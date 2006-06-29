@@ -1,0 +1,82 @@
+2004-06-04 Ratul Mahajan <ratul@cs.washington.edu>
+        * Tasks-Author.inc: authors could not see their reviews 
+	bug fix from kevin fall and keshav
+
+2004-04-03 Ratul Mahajan <ratul@cs.washington.edu>
+        * Author/AuthorViewPaper.php: adding amPaperAuthor test to fix
+	the snooping author bug.
+
+2003-11-15  Ratul Mahajan <ratul@cs.washington.edu>
+	* Reviewer/SeeDecisions.php: bug fix in the query
+
+2003-11-15  Ratul Mahajan <ratul@cs.washington.edu>
+	* Chair/SendMail.php,  Chair/SendMail2.php, Code/ClassReview.php"
+	enabling review and comment mailing to authors
+
+2003-11-11  Ratul Mahajan <ratul@cs.washington.edu>
+
+	* images/GenChart.php: correct currX computation to deal with
+	$valMin!=1
+
+2003-10-12  Dirk Grunwald  <grunwald@systems.cs.colorado.edu>
+
+	* Code/SuckInOSDIPaper.php-not-via-apache: Add to CVS repository for future conferences.
+
+2003-10-07  Dirk Grunwald  <grunwald@home.cs.colorado.edu>
+
+	* Chair/AssignPapers.php: Fix us of $Me rathe than $_Session[Me]
+
+2003-10-02  Dirk Grunwald  <grunwald@home.cs.colorado.edu>
+
+	* Download/GetPaper.php: add backup mechanism to download paper
+	due to problem with MobiSys/etc using /Download/GetPaper/<id>. I
+	don't know why this occurs, but this makes it an explicit paper
+	link with a passed in paperId. Other code (in 'GetPaper') is still
+	preserved.
+
+2003-09-27  Dirk Grunwald  <grunwald@systems.cs.colorado.edu>
+
+	* PC/PCAllAnonReviewsForPaper.php: Add options to allow conference
+	package to fine-tune display of information to PC members during
+	the PC meeting (author, unfinished reviews, reviewer information)
+	Also, fix numerous mistakes introduced by MICRO36.
+
+	* Chair/ModifyPaper.php: Change ModifyPaper to use standard paper
+	edit form in Author/PaperForm.inc
+
+2002-08-02  Dirk Grunwald  <grunwald@esl.cs.colorado.edu>
+
+	* Author/SubmitResponse.php: strip slashes from authors comments
+	since they're added when saving.
+
+2002-08-01  Dirk Grunwald  <grunwald@systems.cs.colorado.edu>
+
+	* Chair/SendMail.php: Add corresponding option to menu.
+
+	* Chair/SendMail2.php: Add mechanism to send mail to all people
+	who have been asked to review a paper but haven't started or
+	finished a review. Only based on ReviewRequest.
+
+2002-02-15    <grunwald@lifebook.dyndns.org>
+
+	* Assistant/AssistantListPapers.php: Remove special "finalized"
+	hack since the more general "ModifyPaper" has been added.
+
+2002-02-15  Dirk Grunwald  <grunwald@esl.cs.colorado.edu>
+
+	* Change database functions in all files to use PEAR::DB files
+
+2002-02-05  Dirk Grunwald  <grunwald@esl.cs.colorado.edu>
+
+	* All/UpdateContactInfo.php: Added infoMsg asking you to update
+	your first/last name if they're not set. This is used as target of
+	redirection from /index.php.
+
+	* index.php: Added check to see if user first/last name are set
+	and if not, user is redirected to the "contact information" page
+	to update their information.
+
+2002-02-02    <grunwald@lifebook.dyndns.org>
+
+	*  (All): Remove use of ASP tags, using <? and ?> tags throughout
+

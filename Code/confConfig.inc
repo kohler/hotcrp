@@ -1,0 +1,94 @@
+<?php 
+
+//
+// Database configuration information
+//
+$dbHost="127.0.0.1";
+$dbUser="HYPO2010";
+$dbPassword ="HYPO2010";
+$dbName="HYPO2010";
+
+//
+// if setupPhase == 1, anyone who logs in has chair powers.
+//
+$Conf = new Conference ( $dbUser, $dbPassword, $dbHost, $dbName );
+$Conf -> setupPhase = 0; 
+//
+// Conference names
+//
+
+//
+// You need a unique session name to distinguish conference sessions
+// running on the same server. DO NOT PUT SPACES IN THE SESSION NAME!!
+//
+$Conf -> sessionName="HYPO2010";
+$Conf -> shortName="HYPO-2010";
+$Conf -> longName="Hypothetical Conference In 2010";
+
+// allowed paper formats: allow PDF and PS for now
+$Conf -> allowPDF = 1;
+$Conf -> allowPS = 0;
+
+//
+// OPTION: can authors specify preferred reviewers?
+//
+$Conf -> optionAllowReviewerPreferences = 1;
+//
+// OPTION: can PC members see reviewer identify during PC meeting?
+//
+$Conf -> optionLetPCSeeReviewers = 1;
+//
+// Can PC see unfinished reviews in review form during PC meeting?
+//
+$Conf -> optionLetPCSeeUnfinishedReviews = 1;
+//
+// Can PC see author information in review form during PC meeting?
+//
+$Conf -> optionLetPCSeeAuthorInfo = 1;
+
+//
+// The name of this site. You can conditionalize this based on
+// e.g. hostname in case you have a development site and a deployment
+// site
+//
+
+$posixinfo = posix_uname();
+$hostname = $posixinfo['nodename'];
+
+//
+// This is the location of the hypothetical conference
+// the test server
+//
+$Conf -> paperSite="http://systems.cs.colorado.edu/HYPO/CRP";
+
+//
+// The conference site (i.e. CFP, registration)
+//
+$Conf -> conferenceSite="http://crp.sourceforge.net/";
+
+//
+// The prefix for papes that are downloaded
+//
+$Conf -> paperPrefix="hypo-2010-paper";
+
+//
+// A CSS, if you want one
+//
+$Conf -> theme ="";
+
+//
+// This is the person advertised as the appropriate person
+// to contact w.r.t problems
+//
+$Conf -> contactName = "The Program Chair";
+$Conf -> contactEmail = "someone@mailinator.com";
+//
+// Email appears to come from this address
+//
+$Conf -> emailFrom = "randomperson@mailinator.com";
+
+//
+// This is where dumps of the database are placed
+//
+$Conf -> dbDumpDir="/var/spool/conference";
+?>

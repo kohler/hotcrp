@@ -1,0 +1,309 @@
+<?php 
+include('../Code/confHeader.inc');
+$_SESSION[Me] -> goIfInvalid($Conf->paperSite);
+$_SESSION[Me] -> goIfNotPC($Conf->paperSite);
+$Conf -> connect();
+?>
+
+<html>
+
+<?php  $Conf->header("Check reviews of your assigned reviewers and send reminders") ?>
+
+<?php 
+
+If( !IsSet($_REQUEST[emailSubject])) {
+  $_REQUEST[emailSubject] = "URGENT: Reminder to Review Paper(s) for $Conf->shortName";
+}
+if (!IsSet($_REQUEST[emailBody])) {
+  $_REQUEST[emailBody] = "Greetings %FIRST% %LAST%,\n\n";
+  $_REQUEST[emailBody] .= $_SESSION[Me]->firstName . " " . $_SESSION[Me]->lastName . "(" . $_SESSION[Me]->email . ") ";
+  $_REQUEST[emailBody] .= "is reminding you to finish your review for\n";
+  $_REQUEST[emailBody] .= "paper #%NUMBER%, %TITLE%\n";
+  $_REQUEST[emailBody] .= "for the $Conf->longName ($Conf->shortName) conference.\n";
+  $_REQUEST[emailBody] .= "\n";
+  $_REQUEST[emailBody] .= "You can continue to modify your review(s)\n";
+  $_REQUEST[emailBody] .= $Conf->printTimeRange('reviewerSubmitReview');
+  $_REQUEST[emailBody] .= "or until you finalize them.\n";
+  $_REQUEST[emailBody] .= "\n";
+  $_REQUEST[emailBody] .= "If you are unable to complete the review by the deadline,\n";
+  $_REQUEST[emailBody] .= "please contact " . $_SESSION[Me]->firstName . " " . $_SESSION[Me]->lastName. " (" . $_SESSION[Me]->email .")\n";
+  $_REQUEST[emailBody] .= "\n";
+  $_REQUEST[emailBody] .= "You can access the reviewing website at this URL\n";
+  $_REQUEST[emailBody] .= "$Conf->paperSite\n";
+  $_REQUEST[emailBody] .= "or use the link at the bottom of this email to automatically log in.\n\n";
+  $_REQUEST[emailBody] .= "Contact $Conf->contactName ($Conf->contactEmail) about problems with the website.\n\n";
+  $_REQUEST[emailBody] .= "Thank you for helping $Conf->shortName - I understand that reviewing is hard work.\n";
+}
+
+//
+// Need to simply finding naglist
+//
+if (IsSet($_REQUEST[nagList])) {
+  for ($i = 0; $i < sizeof($_REQUEST[nagList]); $i++) {
+    $nagMe[$_REQUEST[nagList][$i]] = 1;
+  }
+}
+
+?>
+
+
+<body>
+
+<?php 
+if (IsSet($_REQUEST[nagList])
+    && (IsSet($_REQUEST[SendReviews]) || IsSet($_REQUEST[SampleEmails]))) {
+
+      if (IsSet($_REQUEST[SendReviews])) {
+	print "<h2> Nag-o-Matic Status </h2> ";
+      } else {
+	print "<h2> Nag-o-Matic Preview </h2> ";
+      }
+
+
+      $emailFrom="From: $Conf->emailFrom";
+
+
+      for ($i = 0; $i < sizeof($_REQUEST[nagList]); $i++) {
+	//
+	// We send out nag notices one at a time
+	//
+	$them=$_REQUEST[nagList][$i];
+	$query="SELECT Paper.paperId, Paper.Title, "
+	. " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
+	. " ContactInfo.password, "
+	. " Paper.title, Paper.paperId "
+	. "FROM Paper,ContactInfo,ReviewRequest "
+	. "WHERE ReviewRequest.reviewRequestId=$them "
+	. "AND Paper.paperId=ReviewRequest.paperId "
+	. "AND ContactInfo.contactId=ReviewRequest.asked";
+
+	$result=$Conf->qe($query);
+	if ( $result ) {
+	  $row = $result->fetchRow(DB_FETCHMODE_ASSOC);
+
+	  $msg = $_REQUEST[emailBody];
+	  
+	  $msg=str_replace("%TITLE%", $row['title'], $msg);
+	  $msg=str_replace("%NUMBER%", $row['paperId'], $msg);
+	  $msg=str_replace("%FIRST%", $row['firstName'], $msg);
+	  $msg=str_replace("%LAST%", $row['lastName'], $msg);
+	  $msg=str_replace("%EMAIL%", $row['email'], $msg);
+
+	  $cleanPasswd=htmlspecialchars($row['password']);
+	  $cleanEmail=htmlspecialchars($row['email']);
+
+	  $extraMsg = "\n";
+	  $extraMsg .= "Depending on your email client, you may be able to click on this link ";
+	  $extraMsg .= "to login:\n";
+	  $extraMsg .= "$Conf->paperSite/Reviewer/RequestedReviews.php?loginEmail=$cleanEmail&password=$cleanPasswd\n";
+	    
+	  $Conf->log("Nag $cleanEmail about reviews for paper #" . $row['paperId'], $_SESSION[Me]);
+
+	  if (IsSet($_REQUEST[SendReviews])) {
+
+	    mail($cleanEmail,
+		 $_REQUEST[emailSubject],
+		 $msg . "\n" . $extraMsg,
+		 $emailFrom);
+
+	    $Conf->confirmMsg("Sent email to $cleanEmail");
+
+	  } else if (IsSet($_REQUEST[SampleEmails])) {
+
+	    if (($i % 2) == 0 ) {
+	      $header=$Conf->contrastColorOne;
+	      $body=$Conf->contrastColorTwo;
+	    } else {
+	      $header=$Conf->contrastColorTwo;
+	      $body=$Conf->contrastColorOne;
+	    }
+	    print "<table width=75% align=center border=1>";
+	    print "<tr> <td bgcolor=$header> $emailFrom </td> </tr>";
+	    print "<tr> <td bgcolor=$header> To: $cleanEmail </td> </tr>";
+	    print "<tr> <td bgcolor=$header> Subject: $_REQUEST[emailSubject] </td> </tr>";
+	    print "<tr> <td bgcolor=$body> ";
+	    print nl2br(htmlspecialchars($msg));
+# For debug
+#	    print nl2br(htmlspecialchars($extraMsg));
+	    print "</td></tr>";
+	    print "</table>";
+	    print "<br> <br>";
+	  }
+	} else {
+	  $Conf->errorMsg("hmm - can't nag on review #$them" . $result->getMessage());
+	}
+      }
+} else {
+
+  print "<h3> Nag-O-Matic (tm) </h3>";
+
+$Conf->infoMsg(
+  "If you want to \"nag\" reviewers about specific reviews,"
+  . "select the checklist by appropriate reviewer / paper. When you've "
+  . "selected all reviewers, modify the template letter as you wish "
+  . "and simply push \"Send a Review Reminder\" "
+  . "at the bottom of the page. They will be sent email "
+  . "reminding them of the review deadline and the importance of finishing "
+  . "the reviews. "
+  . "Although you can preview the reviews, "
+  . "there is no confirmation step for sending the email, "
+  . "and there is no protection against sending "
+  . "a nag to someone who already submitted a review, so pay attention to your choices."
+  );
+
+
+?>
+
+<h3> Here are the reviews you have assigned: <h3>
+
+<h4> 
+There are three degrees of review status: <br>
+<ol>
+<li> Not started  - The reviewer has not started the review. </li>
+<li> Not finalized -  The reviewer has started the review, but changes can be made. </li>
+<li> <b> Done </b> -  The reviewer has finalized their review and no more changes can be made. </li>
+</ol>
+</h4>
+
+<FORM METHOD=POST ACTION="<?php echo $_SERVER[PHP_SELF] ?>" target=_blank>
+<?php 
+$result=$Conf->qe("SELECT Paper.paperId, Paper.Title, ContactInfo.email, "
+		  . " ContactInfo.contactId, ReviewRequest.reviewRequestId "
+		  . "FROM Paper, ContactInfo, ReviewRequest "
+		  . "WHERE (ReviewRequest.paperId=Paper.paperId "
+		  . "  AND ReviewRequest.asked=ContactInfo.contactId "
+		  . "  AND ReviewRequest.requestedBy=" . $_SESSION[Me]->contactId. ") "
+		  . " ORDER BY Paper.paperId "
+		  );
+
+if (DB::isError($result)) {
+  $Conf->errorMsg("Error in retrieving list of reviews: " . $result->getMessage());
+} 
+else {
+  ?>
+ <table border=1>
+    <tr>
+    <th width=5%> Nag? </th>
+    <th width=5%> Paper # </th>
+    <th width=15%> Asked </th>
+    <th width=10%> Status </th>
+    <th width=15%> Review </th>
+    <th> Title </th>
+    </tr>
+    <?php 
+    while ($row=$result->fetchRow()) {
+      $paperId = $row[0];
+      $title = $row[1];
+      $contactEmail = $row[2];
+      $contactId = $row[3];
+      $requestId = $row[4];
+
+      $query = "SELECT reviewer, finalized"
+      . " FROM PaperReview "
+      . " WHERE PaperReview.paperId='$paperId' "
+      . " AND PaperReview.reviewer='$contactId' "
+      ;
+
+      $review_result = $Conf->qe($query);
+      if ( DB::isError($review_result) ) {
+	$Conf->errorMsg("That's odd - no information on reivew. "
+			. $review_result->getMessage());
+      } else {
+
+	$review_row = $review_result->fetchRow();
+
+	$num = $review_result->numRows();
+	if ($num == 0) {
+	  $finalized = -1;
+	  $reviewer = "";
+	}
+	else if ($num == 1) {
+	  $finalized = $review_row[1];
+	  $reviewer = $review_row[0];
+	}
+
+	print "<tr>";
+	print "<td>";
+
+	if ( $finalized != 1 ) {
+	  print "<INPUT type=checkbox NAME=nagList[] VALUE='$requestId'";
+	  if ( $nagMe[$requestId] == 1 ) {
+	    print " CHECKED";
+	  }
+	  print ">";
+	} else {
+	  print "&nbsp";
+	}
+
+	print "</td>";
+
+	print "<td> $paperId </td> <td> $contactEmail </td>";
+
+	if ($finalized ==1) {
+	  $status = "<b> Done </b>";
+	  print "<td> $status </td>";
+	  print "<td> <b> <a href=\"PCReviewsForPaper.php?requestId=$requestId\" target=_blank> See review </a> </b>";
+	  print "</td>";
+	  print "<td> $title </td> </tr>\n";
+	}
+	else if ($finalized ==0) {
+	  $status = "Not finalized";
+	  print "<td> $status </td> \n";
+	  print "<td> <b> <a href=\"PCReviewsForPaper.php?requestId=$requestId\" target=_blank> See partial review </a> </b>";
+	  print "</td>";
+	  print "<td> $title </td>";
+	}
+	else {
+	  $status = "Not started";
+	  print "<td> Not started </td> <td> no review available</td>  <td> $title </td>";
+	}
+
+	print "</tr>\n";
+      }
+    }
+ ?>
+    </table>
+<?php 
+}
+?>
+
+<br>
+<INPUT TYPE=SUBMIT name="SendReviews" value="Send a Reviewer Reminder">
+<br>
+<br>
+<INPUT TYPE=SUBMIT name="SampleEmails" value="Preview Email To Be Sent">
+<?php 
+$Conf->infoMsg(
+"Now, type the email you want to send. You can use %TITLE% "
+. " to refer to the paper title, %NUMBER% to refer to the paper number. "
+. " The authors name is %FIRST%, %LAST% and %EMAIL%."
+. " When you press the Preview button, you'll see the email to be generated "
+. " and shown in another page. You won't see the passwords and automatic "
+. " link mentioned in the default template (this is always automatically appended). "
+);
+?>
+
+<table>
+<tr>
+<th> Subject: </th>
+<th>
+<INPUT type=text name="emailSubject" size=80 value="<?php echo $_REQUEST[emailSubject]?>">
+</th>
+</tr>
+<tr> <td colspan=2>
+<textarea rows=30 name="emailBody" cols=80><?php echo $_REQUEST[emailBody]?></textarea>
+</td> </tr>
+</table>
+</FORM>
+
+<?php 
+   }
+?>
+
+</body>
+<?php  $Conf->footer() ?>
+</html>
+
+
+
+

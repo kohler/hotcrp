@@ -1,0 +1,36 @@
+<?php 
+//
+// This needs to be included in each file - it defines the session
+// variables used throughout
+//
+
+//
+// Disable caching
+//
+header ("Cache-Control: no-cache, must-revalidate");  // HTTP/1.1
+header ("Pragma: no-cache");                          
+// session_cache_limiter('nocache');
+
+$ConfSiteURL="http://systems.cs.colorado.edu/grunwald/Conference";
+$ConfSitePATH="/var/www/html/grunwald/Conference";
+//
+// Bring in code
+//
+require_once("$ConfSitePATH/Code/ClassConference.inc");
+require_once("$ConfSitePATH/Code/ClassContact.inc");
+require_once("$ConfSitePATH/Code/ClassPaper.inc");
+//
+require_once("$ConfSitePATH/Code/confConfig.inc");
+require_once("$ConfSitePATH/Code/confFuncs.inc");
+//
+//
+session_start();
+session_register('Conf');
+session_register('Me');
+session_register('Paper');
+
+if (!IsSet($Me)) {
+  $Me = new Contact;
+}
+
+?>

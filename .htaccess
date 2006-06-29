@@ -1,0 +1,6 @@
+##
+## Don't allow upload of .inc files
+##
+Options Indexes
+IndexIgnore .htaccess .sh *.inc */.??* *~ *# */HEADER* */README* */_vti*
+#CharsetDisable On

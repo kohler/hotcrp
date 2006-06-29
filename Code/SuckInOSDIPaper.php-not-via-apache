@@ -1,0 +1,78 @@
+<?
+//
+// This is used to read in papers in USENIX submission format and enter them into the system
+// This takes a single argument which is the paper number. You need to change '$dir' below.
+//
+
+include('../Code/confHeader.inc');
+$Conf -> connect();
+
+print "Hi!\n";
+
+$paperId = $argv[1];
+$dir = "/home/foobar/grunwald/FAST2004/papers/F$paperId";
+print "dir is $dir\n";
+
+$authorInfo=`cat $dir/info.txt`;
+$title=`cat $dir/title.txt`;
+$abstract=`cat $dir/shortabs.txt`;
+$email=`grep Email: $dir/info.txt | sed -e 's/Email: //' `;
+$paperType=`grep Submission-type: $dir/info.txt | sed -e 's/Submission-type: //' `;
+
+$email=trim($email);
+$paperType=trim($paperType);
+$title=addslashes($title);
+$abstract=addslashes($abstract);
+$authorInfo=addslashes($authorInfo);
+
+if ($paperType=="PostScript") {
+  $paperFile="$dir/abstract.ps";
+  $mimetype="application/postscript";
+} else if ($paperType=="PDF") {
+  $paperFile="$dir/abstract.pdf";
+  $mimetype="application/pdf";
+} else {
+  print "Hey, unknown paper type of *$paperType*..\n";
+}
+
+$id = $Conf->emailRegistered($email);
+if ( $id == 0 ) {
+  $newguy = new Contact();
+  $newguy -> initialize("", "", $email, "", "", "");
+  $result = $newguy -> addToDB($Conf);
+  $id = $Conf->emailRegistered($email);
+}
+
+if ($id == 0 ) {
+  print "Unable to register $email\n";
+} else {
+  print "Author contact is $id\n";
+}
+
+$Conf->qe("DELETE FROM Paper WHERE paperId=$paperId");
+
+$query="INSERT INTO Paper SET "
+. "paperId=$paperId, "
+. "contactId='$id', "
+. "title='$title', "
+. "abstract='$abstract', "
+. "acknowledged=1, "
+. "withdrawn=0, "
+. "authorsResponse='$authorsResponse', "
+. "authorInformation='$authorInfo' "
+;
+//print "Query is $query\n";
+$result = $Conf->q($query);
+if (DB::isError($result)) {
+  print "Error in insert for paper\n";
+}
+
+$Conf->qe("DELETE FROM PaperConflict where paperId=$paperId AND authorId=$id");
+$Conf->qe("INSERT INTO PaperConflict set paperId=$paperId, authorId=$id");
+
+$result = $Conf -> storePaper($paperFile,
+			      $mimetype,
+			      $paperId);
+
+
+?>
