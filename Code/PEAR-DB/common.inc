@@ -17,7 +17,7 @@
 // |                                                                      |
 // +----------------------------------------------------------------------+
 //
-// $Id: common.inc,v 1.1 2006/06/29 23:34:07 kohler Exp $
+// $Id: common.inc,v 1.1.1.1 2006/06/29 23:34:07 kohler Exp $
 //
 // Base class for DB implementations.
 //

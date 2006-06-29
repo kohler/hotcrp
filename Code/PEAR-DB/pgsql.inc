@@ -17,7 +17,7 @@
 // |          Stig Bakken <ssb@fast.no>                                   |
 // +----------------------------------------------------------------------+
 //
-// $Id: pgsql.inc,v 1.1 2006/06/29 23:34:07 kohler Exp $
+// $Id: pgsql.inc,v 1.1.1.1 2006/06/29 23:34:07 kohler Exp $
 //
 // Database independent query interface definition for PHP's PostgreSQL
 // extension.
