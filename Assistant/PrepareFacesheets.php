@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotAssistant('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotAssistant('../index.php');
 $Conf -> connect();
 ?>
 

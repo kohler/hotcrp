@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid($Conf->paperSite);
-$_SESSION[Me] -> goIfNotPC($Conf->paperSite);
+$_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
+$_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
 $Conf -> goIfInvalidActivity("PCSubmitReviewDeadline",
 			     $Conf->paperSite);
 $Conf -> goIfInvalidActivity("PCReviewAnyPaper",
@@ -22,7 +22,7 @@ $Conf->infoMsg("This page shows you all the papers that have been entered "
 	       . " and lets you review any for which you do not have a conflict. "
 	       . " Simply click on the paper title to review it ");
 
-$allConflicts = $Conf->allMyConflicts($_SESSION[Me]->contactId);
+$allConflicts = $Conf->allMyConflicts($_SESSION["Me"]->contactId);
 
 //
 // Make an array of all the valid paper indicies.

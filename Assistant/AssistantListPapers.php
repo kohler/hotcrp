@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotAssistant('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotAssistant('../index.php');
 $Conf -> connect();
 
 function olink($key,$string)
@@ -42,7 +42,7 @@ that specified criteria.
 // jl: where is updateFinalized/markFinalized/allPapers defined? is
 // this code used?
 
-if ($_SESSION[Me]->isChair &&
+if ($_SESSION["Me"]->isChair &&
     IsSet($updateFinalized) && IsSet($markFinalized) && IsSet($allPapers)) {
   for ($i = 0; $i < sizeof($allPapers); $i++) {
     $p = $allPapers[$i];
@@ -95,7 +95,7 @@ Found <?php  echo $numpapers ?> papers.
 <FORM method="POST" action="<?php echo $_SERVER[PHP_SELF] ?>">
 
 <INPUT type=checkbox name=SeeAuthorInfo value=1
-   <?php  if ($_REQUEST[SeeAuthorInfo]) {echo "checked";}?> > See author info </br>
+   <?php  if ($_REQUEST["SeeAuthorInfo"]) {echo "checked";}?> > See author info </br>
 
 <INPUT type=checkbox name=onlyWithdrawn value=1
    <?php  if ($_REQUEST[onlyWithdrawn]) {echo "checked";}?> > Only show withdrawn </br>
@@ -117,7 +117,7 @@ Found <?php  echo $numpapers ?> papers.
    <?php  echo olink("Paper.title", "Title") ?>  <br>
    <?php  echo olink("LENGTH(PaperStorage.paper)", "(size)") ?> 
 </th>
-   <?php  if ($_REQUEST[SeeAuthorInfo]) { ?>
+   <?php  if ($_REQUEST["SeeAuthorInfo"]) { ?>
 <th width=30%>
 <?php  echo olink("ContactInfo.lastName", "Author") ?>
 <br>
@@ -166,7 +166,7 @@ Found <?php  echo $numpapers ?> papers.
   <td ROWSPAN=2> <?php  echo $paperId; ?></td>
 				   <td>
      <?php 
-     if ($_SESSION[Me]->isChair) {
+     if ($_SESSION["Me"]->isChair) {
        $link="../PC/PCAllAnonReviewsForPaper.php";
      } else {
        $link="AssistantViewSinglePaper.php";
@@ -178,7 +178,7 @@ Found <?php  echo $numpapers ?> papers.
 
   ?>
   </td>
-  <?php  if ($_REQUEST[SeeAuthorInfo]) { ?>
+  <?php  if ($_REQUEST["SeeAuthorInfo"]) { ?>
   <td> <?php  echo $authorInfo?> </td>
   <td> <?php  echo $author ?> </td>
      <?php  } ?>
@@ -186,7 +186,7 @@ Found <?php  echo $numpapers ?> papers.
   </tr>
   <TR><TD COLSPAN=3>
   <?php 
-  $Conf->paperTable( $_REQUEST[SeeAuthorInfo], false, $paperId );
+  $Conf->paperTable( $_REQUEST["SeeAuthorInfo"], false, $paperId );
   echo '</TD></TR>';
 }
 }

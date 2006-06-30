@@ -1,6 +1,6 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfInvalid("../index.php");
 $Conf -> goIfInvalidActivity("startPaperSubmission", "../index.php");
 $Conf -> connect();
 include("PaperForm.inc");
@@ -72,7 +72,7 @@ exit();
     . "abstract='$_REQUEST[abstract]', "
     . "authorInformation='$_REQUEST[authorInfo]', "
     . "collaborators='$_REQUEST[collaborators]', "
-    . "contactId='" . $_SESSION[Me]->contactId . "' "
+    . "contactId='" . $_SESSION["Me"]->contactId . "' "
     ;
 
   $result = $Conf->qe($query);
@@ -109,7 +109,7 @@ exit();
 	
 	$query = "INSERT into PaperAuthor SET "
 	  . "paperId='$paperId', "
-	  . "authorId='" . $_SESSION[Me]->contactId . "' "
+	  . "authorId='" . $_SESSION["Me"]->contactId . "' "
 	  ;
 
 	$result3 = $Conf->qe($query);
@@ -122,13 +122,13 @@ exit();
 
 	  $Conf->qe("DELETE from Paper WHERE paperId='$paperId'");
 
-	  $Conf->log("Problem creating PaperAuthor for $paperId", $_SESSION[Me]);
+	  $Conf->log("Problem creating PaperAuthor for $paperId", $_SESSION["Me"]);
 
 	} else {
 	    
 	  $result3 = $Conf->qe("INSERT into PaperConflict SET "
 			       . "paperId='$paperId', "
-			       . "authorId='$_SESSION[Me]->contactId' ");
+			       . "authorId='$_SESSION["Me"]->contactId' ");
 
 	  if ( DB::isError($result3) ) {
 	    $Conf->errorMsg("There was another problem associating the paper with you (the contact author). "
@@ -136,7 +136,7 @@ exit();
 			    . "Please press BACK and try again.");
 	    $Conf->qe("DELETE from Paper WHERE paperId='$paperId'");
 	    $Conf->qe("DELETE from PaperAuthor WHERE paperId='$paperId'");
-	    $Conf->log("Problem creating PaperConflict for $paperId", $_SESSION[Me]);
+	    $Conf->log("Problem creating PaperConflict for $paperId", $_SESSION["Me"]);
 	  } else {
 	    if ( IsSet($_REQUEST[topics]) ) {
 	      setTopics($_REQUEST[paperId],
@@ -148,7 +148,7 @@ exit();
 				    $_REQUEST[preferredReviewers]);
 	    }
 
-	    $_SESSION[Me] -> updateContactRoleInfo($Conf);
+	    $_SESSION["Me"] -> updateContactRoleInfo($Conf);
 	    $Conf->confirmMsg("It looks like your paper abstract has been successfully submitted "
 			    . "as paper #$paperId. <b> There's still two more steps! </b> "
 			      . "You need to " .
@@ -166,9 +166,9 @@ exit();
 	    //
 	    // Send them happy email
 	    //
-	    $Conf->sendPaperStartNotice($_SESSION[Me]->email, $paperId, $_REQUEST[title]);
+	    $Conf->sendPaperStartNotice($_SESSION["Me"]->email, $paperId, $_REQUEST[title]);
 
-	    $Conf->log("Submit paper $paperId: $_REQUEST[title]", $_SESSION[Me]);
+	    $Conf->log("Submit paper $paperId: $_REQUEST[title]", $_SESSION["Me"]);
 	  }
 	}
       }

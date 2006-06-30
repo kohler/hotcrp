@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotAssistant('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotAssistant('../index.php');
 $Conf -> connect();
 
 //
@@ -25,7 +25,7 @@ if ( $Conf -> downloadPaper($_REQUEST[paperId]) ) {
     //
     // Happy happy joy joy - do nothing
     //
-    $Conf->log("Downloading $_REQUEST[paperId] for review", $_SESSION[Me]);
+    $Conf->log("Downloading $_REQUEST[paperId] for review", $_SESSION["Me"]);
     exit();
   } else {
     echo "<html>";
@@ -36,6 +36,6 @@ if ( $Conf -> downloadPaper($_REQUEST[paperId]) ) {
       . " </p> </body> </html>";
 
     $Conf->log("Error downloading $_REQUEST[paperId] for review"
-	       . $result->getMessage(), $_SESSION[Me]);
+	       . $result->getMessage(), $_SESSION["Me"]);
   }
 ?>

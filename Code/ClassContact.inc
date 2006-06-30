@@ -114,7 +114,7 @@ class Contact {
       $reviewer = $this->countRequestedReviews() > 0;
     }
 
-    if ($_SESSION[Me] -> isPc && $Conf->validTimeFor('PCSubmitReview')) {
+    if ($_SESSION["Me"] -> isPc && $Conf->validTimeFor('PCSubmitReview')) {
       $pcreviews = $this->countPrimaryReviews()
 	+ $this->countSecondaryReviews();
       $reviewer |= $pcreviews > 0;

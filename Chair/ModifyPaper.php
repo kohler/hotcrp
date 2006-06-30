@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotChair('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotChair('../index.php');
 $Conf -> connect();
 include("../Author/PaperForm.inc");
 ?>
@@ -55,7 +55,7 @@ if (IsSet($_REQUEST[submit])) {
     } else {
       $Conf->infoMsg("Updated information for #$_REQUEST[paperId]");
 
-      $Conf->log("Updated paper information for $_REQUEST[paperId]", $_SESSION[Me]);
+      $Conf->log("Updated paper information for $_REQUEST[paperId]", $_SESSION["Me"]);
 
       if ( ! IsSet($_FILES[uploadedFile]) || $_FILES[uploadedFile] == "none" || !file_exists($_FILES[uploadedFile][tmp_name])) {
 	$Conf->errorMsg("Did NOT change the paper itself");
@@ -87,7 +87,7 @@ if (IsSet($_REQUEST[submit])) {
 	    } else {
 	      $Conf->infoMsg("Looks like paper #$_REQUEST[paperId] was updated, but confirm it");
 
-	      $Conf->log("Replace paper $_REQUEST[paperId]", $_SESSION[Me]);
+	      $Conf->log("Replace paper $_REQUEST[paperId]", $_SESSION["Me"]);
 	    }
 
 	  }

@@ -1,6 +1,6 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfInvalid("../index.php");
 $Conf -> goIfInvalidActivity("finalizePaperSubmission", "../index.php");
 $Conf -> connect();
 $paperId = $_REQUEST[paperId];
@@ -18,7 +18,7 @@ if (!IsSet($_REQUEST[paperId]) || $_REQUEST[paperId] == 0) {
   exit;
 } 
 
-if (! $_SESSION[Me] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
+if (! $_SESSION["Me"] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
   $Conf->errorMsg("You are not the author of paper #$_REQUEST[paperId].<br>"
 		  ."You can't finalize it.");
   exit;
@@ -27,7 +27,7 @@ if (! $_SESSION[Me] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
 $query = "SELECT Paper.title, Paper.abstract, Paper.authorInformation, "
 . " LENGTH(PaperStorage.paper) as size, PaperStorage.mimetype, Paper.collaborators "
 . " FROM Paper, PaperStorage WHERE "
-. " Paper.contactId='" . $_SESSION[Me]->contactId . "' "
+. " Paper.contactId='" . $_SESSION["Me"]->contactId . "' "
 . " AND Paper.paperId=$_REQUEST[paperId] "
 . " AND PaperStorage.paperId=$_REQUEST[paperId]";
 
@@ -50,7 +50,7 @@ $collaborators = $row['collaborators'];
 
 $badPaper = $paperLength < 100 && $mimetype == 'application/txt';
 
-if ( IsSet($_REQUEST[ConfirmPaper]) ) {
+if ( IsSet($_REQUEST["ConfirmPaper"]) ) {
 
   if( $badPaper ){
     $Conf->errorMsg("First you must " .
@@ -76,11 +76,11 @@ if ( IsSet($_REQUEST[ConfirmPaper]) ) {
     //
     // Send them confirmation email
     //
-    $Conf->sendPaperFinalizeNotice($_SESSION[Me]->email, $_REQUEST[paperId], $title);
+    $Conf->sendPaperFinalizeNotice($_SESSION["Me"]->email, $_REQUEST[paperId], $title);
 
-    $Conf->log("Finalize $paperLength byte paper $_REQUEST[paperId]: $title", $_SESSION[Me]);
+    $Conf->log("Finalize $paperLength byte paper $_REQUEST[paperId]: $title", $_SESSION["Me"]);
   }
-  $_SESSION[Me] -> updateContactRoleInfo($Conf);
+  $_SESSION["Me"] -> updateContactRoleInfo($Conf);
   exit();
 
 } else if ( IsSet($UpdatePaper) ) {
@@ -107,7 +107,7 @@ if ( IsSet($_REQUEST[ConfirmPaper]) ) {
   }
 }
 
-$_SESSION[Me] -> updateContactRoleInfo($Conf);
+$_SESSION["Me"] -> updateContactRoleInfo($Conf);
 
 $Conf->infoMsg("You need to finalize your papers before they can be reviewed. Once you finalize"
 	       . " your paper, you can't change any of the information. If you're simply submitting "

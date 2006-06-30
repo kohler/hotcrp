@@ -1,6 +1,6 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfInvalid("../index.php");
 # $Conf -> goIfInvalidActivity("updatePaperSubmission", "../index.php");
 $Conf -> connect();
 ?>
@@ -35,7 +35,7 @@ if ($Conf -> validTimeFor('authorRespondToReviews', 0)) {
 }
 
 $query = "SELECT paperId, title, acknowledged, withdrawn"
-. " FROM Paper WHERE contactId='" . $_SESSION[Me]->contactId. "'";
+. " FROM Paper WHERE contactId='" . $_SESSION["Me"]->contactId. "'";
 $result = $Conf->q($query);
 
 if ( ! $result ) {

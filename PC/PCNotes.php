@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid($Conf->paperSite);
-$_SESSION[Me] -> goIfNotPC($Conf->paperSite);
+$_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
+$_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
 $Conf -> connect();
 
 include('../Code/confConfigReview.inc');
@@ -20,7 +20,7 @@ if (IsSet($_REQUEST[storeComment]) && IsSet($_REQUEST[paperId]) && IsSet($_REQUE
   }
 
   $query="INSERT INTO PaperComments "
-    . " SET paperId=$_REQUEST[paperId], contactId=" . $_SESSION[Me]->contactId. ", "
+    . " SET paperId=$_REQUEST[paperId], contactId=" . $_SESSION["Me"]->contactId. ", "
     . " forAuthor=$_REQUEST[forAuthor], forReviewers=$_REQUEST[forReviewer], "
     . " comment='" . addslashes($_REQUEST[theComment]) . "'";
 
@@ -40,7 +40,7 @@ if (IsSet($_REQUEST[killCommentId])) {
 
 <body>
 <?php 
-if ( $_SESSION[Me]->checkConflict($_REQUEST[paperId], $Conf)) {
+if ( $_SESSION["Me"]->checkConflict($_REQUEST[paperId], $Conf)) {
   
   $Conf -> errorMsg("The program chairs have registered a conflict "
 		    . " of interest for you to read this paper."
@@ -55,7 +55,7 @@ if ( $_SESSION[Me]->checkConflict($_REQUEST[paperId], $Conf)) {
 //
 
 $query="SELECT paperId FROM PrimaryReviewer WHERE "
-. " reviewer=" . $_SESSION[Me]->contactId. " AND paperId=$_REQUEST[paperId] ";
+. " reviewer=" . $_SESSION["Me"]->contactId. " AND paperId=$_REQUEST[paperId] ";
 ;
 
 $result = $Conf->q($query);
@@ -70,7 +70,7 @@ if ( $result ) {
     // OK, check if they've done the review
     //
     $query="SELECT finalized FROM PaperReview WHERE "
-      . " PaperReview.reviewer=" . $_SESSION[Me]->contactId. " "
+      . " PaperReview.reviewer=" . $_SESSION["Me"]->contactId. " "
       . " AND PaperReview.paperId=$_REQUEST[paperId] ";
     ;
     $result = $Conf->q($query);
@@ -125,7 +125,7 @@ while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)) {
     print " and Author.";
   }
   print ". </th>";
-  if ( $row['contactId'] == $_SESSION[Me]->contactId ) {
+  if ( $row['contactId'] == $_SESSION["Me"]->contactId ) {
     print "<th>";
     $id=$row['commentId'];
     $Conf->textButton("Delete?",

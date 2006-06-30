@@ -1,7 +1,7 @@
 <?
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotChair('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotChair('../index.php');
 $Conf -> connect();
 
 function Check($var)
@@ -58,9 +58,9 @@ if (IsSet($_REQUEST[assignPapers])) {
   if (!IsSet($_REQUEST[reviewer]) || $_REQUEST[reviewer]==-1) {
     $Conf->errorMsg("You need to select a reviewer.");
   } else {
-    if (IsSet($_REQUEST[Primary])) {
-      for($i=0; $i < sizeof($_REQUEST[Primary]); $i++) {
-	$paper=$_REQUEST[Primary][$i];
+    if (IsSet($_REQUEST["Primary"])) {
+      for($i=0; $i < sizeof($_REQUEST["Primary"]); $i++) {
+	$paper=$_REQUEST["Primary"][$i];
 	$result = $Conf->qe("SELECT reviewer FROM PrimaryReviewer "
 			    . " WHERE reviewer='$_REQUEST[reviewer]' AND  paperId='$paper'");
 	if (DB::isError($result) ||  $result->numRows() == 0) {
@@ -70,7 +70,7 @@ if (IsSet($_REQUEST[assignPapers])) {
 
 	  if ( !DB::isError($result) ) {
 	    $Conf->infoMsg("Added primary reviewer for paper $paper");
-	    $Conf->log("Added primary reviewer $reviewer for paper $paper", $_SESSION[Me]);
+	    $Conf->log("Added primary reviewer $reviewer for paper $paper", $_SESSION["Me"]);
 	  } else {
 	    $Conf->errorMsg("Error in adding primary reviewer for paper $paper: " . $result->getMessage());
 	  }
@@ -79,9 +79,9 @@ if (IsSet($_REQUEST[assignPapers])) {
 	}
       }
     }
-    if (IsSet($_REQUEST[Secondary])) {
-      for($i=0; $i < sizeof($_REQUEST[Secondary]); $i++) {
-	$paper=$_REQUEST[Secondary][$i];
+    if (IsSet($_REQUEST["Secondary"])) {
+      for($i=0; $i < sizeof($_REQUEST["Secondary"]); $i++) {
+	$paper=$_REQUEST["Secondary"][$i];
 	$result = $Conf->qe("SELECT reviewer FROM SecondaryReviewer "
 			    . " WHERE reviewer='$_REQUEST[reviewer]' AND  paperId='$paper'");
 
@@ -92,7 +92,7 @@ if (IsSet($_REQUEST[assignPapers])) {
 
 	  if ( !DB::isError($result) ) {
 	    $Conf->infoMsg("Added secondary reviewer for paper $paper");
-	    $Conf->log("Added primary reviewer $reviewer for paper $paper", $_SESSION[Me]);
+	    $Conf->log("Added primary reviewer $reviewer for paper $paper", $_SESSION["Me"]);
 	  } else {
 	    $Conf->errorMsg("Error in adding secondary reviewer for paper $paper: " . $result->getMessage());
 	  }

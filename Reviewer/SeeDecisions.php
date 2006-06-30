@@ -3,24 +3,24 @@ include('../Code/confHeader.inc');
 $Conf -> connect();
 
 if ( IsSet($loginEmail) ) {
-  $_SESSION[Me] -> lookupByEmail($loginEmail, $Conf);
+  $_SESSION["Me"] -> lookupByEmail($loginEmail, $Conf);
   if ( IsSet($password)
        && $Conf -> validTimeFor('reviewerViewDecision', 0)
-       && $_SESSION[Me] -> valid()
-       && $_SESSION[Me] -> password == $password) {
+       && $_SESSION["Me"] -> valid()
+       && $_SESSION["Me"] -> password == $password) {
     //
     // Let them fall through -- they'll hit other security
     // checks in just a second, but they've been
     // logged in
     //
   } else {
-    $_SESSION[Me] -> invalidate();
+    $_SESSION["Me"] -> invalidate();
     header("Location: ../index.php");
   }
 }
 
-$_SESSION[Me] -> goIfInvalid("../index.php");
-if (! $_SESSION[Me]->isChair ) {
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+if (! $_SESSION["Me"]->isChair ) {
   $Conf -> goIfInvalidActivity("reviewerViewDecision", "../index.php");
 }
 
@@ -55,7 +55,7 @@ the information is anonymous.
  //
 
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title, Paper.withdrawn FROM Paper, PaperReview "
-		  . "WHERE PaperReview.reviewer='".$_SESSION[Me]->contactId."' "
+		  . "WHERE PaperReview.reviewer='".$_SESSION["Me"]->contactId."' "
 		  . " AND Paper.paperId=PaperReview.paperId "
 		  . " AND PaperReview.finalized=1 "
 		  . "ORDER BY Paper.paperId");

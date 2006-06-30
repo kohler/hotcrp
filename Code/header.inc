@@ -20,7 +20,7 @@ header ("Pragma: no-cache");
 //
 // automatically determine path to conference site
 //
-$here=substr($SCRIPT_FILENAME,0,strrpos($SCRIPT_FILENAME,'/'));
+$here=substr(__FILE__,0,strrpos(__FILE__,'/'));
 if ( file_exists($here . "/Code/confHeader.inc")) {
   $ConfSitePATH=$here;
 } else if ( file_exists($here . "/../Code/confHeader.inc")) {
@@ -73,7 +73,7 @@ session_start();
 //session_register('DB');
 
 //
-// Used in PC/PCALlANonReviewsForPaper
+// Used in PC/PCAllANonReviewsForPaper
 //
 session_register('SeeReviewerInfo');
 session_register('SeeUnfinishedReviews');
@@ -95,32 +95,32 @@ session_register('SeeAuthorInfo');
 //
 //session_register('ShowPCPapers');
 
-if (!IsSet($_SESSION[Me])) {
-  $_SESSION[Me] = new Contact;
+if (!IsSet($_SESSION['Me'])) {
+  $_SESSION['Me'] = new Contact;
 }
 
-if (!IsSet($_SESSION[WhichTaskView])) {
-  $_SESSION[WhichTaskView] = 'All';
+if (!IsSet($_SESSION['WhichTaskView'])) {
+  $_SESSION['WhichTaskView'] = 'All';
 }
 
-if (!IsSet($_SESSION[SeeReviewerInfo])) {
-  $_SESSION[SeeReviewerInfo]=0;
+if (!IsSet($_SESSION['SeeReviewerInfo'])) {
+  $_SESSION['SeeReviewerInfo']=0;
 }
-if (!IsSet($_SESSION[SeeUnfinishedReviews])) {
-  $_SESSION[SeeUnfinishedReviews]=0;
+if (!IsSet($_SESSION['SeeUnfinishedReviews'])) {
+  $_SESSION['SeeUnfinishedReviews']=0;
 }
-if (!IsSet($_SESSION[SeeAuthorInfo])) {
-  $_SESSION[SeeAuthorInfo]=0;
+if (!IsSet($_SESSION['SeeAuthorInfo'])) {
+  $_SESSION['SeeAuthorInfo']=0;
 }
-if (!IsSet($_SESSION[ToldYouAboutNetscape47])) {
-  $_SESSION[ToldYouAboutNetscape47]	= 0;
+if (!IsSet($_SESSION['ToldYouAboutNetscape47'])) {
+  $_SESSION['ToldYouAboutNetscape47']	= 0;
 }
-if (!IsSet($_SESSION[AskedYouToUpdateContactInfo])) {
-  $_SESSION[AskedYouToUpdateContactInfo]	= 0;
+if (!IsSet($_SESSION['AskedYouToUpdateContactInfo'])) {
+  $_SESSION['AskedYouToUpdateContactInfo']	= 0;
 }
 
-if (!IsSet($_SESSION[ShowChairGrades])) {
-  $_SESSION[ShowChairGrades]	= 0;
+if (!IsSet($_SESSION['ShowChairGrades'])) {
+  $_SESSION['ShowChairGrades']	= 0;
 }
 
 ?>

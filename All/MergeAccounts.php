@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
 $Conf -> connect();
-$_SESSION[Me] -> goIfInvalid("../");
+$_SESSION["Me"] -> goIfInvalid("../");
 ?>
 
 <html>
@@ -24,7 +24,7 @@ if (IsSet($_REQUEST[Merge])) {
     $MiniMe = new Contact();
     $MiniMe -> lookupByEmail($_REQUEST[firstEmail], $Conf);
 
-    if ($MiniMe->contactId == $_SESSION[Me] -> contactId) {
+    if ($MiniMe->contactId == $_SESSION["Me"] -> contactId) {
       $Conf->errorMsg("You can't merge yourself with yourself");
     } else if (! $MiniMe -> valid() || $MiniMe -> password != $_REQUEST[passwd]) {
       $Conf-> errorMsg("Either the other acccount doesn't "
@@ -34,7 +34,7 @@ if (IsSet($_REQUEST[Merge])) {
       
       $message = "Your account at the $Conf->shortName conference site "
 	. " has been merged with the account of \n"
-	. $_SESSION[Me]->fullname() . " ( " . $_SESSION[Me] -> email . " )\n";
+	. $_SESSION["Me"]->fullname() . " ( " . $_SESSION["Me"] -> email . " )\n";
       $message .= "If you suspect something fishy, contact the "
 	. "conference contact (" . $Conf -> contactEmail . " )\n";
       
@@ -48,7 +48,7 @@ if (IsSet($_REQUEST[Merge])) {
       // contactID to their first contactId
       //
       $oldid = $MiniMe->contactId;
-      $newid = $_SESSION[Me]->contactId;
+      $newid = $_SESSION["Me"]->contactId;
       //
       // Paper
       //
@@ -80,7 +80,7 @@ if (IsSet($_REQUEST[Merge])) {
       //
       $Conf->qe("DELETE From ContactInfo WHERE contactId=$oldid");
 
-      $Conf->log("Merged account $oldid into " . $_SESSION[Me]->contactId, $_SESSION[Me]);
+      $Conf->log("Merged account $oldid into " . $_SESSION["Me"]->contactId, $_SESSION["Me"]);
 
     }
   }

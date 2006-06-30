@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotPC('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotPC('../index.php');
 $Conf -> connect();
 
 ?>
@@ -31,7 +31,7 @@ if ( $pcresult ) {
   while ($row = $pcresult->fetchRow(DB_FETCHMODE_ASSOC)) {
     $pcId=$row['contactId'];
 
-    if ( $_SESSION[Me] -> isChair ) {
+    if ( $_SESSION["Me"] -> isChair ) {
       $extra = 
 	"<center>" .
 	$Conf->mkTextButtonPopup("Details",

@@ -1,6 +1,6 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfInvalid("../index.php");
 $Conf -> goIfInvalidActivity("startPaperSubmission", "../index.php");
 $Conf -> connect();
 include('PaperForm.inc');

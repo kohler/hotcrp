@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotChair('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotChair('../index.php');
 $Conf -> connect();
 ?>
 
@@ -15,15 +15,15 @@ $Conf -> connect();
 // Process actions from this form..
 //
 if (IsSet($_REQUEST[becomePerson])) {
-  $_SESSION[Me] -> invalidate();
-  $_SESSION[Me] -> lookupById($_REQUEST[become], $Conf);
+  $_SESSION["Me"] -> invalidate();
+  $_SESSION["Me"] -> lookupById($_REQUEST[become], $Conf);
 }
 ?>
 
 <FORM METHOD="POST" ACTION="<?php echo $_SERVER[PHP_SELF] ?>">
 <table align=center>
 <tr> <td>
-<?php  $Conf->makePCSelector('become', $_SESSION[Me]->contactId); ?>  
+<?php  $Conf->makePCSelector('become', $_SESSION["Me"]->contactId); ?>  
 </td>
 <td>
 <INPUT TYPE="SUBMIT" name="becomePerson" value="Become this PC member">
@@ -46,7 +46,7 @@ $result = $Conf->qe($query);
  if (!DB::isError($result)) {
    while($row=$result->fetchRow()) {
      print "<OPTION VALUE=\"$row[0]\" ";
-     if ( $row[0] == $_SESSION[Me] -> contactId) {
+     if ( $row[0] == $_SESSION["Me"] -> contactId) {
        print " SELECTED ";
      }
      print "> $row[1] $row[2] ($row[3]) </OPTION>";
@@ -74,7 +74,7 @@ $result = $Conf->qe($query);
  if (!DB::isError($result)) {
    while($row=$result->fetchRow()) {
      print "<OPTION VALUE=\"$row[0]\" ";
-     if ( $row[0] == $_SESSION[Me] -> contactId) {
+     if ( $row[0] == $_SESSION["Me"] -> contactId) {
        print " SELECTED ";
      }
      print "> $row[1] $row[2] ($row[3]) </OPTION>";

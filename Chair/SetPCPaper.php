@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotChair('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotChair('../index.php');
 $Conf -> connect();
 ?>
 
@@ -64,7 +64,7 @@ if (DB::isError($result)) {
   while ($row=$result->fetchRow()) {
     $id = $row[0];
     $title = $row[1];
-    $me =$_SESSION[Me]->contactId;
+    $me =$_SESSION["Me"]->contactId;
     print "<tr> <td align=center> $id </td>";
     print "<td align=center> <INPUT TYPE=checkbox NAME=Requests[] VALUE='$id'";
     if( $row[2] ){

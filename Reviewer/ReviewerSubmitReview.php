@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
 
-$_SESSION[Me] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfInvalid("../index.php");
 $Conf -> goIfInvalidActivity("reviewerSubmitReviewDeadline", "../index.php");
 $Conf -> connect();
 

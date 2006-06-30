@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotChair('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotChair('../index.php');
 $Conf -> connect();
 
 //
@@ -9,7 +9,7 @@ $Conf -> connect();
 //
 
 if (IsSet($_REQUEST[toggleChairGrades])) {
-  $_SESSION[ShowChairGrades] = ! $_SESSION[ShowChairGrades];
+  $_SESSION["ShowChairGrades"] = ! $_SESSION["ShowChairGrades"];
 }
 
 
@@ -31,7 +31,7 @@ $Conf->infoMsg("Change the configuration parameters.<br> "
 <tr> <td>
 <FORM METHOD=POST ACTION=<?php echo $_SERVER[PHP_SELF]?>>
 <?php 
-if ($_SESSION[ShowChairGrades]) {
+if ($_SESSION["ShowChairGrades"]) {
 ?>
 <input TYPE=SUBMIT NAME=toggleChairGrades VALUE="Hide The Chairs Grades">
 <?php 

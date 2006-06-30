@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid($Conf->paperSite);
-$_SESSION[Me] -> goIfNotPC($Conf->paperSite);
+$_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
+$_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
 $Conf -> connect();
 ?>
 
@@ -13,13 +13,13 @@ $Conf -> connect();
 <?php 
 if (IsSet($_REQUEST[removePaperId]) && IsSet($_REQUEST[removeReview])) {
   $query= "DELETE FROM ReviewRequest WHERE "
-    . "requestedBy=" . $_SESSION[Me]->contactId. " AND reviewRequestId=$_REQUEST[removeReview] "
+    . "requestedBy=" . $_SESSION["Me"]->contactId. " AND reviewRequestId=$_REQUEST[removeReview] "
     . " AND paperId='$_REQUEST[removePaperId]'";
 
   $result = $Conf->qe($query);
 
   if ( !DB::isError($result) ) {
-    $Conf->log("Remove review request #$_REQUEST[removeReview] for $_REQUEST[removePaperId]", $_SESSION[Me]);
+    $Conf->log("Remove review request #$_REQUEST[removeReview] for $_REQUEST[removePaperId]", $_SESSION["Me"]);
   } else {
     $Conf->errorMsg("There was an error removing the reviewers: " . $result->getMessage());
   }
@@ -54,7 +54,7 @@ $result=$Conf->qe("SELECT Paper.paperId, Paper.Title, "
 		  . "FROM Paper, ContactInfo, ReviewRequest "
 		  . "WHERE (ReviewRequest.paperId=Paper.paperId "
 		  . "  AND ReviewRequest.asked=ContactInfo.contactId "
-		  . "  AND ReviewRequest.requestedBy=" . $_SESSION[Me]->contactId . ") "
+		  . "  AND ReviewRequest.requestedBy=" . $_SESSION["Me"]->contactId . ") "
 		  . " ORDER BY Paper.paperId ");
 
 if (DB::isError($result)) {

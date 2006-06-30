@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotChair('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotChair('../index.php');
 $Conf -> connect();
 
 // we are disabling register_globals in php.ini, so we don't need to
@@ -33,12 +33,12 @@ $outcomeValue[3] = "acceptedShort";
 
 if ( IsSet($_REQUEST[gradeForPaper]) && IsSet($_REQUEST[paperId]) ) {
   $q = "DELETE FROM PaperGrade "
-    . " WHERE paperId=$_REQUEST[paperId] AND contactId=" . $_SESSION[Me]->contactId. " ";
+    . " WHERE paperId=$_REQUEST[paperId] AND contactId=" . $_SESSION["Me"]->contactId. " ";
   $Conf->qe($q);
 
   if ($_REQUEST[gradeForPaper] > 0) {
     $q = "INSERT INTO PaperGrade "
-      . " SET paperId=$_REQUEST[paperId], contactId=" . $_SESSION[Me]->contactId . ", grade=$_REQUEST[gradeForPaper] ";
+      . " SET paperId=$_REQUEST[paperId], contactId=" . $_SESSION["Me"]->contactId . ", grade=$_REQUEST[gradeForPaper] ";
     $Conf->qe($q);
   }
 }
@@ -51,7 +51,7 @@ if ( IsSet($_REQUEST[outcomeForPaper]) && IsSet($_REQUEST[paperId]) ) {
 
 
 if (IsSet($_REQUEST[setSortKey])) {
-  $_SESSION[GradeSortKey]=$_REQUEST[setSortKey];
+  $_SESSION["GradeSortKey"]=$_REQUEST[setSortKey];
 }
 
 
@@ -64,16 +64,16 @@ if (IsSet($_REQUEST[setSortKey])) {
 <body>
 <FORM method="POST" action="<?php echo $_SERVER[PHP_SELF] ?>">
 <INPUT type=checkbox name=ShowGrades value=1
-   <?php  if ($_REQUEST[ShowGrades]) {echo "checked";}?> > Show Grades </br>
+   <?php  if ($_REQUEST["ShowGrades"]) {echo "checked";}?> > Show Grades </br>
 
 <INPUT type=checkbox name=ShowChairGrades value=1
-   <?php  if ($_REQUEST[ShowChairGrades]) {echo "checked";}?> > Show Chair Grades </br>
+   <?php  if ($_REQUEST["ShowChairGrades"]) {echo "checked";}?> > Show Chair Grades </br>
 
 <INPUT type=checkbox name=ShowOutcome value=1
-   <?php  if ($_REQUEST[ShowOutcome]) {echo "checked";}?> > Show Outcome (Accept/Reject) </br>
+   <?php  if ($_REQUEST["ShowOutcome"]) {echo "checked";}?> > Show Outcome (Accept/Reject) </br>
 
 <INPUT type=checkbox name=ShowPCPapers value=1
-   <?php  if ($_REQUEST[ShowPCPapers]) {echo "checked";}?> > Show PC Member Papers </br>
+   <?php  if ($_REQUEST["ShowPCPapers"]) {echo "checked";}?> > Show PC Member Papers </br>
 
 <input type="submit" value="Update View" name="submit">
 
@@ -81,28 +81,28 @@ if (IsSet($_REQUEST[setSortKey])) {
 
 <?php 
 
-if (!IsSet($_SESSION[GradeSortKey])) {
-  $_SESSION[GradeSortKey] = "byReviews";
+if (!IsSet($_SESSION["GradeSortKey"])) {
+  $_SESSION["GradeSortKey"] = "byReviews";
 }
 
-$pcConflicts = $Conf->allPCConflicts($_SESSION[Me]->contactId);
-if ( $_REQUEST[ShowPCPapers] ) {
-  $conflicts = $Conf->allMyConflicts($_SESSION[Me]->contactId);
+$pcConflicts = $Conf->allPCConflicts($_SESSION["Me"]->contactId);
+if ( $_REQUEST["ShowPCPapers"] ) {
+  $conflicts = $Conf->allMyConflicts($_SESSION["Me"]->contactId);
 } else {
   $conflicts = $pcConflicts;
 }
 
-if ($_SESSION[GradeSortKey]=="byReviews") {
+if ($_SESSION["GradeSortKey"]=="byReviews") {
   $Conf->infoMsg("Sorting By Overall Merit (assigned by reviewers)");
   $order = "ORDER BY overallMerit DESC, Paper.paperId ";
 }
-elseif ($_SESSION[GradeSortKey]=="byGrades") {
+elseif ($_SESSION["GradeSortKey"]=="byGrades") {
   $Conf->infoMsg("Sorting By Grades (assigned by PC members)");
   $order = "ORDER BY grade DESC, Paper.paperId ";
-} elseif ($_SESSION[GradeSortKey]=="byPapers") {
+} elseif ($_SESSION["GradeSortKey"]=="byPapers") {
   $Conf->infoMsg("Sorting By Paper Number");
   $order = "ORDER BY Paper.paperId ";
-} elseif ($_SESSION[GradeSortKey]=="byOutcome") {
+} elseif ($_SESSION["GradeSortKey"]=="byOutcome") {
   $Conf->infoMsg("Sorting By Paper Number");
   $order = "ORDER BY Paper.outcome ";
 } else {
@@ -139,13 +139,13 @@ if (DB::isError($result)) {
 <th width=5%> <a href="<?php echo $_SERVER[PHP_SELF]?>?setSortKey=byReviews" > Merit </a> </th>
 
 <?php 
-  if ( $_REQUEST[ShowGrades]) { 
+  if ( $_REQUEST["ShowGrades"]) { 
     print "<th width=5%> <a href=\"$_SERVER[PHP_SELF]?setSortKey=byGrades\" > Grades </a> </th>\n";
   }
-  if ( $_REQUEST[ShowChairGrades] ) {
+  if ( $_REQUEST["ShowChairGrades"] ) {
     print "<th width=5%> Your Grade </th>\n";
   }
-  if ( $_REQUEST[ShowOutcome] ) {
+  if ( $_REQUEST["ShowOutcome"] ) {
     print "<th width=5%> <a href=\"$_SERVER[PHP_SELF]?setSortKey=byOutcome\" > Outcome </a> </th>\n";
   }
 ?>
@@ -209,7 +209,7 @@ while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)){
 
     print "</td>";
 
-    if ( $_REQUEST[ShowGrades] ) {
+    if ( $_REQUEST["ShowGrades"] ) {
       print "<td align=center>";
       $q = "SELECT grade FROM PaperGrade "
         . " WHERE paperId=$paperId ";
@@ -217,11 +217,11 @@ while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)){
       print "</td>";
     }
 
-    if ( $_REQUEST[ShowChairGrades] ) {
+    if ( $_REQUEST["ShowChairGrades"] ) {
       print "<td>";
       print "<FORM name=Paper$paperId method=\"POST\" action=\"$_SERVER[PHP_SELF]\">";
       $q = "SELECT grade FROM PaperGrade "
-	. " WHERE paperId=$paperId AND contactId=" . $_SESSION[Me]->contactId . " ";
+	. " WHERE paperId=$paperId AND contactId=" . $_SESSION["Me"]->contactId . " ";
       $r = $Conf->qe($q);
       if (! $r ) {
 	$Conf->errorMsg("Bummer .. " . $result->getMessage());
@@ -231,10 +231,10 @@ while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)){
       }
 
       print "<input type=hidden name=paperId value=$paperId>\n";
-      print "<input type=hidden name=ShowGrades value=$_REQUEST[ShowGrades]>\n";
-      print "<input type=hidden name=ShowChairGrades value=$_REQUEST[ShowChairGrades]>\n";
-      print "<input type=hidden name=ShowOutcome value=$_REQUEST[ShowOutcome]>\n";
-      print "<input type=hidden name=ShowPCPapers value=$_REQUEST[ShowPCPapers]>\n";
+      print "<input type=hidden name=ShowGrades value=$_REQUEST["ShowGrades"]>\n";
+      print "<input type=hidden name=ShowChairGrades value=$_REQUEST["ShowChairGrades"]>\n";
+      print "<input type=hidden name=ShowOutcome value=$_REQUEST["ShowOutcome"]>\n";
+      print "<input type=hidden name=ShowPCPapers value=$_REQUEST["ShowPCPapers"]>\n";
 
       print "<SELECT NAME=gradeForPaper "
 	. " onChange=document.Paper$paperId.submit() >\n";
@@ -250,15 +250,15 @@ while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)){
       print "</td>";
     }
 
-    if ( $_REQUEST[ShowOutcome] ) {
+    if ( $_REQUEST["ShowOutcome"] ) {
       print "<td>";
       print "<FORM name=Outcome$paperId method=\"POST\" action=\"$_SERVER[PHP_SELF]\">";
 
       print "<input type=hidden name=paperId value=$paperId>\n";
-      print "<input type=hidden name=ShowGrades value=$_REQUEST[ShowGrades]>\n";
-      print "<input type=hidden name=ShowChairGrades value=$_REQUEST[ShowChairGrades]>\n";
-      print "<input type=hidden name=ShowOutcome value=$_REQUEST[ShowOutcome]>\n";
-      print "<input type=hidden name=ShowPCPapers value=$_REQUEST[ShowPCPapers]>\n";
+      print "<input type=hidden name=ShowGrades value=$_REQUEST["ShowGrades"]>\n";
+      print "<input type=hidden name=ShowChairGrades value=$_REQUEST["ShowChairGrades"]>\n";
+      print "<input type=hidden name=ShowOutcome value=$_REQUEST["ShowOutcome"]>\n";
+      print "<input type=hidden name=ShowPCPapers value=$_REQUEST["ShowPCPapers"]>\n";
 
       print "<SELECT NAME=outcomeForPaper "
 	. " onChange=document.Outcome$paperId.submit() >\n";

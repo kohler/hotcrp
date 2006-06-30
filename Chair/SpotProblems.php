@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotPC('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotPC('../index.php');
 $Conf -> connect();
 
 function spotSecondaryReviewers($howmany)
@@ -101,7 +101,7 @@ function spotReviews($howmany, $finalized=0)
   }
 }
 
-if (! $_SESSION[Me] -> isChair && ! $Conf -> validTimeFor('PCMeetingView', 0) ) {
+if (! $_SESSION["Me"] -> isChair && ! $Conf -> validTimeFor('PCMeetingView', 0) ) {
   $Conf->infoMsg("You shouldn't be here");
   exit();
 }

@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotAssistant('../index.php');
+$_SESSION['Me'] -> goIfInvalid("../index.php");
+$_SESSION['Me'] -> goIfNotAssistant('../index.php');
 $Conf -> connect();
 ?>
 
@@ -39,7 +39,7 @@ if (!IsSet($_REQUEST['paperId']) || $_REQUEST['paperId'] == 0) {
 
     print "<table align=center border=0 cellpadding=10>\n";
     print "<tr>";
-    if ( $_SESSION[Me] -> isChair ) {
+    if ( $_SESSION['Me'] -> isChair ) {
       print "<td>";
       $Conf->linkWithPaperId("Delete Paper",
 			     "../Chair/DeletePaper2.php",

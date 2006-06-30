@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid($Conf->paperSite);
-$_SESSION[Me] -> goIfNotPC($Conf->paperSite);
+$_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
+$_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
 $Conf -> connect();
 ?>
 
@@ -16,7 +16,7 @@ If( !IsSet($_REQUEST[emailSubject])) {
 }
 if (!IsSet($_REQUEST[emailBody])) {
   $_REQUEST[emailBody] = "Greetings %FIRST% %LAST%,\n\n";
-  $_REQUEST[emailBody] .= $_SESSION[Me]->firstName . " " . $_SESSION[Me]->lastName . "(" . $_SESSION[Me]->email . ") ";
+  $_REQUEST[emailBody] .= $_SESSION["Me"]->firstName . " " . $_SESSION["Me"]->lastName . "(" . $_SESSION["Me"]->email . ") ";
   $_REQUEST[emailBody] .= "is reminding you to finish your review for\n";
   $_REQUEST[emailBody] .= "paper #%NUMBER%, %TITLE%\n";
   $_REQUEST[emailBody] .= "for the $Conf->longName ($Conf->shortName) conference.\n";
@@ -26,7 +26,7 @@ if (!IsSet($_REQUEST[emailBody])) {
   $_REQUEST[emailBody] .= "or until you finalize them.\n";
   $_REQUEST[emailBody] .= "\n";
   $_REQUEST[emailBody] .= "If you are unable to complete the review by the deadline,\n";
-  $_REQUEST[emailBody] .= "please contact " . $_SESSION[Me]->firstName . " " . $_SESSION[Me]->lastName. " (" . $_SESSION[Me]->email .")\n";
+  $_REQUEST[emailBody] .= "please contact " . $_SESSION["Me"]->firstName . " " . $_SESSION["Me"]->lastName. " (" . $_SESSION["Me"]->email .")\n";
   $_REQUEST[emailBody] .= "\n";
   $_REQUEST[emailBody] .= "You can access the reviewing website at this URL\n";
   $_REQUEST[emailBody] .= "$Conf->paperSite\n";
@@ -51,9 +51,9 @@ if (IsSet($_REQUEST[nagList])) {
 
 <?php 
 if (IsSet($_REQUEST[nagList])
-    && (IsSet($_REQUEST[SendReviews]) || IsSet($_REQUEST[SampleEmails]))) {
+    && (IsSet($_REQUEST["SendReviews"]) || IsSet($_REQUEST["SampleEmails"]))) {
 
-      if (IsSet($_REQUEST[SendReviews])) {
+      if (IsSet($_REQUEST["SendReviews"])) {
 	print "<h2> Nag-o-Matic Status </h2> ";
       } else {
 	print "<h2> Nag-o-Matic Preview </h2> ";
@@ -97,9 +97,9 @@ if (IsSet($_REQUEST[nagList])
 	  $extraMsg .= "to login:\n";
 	  $extraMsg .= "$Conf->paperSite/Reviewer/RequestedReviews.php?loginEmail=$cleanEmail&password=$cleanPasswd\n";
 	    
-	  $Conf->log("Nag $cleanEmail about reviews for paper #" . $row['paperId'], $_SESSION[Me]);
+	  $Conf->log("Nag $cleanEmail about reviews for paper #" . $row['paperId'], $_SESSION["Me"]);
 
-	  if (IsSet($_REQUEST[SendReviews])) {
+	  if (IsSet($_REQUEST["SendReviews"])) {
 
 	    mail($cleanEmail,
 		 $_REQUEST[emailSubject],
@@ -108,7 +108,7 @@ if (IsSet($_REQUEST[nagList])
 
 	    $Conf->confirmMsg("Sent email to $cleanEmail");
 
-	  } else if (IsSet($_REQUEST[SampleEmails])) {
+	  } else if (IsSet($_REQUEST["SampleEmails"])) {
 
 	    if (($i % 2) == 0 ) {
 	      $header=$Conf->contrastColorOne;
@@ -172,7 +172,7 @@ $result=$Conf->qe("SELECT Paper.paperId, Paper.Title, ContactInfo.email, "
 		  . "FROM Paper, ContactInfo, ReviewRequest "
 		  . "WHERE (ReviewRequest.paperId=Paper.paperId "
 		  . "  AND ReviewRequest.asked=ContactInfo.contactId "
-		  . "  AND ReviewRequest.requestedBy=" . $_SESSION[Me]->contactId. ") "
+		  . "  AND ReviewRequest.requestedBy=" . $_SESSION["Me"]->contactId. ") "
 		  . " ORDER BY Paper.paperId "
 		  );
 

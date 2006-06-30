@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid($Conf->paperSite);
-$_SESSION[Me] -> goIfNotPC($Conf->paperSite);
+$_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
+$_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
 $Conf -> goIfInvalidActivity("PCGradePapers",
 			     $Conf->paperSite);
 $Conf -> connect();
@@ -21,12 +21,12 @@ if ( IsSet($_REQUEST['gradeForPaper']) ) {
     $grade = addSlashes( $grade );
 
     $q = "DELETE FROM PaperGrade "
-      . " WHERE paperId='$paperId' AND contactId=" . $_SESSION[Me]->contactId. " ";
+      . " WHERE paperId='$paperId' AND contactId=" . $_SESSION["Me"]->contactId. " ";
     $Conf->qe($q);
 
     if ($grade > 0) {
       $q = "INSERT INTO PaperGrade "
-	. " SET paperId='$paperId', contactId=" . $_SESSION[Me]->contactId. ", grade='$grade' ";
+	. " SET paperId='$paperId', contactId=" . $_SESSION["Me"]->contactId. ", grade='$grade' ";
       $Conf->qe($q);
     }
   }
@@ -91,7 +91,7 @@ $gradeRange = $Conf->reviewRange('grade', 'PaperGrade');
 
 
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title FROM Paper, PrimaryReviewer "
-		  . " WHERE PrimaryReviewer.reviewer='" . $_SESSION[Me]->contactId . "' "
+		  . " WHERE PrimaryReviewer.reviewer='" . $_SESSION["Me"]->contactId . "' "
 		  . " AND Paper.paperId=PrimaryReviewer.paperId "
 		  . " ORDER BY Paper.paperId");
 
@@ -135,7 +135,7 @@ while ($row=$result->fetchRow()) {
   $done = $Conf->retCount("SELECT finalized "
 			  . " FROM PaperReview "
 			  . " WHERE PaperReview.paperId='$paperId' "
-			  . " AND PaperReview.reviewer='" . $_SESSION[Me]->contactId. "'"
+			  . " AND PaperReview.reviewer='" . $_SESSION["Me"]->contactId. "'"
 			  );
 
   if ( $done ) {
@@ -156,7 +156,7 @@ while ($row=$result->fetchRow()) {
 
     print "<td>";
     $q = "SELECT grade FROM PaperGrade "
-      . " WHERE paperId=$paperId AND contactId=" . $_SESSION[Me]->contactId . " ";
+      . " WHERE paperId=$paperId AND contactId=" . $_SESSION["Me"]->contactId . " ";
       
     $r = $Conf->qe($q);
     if (DB::isError($r) ) {
@@ -199,7 +199,7 @@ $Conf->infoMsg("You can assign grades for any paper for which you are a secondar
 
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title "
 		  . " FROM Paper, SecondaryReviewer "
-		  . " WHERE SecondaryReviewer.reviewer='" . $_SESSION[Me]->contactId . "' "
+		  . " WHERE SecondaryReviewer.reviewer='" . $_SESSION["Me"]->contactId . "' "
 		  . " AND Paper.paperId=SecondaryReviewer.paperId "
 		  . " ORDER BY Paper.paperId");
 
@@ -239,14 +239,14 @@ while ($row=$result->fetchRow()) {
 			  . " FROM PaperReview, ReviewRequest "
 			  . " WHERE PaperReview.paperId='$paperId' "
 			  . " AND ReviewRequest.paperId=$paperId "
-			  . " AND ReviewRequest.requestedBy='" . $_SESSION[Me]->contactId . "'"
+			  . " AND ReviewRequest.requestedBy='" . $_SESSION["Me"]->contactId . "'"
 			  . " AND PaperReview.reviewer=ReviewRequest.asked "
 			  );
 
   $doneByMe = $Conf->retCount("SELECT PaperReview.finalized "
 			  . " FROM PaperReview "
 			  . " WHERE PaperReview.paperId='$paperId' "
-			  . " AND PaperReview.reviewer='" . $_SESSION[Me]->contactId . "'"
+			  . " AND PaperReview.reviewer='" . $_SESSION["Me"]->contactId . "'"
 			  );
 
   if ( $done || $doneByMe ) {
@@ -269,7 +269,7 @@ while ($row=$result->fetchRow()) {
     print "<td>";
     print "<FORM name=Paper$paperId method=\"POST\" action=\"$_REQUEST[PHP_SELF]\">";
     $q = "SELECT grade FROM PaperGrade "
-      . " WHERE paperId=$paperId AND contactId=" . $_SESSION[Me]->contactId . " ";
+      . " WHERE paperId=$paperId AND contactId=" . $_SESSION["Me"]->contactId . " ";
       
     $r = $Conf->qe($q);
     if (DB::isError($r) ) {

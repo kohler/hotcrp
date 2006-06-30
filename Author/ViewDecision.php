@@ -1,8 +1,8 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-if ( !$_SESSION[Me]->isChair ) {
-  $_SESSION[Me] -> goIfNotAuthor("../index.php");
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+if ( !$_SESSION["Me"]->isChair ) {
+  $_SESSION["Me"] -> goIfNotAuthor("../index.php");
   $Conf -> goIfInvalidActivity("authorViewDecision", "../index.php");
 }
 $Conf -> connect();
@@ -23,11 +23,11 @@ if (!IsSet($_REQUEST[paperId]) ) {
   exit;
 }
 
-if ( $_SESSION[Me] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
+if ( $_SESSION["Me"] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
   //
   // Ok, I'm author...
   //
-} else if ( $_SESSION[Me] -> isChair ) {
+} else if ( $_SESSION["Me"] -> isChair ) {
     $Conf -> infoMsg("....chair exemption...");
 } else {
   $Conf -> errorMsg("Only the submitting paper author can examine the "
@@ -55,7 +55,7 @@ if (IsSet($updateReviewerView)) {
 // Print header using dummy review
 //
 
-$Review=ReviewFactory($Conf, $_SESSION[Me]->contactId, $_REQUEST[paperId]);
+$Review=ReviewFactory($Conf, $_SESSION["Me"]->contactId, $_REQUEST[paperId]);
 
 if ( ! $Review -> valid ) {
   $Conf->errorMsg("You've stumbled on to an invalid review? -- contact chair");

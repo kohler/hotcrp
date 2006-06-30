@@ -1,6 +1,6 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfInvalid("../index.php");
 // $Conf -> goIfInvalidActivity("updatePaperSubmission", "../index.php");
 $Conf -> connect();
 ?>
@@ -17,7 +17,7 @@ if (!IsSet($_REQUEST[paperId]) || $_REQUEST[paperId] == 0) {
   exit;
 } 
 
-if (! $_SESSION[Me] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
+if (! $_SESSION["Me"] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
   $Conf->errorMsg("You are not the author of paper #$_REQUEST[paperId].<br>"
 		  ."You can't delete it.");
   exit;
@@ -26,7 +26,7 @@ if (! $_SESSION[Me] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
 $query = "SELECT Paper.title, Paper.abstract, Paper.authorInformation, "
 . " LENGTH(PaperStorage.paper) as size, PaperStorage.mimetype, Paper.collaborators "
 . " FROM Paper, PaperStorage WHERE "
-. " Paper.contactId='". $_SESSION[Me]->contactId . "' "
+. " Paper.contactId='". $_SESSION["Me"]->contactId . "' "
 . " AND Paper.paperId=$_REQUEST[paperId] "
 . " AND PaperStorage.paperId=$_REQUEST[paperId]";
 
@@ -58,9 +58,9 @@ $collaborators = $row['collaborators'];
 </table>
 
 <?php 
-if ( IsSet($_REQUEST[DeletePaper]) ) {
+if ( IsSet($_REQUEST["DeletePaper"]) ) {
   $Conf->deletePaper($_REQUEST[paperId]);
-  $_SESSION[Me] -> updateContactRoleInfo($Conf);
+  $_SESSION["Me"] -> updateContactRoleInfo($Conf);
   $Conf->infoMsg( "It looks like your paper should have been deleted. " );
   
 

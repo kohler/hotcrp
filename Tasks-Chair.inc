@@ -1,4 +1,4 @@
-<?php if ($_SESSION[Me]->isChair ) {?>
+<?php if ($_SESSION["Me"]->isChair ) {?>
 
 <?php $Conf -> taskHeader("Tasks for the Program Chair", $TaskSpan); ?>
 

@@ -4,8 +4,8 @@ include('../Code/confHeader.inc');
 // If they're here, they don't know
 // this information.
 //
-if (IsSet($_SESSION[Me])) {
-    $_SESSION[Me] -> invalidate();
+if (IsSet($_SESSION['Me'])) {
+    $_SESSION['Me'] -> invalidate();
 }
 ?>
 

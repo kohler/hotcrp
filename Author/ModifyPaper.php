@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotAuthor("../index.php");
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotAuthor("../index.php");
 $Conf -> goIfInvalidActivity("updatePaperSubmission", "../index.php");
 $Conf -> connect();
 include('PaperForm.inc');
@@ -17,7 +17,7 @@ if (!IsSet($_REQUEST[paperId]) ) {
   exit;
 }
 
-if ( ! $_SESSION[Me] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
+if ( ! $_SESSION["Me"] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
   $Conf -> errorMsg("Only the submitting paper author can modify the "
 		    . "paper information.");
   exit;
@@ -81,7 +81,7 @@ if (IsSet($_REQUEST[submit])) {
 
   $Conf->infoMsg("Updated information for #$_REQUEST[paperId]");
 
-  $Conf->log("Updated paper information for $_REQUEST[paperId]", $_SESSION[Me]);
+  $Conf->log("Updated paper information for $_REQUEST[paperId]", $_SESSION["Me"]);
 
 	
   if ( IsSet($_REQUEST[topics]) ) {

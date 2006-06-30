@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotChair('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotChair('../index.php');
 $Conf -> connect();
 
 function olink($key,$string)
@@ -27,27 +27,27 @@ function olink($key,$string)
 
 function navigationBar()
 {
-  //global $_REQUEST[ChunkSize];
-  //global $_REQUEST[StartFrom];
+  //global $_REQUEST["ChunkSize"];
+  //global $_REQUEST["StartFrom"];
   ?>
     <table align=center border=1>
        <tr>
 
        <td>
        <FORM METHOD="POST" ACTION="<?php echo $_SERVER[PHP_SELF] ?>">
-       <input type=hidden name=StartFrom Value="<?php echo $_REQUEST[StartFrom]-$_REQUEST[ChunkSize]?>">
+       <input type=hidden name=StartFrom Value="<?php echo $_REQUEST["StartFrom"]-$_REQUEST["ChunkSize"]?>">
        <input type=submit name="Prev" Value="Prev">
-       <input type=text name="ChunkSize" Value="<?php echo $_REQUEST[ChunkSize]?>">
+       <input type=text name="ChunkSize" Value="<?php echo $_REQUEST["ChunkSize"]?>">
        </form>
        </td>
 
 
-       <td> <big> Records #<?php echo $_REQUEST[StartFrom]?> to #<?php echo $_REQUEST[StartFrom]+$_REQUEST[ChunkSize]?> </big> </td>
+       <td> <big> Records #<?php echo $_REQUEST["StartFrom"]?> to #<?php echo $_REQUEST["StartFrom"]+$_REQUEST["ChunkSize"]?> </big> </td>
        <td>
        <FORM METHOD="POST" ACTION="<?php echo $_SERVER[PHP_SELF] ?>">
-       <input type=hidden name=StartFrom Value="<?php echo $_REQUEST[StartFrom]+$_REQUEST[ChunkSize]?>">
+       <input type=hidden name=StartFrom Value="<?php echo $_REQUEST["StartFrom"]+$_REQUEST["ChunkSize"]?>">
        <input type=submit name="Next" Value="Next">
-       <input type=text name="ChunkSize" Value="<?php echo $_REQUEST[ChunkSize]?>">
+       <input type=text name="ChunkSize" Value="<?php echo $_REQUEST["ChunkSize"]?>">
        </form>
        </td>
        </tr>
@@ -65,16 +65,16 @@ if (IsSet($Dir)) {
   $ORDER = $ORDER . " " . $Dir;
 }
 
-if (!IsSet($_REQUEST[StartFrom])) {
-  $_REQUEST[StartFrom] = 0;
+if (!IsSet($_REQUEST["StartFrom"])) {
+  $_REQUEST["StartFrom"] = 0;
 }
 
-if (!IsSet($_REQUEST[ChunkSize])) {
-  $_REQUEST[ChunkSize] = 10;
+if (!IsSet($_REQUEST["ChunkSize"])) {
+  $_REQUEST["ChunkSize"] = 10;
 }
 
-if ($_REQUEST[StartFrom] < 0) {
-  $_REQUEST[StartFrom] = 0;
+if ($_REQUEST["StartFrom"] < 0) {
+  $_REQUEST["StartFrom"] = 0;
 }
 
 ?>
@@ -102,7 +102,7 @@ $query="SELECT ActionLog.logId, UNIX_TIMESTAMP(ActionLog.time), "
 . " ActionLog.ipaddr, ActionLog.contactId, ActionLog.action, "
 . " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email "
 . " FROM ActionLog, ContactInfo WHERE ActionLog.contactId=ContactInfo.contactId $ORDER "
-. " LIMIT $_REQUEST[StartFrom],$_REQUEST[ChunkSize]";
+. " LIMIT $_REQUEST["StartFrom"],$_REQUEST["ChunkSize"]";
 
 $result = $Conf->q($query);
 

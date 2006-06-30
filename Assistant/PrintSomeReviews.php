@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotChair('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotChair('../index.php');
 $Conf -> connect();
 
 // we are disabling register_globals in php.ini, so we don't need to
@@ -10,7 +10,7 @@ $Conf -> connect();
 // session_register('GradeSortKey');
 
 if (IsSet($_REQUEST[setSortKey])) {
-  $_SESSION[GradeSortKey]=$_REQUEST[setSortKey];
+  $_SESSION["GradeSortKey"]=$_REQUEST[setSortKey];
 }
 
 ?>
@@ -37,24 +37,24 @@ if (IsSet($_REQUEST[setSortKey])) {
 <?php 
 print "</table>";
 
-if ( $_REQUEST[ShowPCPapers] ) {
-  $conflicts = $Conf->allMyConflicts($_SESSION[Me]->contactId);
+if ( $_REQUEST["ShowPCPapers"] ) {
+  $conflicts = $Conf->allMyConflicts($_SESSION["Me"]->contactId);
 } else {
   $conflicts = $Conf->allPCConflicts();
 }
 
-if (!IsSet($_SESSION[GradeSortKey])) {
-  $_SESSION[GradeSortKey] = "byReviews";
+if (!IsSet($_SESSION["GradeSortKey"])) {
+  $_SESSION["GradeSortKey"] = "byReviews";
 }
 
-$pcConflicts = $Conf->allPCConflicts($_SESSION[Me]->contactId);
-if ( $_REQUEST[ShowPCPapers] ) {
-  $conflicts = $Conf->allMyConflicts($_SESSION[Me]->contactId);
+$pcConflicts = $Conf->allPCConflicts($_SESSION["Me"]->contactId);
+if ( $_REQUEST["ShowPCPapers"] ) {
+  $conflicts = $Conf->allMyConflicts($_SESSION["Me"]->contactId);
 } else {
   $conflicts = $pcConflicts;
 }
 
-if ($_SESSION[GradeSortKey]=="byReviews") {
+if ($_SESSION["GradeSortKey"]=="byReviews") {
   $Conf->infoMsg("Sorting By Overall Merit (assigned by reviewers)");
   $result=$Conf->qe("SELECT Paper.paperId, Paper.title, "
 		    . " AVG(PaperReview.overAllMerit) as merit "
@@ -66,7 +66,7 @@ if ($_SESSION[GradeSortKey]=="byReviews") {
 		    . " ORDER BY merit DESC, Paper.paperId "
 		    );
 
-} elseif ($_SESSION[GradeSortKey]=="byGrades") {
+} elseif ($_SESSION["GradeSortKey"]=="byGrades") {
   $Conf->infoMsg("Sorting By Grades (assigned by PC members)");
   $result=$Conf->qe("SELECT Paper.paperId, Paper.title, "
 		    . " AVG(PaperGrade.grade) as merit "
@@ -77,7 +77,7 @@ if ($_SESSION[GradeSortKey]=="byReviews") {
 		    . " ORDER BY merit DESC, Paper.paperId "
 		    );
 
-} elseif ($_SESSION[GradeSortKey]=="byPapers") {
+} elseif ($_SESSION["GradeSortKey"]=="byPapers") {
   $Conf->infoMsg("Sorting By Paper Number");
   $result=$Conf->qe("SELECT Paper.paperId, Paper.title "
 		    . " FROM Paper "
@@ -101,16 +101,16 @@ if (DB::isError($result)) {
 <tr>
 <td align=center colspan=6>
 <INPUT type=checkbox name=SeeOnlyFinalized value=1
-   <?php  if ($_REQUEST[SeeOnlyFinalized]) {echo "checked";}?> > See Only Finalized Reviews </br>
+   <?php  if ($_REQUEST["SeeOnlyFinalized"]) {echo "checked";}?> > See Only Finalized Reviews </br>
 
 <INPUT type=checkbox name=SeeAuthorInfo value=1
-   <?php  if ($_REQUEST[SeeAuthorInfo]) {echo "checked";}?> > See Author Information </br>
+   <?php  if ($_REQUEST["SeeAuthorInfo"]) {echo "checked";}?> > See Author Information </br>
 
 <INPUT type=checkbox name=SeeReviewerInfo value=1
-   <?php  if ($_REQUEST[SeeReviewerInfo]) {echo "checked";}?> > See Reviewer Information </br>
+   <?php  if ($_REQUEST["SeeReviewerInfo"]) {echo "checked";}?> > See Reviewer Information </br>
 
 <INPUT type=checkbox name=ShowPCPapers value=1
-   <?php  if ($_REQUEST[ShowPCPapers]) {echo "checked";}?> > Show PC Member Papers </br>
+   <?php  if ($_REQUEST["ShowPCPapers"]) {echo "checked";}?> > Show PC Member Papers </br>
 
 <INPUT TYPE=SUBMIT name=printThoseSuckers 
 	value="Print The Reviews For Marked Papers"

@@ -3,7 +3,7 @@ function paperTable( $Conf ) {
 $query = "SELECT Paper.title, Paper.abstract, Paper.authorInformation, "
 . " LENGTH(PaperStorage.paper) as size, PaperStorage.mimetype, Paper.collaborators "
 . " FROM Paper, PaperStorage WHERE "
-. " Paper.contactId='" . $_SESSION[Me]->contactId . "' "
+. " Paper.contactId='" . $_SESSION["Me"]->contactId . "' "
 . " AND Paper.paperId=$_REQUEST[paperId] "
 . " AND PaperStorage.paperId=$_REQUEST[paperId]";
 

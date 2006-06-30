@@ -3,24 +3,24 @@ include('../Code/confHeader.inc');
 $Conf -> connect();
 
 if ( IsSet($_REQUEST[loginEmail]) ) {
-  $_SESSION[Me] -> lookupByEmail($_REQUEST[loginEmail], $Conf);
+  $_SESSION["Me"] -> lookupByEmail($_REQUEST[loginEmail], $Conf);
   if ( IsSet($_REQUEST[password])
        && $Conf -> validTimeFor('reviewerSubmitReviewDeadline', 0)
-       && $_SESSION[Me] -> valid()
-       && $_SESSION[Me] -> password == $_REQUEST[password]) {
+       && $_SESSION["Me"] -> valid()
+       && $_SESSION["Me"] -> password == $_REQUEST[password]) {
     //
     // Let them fall through -- they'll hit other security
     // checks in just a second, but they've been
     // logged in
     //
   } else {
-    $_SESSION[Me] -> invalidate();
+    $_SESSION["Me"] -> invalidate();
     header("Location: ../index.php");
   }
 }
 
-$_SESSION[Me] -> goIfInvalid("../index.php");
-if ($_SESSION[Me]->isPC) {
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+if ($_SESSION["Me"]->isPC) {
   $Conf -> goIfInvalidActivity("PCSubmitReviewDeadline", "../index.php");
 } else {
   $Conf -> goIfInvalidActivity("reviewerSubmitReviewDeadline", "../index.php");

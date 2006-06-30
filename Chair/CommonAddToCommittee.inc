@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotChair('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotChair('../index.php');
 $Conf -> connect();
 ?>
 
@@ -51,7 +51,7 @@ if (IsSet($_REQUEST[addPCMember]) ) {
       }
       $Conf->infoMsg("Added $_REQUEST[firstEmail] as $AddWhat ");
 
-      $Conf->log("Added $_REQUEST[firstEmail] as $AddWhat ", $_SESSION[Me]);
+      $Conf->log("Added $_REQUEST[firstEmail] as $AddWhat ", $_SESSION["Me"]);
     }
   }
 } else if (IsSet($_REQUEST[removeThem])) {
@@ -62,7 +62,7 @@ if (IsSet($_REQUEST[addPCMember]) ) {
       $Conf->errorMsg("delete " . $result->getMessage());
     }
 
-    $Conf->log("Removed someone as $AddWhat ", $_SESSION[Me]);
+    $Conf->log("Removed someone as $AddWhat ", $_SESSION["Me"]);
   }
 }
 ?>

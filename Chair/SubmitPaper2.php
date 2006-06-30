@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotChair('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotChair('../index.php');
 $Conf -> connect();
 include('../Author/PaperForm.inc');
 ?>
@@ -82,7 +82,7 @@ if (!IsSet($_REQUEST[submittedFor]) || !IsSet($_REQUEST[title])
 
 	  $Conf->deletePaper($paperId, 0);
 
-	  $Conf->log("Problem creating PaperAuthor for $paperId", $_SESSION[Me]);
+	  $Conf->log("Problem creating PaperAuthor for $paperId", $_SESSION["Me"]);
 
 	} else {
 	    
@@ -95,7 +95,7 @@ if (!IsSet($_REQUEST[submittedFor]) || !IsSet($_REQUEST[title])
 			    . "The error message was " . $result->getMessage() . " "
 			    . "Please press BACK and try again.");
 	    $Conf->deletePaper($paperId, 0);
-	    $Conf->log("Problem creating PaperConflict for $paperId", $_SESSION[Me]);
+	    $Conf->log("Problem creating PaperConflict for $paperId", $_SESSION["Me"]);
 
 	  } else {
 
@@ -109,7 +109,7 @@ if (!IsSet($_REQUEST[submittedFor]) || !IsSet($_REQUEST[title])
 				    $_REQUEST[preferredReviewers]);
 	    }
 
-	    $_SESSION[Me] -> updateContactRoleInfo($Conf);
+	    $_SESSION["Me"] -> updateContactRoleInfo($Conf);
 	    $Conf->confirmMsg("It looks like your paper has been successfully submitted "
 			    . "and uploaded to the server as paper #$paperId.");
 
@@ -122,7 +122,7 @@ if (!IsSet($_REQUEST[submittedFor]) || !IsSet($_REQUEST[title])
 	      $row = $result->fetchRow();
 	      $Conf->sendPaperStartNotice($row[0], $paperId, $_REQUEST[title]);
 	      $Conf->sendPaperStartNotice($Conf->contactEmail, $paperId, $_REQUEST[title]);
-	      $Conf->log("Submit paper $paperId on behalf of $row[0]: $_REQUEST[title]", $_SESSION[Me]);
+	      $Conf->log("Submit paper $paperId on behalf of $row[0]: $_REQUEST[title]", $_SESSION["Me"]);
 	    }
 	  }
 	}

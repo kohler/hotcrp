@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotAuthor("../index.php");
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotAuthor("../index.php");
 $Conf -> connect();
 ?>
 
@@ -14,7 +14,7 @@ $Conf -> connect();
 if (!IsSet($_REQUEST[paperId]) || $_REQUEST[paperId] == 0) {
   $Conf->errorMsg("No paper was selected for finalization?" );
 } 
-else if ( ! $_SESSION[Me] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
+else if ( ! $_SESSION["Me"] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
   $Conf -> errorMsg("Only the submitting paper author can view the "
 		    . "paper information.");
   exit;
@@ -22,7 +22,7 @@ else if ( ! $_SESSION[Me] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
   $query = "SELECT Paper.title, Paper.abstract, Paper.authorInformation, "
     . " PaperStorage.mimetype, Paper.withdrawn, Paper.collaborators "
     . " FROM Paper,PaperStorage WHERE "
-    . " (Paper.contactId='" . $_SESSION[Me]->contactId . "' "
+    . " (Paper.contactId='" . $_SESSION["Me"]->contactId . "' "
     . " AND Paper.paperId=$_REQUEST[paperId] "
     . " AND PaperStorage.paperId=$_REQUEST[paperId]"
     . " )";

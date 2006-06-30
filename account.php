@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
 $Conf -> connect();
-$_SESSION[Me] -> goIfInvalid("../");
+$_SESSION["Me"] -> goIfInvalid("../");
 ?>
 
 <html>
@@ -22,17 +22,17 @@ if (IsSet($_REQUEST[register]) ) {
     //
     // Update Me
     //
-    $_SESSION[Me] -> firstName = $_REQUEST[firstName];
-    $_SESSION[Me] -> lastName = $_REQUEST[lastName];
-    $_SESSION[Me] -> email = $_REQUEST[firstEmail];
-    $_SESSION[Me] -> affiliation = $_REQUEST[affiliation];
-    $_SESSION[Me] -> voicePhoneNumber = $_REQUEST[phone];
-    $_SESSION[Me] -> faxPhoneNumber = $_REQUEST[fax];
-    $_SESSION[Me] -> password = $_REQUEST[passwd];
+    $_SESSION["Me"] -> firstName = $_REQUEST[firstName];
+    $_SESSION["Me"] -> lastName = $_REQUEST[lastName];
+    $_SESSION["Me"] -> email = $_REQUEST[firstEmail];
+    $_SESSION["Me"] -> affiliation = $_REQUEST[affiliation];
+    $_SESSION["Me"] -> voicePhoneNumber = $_REQUEST[phone];
+    $_SESSION["Me"] -> faxPhoneNumber = $_REQUEST[fax];
+    $_SESSION["Me"] -> password = $_REQUEST[passwd];
 
     $success = true;
 
-    $result = $_SESSION[Me] -> updateDB($Conf);
+    $result = $_SESSION["Me"] -> updateDB($Conf);
 
     if (DB::isError($result)) {
       $success = false;
@@ -42,8 +42,8 @@ if (IsSet($_REQUEST[register]) ) {
     } 
 
     // if we are a pc member, update our collaborators and areas of expertise
-    if ( $_SESSION[Me]->isPC ) {
-      $query="UPDATE ContactInfo SET collaborators='$_REQUEST[collaborators]' WHERE contactId='" . $_SESSION[Me]->contactId . "'";
+    if ( $_SESSION["Me"]->isPC ) {
+      $query="UPDATE ContactInfo SET collaborators='$_REQUEST[collaborators]' WHERE contactId='" . $_SESSION["Me"]->contactId . "'";
       
       $result = $Conf->qe($query);
 
@@ -57,7 +57,7 @@ if (IsSet($_REQUEST[register]) ) {
 
 
       // query for this guy's interests
-      $query="SELECT TopicInterest.topicId, TopicInterest.interest FROM TopicInterest WHERE TopicInterest.contactId = " . $_SESSION[Me]->contactId;
+      $query="SELECT TopicInterest.topicId, TopicInterest.interest FROM TopicInterest WHERE TopicInterest.contactId = " . $_SESSION["Me"]->contactId;
       $result = $Conf->q($query);
       if ( DB::isError($result)) {
 	$Conf->errorMsg("Error in query for interests: " . $result->getMessage());
@@ -76,12 +76,12 @@ if (IsSet($_REQUEST[register]) ) {
 	      $query="UPDATE TopicInterest SET "
 		. " interest='$interest' WHERE "
 		. " topicId='$id' AND "
-		. " contactId='" . $_SESSION[Me]->contactId . "' ";
+		. " contactId='" . $_SESSION["Me"]->contactId . "' ";
 	    }
 	    else {
 	      $query="INSERT into TopicInterest SET "
 		. " topicId='$id', "
-		. " contactId='" . $_SESSION[Me]->contactId . "', "
+		. " contactId='" . $_SESSION["Me"]->contactId . "', "
 		. " interest='$interest'";
 	    }
 	    $result = $Conf->qe($query);
@@ -101,20 +101,20 @@ if (IsSet($_REQUEST[register]) ) {
       //
       // Refresh the results
       //
-      $_SESSION[Me] -> lookupByEmail($_REQUEST[firstEmail],$Conf);
+      $_SESSION["Me"] -> lookupByEmail($_REQUEST[firstEmail],$Conf);
       $Conf->confirmMsg("You account was successfully updated. "
 			. "You may make other modifications if you wish, "
 			. "or you may <a href=\"../index.php\"> return to conference page </a>."
 		   );
 
 
-      $Conf->log("Updated account", $_SESSION[Me]);
+      $Conf->log("Updated account", $_SESSION["Me"]);
     }
   }
 }
-$_SESSION[Me] -> updateContactRoleInfo($Conf);
+$_SESSION["Me"] -> updateContactRoleInfo($Conf);
 
-if ($_SESSION[Me] -> firstName == "" || $_SESSION[Me] -> lastName == "" ) {
+if ($_SESSION["Me"] -> firstName == "" || $_SESSION["Me"] -> lastName == "" ) {
   $Conf->infoMsg("<center> <h2>"
 		 . " Please take a moment to update your "
 		 . " contact information<br> (last and first name) "
@@ -138,49 +138,49 @@ Once you're done, hit the button at the bottom on the page.
               <tr>
                 <td width="35%">First Name</td>
                 <td width="65%"><input type="text" name="firstName" size="44"
-			value="<?php echo $_SESSION[Me]->firstName?>" ></td>
+			value="<?php echo $_SESSION["Me"]->firstName?>" ></td>
               </tr>
               <tr>
                 <td width="35%">Last Name</td>
                 <td width="65%"><input type="text" name="lastName" size="44"
-			value="<?php echo $_SESSION[Me]->lastName?>" ></td>
+			value="<?php echo $_SESSION["Me"]->lastName?>" ></td>
               </tr>
               <tr>
                 <td width="35%">Email</td>
                 <td width="65%"><input type="text" name="firstEmail" size="44"
-			value="<?php echo $_SESSION[Me]->email?>" ></td>
+			value="<?php echo $_SESSION["Me"]->email?>" ></td>
               </tr>
               <tr>
                 <td width="35%">Email Again</td>
                 <td width="65%"><input type="text" name="secondEmail" size="44"
-			value="<?php echo $_SESSION[Me]->email?>" ></td>
+			value="<?php echo $_SESSION["Me"]->email?>" ></td>
               </tr>
               <tr>
                 <td width="35%">Password</td>
                 <td width="65%"><input type="password" name="passwd" size="44"
-			value="<?php echo $_SESSION[Me]->password?>" ></td>
+			value="<?php echo $_SESSION["Me"]->password?>" ></td>
               </tr>
               <tr>
                 <td width="35%">Affiliation</td>
                 <td width="65%"><input type="text" name="affiliation" size="44"
-			value="<?php echo $_SESSION[Me]->affiliation?>" ></td>
+			value="<?php echo $_SESSION["Me"]->affiliation?>" ></td>
               </tr>
               <tr>
                 <td width="35%">Voice Phone</td>
                 <td width="65%"><input type="text" name="phone" size="44"
-			value="<?php echo $_SESSION[Me]->voicePhoneNumber?>" ></td>
+			value="<?php echo $_SESSION["Me"]->voicePhoneNumber?>" ></td>
               </tr>
               <tr>
                 <td width="35%">Fax</td>
                 <td width="65%"><input type="text" name="fax" size="44"
-			value="<?php echo $_SESSION[Me]->faxPhoneNumber?>" ></td>
+			value="<?php echo $_SESSION["Me"]->faxPhoneNumber?>" ></td>
               </tr>
-<?php if ( $_SESSION[Me]->isPC ) {
+<?php if ( $_SESSION["Me"]->isPC ) {
   // pc members need to indicate their collaborators, and indicate the
   // topics they are familiar with
   $query = "SELECT collaborators "
   . " FROM ContactInfo WHERE "
-  . " contactId='" . $_SESSION[Me]->contactId . "' ";
+  . " contactId='" . $_SESSION["Me"]->contactId . "' ";
   
   $result = $Conf->qe($query);
   if ( DB::isError($result) ) {
@@ -213,7 +213,7 @@ Once you're done, hit the button at the bottom on the page.
   } else if ($result->numRows() > 0) {
     
     // query for this guy's interests
-    $query="SELECT TopicInterest.topicId, TopicInterest.interest FROM TopicInterest WHERE TopicInterest.contactId = " . $_SESSION[Me]->contactId;
+    $query="SELECT TopicInterest.topicId, TopicInterest.interest FROM TopicInterest WHERE TopicInterest.contactId = " . $_SESSION["Me"]->contactId;
     $result1 = $Conf->q($query);
     if ( DB::isError($result1)) {
       $Conf->errorMsg("Error in query for interests: " . $result1->getMessage());

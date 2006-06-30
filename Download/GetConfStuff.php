@@ -39,7 +39,7 @@ if ( !$matched || !person_ok($who) || !($fp=fopen($path,"r")) || !($stat=fstat($
   exit();
 }
 
-$Conf->log("Downloading $file", $_SESSION[Me]);
+$Conf->log("Downloading $file", $_SESSION['Me']);
 
 //$mimetypes = array (
 //  "zip" =>

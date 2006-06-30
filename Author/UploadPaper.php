@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotAuthor("../index.php");
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotAuthor("../index.php");
 $Conf -> goIfInvalidActivity("updatePaperSubmission", "../index.php");
 $Conf -> connect();
 ?>
@@ -17,7 +17,7 @@ if (!IsSet($_REQUEST[paperId]) || $_REQUEST[paperId] == 0) {
   exit;
 } 
 
-if ( ! $_SESSION[Me] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
+if ( ! $_SESSION["Me"] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
   $Conf -> errorMsg("Only the submitting paper author can modify the "
 		    . "paper information.");
   exit;
@@ -26,7 +26,7 @@ if ( ! $_SESSION[Me] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
 $query = "SELECT Paper.title, Paper.abstract, Paper.authorInformation, "
     . " Paper.withdrawn, Paper.acknowledged, Paper.collaborators "
     . " FROM Paper WHERE "
-    . " Paper.contactId='" . $_SESSION[Me]->contactId . "' "
+    . " Paper.contactId='" . $_SESSION["Me"]->contactId . "' "
     . " AND Paper.paperId=$_REQUEST[paperId] "
 //    . " AND PaperStorage.paperId=$_REQUEST[paperId]"
 ;
@@ -115,7 +115,7 @@ if (IsSet($_REQUEST[submit])) {
 	$Conf->infoMsg("Looks like paper #$_REQUEST[paperId] was updated, but "
 		       . "you may want to confirm this by downloading "
 		       . "your paper ");
-	$Conf->log("Replace paper $_REQUEST[paperId]", $_SESSION[Me]);
+	$Conf->log("Replace paper $_REQUEST[paperId]", $_SESSION["Me"]);
       }
     }
   }

@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotAuthor("../index.php");
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotAuthor("../index.php");
 $Conf -> goIfInvalidActivity("authorViewReviews", "../index.php");
 $Conf -> connect();
 include('../Code/confConfigReview.inc');
@@ -31,11 +31,11 @@ if (!IsSet($_REQUEST[paperId]) ) {
   exit;
 }
 
-if ( $_SESSION[Me] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
+if ( $_SESSION["Me"] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
   //
   // Ok, I'm author...
   //
-} else if ( $_SESSION[Me] -> isChair ) {
+} else if ( $_SESSION["Me"] -> isChair ) {
     $Conf -> infoMsg("....chair exemption...");
 } else {
   $Conf -> errorMsg("Only the submitting paper author can modify the "
@@ -54,7 +54,7 @@ You can see the paper reviews
 // Make certain that the author has submitted all their reviews
 // prior to viewing their own reviews
 
-$missingReviews = $Conf->listMissingReviews($_SESSION[Me]->contactId);
+$missingReviews = $Conf->listMissingReviews($_SESSION["Me"]->contactId);
 
 if ($missingReviews) {
   $Conf->errorMsg("Before you view the reviews for your own paper, "
@@ -107,7 +107,7 @@ print "</center>";
 // Print header using dummy review
 //
 
-$Review=ReviewFactory($Conf, $_SESSION[Me]->contactId, $_REQUEST[paperId]);
+$Review=ReviewFactory($Conf, $_SESSION["Me"]->contactId, $_REQUEST[paperId]);
 
 if ( ! $Review -> valid ) {
   $Conf->errorMsg("You've stumbled on to an invalid review? -- contact chair");

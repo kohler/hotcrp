@@ -6,7 +6,7 @@
 // work for specific browsers (I think Mozilla/netscape).
 //
 include('../Code/confHeader.inc');
-//$_SESSION[Me] -> goIfInvalid("../index.php");
+//$_SESSION['Me'] -> goIfInvalid("../index.php");
 $Conf -> connect();
 
 //
@@ -35,11 +35,11 @@ if ( ! IsSet($_REQUEST[paperId]) ) {
 // to be the contact person for that paper.
 //
 //
-if ( $_SESSION[Me] -> isChair || $_SESSION[Me] -> isPC || $_SESSION[Me] -> isAssistant) {
+if ( $_SESSION['Me'] -> isChair || $_SESSION['Me'] -> isPC || $_SESSION['Me'] -> isAssistant) {
   $valid = 1;
-} else if ($_SESSION[Me] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
+} else if ($_SESSION['Me'] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
   $valid = 1;
-} else if ( $_SESSION[Me] -> iCanReview($_REQUEST[paperId], $Conf) ) {
+} else if ( $_SESSION['Me'] -> iCanReview($_REQUEST[paperId], $Conf) ) {
   $valid = 1;
 } else {
   $valid = 0;
@@ -59,7 +59,7 @@ if ( $Conf -> downloadPaper($_REQUEST[paperId]) ) {
   //
   // Happy happy joy joy - do nothing
   //
-  $Conf->log("Downloading $_REQUEST[paperId] for review", $_SESSION[Me]);
+  $Conf->log("Downloading $_REQUEST[paperId] for review", $_SESSION['Me']);
   exit();
 } else {
   echo "<html>";

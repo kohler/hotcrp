@@ -11,25 +11,25 @@ include('../Code/confJavaScript.inc');
 <?php 
 
 if (stristr($HTTP_USER_AGENT, "Mozilla/4.7")
-    && ! $_SESSION[ToldYouAboutNetscape47] ) {
+    && ! $_SESSION["ToldYouAboutNetscape47"] ) {
   $Conf->popupWarning(
 		   "You appear to be using netscape 4.7."
 		   . "With this browser, resizing the window discards "
 		   . "existing form contents. Make certain you click on "
 		   . "the \"save review\" button before resizing.");
 
-  $_SESSION[ToldYouAboutNetscape47] = 1;
+  $_SESSION["ToldYouAboutNetscape47"] = 1;
 }
 
 
-if ( ! $_SESSION[Me]->iCanReview($_REQUEST[paperId], $Conf) ) {
+if ( ! $_SESSION["Me"]->iCanReview($_REQUEST[paperId], $Conf) ) {
   $Conf->errorMsg("You aren't supposed to be able to review paper #$_REQUEST[paperId]. "
 		  . "If you think this is in error, contact the program chair. ");
   exit();
 } 
 
 
-$Review = ReviewFactory($Conf, $_SESSION[Me]->contactId, $_REQUEST[paperId]);
+$Review = ReviewFactory($Conf, $_SESSION["Me"]->contactId, $_REQUEST[paperId]);
 
 if (IsSet($_REQUEST[submit])) {
   //
@@ -40,16 +40,16 @@ if (IsSet($_REQUEST[submit])) {
   } else {
     $Review-> checkForm($Conf);
     $Review->load($_POST);
-    $Review->saveReview($Conf, $_SESSION[Me]->contactId);
+    $Review->saveReview($Conf, $_SESSION["Me"]->contactId);
 
-    $Conf->log("Save review for $_REQUEST[paperId]", $_SESSION[Me]);
+    $Conf->log("Save review for $_REQUEST[paperId]", $_SESSION["Me"]);
 
     //
     // Read the review again, just to be certain
     // they see the proper values
     //
 
-    $Review = ReviewFactory($Conf, $_SESSION[Me]->contactId, $_REQUEST[paperId]);
+    $Review = ReviewFactory($Conf, $_SESSION["Me"]->contactId, $_REQUEST[paperId]);
 
     //
     // Check if this review has been finalized during
@@ -58,7 +58,7 @@ if (IsSet($_REQUEST[submit])) {
     //
     if ($Review->finalized() ) {
       $Conf->infoMsg("Your review has been finalized!");
-      $Conf->log("Review for paper #$_REQUEST[paperId] finalized", $_SESSION[Me]);
+      $Conf->log("Review for paper #$_REQUEST[paperId] finalized", $_SESSION["Me"]);
 
       if ( $Conf->validTimeFor("notifyChairAboutReviews",0) ) {
 	$email = $Conf->contactEmail;
@@ -100,7 +100,7 @@ if (IsSet($_REQUEST[emailReview])) {
   //
   // Empty
   //
-  mail($_SESSION[Me]->email,
+  mail($_SESSION["Me"]->email,
        "Your review for paper #$_REQUEST[paperId]",
        $Review -> getAnonReviewHeaderASCII($Conf)
        . $Review -> getReviewASCII(),

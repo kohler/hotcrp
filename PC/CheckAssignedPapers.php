@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid($Conf->paperSite);
-$_SESSION[Me] -> goIfNotPC($Conf->paperSite);
+$_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
+$_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
 $Conf -> connect();
 ?>
 
@@ -12,7 +12,7 @@ $Conf -> connect();
 <body>
 <?php 
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title FROM Paper, PrimaryReviewer "
-. "WHERE PrimaryReviewer.reviewer='" . $_SESSION[Me]->contactId. "' AND Paper.paperId=PrimaryReviewer.paperId "
+. "WHERE PrimaryReviewer.reviewer='" . $_SESSION["Me"]->contactId. "' AND Paper.paperId=PrimaryReviewer.paperId "
 		  . "ORDER BY Paper.paperId");
 
 if (DB::isError($result)) {
@@ -51,7 +51,7 @@ $Conf->infoMsg("In order for you to see the other reviews for papers for which y
     $done = $Conf->retCount("SELECT finalized "
 			    . " FROM PaperReview "
 			    . " WHERE PaperReview.paperId='$paperId' "
-			    . " AND PaperReview.reviewer='" . $_SESSION[Me]->contactId. "'"
+			    . " AND PaperReview.reviewer='" . $_SESSION["Me"]->contactId. "'"
 			    );
 
 ?>
@@ -92,7 +92,7 @@ $Conf->infoMsg("You can view any reviews for papers for which you're a secondary
 
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title "
 		  . " FROM Paper, SecondaryReviewer "
-		  . " WHERE SecondaryReviewer.reviewer='" . $_SESSION[Me]->contactId. "' "
+		  . " WHERE SecondaryReviewer.reviewer='" . $_SESSION["Me"]->contactId. "' "
 		  . " AND Paper.paperId=SecondaryReviewer.paperId "
 		  . " ORDER BY Paper.paperId");
 

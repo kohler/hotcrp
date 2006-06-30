@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid($Conf->paperSite);
-$_SESSION[Me] -> goIfNotPC($Conf->paperSite);
+$_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
+$_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
 $Conf -> connect();
 
 function Check($var)
@@ -96,7 +96,7 @@ $Conf->infoMsg("If you have the word 'CONFLICT' next to a paper, "
   countPapers("allStartedReviews", "PaperReview", "WHERE (PaperReview.finalized!=0)");
   countPapers("allFinishedReviews", "PaperReview", "WHERE (PaperReview.finalized=0)");
 
-  $allConflicts = $Conf->allMyConflicts($_SESSION[Me]->contactId);
+  $allConflicts = $Conf->allMyConflicts($_SESSION["Me"]->contactId);
   $pcConflicts = $Conf->allPCConflicts();
 
   //
@@ -138,7 +138,7 @@ Found <?php  echo $countpapersforreview ?> papers.
        } else {
 	 if ( $Conf->validTimeFor('AtTheMeeting', 0) 
 	      && $pcConflicts[$paperId]
-	      && ( $_SESSION[Me] -> isPC && ! $_SESSION[Me] -> isChair ) ) {
+	      && ( $_SESSION["Me"] -> isPC && ! $_SESSION["Me"] -> isChair ) ) {
 		//
 		// Don't show anything
 		//

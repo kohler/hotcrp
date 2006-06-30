@@ -20,14 +20,14 @@ if ( $Conf -> validTimeFor('startPaperSubmission', 0) ) {
 <? } ?>
 
 <?php
-if ( $_SESSION[Me] -> papersSubmitted > 0 
+if ( $_SESSION["Me"] -> papersSubmitted > 0 
   && $Conf -> validTimeFor('finalizePaperSubmission', 0) ) {
 
 $query = "SELECT paperId, title, acknowledged, withdrawn"
-. " FROM Paper WHERE contactId='" . $_SESSION[Me]->contactId. "'";
+. " FROM Paper WHERE contactId='" . $_SESSION["Me"]->contactId. "'";
 $result = $Conf->q($query);
 
-if ( ! $result   && ($_SESSION[Me] -> papersSubmitted <= 0) ) {
+if ( ! $result   && ($_SESSION["Me"] -> papersSubmitted <= 0) ) {
   $Conf->errorMsg("That's odd - you appear to have no papers. "
 		  . $result->getMessage());
 } else {

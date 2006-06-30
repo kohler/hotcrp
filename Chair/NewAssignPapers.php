@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotChair('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotChair('../index.php');
 $Conf -> connect();
 
 function Check($var)
@@ -136,14 +136,14 @@ if (IsSet($_REQUEST['assignPapers'])) {
 
 	  if ( !DB::isError($result) ) {
 	    $Conf->infoMsg("Added $type reviewer ($fixed=$fixedVal $flex=$choice)");
-	    $Conf->log("Added $type $fixed $fixedVal for $flex $choice", $_SESSION[Me]);
+	    $Conf->log("Added $type $fixed $fixedVal for $flex $choice", $_SESSION["Me"]);
 	  } else {
 	    $Conf->errorMsg("Error in adding $type reviewer for paper: " . $result->getMessage());
 	  }
 	} else {
 	  //MVB Let this be silent for now
 	  //$Conf->errorMsg("You tried to add a duplicate $type reviewer for paper # $paper");
-	    $Conf->log("Duplicate $type $fixed $fixedVal for $flex $choice", $_SESSION[Me]);
+	    $Conf->log("Duplicate $type $fixed $fixedVal for $flex $choice", $_SESSION["Me"]);
 	}
       }
     }

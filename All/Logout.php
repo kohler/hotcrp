@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> invalidate();
-// $_SESSION[Me] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> invalidate();
+// $_SESSION["Me"] -> goIfInvalid("../index.php");
 ?>
 
 <html>

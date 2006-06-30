@@ -17,20 +17,20 @@ if (!$testCookieStatus) {
   header("Location: http://" . $_SERVER[HTTP_HOST] . "$here/YouMustAllowCookies.php");
 }
 
-if (!IsSet($_SESSION[Me]) || ! $_SESSION[Me] -> valid() ) {
+if (!IsSet($_SESSION["Me"]) || ! $_SESSION["Me"] -> valid() ) {
   go("All/login.php");
 }
 
 $Conf -> connect();
 
 if ( $_SESSION[AskedYouToUpdateContactInfo]!=1
-     && $_SESSION[Me] -> valid()
-     && ($_SESSION[Me] -> firstName == "" || $_SESSION[Me] -> lastName == "" ) )
+     && $_SESSION["Me"] -> valid()
+     && ($_SESSION["Me"] -> firstName == "" || $_SESSION["Me"] -> lastName == "" ) )
 {
   $_SESSION[AskedYouToUpdateContactInfo] = 1;
   $here = dirname($_SERVER[SCRIPT_NAME]);
 
-  $_SESSION[Me] -> goAlert("All/UpdateContactInfo.php",
+  $_SESSION["Me"] -> goAlert("All/UpdateContactInfo.php",
 		 "Please take a second to enter your contact information");
 }
 
@@ -38,7 +38,7 @@ if ( $_SESSION[AskedYouToUpdateContactInfo]!=1
 // Check for updated menu
 //
 if (IsSet($_REQUEST[setRole])) {
-  $_SESSION[WhichTaskView] = $_REQUEST[setRole];
+  $_SESSEST["WhichTaskView"] = $_REQUEST[setRole];
 }
 
 
@@ -51,7 +51,7 @@ if (IsSet($_REQUEST[setRole])) {
 <body>
 
 <?php
-if (! $_SESSION[Me] -> valid() ) {
+if (! $_SESSION["Me"] -> valid() ) {
   echo "<p>\n";
   echo "To use the conference submission system, you must register an ";
   echo "account. This same account information will be used to identify ";
@@ -76,7 +76,7 @@ if (! $_SESSION[Me] -> valid() ) {
 <table align=center width=80%>
 <tr>
 <td>
-You're logged as <?php echo $_SESSION[Me]->fullname(); echo " (" . $_SESSION[Me]->email . ")" ?>.
+You're logged as <?php echo $_SESSION["Me"]->fullname(); echo " (" . $_SESSION["Me"]->email . ")" ?>.
 If this is not you, please logout.
 You will be automatically logged out if you are idle for more than
 <?php echo round(ini_get("session.gc_maxlifetime")/3600) ?> hours.
@@ -88,12 +88,12 @@ Select a menu from for role-specific tasks.
 //
 // Oh what the hell, update their roles each time
 //
-$_SESSION[Me] -> updateContactRoleInfo($Conf);
+$_SESSION["Me"] -> updateContactRoleInfo($Conf);
 
 function taskbutton($name,$label)
 {
   global $Conf;
-  if ($_SESSION[WhichTaskView] == $name ) {
+  if ($_SESSEST["WhichTaskView"] == $name ) {
    $color = $Conf->taskHeaderColor;
   } else {
    $color = $Conf->contrastColorTwo;
@@ -112,28 +112,28 @@ function taskbutton($name,$label)
 <tr>
 <? taskbutton("All", "Everyone"); ?>
 <? taskbutton("Author", "Author"); ?>
-<? if ($_SESSION[Me]->amReviewer()) {taskbutton("Reviewer", "Reviewer");}?>
-<? if ( $_SESSION[Me]->isPC ) { taskbutton("PC", "PC Members"); }?>
-<? if ( $_SESSION[Me]->isChair ) {taskbutton("Chair", "PC Chair");}?>
-<? if ( $_SESSION[Me]->amAssistant() ) {taskbutton("Assistant", "PC Chair Assitant");}?>
+<? if ($_SESSION["Me"]->amReviewer()) {taskbutton("Reviewer", "Reviewer");}?>
+<? if ( $_SESSION["Me"]->isPC ) { taskbutton("PC", "PC Members"); }?>
+<? if ( $_SESSION["Me"]->isChair ) {taskbutton("Chair", "PC Chair");}?>
+<? if ( $_SESSION["Me"]->amAssistant() ) {taskbutton("Assistant", "PC Chair Assitant");}?>
 </tr>
 </table>
 
 <?
 
-if ($_SESSION[WhichTaskView] == "All") {
+if ($_SESSEST["WhichTaskView"] == "All") {
   $AllPrefix="All/";
   include("Tasks-All.inc");
-} else if ($_SESSION[WhichTaskView] == "Author") {
+} else if ($_SESSEST["WhichTaskView"] == "Author") {
   $AuthorPrefix="Author/";
   include("Tasks-Author.inc");
-} else if ($_SESSION[WhichTaskView] == "Reviewer") {
+} else if ($_SESSEST["WhichTaskView"] == "Reviewer") {
    include("Tasks-Reviewer.inc");
-} else if ($_SESSION[WhichTaskView] == "PC") {
+} else if ($_SESSEST["WhichTaskView"] == "PC") {
   include("Tasks-PC.inc");
-} else if ($_SESSION[WhichTaskView] == "Chair") {
+} else if ($_SESSEST["WhichTaskView"] == "Chair") {
   include("Tasks-Chair.inc");
-} else if ($_SESSION[WhichTaskView] == "Assistant") {
+} else if ($_SESSEST["WhichTaskView"] == "Assistant") {
   include("Tasks-Assistant.inc");
 } else {
   $AllPrefix="All/";
@@ -143,7 +143,7 @@ if ($_SESSION[WhichTaskView] == "All") {
 
 if (0) {
   print "<p> ";
-  print $_SESSION[Me] -> dump();
+  print $_SESSION["Me"] -> dump();
   print "</p>";
 }
 ?>

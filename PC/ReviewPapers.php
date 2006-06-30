@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid($Conf->paperSite);
-$_SESSION[Me] -> goIfNotPC($Conf->paperSite);
+$_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
+$_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
 $Conf -> goIfInvalidActivity("PCSubmitReviewDeadline",
 			     $Conf->paperSite);
 $Conf -> connect();
@@ -26,7 +26,7 @@ or until you finalize them. </b>
 <?php 
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title, Paper.withdrawn "
 		  . " FROM Paper, PrimaryReviewer "
-		  . "WHERE PrimaryReviewer.reviewer='" . $_SESSION[Me]->contactId . "' "
+		  . "WHERE PrimaryReviewer.reviewer='" . $_SESSION["Me"]->contactId . "' "
 		  . " AND Paper.paperId=PrimaryReviewer.paperId "
 		  . "ORDER BY Paper.paperId");
 
@@ -43,7 +43,7 @@ if (DB::isError($result)) {
       $i++;
     }
   }
-  $_SESSION[Me] -> printReviewables($ids, $titles, "PCSubmitReview.php", $Conf);
+  $_SESSION["Me"] -> printReviewables($ids, $titles, "PCSubmitReview.php", $Conf);
 }
 ?>
 
@@ -52,7 +52,7 @@ if (DB::isError($result)) {
 <?php 
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title, Paper.withdrawn "
 		  . " FROM Paper, SecondaryReviewer "
-		  . " WHERE SecondaryReviewer.reviewer='" . $_SESSION[Me]->contactId. "' "
+		  . " WHERE SecondaryReviewer.reviewer='" . $_SESSION["Me"]->contactId. "' "
 		  . " AND Paper.paperId=SecondaryReviewer.paperId "
 		  . "ORDER BY Paper.paperId");
 
@@ -69,7 +69,7 @@ if (DB::isError($result)) {
       $i++;
     }
   }
-  $_SESSION[Me] -> printReviewables($ids, $titles, "PCSubmitReview.php", $Conf);
+  $_SESSION["Me"] -> printReviewables($ids, $titles, "PCSubmitReview.php", $Conf);
 }
 
 if ($Conf->validTimeFor('PCReviewAnyPaper', 0)) {

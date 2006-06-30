@@ -917,7 +917,7 @@ class Conference {
 	  return 1;
 	}
       } else {
-	$this->log("Error downloading $paperId for review" . $result->getMessage(), $_SESSION[Me]);
+	$this->log("Error downloading $paperId for review" . $result->getMessage(), $_SESSION["Me"]);
       }
     }
 
@@ -1097,7 +1097,7 @@ class Conference {
 	}
       }
 
-      $this->log("Delete paper $paperId", $_SESSION[Me]);
+      $this->log("Delete paper $paperId", $_SESSION["Me"]);
     }
 
   function sendPaperDeleteNotice($paperId)
@@ -1624,8 +1624,8 @@ function paperTable( $showAuthor = true, $showAbs = true, $paperId = -1,
     . " Paper.paperId=$paperId "
     . " AND PaperStorage.paperId=$paperId";
 
-  if ( !($_SESSION[Me]->isChair || $_SESSION[Me]->isPC || $_SESSION[Me] -> isAssistant) ){
-    $query = $query . " AND Paper.contactId='" . $_SESSION[Me]->contactId . "' ";
+  if ( !($_SESSION["Me"]->isChair || $_SESSION["Me"]->isPC || $_SESSION["Me"] -> isAssistant) ){
+    $query = $query . " AND Paper.contactId='" . $_SESSION["Me"]->contactId . "' ";
   }
   //$this->warnMsg($query);
 
@@ -1665,7 +1665,7 @@ function paperTable( $showAuthor = true, $showAbs = true, $paperId = -1,
 	</b> </font> </th> </tr>
    <tr> <td> Title: </td> <td> <?php  echo $title ?> </td> </tr>
 <?php
-    if ( $_SESSION[Me]->isChair && $row['pcPaper'] ){
+    if ( $_SESSION["Me"]->isChair && $row['pcPaper'] ){
 ?>
    <TR> <TD COLSPAN=2 ALIGN=CENTER BGCOLOR='Red'> This is a PC paper. </TD> </TR>
 <?php

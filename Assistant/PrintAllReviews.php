@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotAssistant('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotAssistant('../index.php');
 $Conf -> connect();
 include('../Code/confConfigReview.inc');
 include('../PC/gradeNames.inc');
@@ -51,13 +51,13 @@ I am not certain if this works under Netscape or other browsers.
 
 <FORM method="POST" action="<?php echo $_SERVER[PHP_SELF] ?>">
 <INPUT type=checkbox name=SeeOnlyFinalized value=1
-   <?php  if ($_REQUEST[SeeOnlyFinalized]) {echo "checked";}?> > See Only Finalized Reviews </br>
+   <?php  if ($_REQUEST["SeeOnlyFinalized"]) {echo "checked";}?> > See Only Finalized Reviews </br>
 
 <INPUT type=checkbox name=SeeAuthorInfo value=1
-   <?php  if ($_REQUEST[SeeAuthorInfo]) {echo "checked";}?> > See Author Information </br>
+   <?php  if ($_REQUEST["SeeAuthorInfo"]) {echo "checked";}?> > See Author Information </br>
 
 <INPUT type=checkbox name=SeeReviewerInfo value=1
-   <?php  if ($_REQUEST[SeeReviewerInfo]) {echo "checked";}?> > See Reviewer Information </br>
+   <?php  if ($_REQUEST["SeeReviewerInfo"]) {echo "checked";}?> > See Reviewer Information </br>
 
 <SELECT name="ShowPCPapers">
 <?php
@@ -139,7 +139,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
     }
 
 
-    if ( !$_REQUEST[SeeReviewerInfo] ) {
+    if ( !$_REQUEST["SeeReviewerInfo"] ) {
       print "<tr>\n";
       print "<th colspan=2 $titleColour> <big> <big> <big><big>  ";
       print "Paper #$paperId:";
@@ -220,7 +220,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
     print nl2br(htmlentities($title));
     print " </td> </tr>\n";
 
-    if ($_REQUEST[SeeAuthorInfo]) {
+    if ($_REQUEST["SeeAuthorInfo"]) {
       print "<tr> <th> Contact </th> <td> ";
       print nl2br(htmlentities($contactInfo));
       print " </td> </tr>\n";
@@ -243,7 +243,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
     //
     // Now print all the reviews
     //
-    if ($_REQUEST[SeeOnlyFinalized]) {
+    if ($_REQUEST["SeeOnlyFinalized"]) {
       $finalizedStr = " AND PaperReview.finalized=1";
     } else {
       $finalizedStr ="";
@@ -283,7 +283,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
 
 	print "<tr bgcolor=$color>";
 
-	if ($_REQUEST[SeeReviewerInfo]==1) {
+	if ($_REQUEST["SeeReviewerInfo"]==1) {
 	  $reviewBy = "By $first $last ($email)";
 	} else {
 	  $reviewBy = "";
@@ -367,7 +367,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
 	  print " and Author.";
 	}
 	print ". </th>";
-	if ( $row['contactId'] == $_SESSION[Me]->contactId ) {
+	if ( $row['contactId'] == $_SESSION["Me"]->contactId ) {
 	  print "<th>";
 	  $id=$row['commentId'];
 	  $Conf->textButton("Delete?",

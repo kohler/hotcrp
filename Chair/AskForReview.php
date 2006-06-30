@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotChair('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotChair('../index.php');
 $Conf -> connect();
 ?>
 
@@ -11,7 +11,7 @@ $Conf -> connect();
 
 <body>
 <?php 
-if (IsSet($_REQUEST[SendReviews]) && sizeof($_REQUEST[Requests]) > 0) {
+if (IsSet($_REQUEST["SendReviews"]) && sizeof($_REQUEST["Requests"]) > 0) {
   $_REQUEST[firstEmail] = trim($_REQUEST[firstEmail]);
   if ( $_REQUEST[firstEmail] == "" ) {
     $Conf->errorMsg("You need to enter an email address!");
@@ -27,7 +27,7 @@ if (IsSet($_REQUEST[SendReviews]) && sizeof($_REQUEST[Requests]) > 0) {
     //
     $Conf->infoMsg("Creating an account for $_REQUEST[firstEmail]");
 
-    $Conf->log("Create email contact for $_REQUEST[firstEmail] for reviewing", $_SESSION[Me]);
+    $Conf->log("Create email contact for $_REQUEST[firstEmail] for reviewing", $_SESSION["Me"]);
 
     $newguy = new Contact();
     $newguy -> initialize($firstName, $lastName, $_REQUEST[firstEmail], $affiliation,
@@ -44,8 +44,8 @@ if (IsSet($_REQUEST[SendReviews]) && sizeof($_REQUEST[Requests]) > 0) {
   //  $Conf -> infoMsg("$_REQUEST[firstEmail] registered as user $id");
       
   $paperList="";
-  for ($i = 0; $i < sizeof($_REQUEST[Requests]); $i++) {
-    $paperId=$_REQUEST[Requests][$i];
+  for ($i = 0; $i < sizeof($_REQUEST["Requests"]); $i++) {
+    $paperId=$_REQUEST["Requests"][$i];
     //
     // Have they already been asked to review this paper?
     //
@@ -68,7 +68,7 @@ if (IsSet($_REQUEST[SendReviews]) && sizeof($_REQUEST[Requests]) > 0) {
 	$paperList= $paperList . "Paper #$paperId, $title\n";
 	// $Conf->errorMsg("Do $paperId");
 	$query="INSERT INTO ReviewRequest SET "
-	  . " requestedBy=" . $_SESSION[Me]->contactId . ", "
+	  . " requestedBy=" . $_SESSION["Me"]->contactId . ", "
 	  . " asked=$id, "
 	  . " paperId=$paperId";
 	$request=$Conf->qe($query);
@@ -82,10 +82,10 @@ if (IsSet($_REQUEST[SendReviews]) && sizeof($_REQUEST[Requests]) > 0) {
 
 
   if ( $paperList != "" ) {
-    $Conf->sendReviewerRequest($_SESSION[Me], $_REQUEST[firstEmail], $paperList);
+    $Conf->sendReviewerRequest($_SESSION["Me"], $_REQUEST[firstEmail], $paperList);
     $Conf->confirmMsg("Sent email asking $_REQUEST[firstEmail] to review " . nl2br($paperList));
 
-    $Conf->log("Asked $_REQUEST[firstEmail] to review $paperList", $_SESSION[Me]);
+    $Conf->log("Asked $_REQUEST[firstEmail] to review $paperList", $_SESSION["Me"]);
 
   }
 }
@@ -111,7 +111,7 @@ $query = "SELECT Paper.paperId, Paper.Title, ContactInfo.email "
 . "FROM Paper, ContactInfo, ReviewRequest "
 . "WHERE (ReviewRequest.paperId=Paper.paperId "
 . "  AND ReviewRequest.asked=ContactInfo.contactId "
-. "  AND ReviewRequest.requestedBy=" . $_SESSION[Me]->contactId . ") "
+. "  AND ReviewRequest.requestedBy=" . $_SESSION["Me"]->contactId . ") "
 . " ORDER BY Paper.paperId ";
 
 $result=$Conf->qe($query);
@@ -168,7 +168,7 @@ if (DB::isError($result)) {
   while ($row=$result->fetchRow()) {
     $id = $row[0];
     $title = $row[1];
-    $me =$_SESSION[Me]->contactId;
+    $me =$_SESSION["Me"]->contactId;
     $r2 = $Conf->q("SELECT COUNT(*) FROM ReviewRequest WHERE "
 	 . " ReviewRequest.paperId=$id");
     if ( $r2 ) {

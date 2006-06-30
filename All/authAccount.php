@@ -7,17 +7,17 @@ $Conf -> connect();
 //
 
 if ( IsSet($_REQUEST[loginEmail]) ) {
-  $_SESSION[Me] -> lookupByEmail($_REQUEST[loginEmail], $Conf);
+  $_SESSION["Me"] -> lookupByEmail($_REQUEST[loginEmail], $Conf);
 
   if ( !IsSet($_REQUEST[forgot]) && IsSet($_REQUEST[password])
-       && $_SESSION[Me] -> valid()
-       && $_SESSION[Me] -> password == $_REQUEST[password]) {
+       && $_SESSION["Me"] -> valid()
+       && $_SESSION["Me"] -> password == $_REQUEST[password]) {
 
-    $_SESSION[Me] -> go("../index.php");
+    $_SESSION["Me"] -> go("../index.php");
     exit;
   }
 } else {
-  $_SESSION[Me] -> invalidate();
+  $_SESSION["Me"] -> invalidate();
 }
 ?>
 
@@ -29,7 +29,7 @@ if ( IsSet($_REQUEST[loginEmail]) ) {
 
 <?php 
 if ( IsSet($_REQUEST[forgot]) ) {
-  if (! $_SESSION[Me] -> valid() ) {
+  if (! $_SESSION["Me"] -> valid() ) {
     $Conf->errorMsg(
 		 "We did not locate an existing account for $_REQUEST[loginEmail]. "
 		 . "Click <a href=\"login.php\"> here </a> to return to the "
@@ -37,24 +37,24 @@ if ( IsSet($_REQUEST[forgot]) ) {
 		 );
 
   } else { 
-    $_SESSION[Me] -> sendAccountInfo($Conf);
+    $_SESSION["Me"] -> sendAccountInfo($Conf);
     $Conf->confirmMsg(
 		 "The account information for $_REQUEST[loginEmail] has been retrieved and "
 		 . "sent <it> via </it> email. You can use that information to login. "
 		 . "Click <a href=\"login.php\"> here </a> to return to the login page. "
 		 );
-    $_SESSION[Me] -> invalidate();
+    $_SESSION["Me"] -> invalidate();
 
   }
 } else {
   //
   // Check the password
   //
-  if ($_SESSION[Me] -> password != $_REQUEST[password]) {
-    $_SESSION[Me] -> invalidate();
+  if ($_SESSION["Me"] -> password != $_REQUEST[password]) {
+    $_SESSION["Me"] -> invalidate();
   }
 
-  if ( ! $_SESSION[Me] -> valid()) {
+  if ( ! $_SESSION["Me"] -> valid()) {
     $Conf->errorMsg(
 		 "That password is not correct. "
 		 . "-or- That email address ($_REQUEST[loginEmail]) is not registered. "
@@ -63,7 +63,7 @@ if ( IsSet($_REQUEST[forgot]) ) {
 		 );
   } else {
     $Conf->confirmMsg(
-		      "Welcome " . $_SESSION[Me]->fullname() . " "
+		      "Welcome " . $_SESSION["Me"]->fullname() . " "
 		      . "you've successfully logged in.");
     
     print "<center>";
@@ -72,13 +72,13 @@ if ( IsSet($_REQUEST[forgot]) ) {
     //
     // Update their visit counts
     //
-    $_SESSION[Me] -> bumpVisits($Conf);
+    $_SESSION["Me"] -> bumpVisits($Conf);
     //
     // Check their roles
     //
-    $_SESSION[Me] -> updateContactRoleInfo($Conf);
+    $_SESSION["Me"] -> updateContactRoleInfo($Conf);
 
-    $Conf->log("Login", $_SESSION[Me]);
+    $Conf->log("Login", $_SESSION["Me"]);
   }
 }
 ?>

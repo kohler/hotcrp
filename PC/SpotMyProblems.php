@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid($Conf->paperSite);
-$_SESSION[Me] -> goIfNotPC($Conf->paperSite);
+$_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
+$_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
 $Conf -> connect();
 
 function spotSecondaryReviewers($howmany)
@@ -16,7 +16,7 @@ function spotSecondaryReviewers($howmany)
 		       . " ON ReviewRequest.paperId=Paper.paperId "
 		       . " WHERE ReviewRequest.paperId IS NULL "
 		       . " AND SecondaryReviewer.paperId=Paper.paperId "
-		       . " AND SecondaryReviewer.reviewer=" . $_SESSION[Me]->contactId. " "
+		       . " AND SecondaryReviewer.reviewer=" . $_SESSION["Me"]->contactId. " "
 		       . " ORDER BY Paper.paperId ");
   } else {
     $result =$Conf->qe(
@@ -25,7 +25,7 @@ function spotSecondaryReviewers($howmany)
 		       . " LEFT JOIN ReviewRequest "
 		       . " ON ReviewRequest.paperId=Paper.paperId "
 		       . " WHERE SecondaryReviewer.paperId=Paper.paperId "
-		       . " AND SecondaryReviewer.reviewer=" . $_SESSION[Me]->contactId. " "
+		       . " AND SecondaryReviewer.reviewer=" . $_SESSION["Me"]->contactId. " "
 		       . " GROUP BY ReviewRequest.paperId "
 		       . " HAVING COUNT(ReviewRequest.paperId)=$howmany "
 		       . " ORDER BY Paper.paperId ");
@@ -61,7 +61,7 @@ function spotReviews($howmany, $finalized, $table)
       . " ON PaperReview.paperId=Paper.paperId "
       . " WHERE PaperReview.paperId IS NULL "
       . " AND $table" . ".paperId=Paper.paperId "
-      . " AND $table" . ".reviewer=" . $_SESSION[Me]->contactId . " "
+      . " AND $table" . ".reviewer=" . $_SESSION["Me"]->contactId . " "
       . " ORDER BY Paper.paperId ";
 
   } else {
@@ -76,7 +76,7 @@ function spotReviews($howmany, $finalized, $table)
       . " ON PaperReview.paperId=Paper.paperId "
       . " WHERE "
       . "     $table" . ".paperId=Paper.paperId "
-      . " AND $table" . ".reviewer=" . $_SESSION[Me]->contactId . " "
+      . " AND $table" . ".reviewer=" . $_SESSION["Me"]->contactId . " "
       . $fin
       . " GROUP BY PaperReview.paperId "
       . " HAVING COUNT(PaperReview.paperId)=$howmany "

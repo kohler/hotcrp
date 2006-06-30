@@ -1,8 +1,8 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfInvalid("../index.php");
 
-if (! $_SESSION[Me]->isChair ) {
+if (! $_SESSION["Me"]->isChair ) {
   $Conf -> goIfInvalidActivity("reviewerViewDecision", "../index.php");
 }
 
@@ -28,14 +28,14 @@ if (!IsSet($paperId) ) {
 $revByMe = $Conf->countEntries("paperId",
 			      $paperId,
 			      "PaperReview",
-			      "AND reviewer=" . $_SESSION[Me]->contactId. " AND finalized=1");
+			      "AND reviewer=" . $_SESSION["Me"]->contactId. " AND finalized=1");
 
 
 if ( $revByMe ) {
   //
   // Ok, I'm author...
   //
-} else if ( $_SESSION[Me] -> isChair ) {
+} else if ( $_SESSION["Me"] -> isChair ) {
     $Conf -> infoMsg("....chair exemption...");
 } else {
   $Conf -> errorMsg("You did not review or finish reviewing this paper, so "
@@ -47,7 +47,7 @@ if ( $revByMe ) {
 // Print header using dummy review
 //
 
-$Review=ReviewFactory($Conf, $_SESSION[Me]->contactId, $paperId);
+$Review=ReviewFactory($Conf, $_SESSION["Me"]->contactId, $paperId);
 
 if ( ! $Review -> valid ) {
   $Conf->errorMsg("You've stumbled on to an invalid review? -- contact chair");

@@ -16,7 +16,7 @@ find the link to download the paper at the top of the review form </p>
  //
 
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title, Paper.withdrawn FROM Paper, ReviewRequest "
-		    . "WHERE ReviewRequest.asked='" . $_SESSION[Me]->contactId . "' AND Paper.paperId=ReviewRequest.paperId "
+		    . "WHERE ReviewRequest.asked='" . $_SESSION["Me"]->contactId . "' AND Paper.paperId=ReviewRequest.paperId "
 		    . "ORDER BY Paper.paperId");
 if (!DB::isError($result)) {
   $i = 0;
@@ -31,14 +31,14 @@ if (!DB::isError($result)) {
   $Conf->errorMsg("Error in sql " . $result->getMessage());
 }
 
-$_SESSION[Me]->printReviewables($ids, $titles, $PREFIX . "ReviewerSubmitReview.php", $Conf);
+$_SESSION["Me"]->printReviewables($ids, $titles, $PREFIX . "ReviewerSubmitReview.php", $Conf);
 ?>
 
 <?php 
 //
 // Some PC members also like seeing their primary reviews here..
 //
-if ($_SESSION[Me] -> isPC) {
+if ($_SESSION["Me"] -> isPC) {
 ?>
 
 <h2> Primary Reviews </h2>
@@ -56,7 +56,7 @@ find the link to download the paper at the top of the review form </p>
 <?php 
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title, Paper.withdrawn "
 		  . " FROM Paper, PrimaryReviewer "
-		  . "WHERE PrimaryReviewer.reviewer='" . $_SESSION[Me]->contactId. "' "
+		  . "WHERE PrimaryReviewer.reviewer='" . $_SESSION["Me"]->contactId. "' "
 		  . " AND Paper.paperId=PrimaryReviewer.paperId "
 		  . "ORDER BY Paper.paperId");
 
@@ -73,6 +73,6 @@ if (DB::isError($result)) {
       $i++;
     }
   }
-  $_SESSION[Me] -> printReviewables($ids, $titles, "../PC/PCSubmitReview.php", $Conf);
+  $_SESSION["Me"] -> printReviewables($ids, $titles, "../PC/PCSubmitReview.php", $Conf);
 }
 }

@@ -1,4 +1,4 @@
-<?php if ($_SESSION[Me]->amAssistant() ) {?>
+<?php if ($_SESSION["Me"]->amAssistant() ) {?>
 
 <?php $Conf -> taskHeader("Tasks for Assistants To The Program Chair", $TaskSpan); ?>
 

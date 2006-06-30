@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid($Conf->paperSite);
-$_SESSION[Me] -> goIfNotPC($Conf->paperSite);
+$_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
+$_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
 $Conf -> connect();
 
 include('../Code/confConfigReview.inc');
@@ -9,10 +9,10 @@ include('gradeNames.inc');
 
 function showReviewerOkay ( $Conf )
 {
- return ($_SESSION[Me]->isChair ) ||
-     ($_SESSION[Me]->isPC );
-// return ($_SESSION[Me]->isChair && $_SESSION[SeeReviewerInfo]==1) ||
-//     ($_SESSION[Me]->isPC && $Conf->validTimeFor('PCGradePapers', 0));
+ return ($_SESSION["Me"]->isChair ) ||
+     ($_SESSION["Me"]->isPC );
+// return ($_SESSION["Me"]->isChair && $_SESSION["SeeReviewerInfo"]==1) ||
+//     ($_SESSION["Me"]->isPC && $Conf->validTimeFor('PCGradePapers', 0));
 }
 
 ?>
@@ -27,7 +27,7 @@ function showReviewerOkay ( $Conf )
 // No one ever gets to see a paper review for which they
 // have a conflict using this interface.
 //
-if ( $_SESSION[Me]->checkConflict($_REQUEST[paperId], $Conf)) {
+if ( $_SESSION["Me"]->checkConflict($_REQUEST[paperId], $Conf)) {
   
   $Conf -> errorMsg("The program chairs have registered a conflict "
 		    . " of interest for you to read this paper."
@@ -41,7 +41,7 @@ if ( $_SESSION[Me]->checkConflict($_REQUEST[paperId], $Conf)) {
 //
 
 if ( ! $Conf->validTimeFor('AtTheMeeting', 0) ) {
-  if ( !($_SESSION[Me] -> iCanReview($_REQUEST[paperId], $Conf) || $_SESSION[Me] -> isChair)) {
+  if ( !($_SESSION["Me"] -> iCanReview($_REQUEST[paperId], $Conf) || $_SESSION["Me"] -> isChair)) {
     $Conf -> errorMsg("You are unable to view all the reviews for this paper "
 		      . " since you were not a primary or secondary reviwer for it." );
     exit();
@@ -51,7 +51,7 @@ if ( ! $Conf->validTimeFor('AtTheMeeting', 0) ) {
 if ( 0 && $Conf->validTimeFor('AtTheMeeting',0) ) {
   $pcConflicts = $Conf->allPCConflicts();
 
-  if ($pcConflicts[$_REQUEST[paperId]] && ! $_SESSION[Me] -> isChair ) {
+  if ($pcConflicts[$_REQUEST[paperId]] && ! $_SESSION["Me"] -> isChair ) {
     $Conf -> errorMsg("You are unable to view all the reviews for this paper "
 		      . "at the program committee meeting" );
     exit();
@@ -65,7 +65,7 @@ if ( 0 && $Conf->validTimeFor('AtTheMeeting',0) ) {
 //
 
 $query="SELECT paperId FROM PrimaryReviewer WHERE "
-. " reviewer='" . $_SESSION[Me]->contactId . "' AND paperId=" . $_REQUEST[paperId] . " ";
+. " reviewer='" . $_SESSION["Me"]->contactId . "' AND paperId=" . $_REQUEST[paperId] . " ";
 ;
 
 $result = $Conf->q($query);
@@ -80,7 +80,7 @@ if (!DB::isError($result) && $result->numRows() > 0) {
     // OK, check if they've done the review
     //
     $query="SELECT finalized FROM PaperReview WHERE "
-      . " PaperReview.reviewer=" . $_SESSION[Me]->contactId. " "
+      . " PaperReview.reviewer=" . $_SESSION["Me"]->contactId. " "
       . " AND PaperReview.paperId=" . $_REQUEST[paperId] . " ";
     ;
     $result = $Conf->q($query);
@@ -122,9 +122,9 @@ if ( $doTable ) {
     //
     // Update viewing preferences if they pressed UpdateView
     //
-    $_SESSION[SeeReviewerInfo]=$_REQUEST[SeeReviewerInfo];
-    $_SESSION[SeeUnfinishedReviews]=$_REQUEST[SeeUnfinishedReviews];
-    $_SESSION[SeeAuthorInfo]=$_REQUEST[SeeAuthorInfo];
+    $_SESSION["SeeReviewerInfo"]=$_REQUEST["SeeReviewerInfo"];
+    $_SESSION["SeeUnfinishedReviews"]=$_REQUEST["SeeUnfinishedReviews"];
+    $_SESSION["SeeAuthorInfo"]=$_REQUEST["SeeAuthorInfo"];
   }
 
   print "<FORM METHOD=POST ACTION=\"$_SERVER[PHP_SELF]\">";
@@ -138,7 +138,7 @@ if ( $doTable ) {
 
     if ($Conf->okSeeReviewers()) {
       print "<INPUT type=checkbox name=SeeReviewerInfo value=1";
-      if ($_REQUEST[SeeReviewerInfo]) {
+      if ($_REQUEST["SeeReviewerInfo"]) {
 	echo " checked";
       }
       print "> See Reviewer Info<br>";
@@ -146,7 +146,7 @@ if ( $doTable ) {
 
     if ($Conf->okSeeUnfinishedReviews()) {
       print "<INPUT type=checkbox name=SeeUnfinishedReviews value=1";
-      if ($_REQUEST[SeeUnfinishedReviews]) {
+      if ($_REQUEST["SeeUnfinishedReviews"]) {
 	echo " checked";
       }
       print "> See Unfinished Reviews<br>";
@@ -154,7 +154,7 @@ if ( $doTable ) {
       
     if ($Conf->okSeeAuthorInfo()) {
       print "<INPUT type=checkbox name=SeeAuthorInfo value=1";
-      if ($_REQUEST[SeeAuthorInfo]) {
+      if ($_REQUEST["SeeAuthorInfo"]) {
 	echo " checked";
       }
       print "> See Author Info<br>";
@@ -166,7 +166,7 @@ if ( $doTable ) {
   }
   print "</td>";
 
-  if ( $_SESSION[Me]->isChair ) {
+  if ( $_SESSION["Me"]->isChair ) {
     print "<td>\n";
     print $Conf->buttonWithPaperId("Modify Paper",
 				   "../Chair/ModifyPaper.php",
@@ -278,7 +278,7 @@ if (IsSet($_REQUEST['storeComment']) && IsSet($_REQUEST[paperId]) && IsSet($_REQ
   }
 
   $query="INSERT INTO PaperComments "
-    . " SET paperId=" . $_REQUEST[paperId] . ", contactId=" . $_SESSION[Me]->contactId. ", "
+    . " SET paperId=" . $_REQUEST[paperId] . ", contactId=" . $_SESSION["Me"]->contactId. ", "
     . " forAuthor=$forAuthor, forReviewers=$forReviewer, "
     . " comment='" . addslashes($_REQUEST['theComment']) . "'";
 
@@ -294,7 +294,7 @@ if (IsSet($_REQUEST['killCommentId'])) {
 // Print header using dummy review
 //
 
-$Review=ReviewFactory($Conf, $_SESSION[Me]->contactId, $_REQUEST[paperId]);
+$Review=ReviewFactory($Conf, $_SESSION["Me"]->contactId, $_REQUEST[paperId]);
 
 if ( ! $Review -> valid ) {
   $Conf->errorMsg("You've stumbled on to an invalid review? -- contact chair");
@@ -308,8 +308,8 @@ if ($Review->paperFields['outcome'] != "undecided") {
 }
 
 print "<center>";
-if ( ($_SESSION[Me]->isChair && $_SESSION[SeeAuthorInfo])
-     || (!$_SESSION[Me]->isChair && $Conf->validTimeFor('AtTheMeeting', 0)) ) {
+if ( ($_SESSION["Me"]->isChair && $_SESSION["SeeAuthorInfo"])
+     || (!$_SESSION["Me"]->isChair && $Conf->validTimeFor('AtTheMeeting', 0)) ) {
   //
   // FIX ME -
   //
@@ -324,13 +324,13 @@ if ( ($_SESSION[Me]->isChair && $_SESSION[SeeAuthorInfo])
 print "</center>";
 
 
-$Conf->log("View all reviews (blind) for $_REQUEST[paperId]", $_SESSION[Me]);
+$Conf->log("View all reviews (blind) for $_REQUEST[paperId]", $_SESSION["Me"]);
 
 //
   // Now print all the reviews
   //
 $fin= " AND PaperReview.finalized=1 ";
-if ($_SESSION[Me]->isChair && $_SESSION[SeeUnfinishedReviews]) {
+if ($_SESSION["Me"]->isChair && $_SESSION["SeeUnfinishedReviews"]) {
   $fin = "";
 }
 
@@ -368,7 +368,7 @@ if (!DB::isError($result) && $result->numRows() > 0) {
     }
 
     print "<tr bgcolor=$color>";
-    if ( $_SESSION[Me]->isChair ) {
+    if ( $_SESSION["Me"]->isChair ) {
 
       if ( $Review->reviewFields['finalized'] ) {
 	$word = "unfinalize";
@@ -468,8 +468,8 @@ if ($result->numRows() == 0 ) {
             htmlEntities($row['lastName']) . " (" .
 	    htmlEntities($row['email']) . ")</th>";
     }
-    if ( $row['contactId'] == $_SESSION[Me]->contactId 
-	 || $_SESSION[Me]->isChair ) {
+    if ( $row['contactId'] == $_SESSION["Me"]->contactId 
+	 || $_SESSION["Me"]->isChair ) {
       print "<th>";
       $id=$row['commentId'];
       $Conf->textButton("Delete?",

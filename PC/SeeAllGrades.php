@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid($Conf->paperSite);
-$_SESSION[Me] -> goIfNotPC($Conf->paperSite);
+$_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
+$_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
 $Conf -> connect();
 
 // we are disabling register_globals in php.ini, so we don't need to
@@ -10,7 +10,7 @@ $Conf -> connect();
 // session_register('GradeSortKey');
 
 if (IsSet($_REQUEST[setSortKey])) {
-  $_SESSION[GradeSortKey]=$_REQUEST[setSortKey];
+  $_SESSION["GradeSortKey"]=$_REQUEST[setSortKey];
 }
 
 
@@ -32,11 +32,11 @@ if ( ! $Conf -> validTimeFor('PCMeetingView', 0) ) {
   $Conf->errorMsg("You can not see this information right now");
   exit();
 }
-if (!IsSet($_SESSION[GradeSortKey])) {
-  $_SESSION[GradeSortKey] = "byReviews";
+if (!IsSet($_SESSION["GradeSortKey"])) {
+  $_SESSION["GradeSortKey"] = "byReviews";
 }
 
-$conflicts = $Conf->allMyConflicts($_SESSION[Me]->contactId);
+$conflicts = $Conf->allMyConflicts($_SESSION["Me"]->contactId);
 
 $pcConflicts = $Conf->allPCConflicts();
 
@@ -44,7 +44,7 @@ $meritRange = $Conf->reviewRange('overAllMerit', 'PaperReview');
 $gradeRange = $Conf->reviewRange('grade', 'PaperGrade');
 
 
-if ($_SESSION[GradeSortKey]=="byReviews") {
+if ($_SESSION["GradeSortKey"]=="byReviews") {
   $Conf->infoMsg("Sorting By Merit (as indicated by reviewers) ");
   $result=$Conf->qe("SELECT Paper.paperId, Paper.title, "
 		    . " AVG(PaperReview.overAllMerit) as merit "
@@ -56,7 +56,7 @@ if ($_SESSION[GradeSortKey]=="byReviews") {
 		    . " ORDER BY merit DESC, Paper.paperId "
 		    );
 
-} elseif ($_SESSION[GradeSortKey]=="byGrades") {
+} elseif ($_SESSION["GradeSortKey"]=="byGrades") {
   $Conf->infoMsg("Sorting By Grades (as indicated by PC members)");
   $result=$Conf->qe("SELECT Paper.paperId, Paper.title, "
 		    . " AVG(PaperGrade.grade) as merit "
@@ -67,7 +67,7 @@ if ($_SESSION[GradeSortKey]=="byReviews") {
 		    . " ORDER BY merit DESC, Paper.paperId "
 		    );
 
-} elseif ($_SESSION[GradeSortKey]=="byPapers") {
+} elseif ($_SESSION["GradeSortKey"]=="byPapers") {
   $Conf->infoMsg("Sorting By Paper Number");
   $result=$Conf->qe("SELECT Paper.paperId, Paper.title "
 		    . " FROM Paper "
@@ -132,7 +132,7 @@ while ($row=$result->fetchRow()) {
   $noShow = $conflicts[$paperId]
     || ( $Conf->validTimeFor('AtTheMeeting',0)
 	 && $pcConflicts[$paperId]
-	 && ! $_SESSION[Me]->isChair );
+	 && ! $_SESSION["Me"]->isChair );
 
 
   if ( ! $noShow ) {
@@ -148,7 +148,7 @@ while ($row=$result->fetchRow()) {
     print "\n";
 
     $didBr = 0;
-    if ( $_SESSION[Me] ->isChair && $pcConflicts[$paperId] ) {
+    if ( $_SESSION["Me"] ->isChair && $pcConflicts[$paperId] ) {
       print " <b> PC PAPER </b>\n ";
       $didBr = 1;
     }

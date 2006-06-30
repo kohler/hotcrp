@@ -6,9 +6,9 @@ $Conf -> connect();
 // to determine if the user is registered.
 //
 if ( IsSet($_REQUEST[firstEmail]) ) {
-  $_SESSION[Me] -> lookupByEmail($_REQUEST[firstEmail], $Conf);
+  $_SESSION["Me"] -> lookupByEmail($_REQUEST[firstEmail], $Conf);
 } else {
-  $_SESSION[Me] -> invalidate();
+  $_SESSION["Me"] -> invalidate();
 }
 ?>
 
@@ -18,7 +18,7 @@ if ( IsSet($_REQUEST[firstEmail]) ) {
 
 <body>
 
-<?php  if ($_SESSION[Me] -> valid() ) {
+<?php  if ($_SESSION["Me"] -> valid() ) {
   $Conf->errorMsg(
 		  "That email address ($_REQUEST[firstEmail]) is already registered. "
 		  . "If you've forgotten your password, <a href=\"login.php\"> return "
@@ -27,7 +27,7 @@ if ( IsSet($_REQUEST[firstEmail]) ) {
   //
   // Don't leave them registered as the other person..
   //
-  $_SESSION[Me] -> invalidate();
+  $_SESSION["Me"] -> invalidate();
 } else if ($_REQUEST[firstEmail] != $_REQUEST[secondEmail]) {
   $Conf->errorMsg("The first and second email you entered do not match. "
 		  . " Hit back and try again ");
@@ -40,9 +40,9 @@ if ( IsSet($_REQUEST[firstEmail]) ) {
     //
     // Update Me
     //
-    $_SESSION[Me] -> initialize($_REQUEST[firstName], $_REQUEST[lastName], $_REQUEST[firstEmail], $_REQUEST[affiliation],
+    $_SESSION["Me"] -> initialize($_REQUEST[firstName], $_REQUEST[lastName], $_REQUEST[firstEmail], $_REQUEST[affiliation],
 		      $_REQUEST[phone], $_REQUEST[fax]);
-    $result = $_SESSION[Me] -> addToDB($Conf);
+    $result = $_SESSION["Me"] -> addToDB($Conf);
     //
     if (DB::isError($result)) {
       $Conf->errorMsg("There was some problem adding your account. "
@@ -55,9 +55,9 @@ if ( IsSet($_REQUEST[firstEmail]) ) {
 		      . "the password was sent. When it is received, "
 		      . "it can be used to login </a> ");
 
-      $_SESSION[Me] -> sendAccountInfo($Conf);
+      $_SESSION["Me"] -> sendAccountInfo($Conf);
 
-      $Conf->log("Created account", $_SESSION[Me]);
+      $Conf->log("Created account", $_SESSION["Me"]);
 
     }
 }

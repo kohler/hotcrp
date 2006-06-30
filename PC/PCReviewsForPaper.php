@@ -1,8 +1,8 @@
 <?php 
 include('../Code/confHeader.inc');
 include('../Code/confConfigReview.inc');
-$_SESSION[Me] -> goIfInvalid($Conf->paperSite);
-$_SESSION[Me] -> goIfNotPC($Conf->paperSite);
+$_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
+$_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
 $Conf -> connect();
 
 //
@@ -21,14 +21,14 @@ $reviewInfo = $r->fetchRow(DB_FETCHMODE_ASSOC);
 //
 // Access control: requesting PC or Chair
 //
-if ($_SESSION[Me] -> isChair || $reviewInfo['requestedBy'] == $_SESSION[Me] -> contactId ) {
+if ($_SESSION["Me"] -> isChair || $reviewInfo['requestedBy'] == $_SESSION["Me"] -> contactId ) {
   // OK
 } else {
   $Conf->errorMsg("You're not authorized to see this review");
   exit();
 }
 
-if ( $_SESSION[Me]->checkConflict($paperId, $Conf)) {
+if ( $_SESSION["Me"]->checkConflict($paperId, $Conf)) {
   $Conf -> errorMsg("The program chairs have registered a conflict "
 		    . " of interest for you to read this paper."
 		    . " If you think this is incorrect, contact the "

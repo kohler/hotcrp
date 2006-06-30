@@ -4,7 +4,7 @@ include('../Code/confHeader.inc');
 // If they're here, they don't know
 // this information.
 //
-$_SESSION[Me] -> invalidate();
+$_SESSION["Me"] -> invalidate();
 
 ?>
 

@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotChair('../index.php');
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotChair('../index.php');
 $Conf -> connect();
 
 include('Code.inc');
@@ -25,13 +25,13 @@ if (IsSet($_REQUEST[assignConflicts])) {
   if (!IsSet($_REQUEST[pcMember])) {
     $Conf->errorMsg("You need to select a PC Member.");
   } else {
-    if (IsSet($_REQUEST[Conflict])) {
-      for($i=0; $i < sizeof($_REQUEST[Conflict]); $i++) {
-	$paperId=$_REQUEST[Conflict][$i];
+    if (IsSet($_REQUEST["Conflict"])) {
+      for($i=0; $i < sizeof($_REQUEST["Conflict"]); $i++) {
+	$paperId=$_REQUEST["Conflict"][$i];
 	$query="INSERT INTO PaperConflict SET paperId='$paperId', "
 	  . " authorId='$_REQUEST[pcMember]'";
 	$Conf -> qe($query);
-	$Conf->log("Added reviewer conflict for $_REQUEST[pcMember] for paper $paper", $_SESSION[Me]);
+	$Conf->log("Added reviewer conflict for $_REQUEST[pcMember] for paper $paper", $_SESSION["Me"]);
       }
     }
   }
@@ -47,7 +47,7 @@ if (IsSet($_REQUEST[assignConflicts])) {
 <?php 
 
 if (IsSet($_REQUEST[removeConflict])) {
-  removePCConflictPapers($_REQUEST[ExistingConflicts]);
+  removePCConflictPapers($_REQUEST["ExistingConflicts"]);
 }
 
 $Conf->infoMsg("This is the existing list of conflicts. "

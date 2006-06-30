@@ -1,4 +1,4 @@
-<?php if ( $_SESSION[Me]->isPC ) {?>
+<?php if ( $_SESSION["Me"]->isPC ) {?>
 
 <?php
  //
@@ -13,7 +13,7 @@
 		  . " for reviews for your assigned Secondary papers");
 
 
- $Conf->reviewerSummary($_SESSION[Me]->contactId);
+ $Conf->reviewerSummary($_SESSION["Me"]->contactId);
 
 ?>
 <ul>

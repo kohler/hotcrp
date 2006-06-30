@@ -1,7 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION[Me] -> goIfInvalid("../index.php");
-$_SESSION[Me] -> goIfNotAuthor("../index.php");
+$_SESSION["Me"] -> goIfInvalid("../index.php");
+$_SESSION["Me"] -> goIfNotAuthor("../index.php");
 $Conf -> goIfInvalidActivity("authorRespondToReviews", "../index.php");
 $Conf -> connect();
 
@@ -50,7 +50,7 @@ $Conf->infoMsg(
 	       );
 
 
-if ( ! $_SESSION[Me] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
+if ( ! $_SESSION["Me"] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
   $Conf->errorMsg("You aren't supposed to be able to respond for paper #$_REQUEST[paperId]. "
 		  . "If you think this is in error, contact the program chair. ");
   exit;
@@ -61,7 +61,7 @@ if ( ! $_SESSION[Me] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
 // prior to viewing their own reviews
 
 if( 0 ){
-$missingReviews = $Conf->listMissingReviews($_SESSION[Me]->contactId);
+$missingReviews = $Conf->listMissingReviews($_SESSION["Me"]->contactId);
 
 if ($missingReviews) {
   $Conf->errorMsg("Before you can submit a response for your paper, "
@@ -90,14 +90,14 @@ if (IsSet($_REQUEST['submit'])) {
   } else {
     $Conf->infoMsg("Updating the response ($num_words of $word_limit words used)");
     $set = "authorsResponse='" . addslashes($_REQUEST[authorsResponse]) . "'";
-    $query="UPDATE Paper SET $set WHERE paperId='$_REQUEST[paperId]' and contactId='" . $_SESSION[Me]->contactId . "'";
+    $query="UPDATE Paper SET $set WHERE paperId='$_REQUEST[paperId]' and contactId='" . $_SESSION["Me"]->contactId . "'";
     $result = $Conf->qe($query);
 
     if ( !DB::isError($result) ) {
       $Conf->confirmMsg("Successfully updated response");
     } else {
       $Conf->errorMsg("Error in updating response: " . $result->getMessage());
-      $Conf->log("Error in updating response for  $_REQUEST[paperId]: " . $result->getMessage(), $_SESSION[Me]);
+      $Conf->log("Error in updating response for  $_REQUEST[paperId]: " . $result->getMessage(), $_SESSION["Me"]);
     }
   }
 } else {
