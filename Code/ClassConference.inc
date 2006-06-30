@@ -763,7 +763,7 @@ class Conference {
       echo "<tr> <td colspan=3 align=center>";
       echo "<font size=+1 color=red>";
       print "It is currently ";
-      print date ("l dS of F Y h:i:s A T");
+      print date ("l j M Y g:i:sa T");
       echo "</font>";
       echo "</td> </tr>\n";
       echo "</table>\n";

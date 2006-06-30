@@ -4,9 +4,9 @@
 // Database configuration information
 //
 $dbHost="127.0.0.1";
-$dbUser="HYPO2010";
-$dbPassword ="HYPO2010";
-$dbName="HYPO2010";
+$dbUser="HotNetsV";
+$dbPassword ="HotNetsV";
+$dbName="HotNetsV";
 
 //
 // if setupPhase == 1, anyone who logs in has chair powers.
@@ -21,9 +21,9 @@ $Conf -> setupPhase = 0;
 // You need a unique session name to distinguish conference sessions
 // running on the same server. DO NOT PUT SPACES IN THE SESSION NAME!!
 //
-$Conf -> sessionName="HYPO2010";
-$Conf -> shortName="HYPO-2010";
-$Conf -> longName="Hypothetical Conference In 2010";
+$Conf -> sessionName="HotNetsV";
+$Conf -> shortName="HotNets V";
+$Conf -> longName="HotNets V";
 
 // allowed paper formats: allow PDF and PS for now
 $Conf -> allowPDF = 1;
@@ -59,17 +59,17 @@ $hostname = $posixinfo['nodename'];
 // This is the location of the hypothetical conference
 // the test server
 //
-$Conf -> paperSite="http://systems.cs.colorado.edu/HYPO/CRP";
+$Conf -> paperSite="http://www.read.cs.ucla.edu/hotnets5";
 
 //
 // The conference site (i.e. CFP, registration)
 //
-$Conf -> conferenceSite="http://crp.sourceforge.net/";
+$Conf -> conferenceSite="http://www.acm.org/sigs/sigcomm/HotNets-V/";
 
 //
 // The prefix for papes that are downloaded
 //
-$Conf -> paperPrefix="hypo-2010-paper";
+$Conf -> paperPrefix="hotnets5-paper";
 
 //
 // A CSS, if you want one
@@ -80,12 +80,12 @@ $Conf -> theme ="";
 // This is the person advertised as the appropriate person
 // to contact w.r.t problems
 //
-$Conf -> contactName = "The Program Chair";
-$Conf -> contactEmail = "someone@mailinator.com";
+$Conf -> contactName = "Eddie Kohler";
+$Conf -> contactEmail = "kohler@cs.ucla.edu";
 //
 // Email appears to come from this address
 //
-$Conf -> emailFrom = "randomperson@mailinator.com";
+$Conf -> emailFrom = "kohler@read.cs.ucla.edu";
 
 //
 // This is where dumps of the database are placed
