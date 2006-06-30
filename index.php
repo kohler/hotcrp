@@ -4,7 +4,7 @@ include('Code/confHeader.inc');
 
 $testCookieStatus = 0;
 
-if (isset($_COOKIE[myTstCky]) && ($_COOKIE[myTstCky] == "ChocChip")) {
+if (isset($_COOKIE["myTstCky"]) && ($_COOKIE["myTstCky"] == "ChocChip")) {
   $testCookieStatus = 1;
 }
 if (!isset($_GET[CCHK])) {
@@ -23,7 +23,7 @@ if (!IsSet($_SESSION["Me"]) || ! $_SESSION["Me"] -> valid() ) {
 
 $Conf -> connect();
 
-if ( $_SESSION[AskedYouToUpdateContactInfo]!=1
+if ( $_SESSION["AskedYouToUpdateContactInfo"]!=1
      && $_SESSION["Me"] -> valid()
      && ($_SESSION["Me"] -> firstName == "" || $_SESSION["Me"] -> lastName == "" ) )
 {
