@@ -13,22 +13,32 @@ $hostname = $posixinfo['nodename'];
 //
 // Disable caching
 //
-header ("Cache-Control: no-cache, must-revalidate");  // HTTP/1.1
-header ("Pragma: no-cache");                          
+header("Cache-Control: no-cache, must-revalidate");  // HTTP/1.1
+header("Pragma: no-cache");                          
 // session_cache_limiter('nocache');
 
 //
 // automatically determine path to conference site
 //
-$here=substr(__FILE__,0,strrpos(__FILE__,'/'));
-if ( file_exists($here . "/Code/confHeader.inc")) {
-  $ConfSitePATH=$here;
-} else if ( file_exists($here . "/../Code/confHeader.inc")) {
-  $ConfSitePATH=substr($here,0,strrpos($here,'/'));
+$here = substr(__FILE__,0,strrpos(__FILE__,'/'));
+if (file_exists($here . "/Code/confHeader.inc")) {
+    $ConfSitePATH=$here;
+} else if (file_exists($here . "/../Code/confHeader.inc")) {
+    $ConfSitePATH=substr($here,0,strrpos($here,'/'));
 } else {
-//  print "<p> CRP is mis-configured? </p>\n";
-  $ConfSitePATH="/var/www/html";
-//  exit();
+    //  print "<p> CRP is mis-configured? </p>\n";
+    $ConfSitePATH="/var/www/html";
+}
+
+// decide base URL
+$here = substr($_SERVER["PHP_SELF"], 0, strrpos($_SERVER["PHP_SELF"], '/'));
+$last = substr($here, strrpos($here, '/') + 1);
+if ($last == "All" || $last == "Assistant" || $last == "Author"
+    || $last == "Code" || $last == "Chair" || $last == "Download"
+    || $last == "PC" || $last == "Reviewer") {
+    $ConfSiteBase = "../";
+} else {
+    $ConfSiteBase = "./";
 }
 
 //
@@ -43,11 +53,12 @@ require_once("$ConfSitePATH/Code/ClassPaper.inc");
 // should just require_once() the DB interface you need.
 // Otherwise, leave these in...
 //
-require_once("$ConfSitePATH/Code/PEAR-DB/PEAR.inc");
-require_once("$ConfSitePATH/Code/PEAR-DB/common.inc");
-require_once("$ConfSitePATH/Code/PEAR-DB/DB.inc");
-require_once("$ConfSitePATH/Code/PEAR-DB/mysql.inc");
-require_once("$ConfSitePATH/Code/PEAR-DB/pgsql.inc");
+ini_set("include_path", ini_get("include_path") . ":$ConfSitePATH/Code/DB-1.7.6");
+require_once("$ConfSitePATH/Code/DB-1.7.6/DB.php");
+//require_once("$ConfSitePATH/Code/PEAR-DB/common.inc");
+//require_once("$ConfSitePATH/Code/PEAR-DB/DB.inc");
+//require_once("$ConfSitePATH/Code/PEAR-DB/mysql.inc");
+//require_once("$ConfSitePATH/Code/PEAR-DB/pgsql.inc");
 //
 //
 include("$ConfSitePATH/Code/confConfig.inc");

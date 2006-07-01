@@ -58,14 +58,14 @@ class Conference {
   var $warnColor = "lightBlue"; // should be pink!
 
   function Conference ( $dbUser, $dbPassword, $dbHost, $dbName ) {
-    $this -> dbHost = $dbHost;
-    $this -> dbUser = $dbUser;
-    $this -> dbPassword = $dbPassword;
-    $this -> dbName = $dbName;
-    $this -> dsn = "mysql://" . ($this->dbUser) . ":" . ($this->dbPassword) . "@" . ($this->dbHost) . "/" . ($this->dbName) ;
-    $connected = 0;
-    $this -> startTime = array();
-    $this -> endTime = array();
+    $this->dbHost = $dbHost;
+    $this->dbUser = $dbUser;
+    $this->dbPassword = $dbPassword;
+    $this->dbName = $dbName;
+    $this->dsn = "mysql://" . ($this->dbUser) . ":" . ($this->dbPassword) . "@" . ($this->dbHost) . "/" . ($this->dbName) ;
+    $this->connected = 0;
+    $this->startTime = array();
+    $this->endTime = array();
   }
 
   function dump()
@@ -110,29 +110,27 @@ class Conference {
   // Initialization functions
   //
 
-  function connect()
-    {
-      if ($this -> connected == 0) {
-	if ( !IsSet($this->dsn) ) {
-	  $this->errorMsg("Package misconfigured: dsn is not set");
-	}
+  function connect() {
+      if (!$this->connected) {
+	  if (!IsSet($this->dsn)) {
+	      $this->errorMsg("Package misconfigured: dsn is not set");
+	  }
 
-	$this->DB = DB::connect($this->dsn);
+	  $this->DB = DB::connect($this->dsn);
 
-	if (DB::isError($this->DB)) {
-	  $this->errorMsg("Unable to connect to database");
-	  die ($this->DB->getMessage());
-	}
+	  if (DB::isError($this->DB)) {
+	      $this->errorMsg("Unable to connect to database");
+	      die($this->DB->getMessage());
+	  }
 
-	$this -> updateImportantDates();
+	  $this->connected = 1;
+	  $this->updateImportantDates();
       }
-      $this -> connected = 1;
-    }
+  }
 
-  function updateImportantDates()
-    {
-      $this -> startTime = array();
-      $this -> endTime = array();
+  function updateImportantDates() {
+      $this->startTime = array();
+      $this->endTime = array();
       //
       // Suck in the start/end dates
       //
@@ -156,19 +154,21 @@ class Conference {
       }	
     }
 
-  function q($query)
-    {
-      return $this->DB -> query($query);
-    }
+  function q($query) {
+      if (!$this->connected)
+	  $this->connect();
+      return $this->DB->query($query);
+  }
 
-  function qe($query)
-    {
-      $result = $this->DB -> query($query);
-       if (DB::isError($result)) {
-	 $this->errorMsg("Query: " . $result -> getMessage());
+  function qe($query) {
+      if (!$this->connected)
+	  $this->connect();
+      $result = $this->DB->query($query);
+      if (DB::isError($result)) {
+	  $this->errorMsg("Query: " . $result -> getMessage());
       }
       return $result;
-    }
+  }
 
   //
   // Return the number of papers submitted by an author.
@@ -494,8 +494,8 @@ class Conference {
   //
   function validDeadline($what)
     {
-      if ( IsSet($this->startTime[$what]) &&
-	   IsSet($this->endTime[$what]) ) {
+      if (IsSet($this->startTime[$what]) &&
+	  IsSet($this->endTime[$what]) ) {
 	return 1;
       } else {
 	return 0;
@@ -503,62 +503,34 @@ class Conference {
     }
 
   //
-  // 'default' is returned in the time is not
-  // set OR if the time value was specified as zero
+  // 'default' is returned in the time is not set
+  // OR if the time value was specified as zero
   //
-  function validTimeFor($what, $default)
-    {
-      $start = $this -> startTime[$what];
-      $end = $this -> endTime[$what];
-      if ( !IsSet($start) || !IsSet($end) ) {
-	return $default;
-      }
+  function validTimeFor($what, $default) {
+      if (!isset($this->startTime[$what]))
+	  return $default;
+      $start = $this->startTime[$what];
+      $end = $this->endTime[$what];
+      if ($start <= 0)
+	  return $default;
 
       $now = time();
-
-      if (IsSet($end) ) {
-	if ( $end > 0 && $now > $end) {
-	  //
-	  // To late, not allowed
-	  //
-	  return $default;
-	} else {
-	  if ( IsSet($start) ) {
-	    return $now >= $start;
-	  } else {
-	    //
-	    // No start specified, so OK
-	    return 1;
-	  }
-	}
-      }
-      
-      if (IsSet($start)) {
-	//
-	// Only worry about open-ended events - previous
-	// case handled events with an end time
-	//
-	if ( $start > 0 ) {
-	  return $now >= $start;
-	} else {
-	  return $default;
-	}
-      }
-      
-      return 0;
-    }
-
-  function go($url) {
-    header("Location: $url");
-    echo "<html>";
-    echo "<body> <p> You should not be here. ";
-    echo "You need to <a href=\"$url\"> login </a> </p> </body>";
-    echo "</html>";
-    exit();
+      if ($now < $start || (IsSet($end) && $end > 0 && $now > $end))
+	  return 0;
+      else
+	  return 1;
   }
 
-  function goIfInvalidActivity($what,$url)
-    {
+  function go($url) {
+      header("Location: $url");
+      echo "<html>";
+      echo "<body> <p> You should not be here. ";
+      echo "You need to <a href=\"$url\"> login </a> </p> </body>";
+      echo "</html>";
+      exit();
+  }
+
+  function goIfInvalidActivity($what,$url) {
       //
       // Hack to avoid modifying lots of files
       //
@@ -574,8 +546,7 @@ class Conference {
   // Paper storage
   //
 
-  function storePaper($uploadedFileName, $mimetype, $paperId)
-    {
+  function storePaper($uploadedFileName, $mimetype, $paperId) {
       if (!IsSet($uploadedFileName)
 	  || $uploadedFileName == "none" || $uploadedFileName == "") {
 	$mimetype="application/txt";
@@ -696,177 +667,152 @@ class Conference {
   //
   // Message routines
   //
-  function msg($text,$color)
-    {
-	echo "<TABLE BORDER=0 BGCOLOR=#000000 CELLSPACING=2 CELLPADDING=1 WIDTH=85% align=center>\n";
-	print "<tr> <td>\n";
-	echo "<TABLE BORDER=0 BGCOLOR=$color CELLSPACING=0 CELLPADDING=1  WIDTH=100%  align=center>\n";
-	print "<tr> <td>\n";
-      echo "<b>$text</b>";
-      echo "  </td>  </tr> \n";
-      echo "  </table>\n";
-      echo "  </td>  </tr> \n";
-      echo "  </table><br>\n";
-    }
+  function msg($text, $type) {
+      echo "<div class='", $type, "'>", $text, "</div>\n";
+  }
 
-  function infoMsg($text)
-    {
-      $this -> msg($text, $this -> infoColor);
-    }
+  function infoMsg($text) {
+      $this->msg($text, 'info');
+  }
 
-  function warnMsg($text)
-    {
-      $this -> msg($text, $this -> warnColor);
-    }
+  function warnMsg($text) {
+      $this->msg($text, 'warning');
+  }
 
-  function confirmMsg($text)
-    {
-      $this -> msg($text, $this -> confirmColor);
-    }
+  function confirmMsg($text) {
+      $this->msg($text, 'confirm');
+  }
 
-  function errorMsg($text)
-    {
-      $this -> msg($text, $this -> errorColor);
-    }
+  function errorMsg($text) {
+      $this->msg($text, 'error');
+  }
 
   //
   // Conference header, footer
   //
-  function header($title)
-    {
+  function header($title) {
+      global $ConfSiteBase;
+      
       //      echo '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">';
       echo '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">';
-      echo "<head> <title> $title </title>\n";
+      echo "<html>\n";
+      echo "<head> <title>", $title, " - ", $this->shortName, "</title>\n";
 
       echo $this -> theme;
 
-      echo "<table align=center cellspacing=2 cellpadding=1 ";
-	print " width=95% border=0 bgcolor=#000000 >";
-	print "<tr> <td> ";
-      echo "<table align=center border=0 bgcolor=$this->headerBg >\n";
-      echo "<tr> <td align=center width=100% colspan=3> ";
-      echo "<font size=+3> $this->shortName Paper Submission Site </font>";
-      echo "</td> </tr>\n";
+      echo "</head><body>\n";
+      echo "<div id='header'>\n";
+      echo "  <div id='header_left'>\n";
+      echo "    <div id='header_conference'><a href='",
+	  $ConfSiteBase, "index.php'>", $this->shortName,
+	  " Submissions</a></div>\n";
+      echo "    <h1>", $title, "</h1>\n";
+      echo "  </div>\n";
+      echo "  <div id='header_links'>\n";
+      if ($_SESSION["Me"]->valid()) {
+	  echo "    <div id='header_user'><strong>", $_SESSION["Me"]->email, "</strong> &nbsp;|&nbsp; <a href='", $ConfSiteBase, "All/Logout.php'>Logout</a></div>\n";
+      }
+      echo "    <div id='header_time'>", date ("l j M Y g:i:sa T"), "</div>\n";
+      echo "    <div id='header_public'><a href='", $this->conferenceSite, "'>", $this->shortName, " Public Site</a></div>\n";
+      //$this->textButton("Go To $this->shortName Site", $this->conferenceSite);
+      //$this->textButton("Go To $this->shortName Submissions", $ConfSiteBase . "index.php");
+      print "  </div>\n";
+      print "  <div id='header_last'></div>\n</div>\n";
+  }
 
-      echo "<tr>";
-      echo "<td align=left width=15%>";
-      $this->textButton("Go To $this->shortName Site", $this->conferenceSite);
-      echo "</td>";
-      echo "<td width=70% align=center valign=top> ";
-      echo "<font size=+2> $title </font>";
-      echo "</td>";
-      echo "<td align=right width=15%>";
-      $this->textButton("Go To $this->shortName Submissions",
-			"$this->paperSite/index.php");
-      echo "</td>";
-      echo "</tr>\n";
-      echo "<tr> <td colspan=3 align=center>";
-      echo "<font size=+1 color=red>";
-      print "It is currently ";
-      print date ("l j M Y g:i:sa T");
-      echo "</font>";
-      echo "</td> </tr>\n";
-      echo "</table>\n";
-      echo "</td> </tr>\n</table>\n";
-      
-      echo "</head>\n";
-      print "<br>";
-    }
+  function footer() {
+      global $ConfSiteBase;
+      //
+      // Output standard footer - button to go to main submission
+      // site, button to close & pointer to CRP at sourceforge
+      //
+      echo "<div id='footer'>\n";
+      echo "  <div id='footer_left'>\n";
+      echo "    <div id='footer_conference'><a href='", $ConfSiteBase, "index.php'>", $this->shortName, " Submissions Home</a></div>\n";
+      if ($_SESSION["Me"]->valid())
+	  echo "    <div id='footer_logout'><a href='", $ConfSiteBase, "All/Logout.php'>Logout</a></div>\n";
+      echo "  </div>\n";
+      echo "  <div id='footer_right'>\n";
+      echo "    <div id='footer_crp'><a href='http://crp.sourceforge.net/'>CRP</a> Conference Management Software</div>\n";
+      echo "  </div><div id='footer_last'></div></div>\n";
+      //print "<hr>";
+      //print "<table align=center width=50%>";
+      //print "<tr> <td align=left> ";
+      //$this->textButton("Goto Main Index",
+      //"$this->paperSite/index.php");
+      //print "</td> <td align=right>";
+      //print "<SCRIPT type=\"text/javascript\">";
+      //print "function footerCloseMe() {";
+      //print "if (window.opener) window.opener.focus();";
+      //print "window.close();";
+      //print "return false;}";
+      //print "</SCRIPT>";
+      //print "<form method=post action=$_SERVER[PHP_SELF]>\n";
+      //print "<input type=submit onClick=footerCloseMe() value=\"Close Window\">";
+      //print "<input type=submit onClick=\"javascript:window.close()\" value=\"Close Window\">";
+      //print "</form>";
+      //print "</td> </tr>";
+      //print "</table>";
+      //print "<h5>";
+      //print "<a href=\"http://crp.sourceforge.net\"> Conference Review Package -- Copyright © 2001&nbsp; </a><br>";
+      //print "All rights reserved.<br>";
+      //print "</h5>";
+  }
 
-  function footer()
-    {
-	//
-	// Output standard footer - button to go to main submission
-	// site, button to close & pointer to CRP at sourceforge
-	//
-	print "<hr>";
-	print "<table align=center width=50%>";
-	print "<tr> <td align=left> ";
-	$this->textButton("Goto Main Index",
-			  "$this->paperSite/index.php");
-	print "</td> <td align=right>";
-	//print "<SCRIPT type=\"text/javascript\">";
-	//print "function footerCloseMe() {";
-	//print "if (window.opener) window.opener.focus();";
-	//print "window.close();";
-	//print "return false;}";
-	//print "</SCRIPT>";
-	print "<form method=post action=$_SERVER[PHP_SELF]>\n";
-	//print "<input type=submit onClick=footerCloseMe() value=\"Close Window\">";
-	print "<input type=submit onClick=\"javascript:window.close()\" value=\"Close Window\">";
-	print "</form>";
-	print "</td> </tr>";
-	print "</table>";
-	print "<h5>";
-	print "<a href=\"http://crp.sourceforge.net\"> Conference Review Package -- Copyright © 2001&nbsp; </a><br>";
-	print "All rights reserved.<br>";
-	print "</h5>";
-    }
+  function mkTextButton($text, $url, $extra="") {
+      return "<form method=\"POST\" action=\"$url\">"
+	  . "<input type=\"submit\" value=\"$text\" name=\"textButton\" />"
+	  . $extra
+	  . "</form>";
+  }
 
-  function mkTextButton($text, $url, $extra="")
-    {
-      return "<FORM method=\"POST\" action=\"$url\">"
-	. "<input type=\"submit\" value=\"$text\" name=\"textButton\">"
-	. $extra
-	. "</FORM>";
-    }
+  function mkTextButtonPopup($text, $url, $extra="") {
+      return "<form method=\"POST\" action=\"$url\" target=_blank>"
+	  . "<input type=\"submit\" value=\"$text\" name=\"textButton\" />"
+	  . $extra
+	  . "</form>";
+  }
 
-  function mkTextButtonPopup($text, $url, $extra="")
-    {
-      return "<FORM method=\"POST\" action=\"$url\" target=_blank>"
-	. "<input type=\"submit\" value=\"$text\" name=\"textButton\">"
-	. $extra
-	. "</FORM>";
-    }
-
-  function textButton($text, $url, $extra="")
-    {
+  function textButton($text, $url, $extra="") {
       print $this->mkTextButton($text, $url, $extra);
-    }
+  }
 
-  function textButtonPopup($text, $url, $extra="")
-    {
+  function textButtonPopup($text, $url, $extra="") {
       print $this->mkTextButtonPopup($text, $url, $extra);
-    }
+  }
 
-
-  function linkWithPaperId($text, $url, $paperId)
-    {
+  function linkWithPaperId($text, $url, $paperId) {
       print "<a href=\"$url?paperId=$paperId\">" . $text . "</a>";
       //      $this->textButton($text, $url,
       //		 $this->mkHiddenVar("paperId", $paperId)
       //		 );
-    }
+  }
 
-  function buttonWithPaperId($text, $url, $paperId)
-    {
-            $this->textButton($text, $url,
-      		 $this->mkHiddenVar("paperId", $paperId)
-      		 );
-    }
+  function buttonWithPaperId($text, $url, $paperId) {
+      $this->textButton($text, $url,
+			$this->mkHiddenVar("paperId", $paperId)
+			);
+  }
 
   //
   // Functions that make use of the javascript inf confJavaScript.inc
   //
-  function popupWindow($label,$text)
-    {
+  function popupWindow($label, $text) {
       $target="$this->paperSite/genericPopup.php";
       $message=urlencode($text);
 
       print "<script type\"text/javascript\">";
       print "popup(\"$target?popupMessage=$message\", \"$label\");";
       print "</script>";
-    }
+  }
 
-  function popupWarning($text)
-    {
+  function popupWarning($text) {
       $this->popupWindow("Warning",
-		  "<center> <h1> <big> Warning </big> </h1> </center>"
-		  . "<p> $text </p>");
-    }
+			 "<center> <h1> <big> Warning </big> </h1> </center>"
+			 . "<p> $text </p>");
+  }
 
-  function taskHeader($what, $span)
-    {
+  function taskHeader($what, $span) {
       if ( !IsSet($span) ) {
 	$span = "100";
       }
@@ -875,18 +821,17 @@ class Conference {
       print "<tr> <td align=center width=100%>\n";
       print "<font size=+2 color=white> $what </font>\n";
       print "</td> </tr> </table>\n";
-    }
-
-  function alternatingContrast($i) {
-    if ($i % 2 == 0) {
-      return $this->contrastColorOne;
-    } else {
-      return $this->contrastColorTwo;
-    }
   }
 
-  function downloadPaper($paperId)
-    {
+  function alternatingContrast($i) {
+      if ($i % 2 == 0) {
+	  return $this->contrastColorOne;
+      } else {
+	  return $this->contrastColorTwo;
+      }
+  }
+
+  function downloadPaper($paperId) {
       $result = $this->q("SELECT mimetype, paper FROM PaperStorage "
 			 . " WHERE ( PaperStorage.paperId='$paperId' )");
       if ( !DB::isError($result) ) {
@@ -942,8 +887,7 @@ class Conference {
       }
     }
 
-  function makeDownloadPath($paperId, $mimetype)
-    {
+  function makeDownloadPath($paperId, $mimetype) {
       $ext = $this->getFileExtension($mimetype);
       //
       // This mechanisms (using /GetPaper/) appears to have
@@ -951,13 +895,13 @@ class Conference {
       // The other mechanism appears to work
       //
       if ( 0 ) {
-	$path = $this->paperSite . "/Download/GetPaper/" . 
-	  $this->paperPrefix . "-$paperId." . $ext;
+	  $path = $this->paperSite . "/Download/GetPaper/" . 
+	      $this->paperPrefix . "-$paperId." . $ext;
       } else {
-	$path = $this->paperSite . "/Download/GetPaper.php?paperId=$paperId";
+	  $path = $this->paperSite . "/Download/GetPaper.php?paperId=$paperId";
       }
       return $path;
-    }
+  }
 
   
   function composeReviewerRequest($request, $who, $email, $paperList)

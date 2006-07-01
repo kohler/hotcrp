@@ -3,48 +3,47 @@
 //
 // Database configuration information
 //
-$dbHost="127.0.0.1";
-$dbUser="HotNetsV";
-$dbPassword ="HotNetsV";
-$dbName="HotNetsV";
+$dbHost = "127.0.0.1";
+$dbUser = "HotNetsV";
+$dbPassword = "HotNetsV";
+$dbName = "HotNetsV";
 
 //
 // if setupPhase == 1, anyone who logs in has chair powers.
 //
-$Conf = new Conference ( $dbUser, $dbPassword, $dbHost, $dbName );
-$Conf -> setupPhase = 0; 
+$Conf = new Conference($dbUser, $dbPassword, $dbHost, $dbName);
+$Conf->setupPhase = 0;
+
 //
 // Conference names
-//
-
 //
 // You need a unique session name to distinguish conference sessions
 // running on the same server. DO NOT PUT SPACES IN THE SESSION NAME!!
 //
-$Conf -> sessionName="HotNetsV";
-$Conf -> shortName="HotNets V";
-$Conf -> longName="HotNets V";
+$Conf->sessionName = "HotNetsV";
+$Conf->shortName = "HotNets V";
+$Conf->longName = "HotNets V";
 
-// allowed paper formats: allow PDF and PS for now
-$Conf -> allowPDF = 1;
-$Conf -> allowPS = 0;
+// allowed paper formats
+$Conf->allowPDF = 1;
+$Conf->allowPS = 0;
 
 //
 // OPTION: can authors specify preferred reviewers?
 //
-$Conf -> optionAllowReviewerPreferences = 1;
+$Conf->optionAllowReviewerPreferences = 1;
 //
 // OPTION: can PC members see reviewer identify during PC meeting?
 //
-$Conf -> optionLetPCSeeReviewers = 1;
+$Conf->optionLetPCSeeReviewers = 1;
 //
 // Can PC see unfinished reviews in review form during PC meeting?
 //
-$Conf -> optionLetPCSeeUnfinishedReviews = 1;
+$Conf->optionLetPCSeeUnfinishedReviews = 1;
 //
 // Can PC see author information in review form during PC meeting?
 //
-$Conf -> optionLetPCSeeAuthorInfo = 1;
+$Conf->optionLetPCSeeAuthorInfo = 0;
 
 //
 // The name of this site. You can conditionalize this based on
@@ -59,7 +58,7 @@ $hostname = $posixinfo['nodename'];
 // This is the location of the hypothetical conference
 // the test server
 //
-$Conf -> paperSite="http://www.read.cs.ucla.edu/hotnets5";
+$Conf->paperSite = "http://www.read.cs.ucla.edu/hotnets5";
 
 //
 // The conference site (i.e. CFP, registration)
@@ -74,7 +73,7 @@ $Conf -> paperPrefix="hotnets5-paper";
 //
 // A CSS, if you want one
 //
-$Conf -> theme ="";
+$Conf -> theme = "<link rel='stylesheet' type='text/css' href='" . $ConfSiteBase . "Style/base.css' />\n";
 
 //
 // This is the person advertised as the appropriate person

@@ -2,3 +2,5 @@
 ForceType application/x-httpd-php
 </Files>
 
+php_flag magic_quotes_gpc off
+

@@ -10,3 +10,5 @@ deny from all
 order deny,allow
 deny from all
 </Limit>
+
+php_flag magic_quotes_gpc off

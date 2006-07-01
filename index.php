@@ -1,54 +1,50 @@
 <?php
-
 include('Code/confHeader.inc');
 
 $testCookieStatus = 0;
-
-if (isset($_COOKIE["myTstCky"]) && ($_COOKIE["myTstCky"] == "ChocChip")) {
-  $testCookieStatus = 1;
+if (isset($_COOKIE["CRPTestCookie"]) && $_COOKIE["CRPTestCookie"] == "ChocChip") {
+    $testCookieStatus = 1;
 }
-if (!isset($_GET[CCHK])) {
-  setcookie("myTstCky", "ChocChip");
-  header("Location: http://" . $_SERVER[HTTP_HOST] . $_SERVER[PHP_SELF] . "?CCHK=1");
-  exit;
+
+if (!isset($_GET["cc"])) {
+    setcookie("CRPTestCookie", "ChocChip");
+    header("Location: http://" . $_SERVER["HTTP_HOST"] . $_SERVER["PHP_SELF"] . "?cc=1");
+    exit;
 }
 if (!$testCookieStatus) {
-  $here = dirname($_SERVER[SCRIPT_NAME]);
-  header("Location: http://" . $_SERVER[HTTP_HOST] . "$here/YouMustAllowCookies.php");
+    $here = dirname($_SERVER["SCRIPT_NAME"]);
+    header("Location: http://" . $_SERVER["HTTP_HOST"] . "$here/YouMustAllowCookies.php");
 }
 
-if (!IsSet($_SESSION["Me"]) || ! $_SESSION["Me"] -> valid() ) {
-  go("All/login.php");
+if (!IsSet($_SESSION["Me"]) || !$_SESSION["Me"]->valid()) {
+    go("All/login.php");
 }
 
-$Conf -> connect();
+$Conf->connect();
 
-if ( $_SESSION["AskedYouToUpdateContactInfo"]!=1
-     && $_SESSION["Me"] -> valid()
-     && ($_SESSION["Me"] -> firstName == "" || $_SESSION["Me"] -> lastName == "" ) )
-{
-  $_SESSION[AskedYouToUpdateContactInfo] = 1;
-  $here = dirname($_SERVER[SCRIPT_NAME]);
-
-  $_SESSION["Me"] -> goAlert("All/UpdateContactInfo.php",
-		 "Please take a second to enter your contact information");
+if ($_SESSION["AskedYouToUpdateContactInfo"] != 1
+    && $_SESSION["Me"]->valid()
+    && ($_SESSION["Me"]->firstName == ""
+	|| $_SESSION["Me"]->lastName == "")) {
+    $_SESSION["AskedYouToUpdateContactInfo"] = 1;
+    $here = dirname($_SERVER["SCRIPT_NAME"]);
+    
+    $_SESSION["Me"]->goAlert("All/UpdateContactInfo.php",
+			     "Please take a second to enter your contact information");
 }
 
 //
 // Check for updated menu
 //
-if (IsSet($_REQUEST[setRole])) {
-  $_SESSEST["WhichTaskView"] = $_REQUEST[setRole];
+if (IsSet($_REQUEST["setRole"])) {
+  $_SESSION["WhichTaskView"] = $_REQUEST["setRole"];
 }
-
 
 ?>
 
 <html>
-
 <?php $Conf->header("Welcome") ?>
-
-<body>
+<div id='body'>
 
 <?php
 if (! $_SESSION["Me"] -> valid() ) {
@@ -66,12 +62,6 @@ if (! $_SESSION["Me"] -> valid() ) {
   exit();
 }
 ?>
-
-<center>
-<?php
-  $Conf->textButton("Logout", "All/Logout.php");
-?>
-</center>
 
 <table align=center width=80%>
 <tr>
@@ -93,7 +83,7 @@ $_SESSION["Me"] -> updateContactRoleInfo($Conf);
 function taskbutton($name,$label)
 {
   global $Conf;
-  if ($_SESSEST["WhichTaskView"] == $name ) {
+  if ($_SESSION["WhichTaskView"] == $name ) {
    $color = $Conf->taskHeaderColor;
   } else {
    $color = $Conf->contrastColorTwo;
@@ -121,19 +111,19 @@ function taskbutton($name,$label)
 
 <?
 
-if ($_SESSEST["WhichTaskView"] == "All") {
+if ($_SESSION["WhichTaskView"] == "All") {
   $AllPrefix="All/";
   include("Tasks-All.inc");
-} else if ($_SESSEST["WhichTaskView"] == "Author") {
+} else if ($_SESSION["WhichTaskView"] == "Author") {
   $AuthorPrefix="Author/";
   include("Tasks-Author.inc");
-} else if ($_SESSEST["WhichTaskView"] == "Reviewer") {
+} else if ($_SESSION["WhichTaskView"] == "Reviewer") {
    include("Tasks-Reviewer.inc");
-} else if ($_SESSEST["WhichTaskView"] == "PC") {
+} else if ($_SESSION["WhichTaskView"] == "PC") {
   include("Tasks-PC.inc");
-} else if ($_SESSEST["WhichTaskView"] == "Chair") {
+} else if ($_SESSION["WhichTaskView"] == "Chair") {
   include("Tasks-Chair.inc");
-} else if ($_SESSEST["WhichTaskView"] == "Assistant") {
+} else if ($_SESSION["WhichTaskView"] == "Assistant") {
   include("Tasks-Assistant.inc");
 } else {
   $AllPrefix="All/";
@@ -154,6 +144,7 @@ if (0) {
 
 
 
-</body>
+</div>
 <?php $Conf->footer() ?>
+</body>
 </html>

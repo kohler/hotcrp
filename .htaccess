@@ -3,4 +3,5 @@
 ##
 Options Indexes
 IndexIgnore .htaccess .sh *.inc */.??* *~ *# */HEADER* */README* */_vti*
+php_flag magic_quotes_gpc off
 #CharsetDisable On

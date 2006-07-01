@@ -3,6 +3,10 @@
 // Configuration for a Contact (i.e. someone using the reviewing system)
 //
 
+function sqlqtrim($value) {
+    return mysql_real_escape_string(ltrim(rtrim($value)));
+}
+
 function alert($string = "") {
   print "<script language=javascript>\n";
   print "alert(\"" . addslashes($string).  "\");";
@@ -40,7 +44,6 @@ class Contact {
   var $voicePhoneNumber;
   var $faxPhoneNumber;
   var $password;
-  var $uniquid; // is this used?
   var $note;
 
   //
@@ -114,10 +117,10 @@ class Contact {
       $reviewer = $this->countRequestedReviews() > 0;
     }
 
-    if ($_SESSION["Me"] -> isPc && $Conf->validTimeFor('PCSubmitReview')) {
-      $pcreviews = $this->countPrimaryReviews()
-	+ $this->countSecondaryReviews();
-      $reviewer |= $pcreviews > 0;
+    if ($_SESSION["Me"]->isPC && $Conf->validTimeFor('PCSubmitReview')) {
+	$pcreviews = $this->countPrimaryReviews()
+	    + $this->countSecondaryReviews();
+	$reviewer |= $pcreviews > 0;
     }
     return $reviewer;
   }
@@ -145,7 +148,6 @@ class Contact {
       $this -> voicePhoneNumber = 0;
       $this -> faxPhoneNumber = 0;
       $this -> password = 0;
-      $this -> uniquid = 0;
       $this -> note = 0;
       $this -> papersFinalized = 0;
       $this -> papersSubmitted = 0;
@@ -170,7 +172,6 @@ class Contact {
       echo "voicePhoneNumber = " . $this -> voicePhoneNumber . "<br>";
       echo "faxPhoneNumber = " . $this -> faxPhoneNumber . "<br>";
       echo "password = " . $this -> password . "<br>";
-      echo "uniquid = " . $this -> uniquid . "<br>";
       echo "note = " . $this -> note . "<br>";
       echo "papersFinalized = " . $this -> papersFinalized . "<br>";
       echo "papersSubmitted = " . $this -> papersSubmitted . "<br>";
@@ -182,17 +183,16 @@ class Contact {
     }
 
   function trim() {
-    $this->contactId = ltrim(rtrim( $this->contactId));
-    $this->visits = ltrim(rtrim( $this->visits));
-    $this->firstName = ltrim(rtrim( $this->firstName));
-    $this->lastName = ltrim(rtrim( $this->lastName));
-    $this->email = ltrim(rtrim( $this->email));
-    $this->affiliation = ltrim(rtrim( $this->affiliation));
-    $this->voicePhoneNumber = ltrim(rtrim( $this->voicePhoneNumber));
-    $this->faxPhoneNumber = ltrim(rtrim( $this->faxPhoneNumber));
-    $this->password = ltrim(rtrim( $this->password));
-    $this->uniquid = ltrim(rtrim( $this->uniquid));
-    $this->note = ltrim(rtrim( $this->note));
+      $this->contactId = ltrim(rtrim($this->contactId));
+      $this->visits = ltrim(rtrim($this->visits));
+      $this->firstName = ltrim(rtrim($this->firstName));
+      $this->lastName = ltrim(rtrim($this->lastName));
+      $this->email = ltrim(rtrim($this->email));
+      $this->affiliation = ltrim(rtrim($this->affiliation));
+      $this->voicePhoneNumber = ltrim(rtrim($this->voicePhoneNumber));
+      $this->faxPhoneNumber = ltrim(rtrim($this->faxPhoneNumber));
+      $this->password = ltrim(rtrim($this->password));
+      $this->note = ltrim(rtrim($this->note));
   }
 
   function go($url) {
@@ -278,71 +278,54 @@ class Contact {
       return $conf->qe($query);
     }
 
-  function addToDB($conf)
-    {
-      $this -> trim();
-      $query = "INSERT into ContactInfo SET "
-	. " firstName='$this->firstName', lastname='$this->lastName', "
-	. "email='$this->email', "
-	. "affiliation='$this->affiliation', "
-	. "voicePhoneNumber='$this->voicePhoneNumber', "
-	. "faxPhoneNumber='$this->faxPhoneNumber', "
-	. "password='$this->password', "
-	. "uniquid='$this->uniquid' ";
-
-      return $conf->qe($query);
-    }
-
-  function initialize($firstName, $lastName, $email, $affiliation,
-		      $phone, $fax)
-    {
-      $this -> firstName = $firstName;
-      $this -> lastName = $lastName;
-      $this -> email = $email;
-      $this -> affiliation = $affiliation;
-      $this -> voicePhoneNumber = $phone;
-      $this -> faxPhoneNumber = $fax;
-      $this -> uniquid= md5(uniqid(rand()));
-      $this -> password= $this->generatePassword(10);
-
-      $this -> trim();
-    }
+  //function initialize($firstName, $lastName, $email, $affiliation,
+  //		      $phone, $fax)
+  function initialize($email, $conf) {
+      $this->email = ltrim(rtrim($email));
+      $this->password = $this->generatePassword(10);
+      return $conf->qe(sprintf("INSERT INTO ContactInfo SET email='%s', password='%s'", sqlqtrim($this->email), $this->password));
+  }
+  //$this -> firstName = $firstName;
+  //$this -> lastName = $lastName;
+  //$this -> email = $email;
+  //$this -> affiliation = $affiliation;
+  //$this -> voicePhoneNumber = $phone;
+  //$this -> faxPhoneNumber = $fax;
+  //$this -> password= $this->generatePassword(10);
+  //$this -> trim();
+  //}
 
   function updateFromQuery($query, $conf) {
-    $email=ltrim(rtrim($email));
-    $result = $conf->qe($query);
-    if ( !DB::isError($result) && $result->numRows() >= 1 ) {
-      $fromdb = $result->fetchRow(DB_FETCHMODE_OBJECT);
-      $this->contactId = $fromdb -> contactId;
-      $this->visits = $fromdb -> visits;
-      $this->firstName = $fromdb -> firstName;
-      $this->lastName = $fromdb -> lastName;
-      $this->email = $fromdb -> email;
-      $this->affiliation = $fromdb -> affiliation;
-      $this->voicePhoneNumber = $fromdb -> voicePhoneNumber;
-      $this->faxPhoneNumber = $fromdb -> faxPhoneNumber;
-      $this->password = $fromdb -> password;
-      $this->uniquid = $fromdb -> uniquid;
-      $this->note = $fromdb -> note;
+      $email=ltrim(rtrim($email));
+      $result = $conf->qe($query);
+      if (!DB::isError($result) && $result->numRows() >= 1) {
+	  $fromdb = $result->fetchRow(DB_FETCHMODE_OBJECT);
+	  $this->contactId = $fromdb->contactId;
+	  $this->visits = $fromdb->visits;
+	  $this->firstName = $fromdb->firstName;
+	  $this->lastName = $fromdb->lastName;
+	  $this->email = $fromdb->email;
+	  $this->affiliation = $fromdb->affiliation;
+	  $this->voicePhoneNumber = $fromdb->voicePhoneNumber;
+	  $this->faxPhoneNumber = $fromdb->faxPhoneNumber;
+	  $this->password = $fromdb->password;
+	  $this->note = $fromdb->note;
 
-      $this->shortConfName = $conf->shortName;
+	  $this->shortConfName = $conf->shortName;
 
-      $this -> trim();
-    } else {
-      //
-      // Not found - zero out the context
-      //
-      $this -> invalidate();
-    }
+	  $this->trim();
+      } else {
+	  // Not found - zero out the context
+	  $this->invalidate();
+      }
   }
 
   function lookupByEmail($email, $conf) {
-    $email=ltrim(rtrim($email));
-    $this->updateFromQuery("SELECT * FROM ContactInfo WHERE email='$email'", $conf);
+      $this->updateFromQuery(sprintf("SELECT * FROM ContactInfo WHERE email='%s'", sqlqtrim($email)), $conf);
   }
 
   function lookupById($contactId, $conf) {
-    $this->updateFromQuery("SELECT * FROM ContactInfo WHERE contactId='$contactId'", $conf);
+      $this->updateFromQuery("SELECT * FROM ContactInfo WHERE contactId='$contactId'", $conf);
   }
 
 

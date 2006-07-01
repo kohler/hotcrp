@@ -1,20 +1,7 @@
 <?php 
-include('../Code/confHeader.inc');
-$_SESSION["Me"] -> invalidate();
-// $_SESSION["Me"] -> goIfInvalid("../index.php");
+require_once('../Code/confHeader.inc');
+$_SESSION["Me"]->invalidate();
+$LoginType = "Logout";
+$LoginConfirm = "You have been logged out, but you can log in again if you'd like.";
+include('login.php');
 ?>
-
-<html>
-
-<?php  $Conf->header("Logout") ?>
-
-<body>
-<p>
-You are now logged out.
-Click <a href="login.php"> here </a> to login
-as another user
-</p>
-
-<?php  $Conf->footer() ?>
-</body>
-</html>

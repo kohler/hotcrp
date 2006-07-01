@@ -43,32 +43,32 @@ if ( $Conf -> validDeadline('authorViewReviews') ) {
   echo "</li>";
 }
 
-if ( $Conf -> validDeadline('authorRespondToReviews') ) {
+if ($Conf->validDeadline('authorRespondToReviews') ) {
   echo "<li>";
   echo "Authors can respond to the reviews of their papers ";
   echo $Conf->printTimeRange('authorRespondToReviews');
   echo "</li>";
 }
 
-if ( $Conf -> validDeadline('reviewerSubmitReview') ) {
+if ($Conf->validDeadline('reviewerSubmitReview') ) {
   echo "<li>";
   echo "Reviewers need to submit their reviews ";
   echo $Conf->printTimeRange('reviewerSubmitReview');
   echo "</li>";
 }
 
-if ( $Conf -> validDeadline('PCSubmitReview') ) {
-  echo "<li>";
-  echo "Program committee members need to complete reviews ";
-  echo $Conf->printTimeRange('reviewerSubmitReview');
-  echo "</li>";
+if ($Conf->validDeadline('PCSubmitReview') ) {
+    echo "<li>";
+    echo "Program committee members need to complete reviews ";
+    echo $Conf->printTimeRange('reviewerSubmitReview');
+    echo "</li>";
 }
 
-if ( $Conf -> validDeadline('PCViewAllPapers') ) {
-  echo "<li>";
-  echo "Program committee members can see reviews for all papers ";
-  echo $Conf->printTimeRange('PCViewAllPapers');
-  echo "</li>";
+if ($Conf->validDeadline('PCViewAllPapers')) {
+    echo "<li>";
+    echo "Program committee members can see reviews for all papers ";
+    echo $Conf->printTimeRange('PCViewAllPapers');
+    echo "</li>";
 }
 
 ?>
