@@ -10,6 +10,12 @@
 $posixinfo = posix_uname();
 $hostname = $posixinfo['nodename'];
 
+define("ROLE_EXISTS", 0);
+define("ROLE_AUTHOR", 1);
+define("ROLE_PC", 2);
+define("ROLE_ASSISTANT", 3);
+define("ROLE_CHAIR", 4);
+
 //
 // Disable caching
 //
@@ -106,9 +112,9 @@ session_register('SeeAuthorInfo');
 //
 //session_register('ShowPCPapers');
 
-if (!IsSet($_SESSION['Me'])) {
-  $_SESSION['Me'] = new Contact;
-}
+if (!IsSet($_SESSION['Me']))
+    $_SESSION['Me'] = new Contact;
+$_SESSION['Me']->validated = 0;
 
 if (!IsSet($_SESSION['WhichTaskView'])) {
   $_SESSION['WhichTaskView'] = 'All';

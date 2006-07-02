@@ -28,18 +28,30 @@ CREATE TABLE ActionLog (
 
 
 #
+# Table structure for table 'Roles'
+#
+
+drop table if exists Roles;
+CREATE TABLE Roles (
+  contactId int(11) NOT NULL,
+  role int(3) NOT NULL,
+  secondaryId int(11) NOT NULL,
+  KEY contactId (contactId)
+) TYPE=MyISAM;
+
+#
+# Dumping data for table 'Roles'
+#
+
+#
 # Table structure for table 'Chair'
 #
 
 drop table if exists Chair;
-CREATE TABLE Chair (
-  chairId int(11) NOT NULL auto_increment,
-  contactId int(11) default NULL,
-  PRIMARY KEY  (chairId),
-  UNIQUE KEY chairId (chairId),
-  KEY chairId_2 (chairId),
-  KEY contactId (contactId)
-) TYPE=MyISAM;
+#CREATE TABLE Chair (
+#  contactId int(11) NOT NULL,
+#  UNIQUE KEY contactId (contactId)
+#) TYPE=MyISAM;
 
 #
 # Dumping data for table 'Chair'
@@ -51,14 +63,10 @@ CREATE TABLE Chair (
 #
 
 drop table if exists ChairAssistant;
-CREATE TABLE ChairAssistant (
-  chairAssistantId int(11) NOT NULL auto_increment,
-  contactId int(11) default NULL,
-  PRIMARY KEY  (chairAssistantId),
-  UNIQUE KEY chairAssistantId (chairAssistantId),
-  KEY chairAssistantId_2 (chairAssistantId),
-  KEY contactId (contactId)
-) TYPE=MyISAM;
+#CREATE TABLE ChairAssistant (
+#  contactId int(11) NOT NULL,
+#  UNIQUE KEY contactId (contactId)
+#) TYPE=MyISAM;
 
 #
 # Dumping data for table 'ChairAssistant'
@@ -82,7 +90,7 @@ CREATE TABLE ContactInfo (
   password varchar(20) default NULL,
   note varchar(200) default NULL,
   collaborators text,
-  PRIMARY KEY  (contactId),
+  PRIMARY KEY (contactId),
   UNIQUE KEY contactId (contactId),
   UNIQUE KEY email (email),
   KEY email_2 (email),
@@ -108,7 +116,7 @@ CREATE TABLE ImportantDates (
   name char(40) NOT NULL default '',
   start timestamp(14) NOT NULL,
   end timestamp(14) NOT NULL,
-  PRIMARY KEY  (id)
+  PRIMARY KEY (id)
 ) TYPE=MyISAM;
 
 #
@@ -121,14 +129,10 @@ CREATE TABLE ImportantDates (
 #
 
 drop table if exists PCMember;
-CREATE TABLE PCMember (
-  pcId int(11) NOT NULL auto_increment,
-  contactId int(11) default NULL,
-  PRIMARY KEY  (pcId),
-  UNIQUE KEY pcId (pcId),
-  KEY pcId_2 (pcId),
-  KEY contactId (contactId)
-) TYPE=MyISAM;
+#CREATE TABLE PCMember (
+#  contactId int(11) NOT NULL,
+#  UNIQUE KEY contactId (contactId)
+#) TYPE=MyISAM;
 
 #
 # Dumping data for table 'PCMember'
@@ -156,7 +160,7 @@ CREATE TABLE Paper (
   outcome enum('unspecified','accepted','rejected','acceptedShort') default 'unspecified',
   showReviewsToReviewers tinyint(1) default '0',
   showResponseToReviewers tinyint(1) default '0',
-  PRIMARY KEY  (paperId),
+  PRIMARY KEY (paperId),
   UNIQUE KEY paperId (paperId),
   KEY title (title),
   KEY contactId (contactId),
@@ -447,7 +451,7 @@ CREATE TABLE TopicInterest (
   contactId int(11) default NULL,
   topicId int(11) default NULL,
   interest int(11),
-  PRIMARY KEY  (topicInterestId),
+  PRIMARY KEY (topicInterestId),
   UNIQUE KEY topicInterestId (topicInterestId),
   KEY topicInterestId_2 (topicInterestId),
   KEY contactId (contactId),

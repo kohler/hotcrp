@@ -5,9 +5,9 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid("../");
 $MergeError = "";
 
-function crpmergeone($db, $field, $oldid, $newid) {
+function crpmergeone($table, $field, $oldid, $newid) {
     global $Conf;
-    $result = $Conf->q("update $db set $field=$newid where $field=$oldid");
+    $result = $Conf->q("update $table set $field=$newid where $field=$oldid");
     if (DB::isError($result))
 	$MergeError .= $Conf->dbErrorText($result, "", 0);
 }
@@ -51,8 +51,7 @@ If you suspect something fishy, contact the site administrator at\n\
 	    crpmergeone("Paper", "contactId", $oldid, $newid);
 	    crpmergeone("PaperAuthor", "authorId", $oldid, $newid);
 	    crpmergeone("PaperConflict", "authorId", $oldid, $newid);
-	    crpmergeone("PCMember", "contactId", $oldid, $newid);
-	    crpmergeone("Chair", "contactId", $oldid, $newid);
+	    crpmergeone("Roles", "contactId", $oldid, $newid);
 	    crpmergeone("TopicInterest", "contactId", $oldid, $newid);
 	    crpmergeone("ReviewRequest", "asked", $oldid, $newid);
 	    crpmergeone("ReviewRequest", "requestedBy", $oldid, $newid);

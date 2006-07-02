@@ -61,6 +61,7 @@ class Contact {
   var $isPC;
   var $isChair;
   var $isAssistant;
+  var $validated;
 
   function countRequestedReviews() {
     global $Conf;
@@ -130,9 +131,32 @@ class Contact {
   // Initialization functions
   //
 
-  function valid() {
+  function valid($conf = null) {
       global $Conf;
-      return $this->contactId > 0 && $Conf->shortName == $this->shortConfName;
+      if ($conf == null)
+	  $conf = $Conf;
+      if (!$this->validated && $this->contactId > 0) {
+	  $result = $conf->q("select role from Roles, ContactInfo where Roles.contactId = $this->contactId and ContactInfo.contactId = $this->contactId");
+	  if (DB::isError($result) || $result->numRows() == 0)
+	      $this->invalidate();
+	  else {
+	      $this->isAuthor = $this->isPC = $this->isChair = $this->isAssistant = 0;
+	      while ($row = $result->fetchRow()) {
+		  if ($row == ROLE_AUTHOR)
+		      $this->isAuthor = 1;
+		  if ($row == ROLE_PC)
+		      $this->isPC = 1;
+		  if ($row == ROLE_CHAIR)
+		      $this->isChair = 1;
+		  if ($row == ROLE_ASSISTANT)
+		      $this->isAssistant = $this->isPC = 1;
+	      }
+	      if ($conf->setupPhase)
+		  $this->isChair = 1;
+	      $this->validated = 1;
+	  }
+      }
+      return $this->contactId > 0 && $conf->shortName == $this->shortConfName;
   }
 
   function invalidate() {
@@ -281,7 +305,10 @@ class Contact {
       $result = $conf->q(sprintf("insert into ContactInfo set email='%s', password='%s'", sqlqtrim($this->email), sqlqtrim($this->password)));
       if (DB::isError($result))
 	  return $result;
-      return $this->lookupByEmail($this->email, $conf);
+      $result = $this->lookupByEmail($this->email, $conf);
+      if (DB::isError($result))
+	  return $result;
+      return $conf->q("insert into Roles set contactId=$this->contactId, role=" . ROLE_EXISTS);
   }
 
   function updateFromQuery($query, $conf) {
@@ -344,12 +371,6 @@ class Contact {
   function updateContactRoleInfo($conf) {
       $this->papersSubmitted = $conf->countSubmittedById($this->contactId);
       $this->papersFinalized = $conf->countFinalizedById($this->contactId);
-      $this->isAuthor = ($this->papersSubmitted > 0);
-      $this->isChair = $conf->contactIsChair($this->contactId);
-      $this->isAssistant = $conf->contactIsAssistant($this->contactId);
-      $this->isPC = $conf->contactIsPC($this->contactId) || $this->isAssistant;
-      if ($conf->setupPhase)
-	  $this->isChair = 1;
   }
 
   function amPaperAuthor($paperId, $conf) {

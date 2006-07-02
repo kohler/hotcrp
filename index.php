@@ -20,7 +20,6 @@ if (!IsSet($_SESSION["Me"]) || !$_SESSION["Me"]->valid())
     go("All/login.php");
 
 $Conf->connect();
-
 if (!$_SESSION["Me"]->valid())
     exit;
 
@@ -33,9 +32,8 @@ if ($_SESSION["AskedYouToUpdateContactInfo"] < 2
 //
 // Check for updated menu
 //
-if (IsSet($_REQUEST["setRole"])) {
+if (IsSet($_REQUEST["setRole"]))
     $_SESSION["WhichTaskView"] = $_REQUEST["setRole"];
-}
 
 ?>
 
@@ -86,9 +84,7 @@ function taskbutton($name,$label)
     <table>
     <tr>
       <th>Program&nbsp;committee:</th>
-      <td><a href='Chair/ReviewPC.php'>Add/remove&nbsp;members</a> &mdash;
-	<a href='Chair/ReviewChairs.php'>Add/remove&nbsp;co-chairs</a> &mdash;
-	<a href='Chair/ReviewAssistants.php'>Add/remove&nbsp;assistants</a></td>
+      <td><a href='Chair/ReviewPC.php'>Add/remove&nbsp;members</a></td>
     </tr>
     <tr><td></td>
       <td><a href='Chair/ListPC.php'>See&nbsp;contact&nbsp;information</a> &mdash;

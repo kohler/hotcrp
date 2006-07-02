@@ -138,3 +138,6 @@ table.memberlist th {
 	text-align: left;
 	padding-right: 0.5em;
 }
+td.pc_chairbox, td.pc_assbox {
+	text-align: center;
+}

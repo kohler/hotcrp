@@ -237,74 +237,54 @@ class Conference {
   //
   // Determine roles baased on email address and/or contactId
   //
-  function emailIsPC($email)
-    {
-      $result=$this->q("SELECT PCMember.pcId FROM ContactInfo, PCMember "
-			  . " WHERE ( email='$email' "
-		       . " AND PCMember.contactId = ContactInfo.contactId )");
-      if ( $result && $result -> numRows() > 0 ) {
-	$row = $result->fetchRow();
-	return $row[0];
-      } else {
-	return 0;
-      }
-    }
+  function emailIsPC($email) {
+      $result = $this->q("select Roles.contactId from ContactInfo, Roles where (email='" . mysql_real_escape_string($email) . "' and ContactInfo.contactId = Roles.contactId and role = " . ROLE_PC . ")");
+      if (!DB::isError($result) && $result->numRows() > 0) {
+	  $row = $result->fetchRow();
+	  return $row[0];
+      } else
+	  return 0;
+  }
 
-  function contactIsPC($id)
-    {
-      $result=$this->q("SELECT PCMember.pcId FROM PCMember "
-		       . " WHERE PCMember.contactId=$id");
-      if ( $result && $result -> numRows() > 0 ) {
-	$row = $result->fetchRow();
-	return $row[0];
-      } else {
-	return 0;
-      }
-    }
+  function contactIsPC($id) {
+      $result=$this->q("select contactId from Roles where contactId = $id and role = " . ROLE_PC);
+      if (!DB::isError($result) && $result->numRows() > 0) {
+	  $row = $result->fetchRow();
+	  return $row[0];
+      } else
+	  return 0;
+  }
 
-  function emailIsChair($email)
-    {
+  function emailIsChair($email) {
+      if ($this->setupPhase)
+	  return 1;
+      $result = $this->q("select Roles.contactId FROM ContactInfo, Roles where (email = '" . mysql_real_escape_string($email) . "' and ContactInfo.contactId = Roles.contactId and Roles.role = " . ROLE_CHAIR . ")");
+      if (!DB::isError($result) && $result->numRows() > 0) {
+	  $row = $result->fetchRow();
+	  return $row[0];
+      } else
+	  return 0;
+  }
 
-      if ( $this -> setupPhase ) {
-	return 1;
-      }
-      $result=$this->q("SELECT Chair.pcId FROM ContactInfo, Chair "
-			  . " WHERE ( email='$email' "
-		       . " AND Chair.contactId = ContactInfo.contactId )");
-      if ( $result && $result -> numRows() > 0 ) {
-	$row = $result->fetchRow();
-	return $row[0];
-      } else {
-	return 0;
-      }
-    }
+  function contactIsChair($id) {
+      if ($this->setupPhase)
+	  return 1;
+      $result = $this->q("select contactId from Roles where contactId = $id and role = " . ROLE_CHAIR);
+      if (!DB::isError($result) && $result->numRows() > 0) {
+	  $row = $result->fetchRow();
+	  return $row[0];
+      } else
+	  return 0;
+  }
 
-  function contactIsChair($id)
-    {
-      if ( $this -> setupPhase ) {
-	return 1;
-      }
-      $result=$this->q("SELECT Chair.chairId FROM Chair "
-		       . " WHERE Chair.contactId=$id");
-      if ( $result && $result -> numRows() > 0 ) {
-	$row = $result->fetchRow();
-	return $row[0];
-      } else {
+  function contactIsAssistant($id) {
+      $result = $this->q("select contactId from Roles where contactId = $id and role = " . ROLE_ASSISTANT);
+      if (!DB::isError($result) && $result->numRows() > 0) {
+	  $row = $result->fetchRow();
+	  return $row[0];
+      } else
 	return 0;
-      }
-    }
-
-  function contactIsAssistant($id)
-    {
-      $result=$this->q("SELECT ChairAssistant.chairAssistantId FROM ChairAssistant "
-		       . " WHERE ChairAssistant.contactId=$id");
-      if ( $result && $result -> numRows() > 0 ) {
-	$row = $result->fetchRow();
-	return $row[0];
-      } else {
-	return 0;
-      }
-    }
+  }
 
   //
   // Some paper queries (about paperId's)
@@ -710,7 +690,7 @@ class Conference {
       echo "<html>\n";
       echo "<head> <title>", $title, " - ", $this->shortName, "</title>\n";
 
-      echo $this -> theme;
+      echo $this->theme;
 
       echo "</head><body>\n";
       echo "<div id='header'>\n";
@@ -1454,8 +1434,8 @@ class Conference {
   function allPCConflicts()
     {
        $result=$this->qe("SELECT PaperConflict.paperId "
-			 . " FROM PaperConflict, PCMember"
-			 . " WHERE PaperConflict.authorId=PCMember.contactId ");
+			 . " FROM PaperConflict, Roles"
+			 . " WHERE PaperConflict.authorId=Roles.contactId and Roles.role = " . ROLE_PC);
        $conflicts = array();
        if (!DB::isError($result)) {
 	 while ($row = $result->fetchRow()) {
@@ -1473,8 +1453,8 @@ class Conference {
   function makePCSelector($varName, $selected, $size=10) {
     print "<SELECT name=$varName SINGLE size=$size>\n";
     $query = "SELECT ContactInfo.contactId, firstName, lastName, email "
-      . " FROM ContactInfo, PCMember "
-      . " WHERE (PCMember.contactId=ContactInfo.contactId) "
+      . " FROM ContactInfo, Roles "
+      . " WHERE (Roles.contactId = ContactInfo.contactId and Roles.role = " . ROLE_PC . ") "
       . " ORDER BY lastName, firstName ";
     $result = $this->qe($query);
     if (!DB::isError($result)) {
