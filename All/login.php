@@ -7,10 +7,9 @@ require_once('../Code/confHeader.inc');
 if (IsSet($_SESSION['Me'])) {
     $_SESSION['Me']->invalidate();
 }
-?>
 
-<html>
-<?php $Conf->header(IsSet($LoginType) ? $LoginType : "Login") ?>
+$Conf->header(IsSet($LoginType) ? $LoginType : "Login");
+?>
 <div id='body'>
 
 <?php

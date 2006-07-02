@@ -1,12 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-$Conf -> connect();
-?>
-
-<html>
-
-<?php  $Conf->header("Important Dates") ?>
-
+$Conf->connect();
+$Conf->header("Important Dates") ?>
 <body>
 
 <p>

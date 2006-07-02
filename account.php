@@ -104,11 +104,9 @@ function crpformvalue($val) {
     else
 	echo htmlspecialchars($Me->$val);
 }
-?>
 
-<html>
-<?php $Conf->header("Update Profile") ?>
-<body>
+$Conf->header("Update Profile");
+?>
 <div name='body'>
 
 <?php

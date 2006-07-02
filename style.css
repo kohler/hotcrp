@@ -77,10 +77,10 @@ div.confirm {
 	border: 1px solid #cceecc;
 }
 
-input {
+input, button {
 	font-family: sans-serif;
 }
-input.button {
+input.button, button {
 	background: #ffffee;
 	border-top: 2px solid #eeeedd;
 	border-left: 3px solid #eeeedd;
@@ -95,13 +95,26 @@ input.button_default {
 	border-bottom: 2px solid #999966;
 	border-right: 3px solid #999966;
 }
+input.button_alert {
+	font-size: large;
+	font-weight: bold;
+	background: #ffaaaa;
+	border-top: 2px solid #ee6666;
+	border-left: 3px solid #ee6666;
+	border-bottom: 2px solid #996666;
+	border-right: 3px solid #996666;
+}
 
 tr {
 	vertical-align: baseline;
 }
-td.form_caption {
+td.form_caption, td.form_caption_error {
 	text-align: right;
 	padding-right: 0.5em;
+}
+td.form_caption_error {
+	font-weight: bold;
+	color: #ff0000;
 }
 td.form_entry {
 	padding-right: 1em;
@@ -140,4 +153,18 @@ table.memberlist th {
 }
 td.pc_chairbox, td.pc_assbox {
 	text-align: center;
+}
+
+td.datename, td.datename_error {
+	padding-right: 1em;
+	font-weight: bold;
+}
+td.datename_error {
+	color: #ff0000;
+}
+td.datedesc {
+	font-size: small;
+	padding-left: 2em;
+}
+table.daterange {
 }

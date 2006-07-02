@@ -1,19 +1,21 @@
 <?php 
 include('../Code/confHeader.inc');
 include('../Code/Calendar.inc');
-$_SESSION["Me"] -> goIfInvalid("../index.php");
-$_SESSION["Me"] -> goIfNotChair('../index.php');
-$Conf -> connect();
+$Conf->connect();
+$_SESSION["Me"]->goIfInvalid("../index.php");
+$_SESSION["Me"]->goIfNotChair('../index.php');
 include('Code.inc');
 
+$DateStartMap = array("updatePaperSubmission" => "startPaperSubmission",
+		      "finalizePaperSubmission" => "startPaperSubmission");
 
-
-$DateDescr['startPaperSubmission']
-= " Note that all papers must be 'started' before they"
-. " can be updated or finalized. "
-. " If you want to force authors to submit author information "
-. " and an abstract prior to the final submission date, set the "
-. " end time for this range to the time when abstracts are due. ";
+$DateName['startPaperSubmission'][0] = "Submissions open";
+$DateName['startPaperSubmission'][1] = "Deadline for creating new submissions";
+$DateName['updatePaperSubmission'][1] = "Deadline for updating submissions";
+$DateName['finalizePaperSubmission'][1] = "Deadline for finalizing submissions";
+$DateName['authorViewReviews'] = "Reviews visible";
+$DateName['authorRespondToReviews'] = "Responses allowed";
+$DateName['authorViewDecision'] = "Decision visible";
 
 $DateDescr['updatePaperSubmission']
 = "If you want to allow authors to start a paper and then "
@@ -46,8 +48,7 @@ $DateDescr['PCReviewAnyPaper']
 . " have conflicts indicated, set this date range. "
 ;
 
-function showDate($name, $label)
-{
+function showDate($name, $label) {
   global $Conf;
   global $DateDescr;
 
@@ -59,19 +60,19 @@ function showDate($name, $label)
   print "</tr>";
   print "<tr>";
 
-  if (IsSet($DateDescr[$name])) {
+  if (isset($DateDescr[$name])) {
     print "<tr>";
     print "<td colspan=2> $DateDescr[$name] </td>";
     print "</tr>";
     print "<tr>";
   }
 
-  if ( IsSet($Conf->startTime[$name]) ) {
+  if (isset($Conf->startTime[$name]) ) {
     $start = $Conf->parseableTime($Conf->startTime[$name]);
   } else {
     $start = "Not Set";
   }
-  if ( IsSet($Conf->endTime[$name]) ) {
+  if (isset($Conf->endTime[$name]) ) {
     $end = $Conf->parseableTime($Conf->endTime[$name]);
   } else {
     $end = "Not Set";
@@ -100,105 +101,199 @@ function showDate($name, $label)
   print "</FORM>";
 }
 
+function crp_dateview($name, $end) {
+    global $Conf;
+    $var = ($end ? $Conf->endTime : $Conf->startTime);
+    $tname = $name . ($end ? "_end" : "_start");
+    if (isset($_REQUEST[$tname]))
+	return $_REQUEST[$tname];
+    else if (isset($var[$name]))
+	return $Conf->parseableTime($var[$name]);
+    else
+	return "N/A";
+}
+
+function crp_showdate($name) {
+    global $Conf, $DateDescr, $DateName, $DateError;
+    $label = preg_replace('/ /', '&nbsp;', $DateName[$name]);
+
+    echo "<tr>\n";
+    echo "  <td class='datename'>$label</td>\n";
+    $formclass = isset($DateError["${name}_start"]) ? "form_caption_error" : "form_caption";
+    echo "  <td class='$formclass'>From:</td>\n";
+    echo "  <td class='form_entry'><input type='text' name='${name}_start' id='${name}_start' value='", htmlspecialchars(crp_dateview($name, 0)), "' size='20' onchange='highlightUpdate()' /></td>\n";
+    $formclass = isset($DateError["${name}_end"]) ? "form_caption_error" : "form_caption";
+    echo "  <td class='$formclass'>To:</td>\n";
+    echo "  <td class='form_entry'><input type='text' name='${name}_end' id='${name}_end' value='", htmlspecialchars(crp_dateview($name, 1)), "' size='20' onchange='highlightUpdate()' /></td>\n";
+    echo "  <td><button class='button' type='button' onclick='javascript: clearDates(\"", $name, "\")'>Clear</button></td>\n";
+    echo "  <td width='100%'></td>\n";
+    echo "</tr>\n";
+
+    if (isset($DateDescr[$name])) {
+	echo "<tr>\n";
+	echo "  <td colspan='7' class='datedesc'>", $DateDescr[$name], "</td>\n";
+	echo "</tr>\n";
+    }
+}
+
+function crp_show1date($name, $which) {
+    global $Conf, $DateDescr, $DateName, $DateError;
+    $namex = $name . ($which ? "_end" : "_start");
+    $label = preg_replace('/ /', '&nbsp;', $DateName[$name][$which]);
+
+    echo "<tr>\n";
+    $formclass = isset($DateError["$namex"]) ? "datename_error" : "datename";
+    echo "  <td class='$formclass' colspan='2'>$label</td>\n";
+    echo "  <td class='form_entry'><input type='text' name='${namex}' id='${namex}' value='", htmlspecialchars(crp_dateview($name, $which)), "' size='20' onchange='highlightUpdate()' /></td>\n";
+    echo "  <td class='form_caption'></td>\n";
+    echo "  <td class='form_entry'></td>\n";
+    echo "  <td><button class='button' type='button' onclick='javascript: clear1Date(\"", $namex, "\")'>Clear</button></td>\n";
+    echo "  <td width='100%'></td>\n";
+    echo "</tr>\n";
+
+    if (isset($DateDescr[$name])) {
+	echo "<tr>\n";
+	echo "  <td colspan='7' class='datedesc'>", $DateDescr[$name], "</td>\n";
+	echo "</tr>\n";
+    }
+}
+
+$Conf->header_head("Set Dates");
 ?>
+<script type="text/javascript"><!--
+function highlightUpdate() {
+    document.getElementById("blerg").className = "button_alert";
+}
+function clear1Date(name) {
+    document.getElementById(name).value = "N/A";
+}
+function clearDates(name) {
+    clear1Date(name + "_start");
+    clear1Date(name + "_end");
+}
+// -->
+</script>
 
-<html>
-
-<?php  $Conf->header("Set Important Conference Dates") ?>
-
-<body>
+<?php $Conf->header("Set Conference Dates", 0); ?>
+<div id='body'>
 
 <?php 
 //
 // Now catch any modified dates
 //
 
-if (IsSet($_REQUEST[removeDate])) {
-  $Conf->qe("DELETE FROM ImportantDates WHERE name='$_REQUEST[dateToModify]'");
+function crp_strtotime($tname, $which) {
+    global $Error, $DateName, $DateStartMap, $DateError;
+    
+    $req_tname = $tname;
+    if ($which == 0 && isset($DateStartMap[$tname]))
+	$req_tname = $DateStartMap[$tname];
+    $varname = $req_tname . ($which ? "_end" : "_start");
+
+    if (!isset($_REQUEST[$varname]))
+	$err = "missing from form";
+    else {
+	$t = ltrim(rtrim($_REQUEST[$varname]));
+	if ($t == "" || strtoupper($t) == "N/A")
+	    return -1;
+	else if (($t = strtotime($t)) >= 0)
+	    return $t;
+	else
+	    $err = "parse error";
+    }
+    
+    $DateError[$varname] = 1;
+    if ($req_tname != $tname)
+	/* do nothing */;
+    else if (is_array($DateName[$tname]))
+	$Error[] = $DateName[$tname][$which] . " " . $err . ".";
+    else
+	$Error[] = $DateName[$tname] . ($which ? " (end) " : " (start) ") . $err . ".";
+    return -1;
 }
 
-if (IsSet($_REQUEST[modifyDate])) {
-  $start = strtotime($_REQUEST[startTime]);
-  $end = strtotime($_REQUEST[endTime]);
-
-  if ($start == -1 || $end == -1) {
-    if ( $start == -1 && $end != -1) {
-      $Conf->errorMsg("There was an error in your "
-		      . "starting date speciciation. ");
-    } else if ( $start != -1 && $end == -1) {
-      $Conf->errorMsg("There was an error in your "
-		      . "ending date speciciation. ");
-    } else {
-      $Conf->errorMsg("There was an error in both your "
-		      . "starting and ending date speciciation. ");
+if (isset($_REQUEST['update'])) {
+    $Error = array();
+    $Dates = array();
+    $Messages = array();
+    foreach (array('startPaperSubmission', 'updatePaperSubmission',
+		   'finalizePaperSubmission', 'authorViewReviews',
+		   'authorRespondToReviews', 'authorViewDecision') as $s) {
+	$Dates[$s][0] = crp_strtotime($s, 0);
+	$Dates[$s][1] = crp_strtotime($s, 1);
+	if ($Dates[$s][1] > 0 && $Dates[$s][0] < 0) {
+	    $today = getdate();
+	    $Dates[$s][0] = mktime(0, 0, 0, 1, 1, $today["year"]);
+	    if (!isset($DateStartMap[$s]))
+		$Messages[] = (is_array($DateName[$s]) ? $DateName[$s][0] : $DateName[$s] . " begin") . " missing; set to the beginning of this year.";
+	} else if ($Dates[$s][1] > 0 && $Dates[$s][1] < $Dates[$s][0]) {
+	    $Error[] = (is_array($DateName[$s]) ? $DateName[$s][1] : $DateName[$s]) . " period ends before it begins.";
+	    $DateError["${s}_end"] = 1;
+	}
     }
-  } else {
-    $Conf->qe("DELETE FROM ImportantDates WHERE name='$_REQUEST[dateToModify]'");
-    $Conf->qe("INSERT INTO ImportantDates SET name='$_REQUEST[dateToModify]', start=from_unixtime($start), end=from_unixtime($end)");
-  }
+    if (count($Error) > 0)
+	$Conf->errorMsg(join("<br/>\n", $Error));
+    else {
+	// specific date validation
+	foreach (array("updatePaperSubmission" => "startPaperSubmission",
+		       "finalizePaperSubmission" => "updatePaperSubmission",
+		       "updatePaperSubmission" => "finalizePaperSubmission",
+		       "startPaperSubmission" => "updatePaperSubmission")
+		 as $dest => $src) {
+	    if ($Dates[$dest][1] < 0 && $Dates[$src][1] > 0) {
+		$Dates[$dest][1] = $Dates[$src][1];
+		$Messages[] = $DateName[$dest][1] . " set to " . $DateName[$src][1] . ".";
+	    }
+	}
+	
+	if (count($Messages) > 0)
+	    $Conf->infoMsg(join("<br/>\n", $Messages));
+	$result = $Conf->qe("delete from ImportantDates");
+	if (!DB::isError($result)) {
+	    foreach ($Dates as $n => $v) {
+		$sx = ($v[0] > 0 ? "from_unixtime($v[0])" : "'0'");
+		$ex = ($v[1] > 0 ? "from_unixtime($v[1])" : "'0'");
+		$Conf->qe("insert into ImportantDates set name='$n', start=$sx, end=$ex");
+		unset($_REQUEST["${n}_start"]);
+		unset($_REQUEST["${n}_end"]);
+	    }
+	}
+    }
 }
 
 $Conf->updateImportantDates();
-
 ?>
 
 <table>
-<tr> <td> <p> Need a popup calendar for reference? </p> </td>
+<tr> <td>Need a popup calendar for reference?</td>
 <td>
 <?php $Conf->textButtonPopup("Click here!",
 			 "ShowCalendar.php", "")?>
 </td> </tr>
-<tr> <td> <p> Need to understand how to specify a time and date? </p> </td>
+<tr> <td>Need to understand how to specify a time and date?</td>
 <td>
 <?php $Conf->textButtonPopup("Click here!",
 			 "http://www.php.net/manual/en/function.strtotime.php", "")?>
 </td> </tr>
 </table>
 
-<hr>
 
-<table align=center width=100% bgcolor=<?php echo $Conf->contrastColorTwo?>
-   cellspacing=2>
+<h2>Dates Affecting Authors</h2>
 
-<tr> <td align=center> <big> Dates Affecting Authors </big> </td> </tr>
-
-<tr> <td>
-<?php  showDate('startPaperSubmission',
-	    "When paper submissions can be started?");
-?>
-</td> </tr>
-
-<tr> <td>
-<?php  showDate('updatePaperSubmission',
-	    "When can a paper be updated?");
-?>
-</td> </tr>
-
-<tr> <td>
-<?php  showDate('finalizePaperSubmission',
-	    "When can a paper be finalized?");
-?>
-</td> </tr>
-
-<tr> <td>
-<?php  showDate('authorViewReviews',
-	    "When can authors see their reviews?");
-?>
-</td> </tr>
-
-<tr> <td>
-<?php  showDate('authorRespondToReviews',
-	    "When can the author respond to reviews?");
-?>
-
-<tr> <td>
-<?php  showDate('authorViewDecision',
-	    "When can the author view the program committe decision?");
-?>
-</td> </tr>
+<form class='date' method='post' action='SetDates.php'>
+<table class='imptdates'>
+<?php crp_show1date('startPaperSubmission', 0); ?>
+<?php crp_show1date('startPaperSubmission', 1); ?>
+<?php crp_show1date('updatePaperSubmission', 1); ?>
+<?php crp_show1date('finalizePaperSubmission', 1); ?>
+<?php crp_showdate('authorViewReviews'); ?>
+<?php crp_showdate('authorRespondToReviews'); ?>
+<?php crp_showdate('authorViewDecision'); ?>
 </table>
 
-<br>
+<input id="blerg" class='button_default' type='submit' value='Update' name='update' />
+</form>
+
 
 <table align=center width=100% bgcolor=<?php echo $Conf->contrastColorTwo?>
    cellspacing=2>
@@ -292,12 +387,8 @@ $Conf->updateImportantDates();
 
 </table>
 
-
-
-
+</div>
+<?php $Conf->footer() ?>
 </body>
-
-
-<?php  $Conf->footer() ?>
 </html>
 

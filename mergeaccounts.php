@@ -79,10 +79,9 @@ If you suspect something fishy, contact the site administrator at\n\
 	}
     }
  }
-?>
 
-<html>
-<?php $Conf->header("Merge Account Information") ?>
+$Conf->header("Merge Account Information");
+?>
 <div id='body'>
 
 <?php

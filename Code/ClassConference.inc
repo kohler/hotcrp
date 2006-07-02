@@ -428,36 +428,20 @@ class Conference {
 
 
   //
-  // Manage start-stop of various activities
-  //
-  function setTimeRange($what, $start, $stop)
-    {
-      $this -> startTime[$what] = $start;
-      $this -> endTime[$what] = $stop;
-    }
-
-  //
   // Can be overridden by subclass
   //
-  function parseableTime($value)
-    {
-      return date ("d F Y h:i:s A",$value);
-      
-    }
-  function printTime($value)
-    {
-      return date ("l dS of F Y h:i:s A",$value);
-      
-    }
-  function printableStartTime($what)
-    {
-      return $this -> printTime($this -> startTime[$what]);
-    }
-
-  function printableEndTime($what)
-    {
-      return $this -> printTime($this -> endTime[$what]);
-    }
+  function parseableTime($value) {
+      return date("j M Y g:i:sa",$value);
+  }
+  function printTime($value) {
+      return date("l j M Y g:i:sa T", $value);
+  }
+  function printableStartTime($what) {
+      return $this->printTime($this->startTime[$what]);
+  }
+  function printableEndTime($what) {
+      return $this->printTime($this->endTime[$what]);
+  }
 
   function printTimeRange($what)
     {
@@ -484,15 +468,14 @@ class Conference {
   //
   // Is this particular event/deadline defined?
   //
-  function validDeadline($what)
-    {
+  function validDeadline($what) {
       if (IsSet($this->startTime[$what]) &&
 	  IsSet($this->endTime[$what]) ) {
-	return 1;
+	  return 1;
       } else {
-	return 0;
+	  return 0;
       }
-    }
+  }
 
   //
   // 'default' is returned in the time is not set
@@ -682,16 +665,20 @@ class Conference {
   //
   // Conference header, footer
   //
-  function header($title) {
-      global $ConfSiteBase;
-      
-      //      echo '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">';
-      echo '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">';
-      echo "<html>\n";
-      echo "<head> <title>", $title, " - ", $this->shortName, "</title>\n";
-
+  function header_head($title) {
+      // echo '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">';
+      echo "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">\n";
+      echo "<html>\n<head>\n";
+      echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n";
+      echo "<meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />\n";
+      echo "<title>", $title, " - ", $this->shortName, "</title>\n";
       echo $this->theme;
-
+  }
+  
+  function header($title, $doHead = 1) {
+      global $ConfSiteBase;
+      if ($doHead)
+	  $this->header_head($title);
       echo "</head><body>\n";
       echo "<div id='header'>\n";
       echo "  <div id='header_left'>\n";

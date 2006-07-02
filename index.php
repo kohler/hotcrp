@@ -35,10 +35,8 @@ if ($_SESSION["AskedYouToUpdateContactInfo"] < 2
 if (IsSet($_REQUEST["setRole"]))
     $_SESSION["WhichTaskView"] = $_REQUEST["setRole"];
 
+$Conf->header("Welcome");
 ?>
-
-<html>
-<?php $Conf->header("Welcome") ?>
 <div id='body'>
 
 <?php

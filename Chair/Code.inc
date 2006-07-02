@@ -44,7 +44,6 @@ function showPCConflictPapers()
     print "<INPUT type=submit name=removeConflict value=\"Remove Indicated Conflicts\">\n";
     print "</FORM>";
   }
-
 }
 
 ?>
