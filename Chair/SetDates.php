@@ -7,7 +7,9 @@ $_SESSION["Me"]->goIfNotChair('../index.php');
 include('Code.inc');
 
 $DateStartMap = array("updatePaperSubmission" => "startPaperSubmission",
-		      "finalizePaperSubmission" => "startPaperSubmission");
+		      "finalizePaperSubmission" => "startPaperSubmission",
+		      "reviewerSubmitReviewDeadline" => "reviewerSubmitReview",
+		      "PCSubmitReviewDeadline" => "PCSubmitReview");
 
 $DateName['startPaperSubmission'][0] = "Submissions open";
 $DateName['startPaperSubmission'][1] = "Deadline for creating new submissions";
@@ -15,91 +17,44 @@ $DateName['updatePaperSubmission'][1] = "Deadline for updating submissions";
 $DateName['finalizePaperSubmission'][1] = "Deadline for finalizing submissions";
 $DateName['authorViewReviews'] = "Reviews visible";
 $DateName['authorRespondToReviews'] = "Responses allowed";
-$DateName['authorViewDecision'] = "Decision visible";
+$DateName['authorViewDecision'] = "Outcomes visible to authors";
+
+$DateName['reviewerSubmitReview'] = "Peer review period";
+$DateName['reviewerSubmitReviewDeadline'][1] = "Hard peer review deadline";
+$DateName['notifyChairAboutReviews'] = "Chairs are notified of new reviews";
+$DateName['reviewerViewDecision'] = "Outcomes and responses visible to reviewers";
+
+$DateName['PCSubmitReview'] = "PC review period";
+$DateName['PCSubmitReviewDeadline'][1] = "Hard PC review deadline";
+$DateName['PCReviewAnyPaper'] = "PC can review any paper";
+$DateName['PCGradePapers'] = "Paper grading period";
+$DateName['PCMeetingView'] = "PC meeting view";
+$DateName['AtTheMeeting'] = "PC meeting";
+$DateName['EndOfTheMeeting'] = "End of PC meeting";
 
 $DateDescr['updatePaperSubmission']
 = "If you want to allow authors to start a paper and then "
-. "update it before the final deadline, set this range to "
-. "that time. The starting time of this should usually be "
-. "the same as the time to start papers. ";
+    . "update it before the final deadline, set this range to "
+    . "that time.";
 
 $DateDescr['finalizePaperSubmission']
-= "Authors 'finalize' their submission to indicate that this "
-. "was a complete submission - i.e. they didn't just start a paper "
-. "and then wander off. It's usually a good idea to set the time to "
-. "finalize a paper to be a day or two after the submissiond deadine "
-;
-
-$DateDescr['authorViewReviews']
-= "If you want authors to be able to see their reviews, set this time range";
+= "Authors 'finalize' their submission to indicate that it is complete. "
+. "It's usually a good idea to set this deadline to "
+. "a day or two after the submission deadline.";
 
 $DateDescr['authorRespondToReviews']
-= "If you want authors to be able to respond to reviews, set this time range. "
-. "This should obviously overlap with being able to see the reviws"
-;
-
-$DateDescr['authorViewDecision']
-= "If you want authors to be able to log in to see review decisions, set this time range. "
-. "You can also send authors mail based on whether their paper was accepted or not."
-;
+= "This should obviously overlap with the period reviews are visible.";
 
 $DateDescr['PCReviewAnyPaper']
-= "If you want the PC members to be able to review ANY PAPER that does not"
+= "If you want the PC members to be able to review <i>any</i> paper that does not"
 . " have conflicts indicated, set this date range. "
 ;
 
-function showDate($name, $label) {
-  global $Conf;
-  global $DateDescr;
+$DateDescr['PCMeetingView'] = "When can PC members see the identity of reviews for"
+    . " non-conflicting papers and assign paper grades.";
+$DateDescr['AtTheMeeting'] = "Used to hide information about chair opinions.";
+$DateDescr['EndOfTheMeeting'] = "The very end of the PC meeting (look at accepted papers)";
 
-  print "<FORM METHOD=POST ACTION=$_SERVER[PHP_SELF]>";
-  print "<table align=center width=95% ";
-  print "    bgcolor=$Conf->contrastColorOne border=1>";
-  print "<tr>";
-  print "<td align=center colspan=2> <b> <big> $label </big> </b> </td>";
-  print "</tr>";
-  print "<tr>";
-
-  if (isset($DateDescr[$name])) {
-    print "<tr>";
-    print "<td colspan=2> $DateDescr[$name] </td>";
-    print "</tr>";
-    print "<tr>";
-  }
-
-  if (isset($Conf->startTime[$name]) ) {
-    $start = $Conf->parseableTime($Conf->startTime[$name]);
-  } else {
-    $start = "Not Set";
-  }
-  if (isset($Conf->endTime[$name]) ) {
-    $end = $Conf->parseableTime($Conf->endTime[$name]);
-  } else {
-    $end = "Not Set";
-  }
-
-  print "<tr> <td width=30%> From </td> <td align=center> ";
-  print "<input type=text name='startTime' value='$start' size=50> </td>";
-  print "     <td align=center> ";
-  print "</tr>";
-
-  print "<tr> <td> To </td> <td align=center> ";
-  print "<input type=text name='endTime' value='$end' size=50> </td>";
-  print "     <td align=center> ";
-  print "</tr>";
-
-  print "<tr> <td colspan=2> If you want to change either date, ";
-  print "modify the text box and then hit ";
-  print "<input type=submit name='modifyDate' value='Modify Date'>.";
-  print "<br>";
-  print "If you want to remove this date, hit ";
-  print "<input type=submit name='removeDate' value='Remove Date'>.";
-  print "<input type=hidden name='dateToModify' value='$name'>";
-  print "</td> </tr>";
-
-  print "</table>";
-  print "</FORM>";
-}
 
 function crp_dateview($name, $end) {
     global $Conf;
@@ -121,10 +76,10 @@ function crp_showdate($name) {
     echo "  <td class='datename'>$label</td>\n";
     $formclass = isset($DateError["${name}_start"]) ? "form_caption_error" : "form_caption";
     echo "  <td class='$formclass'>From:</td>\n";
-    echo "  <td class='form_entry'><input type='text' name='${name}_start' id='${name}_start' value='", htmlspecialchars(crp_dateview($name, 0)), "' size='20' onchange='highlightUpdate()' /></td>\n";
+    echo "  <td class='form_entry'><input type='text' name='${name}_start' id='${name}_start' value='", htmlspecialchars(crp_dateview($name, 0)), "' size='24' onchange='highlightUpdate()' /></td>\n";
     $formclass = isset($DateError["${name}_end"]) ? "form_caption_error" : "form_caption";
     echo "  <td class='$formclass'>To:</td>\n";
-    echo "  <td class='form_entry'><input type='text' name='${name}_end' id='${name}_end' value='", htmlspecialchars(crp_dateview($name, 1)), "' size='20' onchange='highlightUpdate()' /></td>\n";
+    echo "  <td class='form_entry'><input type='text' name='${name}_end' id='${name}_end' value='", htmlspecialchars(crp_dateview($name, 1)), "' size='24' onchange='highlightUpdate()' /></td>\n";
     echo "  <td><button class='button' type='button' onclick='javascript: clearDates(\"", $name, "\")'>Clear</button></td>\n";
     echo "  <td width='100%'></td>\n";
     echo "</tr>\n";
@@ -144,7 +99,7 @@ function crp_show1date($name, $which) {
     echo "<tr>\n";
     $formclass = isset($DateError["$namex"]) ? "datename_error" : "datename";
     echo "  <td class='$formclass' colspan='2'>$label</td>\n";
-    echo "  <td class='form_entry'><input type='text' name='${namex}' id='${namex}' value='", htmlspecialchars(crp_dateview($name, $which)), "' size='20' onchange='highlightUpdate()' /></td>\n";
+    echo "  <td class='form_entry'><input type='text' name='${namex}' id='${namex}' value='", htmlspecialchars(crp_dateview($name, $which)), "' size='24' onchange='highlightUpdate()' /></td>\n";
     echo "  <td class='form_caption'></td>\n";
     echo "  <td class='form_entry'></td>\n";
     echo "  <td><button class='button' type='button' onclick='javascript: clear1Date(\"", $namex, "\")'>Clear</button></td>\n";
@@ -162,10 +117,14 @@ $Conf->header_head("Set Dates");
 ?>
 <script type="text/javascript"><!--
 function highlightUpdate() {
-    document.getElementById("blerg").className = "button_alert";
+    var ins = document.getElementsByTagName("input");
+    for (var i = 0; i < ins.length; i++)
+	if (ins[i].name == "update")
+	    ins[i].className = "button_alert";
 }
 function clear1Date(name) {
     document.getElementById(name).value = "N/A";
+    highlightUpdate();
 }
 function clearDates(name) {
     clear1Date(name + "_start");
@@ -216,9 +175,17 @@ if (isset($_REQUEST['update'])) {
     $Error = array();
     $Dates = array();
     $Messages = array();
+
+    // extract dates from form entries
     foreach (array('startPaperSubmission', 'updatePaperSubmission',
 		   'finalizePaperSubmission', 'authorViewReviews',
-		   'authorRespondToReviews', 'authorViewDecision') as $s) {
+		   'authorRespondToReviews', 'authorViewDecision',
+		   'reviewerSubmitReview', 'reviewerSubmitReviewDeadline',
+		   'notifyChairAboutReviews', 'reviewerViewDecision',
+		   'PCSubmitReview', 'PCSubmitReviewDeadline',
+		   'PCReviewAnyPaper', 'PCGradePapers',
+		   'PCMeetingView', 'AtTheMeeting', 'EndOfTheMeeting'
+		   ) as $s) {
 	$Dates[$s][0] = crp_strtotime($s, 0);
 	$Dates[$s][1] = crp_strtotime($s, 1);
 	if ($Dates[$s][1] > 0 && $Dates[$s][0] < 0) {
@@ -231,23 +198,29 @@ if (isset($_REQUEST['update'])) {
 	    $DateError["${s}_end"] = 1;
 	}
     }
+
+    // set dates
     if (count($Error) > 0)
 	$Conf->errorMsg(join("<br/>\n", $Error));
     else {
 	// specific date validation
-	foreach (array("updatePaperSubmission" => "startPaperSubmission",
-		       "finalizePaperSubmission" => "updatePaperSubmission",
-		       "updatePaperSubmission" => "finalizePaperSubmission",
-		       "startPaperSubmission" => "updatePaperSubmission")
-		 as $dest => $src) {
+	$dval = array("updatePaperSubmission", "startPaperSubmission",
+		      "finalizePaperSubmission", "updatePaperSubmission",
+		      "updatePaperSubmission", "finalizePaperSubmission",
+		      "startPaperSubmission", "updatePaperSubmission");
+	for ($i = 0; $i < count($dval); $i += 2) {
+	    $dest = $dval[$i]; $src = $dval[$i+1];
 	    if ($Dates[$dest][1] < 0 && $Dates[$src][1] > 0) {
 		$Dates[$dest][1] = $Dates[$src][1];
 		$Messages[] = $DateName[$dest][1] . " set to " . $DateName[$src][1] . ".";
 	    }
 	}
-	
+
+	// print messages now, in case errors come later
 	if (count($Messages) > 0)
 	    $Conf->infoMsg(join("<br/>\n", $Messages));
+
+	// insert into database
 	$result = $Conf->qe("delete from ImportantDates");
 	if (!DB::isError($result)) {
 	    foreach ($Dates as $n => $v) {
@@ -264,23 +237,20 @@ if (isset($_REQUEST['update'])) {
 $Conf->updateImportantDates();
 ?>
 
-<table>
-<tr> <td>Need a popup calendar for reference?</td>
-<td>
-<?php $Conf->textButtonPopup("Click here!",
-			 "ShowCalendar.php", "")?>
-</td> </tr>
-<tr> <td>Need to understand how to specify a time and date?</td>
-<td>
-<?php $Conf->textButtonPopup("Click here!",
-			 "http://www.php.net/manual/en/function.strtotime.php", "")?>
-</td> </tr>
-</table>
+<p><a href='ShowCalendar.php' target='_blank'>Show calendar</a> &mdash;
+<a href='http://www.php.net/manual/en/function.strtotime.php' target='_blank'>How to specify a date</a></p>
 
+<form class='date' method='post' action='SetDates.php'>
+
+<table>
+<tr>
+  <td><input class='button_default' type='submit' value='Update All' name='update' /></td>
+  <td>Each Update button updates all dates.  Remember to select Update after you change a date!  It will turn red to help you remember.</td>
+</tr>
+</table>
 
 <h2>Dates Affecting Authors</h2>
 
-<form class='date' method='post' action='SetDates.php'>
 <table class='imptdates'>
 <?php crp_show1date('startPaperSubmission', 0); ?>
 <?php crp_show1date('startPaperSubmission', 1); ?>
@@ -291,101 +261,36 @@ $Conf->updateImportantDates();
 <?php crp_showdate('authorViewDecision'); ?>
 </table>
 
-<input id="blerg" class='button_default' type='submit' value='Update' name='update' />
+<input class='button_default' type='submit' value='Update All' name='update' />
+
+    
+<h2>Dates Affecting Peer Reviewers</h2>
+
+<table class='imptdates'>
+<?php crp_showdate('reviewerSubmitReview'); ?>
+<?php crp_show1date('reviewerSubmitReviewDeadline', 1); ?>
+<?php crp_showdate('notifyChairAboutReviews'); ?>
+<?php crp_showdate('reviewerViewDecision'); ?>
+</table>
+
+<input class='button_default' type='submit' value='Update All' name='update' />
+
+
+<h2>Dates Affecting the Program Committee</h2>
+
+<table class='imptdates'>
+<?php crp_showdate('PCSubmitReview'); ?>
+<?php crp_show1date('PCSubmitReviewDeadline', 1); ?>
+<?php crp_showdate('PCReviewAnyPaper'); ?>
+<?php crp_showdate('PCGradePapers'); ?>
+<?php crp_showdate('PCMeetingView'); ?>
+<?php crp_showdate('AtTheMeeting'); ?>
+<?php crp_showdate('EndOfTheMeeting'); ?>
+</table>
+
+<input class='button_default' type='submit' value='Update All' name='update' />
+
 </form>
-
-
-<table align=center width=100% bgcolor=<?php echo $Conf->contrastColorTwo?>
-   cellspacing=2>
-
-<tr> <td align=center> <big> Dates Affecting Peer Reviews </big> </td> </tr>
-
-
-<tr> <td>
-<?php  showDate('reviewerSubmitReview',
-	    "This is the ADVERTISED deadline for peer reviews.");
-?>
-</td> </tr>
-
-<tr> <td>
-<?php  showDate('reviewerSubmitReviewDeadline',
-	    "This is the ACTUAL deadline for peer reviews.");
-?>
-</td> </tr>
-
-<tr> <td>
-<?php  showDate('notifyChairAboutReviews',
-	    "When should the chair be notified about new reviews?");
-?>
-</td> </tr>
-
-<tr> <td>
-<?php  showDate('reviewerViewDecision',
-	    "When can the reviewers see the rebuttal and paper outcome?");
-?>
-</td> </tr>
-
-</table>
-
-<br>
-
-<table align=center width=100% bgcolor=<?php echo $Conf->contrastColorTwo?>
-   cellspacing=2>
-
-<tr> <td align=center> <big> Dates Affecting The Program Committee </big> </td> </tr>
-
-
-<tr> <td>
-<?php  showDate('PCSubmitReview',
-	    "This is the ADVERTISED deadline for program committee reviews.");
-?>
-</td> </tr>
-
-<tr> <td>
-<?php  showDate('PCSubmitReviewDeadline',
-	    "This is the ACTUAL deadline for program committee reviews.");
-?>
-</td> </tr>
-
-<tr> <td>
-<?php  showDate('PCReviewAnyPaper',
-	    "When can PC members review any paper?");
-?>
-</td> </tr>
-
-<tr> <td>
-<?php  showDate('PCViewAllPapers',
-	    "When can PC members see all non-conflicting papers and reviews?");
-?>
-</td> </tr>
-
-<tr> <td>
-<?php  showDate('PCGradePapers',
-	    "When can PC members grade papers?");
-?>
-</td> </tr>
-
-<tr> <td>
-<?php  showDate('PCMeetingView',
-	    "When can PC members see the identity of reviews for"
-	    . " non-conflicting papers and assign paper grades.");
-?>
-</td> </tr>
-
-<tr> <td>
-<?php  showDate('AtTheMeeting',
-	    "When is the PC meeting (used to hide information about chair opinions) ");
-?>
-</td> </tr>
-
-<tr> <td>
-<?php  showDate('EndOfTheMeeting',
-	    "The very end of the PC meeting (look at accepted papers)");
-?>
-</td> </tr>
-
-
-</table>
 
 </div>
 <?php $Conf->footer() ?>
