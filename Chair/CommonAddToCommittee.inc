@@ -1,107 +1,110 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION["Me"] -> goIfInvalid("../index.php");
-$_SESSION["Me"] -> goIfNotChair('../index.php');
-$Conf -> connect();
+$Conf->connect();
+$_SESSION["Me"]->goIfInvalid("../");
+$_SESSION["Me"]->goIfNotChair('../');
 ?>
 
 <html>
+<?php $Conf->header("Manage $AddWhat") ?>
+<div id='body'>
 
-<?php  $Conf->header("Add a $AddWhat Member") ?>
-
-<body>
-
-<?php 
-if (IsSet($_REQUEST[addPCMember]) ) {
-  if ( !IsSet($_REQUEST[firstEmail]) || $_REQUEST[firstEmail] == "") {
-    $Conf->errorMsg("You need to supply an email address to add someone");
-  } else {
-    //
-    // Check to see if they exist
-    //
-    $id = $Conf->emailRegistered($_REQUEST[firstEmail]);
-
-    if ( $id == 0 ) {
-      //
-      // Try to add them if they don't exist...
-      //
-      $newguy = new Contact();
-      $newguy -> initialize($_REQUEST[firstName], $_REQUEST[lastName], $_REQUEST[firstEmail], $_REQUEST[affiliation],
-			$_REQUEST[phone], $_REQUEST[fax]);
-      $result = $newguy -> addToDB($Conf);
-
-      if ( $result ) {
-	$Conf->infoMsg("Created account for $_REQUEST[firstEmail]");
-	if ($_REQUEST[inform]) {
-	  $newguy -> sendAccountInfo($Conf);
-	}
-      } else {
-	$Conf->errorMsg("Had trouble creating an account for $_REQUEST[firstEmail]");
-      }
-      $id = $Conf->emailRegistered($_REQUEST[firstEmail]);
-    }
+<?php
+if (isset($_REQUEST['add'])) {
+    if (!isset($_REQUEST['email']))
+	$Conf->errorMsg("Enter the email address to add.");
     else {
-      $Conf->errorMsg("They already have an account");
-    }
-    if ($id != 0) {
-      $query="INSERT into $AddWhatTable SET contactId='$id'";
-      $result = $Conf->qe($query);
-      if (DB::isError($result)) {
-	$Conf->errorMsg("insert error - " . $result->getMessage());
-      }
-      $Conf->infoMsg("Added $_REQUEST[firstEmail] as $AddWhat ");
+	// Make sure email address exists in system
+	$id = $Conf->emailRegistered($_REQUEST['email']);
+	if (!$id) { // try to add them
+	    $newguy = new Contact();
+	    $result = $newguy->initialize($_REQUEST['email'], $Conf);
+	    if (!DB::isError($result)) {
+		if (!isset($_REQUEST['name']))
+		    /* nada */;
+		else if (preg_match('/^(.*),\s*(\S.*)$/', $_REQUEST['name'], $matches)) {
+		    $newguy->firstName = $matches[2];
+		    $newguy->lastName = $matches[1];
+		} else if (preg_match('/^(.*)\s+(\S*)$/', $_REQUEST['name'], $matches)) {
+		    $newguy->firstName = $matches[1];
+		    $newguy->lastName = $matches[2];
+		} else
+		    $newguy->lastName = $_REQUEST['name'];
+		if (isset($_REQUEST['affiliation']))
+		    $newguy->affiliation = $_REQUEST['affiliation'];
+		if (isset($_REQUEST['voicePhoneNumber']))
+		    $newguy->affiliation = $_REQUEST['voicePhoneNumber'];
+		if (isset($_REQUEST['faxPhoneNumber']))
+		    $newguy->affiliation = $_REQUEST['faxPhoneNumber'];
+		$result = $newguy->updateDB($Conf);
+	    }
+	    if (!DB::isError($result)) {
+		$Conf->infoMsg("Created account for " . htmlspecialchars($_REQUEST['email'] . "."));
+		$newguy->sendAccountInfo($Conf);
+		$Conf->log("PC chair created account", $newguy);
+	    } else {
+		$Conf->errorMsg($Conf->dbErrorText($result, "while creating account for " . htmlspecialchars($_REQUEST['email'])));
+		$Conf->log("PC chair account creation failure", $newguy);
+	    }
+	    $id = $newguy->contactId;
+	}
 
-      $Conf->log("Added $_REQUEST[firstEmail] as $AddWhat ", $_SESSION["Me"]);
+	// successfully looked up member, now make them a PC member
+	$query = "insert into $AddWhatTable set contactId='$id'";
+	$result = $Conf->qe($query, "while adding " . htmlspecialchars($_REQUEST['email']) . " to $AddWhat");
+	if (!DB::isError($result)) {
+	    $Conf->infoMsg("Added " . htmlspecialchars($_REQUEST['email']) . " to $AddWhat.");
+	    $Conf->log("Added " . $_REQUEST['email'] . " as $AddWhat", $_SESSION["Me"]);
+	}
     }
-  }
-} else if (IsSet($_REQUEST[removeThem])) {
-  for ($i = 0; $i < sizeof($_REQUEST[removePC]); $i++) {
-    $id =  $_REQUEST[removePC][$i];
-    $result=$Conf->qe("DELETE FROM $AddWhatTable WHERE $AddWhatId='$id'");
-    if ( DB::isError($result) ) {
-      $Conf->errorMsg("delete " . $result->getMessage());
-    }
-
-    $Conf->log("Removed someone as $AddWhat ", $_SESSION["Me"]);
-  }
+    
 }
-?>
+		
+		
 
-<div align="center">
-<center>
-<form METHOD="POST" ACTION="<?php  echo $_SERVER[PHP_SELF] ?>" >
-<table border=1>
-    <tr> <th> Name </th> <th> Email </th> <th> Remove? </th> </tr>
-<?php 
-  $query = "SELECT $AddWhatTable.contactId, $AddWhatTable.$AddWhatId, "
-	. " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email "
-    . " FROM ContactInfo, $AddWhatTable WHERE "
-    . " ($AddWhatTable.contactId=ContactInfo.contactId) ORDER BY ContactInfo.lastName";
-$result = $Conf->qe($query);
-  if ( DB::isError($result) ) {
-    print "<tr> <td>n";
-    $Conf->errorMsg("There are no $AddWhat memebers? "
-		    . $result->getMessage());
-    print "</td></tr>";
-  } else {
-    $cnt = $result->numRows();
-    while ($row = $result->fetchRow() ) {
-      $i = 0;
-      $id = $row[$i++];
-      $pcid = $row[$i++];
-      $first = $row[$i++];
-      $last = $row[$i++];
-      $email = $row[$i++];
-      print "<tr> <td> $first $last </td> <td> $email </td>";
-      print "<td> <INPUT type=\"checkbox\" name=\"removePC[]\" value=\"$pcid\"> </td>";
-      print "</tr>";
+if (IsSet($_REQUEST["removeThem"])) {
+    for ($i = 0; $i < sizeof($_REQUEST["removePC"]); $i++) {
+	$id =  $_REQUEST["removePC"][$i];
+	$result=$Conf->qe("DELETE FROM $AddWhatTable WHERE $AddWhatId='$id'");
+	if ( DB::isError($result) ) {
+	    $Conf->errorMsg("delete " . $result->getMessage());
+	}
+
+	$Conf->log("Removed someone as $AddWhat ", $_SESSION["Me"]);
     }
-  }
+ }
 ?>
 
+<?php 
+$query = "select $AddWhatTable.contactId, $AddWhatTable.$AddWhatId, "
+    . " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email "
+    . " from ContactInfo, $AddWhatTable where "
+    . " ($AddWhatTable.contactId=ContactInfo.contactId) order by ContactInfo.lastName";
+$result = $Conf->q($query);
+if (DB::isError($result))
+    $Conf->errorMsg("Database error: " . $result->getMessage());
+ else { ?>
+<form METHOD="post" ACTION="<?php echo $_SERVER["PHP_SELF"] ?>" >
+<table class="memberlist">
+   <tr> <th>Name</th> <th>Email</th> <th>Remove?</th> </tr>
+<?php
+    while ($row = $result->fetchRow()) {
+	$i = 0;
+	$id = $row[$i++];
+	$pcid = $row[$i++];
+	$first = $row[$i++];
+	$last = $row[$i++];
+	$email = $row[$i++];
+	print "<tr> <td> $first $last </td> <td> $email </td>";
+	print "<td> <INPUT type=\"checkbox\" name=\"removePC[]\" value=\"$pcid\"> </td>";
+	print "</tr>";
+    }
+?>
+<tr><td><input type="text" name="name" size="20" /></td>
+    <td><input type="text" name="email" size="20" /></td>
+    <td><input class='button' type="submit" value="Add member" name='add' /></td></tr>
 </table>
-</center>
-</div>
+<?php } ?>
 
 <p>
 You may see multiple listings for the same committee member.
@@ -172,6 +175,7 @@ entries if you like.
 
 </form>
 
-<?php  $Conf->footer() ?>
+</div>
+<?php $Conf->footer() ?>
 </body>
 </html>

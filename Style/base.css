@@ -2,6 +2,10 @@ body {
 	font-family: sans-serif;
 }
 
+div.clear {
+	clear: both;
+}
+
 div#header {
 	background: #ffff00;
 	padding: 1em;
@@ -25,9 +29,6 @@ div#header_links {
 div#header_left {
 	float: left;
 	margin-right: 5%;
-}
-div#header_last {
-	clear: both;
 }
 
 div#footer {
@@ -54,9 +55,6 @@ div#footer_left {
 div#footer_crp {
 	font-size: small;
 	margin-top: 3px;
-}
-div#footer_last {
-	clear: both;
 }
 
 div#body {
@@ -98,7 +96,45 @@ input.button_default {
 	border-right: 3px solid #999966;
 }
 
+tr {
+	vertical-align: baseline;
+}
 td.form_caption {
 	text-align: right;
-	margin-right: 4px;
+	padding-right: 0.5em;
+}
+td.form_entry {
+	padding-right: 1em;
+}
+
+div.home_tasks {
+	border: 1px solid #eeee66;
+}
+div.home_tasks div.taskname {
+	float: left;
+	width: 25%;
+	background: #ffffdd;
+	padding: 0.5em;
+}
+div.home_tasks div.taskdetail {
+	margin-left: 0.5em;
+	padding: 0.5em;
+}
+div.home_tasks h2 {
+	font-size: large;
+	margin: 0em;
+}
+
+div.home_tasks th {
+	text-align: left;
+	padding-right: 0.5em;
+}
+
+div#home_tasks_chair {
+	border-bottom: 0px none;
+}
+
+table.memberlist th {
+	text-align: left;
+	padding-right: 0.5em;
 }

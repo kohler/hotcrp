@@ -16,18 +16,20 @@ if (!IsSet($_REQUEST["loginEmail"]) || $_REQUEST["loginEmail"] == "") {
 $_SESSION["Me"]->lookupByEmail($_REQUEST["loginEmail"], $Conf);
 if (IsSet($_REQUEST["register"])) {
     if ($_SESSION["Me"]->valid()) {
-	$LoginError = "An account already exists for " . $_REQUEST["loginEmail"] . ".  To retrieve your password, select \"Mail me my password\".";
+	$LoginError = "An account already exists for " . htmlspecialchars($_REQUEST["loginEmail"]) . ".  To retrieve your password, select \"Mail me my password\".";
 	include('login.php');
 	exit;
     }
 
     $result = $_SESSION["Me"]->initialize($_REQUEST["loginEmail"], $Conf);
     if (DB::isError($result)) {
-	$LoginError = "There was an error while adding your account.  The error message was \"" . $result->getMessage() . "\".  Please try again or contact the site administrator at $Conf->emailFrom.";
+	$LoginError = $result->dbErrorText($result, "while adding your account");
     } else {
 	$_SESSION["Me"]->sendAccountInfo($Conf);
 	$Conf->log("Created account", $_SESSION["Me"]);
-	$LoginConfirm = "Successfully created an account for " . $_REQUEST["loginEmail"] . ".  A password has been emailed to this address.  When you receive that email, return here to complete the registration process.";
+	$LoginConfirm = "Successfully created an account for " . htmlspecialchars($_REQUEST["loginEmail"]) . ".  A password has been emailed to this address.  When you receive that email, return here to complete the registration process.";
+	if (isset($_REQUEST["password"]) && $_REQUEST["password"] != "")
+	    $LoginConfirm .= "  Note that the password you supplied on the login screen was ignored."; 
     }
 
     include('login.php');
@@ -35,7 +37,7 @@ if (IsSet($_REQUEST["register"])) {
 }
 
 if (!$_SESSION["Me"]->valid()) {
-    $LoginError = "No account for " . $_REQUEST["loginEmail"] . " exists.  Did you enter the correct email address?";
+    $LoginError = "No account for " . htmlspecialchars($_REQUEST["loginEmail"]) . " exists.  Did you enter the correct email address?";
     include('login.php');
     exit;
 }

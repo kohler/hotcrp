@@ -37,6 +37,7 @@ class Contact {
   //
   var $contactId;
   var $visits;
+  var $contactInfoUpdated;
   var $firstName;
   var $lastName;
   var $email;
@@ -61,16 +62,12 @@ class Contact {
   var $isChair;
   var $isAssistant;
 
-  function amAssistant() {
-    return $this -> isAssistant || $this -> isChair;
-  }
-
   function countRequestedReviews() {
     global $Conf;
     $query = "SELECT COUNT(*) FROM ReviewRequest WHERE "
       . " asked=' " . $this->contactId . "'";
     $result = $Conf->q($query);
-    if ( !DB::isError($result) && $result -> numRows() == 1 ) {
+    if ( !DB::isError($result) && $result->numRows() == 1 ) {
       $row = $result->fetchRow();
       return $row[0];
     } else {
@@ -83,7 +80,7 @@ class Contact {
     $query = "SELECT COUNT(*) FROM PrimaryReviewer WHERE "
       . " reviewer=' " . $this->contactId . "'";
     $result = $Conf->q($query);
-    if ( !DB::isError($result) && $result -> numRows() == 1 ) {
+    if ( !DB::isError($result) && $result->numRows() == 1 ) {
       $row = $result->fetchRow();
       return $row[0];
     } else {
@@ -96,12 +93,16 @@ class Contact {
     $query = "SELECT COUNT(*) FROM SecondaryReviewer WHERE "
       . " reviewer=' " . $this->contactId . "'";
     $result = $Conf->q($query);
-    if ( !DB::isError($result) && $result -> numRows() == 1 ) {
+    if ( !DB::isError($result) && $result->numRows() == 1 ) {
       $row = $result->fetchRow();
       return $row[0];
     } else {
       return 0;
     }
+  }
+
+  function amAssistant() {
+    return $this->isAssistant || $this->isChair;
   }
 
   function amReviewer() {
@@ -130,57 +131,54 @@ class Contact {
   //
 
   function valid() {
-    global $Conf;
-    return $this -> contactId > 0 && ($Conf->shortName == $this->shortConfName);
-    return $this -> contactId > 0;
+      global $Conf;
+      return $this->contactId > 0 && $Conf->shortName == $this->shortConfName;
   }
 
-  function invalidate()
-    {
+  function invalidate() {
       $this->confShortName= 0;
 
-      $this -> contactId = 0;
-      $this -> visits = 0;
-      $this -> firstName = 0;
-      $this -> lastName = 0;
-      $this -> email = 0;
-      $this -> affiliation = 0;
-      $this -> voicePhoneNumber = 0;
-      $this -> faxPhoneNumber = 0;
-      $this -> password = 0;
-      $this -> note = 0;
-      $this -> papersFinalized = 0;
-      $this -> papersSubmitted = 0;
-      $this -> isAuthor = 0;
-      $this -> isPC = 0;
-      $this -> isChair = 0;
-      $this -> isAssistant = 0;
-    }
+      $this->contactId = 0;
+      $this->visits = 0;
+      $this->firstName = '';
+      $this->lastName = '';
+      $this->email = '';
+      $this->affiliation = '';
+      $this->voicePhoneNumber = '';
+      $this->faxPhoneNumber = '';
+      $this->password = '';
+      $this->note = 0;
+      $this->papersFinalized = 0;
+      $this->papersSubmitted = 0;
+      $this->isAuthor = 0;
+      $this->isPC = 0;
+      $this->isChair = 0;
+      $this->isAssistant = 0;
+  }
 
-  function dump()
-    {
+  function dump() {
       echo "<table border=\"1\" width=\"83%\" bgcolor=$bgOne>";
       echo "<tr> <td>";
 
       echo "<p>";
-      echo "contactId = " . $this -> contactId . "<br>";
-      echo "visits = " . $this -> visits . "<br>";
-      echo "firstName = " . $this -> firstName . "<br>";
-      echo "lastName = " . $this -> lastName . "<br>";
-      echo "email = " . $this -> email . "<br>";
-      echo "affiliation = " . $this -> affiliation . "<br>";
-      echo "voicePhoneNumber = " . $this -> voicePhoneNumber . "<br>";
-      echo "faxPhoneNumber = " . $this -> faxPhoneNumber . "<br>";
-      echo "password = " . $this -> password . "<br>";
-      echo "note = " . $this -> note . "<br>";
-      echo "papersFinalized = " . $this -> papersFinalized . "<br>";
-      echo "papersSubmitted = " . $this -> papersSubmitted . "<br>";
-      echo "isAuthor = " . $this -> isAuthor . "<br>";
-      echo "isPC = " . $this -> isPC . "<br>";
-      echo "isChair = " . $this -> isChair . "<br>";
-      echo "isAssistant = " . $this -> isAssistant . "<br>";
+      echo "contactId = " . $this->contactId . "<br>";
+      echo "visits = " . $this->visits . "<br>";
+      echo "firstName = " . $this->firstName . "<br>";
+      echo "lastName = " . $this->lastName . "<br>";
+      echo "email = " . $this->email . "<br>";
+      echo "affiliation = " . $this->affiliation . "<br>";
+      echo "voicePhoneNumber = " . $this->voicePhoneNumber . "<br>";
+      echo "faxPhoneNumber = " . $this->faxPhoneNumber . "<br>";
+      echo "password = " . $this->password . "<br>";
+      echo "note = " . $this->note . "<br>";
+      echo "papersFinalized = " . $this->papersFinalized . "<br>";
+      echo "papersSubmitted = " . $this->papersSubmitted . "<br>";
+      echo "isAuthor = " . $this->isAuthor . "<br>";
+      echo "isPC = " . $this->isPC . "<br>";
+      echo "isChair = " . $this->isChair . "<br>";
+      echo "isAssistant = " . $this->isAssistant . "<br>";
       echo "</p> </td> </tr> </table>";
-    }
+  }
 
   function trim() {
       $this->contactId = ltrim(rtrim($this->contactId));
@@ -196,31 +194,31 @@ class Contact {
   }
 
   function go($url) {
-    go($url);
+      go($url);
   }
 
   function alert($string = "") {
-    alert($string);
+      alert($string);
   }
 
   function goAlert($url, $string = "") {
-    print "<html>\n";
-    print "<head>\n";
-    print "<script language=javascript>\n";
-    print "alert(\"" . addslashes($string).  "\");";
-    print "location=\"$url\";";
-    print "</script>";
-    print "</head>";
-    print "<body>\n";
-    print "<H1> You should not be here. </h1> ";
-    print "<h2> You need to <a href=\"$url\"> login </a> </h2>\n";
-    print "</head>";
-    print "</html>";
-    exit();
+      print "<html>\n";
+      print "<head>\n";
+      print "<script language=javascript>\n";
+      print "alert(\"" . addslashes($string).  "\");";
+      print "location=\"$url\";";
+      print "</script>";
+      print "</head>";
+      print "<body>\n";
+      print "<H1> You should not be here. </h1> ";
+      print "<h2> You need to <a href=\"$url\"> login </a> </h2>\n";
+      print "</head>";
+      print "</html>";
+      exit();
   }
 
   function goIfInvalid($url,$string="") {
-    if ( !$this -> valid() ) {
+    if ( !$this->valid() ) {
       $this->goAlert($url,
 		     "You have invalid credentials and need to login"
 		     );
@@ -228,7 +226,7 @@ class Contact {
   }
 
   function goIfNotAuthor($url) {
-    if ( ! $this -> valid() || !$this -> isAuthor ) {
+    if ( ! $this->valid() || !$this->isAuthor ) {
       $this->goAlert($url,
 		     "This page is only accessible by paper authors"
 		     );
@@ -236,7 +234,7 @@ class Contact {
   }
 
   function goIfNotPC($url) {
-    if ( $this -> valid() && ($this -> isChair || $this -> isPC)) {
+    if ( $this->valid() && ($this->isChair || $this->isPC)) {
       return;
     } else {
       $this->goAlert($url,
@@ -246,7 +244,7 @@ class Contact {
   }
 
   function goIfNotChair($url) {
-    if (!$this -> valid() || ! $this -> isChair ) {
+    if (!$this->valid() || ! $this->isChair ) {
       $this->goAlert($url,
 		     "This page is only accessible by Program Chairs"
 		     );
@@ -254,7 +252,7 @@ class Contact {
   }
 
   function goIfNotAssistant($url) {
-    if ( $this -> valid() && ($this -> isChair || $this -> isAssistant)) {
+    if ( $this->valid() && ($this->isChair || $this->isAssistant)) {
       return;
     } else {
       $this->goAlert($url,
@@ -263,41 +261,31 @@ class Contact {
     }
   }
 
-  function updateDB($conf)
-    {
-      $this -> trim();
-      $query = "UPDATE ContactInfo SET "
-	. " firstName='$this->firstName', lastname='$this->lastName', "
-	. "email='$this->email', "
-	. "affiliation='$this->affiliation', "
-	. "voicePhoneNumber='$this->voicePhoneNumber', "
-	. "faxPhoneNumber='$this->faxPhoneNumber', "
-	. "password='$this->password' "
-	. " WHERE contactId='$this->contactId'";
+  function updateDB($conf) {
+      $this->trim();
+      $query = sprintf("update ContactInfo set firstName='%s', lastName='%s', "
+		       . "email='%s', affiliation='%s', voicePhoneNumber='%s',"
+		       . " faxPhoneNumber='%s', password='%s' "
+		       . "where contactId='%s'",
+		       sqlqtrim($this->firstName), sqlqtrim($this->lastName),
+		       sqlqtrim($this->email), sqlqtrim($this->affiliation),
+		       sqlqtrim($this->voicePhoneNumber),
+		       sqlqtrim($this->faxPhoneNumber),
+		       sqlqtrim($this->password), $this->contactId);
+      return $conf->q($query);
+  }
 
-      return $conf->qe($query);
-    }
-
-  //function initialize($firstName, $lastName, $email, $affiliation,
-  //		      $phone, $fax)
   function initialize($email, $conf) {
       $this->email = ltrim(rtrim($email));
       $this->password = $this->generatePassword(10);
-      return $conf->qe(sprintf("INSERT INTO ContactInfo SET email='%s', password='%s'", sqlqtrim($this->email), $this->password));
+      $result = $conf->q(sprintf("insert into ContactInfo set email='%s', password='%s'", sqlqtrim($this->email), sqlqtrim($this->password)));
+      if (DB::isError($result))
+	  return $result;
+      return $this->lookupByEmail($this->email, $conf);
   }
-  //$this -> firstName = $firstName;
-  //$this -> lastName = $lastName;
-  //$this -> email = $email;
-  //$this -> affiliation = $affiliation;
-  //$this -> voicePhoneNumber = $phone;
-  //$this -> faxPhoneNumber = $fax;
-  //$this -> password= $this->generatePassword(10);
-  //$this -> trim();
-  //}
 
   function updateFromQuery($query, $conf) {
-      $email=ltrim(rtrim($email));
-      $result = $conf->qe($query);
+      $result = $conf->q($query);
       if (!DB::isError($result) && $result->numRows() >= 1) {
 	  $fromdb = $result->fetchRow(DB_FETCHMODE_OBJECT);
 	  $this->contactId = $fromdb->contactId;
@@ -318,87 +306,83 @@ class Contact {
 	  // Not found - zero out the context
 	  $this->invalidate();
       }
+      return $result;
   }
 
   function lookupByEmail($email, $conf) {
-      $this->updateFromQuery(sprintf("SELECT * FROM ContactInfo WHERE email='%s'", sqlqtrim($email)), $conf);
+      return $this->updateFromQuery(sprintf("select * from ContactInfo where email='%s'", sqlqtrim($email)), $conf);
   }
 
   function lookupById($contactId, $conf) {
-      $this->updateFromQuery("SELECT * FROM ContactInfo WHERE contactId='$contactId'", $conf);
+      return $this->updateFromQuery("select * from ContactInfo where contactId='$contactId'", $conf);
   }
 
-
   function fullname() {
-    return $this -> firstName . " " . $this -> lastName;
+      if ($this->firstName && $this->lastName)
+	  return $this->firstName . " " . $this->lastName;
+      else if ($this->firstName || $this->lastName)
+	  return $this->firstName . $this->lastName;
+      else
+	  return "";
   }
 
   function fullnameAndEmail() {
-    return $this -> firstName . " " . $this -> lastName . " ( " . $this->email . " )";
+      $n = $this->fullname();
+      return ($n ? $n . " (" . $this->email . ")" : $this->email);
   }
-
+  
   function bumpVisits($conf) {
-    $this -> visits += 1;
-    $time=mktime();
-    $message = date ("l dS of F Y h:i:s A", $time) . "\n";
-    $query = "UPDATE ContactInfo SET visits='$this->visits', "
-      . " note='$message' WHERE contactId='$this->contactId'";
-    $result = $conf->qe($query);
+      $this->visits += 1;
+      $time=mktime();
+      $message = date ("l dS of F Y h:i:s A", $time) . "\n";
+      $query = "UPDATE ContactInfo SET visits='$this->visits', "
+	  . " note='$message' WHERE contactId='$this->contactId'";
+      $result = $conf->qe($query);
   }
 
   //
-  function updateContactRoleInfo($conf)
-    {
-      $this -> papersSubmitted
-      = $conf -> countSubmittedById($this -> contactId);
-      $this -> papersFinalized
-      = $conf -> countFinalizedById($this -> contactId);
-      $this -> isAuthor = ($this -> papersSubmitted > 0);
-      $this -> isChair = $conf -> contactIsChair( $this -> contactId);
-      $this -> isAssistant = $conf -> contactIsAssistant( $this -> contactId);
-      $this -> isPC = $conf -> contactIsPC( $this -> contactId)
-	|| $this-> isAssistant;
+  function updateContactRoleInfo($conf) {
+      $this->papersSubmitted = $conf->countSubmittedById($this->contactId);
+      $this->papersFinalized = $conf->countFinalizedById($this->contactId);
+      $this->isAuthor = ($this->papersSubmitted > 0);
+      $this->isChair = $conf->contactIsChair($this->contactId);
+      $this->isAssistant = $conf->contactIsAssistant($this->contactId);
+      $this->isPC = $conf->contactIsPC($this->contactId) || $this->isAssistant;
+      if ($conf->setupPhase)
+	  $this->isChair = 1;
+  }
 
-	if ($conf -> setupPhase) {
-	    $this->isChair = 1;
-	}
-    }
-
-  function amPaperAuthor($paperId, $conf)
-    {
-      $contactId = $this -> contactId;
+  function amPaperAuthor($paperId, $conf) {
+      $contactId = $this->contactId;
       //
       // Query for a specific match of the author and paper
       //
       $query = "SELECT paperId FROM Paper WHERE Paper.contactId=$contactId";
       $result = $conf->qe($query);
       
-      if ( DB::isError($result) )  {
-	return 0;
-      }
+      if (DB::isError($result))
+	  return 0;
       while ($row = $result->fetchRow()) {
-	$submittedPaperId = $row[0];
-	if ($submittedPaperId == $paperId) {
-	  return 1;
-	}
+	  $submittedPaperId = $row[0];
+	  if ($submittedPaperId == $paperId)
+	      return 1;
       }
       return 0;
-    }
+  }
 
-  function checkConflict($paperId, $conf)
-    {
+  function checkConflict($paperId, $conf) {
       return $conf->checkConflict($paperId, $this->contactId);
-    }
+  }
 
   function iCanReview($paperId, $conf)
     {
-      if ( $conf -> reviewablePaper($paperId)
+      if ( $conf->reviewablePaper($paperId)
 	   && (
-	       $conf -> reviewRequestFor($paperId, $this -> contactId)
+	       $conf->reviewRequestFor($paperId, $this->contactId)
 	       ||
-	       $conf -> primaryReviewerFor($paperId, $this -> contactId)
+	       $conf->primaryReviewerFor($paperId, $this->contactId)
 	       ||
-	       $conf -> secondaryReviewerFor($paperId, $this -> contactId)
+	       $conf->secondaryReviewerFor($paperId, $this->contactId)
 	       ||
 	       ($this->isPC && $conf->validTimeFor('PCReviewAnyPaper', 0))
 	       )
@@ -413,24 +397,24 @@ class Contact {
   //
   //
   function generatePassword($length) {  
-    srand((double)microtime()*1000000);  
-    $vowels = array("a", "e", "i", "o", "u");  
-    $cons = array("b", "c", "d", "g", "h", "j", "k", "l", "m", "n", "p", "r",
-		  "s", "t", "u", "v", "w", "tr",  
-		  "cr", "br", "fr", "th", "dr", "ch", "ph", "wr", "st", "sp",
-		  "sw", "pr", "sl", "cl");  
+      srand((double)microtime()*1000000);  
+      $vowels = array("a", "e", "i", "o", "u");  
+      $cons = array("b", "c", "d", "g", "h", "j", "k", "l", "m", "n", "p", "r",
+		    "s", "t", "u", "v", "w", "tr",  
+		    "cr", "br", "fr", "th", "dr", "ch", "ph", "wr", "st", "sp",
+		    "sw", "pr", "sl", "cl");  
       
-    $num_vowels = count($vowels);  
-    $num_cons = count($cons);  
-      
-    for($i = 0; $i < $length; $i++){  
-      $password .= $cons[rand(0, $num_cons - 1)] . $vowels[rand(0, $num_vowels - 1)];  
-    }
-    return substr($password, 0, $length);  
+      $num_vowels = count($vowels);  
+      $num_cons = count($cons);  
+
+      $password = "";
+      for ($i = 0; $i < $length; $i++) {
+	  $password .= $cons[rand(0, $num_cons - 1)] . $vowels[rand(0, $num_vowels - 1)];  
+      }
+      return substr($password, 0, $length);  
   }
 
-  function sendAccountInfo($conf)
-    {
+  function sendAccountInfo($conf) {
       $message  = "Someone requested that we send you your account registration information\n";
       $message .= "for the $conf->shortName conference submission site, located at\n";
       $message .= "$conf->paperSite\n";
@@ -442,23 +426,24 @@ class Contact {
       // this should be an option
       //
       if ( 1 ) {
-	$message .= "\n\n";
-	$message .= "Depending on your email client, you may be able to click on this link\n";
-	$cleanEmail=htmlspecialchars($this->email);
-	$cleanPasswd=htmlspecialchars($this->password);
-	$message .= "to login:\n";
-	$message .= "$conf->paperSite/All/authAccount.php?loginEmail=$cleanEmail&password=$cleanPasswd\n";
+	  $message .= "\n\n";
+	  $message .= "Depending on your email client, you may be able to click on this link\n";
+	  $cleanEmail=htmlspecialchars($this->email);
+	  $cleanPasswd=htmlspecialchars($this->password);
+	  $message .= "to login:\n";
+	  $message .= "$conf->paperSite/All/authAccount.php?loginEmail=$cleanEmail&password=$cleanPasswd\n";
       }
 
       $message .= "\n\n";
       $message .= "If you did not request your password, you may want to contact\n";
       $message .= "$conf->contactName ($conf->contactEmail) about this matter.\n\n";
 
-      $results = mail($this->email,
-		      "Account information for $conf->shortName",
-		      $message,
-		      "From: $conf->emailFrom");
-    }
+      if ($conf->allowEmail)
+	  $results = mail($this->email,
+			  "Account information for $conf->shortName",
+			  $message,
+			  "From: $conf->emailFrom");
+  }
 
   //
   // Print all the papers and review links.

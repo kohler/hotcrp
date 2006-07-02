@@ -12,7 +12,7 @@ $dbName = "HotNetsV";
 // if setupPhase == 1, anyone who logs in has chair powers.
 //
 $Conf = new Conference($dbUser, $dbPassword, $dbHost, $dbName);
-$Conf->setupPhase = 0;
+$Conf->setupPhase = 1;
 
 //
 // Conference names
@@ -63,31 +63,35 @@ $Conf->paperSite = "http://www.read.cs.ucla.edu/hotnets5";
 //
 // The conference site (i.e. CFP, registration)
 //
-$Conf -> conferenceSite="http://www.acm.org/sigs/sigcomm/HotNets-V/";
+$Conf->conferenceSite="http://www.acm.org/sigs/sigcomm/HotNets-V/";
 
 //
 // The prefix for papes that are downloaded
 //
-$Conf -> paperPrefix="hotnets5-paper";
+$Conf->paperPrefix="hotnets5-paper";
 
 //
 // A CSS, if you want one
 //
-$Conf -> theme = "<link rel='stylesheet' type='text/css' href='" . $ConfSiteBase . "Style/base.css' />\n";
+$Conf->theme = "<link rel='stylesheet' type='text/css' href='" . $ConfSiteBase . "Style/base.css' />\n";
 
 //
 // This is the person advertised as the appropriate person
 // to contact w.r.t problems
 //
-$Conf -> contactName = "Eddie Kohler";
-$Conf -> contactEmail = "kohler@cs.ucla.edu";
+$Conf->contactName = "Eddie Kohler";
+$Conf->contactEmail = "kohler@cs.ucla.edu";
 //
 // Email appears to come from this address
 //
-$Conf -> emailFrom = "kohler@read.cs.ucla.edu";
+$Conf->emailFrom = "kohler@read.cs.ucla.edu";
+//
+// Actually try to email.
+//
+$Conf->allowEmail = 0;
 
 //
 // This is where dumps of the database are placed
 //
-$Conf -> dbDumpDir="/var/spool/conference";
+$Conf->dbDumpDir="/var/spool/conference";
 ?>

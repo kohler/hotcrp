@@ -67,12 +67,13 @@ if (IsSet($_REQUEST[submit])) {
 	$message = "This is just to let you know that another review \n"
 	  . "for paper #$_REQUEST[paperId] - $title, \n"
 	  . "has been finalized.";
-      
-	mail($email,
-	     "Additional review has arrived for paper #$_REQUEST[paperId]",
-	     $message,
-	     "From: $Conf->emailFrom"
-	     );
+
+	if ($Conf->allowEmail)
+	    mail($email,
+		 "Additional review has arrived for paper #$_REQUEST[paperId]",
+		 $message,
+		 "From: $Conf->emailFrom"
+		 );
       }
 
       if ( $Conf->validTimeFor("authorViewReviews",0) ) {
@@ -83,12 +84,13 @@ if (IsSet($_REQUEST[submit])) {
 	  . "for your paper #$_REQUEST[paperId] - $title, \n"
 	  . "has been finalized. You may wish to augment or amend \n"
 	  . "your response.";
-      
-	mail($email,
-	     "Additional review has arrived for paper #$_REQUEST[paperId]",
-	     $message,
-	     "From: $Conf->emailFrom"
-	     );
+
+	if ($Conf->allowEmail)
+	    mail($email,
+		 "Additional review has arrived for paper #$_REQUEST[paperId]",
+		 $message,
+		 "From: $Conf->emailFrom"
+		 );
       } 
     } else {
       $Conf->infoMsg("Your review has been saved!");
@@ -100,14 +102,15 @@ if (IsSet($_REQUEST[emailReview])) {
   //
   // Empty
   //
-  mail($_SESSION["Me"]->email,
-       "Your review for paper #$_REQUEST[paperId]",
-       $Review -> getAnonReviewHeaderASCII($Conf)
-       . $Review -> getReviewASCII(),
-       "From: $Conf->emailFrom"
-       );
-  $Conf->infoMsg("Sent email with review");
-  exit();
+    if ($Conf->allowEmail)
+	mail($_SESSION["Me"]->email,
+	     "Your review for paper #$_REQUEST[paperId]",
+	     $Review -> getAnonReviewHeaderASCII($Conf)
+	     . $Review -> getReviewASCII(),
+	     "From: $Conf->emailFrom"
+	     );
+    $Conf->infoMsg("Sent email with review");
+    exit();
 }
 
 

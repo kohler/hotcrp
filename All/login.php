@@ -14,10 +14,10 @@ if (IsSet($_SESSION['Me'])) {
 <div id='body'>
 
 <?php
-if (IsSet($LoginConfirm)) {
+if (isset($LoginConfirm)) {
     $Conf->confirmMsg($LoginConfirm);
 }
-if (IsSet($LoginError)) {
+if (isset($LoginError)) {
     $Conf->errorMsg($LoginError);
 }
 
@@ -28,13 +28,30 @@ submitting a paper, co-authoring a paper, reviewing papers, or
 a member of the program committee."); ?>
 
 <form class='login' method='post' action='authAccount.php'>
-<table>
-<tr><td class='form_caption'>Email:</td><td><input type='text' name='loginEmail' size='50' <?php if (IsSet($_REQUEST["loginEmail"])) echo "value=\"", htmlspecialchars($_REQUEST["loginEmail"]), "\" "; ?> /></td></tr>
-  <tr><td class='form_caption'>Password:</td><td><input type='password' name='password' size='50' /></td></tr>
-  <tr><td></td><td><input class='button_default' type='submit' value='Login' name='login' /></td></tr>
-  <tr><td></td><td>
+<table class='form'>
+<tr>
+  <td class='form_caption'>Email:</td>
+  <td class='form_entry'><input type='text' name='loginEmail' size='50'
+    <?php if (isset($_REQUEST["loginEmail"])) echo "value=\"", htmlspecialchars($_REQUEST["loginEmail"]), "\" "; ?>
+  /></td>
+</tr>
+
+<tr>
+  <td class='form_caption'>Password:</td>
+  <td class='form_entry'><input type='password' name='password' size='50' /></td>
+</tr>
+
+<tr><td></td>
+  <td><input class='button_default' type='submit' value='Login' name='login' /></td>
+</tr>
+  
+<tr><td></td>
+  <td>
     <input class='button' type='submit' value='Mail me my password' name='forgot' />
-    <input class='button' type='submit' value='Create new account' name='register' /></td></tr>
+    <input class='button' type='submit' value='Create new account' name='register' />
+  </td>
+</tr>
+
 </table>
 </form>
 

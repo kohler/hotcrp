@@ -14,7 +14,7 @@ $Conf = new Conference ( $dbUser, $dbPassword, $dbHost, $dbName );
 // You use this when initially configuring the conference
 // to add yourself to the PCChair page.
 //
-$Conf -> setupPhase = 0;
+$Conf->setupPhase = 0;
 
 //
 // Conference names
@@ -24,42 +24,42 @@ $Conf -> setupPhase = 0;
 // You need a unique session name to distinguish conference sessions
 // running on the same server. DO NOT PUT SPACES IN THE SESSION NAME!!
 //
-$Conf -> sessionName="HYPO2010";
+$Conf->sessionName="HYPO2010";
 //
 // The short name is usually, it is the conference name & year
 //
-$Conf -> shortName="HYPO-2010";
+$Conf->shortName="HYPO-2010";
 //
 // The long name is used in title pages.
 //
-$Conf -> longName="Hypothetical Conference In 2010";
+$Conf->longName="Hypothetical Conference In 2010";
 
 //
 // allowed paper formats: allow either PDF and PS for now
 // Paper formats are enforced by looking at the first few
 // characters of the paper
 //
-$Conf -> allowPDF = 1;
-$Conf -> allowPS = 0;
+$Conf->allowPDF = 1;
+$Conf->allowPS = 0;
 
 //
 // OPTION: can authors specify preferred reviewers?
 // This allows authors to select PC members they prefer
 // to have review their paper.
 //
-$Conf -> optionAllowReviewerPreferences = 1;
+$Conf->optionAllowReviewerPreferences = 1;
 //
 // OPTION: can PC members see reviewer identify during PC meeting?
 //
-$Conf -> optionLetPCSeeReviewers = 1;
+$Conf->optionLetPCSeeReviewers = 1;
 //
 // Can PC see unfinished reviews in review form during PC meeting?
 //
-$Conf -> optionLetPCSeeUnfinishedReviews = 1;
+$Conf->optionLetPCSeeUnfinishedReviews = 1;
 //
 // Can PC see author information in review form during PC meeting?
 //
-$Conf -> optionLetPCSeeAuthorInfo = 1;
+$Conf->optionLetPCSeeAuthorInfo = 1;
 
 //
 // The name of this site. You can conditionalize this based on
@@ -75,43 +75,47 @@ $hostname = $posixinfo['nodename'];
 // the test server. You should change this to be your
 // site.
 //
-$Conf -> paperSite="http://systems.cs.colorado.edu/HYPO/CRP";
+$Conf->paperSite="http://systems.cs.colorado.edu/HYPO/CRP";
 
 //
 // The conference site (i.e. CFP, registration).
 // You should change this to be your site.
 //
-$Conf -> conferenceSite="http://crp.sourceforge.net/";
+$Conf->conferenceSite="http://crp.sourceforge.net/";
 
 //
 // The prefix for papers that are downloaded
 //
-$Conf -> paperPrefix="hypo-2010-paper";
+$Conf->paperPrefix="hypo-2010-paper";
 
 //
 // A CSS, if you want one. This package is currently not very
 // CSS-friendly or compliant.
 //
-$Conf -> theme ="";
+$Conf->theme ="";
 
 //
 // This is the person advertised as the appropriate person
 // to contact w.r.t problems
 //
-$Conf -> contactName = "The Program Chair";
+$Conf->contactName = "The Program Chair";
 //
 // The email of the contact- this should be a real email address
 //
-$Conf -> contactEmail = "someone@mailinator.com";
+$Conf->contactEmail = "someone@mailinator.com";
 //
 // Email appears to come from this address. This should be a real
 // email address in case people respond with problems.
 //
-$Conf -> emailFrom = "randomperson@mailinator.com";
+$Conf->emailFrom = "randomperson@mailinator.com";
+//
+// Actually try to email.
+//
+$Conf->allowEmail = 1;
 
 //
 // This is where dumps of the database are placed.
 // This needs to be revamped.
 //
-$Conf -> dbDumpDir="/var/spool/conference";
+$Conf->dbDumpDir="/var/spool/conference";
 ?>

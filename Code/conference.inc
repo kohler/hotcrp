@@ -17,6 +17,7 @@ class Conference {
   var $contactName;
   var $contactEmail;
   var $emailFrom;
+  var $allowEmail;
   //
   // Paper formats
   //
@@ -57,15 +58,15 @@ class Conference {
   var $errorColor = "fuchsia"; // should be pink!
   var $warnColor = "lightBlue"; // should be pink!
 
-  function Conference ( $dbUser, $dbPassword, $dbHost, $dbName ) {
-    $this->dbHost = $dbHost;
-    $this->dbUser = $dbUser;
-    $this->dbPassword = $dbPassword;
-    $this->dbName = $dbName;
-    $this->dsn = "mysql://" . ($this->dbUser) . ":" . ($this->dbPassword) . "@" . ($this->dbHost) . "/" . ($this->dbName) ;
-    $this->connected = 0;
-    $this->startTime = array();
-    $this->endTime = array();
+  function Conference($dbUser, $dbPassword, $dbHost, $dbName) {
+      $this->dbHost = $dbHost;
+      $this->dbUser = $dbUser;
+      $this->dbPassword = $dbPassword;
+      $this->dbName = $dbName;
+      $this->dsn = "mysql://" . ($this->dbUser) . ":" . ($this->dbPassword) . "@" . ($this->dbHost) . "/" . ($this->dbName) ;
+      $this->connected = 0;
+      $this->startTime = array();
+      $this->endTime = array();
   }
 
   function dump()
@@ -160,13 +161,24 @@ class Conference {
       return $this->DB->query($query);
   }
 
-  function qe($query) {
+  function dbErrorText($result, $while = "", $suggestRetry = 1) {
+      if ($result != null) {
+	  $text = "<p>Database error";
+	  if ($while)
+	      $text .= " $while";
+	  $text .= ": " . $result->getMessage() . "</p>";
+      }
+      if ($suggestRetry)
+	  $text .= "\n<p>Please try again or contact the site administrator at $this->emailFrom.</p>";
+      return $text;
+  }
+  
+  function qe($query, $while = "", $suggestRetry = 0) {
       if (!$this->connected)
 	  $this->connect();
       $result = $this->DB->query($query);
-      if (DB::isError($result)) {
-	  $this->errorMsg("Query: " . $result -> getMessage());
-      }
+      if (DB::isError($result))
+	  $this->errorMsg($this->dbErrorText($result, $while, $suggestRetry));
       return $result;
   }
 
@@ -212,14 +224,14 @@ class Conference {
   // in the database
   //
   function emailRegistered($email) {
-    $result=$this->q("SELECT ContactInfo.contactId FROM ContactInfo "
-		     . " WHERE ( email='$email' ) ");
-    if ( $result && $result -> numRows() > 0 ) {
-      $row = $result->fetchRow();
-      return $row[0];
-    } else {
-      return 0;
-    }
+      $email = ltrim(rtrim($email));
+      $result = $this->q(sprintf("select ContactInfo.contactId from ContactInfo where (email='%s')", mysql_real_escape_string($email)));
+      if ($result && $result->numRows() > 0) {
+	  $row = $result->fetchRow();
+	  return $row[0];
+      } else {
+	  return 0;
+      }
   }
 
   //
@@ -710,14 +722,16 @@ class Conference {
       echo "  </div>\n";
       echo "  <div id='header_links'>\n";
       if ($_SESSION["Me"]->valid()) {
-	  echo "    <div id='header_user'><strong>", $_SESSION["Me"]->email, "</strong> &nbsp;|&nbsp; <a href='", $ConfSiteBase, "All/Logout.php'>Logout</a></div>\n";
+	  echo "    <div id='header_user'><strong>",
+	      htmlspecialchars($_SESSION["Me"]->email),
+	      "</strong> &nbsp;|&nbsp; <a href='", $ConfSiteBase, "All/Logout.php'>Logout</a></div>\n";
       }
       echo "    <div id='header_time'>", date ("l j M Y g:i:sa T"), "</div>\n";
       echo "    <div id='header_public'><a href='", $this->conferenceSite, "'>", $this->shortName, " Public Site</a></div>\n";
       //$this->textButton("Go To $this->shortName Site", $this->conferenceSite);
       //$this->textButton("Go To $this->shortName Submissions", $ConfSiteBase . "index.php");
       print "  </div>\n";
-      print "  <div id='header_last'></div>\n</div>\n";
+      print "  <div class='clear'></div>\n</div>\n";
   }
 
   function footer() {
@@ -734,7 +748,7 @@ class Conference {
       echo "  </div>\n";
       echo "  <div id='footer_right'>\n";
       echo "    <div id='footer_crp'><a href='http://crp.sourceforge.net/'>CRP</a> Conference Management Software</div>\n";
-      echo "  </div><div id='footer_last'></div></div>\n";
+      echo "  </div><div class='clear'></div></div>\n";
       //print "<hr>";
       //print "<table align=center width=50%>";
       //print "<tr> <td align=left> ";
@@ -939,26 +953,26 @@ class Conference {
 	return $message;
     }
 
-  function sendReviewerRequest($who, $email, $paperList)
-    {
+  function sendReviewerRequest($who, $email, $paperList) {
       $message = $this -> composeReviewerRequest("has asked you to review the following papers",
 						 $who, $email, $paperList);
-      mail($email,
-	   "Request To Review Paper(s) for $this->shortName",
-	   $message,
-	   "From: $this->emailFrom",
-	   "-f$this->emailFrom");
-    }
+      if ($this->allowEmail)
+	  mail($email,
+	       "Request To Review Paper(s) for $this->shortName",
+	       $message,
+	       "From: $this->emailFrom",
+	       "-f$this->emailFrom");
+  }
 
-  function sendUrgentReviewRequest($who, $email, $paperList)
-    {
+  function sendUrgentReviewRequest($who, $email, $paperList) {
       $message = $this -> composeReviewerRequest("\nis reminding you to finish your review(s) for the following papers",
 						 $who, $email, $paperList);
-      mail($email,
-	   "URGENT: Reminder to Review Paper(s) for $this->shortName",
-	   $message,
-	   "From: $this->emailFrom",
-	   "-f$this->emailFrom");
+      if ($this->allowEmail)
+	  mail($email,
+	       "URGENT: Reminder to Review Paper(s) for $this->shortName",
+	       $message,
+	       "From: $this->emailFrom",
+	       "-f$this->emailFrom");
     }
 
   //
@@ -985,8 +999,7 @@ class Conference {
       return $retval;
     }
 
-  function sendPaperStartNotice($email, $paperId, $title)
-    {
+  function sendPaperStartNotice($email, $paperId, $title) {
       $message = "This is a confirmation notice that you've started\n"
 	. " the submission process for your paper, #$paperId, titled\n"
 	. " $title\n"
@@ -995,11 +1008,12 @@ class Conference {
 	. "finalize your paper before it can be reviewed.\n";
 	//. "You have the following papers on record\n";
 
-      mail($email,
-	   "Confirmation of starting paper $paperId",
-	   $message,
-	   "From: $this->emailFrom",
-	   "-f$this->emailFrom");
+      if ($this->allowEmail)
+	  mail($email,
+	       "Confirmation of starting paper $paperId",
+	       $message,
+	       "From: $this->emailFrom",
+	       "-f$this->emailFrom");
     }
 
   function sendPaperFinalizeNotice($email, $paperId, $title)
@@ -1009,11 +1023,12 @@ class Conference {
 	. " $title\n"
 	. "\n"
 	. "Keep this email as confirmation of your paper being submitted.\n";
-      mail($email,
-	   "Confirmation of finalizing paper $paperId",
-	   $message,
-	   "From: $this->emailFrom",
-	   "-f$this->emailFrom");
+      if ($this->allowEmail)
+	  mail($email,
+	       "Confirmation of finalizing paper $paperId",
+	       $message,
+	       "From: $this->emailFrom",
+	       "-f$this->emailFrom");
     }
 
   function deletePaper($paperId, $verbose = 1)
@@ -1074,17 +1089,19 @@ class Conference {
 	. "by sending email to $this->contactEmail\n"
 	;
 
-      mail($email,
-	   "Confirmation of removal of paper $paperId",
-	   $message,
-	   "From: $this->emailFrom",
-	   "-f$this->emailFrom");
+      if ($this->allowEmail)
+	  mail($email,
+	       "Confirmation of removal of paper $paperId",
+	       $message,
+	       "From: $this->emailFrom",
+	       "-f$this->emailFrom");
 
-      mail($this->contactEmail,
-	   "Confirmation of removal of paper $paperId sent to $email",
-	   $message,
-	   "From: $this->emailFrom",
-	   "-f$this->emailFrom");
+      if ($this->allowEmail)
+	  mail($this->contactEmail,
+	       "Confirmation of removal of paper $paperId sent to $email",
+	       $message,
+	       "From: $this->emailFrom",
+	       "-f$this->emailFrom");
     }
 
   function log($text, $who)
@@ -1377,7 +1394,7 @@ class Conference {
       $toggleName = 'toggle' . $varName;
       $toggleButton = 'toggleButton' . $varName;
 
-      print "<FORM METHOD=POST ACTION=$_SERVER[PHP_SELF]$getstuff>\n";
+      echo "<FORM METHOD=POST ACTION=", $_SERVER["PHP_SELF"], "$getstuff>\n";
       if ($_REQUEST[$varName]) {
 	print "<input TYPE=SUBMIT NAME=$toggleButton VALUE=\"$whenSet\">\n";
 	print "<input TYPE=hidden NAME=$toggleName VALUE=0>\n";
