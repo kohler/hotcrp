@@ -73,12 +73,11 @@ if (IsSet($_REQUEST[submit])) {
 
 	  if (! $result) {
 	    $Conf->errorMsg("Could not delete the paper, may be necessary for replacing.");
-	  }
-	  else {
+	  } else {
 
-	    $result = $Conf -> storePaper($_FILES[uploadedFile][tmp_name],
-					  $_FILES[uploadedFile][type],
-					  $_REQUEST[paperId]);
+	    $result = $Conf -> storePaper("uploadedFile",
+					  $_FILES["uploadedFile"]["type"],
+					  $_REQUEST["paperId"]);
 
 	    if (DB::isError($result)) {
 	      $Conf->errorMsg("There was an error opening the file to store your paper."

@@ -7,7 +7,7 @@ include("PaperForm.inc");
 ?>
 
 <html>
-<?php  $Conf->header("Confirming Paper Submission to $Conf->ShortName") ?>
+<?php  $Conf->header("Confirming Paper Submission to $Conf->shortName") ?>
 
 <body>
 
@@ -43,7 +43,7 @@ if ( !IsSet($_REQUEST["topics"]) || sizeof($_REQUEST["topics"]) == 0) {
   }
 }
 
-if (!ok){
+if (!$ok){
 
 $Conf->errorMsg("Did you forget to set a field? "
 		  . "Please press your browser's BACK button and correct this. ");
@@ -67,7 +67,8 @@ exit();
       . "abstract='" . mysql_real_escape_string($_REQUEST["abstract"]) . "', "
       . "authorInformation='" . mysql_real_escape_string($_REQUEST["authorInfo"]) . "', "
       . "collaborators='" . mysql_real_escape_string($_REQUEST["collaborators"]) . "', "
-      . "contactId='" . $_SESSION["Me"]->contactId . "' "
+      . "contactId='" . $_SESSION["Me"]->contactId . "', "
+      . "paperStorageId=1"
       ;
 
   $result = $Conf->qe($query);
@@ -86,33 +87,22 @@ exit();
       $row = $result->fetchRow();
       $paperId = $row[0];
 
-      $result = $Conf -> storePaper($_FILES["uploadedFile"]["tmp_name"],
-				    $_FILES["uploadedFile"]["type"],
-				    $paperId);
-      if ($result == 0 || DB::isError($result)) {
-	$Conf->errorMsg("There was an error storing your paper."
-			. "Please press BACK and try again.");
-	if ( 0 ) {
-	  $Conf->errorMsg("uploadedFile = " . $_FILES["uploadedFile"] . ", mimetype=" . $_FILES["uploadedFile"]["type"] . ", paperId=$paperId");
-	  $Conf->errorMsg("error = " . $result->getMessage());
-	}
-      } else {
-	//
-	  // Ok - the paper is loaded. Now, update the author 
-	  // information and the topic information
-	  //
+      //
+      // Ok - the paper is loaded. Now, update the author 
+      // information and the topic information
+      //
+      
+      $query = "insert into Roles set contactId=" . $_SESSION["Me"]->contactId . ", role=" . ROLE_AUTHOR . ", paperId=$paperId";
+      $Conf->qe($query);
 	
-	  $query = "insert into Roles set contactId=" . $_SESSION["Me"]->contactId . ", role=" . ROLE_AUTHOR . ", paperId=$paperId";
-	  $Conf->qe($query);
-	
-	$query = "INSERT into PaperAuthor SET "
+      $query = "INSERT into PaperAuthor SET "
 	  . "paperId='$paperId', "
 	  . "authorId='" . $_SESSION["Me"]->contactId . "' "
 	  ;
 
-	$result3 = $Conf->qe($query);
+      $result3 = $Conf->qe($query);
 
-	if (DB::isError($result3)) {
+      if (DB::isError($result3)) {
 	  $Conf->errorMsg("There was a problem associating the "
 			  . " paper with you (the contact author). "
 			  . "The error message was " . $result3->getMessage() . " "
@@ -122,7 +112,7 @@ exit();
 
 	  $Conf->log("Problem creating PaperAuthor for $paperId", $_SESSION["Me"]);
 
-	} else {
+      } else {
 	    
 	  $result3 = $Conf->qe("INSERT into PaperConflict SET "
 			       . "paperId='$paperId', "
@@ -136,39 +126,38 @@ exit();
 	    $Conf->qe("DELETE from PaperAuthor WHERE paperId='$paperId'");
 	    $Conf->log("Problem creating PaperConflict for $paperId", $_SESSION["Me"]);
 	  } else {
-	    if ( IsSet($_REQUEST["topics"]) ) {
-	      setTopics($_REQUEST["paperId"],
-			$_REQUEST["topics"]);
-	    }
-
-	    if ( IsSet($_REQUEST["preferredReviewers"]) ) {
-	      setPreferredReviewers($_REQUEST["paperId"],
-				    $_REQUEST["preferredReviewers"]);
-	    }
-
-	    $_SESSION["Me"] -> updateContactRoleInfo($Conf);
-	    $Conf->confirmMsg("It looks like your paper abstract has been successfully submitted "
-			    . "as paper #$paperId. <b> There's still two more steps! </b> "
-			      . "You need to " .
-			      $Conf->mkTextButton("upload your paper",
-						  "UploadPaper.php",
-						  "<input type=hidden NAME=paperId value=$paperId>") .
-			      " and then " .
-			      $Conf->mkTextButton("finalize your paper",
-						  "FinalizePaper.php",
-						  "<input type=hidden NAME=paperId value=$paperId>") .
-			      " Your paper will not be reviewed "
-			      . "until it has been finalized."
-			      );
-
-	    //
-	    // Send them happy email
-	    //
-	    $Conf->sendPaperStartNotice($_SESSION["Me"]->email, $paperId, $_REQUEST["title"]);
-
-	    $Conf->log("Submit paper $paperId: " . $_REQUEST["title"], $_SESSION["Me"]);
+	      if ( IsSet($_REQUEST["topics"]) ) {
+		  setTopics($_REQUEST["paperId"],
+			    $_REQUEST["topics"]);
+	      }
+	      
+	      if ( IsSet($_REQUEST["preferredReviewers"]) ) {
+		  setPreferredReviewers($_REQUEST["paperId"],
+					$_REQUEST["preferredReviewers"]);
+	      }
+	      
+	      $_SESSION["Me"] -> updateContactRoleInfo($Conf);
+	      $Conf->confirmMsg("It looks like your paper abstract has been successfully submitted "
+				. "as paper #$paperId. <b> There's still two more steps! </b> "
+				. "You need to " .
+				$Conf->mkTextButton("upload your paper",
+						    "UploadPaper.php",
+						    "<input type=hidden NAME=paperId value=$paperId>") .
+				" and then " .
+				$Conf->mkTextButton("finalize your paper",
+						    "FinalizePaper.php",
+						    "<input type=hidden NAME=paperId value=$paperId>") .
+				" Your paper will not be reviewed "
+				. "until it has been finalized."
+				);
+	      
+	      //
+	      // Send them happy email
+	      //
+	      $Conf->sendPaperStartNotice($_SESSION["Me"]->email, $paperId, $_REQUEST["title"]);
+	      
+	      $Conf->log("Submit paper $paperId: " . $_REQUEST["title"], $_SESSION["Me"]);
 	  }
-	}
       }
     }
   }

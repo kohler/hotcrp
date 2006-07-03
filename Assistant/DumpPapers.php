@@ -42,7 +42,7 @@ if ( IsSet($_REQUEST[dumpToDirectory]) ) {
 	  $length=strlen($content);
 	  $ext= $Conf -> getFileExtension($mimetype);
 	  $prefix = $_REQUEST[directory] . "/" . $Conf->paperPrefix;
-	  $name= $prefix . "-$paperId." . $ext;
+	  $name= $prefix . "-$paperId" . $ext;
 	
 	  $fd = fopen($name, "w");
 	  if ( !$fd ) {

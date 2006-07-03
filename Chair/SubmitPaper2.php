@@ -53,8 +53,8 @@ if (!IsSet($_REQUEST[submittedFor]) || !IsSet($_REQUEST[title])
       $row = $result->fetchRow();
       $paperId = $row[0];
 
-      $result = $Conf -> storePaper($_FILES[uploadedFile][tmp_name],
-				    $_FILES[uploadedFile][type],
+      $result = $Conf -> storePaper("uploadedFile",
+				    $_FILES["uploadedFile"]["type"],
 				    $paperId);
       if (DB::isError($result)) {
 	$Conf->errorMsg("There was an error storing your paper."

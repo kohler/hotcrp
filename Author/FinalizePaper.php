@@ -90,9 +90,9 @@ if ( IsSet($_REQUEST["ConfirmPaper"]) ) {
   if ( !IsSet($_FILES[uploadedFile])  || $_FILES[uploadedFile] == "none" || !IsSet($_FILES[uploadedFile][type]) ) {
     $Conf->errorMsg("You need to specify the file name and mimetype");
   } else {
-    $result = $Conf -> storePaper($_FILES[uploadedFile],
-				  $_FILES[uploadedFile][type],
-				  $_REQUEST[paperId]);
+    $result = $Conf -> storePaper("uploadedFile",
+				  $_FILES["uploadedFile"]["type"],
+				  $_REQUEST["paperId"]);
     if (DB::isError($result)) {
       $Conf->confirmMsg("I believe your paper has been updated, but you should "
 				  . " download it and double check ");

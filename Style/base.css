@@ -105,6 +105,16 @@ input.button_alert {
 	border-bottom: 2px solid #996666;
 	border-right: 3px solid #996666;
 }
+a.download {
+	font-size: small;
+	padding: 1px 0.25em;
+	background: #ffff99;
+	border-top: 1px solid #eeee66;
+	border-left: 2px solid #eeee66;
+	border-bottom: 1px solid #999966;
+	border-right: 2px solid #999966;
+	text-decoration: none;
+}
 
 tr {
 	vertical-align: baseline;
@@ -179,9 +189,11 @@ td.datedesc {
 table.daterange {
 }
 
-input.textlite {
-	border: none;
-	border-bottom: dashed 1px #ddddff;
+input.textlite, textarea.textlite {
+	/*border: none;*/
+	/*border-bottom: dashed 1px #ddddff;*/
+	border: solid 1px #ddddff;
+	padding: 0px 4px;
 }
 
 div.prevpaperlink {

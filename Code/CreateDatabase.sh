@@ -58,7 +58,8 @@ INSERT INTO user SET
     create_priv='Y',
     drop_priv='Y',
     index_priv='Y',
-    alter_priv='Y'
+    alter_priv='Y',
+    lock_tables_priv='Y'
     ;
 INSERT INTO user SET
     Host='localhost.localdomain',
@@ -71,7 +72,8 @@ INSERT INTO user SET
     create_priv='Y',
     drop_priv='Y',
     index_priv='Y',
-    alter_priv='Y'
+    alter_priv='Y',
+    lock_tables_priv='Y'
     ;
 INSERT INTO user SET
     Host='localhost',
@@ -84,7 +86,8 @@ INSERT INTO user SET
     create_priv='Y',
     drop_priv='Y',
     index_priv='Y',
-    alter_priv='Y'
+    alter_priv='Y',
+    lock_tables_priv='Y'
     ;
 DELETE FROM db WHERE db="$DBNAME";
 INSERT INTO db SET
@@ -99,7 +102,8 @@ INSERT INTO db SET
     drop_priv='Y',
     index_priv='Y',
     references_priv='Y',
-    alter_priv='Y'
+    alter_priv='Y',
+    lock_tables_priv='Y'
     ;
 INSERT INTO db SET
     host='localhost.localdomain',
@@ -113,7 +117,8 @@ INSERT INTO db SET
     drop_priv='Y',
     index_priv='Y',
     references_priv='Y',
-    alter_priv='Y'
+    alter_priv='Y',
+    lock_tables_priv='Y'
     ;
 INSERT INTO db SET
     host='localhost',
@@ -127,7 +132,8 @@ INSERT INTO db SET
     drop_priv='Y',
     index_priv='Y',
     references_priv='Y',
-    alter_priv='Y'
+    alter_priv='Y',
+    lock_tables_priv='Y'
     ;
 __EOF__
 ##

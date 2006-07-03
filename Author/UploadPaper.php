@@ -23,17 +23,17 @@ if ( ! $_SESSION["Me"] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
   exit;
 }
 
-$query = "SELECT Paper.title, Paper.abstract, Paper.authorInformation, "
-    . " Paper.withdrawn, Paper.acknowledged, Paper.collaborators "
-    . " FROM Paper WHERE "
+$query = "select Paper.title, Paper.abstract, Paper.authorInformation, "
+    . " Paper.withdrawn, Paper.acknowledged, Paper.collaborators, "
+    . " Paper.paperStorageId from Paper where "
     . " Paper.contactId='" . $_SESSION["Me"]->contactId . "' "
-    . " AND Paper.paperId=$_REQUEST[paperId] "
+    . " and Paper.paperId=$_REQUEST[paperId] "
 //    . " AND PaperStorage.paperId=$_REQUEST[paperId]"
 ;
 
 $result = $Conf->qe($query);
 
-if ( DB::isError($result) ) {
+if (DB::isError($result)) {
     $Conf->errorMsg("SQL error - " . $result->getMessage());
     exit();
 } 
@@ -69,7 +69,7 @@ if ($finalized) {
 // went away.
 //
 $result = $Conf->qe("SELECT mimetype from PaperStorage "
-		    . " WHERE paperId='$_REQUEST[paperId]'");
+		    . " WHERE paperStorageId=" . $row['paperStorageId']);
 
 if ( DB::isError($result) ) {
     $Conf->errorMsg("SQL error - " . $result->getMessage());
@@ -90,36 +90,28 @@ if ($result -> numRows() != 1) {
 //
 // Now actually replace the paper
 //
-if (IsSet($_REQUEST[submit])) {
-  if ( ! IsSet($_FILES[uploadedFile]) || $_FILES[uploadedFile] == "none" ) {
+if (IsSet($_REQUEST["submit"])) {
+  if ( ! IsSet($_FILES["uploadedFile"]) || $_FILES["uploadedFile"] == "none" ) {
     $Conf->errorMsg("Did NOT change the paper itself");
   } else {
-    $fn = fopen($_FILES[uploadedFile][tmp_name], "r");
-
-    if ( ! $fn ) {
-      $Conf->errorMsg("There was an error opening the file to store your paper."
-		      . "Please press BACK and try again.");
-    } else {
-
-      $result = $Conf -> storePaper($_FILES[uploadedFile][tmp_name],
-				    $_FILES[uploadedFile][type],
-				    $_REQUEST[paperId]);
+      $result = $Conf->storePaper("uploadedFile",
+				  $_FILES["uploadedFile"][type],
+				  $_REQUEST["paperId"]);
 
       if ($result == 0 || DB::isError($result)) {
-	$Conf->errorMsg("There was an error when trying to update your paper. "
+	  $Conf->errorMsg("There was an error when trying to update your paper. "
 			. " Please try again.");
-	if ( DB::isError($result) ) {
-	  $Conf->errorMsg("msg is " . $result->getMessage());
-	}
+	  if ( DB::isError($result) ) {
+	      $Conf->errorMsg("msg is " . $result->getMessage());
+	  }
       } else {
-	$Conf->infoMsg("Looks like paper #$_REQUEST[paperId] was updated, but "
-		       . "you may want to confirm this by downloading "
-		       . "your paper ");
-	$Conf->log("Replace paper $_REQUEST[paperId]", $_SESSION["Me"]);
+	  $Conf->infoMsg("Looks like paper #$_REQUEST[paperId] was updated, but "
+			 . "you may want to confirm this by downloading "
+			 . "your paper ");
+	  $Conf->log("Replace paper $_REQUEST[paperId]", $_SESSION["Me"]);
       }
-    }
   }
-}
+ }
 
 print "<center>";
 $Conf->textButton("Click here to go to the author tasks",

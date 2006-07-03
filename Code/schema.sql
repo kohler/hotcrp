@@ -305,7 +305,7 @@ drop table if exists PaperStorage;
 CREATE TABLE PaperStorage (
   paperStorageId int(11) NOT NULL auto_increment,
   paperId int(11) NOT NULL,
-  when int(11) NOT NULL,
+  timestamp int(11) NOT NULL,
   mimetype varchar(120) NOT NULL default '',
   paper longblob,
   PRIMARY KEY (paperStorageId),
@@ -313,6 +313,8 @@ CREATE TABLE PaperStorage (
   KEY paperId (paperId),
   KEY mimetype (mimetype)
 ) TYPE=MyISAM;
+
+insert into PaperStorage set paperId=0, timestamp=0, mimetype='text/plain', paper='';
 
 #
 # Dumping data for table 'PaperStorage'
