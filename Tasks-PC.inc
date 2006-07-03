@@ -6,7 +6,7 @@
 // be included there.
 //
 
- $Conf -> taskHeader("Tasks for the Program Committee", $TaskSpan);
+ $Conf -> taskHeader("Tasks for the Program Committee");
     
  $Conf -> infoMsg(" You need to write up your own review for any "
 		  . " assigned Primary paper, and ask one or more other people "

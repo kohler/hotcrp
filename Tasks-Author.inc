@@ -1,4 +1,4 @@
-<?php $Conf->taskHeader("Tasks for Authors", $TaskSpan); ?>
+<?php $Conf->taskHeader("Tasks for Authors"); ?>
 
 <p>
 <?php

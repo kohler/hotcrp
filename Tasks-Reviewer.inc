@@ -3,7 +3,7 @@ if ($Conf->validTimeFor('reviewerSubmitReviewDeadline', 0)
     || ($_SESSION['Me'] -> isPc && $Conf->validTimeFor('PCSubmitReview'))
     || $Conf->validTimeFor('reviewerViewDecision', 0) )
 {
-  $Conf -> taskHeader("Tasks for Reviewers", $TaskSpan);	
+  $Conf -> taskHeader("Tasks for Reviewers");
 
 if ($Conf->validTimeFor('reviewerSubmitReviewDeadline', 0)
     || ($_SESSION['Me'] -> isPc && $Conf->validTimeFor('PCSubmitReview')))

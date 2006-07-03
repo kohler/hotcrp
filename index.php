@@ -20,13 +20,14 @@ if (!IsSet($_SESSION["Me"]) || !$_SESSION["Me"]->valid())
     go("All/login.php");
 
 $Conf->connect();
-if (!$_SESSION["Me"]->valid())
+$Me = $_SESSION["Me"];
+if (!$Me->valid())
     exit;
 
 if ($_SESSION["AskedYouToUpdateContactInfo"] < 2
-    && $_SESSION["Me"]->valid() && !$_SESSION["Me"]->lastName) {
+    && $Me->valid() && !$Me->lastName) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 1;
-    $_SESSION["Me"]->go("All/UpdateContactInfo.php");
+    $Me->go("All/UpdateContactInfo.php");
 }
 
 //
@@ -47,18 +48,18 @@ if (isset($_SESSION["confirmMsg"])) {
 ?>
 
 <p>
-You're logged in as <?php echo htmlspecialchars($_SESSION["Me"]->fullnameAndEmail()) ?>.
+You're logged in as <?php echo htmlspecialchars($Me->fullnameAndEmail()) ?>.
 If this is not you, please <a href='<?php echo $ConfSiteBase, "All/Logout.php" ?>'>logout</a>.
 You will be automatically logged out if you are idle for more than
 <?php echo round(ini_get("session.gc_maxlifetime")/3600) ?> hours.
 </p>
 
 <?php
-// Oh what the hell, update their roles each time
-$_SESSION["Me"]->updateContactRoleInfo($Conf);
+// Oh what the hell, update roles and dates each time
+$Me->updateContactRoleInfo($Conf);
+$Conf->updateImportantDates();
 
-function taskbutton($name,$label)
-{
+function taskbutton($name,$label) {
   global $Conf;
   if ($_SESSION["WhichTaskView"] == $name ) {
    $color = $Conf->taskHeaderColor;
@@ -75,7 +76,7 @@ function taskbutton($name,$label)
 
 ?>
 
-<?php if ($_SESSION["Me"]->isChair) { ?>
+<?php if ($Me->isChair) { ?>
 <div class='home_tasks' id='home_tasks_chair'>
   <div class='taskname'><h2>Program Chair Tasks</h2></div>
   <div class='taskdetail'>
@@ -102,6 +103,43 @@ function taskbutton($name,$label)
 </div>
 <?php } ?>
 
+<?php if ($Me->isAuthor || $Conf->canStartPaper() >= 0) { ?>
+<div class='home_tasks' id='home_tasks_chair'>
+  <div class='taskname'><h2>Tasks for Authors</h2></div>
+  <div class='taskdetail'>
+    <table>
+
+    <tr><?php
+    if ($Conf->canStartPaper() == 0)
+	echo "<td colspan='2'>The <a href='All/ImportantDates.php'>deadline</a> for starting new papers has passed.</td>\n";
+    else
+	echo "<th><a href='Author/SubmitPaper.php'>Start new submission</a></th> <td><span class='deadline'>(", $Conf->printDeadline('startPaperSubmission'), ")</span></td>"; ?>
+    </tr>
+
+<?php
+if ($Me->papersSubmitted > 0) {
+    $query = "select paperId, title, acknowledged, withdrawn from Paper, Roles where Paper.paperId=Roles.secondaryId and Roles.contactId=" . $Me->contactId;
+    $result = $Conf->q($query);
+    if (!DB::isError($result)) {
+	$header = "<th>Submissions:</th>";
+	while ($row = $result->fetchRow()) {
+	    echo "<tr>\n  $header\n  <td>";
+	    $header = "<td></td>";
+	    echo "[#", $row[0], "] ", htmlspecialchars($row[1]), "\n";
+	    echo "</td>\n</tr>\n";
+	}
+    }
+    else echo $result->getMessage(), "X";
+}
+?>
+
+    </table>
+  </div>
+  <div class='clear'></div>
+</div>
+<?php } ?>
+
+
 <div class='home_tasks' id='home_tasks_all'>
   <div class='taskname'><h2>Tasks for Everyone</h2></div>
   <div class='taskdetail'>
@@ -115,21 +153,17 @@ function taskbutton($name,$label)
 
 <table width=100%>
 <tr>
-<? taskbutton("All", "Everyone"); ?>
 <? taskbutton("Author", "Author"); ?>
-<? if ($_SESSION["Me"]->amReviewer()) {taskbutton("Reviewer", "Reviewer");}?>
-<? if ($_SESSION["Me"]->isPC) { taskbutton("PC", "PC Members"); }?>
-<? if ($_SESSION["Me"]->isChair) {taskbutton("Chair", "PC Chair");}?>
-<? if ($_SESSION["Me"]->amAssistant()) {taskbutton("Assistant", "PC Chair Assitant");}?>
+<? if ($Me->amReviewer()) {taskbutton("Reviewer", "Reviewer");}?>
+<? if ($Me->isPC) { taskbutton("PC", "PC Members"); }?>
+<? if ($Me->isChair) {taskbutton("Chair", "PC Chair");}?>
+<? if ($Me->amAssistant()) {taskbutton("Assistant", "PC Chair Assitant");}?>
 </tr>
 </table>
 
 <?
 
-if ($_SESSION["WhichTaskView"] == "All") {
-  $AllPrefix="All/";
-  include("Tasks-All.inc");
-} else if ($_SESSION["WhichTaskView"] == "Author") {
+if ($_SESSION["WhichTaskView"] == "Author") {
   $AuthorPrefix="Author/";
   include("Tasks-Author.inc");
 } else if ($_SESSION["WhichTaskView"] == "Reviewer") {
@@ -148,7 +182,7 @@ if ($_SESSION["WhichTaskView"] == "All") {
 
 if (0) {
   print "<p> ";
-  print $_SESSION["Me"] -> dump();
+  print $Me->dump();
   print "</p>";
 }
 ?>

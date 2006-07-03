@@ -442,6 +442,12 @@ class Conference {
   function printableEndTime($what) {
       return $this->printTime($this->endTime[$what]);
   }
+  function printDeadline($what) {
+      if (!isset($this->endTime[$what]) || $this->endTime[$what] <= 0)
+	  return "No deadline";
+      else
+	  return "Deadline: " . $this->printTime($this->endTime[$what]);
+  }
 
   function printTimeRange($what)
     {
@@ -465,6 +471,25 @@ class Conference {
 
     }
 
+  function validPeriod($name) {
+      $now = time();
+      if (!isset($this->startTime[$name]) || $this->startTime[$name] >= $now)
+	  return -1;
+      else {
+	  $t = $this->endTime[$name];
+	  return !isset($t) || $t <= 0 || $now <= $t;
+      }
+  }
+  
+  function canStartPaper() {
+      return $this->validPeriod('startPaperSubmission');
+  }
+  
+  function canFinalizePaper() {
+      return $this->validPeriod('finalizePaperSubmission');
+  }
+  
+  
   //
   // Is this particular event/deadline defined?
   //
@@ -793,12 +818,12 @@ class Conference {
 			 . "<p> $text </p>");
   }
 
-  function taskHeader($what, $span) {
+  function taskHeader($what) {
       if ( !IsSet($span) ) {
 	$span = "100";
       }
       print "<table bgcolor=" . 
-	$this->taskHeaderColor . " width=$span%>\n";
+	$this->taskHeaderColor . " width=100%>\n";
       print "<tr> <td align=center width=100%>\n";
       print "<font size=+2 color=white> $what </font>\n";
       print "</td> </tr> </table>\n";

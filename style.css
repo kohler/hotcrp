@@ -151,10 +151,13 @@ table.memberlist th {
 	text-align: left;
 	padding-right: 0.5em;
 }
-tr.pc_removed td {
+td.pc_name, td.pc_email, td.pc_aff, td.pc_chairbox, td.pc_assbox {
+	padding-right: 0.5em;
+}
+tr.removed td {
 	text-decoration: line-through;
 }
-tr.pc_removed td.pc_action {
+tr.removed td.pc_action {
 	text-decoration: none;
 }
 td.pc_chairbox, td.pc_assbox {
@@ -173,4 +176,9 @@ td.datedesc {
 	padding-left: 2em;
 }
 table.daterange {
+}
+
+tr.pc td.pc_name input, tr.pc td.pc_email input, tr.pc td.pc_aff input {
+	border: none;
+	border-bottom: dashed 1px #ddddff;
 }

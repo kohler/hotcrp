@@ -2,8 +2,8 @@
 include('../Code/confHeader.inc');
 include('../Code/Calendar.inc');
 $Conf->connect();
-$_SESSION["Me"]->goIfInvalid("../index.php");
-$_SESSION["Me"]->goIfNotChair('../index.php');
+$_SESSION["Me"]->goIfInvalid("../");
+$_SESSION["Me"]->goIfNotChair('../');
 include('Code.inc');
 
 $DateStartMap = array("updatePaperSubmission" => "startPaperSubmission",

@@ -1,94 +1,114 @@
 <?php 
 include('../Code/confHeader.inc');
-include('../Code/Calendar.inc');
-$_SESSION["Me"] -> goIfInvalid("../index.php");
-$_SESSION["Me"] -> goIfNotChair('../index.php');
-$Conf -> connect();
+$Conf->connect();
+$_SESSION["Me"]->goIfInvalid("../");
+$_SESSION["Me"]->goIfNotChair('../');
 include('Code.inc');
-php?>
+$Conf->header_head("Manage Conference Topics");
+?>
+<script type="text/javascript"><!--
+function highlightUpdate(id) {
+    var ins = document.getElementsByTagName("input");
+    for (var i = 0; i < ins.length; i++)
+	if (ins[i].name == "update")
+	    ins[i].className = "button_alert";
+    if (id) {
+	var chg = document.getElementById("chg" + id);
+	if (chg.value == "")
+	    chg.value = "chg";
+    }
+}
+function doRemove(id) {
+    var but = document.getElementById("rem" + id);
+    var chg = document.getElementById("chg" + id);
+    var row = document.getElementById("pcrow" + id);
+    chg.value = (but.value == "Remove" ? "rem" : "chg");
+    var x = row.className.replace(/ *removed/, '');
+    row.className = x + (but.value == "Remove" ? " removed" : "");
+    but.value = (but.value == "Remove" ? "Do not remove" : "Remove");
+    highlightUpdate(id);
+}
+// -->
+</script>
+
 <html>
+<?php $Conf->header("Manage Conference Topics", 0) ?>
+<div id='body'>
 
 <?php
-$Conf->header("Manage Conference Topics");
-//
-// Process additions
-//
-if (IsSet($_REQUEST[addTopic])) {
-  if ( !IsSet($_REQUEST[newTopicName])
-       || strlen($_REQUEST[newTopicName]) == 0) {
-    $Conf->errorMsg("You need to provide a valid topic name to add a topic");
-  } else {
-    $query = "INSERT into TopicArea SET topicName='" 
-      . htmlentities($_REQUEST[newTopicName]) . "'";
-    print "<p> Query is $query </p>";
-    $Conf->qe($query);
-  }
-}
-
-if (IsSet($_REQUEST[removeTopics]) && IsSet($_REQUEST[removeTopic]))
-{
-  foreach( $_REQUEST[removeTopic] as $index => $id ){  
-    $Conf->qe("DELETE FROM TopicArea WHERE topicAreaId='$id'");
-    $Conf->qe("DELETE FROM PaperTopic WHERE topicId='$id'");
-  }
-}
-
-?>
-
-<body>
-
-<p>
-"Topics" are used to indicate the possible topics addressed by a paper.
-Internally, they are represented by unique identifiers, not the names you
-specify. When you remove a topic, all papers specifying that topic will
-have their topic association removed. Thus, you should probably not modify
-the topics after you've started accepting papers.
-</p>
-
-<div align="center">
-<center>
-<form METHOD="POST" ACTION="<?php  echo $_SERVER[PHP_SELF] ?>" >
-<table border=1>
-<tr> <th width=95%> Topic </th> <th> Remove? </th> </tr>
-<?php 
-  $query = "SELECT topicAreaId, topicName FROM TopicArea ORDER BY TopicName";
-  $result = $Conf->qe($query);
-  if ( DB::isError($result) ) {
-    print "<tr> <td colspan=2>n";
-    $Conf->errorMsg("There are no topics specified" . $result->getMessage());
-    print "</td></tr>";
-  } else {
-    $rownum = 0;
-    $cnt = $result->numRows();
-    while ($row = $result->fetchRow() ) {
-      $i = 0;
-      $id = $row[$i++];
-      $name = $row[$i++];
-      print "<tr bgcolor=" .
-	$Conf->alternatingContrast($rownum) . "> <td> $name </td>";
-      print "<td> <INPUT type=\"checkbox\" name=\"removeTopic[]\" value=\"$id\"> </td>";
-      print "</tr>";
-      $rownum++;
+if (isset($_REQUEST["update"])) {
+    // Add new topics
+    if (isset($_REQUEST["topics"])) {
+	foreach (preg_split('/[\r\n]+/', $_REQUEST["topics"]) as $t) {
+	    if (($t = ltrim(rtrim($t))) != '')
+		$Conf->qe("insert into TopicArea set topicName='" . mysql_real_escape_string($t) . "'", "while adding new topic");
+	}
     }
-  }
+
+
+    // Now, update existing members
+    foreach ($_REQUEST as $key => $value)
+	if ($key[0] == 'c' && $key[1] == 'h' && $key[2] == 'g'
+	    && ($id = (int) substr($key, 3)) > 0) {
+	    // remove?
+	    if ($value == "rem") {
+		$result = $Conf->qe("delete from TopicArea where topicAreaId='$id'", "while deleting topic");
+		if (!DB::isError($result))
+		    $Conf->log("Removed a topic", $_SESSION["Me"]);
+		continue;
+	    }
+
+	    // remove existing PC roles
+	    if (isset($_REQUEST["top$id"])) {
+		$top = ltrim(rtrim($_REQUEST["top$id"]));
+		$result = $Conf->qe("update TopicArea set topicName='" . mysql_real_escape_string($top) . "' where topicAreaId=$id", "while updating topic name");
+	    }
+	}
+}
 ?>
+
+<?php
+function outrow($id, $name) {
+    echo "<tr class='pc' id='pcrow$id'>\n";
+    echo "  <td class='pc_name'><input class='text' value='", htmlentities($name), "' name='top$id' id='top$id' size='48' onchange='highlightUpdate(\"$id\")' /></td>\n";
+    echo "  <td class='pc_action'><input class='button' type='button' value='Remove' name='rem$id' id='rem$id' onclick='doRemove(\"$id\")' />
+    <input type='hidden' value='' name='chg$id' id='chg$id' /></td>
+</tr>\n";
+}
+
+$query = "select topicAreaId, topicName from TopicArea order by topicName";
+$result = $Conf->q($query);
+if (DB::isError($result))
+    $Conf->errorMsg("Database error: " . $result->getMessage());
+ else { ?>
+<form method="post" action="<?php echo $_SERVER["PHP_SELF"] ?>" >
+<table class="memberlist">
+
+<tr>
+  <th>Topic</th>
+  <th>Actions</th>
+</tr>
+
+<?php
+    while ($row = $result->fetchRow())
+	outrow($row[0], $row[1]);
+?>
+
+<tr>
+  <td class='pc_name'><textarea name="topics" cols="48" rows="3" onchange='highlightUpdate(0)'></textarea></td>
+  <td class='pc_action'>Enter new topics here, one per line</td>
+</tr>
+
+<tr>
+  <td></td>
+  <td class='pc_action'><input class='button' type="submit" value="Save Changes" name='update' /></td>
+</tr>
+
 </table>
-</center>
+<?php } ?>
+</form>
+
 </div>
-<INPUT TYPE="SUBMIT" name="removeTopics" value="Remove Selected Topics">
-</form>
-
-<p>
-To add a new topic, enter the description of the topic and hit "add" </p>
-
-<form METHOD=POST action=<?$_SERVER[PHP_SELF]?>>
-<p> Topic: <input type="text" name="newTopicName" size=80> <br>
-<input TYPE="submit" value="Add selected topic" name="addTopic">
-</form>
-
+<?php $Conf->footer() ?>
 </body>
-
-
-<?php  $Conf->footer() ?>
 </html>
-

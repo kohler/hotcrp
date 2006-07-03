@@ -410,7 +410,7 @@ drop table if exists TopicArea;
 CREATE TABLE TopicArea (
   topicAreaId int(11) NOT NULL auto_increment,
   topicName varchar(80) default NULL,
-  PRIMARY KEY  (topicAreaId),
+  PRIMARY KEY (topicAreaId),
   UNIQUE KEY topicAreaId (topicAreaId),
   KEY topicName (topicName)
 ) TYPE=MyISAM;

@@ -22,7 +22,8 @@ function doRemove(id) {
     var chg = document.getElementById("chg" + id);
     var row = document.getElementById("pcrow" + id);
     chg.value = (but.value == "Remove" ? "rem" : "chg");
-    row.className = (but.value == "Remove" ? "pc_removed" : "");
+    var x = row.className.replace(/ *removed/, '');
+    row.className = x + (but.value == "Remove" ? " removed" : "");
     but.value = (but.value == "Remove" ? "Do not remove" : "Remove");
     highlightUpdate(id);
 }
@@ -30,7 +31,7 @@ function doRemove(id) {
 </script>
 
 <html>
-<?php $Conf->header("Manage $AddWhat") ?>
+<?php $Conf->header("Manage $AddWhat", 0) ?>
 <div id='body'>
 
 <?php
@@ -116,24 +117,18 @@ if (isset($_REQUEST["update"])) {
 		    $Conf->log("Removed someone from PC", $_SESSION["Me"]);
 		continue;
 	    }
-	    
-	    if (isset($_REQUEST['chair']) && in_array($id, $_REQUEST['chair']))
+
+	    // remove existing PC roles
+	    $result = $Conf->qe("delete from Roles where contactId='$id' and role>" . ROLE_PC, "while updating member's roles");
+	    if (!DB::isError($result) && isset($_REQUEST['chair']) && in_array($id, $_REQUEST['chair']))
 		$result = $Conf->qe("insert into Roles set contactId='$id', role=" . ROLE_CHAIR, "while adding member as Chair");
-	    else
-		$result = $Conf->qe("delete from Roles where contactId='$id' and role=" . ROLE_CHAIR, "while deleting member as Chair");
-	    if (DB::isError($result))
-		/* do nothing */;
-	    else if (isset($_REQUEST['ass']) && in_array($id, $_REQUEST['ass']))
+	    if (!DB::isError($result) && isset($_REQUEST['ass']) && in_array($id, $_REQUEST['ass']))
 		$result = $Conf->qe("insert into Roles set contactId='$id', role=" . ROLE_ASSISTANT, "while adding member as assistant");
-	    else
-		$result = $Conf->qe("delete from Roles where contactId='$id' and role=" . ROLE_ASSISTANT, "while deleting member as assistant");
 	    if (!DB::isError($result))
 		$Conf->log("Added someone as Chair", $_SESSION["Me"]);
 	}
  }
-?>
 
-<?php
 function outrow() {
     global $id, $first, $last, $email, $affiliation, $assistant, $chair;
     echo "<tr id='pcrow$id'>\n";
