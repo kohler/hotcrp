@@ -3,14 +3,36 @@ include('../Code/confHeader.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid("../");
-$Me->goIfNotAuthor("../");
 $paperId = cvtint($_REQUEST["paperId"]);
 if ($paperId <= 0)
     $Me->goAlert("../", "Invalid paper ID.");
-else if (!$Me->amPaperAuthor($paperId, $Conf))
-    $Me->goAlert("../", "You are not author of paper #$paperId.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
+
+$notAuthor = !$Me->amPaperAuthor($paperId, $Conf);
+if ($notAuthor && $Me->amAssistant())
+    $Me->goAlert("../", "You are not an author of paper #$paperId.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
+
+$overrideMsg = '';
+if ($Me->amAssistant())
+    $overrideMsg = "  Select the \"Override deadlines\" checkbox and try again if you really want to override this deadline.";
+
 $updatable = $Conf->canUpdatePaper();
 $finalizable = $Conf->canFinalizePaper();
+
+function pt_caption_class($what) {
+    global $PaperError;
+    if (isset($PaperError[$what]))
+	return "pt_caption error";
+    else
+	return "pt_caption";
+}
+
+function pt_data_html($what, $row) {
+    global $can_update;
+    if (isset($_REQUEST[$what]) && $can_update)
+	return htmlspecialchars($_REQUEST[$what]);
+    else
+	return htmlspecialchars($row[$what]);
+}
 
 $Conf->header_head("Manage Submission #$paperId");
 ?>
@@ -27,14 +49,19 @@ function highlightUpdate() {
 <?php $Conf->header("Manage Submission #$paperId", 0, 'aumg') ?>
 
 <?php
+// override?
+$override = 0;
+if (isset($_REQUEST['override']) && $Me->amAssistant())
+    $override = 1;
+
 // withdraw attempt?
 if (isset($_REQUEST['withdraw']))
     $Conf->qe("update Paper set withdrawn=" . time() . " where paperId=$paperId", "while withdrawing paper");
 
 // revive attempt?
 if (isset($_REQUEST['revive'])) {
-    if (!$finalizable)
-	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.");
+    if (!$finalizable && !$override)
+	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.$overrideMsg");
     else
 	$Conf->qe("update Paper set withdrawn=0 where paperId=$paperId", "while reviving paper");
  }
@@ -43,9 +70,9 @@ if (isset($_REQUEST['revive'])) {
 if (isset($_REQUEST['upload'])
     || ((isset($_REQUEST['update']) || isset($_REQUEST['finalize']))
         && fileUploaded($_FILES['uploadedFile']))) {
-    if (!$updatable)
-	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.");
-    else if (!isset($_FILES['uploadedFile']) || $_FILES["uploadedFile"] == "none")
+    if (!$updatable && !$override)
+	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.$overrideMsg");
+    else if (!fileUploaded($_FILES['uploadedFile']))
 	$Conf->errorMsg("Enter the name of a file to upload.");
     else {
 	$result = $Conf->storePaper('uploadedFile', $paperId);
@@ -58,8 +85,8 @@ if (isset($_REQUEST['upload'])
 
 // finalize attempt?
 if (isset($_REQUEST['finalize'])) {
-    if (!$finalizable)
-	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for finalizing papers has passed.");
+    if (!$finalizable && !$override)
+	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for finalizing papers has passed.$overrideMsg");
     else {
 	$result = $Conf->qe("select length(paper) as size from PaperStorage, Paper where Paper.paperStorageId=PaperStorage.paperStorageId and Paper.paperId=$paperId", "while finalizing paper");
 	if (DB::isError($result))
@@ -86,21 +113,28 @@ if (isset($_REQUEST['unfinalize'])) {
  }
 
 // update attempt?
-if (isset($_REQUEST['update']) && !$updatable)
-    $Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.");
+if (isset($_REQUEST['update']) && !$updatable && !$override)
+    $Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.$overrideMsg");
 else if (isset($_REQUEST['update'])) {
-    $updates = '';
-    if (isset($_REQUEST['title']))
-	$updates .= "title='" . sqlq($_REQUEST['title']) . "', ";
-    if (isset($_REQUEST['authorInformation']))
-	$updates .= "authorInformation='" . sqlq($_REQUEST['authorInformation']) . "', ";
-    if (isset($_REQUEST['abstract']))
-	$updates .= "abstract='" . sqlq($_REQUEST['abstract']) . "', ";
-    if (isset($_REQUEST['collaborators']))
-	$updates .= "collaborators='" . sqlq($_REQUEST['collaborators']) . "', ";
-    if ($updates)
+    $anyErrors = 0;
+    foreach (array('title', 'abstract', 'authorInformation') as $what) {
+	if (!isset($_REQUEST[$what]) || $_REQUEST[$what] == "")
+	    $PaperError[$what] = $anyErrors = 1;
+    }
+    if (!$anyErrors) {
+	$updates = "title='" . sqlq($_REQUEST['title']) . "', "
+	    . "abstract='" . sqlq($_REQUEST['abstract']) . "', "
+	    . "authorInformation='" . sqlq($_REQUEST['authorInformation']) . "', ";
+	if (isset($_REQUEST['collaborators']))
+	    $updates .= "collaborators='" . sqlq($_REQUEST['collaborators']) . "', ";
 	$Conf->qe("update Paper set " . substr($updates, 0, -2) . " where paperId=$paperId", "while updating paper information");
+    } else
+	$Conf->errorMsg("One or more required fields were left blank.  Fill in those fields and try again.");
  }
+
+// print message if not author
+if ($notAuthor)
+    $Conf->infoMsg("You are not an author of this paper, but you can still make changes in your capacity as PC Chair or PC Chair's Assistant.");
 
 // previous and next papers
 $result = $Conf->qe("select Roles.paperId, Paper.title from Roles, Paper where Roles.contactId=$Me->contactId and Roles.paperId=Paper.paperId");
@@ -115,8 +149,9 @@ while ($OK && ($row = $result->fetchRow())) {
  }
 
 if ($OK && !isset($paperTitle)) {
-    $Conf->errorMsg("You disappeared as author of paper #$paperId!  Please try again, or contact the site administrator.");
-    $OK = 0;
+    $result = $Conf->qe("select title from Paper where paperId=$paperId");
+    if ($OK && $result->numRows() > 0 && ($row = $result->fetchRow()))
+	$paperTitle = $row[0];
  }
 
 if ($OK && isset($prevPaperId))
@@ -131,10 +166,8 @@ if ($OK) {
     $query = "select Paper.title, Paper.abstract, Paper.authorInformation, "
 	. " length(PaperStorage.paper) as size, PaperStorage.mimetype, "
 	. " Paper.withdrawn, Paper.acknowledged, Paper.collaborators, "
-	. " PaperStorage.timestamp from Paper, PaperStorage where "
-	. " Paper.contactId=$Me->contactId "
-	. " and Paper.paperId=$paperId "
-	. " and PaperStorage.paperStorageId=Paper.paperStorageId";
+	. " PaperStorage.timestamp from Paper, PaperStorage where
+	Paper.paperId=$paperId and PaperStorage.paperStorageId=Paper.paperStorageId";
 
     $result = $Conf->qe($query);
  }
@@ -147,11 +180,11 @@ if ($OK) {
 
     $withdrawn = $row['withdrawn'] > 0;
     $finalized = $row['acknowledged'] > 0;
-    $can_update = $updatable && !$withdrawn && !$finalized;
+    $can_update = ($updatable || $Me->amAssistant()) && !$withdrawn && !$finalized;
 
     if ($can_update) {
-	echo "<tr>\n  <td class='pt_caption'>Title:</td>\n";
-	echo "  <td class='pt_entry'><input class='textlite' type='text' name='title' id='title' value=\"", htmlspecialchars($row['title']), "\" onchange='highlightUpdate()' size='60' /></td>\n";
+	echo "<tr>\n  <td class='", pt_caption_class('title'), "'>Title*:</td>\n";
+	echo "  <td class='pt_entry'><input class='textlite' type='text' name='title' id='title' value=\"", pt_data_html('title', $row), "\" onchange='highlightUpdate()' size='60' /></td>\n";
 	echo "</tr>\n";
     }
 ?>
@@ -167,31 +200,33 @@ if ($OK) {
   <td class='pt_entry'><?php
 	if ($row['size'] > 0)
 	    echo paperDownload($paperId, $row);
-	if (!$finalized && $updatable) {
+	if (!$finalized && ($updatable || $Me->amAssistant())) {
 	    if ($row['size'] > 0)
 		echo "    <br/>\n";
-	    echo "    <input type='file' name='uploadedFile' accept='application/pdf' size='60' />  <input class='button' type='submit' value='Upload File' name='upload' />\n";
+	    echo "    <input type='file' name='uploadedFile' accept='application/pdf' size='60' />  <input class='button' type='submit' value='Upload File";
+	    if (!$updatable) echo '*';
+	    echo "' name='upload' />\n";
 	} ?></td>
 </tr>
 <?php } ?>
 
 <tr>
-  <td class='pt_caption'>Abstract:</td>
+  <td class='<?php echo pt_caption_class('abstract') ?>'>Abstract*:</td>
   <td class='pt_entry'><?php
      if ($can_update)
 	 echo "<textarea class='textlite' name='abstract' rows='5' onchange='highlightUpdate()'>";
-     echo htmlspecialchars($row['abstract']);
+     echo pt_data_html('abstract', $row);
      if ($can_update)
 	 echo "</textarea>";
 ?></td>
 </tr>
 
 <tr>
-  <td class='pt_caption'>Author information:</td>
+  <td class='<?php echo pt_caption_class('authorInformation') ?>'>Author information*:</td>
   <td class='pt_entry'><?php
      if ($can_update)
 	 echo "<textarea class='textlite' name='authorInformation' rows='5' onchange='highlightUpdate()'>";
-     echo htmlspecialchars($row['authorInformation']);
+     echo pt_data_html('authorInformation', $row);
      if ($can_update)
 	 echo "</textarea>";
 ?></td>
@@ -202,7 +237,7 @@ if ($OK) {
   <td class='pt_entry'><?php
      if ($can_update)
 	 echo "<textarea class='textlite' name='collaborators' rows='5' onchange='highlightUpdate()'>";
-     echo htmlspecialchars($row['collaborators']);
+     echo pt_data_html('collaborators', $row);
      if ($can_update)
 	 echo "</textarea>";
 ?></td>
@@ -212,16 +247,26 @@ if ($OK) {
   <td class='pt_caption'>Actions:</td>
   <td class='pt_entry'>
 <?php
-    if ($withdrawn && $finalizable)
-	echo "    <input class='button' type='submit' value='Revive paper' name='revive' />\n";
-    else if ($withdrawn)
+    if ($Me->amAssistant())
+	echo "    <input type='checkbox' name='override' value='1' />&nbsp;Override deadlines<br/>\n";
+    if ($withdrawn && ($finalizable || $Me->amAssistant())) {
+	echo "    <input class='button' type='submit' value='Revive paper";
+        if (!$finalizable) echo '*';
+	echo "' name='revive' />\n";
+    } else if ($withdrawn)
 	echo "    None allowed\n";
     else {
 	if (!$finalized) {
-	    if ($updatable)
-		echo "    <input class='button' type='submit' value='Save Changes' name='update' />\n";
-	    if ($finalizable)
-		echo "    <input class='button' type='submit' value='Finalize' name='finalize' />\n";
+	    if ($updatable || $Me->amAssistant()) {
+		echo "    <input class='button' type='submit' value='Save Changes";
+		if (!$updatable) echo '*';
+		echo "' name='update' />\n";
+	    }
+	    if ($finalizable || $Me->amAssistant()) {
+		echo "    <input class='button' type='submit' value='Finalize";
+		if (!$finalizable) echo '*';
+		echo "' name='finalize' />\n";
+	    }
 	}
 	echo "    <input class='button' type='submit' value='Withdraw' name='withdraw' />\n";
 	if ($finalized && $Me->isChair)

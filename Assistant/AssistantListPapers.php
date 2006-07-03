@@ -75,7 +75,7 @@ if ( $_REQUEST[onlyWithdrawn] ) {
   . " ContactInfo.email, ContactInfo.affiliation, Paper.collaborators, "
   . " LENGTH(PaperStorage.paper) as size, PaperStorage.mimetype "
   . " FROM Paper, ContactInfo, PaperStorage "
-  . " WHERE ContactInfo.contactId = Paper.contactId and PaperStorage.paperId = Paper.paperId "
+  . " WHERE ContactInfo.contactId = Paper.contactId and PaperStorage.paperStorageId = Paper.paperStorageId "
   . $finalizedStr . $withdrawnStr
   . $_REQUEST["ORDER"];
 
@@ -148,7 +148,7 @@ Found <?php  echo $numpapers ?> papers.
 
      $finalized = "";
 
-     if ( $row['acknowledged'] ) {
+     if ( $row['acknowledged'] > 0) {
        $finalized = "\nFINALIZED";
      }
 
