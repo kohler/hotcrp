@@ -39,12 +39,42 @@ if (isset($_REQUEST['revive'])) {
 	$Conf->qe("update Paper set withdrawn=0 where paperId=$paperId", "while reviving paper");
  }
 
+// upload attempt?
+if (isset($_REQUEST['upload'])
+    || ((isset($_REQUEST['update']) || isset($_REQUEST['finalize']))
+        && fileUploaded($_FILES['uploadedFile']))) {
+    if (!$updatable)
+	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.");
+    else if (!isset($_FILES['uploadedFile']) || $_FILES["uploadedFile"] == "none")
+	$Conf->errorMsg("Enter the name of a file to upload.");
+    else {
+	$result = $Conf->storePaper('uploadedFile', $paperId);
+	if ($result == 0 || DB::isError($result))
+	    $Conf->errorMsg("There was an error when trying to update your paper. Please try again.");
+	else
+	    $Conf->confirmMsg("Paper uploaded ($result bytes).");
+    }
+ }
+
 // finalize attempt?
 if (isset($_REQUEST['finalize'])) {
     if (!$finalizable)
 	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for finalizing papers has passed.");
-    else
-	$Conf->qe("update Paper set acknowledged=" . time() . " where paperId=$paperId", "while finalizing paper");
+    else {
+	$result = $Conf->qe("select length(paper) as size from PaperStorage, Paper where Paper.paperStorageId=PaperStorage.paperStorageId and Paper.paperId=$paperId", "while finalizing paper");
+	if (DB::isError($result))
+	    /* do nothing */;
+	else {
+	    $row = $result->fetchRow();
+	    if ($result->numRows() != 1 || $row[0] == 0)
+		$Conf->errorMsg("You must upload a paper before you can finalize.");
+	    else {
+		$result = $Conf->qe("update Paper set acknowledged=" . time() . " where paperId=$paperId", "while finalizing paper");
+		if (!DB::isError($result))
+		    $Conf->confirmMsg("Paper finalized.");
+	    }
+	}
+    }
  }
 
 // unfinalize attempt?
@@ -53,21 +83,6 @@ if (isset($_REQUEST['unfinalize'])) {
 	$Conf->error("Only the program chairs can unfinalize papers.");
     else
 	$Conf->qe("update Paper set acknowledged=0 where paperId=$paperId", "while unfinalizing paper");
- }
-
-// upload attempt?
-if (isset($_REQUEST['upload'])) {
-    if (!$updatable)
-	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.");
-    else if (!isset($_FILES['uploadedFile']) || $_FILES["uploadedFile"] == "none")
-	$Conf->errorMsg("Enter the name of a file to upload.");
-    else {
-	$result = $Conf->storePaper('uploadedFile', $_FILES['uploadedFile']['type'], $paperId);
-	if ($result == 0 || DB::isError($result))
-	    $Conf->errorMsg("There was an error when trying to update your paper. Please try again.");
-	else
-	    $Conf->confirmMsg("Paper uploaded ($result bytes).");
-    }
  }
 
 // update attempt?
@@ -130,7 +145,11 @@ if ($OK) {
 <input type='hidden' name='paperId' value='$paperId' />
 <table class='aumanage'>\n";
 
-    if ($updatable && $row['withdrawn'] <= 0 && $row['acknowledged'] <= 0) {
+    $withdrawn = $row['withdrawn'] > 0;
+    $finalized = $row['acknowledged'] > 0;
+    $can_update = $updatable && !$withdrawn && !$finalized;
+
+    if ($can_update) {
 	echo "<tr>\n  <td class='pt_caption'>Title:</td>\n";
 	echo "  <td class='pt_entry'><input class='textlite' type='text' name='title' id='title' value=\"", htmlspecialchars($row['title']), "\" onchange='highlightUpdate()' size='60' /></td>\n";
 	echo "</tr>\n";
@@ -142,35 +161,71 @@ if ($OK) {
   <td class='pt_entry'><?php echo paperStatus($paperId, $row, 1) ?></td>
 </tr>
 
-<?php if ($row['size'] > 0 && $row['withdrawn'] <= 0) { ?>
+<?php if (!$withdrawn) { ?>
 <tr>
-  <td class='pt_caption'>Download:</td>
-  <td class='pt_entry'><?php echo paperDownload($paperId, $row) ?></td>
+  <td class='pt_caption'>Paper:</td>
+  <td class='pt_entry'><?php
+	if ($row['size'] > 0)
+	    echo paperDownload($paperId, $row);
+	if (!$finalized && $updatable) {
+	    if ($row['size'] > 0)
+		echo "    <br/>\n";
+	    echo "    <input type='file' name='uploadedFile' accept='application/pdf' size='60' />  <input class='button' type='submit' value='Upload File' name='upload' />\n";
+	} ?></td>
 </tr>
 <?php } ?>
+
+<tr>
+  <td class='pt_caption'>Abstract:</td>
+  <td class='pt_entry'><?php
+     if ($can_update)
+	 echo "<textarea class='textlite' name='abstract' rows='5' onchange='highlightUpdate()'>";
+     echo htmlspecialchars($row['abstract']);
+     if ($can_update)
+	 echo "</textarea>";
+?></td>
+</tr>
+
+<tr>
+  <td class='pt_caption'>Author information:</td>
+  <td class='pt_entry'><?php
+     if ($can_update)
+	 echo "<textarea class='textlite' name='authorInformation' rows='5' onchange='highlightUpdate()'>";
+     echo htmlspecialchars($row['authorInformation']);
+     if ($can_update)
+	 echo "</textarea>";
+?></td>
+</tr>
+
+<tr>
+  <td class='pt_caption'>Collaborators:</td>
+  <td class='pt_entry'><?php
+     if ($can_update)
+	 echo "<textarea class='textlite' name='collaborators' rows='5' onchange='highlightUpdate()'>";
+     echo htmlspecialchars($row['collaborators']);
+     if ($can_update)
+	 echo "</textarea>";
+?></td>
+</tr>
 
 <tr>
   <td class='pt_caption'>Actions:</td>
   <td class='pt_entry'>
 <?php
-    if ($row['withdrawn'] > 0 && $finalizable)
+    if ($withdrawn && $finalizable)
 	echo "    <input class='button' type='submit' value='Revive paper' name='revive' />\n";
-    else if ($row['withdrawn'] > 0)
+    else if ($withdrawn)
 	echo "    None allowed\n";
     else {
-	if ($row['acknowledged'] <= 0) {
+	if (!$finalized) {
 	    if ($updatable)
 		echo "    <input class='button' type='submit' value='Save Changes' name='update' />\n";
 	    if ($finalizable)
 		echo "    <input class='button' type='submit' value='Finalize' name='finalize' />\n";
 	}
 	echo "    <input class='button' type='submit' value='Withdraw' name='withdraw' />\n";
-	if ($row['acknowledged'] > 0 && $Me->isChair)
+	if ($finalized && $Me->isChair)
 	    echo "    <input class='button' type='submit' value='Unfinalize' name='unfinalize' />\n";
-	if ($row['acknowledged'] <= 0 && $updatable) {
-	    echo "    <br/>\n";
-	    echo "    <input type='file' name='uploadedFile' accept='application/pdf' size='60' />  <input class='button' type='submit' value='Upload File' name='upload' />\n";
-	}
     }
 ?>  </td>
 </tr>

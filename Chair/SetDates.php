@@ -74,10 +74,10 @@ function crp_showdate($name) {
 
     echo "<tr>\n";
     echo "  <td class='datename'>$label</td>\n";
-    $formclass = isset($DateError["${name}_start"]) ? "form_caption_error" : "form_caption";
+    $formclass = isset($DateError["${name}_start"]) ? "form_caption error" : "form_caption";
     echo "  <td class='$formclass'>From:</td>\n";
     echo "  <td class='form_entry'><input type='text' name='${name}_start' id='${name}_start' value='", htmlspecialchars(crp_dateview($name, 0)), "' size='24' onchange='highlightUpdate()' /></td>\n";
-    $formclass = isset($DateError["${name}_end"]) ? "form_caption_error" : "form_caption";
+    $formclass = isset($DateError["${name}_end"]) ? "form_caption error" : "form_caption";
     echo "  <td class='$formclass'>To:</td>\n";
     echo "  <td class='form_entry'><input type='text' name='${name}_end' id='${name}_end' value='", htmlspecialchars(crp_dateview($name, 1)), "' size='24' onchange='highlightUpdate()' /></td>\n";
     echo "  <td><button class='button' type='button' onclick='javascript: clearDates(\"", $name, "\")'>Clear</button></td>\n";

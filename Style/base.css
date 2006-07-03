@@ -81,6 +81,9 @@ div.confirm {
 input, button, textarea {
 	font-family: sans-serif;
 }
+textarea {
+	vertical-align: baseline;
+}
 input.button, button {
 	background: #ffffee;
 	border-top: 2px solid #eeeedd;
@@ -119,11 +122,11 @@ a.download {
 tr {
 	vertical-align: baseline;
 }
-td.form_caption, td.form_caption_error {
+td.form_caption {
 	text-align: right;
 	padding-right: 0.5em;
 }
-td.form_caption_error {
+td.error {
 	font-weight: bold;
 	color: #ff0000;
 }
@@ -212,4 +215,7 @@ div.aumg h2 {
 td.pt_caption {
 	font-weight: bold;
 	padding-right: 0.5em;
+}
+td.pt_entry textarea {
+	width: 100%;
 }

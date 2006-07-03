@@ -58,6 +58,8 @@ class Conference {
   var $errorColor = "fuchsia"; // should be pink!
   var $warnColor = "lightBlue"; // should be pink!
 
+  var $saveMessages;
+
   function Conference($dbUser, $dbPassword, $dbHost, $dbName) {
       $this->dbHost = $dbHost;
       $this->dbUser = $dbUser;
@@ -67,6 +69,7 @@ class Conference {
       $this->connected = 0;
       $this->startTime = array();
       $this->endTime = array();
+      $this->saveMessages = 0;
   }
 
   function dump()
@@ -456,23 +459,20 @@ class Conference {
 	  return "Deadline: " . $this->printTime($this->endTime[$what]);
   }
 
-  function printTimeRange($what)
-    {
-      $start = $this -> startTime[$what];
-      $end = $this -> endTime[$what];
+  function printTimeRange($what) {
+      $start = &$this->startTime[$what];
+      $end = &$this->endTime[$what];
       $now = time();
-
+      
       $str = "";
-      if ( IsSet($start) && $start != 0 && $start >= $now ) {
-	$str = "after " . $this -> printTime($start) . " ";
-	if ( IsSet($end) && $end != 0 ) {
-	  $str .= "and ";
-	}
+      if (isset($start) && $start > 0 && $start >= $now) {
+	  $str = "after " . $this->printTime($start);
+	  if (isset($end) && $end > 0)
+	      $str .= " and ";
       }
 
-      if ( IsSet($end) && $end != 0 ) {
-	$str .= "until " . $this -> printTime($end) . " ";
-      }
+      if (isset($end) && $end > 0)
+	  $str .= "until " . $this->printTime($end);
       
       return $str;
 
@@ -556,15 +556,11 @@ class Conference {
   // Paper storage
   //
 
-  function storePaper($uploadId, $mimetype, $paperId) {
-      if ($uploadId && isset($_FILES[$uploadId])
-	  && $_FILES[$uploadId]['tmp_name'] != 'none'
-	  && $_FILES[$uploadId]['tmp_name'] != '')
+  function storePaper($uploadId, $paperId) {
+      if ($uploadId && fileUploaded($_FILES[$uploadId]))
 	  $filename = $_FILES[$uploadId]['tmp_name'];
-      else {
-	  $paperStorageId = 1;
-	  $contents = '';
-      }
+      else
+	  return 0;
 
       if (isset($filename)) {
 	  $fd = @fopen($filename, 'rb');
@@ -591,6 +587,9 @@ class Conference {
 	  else if ($this->allowPS && strncasecmp("%!PS-", $contents, 5) == 0)
 	      $mimetype = "application/postscript";
 	  else {
+	      $mimetype = "application/octet-stream";
+	      if (isset($_FILES[$uploadid]["type"]))
+		  $mimetype = $_FILES[$uploadid]["type"];
 	      $message = "You appear to be submitting a file that's not in a valid format for this conference.  ";
 	      if ($this->allowPDF && $this->allowPS)
 		  $message .= "Valid formats are PDF and PostScript.  ";
@@ -674,7 +673,11 @@ class Conference {
   // Message routines
   //
   function msg($text, $type) {
-      echo "<div class='", $type, "'>", $text, "</div>\n";
+      $x = "<div class='$type'>$text</div>\n";
+      if ($this->saveMessages)
+	  $_SESSION["msgs"] = (isset($_SESSION["msgs"]) ? $_SESSION["msgs"] . $x : $x);
+      else
+	  echo $x;
   }
 
   function infoMsg($text) {
@@ -741,6 +744,10 @@ class Conference {
       if (isset($_SESSION["confirmMsg"])) {
 	  $this->confirmMsg($_SESSION["confirmMsg"]);
 	  unset($_SESSION["confirmMsg"]);
+      }
+      if (isset($_SESSION["msgs"])) {
+	  echo $_SESSION["msgs"];
+	  unset($_SESSION["msgs"]);
       }
   }
 

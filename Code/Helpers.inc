@@ -31,15 +31,9 @@ function go($url) {
     exit();
 }
 
-function normalizePeopleList($list) {
-    $out = '';
-    foreach (preg_split('/[\r\n]+/', $list) as $x) {
-	$x = ltrim(trim($x));
-	if ($x == '')
-	    continue;
-	$out .= $x . "\n";
-    }
-    return $out;
+function fileUploaded(&$var) {
+    return isset($var) && $var["tmp_name"] != "none" && $var["tmp_name"] != ""
+	&& is_uploaded_file($var["tmp_name"]);
 }
 
 function paperUploaded($size, $mimetype) {
@@ -73,11 +67,11 @@ function paperStatus($paperId, $row = null, $long = 0, $conf = null) {
 		$x = "Finalized";
 	} else {
 	    if ($long)
-		$x = "Updated at " . $conf->printTime($row['timestamp']);
+		$x = "Not finalized; updated at " . $conf->printTime($row['timestamp']);
 	    else
-		$x = "Updated";
+		$x = "Not finalized";
 	}
-	$x .= " <a href='" . $conf->makeDownloadPath($paperId, $row['mimetype']) . "'>[";
+	/* $x .= " <a href='" . $conf->makeDownloadPath($paperId, $row['mimetype']) . "'>[";
 	if ($row['mimetype'] == 'application/pdf')
 	    $x .= "PDF";
 	else if ($row['mimetype'] == 'application/postscript')
@@ -86,7 +80,7 @@ function paperStatus($paperId, $row = null, $long = 0, $conf = null) {
 	    $x .= "Text";
 	else
 	    $x .= htmlspecialchars($row['mimetype']);
-	$x .= " " . round($row['size'] / 1024) . "&nbsp;kB]</a>";
+	    $x .= " " . round($row['size'] / 1024) . "&nbsp;kB]</a>"; */
 	return $x;
     }
 }
