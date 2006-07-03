@@ -443,8 +443,11 @@ class Conference {
   function parseableTime($value) {
       return date("j M Y g:i:sa",$value);
   }
-  function printTime($value) {
-      return date("l j M Y g:i:sa T", $value);
+  function printTime(&$value) {
+      if (isset($value) && $value > 0)
+	  return date("l j M Y g:i:sa T", $value);
+      else
+	  return "N/A";
   }
   function printableStartTime($what) {
       return $this->printTime($this->startTime[$what]);
