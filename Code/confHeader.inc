@@ -16,6 +16,8 @@ define("ROLE_PC", 2);
 define("ROLE_ASSISTANT", 3);
 define("ROLE_CHAIR", 4);
 
+$OK = 1;
+
 //
 // Disable caching
 //
@@ -50,6 +52,7 @@ if ($last == "All" || $last == "Assistant" || $last == "Author"
 //
 // Bring in code
 //
+require_once("$ConfSitePATH/Code/Helpers.inc");
 require_once("$ConfSitePATH/Code/ClassConference.inc");
 require_once("$ConfSitePATH/Code/ClassContact.inc");
 require_once("$ConfSitePATH/Code/ClassPaper.inc");

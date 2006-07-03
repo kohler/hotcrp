@@ -156,9 +156,13 @@ class Conference {
     }
 
   function q($query) {
+      global $OK;
       if (!$this->connected)
 	  $this->connect();
-      return $this->DB->query($query);
+      $result = $this->DB->query($query);
+      if (DB::isError($result))
+	  $OK = 0;
+      return $result;
   }
 
   function dbErrorText($result, $while = "", $suggestRetry = 1) {
@@ -174,11 +178,14 @@ class Conference {
   }
   
   function qe($query, $while = "", $suggestRetry = 0) {
+      global $OK;
       if (!$this->connected)
 	  $this->connect();
       $result = $this->DB->query($query);
-      if (DB::isError($result))
+      if (DB::isError($result)) {
 	  $this->errorMsg($this->dbErrorText($result, $while, $suggestRetry));
+	  $OK = 0;
+      }
       return $result;
   }
 
@@ -484,7 +491,9 @@ class Conference {
   function canStartPaper() {
       return $this->validPeriod('startPaperSubmission');
   }
-  
+  function canUpdatePaper() {
+      return $this->validPeriod('updatePaperSubmission');
+  }
   function canFinalizePaper() {
       return $this->validPeriod('finalizePaperSubmission');
   }
@@ -549,7 +558,7 @@ class Conference {
   function storePaper($uploadedFileName, $mimetype, $paperId) {
       if (!IsSet($uploadedFileName)
 	  || $uploadedFileName == "none" || $uploadedFileName == "") {
-	$mimetype="application/txt";
+	$mimetype="text/plain";
 	$contents="This is a placeholder since no file was specified";
       } else {
 	//
@@ -584,7 +593,7 @@ class Conference {
 		   && strncasecmp("%!PS-", $contents, 5) == 0 ) {
 	$mimetype=="application/postscript";
 	$paperOk = 1;
-      } else  if ($mimetype == "application/txt") {
+      } else  if ($mimetype == "text/plain") {
 	$paperOk = 1;
 	//
 	//	probably the place holder -- treat as OK
@@ -625,7 +634,7 @@ class Conference {
       }
 
 
-      $query="SELECT mimetype FROM PaperStorage WHERE PaperStorage.paperId=$paperId";
+      $query="select mimetype FROM PaperStorage WHERE PaperStorage.paperId=$paperId";
       $result=$this->q($query);
 
       if ( DB::isError($result) || $result->numRows() == 0 ) {
@@ -700,7 +709,7 @@ class Conference {
       echo $this->theme;
   }
   
-  function header($title, $doHead = 1) {
+  function header($title, $doHead = 1, $class = '') {
       global $ConfSiteBase;
       if ($doHead)
 	  $this->header_head($title);
@@ -723,7 +732,18 @@ class Conference {
       //$this->textButton("Go To $this->shortName Site", $this->conferenceSite);
       //$this->textButton("Go To $this->shortName Submissions", $ConfSiteBase . "index.php");
       print "  </div>\n";
-      print "  <div class='clear'></div>\n</div>\n";
+
+      $class = ($class ? " class='$class'" : "");
+      print "  <div class='clear'></div>\n</div>\n<div id='body'$class>\n";
+
+      if (isset($_SESSION["errorMsg"])) {
+	  $this->errorMsg($_SESSION["errorMsg"]);
+	  unset($_SESSION["errorMsg"]);
+      }
+      if (isset($_SESSION["confirmMsg"])) {
+	  $this->confirmMsg($_SESSION["confirmMsg"]);
+	  unset($_SESSION["confirmMsg"]);
+      }
   }
 
   function footer() {
@@ -838,8 +858,8 @@ class Conference {
   }
 
   function downloadPaper($paperId) {
-      $result = $this->q("SELECT mimetype, paper FROM PaperStorage "
-			 . " WHERE ( PaperStorage.paperId='$paperId' )");
+      $result = $this->q("select mimetype, paper from PaperStorage, Paper "
+			 . " where Paper.paperId=$paperId and PaperStorage.paperStorageId=Paper.paperStorageId");
       if ( !DB::isError($result) ) {
 
 	$row = $result->fetchRow();
@@ -880,7 +900,7 @@ class Conference {
 	return "ps";
       } else if ($mimetype == "application/pdf") {
 	return "pdf";
-      } else if ($mimetype == "application/txt") {
+      } else if ($mimetype == "text/plain") {
 	return "txt";
       } else {
 	return "txt";
@@ -894,19 +914,11 @@ class Conference {
     }
 
   function makeDownloadPath($paperId, $mimetype) {
-      $ext = $this->getFileExtension($mimetype);
-      //
-      // This mechanisms (using /GetPaper/) appears to have
-      // problems on some web servers. I don't know why - dirk
-      // The other mechanism appears to work
-      //
-      if ( 0 ) {
-	  $path = $this->paperSite . "/Download/GetPaper/" . 
-	      $this->paperPrefix . "-$paperId." . $ext;
-      } else {
-	  $path = $this->paperSite . "/Download/GetPaper.php?paperId=$paperId";
-      }
-      return $path;
+      //$ext = $this->getFileExtension($mimetype);
+      //$path = $this->paperSite . "/Download/GetPaper/" . 
+      //   $this->paperPrefix . "-$paperId." . $ext;
+      global $ConfSiteBase;
+      return $ConfSiteBase . "Download/GetPaper.php?paperId=$paperId";
   }
 
   
@@ -1485,7 +1497,7 @@ class Conference {
     if ( $string == "") {
       return "&nbsp;";
     } else {
-      return nl2br(stripslashes($string));
+      return nl2br(htmlspecialchars($string));
     }
   }
 
@@ -1544,8 +1556,7 @@ class Conference {
     }
   }
 
-function showReviewers( $paperId, $type )
-{
+  function showReviewers( $paperId, $type ) {
   print "<TR><TD>$type:</TD><TD>";
    $result = $this->qe("SELECT ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.contactId "
 		       . " FROM ContactInfo, $type" . "Reviewer "
@@ -1560,88 +1571,93 @@ function showReviewers( $paperId, $type )
      print "<p> Error: " . $result->getMessage() . " </p>";
    }
   print "</TD></TR>\n";
-}
-
-function paperTable( $showAuthor = true, $showAbs = true, $paperId = -1,
-		     $showRev = false, $showTopics = true, $showCollab = -1 )
-{
-  if( $showCollab < 0 ){
-    $showCollab = $showAuthor;
   }
-  if( $paperId < 0 ){
-    $paperId = $_REQUEST[paperId];
-  }
-  $query = "SELECT Paper.title, Paper.abstract, Paper.authorInformation, "
-    . " LENGTH(PaperStorage.paper) as size, PaperStorage.mimetype, Paper.collaborators, Paper.pcPaper "
-    . " FROM Paper, PaperStorage WHERE "
-    . " Paper.paperId=$paperId "
-    . " AND PaperStorage.paperId=$paperId";
 
-  if ( !($_SESSION["Me"]->isChair || $_SESSION["Me"]->isPC || $_SESSION["Me"] -> isAssistant) ){
-    $query = $query . " AND Paper.contactId='" . $_SESSION["Me"]->contactId . "' ";
-  }
-  //$this->warnMsg($query);
+  function paperTable($showAuthor = true, $showAbs = true, $paperId = -1,
+		      $showRev = false, $showTopics = true, $showCollab = -1) {
+    if ($showCollab < 0)
+	$showCollab = $showAuthor;
+    if ($paperId < 0)
+	$paperId = $_REQUEST["paperId"];
 
-  $result = $this->qe($query);
+    $query = "select Paper.title, Paper.abstract, Paper.authorInformation, "
+	. " length(PaperStorage.paper) as size, PaperStorage.mimetype, Paper.collaborators, Paper.pcPaper, Paper.acknowledged, Paper.withdrawn "
+	. " from Paper, PaperStorage";
 
-  if ( DB::isError($result) ) {
-    $this->errorMsg("That's odd - paper #$paperId cannot be displayed. "
-		    . $result->getMessage());
-    exit();
-  } 
- 
-  $row = $result->fetchRow(DB_FETCHMODE_ASSOC);
+    $Me = $_SESSION["Me"];
+    if (!($Me->isChair || $Me->isPC || $Me->isAssistant))
+	$query .= ", Roles";
+    $query .= " where Paper.paperId=$paperId and PaperStorage.paperStorageId=Paper.paperStorageId";
+    if (!($Me->isChair || $Me->isPC || $Me->isAssistant))
+	$query .= " and Roles.contactId=$Me->contactId and Roles.paperId=$paperId";
 
-  $title = $this->safeHtml($row['title']);
-  $abstract = $this->safeHtml($row['abstract']);
-  $authorInfo = $this->safeHtml($row['authorInformation']);
-  $paperLength = $row['size'];
-  $mimetype = $row['mimetype'];
-  $collaborators = $this->safeHtml($row['collaborators']);
-  
-  $badPaper = $paperLength < 100 && $mimetype == 'application/txt';
-    ?>
-    <table align=center border=1 bgcolor="<?php echo $this->bgOne?>" >
-       <tr> <th colspan=2 align=center><font size=+1>
-       <b> Paper #
-<?php
-    echo $paperId;
-    if( $badPaper ){
-        echo ' (not yet uploaded)';
-    } else {
-?>
-       <a href="<?php  echo $this->makeDownloadPath($paperId, $mimetype) ?>" target=_blank>
-	  (Download paper of type <?php  echo $mimetype . ", " . $paperLength . " bytes" ?>) </a>
-<?php
+    //$this->warnMsg($query);
+    $result = $this->qe($query);
+    if (DB::isError($result)) {
+	$this->errorMsg("That's odd - paper #$paperId cannot be displayed. "
+			. $result->getMessage());
+	exit();
     }
-?>
-	</b> </font> </th> </tr>
-   <tr> <td> Title: </td> <td> <?php  echo $title ?> </td> </tr>
+ 
+    $row = $result->fetchRow(DB_FETCHMODE_ASSOC);
+
+    $title = htmlspecialchars($row['title']);
+    $abstract = htmlspecialchars($row['abstract']);
+    $authorInfo = htmlspecialchars($row['authorInformation']);
+    $paperLength = $row['size'];
+    $mimetype = $row['mimetype'];
+    $collaborators = htmlspecialchars($row['collaborators']);
+  
+    $badPaper = $paperLength < 100 && $mimetype == 'text/plain';
+    ?>
+    <table class='papertable'>
+       <tr> <th colspan=2 align=center><font size=+1>
+       <b> Paper #<?php echo $paperId ?></b> </font> </th> </tr>
+   <tr> <td class='pt_caption'>Title:</td> <td> <?php  echo $title ?> </td> </tr>
 <?php
     if ( $_SESSION["Me"]->isChair && $row['pcPaper'] ){
 ?>
-   <TR> <TD COLSPAN=2 ALIGN=CENTER BGCOLOR='Red'> This is a PC paper. </TD> </TR>
+   <tr> <td colspan='2' align='center' bgcolor='Red'> This is a PC paper. </td> </tr>
 <?php
     }
 ?>
 <?php
+    echo "  <tr><td class='pt_caption'>Status:</td> <td>";
+    if ($paperLength < 100 && $mimetype == 'text/plain')
+	echo "Not yet uploaded";
+    else if ($row['withdrawn'] > 0)
+	echo "Withdrawn";
+    else {
+	echo "<a href=\"", $this->makeDownloadPath($paperId, $mimetype), "\">";
+	echo ($row['acknowledged'] > 0 ? "Finalized" : "Uploaded");
+	echo " (", round($paperLength/1024), "&nbsp;kB ";
+	if ($mimetype == "application/pdf")
+	    echo "PDF";
+	else if ($mimetype == "application/postscript")
+	    echo "PostScript";
+	else
+	    echo $mimetype;
+	echo ")</a>";
+    }
+    echo "</td></tr>\n";
+	
     if( $showAuthor ){
 ?>
-   <tr> <td> Author Information: </td> <td> <?php  echo $authorInfo ?> </td> </tr>
+   <tr> <td class='pt_caption'>Authors:</td> <td> <?php  echo $authorInfo ?> </td> </tr>
 <?php
     }
 ?>
 <?php
     if( $showAbs ){
 ?>
-   <tr> <td> Abstract: </td> <td> <?php  echo $abstract ?> </td> </tr>
+	<tr> <td class='pt_caption'>Abstract:</td> <td> <?php  echo $abstract ?> </td> </tr>
 <?php
     }
 ?>
 <?php
     if( $showCollab ){
 ?>
-   <tr> <td> Collaborators: </td> <td> <?php  echo $collaborators ?> </td> </tr>
+   <tr> <td class='pt_caption'> Collaborators: </td> <td> <?php  echo $collaborators ?> </td> </tr>
 <?php
     }
     if( $showRev ){

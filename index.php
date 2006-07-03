@@ -38,14 +38,6 @@ if (IsSet($_REQUEST["setRole"]))
 
 $Conf->header("Welcome");
 ?>
-<div id='body'>
-
-<?php
-if (isset($_SESSION["confirmMsg"])) {
-    $Conf->confirmMsg($_SESSION["confirmMsg"]);
-    unset($_SESSION["confirmMsg"]);
-}
-?>
 
 <p>
 You're logged in as <?php echo htmlspecialchars($Me->fullnameAndEmail()) ?>.
@@ -67,7 +59,7 @@ function taskbutton($name,$label) {
    $color = $Conf->contrastColorTwo;
   }
   print "<td bgcolor=$color width=20% align=center> ";
-  echo "<form action='", $_SERVER["PHP_SELF"], "' method=POST>\n";
+  echo "<form action='", $_SERVER["PHP_SELF"], "' method='get'>\n";
   print "<input type=submit value='$label'>";
   print "<input type=hidden name='setRole' value='$name'>";
   print "</form>";
@@ -118,14 +110,15 @@ function taskbutton($name,$label) {
 
 <?php
 if ($Me->papersSubmitted > 0) {
-    $query = "select paperId, title, acknowledged, withdrawn from Paper, Roles where Paper.paperId=Roles.secondaryId and Roles.contactId=" . $Me->contactId;
+    $query = "select Paper.paperId, title, acknowledged, withdrawn from Paper, Roles where Paper.paperId=Roles.paperId and Roles.contactId=" . $Me->contactId;
     $result = $Conf->q($query);
     if (!DB::isError($result)) {
-	$header = "<th>Submissions:</th>";
+	$header = "<th>Existing submissions:</th>";
 	while ($row = $result->fetchRow()) {
 	    echo "<tr>\n  $header\n  <td>";
 	    $header = "<td></td>";
-	    echo "[#", $row[0], "] ", htmlspecialchars($row[1]), "\n";
+	    echo "<a href='Author/ManagePaper.php?paperId=", $row[0],
+		"'>[#", $row[0], "] ", htmlspecialchars($row[1]), "</a>\n";
 	    echo "</td>\n</tr>\n";
 	}
     }
@@ -157,7 +150,7 @@ if ($Me->papersSubmitted > 0) {
 <? if ($Me->amReviewer()) {taskbutton("Reviewer", "Reviewer");}?>
 <? if ($Me->isPC) { taskbutton("PC", "PC Members"); }?>
 <? if ($Me->isChair) {taskbutton("Chair", "PC Chair");}?>
-<? if ($Me->amAssistant()) {taskbutton("Assistant", "PC Chair Assitant");}?>
+<? if ($Me->amAssistant()) {taskbutton("Assistant", "PC Chair Assistant");}?>
 </tr>
 </table>
 
@@ -174,9 +167,6 @@ if ($_SESSION["WhichTaskView"] == "Author") {
   include("Tasks-Chair.inc");
 } else if ($_SESSION["WhichTaskView"] == "Assistant") {
   include("Tasks-Assistant.inc");
-} else {
-  $AllPrefix="All/";
-  include("Tasks-All.inc");
 }
 
 

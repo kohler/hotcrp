@@ -3,29 +3,6 @@
 // Configuration for a Contact (i.e. someone using the reviewing system)
 //
 
-function sqlqtrim($value) {
-    return mysql_real_escape_string(ltrim(rtrim($value)));
-}
-
-function alert($string = "") {
-  print "<script language=javascript>\n";
-  print "alert(\"" . addslashes($string).  "\");";
-  print "</script>";
-}
-
-function go($url) {
-//      header("Location: $url");
-// exit();
-  echo "<html>";
-  echo "<script language=javascript>\n";
-  echo "location=\"$url\";";
-  echo "</script>";
-  echo "<body> <p> You should not be here. ";
-  echo "You need to <a href=\"$url\"> login </a> </p> </body>";
-  echo "</html>";
-  exit();
-}
-
 class Contact {
   //
   // Which conference are we dealing with?
@@ -142,13 +119,13 @@ class Contact {
 	  else {
 	      $this->isAuthor = $this->isPC = $this->isChair = $this->isAssistant = 0;
 	      while ($row = $result->fetchRow()) {
-		  if ($row == ROLE_AUTHOR)
+		  if ($row[0] == ROLE_AUTHOR)
 		      $this->isAuthor = 1;
-		  if ($row == ROLE_PC)
+		  if ($row[0] == ROLE_PC)
 		      $this->isPC = 1;
-		  if ($row == ROLE_CHAIR)
+		  if ($row[0] == ROLE_CHAIR)
 		      $this->isChair = 1;
-		  if ($row == ROLE_ASSISTANT)
+		  if ($row[0] == ROLE_ASSISTANT)
 		      $this->isAssistant = $this->isPC = 1;
 	      }
 	      if ($conf->setupPhase)
@@ -225,36 +202,19 @@ class Contact {
       alert($string);
   }
 
-  function goAlert($url, $string = "") {
-      print "<html>\n";
-      print "<head>\n";
-      print "<script language=javascript>\n";
-      print "alert(\"" . addslashes($string).  "\");";
-      print "location=\"$url\";";
-      print "</script>";
-      print "</head>";
-      print "<body>\n";
-      print "<H1> You should not be here. </h1> ";
-      print "<h2> You need to <a href=\"$url\"> login </a> </h2>\n";
-      print "</head>";
-      print "</html>";
-      exit();
+  function goAlert($url, $message = "") {
+      $_SESSION["errorMsg"] = $message;
+      go($url);
   }
 
-  function goIfInvalid($url,$string="") {
-    if ( !$this->valid() ) {
-      $this->goAlert($url,
-		     "You have invalid credentials and need to login"
-		     );
-    }
+  function goIfInvalid($url, $string = "") {
+      if (!$this->valid())
+	  $this->goAlert($url, $string ? $string : "You have invalid credentials and need to log in.");
   }
 
   function goIfNotAuthor($url) {
-    if ( ! $this->valid() || !$this->isAuthor ) {
-      $this->goAlert($url,
-		     "This page is only accessible by paper authors"
-		     );
-    }
+      if (!$this->valid() || !$this->isAuthor)
+	  $this->goAlert($url, "That page is only accessible to paper authors.");
   }
 
   function goIfNotPC($url) {
@@ -374,21 +334,10 @@ class Contact {
   }
 
   function amPaperAuthor($paperId, $conf) {
-      $contactId = $this->contactId;
-      //
       // Query for a specific match of the author and paper
-      //
-      $query = "SELECT paperId FROM Paper WHERE Paper.contactId=$contactId";
+      $query = "select paperId from Roles where paperId=$paperId and contactId=$this->contactId";
       $result = $conf->qe($query);
-      
-      if (DB::isError($result))
-	  return 0;
-      while ($row = $result->fetchRow()) {
-	  $submittedPaperId = $row[0];
-	  if ($submittedPaperId == $paperId)
-	      return 1;
-      }
-      return 0;
+      return !DB::isError($result) && $result->numRows() > 0;
   }
 
   function checkConflict($paperId, $conf) {

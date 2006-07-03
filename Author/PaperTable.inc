@@ -24,7 +24,7 @@ $paperLength = $row['size'];
 $mimetype = $row['mimetype'];
 $collaborators = $Conf->safeHtml($row['collaborators']);
 
-$badPaper = $paperLength < 100 && $mimetype == 'application/txt';
+$badPaper = $paperLength < 100 && $mimetype == 'text/plain';
 ?>
 <table align=center border=1 bgcolor="<?php echo $Conf->bgOne?>" >
    <tr> <th colspan=2 align=center><font size=+2> <b> Paper #

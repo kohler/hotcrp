@@ -48,7 +48,7 @@ $paperLength = $row['size'];
 $mimetype = $row['mimetype'];
 $collaborators = $row['collaborators'];
 
-$badPaper = $paperLength < 100 && $mimetype == 'application/txt';
+$badPaper = $paperLength < 100 && $mimetype == 'text/plain';
 
 if ( IsSet($_REQUEST["ConfirmPaper"]) ) {
 

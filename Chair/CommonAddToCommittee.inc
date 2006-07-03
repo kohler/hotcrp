@@ -32,7 +32,6 @@ function doRemove(id) {
 
 <html>
 <?php $Conf->header("Manage $AddWhat", 0) ?>
-<div id='body'>
 
 <?php
 function vtrim(&$var) {

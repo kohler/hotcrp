@@ -77,7 +77,7 @@ if ( DB::isError($result) ) {
 } 
 
 if ($result -> numRows() != 1) {
-  $mimetype="application/txt";
+  $mimetype="text/plain";
   $Conf->errorMsg("There appears to be a problem retrieving some of "
 		  . "the information about your paper, but you should "
 		  . "be able to upload a new copy anyway. ");

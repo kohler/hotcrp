@@ -82,7 +82,6 @@ If you suspect something fishy, contact the site administrator at\n\
 
 $Conf->header("Merge Account Information");
 ?>
-<div id='body'>
 
 <?php
 if ($MergeError)

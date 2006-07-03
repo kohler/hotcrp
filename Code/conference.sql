@@ -34,8 +34,8 @@ CREATE TABLE ActionLog (
 drop table if exists Roles;
 CREATE TABLE Roles (
   contactId int(11) NOT NULL,
-  role int(3) NOT NULL,
-  secondaryId int(11) NOT NULL,
+  role tinyint(1) NOT NULL,
+  paperId int(11) NOT NULL,
   KEY contactId (contactId)
 ) TYPE=MyISAM;
 
@@ -156,6 +156,7 @@ CREATE TABLE Paper (
   acknowledged int(11) default '0',
   withdrawn int(11) default '0',
   pcPaper int(11) default '0',
+  paperStorageId int(11) NOT NULL default '0',
   authorsResponse mediumtext,
   outcome enum('unspecified','accepted','rejected','acceptedShort') default 'unspecified',
   showReviewsToReviewers tinyint(1) default '0',
@@ -284,7 +285,7 @@ CREATE TABLE PaperReview (
   strengthOfPaper text,
   potential tinyint(4) NOT NULL default '-1',
   fixability tinyint(4) NOT NULL default '0',
-  PRIMARY KEY  (paperReviewId),
+  PRIMARY KEY (paperReviewId),
   UNIQUE KEY paperReviewid (paperReviewId),
   KEY finalized (finalized),
   KEY paperId (paperId),
@@ -302,9 +303,13 @@ CREATE TABLE PaperReview (
 
 drop table if exists PaperStorage;
 CREATE TABLE PaperStorage (
-  paperId int(11) default NULL,
+  paperStorageId int(11) NOT NULL auto_increment,
+  paperId int(11) NOT NULL,
+  when int(11) NOT NULL,
   mimetype varchar(120) NOT NULL default '',
   paper longblob,
+  PRIMARY KEY (paperStorageId),
+  UNIQUE KEY paperStorageId (paperStorageId),
   KEY paperId (paperId),
   KEY mimetype (mimetype)
 ) TYPE=MyISAM;

@@ -134,7 +134,6 @@ function clearDates(name) {
 </script>
 
 <?php $Conf->header("Set Conference Dates", 0); ?>
-<div id='body'>
 
 <?php 
 //

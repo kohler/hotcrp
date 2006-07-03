@@ -102,7 +102,7 @@ exit();
 	  // information and the topic information
 	  //
 	
-	  $query = "insert into Roles set contactId=" . $_SESSION["Me"]->contactId . ", role=" . ROLE_AUTHOR . ", secondaryId=$paperId";
+	  $query = "insert into Roles set contactId=" . $_SESSION["Me"]->contactId . ", role=" . ROLE_AUTHOR . ", paperId=$paperId";
 	  $Conf->qe($query);
 	
 	$query = "INSERT into PaperAuthor SET "

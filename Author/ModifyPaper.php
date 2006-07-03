@@ -1,23 +1,26 @@
 <?php 
 include('../Code/confHeader.inc');
+$Conf->connect();
 $_SESSION["Me"] -> goIfInvalid("../index.php");
 $_SESSION["Me"] -> goIfNotAuthor("../index.php");
-$Conf -> goIfInvalidActivity("updatePaperSubmission", "../index.php");
-$Conf -> connect();
+$Conf->goIfInvalidActivity("updatePaperSubmission", "../index.php");
+$paperId = cvtint($_REQUEST["paperId"]);
+if ($paperId <= 0)
+    $Me->goAlert("../", "Invalid paper ID.");
 include('PaperForm.inc');
 ?>
 
 <html>
-<?php  $Conf->header("Modify Paper #$_REQUEST[paperId] for $Conf->shortName") ?>
+<?php  $Conf->header("Modify Paper #$paperId for $Conf->shortName") ?>
 
 <body>
 <?php 
-if (!IsSet($_REQUEST[paperId]) ) {
+if (!IsSet($paperId) ) {
   $Conf -> errorMsg("You didn't specify a paper to modify.");
   exit;
 }
 
-if ( ! $_SESSION["Me"] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
+if ( ! $_SESSION["Me"] -> amPaperAuthor($paperId, $Conf) ) {
   $Conf -> errorMsg("Only the submitting paper author can modify the "
 		    . "paper information.");
   exit;
@@ -25,7 +28,7 @@ if ( ! $_SESSION["Me"] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
 
 
 $query = "SELECT acknowledged, withdrawn  FROM Paper " 
-  . " WHERE Paper.paperId=$_REQUEST[paperId]";
+  . " WHERE Paper.paperId=$paperId";
 
 $result = $Conf->qe($query);
 $row = $result->fetchRow();
@@ -47,14 +50,14 @@ if ($finalized) {
 //
 // Process any updates
 //
-if (IsSet($_REQUEST[submit])) {
-  if (!IsSet($_REQUEST[title]) || !IsSet($_REQUEST[abstract]) || !IsSet($_REQUEST[authorInfo]) || !IsSet($_REQUEST[collaborators]) ) {
+if (IsSet($_REQUEST["submit"])) {
+  if (!IsSet($_REQUEST["title"]) || !IsSet($_REQUEST["abstract"]) || !IsSet($_REQUEST["authorInfo"]) || !IsSet($_REQUEST["collaborators"]) ) {
     $Conf->errorMsg("One or more of the required fields is not set. "
 		    . "Use this form or press BACK and correct this. ");
     exit();
   }
 
-  if (sizeof($_REQUEST[topics]) == 0) {
+  if (sizeof($_REQUEST["topics"]) == 0) {
     if ( $Conf->thereAreTopics()) {
       $Conf->errorMsg("You must specify at least one topic. "
 		      . "Use this form or press BACK and correct this. ");
@@ -62,16 +65,11 @@ if (IsSet($_REQUEST[submit])) {
     }
   } 
 
-  $_REQUEST[title] = addslashes($_REQUEST[title]);
-  $_REQUEST[abstract] = addslashes($_REQUEST[abstract]);
-  $_REQUEST[authorInfo] = addslashes($_REQUEST[authorInfo]);
-  $_REQUEST[collaborators] = addslashes($_REQUEST[collaborators]);
-  $query="UPDATE Paper SET "
-    . "title='$_REQUEST[title]', "
-    . "abstract='$_REQUEST[abstract]', "
-    . "collaborators='$_REQUEST[collaborators]', "
-    . "authorInformation='$_REQUEST[authorInfo]' WHERE paperId=$_REQUEST[paperId] "
-    ;
+  $query="update Paper set title='" . sqlq($_REQUEST['title']) . "', "
+      . "abstract='" . sqlq($_REQUEST['abstract']) . "', "
+      . "collaborators='" . sqlq($_REQUEST['collaborators']) . "', "
+      . "authorInformation='" . sqlq($_REQUEST['authorInfo']) . "' "
+      . "where paperId=$paperId";
 
   $result = $Conf->q($query);
   if ( DB::isError($result) ) {
@@ -79,26 +77,26 @@ if (IsSet($_REQUEST[submit])) {
     exit();
   }
 
-  $Conf->infoMsg("Updated information for #$_REQUEST[paperId]");
+  $Conf->infoMsg("Updated information for #$paperId");
 
-  $Conf->log("Updated paper information for $_REQUEST[paperId]", $_SESSION["Me"]);
+  $Conf->log("Updated paper information for $paperId", $_SESSION["Me"]);
 
 	
-  if ( IsSet($_REQUEST[topics]) ) {
-    setTopics($_REQUEST[paperId],
-	      $_REQUEST[topics]);
+  if ( IsSet($_REQUEST["topics"]) ) {
+    setTopics($paperId,
+	      $_REQUEST["topics"]);
   }
 
-  if ( IsSet($_REQUEST[preferredReviewers]) ) {
-    setPreferredReviewers($_REQUEST[paperId],
-			  $_REQUEST[preferredReviewers]);
+  if ( IsSet($_REQUEST["preferredReviewers"]) ) {
+    setPreferredReviewers($paperId,
+			  $_REQUEST["preferredReviewers"]);
   }
 }
 
   $query = "SELECT title, abstract, authorInformation, "
   . " acknowledged, withdrawn, collaborators "
   . " FROM Paper " 
-  . " WHERE Paper.paperId=$_REQUEST[paperId]";
+  . " WHERE Paper.paperId=$paperId";
 
   $result = $Conf->q($query);
 
@@ -109,12 +107,12 @@ if ( DB::isError($result) ) {
 } 
 
 $row = $result->fetchRow();
-$_REQUEST[title]=$row[0];
-$_REQUEST[abstract]=$row[1];
-$_REQUEST[authorInfo]=$row[2];
+$_REQUEST["title"]=$row[0];
+$_REQUEST["abstract"]=$row[1];
+$_REQUEST["authorInfo"]=$row[2];
 $finalized=$row[3];
 $withdrawn=$row[4];
-$_REQUEST[collaborators]=$row[5];
+$_REQUEST["collaborators"]=$row[5];
 ?>
 
 <p>
@@ -138,7 +136,7 @@ $Conf->textButton("Click here to go to the paper list",
 
 <form method="POST" action="<?php echo $_SERVER[PHP_SELF] ?>"
 ENCTYPE="multipart/form-data" >
-<?php echo $Conf->mkHiddenVar('paperId', $_REQUEST[paperId])?>
+<?php echo $Conf->mkHiddenVar('paperId', $paperId)?>
 <center> <input type="submit" value="Update Fields" name="submit"> </center>
 <?php
     //
@@ -149,8 +147,8 @@ ENCTYPE="multipart/form-data" >
 
     $preferredReviewers = getPreferredReviewers($paperId);
 
-    paperForm($Conf,$_REQUEST[title],$_REQUEST[abstract],
-	      $_REQUEST[authorInfo],$_REQUEST[collaborators],
+    paperForm($Conf,$_REQUEST["title"],$_REQUEST["abstract"],
+	      $_REQUEST["authorInfo"],$_REQUEST["collaborators"],
 	      $topics, $preferredReviewers);
 
 ?>

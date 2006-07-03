@@ -7,20 +7,20 @@ function paperForm( $Conf, $title="", $abstract="", $authorInfo="", $collaborato
 <tr>
   <td valign="top"><P><STRONG>Title</STRONG></P></td>
   <td valign="top"> <input type="text" name="title" size="75"
-	value="<?php echo stripslashes($title)?>"
+	value="<?php echo htmlspecialchars($title)?>"
 	MAXLENGTH=200></td>
 </tr>
 
 <tr>
 <td valign="top"><P><STRONG>Abstract</STRONG></P> <P>Maximum 200 words.</P> </td>
-<td valign="top"><textarea rows="30" name="abstract" cols="75"><?php echo stripslashes($abstract)?></textarea> </td>
+<td valign="top"><textarea rows="30" name="abstract" cols="75"><?php echo htmlspecialchars($abstract)?></textarea> </td>
 </tr>
 
 <tr>
   <td valign="top"><P><STRONG>Author Information</STRONG></P>
       <P>List all authors and their affiliation in order of appearance.
 Please list one author per line.</P></td>
-  <td valign="top"> <textarea rows=10 name="authorInfo" cols=75><?php echo stripslashes($authorInfo)?></textarea></td>
+  <td valign="top"> <textarea rows=10 name="authorInfo" cols=75><?php echo htmlspecialchars($authorInfo)?></textarea></td>
 </tr>
 
 <tr>
@@ -32,7 +32,7 @@ co-authors in the past.  This includes your advisor, students,
 and collaborators.  Be sure to include PC members in that list of collaborators. Please list one person per line.  This is
 used to avoid conflicts of interest when papers are assigned.</P>
 </td>
-  <td valign="top"> <textarea rows=20 name="collaborators" cols=75><?php echo stripslashes($collaborators)?></textarea></td>
+  <td valign="top"> <textarea rows=20 name="collaborators" cols=75><?php echo htmlspecialchars($collaborators)?></textarea></td>
 </tr>
 <TR><TD BGCOLOR='White' COLSPAN=2></TD></TR>
 <?php 

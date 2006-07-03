@@ -8,7 +8,7 @@ $Conf->connect();
 //
 
 if (!IsSet($_REQUEST["loginEmail"]) || $_REQUEST["loginEmail"] == "") {
-    $LoginError = "Enter your email address.";
+    $_SESSION["errorMsg"] = "Enter your email address.";
     include('login.php');
     exit;
 }
@@ -16,14 +16,14 @@ if (!IsSet($_REQUEST["loginEmail"]) || $_REQUEST["loginEmail"] == "") {
 $_SESSION["Me"]->lookupByEmail($_REQUEST["loginEmail"], $Conf);
 if (IsSet($_REQUEST["register"])) {
     if ($_SESSION["Me"]->valid()) {
-	$LoginError = "An account already exists for " . htmlspecialchars($_REQUEST["loginEmail"]) . ".  To retrieve your password, select \"Mail me my password\".";
+	$_SESSION["errorMsg"] = "An account already exists for " . htmlspecialchars($_REQUEST["loginEmail"]) . ".  To retrieve your password, select \"Mail me my password\".";
 	include('login.php');
 	exit;
     }
 
     $result = $_SESSION["Me"]->initialize($_REQUEST["loginEmail"], $Conf);
     if (DB::isError($result)) {
-	$LoginError = $result->dbErrorText($result, "while adding your account");
+	$_SESSION["errorMsg"] = $result->dbErrorText($result, "while adding your account");
     } else {
 	$_SESSION["Me"]->sendAccountInfo($Conf);
 	$Conf->log("Created account", $_SESSION["Me"]);
@@ -37,7 +37,7 @@ if (IsSet($_REQUEST["register"])) {
 }
 
 if (!$_SESSION["Me"]->valid()) {
-    $LoginError = "No account for " . htmlspecialchars($_REQUEST["loginEmail"]) . " exists.  Did you enter the correct email address?";
+    $_SESSION["errorMsg"] = "No account for " . htmlspecialchars($_REQUEST["loginEmail"]) . " exists.  Did you enter the correct email address?";
     include('login.php');
     exit;
 }
@@ -51,13 +51,13 @@ if (IsSet($_REQUEST["forgot"])) {
 }
 
 if (!IsSet($_REQUEST["password"]) || $_REQUEST["password"] == "") {
-    $LoginError = "Enter your password, or select \"Mail me my password\".";
+    $_SESSION["errorMsg"] = "Enter your password, or select \"Mail me my password\".";
     include('login.php');
     exit;
 }
 
 if ($_SESSION["Me"]->password != $_REQUEST["password"]) {
-    $LoginError = "That password is incorrect.";
+    $_SESSION["errorMsg"] = "That password is incorrect.";
     include('login.php');
     exit;
 }

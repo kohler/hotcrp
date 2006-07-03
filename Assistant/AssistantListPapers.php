@@ -6,7 +6,7 @@ $Conf -> connect();
 
 function olink($key,$string)
 {
-  return "<a href=\"$_SERVER[PHP_SELF]?orderBy=$key\"> $string </a>";
+  return "<a href=\"" . $_SERVER['PHP_SELF'] . "?orderBy=$key\"> $string </a>";
 }
 
 ?>
@@ -17,11 +17,11 @@ function olink($key,$string)
 
 <body>
 <?php 
-if (!IsSet($_REQUEST[ORDER])) {
-  $_REQUEST[ORDER]="ORDER BY Paper.paperId";
+if (!IsSet($_REQUEST["ORDER"])) {
+  $_REQUEST["ORDER"]="ORDER BY Paper.paperId";
 }
-if (IsSet($_REQUEST[orderBy])) {
-  $_REQUEST[ORDER] = "ORDER BY " . $_REQUEST[orderBy];
+if (IsSet($_REQUEST["orderBy"])) {
+  $_REQUEST["ORDER"] = "ORDER BY " . $_REQUEST["orderBy"];
 }
 ?>
 <h2> List of submitted papers and authors </h2>
@@ -73,12 +73,11 @@ if ( $_REQUEST[onlyWithdrawn] ) {
   . " Paper.authorInformation, Paper.contactId, "
   . " ContactInfo.firstName, ContactInfo.lastName, "
   . " ContactInfo.email, ContactInfo.affiliation, Paper.collaborators, "
-  . " LENGTH(PaperStorage.paper), PaperStorage.mimetype "
-  . " FROM Paper, ContactInfo "
-  . " LEFT JOIN PaperStorage ON (PaperStorage.paperId=Paper.paperId)"
-  . " WHERE ContactInfo.contactId = Paper.ContactId "
+  . " LENGTH(PaperStorage.paper) as size, PaperStorage.mimetype "
+  . " FROM Paper, ContactInfo, PaperStorage "
+  . " WHERE ContactInfo.contactId = Paper.contactId and PaperStorage.paperId = Paper.paperId "
   . $finalizedStr . $withdrawnStr
-  . $_REQUEST[ORDER];
+  . $_REQUEST["ORDER"];
 
 $result=$Conf->q($query);
 
@@ -115,7 +114,7 @@ Found <?php  echo $numpapers ?> papers.
 <th width= 5%> <?php  echo olink("Paper.paperId", "Paper #") ?></th>
 <th>
    <?php  echo olink("Paper.title", "Title") ?>  <br>
-   <?php  echo olink("LENGTH(PaperStorage.paper)", "(size)") ?> 
+   <?php  echo olink("size", "(size)") ?> 
 </th>
    <?php  if ($_REQUEST["SeeAuthorInfo"]) { ?>
 <th width=30%>
@@ -156,7 +155,7 @@ Found <?php  echo $numpapers ?> papers.
      if ($row['mimetype'] == NULL) {
        $withdrawn = "\nWITHDRAWN ";
      } else {
-	$withdrawn = "\n(" . $row['LENGTH(PaperStorage.paper)']
+	$withdrawn = "\n(" . $row['size']
 	   . " bytes) "
 	   . $row['mimetype'] . " ";
      }

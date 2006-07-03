@@ -4,6 +4,7 @@ body {
 
 div.clear {
 	clear: both;
+	margin: 0em;
 }
 
 div#header {
@@ -77,7 +78,7 @@ div.confirm {
 	border: 1px solid #cceecc;
 }
 
-input, button {
+input, button, textarea {
 	font-family: sans-serif;
 }
 input.button, button {
@@ -178,7 +179,25 @@ td.datedesc {
 table.daterange {
 }
 
-tr.pc td.pc_name input, tr.pc td.pc_email input, tr.pc td.pc_aff input {
+input.textlite {
 	border: none;
 	border-bottom: dashed 1px #ddddff;
+}
+
+div.prevpaperlink {
+	float: left;
+	margin: 0em;
+}
+div.nextpaperlink {
+	float: right;
+	margin: 0em;
+}
+
+div.aumg h2 {
+	margin-top: 0em;
+}
+
+td.pt_caption {
+	font-weight: bold;
+	padding-right: 0.5em;
 }

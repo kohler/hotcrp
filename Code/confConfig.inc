@@ -26,7 +26,7 @@ $Conf->longName = "HotNets V";
 
 // allowed paper formats
 $Conf->allowPDF = 1;
-$Conf->allowPS = 0;
+$Conf->allowPS = 1;
 
 //
 // OPTION: can authors specify preferred reviewers?

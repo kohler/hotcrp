@@ -10,14 +10,10 @@ if (IsSet($_SESSION['Me'])) {
 
 $Conf->header(IsSet($LoginType) ? $LoginType : "Login");
 ?>
-<div id='body'>
 
 <?php
 if (isset($LoginConfirm)) {
     $Conf->confirmMsg($LoginConfirm);
-}
-if (isset($LoginError)) {
-    $Conf->errorMsg($LoginError);
 }
 
 $Conf->infoMsg("Log in to the conference management system here.

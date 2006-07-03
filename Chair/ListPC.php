@@ -7,7 +7,6 @@ $_SESSION["Me"]->goIfNotChair('../');
 
 <html>
 <?php $Conf->header("Program Committee Members") ?>
-<div id='body'>
 
 <?php
 if (isset($_REQUEST["nag"])) {
