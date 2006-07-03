@@ -232,7 +232,9 @@ if (isset($_REQUEST['update'])) {
 	    }
 	}
     }
-}
+ } else if (isset($_REQUEST["revert"])) {
+    $_REQUEST = array();
+ }
 
 $Conf->updateImportantDates();
 ?>
@@ -244,8 +246,9 @@ $Conf->updateImportantDates();
 
 <table>
 <tr>
-  <td><input class='button_default' type='submit' value='Update All' name='update' /></td>
-  <td>Each Update button updates all dates.  Remember to select Update after you change a date!  It will turn red to help you remember.</td>
+  <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' /></td>
+  <td class='form_caption'><input class='button_default' type='submit' value='Update All' name='update' /></td>
+  <td>Select Update All to save any changes to dates.  It will turn red to help you remember.</td>
 </tr>
 </table>
 
@@ -261,7 +264,12 @@ $Conf->updateImportantDates();
 <?php crp_showdate('authorViewDecision'); ?>
 </table>
 
-<input class='button_default' type='submit' value='Update All' name='update' />
+<table>
+<tr>
+  <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' /></td>
+  <td><input class='button_default' type='submit' value='Update All' name='update' /></td>
+</tr>
+</table>
 
     
 <h2>Dates Affecting Peer Reviewers</h2>
@@ -273,7 +281,12 @@ $Conf->updateImportantDates();
 <?php crp_showdate('reviewerViewDecision'); ?>
 </table>
 
-<input class='button_default' type='submit' value='Update All' name='update' />
+<table>
+<tr>
+  <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' /></td>
+  <td><input class='button_default' type='submit' value='Update All' name='update' /></td>
+</tr>
+</table>
 
 
 <h2>Dates Affecting the Program Committee</h2>
@@ -288,7 +301,12 @@ $Conf->updateImportantDates();
 <?php crp_showdate('EndOfTheMeeting'); ?>
 </table>
 
-<input class='button_default' type='submit' value='Update All' name='update' />
+<table>
+<tr>
+  <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' /></td>
+  <td><input class='button_default' type='submit' value='Update All' name='update' /></td>
+</tr>
+</table>
 
 </form>
 
