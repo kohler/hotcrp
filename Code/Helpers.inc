@@ -120,7 +120,7 @@ function topicTable($paperId = -1, $active = 0, $conf = null) {
     $result = $Conf->q("select topicId, topicName from TopicArea order by topicName");
     if (!DB::isError($result) && $result->numRows() > 0) {
 	$out = "<table class='topictable'><tr>\n	<td>";
-	$colheight = (int) (($result->numRows() + 2) / 3);
+	$colheight = (int) (($result->numRows() + 1) / 2);
 	for ($i = 0; $i < $result->numRows(); $i++) {
 	    if ($i > 0 && ($i % $colheight) == 0)
 		$out .= "</td>\n	<td>";
