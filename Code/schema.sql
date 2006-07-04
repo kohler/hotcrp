@@ -43,35 +43,6 @@ CREATE TABLE Roles (
 # Dumping data for table 'Roles'
 #
 
-#
-# Table structure for table 'Chair'
-#
-
-drop table if exists Chair;
-#CREATE TABLE Chair (
-#  contactId int(11) NOT NULL,
-#  UNIQUE KEY contactId (contactId)
-#) TYPE=MyISAM;
-
-#
-# Dumping data for table 'Chair'
-#
-
-
-#
-# Table structure for table 'ChairAssistant'
-#
-
-drop table if exists ChairAssistant;
-#CREATE TABLE ChairAssistant (
-#  contactId int(11) NOT NULL,
-#  UNIQUE KEY contactId (contactId)
-#) TYPE=MyISAM;
-
-#
-# Dumping data for table 'ChairAssistant'
-#
-
 
 #
 # Table structure for table 'ContactInfo'
@@ -121,21 +92,6 @@ CREATE TABLE ImportantDates (
 
 #
 # Dumping data for table 'ImportantDates'
-#
-
-
-#
-# Table structure for table 'PCMember'
-#
-
-drop table if exists PCMember;
-#CREATE TABLE PCMember (
-#  contactId int(11) NOT NULL,
-#  UNIQUE KEY contactId (contactId)
-#) TYPE=MyISAM;
-
-#
-# Dumping data for table 'PCMember'
 #
 
 
@@ -322,23 +278,6 @@ insert into PaperStorage set paperId=0, timestamp=0, mimetype='text/plain', pape
 
 
 #
-# Table structure for table 'PaperTopic'
-#
-
-drop table if exists PaperTopic;
-CREATE TABLE PaperTopic (
-  topicId int(11) default NULL,
-  paperId int(11) default NULL,
-  KEY topicId (topicId),
-  KEY paperId (paperId)
-) TYPE=MyISAM;
-
-#
-# Dumping data for table 'PaperTopic'
-#
-
-
-#
 # Table structure for table 'PrimaryReviewer'
 #
 
@@ -406,24 +345,6 @@ CREATE TABLE SecondaryReviewer (
 #
 
 
-#
-# Table structure for table 'TopicArea'
-#
-
-drop table if exists TopicArea;
-CREATE TABLE TopicArea (
-  topicId int(11) NOT NULL auto_increment,
-  topicName varchar(80) default NULL,
-  PRIMARY KEY (topicId),
-  UNIQUE KEY topicId (topicId),
-  KEY topicName (topicName)
-) TYPE=MyISAM;
-
-#
-# Dumping data for table 'TopicArea'
-#
-
-
 drop table if exists PaperReviewerPreference;
 CREATE TABLE PaperReviewerPreference(
   preferenceId int(11) NOT NULL auto_increment,
@@ -446,18 +367,49 @@ CREATE TABLE PaperReviewerConflict(
 
 
 #
+# Table structure for table 'TopicArea'
+#
+
+drop table if exists TopicArea;
+CREATE TABLE TopicArea (
+  topicId int(11) NOT NULL auto_increment,
+  topicName varchar(80) default NULL,
+  PRIMARY KEY (topicId),
+  UNIQUE KEY topicId (topicId),
+  KEY topicName (topicName)
+) TYPE=MyISAM;
+
+#
+# Dumping data for table 'TopicArea'
+#
+
+
+#
+# Table structure for table 'PaperTopic'
+#
+
+drop table if exists PaperTopic;
+CREATE TABLE PaperTopic (
+  topicId int(11) default NULL,
+  paperId int(11) default NULL,
+  KEY topicId (topicId),
+  KEY paperId (paperId)
+) TYPE=MyISAM;
+
+#
+# Dumping data for table 'PaperTopic'
+#
+
+
+#
 # Table structure for table 'TopicInterest'
 #
 
 drop table if exists TopicInterest;
 CREATE TABLE TopicInterest (
-  topicInterestId int(11) NOT NULL auto_increment,
-  contactId int(11) default NULL,
-  topicId int(11) default NULL,
-  interest int(11),
-  PRIMARY KEY (topicInterestId),
-  UNIQUE KEY topicInterestId (topicInterestId),
-  KEY topicInterestId_2 (topicInterestId),
+  contactId int(11) NOT NULL,
+  topicId int(11) NOT NULL,
+  interest int(1),
   KEY contactId (contactId),
   KEY topicId (topicId)
 ) TYPE=MyISAM;
@@ -465,5 +417,3 @@ CREATE TABLE TopicInterest (
 #
 # Dumping data for table 'TopicInterest'
 #
-
-

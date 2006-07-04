@@ -133,6 +133,10 @@ td.error {
 td.form_entry {
 	padding-right: 1em;
 }
+td.form_hint {
+	padding-left: 1em;
+	font-size: small;
+}
 
 div.home_tasks {
 	border: 1px solid #eeee66;
@@ -216,7 +220,7 @@ td.pt_caption {
 	font-weight: bold;
 	padding-right: 0.5em;
 }
-td.pt_entry textarea {
+td.pt_entry textarea, td.form_entry textarea {
 	width: 100%;
 }
 td.pt_hint {
@@ -235,4 +239,27 @@ table.topictable {
 }
 table.topictable tr td {
 	padding-right: 2em;
+}
+
+tr#topicinterest td.form_caption, tr#topicinterest td.form_hint {
+	padding-top: 1.3em;
+}
+tr#topicinterest td#topicinterest {
+	vertical-align: top;
+	padding-top: 0px;
+}
+table.topicinterest {
+	vertical-align: baseline;
+	padding: 0em;
+	border-spacing: 0px;
+}
+table.topicinterest tr td.ti_interest, table.topicinterest tr th {
+	padding-right: 1px;
+	white-space: nowrap;
+	font-size: small;
+	text-align: center;
+}
+table.topicinterest tr td.ti_topic {
+	font-weight: bold;
+	padding-right: 0.5em;
 }

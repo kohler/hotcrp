@@ -70,16 +70,14 @@ if (isset($_REQUEST["update"])) {
 		    $newguy->affiliation = $_REQUEST['voicePhoneNumber'];
 		if (isset($_REQUEST['faxPhoneNumber']))
 		    $newguy->affiliation = $_REQUEST['faxPhoneNumber'];
-		$result = $newguy->updateDB($Conf);
+		$result = $newguy->updateDB($Conf, "while creating account for " . htmlspecialchars($email));
 	    }
 	    if (!DB::isError($result)) {
 		$Conf->infoMsg("Created account for " . htmlspecialchars($email) . ".");
 		$newguy->sendAccountInfo($Conf);
 		$Conf->log("PC chair created account", $newguy);
-	    } else {
-		$Conf->errorMsg($Conf->dbErrorText($result, "while creating account for " . htmlspecialchars($email)));
+	    } else
 		$Conf->log("PC chair account creation failure", $newguy);
-	    }
 	    $id = $newguy->contactId;
 	}
 

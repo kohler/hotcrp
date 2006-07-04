@@ -4,42 +4,93 @@
 //
 
 class Contact {
-  //
-  // Which conference are we dealing with?
-  //
-  var $shortConfName;
+    // Which conference are we dealing with?
+    var $shortConfName;
 
-  //
-  // Information from the SQL definition
-  //
-  var $contactId;
-  var $visits;
-  var $contactInfoUpdated;
-  var $firstName;
-  var $lastName;
-  var $email;
-  var $affiliation;
-  var $voicePhoneNumber;
-  var $faxPhoneNumber;
-  var $password;
-  var $note;
+    // Information from the SQL definition
+    var $contactId;
+    var $visits;
+    var $firstName;
+    var $lastName;
+    var $email;
+    var $affiliation;
+    var $collaborators;
+    var $voicePhoneNumber;
+    var $faxPhoneNumber;
+    var $password;
+    var $note;
+    var $anyTopicInterest;
 
-  //
-  // The following fields are taken from tables other
-  // than Contact
-  //
-  var $papersFinalized;
-  var $papersSubmitted;
+    // The following fields are taken from tables other
+    // than ContactInfo
+    var $papersFinalized;
+    var $papersSubmitted;
 
-  //
-  // Roles
-  //
-  var $isAuthor;
-  var $isPC;
-  var $isChair;
-  var $isAssistant;
-  var $validated;
+    // Roles
+    var $isAuthor;
+    var $isPC;
+    var $isChair;
+    var $isAssistant;
+    var $validated;
 
+
+    //
+    // Initialization functions
+    //
+
+    function valid($conf = null) {
+	global $Conf;
+	if ($conf == null)
+	    $conf = $Conf;
+	if (!$this->validated && $this->contactId > 0) {
+	    $result = $conf->q("select role from Roles, ContactInfo where Roles.contactId = $this->contactId and ContactInfo.contactId = $this->contactId");
+	    if (DB::isError($result) || $result->numRows() == 0)
+		$this->invalidate();
+	    else {
+		$this->isAuthor = $this->isPC = $this->isChair = $this->isAssistant = 0;
+		while ($row = $result->fetchRow()) {
+		    if ($row[0] == ROLE_AUTHOR)
+			$this->isAuthor = 1;
+		    if ($row[0] == ROLE_PC)
+			$this->isPC = 1;
+		    if ($row[0] == ROLE_CHAIR)
+			$this->isChair = 1;
+		    if ($row[0] == ROLE_ASSISTANT)
+			$this->isAssistant = $this->isPC = 1;
+		}
+		if ($conf->setupPhase)
+		    $this->isChair = 1;
+		$this->validated = 1;
+	    }
+	}
+	return $this->contactId > 0 && $conf->shortName == $this->shortConfName;
+    }
+
+    function invalidate() {
+	$this->confShortName = 0;
+
+	$this->contactId = 0;
+	$this->visits = 0;
+	$this->firstName = '';
+	$this->lastName = '';
+	$this->email = '';
+	$this->affiliation = '';
+	$this->voicePhoneNumber = '';
+	$this->faxPhoneNumber = '';
+	$this->password = '';
+	$this->note = 0;
+	$this->collaborators = '';
+	$this->anyTopicInterest = 0;
+	
+	$this->papersFinalized = 0;
+	$this->papersSubmitted = 0;
+	
+	$this->isAuthor = 0;
+	$this->isPC = 0;
+	$this->isChair = 0;
+	$this->isAssistant = 0;
+    }
+  
   function countRequestedReviews() {
     global $Conf;
     $query = "SELECT COUNT(*) FROM ReviewRequest WHERE "
@@ -80,7 +131,7 @@ class Contact {
   }
 
   function amAssistant() {
-    return $this->isAssistant || $this->isChair;
+      return $this->isAssistant || $this->isChair;
   }
 
   function amReviewer() {
@@ -102,59 +153,6 @@ class Contact {
 	$reviewer |= $pcreviews > 0;
     }
     return $reviewer;
-  }
-
-  //
-  // Initialization functions
-  //
-
-  function valid($conf = null) {
-      global $Conf;
-      if ($conf == null)
-	  $conf = $Conf;
-      if (!$this->validated && $this->contactId > 0) {
-	  $result = $conf->q("select role from Roles, ContactInfo where Roles.contactId = $this->contactId and ContactInfo.contactId = $this->contactId");
-	  if (DB::isError($result) || $result->numRows() == 0)
-	      $this->invalidate();
-	  else {
-	      $this->isAuthor = $this->isPC = $this->isChair = $this->isAssistant = 0;
-	      while ($row = $result->fetchRow()) {
-		  if ($row[0] == ROLE_AUTHOR)
-		      $this->isAuthor = 1;
-		  if ($row[0] == ROLE_PC)
-		      $this->isPC = 1;
-		  if ($row[0] == ROLE_CHAIR)
-		      $this->isChair = 1;
-		  if ($row[0] == ROLE_ASSISTANT)
-		      $this->isAssistant = $this->isPC = 1;
-	      }
-	      if ($conf->setupPhase)
-		  $this->isChair = 1;
-	      $this->validated = 1;
-	  }
-      }
-      return $this->contactId > 0 && $conf->shortName == $this->shortConfName;
-  }
-
-  function invalidate() {
-      $this->confShortName= 0;
-
-      $this->contactId = 0;
-      $this->visits = 0;
-      $this->firstName = '';
-      $this->lastName = '';
-      $this->email = '';
-      $this->affiliation = '';
-      $this->voicePhoneNumber = '';
-      $this->faxPhoneNumber = '';
-      $this->password = '';
-      $this->note = 0;
-      $this->papersFinalized = 0;
-      $this->papersSubmitted = 0;
-      $this->isAuthor = 0;
-      $this->isPC = 0;
-      $this->isChair = 0;
-      $this->isAssistant = 0;
   }
 
   function dump() {
@@ -245,18 +243,20 @@ class Contact {
     }
   }
 
-  function updateDB($conf) {
+  function updateDB($conf, $where = "") {
       $this->trim();
-      $query = sprintf("update ContactInfo set firstName='%s', lastName='%s', "
-		       . "email='%s', affiliation='%s', voicePhoneNumber='%s',"
-		       . " faxPhoneNumber='%s', password='%s' "
-		       . "where contactId='%s'",
+      $query = sprintf("update ContactInfo set firstName='%s', lastName='%s',
+		email='%s', affiliation='%s', voicePhoneNumber='%s',
+		faxPhoneNumber='%s', password='%s', collaborators='%s'
+		where contactId='%s'",
 		       sqlqtrim($this->firstName), sqlqtrim($this->lastName),
 		       sqlqtrim($this->email), sqlqtrim($this->affiliation),
 		       sqlqtrim($this->voicePhoneNumber),
 		       sqlqtrim($this->faxPhoneNumber),
-		       sqlqtrim($this->password), $this->contactId);
-      return $conf->q($query);
+		       sqlqtrim($this->password),
+		       sqlqtrim($this->collaborators),
+		       $this->contactId);
+      return $conf->qe($query, $where);
   }
 
   function initialize($email, $conf) {
@@ -275,6 +275,7 @@ class Contact {
       $result = $conf->q($query);
       if (!DB::isError($result) && $result->numRows() >= 1) {
 	  $fromdb = $result->fetchRow(DB_FETCHMODE_OBJECT);
+	  
 	  $this->contactId = $fromdb->contactId;
 	  $this->visits = $fromdb->visits;
 	  $this->firstName = $fromdb->firstName;
@@ -285,6 +286,8 @@ class Contact {
 	  $this->faxPhoneNumber = $fromdb->faxPhoneNumber;
 	  $this->password = $fromdb->password;
 	  $this->note = $fromdb->note;
+	  $this->collaborators = $fromdb->collaborators;
+	  $this->anyTopicInterest = isset($fromdb->topicId);
 
 	  $this->shortConfName = $conf->shortName;
 
@@ -297,11 +300,17 @@ class Contact {
   }
 
   function lookupByEmail($email, $conf) {
-      return $this->updateFromQuery(sprintf("select * from ContactInfo where email='%s'", sqlqtrim($email)), $conf);
+      return $this->updateFromQuery(sprintf(
+		"select ContactInfo.*, TopicInterest.topicId from ContactInfo
+		left join TopicInterest on ContactInfo.contactId=TopicInterest.contactId
+		where email='%s' limit 0,1", sqlqtrim($email)), $conf);
   }
 
   function lookupById($contactId, $conf) {
-      return $this->updateFromQuery("select * from ContactInfo where contactId='$contactId'", $conf);
+      return $this->updateFromQuery(
+		"select ContactInfo.*, TopicInterest.topicId from ContactInfo
+		left join TopicInterest on ContactInfo.contactId=TopicInterest.contactId
+		where contactId=$contactId limit 0,1", $conf);
   }
 
   function fullname() {
@@ -344,25 +353,16 @@ class Contact {
       return $conf->checkConflict($paperId, $this->contactId);
   }
 
-  function iCanReview($paperId, $conf)
-    {
-      if ( $conf->reviewablePaper($paperId)
-	   && (
-	       $conf->reviewRequestFor($paperId, $this->contactId)
-	       ||
-	       $conf->primaryReviewerFor($paperId, $this->contactId)
-	       ||
-	       $conf->secondaryReviewerFor($paperId, $this->contactId)
-	       ||
-	       ($this->isPC && $conf->validTimeFor('PCReviewAnyPaper', 0))
-	       )
-	   )
-	{
+  function iCanReview($paperId, $conf) {
+      if ($conf->reviewablePaper($paperId)
+	  && ($conf->reviewRequestFor($paperId, $this->contactId)
+	      || $conf->primaryReviewerFor($paperId, $this->contactId)
+	      || $conf->secondaryReviewerFor($paperId, $this->contactId)
+	      || ($this->isPC && $conf->validTimeFor('PCReviewAnyPaper', 0))))
 	  return 1;
-	} else {
+      else
 	  return 0;
-	}
-    }
+  }
 
   //
   //
@@ -410,7 +410,7 @@ class Contact {
 
       if ($conf->allowEmail)
 	  $results = mail($this->email,
-			  "Account information for $conf->shortName",
+			  "[$conf->ShortName] Account Information",
 			  $message,
 			  "From: $conf->emailFrom");
   }

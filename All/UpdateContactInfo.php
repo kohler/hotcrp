@@ -6,16 +6,16 @@ $Me = $_SESSION["Me"];
 
 if (isset($_REQUEST["register"])) {
     $_REQUEST["email"] = ltrim(rtrim($_REQUEST["email"]));
-    if ($_REQUEST["password"] == "") {
+    if ($_REQUEST["password"] == "")
 	$UpdateError = "Blank passwords are not allowed.";
-    } else if ($_REQUEST["password"] != $_REQUEST["password2"]) {
+    else if ($_REQUEST["password"] != $_REQUEST["password2"])
 	$UpdateError = "The two passwords you entered did not match.";
-    } else if (ltrim(rtrim($_REQUEST["password"])) != $_REQUEST["password"]) {
+    else if (ltrim(rtrim($_REQUEST["password"])) != $_REQUEST["password"])
 	$UpdateError = "Passwords cannot begin or end with spaces.";
-    } else if ($_REQUEST["email"] != $Me->email
-	       && $Conf->emailRegistered($_REQUEST["email"])) {
+    else if ($_REQUEST["email"] != $Me->email
+	     && $Conf->emailRegistered($_REQUEST["email"]))
 	$UpdateError = "Can't change your email address to " . htmlspecialchars($_REQUEST["email"]) . ", since an account is already registered with that email address.  You may want to <a href='MergeAccounts.php'>merge these accounts</a>.";
-    } else {
+    else {
 	$Me->firstName = $_REQUEST["firstName"];
 	$Me->lastName = $_REQUEST["lastName"];
 	$Me->email = $_REQUEST["email"];
@@ -23,69 +23,28 @@ if (isset($_REQUEST["register"])) {
 	$Me->voicePhoneNumber = $_REQUEST["voicePhoneNumber"];
 	$Me->faxPhoneNumber = $_REQUEST["faxPhoneNumber"];
 	$Me->password = $_REQUEST["password"];
-	$success = true;
+	if (isset($_REQUEST['collaborators']))
+	    $Me->collaborators = $_REQUEST['collaborators'];
 
+	$Conf->saveMessages = 1;
 	$result = $Me->updateDB($Conf);
-	if (DB::isError($result)) {
-	    $success = false;
-	    $UpdateError = $this->dbErrorText($result);
-	}
 
 	// if PC member, update collaborators and areas of expertise
-	if ($Me->isPC) {
-	    $query="UPDATE ContactInfo SET collaborators='" . $_REQUEST["collaborators"] . "' WHERE contactId='" . $_SESSION["Me"]->contactId . "'";
-      
-	    $result = $Conf->qe($query);
+	if ($Me->isPC && $OK) {
+	    // remove all current interests
+	    $Conf->qe("delete from TopicInterest where contactId=$Me->contactId", "while updating topic interests");
 
-      
-	    if (DB::isError($result)) {
-		$success = false;
-		$Conf->errorMsg("There was some problem updating your collaborators. "
-				. "The error message was " .
-				$result->getMessage() . " Please try again. ");
-	    }
-
-
-	    // query for this guy's interests
-	    $query="SELECT TopicInterest.topicId, TopicInterest.interest FROM TopicInterest WHERE TopicInterest.contactId = " . $_SESSION["Me"]->contactId;
-	    $result = $Conf->q($query);
-	    if ( DB::isError($result)) {
-		$Conf->errorMsg("Error in query for interests: " . $result->getMessage());
-	    } else {
-		// load interests into array
-		$interests = array();
-		while ( $row = $result->fetchRow()) {
-		    $interests[$row[0]] = $row[1];
-		}
-
-		$topics = $_REQUEST["topics"];
-		if (IsSet($topics)) {
-		    foreach( $topics as $id => $interest) {
-			if(IsSet($interests[$id])) {
-			    $query="UPDATE TopicInterest SET "
-				. " interest='$interest' WHERE "
-				. " topicId='$id' AND "
-				. " contactId='" . $_SESSION["Me"]->contactId . "' ";
-			} else {
-			    $query="INSERT into TopicInterest SET "
-				. " topicId='$id', "
-				. " contactId='" . $_SESSION["Me"]->contactId . "', "
-				. " interest='$interest'";
-			}
-			$result = $Conf->qe($query);
-			if (DB::isError($result)) {
-			    $success = false;
-			    $Conf->errorMsg("unable to associate one of your areas of interest "
-					    . "with your paper due to a database error. "
-					    . "The message was " . $result->getMessage() 
-					    . " the query was " . $query);
-			}
-		    }
-		}
-	    }
+	    foreach ($_REQUEST as $key => $value)
+		if ($OK && $key[0] == 't' && $key[1] == 'i'
+		    && ($id = (int) substr($key, 2)) > 0
+		    && is_numeric($value)
+		    && ($value = (int) $value) >= 0 && $value < 3)
+		    $Conf->qe("insert into TopicInterest set contactId=$Me->contactId, topicId=$id, interest=$value", "while updating topic interests");
 	}
+
+	$Conf->saveMessages = 0;
 	
-	if ($success) {
+	if ($OK) {
 	    // Refresh the results
 	    $Me->lookupByEmail($_REQUEST["email"], $Conf);
 	    $Conf->log("Updated account", $_SESSION["Me"]);
@@ -112,7 +71,12 @@ $Conf->header("Update Profile");
 <?php
 if (isset($UpdateError))
     $Conf->errorMsg($UpdateError);
-else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1) {
+else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
+    $_SESSION["AskedYouToUpdateContactInfo"] = 3;
+    $msg = ($Me->lastName ? "" : "Please take a moment to update your contact information.  ");
+    $msg .= "We need a list of your recent collaborators to detect paper conflicts.  We also use your interest level in the conference's topics to assign you papers you might like.";
+    $Conf->infoMsg($msg);
+} else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 2;
     $Conf->infoMsg("Please take a moment to update your contact information.");
  }
@@ -133,10 +97,13 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1) {
 </tr>
 
 <tr>
-  <td class='form_caption'>Password<a href='#passwdfootnote'>*</a>:</td>
+  <td class='form_caption'>Password:</td>
   <td class='form_entry'><input type='password' name='password' size='20' value="<?php crpformvalue('password') ?>" /></td>
   <td class='form_caption'>Repeat&nbsp;password:</td>
   <td class='form_entry'><input type='password' name='password2' size='20' value="<?php crpformvalue('password') ?>" /></td>
+  <td class='form_hint'>Please note that the password is stored in our database in cleartext, and will be mailed to you if you have forgotten it.  Thus, you should not use a login password or any other password that is important to you.</td>
+</tr>
+
 </tr>
 
 <tr>
@@ -151,102 +118,53 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1) {
   <td class='form_entry'><input type='text' name='faxPhoneNumber' size='20' value="<?php crpformvalue('faxPhoneNumber') ?>" /></td>
 </tr>
 
+<?php if ($Me->isPC) { ?>
+<tr>
+  <td class='form_caption'>Collaborators and&nbsp;other&nbsp;affiliations:</td>
+  <td class='form_entry' colspan='3'><textarea class='textlite' name='collaborators' rows='5'><?php echo htmlspecialchars($Me->collaborators) ?></textarea></td>
+  <td class='form_hint'>List advisors, students, and other recent 
+    coauthors and collaborators one per line.  We use this information to
+    avoid conflicts of interest when assigning reviews.  Example:
+    <pre class='entryexample'>Bob Roberts (UCLA)
+Ludwig van Beethoven (Colorado)
+Zhang, Ping Yen (INRIA)
+(IIT Madras)</pre></td>
+</tr>
+
+<?php
+    $result = $Conf->q("select TopicArea.topicId, TopicArea.topicName, TopicInterest.interest from TopicArea left join TopicInterest on TopicInterest.contactId=$Me->contactId and TopicInterest.topicId=TopicArea.topicId order by TopicArea.topicName");
+    if (!DB::isError($result) && $result->numRows() > 0) {
+	echo "<tr id='topicinterest'>
+  <td class='form_caption'>Topic&nbsp;interests:</td>
+  <td class='form_entry' colspan='3' id='topicinterest'><table class='topicinterest'>
+       <tr><td></td><th>Low</th><th>Med.</th><th>High</th></tr>\n";
+	for ($i = 0; $i < $result->numRows(); $i++) {
+	    $row = $result->fetchRow();
+	    echo "      <tr><td class='ti_topic'>", htmlspecialchars($row[1]), "</td>";
+	    $interest = isset($row[2]) ? $row[2] : 1;
+	    for ($j = 0; $j < 3; $j++) {
+		echo "<td class='ti_interest'>";
+		echo "<input type='radio' name='ti$row[0]' value='$j' ";
+		if ($interest == $j)
+		    echo "checked='checked' ";
+		echo "/></td>";
+	    }
+	    echo "</td></tr>\n";
+	}
+	echo "    </table></td>
+  <td class='form_hint'>Please indicate how much you would want to review
+	these conference topics.  We use this information to help match papers
+	to reviewers.</td>
+</tr>";
+    }
+} ?>
+
 <tr>
   <td></td>
-  <td colspan='3'><a name='passwordfootnote'>*Please</a> note that the password is stored in our database in cleartext, and will be mailed to you if you have forgotten it.  Thus, you should not use a login password or any other password that is important to you.</td>
+  <td><input class='button_default' type='submit' value='Update Profile' name='register' /></td>
 </tr>
-  
-<tr><td></td><td><input class='button_default' type='submit' value='Update Profile' name='register' /></td></tr>
-</table>
-</form>
-
-<?php if ( $_SESSION["Me"]->isPC ) {
-  // pc members need to indicate their collaborators, and indicate the
-  // topics they are familiar with
-  $query = "SELECT collaborators "
-  . " FROM ContactInfo WHERE "
-  . " contactId='" . $_SESSION["Me"]->contactId . "' ";
-  
-  $result = $Conf->qe($query);
-  if ( DB::isError($result) ) {
-    $Conf->errorMsg("query for your collaborators failed: "
-                    . $result->getMessage());
-  } else {
-    $row = $result->fetchRow();
-    $collaborators = $row[0];
-  }
-  ?>
-  <tr>
-  <td valign="top" width="35%">Collaborators and Other Affiliations:<br>
-  List all persons in alphabetical order (including their current
-					  affiliations) who are currently, or who have been 
-  collaborators or co-authors in the past.  This includes your
-  advisor, students, and collaborators.  Please list one person
-  per line.  This is used to avoid conflicts of interest when
-  papers are assigned.</td>
-  <td valign="top" width="65%">
-  <textarea rows=20 name="collaborators" cols=75><?php echo $collaborators?></textarea></td>
-  </tr>
-
-
-  <?php
-  $query="SELECT TopicArea.topicId, TopicArea.topicName FROM TopicArea";
-  $result = $Conf->q($query);
-
-  if ( DB::isError($result)) {
-    $Conf->errorMsg("Error in query for topics: " . $result->getMessage());
-  } else if ($result->numRows() > 0) {
-    
-    // query for this guy's interests
-    $query="SELECT TopicInterest.topicId, TopicInterest.interest FROM TopicInterest WHERE TopicInterest.contactId = " . $_SESSION["Me"]->contactId;
-    $result1 = $Conf->q($query);
-    if ( DB::isError($result1)) {
-      $Conf->errorMsg("Error in query for interests: " . $result1->getMessage());
-    } else {
-      ?>
-      <tr>
-      <td valign="top" width="16%" height="19">Areas of Expertise:<br> Please
-      indicate your confidence in your ability to review each of the topics
-      listed to the right.  This will be used to help match papers to you
-      for review.
-      </td>
-      <td valign="top" width="84%" height="19">
-      <?php 
-      $names=array();
-      $names[0] = "None";
-      $names[1] = "Low";
-      $names[2] = "High";
-
-      $interests=array();
-
-      // load interests into array
-      while ( $row = $result1->fetchRow()) {
-	$interests[$row[0]] = $row[1];
-      }
-
-      while ($row = $result->fetchRow()) {
-	$id = $row[0];
-	$topic = $row[1];
-	print "<B>$topic</B><br>&nbsp;&nbsp;";
-
-	for($i=0; $i < 3; $i++) {
-	  if ($interests[$id] == $i) {
-	    $checked = "CHECKED";
-	  } else {
-	    $checked ="";
-	  }
-	  print "<INPUT type=radio name=topics[$id] value=$i $checked>&nbsp;$names[$i] ";
-	}
-	print "<br>";
-      }
-    }
-    print "</td></tr>";
-  }
-}
-?>
 
 </table>
-
 </form>
 
 </div>

@@ -1,11 +1,10 @@
 <?php
 require_once('Code/confHeader.inc');
+$Conf->connect();
 
 $testCookieStatus = 0;
-if (isset($_COOKIE["CRPTestCookie"]) && $_COOKIE["CRPTestCookie"] == "ChocChip") {
+if (isset($_COOKIE["CRPTestCookie"]) && $_COOKIE["CRPTestCookie"] == "ChocChip")
     $testCookieStatus = 1;
-}
-
 if (!isset($_GET["cc"]) && !$testCookieStatus) {
     setcookie("CRPTestCookie", "ChocChip");
     header("Location: http://" . $_SERVER["HTTP_HOST"] . $_SERVER["PHP_SELF"] . "?cc=1");
@@ -16,19 +15,17 @@ if (!$testCookieStatus) {
     header("Location: http://" . $_SERVER["HTTP_HOST"] . "$here/YouMustAllowCookies.php");
 }
 
-if (!IsSet($_SESSION["Me"]) || !$_SESSION["Me"]->valid())
+if (!isset($_SESSION["Me"]) || !$_SESSION["Me"]->valid())
     go("All/login.php");
-
-$Conf->connect();
 $Me = $_SESSION["Me"];
-if (!$Me->valid())
-    exit;
 
-if ($_SESSION["AskedYouToUpdateContactInfo"] < 2
-    && $Me->valid() && !$Me->lastName) {
+if (($_SESSION["AskedYouToUpdateContactInfo"] < 2 && !$Me->lastName)
+    || ($_SESSION["AskedYouToUpdateContactInfo"] < 3 && $Me->isPC
+	&& !($Me->collaborators && $Me->anyTopicInterest))) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 1;
     $Me->go("All/UpdateContactInfo.php");
 }
+
 
 //
 // Check for updated menu

@@ -68,7 +68,7 @@ if (isset($_REQUEST["update"])) {
 <?php
 function outrow($id, $name) {
     echo "<tr class='pc' id='pcrow$id'>\n";
-    echo "  <td class='pc_name'><input class='textlite' value='", htmlentities($name), "' name='top$id' id='top$id' size='48' onchange='highlightUpdate(\"$id\")' /></td>\n";
+    echo "  <td class='pc_name'><input class='textlite' value=\"", htmlentities($name), "\" name='top$id' id='top$id' size='48' onchange='highlightUpdate(\"$id\")' /></td>\n";
     echo "  <td class='pc_action'><input class='button' type='button' value='Remove' name='rem$id' id='rem$id' onclick='doRemove(\"$id\")' />
     <input type='hidden' value='' name='chg$id' id='chg$id' /></td>
 </tr>\n";
