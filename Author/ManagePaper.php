@@ -93,9 +93,10 @@ if (isset($_REQUEST['finalize'])) {
 	    /* do nothing */;
 	else {
 	    $row = $result->fetchRow();
-	    if ($result->numRows() != 1 || $row[0] == 0)
+	    if ($result->numRows() != 1 || $row[0] == 0) {
 		$Conf->errorMsg("You must upload a paper before you can finalize.");
-	    else {
+		$PaperError["paper"] = 1;
+	    } else {
 		$result = $Conf->qe("update Paper set acknowledged=" . time() . " where paperId=$paperId", "while finalizing paper");
 		if (!DB::isError($result))
 		    $Conf->confirmMsg("Paper finalized.");
@@ -128,6 +129,20 @@ else if (isset($_REQUEST['update'])) {
 	if (isset($_REQUEST['collaborators']))
 	    $updates .= "collaborators='" . sqlq($_REQUEST['collaborators']) . "', ";
 	$Conf->qe("update Paper set " . substr($updates, 0, -2) . " where paperId=$paperId", "while updating paper information");
+
+	// now set topics
+	$Conf->qe("delete from PaperTopic where paperId=$paperId", "while updating paper topics");
+	foreach ($_REQUEST as $key => $value)
+	    if ($key[0] == 't' && $key[1] == 'o' && $key[2] == 'p'
+		&& ($id = (int) substr($key, 3)) > 0) {
+		$result = $Conf->qe("insert into PaperTopic set paperId=$paperId, topicId=$id", "while updating paper topics");
+		if (DB::isError($result))
+		    break;
+	    }
+
+	// unset values
+	foreach (array('title', 'abstract', 'authorInformation', 'collaborators') as $what)
+	    unset($_REQUEST[$what]);
     } else
 	$Conf->errorMsg("One or more required fields were left blank.  Fill in those fields and try again.");
  }
@@ -196,17 +211,18 @@ if ($OK) {
 
 <?php if (!$withdrawn) { ?>
 <tr>
-  <td class='pt_caption'>Paper:</td>
+  <td class='<?php echo pt_caption_class('paper') ?>'>Paper:</td>
   <td class='pt_entry'><?php
 	if ($row['size'] > 0)
 	    echo paperDownload($paperId, $row);
 	if (!$finalized && ($updatable || $Me->amAssistant())) {
 	    if ($row['size'] > 0)
 		echo "    <br/>\n";
-	    echo "    <input type='file' name='uploadedFile' accept='application/pdf' size='60' />  <input class='button' type='submit' value='Upload File";
+	    echo "    <input type='file' name='uploadedFile' accept='application/pdf' size='60' />&nbsp;<input class='button' type='submit' value='Upload File";
 	    if (!$updatable) echo '*';
 	    echo "' name='upload' />\n";
 	} ?></td>
+  <?php if (!$finalized && ($updatable || $Me->amAssistant())) { ?> <td class='pt_hint'>Max size: <?php echo get_cfg_var("upload_max_filesize") ?>B</td><?php } ?>
 </tr>
 <?php } ?>
 
@@ -222,7 +238,7 @@ if ($OK) {
 </tr>
 
 <tr>
-  <td class='<?php echo pt_caption_class('authorInformation') ?>'>Author information*:</td>
+  <td class='<?php echo pt_caption_class('authorInformation') ?>'>Author&nbsp;information*:</td>
   <td class='pt_entry'><?php
      if ($can_update)
 	 echo "<textarea class='textlite' name='authorInformation' rows='5' onchange='highlightUpdate()'>";
@@ -230,6 +246,9 @@ if ($OK) {
      if ($can_update)
 	 echo "</textarea>";
 ?></td>
+  <?php if ($can_update) { ?><td class='pt_hint'>List all of the paper's authors with affiliations, one per line.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
+Ludwig van Beethoven (Colorado)
+Zhang, Ping Yen (INRIA)</pre></td><?php } ?>
 </tr>
 
 <tr>
@@ -241,7 +260,17 @@ if ($OK) {
      if ($can_update)
 	 echo "</textarea>";
 ?></td>
+  <?php if ($can_update) { ?><td class='pt_hint'>List the paper authors' advisors, students, and other recent coauthors and collaborators.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td><?php } ?>
 </tr>
+
+<?php
+$active = (!$finalized && ($finalizable || $Me->amAssistant()) ? isset($_REQUEST['title']) : -1);
+if ($topicTable = topicTable($paperId, $topicsActive)) { 
+    echo "<tr>\n  <td class='pt_caption'>Topics:</td>\n  <td class='pt_entry'>", $topicTable, "</td>\n";
+    if ($active >= 0)
+	echo "<td class='pt_hint'>Check any topics that apply to your submission.  This will help us match your paper with interested reviewers.</td>\n</tr>\n";
+ }
+?>
 
 <tr>
   <td class='pt_caption'>Actions:</td>

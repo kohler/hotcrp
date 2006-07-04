@@ -190,7 +190,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1) {
 
 
   <?php
-  $query="SELECT TopicArea.topicAreaId, TopicArea.topicName FROM TopicArea";
+  $query="SELECT TopicArea.topicId, TopicArea.topicName FROM TopicArea";
   $result = $Conf->q($query);
 
   if ( DB::isError($result)) {

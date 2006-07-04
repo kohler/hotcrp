@@ -313,7 +313,7 @@ Class ConferenceReview extends FormCollection {
 	// Get paper topics
 	// 
 
-	$query="select TopicArea.topicName from TopicArea INNER JOIN PaperTopic ON TopicArea.topicAreaId = PaperTopic.topicId WHERE PaperTopic.paperId = " . $this->paperId;
+	$query="select TopicArea.topicName from TopicArea INNER JOIN PaperTopic ON TopicArea.topicId = PaperTopic.topicId WHERE PaperTopic.paperId = " . $this->paperId;
         $result = $Conf->q($query);
         if ( DB::isError($result)) {
           $Conf->errorMsg("Error in query for paper topics: " . $result->getMessage());

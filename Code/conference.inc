@@ -1214,7 +1214,7 @@ class Conference {
 	  $query = "SELECT topicName from TopicArea, TopicInterest "
 	    . " WHERE TopicInterest.contactId = $pcId "
 	    . " AND TopicInterest.interest = 2 "
-	    . " AND TopicArea.topicAreaId=TopicInterest.topicId ";
+	    . " AND TopicArea.topicId=TopicInterest.topicId ";
 	  $r=$this->qe($query);
 	  if (!DB::isError($r) && $r -> numRows() > 0) {
 	    print "<tr> <td>";
@@ -1230,7 +1230,7 @@ class Conference {
 	  $query = "SELECT topicName from TopicArea, TopicInterest "
 	    . " WHERE TopicInterest.contactId = $pcId "
 	    . " AND TopicInterest.interest = 1 "
-	    . " AND TopicArea.topicAreaId=TopicInterest.topicId ";
+	    . " AND TopicArea.topicId=TopicInterest.topicId ";
 	  $r=$this->qe($query);
 	  if (!DB::isError($r) && $r -> numRows() > 0) {
 	    print "<tr> <td>";
@@ -1246,7 +1246,7 @@ class Conference {
 	  $query = "SELECT topicName from TopicArea, TopicInterest "
 	    . " WHERE TopicInterest.contactId = $pcId "
 	    . " AND TopicInterest.interest = 0 "
-	    . " AND TopicArea.topicAreaId=TopicInterest.topicId ";
+	    . " AND TopicArea.topicId=TopicInterest.topicId ";
 	  $r=$this->qe($query);
 	  if (!DB::isError($r) && $r -> numRows() > 0) {
 	    print "<tr> <td>";
@@ -1533,7 +1533,7 @@ class Conference {
   function listTopicsForPaper($paperId) {
     $query="SELECT topicName from TopicArea, PaperTopic "
       . "WHERE PaperTopic.paperId='$paperId' "
-      . "AND PaperTopic.topicId=TopicArea.topicAreaId ";
+      . "AND PaperTopic.topicId=TopicArea.topicId ";
     $result = $this->qe($query);
     if ( ! DB::isError($result) ) {
       print "<ul>";
@@ -1656,7 +1656,7 @@ class Conference {
     if( $showTopics ){
       $query="SELECT topicName from TopicArea, PaperTopic "
 	. "WHERE PaperTopic.paperId=$paperId "
-	. "AND PaperTopic.topicId=TopicArea.topicAreaId ";
+	. "AND PaperTopic.topicId=TopicArea.topicId ";
       
       $result = $this->qe($query);
       if ( ! DB::isError($result) && $result->numRows() > 0 ) {

@@ -45,7 +45,7 @@ $result = $Conf->qe($query);
       print "<tr> <td colspan=4> Collaborators: <br> $collaborators </td></tr>";
       print "<tr> <td colspan=4> Interests: <br>";
 
-      $query="SELECT TopicArea.topicAreaId, TopicArea.topicName FROM TopicArea";
+      $query="SELECT TopicArea.topicId, TopicArea.topicName FROM TopicArea";
       $result2 = $Conf->q($query);
 
       if ( DB::isError($result2)) {
@@ -119,7 +119,7 @@ if (DB::isError($result)) {
       print "<tr> <td colspan=4> Collaborators: <br> $collaborators </td></tr>";
       print "<tr> <td colspan=4> Interests: <br>";
 
-      $query="SELECT TopicArea.topicAreaId, TopicArea.topicName FROM TopicArea";
+      $query="SELECT TopicArea.topicId, TopicArea.topicName FROM TopicArea";
       $result2 = $Conf->q($query);
 
       if ( DB::isError($result2)) {

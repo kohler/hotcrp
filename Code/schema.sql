@@ -327,11 +327,8 @@ insert into PaperStorage set paperId=0, timestamp=0, mimetype='text/plain', pape
 
 drop table if exists PaperTopic;
 CREATE TABLE PaperTopic (
-  paperTopicId int(11) NOT NULL auto_increment,
   topicId int(11) default NULL,
   paperId int(11) default NULL,
-  PRIMARY KEY  (paperTopicId),
-  UNIQUE KEY paperTopicId (paperTopicId),
   KEY topicId (topicId),
   KEY paperId (paperId)
 ) TYPE=MyISAM;
@@ -415,10 +412,10 @@ CREATE TABLE SecondaryReviewer (
 
 drop table if exists TopicArea;
 CREATE TABLE TopicArea (
-  topicAreaId int(11) NOT NULL auto_increment,
+  topicId int(11) NOT NULL auto_increment,
   topicName varchar(80) default NULL,
-  PRIMARY KEY (topicAreaId),
-  UNIQUE KEY topicAreaId (topicAreaId),
+  PRIMARY KEY (topicId),
+  UNIQUE KEY topicId (topicId),
   KEY topicName (topicName)
 ) TYPE=MyISAM;
 

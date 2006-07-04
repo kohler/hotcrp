@@ -103,5 +103,39 @@ function paperDownload($paperId, $row = null, $conf = null) {
     $x .= "(" . round($row['size']/1024) . "kB&nbsp;" . htmlspecialchars($conf->getFileTypeAbbrev($row['mimetype'])) . ")";
     return $x;
 }
+
+function topicTable($paperId = -1, $active = 0, $conf = null) {
+    global $Conf;
+    if ($conf == null)
+	$conf = $Conf;
+
+    // get current topics
+    if ($paperId > 0) {
+	$result = $Conf->q("select topicId from PaperTopic where paperId=$paperId");
+	if (!DB::isError($result))
+	    while ($row = $result->fetchRow())
+		$paperTopic[$row[0]] = 1;
+    }
+
+    $result = $Conf->q("select topicId, topicName from TopicArea order by topicName");
+    if (!DB::isError($result) && $result->numRows() > 0) {
+	$out = "<table class='topictable'><tr>\n	<td>";
+	$colheight = (int) (($result->numRows() + 2) / 3);
+	for ($i = 0; $i < $result->numRows(); $i++) {
+	    if ($i > 0 && ($i % $colheight) == 0)
+		$out .= "</td>\n	<td>";
+	    $row = $result->fetchRow();
+	    $out .= "<input type='checkbox' name='top$row[0]' value='1' ";
+	    if ($active > 0 ? isset($_REQUEST["top$row[0]"]) : isset($paperTopic[$row[0]]))
+		$out .= "checked='checked' ";
+	    if ($active < 0)
+		$out .= "readonly='readonly' ";
+	    $out .= "onclick='highlightUpdate()' />&nbsp;" . htmlspecialchars($row[1]) . "<br/>\n";
+	}
+	return $out . "</td>\n</tr></table>";
+    } else
+	return "";
+}
     
+
 ?>

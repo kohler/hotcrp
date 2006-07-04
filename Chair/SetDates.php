@@ -198,28 +198,30 @@ if (isset($_REQUEST['update'])) {
 	}
     }
 
-    // set dates
+    // set nonexistent dates based on existent dates
+    $dval = array("updatePaperSubmission", "startPaperSubmission",
+		  "finalizePaperSubmission", "updatePaperSubmission",
+		  "updatePaperSubmission", "finalizePaperSubmission",
+		  "startPaperSubmission", "updatePaperSubmission");
+    for ($i = 0; $i < count($dval); $i += 2) {
+	$dest = $dval[$i]; $src = $dval[$i+1];
+	if ($Dates[$dest][1] <= 0 && $Dates[$src][1] > 0) {
+	    $Dates[$dest][1] = $Dates[$src][1];
+	    $Messages[] = $DateName[$dest][1] . " set to " . $DateName[$src][1] . ".";
+	} else if ($i < 4 && $Dates[$dest][1] > 0 && $Dates[$src][1] > 0 && $Dates[$dest][1] < $Dates[$src][1]) {
+	    $Error[] = $DateName[$dest][1] . " must be after " . $DateName[$src][1] . ".";
+	    $DateError["${dest}_end"] = $DateError["${src}_end"] = 1;
+	}
+    }
+
+    // print messages now, in case errors come later
+    if (count($Messages) > 0)
+	$Conf->infoMsg(join("<br/>\n", $Messages));
+
+    // set dates, if no errors
     if (count($Error) > 0)
 	$Conf->errorMsg(join("<br/>\n", $Error));
     else {
-	// specific date validation
-	$dval = array("updatePaperSubmission", "startPaperSubmission",
-		      "finalizePaperSubmission", "updatePaperSubmission",
-		      "updatePaperSubmission", "finalizePaperSubmission",
-		      "startPaperSubmission", "updatePaperSubmission");
-	for ($i = 0; $i < count($dval); $i += 2) {
-	    $dest = $dval[$i]; $src = $dval[$i+1];
-	    if ($Dates[$dest][1] < 0 && $Dates[$src][1] > 0) {
-		$Dates[$dest][1] = $Dates[$src][1];
-		$Messages[] = $DateName[$dest][1] . " set to " . $DateName[$src][1] . ".";
-	    }
-	}
-
-	// print messages now, in case errors come later
-	if (count($Messages) > 0)
-	    $Conf->infoMsg(join("<br/>\n", $Messages));
-
-	// insert into database
 	$result = $Conf->qe("delete from ImportantDates");
 	if (!DB::isError($result)) {
 	    foreach ($Dates as $n => $v) {

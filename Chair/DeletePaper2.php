@@ -50,7 +50,7 @@ if (!IsSet($_REQUEST[paperId]) || $_REQUEST[paperId] == 0) {
 <?php 
    $query="SELECT topicName from TopicArea, PaperTopic "
    . "WHERE PaperTopic.paperId=$_REQUEST[paperId] "
-   . "AND PaperTopic.topicId=TopicArea.topicAreaId ";
+   . "AND PaperTopic.topicId=TopicArea.topicId ";
     $result = $Conf->qe($query);
     if ( !DB::isError($result) ) {
       print "<ul>";

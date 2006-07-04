@@ -336,7 +336,7 @@ $result = $Conf->qe($query);
   }
 
   $q = $q . " AND PaperTopic.topicId = TopicInterest.topicId "
-          . " AND PaperTopic.topicId = TopicArea.topicAreaId ";
+          . " AND PaperTopic.topicId = TopicArea.topicId ";
 
   if( !chosen("inth") || !chosen("intm") || !chosen("intn") ){
     $q = $q . "AND ( 0 ";

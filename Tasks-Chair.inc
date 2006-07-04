@@ -4,12 +4,6 @@
 
 <ul>
 
-<li> Manage the Conference Information
-<ul>
-<li> <a href="Chair/SetDates.php"> Set important dates </a>
-<li> <a href="Chair/SetTopics.php"> Manage topics database </a>
-</ul>
-
 <li> Manage the Program Committee Members 
 <ul>
 <li> <a href="Chair/ReviewContacts.php"> See, remove and send reminders
@@ -17,9 +11,6 @@
 <li>  <a href="Chair/ChairAddContact.php"> Add contact information </a>
 to accounts.
 <li>  <a href="Chair/ListPC.php"> List contact information</a> for PC members.
-<li>  <a href="Chair/ReviewPC.php"> Add or remove PC members</a>.
-<li>  <a href="Chair/ReviewChairs.php"> Add or remove program chairs</a>.
-<li>  <a href="Chair/ReviewAssistants.php"> Add or remove assistants to the program chairs</a>.
 <li>  <a href="Chair/BecomeSomeoneElse.php"> Log in as someone else </a>.
 </ul>
 

@@ -50,7 +50,7 @@ $badPaper = $paperLength < 100 && $mimetype == 'text/plain';
 <?php 
    $query="SELECT topicName from TopicArea, PaperTopic "
    . "WHERE PaperTopic.paperId=$_REQUEST[paperId] "
-   . "AND PaperTopic.topicId=TopicArea.topicAreaId ";
+   . "AND PaperTopic.topicId=TopicArea.topicId ";
 
  $result = $Conf->qe($query);
 

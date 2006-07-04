@@ -50,7 +50,7 @@ if (isset($_REQUEST["update"])) {
 	    && ($id = (int) substr($key, 3)) > 0) {
 	    // remove?
 	    if ($value == "rem") {
-		$result = $Conf->qe("delete from TopicArea where topicAreaId='$id'", "while deleting topic");
+		$result = $Conf->qe("delete from TopicArea where topicId='$id'", "while deleting topic");
 		if (!DB::isError($result))
 		    $Conf->log("Removed a topic", $_SESSION["Me"]);
 		continue;
@@ -59,7 +59,7 @@ if (isset($_REQUEST["update"])) {
 	    // remove existing PC roles
 	    if (isset($_REQUEST["top$id"])) {
 		$top = ltrim(rtrim($_REQUEST["top$id"]));
-		$result = $Conf->qe("update TopicArea set topicName='" . mysql_real_escape_string($top) . "' where topicAreaId=$id", "while updating topic name");
+		$result = $Conf->qe("update TopicArea set topicName='" . mysql_real_escape_string($top) . "' where topicId=$id", "while updating topic name");
 	    }
 	}
 }
@@ -74,7 +74,7 @@ function outrow($id, $name) {
 </tr>\n";
 }
 
-$query = "select topicAreaId, topicName from TopicArea order by topicName";
+$query = "select topicId, topicName from TopicArea order by topicName";
 $result = $Conf->q($query);
 if (DB::isError($result))
     $Conf->errorMsg("Database error: " . $result->getMessage());

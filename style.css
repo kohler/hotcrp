@@ -219,3 +219,20 @@ td.pt_caption {
 td.pt_entry textarea {
 	width: 100%;
 }
+td.pt_hint {
+	padding-left: 1em;
+	font-size: small;
+}
+pre.entryexample {
+	padding: 0.5em;
+	background: #eeeeee;
+}
+
+table.topictable {
+	vertical-align: baseline;
+	padding: 0em;
+	border-spacing: 0px;
+}
+table.topictable tr td {
+	padding-right: 2em;
+}

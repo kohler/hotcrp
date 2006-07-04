@@ -97,12 +97,9 @@ if (isset($_REQUEST["update"])) {
 	}
 
 	// unset values
-	unset($_REQUEST["name"]);
-	unset($_REQUEST["email"]);
-	unset($_REQUEST["affiliation"]);
-	unset($_REQUEST["role" . ROLE_PC]);
-	unset($_REQUEST["role" . ROLE_ASSISTANT]);
-	unset($_REQUEST["role" . ROLE_CHAIR]);
+	foreach (array('name', 'email', 'affiliation', 'role' . ROLE_PC,
+		       'role' . ROLE_ASSISTANT, 'role' . ROLE_CHAIR) as $what)
+	    unset($_REQUEST[$what]);
     }
 
     // Now, update existing members

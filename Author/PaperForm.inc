@@ -36,7 +36,7 @@ used to avoid conflicts of interest when papers are assigned.</P>
 </tr>
 <TR><TD BGCOLOR='White' COLSPAN=2></TD></TR>
 <?php 
-$query="SELECT TopicArea.topicAreaId, TopicArea.topicName FROM TopicArea ";
+$query="SELECT TopicArea.topicId, TopicArea.topicName FROM TopicArea ";
 $result = $Conf->q($query);
 if ( DB::isError($result) ) {
   $Conf->errorMsg("Error in query " . $result->getMessage());

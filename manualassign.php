@@ -279,7 +279,7 @@ if(IsSet($_REQUEST[reviewer]) && $_REQUEST[reviewer] >= 0) {
 	  // Pull topics
 	  //
 	  $result=$Conf->qe("SELECT topicName from TopicArea,PaperTopic "
-			    . " WHERE TopicArea.topicAreaId = PaperTopic.topicId "
+			    . " WHERE TopicArea.topicId = PaperTopic.topicId "
 			    . " AND PaperTopic.paperId=$paperId ");
        if (!DB::isError($result) && $result -> numRows() > 0) {
 	 print "<br> Topics: ";

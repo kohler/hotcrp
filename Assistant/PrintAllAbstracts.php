@@ -101,7 +101,7 @@ $result=$Conf->q($query);
 <?php 
    $query="SELECT topicName from TopicArea, PaperTopic "
    . "WHERE PaperTopic.paperId=$paperId "
-   . "AND PaperTopic.topicId=TopicArea.topicAreaId ";
+   . "AND PaperTopic.topicId=TopicArea.topicId ";
     $result2 = $Conf->qe($query);
     if ( ! DB::isError($result) ) {
       print "<ul>";

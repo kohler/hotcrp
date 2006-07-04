@@ -3,7 +3,9 @@ include('../Code/confHeader.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid("../");
-if (!$Conf->canStartPaper())
+
+$can_start = $Conf->canStartPaper();
+if (!$can_start && !$Me->amAssistant())
     $Me->goAlert("../", "The <a href='All/ImportantDates.php'>deadline</a> for starting new papers has passed.");
 
 function pt_caption_class($what) {
@@ -23,6 +25,10 @@ function pt_data_html($what) {
 
 if (isset($_REQUEST['submit'])) {
     $anyErrors = 0;
+    if (!$can_start && !isset($_REQUEST['override'])) {
+	$Error = "The <a href='../All/ImportantDates.php'>deadline</a> for starting new papers has passed.  Select the \"Override deadlines\" checkbox and try again if you really want to override this deadline.";
+	$anyErrors = 1;
+    }
     foreach (array('title', 'abstract', 'authorInformation') as $what) {
 	if (!isset($_REQUEST[$what]) || $_REQUEST[$what] == "")
 	    $PaperError[$what] = $anyErrors = 1;
@@ -59,6 +65,16 @@ if (isset($_REQUEST['submit'])) {
 		$_SESSION["confirmMsg"] .= "  You have until " . $Conf->printTime($Conf->endTime['updatePaperSubmission']) . " to make changes to your registration and finalize your submission.";
 
 	    $Conf->saveMessages = 1;
+
+	    // now set topics
+	    foreach ($_REQUEST as $key => $value)
+		if ($key[0] == 't' && $key[1] == 'o' && $key[2] == 'p'
+		    && ($id = (int) substr($key, 3)) > 0) {
+		    $result = $Conf->qe("insert into PaperTopic set paperId=$paperId, topicId=$id", "while updating paper topics");
+		    if (DB::isError($result))
+			break;
+		}
+	    
 	    $Conf->storePaper("uploadedFile", $paperId);
 	    $Me->go("ManagePaper.php?paperId=$paperId");
 	}
@@ -70,6 +86,8 @@ if (count($PaperError) > 0)
     $Conf->errorMsg("One or more required fields were left blank.  Fill in those fields and try again.");
 if (isset($Error))
     $Conf->errorMsg($Error);
+else if (!$can_start)
+    $Conf->warnMsg("The <a href='../All/ImportantDates.php'>deadline</a> for starting new papers has passed, but you can still submit a new paper in your capacity as PC Chair or PC Chair's Assistant.");
 ?>
 
 <p>
@@ -78,9 +96,7 @@ You can start new paper submissions
 <br>
 You can finalize those submissions (including uploading new
 				    copies of your paper)
-<?php  echo $Conf->printTimeRange('updatePaperSubmission') ?>.
-<br>
-Papers can be no larger than <?php echo get_cfg_var("upload_max_filesize"); ?> bytes.
+<?php echo $Conf->printTimeRange('updatePaperSubmission') ?>.
 </p>
 
 <form method='post' action='SubmitPaper.php' enctype='multipart/form-data'>
@@ -98,6 +114,7 @@ as the contact information for this paper.
 <tr>
   <td class='pt_caption'>Paper (optional):</td>
   <td class='pt_entry'><input type='file' name='uploadedFile' accept='application/pdf' size='60' /></td>
+  <td class='pt_hint'>Max size: <?php echo get_cfg_var("upload_max_filesize") ?>B</td>
 </tr>
 
 <tr>
@@ -106,19 +123,32 @@ as the contact information for this paper.
 </tr>
 
 <tr>
-  <td class='<?php echo pt_caption_class("authorInformation") ?>'>Author information*:</td>
+  <td class='<?php echo pt_caption_class("authorInformation") ?>'>Author&nbsp;information*:</td>
   <td class='pt_entry'><textarea class='textlite' name='authorInformation' rows='5' onchange='highlightUpdate()'><?php echo pt_data_html("authorInformation") ?></textarea></td>
+  <td class='pt_hint'>List all of the paper's authors with affiliations, one per line.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
+Ludwig van Beethoven (Colorado)
+Zhang, Ping Yen (INRIA)</pre></td>
 </tr>
 
 <tr>
   <td class='<?php echo pt_caption_class("collaborators") ?>'>Collaborators:</td>
   <td class='pt_entry'><textarea class='textlite' name='collaborators' rows='5' onchange='highlightUpdate()'><?php echo pt_data_html("collaborators") ?></textarea></td>
+  <td class='pt_hint'>List the paper authors' advisors, students, and other recent coauthors and collaborators.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td>
 </tr>
+
+<?php
+$topicsActive = ($finalizable || $Me->amAssistant() ? isset($_REQUEST['title']) : -1);
+if ($topicTable = topicTable($paperId, $topicsActive))
+    echo "<tr>\n  <td class='pt_caption'>Topics:</td>\n  <td class='pt_entry'>", $topicTable,
+	"</td>\n  <td class='pt_hint'>Check any topics that apply to your submission.  This will help us match your paper with interested reviewers.</td>\n</tr>\n";
+?>
 
 <tr>
   <td class='pt_caption'></td>
-  <td class='pt_entry'>
-    <input class='button' type='submit' value='Create Paper' name='submit' />
+  <td class='pt_entry'><?php
+    if (!$can_start)
+	echo "<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines<br/>\n";
+    ?><input class='button_default' type='submit' value='Create Paper' name='submit' />
   </td>
 </tr>
 
