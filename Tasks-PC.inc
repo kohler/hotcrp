@@ -17,7 +17,6 @@
 
 ?>
 <ul>
-<li> <a href="All/UpdateContactInfo.php"> Program Committee Collaborators and Topics of Interest</a> </li>
 
 <li> Reviewer assignments  (asking others to review papers)
 <ul>

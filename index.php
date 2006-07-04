@@ -74,7 +74,6 @@ function taskbutton($name,$label) {
     </tr>
     <tr><td></td>
       <td><a href='Chair/ListPC.php'>See&nbsp;contact&nbsp;information</a> &mdash;
-	<a href='Chair/ReviewContacts.php'>See&nbsp;contact&nbsp;information&nbsp;2</a> &mdash;
 	<a href='Chair/ChairAddContact.php'>Add&nbsp;contact&nbsp;information</a> &mdash;
 	<a href='Chair/BecomeSomeoneElse.php'>Log&nbsp;in&nbsp;as&nbsp;someone&nbsp;else</a></td>
     </tr>
@@ -153,7 +152,6 @@ if ($Me->isAuthor) {
 
 <table width=100%>
 <tr>
-<? taskbutton("Author", "Author"); ?>
 <? if ($Me->amReviewer()) {taskbutton("Reviewer", "Reviewer");}?>
 <? if ($Me->isPC) { taskbutton("PC", "PC Members"); }?>
 <? if ($Me->isChair) {taskbutton("Chair", "PC Chair");}?>

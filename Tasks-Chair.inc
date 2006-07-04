@@ -6,8 +6,6 @@
 
 <li> Manage the Program Committee Members 
 <ul>
-<li> <a href="Chair/ReviewContacts.php"> See, remove and send reminders
-	</a> about contact information.
 <li>  <a href="Chair/ChairAddContact.php"> Add contact information </a>
 to accounts.
 <li>  <a href="Chair/ListPC.php"> List contact information</a> for PC members.
