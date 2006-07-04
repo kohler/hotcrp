@@ -109,7 +109,6 @@ if (!IsSet($_REQUEST[submittedFor]) || !IsSet($_REQUEST[title])
 				    $_REQUEST[preferredReviewers]);
 	    }
 
-	    $_SESSION["Me"] -> updateContactRoleInfo($Conf);
 	    $Conf->confirmMsg("It looks like your paper has been successfully submitted "
 			    . "and uploaded to the server as paper #$paperId.");
 

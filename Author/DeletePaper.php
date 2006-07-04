@@ -60,7 +60,6 @@ $collaborators = $row['collaborators'];
 <?php 
 if ( IsSet($_REQUEST["DeletePaper"]) ) {
   $Conf->deletePaper($_REQUEST[paperId]);
-  $_SESSION["Me"] -> updateContactRoleInfo($Conf);
   $Conf->infoMsg( "It looks like your paper should have been deleted. " );
   
 

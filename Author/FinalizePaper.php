@@ -80,7 +80,6 @@ if ( IsSet($_REQUEST["ConfirmPaper"]) ) {
 
     $Conf->log("Finalize $paperLength byte paper $_REQUEST[paperId]: $title", $_SESSION["Me"]);
   }
-  $_SESSION["Me"] -> updateContactRoleInfo($Conf);
   exit();
 
 } else if ( IsSet($UpdatePaper) ) {
@@ -106,8 +105,6 @@ if ( IsSet($_REQUEST["ConfirmPaper"]) ) {
     }
   }
 }
-
-$_SESSION["Me"] -> updateContactRoleInfo($Conf);
 
 $Conf->infoMsg("You need to finalize your papers before they can be reviewed. Once you finalize"
 	       . " your paper, you can't change any of the information. If you're simply submitting "

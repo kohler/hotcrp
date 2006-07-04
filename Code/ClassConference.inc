@@ -192,42 +192,6 @@ class Conference {
       return $result;
   }
 
-  //
-  // Return the number of papers submitted by an author.
-  //
-
-  function countSubmittedById($id) {
-    if (1) {
-      $query = "SELECT COUNT(*) FROM Paper WHERE "
-	. "Paper.contactId='$id'";
-    }
-
-    $result = $this->q($query);
-
-    if ( !DB::isError($result) && $result -> numRows() == 1 ) {
-      $row = $result->fetchRow();
-      return $row[0];
-    } else {
-      return 0;
-    }
-  }
-
-  //
-  // Return the number of papers submitted by an author
-  // that have been finalized.
-  //
-  function countFinalizedById($id) {
-    $query = "SELECT COUNT(*) FROM Paper WHERE "
-      . " (Paper.contactId='$id' AND Paper.acknowledged=1 )";
-    $result = $this->q($query);
-
-    if ( !DB::isError($result) && $result -> numRows() == 1 ) {
-      $row = $result->fetchRow();
-      return $row[0];
-    } else {
-      return 0;
-    }
-  }
 
   //
   // Check to see if an email address has been registered

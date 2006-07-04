@@ -44,8 +44,6 @@ You will be automatically logged out if you are idle for more than
 </p>
 
 <?php
-// Oh what the hell, update roles and dates each time
-$Me->updateContactRoleInfo($Conf);
 $Conf->updateImportantDates();
 
 function taskbutton($name,$label) {
@@ -106,14 +104,14 @@ function taskbutton($name,$label) {
     </tr>
 
 <?php
-if ($Me->papersSubmitted > 0) {
+if ($Me->isAuthor) {
     $query = "select Paper.paperId, title, acknowledged, withdrawn,
 	length(PaperStorage.paper) as size, mimetype
 	from Paper, Roles, PaperStorage
  	where Paper.paperId=Roles.paperId and Roles.contactId=$Me->contactId
 	and Paper.paperStorageId=PaperStorage.paperStorageId";
     $result = $Conf->q($query);
-    if (!DB::isError($result)) {
+    if (!DB::isError($result) && $result->numRows() > 0) {
 	$header = "<th>Existing submissions:</th>";
 	$anyToFinalize = 0;
 	while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {

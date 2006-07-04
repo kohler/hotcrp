@@ -21,11 +21,6 @@ class Contact {
     var $note;
     var $anyTopicInterest;
 
-    // The following fields are taken from tables other
-    // than ContactInfo
-    var $papersFinalized;
-    var $papersSubmitted;
-
     // Roles
     var $isAuthor;
     var $isPC;
@@ -81,9 +76,6 @@ class Contact {
 	$this->note = 0;
 	$this->collaborators = '';
 	$this->anyTopicInterest = 0;
-	
-	$this->papersFinalized = 0;
-	$this->papersSubmitted = 0;
 	
 	$this->isAuthor = 0;
 	$this->isPC = 0;
@@ -170,8 +162,6 @@ class Contact {
       echo "faxPhoneNumber = " . $this->faxPhoneNumber . "<br>";
       echo "password = " . $this->password . "<br>";
       echo "note = " . $this->note . "<br>";
-      echo "papersFinalized = " . $this->papersFinalized . "<br>";
-      echo "papersSubmitted = " . $this->papersSubmitted . "<br>";
       echo "isAuthor = " . $this->isAuthor . "<br>";
       echo "isPC = " . $this->isPC . "<br>";
       echo "isChair = " . $this->isChair . "<br>";
@@ -334,12 +324,6 @@ class Contact {
       $query = "UPDATE ContactInfo SET visits='$this->visits', "
 	  . " note='$message' WHERE contactId='$this->contactId'";
       $result = $conf->qe($query);
-  }
-
-  //
-  function updateContactRoleInfo($conf) {
-      $this->papersSubmitted = $conf->countSubmittedById($this->contactId);
-      $this->papersFinalized = $conf->countFinalizedById($this->contactId);
   }
 
   function amPaperAuthor($paperId, $conf) {

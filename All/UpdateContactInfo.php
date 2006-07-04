@@ -54,8 +54,6 @@ if (isset($_REQUEST["register"])) {
     }
  }
 
-$_SESSION["Me"]->updateContactRoleInfo($Conf);
-
 function crpformvalue($val) {
     global $Me;
     if (isset($_REQUEST[$val]))
