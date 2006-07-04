@@ -99,7 +99,7 @@ function taskbutton($name,$label) {
     if ($Conf->canStartPaper() == 0)
 	echo "<td colspan='2'>The <a href='All/ImportantDates.php'>deadline</a> for starting new papers has passed.</td>\n";
     else
-	echo "<th><a href='Author/SubmitPaper.php'>Start new submission</a></th> <td colspan='2'><span class='deadline'>(", $Conf->printDeadline('startPaperSubmission'), ")</span></td>"; ?>
+	echo "<th><a href='Author/SubmitPaper.php'>Start new paper</a></th> <td colspan='2'><span class='deadline'>(", $Conf->printDeadline('startPaperSubmission'), ")</span></td>"; ?>
     </tr>
 
 <?php
@@ -111,7 +111,7 @@ if ($Me->isAuthor) {
 	and Paper.paperStorageId=PaperStorage.paperStorageId";
     $result = $Conf->q($query);
     if (!DB::isError($result) && $result->numRows() > 0) {
-	$header = "<th>Existing submissions:</th>";
+	$header = "<th>Existing papers:</th>";
 	$anyToFinalize = 0;
 	while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
 	    echo "<tr>\n  $header\n  <td class='form_entry'>";
@@ -126,7 +126,7 @@ if ($Me->isAuthor) {
 	if ($anyToFinalize) {
 	    $time = $Conf->printableEndTime('updatePaperSubmission');
 	    if ($time != 'N/A')
-		echo "<tr>\n  <td></td>\n  <td class='form_entry' colspan='2'>You have until $time to finalize your submissions.</td>\n</tr>\n";
+		echo "<tr>\n  <td></td>\n  <td class='form_entry' colspan='2'>You have until $time to submit any papers in progress.</td>\n</tr>\n";
 	}
     }
 }

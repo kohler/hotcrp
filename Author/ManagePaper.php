@@ -34,7 +34,7 @@ function pt_data_html($what, $row) {
 	return htmlspecialchars($row[$what]);
 }
 
-$Conf->header_head("Manage Submission #$paperId");
+$Conf->header_head("Manage Paper #$paperId");
 ?>
 <script type="text/javascript"><!--
 function highlightUpdate() {
@@ -46,7 +46,7 @@ function highlightUpdate() {
 // -->
 </script>
 
-<?php $Conf->header("Manage Submission #$paperId", 0, 'aumg') ?>
+<?php $Conf->header("Manage Paper #$paperId", 0, 'aumg') ?>
 
 <?php
 // override?
@@ -148,6 +148,7 @@ else if (isset($_REQUEST['update'])) {
  }
 
 // print message if not author
+$now = time();
 if ($notAuthor)
     $Conf->infoMsg("You are not an author of this paper, but you can still make changes in your capacity as PC Chair or PC Chair's Assistant.");
 
@@ -163,21 +164,16 @@ while ($OK && ($row = $result->fetchRow())) {
     }
  }
 
-if ($OK && !isset($paperTitle)) {
-    $result = $Conf->qe("select title from Paper where paperId=$paperId");
-    if ($OK && $result->numRows() > 0 && ($row = $result->fetchRow()))
-	$paperTitle = $row[0];
- }
-
-if ($OK && isset($prevPaperId))
-    echo "<div class='prevpaperlink'><a href='ManagePaper.php?paperId=$prevPaperId'>&lt; Previous Paper [#$prevPaperId] ", htmlspecialchars($prevPaperTitle), "</a></div>\n";
-if ($OK && isset($nextPaperId))
-    echo "<div class='nextpaperlink'><a href='ManagePaper.php?paperId=$nextPaperId'>Next Paper [#$nextPaperId] ", htmlspecialchars($nextPaperTitle), " &gt;</a></div>\n";
-echo "<div class='clear'></div>\n\n";
+function printPaperLinks() {
+    global $prevPaperId, $prevPaperTitle, $nextPaperId, $nextPaperTitle, $OK;
+    if ($OK && isset($prevPaperId))
+	echo "<div class='prevpaperlink'><a href='ManagePaper.php?paperId=$prevPaperId'>&lt; Previous Paper [#$prevPaperId] ", htmlspecialchars($prevPaperTitle), "</a></div>\n";
+    if ($OK && isset($nextPaperId))
+	echo "<div class='nextpaperlink'><a href='ManagePaper.php?paperId=$nextPaperId'>Next Paper [#$nextPaperId] ", htmlspecialchars($nextPaperTitle), " &gt;</a></div>\n";
+    echo "<div class='clear'></div>\n\n";
+}
 
 if ($OK) {
-    echo "<h2>[#$paperId] ", htmlspecialchars($paperTitle), "</h2>\n\n";
-
     $query = "select Paper.title, Paper.abstract, Paper.authorInformation, "
 	. " length(PaperStorage.paper) as size, PaperStorage.mimetype, "
 	. " Paper.withdrawn, Paper.acknowledged, Paper.collaborators, "
@@ -187,15 +183,37 @@ if ($OK) {
     $result = $Conf->qe($query);
  }
 
-if ($OK) {
+if ($OK && $result->numRows() > 0) {
     $row = $result->fetchRow(DB_FETCHMODE_ASSOC);
-    echo "<form method='post' action=\"", $_SERVER['PHP_SELF'], "\" enctype='multipart/form-data'>
-<input type='hidden' name='paperId' value='$paperId' />
-<table class='aumanage'>\n";
-
+    
     $withdrawn = $row['withdrawn'] > 0;
     $finalized = $row['acknowledged'] > 0;
     $can_update = ($updatable || $Me->amAssistant()) && !$withdrawn && !$finalized;
+
+    if ($notAuthor)
+	/* do nothing */;
+    else if ($updatable && ($withdrawn || !$finalized)) {
+	$deadline = $Conf->printableEndTime('updatePaperSubmission');
+	$deadline = ($deadline == "N/A" ? "" : "  The deadline is $deadline.");
+	if ($withdrawn)
+	    $Conf->infoMsg("Your paper has been withdrawn, but you can still revive it.$deadline");
+	else
+	    $Conf->infoMsg("You must officially submit your paper using the \"Submit Paper\" button before it can be reviewed.  <strong>This step cannot be undone.</strong>$deadline");
+    } else if ($finalizable && !$withdrawn && !$finalized) {
+	$deadline = $Conf->printableEndTime('finalizePaperSubmission');
+	$deadline = ($deadline == "N/A" ? "" : "  The deadline is $deadline.");
+	$Conf->infoMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating your paper has passed, but you still need to officially submit it using the \"Submit Paper\" button before it can be reviewed.  <strong>This step cannot be undone.</strong>$deadline");
+    } else if (!$withdrawn && !$finalized) {
+	$Conf->infoMsg("The <a href='../All/ImportantDates.php'>deadline</a> for submitting your paper has passed.");
+    }
+
+    printPaperLinks();
+    
+    echo "<h2>[#$paperId] ", htmlspecialchars($row['title']), "</h2>\n\n";
+
+    echo "<form method='post' action=\"", $_SERVER['PHP_SELF'], "\" enctype='multipart/form-data'>
+<input type='hidden' name='paperId' value='$paperId' />
+<table class='aumanage'>\n";
 
     if ($can_update) {
 	echo "<tr>\n  <td class='", pt_caption_class('title'), "'>Title*:</td>\n";
@@ -264,10 +282,10 @@ Zhang, Ping Yen (INRIA)</pre></td><?php } ?>
 </tr>
 
 <?php
-$active = (!$finalized && ($finalizable || $Me->amAssistant()) ? isset($_REQUEST['title']) : -1);
+$topicsActive = (!$finalized && !$withdrawn && ($finalizable || $Me->amAssistant()) ? isset($_REQUEST['title']) : -1);
 if ($topicTable = topicTable($paperId, $topicsActive)) { 
-    echo "<tr>\n  <td class='pt_caption'>Topics:</td>\n  <td class='pt_entry'>", $topicTable, "</td>\n";
-    if ($active >= 0)
+    echo "<tr>\n  <td class='pt_caption'>Topics:</td>\n  <td class='pt_entry' id='topictable'>", $topicTable, "</td>\n";
+    if ($topicsActive >= 0)
 	echo "<td class='pt_hint'>Check any topics that apply to your submission.  This will help us match your paper with interested reviewers.</td>\n</tr>\n";
  }
 ?>
@@ -276,8 +294,6 @@ if ($topicTable = topicTable($paperId, $topicsActive)) {
   <td class='pt_caption'>Actions:</td>
   <td class='pt_entry'>
 <?php
-    if ($Me->amAssistant())
-	echo "    <input type='checkbox' name='override' value='1' />&nbsp;Override deadlines<br/>\n";
     if ($withdrawn && ($finalizable || $Me->amAssistant())) {
 	echo "    <input class='button' type='submit' value='Revive paper";
         if (!$finalizable) echo '*';
@@ -292,15 +308,17 @@ if ($topicTable = topicTable($paperId, $topicsActive)) {
 		echo "' name='update' />\n";
 	    }
 	    if ($finalizable || $Me->amAssistant()) {
-		echo "    <input class='button' type='submit' value='Finalize";
+		echo "    <input class='button_default' type='submit' value='Submit Paper";
 		if (!$finalizable) echo '*';
 		echo "' name='finalize' />\n";
 	    }
 	}
 	echo "    <input class='button' type='submit' value='Withdraw' name='withdraw' />\n";
 	if ($finalized && $Me->isChair)
-	    echo "    <input class='button' type='submit' value='Unfinalize' name='unfinalize' />\n";
+	    echo "    <input class='button' type='submit' value='Unsubmit' name='unfinalize' />\n";
     }
+    if ($Me->amAssistant())
+	echo "    <br/><input type='checkbox' name='override' value='1' />&nbsp;Override deadlines\n";
 ?>  </td>
 </tr>
 
@@ -308,7 +326,10 @@ if ($topicTable = topicTable($paperId, $topicsActive)) {
 </form>
 <?php
     
- }
+} else {
+    $Conf->errorMsg("The paper disappeared!");
+    printPaperLinks();
+}
 ?>
 
 </div>

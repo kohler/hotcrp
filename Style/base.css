@@ -233,7 +233,6 @@ pre.entryexample {
 }
 
 table.topictable {
-	vertical-align: baseline;
 	padding: 0em;
 	border-spacing: 0px;
 }
@@ -244,7 +243,7 @@ table.topictable tr td {
 tr#topicinterest td.form_caption, tr#topicinterest td.form_hint {
 	padding-top: 1.3em;
 }
-tr#topicinterest td#topicinterest {
+tr#topicinterest td#topicinterest, td#topictable {
 	vertical-align: top;
 	padding-top: 0px;
 }
@@ -262,4 +261,14 @@ table.topicinterest tr td.ti_interest, table.topicinterest tr th {
 table.topicinterest tr td.ti_topic {
 	font-weight: bold;
 	padding-right: 0.5em;
+}
+
+span.pstat {
+	font-weight: bold;
+}
+span.pstat_with {
+	color: #333333;
+}
+span.pstat_sub {
+	color: #007700;
 }

@@ -48,28 +48,25 @@ function paperStatus($paperId, $row = null, $long = 0, $conf = null) {
     if ($row == null) {
 	$result = $conf->q("select withdrawn, acknowledged, length(PaperStatus.paper) as size, mimetype, PaperStatus.timestamp from Paper, PaperStorage where Paper.paperId=$paperId and PaperStorage.paperStorageId=Paper.paperStorageId");
 	if (DB::isError($result))
-	    return "Database error";
+	    return "<span class='pstat pstat_err'>Database error</span>";
+	else if ($result->numRows() == 0)
+	    return "<span class='pstat pstat_no'>No such paper</span>";
 	$row = $result->fetchRow(DB_FETCHMODE_ASSOC);
     }
     
     if ($row['withdrawn'] > 0) {
-	if ($long)
-	    return "Withdrawn at " . $conf->printTime($row['withdrawn']);
-	else
-	    return "Withdrawn";
-    } else if ($row['acknowledged'] <= 0 && !paperUploaded($row['size'], $row['mimetype']))
-	return "Not yet uploaded";
+	$x = "<span class='pstat pstat_with'>Withdrawn</span>";
+	return $x . ($long ? " at " . $conf->printTime($row['withdrawn']) : '');    } else if ($row['acknowledged'] <= 0 && !paperUploaded($row['size'], $row['mimetype']))
+	return "<span class='pstat pstat_noup'>Not yet uploaded</span>";
     else {
 	if ($row['acknowledged'] > 0) {
+	    $x = "<span class='pstat pstat_sub'>Submitted</span>";
 	    if ($long)
-		$x = "Finalized at " . $conf->printTime($row['acknowledged']);
-	    else
-		$x = "Finalized";
+		$x .= " at " . $conf->printTime($row['acknowledged']);
 	} else {
+	    $x = "<span class='pstat pstat_prog'>In progress</span>";
 	    if ($long)
-		$x = "Not finalized; updated at " . $conf->printTime($row['timestamp']);
-	    else
-		$x = "Not finalized";
+		$x .= "; updated at " . $conf->printTime($row['timestamp']);
 	}
 	/* $x .= " <a href='" . $conf->makeDownloadPath($paperId, $row['mimetype']) . "'>[";
 	if ($row['mimetype'] == 'application/pdf')
@@ -110,14 +107,17 @@ function topicTable($paperId = -1, $active = 0, $conf = null) {
 	$conf = $Conf;
 
     // get current topics
-    if ($paperId > 0) {
+    $extraQ = '';
+    if ($paperId > 0 && $active < 0)
+	$extraQ = ", PaperTopic where PaperTopic.paperId=$paperId and PaperTopic.topicId=TopicArea.topicId";
+    else if ($paperId > 0) {
 	$result = $Conf->q("select topicId from PaperTopic where paperId=$paperId");
 	if (!DB::isError($result))
 	    while ($row = $result->fetchRow())
 		$paperTopic[$row[0]] = 1;
     }
 
-    $result = $Conf->q("select topicId, topicName from TopicArea order by topicName");
+    $result = $Conf->q("select TopicArea.topicId, topicName from TopicArea$extraQ order by topicName");
     if (!DB::isError($result) && $result->numRows() > 0) {
 	$out = "<table class='topictable'><tr>\n	<td>";
 	$colheight = (int) (($result->numRows() + 1) / 2);
@@ -125,12 +125,15 @@ function topicTable($paperId = -1, $active = 0, $conf = null) {
 	    if ($i > 0 && ($i % $colheight) == 0)
 		$out .= "</td>\n	<td>";
 	    $row = $result->fetchRow();
-	    $out .= "<input type='checkbox' name='top$row[0]' value='1' ";
-	    if ($active > 0 ? isset($_REQUEST["top$row[0]"]) : isset($paperTopic[$row[0]]))
-		$out .= "checked='checked' ";
-	    if ($active < 0)
-		$out .= "readonly='readonly' ";
-	    $out .= "onclick='highlightUpdate()' />&nbsp;" . htmlspecialchars($row[1]) . "<br/>\n";
+	    if ($paperId <= 0 || $active >= 0) {
+		$out .= "<input type='checkbox' name='top$row[0]' value='1' ";
+		if ($active > 0 ? isset($_REQUEST["top$row[0]"]) : isset($paperTopic[$row[0]]))
+		    $out .= "checked='checked' ";
+		if ($active < 0)
+		    $out .= "disabled='disabled' ";
+		$out .= "onclick='highlightUpdate()' />&nbsp;";
+	    }
+	    $out .= htmlspecialchars($row[1]) . "<br/>\n";
 	}
 	return $out . "</td>\n</tr></table>";
     } else

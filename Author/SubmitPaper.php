@@ -81,7 +81,7 @@ if (isset($_REQUEST['submit'])) {
     }
  }
 
-$Conf->header("Submit New Paper");
+$Conf->header("Start New Paper");
 if (count($PaperError) > 0)
     $Conf->errorMsg("One or more required fields were left blank.  Fill in those fields and try again.");
 if (isset($Error))
@@ -139,7 +139,7 @@ Zhang, Ping Yen (INRIA)</pre></td>
 <?php
 $topicsActive = ($finalizable || $Me->amAssistant() ? isset($_REQUEST['title']) : -1);
 if ($topicTable = topicTable($paperId, $topicsActive))
-    echo "<tr>\n  <td class='pt_caption'>Topics:</td>\n  <td class='pt_entry'>", $topicTable,
+    echo "<tr>\n  <td class='pt_caption'>Topics:</td>\n  <td class='pt_entry' id='topictable'>", $topicTable,
 	"</td>\n  <td class='pt_hint'>Check any topics that apply to your submission.  This will help us match your paper with interested reviewers.</td>\n</tr>\n";
 ?>
 
