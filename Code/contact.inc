@@ -394,7 +394,7 @@ class Contact {
 
       if ($conf->allowEmail)
 	  $results = mail($this->email,
-			  "[$conf->ShortName] Account Information",
+			  "[$conf->confShortName] Account Information",
 			  $message,
 			  "From: $conf->emailFrom");
   }
