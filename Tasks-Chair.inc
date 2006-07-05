@@ -6,8 +6,6 @@
 
 <li> Manage the Program Committee Members 
 <ul>
-<li>  <a href="Chair/ChairAddContact.php"> Add contact information </a>
-to accounts.
 <li>  <a href="Chair/ListPC.php"> List contact information</a> for PC members.
 <li>  <a href="Chair/BecomeSomeoneElse.php"> Log in as someone else </a>.
 </ul>

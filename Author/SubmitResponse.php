@@ -136,5 +136,4 @@ if (IsSet($_REQUEST['submit'])) {
 </form>
 </body>
 
-<?php  $Conf->footer() ?>
-</html>
+<?php $Conf->footer() ?>

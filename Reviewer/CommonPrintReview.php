@@ -21,6 +21,5 @@ if ( ! $_SESSION["Me"]->iCanReview($_REQUEST[paperId], $Conf) ) {
   print "</div>";
 }
 ?>
-</body>
-<?php  $Conf->footer() ?>
-</html>
+
+<?php $Conf->footer() ?>

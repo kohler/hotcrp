@@ -84,7 +84,4 @@ if (!IsSet($_REQUEST['paperId']) || $_REQUEST['paperId'] == 0) {
 }
 ?>
 
-<?php  $Conf->footer() ?>
-
-</body>
-</html>
+<?php $Conf->footer() ?>

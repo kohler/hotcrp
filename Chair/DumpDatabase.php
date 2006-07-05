@@ -42,6 +42,4 @@ if ( IsSet($_REQUEST[submitted]) ) {
 
 <?php }?>
 
-<?php  $Conf->footer() ?>
-</body>
-</html>
+<?php $Conf->footer() ?>

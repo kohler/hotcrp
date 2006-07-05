@@ -12,7 +12,5 @@ $AuthorPrefix="";
 include("../Tasks-Author.inc");
 ?>
 
-<?php  $Conf->footer() ?>
+<?php $Conf->footer() ?>
 
-</body>
-</html>

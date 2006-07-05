@@ -152,7 +152,5 @@ if (!DB::isError($result1) ) {
 }
 ?>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+<?php $Conf->footer() ?>
 

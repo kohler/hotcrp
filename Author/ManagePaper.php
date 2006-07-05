@@ -235,7 +235,7 @@ if ($OK) {
 	    $Conf->infoMsg("Your paper has been withdrawn, but you can revive it$deadline.");
 	} else {
 	    $deadline = ($deadline == "N/A" ? "" : "  The deadline is $deadline.");
-	    $Conf->infoMsg("You must officially submit your paper before it can be reviewed.  <strong>This step cannot be undone.</strong>$deadline");
+	    $Conf->infoMsg("You must officially submit your paper before it can be reviewed.  <strong>This step cannot be undone</strong> so make all necessary changes first.$deadline");
 	}
     } else if ($finalizable && !$withdrawn && !$finalized) {
 	$deadline = $Conf->printableEndTime('finalizePaperSubmission');
@@ -382,7 +382,4 @@ if ($topicTable = topicTable($paperId, $topicsActive)) {
 }
 ?>
 
-</div>
 <?php $Conf->footer() ?>
-</body>
-</html>

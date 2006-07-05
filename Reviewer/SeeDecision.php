@@ -164,6 +164,4 @@ if ($result->numRows() == 0) {
 }
 ?>
 
-<?php  $Conf->footer() ?> 
-</body>
-</html>
+<?php $Conf->footer() ?> 

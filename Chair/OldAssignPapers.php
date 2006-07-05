@@ -319,7 +319,5 @@ $result = $Conf->qe($query);
  ?>
      </table>
 
-</body>
 <? $Conf->footer() ?>
-</html>
 

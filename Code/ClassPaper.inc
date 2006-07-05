@@ -6,7 +6,6 @@ class Paper {
   var $paperId;
   var $title;
   var $authorInformation;
-  var $pdfLocation;
   var $contactId;
   var $submitted;
   var $acknowledged;
@@ -29,7 +28,6 @@ class Paper {
     $this -> paperId = -1;
     $this -> title = -1;
     $this -> authorInformation = -1;
-    $this -> pdfLocation = -1;
     $this -> contactId = -1;
     $this -> submitted = -1;
     $this -> acknowledged = -1;
@@ -61,7 +59,6 @@ class Paper {
       $this -> paperId = $fromdb -> paperId;
       $this -> title = $fromdb -> title;
       $this -> authorInformation = $fromdb -> authorInformation;
-      $this -> pdfLocation = $fromdb -> pdfLocation;
       $this -> contactId = $fromdb -> contactId;
       $this -> submitted = $fromdb -> submitted;
       $this -> acknowledged = $fromdb -> acknowledged;

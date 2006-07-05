@@ -70,11 +70,13 @@ function taskbutton($name,$label) {
     <table>
     <tr>
       <th>Program&nbsp;committee:</th>
-      <td><a href='Chair/ReviewPC.php'>Add/remove&nbsp;members</a></td>
+      <td><a href='Chair/ReviewPC.php'>Add/remove&nbsp;members</a> &mdash;
+        <a href='Chair/ListPC.php'>See&nbsp;contact&nbsp;information[X]</a></td>
     </tr>
-    <tr><td></td>
-      <td><a href='Chair/ListPC.php'>See&nbsp;contact&nbsp;information</a> &mdash;
-	<a href='Chair/ChairAddContact.php'>Add&nbsp;contact&nbsp;information</a> &mdash;
+
+    <tr>
+      <th>Accounts:</th>
+      <td><a href='All/UpdateContactInfo.php?new=1'>Create&nbsp;account</a> &mdash;
 	<a href='Chair/BecomeSomeoneElse.php'>Log&nbsp;in&nbsp;as&nbsp;someone&nbsp;else</a></td>
     </tr>
 
@@ -182,8 +184,4 @@ if (0) {
 }
 ?>
 
-
-</div>
 <?php $Conf->footer() ?>
-</body>
-</html>

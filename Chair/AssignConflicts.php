@@ -131,7 +131,6 @@ if (DB::isError($result)) {
 <INPUT TYPE="SUBMIT" name="assignConflicts" value="Indicate conflict for the selected papers">
 </FORM>
 	 <?php  } ?> 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+
+<?php $Conf->footer() ?>
 

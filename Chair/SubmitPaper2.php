@@ -69,22 +69,6 @@ if (!IsSet($_REQUEST[submittedFor]) || !IsSet($_REQUEST[title])
 	  // information and the topic information
 	  //
 	
-	$query = "INSERT into PaperAuthor SET "
-	  . "paperId='$paperId', "
-	  . "authorId='$_REQUEST[submittedFor]' "
-	  ;
-
-	$result=$Conf->qe($query);
-	if ( DB::isError($result) ) {
-	  $Conf->errorMsg("There was a problem associating the paper with you (the contact author). "
-			  . "The error message was " . $result->getMessage() . " "
-			  . "Please press BACK and try again.");
-
-	  $Conf->deletePaper($paperId, 0);
-
-	  $Conf->log("Problem creating PaperAuthor for $paperId", $_SESSION["Me"]);
-
-	} else {
 	    
 	  $result = $Conf->qe("INSERT into PaperConflict SET "
 			    . "paperId='$paperId', "

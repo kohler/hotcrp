@@ -106,7 +106,6 @@ CREATE TABLE Paper (
   authorInformation text,
   abstract text,
   collaborators text,
-  pdfLocation varchar(120) default NULL,
   contactId int(11) default NULL,
   submitted timestamp(14) NOT NULL,
   acknowledged int(11) default '0',
@@ -126,24 +125,6 @@ CREATE TABLE Paper (
 
 #
 # Dumping data for table 'Paper'
-#
-
-
-#
-# Table structure for table 'PaperAuthor'
-#
-
-drop table if exists PaperAuthor;
-CREATE TABLE PaperAuthor (
-  paperId int(11) default NULL,
-  authorId int(11) default NULL,
-  authorOrder int(11) default NULL,
-  KEY paperId (paperId),
-  KEY authorId (authorId)
-) TYPE=MyISAM;
-
-#
-# Dumping data for table 'PaperAuthor'
 #
 
 

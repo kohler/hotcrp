@@ -49,7 +49,6 @@ If you suspect something fishy, contact the site administrator at\n\
 	    // Paper
 	    //
 	    crpmergeone("Paper", "contactId", $oldid, $newid);
-	    crpmergeone("PaperAuthor", "authorId", $oldid, $newid);
 	    crpmergeone("PaperConflict", "authorId", $oldid, $newid);
 	    crpmergeone("Roles", "contactId", $oldid, $newid);
 	    crpmergeone("TopicInterest", "contactId", $oldid, $newid);

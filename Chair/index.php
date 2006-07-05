@@ -4,17 +4,11 @@ $_SESSION["Me"] -> goIfInvalid("../index.php");
 $_SESSION["Me"] -> goIfNotChair('../index.php');
 ?>
 
-<html>
-
-<?php  $Conf->header("Activities for Chairs") ?>
-<body>
+<?php $Conf->header("Activities for Chairs") ?>
 
 <?php 
 $ChairPrefix="";
 include("../Tasks-Chair.inc");
 ?>
 
-<?php  $Conf->footer() ?>
-
-</body>
-</html>
+<?php $Conf->footer() ?>

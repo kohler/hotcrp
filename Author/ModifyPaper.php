@@ -157,8 +157,4 @@ ENCTYPE="multipart/form-data" >
 </center> </div>
 </form>
 
-<?php  $Conf->footer() ?>
-
-</body>
-
-</html>
+<?php $Conf->footer() ?>

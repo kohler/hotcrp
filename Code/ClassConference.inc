@@ -724,6 +724,7 @@ class Conference {
       // Output standard footer - button to go to main submission
       // site, button to close & pointer to CRP at sourceforge
       //
+      echo "</div>\n"; // <div id='body'>
       echo "<div id='footer'>\n";
       echo "  <div id='footer_left'>\n";
       echo "    <div id='footer_conference'><a href='", $ConfSiteBase, "index.php'>", $this->shortName, " Submissions Home</a></div>\n";
@@ -733,6 +734,7 @@ class Conference {
       echo "  <div id='footer_right'>\n";
       echo "    <div id='footer_crp'><a href='http://crp.sourceforge.net/'>CRP</a> Conference Management Software</div>\n";
       echo "  </div><div class='clear'></div></div>\n";
+      echo "</body>\n</html>\n";
       //print "<hr>";
       //print "<table align=center width=50%>";
       //print "<tr> <td align=left> ";
@@ -1581,7 +1583,7 @@ class Conference {
 	echo "Withdrawn";
     else {
 	echo "<a href=\"", $this->makeDownloadPath($paperId, $mimetype), "\">";
-	echo ($row['acknowledged'] > 0 ? "Finalized" : "Uploaded");
+	echo ($row['acknowledged'] > 0 ? "Submitted" : "In progress");
 	echo " (", round($paperLength/1024), "&nbsp;kB ";
 	if ($mimetype == "application/pdf")
 	    echo "PDF";
@@ -1625,7 +1627,7 @@ class Conference {
       $result = $this->qe($query);
       if ( ! DB::isError($result) && $result->numRows() > 0 ) {
 	print "<tr>";
-	print "<td> Indicated Topics </td>";
+	print "<td class='pt_caption'>Topics:</td>";
 	print "<td>";
 	print "<ul>";
 	while ($row=$result->fetchRow()) {

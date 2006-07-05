@@ -80,7 +80,5 @@ if ( IsSet($_REQUEST[dumpToDirectory]) ) {
 </table>
 </FORM>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+<?php $Conf->footer() ?>
 

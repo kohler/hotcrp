@@ -40,6 +40,4 @@ $PREFIX="";
 include('RequestedReviewsFromIndex.inc');
 ?>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+<?php $Conf->footer() ?>

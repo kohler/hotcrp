@@ -120,7 +120,5 @@ $result=$Conf->q($query);
 }
 ?>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+<?php $Conf->footer() ?>
 

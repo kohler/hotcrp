@@ -205,6 +205,4 @@ if ($result->numRows() < 1) {
 }
 ?>
 
-<?php  $Conf->footer() ?> 
-</body>
-</html>
+<?php $Conf->footer() ?> 

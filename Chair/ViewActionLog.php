@@ -125,7 +125,5 @@ if (DB::isError($result)) {
 
 <?php  navigationBar() ?>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+<?php $Conf->footer() ?>
 

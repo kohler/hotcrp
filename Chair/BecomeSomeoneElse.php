@@ -87,7 +87,6 @@ $result = $Conf->qe($query);
 </td> </tr>
 </table>
 </form>
-</body>
-<?php  $Conf->footer() ?>
-</html>
+
+<?php $Conf->footer() ?>
 

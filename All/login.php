@@ -4,17 +4,15 @@ require_once('../Code/confHeader.inc');
 // If they're here, they don't know
 // this information.
 //
-if (IsSet($_SESSION['Me'])) {
+if (IsSet($_SESSION['Me']))
     $_SESSION['Me']->invalidate();
-}
 
 $Conf->header(IsSet($LoginType) ? $LoginType : "Login");
 ?>
 
 <?php
-if (isset($LoginConfirm)) {
+if (isset($LoginConfirm))
     $Conf->confirmMsg($LoginConfirm);
-}
 
 $Conf->infoMsg("Log in to the conference management system here.
 You'll use the same account information

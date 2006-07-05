@@ -157,5 +157,3 @@ if ($topicTable = topicTable($paperId, $topicsActive))
 
 
 <?php $Conf->footer() ?>
-</body>
-</html>

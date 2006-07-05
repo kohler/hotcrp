@@ -54,7 +54,5 @@ if (!isset($Error)) {
 $Conf->header("Download Paper #$paperId");
 $Conf->errorMsg($Error);
 ?>
-</div>
+
 <?php $Conf->footer() ?>
-</body>
-</html>

@@ -147,6 +147,5 @@ if( 0 ){
   print "</table>\n";
 }
 ?>
-<?php  $Conf->footer() ?>
-</body>
-</html>
+
+<?php $Conf->footer() ?>

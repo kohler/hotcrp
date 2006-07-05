@@ -90,7 +90,5 @@ if ($r) {
 
 ?>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+<?php $Conf->footer() ?>
 

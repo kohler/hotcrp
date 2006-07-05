@@ -211,6 +211,5 @@ if ( !IsSet($_REQUEST[printableView]) ) {
 <?php 
 }
 ?>
-</body>
-<?php  $Conf->footer() ?>
-</html>
+
+<?php $Conf->footer() ?>

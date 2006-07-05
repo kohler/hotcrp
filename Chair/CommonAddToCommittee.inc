@@ -131,7 +131,7 @@ function outrow() {
     echo "  <td class='pc_aff'>$affiliation</td>\n";
     echo "  <td class='pc_chairbox'><input type='checkbox' name='chair[]' value='$id' ", ($chair ? "checked='checked'" : ""), " onclick='highlightUpdate(\"$id\")' /></td>\n";
     echo "  <td class='pc_assbox'><input type='checkbox' name='ass[]' value='$id' ", ($assistant ? "checked='checked'" : ""), " onclick='highlightUpdate(\"$id\")' /></td>\n";
-    echo "  <td class='pc_action'><input class='button' type='button' value='Remove' name='rem$id' id='rem$id' onclick='doRemove(\"$id\")' />
+    echo "  <td class='pc_action'><input class='button' type='button' value='Remove from PC' name='rem$id' id='rem$id' onclick='doRemove(\"$id\")' />
     <input type='hidden' value='' name='chg$id' id='chg$id' /></td>
 </tr>\n";
 }

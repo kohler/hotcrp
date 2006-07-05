@@ -79,8 +79,7 @@ if (IsSet($_REQUEST[lookForWords])) {
   print "<br>";
 }
 ?>
-</body>
-<?php  $Conf->footer() ?>
-</html>
+
+<?php $Conf->footer() ?>
 
 

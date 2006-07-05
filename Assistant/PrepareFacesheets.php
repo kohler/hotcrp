@@ -133,9 +133,5 @@ if (DB::isError($result)) {
 }
 ?>
 
-
-
-</body>
-<?php  $Conf->footer() ?>
-</html>
+<?php $Conf->footer() ?>
 

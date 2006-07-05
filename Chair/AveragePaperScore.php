@@ -543,7 +543,5 @@ if( $judgeCol ){
 }
 ?>
 
-<?php  $Conf->footer() ?>
-</body>
-</html>
+<?php $Conf->footer() ?>
 

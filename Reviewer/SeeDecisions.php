@@ -26,11 +26,8 @@ if (! $_SESSION["Me"]->isChair ) {
 
 ?>
 
-<html>
+<?php $Conf->header("See the outcomes for papers you reviewed") ?>
 
-<?php  $Conf->header("See the outcomes for papers you reviewed") ?>
-
-<body>
 
 
 <h3> EDUCATING REVIEWERS</h3>
@@ -80,6 +77,4 @@ if (!DB::isError($result)) {
 }
 ?>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+<?php $Conf->footer() ?>

@@ -188,7 +188,5 @@ if ( $Conf -> validTimeFor('authorRespondToReviews', 0) ) {
 
 ?>
 
-<?php  $Conf->footer() ?>
-</body>
-</html>
+<?php $Conf->footer() ?>
 

@@ -275,6 +275,7 @@ span.pstat_sub {
 
 table.pt_buttons td.ptb_explain {
 	padding: 0px 1em 0px 0px;
+	text-align: center;
 	font-size: small;
 }
 table.pt_buttons td.ptb_button {

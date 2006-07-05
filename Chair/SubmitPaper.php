@@ -42,8 +42,4 @@ if (DB::isError($result)) {
       </form>
 
 
-<?php  $Conf->footer() ?>
-
-</body>
-
-</html>
+<?php $Conf->footer() ?>

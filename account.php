@@ -3,34 +3,71 @@ require_once('../Code/confHeader.inc');
 $Conf->connect();
 $_SESSION["Me"]->goIfInvalid("../");
 $Me = $_SESSION["Me"];
+$RealMe = $Me;
+
+$newProfile = (isset($_REQUEST["new"]) && $Me->amAssistant());
+if ($newProfile) {
+    $Me = new Contact;
+    $Me->invalidate();
+ }
+
+$Conf->saveMessages = 1;
 
 if (isset($_REQUEST["register"])) {
+    $needFields = array('email', 'firstName', 'lastName', 'affiliation');
+    if (!$newProfile)
+	$needFields[] = "password";
+    foreach ($needFields as $field)
+	if (!isset($_REQUEST[$field])) {
+	    $Conf->errorMsg("Required form fields missing.");
+	    $OK = 0;
+	}
+ }
+
+if (isset($_REQUEST['register']) && $OK) {
     $_REQUEST["email"] = ltrim(rtrim($_REQUEST["email"]));
-    if ($_REQUEST["password"] == "")
+    if ($_REQUEST["password"] == "" && !$newProfile)
 	$UpdateError = "Blank passwords are not allowed.";
-    else if ($_REQUEST["password"] != $_REQUEST["password2"])
+    else if ($_REQUEST["password"] != $_REQUEST["password2"] && !$newProfile)
 	$UpdateError = "The two passwords you entered did not match.";
-    else if (ltrim(rtrim($_REQUEST["password"])) != $_REQUEST["password"])
+    else if (ltrim(rtrim($_REQUEST["password"])) != $_REQUEST["password"] && !$newProfile)
 	$UpdateError = "Passwords cannot begin or end with spaces.";
     else if ($_REQUEST["email"] != $Me->email
 	     && $Conf->emailRegistered($_REQUEST["email"]))
 	$UpdateError = "Can't change your email address to " . htmlspecialchars($_REQUEST["email"]) . ", since an account is already registered with that email address.  You may want to <a href='MergeAccounts.php'>merge these accounts</a>.";
     else {
+	$Conf->saveMessages = 1;
+	if ($newProfile) {
+	    $result = $Me->initialize($_REQUEST["email"], $Conf);
+	    if ($OK) {
+		$Me->sendAccountInfo($Conf);
+		$Conf->log("Created account", $Me);
+	    }
+	    
+	    // initialize roles too
+	    for ($i = ROLE_PC; $i <= ROLE_CHAIR; $i++)
+		if (isset($_REQUEST["role$i"]))
+		    $Conf->qe("insert into Roles set contactId=$Me->contactId, role=$i", "while initializing roles");
+	}
+	
 	$Me->firstName = $_REQUEST["firstName"];
 	$Me->lastName = $_REQUEST["lastName"];
 	$Me->email = $_REQUEST["email"];
 	$Me->affiliation = $_REQUEST["affiliation"];
-	$Me->voicePhoneNumber = $_REQUEST["voicePhoneNumber"];
-	$Me->faxPhoneNumber = $_REQUEST["faxPhoneNumber"];
-	$Me->password = $_REQUEST["password"];
+	if (isset($_REQUEST["voicePhoneNumber"]))
+	    $Me->voicePhoneNumber = $_REQUEST["voicePhoneNumber"];
+	if (isset($_REQUEST["faxPhoneNumber"]))
+	    $Me->faxPhoneNumber = $_REQUEST["faxPhoneNumber"];
+	if (!$newProfile)
+	    $Me->password = $_REQUEST["password"];
 	if (isset($_REQUEST['collaborators']))
 	    $Me->collaborators = $_REQUEST['collaborators'];
 
-	$Conf->saveMessages = 1;
-	$result = $Me->updateDB($Conf);
+	if ($OK)
+	    $result = $Me->updateDB($Conf);
 
 	// if PC member, update collaborators and areas of expertise
-	if ($Me->isPC && $OK) {
+	if (($Me->isPC || $newProfile) && $OK) {
 	    // remove all current interests
 	    $Conf->qe("delete from TopicInterest where contactId=$Me->contactId", "while updating topic interests");
 
@@ -47,12 +84,18 @@ if (isset($_REQUEST["register"])) {
 	if ($OK) {
 	    // Refresh the results
 	    $Me->lookupByEmail($_REQUEST["email"], $Conf);
-	    $Conf->log("Updated account", $_SESSION["Me"]);
-	    $_SESSION["confirmMsg"] = "Account profile successfully updated.";
-	    $Me->go("../");
+	    if ($newProfile) {
+		$Conf->log("New account", $RealMe);
+		$_SESSION["confirmMsg"] = "Successfully created an account for " . htmlspecialchars($Me->email) . ".  A password has been emailed to that address.";
+	    } else {
+		$Conf->log("Updated account", $RealMe);
+		$_SESSION["confirmMsg"] = "Account profile successfully updated.";
+	    }
+	    $RealMe->go("../");
 	}
     }
  }
+
 
 function crpformvalue($val) {
     global $Me;
@@ -62,9 +105,8 @@ function crpformvalue($val) {
 	echo htmlspecialchars($Me->$val);
 }
 
-$Conf->header("Update Profile");
+$Conf->header($newProfile ? "Create Account" : "Update Profile");
 ?>
-<div name='body'>
 
 <?php
 if (isset($UpdateError))
@@ -81,6 +123,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
 ?>
 
 <form class='updateProfile' method='post' action='UpdateContactInfo.php'>
+<?php if ($newProfile) echo "<input type='hidden' name='new' value='1' />\n"; ?>
 <table class='form'>
 <tr>
   <td class='form_caption'>Email:</td>
@@ -94,6 +137,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
   <td class='form_entry'><input type='text' name='lastName' size='20' value="<?php crpformvalue('lastName') ?>" /></td>
 </tr>
 
+<?php if (!$newProfile) { ?>
 <tr>
   <td class='form_caption'>Password:</td>
   <td class='form_entry'><input type='password' name='password' size='20' value="<?php crpformvalue('password') ?>" /></td>
@@ -101,8 +145,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
   <td class='form_entry'><input type='password' name='password2' size='20' value="<?php crpformvalue('password') ?>" /></td>
   <td class='form_hint'>Please note that the password is stored in our database in cleartext, and will be mailed to you if you have forgotten it.  Thus, you should not use a login password or any other password that is important to you.</td>
 </tr>
-
-</tr>
+<?php } ?>
 
 <tr>
   <td class='form_caption'>Affiliation:</td>
@@ -116,7 +159,29 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
   <td class='form_entry'><input type='text' name='faxPhoneNumber' size='20' value="<?php crpformvalue('faxPhoneNumber') ?>" /></td>
 </tr>
 
-<?php if ($Me->isPC) { ?>
+<?php if ($newProfile) { ?>
+
+<tr>
+  <td class='form_caption'>Roles:</td>
+  <td colspan='3' class='form_entry'>
+<?php
+    foreach (array(ROLE_PC => "PC&nbsp;member", ROLE_ASSISTANT => "Chair's&nbsp;assistant", ROLE_CHAIR => "PC&nbsp;chair") as $key => $value) {
+	echo "    <input type='checkbox' name='role$key' value='1' ";
+	if (isset($_REQUEST["role$key"])) echo "checked='checked' ";
+	echo "/>&nbsp;", $value, "&nbsp;&nbsp;\n";
+    }
+?>
+  </td>
+</tr>
+
+<tr>
+  <td></td>
+  <td colspan='4'><hr/><strong>PC/Reviewer Information</td>
+</tr>
+
+<?php } ?>
+
+<?php if ($Me->isPC || $newProfile) { ?>
 <tr>
   <td class='form_caption'>Collaborators and&nbsp;other&nbsp;affiliations:</td>
   <td class='form_entry' colspan='3'><textarea class='textlite' name='collaborators' rows='5'><?php echo htmlspecialchars($Me->collaborators) ?></textarea></td>
@@ -159,7 +224,12 @@ Zhang, Ping Yen (INRIA)
 
 <tr>
   <td></td>
-  <td><input class='button_default' type='submit' value='Update Profile' name='register' /></td>
+  <td><input class='button_default' type='submit' value='<?php
+    if ($newProfile)
+	echo "Create Account";
+    else
+	echo "Update Profile";
+?>' name='register' /></td>
 </tr>
 
 </table>
