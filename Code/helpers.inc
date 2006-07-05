@@ -36,17 +36,13 @@ function fileUploaded(&$var) {
 	&& is_uploaded_file($var["tmp_name"]);
 }
 
-function paperUploaded($size, $mimetype) {
-    return $size > 100 || $mimetype != "text/plain";
-}
-
 function paperStatus($paperId, $row = null, $long = 0, $conf = null) {
     global $Conf, $ConfSiteBase;
     if ($conf == null)
 	$conf = $Conf;
     
     if ($row == null) {
-	$result = $conf->q("select withdrawn, acknowledged, length(PaperStatus.paper) as size, mimetype, PaperStatus.timestamp from Paper, PaperStorage where Paper.paperId=$paperId and PaperStorage.paperStorageId=Paper.paperStorageId");
+	$result = $conf->q("select withdrawn, acknowledged, Paper.paperStorageId, mimetype, PaperStatus.timestamp from Paper, PaperStorage where Paper.paperId=$paperId and PaperStorage.paperStorageId=Paper.paperStorageId");
 	if (DB::isError($result))
 	    return "<span class='pstat pstat_err'>Database error</span>";
 	else if ($result->numRows() == 0)
@@ -56,7 +52,7 @@ function paperStatus($paperId, $row = null, $long = 0, $conf = null) {
     
     if ($row['withdrawn'] > 0) {
 	$x = "<span class='pstat pstat_with'>Withdrawn</span>";
-	return $x . ($long ? " at " . $conf->printTime($row['withdrawn']) : '');    } else if ($row['acknowledged'] <= 0 && !paperUploaded($row['size'], $row['mimetype']))
+	return $x . ($long ? " at " . $conf->printTime($row['withdrawn']) : '');    } else if ($row['acknowledged'] <= 0 && $row['paperStorageId'] == 1)
 	return "<span class='pstat pstat_noup'>Not yet uploaded</span>";
     else {
 	if ($row['acknowledged'] > 0) {
@@ -96,8 +92,15 @@ function paperDownload($paperId, $row = null, $conf = null) {
 
     $p = $conf->makeDownloadPath($paperId, $row['mimetype']);
     $x = "<a class='download' href='" . $p . "'>View</a>&nbsp;";
-    $x .= "<a class='download' href='" . $p . "?save=1'>Save&nbsp;to&nbsp;disk</a>&nbsp;";
-    $x .= "(" . round($row['size']/1024) . "kB&nbsp;" . htmlspecialchars($conf->getFileTypeAbbrev($row['mimetype'])) . ")";
+    $x .= "<a class='download' href='" . $p . "?save=1'>Save&nbsp;to&nbsp;disk</a>";
+    if (isset($row['size']) || isset($row['mimetype'])) {
+	$x .= "&nbsp;(";
+	if (isset($row['size']))
+	    $x .= round($row['size']/1024) . "kB" . (isset($row['mimetype']) ? "&nbsp;" : "");
+	if (isset($row['mimetype']))
+	    $x .= htmlspecialchars($conf->getFileTypeAbbrev($row['mimetype']));
+	$x .= ")";
+    }
     return $x;
 }
 

@@ -21,11 +21,12 @@ $finalizable = $Conf->canFinalizePaper();
 function get_prow($paperId) {
     global $Conf, $prow, $OK, $updatable, $can_update, $finalized, $withdrawn, $Me;
     if (!isset($prow) && $OK) {
-	$query = "select Paper.title, Paper.abstract, Paper.authorInformation, "
-	    . " length(PaperStorage.paper) as size, PaperStorage.mimetype, "
-	    . " Paper.withdrawn, Paper.acknowledged, Paper.collaborators, "
-	    . " PaperStorage.timestamp from Paper, PaperStorage where
-	Paper.paperId=$paperId and PaperStorage.paperStorageId=Paper.paperStorageId";
+	$query = "select Paper.title, Paper.abstract, Paper.authorInformation,
+	    length(PaperStorage.paper) as size, Paper.paperStorageId,
+	    PaperStorage.mimetype, Paper.withdrawn, Paper.acknowledged,
+	    Paper.collaborators, PaperStorage.timestamp
+	    from Paper, PaperStorage where Paper.paperId=$paperId
+	    and PaperStorage.paperStorageId=Paper.paperStorageId";
 	$result = $Conf->qe($query);
 	if (!DB::isError($result) && $result->numRows() > 0) {
 	    $prow = $result->fetchRow(DB_FETCHMODE_ASSOC);

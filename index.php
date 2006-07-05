@@ -107,7 +107,7 @@ function taskbutton($name,$label) {
 <?php
 if ($Me->isAuthor) {
     $query = "select Paper.paperId, title, acknowledged, withdrawn,
-	length(PaperStorage.paper) as size, mimetype
+	Paper.paperStorageId, mimetype
 	from Paper, Roles, PaperStorage
  	where Paper.paperId=Roles.paperId and Roles.contactId=$Me->contactId
 	and Paper.paperStorageId=PaperStorage.paperStorageId";
