@@ -126,7 +126,10 @@ if (isset($UpdateError))
 else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 3;
     $msg = ($Me->lastName ? "" : "Please take a moment to update your contact information.  ");
-    $msg .= "We need a list of your recent collaborators to detect paper conflicts.  We also use your interest level in the conference's topics to assign you papers you might like.";
+    $msg .= "We need a list of your recent collaborators to detect paper conflicts.  If you have no collaborators, enter \"None\".";
+    $result = $Conf->q("select * from TopicArea");
+    if (!DB::isError($result) && $result->numRows() > 0)
+	$msg .= "  Additionally, we use your topic interests to assign you papers you might like.";
     $Conf->infoMsg($msg);
 } else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 2;
