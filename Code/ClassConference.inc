@@ -589,7 +589,7 @@ class Conference {
       }
 
       if (!DB::isError($result))
-	  $result = $this->qe("update Paper set paperStorageId=$paperStorageId where paperId=$paperId", "while storing paper in database");
+	  $result = $this->qe("update Paper set paperStorageId=$paperStorageId where paperId=$paperId and withdrawn<=0 and acknowledged<=0", "while storing paper in database");
 
       $this->qe("unlock tables");
 

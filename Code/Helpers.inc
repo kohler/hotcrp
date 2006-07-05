@@ -96,7 +96,7 @@ function paperDownload($paperId, $row = null, $conf = null) {
 
     $p = $conf->makeDownloadPath($paperId, $row['mimetype']);
     $x = "<a class='download' href='" . $p . "'>View</a>&nbsp;";
-    $x .= "<a class='download' href='" . $p . "?save=1'>Save</a>&nbsp;";
+    $x .= "<a class='download' href='" . $p . "?save=1'>Save&nbsp;to&nbsp;disk</a>&nbsp;";
     $x .= "(" . round($row['size']/1024) . "kB&nbsp;" . htmlspecialchars($conf->getFileTypeAbbrev($row['mimetype'])) . ")";
     return $x;
 }

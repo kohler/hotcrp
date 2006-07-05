@@ -18,6 +18,25 @@ if ($Me->amAssistant())
 $updatable = $Conf->canUpdatePaper();
 $finalizable = $Conf->canFinalizePaper();
 
+function get_prow($paperId) {
+    global $Conf, $prow, $OK, $updatable, $can_update, $finalized, $withdrawn, $Me;
+    if (!isset($prow) && $OK) {
+	$query = "select Paper.title, Paper.abstract, Paper.authorInformation, "
+	    . " length(PaperStorage.paper) as size, PaperStorage.mimetype, "
+	    . " Paper.withdrawn, Paper.acknowledged, Paper.collaborators, "
+	    . " PaperStorage.timestamp from Paper, PaperStorage where
+	Paper.paperId=$paperId and PaperStorage.paperStorageId=Paper.paperStorageId";
+	$result = $Conf->qe($query);
+	if (!DB::isError($result) && $result->numRows() > 0) {
+	    $prow = $result->fetchRow(DB_FETCHMODE_ASSOC);
+
+	    $withdrawn = $prow['withdrawn'] > 0;
+	    $finalized = $prow['acknowledged'] > 0;
+	    $can_update = ($updatable || $Me->amAssistant()) && !$withdrawn && !$finalized;
+	}
+    }
+ }
+
 function pt_caption_class($what) {
     global $PaperError;
     if (isset($PaperError[$what]))
@@ -70,7 +89,14 @@ if (isset($_REQUEST['revive'])) {
 if (isset($_REQUEST['upload'])
     || ((isset($_REQUEST['update']) || isset($_REQUEST['finalize']))
         && fileUploaded($_FILES['uploadedFile']))) {
-    if (!$updatable && !$override)
+    get_prow($paperId);
+    if (!$OK)
+	/* do nothing */;
+    else if ($finalized)
+	$Conf->errorMsg("The paper has already been submitted; further updates are not possible.");
+    else if ($withdrawn)
+	$Conf->errorMsg("The paper has been withdrawn.");
+    else if (!$updatable && !$override)
 	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.$overrideMsg");
     else if (!fileUploaded($_FILES['uploadedFile']))
 	$Conf->errorMsg("Enter the name of a file to upload.");
@@ -85,21 +111,26 @@ if (isset($_REQUEST['upload'])
 
 // finalize attempt?
 if (isset($_REQUEST['finalize'])) {
-    if (!$finalizable && !$override)
-	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for finalizing papers has passed.$overrideMsg");
+    get_prow($paperId);
+    if ($finalized)
+	$Conf->errorMsg("The paper has already been submitted.");
+    else if ($withdrawn)
+	$Conf->errorMsg("The paper has been withdrawn.");
+    else if (!$finalizable && !$override)
+	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for submitting papers has passed.$overrideMsg");
     else {
-	$result = $Conf->qe("select length(paper) as size from PaperStorage, Paper where Paper.paperStorageId=PaperStorage.paperStorageId and Paper.paperId=$paperId", "while finalizing paper");
+	$result = $Conf->qe("select length(paper) as size from PaperStorage, Paper where Paper.paperStorageId=PaperStorage.paperStorageId and Paper.paperId=$paperId", "while submitting paper");
 	if (DB::isError($result))
 	    /* do nothing */;
 	else {
 	    $row = $result->fetchRow();
 	    if ($result->numRows() != 1 || $row[0] == 0) {
-		$Conf->errorMsg("You must upload a paper before you can finalize.");
+		$Conf->errorMsg("You must upload a paper before you can submit.");
 		$PaperError["paper"] = 1;
 	    } else {
-		$result = $Conf->qe("update Paper set acknowledged=" . time() . " where paperId=$paperId", "while finalizing paper");
+		$result = $Conf->qe("update Paper set acknowledged=" . time() . " where paperId=$paperId", "while submitting paper");
 		if (!DB::isError($result))
-		    $Conf->confirmMsg("Paper finalized.");
+		    $Conf->confirmMsg("Paper submitted.");
 	    }
 	}
     }
@@ -114,37 +145,46 @@ if (isset($_REQUEST['unfinalize'])) {
  }
 
 // update attempt?
-if (isset($_REQUEST['update']) && !$updatable && !$override)
-    $Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.$overrideMsg");
-else if (isset($_REQUEST['update'])) {
-    $anyErrors = 0;
-    foreach (array('title', 'abstract', 'authorInformation') as $what) {
-	if (!isset($_REQUEST[$what]) || $_REQUEST[$what] == "")
-	    $PaperError[$what] = $anyErrors = 1;
-    }
-    if (!$anyErrors) {
-	$updates = "title='" . sqlq($_REQUEST['title']) . "', "
-	    . "abstract='" . sqlq($_REQUEST['abstract']) . "', "
-	    . "authorInformation='" . sqlq($_REQUEST['authorInformation']) . "', ";
-	if (isset($_REQUEST['collaborators']))
-	    $updates .= "collaborators='" . sqlq($_REQUEST['collaborators']) . "', ";
-	$Conf->qe("update Paper set " . substr($updates, 0, -2) . " where paperId=$paperId", "while updating paper information");
+if (isset($_REQUEST['update'])) {
+    get_prow($paperId);
+    if ($finalized)
+	$Conf->errorMsg("Further updates are not possible; the paper has already been submitted.");
+    else if ($withdrawn)
+	$Conf->errorMsg("Updates are not possible; the paper has been withdrawn.");
+    else if (!$updatable && !$override)
+	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.$overrideMsg");
+    else {
+	$anyErrors = 0;
+	foreach (array('title', 'abstract', 'authorInformation') as $what) {
+	    if (!isset($_REQUEST[$what]) || $_REQUEST[$what] == "")
+		$PaperError[$what] = $anyErrors = 1;
+	}
+	if (!$anyErrors) {
+	    $updates = "title='" . sqlq($_REQUEST['title']) . "', "
+		. "abstract='" . sqlq($_REQUEST['abstract']) . "', "
+		. "authorInformation='" . sqlq($_REQUEST['authorInformation']) . "', ";
+	    if (isset($_REQUEST['collaborators']))
+		$updates .= "collaborators='" . sqlq($_REQUEST['collaborators']) . "', ";
+	    $Conf->qe("update Paper set " . substr($updates, 0, -2) . " where paperId=$paperId and withdrawn<=0 and acknowledged<=0", "while updating paper information");
 
-	// now set topics
-	$Conf->qe("delete from PaperTopic where paperId=$paperId", "while updating paper topics");
-	foreach ($_REQUEST as $key => $value)
-	    if ($key[0] == 't' && $key[1] == 'o' && $key[2] == 'p'
-		&& ($id = (int) substr($key, 3)) > 0) {
-		$result = $Conf->qe("insert into PaperTopic set paperId=$paperId, topicId=$id", "while updating paper topics");
-		if (DB::isError($result))
-		    break;
+	    // now set topics
+	    if ($OK) {
+		$Conf->qe("delete from PaperTopic where paperId=$paperId", "while updating paper topics");
+		foreach ($_REQUEST as $key => $value)
+		    if ($key[0] == 't' && $key[1] == 'o' && $key[2] == 'p'
+			&& ($id = (int) substr($key, 3)) > 0) {
+			$result = $Conf->qe("insert into PaperTopic set paperId=$paperId, topicId=$id", "while updating paper topics");
+			if (DB::isError($result))
+			    break;
+		    }
 	    }
 
-	// unset values
-	foreach (array('title', 'abstract', 'authorInformation', 'collaborators') as $what)
-	    unset($_REQUEST[$what]);
-    } else
-	$Conf->errorMsg("One or more required fields were left blank.  Fill in those fields and try again.");
+	    // unset values
+	    foreach (array('title', 'abstract', 'authorInformation', 'collaborators') as $what)
+		unset($_REQUEST[$what]);
+	} else
+	    $Conf->errorMsg("One or more required fields were left blank.  Fill in those fields and try again.");
+    }
  }
 
 // print message if not author
@@ -173,43 +213,32 @@ function printPaperLinks() {
     echo "<div class='clear'></div>\n\n";
 }
 
-if ($OK) {
-    $query = "select Paper.title, Paper.abstract, Paper.authorInformation, "
-	. " length(PaperStorage.paper) as size, PaperStorage.mimetype, "
-	. " Paper.withdrawn, Paper.acknowledged, Paper.collaborators, "
-	. " PaperStorage.timestamp from Paper, PaperStorage where
-	Paper.paperId=$paperId and PaperStorage.paperStorageId=Paper.paperStorageId";
+unset($prow);
+get_prow($paperId);
 
-    $result = $Conf->qe($query);
- }
-
-if ($OK && $result->numRows() > 0) {
-    $row = $result->fetchRow(DB_FETCHMODE_ASSOC);
-    
-    $withdrawn = $row['withdrawn'] > 0;
-    $finalized = $row['acknowledged'] > 0;
-    $can_update = ($updatable || $Me->amAssistant()) && !$withdrawn && !$finalized;
-
+if ($OK) {    
     if ($notAuthor)
 	/* do nothing */;
     else if ($updatable && ($withdrawn || !$finalized)) {
 	$deadline = $Conf->printableEndTime('updatePaperSubmission');
-	$deadline = ($deadline == "N/A" ? "" : "  The deadline is $deadline.");
-	if ($withdrawn)
-	    $Conf->infoMsg("Your paper has been withdrawn, but you can still revive it.$deadline");
-	else
-	    $Conf->infoMsg("You must officially submit your paper using the \"Submit Paper\" button before it can be reviewed.  <strong>This step cannot be undone.</strong>$deadline");
+	if ($withdrawn) {
+	    $deadline = ($deadline == "N/A" ? "" : " until $deadline");
+	    $Conf->infoMsg("Your paper has been withdrawn, but you can revive it$deadline.");
+	} else {
+	    $deadline = ($deadline == "N/A" ? "" : "  The deadline is $deadline.");
+	    $Conf->infoMsg("You must officially submit your paper before it can be reviewed.  <strong>This step cannot be undone.</strong>$deadline");
+	}
     } else if ($finalizable && !$withdrawn && !$finalized) {
 	$deadline = $Conf->printableEndTime('finalizePaperSubmission');
 	$deadline = ($deadline == "N/A" ? "" : "  The deadline is $deadline.");
-	$Conf->infoMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating your paper has passed, but you still need to officially submit it using the \"Submit Paper\" button before it can be reviewed.  <strong>This step cannot be undone.</strong>$deadline");
+	$Conf->infoMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating your paper has passed, but you still need to officially submit it before it can be reviewed.  <strong>This step cannot be undone.</strong>$deadline");
     } else if (!$withdrawn && !$finalized) {
 	$Conf->infoMsg("The <a href='../All/ImportantDates.php'>deadline</a> for submitting your paper has passed.");
     }
 
     printPaperLinks();
     
-    echo "<h2>[#$paperId] ", htmlspecialchars($row['title']), "</h2>\n\n";
+    echo "<h2>[#$paperId] ", htmlspecialchars($prow['title']), "</h2>\n\n";
 
     echo "<form method='post' action=\"", $_SERVER['PHP_SELF'], "\" enctype='multipart/form-data'>
 <input type='hidden' name='paperId' value='$paperId' />
@@ -217,24 +246,24 @@ if ($OK && $result->numRows() > 0) {
 
     if ($can_update) {
 	echo "<tr>\n  <td class='", pt_caption_class('title'), "'>Title*:</td>\n";
-	echo "  <td class='pt_entry'><input class='textlite' type='text' name='title' id='title' value=\"", pt_data_html('title', $row), "\" onchange='highlightUpdate()' size='60' /></td>\n";
+	echo "  <td class='pt_entry'><input class='textlite' type='text' name='title' id='title' value=\"", pt_data_html('title', $prow), "\" onchange='highlightUpdate()' size='60' /></td>\n";
 	echo "</tr>\n";
     }
 ?>
 
 <tr>
   <td class='pt_caption'>Status:</td>
-  <td class='pt_entry'><?php echo paperStatus($paperId, $row, 1) ?></td>
+  <td class='pt_entry'><?php echo paperStatus($paperId, $prow, 1) ?></td>
 </tr>
 
 <?php if (!$withdrawn) { ?>
 <tr>
   <td class='<?php echo pt_caption_class('paper') ?>'>Paper:</td>
   <td class='pt_entry'><?php
-	if ($row['size'] > 0)
-	    echo paperDownload($paperId, $row);
+	if ($prow['size'] > 0)
+	    echo paperDownload($paperId, $prow);
 	if (!$finalized && ($updatable || $Me->amAssistant())) {
-	    if ($row['size'] > 0)
+	    if ($prow['size'] > 0)
 		echo "    <br/>\n";
 	    echo "    <input type='file' name='uploadedFile' accept='application/pdf' size='60' />&nbsp;<input class='button' type='submit' value='Upload File";
 	    if (!$updatable) echo '*';
@@ -245,22 +274,22 @@ if ($OK && $result->numRows() > 0) {
 <?php } ?>
 
 <tr>
-  <td class='<?php echo pt_caption_class('abstract') ?>'>Abstract*:</td>
+  <td class='<?php echo pt_caption_class('abstract') ?>'>Abstract<?php if ($can_update) echo "*" ?>:</td>
   <td class='pt_entry'><?php
      if ($can_update)
 	 echo "<textarea class='textlite' name='abstract' rows='5' onchange='highlightUpdate()'>";
-     echo pt_data_html('abstract', $row);
+     echo pt_data_html('abstract', $prow);
      if ($can_update)
 	 echo "</textarea>";
 ?></td>
 </tr>
 
 <tr>
-  <td class='<?php echo pt_caption_class('authorInformation') ?>'>Author&nbsp;information*:</td>
+  <td class='<?php echo pt_caption_class('authorInformation') ?>'>Author&nbsp;information<?php if ($can_update) echo "*" ?>:</td>
   <td class='pt_entry'><?php
      if ($can_update)
 	 echo "<textarea class='textlite' name='authorInformation' rows='5' onchange='highlightUpdate()'>";
-     echo pt_data_html('authorInformation', $row);
+     echo pt_data_html('authorInformation', $prow);
      if ($can_update)
 	 echo "</textarea>";
 ?></td>
@@ -274,7 +303,7 @@ Zhang, Ping Yen (INRIA)</pre></td><?php } ?>
   <td class='pt_entry'><?php
      if ($can_update)
 	 echo "<textarea class='textlite' name='collaborators' rows='5' onchange='highlightUpdate()'>";
-     echo pt_data_html('collaborators', $row);
+     echo pt_data_html('collaborators', $prow);
      if ($can_update)
 	 echo "</textarea>";
 ?></td>
@@ -290,36 +319,48 @@ if ($topicTable = topicTable($paperId, $topicsActive)) {
  }
 ?>
 
-<tr>
+<tr class='pt_actions'>
   <td class='pt_caption'>Actions:</td>
-  <td class='pt_entry'>
+  <td class='pt_entry'><table class='pt_buttons'>
 <?php
-    if ($withdrawn && ($finalizable || $Me->amAssistant())) {
-	echo "    <input class='button' type='submit' value='Revive paper";
-        if (!$finalizable) echo '*';
-	echo "' name='revive' />\n";
-    } else if ($withdrawn)
-	echo "    None allowed\n";
+    if ($withdrawn && ($finalizable || $Me->amAssistant()))
+	$buttons[] = "<input class='button' type='submit' value='Revive paper"
+		. ($finalizable ? "" : "*") . "' name='revive' />";
+    else if ($withdrawn)
+	$buttons[] = "None allowed";
     else {
 	if (!$finalized) {
 	    if ($updatable || $Me->amAssistant()) {
-		echo "    <input class='button' type='submit' value='Save Changes";
-		if (!$updatable) echo '*';
-		echo "' name='update' />\n";
+		$buttons[] = "<input class='button' type='submit' value='Save Changes"
+		    . ($updatable ? "" : "*") . "' name='update' />";
+		$explains[] = "(does not submit paper)";
 	    }
 	    if ($finalizable || $Me->amAssistant()) {
-		echo "    <input class='button_default' type='submit' value='Submit Paper";
-		if (!$finalizable) echo '*';
-		echo "' name='finalize' />\n";
+		$buttons[] = "<input class='button_default' type='submit' value='Submit Paper"
+		    . ($finalizable ? "" : "*") . "' name='finalize' />";
+		$explains[] = "(cannot undo)";
 	    }
 	}
-	echo "    <input class='button' type='submit' value='Withdraw' name='withdraw' />\n";
-	if ($finalized && $Me->isChair)
-	    echo "    <input class='button' type='submit' value='Unsubmit' name='unfinalize' />\n";
+	$buttons[] = "<input class='button' type='submit' value='Withdraw' name='withdraw' />";
+	$explains[] = "";
+	if ($finalized && $Me->isChair) {
+	    $buttons[] = "<input class='button' type='submit' value='Undo Submit' name='unfinalize' />";
+	    $explains[] = "(PC chair only)";
+	}
+    }
+    echo "<tr>";
+    foreach ($buttons as $button)
+	echo "<td class='ptb_button'>", $button, "</td>";
+    echo "</tr>\n";
+    if (isset($explains) && count($explains) > 1) {
+	echo "<tr>";
+	foreach ($explains as $explain)
+	    echo "<td class='ptb_explain'>", $explain, "</td>";
+	echo "</tr>\n";
     }
     if ($Me->amAssistant())
-	echo "    <br/><input type='checkbox' name='override' value='1' />&nbsp;Override deadlines\n";
-?>  </td>
+	echo "<tr><td class='ptb_button' colspan='4'><input type='checkbox' name='override' value='1' />&nbsp;Override deadlines</td></tr>\n";
+?>  </table></td>
 </tr>
 
 </table>

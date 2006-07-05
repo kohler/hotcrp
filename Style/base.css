@@ -243,7 +243,7 @@ table.topictable tr td {
 tr#topicinterest td.form_caption, tr#topicinterest td.form_hint {
 	padding-top: 1.3em;
 }
-tr#topicinterest td#topicinterest, td#topictable {
+tr#topicinterest td#topicinterest, td#topictable, tr.pt_actions td.pt_caption {
 	vertical-align: top;
 	padding-top: 0px;
 }
@@ -271,4 +271,12 @@ span.pstat_with {
 }
 span.pstat_sub {
 	color: #007700;
+}
+
+table.pt_buttons td.ptb_explain {
+	padding: 0px 1em 0px 0px;
+	font-size: small;
+}
+table.pt_buttons td.ptb_button {
+	padding: 0px 1em 0px 0px;
 }
