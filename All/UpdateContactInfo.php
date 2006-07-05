@@ -11,8 +11,6 @@ if ($newProfile) {
     $Me->invalidate();
  }
 
-$Conf->saveMessages = 1;
-
 if (isset($_REQUEST["register"])) {
     $needFields = array('email', 'firstName', 'lastName', 'affiliation');
     if (!$newProfile)
@@ -36,7 +34,6 @@ if (isset($_REQUEST['register']) && $OK) {
 	     && $Conf->emailRegistered($_REQUEST["email"]))
 	$UpdateError = "Can't change your email address to " . htmlspecialchars($_REQUEST["email"]) . ", since an account is already registered with that email address.  You may want to <a href='MergeAccounts.php'>merge these accounts</a>.";
     else {
-	$Conf->saveMessages = 1;
 	if ($newProfile) {
 	    $result = $Me->initialize($_REQUEST["email"], $Conf);
 	    if ($OK) {
@@ -45,6 +42,8 @@ if (isset($_REQUEST['register']) && $OK) {
 	    }
 	    
 	    // initialize roles too
+	    if (isset($_REQUEST["role" . ROLE_ASSISTANT]) || isset($_REQUEST["role" . ROLE_CHAIR]))
+		$_REQUEST["role" . ROLE_PC] = 1;
 	    for ($i = ROLE_PC; $i <= ROLE_CHAIR; $i++)
 		if (isset($_REQUEST["role$i"]))
 		    $Conf->qe("insert into Roles set contactId=$Me->contactId, role=$i", "while initializing roles");
@@ -79,17 +78,15 @@ if (isset($_REQUEST['register']) && $OK) {
 		    $Conf->qe("insert into TopicInterest set contactId=$Me->contactId, topicId=$id, interest=$value", "while updating topic interests");
 	}
 
-	$Conf->saveMessages = 0;
-	
 	if ($OK) {
 	    // Refresh the results
 	    $Me->lookupByEmail($_REQUEST["email"], $Conf);
 	    if ($newProfile) {
 		$Conf->log("New account", $RealMe);
-		$_SESSION["confirmMsg"] = "Successfully created an account for " . htmlspecialchars($Me->email) . ".  A password has been emailed to that address.";
+		$Conf->confirmMsg("Successfully created an account for " . htmlspecialchars($Me->email) . ".  A password has been emailed to that address.");
 	    } else {
 		$Conf->log("Updated account", $RealMe);
-		$_SESSION["confirmMsg"] = "Account profile successfully updated.";
+		$Conf->confirmMsg("Account profile successfully updated.");
 	    }
 	    $RealMe->go("../");
 	}
@@ -105,10 +102,21 @@ function crpformvalue($val) {
 	echo htmlspecialchars($Me->$val);
 }
 
-$Conf->header($newProfile ? "Create Account" : "Update Profile");
+$title = ($newProfile ? "Create Account" : "Update Profile");
+$Conf->header_head($title);
 ?>
+<script type="text/javascript"><!--
+function doRole(num) {
+    var pc = document.getElementById("role<?php echo ROLE_PC ?>");
+    var ass = document.getElementById("role<?php echo ROLE_ASSISTANT ?>");
+    var chair = document.getElementById("role<?php echo ROLE_CHAIR ?>");
+}
+// -->
+</script>
 
 <?php
+$Conf->header($title);
+
 if (isset($UpdateError))
     $Conf->errorMsg($UpdateError);
 else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
@@ -166,7 +174,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
   <td colspan='3' class='form_entry'>
 <?php
     foreach (array(ROLE_PC => "PC&nbsp;member", ROLE_ASSISTANT => "Chair's&nbsp;assistant", ROLE_CHAIR => "PC&nbsp;chair") as $key => $value) {
-	echo "    <input type='checkbox' name='role$key' value='1' ";
+	echo "    <input type='checkbox' name='role$key' id='role$key' value='1' ";
 	if (isset($_REQUEST["role$key"])) echo "checked='checked' ";
 	echo "/>&nbsp;", $value, "&nbsp;&nbsp;\n";
     }

@@ -66,7 +66,7 @@ function highlightUpdate() {
 // -->
 </script>
 
-<?php $Conf->header("Manage Paper #$paperId", 0, 'aumg') ?>
+<?php $Conf->header("Manage Paper #$paperId", 'aumg') ?>
 
 <?php
 // override?

@@ -41,6 +41,9 @@ class Conference {
   var $startTime;
   var $endTime;
 
+  var $saveMessages;
+  var $headerPrinted;
+
   //
   // Useful colors
   //
@@ -58,8 +61,6 @@ class Conference {
   var $errorColor = "fuchsia"; // should be pink!
   var $warnColor = "lightBlue"; // should be pink!
 
-  var $saveMessages;
-
   function Conference($dbUser, $dbPassword, $dbHost, $dbName) {
       $this->dbHost = $dbHost;
       $this->dbUser = $dbUser;
@@ -69,7 +70,8 @@ class Conference {
       $this->connected = 0;
       $this->startTime = array();
       $this->endTime = array();
-      $this->saveMessages = 0;
+      $this->saveMessages = 1;
+      $this->headerPrinted = 0;
   }
 
   function dump()
@@ -669,18 +671,20 @@ class Conference {
   //
   function header_head($title) {
       // echo '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">';
-      echo "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">\n";
-      echo "<html>\n<head>\n";
-      echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n";
-      echo "<meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />\n";
-      echo "<title>", $title, " - ", $this->shortName, "</title>\n";
-      echo $this->theme;
+      if (!$this->headerPrinted) {
+	  echo "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">\n";
+	  echo "<html>\n<head>\n";
+	  echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n";
+	  echo "<meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />\n";
+	  echo "<title>", $title, " - ", $this->shortName, "</title>\n";
+	  echo $this->theme;
+	  $this->headerPrinted = 1;
+      }
   }
   
-  function header($title, $doHead = 1, $class = '') {
+  function header($title, $class = '') {
       global $ConfSiteBase;
-      if ($doHead)
-	  $this->header_head($title);
+      $this->header_head($title);
       echo "</head><body>\n";
       echo "<div id='header'>\n";
       echo "  <div id='header_left'>\n";
@@ -704,18 +708,11 @@ class Conference {
       $class = ($class ? " class='$class'" : "");
       print "  <div class='clear'></div>\n</div>\n<div id='body'$class>\n";
 
-      if (isset($_SESSION["errorMsg"])) {
-	  $this->errorMsg($_SESSION["errorMsg"]);
-	  unset($_SESSION["errorMsg"]);
-      }
-      if (isset($_SESSION["confirmMsg"])) {
-	  $this->confirmMsg($_SESSION["confirmMsg"]);
-	  unset($_SESSION["confirmMsg"]);
-      }
       if (isset($_SESSION["msgs"])) {
 	  echo $_SESSION["msgs"];
 	  unset($_SESSION["msgs"]);
       }
+      $this->saveMessages = 0;
   }
 
   function footer() {

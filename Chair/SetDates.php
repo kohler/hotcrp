@@ -133,7 +133,7 @@ function clearDates(name) {
 // -->
 </script>
 
-<?php $Conf->header("Set Conference Dates", 0); ?>
+<?php $Conf->header("Set Conference Dates"); ?>
 
 <?php 
 //

@@ -57,14 +57,13 @@ if (isset($_REQUEST['submit'])) {
 		$Error = $Conf->dbErrorText($result, "while associating you with your new paper #$paperId");
 	}
 	if (!isset($Error)) {
-	    $_SESSION["confirmMsg"] = "A record of your paper has been created.";
+	    $msg = "A record of your paper has been created.";
 	    if (!fileUploaded($_FILES["uploadedFile"]))
-		$_SESSION["confirmMsg"] .= "  You still need to upload the actual paper.";
-	    $_SESSION["confirmMsg"] .= "  Your submission will not be considered final until you finalize it.";
+		$msg .= "  You still need to upload the actual paper.";
+	    $msg .= "  Your submission will not be considered final until you submit it.";
 	    if (isset($Conf->endTime['updatePaperSubmission']))
-		$_SESSION["confirmMsg"] .= "  You have until " . $Conf->printTime($Conf->endTime['updatePaperSubmission']) . " to make changes to your registration and finalize your submission.";
-
-	    $Conf->saveMessages = 1;
+		$msg .= "  You have until " . $Conf->printTime($Conf->endTime['updatePaperSubmission']) . " to make changes to your registration and officially submit your submission.";
+	    $Conf->confirmMsg($msg);
 
 	    // now set topics
 	    foreach ($_REQUEST as $key => $value)

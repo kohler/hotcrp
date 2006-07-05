@@ -127,7 +127,9 @@ if ($Me->isAuthor) {
 	}
 	if ($anyToFinalize) {
 	    $time = $Conf->printableEndTime('updatePaperSubmission');
-	    if ($time != 'N/A')
+	    if (!$Conf->canFinalizePaper())
+		echo "<tr>\n  <td></td>\n  <td class='form_entry' colspan='2'>The <a href='All/ImportantDates.php'>deadline</a> for submitting papers in progress has passed.</td>\n</tr>\n";
+	    else if ($time != 'N/A')
 		echo "<tr>\n  <td></td>\n  <td class='form_entry' colspan='2'>You have until $time to submit any papers in progress.</td>\n</tr>\n";
 	}
     }

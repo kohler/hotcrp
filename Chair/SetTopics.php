@@ -31,7 +31,7 @@ function doRemove(id) {
 // -->
 </script>
 
-<?php $Conf->header("Manage Conference Topics", 0) ?>
+<?php $Conf->header("Manage Conference Topics") ?>
 
 <?php
 if (isset($_REQUEST["update"])) {

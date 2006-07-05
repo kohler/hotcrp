@@ -191,7 +191,8 @@ class Contact {
   }
 
   function goAlert($url, $message = "") {
-      $_SESSION["errorMsg"] = $message;
+      global $Conf;
+      $Conf->errorMsg($message);
       go($url);
   }
 

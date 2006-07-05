@@ -26,7 +26,7 @@ if (isset($_REQUEST["merge"])) {
 	else if ($MiniMe->password != $_REQUEST["password"])
 	    $MergeError = "That password is incorrect.";
 	else if ($MiniMe->contactId == $Me->contactId) {
-	    $_SESSION["confirmMsg"] = "Accounts successfully merged.";
+	    $Conf->confirmMsg("Accounts successfully merged.");
 	    $Me->go("../");
 	} else {
 	    $message = "\
@@ -68,7 +68,7 @@ If you suspect something fishy, contact the site administrator at\n\
 	    }
 
 	    if ($MergeError == "") {
-		$_SESSION["confirmMsg"] = "Account " . htmlspecialchars($MiniMe->email) . " successfully merged.";
+		$Conf->confirmMsg("Account " . htmlspecialchars($MiniMe->email) . " successfully merged.");
 		$Conf->log("Merged account $oldid into " . $Me->contactId, $Me);
 		$Me->go("../");
 	    } else {
