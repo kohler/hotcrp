@@ -106,10 +106,14 @@ $title = ($newProfile ? "Create Account" : "Update Profile");
 $Conf->header_head($title);
 ?>
 <script type="text/javascript"><!--
-function doRole(num) {
+function doRole(what) {
     var pc = document.getElementById("role<?php echo ROLE_PC ?>");
     var ass = document.getElementById("role<?php echo ROLE_ASSISTANT ?>");
     var chair = document.getElementById("role<?php echo ROLE_CHAIR ?>");
+    if (pc == what && !pc.checked)
+	ass.checked = chair.checked = false;
+    if (pc != what && (ass.checked || chair.checked))
+	pc.checked = true;
 }
 // -->
 </script>
@@ -176,7 +180,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
     foreach (array(ROLE_PC => "PC&nbsp;member", ROLE_ASSISTANT => "Chair's&nbsp;assistant", ROLE_CHAIR => "PC&nbsp;chair") as $key => $value) {
 	echo "    <input type='checkbox' name='role$key' id='role$key' value='1' ";
 	if (isset($_REQUEST["role$key"])) echo "checked='checked' ";
-	echo "/>&nbsp;", $value, "&nbsp;&nbsp;\n";
+	echo "onclick='doRole(this)' />&nbsp;", $value, "&nbsp;&nbsp;\n";
     }
 ?>
   </td>
