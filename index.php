@@ -21,7 +21,7 @@ $Me = $_SESSION["Me"];
 
 if (($_SESSION["AskedYouToUpdateContactInfo"] < 2 && !$Me->lastName)
     || ($_SESSION["AskedYouToUpdateContactInfo"] < 3 && $Me->isPC
-	&& !($Me->collaborators && $Me->anyTopicInterest))) {
+	&& !($Me->collaborators || $Me->anyTopicInterest))) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 1;
     $Me->go("All/UpdateContactInfo.php");
 }
