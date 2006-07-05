@@ -104,8 +104,17 @@ if (isset($_REQUEST['upload'])
 	$result = $Conf->storePaper('uploadedFile', $paperId);
 	if ($result == 0 || DB::isError($result))
 	    $Conf->errorMsg("There was an error when trying to update your paper. Please try again.");
-	else
-	    $Conf->confirmMsg("Paper uploaded ($result bytes).");
+	else {
+	    $res2 = $Conf->qe("select length(paper) from PaperStorage, Paper where Paper.paperId=$paperId and Paper.paperStorageId=PaperStorage.paperStorageId");
+	    if (!DB::isError($res2) && $res2->numRows() > 0) {
+		$row = $res2->fetchRow();
+		$actualSize = $row[0];
+	    }
+	    if (isset($actualSize) && $actualSize == $result)
+		$Conf->confirmMsg("Paper uploaded ($result bytes).");
+	    else if (isset($actualSize))
+		$Conf->errorMsg("Paper upload failed: stored $actualSize of $result bytes!  Please try again; make sure your paper is under the size limit.");
+	}
     }
  }
 
