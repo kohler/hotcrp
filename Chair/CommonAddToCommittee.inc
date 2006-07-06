@@ -82,6 +82,10 @@ if (isset($_REQUEST["update"])) {
 	}
 
 	// successfully looked up member, now make them a PC member
+	$Conf->qe("delete from Roles where contactId=$id, role>=" . ROLE_PC);
+	if ((isset($_REQUEST["role".ROLE_ASSISTANT]) && $_REQUEST["role".ROLE_ASSISTANT])
+	    || (isset($_REQUEST["role".ROLE_CHAIR]) && $_REQUEST["role".ROLE_CHAIR]))
+	    $_REQUEST["role".ROLE_PC] = 1;
 	for ($role = ROLE_PC; $role <= ROLE_CHAIR; $role++) {
 	    if (!isset($_REQUEST["role$role"]) || !$_REQUEST["role$role"])
 		continue;
