@@ -698,7 +698,7 @@ class Conference {
       if ($_SESSION["Me"]->valid()) {
 	  echo "    <div id='header_user'><strong>",
 	      htmlspecialchars($_SESSION["Me"]->email),
-	      "</strong> &nbsp;|&nbsp; <a href='", $ConfSiteBase, "All/Logout.php'>Logout</a></div>\n";
+	      "</strong> &nbsp;|&nbsp; <a href='", $ConfSiteBase, "All/Logout.php'>Log&nbsp;out</a></div>\n";
       }
       echo "    <div id='header_time'>", date ("l j M Y g:i:sa T"), "</div>\n";
       echo "    <div id='header_public'><a href='", $this->conferenceSite, "'>", $this->shortName, " Public Site</a></div>\n";
@@ -727,7 +727,7 @@ class Conference {
       echo "  <div id='footer_left'>\n";
       echo "    <div id='footer_conference'><a href='", $ConfSiteBase, "index.php'>", $this->shortName, " Submissions Home</a></div>\n";
       if ($_SESSION["Me"]->valid())
-	  echo "    <div id='footer_logout'><a href='", $ConfSiteBase, "All/Logout.php'>Logout</a></div>\n";
+	  echo "    <div id='footer_logout'><a href='", $ConfSiteBase, "All/Logout.php'>Log&nbsp;out</a></div>\n";
       echo "  </div>\n";
       echo "  <div id='footer_right'>\n";
       echo "    <div id='footer_crp'><a href='http://crp.sourceforge.net/'>CRP</a> Conference Management Software</div>\n";

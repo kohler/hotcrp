@@ -12,8 +12,8 @@ $Conf -> connect();
 
 <?php 
 
-$query = "SELECT ContactInfo.contactId FROM PCMember,ContactInfo "
-  . " WHERE PCMember.contactId=ContactInfo.contactId "
+$query = "SELECT ContactInfo.contactId FROM ContactInfo "
+  . " join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ")"
   . " ORDER BY ContactInfo.lastName, ContactInfo.FirstName ";
 
 $pcresult = $Conf -> qe($query);

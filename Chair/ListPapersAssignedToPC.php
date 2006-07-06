@@ -74,8 +74,8 @@ Also show author info (this is useful to spot conflicts in paper assignments)
 $Conf -> infoMsg("Click on the PC member to got to their detailed view");
 
 $query = "SELECT ContactInfo.contactId, firstName, lastName, email "
- . " FROM ContactInfo, PCMember "
- . " WHERE PCMember.contactId=ContactInfo.contactId "
+ . " FROM ContactInfo "
+ . " join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ")"
  . " ORDER BY lastName, firstName"
 ;
 
@@ -109,8 +109,11 @@ if (DB::isError($result1) ) {
 
 
 <?php 
-$query = "SELECT ContactInfo.contactId, firstName, lastName, email FROM ContactInfo, PCMember "
-. " WHERE PCMember.contactId=ContactInfo.contactId ORDER BY lastName, firstName";
+$query = "SELECT ContactInfo.contactId, firstName, lastName, email "
+ . " FROM ContactInfo "
+ . " join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ")"
+ . " ORDER BY lastName, firstName"
+;
 
 $result1 = $Conf -> qe($query);
 
