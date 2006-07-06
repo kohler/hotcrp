@@ -12,7 +12,7 @@ $dbName = "HotNetsV";
 // if setupPhase == 1, anyone who logs in has chair powers.
 //
 $Conf = new Conference($dbUser, $dbPassword, $dbHost, $dbName);
-$Conf->setupPhase = 1;
+$Conf->setupPhase = 0;
 
 //
 // Conference names

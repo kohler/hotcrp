@@ -21,10 +21,10 @@ $Conf->infoMsg("This page shows you all the papers that have been entered into t
 		    . " Paper.acknowledged, Paper.withdrawn, "
 		    . " Paper.authorInformation, Paper.contactId, "
 		    . " PaperStorage.mimetype "
-		    . " FROM Paper "
-		    . " LEFT JOIN PaperStorage ON (PaperStorage.paperId=Paper.paperId) "
-		    . " WHERE Paper.acknowledged=1 "
-		    . " ORDER BY Paper.paperId");
+		    . " from Paper "
+		    . " left join PaperStorage using (paperStorageId) "
+		    . " where Paper.acknowledged>0 and Paper.withdrawn<=0 "
+		    . " order by Paper.paperId");
 
   if (DB::isError($result)) {
     $Conf->errorMsg("Error in retrieving paper list " . $result->getMessage());

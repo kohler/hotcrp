@@ -21,17 +21,17 @@ function htmlquote( $str )
   return htmlentities( $str, ENT_NOQUOTES );
 }
 
-if (IsSet($_REQUEST[assignConflicts])) {
-  if (!IsSet($_REQUEST[pcMember])) {
+if (IsSet($_REQUEST["assignConflicts"])) {
+  if (!IsSet($_REQUEST["pcMember"])) {
     $Conf->errorMsg("You need to select a PC Member.");
   } else {
     if (IsSet($_REQUEST["Conflict"])) {
       for($i=0; $i < sizeof($_REQUEST["Conflict"]); $i++) {
 	$paperId=$_REQUEST["Conflict"][$i];
 	$query="INSERT INTO PaperConflict SET paperId='$paperId', "
-	  . " authorId='$_REQUEST[pcMember]'";
+	  . " authorId='" . $_REQUEST["pcMember"] . "'";
 	$Conf -> qe($query);
-	$Conf->log("Added reviewer conflict for $_REQUEST[pcMember] for paper $paper", $_SESSION["Me"]);
+	$Conf->log("Added reviewer conflict for " . $_REQUEST["pcMember"] . " for paper $paper", $_SESSION["Me"]);
       }
     }
   }
@@ -65,8 +65,7 @@ $Conf->infoMsg("This table shows you the papers that may be authored by "
 
 $qpc = "SELECT ContactInfo.contactId, firstName, lastName, email, collaborators"
 . ", affiliation"
-. " FROM ContactInfo,PCMember "
-. " WHERE ContactInfo.contactId=PCMember.contactId "
+. " FROM ContactInfo join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ")"
 . " ORDER BY lastName, firstName ";
 
 $rpc = $Conf->qe($qpc);
@@ -116,7 +115,7 @@ while($pcdata=$rpc->fetchRow(DB_FETCHMODE_ASSOC)) {
 
   print "<FORM ACTION=$_SERVER[PHP_SELF]>\n";
   print "<INPUT type=hidden name=paperId value=$paperId>\n";
-  print "<INPUT type=hidden name=pcMember value=$contactId>\n";
+  print "<INPUT type=hidden name=\"pcMember\" value=$contactId>\n";
   print "<table align=center width=75% border=1>\n";
   print "<tr> <th colspan=3 bgColor=$Conf->contrastColorOne> ";
   //print "$namestr (search: $searchstr) </th> </tr>";
@@ -215,7 +214,7 @@ while($pcdata=$rpc->fetchRow(DB_FETCHMODE_ASSOC)) {
     }
   }
   print "<tr> <td colspan=3 align=center> ";
-  print "<INPUT type=submit name=assignConflicts value=\"Assign These Conflicts\">\n";
+  print "<INPUT type=submit name=\"assignConflicts\" value=\"Assign These Conflicts\">\n";
   print "</td> </tr>";
   print "</table>";
   print "</FORM>";

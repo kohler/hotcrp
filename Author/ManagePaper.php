@@ -8,7 +8,7 @@ if ($paperId <= 0)
     $Me->goAlert("../", "Invalid paper ID.");
 
 $notAuthor = !$Me->amPaperAuthor($paperId, $Conf);
-if ($notAuthor && $Me->amAssistant())
+if ($notAuthor && !$Me->amAssistant())
     $Me->goAlert("../", "You are not an author of paper #$paperId.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
 
 $overrideMsg = '';
@@ -325,7 +325,8 @@ $topicsActive = (!$finalized && !$withdrawn && ($finalizable || $Me->amAssistant
 if ($topicTable = topicTable($paperId, $topicsActive)) { 
     echo "<tr>\n  <td class='pt_caption'>Topics:</td>\n  <td class='pt_entry' id='topictable'>", $topicTable, "</td>\n";
     if ($topicsActive >= 0)
-	echo "<td class='pt_hint'>Check any topics that apply to your submission.  This will help us match your paper with interested reviewers.</td>\n</tr>\n";
+	echo "<td class='pt_hint'>Check any topics that apply to your submission.  This will help us match your paper with interested reviewers.</td>\n";
+    echo "</tr>\n";
  }
 ?>
 

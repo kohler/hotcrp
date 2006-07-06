@@ -82,7 +82,7 @@ function paperStatus($paperId, $row = null, $long = 0, $conf = null) {
     }
 }
     
-function paperDownload($paperId, $row = null, $conf = null) {
+function paperDownload($paperId, $row = null, $long = 0, $conf = null) {
     global $Conf, $ConfSiteBase;
     if ($conf == null)
 	$conf = $Conf;
@@ -99,7 +99,7 @@ function paperDownload($paperId, $row = null, $conf = null) {
     $p = $conf->makeDownloadPath($paperId, $row->mimetype);
     $x = "<a class='download' href='" . $p . "'>View</a>&nbsp;";
     $x .= "<a class='download' href='" . $p . "?save=1'>Save&nbsp;to&nbsp;disk</a>";
-    if (isset($row->size) || isset($row->mimetype)) {
+    if ($long && (isset($row->size) || isset($row->mimetype))) {
 	$x .= "&nbsp;(";
 	if (isset($row->size))
 	    $x .= round($row->size/1024) . "kB" . (isset($row->mimetype) ? "&nbsp;" : "");

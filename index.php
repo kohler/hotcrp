@@ -70,7 +70,8 @@ function taskbutton($name,$label) {
     <table>
     <tr>
       <th>Papers:</th>
-      <td><a href='All/ListPapers.php'>List&nbsp;all</a></td>
+      <td><a href='All/ListPapers.php?list=submitted'>List&nbsp;submitted</a> &mdash;
+	<a href='All/ListPapers.php?list=all'>List&nbsp;all</a></td>
     </tr>
 
     <tr>
@@ -158,6 +159,9 @@ if ($Me->isAuthor) {
   <div class='clear'></div>
 </div>
 
+
+<?php if ($Me->amReviewer() || $Me->isPC || $Me->amAssistant()) { ?>
+
 <table width=100%>
 <tr>
 <? if ($Me->amReviewer()) {taskbutton("Reviewer", "Reviewer");}?>
@@ -168,20 +172,19 @@ if ($Me->isAuthor) {
 </table>
 
 <?
-
-if ($_SESSION["WhichTaskView"] == "Author") {
-  $AuthorPrefix="Author/";
-  include("Tasks-Author.inc");
-} else if ($_SESSION["WhichTaskView"] == "Reviewer") {
-   include("Tasks-Reviewer.inc");
-} else if ($_SESSION["WhichTaskView"] == "PC") {
-  include("Tasks-PC.inc");
-} else if ($_SESSION["WhichTaskView"] == "Chair") {
-  include("Tasks-Chair.inc");
-} else if ($_SESSION["WhichTaskView"] == "Assistant") {
-  include("Tasks-Assistant.inc");
+    if ($_SESSION["WhichTaskView"] == "Author") {
+	$AuthorPrefix="Author/";
+	include("Tasks-Author.inc");
+    } else if ($_SESSION["WhichTaskView"] == "Reviewer") {
+	include("Tasks-Reviewer.inc");
+    } else if ($_SESSION["WhichTaskView"] == "PC") {
+	include("Tasks-PC.inc");
+    } else if ($_SESSION["WhichTaskView"] == "Chair") {
+	include("Tasks-Chair.inc");
+    } else if ($_SESSION["WhichTaskView"] == "Assistant") {
+	include("Tasks-Assistant.inc");
+    }
 }
-
 
 if (0) {
   print "<p> ";

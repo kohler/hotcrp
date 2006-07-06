@@ -12,6 +12,7 @@ if (isset($_REQUEST["list"]))
 else
     $list = 'All';
 
-echo PaperList::text($list, $Me);
+$pl = new PaperList(1, $_REQUEST['sort'], "ListPapers.php");
+echo $pl->text($list, $Me);
 
 $Conf->footer() ?>

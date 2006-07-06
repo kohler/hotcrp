@@ -142,8 +142,7 @@ reviewer <b> without further confirmation </b>.
   $paperResult=$Conf->qe("SELECT Paper.paperId, Paper.title, "
 		    . " Paper.acknowledged, Paper.withdrawn, "
 		    . " PaperStorage.mimetype "
-		    . " FROM Paper, PaperStorage "
-		    . " WHERE Paper.paperId=PaperStorage.paperId "
+		    . " FROM Paper left join PaperStorage using (paperStorageId) "
 		    . " ORDER BY Paper.paperId"
 		    );
   $numpaper= 0;
@@ -175,14 +174,13 @@ if (IsSet($_REQUEST[newReviewer]) ) {
   <SELECT name=newReviewer SINGLE onChange="document.selectReviewer.submit()">
   <?
   $query = "SELECT ContactInfo.contactId, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email "
-  . " FROM ContactInfo, PCMember WHERE "
-  . " (PCMember.contactId=ContactInfo.contactId) "
+  . " from ContactInfo join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ") "
   . " ORDER BY ContactInfo.lastName";
 $result = $Conf->qe($query);
  print "<OPTION VALUE=\"-1\"> (Remember to select a committee member!)</OPTION>";
  if (!DB::isError($result)) {
    while($row=$result->fetchRow()) {
-     if ($_REQUEST[reviewer] == $row[0] ) {
+     if ($_REQUEST["reviewer"] == $row[0] ) {
        print "<OPTION VALUE=\"$row[0]\" SELECTED> $row[1] $row[2] ($row[3]) </OPTION>";
      } else {
        print "<OPTION VALUE=\"$row[0]\"> $row[1] $row[2] ($row[3]) </OPTION>";
@@ -198,8 +196,8 @@ $result = $Conf->qe($query);
 
 <?php 
 
-if(IsSet($_REQUEST[reviewer]) && $_REQUEST[reviewer] >= 0) {
-     $Conf->reviewerSummary($_REQUEST[reviewer], 1 , 1);
+if(IsSet($_REQUEST["reviewer"]) && $_REQUEST["reviewer"] >= 0) {
+     $Conf->reviewerSummary($_REQUEST["reviewer"], 1 , 1);
   //
   // Print out a quick jump index
   //
@@ -219,7 +217,7 @@ if(IsSet($_REQUEST[reviewer]) && $_REQUEST[reviewer] >= 0) {
 
 ?>
  <FORM METHOD="POST" ACTION="<?echo $PHP_SELF ?>">
- <INPUT TYPE="hidden" name="reviewer" value="<?echo $_REQUEST[reviewer]?>">
+ <INPUT TYPE="hidden" name="reviewer" value="<?echo $_REQUEST["reviewer"]?>">
  <INPUT TYPE="SUBMIT" name="assignPapers" value="Assign this PC member to the indicated papers">
 
      <table border="1" width="100%" cellpadding=0 cellspacing=0>
@@ -260,7 +258,7 @@ if(IsSet($_REQUEST[reviewer]) && $_REQUEST[reviewer] >= 0) {
        <b> <? echo $paperId ?> </b>
        </td>
        <td>
-       <INPUT TYPE=checkbox NAME=Primary[] VALUE='<?echo $paperId?>'> Add Primary? <br>
+       <INPUT TYPE=checkbox NAME=Primary[] VALUE='<?echo $paperId ?>'> Add Primary? <br>
        <INPUT TYPE=checkbox NAME=Secondary[] VALUE='<?echo $paperId ?>'> Add Secondary? <br>
        </td> 
        </tr>

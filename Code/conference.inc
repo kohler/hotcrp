@@ -1640,10 +1640,10 @@ class Conference {
 
     if ( $this->allowReviewerPreferences ) {
       $query="SELECT ContactInfo.contactId, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email "
-	. " FROM ContactInfo, PCMember, PaperReviewerPreference "
+	. " FROM ContactInfo, PaperReviewerPreference "
+	. " join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ")"
 	. " WHERE PaperReviewerPreference.paperId='$paperId' "
-	. " AND ContactInfo.contactId=PCMember.contactId "
-	. " AND PCMember.contactId=PaperReviewerPreference.contactId "
+	. " AND ContactInfo.contactId=PaperReviewerPreference.contactId "
 	. " ORDER BY ContactInfo.lastName";
 
       $result = $this->qe($query);

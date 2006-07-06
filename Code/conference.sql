@@ -403,7 +403,8 @@ CREATE TABLE TopicInterest (
 drop table if exists PaperList;
 create table PaperList (
   paperListId int(11) NOT NULL auto_increment,
-  paperListName varchar(80),
+  paperListName varchar(20),
+  description varchar(80),
   minRole tinyint(1) NOT NULL default '0',
   sortCol int,
   query varchar(120),
@@ -415,7 +416,10 @@ create table PaperList (
 drop table if exists PaperFields;
 create table PaperFields (
   fieldId int(11) NOT NULL,
-  fieldName varchar(80),
+  fieldName varchar(20),
+  description varchar(80),
+  sortable tinyint(1) default '1',
+  display tinyint(1) default '1',
   PRIMARY KEY (fieldId),
   UNIQUE KEY fieldId (fieldId)
 ) TYPE=MyISAM;
@@ -431,11 +435,27 @@ create table PaperListColumns (
 insert into PaperFields set fieldId=1, fieldName="ID";
 insert into PaperFields set fieldId=2, fieldName="Title";
 insert into PaperFields set fieldId=3, fieldName="Status";
-insert into PaperFields set fieldId=4, fieldName="Download";
+insert into PaperFields set fieldId=4, fieldName="Download", sortable=0;
+insert into PaperFields set fieldId=5, fieldName="ID";
+insert into PaperFields set fieldId=6, fieldName="Title";
 
-insert into PaperList
-	set paperListName='All', minRole=4, sortCol=0, query='';
-insert into PaperListColumns set paperListId=1, fieldId=1, col=0;
-insert into PaperListColumns set paperListId=1, fieldId=2, col=1;
+insert into PaperList set paperListName='author',
+	description='My papers', minRole=1, sortCol=0, query='';
+insert into PaperListColumns set paperListId=1, fieldId=5, col=0;
+insert into PaperListColumns set paperListId=1, fieldId=6, col=1;
 insert into PaperListColumns set paperListId=1, fieldId=3, col=2;
 insert into PaperListColumns set paperListId=1, fieldId=4, col=3;
+
+insert into PaperList set paperListName='submitted',
+	description='Submitted papers', minRole=2, sortCol=0, query='';
+insert into PaperListColumns set paperListId=2, fieldId=1, col=0;
+insert into PaperListColumns set paperListId=2, fieldId=2, col=1;
+insert into PaperListColumns set paperListId=2, fieldId=3, col=2;
+insert into PaperListColumns set paperListId=2, fieldId=4, col=3;
+
+insert into PaperList set paperListName='all',
+	description='All papers', minRole=4, sortCol=0, query='';
+insert into PaperListColumns set paperListId=3, fieldId=1, col=0;
+insert into PaperListColumns set paperListId=3, fieldId=2, col=1;
+insert into PaperListColumns set paperListId=3, fieldId=3, col=2;
+insert into PaperListColumns set paperListId=3, fieldId=4, col=3;

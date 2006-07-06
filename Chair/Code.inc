@@ -17,10 +17,10 @@ function showPCConflictPapers()
   $query = "SELECT Paper.paperId, Paper.title, "
     . " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
     . " PaperConflict.paperConflictId "
-    . " FROM Paper, ContactInfo, PaperConflict, PCMember "
+    . " FROM Paper, ContactInfo, PaperConflict "
+    . " join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ")"
     . " WHERE PaperConflict.paperId=Paper.paperId "
     . " AND PaperConflict.authorId=ContactInfo.contactId"
-    . " AND PCMember.contactId=ContactInfo.contactId "
     . " ORDER by ContactInfo.lastName, Paper.paperId ";
   $r=$Conf->qe($query);
   if (!DB::isError($r)) {

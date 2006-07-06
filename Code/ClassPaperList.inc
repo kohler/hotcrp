@@ -6,6 +6,18 @@ class PaperList {
     const FIELD_TITLE = 2;
     const FIELD_STATUS = 3;
     const FIELD_DOWNLOAD = 4;
+    const FIELD_ID_MANAGE = 5;
+    const FIELD_TITLE_MANAGE = 6;
+
+    var $showHeader;
+    var $sortCol;
+    var $sortLinks;
+    
+    function PaperList($showHeader = 1, &$sortCol = NULL, $sortLinks = '') {
+	$this->showHeader = $showHeader;
+	$this->sortCol = (isset($sortCol) ? (int) $sortCol : 0);
+	$this->sortLinks = $sortLinks;
+    }
     
     function selector($fieldId, &$queryFields, &$queryTables) {
     }
@@ -13,8 +25,10 @@ class PaperList {
     function header($fieldId) {
 	switch ($fieldId) {
 	case self::FIELD_ID:
+	case self::FIELD_ID_MANAGE:
 	    return "ID";
 	case self::FIELD_TITLE:
+	case self::FIELD_TITLE_MANAGE:
 	    return "Title";
 	case self::FIELD_STATUS:
 	    return "Status";
@@ -26,15 +40,23 @@ class PaperList {
     }
 
     function content($fieldId, $row, $plist) {
+	global $ConfSiteBase;
 	switch ($fieldId) {
 	case self::FIELD_ID:
-	    return "[#$row->paperId]";
+	    return "<a href='${ConfSiteBase}All/ViewPaper.php?paperId=$row->paperId'>[#$row->paperId]</a>";
+	case self::FIELD_ID_MANAGE:
+	    return "<a href='${ConfSiteBase}Author/ManagePaper.php?paperId=$row->paperId'>[#$row->paperId]</a>";
 	case self::FIELD_TITLE:
-	    return htmlspecialchars($row->title);
+	    return "<a href='${ConfSiteBase}All/ViewPaper.php?paperId=$row->paperId'>" . htmlspecialchars($row->title) . "</a>";
+	case self::FIELD_TITLE_MANAGE:
+	    return "<a href='${ConfSiteBase}Author/ManagePaper.php?paperId=$row->paperId'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_STATUS:
 	    return paperStatus($row->paperId, $row);
 	case self::FIELD_DOWNLOAD:
-	    return paperDownload($row->paperId, $row);
+	    if ($row->size > 0)
+		return paperDownload($row->paperId, $row);
+	    else
+		return "";
 	default:
 	    return "";
 	}
@@ -93,7 +115,7 @@ class PaperList {
 	if (count($queryTables) > 0)
 	    $pq .= " " . join(" ", array_keys($queryTables));
 	if ($plist->minRole == ROLE_PC || $plist->minRole == ROLE_ASSISTANT)
-	    $pq .= " where acknowledged>0";
+	    $pq .= " where acknowledged>0 and withdrawn<=0";
 
 	// make query
 	$result = $Conf->qe($pq, "while selecting papers");
@@ -101,12 +123,15 @@ class PaperList {
 	    return NULL;
 
 	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname) . "\">\n";
-	$x .= "  <tr class=\"pl_headrow\">\n";
-	foreach ($fieldId as $f) {
-	    $x .= "    <th class=\"pl_$f[1]\">";
-	    $x .= PaperList::header($f[0]) . "</th>\n";
+
+	if ($this->showHeader) {
+	    $x .= "  <tr class=\"pl_headrow\">\n";
+	    foreach ($fieldId as $f) {
+		$x .= "    <th class=\"pl_$f[1]\">";
+		$x .= PaperList::header($f[0]) . "</th>\n";
+	    }
+	    $x .= "  </tr>\n";
 	}
-	$x .= "  </tr>\n";
 
 	if ($result->numRows() == 0)
 	    $x .= "  <tr>\n    <td class=\"pl_nopapers\">No papers available for this query</td>\n  </tr>\n";
