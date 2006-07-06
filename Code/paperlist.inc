@@ -134,7 +134,7 @@ class PaperList {
 	}
 
 	if ($result->numRows() == 0)
-	    $x .= "  <tr>\n    <td class=\"pl_nopapers\">No papers available for this query</td>\n  </tr>\n";
+	    $x .= "  <tr>\n    <td class=\"pl_nopapers\" colspan='" . count($fieldId) . "'>No papers available for this query</td>\n  </tr>\n";
 	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
 	    $x .= "  <tr>\n";
 	    foreach ($fieldId as $f) {
