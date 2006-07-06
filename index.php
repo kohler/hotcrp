@@ -109,11 +109,10 @@ if ($startable)
     echo "    <tr><th><a href='Author/SubmitPaper.php'>Start new paper</a></th> <td colspan='2'><span class='deadline'>(", $Conf->printDeadline('startPaperSubmission'), ")</span></td></tr>\n";
 
 if ($Me->isAuthor) {
-    $query = "select Paper.paperId, title, acknowledged, withdrawn,
-	Paper.paperStorageId, mimetype
-	from Paper left join PaperStorage using (paperStorageId) join Roles
- 	where Paper.paperId=Roles.paperId and Roles.contactId=$Me->contactId
-	and Paper.paperStorageId=PaperStorage.paperStorageId";
+    $query = "select Paper.*, mimetype from Paper
+	join Roles using (paperId)
+	left join PaperStorage using (paperStorageId)
+ 	where Roles.contactId=$Me->contactId and Roles.role=" . ROLE_AUTHOR;
     $result = $Conf->q($query);
     if (!DB::isError($result) && $result->numRows() > 0) {
 	$header = "<th>Existing papers:</th>";

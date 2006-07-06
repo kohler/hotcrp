@@ -21,10 +21,8 @@ $finalizable = $Conf->canFinalizePaper();
 function get_prow($paperId) {
     global $Conf, $prow, $OK, $updatable, $can_update, $finalized, $withdrawn, $Me;
     if (!isset($prow) && $OK) {
-	$query = "select Paper.title, Paper.abstract, Paper.authorInformation,
-	    length(PaperStorage.paper) as size, Paper.paperStorageId,
-	    PaperStorage.mimetype, Paper.withdrawn, Paper.acknowledged,
-	    Paper.collaborators, PaperStorage.timestamp
+	$query = "select Paper.*, length(PaperStorage.paper) as size,
+	    PaperStorage.mimetype, PaperStorage.timestamp
 	    from Paper left join PaperStorage using (paperStorageId)
 	    where Paper.paperId=$paperId";
 	$result = $Conf->qe($query);

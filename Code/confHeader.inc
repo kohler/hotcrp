@@ -12,9 +12,10 @@ $hostname = $posixinfo['nodename'];
 
 define("ROLE_EXISTS", 0);
 define("ROLE_AUTHOR", 1);
-define("ROLE_PC", 2);
-define("ROLE_ASSISTANT", 3);
-define("ROLE_CHAIR", 4);
+define("ROLE_CONFLICT", 2);
+define("ROLE_PC", 3);
+define("ROLE_ASSISTANT", 4);
+define("ROLE_CHAIR", 5);
 
 $OK = 1;
 

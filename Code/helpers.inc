@@ -42,7 +42,7 @@ function paperStatus($paperId, $row = null, $long = 0, $conf = null) {
 	$conf = $Conf;
     
     if ($row == null) {
-	$result = $conf->q("select withdrawn, acknowledged,
+	$result = $conf->q("select withdrawn, acknowledged, outcome,
 		Paper.paperStorageId, mimetype, PaperStatus.timestamp
 		from Paper left join PaperStorage using (paperStorageId)
 		where Paper.paperId=$paperId");
@@ -52,7 +52,9 @@ function paperStatus($paperId, $row = null, $long = 0, $conf = null) {
 	    return "<span class='pstat pstat_no'>No such paper</span>";
 	$row = $result->fetchRow(DB_FETCHMODE_OBJECT);
     }
-    
+
+    $canViewDecision = 0;
+
     if ($row->withdrawn > 0) {
 	$x = "<span class='pstat pstat_with'>Withdrawn</span>";
 	return $x . ($long ? " at " . $conf->printTime($row->withdrawn) : '');
