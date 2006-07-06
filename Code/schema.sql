@@ -447,14 +447,14 @@ insert into PaperListColumns set paperListId=1, fieldId=3, col=2;
 insert into PaperListColumns set paperListId=1, fieldId=4, col=3;
 
 insert into PaperList set paperListName='submitted',
-	description='Submitted papers', minRole=2, sortCol=0, query='';
+	description='Submitted papers', minRole=3, sortCol=0, query='';
 insert into PaperListColumns set paperListId=2, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=2, fieldId=2, col=1;
 insert into PaperListColumns set paperListId=2, fieldId=3, col=2;
 insert into PaperListColumns set paperListId=2, fieldId=4, col=3;
 
 insert into PaperList set paperListName='all',
-	description='All papers', minRole=4, sortCol=0, query='';
+	description='All papers', minRole=5, sortCol=0, query='';
 insert into PaperListColumns set paperListId=3, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=3, fieldId=2, col=1;
 insert into PaperListColumns set paperListId=3, fieldId=3, col=2;
