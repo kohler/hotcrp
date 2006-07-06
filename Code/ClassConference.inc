@@ -599,8 +599,9 @@ class Conference {
   }
 
   function downloadPaper($paperId, $saveit) {
-      $result = $this->q("select mimetype, paper, withdrawn, PaperStorage.paperStorageId from PaperStorage, Paper
-	where Paper.paperId=$paperId and PaperStorage.paperStorageId=Paper.paperStorageId");
+      $result = $this->q("select mimetype, paper, withdrawn, PaperStorage.paperStorageId
+	from Paper left join PaperStorage using (paperStorageId)
+	where Paper.paperId=$paperId");
       if (DB::isError($result)) {
 	  $this->log("Error downloading #$paperId for review" . $result->getMessage(), $_SESSION["Me"]);
 	  return $result;
@@ -1531,14 +1532,15 @@ class Conference {
     if ($paperId < 0)
 	$paperId = $_REQUEST["paperId"];
 
-    $query = "select Paper.title, Paper.abstract, Paper.authorInformation, "
-	. " length(PaperStorage.paper) as size, PaperStorage.mimetype, Paper.collaborators, Paper.pcPaper, Paper.acknowledged, Paper.withdrawn "
-	. " from Paper, PaperStorage";
+    $query = "select Paper.title, Paper.abstract, Paper.authorInformation,
+	length(PaperStorage.paper) as size, mimetype, collaborators, pcPaper,
+	acknowledged, withdrawn
+	from Paper left join PaperStorage using (paperStorageId)";
 
     $Me = $_SESSION["Me"];
     if (!($Me->isChair || $Me->isPC || $Me->isAssistant))
-	$query .= ", Roles";
-    $query .= " where Paper.paperId=$paperId and PaperStorage.paperStorageId=Paper.paperStorageId";
+	$query .= " join Roles";
+    $query .= " where Paper.paperId=$paperId";
     if (!($Me->isChair || $Me->isPC || $Me->isAssistant))
 	$query .= " and Roles.contactId=$Me->contactId and Roles.paperId=$paperId";
 

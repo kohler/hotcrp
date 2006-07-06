@@ -139,7 +139,9 @@ td.form_hint {
 }
 
 div.home_tasks {
-	border: 1px solid #eeee66;
+	border-left: 1px solid #eeee66;
+	border-right: 1px solid #eeee66;
+	border-top: 1px solid #eeee66;
 }
 div.home_tasks div.taskname {
 	float: left;
@@ -148,8 +150,9 @@ div.home_tasks div.taskname {
 	padding: 0.5em;
 }
 div.home_tasks div.taskdetail {
-	margin-left: 0.5em;
-	padding: 0.5em;
+	float: left;
+	padding-left: 0.5em;
+	padding-bottom: 0.25em;
 }
 div.home_tasks h2 {
 	font-size: large;
@@ -161,8 +164,12 @@ div.home_tasks th {
 	padding-right: 0.5em;
 }
 
-div#home_tasks_chair {
-	border-bottom: 0px none;
+div#home_tasks_all {
+	border-bottom: 1px solid #eeee66;
+}
+div#home_tasks_author td, div#home_tasks_author tr, div#home_tasks_author th {
+	padding-bottom: 0px;
+	padding-top: 0px;
 }
 
 table.memberlist th {
@@ -281,3 +288,21 @@ table.pt_buttons td.ptb_explain {
 table.pt_buttons td.ptb_button {
 	padding: 0px 1em 0px 0px;
 }
+
+table.pltable th {
+	text-align: left;
+}
+table.pltable td {
+	padding-right: 1em;
+}
+table.pltable th.pl_ID {
+	text-align: center;
+}
+table.pltable td.pl_ID {
+	text-align: right;
+	padding-right: 0.25em;
+}
+tr.pl_headrow td, tr.pl_headrow th {
+	border-bottom: 1px solid #ccccff;
+}
+

@@ -42,38 +42,42 @@ function paperStatus($paperId, $row = null, $long = 0, $conf = null) {
 	$conf = $Conf;
     
     if ($row == null) {
-	$result = $conf->q("select withdrawn, acknowledged, Paper.paperStorageId, mimetype, PaperStatus.timestamp from Paper, PaperStorage where Paper.paperId=$paperId and PaperStorage.paperStorageId=Paper.paperStorageId");
+	$result = $conf->q("select withdrawn, acknowledged,
+		Paper.paperStorageId, mimetype, PaperStatus.timestamp
+		from Paper left join PaperStorage using (paperStorageId)
+		where Paper.paperId=$paperId");
 	if (DB::isError($result))
 	    return "<span class='pstat pstat_err'>Database error</span>";
 	else if ($result->numRows() == 0)
 	    return "<span class='pstat pstat_no'>No such paper</span>";
-	$row = $result->fetchRow(DB_FETCHMODE_ASSOC);
+	$row = $result->fetchRow(DB_FETCHMODE_OBJECT);
     }
     
-    if ($row['withdrawn'] > 0) {
+    if ($row->withdrawn > 0) {
 	$x = "<span class='pstat pstat_with'>Withdrawn</span>";
-	return $x . ($long ? " at " . $conf->printTime($row['withdrawn']) : '');    } else if ($row['acknowledged'] <= 0 && $row['paperStorageId'] == 1)
+	return $x . ($long ? " at " . $conf->printTime($row->withdrawn) : '');
+    } else if ($row->acknowledged <= 0 && $row->paperStorageId == 1)
 	return "<span class='pstat pstat_noup'>Not yet uploaded</span>";
     else {
-	if ($row['acknowledged'] > 0) {
+	if ($row->acknowledged > 0) {
 	    $x = "<span class='pstat pstat_sub'>Submitted</span>";
 	    if ($long)
-		$x .= " at " . $conf->printTime($row['acknowledged']);
+		$x .= " at " . $conf->printTime($row->acknowledged);
 	} else {
 	    $x = "<span class='pstat pstat_prog'>In progress</span>";
 	    if ($long)
-		$x .= "; updated at " . $conf->printTime($row['timestamp']);
+		$x .= "; updated at " . $conf->printTime($row->timestamp);
 	}
-	/* $x .= " <a href='" . $conf->makeDownloadPath($paperId, $row['mimetype']) . "'>[";
-	if ($row['mimetype'] == 'application/pdf')
+	/* $x .= " <a href='" . $conf->makeDownloadPath($paperId, $row->mimetype) . "'>[";
+	if ($row->mimetype == 'application/pdf')
 	    $x .= "PDF";
-	else if ($row['mimetype'] == 'application/postscript')
+	else if ($row->mimetype == 'application/postscript')
 	    $x .= "PostScript";
-	else if ($row['mimetype'] == 'text/plain')
+	else if ($row->mimetype == 'text/plain')
 	    $x .= "Text";
 	else
-	    $x .= htmlspecialchars($row['mimetype']);
-	    $x .= " " . round($row['size'] / 1024) . "&nbsp;kB]</a>"; */
+	    $x .= htmlspecialchars($row->mimetype);
+	    $x .= " " . round($row->size / 1024) . "&nbsp;kB]</a>"; */
 	return $x;
     }
 }
@@ -84,21 +88,23 @@ function paperDownload($paperId, $row = null, $conf = null) {
 	$conf = $Conf;
     
     if ($row == null) {
-	$result = $conf->q("select length(PaperStorage.paper) as size, mimetype from Paper, PaperStorage where Paper.paperId=$paperId and PaperStorage.paperStorageId=Paper.paperStorageId");
+	$result = $conf->q("select length(PaperStorage.paper) as size, mimetype
+		from Paper left join PaperStorage using (paperStorageId)
+		where Paper.paperId=$paperId");
 	if (DB::isError($result))
 	    return "Database error";
-	$row = $result->fetchRow(DB_FETCHMODE_ASSOC);
+	$row = $result->fetchRow(DB_FETCHMODE_OBJECT);
     }
 
-    $p = $conf->makeDownloadPath($paperId, $row['mimetype']);
+    $p = $conf->makeDownloadPath($paperId, $row->mimetype);
     $x = "<a class='download' href='" . $p . "'>View</a>&nbsp;";
     $x .= "<a class='download' href='" . $p . "?save=1'>Save&nbsp;to&nbsp;disk</a>";
-    if (isset($row['size']) || isset($row['mimetype'])) {
+    if (isset($row->size) || isset($row->mimetype)) {
 	$x .= "&nbsp;(";
-	if (isset($row['size']))
-	    $x .= round($row['size']/1024) . "kB" . (isset($row['mimetype']) ? "&nbsp;" : "");
-	if (isset($row['mimetype']))
-	    $x .= htmlspecialchars($conf->getFileTypeAbbrev($row['mimetype']));
+	if (isset($row->size))
+	    $x .= round($row->size/1024) . "kB" . (isset($row->mimetype) ? "&nbsp;" : "");
+	if (isset($row->mimetype))
+	    $x .= htmlspecialchars($conf->getFileTypeAbbrev($row->mimetype));
 	$x .= ")";
     }
     return $x;
@@ -143,5 +149,4 @@ function topicTable($paperId = -1, $active = 0, $conf = null) {
 	return "";
 }
     
-
 ?>

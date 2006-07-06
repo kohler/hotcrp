@@ -30,7 +30,7 @@ if (($_SESSION["AskedYouToUpdateContactInfo"] < 2 && !$Me->lastName)
 //
 // Check for updated menu
 //
-if (IsSet($_REQUEST["setRole"]))
+if (isset($_REQUEST["setRole"]))
     $_SESSION["WhichTaskView"] = $_REQUEST["setRole"];
 
 $Conf->header("Welcome");
@@ -38,7 +38,7 @@ $Conf->header("Welcome");
 
 <p>
 You're logged in as <?php echo htmlspecialchars($Me->fullnameAndEmail()) ?>.
-If this is not you, please <a href='<?php echo $ConfSiteBase, "All/Logout.php" ?>'>logout</a>.
+If this is not you, please <a href='<?php echo $ConfSiteBase, "All/Logout.php" ?>'>log out</a>.
 You will be automatically logged out if you are idle for more than
 <?php echo round(ini_get("session.gc_maxlifetime")/3600) ?> hours.
 </p>
@@ -69,6 +69,11 @@ function taskbutton($name,$label) {
   <div class='taskdetail'>
     <table>
     <tr>
+      <th>Papers:</th>
+      <td><a href='All/ListPapers.php'>List&nbsp;all</a></td>
+    </tr>
+
+    <tr>
       <th>Program&nbsp;committee:</th>
       <td><a href='Chair/ReviewPC.php'>Add/remove&nbsp;members</a> &mdash;
         <a href='Chair/ListPC.php'>See&nbsp;contact&nbsp;information[X]</a></td>
@@ -77,7 +82,7 @@ function taskbutton($name,$label) {
     <tr>
       <th>Accounts:</th>
       <td><a href='All/UpdateContactInfo.php?new=1'>Create&nbsp;account</a> &mdash;
-	<a href='Chair/BecomeSomeoneElse.php'>Log&nbsp;in&nbsp;as&nbsp;someone&nbsp;else</a></td>
+	<a href='Chair/BecomeSomeoneElse.php'>Log&nbsp;in&nbsp;as&nbsp;someone&nbsp;else[X]</a></td>
     </tr>
 
     <tr>
@@ -92,47 +97,46 @@ function taskbutton($name,$label) {
 <?php } ?>
 
 <?php if ($Me->isAuthor || $Conf->canStartPaper() >= 0) { ?>
-<div class='home_tasks' id='home_tasks_chair'>
+<div class='home_tasks' id='home_tasks_author'>
   <div class='taskname'><h2>Tasks for Authors</h2></div>
   <div class='taskdetail'>
     <table>
 
-    <tr><?php
-    if ($Conf->canStartPaper() == 0)
-	echo "<td colspan='2'>The <a href='All/ImportantDates.php'>deadline</a> for starting new papers has passed.</td>\n";
-    else
-	echo "<th><a href='Author/SubmitPaper.php'>Start new paper</a></th> <td colspan='2'><span class='deadline'>(", $Conf->printDeadline('startPaperSubmission'), ")</span></td>"; ?>
-    </tr>
-
 <?php
+$startable = $Conf->canStartPaper();
+if ($startable)
+    echo "    <tr><th><a href='Author/SubmitPaper.php'>Start new paper</a></th> <td colspan='2'><span class='deadline'>(", $Conf->printDeadline('startPaperSubmission'), ")</span></td></tr>\n";
+
 if ($Me->isAuthor) {
     $query = "select Paper.paperId, title, acknowledged, withdrawn,
 	Paper.paperStorageId, mimetype
-	from Paper, Roles, PaperStorage
+	from Paper left join PaperStorage using (paperStorageId) join Roles
  	where Paper.paperId=Roles.paperId and Roles.contactId=$Me->contactId
 	and Paper.paperStorageId=PaperStorage.paperStorageId";
     $result = $Conf->q($query);
     if (!DB::isError($result) && $result->numRows() > 0) {
 	$header = "<th>Existing papers:</th>";
 	$anyToFinalize = 0;
-	while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
+	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
 	    echo "<tr>\n  $header\n  <td class='form_entry'>";
 	    $header = "<td></td>";
-	    echo "<a href='Author/ManagePaper.php?paperId=", $row['paperId'],
-		"'>[#", $row['paperId'], "] ", htmlspecialchars($row['title']), "</a></td>\n";
-	    echo "  <td>", paperStatus($row['paperId'], $row), "</td>\n";
+	    echo "<a href='Author/ManagePaper.php?paperId=", $row->paperId,
+		"'>[#", $row->paperId, "] ", htmlspecialchars($row->title), "</a></td>\n";
+	    echo "  <td>", paperStatus($row->paperId, $row), "</td>\n";
 	    echo "</tr>\n";
-	    if ($row['acknowledged'] <= 0 && $row['withdrawn'] <= 0)
+	    if ($row->acknowledged <= 0 && $row->withdrawn <= 0)
 		$anyToFinalize = 1;
 	}
 	if ($anyToFinalize) {
 	    $time = $Conf->printableEndTime('updatePaperSubmission');
 	    if (!$Conf->canFinalizePaper())
-		echo "<tr>\n  <td></td>\n  <td class='form_entry' colspan='2'>The <a href='All/ImportantDates.php'>deadline</a> for submitting papers in progress has passed.</td>\n</tr>\n";
+		echo "  <tr>\n    <td colspan='3'>The <a href='All/ImportantDates.php'>deadline</a> for submitting papers in progress has passed.</td>\n  </tr>\n";
 	    else if ($time != 'N/A')
-		echo "<tr>\n  <td></td>\n  <td class='form_entry' colspan='2'>You have until $time to submit any papers in progress.</td>\n</tr>\n";
+		echo "  <tr>\n    <td colspan='3'>You have until $time to submit any papers in progress.</td>\n  </tr>\n";
 	}
     }
+    if (!$startable)
+	echo "  <tr>\n    <td colspan='2'>The <a href='All/ImportantDates.php'>deadline</a> for starting new papers has passed.</td>\n  </tr>\n";
 }
 ?>
 

@@ -60,9 +60,6 @@ if (isset($_REQUEST['submit'])) {
 	    $msg = "A record of your paper has been created.";
 	    if (!fileUploaded($_FILES["uploadedFile"]))
 		$msg .= "  You still need to upload the actual paper.";
-	    $msg .= "  Your submission will not be considered final until you submit it.";
-	    if (isset($Conf->endTime['updatePaperSubmission']))
-		$msg .= "  You have until " . $Conf->printTime($Conf->endTime['updatePaperSubmission']) . " to make changes to your registration and officially submit your submission.";
 	    $Conf->confirmMsg($msg);
 
 	    // now set topics

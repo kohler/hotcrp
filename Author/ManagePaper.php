@@ -25,14 +25,14 @@ function get_prow($paperId) {
 	    length(PaperStorage.paper) as size, Paper.paperStorageId,
 	    PaperStorage.mimetype, Paper.withdrawn, Paper.acknowledged,
 	    Paper.collaborators, PaperStorage.timestamp
-	    from Paper, PaperStorage where Paper.paperId=$paperId
-	    and PaperStorage.paperStorageId=Paper.paperStorageId";
+	    from Paper left join PaperStorage using (paperStorageId)
+	    where Paper.paperId=$paperId";
 	$result = $Conf->qe($query);
 	if (!DB::isError($result) && $result->numRows() > 0) {
-	    $prow = $result->fetchRow(DB_FETCHMODE_ASSOC);
+	    $prow = $result->fetchRow(DB_FETCHMODE_OBJECT);
 
-	    $withdrawn = $prow['withdrawn'] > 0;
-	    $finalized = $prow['acknowledged'] > 0;
+	    $withdrawn = $prow->withdrawn > 0;
+	    $finalized = $prow->acknowledged > 0;
 	    $can_update = ($updatable || $Me->amAssistant()) && !$withdrawn && !$finalized;
 	}
     }
@@ -51,7 +51,7 @@ function pt_data_html($what, $row) {
     if (isset($_REQUEST[$what]) && $can_update)
 	return htmlspecialchars($_REQUEST[$what]);
     else
-	return htmlspecialchars($row[$what]);
+	return htmlspecialchars($row->$what);
 }
 
 $Conf->header_head("Manage Paper #$paperId");
@@ -106,7 +106,7 @@ if (isset($_REQUEST['upload'])
 	if ($result == 0 || DB::isError($result))
 	    $Conf->errorMsg("There was an error when trying to update your paper. Please try again.");
 	else {
-	    $res2 = $Conf->qe("select length(paper) from PaperStorage, Paper where Paper.paperId=$paperId and Paper.paperStorageId=PaperStorage.paperStorageId");
+	    $res2 = $Conf->qe("select length(paper) from Paper left join PaperStorage using (paperStorageId) where Paper.paperId=$paperId");
 	    if (!DB::isError($res2) && $res2->numRows() > 0) {
 		$row = $res2->fetchRow();
 		$actualSize = $row[0];
@@ -129,7 +129,7 @@ if (isset($_REQUEST['finalize'])) {
     else if (!$finalizable && !$override)
 	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for submitting papers has passed.$overrideMsg");
     else {
-	$result = $Conf->qe("select length(paper) as size from PaperStorage, Paper where Paper.paperStorageId=PaperStorage.paperStorageId and Paper.paperId=$paperId", "while submitting paper");
+	$result = $Conf->qe("select length(paper) as size from Paper left join PaperStorage using (paperStorageId) where Paper.paperId=$paperId", "while submitting paper");
 	if (DB::isError($result))
 	    /* do nothing */;
 	else {
@@ -248,7 +248,7 @@ if ($OK) {
 
     printPaperLinks();
     
-    echo "<h2>[#$paperId] ", htmlspecialchars($prow['title']), "</h2>\n\n";
+    echo "<h2>[#$paperId] ", htmlspecialchars($prow->title), "</h2>\n\n";
 
     echo "<form method='post' action=\"", $_SERVER['PHP_SELF'], "\" enctype='multipart/form-data'>
 <input type='hidden' name='paperId' value='$paperId' />
@@ -270,10 +270,10 @@ if ($OK) {
 <tr>
   <td class='<?php echo pt_caption_class('paper') ?>'>Paper:</td>
   <td class='pt_entry'><?php
-	if ($prow['size'] > 0)
+	if ($prow->size > 0)
 	    echo paperDownload($paperId, $prow);
 	if (!$finalized && ($updatable || $Me->amAssistant())) {
-	    if ($prow['size'] > 0)
+	    if ($prow->size > 0)
 		echo "    <br/>\n";
 	    echo "    <input type='file' name='uploadedFile' accept='application/pdf' size='60' />&nbsp;<input class='button' type='submit' value='Upload File";
 	    if (!$updatable) echo '*';

@@ -52,13 +52,13 @@ drop table if exists ContactInfo;
 CREATE TABLE ContactInfo (
   contactId int(11) NOT NULL auto_increment,
   visits int(11) default '0',
-  firstName varchar(40) default NULL,
-  lastName varchar(40) default NULL,
-  email varchar(80) default NULL,
+  firstName varchar(60) default NULL,
+  lastName varchar(60) default NULL,
+  email varchar(120) default NULL,
   affiliation varchar(200) default NULL,
-  voicePhoneNumber varchar(20) default NULL,
-  faxPhoneNumber varchar(20) default NULL,
-  password varchar(20) default NULL,
+  voicePhoneNumber varchar(24) default NULL,
+  faxPhoneNumber varchar(24) default NULL,
+  password varchar(32) default NULL,
   note varchar(200) default NULL,
   collaborators text,
   PRIMARY KEY (contactId),
@@ -331,7 +331,7 @@ CREATE TABLE PaperReviewerPreference(
   preferenceId int(11) NOT NULL auto_increment,
   paperId int(11) default NULL,
   contactId int(11) default NULL,
-  PRIMARY KEY  (preferenceId),
+  PRIMARY KEY (preferenceId),
   UNIQUE KEY preferenceId (preferenceId)
 ) TYPE=MyISAM;
 
@@ -340,7 +340,7 @@ CREATE TABLE PaperReviewerConflict(
   conflictId int(11) NOT NULL auto_increment,
   paperId int(11) default NULL,
   contactId int(11) default NULL,
-  PRIMARY KEY  (conflictId),
+  PRIMARY KEY (conflictId),
   UNIQUE KEY conflictId (conflictId)
 ) TYPE=MyISAM;
 
@@ -398,3 +398,44 @@ CREATE TABLE TopicInterest (
 #
 # Dumping data for table 'TopicInterest'
 #
+
+
+drop table if exists PaperList;
+create table PaperList (
+  paperListId int(11) NOT NULL auto_increment,
+  paperListName varchar(80),
+  minRole tinyint(1) NOT NULL default '0',
+  sortCol int,
+  query varchar(120),
+  PRIMARY KEY (paperListId),
+  UNIQUE KEY paperListId (paperListId),
+  KEY paperListName (paperListName)
+) TYPE=MyISAM;
+
+drop table if exists PaperFields;
+create table PaperFields (
+  fieldId int(11) NOT NULL,
+  fieldName varchar(80),
+  PRIMARY KEY (fieldId),
+  UNIQUE KEY fieldId (fieldId)
+) TYPE=MyISAM;
+
+drop table if exists PaperListColumns;
+create table PaperListColumns (
+  paperListId int(11) NOT NULL,
+  fieldId int(11) NOT NULL,
+  col int(3) NOT NULL,
+  KEY paperListId (paperListId)
+) TYPE=MyISAM;
+
+insert into PaperFields set fieldId=1, fieldName="ID";
+insert into PaperFields set fieldId=2, fieldName="Title";
+insert into PaperFields set fieldId=3, fieldName="Status";
+insert into PaperFields set fieldId=4, fieldName="Download";
+
+insert into PaperList
+	set paperListName='All', minRole=4, sortCol=0, query='';
+insert into PaperListColumns set paperListId=1, fieldId=1, col=0;
+insert into PaperListColumns set paperListId=1, fieldId=2, col=1;
+insert into PaperListColumns set paperListId=1, fieldId=3, col=2;
+insert into PaperListColumns set paperListId=1, fieldId=4, col=3;
