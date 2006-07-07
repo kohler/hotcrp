@@ -86,7 +86,7 @@ class ReviewForm {
 	return $x;
     }
 
-    function validateRequest($rrow, $final, $conf = null) {
+    function validateRequest($rrow, $final, &$tf = null, $conf = null) {
 	global $ReviewFormError, $Conf;
 	$conf = ($conf ? $conf : $Conf);
 	foreach ($this->fieldOrder as $field) {
@@ -95,14 +95,20 @@ class ReviewForm {
 	    $fval = (isset($_REQUEST[$field]) ? $_REQUEST[$field]
 		     : ($rrow ? $rrow->$field : ""));
 	    if (isset($this->options[$field])) {
+		$fval = ltrim(rtrim($fval));
 		$max = count($this->options[$field]);
 		if ($fval == "" || $fval == "0") {
 		    if ($final) {
-			$provide[] = $this->shortName[$field];
+			$provide[] = $field;
 			$ReviewFormError[$field] = 1;
 		    }
-		} else if (($fval = cvtint($fval)) <= 0 || $fval > $max) {
-		    $outofrange[] = $this->shortName[$field];
+		} else if (($fval = cvtint($fval)) > 0 && $fval <= $max)
+		    /* OK */;
+		else if (preg_match("/^[0-9]+\\.", $fval, $matches)
+			 && $matches[1] > 0 && $matches[1] <= $max)
+		    $fval = $matches[1];
+		else {
+		    $outofrange[] = $field;
 		    $ReviewFormError[$field] = 1;
 		}
 	    }
@@ -111,8 +117,16 @@ class ReviewForm {
 	    return 1;
 	if (isset($provide))
 	    $conf->errorMsg("You must choose values for " . textArrayJoin($provide) . " before submitting your review.  Please fix this and submit again.");
-	if (isset($outofrange))
-	    $conf->errorMsg("Bad values for " . textArrayJoin($outofrange) . ".  Please fix this and submit again.");
+	if (isset($outofrange)) {
+	    if ($tf)
+		foreach ($outofrange as $field)
+		    $tf['err'][] = $tf['fieldLineno'][$field] . ": Bad value for field \"" . htmlentities($this->shortName[$field]) . "\".";
+	    else {
+		foreach ($outofrange as $field)
+		    $oor2[] = htmlspecialchars($this->shortName[$field]);
+		$conf->errorMsg("Bad values for " . textArrayJoin($oor2) . ".  Please fix this and submit again.");
+	    }
+	}
 	return 0;
     }
 
@@ -134,9 +148,9 @@ class ReviewForm {
 	if ($final)
 	    $q .= "finalized=1, ";
 	if ($rrow)
-	    $conf->qe("update PaperReview set " . substr($q, 0, -2) . " where paperId=$paperId and contactId=$contactId", "while storing review");
+	    return $conf->qe("update PaperReview set " . substr($q, 0, -2) . " where paperId=$paperId and contactId=$contactId", "while storing review");
 	else
-	    $conf->qe("insert into PaperReview set paperId=$paperId, contactId=$contactId, " . substr($q, 0, -2), "while storing review");
+	    return $conf->qe("insert into PaperReview set paperId=$paperId, contactId=$contactId, " . substr($q, 0, -2), "while storing review");
     }
 
     
@@ -178,53 +192,67 @@ class ReviewForm {
 	return $x;
     }
 
-    function garbageMessage($conf, &$garbage) {
+    function garbageMessage(&$tf, $lineno, &$garbage) {
 	if (isset($garbage))
-	    $conf->infoMsg("Review form appears to begin with garbage; ignoring it.  Offending line: " . htmlentities($garbage));
+	    $tf['err'][] = "$lineno: Review form appears to begin with garbage; ignoring it.";
 	unset($garbage);
     }
+
+    function beginTextForm($filename, $printFilename) {
+	$fd = @fopen($filename, "rb");
+	$contents = fread($fd, filesize($filename));
+	fclose($fd);
+	$contents = preg_replace("/\\r\\n/", "\n", $contents);
+	$contents = strtr($contents, "\r", "\n");
+	return array('text' => $contents, 'filename' => $printFilename,
+		     'lineno' => 0, 'err' => array(), 'confirm' => array());
+    }
     
-    function parseTextForm($text, $paperId, $conf = null) {
+    function parseTextForm(&$tf, $paperId, $conf = null) {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
 
+	$text = $tf['text'];
+	$lineno = $tf['lineno'];
+	$tf['firstLineno'] = $lineno + 1;
+	$tf['fieldLineno'] = array();
+	
 	foreach ($this->fieldOrder as $field)
 	    unset($_REQUEST[$field]);
-
-	$text = preg_replace("/\\r\\n/", "\n", $text);
-	$text = strtr($text, "\r", "\n");
 
 	$mode = 0;
 	$nfields = 0;
 	$field = 0;
+	$anyDirectives = 0;
 	
 	while ($text != "") {
 	    $pos = strpos($text, "\n");
 	    $line = ($pos === FALSE ? $text : substr($text, 0, $pos + 1));
+	    $lineno++;
 
 	    if (substr($line, 0, 6) == "==+== ") {
+		$anyDirectives++;
 		if (preg_match("/Paper Form/", $line)
 		    && !preg_match("/$conf->shortName Paper Form/", $line)) {
-		    $this->garbageMessage($conf, $garbage);
-		    $conf->errorMsg("This review form appears to be for the wrong conference!  Offending line: " . htmlentities($line));
-		    return null;
+		    $this->garbageMessage($tf, $lineno, $garbage);
+		    $tf['err'][] = "$lineno: This review form appears to be for the wrong conference!";
+		    return 0;
 		} else if (preg_match("/^==\\+== Paper \#(\\d+)/", $line, $match)) {
 		    if ($nfields > 0)
 			break;
-		    else if ($paperId > 0 && $paperId != $match[1]) {
-			$this->garbageMessage($conf, $garbage);
-			$conf->errorMsg("This review form appears to be for paper #$match[1], but you submitted it for paper #$paperId.  Offending line: " . htmlentities($line));
-			return null;
-		    } else
+		    else {
 			$_REQUEST['paperId'] = $match[1];
+			$tf['firstLineno'] = $lineno;
+		    }
 		} else if (preg_match("/^==\\+== [A-Z]\\.\\s*(.*?)\\s*\$/", $line, $match)) {
 		    $fn =& $this->fieldName[strtolower($match[1])];
 		    if (isset($fn)) {
 			$field = $fn;
+			$tf['fieldLineno'][$fn] = $lineno;
 			$nfields++;
 		    } else {
-			$this->garbageMessage($conf, $garbage);
-			$conf->errorMsg("This review form appears to mention a review field not used for this conference, namely \"" . htmlentities($match[1]) . "\".  Ignoring that section.  Offending line: " . htmlentities($line));
+			$this->garbageMessage($tf, $lineno, $garbage);
+			$tf['err'][] = "$lineno: Review field \"" . htmlentities($match[1]) . "\" is not used for $conf->shortName reviews.  Ignoring this section.";
 			$field = null;
 		    }
 		    $mode = 1;
@@ -245,10 +273,25 @@ class ReviewForm {
 	    $text = substr($text, strlen($line));
 	}
 
-	if ($nfields == 0)
-	    $conf->errorMsg("That did not appear to be a review form.  Please check its formatting and try again.");
-	
-	return $text;
+	if ($nfields == 0 && $anyDirectives)
+	    $tf['err'][] = "$lineno: That didn't appear to be a review form; I was not able to extract any information from it.  Please check its formatting and try again.";
+
+	$tf['text'] = $text;
+	$tf['lineno'] = $lineno - 1;
+	return $nfields > 0 || $text;
+    }
+    
+    function parseTextFormErrors(&$tf, $conf = null) {
+	global $Conf;
+	$conf = ($conf ? $conf : $Conf);
+
+	if (count($tf['err']) > 0) {
+	    $filename = htmlspecialchars($tf['filename']);
+	    $conf->errorMsg("There were some errors while parsing the uploaded reviews file. <div class='parseerr'><p>$filename:" . join("</p>\n<p>$filename:", $tf['err']) . "</p></div>");
+	}
+
+	if (count($tf['confirm']) > 0)
+	    $conf->confirmMsg("<div class='parseerr'><p>" . join("</p>\n<p>", $tf['confirm']) . "</p></div>");
     }
     
 }

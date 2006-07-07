@@ -4,39 +4,50 @@ require_once('../Code/ClassReview.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid("../");
-$paperId = cvtint(ltrim(rtrim($_REQUEST["paperId"])));
-if ($paperId <= 0)
-    $Me->goAlert("../", "Invalid paper ID \"" . htmlspecialchars($_REQUEST["paperId"]) . "\".");
 
 function doGoPaper() {
     echo "<div class='gopaper'>", goPaperForm(1), "</div><div class='clear'></div>\n\n";
 }
     
-function initialError($what) {
+function initialError($what, &$tf) {
     global $Conf, $paperId;
-    $Conf->header("Review Paper #$paperId", 'review');
-    doGoPaper();
-    $Conf->errorMsg($what);
-    $Conf->footer();
-    exit;
+    if ($tf == null) {
+	$Conf->header("Review Paper #$paperId", 'review');
+	doGoPaper();
+	$Conf->errorMsg($what);
+	$Conf->footer();
+	exit;
+    } else {
+	$tf['err'][] = $tf['filename'] . ":" . $tf['firstLineno'] . ": $what";
+	echo $what;
+	return null;
+    }
 }
 
-$result = $Conf->qe($Conf->paperQuery($Me->contactId, array("paperId" => $paperId)), "while requesting paper to review");
-if (DB::isError($result) || $result->numRows() == 0)
-    initialError("No such paper.");
+function get_prow($paperIdIn, &$tf = null) {
+    global $Conf, $prow, $Me;
 
-$prow = $result->fetchRow(DB_FETCHMODE_OBJECT);
-if ($prow->myReviewType == null) {
-    if (!$Me->isPC)
-	initialError("You are not a reviewer for paper #$paperId.");
-    else if ($prow->myMinRole == ROLE_AUTHOR)
-	initialError("You are an author of paper #$paperId and cannot review it.");
-    else if ($prow->conflictCount > 0)
-	initialError("You have a conflict with paper #$paperId and cannot review it.");
- }
+    if (($paperId = cvtint(ltrim(rtrim($paperIdIn)))) <= 0)
+	return ($prow = initialError("Bad paper ID \"" . htmlentities($paperIdIn) . "\".", $tf));
+    
+    $result = $Conf->qe($Conf->paperQuery($Me->contactId, array("paperId" => $paperId)), "while requesting paper to review");
+    if (DB::isError($result) || $result->numRows() == 0)
+	$prow = initialError("No such paper #$paperId.", $tf);
+    else {
+	$prow = $result->fetchRow(DB_FETCHMODE_OBJECT);
+	if ($prow->myReviewType == null) {
+	    if (!$Me->isPC)
+		$prow = initialError("You are not a reviewer for paper #$paperId.", $tf);
+	    else if ($prow->myMinRole == ROLE_AUTHOR)
+		$prow = initialError("You are an author of paper #$paperId and cannot review it.", $tf);
+	    else if ($prow->conflictCount > 0)
+		$prow = initialError("You have a conflict with paper #$paperId and cannot review it.", $tf);
+	}
+    }
+}
 
-function get_rrow() {
-    global $Conf, $rrow, $paperId, $Me;
+function get_rrow($paperId) {
+    global $Conf, $rrow, $Me;
     $result = $Conf->qe("select * from PaperReview where paperId=$paperId and contactId=$Me->contactId", "while retrieving review");
     if (DB::isError($result) || $result->numRows() == 0)
 	$rrow = null;
@@ -46,8 +57,30 @@ function get_rrow() {
 
 $rf = reviewForm();
 
+$paperId = cvtint(ltrim(rtrim($_REQUEST["paperId"])));
+
+if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'])) {
+    $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
+    while ($rf->parseTextForm($tf, $paperId, $Conf)) {
+	get_prow($_REQUEST['paperId']);
+	get_rrow($_REQUEST['paperId']);
+	if ($prow != null && $rf->validateRequest($rrow, 0, $tf)) {
+	    $result = $rf->saveRequest($_REQUEST['paperId'], $Me->contactId, $rrow, 0);
+	    if (!DB::isError($result))
+		$tf['confirm'][] = "Uploaded review for paper #" . $_REQUEST['paperId'] . ".";
+	}
+	$paperId = -1;
+    }
+    $rf->parseTextFormErrors($tf, $Conf);
+    $paperId = $_REQUEST['paperId'];
+ }
+
+if ($paperId <= 0)
+    $Me->goAlert("../", "Invalid paper ID \"" . htmlspecialchars($_REQUEST["paperId"]) . "\".");
+get_prow($paperId);
+get_rrow($paperId);
+
 if (isset($_REQUEST['downloadForm'])) {
-    get_rrow();
     $x = $rf->textForm($paperId, $prow, $rrow, 1, $Conf);
     header("Content-Description: PHP3 Generated Data");
     header("Content-Disposition: attachment; filename=" . $Conf->downloadPrefix . "review-$paperId.txt");
@@ -71,20 +104,10 @@ function highlightUpdate() {
 <?php $Conf->header("Review Paper #$paperId", 'review');
 doGoPaper();
 
-get_rrow();
-if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'])) {
-    $fd = @fopen($_FILES['uploadedFile']['tmp_name'], "rb");
-    $contents = fread($fd, filesize($_FILES['uploadedFile']['tmp_name']));
-    fclose($fd);
-    
-    if ($rf->parseTextForm($contents, $paperId, $Conf) != null)
-	$_REQUEST['save'] = 1;
- }
-
 if (isset($_REQUEST['save']) || isset($_REQUEST['submit']))
     if ($rf->validateRequest($rrow, isset($_REQUEST['submit']))) {
 	$rf->saveRequest($paperId, $Me->contactId, $rrow, isset($_REQUEST['submit']), $Conf);
-	get_rrow();
+	get_rrow($paperId);
     }
 
 $withdrawn = $prow->withdrawn > 0;

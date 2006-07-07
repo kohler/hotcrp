@@ -337,3 +337,9 @@ tr.pl_headrow td, tr.pl_headrow th {
 table.reviewform td.form_caption {
 	font-weight: bold;
 }
+
+div.error div.parseerr p, div.confirm div.parseerr p {
+	margin: 0px;
+	padding: 0px 0px 0px 3em;
+	text-indent: -3em;
+}
