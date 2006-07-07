@@ -493,6 +493,7 @@ create table ReviewFormField (
   shortName varchar(40) NOT NULL,
   description text,
   sortOrder tinyint(1) NOT NULL default -1,
+  rows tinyint(1) NOT NULL default 0,
   PRIMARY KEY (fieldName),
   UNIQUE KEY fieldName (fieldName),
   KEY shortName (shortName)
@@ -526,17 +527,17 @@ insert into ReviewFormField set fieldName='likelyPresentation',
 insert into ReviewFormField set fieldName='suitableForShort',
 	shortName='Suitable for short paper';
 insert into ReviewFormField set fieldName='paperSummary',
-	shortName='Paper summary', sortOrder=2;
+	shortName='Paper summary', sortOrder=2, rows=5;
 insert into ReviewFormField set fieldName='commentsToAuthor',
-	shortName='Comments for author', sortOrder=3;
+	shortName='Comments for author', sortOrder=3, rows=15;
 insert into ReviewFormField set fieldName='commentsToPC',
-	shortName='Comments for PC', sortOrder=4;
+	shortName='Comments for PC', sortOrder=4, rows=10;
 insert into ReviewFormField set fieldName='commentsToAddress',
-	shortName='Comments to address';
+	shortName='Comments to address', rows=10;
 insert into ReviewFormField set fieldName='weaknessOfPaper',
-	shortName='Paper weakness';
+	shortName='Paper weakness', rows=5;
 insert into ReviewFormField set fieldName='strengthOfPaper',
-	shortName='Paper strengths';
+	shortName='Paper strengths', rows=5;
 insert into ReviewFormField set fieldName='potential',
 	shortName='Potential';
 insert into ReviewFormField set fieldName='fixability',

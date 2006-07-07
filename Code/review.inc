@@ -7,6 +7,7 @@ class ReviewForm {
     var $fieldOrder;
     var $shortName;
     var $fieldName;
+    var $fieldRows;
     var $description;
     var $options;
 
@@ -21,10 +22,11 @@ class ReviewForm {
 	$this->fieldOrder = array();
 	$this->shortName = array();
 	$this->fieldName = array();
+	$this->fieldRows = array();
 	$this->description = array();
 	$this->options = array();
 	
-	$result = $conf->qe("select fieldName, shortName, description, sortOrder from ReviewFormField order by sortOrder", "while updating review form information");
+	$result = $conf->qe("select fieldName, shortName, description, sortOrder, rows from ReviewFormField order by sortOrder, shortName", "while updating review form information");
 	if (DB::isError($result))
 	    return;
 	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
@@ -33,6 +35,7 @@ class ReviewForm {
 	    $this->shortName[$row->fieldName] = $row->shortName;
 	    $this->fieldName[strtolower($row->shortName)] = $row->fieldName;
 	    $this->description[$row->fieldName] = $row->description;
+	    $this->fieldRows[$row->fieldName] = ($row->rows >= 3 ? $row->rows : 3);
 	}
 	
 	$result = $conf->qe("select fieldName, level, description from ReviewFormOptions order by fieldName, level", "while updating review form information");
@@ -59,13 +62,19 @@ class ReviewForm {
 		$fval = $rrow->$field;
 	    
 	    $x .= "<tr class='rev_$field'>\n";
+	    
 	    $x .= "  <td class='form_caption";
 	    if (isset($ReviewFormError[$field]))
 		$x .= " error";
-	    $x .= "'>" . htmlspecialchars($this->shortName[$field]) . ":</td>\n";
+	    $x .= "'>";
+	    $n = htmlspecialchars($this->shortName[$field]);
+	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))
+		$n = preg_replace("/\\s+/", "&nbsp;", $n);
+	    $x .= "$n:</td>\n";
+	    
 	    $x .= "  <td class='form_entry'>";
 	    if (isset($this->options[$field])) {
-		$x .= "<select name='$field'>\n";
+		$x .= "<select name='$field' onchange='highlightUpdate()'>\n";
 		if ($fval == "" || $fval <= 0 || $fval > count($this->options[$field]))
 		    $x .= "    <option value='0' selected='selected'>(Unknown)</option>\n";
 		foreach ($this->options[$field] as $num => $what) {
@@ -76,11 +85,11 @@ class ReviewForm {
 		}
 		$x .= "</select>";
 	    } else {
-		$x .= "<textarea name='$field'>" . htmlspecialchars($fval) . "</textarea>";
+		$x .= "<textarea name='$field' onchange='highlightUpdate()' cols='80' rows='" . $this->fieldRows[$field] . "'>" . htmlspecialchars($fval) . "</textarea>";
 	    }
 	    $x .= "</td>\n";
 	    if ($this->description[$field])
-		$x .= "  <td class='form_hint'>" . htmlspecialchars($this->description[$field]) . "</td>\n";
+		$x .= "  <td class='form_hint'>" . $this->description[$field] . "</td>\n";
 	    $x .= "</tr>\n";
 	}
 	return $x;
@@ -99,12 +108,12 @@ class ReviewForm {
 		$max = count($this->options[$field]);
 		if ($fval == "" || $fval == "0") {
 		    if ($final) {
-			$provide[] = $field;
+			$provide[] = $this->shortName[$field];
 			$ReviewFormError[$field] = 1;
 		    }
-		} else if (($fval = cvtint($fval)) > 0 && $fval <= $max)
-		    /* OK */;
-		else if (preg_match("/^[0-9]+\\.", $fval, $matches)
+		} else if (($xval = cvtint($fval)) > 0 && $xval <= $max)
+		    $fval = $xval;
+		else if (preg_match("/^([0-9]+)\\./", $fval, $matches)
 			 && $matches[1] > 0 && $matches[1] <= $max)
 		    $fval = $matches[1];
 		else {
@@ -182,9 +191,11 @@ class ReviewForm {
 	    
 	    $fval = "";
 	    if ($useRequest && isset($_REQUEST[$field]))
-		$fval = preg_replace("/\\A\\s*(.*?)\\s*\\Z/", '$1', $_REQUEST[$field]);
+		$fval = rtrim($_REQUEST[$field]);
 	    else if ($rrow != null)
-		$fval = preg_replace("/\\s+\\Z/", '', $rrow->$field);
+		$fval = rtrim($rrow->$field);
+	    if (isset($this->options[$field]) && $fval == "0")
+		$fval = "";
 	    $x .= preg_replace("/^==\\+==/m", "\\==+==", $fval);
 
 	    $x .= "\n";

@@ -82,7 +82,7 @@ get_rrow($paperId);
 
 if (isset($_REQUEST['downloadForm'])) {
     $x = $rf->textForm($paperId, $prow, $rrow, 1, $Conf);
-    header("Content-Description: PHP3 Generated Data");
+    header("Content-Description: PHP Generated Data");
     header("Content-Disposition: attachment; filename=" . $Conf->downloadPrefix . "review-$paperId.txt");
     header("Content-Type: text/plain");
     header("Content-Length: " . sizeof($x));
@@ -96,7 +96,7 @@ $Conf->header_head("Review Paper #$paperId");
 function highlightUpdate() {
     var ins = document.getElementsByTagName("input");
     for (var i = 0; i < ins.length; i++)
-	if (ins[i].name == "update")
+	if (ins[i].name == "update" || ins[i].name == "submit")
 	    ins[i].className = "button_alert";
 }
 // -->
@@ -112,11 +112,6 @@ if (isset($_REQUEST['save']) || isset($_REQUEST['submit']))
 
 $withdrawn = $prow->withdrawn > 0;
 $finalized = $prow->acknowledged > 0;
-
-echo "<h2>[#$paperId] ", htmlspecialchars($prow->title), "</h2>\n\n";
-
-//echo "<form method='post' action=\"", $_SERVER['PHP_SELF'], "\" enctype='multipart/form-data'>
-//<input type='hidden' name='paperId' value='$paperId' />
 
 ?>
 
@@ -141,7 +136,7 @@ echo "<h2>[#$paperId] ", htmlspecialchars($prow->title), "</h2>\n\n";
 
 <?php if ($Conf->canViewAuthors($Me, $prow)) { ?>
 <tr>
-  <td class='pt_caption'>Author&nbsp;information:</td>
+  <td class='pt_caption'>Authors:</td>
   <td class='pt_entry'><?php echo htmlspecialchars($prow->authorInformation) ?></td>
 </tr>
 
@@ -162,6 +157,33 @@ if ($topicTable = topicTable($paperId, -1)) {
 
 </table>
 
+
+<table class='reviewform'>
+<tr class='rev_title'>
+  <td class='form_caption'><h2>[#<?php echo $paperId ?>]</h2></td>
+  <td class='form_entry'><h2><?php echo htmlspecialchars($prow->title) ?></h2></td>
+</tr>
+
+<tr class='rev_download'>
+  <td class='form_caption'>Offline&nbsp;reviewing:</td>
+  <td class='form_entry'>
+    <form class='downloadreviewform' action='ReviewPaper.php' method='get'>
+      <input type='hidden' name='paperId' value='<?php echo $paperId ?>' />
+      <input class='button_default' type='submit' value='Download review form' name='downloadForm' id='downloadForm' />
+    </form>
+  </td>
+</tr>
+<tr class='rev_upload'>
+  <td></td>
+  <td class='form_entry'>
+    <form class='downloadreviewform' action='ReviewPaper.php' method='post' enctype='multipart/form-data'>
+      <input type='hidden' name='paperId' value='<?php echo $paperId ?>' />
+      <input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp;<input class='button_default' type='submit' value='Upload review form' name='uploadForm' />
+    </form>
+  </td>
+</tr>
+</table>
+
 <hr/>
 
 <form action='ReviewPaper.php' method='post' enctype='multipart/form-data'>
@@ -173,19 +195,20 @@ echo $rf->formRows($rrow, 1);
 
 <tr class='rev_actions'>
   <td class='form_caption'>Actions:</td>
+<?php if (!$rrow->finalized) { ?>
   <td class='form_entry'><table class='pt_buttons'>
     <tr>
       <td class='ptb_button'><input class='button' type='submit' value='Save changes' name='save' /></td>
       <td class='ptb_button'><input class='button' type='submit' value='Submit' name='submit' /></td>
-      <td class='ptb_button'><input class='button' type='submit' value='Download review form' name='downloadForm' /></td>
     </tr>
     <tr>
       <td class='ptb_explain'>(does not submit review)</td>
-      <td class='ptb_explain'>(cannot undo)</td>
+      <td class='ptb_explain'>(allow PC to see review; cannot undo)</td>
     </tr>
-    <tr>
-    <td colspan='3' class='ptb_button'><input type='file' name='uploadedFile' accept='text/plain' size='60' />&nbsp;<input class='button' type='submit' value='Upload review form' name='uploadForm' /></td>
   </table></td>
+<?php } else { ?>
+  <td class='form_entry'><input class='button_default' type='submit' value='Resubmit' name='submit' /></td>
+<?php } ?>
 </tr>
 
 </table>

@@ -97,7 +97,7 @@ input.button_default {
 	border-bottom: 2px solid #999966;
 	border-right: 3px solid #999966;
 }
-form.gopaper {
+form {
 	margin-bottom: 0px;
 	display: inline;
 }
@@ -142,7 +142,7 @@ td.form_caption {
 	text-align: right;
 	padding-right: 0.5em;
 }
-td.error {
+td.error, td.error input {
 	font-weight: bold;
 	color: #ff0000;
 }
@@ -317,7 +317,7 @@ table.pt_buttons td.ptb_button {
 	padding: 0px 1em 0px 0px;
 }
 
-table.pltable th {
+table.pltable th, table.setreviewform th {
 	text-align: left;
 }
 table.pltable td {
@@ -330,11 +330,12 @@ table.pltable td.pl_ID {
 	text-align: right;
 	padding-right: 0.25em;
 }
-tr.pl_headrow td, tr.pl_headrow th {
+tr.pl_headrow td, tr.pl_headrow th, table.setreviewform th {
 	border-bottom: 1px solid #ccccff;
+	margin-bottom: 4px;
 }
 
-table.reviewform td.form_caption {
+table.reviewform td.form_caption, table.setreviewform td.form_caption {
 	font-weight: bold;
 }
 
@@ -343,3 +344,35 @@ div.error div.parseerr p, div.confirm div.parseerr p {
 	padding: 0px 0px 0px 3em;
 	text-indent: -3em;
 }
+
+div.error pre {
+	padding: 0.5em;
+	background: #fff2f2;
+	border: 1px dashed #eecccc;
+}
+
+div#review hr {
+	margin: 0.75em 0em;
+	border: none;
+	border-top: 1px solid #cc9900;
+}
+form.downloadreviewform input#downloadForm {
+	margin-right: 3em;
+}
+
+div#review table.auview {
+	float: right;
+	background: #f5f5ff;
+	padding: 10px;
+	border: 1px solid #ccccff;
+	margin-top: 0.5em;
+	max-width: 40em;
+}
+
+/*@media screen {
+table.setreviewform input#submit {
+	position: fixed;
+	bottom: 10px;
+	right: 10pt;
+}
+}*/
