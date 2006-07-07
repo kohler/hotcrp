@@ -113,6 +113,52 @@ if (isset($_REQUEST['upload'])
     }
  }
 
+// update attempt?
+if (isset($_REQUEST['update']) || isset($_REQUEST['finalize'])) {
+    get_prow($paperId);
+    if ($finalized)
+	$Conf->errorMsg("Further updates are not possible; the paper has already been submitted.");
+    else if ($withdrawn)
+	$Conf->errorMsg("Updates are not possible; the paper has been withdrawn.");
+    else if (!$updatable && !$override)
+	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.$overrideMsg");
+    else {
+	$anyErrors = 0;
+	foreach (array('title', 'abstract', 'authorInformation') as $what) {
+	    if (isset($_REQUEST[$what]) && $_REQUEST[$what] == "")
+		$PaperError[$what] = $anyErrors = 1;
+	}
+	if (!$anyErrors) {
+	    $updates = "";
+	    if (isset($_REQUEST['title']))
+		$updates .= "title='" . sqlq($_REQUEST['title']) . "', ";
+	    if (isset($_REQUEST['abstract']))
+		$updates .= "abstract='" . sqlq_cleannl($_REQUEST['abstract']) . "', ";
+	    if (isset($_REQUEST['authorInformation']))
+		$updates .= "authorInformation='" . sqlq_cleannl($_REQUEST['authorInformation']) . "', ";
+	    if (isset($_REQUEST['collaborators']))
+		$updates .= "collaborators='" . sqlq_cleannl($_REQUEST['collaborators']) . "', ";
+	    $Conf->qe("update Paper set " . substr($updates, 0, -2) . " where paperId=$paperId and withdrawn<=0 and acknowledged<=0", "while updating paper information");
+
+	    // now set topics
+	    if ($OK) {
+		$Conf->qe("delete from PaperTopic where paperId=$paperId", "while updating paper topics");
+		foreach ($_REQUEST as $key => $value)
+		    if ($key[0] == 't' && $key[1] == 'o' && $key[2] == 'p'
+			&& ($id = (int) substr($key, 3)) > 0) {
+			$result = $Conf->qe("insert into PaperTopic set paperId=$paperId, topicId=$id", "while updating paper topics");
+			if (DB::isError($result))
+			    break;
+		    }
+	    }
+
+	    // unset values
+	    unset($_REQUEST['title'], $_REQUEST['abstract'], $_REQUEST['authorInformation'], $_REQUEST['collaborators']);
+	} else
+	    $Conf->errorMsg("One or more required fields were left blank.  Fill in those fields and try again.");
+    }
+ }
+
 // finalize attempt?
 if (isset($_REQUEST['finalize'])) {
     get_prow($paperId);
@@ -146,49 +192,6 @@ if (isset($_REQUEST['unfinalize'])) {
 	$Conf->error("Only the program chairs can unfinalize papers.");
     else
 	$Conf->qe("update Paper set acknowledged=0 where paperId=$paperId", "while unfinalizing paper");
- }
-
-// update attempt?
-if (isset($_REQUEST['update'])) {
-    get_prow($paperId);
-    if ($finalized)
-	$Conf->errorMsg("Further updates are not possible; the paper has already been submitted.");
-    else if ($withdrawn)
-	$Conf->errorMsg("Updates are not possible; the paper has been withdrawn.");
-    else if (!$updatable && !$override)
-	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.$overrideMsg");
-    else {
-	$anyErrors = 0;
-	foreach (array('title', 'abstract', 'authorInformation') as $what) {
-	    if (!isset($_REQUEST[$what]) || $_REQUEST[$what] == "")
-		$PaperError[$what] = $anyErrors = 1;
-	}
-	if (!$anyErrors) {
-	    $updates = "title='" . sqlq($_REQUEST['title']) . "', "
-		. "abstract='" . sqlq($_REQUEST['abstract']) . "', "
-		. "authorInformation='" . sqlq($_REQUEST['authorInformation']) . "', ";
-	    if (isset($_REQUEST['collaborators']))
-		$updates .= "collaborators='" . sqlq($_REQUEST['collaborators']) . "', ";
-	    $Conf->qe("update Paper set " . substr($updates, 0, -2) . " where paperId=$paperId and withdrawn<=0 and acknowledged<=0", "while updating paper information");
-
-	    // now set topics
-	    if ($OK) {
-		$Conf->qe("delete from PaperTopic where paperId=$paperId", "while updating paper topics");
-		foreach ($_REQUEST as $key => $value)
-		    if ($key[0] == 't' && $key[1] == 'o' && $key[2] == 'p'
-			&& ($id = (int) substr($key, 3)) > 0) {
-			$result = $Conf->qe("insert into PaperTopic set paperId=$paperId, topicId=$id", "while updating paper topics");
-			if (DB::isError($result))
-			    break;
-		    }
-	    }
-
-	    // unset values
-	    foreach (array('title', 'abstract', 'authorInformation', 'collaborators') as $what)
-		unset($_REQUEST[$what]);
-	} else
-	    $Conf->errorMsg("One or more required fields were left blank.  Fill in those fields and try again.");
-    }
  }
 
 // print message if not author
@@ -265,11 +268,11 @@ if ($OK) {
   <td class='<?php echo pt_caption_class('paper') ?>'>Paper:</td>
   <td class='pt_entry'><?php
 	if ($prow->size > 0)
-	    echo paperDownload($paperId, $prow);
+	    echo paperDownload($paperId, $prow, 1);
 	if (!$finalized && ($updatable || $Me->amAssistant())) {
 	    if ($prow->size > 0)
 		echo "    <br/>\n";
-	    echo "    <input type='file' name='uploadedFile' accept='application/pdf' size='60' />&nbsp;<input class='button' type='submit' value='Upload File";
+	    echo "    <input type='file' name='uploadedFile' accept='application/pdf' size='30' />&nbsp;<input class='button' type='submit' value='Upload File";
 	    if (!$updatable) echo '*';
 	    echo "' name='upload' />\n";
 	} ?></td>
@@ -289,13 +292,12 @@ if ($OK) {
 </tr>
 
 <tr>
-  <td class='<?php echo pt_caption_class('authorInformation') ?>'>Author&nbsp;information<?php if ($can_update) echo "*" ?>:</td>
+  <td class='<?php echo pt_caption_class('authorInformation') ?>'>Authors<?php if ($can_update) echo "*" ?>:</td>
   <td class='pt_entry'><?php
-     if ($can_update)
-	 echo "<textarea class='textlite' name='authorInformation' rows='5' onchange='highlightUpdate()'>";
-     echo pt_data_html('authorInformation', $prow);
-     if ($can_update)
-	 echo "</textarea>";
+    if ($can_update)
+	echo "<textarea class='textlite' name='authorInformation' rows='5' onchange='highlightUpdate()'>", pt_data_html('authorInformation', $prow), "</textarea>";
+    else
+	echo authorTable($prow->authorInformation);
 ?></td>
   <?php if ($can_update) { ?><td class='pt_hint'>List all of the paper's authors with affiliations, one per line.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
 Ludwig van Beethoven (Colorado)
@@ -305,11 +307,10 @@ Zhang, Ping Yen (INRIA)</pre></td><?php } ?>
 <tr>
   <td class='pt_caption'>Collaborators:</td>
   <td class='pt_entry'><?php
-     if ($can_update)
-	 echo "<textarea class='textlite' name='collaborators' rows='5' onchange='highlightUpdate()'>";
-     echo pt_data_html('collaborators', $prow);
-     if ($can_update)
-	 echo "</textarea>";
+    if ($can_update)
+	echo "<textarea class='textlite' name='collaborators' rows='5' onchange='highlightUpdate()'>", pt_data_html('collaborators', $prow), "</textarea>";
+    else
+	echo authorTable($prow->collaborators);
 ?></td>
   <?php if ($can_update) { ?><td class='pt_hint'>List the paper authors' advisors, students, and other recent coauthors and collaborators.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td><?php } ?>
 </tr>

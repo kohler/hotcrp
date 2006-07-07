@@ -10,14 +10,18 @@ class PaperList {
     const FIELD_TITLE_MANAGE = 6;
     const FIELD_ID_REVIEW = 7;
     const FIELD_TITLE_REVIEW = 8;
-    const FIELD_REVIEW_TYPE = 9;
-    const FIELD_REVIEW_STATUS = 10;
+    const FIELD_REVIEWER_TYPE = 9;
+    const FIELD_REVIEWER_STATUS = 10;
+    const FIELD_SELECTOR = 11;
 
     var $showHeader;
     var $sortCol;
     var $sortLinks;
     var $count;
     var $needFinalize;
+    var $anySelector;
+    var $shortDescription;
+    var $description;
     
     function PaperList() {
 	$this->showHeader = 1;
@@ -25,6 +29,7 @@ class PaperList {
 	$this->sortLinks = 0;
 	$this->count = 0;
 	$this->needFinalize = 0;
+	$this->anySelector = 0;
     }
     
     function selector($fieldId, &$queryFields, &$queryTables) {
@@ -44,8 +49,12 @@ class PaperList {
 	    return "Status";
 	case self::FIELD_DOWNLOAD:
 	    return "Download";
-	case self::FIELD_REVIEW_STATUS:
-	    return "Review Status";
+	case self::FIELD_REVIEWER_TYPE:
+	    return "Reviewer";
+	case self::FIELD_REVIEWER_STATUS:
+	    return "Reviewer status";
+	case self::FIELD_SELECTOR:
+	    return "";
 	default:
 	    return "&lt;$fieldId&gt;?";
 	}
@@ -69,28 +78,33 @@ class PaperList {
 	case self::FIELD_STATUS:
 	    if ($row->acknowledged <= 0 && $row->withdrawn <= 0)
 		$this->needFinalize++;
-	    return $_SESSION['Me']->paperStatus($row->paperId, $row, 0);
+	    return $_SESSION['Me']->paperStatus($row->paperId, $row, $row->myMinRole == ROLE_AUTHOR);
 	case self::FIELD_DOWNLOAD:
 	    if ($row->size > 0)
 		return paperDownload($row->paperId, $row);
 	    else
 		return "";
-	case self::FIELD_REVIEW_TYPE:
+	case self::FIELD_REVIEWER_TYPE:
 	    if ($row->myReviewType == REVIEW_PRIMARY)
 		return "<span class='rtype rtype_pri'>Primary</span>";
 	    else if ($row->myReviewType == REVIEW_SECONDARY)
 		return "<span class='rtype rtype_sec'>Secondary</span>";
-	    else if ($row->myReviewType == REVIEW_REQUEST)
+	    else if ($row->myReviewType == REVIEW_REQUESTED)
 		return "<span class='rtype rtype_req'>Special request</span>";
 	    else
 		return "";
-	case self::FIELD_REVIEW_STATUS:
-	    if ($row->myReviewFinalized == null)
+	case self::FIELD_REVIEWER_STATUS:
+	    if ($row->myReviewType == 0)
+		return "";
+	    else if ($row->myReviewFinalized == null)
 		return "<span class='rstat rstat_no'>Not started</span>";
 	    else if ($row->myReviewFinalized == 0)
 		return "<span class='rstat rstat_prog'>In progress</span>";
 	    else
 		return "<span class='rstat rstat_done'>Complete</span>";
+	case self::FIELD_SELECTOR:
+	    $this->anySelector = 1;
+	    return "<input class='rstat rstat_sel' type='checkbox' name='papersel[]' value='$row->paperId' />";
 	default:
 	    return "";
 	}
@@ -108,6 +122,8 @@ class PaperList {
 	    return NULL;
 	}
 	$plist = $result->fetchRow(DB_FETCHMODE_OBJECT);
+	$this->description = $plist->description;
+	$this->shortDescription = $plist->shortDescription;
 
 	// check role type
 	if ($plist->minRole >= ROLE_PC && !$me->isPC) {
@@ -183,5 +199,5 @@ class PaperList {
     }
 
 }
-  
+
 ?>

@@ -35,12 +35,12 @@ if (isset($_REQUEST['submit'])) {
     }
     if (!$anyErrors) {
 	$query = "insert into Paper set title='" . sqlq($_REQUEST['title'])
-	    . "', abstract='" . sqlq($_REQUEST['abstract'])
-	    . "', authorInformation='" . sqlq($_REQUEST['authorInformation'])
+	    . "', abstract='" . sqlq_cleannl($_REQUEST['abstract'])
+	    . "', authorInformation='" . sqlq_cleannl($_REQUEST['authorInformation'])
 	    . "', contactId=" . $Me->contactId
 	    . ", paperStorageId=1";
 	if (isset($_REQUEST["collaborators"]))
-	    $query .= ", collaborators='" . sqlq($_REQUEST["collaborators"]) . "'";
+	    $query .= ", collaborators='" . sqlq_cleannl($_REQUEST["collaborators"]) . "'";
 	$result = $Conf->q($query);
 	if (DB::isError($result))
 	    $Error = $Conf->dbErrorText($result, "while adding your paper to the database");
@@ -78,7 +78,7 @@ if (isset($_REQUEST['submit'])) {
  }
 
 $Conf->header("Start New Paper");
-if (count($PaperError) > 0)
+if (isset($PaperError))
     $Conf->errorMsg("One or more required fields were left blank.  Fill in those fields and try again.");
 if (isset($Error))
     $Conf->errorMsg($Error);
@@ -133,18 +133,17 @@ Zhang, Ping Yen (INRIA)</pre></td>
 </tr>
 
 <?php
-$topicsActive = ($finalizable || $Me->amAssistant() ? isset($_REQUEST['title']) : -1);
-if ($topicTable = topicTable($paperId, $topicsActive))
+if ($topicTable = topicTable(-1, 1))
     echo "<tr>\n  <td class='pt_caption'>Topics:</td>\n  <td class='pt_entry' id='topictable'>", $topicTable,
 	"</td>\n  <td class='pt_hint'>Check any topics that apply to your submission.  This will help us match your paper with interested reviewers.</td>\n</tr>\n";
 ?>
 
 <tr>
   <td class='pt_caption'></td>
-  <td class='pt_entry'><?php
+  <td class='pt_entry'><input class='button_default' type='submit' value='Create Paper' name='submit' /><?php
     if (!$can_start)
-	echo "<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines<br/>\n";
-    ?><input class='button_default' type='submit' value='Create Paper' name='submit' />
+	echo "<br/><input type='checkbox' name='override' value='1' />&nbsp;Override deadlines\n";
+    ?>
   </td>
 </tr>
 

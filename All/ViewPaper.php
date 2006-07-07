@@ -69,8 +69,6 @@ if (!$amAuthor && !$Me->isPC) {
 $withdrawn = $prow->withdrawn > 0;
 $finalized = $prow->acknowledged > 0;
 
-echo "<h2>[#$paperId] ", htmlspecialchars($prow->title), "</h2>\n\n";
-
 //echo "<form method='post' action=\"", $_SERVER['PHP_SELF'], "\" enctype='multipart/form-data'>
 //<input type='hidden' name='paperId' value='$paperId' />
 
@@ -79,8 +77,13 @@ echo "<h2>[#$paperId] ", htmlspecialchars($prow->title), "</h2>\n\n";
 <table class='view'>
 
 <tr>
+  <td class='pt_caption'><h2>[#<?php echo $paperId ?>]</h2></td>
+  <td class='pt_entry'><h2><?php echo htmlspecialchars($prow->title) ?></h2></td>
+</tr>
+
+<tr>
   <td class='pt_caption'>Status:</td>
-  <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, 0, 1) ?><?php
+  <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, $prow->myMinRole == ROLE_AUTHOR, 1) ?><?php
 if ($amAuthor)
     echo "<br/>\nYou are an author of this paper.";
 else if ($Me->isPC && $prow->conflictCount > 0)
@@ -111,15 +114,16 @@ if ($prow->myReviewType != null) {
 
 <?php if ($Conf->canViewAuthors($Me, $prow)) { ?>
 <tr>
-  <td class='pt_caption'>Author&nbsp;information:</td>
-  <td class='pt_entry'><?php echo htmlspecialchars($prow->authorInformation) ?></td>
+  <td class='pt_caption'>Authors:</td>
+  <td class='pt_entry'><?php echo authorTable($prow->authorInformation) ?></td>
 </tr>
 
+<?php if ($prow->collaborators) { ?>
 <tr>
   <td class='pt_caption'>Collaborators:</td>
-  <td class='pt_entry'><?php echo htmlspecialchars($prow->collaborators) ?></td>
+  <td class='pt_entry'><?php echo authorTable($prow->collaborators) ?></td>
 </tr>
-<?php } ?>
+<?php } } ?>
 
 <?php
 if ($topicTable = topicTable($paperId, -1)) { 
@@ -134,10 +138,8 @@ if ($prow->myReviewType != null
 else if ($Me->isPC)
     $actions[] = "<button class='button' disabled='disabled'>Review</button>";
 
-if ($Me->amAssistant() && $amAuthor)
-    $actions[] = "<button class='button' disabled='disabled'>Hide authors</button>";
-else if ($Me->amAssistant())
-    $actions[] = "<form method='get' action='ViewPaper.php'><input type='hidden' name='paperId' value='$paperId' /><input type='hidden' name='chairViewAuthors' value='" . (1 - $Me->chairViewAuthors) . "' /><input class='button' type='submit' value='" . ($Me->chairViewAuthors ? "Hide authors" : "Show authors") . "' name='auview' /></form>";
+if ($Me->amAssistant())
+    $actions[] = "<form method='get' action='ViewPaper.php'><input type='hidden' name='paperId' value='$paperId' /><input type='hidden' name='chairMode' value='" . (1 - $Me->chairMode) . "' /><input class='button' type='submit' value='" . ($Me->chairMode ? "Leave chair mode" : "Chair mode") . "' name='auview' /></form>";
 
 if ($amAuthor || $Me->amAssistant())
     $actions[] = "<form method='get' action='${ConfSiteBase}Author/ManagePaper.php'><input type='hidden' name='paperId' value='$paperId' /><input class='button' type='submit' value='Edit submission' name='edit' /></form>";

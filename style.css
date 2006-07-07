@@ -89,7 +89,7 @@ input.button, button {
 	border-right: 3px solid #999966;
 	padding: 0px 6px 0px 6px;
 }
-input.button_default {
+input.button_default, button.button_default {
 	font-size: large;
 	background: #ffff99;
 	border-top: 2px solid #eeee66;
@@ -219,11 +219,14 @@ td.datedesc {
 table.daterange {
 }
 
-input.textlite, textarea.textlite {
+input.textlite, textarea.textlite, table.reviewform td textarea {
 	/*border: none;*/
 	/*border-bottom: dashed 1px #ddddff;*/
 	border: solid 1px #ddddff;
 	padding: 0px 4px;
+}
+table.reviewform td select {
+	border: solid 1px #aaaaff;
 }
 
 div.prevpaperlink {
@@ -319,6 +322,7 @@ table.pt_buttons td.ptb_button {
 
 table.pltable th, table.setreviewform th {
 	text-align: left;
+        padding-right: 0.25em;
 }
 table.pltable td {
 	padding-right: 1em;
@@ -326,7 +330,7 @@ table.pltable td {
 table.pltable th.pl_ID {
 	text-align: center;
 }
-table.pltable td.pl_ID {
+table.pltable td.pl_ID, table.pltable td.pl_Selector {
 	text-align: right;
 	padding-right: 0.25em;
 }
@@ -367,6 +371,16 @@ div#review table.auview {
 	border: 1px solid #ccccff;
 	margin-top: 0.5em;
 	max-width: 40em;
+}
+
+span.autblentry {
+	min-width: 20em;
+	margin-right: 0.75em;
+	white-space: nowrap;
+}
+
+div.plist_form {
+	margin-top: 1em;
 }
 
 /*@media screen {

@@ -41,7 +41,7 @@ if ( $_SESSION["Me"]->checkConflict($_REQUEST[paperId], $Conf)) {
 //
 
 if ( ! $Conf->validTimeFor('AtTheMeeting', 0) ) {
-  if ( !($_SESSION["Me"] -> iCanReview($_REQUEST[paperId], $Conf) || $_SESSION["Me"] -> isChair)) {
+  if (!($_SESSION["Me"]->canReview($_REQUEST["paperId"], $Conf) || $_SESSION["Me"] -> isChair)) {
     $Conf -> errorMsg("You are unable to view all the reviews for this paper "
 		      . " since you were not a primary or secondary reviwer for it." );
     exit();

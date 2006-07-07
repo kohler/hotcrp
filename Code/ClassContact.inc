@@ -26,7 +26,7 @@ class Contact {
     var $isPC;
     var $isChair;
     var $isAssistant;
-    var $chairViewAuthors;
+    var $chairMode;
     var $validated;
 
 
@@ -57,9 +57,9 @@ class Contact {
 		if ($conf->setupPhase)
 		    $this->isChair = 1;
 		if (!$this->isChair)
-		    $this->chairViewAuthors = 0;
-		else if (isset($_REQUEST['chairViewAuthors']))
-		    $this->chairViewAuthors = ($_REQUEST['chairViewAuthors'] > 0 ? 1 : 0);
+		    $this->chairMode = 0;
+		else if (isset($_REQUEST['chairMode']))
+		    $this->chairMode = (cvtint($_REQUEST['chairMode']) > 0 ? 1 : 0);
 		$this->validated = 1;
 	    }
 	}
@@ -332,26 +332,37 @@ class Contact {
       $result = $conf->qe($query);
   }
 
-  function amPaperAuthor($paperId, $conf) {
-      // Query for a specific match of the author and paper
-      $query = "select paperId from Roles where paperId=$paperId and contactId=$this->contactId";
-      $result = $conf->qe($query);
-      return !DB::isError($result) && $result->numRows() > 0;
-  }
+    function amPaperAuthor($paperId, $conf, $prow = null) {
+	if ($prow === null) {
+	    // Query for a specific match of the author and paper
+	    $query = "select paperId from Roles where paperId=$paperId and contactId=$this->contactId";
+	    $result = $conf->qe($query);
+	    return !DB::isError($result) && $result->numRows() > 0;
+	} else
+	    return $prow->myMinRole == ROLE_AUTHOR;
+    }
 
-  function checkConflict($paperId, $conf) {
-      return $conf->checkConflict($paperId, $this->contactId);
-  }
+    function checkConflict($paperId, $conf) {
+	return $conf->checkConflict($paperId, $this->contactId);
+    }
 
-    function iCanReview($paperId, $conf) {
-	if ($this->isPC && $conf->validTimeFor('PCReviewAnyPaper', 0))
-	    return 1;
-	$result = $conf->q("select Paper.paperId
-		from ReviewRequest join Paper using (paperId)
-		where ReviewRequest.contactId=$this->contactId
-		  and Paper.paperId=$paperId
-		  and Paper.withdrawn <= 0 and Paper.acknowledged > 0");
-	return !DB::isError($result) && $result->numRows() > 0;
+    function canDownload($paperId, $conf, $prow = null) {
+	if ($this->amAssistant())
+	    return true;
+	if ($prow === null)
+	    $prow = $conf->getPaperRow($paperId, $this->contactId);
+	if ($prow->myMinRole == ROLE_AUTHOR || $prow->myReviewType > 0)
+	    return true;
+	return $this->isPC && $prow->acknowledged > 0 && $prow->withdrawn <= 0;
+    }
+
+    function canReview($paperId, $conf, $prow = null) {
+	if (($this->isPC && $conf->validTimeFor('PCReviewAnyPaper', 0))
+	    || $this->amAssistant())
+	    return true;
+	if ($prow === null)
+	    $prow = $conf->getPaperRow($paperId, $this->contactId);
+	return $prow->myReviewType > 0;
     }
 
     function paperStatus($paperId, $row, $knownAuthor, $long = 0, $conf = null) {
@@ -383,7 +394,7 @@ class Contact {
 	    else
 		return "<span class='pstat'>Unknown outcome \"" . htmlspecialchars($row->outcome) . "\"</span>";
 	} else if (isset($row->reviewCount) && $row->reviewCount > 0 && $canViewReviews) {
-	    return "<span class='pstat pstat_rev'>Reviews available</span>";
+	    return "<span class='pstat pstat_rev'>Reviews&nbsp;available</span>";
 	} else {
 	    if ($row->acknowledged > 0) {
 		$x = "<span class='pstat pstat_sub'>Submitted</span>";

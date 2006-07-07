@@ -90,9 +90,9 @@ function taskbutton($name,$label) {
 
     <tr>
       <th>Conference&nbsp;information:</th>
-      <td><a href='Chair/SetDates.php'>Set&nbsp;dates</a> &mdash;
-	<a href='Chair/SetTopics.php'>Set&nbsp;topics</a> &mdash;
-	<a href='Chair/SetReviewForm.php'>Set&nbsp;review&nbsp;form[X]</a></td>
+      <td><a href='Chair/SetDates.php'>Change&nbsp;dates</a> &mdash;
+	<a href='Chair/SetTopics.php'>Change&nbsp;topics</a> &mdash;
+	<a href='Chair/SetReviewForm.php'>Change&nbsp;review&nbsp;form</a></td>
     </tr>
     </table>
   </div>
@@ -170,7 +170,7 @@ if ($Me->isAuthor) {
     <a href='All/UpdateContactInfo.php'>Update&nbsp;profile</a> &mdash;
     <a href='All/MergeAccounts.php'>Merge&nbsp;accounts</a> &mdash;
     <a href='All/ImportantDates.php'>Important&nbsp;dates</a> &mdash;
-    <a href='All/Logout.php'>Logout</a>
+    <a href='All/Logout.php'>Log&nbsp;out</a>
   </div>
   <div class='clear'></div>
 </div>

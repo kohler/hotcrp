@@ -8,6 +8,11 @@ function sqlq($value) {
     return mysql_real_escape_string($value);
 }
 
+function sqlq_cleannl($value) {
+    $value = str_replace("\r\n", "\n", $value);
+    return mysql_real_escape_string(strtr($value, "\r", "\n"));
+}
+
 function cvtint(&$value, $default = -1) {
     if (isset($value) && is_numeric($value)) {
 	$ival = intval($value);
@@ -154,6 +159,16 @@ function topicTable($paperId = -1, $active = 0, $conf = null) {
 	return "";
 }
 
+function authorTable($text, $columns = 2) {
+    $out = "";
+    foreach (explode("\n", $text) as $au) {
+	$au = ltrim(rtrim($au));
+	if ($au != '')
+	    $out .= "<span class='autblentry'>" . htmlspecialchars($au) . "</span> ";
+    }
+    return $out;
+}
+
 function goPaperForm($review = 0) {
     global $ConfSiteBase;
     $what = ($review ? 'Review' : 'View');
@@ -184,6 +199,19 @@ function textArrayJoin($arr) {
 	return $arr[0] . " and " . $arr[1];
     else
 	return join(", ", array_slice($arr, 0, -1)) . ", and " . $arr[count($arr) - 1];
+}
+
+function tempdir($dir, $prefix, $mode = 0700) {
+    if (!isset($dir) || !is_dir($dir))
+	$dir = "/tmp";
+    if (substr($dir, -1) != '/')
+	$dir .= '/';
+    for ($i = 0; $i < 100; $i++) {
+	$path = $dir . $prefix . mt_rand(0, 9999999);
+	if (mkdir($path, $mode))
+	    return $path;
+    }
+    return false;
 }
 
 ?>

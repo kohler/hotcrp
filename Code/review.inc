@@ -210,9 +210,8 @@ class ReviewForm {
     }
 
     function beginTextForm($filename, $printFilename) {
-	$fd = @fopen($filename, "rb");
-	$contents = fread($fd, filesize($filename));
-	fclose($fd);
+	if (($contents = file_get_contents($filename)) === false)
+	    return null;
 	$contents = preg_replace("/\\r\\n/", "\n", $contents);
 	$contents = strtr($contents, "\r", "\n");
 	return array('text' => $contents, 'filename' => $printFilename,

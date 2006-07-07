@@ -403,22 +403,22 @@ class Conference {
     }
 
     function canStartPaper() {
-	return $this->validPeriod('startPaperSubmission');
+	return $this->validPeriod('startPaperSubmission') > 0;
     }
     function canUpdatePaper() {
-	return $this->validPeriod('updatePaperSubmission');
+	return $this->validPeriod('updatePaperSubmission') > 0;
     }
     function canFinalizePaper() {
-	return $this->validPeriod('finalizePaperSubmission');
+	return $this->validPeriod('finalizePaperSubmission') > 0;
     }
     function canAuthorViewReviews() {
-	return $this->validPeriod('authorViewReviews');
+	return $this->validPeriod('authorViewReviews') > 0;
     }
     function canAuthorViewDecision() {
-	return $this->validPeriod('authorViewDecision');
+	return $this->validPeriod('authorViewDecision') > 0;
     }
     function canPCReviewAnyPaper() {
-	return $this->validPeriod('PCReviewAnyPaper');
+	return $this->validPeriod('PCReviewAnyPaper') > 0;
     }
     function canViewAuthors($me, $prow) {
 	$amAuthor = ($prow->myMinRole == ROLE_AUTHOR);
@@ -426,7 +426,7 @@ class Conference {
 	    return 1;
 	if (paperAccepted($prow) && $this->validPeriod('EndOfTheMeeting'))
 	    return 1;
-	if ($me->amAssistant() && $me->chairViewAuthors)
+	if ($me->amAssistant() && $me->chairMode)
 	    return 1;
 	return 0;
     }
@@ -491,12 +491,8 @@ class Conference {
 	    return 0;
 
 	if (isset($filename)) {
-	    $fd = @fopen($filename, 'rb');
-	    if (!$fd)
+	    if (($contents = file_get_contents($filename)) === false)
 		return 0;
-
-	    $contents = fread($fd, filesize($filename));
-	    fclose($fd);
 
 	    // Check if paper is postscript or PDF, only kinds allowed.
 	    // We ignore the mimetype since MacOS browsers get this wrong
@@ -547,7 +543,12 @@ class Conference {
 	return (DB::isError($result) ? $result : strlen($contents));
     }
 
-    function downloadPaper($paperId, $saveit) {
+    function downloadPaperName($paperId, $mimetype) {
+	return $this->downloadPrefix . "paper$paperId" . $this->getFileExtension($mimetype);
+    }
+    
+    function __downloadPaper($paperId, $saveit) {
+	// Database query
 	$result = $this->q("select mimetype, paper, withdrawn, PaperStorage.paperStorageId
 	from Paper left join PaperStorage using (paperStorageId)
 	where Paper.paperId=$paperId");
@@ -556,37 +557,107 @@ class Conference {
 	    return $result;
 	} else if ($result->numRows() == 0)
 	    return new PEAR_Error("There is no paper #$paperId.");
-	else {
-	    $row = $result->fetchRow();
-	    $mimetype = $row[0];
-	    $content = $row[1];
-	    $withdrawn = $row[2];
-	    $length = strlen($content);
-	    if ($withdrawn > 0)
-		return new PEAR_Error("Paper #$paperId has been withdrawn.");
-	    else if ($row[3] == 1)
-		return new PEAR_Error("Paper #$paperId has not been uploaded yet.");
-	    else if ($length == 0)
-		return new PEAR_Error("Paper #$paperId appears to be empty.");
-	    else {
-		//
-		// Send out headers
-		//
-		header("Content-Description: PHP Generated Data");
-		$ext = $this->getFileExtension($mimetype);
-		$name = $this->downloadPrefix . "paper$paperId" . $ext;
-		header("Content-Disposition: " . ($saveit ? "attachment" : "inline") . "; filename=$name");
-		header("Content-Type: $mimetype");
-		header("Content-Length: $length"); 
-		//
-		// Send out paper
-		//
-		print $content;
-		return 1;
-	    }
-	}
+
+	// Check data
+	$row = $result->fetchRow();
+	$mimetype = $row[0];
+	$content = $row[1];
+	$withdrawn = $row[2];
+	$length = strlen($content);
+	if ($withdrawn > 0)
+	    return new PEAR_Error("Paper #$paperId has been withdrawn.");
+	else if ($row[3] == 1)
+	    return new PEAR_Error("Paper #$paperId has not been uploaded yet.");
+	else if ($length == 0)
+	    return new PEAR_Error("Paper #$paperId appears to be empty.");
+
+	// Print paper
+	header("Content-Description: PHP Generated Data");
+	$name = $this->downloadPaperName($paperId, $mimetype);
+	header("Content-Disposition: " . ($saveit ? "attachment" : "inline") . "; filename=$name");
+	header("Content-Type: $mimetype");
+	header("Content-Length: $length"); 
+	print $content;
+	return 1;
     }
 
+    function downloadPaper($paperId, $saveit) {
+	$result = $this->downloadPaper($paperId, $saveit);
+	if (DB::isError($result))
+	    $this->errorMsg($this->dbErrorText($result, "while downloading paper", 1));
+	else if (PEAR::isError($result))
+	    $this->errorMsg($result->getMessage());
+	else
+	    $this->log("Downloaded #$paperId", $_SESSION["Me"]);
+	return $result;
+    }
+
+    function __downloadPapers($paperIds, &$tmpdir) {
+	// special cases
+	if (count($paperIds) == 0)
+	    return new PEAR_Error("No papers selected for download.");
+	else if (count($paperIds) == 1)
+	    return __downloadPaper($paperIds[0], 1);
+
+	// paper query
+	$q = "select Paper.paperId, paper, mimetype from PaperStorage join Paper using (paperStorageId) where (";
+	foreach ($paperIds as $paperId)
+	    $downloadQ[] = "Paper.paperId=$paperId";
+	$q .= join(" or ", $downloadQ) . ")";
+	$result = $this->q($q);
+	if (DB::isError($result))
+	    return $result;
+	
+	// set up temporary directory
+	if (($tmpdir = tempdir(null, "crp")) === false)
+	    return new PEAR_Error("Could not create temporary directory!");
+
+	// write papers into temporary directory
+	while ($row = $result->fetchRow()) {
+	    $path = "$tmpdir/" . $this->downloadPaperName($row[0], $row[2]);
+	    if (($len = file_put_contents($path, $row[1])) != strlen($row[1]))
+		$warnings[] = "Could not save paper #$row[0].";
+	    else if ($len == 0)
+		$warnings[] = "Paper #$row[0] has not been uploaded yet.";
+	    else
+		$downloadPaths[] = $path;
+	}
+	if (!isset($downloadPaths))
+	    return new PEAR_Error("No papers could successfully be downloaded.");
+	if (isset($warnings)) {
+	    file_put_contents("$tmpdir/README.warnings", join("\n", $warnings) . "\n");
+	    $downloadPaths[] = "$tmpdir/README.warnings";
+	}
+
+	// run zip
+	$out = system("zip -jq $tmpdir/x.zip " . join(" ", $downloadPaths) . " 2>&1", $status);
+	if ($status != 0)
+	    return new PEAR_Error("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
+	if (($contents = file_get_contents("$tmpdir/x.zip")) === false)
+	    return new PEAR_Error("<code>zip</code> output unreadable or empty.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
+
+	// output
+	header("Content-Description: PHP Generated Data");
+	header("Content-Disposition: attachment; filename=" . $this->downloadPrefix . "papers.zip");
+	header("Content-Type: application/zip");
+	header("Content-Length: " . strlen($contents));
+	print $contents;
+	return 1;
+    }
+
+    function downloadPapers($paperIds) {
+	$result = $this->__downloadPapers($paperIds, $tmpdir);
+	if (DB::isError($result))
+	    $this->errorMsg($this->dbErrorText($result, "while downloading paper", 1));
+	else if (PEAR::isError($result))
+	    $this->errorMsg($result->getMessage());
+	else
+	    $this->log("Downloaded papers from set " . join(", ", $paperIds), $_SESSION["Me"]);
+	if (isset($tmpdir))
+	    exec("/bin/rm -rf $tmpdir");
+	return $result;
+    }
+    
     function paperQuery($contactId, $info = array()) {
 	$pq = "select Paper.*,
 		length(PaperStorage.paper) as size, mimetype, timestamp,
@@ -611,8 +682,17 @@ class Conference {
 	    $pq .= "		$jtype ReviewRequest as MyReviewRequest on (MyReviewRequest.paperId=Paper.paperId and MyReviewRequest.contactId=$contactId)
 		left join PaperReview as MyReview on (MyReview.paperId=Paper.paperId and MyReview.contactId=$contactId)\n";
 	}
-	if (isset($info['paperId']) && $info['paperId'] > 0)
-	    $where[] = "Paper.paperId=" . $info['paperId'];
+	if (isset($info['paperId'])) {
+	    if (is_array($info['paperId'])) {
+		foreach ($info['paperId'] as $pid)
+		    if (($pid = cvtint($pid)) > 0)
+			$pids[] = "Paper.paperId=$pid";
+		if (count($pids) == 0)
+		    $pids[] = "Paper.paperId=0";
+		$where[] = "(" . join(" or ", $pids) . ")";
+	    } else if ($info['paperId'] > 0)
+		$where[] = "Paper.paperId=" . $info['paperId'];
+	}
 	if (isset($info['finalized'])) {
 	    $where[] = "acknowledged>0";
 	    $where[] = "withdrawn<=0";
@@ -622,6 +702,15 @@ class Conference {
 	$pq .= "		group by Roles.paperId, PaperReview.paperId\n";
 	$pq .= "		order by Paper.paperId\n";
 	return $pq;
+    }
+
+    function getPaperRow($paperId, $contactId, $while = "") {
+	$q = $this->paperQuery($contactId, array('paperId' => $paperId));
+	$result = $this->qe($q, $while);
+	if (DB::isError($result) || $result->numRows() == 0)
+	    return null;
+	else
+	    return $result->fetchRow(DB_FETCHMODE_OBJECT);
     }
 
 
@@ -856,7 +945,7 @@ class Conference {
       //$path = $this->paperSite . "/Download/GetPaper/" . 
       //   $this->downloadPrefix . "paper$paperId." . $ext;
       global $ConfSiteBase;
-      return $ConfSiteBase . "Download/GetPaper/" . $this->downloadPrefix . "paper$paperId" . $this->getFileExtension($mimetype);
+      return $ConfSiteBase . "Download/GetPaper/" . $this->downloadPaperName($paperId, $mimetype);
   }
 
   

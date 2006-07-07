@@ -96,7 +96,7 @@ $Conf->header_head("Review Paper #$paperId");
 function highlightUpdate() {
     var ins = document.getElementsByTagName("input");
     for (var i = 0; i < ins.length; i++)
-	if (ins[i].name == "update" || ins[i].name == "submit")
+	if (ins[i].name == "save" || ins[i].name == "submit")
 	    ins[i].className = "button_alert";
 }
 // -->
@@ -137,12 +137,12 @@ $finalized = $prow->acknowledged > 0;
 <?php if ($Conf->canViewAuthors($Me, $prow)) { ?>
 <tr>
   <td class='pt_caption'>Authors:</td>
-  <td class='pt_entry'><?php echo htmlspecialchars($prow->authorInformation) ?></td>
+  <td class='pt_entry'><?php echo authorTable($prow->authorInformation) ?></td>
 </tr>
 
 <tr>
   <td class='pt_caption'>Collaborators:</td>
-  <td class='pt_entry'><?php echo htmlspecialchars($prow->collaborators) ?></td>
+  <td class='pt_entry'><?php echo authorTable($prow->collaborators) ?></td>
 </tr>
 <?php } ?>
 
@@ -198,8 +198,8 @@ echo $rf->formRows($rrow, 1);
 <?php if (!$rrow->finalized) { ?>
   <td class='form_entry'><table class='pt_buttons'>
     <tr>
-      <td class='ptb_button'><input class='button' type='submit' value='Save changes' name='save' /></td>
-      <td class='ptb_button'><input class='button' type='submit' value='Submit' name='submit' /></td>
+      <td class='ptb_button'><input class='button_default' type='submit' value='Save changes' name='save' /></td>
+      <td class='ptb_button'><input class='button_default' type='submit' value='Submit' name='submit' /></td>
     </tr>
     <tr>
       <td class='ptb_explain'>(does not submit review)</td>
