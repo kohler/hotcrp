@@ -26,6 +26,7 @@ class Contact {
     var $isPC;
     var $isChair;
     var $isAssistant;
+    var $chairViewAuthors;
     var $validated;
 
 
@@ -55,6 +56,10 @@ class Contact {
 		}
 		if ($conf->setupPhase)
 		    $this->isChair = 1;
+		if (!$this->isChair)
+		    $this->chairViewAuthors = 0;
+		else if (isset($_REQUEST['chairViewAuthors']))
+		    $this->chairViewAuthors = ($_REQUEST['chairViewAuthors'] > 0 ? 1 : 0);
 		$this->validated = 1;
 	    }
 	}
@@ -99,7 +104,7 @@ class Contact {
   function countRequestedPrimary() {
     global $Conf;
     $query = "SELECT COUNT(*) FROM PrimaryReviewer WHERE "
-      . " reviewer=' " . $this->contactId . "'";
+      . " contactId=' " . $this->contactId . "'";
     $result = $Conf->q($query);
     if ( !DB::isError($result) && $result->numRows() == 1 ) {
       $row = $result->fetchRow();
@@ -112,7 +117,7 @@ class Contact {
   function countRequestedSecondary() {
     global $Conf;
     $query = "SELECT COUNT(*) FROM SecondaryReviewer WHERE "
-      . " reviewer=' " . $this->contactId . "'";
+      . " contactId=' " . $this->contactId . "'";
     $result = $Conf->q($query);
     if ( !DB::isError($result) && $result->numRows() == 1 ) {
       $row = $result->fetchRow();
@@ -338,17 +343,62 @@ class Contact {
       return $conf->checkConflict($paperId, $this->contactId);
   }
 
-  function iCanReview($paperId, $conf) {
-      if ($conf->reviewablePaper($paperId)
-	  && ($conf->reviewRequestFor($paperId, $this->contactId)
-	      || $conf->primaryReviewerFor($paperId, $this->contactId)
-	      || $conf->secondaryReviewerFor($paperId, $this->contactId)
-	      || ($this->isPC && $conf->validTimeFor('PCReviewAnyPaper', 0))))
-	  return 1;
-      else
-	  return 0;
-  }
+    function iCanReview($paperId, $conf) {
+	if ($this->isPC && $conf->validTimeFor('PCReviewAnyPaper', 0))
+	    return 1;
+	$result = $conf->q("select Paper.paperId
+		from ReviewRequest join Paper using (paperId)
+		where ReviewRequest.contactId=$this->contactId
+		  and Paper.paperId=$paperId
+		  and Paper.withdrawn <= 0 and Paper.acknowledged > 0");
+	return !DB::isError($result) && $result->numRows() > 0;
+    }
 
+    function paperStatus($paperId, $row, $knownAuthor, $long = 0, $conf = null) {
+	global $ConfSiteBase, $Conf;
+	if ($conf == null)
+	    $conf = $Conf;
+
+	if ($knownAuthor) {
+	    $canViewReviews = $conf->canAuthorViewReviews();
+	    $canViewDecision = $conf->canAuthorViewDecision();
+	} else if ($this->amAssistant()
+		   || ($this->isPC && (!isset($row->conflictCount) || !$row->conflictCount)))
+	    $canViewReviews = $canViewDecision = 1;
+	else
+	    $canViewReviews = $canViewDecision = 0;
+
+	if ($row->withdrawn > 0) {
+	    $x = "<span class='pstat pstat_with'>Withdrawn</span>";
+	    return $x . ($long ? " at " . $conf->printTime($row->withdrawn) : '');
+	} else if ($row->acknowledged <= 0 && $row->paperStorageId == 1)
+	    return "<span class='pstat pstat_noup'>Not yet uploaded</span>";
+	else if (isset($row->outcome) && $row->outcome != 'unspecified' && $canViewDecision) {
+	    if ($row->outcome == "accepted")
+		return "<span class='pstat pstat_acc'>Accepted</span>";
+	    else if ($row->outcome == "acceptedShort")
+		return "<span class='pstat pstat_accsh'>Accepted as short paper</span>";
+	    else if ($row->outcome == "rejected")
+		return "<span class='pstat pstat_rej'>Rejected</span>";
+	    else
+		return "<span class='pstat'>Unknown outcome \"" . htmlspecialchars($row->outcome) . "\"</span>";
+	} else if (isset($row->reviewCount) && $row->reviewCount > 0 && $canViewReviews) {
+	    return "<span class='pstat pstat_rev'>Reviews available</span>";
+	} else {
+	    if ($row->acknowledged > 0) {
+		$x = "<span class='pstat pstat_sub'>Submitted</span>";
+		if ($long)
+		    $x .= " at " . $conf->printTime($row->acknowledged);
+	    } else {
+		$x = "<span class='pstat pstat_prog'>In progress</span>";
+		if ($long)
+		    $x .= "; updated at " . $conf->printTime($row->timestamp);
+	    }
+	    return $x;
+	}
+    }
+
+  
   //
   //
   function generatePassword($length) {  
@@ -407,7 +457,7 @@ class Contact {
     {
       $paperStatus=array();
 
-      $query="SELECT paperId, finalized FROM PaperReview WHERE reviewer='$this->contactId'";
+      $query="SELECT paperId, finalized FROM PaperReview WHERE contactId='$this->contactId'";
       $result = $conf->qe($query);
       if (!DB::isError($result)) {
 	while ($row = $result->fetchRow()) {

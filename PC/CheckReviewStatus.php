@@ -198,10 +198,10 @@ else {
       $contactId = $row[3];
       $requestId = $row[4];
 
-      $query = "SELECT reviewer, finalized"
+      $query = "SELECT contactId, finalized"
       . " FROM PaperReview "
       . " WHERE PaperReview.paperId='$paperId' "
-      . " AND PaperReview.reviewer='$contactId' "
+      . " AND PaperReview.contactId='$contactId' "
       ;
 
       $review_result = $Conf->qe($query);

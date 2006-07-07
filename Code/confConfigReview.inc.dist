@@ -24,12 +24,12 @@ function& ReviewFactory($conf, $contactId, $paperId)
 //
 function& ReviewFactoryById($conf, $reviewId)
 {
-  $query="SELECT reviewer, paperId FROM PaperReview "
+  $query="SELECT contactId, paperId FROM PaperReview "
     . " WHERE paperReviewid='$reviewId'";
   $result = $conf->q($query);
   if ( DB::isError($result) ) {
     $row=$result->fetchRow(DB_FETCHMODE_ASSOC);
-    return new ISCA2002Review($conf, $row['reviewer'], $row['paperId']);
+    return new ISCA2002Review($conf, $row['contactId'], $row['paperId']);
   } else {
     return 0;
   }

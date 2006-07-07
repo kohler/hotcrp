@@ -81,7 +81,7 @@ if (!IsSet($_REQUEST[paperId])) {
   
   $q = "SELECT firstName, lastName, email, paperReviewId "
     . " FROM PaperReview, ContactInfo "
-    . " WHERE ContactInfo.contactId=PaperReview.reviewer "
+    . " WHERE ContactInfo.contactId=PaperReview.contactId "
     . " AND PaperReview.paperId=$_REQUEST[paperId] "
     . " AND PaperReview.finalized=0 ";
 
@@ -116,7 +116,7 @@ if (!IsSet($_REQUEST[paperId])) {
 
   $q = "SELECT firstName, lastName, email, paperReviewId "
     . " FROM PaperReview, ContactInfo "
-    . " WHERE ContactInfo.contactId=PaperReview.reviewer "
+    . " WHERE ContactInfo.contactId=PaperReview.contactId "
     . " AND PaperReview.paperId=$_REQUEST[paperId] "
     . " AND PaperReview.finalized=1 ";
 
@@ -145,7 +145,7 @@ if (!IsSet($_REQUEST[paperId])) {
 
   $q = "SELECT firstName, lastName, email, paperReviewId "
     . " FROM PaperReview, ContactInfo "
-    . " WHERE ContactInfo.contactId=PaperReview.reviewer "
+    . " WHERE ContactInfo.contactId=PaperReview.contactId "
     . " AND PaperReview.paperId=$_REQUEST[paperId] ";
 
   $result = $Conf->qe($q);

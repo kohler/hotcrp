@@ -134,9 +134,8 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC) ) {
       print "<td> Primary Reviewers: </td>\n";
       print "<td>\n";
       $revQ="SELECT firstName, lastName, email "
-	. " FROM ContactInfo, PrimaryReviewer "
-	. " WHERE PrimaryReviewer.reviewer=ContactInfo.contactId "
-	. " AND PrimaryReviewer.paperId='$paperId'";
+	. " FROM ContactInfo join PrimaryReviewer using (contactId) "
+	. " WHERE PrimaryReviewer.paperId='$paperId'";
       $revR = $Conf->qe($revQ);
       if ($revR) {
 	$sep = "";
@@ -154,9 +153,8 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC) ) {
       print "<td> Secondary Reviewers: </td>\n";
       print "<td>\n";
       $revQ="SELECT firstName, lastName, email "
-	. " FROM ContactInfo, SecondaryReviewer "
-	. " WHERE SecondaryReviewer.reviewer=ContactInfo.contactId "
-	. " AND SecondaryReviewer.paperId='$paperId'";
+	. " FROM ContactInfo join SecondaryReviewer using (contactId) "
+	. " WHERE SecondaryReviewer.paperId='$paperId'";
       $revR = $Conf->qe($revQ);
       if ($revR) {
 	$sep = "";
@@ -227,13 +225,13 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC) ) {
       $finalizedStr ="";
     }
 
-    $result2 = $Conf->qe("SELECT PaperReview.reviewer, "
+    $result2 = $Conf->qe("SELECT PaperReview.contactId, "
 			 . " PaperReview.paperReviewId, PaperReview.finalized, "
 			 . " ContactInfo.firstName, ContactInfo.lastName, "
 			 . " ContactInfo.email "
 			 . " FROM PaperReview, ContactInfo "
 			 . " WHERE PaperReview.paperId='$paperId'"
-			 . " AND PaperReview.reviewer=ContactInfo.contactId"
+			 . " AND PaperReview.contactId=ContactInfo.contactId"
 			 . $finalizedStr
 			 );
 
@@ -245,7 +243,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC) ) {
 
       $i = 1;
       while($row = $result2->fetchRow(DB_FETCHMODE_ASSOC) ) {
-	$reviewer=$row['reviewer'];
+	$reviewer=$row['contactId'];
 	$reviewId=$row['paperReviewId'];
 	$first=$row['firstName'];
 	$last=$row['lastName'];

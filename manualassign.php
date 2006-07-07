@@ -1,8 +1,13 @@
 <?
 include('../Code/confHeader.inc');
-$_SESSION["Me"] -> goIfInvalid("../index.php");
-$_SESSION["Me"] -> goIfNotChair('../index.php');
-$Conf -> connect();
+$Conf->connect();
+$Me = $_SESSION["Me"];
+$_SESSION["Me"]->goIfInvalid("../index.php");
+$_SESSION["Me"]->goIfNotChair('../index.php');
+
+function mz(&$var) {
+    return (isset($var) ? $var : 0);
+}
 
 function Check($var)
 {
@@ -22,10 +27,9 @@ function Num($var)
   }
 }
 
-function countPapers($array, $table, $where)
+function countPapers(&$array, $table, $where)
 {
   global $Conf;
-  global ${$array};
 
   $query = "SELECT $table.paperId, COUNT(*) "
     . " FROM $table "
@@ -38,71 +42,47 @@ function countPapers($array, $table, $where)
   } else {
     while ($row = $result->fetchRow()) {
       $id=$row[0];
-      ${$array}[$id] = $row[1];
+      $array[$id] = $row[1];
     }
   }
 }
 
-?>
+$Conf->header("Assign Papers to Program Committee Members");
 
-<html>
-
-<? $Conf->header("Assign Papers to Program Committee Members") ?>
-
-<body>
-<?
+$reviewer = cvtint($_REQUEST["reviewer"]);
 //
 // Process actions from this form..
 //
-if (IsSet($_REQUEST[assignPapers])) {
-  if (!IsSet($_REQUEST[reviewer]) || $_REQUEST[reviewer]==-1) {
-    $Conf->errorMsg("You need to select a reviewer.");
-  } else {
-    if (IsSet($_REQUEST["Primary"])) {
-      for($i=0; $i < sizeof($_REQUEST["Primary"]); $i++) {
-	$paper=$_REQUEST["Primary"][$i];
-	$result = $Conf->qe("SELECT reviewer FROM PrimaryReviewer "
-			    . " WHERE reviewer='$_REQUEST[reviewer]' AND  paperId='$paper'");
-	if (DB::isError($result) ||  $result->numRows() == 0) {
-
-	  $result=$Conf->qe("INSERT INTO PrimaryReviewer "
-			     . " SET reviewer='$_REQUEST[reviewer]', paperId='$paper'");
-
-	  if ( !DB::isError($result) ) {
-	    $Conf->infoMsg("Added primary reviewer for paper $paper");
-	    $Conf->log("Added primary reviewer $reviewer for paper $paper", $_SESSION["Me"]);
-	  } else {
-	    $Conf->errorMsg("Error in adding primary reviewer for paper $paper: " . $result->getMessage());
-	  }
-	} else {
-	  $Conf->errorMsg("You tried to add a duplicate reviewer for paper # $paper");
+if (isset($_REQUEST["assignPapers"])) {
+    if ($reviewer <= 0) {
+	$Conf->errorMsg("You need to select a reviewer.");
+    } else {
+	$reviewName = array("Primary", "Secondary", "Requested");
+	for ($type = REVIEW_PRIMARY; $type <= REVIEW_REQUESTED; $type++) {
+	    if (!isset($_REQUEST[$reviewName[$type]]))
+		continue;
+	    $extra = ($type == REVIEW_REQUESTED ? "" : ", acceptedOn=current_timestamp");
+	    foreach ($_REQUEST[$reviewName[$type]] as $paper) {
+		if (($paper = cvtint($paper)) <= 0)
+		    continue;
+		$result = $Conf->qe("select contactId from ReviewRequest
+			where contactId=$reviewer and paperId=$paper and type=$type");
+		if (DB::isError($result) || $result->numRows() == 0) {
+		    $result=$Conf->qe("insert into ReviewRequest
+			set contactId=$reviewer, paperId=$paper, type=$type$extra, requestedBy=$Me->contactId");
+		    if (!DB::isError($result)) {
+			$Conf->infoMsg("Added $reviewName[$type] reviewer for paper $paper");
+			$Conf->log("Added $reviewName[$type] reviewer $reviewer for paper $paper", $Me);
+		    } else {
+			$Conf->errorMsg("Error in adding $reviewName[$type] reviewer for paper $paper: " . $result->getMessage());
+		    }
+		} else {
+		    $Conf->errorMsg("You tried to add a duplicate reviewer for paper # $paper");
+		}
+	    }
 	}
-      }
     }
-    if (IsSet($_REQUEST["Secondary"])) {
-      for($i=0; $i < sizeof($_REQUEST["Secondary"]); $i++) {
-	$paper=$_REQUEST["Secondary"][$i];
-	$result = $Conf->qe("SELECT reviewer FROM SecondaryReviewer "
-			    . " WHERE reviewer='$_REQUEST[reviewer]' AND  paperId='$paper'");
-
-	if (DB::isError($result) ||  $result->numRows() == 0) {
-
-	  $result=$Conf->qe("INSERT INTO SecondaryReviewer "
-			     . " SET reviewer='$_REQUEST[reviewer]', paperId='$paper'");
-
-	  if ( !DB::isError($result) ) {
-	    $Conf->infoMsg("Added secondary reviewer for paper $paper");
-	    $Conf->log("Added primary reviewer $reviewer for paper $paper", $_SESSION["Me"]);
-	  } else {
-	    $Conf->errorMsg("Error in adding secondary reviewer for paper $paper: " . $result->getMessage());
-	  }
-	} else {
-	  $Conf->errorMsg("You tried to add a duplicate reviewer for paper # $paper");
-	}
-      }
-    }
-  }
-}
+ }
 ?>
 <h2> Understanding The Displayed Table </h2>
 <p>
@@ -140,9 +120,9 @@ reviewer <b> without further confirmation </b>.
 // Make an array of all the valid paper indicies.
 //
   $paperResult=$Conf->qe("SELECT Paper.paperId, Paper.title, "
-		    . " Paper.acknowledged, Paper.withdrawn, "
 		    . " PaperStorage.mimetype "
 		    . " FROM Paper left join PaperStorage using (paperStorageId) "
+			 . " where acknowledged > 0 and withdrawn <= 0 "
 		    . " ORDER BY Paper.paperId"
 		    );
   $numpaper= 0;
@@ -151,11 +131,20 @@ reviewer <b> without further confirmation </b>.
   } else {
     $numpapers = $paperResult -> numrows();
   }
-  countPapers("allPrimary", "PrimaryReviewer", "");
-  countPapers("allSecondary", "SecondaryReviewer", "");
-  countPapers("allReviewRequest", "ReviewRequest", "");
-  countPapers("allStartedReviews", "PaperReview", "WHERE (PaperReview.finalized!=0)");
-  countPapers("allFinishedReviews", "PaperReview", "WHERE (PaperReview.finalized=0)");
+
+    $result = $Conf->qe("select paperId, type, count(contactId)
+	from ReviewRequest group by paperId, type");
+    if (!DB::isError($result))
+	while ($row = $result->fetchRow())
+	    if ($row[1] == REVIEW_PRIMARY)
+		$allPrimary[$row[0]] = $row[2];
+	    else if ($row[1] == REVIEW_SECONDARY)
+		$allSecondary[$row[0]] = $row[2];
+	    else if ($row[1] == REVIEW_REQUESTED)
+		$allReviewRequest[$row[0]] = $row[2];
+
+  countPapers($allStartedReviews, "PaperReview", "WHERE (PaperReview.finalized=0)");
+  countPapers($allFinishedReviews, "PaperReview", "WHERE (PaperReview.finalized!=0)");
   //
   // Determine the number of completed and started reviews for all papers
   //
@@ -163,15 +152,13 @@ reviewer <b> without further confirmation </b>.
 
   <p> Found <? echo $numpapers ?> papers. </p>
 <?
-if (IsSet($_REQUEST[newReviewer]) ) {
-  $_REQUEST[reviewer] = $_REQUEST[newReviewer];
-}
-
+if (isset($_REQUEST["newReviewer"])) 
+    $reviewer = $_REQUEST["reviewer"] = cvtint($_REQUEST["newReviewer"]);
 ?>
 
 <CENTER>
 <FORM METHOD="POST" ACTION="<?echo $PHP_SELF ?>" name="selectReviewer">
-  <SELECT name=newReviewer SINGLE onChange="document.selectReviewer.submit()">
+  <SELECT name="newReviewer" SINGLE onChange="document.selectReviewer.submit()">
   <?
   $query = "SELECT ContactInfo.contactId, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email "
   . " from ContactInfo join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ") "
@@ -196,8 +183,8 @@ $result = $Conf->qe($query);
 
 <?php 
 
-if(IsSet($_REQUEST["reviewer"]) && $_REQUEST["reviewer"] >= 0) {
-     $Conf->reviewerSummary($_REQUEST["reviewer"], 1 , 1);
+if ($reviewer >= 0) {
+     $Conf->reviewerSummary($reviewer, 1 , 1);
   //
   // Print out a quick jump index
   //
@@ -217,7 +204,7 @@ if(IsSet($_REQUEST["reviewer"]) && $_REQUEST["reviewer"] >= 0) {
 
 ?>
  <FORM METHOD="POST" ACTION="<?echo $PHP_SELF ?>">
- <INPUT TYPE="hidden" name="reviewer" value="<?echo $_REQUEST["reviewer"]?>">
+ <INPUT TYPE="hidden" name="reviewer" value="<?echo $reviewer ?>">
  <INPUT TYPE="SUBMIT" name="assignPapers" value="Assign this PC member to the indicated papers">
 
      <table border="1" width="100%" cellpadding=0 cellspacing=0>
@@ -234,8 +221,8 @@ if(IsSet($_REQUEST["reviewer"]) && $_REQUEST["reviewer"] >= 0) {
       $paperId = $row['paperId'];
       $title = $row['title'];
 
-      $primary=$allPrimary[$paperId];
-      $secondary=$allSecondary[$paperId];
+      $primary = mz($allPrimary[$paperId]);
+      $secondary = mz($allSecondary[$paperId]);
 
        if (($rownum % 10)==0) {
 ?>
@@ -243,8 +230,6 @@ if(IsSet($_REQUEST["reviewer"]) && $_REQUEST["reviewer"] >= 0) {
      <th> <a name="paper<?echo $paperId?>">#</a> </th>
      <th> # 1st </th>
      <th> # 2nd </th> 
-     <th> F? </th> 
-     <th> W? </th> 
      <th> Title </th>
      </tr>
 <?
@@ -258,17 +243,15 @@ if(IsSet($_REQUEST["reviewer"]) && $_REQUEST["reviewer"] >= 0) {
        <b> <? echo $paperId ?> </b>
        </td>
        <td>
-       <INPUT TYPE=checkbox NAME=Primary[] VALUE='<?echo $paperId ?>'> Add Primary? <br>
-       <INPUT TYPE=checkbox NAME=Secondary[] VALUE='<?echo $paperId ?>'> Add Secondary? <br>
+       <INPUT TYPE="checkbox" NAME="Primary[]" VALUE='<?echo $paperId ?>'> Add Primary? <br>
+       <INPUT TYPE="checkbox" NAME="Secondary[]" VALUE='<?echo $paperId ?>'> Add Secondary? <br>
        </td> 
        </tr>
        </table>
        </td>
 
-       <td valign="center" align="center"> <? echo Num($allPrimary[$paperId]) ?> </td>
-       <td valign="center" align="center"> <? echo Num($allSecondary[$paperId]) ?> </td>
-       <td valign="center" align="center"> <? echo Check($allSubmitted[$paperId]) ?> </td>
-       <td valign="center" align="center"> <? echo Check($allWithdrawn[$paperId]) ?> </td>
+       <td valign="center" align="center"> <? echo mz($allPrimary[$paperId]) ?> </td>
+       <td valign="center" align="center"> <? echo mz($allSecondary[$paperId]) ?> </td>
 
        <td> <a href="../Assistant/AssistantViewSinglePaper.php?paperId=<?echo $paperId?>" target=_blank>
 <? echo $title ?> </a>
@@ -295,9 +278,8 @@ if(IsSet($_REQUEST["reviewer"]) && $_REQUEST["reviewer"] >= 0) {
        // Pull out the primary reviewers
        //
        $result = $Conf->qe("SELECT ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.contactId "
-			   . " FROM ContactInfo, PrimaryReviewer "
-			   . " WHERE ( PrimaryReviewer.paperId='$paperId' "
-			   . "         AND PrimaryReviewer.reviewer=ContactInfo.contactId)"
+			   . " FROM ContactInfo join ReviewRequest using (contactId) "
+			   . " WHERE ReviewRequest.paperId='$paperId' and ReviewRequest.type=" . REVIEW_PRIMARY
 			   );
        if (!DB::isError($result)) {
 	 while($row = $result->fetchRow() ) {
@@ -316,10 +298,9 @@ if(IsSet($_REQUEST["reviewer"]) && $_REQUEST["reviewer"] >= 0) {
        //
        // Pull out the secondary reviewers
        //
-       $result = $Conf->qe("SELECT ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.contactId "
-			   . " FROM ContactInfo, SecondaryReviewer "
-			   . " WHERE ( SecondaryReviewer.paperId='$paperId' "
-			   . "         AND SecondaryReviewer.reviewer=ContactInfo.contactId)");
+       $result = $Conf->qe("select ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.contactId
+		from ContactInfo join ReviewRequest using (contactId)
+		where ReviewRequest.paperId=$paperId and ReviewRequest.type=".REVIEW_SECONDARY);
        if (!DB::isError($result)) {
 	 while($row = $result->fetchRow() ) {
 	   print "$row[0] $row[1] ($row[2]) ";

@@ -51,7 +51,7 @@ $Conf->infoMsg("In order for you to see the other reviews for papers for which y
     $done = $Conf->retCount("SELECT finalized "
 			    . " FROM PaperReview "
 			    . " WHERE PaperReview.paperId='$paperId' "
-			    . " AND PaperReview.reviewer='" . $_SESSION["Me"]->contactId. "'"
+			    . " AND PaperReview.contactId='" . $_SESSION["Me"]->contactId. "'"
 			    );
 
 ?>

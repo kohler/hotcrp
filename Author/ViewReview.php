@@ -125,13 +125,13 @@ if ( $Conf -> validTimeFor('authorRespondToReviews', 0) ) {
 }
 print "</center>";
 
-$result = $Conf->qe("SELECT PaperReview.reviewer, "
+$result = $Conf->qe("SELECT PaperReview.contactId, "
 		    . " PaperReview.paperReviewId, "
 		    . " ContactInfo.firstName, ContactInfo.lastName, "
 		    . " ContactInfo.email "
 		    . " FROM PaperReview, ContactInfo $latetables "
 		    . " WHERE PaperReview.paperId='$_REQUEST[paperId]'"
-		    . " AND PaperReview.reviewer=ContactInfo.contactId"
+		    . " AND PaperReview.contactId=ContactInfo.contactId"
 		    . " AND PaperReview.finalized=1 $laterestrict "
 		    );
 
@@ -141,7 +141,7 @@ if (!DB::isError($result) && $result->numRows() > 0) {
 
   $i = 1;
   while($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
-    $reviewer=$row['reviewer'];
+    $reviewer=$row['contactId'];
     $reviewId=$row['paperReviewId'];
     $first=$row['firstName'];
     $last=$row['lastName'];

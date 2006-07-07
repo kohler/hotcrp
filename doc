@@ -19,9 +19,9 @@ if (isset($_REQUEST['paperId'])) {
 	$Error = "Invalid paper ID '" . htmlspecialchars($_REQUEST['paperId']) . "'.";
 } else {
     $paper = preg_replace("|.*/GetPaper/*|", "", $_SERVER["PHP_SELF"]);
-    if (preg_match("/^(" . $Conf->paperPrefix . "-)?(\d+).*$/", $paper, $match)
-	&& $match[2] > 0)
-	$paperId = $match[2];
+    if (preg_match("/^(" . $Conf->downloadPrefix . ")?(paper-?)?(\d+).*$/", $paper, $match)
+	&& $match[3] > 0)
+	$paperId = $match[3];
     else
 	$Error = "Invalid paper name '" . htmlspecialchars($paper) . "'.";
 }

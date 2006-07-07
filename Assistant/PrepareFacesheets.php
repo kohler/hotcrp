@@ -61,8 +61,8 @@ $query = "SELECT firstName, lastName, email, "
 	. " WHERE PaperReview.finalized=1 "
 	. " AND firstName!='' "
 	. " AND lastName!='' "
-	. " AND PaperReview.reviewer=ContactInfo.contactId "
-	. " GROUP BY reviewer "
+	. " AND PaperReview.contactId=ContactInfo.contactId "
+	. " GROUP BY PaperReview.contactId "
 	. " ORDER BY lastName, firstName ";
 
 $result = $Conf->qe($query);
@@ -102,8 +102,8 @@ $query = "SELECT firstName, lastName, email, "
 	. " FROM PaperReview, ContactInfo "
 	. " WHERE PaperReview.finalized=1 "
 	. " AND (firstName='' OR lastName='') "
-	. " AND PaperReview.reviewer=ContactInfo.contactId "
-	. " GROUP BY reviewer "
+	. " AND PaperReview.contactId=ContactInfo.contactId "
+	. " GROUP BY PaperReview.contactId "
 	. " ORDER BY lastName, firstName ";
 
 $result = $Conf->qe($query);

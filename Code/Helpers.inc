@@ -9,10 +9,12 @@ function sqlq($value) {
 }
 
 function cvtint(&$value, $default = -1) {
-    if (isset($value) && is_numeric($value))
-	return (int) $value;
-    else
-	return $default;
+    if (isset($value) && is_numeric($value)) {
+	$ival = intval($value);
+	if ($ival == floatval($value))
+	    return $ival;
+    }
+    return $default;
 }
 
 function alert($string = "") {
@@ -44,7 +46,8 @@ function paperStatus($paperId, $row = null, $long = 0, $conf = null) {
     if ($row == null) {
 	$result = $conf->q("select withdrawn, acknowledged, outcome,
 		Paper.paperStorageId, mimetype, PaperStatus.timestamp
-		from Paper left join PaperStorage using (paperStorageId)
+		from Paper
+		left join PaperStorage using (paperStorageId)
 		where Paper.paperId=$paperId");
 	if (DB::isError($result))
 	    return "<span class='pstat pstat_err'>Database error</span>";
@@ -150,5 +153,37 @@ function topicTable($paperId = -1, $active = 0, $conf = null) {
     } else
 	return "";
 }
-    
+
+function goPaperForm($review = 0) {
+    global $ConfSiteBase;
+    $what = ($review ? 'Review' : 'View');
+    $x = "<form class='gopaper' action='${ConfSiteBase}All/${what}Paper.php' method='get'>";
+    $x .= "#<input class='textlite' type='text' size='3' name='paperId' />";
+    $x .= "&nbsp;<input class='button_default' type='submit' name='go' value='Go to paper' /></form>";
+    return $x;
+}
+
+function paperAccepted($prow) {
+    return $prow->outcome == 'accepted' || $prow->outcome == 'acceptedShort';
+}
+
+function reviewForm($conf = null) {
+    global $Conf;
+    $conf = ($conf ? $conf : $Conf);
+    if (!isset($_SESSION["reviewForm"]))
+	$_SESSION["reviewForm"] = new ReviewForm($conf);
+    else
+	$_SESSION["reviewForm"]->validate($conf);
+    return $_SESSION["reviewForm"];
+}
+
+function textArrayJoin($arr) {
+    if (count($arr) == 1)
+	return $arr[0];
+    else if (count($arr) == 2)
+	return $arr[0] . " and " . $arr[1];
+    else
+	return join(", ", array_slice($arr, 0, -1)) . ", and " . $arr[count($arr) - 1];
+}
+
 ?>

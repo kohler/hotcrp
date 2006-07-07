@@ -21,11 +21,7 @@ $finalizable = $Conf->canFinalizePaper();
 function get_prow($paperId) {
     global $Conf, $prow, $OK, $updatable, $can_update, $finalized, $withdrawn, $Me;
     if (!isset($prow) && $OK) {
-	$query = "select Paper.*, length(PaperStorage.paper) as size,
-	    PaperStorage.mimetype, PaperStorage.timestamp
-	    from Paper left join PaperStorage using (paperStorageId)
-	    where Paper.paperId=$paperId";
-	$result = $Conf->qe($query);
+	$query = $Conf->paperQuery($Me->contactId, array("paperId" => $paperId));	$result = $Conf->qe($query);
 	if (!DB::isError($result) && $result->numRows() > 0) {
 	    $prow = $result->fetchRow(DB_FETCHMODE_OBJECT);
 
@@ -261,7 +257,7 @@ if ($OK) {
 
 <tr>
   <td class='pt_caption'>Status:</td>
-  <td class='pt_entry'><?php echo paperStatus($paperId, $prow, 1) ?></td>
+  <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, !$notAuthor, 1) ?></td>
 </tr>
 
 <?php if (!$withdrawn) { ?>

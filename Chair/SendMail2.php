@@ -27,7 +27,7 @@ function queryFromRecipients($who)
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
 		Paper.paperId, Paper.title
 		from ContactInfo, ReviewRequest, Paper LEFT JOIN
-		PaperReview ON (ContactInfo.contactID=PaperReview.reviewer)
+		PaperReview using (contactID)
 		WHERE
 		      ( ReviewRequest.asked=ContactInfo.contactID
 		        AND

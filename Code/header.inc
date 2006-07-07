@@ -16,6 +16,11 @@ define("ROLE_CONFLICT", 2);
 define("ROLE_PC", 3);
 define("ROLE_ASSISTANT", 4);
 define("ROLE_CHAIR", 5);
+define("ROLE_REVIEWER", 100);	// does not appear in Roles table
+
+define("REVIEW_PRIMARY", 1);
+define("REVIEW_SECONDARY", 2);
+define("REVIEW_REQUESTED", 3);
 
 $OK = 1;
 
@@ -57,6 +62,7 @@ require_once("$ConfSitePATH/Code/Helpers.inc");
 require_once("$ConfSitePATH/Code/ClassConference.inc");
 require_once("$ConfSitePATH/Code/ClassContact.inc");
 require_once("$ConfSitePATH/Code/ClassPaper.inc");
+require_once("$ConfSitePATH/Code/ClassReview.inc");
 //
 //
 // If you have the PEAR::DB library installed globally, you
@@ -116,32 +122,25 @@ session_register('SeeAuthorInfo');
 //
 //session_register('ShowPCPapers');
 
-if (!IsSet($_SESSION['Me']))
+if (!isset($_SESSION['Me']))
     $_SESSION['Me'] = new Contact;
 $_SESSION['Me']->validated = 0;
 
-if (!IsSet($_SESSION['WhichTaskView'])) {
-  $_SESSION['WhichTaskView'] = 'All';
-}
+if (!IsSet($_SESSION['WhichTaskView']))
+    $_SESSION['WhichTaskView'] = 'All';
 
-if (!IsSet($_SESSION['SeeReviewerInfo'])) {
-  $_SESSION['SeeReviewerInfo']=0;
-}
-if (!IsSet($_SESSION['SeeUnfinishedReviews'])) {
-  $_SESSION['SeeUnfinishedReviews']=0;
-}
-if (!IsSet($_SESSION['SeeAuthorInfo'])) {
-  $_SESSION['SeeAuthorInfo']=0;
-}
-if (!IsSet($_SESSION['ToldYouAboutNetscape47'])) {
-  $_SESSION['ToldYouAboutNetscape47']	= 0;
-}
-if (!IsSet($_SESSION['AskedYouToUpdateContactInfo'])) {
-  $_SESSION['AskedYouToUpdateContactInfo']	= 0;
-}
+if (!IsSet($_SESSION['SeeReviewerInfo']))
+    $_SESSION['SeeReviewerInfo'] = 0;
+if (!IsSet($_SESSION['SeeUnfinishedReviews']))
+    $_SESSION['SeeUnfinishedReviews'] = 0;
+if (!IsSet($_SESSION['SeeAuthorInfo']))
+    $_SESSION['SeeAuthorInfo'] = 0;
+if (!IsSet($_SESSION['ToldYouAboutNetscape47']))
+    $_SESSION['ToldYouAboutNetscape47'] = 0;
+if (!IsSet($_SESSION['AskedYouToUpdateContactInfo']))
+    $_SESSION['AskedYouToUpdateContactInfo'] = 0;
 
-if (!IsSet($_SESSION['ShowChairGrades'])) {
-  $_SESSION['ShowChairGrades']	= 0;
-}
+if (!IsSet($_SESSION['ShowChairGrades']))
+    $_SESSION['ShowChairGrades'] = 0;
 
 ?>

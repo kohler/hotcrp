@@ -5,74 +5,77 @@
 // Assumes global variable DB
 //
 class Conference {
-  var $connected;
-  var $setupPhase;
-  var $sessionName; // name of this session, security
-  var $shortName;
-  var $longName;
-  var $theme;
-  var $paperSite;
-  var $conferenceSite;
-  var $paperPrefix;
-  var $contactName;
-  var $contactEmail;
-  var $emailFrom;
-  var $allowEmail;
-  //
-  // Paper formats
-  //
-  var $allowPDF;
-  var $allowPS;
+    
+    var $connected;
+    var $setupPhase;
+    var $sessionName; // name of this session, security
+    var $shortName;
+    var $longName;
+    var $theme;
+    var $blindSubmission;
+    var $paperSite;
+    var $conferenceSite;
+    var $downloadPrefix;
+    var $contactName;
+    var $contactEmail;
+    var $emailFrom;
+    var $allowEmail;
+    //
+    // Paper formats
+    //
+    var $allowPDF;
+    var $allowPS;
 
-  var $allowReviewerPreferences;
+    var $allowReviewerPreferences;
   
-  //
-  // Database specific stuff
-  //
-  var $dsn;
-  var $DB;
+    //
+    // Database specific stuff
+    //
+    var $dsn;
+    var $DB;
 
-  //
-  // Various optional deadlines
-  //
-  var $submissionDeadline;
-  var $reviewDeadline;
+    //
+    // Various optional deadlines
+    //
+    var $submissionDeadline;
+    var $reviewDeadline;
+    
+    var $startTime;
+    var $endTime;
 
-  var $startTime;
-  var $endTime;
+    var $saveMessages;
+    var $headerPrinted;
 
-  var $saveMessages;
-  var $headerPrinted;
+    //
+    // Useful colors
+    //
+    var $bgOne = "#9999cc"; // blue
+    var $bgTwo = "#669999"; // green
+    var $bgInfo = "#ffcccc" ; // gred - uses in informational messages
+    var $contrastColorOne = "#eeeeee";
+    var $contrastColorTwo = "#cccccc";
 
-  //
-  // Useful colors
-  //
-  var $bgOne = "#9999cc"; // blue
-  var $bgTwo = "#669999"; // green
-  var $bgInfo = "#ffcccc" ; // gred - uses in informational messages
-  var $contrastColorOne = "#eeeeee";
-  var $contrastColorTwo = "#cccccc";
+    var $taskHeaderColor = "#006633";
+    var $headerBg = "#eeeeff";
 
-  var $taskHeaderColor = "#006633";
-  var $headerBg = "#eeeeff";
+    var $infoColor = "yellow"; // blue
+    var $confirmColor = "lime"; // green
+    var $errorColor = "fuchsia"; // should be pink!
+    var $warnColor = "lightBlue"; // should be pink!
 
-  var $infoColor = "yellow"; // blue
-  var $confirmColor = "lime"; // green
-  var $errorColor = "fuchsia"; // should be pink!
-  var $warnColor = "lightBlue"; // should be pink!
-
-  function Conference($dbUser, $dbPassword, $dbHost, $dbName) {
-      $this->dbHost = $dbHost;
-      $this->dbUser = $dbUser;
-      $this->dbPassword = $dbPassword;
-      $this->dbName = $dbName;
-      $this->dsn = "mysql://" . ($this->dbUser) . ":" . ($this->dbPassword) . "@" . ($this->dbHost) . "/" . ($this->dbName) ;
-      $this->connected = 0;
-      $this->startTime = array();
-      $this->endTime = array();
-      $this->saveMessages = 1;
-      $this->headerPrinted = 0;
-  }
+    function Conference($dbUser, $dbPassword, $dbHost, $dbName) {
+	$this->dbHost = $dbHost;
+	$this->dbUser = $dbUser;
+	$this->dbPassword = $dbPassword;
+	$this->dbName = $dbName;
+	$this->dsn = "mysql://" . ($this->dbUser) . ":" . ($this->dbPassword) . "@" . ($this->dbHost) . "/" . ($this->dbName) ;
+	$this->connected = 0;
+	$this->startTime = array();
+	$this->endTime = array();
+	$this->saveMessages = 1;
+	$this->headerPrinted = 0;
+	$this->blindSubmission = 1;
+    }
 
   function dump()
     {
@@ -86,7 +89,7 @@ class Conference {
       //      echo "theme is " . $this -> theme . " <br>";
       echo "paperSite is " . $this -> paperSite . " <br>";
       echo "conferenceSite is " . $this -> conferenceSite . " <br>";
-      echo "paperPrefix is " . $this -> paperPrefix . " <br>";
+      echo "downloadPrefix is " . $this->downloadPrefix . " <br>";
       echo "contactName is " . $this -> contactName . " <br>";
       echo "contactEmail is " . $this -> contactEmail . " <br>";
       echo "emailFrom is " . $this -> emailFrom . " <br>";
@@ -188,7 +191,7 @@ class Conference {
 	  $this->connect();
       $result = $this->DB->query($query);
       if (DB::isError($result)) {
-	  $this->errorMsg($this->dbErrorText($result, $while, $suggestRetry));
+	  $this->errorMsg($this->dbErrorText($result, $while . " (" . htmlspecialchars($query) . ")", $suggestRetry));
 	  $OK = 0;
       }
       return $result;
@@ -262,63 +265,6 @@ class Conference {
 	return 0;
   }
 
-  //
-  // Some paper queries (about paperId's)
-  //
-  function reviewablePaper($paperId)
-    {
-      $result = $this->q("SELECT paperId FROM Paper WHERE "
-			 . " paperId='$paperId' AND withdrawn=0");
-
-      if ( ! $result || $result -> numRows() != 1) {
-	return 0;
-      } else {
-	return 1;
-      }
-    }
-
-  //
-  // Is there a request for contactId to review the specified paper?
-  //
-  function reviewRequestFor($paperId, $contactId)
-    {
-      $result = $this->q("SELECT reviewRequestId FROM ReviewRequest "
-			 . "WHERE paperId='$paperId' AND asked='$contactId'");
-      if ( $result ) {
-	 $num=  $result -> numRows();
-	if ($num > 0 ) {
-	  return 1;	
-	} else {
-	  return 0;
-	}
-      } else {
-	return 0;
-      }
-    }
-
-  function primaryReviewerFor($paperId, $contactId)
-    {
-      $result = $this->q("SELECT primaryReviewerId FROM PrimaryReviewer "
-			 . " WHERE paperId='$paperId' AND reviewer='$contactId'");
-      if ( $result && $result -> numRows() >= 1) {
-	return 1;
-      } else {
-	return 0;
-      }
-    }
-
-  function secondaryReviewerFor($paperId, $contactId)
-    {
-      $result = $this->q("SELECT secondaryReviewerId FROM SecondaryReviewer "
-			 . " WHERE paperId='$paperId' AND reviewer='$contactId'");
-      if ( $result && $result -> numRows() >= 1) {
-	return 1;
-      } else {
-	return 0;
-      }
-    }
-
-
   function listMissingReviews($contactId)
     {
       //
@@ -346,7 +292,7 @@ class Conference {
 	  $paperId=$row['paperId'];
 	  $q2="SELECT finalized, paperId FROM PaperReview "
 	    . " WHERE paperId=$paperId "
-	    . " AND reviewer=$contactId "
+	    . " AND contactId=$contactId "
 	    . " AND finalized=1 ";
 	  $r2 = $this->qe($q2);
 	  if (!DB::isError($r2)) {
@@ -368,9 +314,8 @@ class Conference {
       // First, check to see if I have primary requests...
       //
       $q =  " SELECT Paper.paperId  "
-	. "  FROM PrimaryReviewer,Paper "
-	. "  WHERE PrimaryReviewer.reviewer=$contactId "
-	. " AND PrimaryReviewer.paperId=Paper.paperId  AND Paper.withdrawn = 0 "
+	. "  FROM PrimaryReviewer join Paper using (paperId) "
+	. "  WHERE PrimaryReviewer.contactId=$contactId AND Paper.withdrawn <= 0 "
 	. "  ORDER BY paperId ";
 
       $result = $this->qe($q);
@@ -381,7 +326,7 @@ class Conference {
 	  $paperId=$row['paperId'];
 	  $q2="SELECT finalized FROM PaperReview "
 	    . " WHERE paperId=$paperId "
-	    . " AND reviewer=$contactId "
+	    . " AND contactId=$contactId "
 	    . " AND finalized=1 ";
 	  $r2 = $this->qe($q2);
 	  if (DB::isError($r2)) {
@@ -447,38 +392,52 @@ class Conference {
 
     }
 
-  function validPeriod($name) {
-      $now = time();
-      if (!isset($this->startTime[$name]) || $this->startTime[$name] >= $now)
-	  return -1;
-      else {
-	  $t = &$this->endTime[$name];
-	  return !isset($t) || $t <= 0 || $now <= $t;
-      }
-  }
+    function validPeriod($name) {
+	$now = time();
+	if (!isset($this->startTime[$name]) || $this->startTime[$name] >= $now)
+	    return -1;
+	else {
+	    $t = &$this->endTime[$name];
+	    return !isset($t) || $t <= 0 || $now <= $t;
+	}
+    }
+
+    function canStartPaper() {
+	return $this->validPeriod('startPaperSubmission');
+    }
+    function canUpdatePaper() {
+	return $this->validPeriod('updatePaperSubmission');
+    }
+    function canFinalizePaper() {
+	return $this->validPeriod('finalizePaperSubmission');
+    }
+    function canAuthorViewReviews() {
+	return $this->validPeriod('authorViewReviews');
+    }
+    function canAuthorViewDecision() {
+	return $this->validPeriod('authorViewDecision');
+    }
+    function canPCReviewAnyPaper() {
+	return $this->validPeriod('PCReviewAnyPaper');
+    }
+    function canViewAuthors($me, $prow) {
+	$amAuthor = ($prow->myMinRole == ROLE_AUTHOR);
+	if ($amAuthor || !$this->blindSubmission)
+	    return 1;
+	if (paperAccepted($prow) && $this->validPeriod('EndOfTheMeeting'))
+	    return 1;
+	if ($me->amAssistant() && $me->chairViewAuthors)
+	    return 1;
+	return 0;
+    }
+
   
-  function canStartPaper() {
-      return $this->validPeriod('startPaperSubmission');
-  }
-  function canUpdatePaper() {
-      return $this->validPeriod('updatePaperSubmission');
-  }
-  function canFinalizePaper() {
-      return $this->validPeriod('finalizePaperSubmission');
-  }
-  
-  
-  //
-  // Is this particular event/deadline defined?
-  //
-  function validDeadline($what) {
-      if (IsSet($this->startTime[$what]) &&
-	  IsSet($this->endTime[$what]) ) {
-	  return 1;
-      } else {
-	  return 0;
-      }
-  }
+    //
+    // Is this particular event/deadline defined?
+    //
+    function validDeadline($what) {
+	return isset($this->startTime[$what]) && isset($this->endTime[$what]);
+    }
 
   //
   // 'default' is returned in the time is not set
@@ -521,122 +480,149 @@ class Conference {
     }
 
   
-  //
-  // Paper storage
-  //
+    //
+    // Paper storage
+    //
 
-  function storePaper($uploadId, $paperId) {
-      if ($uploadId && fileUploaded($_FILES[$uploadId]))
-	  $filename = $_FILES[$uploadId]['tmp_name'];
-      else
-	  return 0;
+    function storePaper($uploadId, $paperId) {
+	if ($uploadId && fileUploaded($_FILES[$uploadId]))
+	    $filename = $_FILES[$uploadId]['tmp_name'];
+	else
+	    return 0;
 
-      if (isset($filename)) {
-	  $fd = @fopen($filename, 'rb');
-	  if (!$fd)
-	      return 0;
+	if (isset($filename)) {
+	    $fd = @fopen($filename, 'rb');
+	    if (!$fd)
+		return 0;
 
-	  //$fstat = fstat($fd);
-	  
-	  //$size = $uploadedFileName;
-	  //$maxsize = get_cfg_var("upload_max_filesize");
-	  //if ($size > $maxsize) {
-	  //$this->errorMsg("Your file is $size bytes, which is larger than the maximum "
-	  //. "upload size of $maxsize -- double check your file. "
-	  //. "If you need this limit increased, contact $this->contactEmail");
-	  //}
+	    $contents = fread($fd, filesize($filename));
+	    fclose($fd);
 
-	  $contents = fread($fd, filesize($filename));
-	  fclose($fd);
+	    // Check if paper is postscript or PDF, only kinds allowed.
+	    // We ignore the mimetype since MacOS browsers get this wrong
+	    if ($this->allowPDF && strncasecmp("%PDF-", $contents, 5) == 0)
+		$mimetype = "application/pdf";
+	    else if ($this->allowPS && strncasecmp("%!PS-", $contents, 5) == 0)
+		$mimetype = "application/postscript";
+	    else {
+		$mimetype = "application/octet-stream";
+		if (isset($_FILES[$uploadid]["type"]))
+		    $mimetype = $_FILES[$uploadid]["type"];
+		$message = "You appear to be submitting a file that's not in a valid format for this conference.  ";
+		if ($this->allowPDF && $this->allowPS)
+		    $message .= "Valid formats are PDF and PostScript.  ";
+		else if ($this->allowPDF)
+		    $message .= "PDF is the only valid format.  ";
+		else if ($this->allowPS)
+		    $message .= "PostScript is the only valid format.  ";
+		else
+		    $message .= "Internal error: there are no valid formats.  ";
+		$message .= "You tried to upload a file with MIME type '" . htmlentities($mimetype) . "'; ";
+		$message .= "its first 10 bytes are " . htmlspecialchars(substr($contents, 0, 5)) . ".<br/><br/>Please check the file contents; if you think this message is in error, contact the site administrator.";
+		return $this->errorMsg($message);
+	    }
+	}
 
-	  // Check if paper is postscript or PDF, only kinds allowed.
-	  // We ignore the mimetype since MacOS browsers get this wrong
-	  if ($this->allowPDF && strncasecmp("%PDF-", $contents, 5) == 0)
-	      $mimetype = "application/pdf";
-	  else if ($this->allowPS && strncasecmp("%!PS-", $contents, 5) == 0)
-	      $mimetype = "application/postscript";
-	  else {
-	      $mimetype = "application/octet-stream";
-	      if (isset($_FILES[$uploadid]["type"]))
-		  $mimetype = $_FILES[$uploadid]["type"];
-	      $message = "You appear to be submitting a file that's not in a valid format for this conference.  ";
-	      if ($this->allowPDF && $this->allowPS)
-		  $message .= "Valid formats are PDF and PostScript.  ";
-	      else if ($this->allowPDF)
-		  $message .= "PDF is the only valid format.  ";
-	      else if ($this->allowPS)
-		  $message .= "PostScript is the only valid format.  ";
-	      else
-		  $message .= "Internal error: there are no valid formats.  ";
-	      $message .= "You tried to upload a file with MIME type '" . htmlentities($mimetype) . "'; ";
-	      $message .= "its first 10 bytes are " . htmlspecialchars(substr($contents, 0, 5)) . ".<br/><br/>Please check the file contents; if you think this message is in error, contact the site administrator.";
-	      return $this->errorMsg($message);
-	  }
-      }
+	$result = $this->qe("lock tables Paper write, PaperStorage write", "while locking tables");
+	if (DB::isError($result))
+	    return $result;
 
-      $result = $this->qe("lock tables Paper write, PaperStorage write", "while locking tables");
-      if (DB::isError($result))
-	  return $result;
+	if (!isset($paperStorageId)) {
+	    $result = $this->qe("insert into PaperStorage set paperId=$paperId, timestamp=" . time() . ", mimetype='" . sqlq($mimetype) . "', paper='" . sqlq(substr($contents, 0, 400000)) . "'", "while storing paper in database");
+	    if (!DB::isError($result))
+		$result = $this->qe("select last_insert_id()", "while storing paper in database");
+	    if (!DB::isError($result)) {
+		$row = $result->fetchRow();
+		$paperStorageId = $row[0];
+		for ($pos = 400000; $pos < strlen($contents) && !DB::isError($result); $pos += 400000)
+		    $result = $this->qe("update PaperStorage set paper=concat(paper,'" . sqlq(substr($contents, $pos, 400000)) . "') where paperStorageId=$paperStorageId", "while storing paper in database");
+	    }
+	}
+	
+	if (!DB::isError($result))
+	    $result = $this->qe("update Paper set paperStorageId=$paperStorageId where paperId=$paperId and withdrawn<=0 and acknowledged<=0", "while storing paper in database");
 
-      if (!isset($paperStorageId)) {
-	  $result = $this->qe("insert into PaperStorage set paperId=$paperId, timestamp=" . time() . ", mimetype='" . sqlq($mimetype) . "', paper='" . sqlq(substr($contents, 0, 400000)) . "'", "while storing paper in database");
-	  if (!DB::isError($result))
-	      $result = $this->qe("select last_insert_id()", "while storing paper in database");
-	  if (!DB::isError($result)) {
-	      $row = $result->fetchRow();
-	      $paperStorageId = $row[0];
-	      for ($pos = 400000; $pos < strlen($contents) && !DB::isError($result); $pos += 400000)
-		  $result = $this->qe("update PaperStorage set paper=concat(paper,'" . sqlq(substr($contents, $pos, 400000)) . "') where paperStorageId=$paperStorageId", "while storing paper in database");
-	  }
-      }
+	$this->qe("unlock tables");
 
-      if (!DB::isError($result))
-	  $result = $this->qe("update Paper set paperStorageId=$paperStorageId where paperId=$paperId and withdrawn<=0 and acknowledged<=0", "while storing paper in database");
+	return (DB::isError($result) ? $result : strlen($contents));
+    }
 
-      $this->qe("unlock tables");
-
-      return (DB::isError($result) ? $result : strlen($contents));
-  }
-
-  function downloadPaper($paperId, $saveit) {
-      $result = $this->q("select mimetype, paper, withdrawn, PaperStorage.paperStorageId
+    function downloadPaper($paperId, $saveit) {
+	$result = $this->q("select mimetype, paper, withdrawn, PaperStorage.paperStorageId
 	from Paper left join PaperStorage using (paperStorageId)
 	where Paper.paperId=$paperId");
-      if (DB::isError($result)) {
-	  $this->log("Error downloading #$paperId for review" . $result->getMessage(), $_SESSION["Me"]);
-	  return $result;
-      } else if ($result->numRows() == 0)
-	  return new PEAR_Error("There is no paper #$paperId.");
-      else {
-	  $row = $result->fetchRow();
-	  $mimetype = $row[0];
-	  $content = $row[1];
-	  $withdrawn = $row[2];
-	  $length = strlen($content);
-	  if ($withdrawn > 0)
-	      return new PEAR_Error("Paper #$paperId has been withdrawn.");
-	  else if ($row[3] == 1)
-	      return new PEAR_Error("Paper #$paperId has not been uploaded yet.");
-	  else if ($length == 0)
-	      return new PEAR_Error("Paper #$paperId appears to be empty.");
-	  else {
-	      //
-	      // Send out headers
-	      //
-	      header("Content-Description: PHP3 Generated Data");
-	      $ext = $this->getFileExtension($mimetype);
-	      $name = $this->paperPrefix . "-$paperId" . $ext;
-	      header("Content-disposition: " . ($saveit ? "attachment" : "inline") . "; filename=$name");
-	      header("Content-Type: $mimetype");
-	      header("Content-length: $length"); 
-	      //
-	      // Send out paper
-	      //
-	      print $content;
-	      return 1;
-	  }
-      }
-  }
+	if (DB::isError($result)) {
+	    $this->log("Error downloading #$paperId for review" . $result->getMessage(), $_SESSION["Me"]);
+	    return $result;
+	} else if ($result->numRows() == 0)
+	    return new PEAR_Error("There is no paper #$paperId.");
+	else {
+	    $row = $result->fetchRow();
+	    $mimetype = $row[0];
+	    $content = $row[1];
+	    $withdrawn = $row[2];
+	    $length = strlen($content);
+	    if ($withdrawn > 0)
+		return new PEAR_Error("Paper #$paperId has been withdrawn.");
+	    else if ($row[3] == 1)
+		return new PEAR_Error("Paper #$paperId has not been uploaded yet.");
+	    else if ($length == 0)
+		return new PEAR_Error("Paper #$paperId appears to be empty.");
+	    else {
+		//
+		// Send out headers
+		//
+		header("Content-Description: PHP Generated Data");
+		$ext = $this->getFileExtension($mimetype);
+		$name = $this->downloadPrefix . "paper$paperId" . $ext;
+		header("Content-Disposition: " . ($saveit ? "attachment" : "inline") . "; filename=$name");
+		header("Content-Type: $mimetype");
+		header("Content-Length: $length"); 
+		//
+		// Send out paper
+		//
+		print $content;
+		return 1;
+	    }
+	}
+    }
+
+    function paperQuery($contactId, $info = array()) {
+	$pq = "select Paper.*,
+		length(PaperStorage.paper) as size, mimetype, timestamp,
+		count(Roles.role) as conflictCount,
+		min(Roles.role) as myMinRole,
+		count(PaperReview.finalized) as reviewCount,
+		count(PaperReview.paperId) as startedReviewCount";
+	if (!isset($info['author']))
+	    $pq .= ",
+		MyReviewRequest.type as myReviewType,
+		MyReview.finalized as myReviewFinalized";
+	$pq .= "
+		from Paper
+		left join PaperStorage using (paperStorageId)\n";
+	if (isset($info['author']))
+	    $pq .= "		join Roles on (Roles.paperId=Paper.paperId and Roles.role=".ROLE_AUTHOR." and Roles.contactId=$contactId)\n";
+	else
+	    $pq .= "		left join Roles on (Roles.paperId=Paper.paperId and Roles.role>=".ROLE_AUTHOR." and Roles.role<=".ROLE_CONFLICT." and Roles.contactId=$contactId)\n";
+	$pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
+	if (!isset($info['author'])) {
+	    $jtype = (isset($info['reviewer']) ? "join" : "left join");
+	    $pq .= "		$jtype ReviewRequest as MyReviewRequest on (MyReviewRequest.paperId=Paper.paperId and MyReviewRequest.contactId=$contactId)
+		left join PaperReview as MyReview on (MyReview.paperId=Paper.paperId and MyReview.contactId=$contactId)\n";
+	}
+	if (isset($info['paperId']) && $info['paperId'] > 0)
+	    $where[] = "Paper.paperId=" . $info['paperId'];
+	if (isset($info['finalized'])) {
+	    $where[] = "acknowledged>0";
+	    $where[] = "withdrawn<=0";
+	}
+	if (isset($where))
+	    $pq .= "		where " . join(" and ", $where) . "\n";
+	$pq .= "		group by Roles.paperId, PaperReview.paperId\n";
+	$pq .= "		order by Paper.paperId\n";
+	return $pq;
+    }
 
 
   //
@@ -683,7 +669,7 @@ class Conference {
       }
   }
   
-  function header($title, $class = '') {
+  function header($title, $id = '') {
       global $ConfSiteBase;
       $this->header_head($title);
       echo "</head><body>\n";
@@ -706,8 +692,8 @@ class Conference {
       //$this->textButton("Go To $this->shortName Submissions", $ConfSiteBase . "index.php");
       print "  </div>\n";
 
-      $class = ($class ? " class='$class'" : "");
-      print "  <div class='clear'></div>\n</div>\n<div id='body'$class>\n";
+      $id = ($id ? " id='$id'" : "");
+      print "  <div class='clear'></div>\n</div>\n<div class='body'$id>\n";
 
       if (isset($_SESSION["msgs"])) {
 	  echo $_SESSION["msgs"];
@@ -868,9 +854,9 @@ class Conference {
   function makeDownloadPath($paperId, &$mimetype) {
       //$ext = $this->getFileExtension($mimetype);
       //$path = $this->paperSite . "/Download/GetPaper/" . 
-      //   $this->paperPrefix . "-$paperId." . $ext;
+      //   $this->downloadPrefix . "paper$paperId." . $ext;
       global $ConfSiteBase;
-      return $ConfSiteBase . "Download/GetPaper/" . $this->paperPrefix . "-$paperId" . $this->getFileExtension($mimetype);
+      return $ConfSiteBase . "Download/GetPaper/" . $this->downloadPrefix . "paper$paperId" . $this->getFileExtension($mimetype);
   }
 
   
@@ -996,8 +982,6 @@ class Conference {
 		      'PaperConflict',
 		      'PaperTopic',
 		      'ReviewRequest',
-		      'PrimaryReviewer',
-		      'SecondaryReviewer',
 		      'PaperReview',
 		      'PaperReviewerPreference'
 		      );
@@ -1071,163 +1055,167 @@ class Conference {
     }
 
   
-  /////////////////////////////////////////////////////////////////////////////
-  // output summary of review status
-  /////////////////////////////////////////////////////////////////////////////
-  function reviewerSummary($pcId, $showConflicts=0, $showTopics=0, $extra="")
-    {
+    ///////////////////////////////////////////////////////////////////////////
+    // output summary of review status
+    ///////////////////////////////////////////////////////////////////////////
 
-      $query = "SELECT ContactInfo.firstName, "
-	. " ContactInfo.lastName, ContactInfo.email "
-	. " FROM ContactInfo "
-	. " WHERE ContactInfo.contactId=$pcId ";
-      ;
-
-      $pcresult = $this -> qe($query);
-      if (!DB::isError($pcresult)) {
-	$row=$pcresult->fetchRow(DB_FETCHMODE_ASSOC);
-
-	$first = $row['firstName'];
-	$last = $row['lastName'];
-	$email = $row['email'];
-
-	$primaries = $this->countEntries("PrimaryReviewer.reviewer",
-					 $pcId, "PrimaryReviewer");
-
-	$secondaries = $this->countEntries("SecondaryReviewer.reviewer",
-					   $pcId, "SecondaryReviewer");
-
-	$reviews = $this->countEntries("PaperReview.reviewer",
-				       $pcId, "PaperReview");
-	$finished = $this->countEntries(
-					"PaperReview.reviewer",
-					$pcId,
-					"PaperReview",
-					" AND PaperReview.finalized=1 ");
-
-	$asked = $this->countEntries("ReviewRequest.requestedBy",
-				     $pcId, "ReviewRequest");
-
-	$graded = $this->countEntries("PaperGrade.contactId",
-				     $pcId, "PaperGrade");
-
-	$askedReviews = $this->retCount("SELECT COUNT(PaperReview.reviewer) "
-				       . " AS foo "
-				       . " FROM PaperReview, ReviewRequest "
-				       . " WHERE ReviewRequest.requestedBy=$pcId "
-				       . " AND ReviewRequest.asked=PaperReview.reviewer "
-				       . " AND ReviewRequest.paperId=PaperReview.paperId "
-		     );
-
-	$askedFinished = $this->retCount("SELECT COUNT(ReviewRequest.requestedBy) "
-					 . " AS foo "
-					 . " FROM PaperReview, ReviewRequest "
-					 . " WHERE ReviewRequest.requestedBy=$pcId "
-					 . " AND PaperReview.reviewer=ReviewRequest.asked "
-					 . " AND ReviewRequest.paperId=PaperReview.paperId "
-					 . " AND PaperReview.finalized=1"
-					 );
-
-	print "<table width=75% align=center border=1>\n";
-	print "<tr> <td>\n";
-	print "<table width=100% align=center border=0>\n";
-	print "<tr  bgcolor=$this->contrastColorOne> <th> $first $last ( ";
-	print "<a href=\"mailto:$email\"> $email </a> ) </th> </tr>";
-
-	print "<tr> <td>";
-	print "Assigned $primaries primary reviews ";
-	print "and $secondaries secondary reviews<br>";
-	print "Started $reviews reviews, finished $finished <br>";
-	print "Asked for $asked other reviews, ";
-	print " resulting in $askedReviews reviews being started ";
-	print " and $askedFinished being finished  <br>";
-	print "Graded $graded reviews<br>";
-	if (IsSet($extra) &&  $extra != "") {
-	  print "<br> $extra ";
+    function countReviewRequests($contactId) {
+	$result = $this->qe("select type, count(contactId)
+		from ReviewRequest where contactId=$contactId
+		group by type order by null", "while counting review requests");
+	if (DB::isError($result))
+	    $rreq = array(REVIEW_PRIMARY => '0?', REVIEW_SECONDARY => '0?', REVIEW_REQUESTED => '0?');
+	else {
+	    $rreq = array(REVIEW_PRIMARY => 0, REVIEW_SECONDARY => 0, REVIEW_REQUESTED => 0);
+	    while ($row = $result->fetchRow())
+		$rreq[$row[0]] += $row[1];
 	}
-	print "</td> </tr>";
+	return $rreq;
+    }
+  
+    function reviewerSummary($pcId, $showConflicts=0, $showTopics=0, $extra="") {
+	$query = "SELECT ContactInfo.firstName, "
+	    . " ContactInfo.lastName, ContactInfo.email "
+	    . " FROM ContactInfo "
+	    . " WHERE ContactInfo.contactId=$pcId ";
+	;
 
-	if ($showConflicts) {
-	  $query = "SELECT Paper.paperId, Paper.title "
-	    . " FROM Paper, PaperConflict "
-	    . " WHERE PaperConflict.paperId=Paper.paperId "
-	    . " AND PaperConflict.authorId=$pcId "
-	    . " ORDER by Paper.paperId ";
-	  $r=$this->qe($query);
+	$pcresult = $this -> qe($query);
+	if (!DB::isError($pcresult)) {
+	    $row=$pcresult->fetchRow(DB_FETCHMODE_ASSOC);
 
-	  if (!DB::isError($r)) {
-	    $conflicts = $r -> numRows();
+	    $first = $row['firstName'];
+	    $last = $row['lastName'];
+	    $email = $row['email'];
+
+	    $rreq = $this->countReviewRequests($pcId);
+	    $primaries = $rreq[REVIEW_PRIMARY];
+	    $secondaries = $rreq[REVIEW_SECONDARY];
+
+	    $reviews = $this->countEntries("PaperReview.contactId",
+					   $pcId, "PaperReview");
+	    $finished = $this->countEntries(
+					    "PaperReview.contactId",
+					    $pcId,
+					    "PaperReview",
+					    " AND PaperReview.finalized=1 ");
+
+	    $asked = $this->countEntries("ReviewRequest.requestedBy",
+					 $pcId, "ReviewRequest");
+
+	    $graded = $this->countEntries("PaperGrade.contactId",
+					  $pcId, "PaperGrade");
+
+	    $askedReviews = $this->retCount(
+		"select count(PaperReview.contactId) as foo
+		from PaperReview join ReviewRequest using (contactId, paperId)
+		where ReviewRequest.requestedBy=$pcId");
+
+	    $askedFinished = $this->retCount(
+		"select count(ReviewRequest.requestedBy) as foo
+		from PaperReview join ReviewRequest using (contactId, paperId)
+		where ReviewRequest.requestedBy=$pcId");
+
+	    print "<table width=75% align=center border=1>\n";
+	    print "<tr> <td>\n";
+	    print "<table width=100% align=center border=0>\n";
+	    print "<tr  bgcolor=$this->contrastColorOne> <th> $first $last ( ";
+	    print "<a href=\"mailto:$email\"> $email </a> ) </th> </tr>";
+	    
 	    print "<tr> <td>";
-	    if ( $conflicts < 1) {
-	      print "<br> This program committee member has no conflicts ";
-	    } else {
-	      print "<br> This program committee member has the following conflicts";
-	      print "<table>\n";
-	      while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
-		$paperId=$row['paperId'];
-		$title=$row['title'];
-		print "<tr> <td> $paperId </td> <td> $title </td> </tr>\n";
-	      }
-	      print "</table>\n";
+	    print "Assigned $primaries primary reviews ";
+	    print "and $secondaries secondary reviews<br>";
+	    print "Started $reviews reviews, finished $finished <br>";
+	    print "Asked for $asked other reviews, ";
+	    print " resulting in $askedReviews reviews being started ";
+	    print " and $askedFinished being finished  <br>";
+	    print "Graded $graded reviews<br>";
+	    if (IsSet($extra) &&  $extra != "") {
+		print "<br> $extra ";
 	    }
 	    print "</td> </tr>";
-	  }
+
+	    if ($showConflicts) {
+		$query = "SELECT Paper.paperId, Paper.title "
+		    . " FROM Paper, PaperConflict "
+		    . " WHERE PaperConflict.paperId=Paper.paperId "
+		    . " AND PaperConflict.authorId=$pcId "
+		    . " ORDER by Paper.paperId ";
+		$r=$this->qe($query);
+
+		if (!DB::isError($r)) {
+		    $conflicts = $r -> numRows();
+		    print "<tr> <td>";
+		    if ( $conflicts < 1) {
+			print "<br> This program committee member has no conflicts ";
+		    } else {
+			print "<br> This program committee member has the following conflicts";
+			print "<table>\n";
+			while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
+			    $paperId=$row['paperId'];
+			    $title=$row['title'];
+			    print "<tr> <td> $paperId </td> <td> $title </td> </tr>\n";
+			}
+			print "</table>\n";
+		    }
+		    print "</td> </tr>";
+		}
+	    }
+
+	    if ( $showTopics ) {
+		$query = "SELECT topicName from TopicArea, TopicInterest "
+		    . " WHERE TopicInterest.contactId = $pcId "
+		    . " AND TopicInterest.interest = 2 "
+		    . " AND TopicArea.topicId=TopicInterest.topicId ";
+		$r=$this->qe($query);
+		if (!DB::isError($r) && $r -> numRows() > 0) {
+		    print "<tr> <td>";
+		    print "They have high interest in ";
+		    print "<ul>";
+		    while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
+			print "<li> " . $row[topicName] . "</li>";
+		    }
+		    print "</ul>";
+		    print "</td> </tr>";
+		}
+		
+		$query = "SELECT topicName from TopicArea, TopicInterest "
+		    . " WHERE TopicInterest.contactId = $pcId "
+		    . " AND TopicInterest.interest = 1 "
+		    . " AND TopicArea.topicId=TopicInterest.topicId ";
+		$r=$this->qe($query);
+		if (!DB::isError($r) && $r -> numRows() > 0) {
+		    print "<tr> <td>";
+		    print "They have medium interest in ";
+		    print "<ul>";
+		    while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
+			print "<li> " . $row[topicName] . "</li>";
+		    }
+		    print "</ul>";
+		    print "</td> </tr>";
+		}
+
+		$query = "SELECT topicName from TopicArea, TopicInterest "
+		    . " WHERE TopicInterest.contactId = $pcId "
+		    . " AND TopicInterest.interest = 0 "
+		    . " AND TopicArea.topicId=TopicInterest.topicId ";
+		$r=$this->qe($query);
+		if (!DB::isError($r) && $r -> numRows() > 0) {
+		    print "<tr> <td>";
+		    print "They have NO interest in ";
+		    print "<ul>";
+		    while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
+			print "<li> " . $row[topicName] . "</li>";
+		    }
+		    print "</ul>";
+		    print "</td> </tr>";
+		}
+	    }
+
+	    print "</table>";
+	    print "</td> </tr>";
+	    print "</table>";
 	}
-
-	if ( $showTopics ) {
-	  $query = "SELECT topicName from TopicArea, TopicInterest "
-	    . " WHERE TopicInterest.contactId = $pcId "
-	    . " AND TopicInterest.interest = 2 "
-	    . " AND TopicArea.topicId=TopicInterest.topicId ";
-	  $r=$this->qe($query);
-	  if (!DB::isError($r) && $r -> numRows() > 0) {
-	    print "<tr> <td>";
-	    print "They have high interest in ";
-	    print "<ul>";
-	    while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
-	      print "<li> " . $row[topicName] . "</li>";
-	    }
-	    print "</ul>";
-	    print "</td> </tr>";
-	  }
-
-	  $query = "SELECT topicName from TopicArea, TopicInterest "
-	    . " WHERE TopicInterest.contactId = $pcId "
-	    . " AND TopicInterest.interest = 1 "
-	    . " AND TopicArea.topicId=TopicInterest.topicId ";
-	  $r=$this->qe($query);
-	  if (!DB::isError($r) && $r -> numRows() > 0) {
-	    print "<tr> <td>";
-	    print "They have medium interest in ";
-	    print "<ul>";
-	    while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
-	      print "<li> " . $row[topicName] . "</li>";
-	    }
-	    print "</ul>";
-	    print "</td> </tr>";
-	  }
-
-	  $query = "SELECT topicName from TopicArea, TopicInterest "
-	    . " WHERE TopicInterest.contactId = $pcId "
-	    . " AND TopicInterest.interest = 0 "
-	    . " AND TopicArea.topicId=TopicInterest.topicId ";
-	  $r=$this->qe($query);
-	  if (!DB::isError($r) && $r -> numRows() > 0) {
-	    print "<tr> <td>";
-	    print "They have NO interest in ";
-	    print "<ul>";
-	    while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
-	      print "<li> " . $row[topicName] . "</li>";
-	    }
-	    print "</ul>";
-	    print "</td> </tr>";
-	  }
-	}
-
-	print "</table>";
-	print "</td> </tr>";
-	print "</table>";
-      }
     }
 
   function retCount($query)
@@ -1513,7 +1501,7 @@ class Conference {
    $result = $this->qe("SELECT ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.contactId "
 		       . " FROM ContactInfo, $type" . "Reviewer "
 		       . " WHERE ( $type" . "Reviewer.paperId='$paperId' "
-		       . "         AND $type" . "Reviewer.reviewer=ContactInfo.contactId)");
+		       . "         AND $type" . "Reviewer.contactId=ContactInfo.contactId)");
    if (!DB::isError($result)) {
      while($row = $result->fetchRow() ) {
        print "<a href=\"ChairRemoveReviewer.php?paperId=$paperId&who=$row[3]&reviewType=$type\">" . $row[0]. " " . $row[1] . " (" . $row[2] . "), " . "</a>";

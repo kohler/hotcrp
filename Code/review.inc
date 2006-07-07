@@ -1,5 +1,259 @@
 <?php 
 
+class ReviewForm {
+
+    var $updatedWhen;
+
+    var $fieldOrder;
+    var $shortName;
+    var $fieldName;
+    var $description;
+    var $options;
+
+    const SECTIONS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    function ReviewForm($conf) {
+	$this->updatedWhen = 0;
+	$this->updateFromDB($conf);
+    }
+
+    function updateFromDB($conf) {
+	$this->fieldOrder = array();
+	$this->shortName = array();
+	$this->fieldName = array();
+	$this->description = array();
+	$this->options = array();
+	
+	$result = $conf->qe("select fieldName, shortName, description, sortOrder from ReviewFormField order by sortOrder", "while updating review form information");
+	if (DB::isError($result))
+	    return;
+	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
+	    if ($row->sortOrder >= 0)
+		$this->fieldOrder[] = $row->fieldName;
+	    $this->shortName[$row->fieldName] = $row->shortName;
+	    $this->fieldName[strtolower($row->shortName)] = $row->fieldName;
+	    $this->description[$row->fieldName] = $row->description;
+	}
+	
+	$result = $conf->qe("select fieldName, level, description from ReviewFormOptions order by fieldName, level", "while updating review form information");
+	if (DB::isError($result))
+	    return;
+	while ($row = $result->fetchRow())
+	    $this->options[$row[0]][$row[1]] = $row[2];
+	$updatedWhen = time();
+    }
+
+    function validate($conf) {
+	if (!$this->updatedWhen || $this->updatedWhen <= $conf->startTime('reviewFormUpdate'))
+	    $this->updateFromDB($conf);
+    }
+
+    function formRows($rrow, $useRequest = 0) {
+	global $ReviewFormError;
+	$x = '';
+	foreach ($this->fieldOrder as $field) {
+	    $fval = "";
+	    if ($useRequest && isset($_REQUEST[$field]))
+		$fval = $_REQUEST[$field];
+	    else if ($rrow != null)
+		$fval = $rrow->$field;
+	    
+	    $x .= "<tr class='rev_$field'>\n";
+	    $x .= "  <td class='form_caption";
+	    if (isset($ReviewFormError[$field]))
+		$x .= " error";
+	    $x .= "'>" . htmlspecialchars($this->shortName[$field]) . ":</td>\n";
+	    $x .= "  <td class='form_entry'>";
+	    if (isset($this->options[$field])) {
+		$x .= "<select name='$field'>\n";
+		if ($fval == "" || $fval <= 0 || $fval > count($this->options[$field]))
+		    $x .= "    <option value='0' selected='selected'>(Unknown)</option>\n";
+		foreach ($this->options[$field] as $num => $what) {
+		    $x .= "    <option value='$num'";
+		    if ($num == $fval)
+			$x .= " selected='selected'";
+		    $x .= ">$num. " . htmlspecialchars($what) . "</option>\n";
+		}
+		$x .= "</select>";
+	    } else {
+		$x .= "<textarea name='$field'>" . htmlspecialchars($fval) . "</textarea>";
+	    }
+	    $x .= "</td>\n";
+	    if ($this->description[$field])
+		$x .= "  <td class='form_hint'>" . htmlspecialchars($this->description[$field]) . "</td>\n";
+	    $x .= "</tr>\n";
+	}
+	return $x;
+    }
+
+    function validateRequest($rrow, $final, $conf = null) {
+	global $ReviewFormError, $Conf;
+	$conf = ($conf ? $conf : $Conf);
+	foreach ($this->fieldOrder as $field) {
+	    if (!isset($_REQUEST[$field]) && !$final)
+		continue;
+	    $fval = (isset($_REQUEST[$field]) ? $_REQUEST[$field]
+		     : ($rrow ? $rrow->$field : ""));
+	    if (isset($this->options[$field])) {
+		$max = count($this->options[$field]);
+		if ($fval == "" || $fval == "0") {
+		    if ($final) {
+			$provide[] = $this->shortName[$field];
+			$ReviewFormError[$field] = 1;
+		    }
+		} else if (($fval = cvtint($fval)) <= 0 || $fval > $max) {
+		    $outofrange[] = $this->shortName[$field];
+		    $ReviewFormError[$field] = 1;
+		}
+	    }
+	}
+	if (!isset($provide) && !isset($outofrange))
+	    return 1;
+	if (isset($provide))
+	    $conf->errorMsg("You must choose values for " . textArrayJoin($provide) . " before submitting your review.  Please fix this and submit again.");
+	if (isset($outofrange))
+	    $conf->errorMsg("Bad values for " . textArrayJoin($outofrange) . ".  Please fix this and submit again.");
+	return 0;
+    }
+
+    function saveRequest($paperId, $contactId, $rrow, $final, $conf = null) {
+	global $Conf;
+	$conf = ($conf ? $conf : $Conf);
+	$q = "";
+	foreach ($this->fieldOrder as $field)
+	    if (isset($_REQUEST[$field])) {
+		$fval = $_REQUEST[$field];
+		if (!isset($this->options[$field])) {
+		    $fval = preg_replace("/\\A\\s*(.*?)\\s*\\Z/", '$1', $fval);
+		    if ($fval != "")
+			$fval .= "\n";
+		    $_REQUEST[$field] = $fval;
+		}
+		$q .= "$field='" . sqlq($fval) . "', ";
+	    }
+	if ($final)
+	    $q .= "finalized=1, ";
+	if ($rrow)
+	    $conf->qe("update PaperReview set " . substr($q, 0, -2) . " where paperId=$paperId and contactId=$contactId", "while storing review");
+	else
+	    $conf->qe("insert into PaperReview set paperId=$paperId, contactId=$contactId, " . substr($q, 0, -2), "while storing review");
+    }
+
+    
+    function textForm($paperId, $prow, $rrow, $useRequest = 0, $conf = null) {
+	global $ReviewFormError, $Conf;
+	$conf = ($conf ? $conf : $Conf);
+	$sections = self::SECTIONS;
+
+	$x = "==+== " . $conf->shortName . " Paper Review Form
+==-== DO NOT DELETE, ALTER, OR INTRODUCE LINES BEGINNING WITH '==+=='!
+==-== Fill out lettered sections A through " . $sections[count($this->fieldOrder) - 1] . ".
+
+==-== =========================================================================
+
+==+== Paper #$paperId\n";
+	if (isset($prow))
+	    $x .= "==-== Title: $prow->title\n";
+
+	$i = 0;
+	foreach ($this->fieldOrder as $field) {
+	    $x .= "\n==+== " . $sections[$i++] . ". " . $this->shortName[$field] . "\n";
+	    if (isset($this->options[$field]))
+		foreach ($this->options[$field] as $num => $value)
+		    if ($num == 1)
+			$x .= "==-== Choices are: $num. $value\n";
+		    else
+			$x .= "==-==              $num. $value\n";
+	    $x .= "\n";
+	    
+	    $fval = "";
+	    if ($useRequest && isset($_REQUEST[$field]))
+		$fval = preg_replace("/\\A\\s*(.*?)\\s*\\Z/", '$1', $_REQUEST[$field]);
+	    else if ($rrow != null)
+		$fval = preg_replace("/\\s+\\Z/", '', $rrow->$field);
+	    $x .= preg_replace("/^==\\+==/m", "\\==+==", $fval);
+
+	    $x .= "\n";
+	}
+	return $x;
+    }
+
+    function garbageMessage($conf, &$garbage) {
+	if (isset($garbage))
+	    $conf->infoMsg("Review form appears to begin with garbage; ignoring it.  Offending line: " . htmlentities($garbage));
+	unset($garbage);
+    }
+    
+    function parseTextForm($text, $paperId, $conf = null) {
+	global $Conf;
+	$conf = ($conf ? $conf : $Conf);
+
+	foreach ($this->fieldOrder as $field)
+	    unset($_REQUEST[$field]);
+
+	$text = preg_replace("/\\r\\n/", "\n", $text);
+	$text = strtr($text, "\r", "\n");
+
+	$mode = 0;
+	$nfields = 0;
+	$field = 0;
+	
+	while ($text != "") {
+	    $pos = strpos($text, "\n");
+	    $line = ($pos === FALSE ? $text : substr($text, 0, $pos + 1));
+
+	    if (substr($line, 0, 6) == "==+== ") {
+		if (preg_match("/Paper Form/", $line)
+		    && !preg_match("/$conf->shortName Paper Form/", $line)) {
+		    $this->garbageMessage($conf, $garbage);
+		    $conf->errorMsg("This review form appears to be for the wrong conference!  Offending line: " . htmlentities($line));
+		    return null;
+		} else if (preg_match("/^==\\+== Paper \#(\\d+)/", $line, $match)) {
+		    if ($nfields > 0)
+			break;
+		    else if ($paperId > 0 && $paperId != $match[1]) {
+			$this->garbageMessage($conf, $garbage);
+			$conf->errorMsg("This review form appears to be for paper #$match[1], but you submitted it for paper #$paperId.  Offending line: " . htmlentities($line));
+			return null;
+		    } else
+			$_REQUEST['paperId'] = $match[1];
+		} else if (preg_match("/^==\\+== [A-Z]\\.\\s*(.*?)\\s*\$/", $line, $match)) {
+		    $fn =& $this->fieldName[strtolower($match[1])];
+		    if (isset($fn)) {
+			$field = $fn;
+			$nfields++;
+		    } else {
+			$this->garbageMessage($conf, $garbage);
+			$conf->errorMsg("This review form appears to mention a review field not used for this conference, namely \"" . htmlentities($match[1]) . "\".  Ignoring that section.  Offending line: " . htmlentities($line));
+			$field = null;
+		    }
+		    $mode = 1;
+		} else
+		    $field = null;
+	    } else if ($mode < 2 && (substr($line, 0, 5) == "==-==" || ltrim($line) == ""))
+		/* ignore line */;
+	    else {
+		if ($mode == 0) {
+		    $garbage = $line;
+		    $field = null;
+		}
+		if ($field != null)
+		    $_REQUEST[$field] = (isset($_REQUEST[$field]) ? $_REQUEST[$field] . $line : $line);
+		$mode = 2;
+	    }
+
+	    $text = substr($text, strlen($line));
+	}
+
+	if ($nfields == 0)
+	    $conf->errorMsg("That did not appear to be a review form.  Please check its formatting and try again.");
+	
+	return $text;
+    }
+    
+}
+
+
 class FormVariable {
   var $formName;
   var $label;
@@ -334,7 +588,7 @@ Class ConferenceReview extends FormCollection {
 	
 	$myid = $contactId;
 	$result = $Conf->q("SELECT *, unix_timestamp(lastModified) as timestamp FROM PaperReview WHERE "
-			   . " reviewer='$myid' AND paperId='$this->paperId'");
+			   . " contactId='$myid' AND paperId='$this->paperId'");
 	if (DB::isError($result)) {
 	  $this->reviewExisted = 0;
 	} else {
@@ -362,10 +616,10 @@ Class ConferenceReview extends FormCollection {
 	
 	if ($this->reviewExisted) {
 	  $result=$Conf->qe("UPDATE PaperReview SET $set WHERE "
-			   . " reviewer='$myid' AND paperId='$this->paperId'");
+			   . " contactId='$myid' AND paperId='$this->paperId'");
 	} else {
 	  $result=$Conf->qe("INSERT INTO PaperReview SET "
-			   . " reviewer='$myid', paperId='$this->paperId', "
+			   . " contactId='$myid', paperId='$this->paperId', "
 			   . $set );
 	}
       } else {

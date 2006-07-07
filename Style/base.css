@@ -58,9 +58,6 @@ div#footer_crp {
 	margin-top: 3px;
 }
 
-div#body {
-}
-
 div.info, div.warning, div.confirm, div.error {
 	background: #eeeeff url(../images/info45.png) 10px 10px no-repeat;
 	padding: 0.5em 0.5em 0.5em 65px;
@@ -78,7 +75,7 @@ div.confirm {
 	border: 1px solid #cceecc;
 }
 
-input, button, textarea {
+input, button, textarea, select {
 	font-family: sans-serif;
 }
 textarea {
@@ -90,6 +87,7 @@ input.button, button {
 	border-left: 3px solid #eeeedd;
 	border-bottom: 2px solid #999966;
 	border-right: 3px solid #999966;
+	padding: 0px 6px 0px 6px;
 }
 input.button_default {
 	font-size: large;
@@ -98,6 +96,24 @@ input.button_default {
 	border-left: 3px solid #eeee66;
 	border-bottom: 2px solid #999966;
 	border-right: 3px solid #999966;
+}
+form.gopaper {
+	margin-bottom: 0px;
+	display: inline;
+}
+form.gopaper input.button_default, form.gopaper input.textlite {
+	font-size: small;
+}
+form.gopaper input.button_default {
+	padding: 0px;
+	border-top: 1px solid #eeee66;
+	border-left: 2px solid #eeee66;
+	border-bottom: 1px solid #999966;
+	border-right: 2px solid #999966;
+}
+div#view div.gopaper, div#review div.gopaper {
+	float: right;
+	margin-bottom: 0em;
 }
 input.button_alert {
 	font-size: large;
@@ -219,13 +235,21 @@ div.nextpaperlink {
 	margin: 0em;
 }
 
-div.aumg h2 {
+h2 {
 	margin-top: 0em;
 }
 
 td.pt_caption {
 	font-weight: bold;
 	padding-right: 0.5em;
+	text-align: right;
+}
+td.pt_entry form {
+	display: inline;
+	padding-right: 0.5em;
+}
+td.pt_entry button {
+	margin-right: 0.5em;
 }
 td.pt_entry textarea, td.form_entry textarea {
 	width: 100%;
@@ -250,9 +274,13 @@ table.topictable tr td {
 tr#topicinterest td.form_caption, tr#topicinterest td.form_hint {
 	padding-top: 1.3em;
 }
-tr#topicinterest td#topicinterest, td#topictable, tr.pt_actions td.pt_caption {
+tr#topicinterest td#topicinterest, td#topictable, tr.pt_actions td.pt_caption,
+td.plholder, tr.rev_actions td.form_entry {
 	vertical-align: top;
 	padding-top: 0px;
+}
+td.plholder table.pltable {
+	border-spacing: 0px;
 }
 table.topicinterest {
 	vertical-align: baseline;
@@ -306,3 +334,6 @@ tr.pl_headrow td, tr.pl_headrow th {
 	border-bottom: 1px solid #ccccff;
 }
 
+table.reviewform td.form_caption {
+	font-weight: bold;
+}

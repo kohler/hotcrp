@@ -36,7 +36,8 @@ CREATE TABLE Roles (
   contactId int(11) NOT NULL,
   role tinyint(1) NOT NULL,
   paperId int(11) NOT NULL,
-  KEY contactId (contactId)
+  KEY contactId (contactId),
+  KEY paperId (paperId)
 ) TYPE=MyISAM;
 
 #
@@ -83,11 +84,10 @@ CREATE TABLE ContactInfo (
 
 drop table if exists ImportantDates;
 CREATE TABLE ImportantDates (
-  id int(11) NOT NULL auto_increment,
   name char(40) NOT NULL default '',
   start timestamp(14) NOT NULL,
   end timestamp(14) NOT NULL,
-  PRIMARY KEY (id)
+  KEY name (name)
 ) TYPE=MyISAM;
 
 #
@@ -108,8 +108,8 @@ CREATE TABLE Paper (
   collaborators text,
   contactId int(11) default NULL,
   submitted timestamp(14) NOT NULL,
-  acknowledged int(11) default '0',
-  withdrawn int(11) default '0',
+  acknowledged int(11) NOT NULL default '0',
+  withdrawn int(11) NOT NULL default '0',
   pcPaper int(11) default '0',
   paperStorageId int(11) NOT NULL default '0',
   authorsResponse mediumtext,
@@ -183,7 +183,7 @@ CREATE TABLE PaperGrade (
   paperId int(11) default NULL,
   time timestamp(14) NOT NULL,
   grade int(11) default NULL,
-  PRIMARY KEY  (gradeId),
+  PRIMARY KEY (gradeId),
   UNIQUE KEY gradeId (gradeId),
   KEY contactId (contactId),
   KEY paperId (paperId)
@@ -195,38 +195,67 @@ CREATE TABLE PaperGrade (
 
 
 #
+# Table structure for table 'ReviewRequest'
+#
+
+drop table if exists ReviewRequest;
+CREATE TABLE ReviewRequest (
+  contactId int(11) NOT NULL,
+  paperId int(11) NOT NULL,
+  type tinyint(1) NOT NULL default '0',
+
+  requestedBy int(11) NOT NULL default 0,
+  requestMadeOn timestamp(14) NOT NULL,
+  acceptedOn timestamp(14) NOT NULL default 0,
+
+  KEY requestedBy (requestedBy),
+  KEY contactId (contactId),
+  KEY paperId (paperId),
+  KEY type (type)
+) TYPE=MyISAM;
+
+#
+# Dumping data for table 'ReviewRequest'
+#
+
+
+#
 # Table structure for table 'PaperReview'
 #
 
 drop table if exists PaperReview;
 CREATE TABLE PaperReview (
   paperReviewId int(11) NOT NULL auto_increment,
-  paperId int(11) default NULL,
-  reviewer int(11) default NULL,
-  finalized int(11) default '0',
+
+  paperId int(11) NOT NULL,
+  contactId int(11) NOT NULL,
   lastModified timestamp(14) NOT NULL,
-  reviewerQualification int(11) default '0',
-  overAllMerit int(11) default '0',
-  novelty int(11) default '0',
-  technicalMerit int(11) default '0',
-  interestToCommunity int(11) default '0',
-  longevity int(11) default '0',
-  grammar int(11) default '0',
-  likelyPresentation int(11) default '0',
-  suitableForShort int(11) default '0',
+  finalized tinyint(1) NOT NULL default 0,
+
+  overAllMerit tinyint(1) NOT NULL default '0',
+  reviewerQualification tinyint(1) NOT NULL default '0',
+  novelty tinyint(1) NOT NULL default '0',
+  technicalMerit tinyint(1) NOT NULL default '0',
+  interestToCommunity tinyint(1) NOT NULL default '0',
+  longevity tinyint(1) NOT NULL default '0',
+  grammar tinyint(1) NOT NULL default '0',
+  likelyPresentation tinyint(1) NOT NULL default '0',
+  suitableForShort tinyint(1) NOT NULL default '0',
   paperSummary text,
   commentsToAuthor text,
   commentsToPC text,
   commentsToAddress text,
   weaknessOfPaper text,
   strengthOfPaper text,
-  potential tinyint(4) NOT NULL default '-1',
+
+  potential tinyint(4) NOT NULL default '0',
   fixability tinyint(4) NOT NULL default '0',
+
   PRIMARY KEY (paperReviewId),
   UNIQUE KEY paperReviewid (paperReviewId),
-  KEY finalized (finalized),
   KEY paperId (paperId),
-  KEY reviewer (reviewer)
+  KEY contactId (contactId),
+  KEY finalized (finalized)
 ) TYPE=MyISAM;
 
 #
@@ -265,43 +294,17 @@ insert into PaperStorage set paperId=0, timestamp=0, mimetype='text/plain', pape
 drop table if exists PrimaryReviewer;
 CREATE TABLE PrimaryReviewer (
   primaryReviewerId int(11) NOT NULL auto_increment,
-  reviewer int(11) default NULL,
+  contactId int(11) default NULL,
   paperId int(11) default NULL,
   requestMadeOn timestamp(14) NOT NULL,
-  PRIMARY KEY  (primaryReviewerId),
+  PRIMARY KEY (primaryReviewerId),
   UNIQUE KEY primaryReviewerId (primaryReviewerId),
-  KEY reviewer (reviewer),
+  KEY contactId (contactId),
   KEY paperId (paperId)
 ) TYPE=MyISAM;
 
 #
 # Dumping data for table 'PrimaryReviewer'
-#
-
-
-#
-# Table structure for table 'ReviewRequest'
-#
-
-drop table if exists ReviewRequest;
-CREATE TABLE ReviewRequest (
-  reviewRequestId int(11) NOT NULL auto_increment,
-  requestedBy int(11) default NULL,
-  asked int(11) default NULL,
-  paperId int(11) default NULL,
-  requestMadeOn timestamp(14) NOT NULL,
-  acceptedOn timestamp(14) NOT NULL,
-  accepted int(11) default '0',
-  PRIMARY KEY  (reviewRequestId),
-  UNIQUE KEY reviewRequestId (reviewRequestId),
-  KEY reviewRequestId_2 (reviewRequestId),
-  KEY requestedBy (requestedBy),
-  KEY asked (asked),
-  KEY paperId (paperId)
-) TYPE=MyISAM;
-
-#
-# Dumping data for table 'ReviewRequest'
 #
 
 
@@ -312,12 +315,12 @@ CREATE TABLE ReviewRequest (
 drop table if exists SecondaryReviewer;
 CREATE TABLE SecondaryReviewer (
   secondaryReviewerId int(11) NOT NULL auto_increment,
-  reviewer int(11) default NULL,
+  contactId int(11) default NULL,
   paperId int(11) default NULL,
   requestMadeOn timestamp(14) NOT NULL,
-  PRIMARY KEY  (secondaryReviewerId),
+  PRIMARY KEY (secondaryReviewerId),
   UNIQUE KEY secondaryReviewerId (secondaryReviewerId),
-  KEY reviewer (reviewer),
+  KEY contactId (contactId),
   KEY paperId (paperId)
 ) TYPE=MyISAM;
 
@@ -432,30 +435,123 @@ create table PaperListColumns (
   KEY paperListId (paperListId)
 ) TYPE=MyISAM;
 
-insert into PaperFields set fieldId=1, fieldName="ID";
-insert into PaperFields set fieldId=2, fieldName="Title";
-insert into PaperFields set fieldId=3, fieldName="Status";
-insert into PaperFields set fieldId=4, fieldName="Download", sortable=0;
-insert into PaperFields set fieldId=5, fieldName="ID";
-insert into PaperFields set fieldId=6, fieldName="Title";
+insert into PaperFields set fieldId=1, fieldName='ID', description='ID';
+insert into PaperFields set fieldId=2, fieldName='Title', description='Title';
+insert into PaperFields set fieldId=3, fieldName='Status', description='Status';
+insert into PaperFields set fieldId=4, fieldName='Download', description='Download', sortable=0;
+insert into PaperFields set fieldId=5, fieldName='ID (manage)', description='ID (manage link)';
+insert into PaperFields set fieldId=6, fieldName='Title (manage)', description='Title (manage link)';
+insert into PaperFields set fieldId=7, fieldName='ID (review)', description='ID (review link)';
+insert into PaperFields set fieldId=8, fieldName='Title (review)', description='Title (review link)';
+insert into PaperFields set fieldId=9, fieldName='Review Type', description='Review Type';
+insert into PaperFields set fieldId=10, fieldName='Review Status', description='Review Status';
 
-insert into PaperList set paperListName='author',
+insert into PaperList set paperListId=1, paperListName='author',
 	description='My papers', minRole=1, sortCol=0, query='';
 insert into PaperListColumns set paperListId=1, fieldId=5, col=0;
 insert into PaperListColumns set paperListId=1, fieldId=6, col=1;
 insert into PaperListColumns set paperListId=1, fieldId=3, col=2;
 insert into PaperListColumns set paperListId=1, fieldId=4, col=3;
 
-insert into PaperList set paperListName='submitted',
+insert into PaperList set paperListId=2, paperListName='submitted',
 	description='Submitted papers', minRole=3, sortCol=0, query='';
 insert into PaperListColumns set paperListId=2, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=2, fieldId=2, col=1;
 insert into PaperListColumns set paperListId=2, fieldId=3, col=2;
 insert into PaperListColumns set paperListId=2, fieldId=4, col=3;
 
-insert into PaperList set paperListName='all',
+insert into PaperList set paperListId=3, paperListName='all',
 	description='All papers', minRole=5, sortCol=0, query='';
 insert into PaperListColumns set paperListId=3, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=3, fieldId=2, col=1;
 insert into PaperListColumns set paperListId=3, fieldId=3, col=2;
 insert into PaperListColumns set paperListId=3, fieldId=4, col=3;
+
+insert into PaperList set paperListId=4, paperListName='authorHome',
+	description='My papers (homepage view)', minRole=1, sortCol=0, query='';
+insert into PaperListColumns set paperListId=4, fieldId=5, col=0;
+insert into PaperListColumns set paperListId=4, fieldId=6, col=1;
+insert into PaperListColumns set paperListId=4, fieldId=3, col=2;
+
+insert into PaperList set paperListId=5, paperListName='reviewerHome',
+	description='Papers to review (homepage view)',
+	minRole=100, sortCol=0, query='';
+insert into PaperListColumns set paperListId=5, fieldId=7, col=0;
+insert into PaperListColumns set paperListId=5, fieldId=8, col=1;
+insert into PaperListColumns set paperListId=5, fieldId=4, col=2;
+insert into PaperListColumns set paperListId=5, fieldId=9, col=3;
+insert into PaperListColumns set paperListId=5, fieldId=10, col=4;
+
+
+#
+# Review form
+#
+
+drop table if exists ReviewFormField;
+create table ReviewFormField (
+  fieldName varchar(25) NOT NULL,
+  shortName varchar(40) NOT NULL,
+  description text,
+  sortOrder tinyint(1) NOT NULL default -1,
+  PRIMARY KEY (fieldName),
+  UNIQUE KEY fieldName (fieldName),
+  KEY shortName (shortName)
+) TYPE=MyISAM;
+
+drop table if exists ReviewFormOptions;
+create table ReviewFormOptions (
+  fieldName varchar(25) NOT NULL,
+  level tinyint(1) NOT NULL,
+  description text,
+  KEY fieldName (fieldName),
+  KEY level (level)
+) TYPE=MyISAM;
+
+insert into ReviewFormField set fieldName='overAllMerit',
+	shortName='Overall merit', sortOrder=0;
+insert into ReviewFormField set fieldName='reviewerQualification',
+	shortName='Reviewer expertise', sortOrder=1;
+insert into ReviewFormField set fieldName='novelty',
+	shortName='Novelty';
+insert into ReviewFormField set fieldName='technicalMerit',
+	shortName='Technical merit';
+insert into ReviewFormField set fieldName='interestToCommunity',
+	shortName='Community interest';
+insert into ReviewFormField set fieldName='longevity',
+	shortName='Longevity';
+insert into ReviewFormField set fieldName='grammar',
+	shortName='Grammar';
+insert into ReviewFormField set fieldName='likelyPresentation',
+	shortName='Attendance likelihood';
+insert into ReviewFormField set fieldName='suitableForShort',
+	shortName='Suitable for short paper';
+insert into ReviewFormField set fieldName='paperSummary',
+	shortName='Paper summary', sortOrder=2;
+insert into ReviewFormField set fieldName='commentsToAuthor',
+	shortName='Comments for author', sortOrder=3;
+insert into ReviewFormField set fieldName='commentsToPC',
+	shortName='Comments for PC', sortOrder=4;
+insert into ReviewFormField set fieldName='commentsToAddress',
+	shortName='Comments to address';
+insert into ReviewFormField set fieldName='weaknessOfPaper',
+	shortName='Paper weakness';
+insert into ReviewFormField set fieldName='strengthOfPaper',
+	shortName='Paper strengths';
+insert into ReviewFormField set fieldName='potential',
+	shortName='Potential';
+insert into ReviewFormField set fieldName='fixability',
+	shortName='Fixability';
+
+insert into ReviewFormOptions set fieldName='overAllMerit', level=1, description='Reject';
+insert into ReviewFormOptions set fieldName='overAllMerit', level=2, description='Weak reject';
+insert into ReviewFormOptions set fieldName='overAllMerit', level=3, description='Weak accept';
+insert into ReviewFormOptions set fieldName='overAllMerit', level=4, description='Accept';
+insert into ReviewFormOptions set fieldName='overAllMerit', level=5, description='Strong accept';
+
+insert into ReviewFormOptions set fieldName='reviewerQualification', level=1, description='No familiarity';
+insert into ReviewFormOptions set fieldName='reviewerQualification', level=2, description='Some familiarity';
+insert into ReviewFormOptions set fieldName='reviewerQualification', level=3, description='Knowledgeable';
+insert into ReviewFormOptions set fieldName='reviewerQualification', level=4, description='Expert';
+
+delete from ImportantDates where name='reviewFormUpdate';
+insert into ImportantDates set name='reviewFormUpdate', start=current_timestamp, end=current_timestamp;

@@ -23,6 +23,7 @@ $Conf->setupPhase = 0;
 $Conf->sessionName = "HotNetsV";
 $Conf->shortName = "HotNets V";
 $Conf->longName = "HotNets V";
+$Conf->blindSubmission = 1;
 
 // allowed paper formats
 $Conf->allowPDF = 1;
@@ -66,9 +67,9 @@ $Conf->paperSite = "http://www.read.cs.ucla.edu/hotnets5";
 $Conf->conferenceSite="http://www.acm.org/sigs/sigcomm/HotNets-V/";
 
 //
-// The prefix for papes that are downloaded
+// The prefix for downloaded files
 //
-$Conf->paperPrefix="hotnets5-paper";
+$Conf->downloadPrefix="hotnets5-";
 
 //
 // A CSS, if you want one

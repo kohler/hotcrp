@@ -84,9 +84,9 @@ $Conf->paperSite="http://systems.cs.colorado.edu/HYPO/CRP";
 $Conf->conferenceSite="http://crp.sourceforge.net/";
 
 //
-// The prefix for papers that are downloaded
+// The prefix for downloaded files
 //
-$Conf->paperPrefix="hypo-2010-paper";
+$Conf->downloadPrefix="hypo-2010-";
 
 //
 // A CSS, if you want one. This package is currently not very

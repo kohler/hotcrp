@@ -3,11 +3,11 @@ include('../Code/confHeader.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid("../");
-$paperId = cvtint($_REQUEST["paperId"]);
+$paperId = cvtint(ltrim(rtrim($_REQUEST["paperId"])));
 if ($paperId <= 0)
-    $Me->goAlert("../", "Invalid paper ID.");
+    $Me->goAlert("../", "Invalid paper ID \"" . htmlspecialchars($_REQUEST["paperId"]) . "\".");
 
-$Conf->header_head("View Paper #$paperId");
+$Conf->header_head("Paper #$paperId");
 ?>
 <script type="text/javascript"><!--
 function highlightUpdate() {
@@ -19,7 +19,9 @@ function highlightUpdate() {
 // -->
 </script>
 
-<?php $Conf->header("View Paper #$paperId", 'view');
+<?php $Conf->header("Paper #$paperId", 'view');
+
+echo "<div class='gopaper'>", goPaperForm(), "</div><div class='clear'></div>\n\n";
 
 // previous and next papers
   /*$result = $Conf->qe("select Roles.paperId, Paper.title from Roles, Paper where Roles.contactId=$Me->contactId and Roles.paperId=Paper.paperId");
@@ -43,26 +45,22 @@ function printPaperLinks() {
 }
   */
     
-$notAuthor = !$Me->amPaperAuthor($paperId, $Conf);
-
-$query = "select Paper.*, length(PaperStorage.paper) as size,
-		PaperStorage.timestamp, mimetype
-		from Paper left join PaperStorage using (paperStorageId)
-		where Paper.paperId=$paperId";
+$query = $Conf->paperQuery($Me->contactId, array("paperId" => $paperId));
 $result = $Conf->qe($query);
 
 if (DB::isError($result) || $result->numRows() == 0) {
-    $Conf->errorMsg("The paper disappeared!");
+    $Conf->errorMsg("No such paper.");
     $Conf->footer();
     exit;
  }
 
 $prow = $result->fetchRow(DB_FETCHMODE_OBJECT);
-if ($notAuthor && !$Me->isPC) {
+$amAuthor = ($prow->myMinRole == ROLE_AUTHOR);
+if (!$amAuthor && !$Me->isPC) {
     $Conf->errorMsg("You are not an author of paper #$paperId.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
     $Conf->footer();
     exit;
-} else if ($notAuthor && !$Me->amAssistant() && ($prow->acknowledged <= 0 || $prow->withdrawn > 0)) {
+} else if (!$amAuthor && !$Me->amAssistant() && ($prow->acknowledged <= 0 || $prow->withdrawn > 0)) {
     $Conf->errorMsg("You cannot view paper #$paperId, since it has not been officially submitted.");
     $Conf->footer();
     exit;
@@ -78,11 +76,25 @@ echo "<h2>[#$paperId] ", htmlspecialchars($prow->title), "</h2>\n\n";
 
 ?>
 
-<table class='aumanage'>
+<table class='view'>
 
 <tr>
   <td class='pt_caption'>Status:</td>
-  <td class='pt_entry'><?php echo paperStatus($paperId, $prow, 1) ?></td>
+  <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, 0, 1) ?><?php
+if ($amAuthor)
+    echo "<br/>\nYou are an author of this paper.";
+else if ($Me->isPC && $prow->conflictCount > 0)
+    echo "<br/>\nYou have a conflict with this paper.";
+if ($prow->myReviewType != null) {
+    if ($prow->myReviewType == REVIEW_PRIMARY)
+	echo "<br/>\nYou are primary reviewer for this paper.";
+    else if ($prow->myReviewType == REVIEW_SECONDARY)
+	echo "<br/>\nYou are secondary reviewer for this paper.";
+    else if ($prow->myReviewType == REVIEW_REQUESTED)
+	echo "<br/>\nYou were requested to review this paper.";
+    else
+	echo "<br/>\nYou began a review for this paper.";
+ } ?></td>
 </tr>
 
 <?php if (!$withdrawn && $prow->size > 0) { ?>
@@ -97,6 +109,7 @@ echo "<h2>[#$paperId] ", htmlspecialchars($prow->title), "</h2>\n\n";
   <td class='pt_entry'><?php echo htmlspecialchars($prow->abstract) ?></td>
 </tr>
 
+<?php if ($Conf->canViewAuthors($Me, $prow)) { ?>
 <tr>
   <td class='pt_caption'>Author&nbsp;information:</td>
   <td class='pt_entry'><?php echo htmlspecialchars($prow->authorInformation) ?></td>
@@ -106,6 +119,7 @@ echo "<h2>[#$paperId] ", htmlspecialchars($prow->title), "</h2>\n\n";
   <td class='pt_caption'>Collaborators:</td>
   <td class='pt_entry'><?php echo htmlspecialchars($prow->collaborators) ?></td>
 </tr>
+<?php } ?>
 
 <?php
 if ($topicTable = topicTable($paperId, -1)) { 
@@ -114,12 +128,25 @@ if ($topicTable = topicTable($paperId, -1)) {
   <td class='pt_entry' id='topictable'>", $topicTable, "</td>\n</tr>\n";
  }
 
-if (!$notAuthor || $Me->amAssistant()) {
+if ($prow->myReviewType != null
+    || ($Me->isPC && $Conf->canPCReviewAnyPaper() && $prow->conflictCount == 0 && $finalized && !$withdrawn))
+    $actions[] = "<form method='get' action='ReviewPaper.php'><input type='hidden' name='paperId' value='$paperId' /><input class='button' type='submit' value='Review' name='doit' /></form>";
+else if ($Me->isPC)
+    $actions[] = "<button class='button' disabled='disabled'>Review</button>";
+
+if ($Me->amAssistant() && $amAuthor)
+    $actions[] = "<button class='button' disabled='disabled'>Hide authors</button>";
+else if ($Me->amAssistant())
+    $actions[] = "<form method='get' action='ViewPaper.php'><input type='hidden' name='paperId' value='$paperId' /><input type='hidden' name='chairViewAuthors' value='" . (1 - $Me->chairViewAuthors) . "' /><input class='button' type='submit' value='" . ($Me->chairViewAuthors ? "Hide authors" : "Show authors") . "' name='auview' /></form>";
+
+if ($amAuthor || $Me->amAssistant())
+    $actions[] = "<form method='get' action='${ConfSiteBase}Author/ManagePaper.php'><input type='hidden' name='paperId' value='$paperId' /><input class='button' type='submit' value='Edit submission' name='edit' /></form>";
+
+if (isset($actions))
     echo "<tr>
   <td class='pt_caption'>Actions:</td>
-  <td class='pt_entry'><form method='get' action='${ConfSiteBase}Author/ManagePaper.php'><input type='hidden' name='paperId' value='$paperId' /><input class='button' type='submit' value='Edit Submission' name='edit' /></form></td>
+  <td class='pt_entry'>", join(" ", $actions), "</td>
 </tr>\n";
- }
 ?>
 
 </table>

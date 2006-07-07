@@ -1,5 +1,6 @@
 <?php
 require_once('Code/confHeader.inc');
+require_once('Code/ClassPaperList.inc');
 $Conf->connect();
 
 $testCookieStatus = 0;
@@ -54,7 +55,7 @@ function taskbutton($name,$label) {
    $color = $Conf->contrastColorTwo;
   }
   print "<td bgcolor=$color width=20% align=center> ";
-  echo "<form action='", $_SERVER["PHP_SELF"], "' method='get'>\n";
+  echo "<form action='index.php' method='get'>\n";
   print "<input type=submit value='$label'>";
   print "<input type=hidden name='setRole' value='$name'>";
   print "</form>";
@@ -70,7 +71,8 @@ function taskbutton($name,$label) {
     <table>
     <tr>
       <th>Papers:</th>
-      <td><a href='All/ListPapers.php?list=submitted'>List&nbsp;submitted</a> &mdash;
+      <td><?php echo goPaperForm() ?> &mdash;
+	<a href='All/ListPapers.php?list=submitted'>List&nbsp;submitted</a> &mdash;
 	<a href='All/ListPapers.php?list=all'>List&nbsp;all</a></td>
     </tr>
 
@@ -89,13 +91,42 @@ function taskbutton($name,$label) {
     <tr>
       <th>Conference&nbsp;information:</th>
       <td><a href='Chair/SetDates.php'>Set&nbsp;dates</a> &mdash;
-	<a href='Chair/SetTopics.php'>Set&nbsp;topics</a></td>
+	<a href='Chair/SetTopics.php'>Set&nbsp;topics</a> &mdash;
+	<a href='Chair/SetReviewForm.php'>Set&nbsp;review&nbsp;form[X]</a></td>
     </tr>
     </table>
   </div>
   <div class='clear'></div>
 </div>
 <?php } ?>
+
+
+<?php if ($Me->isPC) { ?>
+<div class='home_tasks' id='home_tasks_pc'>
+  <div class='taskname'><h2>Program Committee Tasks</h2></div>
+  <div class='taskdetail'>
+    <table>
+    <tr>
+      <th>Papers:</th>
+      <td><?php echo goPaperForm() ?> &mdash;
+	<a href='All/ListPapers.php?list=submitted'>List&nbsp;submitted</a></td>
+    </tr>
+
+<?php {
+    $plist = new PaperList();
+    $plist->showHeader = 0;
+    $ptext = $plist->text("reviewerHome", $Me);
+    if ($plist->count > 0)
+	echo "<tr>\n  <th>Reviews:</th>\n  <td class='plholder'>$ptext</td>\n</tr>\n";
+}
+?>
+
+    </table>
+  </div>
+  <div class='clear'></div>
+</div>
+<?php } ?>
+
 
 <?php if ($Me->isAuthor || $Conf->canStartPaper() >= 0) { ?>
 <div class='home_tasks' id='home_tasks_author'>
@@ -109,31 +140,17 @@ if ($startable)
     echo "    <tr><th><a href='Author/SubmitPaper.php'>Start new paper</a></th> <td colspan='2'><span class='deadline'>(", $Conf->printDeadline('startPaperSubmission'), ")</span></td></tr>\n";
 
 if ($Me->isAuthor) {
-    $query = "select Paper.*, mimetype from Paper
-	join Roles using (paperId)
-	left join PaperStorage using (paperStorageId)
- 	where Roles.contactId=$Me->contactId and Roles.role=" . ROLE_AUTHOR;
-    $result = $Conf->q($query);
-    if (!DB::isError($result) && $result->numRows() > 0) {
-	$header = "<th>Existing papers:</th>";
-	$anyToFinalize = 0;
-	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
-	    echo "<tr>\n  $header\n  <td class='form_entry'>";
-	    $header = "<td></td>";
-	    echo "<a href='Author/ManagePaper.php?paperId=", $row->paperId,
-		"'>[#", $row->paperId, "] ", htmlspecialchars($row->title), "</a></td>\n";
-	    echo "  <td>", paperStatus($row->paperId, $row), "</td>\n";
-	    echo "</tr>\n";
-	    if ($row->acknowledged <= 0 && $row->withdrawn <= 0)
-		$anyToFinalize = 1;
-	}
-	if ($anyToFinalize) {
-	    $time = $Conf->printableEndTime('updatePaperSubmission');
-	    if (!$Conf->canFinalizePaper())
-		echo "  <tr>\n    <td colspan='3'>The <a href='All/ImportantDates.php'>deadline</a> for submitting papers in progress has passed.</td>\n  </tr>\n";
-	    else if ($time != 'N/A')
-		echo "  <tr>\n    <td colspan='3'>You have until $time to submit any papers in progress.</td>\n  </tr>\n";
-	}
+    $plist = new PaperList();
+    $plist->showHeader = 0;
+    $ptext = $plist->text("authorHome", $Me);
+    if ($plist->count > 0)
+	echo "<tr>\n  <th>Existing papers:</th>\n  <td class='plholder'>$ptext</td>\n</tr>\n";
+    if ($plist->needFinalize > 0) {
+	$time = $Conf->printableEndTime('updatePaperSubmission');
+	if (!$Conf->canFinalizePaper())
+	    echo "  <tr>\n    <td colspan='3'>The <a href='All/ImportantDates.php'>deadline</a> for submitting papers in progress has passed.</td>\n  </tr>\n";
+	else if ($time != 'N/A')
+	    echo "  <tr>\n    <td colspan='3'>You have until $time to submit any papers in progress.</td>\n  </tr>\n";
     }
     if (!$startable)
 	echo "  <tr>\n    <td colspan='2'>The <a href='All/ImportantDates.php'>deadline</a> for starting new papers has passed.</td>\n  </tr>\n";
