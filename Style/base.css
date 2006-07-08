@@ -37,11 +37,11 @@ div#footer {
 	padding: 0.2em 0.5em;
 	border: 1px solid #ccccff;
 }
-div#footer_conference, div#footer_logout {
+div#footer_conference, div#footer_logout, div#footer_chairmode {
 	margin-bottom: 0em;
 	display: inline;
 }
-div#footer_logout {
+div#footer_logout, div#footer_chairmode {
 	margin-left: 1em;
 	padding-left: 1.1em;
 	border-left: 1px solid #ccccff;

@@ -170,9 +170,9 @@ $conflicts = array();
 
 if( !chosen('conflicts') ){
   if( $filtpaper == -1 ){
-  $conflictResult=$Conf->qe( "SELECT PaperConflict.paperId FROM PaperConflict WHERE PaperConflict.authorId ='$filtrev';" );
+  $conflictResult=$Conf->qe( "SELECT PaperConflict.paperId FROM PaperConflict WHERE PaperConflict.contactId ='$filtrev';" );
   } else {
-  $conflictResult=$Conf->qe( "SELECT PaperConflict.authorId FROM PaperConflict WHERE PaperConflict.paperId ='$filtpaper';" );
+  $conflictResult=$Conf->qe( "SELECT PaperConflict.contactId FROM PaperConflict WHERE PaperConflict.paperId ='$filtpaper';" );
   }
 
   if (DB::isError($conflictResult)) {

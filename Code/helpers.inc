@@ -159,9 +159,11 @@ function topicTable($paperId = -1, $active = 0, $conf = null) {
 	return "";
 }
 
-function authorTable($text, $columns = 2) {
+function authorTable($aus, $columns = 2) {
     $out = "";
-    foreach (explode("\n", $text) as $au) {
+    if (!is_array($aus))
+	$aus = explode("\n", $aus);
+    foreach ($aus as $au) {
 	$au = ltrim(rtrim($au));
 	if ($au != '')
 	    $out .= "<span class='autblentry'>" . htmlspecialchars($au) . "</span> ";

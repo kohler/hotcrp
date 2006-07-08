@@ -158,13 +158,10 @@ CREATE TABLE PaperComments (
 
 drop table if exists PaperConflict;
 CREATE TABLE PaperConflict (
-  paperConflictId int(11) NOT NULL auto_increment,
-  paperId int(11) default NULL,
-  authorId int(11) default NULL,
-  PRIMARY KEY  (paperConflictId),
-  UNIQUE KEY paperConflictId (paperConflictId),
+  paperId int(11) NOT NULL,
+  contactId int(11) NOT NULL,
   KEY paperId (paperId),
-  KEY authorId (authorId)
+  KEY contactId (contactId)
 ) TYPE=MyISAM;
 
 #

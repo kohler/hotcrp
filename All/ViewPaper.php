@@ -85,9 +85,9 @@ $finalized = $prow->acknowledged > 0;
   <td class='pt_caption'>Status:</td>
   <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, $prow->myMinRole == ROLE_AUTHOR, 1) ?><?php
 if ($amAuthor)
-    echo "<br/>\nYou are an author of this paper.";
+    echo "<br/>\nYou are an <span class='author'>author</span> of this paper.";
 else if ($Me->isPC && $prow->conflictCount > 0)
-    echo "<br/>\nYou have a conflict with this paper.";
+    echo "<br/>\nYou have a <span class='conflict'>conflict</span> with this paper.";
 if ($prow->myReviewType != null) {
     if ($prow->myReviewType == REVIEW_PRIMARY)
 	echo "<br/>\nYou are primary reviewer for this paper.";
@@ -132,14 +132,23 @@ if ($topicTable = topicTable($paperId, -1)) {
   <td class='pt_entry' id='topictable'>", $topicTable, "</td>\n</tr>\n";
  }
 
-if ($prow->myReviewType != null
-    || ($Me->isPC && $Conf->canPCReviewAnyPaper() && $prow->conflictCount == 0 && $finalized && !$withdrawn))
+if ($Me->amAssistant()) {
+    $q = "select firstName, lastName, count(MyRoles.role) as conflictCount
+	from ContactInfo join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ")
+	left join Roles as MyRoles on (MyRoles.contactId=ContactInfo.contactId and MyRoles.paperId=$paperId and MyRoles.role>=" . ROLE_AUTHOR . " and MyRoles.role<=" . ROLE_CONFLICT . ")
+	group by MyRoles.role order by lastName";
+    $result = $Conf->qe($q, "while finding conflicted PC members");
+    if (!DB::isError($result) && $result->numRows() > 0) {
+	while ($row = $result->fetchRow())
+	    $pcConflicts[] = "$row[0] $row[1]";
+	echo "<tr class='pt_conflict'>\n  <td class='pt_caption'>PC&nbsp;conflicts:</td>\n  <td class='pt_entry'>", authorTable($pcConflicts), "</td>\n</tr>\n\n";
+    }
+ }
+
+if ($Me->canReview($prow->paperId, $Conf, $prow))
     $actions[] = "<form method='get' action='ReviewPaper.php'><input type='hidden' name='paperId' value='$paperId' /><input class='button' type='submit' value='Review' name='doit' /></form>";
 else if ($Me->isPC)
     $actions[] = "<button class='button' disabled='disabled'>Review</button>";
-
-if ($Me->amAssistant())
-    $actions[] = "<form method='get' action='ViewPaper.php'><input type='hidden' name='paperId' value='$paperId' /><input type='hidden' name='chairMode' value='" . (1 - $Me->chairMode) . "' /><input class='button' type='submit' value='" . ($Me->chairMode ? "Leave chair mode" : "Chair mode") . "' name='auview' /></form>";
 
 if ($amAuthor || $Me->amAssistant())
     $actions[] = "<form method='get' action='${ConfSiteBase}Author/ManagePaper.php'><input type='hidden' name='paperId' value='$paperId' /><input class='button' type='submit' value='Edit submission' name='edit' /></form>";

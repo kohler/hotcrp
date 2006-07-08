@@ -49,10 +49,10 @@ If you suspect something fishy, contact the site administrator at\n\
 	    // Paper
 	    //
 	    crpmergeone("Paper", "contactId", $oldid, $newid);
-	    crpmergeone("PaperConflict", "authorId", $oldid, $newid);
+	    crpmergeone("PaperConflict", "contactId", $oldid, $newid);
 	    crpmergeone("Roles", "contactId", $oldid, $newid);
 	    crpmergeone("TopicInterest", "contactId", $oldid, $newid);
-	    crpmergeone("ReviewRequest", "asked", $oldid, $newid);
+	    crpmergeone("ReviewRequest", "contactId", $oldid, $newid);
 	    crpmergeone("ReviewRequest", "requestedBy", $oldid, $newid);
 	    crpmergeone("PrimaryReviewer", "contactId", $oldid, $newid);
 	    crpmergeone("SecondaryReviewer", "contactId", $oldid, $newid);

@@ -29,7 +29,7 @@ if (IsSet($_REQUEST["assignConflicts"])) {
       for($i=0; $i < sizeof($_REQUEST["Conflict"]); $i++) {
 	$paperId=$_REQUEST["Conflict"][$i];
 	$query="INSERT INTO PaperConflict SET paperId='$paperId', "
-	  . " authorId='" . $_REQUEST["pcMember"] . "'";
+	  . " contactId='" . $_REQUEST["pcMember"] . "'";
 	$Conf -> qe($query);
 	$Conf->log("Added reviewer conflict for " . $_REQUEST["pcMember"] . " for paper $paper", $_SESSION["Me"]);
       }

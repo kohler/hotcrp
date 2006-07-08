@@ -757,7 +757,23 @@ class Conference {
 	  $this->headerPrinted = 1;
       }
   }
-  
+
+    function chairModeLink() {
+	$out = "<a href=\"" . $_SERVER["PHP_SELF"];
+	$sep = "?";
+	if (isset($_REQUEST["paperId"])) {
+	    $out .= $sep . "paperId=" . htmlspecialchars($_REQUEST["paperId"]);
+	    $sep = "&amp;";
+	}
+	if (isset($_REQUEST["list"])) {
+	    $out .= $sep . "list=" . htmlspecialchars($_REQUEST["list"]);
+	    $sep = "&amp;";
+	}
+	$out .= $sep . "chairMode=" . (1 - $_SESSION["Me"]->chairMode) . "\">"
+	    . ($_SESSION["Me"]->chairMode ? "Leave" : "Enter");
+	return "$out&nbsp;chair&nbsp;mode</a>";
+    }
+    
   function header($title, $id = '') {
       global $ConfSiteBase;
       $this->header_head($title);
@@ -773,7 +789,10 @@ class Conference {
       if ($_SESSION["Me"]->valid()) {
 	  echo "    <div id='header_user'><strong>",
 	      htmlspecialchars($_SESSION["Me"]->email),
-	      "</strong> &nbsp;|&nbsp; <a href='", $ConfSiteBase, "All/Logout.php'>Log&nbsp;out</a></div>\n";
+	      "</strong> &nbsp;|&nbsp; ";
+	  if ($_SESSION["Me"]->amAssistant())
+	      echo $this->chairModeLink(), " &nbsp;|&nbsp; ";
+	  echo "<a href='", $ConfSiteBase, "All/Logout.php'>Log&nbsp;out</a></div>\n";
       }
       echo "    <div id='header_time'>", date ("l j M Y g:i:sa T"), "</div>\n";
       echo "    <div id='header_public'><a href='", $this->conferenceSite, "'>", $this->shortName, " Public Site</a></div>\n";
@@ -801,8 +820,11 @@ class Conference {
       echo "<div id='footer'>\n";
       echo "  <div id='footer_left'>\n";
       echo "    <div id='footer_conference'><a href='", $ConfSiteBase, "index.php'>", $this->shortName, " Submissions Home</a></div>\n";
-      if ($_SESSION["Me"]->valid())
+      if ($_SESSION["Me"]->valid()) {
+	  if ($_SESSION["Me"]->amAssistant())
+	      echo "    <div id='footer_chairmode'>", $this->chairModeLink(), "</div>\n";
 	  echo "    <div id='footer_logout'><a href='", $ConfSiteBase, "All/Logout.php'>Log&nbsp;out</a></div>\n";
+      }
       echo "  </div>\n";
       echo "  <div id='footer_right'>\n";
       echo "    <div id='footer_crp'><a href='http://crp.sourceforge.net/'>CRP</a> Conference Management Software</div>\n";
@@ -1228,7 +1250,7 @@ class Conference {
 		$query = "SELECT Paper.paperId, Paper.title "
 		    . " FROM Paper, PaperConflict "
 		    . " WHERE PaperConflict.paperId=Paper.paperId "
-		    . " AND PaperConflict.authorId=$pcId "
+		    . " AND PaperConflict.contactId=$pcId "
 		    . " ORDER by Paper.paperId ";
 		$r=$this->qe($query);
 
@@ -1454,7 +1476,7 @@ class Conference {
     {
        $result=$this->qe("SELECT PaperConflict.paperId "
 			 . " FROM PaperConflict"
-			 . " WHERE PaperConflict.authorId='$contactId' "
+			 . " WHERE PaperConflict.contactId='$contactId' "
 			 . " AND PaperConflict.paperId='$paperId' "
 			 );
        if (!DB::isError($result)) {
@@ -1473,7 +1495,7 @@ class Conference {
     {
        $result=$this->qe("SELECT PaperConflict.paperId "
 			 . " FROM PaperConflict"
-			 . " WHERE PaperConflict.authorId='$contactId' ");
+			 . " WHERE PaperConflict.contactId='$contactId' ");
        $conflicts = array();
        if (!DB::isError($result)) {
 	 while ($row = $result->fetchRow()) {
@@ -1488,7 +1510,7 @@ class Conference {
     {
        $result=$this->qe("SELECT PaperConflict.paperId "
 			 . " FROM PaperConflict, Roles"
-			 . " WHERE PaperConflict.authorId=Roles.contactId and Roles.role = " . ROLE_PC);
+			 . " WHERE PaperConflict.contactId=Roles.contactId and Roles.role = " . ROLE_PC);
        $conflicts = array();
        if (!DB::isError($result)) {
 	 while ($row = $result->fetchRow()) {
@@ -1530,8 +1552,7 @@ class Conference {
     }
   }
 
-  function okSeeReviewers()
-    {
+  function okSeeReviewers() {
       global $Me;
       return $Me -> isChair
 	|| ($Me -> isPC
@@ -1539,7 +1560,7 @@ class Conference {
 	    && $this -> validTimeFor('PCMeetingView', 0)
 	    )
 	;
-    }
+  }
   function okSeeUnfinishedReviews()
     {
       global $Me;

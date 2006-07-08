@@ -26,11 +26,11 @@ if (IsSet($_REQUEST[assignConflicts])) {
 	// Delete any existing..
 	//
 	$query="DELETE FROM PaperConflict WHERE paperId='$paperId' "
-	  . " AND authorId='$_REQUEST[reviewer]'";
+	  . " AND contactId='$_REQUEST[reviewer]'";
 	$Conf->qe($query);
 
 	$query="INSERT INTO PaperConflict SET paperId='$paperId', "
-	  . " authorId='$_REQUEST[reviewer]'";
+	  . " contactId='$_REQUEST[reviewer]'";
 	$Conf -> qe($query);
 	$Conf->log("Added reviewer conflict for $_REQUEST[reviewer] for paper $paper", $_SESSION["Me"]);
       }
@@ -111,9 +111,9 @@ if (DB::isError($result)) {
 			      "../Assistant/AssistantViewSinglePaper.php",
 			      $_REQUEST[paperId]);
 			      
-       $query2="SELECT ContactInfo.email, PaperConflict.paperConflictId "
-       . " FROM ContactInfo, PaperConflict "
-       . " WHERE PaperConflict.paperId=$paperId AND PaperConflict.authorId=ContactInfo.contactId "
+       $query2="SELECT ContactInfo.email "
+       . " FROM ContactInfo join PaperConflict using (contactId) "
+       . " WHERE PaperConflict.paperId=$paperId "
        . " ORDER BY ContactInfo.email";
        $result2=$Conf -> q($query2);
        if ( $result2 ) {

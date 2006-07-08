@@ -72,7 +72,7 @@ if (!IsSet($_REQUEST[submittedFor]) || !IsSet($_REQUEST[title])
 	    
 	  $result = $Conf->qe("INSERT into PaperConflict SET "
 			    . "paperId='$paperId', "
-			      . "authorId='$_REQUEST[submittedFor]' ");
+			      . "contactId='" . $_REQUEST["submittedFor"] . "' ");
 
 	  if (DB::isError($result) ) {
 	    $Conf->errorMsg("There was another problem associating the paper with you (the contact author). "

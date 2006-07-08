@@ -71,7 +71,7 @@ $badPaper = $paperLength < 100 && $mimetype == 'text/plain';
 <?php 
    $query="SELECT conflictName from CommitteeConflict, PaperConflict"
    . "WHERE PaperConflict.paperId=$_REQUEST[paperId] "
-   . "AND PaperConflict.authorId=CommitteeConflict.conflictId ";
+   . "AND PaperConflict.contactId=CommitteeConflict.conflictId ";
 
  $result = $Conf->qe($query);
 
