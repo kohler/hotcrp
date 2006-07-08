@@ -161,7 +161,7 @@ if (isset($_REQUEST["newReviewer"]))
   <SELECT name="newReviewer" SINGLE onChange="document.selectReviewer.submit()">
   <?
   $query = "SELECT ContactInfo.contactId, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email "
-  . " from ContactInfo join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ") "
+  . " from ContactInfo join PCMember using (contactId) "
   . " ORDER BY ContactInfo.lastName";
 $result = $Conf->qe($query);
  print "<OPTION VALUE=\"-1\"> (Remember to select a committee member!)</OPTION>";

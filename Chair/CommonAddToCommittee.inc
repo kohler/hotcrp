@@ -1,8 +1,9 @@
 <?php 
 require_once('../Code/confHeader.inc');
 $Conf->connect();
-$_SESSION["Me"]->goIfInvalid("../");
-$_SESSION["Me"]->goIfNotChair('../');
+$Me = $_SESSION["Me"];
+$Me->goIfInvalid("../");
+$Me->goIfNotChair('../');
 $Conf->header_head("Manage $AddWhat");
 ?>
 <script type="text/javascript"><!--
@@ -21,10 +22,11 @@ function doRemove(id) {
     var but = document.getElementById("rem" + id);
     var chg = document.getElementById("chg" + id);
     var row = document.getElementById("pcrow" + id);
-    chg.value = (but.value == "Remove" ? "rem" : "chg");
+    var rem = (but.value == "Remove from PC");
+    chg.value = (rem ? "rem" : "chg");
     var x = row.className.replace(/ *removed/, '');
-    row.className = x + (but.value == "Remove" ? " removed" : "");
-    but.value = (but.value == "Remove" ? "Do not remove" : "Remove");
+    row.className = x + (rem ? " removed" : "");
+    but.value = (rem ? "Do not remove" : "Remove from PC");
     highlightUpdate(id);
 }
 // -->
@@ -39,6 +41,23 @@ function vtrim(&$var) {
 	return ltrim(rtrim($var));
     else
 	return '';
+}
+
+function updateRoles($id, $suff, $email) {
+    global $Conf;
+    // successfully looked up member, now make them a PC member
+    $Conf->qe("delete from PCMember where contactId=$id");
+    $Conf->qe("delete from ChairAssistant where contactId=$id");
+    $Conf->qe("delete from Chair where contactId=$id");
+    if ((isset($_REQUEST["ass$suff"]) && $_REQUEST["ass$suff"])
+	|| (isset($_REQUEST["chair$suff"]) && $_REQUEST["chair$suff"]))
+	$_REQUEST["pc"] = 1;
+    foreach (array("pc$suff" => "PCMember", "ass$suff" => "ChairAssistant", "chair$suff" => "Chair") as $key => $table)
+	if (isset($_REQUEST[$key]) && $_REQUEST[$key] > 0) {
+	    $result = $Conf->qe("insert into $table set contactId='$id'");
+	    if (!DB::isError($result))
+		$Conf->log("Added $email as $table", $_SESSION["Me"]);
+	}
 }
 
 if (isset($_REQUEST["update"])) {
@@ -82,63 +101,28 @@ if (isset($_REQUEST["update"])) {
 	}
 
 	// successfully looked up member, now make them a PC member
-	$Conf->qe("delete from Roles where contactId=$id, role>=" . ROLE_PC);
-	if ((isset($_REQUEST["role".ROLE_ASSISTANT]) && $_REQUEST["role".ROLE_ASSISTANT])
-	    || (isset($_REQUEST["role".ROLE_CHAIR]) && $_REQUEST["role".ROLE_CHAIR]))
-	    $_REQUEST["role".ROLE_PC] = 1;
-	for ($role = ROLE_PC; $role <= ROLE_CHAIR; $role++) {
-	    if (!isset($_REQUEST["role$role"]) || !$_REQUEST["role$role"])
-		continue;
-	    $query = "insert into Roles set contactId='$id', role=$role";
-	    $result = $Conf->qe($query, "while adding " . htmlspecialchars($email) . " to $AddWhat");
-	    if (!DB::isError($result)) {
-		//$Conf->infoMsg("Added " . htmlspecialchars($email) . " to $AddWhat.");
-		$Conf->log("Added $email as $AddWhat (role $role)", $_SESSION["Me"]);
-	    } else
-		break;
-	}
+	updateRoles($id, "new", $email);
 
 	// unset values
-	foreach (array('name', 'email', 'affiliation', 'role' . ROLE_PC,
-		       'role' . ROLE_ASSISTANT, 'role' . ROLE_CHAIR) as $what)
+	foreach (array('name', 'email', 'affiliation', 'pcnew', 'assnew', 'chairnew') as $what)
 	    unset($_REQUEST[$what]);
     }
 
     // Now, update existing members
     foreach ($_REQUEST as $key => $value)
 	if ($key[0] == 'c' && $key[1] == 'h' && $key[2] == 'g'
-	    && ($id = (int) substr($key, 3)) > 0) {
+	    && ($id = cvtint(substr($key, 3))) > 0 && $id != $Me->contactId) {
 	    // remove?
 	    if ($value == "rem") {
-		$result = $Conf->qe("delete from Roles where contactId='$id' and role >= " . ROLE_PC, "while deleting member");
-		if (!DB::isError($result))
-		    $Conf->log("Removed someone from PC", $_SESSION["Me"]);
-		continue;
+		unset($_REQUEST["pc$id"], $_REQUEST["ass$id"], $_REQUEST["chair$id"]);
+		$log = "Removed someone";
+	    } else {
+		$_REQUEST["pc$id"] = 1;
+		$log = "Changed someone's status";
 	    }
-
-	    // remove existing PC roles
-	    $result = $Conf->qe("delete from Roles where contactId='$id' and role>" . ROLE_PC, "while updating member's roles");
-	    if (!DB::isError($result) && isset($_REQUEST['chair']) && in_array($id, $_REQUEST['chair']))
-		$result = $Conf->qe("insert into Roles set contactId='$id', role=" . ROLE_CHAIR, "while adding member as Chair");
-	    if (!DB::isError($result) && isset($_REQUEST['ass']) && in_array($id, $_REQUEST['ass']))
-		$result = $Conf->qe("insert into Roles set contactId='$id', role=" . ROLE_ASSISTANT, "while adding member as assistant");
-	    if (!DB::isError($result))
-		$Conf->log("Added someone as Chair", $_SESSION["Me"]);
+	    updateRoles($id, $id, "ID $id");
 	}
  }
-
-function outrow() {
-    global $id, $first, $last, $email, $affiliation, $assistant, $chair;
-    echo "<tr id='pcrow$id'>\n";
-    echo "  <td class='pc_name'>$first $last</td>\n";
-    echo "  <td class='pc_email'>$email</td>\n";
-    echo "  <td class='pc_aff'>$affiliation</td>\n";
-    echo "  <td class='pc_chairbox'><input type='checkbox' name='chair[]' value='$id' ", ($chair ? "checked='checked'" : ""), " onclick='highlightUpdate(\"$id\")' /></td>\n";
-    echo "  <td class='pc_assbox'><input type='checkbox' name='ass[]' value='$id' ", ($assistant ? "checked='checked'" : ""), " onclick='highlightUpdate(\"$id\")' /></td>\n";
-    echo "  <td class='pc_action'><input class='button' type='button' value='Remove from PC' name='rem$id' id='rem$id' onclick='doRemove(\"$id\")' />
-    <input type='hidden' value='' name='chg$id' id='chg$id' /></td>
-</tr>\n";
-}
 
 function addedvalue($what, $checked) {
     if (isset($_REQUEST[$what])) {
@@ -149,11 +133,14 @@ function addedvalue($what, $checked) {
     }
 }
 
-$query = "select ContactInfo.contactId, ContactInfo.firstName, "
-    . " ContactInfo.lastName, ContactInfo.email, ContactInfo.affiliation, "
-    . " Roles.role from ContactInfo, Roles where "
-    . " Roles.contactId = ContactInfo.contactId and Roles.role >= " . ROLE_PC
-    . " order by ContactInfo.lastName";
+$query = "select ContactInfo.contactId, ContactInfo.firstName,
+	ContactInfo.lastName, ContactInfo.email, ContactInfo.affiliation,
+	ChairAssistant.contactId as ass, Chair.contactId as chair
+	from ContactInfo
+	join PCMember using (contactId)
+	left join ChairAssistant using (contactId)
+	left join Chair using (contactId)
+	order by ContactInfo.lastName";
 $result = $Conf->q($query);
 if (DB::isError($result))
     $Conf->errorMsg("Database error: " . $result->getMessage());
@@ -171,33 +158,40 @@ if (DB::isError($result))
 </tr>
 
 <?php
-    $id = -1; $chair = $assistant = 0;
     while ($row = $result->fetchRow()) {
-	if ($row[0] != $id && $id > 0) {
-	    outrow();
-	    $chair = $assistant = 0;
-	}
 	$id = $row[0];
-	$first = $row[1];
-	$last = $row[2];
-	$email = $row[3];
-	$affiliation = $row[4];
-	if ($row[5] == ROLE_CHAIR)
-	    $chair = 1;
-	if ($row[5] == ROLE_ASSISTANT)
-	    $assistant = 1;
+	echo "<tr id='pcrow$id'>
+  <td class='pc_name'>", htmlspecialchars(ltrim(rtrim("$row[1] $row[2]"))), "</td>
+  <td class='pc_email'>", htmlspecialchars($row[3]), "</td>
+  <td class='pc_aff'>", htmlspecialchars($row[4]), "</td>
+  <td class='pc_chairbox'><input type='checkbox' name='chair$id' value='1'";
+	if ($row[6])
+	    echo " checked='checked'";
+	if ($id == $Me->contactId)
+	    echo " disabled='disabled'";
+	echo " onclick='highlightUpdate($id)' /></td>
+  <td class='pc_assbox'><input type='checkbox' name='ass$id' value='1'";
+	if ($row[5])
+	    echo " checked='checked'";
+	if ($id == $Me->contactId)
+	    echo " disabled='disabled'";
+	echo " onclick='highlightUpdate($id)' /></td>
+  <td class='pc_action'><input class='button' type='button' value='Remove from PC' name='rem$id' id='rem$id'";
+	if ($id == $Me->contactId)
+	    echo " disabled='disabled'";
+	echo " onclick='doRemove($id)' />
+    <input type='hidden' value='' name='chg$id' id='chg$id' /></td>
+</tr>\n";
     }
-    if ($id > 0)
-	outrow();
 ?>
 
 <tr>
   <td class='pc_name'><input type="text" name="name" size="20" onchange='highlightUpdate(0)' <?php addedvalue('name', 0) ?>/></td>
   <td class='pc_email'><input type="text" name="email" size="20" onchange='highlightUpdate(0)' <?php addedvalue('email', 0) ?>/></td>
   <td class='pc_aff'><input type="text" name="affiliation" size="10" onchange='highlightUpdate(0)' <?php addedvalue('affiliation', 0) ?>/></td>
-  <td class='pc_chairbox'><input type='checkbox' name='role<?php echo ROLE_CHAIR ?>' value='1' <?php addedvalue('role' . ROLE_CHAIR, 1) ?>/></td>
-  <td class='pc_assbox'><input type='checkbox' name='role<?php echo ROLE_ASSISTANT ?>' value='1' <?php addedvalue('role' . ROLE_ASSISTANT, 1) ?>/></td>
-  <td class='pc_action'><input type='hidden' name='role<?php echo ROLE_PC ?>' value='1' />Enter new member here</td>
+  <td class='pc_chairbox'><input type='checkbox' name='chairnew' value='1' <?php addedvalue('nchair', 1) ?>/></td>
+  <td class='pc_assbox'><input type='checkbox' name='assnew' value='1' <?php addedvalue('nass', 1) ?>/></td>
+  <td class='pc_action'><input type='hidden' name='pcnew' value='1' />Enter new member here</td>
 </tr>
 
 <tr>

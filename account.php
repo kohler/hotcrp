@@ -42,11 +42,14 @@ if (isset($_REQUEST['register']) && $OK) {
 	    }
 	    
 	    // initialize roles too
-	    if (isset($_REQUEST["role" . ROLE_ASSISTANT]) || isset($_REQUEST["role" . ROLE_CHAIR]))
-		$_REQUEST["role" . ROLE_PC] = 1;
-	    for ($i = ROLE_PC; $i <= ROLE_CHAIR; $i++)
-		if (isset($_REQUEST["role$i"]))
-		    $Conf->qe("insert into Roles set contactId=$Me->contactId, role=$i", "while initializing roles");
+	    if (isset($_REQUEST["ass"]) || isset($_REQUEST["chair"]))
+		$_REQUEST["pc"] = 1;
+	    if (isset($_REQUEST["pc"]))
+		$Conf->qe("insert into PCMember set contactId=$Me->contactId", "while initializing roles");
+	    if (isset($_REQUEST["ass"]))
+		$Conf->qe("insert into ChairAssistant set contactId=$Me->contactId", "while initializing roles");
+	    if (isset($_REQUEST["chair"]))
+		$Conf->qe("insert into Chair set contactId=$Me->contactId", "while initializing roles");
 	}
 	
 	$Me->firstName = $_REQUEST["firstName"];
@@ -107,9 +110,9 @@ $Conf->header_head($title);
 ?>
 <script type="text/javascript"><!--
 function doRole(what) {
-    var pc = document.getElementById("role<?php echo ROLE_PC ?>");
-    var ass = document.getElementById("role<?php echo ROLE_ASSISTANT ?>");
-    var chair = document.getElementById("role<?php echo ROLE_CHAIR ?>");
+    var pc = document.getElementById("pc");
+    var ass = document.getElementById("ass");
+    var chair = document.getElementById("chair");
     if (pc == what && !pc.checked)
 	ass.checked = chair.checked = false;
     if (pc != what && (ass.checked || chair.checked))
@@ -180,9 +183,10 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
   <td class='form_caption'>Roles:</td>
   <td colspan='3' class='form_entry'>
 <?php
-    foreach (array(ROLE_PC => "PC&nbsp;member", ROLE_ASSISTANT => "Chair's&nbsp;assistant", ROLE_CHAIR => "PC&nbsp;chair") as $key => $value) {
-	echo "    <input type='checkbox' name='role$key' id='role$key' value='1' ";
-	if (isset($_REQUEST["role$key"])) echo "checked='checked' ";
+    foreach (array("pc" => "PC&nbsp;member", "ass" => "Chair's&nbsp;assistant", "chair" => "PC&nbsp;chair") as $key => $value) {
+	echo "    <input type='checkbox' name='$key' id='$key' value='1' ";
+	if (isset($_REQUEST["$key"]))
+	    echo "checked='checked' ";
 	echo "onclick='doRole(this)' />&nbsp;", $value, "&nbsp;&nbsp;\n";
     }
 ?>

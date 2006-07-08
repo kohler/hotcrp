@@ -17,7 +17,7 @@ function showPCConflictPapers()
     . " ContactInfo.contactId "
     . " from Paper join ContactInfo "
     . " join PaperConflict on (ContactInfo.contactId=PaperConflict.contactId and PaperConflict.paperId=Paper.paperId and author=0) "
-    . " join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ")"
+    . " join PCMember on (ContactInfo.contactId=PCMember.contactId)"
     . " ORDER by ContactInfo.lastName, Paper.paperId ";
   $r=$Conf->qe($query);
   if (!DB::isError($r)) {

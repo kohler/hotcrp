@@ -203,7 +203,7 @@ class Conference {
   // Determine roles baased on email address and/or contactId
   //
   function emailIsPC($email) {
-      $result = $this->q("select Roles.contactId from ContactInfo, Roles where (email='" . mysql_real_escape_string($email) . "' and ContactInfo.contactId = Roles.contactId and role = " . ROLE_PC . ")");
+      $result = $this->q("select PCMember.contactId from ContactInfo join PCMember using (contactId) where email='" . sqlq($email) . "'");
       if (!DB::isError($result) && $result->numRows() > 0) {
 	  $row = $result->fetchRow();
 	  return $row[0];
@@ -212,7 +212,7 @@ class Conference {
   }
 
   function contactIsPC($id) {
-      $result=$this->q("select contactId from Roles where contactId = $id and role = " . ROLE_PC);
+      $result=$this->q("select contactId from PCMember where contactId=$id");
       if (!DB::isError($result) && $result->numRows() > 0) {
 	  $row = $result->fetchRow();
 	  return $row[0];
@@ -223,7 +223,7 @@ class Conference {
   function emailIsChair($email) {
       if ($this->setupPhase)
 	  return 1;
-      $result = $this->q("select Roles.contactId FROM ContactInfo, Roles where (email = '" . mysql_real_escape_string($email) . "' and ContactInfo.contactId = Roles.contactId and Roles.role = " . ROLE_CHAIR . ")");
+      $result = $this->q("select Chair.contactId FROM ContactInfo join Chair using (contactId) where email='" . sqlq($email) . "'");
       if (!DB::isError($result) && $result->numRows() > 0) {
 	  $row = $result->fetchRow();
 	  return $row[0];
@@ -234,7 +234,7 @@ class Conference {
   function contactIsChair($id) {
       if ($this->setupPhase)
 	  return 1;
-      $result = $this->q("select contactId from Roles where contactId = $id and role = " . ROLE_CHAIR);
+      $result = $this->q("select contactId from Chair where contactId=$id");
       if (!DB::isError($result) && $result->numRows() > 0) {
 	  $row = $result->fetchRow();
 	  return $row[0];
@@ -243,7 +243,7 @@ class Conference {
   }
 
   function contactIsAssistant($id) {
-      $result = $this->q("select contactId from Roles where contactId = $id and role = " . ROLE_ASSISTANT);
+      $result = $this->q("select contactId from ChairAssistant where contactId=$id");
       if (!DB::isError($result) && $result->numRows() > 0) {
 	  $row = $result->fetchRow();
 	  return $row[0];
@@ -1489,7 +1489,7 @@ class Conference {
 
     function allPCConflicts() {
 	$result=$this->qe("select paperId from PaperConflict
-		join Roles on (Roles.contactId=PaperConflict.contactId and Roles.role=" . ROLE_PC . ")", "while examining conflicts");
+		join PCMember using (contactId)", "while examining conflicts");
 	$conflicts = array();
 	if (!DB::isError($result))
 	    while ($row = $result->fetchRow())
@@ -1504,8 +1504,7 @@ class Conference {
   function makePCSelector($varName, $selected, $size=10) {
     print "<SELECT name=$varName SINGLE size=$size>\n";
     $query = "SELECT ContactInfo.contactId, firstName, lastName, email "
-      . " from ContactInfo join Roles using (contactId) "
-      . " where Roles.role = " . ROLE_PC . " "
+      . " from ContactInfo join PCMember using (contactId) "
       . " ORDER BY lastName, firstName ";
     $result = $this->qe($query);
     if (!DB::isError($result)) {
@@ -1714,8 +1713,8 @@ class Conference {
 
     if ( $this->allowReviewerPreferences ) {
       $query="SELECT ContactInfo.contactId, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email "
-	. " FROM ContactInfo, PaperReviewerPreference "
-	. " join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ")"
+	. " FROM ContactInfo join PaperReviewerPreference "
+	. " join PCMember on (contactId)"
 	. " WHERE PaperReviewerPreference.paperId='$paperId' "
 	. " AND ContactInfo.contactId=PaperReviewerPreference.contactId "
 	. " ORDER BY ContactInfo.lastName";

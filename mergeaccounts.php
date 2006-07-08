@@ -12,6 +12,16 @@ function crpmergeone($table, $field, $oldid, $newid) {
 	$MergeError .= $Conf->dbErrorText($result, "", 0);
 }
 
+function crpmergeonex($table, $field, $oldid, $newid) {
+    global $Conf;
+    $result = $Conf->q("update $table set $field=$newid where $field=$oldid");
+    if (DB::isError($result)) {
+	$result = $Conf->q("delete from $table where $field=$oldid");
+	if (DB::isError($result))
+	    $MergeError .= $Conf->dbErrorText($result, "", 0);
+    }
+}
+
 if (isset($_REQUEST["merge"])) {
     if (!$_REQUEST["email"])
 	$MergeError = "Enter an email address to merge.";
@@ -50,7 +60,9 @@ If you suspect something fishy, contact the site administrator at\n\
 	    //
 	    crpmergeone("Paper", "contactId", $oldid, $newid);
 	    crpmergeone("PaperConflict", "contactId", $oldid, $newid);
-	    crpmergeone("Roles", "contactId", $oldid, $newid);
+	    crpmergeonex("PCMember", "contactId", $oldid, $newid);
+	    crpmergeonex("ChairAssistant", "contactId", $oldid, $newid);
+	    crpmergeonex("Chair", "contactId", $oldid, $newid);
 	    crpmergeone("TopicInterest", "contactId", $oldid, $newid);
 	    crpmergeone("ReviewRequest", "contactId", $oldid, $newid);
 	    crpmergeone("ReviewRequest", "requestedBy", $oldid, $newid);

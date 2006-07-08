@@ -39,23 +39,29 @@ class Contact {
 	if ($conf == null)
 	    $conf = $Conf;
 	if (!$this->validated && $this->contactId > 0) {
-	    $result = $conf->q("select role, max(author) as author
-		from Roles
+	    $result = $conf->q("select max(author) as author,
+			PCMember.contactId as pcMember,
+			ChairAssistant.contactId as assistant,
+			Chair.contactId as chair
+		from ContactInfo
 		left join PaperConflict using (contactId)
-		where Roles.contactId=$this->contactId group by role");
+		left join PCMember using (contactId)
+		left join ChairAssistant using (contactId)
+		left join Chair using (contactId)
+		group by author");
 	    if (DB::isError($result) || $result->numRows() == 0)
 		$this->invalidate();
 	    else {
 		$this->isAuthor = $this->isPC = $this->isChair = $this->isAssistant = 0;
 		while ($row = $result->fetchRow()) {
-		    if ($row[1] > 0)
+		    if ($row[0] > 0)
 			$this->isAuthor = 1;
-		    if ($row[0] == ROLE_PC)
+		    if ($row[1] > 0)
 			$this->isPC = 1;
-		    if ($row[0] == ROLE_CHAIR)
-			$this->isChair = 1;
-		    if ($row[0] == ROLE_ASSISTANT)
+		    if ($row[2] > 0)
 			$this->isAssistant = $this->isPC = 1;
+		    if ($row[3] > 0)
+			$this->isChair = 1;
 		}
 		if ($conf->setupPhase)
 		    $this->isChair = 1;
@@ -262,10 +268,7 @@ class Contact {
       $result = $conf->q(sprintf("insert into ContactInfo set email='%s', password='%s'", sqlqtrim($this->email), sqlqtrim($this->password)));
       if (DB::isError($result))
 	  return $result;
-      $result = $this->lookupByEmail($this->email, $conf);
-      if (DB::isError($result))
-	  return $result;
-      return $conf->q("insert into Roles set contactId=$this->contactId, role=" . ROLE_EXISTS);
+      return $this->lookupByEmail($this->email, $conf);
   }
 
   function updateFromQuery($query, $conf) {

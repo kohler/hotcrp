@@ -65,7 +65,7 @@ $Conf->infoMsg("This table shows you the papers that may be authored by "
 
 $qpc = "SELECT ContactInfo.contactId, firstName, lastName, email, collaborators"
 . ", affiliation"
-. " FROM ContactInfo join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ")"
+. " from ContactInfo join PCMember using (contactId)"
 . " ORDER BY lastName, firstName ";
 
 $rpc = $Conf->qe($qpc);

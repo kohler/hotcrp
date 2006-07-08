@@ -27,22 +27,6 @@ CREATE TABLE ActionLog (
 #
 
 
-#
-# Table structure for table 'Roles'
-#
-
-drop table if exists Roles;
-CREATE TABLE Roles (
-  contactId int(11) NOT NULL,
-  role tinyint(1) NOT NULL,
-  KEY contactId (contactId),
-  KEY role (role)
-) TYPE=MyISAM;
-
-#
-# Dumping data for table 'Roles'
-#
-
 
 #
 # Table structure for table 'ContactInfo'
@@ -74,6 +58,51 @@ CREATE TABLE ContactInfo (
 
 #
 # Dumping data for table 'ContactInfo'
+#
+
+
+#
+# Table structure for table 'PCMember'
+#
+
+drop table if exists PCMember;
+CREATE TABLE PCMember (
+  contactId int(11) NOT NULL,
+  UNIQUE KEY contactId (contactId)
+) TYPE=MyISAM;
+
+#
+# Dumping data for table 'PCMember'
+#
+
+
+#
+# Table structure for table 'Chair'
+#
+
+drop table if exists Chair;
+CREATE TABLE Chair (
+  contactId int(11) NOT NULL,
+  UNIQUE KEY contactId (contactId)
+) TYPE=MyISAM;
+
+#
+# Dumping data for table 'Chair'
+#
+
+
+#
+# Table structure for table 'ChairAssistant'
+#
+
+drop table if exists ChairAssistant;
+CREATE TABLE ChairAssistant (
+  contactId int(11) NOT NULL,
+  UNIQUE KEY contactId (contactId)
+) TYPE=MyISAM;
+
+#
+# Dumping data for table 'ChairAssistant'
 #
 
 

@@ -19,8 +19,8 @@ if (isset($_REQUEST["nag"])) {
 } else {
  
   $query = "select ContactInfo.contactId, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.visits, ContactInfo.note, ContactInfo.collaborators "
-    . " FROM ContactInfo, Roles WHERE "
-    . " (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ") ORDER BY ContactInfo.lastName";
+    . " FROM ContactInfo join PCMember using (contactId) "
+    . " ORDER BY ContactInfo.lastName";
 $result = $Conf->qe($query);
   if (DB::isError($result)) {
     $Conf->errorMsg("There are no program committee memebers? "

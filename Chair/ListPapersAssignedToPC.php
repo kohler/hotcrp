@@ -75,7 +75,7 @@ $Conf -> infoMsg("Click on the PC member to got to their detailed view");
 
 $query = "SELECT ContactInfo.contactId, firstName, lastName, email "
  . " FROM ContactInfo "
- . " join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ")"
+ . " join PCMember using (contactId)"
  . " ORDER BY lastName, firstName"
 ;
 
@@ -111,7 +111,7 @@ if (DB::isError($result1) ) {
 <?php 
 $query = "SELECT ContactInfo.contactId, firstName, lastName, email "
  . " FROM ContactInfo "
- . " join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ")"
+ . " join PCMember using (contactId)"
  . " ORDER BY lastName, firstName"
 ;
 
