@@ -13,6 +13,7 @@ class PaperList {
     const FIELD_REVIEWER_TYPE = 9;
     const FIELD_REVIEWER_STATUS = 10;
     const FIELD_SELECTOR = 11;
+    const FIELD_REVIEW = 12;
 
     var $showHeader;
     var $sortCol;
@@ -35,7 +36,7 @@ class PaperList {
     function selector($fieldId, &$queryFields, &$queryTables) {
     }
 
-    function header($fieldId) {
+    function header($fieldId, $ordinal) {
 	switch ($fieldId) {
 	case self::FIELD_ID:
 	case self::FIELD_ID_MANAGE:
@@ -54,21 +55,24 @@ class PaperList {
 	case self::FIELD_REVIEWER_STATUS:
 	    return "Reviewer status";
 	case self::FIELD_SELECTOR:
-	    return "";
+	    return ($ordinal ? "&nbsp;" : "");
+	case self::FIELD_REVIEW:
+	    return "&nbsp;";
 	default:
 	    return "&lt;$fieldId&gt;?";
 	}
     }
 
     function content($fieldId, $row, $plist) {
-	global $ConfSiteBase;
+	global $ConfSiteBase, $Conf;
+	$Me = $_SESSION["Me"];
 	switch ($fieldId) {
 	case self::FIELD_ID:
-	    return "<a href='${ConfSiteBase}All/ViewPaper.php?paperId=$row->paperId'>[#$row->paperId]</a>";
+	    return "<a href='${ConfSiteBase}All/ViewPaper.php?paperId=$row->paperId'>#$row->paperId</a>";
 	case self::FIELD_ID_MANAGE:
-	    return "<a href='${ConfSiteBase}Author/ManagePaper.php?paperId=$row->paperId'>[#$row->paperId]</a>";
+	    return "<a href='${ConfSiteBase}Author/ManagePaper.php?paperId=$row->paperId'>#$row->paperId</a>";
 	case self::FIELD_ID_REVIEW:
-	    return "<a href='${ConfSiteBase}All/ReviewPaper.php?paperId=$row->paperId'>[#$row->paperId]</a>";
+	    return "<a href='${ConfSiteBase}All/ReviewPaper.php?paperId=$row->paperId'>#$row->paperId</a>";
 	case self::FIELD_TITLE:
 	    return "<a href='${ConfSiteBase}All/ViewPaper.php?paperId=$row->paperId'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_TITLE_MANAGE:
@@ -78,7 +82,7 @@ class PaperList {
 	case self::FIELD_STATUS:
 	    if ($row->acknowledged <= 0 && $row->withdrawn <= 0)
 		$this->needFinalize++;
-	    return $_SESSION['Me']->paperStatus($row->paperId, $row, $row->myMinRole == ROLE_AUTHOR);
+	    return $Me->paperStatus($row->paperId, $row, $row->myMinRole == ROLE_AUTHOR);
 	case self::FIELD_DOWNLOAD:
 	    if ($row->size > 0)
 		return paperDownload($row->paperId, $row);
@@ -96,7 +100,7 @@ class PaperList {
 	case self::FIELD_REVIEWER_STATUS:
 	    if ($row->myReviewType == 0)
 		return "";
-	    else if ($row->myReviewFinalized == null)
+	    else if ($row->myReviewFinalized === null)
 		return "<span class='rstat rstat_no'>Not started</span>";
 	    else if ($row->myReviewFinalized == 0)
 		return "<span class='rstat rstat_prog'>In progress</span>";
@@ -105,6 +109,28 @@ class PaperList {
 	case self::FIELD_SELECTOR:
 	    $this->anySelector = 1;
 	    return "<input class='rstat rstat_sel' type='checkbox' name='papersel[]' value='$row->paperId' />";
+	case self::FIELD_REVIEW:
+	    $revulink = "href='${ConfSiteBase}All/ReviewPaper.php?paperId=$row->paperId'";
+	    $asked = ($row->myReviewType > 0);
+	    $timeGood = $Conf->timeReviewPaper($Me->isPC, $asked, false);
+	    $timeOK = $Conf->timeReviewPaper($Me->isPC, $asked, true);
+	    if ($row->myReviewType > 0 && !$row->myReviewFinalized && !$timeGood)
+		return "<a class='review_past' $revulink>Review&nbsp;past&nbsp;due</a>";
+	    else if (($row->myReviewType > 0 && $row->myReviewFinalized === null)
+		     || ($row->conflictCount == 0 && $timeOK && $row->acknowledged > 0 && $row->withdrawn <= 0))
+		return "<a class='review_start' $revulink>Start&nbsp;review</a>";
+	    else if ($row->myReviewType > 0 && !$row->myReviewFinalized)
+		return "<a class='review_comp' $revulink>Complete&nbsp;review</a>";
+	    else if ($row->myReviewType > 0 && $timeOK)
+		return "<a class='review_edit' $revulink>Edit&nbsp;review</a>";
+	    else if ($row->myReviewType > 0)
+		return "<a class='review_view' $revulink>See&nbsp;review</a>";
+	    else if ($Me->isPC && $row->myMinRole == ROLE_AUTHOR)
+		return "<span class='author'>Author</span>";
+	    else if ($Me->isPC && $row->conflictCount > 0)
+		return "<span class='conflict'>Conflict</span>";
+	    else
+		return "";
 	default:
 	    return "";
 	}
@@ -174,9 +200,10 @@ class PaperList {
 
 	if ($this->showHeader) {
 	    $x .= "  <tr class=\"pl_headrow\">\n";
+	    $ord = 0;
 	    foreach ($fieldId as $f) {
 		$x .= "    <th class=\"pl_$f[1]\">";
-		$x .= $this->header($f[0]) . "</th>\n";
+		$x .= $this->header($f[0], $ord++) . "</th>\n";
 	    }
 	    $x .= "  </tr>\n";
 	}

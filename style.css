@@ -124,7 +124,7 @@ input.button_alert {
 	border-bottom: 2px solid #996666;
 	border-right: 3px solid #996666;
 }
-a.download {
+a.download, a.review_start, a.review_comp, a.review_edit, a.review_view {
 	font-size: small;
 	padding: 1px 0.25em;
 	background: #ffff99;
@@ -133,6 +133,21 @@ a.download {
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
 	text-decoration: none;
+}
+a.review_past {
+	font-size: small;
+	font-weight: bold;
+	padding: 1px 0.25em;
+	background: #ffaaaa;
+	border-top: 1px solid #ee6666;
+	border-left: 2px solid #ee6666;
+	border-bottom: 1px solid #996666;
+	border-right: 2px solid #996666;
+	text-decoration: none;
+}
+span.author, span.conflict {
+	font-weight: bold;
+	color: #ff0000;
 }
 
 tr {

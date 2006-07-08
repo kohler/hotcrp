@@ -137,30 +137,16 @@ class Conference {
       }
   }
 
-  function updateImportantDates() {
-      $this->startTime = array();
-      $this->endTime = array();
-      //
-      // Suck in the start/end dates
-      //
-      $result = $this->q("SELECT name, unix_timestamp(start) as st, unix_timestamp(end) as en FROM ImportantDates");
-
-      if (!DB::isError($result)) {
-
-	while($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
-	  $name = $row['name'];
-	  $start = $row['st'];
-	  $end = $row['en'];
-
-	  if ( $start != 0 ) {
-	    $this->startTime[$name] = $start;
-	  }
-
-	  if ( $end != 0 ) {
-	    $this->endTime[$name] = $end;
-	  }
-	}
-      }	
+    function updateImportantDates() {
+	// Suck in the start/end dates
+	$this->startTime = array();
+	$this->endTime = array();
+	$result = $this->q("select name, unix_timestamp(start) as st, unix_timestamp(end) as en from ImportantDates");
+	if (!DB::isError($result))
+	    while ($row = $result->fetchRow()) {
+		$this->startTime[$row[0]] = $row[1];
+		$this->endTime[$row[0]] = $row[2];
+	    }
     }
 
   function q($query) {
@@ -348,81 +334,88 @@ class Conference {
     }
 
 
-  //
-  // Can be overridden by subclass
-  //
-  function parseableTime($value) {
-      return date("j M Y g:i:sa",$value);
-  }
-  function printTime(&$value) {
-      if (isset($value) && $value > 0)
-	  return date("l j M Y g:i:sa T", $value);
-      else
-	  return "N/A";
-  }
-  function printableStartTime($what) {
-      return $this->printTime($this->startTime[$what]);
-  }
-  function printableEndTime($what) {
-      return $this->printTime($this->endTime[$what]);
-  }
-  function printDeadline($what) {
-      if (!isset($this->endTime[$what]) || $this->endTime[$what] <= 0)
-	  return "No deadline";
-      else
-	  return "Deadline: " . $this->printTime($this->endTime[$what]);
-  }
+    //
+    // Can be overridden by subclass
+    //
+    function parseableTime($value) {
+	return date("j M Y g:i:sa",$value);
+    }
+    function printTime(&$value) {
+	if (isset($value) && $value > 0)
+	    return date("l j M Y g:i:sa T", $value);
+	else
+	    return "N/A";
+    }
+    function printableStartTime($what) {
+	return $this->printTime($this->startTime[$what]);
+    }
+    function printableEndTime($what) {
+	return $this->printTime($this->endTime[$what]);
+    }
+    function printDeadline($what) {
+	if (!isset($this->endTime[$what]) || $this->endTime[$what] <= 0)
+	    return "No deadline";
+	else
+	    return "Deadline: " . $this->printTime($this->endTime[$what]);
+    }
 
-  function printTimeRange($what) {
-      $start = &$this->startTime[$what];
-      $end = &$this->endTime[$what];
-      $now = time();
+    function printTimeRange($what) {
+	$start = &$this->startTime[$what];
+	$end = &$this->endTime[$what];
+	$now = time();
       
-      $str = "";
-      if (isset($start) && $start > 0 && $start >= $now) {
-	  $str = "after " . $this->printTime($start);
-	  if (isset($end) && $end > 0)
-	      $str .= " and ";
-      }
+	$str = "";
+	if (isset($start) && $start > 0 && $start >= $now) {
+	    $str = "after " . $this->printTime($start);
+	    if (isset($end) && $end > 0)
+		$str .= " and ";
+	}
 
-      if (isset($end) && $end > 0)
-	  $str .= "until " . $this->printTime($end);
-      
-      return $str;
-
+	if (isset($end) && $end > 0)
+	    $str .= "until " . $this->printTime($end);
+	
+	return $str;
     }
 
     function validPeriod($name) {
 	$now = time();
-	if (!isset($this->startTime[$name]) || $this->startTime[$name] >= $now)
-	    return -1;
-	else {
-	    $t = &$this->endTime[$name];
-	    return !isset($t) || $t <= 0 || $now <= $t;
-	}
+	$t = &$this->startTime[$name];
+	if (!isset($t) || $t <= 0 || $t >= $now)
+	    return 0;
+	$t = &$this->endTime[$name];
+	return !isset($t) || $t <= 0 || $now <= $t;
     }
 
-    function canStartPaper() {
+    function timeStartPaper() {
 	return $this->validPeriod('startPaperSubmission') > 0;
     }
-    function canUpdatePaper() {
+    function timeUpdatePaper() {
 	return $this->validPeriod('updatePaperSubmission') > 0;
     }
-    function canFinalizePaper() {
+    function timeFinalizePaper() {
 	return $this->validPeriod('finalizePaperSubmission') > 0;
     }
-    function canAuthorViewReviews() {
+    function timeAuthorViewReviews() {
 	return $this->validPeriod('authorViewReviews') > 0;
     }
-    function canAuthorViewDecision() {
+    function timeAuthorViewDecision() {
 	return $this->validPeriod('authorViewDecision') > 0;
     }
-    function canPCReviewAnyPaper() {
-	return $this->validPeriod('PCReviewAnyPaper') > 0;
+    function timeReviewPaper($isPC = false, $requested = true, $trueDeadline = true) {
+	if ($isPC && $requested) {
+	    $d = ($trueDeadline ? "PCSubmitReviewDeadline" : "PCSubmitReview");
+	    return $this->validPeriod($d) > 0;
+	} else if ($isPC)
+	    return $this->validPeriod("PCReviewAnyPaper") > 0;
+	else if ($requested) {
+	    $d = ($trueDeadline ? "reviewerSubmitReviewDeadline" : "reviewerSubmitReview");
+	    return $this->validPeriod($d) > 0;
+	} else
+	    return false;
     }
     function canViewAuthors($me, $prow) {
 	$amAuthor = ($prow->myMinRole == ROLE_AUTHOR);
-	if ($amAuthor || !$this->blindSubmission)
+	if ($amAuthor || (!$this->blindSubmission && $prow->acknowledged > 0 && $prow->withdrawn <= 0))
 	    return 1;
 	if (paperAccepted($prow) && $this->validPeriod('EndOfTheMeeting'))
 	    return 1;
@@ -431,12 +424,13 @@ class Conference {
 	return 0;
     }
 
-  
+
     //
     // Is this particular event/deadline defined?
     //
     function validDeadline($what) {
-	return isset($this->startTime[$what]) && isset($this->endTime[$what]);
+	return isset($this->startTime[$what]) && isset($this->endTime[$what])
+	    && $this->startTime[$what] > 0 && $this->endTime[$what] > 0;
     }
 
   //
@@ -657,6 +651,7 @@ class Conference {
 	    exec("/bin/rm -rf $tmpdir");
 	return $result;
     }
+
     
     function paperQuery($contactId, $info = array()) {
 	$pq = "select Paper.*,
@@ -669,6 +664,11 @@ class Conference {
 	    $pq .= ",
 		MyReviewRequest.type as myReviewType,
 		MyReview.finalized as myReviewFinalized";
+	if (isset($info['myReviews'])) {
+	    global $reviewFields;
+	    foreach ($reviewFields as $k => $v)
+		$pq .= ",\t\tMyReview.$k as $k";
+	}
 	$pq .= "
 		from Paper
 		left join PaperStorage using (paperStorageId)\n";

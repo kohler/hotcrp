@@ -38,9 +38,9 @@ while ($OK && ($row = $result->fetchRow())) {
 function printPaperLinks() {
     global $prevPaperId, $prevPaperTitle, $nextPaperId, $nextPaperTitle, $OK;
     if ($OK && isset($prevPaperId))
-	echo "<div class='prevpaperlink'><a href='ManagePaper.php?paperId=$prevPaperId'>&lt; Previous Paper [#$prevPaperId] ", htmlspecialchars($prevPaperTitle), "</a></div>\n";
+	echo "<div class='prevpaperlink'><a href='ManagePaper.php?paperId=$prevPaperId'>&lt; Previous Paper #$prevPaperId ", htmlspecialchars($prevPaperTitle), "</a></div>\n";
     if ($OK && isset($nextPaperId))
-	echo "<div class='nextpaperlink'><a href='ManagePaper.php?paperId=$nextPaperId'>Next Paper [#$nextPaperId] ", htmlspecialchars($nextPaperTitle), " &gt;</a></div>\n";
+	echo "<div class='nextpaperlink'><a href='ManagePaper.php?paperId=$nextPaperId'>Next Paper #$nextPaperId ", htmlspecialchars($nextPaperTitle), " &gt;</a></div>\n";
     echo "<div class='clear'></div>\n\n";
 }
   */
@@ -77,7 +77,7 @@ $finalized = $prow->acknowledged > 0;
 <table class='view'>
 
 <tr>
-  <td class='pt_caption'><h2>[#<?php echo $paperId ?>]</h2></td>
+  <td class='pt_caption'><h2>#<?php echo $paperId ?></h2></td>
   <td class='pt_entry'><h2><?php echo htmlspecialchars($prow->title) ?></h2></td>
 </tr>
 

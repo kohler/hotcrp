@@ -1,5 +1,23 @@
 <?php 
 
+$reviewFields = array('paperSummary' => 0,
+		      'commentsToAuthor' => 0,
+		      'commentsToPC' => 0,
+		      'commentsToAddress' => 0,
+		      'weaknessOfPaper' => 0,
+		      'strengthOfPaper' => 0,
+		      'potential' => 1,
+		      'fixability' => 1,
+		      'overAllMerit' => 1,
+		      'reviewerQualification' => 1,
+		      'novelty' => 1,
+		      'technicalMerit' => 1,
+		      'interestToCommunity' => 1,
+		      'longevity' => 1,
+		      'grammar' => 1,
+		      'likelyPresentation' => 1,
+		      'suitableForShort' => 1);
+
 class ReviewForm {
 
     var $updatedWhen;
@@ -163,18 +181,26 @@ class ReviewForm {
     }
 
     
-    function textForm($paperId, $prow, $rrow, $useRequest = 0, $conf = null) {
+    function textForm($paperId, $prow, $rrow, $useRequest = 0, $conf = null,
+		      $header = 1) {
 	global $ReviewFormError, $Conf;
 	$conf = ($conf ? $conf : $Conf);
 	$sections = self::SECTIONS;
 
-	$x = "==+== " . $conf->shortName . " Paper Review Form
+	if ($header)
+	    $x = "==+== " . $conf->shortName . " Paper Review Form
 ==-== DO NOT DELETE, ALTER, OR INTRODUCE LINES BEGINNING WITH '==+=='!
-==-== Fill out lettered sections A through " . $sections[count($this->fieldOrder) - 1] . ".
+==-== Fill out lettered sections A through " . $sections[count($this->fieldOrder) - 1] . ".\n\n";
+	else
+	    $x = "";
 
-==-== =========================================================================
+	$x .= "==+== =========================================================================
 
-==+== Paper #$paperId\n";
+==+== Paper #";
+	if ($paperId > 0)
+	    $x .= "$paperId\n";
+	else
+	    $x .= "000000\n==-== Replace '000000' with the actual paper number.\n";
 	if (isset($prow))
 	    $x .= "==-== Title: $prow->title\n";
 
@@ -247,7 +273,7 @@ class ReviewForm {
 		    $this->garbageMessage($tf, $lineno, $garbage);
 		    $tf['err'][] = "$lineno: This review form appears to be for the wrong conference!";
 		    return 0;
-		} else if (preg_match("/^==\\+== Paper \#(\\d+)/", $line, $match)) {
+		} else if (preg_match("/^==\\+== Paper \#?(\\d+)/", $line, $match)) {
 		    if ($nfields > 0)
 			break;
 		    else {
@@ -266,8 +292,10 @@ class ReviewForm {
 			$field = null;
 		    }
 		    $mode = 1;
-		} else
+		} else {
 		    $field = null;
+		    $mode = 1;
+		}
 	    } else if ($mode < 2 && (substr($line, 0, 5) == "==-==" || ltrim($line) == ""))
 		/* ignore line */;
 	    else {
@@ -307,6 +335,18 @@ class ReviewForm {
 }
 
 
+function reviewForm($conf = null) {
+    global $Conf;
+    $conf = ($conf ? $conf : $Conf);
+    if (!isset($_SESSION["reviewForm"]))
+	$_SESSION["reviewForm"] = new ReviewForm($conf);
+    else
+	$_SESSION["reviewForm"]->validate($conf);
+    return $_SESSION["reviewForm"];
+}
+
+
+/*
 class FormVariable {
   var $formName;
   var $label;
@@ -845,5 +885,6 @@ Class ConferenceReview extends FormCollection {
     return $resultStr;
   }
 }
+*/
 
 ?>

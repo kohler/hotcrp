@@ -182,16 +182,6 @@ function paperAccepted($prow) {
     return $prow->outcome == 'accepted' || $prow->outcome == 'acceptedShort';
 }
 
-function reviewForm($conf = null) {
-    global $Conf;
-    $conf = ($conf ? $conf : $Conf);
-    if (!isset($_SESSION["reviewForm"]))
-	$_SESSION["reviewForm"] = new ReviewForm($conf);
-    else
-	$_SESSION["reviewForm"]->validate($conf);
-    return $_SESSION["reviewForm"];
-}
-
 function textArrayJoin($arr) {
     if (count($arr) == 1)
 	return $arr[0];

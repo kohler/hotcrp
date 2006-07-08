@@ -526,6 +526,7 @@ insert into PaperFields set fieldId=8, fieldName='Title (review)', description='
 insert into PaperFields set fieldId=9, fieldName='Reviewer', description='Reviewer type';
 insert into PaperFields set fieldId=10, fieldName='Reviewer status', description='Reviewer status';
 insert into PaperFields set fieldId=11, fieldName='Selector', description='Selector';
+insert into PaperFields set fieldId=12, fieldName='Review', description='Review';
 
 insert into PaperList set paperListId=1, paperListName='author',
 	shortDescription='Authored', description='Authored papers', 
@@ -545,6 +546,7 @@ insert into PaperListColumns set paperListId=2, fieldId=3, col=3;
 insert into PaperListColumns set paperListId=2, fieldId=4, col=4;
 insert into PaperListColumns set paperListId=2, fieldId=9, col=5;
 insert into PaperListColumns set paperListId=2, fieldId=10, col=6;
+insert into PaperListColumns set paperListId=2, fieldId=12, col=7;
 
 insert into PaperList set paperListId=3, paperListName='all',
 	shortDescription='All', description='All papers', 
@@ -556,6 +558,7 @@ insert into PaperListColumns set paperListId=3, fieldId=3, col=3;
 insert into PaperListColumns set paperListId=3, fieldId=4, col=4;
 insert into PaperListColumns set paperListId=3, fieldId=9, col=5;
 insert into PaperListColumns set paperListId=3, fieldId=10, col=6;
+insert into PaperListColumns set paperListId=3, fieldId=12, col=7;
 
 insert into PaperList set paperListId=4, paperListName='authorHome',
 	description='My papers (homepage view)', minRole=1, sortCol=0, query='';
@@ -568,6 +571,5 @@ insert into PaperList set paperListId=5, paperListName='reviewerHome',
 	minRole=100, sortCol=0, query='';
 insert into PaperListColumns set paperListId=5, fieldId=7, col=0;
 insert into PaperListColumns set paperListId=5, fieldId=8, col=1;
-insert into PaperListColumns set paperListId=5, fieldId=4, col=2;
-insert into PaperListColumns set paperListId=5, fieldId=9, col=3;
-insert into PaperListColumns set paperListId=5, fieldId=10, col=4;
+insert into PaperListColumns set paperListId=5, fieldId=9, col=2;
+insert into PaperListColumns set paperListId=5, fieldId=10, col=3;

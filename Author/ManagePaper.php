@@ -15,8 +15,8 @@ $overrideMsg = '';
 if ($Me->amAssistant())
     $overrideMsg = "  Select the \"Override deadlines\" checkbox and try again if you really want to override this deadline.";
 
-$updatable = $Conf->canUpdatePaper();
-$finalizable = $Conf->canFinalizePaper();
+$updatable = $Conf->timeUpdatePaper();
+$finalizable = $Conf->timeFinalizePaper();
 
 function get_prow($paperId) {
     global $Conf, $prow, $OK, $updatable, $can_update, $finalized, $withdrawn, $Me;
@@ -214,9 +214,9 @@ while ($OK && ($row = $result->fetchRow())) {
 function printPaperLinks() {
     global $prevPaperId, $prevPaperTitle, $nextPaperId, $nextPaperTitle, $OK;
     if ($OK && isset($prevPaperId))
-	echo "<div class='prevpaperlink'><a href='ManagePaper.php?paperId=$prevPaperId'>&lt; Previous Paper [#$prevPaperId] ", htmlspecialchars($prevPaperTitle), "</a></div>\n";
+	echo "<div class='prevpaperlink'><a href='ManagePaper.php?paperId=$prevPaperId'>&lt; Previous Paper #$prevPaperId ", htmlspecialchars($prevPaperTitle), "</a></div>\n";
     if ($OK && isset($nextPaperId))
-	echo "<div class='nextpaperlink'><a href='ManagePaper.php?paperId=$nextPaperId'>Next Paper [#$nextPaperId] ", htmlspecialchars($nextPaperTitle), " &gt;</a></div>\n";
+	echo "<div class='nextpaperlink'><a href='ManagePaper.php?paperId=$nextPaperId'>Next Paper #$nextPaperId ", htmlspecialchars($nextPaperTitle), " &gt;</a></div>\n";
     echo "<div class='clear'></div>\n\n";
 }
 
@@ -245,7 +245,7 @@ if ($OK) {
 
     printPaperLinks();
     
-    echo "<h2>[#$paperId] ", htmlspecialchars($prow->title), "</h2>\n\n";
+    echo "<h2>#$paperId ", htmlspecialchars($prow->title), "</h2>\n\n";
 
     echo "<form method='post' action=\"", $_SERVER['PHP_SELF'], "\" enctype='multipart/form-data'>
 <input type='hidden' name='paperId' value='$paperId' />

@@ -26,7 +26,6 @@ $DateName['reviewerViewDecision'] = "Outcomes and responses visible to reviewers
 
 $DateName['PCSubmitReview'] = "PC review period";
 $DateName['PCSubmitReviewDeadline'][1] = "Hard PC review deadline";
-$DateName['PCReviewAnyPaper'] = "PC can review any paper";
 $DateName['PCGradePapers'] = "Paper grading period";
 $DateName['PCMeetingView'] = "PC meeting view";
 $DateName['AtTheMeeting'] = "PC meeting";
@@ -45,11 +44,6 @@ $DateDescr['finalizePaperSubmission']
 $DateDescr['authorRespondToReviews']
 = "This should obviously overlap with the period reviews are visible.";
 
-$DateDescr['PCReviewAnyPaper']
-= "If you want the PC members to be able to review <i>any</i> paper that does not"
-. " have conflicts indicated, set this date range. "
-;
-
 $DateDescr['PCMeetingView'] = "When can PC members see the identity of reviews for"
     . " non-conflicting papers and assign paper grades.";
 $DateDescr['AtTheMeeting'] = "Used to hide information about chair opinions.";
@@ -62,7 +56,7 @@ function crp_dateview($name, $end) {
     $tname = $name . ($end ? "_end" : "_start");
     if (isset($_REQUEST[$tname]))
 	return $_REQUEST[$tname];
-    else if (isset($var[$name]))
+    else if (isset($var[$name]) && $var[$name] > 0)
 	return $Conf->parseableTime($var[$name]);
     else
 	return "N/A";
@@ -182,8 +176,8 @@ if (isset($_REQUEST['update'])) {
 		   'reviewerSubmitReview', 'reviewerSubmitReviewDeadline',
 		   'notifyChairAboutReviews', 'reviewerViewDecision',
 		   'PCSubmitReview', 'PCSubmitReviewDeadline',
-		   'PCReviewAnyPaper', 'PCGradePapers',
-		   'PCMeetingView', 'AtTheMeeting', 'EndOfTheMeeting'
+		   'PCGradePapers', 'PCMeetingView', 'AtTheMeeting',
+		   'EndOfTheMeeting'
 		   ) as $s) {
 	$Dates[$s][0] = crp_strtotime($s, 0);
 	$Dates[$s][1] = crp_strtotime($s, 1);
@@ -214,6 +208,15 @@ if (isset($_REQUEST['update'])) {
 	}
     }
 
+    // PCReviewAnyPaper is a special case
+    if (isset($_REQUEST["PCReviewAnyPaper"])) {
+	if ($Dates["PCSubmitReview"] <= 0)
+	    $Dates["PCReviewAnyPaper"] = array(3, 2);
+	else
+	    $Dates["PCReviewAnyPaper"] = $Dates["PCSubmitReviewDeadline"];
+    } else
+	$Dates["PCReviewAnyPaper"] = array(0, 0);
+    
     // print messages now, in case errors come later
     if (count($Messages) > 0)
 	$Conf->infoMsg(join("<br/>\n", $Messages));
@@ -295,7 +298,13 @@ $Conf->updateImportantDates();
 <table class='imptdates'>
 <?php crp_showdate('PCSubmitReview'); ?>
 <?php crp_show1date('PCSubmitReviewDeadline', 1); ?>
-<?php crp_showdate('PCReviewAnyPaper'); ?>
+<tr>
+  <td class='datename' colspan='6'><input type='checkbox' name='PCReviewAnyPaper' value='1' <?php
+	if (isset($_REQUEST["PCReviewAnyPaper"])
+	    || (isset($_REQUEST["PCSubmitReview"]) && isset($Conf->endTime["PCSubmitReview"])))
+	    echo "checked='checked' ";
+    ?>onchange='highlightUpdate()' />&nbsp;PC can review any paper during the reviewing period</td>
+</tr>
 <?php crp_showdate('PCGradePapers'); ?>
 <?php crp_showdate('PCMeetingView'); ?>
 <?php crp_showdate('AtTheMeeting'); ?>

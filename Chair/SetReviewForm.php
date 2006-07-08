@@ -5,25 +5,6 @@ $_SESSION["Me"]->goIfInvalid("../");
 $_SESSION["Me"]->goIfNotChair('../');
 include('Code.inc');
 $Conf->header_head("Set Review Form");
-
-$haveOptions = array('paperSummary' => 0,
-		     'commentsToAuthor' => 0,
-		     'commentsToPC' => 0,
-		     'commentsToAddress' => 0,
-		     'weaknessOfPaper' => 0,
-		     'strengthOfPaper' => 0,
-		     'potential' => 1,
-		     'fixability' => 1,
-		     'overAllMerit' => 1,
-		     'reviewerQualification' => 1,
-		     'novelty' => 1,
-		     'technicalMerit' => 1,
-		     'interestToCommunity' => 1,
-		     'longevity' => 1,
-		     'grammar' => 1,
-		     'likelyPresentation' => 1,
-		     'suitableForShort' => 1);
-
 $rf = reviewForm();
 
 ?>
@@ -63,7 +44,7 @@ function checkOptions(&$var, &$options, &$order) {
 }
 
 if (isset($_REQUEST['update'])) {
-    foreach (array_keys($haveOptions) as $field) {
+    foreach (array_keys($reviewFields) as $field) {
 	$req = '';
 	if (isset($_REQUEST["shortName_$field"]))
 	    $req .= "shortName='" . sqlq($_REQUEST["shortName_$field"]) . "', ";
@@ -71,7 +52,7 @@ if (isset($_REQUEST['update'])) {
 	    $req .= "description='" . sqlq($_REQUEST["description_$field"]) . "', ";
 	if (isset($_REQUEST["order_$field"]))
 	    $req .= "sortOrder='" . cvtint($_REQUEST["order_$field"]) . "', ";
-	if ($haveOptions[$field]) {
+	if ($reviewFields[$field]) {
 	    if (checkOptions($_REQUEST["options_$field"], $options, $_REQUEST["order_$field"])) {
 		$Conf->qe("delete from ReviewFormOptions where fieldName='" . sqlq($field) . "'", "while updating review form");
 		for ($i = 1; $i <= count($options); $i++)
@@ -130,7 +111,7 @@ function getField($row, $name, $ordinalOrder = null) {
 }
 
 function formFieldText($row, $ordinalOrder, $numRows) {
-    global $rf, $haveOptions, $FormError;
+    global $rf, $reviewFields, $FormError;
 
     $x = "<tr class='setrev_$row->fieldName'>\n";
     $x .= "  <td class='form_caption";
@@ -156,7 +137,7 @@ function formFieldText($row, $ordinalOrder, $numRows) {
     $x .= htmlentities(getField($row, 'description'));
     $x .= "</textarea></td>\n";
 
-    if (isset($rf->options[$row->fieldName]) || $haveOptions[$row->fieldName]) {
+    if (isset($rf->options[$row->fieldName]) || $reviewFields[$row->fieldName]) {
 	$x .= "  <td class='form_entry'><textarea name='options_$row->fieldName' rows='6' onchange='highlightUpdate()'>";
 	$y = '';
 	if (isset($rf->options[$row->fieldName])) {

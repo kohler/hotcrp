@@ -127,30 +127,28 @@ class Contact {
     }
   }
 
-  function amAssistant() {
-      return $this->isAssistant || $this->isChair;
-  }
-
-  function amReviewer() {
-    global $Conf;
-
-    $reviewer = false;
-
-    if ($Conf->validTimeFor('reviewerSubmitReviewDeadline', 0)
-	|| $Conf->validTimeFor('reviewerViewDecision', 0) ) {
-      //
-      // See if I have any review requests
-      //
-      $reviewer = $this->countRequestedReviews() > 0;
+    function amAssistant() {
+	return $this->isAssistant || $this->isChair;
     }
 
-    if ($_SESSION["Me"]->isPC && $Conf->validTimeFor('PCSubmitReview', 0)) {
-	$pcreviews = $this->countPrimaryReviews()
-	    + $this->countSecondaryReviews();
-	$reviewer |= $pcreviews > 0;
+    function amReviewer() {
+	global $Conf;
+	/*$reviewer = false;
+	if ($Conf->validTimeFor('reviewerSubmitReviewDeadline', 0)
+	    || $Conf->validTimeFor('reviewerViewDecision', 0) ) {
+	    //
+	    // See if I have any review requests
+	    //
+	    $reviewer = $this->countRequestedReviews() > 0;
+	}
+
+	if ($_SESSION["Me"]->isPC && $Conf->validTimeFor('PCSubmitReview', 0)) {
+	    $pcreviews = $this->countPrimaryReviews()
+		+ $this->countSecondaryReviews();
+	    $reviewer |= $pcreviews > 0;
+	    }*/
+	return true;
     }
-    return $reviewer;
-  }
 
   function dump() {
       echo "<table border=\"1\" width=\"83%\" bgcolor=$bgOne>";
@@ -356,13 +354,28 @@ class Contact {
 	return $this->isPC && $prow->acknowledged > 0 && $prow->withdrawn <= 0;
     }
 
-    function canReview($paperId, $conf, $prow = null) {
-	if (($this->isPC && $conf->validTimeFor('PCReviewAnyPaper', 0))
-	    || $this->amAssistant())
-	    return true;
+    function canReview($paperId, $conf, $prow = null, &$error = null) {
+	global $ConfSiteBase;
 	if ($prow === null)
 	    $prow = $conf->getPaperRow($paperId, $this->contactId);
-	return $prow->myReviewType > 0;
+	if ($prow->myReviewType > 0)
+	    return true;
+	else if (!$this->isPC || (!$this->amAssistant() && !$conf->canPCReviewAnyPaper())) {
+	    $error = "You are not a reviewer for paper #$paperId.";
+	    return false;
+	} else if ($prow->myMinRole == ROLE_AUTHOR) {
+	    $error = "You are an author of paper #$paperId and cannot review it.";
+	    return false;
+	} else if ($prow->conflictCount > 0) {
+	    $error = "You have a conflict with paper #$paperId and cannot review it.";
+	    return false;
+	} else if ($prow->withdrawn > 0 || $prow->acknowledged <= 0) {
+	    $error = "Paper #$paperId was " . ($prow->withdrawn > 0 ? "withdrawn" : "never submitted") . ", so you cannot review it.";
+	    if ($this->amAssistant())
+		$error .= "  As PC Chair you can <a href='${ConfSiteBase}Author/ManagePaper.php?paperId=$paperId'>revive and submit</a> the paper, if you want; then it will be available for review.";
+	    return false;
+	} else
+	    return true;
     }
 
     function paperStatus($paperId, $row, $knownAuthor, $long = 0, $conf = null) {
@@ -371,9 +384,9 @@ class Contact {
 	    $conf = $Conf;
 
 	if ($knownAuthor) {
-	    $canViewReviews = $conf->canAuthorViewReviews();
-	    $canViewDecision = $conf->canAuthorViewDecision();
-	} else if ($this->amAssistant()
+	    $canViewReviews = $conf->timeAuthorViewReviews();
+	    $canViewDecision = $conf->timeAuthorViewDecision();
+	} else if (($this->amAssistant() && $this->chairMode)
 		   || ($this->isPC && (!isset($row->conflictCount) || !$row->conflictCount)))
 	    $canViewReviews = $canViewDecision = 1;
 	else

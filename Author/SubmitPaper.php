@@ -4,7 +4,7 @@ $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid("../");
 
-$can_start = $Conf->canStartPaper();
+$can_start = $Conf->timeStartPaper();
 if (!$can_start && !$Me->amAssistant())
     $Me->goAlert("../", "The <a href='All/ImportantDates.php'>deadline</a> for starting new papers has passed.");
 

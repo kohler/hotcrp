@@ -35,34 +35,30 @@ if (isset($_REQUEST["setRole"]))
     $_SESSION["WhichTaskView"] = $_REQUEST["setRole"];
 
 $Conf->header("Welcome");
-?>
 
-<p>
-You're logged in as <?php echo htmlspecialchars($Me->fullnameAndEmail()) ?>.
-If this is not you, please <a href='<?php echo $ConfSiteBase, "All/Logout.php" ?>'>log out</a>.
-You will be automatically logged out if you are idle for more than
-<?php echo round(ini_get("session.gc_maxlifetime")/3600) ?> hours.
-</p>
+echo "<p>You're logged in as ", htmlspecialchars($Me->fullnameAndEmail()), ".
+If this is not you, please <a href='", $ConfSiteBase, "All/Logout.php'>log out</a>.
+You will be automatically logged out if you are idle for more than ",
+    round(ini_get("session.gc_maxlifetime")/3600), " hours.</p>\n\n";
 
-<?php
 $Conf->updateImportantDates();
 
 function taskbutton($name,$label) {
-  global $Conf;
-  if ($_SESSION["WhichTaskView"] == $name ) {
-   $color = $Conf->taskHeaderColor;
-  } else {
-   $color = $Conf->contrastColorTwo;
-  }
-  print "<td bgcolor=$color width=20% align=center> ";
-  echo "<form action='index.php' method='get'>\n";
-  print "<input type=submit value='$label'>";
-  print "<input type=hidden name='setRole' value='$name'>";
-  print "</form>";
-  print "</td>";
+    global $Conf;
+    if ($_SESSION["WhichTaskView"] == $name )
+	$color = $Conf->taskHeaderColor;
+    else
+	$color = $Conf->contrastColorTwo;
+    print "<td bgcolor=$color width=20% align=center> ";
+    echo "<form action='index.php' method='get'>\n";
+    print "<input type=submit value='$label'>";
+    print "<input type=hidden name='setRole' value='$name'>";
+    print "</form>";
+    print "</td>";
 }
 
 ?>
+
 
 <?php if ($Me->isChair) { ?>
 <div class='home_tasks' id='home_tasks_chair'>
@@ -112,13 +108,19 @@ function taskbutton($name,$label) {
 	<a href='All/ListPapers.php?list=submitted'>List&nbsp;submitted</a></td>
     </tr>
 
-<?php {
+<?php
     $plist = new PaperList();
     $plist->showHeader = 0;
     $ptext = $plist->text("reviewerHome", $Me);
-    if ($plist->count > 0)
-	echo "<tr>\n  <th>Reviews:</th>\n  <td class='plholder'>$ptext</td>\n</tr>\n";
-}
+    if ($plist->count > 0 || $Conf->timeReviewPaper(true, false, true)) {
+	$header = "  <th>Reviews:</th>";
+	if ($plist->count > 0) {
+	    echo "<tr>\n$header\n  <td class='plholder'>$ptext</td>\n</tr>\n";
+	    $header = "  <td></td>";
+	}
+	if ($Conf->timeReviewPaper(true, false, true))
+	    echo "<tr>\n$header\n  <td><a href='All/ListPapers.php?list=submitted'>Review&nbsp;other&nbsp;papers</a> &mdash; <a href='All/ReviewPaper.php?paperId=-1&amp;downloadForm=1'>Download&nbsp;review&nbsp;form</a></td>\n</tr>\n";
+    }
 ?>
 
     </table>
@@ -128,14 +130,14 @@ function taskbutton($name,$label) {
 <?php } ?>
 
 
-<?php if ($Me->isAuthor || $Conf->canStartPaper() >= 0) { ?>
+<?php if ($Me->isAuthor || $Conf->timeStartPaper() >= 0) { ?>
 <div class='home_tasks' id='home_tasks_author'>
   <div class='taskname'><h2>Tasks for Authors</h2></div>
   <div class='taskdetail'>
     <table>
 
 <?php
-$startable = $Conf->canStartPaper();
+$startable = $Conf->timeStartPaper();
 if ($startable)
     echo "    <tr><th><a href='Author/SubmitPaper.php'>Start new paper</a></th> <td colspan='2'><span class='deadline'>(", $Conf->printDeadline('startPaperSubmission'), ")</span></td></tr>\n";
 
@@ -147,7 +149,7 @@ if ($Me->isAuthor) {
 	echo "<tr>\n  <th>Existing papers:</th>\n  <td class='plholder'>$ptext</td>\n</tr>\n";
     if ($plist->needFinalize > 0) {
 	$time = $Conf->printableEndTime('updatePaperSubmission');
-	if (!$Conf->canFinalizePaper())
+	if (!$Conf->timeFinalizePaper())
 	    echo "  <tr>\n    <td colspan='3'>The <a href='All/ImportantDates.php'>deadline</a> for submitting papers in progress has passed.</td>\n  </tr>\n";
 	else if ($time != 'N/A')
 	    echo "  <tr>\n    <td colspan='3'>You have until $time to submit any papers in progress.</td>\n  </tr>\n";

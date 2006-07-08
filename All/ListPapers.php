@@ -12,8 +12,6 @@ if (isset($_REQUEST["download"])) {
     $result = $Conf->qe($q, "while selecting papers for download");
     if (DB::isError($result))
 	/* do nothing */;
-    else if ($result->numRows() == 0)
-	$Conf->errorMsg("No papers selected.");
     else
 	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
 	    if (!$Me->canDownload($row->paperId, $Conf, $row))
@@ -25,6 +23,47 @@ if (isset($_REQUEST["download"])) {
     $result = $Conf->downloadPapers($downloads);
     if (!PEAR::isError($result))
 	exit;
+ }
+
+if (isset($_REQUEST["downloadReview"])) {
+    if (!isset($_REQUEST["papersel"]) || !is_array($_REQUEST["papersel"]))
+	$_REQUEST["papersel"] = array();
+    $q = $Conf->paperQuery($Me->contactId, array("paperId" => $_REQUEST["papersel"], "myReviews" => 1));
+    $result = $Conf->qe($q, "while selecting papers for review");
+    $text = '';
+    $rf = reviewForm();
+    
+    if (DB::isError($result))
+	/* do nothing */;
+    else
+	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
+	    if (!$Me->canReview($row->paperId, $Conf, $row, $errorText))
+		$errors[] = $errorText;
+	    else {
+		$rfSuffix = ($text == "" ? "-$row->paperId" : "s");
+		$text .= $rf->textForm($row->paperId, $row, $row, 0, $Conf, $text == "") . "\n";
+	    }
+	}
+
+    if ($text == "") {
+	if (isset($errors))
+	    $Conf->errorMsg(join("<br/>", $errors) . "<br/>No papers selected.");
+	else
+	    $Conf->errorMsg("No papers selected.");
+    } else {
+	if (isset($errors)) {
+	    $e = "==-== Some review forms are missing due to errors in your paper selection:\n";
+	    foreach ($errors as $ee)
+		$e .= "==-== $ee\n";
+	    $text = "$e\n$text";
+	}
+	header("Content-Description: PHP Generated Data");
+	header("Content-Disposition: attachment; filename=" . $Conf->downloadPrefix . "review$rfSuffix.txt");
+	header("Content-Type: text/plain");
+	header("Content-Length: " . strlen($text));
+	print $text;
+	exit;
+    }
  }
 
 if (isset($_REQUEST["list"]))
@@ -59,7 +98,8 @@ if ($pl->anySelector) {
     echo "<div class='plist_form'>
 <button type='button' id='plb_selall' onclick='checkAll(true)'>Select all</button>
 <button type='button' id='plb_selnone' onclick='checkAll(false)'>Deselect all</button>
-<button class='button_default' type='submit' id='plb_download' name='download'>Download selected</button>
+<button class='button_default' type='submit' id='plb_download' name='download'>Download selected papers</button>
+<button class='button_default' type='submit' id='plb_downloadReview' name='downloadReview'>Download selected review forms</button>
 </div>
 </form>\n";
  }
