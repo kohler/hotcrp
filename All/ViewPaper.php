@@ -65,11 +65,21 @@ if ($prow->author <= 0 && !$Me->isPC) {
     exit;
 }
     
-$withdrawn = $prow->withdrawn > 0;
-$finalized = $prow->acknowledged > 0;
-
-//echo "<form method='post' action=\"", $_SERVER['PHP_SELF'], "\" enctype='multipart/form-data'>
-//<input type='hidden' name='paperId' value='$paperId' />
+if (isset($_REQUEST['setoutcome'])) {
+    if (!$Me->canSetOutcome($prow))
+	$Conf->errorMsg("You cannot set the outcome for paper #$paperId" . ($Me->amAssistant() ? " (but you could if you entered chair mode)" : "") . ".");
+    else {
+	$o = cvtint(ltrim(rtrim($_REQUEST['outcome'])));
+	$rf = reviewForm();
+	if (isset($rf->options['outcome'][$o])) {
+	    $result = $Conf->qe("update Paper set outcome=$o where paperId=$paperId", "while changing outcome");
+	    if (!DB::isError($result))
+		$Conf->confirmMsg("Outcome for paper #$paperId set to " . htmlspecialchars($rf->options['outcome'][$o]) . ".");
+	} else
+	    $Conf->errorMsg("Bad outcome value!");
+	$prow = $Conf->getPaperRow($paperId, $Me->contactId);
+    }
+ }
 
 ?>
 
@@ -82,7 +92,7 @@ $finalized = $prow->acknowledged > 0;
 
 <tr>
   <td class='pt_caption'>Status:</td>
-  <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, $prow->author > 0, 1) ?><?php
+  <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, 1) ?><?php
 if ($prow->author > 0)
     echo "<br/>\nYou are an <span class='author'>author</span> of this paper.";
 else if ($Me->isPC && $prow->conflict > 0)
@@ -147,7 +157,7 @@ if ($topicTable = topicTable($paperId, -1)) {
 </table></td></tr>
 
 
-<?php if (!$withdrawn && $prow->size > 0) { ?>
+<?php if (!$prow->withdrawn > 0 && $prow->size > 0) { ?>
 <tr>
   <td class='pt_caption'>Paper:</td>
   <td class='pt_entry'><?php echo paperDownload($paperId, $prow, 1) ?></td>
@@ -183,6 +193,21 @@ if (isset($actions))
   <td class='pt_caption'>Actions:</td>
   <td class='pt_entry'>", join(" ", $actions), "</td>
 </tr>\n";
+
+if ($Me->canSetOutcome($prow)) {
+    echo "<tr>
+  <td class='pt_caption'>Outcome:</td>
+  <td class='pt_entry'><form method='get' action='ViewPaper.php'><input type='hidden' name='paperId' value='$paperId' /><select class='outcome' name='outcome'>\n";
+    $rf = reviewForm();
+    $outcomeMap = $rf->options['outcome'];
+    $outcomes = array_keys($outcomeMap);
+    sort($outcomes);
+    $outcomes = array_unique(array_merge(array(0), $outcomes));
+    echo $prow->outcome;
+    foreach ($outcomes as $key)
+	echo "    <option value='", $key, "'", ($prow->outcome == $key ? " selected='selected'" : ""), ">", htmlspecialchars($outcomeMap[$key]), "</option>\n";
+    echo "  </select>&nbsp;<input class='button' type='submit' name='setoutcome' value='Set outcome' /></form></td>\n</tr>\n";
+ }
 
 ?></table>
 </form>

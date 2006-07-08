@@ -18,7 +18,7 @@ $Conf -> connect();
 $query = "SELECT firstName, lastName, email, "
 	. " paperId, outcome, title "
 	. " FROM ContactInfo, Paper "
-	. " WHERE (Paper.outcome='accepted' OR Paper.outcome='acceptedShort') "
+	. " WHERE Paper.outcome>0 "
 	. " AND Paper.contactId=ContactInfo.contactId "
 	. " ORDER BY paperId ";
 

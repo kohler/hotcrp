@@ -387,72 +387,79 @@ class Contact {
     
     function canViewAuthors($prow, $conf) {
 	if ($prow->author > 0 || (!$conf->blindSubmission && $prow->acknowledged > 0 && $prow->withdrawn <= 0))
-	    return 1;
+	    return true;
 	if (paperAccepted($prow) && $conf->validPeriod('EndOfTheMeeting'))
-	    return 1;
+	    return true;
 	if ($this->amAssistant() && $this->chairMode)
-	    return 1;
-	return 0;
+	    return true;
+	return false;
     }
 
     function canViewReviews($prow, $conf) {
 	if ($prow->author > 0 && $conf->timeAuthorViewReviews())
-	    return 1;
+	    return true;
 	if ($prow->author <= 0 && $prow->conflict <= 0 && $this->isPC)
-	    return 1;
+	    return true;
 	if ($this->amAssistant() && $this->chairMode)
-	    return 1;
+	    return true;
 	if ($prow->reviewType > 0)
-	    return 1;
-	return 0;
+	    return true;
+	return false;
     }
     function canViewReviewerIdentity($rrow, $prow, $conf) {
 	if ($this->amAssistant() && $this->chairMode)
-	    return 1;
+	    return true;
 	if ($rrow->contactId == $this->contactId)
-	    return 1;
+	    return true;
 	if ($prow->author <= 0 && $prow->conflict <= 0 && $this->isPC)
-	    return 1;
-	return 0;
+	    return true;
+	return false;
     }
-    function canViewAllReviewFields($prow, $conf) {
-	if ($this->amAssistant() && $this->chairMode)
-	    return 1;
-	if ($prow->author <= 0 && $prow->conflict <= 0 && $this->isPC)
-	    return 1;
-	return 0;
+    function canViewDecision($prow, $conf) {
+	if ($prow->author > 0 && $conf->timeAuthorViewDecision())
+	    return true;
+	if ($this->isPC)
+	    return true;
+	return false;
     }
     
-    function paperStatus($paperId, $row, $knownAuthor, $long = 0, $conf = null) {
-	global $ConfSiteBase, $Conf;
-	if ($conf == null)
-	    $conf = $Conf;
+    function canViewAllReviewFields($prow, $conf) {
+	if ($this->amAssistant() && $this->chairMode)
+	    return true;
+	if ($prow->author <= 0 && $prow->conflict <= 0 && $this->isPC)
+	    return true;
+	return false;
+    }
 
-	if ($knownAuthor) {
-	    $canViewReviews = $conf->timeAuthorViewReviews();
-	    $canViewDecision = $conf->timeAuthorViewDecision();
-	} else if (($this->amAssistant() && $this->chairMode)
-		   || ($this->isPC && (!isset($row->conflict) || $row->conflict <= 0)))
-	    $canViewReviews = $canViewDecision = 1;
-	else
-	    $canViewReviews = $canViewDecision = 0;
+    function canSetOutcome($prow) {
+	if (!$this->amAssistant())
+	    return false;
+	if (($prow->author > 0 || $prow->conflict > 0) && !$this->chairMode)
+	    return false;
+	return true;
+    }
+    
+    function paperStatus($paperId, $row, $long = 0, $conf = null) {
+	global $ConfSiteBase, $Conf;
+	$conf = ($conf ? $conf : $Conf);
 
 	if ($row->withdrawn > 0) {
 	    $x = "<span class='pstat pstat_with'>Withdrawn</span>";
 	    return $x . ($long ? " at " . $conf->printTime($row->withdrawn) : '');
-	} else if ($row->acknowledged <= 0 && $row->paperStorageId == 1)
+	} else if ($row->acknowledged <= 0 && $row->paperStorageId == 1) {
 	    return "<span class='pstat pstat_noup'>Not yet uploaded</span>";
-	else if (isset($row->outcome) && $row->outcome != 'unspecified' && $canViewDecision) {
-	    if ($row->outcome == "accepted")
-		return "<span class='pstat pstat_acc'>Accepted</span>";
-	    else if ($row->outcome == "acceptedShort")
-		return "<span class='pstat pstat_accsh'>Accepted as short paper</span>";
-	    else if ($row->outcome == "rejected")
-		return "<span class='pstat pstat_rej'>Rejected</span>";
+	} else if (isset($row->outcome) && $row->outcome != 0 && $this->canViewDecision($row, $conf)) {
+	    $rf = reviewForm();
+	    $x =& $rf->options['outcome'][$row->outcome];
+	    if (isset($x))
+		return "<span class=\"pstat pstat_" . htmlspecialchars($x) . "\">" . htmlspecialchars($x) . "</span>";
 	    else
 		return "<span class='pstat'>Unknown outcome \"" . htmlspecialchars($row->outcome) . "\"</span>";
-	} else if (isset($row->reviewCount) && $row->reviewCount > 0 && $canViewReviews) {
-	    return "<span class='pstat pstat_rev'>Reviews&nbsp;available</span>";
+	} else if (isset($row->reviewCount) && $row->reviewCount > 0) {
+	    if ($this->canViewReviews($row, $conf))
+		return "<span class='pstat pstat_rev'>Reviews&nbsp;available</span>";
+	    else
+		return "<span class='pstat pstat_rev'>Under&nbsp;review</span>";
 	} else {
 	    if ($row->acknowledged > 0) {
 		$x = "<span class='pstat pstat_sub'>Submitted</span>";

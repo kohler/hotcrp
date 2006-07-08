@@ -43,55 +43,6 @@ function fileUploaded(&$var) {
 	&& is_uploaded_file($var["tmp_name"]);
 }
 
-function paperStatus($paperId, $row = null, $long = 0, $conf = null) {
-    global $Conf, $ConfSiteBase;
-    if ($conf == null)
-	$conf = $Conf;
-    
-    if ($row == null) {
-	$result = $conf->q("select withdrawn, acknowledged, outcome,
-		Paper.paperStorageId, mimetype, PaperStatus.timestamp
-		from Paper
-		left join PaperStorage using (paperStorageId)
-		where Paper.paperId=$paperId");
-	if (DB::isError($result))
-	    return "<span class='pstat pstat_err'>Database error</span>";
-	else if ($result->numRows() == 0)
-	    return "<span class='pstat pstat_no'>No such paper</span>";
-	$row = $result->fetchRow(DB_FETCHMODE_OBJECT);
-    }
-
-    $canViewDecision = 0;
-
-    if ($row->withdrawn > 0) {
-	$x = "<span class='pstat pstat_with'>Withdrawn</span>";
-	return $x . ($long ? " at " . $conf->printTime($row->withdrawn) : '');
-    } else if ($row->acknowledged <= 0 && $row->paperStorageId == 1)
-	return "<span class='pstat pstat_noup'>Not yet uploaded</span>";
-    else {
-	if ($row->acknowledged > 0) {
-	    $x = "<span class='pstat pstat_sub'>Submitted</span>";
-	    if ($long)
-		$x .= " at " . $conf->printTime($row->acknowledged);
-	} else {
-	    $x = "<span class='pstat pstat_prog'>In progress</span>";
-	    if ($long)
-		$x .= "; updated at " . $conf->printTime($row->timestamp);
-	}
-	/* $x .= " <a href='" . $conf->makeDownloadPath($paperId, $row->mimetype) . "'>[";
-	if ($row->mimetype == 'application/pdf')
-	    $x .= "PDF";
-	else if ($row->mimetype == 'application/postscript')
-	    $x .= "PostScript";
-	else if ($row->mimetype == 'text/plain')
-	    $x .= "Text";
-	else
-	    $x .= htmlspecialchars($row->mimetype);
-	    $x .= " " . round($row->size / 1024) . "&nbsp;kB]</a>"; */
-	return $x;
-    }
-}
-
 $reviewButton[0] = array
     ("past" => "<a class='review_past' ~>Review&nbsp;past&nbsp;due</a>",
      "start" => "<a class='review_start' ~>Start&nbsp;review</a>",
@@ -128,7 +79,7 @@ function reviewStatus($row, $when = 0, $conf = null) {
     global $Conf;
     $conf = ($conf ? $conf : $Conf);
     
-    if ($row->reviewType == 0 && $row->reviewId === null)
+    if (isset($row->reviewType) && $row->reviewType == 0 && $row->reviewId === null)
 	return "";
     else if ($row->reviewSubmitted === null)
 	return "<span class='rstat rstat_no'>Not started</span>";
@@ -266,7 +217,7 @@ function goPaperForm($review = 0) {
 }
 
 function paperAccepted($prow) {
-    return $prow->outcome == 'accepted' || $prow->outcome == 'acceptedShort';
+    return $prow->outcome > 0;
 }
 
 function textArrayJoin($arr) {

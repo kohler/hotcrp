@@ -20,6 +20,10 @@ define("REVIEW_PRIMARY", 1);
 define("REVIEW_SECONDARY", 2);
 define("REVIEW_REQUESTED", 3);
 
+define("OUTCOME_ACCEPTED", 1);
+define("OUTCOME_ACCEPTED_SHORT", 2);
+define("OUTCOME_REJECTED", -1);
+
 $OK = 1;
 
 //

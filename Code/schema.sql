@@ -138,12 +138,12 @@ CREATE TABLE Paper (
   submitted timestamp(14) NOT NULL,
   acknowledged int(11) NOT NULL default '0',
   withdrawn int(11) NOT NULL default '0',
-  pcPaper int(11) default '0',
+  pcPaper int(11) NOT NULL default '0',
   paperStorageId int(11) NOT NULL default '0',
   authorsResponse mediumtext,
-  outcome enum('unspecified','accepted','rejected','acceptedShort') default 'unspecified',
-  showReviewsToReviewers tinyint(1) default '0',
-  showResponseToReviewers tinyint(1) default '0',
+  outcome tinyint(1) NOT NULL default '0',
+  showReviewsToReviewers tinyint(1) NOT NULL default '0',
+  showResponseToReviewers tinyint(1) NOT NULL default '0',
   PRIMARY KEY (paperId),
   UNIQUE KEY paperId (paperId),
   KEY title (title),
@@ -500,6 +500,11 @@ insert into ReviewFormOptions set fieldName='reviewerQualification', level=1, de
 insert into ReviewFormOptions set fieldName='reviewerQualification', level=2, description='Some familiarity';
 insert into ReviewFormOptions set fieldName='reviewerQualification', level=3, description='Knowledgeable';
 insert into ReviewFormOptions set fieldName='reviewerQualification', level=4, description='Expert';
+
+insert into ReviewFormOptions set fieldName='outcome', level=0, description='Unspecified';
+insert into ReviewFormOptions set fieldName='outcome', level=-1, description='Rejected';
+insert into ReviewFormOptions set fieldName='outcome', level=1, description='Accepted';
+insert into ReviewFormOptions set fieldName='outcome', level=2, description='Accepted as short paper';
 
 delete from ImportantDates where name='reviewFormUpdate';
 insert into ImportantDates set name='reviewFormUpdate', start=current_timestamp, end=current_timestamp;

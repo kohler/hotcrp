@@ -82,7 +82,7 @@ class PaperList {
 	case self::FIELD_STATUS:
 	    if ($row->acknowledged <= 0 && $row->withdrawn <= 0)
 		$this->needFinalize++;
-	    return $Me->paperStatus($row->paperId, $row, $row->author > 0);
+	    return $Me->paperStatus($row->paperId, $row);
 	case self::FIELD_DOWNLOAD:
 	    if ($row->size > 0)
 		return paperDownload($row->paperId, $row);

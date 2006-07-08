@@ -63,11 +63,11 @@ if ( ! $Review -> valid ) {
 }
 
 $outcome = $Review->paperFields['outcome'];
-if ($outcome == "accepted") {
+if ($outcome == OUTCOME_ACCEPTED) {
   $Conf->confirmMsg("This paper was selected for the conference");
-} else if ($outcome == "acceptedShort") {
+} else if ($outcome == OUTCOME_ACCEPTED_SHORT) {
   $Conf->confirmMsg("This paper was selected as a short paper for the conference");
-} else if ($outcome == "rejected") {
+} else if ($outcome == OUTCOME_REJECTED) {
   $Conf->errorMsg("This paper was not selected for the conference");
 } else {
   $Conf->errorMsg("No outcome was specified for this paper");

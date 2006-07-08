@@ -261,7 +261,7 @@ if ($OK) {
 
 <tr>
   <td class='pt_caption'>Status:</td>
-  <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, !$notAuthor, 1) ?></td>
+  <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, 1) ?></td>
 </tr>
 
 <?php if (!$withdrawn) { ?>

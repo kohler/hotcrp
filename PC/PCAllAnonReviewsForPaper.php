@@ -300,7 +300,7 @@ if ( ! $Review -> valid ) {
   $Conf->errorMsg("You've stumbled on to an invalid review? -- contact chair");
   exit;
 }
-if ($Review->paperFields['outcome'] != "undecided") {
+if ($Review->paperFields['outcome'] != 0) {
   $Conf->infoMsg("<center> Paper Outcome Is : "
 		 . $Review->paperFields['outcome']
 		 . "</center>"

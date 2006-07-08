@@ -134,7 +134,7 @@ if (isset($_REQUEST['save']) || isset($_REQUEST['submit']))
 
 <tr>
   <td class='pt_caption'>Status:</td>
-  <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, 0, 1) ?></td>
+  <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, 1) ?></td>
 </tr>
 
 <?php if ($prow->withdrawn <= 0 && $prow->size > 0) { ?>
