@@ -79,17 +79,17 @@ if (!DB::isError($result) && $result->numRows() > 0) {
     //
     // OK, check if they've done the review
     //
-    $query="SELECT finalized FROM PaperReview WHERE "
-      . " PaperReview.reviewer=" . $_SESSION["Me"]->contactId. " "
-      . " AND PaperReview.paperId=" . $_REQUEST[paperId] . " ";
+    $query="SELECT reviewSubmitted FROM PaperReview WHERE "
+	. " PaperReview.contactId=" . $_SESSION["Me"]->contactId. " "
+	. " AND PaperReview.paperId=" . $_REQUEST["paperId"];
     ;
     $result = $Conf->q($query);
     $finalized = 0;
 
     if ( $result ) {
-      while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
-	$finalized=$row['finalized'];
-      }
+	while ($row = $result->fetchRow()) {
+	    $finalized=$row[0];
+	}
     }
 
     if ( ! $finalized ) {
@@ -329,18 +329,18 @@ $Conf->log("View all reviews (blind) for $_REQUEST[paperId]", $_SESSION["Me"]);
 //
   // Now print all the reviews
   //
-$fin= " AND PaperReview.finalized=1 ";
+$fin= " AND PaperReview.reviewSubmitted>0 ";
 if ($_SESSION["Me"]->isChair && $_SESSION["SeeUnfinishedReviews"]) {
   $fin = "";
 }
 
-$result = $Conf->qe("SELECT PaperReview.reviewer, "
-		    . " PaperReview.paperReviewId, "
+$result = $Conf->qe("SELECT PaperReview.contactId, "
+		    . " PaperReview.reviewId, "
 		    . " ContactInfo.firstName, ContactInfo.lastName, "
 		    . " ContactInfo.email "
 		    . " FROM PaperReview, ContactInfo "
 		    . " WHERE PaperReview.paperId='$_REQUEST[paperId]'"
-		    . " AND PaperReview.reviewer=ContactInfo.contactId"
+		    . " AND PaperReview.contactId=ContactInfo.contactId"
 		    . $fin
 		    );
 
@@ -350,8 +350,8 @@ if (!DB::isError($result) && $result->numRows() > 0) {
 
   $i = 1;
   while($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
-    $reviewer=$row['reviewer'];
-    $reviewId=$row['paperReviewId'];
+    $reviewer=$row['contactId'];
+    $reviewId=$row['reviewId'];
     $first=$row['firstName'];
     $last=$row['lastName'];
     $email=$row['email'];
@@ -370,7 +370,7 @@ if (!DB::isError($result) && $result->numRows() > 0) {
     print "<tr bgcolor=$color>";
     if ( $_SESSION["Me"]->isChair ) {
 
-      if ( $Review->reviewFields['finalized'] ) {
+      if ( $Review->reviewFields['reviewSubmitted'] ) {
 	$word = "unfinalize";
       } else {
 	$word = "finalize";

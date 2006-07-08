@@ -115,13 +115,13 @@ $Review->printAnonReviewHeader($Conf,1);
 print "</center>";
 
 $result = $Conf->qe("SELECT PaperReview.contactId, "
-		    . " PaperReview.paperReviewId, "
+		    . " PaperReview.reviewId, "
 		    . " ContactInfo.firstName, ContactInfo.lastName, "
 		    . " ContactInfo.email "
 		    . " FROM PaperReview, ContactInfo "
 		    . " WHERE PaperReview.paperId='$_REQUEST[paperId]'"
 		    . " AND PaperReview.contactId=ContactInfo.contactId"
-		    . " AND PaperReview.finalized=1"
+		    . " AND PaperReview.reviewSubmitted=1"
 		    );
 
 $num_reviews = $result->numRows();
@@ -133,7 +133,7 @@ if (!DB::isError($result) && $result->numRows() > 0) {
   $i = 1;
   while($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
     $reviewer=$row['contactId'];
-    $reviewId=$row['paperReviewId'];
+    $reviewId=$row['reviewId'];
     $first=$row['firstName'];
     $last=$row['lastName'];
     $email=$row['email'];

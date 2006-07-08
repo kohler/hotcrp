@@ -69,17 +69,17 @@ if ( $result ) {
     //
     // OK, check if they've done the review
     //
-    $query="SELECT finalized FROM PaperReview WHERE "
-      . " PaperReview.reviewer=" . $_SESSION["Me"]->contactId. " "
-      . " AND PaperReview.paperId=$_REQUEST[paperId] ";
+    $query="SELECT reviewSubmitted FROM PaperReview WHERE "
+      . " PaperReview.contactId=" . $_SESSION["Me"]->contactId. " "
+      . " AND PaperReview.paperId=" . $_REQUEST["paperId"];
     ;
     $result = $Conf->q($query);
     $finalized = 0;
 
     if ( $result ) {
-      while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
-	$finalized=$row['finalized'];
-      }
+	while ($row = $result->fetchRow()) {
+	    $finalized=$row[0];
+	}
     }
 
     if ( ! $finalized ) {

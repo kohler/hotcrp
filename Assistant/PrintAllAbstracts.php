@@ -44,7 +44,7 @@ I'm not certain if this works under Netscape or other browsers.
 
 <FORM method="POST" action="<?php echo $_SERVER[PHP_SELF] ?>">
 <INPUT type=checkbox name=onlyFinalized value=1
-   <?php  if ($_REQUEST[onlyFinalized]) {echo "checked";}?> > Only show finalized </br>
+   <?php  if ($_REQUEST["onlyFinalized"]) {echo "checked";}?> > Only show finalized </br>
 <input type="submit" value="Update View" name="submit">
 </FORM>
 </p>

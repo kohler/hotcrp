@@ -54,7 +54,7 @@ the information is anonymous.
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title, Paper.withdrawn FROM Paper, PaperReview "
 		  . "WHERE PaperReview.contactId='".$_SESSION["Me"]->contactId."' "
 		  . " AND Paper.paperId=PaperReview.paperId "
-		  . " AND PaperReview.finalized=1 "
+		  . " AND PaperReview.reviewSubmitted=1 "
 		  . "ORDER BY Paper.paperId");
 
 if (!DB::isError($result)) {

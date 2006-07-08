@@ -276,10 +276,10 @@ class Conference {
 
 	  $thisMissing=1;
 	  $paperId=$row['paperId'];
-	  $q2="SELECT finalized, paperId FROM PaperReview "
+	  $q2="SELECT reviewSubmitted, paperId FROM PaperReview "
 	    . " WHERE paperId=$paperId "
 	    . " AND contactId=$contactId "
-	    . " AND finalized=1 ";
+	    . " AND reviewSubmitted=1 ";
 	  $r2 = $this->qe($q2);
 	  if (!DB::isError($r2)) {
 
@@ -310,10 +310,10 @@ class Conference {
 
 	  $thisMissing=1;
 	  $paperId=$row['paperId'];
-	  $q2="SELECT finalized FROM PaperReview "
+	  $q2="SELECT reviewSubmitted FROM PaperReview "
 	    . " WHERE paperId=$paperId "
 	    . " AND contactId=$contactId "
-	    . " AND finalized=1 ";
+	    . " AND reviewSubmitted=1 ";
 	  $r2 = $this->qe($q2);
 	  if (DB::isError($r2)) {
 	    if ( $r2 -> numRows() ) {
@@ -412,15 +412,6 @@ class Conference {
 	    return $this->validPeriod($d) > 0;
 	} else
 	    return false;
-    }
-    function canViewAuthors($me, $prow) {
-	if ($prow->author > 0 || (!$this->blindSubmission && $prow->acknowledged > 0 && $prow->withdrawn <= 0))
-	    return 1;
-	if (paperAccepted($prow) && $this->validPeriod('EndOfTheMeeting'))
-	    return 1;
-	if ($me->amAssistant() && $me->chairMode)
-	    return 1;
-	return 0;
     }
 
 
@@ -653,21 +644,28 @@ class Conference {
 
     
     function paperQuery($contactId, $info = array()) {
+	// fields
 	$pq = "select Paper.*,
 		length(PaperStorage.paper) as size, mimetype, timestamp,
 		max(PaperConflict.author) as author,
 		count(PaperConflict.author) as conflict,
-		count(PaperReview.finalized) as reviewCount,
+		count(PaperReview.reviewSubmitted) as reviewCount,
 		count(PaperReview.paperId) as startedReviewCount";
 	if (!isset($info['author']))
 	    $pq .= ",
-		MyReviewRequest.type as myReviewType,
-		MyReview.finalized as myReviewFinalized";
+		MyReviewRequest.reviewType,
+		MyReview.reviewId,
+		MyReview.reviewSubmitted";
 	if (isset($info['myReviews'])) {
 	    global $reviewFields;
 	    foreach ($reviewFields as $k => $v)
 		$pq .= ",\t\tMyReview.$k as $k";
 	}
+	if (isset($info['contactAuthors']))
+	    $pq .= ",
+		group_concat(PaperAuthors.contactId) as contactAuthors";
+
+	// tables
 	$pq .= "
 		from Paper
 		left join PaperStorage using (paperStorageId)\n";
@@ -676,11 +674,13 @@ class Conference {
 	else
 	    $pq .= "		left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)\n";
 	$pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
-	if (!isset($info['author'])) {
-	    $jtype = (isset($info['reviewer']) ? "join" : "left join");
-	    $pq .= "		$jtype ReviewRequest as MyReviewRequest on (MyReviewRequest.paperId=Paper.paperId and MyReviewRequest.contactId=$contactId)
+	if (!isset($info['author']))
+	    $pq .= "		left join ReviewRequest as MyReviewRequest on (MyReviewRequest.paperId=Paper.paperId and MyReviewRequest.contactId=$contactId)
 		left join PaperReview as MyReview on (MyReview.paperId=Paper.paperId and MyReview.contactId=$contactId)\n";
-	}
+	if (isset($info['contactAuthors']))
+	    $pq .= "		left join PaperConflict as PaperAuthors on (PaperAuthors.paperId=Paper.paperId and PaperAuthors.author>0)\n";
+
+	// conditions
 	if (isset($info['paperId'])) {
 	    if (is_array($info['paperId'])) {
 		foreach ($info['paperId'] as $pid)
@@ -696,9 +696,12 @@ class Conference {
 	    $where[] = "acknowledged>0";
 	    $where[] = "withdrawn<=0";
 	}
+	if (isset($info['reviewer']))
+	    $where[] = "(MyReviewRequest.reviewType or MyReview.reviewId)";
 	if (isset($where))
 	    $pq .= "		where " . join(" and ", $where) . "\n";
-	$pq .= "		group by PaperConflict.paperId\n";
+	
+	$pq .= "		group by Paper.paperId\n";
 	$pq .= "		order by Paper.paperId\n";
 	return $pq;
     }
@@ -1170,9 +1173,9 @@ class Conference {
     ///////////////////////////////////////////////////////////////////////////
 
     function countReviewRequests($contactId) {
-	$result = $this->qe("select type, count(contactId)
+	$result = $this->qe("select reviewType, count(contactId)
 		from ReviewRequest where contactId=$contactId
-		group by type order by null", "while counting review requests");
+		group by reviewType order by null", "while counting review requests");
 	if (DB::isError($result))
 	    $rreq = array(REVIEW_PRIMARY => '0?', REVIEW_SECONDARY => '0?', REVIEW_REQUESTED => '0?');
 	else {
@@ -1208,7 +1211,7 @@ class Conference {
 					    "PaperReview.contactId",
 					    $pcId,
 					    "PaperReview",
-					    " AND PaperReview.finalized=1 ");
+					    " AND PaperReview.reviewSubmitted=1 ");
 
 	    $asked = $this->countEntries("ReviewRequest.requestedBy",
 					 $pcId, "ReviewRequest");

@@ -12,8 +12,8 @@ $Conf -> connect();
 <body>
 <?php 
 if (IsSet($_REQUEST[paperId]) && IsSet($_REQUEST[doUnfinalize]) && IsSet($_REQUEST[unfinalizeId])) {
-    $q = "UPDATE PaperReview SET finalized=0 "
-      . " WHERE paperReviewId=$_REQUEST[unfinalizeId]";
+    $q = "UPDATE PaperReview SET reviewSubmitted=0 "
+      . " WHERE reviewId=$_REQUEST[unfinalizeId]";
 
     if ( $Conf->qe($q) ) {
       $Conf->infoMsg("Review should have been unfinalized..");
@@ -21,8 +21,8 @@ if (IsSet($_REQUEST[paperId]) && IsSet($_REQUEST[doUnfinalize]) && IsSet($_REQUE
       $Conf->infoMsg("Error unfinalizing review..");
     }
 } else if (IsSet($_REQUEST[paperId]) && IsSet($_REQUEST[doFinalize]) && IsSet($_REQUEST[finalizeId])) {
-    $q = "UPDATE PaperReview SET finalized=1 "
-      . " WHERE paperReviewId=$_REQUEST[finalizeId]";
+    $q = "UPDATE PaperReview SET reviewSubmitted=1 "
+      . " WHERE reviewId=$_REQUEST[finalizeId]";
 
     if ( $Conf->qe($q) ) {
       $Conf->infoMsg("Review should have been finalized..");
@@ -31,7 +31,7 @@ if (IsSet($_REQUEST[paperId]) && IsSet($_REQUEST[doUnfinalize]) && IsSet($_REQUE
     }
 } else if (IsSet($_REQUEST[paperId]) && IsSet($_REQUEST[doDelete]) && IsSet($_REQUEST[deleteId])) {
     $q = "DELETE FROM PaperReview  "
-      . " WHERE paperReviewId=$_REQUEST[deleteId]";
+      . " WHERE reviewId=$_REQUEST[deleteId]";
 
     if ( $Conf->qe($q) ) {
       $Conf->infoMsg("Review should have been deleted..");
@@ -79,11 +79,11 @@ if (!IsSet($_REQUEST[paperId])) {
   print "<h2> You've selected paper #$_REQUEST[paperId] - $title </h2>\n";
   print "<p> Now, select the review (by reviewer) you want to finalize or unfinalize </p>";
   
-  $q = "SELECT firstName, lastName, email, paperReviewId "
+  $q = "SELECT firstName, lastName, email, reviewId "
     . " FROM PaperReview, ContactInfo "
     . " WHERE ContactInfo.contactId=PaperReview.contactId "
     . " AND PaperReview.paperId=$_REQUEST[paperId] "
-    . " AND PaperReview.finalized=0 ";
+    . " AND PaperReview.reviewSubmitted=0 ";
 
   $result = $Conf->qe($q);
 
@@ -106,7 +106,7 @@ if (!IsSet($_REQUEST[paperId])) {
   while($row=$result->fetchRow(DB_FETCHMODE_ASSOC)) {
     $name = $row['firstName'] . " " . $row['lastName']
       . " (" . $row['email'] . ")";
-    $rev=$row['paperReviewId'];
+    $rev=$row['reviewId'];
     print "<OPTION VALUE=$rev> $name  </OPTION>\n";
   }
   print "</SELECT>";
@@ -114,11 +114,11 @@ if (!IsSet($_REQUEST[paperId])) {
   
   print "<br> <br>\n";
 
-  $q = "SELECT firstName, lastName, email, paperReviewId "
+  $q = "SELECT firstName, lastName, email, reviewId "
     . " FROM PaperReview, ContactInfo "
     . " WHERE ContactInfo.contactId=PaperReview.contactId "
     . " AND PaperReview.paperId=$_REQUEST[paperId] "
-    . " AND PaperReview.finalized=1 ";
+    . " AND PaperReview.reviewSubmitted=1 ";
 
   $result = $Conf->qe($q);
 
@@ -135,7 +135,7 @@ if (!IsSet($_REQUEST[paperId])) {
   while($row=$result->fetchRow(DB_FETCHMODE_ASSOC)) {
     $name = $row['firstName'] . " " . $row['lastName']
       . " (" . $row['email'] . ")";
-    $rev=$row['paperReviewId'];
+    $rev=$row['reviewId'];
     print "<OPTION VALUE=$rev> $name  </OPTION>\n";
   }
   print "</SELECT>";
@@ -143,7 +143,7 @@ if (!IsSet($_REQUEST[paperId])) {
 
   print "<br> <br>\n";
 
-  $q = "SELECT firstName, lastName, email, paperReviewId "
+  $q = "SELECT firstName, lastName, email, reviewId "
     . " FROM PaperReview, ContactInfo "
     . " WHERE ContactInfo.contactId=PaperReview.contactId "
     . " AND PaperReview.paperId=$_REQUEST[paperId] ";
@@ -164,7 +164,7 @@ if (!IsSet($_REQUEST[paperId])) {
   while($row=$result->fetchRow(DB_FETCHMODE_ASSOC)) {
     $name = $row['firstName'] . " " . $row['lastName']
       . " (" . $row['email'] . ")";
-    $rev=$row['paperReviewId'];
+    $rev=$row['reviewId'];
     print "<OPTION VALUE=$rev> $name  </OPTION>\n";
   }
   print "</SELECT>";

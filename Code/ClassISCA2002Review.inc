@@ -74,7 +74,7 @@ class ISCA2002Review extends ConferenceReview {
     // Tell the check routine which fields need to be defined
     //
     $this->checkFields = array
-      ('finalized', 'reviewerQualification',
+      ('reviewSubmitted', 'reviewerQualification',
        'overAllMerit', 'novelty', 'technicalMerit',
        'interestToCommunity', 'longevity',
        'grammar', 
@@ -82,7 +82,7 @@ class ISCA2002Review extends ConferenceReview {
        'paperSummary', 'commentsToAuthor', 'commentsToPC');
 
     $this->shortFields = array
-      ('finalized', 'reviewerQualification',
+      ('reviewSubmitted', 'reviewerQualification',
        'overAllMerit', 'novelty', 'technicalMerit',
        'interestToCommunity', 'longevity',
        'grammar', 
@@ -96,7 +96,7 @@ class ISCA2002Review extends ConferenceReview {
       // The order we add these is important
       //
 
-      $formFinalized = new FormNumericLabeledRange("finalized",
+      $formFinalized = new FormNumericLabeledRange("reviewSubmitted",
 						  $finalizeName,
 						   0, 1,
 						  "Are you finished with this review?"
@@ -186,14 +186,14 @@ class ISCA2002Review extends ConferenceReview {
   //
   function checkForm($Conf)
     {
-      $finalized = $_POST['finalized'];
+      $finalized = $_POST['reviewSubmitted'];
 
       if ($finalized) {
 	reset($this->checkFields);
 	for($i = 0; $i < sizeof($this->checkFields); $i++) {
 	  $key = $this->checkFields[$i];
 
-	  if ($key != "finalized") {
+	  if ($key != "reviewSubmitted") {
 	    $formv = $_POST[$key];
 	    if ($formv != "" || $formv != 0) {
 	      //
@@ -203,7 +203,7 @@ class ISCA2002Review extends ConferenceReview {
 	      $Conf->errorMsg("You need to provide a value for all the fields ($key). "
 			      . "You can not finalize your review until you provide "
 			      . "values for each field.");
-	      $_POST['finalized'] = 0;
+	      $_POST['reviewSubmitted'] = 0;
 	      return;
 	    }
 	  }
@@ -263,7 +263,7 @@ class ISCA2002Review extends ConferenceReview {
       for($i = 0; $i < sizeof($this->fieldorder); $i++) {
 	$name = $this->fieldorder[$i];
 
-	if ($name == "finalized" || $name == "commentsToPC" ) {
+	if ($name == "reviewSubmitted" || $name == "commentsToPC" ) {
 	  //
 	  // Don't print these fields
 	  //

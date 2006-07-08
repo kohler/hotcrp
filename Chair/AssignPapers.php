@@ -57,7 +57,7 @@ if (isset($_REQUEST["assignPapers"])) {
     if ($reviewer <= 0) {
 	$Conf->errorMsg("You need to select a reviewer.");
     } else {
-	$reviewName = array("Primary", "Secondary", "Requested");
+	$reviewName = array(REVIEW_PRIMARY => "Primary", REVIEW_SECONDARY => "Secondary", REVIEW_REQUESTED => "Requested");
 	for ($type = REVIEW_PRIMARY; $type <= REVIEW_REQUESTED; $type++) {
 	    if (!isset($_REQUEST[$reviewName[$type]]))
 		continue;
@@ -66,10 +66,10 @@ if (isset($_REQUEST["assignPapers"])) {
 		if (($paper = cvtint($paper)) <= 0)
 		    continue;
 		$result = $Conf->qe("select contactId from ReviewRequest
-			where contactId=$reviewer and paperId=$paper and type=$type");
+			where contactId=$reviewer and paperId=$paper and reviewType=$type");
 		if (DB::isError($result) || $result->numRows() == 0) {
 		    $result=$Conf->qe("insert into ReviewRequest
-			set contactId=$reviewer, paperId=$paper, type=$type$extra, requestedBy=$Me->contactId");
+			set contactId=$reviewer, paperId=$paper, reviewType=$type$extra, requestedBy=$Me->contactId");
 		    if (!DB::isError($result)) {
 			$Conf->infoMsg("Added $reviewName[$type] reviewer for paper $paper");
 			$Conf->log("Added $reviewName[$type] reviewer $reviewer for paper $paper", $Me);
@@ -132,8 +132,8 @@ reviewer <b> without further confirmation </b>.
     $numpapers = $paperResult -> numrows();
   }
 
-    $result = $Conf->qe("select paperId, type, count(contactId)
-	from ReviewRequest group by paperId, type");
+    $result = $Conf->qe("select paperId, reviewType, count(contactId)
+	from ReviewRequest group by paperId, reviewType");
     if (!DB::isError($result))
 	while ($row = $result->fetchRow())
 	    if ($row[1] == REVIEW_PRIMARY)
@@ -143,8 +143,8 @@ reviewer <b> without further confirmation </b>.
 	    else if ($row[1] == REVIEW_REQUESTED)
 		$allReviewRequest[$row[0]] = $row[2];
 
-  countPapers($allStartedReviews, "PaperReview", "WHERE (PaperReview.finalized=0)");
-  countPapers($allFinishedReviews, "PaperReview", "WHERE (PaperReview.finalized!=0)");
+  countPapers($allStartedReviews, "PaperReview", "WHERE (PaperReview.reviewSubmitted=0)");
+  countPapers($allFinishedReviews, "PaperReview", "WHERE (PaperReview.reviewSubmitted>0)");
   //
   // Determine the number of completed and started reviews for all papers
   //
@@ -279,7 +279,7 @@ if ($reviewer >= 0) {
        //
        $result = $Conf->qe("SELECT ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.contactId "
 			   . " FROM ContactInfo join ReviewRequest using (contactId) "
-			   . " WHERE ReviewRequest.paperId='$paperId' and ReviewRequest.type=" . REVIEW_PRIMARY
+			   . " WHERE ReviewRequest.paperId='$paperId' and ReviewRequest.reviewType=" . REVIEW_PRIMARY
 			   );
        if (!DB::isError($result)) {
 	 while($row = $result->fetchRow() ) {
@@ -300,7 +300,7 @@ if ($reviewer >= 0) {
        //
        $result = $Conf->qe("select ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.contactId
 		from ContactInfo join ReviewRequest using (contactId)
-		where ReviewRequest.paperId=$paperId and ReviewRequest.type=".REVIEW_SECONDARY);
+		where ReviewRequest.paperId=$paperId and ReviewRequest.reviewType=".REVIEW_SECONDARY);
        if (!DB::isError($result)) {
 	 while($row = $result->fetchRow() ) {
 	   print "$row[0] $row[1] ($row[2]) ";

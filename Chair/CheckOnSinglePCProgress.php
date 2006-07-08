@@ -55,8 +55,8 @@ if ( !DB::isError($result) ) {
 
     print "<br> review requested of $first $last ($email) ";
 	
-    $query2="SELECT finalized FROM PaperReview "
-      . " WHERE paperId=$paperId AND reviewer=$id";
+    $query2="SELECT reviewSubmitted FROM PaperReview "
+      . " WHERE paperId=$paperId AND contactId=$id";
     $r2 = $Conf->qe($query2);
     if ($r2) {
       $foo = $r2->fetchRow();
@@ -118,8 +118,8 @@ if ( ! DB::isError($result) ) {
 
     print "<br> review requested of $first $last ($email) ";
 	
-    $query2="SELECT finalized FROM PaperReview "
-      . " WHERE paperId=$paperId AND reviewer=$id";
+    $query2="SELECT reviewSubmitted FROM PaperReview "
+      . " WHERE paperId=$paperId AND contactId=$id";
     $r2 = $Conf->qe($query2);
     if ($r2) {
       $foo = $r2->fetchRow();

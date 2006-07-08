@@ -91,7 +91,92 @@ function paperStatus($paperId, $row = null, $long = 0, $conf = null) {
 	return $x;
     }
 }
+
+$reviewButton[0] = array
+    ("past" => "<a class='review_past' ~>Review&nbsp;past&nbsp;due</a>",
+     "start" => "<a class='review_start' ~>Start&nbsp;review</a>",
+     "comp" => "<a class='review_comp' ~>Complete&nbsp;review</a>",
+     "edit" => "<a class='review_edit' ~>Edit&nbsp;review</a>",
+     "view" => "<a class='review_view' ~>See&nbsp;review</a>",
+     "author" => "<span class='author'>Author</span>",
+     "conflict" => "<span class='conflict'>Conflict</span>",
+     "" => "");
+$reviewButton[1] = array
+    ("past" => "<button class='review_past' type='submit'>Review&nbsp;past&nbsp;due</button>",
+     "start" => "<button class='review_start' type='submit'>Start&nbsp;review</button>",
+     "comp" => "<button class='review_comp' type='submit'>Complete&nbsp;review</button>",
+     "edit" => "<button class='review_edit' type='submit'>Edit&nbsp;review</button>",
+     "view" => "<button class='review_view' type='submit'>See&nbsp;review</button>",
+     "author" => "<button class='review_author' type='button' disabled='disabled'>Review</button>",
+     "conflict" => "<button class='review_conflict' type='button' disabled='disabled'>Review</button>",
+     "" => "<button class='review_other' type='button' disabled='disabled'>Review</button>");
+
+function reviewType($paperId, $row) {
+    if ($row->reviewType == REVIEW_PRIMARY)
+	return "<span class='rtype rtype_pri'>Primary</span>";
+    else if ($row->reviewType == REVIEW_SECONDARY)
+	return "<span class='rtype rtype_sec'>Secondary</span>";
+    else if ($row->reviewType == REVIEW_REQUESTED)
+	return "<span class='rtype rtype_req'>Requested</span>";
+    else if (!($row->reviewId === null))
+	return "<span class='rtype rtype_pc'>PC</span>";
+    else
+	return "";
+}
+
+function reviewStatus($row, $when = 0, $conf = null) {
+    global $Conf;
+    $conf = ($conf ? $conf : $Conf);
     
+    if ($row->reviewType == 0 && $row->reviewId === null)
+	return "";
+    else if ($row->reviewSubmitted === null)
+	return "<span class='rstat rstat_no'>Not started</span>";
+    else if ($row->reviewSubmitted == 0)
+	$x = "<span class='rstat rstat_prog'>In progress</span>";
+    else
+	$x = "<span class='rstat rstat_done'>Complete</span>";
+    if ($when && isset($row->reviewLastModified) && $_SESSION["Me"]->isPC)
+	$x .= " <span class='rstat_date'>(" . htmlspecialchars($conf->printTime(strtotime($row->reviewLastModified))) . ")</span>";
+    return $x;
+}
+
+function reviewButton($paperId, $row = null, $buttonType = 0, $conf = null) {
+    global $Conf, $ConfSiteBase, $reviewButton;
+    $conf = ($conf ? $conf : $Conf);
+    $Me = $_SESSION["Me"];
+    
+    if ($row === null && ($row = $conf->getPaperRow($paperId, $Me->contactId)) === null)
+	return "Database error";
+
+    $timeGood = $Conf->timeReviewPaper($Me->isPC, $row->reviewType>0, false);
+    $timeOK = $Conf->timeReviewPaper($Me->isPC, $row->reviewType>0, true);
+    $need = ($row->reviewType > 0 || $row->reviewId);
+    if ($need && !$row->reviewSubmitted && !$timeGood)
+	$type = "past";
+    else if (($need && $row->reviewSubmitted === null)
+	     || (!$need && $row->conflict <= 0 && $timeOK && $row->acknowledged > 0 && $row->withdrawn <= 0))
+	$type = "start";
+    else if ($need && !$row->reviewSubmitted)
+	$type = "comp";
+    else if ($need && $timeOK)
+	$type = "edit";
+    else if ($need)
+	$type = "view";
+    else if ($Me->isPC && $row->author > 0)
+	$type = "author";
+    else if ($Me->isPC && $row->conflict > 0)
+	$type = "conflict";
+    else
+	$type = "";
+
+    if ($row->reviewId === null)
+	$revulink = "href='${ConfSiteBase}All/ReviewPaper.php?paperId=$paperId'";
+    else
+	$revulink = "href='${ConfSiteBase}All/ReviewPaper.php?reviewId=$row->reviewId'";
+    return str_replace("~", $revulink, $reviewButton[$buttonType][$type]);
+}
+
 function paperDownload($paperId, $row = null, $long = 0, $conf = null) {
     global $Conf, $ConfSiteBase;
     if ($conf == null)
@@ -204,6 +289,13 @@ function tempdir($dir, $prefix, $mode = 0700) {
 	    return $path;
     }
     return false;
+}
+
+function plural($n, $what) {
+    if ($n == 1)
+	return "$n $what";
+    else
+	return "$n ${what}s";
 }
 
 ?>

@@ -198,7 +198,7 @@ else {
       $contactId = $row[3];
       $requestId = $row[4];
 
-      $query = "SELECT contactId, finalized"
+      $query = "SELECT contactId, reviewSubmitted"
       . " FROM PaperReview "
       . " WHERE PaperReview.paperId='$paperId' "
       . " AND PaperReview.contactId='$contactId' "

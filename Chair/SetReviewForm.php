@@ -4,7 +4,7 @@ $Conf->connect();
 $_SESSION["Me"]->goIfInvalid("../");
 $_SESSION["Me"]->goIfNotChair('../');
 include('Code.inc');
-$Conf->header_head("Set Review Form");
+$Conf->header_head("Edit Review Form");
 $rf = reviewForm();
 
 ?>
@@ -18,7 +18,7 @@ function highlightUpdate() {
 // -->
 </script>
 
-<?php $Conf->header("Set Review Form");
+<?php $Conf->header("Edit Review Form");
 
 function checkOptions(&$var, &$options, &$order) {
     if (!isset($var))
@@ -48,6 +48,10 @@ if (isset($_REQUEST['update'])) {
 	$req = '';
 	if (isset($_REQUEST["shortName_$field"]))
 	    $req .= "shortName='" . sqlq($_REQUEST["shortName_$field"]) . "', ";
+	if (isset($_REQUEST["authorView_$field"]))
+	    $req .= "authorView=1, ";
+	else
+	    $req .= "authorView=0, ";
 	if (isset($_REQUEST["description_$field"]))
 	    $req .= "description='" . sqlq($_REQUEST["description_$field"]) . "', ";
 	if (isset($_REQUEST["order_$field"]))
@@ -114,10 +118,18 @@ function formFieldText($row, $ordinalOrder, $numRows) {
     global $rf, $reviewFields, $FormError;
 
     $x = "<tr class='setrev_$row->fieldName'>\n";
-    $x .= "  <td class='form_caption";
+    $x .= "  <td class='setrev_shortName";
     if ($FormError[$row->fieldName])
 	$x .= " error";
-    $x .= "'><input class='textlite' type='text' name='shortName_$row->fieldName' value=\"" . htmlentities(getField($row, 'shortName')) . "\" onchange='highlightUpdate()' /></td>\n";
+    $x .= "'><input class='textlite' type='text' name='shortName_$row->fieldName' value=\"" . htmlentities(getField($row, 'shortName')) . "\" onchange='highlightUpdate()' />\n";
+
+    // special case checkbox
+    $x .= "<p><input type='checkbox' name='authorView_$row->fieldName' value='1' ";
+    if (isset($_REQUEST["shortName_$row"]) && !isset($_REQUEST["authorView_$row"]))
+	$_REQUEST["authorView_$row"] = 0;
+    if (getField($row, 'authorView') > 0)
+	$x .= "checked='checked' ";
+    $x .= "/>&nbsp;Visible&nbsp;to&nbsp;authors</p></td>\n";
     
     $x .= "  <td class='form_entry'><select name='order_$row->fieldName' onchange='highlightUpdate()'>\n";
     $x .= "    <option value='-1'";

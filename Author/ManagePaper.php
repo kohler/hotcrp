@@ -214,9 +214,9 @@ while ($OK && ($row = $result->fetchRow())) {
 function printPaperLinks() {
     global $prevPaperId, $prevPaperTitle, $nextPaperId, $nextPaperTitle, $OK;
     if ($OK && isset($prevPaperId))
-	echo "<div class='prevpaperlink'><a href='ManagePaper.php?paperId=$prevPaperId'>&lt; Previous Paper #$prevPaperId ", htmlspecialchars($prevPaperTitle), "</a></div>\n";
+	echo "<div class='prevpaperlink'><a href='ManagePaper.php?paperId=$prevPaperId'>&lt; #$prevPaperId ", htmlspecialchars($prevPaperTitle), "</a></div>\n";
     if ($OK && isset($nextPaperId))
-	echo "<div class='nextpaperlink'><a href='ManagePaper.php?paperId=$nextPaperId'>Next Paper #$nextPaperId ", htmlspecialchars($nextPaperTitle), " &gt;</a></div>\n";
+	echo "<div class='nextpaperlink'><a href='ManagePaper.php?paperId=$nextPaperId'>#$nextPaperId ", htmlspecialchars($nextPaperTitle), " &gt;</a></div>\n";
     echo "<div class='clear'></div>\n\n";
 }
 
@@ -245,12 +245,13 @@ if ($OK) {
 
     printPaperLinks();
     
-    echo "<h2>#$paperId ", htmlspecialchars($prow->title), "</h2>\n\n";
-
     echo "<form method='post' action=\"", $_SERVER['PHP_SELF'], "\" enctype='multipart/form-data'>
 <input type='hidden' name='paperId' value='$paperId' />
-<table class='aumanage'>\n";
-
+<table class='aumanage'>
+<tr>
+  <td class='pt_id'><h2>#$paperId</h2></td>
+  <td><h2>", htmlspecialchars($prow->title), "</h2></td>\n</tr>\n";
+    
     if ($can_update) {
 	echo "<tr>\n  <td class='", pt_caption_class('title'), "'>Title*:</td>\n";
 	echo "  <td class='pt_entry'><input class='textlite' type='text' name='title' id='title' value=\"", pt_data_html('title', $prow), "\" onchange='highlightUpdate()' size='60' /></td>\n";
@@ -289,6 +290,23 @@ if ($OK) {
      if ($can_update)
 	 echo "</textarea>";
 ?></td>
+</tr>
+
+<tr>
+  <td class='pt_caption'>Contact&nbsp;authors:</td>
+  <td class='pt_entry'><?php {
+    $q = "select firstName, lastName, email
+	from ContactInfo
+	join PaperConflict using (contactId)
+	where paperId=$paperId and author=1
+	order by lastName, firstName";
+    $result = $Conf->qe($q, "while finding contact authors");
+    if (!DB::isError($result)) {
+	while ($row = $result->fetchRow())
+	    $aus[] = "$row[0] $row[1] ($row[2])";
+	echo authorTable($aus);
+    }
+  } ?></td>
 </tr>
 
 <tr>
@@ -371,6 +389,44 @@ if ($topicTable = topicTable($paperId, $topicsActive)) {
 
 </table>
 </form>
+
+
+<?php
+$nreviews = $prow->reviewCount;
+
+if ($nreviews > 0 && $Me->canViewReviews($prow, $Conf)) {
+    $rf = reviewForm();
+    $q = "select PaperReview.*, ContactInfo.firstName, ContactInfo.lastName,
+ 		ContactInfo.email
+		from PaperReview join ContactInfo using (contactId)
+		where paperId=$paperId and reviewSubmitted>0
+		order by lastName, firstName";
+    $result = $Conf->qe($q, "while retrieving reviews");
+    if (!DB::isError($result) && $result->numRows() > 0)
+	while ($rrow = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
+	    echo "<hr/>
+
+<table class='review'>
+<tr>
+  <td class='form_id'><h3>Review&nbsp;R", $rrow->reviewId, "</h3></td>
+  <td class='form_entry' colspan='3'>";
+	    if ($Me->canViewReviewerIdentity($rrow, $prow, $Conf))
+		echo "by <span class='reviewer'>", ltrim(rtrim(htmlspecialchars("$rrow->firstName $rrow->lastName"))), "</span>";
+	    echo " <span class='reviewstatus'>", reviewStatus($rrow, 1), "</span>";
+	    if ($rrow->contactId == $Me->contactId || $Me->amAssistant())
+		echo " ", reviewButton($paperId, $prow, 0, $Conf);
+	    echo "</td>
+</tr>\n";
+	    echo $rf->webDisplayRows($rrow, $Me->canViewAllReviewFields($prow, $Conf)), "</table>\n\n";
+	}
+
+} else if ($nreviews > 0 && $Me->amAssistant()) {
+    echo "<hr/><p>", plural($nreviews, "review"), " available for paper #$paperId.  You can see them in <a href='ViewPaper.php?paperId=$paperId&amp;chairMode=1'>chair mode</a>.</p>";
+}
+
+?>
+
+
 <?php
     
 } else {

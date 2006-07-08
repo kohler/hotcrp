@@ -29,8 +29,8 @@ if (($who = cvtint($_REQUEST["who"])) <= 0
     }
 
     echo "$who $paperId $reviewType ", $_REQUEST["reviewType"];
-    echo "delete from ReviewRequest where contactId=$who and paperId=$paperId and type=$reviewType";
-    $result = $Conf->qe("delete from ReviewRequest where contactId=$who and paperId=$paperId and type=$reviewType", "while deleting a reviewer");
+    echo "delete from ReviewRequest where contactId=$who and paperId=$paperId and reviewType=$reviewType";
+    $result = $Conf->qe("delete from ReviewRequest where contactId=$who and paperId=$paperId and reviewType=$reviewType", "while deleting a reviewer");
     if (!DB::isError($result)) {
 	$Conf->confirmMsg("I removed " . $Conf->DB->affectedRows() . " reviewers");
     }

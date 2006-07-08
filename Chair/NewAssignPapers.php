@@ -373,8 +373,8 @@ $result = $Conf->qe($query);
   countPapers("allPrimary", "PrimaryReviewer", "");
   countPapers("allSecondary", "SecondaryReviewer", "");
   countPapers("allReviewRequest", "ReviewRequest", "");
-  countPapers("allStartedReviews", "PaperReview", "WHERE (PaperReview.finalized!=0)");
-  countPapers("allFinishedReviews", "PaperReview", "WHERE (PaperReview.finalized=0)");
+  countPapers("allStartedReviews", "PaperReview", "WHERE (PaperReview.reviewSubmitted>0)");
+  countPapers("allFinishedReviews", "PaperReview", "WHERE (PaperReview.reviewSubmitted=0)");
   //
   // Determine the number of completed and started reviews for all papers
   //

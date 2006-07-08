@@ -97,10 +97,10 @@ Found <?php  echo $numpapers ?> papers.
    <?php  if ($_REQUEST["SeeAuthorInfo"]) {echo "checked";}?> > See author info </br>
 
 <INPUT type=checkbox name=onlyWithdrawn value=1
-   <?php  if ($_REQUEST[onlyWithdrawn]) {echo "checked";}?> > Only show withdrawn </br>
+   <?php  if ($_REQUEST["onlyWithdrawn"]) {echo "checked";}?> > Only show withdrawn </br>
 
 <INPUT type=checkbox name=onlyFinalized value=1
-   <?php  if ($_REQUEST[onlyFinalized]) {echo "checked";}?> > Only show finalized </br>
+   <?php  if ($_REQUEST["onlyFinalized"]) {echo "checked";}?> > Only show finalized </br>
 
 <input type=hidden name="ORDER" value="<?php echo $_REQUEST[ORDER] ?>">
 

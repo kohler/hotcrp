@@ -226,18 +226,18 @@ CREATE TABLE PaperGrade (
 
 drop table if exists ReviewRequest;
 CREATE TABLE ReviewRequest (
-  contactId int(11) NOT NULL,
   paperId int(11) NOT NULL,
-  type tinyint(1) NOT NULL default '0',
+  contactId int(11) NOT NULL,
+  reviewType tinyint(1) NOT NULL default '0',
 
   requestedBy int(11) NOT NULL default 0,
   requestMadeOn timestamp(14) NOT NULL,
   acceptedOn timestamp(14) NOT NULL default 0,
 
-  KEY requestedBy (requestedBy),
-  KEY contactId (contactId),
   KEY paperId (paperId),
-  KEY type (type)
+  KEY contactId (contactId),
+  KEY reviewType (reviewType),
+  KEY requestedBy (requestedBy)
 ) TYPE=MyISAM;
 
 #
@@ -251,12 +251,12 @@ CREATE TABLE ReviewRequest (
 
 drop table if exists PaperReview;
 CREATE TABLE PaperReview (
-  paperReviewId int(11) NOT NULL auto_increment,
+  reviewId int(11) NOT NULL auto_increment,
 
   paperId int(11) NOT NULL,
   contactId int(11) NOT NULL,
-  lastModified timestamp(14) NOT NULL,
-  finalized tinyint(1) NOT NULL default 0,
+  reviewLastModified timestamp(14) NOT NULL,
+  reviewSubmitted tinyint(1) NOT NULL default 0,
 
   overAllMerit tinyint(1) NOT NULL default '0',
   reviewerQualification tinyint(1) NOT NULL default '0',
@@ -277,11 +277,11 @@ CREATE TABLE PaperReview (
   potential tinyint(4) NOT NULL default '0',
   fixability tinyint(4) NOT NULL default '0',
 
-  PRIMARY KEY (paperReviewId),
-  UNIQUE KEY paperReviewid (paperReviewId),
+  PRIMARY KEY (reviewId),
+  UNIQUE KEY reviewid (reviewId),
   KEY paperId (paperId),
   KEY contactId (contactId),
-  KEY finalized (finalized)
+  KEY reviewSubmitted (reviewSubmitted)
 ) TYPE=MyISAM;
 
 #
@@ -440,6 +440,7 @@ create table ReviewFormField (
   description text,
   sortOrder tinyint(1) NOT NULL default -1,
   rows tinyint(1) NOT NULL default 0,
+  authorView tinyint(1) NOT NULL default 1,
   PRIMARY KEY (fieldName),
   UNIQUE KEY fieldName (fieldName),
   KEY shortName (shortName)
@@ -477,7 +478,7 @@ insert into ReviewFormField set fieldName='paperSummary',
 insert into ReviewFormField set fieldName='commentsToAuthor',
 	shortName='Comments for author', sortOrder=3, rows=15;
 insert into ReviewFormField set fieldName='commentsToPC',
-	shortName='Comments for PC', sortOrder=4, rows=10;
+	shortName='Comments for PC', sortOrder=4, rows=10, authorView=0;
 insert into ReviewFormField set fieldName='commentsToAddress',
 	shortName='Comments to address', rows=10;
 insert into ReviewFormField set fieldName='weaknessOfPaper',
@@ -595,7 +596,8 @@ insert into PaperListColumns set paperListId=4, fieldId=3, col=2;
 insert into PaperList set paperListId=5, paperListName='reviewerHome',
 	description='Papers to review (homepage view)',
 	minRole=100, sortCol=0, query='';
-insert into PaperListColumns set paperListId=5, fieldId=7, col=0;
-insert into PaperListColumns set paperListId=5, fieldId=8, col=1;
+insert into PaperListColumns set paperListId=5, fieldId=1, col=0;
+insert into PaperListColumns set paperListId=5, fieldId=2, col=1;
 insert into PaperListColumns set paperListId=5, fieldId=9, col=2;
 insert into PaperListColumns set paperListId=5, fieldId=10, col=3;
+insert into PaperListColumns set paperListId=5, fieldId=12, col=4;

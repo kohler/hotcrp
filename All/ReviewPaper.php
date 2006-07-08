@@ -39,13 +39,18 @@ function get_prow($paperIdIn, &$tf = null) {
     }
 }
 
-function get_rrow($paperId) {
+function get_rrow($paperId, $reviewId = -1) {
     global $Conf, $rrow, $Me;
-    $result = $Conf->qe("select * from PaperReview where paperId=$paperId and contactId=$Me->contactId", "while retrieving review");
-    if (DB::isError($result) || $result->numRows() == 0)
+    $where = ($reviewId > 0 ? "reviewId=$reviewId" : "paperId=$paperId and contactId=$Me->contactId");
+    $result = $Conf->qe("select * from PaperReview where $where", "while retrieving review");
+    if (DB::isError($result) || $result->numRows() == 0) {
+	if ($reviewId > 0)
+	    initialError("No such paper review #$reviewId.");
 	$rrow = null;
-    else
+    } else {
 	$rrow = $result->fetchRow(DB_FETCHMODE_OBJECT);
+	$_REQUEST['reviewId'] = $rrow->reviewId;
+    }
 }
 
 $rf = reviewForm();
@@ -69,7 +74,13 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'])) {
  }
 
 $paperId = $originalPaperId;
-if ($paperId > 0) {
+if (isset($_REQUEST["reviewId"])) {
+    get_rrow(-1, cvtint(ltrim(rtrim($_REQUEST["reviewId"]))));
+    if ($Me->contactId != $rrow->contactId && !$Me->amAssistant())
+	initial_error("You did not create review #$rrow->reviewId, so you cannot edit it.");
+    $paperId = $rrow->paperId;
+    get_prow($paperId);
+} else if ($paperId > 0) {
     get_prow($paperId);
     get_rrow($paperId);
 } else
@@ -117,6 +128,11 @@ if (isset($_REQUEST['save']) || isset($_REQUEST['submit']))
 <table class='auview'>
 
 <tr>
+  <td class='pt_caption'>#<?php echo $paperId ?></td>
+  <td class='pt_entry pt_title'><?php echo htmlspecialchars($prow->title) ?></td>
+</tr>
+
+<tr>
   <td class='pt_caption'>Status:</td>
   <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, 0, 1) ?></td>
 </tr>
@@ -133,7 +149,7 @@ if (isset($_REQUEST['save']) || isset($_REQUEST['submit']))
   <td class='pt_entry'><?php echo htmlspecialchars($prow->abstract) ?></td>
 </tr>
 
-<?php if ($Conf->canViewAuthors($Me, $prow)) { ?>
+<?php if ($Me->canViewAuthors($prow, $Conf)) { ?>
 <tr>
   <td class='pt_caption'>Authors:</td>
   <td class='pt_entry'><?php echo authorTable($prow->authorInformation) ?></td>
@@ -159,8 +175,18 @@ if ($topicTable = topicTable($paperId, -1)) {
 
 <table class='reviewform'>
 <tr class='rev_title'>
-  <td class='form_caption'><h2>#<?php echo $paperId ?></h2></td>
-  <td class='form_entry'><h2><?php echo htmlspecialchars($prow->title) ?></h2></td>
+  <td class='pt_id'><h2>Review<?php if (isset($rrow)) echo " R$rrow->reviewId" ?></h2></td>
+  <td class='form_entry'><h2>for Paper #<?php echo $paperId ?></h2></td>
+</tr>
+
+<tr class='rev_type'>
+  <td class='form_caption'>Review&nbsp;type:</td>
+  <td class='form_entry'><?php echo reviewType($paperId, $prow) ?></td>
+</tr>
+
+<tr class='rev_status'>
+  <td class='form_caption'>Review&nbsp;status:</td>
+  <td class='form_entry'><?php echo reviewStatus((isset($rrow) ? $rrow : $prow), 1) ?></td>
 </tr>
 
 <tr class='rev_download'>
@@ -186,15 +212,20 @@ if ($topicTable = topicTable($paperId, -1)) {
 <hr/>
 
 <form action='ReviewPaper.php' method='post' enctype='multipart/form-data'>
-<input type='hidden' name='paperId' value='<?php echo $paperId ?>' />
+<?php
+    if (isset($rrow))
+	echo "<input type='hidden' name='reviewId' value='$rrow->reviewId' />\n";
+    else 
+	echo "<input type='hidden' name='paperId' value='$paperId' />\n";
+?>
 <table class='reviewform'>
 <?php
-echo $rf->formRows($rrow, 1);
+echo $rf->webFormRows($rrow, 1);
 ?>
 
 <tr class='rev_actions'>
   <td class='form_caption'>Actions:</td>
-<?php if (!$rrow->finalized) { ?>
+<?php if (!$rrow->reviewSubmitted) { ?>
   <td class='form_entry'><table class='pt_buttons'>
     <tr>
       <td class='ptb_button'><input class='button_default' type='submit' value='Save changes' name='save' /></td>

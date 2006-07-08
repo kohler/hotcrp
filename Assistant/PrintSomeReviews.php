@@ -61,7 +61,7 @@ if ($_SESSION["GradeSortKey"]=="byReviews") {
 		    . " FROM Paper "
 		    . " LEFT JOIN PaperReview "
 		    . " ON PaperReview.paperId=Paper.paperId "
-		    . " WHERE PaperReview.finalized=1 "
+		    . " WHERE PaperReview.reviewSubmitted=1 "
 		    . " GROUP BY PaperReview.paperId "
 		    . " ORDER BY merit DESC, Paper.paperId "
 		    );
@@ -167,7 +167,7 @@ while ($row=$result->fetchRow()) {
     print "<td align=center>";
     $q = "SELECT overAllMerit FROM PaperReview "
       . " WHERE paperId=$paperId "
-      . " AND finalized = 1";
+      . " AND reviewSubmitted = 1";
     $Conf->graphValues($q, "overAllMerit", $meritRange['min'], $meritRange['max']);
 
     print "</td>";

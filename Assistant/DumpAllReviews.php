@@ -220,13 +220,13 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC) ) {
     // Now print all the reviews
     //
     if ($_REQUEST["SeeOnlyFinalized"]) {
-      $finalizedStr = " AND PaperReview.finalized=1";
+      $finalizedStr = " AND PaperReview.reviewSubmitted=1";
     } else {
       $finalizedStr ="";
     }
 
     $result2 = $Conf->qe("SELECT PaperReview.contactId, "
-			 . " PaperReview.paperReviewId, PaperReview.finalized, "
+			 . " PaperReview.reviewId, PaperReview.reviewSubmitted, "
 			 . " ContactInfo.firstName, ContactInfo.lastName, "
 			 . " ContactInfo.email "
 			 . " FROM PaperReview, ContactInfo "
@@ -244,11 +244,11 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC) ) {
       $i = 1;
       while($row = $result2->fetchRow(DB_FETCHMODE_ASSOC) ) {
 	$reviewer=$row['contactId'];
-	$reviewId=$row['paperReviewId'];
+	$reviewId=$row['reviewId'];
 	$first=$row['firstName'];
 	$last=$row['lastName'];
 	$email=$row['email'];
-	$finalized=$row['finalized'];
+	$finalized=$row['reviewSubmitted'];
 
 	$Review=ReviewFactory($Conf, $reviewer, $paperId);
     $lastModified=$Conf->printTime($Review->reviewFields['timestamp']);

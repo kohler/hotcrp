@@ -93,8 +93,8 @@ $Conf->infoMsg("If you have the word 'CONFLICT' next to a paper, "
   countPapers("allPrimary", "PrimaryReviewer", "");
   countPapers("allSecondary", "SecondaryReviewer", "");
   countPapers("allReviewRequest", "ReviewRequest", "");
-  countPapers("allStartedReviews", "PaperReview", "WHERE (PaperReview.finalized!=0)");
-  countPapers("allFinishedReviews", "PaperReview", "WHERE (PaperReview.finalized=0)");
+  countPapers("allStartedReviews", "PaperReview", "WHERE (PaperReview.reviewSubmitted>0)");
+  countPapers("allFinishedReviews", "PaperReview", "WHERE (PaperReview.reviewSubmitted=0)");
 
   $allConflicts = $Conf->allMyConflicts($_SESSION["Me"]->contactId);
   $pcConflicts = $Conf->allPCConflicts();

@@ -76,8 +76,8 @@ $finalized = $prow->acknowledged > 0;
 <table class='view'>
 
 <tr>
-  <td class='pt_caption'><h2>#<?php echo $paperId ?></h2></td>
-  <td class='pt_entry'><h2><?php echo htmlspecialchars($prow->title) ?></h2></td>
+  <td class='pt_id'><h2>#<?php echo $paperId ?></h2></td>
+  <td class='pt_entry' colspan='2'><h2><?php echo htmlspecialchars($prow->title) ?></h2></td>
 </tr>
 
 <tr>
@@ -87,31 +87,43 @@ if ($prow->author > 0)
     echo "<br/>\nYou are an <span class='author'>author</span> of this paper.";
 else if ($Me->isPC && $prow->conflict > 0)
     echo "<br/>\nYou have a <span class='conflict'>conflict</span> with this paper.";
-if ($prow->myReviewType != null) {
-    if ($prow->myReviewType == REVIEW_PRIMARY)
+if ($prow->reviewType != null) {
+    if ($prow->reviewType == REVIEW_PRIMARY)
 	echo "<br/>\nYou are primary reviewer for this paper.";
-    else if ($prow->myReviewType == REVIEW_SECONDARY)
+    else if ($prow->reviewType == REVIEW_SECONDARY)
 	echo "<br/>\nYou are secondary reviewer for this paper.";
-    else if ($prow->myReviewType == REVIEW_REQUESTED)
+    else if ($prow->reviewType == REVIEW_REQUESTED)
 	echo "<br/>\nYou were requested to review this paper.";
     else
 	echo "<br/>\nYou began a review for this paper.";
  } ?></td>
-</tr>
 
-<?php if (!$withdrawn && $prow->size > 0) { ?>
-<tr>
-  <td class='pt_caption'>Paper:</td>
-  <td class='pt_entry'><?php echo paperDownload($paperId, $prow, 1) ?></td>
-</tr>
-<?php } ?>
+
+<td class='view_right' rowspan='4'><table>
 
 <tr>
   <td class='pt_caption'>Abstract:</td>
   <td class='pt_entry'><?php echo htmlspecialchars($prow->abstract) ?></td>
 </tr>
 
-<?php if ($Conf->canViewAuthors($Me, $prow)) { ?>
+<?php if ($Me->canViewAuthors($prow, $Conf)) { ?>
+<tr>
+  <td class='pt_caption'>Contact&nbsp;authors:</td>
+  <td class='pt_entry'><?php {
+    $q = "select firstName, lastName, email
+	from ContactInfo
+	join PaperConflict using (contactId)
+	where paperId=$paperId and author=1
+	order by lastName, firstName";
+    $result = $Conf->qe($q, "while finding contact authors");
+    if (!DB::isError($result) && $result->numRows() > 0) {
+	while ($row = $result->fetchRow())
+	    $aus[] = "$row[0] $row[1] ($row[2])";
+	echo authorTable($aus);
+    }
+  } ?></td>
+</tr>
+
 <tr>
   <td class='pt_caption'>Authors:</td>
   <td class='pt_entry'><?php echo authorTable($prow->authorInformation) ?></td>
@@ -130,10 +142,25 @@ if ($topicTable = topicTable($paperId, -1)) {
   <td class='pt_caption'>Topics:</td>
   <td class='pt_entry' id='topictable'>", $topicTable, "</td>\n</tr>\n";
  }
+?>
 
+</table></td></tr>
+
+
+<?php if (!$withdrawn && $prow->size > 0) { ?>
+<tr>
+  <td class='pt_caption'>Paper:</td>
+  <td class='pt_entry'><?php echo paperDownload($paperId, $prow, 1) ?></td>
+</tr>
+<?php } ?>
+
+
+<?php
 if ($Me->amAssistant()) {
     $q = "select firstName, lastName
-	from ContactInfo join PaperConflict using (contactId)
+	from ContactInfo
+	join PCMember using (contactId)
+	join PaperConflict using (contactId)
 	where paperId=$paperId group by ContactInfo.contactId";
     $result = $Conf->qe($q, "while finding conflicted PC members");
     if (!DB::isError($result) && $result->numRows() > 0) {
@@ -144,11 +171,11 @@ if ($Me->amAssistant()) {
  }
 
 if ($Me->canReview($prow->paperId, $Conf, $prow))
-    $actions[] = "<form method='get' action='ReviewPaper.php'><input type='hidden' name='paperId' value='$paperId' /><input class='button' type='submit' value='Review' name='doit' /></form>";
+    $actions[] = "<form method='get' action='ReviewPaper.php'><input type='hidden' name='paperId' value='$paperId' />" . reviewButton($prow->paperId, $prow, 1) . "</form>";
 else if ($Me->isPC)
-    $actions[] = "<button class='button' disabled='disabled'>Review</button>";
+    $actions[] = reviewButton($prow->paperId, $prow, 1);
 
-if ($amAuthor || $Me->amAssistant())
+if ($prow->author > 0 || $Me->amAssistant())
     $actions[] = "<form method='get' action='${ConfSiteBase}Author/ManagePaper.php'><input type='hidden' name='paperId' value='$paperId' /><input class='button' type='submit' value='Edit submission' name='edit' /></form>";
 
 if (isset($actions))
@@ -156,9 +183,43 @@ if (isset($actions))
   <td class='pt_caption'>Actions:</td>
   <td class='pt_entry'>", join(" ", $actions), "</td>
 </tr>\n";
-?>
 
-</table>
+?></table>
 </form>
+
+<?php
+$nreviews = $prow->reviewCount;
+
+if ($nreviews > 0 && $Me->canViewReviews($prow, $Conf)) {
+    $rf = reviewForm();
+    $q = "select PaperReview.*, ContactInfo.firstName, ContactInfo.lastName,
+ 		ContactInfo.email
+		from PaperReview join ContactInfo using (contactId)
+		where paperId=$paperId and reviewSubmitted>0
+		order by lastName, firstName";
+    $result = $Conf->qe($q, "while retrieving reviews");
+    if (!DB::isError($result) && $result->numRows() > 0)
+	while ($rrow = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
+	    echo "<hr/>
+
+<table class='review'>
+<tr>
+  <td class='form_id'><h3>Review&nbsp;R", $rrow->reviewId, "</h3></td>
+  <td class='form_entry' colspan='3'>";
+	    if ($Me->canViewReviewerIdentity($rrow, $prow, $Conf))
+		echo "by <span class='reviewer'>", ltrim(rtrim(htmlspecialchars("$rrow->firstName $rrow->lastName"))), "</span>";
+	    echo " <span class='reviewstatus'>", reviewStatus($rrow, 1), "</span>";
+	    if ($rrow->contactId == $Me->contactId || $Me->amAssistant())
+		echo " ", reviewButton($paperId, $prow, 0, $Conf);
+	    echo "</td>
+</tr>\n";
+	    echo $rf->webDisplayRows($rrow, $Me->canViewAllReviewFields($prow, $Conf)), "</table>\n\n";
+	}
+
+} else if ($nreviews > 0 && $Me->amAssistant()) {
+    echo "<hr/><p>", plural($nreviews, "review"), " available for paper #$paperId.  You can see them in <a href='ViewPaper.php?paperId=$paperId&amp;chairMode=1'>chair mode</a>.</p>";
+}
+
+?>
 
 <?php $Conf->footer() ?>

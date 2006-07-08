@@ -133,6 +133,7 @@ a.download, a.review_start, a.review_comp, a.review_edit, a.review_view {
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
 	text-decoration: none;
+	color: black;
 }
 a.review_past {
 	font-size: small;
@@ -144,6 +145,7 @@ a.review_past {
 	border-bottom: 1px solid #996666;
 	border-right: 2px solid #996666;
 	text-decoration: none;
+	color: black;
 }
 span.author, span.conflict {
 	font-weight: bold;
@@ -155,13 +157,14 @@ tr {
 }
 td.form_caption {
 	text-align: right;
-	padding-right: 0.5em;
+	padding-right: 0.25em;
 }
 td.error, td.error input {
 	font-weight: bold;
 	color: #ff0000;
 }
 td.form_entry {
+	padding-left: 0.25em;
 	padding-right: 1em;
 }
 td.form_hint {
@@ -259,8 +262,11 @@ h2 {
 
 td.pt_caption {
 	font-weight: bold;
-	padding-right: 0.5em;
+	padding-right: 0.25em;
 	text-align: right;
+}
+td.pt_entry {
+	padding-left: 0.25em;
 }
 td.pt_entry form {
 	display: inline;
@@ -354,7 +360,8 @@ tr.pl_headrow td, tr.pl_headrow th, table.setreviewform th {
 	margin-bottom: 4px;
 }
 
-table.reviewform td.form_caption, table.setreviewform td.form_caption {
+table.reviewform td.form_caption, table.setreviewform td.form_caption,
+table.review td.form_caption {
 	font-weight: bold;
 }
 
@@ -370,7 +377,7 @@ div.error pre {
 	border: 1px dashed #eecccc;
 }
 
-div#review hr {
+div#review hr, div#view hr, div#aumg hr {
 	margin: 0.75em 0em;
 	border: none;
 	border-top: 1px solid #cc9900;
@@ -396,6 +403,49 @@ span.autblentry {
 
 div.plist_form {
 	margin-top: 1em;
+}
+
+table.view {
+	border-spacing: 0px;
+}
+table.view td {
+	padding-bottom: 2px;
+}
+td.view_right {
+	vertical-align: top;
+	padding-left: 3em;
+}
+td.view_right table {
+	border-spacing: 0px;
+}
+
+span.rev_num {
+	font-size: large;
+	font-weight: bold;
+	color: red;
+}
+table.review td.form_entry {
+	padding-right: 3em;
+}
+
+td.pt_id, table.review td.form_id {
+	text-align: center;
+	border: 1px solid #cccccc;
+}
+td h2, td h3 {
+	margin-top: 0px;
+	margin-bottom: 0px;
+}
+
+span.homesep, span.reviewer, span.reviewstatus {
+	padding-right: 1em;
+}
+
+td.setrev_shortName {
+	padding-right: 0.25em;
+}
+td.setrev_shortName input {
+	font-weight: bold;
 }
 
 /*@media screen {

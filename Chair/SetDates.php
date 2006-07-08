@@ -107,7 +107,7 @@ function crp_show1date($name, $which) {
     }
 }
 
-$Conf->header_head("Set Dates");
+$Conf->header_head("Edit Dates");
 ?>
 <script type="text/javascript"><!--
 function highlightUpdate() {
@@ -127,7 +127,7 @@ function clearDates(name) {
 // -->
 </script>
 
-<?php $Conf->header("Set Conference Dates"); ?>
+<?php $Conf->header("Edit Dates"); ?>
 
 <?php 
 //
@@ -199,11 +199,11 @@ if (isset($_REQUEST['update'])) {
 		  "startPaperSubmission", "updatePaperSubmission");
     for ($i = 0; $i < count($dval); $i += 2) {
 	$dest = $dval[$i]; $src = $dval[$i+1];
-	if ($Dates[$dest][1] <= 0 && $Dates[$src][1] > 0) {
+	if ($i >= 4 && $Dates[$dest][1] <= 0 && $Dates[$src][1] > 0) {
 	    $Dates[$dest][1] = $Dates[$src][1];
 	    $Messages[] = $DateName[$dest][1] . " set to " . $DateName[$src][1] . ".";
 	} else if ($i < 4 && $Dates[$dest][1] > 0 && $Dates[$src][1] > 0 && $Dates[$dest][1] < $Dates[$src][1]) {
-	    $Error[] = $DateName[$dest][1] . " must be after " . $DateName[$src][1] . ".";
+	    $Error[] = $DateName[$dest][1] . " must be on or after " . $DateName[$src][1] . ".";
 	    $DateError["${dest}_end"] = $DateError["${src}_end"] = 1;
 	}
     }
@@ -250,8 +250,8 @@ $Conf->updateImportantDates();
 
 <table>
 <tr>
-  <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' /></td>
   <td class='form_caption'><input class='button_default' type='submit' value='Update All' name='update' /></td>
+  <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' /></td>
   <td>Select Update All to save any changes to dates.  It will turn red to help you remember.</td>
 </tr>
 </table>
@@ -270,8 +270,8 @@ $Conf->updateImportantDates();
 
 <table>
 <tr>
+  <td class='form_caption'><input class='button_default' type='submit' value='Update All' name='update' /></td>
   <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' /></td>
-  <td><input class='button_default' type='submit' value='Update All' name='update' /></td>
 </tr>
 </table>
 
@@ -287,8 +287,8 @@ $Conf->updateImportantDates();
 
 <table>
 <tr>
+  <td class='form_caption'><input class='button_default' type='submit' value='Update All' name='update' /></td>
   <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' /></td>
-  <td><input class='button_default' type='submit' value='Update All' name='update' /></td>
 </tr>
 </table>
 
@@ -313,8 +313,8 @@ $Conf->updateImportantDates();
 
 <table>
 <tr>
+  <td class='form_caption'><input class='button_default' type='submit' value='Update All' name='update' /></td>
   <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' /></td>
-  <td><input class='button_default' type='submit' value='Update All' name='update' /></td>
 </tr>
 </table>
 

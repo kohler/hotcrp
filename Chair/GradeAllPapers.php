@@ -116,7 +116,7 @@ $result=$Conf->qe("SELECT Paper.paperId, Paper.title, Paper.outcome, "
 . " FROM Paper "
 . "  LEFT JOIN PaperReview ON PaperReview.paperId=Paper.paperId "
 . "  LEFT JOIN PaperGrade ON PaperGrade.paperId=Paper.paperId "
-. " WHERE PaperReview.finalized=1 "
+. " WHERE PaperReview.reviewSubmitted>0 "
 . " GROUP BY PaperReview.paperId, PaperGrade.paperId "
 . $order
 );
@@ -191,7 +191,7 @@ while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)){
 				      "PaperReview.paperId",
 				      $paperId,
 				      "PaperReview",
-				      " AND PaperReview.finalized=0 ");
+				      " AND PaperReview.reviewSubmitted=0 ");
     if ( $unfinished > 0) {
       if (! $didBr) {
 	print "<br>\n";
@@ -204,7 +204,7 @@ while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)){
     print "<td align=center>";
     $q = "SELECT overAllMerit FROM PaperReview "
       . " WHERE paperId=$paperId "
-      . " AND finalized = 1";
+      . " AND reviewSubmitted>0";
     $Conf->graphValues($q, "overAllMerit", $meritRange['min'], $meritRange['max']);
 
     print "</td>";

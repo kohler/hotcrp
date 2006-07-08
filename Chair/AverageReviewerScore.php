@@ -40,10 +40,10 @@ if ($_REQUEST[showPC]) {
 $result=$Conf->qe("SELECT ContactInfo.firstName, ContactInfo.lastName,"
 		  . " ContactInfo.email, ContactInfo.contactId,"
 		  . " AVG(PaperReview.overAllMerit) as merit, "
-		  . " COUNT(PaperReview.finalized) as count "
+		  . " COUNT(PaperReview.reviewSubmitted) as count "
 		  . " FROM ContactInfo, PCMember "
 		  . " LEFT JOIN PaperReview using (contactId) "
-		  . " WHERE PaperReview.finalized=1 $extra "
+		  . " WHERE PaperReview.reviewSubmitted>0 $extra "
 		  . " GROUP BY ContactInfo.contactId "
 		  . " ORDER BY merit DESC, count DESC, merit DESC, ContactInfo.lastName "
 		  );
@@ -84,8 +84,8 @@ while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)) {
 
   print "<td align=center>";
   $q = "SELECT overAllMerit FROM PaperReview "
-  . " WHERE reviewer=$contactId "
-  . " AND finalized = 1";
+  . " WHERE contactId=$contactId "
+  . " AND reviewSubmitted>0";
   $Conf->graphValues($q, "overAllMerit", $meritRange['min'], $meritRange['max']);
 
   print "</td>";

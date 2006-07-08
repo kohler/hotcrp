@@ -42,13 +42,13 @@ $Conf->infoMsg("In order for you to see the other reviews for papers for which y
     print "<tr> <td> $paperId </td>";
     print "<td> $title </td>  \n";
 
-    $count = $Conf->retCount("SELECT Count(finalized) "
+    $count = $Conf->retCount("SELECT Count(reviewSubmitted) "
 			   . " FROM PaperReview "
 			   . " WHERE PaperReview.paperId='$paperId'"
-			     . " AND PaperReview.finalized=1 "
+			     . " AND PaperReview.reviewSubmitted>0 "
 			     );
 
-    $done = $Conf->retCount("SELECT finalized "
+    $done = $Conf->retCount("SELECT reviewSubmitted "
 			    . " FROM PaperReview "
 			    . " WHERE PaperReview.paperId='$paperId' "
 			    . " AND PaperReview.contactId='" . $_SESSION["Me"]->contactId. "'"
@@ -106,10 +106,10 @@ if (DB::isError($result)) {
     print "<tr> <td> $paperId </td>";
     print "<td> $title </td> \n ";
 
-    $count = $Conf->retCount("SELECT Count(finalized) "
+    $count = $Conf->retCount("SELECT Count(reviewSubmitted) "
 			   . " FROM PaperReview "
 			   . " WHERE PaperReview.paperId='$paperId'"
-			     . " AND PaperReview.finalized=1"
+			     . " AND PaperReview.reviewSubmitted>0"
 			     );
 
 ?>

@@ -126,16 +126,16 @@ while ($row=$result->fetchRow()) {
 			 $paperId);
   print "</td> \n";
 
-  $count = $Conf->retCount("SELECT Count(finalized) "
+  $count = $Conf->retCount("SELECT Count(reviewSubmitted) "
 			   . " FROM PaperReview "
 			   . " WHERE PaperReview.paperId='$paperId'"
-			   . " AND PaperReview.finalized=1 "
+			   . " AND PaperReview.reviewSubmitted>0 "
 			   );
 
-  $done = $Conf->retCount("SELECT finalized "
+  $done = $Conf->retCount("SELECT reviewSubmitted "
 			  . " FROM PaperReview "
 			  . " WHERE PaperReview.paperId='$paperId' "
-			  . " AND PaperReview.reviewer='" . $_SESSION["Me"]->contactId. "'"
+			  . " AND PaperReview.contactId='" . $_SESSION["Me"]->contactId. "'"
 			  );
 
   if ( $done ) {
@@ -229,24 +229,24 @@ while ($row=$result->fetchRow()) {
   print "<a href=\"PCAllAnonReviewsForPaper.php?paperId=$paperId\" target=_blank>";
   print "$title </a> </td> \n";
 
-  $count = $Conf->retCount("SELECT Count(finalized) "
+  $count = $Conf->retCount("SELECT Count(reviewSubmitted) "
 			   . " FROM PaperReview "
 			   . " WHERE PaperReview.paperId='$paperId'"
-			   . " AND PaperReview.finalized=1 "
+			   . " AND PaperReview.reviewSubmitted>0 "
 			   );
 
-  $done = $Conf->retCount("SELECT PaperReview.finalized "
+  $done = $Conf->retCount("SELECT PaperReview.reviewSubmitted "
 			  . " FROM PaperReview, ReviewRequest "
 			  . " WHERE PaperReview.paperId='$paperId' "
 			  . " AND ReviewRequest.paperId=$paperId "
 			  . " AND ReviewRequest.requestedBy='" . $_SESSION["Me"]->contactId . "'"
-			  . " AND PaperReview.reviewer=ReviewRequest.asked "
+			  . " AND PaperReview.contactId=ReviewRequest.asked "
 			  );
 
-  $doneByMe = $Conf->retCount("SELECT PaperReview.finalized "
+  $doneByMe = $Conf->retCount("SELECT PaperReview.reviewSubmitted "
 			  . " FROM PaperReview "
 			  . " WHERE PaperReview.paperId='$paperId' "
-			  . " AND PaperReview.reviewer='" . $_SESSION["Me"]->contactId . "'"
+			  . " AND PaperReview.contactId='" . $_SESSION["Me"]->contactId . "'"
 			  );
 
   if ( $done || $doneByMe ) {
@@ -254,7 +254,7 @@ while ($row=$result->fetchRow()) {
     print "<td>";
     $q = "SELECT overAllMerit FROM PaperReview "
       . " WHERE paperId=$paperId "
-      . " AND finalized = 1";
+      . " AND reviewSubmitted>0";
     $Conf->graphValues($q, "overAllMerit", $meritRange['min'], $meritRange['max']);
 
 

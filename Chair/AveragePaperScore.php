@@ -288,8 +288,8 @@ if( $target == 'grade' ){
   $countOrd = "";
 } else {
   $table = 'PaperReview';
-  $qual =  "   AND PaperReview.finalized=1 ";
-  $count = " , COUNT(PaperReview.finalized) AS count ";
+  $qual =  "   AND PaperReview.reviewSubmitted=1 ";
+  $count = " , COUNT(PaperReview.reviewSubmitted) AS count ";
   $countOrd = " count DESC, ";
 }
 
@@ -302,9 +302,9 @@ if( ! $isChair ){
     $me = addSlashes( $_SESSION['Me']->contactId );
     $extrapaper = " , PrimaryReviewer AS prim, PaperReview AS other ";
     $extracond =
-      " AND $table.paperId = prim.paperId AND prim.reviewer = '$me' " .
-      " AND $table.paperId = other.paperId AND other.reviewer = '$me' " .
-      " AND other.finalized ";
+      " AND $table.paperId = prim.paperId AND prim.contactId = '$me' " .
+      " AND $table.paperId = other.paperId AND other.contactId = '$me' " .
+      " AND other.reviewSubmitted ";
 
     $Conf->infoMsg("As a PC member you can only see papers that you reviewed.");
   }
@@ -511,7 +511,7 @@ foreach( $grouped_rows[$group] as $row ){
       if( $field == 'grade' ){
 	$q = "SELECT $field FROM PaperGrade WHERE paperID='$paperId'";
       } else {
-	$q = "SELECT $field FROM PaperReview WHERE paperID='$paperId' AND finalized = 1";
+	$q = "SELECT $field FROM PaperReview WHERE paperID='$paperId' AND reviewSubmitted=1";
       }
 
       $Conf->graphValues($q, $field, $meritRange[$field]['min'], $meritRange[$field]['max']);

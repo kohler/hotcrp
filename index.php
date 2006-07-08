@@ -57,6 +57,7 @@ function taskbutton($name,$label) {
     print "</td>";
 }
 
+$homeSep = "<span class='homesep'></span>";
 ?>
 
 
@@ -67,28 +68,28 @@ function taskbutton($name,$label) {
     <table>
     <tr>
       <th>Papers:</th>
-      <td><?php echo goPaperForm() ?> &mdash;
-	<a href='All/ListPapers.php?list=submitted'>List&nbsp;submitted</a> &mdash;
+      <td><?php echo goPaperForm(), " ", $homeSep ?>
+	<a href='All/ListPapers.php?list=submitted'>List&nbsp;submitted</a> <?php echo $homeSep ?>
 	<a href='All/ListPapers.php?list=all'>List&nbsp;all</a></td>
     </tr>
 
     <tr>
       <th>Program&nbsp;committee:</th>
-      <td><a href='Chair/ReviewPC.php'>Add/remove&nbsp;members</a> &mdash;
+      <td><a href='Chair/ReviewPC.php'>Add/remove&nbsp;members</a> <?php echo $homeSep ?>
         <a href='Chair/ListPC.php'>See&nbsp;contact&nbsp;information[X]</a></td>
     </tr>
 
     <tr>
       <th>Accounts:</th>
-      <td><a href='All/UpdateContactInfo.php?new=1'>Create&nbsp;account</a> &mdash;
+      <td><a href='All/UpdateContactInfo.php?new=1'>Create&nbsp;account</a> <?php echo $homeSep ?>
 	<a href='Chair/BecomeSomeoneElse.php'>Log&nbsp;in&nbsp;as&nbsp;someone&nbsp;else[X]</a></td>
     </tr>
 
     <tr>
-      <th>Conference&nbsp;information:</th>
-      <td><a href='Chair/SetDates.php'>Change&nbsp;dates</a> &mdash;
-	<a href='Chair/SetTopics.php'>Change&nbsp;topics</a> &mdash;
-	<a href='Chair/SetReviewForm.php'>Change&nbsp;review&nbsp;form</a></td>
+      <th>Conference&nbsp;setup:</th>
+      <td><a href='Chair/SetDates.php'>Dates</a> <?php echo $homeSep ?>
+	<a href='Chair/SetTopics.php'>Topics</a> <?php echo $homeSep ?>
+	<a href='Chair/SetReviewForm.php'>Review&nbsp;form</a></td>
     </tr>
     </table>
   </div>
@@ -104,7 +105,7 @@ function taskbutton($name,$label) {
     <table>
     <tr>
       <th>Papers:</th>
-      <td><?php echo goPaperForm() ?> &mdash;
+      <td><?php echo goPaperForm(), " ", $homeSep ?>
 	<a href='All/ListPapers.php?list=submitted'>List&nbsp;submitted</a></td>
     </tr>
 
@@ -119,7 +120,7 @@ function taskbutton($name,$label) {
 	    $header = "  <td></td>";
 	}
 	if ($Conf->timeReviewPaper(true, false, true))
-	    echo "<tr>\n$header\n  <td><a href='All/ListPapers.php?list=submitted'>Review&nbsp;other&nbsp;papers</a> &mdash; <a href='All/ReviewPaper.php?paperId=-1&amp;downloadForm=1'>Download&nbsp;review&nbsp;form</a></td>\n</tr>\n";
+	    echo "<tr>\n$header\n  <td><a href='All/ListPapers.php?list=submitted'>Review&nbsp;other&nbsp;papers</a> $homeSep <a href='All/ReviewPaper.php?paperId=-1&amp;downloadForm=1'>Download&nbsp;review&nbsp;form</a></td>\n</tr>\n";
     }
 ?>
 
@@ -151,7 +152,12 @@ if ($Me->isAuthor) {
 	$time = $Conf->printableEndTime('updatePaperSubmission');
 	if (!$Conf->timeFinalizePaper())
 	    echo "  <tr>\n    <td colspan='3'>The <a href='All/ImportantDates.php'>deadline</a> for submitting papers in progress has passed.</td>\n  </tr>\n";
-	else if ($time != 'N/A')
+	else if (!$Conf->timeUpdatePaper()) {
+	    $time = $Conf->printableEndTime('finalizePaperSubmission');
+	    if ($time != 'N/A')
+		echo "  <tr>\n    <td colspan='3'>You have until $time to submit any papers in progress.</td>\n  </tr>\n";
+	    echo "  <tr>\n    <td colspan='3'>The <a href='All/ImportantDates.php'>deadline</a> for updating papers in progress has passed, but you can still submit.</td>\n  </tr>\n";
+	} else if (($time = $Conf->printableEndTime('updatePaperSubmission')) != 'N/A')
 	    echo "  <tr>\n    <td colspan='3'>You have until $time to submit any papers in progress.</td>\n  </tr>\n";
     }
     if (!$startable)
@@ -169,9 +175,9 @@ if ($Me->isAuthor) {
 <div class='home_tasks' id='home_tasks_all'>
   <div class='taskname'><h2>Tasks for Everyone</h2></div>
   <div class='taskdetail'>
-    <a href='All/UpdateContactInfo.php'>Update&nbsp;profile</a> &mdash;
-    <a href='All/MergeAccounts.php'>Merge&nbsp;accounts</a> &mdash;
-    <a href='All/ImportantDates.php'>Important&nbsp;dates</a> &mdash;
+    <a href='All/UpdateContactInfo.php'>Edit&nbsp;profile</a> <?php echo $homeSep ?>
+    <a href='All/MergeAccounts.php'>Merge&nbsp;accounts</a> <?php echo $homeSep ?>
+    <a href='All/ImportantDates.php'>Important&nbsp;dates</a> <?php echo $homeSep ?>
     <a href='All/Logout.php'>Log&nbsp;out</a>
   </div>
   <div class='clear'></div>
@@ -190,10 +196,7 @@ if ($Me->isAuthor) {
 </table>
 
 <?
-    if ($_SESSION["WhichTaskView"] == "Author") {
-	$AuthorPrefix="Author/";
-	include("Tasks-Author.inc");
-    } else if ($_SESSION["WhichTaskView"] == "Reviewer") {
+    if ($_SESSION["WhichTaskView"] == "Reviewer") {
 	include("Tasks-Reviewer.inc");
     } else if ($_SESSION["WhichTaskView"] == "PC") {
 	include("Tasks-PC.inc");

@@ -29,8 +29,8 @@ if (IsSet($_REQUEST[removePaperId]) && IsSet($_REQUEST[removeReview])) {
   //
   $query="DELETE FROM PaperReview "
     . " WHERE paperId=$_REQUEST[removePaperId] "
-    . " AND reviewer=$_REQUEST[removeReviewer] "
-    . " AND finalized=0 ";
+    . " AND contactId=$_REQUEST[removeReviewer] "
+    . " AND reviewSubmitted=0 ";
   $Conf->qe($query);
 }
 ?>

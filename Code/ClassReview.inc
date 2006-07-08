@@ -28,6 +28,7 @@ class ReviewForm {
     var $fieldRows;
     var $description;
     var $options;
+    var $authorView;
 
     const SECTIONS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -43,8 +44,9 @@ class ReviewForm {
 	$this->fieldRows = array();
 	$this->description = array();
 	$this->options = array();
+	$this->authorView = array();
 	
-	$result = $conf->qe("select fieldName, shortName, description, sortOrder, rows from ReviewFormField order by sortOrder, shortName", "while updating review form information");
+	$result = $conf->qe("select fieldName, shortName, description, sortOrder, rows, authorView from ReviewFormField order by sortOrder, shortName", "while updating review form information");
 	if (DB::isError($result))
 	    return;
 	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
@@ -54,6 +56,7 @@ class ReviewForm {
 	    $this->fieldName[strtolower($row->shortName)] = $row->fieldName;
 	    $this->description[$row->fieldName] = $row->description;
 	    $this->fieldRows[$row->fieldName] = ($row->rows >= 3 ? $row->rows : 3);
+	    $this->authorView[$row->fieldName] = $row->authorView;
 	}
 	
 	$result = $conf->qe("select fieldName, level, description from ReviewFormOptions order by fieldName, level", "while updating review form information");
@@ -69,7 +72,7 @@ class ReviewForm {
 	    $this->updateFromDB($conf);
     }
 
-    function formRows($rrow, $useRequest = 0) {
+    function webFormRows($rrow, $useRequest = 0) {
 	global $ReviewFormError;
 	$x = '';
 	foreach ($this->fieldOrder as $field) {
@@ -113,11 +116,11 @@ class ReviewForm {
 	return $x;
     }
 
-    function validateRequest($rrow, $final, &$tf = null, $conf = null) {
+    function validateRequest($rrow, $submit, &$tf = null, $conf = null) {
 	global $ReviewFormError, $Conf;
 	$conf = ($conf ? $conf : $Conf);
 	foreach ($this->fieldOrder as $field) {
-	    if (!isset($_REQUEST[$field]) && !$final)
+	    if (!isset($_REQUEST[$field]) && !$submit)
 		continue;
 	    $fval = (isset($_REQUEST[$field]) ? $_REQUEST[$field]
 		     : ($rrow ? $rrow->$field : ""));
@@ -125,7 +128,7 @@ class ReviewForm {
 		$fval = ltrim(rtrim($fval));
 		$max = count($this->options[$field]);
 		if ($fval == "" || $fval == "0") {
-		    if ($final) {
+		    if ($submit) {
 			$provide[] = $this->shortName[$field];
 			$ReviewFormError[$field] = 1;
 		    }
@@ -157,7 +160,7 @@ class ReviewForm {
 	return 0;
     }
 
-    function saveRequest($paperId, $contactId, $rrow, $final, $conf = null) {
+    function saveRequest($paperId, $contactId, $rrow, $submit, $conf = null) {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
 	$q = "";
@@ -172,12 +175,12 @@ class ReviewForm {
 		}
 		$q .= "$field='" . sqlq($fval) . "', ";
 	    }
-	if ($final)
-	    $q .= "finalized=1, ";
+	if ($submit)
+	    $q .= "reviewSubmitted=1, ";
 	if ($rrow)
-	    return $conf->qe("update PaperReview set " . substr($q, 0, -2) . " where paperId=$paperId and contactId=$contactId", "while storing review");
+	    return $conf->qe("update PaperReview set " . substr($q, 0, -2) . ", reviewLastModified=current_timestamp where reviewId=$rrow->reviewId", "while storing review");
 	else
-	    return $conf->qe("insert into PaperReview set paperId=$paperId, contactId=$contactId, " . substr($q, 0, -2), "while storing review");
+	    return $conf->qe("insert into PaperReview set paperId=$paperId, contactId=$contactId, " . substr($q, 0, -2), ", reviewLastModified=current_timestamp while storing review");
     }
 
     
@@ -330,6 +333,51 @@ class ReviewForm {
 
 	if (count($tf['confirm']) > 0)
 	    $conf->confirmMsg("<div class='parseerr'><p>" . join("</p>\n<p>", $tf['confirm']) . "</p></div>");
+    }
+
+    function webDisplayRows($rrow, $viewAllFields) {
+	global $ReviewFormError;
+	$x = '';
+	$needRow = 1;
+	
+	foreach ($this->fieldOrder as $field) {
+	    $fval = $rrow->$field;
+	    $options = isset($this->options[$field]);
+	    if (!$options && $fval == "")
+		continue;
+	    if (!$this->authorView[$field] && !$viewAllFields)
+		continue;
+	    
+	    if ($needRow == 0 && (!$options || $rowColumns == 2)) {
+		$x .= "</tr>\n";
+		$needRow = 1;
+	    }
+	    if ($needRow) {
+		$x .= "\n<tr class='rev_$field'>\n";
+		$rowColumns = 0;
+	    }
+	    
+	    $x .= "  <td class='form_caption rev_$field'>";
+	    $n = htmlspecialchars($this->shortName[$field]);
+	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))
+		$n = preg_replace("/\\s+/", "&nbsp;", $n);
+	    $x .= "$n:</td>\n";
+	    
+	    $x .= "  <td class='form_entry rev_$field'";
+	    if ($options) {
+		if ($fval == "" || $fval <= 0 || $fval > count($this->options[$field]))
+		    $x .= "><span class='rev_${field}_0'>Unknown</span>";
+		else
+		    $x .= "><span class='rev_${field}_$fval'><span class='rev_num rev_num_$fval'>$fval.</span> " . htmlspecialchars($this->options[$field][$fval]) . "</span>";
+	    } else
+		$x .= " colspan='3'>" . htmlspecialchars($fval);
+	    $x .= "</td>\n";
+
+	    $needRow = !$options;
+	    $rowColumns++;
+	}
+
+	return $x . "</tr>\n";
     }
     
 }
@@ -695,7 +743,7 @@ Class ConferenceReview extends FormCollection {
     }
 
   function finalized() {
-    return $this->reviewFields['finalized'];
+    return $this->reviewFields['reviewSubmitted'];
   }
 
   function saveReview($Conf, $contactId)
@@ -877,7 +925,7 @@ Class ConferenceReview extends FormCollection {
       // exclude the fields that the authors should not see.
       // if the hidden fields are review form specific, this 
       // function should go in the subclasses
-      if ($name != "finalized" and   $name != "commentsToPC") {
+      if ($name != "reviewSubmitted" and   $name != "commentsToPC") {
 	$resultStr .= $this->fields[$name]->getLabel() .":\n";
 	$resultStr .= $this->fields[$name]->getASCII(). "\n\n";
       }

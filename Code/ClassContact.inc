@@ -48,7 +48,8 @@ class Contact {
 		left join PCMember using (contactId)
 		left join ChairAssistant using (contactId)
 		left join Chair using (contactId)
-		group by author");
+		where ContactInfo.contactId=$this->contactId
+		group by ContactInfo.contactId");
 	    if (DB::isError($result) || $result->numRows() == 0)
 		$this->invalidate();
 	    else {
@@ -355,7 +356,7 @@ class Contact {
 	    return true;
 	if ($prow === null)
 	    $prow = $conf->getPaperRow($paperId, $this->contactId);
-	if ($prow->author > 0 || $prow->myReviewType > 0)
+	if ($prow->author > 0 || $prow->reviewType > 0)
 	    return true;
 	return $this->isPC && $prow->acknowledged > 0 && $prow->withdrawn <= 0;
     }
@@ -364,7 +365,7 @@ class Contact {
 	global $ConfSiteBase;
 	if ($prow === null)
 	    $prow = $conf->getPaperRow($paperId, $this->contactId);
-	if ($prow->myReviewType > 0)
+	if ($prow->reviewType > 0)
 	    return true;
 	else if (!$this->isPC || (!$this->amAssistant() && !$conf->canPCReviewAnyPaper())) {
 	    $error = "You are not a reviewer for paper #$paperId.";
@@ -383,7 +384,45 @@ class Contact {
 	} else
 	    return true;
     }
+    
+    function canViewAuthors($prow, $conf) {
+	if ($prow->author > 0 || (!$conf->blindSubmission && $prow->acknowledged > 0 && $prow->withdrawn <= 0))
+	    return 1;
+	if (paperAccepted($prow) && $conf->validPeriod('EndOfTheMeeting'))
+	    return 1;
+	if ($this->amAssistant() && $this->chairMode)
+	    return 1;
+	return 0;
+    }
 
+    function canViewReviews($prow, $conf) {
+	if ($prow->author > 0 && $conf->timeAuthorViewReviews())
+	    return 1;
+	if ($prow->author <= 0 && $prow->conflict <= 0 && $this->isPC)
+	    return 1;
+	if ($this->amAssistant() && $this->chairMode)
+	    return 1;
+	if ($prow->reviewType > 0)
+	    return 1;
+	return 0;
+    }
+    function canViewReviewerIdentity($rrow, $prow, $conf) {
+	if ($this->amAssistant() && $this->chairMode)
+	    return 1;
+	if ($rrow->contactId == $this->contactId)
+	    return 1;
+	if ($prow->author <= 0 && $prow->conflict <= 0 && $this->isPC)
+	    return 1;
+	return 0;
+    }
+    function canViewAllReviewFields($prow, $conf) {
+	if ($this->amAssistant() && $this->chairMode)
+	    return 1;
+	if ($prow->author <= 0 && $prow->conflict <= 0 && $this->isPC)
+	    return 1;
+	return 0;
+    }
+    
     function paperStatus($paperId, $row, $knownAuthor, $long = 0, $conf = null) {
 	global $ConfSiteBase, $Conf;
 	if ($conf == null)
@@ -487,7 +526,7 @@ class Contact {
     {
       $paperStatus=array();
 
-      $query="SELECT paperId, finalized FROM PaperReview WHERE contactId='$this->contactId'";
+      $query="SELECT paperId, reviewSubmitted FROM PaperReview WHERE contactId='$this->contactId'";
       $result = $conf->qe($query);
       if (!DB::isError($result)) {
 	while ($row = $result->fetchRow()) {

@@ -105,7 +105,7 @@ function crpformvalue($val) {
 	echo htmlspecialchars($Me->$val);
 }
 
-$title = ($newProfile ? "Create Account" : "Update Profile");
+$title = ($newProfile ? "Create Account" : "Edit Profile");
 $Conf->header_head($title);
 ?>
 <script type="text/javascript"><!--
@@ -247,7 +247,7 @@ Zhang, Ping Yen (INRIA)
     if ($newProfile)
 	echo "Create Account";
     else
-	echo "Update Profile";
+	echo "Edit Profile";
 ?>' name='register' /></td>
 </tr>
 

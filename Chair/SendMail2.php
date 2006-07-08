@@ -31,8 +31,7 @@ function queryFromRecipients($who)
 		WHERE
 		      ( ReviewRequest.asked=ContactInfo.contactID
 		        AND
-		          (PaperReview.finalized = 0 OR PaperReview.finalized IS NULL )
-		          )
+		        PaperReview.reviewSubmitted = 0 )
 		AND
 		        Paper.paperId=ReviewRequest.paperId
       	GROUP BY ContactInfo.email
@@ -43,7 +42,7 @@ function queryFromRecipients($who)
     $query = "SELECT ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
        . " Paper.paperId, Paper.title "
       . " FROM ContactInfo, PaperReview, Paper "
-      . " WHERE PaperReview.reviewer=ContactInfo.contactID AND PaperReview.finalized=0 "
+      . " WHERE PaperReview.contactId=ContactInfo.contactID AND PaperReview.reviewSubmitted=0 "
       . " AND PaperReview.paperId=Paper.paperId "
       . " GROUP BY ContactInfo.email "
       . " ORDER BY ContactInfo.email "
@@ -53,7 +52,7 @@ function queryFromRecipients($who)
     $query = "SELECT ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
        . " Paper.paperId, Paper.title "
       . " FROM ContactInfo, Paper, PaperReview "
-      . " WHERE PaperReview.reviewer=ContactInfo.contactID AND PaperReview.finalized=1 "
+      . " WHERE PaperReview.contactId=ContactInfo.contactID AND PaperReview.reviewSubmitted>0 "
       . " AND PaperReview.paperId=Paper.paperId "
       . " GROUP BY ContactInfo.email "
       . " ORDER BY ContactInfo.email "
@@ -89,7 +88,7 @@ function queryFromRecipients($who)
 	     . "WHERE Paper.acknowledged "
 	     . "AND PaperReview.paperId = Paper.paperId "
 	     . "AND Paper.contactId = ContactInfo.contactId "
-	     . "AND PaperReview.finalized "
+	     . "AND PaperReview.reviewSubmitted>0 "
 	     . "AND PaperReview.lastModified > ImportantDates.start "
 	     . "AND ImportantDates.name = 'authorRespondToReviews' "
 	     . "ORDER BY email, Paper.paperId ";
@@ -104,11 +103,11 @@ function getReviews($paperId, $finalized) {
 
   $finalizedStr = "";
   if ($finalized) {
-     $finalizedStr = " AND PaperReview.finalized = 1";
+     $finalizedStr = " AND PaperReview.reviewSubmitted>0";
   }
 
-  $result2 = $Conf->qe("SELECT PaperReview.reviewer, "
-		       . " PaperReview.paperReviewId, PaperReview.finalized "
+  $result2 = $Conf->qe("SELECT PaperReview.contactId, "
+		       . " PaperReview.reviewId, PaperReview.reviewSubmitted "
 		       . " FROM PaperReview "
 		       . " WHERE PaperReview.paperId='$paperId' "
 		      . $finalizedStr
@@ -124,8 +123,8 @@ function getReviews($paperId, $finalized) {
     $i = 1;
     while($row = $result2->fetchRow(DB_FETCHMODE_ASSOC)) {
      $reviews .= "\n<Review #$i>\n\n";
-     $reviewer=$row['reviewer'];
-      $reviewId=$row['paperReviewId'];
+     $reviewer=$row['contactId'];
+      $reviewId=$row['reviewId'];
       
       $Review=ReviewFactory($Conf, $reviewer, $paperId);
 

@@ -4,7 +4,7 @@ $Conf->connect();
 $_SESSION["Me"]->goIfInvalid("../");
 $_SESSION["Me"]->goIfNotChair('../');
 include('Code.inc');
-$Conf->header_head("Manage Conference Topics");
+$Conf->header_head("Edit Topics");
 ?>
 <script type="text/javascript"><!--
 function highlightUpdate(id) {
@@ -31,7 +31,7 @@ function doRemove(id) {
 // -->
 </script>
 
-<?php $Conf->header("Manage Conference Topics") ?>
+<?php $Conf->header("Edit Topics") ?>
 
 <?php
 if (isset($_REQUEST["update"])) {

@@ -89,48 +89,14 @@ class PaperList {
 	    else
 		return "";
 	case self::FIELD_REVIEWER_TYPE:
-	    if ($row->myReviewType == REVIEW_PRIMARY)
-		return "<span class='rtype rtype_pri'>Primary</span>";
-	    else if ($row->myReviewType == REVIEW_SECONDARY)
-		return "<span class='rtype rtype_sec'>Secondary</span>";
-	    else if ($row->myReviewType == REVIEW_REQUESTED)
-		return "<span class='rtype rtype_req'>Special request</span>";
-	    else
-		return "";
+	    return reviewType($row->paperId, $row);
 	case self::FIELD_REVIEWER_STATUS:
-	    if ($row->myReviewType == 0)
-		return "";
-	    else if ($row->myReviewFinalized === null)
-		return "<span class='rstat rstat_no'>Not started</span>";
-	    else if ($row->myReviewFinalized == 0)
-		return "<span class='rstat rstat_prog'>In progress</span>";
-	    else
-		return "<span class='rstat rstat_done'>Complete</span>";
+	    return reviewStatus($row, 0);
 	case self::FIELD_SELECTOR:
 	    $this->anySelector = 1;
 	    return "<input class='rstat rstat_sel' type='checkbox' name='papersel[]' value='$row->paperId' />";
 	case self::FIELD_REVIEW:
-	    $revulink = "href='${ConfSiteBase}All/ReviewPaper.php?paperId=$row->paperId'";
-	    $asked = ($row->myReviewType > 0);
-	    $timeGood = $Conf->timeReviewPaper($Me->isPC, $asked, false);
-	    $timeOK = $Conf->timeReviewPaper($Me->isPC, $asked, true);
-	    if ($row->myReviewType > 0 && !$row->myReviewFinalized && !$timeGood)
-		return "<a class='review_past' $revulink>Review&nbsp;past&nbsp;due</a>";
-	    else if (($row->myReviewType > 0 && $row->myReviewFinalized === null)
-		     || ($row->conflict <= 0 && $timeOK && $row->acknowledged > 0 && $row->withdrawn <= 0))
-		return "<a class='review_start' $revulink>Start&nbsp;review</a>";
-	    else if ($row->myReviewType > 0 && !$row->myReviewFinalized)
-		return "<a class='review_comp' $revulink>Complete&nbsp;review</a>";
-	    else if ($row->myReviewType > 0 && $timeOK)
-		return "<a class='review_edit' $revulink>Edit&nbsp;review</a>";
-	    else if ($row->myReviewType > 0)
-		return "<a class='review_view' $revulink>See&nbsp;review</a>";
-	    else if ($Me->isPC && $row->author > 0)
-		return "<span class='author'>Author</span>";
-	    else if ($Me->isPC && $row->conflict > 0)
-		return "<span class='conflict'>Conflict</span>";
-	    else
-		return "";
+	    return reviewButton($row->paperId, $row);
 	default:
 	    return "";
 	}

@@ -61,12 +61,12 @@ function spotReviews($howmany, $finalized, $table)
       . " ON PaperReview.paperId=Paper.paperId "
       . " WHERE PaperReview.paperId IS NULL "
       . " AND $table" . ".paperId=Paper.paperId "
-      . " AND $table" . ".reviewer=" . $_SESSION["Me"]->contactId . " "
+      . " AND $table" . ".contactId=" . $_SESSION["Me"]->contactId . " "
       . " ORDER BY Paper.paperId ";
 
   } else {
     if ( $finalized ) {
-      $fin = " AND PaperReview.finalized=1 ";
+      $fin = " AND PaperReview.reviewSubmitted>0 ";
     }
 
     $query=
@@ -76,7 +76,7 @@ function spotReviews($howmany, $finalized, $table)
       . " ON PaperReview.paperId=Paper.paperId "
       . " WHERE "
       . "     $table" . ".paperId=Paper.paperId "
-      . " AND $table" . ".reviewer=" . $_SESSION["Me"]->contactId . " "
+      . " AND $table" . ".contactId=" . $_SESSION["Me"]->contactId . " "
       . $fin
       . " GROUP BY PaperReview.paperId "
       . " HAVING COUNT(PaperReview.paperId)=$howmany "
