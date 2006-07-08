@@ -176,7 +176,7 @@ if ($topicTable = topicTable($paperId, -1)) {
 <table class='reviewform'>
 <tr class='rev_title'>
   <td class='pt_id'><h2>Review<?php if (isset($rrow)) echo " R$rrow->reviewId" ?></h2></td>
-  <td class='form_entry'><h2>for Paper #<?php echo $paperId ?></h2></td>
+  <td class='form_entry'><h2>for <a href='ViewPaper.php?paperId=<?php echo $paperId ?>'>Paper #<?php echo $paperId ?></a></h2></td>
 </tr>
 
 <tr class='rev_type'>

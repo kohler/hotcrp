@@ -78,8 +78,8 @@ function reviewType($paperId, $row) {
 function reviewStatus($row, $when = 0, $conf = null) {
     global $Conf;
     $conf = ($conf ? $conf : $Conf);
-    
-    if (isset($row->reviewType) && $row->reviewType == 0 && $row->reviewId === null)
+
+    if (!isset($row->reviewType) && !$row->reviewId)
 	return "";
     else if ($row->reviewSubmitted === null)
 	return "<span class='rstat rstat_no'>Not started</span>";
