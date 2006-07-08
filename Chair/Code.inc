@@ -1,26 +1,23 @@
 <?php 
-function removePCConflictPapers($ExistingConflicts)
-{
-  global $Conf;
-  for($i=0; $i < sizeof($ExistingConflicts); $i++) {
-    $conflictId = $ExistingConflicts[$i];
-    $query="DELETE FROM PaperConflict WHERE "
-      . " PaperConflict.paperConflictId='$conflictId'";
-    $Conf->q($query);
-  }
+function removePCConflictPapers($ExistingConflicts) {
+    global $Conf;
+    for($i=0; $i < sizeof($ExistingConflicts); $i++)
+	if (preg_match("/\\A(\\d+)x(\\d+)\\Z/", $ExistingConflicts[$i], $matches)) {
+	    $query = "delete from PaperConflict where paperId='$matches[2]' and contactId='$matches[1]' and author='0'";
+	    $Conf->q($query);
+	}
 }
 
 function showPCConflictPapers()
 {
   global $Conf;
 
-  $query = "SELECT Paper.paperId, Paper.title, "
+  $query = "select Paper.paperId, Paper.title, "
     . " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
-    . " PaperConflict.paperConflictId "
-    . " FROM Paper, ContactInfo, PaperConflict "
+    . " ContactInfo.contactId "
+    . " from Paper join ContactInfo "
+    . " join PaperConflict on (ContactInfo.contactId=PaperConflict.contactId and PaperConflict.paperId=Paper.paperId and author=0) "
     . " join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ")"
-    . " WHERE PaperConflict.paperId=Paper.paperId "
-    . " AND PaperConflict.contactId=ContactInfo.contactId"
     . " ORDER by ContactInfo.lastName, Paper.paperId ";
   $r=$Conf->qe($query);
   if (!DB::isError($r)) {
@@ -33,9 +30,8 @@ function showPCConflictPapers()
       $title = $row['title'];
       $who = $row['firstName'] . " " . $row['lastName']
 	. " (" . $row['email'] . ")";
-      $id=$row['paperConflictId'];
       print "<tr> <th> ";
-      print "<INPUT type=checkbox name=ExistingConflicts[] value=$id>\n";
+      echo "<INPUT type=checkbox name=ExistingConflicts[] value=\"", $row['contactId'], "x", $paperId, "\">\n";
       print "$paperId </th> ";
       print "<td> <a href=\"../Assistant/AssistantViewSinglePaper.php?paperId=$paperId\" target=_blank> $title </a> <br> Conflict indicated for $who </td> ";
       print "</tr>\n";

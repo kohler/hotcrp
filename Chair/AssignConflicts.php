@@ -15,8 +15,8 @@ include('Code.inc');
 //
 // Process actions from this form..
 //
-if (IsSet($_REQUEST[assignConflicts])) {
-  if (!IsSet($_REQUEST[reviewer])) {
+if (IsSet($_REQUEST["assignConflicts"])) {
+  if (!IsSet($_REQUEST["reviewer"])) {
     $Conf->errorMsg("You need to select a reviewer.");
   } else {
     if (IsSet($_REQUEST["Conflict"])) {
@@ -25,11 +25,11 @@ if (IsSet($_REQUEST[assignConflicts])) {
 	//
 	// Delete any existing..
 	//
-	$query="DELETE FROM PaperConflict WHERE paperId='$paperId' "
-	  . " AND contactId='$_REQUEST[reviewer]'";
+	$query="delete from PaperConflict where paperId='$paperId' "
+	  . " and contactId='$_REQUEST[reviewer]'";
 	$Conf->qe($query);
 
-	$query="INSERT INTO PaperConflict SET paperId='$paperId', "
+	$query="insert into PaperConflict SET paperId='$paperId', "
 	  . " contactId='$_REQUEST[reviewer]'";
 	$Conf -> qe($query);
 	$Conf->log("Added reviewer conflict for $_REQUEST[reviewer] for paper $paper", $_SESSION["Me"]);

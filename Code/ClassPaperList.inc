@@ -82,7 +82,7 @@ class PaperList {
 	case self::FIELD_STATUS:
 	    if ($row->acknowledged <= 0 && $row->withdrawn <= 0)
 		$this->needFinalize++;
-	    return $Me->paperStatus($row->paperId, $row, $row->myMinRole == ROLE_AUTHOR);
+	    return $Me->paperStatus($row->paperId, $row, $row->author > 0);
 	case self::FIELD_DOWNLOAD:
 	    if ($row->size > 0)
 		return paperDownload($row->paperId, $row);
@@ -117,7 +117,7 @@ class PaperList {
 	    if ($row->myReviewType > 0 && !$row->myReviewFinalized && !$timeGood)
 		return "<a class='review_past' $revulink>Review&nbsp;past&nbsp;due</a>";
 	    else if (($row->myReviewType > 0 && $row->myReviewFinalized === null)
-		     || ($row->conflictCount == 0 && $timeOK && $row->acknowledged > 0 && $row->withdrawn <= 0))
+		     || ($row->conflict <= 0 && $timeOK && $row->acknowledged > 0 && $row->withdrawn <= 0))
 		return "<a class='review_start' $revulink>Start&nbsp;review</a>";
 	    else if ($row->myReviewType > 0 && !$row->myReviewFinalized)
 		return "<a class='review_comp' $revulink>Complete&nbsp;review</a>";
@@ -125,9 +125,9 @@ class PaperList {
 		return "<a class='review_edit' $revulink>Edit&nbsp;review</a>";
 	    else if ($row->myReviewType > 0)
 		return "<a class='review_view' $revulink>See&nbsp;review</a>";
-	    else if ($Me->isPC && $row->myMinRole == ROLE_AUTHOR)
+	    else if ($Me->isPC && $row->author > 0)
 		return "<span class='author'>Author</span>";
-	    else if ($Me->isPC && $row->conflictCount > 0)
+	    else if ($Me->isPC && $row->conflict > 0)
 		return "<span class='conflict'>Conflict</span>";
 	    else
 		return "";

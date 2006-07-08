@@ -52,7 +52,7 @@ if (isset($_REQUEST['submit'])) {
 	if (!isset($Error)) {
 	    $row = $result->fetchRow();
 	    $paperId = $row[0];
-	    $result = $Conf->q("insert into Roles set contactId=$Me->contactId, role=" . ROLE_AUTHOR . ", paperId=$paperId");
+	    $result = $Conf->q("insert into PaperConflict set contactId=$Me->contactId, paperId=$paperId, author=1");
 	    if (DB::isError($result))
 		$Error = $Conf->dbErrorText($result, "while associating you with your new paper #$paperId");
 	}

@@ -414,8 +414,7 @@ class Conference {
 	    return false;
     }
     function canViewAuthors($me, $prow) {
-	$amAuthor = ($prow->myMinRole == ROLE_AUTHOR);
-	if ($amAuthor || (!$this->blindSubmission && $prow->acknowledged > 0 && $prow->withdrawn <= 0))
+	if ($prow->author > 0 || (!$this->blindSubmission && $prow->acknowledged > 0 && $prow->withdrawn <= 0))
 	    return 1;
 	if (paperAccepted($prow) && $this->validPeriod('EndOfTheMeeting'))
 	    return 1;
@@ -656,8 +655,8 @@ class Conference {
     function paperQuery($contactId, $info = array()) {
 	$pq = "select Paper.*,
 		length(PaperStorage.paper) as size, mimetype, timestamp,
-		count(Roles.role) as conflictCount,
-		min(Roles.role) as myMinRole,
+		max(PaperConflict.author) as author,
+		count(PaperConflict.author) as conflict,
 		count(PaperReview.finalized) as reviewCount,
 		count(PaperReview.paperId) as startedReviewCount";
 	if (!isset($info['author']))
@@ -673,9 +672,9 @@ class Conference {
 		from Paper
 		left join PaperStorage using (paperStorageId)\n";
 	if (isset($info['author']))
-	    $pq .= "		join Roles on (Roles.paperId=Paper.paperId and Roles.role=".ROLE_AUTHOR." and Roles.contactId=$contactId)\n";
+	    $pq .= "		join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.author>0 and PaperConflict.contactId=$contactId)\n";
 	else
-	    $pq .= "		left join Roles on (Roles.paperId=Paper.paperId and Roles.role>=".ROLE_AUTHOR." and Roles.role<=".ROLE_CONFLICT." and Roles.contactId=$contactId)\n";
+	    $pq .= "		left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)\n";
 	$pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
 	if (!isset($info['author'])) {
 	    $jtype = (isset($info['reviewer']) ? "join" : "left join");
@@ -699,7 +698,7 @@ class Conference {
 	}
 	if (isset($where))
 	    $pq .= "		where " . join(" and ", $where) . "\n";
-	$pq .= "		group by Roles.paperId, PaperReview.paperId\n";
+	$pq .= "		group by PaperConflict.paperId\n";
 	$pq .= "		order by Paper.paperId\n";
 	return $pq;
     }
@@ -1472,53 +1471,30 @@ class Conference {
       return "<INPUT type=hidden name=$name value=$value>\n";
     }
 
-  function checkConflict($paperId, $contactId)
-    {
-       $result=$this->qe("SELECT PaperConflict.paperId "
-			 . " FROM PaperConflict"
-			 . " WHERE PaperConflict.contactId='$contactId' "
-			 . " AND PaperConflict.paperId='$paperId' "
-			 );
-       if (!DB::isError($result)) {
-	 while ($row = $result->fetchRow()) {
-	   if ( $row[0] == $paperId ) {
-	     return 1;
-	   }
-	 }
-	 return 0;
-       } else {
-	 return (0);
-       }
+    function checkConflict($paperId, $contactId) {
+	$result = $this->qe("select paperId from PaperConflict
+		where contactId=$contactId and paperId=$paperId", "while examining conflicts");
+	return !DB::isError($result) && $result->numRows() > 0;
     }
 
-  function allMyConflicts($contactId)
-    {
-       $result=$this->qe("SELECT PaperConflict.paperId "
-			 . " FROM PaperConflict"
-			 . " WHERE PaperConflict.contactId='$contactId' ");
-       $conflicts = array();
-       if (!DB::isError($result)) {
-	 while ($row = $result->fetchRow()) {
-	   $conflicts[$row[0]] = 1;
-	   }
-	 }
-
-       return $conflicts;
+    function allMyConflicts($contactId) {
+	$result = $this->qe("select paperId from PaperConflict
+		where contactId=$contactId", "while examining conflicts");
+	$conflicts = array();
+	if (!DB::isError($result))
+	    while ($row = $result->fetchRow())
+		$conflicts[$row[0]] = 1;
+	return $conflicts;
     }
 
-  function allPCConflicts()
-    {
-       $result=$this->qe("SELECT PaperConflict.paperId "
-			 . " FROM PaperConflict, Roles"
-			 . " WHERE PaperConflict.contactId=Roles.contactId and Roles.role = " . ROLE_PC);
-       $conflicts = array();
-       if (!DB::isError($result)) {
-	 while ($row = $result->fetchRow()) {
-	   $conflicts[$row[0]] = 1;
-	   }
-	 }
-
-       return $conflicts;
+    function allPCConflicts() {
+	$result=$this->qe("select paperId from PaperConflict
+		join Roles on (Roles.contactId=PaperConflict.contactId and Roles.role=" . ROLE_PC . ")", "while examining conflicts");
+	$conflicts = array();
+	if (!DB::isError($result))
+	    while ($row = $result->fetchRow())
+		$conflicts[$row[0]] = 1;
+	return $conflicts;
     }
 
   //
@@ -1528,8 +1504,8 @@ class Conference {
   function makePCSelector($varName, $selected, $size=10) {
     print "<SELECT name=$varName SINGLE size=$size>\n";
     $query = "SELECT ContactInfo.contactId, firstName, lastName, email "
-      . " FROM ContactInfo, Roles "
-      . " WHERE (Roles.contactId = ContactInfo.contactId and Roles.role = " . ROLE_PC . ") "
+      . " from ContactInfo join Roles using (contactId) "
+      . " where Roles.role = " . ROLE_PC . " "
       . " ORDER BY lastName, firstName ";
     $result = $this->qe($query);
     if (!DB::isError($result)) {
@@ -1637,10 +1613,10 @@ class Conference {
 
     $Me = $_SESSION["Me"];
     if (!($Me->isChair || $Me->isPC || $Me->isAssistant))
-	$query .= " join Roles";
+	$query .= " join PaperConflict using (contactId)";
     $query .= " where Paper.paperId=$paperId";
     if (!($Me->isChair || $Me->isPC || $Me->isAssistant))
-	$query .= " and Roles.contactId=$Me->contactId and Roles.paperId=$paperId";
+	$query .= " and PaperConflict.author=1";
 
     //$this->warnMsg($query);
     $result = $this->qe($query);

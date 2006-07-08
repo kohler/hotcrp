@@ -35,9 +35,8 @@ drop table if exists Roles;
 CREATE TABLE Roles (
   contactId int(11) NOT NULL,
   role tinyint(1) NOT NULL,
-  paperId int(11) NOT NULL,
   KEY contactId (contactId),
-  KEY paperId (paperId)
+  KEY role (role)
 ) TYPE=MyISAM;
 
 #
@@ -160,6 +159,7 @@ drop table if exists PaperConflict;
 CREATE TABLE PaperConflict (
   paperId int(11) NOT NULL,
   contactId int(11) NOT NULL,
+  author tinyint(1) NOT NULL default '0',
   KEY paperId (paperId),
   KEY contactId (contactId)
 ) TYPE=MyISAM;

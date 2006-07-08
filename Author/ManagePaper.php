@@ -200,7 +200,7 @@ if ($notAuthor)
     $Conf->infoMsg("You are not an author of this paper, but you can still make changes in your capacity as PC Chair or PC Chair's Assistant.");
 
 // previous and next papers
-$result = $Conf->qe("select Roles.paperId, Paper.title from Roles, Paper where Roles.contactId=$Me->contactId and Roles.paperId=Paper.paperId");
+$result = $Conf->qe("select PaperConflict.paperId, Paper.title from PaperConflict join Paper using (paperId) where PaperConflict.contactId=$Me->contactId and PaperConflict.author=1");
 while ($OK && ($row = $result->fetchRow())) {
     if ($row[0] == $paperId)
 	$paperTitle = $row[1];

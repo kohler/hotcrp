@@ -55,12 +55,11 @@ if (DB::isError($result) || $result->numRows() == 0) {
  }
 
 $prow = $result->fetchRow(DB_FETCHMODE_OBJECT);
-$amAuthor = ($prow->myMinRole == ROLE_AUTHOR);
-if (!$amAuthor && !$Me->isPC) {
+if ($prow->author <= 0 && !$Me->isPC) {
     $Conf->errorMsg("You are not an author of paper #$paperId.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
     $Conf->footer();
     exit;
-} else if (!$amAuthor && !$Me->amAssistant() && ($prow->acknowledged <= 0 || $prow->withdrawn > 0)) {
+} else if ($prow->author <= 0 && !$Me->amAssistant() && ($prow->acknowledged <= 0 || $prow->withdrawn > 0)) {
     $Conf->errorMsg("You cannot view paper #$paperId, since it has not been officially submitted.");
     $Conf->footer();
     exit;
@@ -83,10 +82,10 @@ $finalized = $prow->acknowledged > 0;
 
 <tr>
   <td class='pt_caption'>Status:</td>
-  <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, $prow->myMinRole == ROLE_AUTHOR, 1) ?><?php
-if ($amAuthor)
+  <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, $prow->author > 0, 1) ?><?php
+if ($prow->author > 0)
     echo "<br/>\nYou are an <span class='author'>author</span> of this paper.";
-else if ($Me->isPC && $prow->conflictCount > 0)
+else if ($Me->isPC && $prow->conflict > 0)
     echo "<br/>\nYou have a <span class='conflict'>conflict</span> with this paper.";
 if ($prow->myReviewType != null) {
     if ($prow->myReviewType == REVIEW_PRIMARY)
@@ -133,10 +132,9 @@ if ($topicTable = topicTable($paperId, -1)) {
  }
 
 if ($Me->amAssistant()) {
-    $q = "select firstName, lastName, count(MyRoles.role) as conflictCount
-	from ContactInfo join Roles on (Roles.contactId=ContactInfo.contactId and Roles.role=" . ROLE_PC . ")
-	left join Roles as MyRoles on (MyRoles.contactId=ContactInfo.contactId and MyRoles.paperId=$paperId and MyRoles.role>=" . ROLE_AUTHOR . " and MyRoles.role<=" . ROLE_CONFLICT . ")
-	group by MyRoles.role order by lastName";
+    $q = "select firstName, lastName
+	from ContactInfo join PaperConflict using (contactId)
+	where paperId=$paperId group by ContactInfo.contactId";
     $result = $Conf->qe($q, "while finding conflicted PC members");
     if (!DB::isError($result) && $result->numRows() > 0) {
 	while ($row = $result->fetchRow())

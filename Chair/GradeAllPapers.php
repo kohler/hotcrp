@@ -85,7 +85,7 @@ if (!IsSet($_SESSION["GradeSortKey"])) {
   $_SESSION["GradeSortKey"] = "byReviews";
 }
 
-$pcConflicts = $Conf->allPCConflicts($_SESSION["Me"]->contactId);
+$pcConflicts = $Conf->allPCConflicts();
 if ( $_REQUEST["ShowPCPapers"] ) {
   $conflicts = $Conf->allMyConflicts($_SESSION["Me"]->contactId);
 } else {

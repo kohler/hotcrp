@@ -39,13 +39,16 @@ class Contact {
 	if ($conf == null)
 	    $conf = $Conf;
 	if (!$this->validated && $this->contactId > 0) {
-	    $result = $conf->q("select role from Roles, ContactInfo where Roles.contactId = $this->contactId and ContactInfo.contactId = $this->contactId");
+	    $result = $conf->q("select role, max(author) as author
+		from Roles
+		left join PaperConflict using (contactId)
+		where Roles.contactId=$this->contactId group by role");
 	    if (DB::isError($result) || $result->numRows() == 0)
 		$this->invalidate();
 	    else {
 		$this->isAuthor = $this->isPC = $this->isChair = $this->isAssistant = 0;
 		while ($row = $result->fetchRow()) {
-		    if ($row[0] == ROLE_AUTHOR)
+		    if ($row[1] > 0)
 			$this->isAuthor = 1;
 		    if ($row[0] == ROLE_PC)
 			$this->isPC = 1;
@@ -333,11 +336,11 @@ class Contact {
     function amPaperAuthor($paperId, $conf, $prow = null) {
 	if ($prow === null) {
 	    // Query for a specific match of the author and paper
-	    $query = "select paperId from Roles where paperId=$paperId and contactId=$this->contactId";
+	    $query = "select paperId from PaperConflict where paperId=$paperId and contactId=$this->contactId and author=1";
 	    $result = $conf->qe($query);
 	    return !DB::isError($result) && $result->numRows() > 0;
 	} else
-	    return $prow->myMinRole == ROLE_AUTHOR;
+	    return $prow->author > 0;
     }
 
     function checkConflict($paperId, $conf) {
@@ -349,7 +352,7 @@ class Contact {
 	    return true;
 	if ($prow === null)
 	    $prow = $conf->getPaperRow($paperId, $this->contactId);
-	if ($prow->myMinRole == ROLE_AUTHOR || $prow->myReviewType > 0)
+	if ($prow->author > 0 || $prow->myReviewType > 0)
 	    return true;
 	return $this->isPC && $prow->acknowledged > 0 && $prow->withdrawn <= 0;
     }
@@ -363,10 +366,10 @@ class Contact {
 	else if (!$this->isPC || (!$this->amAssistant() && !$conf->canPCReviewAnyPaper())) {
 	    $error = "You are not a reviewer for paper #$paperId.";
 	    return false;
-	} else if ($prow->myMinRole == ROLE_AUTHOR) {
+	} else if ($prow->author > 0) {
 	    $error = "You are an author of paper #$paperId and cannot review it.";
 	    return false;
-	} else if ($prow->conflictCount > 0) {
+	} else if ($prow->conflict > 0) {
 	    $error = "You have a conflict with paper #$paperId and cannot review it.";
 	    return false;
 	} else if ($prow->withdrawn > 0 || $prow->acknowledged <= 0) {
@@ -387,7 +390,7 @@ class Contact {
 	    $canViewReviews = $conf->timeAuthorViewReviews();
 	    $canViewDecision = $conf->timeAuthorViewDecision();
 	} else if (($this->amAssistant() && $this->chairMode)
-		   || ($this->isPC && (!isset($row->conflictCount) || !$row->conflictCount)))
+		   || ($this->isPC && (!isset($row->conflict) || $row->conflict <= 0)))
 	    $canViewReviews = $canViewDecision = 1;
 	else
 	    $canViewReviews = $canViewDecision = 0;
