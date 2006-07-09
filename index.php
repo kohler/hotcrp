@@ -99,8 +99,8 @@ $homeSep = "<span class='homesep'></span>";
 
 
 <?php
-function printDeadlines($da, $colspan) {
-    if (count($da))
+function printDeadlines(&$da, $colspan) {
+    if (isset($da) && count($da))
 	echo "<tr>\n  <td colspan='$colspan'>", join("<br/>\n", $da), "</td>\n</tr>\n";
 }
 
