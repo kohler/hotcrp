@@ -643,25 +643,44 @@ class Conference {
     }
 
     
-    function paperQuery($contactId, $info = array()) {
+    function paperQuery($contactId, $options = array()) {
+	// Options:
+	//   "paperId" => $pid	Only paperId $pid (if array, any of those)
+	//   "finalized"	Only submitted papers
+	//   "author"		Only papers authored by $contactId
+	//   "myReviewRequests"	Only reviews requested by $contactId
+	//   "contactAuthors"	Include comma-separated list of contact author
+	//			contactIds as $row->contactAuthors
+	//   "myReviews"	All reviews authored by $contactId
+	//   "allReviews"	All reviews (multiple rows per paper)
+	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
+
+	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']);
+
 	// fields
 	$pq = "select Paper.*,
 		length(PaperStorage.paper) as size, mimetype, timestamp,
 		max(PaperConflict.author) as author,
 		count(PaperConflict.author) as conflict,
-		count(PaperReview.reviewSubmitted) as reviewCount,
-		count(PaperReview.paperId) as startedReviewCount";
-	if (!isset($info['author']))
+		count(AllReviews.reviewSubmitted) as reviewCount,
+		count(AllReviews.paperId) as startedReviewCount";
+	if (!isset($options['author']))
 	    $pq .= ",
-		MyReviewRequest.reviewType,
-		MyReview.reviewId,
-		MyReview.reviewSubmitted";
-	if (isset($info['myReviews'])) {
+		ReviewRequest.reviewType,
+		PaperReview.reviewId,
+		PaperReview.reviewSubmitted,
+		PaperReview.contactId as reviewContactId";
+	if (isset($options['reviewerName']))
+	    $pq .= ",
+		ReviewerContactInfo.firstName as reviewFirstName,
+		ReviewerContactInfo.lastName as reviewLastName,
+		ReviewerContactInfo.email as reviewEmail";
+	if ($reviewerQuery) {
 	    global $reviewFields;
 	    foreach ($reviewFields as $k => $v)
-		$pq .= ",\t\tMyReview.$k as $k";
+		$pq .= ",\t\tPaperReview.$k as $k";
 	}
-	if (isset($info['contactAuthors']))
+	if (isset($options['contactAuthors']))
 	    $pq .= ",
 		group_concat(PaperAuthors.contactId) as contactAuthors";
 
@@ -669,41 +688,66 @@ class Conference {
 	$pq .= "
 		from Paper
 		left join PaperStorage using (paperStorageId)\n";
-	if (isset($info['author']))
+	
+	if (isset($options['author']))
 	    $pq .= "		join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.author>0 and PaperConflict.contactId=$contactId)\n";
 	else
 	    $pq .= "		left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)\n";
-	$pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
-	if (!isset($info['author']))
-	    $pq .= "		left join ReviewRequest as MyReviewRequest on (MyReviewRequest.paperId=Paper.paperId and MyReviewRequest.contactId=$contactId)
-		left join PaperReview as MyReview on (MyReview.paperId=Paper.paperId and MyReview.contactId=$contactId)\n";
-	if (isset($info['contactAuthors']))
+	
+	$pq .= "		left join PaperReview as AllReviews on (AllReviews.paperId=Paper.paperId)\n";
+
+	if (isset($options['myReviewRequests']))
+	    $pq .= "		join ReviewRequest on (ReviewRequest.paperId=Paper.paperId and ReviewRequest.requestedBy=$contactId and ReviewRequest.reviewType=" . REVIEW_REQUESTED . ")
+		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
+	else if (isset($options['allReviews']))
+	    $pq .= "		left join ReviewRequest on (ReviewRequest.paperId=Paper.paperId)
+		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
+	else if (!isset($options['author']))
+	    $pq .= "		left join ReviewRequest on (ReviewRequest.paperId=Paper.paperId and ReviewRequest.contactId=$contactId)
+		left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$contactId)\n";
+
+	if (isset($options['reviewerName']))
+	    $pq .= "		left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperReview.contactId)\n";
+	
+	if (isset($options['contactAuthors']))
 	    $pq .= "		left join PaperConflict as PaperAuthors on (PaperAuthors.paperId=Paper.paperId and PaperAuthors.author>0)\n";
 
 	// conditions
-	if (isset($info['paperId'])) {
-	    if (is_array($info['paperId'])) {
-		foreach ($info['paperId'] as $pid)
+	if (isset($options['paperId'])) {
+	    if (is_array($options['paperId'])) {
+		foreach ($options['paperId'] as $pid)
 		    if (($pid = cvtint($pid)) > 0)
 			$pids[] = "Paper.paperId=$pid";
 		if (count($pids) == 0)
 		    $pids[] = "Paper.paperId=0";
 		$where[] = "(" . join(" or ", $pids) . ")";
-	    } else if ($info['paperId'] > 0)
-		$where[] = "Paper.paperId=" . $info['paperId'];
+	    } else if ($options['paperId'] > 0)
+		$where[] = "Paper.paperId=" . $options['paperId'];
 	}
-	if (isset($info['finalized'])) {
+	if (isset($options['finalized'])) {
 	    $where[] = "acknowledged>0";
 	    $where[] = "withdrawn<=0";
 	}
-	if (isset($info['reviewer']))
-	    $where[] = "(MyReviewRequest.reviewType or MyReview.reviewId)";
+	if ($reviewerQuery)
+	    $where[] = "(ReviewRequest.reviewType or PaperReview.reviewId)";
+	
 	if (isset($where))
 	    $pq .= "		where " . join(" and ", $where) . "\n";
+
+	// grouping and ordering
+	if ($reviewerQuery)
+	    $pq .= "		group by PaperReview.reviewId\n";
+	else
+	    $pq .= "		group by Paper.paperId\n";
+	if (isset($options['order']) && $options['order'] != "order by Paper.paperId")
+	    $pq .= "		" . $options['order'];
+	else {
+	    $pq .= "		order by Paper.paperId";
+	    if ($reviewerQuery)
+		$pq .= ", PaperReview.reviewId";
+	}
 	
-	$pq .= "		group by Paper.paperId\n";
-	$pq .= "		order by Paper.paperId\n";
-	return $pq;
+	return $pq . "\n";
     }
 
     function getPaperRow($paperId, $contactId, $while = "") {
@@ -716,49 +760,49 @@ class Conference {
     }
 
 
-  //
-  // Message routines
-  //
-  function msg($text, $type) {
-      $x = "<div class='$type'>$text</div>\n";
-      if ($this->saveMessages)
-	  $_SESSION["msgs"] = (isset($_SESSION["msgs"]) ? $_SESSION["msgs"] . $x : $x);
-      else
-	  echo $x;
-  }
+    //
+    // Message routines
+    //
+    function msg($text, $type) {
+	$x = "<div class='$type'>$text</div>\n";
+	if ($this->saveMessages)
+	    $_SESSION["msgs"] = (isset($_SESSION["msgs"]) ? $_SESSION["msgs"] . $x : $x);
+	else
+	    echo $x;
+    }
 
-  function infoMsg($text) {
-      $this->msg($text, 'info');
-  }
+    function infoMsg($text) {
+	$this->msg($text, 'info');
+    }
 
-  function warnMsg($text) {
-      $this->msg($text, 'warning');
-  }
+    function warnMsg($text) {
+	$this->msg($text, 'warning');
+    }
 
-  function confirmMsg($text) {
-      $this->msg($text, 'confirm');
-  }
+    function confirmMsg($text) {
+	$this->msg($text, 'confirm');
+    }
 
-  function errorMsg($text) {
-      $this->msg($text, 'error');
-      return false;
-  }
+    function errorMsg($text) {
+	$this->msg($text, 'error');
+	return false;
+    }
 
-  //
-  // Conference header, footer
-  //
-  function header_head($title) {
-      // echo '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">';
-      if (!$this->headerPrinted) {
-	  echo "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">\n";
-	  echo "<html>\n<head>\n";
-	  echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n";
-	  echo "<meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />\n";
-	  echo "<title>", $title, " - ", $this->shortName, "</title>\n";
-	  echo $this->theme;
-	  $this->headerPrinted = 1;
-      }
-  }
+    //
+    // Conference header, footer
+    //
+    function header_head($title) {
+	// echo '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">';
+	if (!$this->headerPrinted) {
+	    echo "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">\n";
+	    echo "<html>\n<head>\n";
+	    echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n";
+	    echo "<meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />\n";
+	    echo "<title>", $title, " - ", $this->shortName, "</title>\n";
+	    echo $this->theme;
+	    $this->headerPrinted = 1;
+	}
+    }
 
     function chairModeLink() {
 	$out = "<a href=\"" . $_SERVER["PHP_SELF"];
@@ -776,85 +820,61 @@ class Conference {
 	return "$out&nbsp;chair&nbsp;mode</a>";
     }
     
-  function header($title, $id = '') {
-      global $ConfSiteBase;
-      $this->header_head($title);
-      echo "</head><body>\n";
-      echo "<div id='header'>\n";
-      echo "  <div id='header_left'>\n";
-      echo "    <div id='header_conference'><a href='",
-	  $ConfSiteBase, "index.php'>", $this->shortName,
-	  " Submissions</a></div>\n";
-      echo "    <h1>", $title, "</h1>\n";
-      echo "  </div>\n";
-      echo "  <div id='header_links'>\n";
-      if ($_SESSION["Me"]->valid()) {
-	  echo "    <div id='header_user'><strong>",
-	      htmlspecialchars($_SESSION["Me"]->email),
-	      "</strong> &nbsp;|&nbsp; ";
-	  if ($_SESSION["Me"]->amAssistant())
-	      echo $this->chairModeLink(), " &nbsp;|&nbsp; ";
-	  echo "<a href='", $ConfSiteBase, "All/Logout.php'>Log&nbsp;out</a></div>\n";
-      }
-      echo "    <div id='header_time'>", date ("l j M Y g:i:sa T"), "</div>\n";
-      echo "    <div id='header_public'><a href='", $this->conferenceSite, "'>", $this->shortName, " Public Site</a></div>\n";
-      //$this->textButton("Go To $this->shortName Site", $this->conferenceSite);
-      //$this->textButton("Go To $this->shortName Submissions", $ConfSiteBase . "index.php");
-      print "  </div>\n";
+    function header($title, $id = '') {
+	global $ConfSiteBase;
+	$this->header_head($title);
+	echo "</head><body>\n";
+	echo "<div id='header'>\n";
+	echo "  <div id='header_left'>\n";
+	echo "    <div id='header_conference'><a href='",
+	    $ConfSiteBase, "index.php'>", $this->shortName,
+	    " Submissions</a></div>\n";
+	echo "    <h1>", $title, "</h1>\n";
+	echo "  </div>\n";
+	echo "  <div id='header_links'>\n";
+	if ($_SESSION["Me"]->valid()) {
+	    echo "    <div id='header_user'><strong>",
+		htmlspecialchars($_SESSION["Me"]->email),
+		"</strong> &nbsp;|&nbsp; ";
+	    if ($_SESSION["Me"]->amAssistant())
+		echo $this->chairModeLink(), " &nbsp;|&nbsp; ";
+	    echo "<a href='", $ConfSiteBase, "All/Logout.php'>Log&nbsp;out</a></div>\n";
+	}
+	echo "    <div id='header_time'>", date ("l j M Y g:i:sa T"), "</div>\n";
+	echo "    <div id='header_public'><a href='", $this->conferenceSite, "'>", $this->shortName, " Public Site</a></div>\n";
+	print "  </div>\n";
+	
+	$id = ($id ? " id='$id'" : "");
+	print "  <div class='clear'></div>\n</div>\n<div class='body'$id>\n";
 
-      $id = ($id ? " id='$id'" : "");
-      print "  <div class='clear'></div>\n</div>\n<div class='body'$id>\n";
+	if (isset($_SESSION["msgs"])) {
+	    echo $_SESSION["msgs"];
+	    unset($_SESSION["msgs"]);
+	}
+	$this->saveMessages = 0;
+    }
 
-      if (isset($_SESSION["msgs"])) {
-	  echo $_SESSION["msgs"];
-	  unset($_SESSION["msgs"]);
-      }
-      $this->saveMessages = 0;
-  }
-
-  function footer() {
-      global $ConfSiteBase;
-      //
-      // Output standard footer - button to go to main submission
-      // site, button to close & pointer to CRP at sourceforge
-      //
-      echo "</div>\n"; // <div id='body'>
-      echo "<div id='footer'>\n";
-      echo "  <div id='footer_left'>\n";
-      echo "    <div id='footer_conference'><a href='", $ConfSiteBase, "index.php'>", $this->shortName, " Submissions Home</a></div>\n";
-      if ($_SESSION["Me"]->valid()) {
-	  if ($_SESSION["Me"]->amAssistant())
-	      echo "    <div id='footer_chairmode'>", $this->chairModeLink(), "</div>\n";
-	  echo "    <div id='footer_logout'><a href='", $ConfSiteBase, "All/Logout.php'>Log&nbsp;out</a></div>\n";
-      }
-      echo "  </div>\n";
-      echo "  <div id='footer_right'>\n";
-      echo "    <div id='footer_crp'><a href='http://crp.sourceforge.net/'>CRP</a> Conference Management Software</div>\n";
-      echo "  </div><div class='clear'></div></div>\n";
-      echo "</body>\n</html>\n";
-      //print "<hr>";
-      //print "<table align=center width=50%>";
-      //print "<tr> <td align=left> ";
-      //$this->textButton("Goto Main Index",
-      //"$this->paperSite/index.php");
-      //print "</td> <td align=right>";
-      //print "<SCRIPT type=\"text/javascript\">";
-      //print "function footerCloseMe() {";
-      //print "if (window.opener) window.opener.focus();";
-      //print "window.close();";
-      //print "return false;}";
-      //print "</SCRIPT>";
-      //print "<form method=post action=$_SERVER[PHP_SELF]>\n";
-      //print "<input type=submit onClick=footerCloseMe() value=\"Close Window\">";
-      //print "<input type=submit onClick=\"javascript:window.close()\" value=\"Close Window\">";
-      //print "</form>";
-      //print "</td> </tr>";
-      //print "</table>";
-      //print "<h5>";
-      //print "<a href=\"http://crp.sourceforge.net\"> Conference Review Package -- Copyright © 2001&nbsp; </a><br>";
-      //print "All rights reserved.<br>";
-      //print "</h5>";
-  }
+    function footer() {
+	global $ConfSiteBase;
+	//
+	// Output standard footer - button to go to main submission
+	// site, button to close & pointer to CRP at sourceforge
+	//
+	echo "</div>\n"; // <div id='body'>
+	echo "<div id='footer'>\n";
+	echo "  <div id='footer_left'>\n";
+	echo "    <div id='footer_conference'><a href='", $ConfSiteBase, "index.php'>", $this->shortName, " Submissions Home</a></div>\n";
+	if ($_SESSION["Me"]->valid()) {
+	    if ($_SESSION["Me"]->amAssistant())
+		echo "    <div id='footer_chairmode'>", $this->chairModeLink(), "</div>\n";
+	    echo "    <div id='footer_logout'><a href='", $ConfSiteBase, "All/Logout.php'>Log&nbsp;out</a></div>\n";
+	}
+	echo "  </div>\n";
+	echo "  <div id='footer_right'>\n";
+	echo "    <div id='footer_crp'><a href='http://crp.sourceforge.net/'>CRP</a> Conference Management Software</div>\n";
+	echo "  </div><div class='clear'></div></div>\n";
+	echo "</body>\n</html>\n";
+    }
 
   function mkTextButton($text, $url, $extra="") {
       return "<form method=\"POST\" action=\"$url\">"

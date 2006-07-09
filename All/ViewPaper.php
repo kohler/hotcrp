@@ -55,8 +55,8 @@ if (DB::isError($result) || $result->numRows() == 0) {
  }
 
 $prow = $result->fetchRow(DB_FETCHMODE_OBJECT);
-if ($prow->author <= 0 && !$Me->isPC) {
-    $Conf->errorMsg("You are not an author of paper #$paperId.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
+if ($prow->author <= 0 && !$Me->canReview($paperId, $Conf, $prow) && !$Me->isPC) {
+    $Conf->errorMsg("You are not a registered author or reviewer of paper #$paperId.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
     $Conf->footer();
     exit;
 } else if ($prow->author <= 0 && !$Me->amAssistant() && ($prow->acknowledged <= 0 || $prow->withdrawn > 0)) {
@@ -221,15 +221,16 @@ if ($nreviews > 0 && $Me->canViewReviews($prow, $Conf)) {
  		ContactInfo.email
 		from PaperReview join ContactInfo using (contactId)
 		where paperId=$paperId and reviewSubmitted>0
-		order by lastName, firstName";
+		order by reviewId";
     $result = $Conf->qe($q, "while retrieving reviews");
+    $reviewnum = 65;
     if (!DB::isError($result) && $result->numRows() > 0)
 	while ($rrow = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
 	    echo "<hr/>
 
 <table class='review'>
 <tr>
-  <td class='form_id'><h3>Review&nbsp;R", $rrow->reviewId, "</h3></td>
+  <td class='form_id'><h3>Review&nbsp;", chr($reviewnum++), "</h3></td>
   <td class='form_entry' colspan='3'>";
 	    if ($Me->canViewReviewerIdentity($rrow, $prow, $Conf))
 		echo "by <span class='reviewer'>", ltrim(rtrim(htmlspecialchars("$rrow->firstName $rrow->lastName"))), "</span>";

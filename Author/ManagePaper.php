@@ -20,16 +20,12 @@ $finalizable = $Conf->timeFinalizePaper();
 
 function get_prow($paperId) {
     global $Conf, $prow, $OK, $updatable, $can_update, $finalized, $withdrawn, $Me;
-    if (!isset($prow) && $OK) {
-	$query = $Conf->paperQuery($Me->contactId, array("paperId" => $paperId));	$result = $Conf->qe($query);
-	if (!DB::isError($result) && $result->numRows() > 0) {
-	    $prow = $result->fetchRow(DB_FETCHMODE_OBJECT);
-
+    if (!isset($prow) && $OK)
+	if (isset($prow = $Conf->getPaperRow($paperId, $Me->contactId))) {
 	    $withdrawn = $prow->withdrawn > 0;
 	    $finalized = $prow->acknowledged > 0;
 	    $can_update = ($updatable || $Me->amAssistant()) && !$withdrawn && !$finalized;
 	}
-    }
  }
 
 function pt_caption_class($what) {
@@ -400,15 +396,16 @@ if ($nreviews > 0 && $Me->canViewReviews($prow, $Conf)) {
  		ContactInfo.email
 		from PaperReview join ContactInfo using (contactId)
 		where paperId=$paperId and reviewSubmitted>0
-		order by lastName, firstName";
+		order by reviewId";
     $result = $Conf->qe($q, "while retrieving reviews");
+    $reviewnum = 65;
     if (!DB::isError($result) && $result->numRows() > 0)
 	while ($rrow = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
 	    echo "<hr/>
 
 <table class='review'>
 <tr>
-  <td class='form_id'><h3>Review&nbsp;R", $rrow->reviewId, "</h3></td>
+  <td class='form_id'><h3>Review&nbsp;", chr($reviewnum++), "</h3></td>
   <td class='form_entry' colspan='3'>";
 	    if ($Me->canViewReviewerIdentity($rrow, $prow, $Conf))
 		echo "by <span class='reviewer'>", ltrim(rtrim(htmlspecialchars("$rrow->firstName $rrow->lastName"))), "</span>";

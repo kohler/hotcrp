@@ -41,8 +41,10 @@ function get_prow($paperIdIn, &$tf = null) {
 
 function get_rrow($paperId, $reviewId = -1) {
     global $Conf, $rrow, $Me;
-    $where = ($reviewId > 0 ? "reviewId=$reviewId" : "paperId=$paperId and contactId=$Me->contactId");
-    $result = $Conf->qe("select * from PaperReview where $where", "while retrieving review");
+    $where = ($reviewId > 0 ? "reviewId=$reviewId" : "paperId=$paperId and PaperReview.contactId=$Me->contactId");
+    $result = $Conf->qe("select PaperReview.*, firstName, lastName, email
+		from PaperReview join ContactInfo using (contactId)
+		where $where", "while retrieving review");
     if (DB::isError($result) || $result->numRows() == 0) {
 	if ($reviewId > 0)
 	    initialError("No such paper review #$reviewId.");
@@ -55,7 +57,7 @@ function get_rrow($paperId, $reviewId = -1) {
 
 $rf = reviewForm();
 
-$originalPaperId = cvtint(ltrim(rtrim($_REQUEST["paperId"])));
+$originalPaperId = cvtint($_REQUEST["paperId"]);
 
 if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'])) {
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
@@ -64,7 +66,7 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'])) {
 	get_prow($_REQUEST['paperId'], $tf);
 	get_rrow($_REQUEST['paperId'], $tf);
 	if ($prow != null && $rf->validateRequest($rrow, 0, $tf)) {
-	    $result = $rf->saveRequest($prow->paperId, $Me->contactId, $rrow, 0);
+	    $result = $rf->saveRequest($prow, $Me->contactId, $rrow, 0);
 	    if (!DB::isError($result))
 		$tf['confirm'][] = "Uploaded review for paper #$prow->paperId.";
 	}
@@ -119,9 +121,13 @@ if ($paperId <= 0) {
 
 if (isset($_REQUEST['save']) || isset($_REQUEST['submit']))
     if ($rf->validateRequest($rrow, isset($_REQUEST['submit']))) {
-	$rf->saveRequest($paperId, $Me->contactId, $rrow, isset($_REQUEST['submit']), $Conf);
+	$rf->saveRequest($prow, $Me->contactId, $rrow, isset($_REQUEST['submit']), $Conf);
+	$Conf->confirmMsg(isset($_REQUEST['submit']) ? "Review submitted." : "Review saved.");
 	get_rrow($paperId);
     }
+
+if (!$Me->timeReview($prow, $Conf))
+    $Conf->infoMsg("The <a href='${ConfSiteBase}All/ImportantDates.php'>deadline</a> for modifying this review has passed.");
 
 ?>
 
@@ -175,10 +181,17 @@ if ($topicTable = topicTable($paperId, -1)) {
 
 <table class='reviewform'>
 <tr class='rev_title'>
-  <td class='pt_id'><h2>Review<?php if (isset($rrow)) echo " R$rrow->reviewId" ?></h2></td>
+  <td class='pt_id'><h2>Review</h2></td>
   <td class='form_entry'><h2>for <a href='ViewPaper.php?paperId=<?php echo $paperId ?>'>Paper #<?php echo $paperId ?></a></h2></td>
 </tr>
 
+<?php if (isset($rrow) && $Me->contactId != $rrow->contactId) { ?>
+<tr class='rev_type'>
+  <td class='form_caption'>Reviewer:</td>
+  <td class='form_entry'><?php echo htmlspecialchars(rowContactText($rrow)) ?></td>
+</tr>
+<?php } ?>
+								
 <tr class='rev_type'>
   <td class='form_caption'>Review&nbsp;type:</td>
   <td class='form_entry'><?php echo reviewType($paperId, $prow) ?></td>
@@ -221,25 +234,25 @@ if ($topicTable = topicTable($paperId, -1)) {
 <table class='reviewform'>
 <?php
 echo $rf->webFormRows($rrow, 1);
-?>
 
-<tr class='rev_actions'>
+if ($Me->timeReview($prow, $Conf) || $Me->amAssistant()) {
+    echo "<tr class='rev_actions'>
   <td class='form_caption'>Actions:</td>
-<?php if (!$rrow->reviewSubmitted) { ?>
   <td class='form_entry'><table class='pt_buttons'>
-    <tr>
-      <td class='ptb_button'><input class='button_default' type='submit' value='Save changes' name='save' /></td>
+    <tr>\n";
+    if (!$rrow->reviewSubmitted) {
+	echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save changes' name='save' /></td>
       <td class='ptb_button'><input class='button_default' type='submit' value='Submit' name='submit' /></td>
     </tr>
     <tr>
       <td class='ptb_explain'>(does not submit review)</td>
-      <td class='ptb_explain'>(allow PC to see review; cannot undo)</td>
-    </tr>
-  </table></td>
-<?php } else { ?>
-  <td class='form_entry'><input class='button_default' type='submit' value='Resubmit' name='submit' /></td>
-<?php } ?>
-</tr>
+      <td class='ptb_explain'>(allow PC to see review; cannot undo)</td>\n";
+    } else
+	echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Resubmit' name='submit' /></td>\n";
+    if (!$Me->timeReview($prow, $Conf))
+	echo "    </tr>\n    <tr>\n      <td colspan='3'><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td>\n";
+    echo "    </tr>\n  </table></td>\n</tr>\n\n";
+ } ?>
 
 </table>
 </form>

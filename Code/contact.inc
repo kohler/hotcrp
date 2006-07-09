@@ -23,6 +23,7 @@ class Contact {
 
     // Roles
     var $isAuthor;
+    var $isReviewer;
     var $isPC;
     var $isChair;
     var $isAssistant;
@@ -40,10 +41,12 @@ class Contact {
 	    $conf = $Conf;
 	if (!$this->validated && $this->contactId > 0) {
 	    $result = $conf->q("select max(author) as author,
+			count(reviewType) as numReviews,
 			PCMember.contactId as pcMember,
 			ChairAssistant.contactId as assistant,
 			Chair.contactId as chair
 		from ContactInfo
+		left join ReviewRequest using (contactId)
 		left join PaperConflict using (contactId)
 		left join PCMember using (contactId)
 		left join ChairAssistant using (contactId)
@@ -53,24 +56,26 @@ class Contact {
 	    if (DB::isError($result) || $result->numRows() == 0)
 		$this->invalidate();
 	    else {
-		$this->isAuthor = $this->isPC = $this->isChair = $this->isAssistant = 0;
+		$this->isAuthor = $this->isReviewer = $this->isPC = $this->isChair = $this->isAssistant = false;
 		while ($row = $result->fetchRow()) {
 		    if ($row[0] > 0)
-			$this->isAuthor = 1;
+			$this->isAuthor = true;
 		    if ($row[1] > 0)
-			$this->isPC = 1;
+			$this->isReviewer = true;
 		    if ($row[2] > 0)
-			$this->isAssistant = $this->isPC = 1;
+			$this->isPC = true;
 		    if ($row[3] > 0)
-			$this->isChair = 1;
+			$this->isAssistant = $this->isPC = true;
+		    if ($row[4] > 0)
+			$this->isChair = true;
 		}
 		if ($conf->setupPhase)
-		    $this->isChair = 1;
+		    $this->isChair = true;
 		if (!$this->isChair)
-		    $this->chairMode = 0;
+		    $this->chairMode = false;
 		else if (isset($_REQUEST['chairMode']))
 		    $this->chairMode = (cvtint($_REQUEST['chairMode']) > 0 ? 1 : 0);
-		$this->validated = 1;
+		$this->validated = true;
 	    }
 	}
 	return $this->contactId > 0 && $conf->shortName == $this->shortConfName;
@@ -93,9 +98,11 @@ class Contact {
 	$this->anyTopicInterest = 0;
 	
 	$this->isAuthor = 0;
+	$this->isReviewer = 0;
 	$this->isPC = 0;
 	$this->isChair = 0;
 	$this->isAssistant = 0;
+	$this->chairMode = 0;
     }
   
   function countRequestedReviews() {
@@ -142,22 +149,7 @@ class Contact {
     }
 
     function amReviewer() {
-	global $Conf;
-	/*$reviewer = false;
-	if ($Conf->validTimeFor('reviewerSubmitReviewDeadline', 0)
-	    || $Conf->validTimeFor('reviewerViewDecision', 0) ) {
-	    //
-	    // See if I have any review requests
-	    //
-	    $reviewer = $this->countRequestedReviews() > 0;
-	}
-
-	if ($_SESSION["Me"]->isPC && $Conf->validTimeFor('PCSubmitReview', 0)) {
-	    $pcreviews = $this->countPrimaryReviews()
-		+ $this->countSecondaryReviews();
-	    $reviewer |= $pcreviews > 0;
-	    }*/
-	return true;
+	return $this->isPC || $this->isReviewer;
     }
 
   function dump() {
@@ -384,6 +376,10 @@ class Contact {
 	} else
 	    return true;
     }
+
+    function timeReview($prow, $conf) {
+	return $conf->timeReviewPaper($_SESSION['Me']->isPC, $prow->reviewType || $prow->reviewId, true);
+    }
     
     function canViewAuthors($prow, $conf) {
 	if ($prow->author > 0 || (!$conf->blindSubmission && $prow->acknowledged > 0 && $prow->withdrawn <= 0))
@@ -402,7 +398,7 @@ class Contact {
 	    return true;
 	if ($this->amAssistant() && $this->chairMode)
 	    return true;
-	if ($prow->reviewType > 0)
+	if (isset($prow->reviewType) && $prow->reviewType > 0)
 	    return true;
 	return false;
     }
@@ -445,7 +441,7 @@ class Contact {
 
 	if ($row->withdrawn > 0) {
 	    $x = "<span class='pstat pstat_with'>Withdrawn</span>";
-	    return $x . ($long ? " at " . $conf->printTime($row->withdrawn) : '');
+	    return $x . ($long > 0 ? " at " . $conf->printTime($row->withdrawn) : '');
 	} else if ($row->acknowledged <= 0 && $row->paperStorageId == 1) {
 	    return "<span class='pstat pstat_noup'>Not yet uploaded</span>";
 	} else if (isset($row->outcome) && $row->outcome != 0 && $this->canViewDecision($row, $conf)) {
@@ -456,18 +452,22 @@ class Contact {
 	    else
 		return "<span class='pstat'>Unknown outcome \"" . htmlspecialchars($row->outcome) . "\"</span>";
 	} else if (isset($row->reviewCount) && $row->reviewCount > 0) {
-	    if ($this->canViewReviews($row, $conf))
+	    if ($long < 0 && $row->author <= 0)
+		return "";
+	    else if ($this->canViewReviews($row, $conf))
 		return "<span class='pstat pstat_rev'>Reviews&nbsp;available</span>";
 	    else
 		return "<span class='pstat pstat_rev'>Under&nbsp;review</span>";
 	} else {
 	    if ($row->acknowledged > 0) {
+		if ($long < 0)
+		    return "";
 		$x = "<span class='pstat pstat_sub'>Submitted</span>";
-		if ($long)
+		if ($long > 0)
 		    $x .= " at " . $conf->printTime($row->acknowledged);
 	    } else {
 		$x = "<span class='pstat pstat_prog'>In progress</span>";
-		if ($long)
+		if ($long > 0)
 		    $x .= "; updated at " . $conf->printTime($row->timestamp);
 	    }
 	    return $x;

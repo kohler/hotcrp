@@ -1,12 +1,12 @@
 <?php
 if ($Conf->validTimeFor('reviewerSubmitReviewDeadline', 0)
-    || ($_SESSION['Me'] -> isPc && $Conf->validTimeFor('PCSubmitReview'))
+    || ($_SESSION['Me'] -> isPC && $Conf->validTimeFor('PCSubmitReview'))
     || $Conf->validTimeFor('reviewerViewDecision', 0) )
 {
   $Conf -> taskHeader("Tasks for Reviewers");
 
 if ($Conf->validTimeFor('reviewerSubmitReviewDeadline', 0)
-    || ($_SESSION['Me'] -> isPc && $Conf->validTimeFor('PCSubmitReview')))
+    || ($_SESSION['Me'] -> isPC && $Conf->validTimeFor('PCSubmitReview')))
 {
   $PREFIX="Reviewer/";
   include('Reviewer/RequestedReviewsFromIndex.inc');

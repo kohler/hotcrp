@@ -14,10 +14,13 @@ function sqlq_cleannl($value) {
 }
 
 function cvtint(&$value, $default = -1) {
-    if (isset($value) && is_numeric($value)) {
-	$ival = intval($value);
-	if ($ival == floatval($value))
-	    return $ival;
+    if (isset($value)) {
+	$v = ltrim(rtrim($value));
+	if (is_numeric($v)) {
+	    $ival = intval($v);
+	    if ($ival == floatval($v))
+		return $ival;
+	}
     }
     return $default;
 }
@@ -49,8 +52,8 @@ $reviewButton[0] = array
      "comp" => "<a class='review_comp' ~>Complete&nbsp;review</a>",
      "edit" => "<a class='review_edit' ~>Edit&nbsp;review</a>",
      "view" => "<a class='review_view' ~>See&nbsp;review</a>",
-     "author" => "<span class='author'>Author</span>",
-     "conflict" => "<span class='conflict'>Conflict</span>",
+     "author" => "", // <span class='author'>Author</span>",
+     "conflict" => "", // <span class='conflict'>Conflict</span>",
      "" => "");
 $reviewButton[1] = array
     ("past" => "<button class='review_past' type='submit'>Review&nbsp;past&nbsp;due</button>",
@@ -69,6 +72,10 @@ function reviewType($paperId, $row) {
 	return "<span class='rtype rtype_sec'>Secondary</span>";
     else if ($row->reviewType == REVIEW_REQUESTED)
 	return "<span class='rtype rtype_req'>Requested</span>";
+    else if ($row->author > 0)
+	return "<span class='author'>Author</span>";
+    else if ($row->conflict > 0)
+	return "<span class='conflict'>Conflict</span>";
     else if (!($row->reviewId === null))
 	return "<span class='rtype rtype_pc'>PC</span>";
     else
@@ -100,8 +107,9 @@ function reviewButton($paperId, $row = null, $buttonType = 0, $conf = null) {
     if ($row === null && ($row = $conf->getPaperRow($paperId, $Me->contactId)) === null)
 	return "Database error";
 
-    $timeGood = $Conf->timeReviewPaper($Me->isPC, $row->reviewType>0, false);
-    $timeOK = $Conf->timeReviewPaper($Me->isPC, $row->reviewType>0, true);
+    $rreq = ($row->reviewType > 0 || $row->reviewId);
+    $timeGood = $Conf->timeReviewPaper($Me->isPC, $rreq, false);
+    $timeOK = $Conf->timeReviewPaper($Me->isPC, $rreq, true);
     $need = ($row->reviewType > 0 || $row->reviewId);
     if ($need && !$row->reviewSubmitted && !$timeGood)
 	$type = "past";
@@ -207,6 +215,17 @@ function authorTable($aus, $columns = 2) {
     return $out;
 }
 
+function contactText($firstName, $lastName, $email) {
+    $x = ltrim(rtrim("$firstName $lastName"));
+    if ($email)
+	$x .= " ($email)";
+    return $x;
+}
+
+function rowContactText($row) {
+    return contactText($row->firstName, $row->lastName, isset($row->email) ? $row->email : "");
+}
+
 function goPaperForm($review = 0) {
     global $ConfSiteBase;
     $what = ($review ? 'Review' : 'View');
@@ -247,6 +266,43 @@ function plural($n, $what) {
 	return "$n $what";
     else
 	return "$n ${what}s";
+}
+
+function tabLength($text) {
+    $len = 0;
+    for ($i = 0; $i < strlen($text); $i++)
+	if ($text[$i] == ' ')
+	    $len++;
+	else if ($text[$i] == '\t')
+	    $len += 8 - ($len % 8);
+	else
+	    break;
+    return $len;
+}
+
+function htmlWrapText($text) {
+    $lines = explode("\n", $text);
+    // Rules: Indented line that starts with "-", "*", or "#[.]" starts
+    //   indented text.
+    //      Other indented text is preformatted.
+
+    // States: -1 initial, 0 normal text, 1 preformatted text, 2 indented text
+    $state = -1;
+    $savedPar = "";
+    $savedParLines = 0;
+    $indent = 0;
+    $out = "";
+    for ($i = 0; $i < count($lines); $i++) {
+	$line = $lines[$i];
+	if (preg_match("/^\\s*\$/", $line)) {
+	    $savedPar .= $line . "\n";
+	    $savedParLines++;
+	} else if ($state == 1 && ctype_isspace($line[0]))
+	    $out .= $line . "\n";
+	else if (preg_match("/^(\\s+)(-+|\\*+|\\d+\\.?)\\s/", $line, $matches)) {
+	    $x = tabLength($line);
+	} 
+    }
 }
 
 ?>

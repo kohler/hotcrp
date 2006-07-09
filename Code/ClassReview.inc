@@ -30,8 +30,6 @@ class ReviewForm {
     var $options;
     var $authorView;
 
-    const SECTIONS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
     function ReviewForm($conf) {
 	$this->updatedWhen = 0;
 	$this->updateFromDB($conf);
@@ -160,9 +158,14 @@ class ReviewForm {
 	return 0;
     }
 
-    function saveRequest($paperId, $contactId, $rrow, $submit, $conf = null) {
-	global $Conf;
+    function saveRequest($prow, $contactId, $rrow, $submit, $conf = null) {
+	global $Conf, $ConfSiteBase;
 	$conf = ($conf ? $conf : $Conf);
+	$Me = $_SESSION['Me'];
+
+	if (!$Me->timeReview($prow, $conf) && !isset($_REQUEST['override']))
+	    return $conf->errorMsg("The <a href='${ConfSiteBase}All/ImportantDates.php'>deadline</a> for entering this review has passed." . ($Me->amAssistant() ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
+	
 	$q = "";
 	foreach ($this->fieldOrder as $field)
 	    if (isset($_REQUEST[$field])) {
@@ -180,7 +183,7 @@ class ReviewForm {
 	if ($rrow)
 	    return $conf->qe("update PaperReview set " . substr($q, 0, -2) . ", reviewLastModified=current_timestamp where reviewId=$rrow->reviewId", "while storing review");
 	else
-	    return $conf->qe("insert into PaperReview set paperId=$paperId, contactId=$contactId, " . substr($q, 0, -2), ", reviewLastModified=current_timestamp while storing review");
+	    return $conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contactId, " . substr($q, 0, -2), ", reviewLastModified=current_timestamp while storing review");
     }
 
     
@@ -188,12 +191,11 @@ class ReviewForm {
 		      $header = 1) {
 	global $ReviewFormError, $Conf;
 	$conf = ($conf ? $conf : $Conf);
-	$sections = self::SECTIONS;
 
 	if ($header)
 	    $x = "==+== " . $conf->shortName . " Paper Review Form
 ==-== DO NOT DELETE, ALTER, OR INTRODUCE LINES BEGINNING WITH '==+=='!
-==-== Fill out lettered sections A through " . $sections[count($this->fieldOrder) - 1] . ".\n\n";
+==-== Fill out lettered sections A through " . chr(65 + count($this->fieldOrder) - 1) . ".\n\n";
 	else
 	    $x = "";
 
@@ -209,7 +211,7 @@ class ReviewForm {
 
 	$i = 0;
 	foreach ($this->fieldOrder as $field) {
-	    $x .= "\n==+== " . $sections[$i++] . ". " . $this->shortName[$field] . "\n";
+	    $x .= "\n==+== " . chr(65 + $i++) . ". " . $this->shortName[$field] . "\n";
 	    if (isset($this->options[$field]))
 		foreach ($this->options[$field] as $num => $value)
 		    if ($num == 1)

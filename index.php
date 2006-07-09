@@ -98,7 +98,37 @@ $homeSep = "<span class='homesep'></span>";
 <?php } ?>
 
 
-<?php if ($Me->isPC) { ?>
+<?php
+function printDeadlines($da, $colspan) {
+    if (count($da))
+	echo "<tr>\n  <td colspan='$colspan'>", join("<br/>\n", $da), "</td>\n</tr>\n";
+}
+
+function reviewerDeadlines($isPC, $plist) {
+    global $Conf;
+    $rtyp = ($isPC ? "PC" : "reviewer");
+    if ($plist->needSubmitReview == 0)
+	/* do nothing */;
+    else if (!$Conf->timeReviewPaper($isPC, true, true))
+	$deadlines[] = "The <a href='All/ImportantDates.php'>deadline</a> for submitting " . ($isPC ? "PC" : "external") . " reviews has passed.";
+    else if (!$Conf->timeReviewPaper($isPC, true, false))
+	$deadlines[] = "Reviews were requested by " . $Conf->printableEndTime("${rtyp}SubmitReview") . ".";
+    else {
+	$d = $Conf->printableEndTime("${rtyp}SubmitReview");
+	if ($d != "N/A")
+	    if (!$isPC && $_SESSION["Me"]->isPC)
+		$deadlines[] = "External reviewers should submit reviews by $d.";
+	    else
+		$deadlines[] = "Please submit your reviews by $d.";
+    }
+    if ($isPC && $Conf->timeReviewPaper(true, false, true)) {
+	$d = (isset($d) ? "N/A" : $Conf->printableEndTime("PCSubmitReview"));
+	$deadlines[] = "PC members may review any submitted paper" . ($d == "N/A" ? "." : " until $d.");
+    }
+    printDeadlines($deadlines, 6);
+}
+
+if ($Me->isPC) { ?>
 <div class='home_tasks' id='home_tasks_pc'>
   <div class='taskname'><h2>Program Committee Tasks</h2></div>
   <div class='taskdetail'>
@@ -112,7 +142,7 @@ $homeSep = "<span class='homesep'></span>";
 <?php
     $plist = new PaperList();
     $plist->showHeader = 0;
-    $ptext = $plist->text("reviewerHome", $Me);
+    $ptext = $plist->text("pcreviewerHome", $Me);
     if ($plist->count > 0 || $Conf->timeReviewPaper(true, false, true)) {
 	$header = "  <th>Reviews:</th>";
 	if ($plist->count > 0) {
@@ -121,6 +151,42 @@ $homeSep = "<span class='homesep'></span>";
 	}
 	if ($Conf->timeReviewPaper(true, false, true))
 	    echo "<tr>\n$header\n  <td><a href='All/ListPapers.php?list=submitted'>Review&nbsp;other&nbsp;papers</a> $homeSep <a href='All/ReviewPaper.php?paperId=-1&amp;downloadForm=1'>Download&nbsp;review&nbsp;form</a></td>\n</tr>\n";
+
+	reviewerDeadlines(true, $plist);
+    }
+
+    $ptext = $plist->text("reviewRequestsHome", $Me);
+    if ($plist->count > 0) {
+	echo "<tr>\n  <th>Review&nbsp;requests:</th>\n  <td class='plholder'>$ptext</td>\n</tr>\n";
+	reviewerDeadlines(false, $plist, true);
+    }
+?>
+
+    </table>
+  </div>
+  <div class='clear'></div>
+</div>
+<?php } ?>
+
+
+<?php if ($Me->amReviewer() && !$Me->isPC) { ?>
+<div class='home_tasks' id='home_tasks_pc'>
+  <div class='taskname'><h2>Reviewer Tasks</h2></div>
+  <div class='taskdetail'>
+    <table>
+
+<?php
+    $plist = new PaperList();
+    $plist->showHeader = 0;
+    $ptext = $plist->text("reviewerHome", $Me);
+    if ($plist->count > 0) {
+	$header = "  <th>Reviews:</th>";
+	if ($plist->count > 0) {
+	    echo "<tr>\n$header\n  <td class='plholder'>$ptext</td>\n</tr>\n";
+	    $header = "  <td></td>";
+	}
+
+	reviewerDeadlines(false, $plist);
     }
 ?>
 
@@ -151,17 +217,18 @@ if ($Me->isAuthor) {
     if ($plist->needFinalize > 0) {
 	$time = $Conf->printableEndTime('updatePaperSubmission');
 	if (!$Conf->timeFinalizePaper())
-	    echo "  <tr>\n    <td colspan='3'>The <a href='All/ImportantDates.php'>deadline</a> for submitting papers in progress has passed.</td>\n  </tr>\n";
+	    $deadlines[] = "The <a href='All/ImportantDates.php'>deadline</a> for submitting papers in progress has passed.";
 	else if (!$Conf->timeUpdatePaper()) {
+	    $deadlines[] = "The <a href='All/ImportantDates.php'>deadline</a> for updating papers in progress has passed, but you can still submit.";
 	    $time = $Conf->printableEndTime('finalizePaperSubmission');
 	    if ($time != 'N/A')
-		echo "  <tr>\n    <td colspan='3'>You have until $time to submit any papers in progress.</td>\n  </tr>\n";
-	    echo "  <tr>\n    <td colspan='3'>The <a href='All/ImportantDates.php'>deadline</a> for updating papers in progress has passed, but you can still submit.</td>\n  </tr>\n";
+		$deadlines[] = "You have until $time to submit any papers in progress.";
 	} else if (($time = $Conf->printableEndTime('updatePaperSubmission')) != 'N/A')
-	    echo "  <tr>\n    <td colspan='3'>You have until $time to submit any papers in progress.</td>\n  </tr>\n";
+	    $deadlines[] = "You have until $time to submit any papers in progress.";
     }
-    if (!$startable)
-	echo "  <tr>\n    <td colspan='2'>The <a href='All/ImportantDates.php'>deadline</a> for starting new papers has passed.</td>\n  </tr>\n";
+    if (!$startable && !$Conf->timeAuthorViewReviews())
+	$deadlines[] = "The <a href='All/ImportantDates.php'>deadline</a> for starting new papers has passed.";
+    printDeadlines($deadlines, 3);
 }
 ?>
 
@@ -184,11 +251,10 @@ if ($Me->isAuthor) {
 </div>
 
 
-<?php if ($Me->amReviewer() || $Me->isPC || $Me->amAssistant()) { ?>
+<?php if ($Me->isPC || $Me->amAssistant()) { ?>
 
 <table width=100%>
 <tr>
-<? if ($Me->amReviewer()) {taskbutton("Reviewer", "Reviewer");}?>
 <? if ($Me->isPC) { taskbutton("PC", "PC Members"); }?>
 <? if ($Me->isChair) {taskbutton("Chair", "PC Chair");}?>
 <? if ($Me->amAssistant()) {taskbutton("Assistant", "PC Chair Assistant");}?>

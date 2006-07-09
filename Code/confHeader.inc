@@ -16,9 +16,9 @@ define("ROLE_ASSISTANT", 4);
 define("ROLE_CHAIR", 5);
 define("ROLE_REVIEWER", 100);	// does not appear in Roles table
 
-define("REVIEW_PRIMARY", 1);
+define("REVIEW_PRIMARY", 3);
 define("REVIEW_SECONDARY", 2);
-define("REVIEW_REQUESTED", 3);
+define("REVIEW_REQUESTED", 1);
 
 define("OUTCOME_ACCEPTED", 1);
 define("OUTCOME_ACCEPTED_SHORT", 2);

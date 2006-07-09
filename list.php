@@ -66,12 +66,10 @@ if (isset($_REQUEST["downloadReview"])) {
     }
  }
 
-if (isset($_REQUEST["list"]))
-    $list = $_REQUEST['list'];
-else
-    $list = 'author';
+$list = (isset($_REQUEST['list']) ? $_REQUEST['list'] : 'author');
+$sv = (isset($_REQUEST['sort']) ? $_REQUEST['sort'] : "");
 
-$pl = new PaperList(1, 0, "ListPapers.php");
+$pl = new PaperList($sv, "ListPapers.php?list=" . htmlspecialchars($list) . "&amp;sort=");
 $t = $pl->text($list, $Me);
 
 $title = "List " . htmlspecialchars($pl->shortDescription) . " Papers";

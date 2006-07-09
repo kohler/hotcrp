@@ -44,6 +44,9 @@ $DateDescr['finalizePaperSubmission']
 $DateDescr['authorRespondToReviews']
 = "This should obviously overlap with the period reviews are visible.";
 
+$DateDescr['authorViewDecision']
+= "Note that PC authors can view outcomes as soon as they are entered into the system.";
+
 $DateDescr['PCMeetingView'] = "When can PC members see the identity of reviews for"
     . " non-conflicting papers and assign paper grades.";
 $DateDescr['AtTheMeeting'] = "Used to hide information about chair opinions.";
@@ -176,8 +179,8 @@ if (isset($_REQUEST['update'])) {
 		   'reviewerSubmitReview', 'reviewerSubmitReviewDeadline',
 		   'notifyChairAboutReviews', 'reviewerViewDecision',
 		   'PCSubmitReview', 'PCSubmitReviewDeadline',
-		   'PCGradePapers', 'PCMeetingView', 'AtTheMeeting',
-		   'EndOfTheMeeting'
+		   'PCGradePapers', 'PCMeetingView',
+		   'AtTheMeeting', 'EndOfTheMeeting'
 		   ) as $s) {
 	$Dates[$s][0] = crp_strtotime($s, 0);
 	$Dates[$s][1] = crp_strtotime($s, 1);
@@ -195,15 +198,18 @@ if (isset($_REQUEST['update'])) {
     // set nonexistent dates based on existent dates
     $dval = array("updatePaperSubmission", "startPaperSubmission",
 		  "finalizePaperSubmission", "updatePaperSubmission",
+		  "PCSubmitReviewDeadline", "PCSubmitReview",
+		  "reviewerSubmitReviewDeadline", "reviewerSubmitReview",
 		  "updatePaperSubmission", "finalizePaperSubmission",
 		  "startPaperSubmission", "updatePaperSubmission");
     for ($i = 0; $i < count($dval); $i += 2) {
 	$dest = $dval[$i]; $src = $dval[$i+1];
-	if ($i >= 4 && $Dates[$dest][1] <= 0 && $Dates[$src][1] > 0) {
+	if ($i >= 8 && $Dates[$dest][1] <= 0 && $Dates[$src][1] > 0) {
 	    $Dates[$dest][1] = $Dates[$src][1];
 	    $Messages[] = $DateName[$dest][1] . " set to " . $DateName[$src][1] . ".";
-	} else if ($i < 4 && $Dates[$dest][1] > 0 && $Dates[$src][1] > 0 && $Dates[$dest][1] < $Dates[$src][1]) {
-	    $Error[] = $DateName[$dest][1] . " must be on or after " . $DateName[$src][1] . ".";
+	} else if ($i < 8 && $Dates[$dest][1] > 0 && $Dates[$src][1] > 0 && $Dates[$dest][1] < $Dates[$src][1]) {
+	    $dname = is_array($DateName[$src]) ? $DateName[$src][1] : $DateName[$src];
+	    $Error[] = $DateName[$dest][1] . " must be on or after $dname.";
 	    $DateError["${dest}_end"] = $DateError["${src}_end"] = 1;
 	}
     }

@@ -503,8 +503,8 @@ insert into ReviewFormOptions set fieldName='reviewerQualification', level=4, de
 
 insert into ReviewFormOptions set fieldName='outcome', level=0, description='Unspecified';
 insert into ReviewFormOptions set fieldName='outcome', level=-1, description='Rejected';
-insert into ReviewFormOptions set fieldName='outcome', level=1, description='Accepted';
-insert into ReviewFormOptions set fieldName='outcome', level=2, description='Accepted as short paper';
+insert into ReviewFormOptions set fieldName='outcome', level=1, description='Accepted as short paper';
+insert into ReviewFormOptions set fieldName='outcome', level=2, description='Accepted';
 
 delete from ImportantDates where name='reviewFormUpdate';
 insert into ImportantDates set name='reviewFormUpdate', start=current_timestamp, end=current_timestamp;
@@ -520,7 +520,7 @@ create table PaperList (
   paperListName varchar(20) NOT NULL,
   shortDescription varchar(40) NOT NULL default '',
   description varchar(80) NOT NULL default '',
-  minRole tinyint(1) NOT NULL default '0',
+  queryType varchar(20) NOT NULL default 'any',
   sortCol int,
   query varchar(120),
   PRIMARY KEY (paperListId),
@@ -548,61 +548,80 @@ create table PaperListColumns (
 ) TYPE=MyISAM;
 
 insert into PaperFields set fieldId=1, fieldName='ID', description='ID';
-insert into PaperFields set fieldId=2, fieldName='Title', description='Title';
-insert into PaperFields set fieldId=3, fieldName='Status', description='Status';
-insert into PaperFields set fieldId=4, fieldName='Download', description='Download', sortable=0;
-insert into PaperFields set fieldId=5, fieldName='ID (manage)', description='ID (manage link)';
-insert into PaperFields set fieldId=6, fieldName='Title (manage)', description='Title (manage link)';
-insert into PaperFields set fieldId=7, fieldName='ID (review)', description='ID (review link)';
-insert into PaperFields set fieldId=8, fieldName='Title (review)', description='Title (review link)';
-insert into PaperFields set fieldId=9, fieldName='Reviewer', description='Reviewer type';
-insert into PaperFields set fieldId=10, fieldName='Reviewer status', description='Reviewer status';
-insert into PaperFields set fieldId=11, fieldName='Selector', description='Selector';
-insert into PaperFields set fieldId=12, fieldName='Review', description='Review';
+insert into PaperFields set fieldId=2, fieldName='ID (manage)', description='ID (manage link)';
+insert into PaperFields set fieldId=3, fieldName='ID (review)', description='ID (review link)';
+insert into PaperFields set fieldId=11, fieldName='Title', description='Title';
+insert into PaperFields set fieldId=12, fieldName='Title (manage)', description='Title (manage link)';
+insert into PaperFields set fieldId=13, fieldName='Title (review)', description='Title (review link)';
+insert into PaperFields set fieldId=27, fieldName='Status', description='Status';
+insert into PaperFields set fieldId=28, fieldName='Download', description='Download', sortable=0;
+insert into PaperFields set fieldId=29, fieldName='Reviewer', description='Reviewer type';
+insert into PaperFields set fieldId=30, fieldName='Reviewer status', description='Reviewer status';
+insert into PaperFields set fieldId=31, fieldName='Selector', description='Selector';
+insert into PaperFields set fieldId=32, fieldName='Review', description='Review';
+insert into PaperFields set fieldId=33, fieldName='Status', description='Status (for reviewers)';
+insert into PaperFields set fieldId=34, fieldName='Reviewer name', description='Reviewer name';
 
 insert into PaperList set paperListId=1, paperListName='author',
 	shortDescription='Authored', description='Authored papers', 
-	minRole=1, sortCol=0, query='';
-insert into PaperListColumns set paperListId=1, fieldId=5, col=0;
-insert into PaperListColumns set paperListId=1, fieldId=6, col=1;
-insert into PaperListColumns set paperListId=1, fieldId=3, col=2;
-insert into PaperListColumns set paperListId=1, fieldId=4, col=3;
+	queryType='author', sortCol=0, query='';
+insert into PaperListColumns set paperListId=1, fieldId=2, col=0;
+insert into PaperListColumns set paperListId=1, fieldId=12, col=1;
+insert into PaperListColumns set paperListId=1, fieldId=27, col=2;
+insert into PaperListColumns set paperListId=1, fieldId=28, col=3;
 
 insert into PaperList set paperListId=2, paperListName='submitted',
 	shortDescription='Submitted', description='Submitted papers',
-	minRole=3, sortCol=0, query='';
-insert into PaperListColumns set paperListId=2, fieldId=11, col=0;
+	queryType='pc', sortCol=0, query='';
+insert into PaperListColumns set paperListId=2, fieldId=31, col=0;
 insert into PaperListColumns set paperListId=2, fieldId=1, col=1;
-insert into PaperListColumns set paperListId=2, fieldId=2, col=2;
-insert into PaperListColumns set paperListId=2, fieldId=3, col=3;
-insert into PaperListColumns set paperListId=2, fieldId=4, col=4;
-insert into PaperListColumns set paperListId=2, fieldId=9, col=5;
-insert into PaperListColumns set paperListId=2, fieldId=10, col=6;
-insert into PaperListColumns set paperListId=2, fieldId=12, col=7;
+insert into PaperListColumns set paperListId=2, fieldId=11, col=2;
+insert into PaperListColumns set paperListId=2, fieldId=33, col=3;
+insert into PaperListColumns set paperListId=2, fieldId=28, col=4;
+insert into PaperListColumns set paperListId=2, fieldId=29, col=5;
+insert into PaperListColumns set paperListId=2, fieldId=30, col=6;
+insert into PaperListColumns set paperListId=2, fieldId=32, col=7;
 
 insert into PaperList set paperListId=3, paperListName='all',
 	shortDescription='All', description='All papers', 
-	minRole=5, sortCol=0, query='';
-insert into PaperListColumns set paperListId=3, fieldId=11, col=0;
+	queryType='chair', sortCol=0, query='';
+insert into PaperListColumns set paperListId=3, fieldId=31, col=0;
 insert into PaperListColumns set paperListId=3, fieldId=1, col=1;
-insert into PaperListColumns set paperListId=3, fieldId=2, col=2;
-insert into PaperListColumns set paperListId=3, fieldId=3, col=3;
-insert into PaperListColumns set paperListId=3, fieldId=4, col=4;
-insert into PaperListColumns set paperListId=3, fieldId=9, col=5;
-insert into PaperListColumns set paperListId=3, fieldId=10, col=6;
-insert into PaperListColumns set paperListId=3, fieldId=12, col=7;
+insert into PaperListColumns set paperListId=3, fieldId=11, col=2;
+insert into PaperListColumns set paperListId=3, fieldId=27, col=3;
+insert into PaperListColumns set paperListId=3, fieldId=28, col=4;
+insert into PaperListColumns set paperListId=3, fieldId=29, col=5;
+insert into PaperListColumns set paperListId=3, fieldId=30, col=6;
+insert into PaperListColumns set paperListId=3, fieldId=32, col=7;
 
 insert into PaperList set paperListId=4, paperListName='authorHome',
-	description='My papers (homepage view)', minRole=1, sortCol=0, query='';
-insert into PaperListColumns set paperListId=4, fieldId=5, col=0;
-insert into PaperListColumns set paperListId=4, fieldId=6, col=1;
-insert into PaperListColumns set paperListId=4, fieldId=3, col=2;
+	description='My papers (homepage view)', 
+	queryType='author', sortCol=0, query='';
+insert into PaperListColumns set paperListId=4, fieldId=2, col=0;
+insert into PaperListColumns set paperListId=4, fieldId=12, col=1;
+insert into PaperListColumns set paperListId=4, fieldId=27, col=2;
 
-insert into PaperList set paperListId=5, paperListName='reviewerHome',
+insert into PaperList set paperListId=5, paperListName='pcreviewerHome',
 	description='Papers to review (homepage view)',
-	minRole=100, sortCol=0, query='';
+	queryType='myReviews', sortCol=0, query='';
 insert into PaperListColumns set paperListId=5, fieldId=1, col=0;
-insert into PaperListColumns set paperListId=5, fieldId=2, col=1;
-insert into PaperListColumns set paperListId=5, fieldId=9, col=2;
-insert into PaperListColumns set paperListId=5, fieldId=10, col=3;
-insert into PaperListColumns set paperListId=5, fieldId=12, col=4;
+insert into PaperListColumns set paperListId=5, fieldId=11, col=1;
+insert into PaperListColumns set paperListId=5, fieldId=29, col=2;
+insert into PaperListColumns set paperListId=5, fieldId=32, col=3;
+insert into PaperListColumns set paperListId=5, fieldId=33, col=4;
+
+insert into PaperList set paperListId=6, paperListName='reviewerHome',
+	description='Papers to review (homepage view)',
+	queryType='myReviews', sortCol=0, query='';
+insert into PaperListColumns set paperListId=6, fieldId=1, col=0;
+insert into PaperListColumns set paperListId=6, fieldId=11, col=1;
+insert into PaperListColumns set paperListId=6, fieldId=32, col=2;
+insert into PaperListColumns set paperListId=6, fieldId=33, col=3;
+
+insert into PaperList set paperListId=7, paperListName='reviewRequestsHome',
+	description='Requested reviews (homepage view)',
+	queryType='myReviewRequests', sortCol=0, query='';
+insert into PaperListColumns set paperListId=7, fieldId=1, col=0;
+insert into PaperListColumns set paperListId=7, fieldId=11, col=1;
+insert into PaperListColumns set paperListId=7, fieldId=34, col=2;
+insert into PaperListColumns set paperListId=7, fieldId=30, col=3;

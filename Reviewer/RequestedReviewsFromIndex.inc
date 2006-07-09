@@ -15,13 +15,13 @@ find the link to download the paper at the top of the review form </p>
  // Now, look for reviews directed to this person
  //
 
-$result=$Conf->qe("SELECT Paper.paperId, Paper.title, Paper.withdrawn FROM Paper, ReviewRequest "
-		    . "WHERE ReviewRequest.asked='" . $_SESSION["Me"]->contactId . "' AND Paper.paperId=ReviewRequest.paperId "
-		    . "ORDER BY Paper.paperId");
+$result=$Conf->qe("SELECT Paper.paperId, Paper.title, Paper.withdrawn FROM Paper join ReviewRequest using (paperId) "
+		    . "WHERE ReviewRequest.contactId='" . $_SESSION["Me"]->contactId . "' and ReviewRequest.reviewType=" . REVIEW_REQUESTED
+		    . " ORDER BY Paper.paperId");
 if (!DB::isError($result)) {
   $i = 0;
   while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)) {
-    if ( !$row['withdrawn']) {
+    if ($row['withdrawn'] <= 0) {
       $ids[$i] = $row['paperId'];
       $titles[$i] = $row['title'];
       $i++;
@@ -55,10 +55,10 @@ or until you finalize them. </b>
 find the link to download the paper at the top of the review form </p>
 <?php 
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title, Paper.withdrawn "
-		  . " FROM Paper, PrimaryReviewer "
-		  . "WHERE PrimaryReviewer.reviewer='" . $_SESSION["Me"]->contactId. "' "
-		  . " AND Paper.paperId=PrimaryReviewer.paperId "
-		  . "ORDER BY Paper.paperId");
+		  . " FROM Paper join ReviewRequest using (paperId) "
+		  . "where ReviewRequest.contactId='" . $_SESSION["Me"]->contactId. "' "
+		  . " AND ReviewRequest.reviewType=" . REVIEW_PRIMARY
+		  . " ORDER BY Paper.paperId");
 
 if (DB::isError($result)) {
   $Conf->errorMsg("Error in sql " . $result->getMessage());
@@ -67,7 +67,7 @@ if (DB::isError($result)) {
   $titles=array();
   $i = 0;
   while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)) {
-    if ( !$row['withdrawn']) {
+    if ($row['withdrawn'] <= 0) {
       $ids[$i] = $row['paperId'];
       $titles[$i] = $row['title'];
       $i++;

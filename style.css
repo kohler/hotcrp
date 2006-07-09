@@ -448,6 +448,22 @@ td.setrev_shortName input {
 	font-weight: bold;
 }
 
+a.pl_sort {
+	color: black;
+}
+a.pl_sort_def {
+	padding-right: 12px;
+	background: url("../images/sortdown.png") 100% 75% no-repeat;
+	text-decoration: none;
+	color: #660000;
+}
+a.pl_sort_def_rev {
+	padding-right: 12px;
+	background: url("../images/sortup.png") 100% 75% no-repeat;
+	text-decoration: none;
+	color: #660000;
+}
+
 /*@media screen {
 table.setreviewform input#submit {
 	position: fixed;

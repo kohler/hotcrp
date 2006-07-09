@@ -16,13 +16,12 @@ papers.
 </p>
 
 <?php 
-$result=$Conf->q("SELECT Paper.paperId, Paper.title, "
-		 . " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email "
-		 . " FROM ContactInfo, ReviewRequest, Paper "
-		 . " WHERE ContactInfo.contactId=ReviewRequest.asked "
-		 . " AND Paper.paperId=ReviewRequest.paperId "
-		 . " ORDER BY Paper.paperId "
-		 );
+$result=$Conf->q("select Paper.paperId, Paper.title,
+		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
+		from Paper
+		join ReviewRequest using (paperId)
+		join ContactInfo on (ContactInfo.contactId=ReviewRequest.contactId)
+		order by Paper.paperId ");
 $i = 0;
 if (DB::isError($result)) {
   $Conf->errorMsg("Error in retrieving reviewer list " . $result->getMessage());

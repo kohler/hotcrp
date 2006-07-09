@@ -3,39 +3,84 @@
 class PaperList {
 
     const FIELD_ID = 1;
-    const FIELD_TITLE = 2;
-    const FIELD_STATUS = 3;
-    const FIELD_DOWNLOAD = 4;
-    const FIELD_ID_MANAGE = 5;
-    const FIELD_TITLE_MANAGE = 6;
-    const FIELD_ID_REVIEW = 7;
-    const FIELD_TITLE_REVIEW = 8;
-    const FIELD_REVIEWER_TYPE = 9;
-    const FIELD_REVIEWER_STATUS = 10;
-    const FIELD_SELECTOR = 11;
-    const FIELD_REVIEW = 12;
+    const FIELD_ID_MANAGE = 2;
+    const FIELD_ID_REVIEW = 3;
+    const FIELD_TITLE = 11;
+    const FIELD_TITLE_MANAGE = 12;
+    const FIELD_TITLE_REVIEW = 13;
+    const FIELD_STATUS = 27;
+    const FIELD_DOWNLOAD = 28;
+    const FIELD_REVIEWER_TYPE = 29;
+    const FIELD_REVIEWER_STATUS = 30;
+    const FIELD_SELECTOR = 31;
+    const FIELD_REVIEW = 32;
+    const FIELD_STATUS_SHORT = 33;
+    const FIELD_REVIEWER_NAME = 34;
 
     var $showHeader;
-    var $sortCol;
-    var $sortLinks;
+    var $sortField;
+    var $reverseSort;
+    var $sortUri;
     var $count;
     var $needFinalize;
+    var $needSubmitReview;
     var $anySelector;
     var $shortDescription;
     var $description;
     
-    function PaperList() {
+    function PaperList($sortVal = "1", $sortUri = null) {
 	$this->showHeader = 1;
-	$this->sortCol = 0;
-	$this->sortLinks = 0;
+
+	$x = (strlen($sortVal) ? $sortVal[strlen($sortVal)-1] : "");
+	$this->reverseSort = ($x == "R");
+	if ($x == "R" || $x == "N")
+	    $sortVal = substr($sortVal, 0, -1);
+	if ((int) $sortVal == $sortVal)
+	    $this->sortField = (int) $sortVal;
+	else
+	    $this->sortField = null;
+	$this->sortUri = $sortUri;
+
 	$this->count = 0;
 	$this->needFinalize = 0;
+	$this->needSubmitReview = 0;
 	$this->anySelector = 0;
     }
-    
-    function selector($fieldId, &$queryFields, &$queryTables) {
+
+    function selector($fieldId, &$queryOptions) {
+	switch ($fieldId) {
+	case self::FIELD_REVIEWER_NAME:
+	    $queryOptions['reviewerName'] = 1;
+	    break;
+	}
+	if ($this->sortField == $fieldId && ($order = $this->sort($fieldId)))
+	    $queryOptions['order'] = $order;
     }
 
+    function sort($fieldId) {
+	$up = ($this->reverseSort ? "desc" : "asc");
+	$down = ($this->reverseSort ? "asc" : "desc");
+	switch ($fieldId) {
+	case self::FIELD_ID:
+	case self::FIELD_ID_MANAGE:
+	case self::FIELD_ID_REVIEW:
+	    return "order by Paper.paperId $up";
+	case self::FIELD_TITLE:
+	case self::FIELD_TITLE_MANAGE:
+	case self::FIELD_TITLE_REVIEW:
+	    return "order by Paper.title $up";
+	case self::FIELD_STATUS:
+	case self::FIELD_STATUS_SHORT:
+	    return "order by Paper.outcome $down";
+	case self::FIELD_REVIEWER_TYPE:
+	    return "order by ReviewRequest.reviewType $down";
+	case self::FIELD_REVIEWER_NAME:
+	    return "order by ReviewerContactInfo.lastName, ReviewerContactInfo.firstName $up";
+	default:
+	    return null;
+	}
+    }
+    
     function header($fieldId, $ordinal) {
 	switch ($fieldId) {
 	case self::FIELD_ID:
@@ -47,6 +92,7 @@ class PaperList {
 	case self::FIELD_TITLE_REVIEW:
 	    return "Title";
 	case self::FIELD_STATUS:
+	case self::FIELD_STATUS_SHORT:
 	    return "Status";
 	case self::FIELD_DOWNLOAD:
 	    return "Download";
@@ -58,6 +104,8 @@ class PaperList {
 	    return ($ordinal ? "&nbsp;" : "");
 	case self::FIELD_REVIEW:
 	    return "&nbsp;";
+	case self::FIELD_REVIEWER_NAME:
+	    return "Reviewer name";
 	default:
 	    return "&lt;$fieldId&gt;?";
 	}
@@ -72,23 +120,32 @@ class PaperList {
 	case self::FIELD_ID_MANAGE:
 	    return "<a href='${ConfSiteBase}Author/ManagePaper.php?paperId=$row->paperId'>#$row->paperId</a>";
 	case self::FIELD_ID_REVIEW:
-	    return "<a href='${ConfSiteBase}All/ReviewPaper.php?paperId=$row->paperId'>#$row->paperId</a>";
+	    if ($row->reviewId)
+		return "<a href='${ConfSiteBase}All/ReviewPaper.php?reviewId=$row->reviewId'>#$row->paperId</a>";
+	    else
+		return "<a href='${ConfSiteBase}All/ReviewPaper.php?paperId=$row->paperId'>#$row->paperId</a>";
 	case self::FIELD_TITLE:
 	    return "<a href='${ConfSiteBase}All/ViewPaper.php?paperId=$row->paperId'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_TITLE_MANAGE:
 	    return "<a href='${ConfSiteBase}Author/ManagePaper.php?paperId=$row->paperId'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_TITLE_REVIEW:
-	    return "<a href='${ConfSiteBase}All/ReviewPaper.php?paperId=$row->paperId'>" . htmlspecialchars($row->title) . "</a>";
+	    if ($row->reviewId)
+		return "<a href='${ConfSiteBase}All/ReviewPaper.php?paperId=$row->reviewId'>" . htmlspecialchars($row->title) . "</a>";
+	    else
+		return "<a href='${ConfSiteBase}All/ReviewPaper.php?paperId=$row->paperId'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_STATUS:
+	case self::FIELD_STATUS_SHORT:
 	    if ($row->acknowledged <= 0 && $row->withdrawn <= 0)
 		$this->needFinalize++;
-	    return $Me->paperStatus($row->paperId, $row);
+	    return $Me->paperStatus($row->paperId, $row, $fieldId == self::FIELD_STATUS ? 0 : -1);
 	case self::FIELD_DOWNLOAD:
 	    if ($row->size > 0)
 		return paperDownload($row->paperId, $row);
 	    else
 		return "";
 	case self::FIELD_REVIEWER_TYPE:
+	    if ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted))
+		$this->needSubmitReview++;
 	    return reviewType($row->paperId, $row);
 	case self::FIELD_REVIEWER_STATUS:
 	    return reviewStatus($row, 0);
@@ -97,6 +154,8 @@ class PaperList {
 	    return "<input class='rstat rstat_sel' type='checkbox' name='papersel[]' value='$row->paperId' />";
 	case self::FIELD_REVIEW:
 	    return reviewButton($row->paperId, $row);
+	case self::FIELD_REVIEWER_NAME:
+	    return htmlspecialchars(contactText($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail));
 	default:
 	    return "";
 	}
@@ -118,20 +177,20 @@ class PaperList {
 	$this->shortDescription = $plist->shortDescription;
 
 	// check role type
-	if ($plist->minRole >= ROLE_PC && !$me->isPC) {
-	    $Conf->errorMsg("Only PC members may view that type of paper list.");
+	if ($plist->queryType == 'pc' && !$me->isPC) {
+	    $Conf->errorMsg("Only PC members may view this type of paper list.");
 	    return NULL;
-	} else if ($plist->minRole >= ROLE_ASSISTANT && !$me->amAssistant()) {
-	    $Conf->errorMsg("Only PC chairs and their assistants may view that type of paper list.");
-	    return NULL;
-	} else if ($plist->minRole >= ROLE_CHAIR && !$me->isChair) {
-	    $Conf->errorMsg("Only PC chairs may view that type of paper list.");
+	} else if ($plist->queryType == 'chair' && !$me->amAssistant()) {
+	    $Conf->errorMsg("Only PC chairs and their assistants may view this type of paper list.");
 	    return NULL;
 	}
 
 	// initialize query
-	$queryFields = array();
-	$queryTables = array();
+	$queryOptions = array();
+	if ($plist->queryType == 'pc')
+	    $queryOptions['finalized'] = 1;
+	else if ($plist->queryType == 'author' || $plist->queryType == 'myReviews' || $plist->queryType == 'myReviewRequests')
+	    $queryOptions[$plist->queryType] = 1;
 	
 	// get field array
 	$result = $Conf->qe(
@@ -141,21 +200,15 @@ class PaperList {
 		order by PaperListColumns.col", "while looking up paper list information");
 	if (DB::isError($result))
 	    return NULL;
+	
 	$fieldId = array();
 	while ($row = $result->fetchRow()) {
 	    $fieldId[] = array($row[0], htmlspecialchars($row[1]));
-	    PaperList::selector($row[0], $queryFields, $queryTables);
+	    $this->selector($row[0], $queryOptions);
 	}
 
 	// prepare query text
-	if ($plist->minRole == ROLE_PC || $plist->minRole == ROLE_ASSISTANT)
-	    $pq = $Conf->paperQuery($me->contactId, array("finalized" => 1));
-	else if ($plist->minRole < ROLE_PC)
-	    $pq = $Conf->paperQuery($me->contactId, array("author" => 1));
-	else if ($plist->minRole == ROLE_REVIEWER)
-	    $pq = $Conf->paperQuery($me->contactId, array("reviewer" => 1));
-	else
-	    $pq = $Conf->paperQuery($me->contactId);
+	$pq = $Conf->paperQuery($me->contactId, $queryOptions);
 
 	// make query
 	$result = $Conf->qe($pq, "while selecting papers");
@@ -167,10 +220,29 @@ class PaperList {
 	if ($this->showHeader) {
 	    $x .= "  <tr class=\"pl_headrow\">\n";
 	    $ord = 0;
-	    foreach ($fieldId as $f) {
-		$x .= "    <th class=\"pl_$f[1]\">";
-		$x .= $this->header($f[0], $ord++) . "</th>\n";
+
+	    if ($this->sortUri) {
+		$q = "<a class='pl_sort' href=\"" . $this->sortUri;
+		foreach ($fieldId as $f) {
+		    $x .= "    <th class=\"pl_$f[1]\">";
+		    $ftext = $this->header($f[0], $ord++);
+		    if ($this->sortField == null && $f[0] < 10)
+			$this->sortField = $f[0];
+		    if ($f[0] == $this->sortField)
+			$x .= "<a class='pl_sort_def" . ($this->reverseSort ? "_rev" : "") . "' href=\"" . $this->sortUri . $f[0] . ($this->reverseSort ? "N" : "R") . "\">" . $ftext . "</a>";
+		    else if ($this->sort($f[0]))
+			$x .= $q . $f[0] . "\">" . $ftext . "</a>";
+		    else
+			$x .= $ftext;
+		    $x .= "</th>\n";
+		}
+		
+	    } else {
+		foreach ($fieldId as $f)
+		    $x .= "    <th class=\"pl_$f[1]\">"
+			. $this->header($f[0], $ord++) . "</th>\n";
 	    }
+	    
 	    $x .= "  </tr>\n";
 	}
 
