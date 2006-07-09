@@ -101,10 +101,11 @@ if (IsSet($_REQUEST[nagList])
 
 	  if (IsSet($_REQUEST["SendReviews"])) {
 
-	    mail($cleanEmail,
-		 $_REQUEST[emailSubject],
-		 $msg . "\n" . $extraMsg,
-		 $emailFrom);
+	      if ($Conf->allowEmailTo($cleanEmail))
+		  mail($cleanEmail,
+		       $_REQUEST[emailSubject],
+		       $msg . "\n" . $extraMsg,
+		       $emailFrom);
 
 	    $Conf->confirmMsg("Sent email to $cleanEmail");
 

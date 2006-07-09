@@ -519,9 +519,9 @@ class Contact {
       $message .= "If you did not request your password, you may want to contact\n";
       $message .= "$conf->contactName ($conf->contactEmail) about this matter.\n\n";
 
-      if ($conf->allowEmail)
+      if ($conf->allowEmailTo($this->email))
 	  $results = mail($this->email,
-			  "[$conf->confShortName] Account Information",
+			  "[$conf->confShortName] Account information",
 			  $message,
 			  "From: $conf->emailFrom");
   }

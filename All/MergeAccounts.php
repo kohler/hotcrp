@@ -44,7 +44,7 @@ Your account at the " . $Conf->shortName . "submissions site has been\n\
 merged with the account of " . $Me->fullnameAndEmail() . ".\n\
 If you suspect something fishy, contact the site administrator at\n\
 " . $Conf->contactEmail . ".\n";
-	    if ($Conf->allowEmail)
+	    if ($Conf->allowEmailTo($MiniMe->email))
 		mail($MiniMe->email, "[$Conf->shortName] Account Information",
 		     $message, "From: $Conf->emailFrom");
 	    

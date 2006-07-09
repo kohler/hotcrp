@@ -1028,12 +1028,16 @@ class Conference {
 	return $message;
     }
 
+    function allowEmailTo($email) {
+	return $this->allowEmail && strstr($email, "@");
+    }
+  
   function sendReviewerRequest($who, $email, $paperList) {
       $message = $this -> composeReviewerRequest("has asked you to review the following papers",
 						 $who, $email, $paperList);
-      if ($this->allowEmail)
+      if ($this->allowEmailTo($email))
 	  mail($email,
-	       "Request To Review Paper(s) for $this->shortName",
+	       "[$this->shortName] Review request",
 	       $message,
 	       "From: $this->emailFrom",
 	       "-f$this->emailFrom");
@@ -1042,9 +1046,9 @@ class Conference {
   function sendUrgentReviewRequest($who, $email, $paperList) {
       $message = $this -> composeReviewerRequest("\nis reminding you to finish your review(s) for the following papers",
 						 $who, $email, $paperList);
-      if ($this->allowEmail)
+      if ($this->allowEmailTo($email))
 	  mail($email,
-	       "URGENT: Reminder to Review Paper(s) for $this->shortName",
+	       "[$this->shortName] URGENT: Review reminder",
 	       $message,
 	       "From: $this->emailFrom",
 	       "-f$this->emailFrom");
@@ -1083,9 +1087,9 @@ class Conference {
 	. "finalize your paper before it can be reviewed.\n";
 	//. "You have the following papers on record\n";
 
-      if ($this->allowEmail)
+      if ($this->allowEmailTo($email))
 	  mail($email,
-	       "Confirmation of starting paper $paperId",
+	       "[$this->shortName] Paper #$paperId started",
 	       $message,
 	       "From: $this->emailFrom",
 	       "-f$this->emailFrom");
@@ -1098,9 +1102,9 @@ class Conference {
 	. " $title\n"
 	. "\n"
 	. "Keep this email as confirmation of your paper being submitted.\n";
-      if ($this->allowEmail)
+      if ($this->allowEmailTo($email))
 	  mail($email,
-	       "Confirmation of finalizing paper $paperId",
+	       "[$this->shortName] Paper #$paperId submit confirmation",
 	       $message,
 	       "From: $this->emailFrom",
 	       "-f$this->emailFrom");
@@ -1162,16 +1166,16 @@ class Conference {
 	. "by sending email to $this->contactEmail\n"
 	;
 
-      if ($this->allowEmail)
+      if ($this->allowEmailTo($email))
 	  mail($email,
-	       "Confirmation of removal of paper $paperId",
+	       "[$this->shortName] Paper #$paperId removed",
 	       $message,
 	       "From: $this->emailFrom",
 	       "-f$this->emailFrom");
 
-      if ($this->allowEmail)
+      if ($this->allowEmailTo($this->contactEmail))
 	  mail($this->contactEmail,
-	       "Confirmation of removal of paper $paperId sent to $email",
+	       "[$this->shortName] Paper #$paperId removed: sent to $email",
 	       $message,
 	       "From: $this->emailFrom",
 	       "-f$this->emailFrom");

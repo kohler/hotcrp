@@ -11,9 +11,9 @@ $_SESSION["Me"]->goIfNotChair('../');
 <?php
 if (isset($_REQUEST["nag"])) {
   $from="From: $Conf->emailFrom";
-  $subject="nag nag nag";
+  $subject="[$Conf->shortName] nag nag nag";
   $msg="fill in your collaborators and interests!";
-  if ($Conf->allowEmail)
+  if ($Conf->allowEmailTo($_REQUEST['nag']))
       mail($_REQUEST["nag"], $subject, $msg, $from);
   $Conf->confirmMsg("Sent email to " . $_REQUEST['nag']);
 } else {

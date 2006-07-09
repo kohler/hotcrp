@@ -68,9 +68,9 @@ if (IsSet($_REQUEST[submit])) {
 	  . "for paper #$_REQUEST[paperId] - $title, \n"
 	  . "has been finalized.";
 
-	if ($Conf->allowEmail)
+	if ($Conf->allowEmailTo($email))
 	    mail($email,
-		 "Additional review has arrived for paper #$_REQUEST[paperId]",
+		 "[$Conf->shortName] Paper #" . $_REQUEST['paperId'] . ": Additional review",
 		 $message,
 		 "From: $Conf->emailFrom"
 		 );
@@ -85,9 +85,9 @@ if (IsSet($_REQUEST[submit])) {
 	  . "has been finalized. You may wish to augment or amend \n"
 	  . "your response.";
 
-	if ($Conf->allowEmail)
+	if ($Conf->allowEmailTo($email))
 	    mail($email,
-		 "Additional review has arrived for paper #$_REQUEST[paperId]",
+		 "[$Conf->shortName] Paper #" . $_REQUEST['paperId'] . ": Additional review",
 		 $message,
 		 "From: $Conf->emailFrom"
 		 );
@@ -102,9 +102,9 @@ if (IsSet($_REQUEST[emailReview])) {
   //
   // Empty
   //
-    if ($Conf->allowEmail)
+    if ($Conf->allowEmailTo($_SESSION["Me"]->email))
 	mail($_SESSION["Me"]->email,
-	     "Your review for paper #$_REQUEST[paperId]",
+	     "[$Conf->shortName] Paper #" . $_REQUEST['paperId'] . ": Your review",
 	     $Review -> getAnonReviewHeaderASCII($Conf)
 	     . $Review -> getReviewASCII(),
 	     "From: $Conf->emailFrom"

@@ -233,15 +233,17 @@ if (!DB::isError($result)) {
     print "</td> </tr> </table> <br> ";
 
     if ( IsSet($_REQUEST[sendTheMail]) ) {
-      mail($row['email'],
-	   "Mail concerning $Conf->shortName",
-	   $msg,
-	   "From: $Conf->emailFrom");
-      mail($Conf->contactEmail,
-	   "Mail to " . $row['email'] .
-	   "  concerning $Conf->shortName",
-	   $msg,
-	   "From: $Conf->emailFrom");
+	if ($Conf->allowEmailTo($row['email']))
+	    mail($row['email'],
+		 "[$Conf->shortName] Mail concerning $Conf->shortName",
+		 $msg,
+		 "From: $Conf->emailFrom");
+	if ($Conf->allowEmailTo($Conf->contactEmail))
+	    mail($Conf->contactEmail,
+		 "[$Conf->shortName] Mail to " . $row['email'] .
+		 "  concerning $Conf->shortName",
+		 $msg,
+		 "From: $Conf->emailFrom");
 	print"<p> <b> Sent to " . $row['email'] . "</b> </p>\n";
     }
   }
