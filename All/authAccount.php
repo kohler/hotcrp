@@ -27,7 +27,11 @@ if (isset($_REQUEST["register"])) {
     } else {
 	$_SESSION["Me"]->sendAccountInfo($Conf);
 	$Conf->log("Created account", $_SESSION["Me"]);
-	$msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["loginEmail"]) . ".  A password has been emailed to this address.  When you receive that email, return here to complete the registration process.";
+	$msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["loginEmail"]) . ".  ";
+	if ($Conf->allowEmailTo($_SESSION["Me"]->email))
+	    $msg .= "  A password has been emailed to this address.  When you receive that email, return here to complete the registration process.";
+	else
+	    $msg .= "  The email address you provided seems invalid (it doesn't contain an @).  Although an account was created for you, you need the site administrator's help to retrieve your password.";
 	if (isset($_REQUEST["password"]) && $_REQUEST["password"] != "")
 	    $msg .= "  Note that the password you supplied on the login screen was ignored.";
 	$Conf->confirmMsg($msg);
