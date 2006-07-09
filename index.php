@@ -197,7 +197,7 @@ if ($Me->isPC) { ?>
 <?php } ?>
 
 
-<?php if ($Me->isAuthor || $Conf->timeStartPaper() >= 0) { ?>
+<?php if ($Me->isAuthor || $Conf->timeStartPaper() > 0) { ?>
 <div class='home_tasks' id='home_tasks_author'>
   <div class='taskname'><h2>Tasks for Authors</h2></div>
   <div class='taskdetail'>
