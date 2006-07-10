@@ -92,7 +92,7 @@ as the contact information for this paper.</p>
 
 <table class='aumanage'>
 <tr>
-  <td class='<?php echo pt_caption_class("title") ?>'>Title*:</td>
+  <td class='<?php echo pt_caption_class("title") ?>'>Title:</td>
   <td class='pt_entry'><input class='textlite' type='text' name='title' id='title' value="<?php echo pt_data_html("title") ?>" onchange='highlightUpdate()' size='60' /></td>
 </tr>
 
@@ -103,12 +103,12 @@ as the contact information for this paper.</p>
 </tr>
 
 <tr>
-  <td class='<?php echo pt_caption_class("abstract") ?>'>Abstract*:</td>
+  <td class='<?php echo pt_caption_class("abstract") ?>'>Abstract:</td>
   <td class='pt_entry'><textarea class='textlite' name='abstract' rows='5' onchange='highlightUpdate()'><?php echo pt_data_html("abstract") ?></textarea></td>
 </tr>
 
 <tr>
-  <td class='<?php echo pt_caption_class("authorInformation") ?>'>Author&nbsp;information*:</td>
+  <td class='<?php echo pt_caption_class("authorInformation") ?>'>Author&nbsp;information:</td>
   <td class='pt_entry'><textarea class='textlite' name='authorInformation' rows='5' onchange='highlightUpdate()'><?php echo pt_data_html("authorInformation") ?></textarea></td>
   <td class='pt_hint'>List the paper's authors one per line, including affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
 Ludwig van Beethoven (Colorado)
