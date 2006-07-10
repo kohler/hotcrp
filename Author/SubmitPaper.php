@@ -110,7 +110,7 @@ as the contact information for this paper.</p>
 <tr>
   <td class='<?php echo pt_caption_class("authorInformation") ?>'>Author&nbsp;information*:</td>
   <td class='pt_entry'><textarea class='textlite' name='authorInformation' rows='5' onchange='highlightUpdate()'><?php echo pt_data_html("authorInformation") ?></textarea></td>
-  <td class='pt_hint'>List all of the paper's authors with affiliations, one per line.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
+  <td class='pt_hint'>List the paper's authors one per line, with their affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
 Ludwig van Beethoven (Colorado)
 Zhang, Ping Yen (INRIA)</pre></td>
 </tr>

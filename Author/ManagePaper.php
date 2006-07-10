@@ -315,7 +315,7 @@ if ($OK) {
     else
 	echo authorTable($prow->authorInformation);
 ?></td>
-  <?php if ($can_update) { ?><td class='pt_hint'>List the paper's authors and affiliations, one per line.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
+  <?php if ($can_update) { ?><td class='pt_hint'>List the paper's authors one per line, with their affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
 Ludwig van Beethoven (Colorado)
 Zhang, Ping Yen (INRIA)</pre></td><?php } ?>
 </tr>
