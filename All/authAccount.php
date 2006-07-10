@@ -47,7 +47,7 @@ if (!$_SESSION["Me"]->valid()) {
     exit;
 }
 
-if (IsSet($_REQUEST["forgot"])) {
+if (isset($_REQUEST["forgot"])) {
     $_SESSION["Me"]->sendAccountInfo($Conf);
     $Conf->log("Sent password", $_SESSION["Me"]);
     $Conf->confirmMsg("The account information for " . $_REQUEST["loginEmail"] . " has been emailed to that address.  When you receive that email, return here to complete the login process.");
@@ -55,7 +55,7 @@ if (IsSet($_REQUEST["forgot"])) {
     exit;
 }
 
-if (!IsSet($_REQUEST["password"]) || $_REQUEST["password"] == "") {
+if (!isset($_REQUEST["password"]) || $_REQUEST["password"] == "") {
     $Conf->errorMsg("Enter your password, or select \"Mail me my password\".");
     include('login.php');
     exit;
