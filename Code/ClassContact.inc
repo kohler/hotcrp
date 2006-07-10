@@ -568,5 +568,3 @@ class Contact {
       print "</table>";
     }
 }
-
-?>

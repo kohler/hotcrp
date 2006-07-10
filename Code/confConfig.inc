@@ -95,4 +95,3 @@ $Conf->allowEmail = 1;
 // This is where dumps of the database are placed
 //
 $Conf->dbDumpDir="/var/spool/conference";
-?>

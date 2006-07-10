@@ -144,5 +144,3 @@ if (!IsSet($_SESSION['AskedYouToUpdateContactInfo']))
 
 if (!IsSet($_SESSION['ShowChairGrades']))
     $_SESSION['ShowChairGrades'] = 0;
-
-?>

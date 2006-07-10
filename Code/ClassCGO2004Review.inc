@@ -345,6 +345,3 @@ class CGO36Review extends ConferenceReview {
       $this->printTableFooter();
     }
 }
-
-
-?>

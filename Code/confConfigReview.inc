@@ -34,5 +34,3 @@ function& ReviewFactoryById($conf, $reviewId)
     return 0;
   }
 }
-
-?>

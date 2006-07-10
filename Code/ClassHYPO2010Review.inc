@@ -349,6 +349,3 @@ class HYPO2010Review extends ConferenceReview {
       $this->printTableFooter();
     }
 }
-
-
-?>

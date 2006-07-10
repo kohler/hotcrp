@@ -287,6 +287,3 @@ class ISCA2002Review extends ConferenceReview {
       $this->printTableFooter();
     }
 }
-
-
-?>
