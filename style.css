@@ -429,7 +429,7 @@ table.review td.form_entry {
 }
 
 td.pt_id, table.review td.form_id {
-	text-align: center;
+	text-align: right;
 	border: 1px solid #cccccc;
 }
 td h2, td h3 {

@@ -248,7 +248,7 @@ if ($OK) {
 <table class='aumanage'>
 <tr>
   <td class='pt_id'><h2>#$paperId</h2></td>
-  <td colspan='2'><h2>", htmlspecialchars($prow->title), "</h2></td>\n</tr>\n";
+  <td class='pt_entry' colspan='2'><h2>", htmlspecialchars($prow->title), "</h2></td>\n</tr>\n";
     
     if ($can_update) {
 	echo "<tr>\n  <td class='", pt_caption_class('title'), "'>Title:</td>\n";

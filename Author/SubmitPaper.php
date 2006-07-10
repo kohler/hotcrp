@@ -86,20 +86,9 @@ else if (!$can_start)
     $Conf->warnMsg("The <a href='../All/ImportantDates.php'>deadline</a> for starting new papers has passed, but you can still submit a new paper in your capacity as PC Chair or PC Chair's Assistant.");
 ?>
 
-<p>
-You can start new paper submissions
-<?php  echo $Conf->printTimeRange('startPaperSubmission') ?>.
-<br>
-You can finalize those submissions (including uploading new
-				    copies of your paper)
-<?php echo $Conf->printTimeRange('updatePaperSubmission') ?>.
-</p>
-
 <form method='post' action='SubmitPaper.php' enctype='multipart/form-data'>
-<p>
-Enter the following information. We will use your contact information
-as the contact information for this paper.
-</p>
+<p>Enter the following information. We will use your contact information
+as the contact information for this paper.</p>
 
 <table class='aumanage'>
 <tr>
