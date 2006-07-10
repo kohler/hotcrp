@@ -20,12 +20,14 @@ $finalizable = $Conf->timeFinalizePaper();
 
 function get_prow($paperId) {
     global $Conf, $prow, $OK, $updatable, $can_update, $finalized, $withdrawn, $Me;
-    if (!isset($prow) && $OK)
-	if (isset($prow = $Conf->getPaperRow($paperId, $Me->contactId))) {
+    if (!isset($prow) && $OK) {
+	$prow = $Conf->getPaperRow($paperId, $Me->contactId);
+	if (isset($prow)) {
 	    $withdrawn = $prow->withdrawn > 0;
 	    $finalized = $prow->acknowledged > 0;
 	    $can_update = ($updatable || $Me->amAssistant()) && !$withdrawn && !$finalized;
 	}
+    }
  }
 
 function pt_caption_class($what) {
