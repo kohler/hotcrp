@@ -109,15 +109,15 @@ if ($prow->reviewType != null) {
  } ?></td>
 
 
-<td class='view_right' rowspan='4'><table>
+<td class='view_right' rowspan='6'><table>
 
-<tr>
+<tr class='pt_abstract'>
   <td class='pt_caption'>Abstract:</td>
   <td class='pt_entry'><?php echo htmlspecialchars($prow->abstract) ?></td>
 </tr>
 
 <?php if ($Me->canViewAuthors($prow, $Conf)) { ?>
-<tr>
+<tr class='pt_contactAuthors'>
   <td class='pt_caption'>Contact&nbsp;authors:</td>
   <td class='pt_entry'><?php {
     $q = "select firstName, lastName, email
@@ -134,13 +134,13 @@ if ($prow->reviewType != null) {
   } ?></td>
 </tr>
 
-<tr>
+<tr class='pt_authors'>
   <td class='pt_caption'>Authors:</td>
   <td class='pt_entry'><?php echo authorTable($prow->authorInformation) ?></td>
 </tr>
 
 <?php if ($prow->collaborators) { ?>
-<tr>
+<tr class='pt_collaborators'>
   <td class='pt_caption'>Collaborators:</td>
   <td class='pt_entry'><?php echo authorTable($prow->collaborators) ?></td>
 </tr>
@@ -148,7 +148,7 @@ if ($prow->reviewType != null) {
 
 <?php
 if ($topicTable = topicTable($paperId, -1)) { 
-    echo "<tr>
+    echo "<tr class='pt_topics'>
   <td class='pt_caption'>Topics:</td>
   <td class='pt_entry' id='topictable'>", $topicTable, "</td>\n</tr>\n";
  }
@@ -189,13 +189,13 @@ if ($prow->author > 0 || $Me->amAssistant())
     $actions[] = "<form method='get' action='${ConfSiteBase}Author/ManagePaper.php'><input type='hidden' name='paperId' value='$paperId' /><input class='button' type='submit' value='Edit submission' name='edit' /></form>";
 
 if (isset($actions))
-    echo "<tr>
+    echo "<tr class='pt_actions'>
   <td class='pt_caption'>Actions:</td>
   <td class='pt_entry'>", join(" ", $actions), "</td>
 </tr>\n";
 
 if ($Me->canSetOutcome($prow)) {
-    echo "<tr>
+    echo "<tr class='pt_outcome'>
   <td class='pt_caption'>Outcome:</td>
   <td class='pt_entry'><form method='get' action='ViewPaper.php'><input type='hidden' name='paperId' value='$paperId' /><select class='outcome' name='outcome'>\n";
     $rf = reviewForm();
@@ -208,7 +208,8 @@ if ($Me->canSetOutcome($prow)) {
     echo "  </select>&nbsp;<input class='button' type='submit' name='setoutcome' value='Set outcome' /></form></td>\n</tr>\n";
  }
 
-?></table>
+?>
+</table>
 </form>
 
 <?php

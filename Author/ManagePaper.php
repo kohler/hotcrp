@@ -175,7 +175,7 @@ if (isset($_REQUEST['finalize'])) {
 	    if ($result->numRows() != 1 || $row[0] == 0) {
 		$Conf->errorMsg("You must upload a paper before you can submit.");
 		$PaperError["paper"] = 1;
-	    } else if ($row[1] == 0)
+	    } else if ($row[1] == "")
 		$Conf->errorMsg("You must enter something in the Collaborators field before you can submit.  If none of the authors really have collaborators, just enter \"None\".");
 	    else {
 		$result = $Conf->qe("update Paper set acknowledged=" . time() . " where paperId=$paperId", "while submitting paper");

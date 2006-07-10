@@ -792,9 +792,8 @@ class Conference {
     // Conference header, footer
     //
     function header_head($title) {
-	// echo '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">';
 	if (!$this->headerPrinted) {
-	    echo "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">\n";
+	    echo "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n";
 	    echo "<html>\n<head>\n";
 	    echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n";
 	    echo "<meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />\n";

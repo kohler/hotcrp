@@ -282,6 +282,12 @@ td.pt_hint {
 	padding-left: 1em;
 	font-size: small;
 }
+tr.pt_actions td, tr.pt_outcome td {
+	white-space: nowrap;
+}
+tr.pt_abstract td.pt_entry {
+	font-size: 85%;
+}
 pre.entryexample {
 	padding: 0.5em;
 	background: #eeeeee;
@@ -431,6 +437,7 @@ table.review td.form_entry {
 td.pt_id, table.review td.form_id {
 	text-align: right;
 	border: 1px solid #cccccc;
+	padding-right: 0.5em;
 }
 td h2, td h3 {
 	margin-top: 0px;

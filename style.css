@@ -282,6 +282,12 @@ td.pt_hint {
 	padding-left: 1em;
 	font-size: small;
 }
+tr.pt_actions td, tr.pt_outcome td {
+	white-space: nowrap;
+}
+tr.pt_abstract td.pt_entry {
+	font-size: 85%;
+}
 pre.entryexample {
 	padding: 0.5em;
 	background: #eeeeee;
