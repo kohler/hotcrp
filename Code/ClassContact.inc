@@ -359,7 +359,7 @@ class Contact {
 	    $prow = $conf->getPaperRow($paperId, $this->contactId);
 	if ($prow->reviewType > 0)
 	    return true;
-	else if (!$this->isPC || (!$this->amAssistant() && !$conf->canPCReviewAnyPaper())) {
+	else if (!$this->isPC || (!$this->amAssistant() && !$conf->timePCReviewAnyPaper())) {
 	    $error = "You are not a reviewer for paper #$paperId.";
 	    return false;
 	} else if ($prow->author > 0) {

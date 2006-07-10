@@ -401,6 +401,9 @@ class Conference {
     function timeAuthorViewDecision() {
 	return $this->validPeriod('authorViewDecision') > 0;
     }
+    function timePCReviewAnyPaper() {
+	return $this->validPeriod('PCReviewAnyPaper') > 0;
+    }
     function timeReviewPaper($isPC = false, $requested = true, $trueDeadline = true) {
 	if ($isPC && $requested) {
 	    $d = ($trueDeadline ? "PCSubmitReviewDeadline" : "PCSubmitReview");
