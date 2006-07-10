@@ -4,9 +4,9 @@
 // Database configuration information
 //
 $dbHost = "127.0.0.1";
-$dbUser = "TestConf";
-$dbPassword = "TestConf";
-$dbName = "TestConf";
+$dbUser = "HotNetsV";
+$dbPassword = "HotNetsV";
+$dbName = "HotNetsV";
 
 //
 // if setupPhase == 1, anyone who logs in has chair powers.
@@ -20,9 +20,9 @@ $Conf->setupPhase = 0;
 // You need a unique session name to distinguish conference sessions
 // running on the same server. DO NOT PUT SPACES IN THE SESSION NAME!!
 //
-$Conf->sessionName = "TestConf";
-$Conf->shortName = "Test Conference";
-$Conf->longName = "Test Conference 2006";
+$Conf->sessionName = "HotNetsV";
+$Conf->shortName = "HotNets V";
+$Conf->longName = "HotNets V";
 $Conf->blindSubmission = 1;
 
 // allowed paper formats
@@ -59,7 +59,7 @@ $hostname = $posixinfo['nodename'];
 // This is the location of the hypothetical conference
 // the test server
 //
-$Conf->paperSite = "http://www.read.cs.ucla.edu/testconf";
+$Conf->paperSite = "http://www.read.cs.ucla.edu/hotnets5";
 
 //
 // The conference site (i.e. CFP, registration)

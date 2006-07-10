@@ -110,7 +110,7 @@ as the contact information for this paper.</p>
 <tr>
   <td class='<?php echo pt_caption_class("authorInformation") ?>'>Author&nbsp;information*:</td>
   <td class='pt_entry'><textarea class='textlite' name='authorInformation' rows='5' onchange='highlightUpdate()'><?php echo pt_data_html("authorInformation") ?></textarea></td>
-  <td class='pt_hint'>List the paper's authors one per line, with their affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
+  <td class='pt_hint'>List the paper's authors one per line, including affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
 Ludwig van Beethoven (Colorado)
 Zhang, Ping Yen (INRIA)</pre></td>
 </tr>
@@ -118,7 +118,7 @@ Zhang, Ping Yen (INRIA)</pre></td>
 <tr>
   <td class='<?php echo pt_caption_class("collaborators") ?>'>Collaborators:</td>
   <td class='pt_entry'><textarea class='textlite' name='collaborators' rows='5' onchange='highlightUpdate()'><?php echo pt_data_html("collaborators") ?></textarea></td>
-  <td class='pt_hint'>List the paper authors' advisors, students, and other recent coauthors and collaborators.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td>
+  <td class='pt_hint'>List the authors' recent coauthors and collaborators, and any advisor or student relationships.  Be sure to include PC members when appropriate.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td>
 </tr>
 
 <?php
