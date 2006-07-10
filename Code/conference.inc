@@ -584,7 +584,7 @@ class Conference {
 	if (count($paperIds) == 0)
 	    return new PEAR_Error("No papers selected for download.");
 	else if (count($paperIds) == 1)
-	    return __downloadPaper($paperIds[0], 1);
+	    return $this->__downloadPaper($paperIds[0], 1);
 
 	// paper query
 	$q = "select Paper.paperId, paper, mimetype from PaperStorage join Paper using (paperStorageId) where (";
