@@ -204,8 +204,9 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
 <tr>
   <td class='form_caption'>Collaborators and&nbsp;other&nbsp;affiliations:</td>
   <td class='form_entry' colspan='3'><textarea class='textlite' name='collaborators' rows='5'><?php echo htmlspecialchars($Me->collaborators) ?></textarea></td>
-  <td class='form_hint'>List advisors, students, and other recent 
-    coauthors and collaborators one per line.  We use this information to
+  <td class='form_hint'>List your recent (~2 years) coauthors, collaborators,
+    and affiliations, and any advisor or student relationships, one per line.
+    We use this information to
     avoid conflicts of interest when assigning reviews.  Example:
     <pre class='entryexample'>Bob Roberts (UCLA)
 Ludwig van Beethoven (Colorado)

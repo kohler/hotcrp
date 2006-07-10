@@ -118,7 +118,7 @@ Zhang, Ping Yen (INRIA)</pre></td>
 <tr>
   <td class='<?php echo pt_caption_class("collaborators") ?>'>Collaborators:</td>
   <td class='pt_entry'><textarea class='textlite' name='collaborators' rows='5' onchange='highlightUpdate()'><?php echo pt_data_html("collaborators") ?></textarea></td>
-  <td class='pt_hint'>List the authors' recent coauthors and collaborators, and any advisor or student relationships.  Be sure to include PC members when appropriate.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td>
+  <td class='pt_hint'>List the authors' recent (~2 years) coauthors and collaborators, and any advisor or student relationships.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td>
 </tr>
 
 <?php

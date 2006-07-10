@@ -330,7 +330,7 @@ Zhang, Ping Yen (INRIA)</pre></td><?php } ?>
     else
 	echo authorTable($prow->collaborators);
 ?></td>
-  <?php if ($can_update) { ?><td class='pt_hint'>List the authors' recent coauthors and collaborators, and any advisor or student relationships.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td><?php } ?>
+  <?php if ($can_update) { ?><td class='pt_hint'>List the authors' recent (~2 years) coauthors and collaborators, and any advisor or student relationships.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td><?php } ?>
 </tr>
 
 <?php
