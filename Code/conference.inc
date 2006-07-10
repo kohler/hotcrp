@@ -566,7 +566,7 @@ class Conference {
     }
 
     function downloadPaper($paperId, $saveit) {
-	$result = $this->downloadPaper($paperId, $saveit);
+	$result = $this->__downloadPaper($paperId, $saveit);
 	if (DB::isError($result))
 	    $this->errorMsg($this->dbErrorText($result, "while downloading paper", 1));
 	else if (PEAR::isError($result))
