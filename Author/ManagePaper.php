@@ -167,7 +167,7 @@ if (isset($_REQUEST['finalize'])) {
     else if (!$finalizable && !$override)
 	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for submitting papers has passed.$overrideMsg");
     else {
-	$result = $Conf->qe("select length(paper) as size from Paper left join PaperStorage using (paperStorageId) where Paper.paperId=$paperId", "while submitting paper");
+	$result = $Conf->qe("select length(paper) as size, collaborators from Paper left join PaperStorage using (paperStorageId) where Paper.paperId=$paperId", "while submitting paper");
 	if (DB::isError($result))
 	    /* do nothing */;
 	else {
@@ -175,7 +175,9 @@ if (isset($_REQUEST['finalize'])) {
 	    if ($result->numRows() != 1 || $row[0] == 0) {
 		$Conf->errorMsg("You must upload a paper before you can submit.");
 		$PaperError["paper"] = 1;
-	    } else {
+	    } else if ($row[1] == 0)
+		$Conf->errorMsg("You must enter something in the Collaborators field before you can submit.  If none of the authors really have collaborators, just enter \"None\".");
+	    else {
 		$result = $Conf->qe("update Paper set acknowledged=" . time() . " where paperId=$paperId", "while submitting paper");
 		if (!DB::isError($result))
 		    $Conf->confirmMsg("Paper submitted.");

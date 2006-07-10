@@ -203,7 +203,6 @@ if ($Me->canSetOutcome($prow)) {
     $outcomes = array_keys($outcomeMap);
     sort($outcomes);
     $outcomes = array_unique(array_merge(array(0), $outcomes));
-    echo $prow->outcome;
     foreach ($outcomes as $key)
 	echo "    <option value='", $key, "'", ($prow->outcome == $key ? " selected='selected'" : ""), ">", htmlspecialchars($outcomeMap[$key]), "</option>\n";
     echo "  </select>&nbsp;<input class='button' type='submit' name='setoutcome' value='Set outcome' /></form></td>\n</tr>\n";

@@ -3,5 +3,10 @@
 ##
 Options Indexes
 IndexIgnore .htaccess .sh *.inc */.??* *~ *# */HEADER* */README* */_vti*
+<Files ~ "^CVS$">
+	Order allow,deny
+	Deny from all
+	Satisfy All
+</Files>
 php_flag magic_quotes_gpc off
 #CharsetDisable On
