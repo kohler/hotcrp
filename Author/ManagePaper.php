@@ -248,10 +248,10 @@ if ($OK) {
 <table class='aumanage'>
 <tr>
   <td class='pt_id'><h2>#$paperId</h2></td>
-  <td><h2>", htmlspecialchars($prow->title), "</h2></td>\n</tr>\n";
+  <td colspan='2'><h2>", htmlspecialchars($prow->title), "</h2></td>\n</tr>\n";
     
     if ($can_update) {
-	echo "<tr>\n  <td class='", pt_caption_class('title'), "'>Title*:</td>\n";
+	echo "<tr>\n  <td class='", pt_caption_class('title'), "'>Title:</td>\n";
 	echo "  <td class='pt_entry'><input class='textlite' type='text' name='title' id='title' value=\"", pt_data_html('title', $prow), "\" onchange='highlightUpdate()' size='60' /></td>\n";
 	echo "</tr>\n";
     }
@@ -280,7 +280,7 @@ if ($OK) {
 <?php } ?>
 
 <tr>
-  <td class='<?php echo pt_caption_class('abstract') ?>'>Abstract<?php if ($can_update) echo "*" ?>:</td>
+  <td class='<?php echo pt_caption_class('abstract') ?>'>Abstract:</td>
   <td class='pt_entry'><?php
      if ($can_update)
 	 echo "<textarea class='textlite' name='abstract' rows='5' onchange='highlightUpdate()'>";
@@ -308,14 +308,14 @@ if ($OK) {
 </tr>
 
 <tr>
-  <td class='<?php echo pt_caption_class('authorInformation') ?>'>Authors<?php if ($can_update) echo "*" ?>:</td>
+  <td class='<?php echo pt_caption_class('authorInformation') ?>'>Authors:</td>
   <td class='pt_entry'><?php
     if ($can_update)
 	echo "<textarea class='textlite' name='authorInformation' rows='5' onchange='highlightUpdate()'>", pt_data_html('authorInformation', $prow), "</textarea>";
     else
 	echo authorTable($prow->authorInformation);
 ?></td>
-  <?php if ($can_update) { ?><td class='pt_hint'>List all of the paper's authors with affiliations, one per line.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
+  <?php if ($can_update) { ?><td class='pt_hint'>List the paper's authors and affiliations, one per line.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
 Ludwig van Beethoven (Colorado)
 Zhang, Ping Yen (INRIA)</pre></td><?php } ?>
 </tr>
