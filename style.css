@@ -126,7 +126,8 @@ input.button_alert {
 	border-bottom: 2px solid #996666;
 	border-right: 3px solid #996666;
 }
-a.download, a.review_start, a.review_comp, a.review_edit, a.review_view {
+a.download, a.review_start, a.review_comp, a.review_edit, a.review_view,
+input.button_small {
 	font-size: small;
 	padding: 1px 0.25em;
 	background: #ffff99;
@@ -160,6 +161,7 @@ tr {
 td.form_caption {
 	text-align: right;
 	padding-right: 0.25em;
+	font-weight: bold;
 }
 td.error, td.error input {
 	font-weight: bold;
@@ -271,6 +273,13 @@ td.pt_entry {
 	padding-left: 0.25em;
 	padding-right: 2em;
 }
+table.auview td.pt_entry {
+	padding-right: 0em;
+}
+table.auview td.pt_caption {
+	padding-left: 0.25em;
+	width: auto;
+}
 td.pt_entry form {
 	display: inline;
 	padding-right: 0.5em;
@@ -296,7 +305,7 @@ pre.entryexample {
 	background: #eeeeee;
 }
 
-table.topictable {
+table.compact, table.topictable {
 	padding: 0em;
 	border-spacing: 0px;
 }
@@ -369,11 +378,6 @@ tr.pl_headrow td, tr.pl_headrow th, table.setreviewform th {
 	margin-bottom: 4px;
 }
 
-table.reviewform td.form_caption, table.setreviewform td.form_caption,
-table.review td.form_caption {
-	font-weight: bold;
-}
-
 div.error div.parseerr p, div.confirm div.parseerr p {
 	margin: 0px;
 	padding: 0px 0px 0px 3em;
@@ -386,7 +390,7 @@ div.error pre {
 	border: 1px dashed #eecccc;
 }
 
-div#review hr, div#view hr, div#aumg hr {
+hr {
 	margin: 0.75em 0em;
 	border: none;
 	border-top: 1px solid #cc9900;
@@ -395,7 +399,7 @@ form.downloadreviewform input#downloadForm {
 	margin-right: 3em;
 }
 
-div#review table.reviewform {
+div#review table.revtop {
 	width: 60%;
 	float: left;
 }
@@ -483,6 +487,17 @@ a.pl_sort_def_rev {
 	background: url("../images/sortup.png") 100% 75% no-repeat;
 	text-decoration: none;
 	color: #660000;
+}
+
+span.folded span.extension, span.folded a.unfolder {
+	display: none;
+}
+span.unfolded span.ellipsis, span.unfolded a.folder {
+	display: none;
+}
+
+div#offrev form.upload {
+	margin-left: 3em;
 }
 
 /*@media screen {

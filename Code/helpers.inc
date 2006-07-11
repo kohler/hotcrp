@@ -65,7 +65,7 @@ $reviewButton[1] = array
      "conflict" => "<button class='review_conflict' type='button' disabled='disabled'>Review</button>",
      "" => "<button class='review_other' type='button' disabled='disabled'>Review</button>");
 
-function reviewType($paperId, $row) {
+function reviewType($paperId, $row, $long = 0) {
     if ($row->reviewType == REVIEW_PRIMARY)
 	return "<span class='rtype rtype_pri'>Primary</span>";
     else if ($row->reviewType == REVIEW_SECONDARY)
@@ -76,17 +76,17 @@ function reviewType($paperId, $row) {
 	return "<span class='author'>Author</span>";
     else if ($row->conflict > 0)
 	return "<span class='conflict'>Conflict</span>";
-    else if (!($row->reviewId === null))
+    else if (!($row->reviewId === null) || $long)
 	return "<span class='rtype rtype_pc'>PC</span>";
     else
 	return "";
 }
 
-function reviewStatus($row, $when = 0, $conf = null) {
+function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
     global $Conf;
     $conf = ($conf ? $conf : $Conf);
 
-    if (!isset($row->reviewType) && !$row->reviewId)
+    if (!isset($row->reviewType) && !$row->reviewId && !$long)
 	return "";
     else if ($row->reviewSubmitted === null)
 	return "<span class='rstat rstat_no'>Not started</span>";
@@ -303,4 +303,23 @@ function htmlWrapText($text) {
 	    $x = tabLength($line);
 	} 
     }
+}
+
+function htmlFold($text, $maxWords) {
+    global $foldId;
+
+    if (strlen($text) < $maxWords * 7)
+	return $text;
+    $words = preg_split('/\\s+/', $text);
+    if (count($words) < $maxWords)
+	return $text;
+
+    $x = join(" ", array_slice($words, 0, $maxWords));
+    
+    $fid = (isset($foldId) ? $foldId : 1);
+    $foldId = $fid + 1;
+
+    $x .= "<span id='fold$fid' class='folded'><span class='ellipsis'> ... </span><a class='folder' href='javascript:fold($fid, 0)'>[More]</a><span class='extension'> " . join(" ", array_slice($words, $maxWords)) . " </span><a class='unfolder' href='javascript:fold($fid, 1)'>[Less]</a></span>";
+    
+    return $x;
 }

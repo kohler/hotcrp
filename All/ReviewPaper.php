@@ -8,7 +8,7 @@ function doGoPaper() {
     echo "<div class='gopaper'>", goPaperForm(1), "</div><div class='clear'></div>\n\n";
 }
     
-function initialError($what, &$tf) {
+function initialError($what, &$tf = null) {
     global $Conf, $paperId;
     if ($tf == null) {
 	$title = ($paperId <= 0 ? "Review Papers" : "Review Paper #$paperId");
@@ -39,7 +39,7 @@ function get_prow($paperIdIn, &$tf = null) {
     }
 }
 
-function get_rrow($paperId, $reviewId = -1) {
+function get_rrow($paperId, $reviewId = -1, $tf = null) {
     global $Conf, $rrow, $Me;
     $where = ($reviewId > 0 ? "reviewId=$reviewId" : "paperId=$paperId and PaperReview.contactId=$Me->contactId");
     $result = $Conf->qe("select PaperReview.*, firstName, lastName, email
@@ -47,7 +47,7 @@ function get_rrow($paperId, $reviewId = -1) {
 		where $where", "while retrieving review");
     if (DB::isError($result) || $result->numRows() == 0) {
 	if ($reviewId > 0)
-	    initialError("No such paper review #$reviewId.");
+	    initialError("No such paper review #$reviewId.", $tf);
 	$rrow = null;
     } else {
 	$rrow = $result->fetchRow(DB_FETCHMODE_OBJECT);
@@ -64,7 +64,7 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'])) {
     $paperId = $originalPaperId;
     while ($rf->parseTextForm($tf, $originalPaperId, $Conf)) {
 	get_prow($_REQUEST['paperId'], $tf);
-	get_rrow($_REQUEST['paperId'], $tf);
+	get_rrow($_REQUEST['paperId'], -1, $tf);
 	if ($prow != null && $rf->validateRequest($rrow, 0, $tf)) {
 	    $result = $rf->saveRequest($prow, $Me->contactId, $rrow, 0);
 	    if (!DB::isError($result))
@@ -73,6 +73,8 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'])) {
 	$paperId = -1;
     }
     $rf->parseTextFormErrors($tf, $Conf);
+    if (isset($_REQUEST['redirect']) && $_REQUEST['redirect'] == 'offline')
+	go("../OfflineReview.php");
  }
 
 $paperId = $originalPaperId;
@@ -89,7 +91,9 @@ if (isset($_REQUEST["reviewId"])) {
     $prow = $rrow = null;
 
 if (isset($_REQUEST['downloadForm'])) {
-    $x = $rf->textForm($paperId, $prow, $rrow, 1, $Conf);
+    $isReviewer = ($Me->isReviewer || $Me->isPC);
+    $x = $rf->textFormHeader($Conf);
+    $x .= $rf->textForm($paperId, $Conf, $prow, $rrow, $isReviewer, $isReviewer);
     header("Content-Description: PHP Generated Data");
     header("Content-Disposition: attachment; filename=" . $Conf->downloadPrefix . "review" . ($paperId > 0 ? "-$paperId.txt" : ".txt"));
     header("Content-Type: text/plain");
@@ -131,7 +135,7 @@ if (!$Me->timeReview($prow, $Conf))
 
 ?>
 
-<table class='reviewform'>
+<table class='revtop'>
 <tr class='rev_title'>
   <td class='pt_id'><h2>Review</h2></td>
   <td class='form_entry'><h2>for <a href='ViewPaper.php?paperId=<?php echo $paperId ?>'>Paper #<?php echo $paperId ?></a></h2></td>
@@ -146,12 +150,12 @@ if (!$Me->timeReview($prow, $Conf))
 								
 <tr class='rev_type'>
   <td class='form_caption'>Review&nbsp;type:</td>
-  <td class='form_entry'><?php echo reviewType($paperId, $prow) ?></td>
+  <td class='form_entry'><?php echo reviewType($paperId, $prow, true) ?></td>
 </tr>
 
 <tr class='rev_status'>
   <td class='form_caption'>Review&nbsp;status:</td>
-  <td class='form_entry'><?php echo reviewStatus((isset($rrow) ? $rrow : $prow), 1) ?></td>
+  <td class='form_entry'><?php echo reviewStatus((isset($rrow) ? $rrow : $prow), true, true) ?></td>
 </tr>
 
 <tr class='rev_download'>
@@ -159,7 +163,7 @@ if (!$Me->timeReview($prow, $Conf))
   <td class='form_entry'>
     <form class='downloadreviewform' action='ReviewPaper.php' method='get'>
       <input type='hidden' name='paperId' value='<?php echo $paperId ?>' />
-      <input class='button_default' type='submit' value='Download review form' name='downloadForm' id='downloadForm' />
+      <input class='button_small' type='submit' value='Download review' name='downloadForm' id='downloadForm' />
     </form>
   </td>
 </tr>
@@ -168,11 +172,12 @@ if (!$Me->timeReview($prow, $Conf))
   <td class='form_entry'>
     <form class='downloadreviewform' action='ReviewPaper.php' method='post' enctype='multipart/form-data'>
       <input type='hidden' name='paperId' value='<?php echo $paperId ?>' />
-      <input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp;<input class='button_default' type='submit' value='Upload review form' name='uploadForm' />
+      <input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp;<input class='button_small' type='submit' value='Upload review' name='uploadForm' />
     </form>
   </td>
 </tr>
 </table>
+
 
 <table class='auview'>
 <tr>
@@ -194,7 +199,7 @@ if (!$Me->timeReview($prow, $Conf))
 
 <tr class='pt_abstract'>
   <td class='pt_caption'>Abstract:</td>
-  <td class='pt_entry'><?php echo htmlspecialchars($prow->abstract) ?></td>
+  <td class='pt_entry'><?php echo htmlFold(htmlspecialchars($prow->abstract), 25) ?></td>
 </tr>
 
 <?php if ($Me->canViewAuthors($prow, $Conf)) { ?>
@@ -217,10 +222,9 @@ if ($topicTable = topicTable($paperId, -1)) {
 </tr>\n";
  }
 ?>
-
 </table>
 
-<hr/ class='clear'>
+<hr class='clear' />
 
 <form action='ReviewPaper.php' method='post' enctype='multipart/form-data'>
 <?php
@@ -238,7 +242,7 @@ if ($Me->timeReview($prow, $Conf) || $Me->amAssistant()) {
   <td class='form_caption'>Actions:</td>
   <td class='form_entry'><table class='pt_buttons'>
     <tr>\n";
-    if (!$rrow->reviewSubmitted) {
+    if (!isset($rrow) || !$rrow->reviewSubmitted) {
 	echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save changes' name='save' /></td>
       <td class='ptb_button'><input class='button_default' type='submit' value='Submit' name='submit' /></td>
     </tr>

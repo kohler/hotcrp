@@ -186,20 +186,30 @@ class ReviewForm {
 	    return $conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contactId, " . substr($q, 0, -2), ", reviewLastModified=current_timestamp while storing review");
     }
 
+
+    function textFormHeader($conf, $multiple = false) {
+	global $Conf;
+	$conf = ($conf ? $conf : $Conf);
+	
+	$x = "==+== $conf->shortName Paper Review Form
+==-== Fill out lettered sections A through " . chr(65 + count($this->fieldOrder) - 1) . ".\n";
+	if (!$multiple)
+	    $x .= "==-== To review multiple papers, duplicate the form body from \"Begin Review\"
+==-== through \"End Review\".  Make sure to change the paper number.\n";
+	$x .= "==-== DO NOT DELETE, ALTER, OR ADD LINES BEGINNING WITH \"==+==\"!
+==-== When you are done, upload the review form at this address:
+==-== $conf->paperSite/OfflineReview.php
+==-== That site also has further guidance on the review form.\n\n";
+	return $x;
+    }
     
-    function textForm($paperId, $prow, $rrow, $useRequest = 0, $conf = null,
-		      $header = 1) {
+    function textForm($paperId, $conf, $prow, $rrow,
+		      $useRequest = false, $reviewer = true) {
 	global $ReviewFormError, $Conf;
 	$conf = ($conf ? $conf : $Conf);
 
-	if ($header)
-	    $x = "==+== " . $conf->shortName . " Paper Review Form
-==-== DO NOT DELETE, ALTER, OR INTRODUCE LINES BEGINNING WITH '==+=='!
-==-== Fill out lettered sections A through " . chr(65 + count($this->fieldOrder) - 1) . ".\n\n";
-	else
-	    $x = "";
-
-	$x .= "==+== =========================================================================
+	$x = "==+== =========================================================================
+==+== Begin Review
 
 ==+== Paper #";
 	if ($paperId > 0)
@@ -211,6 +221,8 @@ class ReviewForm {
 
 	$i = 0;
 	foreach ($this->fieldOrder as $field) {
+	    //if (!$reviewer && !$this->authorView[$field])
+	    //    continue;
 	    $x .= "\n==+== " . chr(65 + $i++) . ". " . $this->shortName[$field] . "\n";
 	    if (isset($this->options[$field]))
 		foreach ($this->options[$field] as $num => $value)
@@ -231,7 +243,7 @@ class ReviewForm {
 
 	    $x .= "\n";
 	}
-	return $x;
+	return $x . "\n==+== End Review\n";
     }
 
     function garbageMessage(&$tf, $lineno, &$garbage) {
@@ -380,6 +392,41 @@ class ReviewForm {
 	}
 
 	return $x . "</tr>\n";
+    }
+    
+    function webGuidanceRows($viewAllFields) {
+	global $ReviewFormError;
+	$x = '';
+	$needRow = 1;
+	
+	foreach ($this->fieldOrder as $field) {
+	    if (!$this->authorView[$field] && !$viewAllFields)
+		continue;
+	    $options = isset($this->options[$field]);
+	    if (!$this->description[$field] && !$options)
+		continue;
+	    
+	    $x .= "<tr class='rev_$field'>\n";
+	    $x .= "  <td class='form_caption rev_$field'>";
+	    $n = htmlspecialchars($this->shortName[$field]);
+	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))
+		$n = preg_replace("/\\s+/", "&nbsp;", $n);
+	    $x .= "$n:</td>\n";
+	    
+	    $x .= "  <td class='form_entry rev_$field'>";
+	    if ($this->description[$field])
+		$x .= "<div class='rev_description'>" . $this->description[$field] . "</div>";
+	    if ($options) {
+		$x .= "<div class='rev_options'>Choices are:";
+		foreach ($this->options[$field] as $num => $val)
+		    $x .= "<br/>\n$num. " . htmlspecialchars($val);
+		$x .= "</div>";
+	    }
+	    
+	    $x .= "</td>\n</tr>\n";
+	}
+
+	return $x;
     }
     
 }

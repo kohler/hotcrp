@@ -41,7 +41,8 @@ if (isset($_REQUEST["downloadReview"])) {
 		$errors[] = $errorText;
 	    else {
 		$rfSuffix = ($text == "" ? "-$row->paperId" : "s");
-		$text .= $rf->textForm($row->paperId, $row, $row, 0, $Conf, $text == "") . "\n";
+		$text .= $rf->textForm($row->paperId, $Conf, $row, $row,
+				       false, true) . "\n";
 	    }
 	}
 
@@ -51,6 +52,7 @@ if (isset($_REQUEST["downloadReview"])) {
 	else
 	    $Conf->errorMsg("No papers selected.");
     } else {
+	$text = $rf->textFormHeader($Conf, $rfSuffix == "s") . $text;
 	if (isset($errors)) {
 	    $e = "==-== Some review forms are missing due to errors in your paper selection:\n";
 	    foreach ($errors as $ee)

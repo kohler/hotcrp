@@ -97,12 +97,12 @@ class Contact {
 	$this->collaborators = '';
 	$this->anyTopicInterest = 0;
 	
-	$this->isAuthor = 0;
-	$this->isReviewer = 0;
-	$this->isPC = 0;
-	$this->isChair = 0;
-	$this->isAssistant = 0;
-	$this->chairMode = 0;
+	$this->isAuthor = false;
+	$this->isReviewer = false;
+	$this->isPC = false;
+	$this->isChair = false;
+	$this->isAssistant = false;
+	$this->chairMode = false;
     }
   
   function countRequestedReviews() {

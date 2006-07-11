@@ -795,12 +795,14 @@ class Conference {
     // Conference header, footer
     //
     function header_head($title) {
+	global $ConfSiteBase;
 	if (!$this->headerPrinted) {
 	    echo "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n";
 	    echo "<html>\n<head>\n";
 	    echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n";
 	    echo "<meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />\n";
 	    echo "<title>", $title, " - ", $this->shortName, "</title>\n";
+	    echo "<script src=\"${ConfSiteBase}script.js\" type=\"text/javascript\"></script>\n";
 	    echo $this->theme;
 	    $this->headerPrinted = 1;
 	}
