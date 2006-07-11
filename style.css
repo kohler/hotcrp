@@ -2,8 +2,10 @@ body {
 	font-family: sans-serif;
 }
 
-div.clear {
+.clear {
 	clear: both;
+}
+div.clear {
 	margin: 0em;
 }
 
@@ -267,6 +269,7 @@ td.pt_caption {
 }
 td.pt_entry {
 	padding-left: 0.25em;
+	padding-right: 2em;
 }
 td.pt_entry form {
 	display: inline;
@@ -392,13 +395,18 @@ form.downloadreviewform input#downloadForm {
 	margin-right: 3em;
 }
 
+div#review table.reviewform {
+	width: 60%;
+	float: left;
+}
 div#review table.auview {
-	float: right;
 	background: #f5f5ff;
 	padding: 10px;
 	border: 1px solid #ccccff;
 	margin-top: 0.5em;
-	max-width: 40em;
+	width: 40%;
+	float: left;
+	margin-bottom: 0.75em;
 }
 
 span.autblentry {
@@ -413,6 +421,9 @@ div.plist_form {
 
 table.view {
 	border-spacing: 0px;
+}
+table.viewx {
+	float: left;
 }
 table.view td {
 	padding-bottom: 2px;
@@ -434,10 +445,13 @@ table.review td.form_entry {
 	padding-right: 3em;
 }
 
+td.pt_id, td.pt_caption {
+	width: 7em;
+}
 td.pt_id, table.review td.form_id {
 	text-align: right;
 	border: 1px solid #cccccc;
-	padding-right: 0.5em;
+	padding-right: 0.4em;
 }
 td h2, td h3 {
 	margin-top: 0px;

@@ -84,12 +84,13 @@ if (isset($_REQUEST['setoutcome'])) {
 ?>
 
 <table class='view'>
-
 <tr>
   <td class='pt_id'><h2>#<?php echo $paperId ?></h2></td>
   <td class='pt_entry' colspan='2'><h2><?php echo htmlspecialchars($prow->title) ?></h2></td>
 </tr>
+</table>
 
+<table class='viewx'>
 <tr>
   <td class='pt_caption'>Status:</td>
   <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, 1) ?><?php
@@ -107,54 +108,6 @@ if ($prow->reviewType != null) {
     else
 	echo "<br/>\nYou began a review for this paper.";
  } ?></td>
-
-
-<td class='view_right' rowspan='6'><table>
-
-<tr class='pt_abstract'>
-  <td class='pt_caption'>Abstract:</td>
-  <td class='pt_entry'><?php echo htmlspecialchars($prow->abstract) ?></td>
-</tr>
-
-<?php if ($Me->canViewAuthors($prow, $Conf)) { ?>
-<tr class='pt_contactAuthors'>
-  <td class='pt_caption'>Contact&nbsp;authors:</td>
-  <td class='pt_entry'><?php {
-    $q = "select firstName, lastName, email
-	from ContactInfo
-	join PaperConflict using (contactId)
-	where paperId=$paperId and author=1
-	order by lastName, firstName";
-    $result = $Conf->qe($q, "while finding contact authors");
-    if (!DB::isError($result) && $result->numRows() > 0) {
-	while ($row = $result->fetchRow())
-	    $aus[] = "$row[0] $row[1] ($row[2])";
-	echo authorTable($aus);
-    }
-  } ?></td>
-</tr>
-
-<tr class='pt_authors'>
-  <td class='pt_caption'>Authors:</td>
-  <td class='pt_entry'><?php echo authorTable($prow->authorInformation) ?></td>
-</tr>
-
-<?php if ($prow->collaborators) { ?>
-<tr class='pt_collaborators'>
-  <td class='pt_caption'>Collaborators:</td>
-  <td class='pt_entry'><?php echo authorTable($prow->collaborators) ?></td>
-</tr>
-<?php } } ?>
-
-<?php
-if ($topicTable = topicTable($paperId, -1)) { 
-    echo "<tr class='pt_topics'>
-  <td class='pt_caption'>Topics:</td>
-  <td class='pt_entry' id='topictable'>", $topicTable, "</td>\n</tr>\n";
- }
-?>
-
-</table></td></tr>
 
 
 <?php if (!$prow->withdrawn > 0 && $prow->size > 0) { ?>
@@ -210,6 +163,54 @@ if ($Me->canSetOutcome($prow)) {
 
 ?>
 </table>
+
+
+<table class='viewx'>
+<tr class='pt_abstract'>
+  <td class='pt_caption'>Abstract:</td>
+  <td class='pt_entry'><?php echo htmlspecialchars($prow->abstract) ?></td>
+</tr>
+
+<?php if ($Me->canViewAuthors($prow, $Conf)) { ?>
+<tr class='pt_contactAuthors'>
+  <td class='pt_caption'>Contact&nbsp;authors:</td>
+  <td class='pt_entry'><?php {
+    $q = "select firstName, lastName, email
+	from ContactInfo
+	join PaperConflict using (contactId)
+	where paperId=$paperId and author=1
+	order by lastName, firstName";
+    $result = $Conf->qe($q, "while finding contact authors");
+    if (!DB::isError($result) && $result->numRows() > 0) {
+	while ($row = $result->fetchRow())
+	    $aus[] = "$row[0] $row[1] ($row[2])";
+	echo authorTable($aus);
+    }
+  } ?></td>
+</tr>
+
+<tr class='pt_authors'>
+  <td class='pt_caption'>Authors:</td>
+  <td class='pt_entry'><?php echo authorTable($prow->authorInformation) ?></td>
+</tr>
+
+<?php if ($prow->collaborators) { ?>
+<tr class='pt_collaborators'>
+  <td class='pt_caption'>Collaborators:</td>
+  <td class='pt_entry'><?php echo authorTable($prow->collaborators) ?></td>
+</tr>
+<?php } } ?>
+
+<?php
+if ($topicTable = topicTable($paperId, -1)) { 
+    echo "<tr class='pt_topics'>
+  <td class='pt_caption'>Topics:</td>
+  <td class='pt_entry' id='topictable'>", $topicTable, "</td>\n</tr>\n";
+ }
+?>
+
+</table>
+<div class='clear'></div>
 </form>
 
 <?php
