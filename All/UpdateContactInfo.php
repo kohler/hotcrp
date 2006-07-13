@@ -248,7 +248,7 @@ Zhang, Ping Yen (INRIA)
     if ($newProfile)
 	echo "Create Account";
     else
-	echo "Edit Profile";
+	echo "Save Profile";
 ?>' name='register' /></td>
 </tr>
 
