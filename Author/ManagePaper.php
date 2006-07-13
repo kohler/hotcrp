@@ -5,7 +5,7 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid("../");
 $paperId = cvtint($_REQUEST["paperId"]);
 if ($paperId <= 0)
-    $Me->goAlert("../", "Invalid paper ID.");
+    $Me->goAlert("../", "Invalid paper ID \"" . htmlspecialchars($paperId) . "\".");
 
 $notAuthor = !$Me->amPaperAuthor($paperId, $Conf);
 if ($notAuthor && !$Me->amAssistant())
@@ -46,21 +46,11 @@ function pt_data_html($what, $row) {
 	return htmlspecialchars($row->$what);
 }
 
-$Conf->header_head("Manage Paper #$paperId");
-?>
-<script type="text/javascript"><!--
-function highlightUpdate() {
-    var ins = document.getElementsByTagName("input");
-    for (var i = 0; i < ins.length; i++)
-	if (ins[i].name == "update")
-	    ins[i].className = "button_alert";
-}
-// -->
-</script>
+if (isset($_REQUEST["form"]) && $_REQUEST["form"] && !count($_POST))
+    $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  Any changes were lost.");
 
-<?php $Conf->header("Manage Paper #$paperId", 'aumg') ?>
+$Conf->header("Manage Paper #$paperId", 'aumg');
 
-<?php
 // override?
 $override = 0;
 if (isset($_REQUEST['override']) && $Me->amAssistant())
@@ -81,7 +71,7 @@ if (isset($_REQUEST['revive'])) {
 // upload attempt?
 if (isset($_REQUEST['upload'])
     || ((isset($_REQUEST['update']) || isset($_REQUEST['finalize']))
-        && fileUploaded($_FILES['uploadedFile']))) {
+        && fileUploaded($_FILES['uploadedFile'], $Conf))) {
     get_prow($paperId);
     if (!$OK)
 	/* do nothing */;
@@ -91,23 +81,12 @@ if (isset($_REQUEST['upload'])
 	$Conf->errorMsg("The paper has been withdrawn.");
     else if (!$updatable && !$override)
 	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.$overrideMsg");
-    else if (!fileUploaded($_FILES['uploadedFile']))
+    else if (!fileUploaded($_FILES['uploadedFile'], $Conf))
 	$Conf->errorMsg("Enter the name of a file to upload.");
     else {
 	$result = $Conf->storePaper('uploadedFile', $paperId);
-	if ($result == 0 || DB::isError($result))
+	if ($result == 0 || PEAR::isError($result))
 	    $Conf->errorMsg("There was an error when trying to update your paper. Please try again.");
-	else {
-	    $res2 = $Conf->qe("select length(paper) from Paper left join PaperStorage using (paperStorageId) where Paper.paperId=$paperId");
-	    if (!DB::isError($res2) && $res2->numRows() > 0) {
-		$row = $res2->fetchRow();
-		$actualSize = $row[0];
-	    }
-	    if (isset($actualSize) && $actualSize == $result)
-		$Conf->confirmMsg("Paper uploaded ($result bytes).");
-	    else if (isset($actualSize))
-		$Conf->errorMsg("Paper upload failed: stored $actualSize of $result bytes!  Please try again; make sure your paper is under the size limit.");
-	}
     }
  }
 
@@ -245,8 +224,7 @@ if ($OK) {
 
     printPaperLinks();
     
-    echo "<form method='post' action=\"", $_SERVER['PHP_SELF'], "\" enctype='multipart/form-data'>
-<input type='hidden' name='paperId' value='$paperId' />
+    echo "<form method='post' action=\"ManagePaper.php?paperId=$paperId&amp;form=1\" enctype='multipart/form-data'>
 <table class='aumanage'>
 <tr>
   <td class='pt_id'><h2>#$paperId</h2></td>
@@ -273,11 +251,12 @@ if ($OK) {
 	if (!$finalized && ($updatable || $Me->amAssistant())) {
 	    if ($prow->size > 0)
 		echo "    <br/>\n";
+	    echo "    <input type='hidden' name='MAX_FILE_SIZE' value='", ini_get_bytes('upload_max_filesize'), "' />\n";
 	    echo "    <input type='file' name='uploadedFile' accept='application/pdf' size='30' />&nbsp;<input class='button' type='submit' value='Upload File";
 	    if (!$updatable) echo '*';
 	    echo "' name='upload' />\n";
 	} ?></td>
-  <?php if (!$finalized && ($updatable || $Me->amAssistant())) { ?> <td class='pt_hint'>Max size: <?php echo get_cfg_var("upload_max_filesize") ?>B</td><?php } ?>
+  <?php if (!$finalized && ($updatable || $Me->amAssistant())) { ?> <td class='pt_hint'>Max size: <?php echo ini_get("upload_max_filesize") ?>B</td><?php } ?>
 </tr>
 <?php } ?>
 
@@ -317,7 +296,7 @@ if ($OK) {
     else
 	echo authorTable($prow->authorInformation);
 ?></td>
-  <?php if ($can_update) { ?><td class='pt_hint'>List the paper's authors one per line, including affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
+  <?php if ($can_update) { ?><td class='pt_hint'>List the paper's authors one per line, including any affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
 Ludwig van Beethoven (Colorado)
 Zhang, Ping Yen (INRIA)</pre></td><?php } ?>
 </tr>

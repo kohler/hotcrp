@@ -58,7 +58,7 @@ if (isset($_REQUEST['submit'])) {
 	}
 	if (!isset($Error)) {
 	    $msg = "A record of your paper has been created.";
-	    if (!fileUploaded($_FILES["uploadedFile"]))
+	    if (!fileUploaded($_FILES["uploadedFile"], $Conf))
 		$msg .= "  You still need to upload the actual paper.";
 	    $Conf->confirmMsg($msg);
 
@@ -78,6 +78,9 @@ if (isset($_REQUEST['submit'])) {
  }
 
 $Conf->header("Start New Paper");
+
+if (isset($_REQUEST["form"]) && $_REQUEST["form"] && !count($_POST))
+    $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  Any changes were lost.  Try entering your paper's title, abstract, and author information first, then uploading the paper itself.");
 if (isset($PaperError))
     $Conf->errorMsg("One or more required fields were left blank.  Fill in those fields and try again.");
 if (isset($Error))
@@ -86,7 +89,7 @@ else if (!$can_start)
     $Conf->warnMsg("The <a href='../All/ImportantDates.php'>deadline</a> for starting new papers has passed, but you can still submit a new paper in your capacity as PC Chair or PC Chair's Assistant.");
 ?>
 
-<form method='post' action='SubmitPaper.php' enctype='multipart/form-data'>
+<form method='post' action='SubmitPaper.php?form=1' enctype='multipart/form-data'>
 <p>Enter the following information. We will use your contact information
 as the contact information for this paper.</p>
 
@@ -98,7 +101,8 @@ as the contact information for this paper.</p>
 
 <tr>
   <td class='pt_caption'>Paper (optional):</td>
-  <td class='pt_entry'><input type='file' name='uploadedFile' accept='application/pdf' size='60' /></td>
+  <td class='pt_entry'><input type='hidden' name='MAX_FILE_SIZE' value='<?php echo ini_get_bytes('upload_max_filesize') ?>' />
+    <input type='file' name='uploadedFile' accept='application/pdf' size='60' /></td>
   <td class='pt_hint'>Max size: <?php echo get_cfg_var("upload_max_filesize") ?>B</td>
 </tr>
 
@@ -110,7 +114,7 @@ as the contact information for this paper.</p>
 <tr>
   <td class='<?php echo pt_caption_class("authorInformation") ?>'>Author&nbsp;information:</td>
   <td class='pt_entry'><textarea class='textlite' name='authorInformation' rows='5' onchange='highlightUpdate()'><?php echo pt_data_html("authorInformation") ?></textarea></td>
-  <td class='pt_hint'>List the paper's authors one per line, including affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
+  <td class='pt_hint'>List the paper's authors one per line, including any affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
 Ludwig van Beethoven (Colorado)
 Zhang, Ping Yen (INRIA)</pre></td>
 </tr>

@@ -113,12 +113,6 @@ function crp_show1date($name, $which) {
 $Conf->header_head("Edit Dates");
 ?>
 <script type="text/javascript"><!--
-function highlightUpdate() {
-    var ins = document.getElementsByTagName("input");
-    for (var i = 0; i < ins.length; i++)
-	if (ins[i].name == "update")
-	    ins[i].className = "button_alert";
-}
 function clear1Date(name) {
     document.getElementById(name).value = "N/A";
     highlightUpdate();

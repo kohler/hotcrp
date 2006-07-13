@@ -59,7 +59,7 @@ $rf = reviewForm();
 
 $originalPaperId = cvtint($_REQUEST["paperId"]);
 
-if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'])) {
+if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Conf)) {
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
     $paperId = $originalPaperId;
     while ($rf->parseTextForm($tf, $originalPaperId, $Conf)) {
@@ -103,18 +103,7 @@ if (isset($_REQUEST['downloadForm'])) {
  }
 
 $title = ($paperId > 0 ? "Review Paper #$paperId" : "Review Papers");
-$Conf->header_head($title);
-?>
-<script type="text/javascript"><!--
-function highlightUpdate() {
-    var ins = document.getElementsByTagName("input");
-    for (var i = 0; i < ins.length; i++)
-	if (ins[i].name == "save" || ins[i].name == "submit")
-	    ins[i].className = "button_alert";
-}
-// -->
-</script>
-<?php $Conf->header($title, 'review');
+$Conf->header($title, 'review');
 doGoPaper();
 
 if ($paperId <= 0) {
@@ -123,7 +112,7 @@ if ($paperId <= 0) {
     exit;
  }
 
-if (isset($_REQUEST['save']) || isset($_REQUEST['submit']))
+if (isset($_REQUEST['update']) || isset($_REQUEST['submit']))
     if ($rf->validateRequest($rrow, isset($_REQUEST['submit']))) {
 	$rf->saveRequest($prow, $Me->contactId, $rrow, isset($_REQUEST['submit']), $Conf);
 	$Conf->confirmMsg(isset($_REQUEST['submit']) ? "Review submitted." : "Review saved.");
@@ -243,7 +232,7 @@ if ($Me->timeReview($prow, $Conf) || $Me->amAssistant()) {
   <td class='form_entry'><table class='pt_buttons'>
     <tr>\n";
     if (!isset($rrow) || !$rrow->reviewSubmitted) {
-	echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save changes' name='save' /></td>
+	echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save changes' name='update' /></td>
       <td class='ptb_button'><input class='button_default' type='submit' value='Submit' name='submit' /></td>
     </tr>
     <tr>

@@ -7,11 +7,8 @@ $Me->goIfNotChair('../');
 $Conf->header_head("Manage $AddWhat");
 ?>
 <script type="text/javascript"><!--
-function highlightUpdate(id) {
-    var ins = document.getElementsByTagName("input");
-    for (var i = 0; i < ins.length; i++)
-	if (ins[i].name == "update")
-	    ins[i].className = "button_alert";
+function highlightChange(id) {
+    highlightUpdate();
     if (id) {
 	var chg = document.getElementById("chg" + id);
 	if (chg.value == "")
@@ -27,7 +24,7 @@ function doRemove(id) {
     var x = row.className.replace(/ *removed/, '');
     row.className = x + (rem ? " removed" : "");
     but.value = (rem ? "Do not remove" : "Remove from PC");
-    highlightUpdate(id);
+    highlightChange(id);
 }
 // -->
 </script>
@@ -169,13 +166,13 @@ if (DB::isError($result))
 	    echo " checked='checked'";
 	if ($id == $Me->contactId)
 	    echo " disabled='disabled'";
-	echo " onclick='highlightUpdate($id)' /></td>
+	echo " onclick='highlightChange($id)' /></td>
   <td class='pc_assbox'><input type='checkbox' name='ass$id' value='1'";
 	if ($row[5])
 	    echo " checked='checked'";
 	if ($id == $Me->contactId)
 	    echo " disabled='disabled'";
-	echo " onclick='highlightUpdate($id)' /></td>
+	echo " onclick='highlightChange($id)' /></td>
   <td class='pc_action'><input class='button' type='button' value='Remove from PC' name='rem$id' id='rem$id'";
 	if ($id == $Me->contactId)
 	    echo " disabled='disabled'";
@@ -186,9 +183,9 @@ if (DB::isError($result))
 ?>
 
 <tr>
-  <td class='pc_name'><input type="text" name="name" size="20" onchange='highlightUpdate(0)' <?php addedvalue('name', 0) ?>/></td>
-  <td class='pc_email'><input type="text" name="email" size="20" onchange='highlightUpdate(0)' <?php addedvalue('email', 0) ?>/></td>
-  <td class='pc_aff'><input type="text" name="affiliation" size="10" onchange='highlightUpdate(0)' <?php addedvalue('affiliation', 0) ?>/></td>
+  <td class='pc_name'><input type="text" name="name" size="20" onchange='highlightUpdate()' <?php addedvalue('name', 0) ?>/></td>
+  <td class='pc_email'><input type="text" name="email" size="20" onchange='highlightUpdate()' <?php addedvalue('email', 0) ?>/></td>
+  <td class='pc_aff'><input type="text" name="affiliation" size="10" onchange='highlightUpdate()' <?php addedvalue('affiliation', 0) ?>/></td>
   <td class='pc_chairbox'><input type='checkbox' name='chairnew' value='1' <?php addedvalue('nchair', 1) ?>/></td>
   <td class='pc_assbox'><input type='checkbox' name='assnew' value='1' <?php addedvalue('nass', 1) ?>/></td>
   <td class='pc_action'><input type='hidden' name='pcnew' value='1' />Enter new member here</td>

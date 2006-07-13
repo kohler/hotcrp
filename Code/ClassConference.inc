@@ -472,7 +472,7 @@ class Conference {
     //
 
     function storePaper($uploadId, $paperId) {
-	if ($uploadId && fileUploaded($_FILES[$uploadId]))
+	if ($uploadId && fileUploaded($_FILES[$uploadId], $this))
 	    $filename = $_FILES[$uploadId]['tmp_name'];
 	else
 	    return 0;
@@ -520,6 +520,21 @@ class Conference {
 		for ($pos = 400000; $pos < strlen($contents) && !DB::isError($result); $pos += 400000)
 		    $result = $this->qe("update PaperStorage set paper=concat(paper,'" . sqlq(substr($contents, $pos, 400000)) . "') where paperStorageId=$paperStorageId", "while storing paper in database");
 	    }
+
+	    // check that paper storage succeeded
+	    if (!DB::isError($result))
+		$result = $this->qe("select length(paper) from PaperStorage where paperStorageId=$paperStorageId", "while storing paper in database");
+	    if (!DB::isError($result)) {
+		if ($result->numRows() == 0)
+		    $result = new PEAR_Error("Paper upload unsuccessful!");
+		else {
+		    $row = $result->fetchRow();
+		    if ($row[0] != strlen($contents))
+			$result = new PEAR_Error("Failed to store your paper.  Usually, this is because the file you tried to upload was too big for our system.");
+		}
+		if (PEAR::isError($result))
+		    $this->errorMsg($result->getMessage());
+	    }
 	}
 	
 	if (!DB::isError($result))
@@ -527,7 +542,7 @@ class Conference {
 
 	$this->qe("unlock tables");
 
-	return (DB::isError($result) ? $result : strlen($contents));
+	return (PEAR::isError($result) ? $result : strlen($contents));
     }
 
     function downloadPaperName($paperId, $mimetype) {

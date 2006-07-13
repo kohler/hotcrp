@@ -41,9 +41,25 @@ function go($url) {
     exit();
 }
 
-function fileUploaded(&$var) {
-    return isset($var) && $var["tmp_name"] != "none" && $var["tmp_name"] != ""
-	&& is_uploaded_file($var["tmp_name"]);
+function fileUploaded(&$var, $conf) {
+    if (!isset($var) || ($var['error'] != UPLOAD_ERR_OK && !$conf))
+	return false;
+    switch ($var['error']) {
+    case UPLOAD_ERR_OK:
+	return is_uploaded_file($var['tmp_name']);
+    case UPLOAD_ERR_NO_FILE:
+	return false;
+    case UPLOAD_ERR_INI_SIZE:
+    case UPLOAD_ERR_FORM_SIZE:
+	$conf->errorMsg("You tried to upload a file that's too big for our system to accept.  The maximum size is " . ini_get("upload_max_filesize") . "B.");
+	return false;
+    case UPLOAD_ERR_PARTIAL:
+	$conf->errorMsg("You appear to have interrupted the upload process; I am not storing that file.");
+	return false;
+    default:
+	$conf->errorMsg("Internal upload error " . $var['error'] . "!");
+	return false;
+    }
 }
 
 $reviewButton[0] = array
@@ -322,4 +338,19 @@ function htmlFold($text, $maxWords) {
     $x .= "<span id='fold$fid' class='folded'><span class='ellipsis'> ... </span><a class='folder' href='javascript:fold($fid, 0)'>[More]</a><span class='extension'> " . join(" ", array_slice($words, $maxWords)) . " </span><a class='unfolder' href='javascript:fold($fid, 1)'>[Less]</a></span>";
     
     return $x;
+}
+
+function ini_get_bytes($varname) {
+    // from PHP manual
+    $val = trim(ini_get($varname));
+    $last = strtolower($val[strlen($val)-1]);
+    switch ($last) {
+    case 'g':
+	$val *= 1024; // fallthru
+    case 'm':
+	$val *= 1024; // fallthru
+    case 'k':
+	$val *= 1024;
+    }
+    return $val;
 }

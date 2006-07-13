@@ -56,7 +56,7 @@ if (!IsSet($_REQUEST[submittedFor]) || !IsSet($_REQUEST[title])
       $result = $Conf -> storePaper("uploadedFile",
 				    $_FILES["uploadedFile"]["type"],
 				    $paperId);
-      if (DB::isError($result)) {
+      if (PEAR::isError($result)) {
 	$Conf->errorMsg("There was an error storing your paper."
 			. "Please press BACK and try again.");
 	if ( 1) {

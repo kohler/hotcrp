@@ -7,11 +7,8 @@ include('Code.inc');
 $Conf->header_head("Edit Topics");
 ?>
 <script type="text/javascript"><!--
-function highlightUpdate(id) {
-    var ins = document.getElementsByTagName("input");
-    for (var i = 0; i < ins.length; i++)
-	if (ins[i].name == "update")
-	    ins[i].className = "button_alert";
+function highlightChange(id) {
+    highlightUpdate();
     if (id) {
 	var chg = document.getElementById("chg" + id);
 	if (chg.value == "")
@@ -26,7 +23,7 @@ function doRemove(id) {
     var x = row.className.replace(/ *removed/, '');
     row.className = x + (but.value == "Remove" ? " removed" : "");
     but.value = (but.value == "Remove" ? "Do not remove" : "Remove");
-    highlightUpdate(id);
+    highlightChange(id);
 }
 // -->
 </script>
@@ -68,7 +65,7 @@ if (isset($_REQUEST["update"])) {
 <?php
 function outrow($id, $name) {
     echo "<tr class='pc' id='pcrow$id'>\n";
-    echo "  <td class='pc_name'><input class='textlite' value=\"", htmlentities($name), "\" name='top$id' id='top$id' size='48' onchange='highlightUpdate(\"$id\")' /></td>\n";
+    echo "  <td class='pc_name'><input class='textlite' value=\"", htmlentities($name), "\" name='top$id' id='top$id' size='48' onchange='highlightChange(\"$id\")' /></td>\n";
     echo "  <td class='pc_action'><input class='button' type='button' value='Remove' name='rem$id' id='rem$id' onclick='doRemove(\"$id\")' />
     <input type='hidden' value='' name='chg$id' id='chg$id' /></td>
 </tr>\n";
@@ -93,7 +90,7 @@ if (DB::isError($result))
 ?>
 
 <tr>
-  <td class='pc_name'><textarea name="topics" cols="48" rows="3" onchange='highlightUpdate(0)'></textarea></td>
+  <td class='pc_name'><textarea name="topics" cols="48" rows="3" onchange='highlightUpdate()'></textarea></td>
   <td class='pc_action'>Enter new topics here, one per line</td>
 </tr>
 

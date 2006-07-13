@@ -7,19 +7,7 @@ $paperId = cvtint(ltrim(rtrim($_REQUEST["paperId"])));
 if ($paperId <= 0)
     $Me->goAlert("../", "Invalid paper ID \"" . htmlspecialchars($_REQUEST["paperId"]) . "\".");
 
-$Conf->header_head("Paper #$paperId");
-?>
-<script type="text/javascript"><!--
-function highlightUpdate() {
-    var ins = document.getElementsByTagName("input");
-    for (var i = 0; i < ins.length; i++)
-	if (ins[i].name == "update")
-	    ins[i].className = "button_alert";
-}
-// -->
-</script>
-
-<?php $Conf->header("Paper #$paperId", 'view');
+$Conf->header("Paper #$paperId", 'view');
 
 echo "<div class='gopaper'>", goPaperForm(), "</div><div class='clear'></div>\n\n";
 

@@ -4,21 +4,8 @@ $Conf->connect();
 $_SESSION["Me"]->goIfInvalid("../");
 $_SESSION["Me"]->goIfNotChair('../');
 include('Code.inc');
-$Conf->header_head("Edit Review Form");
+$Conf->header("Edit Review Form");
 $rf = reviewForm();
-
-?>
-<script type="text/javascript"><!--
-function highlightUpdate() {
-    var ins = document.getElementsByTagName("input");
-    for (var i = 0; i < ins.length; i++)
-	if (ins[i].name == "update")
-	    ins[i].className = "button_alert";
-}
-// -->
-</script>
-
-<?php $Conf->header("Edit Review Form");
 
 function checkOptions(&$var, &$options, &$order) {
     if (!isset($var))
