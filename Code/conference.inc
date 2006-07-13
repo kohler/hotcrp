@@ -670,10 +670,11 @@ class Conference {
 	//   "contactAuthors"	Include comma-separated list of contact author
 	//			contactIds as $row->contactAuthors
 	//   "myReviews"	All reviews authored by $contactId
+	//   "myReviewsOpt"	myReviews, + include papers not yet reviewed
 	//   "allReviews"	All reviews (multiple rows per paper)
 	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
 
-	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']);
+	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']) || isset($options['myReviewsOpt']);
 
 	// fields
 	$pq = "select Paper.*,
@@ -746,7 +747,7 @@ class Conference {
 	    $where[] = "acknowledged>0";
 	    $where[] = "withdrawn<=0";
 	}
-	if ($reviewerQuery)
+	if ($reviewerQuery && !isset($options['myReviewsOpt']))
 	    $where[] = "(ReviewRequest.reviewType or PaperReview.reviewId)";
 	
 	if (isset($where))
@@ -754,7 +755,7 @@ class Conference {
 
 	// grouping and ordering
 	if ($reviewerQuery)
-	    $pq .= "		group by PaperReview.reviewId\n";
+	    $pq .= "		group by PaperReview.reviewId, Paper.paperId\n";
 	else
 	    $pq .= "		group by Paper.paperId\n";
 	if (isset($options['order']) && $options['order'] != "order by Paper.paperId")

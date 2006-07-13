@@ -149,8 +149,12 @@ if ($Me->isPC) { ?>
 	    echo "<tr>\n$header\n  <td class='plholder'>$ptext</td>\n</tr>\n";
 	    $header = "  <td></td>";
 	}
-	if ($Conf->timeReviewPaper(true, false, true))
-	    echo "<tr>\n$header\n  <td><a href='All/ListPapers.php?list=submitted'>Review&nbsp;other&nbsp;papers</a> $homeSep <a href='OfflineReview.php'>Offline&nbsp;reviewing</a></td>\n</tr>\n";
+	if ($Conf->timeReviewPaper(true, true, true)) {
+	    echo "<tr>\n$header\n  <td>";
+	    if ($Conf->timeReviewPaper(true, false, true))
+		echo "<a href='All/ListPapers.php?list=submitted'>Review&nbsp;other&nbsp;papers</a> $homeSep ";
+	    echo "<a href='OfflineReview.php'>Offline&nbsp;reviewing</a></td>\n</tr>\n";
+	}
 
 	reviewerDeadlines(true, $plist);
     }
@@ -158,7 +162,7 @@ if ($Me->isPC) { ?>
     $ptext = $plist->text("reviewRequestsHome", $Me);
     if ($plist->count > 0) {
 	echo "<tr>\n  <th>Review&nbsp;requests:</th>\n  <td class='plholder'>$ptext</td>\n</tr>\n";
-	reviewerDeadlines(false, $plist, true);
+	reviewerDeadlines(false, $plist);
     }
 ?>
 

@@ -28,7 +28,7 @@ if (isset($_REQUEST["download"])) {
 if (isset($_REQUEST["downloadReview"])) {
     if (!isset($_REQUEST["papersel"]) || !is_array($_REQUEST["papersel"]))
 	$_REQUEST["papersel"] = array();
-    $q = $Conf->paperQuery($Me->contactId, array("paperId" => $_REQUEST["papersel"], "myReviews" => 1));
+    $q = $Conf->paperQuery($Me->contactId, array("paperId" => $_REQUEST["papersel"], "myReviewsOpt" => 1));
     $result = $Conf->qe($q, "while selecting papers for review");
     $text = '';
     $rf = reviewForm();
