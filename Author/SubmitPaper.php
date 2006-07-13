@@ -93,7 +93,7 @@ as the contact information for this paper.</p>
 <table class='aumanage'>
 <tr>
   <td class='<?php echo pt_caption_class("title") ?>'>Title:</td>
-  <td class='pt_entry'><input class='textlite' type='text' name='title' id='title' value="<?php echo pt_data_html("title") ?>" onchange='highlightUpdate()' size='60' /></td>
+  <td class='pt_entry'><textarea class='textlite' name='title' rows='1' cols='60' id='title' onchange='highlightUpdate()'><?php echo pt_data_html("title") ?></textarea></td>
 </tr>
 
 <tr>

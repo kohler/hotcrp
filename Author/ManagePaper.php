@@ -254,7 +254,7 @@ if ($OK) {
     
     if ($can_update) {
 	echo "<tr>\n  <td class='", pt_caption_class('title'), "'>Title:</td>\n";
-	echo "  <td class='pt_entry'><input class='textlite' type='text' name='title' id='title' value=\"", pt_data_html('title', $prow), "\" onchange='highlightUpdate()' size='60' /></td>\n";
+	echo "  <td class='pt_entry'><textarea class='textlite' name='title' rows='1' cols='60' id='title' onchange='highlightUpdate()'>", pt_data_html('title', $prow), "</textarea></td>\n";
 	echo "</tr>\n";
     }
 ?>
