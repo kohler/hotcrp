@@ -35,7 +35,7 @@ function doRemove(id) {
 <?php
 function vtrim(&$var) {
     if (isset($var))
-	return ltrim(rtrim($var));
+	return trim($var);
     else
 	return '';
 }
@@ -65,40 +65,11 @@ if (isset($_REQUEST["update"])) {
 	$Conf->errorMsg("Email address required for new members."); 
     if ($email != '') {
 	// Make sure email address exists in system
-	$id = $Conf->emailRegistered($email);
-	if (!$id) { // try to add them
-	    $newguy = new Contact();
-	    $result = $newguy->initialize($email, $Conf);
-	    if (!DB::isError($result)) {
-		if (!isset($_REQUEST['name']))
-		    /* nada */;
-		else if (preg_match('/^(.*),\s*(\S.*)$/', $_REQUEST['name'], $matches)) {
-		    $newguy->firstName = $matches[2];
-		    $newguy->lastName = $matches[1];
-		} else if (preg_match('/^(.*)\s+(\S*)$/', $_REQUEST['name'], $matches)) {
-		    $newguy->firstName = $matches[1];
-		    $newguy->lastName = $matches[2];
-		} else
-		    $newguy->lastName = $_REQUEST['name'];
-		if (isset($_REQUEST['affiliation']))
-		    $newguy->affiliation = $_REQUEST['affiliation'];
-		if (isset($_REQUEST['voicePhoneNumber']))
-		    $newguy->affiliation = $_REQUEST['voicePhoneNumber'];
-		if (isset($_REQUEST['faxPhoneNumber']))
-		    $newguy->affiliation = $_REQUEST['faxPhoneNumber'];
-		$result = $newguy->updateDB($Conf, "while creating account for " . htmlspecialchars($email));
-	    }
-	    if (!DB::isError($result)) {
-		$Conf->infoMsg("Created account for " . htmlspecialchars($email) . ".");
-		$newguy->sendAccountInfo($Conf);
-		$Conf->log("PC chair created account", $newguy);
-	    } else
-		$Conf->log("PC chair account creation failure", $newguy);
-	    $id = $newguy->contactId;
-	}
+	$id = $Conf->getContactId($email, true);
 
 	// successfully looked up member, now make them a PC member
-	updateRoles($id, "new", $email);
+	if ($id > 0)
+	    updateRoles($id, "new", $email);
 
 	// unset values
 	foreach (array('name', 'email', 'affiliation', 'pcnew', 'assnew', 'chairnew') as $what)
@@ -158,7 +129,7 @@ if (DB::isError($result))
     while ($row = $result->fetchRow()) {
 	$id = $row[0];
 	echo "<tr id='pcrow$id'>
-  <td class='pc_name'>", htmlspecialchars(ltrim(rtrim("$row[1] $row[2]"))), "</td>
+  <td class='pc_name'>", htmlspecialchars(trim("$row[1] $row[2]")), "</td>
   <td class='pc_email'>", htmlspecialchars($row[3]), "</td>
   <td class='pc_aff'>", htmlspecialchars($row[4]), "</td>
   <td class='pc_chairbox'><input type='checkbox' name='chair$id' value='1'";
@@ -183,9 +154,9 @@ if (DB::isError($result))
 ?>
 
 <tr>
-  <td class='pc_name'><input type="text" name="name" size="20" onchange='highlightUpdate()' <?php addedvalue('name', 0) ?>/></td>
-  <td class='pc_email'><input type="text" name="email" size="20" onchange='highlightUpdate()' <?php addedvalue('email', 0) ?>/></td>
-  <td class='pc_aff'><input type="text" name="affiliation" size="10" onchange='highlightUpdate()' <?php addedvalue('affiliation', 0) ?>/></td>
+  <td class='pc_name'><input class='textlite' type="text" name="name" size="20" onchange='highlightUpdate()' <?php addedvalue('name', 0) ?>/></td>
+  <td class='pc_email'><input class='textlite' type="text" name="email" size="20" onchange='highlightUpdate()' <?php addedvalue('email', 0) ?>/></td>
+  <td class='pc_aff'><input class='textlite' type="text" name="affiliation" size="10" onchange='highlightUpdate()' <?php addedvalue('affiliation', 0) ?>/></td>
   <td class='pc_chairbox'><input type='checkbox' name='chairnew' value='1' <?php addedvalue('nchair', 1) ?>/></td>
   <td class='pc_assbox'><input type='checkbox' name='assnew' value='1' <?php addedvalue('nass', 1) ?>/></td>
   <td class='pc_action'><input type='hidden' name='pcnew' value='1' />Enter new member here</td>

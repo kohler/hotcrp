@@ -79,6 +79,7 @@ require_once("$ConfSitePATH/Code/DB-1.7.6/DB.php");
 //require_once("$ConfSitePATH/Code/PEAR-DB/pgsql.inc");
 //
 //
+include("$ConfSitePATH/Code/options.inc");
 include("$ConfSitePATH/Code/confConfig.inc");
 //
 

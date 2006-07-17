@@ -256,7 +256,7 @@ CREATE TABLE PaperReview (
   paperId int(11) NOT NULL,
   contactId int(11) NOT NULL,
   reviewLastModified timestamp(14) NOT NULL,
-  reviewSubmitted tinyint(1) NOT NULL default 0,
+  reviewSubmitted int(1) NOT NULL default 0,
 
   overAllMerit tinyint(1) NOT NULL default '0',
   reviewerQualification tinyint(1) NOT NULL default '0',
@@ -278,10 +278,18 @@ CREATE TABLE PaperReview (
   fixability tinyint(4) NOT NULL default '0',
 
   PRIMARY KEY (reviewId),
-  UNIQUE KEY reviewid (reviewId),
+  UNIQUE KEY reviewId (reviewId),
   KEY paperId (paperId),
   KEY contactId (contactId),
   KEY reviewSubmitted (reviewSubmitted)
+) TYPE=MyISAM;
+
+drop table if exists PaperReviewSubmission;
+CREATE TABLE PaperReviewSubmission (
+  reviewSubmissionId int(11) NOT NULL auto_increment,
+  paperId int(11) NOT NULL,
+  PRIMARY KEY (reviewSubmissionId),
+  UNIQUE KEY reviewSubmissionid (reviewSubmissionId)
 ) TYPE=MyISAM;
 
 #
@@ -300,6 +308,7 @@ CREATE TABLE PaperStorage (
   timestamp int(11) NOT NULL,
   mimetype varchar(120) NOT NULL default '',
   paper longblob,
+  compression tinyint(1) NOT NULL default 0,
   PRIMARY KEY (paperStorageId),
   UNIQUE KEY paperStorageId (paperStorageId),
   KEY paperId (paperId),
@@ -362,15 +371,6 @@ CREATE TABLE PaperReviewerPreference(
   contactId int(11) default NULL,
   PRIMARY KEY (preferenceId),
   UNIQUE KEY preferenceId (preferenceId)
-) TYPE=MyISAM;
-
-drop table if exists PaperReviewerConflict;
-CREATE TABLE PaperReviewerConflict(
-  conflictId int(11) NOT NULL auto_increment,
-  paperId int(11) default NULL,
-  contactId int(11) default NULL,
-  PRIMARY KEY (conflictId),
-  UNIQUE KEY conflictId (conflictId)
 ) TYPE=MyISAM;
 
 

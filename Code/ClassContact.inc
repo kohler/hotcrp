@@ -36,7 +36,7 @@ class Contact {
     //
 
     function valid($conf = null) {
-	global $Conf;
+	global $Conf, $Opt;
 	if ($conf == null)
 	    $conf = $Conf;
 	if (!$this->validated && $this->contactId > 0) {
@@ -69,7 +69,7 @@ class Contact {
 		    if ($row[4] > 0)
 			$this->isChair = true;
 		}
-		if ($conf->setupPhase)
+		if ($Opt['setupPhase'])
 		    $this->isChair = true;
 		if (!$this->isChair)
 		    $this->chairMode = false;
@@ -175,16 +175,16 @@ class Contact {
   }
 
   function trim() {
-      $this->contactId = ltrim(rtrim($this->contactId));
-      $this->visits = ltrim(rtrim($this->visits));
-      $this->firstName = ltrim(rtrim($this->firstName));
-      $this->lastName = ltrim(rtrim($this->lastName));
-      $this->email = ltrim(rtrim($this->email));
-      $this->affiliation = ltrim(rtrim($this->affiliation));
-      $this->voicePhoneNumber = ltrim(rtrim($this->voicePhoneNumber));
-      $this->faxPhoneNumber = ltrim(rtrim($this->faxPhoneNumber));
-      $this->password = ltrim(rtrim($this->password));
-      $this->note = ltrim(rtrim($this->note));
+      $this->contactId = trim($this->contactId);
+      $this->visits = trim($this->visits);
+      $this->firstName = trim($this->firstName);
+      $this->lastName = trim($this->lastName);
+      $this->email = trim($this->email);
+      $this->affiliation = trim($this->affiliation);
+      $this->voicePhoneNumber = trim($this->voicePhoneNumber);
+      $this->faxPhoneNumber = trim($this->faxPhoneNumber);
+      $this->password = trim($this->password);
+      $this->note = trim($this->note);
   }
 
   function go($url) {
@@ -256,7 +256,7 @@ class Contact {
   }
 
   function initialize($email, $conf) {
-      $this->email = ltrim(rtrim($email));
+      $this->email = trim($email);
       $this->password = $this->generatePassword(10);
       $result = $conf->q(sprintf("insert into ContactInfo set email='%s', password='%s'", sqlqtrim($this->email), sqlqtrim($this->password)));
       if (DB::isError($result))
@@ -306,19 +306,19 @@ class Contact {
 		where contactId=$contactId limit 0,1", $conf);
   }
 
-  function fullname() {
-      if ($this->firstName && $this->lastName)
-	  return $this->firstName . " " . $this->lastName;
-      else if ($this->firstName || $this->lastName)
-	  return $this->firstName . $this->lastName;
-      else
-	  return "";
-  }
+    function fullname() {
+	if ($this->firstName && $this->lastName)
+	    return $this->firstName . " " . $this->lastName;
+	else if ($this->firstName || $this->lastName)
+	    return $this->firstName . $this->lastName;
+	else
+	    return "";
+    }
 
-  function fullnameAndEmail() {
-      $n = $this->fullname();
-      return ($n ? $n . " (" . $this->email . ")" : $this->email);
-  }
+    function fullnameAndEmail() {
+	$n = $this->fullname();
+	return ($n ? $n . " (" . $this->email . ")" : $this->email);
+    }
   
   function bumpVisits($conf) {
       $this->visits += 1;
@@ -343,6 +343,10 @@ class Contact {
 	return $conf->checkConflict($paperId, $this->contactId);
     }
 
+    function canManagePaper($prow) {
+	return ($prow->author > 0 || $this->amAssistant());
+    }
+    
     function canDownload($paperId, $conf, $prow = null) {
 	if ($this->amAssistant())
 	    return true;
@@ -382,7 +386,8 @@ class Contact {
     }
     
     function canViewAuthors($prow, $conf) {
-	if ($prow->author > 0 || (!$conf->blindSubmission && $prow->acknowledged > 0 && $prow->withdrawn <= 0))
+	global $Opt;
+	if ($prow->author > 0 || (!$Opt['blindSubmission'] && $prow->acknowledged > 0 && $prow->withdrawn <= 0))
 	    return true;
 	if (paperAccepted($prow) && $conf->validPeriod('EndOfTheMeeting'))
 	    return true;

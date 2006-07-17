@@ -16,7 +16,7 @@ function checkOptions(&$var, &$options, &$order) {
     $text = '';
     $options = array();
     foreach (explode("\n", $var) as $line) {
-	$line = ltrim(rtrim($line));
+	$line = trim($line);
 	if ($line != "") {
 	    if (preg_match("/^$expect\\.\\s*(\\S.*)/", $line, $matches)
 		|| preg_match("/^$expect\\s+(\\S.*)/", $line, $matches)) {

@@ -9,12 +9,6 @@ $dbPassword ="HYPO2010";
 $dbName="HYPO2010";
 
 $Conf = new Conference ( $dbUser, $dbPassword, $dbHost, $dbName );
-//
-// if setupPhase == 1, anyone who logs in has chair powers.
-// You use this when initially configuring the conference
-// to add yourself to the PCChair page.
-//
-$Conf->setupPhase = 0;
 
 //
 // Conference names
@@ -108,10 +102,6 @@ $Conf->contactEmail = "someone@mailinator.com";
 // email address in case people respond with problems.
 //
 $Conf->emailFrom = "randomperson@mailinator.com";
-//
-// Actually try to email.
-//
-$Conf->allowEmail = 1;
 
 //
 // This is where dumps of the database are placed.

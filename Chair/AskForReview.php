@@ -19,7 +19,7 @@ if (IsSet($_REQUEST["SendReviews"]) && sizeof($_REQUEST["Requests"]) > 0) {
   //
   // Check to see if they exist
   //
-  $id = $Conf->emailRegistered($_REQUEST[firstEmail]);
+  $id = $Conf->getContactId($_REQUEST[firstEmail]);
 
   if ( $id == 0 ) {
     //
@@ -38,7 +38,7 @@ if (IsSet($_REQUEST["SendReviews"]) && sizeof($_REQUEST["Requests"]) > 0) {
     } else {
       $Conf->errorMsg("Had trouble creating an account for $_REQUEST[firstEmail]");
     }
-    $id = $Conf->emailRegistered($_REQUEST[firstEmail]);
+    $id = $Conf->getContactId($_REQUEST[firstEmail]);
   } 
 
   //  $Conf -> infoMsg("$_REQUEST[firstEmail] registered as user $id");

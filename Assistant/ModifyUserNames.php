@@ -40,8 +40,8 @@ if (IsSet($_REQUEST[updateContacts])) {
 
     $last = $_REQUEST[newLast][$id];
 
-    $first = ltrim(rtrim($first));
-    $last = ltrim(rtrim($last));
+    $first = trim($first);
+    $last = trim($last);
     
     if ($oldFirst[$id] != $first || $oldLast[$id] != $last) {
 

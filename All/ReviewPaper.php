@@ -26,7 +26,7 @@ function initialError($what, &$tf = null) {
 function get_prow($paperIdIn, &$tf = null) {
     global $Conf, $prow, $Me;
 
-    if (($paperId = cvtint(ltrim(rtrim($paperIdIn)))) <= 0)
+    if (($paperId = cvtint(trim($paperIdIn))) <= 0)
 	return ($prow = initialError("Bad paper ID \"" . htmlentities($paperIdIn) . "\".", $tf));
     
     $result = $Conf->qe($Conf->paperQuery($Me->contactId, array("paperId" => $paperId)), "while requesting paper to review");
@@ -40,11 +40,19 @@ function get_prow($paperIdIn, &$tf = null) {
 }
 
 function get_rrow($paperId, $reviewId = -1, $tf = null) {
-    global $Conf, $rrow, $Me;
-    $where = ($reviewId > 0 ? "reviewId=$reviewId" : "paperId=$paperId and PaperReview.contactId=$Me->contactId");
-    $result = $Conf->qe("select PaperReview.*, firstName, lastName, email
-		from PaperReview join ContactInfo using (contactId)
-		where $where", "while retrieving review");
+    global $Conf, $rrow, $Me, $reviewOrdinal;
+
+    $q = "select PaperReview.*, firstName, lastName, email,
+		count(PRS.reviewId) as reviewOrdinal
+		from PaperReview
+		join ContactInfo using (contactId)
+		left join PaperReview as PRS on (PRS.paperId=PaperReview.paperId and PRS.reviewSubmitted>0 and PRS.reviewSubmitted<PaperReview.reviewSubmitted)";
+    if ($reviewId > 0)
+	$q = "$q where PaperReview.reviewId=$reviewId";
+    else
+	$q = "$q where PaperReview.paperId=$paperId and PaperReview.contactId=$Me->contactId";
+    $result = $Conf->qe("$q group by PRS.paperId", "while retrieving reviews");
+
     if (DB::isError($result) || $result->numRows() == 0) {
 	if ($reviewId > 0)
 	    initialError("No such paper review #$reviewId.", $tf);
@@ -58,6 +66,9 @@ function get_rrow($paperId, $reviewId = -1, $tf = null) {
 $rf = reviewForm();
 
 $originalPaperId = cvtint($_REQUEST["paperId"]);
+
+if (isset($_REQUEST["form"]) && $_REQUEST["form"] && !count($_POST))
+    $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  Any changes were lost.");
 
 if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Conf)) {
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
@@ -79,9 +90,9 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 
 $paperId = $originalPaperId;
 if (isset($_REQUEST["reviewId"])) {
-    get_rrow(-1, cvtint(ltrim(rtrim($_REQUEST["reviewId"]))));
+    get_rrow(-1, cvtint(trim($_REQUEST["reviewId"])));
     if ($Me->contactId != $rrow->contactId && !$Me->amAssistant())
-	initial_error("You did not create review #$rrow->reviewId, so you cannot edit it.");
+	initialError("You did not create review #$rrow->reviewId, so you cannot edit it.");
     $paperId = $rrow->paperId;
     get_prow($paperId);
 } else if ($paperId > 0) {
@@ -119,6 +130,10 @@ if (isset($_REQUEST['update']) || isset($_REQUEST['submit']))
 	get_rrow($paperId);
     }
 
+$overrideMsg = '';
+if ($Me->amAssistant())
+    $overrideMsg = "  Select the \"Override deadlines\" checkbox and try again if you really want to override this deadline.";
+
 if (!$Me->timeReview($prow, $Conf))
     $Conf->infoMsg("The <a href='${ConfSiteBase}All/ImportantDates.php'>deadline</a> for modifying this review has passed.");
 
@@ -126,7 +141,10 @@ if (!$Me->timeReview($prow, $Conf))
 
 <table class='revtop'>
 <tr class='rev_title'>
-  <td class='pt_id'><h2>Review</h2></td>
+  <td class='pt_id'><h2>Review<?php
+	if ($rrow && $rrow->reviewSubmitted > 0)
+	    echo " ", chr(65 + $rrow->reviewOrdinal);
+  ?></h2></td>
   <td class='form_entry'><h2>for <a href='ViewPaper.php?paperId=<?php echo $paperId ?>'>Paper #<?php echo $paperId ?></a></h2></td>
 </tr>
 
@@ -159,7 +177,7 @@ if (!$Me->timeReview($prow, $Conf))
 <tr class='rev_upload'>
   <td></td>
   <td class='form_entry'>
-    <form class='downloadreviewform' action='ReviewPaper.php' method='post' enctype='multipart/form-data'>
+    <form class='downloadreviewform' action='ReviewPaper.php?form=1' method='post' enctype='multipart/form-data'>
       <input type='hidden' name='paperId' value='<?php echo $paperId ?>' />
       <input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp;<input class='button_small' type='submit' value='Upload review' name='uploadForm' />
     </form>
@@ -215,7 +233,7 @@ if ($topicTable = topicTable($paperId, -1)) {
 
 <hr class='clear' />
 
-<form action='ReviewPaper.php' method='post' enctype='multipart/form-data'>
+<form action='ReviewPaper.php?form=1' method='post' enctype='multipart/form-data'>
 <?php
     if (isset($rrow))
 	echo "<input type='hidden' name='reviewId' value='$rrow->reviewId' />\n";
@@ -237,7 +255,7 @@ if ($Me->timeReview($prow, $Conf) || $Me->amAssistant()) {
     </tr>
     <tr>
       <td class='ptb_explain'>(does not submit review)</td>
-      <td class='ptb_explain'>(allow PC to see review; cannot undo)</td>\n";
+      <td class='ptb_explain'>(allow PC to see review)</td>\n";
     } else
 	echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Resubmit' name='submit' /></td>\n";
     if (!$Me->timeReview($prow, $Conf))

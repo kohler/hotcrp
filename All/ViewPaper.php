@@ -3,7 +3,7 @@ include('../Code/confHeader.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid("../");
-$paperId = cvtint(ltrim(rtrim($_REQUEST["paperId"])));
+$paperId = cvtint(trim($_REQUEST["paperId"]));
 if ($paperId <= 0)
     $Me->goAlert("../", "Invalid paper ID \"" . htmlspecialchars($_REQUEST["paperId"]) . "\".");
 
@@ -57,7 +57,7 @@ if (isset($_REQUEST['setoutcome'])) {
     if (!$Me->canSetOutcome($prow))
 	$Conf->errorMsg("You cannot set the outcome for paper #$paperId" . ($Me->amAssistant() ? " (but you could if you entered chair mode)" : "") . ".");
     else {
-	$o = cvtint(ltrim(rtrim($_REQUEST['outcome'])));
+	$o = cvtint(trim($_REQUEST['outcome']));
 	$rf = reviewForm();
 	if (isset($rf->options['outcome'][$o])) {
 	    $result = $Conf->qe("update Paper set outcome=$o where paperId=$paperId", "while changing outcome");
@@ -206,11 +206,12 @@ $nreviews = $prow->reviewCount;
 
 if ($nreviews > 0 && $Me->canViewReviews($prow, $Conf)) {
     $rf = reviewForm();
-    $q = "select PaperReview.*, ContactInfo.firstName, ContactInfo.lastName,
- 		ContactInfo.email
-		from PaperReview join ContactInfo using (contactId)
-		where paperId=$paperId and reviewSubmitted>0
-		order by reviewId";
+    $q = "select PaperReview.*,
+		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
+		from PaperReview
+		join ContactInfo using (contactId)
+		where paperId=$paperId
+		order by reviewSubmitted";
     $result = $Conf->qe($q, "while retrieving reviews");
     $reviewnum = 65;
     if (!DB::isError($result) && $result->numRows() > 0)
@@ -222,10 +223,10 @@ if ($nreviews > 0 && $Me->canViewReviews($prow, $Conf)) {
   <td class='form_id'><h3>Review&nbsp;", chr($reviewnum++), "</h3></td>
   <td class='form_entry' colspan='3'>";
 	    if ($Me->canViewReviewerIdentity($rrow, $prow, $Conf))
-		echo "by <span class='reviewer'>", ltrim(rtrim(htmlspecialchars("$rrow->firstName $rrow->lastName"))), "</span>";
+		echo "by <span class='reviewer'>", trim(htmlspecialchars("$rrow->firstName $rrow->lastName")), "</span>";
 	    echo " <span class='reviewstatus'>", reviewStatus($rrow, 1), "</span>";
 	    if ($rrow->contactId == $Me->contactId || $Me->amAssistant())
-		echo " ", reviewButton($paperId, $prow, 0, $Conf);
+		echo " ", reviewButton($paperId, $rrow, 0, $Conf);
 	    echo "</td>
 </tr>\n";
 	    echo $rf->webDisplayRows($rrow, $Me->canViewAllReviewFields($prow, $Conf)), "</table>\n\n";

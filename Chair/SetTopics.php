@@ -35,7 +35,7 @@ if (isset($_REQUEST["update"])) {
     // Add new topics
     if (isset($_REQUEST["topics"])) {
 	foreach (preg_split('/[\r\n]+/', $_REQUEST["topics"]) as $t) {
-	    if (($t = ltrim(rtrim($t))) != '')
+	    if (($t = trim($t)) != '')
 		$Conf->qe("insert into TopicArea set topicName='" . mysql_real_escape_string($t) . "'", "while adding new topic");
 	}
     }
@@ -55,7 +55,7 @@ if (isset($_REQUEST["update"])) {
 
 	    // remove existing PC roles
 	    if (isset($_REQUEST["top$id"])) {
-		$top = ltrim(rtrim($_REQUEST["top$id"]));
+		$top = trim($_REQUEST["top$id"]);
 		$result = $Conf->qe("update TopicArea set topicName='" . mysql_real_escape_string($top) . "' where topicId=$id", "while updating topic name");
 	    }
 	}

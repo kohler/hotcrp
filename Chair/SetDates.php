@@ -142,7 +142,7 @@ function crp_strtotime($tname, $which) {
     if (!isset($_REQUEST[$varname]))
 	$err = "missing from form";
     else {
-	$t = ltrim(rtrim($_REQUEST[$varname]));
+	$t = trim($_REQUEST[$varname]);
 	if ($t == "" || strtoupper($t) == "N/A")
 	    return -1;
 	else if (($t = strtotime($t)) >= 0)
@@ -250,9 +250,8 @@ $Conf->updateImportantDates();
 
 <table>
 <tr>
-  <td class='form_caption'><input class='button_default' type='submit' value='Update All' name='update' /></td>
+  <td class='form_caption'><input class='button_default' type='submit' value='Save Changes' name='update' /></td>
   <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' /></td>
-  <td>Select Update All to save any changes to dates.  It will turn red to help you remember.</td>
 </tr>
 </table>
 
@@ -270,7 +269,7 @@ $Conf->updateImportantDates();
 
 <table>
 <tr>
-  <td class='form_caption'><input class='button_default' type='submit' value='Update All' name='update' /></td>
+  <td class='form_caption'><input class='button_default' type='submit' value='Save Changes' name='update' /></td>
   <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' /></td>
 </tr>
 </table>
@@ -287,7 +286,7 @@ $Conf->updateImportantDates();
 
 <table>
 <tr>
-  <td class='form_caption'><input class='button_default' type='submit' value='Update All' name='update' /></td>
+  <td class='form_caption'><input class='button_default' type='submit' value='Save Changes' name='update' /></td>
   <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' /></td>
 </tr>
 </table>
@@ -313,7 +312,7 @@ $Conf->updateImportantDates();
 
 <table>
 <tr>
-  <td class='form_caption'><input class='button_default' type='submit' value='Update All' name='update' /></td>
+  <td class='form_caption'><input class='button_default' type='submit' value='Save Changes' name='update' /></td>
   <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' /></td>
 </tr>
 </table>

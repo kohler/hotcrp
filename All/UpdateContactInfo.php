@@ -23,15 +23,15 @@ if (isset($_REQUEST["register"])) {
  }
 
 if (isset($_REQUEST['register']) && $OK) {
-    $_REQUEST["email"] = ltrim(rtrim($_REQUEST["email"]));
+    $_REQUEST["email"] = trim($_REQUEST["email"]);
     if ($_REQUEST["password"] == "" && !$newProfile)
 	$UpdateError = "Blank passwords are not allowed.";
     else if ($_REQUEST["password"] != $_REQUEST["password2"] && !$newProfile)
 	$UpdateError = "The two passwords you entered did not match.";
-    else if (ltrim(rtrim($_REQUEST["password"])) != $_REQUEST["password"] && !$newProfile)
+    else if (trim($_REQUEST["password"]) != $_REQUEST["password"] && !$newProfile)
 	$UpdateError = "Passwords cannot begin or end with spaces.";
     else if ($_REQUEST["email"] != $Me->email
-	     && $Conf->emailRegistered($_REQUEST["email"]))
+	     && $Conf->getContactId($_REQUEST["email"]))
 	$UpdateError = "Can't change your email address to " . htmlspecialchars($_REQUEST["email"]) . ", since an account is already registered with that email address.  You may want to <a href='MergeAccounts.php'>merge these accounts</a>.";
     else {
 	if ($newProfile) {

@@ -9,7 +9,7 @@ if ($paperId <= 0)
 
 $notAuthor = !$Me->amPaperAuthor($paperId, $Conf);
 if ($notAuthor && !$Me->amAssistant())
-    $Me->goAlert("../", "You are not an author of paper #$paperId.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
+    $Me->goAlert("../All/ViewPaper.php?paperId=$paperId", "You are not an author of paper #$paperId.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
 
 $overrideMsg = '';
 if ($Me->amAssistant())
@@ -232,7 +232,7 @@ if ($OK) {
     
     if ($can_update) {
 	echo "<tr>\n  <td class='", pt_caption_class('title'), "'>Title:</td>\n";
-	echo "  <td class='pt_entry'><textarea class='textlite' name='title' rows='1' cols='60' id='title' onchange='highlightUpdate()'>", pt_data_html('title', $prow), "</textarea></td>\n";
+	echo "  <td class='pt_entry'><textarea class='textlite' name='title' rows='1' cols='80' id='title' onchange='highlightUpdate()'>", pt_data_html('title', $prow), "</textarea></td>\n";
 	echo "</tr>\n";
     }
 ?>
@@ -264,7 +264,7 @@ if ($OK) {
   <td class='<?php echo pt_caption_class('abstract') ?>'>Abstract:</td>
   <td class='pt_entry'><?php
      if ($can_update)
-	 echo "<textarea class='textlite' name='abstract' rows='5' onchange='highlightUpdate()'>";
+	 echo "<textarea class='textlite' name='abstract' cols='80' rows='5' onchange='highlightUpdate()'>";
      echo pt_data_html('abstract', $prow);
      if ($can_update)
 	 echo "</textarea>";
@@ -284,6 +284,7 @@ if ($OK) {
 	while ($row = $result->fetchRow())
 	    $aus[] = "$row[0] $row[1] ($row[2])";
 	echo authorTable($aus);
+	echo "<a class='button_small' href='PaperContacts.php?paperId=$paperId'>Edit&nbsp;contact&nbsp;authors</a>";
     }
   } ?></td>
 </tr>
@@ -292,7 +293,7 @@ if ($OK) {
   <td class='<?php echo pt_caption_class('authorInformation') ?>'>Authors:</td>
   <td class='pt_entry'><?php
     if ($can_update)
-	echo "<textarea class='textlite' name='authorInformation' rows='5' onchange='highlightUpdate()'>", pt_data_html('authorInformation', $prow), "</textarea>";
+	echo "<textarea class='textlite' name='authorInformation' cols='80' rows='5' onchange='highlightUpdate()'>", pt_data_html('authorInformation', $prow), "</textarea>";
     else
 	echo authorTable($prow->authorInformation);
 ?></td>
@@ -305,7 +306,7 @@ Zhang, Ping Yen (INRIA)</pre></td><?php } ?>
   <td class='pt_caption'>Collaborators:</td>
   <td class='pt_entry'><?php
     if ($can_update)
-	echo "<textarea class='textlite' name='collaborators' rows='5' onchange='highlightUpdate()'>", pt_data_html('collaborators', $prow), "</textarea>";
+	echo "<textarea class='textlite' name='collaborators' cols='80' rows='5' onchange='highlightUpdate()'>", pt_data_html('collaborators', $prow), "</textarea>";
     else
 	echo authorTable($prow->collaborators);
 ?></td>
@@ -391,7 +392,7 @@ if ($nreviews > 0 && $Me->canViewReviews($prow, $Conf)) {
   <td class='form_id'><h3>Review&nbsp;", chr($reviewnum++), "</h3></td>
   <td class='form_entry' colspan='3'>";
 	    if ($Me->canViewReviewerIdentity($rrow, $prow, $Conf))
-		echo "by <span class='reviewer'>", ltrim(rtrim(htmlspecialchars("$rrow->firstName $rrow->lastName"))), "</span>";
+		echo "by <span class='reviewer'>", trim(htmlspecialchars("$rrow->firstName $rrow->lastName")), "</span>";
 	    echo " <span class='reviewstatus'>", reviewStatus($rrow, 1), "</span>";
 	    if ($rrow->contactId == $Me->contactId || $Me->amAssistant())
 		echo " ", reviewButton($paperId, $prow, 0, $Conf);

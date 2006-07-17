@@ -1,18 +1,12 @@
 <?php 
-//
-// Configuration for a Contact (i.e. someone using the reviewing system)
-//
-// Assumes global variable DB
-//
+
 class Conference {
     
     var $connected;
-    var $setupPhase;
     var $sessionName; // name of this session, security
     var $shortName;
     var $longName;
     var $theme;
-    var $blindSubmission;
     var $paperSite;
     var $conferenceSite;
     var $downloadPrefix;
@@ -74,16 +68,15 @@ class Conference {
 	$this->endTime = array();
 	$this->saveMessages = 1;
 	$this->headerPrinted = 0;
-	$this->blindSubmission = 1;
     }
 
-  function dump()
-    {
+  function dump() {
+      global $Opt;
       echo "<table border=\"1\" width=\"83%\" bgcolor=$bgOne>";
       echo "<tr> <td>";
       echo "<p>";
 
-      echo "setupPhase is " . $this -> setupPhase . " <br>";
+      echo "setupPhase is " . $Opt['setupPhase'] . " <br>";
       echo "shortName is " . $this -> shortName . " <br>";
       echo "longName is " . $this -> longName . " <br>";
       //      echo "theme is " . $this -> theme . " <br>";
@@ -149,107 +142,103 @@ class Conference {
 	    }
     }
 
-  function q($query) {
-      global $OK;
-      if (!$this->connected)
-	  $this->connect();
-      $result = $this->DB->query($query);
-      if (DB::isError($result))
-	  $OK = 0;
-      return $result;
-  }
+    function q($query) {
+	global $OK;
+	if (!$this->connected)
+	    $this->connect();
+	$result = $this->DB->query($query);
+	if (DB::isError($result))
+	    $OK = 0;
+	return $result;
+    }
 
-  function dbErrorText($result, $while = "", $suggestRetry = 1) {
-      if ($result != null) {
-	  $text = "<p>Database error";
-	  if ($while)
-	      $text .= " $while";
-	  $text .= ": " . $result->getMessage() . "</p>";
-      }
-      if ($suggestRetry)
-	  $text .= "\n<p>Please try again or contact the site administrator at $this->emailFrom.</p>";
-      return $text;
-  }
+    function dbErrorText($result, $while = "", $suggestRetry = 1) {
+	if ($result != null) {
+	    $text = "<p>Database error";
+	    if ($while)
+		$text .= " $while";
+	    $text .= ": " . $result->getMessage() . "</p>";
+	}
+	if ($suggestRetry)
+	    $text .= "\n<p>Please try again or contact the site administrator at $this->emailFrom.</p>";
+	return $text;
+    }
   
-  function qe($query, $while = "", $suggestRetry = 0) {
-      global $OK;
-      if (!$this->connected)
-	  $this->connect();
-      $result = $this->DB->query($query);
-      if (DB::isError($result)) {
-	  $this->errorMsg($this->dbErrorText($result, $while . " (" . htmlspecialchars($query) . ")", $suggestRetry));
-	  $OK = 0;
-      }
-      return $result;
-  }
+    function qe($query, $while = "", $suggestRetry = 0) {
+	global $OK;
+	if (!$this->connected)
+	    $this->connect();
+	$result = $this->DB->query($query);
+	if (DB::isError($result)) {
+	    $this->errorMsg($this->dbErrorText($result, $while . " (" . htmlspecialchars($query) . ")", $suggestRetry));
+	    $OK = 0;
+	}
+	return $result;
+    }
 
 
-  //
-  // Check to see if an email address has been registered
-  // in the database
-  //
-  function emailRegistered($email) {
-      $email = ltrim(rtrim($email));
-      $result = $this->q(sprintf("select ContactInfo.contactId from ContactInfo where (email='%s')", mysql_real_escape_string($email)));
-      if ($result && $result->numRows() > 0) {
-	  $row = $result->fetchRow();
-	  return $row[0];
-      } else {
-	  return 0;
-      }
-  }
+    //
+    // Check to see if an email address has been registered
+    // in the database
+    //
+    function getContactId($email, $registerFromRequest = false) {
+	$email = ($email ? trim($email) : "");
+	if (!$email)
+	    return 0;
+	
+	$result = $this->q(sprintf("select contactId from ContactInfo where email='%s'", sqlq($email)));
+	if ($result && $result->numRows() > 0) {
+	    $row = $result->fetchRow();
+	    return $row[0];
+	}
 
-  //
-  // Determine roles baased on email address and/or contactId
-  //
-  function emailIsPC($email) {
-      $result = $this->q("select PCMember.contactId from ContactInfo join PCMember using (contactId) where email='" . sqlq($email) . "'");
-      if (!DB::isError($result) && $result->numRows() > 0) {
-	  $row = $result->fetchRow();
-	  return $row[0];
-      } else
-	  return 0;
-  }
+	if (!$registerFromRequest)
+	    return 0;
 
-  function contactIsPC($id) {
-      $result=$this->q("select contactId from PCMember where contactId=$id");
-      if (!DB::isError($result) && $result->numRows() > 0) {
-	  $row = $result->fetchRow();
-	  return $row[0];
-      } else
-	  return 0;
-  }
+	// try to add them
+	$newguy = new Contact();
+	$result = $newguy->initialize($email, $this);
+	if (!DB::isError($result)) {
+	    
+	    // rigamarole to handle separate or joined first and last names
+	    if (isset($_REQUEST['firstName']) || isset($_REQUEST['lastName'])) {
+		if (isset($_REQUEST['firstName']))
+		    $newguy->firstName = $_REQUEST['firstName'];
+		if (isset($_REQUEST['lastName']))
+		    $newguy->lastName = $_REQUEST['lastName'];
+	    } else if (!isset($_REQUEST['name']))
+		/* nada */;
+	    else if (preg_match('/^(.*),\s*(\S.*)$/', $_REQUEST['name'], $matches)) {
+		$newguy->firstName = $matches[2];
+		$newguy->lastName = $matches[1];
+	    } else if (preg_match('/^(.*)\s+(\S*)$/', $_REQUEST['name'], $matches)) {
+		$newguy->firstName = $matches[1];
+		$newguy->lastName = $matches[2];
+	    } else
+		$newguy->lastName = $_REQUEST['name'];
 
-  function emailIsChair($email) {
-      if ($this->setupPhase)
-	  return 1;
-      $result = $this->q("select Chair.contactId FROM ContactInfo join Chair using (contactId) where email='" . sqlq($email) . "'");
-      if (!DB::isError($result) && $result->numRows() > 0) {
-	  $row = $result->fetchRow();
-	  return $row[0];
-      } else
-	  return 0;
-  }
+	    // other information is easier
+	    if (isset($_REQUEST['affiliation']))
+		$newguy->affiliation = $_REQUEST['affiliation'];
+	    if (isset($_REQUEST['voicePhoneNumber']))
+		$newguy->voicePhoneNumber = $_REQUEST['voicePhoneNumber'];
+	    if (isset($_REQUEST['faxPhoneNumber']))
+		$newguy->faxPhoneNumber = $_REQUEST['faxPhoneNumber'];
 
-  function contactIsChair($id) {
-      if ($this->setupPhase)
-	  return 1;
-      $result = $this->q("select contactId from Chair where contactId=$id");
-      if (!DB::isError($result) && $result->numRows() > 0) {
-	  $row = $result->fetchRow();
-	  return $row[0];
-      } else
-	  return 0;
-  }
+	    // actually update database
+	    $result = $newguy->updateDB($this, "while creating account for " . htmlspecialchars($email));
+	}
+	
+	if (!DB::isError($result)) {
+	    $this->infoMsg("Created account for " . htmlspecialchars($email) . ".");
+	    $newguy->sendAccountInfo($this);
+	    $this->log("$Me->contactId created account", $newguy);
+	} else
+	    $this->log("$Me->contactId account creation failure", $newguy);
+	
+	return $newguy->contactId;
+    }
 
-  function contactIsAssistant($id) {
-      $result = $this->q("select contactId from ChairAssistant where contactId=$id");
-      if (!DB::isError($result) && $result->numRows() > 0) {
-	  $row = $result->fetchRow();
-	  return $row[0];
-      } else
-	return 0;
-  }
 
   function listMissingReviews($contactId)
     {
@@ -551,7 +540,7 @@ class Conference {
     
     function __downloadPaper($paperId, $saveit) {
 	// Database query
-	$result = $this->q("select mimetype, paper, withdrawn, PaperStorage.paperStorageId
+	$result = $this->q("select mimetype, paper, withdrawn, PaperStorage.paperStorageId, compression
 	from Paper left join PaperStorage using (paperStorageId)
 	where Paper.paperId=$paperId");
 	if (DB::isError($result)) {
@@ -565,6 +554,7 @@ class Conference {
 	$mimetype = $row[0];
 	$content = $row[1];
 	$withdrawn = $row[2];
+	$compression = $row[4];
 	$length = strlen($content);
 	if ($withdrawn > 0)
 	    return new PEAR_Error("Paper #$paperId has been withdrawn.");
@@ -579,7 +569,10 @@ class Conference {
 	header("Content-Disposition: " . ($saveit ? "attachment" : "inline") . "; filename=$name");
 	header("Content-Type: $mimetype");
 	header("Content-Length: $length"); 
-	print $content;
+	if ($compression == 1)
+	    print gzinflate($content);
+	else
+	    print $content;
 	return 1;
     }
 
@@ -602,7 +595,7 @@ class Conference {
 	    return $this->__downloadPaper($paperIds[0], 1);
 
 	// paper query
-	$q = "select Paper.paperId, paper, mimetype from PaperStorage join Paper using (paperStorageId) where (";
+	$q = "select Paper.paperId, paper, mimetype, compression from PaperStorage join Paper using (paperStorageId) where (";
 	foreach ($paperIds as $paperId)
 	    $downloadQ[] = "Paper.paperId=$paperId";
 	$q .= join(" or ", $downloadQ) . ")";
@@ -617,6 +610,8 @@ class Conference {
 	// write papers into temporary directory
 	while ($row = $result->fetchRow()) {
 	    $path = "$tmpdir/" . $this->downloadPaperName($row[0], $row[2]);
+	    if ($row[3] == 1)
+		$row[1] = gzinflate($row[1]);
 	    if (($len = file_put_contents($path, $row[1])) != strlen($row[1]))
 		$warnings[] = "Could not save paper #$row[0].";
 	    else if ($len == 0)
@@ -778,6 +773,116 @@ class Conference {
 	    return $result->fetchRow(DB_FETCHMODE_OBJECT);
     }
 
+
+    
+    function reviewQuery($contactId, $options = array()) {
+	// Options:
+	//   "paperId" => $pid	Only paperId $pid (if array, any of those)
+	//   "finalized"	Only submitted papers
+	//   "author"		Only papers authored by $contactId
+	//   "myReviewRequests"	Only reviews requested by $contactId
+	//   "contactAuthors"	Include comma-separated list of contact author
+	//			contactIds as $row->contactAuthors
+	//   "myReviews"	All reviews authored by $contactId
+	//   "myReviewsOpt"	myReviews, + include papers not yet reviewed
+	//   "allReviews"	All reviews (multiple rows per paper)
+	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
+
+	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']) || isset($options['myReviewsOpt']);
+
+	// fields
+	$pq = "select Paper.*,
+		length(PaperStorage.paper) as size, mimetype, timestamp,
+		max(PaperConflict.author) as author,
+		count(PaperConflict.author) as conflict,
+		count(AllReviews.reviewSubmitted) as reviewCount,
+		count(AllReviews.paperId) as startedReviewCount";
+	if (!isset($options['author']))
+	    $pq .= ",
+		ReviewRequest.reviewType,
+		PaperReview.reviewId,
+		PaperReview.reviewSubmitted,
+		PaperReview.contactId as reviewContactId";
+	if (isset($options['reviewerName']))
+	    $pq .= ",
+		ReviewerContactInfo.firstName as reviewFirstName,
+		ReviewerContactInfo.lastName as reviewLastName,
+		ReviewerContactInfo.email as reviewEmail";
+	if ($reviewerQuery) {
+	    global $reviewFields;
+	    foreach ($reviewFields as $k => $v)
+		$pq .= ",\t\tPaperReview.$k as $k";
+	}
+	if (isset($options['contactAuthors']))
+	    $pq .= ",
+		group_concat(PaperAuthors.contactId) as contactAuthors";
+
+	// tables
+	$pq .= "
+		from Paper
+		left join PaperStorage using (paperStorageId)\n";
+	
+	if (isset($options['author']))
+	    $pq .= "		join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.author>0 and PaperConflict.contactId=$contactId)\n";
+	else
+	    $pq .= "		left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)\n";
+	
+	$pq .= "		left join PaperReview as AllReviews on (AllReviews.paperId=Paper.paperId)\n";
+
+	if (isset($options['myReviewRequests']))
+	    $pq .= "		join ReviewRequest on (ReviewRequest.paperId=Paper.paperId and ReviewRequest.requestedBy=$contactId and ReviewRequest.reviewType=" . REVIEW_REQUESTED . ")
+		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
+	else if (isset($options['allReviews']))
+	    $pq .= "		left join ReviewRequest on (ReviewRequest.paperId=Paper.paperId)
+		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
+	else if (!isset($options['author']))
+	    $pq .= "		left join ReviewRequest on (ReviewRequest.paperId=Paper.paperId and ReviewRequest.contactId=$contactId)
+		left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$contactId)\n";
+
+	if (isset($options['reviewerName']))
+	    $pq .= "		left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperReview.contactId)\n";
+	
+	if (isset($options['contactAuthors']))
+	    $pq .= "		left join PaperConflict as PaperAuthors on (PaperAuthors.paperId=Paper.paperId and PaperAuthors.author>0)\n";
+
+	// conditions
+	if (isset($options['paperId'])) {
+	    if (is_array($options['paperId'])) {
+		foreach ($options['paperId'] as $pid)
+		    if (($pid = cvtint($pid)) > 0)
+			$pids[] = "Paper.paperId=$pid";
+		if (count($pids) == 0)
+		    $pids[] = "Paper.paperId=0";
+		$where[] = "(" . join(" or ", $pids) . ")";
+	    } else if ($options['paperId'] > 0)
+		$where[] = "Paper.paperId=" . $options['paperId'];
+	}
+	if (isset($options['finalized'])) {
+	    $where[] = "acknowledged>0";
+	    $where[] = "withdrawn<=0";
+	}
+	if ($reviewerQuery && !isset($options['myReviewsOpt']))
+	    $where[] = "(ReviewRequest.reviewType or PaperReview.reviewId)";
+	
+	if (isset($where))
+	    $pq .= "		where " . join(" and ", $where) . "\n";
+
+	// grouping and ordering
+	if ($reviewerQuery)
+	    $pq .= "		group by PaperReview.reviewId, Paper.paperId\n";
+	else
+	    $pq .= "		group by Paper.paperId\n";
+	if (isset($options['order']) && $options['order'] != "order by Paper.paperId")
+	    $pq .= "		" . $options['order'];
+	else {
+	    $pq .= "		order by Paper.paperId";
+	    if ($reviewerQuery)
+		$pq .= ", PaperReview.reviewId";
+	}
+	
+	return $pq . "\n";
+    }
+    
 
     //
     // Message routines
@@ -1049,7 +1154,8 @@ class Conference {
     }
 
     function allowEmailTo($email) {
-	return $this->allowEmail && strstr($email, "@");
+	global $Opt;
+	return $Opt['allowEmail'] && strstr($email, "@");
     }
   
   function sendReviewerRequest($who, $email, $paperList) {

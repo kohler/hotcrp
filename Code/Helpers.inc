@@ -1,7 +1,7 @@
 <?php
 
 function sqlqtrim($value) {
-    return mysql_real_escape_string(ltrim(rtrim($value)));
+    return mysql_real_escape_string(trim($value));
 }
 
 function sqlq($value) {
@@ -15,7 +15,7 @@ function sqlq_cleannl($value) {
 
 function cvtint(&$value, $default = -1) {
     if (isset($value)) {
-	$v = ltrim(rtrim($value));
+	$v = trim($value);
 	if (is_numeric($v)) {
 	    $ival = intval($v);
 	    if ($ival == floatval($v))
@@ -123,24 +123,29 @@ function reviewButton($paperId, $row = null, $buttonType = 0, $conf = null) {
     if ($row === null && ($row = $conf->getPaperRow($paperId, $Me->contactId)) === null)
 	return "Database error";
 
-    $rreq = ($row->reviewType > 0 || $row->reviewId);
+    $reviewType = (isset($row->reviewType) ? $row->reviewType : 0);
+    $rreq = ($reviewType > 0 || $row->reviewId);
     $timeGood = $Conf->timeReviewPaper($Me->isPC, $rreq, false);
     $timeOK = $Conf->timeReviewPaper($Me->isPC, $rreq, true);
-    $need = ($row->reviewType > 0 || $row->reviewId);
-    if ($need && !$row->reviewSubmitted && !$timeGood)
+    $need = ($reviewType > 0 || $row->reviewId);
+    $conflict = (isset($row->conflict) ? $row->conflict : 0);
+    $acknowledged = (isset($row->acknowledged) ? $row->acknowledged : 0);
+    $withdrawn = (isset($row->withdrawn) ? $row->withdrawn : 0);
+    
+    if ($rreq && !$row->reviewSubmitted && !$timeGood)
 	$type = "past";
-    else if (($need && $row->reviewSubmitted === null)
-	     || (!$need && $row->conflict <= 0 && $timeOK && $row->acknowledged > 0 && $row->withdrawn <= 0))
+    else if (($rreq && $row->reviewSubmitted === null)
+	     || (!$rreq && $conflict <= 0 && $timeOK && $acknowledged > 0 && $withdrawn <= 0))
 	$type = "start";
-    else if ($need && !$row->reviewSubmitted)
+    else if ($rreq && !$row->reviewSubmitted)
 	$type = "comp";
-    else if ($need && $timeOK)
+    else if ($rreq && $timeOK)
 	$type = "edit";
-    else if ($need)
+    else if ($rreq)
 	$type = "view";
-    else if ($Me->isPC && $row->author > 0)
+    else if ($Me->isPC && $author > 0)
 	$type = "author";
-    else if ($Me->isPC && $row->conflict > 0)
+    else if ($Me->isPC && $conflict > 0)
 	$type = "conflict";
     else
 	$type = "";
@@ -224,15 +229,15 @@ function authorTable($aus, $columns = 2) {
     if (!is_array($aus))
 	$aus = explode("\n", $aus);
     foreach ($aus as $au) {
-	$au = ltrim(rtrim($au));
+	$au = trim($au);
 	if ($au != '')
 	    $out .= "<span class='autblentry'>" . htmlspecialchars($au) . "</span> ";
     }
     return $out;
 }
 
-function contactText($firstName, $lastName, $email) {
-    $x = ltrim(rtrim("$firstName $lastName"));
+function contactText($firstName, $lastName, $email=null) {
+    $x = trim("$firstName $lastName");
     if ($email)
 	$x .= " ($email)";
     return $x;

@@ -123,7 +123,7 @@ class ReviewForm {
 	    $fval = (isset($_REQUEST[$field]) ? $_REQUEST[$field]
 		     : ($rrow ? $rrow->$field : ""));
 	    if (isset($this->options[$field])) {
-		$fval = ltrim(rtrim($fval));
+		$fval = trim($fval);
 		$max = count($this->options[$field]);
 		if ($fval == "" || $fval == "0") {
 		    if ($submit) {
@@ -163,7 +163,8 @@ class ReviewForm {
 	$conf = ($conf ? $conf : $Conf);
 	$Me = $_SESSION['Me'];
 
-	if (!$Me->timeReview($prow, $conf) && !isset($_REQUEST['override']))
+	if (!$Me->timeReview($prow, $conf)
+	    && (!isset($_REQUEST['override']) || !$Me->amAssistant()))
 	    return $conf->errorMsg("The <a href='${ConfSiteBase}All/ImportantDates.php'>deadline</a> for entering this review has passed." . ($Me->amAssistant() ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
 	
 	$q = "";
@@ -178,8 +179,17 @@ class ReviewForm {
 		}
 		$q .= "$field='" . sqlq($fval) . "', ";
 	    }
-	if ($submit)
-	    $q .= "reviewSubmitted=1, ";
+
+	if ($submit && (!$rrow || !$rrow->reviewSubmissionId)) {
+	    $result = $conf->qe("insert into PaperReviewSubmission set paperId=$prow->paperId", "while storing review");
+	    if (!DB::isError($result))
+		$result = $conf->qe("select last_insert_id()", "while storing review");
+	    if (!DB::isError($result) && $result->numRows() > 0) {
+		$row = $result->fetchRow();
+		$q .= "reviewSubmitted=$row[0], ";
+	    }
+	}
+	
 	if ($rrow)
 	    return $conf->qe("update PaperReview set " . substr($q, 0, -2) . ", reviewLastModified=current_timestamp where reviewId=$rrow->reviewId", "while storing review");
 	else

@@ -8,11 +8,7 @@ $dbUser = "HotNetsV";
 $dbPassword = "HotNetsV";
 $dbName = "HotNetsV";
 
-//
-// if setupPhase == 1, anyone who logs in has chair powers.
-//
 $Conf = new Conference($dbUser, $dbPassword, $dbHost, $dbName);
-$Conf->setupPhase = 0;
 
 //
 // Conference names
@@ -23,7 +19,6 @@ $Conf->setupPhase = 0;
 $Conf->sessionName = "HotNetsV";
 $Conf->shortName = "HotNets V";
 $Conf->longName = "HotNets V";
-$Conf->blindSubmission = 1;
 
 // allowed paper formats
 $Conf->allowPDF = 1;
@@ -86,10 +81,6 @@ $Conf->contactEmail = "kohler@cs.ucla.edu";
 // Email appears to come from this address
 //
 $Conf->emailFrom = "kohler@read.cs.ucla.edu";
-//
-// Actually try to email.
-//
-$Conf->allowEmail = 1;
 
 //
 // This is where dumps of the database are placed
