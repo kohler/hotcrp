@@ -14,9 +14,7 @@ function initialError($what, &$tf = null) {
 	$title = ($paperId <= 0 ? "Review Papers" : "Review Paper #$paperId");
 	$Conf->header($title, 'review');
 	doGoPaper();
-	$Conf->errorMsg($what);
-	$Conf->footer();
-	exit;
+	$Conf->errorMsgExit($what);
     } else {
 	$tf['err'][] = $tf['firstLineno'] . ": $what";
 	return null;
@@ -34,8 +32,8 @@ function get_prow($paperIdIn, &$tf = null) {
 	$prow = initialError("No such paper #$paperId.", $tf);
     else {
 	$prow = $result->fetchRow(DB_FETCHMODE_OBJECT);
-	if (!$Me->canReview($paperId, $Conf, $prow, $errorText))
-	    $prow = initialError($errorText, $tf);
+	if (!$Me->canStartReview($prow, $Conf, $whyNot))
+	    $prow = initialError(whyNotText($whyNot, "review", $prow->paperId), $tf);
     }
 }
 

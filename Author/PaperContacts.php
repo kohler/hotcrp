@@ -51,6 +51,11 @@ function addContactAuthor($paperId, $contactId) {
     return $result;
 }
 
+function removeContactAuthor($paperId, $contactId) {
+    global $Conf;
+    return $Conf->qe("delete from PaperConflict where paperId=$paperId and contactId=$contactId", "while removing contact author");
+}
+
 $Conf->header("Paper #$paperId Contact Authors", 'paperauthors');
 
 $prow = $Conf->getPaperRow($paperId, $Me->contactId);
@@ -63,9 +68,20 @@ else if (isset($_REQUEST["update"])) {
     else if (($id = $Conf->getContactId($_REQUEST["email"])) > 0) {
 	$result = addContactAuthor($paperId, $id);
 	if (!DB::isError($result))
-	    $Conf->confirmMsg("Added a contact author for paper #$paperId.  The new contact author can manage the paper just as current contact authors, including seeing reviews and submitting revisions.");
+	    $Conf->confirmMsg("Contact author added.");
     }
-}
+} else if (isset($_REQUEST["remove"])) {
+    if (!$Me->amAssistant())
+	$Conf->errorMsg("Only the PC chair can remove contact authors from a paper.");
+    else if (($id = cvtint($_REQUEST['remove'])) <= 0)
+	$Conf->errorMsg("Invalid contact author ID in request.");
+    else {
+	$result = removeContactAuthor($paperId, $id);
+	if (!DB::isError($result))
+	    $Conf->confirmMsg("Contact author removed.");
+    }
+} else
+    $Conf->infoMsg("Use this screen to add more contact authors for your paper.  Any contact author can edit paper information, upload new versions, submit the paper, and view reviews." . ($Me->amAssistant() ? "" : "  Only the PC chair can <i>remove</i> contact authors from the paper, so act carefully."));
     
 
 
@@ -90,15 +106,19 @@ if ($OK) {
   <td class='pt_entry plholder'><table class='pltable'>
     <tr class='pl_headrow'><th>Name</th> <th>Email</th> <th></th></tr>
     <?php {
-      $q = "select firstName, lastName, email
+      $q = "select firstName, lastName, email, contactId
 	from ContactInfo
 	join PaperConflict using (contactId)
 	where paperId=$paperId and author=1
 	order by lastName, firstName";
       $result = $Conf->qe($q, "while finding contact authors");
       if (!DB::isError($result)) {
-	  while ($row = $result->fetchRow())
-	      echo "<tr><td>", htmlspecialchars(contactText($row[0], $row[1])), "</td> <td>", htmlspecialchars($row[2]), "</td></tr>\n    ";
+	  while ($row = $result->fetchRow()) {
+	      echo "<tr><td>", htmlspecialchars(contactText($row[0], $row[1])), "</td> <td>", htmlspecialchars($row[2]), "</td>";
+	      if ($Me->amAssistant())
+		  echo " <td><button class='button_small' type='submit' name='remove' value='$row[3]'>Remove contact author</button></td>";
+	      echo "</tr>\n    ";
+	  }
       }
     } ?>
     <tr><td><input class='textlite' type='text' name='name' size='20' onchange='highlightUpdate()' /></td>

@@ -26,6 +26,8 @@ define("OUTCOME_REJECTED", -1);
 
 $OK = 1;
 
+$Msg["unknown"] = "Unknown error.";
+
 //
 // Disable caching
 //
@@ -38,24 +40,34 @@ header("Pragma: no-cache");
 //
 $here = substr(__FILE__,0,strrpos(__FILE__,'/'));
 if (file_exists($here . "/Code/confHeader.inc")) {
-    $ConfSitePATH=$here;
+    $ConfSitePATH = $here;
 } else if (file_exists($here . "/../Code/confHeader.inc")) {
-    $ConfSitePATH=substr($here,0,strrpos($here,'/'));
+    $ConfSitePATH = substr($here, 0, strrpos($here,'/'));
 } else {
     //  print "<p> CRP is mis-configured? </p>\n";
-    $ConfSitePATH="/var/www/html";
+    $ConfSitePATH = "/var/www/html";
 }
 
-// decide base URL
-$here = substr($_SERVER["PHP_SELF"], 0, strrpos($_SERVER["PHP_SELF"], '/'));
-$last = substr($here, strrpos($here, '/') + 1);
-if ($last == "All" || $last == "Assistant" || $last == "Author"
-    || $last == "Code" || $last == "Chair" || $last == "Download"
-    || $last == "PC" || $last == "Reviewer") {
-    $ConfSiteBase = "../";
-} else {
-    $ConfSiteBase = "./";
+// special handling for Download URLs
+{
+    $toplev = array('All' => 1, 'Assistant' => 1, 'Author' => 1,
+		    'Chair' => 1, 'Code' => 1, 'Download' => 1,
+		    'PC' => 1, 'Reviewer' => 1);
+    $url = $_SERVER['PHP_SELF'];
+    $ndotdot = 0;
+    while (($rpos = strrpos($url, "/")) !== false) {
+	$last = substr($url, $rpos + 1);
+	if (isset($toplev[$last])) {
+	    $ConfSiteBase = str_repeat("../", $ndotdot);
+	    break;
+	}
+	$ndotdot++;
+	$url = substr($url, 0, $rpos);
+    }
+    if (!isset($ConfSiteBase))
+	$ConfSiteBase = "./";
 }
+
 
 //
 // Bring in code

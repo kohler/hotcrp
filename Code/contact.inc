@@ -4,6 +4,7 @@
 //
 
 class Contact {
+    
     // Which conference are we dealing with?
     var $shortConfName;
 
@@ -28,6 +29,7 @@ class Contact {
     var $isChair;
     var $isAssistant;
     var $chairMode;
+    var $chairContactId;
     var $validated;
 
 
@@ -35,7 +37,7 @@ class Contact {
     // Initialization functions
     //
 
-    function valid($conf = null) {
+    function valid($conf = null, $update = false) {
 	global $Conf, $Opt;
 	if ($conf == null)
 	    $conf = $Conf;
@@ -65,7 +67,7 @@ class Contact {
 		    if ($row[2] > 0)
 			$this->isPC = true;
 		    if ($row[3] > 0)
-			$this->isAssistant = $this->isPC = true;
+			$this->isAssistant = true;
 		    if ($row[4] > 0)
 			$this->isChair = true;
 		}
@@ -73,9 +75,26 @@ class Contact {
 		    $this->isChair = true;
 		if (!$this->isChair)
 		    $this->chairMode = false;
-		else if (isset($_REQUEST['chairMode']))
-		    $this->chairMode = (cvtint($_REQUEST['chairMode']) > 0 ? 1 : 0);
+		else
+		    $this->chairContactId = $this->contactId;
+		// change view ID or chair mode
+		if ($this->isChair || $this->chairContactId > 0) {
+		    $viewContact = cvtint($_REQUEST['viewContact']);
+		    $chairMode = cvtint($_REQUEST['chairMode']);
+		    if ($viewContact > 0) {
+			$this->contactId = $viewContact;
+			unset($_REQUEST['viewContact']);
+			return $this->valid($conf, true);
+		    }
+		    if ($chairMode >= 0 && !$this->isChair) {
+			$this->contactId = $this->chairContactId;
+			return $this->valid($conf, true);
+		    } else if ($chairMode >= 0)
+			$this->chairMode = ($chairMode > 0);
+		}
 		$this->validated = true;
+		if ($update)
+		    $this->lookupById($this->contactId, $conf);
 	    }
 	}
 	return $this->contactId > 0 && $conf->shortName == $this->shortConfName;
@@ -103,46 +122,47 @@ class Contact {
 	$this->isChair = false;
 	$this->isAssistant = false;
 	$this->chairMode = false;
+	$this->chairContactId = 0;
     }
   
-  function countRequestedReviews() {
-    global $Conf;
-    $query = "SELECT COUNT(*) FROM ReviewRequest WHERE "
-      . " asked=' " . $this->contactId . "'";
-    $result = $Conf->q($query);
-    if ( !DB::isError($result) && $result->numRows() == 1 ) {
-      $row = $result->fetchRow();
-      return $row[0];
-    } else {
-      return 0;
+    function countRequestedReviews() {
+	global $Conf;
+	$query = "SELECT COUNT(*) FROM ReviewRequest WHERE "
+	    . " asked=' " . $this->contactId . "'";
+	$result = $Conf->q($query);
+	if ( !DB::isError($result) && $result->numRows() == 1 ) {
+	    $row = $result->fetchRow();
+	    return $row[0];
+	} else {
+	    return 0;
+	}
     }
-  }
+    
+    function countRequestedPrimary() {
+	global $Conf;
+	$query = "SELECT COUNT(*) FROM PrimaryReviewer WHERE "
+	    . " contactId=' " . $this->contactId . "'";
+	$result = $Conf->q($query);
+	if ( !DB::isError($result) && $result->numRows() == 1 ) {
+	    $row = $result->fetchRow();
+	    return $row[0];
+	} else {
+	    return 0;
+	}
+    }
 
-  function countRequestedPrimary() {
-    global $Conf;
-    $query = "SELECT COUNT(*) FROM PrimaryReviewer WHERE "
-      . " contactId=' " . $this->contactId . "'";
-    $result = $Conf->q($query);
-    if ( !DB::isError($result) && $result->numRows() == 1 ) {
-      $row = $result->fetchRow();
-      return $row[0];
-    } else {
-      return 0;
+    function countRequestedSecondary() {
+	global $Conf;
+	$query = "SELECT COUNT(*) FROM SecondaryReviewer WHERE "
+	    . " contactId=' " . $this->contactId . "'";
+	$result = $Conf->q($query);
+	if ( !DB::isError($result) && $result->numRows() == 1 ) {
+	    $row = $result->fetchRow();
+	    return $row[0];
+	} else {
+	    return 0;
+	}
     }
-  }
-
-  function countRequestedSecondary() {
-    global $Conf;
-    $query = "SELECT COUNT(*) FROM SecondaryReviewer WHERE "
-      . " contactId=' " . $this->contactId . "'";
-    $result = $Conf->q($query);
-    if ( !DB::isError($result) && $result->numRows() == 1 ) {
-      $row = $result->fetchRow();
-      return $row[0];
-    } else {
-      return 0;
-    }
-  }
 
     function amAssistant() {
 	return $this->isAssistant || $this->isChair;
@@ -152,27 +172,27 @@ class Contact {
 	return $this->isPC || $this->isReviewer;
     }
 
-  function dump() {
-      echo "<table border=\"1\" width=\"83%\" bgcolor=$bgOne>";
-      echo "<tr> <td>";
+    function dump() {
+	echo "<table border=\"1\" width=\"83%\" bgcolor=$bgOne>";
+	echo "<tr> <td>";
 
-      echo "<p>";
-      echo "contactId = " . $this->contactId . "<br>";
-      echo "visits = " . $this->visits . "<br>";
-      echo "firstName = " . $this->firstName . "<br>";
-      echo "lastName = " . $this->lastName . "<br>";
-      echo "email = " . $this->email . "<br>";
-      echo "affiliation = " . $this->affiliation . "<br>";
-      echo "voicePhoneNumber = " . $this->voicePhoneNumber . "<br>";
-      echo "faxPhoneNumber = " . $this->faxPhoneNumber . "<br>";
-      echo "password = " . $this->password . "<br>";
-      echo "note = " . $this->note . "<br>";
-      echo "isAuthor = " . $this->isAuthor . "<br>";
-      echo "isPC = " . $this->isPC . "<br>";
-      echo "isChair = " . $this->isChair . "<br>";
-      echo "isAssistant = " . $this->isAssistant . "<br>";
-      echo "</p> </td> </tr> </table>";
-  }
+	echo "<p>";
+	echo "contactId = " . $this->contactId . "<br>";
+	echo "visits = " . $this->visits . "<br>";
+	echo "firstName = " . $this->firstName . "<br>";
+	echo "lastName = " . $this->lastName . "<br>";
+	echo "email = " . $this->email . "<br>";
+	echo "affiliation = " . $this->affiliation . "<br>";
+	echo "voicePhoneNumber = " . $this->voicePhoneNumber . "<br>";
+	echo "faxPhoneNumber = " . $this->faxPhoneNumber . "<br>";
+	echo "password = " . $this->password . "<br>";
+	echo "note = " . $this->note . "<br>";
+	echo "isAuthor = " . $this->isAuthor . "<br>";
+	echo "isPC = " . $this->isPC . "<br>";
+	echo "isChair = " . $this->isChair . "<br>";
+	echo "isAssistant = " . $this->isAssistant . "<br>";
+	echo "</p> </td> </tr> </table>";
+    }
 
   function trim() {
       $this->contactId = trim($this->contactId);
@@ -239,30 +259,30 @@ class Contact {
     }
   }
 
-  function updateDB($conf, $where = "") {
-      $this->trim();
-      $query = sprintf("update ContactInfo set firstName='%s', lastName='%s',
+    function updateDB($conf, $where = "") {
+	$this->trim();
+	$query = sprintf("update ContactInfo set firstName='%s', lastName='%s',
 		email='%s', affiliation='%s', voicePhoneNumber='%s',
 		faxPhoneNumber='%s', password='%s', collaborators='%s'
 		where contactId='%s'",
-		       sqlqtrim($this->firstName), sqlqtrim($this->lastName),
-		       sqlqtrim($this->email), sqlqtrim($this->affiliation),
-		       sqlqtrim($this->voicePhoneNumber),
-		       sqlqtrim($this->faxPhoneNumber),
-		       sqlqtrim($this->password),
-		       sqlqtrim($this->collaborators),
-		       $this->contactId);
-      return $conf->qe($query, $where);
-  }
+			 sqlqtrim($this->firstName), sqlqtrim($this->lastName),
+			 sqlqtrim($this->email), sqlqtrim($this->affiliation),
+			 sqlqtrim($this->voicePhoneNumber),
+			 sqlqtrim($this->faxPhoneNumber),
+			 sqlqtrim($this->password),
+			 sqlqtrim($this->collaborators),
+			 $this->contactId);
+	return $conf->qe($query, $where);
+    }
 
-  function initialize($email, $conf) {
-      $this->email = trim($email);
-      $this->password = $this->generatePassword(10);
-      $result = $conf->q(sprintf("insert into ContactInfo set email='%s', password='%s'", sqlqtrim($this->email), sqlqtrim($this->password)));
-      if (DB::isError($result))
-	  return $result;
-      return $this->lookupByEmail($this->email, $conf);
-  }
+    function initialize($email, $conf) {
+	$this->email = trim($email);
+	$this->password = $this->generatePassword(10);
+	$result = $conf->q(sprintf("insert into ContactInfo set email='%s', password='%s'", sqlqtrim($this->email), sqlqtrim($this->password)));
+	if (DB::isError($result))
+	    return $result;
+	return $this->lookupByEmail($this->email, $conf);
+    }
 
   function updateFromQuery($query, $conf) {
       $result = $conf->q($query);
@@ -295,16 +315,15 @@ class Contact {
   function lookupByEmail($email, $conf) {
       return $this->updateFromQuery(sprintf(
 		"select ContactInfo.*, TopicInterest.topicId from ContactInfo
-		left join TopicInterest on ContactInfo.contactId=TopicInterest.contactId
+		left join TopicInterest using (contactId)
 		where email='%s' limit 0,1", sqlqtrim($email)), $conf);
   }
 
-  function lookupById($contactId, $conf) {
-      return $this->updateFromQuery(
-		"select ContactInfo.*, TopicInterest.topicId from ContactInfo
-		left join TopicInterest on ContactInfo.contactId=TopicInterest.contactId
-		where contactId=$contactId limit 0,1", $conf);
-  }
+    function lookupById($contactId, $conf) {
+	return $this->updateFromQuery("select ContactInfo.*, TopicInterest.topicId from ContactInfo
+		left join TopicInterest using (contactId)
+		where ContactInfo.contactId=$contactId limit 0,1", $conf);
+    }
 
     function fullname() {
 	if ($this->firstName && $this->lastName)
@@ -319,16 +338,198 @@ class Contact {
 	$n = $this->fullname();
 	return ($n ? $n . " (" . $this->email . ")" : $this->email);
     }
-  
-  function bumpVisits($conf) {
-      $this->visits += 1;
-      $time=mktime();
-      $message = date ("l dS of F Y h:i:s A", $time) . "\n";
-      $query = "UPDATE ContactInfo SET visits='$this->visits', "
-	  . " note='$message' WHERE contactId='$this->contactId'";
-      $result = $conf->qe($query);
-  }
+    
+    function bumpVisits($conf) {
+	$this->visits += 1;
+	$time=mktime();
+	$message = date ("l dS of F Y h:i:s A", $time) . "\n";
+	$query = "UPDATE ContactInfo SET visits='$this->visits', "
+	    . " note='$message' WHERE contactId='$this->contactId'";
+	$result = $conf->qe($query);
+    }
 
+
+    // listing permissions
+
+    function canListAllPapers() {
+	return $this->amAssistant();
+    }
+	
+    function canListSubmittedPapers() {
+	return $this->isPC;
+    }
+
+    function canListReviewerPapers() {
+	return false;
+    }
+
+    function canListAuthoredPapers() {
+	return true;
+    }
+
+
+    // viewing permissions
+
+    function _fetchPaperRow($prow, $conf, &$whyNot, $type) {
+	$whyNot = array();
+	if (is_numeric($prow) && $prow <= 0)
+	    return setRet($whyNot["invalidId"], 1, null);
+	if (is_numeric($prow))
+	    $prow = $conf->getPaperRow($prow, $this->contactId);
+	if (!$prow)
+	    return setRet($whyNot["noPaper"], 1, null);
+	else
+	    return $prow;
+    }
+    
+    function canViewPaper($prow, $conf, &$whyNot = null) {
+	// fetch paper
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "view")))
+	    return false;
+	// policy
+	if ($prow->author > 0
+	    || $this->amAssistant()
+	    || ($prow->withdrawn <= 0 && $prow->acknowledged > 0
+		&& (($this->isPC && $conf->timePCViewSubmission())
+		    || ($prow->reviewType > 0 && $conf->timeReviewerViewSubmission()))))
+	    return true;
+	// collect failure reasons
+	if ($prow->withdrawn > 0)
+	    $whyNot["withdrawn"] = 1;
+	else if ($prow->acknowledged <= 0)
+	    $whyNot["notSubmitted"] = 1;
+	if ($this->isPC && !$conf->timePCViewSubmission())
+	    $whyNot["deadline"] = "PCViewSubmission";
+	else if ($prow->reviewType > 0 && !$conf->timeReviewerViewSubmission())
+	    $whyNot["deadline"] = "ReviewerViewSubmission";
+	if (!isset($whyNot) || count($whyNot) == 0)
+	    $whyNot["permission"] = 1;
+	return false;
+    }
+    
+    function canViewAuthors($prow, $conf, &$whyNot = null) {
+	global $Opt;
+	// fetch paper
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "auview")))
+	    return false;
+	// policy
+	if ($prow->author > 0
+	    || ($this->amAssistant() && $this->chairMode)
+	    || ($prow->withdrawn <= 0 && $prow->acknowledged > 0
+		&& ($this->isPC || $prow->reviewType > 0)
+		&& !$Opt['blindSubmission'])
+	    || (paperAccepted($prow)
+		&& ($this->isPC || $prow->reviewType > 0)
+		&& $conf->timeViewAcceptedAuthors()))
+	    return true;
+	// collect failure reasons
+	if ($prow->withdrawn > 0)
+	    $whyNot["withdrawn"] = 1;
+	else if ($prow->acknowledged <= 0)
+	    $whyNot["notSubmitted"] = 1;
+	else if ($this->isPC || $prow->reviewType > 0)
+	    $whyNot["blindSubmission"] = 1;
+	else
+	    $whyNot["permission"] = 1;
+	if ($this->amAssistant())
+	    $whyNot["chairMode"] = 1;
+	return false;
+    }
+
+    function canViewReviews($prow, $conf, &$whyNot = null, $type = "revview") {
+	// fetch paper
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, $type)))
+	    return false;
+	// policy
+	if (($prow->author > 0 && $conf->timeAuthorViewReviews())
+	    || ($this->amAssistant() && ($this->chairMode || $prow->conflict <= 0))
+	    || ($this->isPC && $prow->conflict <= 0
+		&& ($conf->timePCViewAllReviews()
+		    || (isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0)))
+	    || ($prow->reviewType > 0
+		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0))
+	    return true;
+	// collect failure reasons
+	if ($prow->author <= 0 && !$this->isPC && $prow->reviewType <= 0)
+	    $whyNot['permission'] = 1;
+	else if ($prow->author > 0)
+	    $whyNot['deadline'] = 'authorViewReviews';
+	else if ($prow->conflict > 0)
+	    $whyNot['conflict'] = 1;
+	else
+	    $whyNot['reviewNotComplete'] = 1;
+	return false;
+    }
+
+    function canStartReview($prow, $conf, &$whyNot = null) {
+	global $ConfSiteBase;
+	// fetch paper
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "rev")))
+	    return false;
+	// policy
+	if ($prow->withdrawn <= 0 && $prow->acknowledged > 0
+	    && (($this->amAssistant() && ($this->chairMode || $prow->conflict <= 0))
+		|| ((($this->isPC && $prow->conflict <= 0)
+		     || $prow->reviewType > 0)
+		    && $conf->timeReviewPaper($this->isPC, $prow->reviewType > 0, true))))
+	    return true;
+	// collect failure reasons
+	if (!$this->isPC && $prow->reviewType <= 0)
+	    $whyNot['permission'] = 1;
+	else if ($prow->withdrawn > 0)
+	    $whyNot['withdrawn'] = 1;
+	else if ($prow->acknowledged <= 0)
+	    $whyNot['notSubmitted'] = 1;
+	else {
+	    if ($prow->conflict > 0)
+		$whyNot['conflict'] = 1;
+	    else if ($this->isPC && $prow->reviewType <= 0 && !$conf->timeReviewPaper(true, false, true))
+		$whyNot['reviewNotAssigned'] = 1;
+	    else
+		$whyNot['deadline'] = 'startReview';
+	    if ($this->amAssistant())
+		$whyNot['chairMode'] = 1;
+	}
+	return false;
+    }
+
+    function canEditReview($prow, $conf, &$whyNot = null) {
+	global $ConfSiteBase;
+	// fetch paper
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "rev")))
+	    return false;
+	// policy
+	if ($prow->withdrawn <= 0 && $prow->acknowledged > 0
+	    && (($this->amAssistant()
+		 && ($this->chairMode || $prow->conflict <= 0))
+		|| ((($this->isPC && $prow->conflict <= 0)
+		     || $prow->reviewType > 0)
+		    && ($conf->timeReviewPaper($this->isPC, $prow->reviewType > 0, true)
+			|| ($this->amAssistant() && isset($_REQUEST['override']) && $_REQUEST['override'] > 0)))))
+	    return true;
+	// collect failure reasons
+	if (!$this->isPC && $prow->reviewType <= 0)
+	    $whyNot['permission'] = 1;
+	else if ($prow->withdrawn > 0)
+	    $whyNot['withdrawn'] = 1;
+	else if ($prow->acknowledged <= 0)
+	    $whyNot['notSubmitted'] = 1;
+	else {
+	    if ($prow->conflict > 0)
+		$whyNot['conflict'] = 1;
+	    else if ($this->isPC && $prow->reviewType <= 0 && !$conf->timeReviewPaper(true, false, true))
+		$whyNot['reviewNotAssigned'] = 1;
+	    else
+		$whyNot['deadline'] = 'editReview';
+	    if ($this->amAssistant() && $prow->conflict > 0)
+		$whyNot['chairMode'] = 1;
+	    else if ($this->amAssistant())
+		$whyNot['override'] = 1;
+	}
+	return false;
+    }
+    
+    
     function amPaperAuthor($paperId, $conf, $prow = null) {
 	if ($prow === null) {
 	    // Query for a specific match of the author and paper
@@ -347,66 +548,10 @@ class Contact {
 	return ($prow->author > 0 || $this->amAssistant());
     }
     
-    function canDownload($paperId, $conf, $prow = null) {
-	if ($this->amAssistant())
-	    return true;
-	if ($prow === null)
-	    $prow = $conf->getPaperRow($paperId, $this->contactId);
-	if ($prow->author > 0 || $prow->reviewType > 0)
-	    return true;
-	return $this->isPC && $prow->acknowledged > 0 && $prow->withdrawn <= 0;
-    }
-
-    function canReview($paperId, $conf, $prow = null, &$error = null) {
-	global $ConfSiteBase;
-	if ($prow === null)
-	    $prow = $conf->getPaperRow($paperId, $this->contactId);
-	if ($prow->reviewType > 0)
-	    return true;
-	else if (!$this->isPC || (!$this->amAssistant() && !$conf->timePCReviewAnyPaper())) {
-	    $error = "You are not a reviewer for paper #$paperId.";
-	    return false;
-	} else if ($prow->author > 0) {
-	    $error = "You are an author of paper #$paperId and cannot review it.";
-	    return false;
-	} else if ($prow->conflict > 0) {
-	    $error = "You have a conflict with paper #$paperId and cannot review it.";
-	    return false;
-	} else if ($prow->withdrawn > 0 || $prow->acknowledged <= 0) {
-	    $error = "Paper #$paperId was " . ($prow->withdrawn > 0 ? "withdrawn" : "never submitted") . ", so you cannot review it.";
-	    if ($this->amAssistant())
-		$error .= "  As PC Chair you can <a href='${ConfSiteBase}Author/ManagePaper.php?paperId=$paperId'>revive and submit</a> the paper, if you want; then it will be available for review.";
-	    return false;
-	} else
-	    return true;
-    }
-
     function timeReview($prow, $conf) {
 	return $conf->timeReviewPaper($_SESSION['Me']->isPC, $prow->reviewType || $prow->reviewId, true);
     }
     
-    function canViewAuthors($prow, $conf) {
-	global $Opt;
-	if ($prow->author > 0 || (!$Opt['blindSubmission'] && $prow->acknowledged > 0 && $prow->withdrawn <= 0))
-	    return true;
-	if (paperAccepted($prow) && $conf->validPeriod('EndOfTheMeeting'))
-	    return true;
-	if ($this->amAssistant() && $this->chairMode)
-	    return true;
-	return false;
-    }
-
-    function canViewReviews($prow, $conf) {
-	if ($prow->author > 0 && $conf->timeAuthorViewReviews())
-	    return true;
-	if ($prow->author <= 0 && $prow->conflict <= 0 && $this->isPC)
-	    return true;
-	if ($this->amAssistant() && $this->chairMode)
-	    return true;
-	if (isset($prow->reviewType) && $prow->reviewType > 0)
-	    return true;
-	return false;
-    }
     function canViewReviewerIdentity($rrow, $prow, $conf) {
 	if ($this->amAssistant() && $this->chairMode)
 	    return true;

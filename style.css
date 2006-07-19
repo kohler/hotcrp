@@ -84,20 +84,22 @@ textarea {
 	vertical-align: baseline;
 }
 input.button, button {
-	background: #ffffee;
-	border-top: 2px solid #eeeedd;
-	border-left: 3px solid #eeeedd;
-	border-bottom: 2px solid #999966;
-	border-right: 3px solid #999966;
+	background: #ffffbb;
+	border-top: 1px solid #eeee66;
+	border-left: 2px solid #eeee66;
+	border-bottom: 1px solid #999966;
+	border-right: 2px solid #999966;
 	padding: 0px 6px 0px 6px;
+	margin: 2px 0px;
 }
 input.button_default, button.button_default {
 	font-size: large;
 	background: #ffff99;
-	border-top: 2px solid #eeee66;
-	border-left: 3px solid #eeee66;
-	border-bottom: 2px solid #999966;
-	border-right: 3px solid #999966;
+	border-top: 1px solid #eeee66;
+	border-left: 2px solid #eeee66;
+	border-bottom: 1px solid #999966;
+	border-right: 2px solid #999966;
+	margin: 2px 0px;
 }
 form {
 	margin-bottom: 0px;
@@ -112,6 +114,7 @@ form.gopaper input.button_default {
 	border-left: 2px solid #eeee66;
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
+	margin: 0px 0px;
 }
 div#view div.gopaper, div#review div.gopaper {
 	float: right;
@@ -125,18 +128,20 @@ input.button_alert {
 	border-left: 3px solid #ee6666;
 	border-bottom: 2px solid #996666;
 	border-right: 3px solid #996666;
+	margin: 2px 0px;
 }
 a.download, a.review_start, a.review_comp, a.review_edit, a.review_view,
-input.button_small, a.button_small {
+input.button_small, a.button_small, button.button_small {
 	font-size: small;
 	padding: 1px 0.25em;
-	background: #ffff99;
+	background: #ffffbb;
 	border-top: 1px solid #eeee66;
 	border-left: 2px solid #eeee66;
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
 	text-decoration: none;
 	color: black;
+	margin: 2px 0px;
 }
 a.review_past {
 	font-size: small;
@@ -149,6 +154,7 @@ a.review_past {
 	border-right: 2px solid #996666;
 	text-decoration: none;
 	color: black;
+	margin: 2px 0px;
 }
 span.author, span.conflict {
 	font-weight: bold;

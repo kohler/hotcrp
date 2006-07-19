@@ -80,6 +80,9 @@ $reviewButton[1] = array
      "author" => "<button class='review_author' type='button' disabled='disabled'>Review</button>",
      "conflict" => "<button class='review_conflict' type='button' disabled='disabled'>Review</button>",
      "" => "<button class='review_other' type='button' disabled='disabled'>Review</button>");
+     //"author" => "",
+     //"conflict" => "",
+     //"" => "");
 
 function reviewType($paperId, $row, $long = 0) {
     if ($row->reviewType == REVIEW_PRIMARY)
@@ -115,6 +118,11 @@ function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
     return $x;
 }
 
+function viewContactButton($href, $contactId) {
+    $href .= (strpos($href, "?") === false ? "?" : "&amp;") . "viewContact=$contactId";
+    return "<a class='button_small' href=\"$href\">View as</a>";
+}
+
 function reviewButton($paperId, $row = null, $buttonType = 0, $conf = null) {
     global $Conf, $ConfSiteBase, $reviewButton;
     $conf = ($conf ? $conf : $Conf);
@@ -143,7 +151,7 @@ function reviewButton($paperId, $row = null, $buttonType = 0, $conf = null) {
 	$type = "edit";
     else if ($rreq)
 	$type = "view";
-    else if ($Me->isPC && $author > 0)
+    else if ($Me->isPC && $row->author > 0)
 	$type = "author";
     else if ($Me->isPC && $conflict > 0)
 	$type = "conflict";
@@ -224,14 +232,16 @@ function topicTable($paperId = -1, $active = 0, $conf = null) {
 	return "";
 }
 
-function authorTable($aus, $columns = 2) {
+function authorTable($aus, $htmlspecial = true) {
     $out = "";
     if (!is_array($aus))
 	$aus = explode("\n", $aus);
     foreach ($aus as $au) {
 	$au = trim($au);
-	if ($au != '')
-	    $out .= "<span class='autblentry'>" . htmlspecialchars($au) . "</span> ";
+	if ($au != '') {
+	    $out .= "<span class='autblentry'>";
+	    $out .= ($htmlspecial ? htmlspecialchars($au) : $au) . "</span> ";
+	}
     }
     return $out;
 }
@@ -287,6 +297,11 @@ function plural($n, $what) {
 	return "$n $what";
     else
 	return "$n ${what}s";
+}
+
+function setRet(&$var, $val, $ret = false) {
+    $var = $val;
+    return $ret;
 }
 
 function tabLength($text) {
@@ -358,4 +373,38 @@ function ini_get_bytes($varname) {
 	$val *= 1024;
     }
     return $val;
+}
+
+function whyNotText($whyNot, $action, $paperId = -1) {
+    global $ConfSiteBase;
+    $thisPaper = ($paperId < 0 ? "this paper" : "paper #$paperId");
+    $text = '';
+    if (isset($whyNot['invalidId']))
+	$text .= "Invalid paper number.  ";
+    if (isset($whyNot['noPaper']))
+	$text .= "No such paper" . ($paperId < 0 ? "" : " #$paperId") . ".  ";
+    if (isset($whyNot['withdrawn']))
+	$text .= ucfirst($thisPaper) . " has been withdrawn.  ";
+    if (isset($whyNot['notSubmitted']))
+	$text .= ucfirst($thisPaper) . " was never officially submitted.  ";
+    if (isset($whyNot['deadline']))
+	$text .= "You can't $action $thisPaper at the moment.  (<a href='${ConfSiteBase}All/ImportantDates.php'>View deadlines</a>)  ";
+    if (isset($whyNot['blindSubmission']))
+	$text .= "Submission to this conference is blind.  ";
+    if (isset($whyNot['permission']))
+	$text .= "You don't have permission to $action $thisPaper.  ";
+    if (isset($whyNot['conflict']))
+	$text .= "You have a conflict with $thisPaper.  ";
+    if (isset($whyNot['reviewNotComplete']))
+	$text .= "Your own review for $thisPaper is not complete.  ";
+    if (isset($whyNot['reviewNotAssigned']))
+	$text .= "You have not been assigned to review $thisPaper.  ";
+    // finish it off
+    if (isset($whyNot['chairMode']))
+	$text .= "You could $action this paper by <a href='" . $_SERVER['PHP_SELF'] . (strpos($_SERVER['PHP_SELF'], "?") === false ? "?" : "&amp;") . "chairMode=1'>entering chair mode</a>.  ";
+    if (isset($whyNot['override']))
+	$text .= "Select the \"Override deadlines\" checkbox to override the deadline.  ";
+    if ($text && $action == "view")
+	$text .= "Enter a paper number above, or <a href='${ConfSiteBase}All/ListPapers.php'>list the papers you can view</a>.  ";
+    return ($text ? substr($text, 0, -2) : $text);
 }

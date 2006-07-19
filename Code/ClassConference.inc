@@ -405,6 +405,12 @@ class Conference {
 	} else
 	    return false;
     }
+    function timePCViewSubmission() {
+	return true;
+    }
+    function timeReviewerViewSubmission() {
+	return true;
+    }
 
 
     //
@@ -415,24 +421,24 @@ class Conference {
 	    && $this->startTime[$what] > 0 && $this->endTime[$what] > 0;
     }
 
-  //
-  // 'default' is returned in the time is not set
-  // OR if the time value was specified as zero
-  //
-  function validTimeFor($what, $default) {
-      if (!isset($this->startTime[$what]))
-	  return $default;
-      $start = $this->startTime[$what];
-      $end = $this->endTime[$what];
-      if ($start <= 0)
-	  return $default;
+    //
+    // 'default' is returned in the time is not set
+    // OR if the time value was specified as zero
+    //
+    function validTimeFor($what, $default) {
+	if (!isset($this->startTime[$what]))
+	    return $default;
+	$start = $this->startTime[$what];
+	$end = $this->endTime[$what];
+	if ($start <= 0)
+	    return $default;
 
-      $now = time();
-      if ($now < $start || (IsSet($end) && $end > 0 && $now > $end))
-	  return 0;
-      else
-	  return 1;
-  }
+	$now = time();
+	if ($now < $start || (IsSet($end) && $end > 0 && $now > $end))
+	    return false;
+	else
+	    return true;
+    }
 
   function go($url) {
       header("Location: $url");
@@ -774,7 +780,7 @@ class Conference {
     }
 
 
-    
+
     function reviewQuery($contactId, $options = array()) {
 	// Options:
 	//   "paperId" => $pid	Only paperId $pid (if array, any of those)
@@ -912,6 +918,12 @@ class Conference {
 	return false;
     }
 
+    function errorMsgExit($text) {
+	$this->msg($text, 'error');
+	$this->footer();
+	exit;
+    }
+
     //
     // Conference header, footer
     //
@@ -932,17 +944,18 @@ class Conference {
     function chairModeLink() {
 	$out = "<a href=\"" . $_SERVER["PHP_SELF"];
 	$sep = "?";
-	if (isset($_REQUEST["paperId"])) {
-	    $out .= $sep . "paperId=" . htmlspecialchars($_REQUEST["paperId"]);
-	    $sep = "&amp;";
-	}
-	if (isset($_REQUEST["list"])) {
-	    $out .= $sep . "list=" . htmlspecialchars($_REQUEST["list"]);
-	    $sep = "&amp;";
-	}
-	$out .= $sep . "chairMode=" . (1 - $_SESSION["Me"]->chairMode) . "\">"
-	    . ($_SESSION["Me"]->chairMode ? "Leave" : "Enter");
-	return "$out&nbsp;chair&nbsp;mode</a>";
+	foreach (array('paperId', 'reviewId', 'list') as $what)
+	    if (isset($_REQUEST[$what])) {
+		$out .= $sep . "$what=" . htmlspecialchars($_REQUEST[$what]);
+		$sep = "&amp;";
+	    }
+	$Me = $_SESSION["Me"];
+	if ($Me->amAssistant()) {
+	    $out .= $sep . "chairMode=" . (1 - (int) $Me->chairMode)
+		. "\">" . ($Me->chairMode ? "Leave" : "Enter");
+	    return "$out&nbsp;chair&nbsp;mode</a>";
+	} else
+	    return "$out${sep}chairMode=0\">View as chair</a>";
     }
     
     function header($title, $id = '') {
@@ -961,7 +974,7 @@ class Conference {
 	    echo "    <div id='header_user'><strong>",
 		htmlspecialchars($_SESSION["Me"]->email),
 		"</strong> &nbsp;|&nbsp; ";
-	    if ($_SESSION["Me"]->amAssistant())
+	    if ($_SESSION["Me"]->amAssistant() || $_SESSION["Me"]->chairContactId > 0)
 		echo $this->chairModeLink(), " &nbsp;|&nbsp; ";
 	    echo "<a href='", $ConfSiteBase, "All/Logout.php'>Log&nbsp;out</a></div>\n";
 	}
@@ -989,8 +1002,9 @@ class Conference {
 	echo "<div id='footer'>\n";
 	echo "  <div id='footer_left'>\n";
 	echo "    <div id='footer_conference'><a href='", $ConfSiteBase, "index.php'>", $this->shortName, " Submissions Home</a></div>\n";
-	if ($_SESSION["Me"]->valid()) {
-	    if ($_SESSION["Me"]->amAssistant())
+	$Me = $_SESSION["Me"];
+	if ($Me->valid()) {
+	    if ($Me->amAssistant() || $Me->chairContactId > 0)
 		echo "    <div id='footer_chairmode'>", $this->chairModeLink(), "</div>\n";
 	    echo "    <div id='footer_logout'><a href='", $ConfSiteBase, "All/Logout.php'>Log&nbsp;out</a></div>\n";
 	}

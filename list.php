@@ -14,8 +14,8 @@ if (isset($_REQUEST["download"])) {
 	/* do nothing */;
     else
 	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
-	    if (!$Me->canDownload($row->paperId, $Conf, $row))
-		$Conf->errorMsg("You aren't authorized to download paper #$row->paperId.  You must be one of the paper's authors, or a PC member or reviewer, to download papers.");
+	    if (!$Me->canViewPaper($row, $Conf, $whyNot))
+		$Conf->errorMsg(whyNotText($whyNot, "view", $row->paperId));
 	    else
 		$downloads[] = $row->paperId;
 	}
@@ -37,8 +37,8 @@ if (isset($_REQUEST["downloadReview"])) {
 	/* do nothing */;
     else
 	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
-	    if (!$Me->canReview($row->paperId, $Conf, $row, $errorText))
-		$errors[] = $errorText;
+	    if (!$Me->canStartReview($row, $Conf, $whyNot))
+		$errors[] = whyNotText($whyNot, "review", $row->paperId);
 	    else {
 		$rfSuffix = ($text == "" ? "-$row->paperId" : "s");
 		$text .= $rf->textForm($row->paperId, $Conf, $row, $row,
@@ -68,7 +68,19 @@ if (isset($_REQUEST["downloadReview"])) {
     }
  }
 
-$list = (isset($_REQUEST['list']) ? $_REQUEST['list'] : 'author');
+if (isset($_REQUEST['list']))
+    $list = $_REQUEST['list'];
+else if ($Me->canListAllPapers())
+    $list = 'all';
+else if ($Me->canListSubmittedPapers())
+    $list = 'submitted';
+else if ($Me->canListReviewerPapers())
+    $list = 'reviewer';
+else if ($Me->canListAuthoredPapers())
+    $list = 'author';
+else
+    $list = 'none';
+
 $sv = (isset($_REQUEST['sort']) ? $_REQUEST['sort'] : "");
 
 $pl = new PaperList($sv, "ListPapers.php?list=" . htmlspecialchars($list) . "&amp;sort=");

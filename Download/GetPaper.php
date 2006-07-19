@@ -13,11 +13,9 @@ $Me->goIfInvalid("../");
 //
 // Determine the intended paper
 //
-if (isset($_REQUEST['paperId'])) {
+if (isset($_REQUEST['paperId']))
     $paperId = cvtint($_REQUEST["paperId"]);
-    if ($paperId < 0)
-	$Error = "Invalid paper ID '" . htmlspecialchars($_REQUEST['paperId']) . "'.";
-} else {
+else {
     $paper = preg_replace("|.*/GetPaper/*|", "", $_SERVER["PHP_SELF"]);
     if (preg_match("/^(" . $Conf->downloadPrefix . ")?(paper-?)?(\d+).*$/", $paper, $match)
 	&& $match[3] > 0)
@@ -31,8 +29,8 @@ if (isset($_REQUEST['paperId'])) {
 // are assistants, chairs & PC members. Otherwise, you need
 // to be a contact person for that paper.
 //
-if (!isset($Error) && !$Me->canDownload($paperId, $Conf))
-    $Error = "You aren't authorized to download paper #$paperId.  You must be one of the paper's authors, or a PC member or reviewer, to download papers.";
+if (!isset($Error) && !$Me->canViewPaper($paperId, $Conf, $whyNot))
+    $Error = whyNotText($whyNot, "view", $paperId);
 
 //
 // Actually download paper.
@@ -49,6 +47,5 @@ if (!isset($Error)) {
 $Conf->header("Download Paper #$paperId");
 if (isset($Error))
     $Conf->errorMsg($Error);
-?>
 
-<?php $Conf->footer() ?>
+$Conf->footer() ?>
