@@ -409,8 +409,10 @@ function ini_get_bytes($varname) {
 }
 
 function whyNotText($whyNot, $action, $paperId = -1) {
-    global $ConfSiteBase;
+    global $ConfSiteBase, $Conf;
     $thisPaper = ($paperId < 0 ? "this paper" : "paper #$paperId");
+    if (!is_array($whyNot))
+	$whyNot = array($whyNot => 1);
     $text = '';
     if (isset($whyNot['invalidId']))
 	$text .= "Invalid paper number.  ";
@@ -418,10 +420,29 @@ function whyNotText($whyNot, $action, $paperId = -1) {
 	$text .= "No such paper" . ($paperId < 0 ? "" : " #$paperId") . ".  ";
     if (isset($whyNot['withdrawn']))
 	$text .= ucfirst($thisPaper) . " has been withdrawn.  ";
+    if (isset($whyNot['notWithdrawn']))
+	$text .= ucfirst($thisPaper) . " has not been withdrawn.  ";
     if (isset($whyNot['notSubmitted']))
 	$text .= ucfirst($thisPaper) . " was never officially submitted.  ";
-    if (isset($whyNot['deadline']))
-	$text .= "You can't $action $thisPaper at the moment.  (<a href='${ConfSiteBase}deadlines.php'>View deadlines</a>)  ";
+    if (isset($whyNot['updateSubmitted']))
+	$text .= ucfirst($thisPaper) . " has already been submitted and can no longer be updated.  ";
+    if (isset($whyNot['notUploaded']))
+	$text .= ucfirst($thisPaper) . " cannot be submitted until you upload a version of the paper.  ";
+    if (isset($whyNot['deadline'])) {
+	$dname = $whyNot['deadline'];
+	$start = $Conf->startTime[$dname];
+	$end = $Conf->endTime[$dname];
+	$now = time();
+	if ($start > 0 && $now < $start)
+	    $text .= "You can't $action $thisPaper until " . $Conf->printableStartTime($dname) . ".  ";
+	else if ($end > 0 && $now > $end)
+	    $text .= "The deadline to $action $thisPaper has passed.  It was " . $Conf->printableEndTime($dname) . ".  ";
+	else
+	    $text .= "You can't $action $thisPaper at the moment.  ";
+	$text .= "(<a href='${ConfSiteBase}deadlines.php'>View deadlines</a>)  ";
+	if (isset($whyNot['override']))
+	    $text .= "Select the \"Override deadlines\" checkbox to override this deadline.  ";
+    }
     if (isset($whyNot['blindSubmission']))
 	$text .= "Submission to this conference is blind.  ";
     if (isset($whyNot['permission']))
@@ -437,8 +458,6 @@ function whyNotText($whyNot, $action, $paperId = -1) {
     // finish it off
     if (isset($whyNot['chairMode']))
 	$text .= "You could $action this paper by " . chairModeLink("entering chair mode", 1) . ".  ";
-    if (isset($whyNot['override']))
-	$text .= "Select the \"Override deadlines\" checkbox to override the deadline.  ";
     if ($text && $action == "view")
 	$text .= "Enter a paper number above, or <a href='${ConfSiteBase}All/ListPapers.php'>list the papers you can view</a>.  ";
     return ($text ? substr($text, 0, -2) : $text);

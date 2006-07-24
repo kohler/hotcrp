@@ -407,11 +407,16 @@ class Contact {
 	    return false;
 	// policy
 	if (($prow->author > 0 || $this->amAssistant())
+	    && $prow->withdrawn <= 0 && $prow->acknowledged <= 0
 	    && ($conf->timeUpdatePaper() || $this->amAssistantOverride()))
 	    return true;
 	// collect failure reasons
 	if ($prow->author <= 0 && !$this->amAssistant())
 	    $whyNot["author"] = 1;
+	if ($prow->withdrawn > 0)
+	    $whyNot["withdrawn"] = 1;
+	if ($prow->acknowledged > 0)
+	    $whyNot["updateSubmitted"] = 1;
 	if (!$conf->timeUpdatePaper() && !$this->amAssistantOverride())
 	    $whyNot["deadline"] = "updatePaperSubmission";
 	if ($this->amAssistant())
@@ -425,13 +430,51 @@ class Contact {
 	    return false;
 	// policy
 	if (($prow->author > 0 || $this->amAssistant())
+	    && $prow->withdrawn <= 0 && $prow->acknowledged <= 0
 	    && ($conf->timeFinalizePaper() || $this->amAssistantOverride()))
 	    return true;
 	// collect failure reasons
 	if ($prow->author <= 0 && !$this->amAssistant())
 	    $whyNot["author"] = 1;
+	if ($prow->withdrawn > 0)
+	    $whyNot["withdrawn"] = 1;
+	if ($prow->acknowledged > 0)
+	    $whyNot["updateSubmitted"] = 1;
 	if (!$conf->timeFinalizePaper() && !$this->amAssistantOverride())
 	    $whyNot["deadline"] = "finalizePaperSubmission";
+	if ($this->amAssistant())
+	    $whyNot["override"] = 1;
+	return false;
+    }
+    
+    function canWithdrawPaper($prow, $conf, &$whyNot = null) {
+	// fetch paper
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "withdraw")))
+	    return false;
+	// policy
+	if ($prow->author > 0 || $this->amAssistant())
+	    return true;
+	// collect failure reasons
+	$whyNot["author"] = 1;
+	return false;
+    }
+    
+    function canRevivePaper($prow, $conf, &$whyNot = null) {
+	// fetch paper
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "revive")))
+	    return false;
+	// policy
+	if (($prow->author > 0 || $this->amAssistant())
+	    && $prow->withdrawn > 0
+	    && ($conf->timeUpdatePaper() || $this->amAssistantOverride()))
+	    return true;
+	// collect failure reasons
+	if ($prow->author <= 0 && !$this->amAssistant())
+	    $whyNot["author"] = 1;
+	if ($prow->withdrawn <= 0)
+	    $whyNot["notWithdrawn"] = 1;
+	if (!$conf->timeUpdatePaper() && !$this->amAssistantOverride())
+	    $whyNot["deadline"] = "updatePaperSubmission";
 	if ($this->amAssistant())
 	    $whyNot["override"] = 1;
 	return false;

@@ -11,9 +11,9 @@ function actionTab($text, $name, $default, $disabled) {
     if ($disabled)
 	return "<div class='tab_disabled'>$text</div>";
     else if ($default)
-	return "<div class='tab_default'><a href='paper.php?paperId=" . ($newPaper ? "new" : $paperId) . "&amp;$name=1'>$text</a></div>";
+	return "<div class='tab_default'><a href='paper.php?paperId=" . ($newPaper ? "new" : $paperId) . "&amp;mode=$name'>$text</a></div>";
     else
-	return "<div class='tab'><a href='paper.php?paperId=" . ($newPaper ? "new" : $paperId) . "&amp;$name=1'>$text</a></div>";
+	return "<div class='tab'><a href='paper.php?paperId=" . ($newPaper ? "new" : $paperId) . "&amp;mode=$name'>$text</a></div>";
 }
 
 function actionBar() {
@@ -75,18 +75,7 @@ if (!$newPaper)
     getProw($Me->contactId);
 
 
-// mode
-if ($newPaper || cvtint($_REQUEST["edit"]) > 0)
-    $editMode = true;
-else if (cvtint($_REQUEST["view"]) > 0)
-    $viewMode = true;
-else if ($prow->acknowledged <= 0)
-    $editMode = true;
-else
-    $viewMode = true;
-
-
-// potentially update paper
+// update paper action
 $PaperError = array();
 
 function setRequestFromPaper($prow) {
@@ -123,7 +112,7 @@ function uploadPaper() {
 }
 
 function updatePaper($contactId, $isSubmit, $isUploadOnly) {
-    global $paperId, $newPaper, $PaperError, $Conf;
+    global $paperId, $newPaper, $PaperError, $Conf, $prow;
 
     // check that all required information has been entered
     array_ensure($_REQUEST, "", "title", "abstract", "authorInformation", "collaborators");
@@ -178,9 +167,28 @@ function updatePaper($contactId, $isSubmit, $isUploadOnly) {
     // upload paper if appropriate
     if (fileUploaded($_FILES['paperUpload'], $Conf) && !uploadPaper())
 	return false;
+
+    // submit paper if appropriate
+    if ($isSubmit) {
+	getProw($contactId);
+	if ($prow->paperStorageId == 1) {
+	    $PaperError["paper"] = 1;
+	    return $Conf->errorMsg(whyNotText("notUploaded", "submit", $paperId));
+	}
+	$result = $Conf->qe("update Paper set acknowledged=" . time() . " where paperId=$paperId", "while submitting paper");
+	if (DB::isError($result))
+	    return false;
+    }
     
     // confirmation message
-    $Conf->confirmMsg(($newPaper ? "Created paper #$paperId." : "Updated paper #$paperId."));
+    getProw($contactId);
+    if ($isSubmit)
+	$msg = "Submitted paper #$paperId.";
+    else if ($newPaper)
+	$msg = "Created paper #$paperId.";
+    else
+	$msg = "Updated paper #$paperId.";
+    $Conf->confirmMsg($msg);
     return true;
 }
 
@@ -203,17 +211,72 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submit"])) {
     if (!$ok)
 	$Conf->errorMsg(whyNotText($whyNot, "update", $paperId));
     else if (updatePaper($Me->contactId, isset($_REQUEST["submit"]), false)) {
-	getProw($Me->contactId);
 	if ($newPaper)
-	    $Conf->go("paper.php?paperId=$paperId&edit=1");
-	$newPaper = false;
+	    $Conf->go("paper.php?paperId=$paperId&mode=edit");
     }
 
     // use request?
     $useRequest = ($ok || $Me->amAssistant());
 }
 
-// XXX finalize here
+
+// unfinalize, withdraw, and revive actions
+if (isset($_REQUEST["unsubmit"]) && !$newPaper) {
+    if ($Me->amAssistant()) {
+	$Conf->qe("update Paper set acknowledged=0 where paperId=$paperId", "while undoing paper submit");
+	getProw($Me->contactId);
+    } else
+	$Conf->errorMsg("Only the program chairs can undo paper submission.");
+}
+if (isset($_REQUEST["withdraw"]) && !$newPaper) {
+    if ($Me->canWithdrawPaper($prow, $Conf, $whyNot)) {
+	$Conf->qe("update Paper set withdrawn=" . time() . " where paperId=$paperId", "while withdrawing paper");
+	getProw($Me->contactId);
+    } else
+	$Conf->errorMsg(whyNotText($whyNot, "withdraw", $paperId));
+}
+if (isset($_REQUEST["revive"]) && !$newPaper) {
+    if ($Me->canRevivePaper($prow, $Conf, $whyNot)) {
+	$Conf->qe("update Paper set withdrawn=0 where paperId=$paperId", "while reviving paper");
+	getProw($Me->contactId);
+    } else
+	$Conf->errorMsg(whyNotText($whyNot, "revive", $paperId));
+}
+
+
+// mode
+$editMode = $viewMode = false;
+if ($newPaper || (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "edit"))
+    $editMode = true;
+else if (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "view")
+    $viewMode = true;
+else if ($prow->acknowledged <= 0)
+    $editMode = true;
+else
+    $viewMode = true;
+
+
+// messages for the author
+function deadlineIs($dname, $conf) {
+    $deadline = $conf->printableEndTime($dname);
+    return ($deadline == "N/A" ? "" : "  The deadline is $deadline.");
+}
+
+if ($prow->author > 0 && $prow->acknowledged <= 0 && $editMode) {
+    $timeUpdate = $Conf->timeUpdatePaper();
+    $updateDeadline = deadlineIs("updatePaperSubmission", $Conf);
+    $timeSubmit = $Conf->timeFinalizePaper();
+    $submitDeadline = deadlineIs("finalizePaperSubmission", $Conf); 
+    if ($timeUpdate && $prow->withdrawn > 0)
+	$Conf->infoMsg("Your paper has been withdrawn, but you can still revive it.$updateDeadline");
+    else if ($timeUpdate)
+	$Conf->infoMsg("You must officially submit your paper before it can be reviewed.  <strong>This step cannot be undone</strong> and you can't make changes after submitting, so make all necessary changes first.$updateDeadline");
+    else if ($prow->withdrawn <= 0 && $timeSubmit)
+	$Conf->infoMsg("You cannot update your paper since the <a href='deadlines.php'>deadline</a> has passed, but it still must be officially submitted before it can be considered for the conference.$submitDeadline");
+    else if ($prow->withdrawn <= 0)
+	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting this paper has passed.  The paper will not be considered.$submitDeadline");
+ } else if ($prow->author > 0 && $editMode)
+    $Conf->infoMsg("This paper has been submitted and can no longer be changed.  You can still withdraw the paper or add contact authors, allowing others to view reviews as they become available.");
 
 
 if (isset($_REQUEST['setoutcome'])) {
@@ -230,7 +293,8 @@ if (isset($_REQUEST['setoutcome'])) {
 	    $Conf->errorMsg("Bad outcome value!");
 	$prow = $Conf->getPaperRow($paperId, $Me->contactId);
     }
- }
+}
+
 
 confHeader();
 
@@ -244,8 +308,8 @@ function pt_caption_class($what) {
 }
 
 function pt_data($what, $rows, $authorTable = false) {
-    global $editMode, $newPaper, $prow, $useRequest;
-    if ($editMode)
+    global $editMode, $editable, $newPaper, $prow, $useRequest;
+    if ($editable)
 	echo "<textarea class='textlite' name='$what' rows='$rows' cols='80' onchange='highlightUpdate()'>";
     if ($useRequest)
 	$text = $_REQUEST[$what];
@@ -253,20 +317,24 @@ function pt_data($what, $rows, $authorTable = false) {
 	$text = $prow->$what;
     else
 	$text = "";
-    if ($authorTable && !$editMode)
+    if ($authorTable && !$editable)
 	echo authorTable($text, true);
     else
 	echo htmlspecialchars($text);
-    if ($editMode)
+    if ($editable)
 	echo "</textarea>";
 }
 
 
 // begin table
-if ($editMode)
+if ($editMode) {
     echo "<form method='post' action=\"paper.php?paperId=",
 	($newPaper ? "new" : $paperId),
 	"&amp;post=1\" enctype='multipart/form-data'>";
+    $editable = $newPaper || ($prow->acknowledged <= 0 && $prow->withdrawn <= 0
+			      && ($Conf->timeUpdatePaper() || $Me->amAssistant()));
+} else
+    $editable = false;
 echo "<table class='paper'>\n\n";
 
 
@@ -300,7 +368,7 @@ if (!$newPaper) {
 
 
 // Editable title
-if ($editMode) {
+if ($editable) {
     echo "<tr class='pt_title'>\n  <td class='",
 	pt_caption_class("title"), "'>Title:</td>\n";
     echo "  <td class='pt_entry'>";
@@ -310,7 +378,7 @@ if ($editMode) {
 
 
 // Paper
-if ($newPaper || ($prow->withdrawn <= 0 && ($editMode || $prow->size > 0))) {
+if ($newPaper || ($prow->withdrawn <= 0 && ($editable || $prow->size > 0))) {
     echo "<tr class='pt_paper'>\n  <td class='",
 	pt_caption_class("paper"), "'>Paper",
 	($newPaper ? "&nbsp;(optional)" : ""), ":</td>\n";
@@ -403,7 +471,7 @@ if ($newPaper || $Me->canViewAuthors($prow, $Conf)) {
 	"'>Authors:</td>\n  <td class='pt_entry'>";
     pt_data("authorInformation", 5, true);
     echo "</td>\n";
-    if ($editMode)
+    if ($editable)
 	echo "  <td class='pt_hint'>List the paper's authors one per line, including any affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
 Ludwig van Beethoven (Colorado)
 Zhang, Ping Yen (INRIA)</pre></td>\n";
@@ -414,7 +482,7 @@ Zhang, Ping Yen (INRIA)</pre></td>\n";
 	"'>Collaborators:</td>\n  <td class='pt_entry'>";
     pt_data("collaborators", 5, true);
     echo "</td>\n";
-    if ($editMode)
+    if ($editable)
 	echo "  <td class='pt_hint'>List the authors' recent (~2 years) coauthors and collaborators, and any advisor or student relationships.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td>\n";
     echo "</tr>\n\n";
 }
@@ -429,20 +497,17 @@ if ($topicTable = topicTable($paperId, ($editMode ? (int) $useRequest : -1), $Co
 
 
 // Submit button
-if ($newPaper)
-    echo "<tr class='pt_create'>
-  <td></td>
-  <td class='pt_entry'><input class='button_default' type='submit' name='update' value='Create paper' /></td>
-</tr>\n\n";
-else if ($editMode) {
+if ($editMode) {
     echo "<tr class='pt_edit'>
   <td></td>
   <td class='pt_entry'><table class='pt_buttons'>\n";
     $buttons = array();
-    if ($prow->withdrawn > 0 && ($Conf->timeFinalizePaper() || $Me->amAssistant()))
+    if ($newPaper)
+	$buttons[] = "<input class='button_default' type='submit' name='update' value='Create paper' />";
+    else if ($prow->withdrawn > 0 && ($Conf->timeFinalizePaper() || $Me->amAssistant()))
 	$buttons[] = "<input class='button' type='submit' name='revive' value='Revive paper' />";
     else if ($prow->withdrawn > 0)
-	$buttons[] = "The paper has been withdrawn, and the deadline for reviving it has passed.";
+	$buttons[] = "The paper has been withdrawn, and the <a href='deadlines.php'>deadline</a> for reviving it has passed.";
     else {
 	if ($prow->acknowledged <= 0) {
 	    if ($Conf->timeUpdatePaper() || $Me->amAssistant())
@@ -463,7 +528,10 @@ else if ($editMode) {
 	$x = (is_array($b) ? $b[1] : "");
 	echo "<td class='ptb_explain'>", $x, "</td>";
     }
-    echo "</tr>\n  </table></td>\n</tr>\n\n";
+    echo "</tr>\n";
+    if ($Me->amAssistant())
+	echo "    <tr><td colspan='", count($buttons), "'><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td></tr>\n";
+    echo "  </table></td>\n</tr>\n\n";
 }
 
 

@@ -86,7 +86,7 @@ if (isset($PaperError))
 if (isset($Error))
     $Conf->errorMsg($Error);
 else if (!$can_start)
-    $Conf->warnMsg("The <a href='../All/ImportantDates.php'>deadline</a> for starting new papers has passed, but you can still submit a new paper in your capacity as PC Chair or PC Chair's Assistant.");
+    $Conf->warnMsg("The <a href='../deadlines.php'>deadline</a> for starting new papers has passed, but you can still submit a new paper in your capacity as PC Chair or PC Chair's Assistant.");
 ?>
 
 <form method='post' action='SubmitPaper.php?form=1' enctype='multipart/form-data'>
