@@ -116,10 +116,40 @@ form.gopaper input.button_default {
 	border-right: 2px solid #999966;
 	margin: 0px 0px;
 }
-div#view div.gopaper, div#review div.gopaper {
+
+div.vubar {
+	margin-top: -0.5em;
+}
+div#view div.gopaper, div#review div.gopaper, div.vubar form.gopaper {
 	float: right;
 	margin-bottom: 0em;
 }
+div.vubar .tab, div.vubar .tab_disabled, div.vubar .tab_default {
+	border-top: 0px;
+	border-left: 1px solid #cc9900;
+	border-right: 1px solid #cc9900;
+	border-bottom: 1px solid #cc9900;
+	margin: 0em 1em 1em 1em;
+	padding: 0em 1em;
+	float: left;
+	font-size: small;
+}
+div.vubar .tab_disabled {
+	background: #ffffcc;
+	color: #777777;
+}
+div.vubar .tab {
+	background: #ffff00;
+}
+div.vubar a {
+	text-decoration: none;
+}
+div.vubar .tab_default {
+	background: #ffcccc;
+	font-weight: bold;
+}
+
+
 input.button_alert {
 	font-size: large;
 	font-weight: bold;
@@ -253,7 +283,8 @@ input.textlite, textarea.textlite, table.reviewform td textarea {
 	border: solid 1px #ddddff;
 	padding: 0px 4px;
 }
-table.reviewform td select {
+/*table.reviewform td select*/
+select {
 	border: solid 1px #aaaaff;
 }
 
@@ -270,10 +301,13 @@ h2 {
 	margin-top: 0em;
 }
 
-td.pt_caption {
+td.pt_caption, td.pt_caption_error {
 	font-weight: bold;
 	padding-right: 0.25em;
 	text-align: right;
+}
+td.pt_caption_error {
+	color: #ff0000;
 }
 td.pt_entry {
 	padding-left: 0.25em;
@@ -431,12 +465,6 @@ div.plist_form {
 table.view {
 	border-spacing: 0px;
 }
-table.viewx {
-	float: left;
-}
-table.view td {
-	padding-bottom: 2px;
-}
 
 span.rev_num {
 	font-size: large;
@@ -447,7 +475,7 @@ table.review td.form_entry {
 	padding-right: 3em;
 }
 
-td.pt_id, td.pt_caption {
+td.pt_id, td.pt_caption, td.pt_caption_error {
 	width: 7em;
 }
 td.pt_id, table.review td.form_id {
@@ -455,7 +483,7 @@ td.pt_id, table.review td.form_id {
 	border: 1px solid #cccccc;
 	padding-right: 0.4em;
 }
-div#aumg td.pt_hint {
+div#aumg td.pt_hint, div#paper td.pt_hint {
 	width: 25%;
 }
 td h2, td h3 {

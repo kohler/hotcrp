@@ -68,9 +68,7 @@ if (isset($_REQUEST['setoutcome'])) {
   <td class='pt_id'><h2>#<?php echo $paperId ?></h2></td>
   <td class='pt_entry' colspan='2'><h2><?php echo htmlspecialchars($prow->title) ?></h2></td>
 </tr>
-</table>
 
-<table class='viewx'>
 <tr>
   <td class='pt_caption'>Status:</td>
   <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, 1) ?><?php

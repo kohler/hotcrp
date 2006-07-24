@@ -63,7 +63,7 @@ if (isset($_REQUEST['withdraw']))
 // revive attempt?
 if (isset($_REQUEST['revive'])) {
     if (!$finalizable && !$override)
-	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.$overrideMsg");
+	$Conf->errorMsg("The <a href='../deadlines.php'>deadline</a> for updating papers has passed.$overrideMsg");
     else
 	$Conf->qe("update Paper set withdrawn=0 where paperId=$paperId", "while reviving paper");
  }
@@ -80,7 +80,7 @@ if (isset($_REQUEST['upload'])
     else if ($withdrawn)
 	$Conf->errorMsg("The paper has been withdrawn.");
     else if (!$updatable && !$override)
-	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.$overrideMsg");
+	$Conf->errorMsg("The <a href='../deadlines.php'>deadline</a> for updating papers has passed.$overrideMsg");
     else if (!fileUploaded($_FILES['uploadedFile'], $Conf))
 	$Conf->errorMsg("Enter the name of a file to upload.");
     else {
@@ -98,7 +98,7 @@ if (isset($_REQUEST['update']) || isset($_REQUEST['finalize'])) {
     else if ($withdrawn)
 	$Conf->errorMsg("Updates are not possible; the paper has been withdrawn.");
     else if (!$updatable && !$override)
-	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating papers has passed.$overrideMsg");
+	$Conf->errorMsg("The <a href='../deadlines.php'>deadline</a> for updating papers has passed.$overrideMsg");
     else {
 	$anyErrors = 0;
 	foreach (array('title', 'abstract', 'authorInformation') as $what) {
@@ -144,7 +144,7 @@ if (isset($_REQUEST['finalize'])) {
     else if ($withdrawn)
 	$Conf->errorMsg("The paper has been withdrawn.");
     else if (!$finalizable && !$override)
-	$Conf->errorMsg("The <a href='../All/ImportantDates.php'>deadline</a> for submitting papers has passed.$overrideMsg");
+	$Conf->errorMsg("The <a href='../deadlines.php'>deadline</a> for submitting papers has passed.$overrideMsg");
     else {
 	$result = $Conf->qe("select length(paper) as size, collaborators from Paper left join PaperStorage using (paperStorageId) where Paper.paperId=$paperId", "while submitting paper");
 	if (DB::isError($result))
@@ -217,9 +217,9 @@ if ($OK) {
     } else if ($finalizable && !$withdrawn && !$finalized) {
 	$deadline = $Conf->printableEndTime('finalizePaperSubmission');
 	$deadline = ($deadline == "N/A" ? "" : "  The deadline is $deadline.");
-	$Conf->infoMsg("The <a href='../All/ImportantDates.php'>deadline</a> for updating your paper has passed, but you still need to officially submit it before it can be reviewed.  <strong>This step cannot be undone.</strong>$deadline");
+	$Conf->infoMsg("The <a href='../deadlines.php'>deadline</a> for updating your paper has passed, but you still need to officially submit it before it can be reviewed.  <strong>This step cannot be undone.</strong>$deadline");
     } else if (!$withdrawn && !$finalized) {
-	$Conf->infoMsg("The <a href='../All/ImportantDates.php'>deadline</a> for submitting your paper has passed.");
+	$Conf->infoMsg("The <a href='../deadlines.php'>deadline</a> for submitting your paper has passed.");
     }
 
     printPaperLinks();

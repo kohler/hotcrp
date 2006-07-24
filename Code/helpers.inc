@@ -62,6 +62,39 @@ function fileUploaded(&$var, $conf) {
     }
 }
 
+function selfHref($extra = array()) {
+    $x = $_SERVER["PHP_SELF"];
+    $sep = "?";
+    foreach (array("paperId", "reviewId", "list", "mode") as $what)
+	if (isset($_REQUEST[$what])) {
+	    $x .= "$sep$what=" . urlencode($_REQUEST[$what]);
+	    $sep = "&";
+	}
+    foreach ($extra as $key => $value) {
+	$x .= "$sep$key=" . urlencode($value);
+	$sep = "&";
+    }
+    return $x;
+}
+
+function chairModeLink($text = null, $enterMode = -1) {
+    $Me = $_SESSION["Me"];
+    if ($enterMode < 0)
+	$enterMode = ($Me->amAssistant() ? 1 - (int) $Me->chairMode : 0);
+
+    $out = "<a href=\"" . htmlspecialchars(selfHref(array("chairMode" => $enterMode))) . "\">";
+    
+    if ($text === null) {
+	if ($Me->amAssistant())
+	    $text = ($Me->chairMode ? "Leave" : "Enter") . "&nbsp;chair&nbsp;mode";
+	else
+	    $text = "View&nbsp;as&nbsp;chair";
+    }
+
+    return "$out$text</a>";
+}
+
+
 $reviewButton[0] = array
     ("past" => "<a class='review_past' ~>Review&nbsp;past&nbsp;due</a>",
      "start" => "<a class='review_start' ~>Start&nbsp;review</a>",
@@ -201,7 +234,7 @@ function topicTable($paperId = -1, $active = 0, $conf = null) {
     // get current topics
     $extraQ = '';
     if ($paperId > 0 && $active < 0)
-	$extraQ = ", PaperTopic where PaperTopic.paperId=$paperId and PaperTopic.topicId=TopicArea.topicId";
+	$extraQ = ", PaperTopic using (topicId) where PaperTopic.paperId=$paperId";
     else if ($paperId > 0) {
 	$result = $Conf->q("select topicId from PaperTopic where paperId=$paperId");
 	if (!DB::isError($result))
@@ -259,8 +292,8 @@ function rowContactText($row) {
 
 function goPaperForm($review = 0) {
     global $ConfSiteBase;
-    $what = ($review ? 'Review' : 'View');
-    $x = "<form class='gopaper' action='${ConfSiteBase}All/${what}Paper.php' method='get'>";
+    $what = ($review ? 'All/ReviewPaper.php' : 'paper.php');
+    $x = "<form class='gopaper' action='${ConfSiteBase}$what' method='get'>";
     $x .= "#<input class='textlite' type='text' size='3' name='paperId' />";
     $x .= "&nbsp;<input class='button_default' type='submit' name='go' value='Go to paper' /></form>";
     return $x;
@@ -388,11 +421,13 @@ function whyNotText($whyNot, $action, $paperId = -1) {
     if (isset($whyNot['notSubmitted']))
 	$text .= ucfirst($thisPaper) . " was never officially submitted.  ";
     if (isset($whyNot['deadline']))
-	$text .= "You can't $action $thisPaper at the moment.  (<a href='${ConfSiteBase}All/ImportantDates.php'>View deadlines</a>)  ";
+	$text .= "You can't $action $thisPaper at the moment.  (<a href='${ConfSiteBase}deadlines.php'>View deadlines</a>)  ";
     if (isset($whyNot['blindSubmission']))
 	$text .= "Submission to this conference is blind.  ";
     if (isset($whyNot['permission']))
 	$text .= "You don't have permission to $action $thisPaper.  ";
+    if (isset($whyNot['author']))
+	$text .= "You aren't an author of $thisPaper.  ";
     if (isset($whyNot['conflict']))
 	$text .= "You have a conflict with $thisPaper.  ";
     if (isset($whyNot['reviewNotComplete']))
@@ -401,10 +436,18 @@ function whyNotText($whyNot, $action, $paperId = -1) {
 	$text .= "You have not been assigned to review $thisPaper.  ";
     // finish it off
     if (isset($whyNot['chairMode']))
-	$text .= "You could $action this paper by <a href='" . $_SERVER['PHP_SELF'] . (strpos($_SERVER['PHP_SELF'], "?") === false ? "?" : "&amp;") . "chairMode=1'>entering chair mode</a>.  ";
+	$text .= "You could $action this paper by " . chairModeLink("entering chair mode", 1) . ".  ";
     if (isset($whyNot['override']))
 	$text .= "Select the \"Override deadlines\" checkbox to override the deadline.  ";
     if ($text && $action == "view")
 	$text .= "Enter a paper number above, or <a href='${ConfSiteBase}All/ListPapers.php'>list the papers you can view</a>.  ";
     return ($text ? substr($text, 0, -2) : $text);
+}
+    
+function array_ensure(&$arr, $val) {
+    for ($i = 2; $i < func_num_args(); $i++) {
+	$a = func_get_arg($i);
+	if (!isset($arr[$a]))
+	    $arr[$a] = $val;
+    }
 }

@@ -570,10 +570,10 @@ class Conference {
 	    return new PEAR_Error("Paper #$paperId appears to be empty.");
 
 	// Print paper
+	header("Content-Type: $mimetype");
 	header("Content-Description: PHP Generated Data");
 	$name = $this->downloadPaperName($paperId, $mimetype);
 	header("Content-Disposition: " . ($saveit ? "attachment" : "inline") . "; filename=$name");
-	header("Content-Type: $mimetype");
 	header("Content-Length: $length"); 
 	if ($compression == 1)
 	    print gzinflate($content);
@@ -771,11 +771,20 @@ class Conference {
     }
 
     function getPaperRow($paperId, $contactId, $while = "") {
+	if ($paperId <= 0) {
+	    $this->errorMsg(whyNotText(array("invalidId" => 1), "view", $paperId));
+	    return null;
+	}
+	
 	$q = $this->paperQuery($contactId, array('paperId' => $paperId));
 	$result = $this->qe($q, $while);
-	if (DB::isError($result) || $result->numRows() == 0)
+	
+	if (DB::isError($result))
 	    return null;
-	else
+	else if ($result->numRows() == 0) {
+	    $this->errorMsg(whyNotText(array("noPaper" => 1), "view", $paperId));
+	    return null;
+	} else
 	    return $result->fetchRow(DB_FETCHMODE_OBJECT);
     }
 
@@ -919,7 +928,8 @@ class Conference {
     }
 
     function errorMsgExit($text) {
-	$this->msg($text, 'error');
+	if ($text)
+	    $this->msg($text, 'error');
 	$this->footer();
 	exit;
     }
@@ -941,25 +951,11 @@ class Conference {
 	}
     }
 
-    function chairModeLink() {
-	$out = "<a href=\"" . $_SERVER["PHP_SELF"];
-	$sep = "?";
-	foreach (array('paperId', 'reviewId', 'list') as $what)
-	    if (isset($_REQUEST[$what])) {
-		$out .= $sep . "$what=" . htmlspecialchars($_REQUEST[$what]);
-		$sep = "&amp;";
-	    }
-	$Me = $_SESSION["Me"];
-	if ($Me->amAssistant()) {
-	    $out .= $sep . "chairMode=" . (1 - (int) $Me->chairMode)
-		. "\">" . ($Me->chairMode ? "Leave" : "Enter");
-	    return "$out&nbsp;chair&nbsp;mode</a>";
-	} else
-	    return "$out${sep}chairMode=0\">View as chair</a>";
-    }
-    
-    function header($title, $id = '') {
+    function header($title, $id = "", $actionBar = "") {
 	global $ConfSiteBase;
+	if ($this->headerPrinted >= 2)
+	    return;
+	
 	$this->header_head($title);
 	echo "</head><body>\n";
 	echo "<div id='header'>\n";
@@ -975,21 +971,27 @@ class Conference {
 		htmlspecialchars($_SESSION["Me"]->email),
 		"</strong> &nbsp;|&nbsp; ";
 	    if ($_SESSION["Me"]->amAssistant() || $_SESSION["Me"]->chairContactId > 0)
-		echo $this->chairModeLink(), " &nbsp;|&nbsp; ";
-	    echo "<a href='", $ConfSiteBase, "All/Logout.php'>Log&nbsp;out</a></div>\n";
+		echo chairModeLink(), " &nbsp;|&nbsp; ";
+	    echo "<a href='", $ConfSiteBase, "logout.php'>Log&nbsp;out</a></div>\n";
 	}
 	echo "    <div id='header_time'>", date ("l j M Y g:i:sa T"), "</div>\n";
 	echo "    <div id='header_public'><a href='", $this->conferenceSite, "'>", $this->shortName, " Public Site</a></div>\n";
 	print "  </div>\n";
 	
 	$id = ($id ? " id='$id'" : "");
-	print "  <div class='clear'></div>\n</div>\n<div class='body'$id>\n";
+	print "  <div class='clear'></div>\n</div>\n";
 
+	print $actionBar;
+
+	print "<div class='body'$id>\n";
+	
 	if (isset($_SESSION["msgs"])) {
 	    echo $_SESSION["msgs"];
 	    unset($_SESSION["msgs"]);
 	}
 	$this->saveMessages = 0;
+
+	$this->headerPrinted = 2;
     }
 
     function footer() {
@@ -1005,8 +1007,8 @@ class Conference {
 	$Me = $_SESSION["Me"];
 	if ($Me->valid()) {
 	    if ($Me->amAssistant() || $Me->chairContactId > 0)
-		echo "    <div id='footer_chairmode'>", $this->chairModeLink(), "</div>\n";
-	    echo "    <div id='footer_logout'><a href='", $ConfSiteBase, "All/Logout.php'>Log&nbsp;out</a></div>\n";
+		echo "    <div id='footer_chairmode'>", chairModeLink(), "</div>\n";
+	    echo "    <div id='footer_logout'><a href='", $ConfSiteBase, "logout.php'>Log&nbsp;out</a></div>\n";
 	}
 	echo "  </div>\n";
 	echo "  <div id='footer_right'>\n";

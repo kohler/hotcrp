@@ -116,18 +116,18 @@ class PaperList {
 	$Me = $_SESSION["Me"];
 	switch ($fieldId) {
 	case self::FIELD_ID:
-	    return "<a href='${ConfSiteBase}All/ViewPaper.php?paperId=$row->paperId'>#$row->paperId</a>";
+	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId'>#$row->paperId</a>";
 	case self::FIELD_ID_MANAGE:
-	    return "<a href='${ConfSiteBase}Author/ManagePaper.php?paperId=$row->paperId'>#$row->paperId</a>";
+	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId'>#$row->paperId</a>";
 	case self::FIELD_ID_REVIEW:
 	    if ($row->reviewId)
 		return "<a href='${ConfSiteBase}All/ReviewPaper.php?reviewId=$row->reviewId'>#$row->paperId</a>";
 	    else
 		return "<a href='${ConfSiteBase}All/ReviewPaper.php?paperId=$row->paperId'>#$row->paperId</a>";
 	case self::FIELD_TITLE:
-	    return "<a href='${ConfSiteBase}All/ViewPaper.php?paperId=$row->paperId'>" . htmlspecialchars($row->title) . "</a>";
+	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_TITLE_MANAGE:
-	    return "<a href='${ConfSiteBase}Author/ManagePaper.php?paperId=$row->paperId'>" . htmlspecialchars($row->title) . "</a>";
+	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_TITLE_REVIEW:
 	    if ($row->reviewId)
 		return "<a href='${ConfSiteBase}All/ReviewPaper.php?paperId=$row->reviewId'>" . htmlspecialchars($row->title) . "</a>";

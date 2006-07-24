@@ -133,7 +133,7 @@ if ($Me->amAssistant())
     $overrideMsg = "  Select the \"Override deadlines\" checkbox and try again if you really want to override this deadline.";
 
 if (!$Me->timeReview($prow, $Conf))
-    $Conf->infoMsg("The <a href='${ConfSiteBase}All/ImportantDates.php'>deadline</a> for modifying this review has passed.");
+    $Conf->infoMsg("The <a href='${ConfSiteBase}deadlines.php'>deadline</a> for modifying this review has passed.");
 
 ?>
 
@@ -143,7 +143,7 @@ if (!$Me->timeReview($prow, $Conf))
 	if ($rrow && $rrow->reviewSubmitted > 0)
 	    echo " ", chr(65 + $rrow->reviewOrdinal);
   ?></h2></td>
-  <td class='form_entry'><h2>for <a href='ViewPaper.php?paperId=<?php echo $paperId ?>'>Paper #<?php echo $paperId ?></a></h2></td>
+  <td class='form_entry'><h2>for <a href='../paper.php?paperId=<?php echo $paperId ?>'>Paper #<?php echo $paperId ?></a></h2></td>
 </tr>
 
 <?php if (isset($rrow) && $Me->contactId != $rrow->contactId) { ?>

@@ -2,7 +2,7 @@
 require_once('Code/confHeader.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
-$Me->goIfInvalid("../");
+$Me->goIfInvalid();
 
 $Conf->header("Offline Reviewing", 'offrev');
 
@@ -10,7 +10,7 @@ $pastDeadline = !$Conf->timeReviewPaper($Me->isPC, true, true);
 
 if ($Me->amReviewer()) {
     if ($pastDeadline)
-	$Conf->infoMsg("The <a href='All/ImportantDates.php'>deadline</a> for submitting reviews has passed.");
+	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting reviews has passed.");
     else
 	$Conf->infoMsg("Use this site to download a blank review form, or to upload a review form you've already filled out.");
 } else

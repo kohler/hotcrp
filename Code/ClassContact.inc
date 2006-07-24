@@ -207,29 +207,34 @@ class Contact {
       $this->note = trim($this->note);
   }
 
-  function go($url) {
-      go($url);
-  }
+    function go($url) {
+	go($url);
+    }
 
-  function alert($string = "") {
-      alert($string);
-  }
+    function alert($string = "") {
+	alert($string);
+    }
 
-  function goAlert($url, $message = "") {
-      global $Conf;
-      $Conf->errorMsg($message);
-      go($url);
-  }
+    function goAlert($url, $message = "") {
+	global $Conf;
+	$Conf->errorMsg($message);
+	go($url);
+    }
 
-  function goIfInvalid($url, $string = "") {
-      if (!$this->valid())
-	  $this->goAlert($url, $string ? $string : "You have invalid credentials and need to log in.");
-  }
+    function goIfInvalid($url = null, $string = "") {
+	global $ConfSiteBase;
+	if (!$this->valid()) {
+	    if ($url === null)
+		$url = selfHref();
+	    $_SESSION["afterLogin"] = $url;
+	    $this->goAlert("${ConfSiteBase}login.php", $string ? $string : "You have invalid credentials and need to log in.");
+	}
+    }
 
-  function goIfNotAuthor($url) {
-      if (!$this->valid() || !$this->isAuthor)
-	  $this->goAlert($url, "That page is only accessible to paper authors.");
-  }
+    function goIfNotAuthor($url) {
+	if (!$this->valid() || !$this->isAuthor)
+	    $this->goAlert($url, "That page is only accessible to paper authors.");
+    }
 
   function goIfNotPC($url) {
     if ( $this->valid() && ($this->isChair || $this->isPC)) {
@@ -381,6 +386,56 @@ class Contact {
 	else
 	    return $prow;
     }
+
+    function amAssistantOverride() {
+	return $this->amAssistant() && isset($_REQUEST["override"]) && $_REQUEST["override"] > 0;
+    }
+    
+    function canStartPaper($conf, &$whyNot = null) {
+	$whyNot = array();
+	if ($this->amAssistantOverride() || $conf->timeStartPaper())
+	    return true;
+	$whyNot["deadline"] = "startPaperSubmission";
+	if ($this->amAssistant())
+	    $whyNot["override"] = 1;
+	return false;
+    }
+    
+    function canUpdatePaper($prow, $conf, &$whyNot = null) {
+	// fetch paper
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "update")))
+	    return false;
+	// policy
+	if (($prow->author > 0 || $this->amAssistant())
+	    && ($conf->timeUpdatePaper() || $this->amAssistantOverride()))
+	    return true;
+	// collect failure reasons
+	if ($prow->author <= 0 && !$this->amAssistant())
+	    $whyNot["author"] = 1;
+	if (!$conf->timeUpdatePaper() && !$this->amAssistantOverride())
+	    $whyNot["deadline"] = "updatePaperSubmission";
+	if ($this->amAssistant())
+	    $whyNot["override"] = 1;
+	return false;
+    }
+    
+    function canFinalizePaper($prow, $conf, &$whyNot = null) {
+	// fetch paper
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "submit")))
+	    return false;
+	// policy
+	if (($prow->author > 0 || $this->amAssistant())
+	    && ($conf->timeFinalizePaper() || $this->amAssistantOverride()))
+	    return true;
+	// collect failure reasons
+	if ($prow->author <= 0 && !$this->amAssistant())
+	    $whyNot["author"] = 1;
+	if (!$conf->timeFinalizePaper() && !$this->amAssistantOverride())
+	    $whyNot["deadline"] = "finalizePaperSubmission";
+	if ($this->amAssistant())
+	    $whyNot["override"] = 1;
+	return false;
+    }
     
     function canViewPaper($prow, $conf, &$whyNot = null) {
 	// fetch paper
@@ -505,7 +560,7 @@ class Contact {
 		|| ((($this->isPC && $prow->conflict <= 0)
 		     || $prow->reviewType > 0)
 		    && ($conf->timeReviewPaper($this->isPC, $prow->reviewType > 0, true)
-			|| ($this->amAssistant() && isset($_REQUEST['override']) && $_REQUEST['override'] > 0)))))
+			|| $this->amAssistantOverride()))))
 	    return true;
 	// collect failure reasons
 	if (!$this->isPC && $prow->reviewType <= 0)

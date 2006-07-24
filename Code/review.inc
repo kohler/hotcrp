@@ -165,7 +165,7 @@ class ReviewForm {
 
 	if (!$Me->timeReview($prow, $conf)
 	    && (!isset($_REQUEST['override']) || !$Me->amAssistant()))
-	    return $conf->errorMsg("The <a href='${ConfSiteBase}All/ImportantDates.php'>deadline</a> for entering this review has passed." . ($Me->amAssistant() ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
+	    return $conf->errorMsg("The <a href='${ConfSiteBase}deadlines.php'>deadline</a> for entering this review has passed." . ($Me->amAssistant() ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
 	
 	$q = "";
 	foreach ($this->fieldOrder as $field)

@@ -8,7 +8,7 @@
 include('../Code/confHeader.inc');
 $Conf->connect();
 $Me = $_SESSION['Me'];
-$Me->goIfInvalid("../");
+//$Me->goIfInvalid("../");
 
 //
 // Determine the intended paper
@@ -29,7 +29,7 @@ else {
 // are assistants, chairs & PC members. Otherwise, you need
 // to be a contact person for that paper.
 //
-if (!isset($Error) && !$Me->canViewPaper($paperId, $Conf, $whyNot))
+if (!isset($Error) && 0 && !$Me->canViewPaper($paperId, $Conf, $whyNot))
     $Error = whyNotText($whyNot, "view", $paperId);
 
 //

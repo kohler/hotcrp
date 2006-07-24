@@ -17,7 +17,7 @@ if (!$testCookieStatus) {
 }
 
 if (!isset($_SESSION["Me"]) || !$_SESSION["Me"]->valid())
-    go("All/login.php");
+    go("login.php");
 $Me = $_SESSION["Me"];
 
 if (($_SESSION["AskedYouToUpdateContactInfo"] < 2 && !$Me->lastName)
@@ -37,7 +37,7 @@ if (isset($_REQUEST["setRole"]))
 $Conf->header("Welcome");
 
 echo "<p>You're logged in as ", htmlspecialchars($Me->fullnameAndEmail()), ".
-If this is not you, please <a href='", $ConfSiteBase, "All/Logout.php'>log out</a>.
+If this is not you, please <a href='", $ConfSiteBase, "logout.php'>log out</a>.
 You will be automatically logged out if you are idle for more than ",
     round(ini_get("session.gc_maxlifetime")/3600), " hours.</p>\n\n";
 
@@ -110,7 +110,7 @@ function reviewerDeadlines($isPC, $plist) {
     if ($plist->needSubmitReview == 0)
 	/* do nothing */;
     else if (!$Conf->timeReviewPaper($isPC, true, true))
-	$deadlines[] = "The <a href='All/ImportantDates.php'>deadline</a> for submitting " . ($isPC ? "PC" : "external") . " reviews has passed.";
+	$deadlines[] = "The <a href='deadlines.php'>deadline</a> for submitting " . ($isPC ? "PC" : "external") . " reviews has passed.";
     else if (!$Conf->timeReviewPaper($isPC, true, false))
 	$deadlines[] = "Reviews were requested by " . $Conf->printableEndTime("${rtyp}SubmitReview") . ".";
     else {
@@ -212,7 +212,7 @@ if ($Me->isPC) { ?>
 <?php
 $startable = $Conf->timeStartPaper();
 if ($startable)
-    echo "    <tr><th><a href='Author/SubmitPaper.php'>Start new paper</a></th> <td colspan='2'><span class='deadline'>(", $Conf->printDeadline('startPaperSubmission'), ")</span></td></tr>\n";
+    echo "    <tr><th><a href='paper.php?paperId=new'>Start new paper</a></th> <td colspan='2'><span class='deadline'>(", $Conf->printDeadline('startPaperSubmission'), ")</span></td></tr>\n";
 
 if ($Me->isAuthor) {
     $plist = new PaperList();
@@ -223,9 +223,9 @@ if ($Me->isAuthor) {
     if ($plist->needFinalize > 0) {
 	$time = $Conf->printableEndTime('updatePaperSubmission');
 	if (!$Conf->timeFinalizePaper())
-	    $deadlines[] = "The <a href='All/ImportantDates.php'>deadline</a> for submitting papers in progress has passed.";
+	    $deadlines[] = "The <a href='deadlines.php'>deadline</a> for submitting papers in progress has passed.";
 	else if (!$Conf->timeUpdatePaper()) {
-	    $deadlines[] = "The <a href='All/ImportantDates.php'>deadline</a> for updating papers in progress has passed, but you can still submit.";
+	    $deadlines[] = "The <a href='deadlines.php'>deadline</a> for updating papers in progress has passed, but you can still submit.";
 	    $time = $Conf->printableEndTime('finalizePaperSubmission');
 	    if ($time != 'N/A')
 		$deadlines[] = "You have until $time to submit any papers in progress.";
@@ -233,7 +233,7 @@ if ($Me->isAuthor) {
 	    $deadlines[] = "You have until $time to submit any papers in progress.";
     }
     if (!$startable && !$Conf->timeAuthorViewReviews())
-	$deadlines[] = "The <a href='All/ImportantDates.php'>deadline</a> for starting new papers has passed.";
+	$deadlines[] = "The <a href='deadlines.php'>deadline</a> for starting new papers has passed.";
     printDeadlines($deadlines, 3);
 }
 ?>
@@ -250,8 +250,8 @@ if ($Me->isAuthor) {
   <div class='taskdetail'>
     <a href='All/UpdateContactInfo.php'>Edit&nbsp;profile</a> <?php echo $homeSep ?>
     <a href='All/MergeAccounts.php'>Merge&nbsp;accounts</a> <?php echo $homeSep ?>
-    <a href='All/ImportantDates.php'>Important&nbsp;dates</a> <?php echo $homeSep ?>
-    <a href='All/Logout.php'>Log&nbsp;out</a>
+    <a href='deadlines.php'>Important&nbsp;dates</a> <?php echo $homeSep ?>
+    <a href='logout.php'>Log&nbsp;out</a>
   </div>
   <div class='clear'></div>
 </div>
