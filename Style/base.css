@@ -280,12 +280,13 @@ table.daterange {
 input.textlite, textarea.textlite, table.reviewform td textarea {
 	/*border: none;*/
 	/*border-bottom: dashed 1px #ddddff;*/
-	border: solid 1px #ddddff;
+	border: solid 1px #aaaadd;
 	padding: 0px 4px;
+	background: #fafcff;
 }
 /*table.reviewform td select*/
 select {
-	border: solid 1px #aaaaff;
+	border: solid 1px #aaaadd;
 }
 
 div.prevpaperlink {
