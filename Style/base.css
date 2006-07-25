@@ -143,6 +143,10 @@ div.vubar .tab {
 }
 div.vubar a {
 	text-decoration: none;
+	color: #000000;
+}
+div.vubar a:hover {
+	text-decoration: underline;
 }
 div.vubar .tab_default {
 	background: #ffcccc;
@@ -339,6 +343,9 @@ tr.pt_actions td, tr.pt_outcome td {
 }
 tr.pt_abstract td.pt_entry {
 	font-size: 85%;
+}
+tr.pt_paper input {
+	margin-top: 4px;
 }
 pre.entryexample {
 	padding: 0.5em;

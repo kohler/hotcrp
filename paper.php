@@ -492,8 +492,8 @@ if ($newPaper) {
 	}
 	echo authorTable($aus, false);
     }
-    echo "<a class='button_small' href='Author/PaperContacts.php?paperId=$paperId'>Edit&nbsp;contact&nbsp;authors</a>";
-    // XXX edit contact authors
+    if ($editMode)
+	echo "<a class='button_small' href='Author/PaperContacts.php?paperId=$paperId'>Edit&nbsp;contact&nbsp;authors</a>";
     echo "</td>\n</tr>\n\n";
 }
 
