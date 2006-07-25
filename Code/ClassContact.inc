@@ -746,9 +746,9 @@ class Contact {
     function sendAccountInfo($conf, $create) {
 	$message = "Greetings,\n\n";
 	if ($create)
-	    $message .= "An account has been created for you at the $conf->shortName conference submission site, and an initial password has been assigned.\n\n";
+	    $message .= wordwrap("An account has been created for you at the $conf->shortName conference submission site, and an initial password has been assigned.\n\n");
 	else
-	    $message .= "Someone requested we forward your account information for the $conf->shortName conference submission site.\n\n";
+	    $message .= wordwrap("Here is your account information for the $conf->shortName conference submission site.\n\n");
 	$message .= "        Site: $conf->paperSite
        Email: $this->email
     Password: $this->password
@@ -756,12 +756,10 @@ class Contact {
 Click the link below to log in.  If the link isn't clickable, you may copy
 and paste it into your web browser's location field.
 
-    $conf->paperSite/login.php?email=" . urlencode($this->email) . "&password=" . urlencode($this->password) . "
+    $conf->paperSite/login.php?email=" . urlencode($this->email) . "&password=" . urlencode($this->password) . "\n\n"
+	    . wordwrap("Contact the site administrator, $conf->contactName ($conf->contactEmail), with any questions or concerns.
 
-Contact the site administrator, $conf->contactName ($conf->contactEmail), with any questions or concerns.
-
-- $conf->shortName Conference Submissions\n";
-	$message = wordwrap($message);
+- $conf->shortName Conference Submissions\n");
 	
 	if ($conf->allowEmailTo($this->email))
 	    $results = mail($this->email,

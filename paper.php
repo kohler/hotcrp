@@ -187,28 +187,25 @@ function updatePaper($contactId, $isSubmit, $isUploadOnly) {
 
     // send paper email
     $subject = "[$Conf->shortName] Paper #$paperId " . strtolower($what);
-    $message = ",
-
-This mail confirms the " . ($isSubmit ? "submission" : ($newPaper ? "creation" : "update")) . " of paper #$paperId at the $Conf->shortName conference submission site.";
-    $message .= "\n\n" . wordWrapIndent(trim($prow->title), "Title: ") . "\n";
-    $message .= wordWrapIndent(trim($prow->authorInformation), "Authors: ") . "\n";
-    $message .= "      Paper site: $Conf->paperSite/paper.php?paperId=$paperId\n\n";
+    $message = ",\n\n"
+	. wordwrap("This mail confirms the " . ($isSubmit ? "submission" : ($newPaper ? "creation" : "update")) . " of paper #$paperId at the $Conf->shortName conference submission site.") . "\n\n"
+	. wordWrapIndent(trim($prow->title), "Title: ") . "\n"
+	. wordWrapIndent(trim($prow->authorInformation), "Authors: ") . "\n"
+	. "      Paper site: $Conf->paperSite/paper.php?paperId=$paperId\n\n";
     if ($isSubmit)
-	$message .= "The paper will be considered for inclusion in the conference.  You will receive email when reviews are available for you to view.\n\n";
+	$m = "The paper will be considered for inclusion in the conference.  You will receive email when reviews are available for you to view.";
     else {
-	$message .= "The paper has not been submitted yet.";
+	$m = "The paper has not been submitted yet.";
 	$deadline = $Conf->printableEndTime("updatePaperSubmission");
 	if ($deadline != "N/A")
-	    $message .= "  You have until $deadline to update the paper further.";
+	    $m .= "  You have until $deadline to update the paper further.";
 	$deadline = $Conf->printableEndTime("finalizePaperSubmission");
 	if ($deadline != "N/A")
-	    $message .= "  If you do not officially submit the paper by $deadline, it will not be considered for the conference.";
-	$message .= "\n\n";
+	    $m .= "  If you do not officially submit the paper by $deadline, it will not be considered for the conference.";
     }
-    $message .= "Contact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.
+    $message .= wordwrap("$m\n\nContact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.
 
-- $Conf->shortName Conference Submissions\n";
-    $message = wordwrap($message);
+- $Conf->shortName Conference Submissions\n");
 
     // send email to all contact authors
     $result = $Conf->qe("select firstName, lastName, email from ContactInfo join PaperConflict using (contactId) where paperId=$paperId and author>0", "while looking up contact authors to send email");
