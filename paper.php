@@ -165,8 +165,12 @@ function updatePaper($contactId, $isSubmit, $isUploadOnly) {
 	}
 
     // upload paper if appropriate
-    if (fileUploaded($_FILES['paperUpload'], $Conf) && !uploadPaper())
-	return false;
+    if (fileUploaded($_FILES['paperUpload'], $Conf)) {
+	if ($newPaper)
+	    getProw($contactId);
+	if (!uploadPaper())
+	    return false;
+    }
 
     // submit paper if appropriate
     if ($isSubmit) {
