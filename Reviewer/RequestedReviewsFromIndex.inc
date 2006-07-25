@@ -3,7 +3,7 @@
 <p>You have been asked to review the following paper(s) by a member of the progam committee.
 Click on the link to start or modify a review or to see your finalized review.
 <b> You can continue to modify your review(s)
-<?php  echo $Conf->printTimeRange('reviewerSubmitReview') ?>
+<?php  echo $Conf->printableTimeRange('reviewerSubmitReview') ?>
 or until you finalize them. </b>
 </p>
 
@@ -47,7 +47,7 @@ if ($_SESSION["Me"] -> isPC) {
 by the program chair.
 Click on the link to start or modify a review or to see your finalized review.
 <b> You can continue to modify your review(s)
-<?php  echo $Conf->printTimeRange('PCSubmitReview') ?>
+<?php  echo $Conf->printableTimeRange('PCSubmitReview') ?>
 or until you finalize them. </b>
 </p>
 

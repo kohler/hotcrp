@@ -25,7 +25,7 @@ function doLogin() {
 	if (DB::isError($result))
 	    return $Conf->errorMsg($result->dbErrorText($result, "while adding your account"));
 
-	$_SESSION["Me"]->sendAccountInfo($Conf);
+	$_SESSION["Me"]->sendAccountInfo($Conf, true);
 	$Conf->log("Created account", $_SESSION["Me"]);
 	$msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".  ";
 	if ($Conf->allowEmailTo($_SESSION["Me"]->email))
@@ -42,7 +42,7 @@ function doLogin() {
 	return $Conf->errorMsg("No account for " . htmlspecialchars($_REQUEST["email"]) . " exists.  Did you enter the correct email address?");
 
     if (isset($_REQUEST["forgot"])) {
-	$_SESSION["Me"]->sendAccountInfo($Conf);
+	$_SESSION["Me"]->sendAccountInfo($Conf, false);
 	$Conf->log("Sent password", $_SESSION["Me"]);
 	return $Conf->confirmMsg("The account information for " . $_REQUEST["email"] . " has been emailed to that address.  When you receive that email, return here to complete the login process.");
     }
@@ -78,7 +78,8 @@ $Conf->header("Login", 'login');
 $Conf->infoMsg("Log in to the conference management system here.
 You'll use the same account information throughout the paper evaluation
 process, whether you are submitting a paper, co-authoring a paper,
-reviewing papers, or a member of the program committee."); ?>
+reviewing papers, or a member of the program committee.");
+?>
 
 <form class='login' method='post' action='login.php'>
 <table class='form'>

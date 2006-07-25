@@ -16,7 +16,7 @@ $word_limit = 800;
 
 <p>
 You can submit responses to your paper review
-<?php  echo $Conf->printTimeRange('authorRespondToReviews') ?>. <br>
+<?php  echo $Conf->printableTimeRange('authorRespondToReviews') ?>. <br>
 You can continue modifying or  updating the stored response until then.
 You will receive email messages each time a new review is finalized, but you
 should periodically submit your response as you revise the response to

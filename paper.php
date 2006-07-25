@@ -65,7 +65,7 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
 $prow = null;
 function getProw($contactId) {
     global $prow, $paperId, $Conf, $Me;
-    $prow = $Conf->getPaperRow($paperId, $contactId, "while fetching paper");
+    $prow = $Conf->paperRow($paperId, $contactId, "while fetching paper");
     if ($prow === null)
 	errorMsgExit("");
     else if (!$Me->canViewPaper($prow, $Conf, $whyNot))
@@ -102,13 +102,13 @@ function requestSameAsPaper($prow) {
 }
 
 function uploadPaper() {
-    global $paperId, $Conf;
-    $result = $Conf->storePaper('paperUpload', $paperId);
+    global $prow, $Conf;
+    $result = $Conf->storePaper('paperUpload', $prow);
     if ($result == 0 || PEAR::isError($result)) {
 	$Conf->errorMsg("There was an error while trying to update your paper.  Please try again.");
 	return false;
-    } else
-	return true;
+    }
+    return true;
 }
 
 function updatePaper($contactId, $isSubmit, $isUploadOnly) {
@@ -182,13 +182,46 @@ function updatePaper($contactId, $isSubmit, $isUploadOnly) {
     
     // confirmation message
     getProw($contactId);
+    $what = ($isSubmit ? "Submitted" : ($newPaper ? "Created" : "Updated"));
+    $Conf->confirmMsg("$what paper #$paperId.");
+
+    // send paper email
+    $subject = "[$Conf->shortName] Paper #$paperId " . strtolower($what);
+    $message = ",
+
+This mail confirms the " . ($isSubmit ? "submission" : ($newPaper ? "creation" : "update")) . " of paper #$paperId at the $Conf->shortName conference submission site.";
+    $message .= "\n\n" . wordWrapIndent(trim($prow->title), "Title: ") . "\n";
+    $message .= wordWrapIndent(trim($prow->authorInformation), "Authors: ") . "\n";
+    $message .= "      Paper site: $Conf->paperSite/paper.php?paperId=$paperId\n\n";
     if ($isSubmit)
-	$msg = "Submitted paper #$paperId.";
-    else if ($newPaper)
-	$msg = "Created paper #$paperId.";
-    else
-	$msg = "Updated paper #$paperId.";
-    $Conf->confirmMsg($msg);
+	$message .= "The paper will be considered for inclusion in the conference.  You will receive email when reviews are available for you to view.\n\n";
+    else {
+	$message .= "The paper has not been submitted yet.";
+	$deadline = $Conf->printableEndTime("updatePaperSubmission");
+	if ($deadline != "N/A")
+	    $message .= "  You have until $deadline to update the paper further.";
+	$deadline = $Conf->printableEndTime("finalizePaperSubmission");
+	if ($deadline != "N/A")
+	    $message .= "  If you do not officially submit the paper by $deadline, it will not be considered for the conference.";
+	$message .= "\n\n";
+    }
+    $message .= "Contact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.
+
+- $Conf->shortName Conference Submissions\n";
+    $message = wordwrap($message);
+
+    // send email to all contact authors
+    $result = $Conf->qe("select firstName, lastName, email from ContactInfo join PaperConflict using (contactId) where paperId=$paperId and author>0", "while looking up contact authors to send email");
+    if (!DB::isError($result)) {
+	while (($row = $result->fetchRow())) {
+	    $m = "Dear " . contactText($row[0], $row[1], $row[2]) . $message;
+	    if ($Conf->allowEmailTo($row[2]))
+		mail($row[2], $subject, $m, "From: $Conf->emailFrom");
+	    else
+		$Conf->infoMsg("<pre>$subject\n\n" . htmlspecialchars($m) . "</pre>");
+	}
+    }
+    
     return true;
 }
 
@@ -291,7 +324,7 @@ if (isset($_REQUEST['setoutcome'])) {
 		$Conf->confirmMsg("Outcome for paper #$paperId set to " . htmlspecialchars($rf->options['outcome'][$o]) . ".");
 	} else
 	    $Conf->errorMsg("Bad outcome value!");
-	$prow = $Conf->getPaperRow($paperId, $Me->contactId);
+	$prow = $Conf->paperRow($paperId, $Me->contactId);
     }
 }
 

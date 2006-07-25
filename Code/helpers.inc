@@ -147,7 +147,7 @@ function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
     else
 	$x = "<span class='rstat rstat_done'>Complete</span>";
     if ($when && isset($row->reviewLastModified) && $_SESSION["Me"]->isPC)
-	$x .= " <span class='rstat_date'>(" . htmlspecialchars($conf->printTime(strtotime($row->reviewLastModified))) . ")</span>";
+	$x .= " <span class='rstat_date'>(" . htmlspecialchars($conf->printableTime(strtotime($row->reviewLastModified))) . ")</span>";
     return $x;
 }
 
@@ -161,7 +161,7 @@ function reviewButton($paperId, $row = null, $buttonType = 0, $conf = null) {
     $conf = ($conf ? $conf : $Conf);
     $Me = $_SESSION["Me"];
     
-    if ($row === null && ($row = $conf->getPaperRow($paperId, $Me->contactId)) === null)
+    if ($row === null && ($row = $conf->paperRow($paperId, $Me->contactId)) === null)
 	return "Database error";
 
     $reviewType = (isset($row->reviewType) ? $row->reviewType : 0);
@@ -279,10 +279,18 @@ function authorTable($aus, $htmlspecial = true) {
     return $out;
 }
 
-function contactText($firstName, $lastName, $email=null) {
-    $x = trim("$firstName $lastName");
-    if ($email)
-	$x .= " ($email)";
+function contactText($firstName, $lastName=null, $email=null) {
+    if (is_array($firstName)) {
+	$email = $firstName[2];
+	$lastName = $firstName[1];
+	$firstName = $firstName[0];
+    }
+    if ($firstName || $lastName) {
+	$x = trim("$firstName $lastName");
+	if ($email)
+	    $x .= " ($email)";
+    } else
+	$x = $email;
     return $x;
 }
 
@@ -391,6 +399,15 @@ function htmlFold($text, $maxWords) {
     $x .= "<span id='fold$fid' class='folded'><span class='ellipsis'> ... </span><a class='folder' href='javascript:fold($fid, 0)'>[More]</a><span class='extension'> " . join(" ", array_slice($words, $maxWords)) . " </span><a class='unfolder' href='javascript:fold($fid, 1)'>[Less]</a></span>";
     
     return $x;
+}
+
+function wordWrapIndent($text, $info, $indent = 18, $width = 67, $rjinfo = true) {
+    $text = preg_replace("/^(?!\\Z)/m", str_pad("", $indent), wordwrap($text, $width));
+    if (strlen($info) <= $indent) {
+	$info = str_pad($info, $indent, " ", ($rjinfo ? STR_PAD_LEFT : STR_PAD_RIGHT));
+	return $info . substr($text, $indent);
+    } else
+	return $info . "\n" . $text;
 }
 
 function ini_get_bytes($varname) {

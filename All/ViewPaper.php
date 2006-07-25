@@ -57,7 +57,7 @@ if (isset($_REQUEST['setoutcome'])) {
 		$Conf->confirmMsg("Outcome for paper #$paperId set to " . htmlspecialchars($rf->options['outcome'][$o]) . ".");
 	} else
 	    $Conf->errorMsg("Bad outcome value!");
-	$prow = $Conf->getPaperRow($paperId, $Me->contactId);
+	$prow = $Conf->paperRow($paperId, $Me->contactId);
     }
  }
 

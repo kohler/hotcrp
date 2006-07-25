@@ -56,7 +56,7 @@ if ( $Reviewer -> contactId == 0 ) {
 }
 
 $Review = ReviewFactory($Conf, $Reviewer->contactId, $paperId);
-$lastModified=$Conf->printTime($Review->reviewFields['timestamp']);
+$lastModified=$Conf->printableTime($Review->reviewFields['timestamp']);
 $Conf->header("See the reviews for Paper #$paperId by " . $Reviewer->fullnameAndEmail());
 ?>
 

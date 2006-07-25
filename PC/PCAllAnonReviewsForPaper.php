@@ -358,7 +358,7 @@ if (!DB::isError($result) && $result->numRows() > 0) {
 
     $Review=ReviewFactory($Conf, $reviewer, $_REQUEST[paperId]);
 
-    $lastModified=$Conf->printTime($Review->reviewFields['timestamp']);
+    $lastModified=$Conf->printableTime($Review->reviewFields['timestamp']);
 
     print "<table width=100%>";
     if ($i & 0x1 ) {

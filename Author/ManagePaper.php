@@ -21,7 +21,7 @@ $finalizable = $Conf->timeFinalizePaper();
 function get_prow($paperId) {
     global $Conf, $prow, $OK, $updatable, $can_update, $finalized, $withdrawn, $Me;
     if (!isset($prow) && $OK) {
-	$prow = $Conf->getPaperRow($paperId, $Me->contactId);
+	$prow = $Conf->paperRow($paperId, $Me->contactId);
 	if (isset($prow)) {
 	    $withdrawn = $prow->withdrawn > 0;
 	    $finalized = $prow->acknowledged > 0;

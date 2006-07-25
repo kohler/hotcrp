@@ -13,7 +13,7 @@ $Conf -> connect();
 <?php 
 
 print "<p> You can see this information ";
-print $Conf->printTimeRange('PCMeetingView');
+print $Conf->printableTimeRange('PCMeetingView');
 print "</p>";
 
 if ( ! $Conf -> validTimeFor('PCMeetingView', 0) ) {

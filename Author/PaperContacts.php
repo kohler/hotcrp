@@ -14,7 +14,7 @@ if ($notAuthor && !$Me->amAssistant())
 function get_prow($paperId) {
     global $Conf, $prow, $OK, $updatable, $can_update, $finalized, $withdrawn, $Me;
     if (!isset($prow) && $OK) {
-	$prow = $Conf->getPaperRow($paperId, $Me->contactId);
+	$prow = $Conf->paperRow($paperId, $Me->contactId);
 	if (isset($prow)) {
 	    $withdrawn = $prow->withdrawn > 0;
 	    $finalized = $prow->acknowledged > 0;
@@ -58,7 +58,7 @@ function removeContactAuthor($paperId, $contactId) {
 
 $Conf->header("Paper #$paperId Contact Authors", 'paperauthors');
 
-$prow = $Conf->getPaperRow($paperId, $Me->contactId);
+$prow = $Conf->paperRow($paperId, $Me->contactId);
 
 if (!$Me->canManagePaper($prow))
     $Conf->errorMsg("You can't manage paper #$paperId since you are not a contact author.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");

@@ -40,7 +40,7 @@ if ( IsSet($_REQUEST['gradeForPaper']) ) {
 
 <body>
 <?php $Conf->infoMsg( "You may enter grades " .
-	$Conf -> printTimeRange('PCGradePapers') ); ?>
+	$Conf -> printableTimeRange('PCGradePapers') ); ?>
 
 <table align=center width=75%>
 <tr bgcolor=<?php echo $Conf->infoColor?>>

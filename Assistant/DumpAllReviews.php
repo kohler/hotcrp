@@ -251,7 +251,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC) ) {
 	$finalized=$row['reviewSubmitted'];
 
 	$Review=ReviewFactory($Conf, $reviewer, $paperId);
-    $lastModified=$Conf->printTime($Review->reviewFields['timestamp']);
+    $lastModified=$Conf->printableTime($Review->reviewFields['timestamp']);
 
 	print "<table width=100%>";
 	if ($i & 0x1 ) {
@@ -270,7 +270,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC) ) {
 	print "<th> <big> <big> Review #$reviewId For Paper #$paperId </big> $reviewBy </big> </th>";
 	print "</tr>";
 
-    $lastModified=$Conf->printTime($Review->reviewFields['timestamp']);
+    $lastModified=$Conf->printableTime($Review->reviewFields['timestamp']);
 
 	if ( ! $finalized ) {
 	  print "<tr bgcolor=$color>";

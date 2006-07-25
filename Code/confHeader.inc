@@ -83,7 +83,7 @@ require_once("$ConfSitePATH/Code/ClassReview.inc");
 // should just require_once() the DB interface you need.
 // Otherwise, leave these in...
 //
-ini_set("include_path", ini_get("include_path") . ":$ConfSitePATH/Code/DB-1.7.6");
+ini_set("include_path", ini_get("include_path") . ":$ConfSitePATH/Code/DB-1.7.6:$ConfSitePATH/Code/Mail-1.1.10");
 require_once("$ConfSitePATH/Code/DB-1.7.6/DB.php");
 //require_once("$ConfSitePATH/Code/PEAR-DB/common.inc");
 //require_once("$ConfSitePATH/Code/PEAR-DB/DB.inc");

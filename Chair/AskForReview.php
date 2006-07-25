@@ -34,7 +34,7 @@ if (IsSet($_REQUEST["SendReviews"]) && sizeof($_REQUEST["Requests"]) > 0) {
 			  $phone, $fax);
     $result = $newguy -> addToDB($Conf);
     if ( $result ) {
-      $newguy -> sendAccountInfo($Conf);
+	$newguy->sendAccountInfo($Conf, true);
     } else {
       $Conf->errorMsg("Had trouble creating an account for $_REQUEST[firstEmail]");
     }

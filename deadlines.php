@@ -20,49 +20,49 @@ of each page in the conference review system.
 
 echo "<li>";
 echo "You can start new paper submissions ";
-echo $Conf->printTimeRange('startPaperSubmission');
+echo $Conf->printableTimeRange('startPaperSubmission');
 echo "</li>";
 
 if ( $Conf->validDeadline('updatePaperSubmission') ) {
   echo "<li>";
   echo "You can update or finalize those submissions ";
   echo "(including uploading new copies of your paper)";
-  echo $Conf->printTimeRange('updatePaperSubmission');
+  echo $Conf->printableTimeRange('updatePaperSubmission');
   echo "</li>";
 }
 
 if ( $Conf -> validDeadline('authorViewReviews') ) {
   echo "<li>";
   echo "Authors can view the reviews of their papers ";
-  echo $Conf->printTimeRange('authorViewReviews');
+  echo $Conf->printableTimeRange('authorViewReviews');
   echo "</li>";
 }
 
 if ($Conf->validDeadline('authorRespondToReviews') ) {
   echo "<li>";
   echo "Authors can respond to the reviews of their papers ";
-  echo $Conf->printTimeRange('authorRespondToReviews');
+  echo $Conf->printableTimeRange('authorRespondToReviews');
   echo "</li>";
 }
 
 if ($Conf->validDeadline('reviewerSubmitReview') ) {
   echo "<li>";
   echo "Reviewers need to submit their reviews ";
-  echo $Conf->printTimeRange('reviewerSubmitReview');
+  echo $Conf->printableTimeRange('reviewerSubmitReview');
   echo "</li>";
 }
 
 if ($Conf->validDeadline('PCSubmitReview') ) {
     echo "<li>";
     echo "Program committee members need to complete reviews ";
-    echo $Conf->printTimeRange('reviewerSubmitReview');
+    echo $Conf->printableTimeRange('reviewerSubmitReview');
     echo "</li>";
 }
 
 if ($Conf->validDeadline('PCViewAllPapers')) {
     echo "<li>";
     echo "Program committee members can see reviews for all papers ";
-    echo $Conf->printTimeRange('PCViewAllPapers');
+    echo $Conf->printableTimeRange('PCViewAllPapers');
     echo "</li>";
 }
 

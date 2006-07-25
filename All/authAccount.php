@@ -25,7 +25,7 @@ if (isset($_REQUEST["register"])) {
     if (DB::isError($result)) {
 	$Conf->errorMsg($result->dbErrorText($result, "while adding your account"));
     } else {
-	$_SESSION["Me"]->sendAccountInfo($Conf);
+	$_SESSION["Me"]->sendAccountInfo($Conf, true);
 	$Conf->log("Created account", $_SESSION["Me"]);
 	$msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["loginEmail"]) . ".  ";
 	if ($Conf->allowEmailTo($_SESSION["Me"]->email))
@@ -48,7 +48,7 @@ if (!$_SESSION["Me"]->valid()) {
 }
 
 if (isset($_REQUEST["forgot"])) {
-    $_SESSION["Me"]->sendAccountInfo($Conf);
+    $_SESSION["Me"]->sendAccountInfo($Conf, false);
     $Conf->log("Sent password", $_SESSION["Me"]);
     $Conf->confirmMsg("The account information for " . $_REQUEST["loginEmail"] . " has been emailed to that address.  When you receive that email, return here to complete the login process.");
     include('login.php');

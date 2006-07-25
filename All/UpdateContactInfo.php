@@ -37,7 +37,7 @@ if (isset($_REQUEST['register']) && $OK) {
 	if ($newProfile) {
 	    $result = $Me->initialize($_REQUEST["email"], $Conf);
 	    if ($OK) {
-		$Me->sendAccountInfo($Conf);
+		$Me->sendAccountInfo($Conf, true);
 		$Conf->log("Created account", $Me);
 	    }
 	    

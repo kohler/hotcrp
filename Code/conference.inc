@@ -231,7 +231,7 @@ class Conference {
 	
 	if (!DB::isError($result)) {
 	    $this->infoMsg("Created account for " . htmlspecialchars($email) . ".");
-	    $newguy->sendAccountInfo($this);
+	    $newguy->sendAccountInfo($this, true);
 	    $this->log("$Me->contactId created account", $newguy);
 	} else
 	    $this->log("$Me->contactId account creation failure", $newguy);
@@ -329,39 +329,39 @@ class Conference {
     function parseableTime($value) {
 	return date("j M Y g:i:sa",$value);
     }
-    function printTime(&$value) {
+    function printableTime(&$value) {
 	if (isset($value) && $value > 0)
 	    return date("l j M Y g:i:sa T", $value);
 	else
 	    return "N/A";
     }
     function printableStartTime($what) {
-	return $this->printTime($this->startTime[$what]);
+	return $this->printableTime($this->startTime[$what]);
     }
     function printableEndTime($what) {
-	return $this->printTime($this->endTime[$what]);
+	return $this->printableTime($this->endTime[$what]);
     }
     function printDeadline($what) {
 	if (!isset($this->endTime[$what]) || $this->endTime[$what] <= 0)
 	    return "No deadline";
 	else
-	    return "Deadline: " . $this->printTime($this->endTime[$what]);
+	    return "Deadline: " . $this->printableTime($this->endTime[$what]);
     }
 
-    function printTimeRange($what) {
+    function printableTimeRange($what) {
 	$start = &$this->startTime[$what];
 	$end = &$this->endTime[$what];
 	$now = time();
       
 	$str = "";
 	if (isset($start) && $start > 0 && $start >= $now) {
-	    $str = "after " . $this->printTime($start);
+	    $str = "after " . $this->printableTime($start);
 	    if (isset($end) && $end > 0)
 		$str .= " and ";
 	}
 
 	if (isset($end) && $end > 0)
-	    $str .= "until " . $this->printTime($end);
+	    $str .= "until " . $this->printableTime($end);
 	
 	return $str;
     }
@@ -466,7 +466,11 @@ class Conference {
     // Paper storage
     //
 
-    function storePaper($uploadId, $paperId) {
+    function storePaper($uploadId, $prow) {
+	global $Opt;
+
+	$paperId = (is_numeric($prow) ? $prow : $prow->paperId);
+	
 	if ($uploadId && fileUploaded($_FILES[$uploadId], $this))
 	    $filename = $_FILES[$uploadId]['tmp_name'];
 	else
@@ -537,7 +541,51 @@ class Conference {
 
 	$this->qe("unlock tables");
 
-	return (PEAR::isError($result) ? $result : strlen($contents));
+	if (PEAR::isError($result))
+	    return $result;
+
+	// potentially email the paper to Greg Minshall
+	if ($Opt['emailSubmissions']) {
+	    if (is_numeric($prow))
+		$prow = $this->paperRow($paperId);
+	    
+	    require_once("Mail.php");
+	    require_once("Mail/mime.php");
+
+	    // prepare data
+	    $subject = "[$this->shortName] Paper #$paperId upload";
+	    $message = "           Paper: $this->paperSite/paper.php?paperId=$paperId
+       Submitted: " . $this->printableTime(time()) . "\n\n"
+		. wordWrapIndent(trim($prow->title), "Title: ") . "\n"
+		. wordWrapIndent(trim($prow->abstract), "Abstract: ") . "\n\n"
+		. wordWrapIndent(trim($prow->authorInformation), "Authors: ") . "\n"
+		. wordWrapIndent(trim($prow->collaborators), "Collaborators: ") . "\n";
+
+	    // collect contact authors
+	    $aus = $this->paperContactAuthors($paperId);
+	    $autxt = "";
+	    foreach ($aus as $au)
+		$autxt .= contactText($au) . "\n";
+	    if ($autxt)
+		$message .= wordWrapIndent($autxt, "Contact authors: ");
+	    $message .= "\n";
+	    
+	    $mime = new Mail_mime("\n");
+	    $mime->setTXTBody($message);
+	    $mime->addAttachment($contents, $mimetype, $this->downloadPaperName($paperId, $mimetype), false);
+
+	    $body = $mime->get();
+	    $hdrs = $mime->headers(array("From" => $this->emailFrom,
+					 "Subject" => $subject));
+
+	    $mfac =& Mail::factory("mail");
+	    if ($this->allowEmailTo($Opt["emailSubmissions"]))
+		$mfac->send($Opt["emailSubmissions"], $hdrs, $body);
+	    else
+		$this->infoMsg("<pre>" . htmlspecialchars($body) . "</pre>");
+	}
+	
+	return strlen($contents);
     }
 
     function downloadPaperName($paperId, $mimetype) {
@@ -770,7 +818,7 @@ class Conference {
 	return $pq . "\n";
     }
 
-    function getPaperRow($paperId, $contactId, $while = "") {
+    function paperRow($paperId, $contactId = -1, $while = "") {
 	if ($paperId <= 0) {
 	    $this->errorMsg(whyNotText(array("invalidId" => 1), "view", $paperId));
 	    return null;
@@ -786,6 +834,15 @@ class Conference {
 	    return null;
 	} else
 	    return $result->fetchRow(DB_FETCHMODE_OBJECT);
+    }
+
+    function paperContactAuthors($paperId) {
+	$result = $this->qe("select firstName, lastName, email, contactId from ContactInfo join PaperConflict using (contactId) where paperId=$paperId", "while looking up paper contact authors");
+	$aus = array();
+	if (!DB::isError($result))
+	    while (($row = $result->fetchRow()))
+		$aus[] = $row;
+	return $aus;
     }
 
 
@@ -1143,7 +1200,7 @@ class Conference {
 	$message .= $paperList;
 	$message .= "\n";
 	$message .= "You can continue to modify your review(s)\n";
-	$message .= $this->printTimeRange('reviewerSubmitReview');
+	$message .= $this->printableTimeRange('reviewerSubmitReview');
 	$message .= "or until you finalize them.\n";
 	$message .= "\n\n";
 	$message .= "If you are unable to complete the review by the deadline,\n";
@@ -1171,7 +1228,7 @@ class Conference {
 
     function allowEmailTo($email) {
 	global $Opt;
-	return $Opt['allowEmail'] && strstr($email, "@");
+	return $Opt['sendEmail'] && strstr($email, "@");
     }
   
   function sendReviewerRequest($who, $email, $paperList) {

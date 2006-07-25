@@ -25,12 +25,12 @@ if ($Conf -> validTimeFor('updatePaperSubmission', 0)) {
 
 if ($Conf -> validTimeFor('authorViewReviews', 0)) {
   print "<p> You can see the reviews of your paper ";
-  print $Conf->printTimeRange('submitReponses');
+  print $Conf->printableTimeRange('submitReponses');
   print "</p>";
 }
 if ($Conf -> validTimeFor('authorRespondToReviews', 0)) {
   print "<p> You can submit responses to reviews of your paper ";
-  print $Conf->printTimeRange('submitReponses');
+  print $Conf->printableTimeRange('submitReponses');
   print "</p>";
 }
 

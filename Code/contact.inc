@@ -380,7 +380,7 @@ class Contact {
 	if (is_numeric($prow) && $prow <= 0)
 	    return setRet($whyNot["invalidId"], 1, null);
 	if (is_numeric($prow))
-	    $prow = $conf->getPaperRow($prow, $this->contactId);
+	    $prow = $conf->paperRow($prow, $this->contactId);
 	if (!$prow)
 	    return setRet($whyNot["noPaper"], 1, null);
 	else
@@ -689,7 +689,7 @@ class Contact {
 
 	if ($row->withdrawn > 0) {
 	    $x = "<span class='pstat pstat_with'>Withdrawn</span>";
-	    return $x . ($long > 0 ? " at " . $conf->printTime($row->withdrawn) : '');
+	    return $x . ($long > 0 ? " at " . $conf->printableTime($row->withdrawn) : '');
 	} else if ($row->acknowledged <= 0 && $row->paperStorageId == 1) {
 	    return "<span class='pstat pstat_noup'>Not yet uploaded</span>";
 	} else if (isset($row->outcome) && $row->outcome != 0 && $this->canViewDecision($row, $conf)) {
@@ -712,11 +712,11 @@ class Contact {
 		    return "";
 		$x = "<span class='pstat pstat_sub'>Submitted</span>";
 		if ($long > 0)
-		    $x .= " at " . $conf->printTime($row->acknowledged);
+		    $x .= " at " . $conf->printableTime($row->acknowledged);
 	    } else {
 		$x = "<span class='pstat pstat_prog'>In progress</span>";
 		if ($long > 0)
-		    $x .= "; updated at " . $conf->printTime($row->timestamp);
+		    $x .= "; updated at " . $conf->printableTime($row->timestamp);
 	    }
 	    return $x;
 	}
@@ -743,36 +743,34 @@ class Contact {
       return substr($password, 0, $length);  
   }
 
-  function sendAccountInfo($conf) {
-      $message  = "Someone requested that we send you your account registration information\n";
-      $message .= "for the $conf->shortName conference submission site, located at\n";
-      $message .= "$conf->paperSite\n";
-      $message .= "\n\n";
-      $message .= "Your registration indicates your email address is $this->email\n";
-      $message .= "and your password is $this->password\n";
-      //
-      // This was removed for MICRO36, but I think it's very useful. If nothing else,
-      // this should be an option
-      //
-      if ( 1 ) {
-	  $message .= "\n\n";
-	  $message .= "Depending on your email client, you may be able to click on this link\n";
-	  $cleanEmail=htmlspecialchars($this->email);
-	  $cleanPasswd=htmlspecialchars($this->password);
-	  $message .= "to login:\n";
-	  $message .= "$conf->paperSite/All/authAccount.php?loginEmail=$cleanEmail&password=$cleanPasswd\n";
-      }
+    function sendAccountInfo($conf, $create) {
+	$message = "Greetings,\n\n";
+	if ($create)
+	    $message .= "An account has been created for you at the $conf->shortName conference submission site, and an initial password has been assigned.\n\n";
+	else
+	    $message .= "Someone requested we forward your account information for the $conf->shortName conference submission site.\n\n";
+	$message .= "        Site: $conf->paperSite
+       Email: $this->email
+    Password: $this->password
 
-      $message .= "\n\n";
-      $message .= "If you did not request your password, you may want to contact\n";
-      $message .= "$conf->contactName ($conf->contactEmail) about this matter.\n\n";
+Click the link below to log in.  If the link isn't clickable, you may copy
+and paste it into your web browser's location field.
 
-      if ($conf->allowEmailTo($this->email))
-	  $results = mail($this->email,
-			  "[$conf->confShortName] Account information",
-			  $message,
-			  "From: $conf->emailFrom");
-  }
+    $conf->paperSite/login.php?email=" . urlencode($this->email) . "&password=" . urlencode($this->password) . "
+
+Contact the site administrator, $conf->contactName ($conf->contactEmail), with any questions or concerns.
+
+- $conf->shortName Conference Submissions\n";
+	$message = wordwrap($message);
+	
+	if ($conf->allowEmailTo($this->email))
+	    $results = mail($this->email,
+			    "[$conf->shortName] Account information",
+			    $message,
+			    "From: $conf->emailFrom");
+	else
+	    $conf->infoMsg("<pre>" . htmlspecialchars($message) . "</pre>");
+    }
 
   //
   // Print all the papers and review links.

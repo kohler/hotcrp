@@ -46,7 +46,7 @@ if ( $_SESSION["Me"] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
 
 <p>
 You can see the paper reviews
-<?php  echo $Conf->printTimeRange('authorViewReviews') ?>.
+<?php  echo $Conf->printableTimeRange('authorViewReviews') ?>.
 </p>
 
 <?php 
@@ -149,7 +149,7 @@ if (!DB::isError($result) && $result->numRows() > 0) {
 
     $Review=ReviewFactory($Conf, $reviewer, $_REQUEST[paperId]);
 
-    $lastModified=$Conf->printTime($Review->reviewFields['timestamp']);
+    $lastModified=$Conf->printableTime($Review->reviewFields['timestamp']);
 
     print "<table width=100%>";
 
