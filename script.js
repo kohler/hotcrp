@@ -5,10 +5,15 @@ function highlightUpdate() {
 	    ins[i].className = "button_alert";
 }
 
-function fold(which, fold) {
-    var folded = document.getElementById('fold' + which);
-    if (fold)
-	folded.className = "folded";
-    else
-	folded.className = "unfolded";
+function fold(which, dofold) {
+    if (which instanceof Array) {
+	for (var i = 0; i < which.length; i++)
+	    fold(which[i], dofold);
+    } else {
+	var folded = document.getElementById('fold' + which);
+	if (dofold)
+	    folded.className = folded.className.replace("unfolded", "folded");
+	else
+	    folded.className = folded.className.replace("folded", "unfolded");
+    }
 }

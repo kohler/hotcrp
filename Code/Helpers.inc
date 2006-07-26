@@ -396,7 +396,7 @@ function htmlFold($text, $maxWords) {
     $fid = (isset($foldId) ? $foldId : 1);
     $foldId = $fid + 1;
 
-    $x .= "<span id='fold$fid' class='folded'><span class='ellipsis'> ... </span><a class='folder' href='javascript:fold($fid, 0)'>[More]</a><span class='extension'> " . join(" ", array_slice($words, $maxWords)) . " </span><a class='unfolder' href='javascript:fold($fid, 1)'>[Less]</a></span>";
+    $x .= "<span id='fold$fid' class='folded'><span class='ellipsis'> ... </span><a class='unfolder' href='javascript:fold($fid, 0)'>[More]</a><span class='extension'> " . join(" ", array_slice($words, $maxWords)) . " </span><a class='folder' href='javascript:fold($fid, 1)'>[Less]</a></span>";
     
     return $x;
 }

@@ -83,7 +83,7 @@ input, button, textarea, select {
 textarea {
 	vertical-align: baseline;
 }
-input.button, button {
+input.button, button, a.button {
 	background: #ffffbb;
 	border-top: 1px solid #eeee66;
 	border-left: 2px solid #eeee66;
@@ -91,6 +91,8 @@ input.button, button {
 	border-right: 2px solid #999966;
 	padding: 0px 6px 0px 6px;
 	margin: 2px 0px;
+	text-decoration: none;
+	color: black;
 }
 input.button_default, button.button_default {
 	font-size: large;
@@ -139,7 +141,7 @@ div.vubar .tab_disabled {
 	color: #777777;
 }
 div.vubar .tab {
-	background: #ffff00;
+	background: #ffff99;
 }
 div.vubar a {
 	text-decoration: none;
@@ -149,7 +151,7 @@ div.vubar a:hover {
 	text-decoration: underline;
 }
 div.vubar .tab_default {
-	background: #ffcccc;
+	background: #ffff00;
 	font-weight: bold;
 }
 
@@ -526,10 +528,7 @@ a.pl_sort_def_rev {
 	color: #660000;
 }
 
-span.folded span.extension, span.folded a.unfolder {
-	display: none;
-}
-span.unfolded span.ellipsis, span.unfolded a.folder {
+.folded .extension, .folded .folder, .unfolded .ellipsis, .unfolded .unfolder {
 	display: none;
 }
 

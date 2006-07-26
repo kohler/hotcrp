@@ -293,7 +293,12 @@ else
 // messages for the author
 function deadlineIs($dname, $conf) {
     $deadline = $conf->printableEndTime($dname);
-    return ($deadline == "N/A" ? "" : "  The deadline is $deadline.");
+    if ($deadline == "N/A")
+	return "";
+    else if (time() < $conf->endTime[$dname])
+	return "  The deadline is $deadline.";
+    else
+	return "  The deadline was $deadline.";
 }
 
 if ($prow->author > 0 && $prow->acknowledged <= 0 && $editMode) {
@@ -471,20 +476,33 @@ pt_data("abstract", 5);
 echo "</td>\n</tr>\n\n";
 
 
+// Author area
+$canViewAuthors = $Me->canViewAuthors($prow, $Conf);
+if ($editMode && $Me->amAssistant())
+    $canViewAuthors = true;
+if (!$canViewAuthors && $Me->amAssistant()) {
+    $folders = "['a1','a2','a3','a4']";
+    echo "<tr class='pt_authorTrigger folded' id='folda1'>\n  <td class='pt_caption'></td>\n  <td class='pt_entry'><a class='button unfolder' href=\"javascript:fold($folders, 0)\">Show&nbsp;authors</a><a class='button folder' href=\"javascript:fold($folders, 1)\">Hide&nbsp;authors</a></td>\n</tr>\n\n";
+    $authorTRClasses = " folded";
+    $authorTDClasses = " extension";
+} else
+    $authorTRClasses = $authorTDClasses = "";
+
+
 // Contact authors
 if ($newPaper) {
-    echo "<tr class='pt_contactAuthors'>\n  <td class='pt_caption'>";
-    echo "Contact&nbsp;author:</td>\n  <td class='pt_entry'>", contactText($Me->firstName, $Me->lastName, $Me->email), "</td>\n";
-    echo "  <td class='pt_hint'>You will be able to add more contact authors after you submit the paper.</td>\n";
-} else if ($Me->canViewAuthors($prow, $Conf)) {
+    echo "<tr class='pt_contactAuthors$authorTRClasses' id='folda2'>\n  <td class='pt_caption$authorTDClasses'>";
+    echo "Contact&nbsp;author:</td>\n  <td class='pt_entry$authorTDClasses'>", contactText($Me->firstName, $Me->lastName, $Me->email), "</td>\n";
+    echo "  <td class='pt_hint$authorTDClasses'>You will be able to add more contact authors after you submit the paper.</td>\n";
+} else if ($canViewAuthors || $Me->amAssistant()) {
     $result = $Conf->qe("select firstName, lastName, email, contactId
 	from ContactInfo
 	join PaperConflict using (contactId)
 	where paperId=$paperId and author=1
 	order by lastName, firstName", "while finding contact authors");
-    echo "<tr class='pt_contactAuthors'>\n  <td class='pt_caption'>";
+    echo "<tr class='pt_contactAuthors$authorTRClasses' id='folda2'>\n  <td class='pt_caption$authorTDClasses'>";
     echo (!DB::isError($result) && $result->numRows() == 1 ? "Contact&nbsp;author:" : "Contact&nbsp;authors:");
-    echo "</td>\n  <td class='pt_entry'>";
+    echo "</td>\n  <td class='pt_entry$authorTDClasses'>";
     if (!DB::isError($result)) {
 	while ($row = $result->fetchRow()) {
 	    $au = contactText($row[0], $row[1], $row[2]);
@@ -499,25 +517,25 @@ if ($newPaper) {
 
 
 // Authors
-if ($newPaper || $Me->canViewAuthors($prow, $Conf)) {
-    echo "<tr class='pt_authors'>\n  <td class='",
-	pt_caption_class("authorInformation"),
-	"'>Authors:</td>\n  <td class='pt_entry'>";
+if ($newPaper || $canViewAuthors || $Me->amAssistant()) {
+    echo "<tr class='pt_authors$authorTRClasses' id='folda3'>\n  <td class='",
+	pt_caption_class("authorInformation"), $authorTDClasses,
+	"'>Authors:</td>\n  <td class='pt_entry$authorTDClasses'>";
     pt_data("authorInformation", 5, true);
     echo "</td>\n";
     if ($editable)
-	echo "  <td class='pt_hint'>List the paper's authors one per line, including any affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
+	echo "  <td class='pt_hint$authorTDClasses'>List the paper's authors one per line, including any affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
 Ludwig van Beethoven (Colorado)
 Zhang, Ping Yen (INRIA)</pre></td>\n";
     echo "</tr>\n\n";
 
-    echo "<tr class='pt_collaborators'>\n  <td class='",
-	pt_caption_class("collaborators"),
-	"'>Collaborators:</td>\n  <td class='pt_entry'>";
+    echo "<tr class='pt_collaborators$authorTRClasses' id='folda4'>\n  <td class='",
+	pt_caption_class("collaborators"), $authorTDClasses,
+	"'>Collaborators:</td>\n  <td class='pt_entry$authorTDClasses'>";
     pt_data("collaborators", 5, true);
     echo "</td>\n";
     if ($editable)
-	echo "  <td class='pt_hint'>List the authors' recent (~2 years) coauthors and collaborators, and any advisor or student relationships.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td>\n";
+	echo "  <td class='pt_hint$authorTDClasses'>List the authors' recent (~2 years) coauthors and collaborators, and any advisor or student relationships.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td>\n";
     echo "</tr>\n\n";
 }
 
@@ -569,10 +587,50 @@ if ($editMode) {
 }
 
 
-// End
+// End paper view
 echo "</table>\n";
 if ($editMode)
     echo "</form>\n";
 echo "<div class='clear'></div>\n\n";
+
+
+// Reviews
+if ($prow->reviewCount > 0) {
+    if ($Me->canViewReviews($prow, $Conf, $whyNot)) {
+	$rf = reviewForm();
+	$q = "select PaperReview.*,
+		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
+		from PaperReview
+		join ContactInfo using (contactId)
+		where paperId=$paperId
+		order by reviewSubmitted";
+	$result = $Conf->qe($q, "while retrieving reviews");
+	$reviewnum = 65;
+	if (!DB::isError($result) && $result->numRows() > 0)
+	    while ($rrow = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
+		echo "<hr/>
+
+<table class='review'>
+<tr>
+  <td class='form_id'><h3>Review&nbsp;", chr($reviewnum++), "</h3></td>
+  <td class='form_entry' colspan='3'>";
+		if ($Me->canViewReviewerIdentity($rrow, $prow, $Conf))
+		    echo "by <span class='reviewer'>", trim(htmlspecialchars("$rrow->firstName $rrow->lastName")), "</span>";
+		echo " <span class='reviewstatus'>", reviewStatus($rrow, 1), "</span>";
+		if ($rrow->contactId == $Me->contactId || $Me->amAssistant())
+		    echo " ", reviewButton($paperId, $rrow, 0, $Conf);
+		echo "</td>
+</tr>\n";
+		echo $rf->webDisplayRows($rrow, $Me->canViewAllReviewFields($prow, $Conf)), "</table>\n\n";
+	    }
+
+    } else {
+	echo "<hr/>\n<p>";
+	if ($Me->isPC || $prow->reviewType > 0)
+	    echo plural($nreviews, "review"), " available for paper #$paperId.  ";
+	echo whyNotText($whyNot, "viewreview", $paperId);
+    }
+}
+
 
 $Conf->footer(); ?>
