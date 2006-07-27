@@ -111,8 +111,9 @@ function uploadPaper() {
     return true;
 }
 
-function updatePaper($contactId, $isSubmit, $isUploadOnly) {
+function updatePaper($Me, $isSubmit, $isUploadOnly) {
     global $paperId, $newPaper, $PaperError, $Conf, $prow;
+    $contactId = $Me->contactId;
 
     // check that all required information has been entered
     array_ensure($_REQUEST, "", "title", "abstract", "authorInformation", "collaborators");
@@ -130,7 +131,7 @@ function updatePaper($contactId, $isSubmit, $isUploadOnly) {
     }
 
     // defined contact ID
-    if ($newPaper && (isset($_REQUEST["contact_email"]) || isset($_REQUEST["contact_name"])))
+    if ($newPaper && (isset($_REQUEST["contact_email"]) || isset($_REQUEST["contact_name"])) && $Me->amAssistant())
 	if (!($contactId = $Conf->getContactId($_REQUEST["contact_email"], "contact_"))) {
 	    $Conf->errorMsg("You must supply a valid email address for the contact author.");
 	    $PaperError["contactAuthor"] = 1;
@@ -252,7 +253,7 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submit"])) {
     // actually update
     if (!$ok)
 	$Conf->errorMsg(whyNotText($whyNot, "update", $paperId));
-    else if (updatePaper($Me->contactId, isset($_REQUEST["submit"]), false)) {
+    else if (updatePaper($Me, isset($_REQUEST["submit"]), false)) {
 	if ($newPaper)
 	    $Conf->go("paper.php?paperId=$paperId&mode=edit");
     }
@@ -501,12 +502,12 @@ if (!$canViewAuthors && $Me->amAssistant()) {
 
 // Contact authors
 if ($newPaper) {
-    echo "<tr class='pt_contactAuthors$authorTRClasses' id='folda2'>\n  <td class='", pt_caption_class('contactAuthors'), $authorTDClasses, "'>";
+    echo "<tr class='pt_contactAuthor$authorTRClasses' id='folda2'>\n  <td class='", pt_caption_class('contactAuthor'), $authorTDClasses, "'>";
     echo "Contact&nbsp;author:</td>\n  <td class='pt_entry$authorTDClasses'>";
     if ($Me->amAssistant())
 	contactPulldown("contact", "contact", $Conf, $Me);
     else
-	contactText($Me->firstName, $Me->lastName, $Me->email);
+	echo contactText($Me->firstName, $Me->lastName, $Me->email);
     echo "</td>\n";
     echo "  <td class='pt_hint$authorTDClasses'>You will be able to add more contact authors after you submit the paper.</td>\n";
 } else if ($canViewAuthors || $Me->amAssistant()) {
@@ -515,7 +516,7 @@ if ($newPaper) {
 	join PaperConflict using (contactId)
 	where paperId=$paperId and author=1
 	order by lastName, firstName", "while finding contact authors");
-    echo "<tr class='pt_contactAuthors$authorTRClasses' id='folda2'>\n  <td class='pt_caption$authorTDClasses'>";
+    echo "<tr class='pt_contactAuthor$authorTRClasses' id='folda2'>\n  <td class='pt_caption$authorTDClasses'>";
     echo (!DB::isError($result) && $result->numRows() == 1 ? "Contact&nbsp;author:" : "Contact&nbsp;authors:");
     echo "</td>\n  <td class='pt_entry$authorTDClasses'>";
     if (!DB::isError($result)) {
