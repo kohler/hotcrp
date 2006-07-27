@@ -536,6 +536,13 @@ div#offrev td#upload {
 	padding-left: 3em;
 }
 
+span.contactpulldown {
+	position: absolute;
+}
+span.contactpulldown select {
+	vertical-align: top;
+}
+
 /*@media screen {
 table.setreviewform input#submit {
 	position: fixed;

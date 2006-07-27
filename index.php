@@ -20,7 +20,8 @@ if (!isset($_SESSION["Me"]) || !$_SESSION["Me"]->valid())
     go("login.php");
 $Me = $_SESSION["Me"];
 
-if (($_SESSION["AskedYouToUpdateContactInfo"] < 2 && !$Me->lastName)
+if (($_SESSION["AskedYouToUpdateContactInfo"] < 2
+     && !($Me->lastName && $Me->affiliation))
     || ($_SESSION["AskedYouToUpdateContactInfo"] < 3 && $Me->isPC
 	&& !($Me->collaborators || $Me->anyTopicInterest))) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 1;

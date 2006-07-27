@@ -487,3 +487,23 @@ function array_ensure(&$arr, $val) {
 	    $arr[$a] = $val;
     }
 }
+
+function contactPulldown($id, $name, $conf, $contact) {
+    echo "<input class='textlite' id='${id}_name' name='${name}_name' type='text' value=\"", htmlspecialchars(trim("$contact->firstName $contact->lastName")), "\" />&nbsp;&nbsp;";
+    echo "<input class='textlite' id='${id}_email' name='${name}_email' type='text' value=\"", htmlspecialchars($contact->email), "\" />&nbsp;&nbsp;";
+    
+    $result = $conf->q("select firstName, lastName, email from ContactInfo order by lastName, firstName, email");
+    if (!DB::isError($result)) {
+	echo "<span class='folded' id='fold$id'><a class='button_small unfolder' href=\"javascript:fold('${id}', 0)\">Show&nbsp;list</a>";
+	echo "<span class='contactpulldown extension'>";
+	echo "<select id='${id}_pulldown' name='${name}_pulldown' onchange='contactPulldown(\"$id\")' size='6'>";
+	while (($row = $result->fetchRow())) {
+	    $selected = ($row[2] == $contact->email ? " selected='selected'" : "");
+	    if ($row[0] || $row[1]) {
+		echo "<option$selected value=\"", htmlspecialchars($row[2]), "`````", htmlspecialchars(trim("$row[0] $row[1]")), "\">", htmlspecialchars(trim("$row[0] $row[1]")), " (", htmlspecialchars($row[2]), ")</option>\n";
+	    } else
+		echo "<option$selected>", htmlspecialchars($row[2]), "</option>\n";
+	}
+	echo "</select>&nbsp;<a class='button_small' href=\"javascript:fold('${id}', 1)\">Hide</a></span></span>\n";
+    }
+}

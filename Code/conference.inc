@@ -182,6 +182,9 @@ class Conference {
     // in the database
     //
     function getContactId($email, $registerFromRequest = false) {
+	global $Me;
+	// XXX should lock table
+	
 	$email = ($email ? trim($email) : "");
 	if (!$email)
 	    return 0;
@@ -192,38 +195,47 @@ class Conference {
 	    return $row[0];
 	}
 
-	if (!$registerFromRequest)
+	if ($registerFromRequest === false)
 	    return 0;
 
+	// validate email address
+	require_once("Mail/RFC822.php");
+	$rfc822 = new Mail_RFC822($email);
+	$emailForValidate = $email;
+	if (!$rfc822->validateMailbox($emailForValidate))
+	    return 0;
+	
+	$p = (is_string($registerFromRequest) ? $registerFromRequest : "");
+	
 	// try to add them
 	$newguy = new Contact();
 	$result = $newguy->initialize($email, $this);
 	if (!DB::isError($result)) {
 	    
 	    // rigamarole to handle separate or joined first and last names
-	    if (isset($_REQUEST['firstName']) || isset($_REQUEST['lastName'])) {
-		if (isset($_REQUEST['firstName']))
-		    $newguy->firstName = $_REQUEST['firstName'];
-		if (isset($_REQUEST['lastName']))
-		    $newguy->lastName = $_REQUEST['lastName'];
-	    } else if (!isset($_REQUEST['name']))
+	    if (isset($_REQUEST["${p}firstName"]) || isset($_REQUEST["${p}lastName"])) {
+		if (isset($_REQUEST["${p}firstName"]))
+		    $newguy->firstName = $_REQUEST["${p}firstName"];
+		if (isset($_REQUEST["${p}lastName"]))
+		    $newguy->lastName = $_REQUEST["${p}lastName"];
+	    } else if (!isset($_REQUEST["${p}name"]))
 		/* nada */;
-	    else if (preg_match('/^(.*),\s*(\S.*)$/', $_REQUEST['name'], $matches)) {
+	    else if (preg_match('/^(.*),\s*(\S.*)$/', $_REQUEST["${p}name"], $matches)) {
 		$newguy->firstName = $matches[2];
 		$newguy->lastName = $matches[1];
-	    } else if (preg_match('/^(.*)\s+(\S*)$/', $_REQUEST['name'], $matches)) {
+	    } else if (preg_match('/^(.*)\s+(\S*)$/', $_REQUEST["${p}name"], $matches)) {
 		$newguy->firstName = $matches[1];
 		$newguy->lastName = $matches[2];
 	    } else
-		$newguy->lastName = $_REQUEST['name'];
+		$newguy->lastName = $_REQUEST["${p}name"];
 
 	    // other information is easier
-	    if (isset($_REQUEST['affiliation']))
-		$newguy->affiliation = $_REQUEST['affiliation'];
-	    if (isset($_REQUEST['voicePhoneNumber']))
-		$newguy->voicePhoneNumber = $_REQUEST['voicePhoneNumber'];
-	    if (isset($_REQUEST['faxPhoneNumber']))
-		$newguy->faxPhoneNumber = $_REQUEST['faxPhoneNumber'];
+	    if (isset($_REQUEST["${p}affiliation"]))
+		$newguy->affiliation = $_REQUEST["${p}affiliation"];
+	    if (isset($_REQUEST["${p}voicePhoneNumber"]))
+		$newguy->voicePhoneNumber = $_REQUEST["${p}voicePhoneNumber"];
+	    if (isset($_REQUEST["${p}faxPhoneNumber"]))
+		$newguy->faxPhoneNumber = $_REQUEST["${p}faxPhoneNumber"];
 
 	    // actually update database
 	    $result = $newguy->updateDB($this, "while creating account for " . htmlspecialchars($email));
@@ -1228,7 +1240,8 @@ class Conference {
 
     function allowEmailTo($email) {
 	global $Opt;
-	return $Opt['sendEmail'] && strstr($email, "@");
+	return $Opt['sendEmail'] && strstr($email, "@")
+	    && !preg_match('/@_.com$/', $email);
     }
   
   function sendReviewerRequest($who, $email, $paperList) {

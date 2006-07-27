@@ -129,6 +129,14 @@ function updatePaper($contactId, $isSubmit, $isUploadOnly) {
 	return false;
     }
 
+    // defined contact ID
+    if ($newPaper && (isset($_REQUEST["contact_email"]) || isset($_REQUEST["contact_name"])))
+	if (!($contactId = $Conf->getContactId($_REQUEST["contact_email"], "contact_"))) {
+	    $Conf->errorMsg("You must supply a valid email address for the contact author.");
+	    $PaperError["contactAuthor"] = 1;
+	    return false;
+	}
+
     // update Paper table
     $q = substr($q, 0, -2);
     if (!$newPaper)
@@ -301,7 +309,9 @@ function deadlineIs($dname, $conf) {
 	return "  The deadline was $deadline.";
 }
 
-if ($prow->author > 0 && $prow->acknowledged <= 0 && $editMode) {
+if ($newPaper || !$editMode)
+    /* do nothing */;
+else if ($prow->author > 0 && $prow->acknowledged <= 0) {
     $timeUpdate = $Conf->timeUpdatePaper();
     $updateDeadline = deadlineIs("updatePaperSubmission", $Conf);
     $timeSubmit = $Conf->timeFinalizePaper();
@@ -314,7 +324,7 @@ if ($prow->author > 0 && $prow->acknowledged <= 0 && $editMode) {
 	$Conf->infoMsg("You cannot update your paper since the <a href='deadlines.php'>deadline</a> has passed, but it still must be officially submitted before it can be considered for the conference.$submitDeadline");
     else if ($prow->withdrawn <= 0)
 	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting this paper has passed.  The paper will not be considered.$submitDeadline");
- } else if ($prow->author > 0 && $editMode)
+} else if ($prow->author > 0)
     $Conf->infoMsg("This paper has been submitted and can no longer be changed.  You can still withdraw the paper or add contact authors, allowing others to view reviews as they become available.");
 
 
@@ -491,8 +501,13 @@ if (!$canViewAuthors && $Me->amAssistant()) {
 
 // Contact authors
 if ($newPaper) {
-    echo "<tr class='pt_contactAuthors$authorTRClasses' id='folda2'>\n  <td class='pt_caption$authorTDClasses'>";
-    echo "Contact&nbsp;author:</td>\n  <td class='pt_entry$authorTDClasses'>", contactText($Me->firstName, $Me->lastName, $Me->email), "</td>\n";
+    echo "<tr class='pt_contactAuthors$authorTRClasses' id='folda2'>\n  <td class='", pt_caption_class('contactAuthors'), $authorTDClasses, "'>";
+    echo "Contact&nbsp;author:</td>\n  <td class='pt_entry$authorTDClasses'>";
+    if ($Me->amAssistant())
+	contactPulldown("contact", "contact", $Conf, $Me);
+    else
+	contactText($Me->firstName, $Me->lastName, $Me->email);
+    echo "</td>\n";
     echo "  <td class='pt_hint$authorTDClasses'>You will be able to add more contact authors after you submit the paper.</td>\n";
 } else if ($canViewAuthors || $Me->amAssistant()) {
     $result = $Conf->qe("select firstName, lastName, email, contactId
@@ -595,7 +610,7 @@ echo "<div class='clear'></div>\n\n";
 
 
 // Reviews
-if ($prow->reviewCount > 0) {
+if (!$newPaper && !$editMode && $prow->reviewCount > 0) {
     if ($Me->canViewReviews($prow, $Conf, $whyNot)) {
 	$rf = reviewForm();
 	$q = "select PaperReview.*,
