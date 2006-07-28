@@ -234,7 +234,7 @@ function topicTable($paperId = -1, $active = 0, $conf = null) {
     // get current topics
     $extraQ = '';
     if ($paperId > 0 && $active < 0)
-	$extraQ = ", PaperTopic using (topicId) where PaperTopic.paperId=$paperId";
+	$extraQ = " join PaperTopic using (topicId) where PaperTopic.paperId=$paperId";
     else if ($paperId > 0) {
 	$result = $Conf->q("select topicId from PaperTopic where paperId=$paperId");
 	if (!DB::isError($result))

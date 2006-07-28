@@ -169,7 +169,7 @@ if ( $doTable ) {
   if ( $_SESSION["Me"]->isChair ) {
     print "<td>\n";
     print $Conf->buttonWithPaperId("Modify Paper",
-				   "../Chair/ModifyPaper.php",
+				   "../paper.php",
 				   $_REQUEST[paperId]);
     print "</td><td>\n";
     print $Conf->buttonWithPaperId("Delete Paper\n (requires confirmation) ",

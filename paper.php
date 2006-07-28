@@ -310,9 +310,19 @@ function deadlineIs($dname, $conf) {
 	return "  The deadline was $deadline.";
 }
 
-if ($newPaper || !$editMode)
+$override = ($Me->amAssistant() ? "  As PC Chair, you can override this deadline using the \"Override deadlines\" checkbox." : "");
+if (!$editMode)
     /* do nothing */;
-else if ($prow->author > 0 && $prow->acknowledged <= 0) {
+else if ($newPaper) {
+    $timeStart = $Conf->timeStartPaper();
+    $startDeadline = deadlineIs("startPaperSubmission", $Conf);
+    if (!$timeStart) {
+	$msg = "You cannot start new papers since the <a href='deadlines.php'>deadline</a> has passed.$startDeadline$override";
+	if (!$Me->amAssistant())
+	    errorMsgExit($msg);
+	$Conf->infoMsg($msg);
+    }
+} else if ($prow->author > 0 && $prow->acknowledged <= 0) {
     $timeUpdate = $Conf->timeUpdatePaper();
     $updateDeadline = deadlineIs("updatePaperSubmission", $Conf);
     $timeSubmit = $Conf->timeFinalizePaper();
@@ -322,11 +332,13 @@ else if ($prow->author > 0 && $prow->acknowledged <= 0) {
     else if ($timeUpdate)
 	$Conf->infoMsg("You must officially submit your paper before it can be reviewed.  <strong>This step cannot be undone</strong> and you can't make changes after submitting, so make all necessary changes first.$updateDeadline");
     else if ($prow->withdrawn <= 0 && $timeSubmit)
-	$Conf->infoMsg("You cannot update your paper since the <a href='deadlines.php'>deadline</a> has passed, but it still must be officially submitted before it can be considered for the conference.$submitDeadline");
+	$Conf->infoMsg("You cannot update your paper since the <a href='deadlines.php'>deadline</a> has passed, but it still must be officially submitted before it can be considered for the conference.$submitDeadline$override");
     else if ($prow->withdrawn <= 0)
-	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting this paper has passed.  The paper will not be considered.$submitDeadline");
-} else if ($prow->author > 0)
-    $Conf->infoMsg("This paper has been submitted and can no longer be changed.  You can still withdraw the paper or add contact authors, allowing others to view reviews as they become available.");
+	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting this paper has passed.  The paper will not be considered.$submitDeadline$override");
+} else if ($prow->author > 0) {
+    $override2 = ($Me->amAssistant() ? "  As PC Chair, you can unsubmit the paper, which will allow further changes, using the \"Undo Submit\" button." : "");
+    $Conf->infoMsg("This paper has been submitted and can no longer be changed.  You can still withdraw the paper or add contact authors, allowing others to view reviews as they become available.$override2");
+}
 
 
 if (isset($_REQUEST['setoutcome'])) {
@@ -557,7 +569,10 @@ Zhang, Ping Yen (INRIA)</pre></td>\n";
 
 
 // Topics
-if ($topicTable = topicTable($paperId, ($editMode ? (int) $useRequest : -1), $Conf)) { 
+$topicMode = (int) $useRequest;
+if (!$editMode || (!$newPaper && ($prow->acknowledged > 0 || $prow->withdrawn > 0)))
+    $topicMode = -1;
+if ($topicTable = topicTable($paperId, $topicMode, $Conf)) { 
     echo "<tr class='pt_topics'>
   <td class='pt_caption'>Topics:</td>
   <td class='pt_entry' id='topictable'>", $topicTable, "</td>\n</tr>\n\n";

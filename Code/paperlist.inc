@@ -71,11 +71,11 @@ class PaperList {
 	    return "order by Paper.title $up";
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
-	    return "order by Paper.outcome $down";
+	    return "order by Paper.outcome $down, Paper.withdrawn $up, Paper.acknowledged $down, size $down, Paper.paperId $up";
 	case self::FIELD_REVIEWER_TYPE:
 	    return "order by ReviewRequest.reviewType $down";
 	case self::FIELD_REVIEWER_NAME:
-	    return "order by ReviewerContactInfo.lastName, ReviewerContactInfo.firstName $up";
+	    return "order by ReviewerContactInfo.lastName $up, ReviewerContactInfo.firstName $up";
 	default:
 	    return null;
 	}

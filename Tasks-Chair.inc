@@ -20,8 +20,6 @@
 
 <li> <a href="Chair/GradeAllPapers.php"> Assign Paper Grades  </a> </li>
 
-<li> <a href="Chair/SubmitPaper.php"> Submit </a>  a paper on behalf of someone else </li>
-
 </ul>
 
 <li> Assign papers

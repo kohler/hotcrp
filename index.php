@@ -71,7 +71,8 @@ $homeSep = "<span class='homesep'></span>";
       <th>Papers:</th>
       <td><?php echo goPaperForm(), " ", $homeSep ?>
 	<a href='All/ListPapers.php?list=submitted'>List&nbsp;submitted</a> <?php echo $homeSep ?>
-	<a href='All/ListPapers.php?list=all'>List&nbsp;all</a></td>
+	<a href='All/ListPapers.php?list=all'>List&nbsp;all</a> <?php echo $homeSep ?>
+	<a href='paper.php?paperId=new'>Enter&nbsp;new</a></td>
     </tr>
 
     <tr>

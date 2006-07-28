@@ -47,7 +47,7 @@ if (!IsSet($_REQUEST['paperId']) || $_REQUEST['paperId'] == 0) {
       print "</td>";
       print "<td>";
       $Conf->linkWithPaperId("Modify Paper",
-			     "../Chair/ModifyPaper.php",
+			     "../paper.php",
 			     $_REQUEST['paperId']);
       print "</td>";
     }
