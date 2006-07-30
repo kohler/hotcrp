@@ -284,6 +284,10 @@ function contactText($firstName, $lastName=null, $email=null) {
 	$email = $firstName[2];
 	$lastName = $firstName[1];
 	$firstName = $firstName[0];
+    } else if (is_object($firstName)) {
+	$email = $firstName->email;
+	$lastName = $firstName->lastName;
+	$firstName = $firstName->firstName;
     }
     if ($firstName || $lastName) {
 	$x = trim("$firstName $lastName");
@@ -298,10 +302,9 @@ function rowContactText($row) {
     return contactText($row->firstName, $row->lastName, isset($row->email) ? $row->email : "");
 }
 
-function goPaperForm($review = 0) {
+function goPaperForm($baseUrl = "paper.php") {
     global $ConfSiteBase;
-    $what = ($review ? 'All/ReviewPaper.php' : 'paper.php');
-    $x = "<form class='gopaper' action='${ConfSiteBase}$what' method='get'>";
+    $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get'>";
     $x .= "#<input class='textlite' type='text' size='3' name='paperId' />";
     $x .= "&nbsp;<input class='button_default' type='submit' name='go' value='Go to paper' /></form>";
     return $x;
@@ -358,6 +361,7 @@ function tabLength($text) {
 }
 
 function htmlWrapText($text) {
+    return nl2br($text);//"<pre>$text</pre>";
     $lines = explode("\n", $text);
     // Rules: Indented line that starts with "-", "*", or "#[.]" starts
     //   indented text.
@@ -475,11 +479,13 @@ function whyNotText($whyNot, $action, $paperId = -1) {
     // finish it off
     if (isset($whyNot['chairMode']))
 	$text .= "You could $action this paper by " . chairModeLink("entering chair mode", 1) . ".  ";
+    if (isset($whyNot['forceShow']))
+	$text .= "<a href=\"". htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Show reviews anyway</a>  ";
     if ($text && $action == "view")
 	$text .= "Enter a paper number above, or <a href='${ConfSiteBase}All/ListPapers.php'>list the papers you can view</a>.  ";
     return ($text ? substr($text, 0, -2) : $text);
 }
-    
+
 function array_ensure(&$arr, $val) {
     for ($i = 2; $i < func_num_args(); $i++) {
 	$a = func_get_arg($i);

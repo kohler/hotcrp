@@ -186,44 +186,44 @@ if (!$Me->timeReview($prow, $Conf))
 
 <table class='auview'>
 <tr>
-  <td class='pt_caption'>#<?php echo $paperId ?></td>
-  <td class='pt_entry pt_title'><?php echo htmlspecialchars($prow->title) ?></td>
+  <td class='caption'>#<?php echo $paperId ?></td>
+  <td class='entry pt_title'><?php echo htmlspecialchars($prow->title) ?></td>
 </tr>
 
 <tr>
-  <td class='pt_caption'>Status:</td>
-  <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, 1) ?></td>
+  <td class='caption'>Status:</td>
+  <td class='entry'><?php echo $Me->paperStatus($paperId, $prow, 1) ?></td>
 </tr>
 
 <?php if ($prow->withdrawn <= 0 && $prow->size > 0) { ?>
 <tr>
-  <td class='pt_caption'>Paper:</td>
-  <td class='pt_entry'><?php echo paperDownload($paperId, $prow, 1) ?></td>
+  <td class='caption'>Paper:</td>
+  <td class='entry'><?php echo paperDownload($paperId, $prow, 1) ?></td>
 </tr>
 <?php } ?>
 
 <tr class='pt_abstract'>
-  <td class='pt_caption'>Abstract:</td>
-  <td class='pt_entry'><?php echo htmlFold(htmlspecialchars($prow->abstract), 25) ?></td>
+  <td class='caption'>Abstract:</td>
+  <td class='entry'><?php echo htmlFold(htmlspecialchars($prow->abstract), 25) ?></td>
 </tr>
 
 <?php if ($Me->canViewAuthors($prow, $Conf)) { ?>
 <tr class='pt_authors'>
-  <td class='pt_caption'>Authors:</td>
-  <td class='pt_entry'><?php echo authorTable($prow->authorInformation) ?></td>
+  <td class='caption'>Authors:</td>
+  <td class='entry'><?php echo authorTable($prow->authorInformation) ?></td>
 </tr>
 
 <tr class='pt_collaborators'>
-  <td class='pt_caption'>Collaborators:</td>
-  <td class='pt_entry'><?php echo authorTable($prow->collaborators) ?></td>
+  <td class='caption'>Collaborators:</td>
+  <td class='entry'><?php echo authorTable($prow->collaborators) ?></td>
 </tr>
 <?php } ?>
 
 <?php
 if ($topicTable = topicTable($paperId, -1)) { 
     echo "<tr class='pt_topics'>
-  <td class='pt_caption'>Topics:</td>
-  <td class='pt_entry' id='topictable'>", $topicTable, "</td>
+  <td class='caption'>Topics:</td>
+  <td class='entry' id='topictable'>", $topicTable, "</td>
 </tr>\n";
  }
 ?>

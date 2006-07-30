@@ -115,15 +115,15 @@ else
 <form class='mergeAccounts' method='post' action='MergeAccounts.php'>
 <table class='form'>
 <tr>
-  <td class='form_caption'>Email:</td>
-  <td class='form_entry'><input type='text' name='email' size='50'
+  <td class='caption'>Email:</td>
+  <td class='entry'><input type='text' name='email' size='50'
     <?php if (isset($_REQUEST["email"])) echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" "; ?>
   /></td>
 </tr>
 
 <tr>
-  <td class='form_caption'>Password:</td>
-  <td class='form_entry'><input type='password' name='password' size='50' /></td>
+  <td class='caption'>Password:</td>
+  <td class='entry'><input type='password' name='password' size='50' /></td>
 </tr>
 
 <tr><td></td><td><input class='button_default' type='submit' value='Merge Account' name='merge' /></td></tr>

@@ -89,21 +89,21 @@ else if (isset($_REQUEST["update"])) {
 if ($OK) {    
     echo "<form method='post' action=\"PaperContacts.php?paperId=$paperId&amp;form=1\" enctype='multipart/form-data'>
 <table class='paperauthors'>
-<tr>
-  <td class='pt_id'><h2>#$paperId</h2></td>
-  <td class='pt_entry' colspan='2'><h2>", htmlspecialchars($prow->title), "</h2></td>\n</tr>\n";
+<tr class='id'>
+  <td class='caption'><h2>#$paperId</h2></td>
+  <td class='entry' colspan='2'><h2>", htmlspecialchars($prow->title), "</h2></td>\n</tr>\n";
 
 ?>
 
 <tr>
-  <td class='pt_caption'>Status:</td>
-  <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, 1) ?></td>
+  <td class='caption'>Status:</td>
+  <td class='entry'><?php echo $Me->paperStatus($paperId, $prow, 1) ?></td>
 </tr>
 
 
 <tr>
-  <td class='pt_caption'>Contact&nbsp;authors:</td>
-  <td class='pt_entry plholder'><table class='pltable'>
+  <td class='caption'>Contact&nbsp;authors:</td>
+  <td class='entry plholder'><table class='pltable'>
     <tr class='pl_headrow'><th>Name</th> <th>Email</th> <th></th></tr>
     <?php {
       $q = "select firstName, lastName, email, contactId
@@ -129,16 +129,16 @@ if ($OK) {
 </tr>
 
 <tr>
-  <td class='pt_caption'>Authors:</td>
-  <td class='pt_entry'><?php
+  <td class='caption'>Authors:</td>
+  <td class='entry'><?php
     echo authorTable($prow->authorInformation);
 ?></td>
 </tr>
 
 
 <tr class='pt_actions'>
-  <td class='pt_caption'></td>
-  <td class='pt_entry'><a class='button' href='ManagePaper.php?paperId=<?php echo $paperId ?>'>Return to paper management screen</a></td>
+  <td class='caption'></td>
+  <td class='entry'><a class='button' href='ManagePaper.php?paperId=<?php echo $paperId ?>'>Return to paper management screen</a></td>
 </tr>
 
 </table>

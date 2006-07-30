@@ -18,15 +18,15 @@ a member of the program committee."); ?>
 <form class='login' method='post' action='authAccount.php'>
 <table class='form'>
 <tr>
-  <td class='form_caption'>Email:</td>
-  <td class='form_entry'><input type='text' name='loginEmail' size='50'
+  <td class='caption'>Email:</td>
+  <td class='entry'><input type='text' name='loginEmail' size='50'
     <?php if (isset($_REQUEST["loginEmail"])) echo "value=\"", htmlspecialchars($_REQUEST["loginEmail"]), "\" "; ?>
   /></td>
 </tr>
 
 <tr>
-  <td class='form_caption'>Password:</td>
-  <td class='form_entry'><input type='password' name='password' size='50' /></td>
+  <td class='caption'>Password:</td>
+  <td class='entry'><input type='password' name='password' size='50' /></td>
 </tr>
 
 <tr><td></td>

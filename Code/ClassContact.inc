@@ -512,7 +512,6 @@ class Contact {
 	    return false;
 	// policy
 	if ($prow->author > 0
-	    || ($this->amAssistant() && $this->chairMode)
 	    || ($prow->withdrawn <= 0 && $prow->acknowledged > 0
 		&& ($this->isPC || $prow->reviewType > 0)
 		&& !$Opt['blindSubmission'])
@@ -529,8 +528,6 @@ class Contact {
 	    $whyNot["blindSubmission"] = 1;
 	else
 	    $whyNot["permission"] = 1;
-	if ($this->amAssistant())
-	    $whyNot["chairMode"] = 1;
 	return false;
     }
 
@@ -540,7 +537,7 @@ class Contact {
 	    return false;
 	// policy
 	if (($prow->author > 0 && $conf->timeAuthorViewReviews())
-	    || ($this->amAssistant() && ($this->chairMode || $prow->conflict <= 0))
+	    || ($this->amAssistant() && ($prow->conflict <= 0 || (isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])))
 	    || ($this->isPC && $prow->conflict <= 0
 		&& ($conf->timePCViewAllReviews()
 		    || (isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0)))
@@ -556,6 +553,8 @@ class Contact {
 	    $whyNot['conflict'] = 1;
 	else
 	    $whyNot['reviewNotComplete'] = 1;
+	if ($this->amAssistant())
+	    $whyNot['forceShow'] = 1;
 	return false;
     }
 
@@ -651,7 +650,7 @@ class Contact {
     }
     
     function canViewReviewerIdentity($rrow, $prow, $conf) {
-	if ($this->amAssistant() && $this->chairMode)
+	if ($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
 	    return true;
 	if ($rrow->contactId == $this->contactId)
 	    return true;
@@ -668,7 +667,7 @@ class Contact {
     }
     
     function canViewAllReviewFields($prow, $conf) {
-	if ($this->amAssistant() && $this->chairMode)
+	if ($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
 	    return true;
 	if ($prow->author <= 0 && $prow->conflict <= 0 && $this->isPC)
 	    return true;
@@ -699,13 +698,13 @@ class Contact {
 		return "<span class=\"pstat pstat_" . htmlspecialchars($x) . "\">" . htmlspecialchars($x) . "</span>";
 	    else
 		return "<span class='pstat'>Unknown outcome \"" . htmlspecialchars($row->outcome) . "\"</span>";
-	} else if (isset($row->reviewCount) && $row->reviewCount > 0) {
-	    if ($long < 0 && $row->author <= 0)
-		return "";
-	    else if ($this->canViewReviews($row, $conf))
-		return "<span class='pstat pstat_rev'>Reviews&nbsp;available</span>";
-	    else
-		return "<span class='pstat pstat_rev'>Under&nbsp;review</span>";
+	//} else if (isset($row->reviewCount) && $row->reviewCount > 0) {
+	//    if ($long < 0 && $row->author <= 0)
+	//	return "";
+	//    else if ($this->canViewReviews($row, $conf))
+	//	return "<span class='pstat pstat_rev'>Reviews&nbsp;available</span>";
+	//    else
+	//	return "<span class='pstat pstat_rev'>Under&nbsp;review</span>";
 	} else {
 	    if ($row->acknowledged > 0) {
 		if ($long < 0)

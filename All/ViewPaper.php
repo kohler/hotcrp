@@ -65,13 +65,13 @@ if (isset($_REQUEST['setoutcome'])) {
 
 <table class='view'>
 <tr>
-  <td class='pt_id'><h2>#<?php echo $paperId ?></h2></td>
-  <td class='pt_entry' colspan='2'><h2><?php echo htmlspecialchars($prow->title) ?></h2></td>
+  <td class='id'><h2>#<?php echo $paperId ?></h2></td>
+  <td class='entry' colspan='2'><h2><?php echo htmlspecialchars($prow->title) ?></h2></td>
 </tr>
 
 <tr>
-  <td class='pt_caption'>Status:</td>
-  <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, 1) ?><?php
+  <td class='caption'>Status:</td>
+  <td class='entry'><?php echo $Me->paperStatus($paperId, $prow, 1) ?><?php
 if ($prow->author > 0)
     echo "<br/>\nYou are an <span class='author'>author</span> of this paper.";
 else if ($Me->isPC && $prow->conflict > 0)
@@ -91,8 +91,8 @@ if ($prow->reviewType != null) {
 
 <?php if ($prow->withdrawn <= 0 && $prow->size > 0) { ?>
 <tr>
-  <td class='pt_caption'>Paper:</td>
-  <td class='pt_entry'><?php echo paperDownload($paperId, $prow, 1) ?></td>
+  <td class='caption'>Paper:</td>
+  <td class='entry'><?php echo paperDownload($paperId, $prow, 1) ?></td>
 </tr>
 <?php } ?>
 
@@ -108,7 +108,7 @@ if ($Me->amAssistant()) {
     if (!DB::isError($result) && $result->numRows() > 0) {
 	while ($row = $result->fetchRow())
 	    $pcConflicts[] = "$row[0] $row[1]";
-	echo "<tr class='pt_conflict'>\n  <td class='pt_caption'>PC&nbsp;conflicts:</td>\n  <td class='pt_entry'>", authorTable($pcConflicts), "</td>\n</tr>\n\n";
+	echo "<tr class='pt_conflict'>\n  <td class='caption'>PC&nbsp;conflicts:</td>\n  <td class='entry'>", authorTable($pcConflicts), "</td>\n</tr>\n\n";
     }
 }
 
@@ -124,14 +124,14 @@ if ($prow->author > 0 || $Me->amAssistant())
 
 if (isset($actions))
     echo "<tr class='pt_actions'>
-  <td class='pt_caption'>Actions:</td>
-  <td class='pt_entry'>", join(" ", $actions), "</td>
+  <td class='caption'>Actions:</td>
+  <td class='entry'>", join(" ", $actions), "</td>
 </tr>\n";
 
 if ($Me->canSetOutcome($prow)) {
     echo "<tr class='pt_outcome'>
-  <td class='pt_caption'>Outcome:</td>
-  <td class='pt_entry'><form method='get' action='ViewPaper.php'><input type='hidden' name='paperId' value='$paperId' /><select class='outcome' name='outcome'>\n";
+  <td class='caption'>Outcome:</td>
+  <td class='entry'><form method='get' action='ViewPaper.php'><input type='hidden' name='paperId' value='$paperId' /><select class='outcome' name='outcome'>\n";
     $rf = reviewForm();
     $outcomeMap = $rf->options['outcome'];
     $outcomes = array_keys($outcomeMap);
@@ -146,14 +146,14 @@ if ($Me->canSetOutcome($prow)) {
 
 
 <tr class='pt_abstract'>
-  <td class='pt_caption'>Abstract:</td>
-  <td class='pt_entry'><?php echo htmlspecialchars($prow->abstract) ?></td>
+  <td class='caption'>Abstract:</td>
+  <td class='entry'><?php echo htmlspecialchars($prow->abstract) ?></td>
 </tr>
 
 <?php if ($Me->canViewAuthors($prow, $Conf)) { ?>
 <tr class='pt_contactAuthors'>
-  <td class='pt_caption'>Contact&nbsp;authors:</td>
-  <td class='pt_entry'><?php {
+  <td class='caption'>Contact&nbsp;authors:</td>
+  <td class='entry'><?php {
     $q = "select firstName, lastName, email, contactId
 	from ContactInfo
 	join PaperConflict using (contactId)
@@ -173,22 +173,22 @@ if ($Me->canSetOutcome($prow)) {
 </tr>
 
 <tr class='pt_authors'>
-  <td class='pt_caption'>Authors:</td>
-  <td class='pt_entry'><?php echo authorTable($prow->authorInformation) ?></td>
+  <td class='caption'>Authors:</td>
+  <td class='entry'><?php echo authorTable($prow->authorInformation) ?></td>
 </tr>
 
 <?php if ($prow->collaborators) { ?>
 <tr class='pt_collaborators'>
-  <td class='pt_caption'>Collaborators:</td>
-  <td class='pt_entry'><?php echo authorTable($prow->collaborators) ?></td>
+  <td class='caption'>Collaborators:</td>
+  <td class='entry'><?php echo authorTable($prow->collaborators) ?></td>
 </tr>
 <?php } } ?>
 
 <?php
 if ($topicTable = topicTable($paperId, -1)) { 
     echo "<tr class='pt_topics'>
-  <td class='pt_caption'>Topics:</td>
-  <td class='pt_entry' id='topictable'>", $topicTable, "</td>\n</tr>\n";
+  <td class='caption'>Topics:</td>
+  <td class='entry' id='topictable'>", $topicTable, "</td>\n</tr>\n";
  }
 ?>
 

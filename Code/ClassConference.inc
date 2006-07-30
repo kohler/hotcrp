@@ -420,6 +420,9 @@ class Conference {
     function timePCViewSubmission() {
 	return true;
     }
+    function timePCViewAllReviews() {
+	return true;
+    }
     function timeReviewerViewSubmission() {
 	return true;
     }
@@ -1878,7 +1881,7 @@ class Conference {
     <table class='papertable'>
        <tr> <th colspan=2 align=center><font size=+1>
        <b> Paper #<?php echo $paperId ?></b> </font> </th> </tr>
-   <tr> <td class='pt_caption'>Title:</td> <td> <?php  echo $title ?> </td> </tr>
+   <tr> <td class='caption'>Title:</td> <td> <?php  echo $title ?> </td> </tr>
 <?php
     if ( $_SESSION["Me"]->isChair && $row['pcPaper'] ){
 ?>
@@ -1887,7 +1890,7 @@ class Conference {
     }
 ?>
 <?php
-    echo "  <tr><td class='pt_caption'>Status:</td> <td>";
+    echo "  <tr><td class='caption'>Status:</td> <td>";
     if ($paperLength < 100 && $mimetype == 'text/plain')
 	echo "Not yet uploaded";
     else if ($row['withdrawn'] > 0)
@@ -1908,21 +1911,21 @@ class Conference {
 	
     if( $showAuthor ){
 ?>
-   <tr> <td class='pt_caption'>Authors:</td> <td> <?php  echo $authorInfo ?> </td> </tr>
+   <tr> <td class='caption'>Authors:</td> <td> <?php  echo $authorInfo ?> </td> </tr>
 <?php
     }
 ?>
 <?php
     if( $showAbs ){
 ?>
-	<tr> <td class='pt_caption'>Abstract:</td> <td> <?php  echo $abstract ?> </td> </tr>
+	<tr> <td class='caption'>Abstract:</td> <td> <?php  echo $abstract ?> </td> </tr>
 <?php
     }
 ?>
 <?php
     if( $showCollab ){
 ?>
-   <tr> <td class='pt_caption'> Collaborators: </td> <td> <?php  echo $collaborators ?> </td> </tr>
+   <tr> <td class='caption'> Collaborators: </td> <td> <?php  echo $collaborators ?> </td> </tr>
 <?php
     }
     if( $showRev ){
@@ -1938,7 +1941,7 @@ class Conference {
       $result = $this->qe($query);
       if ( ! DB::isError($result) && $result->numRows() > 0 ) {
 	print "<tr>";
-	print "<td class='pt_caption'>Topics:</td>";
+	print "<td class='caption'>Topics:</td>";
 	print "<td>";
 	print "<ul>";
 	while ($row=$result->fetchRow()) {

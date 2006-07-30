@@ -82,7 +82,7 @@ class ReviewForm {
 	    
 	    $x .= "<tr class='rev_$field'>\n";
 	    
-	    $x .= "  <td class='form_caption";
+	    $x .= "  <td class='caption";
 	    if (isset($ReviewFormError[$field]))
 		$x .= " error";
 	    $x .= "'>";
@@ -91,7 +91,7 @@ class ReviewForm {
 		$n = preg_replace("/\\s+/", "&nbsp;", $n);
 	    $x .= "$n:</td>\n";
 	    
-	    $x .= "  <td class='form_entry'>";
+	    $x .= "  <td class='entry'>";
 	    if (isset($this->options[$field])) {
 		$x .= "<select name='$field' onchange='highlightUpdate()'>\n";
 		if ($fval == "" || $fval <= 0 || $fval > count($this->options[$field]))
@@ -108,7 +108,7 @@ class ReviewForm {
 	    }
 	    $x .= "</td>\n";
 	    if ($this->description[$field])
-		$x .= "  <td class='form_hint'>" . $this->description[$field] . "</td>\n";
+		$x .= "  <td class='hint'>" . $this->description[$field] . "</td>\n";
 	    $x .= "</tr>\n";
 	}
 	return $x;
@@ -358,7 +358,7 @@ class ReviewForm {
 	if (count($tf['confirm']) > 0)
 	    $conf->confirmMsg("<div class='parseerr'><p>" . join("</p>\n<p>", $tf['confirm']) . "</p></div>");
     }
-
+    
     function webDisplayRows($rrow, $viewAllFields) {
 	global $ReviewFormError;
 	$x = '';
@@ -381,20 +381,21 @@ class ReviewForm {
 		$rowColumns = 0;
 	    }
 	    
-	    $x .= "  <td class='form_caption rev_$field'>";
+	    $x .= "  <td class='caption rev_$field'>";
 	    $n = htmlspecialchars($this->shortName[$field]);
 	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))
 		$n = preg_replace("/\\s+/", "&nbsp;", $n);
-	    $x .= "$n:</td>\n";
+	    $x .= "$n</td>\n";
 	    
-	    $x .= "  <td class='form_entry rev_$field'";
+	    $x .= "  <td class='entry rev_$field";
 	    if ($options) {
+		$x .= ($rowColumns == 0 ? " leftentry'" : " rightentry'");
 		if ($fval == "" || $fval <= 0 || $fval > count($this->options[$field]))
 		    $x .= "><span class='rev_${field}_0'>Unknown</span>";
 		else
 		    $x .= "><span class='rev_${field}_$fval'><span class='rev_num rev_num_$fval'>$fval.</span> " . htmlspecialchars($this->options[$field][$fval]) . "</span>";
 	    } else
-		$x .= " colspan='3'>" . htmlspecialchars($fval);
+		$x .= "' colspan='3'>" . htmlWrapText(htmlspecialchars($fval));
 	    $x .= "</td>\n";
 
 	    $needRow = !$options;
@@ -417,13 +418,13 @@ class ReviewForm {
 		continue;
 	    
 	    $x .= "<tr class='rev_$field'>\n";
-	    $x .= "  <td class='form_caption rev_$field'>";
+	    $x .= "  <td class='caption rev_$field'>";
 	    $n = htmlspecialchars($this->shortName[$field]);
 	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))
 		$n = preg_replace("/\\s+/", "&nbsp;", $n);
 	    $x .= "$n:</td>\n";
 	    
-	    $x .= "  <td class='form_entry rev_$field'>";
+	    $x .= "  <td class='entry rev_$field'>";
 	    if ($this->description[$field])
 		$x .= "<div class='rev_description'>" . $this->description[$field] . "</div>";
 	    if ($options) {
@@ -437,6 +438,36 @@ class ReviewForm {
 	}
 
 	return $x;
+    }
+
+    function webNumericScoresTable($rrows, $prow, $contact, $conf, $links) {
+	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
+	$x = "<table class='reviewscores'>\n<tr class='rs_heading'><td></td><td></td>";
+	foreach ($this->fieldOrder as $field) {
+	    if (($this->authorView[$field] || $viewAllFields)
+		&& isset($this->options[$field]))
+		$x .= "<td>" . htmlspecialchars($this->shortName[$field]) . "</td>";
+	}
+	$x .= "</tr>\n";
+	$reviewnum = 65;
+	foreach ($rrows as $rrow) {
+	    $x .= "<tr class='rs_rev'>";
+	    $rtxt = chr($reviewnum++);
+	    $x .= "<td class='rs_num'>"
+		. ($links ? "<a href='#review$rtxt'>" : "")
+		. "Review $rtxt" . ($links ? "</a>" : "") . "</td>";
+	    if ($contact->canViewReviewerIdentity($rrow, $prow, $conf))
+		$x .= "<td class='rs_id'>" . contactText($rrow) . "</td>";
+	    else
+		$x .= "<td></td>";
+	    foreach ($this->fieldOrder as $field) {
+		if (($this->authorView[$field] || $viewAllFields)
+		    && isset($this->options[$field]))
+		    $x .= "<td class='rs_$field'>" . $rrow->$field . "</td>";
+	    }
+	    $x .= "</tr>\n";
+	}
+	return $x . "</table>";
     }
     
 }

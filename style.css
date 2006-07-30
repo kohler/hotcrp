@@ -1,6 +1,10 @@
 body {
 	font-family: sans-serif;
 }
+table, tr, td {
+	padding: 0px;
+	border-spacing: 0px;
+}
 
 .clear {
 	clear: both;
@@ -90,7 +94,7 @@ input.button, button, a.button {
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
 	padding: 0px 6px 0px 6px;
-	margin: 2px 0px;
+	margin: 3px 0px;
 	text-decoration: none;
 	color: black;
 }
@@ -101,11 +105,69 @@ input.button_default, button.button_default {
 	border-left: 2px solid #eeee66;
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
-	margin: 2px 0px;
+	margin: 3px 0px;
 }
 form {
 	margin-bottom: 0px;
 	display: inline;
+}
+
+
+/* view bar */
+div.vubar {
+	margin-top: -0.5em;
+	margin-bottom: 0.25em;
+	background-color: #f0f0ff;
+	width: 100%;
+}
+div.vutabs {
+	padding-top: 0.5em;
+	border-bottom: 1px solid #cc9900;
+	background-color: #f0f0ff;
+}
+div.vubar span.sep {
+	padding: 0em 1em;
+}
+div.vubar .tab, div.vubar .tab_disabled, div.vubar .tab_default {
+	border-top: 1px solid #cc9900;
+	border-left: 1px solid #cc9900;
+	border-right: 1px solid #cc9900;
+	padding: 0em 1em;
+	font-size: small;
+	position: relative;
+	bottom: -1px;
+}
+div.vubar .tab_disabled {
+	background: #ffffcc;
+	color: #777777;
+	border-bottom: 1px solid #cc9900;
+}
+div.vubar .tab {
+	background: #ffff99;
+	border-bottom: 1px solid #cc9900;
+}
+div.vubar .tab_default {
+	font-weight: bold;
+	background: white;
+	border-bottom: 1px solid white;
+}
+div.vubar a {
+	text-decoration: none;
+	color: #000000;
+}
+div.vubar a:hover {
+	text-decoration: underline;
+}
+
+
+/* gopaper form */
+div.gopaper {
+	float: right;
+	margin-bottom: 0em;
+}
+div.vubar div.gopaper {
+	margin-top: 0.25em;
+	margin-right: 0.5em;
 }
 form.gopaper input.button_default, form.gopaper input.textlite {
 	font-size: small;
@@ -119,42 +181,6 @@ form.gopaper input.button_default {
 	margin: 0px 0px;
 }
 
-div.vubar {
-	margin-top: -0.5em;
-}
-div#view div.gopaper, div#review div.gopaper, div.vubar form.gopaper {
-	float: right;
-	margin-bottom: 0em;
-}
-div.vubar .tab, div.vubar .tab_disabled, div.vubar .tab_default {
-	border-top: 0px;
-	border-left: 1px solid #cc9900;
-	border-right: 1px solid #cc9900;
-	border-bottom: 1px solid #cc9900;
-	margin: 0em 1em 1em 1em;
-	padding: 0em 1em;
-	float: left;
-	font-size: small;
-}
-div.vubar .tab_disabled {
-	background: #ffffcc;
-	color: #777777;
-}
-div.vubar .tab {
-	background: #ffff99;
-}
-div.vubar a {
-	text-decoration: none;
-	color: #000000;
-}
-div.vubar a:hover {
-	text-decoration: underline;
-}
-div.vubar .tab_default {
-	background: #ffff00;
-	font-weight: bold;
-}
-
 
 input.button_alert {
 	font-size: large;
@@ -164,7 +190,7 @@ input.button_alert {
 	border-left: 3px solid #ee6666;
 	border-bottom: 2px solid #996666;
 	border-right: 3px solid #996666;
-	margin: 2px 0px;
+	margin: 3px 0px;
 }
 a.download, a.review_start, a.review_comp, a.review_edit, a.review_view,
 input.button_small, a.button_small, button.button_small {
@@ -177,7 +203,7 @@ input.button_small, a.button_small, button.button_small {
 	border-right: 2px solid #999966;
 	text-decoration: none;
 	color: black;
-	margin: 2px 0px;
+	margin: 3px 0px;
 }
 a.review_past {
 	font-size: small;
@@ -190,34 +216,55 @@ a.review_past {
 	border-right: 2px solid #996666;
 	text-decoration: none;
 	color: black;
-	margin: 2px 0px;
+	margin: 3px 0px;
 }
 span.author, span.conflict {
 	font-weight: bold;
 	color: #ff0000;
 }
 
+
+
+/* Captions and entries */
 tr {
 	vertical-align: baseline;
 }
-td.form_caption {
+td.caption {
 	text-align: right;
-	padding-right: 0.25em;
+	padding-right: 0.5em;
 	font-weight: bold;
+	width: 11em;
+	border-right: 1px solid #996666;
+}
+tr.id td.caption {
+	border-bottom: 1px solid #996666;
+	border-right: none;
+}
+td.leftentry {
+	width: 15em;
+}
+td.entry {
+	padding-left: 0.5em;
+	padding-right: 1em;
 }
 td.error, td.error input {
 	font-weight: bold;
 	color: #ff0000;
 }
-td.form_entry {
-	padding-left: 0.25em;
-	padding-right: 1em;
-}
-td.form_hint {
+td.hint {
 	padding-left: 1em;
 	font-size: small;
 }
+div#aumg td.hint, div#paper td.hint {
+	width: 25%;
+}
+td h2, td h3 {
+	margin-top: 0px;
+	margin-bottom: 0px;
+}
 
+
+/* home page */
 div.home_tasks {
 	border-left: 1px solid #eeee66;
 	border-right: 1px solid #eeee66;
@@ -308,42 +355,27 @@ h2 {
 	margin-top: 0em;
 }
 
-td.pt_caption, td.pt_caption_error {
-	font-weight: bold;
-	padding-right: 0.25em;
-	text-align: right;
-}
-td.pt_caption_error {
-	color: #ff0000;
-}
-td.pt_entry {
-	padding-left: 0.25em;
-	padding-right: 2em;
-}
-table.auview td.pt_entry {
+table.auview td.entry {
 	padding-right: 0em;
 }
-table.auview td.pt_caption {
+table.auview td.caption {
 	padding-left: 0.25em;
 	width: auto;
 }
-td.pt_entry form {
+td.entry form {
 	display: inline;
 	padding-right: 0.5em;
 }
-td.pt_entry button {
+td.entry button {
 	margin-right: 0.5em;
 }
-td.pt_entry textarea, td.form_entry textarea {
+td.entry textarea {
 	width: 100%;
-}
-td.pt_hint {
-	font-size: small;
 }
 tr.pt_actions td, tr.pt_outcome td {
 	white-space: nowrap;
 }
-tr.pt_abstract td.pt_entry {
+tr.pt_abstract td.entry {
 	font-size: 85%;
 }
 tr.pt_paper input {
@@ -354,29 +386,17 @@ pre.entryexample {
 	background: #eeeeee;
 }
 
-table.compact, table.topictable {
-	padding: 0em;
-	border-spacing: 0px;
-}
 table.topictable tr td {
 	padding-right: 2em;
 }
 
-tr#topicinterest td.form_caption, tr#topicinterest td.form_hint {
+tr#topicinterest td.caption, tr#topicinterest td.hint {
 	padding-top: 1.3em;
 }
 tr#topicinterest td#topicinterest, td#topictable, tr.pt_actions td,
-td.plholder, tr.rev_actions td.form_entry {
+td.plholder, tr.rev_actions td.entry, tr.pt_reviews td.entry {
 	vertical-align: top;
 	padding-top: 0px;
-}
-td.plholder table.pltable {
-	border-spacing: 0px;
-}
-table.topicinterest {
-	vertical-align: baseline;
-	padding: 0em;
-	border-spacing: 0px;
 }
 table.topicinterest tr td.ti_interest, table.topicinterest tr th {
 	padding-right: 1px;
@@ -388,9 +408,30 @@ table.topicinterest tr td.ti_topic {
 	font-weight: bold;
 	padding-right: 0.5em;
 }
+table.reviewscores td {
+	padding-right: 0.5em;
+}
+table.reviewscores td {
+	text-align: center;
+}
+table.reviewscores td.rs_id, table.reviewscores td.rs_num {
+	text-align: left;
+}
 
 span.pstat {
 	font-weight: bold;
+}
+tr.rs_heading td {
+	font-size: small;
+	font-weight: bold;
+}
+tr.rs_rev td.rs_id, tr.rs_rev td.rs_num {
+	font-weight: normal;
+	color: black;
+}
+tr.rs_rev td {
+	font-weight: bold;
+	color: red;
 }
 span.pstat_with {
 	color: #333333;
@@ -472,33 +513,14 @@ div.plist_form {
 	margin-top: 1em;
 }
 
-table.view {
-	border-spacing: 0px;
-}
 
 span.rev_num {
 	font-size: large;
 	font-weight: bold;
 	color: red;
 }
-table.review td.form_entry {
+table.review td.entry {
 	padding-right: 3em;
-}
-
-td.pt_id, td.pt_caption, td.pt_caption_error {
-	width: 7em;
-}
-td.pt_id, table.review td.form_id {
-	text-align: right;
-	border: 1px solid #cccccc;
-	padding-right: 0.4em;
-}
-div#aumg td.pt_hint, div#paper td.pt_hint {
-	width: 25%;
-}
-td h2, td h3 {
-	margin-top: 0px;
-	margin-bottom: 0px;
 }
 
 span.homesep, span.reviewer, span.reviewstatus {
@@ -531,6 +553,9 @@ a.pl_sort_def_rev {
 .folded .extension, .folded .folder, .unfolded .ellipsis, .unfolded .unfolder {
 	display: none;
 }
+.fold1ed .extension1, .fold1ed .folder1, .unfold1ed .ellipsis1, .unfold1ed .unfolder1 {
+	display: none;
+}
 
 div#offrev td#upload {
 	padding-left: 3em;
@@ -542,11 +567,3 @@ span.contactpulldown {
 span.contactpulldown select {
 	vertical-align: top;
 }
-
-/*@media screen {
-table.setreviewform input#submit {
-	position: fixed;
-	bottom: 10px;
-	right: 10pt;
-}
-}*/

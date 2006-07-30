@@ -71,12 +71,12 @@ function crp_showdate($name) {
 
     echo "<tr>\n";
     echo "  <td class='datename'>$label</td>\n";
-    $formclass = isset($DateError["${name}_start"]) ? "form_caption error" : "form_caption";
+    $formclass = isset($DateError["${name}_start"]) ? "caption error" : "caption";
     echo "  <td class='$formclass'>From:</td>\n";
-    echo "  <td class='form_entry'><input class='textlite' type='text' name='${name}_start' id='${name}_start' value='", htmlspecialchars(crp_dateview($name, 0)), "' size='24' onchange='highlightUpdate()' tabindex='1' /></td>\n";
-    $formclass = isset($DateError["${name}_end"]) ? "form_caption error" : "form_caption";
+    echo "  <td class='entry'><input class='textlite' type='text' name='${name}_start' id='${name}_start' value='", htmlspecialchars(crp_dateview($name, 0)), "' size='24' onchange='highlightUpdate()' tabindex='1' /></td>\n";
+    $formclass = isset($DateError["${name}_end"]) ? "caption error" : "caption";
     echo "  <td class='$formclass'>To:</td>\n";
-    echo "  <td class='form_entry'><input class='textlite' type='text' name='${name}_end' id='${name}_end' value='", htmlspecialchars(crp_dateview($name, 1)), "' size='24' onchange='highlightUpdate()' tabindex='1' /></td>\n";
+    echo "  <td class='entry'><input class='textlite' type='text' name='${name}_end' id='${name}_end' value='", htmlspecialchars(crp_dateview($name, 1)), "' size='24' onchange='highlightUpdate()' tabindex='1' /></td>\n";
     echo "  <td><button class='button' type='button' onclick='javascript: clearDates(\"", $name, "\")'>Clear</button></td>\n";
     echo "  <td width='100%'></td>\n";
     echo "</tr>\n";
@@ -96,9 +96,9 @@ function crp_show1date($name, $which) {
     echo "<tr>\n";
     $formclass = isset($DateError["$namex"]) ? "datename_error" : "datename";
     echo "  <td class='$formclass' colspan='2'>$label</td>\n";
-    echo "  <td class='form_entry'><input class='textlite' type='text' name='${namex}' id='${namex}' value='", htmlspecialchars(crp_dateview($name, $which)), "' size='24' onchange='highlightUpdate()' tabindex='1' /></td>\n";
-    echo "  <td class='form_caption'></td>\n";
-    echo "  <td class='form_entry'></td>\n";
+    echo "  <td class='entry'><input class='textlite' type='text' name='${namex}' id='${namex}' value='", htmlspecialchars(crp_dateview($name, $which)), "' size='24' onchange='highlightUpdate()' tabindex='1' /></td>\n";
+    echo "  <td class='caption'></td>\n";
+    echo "  <td class='entry'></td>\n";
     echo "  <td><button class='button' type='button' onclick='javascript: clear1Date(\"", $namex, "\")'>Clear</button></td>\n";
     echo "  <td width='100%'></td>\n";
     echo "</tr>\n";
@@ -250,8 +250,8 @@ $Conf->updateImportantDates();
 
 <table>
 <tr>
-  <td class='form_caption'><input class='button_default' type='submit' value='Save Changes' name='update' tabindex='1' /></td>
-  <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' tabindex='1' /></td>
+  <td class='caption'><input class='button_default' type='submit' value='Save Changes' name='update' tabindex='1' /></td>
+  <td class='caption'><input class='button' type='submit' value='Revert All' name='revert' tabindex='1' /></td>
 </tr>
 </table>
 
@@ -269,8 +269,8 @@ $Conf->updateImportantDates();
 
 <table>
 <tr>
-  <td class='form_caption'><input class='button_default' type='submit' value='Save Changes' name='update' tabindex='1' /></td>
-  <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' tabindex='1' /></td>
+  <td class='caption'><input class='button_default' type='submit' value='Save Changes' name='update' tabindex='1' /></td>
+  <td class='caption'><input class='button' type='submit' value='Revert All' name='revert' tabindex='1' /></td>
 </tr>
 </table>
 
@@ -286,8 +286,8 @@ $Conf->updateImportantDates();
 
 <table>
 <tr>
-  <td class='form_caption'><input class='button_default' type='submit' value='Save Changes' name='update' tabindex='1' /></td>
-  <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' tabindex='1' /></td>
+  <td class='caption'><input class='button_default' type='submit' value='Save Changes' name='update' tabindex='1' /></td>
+  <td class='caption'><input class='button' type='submit' value='Revert All' name='revert' tabindex='1' /></td>
 </tr>
 </table>
 
@@ -312,8 +312,8 @@ $Conf->updateImportantDates();
 
 <table>
 <tr>
-  <td class='form_caption'><input class='button_default' type='submit' value='Save Changes' name='update' tabindex='1' /></td>
-  <td class='form_caption'><input class='button' type='submit' value='Revert All' name='revert' tabindex='1' /></td>
+  <td class='caption'><input class='button_default' type='submit' value='Save Changes' name='update' tabindex='1' /></td>
+  <td class='caption'><input class='button' type='submit' value='Revert All' name='revert' tabindex='1' /></td>
 </tr>
 </table>
 

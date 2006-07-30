@@ -139,33 +139,33 @@ if (!$Me->timeReview($prow, $Conf))
 
 <table class='revtop'>
 <tr class='rev_title'>
-  <td class='pt_id'><h2>Review<?php
+  <td class='id'><h2>Review<?php
 	if ($rrow && $rrow->reviewSubmitted > 0)
 	    echo " ", chr(65 + $rrow->reviewOrdinal);
   ?></h2></td>
-  <td class='form_entry'><h2>for <a href='../paper.php?paperId=<?php echo $paperId ?>'>Paper #<?php echo $paperId ?></a></h2></td>
+  <td class='entry'><h2>for <a href='../paper.php?paperId=<?php echo $paperId ?>'>Paper #<?php echo $paperId ?></a></h2></td>
 </tr>
 
 <?php if (isset($rrow) && $Me->contactId != $rrow->contactId) { ?>
 <tr class='rev_type'>
-  <td class='form_caption'>Reviewer:</td>
-  <td class='form_entry'><?php echo htmlspecialchars(rowContactText($rrow)) ?></td>
+  <td class='caption'>Reviewer:</td>
+  <td class='entry'><?php echo htmlspecialchars(rowContactText($rrow)) ?></td>
 </tr>
 <?php } ?>
 								
 <tr class='rev_type'>
-  <td class='form_caption'>Review&nbsp;type:</td>
-  <td class='form_entry'><?php echo reviewType($paperId, $prow, true) ?></td>
+  <td class='caption'>Review&nbsp;type:</td>
+  <td class='entry'><?php echo reviewType($paperId, $prow, true) ?></td>
 </tr>
 
 <tr class='rev_status'>
-  <td class='form_caption'>Review&nbsp;status:</td>
-  <td class='form_entry'><?php echo reviewStatus((isset($rrow) ? $rrow : $prow), true, true) ?></td>
+  <td class='caption'>Review&nbsp;status:</td>
+  <td class='entry'><?php echo reviewStatus((isset($rrow) ? $rrow : $prow), true, true) ?></td>
 </tr>
 
 <tr class='rev_download'>
-  <td class='form_caption'>Offline&nbsp;reviewing:</td>
-  <td class='form_entry'>
+  <td class='caption'>Offline&nbsp;reviewing:</td>
+  <td class='entry'>
     <form class='downloadreviewform' action='ReviewPaper.php' method='get'>
       <input type='hidden' name='paperId' value='<?php echo $paperId ?>' />
       <input class='button_small' type='submit' value='Download review' name='downloadForm' id='downloadForm' />
@@ -174,7 +174,7 @@ if (!$Me->timeReview($prow, $Conf))
 </tr>
 <tr class='rev_upload'>
   <td></td>
-  <td class='form_entry'>
+  <td class='entry'>
     <form class='downloadreviewform' action='ReviewPaper.php?form=1' method='post' enctype='multipart/form-data'>
       <input type='hidden' name='paperId' value='<?php echo $paperId ?>' />
       <input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp;<input class='button_small' type='submit' value='Upload review' name='uploadForm' />
@@ -186,44 +186,44 @@ if (!$Me->timeReview($prow, $Conf))
 
 <table class='auview'>
 <tr>
-  <td class='pt_caption'>#<?php echo $paperId ?></td>
-  <td class='pt_entry pt_title'><?php echo htmlspecialchars($prow->title) ?></td>
+  <td class='caption'>#<?php echo $paperId ?></td>
+  <td class='entry pt_title'><?php echo htmlspecialchars($prow->title) ?></td>
 </tr>
 
 <tr>
-  <td class='pt_caption'>Status:</td>
-  <td class='pt_entry'><?php echo $Me->paperStatus($paperId, $prow, 1) ?></td>
+  <td class='caption'>Status:</td>
+  <td class='entry'><?php echo $Me->paperStatus($paperId, $prow, 1) ?></td>
 </tr>
 
 <?php if ($prow->withdrawn <= 0 && $prow->size > 0) { ?>
 <tr>
-  <td class='pt_caption'>Paper:</td>
-  <td class='pt_entry'><?php echo paperDownload($paperId, $prow, 1) ?></td>
+  <td class='caption'>Paper:</td>
+  <td class='entry'><?php echo paperDownload($paperId, $prow, 1) ?></td>
 </tr>
 <?php } ?>
 
 <tr class='pt_abstract'>
-  <td class='pt_caption'>Abstract:</td>
-  <td class='pt_entry'><?php echo htmlFold(htmlspecialchars($prow->abstract), 25) ?></td>
+  <td class='caption'>Abstract:</td>
+  <td class='entry'><?php echo htmlFold(htmlspecialchars($prow->abstract), 25) ?></td>
 </tr>
 
 <?php if ($Me->canViewAuthors($prow, $Conf)) { ?>
 <tr class='pt_authors'>
-  <td class='pt_caption'>Authors:</td>
-  <td class='pt_entry'><?php echo authorTable($prow->authorInformation) ?></td>
+  <td class='caption'>Authors:</td>
+  <td class='entry'><?php echo authorTable($prow->authorInformation) ?></td>
 </tr>
 
 <tr class='pt_collaborators'>
-  <td class='pt_caption'>Collaborators:</td>
-  <td class='pt_entry'><?php echo authorTable($prow->collaborators) ?></td>
+  <td class='caption'>Collaborators:</td>
+  <td class='entry'><?php echo authorTable($prow->collaborators) ?></td>
 </tr>
 <?php } ?>
 
 <?php
 if ($topicTable = topicTable($paperId, -1)) { 
     echo "<tr class='pt_topics'>
-  <td class='pt_caption'>Topics:</td>
-  <td class='pt_entry' id='topictable'>", $topicTable, "</td>
+  <td class='caption'>Topics:</td>
+  <td class='entry' id='topictable'>", $topicTable, "</td>
 </tr>\n";
  }
 ?>
@@ -244,8 +244,8 @@ echo $rf->webFormRows($rrow, 1);
 
 if ($Me->timeReview($prow, $Conf) || $Me->amAssistant()) {
     echo "<tr class='rev_actions'>
-  <td class='form_caption'>Actions:</td>
-  <td class='form_entry'><table class='pt_buttons'>
+  <td class='caption'>Actions:</td>
+  <td class='entry'><table class='pt_buttons'>
     <tr>\n";
     if (!isset($rrow) || !$rrow->reviewSubmitted) {
 	echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save changes' name='update' /></td>

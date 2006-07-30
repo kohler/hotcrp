@@ -5,16 +5,18 @@ function highlightUpdate() {
 	    ins[i].className = "button_alert";
 }
 
-function fold(which, dofold) {
+function fold(which, dofold, foldnum) {
     if (which instanceof Array) {
 	for (var i = 0; i < which.length; i++)
-	    fold(which[i], dofold);
+	    fold(which[i], dofold, foldnum);
     } else {
 	var folded = document.getElementById('fold' + which);
+	var ftext = (foldnum ? "fold" + foldnum + "ed" : "folded");
+	var unftext = "un" + ftext;
 	if (dofold)
-	    folded.className = folded.className.replace("unfolded", "folded");
+	    folded.className = folded.className.replace(unftext, ftext);
 	else
-	    folded.className = folded.className.replace("folded", "unfolded");
+	    folded.className = folded.className.replace(ftext, unftext);
     }
 }
 
