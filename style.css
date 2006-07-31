@@ -112,7 +112,6 @@ input.button_default, button.button_default {
 }
 form {
 	margin-bottom: 0px;
-	display: inline;
 }
 
 
@@ -371,7 +370,6 @@ table.auview td.caption {
 	width: auto;
 }
 td.entry form {
-	display: inline;
 	padding-right: 0.5em;
 }
 td.entry button {

@@ -458,7 +458,7 @@ if ($editable) {
 if (!$editMode && $Me->canSetOutcome($prow)) {
     echo "<tr class='pt_outcome'>
   <td class='caption'>Outcome</td>
-  <td class='entry'><form method='get' action='paper.php'><div><input type='hidden' name='paperId' value='$paperId' /><select class='outcome' name='outcome'>\n";
+  <td class='entry'><form method='get' action='paper.php'><div class='min'><input type='hidden' name='paperId' value='$paperId' /><select class='outcome' name='outcome'>\n";
     $rf = reviewForm();
     $outcomeMap = $rf->options['outcome'];
     $outcomes = array_keys($outcomeMap);
