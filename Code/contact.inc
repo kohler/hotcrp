@@ -96,6 +96,9 @@ class Contact {
 		if ($update)
 		    $this->lookupById($this->contactId, $conf);
 	    }
+	} else if (isset($Opt['validatorContact']) && $Opt['validatorContact'] && !$this->contactId && isset($_REQUEST['validator'])) {
+	    $this->lookupByEmail($Opt['validatorContact'], $conf);
+	    return $this->valid($conf, $update);
 	}
 	return $this->contactId > 0 && $conf->shortName == $this->shortConfName;
     }
