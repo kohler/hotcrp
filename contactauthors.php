@@ -1,5 +1,5 @@
 <?php 
-include('Code/confHeader.inc');
+require_once('Code/confHeader.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
@@ -7,26 +7,27 @@ $Me->goIfInvalid();
 
 // header
 function actionTab($text, $url, $default, $disabled) {
+    $sep = "<td class='sep'></td>";
     if ($disabled)
-	return "<span class='sep'></span><span class='tab_disabled'>$text</span>";
+	return "$sep<td class='tab_disabled' nowrap='nowrap'>$text</td>";
     else if ($default)
-	return "<span class='sep'></span><span class='tab_default'><a href='$url'>$text</a></span>";
+	return "$sep<td class='tab_default' nowrap='nowrap'><a href='$url'>$text</a></td>";
     else
-	return "<span class='sep'></span><span class='tab'><a href='$url'>$text</a></span>";
+	return "$sep<td class='tab' nowrap='nowrap'><a href='$url'>$text</a></td>";
 }
 
 function actionBar($prow) {
     global $Me, $Conf;
     $paperId = ($prow == null ? -1 : $prow->paperId);
     $disableView = $paperId < 0;
-    $x = "<div class='vubar'>";
+
+    $x = "<table class='vubar'><tr><td><table><tr>";
     $x .= actionTab("View", "paper.php?paperId=$paperId&amp;mode=view", false, $disableView);
     $x .= actionTab("Edit", "paper.php?paperId=$paperId&amp;mode=edit", false, ($disableView || ($prow && $prow->author <= 0 && !$Me->amAssistant())));
     if ($prow && ($Me->isPC || $Me->canViewReviews($prow, $Conf)))
 	$x .= actionTab("Reviews" . ($prow ? " ($prow->reviewCount)" : ""), "paper.php?paperId=$paperId&amp;mode=reviews", false, false);
     $x .= actionTab("Contact Authors", "contactauthors.php?paperId=$paperId", true, false);
-    $x .= "<span class='gopaper'>" . goPaperForm() . "</span>";
-    $x .= "</div>\n";
+    $x .= "</tr></table></td><td class='spanner'></td><td class='gopaper' nowrap='nowrap'>" . goPaperForm() . "</td></tr></table>\n";
     return $x;
 }
 
