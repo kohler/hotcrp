@@ -6,11 +6,9 @@ $Me->goIfInvalid();
 
 
 // header
-function actionTab($text, $url, $default, $disabled) {
+function actionTab($text, $url, $default) {
     $sep = "<td class='sep'></td>";
-    if ($disabled)
-	return "$sep<td class='tab_disabled' nowrap='nowrap'>$text</td>";
-    else if ($default)
+    if ($default)
 	return "$sep<td class='tab_default' nowrap='nowrap'><a href='$url'>$text</a></td>";
     else
 	return "$sep<td class='tab' nowrap='nowrap'><a href='$url'>$text</a></td>";
@@ -22,11 +20,13 @@ function actionBar($prow) {
     $disableView = $paperId < 0;
 
     $x = "<table class='vubar'><tr><td><table><tr>";
-    $x .= actionTab("View", "paper.php?paperId=$paperId&amp;mode=view", false, $disableView);
-    $x .= actionTab("Edit", "paper.php?paperId=$paperId&amp;mode=edit", false, ($disableView || ($prow && $prow->author <= 0 && !$Me->amAssistant())));
+    if ($paperId > 0)
+	$x .= actionTab("View", "paper.php?paperId=$paperId&amp;mode=view", false);
+    if ($paperId > 0 && ($prow->author > 0 || $Me->amAssistant()))
+	$x .= actionTab("Edit", "paper.php?paperId=$paperId&amp;mode=edit", false);
     if ($prow && ($Me->isPC || $Me->canViewReviews($prow, $Conf)))
-	$x .= actionTab("Reviews" . ($prow ? " ($prow->reviewCount)" : ""), "paper.php?paperId=$paperId&amp;mode=reviews", false, false);
-    $x .= actionTab("Contact Authors", "contactauthors.php?paperId=$paperId", true, false);
+	$x .= actionTab("Reviews" . ($prow ? " ($prow->reviewCount)" : ""), "paper.php?paperId=$paperId&amp;mode=reviews", false);
+    $x .= actionTab("Contact Authors", "contactauthors.php?paperId=$paperId", true);
     $x .= "</tr></table></td><td class='spanner'></td><td class='gopaper' nowrap='nowrap'>" . goPaperForm() . "</td></tr></table>\n";
     return $x;
 }
