@@ -517,7 +517,7 @@ if ($newPaper || ($prow->withdrawn <= 0 && ($editable || $prow->size > 0))) {
     if ($newPaper || ($editMode && $prow->acknowledged <= 0)) {
 	if (!$newPaper && $prow->size > 0)
 	    echo "<br/>\n    ";
-	echo "<input type='file' name='paperUpload' accept='application/pdf application/postscript' size='", ($newPaper ? 50 : 50), "' />";
+	echo "<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='", ($newPaper ? 30 : 30), "' />";
 	if (!$newPaper && 0)
 	    echo "&nbsp;<input class='button' type='submit' name='upload' value='Upload paper' />";
     }
@@ -536,9 +536,11 @@ if (!$editMode && $Me->amAssistant()) {
 	join PaperConflict using (contactId)
 	where paperId=$paperId group by ContactInfo.contactId";
     $result = $Conf->qe($q, "while finding conflicted PC members");
-    if (!DB::isError($result) && $result->numRows() > 0) {
+    if (!DB::isError($result)) {
 	while ($row = $result->fetchRow())
 	    $pcConflicts[] = "$row[0] $row[1]";
+	if (!isset($pcConflicts))
+	    $pcConflicts[] = "None";
 	echo "<tr class='pt_conflict'>\n  <td class='caption'>PC conflicts</td>\n  <td class='entry'>", authorTable($pcConflicts), "</td>\n</tr>\n\n";
     }
 }
@@ -597,7 +599,7 @@ if ($newPaper) {
 	echo authorTable($aus, false);
     }
     if ($editMode)
-	echo "<a class='button_small' href='Author/PaperContacts.php?paperId=$paperId'>Edit&nbsp;contact&nbsp;authors</a>";
+	echo "<a class='button_small' href='contactauthors.php?paperId=$paperId'>Edit&nbsp;contact&nbsp;authors</a>";
     echo "</td>\n</tr>\n\n";
 }
 
@@ -640,7 +642,7 @@ if ($topicTable = topicTable($paperId, $topicMode, $Conf)) {
 // Submit button
 if ($editMode) {
     echo "<tr class='pt_edit'>
-  <td></td>
+  <td class='caption'></td>
   <td class='entry'><table class='pt_buttons'>\n";
     $buttons = array();
     if ($newPaper)
@@ -677,7 +679,8 @@ if ($editMode) {
 
 
 // End paper view
-echo "</table>\n";
+echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>
+</table>\n";
 if ($editMode)
     echo "</form>\n";
 echo "<div class='clear'></div>\n\n";
@@ -697,11 +700,11 @@ if (!$newPaper && $reviewsMode && $prow->reviewCount > 0) {
 	$reviewnum = 65;
 	if (!DB::isError($result) && $result->numRows() > 0)
 	    while ($rrow = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
-		echo "<hr/>
+		echo "
 
 <table class='rev'>
   <tr class='id'>
-    <td class='caption'><h3>Review&nbsp;", chr($reviewnum++), "</h3></td>
+    <td class='caption'><h3 id='review", chr($reviewnum), "'>Review&nbsp;", chr($reviewnum), "</h3></td>
     <td class='entry' colspan='3'>";
 		if ($Me->canViewReviewerIdentity($rrow, $prow, $Conf))
 		    echo "by <span class='reviewer'>", trim(htmlspecialchars("$rrow->firstName $rrow->lastName")), "</span>";
@@ -710,7 +713,10 @@ if (!$newPaper && $reviewsMode && $prow->reviewCount > 0) {
 		    echo " ", reviewButton($paperId, $rrow, 0, $Conf);
 		echo "</td>
   </tr>\n";
-		echo $rf->webDisplayRows($rrow, $Me->canViewAllReviewFields($prow, $Conf)), "</table>\n\n";
+		echo $rf->webDisplayRows($rrow, $Me->canViewAllReviewFields($prow, $Conf));
+		 echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='3'></td></tr>
+</table>\n\n";
+		 $reviewnum++;
 	    }
 
     } else {

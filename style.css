@@ -116,9 +116,9 @@ form {
 /* view bar */
 div.vubar {
 	margin-top: -0.5em;
-	padding-top: 0.25em;
+	padding: 0.5em 0px 0px 0px;
 	margin-bottom: 0.25em;
-	background-color: #f0f0ff;
+	background-color: #f6f6ff;
 	border-bottom: 1px solid #cc9900;
 	position: relative;
 	width: 100%;
@@ -129,14 +129,14 @@ div.vubar span.sep {
 }
 div.vubar .tab, div.vubar .tab_disabled, div.vubar .tab_default {
 	padding: 0em 1em;
-	margin-top: 0.5em;
 	font-size: small;
 	vertical-align: bottom;
 }
 div.vubar span.gopaper {
 	position: absolute;
 	right: 1em;
-	top: 2px;
+	top: -1px;
+	padding: 4px 0px;
 }
 div.vubar .tab_disabled {
 	color: #777777;
@@ -162,10 +162,6 @@ div.vubar a:hover {
 div.gopaper {
 	float: right;
 	margin-bottom: 0em;
-}
-div.vubar div.gopaper {
-	margin-top: 0.25em;
-	margin-right: 0.5em;
 }
 form.gopaper {
 	display: inline;
@@ -227,6 +223,9 @@ span.author, span.conflict {
 
 
 /* Captions and entries */
+table.paper, table.rev {
+	width: 100%;
+}
 tr {
 	vertical-align: baseline;
 }
@@ -235,11 +234,16 @@ td.caption {
 	padding: 3px 0.5em 3px 0em;
 	font-weight: bold;
 	width: 11em;
-	border-right: 1px solid #996666;
+	border-right: 1px solid #cc9900;
+	background: #fffdf0;
 }
 tr.id td.caption {
-	border-bottom: 1px solid #996666;
+	border-bottom: 1px solid #cc9900;
 	border-right: none;
+	background: white;
+}
+tr.last td {
+	border-bottom: 1px solid #cc9900;
 }
 td.leftentry {
 	width: 15em;
@@ -252,7 +256,7 @@ td.error, td.error input {
 	color: #ff0000;
 }
 td.hint {
-	padding-left: 1em;
+	padding-left: 0.5em;
 	font-size: small;
 }
 div#aumg td.hint, div#paper td.hint {
@@ -334,7 +338,7 @@ input.textlite, textarea.textlite, table.reviewform td textarea {
 	/*border: none;*/
 	/*border-bottom: dashed 1px #ddddff;*/
 	border: solid 1px #aaaadd;
-	padding: 0px 4px;
+	padding: 0px 0px 0px 4px;
 	background: #fafcff;
 }
 /*table.reviewform td select*/
