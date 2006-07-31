@@ -458,7 +458,7 @@ if ($editable) {
 if (!$editMode && $Me->canSetOutcome($prow)) {
     echo "<tr class='pt_outcome'>
   <td class='caption'>Outcome</td>
-  <td class='entry'><form method='get' action='paper.php'><input type='hidden' name='paperId' value='$paperId' /><select class='outcome' name='outcome'>\n";
+  <td class='entry'><form method='get' action='paper.php'><div><input type='hidden' name='paperId' value='$paperId' /><select class='outcome' name='outcome'>\n";
     $rf = reviewForm();
     $outcomeMap = $rf->options['outcome'];
     $outcomes = array_keys($outcomeMap);
@@ -466,7 +466,7 @@ if (!$editMode && $Me->canSetOutcome($prow)) {
     $outcomes = array_unique(array_merge(array(0), $outcomes));
     foreach ($outcomes as $key)
 	echo "    <option value='", $key, "'", ($prow->outcome == $key ? " selected='selected'" : ""), ">", htmlspecialchars($outcomeMap[$key]), "</option>\n";
-    echo "  </select>&nbsp;<input class='button_small' type='submit' name='setoutcome' value='Set outcome' /></form></td>\n</tr>\n";
+    echo "  </select>&nbsp;<input class='button_small' type='submit' name='setoutcome' value='Set outcome' /></div></form></td>\n</tr>\n";
 }
 
 

@@ -1012,7 +1012,7 @@ class Conference {
     function header_head($title) {
 	global $ConfSiteBase;
 	if (!$this->headerPrinted) {
-	    echo "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" SYSTEM \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n";
+	    echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n";
 	    // PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n";
 	    echo "<html>\n<head>\n";
 	    echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n";

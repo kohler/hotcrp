@@ -304,9 +304,9 @@ function rowContactText($row) {
 
 function goPaperForm($baseUrl = "paper.php") {
     global $ConfSiteBase;
-    $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get'>";
+    $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get'><div>";
     $x .= "#<input class='textlite' type='text' size='3' name='paperId' />";
-    $x .= "&nbsp;<input class='button_default' type='submit' name='go' value='Go to paper' /></form>";
+    $x .= "&nbsp;<input class='button_default' type='submit' name='go' value='Go to paper' /></div></form>";
     return $x;
 }
 
