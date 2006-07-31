@@ -65,7 +65,7 @@ function fileUploaded(&$var, $conf) {
 function selfHref($extra = array()) {
     $x = $_SERVER["PHP_SELF"];
     $sep = "?";
-    foreach (array("paperId", "reviewId", "list", "mode") as $what)
+    foreach (array("paperId", "reviewId", "list", "mode", "validator") as $what)
 	if (isset($_REQUEST[$what])) {
 	    $x .= "$sep$what=" . urlencode($_REQUEST[$what]);
 	    $sep = "&";
