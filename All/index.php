@@ -1,10 +1,7 @@
 <?php 
 include('../Code/confHeader.inc');
-?>
 
-<html>
-
-<?php  $Conf->header("Activities for all Users") ?>
+$Conf->header("Activities for all Users") ?>
 <body>
 
 <?php 

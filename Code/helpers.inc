@@ -32,6 +32,7 @@ function alert($string = "") {
 }
 
 function go($url) {
+    echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n";
     echo "<html><head>";
     echo "<script language='javascript'>\n";
     echo "location=\"$url\";";
