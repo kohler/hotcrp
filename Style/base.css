@@ -1,6 +1,7 @@
 body {
 	font-family: sans-serif;
 	color: black;
+	background-color: white;
 }
 table, tr, td {
 	padding: 0px;
