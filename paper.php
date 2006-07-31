@@ -24,7 +24,7 @@ function actionBar($prow) {
     $disableView = (!$newPaper && $paperId < 0);
     $x = "<div class='vubar'>";
     $x .= actionTab("View", "paper.php?paperId=$paperId&amp;mode=view", $viewMode, ($newPaper || $disableView));
-    $x .= actionTab("Edit", "paper.php?paperId=$paperId&amp;mode=edit", $editMode, ($disableView || ($prow && !$Me->canUpdatePaper($prow, $Conf))));
+    $x .= actionTab("Edit", "paper.php?paperId=$paperId&amp;mode=edit", $editMode, ($disableView || ($prow && $prow->author <= 0 && !$Me->amAssistant())));
     if (!$newPaper && $prow && ($Me->isPC || $Me->canViewReviews($prow, $Conf)))
 	$x .= actionTab("Reviews" . ($prow ? " ($prow->reviewCount)" : ""), "paper.php?paperId=$paperId&amp;mode=reviews", $reviewsMode, false);
     $x .= "<span class='gopaper'>" . goPaperForm() . "</span>";
