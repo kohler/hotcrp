@@ -339,7 +339,7 @@ input.textlite, textarea.textlite, table.reviewform td textarea {
 	/*border-bottom: dashed 1px #ddddff;*/
 	border: solid 1px #aaaadd;
 	padding: 0px 0px 0px 4px;
-	background: #fafcff;
+	background: #fcfcfc;
 }
 /*table.reviewform td select*/
 select {

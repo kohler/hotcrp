@@ -144,43 +144,47 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
 <?php if ($newProfile) echo "<input type='hidden' name='new' value='1' />\n"; ?>
 <table class='form'>
 <tr>
-  <td class='caption'>Email:</td>
-  <td class='entry' colspan='3'><input type='text' name='email' size='50' value="<?php crpformvalue('email') ?>" /></td>
+  <td class='caption'>Email</td>
+  <td class='entry' colspan='3'><input class='textlite' type='text' name='email' size='50' value="<?php crpformvalue('email') ?>" /></td>
 </tr>
 
 <tr>
-  <td class='caption'>First&nbsp;name:</td>
-  <td class='entry'><input type='text' name='firstName' size='20' value="<?php crpformvalue('firstName') ?>" /></td>
-  <td class='caption'>Last&nbsp;name:</td>
-  <td class='entry'><input type='text' name='lastName' size='20' value="<?php crpformvalue('lastName') ?>" /></td>
+  <td class='caption'>First&nbsp;name</td>
+  <td class='entry'><input class='textlite' type='text' name='firstName' size='20' value="<?php crpformvalue('firstName') ?>" /></td>
+  <td class='caption'>Last&nbsp;name</td>
+  <td class='entry'><input class='textlite' type='text' name='lastName' size='20' value="<?php crpformvalue('lastName') ?>" /></td>
 </tr>
 
 <?php if (!$newProfile) { ?>
 <tr>
-  <td class='caption'>Password:</td>
-  <td class='entry'><input type='password' name='password' size='20' value="<?php crpformvalue('password') ?>" /></td>
-  <td class='caption'>Repeat password:</td>
-  <td class='entry'><input type='password' name='password2' size='20' value="<?php crpformvalue('password') ?>" /></td>
-  <td class='hint'>Please note that the password is stored in our database in cleartext, and will be mailed to you if you have forgotten it.  Thus, you should not use a login password or any other password that is important to you.</td>
+  <td class='caption'>Password</td>
+  <td class='entry'><input class='textlite' type='password' name='password' size='20' value="<?php crpformvalue('password') ?>" /></td>
+  <td class='caption'>Repeat password</td>
+  <td class='entry'><input class='textlite' type='password' name='password2' size='20' value="<?php crpformvalue('password') ?>" /></td>
+</tr>
+
+<tr>
+  <td class='caption'></td>
+  <td class='hint' colspan='4'>Please note that the password is stored in our database in cleartext, and will be mailed to you if you have forgotten it.  Thus, you should not use a login password or any other password that is important to you.</td>
 </tr>
 <?php } ?>
 
 <tr>
-  <td class='caption'>Affiliation:</td>
-  <td class='entry' colspan='3'><input type='text' name='affiliation' size='50' value="<?php crpformvalue('affiliation') ?>" /></td>
+  <td class='caption'>Affiliation</td>
+  <td class='entry' colspan='3'><input class='textlite' type='text' name='affiliation' size='50' value="<?php crpformvalue('affiliation') ?>" /></td>
 </tr>
 
 <tr>
-  <td class='caption'>Phone:</td>
-  <td class='entry'><input type='text' name='voicePhoneNumber' size='20' value="<?php crpformvalue('voicePhoneNumber') ?>" /></td>
-  <td class='caption'>Fax:</td>
-  <td class='entry'><input type='text' name='faxPhoneNumber' size='20' value="<?php crpformvalue('faxPhoneNumber') ?>" /></td>
+  <td class='caption'>Phone</td>
+  <td class='entry'><input class='textlite' type='text' name='voicePhoneNumber' size='20' value="<?php crpformvalue('voicePhoneNumber') ?>" /></td>
+  <td class='caption'>Fax</td>
+  <td class='entry'><input class='textlite' type='text' name='faxPhoneNumber' size='20' value="<?php crpformvalue('faxPhoneNumber') ?>" /></td>
 </tr>
 
 <?php if ($newProfile) { ?>
 
 <tr>
-  <td class='caption'>Roles:</td>
+  <td class='caption'>Roles</td>
   <td colspan='3' class='entry'>
 <?php
     foreach (array("pc" => "PC&nbsp;member", "ass" => "Chair's&nbsp;assistant", "chair" => "PC&nbsp;chair") as $key => $value) {
@@ -202,7 +206,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
 
 <?php if ($Me->isPC || $newProfile) { ?>
 <tr>
-  <td class='caption'>Collaborators and other affiliations:</td>
+  <td class='caption'>Collaborators and other affiliations</td>
   <td class='entry' colspan='3'><textarea class='textlite' name='collaborators' rows='5'><?php echo htmlspecialchars($Me->collaborators) ?></textarea></td>
   <td class='hint'>List your recent (~2 years) coauthors, collaborators,
     and affiliations, and any advisor or student relationships, one per line.
@@ -218,7 +222,7 @@ Zhang, Ping Yen (INRIA)
     $result = $Conf->q("select TopicArea.topicId, TopicArea.topicName, TopicInterest.interest from TopicArea left join TopicInterest on TopicInterest.contactId=$Me->contactId and TopicInterest.topicId=TopicArea.topicId order by TopicArea.topicName");
     if (!DB::isError($result) && $result->numRows() > 0) {
 	echo "<tr id='topicinterest'>
-  <td class='caption'>Topic interests:</td>
+  <td class='caption'>Topic interests</td>
   <td class='entry' colspan='3' id='topicinterest'><table class='topicinterest'>
        <tr><td></td><th>Low</th><th>Med.</th><th>High</th></tr>\n";
 	for ($i = 0; $i < $result->numRows(); $i++) {
