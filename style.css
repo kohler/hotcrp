@@ -4,6 +4,7 @@ body {
 table, tr, td {
 	padding: 0px;
 	border-spacing: 0px;
+	empty-cells: show;
 }
 
 .clear {
@@ -114,34 +115,38 @@ form {
 
 
 /* view bar */
-div.vubar {
+table.vubar {
 	margin-top: -0.5em;
-	padding: 0.5em 0px 0px 0px;
 	margin-bottom: 0.25em;
 	background-color: #f6f6ff;
-	border-bottom: 1px solid #cc9900;
 	position: relative;
 	width: 100%;
 }
-div.vubar span.sep {
-	padding: 0em 1em;
+table.vubar td {
 	vertical-align: bottom;
 }
-div.vubar .tab, div.vubar .tab_disabled, div.vubar .tab_default {
-	padding: 0em 1em;
+table.vubar td.sep, table.vubar td.tab, table.vubar td.tab_disabled, 
+table.vubar td.spanner, table.vubar td.gopaper {
+	border-bottom: 1px solid #cc9900;
+}
+table.vubar td.sep {
+	padding: 0em 0.75em;
+}
+table.vubar td.spanner {
+	width: 100%;
+}
+table.vubar .tab, table.vubar .tab_disabled, table.vubar .tab_default {
+	padding: 0em 1em 0.1em 1em;
 	font-size: small;
-	vertical-align: bottom;
 }
-div.vubar span.gopaper {
-	position: absolute;
-	right: 1em;
-	top: -1px;
-	padding: 4px 0px;
+table.vubar td.gopaper {
+	vertical-align: middle;
+	padding: 4px 0.5em;
 }
-div.vubar .tab_disabled {
-	color: #777777;
+table.vubar td {
+	min-height: 4px;
 }
-div.vubar .tab_default {
+table.vubar .tab_default {
 	font-weight: bold;
 	background: white;
 	border-top: 1px solid #cc9900;
@@ -149,11 +154,11 @@ div.vubar .tab_default {
 	border-right: 1px solid #cc9900;
 	border-bottom: 1px solid white;
 }
-div.vubar .tab_default a {
+table.vubar .tab_default a {
 	text-decoration: none;
 	color: #000000;
 }
-div.vubar a:hover {
+table.vubar a:hover {
 	text-decoration: underline;
 }
 
@@ -162,9 +167,6 @@ div.vubar a:hover {
 div.gopaper {
 	float: right;
 	margin-bottom: 0em;
-}
-form.gopaper {
-	display: inline;
 }
 form.gopaper input.button_default, form.gopaper input.textlite {
 	font-size: small;
