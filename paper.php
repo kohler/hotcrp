@@ -22,12 +22,13 @@ function actionBar($prow) {
     else
 	$paperId = ($prow == null ? -1 : $prow->paperId);
     $disableView = (!$newPaper && $paperId < 0);
-    $x = "<div class='vubar'><div class='gopaper'>" . goPaperForm() . "</div><div class='vutabs'>";
+    $x = "<div class='vubar'>";
     $x .= actionTab("View", "paper.php?paperId=$paperId&amp;mode=view", $viewMode, ($newPaper || $disableView));
     $x .= actionTab("Edit", "paper.php?paperId=$paperId&amp;mode=edit", $editMode, ($disableView || ($prow && $Me->canUpdatePaper($prow, $Conf))));
     if (!$newPaper && $prow && ($Me->isPC || $Me->canViewReviews($prow, $Conf)))
 	$x .= actionTab("Reviews" . ($prow ? " ($prow->reviewCount)" : ""), "paper.php?paperId=$paperId&amp;mode=reviews", $reviewsMode, false);
-    $x .= "</div><div class='clear'></div></div>\n\n";
+    $x .= "<span class='gopaper'>" . goPaperForm() . "</span>";
+    $x .= "</div>\n";
     return $x;
 }
 
