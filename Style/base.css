@@ -94,9 +94,6 @@ div.confirm {
 input, button, textarea, select {
 	font-family: sans-serif;
 }
-textarea {
-	vertical-align: baseline;
-}
 input.button, button, a.button {
 	background: #ffffbb;
 	border-top: 1px solid #eeee66;
@@ -239,6 +236,9 @@ table.paper, table.rev {
 tr {
 	vertical-align: baseline;
 }
+tr td.textarea {
+	vertical-align: top;
+}
 td.caption {
 	text-align: right;
 	padding: 3px 0.5em 3px 0em;
@@ -258,7 +258,7 @@ tr.last td {
 td.leftentry {
 	width: 15em;
 }
-td.entry {
+td.entry, th.entry {
 	padding: 3px 1em 3px 0.5em;
 }
 td.error, td.error input {

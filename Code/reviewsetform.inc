@@ -86,8 +86,8 @@ if (isset($_REQUEST['update'])) {
 <tr>
   <th>Field name</th>
   <th>Form position</th>
-  <th>Description (HTML allowed)</th>
-  <th>Options</th>
+  <th class='entry'>Description (HTML allowed)</th>
+  <th class='entry'>Options</th>
 </tr>
 
 <?php
@@ -118,7 +118,7 @@ function formFieldText($row, $ordinalOrder, $numRows) {
 	$x .= "checked='checked' ";
     $x .= "/>&nbsp;Visible&nbsp;to&nbsp;authors</p></td>\n";
     
-    $x .= "  <td class='form_entry'><select name='order_$row->fieldName' onchange='highlightUpdate()'>\n";
+    $x .= "  <td class='entry'><select name='order_$row->fieldName' onchange='highlightUpdate()'>\n";
     $x .= "    <option value='-1'";
     $order = getField($row, 'order', $ordinalOrder);
     if ($order < 0)
@@ -132,12 +132,12 @@ function formFieldText($row, $ordinalOrder, $numRows) {
     }
     $x .= "  </select></td>\n";
 
-    $x .= "  <td class='form_entry'><textarea name='description_$row->fieldName' rows='6' cols='30' onchange='highlightUpdate()'>";
+    $x .= "  <td class='entry textarea'><textarea name='description_$row->fieldName' rows='6' cols='30' onchange='highlightUpdate()'>";
     $x .= htmlentities(getField($row, 'description'));
     $x .= "</textarea></td>\n";
 
     if (isset($rf->options[$row->fieldName]) || $reviewFields[$row->fieldName]) {
-	$x .= "  <td class='form_entry'><textarea name='options_$row->fieldName' rows='6' onchange='highlightUpdate()'>";
+	$x .= "  <td class='entry textarea'><textarea name='options_$row->fieldName' rows='6' onchange='highlightUpdate()'>";
 	$y = '';
 	if (isset($rf->options[$row->fieldName])) {
 	    for ($i = 1; $i <= count($rf->options[$row->fieldName]); $i++)

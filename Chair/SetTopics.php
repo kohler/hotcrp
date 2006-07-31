@@ -90,7 +90,7 @@ if (DB::isError($result))
 ?>
 
 <tr>
-  <td class='pc_name'><textarea name="topics" cols="48" rows="3" onchange='highlightUpdate()'></textarea></td>
+  <td class='pc_name textarea'><textarea name="topics" cols="48" rows="3" onchange='highlightUpdate()'></textarea></td>
   <td class='pc_action'>Enter new topics here, one per line</td>
 </tr>
 

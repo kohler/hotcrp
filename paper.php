@@ -142,8 +142,11 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
     foreach (array("title", "abstract", "authorInformation", "collaborators") as $x)
 	if (trim($_REQUEST[$x]) == "" && ($isSubmit || $x != "collaborators"))
 	    $PaperError[$x] = 1;
-	else
+	else {
+	    if ($x == "title")
+		$_REQUEST[$x] = preg_replace("/\\s*[\r\n]+\\s*/s", " ", $_REQUEST[$x]);
 	    $q .= "$x='" . sqlqtrim($_REQUEST[$x]) . "', ";
+	}
 
     // any missing fields?
     if (count($PaperError) > 0) {
@@ -408,7 +411,8 @@ if ($editMode) {
 			      && ($Conf->timeUpdatePaper() || $Me->amAssistant()));
 } else
     $editable = false;
-echo "<table class='paper'>\n\n";
+echo "<table class='paper", ($editMode ? " editpaper" : ""), "'>\n\n";
+$textareaClass = ($editable ? " textarea" : "");
 
 
 // title
@@ -448,7 +452,7 @@ if (!$newPaper) {
 if ($editable) {
     echo "<tr class='pt_title'>\n  <td class='",
 	caption_class("title"), "'>Title</td>\n";
-    echo "  <td class='entry'>";
+    echo "  <td class='entry$textareaClass'>";
     pt_data("title", 1);
     echo "</td>\n</tr>\n\n";
 }
@@ -550,7 +554,7 @@ if (!$editMode && $Me->amAssistant()) {
 // Abstract
 echo "<tr class='pt_abstract", $trClasses, "' id='foldab'>\n  <td class='",
     caption_class("abstract"), $tdClasses,
-    "'>Abstract</td>\n  <td class='entry", $tdClasses, "'>";
+    "'>Abstract</td>\n  <td class='entry", $tdClasses, $textareaClass, "'>";
 pt_data("abstract", 5);
 echo "</td>\n</tr>\n\n";
 
@@ -609,7 +613,7 @@ if ($newPaper) {
 if ($newPaper || $canViewAuthors || $Me->amAssistant()) {
     echo "<tr class='pt_authors$authorTRClasses' id='foldau'>\n  <td class='",
 	caption_class("authorInformation"), $authorTDClasses,
-	"'>Authors</td>\n  <td class='entry$authorTDClasses'>";
+	"'>Authors</td>\n  <td class='entry$authorTDClasses$textareaClass'>";
     pt_data("authorInformation", 5, true);
     echo "</td>\n";
     if ($editable)
@@ -620,7 +624,7 @@ Zhang, Ping Yen (INRIA)</pre></td>\n";
 
     echo "<tr class='pt_collaborators$authorTRClasses' id='foldco'>\n  <td class='",
 	caption_class("collaborators"), $authorTDClasses,
-	"'>Collaborators</td>\n  <td class='entry$authorTDClasses'>";
+	"'>Collaborators</td>\n  <td class='entry$authorTDClasses$textareaClass'>";
     pt_data("collaborators", 5, true);
     echo "</td>\n";
     if ($editable)

@@ -207,7 +207,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
 <?php if ($Me->isPC || $newProfile) { ?>
 <tr>
   <td class='caption'>Collaborators and other affiliations</td>
-  <td class='entry' colspan='3'><textarea class='textlite' name='collaborators' rows='5'><?php echo htmlspecialchars($Me->collaborators) ?></textarea></td>
+  <td class='entry textarea' colspan='3'><textarea class='textlite' name='collaborators' rows='5'><?php echo htmlspecialchars($Me->collaborators) ?></textarea></td>
   <td class='hint'>List your recent (~2 years) coauthors, collaborators,
     and affiliations, and any advisor or student relationships, one per line.
     We use this information to
