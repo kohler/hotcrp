@@ -15,6 +15,13 @@ table, tr, td {
 div.clear, div.min {
 	margin: 0em;
 }
+form {
+	display: inline;
+}
+div.inform {
+	margin: 0em;
+	display: inline;
+}
 
 div#header {
 	background: #ffff00;
