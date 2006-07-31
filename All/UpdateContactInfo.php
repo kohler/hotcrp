@@ -159,7 +159,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
 <tr>
   <td class='caption'>Password:</td>
   <td class='entry'><input type='password' name='password' size='20' value="<?php crpformvalue('password') ?>" /></td>
-  <td class='caption'>Repeat&nbsp;password:</td>
+  <td class='caption'>Repeat password:</td>
   <td class='entry'><input type='password' name='password2' size='20' value="<?php crpformvalue('password') ?>" /></td>
   <td class='hint'>Please note that the password is stored in our database in cleartext, and will be mailed to you if you have forgotten it.  Thus, you should not use a login password or any other password that is important to you.</td>
 </tr>
@@ -202,7 +202,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
 
 <?php if ($Me->isPC || $newProfile) { ?>
 <tr>
-  <td class='caption'>Collaborators and&nbsp;other&nbsp;affiliations:</td>
+  <td class='caption'>Collaborators and other affiliations:</td>
   <td class='entry' colspan='3'><textarea class='textlite' name='collaborators' rows='5'><?php echo htmlspecialchars($Me->collaborators) ?></textarea></td>
   <td class='hint'>List your recent (~2 years) coauthors, collaborators,
     and affiliations, and any advisor or student relationships, one per line.
@@ -218,7 +218,7 @@ Zhang, Ping Yen (INRIA)
     $result = $Conf->q("select TopicArea.topicId, TopicArea.topicName, TopicInterest.interest from TopicArea left join TopicInterest on TopicInterest.contactId=$Me->contactId and TopicInterest.topicId=TopicArea.topicId order by TopicArea.topicName");
     if (!DB::isError($result) && $result->numRows() > 0) {
 	echo "<tr id='topicinterest'>
-  <td class='caption'>Topic&nbsp;interests:</td>
+  <td class='caption'>Topic interests:</td>
   <td class='entry' colspan='3' id='topicinterest'><table class='topicinterest'>
        <tr><td></td><th>Low</th><th>Med.</th><th>High</th></tr>\n";
 	for ($i = 0; $i < $result->numRows(); $i++) {
@@ -243,8 +243,8 @@ Zhang, Ping Yen (INRIA)
 } ?>
 
 <tr>
-  <td></td>
-  <td><input class='button_default' type='submit' value='<?php
+  <td class='caption'></td>
+  <td class='entry'><input class='button_default' type='submit' value='<?php
     if ($newProfile)
 	echo "Create Account";
     else

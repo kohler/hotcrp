@@ -96,11 +96,11 @@ reviewing papers, or a member of the program committee.");
 </tr>
 
 <tr><td></td>
-  <td><input class='button_default' type='submit' value='Login' name='login' /></td>
+  <td class='entry'><input class='button_default' type='submit' value='Login' name='login' /></td>
 </tr>
   
 <tr><td></td>
-  <td>
+  <td class='entry'>
     <input class='button' type='submit' value='Mail me my password' name='forgot' />
     <input class='button' type='submit' value='Create new account' name='register' />
   </td>
