@@ -193,9 +193,9 @@ function reviewButton($paperId, $row = null, $buttonType = 0, $conf = null) {
 	$type = "";
 
     if ($row->reviewId === null)
-	$revulink = "href='${ConfSiteBase}All/ReviewPaper.php?paperId=$paperId'";
+	$revulink = "href='${ConfSiteBase}review.php?paperId=$paperId'";
     else
-	$revulink = "href='${ConfSiteBase}All/ReviewPaper.php?reviewId=$row->reviewId'";
+	$revulink = "href='${ConfSiteBase}review.php?reviewId=$row->reviewId'";
     return str_replace("~", $revulink, $reviewButton[$buttonType][$type]);
 }
 
