@@ -502,11 +502,7 @@ $canViewAuthors = $Me->canViewAuthors($prow, $Conf);
 if ($editMode && $Me->amAssistant())
     $canViewAuthors = true;
 if (!$canViewAuthors && $Me->amAssistant()) {
-    $folders = "['sa','ca','au','co']";
-    echo "<tr class='pt_authorTrigger folded$trClasses' id='foldsa'>\n",
-	"  <td class='caption$tdClasses'></td>\n",
-	"  <td class='entry$tdClasses'><a class='button unfolder' href=\"javascript:fold($folders, 0)\">Show&nbsp;authors</a><a class='button folder' href=\"javascript:fold($folders, 1)\">Hide&nbsp;authors</a></td>\n",
-	"</tr>\n\n";
+    $authorFolders = "['sa','ca','au','co']";
     $authorTRClasses = $trClasses . " folded";
     $authorTDClasses = $tdClasses . " extension";
 } else {
@@ -518,9 +514,14 @@ if (!$canViewAuthors && $Me->amAssistant()) {
 // Authors
 if ($newPaper || $canViewAuthors || $Me->amAssistant()) {
     echo "<tr class='pt_authors$authorTRClasses' id='foldau'>\n  <td class='",
-	caption_class("authorInformation"), $authorTDClasses,
-	"'>Authors</td>\n  <td class='entry$authorTDClasses$textareaClass'>";
-    pt_data("authorInformation", 5, true);
+	caption_class("authorInformation"), $tdClasses,
+	"'>Authors</td>\n  <td class='entry$tdClasses$textareaClass'>";
+    if (!$newPaper && !$canViewAuthors && $Me->amAssistant()) {
+	echo "<span class='ellipsis'>Hidden</span><span class='extension'>";
+	pt_data("authorInformation", 5, true);
+	echo "</span> <a class='button_small unfolder' href=\"javascript:fold($authorFolders, 0)\">Show</a><a class='button_small folder' href=\"javascript:fold($authorFolders, 1)\">Hide</a>";
+    } else
+	pt_data("authorInformation", 5, true);
     echo "</td>\n";
     if ($editable)
 	echo "  <td class='hint$authorTDClasses'>List the paper's authors one per line, including any affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
