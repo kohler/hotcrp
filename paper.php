@@ -29,7 +29,8 @@ function actionBar($prow) {
 	$x .= actionTab("Edit", "paper.php?paperId=$paperId&amp;mode=edit", $editMode);
     if (!$newPaper && $prow && ($Me->isPC || $Me->canViewReviews($prow, $Conf)))
 	$x .= actionTab("Reviews" . ($prow ? " ($prow->reviewCount)" : ""), "paper.php?paperId=$paperId&amp;mode=reviews", $reviewsMode);
-    $x .= "</tr></table></td><td class='spanner'></td><td class='gopaper' nowrap='nowrap'>" . goPaperForm() . "</td></tr></table>\n";
+    $mode = (isset($_REQUEST["mode"]) ? array("mode" => $_REQUEST["mode"]) : array());
+    $x .= "</tr></table></td><td class='spanner'></td><td class='gopaper' nowrap='nowrap'>" . goPaperForm("paper.php", $mode) . "</td></tr></table>\n";
     return $x;
 }
 
@@ -89,7 +90,7 @@ if (!$newPaper) {
     getProw($Me->contactId);
     // perfect mode: default to edit for non-submitted papers
     if ($viewMode && (!isset($_REQUEST["mode"]) || $_REQUEST["mode"] != "view")
-	&& $prow->acknowledged <= 0) {
+	&& $prow->author > 0 && $prow->acknowledged <= 0) {
 	$editMode = true;
 	$viewMode = false;
     }
@@ -458,6 +459,147 @@ if ($editable) {
 }
 
 
+// Paper information folding
+if ($reviewsMode) {
+    $trClasses = " fold1ed";
+    $tdClasses = " extension1";
+} else
+    $trClasses = $tdClasses = "";
+
+
+// Paper
+if ($newPaper || ($prow->withdrawn <= 0 && ($editable || $prow->size > 0))) {
+    echo "<tr class='pt_paper$trClasses' id='foldpa'>\n  <td class='",
+	caption_class("paper"), $tdClasses, "'>Paper",
+	($newPaper ? " (optional)" : ""), "</td>\n";
+    echo "  <td class='entry", $tdClasses, "'>";
+    if (!$newPaper && $prow->size > 0)
+	echo paperDownload($paperId, $prow, 1);
+    if ($newPaper || ($editMode && $prow->acknowledged <= 0)) {
+	if (!$newPaper && $prow->size > 0)
+	    echo "<br/>\n    ";
+	echo "<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='", ($newPaper ? 30 : 30), "' />";
+	if (!$newPaper && 0)
+	    echo "&nbsp;<input class='button' type='submit' name='upload' value='Upload paper' />";
+    }
+    echo "</td>\n";
+    if ($newPaper || ($editMode && $prow->acknowledged <= 0))
+	echo "  <td class='hint$tdClasses'>Max size: ", ini_get("upload_max_filesize"), "B</td>\n";
+    echo "</tr>\n\n";
+}
+
+
+// Abstract
+echo "<tr class='pt_abstract", $trClasses, "' id='foldab'>\n  <td class='",
+    caption_class("abstract"), $tdClasses,
+    "'>Abstract</td>\n  <td class='entry", $tdClasses, $textareaClass, "'>";
+pt_data("abstract", 5);
+echo "</td>\n</tr>\n\n";
+
+
+// Author area
+$canViewAuthors = $Me->canViewAuthors($prow, $Conf);
+if ($editMode && $Me->amAssistant())
+    $canViewAuthors = true;
+if (!$canViewAuthors && $Me->amAssistant()) {
+    $folders = "['sa','ca','au','co']";
+    echo "<tr class='pt_authorTrigger folded$trClasses' id='foldsa'>\n",
+	"  <td class='caption$tdClasses'></td>\n",
+	"  <td class='entry$tdClasses'><a class='button unfolder' href=\"javascript:fold($folders, 0)\">Show&nbsp;authors</a><a class='button folder' href=\"javascript:fold($folders, 1)\">Hide&nbsp;authors</a></td>\n",
+	"</tr>\n\n";
+    $authorTRClasses = $trClasses . " folded";
+    $authorTDClasses = $tdClasses . " extension";
+} else {
+    $authorTRClasses = $trClasses;
+    $authorTDClasses = $tdClasses;
+}
+
+
+// Authors
+if ($newPaper || $canViewAuthors || $Me->amAssistant()) {
+    echo "<tr class='pt_authors$authorTRClasses' id='foldau'>\n  <td class='",
+	caption_class("authorInformation"), $authorTDClasses,
+	"'>Authors</td>\n  <td class='entry$authorTDClasses$textareaClass'>";
+    pt_data("authorInformation", 5, true);
+    echo "</td>\n";
+    if ($editable)
+	echo "  <td class='hint$authorTDClasses'>List the paper's authors one per line, including any affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
+Ludwig van Beethoven (Colorado)
+Zhang, Ping Yen (INRIA)</pre></td>\n";
+    echo "</tr>\n\n";
+
+    echo "<tr class='pt_collaborators$authorTRClasses' id='foldco'>\n  <td class='",
+	caption_class("collaborators"), $authorTDClasses,
+	"'>Collaborators</td>\n  <td class='entry$authorTDClasses$textareaClass'>";
+    pt_data("collaborators", 5, true);
+    echo "</td>\n";
+    if ($editable)
+	echo "  <td class='hint$authorTDClasses'>List the authors' recent (~2 years) coauthors and collaborators, and any advisor or student relationships.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td>\n";
+    echo "</tr>\n\n";
+}
+
+
+// Contact authors
+if ($newPaper) {
+    echo "<tr class='pt_contactAuthor$authorTRClasses' id='foldca'>\n  <td class='", caption_class('contactAuthor'), $authorTDClasses, "'>";
+    echo "Contact author</td>\n  <td class='entry$authorTDClasses'>";
+    if ($Me->amAssistant())
+	contactPulldown("contact", "contact", $Conf, $Me);
+    else
+	echo contactText($Me->firstName, $Me->lastName, $Me->email);
+    echo "</td>\n";
+    echo "  <td class='hint$authorTDClasses'>You will be able to add more contact authors after you submit the paper.</td>\n";
+} else if ($canViewAuthors || $Me->amAssistant()) {
+    $result = $Conf->qe("select firstName, lastName, email, contactId
+	from ContactInfo
+	join PaperConflict using (contactId)
+	where paperId=$paperId and author=1
+	order by lastName, firstName", "while finding contact authors");
+    echo "<tr class='pt_contactAuthor$authorTRClasses' id='foldca'>\n  <td class='caption$authorTDClasses'>";
+    echo (!DB::isError($result) && $result->numRows() == 1 ? "Contact author" : "Contact authors");
+    echo "</td>\n  <td class='entry$authorTDClasses'>";
+    if (!DB::isError($result)) {
+	while ($row = $result->fetchRow()) {
+	    $au = contactText($row[0], $row[1], $row[2]);
+	    $aus[] = $au;
+	}
+	echo authorTable($aus, false);
+    }
+    if ($editMode)
+	echo "<a class='button_small' href='contactauthors.php?paperId=$paperId'>Edit&nbsp;contact&nbsp;authors</a>";
+    echo "</td>\n</tr>\n\n";
+}
+
+
+// Topics
+$topicMode = (int) $useRequest;
+if (!$editMode || (!$newPaper && ($prow->acknowledged > 0 || $prow->withdrawn > 0)))
+    $topicMode = -1;
+if ($topicTable = topicTable($paperId, $topicMode, $Conf)) { 
+    echo "<tr class='pt_topics$trClasses' id='foldto'>
+  <td class='caption$tdClasses'>Topics</td>
+  <td class='entry$tdClasses' id='topictable'>", $topicTable, "</td>\n</tr>\n\n";
+}
+
+
+// PC conflicts
+if (!$editMode && $Me->amAssistant()) {
+    $q = "select firstName, lastName
+	from ContactInfo
+	join PCMember using (contactId)
+	join PaperConflict using (contactId)
+	where paperId=$paperId group by ContactInfo.contactId";
+    $result = $Conf->qe($q, "while finding conflicted PC members");
+    if (!DB::isError($result)) {
+	while ($row = $result->fetchRow())
+	    $pcConflicts[] = "$row[0] $row[1]";
+	if (!isset($pcConflicts))
+	    $pcConflicts[] = "None";
+	echo "<tr class='pt_conflict'>\n  <td class='caption'>PC conflicts</td>\n  <td class='entry'>", authorTable($pcConflicts), "</td>\n</tr>\n\n";
+    }
+}
+
+
 // Outcome
 if (!$editMode && $Me->canSetOutcome($prow)) {
     echo "<tr class='pt_outcome'>
@@ -500,147 +642,6 @@ if ($reviewsMode) {
 	echo $rf->webNumericScoresTable($rrows, $prow, $Me, $Conf, true);
 	echo "</td>\n</tr>\n\n";
     }
-}
-
-
-// Paper information folding
-if ($reviewsMode) {
-    $trClasses = " fold1ed";
-    $tdClasses = " extension1";
-} else
-    $trClasses = $tdClasses = "";
-
-
-// Paper
-if ($newPaper || ($prow->withdrawn <= 0 && ($editable || $prow->size > 0))) {
-    echo "<tr class='pt_paper$trClasses' id='foldpa'>\n  <td class='",
-	caption_class("paper"), $tdClasses, "'>Paper",
-	($newPaper ? " (optional)" : ""), "</td>\n";
-    echo "  <td class='entry", $tdClasses, "'>";
-    if (!$newPaper && $prow->size > 0)
-	echo paperDownload($paperId, $prow, 1);
-    if ($newPaper || ($editMode && $prow->acknowledged <= 0)) {
-	if (!$newPaper && $prow->size > 0)
-	    echo "<br/>\n    ";
-	echo "<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='", ($newPaper ? 30 : 30), "' />";
-	if (!$newPaper && 0)
-	    echo "&nbsp;<input class='button' type='submit' name='upload' value='Upload paper' />";
-    }
-    echo "</td>\n";
-    if ($newPaper || ($editMode && $prow->acknowledged <= 0))
-	echo "  <td class='hint$tdClasses'>Max size: ", ini_get("upload_max_filesize"), "B</td>\n";
-    echo "</tr>\n\n";
-}
-
-
-// PC conflicts
-if (!$editMode && $Me->amAssistant()) {
-    $q = "select firstName, lastName
-	from ContactInfo
-	join PCMember using (contactId)
-	join PaperConflict using (contactId)
-	where paperId=$paperId group by ContactInfo.contactId";
-    $result = $Conf->qe($q, "while finding conflicted PC members");
-    if (!DB::isError($result)) {
-	while ($row = $result->fetchRow())
-	    $pcConflicts[] = "$row[0] $row[1]";
-	if (!isset($pcConflicts))
-	    $pcConflicts[] = "None";
-	echo "<tr class='pt_conflict'>\n  <td class='caption'>PC conflicts</td>\n  <td class='entry'>", authorTable($pcConflicts), "</td>\n</tr>\n\n";
-    }
-}
-
-
-// Abstract
-echo "<tr class='pt_abstract", $trClasses, "' id='foldab'>\n  <td class='",
-    caption_class("abstract"), $tdClasses,
-    "'>Abstract</td>\n  <td class='entry", $tdClasses, $textareaClass, "'>";
-pt_data("abstract", 5);
-echo "</td>\n</tr>\n\n";
-
-
-// Author area
-$canViewAuthors = $Me->canViewAuthors($prow, $Conf);
-if ($editMode && $Me->amAssistant())
-    $canViewAuthors = true;
-if (!$canViewAuthors && $Me->amAssistant()) {
-    $folders = "['sa','ca','au','co']";
-    echo "<tr class='pt_authorTrigger folded$trClasses' id='foldsa'>\n",
-	"  <td class='caption$tdClasses'></td>\n",
-	"  <td class='entry$tdClasses'><a class='button unfolder' href=\"javascript:fold($folders, 0)\">Show&nbsp;authors</a><a class='button folder' href=\"javascript:fold($folders, 1)\">Hide&nbsp;authors</a></td>\n",
-	"</tr>\n\n";
-    $authorTRClasses = $trClasses . " folded";
-    $authorTDClasses = $tdClasses . " extension";
-} else {
-    $authorTRClasses = $trClasses;
-    $authorTDClasses = $tdClasses;
-}
-
-
-// Contact authors
-if ($newPaper) {
-    echo "<tr class='pt_contactAuthor$authorTRClasses' id='foldca'>\n  <td class='", caption_class('contactAuthor'), $authorTDClasses, "'>";
-    echo "Contact author</td>\n  <td class='entry$authorTDClasses'>";
-    if ($Me->amAssistant())
-	contactPulldown("contact", "contact", $Conf, $Me);
-    else
-	echo contactText($Me->firstName, $Me->lastName, $Me->email);
-    echo "</td>\n";
-    echo "  <td class='hint$authorTDClasses'>You will be able to add more contact authors after you submit the paper.</td>\n";
-} else if ($canViewAuthors || $Me->amAssistant()) {
-    $result = $Conf->qe("select firstName, lastName, email, contactId
-	from ContactInfo
-	join PaperConflict using (contactId)
-	where paperId=$paperId and author=1
-	order by lastName, firstName", "while finding contact authors");
-    echo "<tr class='pt_contactAuthor$authorTRClasses' id='foldca'>\n  <td class='caption$authorTDClasses'>";
-    echo (!DB::isError($result) && $result->numRows() == 1 ? "Contact author" : "Contact authors");
-    echo "</td>\n  <td class='entry$authorTDClasses'>";
-    if (!DB::isError($result)) {
-	while ($row = $result->fetchRow()) {
-	    $au = contactText($row[0], $row[1], $row[2]);
-	    $aus[] = $au;
-	}
-	echo authorTable($aus, false);
-    }
-    if ($editMode)
-	echo "<a class='button_small' href='contactauthors.php?paperId=$paperId'>Edit&nbsp;contact&nbsp;authors</a>";
-    echo "</td>\n</tr>\n\n";
-}
-
-
-// Authors
-if ($newPaper || $canViewAuthors || $Me->amAssistant()) {
-    echo "<tr class='pt_authors$authorTRClasses' id='foldau'>\n  <td class='",
-	caption_class("authorInformation"), $authorTDClasses,
-	"'>Authors</td>\n  <td class='entry$authorTDClasses$textareaClass'>";
-    pt_data("authorInformation", 5, true);
-    echo "</td>\n";
-    if ($editable)
-	echo "  <td class='hint$authorTDClasses'>List the paper's authors one per line, including any affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
-Ludwig van Beethoven (Colorado)
-Zhang, Ping Yen (INRIA)</pre></td>\n";
-    echo "</tr>\n\n";
-
-    echo "<tr class='pt_collaborators$authorTRClasses' id='foldco'>\n  <td class='",
-	caption_class("collaborators"), $authorTDClasses,
-	"'>Collaborators</td>\n  <td class='entry$authorTDClasses$textareaClass'>";
-    pt_data("collaborators", 5, true);
-    echo "</td>\n";
-    if ($editable)
-	echo "  <td class='hint$authorTDClasses'>List the authors' recent (~2 years) coauthors and collaborators, and any advisor or student relationships.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td>\n";
-    echo "</tr>\n\n";
-}
-
-
-// Topics
-$topicMode = (int) $useRequest;
-if (!$editMode || (!$newPaper && ($prow->acknowledged > 0 || $prow->withdrawn > 0)))
-    $topicMode = -1;
-if ($topicTable = topicTable($paperId, $topicMode, $Conf)) { 
-    echo "<tr class='pt_topics$trClasses' id='foldto'>
-  <td class='caption$tdClasses'>Topics</td>
-  <td class='entry$tdClasses' id='topictable'>", $topicTable, "</td>\n</tr>\n\n";
 }
 
 

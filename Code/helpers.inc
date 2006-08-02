@@ -303,9 +303,11 @@ function rowContactText($row) {
     return contactText($row->firstName, $row->lastName, isset($row->email) ? $row->email : "");
 }
 
-function goPaperForm($baseUrl = "paper.php") {
+function goPaperForm($baseUrl = "paper.php", $args = array()) {
     global $ConfSiteBase;
     $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get'><div class='inform'>";
+    foreach ($args as $what => $val)
+	$x .= "<input type='hidden' name=\"" . htmlspecialchars($what) . "\" value=\"" . htmlspecialchars($val) . "\" />";
     $x .= "#<input class='textlite' type='text' size='3' name='paperId' />";
     $x .= "&nbsp;<input class='button_default' type='submit' name='go' value='Go to paper' /></div></form>";
     return $x;

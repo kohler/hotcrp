@@ -13,7 +13,9 @@ function fold(which, dofold, foldnum) {
 	var folded = document.getElementById('fold' + which);
 	var ftext = (foldnum ? "fold" + foldnum + "ed" : "folded");
 	var unftext = "un" + ftext;
-	if (dofold)
+	if (!folded)
+	    /* nada */;
+	else if (dofold)
 	    folded.className = folded.className.replace(unftext, ftext);
 	else
 	    folded.className = folded.className.replace(ftext, unftext);
