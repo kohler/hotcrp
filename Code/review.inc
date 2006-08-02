@@ -85,6 +85,8 @@ class ReviewForm {
 	    $x .= "  <td class='caption";
 	    if (isset($ReviewFormError[$field]))
 		$x .= " error";
+	    if (isset($this->options[$field]))
+		$x .= " textarea";
 	    $x .= "'>";
 	    $n = htmlspecialchars($this->shortName[$field]);
 	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))

@@ -233,7 +233,7 @@ span.author, span.conflict {
 table.paper, table.rev {
 	width: 100%;
 }
-tr {
+tr, textarea {
 	vertical-align: baseline;
 }
 tr td.textarea {

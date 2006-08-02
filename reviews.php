@@ -138,8 +138,8 @@ if (!$Me->timeReview($prow, $Conf))
 ?>
 
 <table class='revtop'>
-<tr class='rev_title'>
-  <td class='id'><h2>Review<?php
+<tr class='id'>
+  <td class='caption'><h2>Review<?php
 	if ($rrow && $rrow->reviewSubmitted > 0)
 	    echo " ", chr(65 + $rrow->reviewOrdinal);
   ?></h2></td>

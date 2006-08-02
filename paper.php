@@ -407,7 +407,7 @@ function pt_data($what, $rows, $authorTable = false) {
 if ($editMode) {
     echo "<form method='post' action=\"paper.php?paperId=",
 	($newPaper ? "new" : $paperId),
-	"&amp;post=1\" enctype='multipart/form-data'>";
+	"&amp;post=1&amp;mode=edit\" enctype='multipart/form-data'>";
     $editable = $newPaper || ($prow->acknowledged <= 0 && $prow->withdrawn <= 0
 			      && ($Conf->timeUpdatePaper() || $Me->amAssistant()));
 } else
