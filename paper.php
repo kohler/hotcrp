@@ -711,7 +711,7 @@ if (!$newPaper && $reviewsMode && $prow->reviewCount > 0) {
 	$reviewnum = 65;
 	if (!DB::isError($result) && $result->numRows() > 0)
 	    while ($rrow = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
-		echo "
+		echo "<div class='gap'></div>
 
 <table class='rev'>
   <tr class='id'>
@@ -738,5 +738,6 @@ if (!$newPaper && $reviewsMode && $prow->reviewCount > 0) {
     }
 }
 
+echo "<div class='gapbottom'></div>\n";
 
 $Conf->footer(); ?>

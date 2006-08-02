@@ -1,92 +1,35 @@
 <?php 
 include('../Code/confHeader.inc');
-$_SESSION["Me"] -> goIfInvalid("../index.php");
-$_SESSION["Me"] -> goIfNotChair('../index.php');
-$Conf -> connect();
-?>
+$_SESSION["Me"]->goIfInvalid("../index.php");
+$_SESSION["Me"]->goIfNotChair('../index.php');
+$Conf->connect();
 
-<html>
+$Conf->header("Switch Roles");
 
-<?php  $Conf->header("Switch Roles To That Of Someone Else") ?>
+echo "<form method='get' action='$ConfSiteBase'>
+<select name='viewContact'>\n";
 
-<body>
-<?php 
-//
-// Process actions from this form..
-//
-if (IsSet($_REQUEST[becomePerson])) {
-  $_SESSION["Me"] -> invalidate();
-  $_SESSION["Me"] -> lookupById($_REQUEST[become], $Conf);
+$result = $Conf->qe("select contactId, firstName, lastName, email,
+	Chair.contactId as chair, ChairAssistant.contactId as ass,
+	PCMember.contactId as pc
+	from ContactInfo
+	left join Chair using (contactId)
+	left join ChairAssistant using (contactId)
+	left join PCMember using (contactId)
+	order by chair desc, ass desc, pc desc, lastName, firstName, email");
+if (!DB::isError($result)) {
+    $oldtype = "";
+    while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
+	$type = ($row->chair ? "PC Chair" : ($row->ass ? "PC Chair's Assistant" : ($row->pc ? "PC Member" : "Others")));
+	if ($type != $oldtype)
+	    echo "<option value='-1' disabled='disabled'>", $type, "</option>\n";
+	echo "<option value='$row->contactId'>&nbsp;&nbsp;", contactText($row), "</option>\n";
+	$oldtype = $type;
+    }
 }
-?>
 
-<FORM METHOD="POST" ACTION="<?php echo $_SERVER[PHP_SELF] ?>">
-<table align=center>
-<tr> <td>
-<?php  $Conf->makePCSelector('become', $_SESSION["Me"]->contactId); ?>  
-</td>
-<td>
-<INPUT TYPE="SUBMIT" name="becomePerson" value="Become this PC member">
-</td> </tr>
-</table>
-</form>
+echo "</select>
+<input class='button_default' type='submit' name='go' value='Become contact' />
+</form>";
 
-<br> <br>
-
-<FORM METHOD="POST" ACTION="<?php echo $_SERVER[PHP_SELF] ?>">
-<table align=center>
-<tr> <td>
-  <SELECT name=become SINGLE SIZE=10>
-  <?php 
-  $query = "SELECT ContactInfo.contactId, firstName, lastName, email "
-  . " FROM ContactInfo, ChairAssistant "
-  . " WHERE ChairAssistant.contactId=ContactInfo.contactId "
-  . " ORDER BY email, lastName, firstName ";
-$result = $Conf->qe($query);
- if (!DB::isError($result)) {
-   while($row=$result->fetchRow()) {
-     print "<OPTION VALUE=\"$row[0]\" ";
-     if ( $row[0] == $_SESSION["Me"] -> contactId) {
-       print " SELECTED ";
-     }
-     print "> $row[1] $row[2] ($row[3]) </OPTION>";
-   }
- }
- ?>
- </SELECT>
-</td>
-<td>
-<INPUT TYPE="SUBMIT" name="becomePerson" value="Become assistant to the chair">
-</td> </tr>
-</table>
-</form>
-<br> <br>
-
-<FORM METHOD="POST" ACTION="<?php echo $_SERVER[PHP_SELF] ?>">
-<table align=center>
-<tr> <td>
-  <SELECT name=become SINGLE SIZE=10>
-  <?php 
-  $query = "SELECT contactId, firstName, lastName, email "
-  . " FROM ContactInfo "
- . " ORDER BY email,lastName, firstName ";
-$result = $Conf->qe($query);
- if (!DB::isError($result)) {
-   while($row=$result->fetchRow()) {
-     print "<OPTION VALUE=\"$row[0]\" ";
-     if ( $row[0] == $_SESSION["Me"] -> contactId) {
-       print " SELECTED ";
-     }
-     print "> $row[1] $row[2] ($row[3]) </OPTION>";
-   }
- }
- ?>
- </SELECT>
-</td> <td>
-     <INPUT TYPE="SUBMIT" name="becomePerson" value="Become this random person">
-</td> </tr>
-</table>
-</form>
-
-<?php $Conf->footer() ?>
-
+$Conf->footer() ?>

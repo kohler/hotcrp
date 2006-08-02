@@ -451,7 +451,7 @@ $result = $Conf->qe($query);
 
 	 <?php
 	 $Conf->linkWithPaperId($title,
-				"../Assistant/AssistantViewSinglePaper.php",
+				"${ConfSitePaper}paper.php",
 				$paperId);
 	 ?>
 	 <br>
@@ -461,10 +461,9 @@ $result = $Conf->qe($query);
 	 //
 	 // Pull out the primary reviewers
 	 //
-	 $result = $Conf->qe("SELECT ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.contactId "
-			     . " FROM ContactInfo, PrimaryReviewer "
-			     . " WHERE ( PrimaryReviewer.paperId='$paperId' "
-			     . "         AND PrimaryReviewer.reviewer=ContactInfo.contactId)"
+	 $result = $Conf->qe("select firstName, lastName, email, ContactInfo.contactId "
+			     . " from ContactInfo join ReviewRequest using (contactId) "
+			     . " where paperId=$paperId and reviewType=" . REVIEW_PRIMARY
 			     );
 	 if (!DB::isError($result)) {
 	   while($row = $result->fetchRow() ) {

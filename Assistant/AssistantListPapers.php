@@ -168,7 +168,7 @@ Found <?php  echo $numpapers ?> papers.
      if ($_SESSION["Me"]->isChair) {
        $link="../PC/PCAllAnonReviewsForPaper.php";
      } else {
-       $link="AssistantViewSinglePaper.php";
+       $link="${ConfSiteBase}paper.php";
      }
     ?>
 

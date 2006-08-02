@@ -82,11 +82,7 @@ $revReq = $Conf->countEntries("paperId",
 			      $_REQUEST[paperId],
 			      "ReviewRequest");
 
-$revPrim = $Conf->countEntries("paperId",
-			       $_REQUEST[paperId],
-			       "PrimaryReviewer");
-
-$revTot = $revReq + $revPrim;
+$revTot = $revReq;
 
 print "<p> There are $revFin finalized reviews and ";
 print "$revUnfin started, but unfinalized, reviews for your paper.<br> ";

@@ -66,8 +66,6 @@ If you suspect something fishy, contact the site administrator at\n\
 	    crpmergeone("TopicInterest", "contactId", $oldid, $newid);
 	    crpmergeone("ReviewRequest", "contactId", $oldid, $newid);
 	    crpmergeone("ReviewRequest", "requestedBy", $oldid, $newid);
-	    crpmergeone("PrimaryReviewer", "contactId", $oldid, $newid);
-	    crpmergeone("SecondaryReviewer", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReview", "contactId", $oldid, $newid);
       
 	    //

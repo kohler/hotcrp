@@ -143,8 +143,8 @@ class Contact {
     
     function countRequestedPrimary() {
 	global $Conf;
-	$query = "SELECT COUNT(*) FROM PrimaryReviewer WHERE "
-	    . " contactId=' " . $this->contactId . "'";
+	$query = "select count(*) from ReviewRequest where "
+	    . " contactId=" . $this->contactId . " and reviewType=" . REVIEW_PRIMARY;
 	$result = $Conf->q($query);
 	if ( !DB::isError($result) && $result->numRows() == 1 ) {
 	    $row = $result->fetchRow();

@@ -134,8 +134,8 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC) ) {
       print "<td> Primary Reviewers: </td>\n";
       print "<td>\n";
       $revQ="SELECT firstName, lastName, email "
-	. " FROM ContactInfo join PrimaryReviewer using (contactId) "
-	. " WHERE PrimaryReviewer.paperId='$paperId'";
+	. " FROM ContactInfo join ReviewRequest using (contactId) "
+	. " WHERE paperId='$paperId' and reviewType=" . REVIEW_PRIMARY;
       $revR = $Conf->qe($revQ);
       if ($revR) {
 	$sep = "";

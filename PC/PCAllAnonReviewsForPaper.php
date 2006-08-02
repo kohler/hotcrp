@@ -1,10 +1,10 @@
 <?php 
-include('../Code/confHeader.inc');
+require_once('../Code/confHeader.inc');
 $_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
 $_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
+$Me = $_SESSION["Me"];
 $Conf -> connect();
 
-include('../Code/confConfigReview.inc');
 include('gradeNames.inc');
 
 function showReviewerOkay ( $Conf )
@@ -19,7 +19,7 @@ function showReviewerOkay ( $Conf )
 
 <html>
 
-<?php  $Conf->header("See all the reviews for Paper #" . $_REQUEST[paperId]) ?>
+<?php  $Conf->header("See all the reviews for Paper #" . $_REQUEST["paperId"]) ?>
 
 <body>
 <?php 
@@ -27,7 +27,7 @@ function showReviewerOkay ( $Conf )
 // No one ever gets to see a paper review for which they
 // have a conflict using this interface.
 //
-if ( $_SESSION["Me"]->checkConflict($_REQUEST[paperId], $Conf)) {
+if ( $_SESSION["Me"]->checkConflict($_REQUEST["paperId"], $Conf)) {
   
   $Conf -> errorMsg("The program chairs have registered a conflict "
 		    . " of interest for you to read this paper."
@@ -41,7 +41,7 @@ if ( $_SESSION["Me"]->checkConflict($_REQUEST[paperId], $Conf)) {
 //
 
 if ( ! $Conf->validTimeFor('AtTheMeeting', 0) ) {
-  if (!($_SESSION["Me"]->canReview($_REQUEST["paperId"], $Conf) || $_SESSION["Me"] -> isChair)) {
+  if (!($_SESSION["Me"]->canEditReview($_REQUEST["paperId"], $Conf) || $_SESSION["Me"] -> isChair)) {
     $Conf -> errorMsg("You are unable to view all the reviews for this paper "
 		      . " since you were not a primary or secondary reviwer for it." );
     exit();
@@ -51,7 +51,7 @@ if ( ! $Conf->validTimeFor('AtTheMeeting', 0) ) {
 if ( 0 && $Conf->validTimeFor('AtTheMeeting',0) ) {
   $pcConflicts = $Conf->allPCConflicts();
 
-  if ($pcConflicts[$_REQUEST[paperId]] && ! $_SESSION["Me"] -> isChair ) {
+  if ($pcConflicts[$_REQUEST["paperId"]] && ! $_SESSION["Me"] -> isChair ) {
     $Conf -> errorMsg("You are unable to view all the reviews for this paper "
 		      . "at the program committee meeting" );
     exit();
@@ -64,8 +64,8 @@ if ( 0 && $Conf->validTimeFor('AtTheMeeting',0) ) {
 // they haven't yet finalized their reviews.
 //
 
-$query="SELECT paperId FROM PrimaryReviewer WHERE "
-. " reviewer='" . $_SESSION["Me"]->contactId . "' AND paperId=" . $_REQUEST[paperId] . " ";
+$query="select paperId from ReviewRequest where "
+. " contactId='" . $_SESSION["Me"]->contactId . "' and paperId=" . $_REQUEST["paperId"] . " and reviewType=" . REVIEW_PRIMARY;
 ;
 
 $result = $Conf->q($query);
@@ -138,7 +138,7 @@ if ( $doTable ) {
 
     if ($Conf->okSeeReviewers()) {
       print "<INPUT type=checkbox name=SeeReviewerInfo value=1";
-      if ($_REQUEST["SeeReviewerInfo"]) {
+      if (isset($_REQUEST["SeeReviewerInfo"]) && $_REQUEST["SeeReviewerInfo"]) {
 	echo " checked";
       }
       print "> See Reviewer Info<br>";
@@ -146,7 +146,7 @@ if ( $doTable ) {
 
     if ($Conf->okSeeUnfinishedReviews()) {
       print "<INPUT type=checkbox name=SeeUnfinishedReviews value=1";
-      if ($_REQUEST["SeeUnfinishedReviews"]) {
+      if (isset($_REQUEST["SeeUnfinishedReviews"]) && $_REQUEST["SeeUnfinishedReviews"]) {
 	echo " checked";
       }
       print "> See Unfinished Reviews<br>";
@@ -154,13 +154,13 @@ if ( $doTable ) {
       
     if ($Conf->okSeeAuthorInfo()) {
       print "<INPUT type=checkbox name=SeeAuthorInfo value=1";
-      if ($_REQUEST["SeeAuthorInfo"]) {
+      if (isset($_REQUEST["SeeAuthorInfo"]) && $_REQUEST["SeeAuthorInfo"]) {
 	echo " checked";
       }
       print "> See Author Info<br>";
     }
 
-    print $Conf->mkHiddenVar('paperId', $_REQUEST[paperId]);
+    print $Conf->mkHiddenVar('paperId', $_REQUEST["paperId"]);
     print "<INPUT TYPE=SUBMIT name=UpdateView value=\"Update View\">";
     print "</FORM>";
   }
@@ -170,11 +170,11 @@ if ( $doTable ) {
     print "<td>\n";
     print $Conf->buttonWithPaperId("Modify Paper",
 				   "../paper.php",
-				   $_REQUEST[paperId]);
+				   $_REQUEST["paperId"]);
     print "</td><td>\n";
     print $Conf->buttonWithPaperId("Delete Paper\n (requires confirmation) ",
 				   "../Chair/DeletePaper2.php",
-				   $_REQUEST[paperId]);
+				   $_REQUEST["paperId"]);
     print "</td>\n";
   }
 
@@ -191,15 +191,14 @@ if ( showReviewerOkay($Conf) ){
 </td>
 <td>
 <?php 
-   $query="SELECT firstName, lastName, email "
-   . " FROM ContactInfo, PrimaryReviewer "
-   . " WHERE PrimaryReviewer.reviewer=ContactInfo.contactId "
-   . " AND PrimaryReviewer.paperId='" . $_REQUEST[paperId] . "'";
+   $query="select firstName, lastName, email "
+	. " from ContactInfo join ReviewRequest using (contactId) "
+	. " where paperId=" . $_REQUEST['paperId'] . " and reviewType=" . REVIEW_PRIMARY;
     $result = $Conf->qe($query);
     if (!DB::isError($result)) {
       $sep = "";
       while($row=$result->fetchRow()) {
-	print "<a href=\"mailto:$row[2]?Subject=Concerning%20Paper%20" . $_REQUEST[paperId] . "\">";
+	print "<a href=\"mailto:$row[2]?Subject=Concerning%20Paper%20" . $_REQUEST["paperId"] . "\">";
 	print "$sep$row[0] $row[1] ($row[2]) ";
 	print "</a>";
 	$sep ="<br>";
@@ -214,15 +213,14 @@ if ( showReviewerOkay($Conf) ){
 </td>
 <td>
 <?php 
-   $query="SELECT firstName, lastName, email "
-   . " FROM ContactInfo, SecondaryReviewer "
-   . " WHERE SecondaryReviewer.reviewer=ContactInfo.contactId "
-   . " AND SecondaryReviewer.paperId='" . $_REQUEST[paperId] . "'";
+   $query="select firstName, lastName, email "
+      . " from ContactInfo join ReviewRequest using (contactId) "
+      . " where paperId=" . $_REQUEST["paperId"] . " and reviewType=" . REVIEW_SECONDARY;
     $result = $Conf->qe($query);
     if (!DB::isError($result)) {
       $sep = "";
       while($row=$result->fetchRow()) {
-	print "<a href=\"mailto:$row[2]?Subject=Concerning%20Paper%20" . $_REQUEST[paperId] . "\">";
+	print "<a href=\"mailto:$row[2]?Subject=Concerning%20Paper%20" . $_REQUEST["paperId"] . "\">";
 	print "$sep$row[0] $row[1] ($row[2]) ";
 	print "</a>";
 	$sep ="<br>";
@@ -237,15 +235,14 @@ if ( showReviewerOkay($Conf) ){
 </td>
 <td>
 <?php 
-   $query="SELECT firstName, lastName, email "
-   . " FROM ContactInfo, ReviewRequest "
-   . " WHERE ReviewRequest.asked=ContactInfo.contactId "
-   . " AND ReviewRequest.paperId='" . $_REQUEST[paperId] . "'";
+   $query="select firstName, lastName, email "
+      . " from ContactInfo join ReviewRequest on requestedBy=ContactInfo.contactId "
+      . " where paperId=" . $_REQUEST["paperId"];
     $result = $Conf->qe($query);
     if (!DB::isError($result)) {
       $sep = "";
       while($row=$result->fetchRow()) {
-	print "<a href=\"mailto:$row[2]?Subject=Concerning%20Paper%20" . $_REQUEST[paperId] . "\">";
+	print "<a href=\"mailto:$row[2]?Subject=Concerning%20Paper%20" . $_REQUEST["paperId"] . "\">";
 	print "$sep$row[0] $row[1] ($row[2]) ";
 	print "</a>";
 	$sep ="<br>";
@@ -260,7 +257,7 @@ if ( showReviewerOkay($Conf) ){
 //
 // Store or delete any comments that were made (after security checks above)
 //
-if (IsSet($_REQUEST['storeComment']) && IsSet($_REQUEST[paperId]) && IsSet($_REQUEST['theComment'])) {
+if (IsSet($_REQUEST['storeComment']) && IsSet($_REQUEST["paperId"]) && IsSet($_REQUEST['theComment'])) {
   if (IsSet($_REQUEST['forEveryone']) ){
     $_REQUEST['forReviewer'] = 1;
     $_REQUEST['forAuthor'] = 1;
@@ -278,7 +275,7 @@ if (IsSet($_REQUEST['storeComment']) && IsSet($_REQUEST[paperId]) && IsSet($_REQ
   }
 
   $query="INSERT INTO PaperComments "
-    . " SET paperId=" . $_REQUEST[paperId] . ", contactId=" . $_SESSION["Me"]->contactId. ", "
+    . " SET paperId=" . $_REQUEST["paperId"] . ", contactId=" . $_SESSION["Me"]->contactId. ", "
     . " forAuthor=$forAuthor, forReviewers=$forReviewer, "
     . " comment='" . addslashes($_REQUEST['theComment']) . "'";
 
@@ -294,7 +291,7 @@ if (IsSet($_REQUEST['killCommentId'])) {
 // Print header using dummy review
 //
 
-$Review=ReviewFactory($Conf, $_SESSION["Me"]->contactId, $_REQUEST[paperId]);
+$Review=ReviewFactory($Conf, $_SESSION["Me"]->contactId, $_REQUEST["paperId"]);
 
 if ( ! $Review -> valid ) {
   $Conf->errorMsg("You've stumbled on to an invalid review? -- contact chair");
@@ -324,7 +321,7 @@ if ( ($_SESSION["Me"]->isChair && $_SESSION["SeeAuthorInfo"])
 print "</center>";
 
 
-$Conf->log("View all reviews (blind) for $_REQUEST[paperId]", $_SESSION["Me"]);
+$Conf->log("View all reviews (blind) for " . $_REQUEST["paperId"], $_SESSION["Me"]);
 
 //
   // Now print all the reviews
@@ -339,7 +336,7 @@ $result = $Conf->qe("SELECT PaperReview.contactId, "
 		    . " ContactInfo.firstName, ContactInfo.lastName, "
 		    . " ContactInfo.email "
 		    . " FROM PaperReview, ContactInfo "
-		    . " WHERE PaperReview.paperId='$_REQUEST[paperId]'"
+		    . " WHERE PaperReview.paperId=" . $_REQUEST["paperId"]
 		    . " AND PaperReview.contactId=ContactInfo.contactId"
 		    . $fin
 		    );
@@ -356,7 +353,7 @@ if (!DB::isError($result) && $result->numRows() > 0) {
     $last=$row['lastName'];
     $email=$row['email'];
 
-    $Review=ReviewFactory($Conf, $reviewer, $_REQUEST[paperId]);
+    $Review=ReviewFactory($Conf, $reviewer, $_REQUEST["paperId"]);
 
     $lastModified=$Conf->printableTime($Review->reviewFields['timestamp']);
 
@@ -376,13 +373,13 @@ if (!DB::isError($result) && $result->numRows() > 0) {
 	$word = "finalize";
       }
 
-      $extra = "<a href=\"../Chair/UnfinalizeReview.php?paperId=$_REQUEST[paperId]\" target=_blank> "
+      $extra = "<a href=\"../Chair/UnfinalizeReview.php?paperId=" . $_REQUEST["paperId"] . "\" target=_blank> "
 	. " Click here to $word review </a>";
 
-      print "<th> <big> <big> Review #$reviewId For Paper #$_REQUEST[paperId] </big></big> $extra  </th>";
+      print "<th> <big> <big> Review #$reviewId For Paper #" . $_REQUEST["paperId"] . " </big></big> $extra  </th>";
 
     } else {
-      print "<th> <big> <big> Review #$reviewId For Paper #$_REQUEST[paperId] </big></big> </th>";
+      print "<th> <big> <big> Review #$reviewId For Paper #" . $_REQUEST["paperId"] . " </big></big> </th>";
     }
 
     print "</tr>";
@@ -435,7 +432,7 @@ if (!DB::isError($result) && $result->numRows() > 0) {
 
 $result = $Conf -> qe("SELECT PaperComments.*, UNIX_TIMESTAMP(time) as unixtime , ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email "
 		      . " FROM PaperComments, ContactInfo "
-		      . " WHERE paperId=$_REQUEST[paperId] AND PaperComments.contactId = ContactInfo.contactId "
+		      . " WHERE paperId=" . $_REQUEST["paperId"] . " AND PaperComments.contactId = ContactInfo.contactId "
 		      . " ORDER BY time ");
 if (! $result ) {
   $Conf->errorMsg("Error in SQL " . $result->getMessage());
@@ -473,7 +470,7 @@ if ($result->numRows() == 0 ) {
       print "<th>";
       $id=$row['commentId'];
       $Conf->textButton("Delete?",
-			"$_SERVER[PHP_SELF]?paperId=$_REQUEST[paperId]>",
+			"$_SERVER[PHP_SELF]?paperId=" . $_REQUEST["paperId"] . ">",
 			"<input type=hidden NAME=killCommentId value=$id>");
       print "</th>";
     }
@@ -496,7 +493,7 @@ print "<hr>\n";
 ?>
 
 <FORM METHOD=POST ACTION=<?php echo $_SERVER[PHP_SELF]?>>
-<INPUT TYPE=hidden name=paperId value="<?php  echo $_REQUEST[paperId]?>">
+<INPUT TYPE=hidden name=paperId value="<?php  echo $_REQUEST["paperId"]?>">
 <INPUT TYPE=submit name=storeComment value="Store Comment">
 <table width=80% align=center bgcolor=<?php echo $Conf->contrastColorTwo?>>
 <tr> <th colspan=2 bgcolor=<?php echo $Conf->infoColor?>> Add a new comment </th> </tr>

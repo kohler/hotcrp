@@ -119,6 +119,18 @@ form {
 }
 
 
+div.gap, div.gapbottom {
+	background-color: #f6f6ff;
+	height: 0.75em;
+}
+div.gap {
+	border-bottom: 1px solid #cc9900;
+}
+div.gapbottom {
+	margin-bottom: -0.5em;
+}
+
+
 /* view bar */
 table.vubar {
 	margin-top: -0.5em;
@@ -233,7 +245,7 @@ span.author, span.conflict {
 table.paper, table.rev {
 	width: 100%;
 }
-tr, textarea {
+tr, textarea, select {
 	vertical-align: baseline;
 }
 tr td.textarea {

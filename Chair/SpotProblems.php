@@ -1,5 +1,5 @@
 <?php 
-include('../Code/confHeader.inc');
+require_once('../Code/confHeader.inc');
 $_SESSION["Me"] -> goIfInvalid("../index.php");
 $_SESSION["Me"] -> goIfNotPC('../index.php');
 $Conf -> connect();

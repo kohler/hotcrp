@@ -21,11 +21,12 @@ $query="SELECT "
 . " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
 . " ContactInfo.contactId, "
 . " Paper.paperId, Paper.title "
-. " FROM PrimaryReviewer, ContactInfo, Paper "
-. " WHERE ContactInfo.contactId=$_REQUEST[pcId] "
-. " AND PrimaryReviewer.reviewer=ContactInfo.contactId "
-. " AND PrimaryReviewer.paperId=Paper.paperId "
-. " ORDER BY Paper.paperId "
+. " from ReviewRequest "
+. " join ContactInfo using (contactId) "
+. " join Paper using (paperId) "
+. " where ContactInfo.contactId=" . $_REQUEST[pcId]
+. " and reviewType=" . REVIEW_PRIMARY
+. " order by Paper.paperId "
 ;
 
 $result = $Conf->qe($query);

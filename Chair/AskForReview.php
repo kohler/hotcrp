@@ -183,7 +183,7 @@ if (DB::isError($result)) {
     print "<td> ";
 
     $Conf->linkWithPaperId($title,
-			   "../Assistant/AssistantViewSinglePaper.php",
+			   "${ConfSiteBase}paper.php",
 			   $id);
 
     print "</td> <tr> \n";

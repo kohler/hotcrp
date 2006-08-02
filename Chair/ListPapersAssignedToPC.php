@@ -36,7 +36,7 @@ function paperList($query, $kind)
        print "<b> W </b>";
      }
      print "</td> ";
-     print "<td> <b> <a href=\"../Assistant/AssistantViewSinglePaper.php?paperId=$paperId\" target=_blank> $title </a> </b> ";
+     print "<td> <b> <a href=\"${ConfSiteBase}paper.php?paperId=$paperId\" target=_blank> $title </a> </b> ";
      if ( $_REQUEST[showAuthorInfo] ) {
        print "<br> <i> ";
        print $Conf->safeHtml($authorInformation);
@@ -93,10 +93,10 @@ if (DB::isError($result1) ) {
     $lastName = $row[2];
     $email = $row[3];
 
-    $res = $Conf->qe("SELECT * FROM PrimaryReviewer WHERE reviewer=$pc\n");
+    $res = $Conf->qe("select reviewId from ReviewRequest where contactId=$pc and reviewType=" . REVIEW_PRIMARY);
     $primary = $res->numRows();
 
-    $res = $Conf->qe("SELECT * FROM SecondaryReviewer WHERE reviewer=$pc\n");
+    $res = $Conf->qe("select reviewId from ReviewRequest where contactId=$pc and reviewType=" . REVIEW_SECONDARY);
     $secondary = $res->numRows();
 
     print "<tr> <td> $primary </td> <td> $secondary </td> ";
@@ -141,14 +141,12 @@ if (!DB::isError($result1) ) {
 			   );
 
     print "<br>";
-    paperList("SELECT Paper.paperId, title, withdrawn, authorInformation FROM Paper, PrimaryReviewer "
-	      . " WHERE Paper.paperId=PrimaryReviewer.paperId "
-	      . " AND PrimaryReviewer.reviewer=$pc "
+    paperList("SELECT Paper.paperId, title, withdrawn, authorInformation FROM Paper join ReviewRequest using (paperId) "
+	      . " where ReviewRequest.contactId=$pc and reviewType=" . REVIEW_PRIMARY
 	      . " ORDER BY paperId ", "Primary Reviews" );
 
-    paperList("SELECT Paper.paperId, title, withdrawn, authorInformation FROM Paper, SecondaryReviewer "
-	      . " WHERE Paper.paperId=SecondaryReviewer.paperId "
-	      . " AND SecondaryReviewer.reviewer=$pc "
+    paperList("SELECT Paper.paperId, title, withdrawn, authorInformation FROM Paper join ReviewRequest using (paperId) "
+	      . " where ReviewRequest.contactId=$pc and reviewType=" . REVIEW_SECONDARY
 	      . " ORDER BY paperId ", "Secondary Reviews" );
     print "<br>";
   }

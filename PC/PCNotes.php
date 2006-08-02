@@ -54,8 +54,8 @@ if ( $_SESSION["Me"]->checkConflict($_REQUEST[paperId], $Conf)) {
 // they haven't yet finalized their reviews.
 //
 
-$query="SELECT paperId FROM PrimaryReviewer WHERE "
-. " reviewer=" . $_SESSION["Me"]->contactId. " AND paperId=$_REQUEST[paperId] ";
+$query="select paperId from ReviewRequest where "
+. " contactId=" . $_SESSION["Me"]->contactId . " and paperId=" . $_REQUEST["paperId"] . " and reviewType=" . REVIEW_PRIMARY;
 ;
 
 $result = $Conf->q($query);

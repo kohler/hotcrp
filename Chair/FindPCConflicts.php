@@ -178,7 +178,7 @@ while($pcdata=$rpc->fetchRow(DB_FETCHMODE_ASSOC)) {
       print "<td><TABLE><TR><TH COLSPAN=2 ALIGN='LEFT'>";
 
       $Conf->linkWithPaperId($title,
-			     "../Assistant/AssistantViewSinglePaper.php",
+			     "${ConfSiteBase}paper.php",
 			     $paperId);
       print "</TH></TR>";
 

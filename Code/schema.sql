@@ -322,47 +322,6 @@ insert into PaperStorage set paperId=0, timestamp=0, mimetype='text/plain', pape
 #
 
 
-#
-# Table structure for table 'PrimaryReviewer'
-#
-
-drop table if exists PrimaryReviewer;
-CREATE TABLE PrimaryReviewer (
-  primaryReviewerId int(11) NOT NULL auto_increment,
-  contactId int(11) default NULL,
-  paperId int(11) default NULL,
-  requestMadeOn timestamp(14) NOT NULL,
-  PRIMARY KEY (primaryReviewerId),
-  UNIQUE KEY primaryReviewerId (primaryReviewerId),
-  KEY contactId (contactId),
-  KEY paperId (paperId)
-) TYPE=MyISAM;
-
-#
-# Dumping data for table 'PrimaryReviewer'
-#
-
-
-#
-# Table structure for table 'SecondaryReviewer'
-#
-
-drop table if exists SecondaryReviewer;
-CREATE TABLE SecondaryReviewer (
-  secondaryReviewerId int(11) NOT NULL auto_increment,
-  contactId int(11) default NULL,
-  paperId int(11) default NULL,
-  requestMadeOn timestamp(14) NOT NULL,
-  PRIMARY KEY (secondaryReviewerId),
-  UNIQUE KEY secondaryReviewerId (secondaryReviewerId),
-  KEY contactId (contactId),
-  KEY paperId (paperId)
-) TYPE=MyISAM;
-
-#
-# Dumping data for table 'SecondaryReviewer'
-#
-
 
 drop table if exists PaperReviewerPreference;
 CREATE TABLE PaperReviewerPreference(

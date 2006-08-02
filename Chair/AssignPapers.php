@@ -253,7 +253,7 @@ if ($reviewer >= 0) {
        <td valign="center" align="center"> <? echo mz($allPrimary[$paperId]) ?> </td>
        <td valign="center" align="center"> <? echo mz($allSecondary[$paperId]) ?> </td>
 
-       <td> <a href="../Assistant/AssistantViewSinglePaper.php?paperId=<?echo $paperId?>" target=_blank>
+       <td> <a href="<?php echo $ConfSiteBase ?>paper.php?paperId=<?echo $paperId?>" target=_blank>
 <? echo $title ?> </a>
        <?php
 	  //

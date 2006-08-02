@@ -83,7 +83,7 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     }
     $rf->parseTextFormErrors($tf, $Conf);
     if (isset($_REQUEST['redirect']) && $_REQUEST['redirect'] == 'offline')
-	go("../OfflineReview.php");
+	go("OfflineReview.php");
  }
 
 $paperId = $originalPaperId;
@@ -143,28 +143,28 @@ if (!$Me->timeReview($prow, $Conf))
 	if ($rrow && $rrow->reviewSubmitted > 0)
 	    echo " ", chr(65 + $rrow->reviewOrdinal);
   ?></h2></td>
-  <td class='entry'><h2>for <a href='../paper.php?paperId=<?php echo $paperId ?>'>Paper #<?php echo $paperId ?></a></h2></td>
+  <td class='entry'><h2>for <a href='paper.php?paperId=<?php echo $paperId ?>'>Paper #<?php echo $paperId ?></a></h2></td>
 </tr>
 
 <?php if (isset($rrow) && $Me->contactId != $rrow->contactId) { ?>
 <tr class='rev_type'>
-  <td class='caption'>Reviewer:</td>
+  <td class='caption'>Reviewer</td>
   <td class='entry'><?php echo htmlspecialchars(rowContactText($rrow)) ?></td>
 </tr>
 <?php } ?>
 								
 <tr class='rev_type'>
-  <td class='caption'>Review&nbsp;type:</td>
+  <td class='caption'>Review type</td>
   <td class='entry'><?php echo reviewType($paperId, $prow, true) ?></td>
 </tr>
 
 <tr class='rev_status'>
-  <td class='caption'>Review&nbsp;status:</td>
+  <td class='caption'>Review status</td>
   <td class='entry'><?php echo reviewStatus((isset($rrow) ? $rrow : $prow), true, true) ?></td>
 </tr>
 
 <tr class='rev_download'>
-  <td class='caption'>Offline&nbsp;reviewing:</td>
+  <td class='caption'>Offline reviewing</td>
   <td class='entry'>
     <form class='downloadreviewform' action='ReviewPaper.php' method='get'>
       <input type='hidden' name='paperId' value='<?php echo $paperId ?>' />
@@ -173,7 +173,7 @@ if (!$Me->timeReview($prow, $Conf))
   </td>
 </tr>
 <tr class='rev_upload'>
-  <td></td>
+  <td class='caption'></td>
   <td class='entry'>
     <form class='downloadreviewform' action='ReviewPaper.php?form=1' method='post' enctype='multipart/form-data'>
       <input type='hidden' name='paperId' value='<?php echo $paperId ?>' />
@@ -191,30 +191,30 @@ if (!$Me->timeReview($prow, $Conf))
 </tr>
 
 <tr>
-  <td class='caption'>Status:</td>
+  <td class='caption'>Status</td>
   <td class='entry'><?php echo $Me->paperStatus($paperId, $prow, 1) ?></td>
 </tr>
 
 <?php if ($prow->withdrawn <= 0 && $prow->size > 0) { ?>
 <tr>
-  <td class='caption'>Paper:</td>
+  <td class='caption'>Paper</td>
   <td class='entry'><?php echo paperDownload($paperId, $prow, 1) ?></td>
 </tr>
 <?php } ?>
 
 <tr class='pt_abstract'>
-  <td class='caption'>Abstract:</td>
+  <td class='caption'>Abstract</td>
   <td class='entry'><?php echo htmlFold(htmlspecialchars($prow->abstract), 25) ?></td>
 </tr>
 
 <?php if ($Me->canViewAuthors($prow, $Conf)) { ?>
 <tr class='pt_authors'>
-  <td class='caption'>Authors:</td>
+  <td class='caption'>Authors</td>
   <td class='entry'><?php echo authorTable($prow->authorInformation) ?></td>
 </tr>
 
 <tr class='pt_collaborators'>
-  <td class='caption'>Collaborators:</td>
+  <td class='caption'>Collaborators</td>
   <td class='entry'><?php echo authorTable($prow->collaborators) ?></td>
 </tr>
 <?php } ?>
@@ -222,7 +222,7 @@ if (!$Me->timeReview($prow, $Conf))
 <?php
 if ($topicTable = topicTable($paperId, -1)) { 
     echo "<tr class='pt_topics'>
-  <td class='caption'>Topics:</td>
+  <td class='caption'>Topics</td>
   <td class='entry' id='topictable'>", $topicTable, "</td>
 </tr>\n";
  }
@@ -244,7 +244,7 @@ echo $rf->webFormRows($rrow, 1);
 
 if ($Me->timeReview($prow, $Conf) || $Me->amAssistant()) {
     echo "<tr class='rev_actions'>
-  <td class='caption'>Actions:</td>
+  <td class='caption'></td>
   <td class='entry'><table class='pt_buttons'>
     <tr>\n";
     if (!isset($rrow) || !$rrow->reviewSubmitted) {

@@ -33,7 +33,7 @@ function showPCConflictPapers()
       print "<tr> <th> ";
       echo "<INPUT type=checkbox name=ExistingConflicts[] value=\"", $row['contactId'], "x", $paperId, "\">\n";
       print "$paperId </th> ";
-      print "<td> <a href=\"../Assistant/AssistantViewSinglePaper.php?paperId=$paperId\" target=_blank> $title </a> <br> Conflict indicated for $who </td> ";
+      print "<td> <a href=\"${ConfSiteBase}paper.php?paperId=$paperId\" target=_blank> $title </a> <br> Conflict indicated for $who </td> ";
       print "</tr>\n";
     }
     print "</table>\n";

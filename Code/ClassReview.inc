@@ -91,7 +91,7 @@ class ReviewForm {
 	    $n = htmlspecialchars($this->shortName[$field]);
 	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))
 		$n = preg_replace("/\\s+/", "&nbsp;", $n);
-	    $x .= "$n:</td>\n";
+	    $x .= "$n</td>\n";
 	    
 	    $x .= "  <td class='entry'>";
 	    if (isset($this->options[$field])) {

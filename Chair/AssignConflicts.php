@@ -108,7 +108,7 @@ if (DB::isError($result)) {
        <td> <?php 
 
        $Conf->linkWithPaperId($title,
-			      "../Assistant/AssistantViewSinglePaper.php",
+			      "${ConfSiteBase}paper.php",
 			      $_REQUEST[paperId]);
 			      
        $query2="SELECT ContactInfo.email "

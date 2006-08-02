@@ -300,10 +300,10 @@ class Conference {
       //
       // First, check to see if I have primary requests...
       //
-      $q =  " SELECT Paper.paperId  "
-	. "  FROM PrimaryReviewer join Paper using (paperId) "
-	. "  WHERE PrimaryReviewer.contactId=$contactId AND Paper.withdrawn <= 0 "
-	. "  ORDER BY paperId ";
+      $q =  " select Paper.paperId  "
+	. "  from ReviewRequest join Paper using (paperId) "
+	. "  where ReviewRequest.contactId=$contactId and reviewType=" . REVIEW_PRIMARY . " and Paper.withdrawn <= 0 "
+	. "  order by paperId ";
 
       $result = $this->qe($q);
       if ( !DB::isError($result) ) {
@@ -1043,7 +1043,7 @@ class Conference {
 	    echo "    <div id='header_user'><strong>",
 		htmlspecialchars($_SESSION["Me"]->email),
 		"</strong> &nbsp;|&nbsp; ";
-	    if ($_SESSION["Me"]->amAssistant() || $_SESSION["Me"]->chairContactId > 0)
+	    if (!$_SESSION["Me"]->amAssistant() && $_SESSION["Me"]->chairContactId > 0)
 		echo chairModeLink(), " &nbsp;|&nbsp; ";
 	    echo "<a href='", $ConfSiteBase, "logout.php'>Log&nbsp;out</a></div>\n";
 	}
@@ -1079,7 +1079,7 @@ class Conference {
 	echo "    <div id='footer_conference'><a href='", $ConfSiteBase, "index.php'>", $this->shortName, " Submissions Home</a></div>\n";
 	$Me = $_SESSION["Me"];
 	if ($Me->valid()) {
-	    if ($Me->amAssistant() || $Me->chairContactId > 0)
+	    if (!$Me->amAssistant() && $Me->chairContactId > 0)
 		echo "    <div id='footer_chairmode'>", chairModeLink(), "</div>\n";
 	    echo "    <div id='footer_logout'><a href='", $ConfSiteBase, "logout.php'>Log&nbsp;out</a></div>\n";
 	}
