@@ -528,15 +528,6 @@ if ($newPaper || $canViewAuthors || $Me->amAssistant()) {
 Ludwig van Beethoven (Colorado)
 Zhang, Ping Yen (INRIA)</pre></td>\n";
     echo "</tr>\n\n";
-
-    echo "<tr class='pt_collaborators$authorTRClasses' id='foldco'>\n  <td class='",
-	caption_class("collaborators"), $authorTDClasses,
-	"'>Collaborators</td>\n  <td class='entry$authorTDClasses$textareaClass'>";
-    pt_data("collaborators", 5, true);
-    echo "</td>\n";
-    if ($editable)
-	echo "  <td class='hint$authorTDClasses'>List the authors' recent (~2 years) coauthors and collaborators, and any advisor or student relationships.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td>\n";
-    echo "</tr>\n\n";
 }
 
 
@@ -569,6 +560,19 @@ if ($newPaper) {
     if ($editMode)
 	echo "<a class='button_small' href='contactauthors.php?paperId=$paperId'>Edit&nbsp;contact&nbsp;authors</a>";
     echo "</td>\n</tr>\n\n";
+}
+
+
+// Collaborators
+if ($newPaper || $canViewAuthors || $Me->amAssistant()) {
+    echo "<tr class='pt_collaborators$authorTRClasses' id='foldco'>\n  <td class='",
+	caption_class("collaborators"), $authorTDClasses,
+	"'>Collaborators</td>\n  <td class='entry$authorTDClasses$textareaClass'>";
+    pt_data("collaborators", 5, true);
+    echo "</td>\n";
+    if ($editable)
+	echo "  <td class='hint$authorTDClasses'>List the authors' recent (~2 years) coauthors and collaborators, and any advisor or student relationships.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td>\n";
+    echo "</tr>\n\n";
 }
 
 
