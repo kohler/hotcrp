@@ -67,6 +67,7 @@ If you suspect something fishy, contact the site administrator at\n\
 	    crpmergeone("ReviewRequest", "contactId", $oldid, $newid);
 	    crpmergeone("ReviewRequest", "requestedBy", $oldid, $newid);
 	    crpmergeone("PaperReview", "contactId", $oldid, $newid);
+	    crpmergeone("PaperReview", "requestedBy", $oldid, $newid);
       
 	    //
 	    // Remove the contact record

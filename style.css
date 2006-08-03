@@ -477,16 +477,28 @@ table.pt_buttons td.ptb_button {
 table.pltable th, table.setreviewform th {
 	text-align: left;
         padding-right: 0.25em;
+	vertical-align: bottom;
 }
 table.pltable td {
 	padding-right: 1em;
 }
-table.pltable th.pl_ID {
+table.pltable th.pl_id, table.pltable th.pl_topicMatch {
 	text-align: center;
 }
-table.pltable td.pl_ID, table.pltable td.pl_Selector {
+table.pltable td.pl_id, table.pltable td.pl_selector,
+table.pltable td.pl_topicMatch {
 	text-align: right;
-	padding-right: 0.25em;
+	padding-right: 0.4em;
+}
+table.pltable td.pl_callout {
+	padding-left: 4em;
+}
+span.pl_callouthdr {
+	font-weight: bold;
+	padding-right: 0.5em;
+}
+span.pl_callouthdr:after {
+	content: ":";
 }
 tr.pl_headrow td, tr.pl_headrow th, table.setreviewform th {
 	border-bottom: 1px solid #ccccff;
@@ -526,6 +538,14 @@ div#review table.auview {
 	width: 40%;
 	float: left;
 	margin-bottom: 0.75em;
+}
+
+div#assignpc div.topicinterest {
+	margin-left: 3em;
+}
+form.assignpc {
+	display: block;
+	margin-left: 3em;
 }
 
 span.autblentry {

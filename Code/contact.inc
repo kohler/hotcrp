@@ -48,7 +48,7 @@ class Contact {
 			ChairAssistant.contactId as assistant,
 			Chair.contactId as chair
 		from ContactInfo
-		left join ReviewRequest using (contactId)
+		left join PaperReview using (contactId)
 		left join PaperConflict using (contactId)
 		left join PCMember using (contactId)
 		left join ChairAssistant using (contactId)
@@ -130,8 +130,8 @@ class Contact {
   
     function countRequestedReviews() {
 	global $Conf;
-	$query = "SELECT COUNT(*) FROM ReviewRequest WHERE "
-	    . " asked=' " . $this->contactId . "'";
+	$query = "select count(*) FROM PaperReview WHERE "
+	    . " contactId=" . $this->contactId;
 	$result = $Conf->q($query);
 	if ( !DB::isError($result) && $result->numRows() == 1 ) {
 	    $row = $result->fetchRow();
@@ -143,7 +143,7 @@ class Contact {
     
     function countRequestedPrimary() {
 	global $Conf;
-	$query = "select count(*) from ReviewRequest where "
+	$query = "select count(*) from PaperReview where "
 	    . " contactId=" . $this->contactId . " and reviewType=" . REVIEW_PRIMARY;
 	$result = $Conf->q($query);
 	if ( !DB::isError($result) && $result->numRows() == 1 ) {
@@ -156,8 +156,8 @@ class Contact {
 
     function countRequestedSecondary() {
 	global $Conf;
-	$query = "SELECT COUNT(*) FROM SecondaryReviewer WHERE "
-	    . " contactId=' " . $this->contactId . "'";
+	$query = "select count(*) FROM PaperReview where "
+	    . " contactId=" . $this->contactId . " and reviewType=" . REVIEW_SECONDARY;
 	$result = $Conf->q($query);
 	if ( !DB::isError($result) && $result->numRows() == 1 ) {
 	    $row = $result->fetchRow();

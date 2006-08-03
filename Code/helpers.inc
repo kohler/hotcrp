@@ -141,13 +141,13 @@ function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
 
     if (!isset($row->reviewType) && !$row->reviewId && !$long)
 	return "";
-    else if ($row->reviewSubmitted === null)
+    else if ($row->reviewLastModified == 0)
 	return "<span class='rstat rstat_no'>Not started</span>";
     else if ($row->reviewSubmitted == 0)
 	$x = "<span class='rstat rstat_prog'>In progress</span>";
     else
 	$x = "<span class='rstat rstat_done'>Complete</span>";
-    if ($when && isset($row->reviewLastModified) && $_SESSION["Me"]->isPC)
+    if ($when && $row->reviewLastModified > 0 && $_SESSION["Me"]->isPC)
 	$x .= " <span class='rstat_date'>(" . htmlspecialchars($conf->printableTime(strtotime($row->reviewLastModified))) . ")</span>";
     return $x;
 }
@@ -286,7 +286,7 @@ function contactText($firstName, $lastName=null, $email=null) {
 	$lastName = $firstName[1];
 	$firstName = $firstName[0];
     } else if (is_object($firstName)) {
-	$email = $firstName->email;
+	$email = isset($firstName->email) ? $firstName->email : "";
 	$lastName = $firstName->lastName;
 	$firstName = $firstName->firstName;
     }
@@ -297,10 +297,6 @@ function contactText($firstName, $lastName=null, $email=null) {
     } else
 	$x = $email;
     return $x;
-}
-
-function rowContactText($row) {
-    return contactText($row->firstName, $row->lastName, isset($row->email) ? $row->email : "");
 }
 
 function goPaperForm($baseUrl = "paper.php", $args = array()) {
@@ -515,4 +511,34 @@ function contactPulldown($id, $name, $conf, $contact) {
 	}
 	echo "</select>&nbsp;<a class='button_small' href=\"javascript:fold('${id}', 1)\">Hide</a></span></span>\n";
     }
+}
+
+function actionTab($text, $url, $default) {
+    $sep = "<td class='sep'></td>";
+    if ($default)
+	return "$sep<td class='tab_default' nowrap='nowrap'><a href='$url'>$text</a></td>";
+    else
+	return "$sep<td class='tab' nowrap='nowrap'><a href='$url'>$text</a></td>";
+}
+
+function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
+    global $Me, $Conf;
+    if ($newPaper)
+	$paperId = "new";
+    else
+	$paperId = ($prow == null ? -1 : $prow->paperId);
+    $disableView = (!$newPaper && $paperId < 0);
+
+    $x = "<table class='vubar'><tr><td><table><tr>";
+    if (!$newPaper && $paperId > 0)
+	$x .= actionTab("View", "paper.php?paperId=$paperId&amp;mode=view", $mode == "view");
+    if ($newPaper || ($paperId > 0 && ($prow->author > 0 || $Me->amAssistant())))
+	$x .= actionTab("Edit", "paper.php?paperId=$paperId&amp;mode=edit", $mode == "edit");
+    if (!$newPaper && $prow && ($Me->isPC || $Me->canViewReviews($prow, $Conf)))
+	$x .= actionTab("Reviews" . ($prow ? " ($prow->reviewCount)" : ""), "paper.php?paperId=$paperId&amp;mode=reviews", $mode == "reviews");
+    if ($thisUrl)
+	$x .= actionTab($mode, $thisUrl, true);
+    $xmode = (isset($_REQUEST["mode"]) ? array("mode" => $_REQUEST["mode"]) : array());
+    $x .= "</tr></table></td><td class='spanner'></td><td class='gopaper' nowrap='nowrap'>" . goPaperForm("paper.php", $xmode) . "</td></tr></table>\n";
+    return $x;
 }

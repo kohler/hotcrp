@@ -161,11 +161,11 @@ if ($Me->isPC) { ?>
 	reviewerDeadlines(true, $plist);
     }
 
-    $ptext = $plist->text("reviewRequestsHome", $Me);
-    if ($plist->count > 0) {
-	echo "<tr>\n  <th>Review&nbsp;requests:</th>\n  <td class='plholder'>$ptext</td>\n</tr>\n";
-	reviewerDeadlines(false, $plist);
-    }
+    //    $ptext = $plist->text("reviewRequestsHome", $Me);
+    //    if ($plist->count > 0) {
+    //	echo "<tr>\n  <th>Review&nbsp;requests:</th>\n  <td class='plholder'>$ptext</td>\n</tr>\n";
+    //	reviewerDeadlines(false, $plist);
+    //}
 ?>
 
     </table>

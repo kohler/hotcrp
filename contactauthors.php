@@ -6,35 +6,10 @@ $Me->goIfInvalid();
 
 
 // header
-function actionTab($text, $url, $default) {
-    $sep = "<td class='sep'></td>";
-    if ($default)
-	return "$sep<td class='tab_default' nowrap='nowrap'><a href='$url'>$text</a></td>";
-    else
-	return "$sep<td class='tab' nowrap='nowrap'><a href='$url'>$text</a></td>";
-}
-
-function actionBar($prow) {
-    global $Me, $Conf;
-    $paperId = ($prow == null ? -1 : $prow->paperId);
-    $disableView = $paperId < 0;
-
-    $x = "<table class='vubar'><tr><td><table><tr>";
-    if ($paperId > 0)
-	$x .= actionTab("View", "paper.php?paperId=$paperId&amp;mode=view", false);
-    if ($paperId > 0 && ($prow->author > 0 || $Me->amAssistant()))
-	$x .= actionTab("Edit", "paper.php?paperId=$paperId&amp;mode=edit", false);
-    if ($prow && ($Me->isPC || $Me->canViewReviews($prow, $Conf)))
-	$x .= actionTab("Reviews" . ($prow ? " ($prow->reviewCount)" : ""), "paper.php?paperId=$paperId&amp;mode=reviews", false);
-    $x .= actionTab("Contact Authors", "contactauthors.php?paperId=$paperId", true);
-    $x .= "</tr></table></td><td class='spanner'></td><td class='gopaper' nowrap='nowrap'>" . goPaperForm() . "</td></tr></table>\n";
-    return $x;
-}
-
 function confHeader() {
     global $paperId, $prow, $Conf;
     $title = ($paperId > 0 ? "Paper #$paperId Contact Authors" : "Paper Contact Authors");
-    $Conf->header($title, "contactauthors", actionBar($prow));
+    $Conf->header($title, "contactauthors", actionBar($prow, false, "Contact Authors", "contactauthors.php?paperId=$paperId"));
 }
 
 function errorMsgExit($msg) {

@@ -149,7 +149,7 @@ if (!$Me->timeReview($prow, $Conf))
 <?php if (isset($rrow) && $Me->contactId != $rrow->contactId) { ?>
 <tr class='rev_type'>
   <td class='caption'>Reviewer</td>
-  <td class='entry'><?php echo htmlspecialchars(rowContactText($rrow)) ?></td>
+  <td class='entry'><?php echo htmlspecialchars(contactText($rrow)) ?></td>
 </tr>
 <?php } ?>
 								

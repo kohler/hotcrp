@@ -736,6 +736,7 @@ class Conference {
 	//   "myReviews"	All reviews authored by $contactId
 	//   "myReviewsOpt"	myReviews, + include papers not yet reviewed
 	//   "allReviews"	All reviews (multiple rows per paper)
+	//   "reviewerName"	Include reviewer names
 	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
 
 	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']) || isset($options['myReviewsOpt']);
@@ -743,14 +744,15 @@ class Conference {
 	// fields
 	$pq = "select Paper.*,
 		length(PaperStorage.paper) as size, mimetype, timestamp,
-		max(PaperConflict.author) as author,
-		count(PaperConflict.author) as conflict,
+		PaperConflict.author as author,
+		PaperConflict.author is not null as conflict,
 		count(AllReviews.reviewSubmitted) as reviewCount,
 		count(AllReviews.paperId) as startedReviewCount";
 	if (!isset($options['author']))
 	    $pq .= ",
-		ReviewRequest.reviewType,
+		PaperReview.reviewType,
 		PaperReview.reviewId,
+		PaperReview.reviewLastModified,
 		PaperReview.reviewSubmitted,
 		PaperReview.contactId as reviewContactId";
 	if (isset($options['reviewerName']))
@@ -758,14 +760,20 @@ class Conference {
 		ReviewerContactInfo.firstName as reviewFirstName,
 		ReviewerContactInfo.lastName as reviewLastName,
 		ReviewerContactInfo.email as reviewEmail";
-	if ($reviewerQuery) {
-	    global $reviewFields;
-	    foreach ($reviewFields as $k => $v)
-		$pq .= ",\t\tPaperReview.$k as $k";
-	}
+	//if ($reviewerQuery) {
+	//    global $reviewFields;
+	//    foreach ($reviewFields as $k => $v)
+	//	$pq .= ",\t\tPaperReview.$k as $k";
+	//}
 	if (isset($options['contactAuthors']))
 	    $pq .= ",
 		group_concat(PaperAuthors.contactId) as contactAuthors";
+	if (isset($options['topics']))
+	    $pq .= ",
+		TopicSummary.topicNames";
+	if (isset($options['topicInterestScore']))
+	    $pq .= ",
+		TopicSummary.topicInterestScore";
 
 	// tables
 	$pq .= "
@@ -780,20 +788,28 @@ class Conference {
 	$pq .= "		left join PaperReview as AllReviews on (AllReviews.paperId=Paper.paperId)\n";
 
 	if (isset($options['myReviewRequests']))
-	    $pq .= "		join ReviewRequest on (ReviewRequest.paperId=Paper.paperId and ReviewRequest.requestedBy=$contactId and ReviewRequest.reviewType=" . REVIEW_REQUESTED . ")
-		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
+	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.requestedBy=$contactId and PaperReview.reviewType=" . REVIEW_REQUESTED . ")\n";
 	else if (isset($options['allReviews']))
-	    $pq .= "		left join ReviewRequest on (ReviewRequest.paperId=Paper.paperId)
-		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
+	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
 	else if (!isset($options['author']))
-	    $pq .= "		left join ReviewRequest on (ReviewRequest.paperId=Paper.paperId and ReviewRequest.contactId=$contactId)
-		left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$contactId)\n";
+	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$contactId)\n";
 
 	if (isset($options['reviewerName']))
 	    $pq .= "		left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperReview.contactId)\n";
 	
 	if (isset($options['contactAuthors']))
 	    $pq .= "		left join PaperConflict as PaperAuthors on (PaperAuthors.paperId=Paper.paperId and PaperAuthors.author>0)\n";
+
+	if (isset($options['topics']) || isset($options['topicInterestScore'])) {
+	    $subq = "select paperId";
+	    if (isset($options['topics']))
+		$subq .= ", group_concat(concat_ws(' ::', topicName, interest) order by topicName separator ', ') as topicNames";
+	    if (isset($options['topicInterestScore']))
+		$subq .= ", sum(if(interest=2,2,interest-1)) as topicInterestScore";
+	    $subq .= " from TopicArea join PaperTopic using (topicId) left join TopicInterest on (TopicInterest.topicId=TopicArea.topicId and contactId=$contactId) group by paperId";
+	    $pq .= "		left join ($subq) as TopicSummary on (TopicSummary.paperId=Paper.paperId)\n";
+	}
+
 
 	// conditions
 	if (isset($options['paperId'])) {
@@ -811,8 +827,6 @@ class Conference {
 	    $where[] = "acknowledged>0";
 	    $where[] = "withdrawn<=0";
 	}
-	if ($reviewerQuery && !isset($options['myReviewsOpt']))
-	    $where[] = "(ReviewRequest.reviewType or PaperReview.reviewId)";
 	
 	if (isset($where))
 	    $pq .= "		where " . join(" and ", $where) . "\n";
@@ -829,7 +843,7 @@ class Conference {
 	    if ($reviewerQuery)
 		$pq .= ", PaperReview.reviewId";
 	}
-	
+
 	return $pq . "\n";
     }
 
@@ -861,115 +875,6 @@ class Conference {
     }
 
 
-
-    function reviewQuery($contactId, $options = array()) {
-	// Options:
-	//   "paperId" => $pid	Only paperId $pid (if array, any of those)
-	//   "finalized"	Only submitted papers
-	//   "author"		Only papers authored by $contactId
-	//   "myReviewRequests"	Only reviews requested by $contactId
-	//   "contactAuthors"	Include comma-separated list of contact author
-	//			contactIds as $row->contactAuthors
-	//   "myReviews"	All reviews authored by $contactId
-	//   "myReviewsOpt"	myReviews, + include papers not yet reviewed
-	//   "allReviews"	All reviews (multiple rows per paper)
-	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
-
-	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']) || isset($options['myReviewsOpt']);
-
-	// fields
-	$pq = "select Paper.*,
-		length(PaperStorage.paper) as size, mimetype, timestamp,
-		max(PaperConflict.author) as author,
-		count(PaperConflict.author) as conflict,
-		count(AllReviews.reviewSubmitted) as reviewCount,
-		count(AllReviews.paperId) as startedReviewCount";
-	if (!isset($options['author']))
-	    $pq .= ",
-		ReviewRequest.reviewType,
-		PaperReview.reviewId,
-		PaperReview.reviewSubmitted,
-		PaperReview.contactId as reviewContactId";
-	if (isset($options['reviewerName']))
-	    $pq .= ",
-		ReviewerContactInfo.firstName as reviewFirstName,
-		ReviewerContactInfo.lastName as reviewLastName,
-		ReviewerContactInfo.email as reviewEmail";
-	if ($reviewerQuery) {
-	    global $reviewFields;
-	    foreach ($reviewFields as $k => $v)
-		$pq .= ",\t\tPaperReview.$k as $k";
-	}
-	if (isset($options['contactAuthors']))
-	    $pq .= ",
-		group_concat(PaperAuthors.contactId) as contactAuthors";
-
-	// tables
-	$pq .= "
-		from Paper
-		left join PaperStorage using (paperStorageId)\n";
-	
-	if (isset($options['author']))
-	    $pq .= "		join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.author>0 and PaperConflict.contactId=$contactId)\n";
-	else
-	    $pq .= "		left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)\n";
-	
-	$pq .= "		left join PaperReview as AllReviews on (AllReviews.paperId=Paper.paperId)\n";
-
-	if (isset($options['myReviewRequests']))
-	    $pq .= "		join ReviewRequest on (ReviewRequest.paperId=Paper.paperId and ReviewRequest.requestedBy=$contactId and ReviewRequest.reviewType=" . REVIEW_REQUESTED . ")
-		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
-	else if (isset($options['allReviews']))
-	    $pq .= "		left join ReviewRequest on (ReviewRequest.paperId=Paper.paperId)
-		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
-	else if (!isset($options['author']))
-	    $pq .= "		left join ReviewRequest on (ReviewRequest.paperId=Paper.paperId and ReviewRequest.contactId=$contactId)
-		left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$contactId)\n";
-
-	if (isset($options['reviewerName']))
-	    $pq .= "		left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperReview.contactId)\n";
-	
-	if (isset($options['contactAuthors']))
-	    $pq .= "		left join PaperConflict as PaperAuthors on (PaperAuthors.paperId=Paper.paperId and PaperAuthors.author>0)\n";
-
-	// conditions
-	if (isset($options['paperId'])) {
-	    if (is_array($options['paperId'])) {
-		foreach ($options['paperId'] as $pid)
-		    if (($pid = cvtint($pid)) > 0)
-			$pids[] = "Paper.paperId=$pid";
-		if (count($pids) == 0)
-		    $pids[] = "Paper.paperId=0";
-		$where[] = "(" . join(" or ", $pids) . ")";
-	    } else if ($options['paperId'] > 0)
-		$where[] = "Paper.paperId=" . $options['paperId'];
-	}
-	if (isset($options['finalized'])) {
-	    $where[] = "acknowledged>0";
-	    $where[] = "withdrawn<=0";
-	}
-	if ($reviewerQuery && !isset($options['myReviewsOpt']))
-	    $where[] = "(ReviewRequest.reviewType or PaperReview.reviewId)";
-	
-	if (isset($where))
-	    $pq .= "		where " . join(" and ", $where) . "\n";
-
-	// grouping and ordering
-	if ($reviewerQuery)
-	    $pq .= "		group by PaperReview.reviewId, Paper.paperId\n";
-	else
-	    $pq .= "		group by Paper.paperId\n";
-	if (isset($options['order']) && $options['order'] != "order by Paper.paperId")
-	    $pq .= "		" . $options['order'];
-	else {
-	    $pq .= "		order by Paper.paperId";
-	    if ($reviewerQuery)
-		$pq .= ", PaperReview.reviewId";
-	}
-	
-	return $pq . "\n";
-    }
-    
 
     //
     // Message routines
@@ -1526,7 +1431,7 @@ class Conference {
 		    print "They have high interest in ";
 		    print "<ul>";
 		    while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
-			print "<li> " . $row[topicName] . "</li>";
+			print "<li> " . $row["topicName"] . "</li>";
 		    }
 		    print "</ul>";
 		    print "</td> </tr>";
@@ -1542,7 +1447,7 @@ class Conference {
 		    print "They have medium interest in ";
 		    print "<ul>";
 		    while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
-			print "<li> " . $row[topicName] . "</li>";
+			print "<li> " . $row["topicName"] . "</li>";
 		    }
 		    print "</ul>";
 		    print "</td> </tr>";
@@ -1558,7 +1463,7 @@ class Conference {
 		    print "They have NO interest in ";
 		    print "<ul>";
 		    while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
-			print "<li> " . $row[topicName] . "</li>";
+			print "<li> " . $row["topicName"] . "</li>";
 		    }
 		    print "</ul>";
 		    print "</td> </tr>";

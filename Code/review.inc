@@ -102,7 +102,7 @@ class ReviewForm {
 		    $x .= "    <option value='$num'";
 		    if ($num == $fval)
 			$x .= " selected='selected'";
-		    $x .= ">$num. " . htmlspecialchars($what) . "</option>\n";
+		    $x .= "><b>$num.</b> " . htmlspecialchars($what) . "</option>\n";
 		}
 		$x .= "</select>";
 	    } else {
@@ -195,7 +195,7 @@ class ReviewForm {
 	if ($rrow)
 	    return $conf->qe("update PaperReview set " . substr($q, 0, -2) . ", reviewLastModified=current_timestamp where reviewId=$rrow->reviewId", "while storing review");
 	else
-	    return $conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contactId, " . substr($q, 0, -2), ", reviewLastModified=current_timestamp while storing review");
+	    return $conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contactId, requestedOn=current_timestamp, " . substr($q, 0, -2), ", reviewLastModified=current_timestamp while storing review");
     }
 
 

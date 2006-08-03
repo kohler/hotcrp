@@ -6,41 +6,13 @@ $Me->goIfInvalid();
 
 
 // header
-function actionTab($text, $url, $default) {
-    $sep = "<td class='sep'></td>";
-    if ($default)
-	return "$sep<td class='tab_default' nowrap='nowrap'><a href='$url'>$text</a></td>";
-    else
-	return "$sep<td class='tab' nowrap='nowrap'><a href='$url'>$text</a></td>";
-}
-
-function actionBar($prow) {
-    global $newPaper, $Me, $Conf, $editMode, $viewMode, $reviewsMode;
-    if ($newPaper)
-	$paperId = "new";
-    else
-	$paperId = ($prow == null ? -1 : $prow->paperId);
-    $disableView = (!$newPaper && $paperId < 0);
-
-    $x = "<table class='vubar'><tr><td><table><tr>";
-    if (!$newPaper && $paperId > 0)
-	$x .= actionTab("View", "paper.php?paperId=$paperId&amp;mode=view", $viewMode);
-    if ($newPaper || ($paperId > 0 && ($prow->author > 0 || $Me->amAssistant())))
-	$x .= actionTab("Edit", "paper.php?paperId=$paperId&amp;mode=edit", $editMode);
-    if (!$newPaper && $prow && ($Me->isPC || $Me->canViewReviews($prow, $Conf)))
-	$x .= actionTab("Reviews" . ($prow ? " ($prow->reviewCount)" : ""), "paper.php?paperId=$paperId&amp;mode=reviews", $reviewsMode);
-    $mode = (isset($_REQUEST["mode"]) ? array("mode" => $_REQUEST["mode"]) : array());
-    $x .= "</tr></table></td><td class='spanner'></td><td class='gopaper' nowrap='nowrap'>" . goPaperForm("paper.php", $mode) . "</td></tr></table>\n";
-    return $x;
-}
-
 function confHeader() {
-    global $paperId, $newPaper, $prow, $Conf;
+    global $paperId, $newPaper, $prow, $mode, $Conf;
     if ($paperId > 0)
 	$title = "Paper #$paperId";
     else
 	$title = ($newPaper ? "New Paper" : "Paper View");
-    $Conf->header($title, "paper", actionBar($prow));
+    $Conf->header($title, "paper", actionBar($prow, $newPaper, $mode));
 }
 
 function errorMsgExit($msg) {
@@ -62,13 +34,11 @@ else
 
 
 // mode
-$editMode = $viewMode = $reviewsMode = false;
+$mode = "view";
 if ($newPaper || (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "edit"))
-    $editMode = true;
+    $mode = "edit";
 else if (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "reviews")
-    $reviewsMode = true;
-else
-    $viewMode = true;
+    $mode = "reviews";
 
 
 // general error messages
@@ -89,11 +59,10 @@ function getProw($contactId) {
 if (!$newPaper) {
     getProw($Me->contactId);
     // perfect mode: default to edit for non-submitted papers
-    if ($viewMode && (!isset($_REQUEST["mode"]) || $_REQUEST["mode"] != "view")
-	&& $prow->author > 0 && $prow->acknowledged <= 0) {
-	$editMode = true;
-	$viewMode = false;
-    }
+    if ($mode == "view"
+	&& (!isset($_REQUEST["mode"]) || $_REQUEST["mode"] != "view")
+	&& $prow->author > 0 && $prow->acknowledged <= 0)
+	$mode = "edit";
 }
 
 
@@ -312,6 +281,24 @@ if (isset($_REQUEST["revive"]) && !$newPaper) {
 }
 
 
+// set outcome
+if (isset($_REQUEST['setoutcome'])) {
+    if (!$Me->canSetOutcome($prow))
+	$Conf->errorMsg("You cannot set the outcome for paper #$paperId" . ($Me->amAssistant() ? " (but you could if you entered chair mode)" : "") . ".");
+    else {
+	$o = cvtint(trim($_REQUEST['outcome']));
+	$rf = reviewForm();
+	if (isset($rf->options['outcome'][$o])) {
+	    $result = $Conf->qe("update Paper set outcome=$o where paperId=$paperId", "while changing outcome");
+	    if (!DB::isError($result))
+		$Conf->confirmMsg("Outcome for paper #$paperId set to " . htmlspecialchars($rf->options['outcome'][$o]) . ".");
+	} else
+	    $Conf->errorMsg("Bad outcome value!");
+	$prow = $Conf->paperRow($paperId, $Me->contactId);
+    }
+}
+
+
 // messages for the author
 function deadlineIs($dname, $conf) {
     $deadline = $conf->printableEndTime($dname);
@@ -324,7 +311,7 @@ function deadlineIs($dname, $conf) {
 }
 
 $override = ($Me->amAssistant() ? "  As PC Chair, you can override this deadline using the \"Override deadlines\" checkbox." : "");
-if (!$editMode)
+if ($mode != "edit")
     /* do nothing */;
 else if ($newPaper) {
     $timeStart = $Conf->timeStartPaper();
@@ -349,28 +336,11 @@ else if ($newPaper) {
     else if ($prow->withdrawn <= 0)
 	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting this paper has passed.  The paper will not be considered.$submitDeadline$override");
 } else if ($prow->author > 0) {
-    $override2 = ($Me->amAssistant() ? "  As PC Chair, you can unsubmit the paper, which will allow further changes, using the \"Undo Submit\" button." : "");
+    $override2 = ($Me->amAssistant() ? "  As PC Chair, you can unsubmit the paper, which will allow further changes, using the \"Undo submit\" button." : "");
     $Conf->infoMsg("This paper has been submitted and can no longer be changed.  You can still withdraw the paper or add contact authors, allowing others to view reviews as they become available.$override2");
 }
-if ($editMode && !$newPaper && !$prow->author)
+if ($mode == "edit" && !$newPaper && !$prow->author)
     $Conf->infoMsg("You are not an author of this paper, but can still make changes as PC Chair.");
-
-
-if (isset($_REQUEST['setoutcome'])) {
-    if (!$Me->canSetOutcome($prow))
-	$Conf->errorMsg("You cannot set the outcome for paper #$paperId" . ($Me->amAssistant() ? " (but you could if you entered chair mode)" : "") . ".");
-    else {
-	$o = cvtint(trim($_REQUEST['outcome']));
-	$rf = reviewForm();
-	if (isset($rf->options['outcome'][$o])) {
-	    $result = $Conf->qe("update Paper set outcome=$o where paperId=$paperId", "while changing outcome");
-	    if (!DB::isError($result))
-		$Conf->confirmMsg("Outcome for paper #$paperId set to " . htmlspecialchars($rf->options['outcome'][$o]) . ".");
-	} else
-	    $Conf->errorMsg("Bad outcome value!");
-	$prow = $Conf->paperRow($paperId, $Me->contactId);
-    }
-}
 
 
 confHeader();
@@ -385,7 +355,7 @@ function caption_class($what) {
 }
 
 function pt_data($what, $rows, $authorTable = false) {
-    global $editMode, $editable, $newPaper, $prow, $useRequest;
+    global $mode, $editable, $newPaper, $prow, $useRequest;
     if ($editable)
 	echo "<textarea class='textlite' name='$what' rows='$rows' cols='80' onchange='highlightUpdate()'>";
     if ($useRequest)
@@ -404,7 +374,7 @@ function pt_data($what, $rows, $authorTable = false) {
 
 
 // begin table
-if ($editMode) {
+if ($mode == "edit") {
     echo "<form method='post' action=\"paper.php?paperId=",
 	($newPaper ? "new" : $paperId),
 	"&amp;post=1&amp;mode=edit\" enctype='multipart/form-data'>";
@@ -412,7 +382,7 @@ if ($editMode) {
 			      && ($Conf->timeUpdatePaper() || $Me->amAssistant()));
 } else
     $editable = false;
-echo "<table class='paper", ($editMode ? " editpaper" : ""), "'>\n\n";
+echo "<table class='paper", ($mode == "edit" ? " editpaper" : ""), "'>\n\n";
 $textareaClass = ($editable ? " textarea" : "");
 
 
@@ -427,7 +397,7 @@ if (!$newPaper) {
 if (!$newPaper) {
     echo "<tr id='foldst' class='fold1ed'>\n  <td class='caption'>Status</td>\n";
     echo "  <td class='entry'>", $Me->paperStatus($paperId, $prow, 1);
-    if ($reviewsMode)
+    if ($mode == "reviews")
 	echo "&nbsp;&nbsp;&nbsp; ",
 	    "<a href=\"javascript:fold(['st','pa','ab','sa','ca','au','co','to'], 0, 1)\" class='button_small unfolder1'>Show&nbsp;paper&nbsp;information</a>",
 	    "<a href=\"javascript:fold(['st','pa','ab','sa','ca','au','co','to'], 1, 1)\" class='button_small folder1'>Hide&nbsp;paper&nbsp;information</a>";
@@ -435,7 +405,7 @@ if (!$newPaper) {
 	echo "<br/>\nYou are an <span class='author'>author</span> of this paper.";
     else if ($Me->isPC && $prow->conflict > 0)
 	echo "<br/>\nYou have a <span class='conflict'>conflict</span> with this paper.";
-    if ($prow->reviewType != null && $viewMode) {
+    if ($prow->reviewType != null && $mode == "view") {
 	if ($prow->reviewType == REVIEW_PRIMARY)
 	    echo "<br/>\nYou are a primary reviewer for this paper.";
 	else if ($prow->reviewType == REVIEW_SECONDARY)
@@ -460,7 +430,7 @@ if ($editable) {
 
 
 // Paper information folding
-if ($reviewsMode) {
+if ($mode == "reviews") {
     $trClasses = " fold1ed";
     $tdClasses = " extension1";
 } else
@@ -475,7 +445,7 @@ if ($newPaper || ($prow->withdrawn <= 0 && ($editable || $prow->size > 0))) {
     echo "  <td class='entry", $tdClasses, "'>";
     if (!$newPaper && $prow->size > 0)
 	echo paperDownload($paperId, $prow, 1);
-    if ($newPaper || ($editMode && $prow->acknowledged <= 0)) {
+    if ($newPaper || ($mode == "edit" && $prow->acknowledged <= 0)) {
 	if (!$newPaper && $prow->size > 0)
 	    echo "<br/>\n    ";
 	echo "<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='", ($newPaper ? 30 : 30), "' />";
@@ -483,7 +453,7 @@ if ($newPaper || ($prow->withdrawn <= 0 && ($editable || $prow->size > 0))) {
 	    echo "&nbsp;<input class='button' type='submit' name='upload' value='Upload paper' />";
     }
     echo "</td>\n";
-    if ($newPaper || ($editMode && $prow->acknowledged <= 0))
+    if ($newPaper || ($mode == "edit" && $prow->acknowledged <= 0))
 	echo "  <td class='hint$tdClasses'>Max size: ", ini_get("upload_max_filesize"), "B</td>\n";
     echo "</tr>\n\n";
 }
@@ -499,7 +469,7 @@ echo "</td>\n</tr>\n\n";
 
 // Author area
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf);
-if ($editMode && $Me->amAssistant())
+if ($mode == "edit" && $Me->amAssistant())
     $canViewAuthors = true;
 if (!$canViewAuthors && $Me->amAssistant()) {
     $authorFolders = "['sa','ca','au','co']";
@@ -557,7 +527,7 @@ if ($newPaper) {
 	}
 	echo authorTable($aus, false);
     }
-    if ($editMode)
+    if ($mode == "edit")
 	echo "<a class='button_small' href='contactauthors.php?paperId=$paperId'>Edit&nbsp;contact&nbsp;authors</a>";
     echo "</td>\n</tr>\n\n";
 }
@@ -578,7 +548,7 @@ if ($newPaper || $canViewAuthors || $Me->amAssistant()) {
 
 // Topics
 $topicMode = (int) $useRequest;
-if (!$editMode || (!$newPaper && ($prow->acknowledged > 0 || $prow->withdrawn > 0)))
+if ($mode != "edit" || (!$newPaper && ($prow->acknowledged > 0 || $prow->withdrawn > 0)))
     $topicMode = -1;
 if ($topicTable = topicTable($paperId, $topicMode, $Conf)) { 
     echo "<tr class='pt_topics$trClasses' id='foldto'>
@@ -588,7 +558,7 @@ if ($topicTable = topicTable($paperId, $topicMode, $Conf)) {
 
 
 // PC conflicts
-if (!$editMode && $Me->amAssistant()) {
+if ($mode != "edit" && $Me->amAssistant()) {
     $q = "select firstName, lastName
 	from ContactInfo
 	join PCMember using (contactId)
@@ -606,7 +576,7 @@ if (!$editMode && $Me->amAssistant()) {
 
 
 // Outcome
-if (!$editMode && $Me->canSetOutcome($prow)) {
+if ($mode != "edit" && $Me->canSetOutcome($prow)) {
     echo "<tr class='pt_outcome'>
   <td class='caption'>Outcome</td>
   <td class='entry'><form method='get' action='paper.php'><div class='inform'><input type='hidden' name='paperId' value='$paperId' /><select class='outcome' name='outcome'>\n";
@@ -622,7 +592,7 @@ if (!$editMode && $Me->canSetOutcome($prow)) {
 
 
 // Collect reviews, review scores
-if ($reviewsMode) {
+if ($mode == "reviews") {
     $rrows = array();
     $showReviews = $Me->canViewReviews($prow, $Conf, $whyNot);
     if (!$showReviews) {
@@ -651,7 +621,7 @@ if ($reviewsMode) {
 
 
 // Submit button
-if ($editMode) {
+if ($mode == "edit") {
     echo "<tr class='pt_edit'>
   <td class='caption'></td>
   <td class='entry'><table class='pt_buttons'>\n";
@@ -692,13 +662,13 @@ if ($editMode) {
 // End paper view
 echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>
 </table>\n";
-if ($editMode)
+if ($mode == "edit")
     echo "</form>\n";
 echo "<div class='clear'></div>\n\n";
 
 
 // Reviews
-if (!$newPaper && $reviewsMode && $prow->reviewCount > 0) {
+if (!$newPaper && $mode == "reviews" && $prow->reviewCount > 0) {
     if ($Me->canViewReviews($prow, $Conf, $whyNot)) {
 	$rf = reviewForm();
 	$q = "select PaperReview.*,
