@@ -20,6 +20,8 @@ class PaperList {
     const FIELD_TOPIC_INTEREST = 36;
     const FIELD_TOPIC_NAMES = 37;
     const FIELD_ALL_REVIEWER_NAMES = 38;
+    const FIELD_REVIEWER_PREFERENCE = 39;
+    const FIELD_EDIT_REVIEWER_PREFERENCE = 40;
 
     var $showHeader;
     var $sortField;
@@ -66,6 +68,10 @@ class PaperList {
 	case self::FIELD_ALL_REVIEWER_NAMES:
 	    $queryOptions['reviewList'] = 1;
 	    break;
+	case self::FIELD_REVIEWER_PREFERENCE:
+	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
+	    $queryOptions['reviewerPreference'] = 1;
+	    break;
 	}
 	if ($this->sortField == $fieldId && ($order = $this->sort($fieldId)))
 	    $queryOptions['order'] = $order;
@@ -94,6 +100,9 @@ class PaperList {
 	    return "order by PaperReview.reviewType $down, Paper.paperId $up";
 	case self::FIELD_TOPIC_INTEREST:
 	    return "order by topicInterestScore $down, Paper.paperId $up";
+	case self::FIELD_REVIEWER_PREFERENCE:
+	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
+	    return "order by reviewerPreference $down";
 	default:
 	    return null;
 	}
@@ -135,6 +144,9 @@ class PaperList {
 		return "Reviewers";
 	    else
 		return "Reviewers (" . count($reviewList[$row->paperId]) . ")";
+	case self::FIELD_REVIEWER_PREFERENCE:
+	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
+	    return "Preference";
 	default:
 	    return "&lt;$fieldId&gt;?";
 	}
@@ -215,6 +227,11 @@ class PaperList {
 			    $n .= "<sub><b>2</b></sub>";
 		    }
 	    return $n;
+	case self::FIELD_REVIEWER_PREFERENCE:
+	    return (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
+	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
+	    $x = (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
+	    return "<input class='textlite revpref' type='text' size='4' name='revpref$row->paperId' value=\"$x\" />";
 	default:
 	    return "";
 	}

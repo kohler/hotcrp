@@ -486,7 +486,7 @@ table.pltable th.pl_id, table.pltable th.pl_topicMatch {
 	text-align: center;
 }
 table.pltable td.pl_id, table.pltable td.pl_selector,
-table.pltable td.pl_topicMatch {
+table.pltable td.pl_topicMatch, table.pltable td.pl_reviewPreference {
 	text-align: right;
 	padding-right: 0.4em;
 }

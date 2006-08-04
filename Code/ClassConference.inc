@@ -774,6 +774,9 @@ class Conference {
 	if (isset($options['topicInterestScore']))
 	    $pq .= ",
 		TopicSummary.topicInterestScore";
+	if (isset($options['reviewerPreference']))
+	    $pq .= ",
+		PaperReviewPreference.preference as reviewerPreference";
 
 	// tables
 	$pq .= "
@@ -789,6 +792,8 @@ class Conference {
 
 	if (isset($options['myReviewRequests']))
 	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.requestedBy=$contactId and PaperReview.reviewType=" . REVIEW_REQUESTED . ")\n";
+	else if (isset($options['myReviews']))
+	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$contactId)\n";
 	else if (isset($options['allReviews']))
 	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
 	else if (!isset($options['author']))
@@ -809,6 +814,9 @@ class Conference {
 	    $subq .= " from TopicArea join PaperTopic using (topicId) left join TopicInterest on (TopicInterest.topicId=TopicArea.topicId and contactId=$contactId) group by paperId";
 	    $pq .= "		left join ($subq) as TopicSummary on (TopicSummary.paperId=Paper.paperId)\n";
 	}
+
+	if (isset($options['reviewerPreference']))
+	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$contactId)\n";
 
 
 	// conditions

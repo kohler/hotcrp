@@ -163,13 +163,13 @@ CREATE TABLE Paper (
 drop table if exists PaperComments;
 CREATE TABLE PaperComments (
   commentId int(11) NOT NULL auto_increment,
-  contactId int(11) default NULL,
-  paperId int(11) default NULL,
+  contactId int(11) NOT NULL,
+  paperId int(11) NOT NULL,
   time timestamp(14) NOT NULL,
-  comment text,
-  forReviewers int(11) default '0',
-  forAuthor int(11) default '0',
-  PRIMARY KEY  (commentId),
+  comment text NOT NULL default '',
+  forReviewers tinyint(11) NOT NULL default 0,
+  forAuthor tinyint(11) NOT NULL default 0,
+  PRIMARY KEY (commentId),
   UNIQUE KEY commentId (commentId),
   KEY contactId (contactId),
   KEY paperId (paperId)
@@ -330,13 +330,13 @@ insert into PaperStorage set paperId=0, timestamp=0, mimetype='text/plain', pape
 
 
 
-drop table if exists PaperReviewerPreference;
-CREATE TABLE PaperReviewerPreference(
-  preferenceId int(11) NOT NULL auto_increment,
-  paperId int(11) default NULL,
-  contactId int(11) default NULL,
-  PRIMARY KEY (preferenceId),
-  UNIQUE KEY preferenceId (preferenceId)
+drop table if exists PaperReviewPreference;
+CREATE TABLE PaperReviewPreference (
+  paperId int(11) NOT NULL,
+  contactId int(11) NOT NULL,
+  preference int(4) NOT NULL default 0,
+  KEY paperId (paperId),
+  KEY contactId (contactId)
 ) TYPE=MyISAM;
 
 
@@ -531,6 +531,8 @@ insert into PaperFields set fieldId=35, fieldName='reviewAssignment', descriptio
 insert into PaperFields set fieldId=36, fieldName='topicMatch', description='Topic interest score';
 insert into PaperFields set fieldId=37, fieldName='topicNames', description='Topic names', sortable=0, display=2;
 insert into PaperFields set fieldId=38, fieldName='reviewerNames', description='Reviewer names', sortable=0, display=2;
+insert into PaperFields set fieldId=39, fieldName='reviewPreference', description='Review preference';
+insert into PaperFields set fieldId=40, fieldName='editReviewPreference', description='Edit review preference';
 
 insert into PaperList set paperListId=1, paperListName='author',
 	shortDescription='Authored', description='Authored papers', 
@@ -593,7 +595,18 @@ insert into PaperList set paperListId=8, paperListName='reviewAssignment',
 	queryType='pc', sortCol=3, query='';
 insert into PaperListColumns set paperListId=8, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=8, fieldId=11, col=1;
-insert into PaperListColumns set paperListId=8, fieldId=36, col=2;
-insert into PaperListColumns set paperListId=8, fieldId=35, col=3;
-insert into PaperListColumns set paperListId=8, fieldId=37, col=4;
-insert into PaperListColumns set paperListId=8, fieldId=38, col=5;
+insert into PaperListColumns set paperListId=8, fieldId=39, col=2;
+insert into PaperListColumns set paperListId=8, fieldId=36, col=3;
+insert into PaperListColumns set paperListId=8, fieldId=35, col=4;
+insert into PaperListColumns set paperListId=8, fieldId=37, col=5;
+insert into PaperListColumns set paperListId=8, fieldId=38, col=6;
+
+insert into PaperList set paperListId=9, paperListName='editReviewPreference',
+	description='Edit reviewer preferences',
+	queryType='pc', sortCol=3, query='';
+insert into PaperListColumns set paperListId=9, fieldId=1, col=0;
+insert into PaperListColumns set paperListId=9, fieldId=11, col=1;
+insert into PaperListColumns set paperListId=9, fieldId=36, col=2;
+insert into PaperListColumns set paperListId=9, fieldId=35, col=3;
+insert into PaperListColumns set paperListId=9, fieldId=40, col=4;
+insert into PaperListColumns set paperListId=9, fieldId=37, col=5;
