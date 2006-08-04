@@ -41,11 +41,6 @@ if (!IsSet($_REQUEST['paperId']) || $_REQUEST['paperId'] == 0) {
     print "<tr>";
     if ( $_SESSION['Me'] -> isChair ) {
       print "<td>";
-      $Conf->linkWithPaperId("Delete Paper",
-			     "../Chair/DeletePaper2.php",
-			     $_REQUEST['paperId']);
-      print "</td>";
-      print "<td>";
       $Conf->linkWithPaperId("Modify Paper",
 			     "../paper.php",
 			     $_REQUEST['paperId']);

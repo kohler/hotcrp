@@ -281,6 +281,7 @@ if (isset($_REQUEST['delete'])) {
 	// mail first, before contact info goes away
 	$message = wordwrap("Your $Conf->shortName paper submission #$paperId, \"$prow->title\", has been removed from the conference database by the program chairs.  This is usually done to remove duplicate entries or submissions.  Contact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
 	$Conf->emailContactAuthors($paperId, "Paper #$paperId deleted", $message);
+	// XXX email self?
 
 	$error = false;
 	foreach (array('Paper', 'PaperStorage', 'PaperComments', 'PaperConflict', 'PaperGrade', 'PaperReview', 'PaperReviewSubmission', 'PaperReviewPreference', 'PaperTopic') as $table) {

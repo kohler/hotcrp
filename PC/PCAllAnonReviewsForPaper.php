@@ -171,10 +171,6 @@ if ( $doTable ) {
     print $Conf->buttonWithPaperId("Modify Paper",
 				   "../paper.php",
 				   $_REQUEST["paperId"]);
-    print "</td><td>\n";
-    print $Conf->buttonWithPaperId("Delete Paper\n (requires confirmation) ",
-				   "../Chair/DeletePaper2.php",
-				   $_REQUEST["paperId"]);
     print "</td>\n";
   }
 

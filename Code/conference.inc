@@ -1262,85 +1262,14 @@ class Conference {
 	       "-f$this->emailFrom");
     }
 
-  function deletePaper($paperId, $verbose = 1)
-    {
-      $tables = array(
-		      'PaperStorage',
-		      'Paper',
-		      'PaperAuthor',
-		      'PaperConflict',
-		      'PaperTopic',
-		      'ReviewRequest',
-		      'PaperReview',
-		      'PaperReviewerPreference'
-		      );
-      foreach ($tables as $table ) {
-	$result = $this->q("DELETE FROM $table WHERE paperId='$paperId'");
-	if ( DB::isError($result)) {
-	  if ( $verbose ) {
-	    $this->errorMsg("Unable to delete from $table: " . $result->getMessage());
-	  }
-	} else {
-	  //	  $this->infoMsg("Deleted " . $this->DB->affectedRows() . " records from $table");
-	}
-      }
 
-      $this->log("Delete paper $paperId", $_SESSION["Me"]);
-    }
+    function log($text, $who) {
+	global $REMOTE_ADDR;
 
-  function sendPaperDeleteNotice($paperId)
-    {
-      $query = "SELECT Paper.title, Paper.abstract, Paper.authorInformation, "
-	. " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email "
-	. " FROM Paper,ContactInfo WHERE Paper.paperId=$paperId AND ContactInfo.contactId=Paper.contactId ";
-      $result = $this->qe($query);
-
-      if ( DB::isError($result) ) {
-	$this->errorMsg("That's odd - paper #$paperId isn't suitable for deleting. "
-			. $result->getMessage());
-      } 
-
-      $row = $result->fetchRow();
-      $i = 0;
-      $title = $this->safeHtml($row[$i++]);
-      $abstract = $this->safeHtml($row[$i++]);
-      $authorInfo = $this->safeHtml($row[$i++]);
-      $first = $this->safeHtml($row[$i++]);
-      $last = $this->safeHtml($row[$i++]);
-      $email = $this->safeHtml($row[$i++]);
-
-      $message = "This is a confirmation notice that your paper #$paperId titled\n"
-	. " $title\n"
-	. "\n"
-	. "has been removed from the $this->shortName conference database.\n"
-	. "This is usually done to remove duplicate entries or submissions.\n"
-	. "This was done by the program chair - if you have questions, contact them\n"
-	. "by sending email to $this->contactEmail\n"
-	;
-
-      if ($this->allowEmailTo($email))
-	  mail($email,
-	       "[$this->shortName] Paper #$paperId removed",
-	       $message,
-	       "From: $this->emailFrom",
-	       "-f$this->emailFrom");
-
-      if ($this->allowEmailTo($this->contactEmail))
-	  mail($this->contactEmail,
-	       "[$this->shortName] Paper #$paperId removed: sent to $email",
-	       $message,
-	       "From: $this->emailFrom",
-	       "-f$this->emailFrom");
-    }
-
-  function log($text, $who)
-    {
-      global $REMOTE_ADDR;
-
-      $text=addslashes($text);
-      $this->q("INSERT INTO ActionLog SET  "
-	       . " ipaddr='$REMOTE_ADDR', "
-	       . " contactId='$who->contactId', action='$text'" );
+	$text=addslashes($text);
+	$this->q("INSERT INTO ActionLog SET  "
+		 . " ipaddr='$REMOTE_ADDR', "
+		 . " contactId='$who->contactId', action='$text'" );
     }
 
   

@@ -16,7 +16,6 @@
 </li>
 
 <li> <a href="Chair/SetPCPaper.php"> Mark Papers as PC Papers</a> </li>
-<li> <a href="Chair/DeletePaper.php"> Delete a paper from database</a> </li>
 
 <li> <a href="Chair/GradeAllPapers.php"> Assign Paper Grades  </a> </li>
 
