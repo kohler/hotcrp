@@ -193,9 +193,8 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
     $Conf->confirmMsg("$what paper #$paperId.");
 
     // send paper email
-    $subject = "[$Conf->shortName] Paper #$paperId " . strtolower($what);
-    $message = ",\n\n"
-	. wordwrap("This mail confirms the " . ($isSubmit ? "submission" : ($newPaper ? "creation" : "update")) . " of paper #$paperId at the $Conf->shortName conference submission site.") . "\n\n"
+    $subject = "Paper #$paperId " . strtolower($what);
+    $message = wordwrap("This mail confirms the " . ($isSubmit ? "submission" : ($newPaper ? "creation" : "update")) . " of paper #$paperId at the $Conf->shortName conference submission site.") . "\n\n"
 	. wordWrapIndent(trim($prow->title), "Title: ") . "\n"
 	. wordWrapIndent(trim($prow->authorInformation), "Authors: ") . "\n"
 	. "      Paper site: $Conf->paperSite/paper.php?paperId=$paperId\n\n";
@@ -215,16 +214,7 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 - $Conf->shortName Conference Submissions\n");
 
     // send email to all contact authors
-    $result = $Conf->qe("select firstName, lastName, email from ContactInfo join PaperConflict using (contactId) where paperId=$paperId and author>0", "while looking up contact authors to send email");
-    if (!DB::isError($result)) {
-	while (($row = $result->fetchRow())) {
-	    $m = "Dear " . contactText($row[0], $row[1], $row[2]) . $message;
-	    if ($Conf->allowEmailTo($row[2]))
-		mail($row[2], $subject, $m, "From: $Conf->emailFrom");
-	    else
-		$Conf->infoMsg("<pre>$subject\n\n" . htmlspecialchars($m) . "</pre>");
-	}
-    }
+    $Conf->emailContactAuthors($paperId, $subject, $message);
     
     return true;
 }
@@ -280,6 +270,30 @@ if (isset($_REQUEST["revive"]) && !$newPaper) {
 	$Conf->errorMsg(whyNotText($whyNot, "revive", $paperId));
 }
 
+
+// delete action
+if (isset($_REQUEST['delete'])) {
+    if ($newPaper)
+	$Conf->confirmMsg("Paper deleted.");
+    else if (!$Me->amAssistant())
+	$Conf->errorMsg("Only the program chairs can permanently delete papers.  Authors can withdraw papers, which is effectively the same.");
+    else {
+	// mail first, before contact info goes away
+	$message = wordwrap("Your $Conf->shortName paper submission #$paperId, \"$prow->title\", has been removed from the conference database by the program chairs.  This is usually done to remove duplicate entries or submissions.  Contact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
+	$Conf->emailContactAuthors($paperId, "Paper #$paperId deleted", $message);
+
+	$error = false;
+	foreach (array('Paper', 'PaperStorage', 'PaperComments', 'PaperConflict', 'PaperGrade', 'PaperReview', 'PaperReviewSubmission', 'PaperReviewPreference', 'PaperTopic') as $table) {
+	    $result = $Conf->qe("delete from $table where paperId=$paperId", "while deleting paper");
+	    $error |= DB::isError($result);
+	}
+	if (!$error)
+	    $Conf->confirmMsg("Paper #$paperId deleted.");
+
+	$prow = null;
+	errorMsgExit("");
+    }
+}
 
 // set outcome
 if (isset($_REQUEST['setoutcome'])) {
@@ -658,7 +672,7 @@ if ($mode == "edit") {
 	$buttons[] = "<input class='button' type='submit' name='withdraw' value='Withdraw paper' />";
     }
     if ($Me->amAssistant())
-	$buttons[] = array("<div id='folddel' class='folded' style='position: relative'><button type='button' onclick=\"fold('del', 0)\">Delete paper</button><div class='popupdialog extension'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><input class='button' type='submit' name='delete' value='Delete paper' /><a class='foldbutton unpopup' href=\"javascript:fold('del', 1)\">X</a></div></div>", "(PC chair only)");
+	$buttons[] = array("<div id='folddel' class='folded' style='position: relative'><button type='button' onclick=\"fold('del', 0)\">Delete paper</button><div class='popupdialog extension'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><input class='button' type='submit' name='delete' value='Delete paper' /> <button type='button' onclick=\"fold('del', 1)\">Cancel</button></div></div>", "(PC chair only)");
     echo "    <tr>\n";
     foreach ($buttons as $b) {
 	$x = (is_array($b) ? $b[0] : $b);

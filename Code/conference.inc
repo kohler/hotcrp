@@ -476,6 +476,29 @@ class Conference {
       }
     }
 
+
+    // Emailing
+
+    function emailContactAuthors($paperId, $subject, $message) {
+	global $Opt;
+	if (!$Opt['sendEmail'])
+	    return;
+
+	if ($subject[0] != '[')
+	    $subject = "[$this->shortName] $subject";
+	$result = $this->qe("select firstName, lastName, email
+		from ContactInfo join PaperConflict using (contactId)
+		where paperId=$paperId and author>0", "while looking up contact authors to send email");
+	if (!DB::isError($result))
+	    while (($row = $result->fetchRow())) {
+		$m = "Dear " . contactText($row[0], $row[1], $row[2]) . ",\n\n" . $message;
+		if ($this->allowEmailTo($row[2]))
+		    mail($row[2], $subject, $m, "From: $Conf->emailFrom");
+		else
+		    $this->infoMsg("<pre>$subject\n\n" . htmlspecialchars($m) . "</pre>");
+	    }
+    }
+    
   
     //
     // Paper storage
