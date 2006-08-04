@@ -80,6 +80,8 @@ class Contact {
 		// change view ID or chair mode
 		if ($this->isChair || $this->chairContactId > 0) {
 		    $viewContact = cvtint($_REQUEST['viewContact']);
+		    if ($viewContact <= 0 && isset($_REQUEST['viewContact']))
+			$viewContact = $Conf->getContactId($_REQUEST['viewContact']);
 		    $chairMode = cvtint($_REQUEST['chairMode']);
 		    if ($viewContact > 0) {
 			$this->contactId = $viewContact;
@@ -688,6 +690,8 @@ class Contact {
     function paperStatus($paperId, $row, $long = 0, $conf = null) {
 	global $ConfSiteBase, $Conf;
 	$conf = ($conf ? $conf : $Conf);
+	if (!$this->amAssistant() && $row->author <= 0)
+	    $long = 0;
 
 	if ($row->withdrawn > 0) {
 	    $x = "<span class='pstat pstat_with'>Withdrawn</span>";

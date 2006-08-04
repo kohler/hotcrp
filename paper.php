@@ -12,7 +12,7 @@ function confHeader() {
 	$title = "Paper #$paperId";
     else
 	$title = ($newPaper ? "New Paper" : "Paper View");
-    $Conf->header($title, "paper", actionBar($prow, $newPaper, $mode));
+    $Conf->header($title, "paper_" . $mode, actionBar($prow, $newPaper, $mode));
 }
 
 function errorMsgExit($msg) {
@@ -395,13 +395,20 @@ if (!$newPaper) {
 
 // paper status
 if (!$newPaper) {
-    echo "<tr id='foldst' class='fold1ed'>\n  <td class='caption'>Status</td>\n";
-    echo "  <td class='entry'>", $Me->paperStatus($paperId, $prow, 1);
+    echo "<tr id='foldst' class='fold1ed'>\n  <td class='caption'>";
     if ($mode == "reviews")
-	echo "&nbsp;&nbsp;&nbsp; ",
-	    "<a href=\"javascript:fold(['st','pa','ab','sa','ca','au','co','to'], 0, 1)\" class='button_small unfolder1'>Show&nbsp;paper&nbsp;information</a>",
-	    "<a href=\"javascript:fold(['st','pa','ab','sa','ca','au','co','to'], 1, 1)\" class='button_small folder1'>Hide&nbsp;paper&nbsp;information</a>";
-    if ($prow->author > 0)
+	echo "<a href=\"javascript:fold(['st','pa','ab','ca','au','co','to'], 0, 1)\" class='foldbutton unfolder1'>+</a>",
+	    "<a href=\"javascript:fold(['st','pa','ab','ca','au','co','to'], 1, 1)\" class='foldbutton folder1'>&minus;</a> ";
+    if ($mode != "edit")
+	echo "Paper</td>\n";
+    
+    echo "  <td class='entry'>", $Me->paperStatus($paperId, $prow, ($mode == "view" || $mode == "edit"));
+    if ($mode == "reviews")
+	echo " ", paperDownload($paperId, $prow, 1);
+    //echo "&nbsp;&nbsp;&nbsp; ",
+    //    "<a href=\"javascript:fold(['st','pa','ab','ca','au','co','to'], 0, 1)\" class='button_small unfolder1'>Show&nbsp;paper&nbsp;information</a>",
+    //    "<a href=\"javascript:fold(['st','pa','ab','ca','au','co','to'], 1, 1)\" class='button_small folder1'>Hide&nbsp;paper&nbsp;information</a>";
+    else if ($prow->author > 0)
 	echo "<br/>\nYou are an <span class='author'>author</span> of this paper.";
     else if ($Me->isPC && $prow->conflict > 0)
 	echo "<br/>\nYou have a <span class='conflict'>conflict</span> with this paper.";
@@ -438,10 +445,13 @@ if ($mode == "reviews") {
 
 
 // Paper
-if ($newPaper || ($prow->withdrawn <= 0 && ($editable || $prow->size > 0))) {
+if ($mode != "reviews"
+    && ($newPaper || ($prow->withdrawn <= 0 && ($editable || $prow->size > 0)))) {
     echo "<tr class='pt_paper$trClasses' id='foldpa'>\n  <td class='",
-	caption_class("paper"), $tdClasses, "'>Paper",
-	($newPaper ? " (optional)" : ""), "</td>\n";
+	caption_class("paper"), $tdClasses, "'>";
+    if ($mode != "view")
+	echo "Paper", ($newPaper ? " (optional)" : "");
+    echo "</td>\n";
     echo "  <td class='entry", $tdClasses, "'>";
     if (!$newPaper && $prow->size > 0)
 	echo paperDownload($paperId, $prow, 1);
@@ -471,10 +481,11 @@ echo "</td>\n</tr>\n\n";
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf);
 if ($mode == "edit" && $Me->amAssistant())
     $canViewAuthors = true;
-if (!$canViewAuthors && $Me->amAssistant()) {
-    $authorFolders = "['sa','ca','au','co']";
+if ((!$canViewAuthors || $mode == "reviews") && $Me->amAssistant()) {
+    $authorFolders = "['ca','au','co']";
     $authorTRClasses = $trClasses . " folded";
     $authorTDClasses = $tdClasses . " extension";
+    $canViewAuthors = false;
 } else {
     $authorTRClasses = $trClasses;
     $authorTDClasses = $tdClasses;
@@ -485,11 +496,15 @@ if (!$canViewAuthors && $Me->amAssistant()) {
 if ($newPaper || $canViewAuthors || $Me->amAssistant()) {
     echo "<tr class='pt_authors$authorTRClasses' id='foldau'>\n  <td class='",
 	caption_class("authorInformation"), $tdClasses,
-	"'>Authors</td>\n  <td class='entry$tdClasses$textareaClass'>";
+	"'>";
+    if (!$newPaper && !$canViewAuthors && $Me->amAssistant())
+	echo "<a href=\"javascript:fold($authorFolders, 0)\" class='foldbutton unfolder'>+</a>",
+	    "<a href=\"javascript:fold($authorFolders, 1)\" class='foldbutton folder'>&minus;</a> ";
+    echo "Authors</td>\n  <td class='entry$tdClasses$textareaClass'>";
     if (!$newPaper && !$canViewAuthors && $Me->amAssistant()) {
-	echo "<span class='ellipsis'>Hidden</span><span class='extension'>";
+	echo "<span class='ellipsis'><i>Hidden</i></span><span class='extension'>";
 	pt_data("authorInformation", 5, true);
-	echo "</span> <a class='button_small unfolder' href=\"javascript:fold($authorFolders, 0)\">Show</a><a class='button_small folder' href=\"javascript:fold($authorFolders, 1)\">Hide</a>";
+	echo "</span>";
     } else
 	pt_data("authorInformation", 5, true);
     echo "</td>\n";
@@ -624,7 +639,7 @@ if ($mode == "reviews") {
 if ($mode == "edit") {
     echo "<tr class='pt_edit'>
   <td class='caption'></td>
-  <td class='entry'><table class='pt_buttons'>\n";
+  <td class='entry' colspan='2'><table class='pt_buttons'>\n";
     $buttons = array();
     if ($newPaper)
 	$buttons[] = "<input class='button_default' type='submit' name='update' value='Create paper' />";
@@ -642,17 +657,19 @@ if ($mode == "edit") {
 	    $buttons[] = array("<input class='button' type='submit' name='unsubmit' value='Undo submit' />", "(PC chair only)"); 
 	$buttons[] = "<input class='button' type='submit' name='withdraw' value='Withdraw paper' />";
     }
-    echo "    <tr>";
+    if ($Me->amAssistant())
+	$buttons[] = array("<div id='folddel' class='folded' style='position: relative'><button type='button' onclick=\"fold('del', 0)\">Delete paper</button><div class='popupdialog extension'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><input class='button' type='submit' name='delete' value='Delete paper' /><a class='foldbutton unpopup' href=\"javascript:fold('del', 1)\">X</a></div></div>", "(PC chair only)");
+    echo "    <tr>\n";
     foreach ($buttons as $b) {
 	$x = (is_array($b) ? $b[0] : $b);
-	echo "<td class='ptb_button'>", $x, "</td>";
+	echo "      <td class='ptb_button'>", $x, "</td>\n";
     }
-    echo "</tr>\n    <tr>";
+    echo "    </tr>\n    <tr>\n";
     foreach ($buttons as $b) {
 	$x = (is_array($b) ? $b[1] : "");
-	echo "<td class='ptb_explain'>", $x, "</td>";
+	echo "      <td class='ptb_explain'>", $x, "</td>\n";
     }
-    echo "</tr>\n";
+    echo "    </tr>\n";
     if ($Me->amAssistant())
 	echo "    <tr><td colspan='", count($buttons), "'><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td></tr>\n";
     echo "  </table></td>\n</tr>\n\n";

@@ -89,7 +89,7 @@ function chairModeLink($text = null, $enterMode = -1) {
 	if ($Me->amAssistant())
 	    $text = ($Me->chairMode ? "Leave" : "Enter") . "&nbsp;chair&nbsp;mode";
 	else
-	    $text = "View&nbsp;as&nbsp;chair";
+	    $text = "Return&nbsp;to&nbsp;chair&nbsp;view";
     }
 
     return "$out$text</a>";
@@ -522,7 +522,7 @@ function actionTab($text, $url, $default) {
 }
 
 function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
-    global $Me, $Conf;
+    global $Me, $Conf, $ConfSiteBase;
     if ($newPaper)
 	$paperId = "new";
     else
@@ -531,11 +531,11 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
 
     $x = "<table class='vubar'><tr><td><table><tr>";
     if (!$newPaper && $paperId > 0)
-	$x .= actionTab("View", "paper.php?paperId=$paperId&amp;mode=view", $mode == "view");
+	$x .= actionTab("View", "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=view", $mode == "view");
     if ($newPaper || ($paperId > 0 && ($prow->author > 0 || $Me->amAssistant())))
-	$x .= actionTab("Edit", "paper.php?paperId=$paperId&amp;mode=edit", $mode == "edit");
+	$x .= actionTab("Edit", "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=edit", $mode == "edit");
     if (!$newPaper && $prow && ($Me->isPC || $Me->canViewReviews($prow, $Conf)))
-	$x .= actionTab("Reviews" . ($prow ? " ($prow->reviewCount)" : ""), "paper.php?paperId=$paperId&amp;mode=reviews", $mode == "reviews");
+	$x .= actionTab("Reviews" . ($prow ? " ($prow->reviewCount)" : ""), "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=reviews", $mode == "reviews");
     if ($thisUrl)
 	$x .= actionTab($mode, $thisUrl, true);
     $xmode = (isset($_REQUEST["mode"]) ? array("mode" => $_REQUEST["mode"]) : array());

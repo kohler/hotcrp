@@ -36,6 +36,7 @@ if (isset($_REQUEST["setRole"]))
     $_SESSION["WhichTaskView"] = $_REQUEST["setRole"];
 
 $Conf->header("Welcome");
+echo actionBar(null, false, "");
 
 echo "<p>You're logged in as ", htmlspecialchars($Me->fullnameAndEmail()), ".
 If this is not you, please <a href='", $ConfSiteBase, "logout.php'>log out</a>.
@@ -69,8 +70,7 @@ $homeSep = "<span class='homesep'></span>";
     <table>
     <tr>
       <th>Papers:</th>
-	<td><?php echo goPaperForm(), " ", $homeSep ?>
-	<a href='All/ListPapers.php?list=submitted'>List&nbsp;submitted</a> <?php echo $homeSep ?>
+	<td><a href='All/ListPapers.php?list=submitted'>List&nbsp;submitted</a> <?php echo $homeSep ?>
 	<a href='All/ListPapers.php?list=all'>List&nbsp;all</a> <?php echo $homeSep ?>
 	<a href='paper.php?paperId=new'>Enter&nbsp;new</a></td>
     </tr>
@@ -137,8 +137,7 @@ if ($Me->isPC) { ?>
     <table>
     <tr>
       <th>Papers:</th>
-      <td><?php echo goPaperForm(), " ", $homeSep ?>
-	<a href='All/ListPapers.php?list=submitted'>List&nbsp;submitted</a></td>
+      <td><a href='All/ListPapers.php?list=submitted'>List&nbsp;submitted</a></td>
     </tr>
 
 <?php

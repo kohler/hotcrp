@@ -221,6 +221,26 @@ input.button_small, a.button_small, button.button_small {
 	color: black;
 	margin: 3px 0px;
 }
+a.foldbutton {
+	font-size: small;
+	font-weight: normal;
+	padding: 0px 0.25em;
+	text-decoration: none;
+	color: black;
+	margin: 3px 0px;
+	background: #ffffbb;
+	border-top: 1px solid #eeee66;
+	border-left: 1px solid #eeee66;
+	border-bottom: 1px solid #999966;
+	border-right: 1px solid #999966;
+}
+td.caption a.foldbutton {
+	background: #fff0e0;
+	border-top: 1px solid #eecc66;
+	border-left: 1px solid #eecc66;
+	border-bottom: 1px solid #999966;
+	border-right: 1px solid #999966;
+}
 a.review_past {
 	font-size: small;
 	font-weight: bold;
@@ -281,7 +301,7 @@ td.hint {
 	padding-left: 0.5em;
 	font-size: small;
 }
-div#aumg td.hint, div#paper td.hint {
+div#aumg td.hint, table.paper td.hint {
 	width: 25%;
 }
 td h2, td h3 {
@@ -405,6 +425,9 @@ tr.pt_abstract td.entry {
 }
 tr.pt_paper input {
 	margin-top: 4px;
+}
+div#paper_reviews span.pstat {
+	margin-right: 1em;
 }
 pre.entryexample {
 	padding: 0.5em;
@@ -600,6 +623,25 @@ a.pl_sort_def_rev {
 }
 .fold1ed .extension1, .fold1ed .folder1, .unfold1ed .ellipsis1, .unfold1ed .unfolder1 {
 	display: none;
+}
+
+div.popupdialog {
+	border: 3px solid red;
+	padding: 0.5em;
+	background: #fff2f2;
+	position: absolute;
+	top: -4em;
+	left: 0%;
+	min-width: 15em;
+}
+div.popupdialog .unpopup {
+	position: absolute;
+	top: 0%;
+	right: 0%;
+	margin-top: 0px;
+}
+div.popupdialog p:first-child {
+	margin-top: 0px;
 }
 
 div#offrev td#upload {
