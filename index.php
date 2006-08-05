@@ -59,6 +59,108 @@ function taskbutton($name,$label) {
     print "</td>";
 }
 
+
+
+$tabName = array();
+$tabText = array();
+$tabBody = array();
+
+
+
+if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
+    $tabName[] = "su";
+    $tabText[] = "Submissions";
+    $body = "";
+
+    $startable = $Conf->timeStartPaper();
+    if ($startable || $Me->amAssistant()) {
+	$body .= "<div><strong><a href='paper.php?paperId=new'>Start new paper</a></strong> <span class='deadline'>(" . $Conf->printDeadline('startPaperSubmission') . ")</span>";
+	if ($Me->amAssistant())
+	    $body .= "<br/>\n<small>As PC Chair, you can start papers regardless of deadlines and on other people's behalf.</small>";
+	$body .= "</div>\n";
+    }
+
+    if ($Me->isAuthor) {
+	$plist = new PaperList();
+	$plist->showHeader = 0;
+	$ptext = $plist->text("authorHome", $Me);
+	$deadlines = array();
+	if ($plist->count > 0)
+	    $body .= $ptext;
+	if ($plist->needFinalize > 0) {
+	    $time = $Conf->printableEndTime('updatePaperSubmission');
+	    if (!$Conf->timeFinalizePaper())
+		$deadlines[] = "The <a href='deadlines.php'>deadline</a> for submitting papers in progress has passed.";
+	    else if (!$Conf->timeUpdatePaper()) {
+		$deadlines[] = "The <a href='deadlines.php'>deadline</a> for updating papers in progress has passed, but you can still submit.";
+		$time = $Conf->printableEndTime('finalizePaperSubmission');
+		if ($time != 'N/A')
+		    $deadlines[] = "You have until $time to submit any papers in progress.";
+	    } else if (($time = $Conf->printableEndTime('updatePaperSubmission')) != 'N/A')
+		$deadlines[] = "You have until $time to submit any papers in progress.";
+	}
+	if (!$startable && !$Conf->timeAuthorViewReviews())
+	    $deadlines[] = "The <a href='deadlines.php'>deadline</a> for starting new papers has passed.";
+	$body .= join("<br/>", $deadlines);
+    }
+
+    $tabBody[] = $body;
+}
+
+
+$tabName[] = "se";
+$tabText[] = "Settings";
+$body = "<table class='bullets'><tr>";
+
+$body .= "<td><h4>Your account</h4>
+<ul>
+  <li><a href='All/UpdateContactInfo.php'>Account settings</a>: your name, email, affiliation</li>
+  <li><a href='All/MergeAccounts.php'>Merge accounts</a></li>
+</ul>";
+if ($Me->amAssistant())
+    $body .= "\n<h4>Other accounts</h4>
+<ul>
+  <li><a href='All/UpdateContactInfo.php?new=1'>Create new account</a></li>
+  <li><a href='Chair/BecomeSomeoneElse.php'>Act on someone else's behalf</a></li>
+</ul>";
+$body .= "</td>\n";
+
+$body .= "<td><h4>Conference information</h4>
+<ul>
+  <li><a href='deadlines.php'>Important dates</a></li>
+  <li><a href='pc.php'>Program committee</a>";
+if ($Me->amAssistant())
+    $body .= ": view and/or modify";
+$body .= "</li>\n";
+if ($Me->amAssistant())
+    $body .= "  <li><a href='Chair/SetDates.php'>Set important dates</a></li>
+  <li><a href='Chair/SetTopics.php'>Set conference topics</a></li>
+  <li><a href='Chair/SetReviewForm.php'>Set review form</a></li>\n";
+$body .= "</ul></td>\n";
+
+$body .= "</tr></table>";
+$tabBody[] = $body;
+
+
+$defaultTabName = 'su';
+
+echo "<div class='maintab'><table class='top'><tr>\n  <td><table><tr>\n";
+$tns = "[";
+foreach ($tabName as $tn)
+    $tns .= "'$tn',";
+$tns = substr($tns, 0, -1) . "]";
+for ($i = 0; $i < count($tabBody); $i++) {
+    echo "    <td class='sep'></td>\n";
+    echo "    <td class='", ($tabName[$i] == $defaultTabName ? "tab_default" : "tab"), "' id='tab$tabName[$i]' nowrap='nowrap'><a href=\"javascript:tabfold($tns,'", $tabName[$i], "')\">", $tabText[$i], "</a></td>\n";
+}
+echo "  </tr></table></td>\n  <td style='width:100%'><table style='width:100%'><tr><td class='spanner'></td></tr></table></td>\n</tr></table>\n";
+for ($i = 0; $i < count($tabBody); $i++) {
+    echo "<div class='", ($tabName[$i] == $defaultTabName ? " unfolded" : " folded"), "' id='fold", $tabName[$i], "'><div class='bot extension'>", $tabBody[$i], "</div></div>\n";
+}
+echo "</div>\n";
+
+
+
 $homeSep = "<span class='homesep'></span>";
 ?>
 
@@ -77,22 +179,9 @@ $homeSep = "<span class='homesep'></span>";
 
     <tr>
       <th>Program&nbsp;committee:</th>
-      <td><a href='Chair/ReviewPC.php'>Add/remove&nbsp;members</a> <?php echo $homeSep ?>
-        <a href='Chair/ListPC.php'>See&nbsp;contact&nbsp;information[X]</a></td>
+      <td><a href='Chair/ListPC.php'>See&nbsp;contact&nbsp;information[X]</a></td>
     </tr>
 
-    <tr>
-      <th>Accounts:</th>
-      <td><a href='All/UpdateContactInfo.php?new=1'>Create&nbsp;account</a> <?php echo $homeSep ?>
-	<a href='Chair/BecomeSomeoneElse.php'>Log&nbsp;in&nbsp;as&nbsp;someone&nbsp;else[X]</a></td>
-    </tr>
-
-    <tr>
-      <th>Conference&nbsp;setup:</th>
-      <td><a href='Chair/SetDates.php'>Dates</a> <?php echo $homeSep ?>
-	<a href='Chair/SetTopics.php'>Topics</a> <?php echo $homeSep ?>
-	<a href='Chair/SetReviewForm.php'>Review&nbsp;form</a></td>
-    </tr>
     </table>
   </div>
   <div class='clear'></div>
@@ -201,64 +290,12 @@ if ($Me->isPC) { ?>
   </div>
   <div class='clear'></div>
 </div>
-<?php } ?>
+<?php }
 
 
-<?php if ($Me->isAuthor || $Conf->timeStartPaper() > 0) { ?>
-<div class='home_tasks' id='home_tasks_author'>
-  <div class='taskname'><h2>Tasks for Authors</h2></div>
-  <div class='taskdetail'>
-    <table>
-
-<?php
-$startable = $Conf->timeStartPaper();
-if ($startable)
-    echo "    <tr><th><a href='paper.php?paperId=new'>Start new paper</a></th> <td colspan='2'><span class='deadline'>(", $Conf->printDeadline('startPaperSubmission'), ")</span></td></tr>\n";
-
-if ($Me->isAuthor) {
-    $plist = new PaperList();
-    $plist->showHeader = 0;
-    $ptext = $plist->text("authorHome", $Me);
-    if ($plist->count > 0)
-	echo "<tr>\n  <th>Existing papers:</th>\n  <td class='plholder'>$ptext</td>\n</tr>\n";
-    if ($plist->needFinalize > 0) {
-	$time = $Conf->printableEndTime('updatePaperSubmission');
-	if (!$Conf->timeFinalizePaper())
-	    $deadlines[] = "The <a href='deadlines.php'>deadline</a> for submitting papers in progress has passed.";
-	else if (!$Conf->timeUpdatePaper()) {
-	    $deadlines[] = "The <a href='deadlines.php'>deadline</a> for updating papers in progress has passed, but you can still submit.";
-	    $time = $Conf->printableEndTime('finalizePaperSubmission');
-	    if ($time != 'N/A')
-		$deadlines[] = "You have until $time to submit any papers in progress.";
-	} else if (($time = $Conf->printableEndTime('updatePaperSubmission')) != 'N/A')
-	    $deadlines[] = "You have until $time to submit any papers in progress.";
-    }
-    if (!$startable && !$Conf->timeAuthorViewReviews())
-	$deadlines[] = "The <a href='deadlines.php'>deadline</a> for starting new papers has passed.";
-    printDeadlines($deadlines, 3);
-}
-?>
-
-    </table>
-  </div>
-  <div class='clear'></div>
-</div>
-<?php } ?>
 
 
-<div class='home_tasks' id='home_tasks_all'>
-  <div class='taskname'><h2>Tasks for Everyone</h2></div>
-  <div class='taskdetail'>
-    <a href='All/UpdateContactInfo.php'>Edit&nbsp;profile</a> <?php echo $homeSep ?>
-    <a href='All/MergeAccounts.php'>Merge&nbsp;accounts</a> <?php echo $homeSep ?>
-    <a href='deadlines.php'>Important&nbsp;dates</a> <?php echo $homeSep ?>
-    <a href='logout.php'>Log&nbsp;out</a>
-  </div>
-  <div class='clear'></div>
-</div>
-
-
-<?php if ($Me->isPC || $Me->amAssistant()) { ?>
+if ($Me->isPC || $Me->amAssistant()) { ?>
 
 <table width=100%>
 <tr>

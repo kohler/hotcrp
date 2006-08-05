@@ -30,7 +30,6 @@ $result = $Conf->qe($query);
     while ($row = $result->fetchRow() ) {
       $i = 0;
       $id = $row[$i++];
-      $pcid = $row[$i++];
       $first = $row[$i++];
       $last = $row[$i++];
       $email = $row[$i++];

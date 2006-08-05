@@ -29,7 +29,7 @@ if ($Me->amReviewer()) {
     <tr>
       <td><form action='review.php?form=1' method='post' enctype='multipart/form-data'>
 	<input type='hidden' name='redirect' value='offline' />
-	<input type='file' name='uploadedFile' accept='text/plain' size='30' <?php echo $disabled ?>/>&nbsp;<input class='button_default' type='submit' value='Upload review form' name='uploadForm' <?php echo $disabled ?>/>
+	<input type='file' name='uploadedFile' accept='text/plain' size='30' <?php echo $disabled ?>/>&nbsp;<input class='button_default' type='submit' value='Upload filled-out review form' name='uploadForm' <?php echo $disabled ?>/>
       </form></td>
     </tr>
     <?php if ($pastDeadline && $Me->amAssistant()) { ?>

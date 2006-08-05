@@ -22,6 +22,19 @@ function fold(which, dofold, foldnum) {
     }
 }
 
+function tabfold(tabset, unfolded, foldnum) {
+    for (var i = 0; i < tabset.length; i++) {
+	fold(tabset[i], tabset[i] != unfolded, foldnum);
+	var tab = document.getElementById('tab' + tabset[i]);
+	if (!tab)
+	    /* nada */;
+	else if (tabset[i] == unfolded)
+	    tab.className = "tab_default";
+	else
+	    tab.className = "tab";
+    }
+}
+
 function contactPulldown(which) {
     var pulldown = document.getElementById(which + "_pulldown");
     if (pulldown.value != "") {

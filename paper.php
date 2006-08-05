@@ -13,6 +13,10 @@ function confHeader() {
 	$title = "Paper #$paperId";
     else
 	$title = ($newPaper ? "New Paper" : "Paper View");
+    if ($mode == "edit")
+	$title = "Edit $title";
+    else if ($mode == "reviews")
+	$title = "$title Reviews";
     $Conf->header($title, "paper_" . $mode, actionBar($prow, $newPaper, $mode));
 }
 
