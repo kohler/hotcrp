@@ -104,8 +104,9 @@ function addedvalue($what, $checked) {
 	return "";
 }
 
-$query = "select ContactInfo.contactId, firstName, lastName, email,
-	affiliation, collaborators,
+$query = "select ContactInfo.contactId, ContactInfo.firstName,
+	ContactInfo.lastName, ContactInfo.email, ContactInfo.affiliation,
+	ContactInfo.collaborators,
 	group_concat(concat_ws(' ::', topicName, interest) order by topicName separator ', ') as topicNames,
 	ChairAssistant.contactId as ass, Chair.contactId as chair
 	from ContactInfo
