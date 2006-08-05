@@ -53,6 +53,8 @@ function doLogin() {
     if ($_SESSION["Me"]->password != $_REQUEST["password"])
 	return $Conf->errorMsg("That password is incorrect.");
 
+    $Conf->qe("update ContactInfo set visits=visits+1, lastLogin=" . time() . " where contactId=" . $_SESSION["Me"]->contactId, "while recording login statistics");
+    
     if (isset($_REQUEST["go"]))
 	$where = $_REQUEST["go"];
     else if (isset($_SESSION["afterLogin"])) {

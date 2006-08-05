@@ -35,7 +35,7 @@ CREATE TABLE ActionLog (
 drop table if exists ContactInfo;
 CREATE TABLE ContactInfo (
   contactId int(11) NOT NULL auto_increment,
-  visits int(11) default '0',
+  visits int(11) NOT NULL default 0,
   firstName varchar(60) default NULL,
   lastName varchar(60) default NULL,
   email varchar(120) default NULL,
@@ -45,6 +45,7 @@ CREATE TABLE ContactInfo (
   password varchar(32) default NULL,
   note varchar(200) default NULL,
   collaborators text,
+  lastLogin int(11) NOT NULL default 0,
   PRIMARY KEY (contactId),
   UNIQUE KEY contactId (contactId),
   UNIQUE KEY email (email),
