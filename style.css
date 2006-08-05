@@ -149,7 +149,7 @@ table.vubar td.spanner, table.vubar td.gopaper {
 table.vubar td.sep {
 	padding: 0em 0.75em;
 }
-table.vubar td.spanner {
+table.vubar td.spanner, table.reviewform {
 	width: 100%;
 }
 table.vubar .tab, table.vubar .tab_disabled, table.vubar .tab_default {
@@ -284,7 +284,7 @@ tr.id td.caption {
 	border-right: none;
 	background: white;
 }
-tr.last td {
+tr.last td, table.reviewform {
 	border-bottom: 1px solid #cc9900;
 }
 td.leftentry {

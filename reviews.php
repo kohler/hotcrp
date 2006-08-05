@@ -145,7 +145,7 @@ if (!$Me->timeReview($prow, $Conf))
 
 
 // begin table
-echo "<table class='reviewform'>\n\n";
+echo "<table class='reviewformtop'>\n\n";
 
 
 // title
@@ -189,23 +189,30 @@ echo "<form class='downloadreviewform' action='review.php?form=1' method='post' 
 echo "</td>\n";
 echo "</tr>\n\n";
 
-?>
-  </td>
-</tr>
-</table>
+
+// extra space
+echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>&nbsp;</td>\n</tr>\n\n";
 
 
-<form action='ReviewPaper.php?post=1' method='post' enctype='multipart/form-data'>
-<?php
-    if (isset($rrow))
-	echo "<input type='hidden' name='reviewId' value='$rrow->reviewId' />\n";
-    else 
-	echo "<input type='hidden' name='paperId' value='$paperId' />\n";
-?>
-<table class='reviewform'>
-<?php
+// close this table
+echo "</table>\n\n";
+
+
+// start review form
+echo "<form action='review.php?";
+if (isset($rrow))
+    echo "reviewId=", $rrow->reviewId;
+else
+    echo "paperId=", $prow->paperId;
+echo "&amp;post=1' method='post' enctype='multipart/form-data'>\n";
+echo "<table class='reviewform'>\n";
+
+
+// form body
 echo $rf->webFormRows($rrow, 1);
 
+
+// review actions
 if ($Me->timeReview($prow, $Conf) || $Me->amAssistant()) {
     echo "<tr class='rev_actions'>
   <td class='caption'></td>
@@ -223,9 +230,10 @@ if ($Me->timeReview($prow, $Conf) || $Me->amAssistant()) {
     if (!$Me->timeReview($prow, $Conf))
 	echo "    </tr>\n    <tr>\n      <td colspan='3'><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td>\n";
     echo "    </tr>\n  </table></td>\n</tr>\n\n";
- } ?>
+}
 
-</table>
-</form>
+echo "</table>\n</form>\n\n";
 
-<?php $Conf->footer() ?>
+echo "<div class='gapbottom'></div>\n";
+
+$Conf->footer(); ?>

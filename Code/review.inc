@@ -87,11 +87,7 @@ class ReviewForm {
 		$x .= " error";
 	    if (isset($this->options[$field]))
 		$x .= " textarea";
-	    $x .= "'>";
-	    $n = htmlspecialchars($this->shortName[$field]);
-	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))
-		$n = preg_replace("/\\s+/", "&nbsp;", $n);
-	    $x .= "$n</td>\n";
+	    $x .= "'>" . htmlspecialchars($this->shortName[$field]) . "</td>\n";
 	    
 	    $x .= "  <td class='entry'>";
 	    if (isset($this->options[$field])) {
@@ -421,10 +417,7 @@ class ReviewForm {
 	    
 	    $x .= "<tr class='rev_$field'>\n";
 	    $x .= "  <td class='caption rev_$field'>";
-	    $n = htmlspecialchars($this->shortName[$field]);
-	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))
-		$n = preg_replace("/\\s+/", "&nbsp;", $n);
-	    $x .= "$n:</td>\n";
+	    $x .= htmlspecialchars($this->shortName[$field]) . "</td>\n";
 	    
 	    $x .= "  <td class='entry rev_$field'>";
 	    if ($this->description[$field])
