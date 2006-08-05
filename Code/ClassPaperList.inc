@@ -162,18 +162,18 @@ class PaperList {
 	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='2'>#$row->paperId</a>";
 	case self::FIELD_ID_REVIEW:
 	    if ($row->reviewId)
-		return "<a href='${ConfSiteBase}All/ReviewPaper.php?reviewId=$row->reviewId' tabindex='2'>#$row->paperId</a>";
+		return "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId' tabindex='2'>#$row->paperId</a>";
 	    else
-		return "<a href='${ConfSiteBase}All/ReviewPaper.php?paperId=$row->paperId' tabindex='2'>#$row->paperId</a>";
+		return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId' tabindex='2'>#$row->paperId</a>";
 	case self::FIELD_TITLE:
 	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_TITLE_MANAGE:
 	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_TITLE_REVIEW:
 	    if ($row->reviewId)
-		return "<a href='${ConfSiteBase}All/ReviewPaper.php?paperId=$row->reviewId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
+		return "<a href='${ConfSiteBase}review.php?paperId=$row->reviewId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
 	    else
-		return "<a href='${ConfSiteBase}All/ReviewPaper.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
+		return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->acknowledged <= 0 && $row->withdrawn <= 0)
@@ -292,7 +292,7 @@ class PaperList {
 	$reviewList = array();
 	if ($queryOptions['reviewList']) {
 	    $result = $Conf->qe("select Paper.paperId, reviewId, reviewType,
-		reviewSubmitted, reviewLastModified,
+		reviewSubmitted, reviewModified,
 		PaperReview.contactId, lastName, firstName, email
 		from Paper
 		join PaperReview using (paperId)

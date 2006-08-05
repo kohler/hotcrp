@@ -510,13 +510,14 @@ class Contact {
 	return false;
     }
     
-    function canViewAuthors($prow, $conf, &$whyNot = null) {
+    function canViewAuthors($prow, $conf, $blindWins, &$whyNot = null) {
 	global $Opt;
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "auview")))
 	    return false;
 	// policy
-	if ($prow->author > 0
+	if (($prow->author > 0
+	     && (!$this->isPC || !$blindWins || !$Opt['blindSubmission']))
 	    || ($prow->withdrawn <= 0 && $prow->acknowledged > 0
 		&& ($this->isPC || $prow->reviewType > 0)
 		&& !$Opt['blindSubmission'])

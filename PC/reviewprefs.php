@@ -83,7 +83,7 @@ Click on a column heading to sort by that column.</p>\n\n";
 $paperList = new PaperList($_REQUEST["sort"], "reviewprefs.php?sort=");
 echo "<form class='assignpc' method='post' action=\"reviewprefs.php?post=1\" enctype='multipart/form-data'>\n";
 echo $paperList->text("editReviewPreference", $_SESSION['Me'], $reviewer);
-echo "<input class='button_default' type='submit' name='update' value='Save assignments' />\n";
+echo "<input class='button_default' type='submit' name='update' value='Save preferences' />\n";
 echo "</form>\n";
 
 $Conf->footer() ?>

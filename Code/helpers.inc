@@ -141,14 +141,14 @@ function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
 
     if (!isset($row->reviewType) && !$row->reviewId && !$long)
 	return "";
-    else if ($row->reviewLastModified == 0)
+    else if ($row->reviewModified == 0)
 	return "<span class='rstat rstat_no'>Not started</span>";
     else if ($row->reviewSubmitted == 0)
 	$x = "<span class='rstat rstat_prog'>In progress</span>";
     else
 	$x = "<span class='rstat rstat_done'>Complete</span>";
-    if ($when && $row->reviewLastModified > 0 && $_SESSION["Me"]->isPC)
-	$x .= " <span class='rstat_date'>(" . htmlspecialchars($conf->printableTime(strtotime($row->reviewLastModified))) . ")</span>";
+    if ($when && $row->reviewModified > 0 && $_SESSION["Me"]->isPC)
+	$x .= " <span class='rstat_date'>(" . htmlspecialchars($conf->printableTime($row->reviewModified)) . ")</span>";
     return $x;
 }
 
@@ -530,15 +530,37 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
     $disableView = (!$newPaper && $paperId < 0);
 
     $x = "<table class='vubar'><tr><td><table><tr>";
+    
     if (!$newPaper && $paperId > 0)
 	$x .= actionTab("View", "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=view", $mode == "view");
+    
     if ($newPaper || ($paperId > 0 && ($prow->author > 0 || $Me->amAssistant())))
 	$x .= actionTab("Edit", "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=edit", $mode == "edit");
+    
+    if ($newPaper || !$prow)
+	/* do nothing */;
+    else if (isset($prow->reviewType) && $prow->reviewType > 0) {
+	$name = ($prow->reviewModified ? "Edit review" : "Start review");
+	$x .= actionTab($name, "${ConfSiteBase}review.php?paperId=$paperId", $mode == "editreview");
+    } else if (($Me->isPC && $Conf->timePCReviewAnyPaper() && $prow->author <= 0 && $prow->conflict <= 0)
+	       || $Me->amAssistant())
+	$x .= actionTab("Add review", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "editreview");
+    
     if (!$newPaper && $prow && ($Me->isPC || $Me->canViewReviews($prow, $Conf)))
-	$x .= actionTab("Reviews" . ($prow ? " ($prow->reviewCount)" : ""), "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=reviews", $mode == "reviews");
+	$x .= actionTab("All reviews" . ($prow ? " ($prow->reviewCount)" : ""), "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=reviews", $mode == "reviews");
+    
     if ($thisUrl)
 	$x .= actionTab($mode, $thisUrl, true);
+
+    $goBase = ($mode == "editreview" ? "review.php" : "paper.php");
     $xmode = (isset($_REQUEST["mode"]) ? array("mode" => $_REQUEST["mode"]) : array());
-    $x .= "</tr></table></td><td class='spanner'></td><td class='gopaper' nowrap='nowrap'>" . goPaperForm("paper.php", $xmode) . "</td></tr></table>\n";
+    $x .= "</tr></table></td><td class='spanner'></td><td class='gopaper' nowrap='nowrap'>" . goPaperForm($goBase, $xmode) . "</td></tr></table>\n";
     return $x;
+}
+
+function unparseReviewOrdinal($ord) {
+    if ($ord < 26)
+	return chr($ord + 65);
+    else
+	return chr(int($ord / 26) + 65) . chr(($ord % 26) + 65);
 }

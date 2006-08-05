@@ -260,7 +260,7 @@ CREATE TABLE PaperReview (
   requestedOn timestamp(14) NOT NULL,
   acceptedOn timestamp(14) NOT NULL default 0,
 
-  reviewLastModified timestamp(14) NOT NULL default 0,
+  reviewModified int(1),
   reviewSubmitted int(1),
 
   overAllMerit tinyint(1) NOT NULL default '0',

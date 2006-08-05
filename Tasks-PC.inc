@@ -50,6 +50,7 @@ based on how many reviews have been submitted by everyone
 <li> Your job -- reviewing papers 
 <ul>
 
+<li> <a href="PC/reviewprefs.php">Express reviewing preferences</a></li>
 
 <li> <a href="PC/CheckAssignedPapers.php">See Ranking for Your Assigned Papers
 </a> -- you can get to reviews from here as well

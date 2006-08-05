@@ -1,5 +1,6 @@
 <?php 
 require_once('Code/confHeader.inc');
+require_once('Code/papertable.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
@@ -370,12 +371,12 @@ function caption_class($what) {
 }
 
 function pt_data($what, $rows, $authorTable = false) {
-    global $mode, $editable, $newPaper, $prow, $useRequest;
+    global $editable, $prow, $useRequest;
     if ($editable)
 	echo "<textarea class='textlite' name='$what' rows='$rows' cols='80' onchange='highlightUpdate()'>";
     if ($useRequest)
 	$text = $_REQUEST[$what];
-    else if (!$newPaper)
+    else if ($prow)
 	$text = $prow->$what;
     else
 	$text = "";
@@ -408,183 +409,65 @@ if (!$newPaper) {
 }
 
 
+// prepare paper table
+$canViewAuthors = $Me->canViewAuthors($prow, $Conf, $mode == "reviews");
+if ($mode == "edit" && $Me->amAssistant())
+    $canViewAuthors = true;
+
+$paperTable = new PaperTable($editable, $editable && $useRequest,
+			     $mode == "reviews",
+			     !$canViewAuthors && $Me->amAssistant());
+
+
 // paper status
 if (!$newPaper) {
-    echo "<tr id='foldst' class='fold1ed'>\n  <td class='caption'>";
     if ($mode == "reviews")
-	echo "<a href=\"javascript:fold(['st','pa','ab','ca','au','co','to'], 0, 1)\" class='foldbutton unfolder1'>+</a>",
-	    "<a href=\"javascript:fold(['st','pa','ab','ca','au','co','to'], 1, 1)\" class='foldbutton folder1'>&minus;</a> ";
-    if ($mode != "edit")
-	echo "Paper</td>\n";
-    
-    echo "  <td class='entry'>", $Me->paperStatus($paperId, $prow, ($mode == "view" || $mode == "edit"));
-    if ($mode == "reviews")
-	echo " ", paperDownload($paperId, $prow, 1);
-    //echo "&nbsp;&nbsp;&nbsp; ",
-    //    "<a href=\"javascript:fold(['st','pa','ab','ca','au','co','to'], 0, 1)\" class='button_small unfolder1'>Show&nbsp;paper&nbsp;information</a>",
-    //    "<a href=\"javascript:fold(['st','pa','ab','ca','au','co','to'], 1, 1)\" class='button_small folder1'>Hide&nbsp;paper&nbsp;information</a>";
-    else if ($prow->author > 0)
-	echo "<br/>\nYou are an <span class='author'>author</span> of this paper.";
-    else if ($Me->isPC && $prow->conflict > 0)
-	echo "<br/>\nYou have a <span class='conflict'>conflict</span> with this paper.";
-    if ($prow->reviewType != null && $mode == "view") {
-	if ($prow->reviewType == REVIEW_PRIMARY)
-	    echo "<br/>\nYou are a primary reviewer for this paper.";
-	else if ($prow->reviewType == REVIEW_SECONDARY)
-	    echo "<br/>\nYou are a secondary reviewer for this paper.";
-	else if ($prow->reviewType == REVIEW_REQUESTED)
-	    echo "<br/>\nYou were requested to review this paper.";
-	else
-	    echo "<br/>\nYou began a review for this paper.";
-    }
-    echo "</td>\n</tr>\n\n";
+	$paperTable->echoStatusRow($prow, PaperTable::STATUS_DOWNLOAD);
+    else if ($mode == "edit")
+	$paperTable->echoStatusRow($prow, PaperTable::STATUS_DATE | PaperTable::NOCAPTION);
+    else
+	$paperTable->echoStatusRow($prow, PaperTable::STATUS_DATE | PaperTable::STATUS_CONFLICTINFO | PaperTable::STATUS_REVIEWERINFO);
 }
 
 
 // Editable title
-if ($editable) {
-    echo "<tr class='pt_title'>\n  <td class='",
-	caption_class("title"), "'>Title</td>\n";
-    echo "  <td class='entry$textareaClass'>";
-    pt_data("title", 1);
-    echo "</td>\n</tr>\n\n";
-}
-
-
-// Paper information folding
-if ($mode == "reviews") {
-    $trClasses = " fold1ed";
-    $tdClasses = " extension1";
-} else
-    $trClasses = $tdClasses = "";
+if ($editable)
+    $paperTable->echoTitleRow($prow);
 
 
 // Paper
 if ($mode != "reviews"
     && ($newPaper || ($prow->withdrawn <= 0 && ($editable || $prow->size > 0)))) {
-    echo "<tr class='pt_paper$trClasses' id='foldpa'>\n  <td class='",
-	caption_class("paper"), $tdClasses, "'>";
-    if ($mode != "view")
-	echo "Paper", ($newPaper ? " (optional)" : "");
-    echo "</td>\n";
-    echo "  <td class='entry", $tdClasses, "'>";
-    if (!$newPaper && $prow->size > 0)
-	echo paperDownload($paperId, $prow, 1);
-    if ($newPaper || ($mode == "edit" && $prow->acknowledged <= 0)) {
-	if (!$newPaper && $prow->size > 0)
-	    echo "<br/>\n    ";
-	echo "<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='", ($newPaper ? 30 : 30), "' />";
-	if (!$newPaper && 0)
-	    echo "&nbsp;<input class='button' type='submit' name='upload' value='Upload paper' />";
-    }
-    echo "</td>\n";
-    if ($newPaper || ($mode == "edit" && $prow->acknowledged <= 0))
-	echo "  <td class='hint$tdClasses'>Max size: ", ini_get("upload_max_filesize"), "B</td>\n";
-    echo "</tr>\n\n";
+    if ($mode == "edit")
+	$paperTable->echoDownloadRow($prow, ($newPaper ? PaperTable::OPTIONAL : 0));
+    else
+	$paperTable->echoDownloadRow($prow, PaperTable::NOCAPTION);
 }
 
 
 // Abstract
-echo "<tr class='pt_abstract", $trClasses, "' id='foldab'>\n  <td class='",
-    caption_class("abstract"), $tdClasses,
-    "'>Abstract</td>\n  <td class='entry", $tdClasses, $textareaClass, "'>";
-pt_data("abstract", 5);
-echo "</td>\n</tr>\n\n";
-
-
-// Author area
-$canViewAuthors = $Me->canViewAuthors($prow, $Conf);
-if ($mode == "edit" && $Me->amAssistant())
-    $canViewAuthors = true;
-if ((!$canViewAuthors || $mode == "reviews") && $Me->amAssistant()) {
-    $authorFolders = "['ca','au','co']";
-    $authorTRClasses = $trClasses . " folded";
-    $authorTDClasses = $tdClasses . " extension";
-    $canViewAuthors = false;
-} else {
-    $authorTRClasses = $trClasses;
-    $authorTDClasses = $tdClasses;
-}
+$paperTable->echoAbstractRow($prow);
 
 
 // Authors
-if ($newPaper || $canViewAuthors || $Me->amAssistant()) {
-    echo "<tr class='pt_authors$authorTRClasses' id='foldau'>\n  <td class='",
-	caption_class("authorInformation"), $tdClasses,
-	"'>";
-    if (!$newPaper && !$canViewAuthors && $Me->amAssistant())
-	echo "<a href=\"javascript:fold($authorFolders, 0)\" class='foldbutton unfolder'>+</a>",
-	    "<a href=\"javascript:fold($authorFolders, 1)\" class='foldbutton folder'>&minus;</a> ";
-    echo "Authors</td>\n  <td class='entry$tdClasses$textareaClass'>";
-    if (!$newPaper && !$canViewAuthors && $Me->amAssistant()) {
-	echo "<span class='ellipsis'><i>Hidden</i></span><span class='extension'>";
-	pt_data("authorInformation", 5, true);
-	echo "</span>";
-    } else
-	pt_data("authorInformation", 5, true);
-    echo "</td>\n";
-    if ($editable)
-	echo "  <td class='hint$authorTDClasses'>List the paper's authors one per line, including any affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
-Ludwig van Beethoven (Colorado)
-Zhang, Ping Yen (INRIA)</pre></td>\n";
-    echo "</tr>\n\n";
-}
+if ($newPaper || $canViewAuthors || $Me->amAssistant())
+    $paperTable->echoAuthorInformation($prow);
 
 
 // Contact authors
-if ($newPaper) {
-    echo "<tr class='pt_contactAuthor$authorTRClasses' id='foldca'>\n  <td class='", caption_class('contactAuthor'), $authorTDClasses, "'>";
-    echo "Contact author</td>\n  <td class='entry$authorTDClasses'>";
-    if ($Me->amAssistant())
-	contactPulldown("contact", "contact", $Conf, $Me);
-    else
-	echo contactText($Me->firstName, $Me->lastName, $Me->email);
-    echo "</td>\n";
-    echo "  <td class='hint$authorTDClasses'>You will be able to add more contact authors after you submit the paper.</td>\n";
-} else if ($canViewAuthors || $Me->amAssistant()) {
-    $result = $Conf->qe("select firstName, lastName, email, contactId
-	from ContactInfo
-	join PaperConflict using (contactId)
-	where paperId=$paperId and author=1
-	order by lastName, firstName", "while finding contact authors");
-    echo "<tr class='pt_contactAuthor$authorTRClasses' id='foldca'>\n  <td class='caption$authorTDClasses'>";
-    echo (!DB::isError($result) && $result->numRows() == 1 ? "Contact author" : "Contact authors");
-    echo "</td>\n  <td class='entry$authorTDClasses'>";
-    if (!DB::isError($result)) {
-	while ($row = $result->fetchRow()) {
-	    $au = contactText($row[0], $row[1], $row[2]);
-	    $aus[] = $au;
-	}
-	echo authorTable($aus, false);
-    }
-    if ($mode == "edit")
-	echo "<a class='button_small' href='contactauthors.php?paperId=$paperId'>Edit&nbsp;contact&nbsp;authors</a>";
-    echo "</td>\n</tr>\n\n";
-}
+if ($newPaper)
+    $paperTable->echoNewContactAuthor($Me->amAssistant());
+else if ($canViewAuthors || $Me->amAssistant())
+    $paperTable->echoContactAuthor($prow);
 
 
 // Collaborators
-if ($newPaper || $canViewAuthors || $Me->amAssistant()) {
-    echo "<tr class='pt_collaborators$authorTRClasses' id='foldco'>\n  <td class='",
-	caption_class("collaborators"), $authorTDClasses,
-	"'>Collaborators</td>\n  <td class='entry$authorTDClasses$textareaClass'>";
-    pt_data("collaborators", 5, true);
-    echo "</td>\n";
-    if ($editable)
-	echo "  <td class='hint$authorTDClasses'>List the authors' recent (~2 years) coauthors and collaborators, and any advisor or student relationships.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td>\n";
-    echo "</tr>\n\n";
-}
+if ($newPaper || $canViewAuthors || $Me->amAssistant())
+    $paperTable->echoCollaborators($prow);
 
 
 // Topics
-$topicMode = (int) $useRequest;
-if ($mode != "edit" || (!$newPaper && ($prow->acknowledged > 0 || $prow->withdrawn > 0)))
-    $topicMode = -1;
-if ($topicTable = topicTable($paperId, $topicMode, $Conf)) { 
-    echo "<tr class='pt_topics$trClasses' id='foldto'>
-  <td class='caption$tdClasses'>Topics</td>
-  <td class='entry$tdClasses' id='topictable'>", $topicTable, "</td>\n</tr>\n\n";
-}
+$paperTable->echoTopics($prow);
 
 
 // PC conflicts
@@ -672,7 +555,7 @@ if ($mode == "edit") {
 	    $buttons[] = array("<input class='button' type='submit' name='unsubmit' value='Undo submit' />", "(PC chair only)"); 
 	$buttons[] = "<input class='button' type='submit' name='withdraw' value='Withdraw paper' />";
     }
-    if ($Me->amAssistant())
+    if ($Me->amAssistant() && !$newPaper)
 	$buttons[] = array("<div id='folddel' class='folded' style='position: relative'><button type='button' onclick=\"fold('del', 0)\">Delete paper</button><div class='popupdialog extension'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><input class='button' type='submit' name='delete' value='Delete paper' /> <button type='button' onclick=\"fold('del', 1)\">Cancel</button></div></div>", "(PC chair only)");
     echo "    <tr>\n";
     foreach ($buttons as $b) {

@@ -426,7 +426,7 @@ tr.pt_abstract td.entry {
 tr.pt_paper input {
 	margin-top: 4px;
 }
-div#paper_reviews span.pstat {
+div#paper_reviews span.pstat, div#review tr.pt_status span.pstat {
 	margin-right: 1em;
 }
 pre.entryexample {
@@ -434,6 +434,9 @@ pre.entryexample {
 	background: #eeeeee;
 }
 
+table.topictable {
+	padding-top: 3px;
+}
 table.topictable tr td {
 	padding-right: 2em;
 }
@@ -441,7 +444,7 @@ table.topictable tr td {
 tr#topicinterest td.caption, tr#topicinterest td.hint {
 	padding-top: 1.3em;
 }
-tr#topicinterest td#topicinterest, td#topictable, tr.pt_actions td,
+tr#topicinterest td#topicinterest, tr.pt_topics td.entry, tr.pt_actions td,
 td.plholder, tr.rev_actions td.entry, tr.pt_reviews td.entry {
 	vertical-align: top;
 	padding-top: 0px;

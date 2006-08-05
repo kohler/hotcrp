@@ -20,14 +20,14 @@ if ($Me->amReviewer()) {
 
 <table>
 <tr class='pt_actions'>
-  <td class='form_entry'><form method='get' action='All/ReviewPaper.php'><input class='button_default' type='submit' name='downloadForm' value='Download review form' /></form></td>
+  <td class='form_entry'><form method='get' action='review.php'><input class='button_default' type='submit' name='downloadForm' value='Download review form' /></form></td>
 
 <?php if ($Me->amReviewer()) {
     $disabled = ($pastDeadline && !$Me->amAssistant() ? " disabled='disabled'" : "");
 ?>
   <td class='form_entry' id='upload'><table class='compact'>
     <tr>
-      <td><form action='All/ReviewPaper.php?form=1' method='post' enctype='multipart/form-data'>
+      <td><form action='review.php?form=1' method='post' enctype='multipart/form-data'>
 	<input type='hidden' name='redirect' value='offline' />
 	<input type='file' name='uploadedFile' accept='text/plain' size='30' <?php echo $disabled ?>/>&nbsp;<input class='button_default' type='submit' value='Upload review form' name='uploadForm' <?php echo $disabled ?>/>
       </form></td>

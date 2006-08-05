@@ -1,39 +1,47 @@
 <?php 
 require_once('Code/confHeader.inc');
+require_once('Code/papertable.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 
-function doGoPaper() {
-    echo "<div class='gopaper'>", goPaperForm(1), "</div><div class='clear'></div>\n\n";
+
+// header
+function confHeader() {
+    global $paperId, $prow, $mode, $Conf;
+    if ($paperId > 0)
+	$title = "Review Paper #$paperId";
+    else
+	$title = "Review Papers";
+    $Conf->header($title, "review", actionBar($prow, false, "editreview"));
 }
-    
-function initialError($what, &$tf = null) {
-    global $Conf, $paperId;
+
+function errorMsgExit($msg, &$tf = null) {
+    global $Conf;
     if ($tf == null) {
-	$title = ($paperId <= 0 ? "Review Papers" : "Review Paper #$paperId");
-	$Conf->header($title, 'review');
-	doGoPaper();
-	$Conf->errorMsgExit($what);
+	confHeader();
+	$Conf->errorMsgExit($msg);
     } else {
-	$tf['err'][] = $tf['firstLineno'] . ": $what";
+	$tf['err'][] = $tf['firstLineno'] . ": $msg";
 	return null;
     }
 }
 
+
+//  
 function get_prow($paperIdIn, &$tf = null) {
     global $Conf, $prow, $Me;
 
     if (($paperId = cvtint(trim($paperIdIn))) <= 0)
-	return ($prow = initialError("Bad paper ID \"" . htmlentities($paperIdIn) . "\".", $tf));
+	return ($prow = errorMsgExit("Bad paper ID \"" . htmlentities($paperIdIn) . "\".", $tf));
     
     $result = $Conf->qe($Conf->paperQuery($Me->contactId, array("paperId" => $paperId)), "while requesting paper to review");
     if (DB::isError($result) || $result->numRows() == 0)
-	$prow = initialError("No such paper #$paperId.", $tf);
+	$prow = errorMsgExit("No such paper #$paperId.", $tf);
     else {
 	$prow = $result->fetchRow(DB_FETCHMODE_OBJECT);
 	if (!$Me->canStartReview($prow, $Conf, $whyNot))
-	    $prow = initialError(whyNotText($whyNot, "review", $prow->paperId), $tf);
+	    $prow = errorMsgExit(whyNotText($whyNot, "review", $prow->paperId), $tf);
     }
 }
 
@@ -53,7 +61,7 @@ function get_rrow($paperId, $reviewId = -1, $tf = null) {
 
     if (DB::isError($result) || $result->numRows() == 0) {
 	if ($reviewId > 0)
-	    initialError("No such paper review #$reviewId.", $tf);
+	    errorMsgExit("No such paper review #$reviewId.", $tf);
 	$rrow = null;
     } else {
 	$rrow = $result->fetchRow(DB_FETCHMODE_OBJECT);
@@ -65,7 +73,7 @@ $rf = reviewForm();
 
 $originalPaperId = cvtint($_REQUEST["paperId"]);
 
-if (isset($_REQUEST["form"]) && $_REQUEST["form"] && !count($_POST))
+if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
     $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  Any changes were lost.");
 
 if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Conf)) {
@@ -83,14 +91,14 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     }
     $rf->parseTextFormErrors($tf, $Conf);
     if (isset($_REQUEST['redirect']) && $_REQUEST['redirect'] == 'offline')
-	go("OfflineReview.php");
+	go("${ConfSiteBase}uploadreview.php");
  }
 
 $paperId = $originalPaperId;
 if (isset($_REQUEST["reviewId"])) {
     get_rrow(-1, cvtint(trim($_REQUEST["reviewId"])));
     if ($Me->contactId != $rrow->contactId && !$Me->amAssistant())
-	initialError("You did not create review #$rrow->reviewId, so you cannot edit it.");
+	errorMsgExit("You did not create review #$rrow->reviewId, so you cannot edit it.");
     $paperId = $rrow->paperId;
     get_prow($paperId);
 } else if ($paperId > 0) {
@@ -111,9 +119,9 @@ if (isset($_REQUEST['downloadForm'])) {
     exit;
  }
 
-$title = ($paperId > 0 ? "Review Paper #$paperId" : "Review Papers");
-$Conf->header($title, 'review');
-doGoPaper();
+
+confHeader();
+
 
 if ($paperId <= 0) {
     $Conf->errorMsg("No paper selected to review.");
@@ -135,103 +143,59 @@ if ($Me->amAssistant())
 if (!$Me->timeReview($prow, $Conf))
     $Conf->infoMsg("The <a href='${ConfSiteBase}deadlines.php'>deadline</a> for modifying this review has passed.");
 
+
+// begin table
+echo "<table class='reviewform'>\n\n";
+
+
+// title
+echo "<tr class='id'>\n  <td class='caption'><h2>Review #", $paperId;
+if ($rrow && $rrow->reviewSubmitted > 0)
+    echo unparseReviewOrdinal($rrow->reviewOrdinal);
+echo "</h2></td>\n";
+echo "  <td class='entry' colspan='2'><h2>", htmlspecialchars($prow->title), "</h2></td>\n</tr>\n\n";
+
+
+// paper table
+$canViewAuthors = $Me->canViewAuthors($prow, $Conf, true);
+$paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->amAssistant());
+
+$paperTable->echoStatusRow($prow, PaperTable::STATUS_DOWNLOAD);
+$paperTable->echoAbstractRow($prow);
+if ($canViewAuthors || $Me->amAssistant()) {
+    $paperTable->echoAuthorInformation($prow);
+    $paperTable->echoContactAuthor($prow);
+    $paperTable->echoCollaborators($prow);
+}
+$paperTable->echoTopics($prow);
+
+
+// review information
+// XXX reviewer ID
+// XXX "<td class='entry'>", htmlspecialchars(contactText($rrow)), "</td>"
+echo "<tr class='rev_rev'>\n";
+echo "  <td class='caption'>Review</td>\n";
+echo "  <td class='entry'>";
+echo reviewStatus((isset($rrow) ? $rrow : $prow), true, true), "; ",
+    reviewType($paperId, $prow, true), "<br/>";
+echo "<form class='downloadreviewform' action='review.php' method='get'>",
+    "<input type='hidden' name='paperId' value='$paperId' />",
+    "<input class='button_small' type='submit' value='Download form' name='downloadForm' id='downloadForm' />",
+    "</form>";
+echo "<form class='downloadreviewform' action='review.php?form=1' method='post' enctype='multipart/form-data'>",
+    "<input type='hidden' name='paperId' value='$paperId' />",
+    "<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp;<input class='button_small' type='submit' value='Upload form' name='uploadForm' />",
+    "</form>";
+echo "</td>\n";
+echo "</tr>\n\n";
+
 ?>
-
-<table class='revtop'>
-<tr class='id'>
-  <td class='caption'><h2>Review<?php
-	if ($rrow && $rrow->reviewSubmitted > 0)
-	    echo " ", chr(65 + $rrow->reviewOrdinal);
-  ?></h2></td>
-  <td class='entry'><h2>for <a href='paper.php?paperId=<?php echo $paperId ?>'>Paper #<?php echo $paperId ?></a></h2></td>
-</tr>
-
-<?php if (isset($rrow) && $Me->contactId != $rrow->contactId) { ?>
-<tr class='rev_type'>
-  <td class='caption'>Reviewer</td>
-  <td class='entry'><?php echo htmlspecialchars(contactText($rrow)) ?></td>
-</tr>
-<?php } ?>
-								
-<tr class='rev_type'>
-  <td class='caption'>Review type</td>
-  <td class='entry'><?php echo reviewType($paperId, $prow, true) ?></td>
-</tr>
-
-<tr class='rev_status'>
-  <td class='caption'>Review status</td>
-  <td class='entry'><?php echo reviewStatus((isset($rrow) ? $rrow : $prow), true, true) ?></td>
-</tr>
-
-<tr class='rev_download'>
-  <td class='caption'>Offline reviewing</td>
-  <td class='entry'>
-    <form class='downloadreviewform' action='ReviewPaper.php' method='get'>
-      <input type='hidden' name='paperId' value='<?php echo $paperId ?>' />
-      <input class='button_small' type='submit' value='Download review' name='downloadForm' id='downloadForm' />
-    </form>
-  </td>
-</tr>
-<tr class='rev_upload'>
-  <td class='caption'></td>
-  <td class='entry'>
-    <form class='downloadreviewform' action='ReviewPaper.php?form=1' method='post' enctype='multipart/form-data'>
-      <input type='hidden' name='paperId' value='<?php echo $paperId ?>' />
-      <input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp;<input class='button_small' type='submit' value='Upload review' name='uploadForm' />
-    </form>
   </td>
 </tr>
 </table>
 
 
-<table class='auview'>
-<tr>
-  <td class='caption'>#<?php echo $paperId ?></td>
-  <td class='entry pt_title'><?php echo htmlspecialchars($prow->title) ?></td>
-</tr>
-
-<tr>
-  <td class='caption'>Status</td>
-  <td class='entry'><?php echo $Me->paperStatus($paperId, $prow, 1) ?></td>
-</tr>
-
-<?php if ($prow->withdrawn <= 0 && $prow->size > 0) { ?>
-<tr>
-  <td class='caption'>Paper</td>
-  <td class='entry'><?php echo paperDownload($paperId, $prow, 1) ?></td>
-</tr>
-<?php } ?>
-
-<tr class='pt_abstract'>
-  <td class='caption'>Abstract</td>
-  <td class='entry'><?php echo htmlFold(htmlspecialchars($prow->abstract), 25) ?></td>
-</tr>
-
-<?php if ($Me->canViewAuthors($prow, $Conf)) { ?>
-<tr class='pt_authors'>
-  <td class='caption'>Authors</td>
-  <td class='entry'><?php echo authorTable($prow->authorInformation) ?></td>
-</tr>
-
-<tr class='pt_collaborators'>
-  <td class='caption'>Collaborators</td>
-  <td class='entry'><?php echo authorTable($prow->collaborators) ?></td>
-</tr>
-<?php } ?>
-
-<?php
-if ($topicTable = topicTable($paperId, -1)) { 
-    echo "<tr class='pt_topics'>
-  <td class='caption'>Topics</td>
-  <td class='entry' id='topictable'>", $topicTable, "</td>
-</tr>\n";
- }
-?>
-</table>
-
-<hr class='clear' />
-
-<form action='ReviewPaper.php?form=1' method='post' enctype='multipart/form-data'>
+<form action='ReviewPaper.php?post=1' method='post' enctype='multipart/form-data'>
 <?php
     if (isset($rrow))
 	echo "<input type='hidden' name='reviewId' value='$rrow->reviewId' />\n";

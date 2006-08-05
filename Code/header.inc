@@ -67,7 +67,7 @@ if (file_exists($here . "/Code/confHeader.inc")) {
 	$url = substr($url, 0, $rpos);
     }
     if (!isset($ConfSiteBase))
-	$ConfSiteBase = "./";
+	$ConfSiteBase = "";
 }
 
 
@@ -77,7 +77,6 @@ if (file_exists($here . "/Code/confHeader.inc")) {
 require_once("$ConfSitePATH/Code/Helpers.inc");
 require_once("$ConfSitePATH/Code/ClassConference.inc");
 require_once("$ConfSitePATH/Code/ClassContact.inc");
-require_once("$ConfSitePATH/Code/ClassPaper.inc");
 require_once("$ConfSitePATH/Code/ClassReview.inc");
 //
 //

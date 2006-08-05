@@ -193,9 +193,9 @@ class ReviewForm {
 	}
 	
 	if ($rrow)
-	    return $conf->qe("update PaperReview set " . substr($q, 0, -2) . ", reviewLastModified=current_timestamp where reviewId=$rrow->reviewId", "while storing review");
+	    return $conf->qe("update PaperReview set $q reviewModified=" . time() . " where reviewId=$rrow->reviewId", "while storing review");
 	else
-	    return $conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contactId, requestedOn=current_timestamp, " . substr($q, 0, -2), ", reviewLastModified=current_timestamp while storing review");
+	    return $conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contactId, requestedOn=current_timestamp, $q reviewModified=" . time() . " while storing review");
     }
 
 
@@ -210,7 +210,7 @@ class ReviewForm {
 ==-== through \"End Review\".  Make sure to change the paper number.\n";
 	$x .= "==-== DO NOT DELETE, ALTER, OR ADD LINES BEGINNING WITH \"==+==\"!
 ==-== When you are done, upload the review form at this address:
-==-== $conf->paperSite/OfflineReview.php
+==-== $conf->paperSite/uploadreview.php
 ==-== That site also has further guidance on the review form.\n\n";
 	return $x;
     }

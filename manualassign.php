@@ -20,7 +20,7 @@ function saveAssignments($reviewer) {
 	return $result;
 
     $result = $Conf->qe("select Paper.paperId,
-	reviewId, reviewType, reviewLastModified
+	reviewId, reviewType, reviewModified
 	from Paper
 	left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=$reviewer)
 	where acknowledged>0 and withdrawn<=0
@@ -39,7 +39,7 @@ function saveAssignments($reviewer) {
 		$q = "insert into PaperReview set paperId=$row->paperId, contactId=$reviewer, reviewType=$type, requestedBy=$Me->contactId, requestedOn=current_timestamp";
 	    else if ($type > 0 && $row->reviewType != $type)
 		$q = "update PaperReview set reviewType=$type where reviewId=$row->reviewId";
-	    else if ($type == 0 && $row->reviewType && !$row->reviewLastModified)
+	    else if ($type == 0 && $row->reviewType && !$row->reviewModified)
 		$q = "delete from PaperReview where reviewId=$row->reviewId";
 	    else if ($type == 0 && $row->reviewType)
 		$q = "update PaperReview set reviewType=" . REVIEW_PC . " where reviewId=$row->reviewId";
