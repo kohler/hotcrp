@@ -354,9 +354,10 @@ else if ($newPaper) {
 } else if ($prow->author > 0) {
     $override2 = ($Me->amAssistant() ? "  As PC Chair, you can unsubmit the paper, which will allow further changes, using the \"Undo submit\" button." : "");
     $Conf->infoMsg("This paper has been submitted and can no longer be changed.  You can still withdraw the paper or add contact authors, allowing others to view reviews as they become available.$override2");
-}
-if ($mode == "edit" && !$newPaper && !$prow->author)
-    $Conf->infoMsg("You are not an author of this paper, but can still make changes as PC Chair.");
+} else if (!$Me->amAssistant())
+    errorMsgExit("You can't edit paper #$paperId since you aren't one of its contact authors.");
+else
+    $Conf->infoMsg("You aren't a contact author for this paper, but can still make changes as PC Chair.");
 
 
 confHeader();

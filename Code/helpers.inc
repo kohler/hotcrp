@@ -468,7 +468,7 @@ function whyNotText($whyNot, $action, $paperId = -1) {
     if (isset($whyNot['permission']))
 	$text .= "You don't have permission to $action $thisPaper.  ";
     if (isset($whyNot['author']))
-	$text .= "You aren't an author of $thisPaper.  ";
+	$text .= "You aren't a contact author for $thisPaper.  ";
     if (isset($whyNot['conflict']))
 	$text .= "You have a conflict with $thisPaper.  ";
     if (isset($whyNot['reviewNotComplete']))
