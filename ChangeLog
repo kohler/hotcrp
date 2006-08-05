@@ -1,82 +1,1205 @@
-2004-06-04 Ratul Mahajan <ratul@cs.washington.edu>
-        * Tasks-Author.inc: authors could not see their reviews 
-	bug fix from kevin fall and keshav
+2006-08-05 Saturday 13:01  kohler
 
-2004-04-03 Ratul Mahajan <ratul@cs.washington.edu>
-        * Author/AuthorViewPaper.php: adding amPaperAuthor test to fix
-	the snooping author bug.
+	* login.php (1.5), Code/conference.sql (1.28): nits
 
-2003-11-15  Ratul Mahajan <ratul@cs.washington.edu>
-	* Reviewer/SeeDecisions.php: bug fix in the query
+2006-08-05 Saturday 12:53  kohler
 
-2003-11-15  Ratul Mahajan <ratul@cs.washington.edu>
-	* Chair/SendMail.php,  Chair/SendMail2.php, Code/ClassReview.php"
-	enabling review and comment mailing to authors
+	* index.php (1.38), paper.php (1.33), pc.php (1.1), script.js
+	  (1.7), uploadreview.php (1.3), Chair/CommonAddToCommittee.inc
+	  (1.16), Chair/ListPC.php (1.9), Chair/ReviewPC.php (1.5),
+	  Code/Helpers.inc (1.42), Style/base.css (1.55): move to pc.php
+	  from Chair/ReviewPC
 
-2003-11-11  Ratul Mahajan <ratul@cs.washington.edu>
+2006-08-04 Friday 18:30  kohler
 
-	* images/GenChart.php: correct currX computation to deal with
-	$valMin!=1
+	* paper.php (1.32), Code/Helpers.inc (1.41): author fixing
 
-2003-10-12  Dirk Grunwald  <grunwald@systems.cs.colorado.edu>
+2006-08-04 Friday 18:21  kohler
 
-	* Code/SuckInOSDIPaper.php-not-via-apache: Add to CVS repository for future conferences.
+	* review.php (1.7), uploadreview.php (1.2), Code/ClassReview.inc
+	  (1.19), Style/base.css (1.54): blerng
 
-2003-10-07  Dirk Grunwald  <grunwald@home.cs.colorado.edu>
+2006-08-04 Friday 18:01  kohler
 
-	* Chair/AssignPapers.php: Fix us of $Me rathe than $_Session[Me]
+	* OfflineReview.php (1.4), Tasks-PC.inc (1.6), index.php (1.37),
+	  paper.php (1.31), review.php (1.6), uploadreview.php (1.1),
+	  All/ReviewPaper.php (1.18), Chair/AssignPapers.php (1.11),
+	  Code/ClassConference.inc (1.51), Code/ClassContact.inc (1.35),
+	  Code/ClassPaper.inc (1.4), Code/ClassPaperList.inc (1.16),
+	  Code/ClassReview.inc (1.18), Code/Helpers.inc (1.40),
+	  Code/confHeader.inc (1.17), Code/conference.sql (1.27),
+	  Code/papertable.inc (1.1), PC/reviewprefs.php (1.2),
+	  Style/base.css (1.53): reviews
 
-2003-10-02  Dirk Grunwald  <grunwald@home.cs.colorado.edu>
+2006-08-04 Friday 13:41  kohler
 
-	* Download/GetPaper.php: add backup mechanism to download paper
-	due to problem with MobiSys/etc using /Download/GetPaper/<id>. I
-	don't know why this occurs, but this makes it an explicit paper
-	link with a passed in paperId. Other code (in 'GetPaper') is still
-	preserved.
+	* Tasks-Chair.inc (1.9), paper.php (1.30),
+	  Assistant/AssistantViewSinglePaper.php (1.5),
+	  Chair/DeletePaper.php (1.3), Chair/DeletePaper2.php (1.4),
+	  Chair/DeletePaper3.php (1.3), Code/ClassConference.inc (1.50),
+	  PC/PCAllAnonReviewsForPaper.php (1.9): remove old deletion
+	  methods
 
-2003-09-27  Dirk Grunwald  <grunwald@systems.cs.colorado.edu>
+2006-08-04 Friday 13:31  kohler
 
-	* PC/PCAllAnonReviewsForPaper.php: Add options to allow conference
-	package to fine-tune display of information to PC members during
-	the PC meeting (author, unfinished reviews, reviewer information)
-	Also, fix numerous mistakes introduced by MICRO36.
+	* paper.php (1.29), Code/ClassConference.inc (1.49): paper deletion
 
-	* Chair/ModifyPaper.php: Change ModifyPaper to use standard paper
-	edit form in Author/PaperForm.inc
+2006-08-04 Friday 10:25  kohler
 
-2002-08-02  Dirk Grunwald  <grunwald@esl.cs.colorado.edu>
+	* index.php (1.36), paper.php (1.28), Code/ClassContact.inc (1.34),
+	  Code/Helpers.inc (1.39), Style/base.css (1.52): delete paper
+	  dialog
 
-	* Author/SubmitResponse.php: strip slashes from authors comments
-	since they're added when saving.
+2006-08-03 Thursday 21:43  kohler
 
-2002-08-01  Dirk Grunwald  <grunwald@systems.cs.colorado.edu>
+	* Chair/AssignPapers.php (1.10), Code/ClassConference.inc (1.48),
+	  Code/ClassPaperList.inc (1.15), Code/conference.sql (1.26),
+	  PC/reviewprefs.php (1.1), Style/base.css (1.51): reviewer
+	  preferences
 
-	* Chair/SendMail.php: Add corresponding option to menu.
+2006-08-03 Thursday 00:52  kohler
 
-	* Chair/SendMail2.php: Add mechanism to send mail to all people
-	who have been asked to review a paper but haven't started or
-	finished a review. Only based on ReviewRequest.
+	* contactauthors.php (1.6), index.php (1.35), paper.php (1.27),
+	  review.php (1.5), All/MergeAccounts.php (1.15),
+	  All/ReviewPaper.php (1.17), Chair/AssignPapers.php (1.9),
+	  Code/ClassConference.inc (1.47), Code/ClassContact.inc (1.33),
+	  Code/ClassPaperList.inc (1.14), Code/ClassReview.inc (1.17),
+	  Code/Helpers.inc (1.38), Code/confHeader.inc (1.16),
+	  Code/conference.sql (1.25), Style/base.css (1.50): holy shit, we
+	  have review assignment
 
-2002-02-15    <grunwald@lifebook.dyndns.org>
+2006-08-01 Tuesday 23:48  kohler
 
-	* Assistant/AssistantListPapers.php: Remove special "finalized"
-	hack since the more general "ModifyPaper" has been added.
+	* paper.php (1.26), review.php (1.4), All/ImportantDates.php (1.5),
+	  All/MergeAccounts.php (1.14), All/ViewPaper.php (1.19),
+	  Assistant/AssistantListPapers.php (1.6),
+	  Assistant/DumpAllReviews.php (1.6), Assistant/PrintAllReviews.php
+	  (1.6), Author/ViewReview.php (1.7), Chair/AskForReview.php (1.5),
+	  Chair/AssignConflicts.php (1.6), Chair/AssignPapers.php (1.8),
+	  Chair/BecomeSomeoneElse.php (1.4),
+	  Chair/CheckOnSinglePCProgress.php (1.4), Chair/Code.inc (1.7),
+	  Chair/FindPCConflicts.php (1.6), Chair/ListPapersAssignedToPC.php
+	  (1.6), Chair/NewAssignPapers.php (1.6), Chair/SetPCPaper.php
+	  (1.3), Chair/SpotProblems.php (1.4), Code/ClassConference.inc
+	  (1.46), Code/ClassContact.inc (1.32), Code/ClassReview.inc
+	  (1.16), Code/DumpSingleReview.php-not-via-apache (1.5),
+	  Code/conference.sql (1.24), PC/PCAllAnonReviewsForPaper.php
+	  (1.8), PC/PCNotes.php (1.4), Style/base.css (1.49):
+	  PrimaryReviewer fixes
 
-2002-02-15  Dirk Grunwald  <grunwald@esl.cs.colorado.edu>
+2006-08-01 Tuesday 18:56  kohler
 
-	* Change database functions in all files to use PEAR::DB files
+	* paper.php (1.25), review.php (1.3), Code/ClassReview.inc (1.15),
+	  Style/base.css (1.48): a bit more
 
-2002-02-05  Dirk Grunwald  <grunwald@esl.cs.colorado.edu>
+2006-08-01 Tuesday 18:48  kohler
 
-	* All/UpdateContactInfo.php: Added infoMsg asking you to update
-	your first/last name if they're not set. This is used as target of
-	redirection from /index.php.
+	* paper.php (1.24), All/Logout.php (1.6), All/authAccount.php
+	  (1.10), All/login.php (1.10), Author/PaperContacts.php (1.5),
+	  Author/SubmitPaper.php (1.20): remove some dumb shit
 
-	* index.php: Added check to see if user first/last name are set
-	and if not, user is redirected to the "contact information" page
-	to update their information.
+2006-08-01 Tuesday 18:43  kohler
 
-2002-02-02    <grunwald@lifebook.dyndns.org>
+	* Code/Helpers.inc (1.37): link to main review site
 
-	*  (All): Remove use of ASP tags, using <? and ?> tags throughout
+2006-08-01 Tuesday 18:41  kohler
+
+	* paper.php (1.23): different author folding
+
+2006-08-01 Tuesday 18:35  kohler
+
+	* paper.php (1.22), script.js (1.6), Code/Helpers.inc (1.36):
+	  rearrangement
+
+2006-07-31 Monday 12:54  kohler
+
+	* contactauthors.php (1.5), paper.php (1.21): nits
+
+2006-07-31 Monday 10:52  kohler
+
+	* paper.php (1.20), All/UpdateContactInfo.php (1.21),
+	  Chair/SetReviewForm.php (1.8), Chair/SetTopics.php (1.11),
+	  Style/base.css (1.47): stupid textarea nonsense
+
+2006-07-31 Monday 09:33  kohler
+
+	* contactauthors.php (1.4): contact
+
+2006-07-31 Monday 09:26  kohler
+
+	* index.php (1.34), paper.php (1.19), Code/Helpers.inc (1.35),
+	  Style/base.css (1.46): inline forms?
+
+2006-07-31 Monday 09:12  kohler
+
+	* All/index.php (1.2), Code/Helpers.inc (1.34), Style/base.css
+	  (1.42), Style/base.css (1.43), paper.php (1.18), Style/base.css
+	  (1.44), Style/base.css (1.45): nits
+
+2006-07-31 Monday 09:06  kohler
+
+	* Code/Helpers.inc (1.33): validator is in links
+
+2006-07-31 Monday 09:05  kohler
+
+	* Code/options.inc (1.2.2.2): allow validator
+
+2006-07-31 Monday 09:05  kohler
+
+	* paper.php (1.17), Code/ClassConference.inc (1.45),
+	  Code/Helpers.inc (1.32): valid XHTML 1.0 Transitional
+
+2006-07-31 Monday 08:56  kohler
+
+	* Code/ClassContact.inc (1.31): validator contact
+
+2006-07-31 Monday 08:40  kohler
+
+	* paper.php (1.16), Code/ClassConference.inc (1.44), Style/base.css
+	  (1.41): table
+
+2006-07-30 Sunday 23:34  kohler
+
+	* All/UpdateContactInfo.php (1.20), Style/base.css (1.40): color
+	  perfection, bleh
+
+2006-07-30 Sunday 23:04  kohler
+
+	* contactauthors.php (1.3), paper.php (1.15): more edit nits
+
+2006-07-30 Sunday 22:59  kohler
+
+	* contactauthors.php (1.2), login.php (1.4), paper.php (1.14),
+	  All/UpdateContactInfo.php (1.19): nits
+
+2006-07-30 Sunday 22:16  kohler
+
+	* contactauthors.php (1.1), paper.php (1.13), Style/base.css
+	  (1.39): contact
+
+2006-07-30 Sunday 21:37  kohler
+
+	* paper.php (1.12), Style/base.css (1.38): paper
+
+2006-07-30 Sunday 12:22  kohler
+
+	* login.php (1.3), paper.php (1.11), review.php (1.2), script.js
+	  (1.5), All/MergeAccounts.php (1.13), All/ReviewPaper.php (1.16),
+	  All/UpdateContactInfo.php (1.18), All/ViewPaper.php (1.18),
+	  All/login.php (1.9), Author/PaperContacts.php (1.4),
+	  Chair/SetDates.php (1.17), Code/ClassConference.inc (1.43),
+	  Code/ClassContact.inc (1.30), Code/ClassReview.inc (1.14),
+	  Code/Helpers.inc (1.31), Style/base.css (1.37): more
+
+2006-07-28 Friday 13:16  kohler
+
+	* Tasks-Chair.inc (1.8), deadlines.php (1.3), index.php (1.33),
+	  paper.php (1.10), Assistant/AssistantViewSinglePaper.php (1.4),
+	  Author/ManagePaper.php (1.35), Author/PaperActions.php (1.5),
+	  Author/PaperForm.inc (1.4), Author/PaperTable.inc (1.6),
+	  Chair/ModifyPaper.php (1.5), Chair/SubmitPaper.php (1.4),
+	  Chair/SubmitPaper2.php (1.8), Code/ClassPaperList.inc (1.13),
+	  Code/Helpers.inc (1.30), PC/PCAllAnonReviewsForPaper.php (1.7):
+	  updates
+
+2006-07-27 Thursday 15:34  kohler
+
+	* Code/options.inc (1.5): mail papers to greg
+
+2006-07-27 Thursday 15:29  kohler
+
+	* paper.php (1.9): nits
+
+2006-07-27 Thursday 15:26  kohler
+
+	* index.php (1.32), paper.php (1.8), script.js (1.4),
+	  Code/ClassConference.inc (1.42), Code/Helpers.inc (1.29),
+	  Style/base.css (1.36): paper.php: chair can enter a contact
+
+2006-07-26 Wednesday 10:20  kohler
+
+	* paper.php (1.7), review.php (1.1), script.js (1.3),
+	  Code/Helpers.inc (1.28), Style/base.css (1.35): more
+
+2006-07-25 Tuesday 12:13  kohler
+
+	* paper.php (1.6), Chair/SetDates.php (1.16), Code/options.inc
+	  (1.4), Style/base.css (1.34): more stylin
+
+2006-07-25 Tuesday 12:11  kohler
+
+	* Code/options.inc (1.2.2.1): minshall
+
+2006-07-25 Tuesday 12:10  kohler
+
+	* Code/options.inc (1.3): email
+
+2006-07-25 Tuesday 12:09  kohler
+
+	* Code/confConfig.inc (1.8.2.2): update
+
+2006-07-25 Tuesday 11:28  kohler
+
+	* Style/base.css (1.33): update style just a touch
+
+2006-07-25 Tuesday 11:11  kohler
+
+	* paper.php (1.5): nit for submitting new paper
+
+2006-07-25 Tuesday 11:04  kohler
+
+	* paper.php (1.4), Code/ClassContact.inc (1.29): wordwrap fixes
+
+2006-07-25 Tuesday 10:55  kohler
+
+	* deadlines.php (1.2), login.php (1.2), paper.php (1.3),
+	  All/ImportantDates.php (1.4), All/UpdateContactInfo.php (1.17),
+	  All/ViewPaper.php (1.17), All/authAccount.php (1.9),
+	  Assistant/DumpAllReviews.php (1.5), Assistant/PrintAllReviews.php
+	  (1.5), Author/ManagePaper.php (1.34), Author/PaperActions.php
+	  (1.4), Author/PaperContacts.php (1.3), Author/SubmitResponse.php
+	  (1.4), Author/ViewReview.php (1.6), Chair/AskForReview.php (1.4),
+	  Code/ClassConference.inc (1.41), Code/ClassContact.inc (1.28),
+	  Code/DumpSingleReview.php-not-via-apache (1.4), Code/Helpers.inc
+	  (1.27), Code/confHeader.inc (1.15), Code/options.inc (1.2),
+	  PC/AskForReviewCommon.inc (1.4), PC/CheckOnPCProgress.php (1.3),
+	  PC/CheckReviewStatus.php (1.6), PC/GradePapers.php (1.4),
+	  PC/PCAllAnonReviewsForPaper.php (1.6), PC/PCReviewsForPaper.php
+	  (1.3), PC/SeeAllGrades.php (1.4),
+	  Reviewer/RequestedReviewsFromIndex.inc (1.4): mail submissions
+
+2006-07-24 Monday 14:48  kohler
+
+	* paper.php (1.2), Author/SubmitPaper.php (1.19),
+	  Code/ClassContact.inc (1.27), Code/Helpers.inc (1.26): some-nits
+
+2006-07-23 Sunday 21:07  kohler
+
+	* OfflineReview.php (1.3), deadlines.php (1.1), index.php (1.31),
+	  login.php (1.1), logout.php (1.1), paper.php (1.1),
+	  All/ReviewPaper.php (1.15), All/ViewPaper.php (1.16),
+	  Author/ManagePaper.php (1.33), Code/ClassConference.inc (1.40),
+	  Code/ClassContact.inc (1.26), Code/ClassPaperList.inc (1.12),
+	  Code/ClassReview.inc (1.13), Code/Helpers.inc (1.25),
+	  Download/GetPaper.php (1.8), Style/base.css (1.32): some more
+
+2006-07-19 Wednesday 14:24  kohler
+
+	* All/ListPapers.php (1.9), All/ReviewPaper.php (1.14),
+	  All/ViewPaper.php (1.15), Author/PaperContacts.php (1.2),
+	  Code/ClassConference.inc (1.39), Code/ClassContact.inc (1.25),
+	  Code/Helpers.inc (1.24), Code/confHeader.inc (1.14),
+	  Download/GetPaper (1.8), Download/GetPaper.php (1.7),
+	  Style/base.css (1.31): updates
+
+2006-07-16 Sunday 22:49  kohler
+
+	* OfflineReview.php (1.2), All/ReviewPaper.php (1.13),
+	  All/UpdateContactInfo.php (1.16), All/ViewPaper.php (1.14),
+	  Assistant/ModifyUserNames.php (1.4), Author/ManagePaper.php
+	  (1.32), Author/PaperContacts.php (1.1), Chair/AskForReview.php
+	  (1.3), Chair/CommonAddToCommittee.inc (1.15), Chair/ReviewPC.php
+	  (1.4), Chair/SetDates.php (1.15), Chair/SetReviewForm.php (1.7),
+	  Chair/SetTopics.php (1.10), Code/ClassConference.inc (1.38),
+	  Code/ClassContact.inc (1.24), Code/ClassReview.inc (1.12),
+	  Code/Helpers.inc (1.23), Code/confConfig.inc (1.11),
+	  Code/confConfig.inc.dist (1.4), Code/confHeader.inc (1.13),
+	  Code/conference.sql (1.23), Code/options.inc (1.1),
+	  PC/AskForReviewCommon.inc (1.3), Style/base.css (1.30): options
+	  exist; add PaperContacts.php screen
+
+2006-07-13 Thursday 14:13  kohler
+
+	* index.php (1.30), All/ListPapers.php (1.8),
+	  Code/ClassConference.inc (1.37): select multiple review forms
+
+2006-07-13 Thursday 14:03  kohler
+
+	* script.js (1.2), All/ReviewPaper.php (1.12), All/ViewPaper.php
+	  (1.13), Author/ManagePaper.php (1.31), Author/SubmitPaper.php
+	  (1.18), Chair/CommonAddToCommittee.inc (1.14),
+	  Chair/ModifyPaper.php (1.4), Chair/SetDates.php (1.14),
+	  Chair/SetReviewForm.php (1.6), Chair/SetTopics.php (1.9),
+	  Chair/SubmitPaper2.php (1.7), Code/ClassConference.inc (1.36),
+	  Code/Helpers.inc (1.22): highlightUpdate in script.js; also check
+	  for too large uploaded papers
+
+2006-07-13 Thursday 13:19  kohler
+
+	* Author/: ManagePaper.php (1.30), SubmitPaper.php (1.17):
+	  <textarea> for title (minshall)
+
+2006-07-13 Thursday 10:37  kohler
+
+	* All/UpdateContactInfo.php (1.15): nit
+
+2006-07-11 Tuesday 13:41  kohler
+
+	* OfflineReview.php (1.1), index.php (1.29), javascript.inc (1.2),
+	  script.js (1.1), All/ListPapers.php (1.7), All/ReviewPaper.php
+	  (1.11), Code/ClassConference.inc (1.35), Code/ClassContact.inc
+	  (1.23), Code/ClassReview.inc (1.11), Code/Helpers.inc (1.21),
+	  Style/base.css (1.29): improved style, offline reviewing, hide
+	  long abstract
+
+2006-07-11 Tuesday 10:09  kohler
+
+	* All/ReviewPaper.php (1.10), All/ViewPaper.php (1.12),
+	  Style/base.css (1.28): view/style
+
+2006-07-10 Monday 08:04  kohler
+
+	* All/UpdateContactInfo.php (1.14), Author/ManagePaper.php (1.29),
+	  Author/SubmitPaper.php (1.16): define recent
+
+2006-07-10 Monday 08:00  kohler
+
+	* Code/ClassConference.inc (1.34): forgot $this-> (Rebecca Isaacs)
+
+2006-07-10 Monday 07:37  kohler
+
+	* Code/: ClassConference.inc (1.33), ClassContact.inc (1.22):
+	  timePCReviewAnyPaper (Rebecca Isaacs)
+
+2006-07-10 Monday 00:43  kohler
+
+	* Code/: ClassConference.inc (1.32), confConfig.inc (1.8.2.1):
+	  moron
+
+2006-07-10 Monday 00:40  kohler
+
+	* Code/: Calendar.inc (1.2), ClassCGO2004Review.inc (1.3),
+	  ClassConference.inc (1.31), ClassContact.inc (1.21),
+	  ClassHYPO2010Review.inc (1.3), ClassISCA2002Review.inc (1.3),
+	  ClassMICRO36Review.inc (1.3), ClassPaper.inc (1.3),
+	  ClassPaperList.inc (1.11), ClassReview.inc (1.10), Helpers.inc
+	  (1.20), confConfig.inc (1.10), confConfigReview.inc (1.3),
+	  confHeader.inc (1.12): remove closing tags
+
+2006-07-10 Monday 00:06  kohler
+
+	* All/ViewPaper.php (1.11), Author/ManagePaper.php (1.28),
+	  Code/ClassConference.inc (1.30), Style/base.css (1.27): some
+	  fixes, smaller abstract
+
+2006-07-10 Monday 00:02  kohler
+
+	* Author/SubmitPaper.php (1.15): remove "mandatory" markings;
+	  probably not necessary
+
+2006-07-09 Sunday 23:24  kohler
+
+	* Author/ManagePaper.php (1.27), Author/SubmitPaper.php (1.14),
+	  Code/confConfig.inc (1.9): help text, config => HN5
+
+2006-07-09 Sunday 23:14  kohler
+
+	* .htaccess (1.3), All/ViewPaper.php (1.10), Author/ManagePaper.php
+	  (1.26), Code/confConfig.inc (1.8): no debug print
+
+2006-07-09 Sunday 22:48  kohler
+
+	* Author/ManagePaper.php (1.23), Author/SubmitPaper.php (1.12),
+	  Author/ManagePaper.php (1.24), Style/base.css (1.24),
+	  Style/base.css (1.25), Author/ManagePaper.php (1.25),
+	  Author/SubmitPaper.php (1.13), Style/base.css (1.26): nits
+
+2006-07-09 Sunday 22:34  kohler
+
+	* Author/ManagePaper.php (1.22): php is not as cool as i thought
+
+2006-07-09 Sunday 18:05  kohler
+
+	* All/authAccount.php (1.8), images/sortdown.png (1.1),
+	  images/sortup.png (1.1): forgot images
+
+2006-07-09 Sunday 16:03  kohler
+
+	* All/authAccount.php (1.7): more no-email
+
+2006-07-09 Sunday 16:01  kohler
+
+	* All/MergeAccounts.php (1.12), Chair/ListPC.php (1.8),
+	  Chair/SendMail2.php (1.5), Code/ClassConference.inc (1.29),
+	  Code/ClassContact.inc (1.20), PC/CheckReviewStatus.php (1.5),
+	  Reviewer/CommonSubmitReview.php (1.6): emailing
+
+2006-07-09 Sunday 15:23  kohler
+
+	* index.php (1.27), index.php (1.28): nit
+
+2006-07-09 Sunday 15:19  kohler
+
+	* Tasks-Reviewer.inc (1.4), index.php (1.26), All/ListPapers.php
+	  (1.6), All/ReviewPaper.php (1.9), All/ViewPaper.php (1.9),
+	  Author/ManagePaper.php (1.21), Chair/ListReviews.php (1.3),
+	  Chair/SetDates.php (1.13), Code/ClassConference.inc (1.28),
+	  Code/ClassContact.inc (1.19), Code/ClassPaperList.inc (1.10),
+	  Code/ClassReview.inc (1.9), Code/Helpers.inc (1.19),
+	  Code/confHeader.inc (1.11), Code/conference.sql (1.22),
+	  Reviewer/RequestedReviewsFromIndex.inc (1.3), Style/base.css
+	  (1.23): major bullshit dot com: paper list, mostly
+
+2006-07-08 Saturday 16:03  kohler
+
+	* All/ReviewPaper.php (1.8), Code/Helpers.inc (1.18): nit
+
+2006-07-08 Saturday 14:46  kohler
+
+	* All/ReviewPaper.php (1.7), All/ViewPaper.php (1.8),
+	  Assistant/PrepareFacesheets.php (1.6), Author/ManagePaper.php
+	  (1.20), Author/ViewDecision.php (1.6), Code/ClassContact.inc
+	  (1.18), Code/ClassPaperList.inc (1.9), Code/Helpers.inc (1.17),
+	  Code/confHeader.inc (1.10), Code/conference.sql (1.21),
+	  PC/PCAllAnonReviewsForPaper.php (1.5), Reviewer/SeeDecision.php
+	  (1.6): set outcomes
+
+2006-07-08 Saturday 12:44  kohler
+
+	* Tasks-PC.inc (1.5), index.php (1.25), All/ReviewPaper.php (1.6),
+	  All/UpdateContactInfo.php (1.13), All/ViewPaper.php (1.7),
+	  Assistant/AssistantListPapers.php (1.5),
+	  Assistant/DumpAllReviews.php (1.4),
+	  Assistant/PrepareFacesheets.php (1.5),
+	  Assistant/PrintAllAbstracts.php (1.5),
+	  Assistant/PrintAllReviews.php (1.4),
+	  Assistant/PrintSomeReviews.php (1.3), Author/ManagePaper.php
+	  (1.19), Author/ModifyPaper.php (1.5), Author/ViewDecision.php
+	  (1.5), Author/ViewReview.php (1.5), Chair/AssignPapers.php (1.7),
+	  Chair/AveragePaperScore.php (1.4), Chair/AverageReviewerScore.php
+	  (1.4), Chair/ChairRemoveReviewer.php (1.4),
+	  Chair/CheckOnSinglePCProgress.php (1.3), Chair/GradeAllPapers.php
+	  (1.4), Chair/NewAssignPapers.php (1.5), Chair/SendMail2.php
+	  (1.4), Chair/SetDates.php (1.12), Chair/SetReviewForm.php (1.5),
+	  Chair/SetTopics.php (1.8), Chair/SpotProblems.php (1.3),
+	  Chair/UnfinalizeReview.php (1.4), Code/ClassCGO2004Review.inc
+	  (1.2), Code/ClassConference.inc (1.27), Code/ClassContact.inc
+	  (1.17), Code/ClassHYPO2010Review.inc (1.2),
+	  Code/ClassISCA2002Review.inc (1.2), Code/ClassMICRO36Review.inc
+	  (1.2), Code/ClassPaperList.inc (1.8), Code/ClassReview.inc (1.8),
+	  Code/DumpSingleReview.php-not-via-apache (1.3), Code/Helpers.inc
+	  (1.16), Code/conference.sql (1.20), PC/CheckAssignedPapers.php
+	  (1.4), PC/CheckReviewStatus.php (1.4), PC/GradePapers.php (1.3),
+	  PC/ListReviews.php (1.3), PC/PCAllAnonReviewsForPaper.php (1.4),
+	  PC/PCListPapers.php (1.4), PC/PCNotes.php (1.3),
+	  PC/RemoveAskReview.php (1.3), PC/SeeAllGrades.php (1.3),
+	  PC/SpotMyProblems.php (1.3), Reviewer/SeeDecision.php (1.5),
+	  Reviewer/SeeDecisions.php (1.5), Style/base.css (1.22): so many
+	  nightmares
+
+2006-07-07 Friday 23:56  kohler
+
+	* All/MergeAccounts.php (1.11), All/UpdateContactInfo.php (1.12),
+	  Chair/AssignPapers.php (1.6), Chair/CheckOnPCProgress.php (1.4),
+	  Chair/Code.inc (1.6), Chair/CommonAddToCommittee.inc (1.13),
+	  Chair/FindPCConflicts.php (1.5), Chair/ListPC.php (1.7),
+	  Chair/ListPapersAssignedToPC.php (1.5), Code/ClassConference.inc
+	  (1.26), Code/ClassContact.inc (1.16), Code/conference.sql (1.19):
+	  remove Roles table, restore PCMember, ChairAssistant, Chair: joys
+	  of left join
+
+2006-07-07 Friday 22:40  kohler
+
+	* All/ViewPaper.php (1.6), Author/ManagePaper.php (1.18),
+	  Author/SubmitPaper.php (1.11), Chair/AssignConflicts.php (1.5),
+	  Chair/Code.inc (1.5), Chair/GradeAllPapers.php (1.3),
+	  Code/ClassConference.inc (1.25), Code/ClassContact.inc (1.15),
+	  Code/ClassPaperList.inc (1.7), Code/confHeader.inc (1.9),
+	  Code/conference.sql (1.18): paper conflict suckery
+
+2006-07-07 Friday 21:51  kohler
+
+	* All/MergeAccounts.php (1.10), All/ViewPaper.php (1.5),
+	  Author/PaperTable.inc (1.5), Chair/AssignConflicts.php (1.4),
+	  Chair/Code.inc (1.4), Chair/FindPCConflicts.php (1.4),
+	  Chair/NewAssignPapers.php (1.4), Chair/SubmitPaper2.php (1.6),
+	  Code/ClassConference.inc (1.24), Code/Helpers.inc (1.15),
+	  Code/conference.sql (1.17), Style/base.css (1.21): yet more...
+	  this grows tiresome
+
+2006-07-07 Friday 21:20  kohler
+
+	* index.php (1.24), All/ListPapers.php (1.5), All/ReviewPaper.php
+	  (1.5), All/ViewPaper.php (1.4), Author/ManagePaper.php (1.17),
+	  Author/SubmitPaper.php (1.10), Chair/SetDates.php (1.11),
+	  Chair/SetReviewForm.php (1.4), Code/ClassConference.inc (1.23),
+	  Code/ClassContact.inc (1.14), Code/ClassPaperList.inc (1.6),
+	  Code/ClassReview.inc (1.7), Code/Helpers.inc (1.14),
+	  Code/confHeader.inc (1.8), Code/conference.sql (1.16),
+	  PC/ReviewAnyPaper.php (1.3), PC/ReviewPapers.php (1.3),
+	  Style/base.css (1.20): yet more updates
+
+2006-07-07 Friday 14:37  kohler
+
+	* index.php (1.23), All/ListPapers.php (1.4), All/ReviewPaper.php
+	  (1.4), All/ViewPaper.php (1.3), Assistant/DownloadPaper.php
+	  (1.3), Author/ManagePaper.php (1.16), Author/SubmitPaper.php
+	  (1.9), Chair/SetReviewForm.php (1.3), Code/ClassConference.inc
+	  (1.22), Code/ClassContact.inc (1.13), Code/ClassPaperList.inc
+	  (1.5), Code/ClassReview.inc (1.6), Code/Helpers.inc (1.13),
+	  Code/conference.sql (1.15), Download/GetPaper (1.7),
+	  Download/GetPaper.php (1.6), PC/PCAllAnonReviewsForPaper.php
+	  (1.3), Reviewer/CommonPrintReview.php (1.4),
+	  Reviewer/CommonSubmitReview.php (1.5), Style/base.css (1.19):
+	  more reviewing: download a set of papers as a zip file
+
+2006-07-07 Friday 10:12  kohler
+
+	* All/ReviewPaper.php (1.3), Chair/SetReviewForm.php (1.2),
+	  Code/ClassReview.inc (1.5), Code/conference.sql (1.14),
+	  Style/base.css (1.18): review updates: getting there
+
+2006-07-07 Friday 00:30  kohler
+
+	* All/ReviewPaper.php (1.2), Code/ClassReview.inc (1.4),
+	  Style/base.css (1.17): upload multiple paper review forms
+
+2006-07-06 Thursday 20:12  kohler
+
+	* index.php (1.22), All/MergeAccounts.php (1.9),
+	  All/ReviewPaper.php (1.1), All/ViewPaper.php (1.2),
+	  Assistant/DumpAllReviews.php (1.3), Assistant/ListReviewers.php
+	  (1.3), Assistant/PrepareFacesheets.php (1.4),
+	  Assistant/PrintAllReviews.php (1.3), Author/ManagePaper.php
+	  (1.15), Author/ViewDecision.php (1.4), Author/ViewReview.php
+	  (1.4), Chair/AssignPapers.php (1.5),
+	  Chair/AverageReviewerScore.php (1.3),
+	  Chair/ChairRemoveReviewer.php (1.3), Chair/OldAssignPapers.php
+	  (1.3), Chair/SendMail2.php (1.3), Chair/SetReviewForm.php (1.1),
+	  Chair/UnfinalizeReview.php (1.3), Code/ClassConference.inc
+	  (1.21), Code/ClassContact.inc (1.12), Code/ClassPaperList.inc
+	  (1.4), Code/ClassReview.inc (1.3),
+	  Code/DumpSingleReview.php-not-via-apache (1.2), Code/Helpers.inc
+	  (1.12), Code/confConfig.inc (1.7), Code/confConfig.inc.dist
+	  (1.3), Code/confConfigReview.inc (1.2),
+	  Code/confConfigReview.inc.dist (1.2), Code/confHeader.inc (1.7),
+	  Code/conference.sql (1.13), Download/GetPaper (1.6),
+	  Download/GetPaper.php (1.5), PC/CheckAssignedPapers.php (1.3),
+	  PC/CheckReviewStatus.php (1.3), Reviewer/SeeDecision.php (1.4),
+	  Reviewer/SeeDecisions.php (1.4), Style/base.css (1.16): moving
+	  towards reviewing
+
+2006-07-06 Thursday 00:48  kohler
+
+	* Code/conference.sql (1.12): x
+
+2006-07-05 Wednesday 23:36  kohler
+
+	* Chair/CommonAddToCommittee.inc (1.12): changesw
+
+2006-07-05 Wednesday 23:32  kohler
+
+	* index.php (1.21), Author/ManagePaper.php (1.14), Code/Helpers.inc
+	  (1.11), Code/confHeader.inc (1.6): conflicts
+
+2006-07-05 Wednesday 23:15  kohler
+
+	* Code/ClassPaperList.inc (1.3): x
+
+2006-07-05 Wednesday 23:13  kohler
+
+	* Chair/CheckOnPCProgress.php (1.3),
+	  Chair/ListPapersAssignedToPC.php (1.4), Code/ClassConference.inc
+	  (1.20): more
+
+2006-07-05 Wednesday 22:55  kohler
+
+	* index.php (1.20), All/ListPapers.php (1.3), All/ViewPaper.php
+	  (1.1), Author/ManagePaper.php (1.13), Chair/AssignPapers.php
+	  (1.4), Chair/Code.inc (1.3), Chair/FindPCConflicts.php (1.3),
+	  Code/ClassConference.inc (1.19), Code/ClassPaperList.inc (1.2),
+	  Code/Helpers.inc (1.10), Code/confConfig.inc (1.6),
+	  Code/conference.sql (1.11), PC/PCListPapers.php (1.3): yet more
+
+2006-07-05 Wednesday 21:17  kohler
+
+	* Tasks-Chair.inc (1.7), index.php (1.19), All/ListPapers.php
+	  (1.2), Author/ManagePaper.php (1.12), Author/SubmitPaper.php
+	  (1.8), Code/ClassConference.inc (1.18), Code/ClassPaperList.inc
+	  (1.1), Code/Helpers.inc (1.9), Code/conference.sql (1.10),
+	  Style/base.css (1.15): ClassPaperList v1
+
+2006-07-05 Wednesday 16:06  kohler
+
+	* index.php (1.18), Code/ClassContact.inc (1.11): minor updates
+
+2006-07-05 Wednesday 12:30  kohler
+
+	* All/Logout.php (1.5): x
+
+2006-07-05 Wednesday 12:29  kohler
+
+	* All/UpdateContactInfo.php (1.11): more
+
+2006-07-05 Wednesday 12:27  kohler
+
+	* All/UpdateContactInfo.php (1.10): doRole
+
+2006-07-05 Wednesday 12:22  kohler
+
+	* index.php (1.17), All/Logout.php (1.4), All/MergeAccounts.php
+	  (1.8), All/UpdateContactInfo.php (1.9), All/authAccount.php
+	  (1.6), All/login.php (1.8), Author/ManagePaper.php (1.11),
+	  Author/SubmitPaper.php (1.7), Chair/CommonAddToCommittee.inc
+	  (1.11), Chair/SetDates.php (1.10), Chair/SetTopics.php (1.7),
+	  Code/ClassConference.inc (1.17), Code/ClassContact.inc (1.10):
+	  updates
+
+2006-07-05 Wednesday 07:55  kohler
+
+	* Code/ClassContact.inc (1.9): confShortName
+
+2006-07-04 Tuesday 23:25  kohler
+
+	* index.php (1.16), All/ListPapers.php (1.1),
+	  Author/ManagePaper.php (1.10), Code/Helpers.inc (1.8): yet more
+
+2006-07-04 Tuesday 23:09  kohler
+
+	* Tasks-Chair.inc (1.6), index.php (1.15), All/MergeAccounts.php
+	  (1.7), All/UpdateContactInfo.php (1.8), All/login.php (1.7),
+	  Assistant/AssistantViewSinglePaper.php (1.3),
+	  Assistant/DumpPapers.php (1.4), Assistant/ModifyUserNames.php
+	  (1.3), Assistant/PrepareFacesheets.php (1.3),
+	  Assistant/PrintAllAbstracts.php (1.4), Author/AuthorViewPaper.php
+	  (1.3), Author/ManagePaper.php (1.9), Author/ModifyPaper.php
+	  (1.4), Author/PaperActions.php (1.3), Author/SubmitPaper.php
+	  (1.6), Author/SubmitResponse.php (1.3), Author/ViewDecision.php
+	  (1.3), Author/ViewReview.php (1.3), Author/index.php (1.2),
+	  Chair/AssignConflicts.php (1.3), Chair/AveragePaperScore.php
+	  (1.3), Chair/BecomeSomeoneElse.php (1.3),
+	  Chair/ChairAddContact.php (1.3), Chair/CommonAddToCommittee.inc
+	  (1.10), Chair/DumpDatabase.php (1.3),
+	  Chair/ListPapersAssignedToPC.php (1.3), Chair/OldAssignPapers.php
+	  (1.2), Chair/SearchPapers.php (1.3), Chair/SubmitPaper.php (1.3),
+	  Chair/SubmitPaper2.php (1.5), Chair/ViewActionLog.php (1.3),
+	  Chair/index.php (1.3), Code/ClassConference.inc (1.16),
+	  Code/ClassPaper.inc (1.2), Code/conference.sql (1.9),
+	  Download/GetPaper (1.5), Download/GetPaper.php (1.4),
+	  Reviewer/CommonPrintReview.php (1.3),
+	  Reviewer/CommonSubmitReview.php (1.4),
+	  Reviewer/RequestedReviews.php (1.3), Reviewer/SeeDecision.php
+	  (1.3), Reviewer/SeeDecisions.php (1.3), Style/base.css (1.14):
+	  stable footer, more updates
+
+2006-07-04 Tuesday 21:01  kohler
+
+	* Author/ManagePaper.php (1.8): more
+
+2006-07-04 Tuesday 18:36  kohler
+
+	* Author/ManagePaper.php (1.7), Code/ClassConference.inc (1.15),
+	  Code/Helpers.inc (1.7), Style/base.css (1.13): no submit or
+	  update already submitted or withdrawn paper
+
+2006-07-04 Tuesday 13:24  kohler
+
+	* index.php (1.14), Author/ManagePaper.php (1.6),
+	  Author/SubmitPaper.php (1.5), Code/Helpers.inc (1.6),
+	  Style/base.css (1.12): more topics stuff
+
+2006-07-04 Tuesday 11:59  kohler
+
+	* Code/Helpers.inc (1.5): 2 columns, not 3
+
+2006-07-04 Tuesday 11:59  kohler
+
+	* Tasks-Chair.inc (1.5), Tasks-PC.inc (1.4), index.php (1.13),
+	  Author/DeletePaper.php (1.4), Author/FinalizePaper.php (1.6),
+	  Author/UploadPaper.php (1.5), Chair/ReviewContacts.php (1.3):
+	  remove unused things
+
+2006-07-04 Tuesday 11:41  kohler
+
+	* index.php (1.12), All/UpdateContactInfo.php (1.7),
+	  Author/DeletePaper.php (1.3), Author/FinalizePaper.php (1.5),
+	  Chair/SubmitPaper2.php (1.4), Code/ClassContact.inc (1.8),
+	  Code/ClassConference.inc (1.14): dont need updateContactRoleInfo
+
+2006-07-04 Tuesday 10:35  kohler
+
+	* index.php (1.11), All/UpdateContactInfo.php (1.6),
+	  Chair/CommonAddToCommittee.inc (1.9), Chair/SetTopics.php (1.6),
+	  Code/ClassContact.inc (1.7), Code/conference.sql (1.8),
+	  Style/base.css (1.11): update contact info generates reviewer
+	  collaborators, topics of interest
+
+2006-07-03 Monday 17:22  kohler
+
+	* Tasks-Chair.inc (1.4), All/UpdateContactInfo.php (1.5),
+	  Assistant/PrintAllAbstracts.php (1.3), Author/ManagePaper.php
+	  (1.5), Author/PaperForm.inc (1.3), Author/PaperTable.inc (1.4),
+	  Author/SubmitPaper.php (1.4), Chair/AssignPapers.php (1.3),
+	  Chair/ChairViewSinglePaper.php (1.3),
+	  Chair/CommonAddToCommittee.inc (1.8), Chair/DeletePaper2.php
+	  (1.3), Chair/ListPC.php (1.6), Chair/NewAssignPapers.php (1.3),
+	  Chair/SetDates.php (1.9), Chair/SetTopics.php (1.5),
+	  Code/ClassConference.inc (1.13), Code/ClassReview.inc (1.2),
+	  Code/Helpers.inc (1.4), Code/conference.sql (1.7),
+	  PC/ShowAbstract.php (1.3), Style/base.css (1.10): yet more
+
+2006-07-03 Monday 15:26  kohler
+
+	* Assistant/AssistantListPapers.php (1.4), Author/ManagePaper.php
+	  (1.4): a couple more
+
+2006-07-03 Monday 14:45  kohler
+
+	* Tasks-Author.inc (1.5), index.php (1.10),
+	  Code/ClassConference.inc (1.12): yet more updates
+
+2006-07-03 Monday 14:29  kohler
+
+	* Author/ManagePaper.php (1.3), Author/SubmitPaper.php (1.3),
+	  Author/SubmitPaper2.php (1.6), Chair/SetDates.php (1.8),
+	  Code/ClassConference.inc (1.11), Code/Helpers.inc (1.3),
+	  Style/base.css (1.9): more
+
+2006-07-03 Monday 13:25  kohler
+
+	* Assistant/DumpPapers.php (1.3), Author/FinalizePaper.php (1.4),
+	  Author/ManagePaper.php (1.2), Author/SubmitPaper2.php (1.5),
+	  Author/UploadPaper.php (1.4), Chair/ModifyPaper.php (1.3),
+	  Chair/SubmitPaper2.php (1.3), Code/ClassConference.inc (1.10),
+	  Code/CreateDatabase.sh (1.3), Code/Helpers.inc (1.2),
+	  Code/conference.sql (1.6), Download/GetPaper (1.4),
+	  Download/GetPaper.php (1.3), Style/base.css (1.8): yet more
+	  updates
+
+2006-07-03 Monday 07:46  kohler
+
+	* index.php (1.9), All/MergeAccounts.php (1.6), All/authAccount.php
+	  (1.5), All/login.php (1.6), Assistant/AssistantListPapers.php
+	  (1.3), Author/FinalizePaper.php (1.3), Author/ManagePaper.php
+	  (1.1), Author/ModifyPaper.php (1.3), Author/PaperForm.inc (1.2),
+	  Author/PaperTable.inc (1.3), Author/SubmitPaper2.php (1.4),
+	  Author/UploadPaper.php (1.3), Chair/CommonAddToCommittee.inc
+	  (1.7), Chair/ListPC.php (1.5), Chair/SetDates.php (1.7),
+	  Chair/SetTopics.php (1.4), Code/ClassConference.inc (1.9),
+	  Code/ClassContact.inc (1.6), Code/Helpers.inc (1.1),
+	  Code/confConfig.inc (1.5), Code/confHeader.inc (1.5),
+	  Code/conference.sql (1.5), Download/GetPaper (1.3),
+	  Style/base.css (1.7): more progress
+
+2006-07-02 Sunday 23:22  kohler
+
+	* Tasks-Assistant.inc (1.3), Tasks-Author.inc (1.4),
+	  Tasks-Chair.inc (1.3), Tasks-PC.inc (1.3), Tasks-Reviewer.inc
+	  (1.3), index.php (1.8), Author/SubmitPaper2.php (1.3),
+	  Chair/CommonAddToCommittee.inc (1.6), Chair/SetDates.php (1.6),
+	  Chair/SetTopics.php (1.3), Code/ClassConference.inc (1.8),
+	  Code/conference.sql (1.4), Style/base.css (1.6): some more
+	  progress
+
+2006-07-02 Sunday 19:02  kohler
+
+	* Chair/CommonAddToCommittee.inc (1.5), Chair/SetDates.php (1.5),
+	  Style/base.css (1.5): committee review screen is batch-update
+
+2006-07-02 Sunday 13:00  kohler
+
+	* Chair/SetDates.php (1.4): set dates basically done (except need
+	  to figure out which dates matter)
+
+2006-07-02 Sunday 12:09  kohler
+
+	* index.php (1.7), All/ImportantDates.php (1.3),
+	  All/MergeAccounts.php (1.5), All/UpdateContactInfo.php (1.4),
+	  All/login.php (1.5), Chair/Code.inc (1.2), Chair/ListPC.php
+	  (1.4), Chair/SetDates.php (1.3), Code/ClassConference.inc (1.7),
+	  Style/base.css (1.4): date stuff
+
+2006-07-01 Saturday 20:09  kohler
+
+	* index.php (1.6), All/MergeAccounts.php (1.4),
+	  Chair/CommonAddToCommittee.inc (1.4), Chair/ReviewAssistants.php
+	  (1.2), Chair/ReviewChairs.php (1.2), Chair/ReviewPC.php (1.3),
+	  Code/ClassConference.inc (1.6), Code/ClassContact.inc (1.5),
+	  Code/confHeader.inc (1.4), Code/conference.sql (1.3),
+	  Style/base.css (1.3): new PC management page
+
+2006-07-01 Saturday 18:06  kohler
+
+	* Tasks-All.inc (1.2), Tasks-Author.inc (1.3), index.php (1.5),
+	  All/MergeAccounts.php (1.3), All/UpdateContactInfo.php (1.3),
+	  All/authAccount.php (1.4), All/login.php (1.4), All/register.php
+	  (1.3), All/registerAccount.php (1.3),
+	  Chair/CommonAddToCommittee.inc (1.3), Chair/ListPC.php (1.3),
+	  Chair/ReviewPC.php (1.2), Code/ClassConference.inc (1.5),
+	  Code/ClassContact.inc (1.4), Code/confConfig.inc (1.4),
+	  Code/confConfig.inc.dist (1.2), Reviewer/CommonSubmitReview.php
+	  (1.3), Style/base.css (1.2): more updates
+
+2006-07-01 Saturday 12:41  kohler
+
+	* .htaccess (1.2), index.php (1.4), testcookie.php (1.2),
+	  All/.htaccess (1.1), All/ImportantDates.php (1.2), All/Logout.php
+	  (1.3), All/authAccount.php (1.3), All/login.php (1.3),
+	  Assistant/.htaccess (1.1), Author/.htaccess (1.1),
+	  Chair/.htaccess (1.1), Code/.htaccess (1.2),
+	  Code/ClassConference.inc (1.4), Code/ClassContact.inc (1.3),
+	  Code/confConfig.inc (1.3), Code/confHeader.inc (1.3),
+	  Code/conference.sql (1.2), Download/.htaccess (1.2), PC/.htaccess
+	  (1.1), Reviewer/.htaccess (1.1), Style/base.css (1.1),
+	  images/info45.png (1.1), images/stophand45.png (1.1): more
+	  progress
+
+2006-06-29 Thursday 17:59  kohler
+
+	* Code/: ClassConference.inc (1.3), confConfig.inc (1.2): a little
+	  more fixes
+
+2006-06-29 Thursday 17:54  kohler
+
+	* Code/CreateDatabase.sh (1.2): a better CreateDatabase
+
+2006-06-29 Thursday 17:14  kohler
+
+	* index.php (1.3): update for newer PHPs
+
+2006-06-29 Thursday 17:00  kohler
+
+	* Tasks-Assistant.inc (1.2), Tasks-Author.inc (1.2),
+	  Tasks-Chair.inc (1.2), Tasks-PC.inc (1.2), Tasks-Reviewer.inc
+	  (1.2), index.php (1.2), All/Logout.php (1.2),
+	  All/MergeAccounts.php (1.2), All/UpdateContactInfo.php (1.2),
+	  All/authAccount.php (1.2), All/login.php (1.2), All/register.php
+	  (1.2), All/registerAccount.php (1.2),
+	  Assistant/AssistantListPapers.php (1.2),
+	  Assistant/AssistantViewSinglePaper.php (1.2),
+	  Assistant/DownloadPaper.php (1.2), Assistant/DumpAllReviews.php
+	  (1.2), Assistant/DumpPapers.php (1.2),
+	  Assistant/ListFirstAuthors.php (1.2), Assistant/ListReviewers.php
+	  (1.2), Assistant/ModifyUserNames.php (1.2),
+	  Assistant/PrepareFacesheets.php (1.2),
+	  Assistant/PrintAllAbstracts.php (1.2),
+	  Assistant/PrintAllReviews.php (1.2),
+	  Assistant/PrintSomeReviews.php (1.2), Assistant/index.php (1.2),
+	  Author/AuthorViewPaper.php (1.2), Author/DeletePaper.php (1.2),
+	  Author/FinalizePaper.php (1.2), Author/ModifyPaper.php (1.2),
+	  Author/PaperActions.php (1.2), Author/PaperTable.inc (1.2),
+	  Author/SubmitPaper.php (1.2), Author/SubmitPaper2.php (1.2),
+	  Author/SubmitResponse.php (1.2), Author/UploadPaper.php (1.2),
+	  Author/ViewDecision.php (1.2), Author/ViewReview.php (1.2),
+	  Chair/AskForReview.php (1.2), Chair/AssignConflicts.php (1.2),
+	  Chair/AssignPapers.php (1.2), Chair/AveragePaperScore.php (1.2),
+	  Chair/AverageReviewerScore.php (1.2), Chair/BecomeSomeoneElse.php
+	  (1.2), Chair/ChairAddContact.php (1.2),
+	  Chair/ChairRemoveReviewer.php (1.2),
+	  Chair/ChairViewSinglePaper.php (1.2), Chair/CheckOnPCProgress.php
+	  (1.2), Chair/CheckOnSinglePCProgress.php (1.2),
+	  Chair/CommonAddToCommittee.inc (1.2), Chair/DeletePaper.php
+	  (1.2), Chair/DeletePaper2.php (1.2), Chair/DeletePaper3.php
+	  (1.2), Chair/DumpDatabase.php (1.2), Chair/FindPCConflicts.php
+	  (1.2), Chair/GradeAllPapers.php (1.2), Chair/ListFirstAuthors.php
+	  (1.2), Chair/ListPC.php (1.2), Chair/ListPapersAssignedToPC.php
+	  (1.2), Chair/ListReviewers.php (1.2), Chair/ListReviews.php
+	  (1.2), Chair/ModifyPaper.php (1.2), Chair/NewAssignPapers.php
+	  (1.2), Chair/ReviewContacts.php (1.2), Chair/SearchPapers.php
+	  (1.2), Chair/SendMail.php (1.2), Chair/SendMail2.php (1.2),
+	  Chair/SetDates.php (1.2), Chair/SetPCPaper.php (1.2),
+	  Chair/SetTopics.php (1.2), Chair/ShowCalendar.php (1.2),
+	  Chair/SpotProblems.php (1.2), Chair/SubmitPaper.php (1.2),
+	  Chair/SubmitPaper2.php (1.2), Chair/UnfinalizeReview.php (1.2),
+	  Chair/ViewActionLog.php (1.2), Chair/ViewButtons.php (1.2),
+	  Chair/index.php (1.2), Code/ClassConference.inc (1.2),
+	  Code/ClassContact.inc (1.2), Code/confHeader.inc (1.2),
+	  Download/GetConfStuff.php (1.2), Download/GetPaper (1.2),
+	  Download/GetPaper.php (1.2), PC/AskForReviewCommon.inc (1.2),
+	  PC/CheckAssignedPapers.php (1.2), PC/CheckOnPCProgress.php (1.2),
+	  PC/CheckReviewStatus.php (1.2), PC/GradePapers.php (1.2),
+	  PC/ListReviews.php (1.2), PC/PCAllAnonReviewsForPaper.php (1.2),
+	  PC/PCListPapers.php (1.2), PC/PCNotes.php (1.2),
+	  PC/PCReviewsForPaper.php (1.2), PC/PCSubmitReview.php (1.2),
+	  PC/RemoveAskReview.php (1.2), PC/ReviewAnyPaper.php (1.2),
+	  PC/ReviewPapers.php (1.2), PC/SeeAcceptedPapers.php (1.2),
+	  PC/SeeAllGrades.php (1.2), PC/ShowAbstract.php (1.2),
+	  PC/SpotMyProblems.php (1.2), PC/index.php (1.2),
+	  Reviewer/CommonPrintReview.php (1.2),
+	  Reviewer/CommonSubmitReview.php (1.2),
+	  Reviewer/RequestedReviews.php (1.2),
+	  Reviewer/RequestedReviewsFromIndex.inc (1.2),
+	  Reviewer/ReviewerSubmitReview.php (1.2), Reviewer/SeeDecision.php
+	  (1.2), Reviewer/SeeDecisions.php (1.2): update for newer PHPs
+
+2006-06-29 Thursday 16:34  kohler
+
+	* .htaccess (1.1.1.1), Tasks-All.inc (1.1.1.1), Tasks-Assistant.inc
+	  (1.1.1.1), Tasks-Author.inc (1.1.1.1), Tasks-Chair.inc (1.1.1.1),
+	  Tasks-PC.inc (1.1.1.1), Tasks-Reviewer.inc (1.1.1.1),
+	  YouMustAllowCookies.php (1.1.1.1), genericPopup.php (1.1.1.1),
+	  index.php (1.1.1.1), javascript.inc (1.1.1.1), testcookie.php
+	  (1.1.1.1), All/ImportantDates.php (1.1.1.1), All/Logout.php
+	  (1.1.1.1), All/MergeAccounts.php (1.1.1.1),
+	  All/UpdateContactInfo.php (1.1.1.1), All/authAccount.php
+	  (1.1.1.1), All/index.php (1.1.1.1), All/login.php (1.1.1.1),
+	  All/register.php (1.1.1.1), All/registerAccount.php (1.1.1.1),
+	  All/target.php (1.1.1.1), Assistant/AssistantListPapers.php
+	  (1.1.1.1), Assistant/AssistantViewSinglePaper.php (1.1.1.1),
+	  Assistant/DownloadPaper.php (1.1.1.1),
+	  Assistant/DumpAllReviews.php (1.1.1.1), Assistant/DumpPapers.php
+	  (1.1.1.1), Assistant/ListFirstAuthors.php (1.1.1.1),
+	  Assistant/ListReviewers.php (1.1.1.1),
+	  Assistant/ModifyUserNames.php (1.1.1.1),
+	  Assistant/PrepareFacesheets.php (1.1.1.1),
+	  Assistant/PrintAllAbstracts.php (1.1.1.1),
+	  Assistant/PrintAllReviews.php (1.1.1.1),
+	  Assistant/PrintSomeReviews.php (1.1.1.1), Assistant/foo.php
+	  (1.1.1.1), Assistant/index.php (1.1.1.1),
+	  Author/AuthorViewPaper.php (1.1.1.1), Author/DeletePaper.php
+	  (1.1.1.1), Author/FinalizePaper.php (1.1.1.1),
+	  Author/ModifyPaper.php (1.1.1.1), Author/PaperActions.php
+	  (1.1.1.1), Author/PaperForm.inc (1.1.1.1), Author/PaperTable.inc
+	  (1.1.1.1), Author/SubmitPaper.php (1.1.1.1),
+	  Author/SubmitPaper2.php (1.1.1.1), Author/SubmitResponse.php
+	  (1.1.1.1), Author/UploadPaper.php (1.1.1.1),
+	  Author/ViewDecision.php (1.1.1.1), Author/ViewReview.php
+	  (1.1.1.1), Author/index.php (1.1.1.1), Chair/AskForReview.php
+	  (1.1.1.1), Chair/AssignConflicts.php (1.1.1.1),
+	  Chair/AssignPapers.php (1.1.1.1), Chair/AveragePaperScore.php
+	  (1.1.1.1), Chair/AverageReviewerScore.php (1.1.1.1),
+	  Chair/BecomeSomeoneElse.php (1.1.1.1), Chair/ChairAddContact.php
+	  (1.1.1.1), Chair/ChairRemoveReviewer.php (1.1.1.1),
+	  Chair/ChairViewSinglePaper.php (1.1.1.1),
+	  Chair/CheckOnPCProgress.php (1.1.1.1),
+	  Chair/CheckOnSinglePCProgress.php (1.1.1.1), Chair/Code.inc
+	  (1.1.1.1), Chair/CommonAddToCommittee.inc (1.1.1.1),
+	  Chair/DeletePaper.php (1.1.1.1), Chair/DeletePaper2.php
+	  (1.1.1.1), Chair/DeletePaper3.php (1.1.1.1),
+	  Chair/DumpDatabase.php (1.1.1.1), Chair/FindPCConflicts.php
+	  (1.1.1.1), Chair/GradeAllPapers.php (1.1.1.1),
+	  Chair/ListFirstAuthors.php (1.1.1.1), Chair/ListPC.php (1.1.1.1),
+	  Chair/ListPapersAssignedToPC.php (1.1.1.1),
+	  Chair/ListReviewers.php (1.1.1.1), Chair/ListReviews.php
+	  (1.1.1.1), Chair/ModifyPaper.php (1.1.1.1),
+	  Chair/NewAssignPapers.php (1.1.1.1), Chair/OldAssignPapers.php
+	  (1.1.1.1), Chair/ReviewAssistants.php (1.1.1.1),
+	  Chair/ReviewChairs.php (1.1.1.1), Chair/ReviewContacts.php
+	  (1.1.1.1), Chair/ReviewPC.php (1.1.1.1), Chair/SearchPapers.php
+	  (1.1.1.1), Chair/SendMail.php (1.1.1.1), Chair/SendMail2.php
+	  (1.1.1.1), Chair/SetDates.php (1.1.1.1), Chair/SetPCPaper.php
+	  (1.1.1.1), Chair/SetTopics.php (1.1.1.1), Chair/ShowCalendar.php
+	  (1.1.1.1), Chair/SpotProblems.php (1.1.1.1),
+	  Chair/SubmitPaper.php (1.1.1.1), Chair/SubmitPaper2.php
+	  (1.1.1.1), Chair/UnfinalizeReview.php (1.1.1.1),
+	  Chair/ViewActionLog.php (1.1.1.1), Chair/ViewButtons.php
+	  (1.1.1.1), Chair/index.php (1.1.1.1), Code/.htaccess (1.1.1.1),
+	  Code/Calendar.inc (1.1.1.1), Code/ClassCGO2004Review.inc
+	  (1.1.1.1), Code/ClassConference.inc (1.1.1.1),
+	  Code/ClassContact.inc (1.1.1.1), Code/ClassHYPO2010Review.inc
+	  (1.1.1.1), Code/ClassISCA2002Review.inc (1.1.1.1),
+	  Code/ClassMICRO36Review.inc (1.1.1.1), Code/ClassPaper.inc
+	  (1.1.1.1), Code/ClassReview.inc (1.1.1.1), Code/CreateDatabase.sh
+	  (1.1.1.1), Code/DumpAllReviews.php-not-via-apache (1.1.1.1),
+	  Code/DumpSingleReview.php-not-via-apache (1.1.1.1),
+	  Code/SuckInOSDIPaper.php-not-via-apache (1.1.1.1),
+	  Code/animate.js (1.1.1.1), Code/confConfig.inc (1.1.1.1),
+	  Code/confConfig.inc.dist (1.1.1.1), Code/confConfigReview.inc
+	  (1.1.1.1), Code/confConfigReview.inc.dist (1.1.1.1),
+	  Code/confHeader.inc (1.1.1.1), Code/confHeader.inc.dist
+	  (1.1.1.1), Code/confJavaScript.inc (1.1.1.1), Code/conference.sql
+	  (1.1.1.1), Download/.htaccess (1.1.1.1),
+	  Download/GetConfStuff.php (1.1.1.1), Download/GetPaper (1.1.1.1),
+	  Download/GetPaper.php (1.1.1.1), Download/index.html (1.1.1.1),
+	  PC/AskForReviewCommon.inc (1.1.1.1), PC/AskForSecondaryReview.php
+	  (1.1.1.1), PC/CheckAssignedPapers.php (1.1.1.1),
+	  PC/GradePapers.php (1.1.1.1), PC/ListReviews.php (1.1.1.1),
+	  PC/PCAllAnonReviewsForPaper.php (1.1.1.1), PC/PCListPapers.php
+	  (1.1.1.1), PC/PCNotes.php (1.1.1.1), PC/PCReviewsForPaper.php
+	  (1.1.1.1), PC/PCSubmitReview.php (1.1.1.1),
+	  PC/RemoveAskReview.php (1.1.1.1), PC/ReviewAnyPaper.php
+	  (1.1.1.1), PC/ReviewPapers.php (1.1.1.1),
+	  PC/SeeAcceptedPapers.php (1.1.1.1), PC/SeeAllGrades.php
+	  (1.1.1.1), PC/ShowAbstract.php (1.1.1.1), PC/SpotMyProblems.php
+	  (1.1.1.1), PC/ValidPapers.inc (1.1.1.1), PC/gradeNames.inc
+	  (1.1.1.1), PC/index.php (1.1.1.1), Reviewer/CommonPrintReview.php
+	  (1.1.1.1), Reviewer/CommonSubmitReview.php (1.1.1.1),
+	  Reviewer/RequestedReviews.php (1.1.1.1),
+	  Reviewer/RequestedReviewsFromIndex.inc (1.1.1.1),
+	  Reviewer/ReviewerSubmitReview.php (1.1.1.1),
+	  Reviewer/SeeDecision.php (1.1.1.1), Reviewer/SeeDecisions.php
+	  (1.1.1.1), Reviewer/ratings.html (1.1.1.1), Reviewer/ratings.php
+	  (1.1.1.1), images/CheckMark.gif (1.1.1.1), images/GenChart.php
+	  (1.1.1.1), images/GeneralChart.php (1.1.1.1),
+	  PC/AskForPrimaryReview.php (1.1.1.1), PC/CheckOnPCProgress.php
+	  (1.1.1.1), PC/CheckReviewStatus.php (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodbanr.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodbck.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodbckh.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodbul1.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodbul2.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodbul3.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodhbtn.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodhhov.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodhom.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodhomh.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodhsel.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodnxt.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodnxth.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodrule.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodup.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amoduph.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodvbtn.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodvhov.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/amodvsel.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/color0.css (1.1.1.1),
+	  themes/modular-with-arial-fonts/color1.css (1.1.1.1),
+	  themes/modular-with-arial-fonts/custom.css (1.1.1.1),
+	  themes/modular-with-arial-fonts/graph0.css (1.1.1.1),
+	  themes/modular-with-arial-fonts/graph1.css (1.1.1.1),
+	  themes/modular-with-arial-fonts/modbanr.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/modbck.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/modbkgnd.jpg (1.1.1.1),
+	  themes/modular-with-arial-fonts/modbul1.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/modbul2.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/modbul3.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/modglobl.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/modhbtn.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/modhom.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/modhsel.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/modnxt.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/modrule.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/modu1110.css (1.1.1.1),
+	  themes/modular-with-arial-fonts/modu1515.css (1.1.1.1),
+	  themes/modular-with-arial-fonts/modular-with-arial-fonts.inf
+	  (1.1.1.1),
+	  themes/modular-with-arial-fonts/modular-with-arial-fonts.utf8
+	  (1.1.1.1), themes/modular-with-arial-fonts/modup.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/modvbtn.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/modvsel.gif (1.1.1.1),
+	  themes/modular-with-arial-fonts/theme.css (1.1.1.1): CRP import
+
+2006-06-29 Thursday 16:34  kohler
+
+	* .htaccess (1.1), Tasks-All.inc (1.1), Tasks-Assistant.inc (1.1),
+	  Tasks-Author.inc (1.1), Tasks-Chair.inc (1.1), Tasks-PC.inc
+	  (1.1), Tasks-Reviewer.inc (1.1), YouMustAllowCookies.php (1.1),
+	  genericPopup.php (1.1), index.php (1.1), javascript.inc (1.1),
+	  testcookie.php (1.1), All/ImportantDates.php (1.1),
+	  All/Logout.php (1.1), All/MergeAccounts.php (1.1),
+	  All/UpdateContactInfo.php (1.1), All/authAccount.php (1.1),
+	  All/index.php (1.1), All/login.php (1.1), All/register.php (1.1),
+	  All/registerAccount.php (1.1), All/target.php (1.1),
+	  Assistant/AssistantListPapers.php (1.1),
+	  Assistant/AssistantViewSinglePaper.php (1.1),
+	  Assistant/DownloadPaper.php (1.1), Assistant/DumpAllReviews.php
+	  (1.1), Assistant/DumpPapers.php (1.1),
+	  Assistant/ListFirstAuthors.php (1.1), Assistant/ListReviewers.php
+	  (1.1), Assistant/ModifyUserNames.php (1.1),
+	  Assistant/PrepareFacesheets.php (1.1),
+	  Assistant/PrintAllAbstracts.php (1.1),
+	  Assistant/PrintAllReviews.php (1.1),
+	  Assistant/PrintSomeReviews.php (1.1), Assistant/foo.php (1.1),
+	  Assistant/index.php (1.1), Author/AuthorViewPaper.php (1.1),
+	  Author/DeletePaper.php (1.1), Author/FinalizePaper.php (1.1),
+	  Author/ModifyPaper.php (1.1), Author/PaperActions.php (1.1),
+	  Author/PaperForm.inc (1.1), Author/PaperTable.inc (1.1),
+	  Author/SubmitPaper.php (1.1), Author/SubmitPaper2.php (1.1),
+	  Author/SubmitResponse.php (1.1), Author/UploadPaper.php (1.1),
+	  Author/ViewDecision.php (1.1), Author/ViewReview.php (1.1),
+	  Author/index.php (1.1), Chair/AskForReview.php (1.1),
+	  Chair/AssignConflicts.php (1.1), Chair/AssignPapers.php (1.1),
+	  Chair/AveragePaperScore.php (1.1), Chair/AverageReviewerScore.php
+	  (1.1), Chair/BecomeSomeoneElse.php (1.1),
+	  Chair/ChairAddContact.php (1.1), Chair/ChairRemoveReviewer.php
+	  (1.1), Chair/ChairViewSinglePaper.php (1.1),
+	  Chair/CheckOnPCProgress.php (1.1),
+	  Chair/CheckOnSinglePCProgress.php (1.1), Chair/Code.inc (1.1),
+	  Chair/CommonAddToCommittee.inc (1.1), Chair/DeletePaper.php
+	  (1.1), Chair/DeletePaper2.php (1.1), Chair/DeletePaper3.php
+	  (1.1), Chair/DumpDatabase.php (1.1), Chair/FindPCConflicts.php
+	  (1.1), Chair/GradeAllPapers.php (1.1), Chair/ListFirstAuthors.php
+	  (1.1), Chair/ListPC.php (1.1), Chair/ListPapersAssignedToPC.php
+	  (1.1), Chair/ListReviewers.php (1.1), Chair/ListReviews.php
+	  (1.1), Chair/ModifyPaper.php (1.1), Chair/NewAssignPapers.php
+	  (1.1), Chair/OldAssignPapers.php (1.1),
+	  Chair/ReviewAssistants.php (1.1), Chair/ReviewChairs.php (1.1),
+	  Chair/ReviewContacts.php (1.1), Chair/ReviewPC.php (1.1),
+	  Chair/SearchPapers.php (1.1), Chair/SendMail.php (1.1),
+	  Chair/SendMail2.php (1.1), Chair/SetDates.php (1.1),
+	  Chair/SetPCPaper.php (1.1), Chair/SetTopics.php (1.1),
+	  Chair/ShowCalendar.php (1.1), Chair/SpotProblems.php (1.1),
+	  Chair/SubmitPaper.php (1.1), Chair/SubmitPaper2.php (1.1),
+	  Chair/UnfinalizeReview.php (1.1), Chair/ViewActionLog.php (1.1),
+	  Chair/ViewButtons.php (1.1), Chair/index.php (1.1),
+	  Code/.htaccess (1.1), Code/Calendar.inc (1.1),
+	  Code/ClassCGO2004Review.inc (1.1), Code/ClassConference.inc
+	  (1.1), Code/ClassContact.inc (1.1), Code/ClassHYPO2010Review.inc
+	  (1.1), Code/ClassISCA2002Review.inc (1.1),
+	  Code/ClassMICRO36Review.inc (1.1), Code/ClassPaper.inc (1.1),
+	  Code/ClassReview.inc (1.1), Code/CreateDatabase.sh (1.1),
+	  Code/DumpAllReviews.php-not-via-apache (1.1),
+	  Code/DumpSingleReview.php-not-via-apache (1.1),
+	  Code/SuckInOSDIPaper.php-not-via-apache (1.1), Code/animate.js
+	  (1.1), Code/confConfig.inc (1.1), Code/confConfig.inc.dist (1.1),
+	  Code/confConfigReview.inc (1.1), Code/confConfigReview.inc.dist
+	  (1.1), Code/confHeader.inc (1.1), Code/confHeader.inc.dist (1.1),
+	  Code/confJavaScript.inc (1.1), Code/conference.sql (1.1),
+	  Download/.htaccess (1.1), Download/GetConfStuff.php (1.1),
+	  Download/GetPaper (1.1), Download/GetPaper.php (1.1),
+	  Download/index.html (1.1), PC/AskForReviewCommon.inc (1.1),
+	  PC/AskForSecondaryReview.php (1.1), PC/CheckAssignedPapers.php
+	  (1.1), PC/GradePapers.php (1.1), PC/ListReviews.php (1.1),
+	  PC/PCAllAnonReviewsForPaper.php (1.1), PC/PCListPapers.php (1.1),
+	  PC/PCNotes.php (1.1), PC/PCReviewsForPaper.php (1.1),
+	  PC/PCSubmitReview.php (1.1), PC/RemoveAskReview.php (1.1),
+	  PC/ReviewAnyPaper.php (1.1), PC/ReviewPapers.php (1.1),
+	  PC/SeeAcceptedPapers.php (1.1), PC/SeeAllGrades.php (1.1),
+	  PC/ShowAbstract.php (1.1), PC/SpotMyProblems.php (1.1),
+	  PC/ValidPapers.inc (1.1), PC/gradeNames.inc (1.1), PC/index.php
+	  (1.1), Reviewer/CommonPrintReview.php (1.1),
+	  Reviewer/CommonSubmitReview.php (1.1),
+	  Reviewer/RequestedReviews.php (1.1),
+	  Reviewer/RequestedReviewsFromIndex.inc (1.1),
+	  Reviewer/ReviewerSubmitReview.php (1.1), Reviewer/SeeDecision.php
+	  (1.1), Reviewer/SeeDecisions.php (1.1), Reviewer/ratings.html
+	  (1.1), Reviewer/ratings.php (1.1), images/CheckMark.gif (1.1),
+	  images/GenChart.php (1.1), images/GeneralChart.php (1.1),
+	  PC/AskForPrimaryReview.php (1.1), PC/CheckOnPCProgress.php (1.1),
+	  PC/CheckReviewStatus.php (1.1),
+	  themes/modular-with-arial-fonts/amodbanr.gif (1.1),
+	  themes/modular-with-arial-fonts/amodbck.gif (1.1),
+	  themes/modular-with-arial-fonts/amodbckh.gif (1.1),
+	  themes/modular-with-arial-fonts/amodbul1.gif (1.1),
+	  themes/modular-with-arial-fonts/amodbul2.gif (1.1),
+	  themes/modular-with-arial-fonts/amodbul3.gif (1.1),
+	  themes/modular-with-arial-fonts/amodhbtn.gif (1.1),
+	  themes/modular-with-arial-fonts/amodhhov.gif (1.1),
+	  themes/modular-with-arial-fonts/amodhom.gif (1.1),
+	  themes/modular-with-arial-fonts/amodhomh.gif (1.1),
+	  themes/modular-with-arial-fonts/amodhsel.gif (1.1),
+	  themes/modular-with-arial-fonts/amodnxt.gif (1.1),
+	  themes/modular-with-arial-fonts/amodnxth.gif (1.1),
+	  themes/modular-with-arial-fonts/amodrule.gif (1.1),
+	  themes/modular-with-arial-fonts/amodup.gif (1.1),
+	  themes/modular-with-arial-fonts/amoduph.gif (1.1),
+	  themes/modular-with-arial-fonts/amodvbtn.gif (1.1),
+	  themes/modular-with-arial-fonts/amodvhov.gif (1.1),
+	  themes/modular-with-arial-fonts/amodvsel.gif (1.1),
+	  themes/modular-with-arial-fonts/color0.css (1.1),
+	  themes/modular-with-arial-fonts/color1.css (1.1),
+	  themes/modular-with-arial-fonts/custom.css (1.1),
+	  themes/modular-with-arial-fonts/graph0.css (1.1),
+	  themes/modular-with-arial-fonts/graph1.css (1.1),
+	  themes/modular-with-arial-fonts/modbanr.gif (1.1),
+	  themes/modular-with-arial-fonts/modbck.gif (1.1),
+	  themes/modular-with-arial-fonts/modbkgnd.jpg (1.1),
+	  themes/modular-with-arial-fonts/modbul1.gif (1.1),
+	  themes/modular-with-arial-fonts/modbul2.gif (1.1),
+	  themes/modular-with-arial-fonts/modbul3.gif (1.1),
+	  themes/modular-with-arial-fonts/modglobl.gif (1.1),
+	  themes/modular-with-arial-fonts/modhbtn.gif (1.1),
+	  themes/modular-with-arial-fonts/modhom.gif (1.1),
+	  themes/modular-with-arial-fonts/modhsel.gif (1.1),
+	  themes/modular-with-arial-fonts/modnxt.gif (1.1),
+	  themes/modular-with-arial-fonts/modrule.gif (1.1),
+	  themes/modular-with-arial-fonts/modu1110.css (1.1),
+	  themes/modular-with-arial-fonts/modu1515.css (1.1),
+	  themes/modular-with-arial-fonts/modular-with-arial-fonts.inf
+	  (1.1),
+	  themes/modular-with-arial-fonts/modular-with-arial-fonts.utf8
+	  (1.1), themes/modular-with-arial-fonts/modup.gif (1.1),
+	  themes/modular-with-arial-fonts/modvbtn.gif (1.1),
+	  themes/modular-with-arial-fonts/modvsel.gif (1.1),
+	  themes/modular-with-arial-fonts/theme.css (1.1): Initial revision
 
