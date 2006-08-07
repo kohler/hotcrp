@@ -43,6 +43,7 @@ if (IsSet($_REQUEST["SendReviews"]) && sizeof($_REQUEST["Requests"]) > 0) {
   } 
 
   //  $Conf -> infoMsg("$_REQUEST[firstEmail] registered as user $id");
+  // XXX lock table
       
   $paperList="";
   for ($i = 0; $i < sizeof($_REQUEST["Requests"]); $i++) {
@@ -50,7 +51,7 @@ if (IsSet($_REQUEST["SendReviews"]) && sizeof($_REQUEST["Requests"]) > 0) {
     //
     // Have they already been asked to review this paper?
     //
-    $query = "SELECT reviewRequestId, paperId FROM ReviewRequest WHERE paperId=$paperId AND asked=$id";
+    $query = "select reviewId, paperId FROM PaperReview WHERE paperId=$paperId and contactId=$id";
     $result=$Conf->qe($query);
 
     if ( !DB::isError($result) && $result->numRows() >= 1 ) {
@@ -68,10 +69,7 @@ if (IsSet($_REQUEST["SendReviews"]) && sizeof($_REQUEST["Requests"]) > 0) {
 	$title=$row[0];
 	$paperList= $paperList . "Paper #$paperId, $title\n";
 	// $Conf->errorMsg("Do $paperId");
-	$query="INSERT INTO ReviewRequest SET "
-	  . " requestedBy=" . $_SESSION["Me"]->contactId. ", "
-	  . " asked=$id, "
-	  . " paperId=$paperId";
+	$query="insert into PaperReview set paperId=$paperId, contactId=$id, reviewType=" . REVIEW_REQUESTED . ", requestedBy=" . $_SESSION["Me"]->contactId. ", requestedOn=current_timestamp";
 	$request=$Conf->qe($query);
 	if (DB::isError($result)) {
 	  $Conf->errorMsg("Request to review paper $paperId failed for $query: " . $result->getMessage());
@@ -107,12 +105,12 @@ list available to you as a program committee member).
 <h3> These are the review requests you have already made </h3>
 
 <?php 
-$result=$Conf->qe("SELECT Paper.paperId, Paper.Title, ContactInfo.email "
-		  . "FROM Paper, ContactInfo, ReviewRequest "
-		  . "WHERE (ReviewRequest.paperId=Paper.paperId "
-		  . "  AND ReviewRequest.asked=ContactInfo.contactId "
-		  . "  AND ReviewRequest.requestedBy=" . $_SESSION["Me"]->contactId. ") "
-		  . " ORDER BY Paper.paperId ");
+$result=$Conf->qe("SELECT Paper.paperId, Paper.title, ContactInfo.email
+		from Paper
+		join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.requestedBy=" . $_SESSION["Me"]->contactId . ")
+		join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)
+		where PaperReview.reviewType<" . REVIEW_PC . "
+		order by Paper.paperId");
 if (DB::isError($result)) {
   $Conf->errorMsg("Error in retrieving list of reviews: " . $result->getMessage());
 } else {
@@ -143,11 +141,11 @@ if (DB::isError($result)) {
 <INPUT TYPE=TEXT name=firstEmail value="<?php echo $_REQUEST[firstEmail]?>" size=64> <br>
 <INPUT TYPE=SUBMIT name="SendReviews" value="Send the Review Requests">
 <br>
-<?php 
+<?php
+$rtype = ($ReviewKind == "Primary" ? REVIEW_PRIMARY : REVIEW_SECONDARY);
 $result=$Conf->q("SELECT Paper.paperId, Paper.title, Paper.withdrawn "
-. "FROM Paper, $ReviewTable "
-. "WHERE $ReviewTable.reviewer='" . $_SESSION["Me"]->contactId. "' "
-. "AND Paper.paperId=$ReviewTable.paperId "
+. "FROM Paper join PaperReview using (paperId) "
+. "WHERE PaperReview.contactId='" . $_SESSION["Me"]->contactId. "' "
 . "ORDER BY Paper.paperId ");
 
 if (DB::isError($result)) {
@@ -198,6 +196,4 @@ if (DB::isError($result)) {
 <INPUT TYPE=SUBMIT name="SendReviews" value="Send the Review Requests">
 </FORM>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+<?php $Conf->footer() ?>

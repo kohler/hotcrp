@@ -550,7 +550,6 @@ insert into PaperListColumns set paperListId=2, fieldId=31, col=0;
 insert into PaperListColumns set paperListId=2, fieldId=1, col=1;
 insert into PaperListColumns set paperListId=2, fieldId=11, col=2;
 insert into PaperListColumns set paperListId=2, fieldId=33, col=3;
-insert into PaperListColumns set paperListId=2, fieldId=28, col=4;
 insert into PaperListColumns set paperListId=2, fieldId=29, col=5;
 insert into PaperListColumns set paperListId=2, fieldId=30, col=6;
 insert into PaperListColumns set paperListId=2, fieldId=32, col=7;
@@ -562,7 +561,6 @@ insert into PaperListColumns set paperListId=3, fieldId=31, col=0;
 insert into PaperListColumns set paperListId=3, fieldId=1, col=1;
 insert into PaperListColumns set paperListId=3, fieldId=11, col=2;
 insert into PaperListColumns set paperListId=3, fieldId=27, col=3;
-insert into PaperListColumns set paperListId=3, fieldId=28, col=4;
 insert into PaperListColumns set paperListId=3, fieldId=29, col=5;
 insert into PaperListColumns set paperListId=3, fieldId=30, col=6;
 insert into PaperListColumns set paperListId=3, fieldId=32, col=7;
@@ -574,28 +572,19 @@ insert into PaperListColumns set paperListId=4, fieldId=2, col=0;
 insert into PaperListColumns set paperListId=4, fieldId=12, col=1;
 insert into PaperListColumns set paperListId=4, fieldId=27, col=2;
 
-insert into PaperList set paperListId=5, paperListName='pcreviewerHome',
-	description='Papers to review (homepage view)',
-	queryType='myReviews', sortCol=0, query='';
-insert into PaperListColumns set paperListId=5, fieldId=1, col=0;
-insert into PaperListColumns set paperListId=5, fieldId=11, col=1;
-insert into PaperListColumns set paperListId=5, fieldId=29, col=2;
-insert into PaperListColumns set paperListId=5, fieldId=32, col=3;
-insert into PaperListColumns set paperListId=5, fieldId=33, col=4;
-
 insert into PaperList set paperListId=6, paperListName='reviewerHome',
 	description='Papers to review (homepage view)',
 	queryType='myReviews', sortCol=0, query='';
-insert into PaperListColumns set paperListId=6, fieldId=1, col=0;
-insert into PaperListColumns set paperListId=6, fieldId=11, col=1;
+insert into PaperListColumns set paperListId=6, fieldId=3, col=0;
+insert into PaperListColumns set paperListId=6, fieldId=13, col=1;
 insert into PaperListColumns set paperListId=6, fieldId=32, col=2;
 insert into PaperListColumns set paperListId=6, fieldId=33, col=3;
 
 insert into PaperList set paperListId=8, paperListName='reviewAssignment',
 	description='Review assignments (homepage view)',
 	queryType='pc', sortCol=3, query='';
-insert into PaperListColumns set paperListId=8, fieldId=1, col=0;
-insert into PaperListColumns set paperListId=8, fieldId=11, col=1;
+insert into PaperListColumns set paperListId=8, fieldId=3, col=0;
+insert into PaperListColumns set paperListId=8, fieldId=13, col=1;
 insert into PaperListColumns set paperListId=8, fieldId=39, col=2;
 insert into PaperListColumns set paperListId=8, fieldId=36, col=3;
 insert into PaperListColumns set paperListId=8, fieldId=35, col=4;

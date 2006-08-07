@@ -38,9 +38,9 @@ if (!IsSet($_REQUEST[emailBody])) {
 //
 // Need to simply finding naglist
 //
-if (IsSet($_REQUEST[nagList])) {
-  for ($i = 0; $i < sizeof($_REQUEST[nagList]); $i++) {
-    $nagMe[$_REQUEST[nagList][$i]] = 1;
+if (IsSet($_REQUEST["nagList"])) {
+  for ($i = 0; $i < sizeof($_REQUEST["nagList"]); $i++) {
+    $nagMe[$_REQUEST["nagList"][$i]] = 1;
   }
 }
 
@@ -50,7 +50,7 @@ if (IsSet($_REQUEST[nagList])) {
 <body>
 
 <?php 
-if (IsSet($_REQUEST[nagList])
+if (IsSet($_REQUEST["nagList"])
     && (IsSet($_REQUEST["SendReviews"]) || IsSet($_REQUEST["SampleEmails"]))) {
 
       if (IsSet($_REQUEST["SendReviews"])) {
@@ -63,11 +63,11 @@ if (IsSet($_REQUEST[nagList])
       $emailFrom="From: $Conf->emailFrom";
 
 
-      for ($i = 0; $i < sizeof($_REQUEST[nagList]); $i++) {
+      for ($i = 0; $i < sizeof($_REQUEST["nagList"]); $i++) {
 	//
 	// We send out nag notices one at a time
 	//
-	$them=$_REQUEST[nagList][$i];
+	$them=$_REQUEST["nagList"][$i];
 	$query="SELECT Paper.paperId, Paper.Title, "
 	. " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
 	. " ContactInfo.password, "
@@ -81,7 +81,7 @@ if (IsSet($_REQUEST[nagList])
 	if ( $result ) {
 	  $row = $result->fetchRow(DB_FETCHMODE_ASSOC);
 
-	  $msg = $_REQUEST[emailBody];
+	  $msg = $_REQUEST["emailBody"];
 	  
 	  $msg=str_replace("%TITLE%", $row['title'], $msg);
 	  $msg=str_replace("%NUMBER%", $row['paperId'], $msg);
@@ -103,7 +103,7 @@ if (IsSet($_REQUEST[nagList])
 
 	      if ($Conf->allowEmailTo($cleanEmail))
 		  mail($cleanEmail,
-		       $_REQUEST[emailSubject],
+		       $_REQUEST["emailSubject"],
 		       $msg . "\n" . $extraMsg,
 		       $emailFrom);
 
@@ -121,7 +121,7 @@ if (IsSet($_REQUEST[nagList])
 	    print "<table width=75% align=center border=1>";
 	    print "<tr> <td bgcolor=$header> $emailFrom </td> </tr>";
 	    print "<tr> <td bgcolor=$header> To: $cleanEmail </td> </tr>";
-	    print "<tr> <td bgcolor=$header> Subject: $_REQUEST[emailSubject] </td> </tr>";
+	    print "<tr> <td bgcolor=$header> Subject: " . $_REQUEST["emailSubject"] . "</td> </tr>";
 	    print "<tr> <td bgcolor=$body> ";
 	    print nl2br(htmlspecialchars($msg));
 # For debug
@@ -166,16 +166,15 @@ There are three degrees of review status: <br>
 </ol>
 </h4>
 
-<FORM METHOD=POST ACTION="<?php echo $_SERVER[PHP_SELF] ?>" target=_blank>
+<form method='post' action="<?php echo $_SERVER[PHP_SELF] ?>" target='_blank'>
 <?php 
-$result=$Conf->qe("SELECT Paper.paperId, Paper.Title, ContactInfo.email, "
-		  . " ContactInfo.contactId, ReviewRequest.reviewRequestId "
-		  . "FROM Paper, ContactInfo, ReviewRequest "
-		  . "WHERE (ReviewRequest.paperId=Paper.paperId "
-		  . "  AND ReviewRequest.asked=ContactInfo.contactId "
-		  . "  AND ReviewRequest.requestedBy=" . $_SESSION["Me"]->contactId. ") "
-		  . " ORDER BY Paper.paperId "
-		  );
+$result=$Conf->qe("select Paper.paperId, Paper.Title, ContactInfo.email,
+		ContactInfo.contactId, PaperReview.reviewId
+		from Paper
+		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.requestedBy=" . $_SESSION["Me"]->contactId . ")
+		join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
+		where PaperReview.reviewType<" . REVIEW_PC . "
+		order by Paper.paperId");
 
 if (DB::isError($result)) {
   $Conf->errorMsg("Error in retrieving list of reviews: " . $result->getMessage());
@@ -199,10 +198,10 @@ else {
       $contactId = $row[3];
       $requestId = $row[4];
 
-      $query = "SELECT contactId, reviewSubmitted"
-      . " FROM PaperReview "
-      . " WHERE PaperReview.paperId='$paperId' "
-      . " AND PaperReview.contactId='$contactId' "
+      $query = "select contactId, reviewSubmitted, reviewModified"
+      . " from PaperReview "
+      . " where PaperReview.paperId='$paperId' "
+      . " and PaperReview.contactId='$contactId' "
       ;
 
       $review_result = $Conf->qe($query);
@@ -219,7 +218,7 @@ else {
 	  $reviewer = "";
 	}
 	else if ($num == 1) {
-	  $finalized = $review_row[1];
+	  $finalized = ($review_row[2] ? $review_row[1] : -1);
 	  $reviewer = $review_row[0];
 	}
 
@@ -243,14 +242,14 @@ else {
 	if ($finalized ==1) {
 	  $status = "<b> Done </b>";
 	  print "<td> $status </td>";
-	  print "<td> <b> <a href=\"PCReviewsForPaper.php?requestId=$requestId\" target=_blank> See review </a> </b>";
+	  print "<td> <b> <a href=\"${ConfSiteBase}review.php?reviewId=$requestId\" target=_blank> See review </a> </b>";
 	  print "</td>";
 	  print "<td> $title </td> </tr>\n";
 	}
 	else if ($finalized ==0) {
 	  $status = "Not finalized";
 	  print "<td> $status </td> \n";
-	  print "<td> <b> <a href=\"PCReviewsForPaper.php?requestId=$requestId\" target=_blank> See partial review </a> </b>";
+	  print "<td> <b> <a href=\"${ConfSiteBase}review.php?reviewId=$requestId\" target=_blank> See partial review </a> </b>";
 	  print "</td>";
 	  print "<td> $title </td>";
 	}

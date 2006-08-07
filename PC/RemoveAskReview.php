@@ -12,26 +12,18 @@ $Conf -> connect();
 <body>
 <?php 
 if (IsSet($_REQUEST[removePaperId]) && IsSet($_REQUEST[removeReview])) {
-  $query= "DELETE FROM ReviewRequest WHERE "
-    . "requestedBy=" . $_SESSION["Me"]->contactId. " AND reviewRequestId=$_REQUEST[removeReview] "
-    . " AND paperId='$_REQUEST[removePaperId]'";
+  $query= "delete from PaperReview where "
+      . "requestedBy=" . $_SESSION["Me"]->contactId. " and reviewId=" . $_REQUEST["removeReview"] . " "
+      . " and paperId=" . $_REQUEST["removePaperId"]
+      . " and reviewModified=0";
 
   $result = $Conf->qe($query);
 
   if ( !DB::isError($result) ) {
-    $Conf->log("Remove review request #$_REQUEST[removeReview] for $_REQUEST[removePaperId]", $_SESSION["Me"]);
+    $Conf->log("Remove review request #" . $_REQUEST["removeReview"] . " for " . $_REQUEST["removePaperId"], $_SESSION["Me"]);
   } else {
     $Conf->errorMsg("There was an error removing the reviewers: " . $result->getMessage());
   }
-  
-  //
-  // Remove any unfinished reviews
-  //
-  $query="DELETE FROM PaperReview "
-    . " WHERE paperId=$_REQUEST[removePaperId] "
-    . " AND contactId=$_REQUEST[removeReviewer] "
-    . " AND reviewSubmitted=0 ";
-  $Conf->qe($query);
 }
 ?>
 
@@ -44,18 +36,18 @@ a specific paper.
 
 $Conf->warnMsg("<b> There is no confirmation step! </b>
 Once you remove someone from reviewing a specific paper, any reviews they've
-already submitted for that paper will remain in the database;
-however, they will not be able to submit a review if they haven't already started the review.");
+already started for that paper will remain in the database;
+however, they will not be able to start a review they haven't already started.");
 
 
-$result=$Conf->qe("SELECT Paper.paperId, Paper.Title, "
-		  . " ContactInfo.email, ContactInfo.contactId, "
-		  . " ReviewRequest.reviewRequestId "
-		  . "FROM Paper, ContactInfo, ReviewRequest "
-		  . "WHERE (ReviewRequest.paperId=Paper.paperId "
-		  . "  AND ReviewRequest.asked=ContactInfo.contactId "
-		  . "  AND ReviewRequest.requestedBy=" . $_SESSION["Me"]->contactId . ") "
-		  . " ORDER BY Paper.paperId ");
+$result=$Conf->qe("SELECT Paper.paperId, Paper.title,
+		ContactInfo.email, ContactInfo.contactId,
+		PaperReview.reviewId
+		from Paper
+		join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.requestedBy=" . $_SESSION["Me"]->contactId . ")
+		join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
+		where PaperReview.reviewType<" . REVIEW_PC . "
+		order by Paper.paperId");
 
 if (DB::isError($result)) {
   $Conf->errorMsg("Error in retrieving list of reviews: " . $result->getMessage());
@@ -80,11 +72,8 @@ if (DB::isError($result)) {
     </table>
 	<?php 
 	}
-?>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+$Conf->footer() ?>
 
 
 

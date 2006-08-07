@@ -11,6 +11,20 @@ $Conf->header("Review Preferences", "revpref");
 $reviewer = cvtint($_REQUEST["reviewer"]);
 
 
+function cvtpref($n) {
+    $n = trim($n);
+    if (preg_match('/^-+$/', $n))
+	return -strlen($n);
+    else if (preg_match('/^\++$/', $n))
+	return strlen($n);
+    else if ($n == "")
+	return 0;
+    else if (is_numeric($n))
+	return round($n);
+    else
+	return -1000001;
+}
+
 function savePreferences($reviewer) {
     global $Conf, $Me, $reviewTypeName;
 
@@ -20,7 +34,7 @@ function savePreferences($reviewer) {
     foreach ($_REQUEST as $k => $v)
 	if ($k[0] == 'r' && substr($k, 0, 7) == "revpref"
 	    && ($p = cvtint(substr($k, 7))) > 0) {
-	    if (($v = cvtint($v)) >= -1000000 && $v <= 1000000) {
+	    if (($v = cvtpref($v)) >= -1000000 && $v <= 1000000) {
 		$setting[$p] = $v;
 		$pmax = max($pmax, $p);
 	    } else
@@ -28,7 +42,7 @@ function savePreferences($reviewer) {
 	}
 
     if ($error)
-	$Conf->errorMsg("Reviewer preferences must be integers between -1000000 and 1000000.");
+	$Conf->errorMsg("Bad preference setting.  Example settings include '0' or '' (don't care), '+' (want to review, same as +1), '++' (really want to review, same as +2), '&minus;' (don't want to review, same as &minus;1), '&minus;&minus;' (really don't want to review, same as &minus;2), and numbers between &minus;1000000 and 1000000.");
     if ($pmax == 0 && !$error)
 	$Conf->errorMsg("No reviewer preferences to update.");
     if ($pmax == 0)

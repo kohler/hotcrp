@@ -28,7 +28,7 @@ class Contact {
     var $isPC;
     var $isChair;
     var $isAssistant;
-    var $chairMode;
+    //var $chairMode;
     var $chairContactId;
     var $validated;
 
@@ -73,9 +73,9 @@ class Contact {
 		}
 		if ($Opt['setupPhase'])
 		    $this->isChair = true;
-		if (!$this->isChair)
-		    $this->chairMode = false;
-		else
+		//if (!$this->isChair)
+		//    $this->chairMode = false;
+		if ($this->isChair)
 		    $this->chairContactId = $this->contactId;
 		// change view ID or chair mode
 		if ($this->isChair || $this->chairContactId > 0) {
@@ -91,8 +91,8 @@ class Contact {
 		    if ($chairMode >= 0 && !$this->isChair) {
 			$this->contactId = $this->chairContactId;
 			return $this->valid($conf, true);
-		    } else if ($chairMode >= 0)
-			$this->chairMode = ($chairMode > 0);
+		    } //else if ($chairMode >= 0)
+		    //	$this->chairMode = ($chairMode > 0);
 		}
 		$this->validated = true;
 		if ($update)
@@ -126,7 +126,7 @@ class Contact {
 	$this->isPC = false;
 	$this->isChair = false;
 	$this->isAssistant = false;
-	$this->chairMode = false;
+	//$this->chairMode = false;
 	$this->chairContactId = 0;
     }
   
@@ -505,7 +505,8 @@ class Contact {
 	    $whyNot["deadline"] = "PCViewSubmission";
 	else if ($prow->reviewType > 0 && !$conf->timeReviewerViewSubmission())
 	    $whyNot["deadline"] = "ReviewerViewSubmission";
-	if (!isset($whyNot) || count($whyNot) == 0)
+	if ((!$this->isPC && $prow->reviewType <= 0)
+	    || !isset($whyNot) || count($whyNot) == 0)
 	    $whyNot["permission"] = 1;
 	return false;
     }
@@ -569,9 +570,10 @@ class Contact {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "rev")))
 	    return false;
+	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
 	// policy
 	if ($prow->withdrawn <= 0 && $prow->acknowledged > 0
-	    && (($this->amAssistant() && ($this->chairMode || $prow->conflict <= 0))
+	    && (($this->amAssistant() && ($forceShow || $prow->conflict <= 0))
 		|| ((($this->isPC && $prow->conflict <= 0)
 		     || $prow->reviewType > 0)
 		    && $conf->timeReviewPaper($this->isPC, $prow->reviewType > 0, true))))
@@ -601,10 +603,10 @@ class Contact {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "rev")))
 	    return false;
+	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
 	// policy
 	if ($prow->withdrawn <= 0 && $prow->acknowledged > 0
-	    && (($this->amAssistant()
-		 && ($this->chairMode || $prow->conflict <= 0))
+	    && (($this->amAssistant() && ($forceShow || $prow->conflict <= 0))
 		|| ((($this->isPC && $prow->conflict <= 0)
 		     || $prow->reviewType > 0)
 		    && ($conf->timeReviewPaper($this->isPC, $prow->reviewType > 0, true)
@@ -683,7 +685,8 @@ class Contact {
     function canSetOutcome($prow) {
 	if (!$this->amAssistant())
 	    return false;
-	if (($prow->author > 0 || $prow->conflict > 0) && !$this->chairMode)
+	if (($prow->author > 0 || $prow->conflict > 0)
+	    && !(isset($_REQUEST['forceShow']) && $_REQUEST['forceShow']))
 	    return false;
 	return true;
     }

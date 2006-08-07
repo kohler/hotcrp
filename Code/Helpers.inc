@@ -574,7 +574,6 @@ function reviewersTable($paperId, $reviewId = null, $buttons = false) {
     $nonsubrev = array();
     $ordinal = 0;
     $anyThisReview = 0;
-    $nRetractable;
     while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
 	// review ID
 	$t = "    <tr>";
@@ -620,10 +619,8 @@ function reviewersTable($paperId, $reviewId = null, $buttons = false) {
 	$actions = array();
 	if ($row->reviewType == REVIEW_REQUESTED
 	    && $row->reviewModified <= 0
-	    && ($row->requestedBy == $Me->contactId || $Me->amAssistant())) {
+	    && ($row->requestedBy == $Me->contactId || $Me->amAssistant()))
 	    $actions[] = "<a class='button_small' href=\"${ConfSiteBase}reqreview.php?paperId=$paperId&amp;reviewId=$row->reviewId&amp;action=retract\">Retract review request</a>";
-	    $nRetractable++;
-	}
 	if (count($actions) > 0 && $buttons)
 	    $t .= "<td>" . join("", $actions) . "</td>";
 
@@ -639,12 +636,8 @@ function reviewersTable($paperId, $reviewId = null, $buttons = false) {
     if (!$anyThisReview && $reviewId !== null)
 	$nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Review</b></td><td>" . contactText($Me) . "</td><td></td><td>Not started</td></tr>\n";
 
-    if ($reviewId !== null && ($Me->amAssistant() || $Conf->timeReviewPaper(false, true, true))) {
-	$t = "Ask someone else to review this paper";
-	if ($nRetractable)
-	    $t .= ", retract outstanding review requests";
-	$nonsubrev[] = "    <tr><td></td><td colspan='5'><a class='small' href=\"${ConfSiteBase}reqreview.php?paperId=$paperId\">$t</a></td></tr>\n";
-    }
+    if ($reviewId !== null && ($Me->amAssistant() || $Conf->timeReviewPaper(false, true, true)))
+	$nonsubrev[] = "    <tr><td></td><td colspan='5'><a class='small' href=\"${ConfSiteBase}reqreview.php?paperId=$paperId\">Ask someone else to review this paper</a></td></tr>\n";
     
     if (count($nonsubrev) || count($subrev))
 	return join("", $subrev) . join("", $nonsubrev);
