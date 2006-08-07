@@ -104,6 +104,7 @@ input.button, button, a.button {
 	margin: 3px 0px;
 	text-decoration: none;
 	color: black;
+	white-space: nowrap;
 }
 input.button_default, button.button_default {
 	font-size: large;
@@ -113,6 +114,7 @@ input.button_default, button.button_default {
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
 	margin: 3px 0px;
+	white-space: nowrap;
 }
 form {
 	margin-bottom: 0px;
@@ -184,6 +186,7 @@ table.vubar .tab_default {
 div.maintab {
 	position: relative;
 	width: 100%;
+	margin-bottom: 1em;
 }
 div.maintab .bot {
 	padding: 1em;
@@ -207,6 +210,9 @@ div.maintab table.top td.tab {
 	border-bottom: 2px solid #cc9900;
 	padding: 0em 1em 2px 1em;
 	font-weight: normal;
+}
+div.maintabsep {
+	padding: 0.25em 0em;
 }
 
 
@@ -239,7 +245,7 @@ input.button_alert {
 	border-right: 3px solid #996666;
 	margin: 3px 0px;
 }
-a.download, a.review_start, a.review_comp, a.review_edit, a.review_view,
+a.download, a.rev_start, a.rev_comp, a.rev_edit, a.rev_view,
 input.button_small, a.button_small, button.button_small {
 	font-size: small;
 	padding: 1px 0.25em;
@@ -251,6 +257,10 @@ input.button_small, a.button_small, button.button_small {
 	text-decoration: none;
 	color: black;
 	margin: 3px 0px;
+	white-space: nowrap;
+}
+a.small {
+	font-size: small;
 }
 a.foldbutton {
 	font-size: small;
@@ -272,7 +282,7 @@ td.caption a.foldbutton {
 	border-bottom: 1px solid #999966;
 	border-right: 1px solid #999966;
 }
-a.review_past {
+a.rev_past {
 	font-size: small;
 	font-weight: bold;
 	padding: 1px 0.25em;
@@ -478,7 +488,8 @@ tr.pt_abstract td.entry {
 tr.pt_paper input {
 	margin-top: 4px;
 }
-div#paper_reviews span.pstat, div#review tr.pt_status span.pstat {
+div#paper_reviews span.pstat, div#review tr.pt_status span.pstat,
+div#revreq tr.pt_status span.pstat {
 	margin-right: 1em;
 }
 pre.entryexample {
@@ -497,9 +508,12 @@ tr#topicinterest td.caption, tr#topicinterest td.hint {
 	padding-top: 1.3em;
 }
 tr#topicinterest td#topicinterest, tr.pt_topics td.entry, tr.pt_actions td,
-td.plholder, tr.rev_actions td.entry, tr.pt_reviews td.entry {
+td.plholder, tr.rev_actions td.entry, tr.pt_reviews td.entry,
+tr.rev_reviewers td.entry {
 	vertical-align: top;
-	padding-top: 0px;
+}
+tr.rev_reviewers td.entry {
+	padding-top: 3px;
 }
 table.topicinterest tr td.ti_interest, table.topicinterest tr th {
 	padding-right: 1px;
@@ -520,6 +534,13 @@ table.reviewscores td {
 table.reviewscores td.rs_id, table.reviewscores td.rs_num {
 	text-align: left;
 }
+table.reviewers td {
+	padding-right: 1em;
+}
+table.reviewers td.highlight {
+	padding-right: 0.25em;
+}
+
 
 span.pstat {
 	font-weight: bold;

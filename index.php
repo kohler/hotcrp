@@ -64,20 +64,73 @@ function taskbutton($name,$label) {
 $tabName = array();
 $tabText = array();
 $tabBody = array();
+$tabSep = "<div class='maintabsep'></div>\n";
 
+
+if ($Me->isPC || $Me->amReviewer()) {
+    $tabName[] = "re";
+    $tabText[] = "Reviews";
+    if (!isset($defaultTabName))
+	$defaultTabName = 're';
+    $body = "";
+    $sep = "";
+
+    $plist = new PaperList();
+    $plist->showHeader = 0;
+    $ptext = $plist->text("reviewerHome", $Me);
+    if ($plist->count > 0) {
+	$body .= $sep . $ptext;
+	$sep = $tabSep;
+    }
+
+    if ($Me->isPC && $Conf->timeReviewPaper(true, false, true)){
+	$body .= $sep . "PC members may review <a href='All/ListPapers.php?list=submitted'>any submitted paper</a>, whether or not a review has been assigned.";
+	$sep = $tabSep;
+    }
+
+    $deadlines = array();
+    $rtyp = ($Me->isPC ? "PC" : "reviewer");
+    unset($d);
+    if ($plist->needSubmitReview == 0) {
+	/* nada */
+	//if ($plist->count > 0)
+	//   $deadlines[] = "Thank you for submitting your requested reviews!";
+    } else if (!$Conf->timeReviewPaper($Me->isPC, true, true))
+	$deadlines[] = "The <a href='deadlines.php'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.";
+    else if (!$Conf->timeReviewPaper($Me->isPC, true, false))
+	$deadlines[] = "Reviews were requested by " . $Conf->printableEndTime("${rtyp}SubmitReview") . ".";
+    else {
+	$d = $Conf->printableEndTime("${rtyp}SubmitReview");
+	if ($d != "N/A")
+	    $deadlines[] = "Please submit your reviews by $d.";
+    }
+    if ($Me->isPC && $Conf->timeReviewPaper(true, false, true)) {
+	$d = (isset($d) ? "N/A" : $Conf->printableEndTime("PCSubmitReview"));
+	if ($d != "N/A")
+	    $deadlines[] = "Please submit your reviews by $d.";
+    }
+    if (count($deadlines) > 0)
+	$body .= $sep . join("<br/>", $deadlines);
+    
+    $tabBody[] = $body;
+}
 
 
 if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
     $tabName[] = "su";
     $tabText[] = "Submissions";
+    if (!isset($defaultTabName))
+	$defaultTabName = 'su';
     $body = "";
+    $sep = "";
 
     $startable = $Conf->timeStartPaper();
     if ($startable || $Me->amAssistant()) {
-	$body .= "<div><strong><a href='paper.php?paperId=new'>Start new paper</a></strong> <span class='deadline'>(" . $Conf->printDeadline('startPaperSubmission') . ")</span>";
+	$body .= "$sep<div><strong><a href='paper.php?paperId=new'>Start new paper</a></strong> <span class='deadline'>(" . $Conf->printDeadline('startPaperSubmission') . ")</span>";
 	if ($Me->amAssistant())
 	    $body .= "<br/>\n<small>As PC Chair, you can start papers regardless of deadlines and on other people's behalf.</small>";
 	$body .= "</div>\n";
+	$sep = $tabSep;
     }
 
     if ($Me->isAuthor) {
@@ -85,8 +138,10 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
 	$plist->showHeader = 0;
 	$ptext = $plist->text("authorHome", $Me);
 	$deadlines = array();
-	if ($plist->count > 0)
-	    $body .= $ptext;
+	if ($plist->count > 0) {
+	    $body .= $sep . $ptext;
+	    $sep = $tabSep;
+	}
 	if ($plist->needFinalize > 0) {
 	    $time = $Conf->printableEndTime('updatePaperSubmission');
 	    if (!$Conf->timeFinalizePaper())
@@ -101,7 +156,8 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
 	}
 	if (!$startable && !$Conf->timeAuthorViewReviews())
 	    $deadlines[] = "The <a href='deadlines.php'>deadline</a> for starting new papers has passed.";
-	$body .= join("<br/>", $deadlines);
+	if (count($deadlines) > 0)
+	    $body .= $sep . join("<br/>", $deadlines);
     }
 
     $tabBody[] = $body;
@@ -110,6 +166,8 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
 
 $tabName[] = "se";
 $tabText[] = "Settings";
+if (!isset($defaultTabName))
+    $defaultTabName = 'se';
 $body = "<table class='bullets'><tr>";
 
 $body .= "<td><h4>Your account</h4>
@@ -141,8 +199,6 @@ $body .= "</ul></td>\n";
 $body .= "</tr></table>";
 $tabBody[] = $body;
 
-
-$defaultTabName = 'su';
 
 echo "<div class='maintab'><table class='top'><tr>\n  <td><table><tr>\n";
 $tns = "[";
@@ -218,79 +274,6 @@ function reviewerDeadlines($isPC, $plist) {
     }
     printDeadlines($deadlines, 6);
 }
-
-if ($Me->isPC) { ?>
-<div class='home_tasks' id='home_tasks_pc'>
-  <div class='taskname'><h2>Program Committee Tasks</h2></div>
-  <div class='taskdetail'>
-    <table>
-    <tr>
-      <th>Papers:</th>
-      <td><a href='All/ListPapers.php?list=submitted'>List&nbsp;submitted</a></td>
-    </tr>
-
-<?php
-    $plist = new PaperList();
-    $plist->showHeader = 0;
-    $ptext = $plist->text("pcreviewerHome", $Me);
-    if ($plist->count > 0 || $Conf->timeReviewPaper(true, false, true)) {
-	$header = "  <th>Reviews:</th>";
-	if ($plist->count > 0) {
-	    echo "<tr>\n$header\n  <td class='plholder'>$ptext</td>\n</tr>\n";
-	    $header = "  <td></td>";
-	}
-	if ($Conf->timeReviewPaper(true, true, true)) {
-	    echo "<tr>\n$header\n  <td>";
-	    if ($Conf->timeReviewPaper(true, false, true))
-		echo "<a href='All/ListPapers.php?list=submitted'>Review&nbsp;other&nbsp;papers</a> $homeSep ";
-	    echo "<a href='uploadreview.php'>Offline&nbsp;reviewing</a></td>\n</tr>\n";
-	}
-
-	reviewerDeadlines(true, $plist);
-    }
-
-    //    $ptext = $plist->text("reviewRequestsHome", $Me);
-    //    if ($plist->count > 0) {
-    //	echo "<tr>\n  <th>Review&nbsp;requests:</th>\n  <td class='plholder'>$ptext</td>\n</tr>\n";
-    //	reviewerDeadlines(false, $plist);
-    //}
-?>
-
-    </table>
-  </div>
-  <div class='clear'></div>
-</div>
-<?php } ?>
-
-
-<?php if ($Me->amReviewer() && !$Me->isPC) { ?>
-<div class='home_tasks' id='home_tasks_pc'>
-  <div class='taskname'><h2>Reviewer Tasks</h2></div>
-  <div class='taskdetail'>
-    <table>
-
-<?php
-    $plist = new PaperList();
-    $plist->showHeader = 0;
-    $ptext = $plist->text("reviewerHome", $Me);
-    if ($plist->count > 0) {
-	$header = "  <th>Reviews:</th>";
-	if ($plist->count > 0) {
-	    echo "<tr>\n$header\n  <td class='plholder'>$ptext</td>\n</tr>\n";
-	    $header = "  <td></td>";
-	}
-	if ($Conf->timeReviewPaper(false, true, true))
-	    echo "<tr>\n$header\n  <td><a href='uploadreview.php'>Offline&nbsp;reviewing</a></td>\n</tr>\n";
-
-	reviewerDeadlines(false, $plist);
-    }
-?>
-
-    </table>
-  </div>
-  <div class='clear'></div>
-</div>
-<?php }
 
 
 

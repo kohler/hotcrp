@@ -78,42 +78,25 @@ function selfHref($extra = array()) {
     return $x;
 }
 
-function chairModeLink($text = null, $enterMode = -1) {
-    $Me = $_SESSION["Me"];
-    if ($enterMode < 0)
-	$enterMode = ($Me->amAssistant() ? 1 - (int) $Me->chairMode : 0);
-
-    $out = "<a href=\"" . htmlspecialchars(selfHref(array("chairMode" => $enterMode))) . "\">";
-    
-    if ($text === null) {
-	if ($Me->amAssistant())
-	    $text = ($Me->chairMode ? "Leave" : "Enter") . "&nbsp;chair&nbsp;mode";
-	else
-	    $text = "Return&nbsp;to&nbsp;chair&nbsp;view";
-    }
-
-    return "$out$text</a>";
-}
-
 
 $reviewButton[0] = array
-    ("past" => "<a class='review_past' ~>Review&nbsp;past&nbsp;due</a>",
-     "start" => "<a class='review_start' ~>Start&nbsp;review</a>",
-     "comp" => "<a class='review_comp' ~>Complete&nbsp;review</a>",
-     "edit" => "<a class='review_edit' ~>Edit&nbsp;review</a>",
-     "view" => "<a class='review_view' ~>See&nbsp;review</a>",
+    ("past" => "<a class='rev_past' ~>Review&nbsp;overdue</a>",
+     "start" => "<a class='rev_start' ~>Start&nbsp;review</a>",
+     "comp" => "<a class='rev_comp' ~>Complete&nbsp;review</a>",
+     "edit" => "<a class='rev_edit' ~>Edit&nbsp;review</a>",
+     "view" => "<a class='rev_view' ~>See&nbsp;review</a>",
      "author" => "", // <span class='author'>Author</span>",
      "conflict" => "", // <span class='conflict'>Conflict</span>",
      "" => "");
 $reviewButton[1] = array
-    ("past" => "<button class='review_past' type='submit'>Review&nbsp;past&nbsp;due</button>",
-     "start" => "<button class='review_start' type='submit'>Start&nbsp;review</button>",
-     "comp" => "<button class='review_comp' type='submit'>Complete&nbsp;review</button>",
-     "edit" => "<button class='review_edit' type='submit'>Edit&nbsp;review</button>",
-     "view" => "<button class='review_view' type='submit'>See&nbsp;review</button>",
-     "author" => "<button class='review_author' type='button' disabled='disabled'>Review</button>",
-     "conflict" => "<button class='review_conflict' type='button' disabled='disabled'>Review</button>",
-     "" => "<button class='review_other' type='button' disabled='disabled'>Review</button>");
+    ("past" => "<button class='rev_past' type='submit'>Review&nbsp;past&nbsp;due</button>",
+     "start" => "<button class='rev_start' type='submit'>Start&nbsp;review</button>",
+     "comp" => "<button class='rev_comp' type='submit'>Complete&nbsp;review</button>",
+     "edit" => "<button class='rev_edit' type='submit'>Edit&nbsp;review</button>",
+     "view" => "<button class='rev_view' type='submit'>See&nbsp;review</button>",
+     "author" => "<button class='rev_author' type='button' disabled='disabled'>Review</button>",
+     "conflict" => "<button class='rev_conflict' type='button' disabled='disabled'>Review</button>",
+     "" => "<button class='rev_other' type='button' disabled='disabled'>Review</button>");
      //"author" => "",
      //"conflict" => "",
      //"" => "");
@@ -196,7 +179,15 @@ function reviewButton($paperId, $row = null, $buttonType = 0, $conf = null) {
 	$revulink = "href='${ConfSiteBase}review.php?paperId=$paperId'";
     else
 	$revulink = "href='${ConfSiteBase}review.php?reviewId=$row->reviewId'";
-    return str_replace("~", $revulink, $reviewButton[$buttonType][$type]);
+    $button = $reviewButton[$buttonType][$type];
+    if ($reviewType == REVIEW_PRIMARY) {
+	$button = str_replace("review", "primary&nbsp;review", $button);
+	$button = str_replace("Review", "Primary&nbsp;review", $button);
+    } else if ($reviewType == REVIEW_SECONDARY) {
+	$button = str_replace("review", "secondary&nbsp;review", $button);
+	$button = str_replace("Review", "Secondary&nbsp;review", $button);
+    }
+    return str_replace("~", $revulink, $button);
 }
 
 function paperDownload($paperId, $row = null, $long = 0, $conf = null) {
@@ -438,6 +429,8 @@ function whyNotText($whyNot, $action, $paperId = -1) {
 	$text .= "Invalid paper number.  ";
     if (isset($whyNot['noPaper']))
 	$text .= "No such paper" . ($paperId < 0 ? "" : " #$paperId") . ".  ";
+    if (isset($whyNot['permission']))
+	$text .= "You don't have permission to $action $thisPaper.  ";
     if (isset($whyNot['withdrawn']))
 	$text .= ucfirst($thisPaper) . " has been withdrawn.  ";
     if (isset($whyNot['notWithdrawn']))
@@ -465,8 +458,6 @@ function whyNotText($whyNot, $action, $paperId = -1) {
     }
     if (isset($whyNot['blindSubmission']))
 	$text .= "Submission to this conference is blind.  ";
-    if (isset($whyNot['permission']))
-	$text .= "You don't have permission to $action $thisPaper.  ";
     if (isset($whyNot['author']))
 	$text .= "You aren't a contact author for $thisPaper.  ";
     if (isset($whyNot['conflict']))
@@ -477,7 +468,7 @@ function whyNotText($whyNot, $action, $paperId = -1) {
 	$text .= "You have not been assigned to review $thisPaper.  ";
     // finish it off
     if (isset($whyNot['chairMode']))
-	$text .= "You could $action this paper by " . chairModeLink("entering chair mode", 1) . ".  ";
+	$text .= "<a href=\"" . selfHref(array("forceShow" => 1)) . "\">" . ucfirst($action) . " the paper anyway</a>  ";
     if (isset($whyNot['forceShow']))
 	$text .= "<a href=\"". htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Show reviews anyway</a>  ";
     if ($text && $action == "view")
@@ -540,14 +531,14 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
     if ($newPaper || !$prow)
 	/* do nothing */;
     else if (isset($prow->reviewType) && $prow->reviewType > 0) {
-	$name = ($prow->reviewModified ? "Edit review" : "Start review");
+	$name = ($prow->reviewModified ? "Review" : "Add review");
 	$x .= actionTab($name, "${ConfSiteBase}review.php?paperId=$paperId", $mode == "editreview");
     } else if (($Me->isPC && $Conf->timePCReviewAnyPaper() && $prow->author <= 0 && $prow->conflict <= 0)
 	       || $Me->amAssistant())
 	$x .= actionTab("Add review", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "editreview");
     
     if (!$newPaper && $prow && ($Me->isPC || $Me->canViewReviews($prow, $Conf)))
-	$x .= actionTab("All reviews" . ($prow ? " ($prow->reviewCount)" : ""), "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=reviews", $mode == "reviews");
+	$x .= actionTab("Read reviews" . ($prow ? " ($prow->reviewCount)" : ""), "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=reviews", $mode == "reviews");
     
     if ($thisUrl)
 	$x .= actionTab($mode, $thisUrl, true);
@@ -563,4 +554,100 @@ function unparseReviewOrdinal($ord) {
 	return chr($ord + 65);
     else
 	return chr(int($ord / 26) + 65) . chr(($ord % 26) + 65);
+}
+
+function reviewersTable($paperId, $reviewId = null, $buttons = false) {
+    global $Conf, $Me;
+    
+    $result = $Conf->qe("select ContactInfo.contactId, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
+		ReqContactInfo.contactId as reqContactId, ReqContactInfo.firstName as reqFirstName, ReqContactInfo.lastName as reqLastName, ReqContactInfo.email as reqEmail,
+		reviewId, reviewType, reviewModified, reviewSubmitted
+		from PaperReview
+		join ContactInfo using (contactId)
+		left join ContactInfo as ReqContactInfo on (ReqContactInfo.contactId=PaperReview.requestedBy)
+		where paperId=$paperId
+		order by reviewSubmitted, reviewType desc, lastName, firstName, email");
+    if (DB::isError($result))
+	return "";
+    
+    $subrev = array();
+    $nonsubrev = array();
+    $ordinal = 0;
+    $anyThisReview = 0;
+    $nRetractable;
+    while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
+	// review ID
+	$t = "    <tr>";
+
+	// dingbat
+	$thisReview = ($reviewId == $row->reviewId);
+	$anyThisReview += $thisReview;
+	if ($reviewId !== null)
+	    $t .= ($thisReview ? "<td class='highlight'><b>&#187;</b></td>" : "<td></td>");
+
+	// review ID
+	$t .= "<td>" . ($thisReview ? "<b>" : "<a href='review.php?reviewId=$row->reviewId'>");
+	$t .= "Review";
+	if ($row->reviewSubmitted > 0)
+	    $t .= " #$paperId" . unparseReviewOrdinal($ordinal++);
+	$t .= ($thisReview ? "</b>" : "</a>");
+	$t .= "</td>";
+
+	// reviewer
+	$t .= "<td>" . contactText($row) . "</td>";
+
+	// review type
+	$t .= "<td>";
+	if ($row->reviewType == REVIEW_PRIMARY)
+	    $t .= "Primary";
+	else if ($row->reviewType == REVIEW_SECONDARY)
+	    $t .= "Secondary";
+	else if ($row->reviewType == REVIEW_REQUESTED)
+	    $t .= "Requested by " . ($row->reqContactId == $Me->contactId ? "you" : contactText($row->reqFirstName, $row->reqLastName, $req->reqEmail));
+	$t .= "</td>";
+
+	// status
+	$t .= "<td>";
+	if ($row->reviewModified <= 0)
+	    $t .= "Not started";
+	else if ($row->reviewSubmitted <= 0)
+	    $t .= "In progress";
+	else
+	    $t .= "Submitted";
+	$t .= "</td>";
+
+	// actions
+	$actions = array();
+	if ($row->reviewType == REVIEW_REQUESTED
+	    && $row->reviewModified <= 0
+	    && ($row->requestedBy == $Me->contactId || $Me->amAssistant())) {
+	    $actions[] = "<a class='button_small' href=\"${ConfSiteBase}reqreview.php?paperId=$paperId&amp;reviewId=$row->reviewId&amp;action=retract\">Retract review request</a>";
+	    $nRetractable++;
+	}
+	if (count($actions) > 0 && $buttons)
+	    $t .= "<td>" . join("", $actions) . "</td>";
+
+	$t .= "</tr>\n";
+
+	// affix
+	if ($row->reviewSubmitted <= 0)
+	    $nonsubrev[] = $t;
+	else
+	    $subrev[] = $t;
+    }
+    
+    if (!$anyThisReview && $reviewId !== null)
+	$nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Review</b></td><td>" . contactText($Me) . "</td><td></td><td>Not started</td></tr>\n";
+
+    if ($reviewId !== null && ($Me->amAssistant() || $Conf->timeReviewPaper(false, true, true))) {
+	$t = "Ask someone else to review this paper";
+	if ($nRetractable)
+	    $t .= ", retract outstanding review requests";
+	$nonsubrev[] = "    <tr><td></td><td colspan='5'><a class='small' href=\"${ConfSiteBase}reqreview.php?paperId=$paperId\">$t</a></td></tr>\n";
+    }
+    
+    if (count($nonsubrev) || count($subrev))
+	return join("", $subrev) . join("", $nonsubrev);
+    else
+	return "";
 }

@@ -300,7 +300,8 @@ $Conf->updateImportantDates();
 <tr>
   <td class='datename' colspan='6'><input type='checkbox' name='PCReviewAnyPaper' value='1' <?php
 	if (isset($_REQUEST["PCReviewAnyPaper"])
-	    || (isset($_REQUEST["PCSubmitReview"]) && isset($Conf->endTime["PCSubmitReview"])))
+	    || (isset($Conf->startTime["PCReviewAnyPaper"])
+		&& (!isset($Conf->endTime["PCReviewAnyPaper"]) || $Conf->startTime["PCReviewAnyPaper"] < $Conf->endTime["PCReviewAnyPaper"])))
 	    echo "checked='checked' ";
     ?>onchange='highlightUpdate()' tabindex='1' />&nbsp;PC can review any paper during the reviewing period</td>
 </tr>

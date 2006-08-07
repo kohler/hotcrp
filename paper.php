@@ -522,7 +522,7 @@ if ($mode == "reviews") {
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
 		from PaperReview
 		join ContactInfo using (contactId)
-		where paperId=$paperId
+		where paperId=$paperId and reviewSubmitted>0
 		order by reviewSubmitted";
 	$result = $Conf->qe($q, "while retrieving reviews");
 	if (!DB::isError($result))
@@ -595,7 +595,7 @@ if (!$newPaper && $mode == "reviews" && $prow->reviewCount > 0) {
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
 		from PaperReview
 		join ContactInfo using (contactId)
-		where paperId=$paperId
+		where paperId=$paperId and reviewSubmitted>0
 		order by reviewSubmitted";
 	$result = $Conf->qe($q, "while retrieving reviews");
 	$reviewnum = 65;

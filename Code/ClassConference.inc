@@ -980,7 +980,7 @@ class Conference {
 		htmlspecialchars($_SESSION["Me"]->email),
 		"</strong> &nbsp;|&nbsp; ";
 	    if (!$_SESSION["Me"]->amAssistant() && $_SESSION["Me"]->chairContactId > 0)
-		echo chairModeLink(), " &nbsp;|&nbsp; ";
+		echo "<a href=\"", htmlspecialchars(selfHref(array("chairMode" => 0))), "\">Return&nbsp;to&nbsp;chair&nbsp;view</a> &nbsp;|&nbsp; ";
 	    echo "<a href='", $ConfSiteBase, "logout.php'>Log&nbsp;out</a></div>\n";
 	}
 	echo "    <div id='header_time'>", date ("l j M Y g:i:sa T"), "</div>\n";
@@ -1016,7 +1016,7 @@ class Conference {
 	$Me = $_SESSION["Me"];
 	if ($Me->valid()) {
 	    if (!$Me->amAssistant() && $Me->chairContactId > 0)
-		echo "    <div id='footer_chairmode'>", chairModeLink(), "</div>\n";
+		echo "    <div id='footer_chairmode'><a href=\"", htmlspecialchars(selfHref(array("chairMode" => 0))), "\">Return&nbsp;to&nbsp;chair&nbsp;view</a></div>\n";
 	    echo "    <div id='footer_logout'><a href='", $ConfSiteBase, "logout.php'>Log&nbsp;out</a></div>\n";
 	}
 	echo "  </div>\n";

@@ -170,14 +170,23 @@ if ($canViewAuthors || $Me->amAssistant()) {
 $paperTable->echoTopics($prow);
 
 
+// reviewer information
+if (($revTable = reviewersTable($prow->paperId, (isset($rrow) ? $rrow->reviewId : -1)))) {
+    echo "<tr class='rev_reviewers'>\n";
+    echo "  <td class='caption'>Reviewers</td>\n";
+    echo "  <td class='entry'><table class='reviewers'>\n", $revTable, "  </table></td>\n";
+    echo "</tr>\n\n";
+}
+
+
 // review information
 // XXX reviewer ID
 // XXX "<td class='entry'>", htmlspecialchars(contactText($rrow)), "</td>"
 echo "<tr class='rev_rev'>\n";
-echo "  <td class='caption'>Review</td>\n";
+echo "  <td class='caption'></td>\n";
 echo "  <td class='entry'>";
-echo reviewStatus((isset($rrow) ? $rrow : $prow), true, true), "; ",
-    reviewType($paperId, $prow, true), "<br/>";
+// echo reviewStatus((isset($rrow) ? $rrow : $prow), true, true), "; ",
+//    reviewType($paperId, $prow, true), "<br/>";
 echo "<form class='downloadreviewform' action='review.php' method='get'>",
     "<input type='hidden' name='paperId' value='$paperId' />",
     "<input class='button_small' type='submit' value='Download form' name='downloadForm' id='downloadForm' />",
@@ -204,6 +213,8 @@ if (isset($rrow))
     echo "reviewId=", $rrow->reviewId;
 else
     echo "paperId=", $prow->paperId;
+if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'])
+    echo "&amp;forceShow=1";
 echo "&amp;post=1' method='post' enctype='multipart/form-data'>\n";
 echo "<table class='reviewform'>\n";
 
