@@ -1,10 +1,12 @@
 <?php 
-require_once('../Code/confHeader.inc');
-require_once('../Code/ClassPaperList.inc');
+require_once('Code/confHeader.inc');
+require_once('Code/ClassPaperList.inc');
 $Conf->connect();
-$_SESSION["Me"]->goIfInvalid("../");
 $Me = $_SESSION["Me"];
+$Me->goIfInvalid("../");
 
+
+// download selected papers
 if (isset($_REQUEST["download"])) {
     if (!isset($_REQUEST["papersel"]) || !is_array($_REQUEST["papersel"]))
 	$_REQUEST["papersel"] = array();
@@ -23,49 +25,51 @@ if (isset($_REQUEST["download"])) {
     $result = $Conf->downloadPapers($downloads);
     if (!PEAR::isError($result))
 	exit;
- }
+}
 
-if (isset($_REQUEST["downloadReview"])) {
-    if (!isset($_REQUEST["papersel"]) || !is_array($_REQUEST["papersel"]))
-	$_REQUEST["papersel"] = array();
-    $q = $Conf->paperQuery($Me->contactId, array("paperId" => $_REQUEST["papersel"], "myReviewsOpt" => 1));
-    $result = $Conf->qe($q, "while selecting papers for review");
-    $text = '';
+
+// download review form for selected papers
+// (or blank form if no papers selected)
+if (isset($_REQUEST["downloadReview"]) && !isset($_REQUEST["papersel"])) {
     $rf = reviewForm();
-    
-    if (DB::isError($result))
-	/* do nothing */;
-    else
+    $text = $rf->textFormHeader($Conf, false)
+	. $rf->textForm(null, null, $Conf, false, true) . "\n";
+    downloadText($text, $Conf->downloadPrefix . "review.txt", "review form");
+    exit;
+} else if (isset($_REQUEST["downloadReview"])) {
+    $rf = reviewForm();
+
+    if (!is_array($_REQUEST["papersel"]))
+	$_REQUEST["papersel"] = array();
+    $result = $Conf->qe($Conf->paperQuery($Me->contactId, array("paperId" => $_REQUEST["papersel"], "myReviewsOpt" => 1)), "while selecting papers for review");
+
+    $text = '';
+    $errors = array();
+    if (!DB::isError($result))
 	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
-	    if (!$Me->canReview($row, $Conf, $whyNot))
-		$errors[] = whyNotText($whyNot, "review");
+	    if (!$Me->canReview($row, null, $Conf, $whyNot))
+		$errors[] = whyNotText($whyNot, "review") . "<br />";
 	    else {
 		$rfSuffix = ($text == "" ? "-$row->paperId" : "s");
 		$text .= $rf->textForm($row, $row, $Conf, false, true) . "\n";
 	    }
 	}
 
-    if ($text == "") {
-	if (isset($errors))
-	    $Conf->errorMsg(join("<br/>", $errors) . "<br/>No papers selected.");
-	else
-	    $Conf->errorMsg("No papers selected.");
-    } else {
+    if ($text == "")
+	$Conf->errorMsg(join("", $errors) . "No papers selected.");
+    else {
 	$text = $rf->textFormHeader($Conf, $rfSuffix == "s") . $text;
-	if (isset($errors)) {
+	if (count($errors)) {
 	    $e = "==-== Some review forms are missing due to errors in your paper selection:\n";
 	    foreach ($errors as $ee)
-		$e .= "==-== $ee\n";
+		$e .= "==-== " . preg_replace('|\s+<.*|', "", $ee) . "\n";
 	    $text = "$e\n$text";
 	}
-	header("Content-Description: PHP Generated Data");
-	header("Content-Disposition: attachment; filename=" . $Conf->downloadPrefix . "review$rfSuffix.txt");
-	header("Content-Type: text/plain");
-	header("Content-Length: " . strlen($text));
-	print $text;
+	downloadText($text, $Conf->downloadPrefix . "review$rfSuffix.txt", "review forms");
 	exit;
     }
- }
+}
+
 
 if (isset($_REQUEST['list']))
     $list = $_REQUEST['list'];
@@ -82,7 +86,7 @@ else
 
 $sv = (isset($_REQUEST['sort']) ? $_REQUEST['sort'] : "");
 
-$pl = new PaperList($sv, "ListPapers.php?list=" . htmlspecialchars($list) . "&amp;sort=");
+$pl = new PaperList($sv, "list.php?list=" . htmlspecialchars($list) . "&amp;sort=");
 $t = $pl->text($list, $Me);
 
 $title = "List " . htmlspecialchars($pl->shortDescription) . " Papers";
@@ -100,7 +104,7 @@ function checkAll(onoff) {
 $Conf->header($title);
 
 if ($pl->anySelector)
-    echo "<form action='ListPapers.php' method='get'>
+    echo "<form action='list.php' method='get'>
 <input type='hidden' name='list' value='" . htmlspecialchars($list) . "' />\n";
 
 echo $t;

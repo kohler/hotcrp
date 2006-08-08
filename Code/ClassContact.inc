@@ -587,7 +587,7 @@ class Contact {
 	return false;
     }
 
-    function canReview($prow, $conf, &$whyNot = null, $submit = false) {
+    function canReview($prow, $rrow, $conf, &$whyNot = null, $submit = false) {
 	global $ConfSiteBase;
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "rev")))
@@ -600,9 +600,12 @@ class Contact {
 		|| $prow->reviewType > 0)
 	    && ($conf->timeReviewPaper($this->isPC, $prow->reviewType > 0, true)
 		|| $this->amAssistantOverride()
-		|| ($this->amAssistant() && !$submit)))
+		|| ($this->amAssistant() && !$submit))
+	    && (!$rrow || $rrow->contactId == $this->contactId || $this->amAssistant()))
 	    return true;
 	// collect failure reasons
+	if ($rrow && $rrow->contactId != $this->contactId && !$this->amAssistant())
+	    $whyNot['differentReviewer'] = 1;
 	if (!$this->isPC && $prow->reviewType <= 0)
 	    $whyNot['permission'] = 1;
 	else if ($prow->withdrawn > 0)
@@ -624,8 +627,8 @@ class Contact {
 	return false;
     }
 
-    function canSubmitReview($prow, $conf, &$whyNot = null) {
-	return $this->canReview($prow, $conf, $whyNot, true);
+    function canSubmitReview($prow, $rrow, $conf, &$whyNot = null) {
+	return $this->canReview($prow, $rrow, $conf, $whyNot, true);
     }
     
     
@@ -669,9 +672,9 @@ class Contact {
     }
     
     function canViewAllReviewFields($prow, $conf) {
-	if ($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
-	    return true;
-	if ($prow->author <= 0 && $prow->conflict <= 0 && $this->isPC)
+	if (($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
+	    || ($prow->author <= 0 && $prow->conflict <= 0 && $this->isPC)
+	    || $prow->reviewType > 0)
 	    return true;
 	return false;
     }

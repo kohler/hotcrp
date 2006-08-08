@@ -102,7 +102,7 @@ else if (isset($_REQUEST["update"])) {
 
 
 if ($OK) {    
-    echo "<form method='post' action=\"contactauthors.php?paperId=$paperId&amp;form=1\" enctype='multipart/form-data'>
+    echo "<form method='post' action=\"contactauthors.php?paperId=$paperId&amp;post=1\" enctype='multipart/form-data'>
 <table class='paperauthors'>
 <tr class='id'>
   <td class='caption'><h2>#$paperId</h2></td>

@@ -84,7 +84,7 @@ if ($Me->isPC || $Me->amReviewer()) {
     }
 
     if ($Me->isPC && $Conf->timeReviewPaper(true, false, true)){
-	$body .= $sep . "PC members may review <a href='All/ListPapers.php?list=submitted'>any submitted paper</a>, whether or not a review has been assigned.";
+	$body .= $sep . "PC members may review <a href='list.php?list=submitted'>any submitted paper</a>, whether or not a review has been assigned.";
 	$sep = $tabSep;
     }
 
@@ -111,6 +111,12 @@ if ($Me->isPC || $Me->amReviewer()) {
     }
     if (count($deadlines) > 0)
 	$body .= $sep . join("<br/>", $deadlines);
+
+    $body .= "<hr />
+
+<ul>
+  <li><a href='uploadreview.php'>Download and upload review forms</a></li>
+</ul>\n";
     
     $tabBody[] = $body;
 }
@@ -228,8 +234,8 @@ $homeSep = "<span class='homesep'></span>";
     <table>
     <tr>
       <th>Papers:</th>
-	<td><a href='All/ListPapers.php?list=submitted'>List&nbsp;submitted</a> <?php echo $homeSep ?>
-	<a href='All/ListPapers.php?list=all'>List&nbsp;all</a> <?php echo $homeSep ?>
+	<td><a href='list.php?list=submitted'>List&nbsp;submitted</a> <?php echo $homeSep ?>
+	<a href='list.php?list=all'>List&nbsp;all</a> <?php echo $homeSep ?>
 	<a href='paper.php?paperId=new'>Enter&nbsp;new</a></td>
     </tr>
 

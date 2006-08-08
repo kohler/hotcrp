@@ -11,135 +11,115 @@ $rf = reviewForm();
 function confHeader() {
     global $paperId, $prow, $mode, $Conf;
     if ($paperId > 0)
-	$title = "Review Paper #$paperId";
+	$title = "Paper #$paperId Reviews";
     else
-	$title = "Review Papers";
+	$title = "Paper Reviews";
     $Conf->header($title, "review", actionBar($prow, false, "editreview"));
 }
 
-function errorMsgExit($msg, &$tf = null) {
+function errorMsgExit($msg) {
     global $Conf;
-    if ($tf == null) {
-	confHeader();
-	$Conf->errorMsgExit($msg);
-    } else {
-	$tf['err'][] = $tf['firstLineno'] . ": $msg";
-	return null;
-    }
+    confHeader();
+    $Conf->errorMsgExit($msg);
 }
 
 
-//  
-function getProw($paperId, $submit, &$tf = null) {
-    global $Conf, $Me;
-    if (($prow = $Conf->paperRow($paperId, $Me->contactId, $whyNot))
-	&& ($submit
-	    ? $Me->canSubmitReview($prow, $Conf, $whyNot)
-	    : $Me->canViewPaper($prow, $Conf, $whyNot)))
-	return $prow;
+// collect paper ID
+function loadRows() {
+    global $Conf, $Me, $ConfSiteBase, $prow, $rrows, $rrow;
+    if (isset($_REQUEST["reviewId"]))
+	$sel = array("reviewId" => $_REQUEST["reviewId"]);
+    else if (isset($_REQUEST["paperId"]))
+	$sel = array("paperId" => $_REQUEST["paperId"]);
     else
-	return errorMsgExit(whyNotText($whyNot, "review"), $tf);
-}
+	errorMsgExit("Select a paper ID above, or <a href='${ConfSiteBase}list.php'>list the papers you can view</a>.");
+    if (!(($prow = $Conf->paperRow($sel, $Me->contactId, $whyNot))
+	  && $Me->canViewPaper($prow, $Conf, $whyNot)))
+	errorMsgExit(whyNotText($whyNot, "review"));
 
-function getRrow($paperId, $reviewId = -1, $must = false, $tf = null) {
-    global $Conf, $Me, $rrowError;
-    $rrowError = false;
-    if ($reviewId > 0)
-	$x = array("reviewId" => $reviewId);
-    else
-	$x = array("paperId" => $paperId, "contactId" => $Me->contactId);
-    if (($rrow = $Conf->reviewRow($x, $whyNot)))
-	return $rrow;
-    if ($must || $reviewId > 0 || !isset($whyNot['noReview'])) {
-	$rrowError = true;
-	errorMsgExit(whyNotText($whyNot, "review"), $tf);
-    }
-    return null;
+    $rrows = $Conf->reviewRow(array('paperId' => $prow->paperId, 'array' => 1), $whyNot);
+    $rrow = null;
+    foreach ($rrows as $rr)
+	if (isset($_REQUEST['reviewId']) ? $rr->reviewId == $_REQUEST['reviewId'] : $rr->contactId == $Me->contactId)
+	    $rrow = $rr;
+    if (isset($_REQUEST['reviewId']) && !$rrow)
+	errorMsgExit("That review no longer exists.");
 }
+loadRows();
 
 
 // general error messages
 if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
-    $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  Any changes were lost.");
+    $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  The file was ignored.");
 
 
-// upload review form
+// upload review form action
 if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Conf)) {
-    $originalPaperId = $_REQUEST["paperId"];
+    // parse form, store reviews
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
-    while ($rf->parseTextForm($tf, $Conf)) {
-	if (($prow = getProw($_REQUEST['paperId'], true, $tf))
-	    && (($rrow = getRrow($_REQUEST['paperId'], -1, false, $tf))
-		|| !$rrowError)
-	    && $rf->checkRequestFields($rrow, 0, $tf)) {
-	    $result = $rf->saveRequest($prow, $Me->contactId, $rrow, 0);
-	    if (!DB::isError($result))
-		$tf['confirm'][] = "Uploaded review for paper #$prow->paperId.";
-	}
+
+    if (!($req = $rf->parseTextForm($tf, $Conf)))
+	/* error already reported */;
+    else if ($req['paperId'] != $prow->paperId)
+	$tf['err'][] = $tf['firstLineno'] . ": This review form is for paper #" . $req['paperId'] . ", not paper #$prow->paperId; did you mean to upload it here?  I have ignored the form.  <a class='button_small' href='${ConfSiteBase}review.php?paperId=" . $req['paperId'] . "'>Review paper #" . $req['paperId'] . "</a> <a class='button_small' href='${ConfSiteBase}uploadreview.php'>General review upload site</a>";
+    else if (!$Me->canSubmitReview($prow, $rrow, $Conf, $whyNot))
+	$tf['err'][] = $tf['firstLineno'] . ": " . whyNotText($whyNot, "review");
+    else if ($rf->checkRequestFields($req, $rrow, $tf)) {
+	$result = $rf->saveRequest($req, $rrow, $prow, $Me->contactId);
+	if (!DB::isError($result))
+	    $tf['confirm'][] = "Uploaded review for paper #$prow->paperId.";
     }
-    $rf->parseTextFormErrors($tf, $Conf);
-    if (isset($_REQUEST['redirect']) && $_REQUEST['redirect'] == 'offline')
-	go("${ConfSiteBase}uploadreview.php");
-    $_REQUEST['paperId'] = $originalPaperId;
-}
+
+    if (count($tf['err']) == 0 && $rf->parseTextForm($tf, $Conf))
+	$tf['err'][] = $tf['firstLineno'] . ": Only the first review form in the file was parsed.  <a href='${ConfSiteBase}uploadreview.php'>Upload a file with multiple reviews</a>";
+
+    $rf->textFormMessages($tf, $Conf);
+    loadRows();
+} else if (isset($_REQUEST['uploadForm']))
+    $Conf->errorMsg("Select a review form to upload.");
 
 
-// get paper and review rows; exit if requested review is not visible,
-// or no requested review and paper is not reviewable
-if (isset($_REQUEST["reviewId"])) {
-    if (!($rrow = getRrow(-1, $_REQUEST['reviewId'], true))
-	|| !($prow = getProw($rrow->paperId, false))
-	|| !$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
-	errorMsgExit(whyNotText($whyNot, "review"));
-} else if (isset($_REQUEST["paperId"])) {
-    $prow = getProw($_REQUEST["paperId"], false);
-    $rrow = getRrow($prow->paperId, -1, false);
-    if ($rrow ? !$Me->canViewReview($prow, $rrow, $Conf, $whyNot)
-	: !$Me->canReview($prow, $Conf, $whyNot))
-	errorMsgExit(whyNotText($whyNot, "review"));
-} else
-    $prow = $rrow = null;
-$paperId = ($prow ? $prow->paperId : -1);
+// update review action
+if (isset($_REQUEST['update']) || isset($_REQUEST['submit']))
+    if (!$Me->canSubmitReview($prow, $rrow, $Conf, $whyNot))
+	$Conf->errorMsg(whyNotText($whyNot, "review"));
+    else if ($rf->checkRequestFields($_REQUEST, $rrow)) {
+	$result = $rf->saveRequest($_REQUEST, $rrow, $prow, $Me->contactId);
+	if (!DB::isError($result))
+	    $Conf->confirmMsg(isset($_REQUEST['submit']) ? "Review submitted." : "Review saved.");
+	loadRows();
+    }
 
 
-// download form
-if (isset($_REQUEST['downloadForm'])) {
-    $x = $rf->textFormHeader($Conf);
-    $x .= $rf->textForm($prow, $rrow, $Conf, $prow->reviewType > 0,
-			($prow->reviewType > 0
-			 || ($Me->isPC && $prow->conflict <= 0)
-			 || ($Me->amAssistant() && isset($_REQUEST['forceShow']))));
-    header("Content-Description: PHP Generated Data");
-    header("Content-Disposition: attachment; filename=" . $Conf->downloadPrefix . "review" . ($paperId > 0 ? "-$paperId.txt" : ".txt"));
-    header("Content-Type: text/plain");
-    header("Content-Length: " . strlen($x));
-    print $x;
+// download review form action
+function downloadForm() {
+    global $rf, $Conf, $Me, $prow, $rrow, $rrows;
+    if (!$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
+	return $Conf->errorMsg(whyNotText($whyNot, "review"));
+    $text = $rf->textFormHeader($Conf)
+	. $rf->textForm($prow, $rrow, $Conf, $prow->reviewType > 0,
+			$Me->canViewAllReviewFields($prow, $Conf)) . "\n";
+    downloadText($text, $Conf->downloadPrefix . "review-" . $prow->paperId . ".txt", "review form");
     exit;
 }
+if (isset($_REQUEST['downloadForm']))
+    downloadForm();
 
 
+// mode
+// XXX
+$mode = "view";
+if ((isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "edit")
+    || (!isset($_REQUEST["mode"]) && $prow && $prow->reviewType > 0 && $prow->reviewSubmitted <= 0))
+    $mode = "edit";
+
+
+// page header
 confHeader();
 
 
-if ($paperId <= 0) {
-    $Conf->errorMsg("No paper selected to review.");
-    $Conf->footer();
-    exit;
-}
-
-
-if (isset($_REQUEST['update']) || isset($_REQUEST['submit']))
-    if (!$Me->canSubmitReview($prow, $Conf, $whyNot))
-	$Conf->errorMsg(whyNotText($whyNot, "review"));
-    else if ($rf->checkRequestFields($rrow, isset($_REQUEST['submit']))) {
-	$rf->saveRequest($prow, $Me->contactId, $rrow, isset($_REQUEST['submit']), $Conf);
-	$Conf->confirmMsg(isset($_REQUEST['submit']) ? "Review submitted." : "Review saved.");
-	$rrow = getRrow($prow->paperId, ($rrow ? $rrow->reviewId : -1), true);
-    }
-
-
 // messages for review viewers
-if (!$Me->timeReview($prow, $Conf))
+if ($mode == "edit" && !$Me->timeReview($prow, $Conf))
     $Conf->infoMsg("The <a href='${ConfSiteBase}deadlines.php'>deadline</a> for modifying this review has passed.");
 
 
@@ -148,7 +128,7 @@ echo "<table class='reviewformtop'>\n\n";
 
 
 // title
-echo "<tr class='id'>\n  <td class='caption'><h2>Review #", $paperId;
+echo "<tr class='id'>\n  <td class='caption'><h2>Review #", $prow->paperId;
 if ($rrow && $rrow->reviewSubmitted > 0)
     echo unparseReviewOrdinal($rrow->reviewOrdinal);
 else
@@ -169,6 +149,8 @@ if ($canViewAuthors || $Me->amAssistant()) {
     $paperTable->echoCollaborators($prow);
 }
 $paperTable->echoTopics($prow);
+if ($Me->amAssistant())
+    $paperTable->echoPCConflicts($prow);
 
 
 // reviewer information
@@ -178,6 +160,10 @@ if (($revTable = reviewersTable($prow, (isset($rrow) ? $rrow->reviewId : -1)))) 
     echo "  <td class='entry'><table class='reviewers'>\n", $revTable, "  </table></td>\n";
     echo "</tr>\n\n";
 }
+
+
+if ($mode == "view" && $Me->canSetOutcome($prow))
+    $paperTable->echoOutcomeSelector($prow);
 
 
 // extra space
@@ -193,11 +179,16 @@ echo "  <td class='entry'>";
 // echo reviewStatus((isset($rrow) ? $rrow : $prow), true, true), "; ",
 //    reviewType($paperId, $prow, true), "<br/>";
 echo "<form class='downloadreviewform' action='review.php' method='get'>",
-    "<input type='hidden' name='paperId' value='$paperId' />",
-    "<input class='button_small' type='submit' value='Download form' name='downloadForm' id='downloadForm' />",
+    "<input type='hidden' name='paperId' value='$prow->paperId' />";
+if ($rrow)
+    echo "<input type='hidden' name='reviewId' value='$rrow->reviewId' />";
+echo "<input class='button_small' type='submit' value='Download form' name='downloadForm' id='downloadForm' />",
     "</form>";
-echo "<form class='downloadreviewform' action='review.php?form=1' method='post' enctype='multipart/form-data'>",
-    "<input type='hidden' name='paperId' value='$paperId' />",
+
+echo "<form class='downloadreviewform' action='review.php?post=1&amp;paperId=$prow->paperId";
+if ($rrow)
+    echo "&amp;reviewId=$rrow->reviewId";
+echo "' method='post' enctype='multipart/form-data'>",
     "<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp;<input class='button_small' type='submit' value='Upload form' name='uploadForm' />",
     "</form>";
 echo "</td>\n";

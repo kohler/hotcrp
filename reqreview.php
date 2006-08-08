@@ -28,7 +28,7 @@ $prow = null;
 function getProw($contactId) {
     global $prow, $paperId, $Conf, $Me;
     if (!($prow = $Conf->paperRow($paperId, $contactId, $whyNot))
-	|| !$Me->canReview($prow, $Conf, $whyNot))
+	|| !$Me->canReview($prow, null, $Conf, $whyNot))
 	errorMsgExit(whyNotText($whyNot, "review"));
 }
 

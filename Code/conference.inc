@@ -693,6 +693,7 @@ class Conference {
     function paperQuery($contactId, $options = array()) {
 	// Options:
 	//   "paperId" => $pid	Only paperId $pid (if array, any of those)
+	//   "reviewId" => $rid Only paper reviewed by $rid
 	//   "finalized"	Only submitted papers
 	//   "author"		Only papers authored by $contactId
 	//   "myReviewRequests"	Only reviews requested by $contactId
@@ -725,11 +726,11 @@ class Conference {
 		ReviewerContactInfo.firstName as reviewFirstName,
 		ReviewerContactInfo.lastName as reviewLastName,
 		ReviewerContactInfo.email as reviewEmail";
-	//if ($reviewerQuery) {
-	//    global $reviewFields;
-	//    foreach ($reviewFields as $k => $v)
-	//	$pq .= ",\t\tPaperReview.$k as $k";
-	//}
+	if ($reviewerQuery) {
+	    global $reviewFields;
+	    foreach ($reviewFields as $k => $v)
+		$pq .= ",\t\tPaperReview.$k as $k";
+	}
 	if (isset($options['contactAuthors']))
 	    $pq .= ",
 		group_concat(PaperAuthors.contactId) as contactAuthors";
@@ -747,7 +748,9 @@ class Conference {
 	$pq .= "
 		from Paper
 		left join PaperStorage using (paperStorageId)\n";
-	
+
+	if (isset($options['reviewId']))
+	    $pq .= "		join PaperReview as ReviewSelector on (ReviewSelector.paperId=Paper.paperId)\n";
 	if (isset($options['author']))
 	    $pq .= "		join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.author>0 and PaperConflict.contactId=$contactId)\n";
 	else
@@ -759,6 +762,8 @@ class Conference {
 	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.requestedBy=$contactId and PaperReview.reviewType=" . REVIEW_REQUESTED . ")\n";
 	else if (isset($options['myReviews']))
 	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$contactId)\n";
+	else if (isset($options['myReviewsOpt']))
+	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$contactId)\n";
 	else if (isset($options['allReviews']))
 	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
 	else if (!isset($options['author']))
@@ -786,15 +791,20 @@ class Conference {
 
 	// conditions
 	if (isset($options['paperId'])) {
-	    if (is_array($options['paperId'])) {
-		foreach ($options['paperId'] as $pid)
-		    if (($pid = cvtint($pid)) > 0)
-			$pids[] = "Paper.paperId=$pid";
-		if (count($pids) == 0)
-		    $pids[] = "Paper.paperId=0";
-		$where[] = "(" . join(" or ", $pids) . ")";
-	    } else if ($options['paperId'] > 0)
-		$where[] = "Paper.paperId=" . $options['paperId'];
+	    foreach (mkarray($options['paperId']) as $pid)
+		if (($pid = cvtint($pid)) > 0)
+		    $pids[] = "Paper.paperId=$pid";
+	    if (is_array($options['paperId']) && count($pids) == 0)
+		$pids[] = "Paper.paperId=0";
+	    $where[] = "(" . join(" or ", $pids) . ")";
+	}
+	if (isset($options['reviewId'])) {
+	    foreach (mkarray($options['reviewId']) as $rid)
+		if (($rid = cvtint($rid)) > 0)
+		    $rids[] = "ReviewSelector.reviewId=$rid";
+	    if (is_array($options['reviewId']) && count($rids) == 0)
+		$pids[] = "ReviewSelector.reviewId=0";
+	    $where[] = "(" . join(" or ", $rids) . ")";
 	}
 	if (isset($options['finalized'])) {
 	    $where[] = "acknowledged>0";
@@ -806,7 +816,7 @@ class Conference {
 
 	// grouping and ordering
 	if ($reviewerQuery)
-	    $pq .= "		group by PaperReview.reviewId, Paper.paperId\n";
+	    $pq .= "		group by Paper.paperId, PaperReview.reviewId\n";
 	else
 	    $pq .= "		group by Paper.paperId\n";
 	if (isset($options['order']) && $options['order'] != "order by Paper.paperId")
@@ -820,15 +830,21 @@ class Conference {
 	return $pq . "\n";
     }
 
-    function paperRow($paperId, $contactId = -1, &$whyNot = null) {
-	$whyNot = array('paperId' => $paperId);
-	$paperId = cvtint($paperId);
-	if ($paperId <= 0)
-	    $whyNot['invalidId'] = 'paper';
-	else {
-	    $q = $this->paperQuery($contactId, array('paperId' => $paperId));
-	    $result = $this->q($q);
+    function paperRow($selector, $contactId = -1, &$whyNot = null) {
+	$whyNot = array();
+	if (!is_array($selector)) {
+	    $whyNot['paperId'] = $selector;
+	    $selector = array('paperId' => $selector);
+	}
 	
+	if (isset($selector['paperId']) && cvtint($selector['paperId']) < 0)
+	    $whyNot['invalidId'] = 'paper';
+	else if (isset($selector['reviewId']) && cvtint($selector['reviewId']) < 0)
+	    $whyNot['invalidId'] = 'review';
+	else {
+	    $q = $this->paperQuery($contactId, $selector);
+	    $result = $this->q($q);
+	    
 	    if (DB::isError($result))
 		$whyNot['dbError'] = "Database error while fetching paper (" . htmlspecialchars($q) . "): " . htmlspecialchars($result->getMessage());
 	    else if ($result->numRows() == 0)
@@ -836,6 +852,7 @@ class Conference {
 	    else
 		return $result->fetchRow(DB_FETCHMODE_OBJECT);
 	}
+
 	return null;
     }
 
@@ -883,6 +900,8 @@ class Conference {
 	    $where[] = "PaperReview.contactId=" . cvtint($selector['contactId']);
 	if (isset($selector['reviewOrdinal']))
 	    $where[] = "PaperReview.reviewSubmitted>0 and reviewOrdinal=" . cvtint($selector['reviewOrdinal']);
+	else if (isset($selector['submitted']))
+	    $where[] = "PaperReview.reviewSubmitted>0";
 	if (!count($where)) {
 	    $whyNot['internal'] = 1;
 	    return null;

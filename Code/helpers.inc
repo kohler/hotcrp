@@ -29,6 +29,13 @@ function cvtint(&$value, $default = -1) {
     return $default;
 }
 
+function mkarray($value) {
+    if (is_array($value))
+	return $value;
+    else
+	return array($value);
+}
+
 function alert($string = "") {
   print "<script language=javascript>\n";
   print "alert(\"" . addslashes($string).  "\");";
@@ -479,13 +486,15 @@ function whyNotText($whyNot, $action) {
 	$text .= "Your own review for $thisPaper is not complete, so you can't view other people's reviews.  ";
     if (isset($whyNot['reviewNotAssigned']))
 	$text .= "You have not been assigned to review $thisPaper.  ";
+    if (isset($whyNot['differentReviewer']))
+	$text .= "You didn't write this review, so you can't change it.  ";
     // finish it off
     if (isset($whyNot['chairMode']))
 	$text .= "<a href=\"" . selfHref(array("forceShow" => 1)) . "\">" . ucfirst($action) . " the paper anyway</a>  ";
     if (isset($whyNot['forceShow']))
 	$text .= "<a href=\"". htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Show reviews anyway</a>  ";
     if ($text && $action == "view")
-	$text .= "Enter a paper number above, or <a href='${ConfSiteBase}All/ListPapers.php'>list the papers you can view</a>.  ";
+	$text .= "Enter a paper number above, or <a href='${ConfSiteBase}list.php'>list the papers you can view</a>.  ";
     return ($text ? substr($text, 0, -2) : $text);
 }
 
@@ -671,4 +680,13 @@ function reviewersTable($prow, $reviewId = null, $all = false, $buttons = false)
 	return join("", $subrev) . join("", $nonsubrev);
     else
 	return "";
+}
+
+function downloadText($text, $filename, $description) {
+    global $Conf;
+    header("Content-Description: $Conf->shortName $description, PHP generated data");
+    header("Content-Disposition: attachment; filename=$filename");
+    header("Content-Type: text/plain");
+    header("Content-Length: " . strlen($text));
+    print $text;
 }

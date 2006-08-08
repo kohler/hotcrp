@@ -112,14 +112,14 @@ class ReviewForm {
 	return $x;
     }
 
-    function checkRequestFields($rrow, $submit, &$tf = null, $conf = null) {
+    function checkRequestFields($req, $rrow, &$tf = null, $conf = null) {
 	global $ReviewFormError, $Conf;
 	$conf = ($conf ? $conf : $Conf);
+	$submit = isset($req["submit"]);
 	foreach ($this->fieldOrder as $field) {
-	    if (!isset($_REQUEST[$field]) && !$submit)
+	    if (!isset($req[$field]) && !$submit)
 		continue;
-	    $fval = (isset($_REQUEST[$field]) ? $_REQUEST[$field]
-		     : ($rrow ? $rrow->$field : ""));
+	    $fval = (isset($req[$field]) ? $req[$field] : ($rrow ? $rrow->$field : ""));
 	    if (isset($this->options[$field])) {
 		$fval = trim($fval);
 		$max = count($this->options[$field]);
@@ -156,24 +156,25 @@ class ReviewForm {
 	return 0;
     }
 
-    function saveRequest($prow, $contactId, $rrow, $submit, $conf = null) {
+    function saveRequest($req, $rrow, $prow, $contactId, $conf = null) {
 	global $Conf, $ConfSiteBase;
 	$conf = ($conf ? $conf : $Conf);
 	$Me = $_SESSION['Me'];
+	$submit = isset($req["submit"]);
 
 	if (!$Me->timeReview($prow, $conf)
-	    && (!isset($_REQUEST['override']) || !$Me->amAssistant()))
+	    && (!isset($req['override']) || !$Me->amAssistant()))
 	    return $conf->errorMsg("The <a href='${ConfSiteBase}deadlines.php'>deadline</a> for entering this review has passed." . ($Me->amAssistant() ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
 	
 	$q = "";
 	foreach ($this->fieldOrder as $field)
-	    if (isset($_REQUEST[$field])) {
-		$fval = $_REQUEST[$field];
+	    if (isset($req[$field])) {
+		$fval = $req[$field];
 		if (!isset($this->options[$field])) {
 		    $fval = preg_replace("/\\A\\s*(.*?)\\s*\\Z/", '$1', $fval);
 		    if ($fval != "")
 			$fval .= "\n";
-		    $_REQUEST[$field] = $fval;
+		    $req[$field] = $fval;
 		}
 		$q .= "$field='" . sqlq($fval) . "', ";
 	    }
@@ -197,7 +198,7 @@ class ReviewForm {
 	if (!$multiple)
 	    $x .= "==-== To review multiple papers, duplicate the form body from \"Begin Review\"
 ==-== through \"End Review\".  Make sure to change the paper number.\n";
-	$x .= "==-== DO NOT DELETE, ALTER, OR ADD LINES BEGINNING WITH \"==+==\"!
+	$x .= "==-== DO NOT DELETE, ALTER, OR ADD \"==+==\" LINES EXCEPT AS NOTED!
 ==-== When you are done, upload the review form at this address:
 ==-== $conf->paperSite/uploadreview.php
 ==-== That site also has further guidance on the review form.\n\n";
@@ -220,6 +221,9 @@ class ReviewForm {
 		$x .= "000000\n==-== Replace '000000' with the actual paper number.\n";
 	    if ($prow)
 		$x .= "==-== Title: $prow->title\n";
+	    $x .= "\n==-== Uploading this form will submit the review, making it available to
+==-== authors and the PC, unless you delete the following line.
+==+== Submit Review\n";
 	} else {
 	    $x .= "==+== Begin Review #$prow->paperId";
 	    if ($rrow && isset($rrow->reviewOrdinal))
@@ -231,18 +235,21 @@ class ReviewForm {
 	foreach ($this->fieldOrder as $field) {
 	    if (!$reviewer && !$this->authorView[$field])
 		continue;
-	    $x .= "\n==+== " . chr(65 + $i++) . ". " . $this->shortName[$field] . "\n";
+	    $x .= "\n==+== " . chr(65 + $i++) . ". " . $this->shortName[$field];
+	    if (!$this->authorView[$field])
+		$x .= " (PC only)";
+	    $x .= "\n";
 	    if (isset($this->options[$field]) && $reviewer)
 		foreach ($this->options[$field] as $num => $value)
 		    if ($num == 1)
-			$x .= "==-== Choices are: $num. $value\n";
+			$x .= "==-== Choices: $num. $value\n";
 		    else
-			$x .= "==-==              $num. $value\n";
+			$x .= "==-==          $num. $value\n";
 	    $x .= "\n";
 	    
 	    $fval = "";
-	    if ($useRequest && isset($_REQUEST[$field]))
-		$fval = rtrim($_REQUEST[$field]);
+	    if ($useRequest && isset($req[$field]))
+		$fval = rtrim($req[$field]);
 	    else if ($rrow != null)
 		$fval = rtrim($rrow->$field);
 	    if (isset($this->options[$field]) && $fval == "0")
@@ -277,9 +284,7 @@ class ReviewForm {
 	$lineno = $tf['lineno'];
 	$tf['firstLineno'] = $lineno + 1;
 	$tf['fieldLineno'] = array();
-	
-	foreach ($this->fieldOrder as $field)
-	    unset($_REQUEST[$field]);
+	$req = array();
 
 	$mode = 0;
 	$nfields = 0;
@@ -297,23 +302,26 @@ class ReviewForm {
 		    && !preg_match("/$conf->shortName Paper Form/", $line)) {
 		    $this->garbageMessage($tf, $lineno, $garbage);
 		    $tf['err'][] = "$lineno: This review form appears to be for the wrong conference!";
-		    return 0;
+		    return null;
 		} else if (preg_match("/^==\\+== Paper \#?(\\d+)/", $line, $match)) {
 		    if ($nfields > 0)
 			break;
 		    else {
-			$_REQUEST['paperId'] = $match[1];
+			$req['paperId'] = $match[1];
 			$tf['firstLineno'] = $lineno;
 		    }
+		} else if (preg_match("/^==\\+== Submit Review\\s*\$/", $line)) {
+		    $req["submit"] = true;
 		} else if (preg_match("/^==\\+== [A-Z]\\.\\s*(.*?)\\s*\$/", $line, $match)) {
-		    $fn =& $this->fieldName[strtolower($match[1])];
+		    $fname = str_replace(" (PC only)", "", $match[1]);
+		    $fn =& $this->fieldName[strtolower($fname)];
 		    if (isset($fn)) {
 			$field = $fn;
 			$tf['fieldLineno'][$fn] = $lineno;
 			$nfields++;
 		    } else {
 			$this->garbageMessage($tf, $lineno, $garbage);
-			$tf['err'][] = "$lineno: Review field \"" . htmlentities($match[1]) . "\" is not used for $conf->shortName reviews.  Ignoring this section.";
+			$tf['err'][] = "$lineno: Review field \"" . htmlentities($fname) . "\" is not used for $conf->shortName reviews.  Ignoring this section.";
 			$field = null;
 		    }
 		    $mode = 1;
@@ -329,7 +337,7 @@ class ReviewForm {
 		    $field = null;
 		}
 		if ($field != null)
-		    $_REQUEST[$field] = (isset($_REQUEST[$field]) ? $_REQUEST[$field] . $line : $line);
+		    $req[$field] = (isset($req[$field]) ? $req[$field] . $line : $line);
 		$mode = 2;
 	    }
 
@@ -341,10 +349,16 @@ class ReviewForm {
 
 	$tf['text'] = $text;
 	$tf['lineno'] = $lineno - 1;
-	return $nfields > 0 || $text;
+
+	if ($nfields == 0 && $text) // try again
+	    return $this->parseTextForm($tf, $conf);
+	else if ($nfields == 0)
+	    return null;
+	else
+	    return $req;
     }
     
-    function parseTextFormErrors(&$tf, $conf = null) {
+    function textFormMessages(&$tf, $conf = null) {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
 

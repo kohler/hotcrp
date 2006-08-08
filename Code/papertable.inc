@@ -230,5 +230,36 @@ Zhang, Ping Yen (INRIA)</pre></td>\n";
 	    echo "</tr>\n\n";
 	}
     }
-	
+
+    function echoPCConflicts($prow) {
+	global $Conf;
+	$q = "select firstName, lastName
+		from ContactInfo
+		join PCMember using (contactId)
+		join PaperConflict using (contactId)
+		where paperId=$prow->paperId group by ContactInfo.contactId";
+	$result = $Conf->qe($q, "while finding conflicted PC members");
+	if (!DB::isError($result)) {
+	    while ($row = $result->fetchRow())
+		$pcConflicts[] = "$row[0] $row[1]";
+	    if (!isset($pcConflicts))
+		$pcConflicts[] = "None";
+	    echo "<tr class='pt_conflict'>\n  <td class='caption'>PC conflicts</td>\n  <td class='entry'>", authorTable($pcConflicts), "</td>\n</tr>\n\n";
+	}
+    }
+
+    function echoOutcomeSelector($prow) {
+	echo "<tr class='pt_outcome'>
+  <td class='caption'>Outcome</td>
+  <td class='entry'><form method='get' action='paper.php'><div class='inform'><input type='hidden' name='paperId' value='$prow->paperId' /><select class='outcome' name='outcome'>\n";
+	$rf = reviewForm();
+	$outcomeMap = $rf->options['outcome'];
+	$outcomes = array_keys($outcomeMap);
+	sort($outcomes);
+	$outcomes = array_unique(array_merge(array(0), $outcomes));
+	foreach ($outcomes as $key)
+	    echo "    <option value='", $key, "'", ($prow->outcome == $key ? " selected='selected'" : ""), ">", htmlspecialchars($outcomeMap[$key]), "</option>\n";
+	echo "  </select>&nbsp;<input class='button_small' type='submit' name='setoutcome' value='Set outcome' /></div></form></td>\n</tr>\n";
+    }
+
 }

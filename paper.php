@@ -300,7 +300,8 @@ if (isset($_REQUEST['delete'])) {
     }
 }
 
-// set outcome
+
+// set outcome action
 if (isset($_REQUEST['setoutcome'])) {
     if (!$Me->canSetOutcome($prow))
 	$Conf->errorMsg("You cannot set the outcome for paper #$paperId" . ($Me->amAssistant() ? " (but you could if you entered chair mode)" : "") . ".");
@@ -363,34 +364,8 @@ else
     $Conf->infoMsg("You aren't a contact author for this paper, but can still make changes as PC Chair.");
 
 
+// page header
 confHeader();
-
-
-function caption_class($what) {
-    global $PaperError;
-    if (isset($PaperError[$what]))
-	return "caption error";
-    else
-	return "caption";
-}
-
-function pt_data($what, $rows, $authorTable = false) {
-    global $editable, $prow, $useRequest;
-    if ($editable)
-	echo "<textarea class='textlite' name='$what' rows='$rows' cols='80' onchange='highlightUpdate()'>";
-    if ($useRequest)
-	$text = $_REQUEST[$what];
-    else if ($prow)
-	$text = $prow->$what;
-    else
-	$text = "";
-    if ($authorTable && !$editable)
-	echo authorTable($text, true);
-    else
-	echo htmlspecialchars($text);
-    if ($editable)
-	echo "</textarea>";
-}
 
 
 // begin table
@@ -475,37 +450,8 @@ $paperTable->echoTopics($prow);
 
 
 // PC conflicts
-if ($mode != "edit" && $Me->amAssistant()) {
-    $q = "select firstName, lastName
-	from ContactInfo
-	join PCMember using (contactId)
-	join PaperConflict using (contactId)
-	where paperId=$paperId group by ContactInfo.contactId";
-    $result = $Conf->qe($q, "while finding conflicted PC members");
-    if (!DB::isError($result)) {
-	while ($row = $result->fetchRow())
-	    $pcConflicts[] = "$row[0] $row[1]";
-	if (!isset($pcConflicts))
-	    $pcConflicts[] = "None";
-	echo "<tr class='pt_conflict'>\n  <td class='caption'>PC conflicts</td>\n  <td class='entry'>", authorTable($pcConflicts), "</td>\n</tr>\n\n";
-    }
-}
-
-
-// Outcome
-if ($mode != "edit" && $Me->canSetOutcome($prow)) {
-    echo "<tr class='pt_outcome'>
-  <td class='caption'>Outcome</td>
-  <td class='entry'><form method='get' action='paper.php'><div class='inform'><input type='hidden' name='paperId' value='$paperId' /><select class='outcome' name='outcome'>\n";
-    $rf = reviewForm();
-    $outcomeMap = $rf->options['outcome'];
-    $outcomes = array_keys($outcomeMap);
-    sort($outcomes);
-    $outcomes = array_unique(array_merge(array(0), $outcomes));
-    foreach ($outcomes as $key)
-	echo "    <option value='", $key, "'", ($prow->outcome == $key ? " selected='selected'" : ""), ">", htmlspecialchars($outcomeMap[$key]), "</option>\n";
-    echo "  </select>&nbsp;<input class='button_small' type='submit' name='setoutcome' value='Set outcome' /></div></form></td>\n</tr>\n";
-}
+if ($mode != "edit" && $Me->amAssistant())
+    $paperTable->echoPCConflicts($prow);
 
 
 // Collect reviews, review scores
@@ -535,6 +481,11 @@ if ($mode == "reviews") {
 	echo "</td>\n</tr>\n\n";
     }
 }
+
+
+// Outcome
+if ($mode != "edit" && $Me->canSetOutcome($prow))
+    $paperTable->echoOutcomeSelector($prow);
 
 
 // Submit button
