@@ -8,7 +8,7 @@ $Conf->header_head("Program Committee");
 
 if ($Me->amAssistant()) {
 ?>
-<script type="text/javascript"><!--
+<script type="text/javascript">
 function highlightChange(id) {
     highlightUpdate();
     if (id) {
@@ -28,18 +28,10 @@ function doRemove(id) {
     but.value = (rem ? "Do not remove" : "Remove from PC");
     highlightChange(id);
 }
-// -->
 </script>
 <?php }
 
 $Conf->header("Program Committee");
-
-function vtrim(&$var) {
-    if (isset($var))
-	return trim($var);
-    else
-	return '';
-}
 
 function updateRoles($id, $suff, $email) {
     global $Conf;

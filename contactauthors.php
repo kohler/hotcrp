@@ -26,13 +26,10 @@ $paperId = cvtint($_REQUEST["paperId"]);
 $prow = null;
 function getProw($contactId) {
     global $prow, $paperId, $Conf, $Me;
-    $prow = $Conf->paperRow($paperId, $contactId, "while fetching paper");
-    if ($prow === null)
-	errorMsgExit("");
-    else if (!$Me->canViewPaper($prow, $Conf, $whyNot))
-	errorMsgExit(whyNotText($whyNot, "view", $paperId));
+    if (!($prow = $Conf->paperRow($paperId, $contactId, $whyNot))
+	|| !$Me->canViewPaper($prow, $Conf, $whyNot))
+	errorMsgExit(whyNotText($whyNot, "view"));
 }
-
 getProw($Me->contactId);
 
 

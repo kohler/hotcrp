@@ -112,7 +112,7 @@ function crp_show1date($name, $which) {
 
 $Conf->header_head("Edit Dates");
 ?>
-<script type="text/javascript"><!--
+<script type="text/javascript">
 function clear1Date(name) {
     document.getElementById(name).value = "N/A";
     highlightUpdate();
@@ -121,7 +121,6 @@ function clearDates(name) {
     clear1Date(name + "_start");
     clear1Date(name + "_end");
 }
-// -->
 </script>
 
 <?php $Conf->header("Edit Dates"); ?>

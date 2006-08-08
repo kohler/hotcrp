@@ -264,7 +264,7 @@ class Contact {
       return;
     } else {
       $this->goAlert($url,
-		     "This page is only accessible by Program Chair Assitants"
+		     "This page is only accessible by Program Chair Assistants"
 		     );
     }
   }
@@ -381,15 +381,12 @@ class Contact {
     // viewing permissions
 
     function _fetchPaperRow($prow, $conf, &$whyNot, $type) {
-	$whyNot = array();
-	if (is_numeric($prow) && $prow <= 0)
-	    return setRet($whyNot["invalidId"], 1, null);
-	if (is_numeric($prow))
-	    $prow = $conf->paperRow($prow, $this->contactId);
-	if (!$prow)
-	    return setRet($whyNot["noPaper"], 1, null);
-	else
+	if (!is_object($prow))
+	    return $conf->paperRow($prow, $this->contactId, $whyNot);
+	else {
+	    $whyNot = array('paperId' => $prow->paperId);
 	    return $prow;
+	}
     }
 
     function amAssistantOverride() {
@@ -497,6 +494,10 @@ class Contact {
 		    || ($prow->reviewType > 0 && $conf->timeReviewerViewSubmission()))))
 	    return true;
 	// collect failure reasons
+	if (!$this->isPC && $prow->author <= 0) {
+	    $whyNot["permission"] = 1;
+	    return false;
+	}
 	if ($prow->withdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
 	else if ($prow->acknowledged <= 0)
@@ -505,8 +506,7 @@ class Contact {
 	    $whyNot["deadline"] = "PCViewSubmission";
 	else if ($prow->reviewType > 0 && !$conf->timeReviewerViewSubmission())
 	    $whyNot["deadline"] = "ReviewerViewSubmission";
-	if ((!$this->isPC && $prow->reviewType <= 0)
-	    || !isset($whyNot) || count($whyNot) == 0)
+	if ((!$this->isPC && $prow->reviewType <= 0) || count($whyNot) == 1)
 	    $whyNot["permission"] = 1;
 	return false;
     }
@@ -538,7 +538,7 @@ class Contact {
 	return false;
     }
 
-    function canViewReviews($prow, $conf, &$whyNot = null, $type = "revview") {
+    function canViewReview($prow, $rrow, $conf, &$whyNot = null, $type = "revview") {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, $type)))
 	    return false;
@@ -549,7 +549,9 @@ class Contact {
 		&& ($conf->timePCViewAllReviews()
 		    || (isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0)))
 	    || ($prow->reviewType > 0
-		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0))
+		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0)
+	    || ($rrow && $rrow->paperId == $prow->paperId
+		&& $rrow->contactId == $this->contactId))
 	    return true;
 	// collect failure reasons
 	if ($prow->author <= 0 && !$this->isPC && $prow->reviewType <= 0)
@@ -565,40 +567,27 @@ class Contact {
 	return false;
     }
 
-    function canStartReview($prow, $conf, &$whyNot = null) {
+    function canRequestReview($prow, $conf, &$whyNot = null) {
 	global $ConfSiteBase;
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "rev")))
 	    return false;
-	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
 	// policy
-	if ($prow->withdrawn <= 0 && $prow->acknowledged > 0
-	    && (($this->amAssistant() && ($forceShow || $prow->conflict <= 0))
-		|| ((($this->isPC && $prow->conflict <= 0)
-		     || $prow->reviewType > 0)
-		    && $conf->timeReviewPaper($this->isPC, $prow->reviewType > 0, true))))
+	if (($prow->reviewType >= REVIEW_SECONDARY || $this->amAssistant())
+	    && ($conf->timeReviewPaper(false, true, true) || $this->amAssistantOverride()))
 	    return true;
 	// collect failure reasons
-	if (!$this->isPC && $prow->reviewType <= 0)
+	if ($prow->reviewType < REVIEW_SECONDARY)
 	    $whyNot['permission'] = 1;
-	else if ($prow->withdrawn > 0)
-	    $whyNot['withdrawn'] = 1;
-	else if ($prow->acknowledged <= 0)
-	    $whyNot['notSubmitted'] = 1;
 	else {
-	    if ($prow->conflict > 0)
-		$whyNot['conflict'] = 1;
-	    else if ($this->isPC && $prow->reviewType <= 0 && !$conf->timeReviewPaper(true, false, true))
-		$whyNot['reviewNotAssigned'] = 1;
-	    else
-		$whyNot['deadline'] = 'startReview';
+	    $whyNot['deadline'] = ($Me->isPC ? "PCSubmitReviewDeadline" : "reviewerSubmitReviewDeadline");
 	    if ($this->amAssistant())
-		$whyNot['chairMode'] = 1;
+		$whyNot['override'] = 1;
 	}
 	return false;
     }
 
-    function canEditReview($prow, $conf, &$whyNot = null) {
+    function canReview($prow, $conf, &$whyNot = null, $submit = false) {
 	global $ConfSiteBase;
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "rev")))
@@ -607,10 +596,11 @@ class Contact {
 	// policy
 	if ($prow->withdrawn <= 0 && $prow->acknowledged > 0
 	    && (($this->amAssistant() && ($forceShow || $prow->conflict <= 0))
-		|| ((($this->isPC && $prow->conflict <= 0)
-		     || $prow->reviewType > 0)
-		    && ($conf->timeReviewPaper($this->isPC, $prow->reviewType > 0, true)
-			|| $this->amAssistantOverride()))))
+		|| ($this->isPC && $prow->conflict <= 0)
+		|| $prow->reviewType > 0)
+	    && ($conf->timeReviewPaper($this->isPC, $prow->reviewType > 0, true)
+		|| $this->amAssistantOverride()
+		|| ($this->amAssistant() && !$submit)))
 	    return true;
 	// collect failure reasons
 	if (!$this->isPC && $prow->reviewType <= 0)
@@ -625,13 +615,17 @@ class Contact {
 	    else if ($this->isPC && $prow->reviewType <= 0 && !$conf->timeReviewPaper(true, false, true))
 		$whyNot['reviewNotAssigned'] = 1;
 	    else
-		$whyNot['deadline'] = 'editReview';
+		$whyNot['deadline'] = ($Me->isPC ? "PCSubmitReviewDeadline" : "reviewerSubmitReviewDeadline");
 	    if ($this->amAssistant() && $prow->conflict > 0)
 		$whyNot['chairMode'] = 1;
-	    else if ($this->amAssistant())
+	    if ($this->amAssistant() && isset($whyNot['deadline']))
 		$whyNot['override'] = 1;
 	}
 	return false;
+    }
+
+    function canSubmitReview($prow, $conf, &$whyNot = null) {
+	return $this->canReview($prow, $conf, $whyNot, true);
     }
     
     
@@ -657,7 +651,7 @@ class Contact {
 	return $conf->timeReviewPaper($_SESSION['Me']->isPC, $prow->reviewType || $prow->reviewId, true);
     }
     
-    function canViewReviewerIdentity($rrow, $prow, $conf) {
+    function canViewReviewerIdentity($prow, $rrow, $conf) {
 	if ($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
 	    return true;
 	if ($rrow->contactId == $this->contactId)
@@ -712,7 +706,7 @@ class Contact {
 	//} else if (isset($row->reviewCount) && $row->reviewCount > 0) {
 	//    if ($long < 0 && $row->author <= 0)
 	//	return "";
-	//    else if ($this->canViewReviews($row, $conf))
+	//    else if ($this->canViewReview($row, null, $conf))
 	//	return "<span class='pstat pstat_rev'>Reviews&nbsp;available</span>";
 	//    else
 	//	return "<span class='pstat pstat_rev'>Under&nbsp;review</span>";
@@ -754,30 +748,31 @@ class Contact {
   }
 
     function sendAccountInfo($conf, $create) {
-	$message = "Greetings,\n\n";
+	$m = "Greetings,\n\n";
 	if ($create)
-	    $message .= wordwrap("An account has been created for you at the $conf->shortName conference submission site, and an initial password has been assigned.\n\n");
+	    $m .= wordwrap("An account has been created for you at the $conf->shortName conference submission site, and an initial password has been assigned.\n\n");
 	else
-	    $message .= wordwrap("Here is your account information for the $conf->shortName conference submission site.\n\n");
-	$message .= "        Site: $conf->paperSite
+	    $m .= wordwrap("Here is your account information for the $conf->shortName conference submission site.\n\n");
+	$m .= "        Site: $conf->paperSite
        Email: $this->email
     Password: $this->password
 
 Click the link below to log in.  If the link isn't clickable, you may copy
 and paste it into your web browser's location field.
 
-    $conf->paperSite/login.php?email=" . urlencode($this->email) . "&password=" . urlencode($this->password) . "\n\n"
-	    . wordwrap("Contact the site administrator, $conf->contactName ($conf->contactEmail), with any questions or concerns.
+    $conf->paperSite/login.php?email=" . urlencode($this->email) . "&password=" . urlencode($this->password) . "\n\n";
+	if ($create)
+	    $m .= wordwrap("If you already have an account at the $conf->shortName site, you may merge this new account into that one.  Log in to the conference site and select \"Merge accounts\" on the \"Settings\" tab.\n\n");
+	$m .= wordwrap("Contact the site administrator, $conf->contactName ($conf->contactEmail), with any questions or concerns.
 
 - $conf->shortName Conference Submissions\n");
+
+	$s = "[$conf->shortName] Account information";
 	
 	if ($conf->allowEmailTo($this->email))
-	    $results = mail($this->email,
-			    "[$conf->shortName] Account information",
-			    $message,
-			    "From: $conf->emailFrom");
+	    $results = mail($this->email, $s, $m, "From: $conf->emailFrom");
 	else
-	    $conf->infoMsg("<pre>" . htmlspecialchars($message) . "</pre>");
+	    $conf->infoMsg("<pre>" . htmlspecialchars("$s\n\n$m") . "</pre>");
     }
 
   //

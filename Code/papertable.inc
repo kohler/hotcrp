@@ -95,7 +95,7 @@ class PaperTable {
 	echo "  <td class='entry'>",
 	    $Me->paperStatus($prow->paperId, $prow, ($flags & self::STATUS_DATE) != 0);
 	if ($flags & self::STATUS_DOWNLOAD)
-	    echo " ", paperDownload($paperId, $prow, 1);
+	    echo " ", paperDownload($prow->paperId, $prow, 1);
 	if (($flags & self::STATUS_CONFLICTINFO) && $prow->author > 0)
 	    echo "<br/>\nYou are an <span class='author'>author</span> of this paper.";
 	else if (($flags & self::STATUS_CONFLICTINFO) && $prow->conflict > 0)

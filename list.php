@@ -15,7 +15,7 @@ if (isset($_REQUEST["download"])) {
     else
 	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
 	    if (!$Me->canViewPaper($row, $Conf, $whyNot))
-		$Conf->errorMsg(whyNotText($whyNot, "view", $row->paperId));
+		$Conf->errorMsg(whyNotText($whyNot, "view"));
 	    else
 		$downloads[] = $row->paperId;
 	}
@@ -37,12 +37,11 @@ if (isset($_REQUEST["downloadReview"])) {
 	/* do nothing */;
     else
 	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
-	    if (!$Me->canStartReview($row, $Conf, $whyNot))
-		$errors[] = whyNotText($whyNot, "review", $row->paperId);
+	    if (!$Me->canReview($row, $Conf, $whyNot))
+		$errors[] = whyNotText($whyNot, "review");
 	    else {
 		$rfSuffix = ($text == "" ? "-$row->paperId" : "s");
-		$text .= $rf->textForm($row->paperId, $Conf, $row, $row,
-				       false, true) . "\n";
+		$text .= $rf->textForm($row, $row, $Conf, false, true) . "\n";
 	    }
 	}
 

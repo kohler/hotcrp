@@ -4,6 +4,7 @@ require_once('Code/papertable.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
+$rf = reviewForm();
 
 
 // header
@@ -29,95 +30,92 @@ function errorMsgExit($msg, &$tf = null) {
 
 
 //  
-function get_prow($paperIdIn, &$tf = null) {
-    global $Conf, $prow, $Me;
-
-    if (($paperId = cvtint(trim($paperIdIn))) <= 0)
-	return ($prow = errorMsgExit("Bad paper ID \"" . htmlentities($paperIdIn) . "\".", $tf));
-    
-    $result = $Conf->qe($Conf->paperQuery($Me->contactId, array("paperId" => $paperId)), "while requesting paper to review");
-    if (DB::isError($result) || $result->numRows() == 0)
-	$prow = errorMsgExit("No such paper #$paperId.", $tf);
-    else {
-	$prow = $result->fetchRow(DB_FETCHMODE_OBJECT);
-	if (!$Me->canStartReview($prow, $Conf, $whyNot))
-	    $prow = errorMsgExit(whyNotText($whyNot, "review", $prow->paperId), $tf);
-    }
-}
-
-function get_rrow($paperId, $reviewId = -1, $tf = null) {
-    global $Conf, $rrow, $Me, $reviewOrdinal;
-
-    $q = "select PaperReview.*, firstName, lastName, email,
-		count(PRS.reviewId) as reviewOrdinal
-		from PaperReview
-		join ContactInfo using (contactId)
-		left join PaperReview as PRS on (PRS.paperId=PaperReview.paperId and PRS.reviewSubmitted>0 and PRS.reviewSubmitted<PaperReview.reviewSubmitted)";
-    if ($reviewId > 0)
-	$q = "$q where PaperReview.reviewId=$reviewId";
+function getProw($paperId, $submit, &$tf = null) {
+    global $Conf, $Me;
+    if (($prow = $Conf->paperRow($paperId, $Me->contactId, $whyNot))
+	&& ($submit
+	    ? $Me->canSubmitReview($prow, $Conf, $whyNot)
+	    : $Me->canViewPaper($prow, $Conf, $whyNot)))
+	return $prow;
     else
-	$q = "$q where PaperReview.paperId=$paperId and PaperReview.contactId=$Me->contactId";
-    $result = $Conf->qe("$q group by PRS.paperId", "while retrieving reviews");
-
-    if (DB::isError($result) || $result->numRows() == 0) {
-	if ($reviewId > 0)
-	    errorMsgExit("No such paper review #$reviewId.", $tf);
-	$rrow = null;
-    } else {
-	$rrow = $result->fetchRow(DB_FETCHMODE_OBJECT);
-	$_REQUEST['reviewId'] = $rrow->reviewId;
-    }
+	return errorMsgExit(whyNotText($whyNot, "review"), $tf);
 }
 
-$rf = reviewForm();
+function getRrow($paperId, $reviewId = -1, $must = false, $tf = null) {
+    global $Conf, $Me, $rrowError;
+    $rrowError = false;
+    if ($reviewId > 0)
+	$x = array("reviewId" => $reviewId);
+    else
+	$x = array("paperId" => $paperId, "contactId" => $Me->contactId);
+    if (($rrow = $Conf->reviewRow($x, $whyNot)))
+	return $rrow;
+    if ($must || $reviewId > 0 || !isset($whyNot['noReview'])) {
+	$rrowError = true;
+	errorMsgExit(whyNotText($whyNot, "review"), $tf);
+    }
+    return null;
+}
 
-$originalPaperId = cvtint($_REQUEST["paperId"]);
 
+// general error messages
 if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
     $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  Any changes were lost.");
 
+
+// upload review form
 if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Conf)) {
+    $originalPaperId = $_REQUEST["paperId"];
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
-    $paperId = $originalPaperId;
-    while ($rf->parseTextForm($tf, $originalPaperId, $Conf)) {
-	get_prow($_REQUEST['paperId'], $tf);
-	get_rrow($_REQUEST['paperId'], -1, $tf);
-	if ($prow != null && $rf->validateRequest($rrow, 0, $tf)) {
+    while ($rf->parseTextForm($tf, $Conf)) {
+	if (($prow = getProw($_REQUEST['paperId'], true, $tf))
+	    && (($rrow = getRrow($_REQUEST['paperId'], -1, false, $tf))
+		|| !$rrowError)
+	    && $rf->checkRequestFields($rrow, 0, $tf)) {
 	    $result = $rf->saveRequest($prow, $Me->contactId, $rrow, 0);
 	    if (!DB::isError($result))
 		$tf['confirm'][] = "Uploaded review for paper #$prow->paperId.";
 	}
-	$paperId = -1;
     }
     $rf->parseTextFormErrors($tf, $Conf);
     if (isset($_REQUEST['redirect']) && $_REQUEST['redirect'] == 'offline')
 	go("${ConfSiteBase}uploadreview.php");
- }
+    $_REQUEST['paperId'] = $originalPaperId;
+}
 
-$paperId = $originalPaperId;
+
+// get paper and review rows; exit if requested review is not visible,
+// or no requested review and paper is not reviewable
 if (isset($_REQUEST["reviewId"])) {
-    get_rrow(-1, cvtint(trim($_REQUEST["reviewId"])));
-    if ($Me->contactId != $rrow->contactId && !$Me->amAssistant())
-	errorMsgExit("You did not create review #$rrow->reviewId, so you cannot edit it.");
-    $paperId = $rrow->paperId;
-    get_prow($paperId);
-} else if ($paperId > 0) {
-    get_prow($paperId);
-    get_rrow($paperId);
+    if (!($rrow = getRrow(-1, $_REQUEST['reviewId'], true))
+	|| !($prow = getProw($rrow->paperId, false))
+	|| !$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
+	errorMsgExit(whyNotText($whyNot, "review"));
+} else if (isset($_REQUEST["paperId"])) {
+    $prow = getProw($_REQUEST["paperId"], false);
+    $rrow = getRrow($prow->paperId, -1, false);
+    if ($rrow ? !$Me->canViewReview($prow, $rrow, $Conf, $whyNot)
+	: !$Me->canReview($prow, $Conf, $whyNot))
+	errorMsgExit(whyNotText($whyNot, "review"));
 } else
     $prow = $rrow = null;
+$paperId = ($prow ? $prow->paperId : -1);
 
+
+// download form
 if (isset($_REQUEST['downloadForm'])) {
-    $isReviewer = ($Me->isReviewer || $Me->isPC);
     $x = $rf->textFormHeader($Conf);
-    $x .= $rf->textForm($paperId, $Conf, $prow, $rrow, $isReviewer, $isReviewer);
+    $x .= $rf->textForm($prow, $rrow, $Conf, $prow->reviewType > 0,
+			($prow->reviewType > 0
+			 || ($Me->isPC && $prow->conflict <= 0)
+			 || ($Me->amAssistant() && isset($_REQUEST['forceShow']))));
     header("Content-Description: PHP Generated Data");
     header("Content-Disposition: attachment; filename=" . $Conf->downloadPrefix . "review" . ($paperId > 0 ? "-$paperId.txt" : ".txt"));
     header("Content-Type: text/plain");
     header("Content-Length: " . strlen($x));
     print $x;
     exit;
- }
+}
 
 
 confHeader();
@@ -127,19 +125,20 @@ if ($paperId <= 0) {
     $Conf->errorMsg("No paper selected to review.");
     $Conf->footer();
     exit;
- }
+}
+
 
 if (isset($_REQUEST['update']) || isset($_REQUEST['submit']))
-    if ($rf->validateRequest($rrow, isset($_REQUEST['submit']))) {
+    if (!$Me->canSubmitReview($prow, $Conf, $whyNot))
+	$Conf->errorMsg(whyNotText($whyNot, "review"));
+    else if ($rf->checkRequestFields($rrow, isset($_REQUEST['submit']))) {
 	$rf->saveRequest($prow, $Me->contactId, $rrow, isset($_REQUEST['submit']), $Conf);
 	$Conf->confirmMsg(isset($_REQUEST['submit']) ? "Review submitted." : "Review saved.");
-	get_rrow($paperId);
+	$rrow = getRrow($prow->paperId, ($rrow ? $rrow->reviewId : -1), true);
     }
 
-$overrideMsg = '';
-if ($Me->amAssistant())
-    $overrideMsg = "  Select the \"Override deadlines\" checkbox and try again if you really want to override this deadline.";
 
+// messages for review viewers
 if (!$Me->timeReview($prow, $Conf))
     $Conf->infoMsg("The <a href='${ConfSiteBase}deadlines.php'>deadline</a> for modifying this review has passed.");
 
@@ -171,12 +170,16 @@ $paperTable->echoTopics($prow);
 
 
 // reviewer information
-if (($revTable = reviewersTable($prow->paperId, (isset($rrow) ? $rrow->reviewId : -1)))) {
+if (($revTable = reviewersTable($prow, (isset($rrow) ? $rrow->reviewId : -1)))) {
     echo "<tr class='rev_reviewers'>\n";
     echo "  <td class='caption'>Reviewers</td>\n";
     echo "  <td class='entry'><table class='reviewers'>\n", $revTable, "  </table></td>\n";
     echo "</tr>\n\n";
 }
+
+
+// extra space
+echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>&nbsp;</td>\n</tr>\n\n";
 
 
 // review information

@@ -47,3 +47,10 @@ function contactPulldown(which) {
     var folder = document.getElementById('fold' + which);
     folder.className = folder.className.replace("unfolded", "folded");
 }
+
+function tempText(elt, text, on) {
+    if (on && elt.value == text)
+	elt.value = "";
+    else if (!on && elt.value == "")
+	elt.value = text;
+}

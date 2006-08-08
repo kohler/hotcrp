@@ -30,7 +30,7 @@ else {
 // to be a contact person for that paper.
 //
 if (!isset($Error) && !$Me->canViewPaper($paperId, $Conf, $whyNot))
-    $Error = whyNotText($whyNot, "view", $paperId);
+    $Error = whyNotText($whyNot, "view");
 
 //
 // Actually download paper.

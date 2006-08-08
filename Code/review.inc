@@ -112,7 +112,7 @@ class ReviewForm {
 	return $x;
     }
 
-    function validateRequest($rrow, $submit, &$tf = null, $conf = null) {
+    function checkRequestFields($rrow, $submit, &$tf = null, $conf = null) {
 	global $ReviewFormError, $Conf;
 	$conf = ($conf ? $conf : $Conf);
 	foreach ($this->fieldOrder as $field) {
@@ -178,15 +178,8 @@ class ReviewForm {
 		$q .= "$field='" . sqlq($fval) . "', ";
 	    }
 
-	if ($submit && (!$rrow || !$rrow->reviewSubmissionId)) {
-	    $result = $conf->qe("insert into PaperReviewSubmission set paperId=$prow->paperId", "while storing review");
-	    if (!DB::isError($result))
-		$result = $conf->qe("select last_insert_id()", "while storing review");
-	    if (!DB::isError($result) && $result->numRows() > 0) {
-		$row = $result->fetchRow();
-		$q .= "reviewSubmitted=$row[0], ";
-	    }
-	}
+	if ($submit && (!$rrow || !$rrow->reviewSubmitted))
+	    $q .= "reviewSubmitted=" . time() . ", ";
 	
 	if ($rrow)
 	    return $conf->qe("update PaperReview set $q reviewModified=" . time() . " where reviewId=$rrow->reviewId", "while storing review");
@@ -211,28 +204,35 @@ class ReviewForm {
 	return $x;
     }
     
-    function textForm($paperId, $conf, $prow, $rrow,
-		      $useRequest = false, $reviewer = true) {
-	global $ReviewFormError, $Conf;
+    function textForm($prow, $rrow, $conf, $useRequest = false, $reviewer = true) {
+	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
 
-	$x = "==+== =========================================================================
-==+== Begin Review
+	$x = "==+== =========================================================================\n";
+
+	if ($reviewer || !$prow) {
+	    $x .= "==+== Begin Review
 
 ==+== Paper #";
-	if ($paperId > 0)
-	    $x .= "$paperId\n";
-	else
-	    $x .= "000000\n==-== Replace '000000' with the actual paper number.\n";
-	if (isset($prow))
-	    $x .= "==-== Title: $prow->title\n";
+	    if ($prow)
+		$x .= "$prow->paperId\n";
+	    else
+		$x .= "000000\n==-== Replace '000000' with the actual paper number.\n";
+	    if ($prow)
+		$x .= "==-== Title: $prow->title\n";
+	} else {
+	    $x .= "==+== Begin Review #$prow->paperId";
+	    if ($rrow && isset($rrow->reviewOrdinal))
+		$x .= unparseReviewOrdinal($rrow->reviewOrdinal);
+	    $x .= "\n";
+	}
 
 	$i = 0;
 	foreach ($this->fieldOrder as $field) {
-	    //if (!$reviewer && !$this->authorView[$field])
-	    //    continue;
+	    if (!$reviewer && !$this->authorView[$field])
+		continue;
 	    $x .= "\n==+== " . chr(65 + $i++) . ". " . $this->shortName[$field] . "\n";
-	    if (isset($this->options[$field]))
+	    if (isset($this->options[$field]) && $reviewer)
 		foreach ($this->options[$field] as $num => $value)
 		    if ($num == 1)
 			$x .= "==-== Choices are: $num. $value\n";
@@ -269,7 +269,7 @@ class ReviewForm {
 		     'lineno' => 0, 'err' => array(), 'confirm' => array());
     }
     
-    function parseTextForm(&$tf, $paperId, $conf = null) {
+    function parseTextForm(&$tf, $conf = null) {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
 
@@ -451,7 +451,7 @@ class ReviewForm {
 	    $x .= "<td class='rs_num'>"
 		. ($links ? "<a href='#review$rtxt'>" : "")
 		. "Review $rtxt" . ($links ? "</a>" : "") . "</td>";
-	    if ($contact->canViewReviewerIdentity($rrow, $prow, $conf))
+	    if ($contact->canViewReviewerIdentity($prow, $rrow, $conf))
 		$x .= "<td class='rs_id'>" . contactText($rrow) . "</td>";
 	    else
 		$x .= "<td></td>";

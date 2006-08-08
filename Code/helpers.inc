@@ -1,5 +1,9 @@
 <?php
 
+function vtrim(&$var) {
+    return (isset($var) ? trim($var) : "");
+}
+
 function sqlqtrim($value) {
     return mysql_real_escape_string(trim($value));
 }
@@ -419,16 +423,25 @@ function ini_get_bytes($varname) {
     return $val;
 }
 
-function whyNotText($whyNot, $action, $paperId = -1) {
+function whyNotText($whyNot, $action) {
     global $ConfSiteBase, $Conf;
-    $thisPaper = ($paperId < 0 ? "this paper" : "paper #$paperId");
     if (!is_array($whyNot))
 	$whyNot = array($whyNot => 1);
+    $paperId = (isset($whyNot['paperId']) ? $whyNot['paperId'] : -1);
+    $reviewId = (isset($whyNot['reviewId']) ? $whyNot['reviewId'] : -1);
+    $thisPaper = ($paperId < 0 ? "this paper" : "paper #$paperId");
     $text = '';
-    if (isset($whyNot['invalidId']))
-	$text .= "Invalid paper number.  ";
+    if (isset($whyNot['invalidId'])) {
+	$x = $whyNot['invalidId'] . "Id";
+	$xid = (isset($whyNot[$x]) ? " \"" . $whyNot[$x] . "\"" : "");
+	$text .= "Invalid " . $whyNot['invalidId'] . " number" . htmlspecialchars($xid) . ".  ";
+    }
     if (isset($whyNot['noPaper']))
 	$text .= "No such paper" . ($paperId < 0 ? "" : " #$paperId") . ".  ";
+    if (isset($whyNot['noReview']))
+	$text .= "No such review" . ($reviewId < 0 ? "" : " #$reviewId") . ".  ";
+    if (isset($whyNot['dbError']))
+	$text .= $whyNot['dbError'] . "  ";
     if (isset($whyNot['permission']))
 	$text .= "You don't have permission to $action $thisPaper.  ";
     if (isset($whyNot['withdrawn']))
@@ -463,7 +476,7 @@ function whyNotText($whyNot, $action, $paperId = -1) {
     if (isset($whyNot['conflict']))
 	$text .= "You have a conflict with $thisPaper.  ";
     if (isset($whyNot['reviewNotComplete']))
-	$text .= "Your own review for $thisPaper is not complete.  ";
+	$text .= "Your own review for $thisPaper is not complete, so you can't view other people's reviews.  ";
     if (isset($whyNot['reviewNotAssigned']))
 	$text .= "You have not been assigned to review $thisPaper.  ";
     // finish it off
@@ -537,7 +550,7 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
 	       || $Me->amAssistant())
 	$x .= actionTab("Add review", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "editreview");
     
-    if (!$newPaper && $prow && ($Me->isPC || $Me->canViewReviews($prow, $Conf)))
+    if (!$newPaper && $prow && ($Me->isPC || $Me->canViewReview($prow, null, $Conf)))
 	$x .= actionTab("Read reviews" . ($prow ? " ($prow->reviewCount)" : ""), "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=reviews", $mode == "reviews");
     
     if ($thisUrl)
@@ -556,7 +569,7 @@ function unparseReviewOrdinal($ord) {
 	return chr(int($ord / 26) + 65) . chr(($ord % 26) + 65);
 }
 
-function reviewersTable($paperId, $reviewId = null, $buttons = false) {
+function reviewersTable($prow, $reviewId = null, $buttons = false) {
     global $Conf, $Me;
     
     $result = $Conf->qe("select ContactInfo.contactId, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
@@ -565,7 +578,7 @@ function reviewersTable($paperId, $reviewId = null, $buttons = false) {
 		from PaperReview
 		join ContactInfo using (contactId)
 		left join ContactInfo as ReqContactInfo on (ReqContactInfo.contactId=PaperReview.requestedBy)
-		where paperId=$paperId
+		where paperId=$prow->paperId
 		order by reviewSubmitted, reviewType desc, lastName, firstName, email");
     if (DB::isError($result))
 	return "";
@@ -574,7 +587,9 @@ function reviewersTable($paperId, $reviewId = null, $buttons = false) {
     $nonsubrev = array();
     $ordinal = 0;
     $anyThisReview = 0;
-    $nRetractable;
+    $nRetractable = 0;
+    $link = ($Me->canViewReview($prow, null, $Conf) || $Me->amAssistant());
+    
     while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
 	// review ID
 	$t = "    <tr>";
@@ -586,15 +601,18 @@ function reviewersTable($paperId, $reviewId = null, $buttons = false) {
 	    $t .= ($thisReview ? "<td class='highlight'><b>&#187;</b></td>" : "<td></td>");
 
 	// review ID
-	$t .= "<td>" . ($thisReview ? "<b>" : "<a href='review.php?reviewId=$row->reviewId'>");
+	$t .= "<td>" . ($thisReview ? "<b>" : ($link ? "<a href='review.php?reviewId=$row->reviewId'>" : ""));
 	$t .= "Review";
 	if ($row->reviewSubmitted > 0)
-	    $t .= " #$paperId" . unparseReviewOrdinal($ordinal++);
-	$t .= ($thisReview ? "</b>" : "</a>");
+	    $t .= " #$prow->paperId" . unparseReviewOrdinal($ordinal++);
+	$t .= ($thisReview ? "</b>" : ($link ? "</a>" : ""));
 	$t .= "</td>";
 
 	// reviewer
-	$t .= "<td>" . contactText($row) . "</td>";
+	if ($row->contactId == $Me->contactId)
+	    $t .= "<td>You</td>";
+	else
+	    $t .= "<td>" . contactText($row) . "</td>";
 
 	// review type
 	$t .= "<td>";
@@ -603,7 +621,7 @@ function reviewersTable($paperId, $reviewId = null, $buttons = false) {
 	else if ($row->reviewType == REVIEW_SECONDARY)
 	    $t .= "Secondary";
 	else if ($row->reviewType == REVIEW_REQUESTED)
-	    $t .= "Requested by " . ($row->reqContactId == $Me->contactId ? "you" : contactText($row->reqFirstName, $row->reqLastName, $req->reqEmail));
+	    $t .= "Requested by " . ($row->reqContactId == $Me->contactId ? "you" : contactText($row->reqFirstName, $row->reqLastName, $row->reqEmail));
 	$t .= "</td>";
 
 	// status
@@ -621,7 +639,7 @@ function reviewersTable($paperId, $reviewId = null, $buttons = false) {
 	if ($row->reviewType == REVIEW_REQUESTED
 	    && $row->reviewModified <= 0
 	    && ($row->requestedBy == $Me->contactId || $Me->amAssistant())) {
-	    $actions[] = "<a class='button_small' href=\"${ConfSiteBase}reqreview.php?paperId=$paperId&amp;reviewId=$row->reviewId&amp;action=retract\">Retract review request</a>";
+	    $actions[] = "<a class='button_small' href=\"${ConfSiteBase}reqreview.php?paperId=$prow->paperId&amp;retract=$row->reviewId\">Retract review request</a>";
 	    $nRetractable++;
 	}
 	if (count($actions) > 0 && $buttons)
@@ -639,13 +657,6 @@ function reviewersTable($paperId, $reviewId = null, $buttons = false) {
     if (!$anyThisReview && $reviewId !== null)
 	$nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Review</b></td><td>" . contactText($Me) . "</td><td></td><td>Not started</td></tr>\n";
 
-    if ($reviewId !== null && ($Me->amAssistant() || $Conf->timeReviewPaper(false, true, true))) {
-	$t = "Ask someone else to review this paper";
-	if ($nRetractable)
-	    $t .= ", retract outstanding review requests";
-	$nonsubrev[] = "    <tr><td></td><td colspan='5'><a class='small' href=\"${ConfSiteBase}reqreview.php?paperId=$paperId\">$t</a></td></tr>\n";
-    }
-    
     if (count($nonsubrev) || count($subrev))
 	return join("", $subrev) . join("", $nonsubrev);
     else

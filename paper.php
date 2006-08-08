@@ -55,11 +55,9 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
 $prow = null;
 function getProw($contactId) {
     global $prow, $paperId, $Conf, $Me;
-    $prow = $Conf->paperRow($paperId, $contactId, "while fetching paper");
-    if ($prow === null)
-	errorMsgExit("");
-    else if (!$Me->canViewPaper($prow, $Conf, $whyNot))
-	errorMsgExit(whyNotText($whyNot, "view", $paperId));
+    if (!($prow = $Conf->paperRow($paperId, $contactId, $whyNot))
+	|| !$Me->canViewPaper($prow, $Conf, $whyNot))
+	errorMsgExit(whyNotText($whyNot, "view"));
 }
 if (!$newPaper) {
     getProw($Me->contactId);
@@ -241,7 +239,7 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submit"])) {
 
     // actually update
     if (!$ok)
-	$Conf->errorMsg(whyNotText($whyNot, "update", $paperId));
+	$Conf->errorMsg(whyNotText($whyNot, "update"));
     else if (updatePaper($Me, isset($_REQUEST["submit"]), false)) {
 	if ($newPaper)
 	    $Conf->go("paper.php?paperId=$paperId&mode=edit");
@@ -265,14 +263,14 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	$Conf->qe("update Paper set withdrawn=" . time() . " where paperId=$paperId", "while withdrawing paper");
 	getProw($Me->contactId);
     } else
-	$Conf->errorMsg(whyNotText($whyNot, "withdraw", $paperId));
+	$Conf->errorMsg(whyNotText($whyNot, "withdraw"));
 }
 if (isset($_REQUEST["revive"]) && !$newPaper) {
     if ($Me->canRevivePaper($prow, $Conf, $whyNot)) {
 	$Conf->qe("update Paper set withdrawn=0 where paperId=$paperId", "while reviving paper");
 	getProw($Me->contactId);
     } else
-	$Conf->errorMsg(whyNotText($whyNot, "revive", $paperId));
+	$Conf->errorMsg(whyNotText($whyNot, "revive"));
 }
 
 
@@ -512,10 +510,10 @@ if ($mode != "edit" && $Me->canSetOutcome($prow)) {
 // Collect reviews, review scores
 if ($mode == "reviews") {
     $rrows = array();
-    $showReviews = $Me->canViewReviews($prow, $Conf, $whyNot);
+    $showReviews = $Me->canViewReview($prow, null, $Conf, $whyNot);
     if (!$showReviews) {
 	echo "<tr class='pt_reviews'>\n  <td class='caption'></td>\n  <td class='entry'>";
-	$Conf->infoMsg(whyNotText($whyNot, "view reviews for", $paperId));
+	$Conf->infoMsg(whyNotText($whyNot, "view reviews for"));
 	echo "</td>\n</tr>\n\n";
     } else {
 	$q = "select PaperReview.*,
@@ -589,7 +587,7 @@ echo "<div class='clear'></div>\n\n";
 
 // Reviews
 if (!$newPaper && $mode == "reviews" && $prow->reviewCount > 0) {
-    if ($Me->canViewReviews($prow, $Conf, $whyNot)) {
+    if ($Me->canViewReview($prow, null, $Conf, $whyNot)) {
 	$rf = reviewForm();
 	$q = "select PaperReview.*,
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
@@ -607,7 +605,7 @@ if (!$newPaper && $mode == "reviews" && $prow->reviewCount > 0) {
   <tr class='id'>
     <td class='caption'><h3 id='review", chr($reviewnum), "'>Review&nbsp;", chr($reviewnum), "</h3></td>
     <td class='entry' colspan='3'>";
-		if ($Me->canViewReviewerIdentity($rrow, $prow, $Conf))
+		if ($Me->canViewReviewerIdentity($prow, $rrow, $Conf))
 		    echo "by <span class='reviewer'>", trim(htmlspecialchars("$rrow->firstName $rrow->lastName")), "</span>";
 		echo " <span class='reviewstatus'>", reviewStatus($rrow, 1), "</span>";
 		if ($rrow->contactId == $Me->contactId || $Me->amAssistant())
@@ -624,7 +622,7 @@ if (!$newPaper && $mode == "reviews" && $prow->reviewCount > 0) {
 	echo "<hr/>\n<p>";
 	if ($Me->isPC || $prow->reviewType > 0)
 	    echo plural($nreviews, "review"), " available for paper #$paperId.  ";
-	echo whyNotText($whyNot, "viewreview", $paperId);
+	echo whyNotText($whyNot, "viewreview");
     }
 }
 

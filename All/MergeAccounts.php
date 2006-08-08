@@ -2,7 +2,7 @@
 include('../Code/confHeader.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
-$Me->goIfInvalid("../");
+$Me->goIfInvalid();
 $MergeError = "";
 
 function crpmergeone($table, $field, $oldid, $newid) {
@@ -39,6 +39,13 @@ if (isset($_REQUEST["merge"])) {
 	    $Conf->confirmMsg("Accounts successfully merged.");
 	    $Me->go("../");
 	} else {
+	    // Do they prefer the account they named?
+	    if (isset($_REQUEST['prefer']) && $_REQUEST['prefer']) {
+		$mm = $Me;
+		$_REQUEST["Me"] = $Me = $MiniMe;
+		$MiniMe = $mm;
+	    }
+	    
 	    $message = "\
 Your account at the " . $Conf->shortName . "submissions site has been\n\
 merged with the account of " . $Me->fullnameAndEmail() . ".\n\
@@ -48,16 +55,12 @@ If you suspect something fishy, contact the site administrator at\n\
 		mail($MiniMe->email, "[$Conf->shortName] Account Information",
 		     $message, "From: $Conf->emailFrom");
 	    
-	    //
 	    // Now, scan through all the tables that possibly
 	    // specify a contactID and change it from their 2nd
 	    // contactID to their first contactId
-	    //
 	    $oldid = $MiniMe->contactId;
 	    $newid = $Me->contactId;
-	    //
-	    // Paper
-	    //
+	    
 	    crpmergeone("Paper", "contactId", $oldid, $newid);
 	    crpmergeone("PaperConflict", "contactId", $oldid, $newid);
 	    crpmergeonex("PCMember", "contactId", $oldid, $newid);
@@ -66,9 +69,13 @@ If you suspect something fishy, contact the site administrator at\n\
 	    crpmergeone("TopicInterest", "contactId", $oldid, $newid);
 	    crpmergeone("ReviewRequest", "contactId", $oldid, $newid);
 	    crpmergeone("ReviewRequest", "requestedBy", $oldid, $newid);
+	    crpmergeone("ReviewRequestRefused", "contactId", $oldid, $newid);
+	    crpmergeone("ReviewRequestRefused", "requestedBy", $oldid, $newid);
 	    crpmergeone("PaperReview", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReview", "requestedBy", $oldid, $newid);
-      
+
+	    // XXX ensure uniqueness in PaperConflict
+	    
 	    //
 	    // Remove the contact record
 	    //
@@ -88,7 +95,7 @@ If you suspect something fishy, contact the site administrator at\n\
 	    }
 	}
     }
- }
+}
 
 $Conf->header("Merge Account Information");
 ?>
@@ -113,6 +120,7 @@ else
 
 <form class='mergeAccounts' method='post' action='MergeAccounts.php'>
 <table class='form'>
+
 <tr>
   <td class='caption'>Email:</td>
   <td class='entry'><input type='text' name='email' size='50'
@@ -123,6 +131,12 @@ else
 <tr>
   <td class='caption'>Password:</td>
   <td class='entry'><input type='password' name='password' size='50' /></td>
+</tr>
+
+<tr>
+  <td class='caption'></td>
+  <td class='entry'><input type='radio' name='prefer' value='0' />&nbsp;Keep my current account (<?php echo htmlspecialchars($Me->email) ?>)<br />
+    <input type='radio' name='prefer' value='1' />&nbsp;Keep the account named above, delete my current account</td>
 </tr>
 
 <tr><td></td><td><input class='button_default' type='submit' value='Merge Account' name='merge' /></td></tr>

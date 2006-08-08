@@ -157,7 +157,7 @@ class Conference {
 	    $text = "<p>Database error";
 	    if ($while)
 		$text .= " $while";
-	    $text .= ": " . $result->getMessage() . "</p>";
+	    $text .= ": " . htmlspecialchars($result->getMessage()) . "</p>";
 	}
 	if ($suggestRetry)
 	    $text .= "\n<p>Please try again or contact the site administrator at $this->emailFrom.</p>";
@@ -878,24 +878,26 @@ class Conference {
 	return $pq . "\n";
     }
 
-    function paperRow($paperId, $contactId = -1, $while = "") {
-	if ($paperId <= 0) {
-	    $this->errorMsg(whyNotText(array("invalidId" => 1), "view", $paperId));
-	    return null;
+    function paperRow($paperId, $contactId = -1, &$whyNot = null) {
+	$whyNot = array('paperId' => $paperId);
+	$paperId = cvtint($paperId);
+	if ($paperId <= 0)
+	    $whyNot['invalidId'] = 'paper';
+	else {
+	    $q = $this->paperQuery($contactId, array('paperId' => $paperId));
+	    $result = $this->q($q);
+	
+	    if (DB::isError($result))
+		$whyNot['dbError'] = "Database error while fetching paper (" . htmlspecialchars($q) . "): " . htmlspecialchars($result->getMessage());
+	    else if ($result->numRows() == 0)
+		$whyNot['noPaper'] = 1;
+	    else
+		return $result->fetchRow(DB_FETCHMODE_OBJECT);
 	}
-	
-	$q = $this->paperQuery($contactId, array('paperId' => $paperId));
-	$result = $this->qe($q, $while);
-	
-	if (DB::isError($result))
-	    return null;
-	else if ($result->numRows() == 0) {
-	    $this->errorMsg(whyNotText(array("noPaper" => 1), "view", $paperId));
-	    return null;
-	} else
-	    return $result->fetchRow(DB_FETCHMODE_OBJECT);
+	return null;
     }
 
+    
     function paperContactAuthors($paperId) {
 	$result = $this->qe("select firstName, lastName, email, contactId from ContactInfo join PaperConflict using (contactId) where paperId=$paperId", "while looking up paper contact authors");
 	$aus = array();
@@ -906,6 +908,67 @@ class Conference {
     }
 
 
+    function reviewRow($selector, &$whyNot = null) {
+	$whyNot = array();
+	
+	if (isset($selector['reviewId'])) {
+	    $whyNot['reviewId'] = $selector['reviewId'];
+	    if (($reviewId = cvtint($selector['reviewId'])) <= 0) {
+		$whyNot['invalidId'] = 'review';
+		return null;
+	    }
+	}
+	if (isset($selector['paperId'])) {
+	    $whyNot['paperId'] = $selector['paperId'];
+	    if (($paperId = cvtint($selector['paperId'])) <= 0) {
+		$whyNot['invalidId'] = 'paper';
+		return null;
+	    }
+	}
+	
+	$q = "select PaperReview.*, firstName, lastName, email,
+		count(PRS.reviewId) as reviewOrdinal
+		from PaperReview
+		join ContactInfo using (contactId)
+		left join PaperReview as PRS on (PaperReview.paperId=PRS.paperId and PRS.reviewSubmitted>0 and PRS.reviewSubmitted<PaperReview.reviewSubmitted)\n";
+
+	$where = array();
+	if (isset($reviewId))
+	    $where[] = "PaperReview.reviewId=$reviewId";
+	if (isset($paperId))
+	    $where[] = "PaperReview.paperId=$paperId";
+	if (isset($selector['contactId']))
+	    $where[] = "PaperReview.contactId=" . cvtint($selector['contactId']);
+	if (isset($selector['reviewOrdinal']))
+	    $where[] = "PaperReview.reviewSubmitted>0 and reviewOrdinal=" . cvtint($selector['reviewOrdinal']);
+	if (!count($where)) {
+	    $whyNot['internal'] = 1;
+	    return null;
+	}
+
+	$q = $q . " where " . join(" and ", $where) . " group by PaperReview.reviewId order by paperId, reviewSubmitted";
+
+	$result = $this->q($q);
+	if (DB::isError($result)) {
+	    $whyNot['dbError'] = "Database error while fetching review (" . htmlspecialchars($q) . "): " . htmlspecialchars($result->getMessage());
+	    return null;
+	}
+
+	$x = array();
+	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT)))
+	    $x[] = $row;
+	
+	if (isset($selector['array']))
+	    return $x;
+	else if (count($x) == 1)
+	    return $x[0];
+	if (count($x) == 0)
+	    $whyNot['noReview'] = 1;
+	else
+	    $whyNot['multipleReviews'] = 1;
+	return null;
+    }
+	
 
     //
     // Message routines

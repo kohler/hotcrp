@@ -47,6 +47,5 @@ $rf = reviewForm();
 $text = $rf->webGuidanceRows($Me->amReviewer());
 if ($text)
     echo "<hr/>\n\n<table>\n<tr class='id'>\n  <td class='caption'></td>\n  <td class='entry'><h3>Review form guidance</h3></td>\n</tr>\n", $text, "</table>\n";
+$Conf->footer();
 ?>
-
-<?php $Conf->footer() ?>

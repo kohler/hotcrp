@@ -292,12 +292,15 @@ CREATE TABLE PaperReview (
   KEY requestedBy (requestedBy)
 ) TYPE=MyISAM;
 
-drop table if exists PaperReviewSubmission;
-CREATE TABLE PaperReviewSubmission (
-  reviewSubmissionId int(11) NOT NULL auto_increment,
+drop table if exists PaperReviewRefused;
+CREATE TABLE PaperReviewRefused (
   paperId int(11) NOT NULL,
-  PRIMARY KEY (reviewSubmissionId),
-  UNIQUE KEY reviewSubmissionid (reviewSubmissionId)
+  contactId int(11) NOT NULL,
+  requestedBy int(11) NOT NULL,
+  reason text NOT NULL default '',
+  KEY paperId (paperId),
+  KEY contactId (contactId),
+  KEY requestedBy (requestedBy)
 ) TYPE=MyISAM;
 
 #
