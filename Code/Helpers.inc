@@ -453,7 +453,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['updateSubmitted']))
 	$text .= ucfirst($thisPaper) . " has already been submitted and can no longer be updated.  ";
     if (isset($whyNot['notUploaded']))
-	$text .= ucfirst($thisPaper) . " cannot be submitted until you upload a version of the paper.  ";
+	$text .= ucfirst($thisPaper) . " can't be submitted because you haven't yet uploaded the paper itself.  Upload the paper and try again.  ";
     if (isset($whyNot['deadline'])) {
 	$dname = $whyNot['deadline'];
 	$start = $Conf->startTime[$dname];
@@ -546,11 +546,13 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
     else if (isset($prow->reviewType) && $prow->reviewType > 0) {
 	$name = ($prow->reviewModified ? "Review" : "Add review");
 	$x .= actionTab($name, "${ConfSiteBase}review.php?paperId=$paperId", $mode == "editreview");
-    } else if (($Me->isPC && $Conf->timePCReviewAnyPaper() && $prow->author <= 0 && $prow->conflict <= 0)
-	       || $Me->amAssistant())
+    } else if ((($Me->isPC && $Conf->timePCReviewAnyPaper() && $prow->author <= 0 && $prow->conflict <= 0)
+		|| $Me->amAssistant())
+	       && $prow->acknowledged > 0 && $prow->withdrawn <= 0)
 	$x .= actionTab("Add review", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "editreview");
     
-    if (!$newPaper && $prow && ($Me->isPC || $Me->canViewReview($prow, null, $Conf)))
+    if (!$newPaper && $prow && ($Me->isPC || $Me->canViewReview($prow, null, $Conf))
+	&& $prow->acknowledged > 0 && $prow->withdrawn <= 0)
 	$x .= actionTab("Read reviews" . ($prow ? " ($prow->reviewCount)" : ""), "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=reviews", $mode == "reviews");
     
     if ($thisUrl)
@@ -569,8 +571,8 @@ function unparseReviewOrdinal($ord) {
 	return chr(int($ord / 26) + 65) . chr(($ord % 26) + 65);
 }
 
-function reviewersTable($prow, $reviewId = null, $buttons = false) {
-    global $Conf, $Me;
+function reviewersTable($prow, $reviewId = null, $all = false, $buttons = false) {
+    global $Conf, $Me, $ConfSiteBase;
     
     $result = $Conf->qe("select ContactInfo.contactId, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
 		ReqContactInfo.contactId as reqContactId, ReqContactInfo.firstName as reqFirstName, ReqContactInfo.lastName as reqLastName, ReqContactInfo.email as reqEmail,
@@ -586,7 +588,7 @@ function reviewersTable($prow, $reviewId = null, $buttons = false) {
     $subrev = array();
     $nonsubrev = array();
     $ordinal = 0;
-    $anyThisReview = 0;
+    $anyThisReview = $anyMyReview = 0;
     $nRetractable = 0;
     $link = ($Me->canViewReview($prow, null, $Conf) || $Me->amAssistant());
     
@@ -597,6 +599,7 @@ function reviewersTable($prow, $reviewId = null, $buttons = false) {
 	// dingbat
 	$thisReview = ($reviewId == $row->reviewId);
 	$anyThisReview += $thisReview;
+	$anyMyReview += ($row->contactId == $Me->contactId);
 	if ($reviewId !== null)
 	    $t .= ($thisReview ? "<td class='highlight'><b>&#187;</b></td>" : "<td></td>");
 
@@ -609,14 +612,18 @@ function reviewersTable($prow, $reviewId = null, $buttons = false) {
 	$t .= "</td>";
 
 	// reviewer
-	if ($row->contactId == $Me->contactId)
+	if (!$Me->canViewReviewerIdentity($prow, $row, $Conf))
+	    $t .= "<td></td>";
+	else if ($row->contactId == $Me->contactId)
 	    $t .= "<td>You</td>";
 	else
 	    $t .= "<td>" . contactText($row) . "</td>";
 
 	// review type
 	$t .= "<td>";
-	if ($row->reviewType == REVIEW_PRIMARY)
+	if ($prow->author > 0 || $prow->conflict > 0)
+	    $t .= "";
+	else if ($row->reviewType == REVIEW_PRIMARY)
 	    $t .= "Primary";
 	else if ($row->reviewType == REVIEW_SECONDARY)
 	    $t .= "Secondary";
@@ -631,7 +638,7 @@ function reviewersTable($prow, $reviewId = null, $buttons = false) {
 	else if ($row->reviewSubmitted <= 0)
 	    $t .= "In progress";
 	else
-	    $t .= "Submitted";
+	    $t .= "Complete";
 	$t .= "</td>";
 
 	// actions
@@ -654,8 +661,11 @@ function reviewersTable($prow, $reviewId = null, $buttons = false) {
 	    $subrev[] = $t;
     }
     
-    if (!$anyThisReview && $reviewId !== null)
-	$nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Review</b></td><td>" . contactText($Me) . "</td><td></td><td>Not started</td></tr>\n";
+    if (!$anyMyReview && $reviewId !== null)
+	if (!$anyThisReview)
+	    $nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Review</b></td><td>" . contactText($Me) . "</td><td></td><td>Not started</td></tr>\n";
+	else
+	    $nonsubrev[] = "    <tr><td></td><td><a href=\"${ConfSiteBase}review.php?paperId=$prow->paperId\">Enter review</a></td><td>" . contactText($Me) . "</td><td></td><td>Not started</td></tr>\n";
 
     if (count($nonsubrev) || count($subrev))
 	return join("", $subrev) . join("", $nonsubrev);

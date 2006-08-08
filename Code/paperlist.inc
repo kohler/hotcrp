@@ -171,7 +171,7 @@ class PaperList {
 	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_TITLE_REVIEW:
 	    if ($row->reviewId)
-		return "<a href='${ConfSiteBase}review.php?paperId=$row->reviewId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
+		return "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
 	    else
 		return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_STATUS:
@@ -290,7 +290,7 @@ class PaperList {
 
 	// prepare review query
 	$reviewList = array();
-	if ($queryOptions['reviewList']) {
+	if (isset($queryOptions['reviewList'])) {
 	    $result = $Conf->qe("select Paper.paperId, reviewId, reviewType,
 		reviewSubmitted, reviewModified,
 		PaperReview.contactId, lastName, firstName, email

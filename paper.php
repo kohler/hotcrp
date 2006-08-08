@@ -4,6 +4,7 @@ require_once('Code/papertable.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
+$useRequest = false;
 
 
 // header
@@ -123,7 +124,7 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 
     // any missing fields?
     if (count($PaperError) > 0) {
-	$Conf->errorMsg("One or more required fields were left blank.  Fill in those fields and try again." . (isset($PaperError["collaborators"]) ? "  If none of the authors have recent collaborators, just enter \"None\" in the Collaborators field." : ""));
+	$Conf->errorMsg("One or more required fields were left blank.  Fill in the highlighted fields and try again." . (isset($PaperError["collaborators"]) ? "  If none of the authors have recent collaborators, just enter \"None\" in the Collaborators field." : ""));
 	return false;
     }
 
@@ -348,7 +349,7 @@ else if ($newPaper) {
     if ($timeUpdate && $prow->withdrawn > 0)
 	$Conf->infoMsg("Your paper has been withdrawn, but you can still revive it.$updateDeadline");
     else if ($timeUpdate)
-	$Conf->infoMsg("You must officially submit your paper before it can be reviewed.  <strong>This step cannot be undone</strong> and you can't make changes after submitting, so make all necessary changes first.$updateDeadline");
+	$Conf->infoMsg("You must officially submit your paper before it can be reviewed.  <strong>This step cannot be undone</strong> and you can't make changes afterwards, so make all necessary changes first.$updateDeadline");
     else if ($prow->withdrawn <= 0 && $timeSubmit)
 	$Conf->infoMsg("You cannot update your paper since the <a href='deadlines.php'>deadline</a> has passed, but it still must be officially submitted before it can be considered for the conference.$submitDeadline$override");
     else if ($prow->withdrawn <= 0)
@@ -461,7 +462,7 @@ if ($newPaper || $canViewAuthors || $Me->amAssistant())
 if ($newPaper)
     $paperTable->echoNewContactAuthor($Me->amAssistant());
 else if ($canViewAuthors || $Me->amAssistant())
-    $paperTable->echoContactAuthor($prow);
+    $paperTable->echoContactAuthor($prow, $mode == "edit");
 
 
 // Collaborators
@@ -617,12 +618,6 @@ if (!$newPaper && $mode == "reviews" && $prow->reviewCount > 0) {
 </table>\n\n";
 		 $reviewnum++;
 	    }
-
-    } else {
-	echo "<hr/>\n<p>";
-	if ($Me->isPC || $prow->reviewType > 0)
-	    echo plural($nreviews, "review"), " available for paper #$paperId.  ";
-	echo whyNotText($whyNot, "viewreview");
     }
 }
 

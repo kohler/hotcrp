@@ -264,72 +264,14 @@ class Conference {
       //
       // First, check to see if I should have review for requests...
       //
-      $q =  " SELECT ReviewRequest.paperId  "
-	. "  FROM ReviewRequest, Paper "
-	. "  WHERE ReviewRequest.asked=$contactId "
-	. " AND ReviewRequest.paperId=Paper.paperId "
-	. "  AND Paper.withdrawn = 0 "
-	. "  ORDER BY paperId ";
+      $q = "select paperId from PaperReview where contactId=$contactId and reviewType>0 and reviewSubmitted<=0 order by paperId";
 
       $result = $this->qe($q);
-      if ( !DB::isError($result) ) {
-	while($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
-
-	  $thisMissing=1;
-	  $paperId=$row['paperId'];
-	  $q2="SELECT reviewSubmitted, paperId FROM PaperReview "
-	    . " WHERE paperId=$paperId "
-	    . " AND contactId=$contactId "
-	    . " AND reviewSubmitted=1 ";
-	  $r2 = $this->qe($q2);
-	  if (!DB::isError($r2)) {
-
-	    if ( $r2->numRows() > 0) {
-	      $thisMissing = 0;
-	    }
+      if (!DB::isError($result))
+	  while($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
+	      $this->errorMsg("Missing review for paper #" . $row['paperId']);
+	      $missingReviews = 1;
 	  }
-	    
-	  if ($thisMissing ) {
-	    $this->errorMsg("Missing review for paper #"
-			    . $row['paperId']);
-	    $missingReviews=1;
-	  }
-	}
-      }
-
-      //
-      // First, check to see if I have primary requests...
-      //
-      $q =  " select Paper.paperId  "
-	. "  from ReviewRequest join Paper using (paperId) "
-	. "  where ReviewRequest.contactId=$contactId and reviewType=" . REVIEW_PRIMARY . " and Paper.withdrawn <= 0 "
-	. "  order by paperId ";
-
-      $result = $this->qe($q);
-      if ( !DB::isError($result) ) {
-	while($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
-
-	  $thisMissing=1;
-	  $paperId=$row['paperId'];
-	  $q2="SELECT reviewSubmitted FROM PaperReview "
-	    . " WHERE paperId=$paperId "
-	    . " AND contactId=$contactId "
-	    . " AND reviewSubmitted=1 ";
-	  $r2 = $this->qe($q2);
-	  if (DB::isError($r2)) {
-	    if ( $r2 -> numRows() ) {
-	      $thisMissing = 0;
-	    }
-	  }
-	    
-	  if ($thisMissing ) {
-	    $this->errorMsg("Missing review for paper #"
-			    . $row['paperId']);
-	    $missingReviews=1;
-	  }
-	}
-      }
-
       
       return $missingReviews;
     }

@@ -151,6 +151,8 @@ echo "<table class='reviewformtop'>\n\n";
 echo "<tr class='id'>\n  <td class='caption'><h2>Review #", $paperId;
 if ($rrow && $rrow->reviewSubmitted > 0)
     echo unparseReviewOrdinal($rrow->reviewOrdinal);
+else
+    echo "x";
 echo "</h2></td>\n";
 echo "  <td class='entry' colspan='2'><h2>", htmlspecialchars($prow->title), "</h2></td>\n</tr>\n\n";
 
@@ -179,7 +181,7 @@ if (($revTable = reviewersTable($prow, (isset($rrow) ? $rrow->reviewId : -1)))) 
 
 
 // extra space
-echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>&nbsp;</td>\n</tr>\n\n";
+echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><hr class='smgap' /></td>\n</tr>\n\n";
 
 
 // review information

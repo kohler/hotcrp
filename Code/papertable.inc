@@ -184,8 +184,8 @@ Zhang, Ping Yen (INRIA)</pre></td>\n";
 	echo "  ", $this->tdHint('contactAuthor'), "You will be able to add more contact authors after you submit the paper.</td>\n";
     }
 
-    function echoContactAuthor($prow) {
-	global $Conf;
+    function echoContactAuthor($prow, $editMode = null) {
+	global $Conf, $ConfSiteBase;
 	$result = $Conf->qe("select firstName, lastName, email, contactId
 		from ContactInfo
 		join PaperConflict using (contactId)
@@ -202,7 +202,7 @@ Zhang, Ping Yen (INRIA)</pre></td>\n";
 	    }
 	    echo authorTable($aus, false);
 	}
-	if ($this->editable)
+	if ($editMode || ($editMode === null && $this->editable))
 	    echo "<a class='button_small' href='${ConfSiteBase}contactauthors.php?paperId=$prow->paperId'>Edit&nbsp;contact&nbsp;authors</a>";
 	echo "</td>\n</tr>\n\n";
     }

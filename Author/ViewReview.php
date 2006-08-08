@@ -4,7 +4,7 @@ $_SESSION["Me"] -> goIfInvalid("../index.php");
 $_SESSION["Me"] -> goIfNotAuthor("../index.php");
 $Conf -> goIfInvalidActivity("authorViewReviews", "../index.php");
 $Conf -> connect();
-include('../Code/confConfigReview.inc');
+$rf = reviewForm();
 
 if ( $Conf -> validTimeFor('authorViewReviews', 0) ) {
   $type = 'finished';
@@ -26,12 +26,12 @@ if ( $Conf -> validTimeFor('authorViewReviews', 0) ) {
 <body>
 
 <?php 
-if (!IsSet($_REQUEST[paperId]) ) {
+if (!IsSet($_REQUEST["paperId"]) ) {
   $Conf -> errorMsg("You did not specify a paper to modify.");
   exit;
 }
 
-if ( $_SESSION["Me"] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
+if ( $_SESSION["Me"] -> amPaperAuthor($_REQUEST["paperId"], $Conf) ) {
   //
   // Ok, I'm author...
   //
@@ -69,18 +69,18 @@ if ($missingReviews) {
 print "<center>";
 
 $revFin = $Conf->countEntries("paperId",
-			      $_REQUEST[paperId],
+			      $_REQUEST["paperId"],
 			      "PaperReview",
-			      "AND reviewSubmitted=1");
+			      "and reviewSubmitted>0");
 
 $revUnfin = $Conf->countEntries("paperId",
-				$_REQUEST[paperId],
+				$_REQUEST["paperId"],
 				"PaperReview",
-				"AND reviewSubmitted=0");
+				"and reviewSubmitted<=0");
 
 $revReq = $Conf->countEntries("paperId",
-			      $_REQUEST[paperId],
-			      "ReviewRequest");
+			      $_REQUEST["paperId"],
+			      "PaperReview");
 
 $revTot = $revReq;
 
@@ -94,7 +94,7 @@ print "</p>";
 if ( $Conf -> validTimeFor('authorRespondToReviews', 0) ) {
   $Conf->linkWithPaperId("Respond To The Reviewers Comments",
 			 "SubmitResponse.php",
-			 $_REQUEST[paperId]);
+			 $_REQUEST["paperId"]);
 }
 print "</center>";
 
@@ -103,32 +103,25 @@ print "</center>";
 // Print header using dummy review
 //
 
-$Review=ReviewFactory($Conf, $_SESSION["Me"]->contactId, $_REQUEST[paperId]);
-
-if ( ! $Review -> valid ) {
-  $Conf->errorMsg("You've stumbled on to an invalid review? -- contact chair");
-  exit;
-}
-
 print "<center>";
 //
 // Print review header with existing author response only if responses allowed
 //
-if ( $Conf -> validTimeFor('authorRespondToReviews', 0) ) {
-  $Review->printAnonReviewHeader($Conf,1);
-} else {
-  $Review->printAnonReviewHeader($Conf,0);
-}
+//if ( $Conf -> validTimeFor('authorRespondToReviews', 0) ) {
+//  $Review->printAnonReviewHeader($Conf,1);
+//} else {
+//  $Review->printAnonReviewHeader($Conf,0);
+//}
 print "</center>";
 
-$result = $Conf->qe("SELECT PaperReview.contactId, "
+$result = $Conf->qe("select PaperReview.contactId, "
 		    . " PaperReview.reviewId, "
 		    . " ContactInfo.firstName, ContactInfo.lastName, "
 		    . " ContactInfo.email "
-		    . " FROM PaperReview, ContactInfo $latetables "
-		    . " WHERE PaperReview.paperId='$_REQUEST[paperId]'"
-		    . " AND PaperReview.contactId=ContactInfo.contactId"
-		    . " AND PaperReview.finalized=1 $laterestrict "
+		    . " from PaperReview, ContactInfo $latetables "
+		    . " where PaperReview.paperId='" . $_REQUEST["paperId"] . "'"
+		    . " and PaperReview.contactId=ContactInfo.contactId"
+		    . " and PaperReview.reviewSubmitted>0 $laterestrict "
 		    );
 
 if (!DB::isError($result) && $result->numRows() > 0) {
@@ -143,9 +136,9 @@ if (!DB::isError($result) && $result->numRows() > 0) {
     $last=$row['lastName'];
     $email=$row['email'];
 
-    $Review=ReviewFactory($Conf, $reviewer, $_REQUEST[paperId]);
+    $rrow = $Conf->reviewRow(array('reviewId' => $reviewId));
 
-    $lastModified=$Conf->printableTime($Review->reviewFields['timestamp']);
+    $lastModified=$Conf->printableTime($rrow->timestamp);
 
     print "<table width=100%>";
 
@@ -156,18 +149,16 @@ if (!DB::isError($result) && $result->numRows() > 0) {
     }
 
     print "<tr bgcolor=$color>";
-    print "<th> <big> <big> Review #$reviewId For Paper #$_REQUEST[paperId] </big></big> </th>";
+    print "<th> <big> <big> Review #$reviewId For Paper #" . $_REQUEST["paperId"] . " </big></big> </th>";
     print "</tr>";
     print "<tr bgcolor=$color>";
     print "<th> (review last modified $lastModified) </th> </tr>\n";
     
-    print "<tr bgcolor=$color> <td> ";
+    print "<tr bgcolor=$color> <td><table>";
 
-    if ($Review->valid) {
-      $Review -> authorViewReview($Conf);
-    }
+    echo $rf->webDisplayRows($rrow, false);
 
-    print "</td> </tr>";
+    print "</table></td> </tr>";
     $i++;
     print "</table>";
   }
@@ -178,7 +169,7 @@ if ( $Conf -> validTimeFor('authorRespondToReviews', 0) ) {
   print "<center>";
   $Conf->linkWithPaperId("Respond To The Reviewers Comments",
 			 "SubmitResponse.php",
-			 $_REQUEST[paperId]);
+			 $_REQUEST["paperId"]);
   print "</center>";
 }
 

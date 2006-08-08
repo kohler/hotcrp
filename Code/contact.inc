@@ -494,7 +494,7 @@ class Contact {
 		    || ($prow->reviewType > 0 && $conf->timeReviewerViewSubmission()))))
 	    return true;
 	// collect failure reasons
-	if (!$this->isPC && $prow->author <= 0) {
+	if (!$this->isPC && $prow->author <= 0 && $prow->reviewType <= 0) {
 	    $whyNot["permission"] = 1;
 	    return false;
 	}
