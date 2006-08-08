@@ -604,7 +604,7 @@ if (!$newPaper && $mode == "reviews" && $prow->reviewCount > 0) {
 
 <table class='rev'>
   <tr class='id'>
-    <td class='caption'><h3 id='review", chr($reviewnum), "'>Review&nbsp;", chr($reviewnum), "</h3></td>
+    <td class='caption'><h3 id='review", chr($reviewnum), "'>Review&nbsp;#$prow->paperId", chr($reviewnum), "</h3></td>
     <td class='entry' colspan='3'>";
 		if ($Me->canViewReviewerIdentity($prow, $rrow, $Conf))
 		    echo "by <span class='reviewer'>", trim(htmlspecialchars("$rrow->firstName $rrow->lastName")), "</span>";
