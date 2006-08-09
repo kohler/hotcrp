@@ -35,7 +35,7 @@ function loadRows() {
 	errorMsgExit("Select a paper ID above, or <a href='${ConfSiteBase}list.php'>list the papers you can view</a>.");
     if (!(($prow = $Conf->paperRow($sel, $Me->contactId, $whyNot))
 	  && $Me->canViewPaper($prow, $Conf, $whyNot)))
-	errorMsgExit(whyNotText($whyNot, "review"));
+	errorMsgExit(whyNotText($whyNot, "view"));
 
     $rrows = $Conf->reviewRow(array('paperId' => $prow->paperId, 'array' => 1), $whyNot);
     $rrow = null;
@@ -107,17 +107,26 @@ if (isset($_REQUEST['downloadForm']))
     downloadForm();
 
 
+// forceShow
+if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->amAssistant())
+    $forceShow = "&amp;forceShow=1";
+else
+    $forceShow = "";
+
+
 // mode
 $mode = "view";
 if (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "edit")
     $mode = "edit";
 if (!isset($_REQUEST["mode"]) && isset($_REQUEST["reviewId"])
-    && $rrow && $rrow->contactId == $Me->contactId)
+    && $rrow
+    && ($rrow->contactId == $Me->contactId
+	|| ($Me->amAssistant() && ($prow->conflict <= 0 || $forceShow))))
     $mode = "edit";
-if ($mode == "view"
+if ($mode == "view" && $prow->conflict <= 0
     && !$Me->canViewReview($prow, (isset($_REQUEST["reviewId"]) ? $rrow : null), $Conf, $whyNot)) {
     if (isset($whyNot['reviewNotComplete'])) {
-	if (isset($_REQUEST["mode"]) || $whyNot['forceShow'])
+	if (isset($_REQUEST["mode"]) || isset($whyNot['forceShow']))
 	    $Conf->infoMsg(whyNotText($whyNot, "review"));
     } else
 	errorMsgExit(whyNotText($whyNot, "review"));
@@ -154,7 +163,7 @@ echo "  <td class='entry' colspan='2'><h2>", htmlspecialchars($prow->title), "</
 
 
 // paper table
-$canViewAuthors = $Me->canViewAuthors($prow, $Conf, true);
+$canViewAuthors = $Me->canViewAuthors($prow, $Conf, $forceShow);
 $paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->amAssistant());
 
 $paperTable->echoStatusRow($prow, PaperTable::STATUS_DOWNLOAD);
@@ -167,6 +176,131 @@ if ($canViewAuthors || $Me->amAssistant()) {
 $paperTable->echoTopics($prow);
 if ($Me->amAssistant())
     $paperTable->echoPCConflicts($prow);
+
+
+// reviewer information
+function reviewersTable() {
+    global $Conf, $Me, $mode, $prow, $rrows, $rrow, $ConfSiteBase, $forceShow;
+    
+    $subrev = array();
+    $nonsubrev = array();
+    $foundRrow = $foundMyReview = $foundNonsub = 0;
+    $actingConflict = ($prow->conflict > 0 && !$forceShow);
+
+    foreach ($rrows as $rr) {
+	$highlight = ($rrow && $rr->reviewId == $rrow->reviewId);
+	$foundRrow += $highlight;
+	$foundMyReview += ($rr->contactId == $Me->contactId);
+	$foundNonsub += ($rr->reviewSubmitted <= 0);
+	$canView = $Me->canViewReview($prow, $rr, $Conf);
+
+	// skip unsubmitted reviews
+	if (!$canView && $actingConflict)
+	    continue;
+
+	$t = "    <tr>";
+
+	// dingbat
+	if ($rrow || $mode == "edit")
+	    $t .= "<td class='highlight'>" . ($highlight ? "<b>&#187;</b>" : "") . "</td>";
+
+	// review ID
+	$id = "Review";
+	if ($rr->reviewSubmitted > 0)
+	    $id .= "&nbsp;#" . $prow->paperId . unparseReviewOrdinal($rr->reviewOrdinal);
+	if ($rrow && $rrow->reviewId == $rr->reviewId)
+	    $t .= "<td><b>$id</b></td>";
+	else if (!$canView)
+	    $t .= "<td>$id</td>";
+	else if ($mode == "view" && !$rrow && $rr->reviewModified > 0)
+	    $t .= "<td><a href='#review$rr->reviewId'>$id</a></td>";
+	else
+	    $t .= "<td><a href='review.php?reviewId=$rr->reviewId$forceShow'>$id</a></td>";
+
+	// reviewer identity
+	if (!$Me->canViewReviewerIdentity($prow, $rr, $Conf))
+	    $t .= "<td class='rev_empty'></td>";
+	else if ($rr->contactId == $Me->contactId)
+	    $t .= "<td>You</td>";
+	else
+	    $t .= "<td>" . contactText($rr) . "</td>";
+
+	// review type
+	if ($prow->author > 0 || $prow->conflict > 0)
+	    $t .= "<td class='rev_empty'></td>";
+	else if ($rr->reviewType == REVIEW_PRIMARY)
+	    $t .= "<td>Primary</td>";
+	else if ($rr->reviewType == REVIEW_SECONDARY)
+	    $t .= "<td>Secondary</td>";
+	else if ($rr->reviewType == REVIEW_REQUESTED)
+	    $t .= "<td>Requested<br /><small>by " . ($rr->reqContactId == $Me->contactId ? "you" : contactText($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail)) . "</small></td>";
+
+	// status
+	$t .= "<td>";
+	if ($rr->reviewModified <= 0)
+	    $t .= "Not started";
+	else if ($rr->reviewSubmitted <= 0)
+	    $t .= "In progress";
+	else
+	    $t .= "";
+	$t .= "</td>";
+
+	// actions
+	$actions = array();
+	if ($rr->reviewType == REVIEW_REQUESTED
+	    && $rr->reviewModified <= 0
+	    && ($rr->requestedBy == $Me->contactId || $Me->amAssistant())) {
+	    $actions[] = "<a class='button_small' href=\"${ConfSiteBase}reqreview.php?paperId=$prow->paperId&amp;retract=$rr->reviewId$forceShow\">Retract review request</a>";
+	    $nRetractable++;
+	}
+	if (count($actions) > 0 && $buttons)
+	    $t .= "<td>" . join("", $actions) . "</td>";
+
+	$t .= "</tr>\n";
+
+	// affix
+	if ($rr->reviewSubmitted <= 0)
+	    $nonsubrev[] = $t;
+	else
+	    $subrev[] = $t;
+    }
+
+    // bottom links
+    // edit your own review
+    if ($mode == "edit" && !$rrow)
+	$nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Enter&nbsp;review</b></td><td>You</td><td class='rev_empty'></td><td>Not started</td></tr>\n";
+    else if ($mode == "edit" && !$foundMyReview && $Me->canReview($prow, null, $Conf))
+	$nonsubrev[] = "    <tr><td></td><td><a href='review.php?paperId=$prow->paperId&amp;mode=edit$forceShow'>Enter&nbsp;review</a></td><td>You</td><td class='rev_empty'></td><td>Not started</td></tr>\n";
+
+    // unfinished review notification
+    if ($prow->author > 0 && !$forceShow && $foundNonsub) {
+	$t = ($mode == "edit" || $rrow ? "<td></td>" : "");
+	$t .= "<td colspan='4'>";
+	if ($foundNonsub == 1)
+	    $t .= "1 additional review was requested, but has not been submitted yet.  ";
+	else
+	    $t .= "$foundNonsub additional reviews were requested, but have not been submitted yet.  ";
+	$t .= "You will be emailed when additional reviews are submitted and if any existing reviews are changed.</td>";
+	$nonsubrev[] = "    <tr>$t</tr>\n";
+    }
+    
+    // see all reviews
+    if (($mode == "view" && $rrow && $Me->canViewReview($prow, $rrow, $Conf))
+	|| ($mode == "edit" && $Me->canViewReview($prow, null, $Conf)))
+	$nonsubrev[] = "    <tr><td></td><td colspan='4'><a href='review.php?paperId=$prow->paperId&amp;mode=view$forceShow'>View all reviews on one page</a></td></tr>\n";
+
+    // forceShow
+    if ($prow->conflict > 0 && $Me->amAssistant() && !$forceShow) {
+	$t = ($mode == "edit" || $rrow ? "<td></td>" : "");
+	$nonsubrev[] = "    <tr>$t<td colspan='4'><a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\"><b>Override conflict</b> to show reviewer identities and allow editing</a></td>\n";
+    }
+    
+    // completion
+    if (count($nonsubrev) || count($subrev))
+	return join("", $subrev) . join("", $nonsubrev);
+    else
+	return "";
+}
 
 
 // reviewer information
@@ -187,11 +321,11 @@ echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></
 </table>\n\n";
 
 
-//if ($rrow && $rrow->reviewSubmitted > 0)
-//    echo unparseReviewOrdinal($rrow->reviewOrdinal);
-//else
-//    echo "x";
-//echo "</h2></td>\n";
+// exit on certain errors
+if ($mode == "view" && !$Me->canViewReview($prow, (isset($_REQUEST["reviewId"]) ? $rrow : null), $Conf)) {
+    echo "<div class='gapbottom'></div>\n";
+    errorMsgExit("");
+}
 
 
 // review information
@@ -199,7 +333,7 @@ echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></
 // XXX "<td class='entry'>", htmlspecialchars(contactText($rrow)), "</td>"
 
 function reviewView($prow, $rrow, $editMode) {
-    global $Conf, $Me, $rf;
+    global $Conf, $Me, $rf, $forceShow;
     
     echo "<div class='gap'></div>
 
@@ -247,9 +381,7 @@ function reviewView($prow, $rrow, $editMode) {
 	    echo "reviewId=$rrow->reviewId";
 	else
 	    echo "paperId=$prow->paperId";
-	if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'])
-	    echo "&amp;forceShow=1";
-	echo "&amp;post=1' method='post' enctype='multipart/form-data'>\n";
+	echo "$forceShow&amp;post=1' method='post' enctype='multipart/form-data'>\n";
 	echo "<table class='reviewform'>\n";
 
 	// form body

@@ -77,8 +77,8 @@ function fileUploaded(&$var, $conf) {
 function selfHref($extra = array()) {
     $x = $_SERVER["PHP_SELF"];
     $sep = "?";
-    foreach (array("paperId", "reviewId", "list", "mode", "validator") as $what)
-	if (isset($_REQUEST[$what])) {
+    foreach (array("paperId", "reviewId", "list", "mode", "forceShow", "validator") as $what)
+	if (isset($_REQUEST[$what]) && !isset($extra[$what])) {
 	    $x .= "$sep$what=" . urlencode($_REQUEST[$what]);
 	    $sep = "&";
 	}
@@ -485,7 +485,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['reviewNotComplete']))
 	$text .= "Your own review for $thisPaper is not complete, so you can't view other people's reviews.  ";
     if (isset($whyNot['reviewNotAssigned']))
-	$text .= "You have not been assigned to review $thisPaper.  ";
+	$text .= "You are not assigned to review $thisPaper.  ";
     if (isset($whyNot['differentReviewer']))
 	$text .= "You didn't write this review, so you can't change it.  ";
     // finish it off
@@ -588,108 +588,6 @@ function unparseReviewOrdinal($ord) {
 	return chr($ord + 65);
     else
 	return chr(intval($ord / 26) + 65) . chr(($ord % 26) + 65);
-}
-
-function reviewersTable($prow, $reviewId = null, $all = false, $buttons = false) {
-    global $Conf, $Me, $ConfSiteBase;
-    
-    $result = $Conf->qe("select ContactInfo.contactId, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
-		ReqContactInfo.contactId as reqContactId, ReqContactInfo.firstName as reqFirstName, ReqContactInfo.lastName as reqLastName, ReqContactInfo.email as reqEmail,
-		reviewId, reviewType, reviewModified, reviewSubmitted
-		from PaperReview
-		join ContactInfo using (contactId)
-		left join ContactInfo as ReqContactInfo on (ReqContactInfo.contactId=PaperReview.requestedBy)
-		where paperId=$prow->paperId
-		order by reviewSubmitted, reviewType desc, lastName, firstName, email");
-    if (DB::isError($result))
-	return "";
-    
-    $subrev = array();
-    $nonsubrev = array();
-    $ordinal = 0;
-    $anyThisReview = $anyMyReview = 0;
-    $nRetractable = 0;
-    $link = ($Me->canViewReview($prow, null, $Conf) || $Me->amAssistant());
-    
-    while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
-	// review ID
-	$t = "    <tr>";
-
-	// dingbat
-	$thisReview = ($reviewId == $row->reviewId);
-	$anyThisReview += $thisReview;
-	$anyMyReview += ($row->contactId == $Me->contactId);
-	if ($reviewId !== null)
-	    $t .= ($thisReview ? "<td class='highlight'><b>&#187;</b></td>" : "<td></td>");
-
-	// review ID
-	$t .= "<td>" . ($thisReview ? "<b>" : ($link ? "<a href='review.php?reviewId=$row->reviewId'>" : ""));
-	$t .= "Review";
-	if ($row->reviewSubmitted > 0)
-	    $t .= " #$prow->paperId" . unparseReviewOrdinal($ordinal++);
-	$t .= ($thisReview ? "</b>" : ($link ? "</a>" : ""));
-	$t .= "</td>";
-
-	// reviewer
-	if (!$Me->canViewReviewerIdentity($prow, $row, $Conf))
-	    $t .= "<td></td>";
-	else if ($row->contactId == $Me->contactId)
-	    $t .= "<td>You</td>";
-	else
-	    $t .= "<td>" . contactText($row) . "</td>";
-
-	// review type
-	$t .= "<td>";
-	if ($prow->author > 0 || $prow->conflict > 0)
-	    $t .= "";
-	else if ($row->reviewType == REVIEW_PRIMARY)
-	    $t .= "Primary";
-	else if ($row->reviewType == REVIEW_SECONDARY)
-	    $t .= "Secondary";
-	else if ($row->reviewType == REVIEW_REQUESTED)
-	    $t .= "Requested by " . ($row->reqContactId == $Me->contactId ? "you" : contactText($row->reqFirstName, $row->reqLastName, $row->reqEmail));
-	$t .= "</td>";
-
-	// status
-	$t .= "<td>";
-	if ($row->reviewModified <= 0)
-	    $t .= "Not started";
-	else if ($row->reviewSubmitted <= 0)
-	    $t .= "In progress";
-	else
-	    $t .= "Complete";
-	$t .= "</td>";
-
-	// actions
-	$actions = array();
-	if ($row->reviewType == REVIEW_REQUESTED
-	    && $row->reviewModified <= 0
-	    && ($row->requestedBy == $Me->contactId || $Me->amAssistant())) {
-	    $actions[] = "<a class='button_small' href=\"${ConfSiteBase}reqreview.php?paperId=$prow->paperId&amp;retract=$row->reviewId\">Retract review request</a>";
-	    $nRetractable++;
-	}
-	if (count($actions) > 0 && $buttons)
-	    $t .= "<td>" . join("", $actions) . "</td>";
-
-	$t .= "</tr>\n";
-
-	// affix
-	if ($row->reviewSubmitted <= 0)
-	    $nonsubrev[] = $t;
-	else
-	    $subrev[] = $t;
-    }
-    
-    if (!$anyMyReview && $reviewId !== null)
-	if (!$anyThisReview)
-	    $nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Enter review</b></td><td>" . contactText($Me) . "</td><td></td><td>Not started</td></tr>\n";
-	else
-	    $nonsubrev[] = "    <tr><td></td><td><a href=\"${ConfSiteBase}review.php?paperId=$prow->paperId&amp;mode=edit\">Enter review</a></td><td>" . contactText($Me) . "</td><td></td><td>Not started</td></tr>\n";
-
-    if (count($nonsubrev) || count($subrev))
-	return join("", $subrev) . join("", $nonsubrev);
-    else
-	return "";
 }
 
 function downloadText($text, $filename, $description) {

@@ -363,7 +363,7 @@ class Conference {
 	return true;
     }
     function timePCViewAllReviews() {
-	return $this->validPeriod("PCMeeting") > 0;
+	return $this->validPeriod("PCMeetingView") > 0;
     }
     function timeReviewerViewSubmission() {
 	return true;
@@ -891,10 +891,13 @@ class Conference {
 	    }
 	}
 	
-	$q = "select PaperReview.*, firstName, lastName, email,
+	$q = "select PaperReview.*,
+		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
+		ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail,
 		count(PRS.reviewId) as reviewOrdinal
 		from PaperReview
 		join ContactInfo using (contactId)
+		left join ContactInfo as ReqCI on (ReqCI.contactId=PaperReview.requestedBy)
 		left join PaperReview as PRS on (PaperReview.paperId=PRS.paperId and PRS.reviewSubmitted>0 and PRS.reviewSubmitted<PaperReview.reviewSubmitted)\n";
 
 	$where = array();
@@ -913,7 +916,7 @@ class Conference {
 	    return null;
 	}
 
-	$q = $q . " where " . join(" and ", $where) . " group by PaperReview.reviewId order by paperId, reviewSubmitted";
+	$q = $q . " where " . join(" and ", $where) . " group by PaperReview.reviewId order by paperId, reviewSubmitted, reviewType desc, reviewId";
 
 	$result = $this->q($q);
 	if (DB::isError($result)) {

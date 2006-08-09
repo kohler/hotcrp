@@ -543,12 +543,15 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, $type)))
 	    return false;
 	// policy
-	if (($prow->author > 0 && $conf->timeAuthorViewReviews())
-	    || ($this->amAssistant() && ($prow->conflict <= 0 || (isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])))
-	    || ($this->isPC && $prow->conflict <= 0
+	$rrsub = (!$rrow || $rrow->reviewSubmitted > 0);
+	if (($prow->author > 0 && $conf->timeAuthorViewReviews() && $rrsub)
+	    || ($this->amAssistant()
+		&& (($prow->conflict <= 0 && $rrsub)
+		    || (isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])))
+	    || ($this->isPC && $prow->conflict <= 0 && $rrsub
 		&& ($conf->timePCViewAllReviews()
 		    || (isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0)))
-	    || ($prow->reviewType > 0
+	    || ($prow->reviewType > 0 && $rrsub
 		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0)
 	    || ($rrow && $rrow->paperId == $prow->paperId
 		&& $rrow->contactId == $this->contactId))
