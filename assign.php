@@ -1,6 +1,7 @@
 <?php 
 require_once('Code/confHeader.inc');
 require_once('Code/papertable.inc');
+require_once('Code/reviewtable.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
@@ -8,9 +9,9 @@ $Me->goIfInvalid();
 
 // header
 function confHeader() {
-    global $paperId, $prow, $Conf;
-    $title = ($paperId > 0 ? "Paper #$paperId Review Requests" : "Paper Review Requests");
-    $Conf->header($title, "revreq", actionBar($prow, false, "Review requests", "${ConfSiteBase}reqreview.php?paperId=$paperId"));
+    global $prow, $Conf, $ConfSiteBase;
+    $title = ($prow ? "Paper #$prow->paperId Review Requests" : "Paper Review Requests");
+    $Conf->header($title, "revreq", actionBar($prow, false, "Review requests", "${ConfSiteBase}reqreview.php?paperId=" . ($prow ? $prow->paperId : -1)));
 }
 
 function errorMsgExit($msg) {
@@ -20,19 +21,22 @@ function errorMsgExit($msg) {
 }
 
 
-// collect paper ID
-$paperId = cvtint($_REQUEST["paperId"]);
-
 // grab paper row
-$prow = null;
-function getProw($contactId) {
-    global $prow, $paperId, $Conf, $Me;
-    if (!($prow = $Conf->paperRow($paperId, $contactId, $whyNot))
-	|| !$Me->canReview($prow, null, $Conf, $whyNot))
+function getProw() {
+    global $prow, $rrows, $Conf, $Me;
+    if (!(($prow = $Conf->paperRow(cvtint($_REQUEST["paperId"]), $Me->contactId, $whyNot))
+	  && $Me->canReview($prow, null, $Conf, $whyNot)))
 	errorMsgExit(whyNotText($whyNot, "review"));
+    $rrows = $Conf->reviewRow(array('paperId' => $prow->paperId, 'array' => 1), $whyNot);
 }
+getProw();
 
-getProw($Me->contactId);
+
+// forceShow
+if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->amAssistant())
+    $forceShow = "&amp;forceShow=1";
+else
+    $forceShow = "";
 
 
 confHeader();
@@ -121,13 +125,14 @@ if (isset($_REQUEST['add'])) {
     else {
 	requestReview($email);
 	$Conf->qe("unlock tables");
+	getProw();
     }
 }
 
 
 // retract review request
 
-function retractRequest($reviewId, $paperId) {
+function retractRequest($reviewId) {
     global $Conf, $Me, $prow;
     
     $while = "while retracting review request";
@@ -146,7 +151,7 @@ function retractRequest($reviewId, $paperId) {
 	return $Conf->errorMsg("No such review request.");
 
     $row = $result->fetchRow(DB_FETCHMODE_OBJECT);
-    if ($row->paperId != $paperId)
+    if ($row->paperId != $prow->paperId)
 	return $Conf->errorMsg("Weird!  Retracted review is for a different paper.");
     else if ($row->reviewModified > 0)
 	return $Conf->errorMsg("You can't retract that review request since the reviewer has already started their review.");
@@ -175,17 +180,17 @@ Thank you,
 }
 
 if (isset($_REQUEST['retract']) && ($retract = cvtint($_REQUEST['retract'])) > 0) {
-    retractRequest($retract, $paperId);
+    retractRequest($retract, $prow->paperId);
     $Conf->qe("unlock tables");
+    getProw();
 }
 
 // begin table
-echo "<form action='reqreview.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>\n";
-echo "<table class='reviewformtop'>\n\n";
+echo "<table class='review'>\n\n";
 
 
 // title
-echo "<tr class='id'>\n  <td class='caption'><h2>#", $paperId, "</h2></td>\n";
+echo "<tr class='id'>\n  <td class='caption'><h2>#", $prow->paperId, "</h2></td>\n";
 echo "  <td class='entry' colspan='2'><h2>", htmlspecialchars($prow->title), "</h2></td>\n</tr>\n\n";
 
 
@@ -204,23 +209,29 @@ $paperTable->echoTopics($prow);
 
 
 // reviewer information
-if (($revTable = reviewersTable($prow, null, true))) {
-    echo "<tr class='rev_reviewers'>\n";
-    echo "  <td class='caption'>Reviewers</td>\n";
-    echo "  <td class='entry'><table class='reviewers'>\n", $revTable;
-    if ($Me->canRequestReview($prow, $Conf)) {
-	echo "    <tr><td colspan='4'>
-	<input class='textlite' type='text' name='name' value='Name' onfocus=\"tempText(this, 'Name', 1)\" onblur=\"tempText(this, 'Name', 0)\" />
-	<input class='textlite' type='text' name='email' value='Email' onfocus=\"tempText(this, 'Email', 1)\" onblur=\"tempText(this, 'Email', 0)\" />
+$revTable = reviewTable($prow, $rrows, null, "req");
+$revTableClass = (preg_match("/<th/", $revTable) ? "rev_reviewers_hdr" : "rev_reviewers");
+echo "<tr class='", $revTableClass, "'>\n";
+echo "  <td class='caption'>Reviews</td>\n";
+echo "  <td class='entry'>", ($revTable ? $revTable : "None");
+if ($Me->canRequestReview($prow, $Conf, $whyNot) || isset($whyNot['override'])) {
+    echo "  <form action='reqreview.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>
+    <table class='reviewers'><tr>
+      <td>
+	<input class='textlite' type='text' name='name' value=\"";
+    echo (isset($_REQUEST['name']) ? htmlspecialchars($_REQUEST['name']) : "Name");
+    echo "\" onfocus=\"tempText(this, 'Name', 1)\" onblur=\"tempText(this, 'Name', 0)\" />
+	<input class='textlite' type='text' name='email' value=\"";
+    echo (isset($_REQUEST['email']) ? htmlspecialchars($_REQUEST['email']) : "Email");
+    echo "\" onfocus=\"tempText(this, 'Email', 1)\" onblur=\"tempText(this, 'Email', 0)\" />
       </td>
       <td><input class='button_small' type='submit' name='add' value='Request an external review' />";
-	if ($Me->amAssistant())
-	    echo "<br />\n	<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines and any previous refusal";
-	echo "\n    </td></tr>\n";
-    }
-    echo "  </table></td>\n";
-    echo "</tr>\n\n";
+    if ($Me->amAssistant())
+	echo "<br />\n	<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines and any previous refusal";
+    echo "\n      </td>\n    </tr></table>
+  </form>";
 }
+echo "</td>\n</tr>\n\n";
 
 
 // close this table

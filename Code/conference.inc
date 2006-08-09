@@ -836,19 +836,19 @@ class Conference {
 	return $pq . "\n";
     }
 
-    function paperRow($selector, $contactId = -1, &$whyNot = null) {
+    function paperRow($sel, $contactId = -1, &$whyNot = null) {
 	$whyNot = array();
-	if (!is_array($selector)) {
-	    $whyNot['paperId'] = $selector;
-	    $selector = array('paperId' => $selector);
+	if (!is_array($sel)) {
+	    $whyNot['paperId'] = $sel;
+	    $sel = array('paperId' => $sel);
 	}
 	
-	if (isset($selector['paperId']) && cvtint($selector['paperId']) < 0)
+	if (isset($sel['paperId']) && cvtint($sel['paperId']) < 0)
 	    $whyNot['invalidId'] = 'paper';
-	else if (isset($selector['reviewId']) && cvtint($selector['reviewId']) < 0)
+	else if (isset($sel['reviewId']) && cvtint($sel['reviewId']) < 0)
 	    $whyNot['invalidId'] = 'review';
 	else {
-	    $q = $this->paperQuery($contactId, $selector);
+	    $q = $this->paperQuery($contactId, $sel);
 	    $result = $this->q($q);
 	    
 	    if (DB::isError($result))

@@ -583,7 +583,7 @@ class Contact {
 	if ($prow->reviewType < REVIEW_SECONDARY)
 	    $whyNot['permission'] = 1;
 	else {
-	    $whyNot['deadline'] = ($Me->isPC ? "PCSubmitReviewDeadline" : "reviewerSubmitReviewDeadline");
+	    $whyNot['deadline'] = ($this->isPC ? "PCSubmitReviewDeadline" : "reviewerSubmitReviewDeadline");
 	    if ($this->amAssistant())
 		$whyNot['override'] = 1;
 	}
@@ -609,7 +609,7 @@ class Contact {
 	// collect failure reasons
 	if ($rrow && $rrow->contactId != $this->contactId && !$this->amAssistant())
 	    $whyNot['differentReviewer'] = 1;
-	if (!$this->isPC && $prow->reviewType <= 0)
+	else if (!$this->isPC && $prow->reviewType <= 0)
 	    $whyNot['permission'] = 1;
 	else if ($prow->withdrawn > 0)
 	    $whyNot['withdrawn'] = 1;
@@ -621,7 +621,7 @@ class Contact {
 	    else if ($this->isPC && $prow->reviewType <= 0 && !$conf->timeReviewPaper(true, false, true))
 		$whyNot['reviewNotAssigned'] = 1;
 	    else
-		$whyNot['deadline'] = ($Me->isPC ? "PCSubmitReviewDeadline" : "reviewerSubmitReviewDeadline");
+		$whyNot['deadline'] = ($this->isPC ? "PCSubmitReviewDeadline" : "reviewerSubmitReviewDeadline");
 	    if ($this->amAssistant() && $prow->conflict > 0)
 		$whyNot['chairMode'] = 1;
 	    if ($this->amAssistant() && isset($whyNot['deadline']))

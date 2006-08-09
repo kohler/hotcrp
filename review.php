@@ -1,6 +1,7 @@
 <?php 
 require_once('Code/confHeader.inc');
 require_once('Code/papertable.inc');
+require_once('Code/reviewtable.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
@@ -26,7 +27,7 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $ConfSiteBase, $prow, $rrows, $rrow;
+    global $Conf, $Me, $ConfSiteBase, $prow, $rrows, $rrow, $editRrow;
     if (isset($_REQUEST["reviewId"]))
 	$sel = array("reviewId" => $_REQUEST["reviewId"]);
     else if (isset($_REQUEST["paperId"]))
@@ -38,12 +39,16 @@ function loadRows() {
 	errorMsgExit(whyNotText($whyNot, "view"));
 
     $rrows = $Conf->reviewRow(array('paperId' => $prow->paperId, 'array' => 1), $whyNot);
-    $rrow = null;
-    foreach ($rrows as $rr)
-	if (isset($_REQUEST['reviewId']) ? $rr->reviewId == $_REQUEST['reviewId'] : $rr->contactId == $Me->contactId)
+    $rrow = $myRrow = null;
+    foreach ($rrows as $rr) {
+	if (isset($_REQUEST['reviewId']) && $rr->reviewId == $_REQUEST['reviewId'])
 	    $rrow = $rr;
+	if ($rr->contactId == $Me->contactId)
+	    $myRrow = $rr;
+    }
     if (isset($_REQUEST['reviewId']) && !$rrow)
 	errorMsgExit("That review no longer exists.");
+    $editRrow = ($rrow ? $rrow : $myRrow);
 }
 loadRows();
 
@@ -62,10 +67,10 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 	/* error already reported */;
     else if ($req['paperId'] != $prow->paperId)
 	$tf['err'][] = $tf['firstLineno'] . ": This review form is for paper #" . $req['paperId'] . ", not paper #$prow->paperId; did you mean to upload it here?  I have ignored the form.  <a class='button_small' href='${ConfSiteBase}review.php?paperId=" . $req['paperId'] . "'>Review paper #" . $req['paperId'] . "</a> <a class='button_small' href='${ConfSiteBase}uploadreview.php'>General review upload site</a>";
-    else if (!$Me->canSubmitReview($prow, $rrow, $Conf, $whyNot))
+    else if (!$Me->canSubmitReview($prow, $editRrow, $Conf, $whyNot))
 	$tf['err'][] = $tf['firstLineno'] . ": " . whyNotText($whyNot, "review");
-    else if ($rf->checkRequestFields($req, $rrow, $tf)) {
-	$result = $rf->saveRequest($req, $rrow, $prow, $Me->contactId);
+    else if ($rf->checkRequestFields($req, $editRrow, $tf)) {
+	$result = $rf->saveRequest($req, $editRrow, $prow, $Me->contactId);
 	if (!DB::isError($result))
 	    $tf['confirm'][] = "Uploaded review for paper #$prow->paperId.";
     }
@@ -81,10 +86,10 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 
 // update review action
 if (isset($_REQUEST['update']) || isset($_REQUEST['submit']))
-    if (!$Me->canSubmitReview($prow, $rrow, $Conf, $whyNot))
+    if (!$Me->canSubmitReview($prow, $editRrow, $Conf, $whyNot))
 	$Conf->errorMsg(whyNotText($whyNot, "review"));
-    else if ($rf->checkRequestFields($_REQUEST, $rrow)) {
-	$result = $rf->saveRequest($_REQUEST, $rrow, $prow, $Me->contactId);
+    else if ($rf->checkRequestFields($_REQUEST, $editRrow)) {
+	$result = $rf->saveRequest($_REQUEST, $editRrow, $prow, $Me->contactId);
 	if (!DB::isError($result))
 	    $Conf->confirmMsg(isset($_REQUEST['submit']) ? "Review submitted." : "Review saved.");
 	loadRows();
@@ -93,11 +98,11 @@ if (isset($_REQUEST['update']) || isset($_REQUEST['submit']))
 
 // download review form action
 function downloadForm() {
-    global $rf, $Conf, $Me, $prow, $rrow, $rrows;
-    if (!$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
+    global $rf, $Conf, $Me, $prow, $editRrow, $rrows, $myRrow;
+    if (!$Me->canViewReview($prow, $editRrow, $Conf, $whyNot))
 	return $Conf->errorMsg(whyNotText($whyNot, "review"));
     $text = $rf->textFormHeader($Conf)
-	. $rf->textForm($prow, $rrow, $Conf,
+	. $rf->textForm($prow, $editRrow, $Conf,
 			($prow->reviewType > 0 ? $_REQUEST : null),
 			$Me->canViewAllReviewFields($prow, $Conf)) . "\n";
     downloadText($text, $Conf->downloadPrefix . "review-" . $prow->paperId . ".txt", "review form");
@@ -116,25 +121,28 @@ else
 
 // mode
 $mode = "view";
+// first set mode
 if (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "edit")
     $mode = "edit";
-if (!isset($_REQUEST["mode"]) && isset($_REQUEST["reviewId"])
-    && $rrow
-    && ($rrow->contactId == $Me->contactId
-	|| ($Me->amAssistant() && ($prow->conflict <= 0 || $forceShow))))
+else if (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "view")
+    $mode = "view";
+else if ($prow->conflict <= 0 && !$Me->canViewReview($prow, $rrow, $Conf))
     $mode = "edit";
+else if ($rrow && ($Me->canReview($prow, $rrow, $Conf)
+		   || ($Me->amAssistant() && ($prow->conflict <= 0 || $forceShow))))
+    $mode = "edit";
+else
+    $mode = "view";
+// then fix impossible modes
 if ($mode == "view" && $prow->conflict <= 0
-    && !$Me->canViewReview($prow, (isset($_REQUEST["reviewId"]) ? $rrow : null), $Conf, $whyNot)) {
+    && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot)) {
     if (isset($whyNot['reviewNotComplete'])) {
 	if (isset($_REQUEST["mode"]) || isset($whyNot['forceShow']))
 	    $Conf->infoMsg(whyNotText($whyNot, "review"));
     } else
 	errorMsgExit(whyNotText($whyNot, "review"));
     $mode = "edit";
-    $rrow = null;
-    foreach ($rrows as $rr)
-	if ($rr->contactId == $Me->contactId)
-	    $rrow = $rr;
+    $rrow = $myRrow;
 }
 if ($mode == "edit" && !$Me->canReview($prow, $rrow, $Conf, $whyNot)) {
     $Conf->errorMsg(whyNotText($whyNot, "review"));
@@ -179,148 +187,7 @@ if ($Me->amAssistant())
 
 
 // reviewer information
-function reviewersTable() {
-    global $ConfSiteBase, $Conf, $Me, $mode, $prow, $rrows, $rrow, $rf, $forceShow;
-    
-    $subrev = array();
-    $nonsubrev = array();
-    $foundRrow = $foundMyReview = $foundNonsub = 0;
-    $actingConflict = ($prow->conflict > 0 && !$forceShow);
-    $anyScores = false;
-
-    // actual rows
-    foreach ($rrows as $rr) {
-	$highlight = ($rrow && $rr->reviewId == $rrow->reviewId);
-	$foundRrow += $highlight;
-	$foundMyReview += ($rr->contactId == $Me->contactId);
-	$foundNonsub += ($rr->reviewSubmitted <= 0);
-	$canView = $Me->canViewReview($prow, $rr, $Conf);
-
-	// skip unsubmitted reviews
-	if (!$canView && $actingConflict)
-	    continue;
-
-	$t = "    <tr>";
-
-	// dingbat
-	if ($rrow || $mode == "edit")
-	    $t .= "<td class='highlight'>" . ($highlight ? "<b>&#187;</b>" : "") . "</td>";
-
-	// review ID
-	$id = "Review";
-	if ($rr->reviewSubmitted > 0)
-	    $id .= "&nbsp;#" . $prow->paperId . unparseReviewOrdinal($rr->reviewOrdinal);
-	if ($rrow && $rrow->reviewId == $rr->reviewId)
-	    $t .= "<td><b>$id</b></td>";
-	else if (!$canView)
-	    $t .= "<td>$id</td>";
-	else
-	    $t .= "<td><a href='review.php?reviewId=$rr->reviewId$forceShow'>$id</a></td>";
-
-	// reviewer identity
-	if (!$Me->canViewReviewerIdentity($prow, $rr, $Conf))
-	    $t .= "<td class='empty'></td>";
-	else if ($rr->contactId == $Me->contactId)
-	    $t .= "<td>You</td>";
-	else
-	    $t .= "<td>" . contactText($rr) . "</td>";
-
-	// review type
-	if ($prow->author > 0 || $prow->conflict > 0)
-	    $t .= "<td class='empty'></td>";
-	else if ($rr->reviewType == REVIEW_PRIMARY)
-	    $t .= "<td>Primary</td>";
-	else if ($rr->reviewType == REVIEW_SECONDARY)
-	    $t .= "<td>Secondary</td>";
-	else if ($rr->reviewType == REVIEW_REQUESTED)
-	    $t .= "<td>Requested<br /><small>by " . ($rr->reqContactId == $Me->contactId ? "you" : contactText($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail)) . "</small></td>";
-
-	// status
-	if ($rr->reviewModified <= 0)
-	    $t .= "<td>Not started</td>";
-	else if ($rr->reviewSubmitted <= 0)
-	    $t .= "<td>In progress</td>";
-	else
-	    $t .= "<td class='empty'></td>";
-
-	// scores
-	$t .= $rf->webNumericScoresRow($rr, $prow, $Me, $Conf, $anyScores);
-
-	// actions
-	$actions = array();
-	if ($rr->reviewType == REVIEW_REQUESTED
-	    && $rr->reviewModified <= 0
-	    && ($rr->requestedBy == $Me->contactId || $Me->amAssistant())) {
-	    $actions[] = "<a class='button_small' href=\"${ConfSiteBase}reqreview.php?paperId=$prow->paperId&amp;retract=$rr->reviewId$forceShow\">Retract review request</a>";
-	    $nRetractable++;
-	}
-	if (count($actions) > 0 && $buttons)
-	    $t .= "<td>" . join("", $actions) . "</td>";
-
-	$t .= "</tr>\n";
-
-	// affix
-	if ($rr->reviewSubmitted <= 0)
-	    $nonsubrev[] = $t;
-	else
-	    $subrev[] = $t;
-    }
-
-    // bottom links
-    // edit your own review
-    if ($mode == "edit" && !$rrow)
-	$nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Enter&nbsp;review</b></td><td>You</td><td class='empty'></td><td>Not started</td></tr>\n";
-    else if ($mode == "edit" && !$foundMyReview && $Me->canReview($prow, null, $Conf))
-	$nonsubrev[] = "    <tr><td></td><td><a href='review.php?paperId=$prow->paperId&amp;mode=edit$forceShow'>Enter&nbsp;review</a></td><td>You</td><td class='empty'></td><td>Not started</td></tr>\n";
-
-    // headers
-    $numericHeaders = "";
-    if ($anyScores) {
-	$t = ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "");
-	$numericHeaders = "    <tr>$t<td class='empty' colspan='4'></td>" . $rf->webNumericScoresHeader($prow, $Me, $Conf) . "</tr>\n";
-    }
-    
-    // see all reviews
-    if (($mode == "view" && isset($_REQUEST['reviewId']) && $Me->canViewReview($prow, null, $Conf))
-	|| ($mode == "edit" && $Me->canViewReview($prow, null, $Conf))) {
-	$t = "    <tr>" . ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "") . "<td colspan='";
-	$t .= ($anyScores ? 4 + $rf->numNumericScores($prow, $Me, $Conf) : 4);
-	$t .= "'><a href='review.php?paperId=$prow->paperId&amp;mode=view$forceShow'>View all reviews on one page</a></td></tr>\n";
-	$nonsubrev[] = $t;
-    }
-    
-    // completion
-    if (count($nonsubrev) || count($subrev))
-	$result = "<table class='reviewers'>\n" . $numericHeaders
-		     . join("", $subrev) . join("", $nonsubrev)
-		     . "  </table>\n";
-    else
-	$result = "";
-
-    // unfinished review notification
-    $notes = array();
-    if ($prow->author > 0 && !$forceShow && $foundNonsub) {
-	if ($foundNonsub == 1)
-	    $t = "1 additional review was requested, but has not been submitted yet.  ";
-	else
-	    $t = "$foundNonsub additional reviews were requested, but have not been submitted yet.  ";
-	$t .= "You will be emailed when additional reviews are submitted and if any existing reviews are changed.";
-	$notes[] = $t;
-    }
-
-    // forceShow
-    if ($prow->conflict > 0 && $Me->amAssistant() && !$forceShow)
-	$notes[] = "<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\"><b>Override your conflict</b> to show reviewer identities and allow editing</a>";
-
-    if (count($notes))
-	$result .= "<div class='reviewersbot'>" . join("<br />\n", $notes) . "</div>";
-
-    return $result;
-}
-// <table class='reviewers'>\n", $revTable, "  </table></td>\n";
-
-// reviewer information
-$revTable = reviewersTable($prow, (isset($rrow) ? $rrow->reviewId : -1));
+$revTable = reviewTable($prow, $rrows, $rrow, $mode);
 $revTableClass = (preg_match("/<th/", $revTable) ? "rev_reviewers_hdr" : "rev_reviewers");
 echo "<tr class='", $revTableClass, "'>\n";
 echo "  <td class='caption'>Reviews</td>\n";
@@ -338,7 +205,7 @@ echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></
 
 
 // exit on certain errors
-if ($mode == "view" && !$Me->canViewReview($prow, (isset($_REQUEST["reviewId"]) ? $rrow : null), $Conf)) {
+if ($mode == "view" && !$Me->canViewReview($prow, $rrow, $Conf)) {
     echo "<div class='gapbottom'></div>\n";
     errorMsgExit("");
 }
@@ -434,7 +301,7 @@ function reviewView($prow, $rrow, $editMode) {
 }
 
 
-if ($mode == "view" && !isset($_REQUEST["reviewId"])) {
+if ($mode == "view" && !$rrow) {
     foreach ($rrows as $rr)
 	if ($rr->reviewSubmitted > 0)
 	    reviewView($prow, $rr, false);
