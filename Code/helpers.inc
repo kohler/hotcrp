@@ -553,12 +553,11 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
     if ($newPaper || !$prow)
 	/* do nothing */;
     else if (isset($prow->reviewType) && $prow->reviewType > 0) {
-	$name = ($prow->reviewModified ? "Review" : "Add review");
-	$x .= actionTab($name, "${ConfSiteBase}review.php?paperId=$paperId", $mode == "editreview");
+	$x .= actionTab("Reviews", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "editreview");
     } else if ((($Me->isPC && $Conf->timePCReviewAnyPaper() && $prow->author <= 0 && $prow->conflict <= 0)
 		|| $Me->amAssistant())
 	       && $prow->acknowledged > 0 && $prow->withdrawn <= 0)
-	$x .= actionTab("Add review", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "editreview");
+	$x .= actionTab("Reviews", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "editreview");
     
     if (!$newPaper && $prow && ($Me->isPC || $Me->canViewReview($prow, null, $Conf))
 	&& $prow->acknowledged > 0 && $prow->withdrawn <= 0)
@@ -573,11 +572,22 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
     return $x;
 }
 
+function parseReviewOrdinal($n) {
+    if (preg_match('/^[A-Z]$/', $n))
+	return ord($n) - 65;
+    else if (preg_match('/^([A-Z])([A-Z])$/', $n, $m))
+	return (ord($m[0]) - 64) * 26 + ord($m[1]) - 65;
+    else
+	return -1;
+}
+
 function unparseReviewOrdinal($ord) {
-    if ($ord < 26)
+    if ($ord === null)
+	return "";
+    else if ($ord < 26)
 	return chr($ord + 65);
     else
-	return chr(int($ord / 26) + 65) . chr(($ord % 26) + 65);
+	return chr(intval($ord / 26) + 65) . chr(($ord % 26) + 65);
 }
 
 function reviewersTable($prow, $reviewId = null, $all = false, $buttons = false) {
@@ -672,9 +682,9 @@ function reviewersTable($prow, $reviewId = null, $all = false, $buttons = false)
     
     if (!$anyMyReview && $reviewId !== null)
 	if (!$anyThisReview)
-	    $nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Review</b></td><td>" . contactText($Me) . "</td><td></td><td>Not started</td></tr>\n";
+	    $nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Enter review</b></td><td>" . contactText($Me) . "</td><td></td><td>Not started</td></tr>\n";
 	else
-	    $nonsubrev[] = "    <tr><td></td><td><a href=\"${ConfSiteBase}review.php?paperId=$prow->paperId\">Enter review</a></td><td>" . contactText($Me) . "</td><td></td><td>Not started</td></tr>\n";
+	    $nonsubrev[] = "    <tr><td></td><td><a href=\"${ConfSiteBase}review.php?paperId=$prow->paperId&amp;mode=edit\">Enter review</a></td><td>" . contactText($Me) . "</td><td></td><td>Not started</td></tr>\n";
 
     if (count($nonsubrev) || count($subrev))
 	return join("", $subrev) . join("", $nonsubrev);

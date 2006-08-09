@@ -97,7 +97,8 @@ function downloadForm() {
     if (!$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
 	return $Conf->errorMsg(whyNotText($whyNot, "review"));
     $text = $rf->textFormHeader($Conf)
-	. $rf->textForm($prow, $rrow, $Conf, $prow->reviewType > 0,
+	. $rf->textForm($prow, $rrow, $Conf,
+			($prow->reviewType > 0 ? $_REQUEST : null),
 			$Me->canViewAllReviewFields($prow, $Conf)) . "\n";
     downloadText($text, $Conf->downloadPrefix . "review-" . $prow->paperId . ".txt", "review form");
     exit;
@@ -107,11 +108,22 @@ if (isset($_REQUEST['downloadForm']))
 
 
 // mode
-// XXX
 $mode = "view";
-if ((isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "edit")
-    || (!isset($_REQUEST["mode"]) && $prow && $prow->reviewType > 0 && $prow->reviewSubmitted <= 0))
+if (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "edit")
     $mode = "edit";
+if (!isset($_REQUEST["mode"]) && isset($_REQUEST["reviewId"])
+    && $rrow && $rrow->contactId == $Me->contactId)
+    $mode = "edit";
+if ($mode == "view" && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot)) {
+    $Conf->errorMsg(whyNotText($whyNot, "review"));
+    if (!isset($whyNot['reviewNotComplete']))
+	errorMsgExit("");
+    $mode = "edit";
+    $rrow = null;
+    foreach ($rrows as $rr)
+	if ($rr->contactId == $Me->contactId)
+	    $rrow = $rr;
+}
 
 
 // page header
@@ -124,16 +136,11 @@ if ($mode == "edit" && !$Me->timeReview($prow, $Conf))
 
 
 // begin table
-echo "<table class='reviewformtop'>\n\n";
+echo "<table class='paper'>\n\n";
 
 
 // title
-echo "<tr class='id'>\n  <td class='caption'><h2>Review #", $prow->paperId;
-if ($rrow && $rrow->reviewSubmitted > 0)
-    echo unparseReviewOrdinal($rrow->reviewOrdinal);
-else
-    echo "x";
-echo "</h2></td>\n";
+echo "<tr class='id'>\n  <td class='caption'><h2>#$prow->paperId</h2></td>\n";
 echo "  <td class='entry' colspan='2'><h2>", htmlspecialchars($prow->title), "</h2></td>\n</tr>\n\n";
 
 
@@ -167,79 +174,119 @@ if ($mode == "view" && $Me->canSetOutcome($prow))
 
 
 // extra space
-echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><hr class='smgap' /></td>\n</tr>\n\n";
+echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>
+</table>\n\n";
+
+
+//if ($rrow && $rrow->reviewSubmitted > 0)
+//    echo unparseReviewOrdinal($rrow->reviewOrdinal);
+//else
+//    echo "x";
+//echo "</h2></td>\n";
 
 
 // review information
 // XXX reviewer ID
 // XXX "<td class='entry'>", htmlspecialchars(contactText($rrow)), "</td>"
-echo "<tr class='rev_rev'>\n";
-echo "  <td class='caption'></td>\n";
-echo "  <td class='entry'>";
-// echo reviewStatus((isset($rrow) ? $rrow : $prow), true, true), "; ",
-//    reviewType($paperId, $prow, true), "<br/>";
-echo "<form class='downloadreviewform' action='review.php' method='get'>",
-    "<input type='hidden' name='paperId' value='$prow->paperId' />";
-if ($rrow)
-    echo "<input type='hidden' name='reviewId' value='$rrow->reviewId' />";
-echo "<input class='button_small' type='submit' value='Download form' name='downloadForm' id='downloadForm' />",
-    "</form>";
 
-echo "<form class='downloadreviewform' action='review.php?post=1&amp;paperId=$prow->paperId";
-if ($rrow)
-    echo "&amp;reviewId=$rrow->reviewId";
-echo "' method='post' enctype='multipart/form-data'>",
-    "<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp;<input class='button_small' type='submit' value='Upload form' name='uploadForm' />",
-    "</form>";
-echo "</td>\n";
-echo "</tr>\n\n";
+function reviewView($prow, $rrow, $editMode) {
+    global $Conf, $Me, $rf;
+    
+    echo "<div class='gap'></div>
 
+<table class='rev'>
+  <tr class='id'>
+    <td class='caption'><h3";
+    if ($rrow)
+	echo " id='review$rrow->reviewId'";
+    echo ">Review";
+    if ($rrow && $rrow->reviewSubmitted)
+	echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
+    echo "</h3></td>
+    <td class='entry' entry='3'></td>
+  </tr>
 
-// extra space
-echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>&nbsp;</td>\n</tr>\n\n";
+  <tr class='rev_rev'>
+    <td class='caption'></td>
+    <td class='entry'>";
+    if ($editMode && $rrow && $rrow->contactId != $Me->contactId)
+	$Conf->infoMsg("You aren't the author of this review, but you can still make changes as PC Chair.");
+    echo "<form class='downloadreviewform' action='review.php' method='get'>",
+	"<input type='hidden' name='paperId' value='$prow->paperId' />";
+    if ($rrow)
+	echo "<input type='hidden' name='reviewId' value='$rrow->reviewId' />";
+    echo "<input class='button_small' type='submit' value='Download", ($editMode ? " form" : ""), "' name='downloadForm' id='downloadForm' />",
+	"</form>";
 
+    if ($editMode) {
+	echo "<form class='downloadreviewform' action='review.php?post=1&amp;paperId=$prow->paperId";
+	if ($rrow)
+	    echo "&amp;reviewId=$rrow->reviewId";
+	echo "' method='post' enctype='multipart/form-data'>",
+	    "<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp;<input class='button_small' type='submit' value='Upload form' name='uploadForm' />",
+	    "</form>";
+    }
+    
+    echo "</td>
+  </tr>
+</table>\n";
 
-// close this table
-echo "</table>\n\n";
+    if ($editMode) {
+	// start review form
+	echo "<form action='review.php?";
+	if (isset($rrow))
+	    echo "reviewId=$rrow->reviewId";
+	else
+	    echo "paperId=$prow->paperId";
+	if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'])
+	    echo "&amp;forceShow=1";
+	echo "&amp;post=1' method='post' enctype='multipart/form-data'>\n";
+	echo "<table class='reviewform'>\n";
 
+	// form body
+	echo $rf->webFormRows($rrow, 1);
 
-// start review form
-echo "<form action='review.php?";
-if (isset($rrow))
-    echo "reviewId=", $rrow->reviewId;
-else
-    echo "paperId=", $prow->paperId;
-if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'])
-    echo "&amp;forceShow=1";
-echo "&amp;post=1' method='post' enctype='multipart/form-data'>\n";
-echo "<table class='reviewform'>\n";
-
-
-// form body
-echo $rf->webFormRows($rrow, 1);
-
-
-// review actions
-if ($Me->timeReview($prow, $Conf) || $Me->amAssistant()) {
-    echo "<tr class='rev_actions'>
+	// review actions
+	if ($Me->timeReview($prow, $Conf) || $Me->amAssistant()) {
+	    echo "<tr class='rev_actions'>
   <td class='caption'></td>
   <td class='entry'><table class='pt_buttons'>
     <tr>\n";
-    if (!isset($rrow) || !$rrow->reviewSubmitted) {
-	echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save changes' name='update' /></td>
+	    if (!$rrow || !$rrow->reviewSubmitted) {
+		echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save changes' name='update' /></td>
       <td class='ptb_button'><input class='button_default' type='submit' value='Submit' name='submit' /></td>
     </tr>
     <tr>
       <td class='ptb_explain'>(does not submit review)</td>
       <td class='ptb_explain'>(allow PC to see review)</td>\n";
-    } else
-	echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Resubmit' name='submit' /></td>\n";
-    if (!$Me->timeReview($prow, $Conf))
-	echo "    </tr>\n    <tr>\n      <td colspan='3'><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td>\n";
-    echo "    </tr>\n  </table></td>\n</tr>\n\n";
+	    } else
+		echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Resubmit' name='submit' /></td>\n";
+	    if (!$Me->timeReview($prow, $Conf))
+		echo "    </tr>\n    <tr>\n      <td colspan='3'><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td>\n";
+	    echo "    </tr>\n  </table></td>\n</tr>\n\n";
+	}
+
+	echo "</table>\n</form>\n\n";
+	
+    } else {
+	echo "<table class='review'>\n";
+	echo $rf->webDisplayRows($rrow, $Me->canViewAllReviewFields($prow, $Conf));
+	echo "</table>\n";
+    }
+    
 }
 
-echo "</table>\n</form>\n\n";
+
+if ($mode == "view" && !isset($_REQUEST["reviewId"])) {
+    foreach ($rrows as $rr)
+	if ($rr->reviewSubmitted > 0)
+	    reviewView($prow, $rr, false);
+    foreach ($rrows as $rr)
+	if ($rr->reviewSubmitted <= 0 && $rr->reviewModified > 0)
+	    reviewView($prow, $rr, false);
+} else
+    reviewView($prow, $rrow, $mode == "edit");
+
 
 echo "<div class='gapbottom'></div>\n";
 

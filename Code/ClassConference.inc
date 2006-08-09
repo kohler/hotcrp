@@ -363,10 +363,16 @@ class Conference {
 	return true;
     }
     function timePCViewAllReviews() {
-	return true;
+	return $this->validPeriod("PCMeeting") > 0;
     }
     function timeReviewerViewSubmission() {
 	return true;
+    }
+    function timeEmailChairAboutReview() {
+	return $this->validPeriod("notifyChairAboutReviews") > 0;
+    }
+    function timeEmailAuthorsAboutReview() {
+	return $this->validPeriod("authorViewReviews") > 0;
     }
 
 

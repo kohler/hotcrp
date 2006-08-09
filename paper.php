@@ -198,27 +198,27 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 
     // send paper email
     $subject = "Paper #$paperId " . strtolower($what);
-    $message = wordwrap("This mail confirms the " . ($isSubmit ? "submission" : ($newPaper ? "creation" : "update")) . " of paper #$paperId at the $Conf->shortName conference submission site.") . "\n\n"
+    $m = wordwrap("This mail confirms the " . ($isSubmit ? "submission" : ($newPaper ? "creation" : "update")) . " of paper #$paperId at the $Conf->shortName conference submission site.") . "\n\n"
 	. wordWrapIndent(trim($prow->title), "Title: ") . "\n"
 	. wordWrapIndent(trim($prow->authorInformation), "Authors: ") . "\n"
 	. "      Paper site: $Conf->paperSite/paper.php?paperId=$paperId\n\n";
     if ($isSubmit)
-	$m = "The paper will be considered for inclusion in the conference.  You will receive email when reviews are available for you to view.";
+	$mx = "The paper will be considered for inclusion in the conference.  You will receive email when reviews are available for you to view.";
     else {
-	$m = "The paper has not been submitted yet.";
+	$mx = "The paper has not been submitted yet.";
 	$deadline = $Conf->printableEndTime("updatePaperSubmission");
 	if ($deadline != "N/A")
-	    $m .= "  You have until $deadline to update the paper further.";
+	    $mx .= "  You have until $deadline to update the paper further.";
 	$deadline = $Conf->printableEndTime("finalizePaperSubmission");
 	if ($deadline != "N/A")
-	    $m .= "  If you do not officially submit the paper by $deadline, it will not be considered for the conference.";
+	    $mx .= "  If you do not officially submit the paper by $deadline, it will not be considered for the conference.";
     }
-    $message .= wordwrap("$m\n\nContact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.
+    $m .= wordwrap("$mx\n\nContact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.
 
 - $Conf->shortName Conference Submissions\n");
 
     // send email to all contact authors
-    $Conf->emailContactAuthors($paperId, $subject, $message);
+    $Conf->emailContactAuthors($paperId, $subject, $m);
     
     return true;
 }

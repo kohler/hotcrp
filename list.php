@@ -33,7 +33,7 @@ if (isset($_REQUEST["download"])) {
 if (isset($_REQUEST["downloadReview"]) && !isset($_REQUEST["papersel"])) {
     $rf = reviewForm();
     $text = $rf->textFormHeader($Conf, false)
-	. $rf->textForm(null, null, $Conf, false, true) . "\n";
+	. $rf->textForm(null, null, $Conf, null, true) . "\n";
     downloadText($text, $Conf->downloadPrefix . "review.txt", "review form");
     exit;
 } else if (isset($_REQUEST["downloadReview"])) {
@@ -51,7 +51,7 @@ if (isset($_REQUEST["downloadReview"]) && !isset($_REQUEST["papersel"])) {
 		$errors[] = whyNotText($whyNot, "review") . "<br />";
 	    else {
 		$rfSuffix = ($text == "" ? "-$row->paperId" : "s");
-		$text .= $rf->textForm($row, $row, $Conf, false, true) . "\n";
+		$text .= $rf->textForm($row, $row, $Conf, null, true) . "\n";
 	    }
 	}
 

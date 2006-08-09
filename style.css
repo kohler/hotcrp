@@ -303,7 +303,7 @@ span.author, span.conflict {
 
 
 /* Captions and entries */
-table.paper, table.rev {
+table.paper, table.review, table.reviewform {
 	width: 100%;
 }
 tr, textarea, select {
@@ -325,7 +325,7 @@ tr.id td.caption {
 	border-right: none;
 	background: white;
 }
-tr.last td, table.reviewform {
+tr.last td, table.reviewform, table.review {
 	border-bottom: 1px solid #cc9900;
 }
 td.leftentry {

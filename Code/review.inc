@@ -183,9 +183,62 @@ class ReviewForm {
 	    $q .= "reviewSubmitted=" . time() . ", ";
 	
 	if ($rrow)
-	    return $conf->qe("update PaperReview set $q reviewModified=" . time() . " where reviewId=$rrow->reviewId", "while storing review");
+	    $result = $conf->qe("update PaperReview set $q reviewModified=" . time() . " where reviewId=$rrow->reviewId", "while storing review");
 	else
-	    return $conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contactId, requestedOn=current_timestamp, $q reviewModified=" . time(), " while storing review");
+	    $result = $conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contactId, requestedOn=current_timestamp, $q reviewModified=" . time(), " while storing review");
+	if (DB::isError($result))
+	    return $result;
+
+	// log updates
+	$conf->log("Review " . ($rrow ? "$rrow->reviewId " : "") . "for $prow->paperId saved", $Me);
+	if ($submit && (!$rrow || !$rrow->reviewSubmitted))
+	    $conf->log("Review " . ($rrow ? "$rrow->reviewId " : "") . "for $prow->paperId submitted", $Me);
+	
+	// potentially email chair and authors
+	if ($submit && ($conf->timeEmailChairAboutReview() || $conf->timeEmailAuthorsAboutReview())) {
+	    
+	    // fetch review ordinal
+	    if (!$rrow || !$rrow->reviewSubmitted) {
+		$result = $conf->q("select PaperReview.reviewId, count(PRS.reviewId) as reviewOrdinal
+		from PaperReview
+		left join PaperReview as PRS on (PaperReview.paperId=PRS.paperId and PRS.reviewSubmitted>0 and PRS.reviewSubmitted<PaperReview.reviewSubmitted)
+		where " . ($rrow ? "PaperReview.reviewId=$rrow->reviewId" : "PaperReview.paperId=$prow->paperId and PaperReview.contactId=$contactId") . "
+		group by PaperReview.reviewId");
+		if (!DB::isError($result) && $result->numRows() == 1) {
+		    $r = $result->fetchRow();
+		    $req['reviewId'] = $r[0];
+		    $req['reviewOrdinal'] = $r[1];
+		}
+	    }
+
+	    // construct mail
+	    if (isset($req['reviewOrdinal']))
+		$reviewnum = unparseReviewOrdinal($req['reviewOrdinal']);
+	    else if ($rrow && $rrow->reviewSubmitted)
+		$reviewnum = unparseReviewOrdinal($rrow->reviewOrdinal);
+	    else
+		$reviewnum = "x";
+	    
+	    $m = wordwrap("Review #$prow->paperId$reviewnum for paper #$prow->paperId, \"$prow->title\", " . ($rrow && $rrow->reviewSubmitted ? "has been updated.  " : "has been submitted.  ") . "The review is available at the following address:\n\n");
+	    $m .= "  $conf->paperSite/review.php?paperId=$prow->paperId\n\n";
+	    $m .= wordwrap("Contact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.
+
+- $Conf->shortName Conference Submissions\n");
+
+	    $s = "[$conf->shortName] Review #$prow->paperId$reviewnum " . ($rrow && $rrow->reviewSubmitted ? "updated" : "submitted");
+
+	    // actually mail
+	    if ($conf->timeEmailChairAboutReview())
+		if ($conf->allowEmailTo($conf->contactEmail))
+		    mail($conf->contactEmail, $s, $m, "From: $conf->emailFrom");
+		else
+		    $conf->infoMsg("<pre>" . htmlspecialchars("$s\n\n$m") . "</pre>");
+
+	    if ($conf->timeEmailAuthorsAboutReview())
+		$conf->emailContactAuthors($prow->paperId, $s, $m);
+	}
+	
+	return $result;
     }
 
 
@@ -205,7 +258,7 @@ class ReviewForm {
 	return $x;
     }
     
-    function textForm($prow, $rrow, $conf, $useRequest = false, $reviewer = true) {
+    function textForm($prow, $rrow, $conf, $req = null, $reviewer = true) {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
 
@@ -226,7 +279,9 @@ class ReviewForm {
 ==+== Submit Review\n";
 	} else {
 	    $x .= "==+== Begin Review #$prow->paperId";
-	    if ($rrow && isset($rrow->reviewOrdinal))
+	    if ($req && isset($req['reviewOrdinal']))
+		$x .= unparseReviewOrdinal($req['reviewOrdinal']);
+	    else if ($rrow && isset($rrow->reviewOrdinal))
 		$x .= unparseReviewOrdinal($rrow->reviewOrdinal);
 	    $x .= "\n";
 	}
@@ -254,6 +309,8 @@ class ReviewForm {
 		$fval = rtrim($rrow->$field);
 	    if (isset($this->options[$field]) && $fval == "0")
 		$fval = "";
+	    else if (isset($this->options[$field]) && isset($this->options[$field][$fval]))
+		$fval = "$fval. " . $this->options[$field][$fval];
 	    $x .= preg_replace("/^==\\+==/m", "\\==+==", $fval);
 
 	    $x .= "\n";
@@ -377,7 +434,7 @@ class ReviewForm {
 	$needRow = 1;
 	
 	foreach ($this->fieldOrder as $field) {
-	    $fval = $rrow->$field;
+	    $fval = ($rrow ? $rrow->$field : "");
 	    $options = isset($this->options[$field]);
 	    if (!$options && $fval == "")
 		continue;
