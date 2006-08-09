@@ -506,6 +506,42 @@ class ReviewForm {
 	return $x;
     }
 
+    function webNumericScoresHeader($prow, $contact, $conf) {
+	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
+	$x = "";
+	foreach ($this->fieldOrder as $field)
+	    if (($this->authorView[$field] || $viewAllFields)
+		&& isset($this->options[$field]))
+		$x .= "<th>" . htmlspecialchars($this->shortName[$field]) . "</th>";
+	return $x;
+    }
+
+    function webNumericScoresRow($rrow, $prow, $contact, $conf, &$anyScores) {
+	$view = $contact->canViewReview($prow, $rrow, $conf);
+	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
+	$x = "";
+	foreach ($this->fieldOrder as $field)
+	    if (($this->authorView[$field] || $viewAllFields)
+		&& isset($this->options[$field]) && $rrow->$field) {
+		if ($view) {
+		    $x .= "<td class='revscore rs_$field'>" . $rrow->$field . "</td>";
+		    $anyScores = true;
+		} else
+		    $x .= "<td class='revscore rs_$field'></td>";
+	    }
+	return $x;
+    }
+
+    function numNumericScores($prow, $contact, $conf) {
+	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
+	$n = 0;
+	foreach ($this->fieldOrder as $field)
+	    if (($this->authorView[$field] || $viewAllFields)
+		&& isset($this->options[$field]))
+		$n++;
+	return $n;
+    }
+    
     function webNumericScoresTable($rrows, $prow, $contact, $conf, $links) {
 	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
 	$x = "<table class='reviewscores'>\n<tr class='rs_heading'><td></td><td></td>";

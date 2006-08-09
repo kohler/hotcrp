@@ -9,12 +9,12 @@ $rf = reviewForm();
 
 // header
 function confHeader() {
-    global $paperId, $prow, $mode, $Conf;
-    if ($paperId > 0)
-	$title = "Paper #$paperId Reviews";
+    global $prow, $mode, $Conf;
+    if ($prow)
+	$title = "Paper #$prow->paperId Reviews";
     else
 	$title = "Paper Reviews";
-    $Conf->header($title, "review", actionBar($prow, false, "editreview"));
+    $Conf->header($title, "review", actionBar($prow, false, "review"));
 }
 
 function errorMsgExit($msg) {
@@ -180,13 +180,15 @@ if ($Me->amAssistant())
 
 // reviewer information
 function reviewersTable() {
-    global $Conf, $Me, $mode, $prow, $rrows, $rrow, $ConfSiteBase, $forceShow;
+    global $ConfSiteBase, $Conf, $Me, $mode, $prow, $rrows, $rrow, $rf, $forceShow;
     
     $subrev = array();
     $nonsubrev = array();
     $foundRrow = $foundMyReview = $foundNonsub = 0;
     $actingConflict = ($prow->conflict > 0 && !$forceShow);
+    $anyScores = false;
 
+    // actual rows
     foreach ($rrows as $rr) {
 	$highlight = ($rrow && $rr->reviewId == $rrow->reviewId);
 	$foundRrow += $highlight;
@@ -212,14 +214,12 @@ function reviewersTable() {
 	    $t .= "<td><b>$id</b></td>";
 	else if (!$canView)
 	    $t .= "<td>$id</td>";
-	else if ($mode == "view" && !$rrow && $rr->reviewModified > 0)
-	    $t .= "<td><a href='#review$rr->reviewId'>$id</a></td>";
 	else
 	    $t .= "<td><a href='review.php?reviewId=$rr->reviewId$forceShow'>$id</a></td>";
 
 	// reviewer identity
 	if (!$Me->canViewReviewerIdentity($prow, $rr, $Conf))
-	    $t .= "<td class='rev_empty'></td>";
+	    $t .= "<td class='empty'></td>";
 	else if ($rr->contactId == $Me->contactId)
 	    $t .= "<td>You</td>";
 	else
@@ -227,7 +227,7 @@ function reviewersTable() {
 
 	// review type
 	if ($prow->author > 0 || $prow->conflict > 0)
-	    $t .= "<td class='rev_empty'></td>";
+	    $t .= "<td class='empty'></td>";
 	else if ($rr->reviewType == REVIEW_PRIMARY)
 	    $t .= "<td>Primary</td>";
 	else if ($rr->reviewType == REVIEW_SECONDARY)
@@ -236,14 +236,15 @@ function reviewersTable() {
 	    $t .= "<td>Requested<br /><small>by " . ($rr->reqContactId == $Me->contactId ? "you" : contactText($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail)) . "</small></td>";
 
 	// status
-	$t .= "<td>";
 	if ($rr->reviewModified <= 0)
-	    $t .= "Not started";
+	    $t .= "<td>Not started</td>";
 	else if ($rr->reviewSubmitted <= 0)
-	    $t .= "In progress";
+	    $t .= "<td>In progress</td>";
 	else
-	    $t .= "";
-	$t .= "</td>";
+	    $t .= "<td class='empty'></td>";
+
+	// scores
+	$t .= $rf->webNumericScoresRow($rr, $prow, $Me, $Conf, $anyScores);
 
 	// actions
 	$actions = array();
@@ -268,48 +269,63 @@ function reviewersTable() {
     // bottom links
     // edit your own review
     if ($mode == "edit" && !$rrow)
-	$nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Enter&nbsp;review</b></td><td>You</td><td class='rev_empty'></td><td>Not started</td></tr>\n";
+	$nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Enter&nbsp;review</b></td><td>You</td><td class='empty'></td><td>Not started</td></tr>\n";
     else if ($mode == "edit" && !$foundMyReview && $Me->canReview($prow, null, $Conf))
-	$nonsubrev[] = "    <tr><td></td><td><a href='review.php?paperId=$prow->paperId&amp;mode=edit$forceShow'>Enter&nbsp;review</a></td><td>You</td><td class='rev_empty'></td><td>Not started</td></tr>\n";
+	$nonsubrev[] = "    <tr><td></td><td><a href='review.php?paperId=$prow->paperId&amp;mode=edit$forceShow'>Enter&nbsp;review</a></td><td>You</td><td class='empty'></td><td>Not started</td></tr>\n";
 
-    // unfinished review notification
-    if ($prow->author > 0 && !$forceShow && $foundNonsub) {
-	$t = ($mode == "edit" || $rrow ? "<td></td>" : "");
-	$t .= "<td colspan='4'>";
-	if ($foundNonsub == 1)
-	    $t .= "1 additional review was requested, but has not been submitted yet.  ";
-	else
-	    $t .= "$foundNonsub additional reviews were requested, but have not been submitted yet.  ";
-	$t .= "You will be emailed when additional reviews are submitted and if any existing reviews are changed.</td>";
-	$nonsubrev[] = "    <tr>$t</tr>\n";
+    // headers
+    $numericHeaders = "";
+    if ($anyScores) {
+	$t = ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "");
+	$numericHeaders = "    <tr>$t<td class='empty' colspan='4'></td>" . $rf->webNumericScoresHeader($prow, $Me, $Conf) . "</tr>\n";
     }
     
     // see all reviews
-    if (($mode == "view" && $rrow && $Me->canViewReview($prow, $rrow, $Conf))
-	|| ($mode == "edit" && $Me->canViewReview($prow, null, $Conf)))
-	$nonsubrev[] = "    <tr><td></td><td colspan='4'><a href='review.php?paperId=$prow->paperId&amp;mode=view$forceShow'>View all reviews on one page</a></td></tr>\n";
-
-    // forceShow
-    if ($prow->conflict > 0 && $Me->amAssistant() && !$forceShow) {
-	$t = ($mode == "edit" || $rrow ? "<td></td>" : "");
-	$nonsubrev[] = "    <tr>$t<td colspan='4'><a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\"><b>Override conflict</b> to show reviewer identities and allow editing</a></td>\n";
+    if (($mode == "view" && isset($_REQUEST['reviewId']) && $Me->canViewReview($prow, null, $Conf))
+	|| ($mode == "edit" && $Me->canViewReview($prow, null, $Conf))) {
+	$t = "    <tr>" . ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "") . "<td colspan='";
+	$t .= ($anyScores ? 4 + $rf->numNumericScores($prow, $Me, $Conf) : 4);
+	$t .= "'><a href='review.php?paperId=$prow->paperId&amp;mode=view$forceShow'>View all reviews on one page</a></td></tr>\n";
+	$nonsubrev[] = $t;
     }
     
     // completion
     if (count($nonsubrev) || count($subrev))
-	return join("", $subrev) . join("", $nonsubrev);
+	$result = "<table class='reviewers'>\n" . $numericHeaders
+		     . join("", $subrev) . join("", $nonsubrev)
+		     . "  </table>\n";
     else
-	return "";
-}
+	$result = "";
 
+    // unfinished review notification
+    $notes = array();
+    if ($prow->author > 0 && !$forceShow && $foundNonsub) {
+	if ($foundNonsub == 1)
+	    $t = "1 additional review was requested, but has not been submitted yet.  ";
+	else
+	    $t = "$foundNonsub additional reviews were requested, but have not been submitted yet.  ";
+	$t .= "You will be emailed when additional reviews are submitted and if any existing reviews are changed.";
+	$notes[] = $t;
+    }
+
+    // forceShow
+    if ($prow->conflict > 0 && $Me->amAssistant() && !$forceShow)
+	$notes[] = "<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\"><b>Override your conflict</b> to show reviewer identities and allow editing</a>";
+
+    if (count($notes))
+	$result .= "<div class='reviewersbot'>" . join("<br />\n", $notes) . "</div>";
+
+    return $result;
+}
+// <table class='reviewers'>\n", $revTable, "  </table></td>\n";
 
 // reviewer information
-if (($revTable = reviewersTable($prow, (isset($rrow) ? $rrow->reviewId : -1)))) {
-    echo "<tr class='rev_reviewers'>\n";
-    echo "  <td class='caption'>Reviewers</td>\n";
-    echo "  <td class='entry'><table class='reviewers'>\n", $revTable, "  </table></td>\n";
-    echo "</tr>\n\n";
-}
+$revTable = reviewersTable($prow, (isset($rrow) ? $rrow->reviewId : -1));
+$revTableClass = (preg_match("/<th/", $revTable) ? "rev_reviewers_hdr" : "rev_reviewers");
+echo "<tr class='", $revTableClass, "'>\n";
+echo "  <td class='caption'>Reviews</td>\n";
+echo "  <td class='entry'>", ($revTable ? $revTable : "None"), "</td>\n";
+echo "</tr>\n\n";
 
 
 if ($mode == "view" && $Me->canSetOutcome($prow))

@@ -549,24 +549,16 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
     
     if ($newPaper || ($paperId > 0 && ($prow->author > 0 || $Me->amAssistant())))
 	$x .= actionTab("Edit", "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=edit", $mode == "edit");
-    
-    if ($newPaper || !$prow)
-	/* do nothing */;
-    else if (isset($prow->reviewType) && $prow->reviewType > 0) {
-	$x .= actionTab("Reviews", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "editreview");
-    } else if ((($Me->isPC && $Conf->timePCReviewAnyPaper() && $prow->author <= 0 && $prow->conflict <= 0)
-		|| $Me->amAssistant())
-	       && $prow->acknowledged > 0 && $prow->withdrawn <= 0)
-	$x .= actionTab("Reviews", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "editreview");
-    
-    if (!$newPaper && $prow && ($Me->isPC || $Me->canViewReview($prow, null, $Conf))
-	&& $prow->acknowledged > 0 && $prow->withdrawn <= 0)
-	$x .= actionTab("Read reviews" . ($prow ? " ($prow->reviewCount)" : ""), "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=reviews", $mode == "reviews");
+
+    if (!$newPaper && $prow
+	&& ($prow->reviewType > 0 || $Me->canViewReview($prow, null, $Conf)
+	    || ($Me->isPC && $prow->acknowledged > 0 && $prow->withdrawn <= 0)))
+	$x .= actionTab("Reviews", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "review");
     
     if ($thisUrl)
 	$x .= actionTab($mode, $thisUrl, true);
 
-    $goBase = ($mode == "editreview" ? "review.php" : "paper.php");
+    $goBase = ($mode == "review" ? "review.php" : "paper.php");
     $xmode = (isset($_REQUEST["mode"]) ? array("mode" => $_REQUEST["mode"]) : array());
     $x .= "  </tr></table></td>\n  <td class='spanner'></td>\n  <td class='gopaper' nowrap='nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n</tr></table>\n";
     return $x;

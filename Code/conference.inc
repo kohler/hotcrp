@@ -893,7 +893,7 @@ class Conference {
 	
 	$q = "select PaperReview.*,
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
-		ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail,
+		ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail, ReqCI.contactId as reqContactId,
 		count(PRS.reviewId) as reviewOrdinal
 		from PaperReview
 		join ContactInfo using (contactId)

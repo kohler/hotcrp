@@ -509,11 +509,11 @@ tr#topicinterest td.caption, tr#topicinterest td.hint {
 }
 tr#topicinterest td#topicinterest, tr.pt_topics td.entry, tr.pt_actions td,
 td.plholder, tr.rev_actions td.entry, tr.pt_reviews td.entry,
-tr.rev_reviewers td.entry {
+tr.rev_reviewers td.entry, tr.rev_reviewers_hdr td.entry {
 	vertical-align: top;
 }
-tr.rev_reviewers td.entry {
-	padding-top: 3px;
+tr.rev_reviewers_hdr td.entry {
+	padding: 1px 1em 3px 0.5em;
 }
 table.topicinterest tr td.ti_interest, table.topicinterest tr th {
 	padding-right: 1px;
@@ -525,20 +525,30 @@ table.topicinterest tr td.ti_topic {
 	font-weight: bold;
 	padding-right: 0.5em;
 }
-table.reviewscores td {
-	padding-right: 0.5em;
-}
-table.reviewscores td {
-	text-align: center;
-}
-table.reviewscores td.rs_id, table.reviewscores td.rs_num {
-	text-align: left;
-}
 table.reviewers td {
 	padding-right: 1em;
 }
+table.reviewers th {
+	font-size: small;
+	padding: 0em 0.25em;
+}
 table.reviewers td.highlight {
 	padding-right: 0.25em;
+}
+table.reviewers td.revscore {
+	padding-right: 0em;
+	text-align: center;
+	font-weight: bold;
+	color: red;
+}
+table.reviewers td.rs_id, table.reviewscores td.rs_num {
+	text-align: left;
+}
+div.reviewersbot {
+	padding-top: 0.5em;
+}
+table.reviewers td.empty {
+	padding: 0em 0em;
 }
 
 
