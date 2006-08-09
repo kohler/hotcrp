@@ -114,15 +114,22 @@ if (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "edit")
 if (!isset($_REQUEST["mode"]) && isset($_REQUEST["reviewId"])
     && $rrow && $rrow->contactId == $Me->contactId)
     $mode = "edit";
-if ($mode == "view" && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot)) {
-    $Conf->errorMsg(whyNotText($whyNot, "review"));
-    if (!isset($whyNot['reviewNotComplete']))
-	errorMsgExit("");
+if ($mode == "view"
+    && !$Me->canViewReview($prow, (isset($_REQUEST["reviewId"]) ? $rrow : null), $Conf, $whyNot)) {
+    if (isset($whyNot['reviewNotComplete'])) {
+	if (isset($_REQUEST["mode"]) || $whyNot['forceShow'])
+	    $Conf->infoMsg(whyNotText($whyNot, "review"));
+    } else
+	errorMsgExit(whyNotText($whyNot, "review"));
     $mode = "edit";
     $rrow = null;
     foreach ($rrows as $rr)
 	if ($rr->contactId == $Me->contactId)
 	    $rrow = $rr;
+}
+if ($mode == "edit" && !$Me->canReview($prow, $rrow, $Conf, $whyNot)) {
+    $Conf->errorMsg(whyNotText($whyNot, "review"));
+    $mode = "view";
 }
 
 
@@ -133,6 +140,8 @@ confHeader();
 // messages for review viewers
 if ($mode == "edit" && !$Me->timeReview($prow, $Conf))
     $Conf->infoMsg("The <a href='${ConfSiteBase}deadlines.php'>deadline</a> for modifying this review has passed.");
+if ($mode == "edit" && $prow->reviewType <= 0)
+    $Conf->infoMsg("You haven't been assigned to review this paper, but you can review it anyway.");
 
 
 // begin table
