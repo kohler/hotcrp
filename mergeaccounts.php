@@ -69,10 +69,12 @@ If you suspect something fishy, contact the site administrator at\n\
 	    crpmergeone("TopicInterest", "contactId", $oldid, $newid);
 	    crpmergeone("ReviewRequest", "contactId", $oldid, $newid);
 	    crpmergeone("ReviewRequest", "requestedBy", $oldid, $newid);
-	    crpmergeone("ReviewRequestRefused", "contactId", $oldid, $newid);
-	    crpmergeone("ReviewRequestRefused", "requestedBy", $oldid, $newid);
 	    crpmergeone("PaperReview", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReview", "requestedBy", $oldid, $newid);
+	    crpmergeone("PaperReviewArchive", "contactId", $oldid, $newid);
+	    crpmergeone("PaperReviewArchive", "requestedBy", $oldid, $newid);
+	    crpmergeone("PaperReviewRefused", "contactId", $oldid, $newid);
+	    crpmergeone("PaperReviewRefused", "requestedBy", $oldid, $newid);
 
 	    // XXX ensure uniqueness in PaperConflict
 	    
