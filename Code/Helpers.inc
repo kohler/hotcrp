@@ -577,6 +577,7 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
     else
 	$paperId = ($prow == null ? -1 : $prow->paperId);
     $disableView = (!$newPaper && $paperId < 0);
+    $forceShow = ($Me->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] ? "&amp;forceShow=1" : "");
 
     $x = "<table class='vubar'><tr>\n  <td><table><tr>\n";
     
@@ -594,8 +595,13 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
     if ($thisUrl)
 	$x .= actionTab($mode, $thisUrl, true);
 
-    $goBase = ($mode == "review" ? "review.php" : "paper.php");
+    if ($mode == "Review assignments")
+	$goBase = "reqreview.php";
+    else
+	$goBase = ($mode == "review" ? "review.php" : "paper.php");
     $xmode = (isset($_REQUEST["mode"]) ? array("mode" => $_REQUEST["mode"]) : array());
+    if ($forceShow && $mode == "Review assignments")
+	$xmode["forceShow"] = 1;
     $x .= "  </tr></table></td>\n  <td class='spanner'></td>\n  <td class='gopaper' nowrap='nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n</tr></table>\n";
     return $x;
 }

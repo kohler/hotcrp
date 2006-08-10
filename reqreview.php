@@ -5,13 +5,14 @@ require_once('Code/reviewtable.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
+$forceShow = true;
 
 
 // header
 function confHeader() {
     global $prow, $Conf, $ConfSiteBase;
-    $title = ($prow ? "Paper #$prow->paperId Review Requests" : "Paper Review Requests");
-    $Conf->header($title, "revreq", actionBar($prow, false, "Review requests", "${ConfSiteBase}reqreview.php?paperId=" . ($prow ? $prow->paperId : -1)));
+    $title = ($prow ? "Paper #$prow->paperId Review Assignments" : "Paper Review Assignments");
+    $Conf->header($title, "revreq", actionBar($prow, false, "Review assignments", "${ConfSiteBase}reqreview.php?paperId=" . ($prow ? $prow->paperId : -1)));
 }
 
 function errorMsgExit($msg) {
@@ -40,7 +41,7 @@ function findRrow($contactId) {
 }
 
 
-// forceShow
+// always forceShow
 if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->amAssistant())
     $forceShow = "&amp;forceShow=1";
 else
@@ -229,7 +230,7 @@ echo "  <td class='entry' colspan='2'><h2>", htmlspecialchars($prow->title), "</
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, true);
 $paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->amAssistant());
 
-$paperTable->echoStatusRow($prow, PaperTable::STATUS_DOWNLOAD);
+$paperTable->echoStatusRow($prow, PaperTable::STATUS_DOWNLOAD | PaperTable::STATUS_CONFLICTINFO_PC);
 $paperTable->echoAbstractRow($prow);
 if ($canViewAuthors || $Me->amAssistant()) {
     $paperTable->echoAuthorInformation($prow);
@@ -248,9 +249,10 @@ echo "  <td class='entry'>", ($revTable ? $revTable : "None");
 
 // add reviewers
 $Conf->infoMsg("External reviewers are given access to those papers assigned
- to them for review, including the other reviewers' identities and any
- eventual outcome.  Before requesting an external review, you should
- generally check personally whether they are interested.");
+ to them for review, including "
+	       . ($Conf->startTime["reviewerViewReviews"] >= 2 ? "the other reviewers' identities and " : "")
+	       . "any eventual outcome.  Before requesting an external review,
+ you should generally check personally whether they are interested.");
 
 
 echo "  <form action='reqreview.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>
@@ -267,8 +269,7 @@ if ($Me->amAssistant()) {
 	<select name='id$rtyp'>
 	<option selected='selected' value=''>Select PC member</option>\n";
 	foreach ($pc as $p)
-	    if ($p->conflict <= 0)
-		echo "	<option value='$p->contactId'>", contactHtml($p), "</option>\n";
+	    echo "	<option value='$p->contactId'", ($p->conflict > 0 ? " disabled='disabled'" : ""), ">", contactHtml($p), "</option>\n";
 	echo "	</select>
       </td><td><input class='button_small' type='submit' name='add$rtyp' value='Add " . ($rtyp == REVIEW_PRIMARY ? "primary" : "secondary") . " reviewer' /></td>
     </tr>\n";

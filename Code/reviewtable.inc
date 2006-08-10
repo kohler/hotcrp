@@ -135,7 +135,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	    $t = "Assign or request reviewers";
 	else
 	    $t = "Ask someone else to review this paper" . ($nRetractable ? " or retract outstanding review requests" : "");
-	$notes[] = "<a href=\"${ConfSiteBase}reqreview.php?paperId=$prow->paperId\">$t</a>";
+	$notes[] = "<a href=\"${ConfSiteBase}reqreview.php?paperId=$prow->paperId" . ($forceShow ? "&amp;forceShow=1" : "") . "\">$t</a>";
     }
 
     // refuse review

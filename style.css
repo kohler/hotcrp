@@ -258,6 +258,7 @@ input.button_small, a.button_small, button.button_small {
 	color: black;
 	margin: 3px 0px;
 	white-space: nowrap;
+	vertical-align: 1px;
 }
 a.small {
 	font-size: small;

@@ -12,7 +12,8 @@ class PaperTable {
     const STATUS_DATE = 4;
     const STATUS_DOWNLOAD = 8;
     const STATUS_CONFLICTINFO = 16;
-    const STATUS_REVIEWERINFO = 32;
+    const STATUS_CONFLICTINFO_PC = 32;
+    const STATUS_REVIEWERINFO = 64;
 
     var $editable;
     var $useRequest;
@@ -98,7 +99,8 @@ class PaperTable {
 	    echo " ", paperDownload($prow->paperId, $prow, 1);
 	if (($flags & self::STATUS_CONFLICTINFO) && $prow->author > 0)
 	    echo "<br/>\nYou are an <span class='author'>author</span> of this paper.";
-	else if (($flags & self::STATUS_CONFLICTINFO) && $prow->conflict > 0)
+	else if ((($flags & self::STATUS_CONFLICTINFO) && $prow->conflict > 0)
+		 || (($flags & self::STATUS_CONFLICTINFO_PC) && $Me->isPC && $prow->conflict > 0))
 	    echo "<br/>\nYou have a <span class='conflict'>conflict</span> with this paper.";
 	if ($prow->reviewType != null && ($flags & self::STATUS_REVIEWERINFO)) {
 	    if ($prow->reviewType == REVIEW_PRIMARY)
