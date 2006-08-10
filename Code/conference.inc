@@ -433,7 +433,8 @@ class Conference {
 	    $subject = "[$this->shortName] $subject";
 	$result = $this->qe("select firstName, lastName, email
 		from ContactInfo join PaperConflict using (contactId)
-		where paperId=$paperId and author>0", "while looking up contact authors to send email");
+		where paperId=$paperId and author>0
+		group by ContactInfo.contactId", "while looking up contact authors to send email");
 	if (!DB::isError($result))
 	    while (($row = $result->fetchRow())) {
 		$m = "Dear " . contactText($row[0], $row[1], $row[2]) . ",\n\n" . $message;

@@ -258,6 +258,8 @@ input.button_small, a.button_small, button.button_small {
 	color: black;
 	margin: 3px 0px;
 	white-space: nowrap;
+}
+a.button_small {
 	vertical-align: 1px;
 }
 a.small {
@@ -510,10 +512,7 @@ pre.entryexample {
 	background: #eeeeee;
 }
 
-table.topictable {
-	padding-top: 3px;
-}
-table.topictable tr td {
+table.simple tr td {
 	padding-right: 2em;
 }
 
@@ -522,7 +521,8 @@ tr#topicinterest td.caption, tr#topicinterest td.hint {
 }
 tr#topicinterest td#topicinterest, tr.pt_topics td.entry, tr.pt_actions td,
 td.plholder, tr.rev_actions td.entry, tr.pt_reviews td.entry,
-tr.rev_reviewers td.entry, tr.rev_reviewers_hdr td.entry {
+tr.rev_reviewers td.entry, tr.rev_reviewers_hdr td.entry,
+tr.pt_conflict_ass td.entry {
 	vertical-align: top;
 }
 tr.rev_reviewers_hdr td.entry {
@@ -535,7 +535,6 @@ table.topicinterest tr td.ti_interest, table.topicinterest tr th {
 	text-align: center;
 }
 table.topicinterest tr td.ti_topic {
-	font-weight: bold;
 	padding-right: 0.5em;
 }
 table.reviewers td {

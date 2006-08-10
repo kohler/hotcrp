@@ -195,7 +195,8 @@ else
     $mode = "view";
 // then fix impossible modes
 if ($mode == "view" && $prow->conflict <= 0
-    && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot)) {
+    && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot)
+    && $Me->canReview($prow, $myRrow, $Conf)) {
     if (isset($whyNot['reviewNotComplete']) || isset($whyNot['externalReviewer'])) {
 	if (isset($_REQUEST["mode"]) || isset($whyNot['forceShow']))
 	    $Conf->infoMsg(whyNotText($whyNot, "review"));
@@ -217,10 +218,8 @@ confHeader();
 
 
 // messages for review viewers
-if ((($rrow && $rrow->reviewType > 0) || $mode == "edit")
-    && !$Me->timeReview($prow, $Conf))
-    $Conf->infoMsg(whyNotText(array("deadline" => ($Me->isPC ? "PCSubmitReviewDeadline" : "reviewerSubmitReviewDeadline"),
-				    "override" => $Me->amAssistant()), "review"));
+if ($mode == "edit" && !$Me->canReview($prow, $rrow, $Conf, $whyNot))
+    $Conf->infoMsg(whyNotText($whyNot, "review"));
 if ($mode == "edit" && $prow->reviewType <= 0)
     $Conf->infoMsg("You haven't been assigned to review this paper, but you can review it anyway.");
 
@@ -274,7 +273,7 @@ echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></
 
 
 // exit on certain errors
-if ($rrow && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
+if (!$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
     errorMsgExit(whyNotText($whyNot, "review"));
 
 

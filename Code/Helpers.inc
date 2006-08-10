@@ -247,7 +247,7 @@ function topicTable($paperId = -1, $active = 0, $conf = null) {
 
     $result = $Conf->q("select TopicArea.topicId, topicName from TopicArea$extraQ order by topicName");
     if (!DB::isError($result) && $result->numRows() > 0) {
-	$out = "<table class='topictable'><tr>\n	<td>";
+	$out = "<table class='simple'><tr>\n	<td>";
 	$colheight = (int) (($result->numRows() + 1) / 2);
 	for ($i = 0; $i < $result->numRows(); $i++) {
 	    if ($i > 0 && ($i % $colheight) == 0)
@@ -504,7 +504,9 @@ function whyNotText($whyNot, $action) {
 	    else
 		$text .= "The deadline to $action $thisPaper has passed.  ";
 	    $text .= "It was " . $Conf->printableEndTime($dname) . ".  ";
-	} else
+	} else if ($dname == "authorViewReviews")
+	    $text .= "Authors can't view paper reviews at the moment.  ";
+	else
 	    $text .= "You can't $action $thisPaper at the moment.  ";
 	$text .= "(<a href='${ConfSiteBase}deadlines.php'>View deadlines</a>)  ";
 	if (isset($whyNot['override']) && $whyNot['override'])
@@ -591,17 +593,19 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
 	&& ($prow->reviewType > 0 || $Me->canViewReview($prow, null, $Conf)
 	    || ($Me->isPC && $prow->acknowledged > 0 && $prow->withdrawn <= 0)))
 	$x .= actionTab("Reviews", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "review");
+
+    if ($mode == "revreq"
+	|| ($Me->amAssistant() && $prow && $prow->acknowledged > 0 && $prow->withdrawn <= 0))
+	$x .= actionTab("Assignments", "${ConfSiteBase}reqreview.php?paperId=$paperId", $mode == "revreq");
     
     if ($thisUrl)
 	$x .= actionTab($mode, $thisUrl, true);
 
-    if ($mode == "Review assignments")
+    if ($mode == "revreq")
 	$goBase = "reqreview.php";
     else
 	$goBase = ($mode == "review" ? "review.php" : "paper.php");
     $xmode = (isset($_REQUEST["mode"]) ? array("mode" => $_REQUEST["mode"]) : array());
-    if ($forceShow && $mode == "Review assignments")
-	$xmode["forceShow"] = 1;
     $x .= "  </tr></table></td>\n  <td class='spanner'></td>\n  <td class='gopaper' nowrap='nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n</tr></table>\n";
     return $x;
 }

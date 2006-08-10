@@ -544,14 +544,14 @@ class Contact {
 	    return false;
 	// policy
 	$rrsub = (!$rrow || $rrow->reviewSubmitted > 0);
+	$forceShow = ($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"]);
 	if (($prow->author > 0 && $conf->timeAuthorViewReviews() && $rrsub)
-	    || ($this->amAssistant()
-		&& ($prow->conflict <= 0
-		    || (isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])))
+	    || ($prow->conflict > 0 && $forceShow)
+	    || ($this->amAssistant() && $prow->conflict <= 0)
 	    || ($this->isPC && $prow->conflict <= 0 && $rrsub
 		&& ($conf->timePCViewAllReviews()
 		    || (isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0)))
-	    || ($prow->reviewType > 0 && $rrsub
+	    || ($prow->reviewType > 0 && $prow->conflict <= 0 && $rrsub
 		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0
 		&& $conf->startTime["reviewerViewReviews"] >= 1)
 	    || ($rrow && $rrow->paperId == $prow->paperId
@@ -843,7 +843,7 @@ and paste it into your web browser's location field.
 	
 	$result = $conf->qe($q, "while assigning review");
 	if (!DB::isError($result))
-	    $conf->log("Added $reviewTypeName[$type] reviewer $reviewer for paper $paperId", $Me);
+	    $conf->log("Added $reviewTypeName[$type] reviewer $reviewer for paper $paperId", $this);
     }	
   
 }

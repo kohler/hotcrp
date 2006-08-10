@@ -5,14 +5,15 @@ require_once('Code/reviewtable.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$forceShow = true;
+$_REQUEST["forceShow"] = 1;
+$rf = reviewForm();
 
 
 // header
 function confHeader() {
     global $prow, $Conf, $ConfSiteBase;
     $title = ($prow ? "Paper #$prow->paperId Review Assignments" : "Paper Review Assignments");
-    $Conf->header($title, "revreq", actionBar($prow, false, "Review assignments", "${ConfSiteBase}reqreview.php?paperId=" . ($prow ? $prow->paperId : -1)));
+    $Conf->header($title, "revreq", actionBar($prow, false, "revreq"));
 }
 
 function errorMsgExit($msg) {
@@ -24,11 +25,15 @@ function errorMsgExit($msg) {
 
 // grab paper row
 function getProw() {
-    global $prow, $rrows, $Conf, $Me;
+    global $prow, $rrows, $Conf, $Me, $anyPrimary;
     if (!(($prow = $Conf->paperRow(cvtint($_REQUEST["paperId"]), $Me->contactId, $whyNot))
 	  && $Me->canRequestReview($prow, $Conf, false, $whyNot)))
 	errorMsgExit(whyNotText($whyNot, "request reviews for"));
     $rrows = $Conf->reviewRow(array('paperId' => $prow->paperId, 'array' => 1), $whyNot);
+    $anyPrimary = false;
+    foreach ($rrows as $rr)
+	if ($rr->reviewType == REVIEW_PRIMARY)
+	    $anyPrimary = true;
 }
 getProw();
 
@@ -41,7 +46,7 @@ function findRrow($contactId) {
 }
 
 
-// always forceShow
+// forceShow
 if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->amAssistant())
     $forceShow = "&amp;forceShow=1";
 else
@@ -51,14 +56,37 @@ else
 confHeader();
 
 
-$rf = reviewForm();
-
 if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
     $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  Any changes were lost.");
 
 
-// add review requests
+// change PC conflicts
+function pcConflicts() {
+    global $Conf, $prow;
+    $while = "while updating PC conflicts";
+    $Conf->qe("lock tables PaperConflict write, PCMember write", $while);
+    
+    // don't record separate PC conflicts on author conflicts
+    $result = $Conf->qe("select contactId from PaperConflict where paperId=$prow->paperId and author>0", $while);
+    if (!DB::isError($result))
+	while (($row = $result->fetchRow()))
+	    unset($_REQUEST["pcc$row[0]"]);
 
+    $Conf->qe("delete from PaperConflict using PaperConflict join PCMember using (contactId) where paperId=$prow->paperId and author<=0", $while);
+    
+    foreach ($_REQUEST as $k => $v)
+	if ($k[0] == 'p' && $k[1] == 'c' && $k[2] == 'c'
+	    && ($id = cvtint(substr($k, 3))) > 0)
+	    $Conf->qe("insert into PaperConflict set paperId=$prow->paperId, contactId=$id, author=0", $while);
+}
+if (isset($_REQUEST['update']) && $Me->amAssistant()) {
+    pcConflicts();
+    $Conf->qe("unlock tables");
+    getProw();
+}
+
+
+// add review requests
 function requestReview($email) {
     global $Conf, $Me, $Opt, $prow;
     
@@ -69,7 +97,7 @@ function requestReview($email) {
     
     $while = "while requesting review";
     $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo write", $while);
-    // NB caller unlocks tables
+    // NB caller unlocks tables on error
 
     // check for outstanding review request
     $result = $Conf->qe("select reviewId, firstName, lastName, email from PaperReview join ContactInfo on (ContactInfo.contactId=PaperReview.requestedBy) where paperId=$prow->paperId and PaperReview.contactId=$reqId", $while);
@@ -123,6 +151,7 @@ Thank you for your help -- we appreciate that reviewing is hard work!
 
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
+    $Conf->qe("unlock tables");
     $Conf->log("Asked $Them->contactId ($Them->email) to review $prow->paperId", $Me);
     return true;
 }
@@ -134,30 +163,23 @@ if (isset($_REQUEST['add'])) {
 	     || $email == "Email")
 	$Conf->errorMsg("An email address is required to request a review.");
     else {
-	$ok = requestReview($email);
-	$Conf->qe("unlock tables");
-	getProw();
-	if ($ok) {
+	if (requestReview($email)) {
 	    unset($_REQUEST['email']);
 	    unset($_REQUEST['name']);
-	}
+	} else
+	    $Conf->qe("unlock tables");
+	getProw();
     }
 }
 
 
 // add primary or secondary reviewer
-if (isset($_REQUEST['add' . REVIEW_PRIMARY]) && $Me->amAssistant()) {
-    if (($cid = cvtint($_REQUEST['id' . REVIEW_PRIMARY])) <= 0)
+if (isset($_REQUEST['addpc']) && $Me->amAssistant()) {
+    if (($pcid = cvtint($_REQUEST['pcid'])) <= 0)
 	$Conf->errorMsg("Enter a PC member.");
-    else
-	$Me->assignPaper($prow->paperId, findRrow($cid), $cid, REVIEW_PRIMARY, $Conf);
-    getProw();
-}
-if (isset($_REQUEST['add' . REVIEW_SECONDARY]) && $Me->amAssistant()) {
-    if (($cid = cvtint($_REQUEST['id' . REVIEW_SECONDARY])) <= 0)
-	$Conf->errorMsg("Enter a PC member.");
-    else
-	$Me->assignPaper($prow->paperId, findRrow($cid), $cid, REVIEW_SECONDARY, $Conf);
+    else if (($pctype = cvtint($_REQUEST['pctype'])) == REVIEW_PRIMARY
+	     || $pctype == REVIEW_SECONDARY)
+	$Me->assignPaper($prow->paperId, findRrow($pcid), $pcid, $pctype, $Conf);
     getProw();
 }
 
@@ -217,8 +239,9 @@ if (isset($_REQUEST['retract']) && ($retract = cvtint($_REQUEST['retract'])) > 0
     getProw();
 }
 
-// begin table
-echo "<table class='review'>\n\n";
+// begin form and table
+echo "<form action='reqreview.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>
+<table class='review'>\n\n";
 
 
 // title
@@ -230,7 +253,7 @@ echo "  <td class='entry' colspan='2'><h2>", htmlspecialchars($prow->title), "</
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, true);
 $paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->amAssistant());
 
-$paperTable->echoStatusRow($prow, PaperTable::STATUS_DOWNLOAD | PaperTable::STATUS_CONFLICTINFO_PC);
+$paperTable->echoStatusRow($prow, PaperTable::STATUS_DOWNLOAD | PaperTable::STATUS_CONFLICTINFO);
 $paperTable->echoAbstractRow($prow);
 if ($canViewAuthors || $Me->amAssistant()) {
     $paperTable->echoAuthorInformation($prow);
@@ -238,6 +261,44 @@ if ($canViewAuthors || $Me->amAssistant()) {
     $paperTable->echoCollaborators($prow);
 }
 $paperTable->echoTopics($prow);
+
+
+// PC conflicts
+if ($Me->amAssistant()) {
+    $result = $Conf->qe("select ContactInfo.contactId, firstName, lastName, email,
+	count(PaperConflict.contactId) as conflict,
+	max(PaperConflict.author) as author, reviewType
+	from ContactInfo
+	join PCMember using (contactId)
+	left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$prow->paperId)
+	left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$prow->paperId)
+	group by email
+	order by lastName, firstName, email", "while looking up PC");
+    if (!DB::isError($result))
+	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT)))
+	    $pc[] = $row;
+
+    // PC conflicts row
+    echo "<tr class='pt_conflict_ass'>
+  <td class='caption'>PC conflicts</td>
+  <td class='entry'><table class='simple'>\n    <tr>";
+    $n = intval((count($pc) + 2) / 3);
+    for ($i = 0; $i < count($pc); $i++) {
+	$p = $pc[$i];
+	if (($i % $n) == 0) {
+	    if ($i == $n)
+		echo "	<input class='button_small' type='submit' name='update' value='Save conflicts' />\n";
+	    echo ($i ? "    </td><td>\n" : "<td>\n");
+	}
+	echo "	<input type='checkbox' name='pcc", $p->contactId, "'";
+	if ($p->conflict > 0)
+	    echo " checked='checked'";
+	if ($p->author > 0)
+	    echo " disabled='disabled'";
+	echo " onchange='highlightUpdate()' />&nbsp;", contactHtml($p), "<br/>\n";
+    }
+    echo "    </tr>\n  </table></td>\n</tr>\n\n";
+}
 
 
 // reviewer information
@@ -255,26 +316,21 @@ $Conf->infoMsg("External reviewers are given access to those papers assigned
  you should generally check personally whether they are interested.");
 
 
-echo "  <form action='reqreview.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>
-    <table class='reviewers'>\n";
+echo "<table class='reviewers'>\n";
 
 if ($Me->amAssistant()) {
-    $result = $Conf->qe("select ContactInfo.contactId, firstName, lastName, email, count(PaperConflict.contactId) as conflict, reviewType from ContactInfo join PCMember using (contactId) left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$prow->paperId) left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$prow->paperId) group by email order by lastName, firstName, email", "while looking up PC");
-    if (!DB::isError($result))
-	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT)))
-	    $pc[] = $row;
-
-    for ($rtyp = REVIEW_PRIMARY; $rtyp >= REVIEW_SECONDARY; $rtyp--) {
-	echo "    <tr><td>
-	<select name='id$rtyp'>
+    echo "    <tr><td>
+	<select name='pcid'>
 	<option selected='selected' value=''>Select PC member</option>\n";
 	foreach ($pc as $p)
 	    echo "	<option value='$p->contactId'", ($p->conflict > 0 ? " disabled='disabled'" : ""), ">", contactHtml($p), "</option>\n";
 	echo "	</select>
-      </td><td><input class='button_small' type='submit' name='add$rtyp' value='Add " . ($rtyp == REVIEW_PRIMARY ? "primary" : "secondary") . " reviewer' /></td>
+	<span class='gap'></span>
+	<input type='radio' name='pctype' value='", REVIEW_PRIMARY, "' ", ($anyPrimary ? "" : "checked='checked' "), "/>&nbsp;Primary
+	<input type='radio' name='pctype' value='", REVIEW_SECONDARY, "' ", ($anyPrimary ? "checked='checked' " : ""), "/>&nbsp;Secondary
+      </td><td><input class='button_small' type='submit' name='addpc' value='Assign PC review' /></td>
     </tr>\n";
     }
-}
 
 echo "    <tr><td>
 	<input class='textlite' type='text' name='name' value=\"";

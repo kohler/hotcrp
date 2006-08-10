@@ -6,7 +6,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     
     $subrev = array();
     $nonsubrev = array();
-    $foundRrow = $foundMyReview = $foundNonsub = $nRetractable = 0;
+    $foundRrow = $foundMyReview = $notShown = $nRetractable = 0;
     $actingConflict = ($prow->conflict > 0 && !$forceShow);
     $effAssistant = $Me->amAssistant() && !$actingConflict;
     $anyScores = false;
@@ -18,12 +18,13 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	$highlight = ($rrow && $rr->reviewId == $rrow->reviewId);
 	$foundRrow += $highlight;
 	$foundMyReview += ($rr->contactId == $Me->contactId);
-	$foundNonsub += ($rr->reviewSubmitted <= 0);
-	$canView = $Me->canViewReview($prow, $rr, $Conf);
+	$canView = $Me->canViewReview($prow, $rr, $Conf, $whyNot);
 
 	// skip unsubmitted reviews
-	if (!$canView && $actingConflict)
+	if (!$canView && $actingConflict) {
+	    $notShown++;
 	    continue;
+	}
 
 	$t = "    <tr>";
 
@@ -55,7 +56,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	    $t .= "<td>" . contactHtml($rr) . "</td>";
 
 	// review type
-	if ($prow->author > 0 || $prow->conflict > 0)
+	if ($prow->conflict > 0 && !$effAssistant)
 	    $t .= "<td class='empty'></td>";
 	else if ($rr->reviewType == REVIEW_PRIMARY)
 	    $t .= "<td>Primary</td>";
@@ -115,12 +116,13 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     
     // unfinished review notification
     $notes = array();
-    if ($prow->author > 0 && !$forceShow && $foundNonsub) {
-	$qualifier = (count($subrev) ? " additional" : "");
-	if ($foundNonsub == 1)
+    if ($prow->author > 0 && !$effAssistant && $notShown
+	&& $Me->canViewReview($prow, null, $Conf)) {
+	$qualifier = (count($subrev) + count($nonsubrev) ? " additional" : "");
+	if ($notShown == 1)
 	    $t = "1$qualifier review was requested, but has not been submitted yet.  ";
 	else
-	    $t = "$foundNonsub$qualifier reviews were requested, but have not been submitted yet.  ";
+	    $t = "$notShown$qualifier reviews were requested, but have not been submitted yet.  ";
 	$t .= "You will be emailed when$qualifier reviews are submitted and if any existing reviews are changed.";
 	$notes[] = $t;
     }
