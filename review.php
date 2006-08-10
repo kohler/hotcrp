@@ -196,7 +196,7 @@ else
 // then fix impossible modes
 if ($mode == "view" && $prow->conflict <= 0
     && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot)) {
-    if (isset($whyNot['reviewNotComplete'])) {
+    if (isset($whyNot['reviewNotComplete']) || isset($whyNot['externalReviewer'])) {
 	if (isset($_REQUEST["mode"]) || isset($whyNot['forceShow']))
 	    $Conf->infoMsg(whyNotText($whyNot, "review"));
     } else
@@ -274,10 +274,8 @@ echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></
 
 
 // exit on certain errors
-if ($mode == "view" && !$Me->canViewReview($prow, $rrow, $Conf)) {
-    echo "<div class='gapbottom'></div>\n";
-    errorMsgExit("");
-}
+if ($rrow && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
+    errorMsgExit(whyNotText($whyNot, "review"));
 
 
 // review information

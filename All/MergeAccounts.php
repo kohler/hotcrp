@@ -135,7 +135,7 @@ else
 
 <tr>
   <td class='caption'></td>
-  <td class='entry'><input type='radio' name='prefer' value='0' />&nbsp;Keep my current account (<?php echo htmlspecialchars($Me->email) ?>)<br />
+  <td class='entry'><input type='radio' name='prefer' value='0' checked='checked' />&nbsp;Keep my current account (<?php echo htmlspecialchars($Me->email) ?>)<br />
     <input type='radio' name='prefer' value='1' />&nbsp;Keep the account named above, delete my current account</td>
 </tr>
 

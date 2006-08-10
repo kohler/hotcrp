@@ -223,7 +223,7 @@ echo "</div>\n";
 
 
 
-$homeSep = "<span class='homesep'></span>";
+$homeSep = "<span class='sep'></span>";
 ?>
 
 

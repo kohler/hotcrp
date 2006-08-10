@@ -140,6 +140,9 @@ class Conference {
 		$this->startTime[$row[0]] = $row[1];
 		$this->endTime[$row[0]] = $row[2];
 	    }
+	foreach (array("PCReviewAnyPaper", "reviewerViewReviews") as $x)
+	    if (!isset($this->startTime[$x]))
+		$this->startTime[$x] = 0;
     }
 
     function q($query) {
@@ -346,20 +349,12 @@ class Conference {
     function timeAuthorViewDecision() {
 	return $this->validPeriod('authorViewDecision') > 0;
     }
-    function timePCReviewAnyPaper() {
-	return $this->validPeriod('PCReviewAnyPaper') > 0;
-    }
-    function timeReviewPaper($isPC = false, $requested = true, $trueDeadline = true) {
-	if ($isPC && $requested) {
-	    $d = ($trueDeadline ? "PCSubmitReviewDeadline" : "PCSubmitReview");
-	    return $this->validPeriod($d) > 0;
-	} else if ($isPC)
-	    return $this->validPeriod("PCReviewAnyPaper") > 0;
-	else if ($requested) {
-	    $d = ($trueDeadline ? "reviewerSubmitReviewDeadline" : "reviewerSubmitReview");
-	    return $this->validPeriod($d) > 0;
-	} else
+    function timeReviewPaper($isPC = false, $requested = true, $hard = true) {
+	if (!($requested
+	      || ($isPC && $this->startTime["PCReviewAnyPaper"] > 0)))
 	    return false;
+	$d = ($isPC ? "PC" : "reviewer") . "SubmitReview" . ($hard ? "Deadline" : "");
+	return $this->validPeriod($d) > 0;
     }
     function timePCViewSubmission() {
 	return true;

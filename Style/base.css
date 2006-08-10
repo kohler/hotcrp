@@ -693,7 +693,7 @@ table.review td.entry {
 	padding-right: 3em;
 }
 
-span.homesep, span.reviewer, span.reviewstatus {
+span.sep, span.reviewer, span.reviewstatus {
 	padding-right: 1em;
 }
 

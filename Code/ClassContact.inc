@@ -552,7 +552,8 @@ class Contact {
 		&& ($conf->timePCViewAllReviews()
 		    || (isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0)))
 	    || ($prow->reviewType > 0 && $rrsub
-		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0)
+		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0
+		&& $conf->startTime["reviewerViewReviews"] >= 1)
 	    || ($rrow && $rrow->paperId == $prow->paperId
 		&& $rrow->contactId == $this->contactId))
 	    return true;
@@ -563,6 +564,8 @@ class Contact {
 	    $whyNot['deadline'] = 'authorViewReviews';
 	else if ($prow->conflict > 0)
 	    $whyNot['conflict'] = 1;
+	else if ($prow->reviewType > 0 && !$this->isPC && $prow->reviewSubmitted > 0)
+	    $whyNot['externalReviewer'] = 1;
 	else
 	    $whyNot['reviewNotComplete'] = 1;
 	if ($this->amAssistant())
@@ -658,11 +661,12 @@ class Contact {
     }
     
     function canViewReviewerIdentity($prow, $rrow, $conf) {
-	if ($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
-	    return true;
-	if ($rrow->contactId == $this->contactId)
-	    return true;
-	if ($prow->author <= 0 && $prow->conflict <= 0 && $this->isPC)
+	if (($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
+	    || $rrow->contactId == $this->contactId
+	    || ($this->isPC && $prow->author <= 0 && $prow->conflict <= 0)
+	    || ($prow->reviewType > 0
+		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0
+		&& $conf->startTime["reviewerViewReviews"] >= 2))
 	    return true;
 	return false;
     }

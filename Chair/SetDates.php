@@ -6,6 +6,9 @@ $_SESSION["Me"]->goIfInvalid("../");
 $_SESSION["Me"]->goIfNotChair('../');
 include('Code.inc');
 
+// not actually dates; just look at the startTime
+// PCReviewAnyPaper
+
 $DateStartMap = array("updatePaperSubmission" => "startPaperSubmission",
 		      "finalizePaperSubmission" => "startPaperSubmission",
 		      "reviewerSubmitReviewDeadline" => "reviewerSubmitReview",
@@ -15,7 +18,7 @@ $DateStartMap = array("updatePaperSubmission" => "startPaperSubmission",
 $DateName['startPaperSubmission'][0] = "Submission period begins";
 $DateName['startPaperSubmission'][1] = "Deadline for creating new submissions";
 $DateName['updatePaperSubmission'][1] = "Deadline for updating submissions";
-$DateName['finalizePaperSubmission'][1] = "Deadline for finalizing submissions";
+$DateName['finalizePaperSubmission'][1] = "Submission period ends";
 
 $DateName['reviewerSubmitReview'][0] = "Review period begins";
 $DateName['reviewerSubmitReview'][1] = "Soft deadline for external reviews";
@@ -44,9 +47,9 @@ $DateDescr['updatePaperSubmission']
     . "that time.";
 
 $DateDescr['finalizePaperSubmission']
-= "Authors 'finalize' their submission to indicate that it is complete. "
+= "Papers must be officially submitted by this date or they will not be considered.  "
 . "It's usually a good idea to set this deadline to "
-. "a day or two after the submission deadline.";
+. "a day or two after the update deadline.";
 
 $DateDescr['authorRespondToReviews']
 = "This should obviously overlap with the period reviews are visible.";
@@ -218,14 +221,11 @@ if (isset($_REQUEST['update'])) {
 	}
     }
 
-    // PCReviewAnyPaper is a special case
-    if (isset($_REQUEST["PCReviewAnyPaper"])) {
-	if ($Dates["PCSubmitReview"] <= 0)
-	    $Dates["PCReviewAnyPaper"] = array(3, 2);
-	else
-	    $Dates["PCReviewAnyPaper"] = $Dates["PCSubmitReviewDeadline"];
-    } else
-	$Dates["PCReviewAnyPaper"] = array(0, 0);
+    // special cases
+    $Dates["PCReviewAnyPaper"] = array((isset($_REQUEST["PCReviewAnyPaper"]) ? 1 : 0), 0);
+    if (($x = cvtint($_REQUEST["reviewerViewReviews"])) < 0 || $x > 2)
+	$x = 0;
+    $Dates["reviewerViewReviews"] = array($x, 0);
     
     // print messages now, in case errors come later
     if (count($Messages) > 0)
@@ -236,19 +236,19 @@ if (isset($_REQUEST['update'])) {
 	$Conf->errorMsg(join("<br/>\n", $Error));
     else {
 	$result = $Conf->qe("delete from ImportantDates");
-	if (!DB::isError($result)) {
+	if (!DB::isError($result))
 	    foreach ($Dates as $n => $v) {
 		$sx = ($v[0] > 0 ? "from_unixtime($v[0])" : "'0'");
 		$ex = ($v[1] > 0 ? "from_unixtime($v[1])" : "'0'");
 		$Conf->qe("insert into ImportantDates set name='$n', start=$sx, end=$ex");
 		unset($_REQUEST["${n}_start"]);
 		unset($_REQUEST["${n}_end"]);
+		unset($_REQUEST[$n]);
 	    }
-	}
     }
- } else if (isset($_REQUEST["revert"])) {
+} else if (isset($_REQUEST["revert"])) {
     $_REQUEST = array();
- }
+}
 
 $Conf->updateImportantDates();
 ?>
@@ -293,15 +293,26 @@ $Conf->updateImportantDates();
 <tr>
   <td class='datename' colspan='6'><input type='checkbox' name='PCReviewAnyPaper' value='1' <?php
 	if (isset($_REQUEST["PCReviewAnyPaper"])
-	    || (isset($Conf->startTime["PCReviewAnyPaper"])
-		&& (!isset($Conf->endTime["PCReviewAnyPaper"]) || $Conf->startTime["PCReviewAnyPaper"] < $Conf->endTime["PCReviewAnyPaper"])))
+	    || cvtint($Conf->startTime["PCReviewAnyPaper"]) > 0)
 	    echo "checked='checked' ";
-    ?>onchange='highlightUpdate()' tabindex='1' />&nbsp;PC can review any paper during the reviewing period</td>
+    ?>onchange='highlightUpdate()' tabindex='1' />&nbsp;PC can review any submitted paper during the review period</td>
 </tr>
-<?php crp_show1date('reviewerSubmitReview', 1); ?>
-<?php crp_show1date('PCSubmitReview', 1); ?>
-<?php crp_show1date('reviewerSubmitReviewDeadline', 1); ?>
-<?php crp_show1date('PCSubmitReviewDeadline', 1); ?>
+<?php
+
+crp_show1date('reviewerSubmitReview', 1);
+
+echo "<tr>\n  <td colspan='2' class='datename'>External reviewers can view other reviews:</td>\n  <td colspan='8' class='entry'>";
+$x = cvtint($_REQUEST["reviewerViewReviews"]);
+if ($x < 0)
+    $x = cvtint($Conf->startTime["reviewerViewReviews"]);
+echo "<span class='sep'><input type='radio' name='reviewerViewReviews' value='0'", ($x <= 0 || $x > 2 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Never </span><br />";
+echo "<input type='radio' name='reviewerViewReviews' value='1'", ($x == 1 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;After they submit their reviews, but they cannot see reviewer identities<br />";
+echo "<input type='radio' name='reviewerViewReviews' value='2'", ($x == 2 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;After they submit their reviews, including reviewer identities";
+echo "</td>\n</tr>\n";
+
+crp_show1date('PCSubmitReview', 1);
+crp_show1date('reviewerSubmitReviewDeadline', 1);
+crp_show1date('PCSubmitReviewDeadline', 1); ?>
 </table>
 
     
