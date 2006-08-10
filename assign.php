@@ -122,6 +122,7 @@ Thank you for your help -- we appreciate that reviewing is hard work!
 
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
+    $Conf->log("Asked $Them->contactId ($Them->email) to review $prow->paperId", $Me);
     return true;
 }
 
@@ -246,9 +247,13 @@ echo "  <td class='caption'>Reviews</td>\n";
 echo "  <td class='entry'>", ($revTable ? $revTable : "None");
 
 // add reviewers
-echo "  <hr class='smgap' />
+$Conf->infoMsg("External reviewers are given access to those papers assigned
+ to them for review, including the other reviewers' identities and any
+ eventual outcome.  Before requesting an external review, you should
+ generally check personally whether they are interested.");
 
-  <form action='reqreview.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>
+
+echo "  <form action='reqreview.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>
     <table class='reviewers'>\n";
 
 if ($Me->amAssistant()) {

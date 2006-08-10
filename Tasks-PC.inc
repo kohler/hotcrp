@@ -21,23 +21,6 @@
 <li> Reviewer assignments  (asking others to review papers)
 <ul>
 
-<?php if ($Conf->validTimeFor('PCSubmitReviewDeadline', 0)) { ?>
-<li>  <a href="PC/AskForSecondaryReview.php">Ask someone</a>
-to review a paper for which you are a <b> secondary </b> reviewer
-</li><br>
-
-<li>  <a href="PC/AskForPrimaryReview.php"> Ask someone </a>
-to review a paper for which you are a <b> primary </b>  reviewer <br>
-(note that you don't <b> need </b> to ask other people to review<br>
-papers for which you are the primary, but you <b> may </b> do it)
-</li>
-
-<?php } ?>
-
-<li> <a href="PC/RemoveAskReview.php"> Un-ask someone </a>
-to be a reviewer for a paper.
- </li>
-
 <li> <a href="PC/CheckReviewStatus.php"> Check on reviewer progress status </a> 
 (and possibly nag reviewers) </li>
 

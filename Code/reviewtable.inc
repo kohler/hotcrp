@@ -116,11 +116,12 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     // unfinished review notification
     $notes = array();
     if ($prow->author > 0 && !$forceShow && $foundNonsub) {
+	$qualifier = (count($subrev) ? " additional" : "");
 	if ($foundNonsub == 1)
-	    $t = "1 additional review was requested, but has not been submitted yet.  ";
+	    $t = "1$qualifier review was requested, but has not been submitted yet.  ";
 	else
-	    $t = "$foundNonsub additional reviews were requested, but have not been submitted yet.  ";
-	$t .= "You will be emailed when additional reviews are submitted and if any existing reviews are changed.";
+	    $t = "$foundNonsub$qualifier reviews were requested, but have not been submitted yet.  ";
+	$t .= "You will be emailed when$qualifier reviews are submitted and if any existing reviews are changed.";
 	$notes[] = $t;
     }
 
