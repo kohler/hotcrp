@@ -129,7 +129,7 @@ if ($OK) {
       $result = $Conf->qe($q, "while finding contact authors");
       if (!DB::isError($result)) {
 	  while ($row = $result->fetchRow()) {
-	      echo "<tr><td>", htmlspecialchars(contactText($row[0], $row[1])), "</td> <td>", htmlspecialchars($row[2]), "</td>";
+	      echo "<tr><td>", contactHtml($row[0], $row[1]), "</td> <td>", htmlspecialchars($row[2]), "</td>";
 	      if ($Me->amAssistant())
 		  echo " <td><button class='button_small' type='submit' name='remove' value='$row[3]'>Remove contact author</button></td>";
 	      echo "</tr>\n    ";

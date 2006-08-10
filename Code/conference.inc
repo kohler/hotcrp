@@ -840,10 +840,12 @@ class Conference {
 
     function paperRow($sel, $contactId = -1, &$whyNot = null) {
 	$whyNot = array();
-	if (!is_array($sel)) {
-	    $whyNot['paperId'] = $sel;
+	if (!is_array($sel))
 	    $sel = array('paperId' => $sel);
-	}
+	if (isset($sel['paperId']))
+	    $whyNot['paperId'] = $sel['paperId'];
+	if (isset($sel['reviewId']))
+	    $whyNot['reviewId'] = $sel['reviewId'];
 	
 	if (isset($sel['paperId']) && cvtint($sel['paperId']) < 0)
 	    $whyNot['invalidId'] = 'paper';
@@ -1307,7 +1309,6 @@ class Conference {
 		 . " contactId='$who->contactId', action='$text'" );
     }
 
-  
     ///////////////////////////////////////////////////////////////////////////
     // output summary of review status
     ///////////////////////////////////////////////////////////////////////////

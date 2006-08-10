@@ -23,7 +23,7 @@ if (!DB::isError($result)) {
 	$type = ($row->chair ? "PC Chair" : ($row->ass ? "PC Chair's Assistant" : ($row->pc ? "PC Member" : "Others")));
 	if ($type != $oldtype)
 	    echo "<option value='-1' disabled='disabled'>", $type, "</option>\n";
-	echo "<option value='$row->contactId'>&nbsp;&nbsp;", contactText($row), "</option>\n";
+	echo "<option value='$row->contactId'>&nbsp;&nbsp;", contactHtml($row), "</option>\n";
 	$oldtype = $type;
     }
 }

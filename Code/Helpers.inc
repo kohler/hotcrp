@@ -301,6 +301,26 @@ function contactText($firstName, $lastName=null, $email=null) {
     return $x;
 }
 
+function contactHtml($firstName, $lastName=null, $email=null) {
+    return htmlspecialchars(contactText($firstName, $lastName, $email));
+    if (is_array($firstName)) {
+	$email = $firstName[2];
+	$lastName = $firstName[1];
+	$firstName = $firstName[0];
+    } else if (is_object($firstName)) {
+	$email = isset($firstName->email) ? $firstName->email : "";
+	$lastName = $firstName->lastName;
+	$firstName = $firstName->firstName;
+    }
+    if ($firstName || $lastName) {
+	$x = trim("$firstName $lastName");
+	if ($email)
+	    $x .= " ($email)";
+    } else
+	$x = $email;
+    return $x;
+}
+
 function goPaperForm($baseUrl = "paper.php", $args = array()) {
     global $ConfSiteBase;
     $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get'><div class='inform'>";
@@ -443,7 +463,9 @@ function whyNotText($whyNot, $action) {
 	$xid = (isset($whyNot[$x]) ? " \"" . $whyNot[$x] . "\"" : "");
 	$text .= "Invalid " . $whyNot['invalidId'] . " number" . htmlspecialchars($xid) . ".  ";
     }
-    if (isset($whyNot['noPaper']))
+    if (isset($whyNot['noPaper']) && $paperId < 0 && $reviewId > 0)
+	$text .= "No such review" . ($reviewId < 0 ? "" : " #$reviewId") . ".  ";
+    else if (isset($whyNot['noPaper']))
 	$text .= "No such paper" . ($paperId < 0 ? "" : " #$paperId") . ".  ";
     if (isset($whyNot['noReview']))
 	$text .= "No such review" . ($reviewId < 0 ? "" : " #$reviewId") . ".  ";

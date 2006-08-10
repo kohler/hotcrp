@@ -179,7 +179,7 @@ Zhang, Ping Yen (INRIA)</pre></td>\n";
 	if ($pulldown)
 	    contactPulldown("contact", "contact", $Conf, $Me);
 	else
-	    echo contactText($Me->firstName, $Me->lastName, $Me->email);
+	    echo contactHtml($Me);
 	echo "</td>\n";
 	echo "  ", $this->tdHint('contactAuthor'), "You will be able to add more contact authors after you submit the paper.</td>\n";
     }
@@ -200,7 +200,7 @@ Zhang, Ping Yen (INRIA)</pre></td>\n";
 		$au = contactText($row[0], $row[1], $row[2]);
 		$aus[] = $au;
 	    }
-	    echo authorTable($aus, false);
+	    echo authorTable($aus);
 	}
 	if ($editMode || ($editMode === null && $this->editable))
 	    echo "<a class='button_small' href='${ConfSiteBase}contactauthors.php?paperId=$prow->paperId'>Edit&nbsp;contact&nbsp;authors</a>";

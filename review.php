@@ -112,6 +112,67 @@ if (isset($_REQUEST['downloadForm']))
     downloadForm();
 
 
+// refuse review action
+function refuseReview() {
+    global $ConfSiteBase, $Conf, $Opt, $Me, $prow, $rrow, $reviewFields;
+    
+    $while = "while refusing review";
+    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperReviewArchive write", $while);
+
+    if ($rrow->reviewModified > 0) {
+	$fields = "reviewId, paperId, contactId, reviewType, requestedBy,
+		requestedOn, acceptedOn, reviewModified, reviewSubmitted, "
+	    . join(", ", array_keys($reviewFields));
+	$result = $Conf->qe("insert into PaperReviewArchive ($fields) select $fields from PaperReview where reviewId=$rrow->reviewId", $while);
+	if (DB::isError($result))
+	    return;
+    }
+    $result = $Conf->qe("delete from PaperReview where reviewId=$rrow->reviewId", $while);
+    if (DB::isError($result))
+	return;
+    $reason = (isset($_REQUEST['reason']) ? $_REQUEST['reason'] : "");
+    $result = $Conf->qe("insert into PaperReviewRefused set paperId=$rrow->paperId, contactId=$rrow->contactId, requestedBy=$rrow->requestedBy, reason='" . sqlqtrim($reason) . "'", $while);
+    if (DB::isError($result))
+	return;
+
+    // send confirmation email
+    $m = "Dear " . contactText($rrow->reqFirstName, $rrow->reqLastName, $rrow->reqEmail) . ",\n\n";
+    $m .= wordwrap(contactText($rrow) . " cannot complete the review of $Conf->shortName paper #$prow->paperId that you requested.  " . ($reason ? "They gave the reason \"$reason\".  " : "") . "You may want to find an alternate reviewer.\n\n")
+	. wordWrapIndent(trim($prow->title), "Title: ", 14) . "\n"
+	. "  Paper site: $Conf->paperSite/review.php?paperId=$prow->paperId
+
+- $Conf->shortName Conference Submissions\n";
+
+    $s = "[$Conf->shortName] Review request for paper #$prow->paperId refused";
+
+    if ($Conf->allowEmailTo($rrow->reqEmail))
+	$results = mail($rrow->reqEmail, $s, $m, "From: $Conf->emailFrom");
+    else
+	$Conf->infoMsg("<pre>" . htmlspecialchars("$s\n\n$m") . "</pre>");
+
+    // confirmation message
+    $Conf->confirmMsg("The request for you to review paper #$prow->paperId has been removed.  Mail was sent to the person who originally requested the review.");
+    $Conf->qe("unlock tables");
+
+    $prow = null;
+    confHeader();
+    exit;
+}
+
+if (isset($_REQUEST['refuse'])) {
+    if (!$rrow || ($rrow->contactId != $Me->contactId && !$Me->amAssistant())
+	|| $rrow->reviewType != REVIEW_REQUESTED)
+	$Conf->errorMsg("This review was not requested of you, so you cannot refuse it.");
+    else if ($rrow->reviewSubmitted > 0)
+	$Conf->errorMsg("This review has already been submitted; you can't refuse it now.");
+    else {
+	refuseReview();
+	$Conf->qe("unlock tables");
+	loadRows();
+    }
+}
+    
+
 // forceShow
 if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->amAssistant())
     $forceShow = "&amp;forceShow=1";
@@ -120,16 +181,15 @@ else
 
 
 // mode
-$mode = "view";
-// first set mode
 if (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "edit")
     $mode = "edit";
 else if (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "view")
     $mode = "view";
-else if ($prow->conflict <= 0 && !$Me->canViewReview($prow, $rrow, $Conf))
-    $mode = "edit";
 else if ($rrow && ($Me->canReview($prow, $rrow, $Conf)
 		   || ($Me->amAssistant() && ($prow->conflict <= 0 || $forceShow))))
+    $mode = "edit";
+else if (!$rrow && (($prow->reviewType > 0 && $prow->reviewSubmitted <= 0)
+		    || ($Me->isPC && !$Me->canViewReview($prow, $rrow, $Conf))))
     $mode = "edit";
 else
     $mode = "view";
@@ -148,6 +208,8 @@ if ($mode == "edit" && !$Me->canReview($prow, $rrow, $Conf, $whyNot)) {
     $Conf->errorMsg(whyNotText($whyNot, "review"));
     $mode = "view";
 }
+if ($mode == "edit" && !$rrow)
+    $rrow = $editRrow;
 
 
 // page header
@@ -191,8 +253,13 @@ if ($Me->amAssistant())
 // reviewer information
 $revTable = reviewTable($prow, $rrows, $rrow, $mode);
 $revTableClass = (preg_match("/<th/", $revTable) ? "rev_reviewers_hdr" : "rev_reviewers");
+if ($reviewTableFolder)
+    $revTableClass .= " folded' id='foldrt";
 echo "<tr class='", $revTableClass, "'>\n";
-echo "  <td class='caption'>Reviews</td>\n";
+echo "  <td class='caption'>";
+if ($reviewTableFolder)
+    echo "<a class='foldbutton unfolder' href=\"javascript:fold('rt', 0)\">+</a><a class='foldbutton folder' href=\"javascript:fold('rt', 1)\">&minus;</a>&nbsp;";
+echo "Reviews</td>\n";
 echo "  <td class='entry'>", ($revTable ? $revTable : "None"), "</td>\n";
 echo "</tr>\n\n";
 
@@ -215,7 +282,7 @@ if ($mode == "view" && !$Me->canViewReview($prow, $rrow, $Conf)) {
 
 // review information
 // XXX reviewer ID
-// XXX "<td class='entry'>", htmlspecialchars(contactText($rrow)), "</td>"
+// XXX "<td class='entry'>", contactHtml($rrow), "</td>"
 
 function reviewView($prow, $rrow, $editMode) {
     global $Conf, $Me, $rf, $forceShow;

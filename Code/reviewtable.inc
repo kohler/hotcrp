@@ -2,7 +2,7 @@
 
 // reviewer information
 function reviewTable($prow, $rrows, $rrow, $mode) {
-    global $Conf, $ConfSiteBase, $Me, $rf, $forceShow;
+    global $Conf, $ConfSiteBase, $Me, $rf, $forceShow, $reviewTableFolder;
     
     $subrev = array();
     $nonsubrev = array();
@@ -11,6 +11,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     $effAssistant = $Me->amAssistant() && !$actingConflict;
     $anyScores = false;
     $nNumeric = $rf->numNumericScores($prow, $Me, $Conf);
+    $reviewTableFolder = false;
     
     // actual rows
     foreach ($rrows as $rr) {
@@ -34,6 +35,10 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	$id = "Review";
 	if ($rr->reviewSubmitted > 0)
 	    $id .= "&nbsp;#" . $prow->paperId . unparseReviewOrdinal($rr->reviewOrdinal);
+	else if ($rr->reviewModified > 0)
+	    $id .= "&nbsp;in&nbsp;progress";
+	else
+	    $id .= "&nbsp;(not&nbsp;started)";
 	if ($rrow && $rrow->reviewId == $rr->reviewId)
 	    $t .= "<td><b>$id</b></td>";
 	else if (!$canView)
@@ -47,7 +52,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	else if ($rr->contactId == $Me->contactId)
 	    $t .= "<td>You</td>";
 	else
-	    $t .= "<td>" . contactText($rr) . "</td>";
+	    $t .= "<td>" . contactHtml($rr) . "</td>";
 
 	// review type
 	if ($prow->author > 0 || $prow->conflict > 0)
@@ -56,29 +61,25 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	    $t .= "<td>Primary</td>";
 	else if ($rr->reviewType == REVIEW_SECONDARY)
 	    $t .= "<td>Secondary</td>";
-	else if ($rr->reviewType == REVIEW_REQUESTED)
-	    $t .= "<td>Requested<br /><small>by " . ($rr->reqContactId == $Me->contactId ? "you" : contactText($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail)) . "</small></td>";
+	else if ($rr->reviewType == REVIEW_REQUESTED && $rr->reqContactId == $Me->contactId)
+	    $t .= "<td>Requested by you</td>";
+	else if ($rr->reviewType == REVIEW_REQUESTED) {
+	    $class = ($mode == "req" ? "" : " class='extension'");
+	    $t .= "<td>Requested<br /><small$class>by " . contactHtml($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail) . "</small></td>";
+	    if ($class)
+		$reviewTableFolder = true;
+	}
 
-	// status
-	if ($rr->reviewModified <= 0) {
-	    $t .= "<td colspan='" . (2 + $nNumeric) . "'>Not started";
-	    
-	    if ($rr->reviewType == REVIEW_REQUESTED
-		&& ($rr->requestedBy == $Me->contactId || $effAssistant)) {
-		if ($mode == "req")
-		    $t .= " <a class='button_small' href=\"${ConfSiteBase}reqreview.php?paperId=$prow->paperId&amp;retract=$rr->reviewId$forceShow\">Retract review request</a>";
-		else
-		    $nRetractable++;
-	    }
-	    
-	    $t .= "</td>";
-	} else if ($rr->reviewSubmitted <= 0)
-	    $t .= "<td>In progress</td>";
-	else
-	    $t .= "<td class='empty'></td>";
-
-	// scores
-	$t .= $rf->webNumericScoresRow($rr, $prow, $Me, $Conf, $anyScores);
+	// scores or retract request
+	if ($rr->reviewModified <= 0 && $rr->reviewType == REVIEW_REQUESTED
+	    && ($rr->requestedBy == $Me->contactId || $effAssistant)) {
+	    if ($mode == "req") {
+		$t .= "<td colspan='" . (1 + $nNumeric) . "'>";
+		$t .= "<a class='button_small' href=\"${ConfSiteBase}reqreview.php?paperId=$prow->paperId&amp;retract=$rr->reviewId$forceShow\">Retract review request</a></td>";
+	    } else
+		$nRetractable++;
+	} else 
+	    $t .= $rf->webNumericScoresRow($rr, $prow, $Me, $Conf, $anyScores);
 
 	$t .= "<td></td></tr>\n";
 
@@ -100,14 +101,14 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     $numericHeaders = "";
     if ($anyScores) {
 	$t = ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "");
-	$numericHeaders = "    <tr>$t<td class='empty' colspan='4'></td>" . $rf->webNumericScoresHeader($prow, $Me, $Conf) . "</tr>\n";
+	$numericHeaders = "    <tr>$t<td class='empty' colspan='3'></td>" . $rf->webNumericScoresHeader($prow, $Me, $Conf) . "</tr>\n";
     }
     
     // see all reviews
     if (($mode != "edit" && $rrow && $Me->canViewReview($prow, null, $Conf))
 	|| ($mode == "edit" && $Me->canViewReview($prow, null, $Conf))) {
 	$t = "    <tr>" . ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "") . "<td colspan='";
-	$t .= ($anyScores ? 5 + $nNumeric : 5);
+	$t .= ($anyScores ? 4 + $nNumeric : 4);
 	$t .= "'><a href='review.php?paperId=$prow->paperId&amp;mode=view$forceShow'>View all reviews on one page</a></td></tr>\n";
 	$nonsubrev[] = $t;
     }
@@ -129,20 +130,39 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 
     // review requests
     if ($mode != "req" && ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
-	$t = ($nRetractable ? " or retract outstanding review requests" : "");
-	$notes[] = "<a href=\"${ConfSiteBase}reqreview.php?paperId=$prow->paperId\">Ask someone else to review this paper$t</a>";
+	if ($Me->amAssistant())
+	    $t = "Assign or request reviewers";
+	else
+	    $t = "Ask someone else to review this paper" . ($nRetractable ? " or retract outstanding review requests" : "");
+	$notes[] = "<a href=\"${ConfSiteBase}reqreview.php?paperId=$prow->paperId\">$t</a>";
+    }
+
+    // refuse review
+    if ($mode != "req" && $rrow && $rrow->reviewType == REVIEW_REQUESTED && $rrow->reviewSubmitted <= 0) {
+	$t = "<div id='foldref' class='folded' style='position: relative'><a href=\"javascript:fold('ref', 0)\">I cannot finish this review</a>
+  <div class='popupdialog extension'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p>
+    <form action='${ConfSiteBase}review.php?reviewId=$rrow->reviewId&amp;post=1' method='post' enctype='multipart/form-data'>\n";
+	if ($forceShow)
+	    $t .= "      <input type='hidden' name='forceShow' value='1' />\n";
+	$t .= "      <input class='textlite' type='text' name='reason' value='' size='40' />
+      <hr class='smgap' />
+      <input class='button' type='submit' name='refuse' value='Refuse review' />
+      <button type='button' onclick=\"fold('ref', 1)\">Cancel</button>
+    </form>
+  </div></div>";
+	$notes[] = $t;
     }
 
     if (count($notes)) {
 	$t = ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "");
-	$nonsubrev[] = "    <tr>$t<td class='revnotes' colspan='" . ($anyScores ? 5 + $nNumeric : 5) . "'>" . join("<br />\n", $notes) . "</td></tr>\n";
+	$nonsubrev[] = "    <tr>$t<td class='revnotes' colspan='" . ($anyScores ? 4 + $nNumeric : 4) . "'>" . join("<br />\n", $notes) . "</td></tr>\n";
     }
 
     // completion
     if (count($nonsubrev) || count($subrev))
-	return "<table class='reviewers'>\n" . $numericHeaders
-		     . join("", $subrev) . join("", $nonsubrev)
-		     . "  </table>\n";
+	return "<table class='reviewers'>\n"
+	    . $numericHeaders . join("", $subrev) . join("", $nonsubrev)
+	    . "  </table>\n";
     else
 	return "";
 }

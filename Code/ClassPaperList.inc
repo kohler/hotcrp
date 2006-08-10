@@ -196,7 +196,7 @@ class PaperList {
 	case self::FIELD_REVIEW:
 	    return reviewButton($row->paperId, $row);
 	case self::FIELD_REVIEWER_NAME:
-	    return htmlspecialchars(contactText($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail));
+	    return contactHtml($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail);
 	case self::FIELD_ASSIGN_REVIEW:
 	    if ($row->author > 0)
 		return "<span class='author'>Author</span>";
@@ -220,7 +220,7 @@ class PaperList {
 		foreach ($reviewList[$row->paperId] as $xrow)
 		    if ($xrow->lastName) {
 			$n .= ($n ? ", " : "");
-			$n .= contactText($xrow->firstName, $xrow->lastName);
+			$n .= contactHtml($xrow->firstName, $xrow->lastName);
 			if ($xrow->reviewType == REVIEW_PRIMARY)
 			    $n .= "<sub><b>1</b></sub>";
 			else if ($xrow->reviewType == REVIEW_SECONDARY)

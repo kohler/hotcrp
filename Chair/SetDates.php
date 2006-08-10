@@ -257,6 +257,7 @@ $Conf->updateImportantDates();
 <a href='http://www.php.net/manual/en/function.strtotime.php' target='_blank'>How to specify a date</a></p>
 
 <form class='date' method='post' action='SetDates.php'>
+<input type='hidden' name='chairMode' value='0' />
 
 <table>
 <tr>

@@ -822,4 +822,24 @@ and paste it into your web browser's location field.
       }
       print "</table>";
     }
+
+
+    function assignPaper($paperId, $row, $reviewer, $type, $conf) {
+	global $reviewTypeName;
+	if ($type > 0 && (!$row || !$row->reviewType))
+	    $q = "insert into PaperReview set paperId=$paperId, contactId=$reviewer, reviewType=$type, requestedBy=$this->contactId, requestedOn=current_timestamp";
+	else if ($type > 0 && $row->reviewType != $type)
+	    $q = "update PaperReview set reviewType=$type where reviewId=$row->reviewId";
+	else if ($type == 0 && $row && $row->reviewType && !$row->reviewModified)
+	    $q = "delete from PaperReview where reviewId=$row->reviewId";
+	else if ($type == 0 && $row && $row->reviewType)
+	    $q = "update PaperReview set reviewType=" . REVIEW_PC . " where reviewId=$row->reviewId";
+	else
+	    return;
+	
+	$result = $conf->qe($q, "while assigning review");
+	if (!DB::isError($result))
+	    $conf->log("Added $reviewTypeName[$type] reviewer $reviewer for paper $paperId", $Me);
+    }	
+  
 }

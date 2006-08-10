@@ -31,6 +31,14 @@ function getProw() {
 }
 getProw();
 
+function findRrow($contactId) {
+    global $rrows;
+    foreach ($rrows as $rr)
+	if ($rr->contactId == $contactId)
+	    return $rr;
+    return null;
+}
+
 
 // forceShow
 if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->amAssistant())
@@ -67,7 +75,7 @@ function requestReview($email) {
     if (DB::isError($result))
 	return false;
     else if (($row = $result->fetchRow(DB_FETCHMODE_OBJECT)))
-	return $Conf->errorMsg(contactText($row) . " has already requested a review from " . contactText($Them) . ".");
+	return $Conf->errorMsg(contactHtml($row) . " has already requested a review from " . contactHtml($Them) . ".");
 
     // check for outstanding refusal to review
     $result = $Conf->qe("select reason from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
@@ -77,7 +85,7 @@ function requestReview($email) {
 	    $Conf->infoMsg("Overriding previous refusal to review paper #$prow->paperId." . ($row[0] ? "  (Their reason was \"" . htmlspecialchars($row[0]) . "\".)" : ""));
 	    $Conf->qe("delete from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
 	} else
-	    return $Conf->errorMsg(contactText($Them) . " refused a previous request to review paper #$prow->paperId." . ($row[0] ? "  (Their reason was \"" . htmlspecialchars($row[0]) . "\".)" : "") . ($Me->amAssistant() ? "  As PC Chair, you can override this refusal with the \"Override...\" checkbox." : ""));
+	    return $Conf->errorMsg(contactHtml($Them) . " refused a previous request to review paper #$prow->paperId." . ($row[0] ? "  (Their reason was \"" . htmlspecialchars($row[0]) . "\".)" : "") . ($Me->amAssistant() ? "  As PC Chair, you can override this refusal with the \"Override...\" checkbox." : ""));
     }
 
     // at this point, we think we've succeeded.
@@ -114,6 +122,7 @@ Thank you for your help -- we appreciate that reviewing is hard work!
 
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
+    return true;
 }
 
 if (isset($_REQUEST['add'])) {
@@ -123,12 +132,31 @@ if (isset($_REQUEST['add'])) {
 	     || $email == "Email")
 	$Conf->errorMsg("An email address is required to request a review.");
     else {
-	requestReview($email);
+	$ok = requestReview($email);
 	$Conf->qe("unlock tables");
 	getProw();
-	unset($_REQUEST['email']);
-	unset($_REQUEST['name']);
+	if ($ok) {
+	    unset($_REQUEST['email']);
+	    unset($_REQUEST['name']);
+	}
     }
+}
+
+
+// add primary or secondary reviewer
+if (isset($_REQUEST['add' . REVIEW_PRIMARY]) && $Me->amAssistant()) {
+    if (($cid = cvtint($_REQUEST['id' . REVIEW_PRIMARY])) <= 0)
+	$Conf->errorMsg("Enter a PC member.");
+    else
+	$Me->assignPaper($prow->paperId, findRrow($cid), $cid, REVIEW_PRIMARY, $Conf);
+    getProw();
+}
+if (isset($_REQUEST['add' . REVIEW_SECONDARY]) && $Me->amAssistant()) {
+    if (($cid = cvtint($_REQUEST['id' . REVIEW_SECONDARY])) <= 0)
+	$Conf->errorMsg("Enter a PC member.");
+    else
+	$Me->assignPaper($prow->paperId, findRrow($cid), $cid, REVIEW_SECONDARY, $Conf);
+    getProw();
 }
 
 
@@ -178,7 +206,7 @@ Thank you,
 	$Conf->infoMsg("<pre>" . htmlspecialchars("$s\n\n$m") . "</pre>");
 
     // confirmation message
-    $Conf->confirmMsg("Removed request that " . contactText($row) . " review paper #$prow->paperId.");
+    $Conf->confirmMsg("Removed request that " . contactHtml($row) . " review paper #$prow->paperId.");
 }
 
 if (isset($_REQUEST['retract']) && ($retract = cvtint($_REQUEST['retract'])) > 0) {
@@ -216,21 +244,45 @@ $revTableClass = (preg_match("/<th/", $revTable) ? "rev_reviewers_hdr" : "rev_re
 echo "<tr class='", $revTableClass, "'>\n";
 echo "  <td class='caption'>Reviews</td>\n";
 echo "  <td class='entry'>", ($revTable ? $revTable : "None");
-echo "  <form action='reqreview.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>
-    <table class='reviewers'><tr>
-      <td>
+
+// add reviewers
+echo "  <hr class='smgap' />
+
+  <form action='reqreview.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>
+    <table class='reviewers'>\n";
+
+if ($Me->amAssistant()) {
+    $result = $Conf->qe("select ContactInfo.contactId, firstName, lastName, email, count(PaperConflict.contactId) as conflict, reviewType from ContactInfo join PCMember using (contactId) left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$prow->paperId) left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$prow->paperId) group by email order by lastName, firstName, email", "while looking up PC");
+    if (!DB::isError($result))
+	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT)))
+	    $pc[] = $row;
+
+    for ($rtyp = REVIEW_PRIMARY; $rtyp >= REVIEW_SECONDARY; $rtyp--) {
+	echo "    <tr><td>
+	<select name='id$rtyp'>
+	<option selected='selected' value=''>Select PC member</option>\n";
+	foreach ($pc as $p)
+	    if ($p->conflict <= 0)
+		echo "	<option value='$p->contactId'>", contactHtml($p), "</option>\n";
+	echo "	</select>
+      </td><td><input class='button_small' type='submit' name='add$rtyp' value='Add " . ($rtyp == REVIEW_PRIMARY ? "primary" : "secondary") . " reviewer' /></td>
+    </tr>\n";
+    }
+}
+
+echo "    <tr><td>
 	<input class='textlite' type='text' name='name' value=\"";
 echo (isset($_REQUEST['name']) ? htmlspecialchars($_REQUEST['name']) : "Name");
 echo "\" onfocus=\"tempText(this, 'Name', 1)\" onblur=\"tempText(this, 'Name', 0)\" />
 	<input class='textlite' type='text' name='email' value=\"";
 echo (isset($_REQUEST['email']) ? htmlspecialchars($_REQUEST['email']) : "Email");
 echo "\" onfocus=\"tempText(this, 'Email', 1)\" onblur=\"tempText(this, 'Email', 0)\" />
-      </td>
-      <td><input class='button_small' type='submit' name='add' value='Request an external review' />";
+      </td><td><input class='button_small' type='submit' name='add' value='Request an external review' />";
 if ($Me->amAssistant())
     echo "<br />\n	<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines and any previous refusal";
-echo "\n      </td>\n    </tr></table>
-  </form>";
+echo "\n    </td></tr>\n";
+
+echo "    </table>\n  </form>";
 echo "</td>\n</tr>\n\n";
 
 

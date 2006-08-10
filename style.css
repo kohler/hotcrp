@@ -262,18 +262,25 @@ input.button_small, a.button_small, button.button_small {
 a.small {
 	font-size: small;
 }
-a.foldbutton {
+a.foldbutton, a.foldbutton_tiny {
 	font-size: small;
 	font-weight: normal;
 	padding: 0px 0.25em;
 	text-decoration: none;
 	color: black;
 	margin: 3px 0px;
-	background: #ffffbb;
+	background: #ffffdd;
 	border-top: 1px solid #eeee66;
 	border-left: 1px solid #eeee66;
 	border-bottom: 1px solid #999966;
 	border-right: 1px solid #999966;
+}
+a.foldbutton {
+	font-size: small;
+}
+a.foldbutton_tiny {
+	font-size: xx-small;
+	vertical-align: 3px;
 }
 td.caption a.foldbutton {
 	background: #fff0e0;

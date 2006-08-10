@@ -559,7 +559,7 @@ class ReviewForm {
 		. ($links ? "<a href='#review$rtxt'>" : "")
 		. "Review $rtxt" . ($links ? "</a>" : "") . "</td>";
 	    if ($contact->canViewReviewerIdentity($prow, $rrow, $conf))
-		$x .= "<td class='rs_id'>" . contactText($rrow) . "</td>";
+		$x .= "<td class='rs_id'>" . contactHtml($rrow) . "</td>";
 	    else
 		$x .= "<td></td>";
 	    foreach ($this->fieldOrder as $field) {

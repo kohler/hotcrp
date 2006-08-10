@@ -303,6 +303,50 @@ CREATE TABLE PaperReviewRefused (
   KEY requestedBy (requestedBy)
 ) TYPE=MyISAM;
 
+drop table if exists PaperReviewArchive;
+CREATE TABLE PaperReviewArchive (  
+  reviewArchiveId int(11) NOT NULL auto_increment,
+  reviewId int(11) NOT NULL,
+  paperId int(11) NOT NULL,
+  contactId int(11) NOT NULL,
+
+  reviewType tinyint(1) NOT NULL default 0,
+  requestedBy int(11) NOT NULL default 0,
+  requestedOn timestamp(14) NOT NULL,
+  acceptedOn timestamp(14) NOT NULL default 0,
+
+  reviewModified int(1),
+  reviewSubmitted int(1),
+
+  overAllMerit tinyint(1) NOT NULL default '0',
+  reviewerQualification tinyint(1) NOT NULL default '0',
+  novelty tinyint(1) NOT NULL default '0',
+  technicalMerit tinyint(1) NOT NULL default '0',
+  interestToCommunity tinyint(1) NOT NULL default '0',
+  longevity tinyint(1) NOT NULL default '0',
+  grammar tinyint(1) NOT NULL default '0',
+  likelyPresentation tinyint(1) NOT NULL default '0',
+  suitableForShort tinyint(1) NOT NULL default '0',
+  paperSummary text NOT NULL default '',
+  commentsToAuthor text NOT NULL default '',
+  commentsToPC text NOT NULL default '',
+  commentsToAddress text NOT NULL default '',
+  weaknessOfPaper text NOT NULL default '',
+  strengthOfPaper text NOT NULL default '',
+
+  potential tinyint(4) NOT NULL default '0',
+  fixability tinyint(4) NOT NULL default '0',
+
+  PRIMARY KEY (reviewArchiveId),
+  UNIQUE KEY reviewArchiveId (reviewArchiveId),
+  KEY reviewId (reviewId),
+  KEY paperId (paperId),
+  KEY contactId (contactId),
+  KEY reviewSubmitted (reviewSubmitted),
+  KEY reviewType (reviewType),
+  KEY requestedBy (requestedBy)
+) TYPE=MyISAM;
+
 #
 # Dumping data for table 'PaperReview'
 #

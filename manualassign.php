@@ -33,22 +33,8 @@ function saveAssignments($reviewer) {
 		continue;
 	    $lastPaperId = $row->paperId;
 	    $type = max(cvtint($_REQUEST["assrev$row->paperId"]), 0);
-	    if ($type != 0 && $type != REVIEW_PRIMARY && $type != REVIEW_SECONDARY)
-		continue;
-	    if ($type > 0 && !$row->reviewType)
-		$q = "insert into PaperReview set paperId=$row->paperId, contactId=$reviewer, reviewType=$type, requestedBy=$Me->contactId, requestedOn=current_timestamp";
-	    else if ($type > 0 && $row->reviewType != $type)
-		$q = "update PaperReview set reviewType=$type where reviewId=$row->reviewId";
-	    else if ($type == 0 && $row->reviewType && !$row->reviewModified)
-		$q = "delete from PaperReview where reviewId=$row->reviewId";
-	    else if ($type == 0 && $row->reviewType)
-		$q = "update PaperReview set reviewType=" . REVIEW_PC . " where reviewId=$row->reviewId";
-	    else
-		continue;
-	    
-	    $result2 = $Conf->qe($q, $while);
-	    if (!DB::isError($result2))
-		$Conf->log("Added $reviewTypeName[$type] reviewer $reviewer for paper $paper", $Me);
+	    if ($type == 0 || $type == REVIEW_PRIMARY || $type == REVIEW_SECONDARY)
+		$Me->assignPaper($row->paperId, $row, $reviewer, $type, $Conf);
 	}
 
     $Conf->qe("unlock tables", $while);
@@ -90,7 +76,7 @@ if (!DB::isError($result)) {
 	echo "<option value='$row->contactId'";
 	if ($row->contactId == $_REQUEST['reviewer'])
 	    echo " selected='selected'";
-	echo ">", contactText($row);
+	echo ">", contactHtml($row);
 	echo " (", plural($row->reviewCount, "assignment"), ")";
 	echo "</option>";
     }
