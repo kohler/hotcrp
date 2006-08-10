@@ -140,7 +140,8 @@ class Conference {
 		$this->startTime[$row[0]] = $row[1];
 		$this->endTime[$row[0]] = $row[2];
 	    }
-	foreach (array("PCReviewAnyPaper", "reviewerViewReviews") as $x)
+	foreach (array("PCReviewAnyPaper", "reviewerViewReviews",
+		       "notifyChairAboutReviews") as $x)
 	    if (!isset($this->startTime[$x]))
 		$this->startTime[$x] = 0;
     }
@@ -366,7 +367,7 @@ class Conference {
 	return true;
     }
     function timeEmailChairAboutReview() {
-	return $this->validPeriod("notifyChairAboutReviews") > 0;
+	return $this->startTime["notifyChairAboutReviews"] > 0;
     }
     function timeEmailAuthorsAboutReview() {
 	return $this->validPeriod("authorViewReviews") > 0;

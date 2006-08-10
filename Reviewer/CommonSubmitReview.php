@@ -60,7 +60,7 @@ if (IsSet($_REQUEST[submit])) {
       $Conf->infoMsg("Your review has been finalized!");
       $Conf->log("Review for paper #$_REQUEST[paperId] finalized", $_SESSION["Me"]);
 
-      if ( $Conf->validTimeFor("notifyChairAboutReviews",0) ) {
+      if ( $Conf->timeEmailChairAboutReview() ) {
 	$email = $Conf->contactEmail;
 	$title = $Review->paperFields['title'];
 

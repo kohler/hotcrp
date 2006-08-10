@@ -197,8 +197,7 @@ if ($Me->amAssistant())
     $body .= ": view and/or modify";
 $body .= "</li>\n";
 if ($Me->amAssistant())
-    $body .= "  <li><a href='Chair/SetDates.php'>Set important dates</a></li>
-  <li><a href='Chair/SetTopics.php'>Set conference topics</a></li>
+    $body .= "  <li><a href='Chair/SetTopics.php'>Set conference topics</a></li>
   <li><a href='Chair/SetReviewForm.php'>Set review form</a></li>\n";
 $body .= "</ul></td>\n";
 
