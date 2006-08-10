@@ -406,8 +406,8 @@ function htmlFold($text, $maxWords) {
     return $x;
 }
 
-function wordWrapIndent($text, $info, $indent = 18, $width = 67, $rjinfo = true) {
-    $text = preg_replace("/^(?!\\Z)/m", str_pad("", $indent), wordwrap($text, $width));
+function wordWrapIndent($text, $info, $indent = 18, $totWidth = 75, $rjinfo = true) {
+    $text = preg_replace("/^(?!\\Z)/m", str_pad("", $indent), wordwrap($text, $totWidth - $indent));
     if (strlen($info) <= $indent) {
 	$info = str_pad($info, $indent, " ", ($rjinfo ? STR_PAD_LEFT : STR_PAD_RIGHT));
 	return $info . substr($text, $indent);
@@ -468,13 +468,25 @@ function whyNotText($whyNot, $action) {
 	$now = time();
 	if ($start > 0 && $now < $start)
 	    $text .= "You can't $action $thisPaper until " . $Conf->printableStartTime($dname) . ".  ";
-	else if ($end > 0 && $now > $end)
-	    $text .= "The deadline to $action $thisPaper has passed.  It was " . $Conf->printableEndTime($dname) . ".  ";
-	else
+	else if ($end > 0 && $now > $end) {
+	    if ($dname == "startPaperSubmission")
+		$text .= "The deadline to start new paper submissions has passed.  ";
+	    else if ($dname == "updatePaperSubmission")
+		$text .= "The deadline to update paper submissions has passed.  ";
+	    else if ($dname == "finalizePaperSubmission")
+		$text .= "The deadline to officially submit $thisPaper has passed.  ";
+	    else if ($dname == "reviewerSubmitReviewDeadline")
+		$text .= "The external review deadline has passed.  ";
+	    else if ($dname == "PCSubmitReviewDeadline")
+		$text .= "The PC review deadline has passed.  ";
+	    else
+		$text .= "The deadline to $action $thisPaper has passed.  ";
+	    $text .= "It was " . $Conf->printableEndTime($dname) . ".  ";
+	} else
 	    $text .= "You can't $action $thisPaper at the moment.  ";
 	$text .= "(<a href='${ConfSiteBase}deadlines.php'>View deadlines</a>)  ";
-	if (isset($whyNot['override']))
-	    $text .= "Select the \"Override deadlines\" checkbox to override this deadline.  ";
+	if (isset($whyNot['override']) && $whyNot['override'])
+	    $text .= "Select the \"Override deadlines\" checkbox to override this deadline as PC Chair.  ";
     }
     if (isset($whyNot['blindSubmission']))
 	$text .= "Submission to this conference is blind.  ";

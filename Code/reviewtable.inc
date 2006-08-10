@@ -10,7 +10,8 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     $actingConflict = ($prow->conflict > 0 && !$forceShow);
     $effAssistant = $Me->amAssistant() && !$actingConflict;
     $anyScores = false;
-
+    $nNumeric = $rf->numNumericScores($prow, $Me, $Conf);
+    
     // actual rows
     foreach ($rrows as $rr) {
 	$highlight = ($rrow && $rr->reviewId == $rrow->reviewId);
@@ -59,9 +60,19 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	    $t .= "<td>Requested<br /><small>by " . ($rr->reqContactId == $Me->contactId ? "you" : contactText($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail)) . "</small></td>";
 
 	// status
-	if ($rr->reviewModified <= 0)
-	    $t .= "<td>Not started</td>";
-	else if ($rr->reviewSubmitted <= 0)
+	if ($rr->reviewModified <= 0) {
+	    $t .= "<td colspan='" . (2 + $nNumeric) . "'>Not started";
+	    
+	    if ($rr->reviewType == REVIEW_REQUESTED
+		&& ($rr->requestedBy == $Me->contactId || $effAssistant)) {
+		if ($mode == "req")
+		    $t .= " <a class='button_small' href=\"${ConfSiteBase}reqreview.php?paperId=$prow->paperId&amp;retract=$rr->reviewId$forceShow\">Retract review request</a>";
+		else
+		    $nRetractable++;
+	    }
+	    
+	    $t .= "</td>";
+	} else if ($rr->reviewSubmitted <= 0)
 	    $t .= "<td>In progress</td>";
 	else
 	    $t .= "<td class='empty'></td>";
@@ -69,18 +80,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	// scores
 	$t .= $rf->webNumericScoresRow($rr, $prow, $Me, $Conf, $anyScores);
 
-	// actions
-	$actions = array();
-	if ($rr->reviewType == REVIEW_REQUESTED
-	    && $rr->reviewModified <= 0
-	    && ($rr->requestedBy == $Me->contactId || $effAssistant)) {
-	    $actions[] = "<a class='button_small' href=\"${ConfSiteBase}reqreview.php?paperId=$prow->paperId&amp;retract=$rr->reviewId$forceShow\">Retract review request</a>";
-	    $nRetractable++;
-	}
-	if (count($actions) > 0)
-	    $t .= "<td>" . join("", $actions) . "</td>";
-
-	$t .= "</tr>\n";
+	$t .= "<td></td></tr>\n";
 
 	// affix
 	if ($rr->reviewSubmitted <= 0)
@@ -107,19 +107,11 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     if (($mode != "edit" && $rrow && $Me->canViewReview($prow, null, $Conf))
 	|| ($mode == "edit" && $Me->canViewReview($prow, null, $Conf))) {
 	$t = "    <tr>" . ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "") . "<td colspan='";
-	$t .= ($anyScores ? 4 + $rf->numNumericScores($prow, $Me, $Conf) : 4);
+	$t .= ($anyScores ? 5 + $nNumeric : 5);
 	$t .= "'><a href='review.php?paperId=$prow->paperId&amp;mode=view$forceShow'>View all reviews on one page</a></td></tr>\n";
 	$nonsubrev[] = $t;
     }
     
-    // completion
-    if (count($nonsubrev) || count($subrev))
-	$result = "<table class='reviewers'>\n" . $numericHeaders
-		     . join("", $subrev) . join("", $nonsubrev)
-		     . "  </table>\n";
-    else
-	$result = "";
-
     // unfinished review notification
     $notes = array();
     if ($prow->author > 0 && !$forceShow && $foundNonsub) {
@@ -136,13 +128,21 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	$notes[] = "<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\"><b>Override your conflict</b> to show reviewer identities and allow editing</a>";
 
     // review requests
-    if ($mode != "req" && ($prow->reviewType > 0 || $effAssistant)) {
-	$t = ($nRetractable ? ", retract outstanding review requests" : "");
+    if ($mode != "req" && ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
+	$t = ($nRetractable ? " or retract outstanding review requests" : "");
 	$notes[] = "<a href=\"${ConfSiteBase}reqreview.php?paperId=$prow->paperId\">Ask someone else to review this paper$t</a>";
     }
 
-    if (count($notes))
-	$result .= "<div class='reviewersbot'>" . join("<br />\n", $notes) . "</div>";
+    if (count($notes)) {
+	$t = ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "");
+	$nonsubrev[] = "    <tr>$t<td class='revnotes' colspan='" . ($anyScores ? 5 + $nNumeric : 5) . "'>" . join("<br />\n", $notes) . "</td></tr>\n";
+    }
 
-    return $result;
+    // completion
+    if (count($nonsubrev) || count($subrev))
+	return "<table class='reviewers'>\n" . $numericHeaders
+		     . join("", $subrev) . join("", $nonsubrev)
+		     . "  </table>\n";
+    else
+	return "";
 }

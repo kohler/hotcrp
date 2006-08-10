@@ -155,8 +155,10 @@ confHeader();
 
 
 // messages for review viewers
-if ($mode == "edit" && !$Me->timeReview($prow, $Conf))
-    $Conf->infoMsg("The <a href='${ConfSiteBase}deadlines.php'>deadline</a> for modifying this review has passed.");
+if ((($rrow && $rrow->reviewType > 0) || $mode == "edit")
+    && !$Me->timeReview($prow, $Conf))
+    $Conf->infoMsg(whyNotText(array("deadline" => ($Me->isPC ? "PCSubmitReviewDeadline" : "reviewerSubmitReviewDeadline"),
+				    "override" => $Me->amAssistant()), "review"));
 if ($mode == "edit" && $prow->reviewType <= 0)
     $Conf->infoMsg("You haven't been assigned to review this paper, but you can review it anyway.");
 

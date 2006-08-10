@@ -16,8 +16,6 @@ function confHeader() {
 	$title = ($newPaper ? "New Paper" : "Paper View");
     if ($mode == "edit")
 	$title = "Edit $title";
-    else if ($mode == "reviews")
-	$title = "$title Reviews";
     $Conf->header($title, "paper_" . $mode, actionBar($prow, $newPaper, $mode));
 }
 
@@ -43,8 +41,6 @@ else
 $mode = "view";
 if ($newPaper || (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "edit"))
     $mode = "edit";
-else if (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "reviews")
-    $mode = "reviews";
 
 
 // general error messages
@@ -389,20 +385,18 @@ if (!$newPaper) {
 
 
 // prepare paper table
-$canViewAuthors = $Me->canViewAuthors($prow, $Conf, $mode == "reviews");
+$canViewAuthors = $Me->canViewAuthors($prow, $Conf, false);
 if ($mode == "edit" && $Me->amAssistant())
     $canViewAuthors = true;
 
 $paperTable = new PaperTable($editable, $editable && $useRequest,
-			     $mode == "reviews",
+			     false,
 			     !$canViewAuthors && $Me->amAssistant());
 
 
 // paper status
 if (!$newPaper) {
-    if ($mode == "reviews")
-	$paperTable->echoStatusRow($prow, PaperTable::STATUS_DOWNLOAD);
-    else if ($mode == "edit")
+    if ($mode == "edit")
 	$paperTable->echoStatusRow($prow, PaperTable::STATUS_DATE | PaperTable::NOCAPTION);
     else
 	$paperTable->echoStatusRow($prow, PaperTable::STATUS_DATE | PaperTable::STATUS_CONFLICTINFO | PaperTable::STATUS_REVIEWERINFO);
@@ -415,8 +409,7 @@ if ($editable)
 
 
 // Paper
-if ($mode != "reviews"
-    && ($newPaper || ($prow->withdrawn <= 0 && ($editable || $prow->size > 0)))) {
+if ($newPaper || ($prow->withdrawn <= 0 && ($editable || $prow->size > 0))) {
     if ($mode == "edit")
 	$paperTable->echoDownloadRow($prow, ($newPaper ? PaperTable::OPTIONAL : 0));
     else
@@ -452,35 +445,6 @@ $paperTable->echoTopics($prow);
 // PC conflicts
 if ($mode != "edit" && $Me->amAssistant())
     $paperTable->echoPCConflicts($prow);
-
-
-// Collect reviews, review scores
-if ($mode == "reviews") {
-    $rrows = array();
-    $showReviews = $Me->canViewReview($prow, null, $Conf, $whyNot);
-    if (!$showReviews) {
-	echo "<tr class='pt_reviews'>\n  <td class='caption'></td>\n  <td class='entry'>";
-	$Conf->infoMsg(whyNotText($whyNot, "view reviews for"));
-	echo "</td>\n</tr>\n\n";
-    } else {
-	$q = "select PaperReview.*,
-		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
-		from PaperReview
-		join ContactInfo using (contactId)
-		where paperId=$paperId and reviewSubmitted>0
-		order by reviewSubmitted";
-	$result = $Conf->qe($q, "while retrieving reviews");
-	if (!DB::isError($result))
-	    while ($rrow = $result->fetchRow(DB_FETCHMODE_OBJECT))
-		$rrows[] = $rrow;
-    }
-    if (count($rrows) > 0) {
-	echo "<tr class='pt_reviews'>\n  <td class='caption'>Reviews</td>\n  <td class='entry'>";
-	$rf = reviewForm();
-	echo $rf->webNumericScoresTable($rrows, $prow, $Me, $Conf, true);
-	echo "</td>\n</tr>\n\n";
-    }
-}
 
 
 // Outcome
@@ -536,41 +500,6 @@ if ($mode == "edit")
     echo "</form>\n";
 echo "<div class='clear'></div>\n\n";
 
-
-// Reviews
-if (!$newPaper && $mode == "reviews" && $prow->reviewCount > 0) {
-    if ($Me->canViewReview($prow, null, $Conf, $whyNot)) {
-	$rf = reviewForm();
-	$q = "select PaperReview.*,
-		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
-		from PaperReview
-		join ContactInfo using (contactId)
-		where paperId=$paperId and reviewSubmitted>0
-		order by reviewSubmitted";
-	$result = $Conf->qe($q, "while retrieving reviews");
-	$reviewnum = 65;
-	if (!DB::isError($result) && $result->numRows() > 0)
-	    while ($rrow = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
-		echo "<div class='gap'></div>
-
-<table class='rev'>
-  <tr class='id'>
-    <td class='caption'><h3 id='review", chr($reviewnum), "'>Review&nbsp;#$prow->paperId", chr($reviewnum), "</h3></td>
-    <td class='entry' colspan='3'>";
-		if ($Me->canViewReviewerIdentity($prow, $rrow, $Conf))
-		    echo "by <span class='reviewer'>", trim(htmlspecialchars("$rrow->firstName $rrow->lastName")), "</span>";
-		echo " <span class='reviewstatus'>", reviewStatus($rrow, 1), "</span>";
-		if ($rrow->contactId == $Me->contactId || $Me->amAssistant())
-		    echo " ", reviewButton($paperId, $rrow, 0, $Conf);
-		echo "</td>
-  </tr>\n";
-		echo $rf->webDisplayRows($rrow, $Me->canViewAllReviewFields($prow, $Conf));
-		 echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='3'></td></tr>
-</table>\n\n";
-		 $reviewnum++;
-	    }
-    }
-}
 
 echo "<div class='gapbottom'></div>\n";
 

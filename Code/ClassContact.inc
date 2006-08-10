@@ -546,7 +546,7 @@ class Contact {
 	$rrsub = (!$rrow || $rrow->reviewSubmitted > 0);
 	if (($prow->author > 0 && $conf->timeAuthorViewReviews() && $rrsub)
 	    || ($this->amAssistant()
-		&& (($prow->conflict <= 0 && $rrsub)
+		&& ($prow->conflict <= 0
 		    || (isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])))
 	    || ($this->isPC && $prow->conflict <= 0 && $rrsub
 		&& ($conf->timePCViewAllReviews()
@@ -570,14 +570,14 @@ class Contact {
 	return false;
     }
 
-    function canRequestReview($prow, $conf, &$whyNot = null) {
+    function canRequestReview($prow, $conf, $time, &$whyNot = null) {
 	global $ConfSiteBase;
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "rev")))
 	    return false;
 	// policy
 	if (($prow->reviewType >= REVIEW_SECONDARY || $this->amAssistant())
-	    && ($conf->timeReviewPaper(false, true, true) || $this->amAssistantOverride()))
+	    && ($conf->timeReviewPaper(false, true, true) || $this->amAssistantOverride() || !$time))
 	    return true;
 	// collect failure reasons
 	if ($prow->reviewType < REVIEW_SECONDARY)

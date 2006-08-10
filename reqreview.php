@@ -25,8 +25,8 @@ function errorMsgExit($msg) {
 function getProw() {
     global $prow, $rrows, $Conf, $Me;
     if (!(($prow = $Conf->paperRow(cvtint($_REQUEST["paperId"]), $Me->contactId, $whyNot))
-	  && $Me->canReview($prow, null, $Conf, $whyNot)))
-	errorMsgExit(whyNotText($whyNot, "review"));
+	  && $Me->canRequestReview($prow, $Conf, false, $whyNot)))
+	errorMsgExit(whyNotText($whyNot, "request reviews for"));
     $rrows = $Conf->reviewRow(array('paperId' => $prow->paperId, 'array' => 1), $whyNot);
 }
 getProw();
@@ -87,11 +87,11 @@ function requestReview($email) {
     // send confirmation email
     $m = "Dear " . contactText($Them) . ",\n\n";
     $m .= wordwrap(contactText($Me) . " has asked you to review paper #$prow->paperId for the $Conf->longName" . ($Conf->shortName != $Conf->longName ? " ($Conf->shortName)" : "") . " conference.\n\n")
-	. wordWrapIndent(trim($prow->title), "Title: ") . "\n";
+	. wordWrapIndent(trim($prow->title), "Title: ", 14) . "\n";
     if (!$Opt['blindSubmission'])
-	$m .= wordWrapIndent(trim($prow->authorInformation), "Authors: ") . "\n";
-    $m .= "      Paper site: $Conf->paperSite/review.php?paperId=$prow->paperId\n\n";
-    $m .= wordwrap("If you are willing to review this paper, please enter your review " . $Conf->printableTimeRange('reviewerSubmitReview') . ".  You may also complete a review form offline and upload it to the site.  If you cannot complete the review, you may refuse the review on the conference site or contact " . contactText($Me) . " directly.  For your reference, your account information is as follows.\n\n");
+	$m .= wordWrapIndent(trim($prow->authorInformation), "Authors: ", 14) . "\n";
+    $m .= "  Paper site: $Conf->paperSite/review.php?paperId=$prow->paperId\n\n";
+    $m .= wordwrap("If you are willing to review this paper, please enter your review " . $Conf->printableTimeRange('reviewerSubmitReview', "by") . ".  You may also complete a review form offline and upload it to the site.  If you cannot complete the review, you may refuse the review on the conference site or contact " . contactText($Me) . " directly.  For reference, your account information is as follows:\n\n");
     $m .= "        Site: $Conf->paperSite
        Email: $Them->email
     Password: $Them->password
@@ -117,8 +117,8 @@ Thank you for your help -- we appreciate that reviewing is hard work!
 }
 
 if (isset($_REQUEST['add'])) {
-    if (!$Me->canRequestReview($prow, $Conf, $whyNot))
-	$Conf->errorMsg(whyNotText($whyNot, "request review"));
+    if (!$Me->canRequestReview($prow, $Conf, true, $whyNot))
+	$Conf->errorMsg(whyNotText($whyNot, "request reviews for"));
     else if (($email = vtrim($_REQUEST['email'])) == ""
 	     || $email == "Email")
 	$Conf->errorMsg("An email address is required to request a review.");
@@ -126,6 +126,8 @@ if (isset($_REQUEST['add'])) {
 	requestReview($email);
 	$Conf->qe("unlock tables");
 	getProw();
+	unset($_REQUEST['email']);
+	unset($_REQUEST['name']);
     }
 }
 
@@ -214,23 +216,21 @@ $revTableClass = (preg_match("/<th/", $revTable) ? "rev_reviewers_hdr" : "rev_re
 echo "<tr class='", $revTableClass, "'>\n";
 echo "  <td class='caption'>Reviews</td>\n";
 echo "  <td class='entry'>", ($revTable ? $revTable : "None");
-if ($Me->canRequestReview($prow, $Conf, $whyNot) || isset($whyNot['override'])) {
-    echo "  <form action='reqreview.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>
+echo "  <form action='reqreview.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>
     <table class='reviewers'><tr>
       <td>
 	<input class='textlite' type='text' name='name' value=\"";
-    echo (isset($_REQUEST['name']) ? htmlspecialchars($_REQUEST['name']) : "Name");
-    echo "\" onfocus=\"tempText(this, 'Name', 1)\" onblur=\"tempText(this, 'Name', 0)\" />
+echo (isset($_REQUEST['name']) ? htmlspecialchars($_REQUEST['name']) : "Name");
+echo "\" onfocus=\"tempText(this, 'Name', 1)\" onblur=\"tempText(this, 'Name', 0)\" />
 	<input class='textlite' type='text' name='email' value=\"";
-    echo (isset($_REQUEST['email']) ? htmlspecialchars($_REQUEST['email']) : "Email");
-    echo "\" onfocus=\"tempText(this, 'Email', 1)\" onblur=\"tempText(this, 'Email', 0)\" />
+echo (isset($_REQUEST['email']) ? htmlspecialchars($_REQUEST['email']) : "Email");
+echo "\" onfocus=\"tempText(this, 'Email', 1)\" onblur=\"tempText(this, 'Email', 0)\" />
       </td>
       <td><input class='button_small' type='submit' name='add' value='Request an external review' />";
-    if ($Me->amAssistant())
-	echo "<br />\n	<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines and any previous refusal";
-    echo "\n      </td>\n    </tr></table>
+if ($Me->amAssistant())
+    echo "<br />\n	<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines and any previous refusal";
+echo "\n      </td>\n    </tr></table>
   </form>";
-}
 echo "</td>\n</tr>\n\n";
 
 

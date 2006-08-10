@@ -312,6 +312,11 @@ tr, textarea, select {
 tr td.textarea {
 	vertical-align: top;
 }
+td.rcaption {
+	text-align: right;
+	padding: 3px 0.5em 3px 0em;
+	font-weight: bold;
+}
 td.caption {
 	text-align: right;
 	padding: 3px 0.5em 3px 0em;
@@ -544,7 +549,7 @@ table.reviewers td.revscore {
 table.reviewers td.rs_id, table.reviewscores td.rs_num {
 	text-align: left;
 }
-div.reviewersbot {
+table.reviewers td.revnotes {
 	padding-top: 0.5em;
 }
 table.reviewers td.empty {

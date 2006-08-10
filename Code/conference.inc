@@ -302,7 +302,7 @@ class Conference {
 	    return "Deadline: " . $this->printableTime($this->endTime[$what]);
     }
 
-    function printableTimeRange($what) {
+    function printableTimeRange($what, $type = "until") {
 	$start = &$this->startTime[$what];
 	$end = &$this->endTime[$what];
 	$now = time();
@@ -314,8 +314,10 @@ class Conference {
 		$str .= " and ";
 	}
 
-	if (isset($end) && $end > 0)
-	    $str .= "until " . $this->printableTime($end);
+	if (isset($end) && $end > 0) {
+	    $str .= ($type == "by" ? "by " : "until ");
+	    $str .= $this->printableTime($end);
+	}
 	
 	return $str;
     }
