@@ -69,7 +69,7 @@ $Conf->downloadPrefix="hotnets5-";
 //
 // A CSS, if you want one
 //
-$Conf->theme = "<link rel='stylesheet' type='text/css' href='" . $ConfSiteBase . "Style/base.css' />\n";
+$Conf->theme = "<link rel='stylesheet' type='text/css' href='" . $ConfSiteBase . "style.css' />\n";
 
 //
 // This is the person advertised as the appropriate person
