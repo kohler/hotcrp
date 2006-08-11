@@ -441,7 +441,6 @@ table.memberlist td.pl_callout {
 
 td.datename, td.datename_error {
 	padding-right: 1em;
-	font-weight: bold;
 }
 td.datename_error {
 	color: #ff0000;

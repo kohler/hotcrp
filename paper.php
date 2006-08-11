@@ -297,24 +297,6 @@ if (isset($_REQUEST['delete'])) {
 }
 
 
-// set outcome action
-if (isset($_REQUEST['setoutcome'])) {
-    if (!$Me->canSetOutcome($prow))
-	$Conf->errorMsg("You cannot set the outcome for paper #$paperId" . ($Me->amAssistant() ? " (but you could if you entered chair mode)" : "") . ".");
-    else {
-	$o = cvtint(trim($_REQUEST['outcome']));
-	$rf = reviewForm();
-	if (isset($rf->options['outcome'][$o])) {
-	    $result = $Conf->qe("update Paper set outcome=$o where paperId=$paperId", "while changing outcome");
-	    if (!DB::isError($result))
-		$Conf->confirmMsg("Outcome for paper #$paperId set to " . htmlspecialchars($rf->options['outcome'][$o]) . ".");
-	} else
-	    $Conf->errorMsg("Bad outcome value!");
-	$prow = $Conf->paperRow($paperId, $Me->contactId);
-    }
-}
-
-
 // messages for the author
 function deadlineIs($dname, $conf) {
     $deadline = $conf->printableEndTime($dname);
@@ -448,8 +430,8 @@ if ($mode != "edit" && $Me->amAssistant())
 
 
 // Outcome
-if ($mode != "edit" && $Me->canSetOutcome($prow))
-    $paperTable->echoOutcomeSelector($prow);
+// if ($mode != "edit" && $Me->canSetOutcome($prow))
+//     $paperTable->echoOutcomeSelector($prow);
 
 
 // Submit button

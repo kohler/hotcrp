@@ -253,7 +253,10 @@ Zhang, Ping Yen (INRIA)</pre></td>\n";
     function echoOutcomeSelector($prow) {
 	echo "<tr class='pt_outcome'>
   <td class='caption'>Outcome</td>
-  <td class='entry'><form method='get' action='paper.php'><div class='inform'><input type='hidden' name='paperId' value='$prow->paperId' /><select class='outcome' name='outcome'>\n";
+  <td class='entry'><form method='get' action='review.php'><div class='inform'><input type='hidden' name='paperId' value='$prow->paperId' />";
+	if (isset($_REQUEST['forceShow']))
+	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
+	echo "<select class='outcome' name='outcome'>\n";
 	$rf = reviewForm();
 	$outcomeMap = $rf->options['outcome'];
 	$outcomes = array_keys($outcomeMap);

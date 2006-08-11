@@ -69,7 +69,8 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	    $t .= "<td>Requested<br /><small$class>by " . contactHtml($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail) . "</small></td>";
 	    if ($class)
 		$reviewTableFolder = true;
-	}
+	} else
+	    $t .= "<td class='empty'></td>";
 
 	// scores or retract request
 	if ($rr->reviewModified <= 0 && $rr->reviewType == REVIEW_REQUESTED

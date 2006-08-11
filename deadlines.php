@@ -127,7 +127,7 @@ if (isset($_REQUEST['update']) && $Me->amAssistant()) {
 	    $today = getdate();
 	    $Dates[$s][0] = mktime(0, 0, 0, 1, 1, $today["year"]);
 	    if (!isset($DateStartMap[$s]))
-		$Messages[] = (is_array($DateName[$s]) ? $DateName[$s][0] : $DateName[$s] . " begin") . " missing; set to the beginning of this year.";
+		$Messages[] = "\"" . (is_array($DateName[$s]) ? $DateName[$s][0] : $DateName[$s] . " begin") . "\" missing; set to the beginning of this year.";
 	} else if ($Dates[$s][1] > 0 && $Dates[$s][1] < $Dates[$s][0]) {
 	    $Error[] = (is_array($DateName[$s]) ? $DateName[$s][1] : $DateName[$s]) . " period ends before it begins.";
 	    $DateError["${s}_end"] = 1;
