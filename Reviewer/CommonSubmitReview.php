@@ -5,7 +5,7 @@ include('../Code/confJavaScript.inc');
 
 <html>
 
-<?php  $Conf->header("Submit or Update A Review For Paper #$_REQUEST[paperId]") ?>
+<?php  $Conf->header("Submit or Update A Review For Paper #$_REQUEST['paperId']") ?>
 
 <body>
 <?php 
@@ -23,13 +23,13 @@ if (stristr($HTTP_USER_AGENT, "Mozilla/4.7")
 
 
 if (!$_SESSION["Me"]->canReview($_REQUEST["paperId"], null, $Conf) ) {
-  $Conf->errorMsg("You aren't supposed to be able to review paper #$_REQUEST[paperId]. "
+  $Conf->errorMsg("You aren't supposed to be able to review paper #" . $_REQUEST["paperId"] . ". "
 		  . "If you think this is in error, contact the program chair. ");
   exit();
 } 
 
 
-$Review = ReviewFactory($Conf, $_SESSION["Me"]->contactId, $_REQUEST[paperId]);
+$Review = ReviewFactory($Conf, $_SESSION["Me"]->contactId, $_REQUEST["paperId"]);
 
 if (IsSet($_REQUEST[submit])) {
   //
@@ -42,14 +42,14 @@ if (IsSet($_REQUEST[submit])) {
     $Review->load($_POST);
     $Review->saveReview($Conf, $_SESSION["Me"]->contactId);
 
-    $Conf->log("Save review for $_REQUEST[paperId]", $_SESSION["Me"]);
+    $Conf->log("Save review for " . $_REQUEST["paperId"], $_SESSION["Me"]);
 
     //
     // Read the review again, just to be certain
     // they see the proper values
     //
 
-    $Review = ReviewFactory($Conf, $_SESSION["Me"]->contactId, $_REQUEST[paperId]);
+    $Review = ReviewFactory($Conf, $_SESSION["Me"]->contactId, $_REQUEST["paperId"]);
 
     //
     // Check if this review has been finalized during
@@ -58,14 +58,14 @@ if (IsSet($_REQUEST[submit])) {
     //
     if ($Review->finalized() ) {
       $Conf->infoMsg("Your review has been finalized!");
-      $Conf->log("Review for paper #$_REQUEST[paperId] finalized", $_SESSION["Me"]);
+      $Conf->log("Review for paper #" . $_REQUEST["paperId"] . " finalized", $_SESSION["Me"]);
 
       if ( $Conf->timeEmailChairAboutReview() ) {
 	$email = $Conf->contactEmail;
 	$title = $Review->paperFields['title'];
 
 	$message = "This is just to let you know that another review \n"
-	  . "for paper #$_REQUEST[paperId] - $title, \n"
+	  . "for paper #" . $_REQUEST["paperId"] . " - $title, \n"
 	  . "has been finalized.";
 
 	if ($Conf->allowEmailTo($email))
@@ -81,7 +81,7 @@ if (IsSet($_REQUEST[submit])) {
 	$title = $Review->paperFields['title'];
 
 	$message = "This is just to let you know that another review \n"
-	  . "for your paper #$_REQUEST[paperId] - $title, \n"
+	  . "for your paper #" . $_REQUEST["paperId"] . " - $title, \n"
 	  . "has been finalized. You may wish to augment or amend \n"
 	  . "your response.";
 
@@ -139,7 +139,7 @@ if ( !IsSet($_REQUEST[printableView]) ) {
      <tr> <td>
      <FORM METHOD="POST" ACTION="<?php echo $_SERVER[PHP_SELF] ?>" TARGET=_blank>
      <INPUT TYPE=submit NAME=emailReview VALUE="Send yourself this review by email">
-     <INPUT TYPE=hidden NAME=paperId value=<?php echo $_REQUEST[paperId]?>>
+     <INPUT TYPE=hidden NAME=paperId value=<?php echo $_REQUEST["paperId"]?>>
      </FORM>
      </td> </tr>
      </table>
@@ -180,16 +180,16 @@ if ( !IsSet($_REQUEST[printableView]) ) {
 <tr>
 
 <td>
-<FORM METHOD="POST" ACTION="<?php echo $_SERVER[PHP_SELF] ?>" TARGET=_blank>
+<FORM METHOD="POST" ACTION="<?php echo $_SERVER["PHP_SELF"] ?>" TARGET=_blank>
 <INPUT TYPE=submit NAME=printableView VALUE="See a printable version of your review">
-<INPUT TYPE=hidden NAME=paperId value=<?php echo $_REQUEST[paperId]?>>
+<INPUT TYPE=hidden NAME=paperId value=<?php echo $_REQUEST["paperId"]?>>
 </FORM>
 </td>
 
 <td>
-<FORM METHOD="POST" ACTION="<?php echo $_SERVER[PHP_SELF] ?>" TARGET=_blank>
+<FORM METHOD="POST" ACTION="<?php echo $_SERVER["PHP_SELF"] ?>" TARGET=_blank>
 <INPUT TYPE=submit NAME=emailReview VALUE="Send yourself this review by email">
-<INPUT TYPE=hidden NAME=paperId value=<?php echo $_REQUEST[paperId]?>>
+<INPUT TYPE=hidden NAME=paperId value=<?php echo $_REQUEST["paperId"]?>>
 </FORM>
 </td>
 
@@ -198,14 +198,14 @@ if ( !IsSet($_REQUEST[printableView]) ) {
 
 <FORM METHOD="POST" ACTION="<?php echo $_SERVER[PHP_SELF] ?>">
 <INPUT TYPE=submit NAME=submit VALUE="Submit your paper review">
-<INPUT TYPE=hidden NAME=paperId value=<?php echo $_REQUEST[paperId]?>>
+<INPUT TYPE=hidden NAME=paperId value=<?php echo $_REQUEST["paperId"]?>>
 <?php  $Review -> printEditable() ?>
 <INPUT TYPE=submit NAME=submit VALUE="Submit your paper review">
 </FORM>
 
 <FORM METHOD="POST" ACTION="<?php echo $_SERVER[PHP_SELF] ?>" TARGET=_blank>
 <INPUT TYPE=submit NAME=printableView VALUE="See a printable version of your review">
-<INPUT TYPE=hidden NAME=paperId value=<?php echo $_REQUEST[paperId]?>>
+<INPUT TYPE=hidden NAME=paperId value=<?php echo $_REQUEST["paperId"]?>>
 </FORM>
 
 <?php 

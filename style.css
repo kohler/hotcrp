@@ -75,7 +75,7 @@ div#footer_crp {
 }
 
 div.info, div.warning, div.confirm, div.error {
-	background: #eeeeff url(../images/info45.png) 10px 10px no-repeat;
+	background: #eeeeff url(images/info45.png) 10px 10px no-repeat;
 	padding: 0.5em 0.5em 0.5em 65px;
 	border: 1px solid #ccccee;
 	margin-top: 0.5em;
@@ -83,11 +83,11 @@ div.info, div.warning, div.confirm, div.error {
 	min-height: 45px;
 }
 div.error {
-	background: #ffeeee url(../images/stophand45.png) 10px 10px no-repeat;
+	background: #ffeeee url(images/stophand45.png) 10px 10px no-repeat;
 	border: 1px solid #eecccc;
 }
 div.confirm {
-	background: #eeffee url(../images/info45.png) 10px 10px no-repeat;
+	background: #eeffee url(images/info45.png) 10px 10px no-repeat;
 	border: 1px solid #cceecc;
 }
 
@@ -708,13 +708,13 @@ a.pl_sort {
 }
 a.pl_sort_def {
 	padding-right: 12px;
-	background: url("../images/sortdown.png") 100% 75% no-repeat;
+	background: url("images/sortdown.png") 100% 75% no-repeat;
 	text-decoration: none;
 	color: #660000;
 }
 a.pl_sort_def_rev {
 	padding-right: 12px;
-	background: url("../images/sortup.png") 100% 75% no-repeat;
+	background: url("images/sortup.png") 100% 75% no-repeat;
 	text-decoration: none;
 	color: #660000;
 }

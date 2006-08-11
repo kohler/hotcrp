@@ -176,7 +176,7 @@ if (isset($_REQUEST['refuse'])) {
 // set outcome action
 if (isset($_REQUEST['setoutcome'])) {
     if (!$Me->canSetOutcome($prow))
-	$Conf->errorMsg("You cannot set the outcome for paper #$paperId." . ($Me->amAssistant() ? "  (<a href='" . selfHref(array("forceShow" => 1)) . "'>Override conflict</a>)" : ""));
+	$Conf->errorMsg("You cannot set the outcome for paper #$prow->paperId." . ($Me->amAssistant() ? "  (<a href='" . selfHref(array("forceShow" => 1)) . "'>Override conflict</a>)" : ""));
     else {
 	$o = cvtint(trim($_REQUEST['outcome']));
 	$rf = reviewForm();

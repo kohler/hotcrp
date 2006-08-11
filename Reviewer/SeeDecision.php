@@ -7,28 +7,28 @@ if (! $_SESSION["Me"]->isChair ) {
 }
 
 $Conf -> connect();
-include('../Code/confConfigReview.inc');
 
 ?>
 
 <html>
 
-<?php  $Conf->header("See Reviewer Outcome, Reviews and Comments For Paper #$paperId") ?>
+<?php  $Conf->header("See Reviewer Outcome, Reviews and Comments For Paper #" . $_REQUEST["paperId"]) ?>
 
 <body>
 
 <?php 
 
-if (!IsSet($paperId) ) {
+if (!IsSet($_REQUEST["paperId"]) ) {
   $Conf -> errorMsg("You did not specify a paper to examine.");
   exit;
 }
+$paperId = $_REQUEST["paperId"];
 
 
 $revByMe = $Conf->countEntries("paperId",
 			      $paperId,
 			      "PaperReview",
-			      "AND contactId=" . $_SESSION["Me"]->contactId. " AND finalized=1");
+			      "AND contactId=" . $_SESSION["Me"]->contactId. " AND reviewSubmitted>0");
 
 
 if ( $revByMe ) {
@@ -47,14 +47,15 @@ if ( $revByMe ) {
 // Print header using dummy review
 //
 
-$Review=ReviewFactory($Conf, $_SESSION["Me"]->contactId, $paperId);
-
-if ( ! $Review -> valid ) {
+//$Review=ReviewFactory($Conf, $_SESSION["Me"]->contactId, $paperId);
+$rf = reviewForm();
+$prow = $Conf->paperRow($paperId, $_SESSION["Me"]->contactId);
+if (!$prow) {
   $Conf->errorMsg("You've stumbled on to an invalid review? -- contact chair");
   exit;
 }
 
-$outcome = $Review->paperFields['outcome'];
+$outcome = $prow->outcome;
 if ($outcome == OUTCOME_ACCEPTED) {
   $Conf->confirmMsg("This paper was selected for the conference");
 } else if ($outcome == OUTCOME_ACCEPTED_SHORT) {
@@ -64,28 +65,32 @@ if ($outcome == OUTCOME_ACCEPTED) {
 } else {
   $Conf->errorMsg("No outcome was specified for this paper");
 }
-print "<center>";
+//print "<center>";
 //
 // Print review header with existing author response
 //
-$Review->printAnonReviewHeader($Conf,
-			       $Review->paperFields['showReponseToReviewers']
-			       );
-print "</center>";
+//$Review->printAnonReviewHeader($Conf,
+//			       $Review->paperFields['showReponseToReviewers']
+//			       );
+//print "</center>";
 
+$rrows = $Conf->reviewRow(array("paperId" => $paperId, "submitted" => 1, "array" => 1));
+
+
+/* EDDIE
 if ($Review -> paperFields['showReviewsToReviewers']) {
-  $result = $Conf->qe("SELECT PaperReview.contactId, "
-		      . " PaperReview.reviewId, "
-		      . " ContactInfo.firstName, ContactInfo.lastName, "
-		      . " ContactInfo.email "
-		      . " FROM PaperReview, ContactInfo "
-		      . " WHERE PaperReview.paperId='$paperId'"
-		      . " AND PaperReview.contactId=ContactInfo.contactId"
-		      . " AND PaperReview.reviewSubmitted=1"
-		      );
+   $result = $Conf->qe("SELECT PaperReview.contactId, "
+ 		      . " PaperReview.reviewId, "
+ 		      . " ContactInfo.firstName, ContactInfo.lastName, "
+ 		      . " ContactInfo.email "
+ 		      . " FROM PaperReview, ContactInfo "
+ 		      . " WHERE PaperReview.paperId='$paperId'"
+ 		      . " AND PaperReview.contactId=ContactInfo.contactId"
+ 		      . " AND PaperReview.reviewSubmitted=1"
+ 		      );
 
-  if (!DB::isError($result) && $result->numRows()) {
-    $header = 0;
+if (!DB::isError($result) && $result->numRows()) */ {
+    /*    $header = 0;
     $reviewerId = array();
 
     $i = 1;
@@ -119,7 +124,13 @@ if ($Review -> paperFields['showReviewsToReviewers']) {
       $i++;
       print "</table>";
     }
-  }
+    } */
+
+    foreach ($rrows as $rr) {
+	echo "<table class='review'>\n";
+	echo $rf->webDisplayRows($rr, true);
+	echo "</table>\n";
+    }
 }
 
 //

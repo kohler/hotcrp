@@ -876,7 +876,9 @@ class Conference {
 
     function reviewRow($selector, &$whyNot = null) {
 	$whyNot = array();
-	
+
+	if (!is_array($selector))
+	    $selector = array('reviewId' => $selector);
 	if (isset($selector['reviewId'])) {
 	    $whyNot['reviewId'] = $selector['reviewId'];
 	    if (($reviewId = cvtint($selector['reviewId'])) <= 0) {

@@ -51,10 +51,9 @@ the information is anonymous.
  // Now, look for reviews directed to this person
  //
 
-$result=$Conf->qe("SELECT Paper.paperId, Paper.title, Paper.withdrawn FROM Paper, PaperReview "
+$result=$Conf->qe("SELECT Paper.paperId, Paper.title, Paper.withdrawn FROM Paper join PaperReview using (paperId) "
 		  . "WHERE PaperReview.contactId='".$_SESSION["Me"]->contactId."' "
-		  . " AND Paper.paperId=PaperReview.paperId "
-		  . " AND PaperReview.reviewSubmitted=1 "
+		  . " AND PaperReview.reviewSubmitted>0 "
 		  . "ORDER BY Paper.paperId");
 
 if (!DB::isError($result)) {

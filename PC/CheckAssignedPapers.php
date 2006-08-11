@@ -11,9 +11,7 @@ $Conf -> connect();
 
 <body>
 <?php 
-$result=$Conf->qe("SELECT Paper.paperId, Paper.title FROM Paper, PrimaryReviewer "
-. "WHERE PrimaryReviewer.reviewer='" . $_SESSION["Me"]->contactId. "' AND Paper.paperId=PrimaryReviewer.paperId "
-		  . "ORDER BY Paper.paperId");
+$result=$Conf->qe("SELECT Paper.paperId, Paper.title FROM Paper join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=" . $_SESSION["Me"]->contactId . ") where PaperReview.reviewType=" . REVIEW_PRIMARY . " order by Paper.paperId");
 
 if (DB::isError($result)) {
   $Conf->errorMsg("Error in sql " . $result->getMessage());
@@ -91,9 +89,7 @@ $Conf->infoMsg("You can view any reviews for papers for which you're a secondary
 <?php 
 
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title "
-		  . " FROM Paper, SecondaryReviewer "
-		  . " WHERE SecondaryReviewer.reviewer='" . $_SESSION["Me"]->contactId. "' "
-		  . " AND Paper.paperId=SecondaryReviewer.paperId "
+		  . " FROM Paper join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=" . $_SESSION["Me"]->contactId . ") where PaperReview.reviewType=" . REVIEW_SECONDARY
 		  . " ORDER BY Paper.paperId");
 
 if (DB::isError($result)) {
