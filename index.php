@@ -39,6 +39,12 @@ $Conf->header("Welcome");
 echo actionBar(null, false, "");
 
 
+// if chair, check PHP setup
+if ($Me->amAssistant()) {
+    if (get_magic_quotes_gpc())
+	$Conf->errorMsg("The PHP <code>magic_quotes_gpc</code> feature is on.  This is a bad idea; disable it in your <code>php.ini</code> configuration file.");
+}
+
 
 $tabName = array();
 $tabText = array();
