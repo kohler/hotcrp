@@ -378,6 +378,9 @@ div.maintab ul {
 	margin-bottom: 0em;
 	padding-left: 1em;
 }
+div.maintab table.bullets td ul:first-child {
+	margin-top: 0em;
+}
 div.maintab table.bullets {
 	width: 100%;
 }

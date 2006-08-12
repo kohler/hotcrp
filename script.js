@@ -22,7 +22,7 @@ function fold(which, dofold, foldnum) {
     }
 }
 
-function tabfold(tabset, unfolded, foldnum) {
+function tabfold(tabset, unfolded, foldnum, sessioner) {
     for (var i = 0; i < tabset.length; i++) {
 	fold(tabset[i], tabset[i] != unfolded, foldnum);
 	var tab = document.getElementById('tab' + tabset[i]);
@@ -32,6 +32,11 @@ function tabfold(tabset, unfolded, foldnum) {
 	    tab.className = "tab_default";
 	else
 	    tab.className = "tab";
+	if (sessioner) {
+	    var si = document.getElementById(sessioner);
+	    if (si)
+		si.src = si.src.replace(/val=.*/, 'val=' + unfolded);
+	}
     }
 }
 

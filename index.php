@@ -38,27 +38,6 @@ if (isset($_REQUEST["setRole"]))
 $Conf->header("Welcome");
 echo actionBar(null, false, "");
 
-echo "<p>You're logged in as ", htmlspecialchars($Me->fullnameAndEmail()), ".
-If this is not you, please <a href='", $ConfSiteBase, "logout.php'>log out</a>.
-You will be automatically logged out if you are idle for more than ",
-    round(ini_get("session.gc_maxlifetime")/3600), " hours.</p>\n\n";
-
-$Conf->updateImportantDates();
-
-function taskbutton($name,$label) {
-    global $Conf;
-    if ($_SESSION["WhichTaskView"] == $name )
-	$color = $Conf->taskHeaderColor;
-    else
-	$color = $Conf->contrastColorTwo;
-    print "<td bgcolor=$color width=20% align=center> ";
-    echo "<form action='index.php' method='get'>\n";
-    print "<input type=submit value='$label'>";
-    print "<input type=hidden name='setRole' value='$name'>";
-    print "</form>";
-    print "</td>";
-}
-
 
 
 $tabName = array();
@@ -114,9 +93,21 @@ if ($Me->isPC || $Me->amReviewer()) {
 
     $body .= "<hr />
 
+<table class='bullets'><tr><td>
+
 <ul>
   <li><a href='uploadreview.php'>Download and upload review forms</a></li>
-</ul>\n";
+</ul>
+
+</td><td>\n\n";
+    if ($Me->isPC) {
+	$body .= "<ul>
+  <li><a href='list.php?list=submitted'>List submitted papers</a></li>\n";
+	if ($Me->amAssistant())
+	    $body .= "  <li><a href='list.php?list=all'>List all papers</a></li>\n";
+	$body .= "</ul>\n\n";
+    }
+    $body .= "</td></tr></table>\n";
     
     $tabBody[] = $body;
 }
@@ -208,6 +199,19 @@ $body .= "</tr></table>";
 $tabBody[] = $body;
 
 
+if (isset($_SESSION["mainTab"]) && in_array($_SESSION["mainTab"], $tabName))
+    $defaultTabName = $_SESSION["mainTab"];
+
+						      
+// now we know the default tab name, print the introduction
+echo "<p>You're logged in as ", htmlspecialchars($Me->fullnameAndEmail()), ".
+If this is not you, please <a href='", $ConfSiteBase, "logout.php'>log out</a>.
+You will be automatically logged out if you are idle for more than ",
+    round(ini_get("session.gc_maxlifetime")/3600), " hours.";
+echo "<img id='tabsv' alt='' src='", $ConfSiteBase, "sessionvar.php?var=mainTab&amp;val=", $defaultTabName, "' /></p>\n\n";
+
+
+
 echo "<div class='maintab'><table class='top'><tr>\n  <td><table><tr>\n";
 $tns = "[";
 foreach ($tabName as $tn)
@@ -215,7 +219,7 @@ foreach ($tabName as $tn)
 $tns = substr($tns, 0, -1) . "]";
 for ($i = 0; $i < count($tabBody); $i++) {
     echo "    <td class='sep'></td>\n";
-    echo "    <td class='", ($tabName[$i] == $defaultTabName ? "tab_default" : "tab"), "' id='tab$tabName[$i]' nowrap='nowrap'><a href=\"javascript:tabfold($tns,'", $tabName[$i], "')\">", $tabText[$i], "</a></td>\n";
+    echo "    <td class='", ($tabName[$i] == $defaultTabName ? "tab_default" : "tab"), "' id='tab$tabName[$i]' nowrap='nowrap'><a href=\"javascript:tabfold($tns,'", $tabName[$i], "',0,'tabsv')\">", $tabText[$i], "</a></td>\n";
 }
 echo "  </tr></table></td>\n  <td style='width:100%'><table style='width:100%'><tr><td class='spanner'></td></tr></table></td>\n</tr></table>\n";
 for ($i = 0; $i < count($tabBody); $i++) {
@@ -234,12 +238,6 @@ $homeSep = "<span class='sep'></span>";
   <div class='taskname'><h2>Program Chair Tasks</h2></div>
   <div class='taskdetail'>
     <table>
-    <tr>
-      <th>Papers:</th>
-	<td><a href='list.php?list=submitted'>List&nbsp;submitted</a> <?php echo $homeSep ?>
-	<a href='list.php?list=all'>List&nbsp;all</a> <?php echo $homeSep ?>
-	<a href='paper.php?paperId=new'>Enter&nbsp;new</a></td>
-    </tr>
 
     <tr>
       <th>Program&nbsp;committee:</th>
@@ -284,6 +282,21 @@ function reviewerDeadlines($isPC, $plist) {
 }
 
 
+
+
+function taskbutton($name,$label) {
+    global $Conf;
+    if ($_SESSION["WhichTaskView"] == $name )
+	$color = $Conf->taskHeaderColor;
+    else
+	$color = $Conf->contrastColorTwo;
+    print "<td bgcolor=$color width=20% align=center> ";
+    echo "<form action='index.php' method='get'>\n";
+    print "<input type=submit value='$label'>";
+    print "<input type=hidden name='setRole' value='$name'>";
+    print "</form>";
+    print "</td>";
+}
 
 
 if ($Me->isPC || $Me->amAssistant()) { ?>
