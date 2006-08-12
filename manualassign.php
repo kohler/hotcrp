@@ -99,8 +99,8 @@ if ($reviewer >= 0) {
 	    echo "</div>\n";
 	}
     }
-    
-    $paperList = new PaperList($_REQUEST["sort"], "AssignPapers.php?reviewer=$reviewer&amp;sort=");
+
+    $paperList = new PaperList(defval($_REQUEST["sort"]), "AssignPapers.php?reviewer=$reviewer&amp;sort=");
     echo "<form class='assignpc' method='post' action=\"AssignPapers.php?reviewer=$reviewer&amp;post=1\" enctype='multipart/form-data'>\n";
     echo $paperList->text("reviewAssignment", $_SESSION['Me'], $reviewer);
     echo "<input class='button_default' type='submit' name='update' value='Save assignments' />\n";

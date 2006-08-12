@@ -40,7 +40,7 @@ if (isset($_REQUEST["merge"])) {
 	    $Me->go("../");
 	} else {
 	    // Do they prefer the account they named?
-	    if (isset($_REQUEST['prefer']) && $_REQUEST['prefer']) {
+	    if (defval($_REQUEST['prefer'])) {
 		$mm = $Me;
 		$_REQUEST["Me"] = $Me = $MiniMe;
 		$MiniMe = $mm;

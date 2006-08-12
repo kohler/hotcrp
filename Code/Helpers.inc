@@ -1,5 +1,9 @@
 <?php
 
+function defval(&$var, $defval = null) {
+    return (isset($var) ? $var : $defval);
+}
+
 function vtrim(&$var) {
     return (isset($var) ? trim($var) : "");
 }
@@ -321,6 +325,41 @@ function contactHtml($firstName, $lastName=null, $email=null) {
     return $x;
 }
 
+function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
+    global $ConfSiteBase;
+    
+    if (isset($_SESSION["whichList"])) {
+	if ($_SESSION["whichList"] == "mainTab" && isset($_SESSION["mainTab"]))
+	    $listname = "list_tab" . $_SESSION["mainTab"];
+	else
+	    $listname = $_SESSION["whichList"];
+    }
+    if (!isset($listname) || !($list = defval($_SESSION[$listname]))
+	|| !is_array($list) || !count($list)
+	|| ($k = array_search($paperId, $list)) === false)
+	return "";
+
+    $urlrest = "";
+    foreach ($args as $what => $val)
+	$urlrest .= "&amp;" . htmlspecialchars($what) . "=" . htmlspecialchars($val);
+
+    $x = "<small>";
+    if ($k > 0)
+	$x .= "<a href=\"${ConfSiteBase}$baseUrl?paperId="
+	    . $list[$k - 1] . $urlrest . "\"><img src=\"${ConfSiteBase}images/prev.png\" />#" . $list[$k - 1] . "</a>";
+    if (($listinfo = defval($_SESSION[$listname . "!"])) && $listinfo[1]) {
+	$x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
+	$x .= "<a href=\"${ConfSiteBase}list.php?list=" . $listinfo[0] . "\">" . htmlspecialchars($listinfo[1]) . "</a>";
+    }
+    if ($k < count($list) - 1) {
+	$x .= ($k > 0 || $listinfo ? "&nbsp;&nbsp;" : "");
+	$x .= "<a href=\"${ConfSiteBase}$baseUrl?paperId="
+	    . $list[$k + 1] . $urlrest . "\">#" . $list[$k + 1]
+	    . "<img src=\"${ConfSiteBase}images/next.png\" /></a>";
+    }
+    return $x;
+}
+
 function goPaperForm($baseUrl = "paper.php", $args = array()) {
     global $ConfSiteBase;
     $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get'><div class='inform'>";
@@ -601,13 +640,17 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
     if ($thisUrl)
 	$x .= actionTab($mode, $thisUrl, true);
 
+    $x .= "  </tr></table></td>\n  <td class='spanner'></td>\n";
+    
     if ($mode == "revreq")
 	$goBase = "reqreview.php";
     else
 	$goBase = ($mode == "review" ? "review.php" : "paper.php");
     $xmode = (isset($_REQUEST["mode"]) ? array("mode" => $_REQUEST["mode"]) : array());
-    $x .= "  </tr></table></td>\n  <td class='spanner'></td>\n  <td class='gopaper' nowrap='nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n</tr></table>\n";
-    return $x;
+    if ($prow && ($zz = listLinks($prow->paperId, $goBase, $xmode)))
+	$x .= "  <td class='listlinks' nowrap='nowrap'>" . $zz . "</td>\n";
+    $x .= "  <td class='gopaper' nowrap='nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n";
+    return $x . "</tr></table>\n";;
 }
 
 function parseReviewOrdinal($n) {

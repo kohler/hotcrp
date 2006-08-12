@@ -84,23 +84,13 @@ else if ($Me->canListAuthoredPapers())
 else
     $list = 'none';
 
-$sv = (isset($_REQUEST['sort']) ? $_REQUEST['sort'] : "");
-
-$pl = new PaperList($sv, "list.php?list=" . htmlspecialchars($list) . "&amp;sort=");
+$pl = new PaperList(defval($_REQUEST['sort']),
+		    "list.php?list=" . htmlspecialchars($list) . "&amp;sort=",
+		    "list");
 $t = $pl->text($list, $Me);
+$_SESSION["whichList"] = "list";
 
 $title = "List " . htmlspecialchars($pl->shortDescription) . " Papers";
-$Conf->header_head($title) ?>
-<script type="text/javascript"><!--
-function checkAll(onoff) {
-    var ins = document.getElementsByTagName("input");
-    for (var i = 0; i < ins.length; i++)
-	if (ins[i].name == "papersel[]")
-	    ins[i].checked = onoff;
-}
-// -->
-</script>
-<?php
 $Conf->header($title);
 
 if ($pl->anySelector)
@@ -111,12 +101,12 @@ echo $t;
 
 if ($pl->anySelector) {
     echo "<div class='plist_form'>
-<button type='button' id='plb_selall' onclick='checkAll(true)'>Select all</button>
-<button type='button' id='plb_selnone' onclick='checkAll(false)'>Deselect all</button>
+<button type='button' id='plb_selall' onclick='checkPapersel(true)'>Select all</button>
+<button type='button' id='plb_selnone' onclick='checkPapersel(false)'>Deselect all</button>
 <button class='button_default' type='submit' id='plb_download' name='download'>Download selected papers</button>
 <button class='button_default' type='submit' id='plb_downloadReview' name='downloadReview'>Download selected review forms</button>
 </div>
 </form>\n";
- }
+}
 
 $Conf->footer() ?>

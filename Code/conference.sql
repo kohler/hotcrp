@@ -614,14 +614,14 @@ insert into PaperListColumns set paperListId=3, fieldId=30, col=6;
 insert into PaperListColumns set paperListId=3, fieldId=32, col=7;
 
 insert into PaperList set paperListId=4, paperListName='authorHome',
-	description='My papers (homepage view)', 
+	shortDescription='Your papers', description='My papers (homepage view)', 
 	queryType='author', sortCol=0, query='';
 insert into PaperListColumns set paperListId=4, fieldId=2, col=0;
 insert into PaperListColumns set paperListId=4, fieldId=12, col=1;
 insert into PaperListColumns set paperListId=4, fieldId=27, col=2;
 
 insert into PaperList set paperListId=6, paperListName='reviewerHome',
-	description='Papers to review (homepage view)',
+	shortDescription='Your reviews', description='Papers to review (homepage view)',
 	queryType='myReviews', sortCol=0, query='';
 insert into PaperListColumns set paperListId=6, fieldId=3, col=0;
 insert into PaperListColumns set paperListId=6, fieldId=13, col=1;
@@ -629,7 +629,7 @@ insert into PaperListColumns set paperListId=6, fieldId=32, col=2;
 insert into PaperListColumns set paperListId=6, fieldId=33, col=3;
 
 insert into PaperList set paperListId=8, paperListName='reviewAssignment',
-	description='Review assignments (homepage view)',
+	shortDescription='Your reviews', description='Review assignments (homepage view)',
 	queryType='pc', sortCol=3, query='';
 insert into PaperListColumns set paperListId=8, fieldId=3, col=0;
 insert into PaperListColumns set paperListId=8, fieldId=13, col=1;
@@ -640,7 +640,7 @@ insert into PaperListColumns set paperListId=8, fieldId=37, col=5;
 insert into PaperListColumns set paperListId=8, fieldId=38, col=6;
 
 insert into PaperList set paperListId=9, paperListName='editReviewPreference',
-	description='Edit reviewer preferences',
+	shortDescription='Review preferences', description='Edit reviewer preferences',
 	queryType='pc', sortCol=3, query='';
 insert into PaperListColumns set paperListId=9, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=9, fieldId=11, col=1;

@@ -130,7 +130,7 @@ function refuseReview() {
     $result = $Conf->qe("delete from PaperReview where reviewId=$rrow->reviewId", $while);
     if (DB::isError($result))
 	return;
-    $reason = (isset($_REQUEST['reason']) ? $_REQUEST['reason'] : "");
+    $reason = defval($_REQUEST['reason'], "");
     $result = $Conf->qe("insert into PaperReviewRefused set paperId=$rrow->paperId, contactId=$rrow->contactId, requestedBy=$rrow->requestedBy, reason='" . sqlqtrim($reason) . "'", $while);
     if (DB::isError($result))
 	return;
@@ -192,16 +192,16 @@ if (isset($_REQUEST['setoutcome'])) {
 
 
 // forceShow
-if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->amAssistant())
+if (defval($_REQUEST['forceShow']) && $Me->amAssistant())
     $forceShow = "&amp;forceShow=1";
 else
     $forceShow = "";
 
 
 // mode
-if (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "edit")
+if (defval($_REQUEST["mode"]) == "edit")
     $mode = "edit";
-else if (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "view")
+else if (defval($_REQUEST["mode"]) == "view")
     $mode = "view";
 else if ($rrow && ($Me->canReview($prow, $rrow, $Conf)
 		   || ($Me->amAssistant() && ($prow->conflict <= 0 || $forceShow))))

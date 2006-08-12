@@ -33,11 +33,12 @@ class PaperList {
     var $anySelector;
     var $shortDescription;
     var $description;
+    var $sessionVar;
     
-    function PaperList(&$sortVal = "1", $sortUri = null) {
+    function PaperList($sortVal = "1", $sortUri = null, $sessionVar = null) {
 	$this->showHeader = 1;
 
-	$s = isset($sortVal) ? $sortVal : "";
+	$s = ($sortVal !== null ? $sortVal : "");
 	$x = (strlen($s) ? $sortVal[strlen($s)-1] : "");
 	$this->reverseSort = ($x == "R");
 	if ($x == "R" || $x == "N")
@@ -52,6 +53,7 @@ class PaperList {
 	$this->needFinalize = 0;
 	$this->needSubmitReview = 0;
 	$this->anySelector = 0;
+	$this->sessionVar = $sessionVar;
     }
 
     function selector($fieldId, &$queryOptions) {
@@ -349,8 +351,10 @@ class PaperList {
 	if ($result->numRows() == 0)
 	    $x .= "  <tr>\n    <td class=\"pl_nopapers\" colspan='$ncol'>No papers available for this query</td>\n  </tr>\n";
 
+	$ids = array();
 	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
 	    $this->count++;
+	    $ids[] = $row->paperId;
 	    $x .= "  <tr>\n";
 	    foreach ($fieldId as $f)
 		if ($f[2] != 2) {
@@ -369,6 +373,11 @@ class PaperList {
 
 	$x .= "</table>";
 
+	if ($this->sessionVar) {
+	    $_SESSION[$this->sessionVar] = $ids;
+	    $_SESSION[$this->sessionVar . "!"] = array($listname, $this->shortDescription);
+	}
+	
 	return $x;
     }
 

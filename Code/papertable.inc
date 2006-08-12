@@ -203,6 +203,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 	echo (!DB::isError($result) && $result->numRows() == 1 ? "Contact author" : "Contact authors");
 	echo "</td>\n  ", $this->tdEntry('contactAuthor');
 	if (!DB::isError($result)) {
+	    $aus = array();
 	    while (($row = $result->fetchRow())) {
 		$au = contactText($row[0], $row[1], $row[2]);
 		$aus[] = $au;

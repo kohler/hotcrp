@@ -54,7 +54,7 @@ if ($Me->isPC || $Me->amReviewer()) {
     $body = "";
     $sep = "";
 
-    $plist = new PaperList();
+    $plist = new PaperList("1", null, "list_tabre");
     $plist->showHeader = 0;
     $ptext = $plist->text("reviewerHome", $Me);
     if ($plist->count > 0) {
@@ -131,7 +131,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
     }
 
     if ($Me->isAuthor) {
-	$plist = new PaperList();
+	$plist = new PaperList("1", null, "list_tabsu");
 	$plist->showHeader = 0;
 	$ptext = $plist->text("authorHome", $Me);
 	$deadlines = array();
@@ -201,6 +201,7 @@ $tabBody[] = $body;
 
 if (isset($_SESSION["mainTab"]) && in_array($_SESSION["mainTab"], $tabName))
     $defaultTabName = $_SESSION["mainTab"];
+$_SESSION["whichList"] = "mainTab";
 
 						      
 // now we know the default tab name, print the introduction
