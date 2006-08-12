@@ -77,7 +77,8 @@ and low interest in <span class='topic0'>grey topics</span>.
 Click on a column heading to sort by that column.</p>");
 
     
-$paperList = new PaperList(defval($_REQUEST["sort"]), "reviewprefs.php?sort=");
+$paperList = new PaperList(defval($_REQUEST["sort"]), "reviewprefs.php?sort=", "list");
+$_SESSION["whichList"] = "list";
 echo "<form class='assignpc' method='post' action=\"reviewprefs.php?post=1\" enctype='multipart/form-data'>\n";
 echo $paperList->text("editReviewPreference", $_SESSION['Me']);
 echo "<input class='button_default' type='submit' name='update' value='Save preferences' />\n";
