@@ -170,7 +170,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
 	echo "<tr>\n  <td class='pl_callout' colspan='$ncol'><span class='pl_callouthdr'>Collaborators</span> ", authorTable($row->collaborators), "</td>\n</tr>\n";
 
     // topics
-    if ($Me->isPC && $row->topicNames) {
+    if ($Me->isPC && $row->topicNames && $row->topicNames != "::::::") {
 	echo "<tr>\n  <td class='pl_callout' colspan='$ncol'><span class='pl_callouthdr'>Topic interest</span> ";
 	echo fixTopicInterest($row->topicNames), "</td>\n</tr>\n";
     }

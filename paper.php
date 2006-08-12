@@ -539,6 +539,9 @@ if ($mode == "edit")
 echo "<div class='clear'></div>\n\n";
 
 
+if ($mode == "view" && $Me->isPC)
+    echo "+", $Conf->timePCReviewPreferences(), "-", $Conf->timeReviewPaper(true, true, true), "\n";
+
 echo "<div class='gapbottom'></div>\n";
 
 $Conf->footer(); ?>
