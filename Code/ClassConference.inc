@@ -761,7 +761,7 @@ class Conference {
 		TopicSummary.topicInterestScore";
 	if (defval($options['reviewerPreference']))
 	    $pq .= ",
-		PaperReviewPreference.preference as reviewerPreference";
+		ifnull(PaperReviewPreference.preference, 0) as reviewerPreference";
 
 	// tables
 	$pq .= "
