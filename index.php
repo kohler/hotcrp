@@ -91,9 +91,10 @@ if ($Me->isPC || $Me->amReviewer()) {
     if (count($deadlines) > 0)
 	$body .= $sep . join("<br/>", $deadlines);
 
-    $body .= "<hr />
+    if ($body)
+	$body .= "<hr />\n\n";
 
-<table class='bullets'><tr><td>
+    $body .= "<table class='bullets'><tr><td>
 
 <ul>
   <li><a href='uploadreview.php'>Download and upload review forms</a></li>\n";
