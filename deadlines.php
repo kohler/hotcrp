@@ -163,6 +163,9 @@ if (isset($_REQUEST['update']) && $Me->amAssistant()) {
 	$x = 0;
     $Dates["reviewerViewReviews"] = array($x, 0);
     $Dates["notifyChairAboutReviews"] = array((isset($_REQUEST["notifyChairAboutReviews"]) ? 1 : 0), 0);
+    if (($x = cvtint($_REQUEST["blindSubmission"])) < 0 || $x > 2)
+	$x = 2;
+    $Dates["blindSubmission"] = array($x, 0);
     
     // print messages now, in case errors come later
     if (count($Messages) > 0)
@@ -235,10 +238,10 @@ function crp_show1date($name, $which) {
     $formclass = isset($DateError["$namex"]) ? "datename_error" : "datename";
     echo "  <td class='$formclass' colspan='2'>$label</td>\n";
     echo "  <td class='entry'><input class='textlite' type='text' name='${namex}' id='${namex}' value='", htmlspecialchars(crp_dateview($name, $which)), "' size='24' onchange='highlightUpdate()' tabindex='1' /></td>\n";
-    echo "  <td class='rcaption'></td>\n";
-    echo "  <td class='entry'></td>\n";
-    echo "  <td><button class='button' type='button' onclick='javascript: clear1Date(\"", $namex, "\")'>Clear</button></td>\n";
-    echo "  <td width='100%'></td>\n";
+    //echo "  <td class='rcaption'></td>\n";
+    //echo "  <td class='entry'></td>\n";
+    //echo "  <td><button class='button' type='button' onclick='javascript: clear1Date(\"", $namex, "\")'>Clear</button></td>\n";
+    //echo "  <td width='100%'></td>\n";
     echo "</tr>\n";
 
     if (isset($DateDescr[$name])) {
@@ -347,42 +350,49 @@ if ($Me->amAssistant()) {
 
 <h3>The review period</h3>
 
-<table class='imptdates'>\n";
+<table>\n
+<tr><td style='vertical-align: top'><table class='imptdates'>\n";
     
     crp_show1date('reviewerSubmitReview', 0);
-    
-    echo "<tr>
-  <td class='datename' colspan='6'><input type='checkbox' name='PCReviewAnyPaper' value='1' ";
-    if (isset($_REQUEST["PCReviewAnyPaper"])
-	|| cvtint($Conf->startTime["PCReviewAnyPaper"]) > 0)
-	echo "checked='checked' ";
-    echo "onchange='highlightUpdate()' tabindex='1' />&nbsp;PC can review any submitted paper during the review period</td>
-</tr>\n";
-    
     crp_show1date('reviewerSubmitReview', 1);
-
     crp_show1date('PCSubmitReview', 1);
     crp_show1date('reviewerSubmitReviewDeadline', 1);
     crp_show1date('PCSubmitReviewDeadline', 1);
+    
+    echo "</table></td><td style='vertical-align: top'><table class='imptdates'>
+<tr>
+  <td class='datename'>";
 
-    echo "<tr>
-  <td class='datename' colspan='6'><input type='checkbox' name='notifyChairAboutReviews' value='1' ";
+    $x = cvtint($_REQUEST["blindSubmission"]);
+    if ($x < 0)
+	$x = cvtint($Conf->startTime["blindSubmission"]);
+    echo "<input type='radio' name='blindSubmission' value='2'", ($x < 0 || $x >= 2 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Blind submission<br />";
+    echo "<input type='radio' name='blindSubmission' value='1'", ($x == 1 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Optionally blind submission<br />";
+    echo "<input type='radio' name='blindSubmission' value='0'", ($x == 0 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Nonblind submission\n";
+
+    echo "<div class='maintabsep'></div>\n<input type='checkbox' name='PCReviewAnyPaper' value='1' ";
+    if (isset($_REQUEST["PCReviewAnyPaper"])
+	|| cvtint($Conf->startTime["PCReviewAnyPaper"]) > 0)
+	echo "checked='checked' ";
+    echo "onchange='highlightUpdate()' tabindex='1' />&nbsp;PC can review any submitted paper during the review period<br />\n";
+
+    echo "<input type='checkbox' name='notifyChairAboutReviews' value='1' ";
     if (isset($_REQUEST["notifyChairAboutReviews"])
 	|| cvtint($Conf->startTime["notifyChairAboutReviews"]) > 0)
 	echo "checked='checked' ";
-    echo "onchange='highlightUpdate()' tabindex='1' />&nbsp;PC Chairs are notified via email about new reviews</td>
-</tr>\n";
+    echo "onchange='highlightUpdate()' tabindex='1' />&nbsp;PC Chairs are notified via email about new reviews<br />\n";
     
-    echo "<tr>\n  <td colspan='2' class='datename'>External reviewers can view other reviews for their papers:</td>\n  <td colspan='8' class='entry'>";
+    echo "<div class='maintabsep'></div>\nExternal reviewers can view other reviews for their papers:<br />";
     $x = cvtint($_REQUEST["reviewerViewReviews"]);
     if ($x < 0)
 	$x = cvtint($Conf->startTime["reviewerViewReviews"]);
-    echo "<span class='sep'><input type='radio' name='reviewerViewReviews' value='0'", ($x <= 0 || $x > 2 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Never </span><br />";
+    echo "<input type='radio' name='reviewerViewReviews' value='0'", ($x <= 0 || $x > 2 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Never </span><br />";
     echo "<input type='radio' name='reviewerViewReviews' value='1'", ($x == 1 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;After they submit their reviews, but they cannot see reviewer identities<br />";
     echo "<input type='radio' name='reviewerViewReviews' value='2'", ($x == 2 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;After they submit their reviews, including reviewer identities";
     echo "</td>\n</tr>\n";
 
-    echo "</table>
+    echo "</table></td></tr>
+</table>
 
     
 <table class='imptdates'>\n";

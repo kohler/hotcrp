@@ -141,6 +141,7 @@ CREATE TABLE Paper (
   withdrawn int(11) NOT NULL default '0',
   pcPaper int(11) NOT NULL default '0',
   paperStorageId int(11) NOT NULL default '0',
+  blind tinyint(1) NOT NULL default '1',
   authorsResponse mediumtext,
   outcome tinyint(1) NOT NULL default '0',
   showReviewsToReviewers tinyint(1) NOT NULL default '0',

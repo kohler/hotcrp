@@ -132,12 +132,19 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 	    return false;
 	}
 
-    // update Paper table
-    $q = substr($q, 0, -2);
-    if (!$newPaper)
-	$q .= " where paperId=$paperId and withdrawn<=0 and acknowledged<=0";
+    // blind?
+    if ($Conf->blindSubmission() > 1
+	|| ($Conf->blindSubmission() == 1 && isset($_REQUEST['blind'])))
+	$q .= "blind=1, ";
     else
-	$q .= ", contactId=$contactId, paperStorageId=1";
+	$q .= "blind=0, ";
+    
+    // update Paper table
+    if ($newPaper)
+	$q .= "contactId=$contactId, paperStorageId=1";
+    else
+	$q = substr($q, 0, -2) . " where paperId=$paperId and withdrawn<=0 and acknowledged<=0";
+    
     $result = $Conf->qe(($newPaper ? "insert into" : "update") . " Paper set $q", "while updating paper information");
     if (DB::isError($result))
 	return false;
@@ -330,7 +337,7 @@ else if ($newPaper) {
     else if ($timeUpdate)
 	$Conf->infoMsg("You must officially submit your paper before it can be reviewed.  <strong>This step cannot be undone</strong> and you can't make changes afterwards, so make all necessary changes first.$updateDeadline");
     else if ($prow->withdrawn <= 0 && $timeSubmit)
-	$Conf->infoMsg("You cannot update your paper since the <a href='deadlines.php'>deadline</a> has passed, but it still must be officially submitted before it can be considered for the conference.$submitDeadline$override");
+	$Conf->infoMsg("You cannot make any changes as the <a href='deadlines.php'>deadline</a> has passed, but the current version can still be officially submitted.  Only officially submitted papers will be considered for the conference.$submitDeadline$override");
     else if ($prow->withdrawn <= 0)
 	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting this paper has passed.  The paper will not be considered.$submitDeadline$override");
 } else if ($prow->author > 0) {
@@ -406,6 +413,16 @@ $paperTable->echoAbstractRow($prow);
 // Authors
 if ($newPaper || $canViewAuthors || $Me->amAssistant())
     $paperTable->echoAuthorInformation($prow);
+if (($newPaper || $mode == "edit") && $Conf->blindSubmission() == 1) {
+    echo "<tr class='pt_blind'>
+  <td class='caption'></td>
+  <td class='entry'><input type='checkbox' name='blind' value='1'";
+    if ($useRequest ? isset($_REQUEST['blind']) : (!$prow || $prow->blind))
+	echo " checked='checked'";
+    echo " />&nbsp;Blind submission</td>
+  <td class='hint'>Blind submissions have their author lists hidden from external reviewers and the PC.  You may choose whether or not to submit your paper blind.</td>
+</tr>\n";
+}
 
 
 // Contact authors
@@ -449,7 +466,7 @@ if ($mode == "edit") {
     else {
 	if ($prow->acknowledged <= 0) {
 	    if ($Conf->timeUpdatePaper() || $Me->amAssistant())
-		$buttons[] = array("<input class='button' type='submit' name='update' value='Save changes' />", "(does not submit paper)");
+		$buttons[] = array("<input class='button' type='submit' name='update' value='Save changes' />", "(does not submit)");
 	    if ($Conf->timeFinalizePaper() || $Me->amAssistant())
 		$buttons[] = array("<input class='button_default' type='submit' name='submit' value='Submit paper' />", "(cannot undo)");
 	} else if ($Me->amAssistant())

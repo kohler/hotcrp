@@ -191,7 +191,10 @@ $body .= "</td>\n";
 
 $body .= "<td><h4>Conference information</h4>
 <ul>
-  <li><a href='deadlines.php'>Important dates</a></li>
+  <li><a href='deadlines.php'>Important dates";
+if ($Me->amAssistant())
+    $body .= " and conference options";
+$body .= "</a></li>
   <li><a href='pc.php'>Program committee</a>";
 if ($Me->amAssistant())
     $body .= ": view and/or modify";

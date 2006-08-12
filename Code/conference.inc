@@ -144,6 +144,8 @@ class Conference {
 		       "notifyChairAboutReviews") as $x)
 	    if (!isset($this->startTime[$x]))
 		$this->startTime[$x] = 0;
+	if (!isset($this->startTime["blindSubmission"]))
+	    $this->startTime["blindSubmission"] = 2;
     }
 
     function q($query) {
@@ -373,6 +375,10 @@ class Conference {
 	return $this->validPeriod("authorViewReviews") > 0;
     }
 
+    function blindSubmission() {
+	return $this->startTime['blindSubmission'];
+    }
+    
 
     //
     // Is this particular event/deadline defined?

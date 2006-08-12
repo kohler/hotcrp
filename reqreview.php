@@ -125,7 +125,7 @@ function requestReview($email) {
     $m = "Dear " . contactText($Them) . ",\n\n";
     $m .= wordwrap(contactText($Me) . " has asked you to review paper #$prow->paperId for the $Conf->longName" . ($Conf->shortName != $Conf->longName ? " ($Conf->shortName)" : "") . " conference.\n\n")
 	. wordWrapIndent(trim($prow->title), "Title: ", 14) . "\n";
-    if (!$Opt['blindSubmission'])
+    if (!$prow->blind)
 	$m .= wordWrapIndent(trim($prow->authorInformation), "Authors: ", 14) . "\n";
     $m .= "  Paper site: $Conf->paperSite/review.php?paperId=$prow->paperId\n\n";
     $m .= wordwrap("If you are willing to review this paper, please enter your review " . $Conf->printableTimeRange('reviewerSubmitReview', "by") . ".  You may also complete a review form offline and upload it to the site.  If you cannot complete the review, you may refuse the review on the conference site or contact " . contactText($Me) . " directly.  For reference, your account information is as follows:\n\n");

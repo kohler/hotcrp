@@ -253,7 +253,7 @@ echo "  <td class='entry' colspan='2'><h2>", htmlspecialchars($prow->title), "</
 
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, $forceShow);
-$paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->amAssistant());
+$paperTable = new PaperTable(false, false, true, ($Me->amAssistant() && $prow->blind ? 1 : 2));
 
 $paperTable->echoStatusRow($prow, PaperTable::STATUS_DOWNLOAD | PaperTable::STATUS_CONFLICTINFO_PC);
 $paperTable->echoAbstractRow($prow);

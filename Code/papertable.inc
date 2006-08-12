@@ -153,6 +153,7 @@ class PaperTable {
     }
 
     function echoAuthorInformation($prow) {
+	global $Conf;
 	echo "<tr class='pt_authorInformation$this->autrClasses' id='foldau'>\n";
 	echo "  ", $this->tdCaption("authorInformation");
 	if ($this->authorsFolded)
@@ -160,16 +161,20 @@ class PaperTable {
 	    "<a href=\"javascript:fold(['au','ca','co'], 1)\" class='foldbutton folder'>&minus;</a> ";
 	echo "Authors</td>\n";
 	echo "  ", $this->tdEntry("authorInformation");
-	if ($this->authorsFolded)
+	if ($this->authorsFolded == 1)
 	    echo"<span class='ellipsis'><i>Hidden for blind review</i></span><span class='extension'>";
 	$this->echoEntryData("authorInformation", $prow, 5, true);
-	if ($this->authorsFolded)
+	if ($this->authorsFolded == 1)
 	    echo "</span>";
 	echo "</td>\n";
-	if ($this->editable)
+	if ($this->editable) {
 	    echo "  ", $this->tdHint("authorInformation"), "List the paper's authors one per line, including any affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
 Ludwig van Beethoven (Colorado)
-Zhang, Ping Yen (INRIA)</pre></td>\n";
+Zhang, Ping Yen (INRIA)</pre>";
+	    if ($Conf->blindSubmission() == 2)
+		echo " Submission is blind, so author information will not be shown to the PC or to external reviewers.";
+	    echo "</td>\n";
+	}
 	echo "</tr>\n\n";
     }
 
