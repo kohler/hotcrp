@@ -265,7 +265,7 @@ $paperTable->echoTopics($prow);
 
 // PC conflicts
 if ($Me->amAssistant()) {
-    $result = $Conf->qe("select ContactInfo.contactId, firstName, lastName, email,
+    $result = $Conf->qe("select ContactInfo.contactId, firstName, lastName,
 	count(PaperConflict.contactId) as conflict,
 	max(PaperConflict.author) as author, reviewType
 	from ContactInfo

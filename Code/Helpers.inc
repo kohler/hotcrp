@@ -306,11 +306,13 @@ function authorTable($aus, $htmlspecial = true) {
 
 function contactText($firstName, $lastName=null, $email=null) {
     if (is_array($firstName)) {
-	$email = $firstName[2];
+	if ($email === null && count($firstName) >= 2)
+	    $email = $firstName[2];
 	$lastName = $firstName[1];
 	$firstName = $firstName[0];
     } else if (is_object($firstName)) {
-	$email = isset($firstName->email) ? $firstName->email : "";
+	if ($email === null && isset($firstName->email))
+	    $email = $firstName->email;
 	$lastName = $firstName->lastName;
 	$firstName = $firstName->firstName;
     }
