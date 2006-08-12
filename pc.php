@@ -99,7 +99,7 @@ function addedvalue($what, $checked) {
 $query = "select ContactInfo.contactId, ContactInfo.firstName,
 	ContactInfo.lastName, ContactInfo.email, ContactInfo.affiliation,
 	ContactInfo.collaborators,
-	group_concat(concat_ws(' ::', topicName, interest) order by topicName separator ', ') as topicNames,
+	group_concat(concat_ws('', ':::', topicName, ':::', interest) order by topicName separator ', ') as topicNames,
 	ChairAssistant.contactId as ass, Chair.contactId as chair
 	from ContactInfo
 	join PCMember using (contactId)
@@ -172,9 +172,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
     // topics
     if ($Me->isPC && $row->topicNames) {
 	echo "<tr>\n  <td class='pl_callout' colspan='$ncol'><span class='pl_callouthdr'>Topic interest</span> ";
-	$ti = str_replace(" ::0", "&nbsp;(&minus;)", htmlspecialchars($row->topicNames));
-	$ti = str_replace(" ::2", "&nbsp;(+)", $ti);
-	echo $ti, "</td>\n</tr>\n";
+	echo fixTopicInterest($row->topicNames), "</td>\n</tr>\n";
     }
     
     echo "\n";
