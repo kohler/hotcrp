@@ -64,17 +64,18 @@ if (isset($_REQUEST["update"]))
 
 
 $Conf->infoMsg("<p>Help us assign you papers you want by
-entering your preferences here.
+entering your preferences.
 Preferences are integers; the higher the number, the more you want to
 review the paper.  0 is neutral (no preference).
 For short, \"+\" means \"+1\", \"&minus;\" means \"&minus;1\",
 \"++\" means \"+2\", and so forth.</p>
 
-<p>The paper list shows all submitted papers and their topics.
-You have high interest in <span class='topic2'>bold topics</span>,
-and low interest in <span class='topic0'>grey topics</span>.
-\"Topic score\" is higher the more the you are interested in the paper's topics.
-Click on a column heading to sort by that column.</p>");
+<p>The paper list shows all submitted papers and their topics.  You have high
+interest in <span class='topic2'>bold topics</span>, and low interest in <span
+class='topic0'>grey topics</span>.  \"Topic score\" is higher the more the you
+are interested in the paper's topics.  Click on a column heading to sort by
+that column.  You may also enter preferences on the paper pages, which are
+accessible by clicking the paper title.</p>");
 
     
 $paperList = new PaperList(defval($_REQUEST["sort"]), "reviewprefs.php?sort=", "list");
