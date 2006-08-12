@@ -34,6 +34,7 @@ class PaperList {
     var $shortDescription;
     var $description;
     var $sessionVar;
+    var $contact;
     
     function PaperList($sortVal = "1", $sortUri = null, $sessionVar = null) {
 	$this->showHeader = 1;
@@ -124,7 +125,7 @@ class PaperList {
 	case self::FIELD_STATUS_SHORT:
 	    return "Status";
 	case self::FIELD_DOWNLOAD:
-	    return "Download";
+	    return "";
 	case self::FIELD_REVIEWER_TYPE:
 	    return "Reviewer";
 	case self::FIELD_REVIEWER_STATUS:
@@ -156,7 +157,6 @@ class PaperList {
     
     function content($fieldId, $row, $plist, $reviewList) {
 	global $ConfSiteBase, $Conf;
-	$Me = $_SESSION["Me"];
 	switch ($fieldId) {
 	case self::FIELD_ID:
 	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='2'>#$row->paperId</a>";
@@ -180,7 +180,7 @@ class PaperList {
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->acknowledged <= 0 && $row->withdrawn <= 0)
 		$this->needFinalize++;
-	    return $Me->paperStatus($row->paperId, $row, $fieldId == self::FIELD_STATUS ? 0 : -1);
+	    return $this->contact->paperStatus($row->paperId, $row, $fieldId == self::FIELD_STATUS ? 0 : -1);
 	case self::FIELD_DOWNLOAD:
 	    if ($row->size > 0)
 		return paperDownload($row->paperId, $row);
@@ -213,9 +213,7 @@ class PaperList {
 	case self::FIELD_TOPIC_INTEREST:
 	    return htmlspecialchars($row->topicInterestScore + 0);
 	case self::FIELD_TOPIC_NAMES:
-	    $n = str_replace(" ::0", "&nbsp;(&minus;)", htmlspecialchars($row->topicNames));
-	    $n = str_replace(" ::2", "&nbsp;(+)", $n);
-	    return str_replace(" ::1", "", $n);
+	    return fixTopicInterest($row->topicNames);
 	case self::FIELD_ALL_REVIEWER_NAMES:
 	    $n = "";
 	    if (isset($reviewList[$row->paperId]))
@@ -232,6 +230,8 @@ class PaperList {
 	case self::FIELD_REVIEWER_PREFERENCE:
 	    return (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
 	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
+	    if ($row->conflict > 0)
+		return "N/A";
 	    $x = (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
 	    return "<input class='textlite revpref' type='text' size='4' name='revpref$row->paperId' value=\"$x\" />";
 	default:
@@ -241,6 +241,7 @@ class PaperList {
 
     function text($listname, $me, $contactId = -1) {
 	global $Conf;
+	$this->contact = $me;
 
 	// get paper list id
 	$result = $Conf->qe("select * from PaperList where paperListName='" . sqlq($listname) . "'", "while looking up list type");

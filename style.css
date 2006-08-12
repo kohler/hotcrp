@@ -137,6 +137,14 @@ a img {
 	border: none;
 }
 
+span.topic0 {
+	color: grey;
+	text-decoration: line-through;
+}
+span.topic2 {
+	font-weight: bold;
+}
+
 /* view bar */
 table.vubar {
 	margin-top: -0.5em;

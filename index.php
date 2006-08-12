@@ -96,8 +96,10 @@ if ($Me->isPC || $Me->amReviewer()) {
 <table class='bullets'><tr><td>
 
 <ul>
-  <li><a href='uploadreview.php'>Download and upload review forms</a></li>
-</ul>
+  <li><a href='uploadreview.php'>Download and upload review forms</a></li>\n";
+    if ($Me->isPC)
+	$body .= "  <li><a href='PC/reviewprefs.php'>Review preferences</a></li>\n";
+    $body .= "</ul>
 
 </td><td>\n\n";
     if ($Me->isPC) {

@@ -789,7 +789,7 @@ class Conference {
 	if (isset($options['topics']) || isset($options['topicInterestScore'])) {
 	    $subq = "select paperId";
 	    if (isset($options['topics']))
-		$subq .= ", group_concat(concat_ws(' ::', topicName, interest) order by topicName separator ', ') as topicNames";
+		$subq .= ", group_concat(concat_ws('', ':::', topicName, ':::', interest) order by topicName separator ', ') as topicNames";
 	    if (isset($options['topicInterestScore']))
 		$subq .= ", sum(if(interest=2,2,interest-1)) as topicInterestScore";
 	    $subq .= " from TopicArea join PaperTopic using (topicId) left join TopicInterest on (TopicInterest.topicId=TopicArea.topicId and contactId=$contactId) group by paperId";

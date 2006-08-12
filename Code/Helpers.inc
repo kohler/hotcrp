@@ -221,7 +221,7 @@ function paperDownload($paperId, $row = null, $long = 0, $conf = null) {
 
     $p = $conf->makeDownloadPath($paperId, $row->mimetype);
     $x = "<a class='download' href='" . $p . "'>View</a>&nbsp;";
-    $x .= "<a class='download' href='" . $p . "?save=1'>Save&nbsp;to&nbsp;disk</a>";
+    $x .= "<a class='download' href='" . $p . "?save=1'>Save</a>";
     if ($long && (isset($row->size) || isset($row->mimetype))) {
 	$x .= "&nbsp;(";
 	if (isset($row->size))
@@ -678,4 +678,10 @@ function downloadText($text, $filename, $description) {
     header("Content-Type: text/plain");
     header("Content-Length: " . strlen($text));
     print $text;
+}
+
+function fixTopicInterest($n) {
+    return preg_replace('/:::(.*?):::(\d*)/',
+			'<span class="topic$2">$1</span>',
+			htmlspecialchars($n));
 }

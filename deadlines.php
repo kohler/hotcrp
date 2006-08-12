@@ -15,12 +15,14 @@ $DateStartMap = array("updatePaperSubmission" => "startPaperSubmission",
 		      "reviewerSubmitReviewDeadline" => "reviewerSubmitReview",
 		      "PCSubmitReviewDeadline" => "reviewerSubmitReview",
 		      "PCSubmitReview" => "reviewerSubmitReview");
+$DateNoEndMap = array("PCReviewPreferences" => 1);
 
 $DateName['startPaperSubmission'][0] = "Submission period begins";
 $DateName['startPaperSubmission'][1] = "Deadline for creating new submissions";
 $DateName['updatePaperSubmission'][1] = "Deadline for updating submissions";
 $DateName['finalizePaperSubmission'][1] = "Submission period ends";
 
+$DateName['PCReviewPreferences'][0] = "Start collecting PC preferences";
 $DateName['reviewerSubmitReview'][0] = "Review period begins";
 $DateName['reviewerSubmitReview'][1] = "Soft deadline for external reviews";
 $DateName['PCSubmitReview'][1] = "Soft deadline for PC reviews";
@@ -77,11 +79,13 @@ $Conf->header("Important Dates");
 // Now catch any modified dates
 
 function crp_strtotime($tname, $which) {
-    global $Error, $DateName, $DateStartMap, $DateError;
+    global $Error, $DateName, $DateStartMap, $DateNoEndMap, $DateError;
     
     $req_tname = $tname;
     if ($which == 0 && isset($DateStartMap[$tname]))
 	$req_tname = $DateStartMap[$tname];
+    if ($which == 1 && isset($DateNoEndMap[$tname]))
+	return -1;
     $varname = $req_tname . ($which ? "_end" : "_start");
 
     if (!isset($_REQUEST[$varname]))
@@ -116,7 +120,7 @@ if (isset($_REQUEST['update']) && $Me->amAssistant()) {
 		   'finalizePaperSubmission', 'authorViewReviews',
 		   'authorRespondToReviews', 'authorViewDecision',
 		   'reviewerSubmitReview', 'reviewerSubmitReviewDeadline',
-		   'reviewerViewDecision',
+		   'reviewerViewDecision', 'PCReviewPreferences',
 		   'PCSubmitReview', 'PCSubmitReviewDeadline',
 		   'PCGradePapers', 'PCMeetingView',
 		   'AtTheMeeting', 'EndOfTheMeeting'
@@ -153,7 +157,8 @@ if (isset($_REQUEST['update']) && $Me->amAssistant()) {
 	$dest = $dval[$i]; $src = $dval[$i+1];
 	if ($Dates[$dest][1] <= 0 && $Dates[$src][1] > 0) {
 	    $Dates[$dest][1] = $Dates[$src][1];
-	    $Messages[] = $DateName[$dest][1] . " set to " . $DateName[$src][1] . ".";
+	    if (!is_array($DateName[$dest]) || $DateName[$dest][1])
+		$Messages[] = $DateName[$dest][1] . " set to " . $DateName[$src][1] . ".";
 	}
     }
 
@@ -353,6 +358,7 @@ if ($Me->amAssistant()) {
 <table>\n
 <tr><td style='vertical-align: top'><table class='imptdates'>\n";
     
+    crp_show1date('PCReviewPreferences', 0);
     crp_show1date('reviewerSubmitReview', 0);
     crp_show1date('reviewerSubmitReview', 1);
     crp_show1date('PCSubmitReview', 1);
@@ -370,7 +376,9 @@ if ($Me->amAssistant()) {
     echo "<input type='radio' name='blindSubmission' value='1'", ($x == 1 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Optionally blind submission<br />";
     echo "<input type='radio' name='blindSubmission' value='0'", ($x == 0 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Nonblind submission\n";
 
-    echo "<div class='maintabsep'></div>\n<input type='checkbox' name='PCReviewAnyPaper' value='1' ";
+    echo "<div class='maintabsep'></div>\n";
+
+    echo "<input type='checkbox' name='PCReviewAnyPaper' value='1' ";
     if (isset($_REQUEST["PCReviewAnyPaper"])
 	|| cvtint($Conf->startTime["PCReviewAnyPaper"]) > 0)
 	echo "checked='checked' ";

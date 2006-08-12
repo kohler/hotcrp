@@ -644,7 +644,8 @@ insert into PaperList set paperListId=9, paperListName='editReviewPreference',
 	queryType='pc', sortCol=3, query='';
 insert into PaperListColumns set paperListId=9, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=9, fieldId=11, col=1;
-insert into PaperListColumns set paperListId=9, fieldId=36, col=2;
-insert into PaperListColumns set paperListId=9, fieldId=35, col=3;
-insert into PaperListColumns set paperListId=9, fieldId=40, col=4;
-insert into PaperListColumns set paperListId=9, fieldId=37, col=5;
+insert into PaperListColumns set paperListId=9, fieldId=28, col=2;
+insert into PaperListColumns set paperListId=9, fieldId=36, col=3;
+insert into PaperListColumns set paperListId=9, fieldId=29, col=4;
+insert into PaperListColumns set paperListId=9, fieldId=40, col=5;
+insert into PaperListColumns set paperListId=9, fieldId=37, col=6;

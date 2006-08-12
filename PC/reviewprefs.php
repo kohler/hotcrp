@@ -8,9 +8,6 @@ $Me->goIfNotPC('../index.php');
 
 $Conf->header("Review Preferences", "revpref");
 
-$reviewer = cvtint($_REQUEST["reviewer"]);
-
-
 function cvtpref($n) {
     $n = trim($n);
     if (preg_match('/^-+$/', $n))
@@ -76,27 +73,27 @@ function savePreferences($reviewer) {
 
     $Conf->qe("unlock tables", $while);
 }
-
-
 if (isset($_REQUEST["update"]))
     savePreferences($Me->contactId);
 
-echo "<p>Select a program committee member and assign that person papers to review.
-Primary reviewers must review the paper themselves; secondary reviewers 
-may delegate the paper or review it themselves.</p>
 
-<p>The paper list shows all submitted papers and their topics and reviewers.
-The selected PC member has high interest in topics marked with (+), and low
-interest in topics marked with (&minus;).
-\"Topic score\" is higher the more the PC member is interested in the paper's topics.
-In the reviewer list, <sub><b>1</b></sub> indicates a primary reviewer,
-and <sub><b>2</b></sub> a secondary reviewer.
-Click on a column heading to sort by that column.</p>\n\n";
+$Conf->infoMsg("<p>Help us assign you papers you want by
+entering your preferences here.
+Preferences are integers; the higher the number, the more you want to
+review the paper.  0 is neutral (no preference).
+For short, \"+\" means \"+1\", \"&minus;\" means \"&minus;1\",
+\"++\" means \"+2\", and so forth.</p>
+
+<p>The paper list shows all submitted papers and their topics.
+You have high interest in <span class='topic2'>bold topics</span>,
+and low interest in <span class='topic0'>grey topics</span>.
+\"Topic score\" is higher the more the you are interested in the paper's topics.
+Click on a column heading to sort by that column.</p>");
 
     
-$paperList = new PaperList($_REQUEST["sort"], "reviewprefs.php?sort=");
+$paperList = new PaperList(defval($_REQUEST["sort"]), "reviewprefs.php?sort=");
 echo "<form class='assignpc' method='post' action=\"reviewprefs.php?post=1\" enctype='multipart/form-data'>\n";
-echo $paperList->text("editReviewPreference", $_SESSION['Me'], $reviewer);
+echo $paperList->text("editReviewPreference", $_SESSION['Me']);
 echo "<input class='button_default' type='submit' name='update' value='Save preferences' />\n";
 echo "</form>\n";
 
