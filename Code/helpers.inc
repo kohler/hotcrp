@@ -233,10 +233,25 @@ function paperDownload($paperId, $row = null, $long = 0, $conf = null) {
     return $x;
 }
 
-function topicTable($paperId = -1, $active = 0, $conf = null) {
+function topicTable($prow, $active = 0, $conf = null) {
     global $Conf;
     if ($conf == null)
 	$conf = $Conf;
+    $paperId = ($prow ? $prow->paperId : -1);
+
+    // read from paper row if appropriate
+    if ($paperId > 0 && $active < 0 && isset($prow->topicNames)) {
+	preg_match_all('/:::.*?:::\d*/', $prow->topicNames, $top);
+	$out = "<table class='simple'><tr>\n	<td>";
+	$colheight = (int) ((count($top[0]) + 1) / 2);
+	for ($i = 0; $i < count($top[0]); $i++) {
+	    if ($i > 0 && ($i % $colheight) == 0)
+		$out .= "</td>\n	<td>";
+	    $out .= fixTopicInterest($top[0][$i]) . "<br />\n";
+	}
+	return $out . "</td>\n</tr></table>";
+    }
+
 
     // get current topics
     $extraQ = '';
@@ -265,7 +280,7 @@ function topicTable($paperId = -1, $active = 0, $conf = null) {
 		    $out .= "disabled='disabled' ";
 		$out .= "onclick='highlightUpdate()' />&nbsp;";
 	    }
-	    $out .= htmlspecialchars($row[1]) . "<br/>\n";
+	    $out .= htmlspecialchars($row[1]) . "<br />\n";
 	}
 	return $out . "</td>\n</tr></table>";
     } else
@@ -687,4 +702,18 @@ function fixTopicInterest($n) {
     return preg_replace('/:::(.*?):::(\d*)/',
 			'<span class="topic$2">$1</span>',
 			htmlspecialchars($n));
+}
+
+function cvtpref($n) {
+    $n = trim($n);
+    if (preg_match('/^-+$/', $n))
+	return -strlen($n);
+    else if (preg_match('/^\++$/', $n))
+	return strlen($n);
+    else if ($n == "")
+	return 0;
+    else if (is_numeric($n))
+	return round($n);
+    else
+	return -1000001;
 }

@@ -308,7 +308,10 @@ class PaperList {
 	}
 	
 	// prepare query text
-	$pq = $Conf->paperQuery($contactId, $queryOptions);
+	if ($me->contactId == $contactId)
+	    $pq = $Conf->paperQuery($me, $queryOptions);
+	else
+	    $pq = $Conf->paperQuery($contactId, $queryOptions);
 
 	// make query
 	$result = $Conf->qe($pq, "while selecting papers");

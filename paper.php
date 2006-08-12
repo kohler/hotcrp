@@ -48,11 +48,21 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
     $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  Any changes were lost.");
 
 
+// date mode
+$mainPreferences = false;
+if ($mode == "view" && $Me->isPC && $Conf->timePCReviewPreferences()
+    && !$Conf->timeReviewPaper(true, true, true))
+    $mainPreferences = true;
+
+
 // grab paper row
 $prow = null;
 function getProw($contactId) {
-    global $prow, $paperId, $Conf, $Me;
-    if (!($prow = $Conf->paperRow($paperId, $contactId, $whyNot))
+    global $prow, $paperId, $Conf, $Me, $mainPreferences;
+    if (!($prow = $Conf->paperRow(array('paperId' => $paperId,
+					'topics' => 1,
+					'reviewerPreference' => $mainPreferences),
+				  $contactId, $whyNot))
 	|| !$Me->canViewPaper($prow, $Conf, $whyNot))
 	errorMsgExit(whyNotText($whyNot, "view"));
 }
@@ -304,6 +314,22 @@ if (isset($_REQUEST['delete'])) {
 }
 
 
+// set review preference action
+if (isset($_REQUEST['setrevpref']) && $prow && isset($_REQUEST['revpref'])) {
+    if (($v = cvtpref($_REQUEST['revpref'])) >= -1000000 && $v <= 1000000) {
+	$while = "while saving review preference";
+	$Conf->qe("lock tables PaperReviewPreference write", $while);
+	$Conf->qe("delete from PaperReviewPreference where contactId=$Me->contactId and paperId=$prow->paperId", $while);
+	$result = $Conf->qe("insert into PaperReviewPreference set paperId=$prow->paperId, contactId=$Me->contactId, preference=$v", $while);
+	$Conf->qe("unlock tables", $while);
+	if (!DB::isError($result))
+	    $Conf->confirmMsg("Review preference saved.");
+	getProw($Me->contactId);
+    } else
+	$Conf->errorMsg("Bad preference setting.  Example settings include '0' or '' (don't care), '+' (want to review, same as +1), '++' (really want to review, same as +2), '&minus;' (don't want to review, same as &minus;1), '&minus;&minus;' (really don't want to review, same as &minus;2), and numbers between &minus;1000000 and 1000000.");
+}
+
+
 // messages for the author
 function deadlineIs($dname, $conf) {
     $deadline = $conf->printableEndTime($dname);
@@ -439,6 +465,19 @@ if ($newPaper || $canViewAuthors || $Me->amAssistant())
 
 // Topics
 $paperTable->echoTopics($prow);
+
+
+// Review preference
+if ($mode != "edit" && $mainPreferences) {
+    $x = (isset($prow->reviewerPreference) ? htmlspecialchars($prow->reviewerPreference) : "0");
+    echo "<tr class='pt_preferences'>
+  <td class='caption'>Review preference</td>
+  <td class='entry'><form action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1\" method='post' enctype='multipart/form-data'>
+    <input class='textlite revpref' type='text' size='4' name='revpref' value=\"$x\" />
+    <input class='button_small' type='submit' name='setrevpref' value='Set preference' />
+  </form></td>
+</tr>\n\n";
+}
 
 
 // PC conflicts

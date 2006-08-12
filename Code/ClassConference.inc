@@ -352,6 +352,9 @@ class Conference {
     function timeAuthorViewDecision() {
 	return $this->validPeriod('authorViewDecision') > 0;
     }
+    function timePCReviewPreferences() {
+	return $this->validPeriod('PCReviewPreferences') > 0;
+    }
     function timeReviewPaper($isPC = false, $requested = true, $hard = true) {
 	if (!($requested
 	      || ($isPC && $this->startTime["PCReviewAnyPaper"] > 0)))
@@ -701,7 +704,7 @@ class Conference {
     }
 
     
-    function paperQuery($contactId, $options = array()) {
+    function paperQuery($contact, $options = array()) {
 	// Options:
 	//   "paperId" => $pid	Only paperId $pid (if array, any of those)
 	//   "reviewId" => $rid Only paper reviewed by $rid
@@ -717,6 +720,7 @@ class Conference {
 	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
 
 	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']) || isset($options['myReviewsOpt']);
+	$contactId = (is_object($contact) ? $contact->contactId : $contact);
 
 	// fields
 	$pq = "select Paper.*,
@@ -751,7 +755,7 @@ class Conference {
 	if (isset($options['topicInterestScore']))
 	    $pq .= ",
 		TopicSummary.topicInterestScore";
-	if (isset($options['reviewerPreference']))
+	if (defval($options['reviewerPreference']))
 	    $pq .= ",
 		PaperReviewPreference.preference as reviewerPreference";
 
@@ -796,7 +800,7 @@ class Conference {
 	    $pq .= "		left join ($subq) as TopicSummary on (TopicSummary.paperId=Paper.paperId)\n";
 	}
 
-	if (isset($options['reviewerPreference']))
+	if (defval($options['reviewerPreference']))
 	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$contactId)\n";
 
 

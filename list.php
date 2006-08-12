@@ -10,7 +10,7 @@ $Me->goIfInvalid("../");
 if (isset($_REQUEST["download"])) {
     if (!isset($_REQUEST["papersel"]) || !is_array($_REQUEST["papersel"]))
 	$_REQUEST["papersel"] = array();
-    $q = $Conf->paperQuery($Me->contactId, array("paperId" => $_REQUEST["papersel"]));
+    $q = $Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"]));
     $result = $Conf->qe($q, "while selecting papers for download");
     if (DB::isError($result))
 	/* do nothing */;
@@ -41,7 +41,7 @@ if (isset($_REQUEST["downloadReview"]) && !isset($_REQUEST["papersel"])) {
 
     if (!is_array($_REQUEST["papersel"]))
 	$_REQUEST["papersel"] = array();
-    $result = $Conf->qe($Conf->paperQuery($Me->contactId, array("paperId" => $_REQUEST["papersel"], "myReviewsOpt" => 1)), "while selecting papers for review");
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"], "myReviewsOpt" => 1)), "while selecting papers for review");
 
     $text = '';
     $errors = array();

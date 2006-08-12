@@ -8,20 +8,6 @@ $Me->goIfNotPC('../index.php');
 
 $Conf->header("Review Preferences", "revpref");
 
-function cvtpref($n) {
-    $n = trim($n);
-    if (preg_match('/^-+$/', $n))
-	return -strlen($n);
-    else if (preg_match('/^\++$/', $n))
-	return strlen($n);
-    else if ($n == "")
-	return 0;
-    else if (is_numeric($n))
-	return round($n);
-    else
-	return -1000001;
-}
-
 function savePreferences($reviewer) {
     global $Conf, $Me, $reviewTypeName;
 

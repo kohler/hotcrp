@@ -53,6 +53,8 @@ class PaperTable {
 	    $c .= " extension";
 	if ($this->editable && isset($textAreaRows[$what]))
 	    $c .= " textarea";
+	if (!$this->editable)
+	    $c .= " colspan='2'";
 	return $c . "'>";
     }
 
@@ -231,7 +233,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 	$topicMode = (int) $this->useRequest;
 	if (!$this->editable || ($prow && ($prow->acknowledged > 0 || $prow->withdrawn > 0)))
 	    $topicMode = -1;
-	if ($topicTable = topicTable($prow ? $prow->paperId : -1, $topicMode, $Conf)) { 
+	if ($topicTable = topicTable($prow, $topicMode, $Conf)) { 
 	    echo "<tr class='pt_topics$this->trClasses' id='foldto'>\n";
 	    echo "  ", $this->tdCaption("topics"), "Topics</td>\n";
 	    echo "  ", $this->tdEntry("topics"), $topicTable, "</td>\n";
