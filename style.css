@@ -691,9 +691,11 @@ form.assignpc {
 }
 
 span.autblentry {
-	min-width: 20em;
 	margin-right: 0.75em;
 	white-space: nowrap;
+}
+span.autblentry_long {
+	margin-right: 0.75em;
 }
 
 div.plist_form {

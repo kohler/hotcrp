@@ -279,7 +279,10 @@ function authorTable($aus, $htmlspecial = true) {
     foreach ($aus as $au) {
 	$au = trim($au);
 	if ($au != '') {
-	    $out .= "<span class='autblentry'>";
+	    if (strlen($au) > 40)
+		$out .= "<span class='autblentry_long'>";
+	    else
+		$out .= "<span class='autblentry'>";
 	    $out .= ($htmlspecial ? htmlspecialchars($au) : $au) . "</span> ";
 	}
     }
