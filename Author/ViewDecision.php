@@ -12,18 +12,18 @@ include('../Code/confConfigReview.inc');
 
 <html>
 
-<?php  $Conf->header("See Outcome, Reviews and Comments For Paper #$_REQUEST[paperId]") ?>
+<?php  $Conf->header("See Outcome, Reviews and Comments For Paper #" . $_REQUEST["paperId"]) ?>
 
 <body>
 
 <?php 
 
-if (!IsSet($_REQUEST[paperId]) ) {
+if (!IsSet($_REQUEST["paperId"]) ) {
   $Conf -> errorMsg("You did not specify a paper to modify.");
   exit;
 }
 
-if ( $_SESSION["Me"] -> amPaperAuthor($_REQUEST[paperId], $Conf) ) {
+if ( $_SESSION["Me"] -> amPaperAuthor($_REQUEST["paperId"], $Conf) ) {
   //
   // Ok, I'm author...
   //
@@ -47,7 +47,7 @@ if (IsSet($updateReviewerView)) {
   $q = ("UPDATE Paper SET "
 	. " showResponseToReviewers=$showResponseToReviewers, "
 	. " showReviewsToReviewers=$showReviewsToReviewers "
-	. " WHERE paperId=$_REQUEST[paperId]");
+	. " WHERE paperId=" . $_REQUEST["paperId"]);
   $Conf->qe($q);
 }
 
@@ -55,7 +55,7 @@ if (IsSet($updateReviewerView)) {
 // Print header using dummy review
 //
 
-$Review=ReviewFactory($Conf, $_SESSION["Me"]->contactId, $_REQUEST[paperId]);
+$Review=ReviewFactory($Conf, $_SESSION["Me"]->contactId, $_REQUEST["paperId"]);
 
 if ( ! $Review -> valid ) {
   $Conf->errorMsg("You've stumbled on to an invalid review? -- contact chair");
@@ -90,7 +90,7 @@ if (1 || $Conf->validTimeFor('reviewerViewDecision', 0) ) {
   print "<table align=center width=50% border=1>\n";
   print "<tr> <td> \n";
   print "<FORM name=Checks method=\"POST\" action=\"$_SERVER[PHP_SELF]\">\n";
-  print "<input type=hidden name=paperId value=$_REQUEST[paperId]>\n";
+  print "<input type=hidden name=paperId value=" . $_REQUEST["paperId"] . ">\n";
   print "<input type=checkbox name=showResponseToReviewers value=1 " ;
   if ( $showResponse ) print " CHECKED ";
   print "> Allow reviewers to see your response to all reviews";
@@ -119,7 +119,7 @@ $result = $Conf->qe("SELECT PaperReview.contactId, "
 		    . " ContactInfo.firstName, ContactInfo.lastName, "
 		    . " ContactInfo.email "
 		    . " FROM PaperReview, ContactInfo "
-		    . " WHERE PaperReview.paperId='$_REQUEST[paperId]'"
+		    . " WHERE PaperReview.paperId='" . $_REQUEST["paperId"] . "'"
 		    . " AND PaperReview.contactId=ContactInfo.contactId"
 		    . " AND PaperReview.reviewSubmitted=1"
 		    );
@@ -138,7 +138,7 @@ if (!DB::isError($result) && $result->numRows() > 0) {
     $last=$row['lastName'];
     $email=$row['email'];
 
-    $Review=ReviewFactory($Conf, $reviewer, $_REQUEST[paperId]);
+    $Review=ReviewFactory($Conf, $reviewer, $_REQUEST["paperId"]);
     print "<table width=100% >";
 
     if ($i & 0x1 ) {
@@ -148,7 +148,7 @@ if (!DB::isError($result) && $result->numRows() > 0) {
     }
 
     print "<tr bgcolor=$color>";
-    print "<th> <big> <big> Review #$reviewId For Paper #$_REQUEST[paperId] </big></big> </th>";
+    print "<th> <big> <big> Review #$reviewId For Paper #" . $_REQUEST["paperId"] . " </big></big> </th>";
     print "</tr>";
     
     print "<tr bgcolor=$color> <td> ";
@@ -169,7 +169,7 @@ if (!DB::isError($result) && $result->numRows() > 0) {
 
 $result = $Conf -> qe("SELECT *, UNIX_TIMESTAMP(time) as unixtime "
 		      . " FROM PaperComments "
-		      . " WHERE paperId=$_REQUEST[paperId] "
+		      . " WHERE paperId=" . $_REQUEST["paperId"]
 		      . " ORDER BY time ");
 
 if (DB::isError($result) ) {
