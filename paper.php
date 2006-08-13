@@ -231,7 +231,8 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 - $Conf->shortName Conference Submissions\n");
 
     // send email to all contact authors
-    $Conf->emailContactAuthors($paperId, $subject, $m);
+    if (!$Me->amAssistant() || isset($_REQUEST["emailUpdate"]))
+	$Conf->emailContactAuthors($paperId, $subject, $m);
     
     return true;
 }
@@ -524,10 +525,17 @@ if ($mode == "edit") {
 	$x = (is_array($b) ? $b[1] : "");
 	echo "      <td class='ptb_explain'>", $x, "</td>\n";
     }
-    echo "    </tr>\n";
-    if ($Me->amAssistant())
-	echo "    <tr><td colspan='", count($buttons), "'><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td></tr>\n";
-    echo "  </table></td>\n</tr>\n\n";
+    echo "    </tr>\n  </table></td>\n</tr>\n\n";
+    if ($Me->amAssistant()) {
+	echo "<tr>
+  <td class='caption'></td>
+  <td class='entry'>
+    <input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines\n";
+	if ($prow && $prow->author <= 0 && $prow->acknowledged <= 0)
+	    echo "    <span class='sep'></span>
+    <input type='checkbox' name='emailUpdate' value='1' checked='checked' />&nbsp;Email&nbsp;authors\n";
+	echo "  </td>\n</tr>\n\n";
+    }
 }
 
 
