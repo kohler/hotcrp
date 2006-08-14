@@ -313,7 +313,7 @@ function reviewView($prow, $rrow, $editMode) {
     if ($rrow && $rrow->reviewSubmitted)
 	echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
     echo "</h3></td>
-    <td class='entry' entry='3'></td>
+    <td class='entry'></td>
   </tr>
 
   <tr class='rev_rev'>

@@ -707,11 +707,22 @@ class Conference {
 	return $result;
     }
 
+
+    function _paperQuery_where($optarr, $field) {
+	$ids = array();
+	foreach (mkarray($optarr) as $id)
+	    if (($id = cvtint($id)) > 0)
+		$ids[] = "$field=$id";
+	if (is_array($optarr) && count($ids) == 0)
+	    $ids[] = "$field=0";
+	return "(" . join(" or ", $ids) . ")";
+    }
     
     function paperQuery($contact, $options = array()) {
 	// Options:
 	//   "paperId" => $pid	Only paperId $pid (if array, any of those)
 	//   "reviewId" => $rid Only paper reviewed by $rid
+	//   "commentId" => $c  Only paper where comment is $c
 	//   "finalized"	Only submitted papers
 	//   "author"		Only papers authored by $contactId
 	//   "myReviewRequests"	Only reviews requested by $contactId
@@ -770,6 +781,8 @@ class Conference {
 
 	if (isset($options['reviewId']))
 	    $pq .= "		join PaperReview as ReviewSelector on (ReviewSelector.paperId=Paper.paperId)\n";
+	if (isset($options['commentId']))
+	    $pq .= "		join PaperComments as CommentSelector on (CommentSelector.paperId=Paper.paperId)\n";
 	if (isset($options['author']))
 	    $pq .= "		join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.author>0 and PaperConflict.contactId=$contactId)\n";
 	else
@@ -809,22 +822,12 @@ class Conference {
 
 
 	// conditions
-	if (isset($options['paperId'])) {
-	    foreach (mkarray($options['paperId']) as $pid)
-		if (($pid = cvtint($pid)) > 0)
-		    $pids[] = "Paper.paperId=$pid";
-	    if (is_array($options['paperId']) && count($pids) == 0)
-		$pids[] = "Paper.paperId=0";
-	    $where[] = "(" . join(" or ", $pids) . ")";
-	}
-	if (isset($options['reviewId'])) {
-	    foreach (mkarray($options['reviewId']) as $rid)
-		if (($rid = cvtint($rid)) > 0)
-		    $rids[] = "ReviewSelector.reviewId=$rid";
-	    if (is_array($options['reviewId']) && count($rids) == 0)
-		$pids[] = "ReviewSelector.reviewId=0";
-	    $where[] = "(" . join(" or ", $rids) . ")";
-	}
+	if (isset($options['paperId']))
+	    $where[] = $this->_paperQuery_where($options['paperId'], "Paper.paperId");
+	if (isset($options['reviewId']))
+	    $where[] = $this->_paperQuery_where($options['reviewId'], "ReviewSelector.reviewId");
+	if (isset($options['commentId']))
+	    $where[] = $this->_paperQuery_where($options['commentId'], "CommentSelector.commentId");
 	if (isset($options['finalized'])) {
 	    $where[] = "acknowledged>0";
 	    $where[] = "withdrawn<=0";

@@ -552,7 +552,7 @@ class Contact {
 		    || (isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0)))
 	    || ($prow->reviewType > 0 && $prow->conflict <= 0 && $rrsub
 		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0
-		&& $conf->startTime["reviewerViewReviews"] >= 1)
+		&& ($this->isPC || $conf->startTime["reviewerViewReviews"] >= 1))
 	    || ($rrow && $rrow->paperId == $prow->paperId
 		&& $rrow->contactId == $this->contactId))
 	    return true;
@@ -635,7 +635,40 @@ class Contact {
     function canSubmitReview($prow, $rrow, $conf, &$whyNot = null) {
 	return $this->canReview($prow, $rrow, $conf, $whyNot, true);
     }
-    
+
+    function canViewComment($prow, $crow, $conf, &$whyNot = null) {
+	// fetch paper
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "comment")))
+	    return false;
+	// policy
+	$forceShow = ($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"]);
+	if (($prow->author > 0 && $conf->timeAuthorViewReviews()
+	     && (!$crow || $crow->forAuthor))
+	    || ($prow->conflict > 0 && $forceShow)
+	    || ($this->amAssistant() && $prow->conflict <= 0)
+	    || ($this->isPC && $prow->conflict <= 0
+		&& ($conf->timePCViewAllReviews()
+		    || !$crow || $crow->forPC))
+	    || ($prow->reviewType > 0 && $prow->conflict <= 0
+		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0))
+	    return true;
+	return false;
+	// collect failure reasons
+	if ($prow->author <= 0 && !$this->isPC && $prow->reviewType <= 0)
+	    $whyNot['permission'] = 1;
+	else if ($prow->author > 0)
+	    $whyNot['deadline'] = 'authorViewReviews';
+	else if ($prow->conflict > 0)
+	    $whyNot['conflict'] = 1;
+	else if ($prow->reviewType > 0 && !$this->isPC && $prow->reviewSubmitted > 0)
+	    $whyNot['externalReviewer'] = 1;
+	else
+	    $whyNot['reviewNotComplete'] = 1;
+	if ($this->amAssistant())
+	    $whyNot['forceShow'] = 1;
+	return false;
+    }
+
     
     function amPaperAuthor($paperId, $conf, $prow = null) {
 	if ($prow === null) {
