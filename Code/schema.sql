@@ -178,7 +178,7 @@ CREATE TABLE PaperComments (
   comment text NOT NULL default '',
   forPC tinyint(1) NOT NULL default 0,
   forAuthor tinyint(1) NOT NULL default 0,
-  edits int(11) NOT NULL default 0,
+  edits int(3) NOT NULL default 0,
   blind tinyint(1) NOT NULL default 1,
   PRIMARY KEY (commentId),
   UNIQUE KEY commentId (commentId),
@@ -200,7 +200,7 @@ CREATE TABLE PaperConflict (
   paperId int(11) NOT NULL,
   contactId int(11) NOT NULL,
   author tinyint(1) NOT NULL default '0',
-  UNIQUE KEY paperConflict (contactId,paperId)
+  UNIQUE KEY contactPaper (contactId,paperId)
 ) TYPE=MyISAM;
 
 #
@@ -392,7 +392,7 @@ CREATE TABLE PaperReviewPreference (
   paperId int(11) NOT NULL,
   contactId int(11) NOT NULL,
   preference int(4) NOT NULL default 0,
-  UNIQUE KEY paperContact (contactId,paperId)
+  UNIQUE KEY contactPaper (contactId,paperId)
 ) TYPE=MyISAM;
 
 

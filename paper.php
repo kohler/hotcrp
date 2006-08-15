@@ -284,7 +284,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 }
 if (isset($_REQUEST["revive"]) && !$newPaper) {
     if ($Me->canRevivePaper($prow, $Conf, $whyNot)) {
-	$Conf->qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted==-100," . time() . ",0) where paperId=$paperId", "while reviving paper");
+	$Conf->qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100," . time() . ",0) where paperId=$paperId", "while reviving paper");
 	getProw($Me->contactId);
     } else
 	$Conf->errorMsg(whyNotText($whyNot, "revive"));
