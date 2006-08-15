@@ -98,7 +98,7 @@ $query="SELECT Paper.paperId, Paper.title, Paper.abstract, Paper.authorsResponse
     . " ContactInfo.firstName, ContactInfo.lastName, "
     . " ContactInfo.email, ContactInfo.affiliation, Paper.authorInformation "
     . " FROM Paper,ContactInfo "
-    . " WHERE Paper.contactId=ContactInfo.contactId AND Paper.acknowledged=1 "
+    . " WHERE Paper.contactId=ContactInfo.contactId AND Paper.timeSubmitted>0 "
     . " $restrict ORDER BY paperId ";
 
 $result=$Conf->qe($query);

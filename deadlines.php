@@ -171,6 +171,7 @@ if (isset($_REQUEST['update']) && $Me->amAssistant()) {
     if (($x = cvtint($_REQUEST["blindSubmission"])) < 0 || $x > 2)
 	$x = 2;
     $Dates["blindSubmission"] = array($x, 0);
+    $Dates["reviewFormUpdate"] = array(time(), 0);
     
     // print messages now, in case errors come later
     if (count($Messages) > 0)

@@ -59,6 +59,10 @@ if (isset($_REQUEST["update"])) {
 		$result = $Conf->qe("update TopicArea set topicName='" . mysql_real_escape_string($top) . "' where topicId=$id", "while updating topic name");
 	    }
 	}
+
+    // Finally mark the form
+    $Conf->qe("delete from ImportantDates where name='reviewFormUpdate'"); 
+    $Conf->qe("insert into ImportantDates set name='reviewFormUpdate', start=current_timestamp"); 
 }
 ?>
 

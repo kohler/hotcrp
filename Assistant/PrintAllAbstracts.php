@@ -24,7 +24,7 @@ p.page {page-break-after: always}
 
 $finalizedStr = "";
 if ( $_REQUEST[onlyFinalized] ) {
-  $finalizedStr =  " AND Paper.acknowledged!=0 ";
+  $finalizedStr =  " AND Paper.timeSubmitted>0 ";
 }
 
 $ORDER="ORDER BY Paper.paperId";
@@ -52,7 +52,7 @@ I'm not certain if this works under Netscape or other browsers.
 
 <?php 
   $query="SELECT Paper.paperId, Paper.title, "
-  . " Paper.acknowledged, Paper.withdrawn, "
+  . " Paper.timeSubmitted, Paper.timeWithdrawn, "
   . " Paper.authorInformation, Paper.abstract, Paper.contactId, "
   . " ContactInfo.firstName, ContactInfo.lastName, "
   . " ContactInfo.email, ContactInfo.affiliation, "

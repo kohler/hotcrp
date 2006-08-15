@@ -94,7 +94,7 @@ class PaperList {
 	    return "order by Paper.title $up";
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
-	    return "order by Paper.outcome $down, (Paper.withdrawn > 0) $up, (Paper.acknowledged > 0) $down, (paperStorageId > 1) $down, Paper.paperId $up";
+	    return "order by Paper.outcome $down, (Paper.timeWithdrawn > 0) $up, (Paper.timeSubmitted > 0) $down, (paperStorageId > 1) $down, Paper.paperId $up";
 	case self::FIELD_REVIEWER_TYPE:
 	    return "order by PaperReview.reviewType $down";
 	case self::FIELD_REVIEWER_NAME:
@@ -178,7 +178,7 @@ class PaperList {
 		return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
-	    if ($row->acknowledged <= 0 && $row->withdrawn <= 0)
+	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
 		$this->needFinalize++;
 	    return $this->contact->paperStatus($row->paperId, $row, $fieldId == self::FIELD_STATUS ? 0 : -1);
 	case self::FIELD_DOWNLOAD:
@@ -213,7 +213,8 @@ class PaperList {
 	case self::FIELD_TOPIC_INTEREST:
 	    return htmlspecialchars($row->topicInterestScore + 0);
 	case self::FIELD_TOPIC_NAMES:
-	    return fixTopicInterest($row->topicNames);
+	    $rf = reviewForm();
+	    return join(", ", $rf->webTopicArray($row->topicIds, defval($row->topicInterest)));
 	case self::FIELD_ALL_REVIEWER_NAMES:
 	    $n = "";
 	    if (isset($reviewList[$row->paperId]))
@@ -300,7 +301,7 @@ class PaperList {
 		from Paper
 		join PaperReview using (paperId)
 		join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
-		" . ($plist->queryType == 'pc' ? "where acknowledged>0 and withdrawn<=0" : "where paperId=-1") . "
+		where " . ($plist->queryType == 'pc' ? "timeSubmitted>0" : "paperId=-1") . "
 		order by lastName, firstName, email", "while fetching reviews");
 	    if (!DB::isError($result))
 		while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT)))

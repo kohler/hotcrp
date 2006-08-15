@@ -169,8 +169,8 @@ function reviewButton($paperId, $row = null, $buttonType = 0, $conf = null) {
     $timeOK = $Conf->timeReviewPaper($Me->isPC, $rreq, true);
     $need = ($reviewType > 0 || $row->reviewId);
     $conflict = (isset($row->conflict) ? $row->conflict : 0);
-    $acknowledged = (isset($row->acknowledged) ? $row->acknowledged : 0);
-    $withdrawn = (isset($row->withdrawn) ? $row->withdrawn : 0);
+    $acknowledged = defval($row->timeSubmitted, 0);
+    $withdrawn = defval($row->timeWithdrawn, 0);
     
     if ($rreq && !$row->reviewSubmitted && !$timeGood)
 	$type = "past";
@@ -240,14 +240,15 @@ function topicTable($prow, $active = 0, $conf = null) {
     $paperId = ($prow ? $prow->paperId : -1);
 
     // read from paper row if appropriate
-    if ($paperId > 0 && $active < 0 && isset($prow->topicNames)) {
-	preg_match_all('/:::.*?:::\d*/', $prow->topicNames, $top);
+    if ($paperId > 0 && $active < 0 && isset($prow->topicIds)) {
+	$rf = reviewForm();
+	$top = $rf->webTopicArray($prow->topicIds, defval($prow->topicInterest));
 	$out = "<table class='simple'><tr>\n	<td>";
-	$colheight = (int) ((count($top[0]) + 1) / 2);
-	for ($i = 0; $i < count($top[0]); $i++) {
+	$colheight = (int) ((count($top) + 1) / 2);
+	for ($i = 0; $i < count($top); $i++) {
 	    if ($i > 0 && ($i % $colheight) == 0)
 		$out .= "</td>\n	<td>";
-	    $out .= fixTopicInterest($top[0][$i]) . "<br />\n";
+	    $out .= $top[$i] . "<br />\n";
 	}
 	return $out . "</td>\n</tr></table>";
     }
@@ -650,12 +651,12 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
 
     if (!$newPaper && $prow
 	&& ($prow->reviewType > 0 || $Me->canViewReview($prow, null, $Conf)
-	    || ($Me->isPC && $prow->acknowledged > 0 && $prow->withdrawn <= 0
+	    || ($Me->isPC && $prow->timeSubmitted > 0
 		&& $Conf->timePCReviewOpen())))
 	$x .= actionTab("Reviews", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "review");
 
     if ($mode == "revreq"
-	|| ($Me->amAssistant() && $prow && $prow->acknowledged > 0 && $prow->withdrawn <= 0))
+	|| ($Me->amAssistant() && $prow && $prow->timeSubmitted > 0))
 	$x .= actionTab("Assignments", "${ConfSiteBase}reqreview.php?paperId=$paperId", $mode == "revreq");
     
     if ($thisUrl)
@@ -699,12 +700,6 @@ function downloadText($text, $filename, $description) {
     header("Content-Type: text/plain");
     header("Content-Length: " . strlen($text));
     print $text;
-}
-
-function fixTopicInterest($n) {
-    return preg_replace('/:::(.*?):::(\d*)/',
-			'<span class="topic$2">$1</span>',
-			htmlspecialchars($n));
 }
 
 function cvtpref($n) {

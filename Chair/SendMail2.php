@@ -12,14 +12,14 @@ function queryFromRecipients($who)
       . "ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
        . " Paper.paperId, Paper.title "
       . "FROM Paper, ContactInfo "
-      . " WHERE Paper.contactId=ContactInfo.contactID AND Paper.acknowledged=0";
+      . " WHERE Paper.contactId=ContactInfo.contactID AND Paper.timeSubmitted<=0";
     return $query;
   } else if ($who == "submit-and-finalize" ) {
     $query = "SELECT Paper.paperId, Paper.title, "
       . "ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
        . " Paper.paperId, Paper.title "
       . "FROM Paper, ContactInfo "
-      . " WHERE Paper.contactId=ContactInfo.contactID AND Paper.acknowledged=1";
+      . " WHERE Paper.contactId=ContactInfo.contactID AND Paper.timeSubmitted>0";
     return $query;
   } else if ($who == "asked-to-review") {
     $query = "
@@ -85,7 +85,7 @@ function queryFromRecipients($who)
   } else if ($who == "author-late-review") {
       $query = "SELECT DISTINCT firstName, lastName, email, Paper.paperId, title "
              . "FROM ContactInfo, Paper, PaperReview, ImportantDates "
-	     . "WHERE Paper.acknowledged "
+	     . "WHERE Paper.timeSubmitted>0 "
 	     . "AND PaperReview.paperId = Paper.paperId "
 	     . "AND Paper.contactId = ContactInfo.contactId "
 	     . "AND PaperReview.reviewSubmitted>0 "

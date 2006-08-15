@@ -30,7 +30,7 @@ This page shows you all the first authors that have entered papers into the data
   $allContactId=array();
 
   $result=$Conf->qe("SELECT Paper.paperId, Paper.title, "
-		    . " Paper.acknowledged, Paper.withdrawn, "
+		    . " Paper.timeSubmitted, Paper.timeWithdrawn, "
 		    . " Paper.authorInformation, Paper.contactId"
 		    . " FROM Paper");
 

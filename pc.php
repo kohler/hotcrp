@@ -3,6 +3,7 @@ require_once('Code/confHeader.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
+$rf = reviewForm();
 
 $Conf->header_head("Program Committee");
 
@@ -99,7 +100,8 @@ function addedvalue($what, $checked) {
 $query = "select ContactInfo.contactId, ContactInfo.firstName,
 	ContactInfo.lastName, ContactInfo.email, ContactInfo.affiliation,
 	ContactInfo.collaborators,
-	group_concat(concat_ws('', ':::', topicName, ':::', interest) order by topicName separator ', ') as topicNames,
+	group_concat(topicId) as topicIds,
+	group_concat(interest) as topicInterest,
 	ChairAssistant.contactId as ass, Chair.contactId as chair
 	from ContactInfo
 	join PCMember using (contactId)
@@ -170,9 +172,9 @@ while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
 	echo "<tr>\n  <td class='pl_callout' colspan='$ncol'><span class='pl_callouthdr'>Collaborators</span> ", authorTable($row->collaborators), "</td>\n</tr>\n";
 
     // topics
-    if ($Me->isPC && $row->topicNames) {
+    if ($Me->isPC && $row->topicIds) {
 	echo "<tr>\n  <td class='pl_callout' colspan='$ncol'><span class='pl_callouthdr'>Topic interest</span> ";
-	echo fixTopicInterest($row->topicNames), ":::", $row->topicNames, ":::", "</td>\n</tr>\n";
+	echo join(", ", $rf->webTopicArray($row->topicIds, defval($row->topicInterest))), "</td>\n</tr>\n";
     }
     
     echo "\n";

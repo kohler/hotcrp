@@ -52,24 +52,24 @@ if ($_SESSION["Me"]->isChair &&
     } else {
       $mark = 0;
     }
-    $query="UPDATE Paper SET acknowledged=$mark WHERE paperId=$p";
+    $query="update Paper set timeSubmitted=" . ($mark ? time() : 0) . " WHERE paperId=$p";
     $Conf->qe($query);
   }
 }
 
 $finalizedStr = "";
 if ( $_REQUEST[onlyFinalized] ) {
-  $finalizedStr =  " AND Paper.acknowledged!=0 ";
+  $finalizedStr =  " AND Paper.timeSubmitted>0 ";
 }
 
 $withdrawnStr = "";
 if ( $_REQUEST[onlyWithdrawn] ) {
-  $withdrawnStr =  " AND Paper.withdrawn!=0 ";
+  $withdrawnStr =  " AND Paper.timeWithdrawn>0 ";
 }
 
 
   $query="SELECT Paper.paperId, Paper.title, "
-  . " Paper.acknowledged, Paper.withdrawn, "
+  . " Paper.timeSubmitted, Paper.timeWithdrawn, "
   . " Paper.authorInformation, Paper.contactId, "
   . " ContactInfo.firstName, ContactInfo.lastName, "
   . " ContactInfo.email, ContactInfo.affiliation, Paper.collaborators, "
@@ -148,7 +148,7 @@ Found <?php  echo $numpapers ?> papers.
 
      $finalized = "";
 
-     if ( $row['acknowledged'] > 0) {
+     if ( $row['timeSubmitted'] > 0) {
        $finalized = "\nFINALIZED";
      }
 

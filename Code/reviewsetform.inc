@@ -72,7 +72,8 @@ if (isset($_REQUEST['update'])) {
 
     // alert consumers of change to form
     if (isset($updates)) {
-	$Conf->qe("update ImportantDates set start=current_timestamp, end=current_timestamp where name='reviewFormUpdate'", "while updating review form");
+	$Conf->qe("delete from ImportantDates where name='reviewFormUpdate'"); 
+	$Conf->qe("insert into ImportantDates set name='reviewFormUpdate', start=current_timestamp");
 	$Conf->confirmMsg("Review form updated.");
 	$rf->validate($Conf);
     }

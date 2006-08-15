@@ -27,8 +27,10 @@ class ReviewForm {
     var $fieldName;
     var $fieldRows;
     var $description;
-    var $options;
     var $authorView;
+    var $options;
+    var $topicName;
+    var $topicOrder;
 
     function ReviewForm($conf) {
 	$this->updatedWhen = 0;
@@ -41,13 +43,17 @@ class ReviewForm {
 	$this->fieldName = array();
 	$this->fieldRows = array();
 	$this->description = array();
-	$this->options = array();
 	$this->authorView = array();
+	$this->options = array();
+	$this->topicName = array();
+	$this->topicOrder = array();
+
+	$while = "while updating review form information";
 	
-	$result = $conf->qe("select fieldName, shortName, description, sortOrder, rows, authorView from ReviewFormField order by sortOrder, shortName", "while updating review form information");
+	$result = $conf->qe("select fieldName, shortName, description, sortOrder, rows, authorView from ReviewFormField order by sortOrder, shortName", $while);
 	if (DB::isError($result))
 	    return;
-	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
+	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
 	    if ($row->sortOrder >= 0)
 		$this->fieldOrder[] = $row->fieldName;
 	    $this->shortName[$row->fieldName] = $row->shortName;
@@ -57,16 +63,26 @@ class ReviewForm {
 	    $this->authorView[$row->fieldName] = $row->authorView;
 	}
 	
-	$result = $conf->qe("select fieldName, level, description from ReviewFormOptions order by fieldName, level", "while updating review form information");
+	$result = $conf->qe("select fieldName, level, description from ReviewFormOptions order by fieldName, level", $while);
 	if (DB::isError($result))
 	    return;
-	while ($row = $result->fetchRow())
+	while (($row = $result->fetchRow()))
 	    $this->options[$row[0]][$row[1]] = $row[2];
-	$updatedWhen = time();
+
+	$result = $conf->qe("select topicId, topicName from TopicArea order by topicName", $while);
+	if (DB::isError($result))
+	    return;
+	$i = 0;
+	while (($row = $result->fetchRow())) {
+	    $this->topicName[$row[0]] = $row[1];
+	    $this->topicOrder[$row[0]] = $i++;
+	}
+	
+	$this->updatedWhen = time();
     }
 
     function validate($conf) {
-	if (!$this->updatedWhen || $this->updatedWhen <= $conf->startTime('reviewFormUpdate'))
+	if (!$this->updatedWhen || $this->updatedWhen <= $conf->startTime['reviewFormUpdate'])
 	    $this->updateFromDB($conf);
     }
 
@@ -570,6 +586,23 @@ class ReviewForm {
 	    $x .= "</tr>\n";
 	}
 	return $x . "</table>";
+    }
+
+    function webTopicArray($topicIds, $interests = null) {
+	if (!$topicIds)
+	    return "";
+	if (!is_array($topicIds))
+	    $topicIds = explode(",", $topicIds);
+	if ($interests && !is_array($interests))
+	    $interests = explode(",", $interests);
+	$out = array();
+	for ($i = 0; $i < count($topicIds); $i++)
+	    $out[$this->topicOrder[$topicIds[$i]]] =
+		"<span class='topic" . (isset($interests) ? $interests[$i] : 1)
+		. "'>" . htmlspecialchars($this->topicName[$topicIds[$i]])
+		. "</span>";
+	ksort($out);
+	return array_values($out);
     }
     
 }

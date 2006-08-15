@@ -15,7 +15,7 @@ if (!IsSet($_REQUEST[paperId]) || $_REQUEST[paperId] == 0) {
   $Conf->errorMsg("No paper was selected" );
 } else {
   $query = "SELECT Paper.title, Paper.abstract, PaperStorage.mimetype, "
-    . " Paper.withdrawn "
+    . " Paper.timeWithdrawn "
     . " FROM Paper,PaperStorage WHERE "
     . " Paper.paperId=$_REQUEST[paperId] "
     . " AND PaperStorage.paperId=$_REQUEST[paperId]"
@@ -33,7 +33,7 @@ if (!IsSet($_REQUEST[paperId]) || $_REQUEST[paperId] == 0) {
     $mimetype=$row[2];
     $withdrawn=$row[3];
 
-    if ( $withdrawn ) {
+    if ( $withdrawn > 0) {
       print "<h2> This paper has been withdrawn </h2>";
     }
 ?>

@@ -15,12 +15,11 @@ if (!IsSet($_REQUEST['paperId']) || $_REQUEST['paperId'] == 0) {
   $Conf->errorMsg("No paper was selected for viewing?" );
 } else {
   $query = "SELECT Paper.title, Paper.abstract, Paper.authorInformation, "
-    . " Paper.withdrawn, "
-    . " LENGTH(PaperStorage.paper), PaperStorage.mimetype, "
+    . " Paper.timeWithdrawn, "
+    . " Paper.size, Paper.mimetype, "
     . " ContactInfo.firstName, ContactInfo.lastName, "
     . " ContactInfo.email, ContactInfo.affiliation "
-    . " FROM Paper, ContactInfo "
-    . " LEFT JOIN PaperStorage ON  PaperStorage.paperId=$_REQUEST[paperId] "
+    . " FROM Paper join ContactInfo using (contactId) "
     . " WHERE Paper.paperId=" . $_REQUEST['paperId'] . " AND ContactInfo.contactId=Paper.ContactId"
     ;
   $result = $Conf->qe($query);
@@ -34,7 +33,7 @@ if (!IsSet($_REQUEST['paperId']) || $_REQUEST['paperId'] == 0) {
     $authorInfo = $Conf->safeHtml($row['authorInformation']);
     $contactInfo = $row['firstName'] . " " . $row['lastName']
       . " ( " . $row['email'] . " ) ";
-    $length=$row['LENGTH(PaperStorage.paper)'];
+    $length=$row['size'];
     $mimetype = $Conf->safeHtml($row['mimetype']);
 
     print "<table align=center border=0 cellpadding=10>\n";
@@ -69,7 +68,7 @@ if (!IsSet($_REQUEST['paperId']) || $_REQUEST['paperId'] == 0) {
     print "</tr>";
     print "</table>";
 
-    if ($row['withdrawn']) {
+    if ($row['timeWithdrawn']) {
       $Conf->infoMsg("This paper has been WITHDRAWN");
     }
 

@@ -28,7 +28,7 @@ function paperList($query, $kind)
       $i++;
      $paperId=$row['paperId'];
      $title=$row['title'];
-     $withdrawn=$row['withdrawn'];
+     $withdrawn=$row['timeWithdrawn'];
      $authorInformation=$row['authorInformation'];
      print "<tr> <td align=center> $i </td> ";
      print "<td align=center> $paperId ";
@@ -141,11 +141,11 @@ if (!DB::isError($result1) ) {
 			   );
 
     print "<br>";
-    paperList("SELECT Paper.paperId, title, withdrawn, authorInformation FROM Paper join ReviewRequest using (paperId) "
+    paperList("SELECT Paper.paperId, title, timeWithdrawn, authorInformation FROM Paper join ReviewRequest using (paperId) "
 	      . " where ReviewRequest.contactId=$pc and reviewType=" . REVIEW_PRIMARY
 	      . " ORDER BY paperId ", "Primary Reviews" );
 
-    paperList("SELECT Paper.paperId, title, withdrawn, authorInformation FROM Paper join ReviewRequest using (paperId) "
+    paperList("SELECT Paper.paperId, title, timeWithdrawn, authorInformation FROM Paper join ReviewRequest using (paperId) "
 	      . " where ReviewRequest.contactId=$pc and reviewType=" . REVIEW_SECONDARY
 	      . " ORDER BY paperId ", "Secondary Reviews" );
     print "<br>";

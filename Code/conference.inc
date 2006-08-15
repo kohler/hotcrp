@@ -468,6 +468,7 @@ class Conference {
 	global $Opt;
 
 	$paperId = (is_numeric($prow) ? $prow : $prow->paperId);
+	$while = "while storing paper in database";
 	
 	if ($uploadId && fileUploaded($_FILES[$uploadId], $this))
 	    $filename = $_FILES[$uploadId]['tmp_name'];
@@ -503,41 +504,42 @@ class Conference {
 	    }
 	}
 
-	$result = $this->qe("lock tables Paper write, PaperStorage write", "while locking tables");
+	$result = $this->qe("lock tables Paper write, PaperStorage write", $while);
 	if (DB::isError($result))
 	    return $result;
 
-	if (!isset($paperStorageId)) {
-	    $result = $this->qe("insert into PaperStorage set paperId=$paperId, timestamp=" . time() . ", mimetype='" . sqlq($mimetype) . "', paper='" . sqlq(substr($contents, 0, 400000)) . "'", "while storing paper in database");
-	    if (!DB::isError($result))
-		$result = $this->qe("select last_insert_id()", "while storing paper in database");
-	    if (!DB::isError($result)) {
-		$row = $result->fetchRow();
-		$paperStorageId = $row[0];
-		for ($pos = 400000; $pos < strlen($contents) && !DB::isError($result); $pos += 400000)
-		    $result = $this->qe("update PaperStorage set paper=concat(paper,'" . sqlq(substr($contents, $pos, 400000)) . "') where paperStorageId=$paperStorageId", "while storing paper in database");
-	    }
-
-	    // check that paper storage succeeded
-	    if (!DB::isError($result))
-		$result = $this->qe("select length(paper) from PaperStorage where paperStorageId=$paperStorageId", "while storing paper in database");
-	    if (!DB::isError($result)) {
-		if ($result->numRows() == 0)
-		    $result = new PEAR_Error("Paper upload unsuccessful!");
-		else {
-		    $row = $result->fetchRow();
-		    if ($row[0] != strlen($contents))
-			$result = new PEAR_Error("Failed to store your paper.  Usually, this is because the file you tried to upload was too big for our system.");
-		}
-		if (PEAR::isError($result))
-		    $this->errorMsg($result->getMessage());
-	    }
-	}
-	
+	$timestamp = time();
+	$result = $this->qe("insert into PaperStorage set paperId=$paperId, timestamp=$timestamp, mimetype='" . sqlq($mimetype) . "', paper='" . sqlq(substr($contents, 0, 400000)) . "'", $while);
 	if (!DB::isError($result))
-	    $result = $this->qe("update Paper set paperStorageId=$paperStorageId where paperId=$paperId and withdrawn<=0 and acknowledged<=0", "while storing paper in database");
+	    $result = $this->qe("select last_insert_id()", $while);
+	if (!DB::isError($result)) {
+	    $row = $result->fetchRow();
+	    $paperStorageId = $row[0];
+	    for ($pos = 400000; $pos < strlen($contents) && !DB::isError($result); $pos += 400000)
+		$result = $this->qe("update PaperStorage set paper=concat(paper,'" . sqlq(substr($contents, $pos, 400000)) . "') where paperStorageId=$paperStorageId", $while);
+	}
 
-	$this->qe("unlock tables");
+	// check that paper storage succeeded
+	if (!DB::isError($result))
+	    $result = $this->qe("select length(paper) from PaperStorage where paperStorageId=$paperStorageId", $while);
+	if (!DB::isError($result)) {
+	    if ($result->numRows() == 0)
+		$result = new PEAR_Error("Paper upload unsuccessful!");
+	    else {
+		$row = $result->fetchRow();
+		if ($row[0] != strlen($contents))
+		    $result = new PEAR_Error("Failed to store your paper.  Usually, this is because the file you tried to upload was too big for our system.");
+	    }
+	    if (PEAR::isError($result))
+		$this->errorMsg($result->getMessage());
+	}
+    
+	if (!DB::isError($result))
+	    $result = $this->qe("update Paper
+		set paperStorageId=$paperStorageId, size=" . strlen($contents) . ", mimetype='" . sqlq($mimetype) . "', timestamp=$timestamp
+		where paperId=$paperId and timeWithdrawn<=0 and timeSubmitted<=0", $while);
+
+	$this->qe("unlock tables", $while);
 
 	if (PEAR::isError($result))
 	    return $result;
@@ -553,7 +555,7 @@ class Conference {
 	    // prepare data
 	    $subject = "[$this->shortName] Paper #$paperId upload";
 	    $message = "           Paper: $this->paperSite/paper.php?paperId=$paperId
-       Submitted: " . $this->printableTime(time()) . "\n\n"
+       Submitted: " . $this->printableTime($timestamp) . "\n\n"
 		. wordWrapIndent(trim($prow->title), "Title: ") . "\n"
 		. wordWrapIndent(trim($prow->abstract), "Abstract: ") . "\n\n"
 		. wordWrapIndent(trim($prow->authorInformation), "Authors: ") . "\n"
@@ -592,8 +594,9 @@ class Conference {
     
     function __downloadPaper($paperId, $saveit) {
 	// Database query
-	$result = $this->q("select mimetype, paper, withdrawn, PaperStorage.paperStorageId, compression
-	from Paper left join PaperStorage using (paperStorageId)
+	$result = $this->q("select mimetype, paper, timeWithdrawn, PaperStorage.paperStorageId, compression
+	from Paper
+	left join PaperStorage using (paperStorageId)
 	where Paper.paperId=$paperId");
 	if (DB::isError($result)) {
 	    $this->log("Error downloading #$paperId for review" . $result->getMessage(), $_SESSION["Me"]);
@@ -726,8 +729,6 @@ class Conference {
 	//   "finalized"	Only submitted papers
 	//   "author"		Only papers authored by $contactId
 	//   "myReviewRequests"	Only reviews requested by $contactId
-	//   "contactAuthors"	Include comma-separated list of contact author
-	//			contactIds as $row->contactAuthors
 	//   "myReviews"	All reviews authored by $contactId
 	//   "myReviewsOpt"	myReviews, + include papers not yet reviewed
 	//   "allReviews"	All reviews (multiple rows per paper)
@@ -739,7 +740,6 @@ class Conference {
 
 	// fields
 	$pq = "select Paper.*,
-		length(PaperStorage.paper) as size, mimetype, timestamp,
 		PaperConflict.author as author,
 		PaperConflict.author is not null as conflict,
 		count(AllReviews.reviewSubmitted) as reviewCount,
@@ -761,23 +761,20 @@ class Conference {
 	    foreach ($reviewFields as $k => $v)
 		$pq .= ",\t\tPaperReview.$k as $k";
 	}
-	if (isset($options['contactAuthors']))
-	    $pq .= ",
-		group_concat(PaperAuthors.contactId) as contactAuthors";
 	if (isset($options['topics']))
 	    $pq .= ",
-		TopicSummary.topicNames";
+		group_concat(PaperTopic.topicId) as topicIds,
+		group_concat(TopicInterest.interest) as topicInterest";
 	if (isset($options['topicInterestScore']))
 	    $pq .= ",
-		TopicSummary.topicInterestScore";
+		sum(if(interest=2,2,interest-1)) as topicInterestScore";
 	if (defval($options['reviewerPreference']))
 	    $pq .= ",
 		ifnull(PaperReviewPreference.preference, 0) as reviewerPreference";
 
 	// tables
 	$pq .= "
-		from Paper
-		left join PaperStorage using (paperStorageId)\n";
+		from Paper\n";
 
 	if (isset($options['reviewId']))
 	    $pq .= "		join PaperReview as ReviewSelector on (ReviewSelector.paperId=Paper.paperId)\n";
@@ -804,18 +801,9 @@ class Conference {
 	if (isset($options['reviewerName']))
 	    $pq .= "		left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperReview.contactId)\n";
 	
-	if (isset($options['contactAuthors']))
-	    $pq .= "		left join PaperConflict as PaperAuthors on (PaperAuthors.paperId=Paper.paperId and PaperAuthors.author>0)\n";
-
-	if (isset($options['topics']) || isset($options['topicInterestScore'])) {
-	    $subq = "select paperId";
-	    if (isset($options['topics']))
-		$subq .= ", group_concat(concat_ws('', ':::', topicName, ':::', interest) order by topicName separator ', ') as topicNames";
-	    if (isset($options['topicInterestScore']))
-		$subq .= ", sum(if(interest=2,2,interest-1)) as topicInterestScore";
-	    $subq .= " from TopicArea join PaperTopic using (topicId) left join TopicInterest on (TopicInterest.topicId=TopicArea.topicId and contactId=$contactId) group by paperId";
-	    $pq .= "		left join ($subq) as TopicSummary on (TopicSummary.paperId=Paper.paperId)\n";
-	}
+	if (isset($options['topics']) || isset($options['topicInterestScore']))
+	    $pq .= "		left join PaperTopic on (PaperTopic.paperId=Paper.paperId)
+		left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$contactId)\n";
 
 	if (defval($options['reviewerPreference']))
 	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$contactId)\n";
@@ -828,10 +816,8 @@ class Conference {
 	    $where[] = $this->_paperQuery_where($options['reviewId'], "ReviewSelector.reviewId");
 	if (isset($options['commentId']))
 	    $where[] = $this->_paperQuery_where($options['commentId'], "CommentSelector.commentId");
-	if (isset($options['finalized'])) {
-	    $where[] = "acknowledged>0";
-	    $where[] = "withdrawn<=0";
-	}
+	if (isset($options['finalized']))
+	    $where[] = "timeSubmitted>0";
 	
 	if (isset($where))
 	    $pq .= "		where " . join(" and ", $where) . "\n";
@@ -849,6 +835,7 @@ class Conference {
 		$pq .= ", PaperReview.reviewId";
 	}
 
+	//$this->infoMsg(htmlspecialchars($pq));
 	return $pq . "\n";
     }
 
@@ -1766,9 +1753,9 @@ class Conference {
 	$paperId = $_REQUEST["paperId"];
 
     $query = "select Paper.title, Paper.abstract, Paper.authorInformation,
-	length(PaperStorage.paper) as size, mimetype, collaborators, pcPaper,
-	acknowledged, withdrawn
-	from Paper left join PaperStorage using (paperStorageId)";
+	Paper.size, Paper.mimetype, collaborators, pcPaper,
+	timeSubmitted, timeWithdrawn
+	from Paper";
 
     $Me = $_SESSION["Me"];
     if (!($Me->isChair || $Me->isPC || $Me->isAssistant))
@@ -1811,11 +1798,11 @@ class Conference {
     echo "  <tr><td class='caption'>Status:</td> <td>";
     if ($paperLength < 100 && $mimetype == 'text/plain')
 	echo "Not yet uploaded";
-    else if ($row['withdrawn'] > 0)
+    else if ($row['timeWithdrawn'] > 0)
 	echo "Withdrawn";
     else {
 	echo "<a href=\"", $this->makeDownloadPath($paperId, $mimetype), "\">";
-	echo ($row['acknowledged'] > 0 ? "Submitted" : "In progress");
+	echo ($row['timeSubmitted'] > 0 ? "Submitted" : "In progress");
 	echo " (", round($paperLength/1024), "&nbsp;kB ";
 	if ($mimetype == "application/pdf")
 	    echo "PDF";

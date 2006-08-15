@@ -23,7 +23,7 @@ function saveAssignments($reviewer) {
 	reviewId, reviewType, reviewModified
 	from Paper
 	left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=$reviewer)
-	where acknowledged>0 and withdrawn<=0
+	where timeSubmitted>0
 	order by paperId asc, reviewId asc", $while);
 
     $lastPaperId = -1;

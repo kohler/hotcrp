@@ -409,15 +409,15 @@ class Contact {
 	    return false;
 	// policy
 	if (($prow->author > 0 || $this->amAssistant())
-	    && $prow->withdrawn <= 0 && $prow->acknowledged <= 0
+	    && $prow->timeWithdrawn <= 0 && $prow->timeSubmitted <= 0
 	    && ($conf->timeUpdatePaper() || $this->amAssistantOverride()))
 	    return true;
 	// collect failure reasons
 	if ($prow->author <= 0 && !$this->amAssistant())
 	    $whyNot["author"] = 1;
-	if ($prow->withdrawn > 0)
+	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
-	if ($prow->acknowledged > 0)
+	if ($prow->timeSubmitted > 0)
 	    $whyNot["updateSubmitted"] = 1;
 	if (!$conf->timeUpdatePaper() && !$this->amAssistantOverride())
 	    $whyNot["deadline"] = "updatePaperSubmission";
@@ -432,15 +432,15 @@ class Contact {
 	    return false;
 	// policy
 	if (($prow->author > 0 || $this->amAssistant())
-	    && $prow->withdrawn <= 0 && $prow->acknowledged <= 0
+	    && $prow->timeWithdrawn <= 0 && $prow->timeSubmitted <= 0
 	    && ($conf->timeFinalizePaper() || $this->amAssistantOverride()))
 	    return true;
 	// collect failure reasons
 	if ($prow->author <= 0 && !$this->amAssistant())
 	    $whyNot["author"] = 1;
-	if ($prow->withdrawn > 0)
+	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
-	if ($prow->acknowledged > 0)
+	if ($prow->timeSubmitted > 0)
 	    $whyNot["updateSubmitted"] = 1;
 	if (!$conf->timeFinalizePaper() && !$this->amAssistantOverride())
 	    $whyNot["deadline"] = "finalizePaperSubmission";
@@ -467,13 +467,13 @@ class Contact {
 	    return false;
 	// policy
 	if (($prow->author > 0 || $this->amAssistant())
-	    && $prow->withdrawn > 0
+	    && $prow->timeWithdrawn > 0
 	    && ($conf->timeUpdatePaper() || $this->amAssistantOverride()))
 	    return true;
 	// collect failure reasons
 	if ($prow->author <= 0 && !$this->amAssistant())
 	    $whyNot["author"] = 1;
-	if ($prow->withdrawn <= 0)
+	if ($prow->timeWithdrawn <= 0)
 	    $whyNot["notWithdrawn"] = 1;
 	if (!$conf->timeUpdatePaper() && !$this->amAssistantOverride())
 	    $whyNot["deadline"] = "updatePaperSubmission";
@@ -489,7 +489,7 @@ class Contact {
 	// policy
 	if ($prow->author > 0
 	    || $this->amAssistant()
-	    || ($prow->withdrawn <= 0 && $prow->acknowledged > 0
+	    || ($prow->timeSubmitted > 0
 		&& (($this->isPC && $conf->timePCViewSubmission())
 		    || ($prow->reviewType > 0 && $conf->timeReviewerViewSubmission()))))
 	    return true;
@@ -498,9 +498,9 @@ class Contact {
 	    $whyNot["permission"] = 1;
 	    return false;
 	}
-	if ($prow->withdrawn > 0)
+	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
-	else if ($prow->acknowledged <= 0)
+	else if ($prow->timeSubmitted <= 0)
 	    $whyNot["notSubmitted"] = 1;
 	if ($this->isPC && !$conf->timePCViewSubmission())
 	    $whyNot["deadline"] = "PCViewSubmission";
@@ -518,7 +518,7 @@ class Contact {
 	// policy
 	if (($prow->author > 0
 	     && (!$this->isPC || !$blindWins || !$prow->blind))
-	    || ($prow->withdrawn <= 0 && $prow->acknowledged > 0
+	    || ($prow->timeSubmitted > 0
 		&& ($this->isPC || $prow->reviewType > 0)
 		&& !$prow->blind)
 	    || (paperAccepted($prow)
@@ -526,9 +526,9 @@ class Contact {
 		&& $conf->timeViewAcceptedAuthors()))
 	    return true;
 	// collect failure reasons
-	if ($prow->withdrawn > 0)
+	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
-	else if ($prow->acknowledged <= 0)
+	else if ($prow->timeSubmitted <= 0)
 	    $whyNot["notSubmitted"] = 1;
 	else if ($this->isPC || $prow->reviewType > 0)
 	    $whyNot["blindSubmission"] = 1;
@@ -599,7 +599,7 @@ class Contact {
 	    return false;
 	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
 	// policy
-	if ($prow->withdrawn <= 0 && $prow->acknowledged > 0
+	if ($prow->timeSubmitted > 0
 	    && (($this->amAssistant() && ($forceShow || $prow->conflict <= 0))
 		|| ($this->isPC && $prow->conflict <= 0)
 		|| $prow->reviewType > 0)
@@ -613,9 +613,9 @@ class Contact {
 	    $whyNot['differentReviewer'] = 1;
 	else if (!$this->isPC && $prow->reviewType <= 0)
 	    $whyNot['permission'] = 1;
-	else if ($prow->withdrawn > 0)
+	else if ($prow->timeWithdrawn > 0)
 	    $whyNot['withdrawn'] = 1;
-	else if ($prow->acknowledged <= 0)
+	else if ($prow->timeSubmitted <= 0)
 	    $whyNot['notSubmitted'] = 1;
 	else {
 	    if ($prow->conflict > 0)
@@ -735,10 +735,10 @@ class Contact {
 	if (!$this->amAssistant() && $row->author <= 0)
 	    $long = 0;
 
-	if ($row->withdrawn > 0) {
+	if ($row->timeWithdrawn > 0) {
 	    $x = "<span class='pstat pstat_with'>Withdrawn</span>";
-	    return $x . ($long > 0 ? " at " . $conf->printableTime($row->withdrawn) : '');
-	} else if ($row->acknowledged <= 0 && $row->paperStorageId == 1) {
+	    return $x . ($long > 0 ? " at " . $conf->printableTime($row->timeWithdrawn) : '');
+	} else if ($row->timeSubmitted <= 0 && $row->paperStorageId == 1) {
 	    return "<span class='pstat pstat_noup'>Not yet uploaded</span>";
 	} else if (isset($row->outcome) && $row->outcome != 0 && $this->canViewDecision($row, $conf)) {
 	    $rf = reviewForm();
@@ -755,12 +755,12 @@ class Contact {
 	//    else
 	//	return "<span class='pstat pstat_rev'>Under&nbsp;review</span>";
 	} else {
-	    if ($row->acknowledged > 0) {
+	    if ($row->timeSubmitted > 0) {
 		if ($long < 0)
 		    return "";
 		$x = "<span class='pstat pstat_sub'>Submitted</span>";
 		if ($long > 0)
-		    $x .= " at " . $conf->printableTime($row->acknowledged);
+		    $x .= " at " . $conf->printableTime($row->timeSubmitted);
 	    } else {
 		$x = "<span class='pstat pstat_prog'>In progress</span>";
 		if ($long > 0)

@@ -73,7 +73,7 @@ $Conf->infoMsg("If you have the word 'CONFLICT' next to a paper, "
 
 
   $result=$Conf->qe("SELECT Paper.paperId, Paper.title, "
-		    . " Paper.acknowledged, Paper.withdrawn "
+		    . " Paper.timeSubmitted, Paper.timeWithdrawn "
 		    . " FROM Paper ORDER BY paperId");
   $i = 0;
   if (DB::isError($result)) {

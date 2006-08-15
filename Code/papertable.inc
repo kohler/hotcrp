@@ -134,14 +134,14 @@ class PaperTable {
 	echo "  ", $this->tdEntry("paper");
 	if ($prow && $prow->size > 0)
 	    echo paperDownload($prow->paperId, $prow, 1);
-	if ($this->editable && (!$prow || $prow->acknowledged <= 0)) {
+	if ($this->editable && (!$prow || $prow->timeSubmitted <= 0)) {
 	    if ($prow && $prow->size > 0)
 		echo "<br/>\n    ";
 	    echo "<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='30' />";
 	    //echo "&nbsp;<input class='button' type='submit' name='upload' value='Upload paper' />";
 	}
 	echo "</td>\n";
-	if ($this->editable && (!$prow || $prow->acknowledged <= 0))
+	if ($this->editable && (!$prow || $prow->timeSubmitted <= 0))
 	    echo "  ", $this->tdHint("paper"), "Max size: ", ini_get("upload_max_filesize"), "B</td>\n";
 	echo "</tr>\n\n";
     }
@@ -231,7 +231,7 @@ Zhang, Ping Yen (INRIA)</pre>";
     function echoTopics($prow) {
 	global $Conf;
 	$topicMode = (int) $this->useRequest;
-	if (!$this->editable || ($prow && ($prow->acknowledged > 0 || $prow->withdrawn > 0)))
+	if (!$this->editable || ($prow && ($prow->timeSubmitted > 0 || $prow->timeWithdrawn > 0)))
 	    $topicMode = -1;
 	if ($topicTable = topicTable($prow, $topicMode, $Conf)) { 
 	    echo "<tr class='pt_topics$this->trClasses' id='foldto'>\n";

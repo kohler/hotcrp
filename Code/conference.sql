@@ -49,8 +49,8 @@ CREATE TABLE ContactInfo (
   PRIMARY KEY (contactId),
   UNIQUE KEY contactId (contactId),
   UNIQUE KEY email (email),
-  KEY email_2 (email),
-  FULLTEXT KEY firstName (firstName,lastName,email),
+  KEY fullName (lastName,firstName,email),
+  FULLTEXT KEY name (lastName,firstName,email),
   FULLTEXT KEY affiliation (affiliation),
   FULLTEXT KEY email_3 (email),
   FULLTEXT KEY firstName_2 (firstName),
@@ -113,10 +113,10 @@ CREATE TABLE ChairAssistant (
 
 drop table if exists ImportantDates;
 CREATE TABLE ImportantDates (
-  name char(40) NOT NULL default '',
+  name char(40) NOT NULL,
   start timestamp(14) NOT NULL,
-  end timestamp(14) NOT NULL,
-  KEY name (name)
+  end timestamp(14) NOT NULL default 0,
+  UNIQUE KEY name (name)
 ) TYPE=MyISAM;
 
 #
@@ -136,16 +136,23 @@ CREATE TABLE Paper (
   abstract text,
   collaborators text,
   contactId int(11) default NULL,
-  submitted timestamp(14) NOT NULL,
-  acknowledged int(11) NOT NULL default '0',
-  withdrawn int(11) NOT NULL default '0',
-  pcPaper int(11) NOT NULL default '0',
+
+  timeSubmitted int(11) NOT NULL default 0,
+  timeWithdrawn int(11) NOT NULL default 0,
+  pcPaper tinyint(11) NOT NULL default '0',
+
   paperStorageId int(11) NOT NULL default '0',
+  # copied from PaperStorage to reduce joins
+  size int(11) NOT NULL default 0,
+  mimetype varchar(40) NOT NULL default '',
+  timestamp int(11) NOT NULL default 0,
+
   blind tinyint(1) NOT NULL default '1',
   authorsResponse mediumtext,
   outcome tinyint(1) NOT NULL default '0',
   showReviewsToReviewers tinyint(1) NOT NULL default '0',
   showResponseToReviewers tinyint(1) NOT NULL default '0',
+
   PRIMARY KEY (paperId),
   UNIQUE KEY paperId (paperId),
   KEY title (title),
@@ -193,8 +200,7 @@ CREATE TABLE PaperConflict (
   paperId int(11) NOT NULL,
   contactId int(11) NOT NULL,
   author tinyint(1) NOT NULL default '0',
-  KEY paperId (paperId),
-  KEY contactId (contactId)
+  UNIQUE KEY paperConflict (contactId,paperId)
 ) TYPE=MyISAM;
 
 #
@@ -288,8 +294,8 @@ CREATE TABLE PaperReview (
 
   PRIMARY KEY (reviewId),
   UNIQUE KEY reviewId (reviewId),
+  UNIQUE KEY contactPaper (contactId,paperId),
   KEY paperId (paperId),
-  KEY contactId (contactId),
   KEY reviewSubmitted (reviewSubmitted),
   KEY reviewType (reviewType),
   KEY requestedBy (requestedBy)
@@ -364,7 +370,7 @@ CREATE TABLE PaperStorage (
   paperStorageId int(11) NOT NULL auto_increment,
   paperId int(11) NOT NULL,
   timestamp int(11) NOT NULL,
-  mimetype varchar(120) NOT NULL default '',
+  mimetype varchar(40) NOT NULL default '',
   paper longblob,
   compression tinyint(1) NOT NULL default 0,
   PRIMARY KEY (paperStorageId),
@@ -386,8 +392,7 @@ CREATE TABLE PaperReviewPreference (
   paperId int(11) NOT NULL,
   contactId int(11) NOT NULL,
   preference int(4) NOT NULL default 0,
-  KEY paperId (paperId),
-  KEY contactId (contactId)
+  UNIQUE KEY paperContact (contactId,paperId)
 ) TYPE=MyISAM;
 
 
@@ -419,8 +424,7 @@ drop table if exists PaperTopic;
 CREATE TABLE PaperTopic (
   topicId int(11) default NULL,
   paperId int(11) default NULL,
-  KEY topicId (topicId),
-  KEY paperId (paperId)
+  UNIQUE KEY paperTopic (paperId,topicId)
 ) TYPE=MyISAM;
 
 #
@@ -437,8 +441,7 @@ CREATE TABLE TopicInterest (
   contactId int(11) NOT NULL,
   topicId int(11) NOT NULL,
   interest int(1),
-  KEY contactId (contactId),
-  KEY topicId (topicId)
+  UNIQUE KEY contactTopic (contactId,topicId)
 ) TYPE=MyISAM;
 
 #
@@ -524,7 +527,7 @@ insert into ReviewFormOptions set fieldName='outcome', level=1, description='Acc
 insert into ReviewFormOptions set fieldName='outcome', level=2, description='Accepted';
 
 delete from ImportantDates where name='reviewFormUpdate';
-insert into ImportantDates set name='reviewFormUpdate', start=current_timestamp, end=current_timestamp;
+insert into ImportantDates set name='reviewFormUpdate', start=current_timestamp;
 
 
 #

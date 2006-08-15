@@ -13,7 +13,7 @@ $Conf -> goIfInvalidActivity("EndOfTheMeeting", $Conf->paperSite);
 <body>
 <?php 
   $result=$Conf->qe("SELECT Paper.paperId, Paper.title, "
-		    . " Paper.acknowledged, Paper.withdrawn "
+		    . " Paper.timeSubmitted, Paper.timeWithdrawn "
 		    . " FROM Paper "
 		    . " WHERE (outcome='accepted' OR outcome='acceptedShort')"
 		    . " ORDER BY paperId"
@@ -28,7 +28,7 @@ $Conf -> goIfInvalidActivity("EndOfTheMeeting", $Conf->paperSite);
     print "<th align=center> Paper # </th> <th align=cetner > Title </th> </tr>\n";
     $i = 1;
     while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
-      if ( !$row['withdrawn']) {
+      if ($row['timeWithdrawn'] <= 0) {
 	$paperId=$row['paperId'];
 	$title=$row['title'];
 	print "<tr> ";

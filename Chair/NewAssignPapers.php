@@ -265,7 +265,7 @@ $result = $Conf->qe($query);
    }
  }
  print "</SELECT>\n<SELECT name='filtPaper' SINGLE>\n";
-  $query = "SELECT paperId, title FROM Paper WHERE acknowledged = 1 AND withdrawn = 0 ORDER BY paperId";
+  $query = "SELECT Paper.paperId, title FROM Paper where timeSubmitted>0 ORDER BY paperId";
 $result = $Conf->qe($query);
  print "<OPTION VALUE=\"-1\"> (Paper unselected)</OPTION>";
  if (!DB::isError($result)) {
@@ -319,11 +319,11 @@ $result = $Conf->qe($query);
 //
   if( $filtpaper == -1 ){
   $q="SELECT Paper.paperId, Paper.title, "
-      . " Paper.acknowledged, Paper.withdrawn, "
+      . " Paper.timeSubmitted, Paper.timeWithdrawn, "
       . " PaperStorage.mimetype, TopicInterest.interest, TopicArea.topicName "
       . " FROM Paper, PaperStorage, ContactInfo, TopicInterest, PaperTopic, TopicArea "
       . " WHERE Paper.paperId=PaperStorage.paperId "
-      . " AND Paper.acknowledged = 1 AND Paper.withdrawn = 0 "
+      . " AND Paper.timeSubmitted>0 AND Paper.timeWithdrawn<=0 "
       . " AND TopicInterest.contactId = '$filtrev' "
       . " AND PaperTopic.paperId = Paper.paperId ";
   } else {
