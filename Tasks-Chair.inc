@@ -7,13 +7,6 @@
 <li> Manage all papers
 
 <ul>
-<li> <a href="Assistant/AssistantListPapers.php">
-	List all papers and authors in the database. </a>
-	<br> <b> <i> You can also see details of each paper from here,
-	modify or delete the paper </i> </b>
-</li>
-<li> <a href="PC/PCListPapers.php"> View the list of all submitted papers </a>
-</li>
 
 <li> <a href="Chair/SetPCPaper.php"> Mark Papers as PC Papers</a> </li>
 

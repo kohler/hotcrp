@@ -69,13 +69,13 @@ $result = $Conf->qe($query);
 	  }
 	  print "Highly qualified:<br>"; 
 	  foreach($topics as $id => $topic) {
-	    if ($interests[$id] == 2)
-	      print "&nbsp;&nbsp;$topic<br>";
+	      if (defval($interests[$id], 1) == 2)
+		  print "&nbsp;&nbsp;$topic<br>";
 	  }
 	  print "Somewhat qualified:<br>"; 
 	  foreach($topics as $id => $topic) {
-	    if ($interests[$id] == 1)
-	      print "&nbsp;&nbsp;$topic<br>";
+	      if (defval($interests[$id], 1) == 1)
+		  print "&nbsp;&nbsp;$topic<br>";
           }
 	}
       }
@@ -89,21 +89,20 @@ $result = $Conf->qe($query);
 
 
 <?php
-$query = "select ContactInfo.contactId, PCMember.pcId, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.visits, ContactInfo.note, ContactInfo.collaborators "
+$query = "select ContactInfo.contactId, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.visits, ContactInfo.note, ContactInfo.collaborators "
     . "from ContactInfo, PCMember "
     . "where (PCMember.contactId=ContactInfo.contactId) "
     . "order by ContactInfo.lastName";
 $result = $Conf->q($query);
 
 if (DB::isError($result)) {
-    $Conf->errorMsg("Database error: " . $result->errorMsg());
+    $Conf->errorMsg("Database error: " . $result->getMessage());
  } else if ($result->numRows() == 0) {
     $Conf->infoMsg("There are no program committee members.");
  } else {
     while ($row = $result->fetchRow() ) {
       $i = 0;
       $id = $row[$i++];
-      $pcid = $row[$i++];
       $first = $row[$i++];
       $last = $row[$i++];
       $email = $row[$i++];
@@ -143,13 +142,13 @@ if (DB::isError($result)) {
 	  }
 	  print "Highly qualified:<br>"; 
 	  foreach($topics as $id => $topic) {
-	    if ($interests[$id] == 2)
-	      print "&nbsp;&nbsp;$topic<br>";
+	      if (defval($interests[$id], 1) == 2)
+		  print "&nbsp;&nbsp;$topic<br>";
 	  }
 	  print "Somewhat qualified:<br>"; 
 	  foreach($topics as $id => $topic) {
-	    if ($interests[$id] == 1)
-	      print "&nbsp;&nbsp;$topic<br>";
+	      if (defval($interests[$id], 1) == 1)
+		  print "&nbsp;&nbsp;$topic<br>";
           }
 	}
       }

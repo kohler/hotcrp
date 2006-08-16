@@ -22,6 +22,7 @@ class PaperList {
     const FIELD_ALL_REVIEWER_NAMES = 38;
     const FIELD_REVIEWER_PREFERENCE = 39;
     const FIELD_EDIT_REVIEWER_PREFERENCE = 40;
+    const FIELD_REVIEWS_STATUS = 41;
 
     var $showHeader;
     var $sortField;
@@ -99,6 +100,8 @@ class PaperList {
 	    return "order by PaperReview.reviewType $down";
 	case self::FIELD_REVIEWER_NAME:
 	    return "order by ReviewerContactInfo.lastName $up, ReviewerContactInfo.firstName $up";
+	case self::FIELD_REVIEWS_STATUS:
+	    return "order by reviewCount $up, startedReviewCount $up";
 	case self::FIELD_ASSIGN_REVIEW:
 	    return "order by PaperReview.reviewType $down, Paper.paperId $up";
 	case self::FIELD_TOPIC_INTEREST:
@@ -130,6 +133,8 @@ class PaperList {
 	    return "Reviewer";
 	case self::FIELD_REVIEWER_STATUS:
 	    return "Reviewer status";
+	case self::FIELD_REVIEWS_STATUS:
+	    return "<acronym title='\"1/2\" means 1 complete review out of 2 assigned reviews'>#&nbsp;Reviews</acronym>";
 	case self::FIELD_SELECTOR:
 	    return ($ordinal ? "&nbsp;" : "");
 	case self::FIELD_REVIEW:
@@ -163,19 +168,13 @@ class PaperList {
 	case self::FIELD_ID_MANAGE:
 	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='2'>#$row->paperId</a>";
 	case self::FIELD_ID_REVIEW:
-	    if ($row->reviewId)
-		return "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId' tabindex='2'>#$row->paperId</a>";
-	    else
-		return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId' tabindex='2'>#$row->paperId</a>";
+	    return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId' tabindex='2'>#$row->paperId</a>";
 	case self::FIELD_TITLE:
 	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_TITLE_MANAGE:
 	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_TITLE_REVIEW:
-	    if ($row->reviewId)
-		return "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
-	    else
-		return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
+	    return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
@@ -192,6 +191,11 @@ class PaperList {
 	    return reviewType($row->paperId, $row);
 	case self::FIELD_REVIEWER_STATUS:
 	    return reviewStatus($row, 0);
+	case self::FIELD_REVIEWS_STATUS:
+	    if ($row->reviewCount != $row->startedReviewCount)
+		return "<b>$row->reviewCount</b>/$row->startedReviewCount";
+	    else
+		return "<b>$row->reviewCount</b>";
 	case self::FIELD_SELECTOR:
 	    $this->anySelector = 1;
 	    return "<input class='rstat rstat_sel' type='checkbox' name='papersel[]' value='$row->paperId' tabindex='1' />";

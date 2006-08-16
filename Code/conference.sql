@@ -587,6 +587,7 @@ insert into PaperFields set fieldId=37, fieldName='topicNames', description='Top
 insert into PaperFields set fieldId=38, fieldName='reviewerNames', description='Reviewer names', sortable=0, display=2;
 insert into PaperFields set fieldId=39, fieldName='reviewPreference', description='Review preference';
 insert into PaperFields set fieldId=40, fieldName='editReviewPreference', description='Edit review preference';
+insert into PaperFields set fieldId=41, fieldName='reviewsStatus', description='Review counts';
 
 insert into PaperList set paperListId=1, paperListName='author',
 	shortDescription='Authored', description='Authored papers', 
@@ -630,8 +631,9 @@ insert into PaperList set paperListId=6, paperListName='reviewerHome',
 	queryType='myReviews', sortCol=0, query='';
 insert into PaperListColumns set paperListId=6, fieldId=3, col=0;
 insert into PaperListColumns set paperListId=6, fieldId=13, col=1;
-insert into PaperListColumns set paperListId=6, fieldId=32, col=2;
-insert into PaperListColumns set paperListId=6, fieldId=33, col=3;
+insert into PaperListColumns set paperListId=6, fieldId=33, col=2;
+insert into PaperListColumns set paperListId=6, fieldId=41, col=3;
+insert into PaperListColumns set paperListId=6, fieldId=32, col=4;
 
 insert into PaperList set paperListId=8, paperListName='reviewAssignment',
 	shortDescription='Your reviews', description='Review assignments (homepage view)',

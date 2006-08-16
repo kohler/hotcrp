@@ -40,7 +40,7 @@ function spotSecondaryReviewers($howmany)
       print "<tr> <td> $paperId </td><td> ";
 
       $Conf->linkWithPaperId($title,
-			     "ShowAbstract.php",
+			     "paper.php",
 			     $paperId);
 
       print "</td> </tr>";

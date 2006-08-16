@@ -61,7 +61,7 @@ if ($Me->isPC || $Me->amReviewer()) {
     $sep = "";
 
     $plist = new PaperList("1", null, "list_tabre");
-    $plist->showHeader = 0;
+    //$plist->showHeader = 0;
     $ptext = $plist->text("reviewerHome", $Me);
     if ($plist->count > 0) {
 	$body .= $sep . $ptext;
@@ -186,6 +186,7 @@ if ($Me->amAssistant())
 <ul>
   <li><a href='All/UpdateContactInfo.php?new=1'>Create new account</a></li>
   <li><a href='Chair/BecomeSomeoneElse.php'>Act on someone else's behalf</a></li>
+  <li><a href='Chair/ListPC.php'>Program committee accounts</a></li>
 </ul>";
 $body .= "</td>\n";
 
@@ -241,24 +242,6 @@ echo "</div>\n";
 
 $homeSep = "<span class='sep'></span>";
 ?>
-
-
-<?php if ($Me->isChair) { ?>
-<div class='home_tasks' id='home_tasks_chair'>
-  <div class='taskname'><h2>Program Chair Tasks</h2></div>
-  <div class='taskdetail'>
-    <table>
-
-    <tr>
-      <th>Program&nbsp;committee:</th>
-      <td><a href='Chair/ListPC.php'>See&nbsp;contact&nbsp;information[X]</a></td>
-    </tr>
-
-    </table>
-  </div>
-  <div class='clear'></div>
-</div>
-<?php } ?>
 
 
 <?php

@@ -627,8 +627,13 @@ table.pltable th, table.setreviewform th, table.memberlist th {
 table.pltable td {
 	padding-right: 1em;
 }
-table.pltable th.pl_id, table.pltable th.pl_topicMatch {
+table.pltable th.pl_id, table.pltable th.pl_topicMatch,
+table.pltable th.pl_reviewsStatus {
 	text-align: center;
+}
+table.pltable td.pl_reviewsStatus {
+	text-align: center;
+	padding-right: 0.2em;
 }
 table.pltable td.pl_id, table.pltable td.pl_selector,
 table.pltable td.pl_topicMatch, table.pltable td.pl_reviewPreference {
@@ -648,6 +653,10 @@ span.pl_callouthdr:after {
 tr.pl_headrow td, tr.pl_headrow th, table.setreviewform th, table.memberlist th {
 	border-bottom: 1px solid #ccccff;
 	margin-bottom: 4px;
+}
+table.plt_reviewerHome tr.pl_headrow th {
+	border-bottom: none;
+	font-size: small;
 }
 
 div.error div.parseerr p, div.confirm div.parseerr p {

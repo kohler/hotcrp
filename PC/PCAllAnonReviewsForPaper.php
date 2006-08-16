@@ -4,6 +4,7 @@ $_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
 $_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
 $Me = $_SESSION["Me"];
 $Conf -> connect();
+$rf = reviewForm();
 
 include('gradeNames.inc');
 
@@ -64,7 +65,7 @@ if ( 0 && $Conf->validTimeFor('AtTheMeeting',0) ) {
 // they haven't yet finalized their reviews.
 //
 
-$query="select paperId from ReviewRequest where "
+$query="select paperId from PaperReview where "
 . " contactId='" . $_SESSION["Me"]->contactId . "' and paperId=" . $_REQUEST["paperId"] . " and reviewType=" . REVIEW_PRIMARY;
 ;
 
@@ -188,7 +189,7 @@ if ( showReviewerOkay($Conf) ){
 <td>
 <?php 
    $query="select firstName, lastName, email "
-	. " from ContactInfo join ReviewRequest using (contactId) "
+	. " from ContactInfo join PaperReview using (contactId) "
 	. " where paperId=" . $_REQUEST['paperId'] . " and reviewType=" . REVIEW_PRIMARY;
     $result = $Conf->qe($query);
     if (!DB::isError($result)) {
@@ -210,7 +211,7 @@ if ( showReviewerOkay($Conf) ){
 <td>
 <?php 
    $query="select firstName, lastName, email "
-      . " from ContactInfo join ReviewRequest using (contactId) "
+      . " from ContactInfo join PaperReview using (contactId) "
       . " where paperId=" . $_REQUEST["paperId"] . " and reviewType=" . REVIEW_SECONDARY;
     $result = $Conf->qe($query);
     if (!DB::isError($result)) {
@@ -232,7 +233,7 @@ if ( showReviewerOkay($Conf) ){
 <td>
 <?php 
    $query="select firstName, lastName, email "
-      . " from ContactInfo join ReviewRequest on requestedBy=ContactInfo.contactId "
+      . " from ContactInfo join PaperReview on requestedBy=ContactInfo.contactId "
       . " where paperId=" . $_REQUEST["paperId"];
     $result = $Conf->qe($query);
     if (!DB::isError($result)) {
@@ -287,15 +288,15 @@ if (IsSet($_REQUEST['killCommentId'])) {
 // Print header using dummy review
 //
 
-$Review=ReviewFactory($Conf, $_SESSION["Me"]->contactId, $_REQUEST["paperId"]);
+$prow = $Conf->paperRow($_REQUEST["paperId"], $Me->contactId);
 
-if ( ! $Review -> valid ) {
+if ( ! $prow ) {
   $Conf->errorMsg("You've stumbled on to an invalid review? -- contact chair");
   exit;
 }
-if ($Review->paperFields['outcome'] != 0) {
+if ($prow->outcome != 0) {
   $Conf->infoMsg("<center> Paper Outcome Is : "
-		 . $Review->paperFields['outcome']
+		 . htmlspecialchars($rf->options['outcome'][$prow->outcome])
 		 . "</center>"
 		 );
 }
@@ -310,9 +311,9 @@ if ( ($_SESSION["Me"]->isChair && $_SESSION["SeeAuthorInfo"])
   // This is not depending on the option checked for view choices above.
   // When should the PC members be able to see / change these options?
   //
-  $Review->printVisibleReviewHeader($Conf);
+    //  $Review->printVisibleReviewHeader($Conf);
 } else {
-  $Review->printAnonReviewHeader($Conf,1);
+    //  $Review->printAnonReviewHeader($Conf,1);
 }
 print "</center>";
 
@@ -349,9 +350,9 @@ if (!DB::isError($result) && $result->numRows() > 0) {
     $last=$row['lastName'];
     $email=$row['email'];
 
-    $Review=ReviewFactory($Conf, $reviewer, $_REQUEST["paperId"]);
+    $rrow = $Conf->reviewRow(array('reviewId' => $reviewId));
 
-    $lastModified=$Conf->printableTime($Review->reviewFields['timestamp']);
+    $lastModified=$Conf->printableTime($rrow->timestamp);
 
     print "<table width=100%>";
     if ($i & 0x1 ) {
@@ -363,7 +364,7 @@ if (!DB::isError($result) && $result->numRows() > 0) {
     print "<tr bgcolor=$color>";
     if ( $_SESSION["Me"]->isChair ) {
 
-      if ( $Review->reviewFields['reviewSubmitted'] ) {
+      if ( $rrow->reviewSubmitted ) {
 	$word = "unfinalize";
       } else {
 	$word = "finalize";
@@ -389,7 +390,7 @@ if (!DB::isError($result) && $result->numRows() > 0) {
     print "<tr bgcolor=$color>";
     print "<th> (review last modified $lastModified) </th> </tr>\n";
 
-    $paperId = addSlashes( $_REQUEST['paperId'] );
+    $paperId = sqlq( $_REQUEST['paperId'] );
 
     $gradeRes = $Conf -> qe("SELECT grade"
 			  . " FROM PaperGrade "
@@ -409,13 +410,13 @@ if (!DB::isError($result) && $result->numRows() > 0) {
     print "<tr bgcolor=$color>";
     print "<th> Grade is $grade </th> </tr>\n";
 
-    print "<tr bgcolor=$color> <td> ";
+    print "<tr bgcolor=$color> <td><table> ";
 
-    if ($Review->valid) {
-      $Review -> printViewable();
+    if ($rrow) {
+	echo $rf->webDisplayRows($rrow, false);
     }
 
-    print "</td> </tr>";
+    print "</table></td> </tr>";
 
     print "<tr> <td> <br> <br> <br> </td> </tr>";
     print "</table>";
