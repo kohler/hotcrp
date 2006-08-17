@@ -1,3 +1,20 @@
+2006-08-17 Thursday 08:38  kohler
+
+	* paper.php (1.49): save changes
+
+2006-08-16 Wednesday 08:39  kohler
+
+	* Tasks-Chair.inc (1.10), Tasks-PC.inc (1.8), index.php (1.49),
+	  style.css (1.73), Assistant/AssistantListPapers.php (1.8),
+	  Chair/ListPC.php (1.10), Code/ClassPaperList.inc (1.24),
+	  Code/conference.sql (1.38), PC/PCAllAnonReviewsForPaper.php
+	  (1.12), PC/ShowAbstract.php (1.5), PC/SpotMyProblems.php (1.4):
+	  remove a few obsolete pages, some other updates
+
+2006-08-15 Tuesday 00:45  kohler
+
+	* paper.php (1.48), Code/conference.sql (1.37): some more nits
+
 2006-08-15 Tuesday 00:20  kohler
 
 	* deadlines.php (1.8), paper.php (1.47), pc.php (1.7),
