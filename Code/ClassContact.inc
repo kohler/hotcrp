@@ -409,7 +409,8 @@ class Contact {
 	    return false;
 	// policy
 	if (($prow->author > 0 || $this->amAssistant())
-	    && $prow->timeWithdrawn <= 0 && $prow->timeSubmitted <= 0
+	    && $prow->timeWithdrawn <= 0
+	    && ($prow->timeSubmitted <= 0 || $this->amAssistantOverride())
 	    && ($conf->timeUpdatePaper() || $this->amAssistantOverride()))
 	    return true;
 	// collect failure reasons
