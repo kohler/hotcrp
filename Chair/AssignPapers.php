@@ -60,7 +60,7 @@ Click on a column heading to sort by that column.</p>\n\n";
 
 
 echo "<form method='get' action='AssignPapers.php' name='selectReviewer'>
-  <select name='reviewer' onChange='document.selectReviewer.submit()'>\n";
+  <select name='reviewer' onchange='document.selectReviewer.submit()'>\n";
 
 $query = "select ContactInfo.contactId, firstName, lastName,
 		count(reviewId) as reviewCount
@@ -68,7 +68,7 @@ $query = "select ContactInfo.contactId, firstName, lastName,
 		join PCMember using (contactId)
 		left join PaperReview on (ContactInfo.contactId=PaperReview.contactId and PaperReview.reviewType>=" . REVIEW_SECONDARY . ")
 		group by contactId
-		order by lastName, firstName";
+		order by lastName, firstName, email";
 $result = $Conf->qe($query);
 print "<option value='-1'>(Remember to select a committee member!)</OPTION>";
 if (!DB::isError($result)) {

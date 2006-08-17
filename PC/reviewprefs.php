@@ -5,6 +5,9 @@ $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPC('../index.php');
+$reviewer = cvtint($_REQUEST["reviewer"]);
+if ($reviewer <= 0 || !$Me->amAssistant())
+    $reviewer = $Me->contactId;
 
 $Conf->header("Review Preferences", "revpref");
 
@@ -60,7 +63,7 @@ function savePreferences($reviewer) {
     $Conf->qe("unlock tables", $while);
 }
 if (isset($_REQUEST["update"]))
-    savePreferences($Me->contactId);
+    savePreferences($reviewer);
 
 
 $Conf->infoMsg("<p>Help us assign you papers you want by
@@ -77,11 +80,37 @@ are interested in the paper's topics.  Click on a column heading to sort by
 that column.  You may also enter preferences on the paper pages, which are
 accessible by clicking the paper title.</p>");
 
+
+if ($Me->amAssistant()) {
+    echo "<form method='get' action='reviewprefs.php' name='selectReviewer'>
+  <b>Showing preferences for</b>
+  <select name='reviewer' onchange='document.selectReviewer.submit()'>\n";
+
+    $query = "select ContactInfo.contactId, firstName, lastName,
+		count(preference) as preferenceCount
+		from ContactInfo
+		join PCMember using (contactId)
+		left join PaperReviewPreference on (ContactInfo.contactId=PaperReviewPreference.contactId)
+		group by contactId
+		order by lastName, firstName, email";
+    $result = $Conf->qe($query);
+    if (!DB::isError($result))
+	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
+	    echo "<option value='$row->contactId'";
+	    if ($row->contactId == $reviewer)
+		echo " selected='selected'";
+	    echo ">", contactHtml($row);
+	    if ($row->preferenceCount <= 0)
+		echo " (no preferences)";
+	    echo "</option>";
+	}
+    echo "</select>\n</form>\n<hr />\n\n";
+}
     
-$paperList = new PaperList(defval($_REQUEST["sort"]), "reviewprefs.php?sort=", "list");
+$paperList = new PaperList(defval($_REQUEST["sort"]), "reviewprefs.php?reviewer=$reviewer&amp;sort=", "list");
 $_SESSION["whichList"] = "list";
-echo "<form class='assignpc' method='post' action=\"reviewprefs.php?post=1\" enctype='multipart/form-data'>\n";
-echo $paperList->text("editReviewPreference", $_SESSION['Me']);
+echo "<form class='assignpc' method='post' action=\"reviewprefs.php?reviewer=$reviewer&amp;post=1\" enctype='multipart/form-data'>\n";
+echo $paperList->text("editReviewPreference", $_SESSION['Me'], $reviewer);
 echo "<input class='button_default' type='submit' name='update' value='Save preferences' />\n";
 echo "</form>\n";
 
