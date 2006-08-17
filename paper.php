@@ -238,8 +238,9 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 
     // send email to all contact authors
     if (!$Me->amAssistant() || isset($_REQUEST["emailUpdate"]))
-	$Conf->emailContactAuthors($paperId, $subject, $m);
+	$Conf->emailContactAuthors($prow, $subject, $m);
     
+    $Conf->log("$what #$paperId", $Me);
     return true;
 }
 
@@ -276,6 +277,7 @@ if (isset($_REQUEST["unsubmit"]) && !$newPaper) {
     if ($Me->amAssistant()) {
 	$Conf->qe("update Paper set timeSubmitted=0 where paperId=$paperId", "while undoing paper submit");
 	getProw($Me->contactId);
+	$Conf->log("Unsubmitted #$paperId", $Me);
     } else
 	$Conf->errorMsg("Only the program chairs can undo paper submission.");
 }
@@ -288,9 +290,9 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	if ($Me->amAssistant() && isset($_REQUEST["emailNote"]) && $_REQUEST["emailNote"] != "Note to authors")
 	    $m .= "\n\n" . $_REQUEST["emailNote"];
 	$m = wordwrap("$m\n\nContact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
-	$Conf->emailContactAuthors($paperId, "Paper #$paperId withdrawn", $m);
+	$Conf->emailContactAuthors($prow, "Paper #$paperId withdrawn", $m);
 
-	// XXX log
+	$Conf->log("Withdrew #$paperId", $Me);
     } else
 	$Conf->errorMsg(whyNotText($whyNot, "withdraw"));
 }
@@ -298,6 +300,7 @@ if (isset($_REQUEST["revive"]) && !$newPaper) {
     if ($Me->canRevivePaper($prow, $Conf, $whyNot)) {
 	$Conf->qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100," . time() . ",0) where paperId=$paperId", "while reviving paper");
 	getProw($Me->contactId);
+	$Conf->log("Revived #$paperId", $Me);
     } else
 	$Conf->errorMsg(whyNotText($whyNot, "revive"));
 }
@@ -315,7 +318,7 @@ if (isset($_REQUEST['delete'])) {
 	if ($Me->amAssistant() && isset($_REQUEST["emailNote"]) && $_REQUEST["emailNote"] != "Note to authors")
 	    $m .= "\n\n" . $_REQUEST["emailNote"];
 	$m = wordwrap("$m\n\nContact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
-	$Conf->emailContactAuthors($paperId, "Paper #$paperId deleted", $m);
+	$Conf->emailContactAuthors($prow, "Paper #$paperId deleted", $m);
 	// XXX email self?
 
 	$error = false;
@@ -323,9 +326,11 @@ if (isset($_REQUEST['delete'])) {
 	    $result = $Conf->qe("delete from $table where paperId=$paperId", "while deleting paper");
 	    $error |= DB::isError($result);
 	}
-	if (!$error)
+	if (!$error) {
 	    $Conf->confirmMsg("Paper #$paperId deleted.");
-
+	    $Conf->log("Deleted #$paperId", $Me);
+	}
+	
 	$prow = null;
 	errorMsgExit("");
     }

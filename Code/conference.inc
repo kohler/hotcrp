@@ -438,8 +438,8 @@ class Conference {
 
     // Emailing
 
-    function emailContactAuthors($paperId, $subject, $message) {
-	global $Opt;
+    function emailContactAuthors($prow, $subject, $message) {
+	global $Opt, $Me;
 	if (!$Opt['sendEmail'])
 	    return;
 
@@ -447,16 +447,20 @@ class Conference {
 	    $subject = "[$this->shortName] $subject";
 	$result = $this->qe("select firstName, lastName, email
 		from ContactInfo join PaperConflict using (contactId)
-		where paperId=$paperId and author>0
+		where paperId=$prow->paperId and author>0
 		group by ContactInfo.contactId", "while looking up contact authors to send email");
-	if (!DB::isError($result))
+	if (!DB::isError($result)) {
 	    while (($row = $result->fetchRow())) {
-		$m = "Dear " . contactText($row[0], $row[1], $row[2]) . ",\n\n" . $message;
+		$contacts[] = $c = contactText($row[0], $row[1], $row[2]);
+		$m = "Dear $c,\n\n" . $message;
 		if ($this->allowEmailTo($row[2]))
 		    mail($row[2], $subject, $m, "From: $Conf->emailFrom");
 		else
-		    $this->infoMsg("<pre>$subject\n\n" . htmlspecialchars($m) . "</pre>");
+		    $this->infoMsg("<pre>" . htmlspecialchars($subject) . "\n\n" . htmlspecialchars($m) . "</pre>");
 	    }
+	    if ($prow->author <= 0 && count($contacts) > 0 && $Me->amAssistant())
+		$this->infoMsg("Sent \"" . htmlspecialchars($subject) . "\" email to paper #$prow->paperId's contact author" . (count($contacts) == 1 ? "" : "s") . ", " . htmlspecialchars(join(", ", $contacts)) . ".");
+	}
     }
     
   

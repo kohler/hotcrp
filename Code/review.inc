@@ -251,7 +251,7 @@ class ReviewForm {
 		    $conf->infoMsg("<pre>" . htmlspecialchars("$s\n\n$m") . "</pre>");
 
 	    if ($conf->timeEmailAuthorsAboutReview())
-		$conf->emailContactAuthors($prow->paperId, $s, $m);
+		$conf->emailContactAuthors($prow, $s, $m);
 	}
 	
 	return $result;

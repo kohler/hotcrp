@@ -455,10 +455,14 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "withdraw")))
 	    return false;
 	// policy
-	if ($prow->author > 0 || $this->amAssistant())
+	if (($prow->author > 0 || $this->amAssistant())
+	    && $prow->timeWithdrawn <= 0)
 	    return true;
 	// collect failure reasons
-	$whyNot["author"] = 1;
+	if ($prow->timeWithdrawn > 0)
+	    $whyNot["withdrawn"] = 1;
+	if ($prow->author <= 0 && !$this->amAssistant())
+	    $whyNot["author"] = 1;
 	return false;
     }
     
