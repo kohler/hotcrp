@@ -590,7 +590,7 @@ class ReviewForm {
 
     function webTopicArray($topicIds, $interests = null) {
 	if (!$topicIds)
-	    return "";
+	    return array();
 	if (!is_array($topicIds))
 	    $topicIds = explode(",", $topicIds);
 	if ($interests && !is_array($interests))
