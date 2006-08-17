@@ -598,7 +598,7 @@ class Conference {
     
     function __downloadPaper($paperId, $saveit) {
 	// Database query
-	$result = $this->q("select mimetype, paper, timeWithdrawn, PaperStorage.paperStorageId, compression
+	$result = $this->q("select mimetype, paper, PaperStorage.paperStorageId, compression
 	from Paper
 	left join PaperStorage using (paperStorageId)
 	where Paper.paperId=$paperId");
@@ -612,12 +612,9 @@ class Conference {
 	$row = $result->fetchRow();
 	$mimetype = $row[0];
 	$content = $row[1];
-	$withdrawn = $row[2];
-	$compression = $row[4];
+	$compression = $row[3];
 	$length = strlen($content);
-	if ($withdrawn > 0)
-	    return new PEAR_Error("Paper #$paperId has been withdrawn.");
-	else if ($row[3] == 1)
+	if ($row[2] == 1)
 	    return new PEAR_Error("Paper #$paperId has not been uploaded yet.");
 	else if ($length == 0)
 	    return new PEAR_Error("Paper #$paperId appears to be empty.");

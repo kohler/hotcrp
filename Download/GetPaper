@@ -8,7 +8,7 @@
 include('../Code/confHeader.inc');
 $Conf->connect();
 $Me = $_SESSION['Me'];
-$Me->goIfInvalid("../");
+$Me->goIfInvalid();
 
 //
 // Determine the intended paper
@@ -39,7 +39,7 @@ if (!isset($Error)) {
     $result = $Conf->downloadPaper($paperId, cvtint($_REQUEST['save']) > 0);
     if (!PEAR::isError($result))
 	exit;
- }
+}
 
 //
 // If we get here, there is an error.
