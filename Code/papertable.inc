@@ -231,7 +231,9 @@ Zhang, Ping Yen (INRIA)</pre>";
     function echoTopics($prow) {
 	global $Conf;
 	$topicMode = (int) $this->useRequest;
-	if (!$this->editable || ($prow && ($prow->timeSubmitted > 0 || $prow->timeWithdrawn > 0)))
+	if (!$this->editable)
+	    //    || ($prow && (($prow->timeSubmitted > 0
+	    //		   || $prow->timeWithdrawn > 0))))
 	    $topicMode = -1;
 	if ($topicTable = topicTable($prow, $topicMode, $Conf)) { 
 	    echo "<tr class='pt_topics$this->trClasses' id='foldto'>\n";
