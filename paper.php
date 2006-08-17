@@ -155,7 +155,9 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
     if ($newPaper)
 	$q .= "contactId=$contactId, paperStorageId=1";
     else
-	$q = substr($q, 0, -2) . " where paperId=$paperId and timeSubmitted<=0 and timeWithdrawn<=0";
+	$q = substr($q, 0, -2) . " where paperId=$paperId"
+	    . ($Me->amAssistant() ? "" : " and timeSubmitted<=0")
+	    . " and timeWithdrawn<=0";
     
     $result = $Conf->qe(($newPaper ? "insert into" : "update") . " Paper set $q", "while updating paper information");
     if (DB::isError($result))
@@ -387,13 +389,12 @@ if ($mode == "edit") {
     echo "<form method='post' action=\"paper.php?paperId=",
 	($newPaper ? "new" : $paperId),
 	"&amp;post=1&amp;mode=edit\" enctype='multipart/form-data'>";
-    $editable = $newPaper || ($prow->timeSubmitted <= 0
+    $editable = $newPaper || (($prow->timeSubmitted <= 0 || $Me->amAssistant())
 			      && $prow->timeWithdrawn <= 0
 			      && ($Conf->timeUpdatePaper() || $Me->amAssistant()));
 } else
     $editable = false;
 echo "<table class='paper", ($mode == "edit" ? " editpaper" : ""), "'>\n\n";
-$textareaClass = ($editable ? " textarea" : "");
 
 
 // title
@@ -512,8 +513,10 @@ if ($mode == "edit") {
 		$buttons[] = array("<input class='button' type='submit' name='update' value='Save changes' />", "(does not submit)");
 	    if ($Conf->timeFinalizePaper() || $Me->amAssistant())
 		$buttons[] = array("<input class='button_default' type='submit' name='submit' value='Submit paper' />", "(cannot undo)");
-	} else if ($Me->amAssistant())
-	    $buttons[] = array("<input class='button' type='submit' name='unsubmit' value='Undo submit' />", "(PC chair only)"); 
+	} else if ($Me->amAssistant()) {
+	    $buttons[] = array("<input class='button' type='submit' name='update' value='Save changes' />", "(PC chair only)");
+	    $buttons[] = array("<input class='button' type='submit' name='unsubmit' value='Undo submit' />", "(PC chair only)");
+	}
 	$buttons[] = "<input class='button' type='submit' name='withdraw' value='Withdraw paper' />";
     }
     if ($Me->amAssistant() && !$newPaper)
@@ -534,9 +537,12 @@ if ($mode == "edit") {
   <td class='caption'></td>
   <td class='entry'>
     <input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines\n";
-	if ($prow && $prow->author <= 0 && $prow->timeSubmitted <= 0)
+	if ($prow && (($prow->author <= 0 && $prow->timeSubmitted <= 0)
+		      || $prow->timeSubmitted > 0))
 	    echo "    <span class='sep'></span>
-    <input type='checkbox' name='emailUpdate' value='1' checked='checked' />&nbsp;Email&nbsp;authors\n";
+    <input type='checkbox' name='emailUpdate' value='1'",
+		($prow->timeSubmitted > 0 ? "" : " checked='checked'"),
+		" />&nbsp;Email&nbsp;authors\n";
 	echo "  </td>\n</tr>\n\n";
     }
 }
