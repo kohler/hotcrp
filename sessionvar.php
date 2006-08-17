@@ -3,7 +3,7 @@ require_once('Code/confHeader.inc');
 
 if (isset($_REQUEST["var"])) {
     $v = $_REQUEST["var"];
-    if ($v == "mainTab") {
+    if ($v == "mainTab" || $v == "reqreviewFold") {
 	if (isset($_REQUEST["val"]))
 	    $_SESSION[$v] = $_REQUEST["val"];
 	else

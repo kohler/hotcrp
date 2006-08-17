@@ -19,17 +19,32 @@ class PaperTable {
     var $useRequest;
     var $allFolded;
     var $authorsFolded;
-    
     var $trClasses;
     var $autrClasses;
+    var $foldsession;
+    var $foldState;
     
-    function PaperTable($editable, $useRequest, $allFolded, $authorsFolded) {
+    function PaperTable($editable, $useRequest, $allFolded, $authorsFolded,
+			$foldsession = null) {
 	$this->editable = $editable;
 	$this->useRequest = $useRequest;
+
+	$this->foldsession = $foldsession;
+	$foldState = ($foldsession ? defval($_SESSION[$foldsession], 3) : 3);
+	$this->foldState = $foldState;
+	
 	$this->allFolded = $allFolded;
-	$this->trClasses = ($allFolded ? " fold1ed" : "");
+	if ($allFolded)
+	    $this->trClasses = ($foldState & 2 ? " fold1ed" : " unfold1ed");
+	else
+	    $this->trClasses = "";
+	
 	$this->authorsFolded = $authorsFolded;
-	$this->autrClasses = ($authorsFolded ? " folded" : "") . $this->trClasses;
+	if ($authorsFolded)
+	    $this->autrClasses = ($foldState & 1 ? " folded" : " unfolded");
+	else
+	    $this->autrClasses = "";
+	$this->autrClasses .= $this->trClasses;
     }
 
     function tdCaption($what) {
@@ -54,7 +69,7 @@ class PaperTable {
 	if ($this->editable && isset($textAreaRows[$what]))
 	    $c .= " textarea";
 	if (!$this->editable)
-	    $c .= " colspan='2'";
+	    $c .= "' colspan='2";
 	return $c . "'>";
     }
 
@@ -88,11 +103,13 @@ class PaperTable {
 
     function echoStatusRow($prow, $flags) {
 	global $Me;
-	echo "<tr class='pt_status fold1ed' id='foldst'>\n";
+	echo "<tr class='pt_status", $this->trClasses, "' id='foldst'>\n";
 	echo "  <td class='caption'>";
-	if ($this->allFolded)
-	    echo "<a href=\"javascript:fold(['st','ti','pa','ab','ca','au','co','to'], 0, 1)\" class='foldbutton unfolder1'>+</a>",
-		"<a href=\"javascript:fold(['st','ti','pa','ab','ca','au','co','to'], 1, 1)\" class='foldbutton folder1'>&minus;</a> ";
+	if ($this->allFolded) {
+	    $fs = ($this->foldsession ? ";foldsession(['au','st'], '$this->foldsession')" : "");
+	    echo "<a href=\"javascript:fold(['st','ti','pa','ab','ca','au','co','to'], 0, 1)$fs\" class='foldbutton unfolder1'>+</a>",
+		"<a href=\"javascript:fold(['st','ti','pa','ab','ca','au','co','to'], 1, 1)$fs\" class='foldbutton folder1'>&minus;</a> ";
+	}
 	if (!($flags & self::NOCAPTION))
 	    echo "Paper</td>\n";
 	echo "  <td class='entry'>",
@@ -158,9 +175,11 @@ class PaperTable {
 	global $Conf;
 	echo "<tr class='pt_authorInformation$this->autrClasses' id='foldau'>\n";
 	echo "  ", $this->tdCaption("authorInformation");
-	if ($this->authorsFolded)
-	    echo "<a href=\"javascript:fold(['au','ca','co'], 0)\" class='foldbutton unfolder'>+</a>",
-	    "<a href=\"javascript:fold(['au','ca','co'], 1)\" class='foldbutton folder'>&minus;</a> ";
+	if ($this->authorsFolded) {
+	    $fs = ($this->foldsession ? ";foldsession(['au','st'], '$this->foldsession')" : "");
+	    echo "<a href=\"javascript:fold(['au','ca','co'], 0)$fs\" class='foldbutton unfolder'>+</a>",
+	    "<a href=\"javascript:fold(['au','ca','co'], 1)$fs\" class='foldbutton folder'>&minus;</a> ";
+	}
 	echo "Authors</td>\n";
 	echo "  ", $this->tdEntry("authorInformation");
 	if ($this->authorsFolded == 1)

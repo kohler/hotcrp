@@ -7,6 +7,7 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $_REQUEST["forceShow"] = 1;
 $rf = reviewForm();
+$reqreviewFold = defval($_SESSION["reqreviewFold"], 3);
 
 
 // header
@@ -246,12 +247,12 @@ echo "<form action='reqreview.php?paperId=$prow->paperId&amp;post=1' method='pos
 
 // title
 echo "<tr class='id'>\n  <td class='caption'><h2>#", $prow->paperId, "</h2></td>\n";
-echo "  <td class='entry' colspan='2'><h2>", htmlspecialchars($prow->title), "</h2></td>\n</tr>\n\n";
+echo "  <td class='entry' colspan='2'><h2>", htmlspecialchars($prow->title), "</h2><img id='reqreviewFold' alt='' src='", $ConfSiteBase, "sessionvar.php?var=reqreviewFold&amp;val=", $reqreviewFold, "' width='1' height='1' /></td>\n</tr>\n\n";
 
 
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, true);
-$paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->amAssistant());
+$paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->amAssistant(), "reqreviewFold");
 
 $paperTable->echoStatusRow($prow, PaperTable::STATUS_DOWNLOAD | PaperTable::STATUS_CONFLICTINFO);
 $paperTable->echoAbstractRow($prow);

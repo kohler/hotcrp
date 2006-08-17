@@ -11,7 +11,7 @@ function fold(which, dofold, foldnum) {
 	    fold(which[i], dofold, foldnum);
     } else {
 	var folded = document.getElementById('fold' + which);
-	var ftext = (foldnum ? "fold" + foldnum + "ed" : "folded");
+	var ftext = "fold" + (foldnum ? foldnum : "") + "ed";
 	var unftext = "un" + ftext;
 	if (!folded)
 	    /* nada */;
@@ -38,6 +38,18 @@ function tabfold(tabset, unfolded, foldnum, sessioner) {
 		si.src = si.src.replace(/val=.*/, 'val=' + unfolded);
 	}
     }
+}
+
+function foldsession(foldset, sessioner) {
+    var foldval = 0;
+    for (var i = 0; i < foldset.length; i++) {
+	var e = document.getElementById('fold' + foldset[i]);
+	if (e && e.className.match("\\bfold" + (i ? i : "") + "ed\\b"))
+            foldval |= (1 << i);
+    }
+    var si = document.getElementById(sessioner);
+    if (si)
+	si.src = si.src.replace(/val=.*/, 'val=' + foldval);
 }
 
 function contactPulldown(which) {
