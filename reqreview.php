@@ -285,11 +285,8 @@ if ($Me->amAssistant()) {
     $n = intval((count($pc) + 2) / 3);
     for ($i = 0; $i < count($pc); $i++) {
 	$p = $pc[$i];
-	if (($i % $n) == 0) {
-	    if ($i == $n)
-		echo "	<input class='button_small' type='submit' name='update' value='Save conflicts' />\n";
+	if (($i % $n) == 0)
 	    echo ($i ? "    </td><td>\n" : "<td>\n");
-	}
 	echo "	<input type='checkbox' name='pcc", $p->contactId, "'";
 	if ($p->conflict > 0)
 	    echo " checked='checked'";
@@ -297,7 +294,11 @@ if ($Me->amAssistant()) {
 	    echo " disabled='disabled'";
 	echo " onchange='highlightUpdate()' />&nbsp;", contactHtml($p), "<br/>\n";
     }
-    echo "    </tr>\n  </table></td>\n</tr>\n\n";
+    echo "    </tr>
+    <tr>
+      <td colspan='3'><input class='button_small' type='submit' name='update' value='Save conflicts' /></td>
+    </tr>
+  </table></td>\n</tr>\n\n";
 }
 
 
