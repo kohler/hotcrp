@@ -651,14 +651,18 @@ span.pl_callouthdr:after {
 	content: ":";
 }
 tr.pl_headrow td, tr.pl_headrow th, table.setreviewform th, table.memberlist th {
-	border-bottom: 1px solid #ccccff;
+	border-bottom: 1px solid #cc9900;
+	font-size: small;
 }
-tr.pl_headrow {
-	padding-bottom: 2px;
+tr.pl_firstrow td {
+	padding-top: 2px;
 }
 table.plt_reviewerHome tr.pl_headrow th {
 	border-bottom: none;
 	font-size: small;
+}
+table.plt_reviewerHome tr.pl_firstrow td {
+	padding-top: 0px;
 }
 
 div.error div.parseerr p, div.confirm div.parseerr p {

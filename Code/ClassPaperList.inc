@@ -358,13 +358,15 @@ class PaperList {
 	}
 
 	if ($result->numRows() == 0)
-	    $x .= "  <tr>\n    <td class=\"pl_nopapers\" colspan='$ncol'>No papers available for this query</td>\n  </tr>\n";
+	    $x .= "  <tr class=\"pl_firstrow\">\n    <td class=\"pl_nopapers\" colspan='$ncol'>No papers available for this query</td>\n  </tr>\n";
 
 	$ids = array();
+	$trclass = ($this->showHeader ? " class=\"pl_firstrow\"" : "");
 	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
 	    $this->count++;
 	    $ids[] = $row->paperId;
-	    $x .= "  <tr>\n";
+	    $x .= "  <tr$trclass>\n";
+	    $trclass = "";
 	    foreach ($fieldId as $f)
 		if ($f[2] != 2) {
 		    $x .= "    <td class=\"pl_$f[1]\">";
