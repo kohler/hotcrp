@@ -230,6 +230,8 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 	if ($deadline != "N/A")
 	    $mx .= "  If you do not officially submit the paper by $deadline, it will not be considered for the conference.";
     }
+    if ($Me->amAssistant() && isset($_REQUEST["emailNote"]) && $_REQUEST["emailNote"] != "Note to authors")
+	$mx .= "\n\n" . $_REQUEST["emailNote"];
     $m .= wordwrap("$mx\n\nContact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.
 
 - $Conf->shortName Conference Submissions\n");
@@ -281,6 +283,14 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
     if ($Me->canWithdrawPaper($prow, $Conf, $whyNot)) {
 	$Conf->qe("update Paper set timeWithdrawn=" . time() . ", timeSubmitted=if(timeSubmitted>0,-100,0) where paperId=$paperId", "while withdrawing paper");
 	getProw($Me->contactId);
+
+	$m = "This mail confirms that paper #$paperId, \"$prow->title\", has been withdrawn from consideration for the $Conf->shortName conference.";
+	if ($Me->amAssistant() && isset($_REQUEST["emailNote"]) && $_REQUEST["emailNote"] != "Note to authors")
+	    $m .= "\n\n" . $_REQUEST["emailNote"];
+	$m = wordwrap("$m\n\nContact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
+	$Conf->emailContactAuthors($paperId, "Paper #$paperId withdrawn", $m);
+
+	// XXX log
     } else
 	$Conf->errorMsg(whyNotText($whyNot, "withdraw"));
 }
@@ -301,8 +311,11 @@ if (isset($_REQUEST['delete'])) {
 	$Conf->errorMsg("Only the program chairs can permanently delete papers.  Authors can withdraw papers, which is effectively the same.");
     else {
 	// mail first, before contact info goes away
-	$message = wordwrap("Your $Conf->shortName paper submission #$paperId, \"$prow->title\", has been removed from the conference database by the program chairs.  This is usually done to remove duplicate entries or submissions.  Contact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
-	$Conf->emailContactAuthors($paperId, "Paper #$paperId deleted", $message);
+	$m = "Your $Conf->shortName paper submission #$paperId, \"$prow->title\", has been removed from the conference database by the program chairs.  This is usually done to remove duplicate entries or submissions.";
+	if ($Me->amAssistant() && isset($_REQUEST["emailNote"]) && $_REQUEST["emailNote"] != "Note to authors")
+	    $m .= "\n\n" . $_REQUEST["emailNote"];
+	$m = wordwrap("$m\n\nContact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
+	$Conf->emailContactAuthors($paperId, "Paper #$paperId deleted", $m);
 	// XXX email self?
 
 	$error = false;
@@ -535,7 +548,7 @@ if ($mode == "edit") {
     if ($Me->amAssistant()) {
 	echo "<tr>
   <td class='caption'></td>
-  <td class='entry'>
+  <td class='entry' colspan='2'>
     <input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines\n";
 	if ($prow && (($prow->author <= 0 && $prow->timeSubmitted <= 0)
 		      || $prow->timeSubmitted > 0))
@@ -543,6 +556,8 @@ if ($mode == "edit") {
     <input type='checkbox' name='emailUpdate' value='1'",
 		($prow->timeSubmitted > 0 ? "" : " checked='checked'"),
 		" />&nbsp;Email&nbsp;authors\n";
+	echo "    <span class='sep'></span>
+    <input type='text' name='emailNote' value='Note to authors' size='30' onfocus=\"tempText(this, 'Note to authors', 1)\" onblur=\"tempText(this, 'Note to authors', 0)\" />\n";
 	echo "  </td>\n</tr>\n\n";
     }
 }
