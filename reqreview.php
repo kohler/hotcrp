@@ -267,11 +267,12 @@ $paperTable->echoTopics($prow);
 if ($Me->amAssistant()) {
     $result = $Conf->qe("select ContactInfo.contactId, firstName, lastName,
 	count(PaperConflict.contactId) as conflict,
-	max(PaperConflict.author) as author, reviewType
+	max(PaperConflict.author) as author, reviewType, preference
 	from ContactInfo
 	join PCMember using (contactId)
 	left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$prow->paperId)
 	left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$prow->paperId)
+	left join PaperReviewPreference on (PaperReviewPreference.contactId=ContactInfo.contactId and PaperReviewPreference.paperId=$prow->paperId)
 	group by email
 	order by lastName, firstName, email", "while looking up PC");
     if (!DB::isError($result))
@@ -280,7 +281,7 @@ if ($Me->amAssistant()) {
 
     // PC conflicts row
     echo "<tr class='pt_conflict_ass'>
-  <td class='caption'>PC conflicts</td>
+  <td class='caption'>PC conflicts and preferences</td>
   <td class='entry'><table class='simple'>\n    <tr>";
     $n = intval((count($pc) + 2) / 3);
     for ($i = 0; $i < count($pc); $i++) {
@@ -292,7 +293,10 @@ if ($Me->amAssistant()) {
 	    echo " checked='checked'";
 	if ($p->author > 0)
 	    echo " disabled='disabled'";
-	echo " onchange='highlightUpdate()' />&nbsp;", contactHtml($p), "<br/>\n";
+	echo " onchange='highlightUpdate()' />&nbsp;", contactHtml($p);
+	if ($p->conflict <= 0 && $p->author <= 0 && $p->preference)
+	    echo " [", htmlspecialchars($p->preference), "]";
+	echo "<br/>\n";
     }
     echo "    </tr>
     <tr>
