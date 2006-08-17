@@ -447,7 +447,9 @@ if ($editable)
 
 
 // Paper
-if ($newPaper || ($prow->timeWithdrawn <= 0 && ($editable || $prow->size > 0))) {
+if ($newPaper
+    || ($prow->timeWithdrawn <= 0 && ($editable || $prow->size > 0))
+    || ($prow->timeWithdrawn > 0 && $mode == "edit" && $prow->size > 0)) {
     if ($mode == "edit")
 	$paperTable->echoDownloadRow($prow, ($newPaper ? PaperTable::OPTIONAL : 0));
     else
