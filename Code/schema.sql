@@ -590,7 +590,7 @@ insert into PaperFields set fieldId=38, fieldName='reviewerNames', description='
 insert into PaperFields set fieldId=39, fieldName='reviewPreference', description='Review preference';
 insert into PaperFields set fieldId=40, fieldName='editReviewPreference', description='Edit review preference';
 insert into PaperFields set fieldId=41, fieldName='reviewsStatus', description='Review counts';
-insert into PaperFields set fieldId=42, fieldName='matches', description='Matches';
+insert into PaperFields set fieldId=42, fieldName='matches', description='Matches', display=0;
 insert into PaperFields set fieldId=43, fieldName='desirability', description='Desirability';
 insert into PaperFields set fieldId=44, fieldName='allPreferences', description='Reviewer preferences', sortable=0, display=2;
 
@@ -670,3 +670,11 @@ insert into PaperList set paperListId=10, paperListName='matches',
 insert into PaperListColumns set paperListId=10, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=10, fieldId=11, col=1;
 insert into PaperListColumns set paperListId=10, fieldId=42, col=2;
+
+insert into PaperList set paperListId=11, paperListName='matchesAll',
+	shortDescription='Search matches', description='Search matches',
+	queryType='chair', sortCol=3, query='';
+insert into PaperListColumns set paperListId=11, fieldId=1, col=0;
+insert into PaperListColumns set paperListId=11, fieldId=11, col=1;
+insert into PaperListColumns set paperListId=11, fieldId=27, col=2;
+insert into PaperListColumns set paperListId=11, fieldId=42, col=3;

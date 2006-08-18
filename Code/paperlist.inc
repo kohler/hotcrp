@@ -362,7 +362,7 @@ class PaperList {
 	    if ($this->sortUri) {
 		$q = "<a class='pl_sort' href=\"" . $this->sortUri;
 		foreach ($fieldId as $f) {
-		    if ($f[2] == 2)
+		    if ($f[2] != 1)
 			continue;
 		    $x .= "    <th class=\"pl_$f[1]\">";
 		    $ftext = $this->header($f[0], $ord++);
@@ -379,7 +379,7 @@ class PaperList {
 		
 	    } else {
 		foreach ($fieldId as $f)
-		    if ($f[2] != 2)
+		    if ($f[2] == 1)
 			$x .= "    <th class=\"pl_$f[1]\">"
 			    . $this->header($f[0], $ord++) . "</th>\n";
 	    }
@@ -398,7 +398,7 @@ class PaperList {
 	    $x .= "  <tr$trclass>\n";
 	    $trclass = "";
 	    foreach ($fieldId as $f)
-		if ($f[2] != 2) {
+		if ($f[2] == 1) {
 		    $x .= "    <td class=\"pl_$f[1]\">";
 		    $x .= $this->content($f[0], $row, $plist, $reviewList) . "</td>\n";
 		}

@@ -7,7 +7,7 @@ $Me->goIfInvalid();
 $Me->goIfNotPC('index.php');
 
 
-$Conf->header("Search");
+$Conf->header("Search", 'search');
 
 
 $totals = 0;
@@ -27,22 +27,22 @@ echo "<form method='get' action='search.php'>
 if (isset($_REQUEST["search"]))
     echo htmlspecialchars($_REQUEST["search"]);
 echo "\" /> <input class='button' type='submit' name='go' value='Search' />
-    </td>\n\n    <td>\n";
+    </td>
+    <td>\n";
 
 echo "	<input type='checkbox' name='ti' value='1'", ($search['ti'] ? " checked='checked'" : ""), " />&nbsp;Titles\n",
     "	<span class='sep'></span> <input type='checkbox' name='ab' value='1'", ($search['ab'] ? " checked='checked'" : ""), " />&nbsp;Abstracts\n    </td>\n";
-if ($Me->amAssistant() || $Conf->blindSubmission() <= 1) {
+if ($Me->amAssistant() || $Conf->blindSubmission() <= 1)
     echo "    <td>\n	<input type='checkbox' name='au' value='1'", ($search['au'] ? " checked='checked'" : ""), " />&nbsp;Authors\n",
 	"	<span class='sep'></span> <input type='checkbox' name='co' value='1'", ($search['co'] ? " checked='checked'" : ""), " />&nbsp;Collaborators\n    </td>\n";
-    if (!$Me->amAssistant() && $Conf->blindSubmission() == 1)
-	echo "  <tr>\n    <td colspan='2'></td><td><small>Non-blind submissions only</small></td>\n";
-}
 
-echo "  </tr>\n";
+echo "  </tr><tr>\n    <td><small>Finds <b>any</b> of the words</small></td>\n";
+if (!$Me->amAssistant() && $Conf->blindSubmission() == 1)
+    echo "    <td></td><td><small>Non-blind submissions only</small></td>
+  </tr><tr>\n    <td></td>\n";
+
 if ($Me->amAssistant()) {
-    echo "  <tr>
-    <td></td>
-    <td colspan='2'>Papers: <input type='radio' name='all' value='0'",
+    echo "    <td colspan='2'>Papers: <input type='radio' name='all' value='0'",
 	($searchall ? "" : " checked='checked'"),
 	" />&nbsp;Submitted <span class='sep'></span> <input type='radio' name='all' value='1'",
 	($searchall ? " checked='checked'" : ""),
@@ -50,9 +50,7 @@ if ($Me->amAssistant()) {
   </tr>\n";
 }
 
-echo "</table>\n</form>\n";
-
-// XXXXXXXX all vs. submitted
+echo "</table>\n</form>\n\n";
 
 
 if (isset($_REQUEST["search"]) && trim($_REQUEST["search"]) != "") {
@@ -93,7 +91,8 @@ if (isset($_REQUEST["search"]) && trim($_REQUEST["search"]) != "") {
 			    "matches");
 	$_SESSION["whichList"] = "matches";
 	$_SESSION["matchPreg"] = "/($re)/i";
-	echo $pl->text("matches", $Me);
+	echo "<div class='maintabsep'></div>\n\n";
+	echo $pl->text(($searchall ? "matchesAll" : "matches"), $Me);
     }
 }
 
