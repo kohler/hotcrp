@@ -60,27 +60,100 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
     $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  Any changes were lost.");
 
 
-// change PC conflicts
-function pcConflicts() {
-    global $Conf, $prow;
+
+// retract review request
+function retractRequest($reviewId, $lock = true, $confirm = true) {
+    global $Conf, $Me, $prow;
+    
+    $while = "while retracting review request";
+    if ($lock)
+	$Conf->qe("lock tables PaperReview write, ContactInfo write", $while);
+    // NB caller unlocks tables
+
+    // check for outstanding review request
+    $result = $Conf->qe("select reviewType, reviewModified, reviewSubmitted, requestedBy, paperId,
+		firstName, lastName, email
+		from PaperReview
+		join ContactInfo using (contactId)
+		where reviewId=$reviewId", $while);
+    if (DB::isError($result))
+	return false;
+    else if ($result->numRows() == 0)
+	return $Conf->errorMsg("No such review request.");
+
+    $row = $result->fetchRow(DB_FETCHMODE_OBJECT);
+    if ($row->paperId != $prow->paperId)
+	return $Conf->errorMsg("Weird!  Retracted review is for a different paper.");
+    else if ($row->reviewModified > 0)
+	return $Conf->errorMsg("You can't retract that review request since the reviewer has already started their review.");
+    else if (!$Me->amAssistant() && $Me->contactId != $row->requestedBy)
+	return $Conf->errorMsg("You can't retract that review request since you didn't make the request in the first place.");
+
+    // at this point, success; remove the review request
+    $Conf->qe("delete from PaperReview where reviewId=$reviewId", $while);
+
+    // send confirmation email
+    $m = "Dear " . contactText($row) . ",\n\n";
+    $m .= wordwrap(contactText($Me) . " has retracted a previous request that you review Paper #$prow->paperId for the $Conf->longName" . ($Conf->shortName != $Conf->longName ? " ($Conf->shortName)" : "") . " conference.  Contact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.
+
+Thank you,
+- $Conf->shortName Conference Submissions\n");
+
+    $s = "[$Conf->shortName] Retracted review request for paper #$prow->paperId";
+
+    // don't send email if the review site isn't open yet
+    if (!$Conf->timeReviewOpen())
+	/* do nothing */;
+    else if ($Conf->allowEmailTo($row->email))
+	$results = mail($row->email, $s, $m, "From: $Conf->emailFrom");
+    else
+	$Conf->infoMsg("<pre>" . htmlspecialchars("$s\n\n$m") . "</pre>");
+
+    // confirmation message
+    if ($confirm)
+	$Conf->confirmMsg("Removed request that " . contactHtml($row) . " review paper #$prow->paperId.");
+}
+
+if (isset($_REQUEST['retract']) && ($retract = cvtint($_REQUEST['retract'])) > 0) {
+    retractRequest($retract, $prow->paperId);
+    $Conf->qe("unlock tables");
+    getProw();
+}
+
+
+// change PC assignments
+function pcAssignments() {
+    global $Conf, $Me, $prow;
     $while = "while updating PC conflicts";
-    $Conf->qe("lock tables PaperConflict write, PCMember write", $while);
+    $Conf->qe("lock tables PaperReview write, PaperConflict write, PCMember write, ContactInfo write", $while);
     
     // don't record separate PC conflicts on author conflicts
-    $result = $Conf->qe("select contactId from PaperConflict where paperId=$prow->paperId and author>0", $while);
+    $result = $Conf->qe("select PCMember.contactId,
+	PaperConflict.author, PaperConflict.contactId as conflictId,
+	reviewType, reviewModified, reviewId
+	from PCMember
+	left join PaperConflict on (PaperConflict.contactId=PCMember.contactId and PaperConflict.paperId=$prow->paperId)
+	left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.paperId=$prow->paperId)", $while);
     if (!DB::isError($result))
-	while (($row = $result->fetchRow()))
-	    unset($_REQUEST["pcc$row[0]"]);
+	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
+	    $val = defval($_REQUEST["pcs$row->contactId"], 0);
+	    if ($row->author)
+		continue;
 
-    $Conf->qe("delete from PaperConflict using PaperConflict join PCMember using (contactId) where paperId=$prow->paperId and author<=0", $while);
-    
-    foreach ($_REQUEST as $k => $v)
-	if ($k[0] == 'p' && $k[1] == 'c' && $k[2] == 'c'
-	    && ($id = cvtint(substr($k, 3))) > 0)
-	    $Conf->qe("insert into PaperConflict set paperId=$prow->paperId, contactId=$id, author=0", $while);
+	    // manage conflicts
+	    if ($row->conflictId && $val >= 0)
+		$Conf->qe("delete from PaperConflict where paperId=$prow->paperId and contactId=$row->conflictId", $while);
+	    else if (!$row->conflictId && $val < 0)
+		$Conf->qe("insert into PaperConflict set paperId=$prow->paperId, contactId=$row->contactId, author=0", $while);
+
+	    // manage assignments
+	    $val = max($val, 0);
+	    if ($val != $row->reviewType && ($val == 0 || $val == REVIEW_PRIMARY || $val == REVIEW_SECONDARY))
+		$Me->assignPaper($prow->paperId, $row, $row->contactId, $val, $Conf);
+	}
 }
 if (isset($_REQUEST['update']) && $Me->amAssistant()) {
-    pcConflicts();
+    pcAssignments();
     $Conf->qe("unlock tables");
     getProw();
 }
@@ -184,62 +257,6 @@ if (isset($_REQUEST['addpc']) && $Me->amAssistant()) {
 }
 
 
-// retract review request
-
-function retractRequest($reviewId) {
-    global $Conf, $Me, $prow;
-    
-    $while = "while retracting review request";
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo write", $while);
-    // NB caller unlocks tables
-
-    // check for outstanding review request
-    $result = $Conf->qe("select reviewType, reviewModified, reviewSubmitted, requestedBy, paperId,
-		firstName, lastName, email
-		from PaperReview
-		join ContactInfo using (contactId)
-		where reviewId=$reviewId", $while);
-    if (DB::isError($result))
-	return false;
-    else if ($result->numRows() == 0)
-	return $Conf->errorMsg("No such review request.");
-
-    $row = $result->fetchRow(DB_FETCHMODE_OBJECT);
-    if ($row->paperId != $prow->paperId)
-	return $Conf->errorMsg("Weird!  Retracted review is for a different paper.");
-    else if ($row->reviewModified > 0)
-	return $Conf->errorMsg("You can't retract that review request since the reviewer has already started their review.");
-    else if (!$Me->amAssistant() && $Me->contactId != $row->requestedBy)
-	return $Conf->errorMsg("You can't retract that review request since you didn't make the request in the first place.");
-
-    // at this point, success; remove the review request
-    $Conf->qe("delete from PaperReview where reviewId=$reviewId", $while);
-
-    // send confirmation email
-    $m = "Dear " . contactText($row) . ",\n\n";
-    $m .= wordwrap(contactText($Me) . " has retracted a previous request that you review Paper #$prow->paperId for the $Conf->longName" . ($Conf->shortName != $Conf->longName ? " ($Conf->shortName)" : "") . " conference.  Contact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.
-
-Thank you,
-- $Conf->shortName Conference Submissions\n");
-
-    $s = "[$Conf->shortName] Retracted review request for paper #$prow->paperId";
-
-    if ($Conf->allowEmailTo($row->email))
-	$results = mail($row->email, $s, $m, "From: $Conf->emailFrom");
-    else
-	$Conf->infoMsg("<pre>" . htmlspecialchars("$s\n\n$m") . "</pre>");
-
-    // confirmation message
-    $Conf->confirmMsg("Removed request that " . contactHtml($row) . " review paper #$prow->paperId.");
-}
-
-if (isset($_REQUEST['retract']) && ($retract = cvtint($_REQUEST['retract'])) > 0) {
-    retractRequest($retract, $prow->paperId);
-    $Conf->qe("unlock tables");
-    getProw();
-}
-
-
 // begin form and table
 echo "<form action='reqreview.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>
 <table class='review'>\n\n";
@@ -268,12 +285,12 @@ if ($canViewAuthors || $Me->amAssistant()) {
 $paperTable->echoTopics($prow);
 
 
-// PC conflicts
+// PC assignments
 if ($Me->amAssistant()) {
     $result = $Conf->qe("select ContactInfo.contactId, firstName, lastName,
 	count(PaperConflict.contactId) as conflict,
-	max(PaperConflict.author) as author, PaperReview.reviewType,
-	preference,
+	max(PaperConflict.author) as author,
+	PaperReview.reviewType,	preference,
 	group_concat(AllReviews.reviewType separator '') as allReviews
 	from ContactInfo
 	join PCMember using (contactId)
@@ -289,29 +306,43 @@ if ($Me->amAssistant()) {
 
     // PC conflicts row
     echo "<tr class='pt_conflict_ass'>
-  <td class='caption'>PC conflicts and preferences</td>
-  <td class='entry'><table class='simple'>\n    <tr>";
+  <td class='caption'>PC assignments</td>
+  <td class='entry'><table class='pcass'><tr><td><table>\n";
     $n = intval((count($pc) + 2) / 3);
     for ($i = 0; $i < count($pc); $i++) {
+	if (($i % $n) == 0 && $i)
+	    echo "    </table></td><td class='colmid'><table>\n";
 	$p = $pc[$i];
-	if (($i % $n) == 0)
-	    echo ($i ? "    </td><td>\n" : "<td>\n");
-	echo "	<input type='checkbox' name='pcc", $p->contactId, "'";
-	if ($p->conflict > 0)
-	    echo " checked='checked'";
-	if ($p->author > 0)
-	    echo " disabled='disabled'";
-	echo " onchange='highlightUpdate()' />&nbsp;", contactHtml($p);
+
+	// first, name and assignment
+	echo "      <tr><td class='name'>";
+	echo str_replace(' ', "&nbsp;", contactHtml($p));
 	if ($p->conflict <= 0 && $p->author <= 0 && $p->preference)
 	    echo " [", htmlspecialchars($p->preference), "]";
+	echo "</td><td class='ass'>";
+	if ($p->author > 0)
+	    echo "Author";
+	else {
+	    echo "<select name='pcs", $p->contactId, "' onchange='highlightUpdate()'>
+	<option value='0'", ($p->conflict <= 0 && $p->reviewType < REVIEW_SECONDARY ? " selected='selected'" : ""), ">None</option>
+	<option value='", REVIEW_PRIMARY, "' ", ($p->conflict <= 0 && $p->reviewType == REVIEW_PRIMARY ? " selected='selected'" : ""), ">Primary</option>
+	<option value='", REVIEW_SECONDARY, "' ", ($p->conflict <= 0 && $p->reviewType == REVIEW_SECONDARY ? " selected='selected'" : ""), ">Secondary</option>
+	<option value='-1'", ($p->conflict > 0 ? " selected='selected'" : ""), ">Conflict</option>
+      </select>";
+	}
+	echo "</td></tr>\n";
+
+	// then, number of reviews
+	echo "      <tr><td colspan='2' class='nrev'>";
 	$numReviews = strlen($p->allReviews);
 	$numPrimary = preg_match_all("|" . REVIEW_PRIMARY . "|", $p->allReviews, $matches);
-	echo " <small>(", plural($numReviews, "review"), ")</small>";
-	echo "<br/>\n";
+	echo "<small>", plural($numReviews, "review");
+	if ($numPrimary && $numPrimary < $numReviews)
+	    echo ", ", $numPrimary, " primary";
+	echo "</td></tr>\n";
     }
-    echo "    </tr>
-    <tr>
-      <td colspan='3'><input class='button_small' type='submit' name='update' value='Save conflicts' /></td>
+    echo "    </table></td></tr><tr>
+      <td colspan='3'><input class='button_small' type='submit' name='update' value='Save assignments' /></td>
     </tr>
   </table></td>\n</tr>\n\n";
 }

@@ -549,6 +549,25 @@ tr.rev_reviewers td.entry, tr.rev_reviewers_hdr td.entry,
 tr.pt_conflict_ass td.entry {
 	vertical-align: top;
 }
+table.pcass td {
+	vertical-align: top;
+}
+table.pcass td.colmid {
+	border-left: 1px dotted #cc9900;
+	padding-left: 0.5em;
+}
+table.pcass td.name {
+	padding-right: 1em;
+}
+table.pcass td.ass {
+	padding-right: 0.65em;
+	font-size: small;
+}
+table.pcass td.nrev {
+	font-size: small;
+	padding-bottom: 3px;
+}
+
 tr.rev_reviewers_hdr td.entry {
 	padding: 1px 1em 3px 0.5em;
 }

@@ -74,8 +74,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 
 	// scores or retract request
 	if ($rr->reviewModified <= 0
-	    && ($rr->reviewType == REVIEW_REQUESTED
-		|| ($rr->reviewType >= REVIEW_SECONDARY && $effAssistant))
+	    && $rr->reviewType == REVIEW_REQUESTED
 	    && ($rr->requestedBy == $Me->contactId || $effAssistant)) {
 	    if ($mode == "req") {
 		$t .= "<td colspan='" . (1 + $nNumeric) . "'>";
