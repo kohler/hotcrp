@@ -23,7 +23,7 @@ if (isset($_REQUEST["search"]) && trim($_REQUEST["search"]) != "") {
     $q = "create temporary table Matches select paperId from Paper\n";
 
     $sep = "where";
-    foreach (split("/\\s+/", $_REQUEST["search"]) as $word)
+    foreach (preg_split("/\\s+/", $_REQUEST["search"]) as $word)
 	if ($word != "") {
 	    $word = preg_replace("/([%_\\\\])/", "\\\$1", $word);
 	    $word = sqlq($word);
@@ -32,7 +32,7 @@ if (isset($_REQUEST["search"]) && trim($_REQUEST["search"]) != "") {
 		$q .= " or authorInformation like '%$word%' or collaborators like '%$word%'";
 	    else
 		$q .= " or (blind=0 and (authorInformation like '%$word%' or collaborators like '%$word%'))";
-	    $sep = "or";
+	    $sep = " or";
 	}
     
     /* $find = sqlqtrim($_REQUEST["search"]);
@@ -43,6 +43,7 @@ if (isset($_REQUEST["search"]) && trim($_REQUEST["search"]) != "") {
 	or (blind=0 and match(authorInformation, collaborators) against ('" . sqlqtrim($_REQUEST["search"]) . "' in boolean mode)\n"; */
 
     $while = "while searching papers";
+    //$Conf->infoMsg(htmlspecialchars($q));
     $result = $Conf->qe($q, $while);
     if (!DB::isError($result)) {
 	$pl = new PaperList(defval($_REQUEST['sort']),
