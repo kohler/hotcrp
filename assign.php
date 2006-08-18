@@ -272,12 +272,15 @@ $paperTable->echoTopics($prow);
 if ($Me->amAssistant()) {
     $result = $Conf->qe("select ContactInfo.contactId, firstName, lastName,
 	count(PaperConflict.contactId) as conflict,
-	max(PaperConflict.author) as author, reviewType, preference
+	max(PaperConflict.author) as author, PaperReview.reviewType,
+	preference,
+	group_concat(AllReviews.reviewType separator '') as allReviews
 	from ContactInfo
 	join PCMember using (contactId)
 	left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$prow->paperId)
 	left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$prow->paperId)
 	left join PaperReviewPreference on (PaperReviewPreference.contactId=ContactInfo.contactId and PaperReviewPreference.paperId=$prow->paperId)
+	left join PaperReview as AllReviews on (AllReviews.contactId=ContactInfo.contactId)
 	group by email
 	order by lastName, firstName, email", "while looking up PC");
     if (!DB::isError($result))
@@ -301,6 +304,9 @@ if ($Me->amAssistant()) {
 	echo " onchange='highlightUpdate()' />&nbsp;", contactHtml($p);
 	if ($p->conflict <= 0 && $p->author <= 0 && $p->preference)
 	    echo " [", htmlspecialchars($p->preference), "]";
+	$numReviews = strlen($p->allReviews);
+	$numPrimary = preg_match_all("|" . REVIEW_PRIMARY . "|", $p->allReviews, $matches);
+	echo " <small>(", plural($numReviews, "review"), ")</small>";
 	echo "<br/>\n";
     }
     echo "    </tr>
