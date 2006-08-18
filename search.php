@@ -23,8 +23,10 @@ if (isset($_REQUEST["search"]) && trim($_REQUEST["search"]) != "") {
     $q = "create temporary table Matches select paperId from Paper\n";
 
     $sep = "where";
+    $re = "";
     foreach (preg_split("/\\s+/", $_REQUEST["search"]) as $word)
 	if ($word != "") {
+	    $re .= ($re == "" ? "" : "|") . preg_quote($word);
 	    $word = preg_replace("/([%_\\\\])/", "\\\$1", $word);
 	    $word = sqlq($word);
 	    $q .= $sep . " title like '%$word%' or abstract like '%$word%'";
@@ -50,6 +52,7 @@ if (isset($_REQUEST["search"]) && trim($_REQUEST["search"]) != "") {
 			    null, //"list.php?list=" . htmlspecialchars($list) . "&amp;sort=",
 			    "matches");
 	$_SESSION["whichList"] = "matches";
+	$_SESSION["matchPreg"] = "/($re)/i";
 	echo $pl->text("matches", $Me);
     }
 }

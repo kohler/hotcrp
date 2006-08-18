@@ -665,6 +665,10 @@ table.plt_reviewerHome tr.pl_firstrow td {
 	padding-top: 0px;
 }
 
+span.match {
+	color: #ff6600;
+}
+
 div.error div.parseerr p, div.confirm div.parseerr p {
 	margin: 0px;
 	padding: 0px 0px 0px 3em;

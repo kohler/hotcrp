@@ -23,6 +23,7 @@ class PaperTable {
     var $autrClasses;
     var $foldsession;
     var $foldState;
+    var $highlight;
     
     function PaperTable($editable, $useRequest, $allFolded, $authorsFolded,
 			$foldsession = null) {
@@ -45,6 +46,8 @@ class PaperTable {
 	else
 	    $this->autrClasses = "";
 	$this->autrClasses .= $this->trClasses;
+
+	$this->highlight = (defval($_SESSION["whichList"]) == "matches" && isset($_SESSION["matchPreg"]));
     }
 
     function tdCaption($what) {
@@ -84,6 +87,7 @@ class PaperTable {
     }
 
     function echoEntryData($fieldName, $prow, $nrows, $authorTable = false) {
+	global $textAreaRows;
 	if ($this->editable)
 	    echo "<textarea class='textlite' name='$fieldName' rows='$nrows' cols='80' onchange='highlightUpdate()'>";
 	if ($this->useRequest)
@@ -94,6 +98,8 @@ class PaperTable {
 	    $text = "";
 	if ($authorTable && !$this->editable)
 	    echo authorTable($text, true);
+	else if ($this->highlight && isset($textAreaRows[$fieldName]))
+	    echo preg_replace($_SESSION["matchPreg"], "<span class='match'>\$1</span>", htmlspecialchars($text));
 	else
 	    echo htmlspecialchars($text);
 	if ($this->editable)
