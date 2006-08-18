@@ -88,20 +88,27 @@ class PaperTable {
 
     function echoEntryData($fieldName, $prow, $nrows, $authorTable = false) {
 	global $textAreaRows;
+	
 	if ($this->editable)
 	    echo "<textarea class='textlite' name='$fieldName' rows='$nrows' cols='80' onchange='highlightUpdate()'>";
+	
 	if ($this->useRequest)
 	    $text = $_REQUEST[$fieldName];
 	else if ($prow)
 	    $text = $prow->$fieldName;
 	else
 	    $text = "";
-	if ($authorTable && !$this->editable)
-	    echo authorTable($text, true);
-	else if ($this->highlight && isset($textAreaRows[$fieldName]))
-	    echo preg_replace($_SESSION["matchPreg"], "<span class='match'>\$1</span>", htmlspecialchars($text));
+	
+	if ($this->highlight && isset($textAreaRows[$fieldName]))
+	    $text = preg_replace($_SESSION["matchPreg"], "<span class='match'>\$1</span>", htmlspecialchars($text));
 	else
-	    echo htmlspecialchars($text);
+	    $text = htmlspecialchars($text);
+	
+	if ($authorTable && !$this->editable)
+	    echo authorTable($text, false);
+	else
+	    echo $text;
+	
 	if ($this->editable)
 	    echo "</textarea>";
     }
