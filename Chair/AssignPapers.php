@@ -53,7 +53,7 @@ may delegate the paper or review it themselves.</p>
 <p>The paper list shows all submitted papers and their topics and reviewers.
 The selected PC member has high interest in topics marked with (+), and low
 interest in topics marked with (&minus;).
-\"Topic score\" is higher the more the PC member is interested in the paper's topics.
+\"Topic score\" is higher the more the PC member is interested in the paper's topics; \"Desirability\" is higher the more people want to review the paper.
 In the reviewer list, <sub><b>1</b></sub> indicates a primary reviewer,
 and <sub><b>2</b></sub> a secondary reviewer.
 Click on a column heading to sort by that column.</p>\n\n";

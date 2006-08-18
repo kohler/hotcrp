@@ -823,7 +823,7 @@ class Conference {
 	    || defval($options['desirability'])) {
 	    $subq = "select paperId";
 	    if (defval($options['allReviewerPreference']))
-		$subq .= ", group_concat(concat(lastName,':::',firstName,':::',preference) order by preference desc separator ';;;') as allReviewerPreference";
+		$subq .= ", group_concat(concat(lastName,':::',firstName,':::',preference) order by preference desc, lastName, firstName separator ';;;') as allReviewerPreference";
 	    if (defval($options['desirability']))
 		$subq .= ", sum(greatest(least(preference,1),-1)) as desirability";
 	    $subq .= " from PaperReviewPreference";
