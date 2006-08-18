@@ -773,6 +773,12 @@ class Conference {
 	if (defval($options['reviewerPreference']))
 	    $pq .= ",
 		ifnull(PaperReviewPreference.preference, 0) as reviewerPreference";
+	if (defval($options['allReviewerPreference']))
+	    $pq .= ",
+		APRP.allReviewerPreference";
+	if (defval($options['desirability']))
+	    $pq .= ",
+		APRP.desirability";
 
 	// tables
 	$pq .= "
@@ -810,9 +816,22 @@ class Conference {
 	if (isset($options['topics']) || isset($options['topicInterestScore']))
 	    $pq .= "		left join PaperTopic on (PaperTopic.paperId=Paper.paperId)
 		left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$contactId)\n";
-
+	
 	if (defval($options['reviewerPreference']))
 	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$contactId)\n";
+	if (defval($options['allReviewerPreference'])
+	    || defval($options['desirability'])) {
+	    $subq = "select paperId";
+	    if (defval($options['allReviewerPreference']))
+		$subq .= ", group_concat(concat(lastName,':::',firstName,':::',preference) order by preference desc separator ';;;') as allReviewerPreference";
+	    if (defval($options['desirability']))
+		$subq .= ", sum(greatest(least(preference,1),-1)) as desirability";
+	    $subq .= " from PaperReviewPreference";
+	    if (defval($options['allReviewerPreference']))
+		$subq .= " join ContactInfo using (contactId)";
+	    $subq .= " group by paperId";
+	    $pq .= "		left join ($subq) as APRP on (APRP.paperId=Paper.paperId)\n";
+	}
 
 
 	// conditions

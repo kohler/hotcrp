@@ -21,7 +21,8 @@ function savePreferences($reviewer) {
 	if ($k[0] == 'r' && substr($k, 0, 7) == "revpref"
 	    && ($p = cvtint(substr($k, 7))) > 0) {
 	    if (($v = cvtpref($v)) >= -1000000 && $v <= 1000000) {
-		$setting[$p] = $v;
+		if ($v != 0)
+		    $setting[$p] = $v;
 		$pmax = max($pmax, $p);
 	    } else
 		$error = true;

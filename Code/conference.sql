@@ -591,6 +591,8 @@ insert into PaperFields set fieldId=39, fieldName='reviewPreference', descriptio
 insert into PaperFields set fieldId=40, fieldName='editReviewPreference', description='Edit review preference';
 insert into PaperFields set fieldId=41, fieldName='reviewsStatus', description='Review counts';
 insert into PaperFields set fieldId=42, fieldName='matches', description='Matches';
+insert into PaperFields set fieldId=43, fieldName='desirability', description='Desirability';
+insert into PaperFields set fieldId=44, fieldName='allPreferences', description='Reviewer preferences', sortable=0, display=2;
 
 insert into PaperList set paperListId=1, paperListName='author',
 	shortDescription='Authored', description='Authored papers', 
@@ -645,9 +647,11 @@ insert into PaperListColumns set paperListId=8, fieldId=3, col=0;
 insert into PaperListColumns set paperListId=8, fieldId=13, col=1;
 insert into PaperListColumns set paperListId=8, fieldId=39, col=2;
 insert into PaperListColumns set paperListId=8, fieldId=36, col=3;
-insert into PaperListColumns set paperListId=8, fieldId=35, col=4;
-insert into PaperListColumns set paperListId=8, fieldId=37, col=5;
-insert into PaperListColumns set paperListId=8, fieldId=38, col=6;
+insert into PaperListColumns set paperListId=8, fieldId=43, col=4;
+insert into PaperListColumns set paperListId=8, fieldId=35, col=5;
+insert into PaperListColumns set paperListId=8, fieldId=37, col=6;
+insert into PaperListColumns set paperListId=8, fieldId=38, col=7;
+insert into PaperListColumns set paperListId=8, fieldId=44, col=8;
 
 insert into PaperList set paperListId=9, paperListName='editReviewPreference',
 	shortDescription='Review preferences', description='Edit reviewer preferences',

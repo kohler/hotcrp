@@ -636,7 +636,8 @@ table.pltable td.pl_reviewsStatus {
 	padding-right: 0.2em;
 }
 table.pltable td.pl_id, table.pltable td.pl_selector,
-table.pltable td.pl_topicMatch, table.pltable td.pl_reviewPreference {
+table.pltable td.pl_topicMatch, table.pltable td.pl_reviewPreference,
+table.pltable td.pl_desirability {
 	text-align: right;
 	padding-right: 0.4em;
 }
