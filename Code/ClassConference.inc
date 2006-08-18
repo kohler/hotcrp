@@ -355,8 +355,8 @@ class Conference {
     function timePCReviewPreferences() {
 	return $this->validPeriod('PCReviewPreferences') > 0;
     }
-    function timePCReviewOpen() {
-	$st = defval($this->startTime['PCSubmitReview'], 0);
+    function timeReviewOpen() {
+	$st = defval($this->startTime['reviewerSubmitReview'], 0);
 	return $st > 0 && time() >= $st;
     }
     function timeReviewPaper($isPC = false, $requested = true, $hard = true) {

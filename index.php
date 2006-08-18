@@ -60,15 +60,17 @@ if ($Me->isPC || $Me->amReviewer()) {
     $body = "";
     $sep = "";
 
-    $plist = new PaperList("1", null, "list_tabre");
-    //$plist->showHeader = 0;
-    $ptext = $plist->text("reviewerHome", $Me);
-    if ($plist->count > 0) {
-	$body .= $sep . $ptext;
-	$sep = $tabSep;
+    if ($Conf->timeReviewOpen()) {
+	$plist = new PaperList("1", null, "list_tabre");
+	//$plist->showHeader = 0;
+	$ptext = $plist->text("reviewerHome", $Me);
+	if ($plist->count > 0) {
+	    $body .= $sep . $ptext;
+	    $sep = $tabSep;
+	}
     }
 
-    if ($Me->isPC && $Conf->timeReviewPaper(true, false, true)){
+    if ($Me->isPC && $Conf->timeReviewPaper(true, false, true)) {
 	$body .= $sep . "PC members may review <a href='list.php?list=submitted'>any submitted paper</a>, whether or not a review has been assigned.";
 	$sep = $tabSep;
     }

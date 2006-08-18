@@ -652,7 +652,7 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
     if (!$newPaper && $prow
 	&& ($prow->reviewType > 0 || $Me->canViewReview($prow, null, $Conf)
 	    || ($Me->isPC && $prow->timeSubmitted > 0
-		&& $Conf->timePCReviewOpen())))
+		&& $Conf->timeReviewOpen())))
 	$x .= actionTab("Reviews", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "review");
 
     if ($mode == "revreq"
