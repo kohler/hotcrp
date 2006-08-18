@@ -239,20 +239,25 @@ if (isset($_REQUEST['retract']) && ($retract = cvtint($_REQUEST['retract'])) > 0
     getProw();
 }
 
+
 // begin form and table
 echo "<form action='reqreview.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>
 <table class='review'>\n\n";
-
-
-// title
-echo "<tr class='id'>\n  <td class='caption'><h2>#", $prow->paperId, "</h2></td>\n";
-echo "  <td class='entry' colspan='2'><h2>", htmlspecialchars($prow->title), "</h2><img id='reqreviewFold' alt='' src='", $ConfSiteBase, "sessionvar.php?var=reqreviewFold&amp;val=", defval($_SESSION["reqreviewFold"], 3), "&amp;cache=1' width='1' height='1' /></td>\n</tr>\n\n";
 
 
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, true);
 $paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->amAssistant(), "reqreviewFold");
 
+
+// title
+echo "<tr class='id'>\n  <td class='caption'><h2>#", $prow->paperId, "</h2></td>\n";
+echo "  <td class='entry' colspan='2'><h2>";
+$paperTable->echoTitle($prow);
+echo "</h2><img id='reqreviewFold' alt='' src='", $ConfSiteBase, "sessionvar.php?var=reqreviewFold&amp;val=", defval($_SESSION["reqreviewFold"], 3), "&amp;cache=1' width='1' height='1' /></td>\n</tr>\n\n";
+
+
+// paper body
 $paperTable->echoStatusRow($prow, PaperTable::STATUS_DOWNLOAD | PaperTable::STATUS_CONFLICTINFO);
 $paperTable->echoAbstractRow($prow);
 if ($canViewAuthors || $Me->amAssistant()) {

@@ -415,13 +415,6 @@ if ($mode == "edit") {
 echo "<table class='paper", ($mode == "edit" ? " editpaper" : ""), "'>\n\n";
 
 
-// title
-if (!$newPaper) {
-    echo "<tr class='id'>\n  <td class='caption'><h2>#$paperId</h2></td>\n";
-    echo "  <td class='entry' colspan='2'><h2>", htmlspecialchars($prow->title), "</h2></td>\n</tr>\n\n";
-}
-
-
 // prepare paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, false);
 if ($mode == "edit" && $Me->amAssistant())
@@ -430,6 +423,15 @@ if ($mode == "edit" && $Me->amAssistant())
 $paperTable = new PaperTable($editable, $editable && $useRequest,
 			     false,
 			     !$canViewAuthors && $Me->amAssistant());
+
+
+// title
+if (!$newPaper) {
+    echo "<tr class='id'>\n  <td class='caption'><h2>#$paperId</h2></td>\n";
+    echo "  <td class='entry' colspan='2'><h2>";
+    $paperTable->echoTitle($prow);
+    echo "</h2></td>\n</tr>\n\n";
+}
 
 
 // paper status

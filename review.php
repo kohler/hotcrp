@@ -246,15 +246,19 @@ if ($mode == "edit" && $prow->reviewType <= 0)
 echo "<table class='paper'>\n\n";
 
 
-// title
-echo "<tr class='id'>\n  <td class='caption'><h2>#$prow->paperId</h2></td>\n";
-echo "  <td class='entry' colspan='2'><h2>", htmlspecialchars($prow->title), "</h2></td>\n</tr>\n\n";
-
-
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, $forceShow);
 $paperTable = new PaperTable(false, false, true, ($Me->amAssistant() && $prow->blind ? 1 : 2));
 
+
+// title
+echo "<tr class='id'>\n  <td class='caption'><h2>#$prow->paperId</h2></td>\n";
+echo "  <td class='entry' colspan='2'><h2>";
+$paperTable->echoTitle($prow);
+echo "</h2></td>\n</tr>\n\n";
+
+
+// paper data
 $paperTable->echoStatusRow($prow, PaperTable::STATUS_DOWNLOAD | PaperTable::STATUS_CONFLICTINFO_PC);
 $paperTable->echoAbstractRow($prow);
 if ($canViewAuthors || $Me->amAssistant()) {

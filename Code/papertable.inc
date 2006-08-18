@@ -106,7 +106,13 @@ class PaperTable {
 	    echo "</textarea>";
     }
 
-
+    function echoTitle($prow) {
+	if ($this->highlight)
+	    echo preg_replace($_SESSION["matchPreg"], "<span class='match'>\$1</span>", htmlspecialchars($prow->title));
+	else
+	    echo htmlspecialchars($prow->title);
+    }
+    
     function echoStatusRow($prow, $flags) {
 	global $Me;
 	echo "<tr class='pt_status", $this->trClasses, "' id='foldst'>\n";
