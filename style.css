@@ -667,6 +667,7 @@ table.plt_reviewerHome tr.pl_firstrow td {
 
 span.match {
 	color: #ff6600;
+	font-weight: bold;
 }
 
 div.error div.parseerr p, div.confirm div.parseerr p {
