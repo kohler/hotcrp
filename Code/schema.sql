@@ -612,6 +612,7 @@ insert into PaperListColumns set paperListId=2, fieldId=33, col=3;
 insert into PaperListColumns set paperListId=2, fieldId=29, col=5;
 insert into PaperListColumns set paperListId=2, fieldId=30, col=6;
 insert into PaperListColumns set paperListId=2, fieldId=32, col=7;
+insert into PaperListColumns set paperListId=2, fieldId=41, col=8;
 
 insert into PaperList set paperListId=3, paperListName='all',
 	shortDescription='All', description='All papers', 
