@@ -734,6 +734,7 @@ class Conference {
 	//   "myReviewsOpt"	myReviews, + include papers not yet reviewed
 	//   "allReviews"	All reviews (multiple rows per paper)
 	//   "reviewerName"	Include reviewer names
+	//   "joinTable"	A table with paperId columns to join
 	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
 
 	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']) || isset($options['myReviewsOpt']);
@@ -781,10 +782,14 @@ class Conference {
 	    $pq .= "		join PaperReview as ReviewSelector on (ReviewSelector.paperId=Paper.paperId)\n";
 	if (isset($options['commentId']))
 	    $pq .= "		join PaperComments as CommentSelector on (CommentSelector.paperId=Paper.paperId)\n";
+	
 	if (isset($options['author']))
 	    $pq .= "		join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.author>0 and PaperConflict.contactId=$contactId)\n";
 	else
 	    $pq .= "		left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)\n";
+
+	if (isset($options['joinTable']))
+	    $pq .= "		join " . $options['joinTable'] . " on (" . $options['joinTable'] . ".paperId=Paper.paperId)\n";
 	
 	$pq .= "		left join PaperReview as AllReviews on (AllReviews.paperId=Paper.paperId)\n";
 

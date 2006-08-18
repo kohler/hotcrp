@@ -11,8 +11,12 @@ if (isset($_REQUEST["var"])) {
     }
 }
 
-header("Cache-Control: no-cache, must-revalidate");
-header("Pragma: no-cache");                          
+if (isset($_REQUEST["cache"])) { // allow caching
+    header("Cache-Control: public, max-age=31557600");
+    header("Expires: " . date("r", time() + 31557600));
+    header("Pragma: "); // don't know where the pragma is coming from; oh well
+}
+
 header("Content-Type: image/gif");
 header("Content-Description: PHP generated data");
 header("Content-Length: 43");

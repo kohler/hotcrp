@@ -3,7 +3,7 @@ require_once('Code/confHeader.inc');
 require_once('Code/ClassPaperList.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
-$Me->goIfInvalid("../");
+$Me->goIfInvalid();
 
 
 // download selected papers

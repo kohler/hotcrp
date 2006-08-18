@@ -23,6 +23,7 @@ class PaperList {
     const FIELD_REVIEWER_PREFERENCE = 39;
     const FIELD_EDIT_REVIEWER_PREFERENCE = 40;
     const FIELD_REVIEWS_STATUS = 41;
+    const FIELD_MATCHES = 42;
 
     var $showHeader;
     var $sortField;
@@ -75,6 +76,9 @@ class PaperList {
 	case self::FIELD_REVIEWER_PREFERENCE:
 	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
 	    $queryOptions['reviewerPreference'] = 1;
+	    break;
+	case self::FIELD_MATCHES:
+	    $queryOptions['joinTable'] = 'Matches';
 	    break;
 	}
 	if ($this->sortField == $fieldId && ($order = $this->sort($fieldId)))

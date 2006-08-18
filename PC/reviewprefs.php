@@ -1,4 +1,4 @@
-<?
+<?php
 require_once('../Code/confHeader.inc');
 require_once('../Code/ClassPaperList.inc');
 $Conf->connect();
@@ -114,5 +114,4 @@ echo $paperList->text("editReviewPreference", $_SESSION['Me'], $reviewer);
 echo "<input class='button_default' type='submit' name='update' value='Save preferences' />\n";
 echo "</form>\n";
 
-$Conf->footer() ?>
-
+$Conf->footer();

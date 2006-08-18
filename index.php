@@ -114,6 +114,7 @@ if ($Me->isPC || $Me->amReviewer()) {
   <li><a href='list.php?list=submitted'>List submitted papers</a></li>\n";
 	if ($Me->amAssistant())
 	    $body .= "  <li><a href='list.php?list=all'>List all papers</a></li>\n";
+	$body .= "  <li><form method='get' action='search.php'><input class='textlite' type='text' size='20' name='search' value='' /> <input class='button_small' type='submit' name='go' value='Search' /></form></li>\n";
 	$body .= "</ul>\n\n";
     }
     $body .= "</td></tr></table>\n";
@@ -219,7 +220,7 @@ echo "<p>You're logged in as ", htmlspecialchars($Me->fullnameAndEmail()), ".
 If this is not you, please <a href='", $ConfSiteBase, "logout.php'>log out</a>.
 You will be automatically logged out if you are idle for more than ",
     round(ini_get("session.gc_maxlifetime")/3600), " hours.";
-echo "<img id='tabsv' alt='' src='", $ConfSiteBase, "sessionvar.php?var=mainTab&amp;val=", $defaultTabName, "' /></p>\n\n";
+echo "<img id='tabsv' alt='' src='", $ConfSiteBase, "sessionvar.php?var=mainTab&amp;val=", $defaultTabName, "&amp;cache=1' /></p>\n\n";
 
 
 

@@ -157,7 +157,9 @@ CREATE TABLE Paper (
   UNIQUE KEY paperId (paperId),
   KEY title (title),
   KEY contactId (contactId),
-  FULLTEXT KEY abstract (abstract,authorInformation)
+  FULLTEXT KEY titleAbstractText (title,abstract),
+  FULLTEXT KEY allText (title,abstract,authorInformation,collaborators),
+  FULLTEXT KEY authorText (authorInformation,collaborators)
 ) TYPE=MyISAM;
 
 #
@@ -588,6 +590,7 @@ insert into PaperFields set fieldId=38, fieldName='reviewerNames', description='
 insert into PaperFields set fieldId=39, fieldName='reviewPreference', description='Review preference';
 insert into PaperFields set fieldId=40, fieldName='editReviewPreference', description='Edit review preference';
 insert into PaperFields set fieldId=41, fieldName='reviewsStatus', description='Review counts';
+insert into PaperFields set fieldId=42, fieldName='matches', description='Matches';
 
 insert into PaperList set paperListId=1, paperListName='author',
 	shortDescription='Authored', description='Authored papers', 
@@ -656,3 +659,10 @@ insert into PaperListColumns set paperListId=9, fieldId=36, col=3;
 insert into PaperListColumns set paperListId=9, fieldId=29, col=4;
 insert into PaperListColumns set paperListId=9, fieldId=40, col=5;
 insert into PaperListColumns set paperListId=9, fieldId=37, col=6;
+
+insert into PaperList set paperListId=10, paperListName='matches',
+	shortDescription='Search matches', description='Search matches',
+	queryType='pc', sortCol=3, query='';
+insert into PaperListColumns set paperListId=10, fieldId=1, col=0;
+insert into PaperListColumns set paperListId=10, fieldId=11, col=1;
+insert into PaperListColumns set paperListId=10, fieldId=42, col=2;
