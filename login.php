@@ -87,24 +87,24 @@ reviewing papers, or a member of the program committee.");
 <table class='form'>
 <tr>
   <td class='caption'>Email:</td>
-  <td class='entry'><input type='text' name='email' size='50'
+  <td class='entry'><input type='text' name='email' size='50' tabindex='1'
     <?php if (isset($_REQUEST["email"])) echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" "; ?>
   /></td>
 </tr>
 
 <tr>
   <td class='caption'>Password:</td>
-  <td class='entry'><input type='password' name='password' size='50' /></td>
+  <td class='entry'><input type='password' name='password' size='50' tabindex='1' /></td>
 </tr>
 
 <tr><td></td>
-  <td class='entry'><input class='button_default' type='submit' value='Login' name='login' /></td>
+  <td class='entry'><input class='button_default' type='submit' value='Login' name='login' tabindex='1' /></td>
 </tr>
   
 <tr><td></td>
   <td class='entry'>
-    <input class='button' type='submit' value='Mail me my password' name='forgot' />
-    <input class='button' type='submit' value='Create new account' name='register' />
+    <input class='button' type='submit' value='Mail me my password' name='forgot' tabindex='1' />
+    <input class='button' type='submit' value='Create new account' name='register' tabindex='1' />
   </td>
 </tr>
 

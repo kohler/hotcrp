@@ -306,7 +306,7 @@ if ($Me->amAssistant()) {
 
     // PC conflicts row
     echo "<tr class='pt_conflict_ass'>
-  <td class='caption'>PC assignments</td>
+  <td class='caption'>PC assignments<br /><span class='hint'>Any review preferences are in brackets.</span></td>
   <td class='entry'><table class='pcass'><tr><td><table>\n";
     $n = intval((count($pc) + 2) / 3);
     for ($i = 0; $i < count($pc); $i++) {
@@ -315,22 +315,29 @@ if ($Me->amAssistant()) {
 	$p = $pc[$i];
 
 	// first, name and assignment
-	echo "      <tr><td class='name'>";
-	echo str_replace(' ', "&nbsp;", contactHtml($p));
-	if ($p->conflict <= 0 && $p->author <= 0 && $p->preference)
-	    echo " [", htmlspecialchars($p->preference), "]";
-	echo "</td><td class='ass'>";
-	if ($p->author > 0)
-	    echo "Author";
-	else {
-	    echo "<select name='pcs", $p->contactId, "' onchange='highlightUpdate()'>
+	echo "      <tr>";
+	if ($p->author > 0) {
+	    echo "<td id='ass$p->contactId' class='name-1' colspan='2'>";
+	    echo str_replace(' ', "&nbsp;", contactHtml($p));
+	    echo " <small>(Author)</small></td>";
+	} else {
+	    $cid = ($p->conflict > 0 ? -1 : $p->reviewType + 0);
+	    echo "<td id='ass$p->contactId' class='name$cid'>";
+	    echo str_replace(' ', "&nbsp;", contactHtml($p));
+	    if ($p->conflict <= 0 && $p->author <= 0 && $p->preference)
+		echo " [", htmlspecialchars($p->preference), "]";
+	    echo "</td><td class='ass'>";
+	    echo "<div id='foldass$p->contactId' class='folded' style='position: relative'><a id='folderass$p->contactId' href=\"javascript:foldassign($p->contactId)\"><img src=\"${ConfSiteBase}images/next.png\" /></a>&nbsp;";
+	    echo "<select id='pcs", $p->contactId, "' name='pcs", $p->contactId, "' class='extension' size='4' onchange='selassign(this, $p->contactId)' onclick='selassign(null, $p->contactId)' onblur='selassign(null, $p->contactId)' style='position: absolute'>
 	<option value='0'", ($p->conflict <= 0 && $p->reviewType < REVIEW_SECONDARY ? " selected='selected'" : ""), ">None</option>
 	<option value='", REVIEW_PRIMARY, "' ", ($p->conflict <= 0 && $p->reviewType == REVIEW_PRIMARY ? " selected='selected'" : ""), ">Primary</option>
 	<option value='", REVIEW_SECONDARY, "' ", ($p->conflict <= 0 && $p->reviewType == REVIEW_SECONDARY ? " selected='selected'" : ""), ">Secondary</option>
 	<option value='-1'", ($p->conflict > 0 ? " selected='selected'" : ""), ">Conflict</option>
       </select>";
+	    echo "</div></div>";
+	    echo "</td>";
 	}
-	echo "</td></tr>\n";
+	echo "</tr>\n";
 
 	// then, number of reviews
 	echo "      <tr><td colspan='2' class='nrev'>";

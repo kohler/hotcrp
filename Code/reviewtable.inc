@@ -50,8 +50,6 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	// reviewer identity
 	if (!$Me->canViewReviewerIdentity($prow, $rr, $Conf))
 	    $t .= "<td class='empty'></td>";
-	else if ($rr->contactId == $Me->contactId)
-	    $t .= "<td>You</td>";
 	else
 	    $t .= "<td>" . contactHtml($rr) . "</td>";
 
@@ -96,9 +94,9 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     // bottom links
     // edit your own review
     if ($mode == "edit" && !$rrow)
-	$nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Enter&nbsp;review</b></td><td>You</td><td class='empty'></td><td>Not started</td></tr>\n";
+	$nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Enter&nbsp;review</b></td><td>" . contactHtml($Me) . "</td><td class='empty'></td><td>Not started</td></tr>\n";
     else if ($mode == "edit" && !$foundMyReview && $Me->canReview($prow, null, $Conf))
-	$nonsubrev[] = "    <tr><td></td><td><a href='review.php?paperId=$prow->paperId&amp;mode=edit$forceShow'>Enter&nbsp;review</a></td><td>You</td><td class='empty'></td><td>Not started</td></tr>\n";
+	$nonsubrev[] = "    <tr><td></td><td><a href='review.php?paperId=$prow->paperId&amp;mode=edit$forceShow'>Enter&nbsp;review</a></td><td>" . contactHtml($Me) . "</td><td class='empty'></td><td>Not started</td></tr>\n";
 
     // headers
     $numericHeaders = "";

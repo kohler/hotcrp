@@ -13,6 +13,8 @@ function fold(which, dofold, foldnum) {
 	var folded = document.getElementById('fold' + which);
 	var ftext = "fold" + (foldnum ? foldnum : "") + "ed";
 	var unftext = "un" + ftext;
+	if (folded && dofold == null && folded.className.indexOf(unftext) >= 0)
+	    dofold = true;
 	if (!folded)
 	    /* nada */;
 	else if (dofold)
@@ -77,4 +79,27 @@ function checkPapersel(onoff) {
     for (var i = 0; i < ins.length; i++)
 	if (ins[i].name == "papersel[]")
 	    ins[i].checked = onoff;
+}
+
+function foldassign(which) {
+    fold("ass" + which);
+    var folder = document.getElementById("foldass" + which);
+    if (folder.className.indexOf("unfolded") >= 0)
+	document.getElementById("pcs" + which).focus();
+    else
+	folder.focus();
+}
+
+function selassign(elt, which) {
+    var namecell = document.getElementById("ass" + which);
+    if (namecell && elt)
+	namecell.className = "name" + elt.value;
+    var folder = document.getElementById("foldass" + which);
+    if (folder)
+	folder.className = folder.className.replace("unfolded", "folded");
+    if (elt)
+	highlightUpdate();
+    folder = document.getElementById("folderass" + which);
+    if (folder)
+	folder.focus();
 }

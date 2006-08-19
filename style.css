@@ -386,6 +386,10 @@ td h2, td h3 {
 	margin-top: 0px;
 	margin-bottom: 0px;
 }
+td.caption span.hint {
+	font-weight: normal;
+	font-size: small;
+}
 
 
 /* home page */
@@ -549,23 +553,30 @@ tr.rev_reviewers td.entry, tr.rev_reviewers_hdr td.entry,
 tr.pt_conflict_ass td.entry {
 	vertical-align: top;
 }
-table.pcass td {
-	vertical-align: top;
-}
 table.pcass td.colmid {
 	border-left: 1px dotted #cc9900;
 	padding-left: 0.5em;
+	vertical-align: top;
 }
-table.pcass td.name {
+table.pcass td.name-1, table.pcass td.name0, table.pcass td.name1,
+table.pcass td.name3, table.pcass td.name4 {
 	padding-right: 1em;
 }
+table.pcass td.name-1 {
+	color: grey;
+}
+table.pcass td.name3, table.pcass td.name4 {
+	font-weight: bold;
+}
 table.pcass td.ass {
-	padding-right: 0.65em;
+	padding-right: 0.45em;
+	text-align: right;
 	font-size: small;
 }
 table.pcass td.nrev {
 	font-size: small;
 	padding-bottom: 3px;
+	padding-right: 0.65em;
 }
 
 tr.rev_reviewers_hdr td.entry {
