@@ -144,7 +144,7 @@ class PaperList {
 	case self::FIELD_DOWNLOAD:
 	    return "";
 	case self::FIELD_REVIEWER_TYPE:
-	    return "Reviewer";
+	    return "Review";
 	case self::FIELD_REVIEWER_STATUS:
 	    return "Reviewer status";
 	case self::FIELD_REVIEWS_STATUS:
@@ -206,7 +206,31 @@ class PaperList {
 	case self::FIELD_REVIEWER_TYPE:
 	    if ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted))
 		$this->needSubmitReview++;
-	    return reviewType($row->paperId, $row);
+	    if ($row->reviewId) {
+		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId\">";
+		$a2 = "</a> ";
+		if ($row->reviewModified == 0)
+		    $a2 .= "<span class='rstat rstat_no'>(Not started)</span>";
+		else if ($row->reviewSubmitted == 0)
+		    $a2 .= "<span class='rstat rstat_prog'>(In progress)</span>";
+		else
+		    $a2 .= "<span class='rstat rstat_done'>(Complete)</span>";
+	    } else
+		$a1 = $a2 = "";
+	    if ($row->reviewType == REVIEW_PRIMARY)
+		return "$a1<span class='rtype rtype_pri'>Primary</span>$a2";
+	    else if ($row->reviewType == REVIEW_SECONDARY)
+		return "$a1<span class='rtype rtype_sec'>Secondary</span>$a2";
+	    else if ($row->reviewType == REVIEW_REQUESTED)
+		return "$a1<span class='rtype rtype_req'>Requested</span>$a2";
+	    else if ($row->reviewType)
+		return "$a1<span class='rtype'>Review</span>$a2";
+	    else if ($row->author > 0)
+		return "<span class='rtype rtype_con'>Author</span>";
+	    else if ($row->conflict > 0)
+		return "<span class='rtype rtype_con'>Conflict</span>";
+	    else
+		return "";
 	case self::FIELD_REVIEWER_STATUS:
 	    return reviewStatus($row, 0);
 	case self::FIELD_REVIEWS_STATUS:
@@ -353,6 +377,36 @@ class PaperList {
 	if (DB::isError($result))
 	    return NULL;
 
+	if ($result->numRows() == 0)
+	    return "No papers";
+	// $x .= "  <tr class=\"pl_firstrow\">\n    <td class=\"pl_nopapers\" colspan='$ncol'>No papers available for this query</td>\n  </tr>\n";
+
+	$ids = array();
+	$anyData = array();
+	$trclass = ($this->showHeader ? " class=\"pl_firstrow\"" : "");
+	$body = '';
+	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
+	    $this->count++;
+	    $ids[] = $row->paperId;
+	    $body .= "  <tr$trclass>\n";
+	    $trclass = "";
+	    foreach ($fieldId as $f)
+		if ($f[2] == 1) {
+		    $c = $this->content($f[0], $row, $plist, $reviewList);
+		    $body .= "    <td class=\"pl_$f[1]\">$c</td>\n";
+		    if ($c)
+			$anyData[$f[0]] = 1;
+		}
+	    $body .= "  </tr>\n";
+	    foreach ($fieldId as $f)
+		if ($f[2] == 2 && ($d = $this->content($f[0], $row, $plist, $reviewList))) {
+		    $body .= "  <tr class=\"pl_$f[1] pl_callout\">\n";
+		    $body .= "<td class=\"pl_$f[1] pl_callout\" colspan='$ncol'>";
+		    $body .= "<span class='pl_callouthdr'>" . $this->header($f[0], -1, $row, $reviewList) . "</span>";
+		    $body .= $d . "</td>\n  </tr>\n";
+		}
+	}
+
 	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname) . "\">\n";
 
 	if ($this->showHeader) {
@@ -364,6 +418,10 @@ class PaperList {
 		foreach ($fieldId as $f) {
 		    if ($f[2] != 1)
 			continue;
+		    else if (!isset($anyData[$f[0]])) {
+			$x .= "    <th class=\"pl_$f[1]\"></th>\n";
+			continue;
+		    }
 		    $x .= "    <th class=\"pl_$f[1]\">";
 		    $ftext = $this->header($f[0], $ord++);
 		    if ($this->sortField == null && $f[0] < 10)
@@ -379,40 +437,17 @@ class PaperList {
 		
 	    } else {
 		foreach ($fieldId as $f)
-		    if ($f[2] == 1)
+		    if ($f[2] == 1 && isset($anyData[$f[0]]))
 			$x .= "    <th class=\"pl_$f[1]\">"
 			    . $this->header($f[0], $ord++) . "</th>\n";
+		    else if ($f[2] == 1)
+			$x .= "    <th class=\"pl_$f[1]\"></th>\n";
 	    }
 	    
 	    $x .= "  </tr>\n";
 	}
 
-	if ($result->numRows() == 0)
-	    $x .= "  <tr class=\"pl_firstrow\">\n    <td class=\"pl_nopapers\" colspan='$ncol'>No papers available for this query</td>\n  </tr>\n";
-
-	$ids = array();
-	$trclass = ($this->showHeader ? " class=\"pl_firstrow\"" : "");
-	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
-	    $this->count++;
-	    $ids[] = $row->paperId;
-	    $x .= "  <tr$trclass>\n";
-	    $trclass = "";
-	    foreach ($fieldId as $f)
-		if ($f[2] == 1) {
-		    $x .= "    <td class=\"pl_$f[1]\">";
-		    $x .= $this->content($f[0], $row, $plist, $reviewList) . "</td>\n";
-		}
-	    $x .= "  </tr>\n";
-	    foreach ($fieldId as $f)
-		if ($f[2] == 2 && ($d = $this->content($f[0], $row, $plist, $reviewList))) {
-		    $x .= "  <tr class=\"pl_$f[1] pl_callout\">\n";
-		    $x .= "<td class=\"pl_$f[1] pl_callout\" colspan='$ncol'>";
-		    $x .= "<span class='pl_callouthdr'>" . $this->header($f[0], -1, $row, $reviewList) . "</span>";
-		    $x .= $d . "</td>\n  </tr>\n";
-		}
-	}
-
-	$x .= "</table>";
+	$x .= $body . "</table>";
 
 	if ($this->sessionVar) {
 	    $_SESSION[$this->sessionVar] = $ids;
