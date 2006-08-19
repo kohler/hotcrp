@@ -75,9 +75,9 @@ if (isset($_REQUEST['update'])) {
 	$Conf->qe("delete from ImportantDates where name='reviewFormUpdate'"); 
 	$Conf->qe("insert into ImportantDates set name='reviewFormUpdate', start=current_timestamp");
 	$Conf->confirmMsg("Review form updated.");
-	$rf->validate($Conf);
+	$rf->validate($Conf, true);
     }
- }
+}
 
 ?>
 
@@ -156,7 +156,7 @@ $result = $Conf->qe("select * from ReviewFormField order by sortOrder, shortName
 if (DB::isError($result)) {
     $Conf->footer();
     exit;
- }
+}
 
 $ordinalOrder = 0;
 $notShown = '';
