@@ -82,18 +82,19 @@ function checkPapersel(onoff) {
 }
 
 function foldassign(which) {
-    fold("ass" + which);
     var folder = document.getElementById("foldass" + which);
-    if (folder.className.indexOf("unfolded") >= 0)
+    if (folder.className.indexOf("unfolded") < 0) {
+	fold("ass" + which, false);
 	document.getElementById("pcs" + which).focus();
-    else
-	folder.focus();
+    }
 }
 
 function selassign(elt, which) {
-    var namecell = document.getElementById("ass" + which);
-    if (namecell && elt)
-	namecell.className = "name" + elt.value;
+    if (elt) {
+	document.getElementById("ass" + which).className = "name" + elt.value;
+	var i = document.images["assimg" + which];
+	i.src = i.src.replace(/ass-?\d/, "ass" + elt.value);
+    }
     var folder = document.getElementById("foldass" + which);
     if (folder)
 	folder.className = folder.className.replace("unfolded", "folded");
