@@ -388,7 +388,7 @@ td.hint {
 	padding-left: 0.5em;
 	font-size: small;
 }
-div#aumg td.hint, table.paper td.hint {
+div#aumg td.hint, table.paper td.hint, table.reviewform td.hint {
 	width: 25%;
 }
 td h2, td h3 {
