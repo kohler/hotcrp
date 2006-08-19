@@ -326,7 +326,7 @@ if ($Me->amAssistant()) {
 	    echo str_replace(' ', "&nbsp;", contactHtml($p));
 	    if ($p->conflict <= 0 && $p->author <= 0 && $p->preference)
 		echo " [", htmlspecialchars($p->preference), "]";
-	    echo "</td><td class='ass'>";
+	    echo "</td><td class='ass' nowrap='nowrap'>";
 	    echo "<div id='foldass$p->contactId' class='folded' style='position: relative'><a id='folderass$p->contactId' href=\"javascript:foldassign($p->contactId)\"><img name='assimg$p->contactId' src=\"${ConfSiteBase}images/ass$cid.png\" /><img src=\"${ConfSiteBase}images/next.png\" /></a>&nbsp;";
 	    echo "<select id='pcs", $p->contactId, "' name='pcs", $p->contactId, "' class='extension' size='4' onchange='selassign(this, $p->contactId)' onclick='selassign(null, $p->contactId)' onblur='selassign(0, $p->contactId)' style='position: absolute'>
 	<option value='0'", ($p->conflict <= 0 && $p->reviewType < REVIEW_SECONDARY ? " selected='selected'" : ""), ">None</option>
