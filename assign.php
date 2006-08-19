@@ -306,7 +306,7 @@ if ($Me->amAssistant()) {
 
     // PC conflicts row
     echo "<tr class='pt_conflict_ass'>
-  <td class='caption'>PC assignments<br /><span class='hint'>Any review preferences are in brackets.</span></td>
+  <td class='caption'>PC assignments<br /><span class='hint'>Any review preferences are in brackets</span></td>
   <td class='entry'><table class='pcass'><tr><td><table>\n";
     $n = intval((count($pc) + 2) / 3);
     for ($i = 0; $i < count($pc); $i++) {
@@ -371,20 +371,6 @@ $Conf->infoMsg("External reviewers are given access to those papers assigned
 
 
 echo "<table class='reviewers'>\n";
-
-if ($Me->amAssistant()) {
-    echo "    <tr><td>
-	<select name='pcid'>
-	<option selected='selected' value=''>Select PC member</option>\n";
-	foreach ($pc as $p)
-	    echo "	<option value='$p->contactId'", ($p->conflict > 0 ? " disabled='disabled'" : ""), ">", contactHtml($p), "</option>\n";
-	echo "	</select>
-	<span class='gap'></span>
-	<input type='radio' name='pctype' value='", REVIEW_PRIMARY, "' ", ($anyPrimary&&0 ? "" : "checked='checked' "), "/>&nbsp;Primary
-	<input type='radio' name='pctype' value='", REVIEW_SECONDARY, "' ", ($anyPrimary&&0 ? "checked='checked' " : ""), "/>&nbsp;Secondary
-      </td><td><input class='button_small' type='submit' name='addpc' value='Assign PC review' /></td>
-    </tr>\n";
-    }
 
 echo "    <tr><td>
 	<input class='textlite' type='text' name='name' value=\"";
