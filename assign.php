@@ -380,8 +380,8 @@ if ($Me->amAssistant()) {
 	    echo "	<option value='$p->contactId'", ($p->conflict > 0 ? " disabled='disabled'" : ""), ">", contactHtml($p), "</option>\n";
 	echo "	</select>
 	<span class='gap'></span>
-	<input type='radio' name='pctype' value='", REVIEW_PRIMARY, "' ", ($anyPrimary ? "" : "checked='checked' "), "/>&nbsp;Primary
-	<input type='radio' name='pctype' value='", REVIEW_SECONDARY, "' ", ($anyPrimary ? "checked='checked' " : ""), "/>&nbsp;Secondary
+	<input type='radio' name='pctype' value='", REVIEW_PRIMARY, "' ", ($anyPrimary&&0 ? "" : "checked='checked' "), "/>&nbsp;Primary
+	<input type='radio' name='pctype' value='", REVIEW_SECONDARY, "' ", ($anyPrimary&&0 ? "checked='checked' " : ""), "/>&nbsp;Secondary
       </td><td><input class='button_small' type='submit' name='addpc' value='Assign PC review' /></td>
     </tr>\n";
     }
