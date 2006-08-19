@@ -643,10 +643,8 @@ insert into PaperListColumns set paperListId=2, fieldId=31, col=0;
 insert into PaperListColumns set paperListId=2, fieldId=1, col=1;
 insert into PaperListColumns set paperListId=2, fieldId=11, col=2;
 insert into PaperListColumns set paperListId=2, fieldId=33, col=3;
-insert into PaperListColumns set paperListId=2, fieldId=29, col=5;
-insert into PaperListColumns set paperListId=2, fieldId=30, col=6;
-insert into PaperListColumns set paperListId=2, fieldId=32, col=7;
-insert into PaperListColumns set paperListId=2, fieldId=41, col=8;
+insert into PaperListColumns set paperListId=2, fieldId=29, col=4;
+insert into PaperListColumns set paperListId=2, fieldId=41, col=5;
 
 insert into PaperList set paperListId=3, paperListName='all',
 	shortDescription='All', description='All papers', 
@@ -656,8 +654,6 @@ insert into PaperListColumns set paperListId=3, fieldId=1, col=1;
 insert into PaperListColumns set paperListId=3, fieldId=11, col=2;
 insert into PaperListColumns set paperListId=3, fieldId=27, col=3;
 insert into PaperListColumns set paperListId=3, fieldId=29, col=5;
-insert into PaperListColumns set paperListId=3, fieldId=30, col=6;
-insert into PaperListColumns set paperListId=3, fieldId=32, col=7;
 
 insert into PaperList set paperListId=4, paperListName='authorHome',
 	shortDescription='Your papers', description='My papers (homepage view)', 
@@ -671,9 +667,8 @@ insert into PaperList set paperListId=6, paperListName='reviewerHome',
 	queryType='myReviews', sortCol=0, query='';
 insert into PaperListColumns set paperListId=6, fieldId=3, col=0;
 insert into PaperListColumns set paperListId=6, fieldId=13, col=1;
-insert into PaperListColumns set paperListId=6, fieldId=33, col=2;
-insert into PaperListColumns set paperListId=6, fieldId=41, col=3;
-insert into PaperListColumns set paperListId=6, fieldId=32, col=4;
+insert into PaperListColumns set paperListId=6, fieldId=29, col=2;
+insert into PaperListColumns set paperListId=6, fieldId=33, col=3;
 
 insert into PaperList set paperListId=8, paperListName='reviewAssignment',
 	shortDescription='Your reviews', description='Review assignments (homepage view)',

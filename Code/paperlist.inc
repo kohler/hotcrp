@@ -208,11 +208,11 @@ class PaperList {
 		$this->needSubmitReview++;
 	    if ($row->reviewId) {
 		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId\">";
-		$a2 = "</a> ";
+		$a2 = "</a>&nbsp;";
 		if ($row->reviewModified == 0)
-		    $a2 .= "<span class='rstat rstat_no'>(Not started)</span>";
+		    $a2 .= "<span class='rstat rstat_no'>(Not&nbsp;started)</span>";
 		else if ($row->reviewSubmitted == 0)
-		    $a2 .= "<span class='rstat rstat_prog'>(In progress)</span>";
+		    $a2 .= "<span class='rstat rstat_prog'>(In&nbsp;progress)</span>";
 		else
 		    $a2 .= "<span class='rstat rstat_done'>(Complete)</span>";
 	    } else

@@ -778,6 +778,9 @@ table.review td.entry {
 span.sep, span.reviewer, span.reviewstatus {
 	padding-right: 1em;
 }
+span.rstat {
+	font-size: smaller;
+}
 
 td.setrev_shortName {
 	padding-right: 0.25em;
