@@ -1025,7 +1025,7 @@ class Conference {
 	}
     }
 
-    function header($title, $id = "", $actionBar = "") {
+    function header($title, $id = "", $actionBar = "<div class='gap'></div>", $showTitle = true) {
 	global $ConfSiteBase;
 	if ($this->headerPrinted >= 2)
 	    return;
@@ -1034,22 +1034,24 @@ class Conference {
 	echo "</head><body>\n";
 	echo "<div id='header'>\n";
 	echo "  <div id='header_left'>\n";
-	echo "    <div id='header_conference'><a href='",
+	echo "    <a href='",
 	    $ConfSiteBase, "index.php'>", $this->shortName,
-	    " Submissions</a></div>\n";
-	echo "    <h1>", $title, "</h1>\n";
+	    "</a>";
+	if ($title && $showTitle)
+	    echo " &nbsp;:&nbsp; <h1>", $title, "</h1>\n";
 	echo "  </div>\n";
-	echo "  <div id='header_links'>\n";
+	echo "  <div id='header_user'>";
 	if ($_SESSION["Me"]->valid()) {
-	    echo "    <div id='header_user'><strong>",
+	    echo "<strong>",
 		htmlspecialchars($_SESSION["Me"]->email),
 		"</strong> &nbsp;|&nbsp; ";
 	    if (!$_SESSION["Me"]->amAssistant() && $_SESSION["Me"]->chairContactId > 0)
 		echo "<a href=\"", htmlspecialchars(selfHref(array("chairMode" => 0))), "\">Return&nbsp;to&nbsp;chair&nbsp;view</a> &nbsp;|&nbsp; ";
-	    echo "<a href='", $ConfSiteBase, "logout.php'>Log&nbsp;out</a></div>\n";
+	    echo "<a href='", $ConfSiteBase, "logout.php'>Sign&nbsp;out</a>";
+	    echo " &nbsp;|&nbsp; ";
 	}
-	echo "    <div id='header_time'>", date ("l j M Y g:i:sa T"), "</div>\n";
-	echo "    <div id='header_public'><a href='", $this->conferenceSite, "'>", $this->shortName, " Public Site</a></div>\n";
+	echo date("l j M Y g:i:sa T"), "</div>\n";
+	//echo "    <div id='header_public'><a href='", $this->conferenceSite, "'>", $this->shortName, " Public Site</a></div>\n";
 	print "  </div>\n";
 	
 	$id = ($id ? " id='$id'" : "");

@@ -16,7 +16,7 @@ function confHeader() {
 	$title = ($newPaper ? "New Paper" : "Paper View");
     if ($mode == "edit")
 	$title = "Edit $title";
-    $Conf->header($title, "paper_" . $mode, actionBar($prow, $newPaper, $mode));
+    $Conf->header($title, "paper_" . $mode, actionBar($prow, $newPaper, $mode), false);
 }
 
 function errorMsgExit($msg) {

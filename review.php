@@ -15,7 +15,7 @@ function confHeader() {
 	$title = "Paper #$prow->paperId Reviews";
     else
 	$title = "Paper Reviews";
-    $Conf->header($title, "review", actionBar($prow, false, "review"));
+    $Conf->header($title, "review", actionBar($prow, false, "review"), false);
 }
 
 function errorMsgExit($msg) {

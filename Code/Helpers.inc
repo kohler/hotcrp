@@ -364,7 +364,7 @@ function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
     foreach ($args as $what => $val)
 	$urlrest .= "&amp;" . htmlspecialchars($what) . "=" . htmlspecialchars($val);
 
-    $x = "<small>";
+    $x = "";
     if ($k > 0)
 	$x .= "<a href=\"${ConfSiteBase}$baseUrl?paperId="
 	    . $list[$k - 1] . $urlrest . "\"><img src=\"${ConfSiteBase}images/prev.png\" />#" . $list[$k - 1] . "</a>";

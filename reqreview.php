@@ -13,7 +13,7 @@ $rf = reviewForm();
 function confHeader() {
     global $prow, $Conf, $ConfSiteBase;
     $title = ($prow ? "Paper #$prow->paperId Review Assignments" : "Paper Review Assignments");
-    $Conf->header($title, "revreq", actionBar($prow, false, "revreq"));
+    $Conf->header($title, "revreq", actionBar($prow, false, "revreq"), false);
 }
 
 function errorMsgExit($msg) {

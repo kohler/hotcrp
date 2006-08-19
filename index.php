@@ -35,8 +35,7 @@ if (($_SESSION["AskedYouToUpdateContactInfo"] < 2
 if (isset($_REQUEST["setRole"]))
     $_SESSION["WhichTaskView"] = $_REQUEST["setRole"];
 
-$Conf->header("Welcome");
-echo actionBar(null, false, "");
+$Conf->header("Home", "", actionBar(null, false, ""));
 
 
 // if chair, check PHP setup

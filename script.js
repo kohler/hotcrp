@@ -109,6 +109,6 @@ function selassign(elt, which) {
 	folder.focus();
     if (elt === 0) {
 	selassign_blur = which;
-	setTimeout("selassign_blur = 0;", 100);
+	setTimeout("selassign_blur = 0;", 300);
     }
 }
