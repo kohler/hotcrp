@@ -33,7 +33,7 @@ div#header_user {
 }
 div#header_left {
 	font-size: small;
-	padding: 0.1em 0em 0em 1.5em;
+	padding: 0.1em 0em 0em 1em;
 	float: left;
 	margin-right: 5%;
 	margin-bottom: 0em;
@@ -176,6 +176,9 @@ table.vubar td.tab, table.vubar td.tab_disabled {
 }
 table.vubar td.sep, div.maintab td.sep {
 	padding: 0em 0.75em;
+}
+table.vubar td.sep:first-child {
+	padding: 0em 0.5em;
 }
 td.spanner, table.reviewform {
 	width: 100%;

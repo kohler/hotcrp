@@ -1052,7 +1052,6 @@ class Conference {
 	}
 	echo date("l j M Y g:i:sa T"), "</div>\n";
 	//echo "    <div id='header_public'><a href='", $this->conferenceSite, "'>", $this->shortName, " Public Site</a></div>\n";
-	print "  </div>\n";
 	
 	$id = ($id ? " id='$id'" : "");
 	print "  <div class='clear'></div>\n</div>\n";
