@@ -334,7 +334,7 @@ if ($Me->amAssistant()) {
 	<option value='", REVIEW_SECONDARY, "' ", ($p->conflict <= 0 && $p->reviewType == REVIEW_SECONDARY ? " selected='selected'" : ""), ">Secondary</option>
 	<option value='-1'", ($p->conflict > 0 ? " selected='selected'" : ""), ">Conflict</option>
       </select>";
-	    echo "</div></div>";
+	    echo "</div>";
 	    echo "</td>";
 	}
 	echo "</tr>\n";
