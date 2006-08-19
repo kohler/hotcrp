@@ -488,11 +488,9 @@ insert into ReviewFormField set fieldName='technicalMerit',
 insert into ReviewFormField set fieldName='interestToCommunity',
 	shortName='Community interest';
 insert into ReviewFormField set fieldName='longevity',
-	shortName='Longevity';
+	shortName='Longevity', description='How important will this work be over time?';
 insert into ReviewFormField set fieldName='grammar',
-	shortName='Grammar';
-insert into ReviewFormField set fieldName='likelyPresentation',
-	shortName='Attendance likelihood';
+	shortName='Writing';
 insert into ReviewFormField set fieldName='suitableForShort',
 	shortName='Suitable for short paper';
 insert into ReviewFormField set fieldName='paperSummary',
@@ -502,15 +500,17 @@ insert into ReviewFormField set fieldName='commentsToAuthor',
 insert into ReviewFormField set fieldName='commentsToPC',
 	shortName='Comments for PC', sortOrder=4, rows=10, authorView=0;
 insert into ReviewFormField set fieldName='commentsToAddress',
-	shortName='Comments to address', rows=10;
+	shortName='Comments to address in the response', rows=10;
 insert into ReviewFormField set fieldName='weaknessOfPaper',
 	shortName='Paper weakness', rows=5;
 insert into ReviewFormField set fieldName='strengthOfPaper',
 	shortName='Paper strengths', rows=5;
+insert into ReviewFormField set fieldName='likelyPresentation',
+	shortName='Numeric field 1';
 insert into ReviewFormField set fieldName='potential',
-	shortName='Potential';
+	shortName='Numeric field 2';
 insert into ReviewFormField set fieldName='fixability',
-	shortName='Fixability';
+	shortName='Numeric field 3';
 
 insert into ReviewFormOptions set fieldName='overAllMerit', level=1, description='Reject';
 insert into ReviewFormOptions set fieldName='overAllMerit', level=2, description='Weak reject';
@@ -522,6 +522,40 @@ insert into ReviewFormOptions set fieldName='reviewerQualification', level=1, de
 insert into ReviewFormOptions set fieldName='reviewerQualification', level=2, description='Some familiarity';
 insert into ReviewFormOptions set fieldName='reviewerQualification', level=3, description='Knowledgeable';
 insert into ReviewFormOptions set fieldName='reviewerQualification', level=4, description='Expert';
+
+insert into ReviewFormOptions set fieldName='novelty', level=1, description='Published before';
+insert into ReviewFormOptions set fieldName='novelty', level=2, description='Done before (not necessarily published)';
+insert into ReviewFormOptions set fieldName='novelty', level=3, description='Incremental improvement';
+insert into ReviewFormOptions set fieldName='novelty', level=4, description='New contribution';
+insert into ReviewFormOptions set fieldName='novelty', level=5, description='Surprisingly new contribution';
+
+insert into ReviewFormOptions set fieldName='technicalMerit', level=1, description='Poor';
+insert into ReviewFormOptions set fieldName='technicalMerit', level=2, description='Fair';
+insert into ReviewFormOptions set fieldName='technicalMerit', level=3, description='Average';
+insert into ReviewFormOptions set fieldName='technicalMerit', level=4, description='Good';
+insert into ReviewFormOptions set fieldName='technicalMerit', level=5, description='Excellent';
+
+insert into ReviewFormOptions set fieldName='interestToCommunity', level=1, description='None';
+insert into ReviewFormOptions set fieldName='interestToCommunity', level=2, description='Low';
+insert into ReviewFormOptions set fieldName='interestToCommunity', level=3, description='Average';
+insert into ReviewFormOptions set fieldName='interestToCommunity', level=4, description='High';
+insert into ReviewFormOptions set fieldName='interestToCommunity', level=5, description='Exciting';
+
+insert into ReviewFormOptions set fieldName='longevity', level=1, description='Not important now or later';
+insert into ReviewFormOptions set fieldName='longevity', level=2, description='Low importance';
+insert into ReviewFormOptions set fieldName='longevity', level=3, description='Average importance';
+insert into ReviewFormOptions set fieldName='longevity', level=4, description='Important';
+insert into ReviewFormOptions set fieldName='longevity', level=5, description='Exciting';
+
+insert into ReviewFormOptions set fieldName='grammar', level=1, description='Poor';
+insert into ReviewFormOptions set fieldName='grammar', level=2, description='Fair';
+insert into ReviewFormOptions set fieldName='grammar', level=3, description='Average';
+insert into ReviewFormOptions set fieldName='grammar', level=4, description='Good';
+insert into ReviewFormOptions set fieldName='grammar', level=5, description='Excellent';
+
+insert into ReviewFormOptions set fieldName='suitableForShort', level=1, description='Not suitable';
+insert into ReviewFormOptions set fieldName='suitableForShort', level=2, description='Can\'t tell';
+insert into ReviewFormOptions set fieldName='suitableForShort', level=3, description='Suitable';
 
 insert into ReviewFormOptions set fieldName='outcome', level=0, description='Unspecified';
 insert into ReviewFormOptions set fieldName='outcome', level=-1, description='Rejected';
