@@ -81,12 +81,16 @@ function checkPapersel(onoff) {
 	    ins[i].checked = onoff;
 }
 
+var selassign_blur = 0;
+
 function foldassign(which) {
     var folder = document.getElementById("foldass" + which);
-    if (folder.className.indexOf("unfolded") < 0) {
+    if (folder.className.indexOf("unfolded") < 0
+	&& selassign_blur != which) {
 	fold("ass" + which, false);
 	document.getElementById("pcs" + which).focus();
     }
+    selassign_blur = 0;
 }
 
 function selassign(elt, which) {
@@ -101,6 +105,10 @@ function selassign(elt, which) {
     if (elt)
 	highlightUpdate();
     folder = document.getElementById("folderass" + which);
-    if (folder)
+    if (folder && elt !== 0)
 	folder.focus();
+    if (elt === 0) {
+	selassign_blur = which;
+	setTimeout("selassign_blur = 0;", 100);
+    }
 }
