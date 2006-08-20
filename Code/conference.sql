@@ -685,9 +685,10 @@ insert into PaperList set paperListId=7, paperListName='reviewer',
 insert into PaperListColumns set paperListId=7, fieldId=31, col=0;
 insert into PaperListColumns set paperListId=7, fieldId=1, col=1;
 insert into PaperListColumns set paperListId=7, fieldId=11, col=2;
-insert into PaperListColumns set paperListId=7, fieldId=29, col=3;
-insert into PaperListColumns set paperListId=7, fieldId=41, col=4;
-insert into PaperListColumns set paperListId=7, fieldId=33, col=5;
+insert into PaperListColumns set paperListId=7, fieldId=28, col=3;
+insert into PaperListColumns set paperListId=7, fieldId=29, col=4;
+insert into PaperListColumns set paperListId=7, fieldId=41, col=5;
+insert into PaperListColumns set paperListId=7, fieldId=33, col=6;
 
 insert into PaperList set paperListId=8, paperListName='reviewAssignment',
 	shortDescription='Review assignment', description='Review assignments',

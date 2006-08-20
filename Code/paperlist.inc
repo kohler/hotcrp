@@ -30,7 +30,7 @@ class PaperList {
     var $showHeader;
     var $sortField;
     var $reverseSort;
-    var $sortUri;
+    var $sortable;
     var $count;
     var $needFinalize;
     var $needSubmitReview;
@@ -52,6 +52,7 @@ class PaperList {
 	    $this->sortField = (int) $s;
 	else
 	    $this->sortField = null;
+	$this->sortable = $sortable;
 
 	$this->count = 0;
 	$this->needFinalize = 0;
@@ -432,7 +433,7 @@ class PaperList {
 	    $x .= "  <tr class=\"pl_headrow\">\n";
 	    $ord = 0;
 
-	    if ($url) {
+	    if ($this->sortable && $url) {
 		$sortUrl = $url . (strpos($url, "?") ? "&" : "?") . "sort=";
 		$q = "<a class='pl_sort' href=\"" . $sortUrl;
 		foreach ($fieldId as $f) {
