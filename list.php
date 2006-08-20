@@ -133,6 +133,8 @@ if ($pl->anySelector)
 
 echo $t;
 
+echo "<hr class='smgap' />\n<small>", plural($pl->count, "paper"), " total</small>\n\n";
+
 if ($pl->anySelector) {
     echo "<div class='plist_form'>
 <button type='button' id='plb_selall' onclick='checkPapersel(true)'>Select all</button>

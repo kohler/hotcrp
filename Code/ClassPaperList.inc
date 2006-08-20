@@ -54,10 +54,6 @@ class PaperList {
 	    $this->sortField = null;
 	$this->sortable = $sortable;
 
-	$this->count = 0;
-	$this->needFinalize = 0;
-	$this->needSubmitReview = 0;
-	$this->anySelector = 0;
 	$this->sessionVar = $sessionVar;
     }
 
@@ -331,7 +327,12 @@ class PaperList {
     
     function text($listname, $me, $contactId = -1) {
 	global $Conf;
+
 	$this->contact = $me;
+	$this->count = 0;
+	$this->needFinalize = 0;
+	$this->needSubmitReview = 0;
+	$this->anySelector = 0;
 
 	// get paper list id
 	self::updatePaperLists();
