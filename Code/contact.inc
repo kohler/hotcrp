@@ -43,7 +43,7 @@ class Contact {
 	    $conf = $Conf;
 	if (!$this->validated && $this->contactId > 0) {
 	    $result = $conf->q("select max(author) as author,
-			count(reviewType) as numReviews,
+			PaperReview.contactId as reviewer,
 			PCMember.contactId as pcMember,
 			ChairAssistant.contactId as assistant,
 			Chair.contactId as chair

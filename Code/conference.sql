@@ -202,7 +202,8 @@ CREATE TABLE PaperConflict (
   paperId int(11) NOT NULL,
   contactId int(11) NOT NULL,
   author tinyint(1) NOT NULL default '0',
-  UNIQUE KEY contactPaper (contactId,paperId)
+  UNIQUE KEY contactPaper (contactId,paperId),
+  UNIQUE KEY contactPaperAuthor (contactId,paperId,author)
 ) TYPE=MyISAM;
 
 #
