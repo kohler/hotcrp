@@ -237,7 +237,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 		from ContactInfo
 		join PaperConflict using (contactId)
 		where paperId=$prow->paperId and author=1
-		order by lastName, firstName", "while finding contact authors");
+		order by lastName, firstName, email", "while finding contact authors");
 	echo "<tr class='pt_contactAuthor$this->autrClasses' id='foldca'>\n";
 	echo "  ", $this->tdCaption("contactAuthor");
 	echo (!DB::isError($result) && $result->numRows() == 1 ? "Contact author" : "Contact authors");

@@ -578,8 +578,8 @@ create table PaperList (
   description varchar(80) NOT NULL default '',
   queryType varchar(20) NOT NULL default 'any',
   listHome varchar(40) NOT NULL default '',
-  listContactId bool NOT NULL default false,
-  listReviewer bool NOT NULL default false, 
+  listContact varchar(20) NOT NULL default '',
+  listContactType varchar(20) NOT NULL default 'any',
   sortCol int,
   query varchar(120),
   PRIMARY KEY (paperListId),
@@ -633,7 +633,7 @@ insert into PaperFields set fieldId=44, fieldName='allPreferences', description=
 
 insert into PaperList set paperListId=1, paperListName='author',
 	shortDescription='Authored', description='Authored papers',
-	listHome='list.php?list=author', listContactId=true,
+	listHome='list.php?list=author', listContact='contactId',
 	queryType='author', sortCol=0, query='';
 insert into PaperListColumns set paperListId=1, fieldId=2, col=0;
 insert into PaperListColumns set paperListId=1, fieldId=12, col=1;
@@ -663,7 +663,7 @@ insert into PaperListColumns set paperListId=3, fieldId=29, col=5;
 
 insert into PaperList set paperListId=4, paperListName='authorHome',
 	shortDescription='Your papers', description='My papers (homepage view)', 
-	listHome='list.php?list=author', listContactId=true,
+	listHome='list.php?list=author', listContact='contactId',
 	queryType='author', sortCol=0, query='';
 insert into PaperListColumns set paperListId=4, fieldId=2, col=0;
 insert into PaperListColumns set paperListId=4, fieldId=12, col=1;
@@ -671,7 +671,7 @@ insert into PaperListColumns set paperListId=4, fieldId=27, col=2;
 
 insert into PaperList set paperListId=6, paperListName='reviewerHome',
 	shortDescription='Your reviews', description='Papers to review (homepage view)',
-	listHome='list.php?list=reviewer', listReviewer=true,
+	listHome='list.php?list=reviewer', listContact='reviewer', listContactType='reviewer',
 	queryType='myReviews', sortCol=0, query='';
 insert into PaperListColumns set paperListId=6, fieldId=3, col=0;
 insert into PaperListColumns set paperListId=6, fieldId=13, col=1;
@@ -680,7 +680,7 @@ insert into PaperListColumns set paperListId=6, fieldId=33, col=3;
 
 insert into PaperList set paperListId=7, paperListName='reviewer',
 	shortDescription='Your reviews', description='Papers to review',
-	listHome='list.php?list=reviewer', listReviewer=true,
+	listHome='list.php?list=reviewer', listContact='reviewer', listContactType='reviewer',
 	queryType='myReviews', sortCol=0, query='';
 insert into PaperListColumns set paperListId=7, fieldId=31, col=0;
 insert into PaperListColumns set paperListId=7, fieldId=1, col=1;
@@ -692,7 +692,7 @@ insert into PaperListColumns set paperListId=7, fieldId=33, col=6;
 
 insert into PaperList set paperListId=8, paperListName='reviewAssignment',
 	shortDescription='Review assignment', description='Review assignments',
-	listHome='Chair/AssignPapers.php', listReviewer=true,
+	listHome='Chair/AssignPapers.php', listContact='reviewer', listContactType='pc',
 	queryType='pc', sortCol=3, query='';
 insert into PaperListColumns set paperListId=8, fieldId=3, col=0;
 insert into PaperListColumns set paperListId=8, fieldId=13, col=1;
@@ -706,7 +706,7 @@ insert into PaperListColumns set paperListId=8, fieldId=44, col=8;
 
 insert into PaperList set paperListId=9, paperListName='editReviewPreference',
 	shortDescription='Review preferences', description='Edit reviewer preferences',
-	listHome='PC/reviewprefs.php', listReviewer=true,
+	listHome='PC/reviewprefs.php', listContact='reviewer', listContactType='pc',
 	queryType='pc', sortCol=3, query='';
 insert into PaperListColumns set paperListId=9, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=9, fieldId=11, col=1;

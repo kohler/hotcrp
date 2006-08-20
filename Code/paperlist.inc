@@ -111,7 +111,7 @@ class PaperList {
 	case self::FIELD_REVIEWER_TYPE:
 	    return "order by PaperReview.reviewType $down";
 	case self::FIELD_REVIEWER_NAME:
-	    return "order by ReviewerContactInfo.lastName $up, ReviewerContactInfo.firstName $up";
+	    return "order by ReviewerContactInfo.lastName $up, ReviewerContactInfo.firstName $up, ReviewerContactInfo.email $up";
 	case self::FIELD_REVIEWS_STATUS:
 	    return "order by reviewCount $up, startedReviewCount $up";
 	case self::FIELD_ASSIGN_REVIEW:
@@ -312,13 +312,29 @@ class PaperList {
 	    $_SESSION["paperLists"] = $pl;
 	}
     }
+
+    function listContact($listname) {
+	self::updatePaperLists();
+	if (($plist = defval($_SESSION["paperLists"][$listname])))
+	    return $plist->listContact;
+	else
+	    return '';
+    }
+
+    function listContactType($listname) {
+	self::updatePaperLists();
+	if (($plist = defval($_SESSION["paperLists"][$listname])))
+	    return $plist->listContactType;
+	else
+	    return '';
+    }
     
     function text($listname, $me, $contactId = -1) {
 	global $Conf;
 	$this->contact = $me;
 
 	// get paper list id
-	$this->updatePaperLists();
+	self::updatePaperLists();
 	if (!($plist = defval($_SESSION["paperLists"][$listname]))) {
 	    $Conf->errorMsg("There is no paper list query named '" . htmlspecialchars($listname) . "'.");
 	    return NULL;
@@ -346,10 +362,8 @@ class PaperList {
 
 	// get URL
 	$url = $plist->listHome;
-	if ($plist->listContactId && $contactId != $me->contactId)
-	    $url .= (strpos($url, "?") ? "&" : "?") . "contactId=" . $contactId;
-	if ($plist->listReviewer && $contactId != $me->contactId)
-	    $url .= (strpos($url, "?") ? "&" : "?") . "reviewer=" . $contactId;
+	if ($plist->listContact && $contactId != $me->contactId)
+	    $url .= (strpos($url, "?") ? "&" : "?") . $plist->listContact . "=" . $contactId;
 	$url = preg_replace_callback("|(\\w+)=\\*|", create_function('$m', 'return $m[1] . "=" . urlencode($_REQUEST[$m[1]]);'), $url);
 	
 	// get field array

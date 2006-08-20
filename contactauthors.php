@@ -125,7 +125,7 @@ if ($OK) {
 	from ContactInfo
 	join PaperConflict using (contactId)
 	where paperId=$paperId and author=1
-	order by lastName, firstName";
+	order by lastName, firstName, email";
       $result = $Conf->qe($q, "while finding contact authors");
       if (!DB::isError($result)) {
 	  while ($row = $result->fetchRow()) {

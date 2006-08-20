@@ -1675,21 +1675,21 @@ class Conference {
   // selected on the specified contactId
   //
   function makePCSelector($varName, $selected, $size=10) {
-    print "<SELECT name=$varName SINGLE size=$size>\n";
+    print "<select name='$varName' size='$size'>\n";
     $query = "SELECT ContactInfo.contactId, firstName, lastName, email "
       . " from ContactInfo join PCMember using (contactId) "
       . " ORDER BY lastName, firstName ";
     $result = $this->qe($query);
     if (!DB::isError($result)) {
       while($row=$result->fetchRow()) {
-	print "<OPTION VALUE=\"$row[0]\" ";
+	print "<option value=\"$row[0]\" ";
 	if ($row[0] == $selected) {
-	  print "SELECTED ";
+	  print "selected='selected' ";
 	}
-	print "> $row[1] $row[2] ($row[3]) </OPTION>";
+	print "> $row[1] $row[2] ($row[3]) </option>";
       }
     }
-    print "</SELECT>";
+    print "</select>";
   }
 
   function safeHtml($string) {
@@ -1890,7 +1890,7 @@ class Conference {
 	. " join PCMember on (contactId)"
 	. " WHERE PaperReviewerPreference.paperId='$paperId' "
 	. " AND ContactInfo.contactId=PaperReviewerPreference.contactId "
-	. " ORDER BY ContactInfo.lastName";
+	. " ORDER BY ContactInfo.lastName, ContactInfo.firstName, ContactInfo.email";
 
       $result = $this->qe($query);
 
