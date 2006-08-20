@@ -60,7 +60,7 @@ if ($Me->isPC || $Me->amReviewer()) {
     $sep = "";
 
     if ($Conf->timeReviewOpen()) {
-	$plist = new PaperList("1", null, "list_tabre");
+	$plist = new PaperList(false, "list_tabre");
 	//$plist->showHeader = 0;
 	$ptext = $plist->text("reviewerHome", $Me);
 	if ($plist->count > 0) {
@@ -143,7 +143,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
     }
 
     if ($Me->isAuthor) {
-	$plist = new PaperList("1", null, "list_tabsu");
+	$plist = new PaperList(false, "list_tabsu");
 	$plist->showHeader = 0;
 	$ptext = $plist->text("authorHome", $Me);
 	$deadlines = array();

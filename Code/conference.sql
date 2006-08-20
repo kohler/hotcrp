@@ -577,6 +577,9 @@ create table PaperList (
   shortDescription varchar(40) NOT NULL default '',
   description varchar(80) NOT NULL default '',
   queryType varchar(20) NOT NULL default 'any',
+  listHome varchar(40) NOT NULL default '',
+  listContactId bool NOT NULL default false,
+  listReviewer bool NOT NULL default false, 
   sortCol int,
   query varchar(120),
   PRIMARY KEY (paperListId),
@@ -600,7 +603,7 @@ create table PaperListColumns (
   paperListId int(11) NOT NULL,
   fieldId int(11) NOT NULL,
   col int(3) NOT NULL,
-  KEY paperListId (paperListId)
+  UNIQUE KEY paperListCol (paperListId,col)
 ) TYPE=MyISAM;
 
 insert into PaperFields set fieldId=1, fieldName='id', description='ID';
@@ -629,7 +632,8 @@ insert into PaperFields set fieldId=43, fieldName='desirability', description='D
 insert into PaperFields set fieldId=44, fieldName='allPreferences', description='Reviewer preferences', sortable=0, display=2;
 
 insert into PaperList set paperListId=1, paperListName='author',
-	shortDescription='Authored', description='Authored papers', 
+	shortDescription='Authored', description='Authored papers',
+	listHome='list.php?list=author', listContactId=true,
 	queryType='author', sortCol=0, query='';
 insert into PaperListColumns set paperListId=1, fieldId=2, col=0;
 insert into PaperListColumns set paperListId=1, fieldId=12, col=1;
@@ -638,16 +642,18 @@ insert into PaperListColumns set paperListId=1, fieldId=28, col=3;
 
 insert into PaperList set paperListId=2, paperListName='submitted',
 	shortDescription='Submitted', description='Submitted papers',
+	listHome='list.php?list=submitted',
 	queryType='pc', sortCol=0, query='';
 insert into PaperListColumns set paperListId=2, fieldId=31, col=0;
 insert into PaperListColumns set paperListId=2, fieldId=1, col=1;
 insert into PaperListColumns set paperListId=2, fieldId=11, col=2;
-insert into PaperListColumns set paperListId=2, fieldId=33, col=3;
-insert into PaperListColumns set paperListId=2, fieldId=29, col=4;
-insert into PaperListColumns set paperListId=2, fieldId=41, col=5;
+insert into PaperListColumns set paperListId=2, fieldId=29, col=3;
+insert into PaperListColumns set paperListId=2, fieldId=41, col=4;
+insert into PaperListColumns set paperListId=2, fieldId=33, col=5;
 
 insert into PaperList set paperListId=3, paperListName='all',
 	shortDescription='All', description='All papers', 
+	listHome='list.php?list=all',
 	queryType='chair', sortCol=0, query='';
 insert into PaperListColumns set paperListId=3, fieldId=31, col=0;
 insert into PaperListColumns set paperListId=3, fieldId=1, col=1;
@@ -657,6 +663,7 @@ insert into PaperListColumns set paperListId=3, fieldId=29, col=5;
 
 insert into PaperList set paperListId=4, paperListName='authorHome',
 	shortDescription='Your papers', description='My papers (homepage view)', 
+	listHome='list.php?list=author', listContactId=true,
 	queryType='author', sortCol=0, query='';
 insert into PaperListColumns set paperListId=4, fieldId=2, col=0;
 insert into PaperListColumns set paperListId=4, fieldId=12, col=1;
@@ -664,14 +671,27 @@ insert into PaperListColumns set paperListId=4, fieldId=27, col=2;
 
 insert into PaperList set paperListId=6, paperListName='reviewerHome',
 	shortDescription='Your reviews', description='Papers to review (homepage view)',
+	listHome='list.php?list=reviewer', listReviewer=true,
 	queryType='myReviews', sortCol=0, query='';
 insert into PaperListColumns set paperListId=6, fieldId=3, col=0;
 insert into PaperListColumns set paperListId=6, fieldId=13, col=1;
 insert into PaperListColumns set paperListId=6, fieldId=29, col=2;
 insert into PaperListColumns set paperListId=6, fieldId=33, col=3;
 
+insert into PaperList set paperListId=7, paperListName='reviewer',
+	shortDescription='Your reviews', description='Papers to review',
+	listHome='list.php?list=reviewer', listReviewer=true,
+	queryType='myReviews', sortCol=0, query='';
+insert into PaperListColumns set paperListId=7, fieldId=31, col=0;
+insert into PaperListColumns set paperListId=7, fieldId=1, col=1;
+insert into PaperListColumns set paperListId=7, fieldId=11, col=2;
+insert into PaperListColumns set paperListId=7, fieldId=29, col=3;
+insert into PaperListColumns set paperListId=7, fieldId=41, col=4;
+insert into PaperListColumns set paperListId=7, fieldId=33, col=5;
+
 insert into PaperList set paperListId=8, paperListName='reviewAssignment',
-	shortDescription='Your reviews', description='Review assignments (homepage view)',
+	shortDescription='Review assignment', description='Review assignments',
+	listHome='Chair/AssignPapers.php', listReviewer=true,
 	queryType='pc', sortCol=3, query='';
 insert into PaperListColumns set paperListId=8, fieldId=3, col=0;
 insert into PaperListColumns set paperListId=8, fieldId=13, col=1;
@@ -685,6 +705,7 @@ insert into PaperListColumns set paperListId=8, fieldId=44, col=8;
 
 insert into PaperList set paperListId=9, paperListName='editReviewPreference',
 	shortDescription='Review preferences', description='Edit reviewer preferences',
+	listHome='PC/reviewprefs.php', listReviewer=true,
 	queryType='pc', sortCol=3, query='';
 insert into PaperListColumns set paperListId=9, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=9, fieldId=11, col=1;
@@ -696,6 +717,7 @@ insert into PaperListColumns set paperListId=9, fieldId=37, col=6;
 
 insert into PaperList set paperListId=10, paperListName='matches',
 	shortDescription='Search matches', description='Search matches',
+	listHome='search.php?search=*',
 	queryType='pc', sortCol=3, query='';
 insert into PaperListColumns set paperListId=10, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=10, fieldId=11, col=1;
@@ -703,8 +725,12 @@ insert into PaperListColumns set paperListId=10, fieldId=42, col=2;
 
 insert into PaperList set paperListId=11, paperListName='matchesAll',
 	shortDescription='Search matches', description='Search matches',
+	listHome='search.php?search=*&all=1',
 	queryType='chair', sortCol=3, query='';
 insert into PaperListColumns set paperListId=11, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=11, fieldId=11, col=1;
 insert into PaperListColumns set paperListId=11, fieldId=27, col=2;
 insert into PaperListColumns set paperListId=11, fieldId=42, col=3;
+
+delete from ImportantDates where name='paperListUpdate';
+insert into ImportantDates set name='paperListUpdate', start=current_timestamp;

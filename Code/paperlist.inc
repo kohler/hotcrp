@@ -40,10 +40,10 @@ class PaperList {
     var $sessionVar;
     var $contact;
     
-    function PaperList($sortVal = "1", $sortUri = null, $sessionVar = null) {
+    function PaperList($sortable = true, $sessionVar = null) {
 	$this->showHeader = 1;
 
-	$s = ($sortVal !== null ? $sortVal : "");
+	$s = ($sortable ? defval($_REQUEST["sort"], "") : "");
 	$x = (strlen($s) ? $sortVal[strlen($s)-1] : "");
 	$this->reverseSort = ($x == "R");
 	if ($x == "R" || $x == "N")
@@ -52,7 +52,6 @@ class PaperList {
 	    $this->sortField = (int) $s;
 	else
 	    $this->sortField = null;
-	$this->sortUri = $sortUri;
 
 	$this->count = 0;
 	$this->needFinalize = 0;
@@ -298,19 +297,31 @@ class PaperList {
 	}
     }
 
+    function updatePaperLists() {
+	global $Conf;
+	if (!isset($_SESSION["paperLists"])
+	    || defval($Conf->startTime["paperListUpdate"]) <= 0
+	    || $_SESSION["paperLists"]["date"] <= $Conf->startTime["paperListUpdate"]) {
+	    $pl = array();
+	    $result = $Conf->qe("select * from PaperList");
+	    if (!DB::isError($result))
+		while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT)))
+		    $pl[$row->paperListName] = $row;
+	    $pl["date"] = defval($Conf->startTime["paperListUpdate"]);
+	    $_SESSION["paperLists"] = $pl;
+	}
+    }
+    
     function text($listname, $me, $contactId = -1) {
 	global $Conf;
 	$this->contact = $me;
 
 	// get paper list id
-	$result = $Conf->qe("select * from PaperList where paperListName='" . sqlq($listname) . "'", "while looking up list type");
-	if (DB::isError($result))
-	    return NULL;
-	else if ($result->numRows() == 0) {
+	$this->updatePaperLists();
+	if (!($plist = defval($_SESSION["paperLists"][$listname]))) {
 	    $Conf->errorMsg("There is no paper list query named '" . htmlspecialchars($listname) . "'.");
 	    return NULL;
 	}
-	$plist = $result->fetchRow(DB_FETCHMODE_OBJECT);
 	$this->description = $plist->description;
 	$this->shortDescription = $plist->shortDescription;
 
@@ -331,6 +342,14 @@ class PaperList {
 	    $queryOptions['finalized'] = 1;
 	else if ($plist->queryType == 'author' || $plist->queryType == 'myReviews' || $plist->queryType == 'myReviewRequests')
 	    $queryOptions[$plist->queryType] = 1;
+
+	// get URL
+	$url = $plist->listHome;
+	if ($plist->listContactId && $contactId != $me->contactId)
+	    $url .= (strpos($url, "?") ? "&" : "?") . "contactId=" . $contactId;
+	if ($plist->listReviewer && $contactId != $me->contactId)
+	    $url .= (strpos($url, "?") ? "&" : "?") . "reviewer=" . $contactId;
+	$url = preg_replace_callback("|(\\w+)=\\*|", create_function('$m', 'return $m[1] . "=" . urlencode($_REQUEST[$m[1]]);'), $url);
 	
 	// get field array
 	$result = $Conf->qe(
@@ -413,8 +432,9 @@ class PaperList {
 	    $x .= "  <tr class=\"pl_headrow\">\n";
 	    $ord = 0;
 
-	    if ($this->sortUri) {
-		$q = "<a class='pl_sort' href=\"" . $this->sortUri;
+	    if ($url) {
+		$sortUrl = $url . (strpos($url, "?") ? "&" : "?") . "sort=";
+		$q = "<a class='pl_sort' href=\"" . $sortUrl;
 		foreach ($fieldId as $f) {
 		    if ($f[2] != 1)
 			continue;
@@ -427,7 +447,7 @@ class PaperList {
 		    if ($this->sortField == null && $f[0] < 10)
 			$this->sortField = $f[0];
 		    if ($f[0] == $this->sortField)
-			$x .= "<a class='pl_sort_def" . ($this->reverseSort ? "_rev" : "") . "' href=\"" . $this->sortUri . $f[0] . ($this->reverseSort ? "N" : "R") . "\">" . $ftext . "</a>";
+			$x .= "<a class='pl_sort_def" . ($this->reverseSort ? "_rev" : "") . "' href=\"" . $sortUrl . $f[0] . ($this->reverseSort ? "N" : "R") . "\">" . $ftext . "</a>";
 		    else if ($this->sort($f[0]))
 			$x .= $q . $f[0] . "\">" . $ftext . "</a>";
 		    else
@@ -449,9 +469,12 @@ class PaperList {
 
 	$x .= $body . "</table>";
 
+	// session variable to remember the list
 	if ($this->sessionVar) {
+	    if (isset($_REQUEST["sort"]))
+		$url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
 	    $_SESSION[$this->sessionVar] = $ids;
-	    $_SESSION[$this->sessionVar . "!"] = array($listname, $this->shortDescription);
+	    $_SESSION[$this->sessionVar . "!"] = array($url, $this->shortDescription);
 	}
 	
 	return $x;

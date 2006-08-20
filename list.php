@@ -84,11 +84,9 @@ else if ($Me->canListAuthoredPapers())
 else
     $list = 'none';
 
-$pl = new PaperList(defval($_REQUEST['sort']),
-		    "list.php?list=" . htmlspecialchars($list) . "&amp;sort=",
-		    "list");
-$t = $pl->text($list, $Me);
+$pl = new PaperList(true, "list");
 $_SESSION["whichList"] = "list";
+$t = $pl->text($list, $Me);
 
 $title = "List " . htmlspecialchars($pl->shortDescription) . " Papers";
 $Conf->header($title);

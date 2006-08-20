@@ -370,7 +370,10 @@ function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
 	    . $list[$k - 1] . $urlrest . "\"><img src=\"${ConfSiteBase}images/prev.png\" />#" . $list[$k - 1] . "</a>";
     if (($listinfo = defval($_SESSION[$listname . "!"])) && $listinfo[1]) {
 	$x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
-	$x .= "<a href=\"${ConfSiteBase}list.php?list=" . $listinfo[0] . "\">" . htmlspecialchars($listinfo[1]) . "</a>";
+	if ($listinfo[0])
+	    $x .= "<a href=\"${ConfSiteBase}" . htmlspecialchars($listinfo[0]) . "\">" . htmlspecialchars($listinfo[1]) . "</a>";
+	else
+	    $x .= htmlspecialchars($listinfo[1]);
     }
     if ($k < count($list) - 1) {
 	$x .= ($k > 0 || $listinfo ? "&nbsp;&nbsp;" : "");

@@ -108,7 +108,7 @@ if ($Me->amAssistant()) {
     echo "</select>\n</form>\n<hr />\n\n";
 }
     
-$paperList = new PaperList(defval($_REQUEST["sort"]), "reviewprefs.php?reviewer=$reviewer&amp;sort=", "list");
+$paperList = new PaperList(true, "list");
 $_SESSION["whichList"] = "list";
 echo "<form class='assignpc' method='post' action=\"reviewprefs.php?reviewer=$reviewer&amp;post=1\" enctype='multipart/form-data'>\n";
 echo $paperList->text("editReviewPreference", $_SESSION['Me'], $reviewer);

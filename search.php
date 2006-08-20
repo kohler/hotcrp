@@ -86,10 +86,8 @@ if (isset($_REQUEST["search"]) && trim($_REQUEST["search"]) != "") {
     //$Conf->infoMsg(htmlspecialchars($q));
     $result = $Conf->qe($q, $while);
     if (!DB::isError($result)) {
-	$pl = new PaperList(defval($_REQUEST['sort']),
-			    null, //"list.php?list=" . htmlspecialchars($list) . "&amp;sort=",
-			    "matches");
-	$_SESSION["whichList"] = "matches";
+	$pl = new PaperList(true, "list");
+	$_SESSION["whichList"] = "list";
 	$_SESSION["matchPreg"] = "/($re)/i";
 	echo "<div class='maintabsep'></div>\n\n";
 	echo $pl->text(($searchall ? "matchesAll" : "matches"), $Me);
