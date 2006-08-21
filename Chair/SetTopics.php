@@ -16,21 +16,23 @@ function highlightChange(id) {
     }
 }
 function doRemove(id) {
-    var but = document.getElementById("rem" + id);
     var chg = document.getElementById("chg" + id);
     var row = document.getElementById("pcrow" + id);
-    chg.value = (but.value == "Remove" ? "rem" : "chg");
-    var x = row.className.replace(/ *removed/, '');
-    row.className = x + (but.value == "Remove" ? " removed" : "");
-    but.value = (but.value == "Remove" ? "Do not remove" : "Remove");
+    var rem = !row.className.match(/ removed/);
+    chg.value = (rem ? "rem" : "chg");
+    if (rem)
+	row.className = row.className.replace(/unfolded/, 'folded') + " removed";
+    else
+	row.className = row.className.replace(/\bfolded/, 'unfolded').replace(/\s*removed/, '');
     highlightChange(id);
 }
 // -->
 </script>
 
-<?php $Conf->header("Edit Topics") ?>
-
 <?php
+
+$Conf->header("Edit Topics");
+
 if (isset($_REQUEST["update"])) {
     // Add new topics
     if (isset($_REQUEST["topics"])) {
@@ -64,13 +66,11 @@ if (isset($_REQUEST["update"])) {
     $Conf->qe("delete from ImportantDates where name='reviewFormUpdate'"); 
     $Conf->qe("insert into ImportantDates set name='reviewFormUpdate', start=current_timestamp"); 
 }
-?>
 
-<?php
 function outrow($id, $name) {
-    echo "<tr class='pc' id='pcrow$id'>\n";
+    echo "<tr class='pc unfolded' id='pcrow$id'>\n";
     echo "  <td class='pc_name'><input class='textlite' value=\"", htmlentities($name), "\" name='top$id' id='top$id' size='48' onchange='highlightChange(\"$id\")' /></td>\n";
-    echo "  <td class='pc_action'><input class='button' type='button' value='Remove' name='rem$id' id='rem$id' onclick='doRemove(\"$id\")' />
+    echo "  <td class='pc_action'><a class='extension' href=\"javascript:doRemove('$id')\">Remove</a><a class='ellipsis' href=\"javascript:doRemove('$id')\">Do not remove</a>
     <input type='hidden' value='' name='chg$id' id='chg$id' /></td>
 </tr>\n";
 }
@@ -79,35 +79,33 @@ $query = "select topicId, topicName from TopicArea order by topicName";
 $result = $Conf->q($query);
 if (DB::isError($result))
     $Conf->errorMsg("Database error: " . $result->getMessage());
- else { ?>
-<form method="post" action="<?php echo $_SERVER["PHP_SELF"] ?>" >
-<table class="memberlist">
+else {
+    echo "<hr class='smgap' />
+
+<form method='post' action='SetTopics.php?post=1' enctype='multipart/form-data'>
+<table class='memberlist'>
 
 <tr>
   <th>Topic</th>
   <th>Actions</th>
-</tr>
+</tr>\n\n";
 
-<?php
     while ($row = $result->fetchRow())
 	outrow($row[0], $row[1]);
-?>
 
-<tr>
-  <td class='pc_name textarea'><textarea name="topics" cols="48" rows="3" onchange='highlightUpdate()'></textarea></td>
+    echo "<tr>
+  <td class='pc_name textarea'><textarea name='topics' cols='48' rows='3' onchange='highlightUpdate()'></textarea></td>
   <td class='pc_action'>Enter new topics here, one per line</td>
 </tr>
 
 <tr>
   <td></td>
-  <td class='pc_action'><input class='button' type="submit" value="Save Changes" name='update' /></td>
+  <td class='pc_action'><input class='button' type='submit' value='Save Changes' name='update' /></td>
 </tr>
 
-</table>
-<?php } ?>
-</form>
+</table>\n";
+}
 
-</div>
-<?php $Conf->footer() ?>
-</body>
-</html>
+echo "</form>\n";
+
+$Conf->footer();
