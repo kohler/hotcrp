@@ -216,6 +216,8 @@ $tabBody[] = $body;
 
 if (isset($_SESSION["mainTab"]) && in_array($_SESSION["mainTab"], $tabName))
     $defaultTabName = $_SESSION["mainTab"];
+if (!isset($_SESSION["mainTab"]) || $_SESSION["mainTab"] != $defaultTabName)
+    $_SESSION["mainTab"] = $defaultTabName;
 $_SESSION["whichList"] = "mainTab";
 
 						      
