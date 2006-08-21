@@ -1025,7 +1025,7 @@ class Conference {
 	}
     }
 
-    function header($title, $id = "", $actionBar = "<div class='gap'></div>", $showTitle = true) {
+    function header($title, $id = "", $actionBar = "<div class='gaptop'></div>", $showTitle = true) {
 	global $ConfSiteBase;
 	if ($this->headerPrinted >= 2)
 	    return;
@@ -1077,18 +1077,8 @@ class Conference {
 	//
 	echo "</div>\n"; // <div id='body'>
 	echo "<div id='footer'>\n";
-	echo "  <div id='footer_left'>\n";
-	echo "    <div id='footer_conference'><a href='", $ConfSiteBase, "index.php'>", $this->shortName, " Submissions Home</a></div>\n";
-	$Me = $_SESSION["Me"];
-	if ($Me->valid()) {
-	    if (!$Me->amAssistant() && $Me->chairContactId > 0)
-		echo "    <div id='footer_chairmode'><a href=\"", htmlspecialchars(selfHref(array("chairMode" => 0))), "\">Return&nbsp;to&nbsp;chair&nbsp;view</a></div>\n";
-	    echo "    <div id='footer_logout'><a href='", $ConfSiteBase, "logout.php'>Log&nbsp;out</a></div>\n";
-	}
-	echo "  </div>\n";
-	echo "  <div id='footer_right'>\n";
-	echo "    <div id='footer_crp'><a href='http://crp.sourceforge.net/'>CRP</a> Conference Management Software</div>\n";
-	echo "  </div><div class='clear'></div></div>\n";
+	echo "  <div id='footer_crp'><a href='http://crp.sourceforge.net/'>CRP</a> Conference Management Software</div>\n";
+	echo "  <div class='clear'></div></div>\n";
 	echo "</body>\n</html>\n";
     }
 

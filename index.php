@@ -59,6 +59,12 @@ if ($Me->isPC || $Me->amReviewer()) {
     $body = "";
     $sep = "";
 
+    unset($plist);
+    if ($Conf->timeReviewOpen()) {
+	$plist = new PaperList(false, "list_tabre");
+	$ptext = $plist->text("reviewerHome", $Me);
+    }
+    
     $deadlines = array();
     $rtyp = ($Me->isPC ? "PC" : "reviewer");
     unset($d);
@@ -66,7 +72,7 @@ if ($Me->isPC || $Me->amReviewer()) {
 	$deadlines[] = "<a href='list.php?list=reviewer'>List your assigned papers</a> to download papers and review forms.";
     if ($Me->isPC && $Conf->timeReviewPaper(true, false, true))
 	$deadlines[] = "PC members may review <a href='list.php?list=submitted'>any submitted paper</a>, whether or not a review has been assigned.";
-    if ($plist->needSubmitReview == 0) {
+    if (isset($plist) && $plist->needSubmitReview == 0) {
 	/* nada */
 	//if ($plist->count > 0)
 	//   $deadlines[] = "Thank you for submitting your requested reviews!";
@@ -89,14 +95,9 @@ if ($Me->isPC || $Me->amReviewer()) {
 	$sep = $tabSep;
     }
 
-    if ($Conf->timeReviewOpen()) {
-	$plist = new PaperList(false, "list_tabre");
-	//$plist->showHeader = 0;
-	$ptext = $plist->text("reviewerHome", $Me);
-	if ($plist->count > 0) {
-	    $body .= $sep . $ptext;
-	    $sep = $tabSep;
-	}
+    if (isset($plist) && $plist->count > 0) {
+	$body .= $sep . $ptext;
+	$sep = $tabSep;
     }
 
     if ($body)

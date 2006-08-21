@@ -25,6 +25,9 @@ div.inform {
 
 div#header {
 	background: #f6f6ff;
+	border-left: 1px solid #000099;
+	border-right: 1px solid #000099;
+	border-top: 1px solid #000099;
 }
 div#header_user {
 	font-size: small;
@@ -55,25 +58,9 @@ h1 {
 div#footer {
 	margin-top: 0.5em;
 	padding: 0.2em 0.5em;
-	border: 1px solid #ccccff;
-}
-div#footer_conference, div#footer_logout, div#footer_chairmode {
-	margin-bottom: 0em;
-	display: inline;
-}
-div#footer_logout, div#footer_chairmode {
-	margin-left: 1em;
-	padding-left: 1.1em;
-	border-left: 1px solid #ccccff;
-}
-div#footer_right {
-	float: right;
-}
-div#footer_left {
-	float: left;
-	margin-right: 5%;
 }
 div#footer_crp {
+	float: right;
 	font-size: small;
 	margin-top: 3px;
 }
@@ -142,6 +129,13 @@ div.gap {
 div.gapbottom {
 	margin-bottom: -0.5em;
 }
+div.gaptop {
+	background-color: #f6f6ff;
+	height: 0.75em;
+	border-bottom: 1px solid #cc9900;
+	border-left: 1px solid #cc9900;
+	border-right: 1px solid #cc9900;
+}
 
 
 a img {
@@ -163,6 +157,8 @@ table.vubar {
 	position: relative;
 	width: 100%;
 	font-size: small;
+	border-left: 1px solid #cc9900;
+	border-right: 1px solid #cc9900;
 }
 table.vubar td {
 	vertical-align: bottom;

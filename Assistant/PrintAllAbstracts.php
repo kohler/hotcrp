@@ -23,30 +23,30 @@ p.page {page-break-after: always}
 <?php 
 
 $finalizedStr = "";
-if ( $_REQUEST[onlyFinalized] ) {
+if (defval($_REQUEST["onlyFinalized"])) {
   $finalizedStr =  " AND Paper.timeSubmitted>0 ";
 }
 
 $ORDER="ORDER BY Paper.paperId";
-if (IsSet($_REQUEST[orderBy])) {
-  $ORDER = "ORDER BY " . $_REQUEST[orderBy];
+if (isset($_REQUEST["orderBy"])) {
+  $ORDER = "ORDER BY " . $_REQUEST["orderBy"];
 }
 ?>
 <h2> List of submitted papers and authors </h2>
 <p>
-This page shows you all the papers & abstracts that have been entered into the database.
+This page shows you all the papers &amp; abstracts that have been entered into the database.
 Under Microsoft Internet Explorer, you should be able to "Print" or "Print Preview" and it
 will print a single abstract per page (overly long abstracts may print on two pages).
 I'm not certain if this works under Netscape or other browsers.
 </p>
 
-<P CLASS=page> You should see a page break following this when printing. </p>
+<p class="page"> You should see a page break following this when printing. </p>
 
-<FORM method="POST" action="<?php echo $_SERVER[PHP_SELF] ?>">
-<INPUT type=checkbox name=onlyFinalized value=1
-   <?php  if ($_REQUEST["onlyFinalized"]) {echo "checked";}?> > Only show finalized </br>
+<form method="post" action="<?php echo $_SERVER["PHP_SELF"] ?>">
+<input type='checkbox' name='onlyFinalized' value='1'
+   <?php  if (defval($_REQUEST["onlyFinalized"])) {echo "checked='checked' ";}?> /> Only show finalized <br/>
 <input type="submit" value="Update View" name="submit">
-</FORM>
+</form>
 </p>
 
 
@@ -56,9 +56,8 @@ I'm not certain if this works under Netscape or other browsers.
   . " Paper.authorInformation, Paper.abstract, Paper.contactId, "
   . " ContactInfo.firstName, ContactInfo.lastName, "
   . " ContactInfo.email, ContactInfo.affiliation, "
-  . " LENGTH(PaperStorage.paper), PaperStorage.mimetype "
+  . " Paper.size, Paper.mimetype "
   . " FROM Paper, ContactInfo "
-  . " LEFT JOIN PaperStorage ON (PaperStorage.paperId=Paper.paperId)"
   . " WHERE ContactInfo.contactId = Paper.ContactId "
   . $finalizedStr
   . $ORDER;
@@ -76,7 +75,7 @@ $result=$Conf->q($query);
      . " ( " . $row['email'] . " ) ";
      $abstract=$row['abstract'];
      $mimetype=$row['mimetype'];
-     $length=$row['LENGTH(PaperStorage.paper)'];
+     $length=$row['size'];
   ?>
 
 
@@ -114,7 +113,7 @@ $result=$Conf->q($query);
 </td> </tr>
 </table>
 
-<p CLASS=page> End of <?php  echo $paperId ?> </p>
+<p class='page'> End of <?php  echo $paperId ?> </p>
   <?php 
 }
 }

@@ -102,7 +102,7 @@ $query="SELECT ActionLog.logId, UNIX_TIMESTAMP(ActionLog.time), "
 . " ActionLog.ipaddr, ActionLog.contactId, ActionLog.action, "
 . " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email "
 . " FROM ActionLog, ContactInfo WHERE ActionLog.contactId=ContactInfo.contactId $ORDER "
-. " LIMIT $_REQUEST["StartFrom"],$_REQUEST["ChunkSize"]";
+. " LIMIT " . $_REQUEST["StartFrom"] . "," . $_REQUEST["ChunkSize"];
 
 $result = $Conf->q($query);
 
