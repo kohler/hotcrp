@@ -19,14 +19,14 @@ function highlightChange(id) {
     }
 }
 function doRemove(id) {
-    var but = document.getElementById("rem" + id);
     var chg = document.getElementById("chg" + id);
     var row = document.getElementById("pcrow" + id);
-    var rem = (but.value == "Remove from PC");
+    var rem = !row.className.match(/ removed/);
     chg.value = (rem ? "rem" : "chg");
-    var x = row.className.replace(/ *removed/, '');
-    row.className = x + (rem ? " removed" : "");
-    but.value = (rem ? "Do not remove" : "Remove from PC");
+    if (rem)
+	row.className = row.className.replace(/unfolded/, 'folded') + " removed";
+    else
+	row.className = row.className.replace(/\bfolded/, 'unfolded').replace(/\s*removed/, '');
     highlightChange(id);
 }
 </script>
@@ -117,6 +117,8 @@ if (DB::isError($result))
 
 
 // form
+echo "<hr class='smgap' />\n";
+
 if ($Me->amAssistant())
     echo "<form method='post' action='pc.php?post=1'>\n";
 
@@ -142,7 +144,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
     $id = $row->contactId;
 
     // main row
-    echo "<tr id='pcrow$id' class='pcrow'>
+    echo "<tr id='pcrow$id' class='pcrow unfolded'>
   <td class='pc_name'>", htmlspecialchars(trim("$row->firstName $row->lastName")), "</td>\n";
     if ($Me->isPC)
 	echo "  <td class='pc_email'><a href=\"mailto:", htmlspecialchars($row->email), "\">", htmlspecialchars($row->email), "</a></td>\n";
@@ -160,8 +162,11 @@ while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
 	if ($id == $Me->contactId)
 	    echo " disabled='disabled'";
 	echo " onclick='highlightChange($id)' /></td>\n";
+	echo "  <td class='pc_action'>";
 	if ($id != $Me->contactId)
-	    echo "  <td class='pc_action'><input class='button_small' type='button' value='Remove from PC' name='rem$id' id='rem$id' onclick='doRemove($id)' />
+	    echo "<a class='extension' href='javascript:doRemove($id)'>Remove from PC</a><a class='ellipsis' href='javascript:doRemove($id)'>Do not remove</a>";
+	//&nbsp;|&nbsp; ";
+	echo "
     <input type='hidden' value='' name='chg$id' id='chg$id' /></td>\n";
     } else
 	echo "  <td class='pc_role'>", ($row->chair ? "PC Chair" : ($row->ass ? "PC Chair's Assistant" : "PC member")), "</td>\n";

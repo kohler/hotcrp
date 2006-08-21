@@ -1,15 +1,15 @@
 <?php 
 require_once('../Code/confHeader.inc');
 $Conf->connect();
-$_SESSION["Me"]->goIfInvalid("../");
 $Me = $_SESSION["Me"];
+$Me->goIfInvalid();
 $RealMe = $Me;
 
 $newProfile = (isset($_REQUEST["new"]) && $Me->amAssistant());
 if ($newProfile) {
     $Me = new Contact;
     $Me->invalidate();
- }
+}
 
 if (isset($_REQUEST["register"])) {
     $needFields = array('email', 'firstName', 'lastName', 'affiliation');
