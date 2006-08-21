@@ -638,8 +638,8 @@ insert into PaperList set paperListId=1, paperListName='author',
 	queryType='author', sortCol=0, query='';
 insert into PaperListColumns set paperListId=1, fieldId=2, col=0;
 insert into PaperListColumns set paperListId=1, fieldId=12, col=1;
-insert into PaperListColumns set paperListId=1, fieldId=27, col=2;
-insert into PaperListColumns set paperListId=1, fieldId=28, col=3;
+insert into PaperListColumns set paperListId=1, fieldId=28, col=2;
+insert into PaperListColumns set paperListId=1, fieldId=27, col=3;
 
 insert into PaperList set paperListId=2, paperListName='submitted',
 	shortDescription='Submitted', description='Submitted papers',

@@ -195,10 +195,14 @@ class PaperList {
 		$this->needFinalize++;
 	    return $this->contact->paperStatus($row->paperId, $row, $fieldId == self::FIELD_STATUS ? 0 : -1);
 	case self::FIELD_DOWNLOAD:
-	    if ($row->size > 0)
-		return paperDownload($row->paperId, $row);
-	    else
+	    if ($row->size == 0)
 		return "";
+	    else if ($row->mimetype == "application/pdf")
+		return "<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\"><img src=\"${ConfSiteBase}images/pdf.png\" alt='[PDF]' /></a>";
+	    else if ($row->mimetype == "application/postscript")
+		return "<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\"><img src=\"${ConfSiteBase}images/postscript.png\" alt='[PS]' /></a>";
+	    else
+		return "<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\">Paper</a>";
 	case self::FIELD_REVIEWER_TYPE:
 	    if ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted))
 		$this->needSubmitReview++;

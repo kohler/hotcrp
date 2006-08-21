@@ -672,9 +672,12 @@ table.pltable td.pl_reviewsStatus {
 }
 table.pltable td.pl_id, table.pltable td.pl_selector,
 table.pltable td.pl_topicMatch, table.pltable td.pl_reviewPreference,
-table.pltable td.pl_desirability {
+table.pltable td.pl_desirability, table.pltable td.pl_download {
 	text-align: right;
 	padding-right: 0.4em;
+}
+table.pltable td.pl_download {
+	vertical-align: middle;
 }
 td.pl_callout {
 	padding-left: 4em;
