@@ -330,7 +330,7 @@ class PaperList {
     }
     
     function text($listname, $me, $contactId = -1) {
-	global $Conf;
+	global $Conf, $ConfSiteBase;
 
 	$this->contact = $me;
 	$this->count = 0;
