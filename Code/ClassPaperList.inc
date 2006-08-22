@@ -366,7 +366,7 @@ class PaperList {
 	    $queryOptions[$plist->queryType] = 1;
 
 	// get URL
-	$url = $plist->listHome;
+	$url = $ConfSiteBase . $plist->listHome;
 	if ($plist->listContact && $contactId != $me->contactId)
 	    $url .= (strpos($url, "?") ? "&" : "?") . $plist->listContact . "=" . $contactId;
 	$url = preg_replace_callback("|(\\w+)=\\*|", create_function('$m', 'return $m[1] . "=" . urlencode($_REQUEST[$m[1]]);'), $url);
