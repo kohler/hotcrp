@@ -6,7 +6,7 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotChair('../index.php');
 
-$Conf->header("Assign PC Reviews", "assignpc");
+$Conf->header("PC Assignments", "assignpc");
 
 $reviewer = cvtint($_REQUEST["reviewer"]);
 

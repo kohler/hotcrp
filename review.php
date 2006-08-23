@@ -362,8 +362,27 @@ function reviewView($prow, $rrow, $editMode) {
 	if ($Me->timeReview($prow, $Conf) || $Me->amAssistant()) {
 	    echo "<tr class='rev_actions'>
   <td class='caption'></td>
-  <td class='entry'><table class='pt_buttons'>
-    <tr>\n";
+  <td class='entry'><table class='pt_buttons'>\n";
+	    $buttons = array();
+	    if (!$rrow || !$rrow->reviewSubmitted) {
+		$buttons[] = array("<input class='button_default' type='submit' value='Save changes' name='update' />", "(does not submit review)");
+		$buttons[] = array("<input class='button_default' type='submit' value='Submit' name='submit' />", "(PC and authors can see review)");
+	    } else
+		$buttons[] = "<input class='button_default' type='submit' value='Resubmit' name='submit' />";
+
+	    echo "    <tr>\n";
+	    foreach ($buttons as $b) {
+		$x = (is_array($b) ? $b[0] : $b);
+		echo "      <td class='ptb_button'>", $x, "</td>\n";
+	    }
+	    echo "    </tr>\n    <tr>\n";
+	    foreach ($buttons as $b) {
+		$x = (is_array($b) ? $b[1] : "");
+		echo "      <td class='ptb_explain'>", $x, "</td>\n";
+	    }
+	    echo "    </tr>\n  </table></td>\n</tr>\n\n";
+	    
+	    echo "    <tr>\n";
 	    if (!$rrow || !$rrow->reviewSubmitted) {
 		echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save changes' name='update' /></td>
       <td class='ptb_button'><input class='button_default' type='submit' value='Submit' name='submit' /></td>

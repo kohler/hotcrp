@@ -16,22 +16,12 @@
 
 <li> Assign papers
 <ul> 
-<li> <a href="Chair/AssignPapers.php"> Assign papers for review </a>
-and check the status (number of reviews, <i> etc </i>). </li>
 
 <li> <a href="Chair/ListPapersAssignedToPC.php"> List papers assigned to PC member </a>
-
-
-<li> <a href="Chair/AssignConflicts.php"> Assign conflicts </a> </li>
 
 <li> <a href="Chair/FindPCConflicts.php"> Look for conflicts </a> 
 -- by searching for PC names 
 </li>
-
-<li> <a href="Chair/SearchPapers.php"> Search papers</a> 
--- search for  words in papers
-</li>
-
 
 <li> <a href="Chair/AskForReview.php"> Ask someone to review a paper (any paper) </a> </li>
 
