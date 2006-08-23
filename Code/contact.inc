@@ -288,7 +288,7 @@ class Contact {
     function initialize($email, $conf) {
 	$this->email = trim($email);
 	$this->password = $this->generatePassword(10);
-	$result = $conf->q(sprintf("insert into ContactInfo set email='%s', password='%s'", sqlqtrim($this->email), sqlqtrim($this->password)));
+	$result = $conf->q(sprintf("insert into ContactInfo (email, password) values ('%s', '%s')", sqlqtrim($this->email), sqlqtrim($this->password)));
 	if (DB::isError($result))
 	    return $result;
 	return $this->lookupByEmail($this->email, $conf);
@@ -678,7 +678,7 @@ class Contact {
     function amPaperAuthor($paperId, $conf, $prow = null) {
 	if ($prow === null) {
 	    // Query for a specific match of the author and paper
-	    $query = "select paperId from PaperConflict where paperId=$paperId and contactId=$this->contactId and author=1";
+	    $query = "select paperId from PaperConflict where paperId=$paperId and contactId=$this->contactId and author>0";
 	    $result = $conf->qe($query);
 	    return !DB::isError($result) && $result->numRows() > 0;
 	} else
@@ -870,12 +870,12 @@ and paste it into your web browser's location field.
     function assignPaper($paperId, $row, $reviewer, $type, $conf) {
 	global $reviewTypeName;
 	if ($type > 0 && (!$row || !$row->reviewType))
-	    $q = "insert into PaperReview set paperId=$paperId, contactId=$reviewer, reviewType=$type, requestedBy=$this->contactId, requestedOn=current_timestamp";
+	    $q = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($paperId, $reviewer, $type, $this->contactId, current_timestamp)";
 	else if ($type > 0 && $row->reviewType != $type)
 	    $q = "update PaperReview set reviewType=$type where reviewId=$row->reviewId";
-	else if ($type == 0 && $row && $row->reviewType && !$row->reviewModified)
+	else if ($type <= 0 && $row && $row->reviewType && !$row->reviewModified)
 	    $q = "delete from PaperReview where reviewId=$row->reviewId";
-	else if ($type == 0 && $row && $row->reviewType)
+	else if ($type <= 0 && $row && $row->reviewType)
 	    $q = "update PaperReview set reviewType=" . REVIEW_PC . " where reviewId=$row->reviewId";
 	else
 	    return;
@@ -883,6 +883,6 @@ and paste it into your web browser's location field.
 	$result = $conf->qe($q, "while assigning review");
 	if (!DB::isError($result))
 	    $conf->log("Added $reviewTypeName[$type] reviewer $reviewer for paper $paperId", $this);
-    }	
-  
+    }
+
 }

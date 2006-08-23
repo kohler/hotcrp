@@ -15,26 +15,31 @@ function saveAssignments($reviewer) {
     global $Conf, $Me, $reviewTypeName;
 
     $while = "while saving review assignments";
-    $result = $Conf->qe("lock tables Paper write, PaperReview write", $while);
+    $result = $Conf->qe("lock tables Paper write, PaperReview write, PaperConflict write", $while);
     if (DB::isError($result))
 	return $result;
 
     $result = $Conf->qe("select Paper.paperId,
+	PaperConflict.author, PaperConflict.contactId as conflict,
 	reviewId, reviewType, reviewModified
 	from Paper
 	left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=$reviewer)
+	left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=$reviewer)
 	where timeSubmitted>0
 	order by paperId asc, reviewId asc", $while);
 
     $lastPaperId = -1;
     if (!DB::isError($result))
 	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
-	    if ($row->paperId == $lastPaperId)
+	    if ($row->paperId == $lastPaperId || $row->author > 0)
 		continue;
 	    $lastPaperId = $row->paperId;
-	    $type = max(cvtint($_REQUEST["assrev$row->paperId"]), 0);
-	    if ($type == 0 || $type == REVIEW_PRIMARY || $type == REVIEW_SECONDARY)
-		$Me->assignPaper($row->paperId, $row, $reviewer, $type, $Conf);
+	    $type = cvtint($_REQUEST["assrev$row->paperId"]);
+	    if ($type >= 0 && $row->conflict)
+		$Conf->qe("delete from PaperConflict where paperId=$row->paperId and contactId=$reviewer", $while);
+	    if ($type < 0 && !$row->conflict)
+		$Conf->qe("insert into PaperConflict (paperId, contactId) values ($row->paperId, $reviewer)", $while);
+	    $Me->assignPaper($row->paperId, $row, $reviewer, $type, $Conf);
 	}
 
     $Conf->qe("unlock tables", $while);
@@ -51,11 +56,11 @@ Primary reviewers must review the paper themselves; secondary reviewers
 may delegate the paper or review it themselves.</p>
 
 <p>The paper list shows all submitted papers and their topics and reviewers.
-The selected PC member has high interest in topics marked with (+), and low
-interest in topics marked with (&minus;).
+The selected PC member has high interest in <span class='topic2'>bold topics</span>, and low
+interest in <span class='topic0'>grey topics</span>.
 \"Topic score\" is higher the more the PC member is interested in the paper's topics; \"Desirability\" is higher the more people want to review the paper.
-In the reviewer list, <sub><b>1</b></sub> indicates a primary reviewer,
-and <sub><b>2</b></sub> a secondary reviewer.
+In the reviewer list, <img src='${ConfSiteBase}images/ass", REVIEW_PRIMARY, ".png' alt='Primary' /> indicates a primary reviewer,
+and <img src='${ConfSiteBase}images/ass", REVIEW_SECONDARY, ".png' alt='Secondary' /> a secondary reviewer.
 Click on a column heading to sort by that column.</p>\n\n";
 
 

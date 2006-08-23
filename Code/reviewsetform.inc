@@ -47,7 +47,7 @@ if (isset($_REQUEST['update'])) {
 	    if (checkOptions($_REQUEST["options_$field"], $options, $_REQUEST["order_$field"])) {
 		$Conf->qe("delete from ReviewFormOptions where fieldName='" . sqlq($field) . "'", "while updating review form");
 		for ($i = 1; $i <= count($options); $i++)
-		    $Conf->qe("insert into ReviewFormOptions set fieldName='" . sqlq($field) . "', level=$i, description='" . sqlq($options[$i]) . "'", "while updating review form");
+		    $Conf->qe("insert into ReviewFormOptions (fieldName, level, description) values ('" . sqlq($field) . "', $i, '" . sqlq($options[$i]) . "')", "while updating review form");
 		unset($_REQUEST["options_$field"]);
 		$updates = 1;
 	    } else {
@@ -73,7 +73,7 @@ if (isset($_REQUEST['update'])) {
     // alert consumers of change to form
     if (isset($updates)) {
 	$Conf->qe("delete from ImportantDates where name='reviewFormUpdate'"); 
-	$Conf->qe("insert into ImportantDates set name='reviewFormUpdate', start=current_timestamp");
+	$Conf->qe("insert into ImportantDates (name, start) values ('reviewFormUpdate', current_timestamp)");
 	$Conf->confirmMsg("Review form updated.");
 	$rf->validate($Conf, true);
     }

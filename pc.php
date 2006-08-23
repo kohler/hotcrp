@@ -45,7 +45,7 @@ function updateRoles($id, $suff, $email) {
 	$_REQUEST["pc"] = 1;
     foreach (array("pc$suff" => "PCMember", "ass$suff" => "ChairAssistant", "chair$suff" => "Chair") as $key => $table)
 	if (isset($_REQUEST[$key]) && $_REQUEST[$key] > 0) {
-	    $result = $Conf->qe("insert into $table set contactId='$id'");
+	    $result = $Conf->qe("insert into $table (contactId) values ($id)");
 	    if (!DB::isError($result))
 		$Conf->log("Added $email as $table", $_SESSION["Me"]);
 	}

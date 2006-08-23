@@ -144,7 +144,7 @@ function pcAssignments() {
 	    if ($row->conflictId && $val >= 0)
 		$Conf->qe("delete from PaperConflict where paperId=$prow->paperId and contactId=$row->conflictId", $while);
 	    else if (!$row->conflictId && $val < 0)
-		$Conf->qe("insert into PaperConflict set paperId=$prow->paperId, contactId=$row->contactId, author=0", $while);
+		$Conf->qe("insert into PaperConflict (paperId, contactId, author) values ($prow->paperId, $row->contactId, 0)", $while);
 
 	    // manage assignments
 	    $val = max($val, 0);
@@ -192,7 +192,7 @@ function requestReview($email) {
 
     // at this point, we think we've succeeded.
     // store the review request
-    $Conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$reqId, reviewType=" . REVIEW_REQUESTED . ", requestedBy=" . $Me->contactId . ", requestedOn=current_timestamp", $while);
+    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($prow->paperId, $reqId, " . REVIEW_REQUESTED . ", $Me->contactId, current_timestamp)", $while);
     
     // send confirmation email
     $m = "Dear " . contactText($Them) . ",\n\n";
@@ -288,8 +288,8 @@ $paperTable->echoTopics($prow);
 // PC assignments
 if ($Me->amAssistant()) {
     $result = $Conf->qe("select ContactInfo.contactId, firstName, lastName,
-	count(PaperConflict.contactId) as conflict,
-	max(PaperConflict.author) as author,
+	PaperConflict.contactId as conflict,
+	PaperConflict.author as author,
 	PaperReview.reviewType,	preference,
 	group_concat(AllReviews.reviewType separator '') as allReviews
 	from ContactInfo

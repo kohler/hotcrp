@@ -38,7 +38,7 @@ if (isset($_REQUEST["update"])) {
     if (isset($_REQUEST["topics"])) {
 	foreach (preg_split('/[\r\n]+/', $_REQUEST["topics"]) as $t) {
 	    if (($t = trim($t)) != '')
-		$Conf->qe("insert into TopicArea set topicName='" . mysql_real_escape_string($t) . "'", "while adding new topic");
+		$Conf->qe("insert into TopicArea (topicName) values ('" . mysql_real_escape_string($t) . "')", "while adding new topic");
 	}
     }
 
@@ -64,7 +64,7 @@ if (isset($_REQUEST["update"])) {
 
     // Finally mark the form
     $Conf->qe("delete from ImportantDates where name='reviewFormUpdate'"); 
-    $Conf->qe("insert into ImportantDates set name='reviewFormUpdate', start=current_timestamp"); 
+    $Conf->qe("insert into ImportantDates (name, start) values ('reviewFormUpdate', current_timestamp)"); 
 }
 
 function outrow($id, $name) {

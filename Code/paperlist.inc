@@ -248,12 +248,12 @@ class PaperList {
 	case self::FIELD_ASSIGN_REVIEW:
 	    if ($row->author > 0)
 		return "<span class='author'>Author</span>";
-	    else if ($row->conflict > 0)
-		return "<span class='conflict'>Conflict</span>";
+	    $rt = ($row->conflict > 0 ? -1 : min(max($row->reviewType, 0), REVIEW_PRIMARY));
 	    $x = "<select name='assrev$row->paperId' tabindex='1' onchange='highlightUpdate()'>";
-	    $x .= "<option value='0'" . ($row->reviewType <= 0 ? " selected='selected'" : "") . ">None</option>";
-	    $x .= "<option value='" . REVIEW_PRIMARY . "'" . ($row->reviewType == REVIEW_PRIMARY ? " selected='selected'" : "") . ">Primary</option>";
-	    $x .= "<option value='" . REVIEW_SECONDARY . "'" . ($row->reviewType == REVIEW_SECONDARY ? " selected='selected'" : "") . ">Secondary</option>";
+	    $x .= "<option value='0'" . ($rt == 0 ? " selected='selected'" : "") . ">None</option>";
+	    $x .= "<option value='" . REVIEW_PRIMARY . "'" . ($rt == REVIEW_PRIMARY ? " selected='selected'" : "") . ">Primary</option>";
+	    $x .= "<option value='" . REVIEW_SECONDARY . "'" . ($rt == REVIEW_SECONDARY ? " selected='selected'" : "") . ">Secondary</option>";
+	    $x .= "<option value='-1'" . ($rt == -1 ? " selected='selected'" : "") . ">Conflict</option>";
 	    $x .= "</select>";
 	    return $x;
 	case self::FIELD_TOPIC_INTEREST:
@@ -269,9 +269,9 @@ class PaperList {
 			$n .= ($n ? ", " : "");
 			$n .= contactHtml($xrow->firstName, $xrow->lastName);
 			if ($xrow->reviewType == REVIEW_PRIMARY)
-			    $n .= "<sub><b>1</b></sub>";
+			    $n .= "&nbsp;<img src='${ConfSiteBase}images/ass" . REVIEW_PRIMARY . ".png' alt='Primary' />";
 			else if ($xrow->reviewType == REVIEW_SECONDARY)
-			    $n .= "<sub><b>2</b></sub>";
+			    $n .= "&nbsp;<img src='${ConfSiteBase}images/ass" . REVIEW_SECONDARY . ".png' alt='Secondary' />";
 		    }
 	    return $n;
 	case self::FIELD_REVIEWER_PREFERENCE:
@@ -433,7 +433,7 @@ class PaperList {
 		if ($f[2] == 1) {
 		    $c = $this->content($f[0], $row, $plist, $reviewList);
 		    $body .= "    <td class=\"pl_$f[1]\">$c</td>\n";
-		    if ($c)
+		    if ($c != "")
 			$anyData[$f[0]] = 1;
 		}
 	    $body .= "  </tr>\n";

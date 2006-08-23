@@ -59,7 +59,7 @@ function savePreferences($reviewer) {
 
     for ($p = 1; $p <= $pmax; $p++)
 	if (isset($setting[$p]))
-	    $Conf->qe("insert into PaperReviewPreference set paperId=$p, contactId=$reviewer, preference=$setting[$p]", $while);
+	    $Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values ($p, $reviewer, $setting[$p])", $while);
 
     $Conf->qe("unlock tables", $while);
 }

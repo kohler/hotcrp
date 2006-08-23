@@ -45,11 +45,11 @@ if (isset($_REQUEST['register']) && $OK) {
 	    if (isset($_REQUEST["ass"]) || isset($_REQUEST["chair"]))
 		$_REQUEST["pc"] = 1;
 	    if (isset($_REQUEST["pc"]))
-		$Conf->qe("insert into PCMember set contactId=$Me->contactId", "while initializing roles");
+		$Conf->qe("insert into PCMember (contactId) values ($Me->contactId)", "while initializing roles");
 	    if (isset($_REQUEST["ass"]))
-		$Conf->qe("insert into ChairAssistant set contactId=$Me->contactId", "while initializing roles");
+		$Conf->qe("insert into ChairAssistant (contactId) values ($Me->contactId)", "while initializing roles");
 	    if (isset($_REQUEST["chair"]))
-		$Conf->qe("insert into Chair set contactId=$Me->contactId", "while initializing roles");
+		$Conf->qe("insert into Chair (contactId) values ($Me->contactId)", "while initializing roles");
 	}
 	
 	$Me->firstName = $_REQUEST["firstName"];
@@ -78,7 +78,7 @@ if (isset($_REQUEST['register']) && $OK) {
 		    && ($id = (int) substr($key, 2)) > 0
 		    && is_numeric($value)
 		    && ($value = (int) $value) >= 0 && $value < 3)
-		    $Conf->qe("insert into TopicInterest set contactId=$Me->contactId, topicId=$id, interest=$value", "while updating topic interests");
+		    $Conf->qe("insert into TopicInterest (contactId, topicId, interest) values ($Me->contactId, $id, $value)", "while updating topic interests");
 	}
 
 	if ($OK) {

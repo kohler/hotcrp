@@ -131,7 +131,7 @@ function refuseReview() {
     if (DB::isError($result))
 	return;
     $reason = defval($_REQUEST['reason'], "");
-    $result = $Conf->qe("insert into PaperReviewRefused set paperId=$rrow->paperId, contactId=$rrow->contactId, requestedBy=$rrow->requestedBy, reason='" . sqlqtrim($reason) . "'", $while);
+    $result = $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($rrow->paperId, $rrow->contactId, $rrow->requestedBy, '" . sqlqtrim($reason) . "')", $while);
     if (DB::isError($result))
 	return;
 

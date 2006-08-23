@@ -58,7 +58,7 @@ function addContactAuthor($paperId, $contactId) {
     if (!DB::isError($result) && $result->numRows() > 0)
 	$q = "update PaperConflict set author=1 where paperId=$paperId and contactId=$contactId";
     else
-	$q = "insert into PaperConflict set paperId=$paperId, contactId=$contactId, author=1";
+	$q = "insert into PaperConflict (paperId, contactId, author) values ($paperId, $contactId, 1)";
 
     $result = $Conf->qe($q, "while adding contact author");
 

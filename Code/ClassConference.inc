@@ -743,7 +743,7 @@ class Conference {
 	// fields
 	$pq = "select Paper.*,
 		PaperConflict.author as author,
-		PaperConflict.author is not null as conflict,
+		PaperConflict.contactId as conflict,
 		count(AllReviews.reviewSubmitted) as reviewCount,
 		count(AllReviews.paperId) as startedReviewCount";
 	if (!isset($options['author']))
@@ -894,7 +894,7 @@ class Conference {
 
     
     function paperContactAuthors($paperId) {
-	$result = $this->qe("select firstName, lastName, email, contactId from ContactInfo join PaperConflict using (contactId) where paperId=$paperId", "while looking up paper contact authors");
+	$result = $this->qe("select firstName, lastName, email, contactId from ContactInfo join PaperConflict using (contactId) where paperId=$paperId and author>0", "while looking up paper contact authors");
 	$aus = array();
 	if (!DB::isError($result))
 	    while (($row = $result->fetchRow()))

@@ -186,7 +186,7 @@ if (isset($_REQUEST['update']) && $Me->amAssistant()) {
 	    foreach ($Dates as $n => $v) {
 		$sx = ($v[0] > 0 ? "from_unixtime($v[0])" : "'0'");
 		$ex = ($v[1] > 0 ? "from_unixtime($v[1])" : "'0'");
-		$Conf->qe("insert into ImportantDates set name='$n', start=$sx, end=$ex");
+		$Conf->qe("insert into ImportantDates (name, start, end) values ('$n', $sx, $ex)");
 		unset($_REQUEST["${n}_start"]);
 		unset($_REQUEST["${n}_end"]);
 		unset($_REQUEST[$n]);

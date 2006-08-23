@@ -171,7 +171,7 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 	$row = $result->fetchRow();
 	$paperId = $row[0];
 
-	$result = $Conf->qe("insert into PaperConflict set paperId=$paperId, contactId=$contactId, author=1", "while updating paper information");
+	$result = $Conf->qe("insert into PaperConflict (paperId, contactId, author) values ($paperId, $contactId, 1)", "while updating paper information");
 	if (DB::isError($result))
 	    return false;
     }
@@ -183,7 +183,7 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
     foreach ($_REQUEST as $key => $value)
 	if ($key[0] == 't' && $key[1] == 'o' && $key[2] == 'p'
 	    && ($id = cvtint(substr($key, 3))) > 0 && $value > 0) {
-	    $result = $Conf->qe("insert into PaperTopic set paperId=$paperId, topicId=$id", "while updating paper topics");
+	    $result = $Conf->qe("insert into PaperTopic (paperId, topicId) values ($paperId, $id)", "while updating paper topics");
 	    if (DB::isError($result))
 		return false;
 	}
@@ -343,7 +343,7 @@ if (isset($_REQUEST['setrevpref']) && $prow && isset($_REQUEST['revpref'])) {
 	$while = "while saving review preference";
 	$Conf->qe("lock tables PaperReviewPreference write", $while);
 	$Conf->qe("delete from PaperReviewPreference where contactId=$Me->contactId and paperId=$prow->paperId", $while);
-	$result = $Conf->qe("insert into PaperReviewPreference set paperId=$prow->paperId, contactId=$Me->contactId, preference=$v", $while);
+	$result = $Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values ($prow->paperId, $Me->contactId, $v)", $while);
 	$Conf->qe("unlock tables", $while);
 	if (!DB::isError($result))
 	    $Conf->confirmMsg("Review preference saved.");
