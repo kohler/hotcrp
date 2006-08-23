@@ -37,15 +37,6 @@ based on how many reviews have been submitted by everyone
 </a> -- you can get to reviews from here as well
 </li>
 
-<?php if (0) { ?>
-<li> <a href="PC/ListReviews.php"> View all paper reviews </a>,
-including the ones for which you aren't a reviewer. <br> For these
-papers, reviewer information is not shown, and you won't <br>
-be able to view papers for which you have a conflict.
-</li> 
-
-<?php }?>
-
 </ul>
 
 

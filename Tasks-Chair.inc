@@ -25,8 +25,6 @@
 
 <li> <a href="Chair/AskForReview.php"> Ask someone to review a paper (any paper) </a> </li>
 
-<li> <a href="Chair/UnfinalizeReview.php"> Finalize, unfinalize or delete a review </a>
-
 </ul>
 
 <li> Check on reviewing progress

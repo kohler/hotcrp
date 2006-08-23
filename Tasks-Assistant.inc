@@ -29,10 +29,6 @@
 	Prepare information for face sheets</a>
 </li>
 
-<li> <a href="Assistant/DumpPapers.php">
-	Dump all papers into a directory </a>
-	-- Useful for making a CDrom for the PC meeting
-</li>
 </ul>
 </ul>
 
