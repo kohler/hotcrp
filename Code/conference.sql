@@ -684,8 +684,8 @@ insert into PaperList set paperListId=7, paperListName='reviewer',
 	listHome='list.php?list=reviewer', listContact='reviewer', listContactType='reviewer',
 	queryType='myReviews', sortCol=0, query='';
 insert into PaperListColumns set paperListId=7, fieldId=31, col=0;
-insert into PaperListColumns set paperListId=7, fieldId=1, col=1;
-insert into PaperListColumns set paperListId=7, fieldId=11, col=2;
+insert into PaperListColumns set paperListId=7, fieldId=3, col=1;
+insert into PaperListColumns set paperListId=7, fieldId=13, col=2;
 insert into PaperListColumns set paperListId=7, fieldId=28, col=3;
 insert into PaperListColumns set paperListId=7, fieldId=29, col=4;
 insert into PaperListColumns set paperListId=7, fieldId=41, col=5;
