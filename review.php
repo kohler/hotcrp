@@ -115,6 +115,7 @@ if (isset($_REQUEST['delete']) && $Me->amAssistant())
     if (!$editRrow)
 	$Conf->errorMsg("No review to delete.");
     else {
+	archiveReview($editRrow);
 	$result = $Conf->qe("delete from PaperReview where reviewId=$editRrow->reviewId", "while deleting review");
 	if (!DB::isError($result)) {
 	    $Conf->log("Review $editRrow->reviewId for $prow->paperId by $editRrow->contactId deleted", $Me);
@@ -143,20 +144,22 @@ if (isset($_REQUEST['downloadForm']))
 
 
 // refuse review action
+function archiveReview($rrow) {
+    $fields = "reviewId, paperId, contactId, reviewType, requestedBy,
+		requestedOn, acceptedOn, reviewModified, reviewSubmitted, "
+	. join(", ", array_keys($reviewFields));
+    $Conf->qe("insert into PaperReviewArchive ($fields) select $fields from PaperReview where reviewId=$rrow->reviewId", "while archiving review");
+}
+
 function refuseReview() {
     global $ConfSiteBase, $Conf, $Opt, $Me, $prow, $rrow, $reviewFields;
     
     $while = "while refusing review";
     $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperReviewArchive write", $while);
 
-    if ($rrow->reviewModified > 0) {
-	$fields = "reviewId, paperId, contactId, reviewType, requestedBy,
-		requestedOn, acceptedOn, reviewModified, reviewSubmitted, "
-	    . join(", ", array_keys($reviewFields));
-	$result = $Conf->qe("insert into PaperReviewArchive ($fields) select $fields from PaperReview where reviewId=$rrow->reviewId", $while);
-	if (DB::isError($result))
-	    return;
-    }
+    if ($rrow->reviewModified > 0)
+	archiveReview($rrow);
+
     $result = $Conf->qe("delete from PaperReview where reviewId=$rrow->reviewId", $while);
     if (DB::isError($result))
 	return;
