@@ -85,13 +85,43 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 
 
 // update review action
-if (isset($_REQUEST['update']) || isset($_REQUEST['submit']))
+if (isset($_REQUEST['update']) || isset($_REQUEST['submit']) || isset($_REQUEST['unsubmit']))
     if (!$Me->canSubmitReview($prow, $editRrow, $Conf, $whyNot))
 	$Conf->errorMsg(whyNotText($whyNot, "review"));
     else if ($rf->checkRequestFields($_REQUEST, $editRrow)) {
 	$result = $rf->saveRequest($_REQUEST, $editRrow, $prow, $Me->contactId);
 	if (!DB::isError($result))
 	    $Conf->confirmMsg(isset($_REQUEST['submit']) ? "Review submitted." : "Review saved.");
+	loadRows();
+    }
+
+
+// unsubmit review action
+if (isset($_REQUEST['unsubmit']) && $Me->amAssistant())
+    if (!$editRrow || $editRrow->reviewSubmitted <= 0)
+	$Conf->errorMsg("This review has not been submitted.");
+    else {
+	$result = $Conf->qe("update PaperReview set reviewSubmitted=0 where reviewId=$editRrow->reviewId", "while unsubmitting review");
+	if (!DB::isError($result)) {
+	    $Conf->log("Review $editRrow->reviewId for $prow->paperId by $editRrow->contactId unsubmitted", $Me);
+	    $Conf->confirmMsg("Unsubmitted review.");
+	}
+	loadRows();
+    }
+
+
+// delete review action
+if (isset($_REQUEST['delete']) && $Me->amAssistant())
+    if (!$editRrow)
+	$Conf->errorMsg("No review to delete.");
+    else {
+	$result = $Conf->qe("delete from PaperReview where reviewId=$editRrow->reviewId", "while deleting review");
+	if (!DB::isError($result)) {
+	    $Conf->log("Review $editRrow->reviewId for $prow->paperId by $editRrow->contactId deleted", $Me);
+	    $Conf->confirmMsg("Deleted review.");
+	    unset($_REQUEST["reviewId"]);
+	    $_REQUEST["paperId"] = $editRrow->paperId;
+	}
 	loadRows();
     }
 
@@ -366,9 +396,14 @@ function reviewView($prow, $rrow, $editMode) {
 	    $buttons = array();
 	    if (!$rrow || !$rrow->reviewSubmitted) {
 		$buttons[] = array("<input class='button_default' type='submit' value='Save changes' name='update' />", "(does not submit review)");
-		$buttons[] = array("<input class='button_default' type='submit' value='Submit' name='submit' />", "(PC and authors can see review)");
-	    } else
+		$buttons[] = array("<input class='button_default' type='submit' value='Submit' name='submit' />", "(cannot undo)");
+	    } else {
 		$buttons[] = "<input class='button_default' type='submit' value='Resubmit' name='submit' />";
+		if ($Me->amAssistant())
+		    $buttons[] = array("<input class='button' type='submit' value='Unsubmit' name='unsubmit' />", "(PC chair only)");
+	    }
+	    if ($rrow && $Me->amAssistant())
+		$buttons[] = array("<div id='folddel' class='folded' style='position: relative'><button type='button' onclick=\"fold('del', 0)\">Delete review</button><div class='popupdialog extension'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><input class='button' type='submit' name='delete' value='Delete review' /> <button type='button' onclick=\"fold('del', 1)\">Cancel</button></div></div>", "(PC chair only)");
 
 	    echo "    <tr>\n";
 	    foreach ($buttons as $b) {
@@ -380,20 +415,6 @@ function reviewView($prow, $rrow, $editMode) {
 		$x = (is_array($b) ? $b[1] : "");
 		echo "      <td class='ptb_explain'>", $x, "</td>\n";
 	    }
-	    echo "    </tr>\n  </table></td>\n</tr>\n\n";
-	    
-	    echo "    <tr>\n";
-	    if (!$rrow || !$rrow->reviewSubmitted) {
-		echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save changes' name='update' /></td>
-      <td class='ptb_button'><input class='button_default' type='submit' value='Submit' name='submit' /></td>
-    </tr>
-    <tr>
-      <td class='ptb_explain'>(does not submit review)</td>
-      <td class='ptb_explain'>(allow PC to see review)</td>\n";
-	    } else
-		echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Resubmit' name='submit' /></td>\n";
-	    if (!$Me->timeReview($prow, $Conf))
-		echo "    </tr>\n    <tr>\n      <td colspan='3'><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td>\n";
 	    echo "    </tr>\n  </table></td>\n</tr>\n\n";
 	}
 
