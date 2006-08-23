@@ -51,9 +51,11 @@ if (isset($_REQUEST["update"]) && $reviewer > 0)
 else if (isset($_REQUEST["update"]))
     $Conf->errorMsg("You need to select a reviewer.");
 
-echo "<p>Select a program committee member and assign that person papers to review.
+echo "<p>Select a program committee member and assign that person conflicts and
+papers to review.
 Primary reviewers must review the paper themselves; secondary reviewers 
-may delegate the paper or review it themselves.</p>
+may delegate the paper or review it themselves.
+You can also assign reviews and conflicts on the paper pages.</p>
 
 <p>The paper list shows all submitted papers and their topics and reviewers.
 The selected PC member has high interest in <span class='topic2'>bold topics</span>, and low

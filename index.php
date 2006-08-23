@@ -109,6 +109,8 @@ if ($Me->isPC || $Me->amReviewer()) {
   <li><a href='uploadreview.php'>Download and upload review forms</a></li>\n";
     if ($Me->isPC)
 	$body .= "  <li><a href='PC/reviewprefs.php'>Review preferences</a></li>\n";
+    if ($Me->amAssistant())
+	$body .= "  <li><a href='Chair/AssignPapers.php'>Assign PC reviews and conflicts</a></li>\n";
     $body .= "</ul>
 
 </td><td>\n\n";
