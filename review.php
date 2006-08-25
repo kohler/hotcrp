@@ -357,7 +357,7 @@ function reviewView($prow, $rrow, $editMode) {
     <td class='entry'>";
     if ($Me->canViewReviewerIdentity($prow, $rrow, $Conf))
 	echo "by ", contactHtml($rrow), " &nbsp;|&nbsp; ";
-    if ($rrow)
+    if ($rrow && $rrow->reviewModified > 0)
 	echo "Modified ", $Conf->printableTime($rrow->reviewModified);
     if ($rrow && !$editMode)
 	echo " &nbsp;|&nbsp; <a href='review.php?paperId=$prow->paperId&amp;reviewId=$rrow->reviewId&amp;text=1'>Text version</a>";

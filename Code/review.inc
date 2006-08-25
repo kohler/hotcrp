@@ -321,7 +321,8 @@ class ReviewForm {
 	    if ($conf->blindReview() > 1
 		|| ($conf->blindReview() == 1 && !$rrow->blind))
 		$x .= "==-== by " . contactText($rrow) . "\n";
-	    $x .= "==-== Modified " . $conf->printableTime($rrow->reviewModified) . "\n";
+	    if ($rrow->reviewModified)
+		$x .= "==-== Modified " . $conf->printableTime($rrow->reviewModified) . "\n";
 	}
 
 	$i = 0;
