@@ -2,6 +2,7 @@ body {
 	font-family: sans-serif;
 	color: black;
 	background-color: white;
+	margin: 0px;
 }
 table, tr, td {
 	padding: 0px;
@@ -23,11 +24,13 @@ div.inform {
 	display: inline;
 }
 
+div.body {
+	padding: 0px 8px;
+}
+
 div#header {
 	background: #f6f6ff;
-	border-left: 1px solid #000099;
-	border-right: 1px solid #000099;
-	border-top: 1px solid #000099;
+	padding: 8px 8px 0px 8px;
 }
 div#header_user {
 	font-size: small;
@@ -133,8 +136,6 @@ div.gaptop {
 	background-color: #f6f6ff;
 	height: 0.75em;
 	border-bottom: 1px solid #cc9900;
-	border-left: 1px solid #cc9900;
-	border-right: 1px solid #cc9900;
 }
 
 
@@ -157,8 +158,6 @@ table.vubar {
 	position: relative;
 	width: 100%;
 	font-size: small;
-	border-left: 1px solid #cc9900;
-	border-right: 1px solid #cc9900;
 }
 table.vubar td {
 	vertical-align: bottom;

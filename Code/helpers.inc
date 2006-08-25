@@ -696,10 +696,10 @@ function unparseReviewOrdinal($ord) {
 	return chr(intval($ord / 26) + 65) . chr(($ord % 26) + 65);
 }
 
-function downloadText($text, $filename, $description) {
+function downloadText($text, $filename, $description, $inline = false) {
     global $Conf;
     header("Content-Description: $Conf->shortName $description, PHP generated data");
-    header("Content-Disposition: attachment; filename=$filename");
+    header("Content-Disposition: " . ($inline ? "inline" : "attachment") . "; filename=$filename");
     header("Content-Type: text/plain");
     header("Content-Length: " . strlen($text));
     print $text;

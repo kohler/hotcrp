@@ -146,7 +146,7 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 
     // blind?
     if ($Conf->blindSubmission() > 1
-	|| ($Conf->blindSubmission() == 1 && isset($_REQUEST['blind'])))
+	|| ($Conf->blindSubmission() == 1 && defval($_REQUEST['blind'])))
 	$q .= "blind=1, ";
     else
 	$q .= "blind=0, ";
@@ -472,8 +472,8 @@ if (($newPaper || $mode == "edit") && $Conf->blindSubmission() == 1) {
   <td class='entry'><input type='checkbox' name='blind' value='1'";
     if ($useRequest ? isset($_REQUEST['blind']) : (!$prow || $prow->blind))
 	echo " checked='checked'";
-    echo " />&nbsp;Blind submission</td>
-  <td class='hint'>Blind submissions have their author lists hidden from external reviewers and the PC.  You may choose whether or not to submit your paper blind.</td>
+    echo " />&nbsp;Anonymous submission</td>
+  <td class='hint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (the PC and any external reviewers won't be shown the author list).</td>
 </tr>\n";
 }
 

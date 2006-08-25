@@ -146,6 +146,8 @@ class Conference {
 		$this->startTime[$x] = 0;
 	if (!isset($this->startTime["blindSubmission"]))
 	    $this->startTime["blindSubmission"] = 2;
+	if (!isset($this->startTime["blindReview"]))
+	    $this->startTime["blindReview"] = 2;
     }
 
     function q($query) {
@@ -384,6 +386,9 @@ class Conference {
 
     function blindSubmission() {
 	return $this->startTime['blindSubmission'];
+    }
+    function blindReview() {
+	return $this->startTime['blindReview'];
     }
     
 
@@ -1034,11 +1039,15 @@ class Conference {
 	echo "</head><body>\n";
 	echo "<div id='header'>\n";
 	echo "  <div id='header_left'>\n";
-	echo "    <a href='",
-	    $ConfSiteBase, "index.php'>", $this->shortName,
-	    "</a>";
-	if ($title && $showTitle)
-	    echo " &nbsp;:&nbsp; <h1>", $title, "</h1>\n";
+	if ($title && $showTitle && $title == "Home")
+	    echo "<h1>", $this->shortName, "</h1>";
+	else {
+	    echo "    <a href='",
+		$ConfSiteBase, "index.php'>", $this->shortName,
+		"</a>";
+	    if ($title && $showTitle)
+		echo " &nbsp;:&nbsp; <h1>", $title, "</h1>\n";
+	}
 	echo "  </div>\n";
 	echo "  <div id='header_user'>";
 	if ($_SESSION["Me"]->valid()) {

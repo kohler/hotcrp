@@ -699,11 +699,15 @@ class Contact {
     
     function canViewReviewerIdentity($prow, $rrow, $conf) {
 	if (($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
-	    || $rrow->contactId == $this->contactId
+	    || ($rrow && $rrow->contactId == $this->contactId)
 	    || ($this->isPC && $prow->author <= 0 && $prow->conflict <= 0)
 	    || ($prow->reviewType > 0
 		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0
 		&& $conf->startTime["reviewerViewReviews"] >= 2))
+	    return true;
+	$blind = $conf->blindReview();
+	if ($blind > 1
+	    || ($blind == 1 && $rrow && $rrow->blind == 0))
 	    return true;
 	return false;
     }

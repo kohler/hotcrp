@@ -6,6 +6,7 @@ $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $rf = reviewForm();
+$useRequest = false;
 
 
 // header
@@ -93,7 +94,8 @@ if (isset($_REQUEST['update']) || isset($_REQUEST['submit']) || isset($_REQUEST[
 	if (!DB::isError($result))
 	    $Conf->confirmMsg(isset($_REQUEST['submit']) ? "Review submitted." : "Review saved.");
 	loadRows();
-    }
+    } else
+	$useRequest = true;
 
 
 // unsubmit review action
@@ -128,19 +130,21 @@ if (isset($_REQUEST['delete']) && $Me->amAssistant())
 
 
 // download review form action
-function downloadForm() {
+function downloadForm($inline) {
     global $rf, $Conf, $Me, $prow, $editRrow, $rrows, $myRrow;
     if (!$Me->canViewReview($prow, $editRrow, $Conf, $whyNot))
 	return $Conf->errorMsg(whyNotText($whyNot, "review"));
-    $text = $rf->textFormHeader($Conf)
+    $text = $rf->textFormHeader($Conf, false, $Me->canViewAllReviewFields($prow, $Conf))
 	. $rf->textForm($prow, $editRrow, $Conf,
 			($prow->reviewType > 0 ? $_REQUEST : null),
 			$Me->canViewAllReviewFields($prow, $Conf)) . "\n";
-    downloadText($text, $Conf->downloadPrefix . "review-" . $prow->paperId . ".txt", "review form");
+    downloadText($text, $Conf->downloadPrefix . "review-" . $prow->paperId . ".txt", "review form", $inline);
     exit;
 }
 if (isset($_REQUEST['downloadForm']))
-    downloadForm();
+    downloadForm(false);
+if (isset($_REQUEST['text']))
+    downloadForm(true);
 
 
 // refuse review action
@@ -350,33 +354,39 @@ function reviewView($prow, $rrow, $editMode) {
     if ($rrow && $rrow->reviewSubmitted)
 	echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
     echo "</h3></td>
-    <td class='entry'></td>
-  </tr>
-
-  <tr class='rev_rev'>
-    <td class='caption'></td>
     <td class='entry'>";
-    if ($editMode && $rrow && $rrow->contactId != $Me->contactId)
-	$Conf->infoMsg("You aren't the author of this review, but you can still make changes as PC Chair.");
-    echo "<form class='downloadreviewform' action='review.php' method='get'>",
-	"<input type='hidden' name='paperId' value='$prow->paperId' />";
+    if ($Me->canViewReviewerIdentity($prow, $rrow, $Conf))
+	echo "by ", contactHtml($rrow), " &nbsp;|&nbsp; ";
     if ($rrow)
-	echo "<input type='hidden' name='reviewId' value='$rrow->reviewId' />";
-    echo "<input class='button_small' type='submit' value='Download", ($editMode ? " form" : ""), "' name='downloadForm' id='downloadForm' />",
-	"</form>";
+	echo "Modified ", $Conf->printableTime($rrow->reviewModified);
+    if ($rrow && !$editMode)
+	echo " &nbsp;|&nbsp; <a href='review.php?paperId=$prow->paperId&amp;reviewId=$rrow->reviewId&amp;text=1'>Text version</a>";
+    echo "</td>
+  </tr>\n";
+    
 
     if ($editMode) {
+	echo "\n  <tr class='rev_rev'>
+    <td class='caption'></td>
+    <td class='entry'>";
+	if ($rrow && $rrow->contactId != $Me->contactId)
+	    $Conf->infoMsg("You aren't the author of this review, but you can still make changes as PC Chair.");
+	echo "<form class='downloadreviewform' action='review.php' method='get'>",
+	    "<input type='hidden' name='paperId' value='$prow->paperId' />";
+	if ($rrow)
+	    echo "<input type='hidden' name='reviewId' value='$rrow->reviewId' />";
+	echo "<input class='button_small' type='submit' value='Download", ($editMode ? " form" : ""), "' name='downloadForm' id='downloadForm' />",
+	    "</form>";
+
 	echo "<form class='downloadreviewform' action='review.php?post=1&amp;paperId=$prow->paperId";
 	if ($rrow)
 	    echo "&amp;reviewId=$rrow->reviewId";
 	echo "' method='post' enctype='multipart/form-data'>",
 	    "<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp;<input class='button_small' type='submit' value='Upload form' name='uploadForm' />",
-	    "</form>";
+	    "</form></td>\n  </tr>\n";
     }
     
-    echo "</td>
-  </tr>
-</table>\n";
+    echo "</table>\n";
 
     if ($editMode) {
 	// start review form
@@ -388,8 +398,20 @@ function reviewView($prow, $rrow, $editMode) {
 	echo "$forceShow&amp;post=1' method='post' enctype='multipart/form-data'>\n";
 	echo "<table class='reviewform'>\n";
 
+	// blind?
+	if ($Conf->blindReview() == 1) {
+	    echo "<tr class='rev_blind'>
+  <td class='caption'></td>
+  <td class='entry'><input type='checkbox' name='blind' value='1'";
+	    if ($useRequest ? defval($_REQUEST['blind']) : (!$rrow || $rrow->blind))
+		echo " checked='checked'";
+	    echo " />&nbsp;Anonymous review</td>
+  <td class='hint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won't know who wrote the review).</td>
+</tr>\n";
+	}
+	
 	// form body
-	echo $rf->webFormRows($rrow, 1);
+	echo $rf->webFormRows($rrow, true);
 
 	// review actions
 	if ($Me->timeReview($prow, $Conf) || $Me->amAssistant()) {

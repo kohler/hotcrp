@@ -39,15 +39,15 @@ $DateName['PCMeetingView'] = "PC meeting view";
 $DateName['AtTheMeeting'] = "PC meeting";
 $DateName['EndOfTheMeeting'] = "End of PC meeting";
 
-$DateDescr['updatePaperSubmission']
-= "If you want to allow authors to start a paper and then "
-    . "update it before the final deadline, set this range to "
-    . "that time.";
+#$DateDescr['updatePaperSubmission']
+#= "If you want to allow authors to start a paper and then "
+#. "update it before the final deadline, set this range to "
+#. "that time.";
 
-$DateDescr['finalizePaperSubmission']
-= "Papers must be officially submitted by this date or they will not be considered.  "
-. "It's usually a good idea to set this deadline to "
-. "a day or two after the update deadline.";
+#$DateDescr['finalizePaperSubmission']
+#= "Papers must be officially submitted by this date or they will not be considered.  "
+#. "It's usually a good idea to set this deadline to "
+#. "a day or two after the update deadline.";
 
 $DateDescr['authorRespondToReviews']
 = "This should obviously overlap with the period reviews are visible.";
@@ -171,6 +171,9 @@ if (isset($_REQUEST['update']) && $Me->amAssistant()) {
     if (($x = cvtint($_REQUEST["blindSubmission"])) < 0 || $x > 2)
 	$x = 2;
     $Dates["blindSubmission"] = array($x, 0);
+    if (($x = cvtint($_REQUEST["blindReview"])) < 0 || $x > 2)
+	$x = 2;
+    $Dates["blindReview"] = array($x, 0);
     $Dates["reviewFormUpdate"] = array(time(), 0);
     
     // print messages now, in case errors come later
@@ -336,11 +339,28 @@ if ($Me->amAssistant()) {
 
 <h3>The submission period</h3>
 
-<table class='imptdates'>\n";
+<table>
+<tr><td style='vertical-align: top'><table class='imptdates'>\n";
     crp_show1date('startPaperSubmission', 0);
     crp_show1date('startPaperSubmission', 1);
     crp_show1date('updatePaperSubmission', 1);
     crp_show1date('finalizePaperSubmission', 1);
+    echo "</table></td>
+<td style='vertical-align: top'><table class='imptdates'>
+  <tr><td class='datename'>";
+
+    $x = cvtint($_REQUEST["blindSubmission"]);
+    if ($x < 0)
+	$x = cvtint($Conf->startTime["blindSubmission"]);
+    echo "<input type='radio' name='blindSubmission' value='2'", ($x < 0 || $x >= 2 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Blind submission<br />";
+    echo "<input type='radio' name='blindSubmission' value='1'", ($x == 1 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Optionally blind submission<br />";
+    echo "<input type='radio' name='blindSubmission' value='0'", ($x == 0 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Nonblind submission\n";
+
+    echo "  </td></tr>
+</table></td></tr>
+</table>
+
+<table class='imptdates'>\n";
     crp_showdate('authorViewReviews');
     crp_showdate('authorRespondToReviews');
     crp_showdate('authorViewDecision');
@@ -356,7 +376,7 @@ if ($Me->amAssistant()) {
 
 <h3>The review period</h3>
 
-<table>\n
+<table>
 <tr><td style='vertical-align: top'><table class='imptdates'>\n";
     
     crp_show1date('PCReviewPreferences', 0);
@@ -370,12 +390,12 @@ if ($Me->amAssistant()) {
 <tr>
   <td class='datename'>";
 
-    $x = cvtint($_REQUEST["blindSubmission"]);
+    $x = cvtint($_REQUEST["blindReview"]);
     if ($x < 0)
-	$x = cvtint($Conf->startTime["blindSubmission"]);
-    echo "<input type='radio' name='blindSubmission' value='2'", ($x < 0 || $x >= 2 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Blind submission<br />";
-    echo "<input type='radio' name='blindSubmission' value='1'", ($x == 1 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Optionally blind submission<br />";
-    echo "<input type='radio' name='blindSubmission' value='0'", ($x == 0 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Nonblind submission\n";
+	$x = cvtint($Conf->startTime["blindReview"]);
+    echo "<input type='radio' name='blindReview' value='2'", ($x < 0 || $x >= 2 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Blind review<br />";
+    echo "<input type='radio' name='blindReview' value='1'", ($x == 1 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Optionally blind review<br />";
+    echo "<input type='radio' name='blindReview' value='0'", ($x == 0 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Nonblind review\n";
 
     echo "<div class='maintabsep'></div>\n";
 

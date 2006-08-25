@@ -86,7 +86,7 @@ class ReviewForm {
 	    $this->updateFromDB($conf);
     }
 
-    function webFormRows($rrow, $useRequest = 0) {
+    function webFormRows($rrow, $useRequest = false) {
 	global $ReviewFormError;
 	$x = '';
 	foreach ($this->fieldOrder as $field) {
@@ -103,7 +103,10 @@ class ReviewForm {
 		$x .= " error";
 	    if (isset($this->options[$field]))
 		$x .= " textarea";
-	    $x .= "'>" . htmlspecialchars($this->shortName[$field]) . "</td>\n";
+	    $x .= "'>" . htmlspecialchars($this->shortName[$field]);
+	    if (!$this->authorView[$field])
+		$x .= "<br /><span class='hint'>PC only</span>";
+	    $x .= "</td>\n";
 	    
 	    $x .= "  <td class='entry'>";
 	    if (isset($this->options[$field])) {
@@ -197,6 +200,13 @@ class ReviewForm {
 
 	if ($submit && (!$rrow || !$rrow->reviewSubmitted))
 	    $q .= "reviewSubmitted=" . time() . ", ";
+
+	// blind?
+	if ($conf->blindReview() > 1
+	    || ($conf->blindReview() == 1 && defval($req['blind'])))
+	    $q .= "blind=1, ";
+	else
+	    $q .= "blind=0, ";
 	
 	if ($rrow)
 	    $result = $conf->qe("update PaperReview set $q reviewModified=" . time() . " where reviewId=$rrow->reviewId", "while storing review");
@@ -258,19 +268,23 @@ class ReviewForm {
     }
 
 
-    function textFormHeader($conf, $multiple = false) {
+    function textFormHeader($conf, $multiple = false, $editable = true) {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
 	
-	$x = "==+== $conf->shortName Paper Review Form
+	$x = "==+== $conf->shortName Paper Review";
+	if ($editable) {
+	    $x .= " Form
 ==-== Fill out lettered sections A through " . chr(65 + count($this->fieldOrder) - 1) . ".\n";
-	if (!$multiple)
-	    $x .= "==-== To review multiple papers, duplicate the form body from \"Begin Review\"
+	    if (!$multiple)
+		$x .= "==-== To review multiple papers, duplicate the form body from \"Begin Review\"
 ==-== through \"End Review\".  Make sure to change the paper number.\n";
-	$x .= "==-== DO NOT DELETE, ALTER, OR ADD \"==+==\" LINES EXCEPT AS NOTED!
+	    $x .= "==-== DO NOT CHANGE \"==+==\" LINES EXCEPT AS NOTED!
 ==-== When you are done, upload the review form at this address:
 ==-== $conf->paperSite/uploadreview.php
 ==-== That site also has further guidance on the review form.\n\n";
+	} else
+	    $x .= "\n\n";
 	return $x;
     }
     
@@ -293,6 +307,10 @@ class ReviewForm {
 	    $x .= "\n==-== Uploading this form will submit the review, making it available to
 ==-== authors and the PC, unless you delete the following line.
 ==+== Submit Review\n";
+	    if ($conf->blindReview() == 1)
+		$x .= "\n==-== " . $conf->shortName . " allows either anonymous or open review.
+==-== To submit a non-anonymous review, change 'Anonymous' to 'Open' here.
+==+== " . ($rrow && !$rrow->blind ? "Open" : "Anonymous") . " Review\n";
 	} else {
 	    $x .= "==+== Begin Review #$prow->paperId";
 	    if ($req && isset($req['reviewOrdinal']))
@@ -300,9 +318,14 @@ class ReviewForm {
 	    else if ($rrow && isset($rrow->reviewOrdinal))
 		$x .= unparseReviewOrdinal($rrow->reviewOrdinal);
 	    $x .= "\n";
+	    if ($conf->blindReview() > 1
+		|| ($conf->blindReview() == 1 && !$rrow->blind))
+		$x .= "==-== by " . contactText($rrow) . "\n";
+	    $x .= "==-== Modified " . $conf->printableTime($rrow->reviewModified) . "\n";
 	}
 
 	$i = 0;
+	$numericMessage = 0;
 	foreach ($this->fieldOrder as $field) {
 	    if (!$reviewer && !$this->authorView[$field])
 		continue;
@@ -310,16 +333,19 @@ class ReviewForm {
 	    if (!$this->authorView[$field])
 		$x .= " (PC only)";
 	    $x .= "\n";
-	    if (isset($this->options[$field]) && $reviewer)
+	    if (isset($this->options[$field]) && $reviewer) {
 		foreach ($this->options[$field] as $num => $value)
 		    if ($num == 1)
 			$x .= "==-== Choices: $num. $value\n";
 		    else
 			$x .= "==-==          $num. $value\n";
+		if ($numericMessage++ == 0)
+		    $x .= "==-== Enter the number of your choice here.\n";
+	    }
 	    $x .= "\n";
 	    
 	    $fval = "";
-	    if ($useRequest && isset($req[$field]))
+	    if ($req && isset($req[$field]))
 		$fval = rtrim($req[$field]);
 	    else if ($rrow != null)
 		$fval = rtrim($rrow->$field);
@@ -376,15 +402,18 @@ class ReviewForm {
 		    $this->garbageMessage($tf, $lineno, $garbage);
 		    $tf['err'][] = "$lineno: This review form appears to be for the wrong conference!";
 		    return null;
-		} else if (preg_match("/^==\\+== Paper \#?(\\d+)/", $line, $match)) {
+		} else if (preg_match("/^==\\+== Paper \#?(\\d+)/i", $line, $match)) {
 		    if ($nfields > 0)
 			break;
 		    else {
 			$req['paperId'] = $match[1];
+			$req['blind'] = 1;
 			$tf['firstLineno'] = $lineno;
 		    }
-		} else if (preg_match("/^==\\+== Submit Review\\s*\$/", $line)) {
+		} else if (preg_match("/^==\\+== Submit Review\\s*\$/i", $line)) {
 		    $req["submit"] = true;
+		} else if (preg_match("/^==\\+== Open Review\\s*\$/i", $line)) {
+		    $req['blind'] = 0;
 		} else if (preg_match("/^==\\+== [A-Z]\\.\\s*(.*?)\\s*\$/", $line, $match)) {
 		    $fname = str_replace(" (PC only)", "", $match[1]);
 		    $fn =& $this->fieldName[strtolower($fname)];
@@ -470,7 +499,10 @@ class ReviewForm {
 	    $n = htmlspecialchars($this->shortName[$field]);
 	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))
 		$n = preg_replace("/\\s+/", "&nbsp;", $n);
-	    $x .= "$n</td>\n";
+	    $x .= "$n";
+	    if (!$this->authorView[$field])
+		$x .= "<br /><span class='hint'>PC only</span>";
+	    $x .= "</td>\n";
 	    
 	    $x .= "  <td class='entry rev_$field";
 	    if ($options) {
