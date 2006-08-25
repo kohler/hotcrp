@@ -355,12 +355,17 @@ function reviewView($prow, $rrow, $editMode) {
 	echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
     echo "</h3></td>
     <td class='entry'>";
-    if ($Me->canViewReviewerIdentity($prow, $rrow, $Conf))
-	echo "by ", contactHtml($rrow), " &nbsp;|&nbsp; ";
-    if ($rrow && $rrow->reviewModified > 0)
-	echo "Modified ", $Conf->printableTime($rrow->reviewModified);
+    $sep = "";
+    if ($Me->canViewReviewerIdentity($prow, $rrow, $Conf)) {
+	echo "by ", contactHtml($rrow);
+	$sep = " &nbsp;|&nbsp; ";
+    }
+    if ($rrow && $rrow->reviewModified > 0) {
+	echo $sep, "Modified ", $Conf->printableTime($rrow->reviewModified);
+	$sep = " &nbsp;|&nbsp; ";
+    }
     if ($rrow && !$editMode)
-	echo " &nbsp;|&nbsp; <a href='review.php?paperId=$prow->paperId&amp;reviewId=$rrow->reviewId&amp;text=1'>Text version</a>";
+	echo $sep, "<a href='review.php?paperId=$prow->paperId&amp;reviewId=$rrow->reviewId&amp;text=1'>Text version</a>";
     echo "</td>
   </tr>\n";
     
