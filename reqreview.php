@@ -264,14 +264,14 @@ echo "<form action='reqreview.php?paperId=$prow->paperId&amp;post=1' method='pos
 
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, true);
-$paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->amAssistant(), "reqreviewFold");
+$paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->amAssistant(), "assignFold");
 
 
 // title
 echo "<tr class='id'>\n  <td class='caption'><h2>#", $prow->paperId, "</h2></td>\n";
 echo "  <td class='entry' colspan='2'><h2>";
 $paperTable->echoTitle($prow);
-echo "</h2><img id='reqreviewFold' alt='' src='", $ConfSiteBase, "sessionvar.php?var=reqreviewFold&amp;val=", defval($_SESSION["reqreviewFold"], 3), "&amp;cache=1' width='1' height='1' /></td>\n</tr>\n\n";
+echo "</h2><img id='assignFold' alt='' src='", $ConfSiteBase, "sessionvar.php?var=assignFold&amp;val=", defval($_SESSION["assignFold"], 3), "&amp;cache=1' width='1' height='1' /></td>\n</tr>\n\n";
 
 
 // paper body

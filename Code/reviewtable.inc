@@ -76,7 +76,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	    && ($rr->requestedBy == $Me->contactId || $effAssistant)) {
 	    if ($mode == "req") {
 		$t .= "<td colspan='" . (1 + $nNumeric) . "'>";
-		$t .= "<a class='button_small' href=\"${ConfSiteBase}reqreview.php?paperId=$prow->paperId&amp;retract=$rr->reviewId$forceShow\">Retract review request</a></td>";
+		$t .= "<a class='button_small' href=\"${ConfSiteBase}assign.php?paperId=$prow->paperId&amp;retract=$rr->reviewId$forceShow\">Retract review request</a></td>";
 	    } else
 		$nRetractable++;
 	} else 
@@ -137,7 +137,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	    $t = "Assign or request reviewers";
 	else
 	    $t = "Ask someone else to review this paper" . ($nRetractable ? " or retract outstanding review requests" : "");
-	$notes[] = "<a href=\"${ConfSiteBase}reqreview.php?paperId=$prow->paperId" . ($forceShow ? "&amp;forceShow=1" : "") . "\">$t</a>";
+	$notes[] = "<a href=\"${ConfSiteBase}assign.php?paperId=$prow->paperId" . ($forceShow ? "&amp;forceShow=1" : "") . "\">$t</a>";
     }
 
     // refuse review

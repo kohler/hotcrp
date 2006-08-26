@@ -658,19 +658,19 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
 		&& $Conf->timeReviewOpen())))
 	$x .= actionTab("Reviews", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "review");
 
-    if ($mode == "revreq"
+    if ($mode == "assign"
 	|| ($Me->amAssistant() && $prow && $prow->timeSubmitted > 0))
-	$x .= actionTab("Assignments", "${ConfSiteBase}reqreview.php?paperId=$paperId", $mode == "revreq");
+	$x .= actionTab("Assignments", "${ConfSiteBase}assign.php?paperId=$paperId", $mode == "assign");
     
     if ($thisUrl)
 	$x .= actionTab($mode, $thisUrl, true);
 
     $x .= "  </tr></table></td>\n  <td class='spanner'></td>\n";
     
-    if ($mode == "revreq")
-	$goBase = "reqreview.php";
+    if ($mode == "assign" || $mode == "review" || $mode == "comment")
+	$goBase = "$mode.php";
     else
-	$goBase = ($mode == "review" ? "review.php" : "paper.php");
+	$goBase = "paper.php";
     $xmode = (isset($_REQUEST["mode"]) ? array("mode" => $_REQUEST["mode"]) : array());
     if ($prow && ($zz = listLinks($prow->paperId, $goBase, $xmode)))
 	$x .= "  <td class='listlinks' nowrap='nowrap'>" . $zz . "</td>\n";
