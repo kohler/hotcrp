@@ -15,7 +15,7 @@ function saveAssignments($reviewer) {
     global $Conf, $Me, $reviewTypeName;
 
     $while = "while saving review assignments";
-    $result = $Conf->qe("lock tables Paper write, PaperReview write, PaperConflict write", $while);
+    $result = $Conf->qe("lock tables Paper read, PaperReview write, PaperConflict write", $while);
     if (DB::isError($result))
 	return $result;
 

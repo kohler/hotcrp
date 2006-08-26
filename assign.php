@@ -67,7 +67,7 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
     
     $while = "while retracting review request";
     if ($lock)
-	$Conf->qe("lock tables PaperReview write, ContactInfo write", $while);
+	$Conf->qe("lock tables PaperReview write, ContactInfo read", $while);
     // NB caller unlocks tables
 
     // check for outstanding review request
@@ -125,7 +125,7 @@ if (isset($_REQUEST['retract']) && ($retract = cvtint($_REQUEST['retract'])) > 0
 function pcAssignments() {
     global $Conf, $Me, $prow;
     $while = "while updating PC conflicts";
-    $Conf->qe("lock tables PaperReview write, PaperConflict write, PCMember write, ContactInfo write", $while);
+    $Conf->qe("lock tables PaperReview write, PaperConflict write, PCMember read, ContactInfo read", $while);
     
     // don't record separate PC conflicts on author conflicts
     $result = $Conf->qe("select PCMember.contactId,
@@ -169,7 +169,7 @@ function requestReview($email) {
     $Them->lookupById($reqId, $Conf);
     
     $while = "while requesting review";
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo write", $while);
+    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo read", $while);
     // NB caller unlocks tables on error
 
     // check for outstanding review request
