@@ -251,7 +251,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 	    echo authorTable($aus);
 	}
 	if ($editMode || ($editMode === null && $this->editable))
-	    echo "<a class='button_small' href='${ConfSiteBase}contactauthors.php?paperId=$prow->paperId'>Edit&nbsp;contact&nbsp;authors</a>";
+	    echo "<a href='${ConfSiteBase}contactauthors.php?paperId=$prow->paperId'>Edit&nbsp;contact&nbsp;authors</a>";
 	echo "</td>\n</tr>\n\n";
     }
 

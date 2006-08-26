@@ -535,8 +535,7 @@ tr.pt_abstract td.entry {
 tr.pt_paper input {
 	margin-top: 4px;
 }
-div#paper_reviews span.pstat, div#review tr.pt_status span.pstat,
-div#revreq tr.pt_status span.pstat, div#comment tr.pt_status span.pstat {
+div#paper_reviews span.pstat, tr.pt_status span.pstat {
 	margin-right: 1em;
 }
 pre.entryexample {
