@@ -680,9 +680,9 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
 
 function parseReviewOrdinal($n) {
     if (preg_match('/^[A-Z]$/', $n))
-	return ord($n) - 65;
+	return ord($n) - 64;
     else if (preg_match('/^([A-Z])([A-Z])$/', $n, $m))
-	return (ord($m[0]) - 64) * 26 + ord($m[1]) - 65;
+	return (ord($m[0]) - 64) * 26 + ord($m[1]) - 64;
     else
 	return -1;
 }
@@ -690,10 +690,10 @@ function parseReviewOrdinal($n) {
 function unparseReviewOrdinal($ord) {
     if ($ord === null)
 	return "";
-    else if ($ord < 26)
-	return chr($ord + 65);
+    else if ($ord <= 26)
+	return chr($ord + 64);
     else
-	return chr(intval($ord / 26) + 65) . chr(($ord % 26) + 65);
+	return chr(intval(($ord - 1) / 26) + 65) . chr(($ord % 26) + 64);
 }
 
 function downloadText($text, $filename, $description, $inline = false) {

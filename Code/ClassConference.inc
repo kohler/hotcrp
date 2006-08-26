@@ -777,13 +777,13 @@ class Conference {
 		sum(if(interest=2,2,interest-1)) as topicInterestScore";
 	if (defval($options['reviewerPreference']))
 	    $pq .= ",
-		ifnull(PaperReviewPreference.preference, 0) as reviewerPreference";
+		coalesce(PaperReviewPreference.preference, 0) as reviewerPreference";
 	if (defval($options['allReviewerPreference']))
 	    $pq .= ",
 		APRP.allReviewerPreference";
 	if (defval($options['desirability']))
 	    $pq .= ",
-		ifnull(APRP.desirability, 0) as desirability";
+		coalesce(APRP.desirability, 0) as desirability";
 
 	// tables
 	$pq .= "
@@ -930,12 +930,10 @@ class Conference {
 	
 	$q = "select PaperReview.*,
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
-		ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail, ReqCI.contactId as reqContactId,
-		count(PRS.reviewId) as reviewOrdinal
+		ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail, ReqCI.contactId as reqContactId
 		from PaperReview
 		join ContactInfo using (contactId)
-		left join ContactInfo as ReqCI on (ReqCI.contactId=PaperReview.requestedBy)
-		left join PaperReview as PRS on (PaperReview.paperId=PRS.paperId and PRS.reviewSubmitted>0 and PRS.reviewSubmitted<PaperReview.reviewSubmitted)\n";
+		left join ContactInfo as ReqCI on (ReqCI.contactId=PaperReview.requestedBy)\n";
 
 	$where = array();
 	if (isset($reviewId))
@@ -953,7 +951,7 @@ class Conference {
 	    return null;
 	}
 
-	$q = $q . " where " . join(" and ", $where) . " group by PaperReview.reviewId order by paperId, reviewSubmitted, reviewType desc, reviewId";
+	$q = $q . " where " . join(" and ", $where) . " group by PaperReview.reviewId order by paperId, reviewOrdinal, reviewType desc, reviewId";
 
 	$result = $this->q($q);
 	if (DB::isError($result)) {

@@ -180,6 +180,7 @@ class ReviewForm {
 	$conf = ($conf ? $conf : $Conf);
 	$Me = $_SESSION['Me'];
 	$submit = isset($req["submit"]);
+	$while = "while storing review";
 
 	if (!$Me->timeReview($prow, $conf)
 	    && (!isset($req['override']) || !$Me->amAssistant()))
@@ -198,8 +199,23 @@ class ReviewForm {
 		$q .= "$field='" . sqlq($fval) . "', ";
 	    }
 
-	if ($submit && (!$rrow || !$rrow->reviewSubmitted))
+	// potentially assign review ordinal (requires table locking since
+	// mySQL is stupid)
+	$locked = false;
+	if ($submit && (!$rrow || !$rrow->reviewSubmitted)) {
 	    $q .= "reviewSubmitted=" . time() . ", ";
+	    if (!$rrow || !$rrow->reviewOrdinal) {
+		$result = $conf->qe("lock tables PaperReview write", $while);
+		if (DB::isError($result))
+		    return $result;
+		$locked = true;
+		$result = $conf->qe("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=$prow->paperId group by paperId", $while);
+		if (!DB::isError($result)) {
+		    $crow = $result->fetchRow();
+		    $q .= "reviewOrdinal=coalesce(reviewOrdinal, " . ($crow[0] + 1) . "), ";
+		}
+	    }
+	}
 
 	// blind?
 	if ($conf->blindReview() > 1
@@ -207,33 +223,44 @@ class ReviewForm {
 	    $q .= "blind=1, ";
 	else
 	    $q .= "blind=0, ";
-	
+
+	// actually affect database
 	if ($rrow)
-	    $result = $conf->qe("update PaperReview set $q reviewModified=" . time() . " where reviewId=$rrow->reviewId", "while storing review");
+	    $result = $conf->qe("update PaperReview set $q reviewModified=" . time() . " where reviewId=$rrow->reviewId", $while);
 	else
-	    $result = $conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contactId, requestedOn=current_timestamp, $q reviewModified=" . time(), " while storing review");
+	    $result = $conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contactId, requestedOn=current_timestamp, $q reviewModified=" . time(), $while);
+
+	// unlock tables even if problem
+	if ($locked)
+	    $conf->qe("unlock tables", $while);
 	if (DB::isError($result))
 	    return $result;
 
-	// log updates
-	$conf->log("Review " . ($rrow ? "$rrow->reviewId " : "") . "for $prow->paperId saved", $Me);
-	if ($submit && (!$rrow || !$rrow->reviewSubmitted))
-	    $conf->log("Review " . ($rrow ? "$rrow->reviewId " : "") . "for $prow->paperId submitted", $Me);
+	// look up review ID
+	if ($rrow)
+	    $req['reviewId'] = $reviewId = $rrow->reviewId;
+	else {
+	    $result2 = $conf->qe("select last_insert_id()", $while);
+	    if (DB::isError($result2))
+		return $result2;
+	    $crow = $result2->fetchRow();
+	    $req['reviewId'] = $reviewId = $crow[0];
+	}
 	
+	// log updates
+	$conf->log("Review $reviewId for $prow->paperId " . ($rrow ? "created" : "saved"), $Me);
+	if ($submit && (!$rrow || !$rrow->reviewSubmitted))
+	    $conf->log("Review $reviewId for $prow->paperId submitted", $Me);
+
 	// potentially email chair and authors
 	if ($submit && ($conf->timeEmailChairAboutReview() || $conf->timeEmailAuthorsAboutReview())) {
 	    
 	    // fetch review ordinal
 	    if (!$rrow || !$rrow->reviewSubmitted) {
-		$result = $conf->q("select PaperReview.reviewId, count(PRS.reviewId) as reviewOrdinal
-		from PaperReview
-		left join PaperReview as PRS on (PaperReview.paperId=PRS.paperId and PRS.reviewSubmitted>0 and PRS.reviewSubmitted<PaperReview.reviewSubmitted)
-		where " . ($rrow ? "PaperReview.reviewId=$rrow->reviewId" : "PaperReview.paperId=$prow->paperId and PaperReview.contactId=$contactId") . "
-		group by PaperReview.reviewId");
+		$result = $conf->q("select reviewOrdinal from PaperReview where reviewId=$reviewId");
 		if (!DB::isError($result) && $result->numRows() == 1) {
-		    $r = $result->fetchRow();
-		    $req['reviewId'] = $r[0];
-		    $req['reviewOrdinal'] = $r[1];
+		    $crow = $result->fetchRow();
+		    $req['reviewOrdinal'] = $crow[1];
 		}
 	    }
 

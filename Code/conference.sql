@@ -139,9 +139,9 @@ CREATE TABLE Paper (
 
   timeSubmitted int(11) NOT NULL default 0,
   timeWithdrawn int(11) NOT NULL default 0,
-  pcPaper tinyint(11) NOT NULL default '0',
+  pcPaper tinyint(11) NOT NULL default 0,
 
-  paperStorageId int(11) NOT NULL default '0',
+  paperStorageId int(11) NOT NULL default 0,
   # copied from PaperStorage to reduce joins
   size int(11) NOT NULL default 0,
   mimetype varchar(40) NOT NULL default '',
@@ -149,9 +149,9 @@ CREATE TABLE Paper (
 
   blind tinyint(1) NOT NULL default 1,
   authorsResponse mediumtext,
-  outcome tinyint(1) NOT NULL default '0',
-  showReviewsToReviewers tinyint(1) NOT NULL default '0',
-  showResponseToReviewers tinyint(1) NOT NULL default '0',
+  outcome tinyint(1) NOT NULL default 0,
+  showReviewsToReviewers tinyint(1) NOT NULL default 0,
+  showResponseToReviewers tinyint(1) NOT NULL default 0,
 
   PRIMARY KEY (paperId),
   UNIQUE KEY paperId (paperId),
@@ -276,6 +276,7 @@ CREATE TABLE PaperReview (
 
   reviewModified int(1),
   reviewSubmitted int(1),
+  reviewOrdinal int(1),
 
   overAllMerit tinyint(1) NOT NULL default 0,
   reviewerQualification tinyint(1) NOT NULL default 0,
@@ -331,6 +332,7 @@ CREATE TABLE PaperReviewArchive (
 
   reviewModified int(1),
   reviewSubmitted int(1),
+  reviewOrdinal int(1),
 
   overAllMerit tinyint(1) NOT NULL default 0,
   reviewerQualification tinyint(1) NOT NULL default 0,
