@@ -1,3 +1,342 @@
+2006-08-26 Saturday 01:20  kohler
+
+	* Code/: ClassConference.inc (1.87), ClassReview.inc (1.32),
+	  Helpers.inc (1.68), conference.sql (1.52): small victory:
+	  reviewOrdinal makes a bit more sense now
+
+2006-08-26 Saturday 00:38  kohler
+
+	* Code/ClassContact.inc (1.54): assignment nit
+
+2006-08-26 Saturday 00:34  kohler
+
+	* reqreview.php (1.32): x
+
+2006-08-26 Saturday 00:34  kohler
+
+	* assign.php (1.31), comment.php (1.3), reqreview.php (1.31),
+	  sessionvar.php (1.4), Code/Helpers.inc (1.67),
+	  Code/reviewtable.inc (1.11), assign.php (1.32): reqreview ->
+	  assign
+
+2006-08-25 Friday 18:10  kohler
+
+	* contactauthors.php (1.12), style.css (1.90), Code/papertable.inc
+	  (1.18): nit
+
+2006-08-25 Friday 14:42  kohler
+
+	* review.php (1.34), Code/ClassReview.inc (1.31), review.php
+	  (1.35): nit
+
+2006-08-25 Friday 14:40  kohler
+
+	* deadlines.php (1.10), paper.php (1.56), review.php (1.33),
+	  style.css (1.89), Code/ClassConference.inc (1.86),
+	  Code/ClassContact.inc (1.53), Code/ClassReview.inc (1.30),
+	  Code/Helpers.inc (1.66), Code/conference.sql (1.51): blindness
+
+2006-08-22 Tuesday 23:32  kohler
+
+	* Code/conference.sql (1.50): x
+
+2006-08-22 Tuesday 23:19  kohler
+
+	* Tasks-Assistant.inc (1.5), Tasks-Chair.inc (1.12), Tasks-PC.inc
+	  (1.9), Assistant/DumpPapers.php (1.5), PC/ListReviews.php (1.5),
+	  PC/ValidPapers.inc (1.2): remove nonuseful pages
+
+2006-08-22 Tuesday 23:10  kohler
+
+	* Chair/UnfinalizeReview.php (1.5): blag blag
+
+2006-08-22 Tuesday 23:08  kohler
+
+	* review.php (1.31), review.php (1.32): unsubmit and delete reviews
+
+2006-08-22 Tuesday 22:43  kohler
+
+	* Tasks-Chair.inc (1.11), review.php (1.30), Chair/AssignPapers.php
+	  (1.20), Chair/SearchPapers.php (1.4): more stuff
+
+2006-08-22 Tuesday 22:08  kohler
+
+	* index.php (1.58), Chair/AssignConflicts.php (1.8),
+	  Chair/AssignPapers.php (1.19): assign papers
+
+2006-08-22 Tuesday 21:54  kohler
+
+	* assign.php (1.30), contactauthors.php (1.11), deadlines.php
+	  (1.9), paper.php (1.55), pc.php (1.9), reqreview.php (1.30),
+	  review.php (1.29), All/UpdateContactInfo.php (1.23),
+	  Chair/AssignConflicts.php (1.7), Chair/AssignPapers.php (1.18),
+	  Chair/SetReviewForm.php (1.11), Chair/SetTopics.php (1.14),
+	  Code/ClassConference.inc (1.85), Code/ClassContact.inc (1.52),
+	  Code/ClassPaperList.inc (1.38), PC/reviewprefs.php (1.12): redo
+	  insert for some reason
+
+2006-08-21 Monday 16:59  kohler
+
+	* index.php (1.57), logout.php (1.2), Code/ClassPaperList.inc
+	  (1.36), Code/ClassPaperList.inc (1.37): x
+
+2006-08-21 Monday 09:55  kohler
+
+	* style.css (1.88), Code/ClassPaperList.inc (1.35),
+	  Code/conference.sql (1.49), images/pdf.png (1.1),
+	  images/postscript.png (1.1): pdf/postscript
+
+2006-08-21 Monday 09:43  kohler
+
+	* Chair/SetTopics.php (1.13): la la la
+
+2006-08-21 Monday 09:37  kohler
+
+	* pc.php (1.8), All/UpdateContactInfo.php (1.22): pc
+
+2006-08-21 Monday 09:19  kohler
+
+	* Tasks-Assistant.inc (1.4), index.php (1.56), style.css (1.87),
+	  Assistant/PrintAllAbstracts.php (1.7), Chair/ViewActionLog.php
+	  (1.4), Code/ClassConference.inc (1.84): more
+
+2006-08-20 Sunday 10:34  kohler
+
+	* list.php (1.18), style.css (1.86), Code/ClassPaperList.inc
+	  (1.34): list paper numbers in list view
+
+2006-08-20 Sunday 10:26  kohler
+
+	* index.php (1.55), Code/ClassContact.inc (1.51),
+	  Code/conference.sql (1.48): wahoo
+
+2006-08-20 Sunday 10:09  kohler
+
+	* contactauthors.php (1.10), list.php (1.17),
+	  Code/ClassConference.inc (1.83), Code/ClassPaperList.inc (1.33),
+	  Code/conference.sql (1.47), Code/papertable.inc (1.17): some more
+
+2006-08-20 Sunday 09:39  kohler
+
+	* Code/: ClassPaperList.inc (1.32), conference.sql (1.46): oops
+
+2006-08-20 Sunday 09:33  kohler
+
+	* index.php (1.54), list.php (1.16), search.php (1.6),
+	  Chair/AssignPapers.php (1.17), Code/ClassPaperList.inc (1.31),
+	  Code/Helpers.inc (1.65), Code/conference.sql (1.45),
+	  PC/reviewprefs.php (1.11): some paper list stuff
+
+2006-08-19 Saturday 12:31  kohler
+
+	* style.css (1.85), Code/ClassPaperList.inc (1.29),
+	  Code/conference.sql (1.44), Code/ClassPaperList.inc (1.30): nit
+
+2006-08-19 Saturday 10:21  kohler
+
+	* style.css (1.84): nit
+
+2006-08-19 Saturday 09:12  kohler
+
+	* Chair/SetReviewForm.php (1.10), Code/ClassReview.inc (1.29):
+	  correctly update review form
+
+2006-08-19 Saturday 09:02  kohler
+
+	* Code/conference.sql (1.43): reviews
+
+2006-08-19 Saturday 08:47  kohler
+
+	* style.css (1.83), Code/ClassConference.inc (1.82): tab nits
+
+2006-08-19 Saturday 08:42  kohler
+
+	* assign.php (1.29), index.php (1.53), paper.php (1.54),
+	  reqreview.php (1.29), review.php (1.28), script.js (1.15),
+	  style.css (1.82), Code/ClassConference.inc (1.81),
+	  Code/Helpers.inc (1.64): rework header
+
+2006-08-18 Friday 19:17  kohler
+
+	* assign.php (1.28), reqreview.php (1.28), images/ass1.png (1.1),
+	  images/ass2.png (1.1): x
+
+2006-08-18 Friday 19:03  kohler
+
+	* assign.php (1.27), reqreview.php (1.27): nowrap
+
+2006-08-18 Friday 19:02  kohler
+
+	* assign.php (1.26), reqreview.php (1.26): x
+
+2006-08-18 Friday 18:56  kohler
+
+	* style.css (1.81): nit
+
+2006-08-18 Friday 18:54  kohler
+
+	* assign.php (1.25), reqreview.php (1.25), script.js (1.14),
+	  images/ass3.png (1.2): a little bit better navigation
+
+2006-08-18 Friday 18:39  kohler
+
+	* assign.php (1.24), reqreview.php (1.24), script.js (1.13),
+	  images/ass-1.png (1.1), images/ass0.png (1.1), images/ass3.png
+	  (1.1), images/ass4.png (1.1): images
+
+2006-08-18 Friday 18:07  kohler
+
+	* assign.php (1.23), reqreview.php (1.23): more nits
+
+2006-08-18 Friday 18:06  kohler
+
+	* assign.php (1.22), reqreview.php (1.22): x
+
+2006-08-18 Friday 18:06  kohler
+
+	* assign.php (1.21), login.php (1.6), reqreview.php (1.21),
+	  script.js (1.12), style.css (1.80), Code/reviewtable.inc (1.10):
+	  new assignments
+
+2006-08-18 Friday 16:31  kohler
+
+	* assign.php (1.20), reqreview.php (1.20), style.css (1.79),
+	  Code/reviewtable.inc (1.9): new type of PC assignment
+
+2006-08-18 Friday 15:12  kohler
+
+	* index.php (1.52), Code/ClassConference.inc (1.80),
+	  Code/Helpers.inc (1.63): hide reviewables
+
+2006-08-18 Friday 12:00  kohler
+
+	* Code/conference.sql (1.42): x
+
+2006-08-18 Friday 11:12  kohler
+
+	* Code/reviewtable.inc (1.8): nit
+
+2006-08-18 Friday 10:11  kohler
+
+	* search.php (1.5), Code/ClassPaperList.inc (1.28),
+	  Code/conference.sql (1.41): search nits
+
+2006-08-18 Friday 09:26  kohler
+
+	* assign.php (1.19), reqreview.php (1.19): number_reviews
+
+2006-08-18 Friday 09:11  kohler
+
+	* index.php (1.51), search.php (1.4): search
+
+2006-08-17 Thursday 23:18  kohler
+
+	* Code/ClassConference.inc (1.77), Code/ClassConference.inc (1.78),
+	  Code/ClassConference.inc (1.79), Chair/AssignPapers.php (1.16):
+	  nit
+
+2006-08-17 Thursday 23:16  kohler
+
+	* style.css (1.78), Code/ClassConference.inc (1.76),
+	  Code/ClassPaperList.inc (1.27), Code/conference.sql (1.40),
+	  PC/reviewprefs.php (1.10): desirability
+
+2006-08-17 Thursday 22:09  kohler
+
+	* Code/papertable.inc (1.16): more search
+
+2006-08-17 Thursday 22:03  kohler
+
+	* assign.php (1.18), comment.php (1.2), paper.php (1.53),
+	  reqreview.php (1.18), review.php (1.27), Code/papertable.inc
+	  (1.15): highlight in title
+
+2006-08-17 Thursday 21:59  kohler
+
+	* style.css (1.77): x
+
+2006-08-17 Thursday 21:57  kohler
+
+	* search.php (1.3), style.css (1.76), Code/papertable.inc (1.14):
+	  highlight search matches
+
+2006-08-17 Thursday 21:48  kohler
+
+	* search.php (1.2): nit
+
+2006-08-17 Thursday 21:29  kohler
+
+	* reload.sh (1.1): nit
+
+2006-08-17 Thursday 21:28  kohler
+
+	* assign.php (1.17), index.php (1.50), list.php (1.15),
+	  reqreview.php (1.17), search.php (1.1), sessionvar.php (1.3),
+	  Code/ClassConference.inc (1.75), Code/ClassPaperList.inc (1.26),
+	  Code/CreateDatabase.sh (1.4), Code/confHeader.inc (1.19),
+	  Code/conference.sql (1.39), PC/reviewprefs.php (1.9): farts on my
+	  face in fartfacetown
+
+2006-08-17 Thursday 15:01  kohler
+
+	* style.css (1.75), Code/ClassPaperList.inc (1.25): firstrow
+	  spacing
+
+2006-08-17 Thursday 14:27  kohler
+
+	* assign.php (1.16), reqreview.php (1.16): reviewer preference
+
+2006-08-17 Thursday 14:23  kohler
+
+	* style.css (1.74), Chair/AssignPapers.php (1.15),
+	  PC/reviewprefs.php (1.8): review preferences for all PC members
+
+2006-08-17 Thursday 14:03  kohler
+
+	* Code/ClassConference.inc (1.74), Download/GetPaper (1.10),
+	  Download/GetPaper.php (1.10): more withdrawn viewing
+
+2006-08-17 Thursday 13:59  kohler
+
+	* paper.php (1.52): can view withdrawn paper in edit mode
+
+2006-08-17 Thursday 13:54  kohler
+
+	* paper.php (1.51), Code/ClassConference.inc (1.73),
+	  Code/ClassContact.inc (1.50), Code/ClassReview.inc (1.28): keep
+	  log
+
+2006-08-17 Thursday 12:55  kohler
+
+	* paper.php (1.50): email on withdrawal, email note possibility
+
+2006-08-17 Thursday 12:41  kohler
+
+	* Code/ClassReview.inc (1.27): nit
+
+2006-08-17 Thursday 12:32  kohler
+
+	* assign.php (1.14), reqreview.php (1.14), assign.php (1.15),
+	  reqreview.php (1.15): shut up warnings
+
+2006-08-17 Thursday 12:30  kohler
+
+	* assign.php (1.13), reqreview.php (1.13), script.js (1.11),
+	  sessionvar.php (1.2), Code/papertable.inc (1.13): folding
+	  remembering
+
+2006-08-17 Thursday 09:19  kohler
+
+	* Code/papertable.inc (1.12): editable?
+
+2006-08-17 Thursday 08:46  kohler
+
+	* assign.php (1.12), reqreview.php (1.12): x
+
+2006-08-17 Thursday 08:40  kohler
+
+	* Code/ClassContact.inc (1.49): nit
+
 2006-08-17 Thursday 08:38  kohler
 
 	* paper.php (1.49): save changes
@@ -62,8 +401,8 @@
 
 2006-08-12 Saturday 11:18  kohler
 
-	* reqreview.php (1.11), Code/Helpers.inc (1.61): dont list email,
-	  too verbose
+	* assign.php (1.11), reqreview.php (1.11), Code/Helpers.inc (1.61):
+	  dont list email, too verbose
 
 2006-08-12 Saturday 11:16  kohler
 
@@ -134,10 +473,11 @@
 
 2006-08-11 Friday 18:54  kohler
 
-	* deadlines.php (1.6), index.php (1.43), paper.php (1.42),
-	  reqreview.php (1.10), review.php (1.24), Code/ClassConference.inc
-	  (1.66), Code/ClassContact.inc (1.46), Code/conference.sql (1.32),
-	  Code/papertable.inc (1.8): optionally blind submission
+	* assign.php (1.10), deadlines.php (1.6), index.php (1.43),
+	  paper.php (1.42), reqreview.php (1.10), review.php (1.24),
+	  Code/ClassConference.inc (1.66), Code/ClassContact.inc (1.46),
+	  Code/conference.sql (1.32), Code/papertable.inc (1.8): optionally
+	  blind submission
 
 2006-08-11 Friday 13:51  kohler
 
@@ -175,17 +515,18 @@
 
 2006-08-10 Thursday 12:43  kohler
 
-	* reqreview.php (1.9), review.php (1.21), style.css (1.64),
-	  Code/ClassConference.inc (1.63), Code/ClassContact.inc (1.45),
-	  Code/Helpers.inc (1.55), Code/options.inc (1.6),
-	  Code/reviewtable.inc (1.6), Style/base.css (1.64): more updates:
-	  review requests
+	* assign.php (1.9), reqreview.php (1.9), review.php (1.21),
+	  style.css (1.64), Code/ClassConference.inc (1.63),
+	  Code/ClassContact.inc (1.45), Code/Helpers.inc (1.55),
+	  Code/options.inc (1.6), Code/reviewtable.inc (1.6),
+	  Style/base.css (1.64): more updates: review requests
 
 2006-08-10 Thursday 08:57  kohler
 
-	* reqreview.php (1.8), review.php (1.20), style.css (1.63),
-	  Code/Helpers.inc (1.54), Code/papertable.inc (1.6),
-	  Code/reviewtable.inc (1.5), Style/base.css (1.63): more nitties
+	* assign.php (1.8), reqreview.php (1.8), review.php (1.20),
+	  style.css (1.63), Code/Helpers.inc (1.54), Code/papertable.inc
+	  (1.6), Code/reviewtable.inc (1.5), Style/base.css (1.63): more
+	  nitties
 
 2006-08-10 Thursday 08:38  kohler
 
@@ -201,36 +542,36 @@
 
 2006-08-10 Thursday 00:18  kohler
 
-	* Tasks-PC.inc (1.7), reqreview.php (1.7), Code/reviewtable.inc
-	  (1.4), PC/AskForPrimaryReview.php (1.3),
+	* Tasks-PC.inc (1.7), assign.php (1.7), reqreview.php (1.7),
+	  Code/reviewtable.inc (1.4), PC/AskForPrimaryReview.php (1.3),
 	  PC/AskForReviewCommon.inc (1.6), PC/AskForSecondaryReview.php
 	  (1.3), PC/RemoveAskReview.php (1.5): remove redundant pages
 
 2006-08-09 Wednesday 23:59  kohler
 
-	* contactauthors.php (1.9), reqreview.php (1.6), review.php (1.18),
-	  style.css (1.61), Chair/AssignPapers.php (1.12),
-	  Chair/BecomeSomeoneElse.php (1.5), Chair/SetDates.php (1.21),
-	  Code/ClassConference.inc (1.61), Code/ClassContact.inc (1.43),
-	  Code/ClassPaperList.inc (1.18), Code/ClassReview.inc (1.25),
-	  Code/Helpers.inc (1.52), Code/conference.sql (1.31),
+	* assign.php (1.6), contactauthors.php (1.9), reqreview.php (1.6),
+	  review.php (1.18), style.css (1.61), Chair/AssignPapers.php
+	  (1.12), Chair/BecomeSomeoneElse.php (1.5), Chair/SetDates.php
+	  (1.21), Code/ClassConference.inc (1.61), Code/ClassContact.inc
+	  (1.43), Code/ClassPaperList.inc (1.18), Code/ClassReview.inc
+	  (1.25), Code/Helpers.inc (1.52), Code/conference.sql (1.31),
 	  Code/papertable.inc (1.5), Code/reviewtable.inc (1.3),
 	  Style/base.css (1.61): review requests work, review assignments
 	  from the paper review requests page works
 
 2006-08-09 Wednesday 17:05  kohler
 
-	* paper.php (1.40), reqreview.php (1.5), review.php (1.17),
-	  style.css (1.60), Chair/SetDates.php (1.20),
+	* assign.php (1.5), paper.php (1.40), reqreview.php (1.5),
+	  review.php (1.17), style.css (1.60), Chair/SetDates.php (1.20),
 	  Code/ClassConference.inc (1.60), Code/ClassContact.inc (1.42),
 	  Code/Helpers.inc (1.51), Code/reviewtable.inc (1.2),
 	  Style/base.css (1.60): some deadlines
 
 2006-08-09 Wednesday 13:52  kohler
 
-	* reqreview.php (1.4), review.php (1.16), Code/ClassConference.inc
-	  (1.59), Code/ClassContact.inc (1.41), Code/reviewtable.inc (1.1):
-	  more reviews
+	* assign.php (1.4), reqreview.php (1.4), review.php (1.16),
+	  Code/ClassConference.inc (1.59), Code/ClassContact.inc (1.41),
+	  Code/reviewtable.inc (1.1): more reviews
 
 2006-08-09 Wednesday 12:33  kohler
 
@@ -257,13 +598,14 @@
 
 2006-08-08 Tuesday 15:15  kohler
 
-	* contactauthors.php (1.8), index.php (1.40), list.php (1.11),
-	  paper.php (1.38), reqreview.php (1.3), review.php (1.11),
-	  reviews.php (1.11), uploadreview.php (1.5), All/ListPapers.php
-	  (1.11), Code/ClassConference.inc (1.55), Code/ClassContact.inc
-	  (1.39), Code/ClassReview.inc (1.22), Code/Helpers.inc (1.47),
-	  Code/papertable.inc (1.4), PC/PCAllAnonReviewsForPaper.php
-	  (1.11), Reviewer/CommonPrintReview.php (1.5),
+	* assign.php (1.3), contactauthors.php (1.8), index.php (1.40),
+	  list.php (1.11), paper.php (1.38), reqreview.php (1.3),
+	  review.php (1.11), reviews.php (1.11), uploadreview.php (1.5),
+	  All/ListPapers.php (1.11), Code/ClassConference.inc (1.55),
+	  Code/ClassContact.inc (1.39), Code/ClassReview.inc (1.22),
+	  Code/Helpers.inc (1.47), Code/papertable.inc (1.4),
+	  PC/PCAllAnonReviewsForPaper.php (1.11),
+	  Reviewer/CommonPrintReview.php (1.5),
 	  Reviewer/CommonSubmitReview.php (1.7): reviews some more
 
 2006-08-08 Tuesday 10:14  kohler
@@ -280,27 +622,29 @@
 
 2006-08-08 Tuesday 08:20  kohler
 
-	* contactauthors.php (1.7), list.php (1.10), paper.php (1.35),
-	  pc.php (1.3), reqreview.php (1.2), review.php (1.9), reviews.php
-	  (1.9), script.js (1.8), style.css (1.57), uploadreview.php (1.4),
-	  All/ListPapers.php (1.10), All/MergeAccounts.php (1.16),
-	  Chair/SetDates.php (1.19), Code/ClassConference.inc (1.53),
-	  Code/ClassContact.inc (1.37), Code/ClassReview.inc (1.20),
-	  Code/Helpers.inc (1.45), Code/conference.sql (1.30),
-	  Code/papertable.inc (1.2), Download/GetPaper (1.9),
-	  Download/GetPaper.php (1.9), PC/PCAllAnonReviewsForPaper.php
-	  (1.10), Style/base.css (1.57): big edit
+	* assign.php (1.2), contactauthors.php (1.7), list.php (1.10),
+	  paper.php (1.35), pc.php (1.3), reqreview.php (1.2), review.php
+	  (1.9), reviews.php (1.9), script.js (1.8), style.css (1.57),
+	  uploadreview.php (1.4), All/ListPapers.php (1.10),
+	  All/MergeAccounts.php (1.16), Chair/SetDates.php (1.19),
+	  Code/ClassConference.inc (1.53), Code/ClassContact.inc (1.37),
+	  Code/ClassReview.inc (1.20), Code/Helpers.inc (1.45),
+	  Code/conference.sql (1.30), Code/papertable.inc (1.2),
+	  Download/GetPaper (1.9), Download/GetPaper.php (1.9),
+	  PC/PCAllAnonReviewsForPaper.php (1.10), Style/base.css (1.57):
+	  big edit
 
 2006-08-06 Sunday 23:54  kohler
 
-	* index.php (1.39), paper.php (1.34), reqreview.php (1.1),
-	  review.php (1.8), reviews.php (1.8), style.css (1.56),
-	  Chair/SetDates.php (1.18), Code/ClassConference.inc (1.52),
-	  Code/ClassContact.inc (1.36), Code/Helpers.inc (1.43),
-	  Code/conference.sql (1.29), PC/AskForPrimaryReview.php (1.2),
-	  PC/AskForReviewCommon.inc (1.5), PC/AskForSecondaryReview.php
-	  (1.2), PC/CheckReviewStatus.php (1.7), PC/PCReviewsForPaper.php
-	  (1.4), PC/RemoveAskReview.php (1.4), PC/reviewprefs.php (1.3),
+	* assign.php (1.1), index.php (1.39), paper.php (1.34),
+	  reqreview.php (1.1), review.php (1.8), reviews.php (1.8),
+	  style.css (1.56), Chair/SetDates.php (1.18),
+	  Code/ClassConference.inc (1.52), Code/ClassContact.inc (1.36),
+	  Code/Helpers.inc (1.43), Code/conference.sql (1.29),
+	  PC/AskForPrimaryReview.php (1.2), PC/AskForReviewCommon.inc
+	  (1.5), PC/AskForSecondaryReview.php (1.2),
+	  PC/CheckReviewStatus.php (1.7), PC/PCReviewsForPaper.php (1.4),
+	  PC/RemoveAskReview.php (1.4), PC/reviewprefs.php (1.3),
 	  Style/base.css (1.56), Code/Helpers.inc (1.44): towards review
 	  requests
 
