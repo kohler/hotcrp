@@ -336,7 +336,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
 //
 
     $comResult = $Conf -> qe("SELECT *, UNIX_TIMESTAMP(time) as unixtime "
-			  . " FROM PaperComments "
+			  . " FROM PaperComment "
 			  . " WHERE paperId=$paperId "
 			  . " ORDER BY time ");
     if (DB::isError($comResult)) {

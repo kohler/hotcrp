@@ -168,7 +168,7 @@ if (!DB::isError($result) && $result->numRows() > 0) {
 //
 
 $result = $Conf -> qe("SELECT *, UNIX_TIMESTAMP(time) as unixtime "
-		      . " FROM PaperComments "
+		      . " FROM PaperComment "
 		      . " WHERE paperId=" . $_REQUEST["paperId"]
 		      . " ORDER BY time ");
 

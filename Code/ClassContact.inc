@@ -641,6 +641,49 @@ class Contact {
 	return $this->canReview($prow, $rrow, $conf, $whyNot, true);
     }
 
+
+    function canComment($prow, $crow, $conf, &$whyNot = null, $submit = false) {
+	global $ConfSiteBase;
+	// fetch paper
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "rev")))
+	    return false;
+	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
+	// policy
+	if ($prow->timeSubmitted > 0
+	    && (($this->amAssistant() && ($forceShow || $prow->conflict <= 0))
+		|| ($this->isPC && $prow->conflict <= 0)
+		|| $prow->reviewType > 0)
+	    && ($conf->timeReviewPaper($this->isPC, true, true)
+		|| $this->amAssistantOverride()
+		|| ($this->amAssistant() && !$submit))
+	    && (!$crow || $crow->contactId == $this->contactId || $this->amAssistant()))
+	    return true;
+	// collect failure reasons
+	if ($crow && $crow->contactId != $this->contactId && !$this->amAssistant())
+	    $whyNot['differentReviewer'] = 1;
+	else if (!$this->isPC && $prow->reviewType <= 0)
+	    $whyNot['permission'] = 1;
+	else if ($prow->timeWithdrawn > 0)
+	    $whyNot['withdrawn'] = 1;
+	else if ($prow->timeSubmitted <= 0)
+	    $whyNot['notSubmitted'] = 1;
+	else {
+	    if ($prow->conflict > 0)
+		$whyNot['conflict'] = 1;
+	    else
+		$whyNot['deadline'] = ($this->isPC ? "PCSubmitReviewDeadline" : "reviewerSubmitReviewDeadline");
+	    if ($this->amAssistant() && $prow->conflict > 0)
+		$whyNot['chairMode'] = 1;
+	    if ($this->amAssistant() && isset($whyNot['deadline']))
+		$whyNot['override'] = 1;
+	}
+	return false;
+    }
+    
+    function canSubmitComment($prow, $crow, $conf, &$whyNot = null) {
+	return $this->canComment($prow, $crow, $conf, $whyNot, true);
+    }
+
     function canViewComment($prow, $crow, $conf, &$whyNot = null) {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "comment")))
@@ -648,14 +691,15 @@ class Contact {
 	// policy
 	$forceShow = ($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"]);
 	if (($prow->author > 0 && $conf->timeAuthorViewReviews()
-	     && (!$crow || $crow->forAuthor))
+	     && (!$crow || $crow->forAuthors))
 	    || ($prow->conflict > 0 && $forceShow)
 	    || ($this->amAssistant() && $prow->conflict <= 0)
 	    || ($this->isPC && $prow->conflict <= 0
 		&& ($conf->timePCViewAllReviews()
 		    || !$crow || $crow->forPC))
 	    || ($prow->reviewType > 0 && $prow->conflict <= 0
-		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0))
+		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0
+		&& (!$crow || $crow->forReviewers)))
 	    return true;
 	return false;
 	// collect failure reasons
@@ -700,6 +744,21 @@ class Contact {
     function canViewReviewerIdentity($prow, $rrow, $conf) {
 	if (($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
 	    || ($rrow && $rrow->contactId == $this->contactId)
+	    || ($this->isPC && $prow->author <= 0 && $prow->conflict <= 0)
+	    || ($prow->reviewType > 0
+		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0
+		&& $conf->startTime["reviewerViewReviews"] >= 2))
+	    return true;
+	$blind = $conf->blindReview();
+	if ($blind > 1
+	    || ($blind == 1 && $rrow && $rrow->blind == 0))
+	    return true;
+	return false;
+    }
+    
+    function canViewCommentIdentity($prow, $crow, $conf) {
+	if (($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
+	    || ($crow && $crow->contactId == $this->contactId)
 	    || ($this->isPC && $prow->author <= 0 && $prow->conflict <= 0)
 	    || ($prow->reviewType > 0
 		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0
@@ -780,25 +839,22 @@ class Contact {
     }
 
   
-  //
-  //
-  function generatePassword($length) {  
-      srand((double)microtime()*1000000);  
-      $vowels = array("a", "e", "i", "o", "u");  
-      $cons = array("b", "c", "d", "g", "h", "j", "k", "l", "m", "n", "p", "r",
-		    "s", "t", "u", "v", "w", "tr",  
-		    "cr", "br", "fr", "th", "dr", "ch", "ph", "wr", "st", "sp",
-		    "sw", "pr", "sl", "cl");  
+    function generatePassword($length) {  
+	srand((double)microtime()*1000000);  
+	$vowels = array("a", "e", "i", "o", "u");  
+	$cons = array("b", "c", "d", "g", "h", "j", "k", "l", "m", "n", "p",
+		      "r", "s", "t", "u", "v", "w", "tr",  
+		      "cr", "br", "fr", "th", "dr", "ch", "ph", "wr", "st",
+		      "sp", "sw", "pr", "sl", "cl");  
       
-      $num_vowels = count($vowels);  
-      $num_cons = count($cons);  
+	$num_vowels = count($vowels);  
+	$num_cons = count($cons);  
 
-      $password = "";
-      for ($i = 0; $i < $length; $i++) {
-	  $password .= $cons[rand(0, $num_cons - 1)] . $vowels[rand(0, $num_vowels - 1)];  
-      }
-      return substr($password, 0, $length);  
-  }
+	$password = "";
+	for ($i = 0; $i < $length; $i++)
+	    $password .= $cons[rand(0, $num_cons - 1)] . $vowels[rand(0, $num_vowels - 1)];  
+	return substr($password, 0, $length);  
+    }
 
     function sendAccountInfo($conf, $create) {
 	$m = "Greetings,\n\n";

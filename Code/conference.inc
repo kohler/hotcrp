@@ -792,7 +792,7 @@ class Conference {
 	if (isset($options['reviewId']))
 	    $pq .= "		join PaperReview as ReviewSelector on (ReviewSelector.paperId=Paper.paperId)\n";
 	if (isset($options['commentId']))
-	    $pq .= "		join PaperComments as CommentSelector on (CommentSelector.paperId=Paper.paperId)\n";
+	    $pq .= "		join PaperComment as CommentSelector on (CommentSelector.paperId=Paper.paperId)\n";
 	
 	if (isset($options['author']))
 	    $pq .= "		join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.author>0 and PaperConflict.contactId=$contactId)\n";

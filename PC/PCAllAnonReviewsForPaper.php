@@ -271,7 +271,7 @@ if (IsSet($_REQUEST['storeComment']) && IsSet($_REQUEST["paperId"]) && IsSet($_R
     $forAuthor=0;
   }
 
-  $query="INSERT INTO PaperComments "
+  $query="INSERT INTO PaperComment "
     . " SET paperId=" . $_REQUEST["paperId"] . ", contactId=" . $_SESSION["Me"]->contactId. ", "
     . " forAuthor=$forAuthor, forReviewers=$forReviewer, "
     . " comment='" . addslashes($_REQUEST['theComment']) . "'";
@@ -280,7 +280,7 @@ if (IsSet($_REQUEST['storeComment']) && IsSet($_REQUEST["paperId"]) && IsSet($_R
 }
 
 if (IsSet($_REQUEST['killCommentId'])) {
-  $query="DELETE FROM PaperComments WHERE commentId='" . addSlashes($_REQUEST['killCommentId']) . "';";
+  $query="DELETE FROM PaperComment WHERE commentId='" . addSlashes($_REQUEST['killCommentId']) . "';";
   $Conf->qe($query);
 }
 
@@ -427,9 +427,9 @@ if (!DB::isError($result) && $result->numRows() > 0) {
 // Now, print out the comments
 //
 
-$result = $Conf -> qe("SELECT PaperComments.*, UNIX_TIMESTAMP(time) as unixtime , ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email "
-		      . " FROM PaperComments, ContactInfo "
-		      . " WHERE paperId=" . $_REQUEST["paperId"] . " AND PaperComments.contactId = ContactInfo.contactId "
+$result = $Conf -> qe("SELECT PaperComment.*, UNIX_TIMESTAMP(time) as unixtime , ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email "
+		      . " FROM PaperComment, ContactInfo "
+		      . " WHERE paperId=" . $_REQUEST["paperId"] . " AND PaperComment.contactId = ContactInfo.contactId "
 		      . " ORDER BY time ");
 if (! $result ) {
   $Conf->errorMsg("Error in SQL " . $result->getMessage());

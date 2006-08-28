@@ -81,7 +81,7 @@ function fileUploaded(&$var, $conf) {
 function selfHref($extra = array()) {
     $x = $_SERVER["PHP_SELF"];
     $sep = "?";
-    foreach (array("paperId", "reviewId", "list", "mode", "forceShow", "validator") as $what)
+    foreach (array("paperId", "reviewId", "commentId", "list", "mode", "forceShow", "validator") as $what)
 	if (isset($_REQUEST[$what]) && !isset($extra[$what])) {
 	    $x .= "$sep$what=" . urlencode($_REQUEST[$what]);
 	    $sep = "&";
@@ -657,6 +657,14 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
 	    || ($Me->isPC && $prow->timeSubmitted > 0
 		&& $Conf->timeReviewOpen())))
 	$x .= actionTab("Reviews", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "review");
+
+    if (!$newPaper && $prow
+	&& ($prow->reviewType > 0
+	    || (($mode == "comment" || $prow->numAuthorComments > 0)
+		&& $Me->canViewComment($prow, null, $Conf))
+	    || ($Me->isPC && $prow->timeSubmitted > 0
+		&& $Conf->timeReviewOpen())))
+	$x .= actionTab("Comments", "${ConfSiteBase}comment.php?paperId=$paperId", $mode == "comment");
 
     if ($mode == "assign"
 	|| ($Me->amAssistant() && $prow && $prow->timeSubmitted > 0))

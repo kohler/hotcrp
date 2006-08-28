@@ -153,6 +153,10 @@ CREATE TABLE Paper (
   showReviewsToReviewers tinyint(1) NOT NULL default 0,
   showResponseToReviewers tinyint(1) NOT NULL default 0,
 
+  # calculated from PaperComment to reduce joins
+  numComments int(11) NOT NULL default 0,
+  numAuthorComments int(11) NOT NULL default 0,
+
   PRIMARY KEY (paperId),
   UNIQUE KEY paperId (paperId),
   KEY title (title),
@@ -168,19 +172,18 @@ CREATE TABLE Paper (
 
 
 #
-# Table structure for table 'PaperComments'
+# Table structure for table 'PaperComment'
 #
 
-drop table if exists PaperComments;
-CREATE TABLE PaperComments (
+drop table if exists PaperComment;
+CREATE TABLE PaperComment (
   commentId int(11) NOT NULL auto_increment,
   contactId int(11) NOT NULL,
   paperId int(11) NOT NULL,
-  time timestamp(14) NOT NULL,
+  timeModified int(11) NOT NULL,
   comment text NOT NULL default '',
-  forPC tinyint(1) NOT NULL default 0,
-  forAuthor tinyint(1) NOT NULL default 0,
-  edits int(3) NOT NULL default 0,
+  forReviewers tinyint(1) NOT NULL default 0,
+  forAuthors tinyint(1) NOT NULL default 0,
   blind tinyint(1) NOT NULL default 1,
   PRIMARY KEY (commentId),
   UNIQUE KEY commentId (commentId),
@@ -189,7 +192,7 @@ CREATE TABLE PaperComments (
 ) TYPE=MyISAM;
 
 #
-# Dumping data for table 'PaperComments'
+# Dumping data for table 'PaperComment'
 #
 
 

@@ -110,7 +110,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	|| ($mode == "edit" && $Me->canViewReview($prow, null, $Conf))) {
 	$t = "    <tr>" . ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "") . "<td colspan='";
 	$t .= ($anyScores ? 4 + $nNumeric : 4);
-	$t .= "'><a href='review.php?paperId=$prow->paperId&amp;mode=view$forceShow'>View all reviews on one page</a></td></tr>\n";
+	$t .= "'><a href='review.php?paperId=$prow->paperId&amp;mode=view$forceShow'>All reviews on one page</a></td></tr>\n";
 	$nonsubrev[] = $t;
     }
     

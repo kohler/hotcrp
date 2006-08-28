@@ -1,11 +1,11 @@
 <?php 
 require_once('Code/confHeader.inc');
 require_once('Code/papertable.inc');
-require_once('Code/reviewtable.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $rf = reviewForm();
+$useRequest = false;
 
 
 // header
@@ -38,8 +38,8 @@ function loadRows() {
 	  && $Me->canViewPaper($prow, $Conf, $whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
 
-    $result = $Conf->qe("select PaperComments.*, firstName, lastName, email
-		from PaperComments
+    $result = $Conf->qe("select PaperComment.*, firstName, lastName, email
+		from PaperComment
 		join ContactInfo using (contactId)
 		where paperId=$prow->paperId
 		order by commentId");
@@ -64,13 +64,52 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
 
 // update review action
 if (isset($_REQUEST['submit']))
-    if (!$Me->canSubmitComment($prow, $Conf, $whyNot))
+    if (!$Me->canSubmitComment($prow, $crow, $Conf, $whyNot))
 	$Conf->errorMsg(whyNotText($whyNot, "comment"));
-    else if ($rf->checkRequestFields($_REQUEST, $editRrow)) {
-	$result = $rf->saveRequest($_REQUEST, $editRrow, $prow, $Me->contactId);
-	if (!DB::isError($result))
-	    $Conf->confirmMsg(isset($_REQUEST['submit']) ? "Review submitted." : "Review saved.");
-	loadRows();
+    else if (!($text = defval($_REQUEST['comment'])) && !$crow) {
+	$Conf->errorMsg("Enter a comment.");
+	$useRequest = true;
+    } else if (!$text) {
+	$q = "delete from PaperComment where commentId=$crow->commentId";
+    } else {
+	$forReviewers = (defval($_REQUEST["forReviewers"]) ? 1 : 0);
+	$forAuthors = (defval($_REQUEST["forAuthors"]) ? 1 : 0);
+	$blind = 0;
+	if ($Conf->blindReview() > 1
+	    || ($Conf->blindReview() == 1 && defval($_REQUEST["blind"])))
+	    $blind = 1;
+	$change = (!$crow || $crow->forAuthors != $forAuthors);
+	
+	if (!$crow) {
+	    $q = "insert into PaperComment (contactId, paperId, timeModified, comment, forReviewers, forAuthors, blind) values ($Me->contactId, $prow->paperId, " . time() . ", '" . sqlq($text) . "', $forReviewers, $forAuthors, $blind)";
+	} else {
+	    $q = "update PaperComment set timeModified=" . time() . ", comment='" . sqlq($text) . "', forReviewers=$forReviewers, forAuthors=$forAuthors, blind=$blind where commentId=$crow->commentId";
+	}
+
+	$result = $Conf->qe($q, "while saving comment");
+
+	if (!$crow && !DB::isError($result)) {
+	    $result = $Conf->qe("select last_insert_id()", "while saving comment");
+	    if (!DB::isError($result) && $result->numRows() > 0) {
+		$r = $result->fetchRow();
+		$commentId = $r[0];
+	    } else
+		/* XXX */;
+	} else if ($crow)
+	    $commentId = $crow->commentId;
+	
+	if (!DB::isError($result)) {
+	    $Conf->confirmMsg("Comment saved");
+	    $Conf->log("Comment $commentId for paper $prow->paperId saved", $Me);
+
+	    // adjust comment counts
+	    if ($change)
+		$Conf->qe("update Paper set numComments=(select count(commentId) from PaperComment where paperId=$prow->paperId), numAuthorComments=(select count(commentId) from PaperComment where paperId=$prow->paperId and forAuthors>0) where paperId=$prow->paperId", $where);
+	    
+	    $_REQUEST["paperId"] = $prow->paperId;
+	    unset($_REQUEST["commentId"]);
+	    loadRows();
+	}
     }
 
 
@@ -112,6 +151,8 @@ if ($canViewAuthors || $Me->amAssistant()) {
 $paperTable->echoTopics($prow);
 if ($Me->amAssistant())
     $paperTable->echoPCConflicts($prow);
+if ($crow)
+    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><a href='comment.php?paperId=$prow->paperId'>All comments</a></td>\n</tr>\n\n";
 
 
 // extra space
@@ -129,56 +170,112 @@ if (!$Me->canViewComment($prow, $crow, $Conf, $whyNot))
 // XXX "<td class='entry'>", contactHtml($rrow), "</td>"
 
 function commentView($prow, $crow, $editMode) {
-    global $Conf, $Me, $rf, $forceShow;
+    global $Conf, $Me, $rf, $forceShow, $useRequest;
+
+    if (!$Me->canViewComment($prow, $crow, $Conf))
+	return;
+    if ($editMode && !$Me->canComment($prow, $crow, $Conf))
+	$editMode = false;
     
-    echo "<div class='gap'></div>
-
-<table class='rev'>
-  <tr class='id'>
-    <td class='caption'><h3";
-    if ($rrow)
-	echo " id='review$rrow->reviewId'";
-    echo ">Comment</h3></td>
-    <td class='entry'></td>
-  </tr>
-
-  <tr class='rev_rev'>
-    <td class='caption'></td>
-    <td class='entry'>";
-    if ($editMode && $rrow && $rrow->contactId != $Me->contactId)
-	$Conf->infoMsg("You aren't the author of this review, but you can still make changes as PC Chair.");
-    echo "</td>
-  </tr>
-</table>\n";
+    echo "<div class='gap'></div>\n\n";
 
     if ($editMode) {
-	// start review form
-	echo "<form action='review.php?";
-	if (isset($rrow))
-	    echo "reviewId=$rrow->reviewId";
+	echo "<form action='comment.php?";
+	if ($crow)
+	    echo "commentId=$crow->commentId";
 	else
 	    echo "paperId=$prow->paperId";
 	echo "$forceShow&amp;post=1' method='post' enctype='multipart/form-data'>\n";
-	echo "<table class='reviewform'>\n";
+    }
 
+    echo "<table class='comment'>
+<tr class='id'>
+  <td class='caption'><h3";
+    if ($crow)
+	echo " id='comment$crow->commentId'";
+    echo ">", ($crow ? "Comment" : "Add Comment"), "</h3></td>
+  <td class='entry'>";
+    $sep = "";
+    if ($crow && $Me->canViewCommentIdentity($prow, $crow, $Conf)) {
+	echo "by ", contactHtml($crow);
+	$sep = " &nbsp;|&nbsp; ";
+    }
+    if ($crow && $crow->timeModified > 0) {
+	echo $sep, $Conf->printableTime($crow->timeModified);
+	$sep = " &nbsp;|&nbsp; ";
+    }
+    if (!$crow || $prow->author > 0)
+	/* do nothing */;
+    else if (!$crow->forAuthors && !$crow->forReviewers)
+	echo $sep, "For PC only";
+    else {
+	echo $sep, "For PC";
+	if ($crow->forReviewers)
+	    echo " + reviewers";
+	if ($crow->forAuthors)
+	    echo " + authors";
+    }
+    if ($crow && ($crow->contactId == $Me->contactId || $Me->amAssistant())) {
+	if (isset($_REQUEST["commentId"]) && $editMode)
+	    echo " &nbsp;|&nbsp; <b>Edit</b>";
+	else
+	    echo " &nbsp;|&nbsp; <a href='comment.php?commentId=$crow->commentId'>Edit</a>";
+    }
+    echo "</td>\n</tr>\n\n";
+
+    if ($editMode && $crow && $crow->contactId != $Me->contactId) {
+	echo "<tr class='rev_rev'>
+  <td class='caption'></td>
+  <td class='entry'>";
+	$Conf->infoMsg("You didn't write this comment, but you can still make changes as PC Chair.");
+	echo "</td>\n</tr>\n\n";
+    }
+
+    if ($editMode) {
 	// form body
-	echo $rf->webFormRows($rrow, 1);
+	echo "<tr>
+  <td class='caption'></td>
+  <td class='entry'><textarea name='comment' rows='10' cols='80'>";
+	if ($crow)
+	    echo htmlspecialchars($crow->comment);
+	echo "</textarea></td>
+</tr>
+
+<tr>
+  <td class='caption'>Visibility</td>
+  <td class='entry'>Show PC and: <input type='checkbox' name='forReviewers' value='1'";
+	if ($useRequest ? defval($_REQUEST['forReviewers']) : (!$crow || $crow->forReviewers))
+	    echo " checked='checked'";
+	echo " />&nbsp;Reviewers &nbsp;
+    <input type='checkbox' name='forAuthors' value='1'";
+	if ($useRequest ? defval($_REQUEST['forAuthors']) : (!$crow || $crow->forAuthors))
+	    echo " checked='checked'";
+	echo " />&nbsp;Authors\n";
+
+	// blind?
+	if ($Conf->blindReview() == 1) {
+	    echo "<span class='lgsep'></span><input type='checkbox' name='blind' value='1'";
+	    if ($useRequest ? defval($_REQUEST['blind']) : (!$crow || $crow->blind))
+		echo " checked='checked'";
+	    echo " />&nbsp;Anonymous to authors\n";
+	}
+	
+	echo "  </td>
+</tr>\n\n";
 
 	// review actions
-	if ($Me->timeReview($prow, $Conf) || $Me->amAssistant()) {
+	if (1) {
 	    echo "<tr class='rev_actions'>
   <td class='caption'></td>
   <td class='entry'><table class='pt_buttons'>
     <tr>\n";
-	    if (!$rrow || !$rrow->reviewSubmitted) {
-		echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save changes' name='update' /></td>
-      <td class='ptb_button'><input class='button_default' type='submit' value='Submit' name='submit' /></td>
+	    if (!$crow || !$crow->reviewSubmitted) {
+		echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save' name='submit' /></td>
     </tr>
     <tr>
-      <td class='ptb_explain'>(does not submit review)</td>
       <td class='ptb_explain'>(allow PC to see review)</td>\n";
 	    } else
-		echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Resubmit' name='submit' /></td>\n";
+		echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save' name='submit' /></td>\n";
 	    if (!$Me->timeReview($prow, $Conf))
 		echo "    </tr>\n    <tr>\n      <td colspan='3'><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td>\n";
 	    echo "    </tr>\n  </table></td>\n</tr>\n\n";
@@ -187,18 +284,24 @@ function commentView($prow, $crow, $editMode) {
 	echo "</table>\n</form>\n\n";
 	
     } else {
-	echo "<table class='review'>\n";
-	echo $rf->webDisplayRows($rrow, $Me->canViewAllReviewFields($prow, $Conf));
-	echo "</table>\n";
+	echo "<tr>
+  <td class='caption'></td>
+  <td class='entry'>", htmlWrapText(htmlspecialchars($crow->comment)), "</td>
+</tr>
+</table>\n";
     }
     
 }
 
 
-foreach ($crows as $cr)
-    commentView($prow, $cr, false);
-// reviewView($prow, $rrow, $mode == "edit");
-
+if ($crow)
+    commentView($prow, $crow, true);
+else {
+    foreach ($crows as $cr)
+	commentView($prow, $cr, false);
+    if ($Me->canComment($prow, null, $Conf))
+	commentView($prow, null, true);
+}
 
 echo "<div class='gapbottom'></div>\n";
 

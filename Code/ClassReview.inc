@@ -322,9 +322,12 @@ class ReviewForm {
 	$x = "==+== =========================================================================\n";
 
 	if ($reviewer || !$prow) {
-	    $x .= "==+== Begin Review
-
-==+== Paper #";
+	    $x .= "==+== Begin Review";
+	    if ($req && isset($req['reviewOrdinal']))
+		$x .= " #" . $prow->paperId . unparseReviewOrdinal($req['reviewOrdinal']);
+	    else if ($rrow && isset($rrow->reviewOrdinal))
+		$x .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
+	    $x .= "\n\n==+== Paper #";
 	    if ($prow)
 		$x .= "$prow->paperId\n";
 	    else

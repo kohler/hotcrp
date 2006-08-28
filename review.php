@@ -77,7 +77,7 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     }
 
     if (count($tf['err']) == 0 && $rf->parseTextForm($tf, $Conf))
-	$tf['err'][] = $tf['firstLineno'] . ": Only the first review form in the file was parsed.  <a href='${ConfSiteBase}uploadreview.php'>Upload a file with multiple reviews</a>";
+	$tf['err'][] = $tf['firstLineno'] . ": Only the first review form in the file was parsed.  <a href='${ConfSiteBase}uploadreview.php'>Upload multiple-review files here.</a>";
 
     $rf->textFormMessages($tf, $Conf);
     loadRows();
@@ -341,22 +341,31 @@ if (!$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
 // XXX "<td class='entry'>", contactHtml($rrow), "</td>"
 
 function reviewView($prow, $rrow, $editMode) {
-    global $Conf, $Me, $rf, $forceShow;
+    global $Conf, $Me, $rf, $forceShow, $useRequest;
     
-    echo "<div class='gap'></div>
+    echo "<div class='gap'></div>\n\n";
 
-<table class='rev'>
-  <tr class='id'>
-    <td class='caption'><h3";
+    if ($editMode) {
+	echo "<form action='review.php?";
+	if ($rrow)
+	    echo "reviewId=$rrow->reviewId";
+	else
+	    echo "paperId=$prow->paperId";
+	echo "$forceShow&amp;post=1' method='post' enctype='multipart/form-data'>\n";
+    }
+    
+    echo "<table class='review'>
+<tr class='id'>
+  <td class='caption'><h3";
     if ($rrow)
 	echo " id='review$rrow->reviewId'";
     echo ">Review";
     if ($rrow && $rrow->reviewSubmitted)
 	echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
     echo "</h3></td>
-    <td class='entry'>";
+  <td class='entry' colspan='", ($editMode ? 2 : 3), "'>";
     $sep = "";
-    if ($Me->canViewReviewerIdentity($prow, $rrow, $Conf)) {
+    if ($rrow && $Me->canViewReviewerIdentity($prow, $rrow, $Conf)) {
 	echo "by ", contactHtml($rrow);
 	$sep = " &nbsp;|&nbsp; ";
     }
@@ -367,42 +376,20 @@ function reviewView($prow, $rrow, $editMode) {
     if ($rrow && !$editMode)
 	echo $sep, "<a href='review.php?paperId=$prow->paperId&amp;reviewId=$rrow->reviewId&amp;text=1'>Text version</a>";
     echo "</td>
-  </tr>\n";
+</tr>\n";
     
 
     if ($editMode) {
-	echo "\n  <tr class='rev_rev'>
-    <td class='caption'></td>
-    <td class='entry'>";
+	echo "\n<tr class='rev_rev'>
+  <td class='caption'></td>
+  <td class='entry' colspan='2'>";
 	if ($rrow && $rrow->contactId != $Me->contactId)
-	    $Conf->infoMsg("You aren't the author of this review, but you can still make changes as PC Chair.");
-	echo "<form class='downloadreviewform' action='review.php' method='get'>",
-	    "<input type='hidden' name='paperId' value='$prow->paperId' />";
-	if ($rrow)
-	    echo "<input type='hidden' name='reviewId' value='$rrow->reviewId' />";
-	echo "<input class='button_small' type='submit' value='Download", ($editMode ? " form" : ""), "' name='downloadForm' id='downloadForm' />",
-	    "</form>";
-
-	echo "<form class='downloadreviewform' action='review.php?post=1&amp;paperId=$prow->paperId";
-	if ($rrow)
-	    echo "&amp;reviewId=$rrow->reviewId";
-	echo "' method='post' enctype='multipart/form-data'>",
-	    "<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp;<input class='button_small' type='submit' value='Upload form' name='uploadForm' />",
-	    "</form></td>\n  </tr>\n";
+	    $Conf->infoMsg("You didn't write this review, but you can still make changes as PC Chair.");
+	echo "<input class='button_small' type='submit' value='Download", ($editMode ? " form" : ""), "' name='downloadForm' id='downloadForm' />";
+	echo "<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp;<input class='button_small' type='submit' value='Upload form' name='uploadForm' /></td>\n</tr>\n";
     }
     
-    echo "</table>\n";
-
     if ($editMode) {
-	// start review form
-	echo "<form action='review.php?";
-	if (isset($rrow))
-	    echo "reviewId=$rrow->reviewId";
-	else
-	    echo "paperId=$prow->paperId";
-	echo "$forceShow&amp;post=1' method='post' enctype='multipart/form-data'>\n";
-	echo "<table class='reviewform'>\n";
-
 	// blind?
 	if ($Conf->blindReview() == 1) {
 	    echo "<tr class='rev_blind'>
@@ -416,7 +403,7 @@ function reviewView($prow, $rrow, $editMode) {
 	}
 	
 	// form body
-	echo $rf->webFormRows($rrow, true);
+	echo $rf->webFormRows($rrow, $useRequest);
 
 	// review actions
 	if ($Me->timeReview($prow, $Conf) || $Me->amAssistant()) {
@@ -449,9 +436,7 @@ function reviewView($prow, $rrow, $editMode) {
 	}
 
 	echo "</table>\n</form>\n\n";
-	
     } else {
-	echo "<table class='review'>\n";
 	echo $rf->webDisplayRows($rrow, $Me->canViewAllReviewFields($prow, $Conf));
 	echo "</table>\n";
     }

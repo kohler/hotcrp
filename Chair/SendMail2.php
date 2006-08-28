@@ -145,7 +145,7 @@ function getComments ($paperId) {
   global $Conf;
 
   $comResult = $Conf -> qe("SELECT * "
-			   . " FROM PaperComments "
+			   . " FROM PaperComment "
 			   . " WHERE paperId=$paperId AND "
 			   . " forAuthor=1 ");
 

@@ -153,8 +153,8 @@ while ($row=$result->fetchRow()) {
       $didBr = 1;
     }
 
-    $comments = $Conf->countEntries("PaperComments.paperId",
-				    $paperId, "PaperComments");
+    $comments = $Conf->countEntries("PaperComment.paperId",
+				    $paperId, "PaperComment");
     if ( $comments > 0) {
       if (! $didBr) {
 	print "<br>\n";

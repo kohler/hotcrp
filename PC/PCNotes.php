@@ -19,7 +19,7 @@ if (IsSet($_REQUEST[storeComment]) && IsSet($_REQUEST[paperId]) && IsSet($_REQUE
     $_REQUEST[forAuthor]=0;
   }
 
-  $query="INSERT INTO PaperComments "
+  $query="INSERT INTO PaperComment "
     . " SET paperId=$_REQUEST[paperId], contactId=" . $_SESSION["Me"]->contactId. ", "
     . " forAuthor=$_REQUEST[forAuthor], forReviewers=$_REQUEST[forReviewer], "
     . " comment='" . addslashes($_REQUEST[theComment]) . "'";
@@ -28,7 +28,7 @@ if (IsSet($_REQUEST[storeComment]) && IsSet($_REQUEST[paperId]) && IsSet($_REQUE
 }
 
 if (IsSet($_REQUEST[killCommentId])) {
-  $query="DELETE FROM PaperComments WHERE commentId=$_REQUEST[killCommentId]";
+  $query="DELETE FROM PaperComment WHERE commentId=$_REQUEST[killCommentId]";
   $Conf->qe($query);
 }
 
@@ -98,7 +98,7 @@ if ( $result ) {
 
 
 $result = $Conf -> qe("SELECT *, UNIX_TIMESTAMP(time) as unixtime "
-		      . " FROM PaperComments "
+		      . " FROM PaperComment "
 		      . " WHERE paperId=$_REQUEST[paperId] "
 		      . " ORDER BY time ");
 if (! $result ) {

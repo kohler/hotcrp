@@ -175,7 +175,7 @@ table.vubar td.sep, div.maintab td.sep {
 table.vubar td.sep:first-child {
 	padding: 0em 0.5em;
 }
-td.spanner, table.reviewform {
+td.spanner {
 	width: 100%;
 }
 table.vubar .tab, table.vubar .tab_disabled, table.vubar .tab_default {
@@ -339,7 +339,7 @@ span.author, span.conflict {
 
 
 /* Captions and entries */
-table.paper, table.review, table.reviewform {
+table.paper, table.review, table.comment {
 	width: 100%;
 }
 tr, textarea, select {
@@ -366,7 +366,10 @@ tr.id td.caption {
 	border-right: none;
 	background: white;
 }
-tr.last td, table.reviewform, table.review {
+table.comment tr.id td.entry {
+	font-size: small;
+}
+tr.last td, table.review, table.comment {
 	border-bottom: 1px solid #cc9900;
 }
 td.leftentry {
@@ -383,7 +386,7 @@ td.hint {
 	padding-left: 0.5em;
 	font-size: small;
 }
-div#aumg td.hint, table.paper td.hint, table.reviewform td.hint {
+div#aumg td.hint, table.paper td.hint, table.review td.hint, table.comment td.hint {
 	width: 25%;
 }
 td h2, td h3 {
@@ -485,14 +488,13 @@ td.datedesc {
 table.daterange {
 }
 
-input.textlite, textarea.textlite, table.reviewform td textarea {
+input.textlite, textarea {
 	/*border: none;*/
 	/*border-bottom: dashed 1px #ddddff;*/
 	border: solid 1px #aaaadd;
 	padding: 0px 0px 0px 4px;
 	background: #fcfcfc;
 }
-/*table.reviewform td select*/
 select {
 	border: solid 1px #aaaadd;
 }
@@ -728,7 +730,7 @@ hr.smgap {
 	margin: 0.25em 0em;
 	border: none;
 }
-form.downloadreviewform input#downloadForm {
+table.review input#downloadForm {
 	margin-right: 3em;
 }
 
@@ -768,12 +770,12 @@ span.rev_num {
 	font-weight: bold;
 	color: red;
 }
-table.review td.entry {
-	padding-right: 3em;
-}
 
 span.sep, span.reviewer, span.reviewstatus {
 	padding-right: 1em;
+}
+span.lgsep {
+	padding-right: 2em;
 }
 span.rstat {
 	font-size: smaller;
