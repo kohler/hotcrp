@@ -63,54 +63,75 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
 
 
 // update review action
-if (isset($_REQUEST['submit']))
+function saveComment($text) {
+    global $Me, $Conf, $prow, $crow;
+
+    // options
+    $forReviewers = (defval($_REQUEST["forReviewers"]) ? 1 : 0);
+    $forAuthors = (defval($_REQUEST["forAuthors"]) ? 1 : 0);
+    $blind = 0;
+    if ($Conf->blindReview() > 1
+	|| ($Conf->blindReview() == 1 && defval($_REQUEST["blind"])))
+	$blind = 1;
+
+    // query
+    if (!$text) {
+	$change = true;
+	$q = "delete from PaperComment where commentId=$crow->commentId";
+    } else if (!$crow) {
+	$change = true;
+	$q = "insert into PaperComment (contactId, paperId, timeModified, comment, forReviewers, forAuthors, blind) values ($Me->contactId, $prow->paperId, " . time() . ", '" . sqlq($text) . "', $forReviewers, $forAuthors, $blind)";
+    } else {
+	$change = ($crow->forAuthors != $forAuthors);
+	$q = "update PaperComment set timeModified=" . time() . ", comment='" . sqlq($text) . "', forReviewers=$forReviewers, forAuthors=$forAuthors, blind=$blind where commentId=$crow->commentId";
+    }
+
+    $while = "while saving comment";
+    $result = $Conf->qe($q, $while);
+    if (DB::isError($result))
+	return;
+
+    // comment ID
+    if ($crow)
+	$commentId = $crow->commentId;
+    else {
+	$result = $Conf->qe("select last_insert_id()", $while);
+	if (DB::isError($result) || $result->numRows() == 0)
+	    return;
+	$r = $result->fetchRow();
+	$commentId = $r[0];
+    }
+
+    // log, end
+    if (!DB::isError($result)) {
+	$action = ($text == "" ? "deleted" : "saved");
+	$Conf->confirmMsg("Comment $action");
+	$Conf->log("Comment $commentId for paper $prow->paperId $action", $Me);
+
+	// adjust comment counts
+	if ($change)
+	    $Conf->qe("update Paper set numComments=(select count(commentId) from PaperComment where paperId=$prow->paperId), numAuthorComments=(select count(commentId) from PaperComment where paperId=$prow->paperId and forAuthors>0) where paperId=$prow->paperId", $where);
+	
+	$_REQUEST["paperId"] = $prow->paperId;
+	unset($_REQUEST["commentId"]);
+	loadRows();
+    }
+}
+
+if (isset($_REQUEST['submit'])) {
     if (!$Me->canSubmitComment($prow, $crow, $Conf, $whyNot))
 	$Conf->errorMsg(whyNotText($whyNot, "comment"));
     else if (!($text = defval($_REQUEST['comment'])) && !$crow) {
 	$Conf->errorMsg("Enter a comment.");
 	$useRequest = true;
-    } else if (!$text) {
-	$q = "delete from PaperComment where commentId=$crow->commentId";
-    } else {
-	$forReviewers = (defval($_REQUEST["forReviewers"]) ? 1 : 0);
-	$forAuthors = (defval($_REQUEST["forAuthors"]) ? 1 : 0);
-	$blind = 0;
-	if ($Conf->blindReview() > 1
-	    || ($Conf->blindReview() == 1 && defval($_REQUEST["blind"])))
-	    $blind = 1;
-	$change = (!$crow || $crow->forAuthors != $forAuthors);
-	
-	if (!$crow) {
-	    $q = "insert into PaperComment (contactId, paperId, timeModified, comment, forReviewers, forAuthors, blind) values ($Me->contactId, $prow->paperId, " . time() . ", '" . sqlq($text) . "', $forReviewers, $forAuthors, $blind)";
-	} else {
-	    $q = "update PaperComment set timeModified=" . time() . ", comment='" . sqlq($text) . "', forReviewers=$forReviewers, forAuthors=$forAuthors, blind=$blind where commentId=$crow->commentId";
-	}
-
-	$result = $Conf->qe($q, "while saving comment");
-
-	if (!$crow && !DB::isError($result)) {
-	    $result = $Conf->qe("select last_insert_id()", "while saving comment");
-	    if (!DB::isError($result) && $result->numRows() > 0) {
-		$r = $result->fetchRow();
-		$commentId = $r[0];
-	    } else
-		/* XXX */;
-	} else if ($crow)
-	    $commentId = $crow->commentId;
-	
-	if (!DB::isError($result)) {
-	    $Conf->confirmMsg("Comment saved");
-	    $Conf->log("Comment $commentId for paper $prow->paperId saved", $Me);
-
-	    // adjust comment counts
-	    if ($change)
-		$Conf->qe("update Paper set numComments=(select count(commentId) from PaperComment where paperId=$prow->paperId), numAuthorComments=(select count(commentId) from PaperComment where paperId=$prow->paperId and forAuthors>0) where paperId=$prow->paperId", $where);
-	    
-	    $_REQUEST["paperId"] = $prow->paperId;
-	    unset($_REQUEST["commentId"]);
-	    loadRows();
-	}
-    }
+    } else
+	saveComment($text);
+} else if (isset($_REQUEST['delete']) && $crow) {
+    if (!$Me->canSubmitComment($prow, $crow, $Conf, $whyNot))
+	$Conf->errorMsg(whyNotText($whyNot, "comment"));
+    else
+	saveComment("");
+}
 
 
 // forceShow
@@ -243,7 +264,7 @@ function commentView($prow, $crow, $editMode) {
 
 <tr>
   <td class='caption'>Visibility</td>
-  <td class='entry'>Show PC and: <input type='checkbox' name='forReviewers' value='1'";
+  <td class='entry'>For PC and: <input type='checkbox' name='forReviewers' value='1'";
 	if ($useRequest ? defval($_REQUEST['forReviewers']) : (!$crow || $crow->forReviewers))
 	    echo " checked='checked'";
 	echo " />&nbsp;Reviewers &nbsp;
@@ -269,15 +290,11 @@ function commentView($prow, $crow, $editMode) {
   <td class='caption'></td>
   <td class='entry'><table class='pt_buttons'>
     <tr>\n";
-	    if (!$crow || !$crow->reviewSubmitted) {
-		echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save' name='submit' /></td>
-    </tr>
-    <tr>
-      <td class='ptb_explain'>(allow PC to see review)</td>\n";
-	    } else
-		echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save' name='submit' /></td>\n";
+	    echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save' name='submit' /></td>\n";
+	    if ($crow)
+		echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Delete comment' name='delete' /></td>\n";
 	    if (!$Me->timeReview($prow, $Conf))
-		echo "    </tr>\n    <tr>\n      <td colspan='3'><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td>\n";
+		echo "    </tr>\n    <tr>\n      <td colspan='2'><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td>\n";
 	    echo "    </tr>\n  </table></td>\n</tr>\n\n";
 	}
 
