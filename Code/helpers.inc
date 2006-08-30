@@ -653,7 +653,8 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
 	$x .= actionTab("Edit", "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=edit", $mode == "edit");
 
     if (!$newPaper && $prow
-	&& ($prow->reviewType > 0 || $Me->canViewReview($prow, null, $Conf)
+	&& ($prow->reviewType > 0
+	    || $Me->canViewReview($prow, null, $Conf)
 	    || ($Me->isPC && $prow->timeSubmitted > 0
 		&& $Conf->timeReviewOpen())))
 	$x .= actionTab("Reviews", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "review");

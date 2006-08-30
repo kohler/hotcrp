@@ -110,7 +110,7 @@ function saveComment($text) {
 
 	// adjust comment counts
 	if ($change)
-	    $Conf->qe("update Paper set numComments=(select count(commentId) from PaperComment where paperId=$prow->paperId), numAuthorComments=(select count(commentId) from PaperComment where paperId=$prow->paperId and forAuthors>0) where paperId=$prow->paperId", $where);
+	    $Conf->qe("update Paper set numComments=(select count(commentId) from PaperComment where paperId=$prow->paperId), numAuthorComments=(select count(commentId) from PaperComment where paperId=$prow->paperId and forAuthors>0) where paperId=$prow->paperId", $while);
 	
 	$_REQUEST["paperId"] = $prow->paperId;
 	unset($_REQUEST["commentId"]);

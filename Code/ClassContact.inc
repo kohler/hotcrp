@@ -550,13 +550,12 @@ class Contact {
 	$rrsub = (!$rrow || $rrow->reviewSubmitted > 0);
 	$forceShow = ($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"]);
 	if (($prow->author > 0 && $conf->timeAuthorViewReviews() && $rrsub)
-	    || ($prow->conflict > 0 && $forceShow)
-	    || ($this->amAssistant() && $prow->conflict <= 0)
+	    || ($this->amAssistant() && ($prow->conflict <= 0 || $forceShow))
 	    || ($this->isPC && $prow->conflict <= 0 && $rrsub
 		&& ($conf->timePCViewAllReviews()
-		    || (isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0)))
+		    || defval($prow->reviewSubmitted) > 0))
 	    || ($prow->reviewType > 0 && $prow->conflict <= 0 && $rrsub
-		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0
+		&& defval($prow->reviewSubmitted) > 0
 		&& ($this->isPC || $conf->startTime["reviewerViewReviews"] >= 1))
 	    || ($rrow && $rrow->paperId == $prow->paperId
 		&& $rrow->contactId == $this->contactId))

@@ -39,6 +39,7 @@ class Conference {
 
     var $saveMessages;
     var $headerPrinted;
+    var $tableMessages;
 
     //
     // Useful colors
@@ -66,8 +67,9 @@ class Conference {
 	$this->connected = 0;
 	$this->startTime = array();
 	$this->endTime = array();
-	$this->saveMessages = 1;
+	$this->saveMessages = true;
 	$this->headerPrinted = 0;
+	$this->tableMessages = false;
     }
 
   function dump() {
@@ -982,6 +984,8 @@ class Conference {
 	$x = "<div class='$type'>$text</div>\n";
 	if ($this->saveMessages)
 	    $_SESSION["msgs"] = (isset($_SESSION["msgs"]) ? $_SESSION["msgs"] . $x : $x);
+	else if ($this->tableMessages)
+	    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry' colspan='", $this->tableMessages, "'>", $x, "</td>\n</tr>\n\n";
 	else
 	    echo $x;
     }
@@ -1009,6 +1013,11 @@ class Conference {
 	$this->footer();
 	exit;
     }
+
+    function tableMsg($colspan) {
+	$this->tableMessages = $colspan;
+    }
+    
 
     //
     // Conference header, footer
@@ -1071,17 +1080,19 @@ class Conference {
 	    echo $_SESSION["msgs"];
 	    unset($_SESSION["msgs"]);
 	}
-	$this->saveMessages = 0;
+	$this->saveMessages = false;
 
 	$this->headerPrinted = 2;
     }
 
     function footer() {
 	global $ConfSiteBase;
-	//
+
+	if ($this->tableMessages)
+	    echo "</table>\n\n";
+	
 	// Output standard footer - button to go to main submission
 	// site, button to close & pointer to CRP at sourceforge
-	//
 	echo "</div>\n"; // <div id='body'>
 	echo "<div id='footer'>\n";
 	echo "  <div id='footer_crp'><a href='http://crp.sourceforge.net/'>CRP</a> Conference Management Software</div>\n";

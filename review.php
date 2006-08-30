@@ -7,6 +7,7 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $rf = reviewForm();
 $useRequest = false;
+$forceShow = (defval($_REQUEST['forceShow']) && $Me->amAssistant() ? "&amp;forceShow=1" : "");
 
 
 // header
@@ -228,55 +229,8 @@ if (isset($_REQUEST['setoutcome'])) {
 }
 
 
-// forceShow
-if (defval($_REQUEST['forceShow']) && $Me->amAssistant())
-    $forceShow = "&amp;forceShow=1";
-else
-    $forceShow = "";
-
-
-// mode
-if (defval($_REQUEST["mode"]) == "edit")
-    $mode = "edit";
-else if (defval($_REQUEST["mode"]) == "view")
-    $mode = "view";
-else if ($rrow && ($Me->canReview($prow, $rrow, $Conf)
-		   || ($Me->amAssistant() && ($prow->conflict <= 0 || $forceShow))))
-    $mode = "edit";
-else if (!$rrow && (($prow->reviewType > 0 && $prow->reviewSubmitted <= 0)
-		    || ($Me->isPC && !$Me->canViewReview($prow, $rrow, $Conf))))
-    $mode = "edit";
-else
-    $mode = "view";
-// then fix impossible modes
-if ($mode == "view" && $prow->conflict <= 0
-    && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot)
-    && $Me->canReview($prow, $myRrow, $Conf)) {
-    if (isset($whyNot['reviewNotComplete']) || isset($whyNot['externalReviewer'])) {
-	if (isset($_REQUEST["mode"]) || isset($whyNot['forceShow']))
-	    $Conf->infoMsg(whyNotText($whyNot, "review"));
-    } else
-	errorMsgExit(whyNotText($whyNot, "review"));
-    $mode = "edit";
-    $rrow = $myRrow;
-}
-if ($mode == "edit" && !$Me->canReview($prow, $rrow, $Conf, $whyNot)) {
-    $Conf->errorMsg(whyNotText($whyNot, "review"));
-    $mode = "view";
-}
-if ($mode == "edit" && !$rrow)
-    $rrow = $editRrow;
-
-
 // page header
 confHeader();
-
-
-// messages for review viewers
-if ($mode == "edit" && !$Me->canReview($prow, $rrow, $Conf, $whyNot))
-    $Conf->infoMsg(whyNotText($whyNot, "review"));
-if ($mode == "edit" && $prow->reviewType <= 0)
-    $Conf->infoMsg("You haven't been assigned to review this paper, but you can review it anyway.");
 
 
 // begin table
@@ -308,6 +262,52 @@ if ($Me->amAssistant())
     $paperTable->echoPCConflicts($prow);
 
 
+// can we see any reviews?
+$Conf->tableMsg(1);
+$viewAny = $Me->canViewReview($prow, null, $Conf, $whyNotView);
+$editAny = $Me->canReview($prow, null, $Conf, $whyNotEdit);
+if (!$viewAny && !$editAny)
+    errorMsgExit("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
+
+
+// mode
+if (defval($_REQUEST["mode"]) == "edit")
+    $mode = "edit";
+else if (defval($_REQUEST["mode"]) == "view")
+    $mode = "view";
+else if ($rrow && ($Me->canReview($prow, $rrow, $Conf)
+		   || ($Me->amAssistant() && ($prow->conflict <= 0 || $forceShow))))
+    $mode = "edit";
+else if (!$rrow && (($prow->reviewType > 0 && $prow->reviewSubmitted <= 0)
+		    || ($Me->isPC && !$viewAny)))
+    $mode = "edit";
+else
+    $mode = "view";
+// then fix impossible modes
+if ($mode == "view" && $prow->conflict <= 0
+    && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot)
+    && $Me->canReview($prow, $myRrow, $Conf)) {
+    if (isset($whyNot['reviewNotComplete']) || isset($whyNot['externalReviewer'])) {
+	if (isset($_REQUEST["mode"]) || isset($whyNot['forceShow']))
+	    $Conf->infoMsg(whyNotText($whyNot, "review"));
+    } else
+	errorMsgExit(whyNotText($whyNot, "review"));
+    $mode = "edit";
+    $rrow = $myRrow;
+}
+if ($mode == "edit" && !$Me->canReview($prow, $rrow, $Conf, $whyNot)) {
+    $Conf->errorMsg(whyNotText($whyNot, "review"));
+    $mode = "view";
+}
+if ($mode == "edit" && !$rrow)
+    $rrow = $editRrow;
+
+
+// messages for review viewers
+if ($mode == "edit" && $prow->reviewType <= 0)
+    $Conf->infoMsg("You haven't been assigned to review this paper, but you can review it anyway.");
+
+
 // reviewer information
 $revTable = reviewTable($prow, $rrows, $rrow, $mode);
 $revTableClass = (preg_match("/<th/", $revTable) ? "rev_reviewers_hdr" : "rev_reviewers");
@@ -329,10 +329,11 @@ if ($Me->canSetOutcome($prow))
 // extra space
 echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>
 </table>\n\n";
+$Conf->tableMsg(0);
 
 
 // exit on certain errors
-if (!$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
+if ($rrow && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
     errorMsgExit(whyNotText($whyNot, "review"));
 
 
