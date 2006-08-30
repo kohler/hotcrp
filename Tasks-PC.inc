@@ -30,13 +30,6 @@ based on how many reviews have been submitted by everyone
 
 </ul>
 
-<li> Your job -- reviewing papers 
-<ul>
-
-<li> <a href="PC/CheckAssignedPapers.php">See Ranking for Your Assigned Papers
-</a> -- you can get to reviews from here as well
-</li>
-
 </ul>
 
 
