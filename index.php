@@ -312,9 +312,7 @@ if ($Me->isPC || $Me->amAssistant()) { ?>
 </table>
 
 <?
-    if ($_SESSION["WhichTaskView"] == "Reviewer") {
-	include("Tasks-Reviewer.inc");
-    } else if ($_SESSION["WhichTaskView"] == "PC") {
+    if ($_SESSION["WhichTaskView"] == "PC") {
 	include("Tasks-PC.inc");
     } else if ($_SESSION["WhichTaskView"] == "Chair") {
 	include("Tasks-Chair.inc");
