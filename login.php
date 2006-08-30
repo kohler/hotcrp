@@ -86,14 +86,14 @@ reviewing papers, or a member of the program committee.");
 <form class='login' method='post' action='login.php'>
 <table class='form'>
 <tr>
-  <td class='caption'>Email:</td>
+  <td class='caption'>Email</td>
   <td class='entry'><input type='text' name='email' size='50' tabindex='1'
     <?php if (isset($_REQUEST["email"])) echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" "; ?>
   /></td>
 </tr>
 
 <tr>
-  <td class='caption'>Password:</td>
+  <td class='caption'>Password</td>
   <td class='entry'><input type='password' name='password' size='50' tabindex='1' /></td>
 </tr>
 
