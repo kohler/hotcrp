@@ -424,13 +424,16 @@ class PaperList {
 
 	$ids = array();
 	$anyData = array();
-	$trclass = ($this->showHeader ? " class=\"pl_firstrow\"" : "");
 	$body = '';
 	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
-	    $this->count++;
 	    $ids[] = $row->paperId;
-	    $body .= "  <tr$trclass>\n";
-	    $trclass = "";
+	    $trclass = "k" . ($this->count % 6 < 3 ? 0 : 1);
+	    $this->count++;
+	    
+	    $body .= "  <tr class=\"" . $trclass;
+	    if ($this->showHeader && $this->count == 1)
+		$body .= " pl_firstrow";
+	    $body .= "\">\n";
 	    foreach ($fieldId as $f)
 		if ($f[2] == 1) {
 		    $c = $this->content($f[0], $row, $plist, $reviewList);
@@ -439,9 +442,10 @@ class PaperList {
 			$anyData[$f[0]] = 1;
 		}
 	    $body .= "  </tr>\n";
+	    
 	    foreach ($fieldId as $f)
 		if ($f[2] == 2 && ($d = $this->content($f[0], $row, $plist, $reviewList))) {
-		    $body .= "  <tr class=\"pl_$f[1] pl_callout\">\n";
+		    $body .= "  <tr class=\"pl_$f[1] pl_callout $trclass\">\n";
 		    $body .= "<td class=\"pl_$f[1] pl_callout\" colspan='$ncol'>";
 		    $body .= "<span class='pl_callouthdr'>" . $this->header($f[0], -1, $row, $reviewList) . "</span>";
 		    $body .= $d . "</td>\n  </tr>\n";

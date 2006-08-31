@@ -804,6 +804,10 @@ a.pl_sort_def_rev {
 	color: #660000;
 }
 
+tr.k1 td {
+	background: #f2f2f6;
+}
+
 .folded .extension, .folded .folder, .unfolded .ellipsis, .unfolded .unfolder {
 	display: none;
 }

@@ -138,7 +138,7 @@ function formFieldText($row, $ordinalOrder, $numRows) {
     $order = getField($row, 'order', $ordinalOrder);
     if ($order < 0)
 	$x .= " selected='selected'";
-    $x .= ">Not shown</option>\n";
+    $x .= ">Not on form</option>\n";
     for ($i = 0; $i < $numRows; $i++) {
 	$x .= "    <option value='$i'";
 	if ($order == $i)
