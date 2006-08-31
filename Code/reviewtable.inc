@@ -105,13 +105,32 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	$numericHeaders = "    <tr>$t<td class='empty' colspan='3'></td>" . $rf->webNumericScoresHeader($prow, $Me, $Conf) . "</tr>\n";
     }
     
+    $t = '';
+    $hilite = ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "");
     // see all reviews
     if (($mode != "edit" && $rrow && $Me->canViewReview($prow, null, $Conf))
-	|| ($mode == "edit" && $Me->canViewReview($prow, null, $Conf))) {
-	$t = "    <tr>" . ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "") . "<td colspan='";
-	$t .= ($anyScores ? 4 + $nNumeric : 4);
-	$t .= "'><a href='review.php?paperId=$prow->paperId&amp;mode=view$forceShow'>All reviews on one page</a></td></tr>\n";
-	$nonsubrev[] = $t;
+	|| ($mode == "edit" && $Me->canViewReview($prow, null, $Conf)))
+	$t .= "<a href='review.php?paperId=$prow->paperId&amp;mode=view$forceShow'>All reviews on one page</a>";
+    // review assignments
+    if ($mode != "req" && ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
+	if ($Me->amAssistant())
+	    $x = "Assign or request reviewers";
+	else
+	    $x = "Ask someone else to review this paper" . ($nRetractable ? " or retract outstanding review requests" : "");
+	$t .= ($t == "" ? "" : " &nbsp;|&nbsp; ") . "<a href=\"${ConfSiteBase}assign.php?paperId=$prow->paperId" . ($forceShow ? "&amp;forceShow=1" : "") . "\">$x</a>";
+    }
+    // extra action row
+    if ($t)
+	$nonsubrev[] = "    <tr>$hilite<td colspan='"
+	    . ($anyScores ? 4 + $nNumeric : 4) . "'>" . $t . "</td></tr>\n";
+
+    // review requests
+    if ($mode != "req" && ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
+	if ($Me->amAssistant())
+	    $t = "Assign reviewers";
+	else
+	    $t = "Request an external review" . ($nRetractable ? " or retract outstanding review requests" : "");
+	$notes[] = "<a href=\"${ConfSiteBase}assign.php?paperId=$prow->paperId" . ($forceShow ? "&amp;forceShow=1" : "") . "\">$t</a>";
     }
     
     // unfinished review notification
@@ -131,19 +150,8 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     if ($Me->amAssistant() && !$effAssistant)
 	$notes[] = "<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\"><b>Override your conflict</b> to show reviewer identities and allow editing</a>";
 
-    // review requests
-    if ($mode != "req" && ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
-	if ($Me->amAssistant())
-	    $t = "Assign or request reviewers";
-	else
-	    $t = "Ask someone else to review this paper" . ($nRetractable ? " or retract outstanding review requests" : "");
-	$notes[] = "<a href=\"${ConfSiteBase}assign.php?paperId=$prow->paperId" . ($forceShow ? "&amp;forceShow=1" : "") . "\">$t</a>";
-    }
-
-    if (count($notes)) {
-	$t = ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "");
-	$nonsubrev[] = "    <tr>$t<td class='revnotes' colspan='" . ($anyScores ? 4 + $nNumeric : 4) . "'>" . join("<br />\n", $notes) . "</td></tr>\n";
-    }
+    if (count($notes))
+	$nonsubrev[] = "    <tr>$hilite<td class='revnotes' colspan='" . ($anyScores ? 4 + $nNumeric : 4) . "'>" . join("<br />\n", $notes) . "</td></tr>\n";
 
     // completion
     if (count($nonsubrev) || count($subrev))
