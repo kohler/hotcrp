@@ -1520,38 +1520,30 @@ class Conference {
       }
     }
 
-  function countEntries($field, $who, $table, $extra="")
-    {
-      return $this->retCount("SELECT "
-		      . " COUNT($field) AS foo "
-		      . " FROM $table "
-		      . " WHERE $field=$who $extra"
-		      );
+    function countEntries($field, $who, $table, $extra="") {
+	return $this->retCount("select count($field) as foo from $table where $field=$who $extra");
     }
 
-  function reviewRange($what, $table)
-    {
-      //
-      // This is fairly inefficient since we query for each graph
-      // but
-      $range = array();
-      $result = $this -> qe("SELECT min($what), max($what) from $table");
-      if ( !DB::isError($result) ) {
-	$row = $result->fetchRow();
-	$range['min'] = $row[0];
-	$range['max'] = $row[1];
-      } 
-      return $range;
+    function reviewRange($what, $table) {
+	//
+	// This is fairly inefficient since we query for each graph
+	// but
+	$range = array();
+	$result = $this -> qe("SELECT min($what), max($what) from $table");
+	if ( !DB::isError($result) ) {
+	    $row = $result->fetchRow();
+	    $range['min'] = $row[0];
+	    $range['max'] = $row[1];
+	} 
+	return $range;
     }
 
   function graphValuesStr($query, $what, $min, $max)
     {
       $result = "";
 
-      $merit=array();
-      for ($i = $min; $i <= $max; $i++) {
-	$merit[$i] = 0;
-      }
+      $merit = array_fill($min, $max - $min + 1, 0);
+
       $result = $this->qe($query);
       if ( DB::isError($result) ) {
 	$this->errorMsg("Error: " . $result->getMessage());
@@ -1560,29 +1552,29 @@ class Conference {
       //
       // Determine min/max of attribute
       //
-      $sum=0;
-      $num=0;
+      $sum = 0;
+      $num = 0;
 
       $retstr = "";
-      while($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
-	$value = $row[$what];
-	if ( !IsSet($merit[$value]) ) {
-	  $merit[$value] = 1;
-	} else {
-	  $merit[$value] += 1;
-        }
-	$sum += $value;
-	$num++;
+      while (($row = $result->fetchRow(DB_FETCHMODE_ASSOC))) {
+	  $value = $row[$what];
+	  if ( !IsSet($merit[$value]) ) {
+	      $merit[$value] = 1;
+	  } else {
+	      $merit[$value] += 1;
+	  }
+	  $sum += $value;
+	  $num++;
       }
 
-      $str="../images/GenChart.php?";
+      $str="../images/GenChart.php?v=";
       $sep = "";
       foreach ($merit as $key => $value) {	
 	$str = $str . $sep . "v[" . $key . "]=$value";
 	$sep="&";
       }
       $retstr .= "<table><tr><td align=\"center\">";
-      $retstr .= "<img src=\"$str\" ";
+      $retstr .= "<img src=\"" . htmlspecialchars($str) . "\" ";
       $retstr .= sprintf("alt=\"avg=%0.2f\" ", $avg);
       $retstr .= "align=bottom>";
       $retstr .= "</td><tr><td align=\"center\"><font size=-2>";

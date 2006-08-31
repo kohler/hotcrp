@@ -1,9 +1,9 @@
 <?php 
-include('../Code/confHeader.inc');
+require_once('../Code/confHeader.inc');
 $Conf->connect();
-$_SESSION["Me"]->goIfInvalid("../");
-$_SESSION["Me"]->goIfNotChair('../');
-include('Code.inc');
+$Me = $_SESSION["Me"];
+$Me->goIfInvalid();
+$Me->goIfNotChair('../');
 $Conf->header("Edit Review Form");
 $rf = reviewForm();
 
@@ -31,6 +31,10 @@ function checkOptions(&$var, &$options, &$order) {
 }
 
 if (isset($_REQUEST['update'])) {
+    $while = "while updating review form";
+    $scoreModified = array();
+    $Conf->qe("lock tables ReviewFormField write, PaperReview write, ReviewFormOptions write");
+    
     foreach (array_keys($reviewFields) as $field) {
 	$req = '';
 	if (isset($_REQUEST["shortName_$field"]))
@@ -45,9 +49,14 @@ if (isset($_REQUEST['update'])) {
 	    $req .= "sortOrder='" . cvtint($_REQUEST["order_$field"]) . "', ";
 	if ($reviewFields[$field]) {
 	    if (checkOptions($_REQUEST["options_$field"], $options, $_REQUEST["order_$field"])) {
-		$Conf->qe("delete from ReviewFormOptions where fieldName='" . sqlq($field) . "'", "while updating review form");
+		$Conf->qe("delete from ReviewFormOptions where fieldName='" . sqlq($field) . "'", $while);
 		for ($i = 1; $i <= count($options); $i++)
-		    $Conf->qe("insert into ReviewFormOptions (fieldName, level, description) values ('" . sqlq($field) . "', $i, '" . sqlq($options[$i]) . "')", "while updating review form");
+		    $Conf->qe("insert into ReviewFormOptions (fieldName, level, description) values ('" . sqlq($field) . "', $i, '" . sqlq($options[$i]) . "')", $while);
+		
+		$result = $Conf->qe("update PaperReview set $field=0 where $field>" . count($options), $while);
+		if (!DB::isError($result) && $Conf->DB->affectedRows() > 0)
+		    $scoreModified[] = htmlspecialchars($_REQUEST["shortName_$field"]);
+		
 		unset($_REQUEST["options_$field"]);
 		$updates = 1;
 	    } else {
@@ -57,7 +66,7 @@ if (isset($_REQUEST['update'])) {
 	    }
 	}
 	if ($req != '') {
-	    $result = $Conf->qe("update ReviewFormField set " . substr($req, 0, -2) . " where fieldName='" . sqlq($field) . "'", "while updating review form");
+	    $result = $Conf->qe("update ReviewFormField set " . substr($req, 0, -2) . " where fieldName='" . sqlq($field) . "'", $while);
 	    if (!DB::isError($result)) {
 		unset($_REQUEST["order_$field"], $_REQUEST["shortName_$field"], $_REQUEST["description_$field"]);
 		$updates = 1;
@@ -69,6 +78,11 @@ if (isset($_REQUEST['update'])) {
 	$Conf->errorMsg("Review fields with options must have at least two choices, numbered sequentially from 1.  Enter them like this:  <pre>1. Low quality
 2. Medium quality
 3. High quality</pre>  Please edit the highlighted fields and save again.");
+
+    if (count($scoreModified))
+	$Conf->warnMsg("Your changes invalidated some existing review scores.  The invalid scores have been reset to \"Unknown\".  The relevant fields were: " . join(", ", $scoreModified) . ".");
+
+    $Conf->qe("unlock tables");
 
     // alert consumers of change to form
     if (isset($updates)) {
@@ -176,7 +190,4 @@ echo $notShown;
 </table>
 </form>
 
-</div>
 <?php $Conf->footer() ?>
-</body>
-</html>
