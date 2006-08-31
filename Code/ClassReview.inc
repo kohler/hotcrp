@@ -601,8 +601,8 @@ class ReviewForm {
 	$x = "";
 	foreach ($this->fieldOrder as $field)
 	    if (($this->authorView[$field] || $viewAllFields)
-		&& isset($this->options[$field]) && $rrow->$field) {
-		if ($view) {
+		&& isset($this->options[$field])) {
+		if ($view && $rrow->$field) {
 		    $x .= "<td class='revscore rs_$field'>" . $rrow->$field . "</td>";
 		    $anyScores = true;
 		} else
