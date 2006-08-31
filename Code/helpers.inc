@@ -583,6 +583,8 @@ function whyNotText($whyNot, $action) {
 	$text .= "You have a conflict with $thisPaper.  ";
     if (isset($whyNot['reviewNotComplete']))
 	$text .= "Your own review for $thisPaper is not complete, so you can't view other people's reviews.  ";
+    if (isset($whyNot['reviewsOutstanding']))
+	$text .= "You must complete <a href=\"${ConfSiteBase}list.php?list=reviewer\">your own reviews</a> for other papers before you can view the reviews for papers you authored.  ";
     if (isset($whyNot['externalReviewer']))
 	$text .= "External reviewers may not view other reviews for the papers they review.  ";
     if (isset($whyNot['reviewNotAssigned']))

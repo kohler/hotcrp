@@ -1,7 +1,7 @@
 <?php
 //
 // Generates a GIF image of a bar chat.
-// Arguments are passed in as v[0]...v[n]
+// Arguments are passed in as v
 //
 
 $blockHeight = 8;
@@ -10,29 +10,26 @@ $blockWidth = 8; // Was 16
 $blockSkip = 2; // along vertical
 $blockPad = 4; // pad from left/right side
 
-$valMin = 10000;
-$valMax = -1;
+if (!isset($_REQUEST["v"]))
+    exit;
+
+if (isset($_REQUEST["first"]) && is_numeric($_REQUEST["first"]))
+    $valMin = $valMax = intval($_REQUEST["first"]);
+else
+    $valMin = $valMax = 1;
 $values = array();
 $maxY = 5;
-
-if (!IsSet($_REQUEST[v])) {
-  exit;
-} else {
-  foreach ($_REQUEST[v] as $key => $value) {
-    $values[$key] = $value;
-    $valMin = min($key, $valMin);
-    $valMax = max($key, $valMax);
+foreach (explode(",", $_REQUEST["v"]) as $value) {
+    $value = (is_numeric($value) && $value > 0 ? intval($value) : 0);
+    $values[$valMax++] = $value;
     $maxY = max($value, $maxY);
-  }
 }
 
-$valWidth = $valMax - $valMin + 1;
+$textWidth = 12;
 
-$textWidth=12;
-
-$picWidth=($blockWidth + $blockPad ) * $valWidth
-	+ $blockPad
-	+ 2 * $textWidth;
+$picWidth = ($blockWidth + $blockPad) * ($valMax - $valMin)
+    + $blockPad
+    + 2 * $textWidth;
 
 $picHeight=$blockHeight * $maxY + $blockSkip * ($maxY+1);
 
@@ -47,12 +44,12 @@ $cBlack=ImageColorAllocate($pic,0,0,0);
 ImageFilledRectangle($pic,0,0,$picWidth+1,$picHeight+1,$cBlack);
 ImageFilledRectangle($pic,1,1,$picWidth-1,$picHeight-1,$cWhite);
 
-for ($value = $valMin; $value <= $valMax; $value++) {
+for ($value = $valMin; $value < $valMax; $value++) {
   //
   // Set fill color for rectangles...
   //
   $frac = (255.0 * ($value-$valMin));
-  $frac = $frac / ($valMax - $valMin + 1);
+  $frac = $frac / ($valMax - $valMin);
 
   //  print "frac is $frac\n";
   $cFill=ImageColorAllocate($pic,255-$frac, 0, $frac);
@@ -80,28 +77,7 @@ for ($value = $valMin; $value <= $valMax; $value++) {
 ImageStringUp($pic, 2, 0, 40, "Bad", $cBlack);
 ImageStringUp($pic, 2, $picWidth-$textWidth, 40, "Good", $cBlack);
 
-
 Header("Content-type: image/png");
 Header("Cache-Control: public");
 ImagePNG($pic);
 exit();
-
-
-if (function_exists("imagejpeg")) {
-  Header("Content-type: image/jpeg");
-  ImageJPEG($pic, "", 0.5);
-}
-elseif (function_exists("imagepng")) {
-  Header("Content-type: image/png");
-  ImagePNG($pic);
-}
-elseif (function_exists("imagewbmp")) {
-  Header("Content-type: image/vnd.wap.wbmp");
-  ImageWBMP($pic);
-}
-else {
-  die("No image support in this PHP server");
-}
-
-?>
-

@@ -152,9 +152,9 @@ if (DB::isError($result)) {
 </tr>
 <td> <b> 
 <?php 
-
-$meritRange = $Conf->reviewRange('overAllMerit', 'PaperReview');
-$gradeRange = $Conf->reviewRange('grade', 'PaperGrade');
+$rf = reviewForm();
+$meritMax = $rf->maxNumericScore('overAllMerit');
+$gradeMax = $rf->maxNumericScore('grade');
 
 $rowNum = 0;
 while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)){
@@ -205,7 +205,7 @@ while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)){
     $q = "SELECT overAllMerit FROM PaperReview "
       . " WHERE paperId=$paperId "
       . " AND reviewSubmitted>0";
-    $Conf->graphValues($q, "overAllMerit", $meritRange['min'], $meritRange['max']);
+    $Conf->graphValues($q, "overAllMerit", $meritMax);
 
     print "</td>";
 
@@ -213,7 +213,7 @@ while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)){
       print "<td align=center>";
       $q = "SELECT grade FROM PaperGrade "
         . " WHERE paperId=$paperId ";
-      $Conf->graphValues($q, "grade", $gradeRange['min'], $gradeRange['max']);
+      $Conf->graphValues($q, "grade", $gradeMax);
       print "</td>";
     }
 

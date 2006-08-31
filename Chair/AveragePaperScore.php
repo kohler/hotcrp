@@ -364,12 +364,9 @@ if( $judgeCol ){
   print "<INPUT TYPE='HIDDEN' NAME='pcmode' VALUE='$pcmode'>\n";
 }
 
+$rf = reviewForm();
 foreach( $kept_graphs as $field => $name ){
-  if( $field == 'grade' ){
-    $meritRange[$field] = $Conf->reviewRange($field, 'PaperGrade');
-  } else {
-    $meritRange[$field] = $Conf->reviewRange($field, 'PaperReview');
-  }
+    $meritMax[$field] = $rf->maxNumericScore($field);
 }
 
 $grouped_rows = array();
@@ -514,7 +511,7 @@ foreach( $grouped_rows[$group] as $row ){
 	$q = "SELECT $field FROM PaperReview WHERE paperID='$paperId' AND reviewSubmitted=1";
       }
 
-      $Conf->graphValues($q, $field, $meritRange[$field]['min'], $meritRange[$field]['max']);
+      $Conf->graphValues($q, $field, $meritMax[$field]);
     }
     print "</td>";
   }

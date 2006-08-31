@@ -3,7 +3,7 @@ require_once('../Code/confHeader.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPC();
+$Me->goIfNotPC("../");
 $Conf->goIfInvalidActivity("PCGradePapers", "../");
 
 include('gradeNames.inc');
@@ -81,9 +81,9 @@ the paper) so they can express them at the PC meeting.
 <br><br>
 
 <?php 
-
-$meritRange = $Conf->reviewRange('overAllMerit', 'PaperReview');
-$gradeRange = $Conf->reviewRange('grade', 'PaperGrade');
+$rf = reviewForm();
+$meritMax = $rf->maxNumericScore('overAllMerit');
+$gradeMax = $rf->maxNumericScore('grade');
 
 
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title FROM Paper join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$Me->contactId and PaperReview.reviewType=" . REVIEW_PRIMARY . ") order by Paper.paperId");
@@ -93,7 +93,7 @@ if (DB::isError($result)) {
   exit();
 } 
 
-print "<FORM name=Paper$paperId method=\"POST\" action=\"$_SERVER[PHP_SELF]\">";
+print "<FORM name='Paper' method=\"POST\" action=\"$_SERVER[PHP_SELF]\">";
 ?>
 
 <table border=1>
@@ -137,14 +137,14 @@ while ($row=$result->fetchRow()) {
     $q = "SELECT overAllMerit FROM PaperReview "
       . " WHERE paperId=$paperId "
       . " AND reviewSubmitted>0";
-    $Conf->graphValues($q, "overAllMerit", $meritRange['min'], $meritRange['max']);
+    $Conf->graphValues($q, "overAllMerit", $meritMax);
 
     print "</td>";
 
     print "<td>";
     $q = "SELECT grade FROM PaperGrade "
       . " WHERE paperId=$paperId ";
-    $Conf->graphValues($q, "grade", $gradeRange['min'], $gradeRange['max']);
+    $Conf->graphValues($q, "grade", $gradeMax);
     print "</td>";
 
     print "<td>";
@@ -245,7 +245,7 @@ while ($row=$result->fetchRow()) {
     $q = "SELECT overAllMerit FROM PaperReview "
       . " WHERE paperId=$paperId "
       . " AND reviewSubmitted>0";
-    $Conf->graphValues($q, "overAllMerit", $meritRange['min'], $meritRange['max']);
+    $Conf->graphValues($q, "overAllMerit", $meritMax);
 
 
     print "</td>";
@@ -253,7 +253,7 @@ while ($row=$result->fetchRow()) {
     print "<td>";
     $q = "SELECT grade FROM PaperGrade "
       . " WHERE paperId=$paperId ";
-    $Conf->graphValues($q, "grade", $gradeRange['min'], $gradeRange['max']);
+    $Conf->graphValues($q, "grade", $gradeMax);
     print "</td>";
 
     print "<td>";

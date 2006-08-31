@@ -28,7 +28,7 @@ class Contact {
     var $isPC;
     var $isChair;
     var $isAssistant;
-    //var $chairMode;
+    var $reviewsOutstanding;
     var $chairContactId;
     var $validated;
 
@@ -46,7 +46,8 @@ class Contact {
 			PaperReview.contactId as reviewer,
 			PCMember.contactId as pcMember,
 			ChairAssistant.contactId as assistant,
-			Chair.contactId as chair
+			Chair.contactId as chair,
+			min(PaperReview.reviewSubmitted) as minSubmitted
 		from ContactInfo
 		left join PaperReview using (contactId)
 		left join PaperConflict using (contactId)
@@ -58,8 +59,8 @@ class Contact {
 	    if (DB::isError($result) || $result->numRows() == 0)
 		$this->invalidate();
 	    else {
-		$this->isAuthor = $this->isReviewer = $this->isPC = $this->isChair = $this->isAssistant = false;
-		while ($row = $result->fetchRow()) {
+		$this->isAuthor = $this->isReviewer = $this->isPC = $this->isChair = $this->isAssistant = $this->reviewsOutstanding = false;
+		while (($row = $result->fetchRow())) {
 		    if ($row[0] > 0)
 			$this->isAuthor = true;
 		    if ($row[1] > 0)
@@ -70,11 +71,11 @@ class Contact {
 			$this->isAssistant = true;
 		    if ($row[4] > 0)
 			$this->isChair = true;
+		    if ($row[5] <= 0)
+			$this->reviewsOutstanding = true;
 		}
 		if ($Opt['setupPhase'])
 		    $this->isChair = true;
-		//if (!$this->isChair)
-		//    $this->chairMode = false;
 		if ($this->isChair)
 		    $this->chairContactId = $this->contactId;
 		// change view ID or chair mode
@@ -91,8 +92,7 @@ class Contact {
 		    if ($chairMode >= 0 && !$this->isChair) {
 			$this->contactId = $this->chairContactId;
 			return $this->valid($conf, true);
-		    } //else if ($chairMode >= 0)
-		    //	$this->chairMode = ($chairMode > 0);
+		    }
 		}
 		$this->validated = true;
 		if ($update)
@@ -126,7 +126,7 @@ class Contact {
 	$this->isPC = false;
 	$this->isChair = false;
 	$this->isAssistant = false;
-	//$this->chairMode = false;
+	$this->reviewsOustanding = false;
 	$this->chairContactId = 0;
     }
   
@@ -550,7 +550,8 @@ class Contact {
 	// policy
 	$rrsub = (!$rrow || $rrow->reviewSubmitted > 0);
 	$forceShow = ($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"]);
-	if (($prow->author > 0 && $conf->timeAuthorViewReviews() && $rrsub)
+	if (($prow->author > 0 && $conf->timeAuthorViewReviews() && $rrsub
+	     && (!$this->reviewsOutstanding || !$this->isReviewer))
 	    || ($this->amAssistant() && ($prow->conflict <= 0 || $forceShow))
 	    || ($this->isPC && $prow->conflict <= 0 && $rrsub
 		&& ($conf->timePCViewAllReviews()
@@ -564,6 +565,9 @@ class Contact {
 	// collect failure reasons
 	if ($prow->author <= 0 && !$this->isPC && $prow->reviewType <= 0)
 	    $whyNot['permission'] = 1;
+	else if ($prow->author > 0 && $conf->timeAuthorViewReviews()
+		 && $this->reviewsOutstanding && $this->isReviewer)
+	    $whyNot['reviewsOutstanding'] = 1;
 	else if ($prow->author > 0)
 	    $whyNot['deadline'] = 'authorViewReviews';
 	else if ($prow->conflict > 0)

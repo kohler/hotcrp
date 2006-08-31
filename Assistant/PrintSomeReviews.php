@@ -128,9 +128,10 @@ if (DB::isError($result)) {
 <th width=5%> <a href="<?php echo $_SERVER[PHP_SELF]?>?setSortKey=byGrades"> Grades </a> </th>
 </tr>
 <td> <b> 
-<?php 
-$meritRange = $Conf->reviewRange('overAllMerit', 'PaperReview');
-$gradeRange = $Conf->reviewRange('grade', 'PaperGrade');
+<?php
+$rf = reviewForm();
+$meritMax = $rf->maxNumericScore('overAllMerit');
+$gradeMax = $rf->maxNumericScore('grade');
 
 
 $rowNum = 0;
@@ -168,14 +169,14 @@ while ($row=$result->fetchRow()) {
     $q = "SELECT overAllMerit FROM PaperReview "
       . " WHERE paperId=$paperId "
       . " AND reviewSubmitted = 1";
-    $Conf->graphValues($q, "overAllMerit", $meritRange['min'], $meritRange['max']);
+    $Conf->graphValues($q, "overAllMerit", $meritMax);
 
     print "</td>";
 
     print "<td align=center>";
     $q = "SELECT grade FROM PaperGrade "
       . " WHERE paperId=$paperId ";
-    $Conf->graphValues($q, "grade", $gradeRange['min'], $gradeRange['max']);
+    $Conf->graphValues($q, "grade", $gradeMax);
     print "</td>";
     print "<tr> \n";
   }

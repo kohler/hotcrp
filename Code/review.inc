@@ -260,7 +260,7 @@ class ReviewForm {
 		$result = $conf->q("select reviewOrdinal from PaperReview where reviewId=$reviewId");
 		if (!DB::isError($result) && $result->numRows() == 1) {
 		    $crow = $result->fetchRow();
-		    $req['reviewOrdinal'] = $crow[1];
+		    $req['reviewOrdinal'] = $crow[0];
 		}
 	    }
 
@@ -610,16 +610,6 @@ class ReviewForm {
 	    }
 	return $x;
     }
-
-    function numNumericScores($prow, $contact, $conf) {
-	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
-	$n = 0;
-	foreach ($this->fieldOrder as $field)
-	    if (($this->authorView[$field] || $viewAllFields)
-		&& isset($this->options[$field]))
-		$n++;
-	return $n;
-    }
     
     function webNumericScoresTable($rrows, $prow, $contact, $conf, $links) {
 	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
@@ -666,6 +656,23 @@ class ReviewForm {
 		. "</span>";
 	ksort($out);
 	return array_values($out);
+    }
+
+    function numNumericScores($prow, $contact, $conf) {
+	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
+	$n = 0;
+	foreach ($this->fieldOrder as $field)
+	    if (($this->authorView[$field] || $viewAllFields)
+		&& isset($this->options[$field]))
+		$n++;
+	return $n;
+    }
+
+    function maxNumericScore($field) {
+	if (isset($this->options[$field]))
+	    return count($this->options[$field]);
+	else
+	    return 0;
     }
     
 }

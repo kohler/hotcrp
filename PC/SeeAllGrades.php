@@ -40,8 +40,9 @@ $conflicts = $Conf->allMyConflicts($_SESSION["Me"]->contactId);
 
 $pcConflicts = $Conf->allPCConflicts();
 
-$meritRange = $Conf->reviewRange('overAllMerit', 'PaperReview');
-$gradeRange = $Conf->reviewRange('grade', 'PaperGrade');
+$rf = reviewForm();
+$meritMax = $rf->maxNumericScore('overAllMerit');
+$gradeMax = $rf->maxNumericScore('grade');
 
 
 if ($_SESSION["GradeSortKey"]=="byReviews") {
@@ -169,7 +170,7 @@ while ($row=$result->fetchRow()) {
     $q = "SELECT overAllMerit FROM PaperReview "
       . " WHERE paperId=$paperId "
       . " AND reviewSubmitted>0";
-    $Conf->graphValues($q, "overAllMerit", $meritRange['min'], $meritRange['max']);
+    $Conf->graphValues($q, "overAllMerit", $meritMax);
 
 
     print "</td>";
@@ -177,7 +178,7 @@ while ($row=$result->fetchRow()) {
     print "<td align=center>";
     $q = "SELECT grade FROM PaperGrade "
       . " WHERE paperId=$paperId ";
-    $Conf->graphValues($q, "grade", $gradeRange['min'], $gradeRange['max']);
+    $Conf->graphValues($q, "grade", $gradeMax);
     print "</td>";
     print "<tr> \n";
   }

@@ -66,8 +66,9 @@ if (DB::isError($result)) {
 <th> Merit </th>
 </tr>
 <td> <b> 
-<?php 
-$meritRange = $Conf->reviewRange('overAllMerit', 'PaperReview');
+<?php
+$rf = reviewForm();
+$meritMax = $rf->maxNumericScore('overAllMerit');
 
 $rowNum = 0;
 while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)) {
@@ -86,7 +87,7 @@ while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)) {
   $q = "SELECT overAllMerit FROM PaperReview "
   . " WHERE contactId=$contactId "
   . " AND reviewSubmitted>0";
-  $Conf->graphValues($q, "overAllMerit", $meritRange['min'], $meritRange['max']);
+  $Conf->graphValues($q, "overAllMerit", $meritMax);
 
   print "</td>";
 

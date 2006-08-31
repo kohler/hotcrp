@@ -1524,82 +1524,54 @@ class Conference {
 	return $this->retCount("select count($field) as foo from $table where $field=$who $extra");
     }
 
-    function reviewRange($what, $table) {
-	//
-	// This is fairly inefficient since we query for each graph
-	// but
-	$range = array();
-	$result = $this -> qe("SELECT min($what), max($what) from $table");
-	if ( !DB::isError($result) ) {
-	    $row = $result->fetchRow();
-	    $range['min'] = $row[0];
-	    $range['max'] = $row[1];
-	} 
-	return $range;
+    function graphValuesStr($query, $what, $max) {
+	global $ConfSiteBase;
+	
+	$result = "";
+
+	$merit = ($max ? array_fill(1, $max, 0) : array());
+
+	$result = $this->qe($query);
+	if (DB::isError($result))
+	    $this->errorMsg("Error: " . $result->getMessage());
+
+	$sum = $n = $sumsq = 0;
+	while (($row = $result->fetchRow(DB_FETCHMODE_ASSOC))) {
+	    $value = $row[$what];
+	    if (!isset($merit[$value])) {
+		$merit[$value] = 1;
+	    } else {
+		$merit[$value] += 1;
+	    }
+	    $sum += $value;
+	    $sumsq += $value * $value;
+	    $n++;
+	}
+	$avg = ($n > 0 ? $sum / $n : 0);
+	$dev = ($n > 1 ? sqrt(($sumsq - $sum*$sum/$n) / ($n - 1)) : 0);
+
+	$url = "";
+	for ($key = 1; $key <= $max; $key++)
+	    $url .= ($url == "" ? "" : ",") . $merit[$key];
+	$url = "${ConfSiteBase}images/GenChart.php?v=$url";
+	
+	$retstr = "<table><tr><td align=\"center\">";
+	$retstr .= "<img src=\"" . htmlspecialchars($url) . "\" ";
+	$retstr .= sprintf("alt=\"avg=%0.2f\" ", $avg);
+	$retstr .= "align=bottom>";
+	$retstr .= "</td><tr><td align=\"center\"><font size=-2>";
+	if ($n > 0)
+	    $retstr .= sprintf("avg=%0.2f", $avg);
+	if ($n > 1)
+	    $retstr .= sprintf(" std=%0.2f", $dev);
+	$retstr .= "</font></td></tr></table>";
+	
+	return $retstr;
     }
 
-  function graphValuesStr($query, $what, $min, $max)
-    {
-      $result = "";
-
-      $merit = array_fill($min, $max - $min + 1, 0);
-
-      $result = $this->qe($query);
-      if ( DB::isError($result) ) {
-	$this->errorMsg("Error: " . $result->getMessage());
-      }
-
-      //
-      // Determine min/max of attribute
-      //
-      $sum = 0;
-      $num = 0;
-
-      $retstr = "";
-      while (($row = $result->fetchRow(DB_FETCHMODE_ASSOC))) {
-	  $value = $row[$what];
-	  if ( !IsSet($merit[$value]) ) {
-	      $merit[$value] = 1;
-	  } else {
-	      $merit[$value] += 1;
-	  }
-	  $sum += $value;
-	  $num++;
-      }
-
-      $str="../images/GenChart.php?v=";
-      $sep = "";
-      foreach ($merit as $key => $value) {	
-	$str = $str . $sep . "v[" . $key . "]=$value";
-	$sep="&";
-      }
-      $retstr .= "<table><tr><td align=\"center\">";
-      $retstr .= "<img src=\"" . htmlspecialchars($str) . "\" ";
-      $retstr .= sprintf("alt=\"avg=%0.2f\" ", $avg);
-      $retstr .= "align=bottom>";
-      $retstr .= "</td><tr><td align=\"center\"><font size=-2>";
-      if($num > 0){
-        $avg=$sum/$num;
-	$retstr .= sprintf("avg=%0.2f", $avg);
-	if( $num > 1 ){
-	  $dev = 0;
-	  foreach ($merit as $val => $count) {	
-	    $v = $val-$avg;
-	    $dev += $v*$v * $count;
-	  }
-	  $dev = sqrt( $dev/($num-1) );
-	  $retstr .= sprintf(" std=%0.2f", $dev);
-	}
-      }
-      $retstr .= "</font></td></tr></table>";
-
-      return $retstr;
-  } 
-
-  function graphValues($query, $what, $min, $max)
-  {
-    print $this->graphValuesStr($query, $what, $min, $max);
-  }
+    function graphValues($query, $what, $max) {
+	print $this->graphValuesStr($query, $what, $max);
+    }
 
   //
   // Functions to implement a stateful toggle button

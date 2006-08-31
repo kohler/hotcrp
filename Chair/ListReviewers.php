@@ -69,7 +69,7 @@ for($i = 0; $i < sizeof($allReviewers); $i++) {
 
   $query = "SELECT COUNT(PaperReview.paperId)"
     . " FROM PaperReview WHERE "
-    . " (PaperReview.reviewer='$id' )";
+    . " (PaperReview.contactId='$id' )";
 
   $result = $Conf->qe($query);
   if ( DB::isError($result) ) {
