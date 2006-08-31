@@ -203,7 +203,7 @@ class ReviewForm {
 	// mySQL is stupid)
 	$locked = false;
 	if ($submit && (!$rrow || !$rrow->reviewSubmitted)) {
-	    $q .= "reviewSubmitted=" . time() . ", ";
+	    $q .= "reviewSubmitted=" . time() . ", reviewNeedsSubmit=0, ";
 	    if (!$rrow || !$rrow->reviewOrdinal) {
 		$result = $conf->qe("lock tables PaperReview write", $while);
 		if (DB::isError($result))

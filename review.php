@@ -430,9 +430,9 @@ function reviewView($prow, $rrow, $editMode) {
 	if ($rrow && $rrow->reviewSubmitted <= 0 && $rrow->reviewType == REVIEW_SECONDARY) {
 	    echo "\n<tr class='rev_del'>\n  <td class='caption'></td>\n  <td class='entry' colspan='2'>";
 	    if ($nExternalRequests == 0)
-		echo "As a secondary reviewer, you can delegate your review, expressing your intention not to write a review yourself, once you have <a href=\"assign.php?paperId=$rrow->paperId\">requested at least one external review</a>.";
+		echo "As a secondary reviewer, you can delegate your review, expressing your intention not to write a review yourself, once you have <a href=\"assign.php?paperId=$rrow->paperId$forceShow\">requested at least one external review</a>.";
 	    else if ($rrow->reviewNeedsSubmit)
-		echo "<a href=\"review.php?reviewId=$rrow->reviewId&amp;delegate=1\">Delegate review</a> if you don't plan to finish this review yourself";
+		echo "<a href=\"review.php?reviewId=$rrow->reviewId&amp;delegate=1$forceShow\">Delegate review</a> if you don't plan to finish this review yourself";
 	    else
 		echo "This secondary review has been delegated, but you can still complete it if you'd like.";
 	    echo "</td>\n</tr>\n";

@@ -169,7 +169,7 @@ function requestReview($email) {
     $Them->lookupById($reqId, $Conf);
     
     $while = "while requesting review";
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo read", $while);
+    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo read, PaperConflict read", $while);
     // NB caller unlocks tables on error
 
     // check for outstanding review request
@@ -180,14 +180,16 @@ function requestReview($email) {
 	return $Conf->errorMsg(contactHtml($row) . " has already requested a review from " . contactHtml($Them) . ".");
 
     // check for outstanding refusal to review
-    $result = $Conf->qe("select reason from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
+    $result = $Conf->qe("select paperId, '<conflict>' from PaperConflict where paperId=$prow->paperId and contactId=$reqId union select paperId, reason from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
     if (!DB::isError($result) && $result->numRows() > 0) {
 	$row = $result->fetchRow();
-	if ($Me->amAssistantOverride()) {
-	    $Conf->infoMsg("Overriding previous refusal to review paper #$prow->paperId." . ($row[0] ? "  (Their reason was \"" . htmlspecialchars($row[0]) . "\".)" : ""));
+	if ($row[1] == "<conflict>")
+	    return $Conf->errorMsg(contactHtml($Them) . " has a conflict registered with paper #$prow->paperId and cannot be asked to review it.");
+	else if ($Me->amAssistantOverride()) {
+	    $Conf->infoMsg("Overriding previous refusal to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was \"" . htmlspecialchars($row[1]) . "\".)" : ""));
 	    $Conf->qe("delete from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
 	} else
-	    return $Conf->errorMsg(contactHtml($Them) . " refused a previous request to review paper #$prow->paperId." . ($row[0] ? "  (Their reason was \"" . htmlspecialchars($row[0]) . "\".)" : "") . ($Me->amAssistant() ? "  As PC Chair, you can override this refusal with the \"Override...\" checkbox." : ""));
+	    return $Conf->errorMsg(contactHtml($Them) . " refused a previous request to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was \"" . htmlspecialchars($row[1]) . "\".)" : "") . ($Me->amAssistant() ? "  As PC Chair, you can override this refusal with the \"Override...\" checkbox." : ""));
     }
 
     // at this point, we think we've succeeded.
@@ -196,18 +198,18 @@ function requestReview($email) {
     
     // send confirmation email
     $m = "Dear " . contactText($Them) . ",\n\n";
-    $m .= wordwrap(contactText($Me) . " has asked you to review paper #$prow->paperId for the $Conf->longName" . ($Conf->shortName != $Conf->longName ? " ($Conf->shortName)" : "") . " conference.\n\n")
+    $m .= wordwrap(contactText($Me) . " has asked you to review $Conf->longName" . ($Conf->shortName != $Conf->longName ? " ($Conf->shortName)" : "") . " paper #$prow->paperId.\n\n")
 	. wordWrapIndent(trim($prow->title), "Title: ", 14) . "\n";
     if (!$prow->blind)
 	$m .= wordWrapIndent(trim($prow->authorInformation), "Authors: ", 14) . "\n";
     $m .= "  Paper site: $Conf->paperSite/review.php?paperId=$prow->paperId\n\n";
-    $m .= wordwrap("If you are willing to review this paper, please enter your review " . $Conf->printableTimeRange('reviewerSubmitReview', "by") . ".  You may also complete a review form offline and upload it to the site.  If you cannot complete the review, you may refuse the review on the conference site or contact " . contactText($Me) . " directly.  For reference, your account information is as follows:\n\n");
+    $m .= wordwrap("If you are willing to review this paper, please enter your review " . $Conf->printableTimeRange('reviewerSubmitReview', "by") . ".  You may also complete a review form offline and upload it to the site.  If you cannot complete the review, you may refuse the review on the paper site or contact " . contactText($Me) . " directly.  For reference, your account information is as follows:\n\n");
     $m .= "        Site: $Conf->paperSite
        Email: $Them->email
     Password: $Them->password
 
-Click the link below to log in.  If the link isn't clickable, you may copy
-and paste it into your web browser's location field.
+Click the link below to sign in, or copy and paste it into your web 
+browser's location field.
 
     $Conf->paperSite/login.php?email=" . urlencode($Them->email) . "&password=" . urlencode($Them->password) . "\n\n";
     $m .= wordwrap("Contact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.

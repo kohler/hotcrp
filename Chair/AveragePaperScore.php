@@ -288,7 +288,7 @@ if( $target == 'grade' ){
   $countOrd = "";
 } else {
   $table = 'PaperReview';
-  $qual =  "   AND PaperReview.reviewSubmitted=1 ";
+  $qual =  "   AND PaperReview.reviewSubmitted>0 ";
   $count = " , COUNT(PaperReview.reviewSubmitted) AS count ";
   $countOrd = " count DESC, ";
 }
@@ -508,7 +508,7 @@ foreach( $grouped_rows[$group] as $row ){
       if( $field == 'grade' ){
 	$q = "SELECT $field FROM PaperGrade WHERE paperID='$paperId'";
       } else {
-	$q = "SELECT $field FROM PaperReview WHERE paperID='$paperId' AND reviewSubmitted=1";
+	$q = "SELECT $field FROM PaperReview WHERE paperID='$paperId' AND reviewSubmitted>0";
       }
 
       $Conf->graphValues($q, $field, $meritMax[$field]);

@@ -139,6 +139,8 @@ function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
 
     if (!isset($row->reviewType) && !$row->reviewId && !$long)
 	return "";
+    else if ($row->reviewModified == 0 && $row->reviewType == REVIEW_SECONDARY && $row->reviewNeedsSubmit == 0)
+	return "<span class='rstat rstat_no'>Delegated</span>";
     else if ($row->reviewModified == 0)
 	return "<span class='rstat rstat_no'>Not started</span>";
     else if ($row->reviewSubmitted == 0)

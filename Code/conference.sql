@@ -204,7 +204,7 @@ drop table if exists PaperConflict;
 CREATE TABLE PaperConflict (
   paperId int(11) NOT NULL,
   contactId int(11) NOT NULL,
-  author tinyint(1) NOT NULL default '0',
+  author tinyint(1) NOT NULL default 0,
   UNIQUE KEY contactPaper (contactId,paperId),
   UNIQUE KEY contactPaperAuthor (contactId,paperId,author)
 ) TYPE=MyISAM;
@@ -280,6 +280,7 @@ CREATE TABLE PaperReview (
   reviewModified int(1),
   reviewSubmitted int(1),
   reviewOrdinal int(1),
+  reviewNeedsSubmit tinyint(1) NOT NULL default 1,
 
   overAllMerit tinyint(1) NOT NULL default 0,
   reviewerQualification tinyint(1) NOT NULL default 0,
@@ -305,6 +306,7 @@ CREATE TABLE PaperReview (
   UNIQUE KEY contactPaper (contactId,paperId),
   KEY paperId (paperId),
   KEY reviewSubmitted (reviewSubmitted),
+  KEY reviewNeedsSubmit (reviewNeedsSubmit),
   KEY reviewType (reviewType),
   KEY requestedBy (requestedBy)
 ) TYPE=MyISAM;
@@ -336,6 +338,7 @@ CREATE TABLE PaperReviewArchive (
   reviewModified int(1),
   reviewSubmitted int(1),
   reviewOrdinal int(1),
+  reviewNeedsSubmit tinyint(1) NOT NULL default 1,
 
   overAllMerit tinyint(1) NOT NULL default 0,
   reviewerQualification tinyint(1) NOT NULL default 0,
@@ -359,9 +362,10 @@ CREATE TABLE PaperReviewArchive (
   PRIMARY KEY (reviewArchiveId),
   UNIQUE KEY reviewArchiveId (reviewArchiveId),
   KEY reviewId (reviewId),
+  KEY contactPaper (contactId,paperId),
   KEY paperId (paperId),
-  KEY contactId (contactId),
   KEY reviewSubmitted (reviewSubmitted),
+  KEY reviewNeedsSubmit (reviewNeedsSubmit),
   KEY reviewType (reviewType),
   KEY requestedBy (requestedBy)
 ) TYPE=MyISAM;

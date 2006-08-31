@@ -1389,7 +1389,7 @@ class Conference {
 					    "PaperReview.contactId",
 					    $pcId,
 					    "PaperReview",
-					    " AND PaperReview.reviewSubmitted=1 ");
+					    " AND PaperReview.reviewSubmitted>0 ");
 
 	    $asked = $this->countEntries("ReviewRequest.requestedBy",
 					 $pcId, "ReviewRequest");

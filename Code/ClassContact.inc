@@ -47,7 +47,7 @@ class Contact {
 			PCMember.contactId as pcMember,
 			ChairAssistant.contactId as assistant,
 			Chair.contactId as chair,
-			min(PaperReview.reviewSubmitted) as minSubmitted
+			max(PaperReview.reviewNeedsSubmit) as reviewNeedsSubmit
 		from ContactInfo
 		left join PaperReview using (contactId)
 		left join PaperConflict using (contactId)
@@ -71,7 +71,7 @@ class Contact {
 			$this->isAssistant = true;
 		    if ($row[4] > 0)
 			$this->isChair = true;
-		    if ($row[5] <= 0)
+		    if ($row[5] > 0)
 			$this->reviewsOutstanding = true;
 		}
 		if ($Opt['setupPhase'])

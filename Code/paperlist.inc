@@ -209,12 +209,14 @@ class PaperList {
 	    if ($row->reviewId) {
 		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId\">";
 		$a2 = "</a>&nbsp;";
-		if ($row->reviewModified == 0)
-		    $a2 .= "<span class='rstat rstat_no'>(Not&nbsp;started)</span>";
-		else if ($row->reviewSubmitted == 0)
-		    $a2 .= "<span class='rstat rstat_prog'>(In&nbsp;progress)</span>";
-		else
+		if ($row->reviewSubmitted > 0)
 		    $a2 .= "<span class='rstat rstat_done'>(Complete)</span>";
+		else if ($row->reviewType == REVIEW_SECONDARY && $row->reviewNeedsSubmit == 0)
+		    $a2 .= "<span class='rstat rstat_no'>(Delegated)</span>";
+		else if ($row->reviewModified == 0)
+		    $a2 .= "<span class='rstat rstat_no'>(Not&nbsp;started)</span>";
+		else
+		    $a2 .= "<span class='rstat rstat_prog'>(In&nbsp;progress)</span>";
 	    } else
 		$a1 = $a2 = "";
 	    if ($row->reviewType == REVIEW_PRIMARY)

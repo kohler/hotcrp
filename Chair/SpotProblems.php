@@ -62,7 +62,7 @@ function spotReviews($howmany, $finalized=0)
 
   } else {
     if ( $finalized ) {
-      $fin = " AND PaperReview.reviewSubmitted=1 ";
+      $fin = " AND PaperReview.reviewSubmitted>0 ";
     }
 
     $result =$Conf->qe(

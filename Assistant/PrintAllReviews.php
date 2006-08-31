@@ -242,7 +242,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
     // Now print all the reviews
     //
     if ($_REQUEST["SeeOnlyFinalized"]) {
-      $finalizedStr = " AND PaperReview.reviewSubmitted=1";
+      $finalizedStr = " AND PaperReview.reviewSubmitted>0";
     } else {
       $finalizedStr ="";
     }
