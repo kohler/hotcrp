@@ -11,7 +11,7 @@ function olink($key,$string)
 
 function paperList($query, $kind)
 {
-  global $Conf;
+    global $Conf, $ConfSiteBase;
   // global $_REQUEST[showAuthorInfo];
 
   $result = $Conf->qe($query);
@@ -93,10 +93,10 @@ if (DB::isError($result1) ) {
     $lastName = $row[2];
     $email = $row[3];
 
-    $res = $Conf->qe("select reviewId from ReviewRequest where contactId=$pc and reviewType=" . REVIEW_PRIMARY);
+    $res = $Conf->qe("select reviewId from PaperReview where contactId=$pc and reviewType=" . REVIEW_PRIMARY);
     $primary = $res->numRows();
 
-    $res = $Conf->qe("select reviewId from ReviewRequest where contactId=$pc and reviewType=" . REVIEW_SECONDARY);
+    $res = $Conf->qe("select reviewId from PaperReview where contactId=$pc and reviewType=" . REVIEW_SECONDARY);
     $secondary = $res->numRows();
 
     print "<tr> <td> $primary </td> <td> $secondary </td> ";
@@ -141,12 +141,12 @@ if (!DB::isError($result1) ) {
 			   );
 
     print "<br>";
-    paperList("SELECT Paper.paperId, title, timeWithdrawn, authorInformation FROM Paper join ReviewRequest using (paperId) "
-	      . " where ReviewRequest.contactId=$pc and reviewType=" . REVIEW_PRIMARY
+    paperList("SELECT Paper.paperId, title, timeWithdrawn, authorInformation FROM Paper join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$pc) "
+	      . " where reviewType=" . REVIEW_PRIMARY
 	      . " ORDER BY paperId ", "Primary Reviews" );
 
-    paperList("SELECT Paper.paperId, title, timeWithdrawn, authorInformation FROM Paper join ReviewRequest using (paperId) "
-	      . " where ReviewRequest.contactId=$pc and reviewType=" . REVIEW_SECONDARY
+    paperList("SELECT Paper.paperId, title, timeWithdrawn, authorInformation FROM Paper join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$pc) "
+	      . " where reviewType=" . REVIEW_SECONDARY
 	      . " ORDER BY paperId ", "Secondary Reviews" );
     print "<br>";
   }

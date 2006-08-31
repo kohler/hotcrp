@@ -9,6 +9,8 @@ $Me->goIfNotChair('../index.php');
 $Conf->header("PC Assignments", "assignpc");
 
 $reviewer = cvtint($_REQUEST["reviewer"]);
+if ($reviewer < 0)
+    $reviewer = $Me->contactId;
 
 
 function saveAssignments($reviewer) {
@@ -66,8 +68,10 @@ and <img src='${ConfSiteBase}images/ass", REVIEW_SECONDARY, ".png' alt='Secondar
 Click on a column heading to sort by that column.</p>\n\n";
 
 
-echo "<form method='get' action='AssignPapers.php' name='selectReviewer'>
-  <select name='reviewer' onchange='document.selectReviewer.submit()'>\n";
+echo "<form method='get' action='AssignPapers.php' name='selectReviewer'>\n";
+if (isset($_REQUEST["sort"]))
+    echo "  <input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />\n";
+echo "  <select name='reviewer' onchange='document.selectReviewer.submit()'>\n";
 
 $query = "select ContactInfo.contactId, firstName, lastName,
 		count(reviewId) as reviewCount
@@ -77,11 +81,10 @@ $query = "select ContactInfo.contactId, firstName, lastName,
 		group by contactId
 		order by lastName, firstName, email";
 $result = $Conf->qe($query);
-print "<option value='-1'>(Remember to select a committee member!)</OPTION>";
 if (!DB::isError($result)) {
     while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
 	echo "<option value='$row->contactId'";
-	if ($row->contactId == $_REQUEST['reviewer'])
+	if ($row->contactId == $reviewer)
 	    echo " selected='selected'";
 	echo ">", contactHtml($row);
 	echo " (", plural($row->reviewCount, "assignment"), ")";
@@ -109,7 +112,10 @@ if ($reviewer >= 0) {
 
     $paperList = new PaperList(true, "list");
     $_SESSION["whichList"] = "list";
-    echo "<form class='assignpc' method='post' action=\"AssignPapers.php?reviewer=$reviewer&amp;post=1\" enctype='multipart/form-data'>\n";
+    echo "<form class='assignpc' method='post' action=\"AssignPapers.php?reviewer=$reviewer&amp;post=1";
+    if (isset($_REQUEST["sort"]))
+	echo "&amp;sort=", urlencode($_REQUEST["sort"]);
+    echo "\" enctype='multipart/form-data'>\n";
     echo $paperList->text("reviewAssignment", $_SESSION['Me'], $reviewer);
     echo "<input class='button_default' type='submit' name='update' value='Save assignments' />\n";
     echo "</form>\n";
