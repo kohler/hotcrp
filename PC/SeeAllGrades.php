@@ -142,7 +142,7 @@ while ($row=$result->fetchRow()) {
     print "<td>\n";
 
     $Conf->linkWithPaperId($title,
-                           "../PC/PCAllAnonReviewsForPaper.php",
+                           "../review.php",
                            $paperId);
 
     print "\n";

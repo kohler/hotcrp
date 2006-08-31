@@ -37,7 +37,7 @@ function spotSecondaryReviewers($howmany)
       print "<tr> <td> $paperId </td><td> ";
 
       $Conf->linkWithPaperId("$title",
-			     "../PC/PCAllAnonReviewsForPaper.php",
+			     "../review.php",
 			     $paperId);
 
       print "</td> </tr>";
@@ -90,7 +90,7 @@ function spotReviews($howmany, $finalized=0)
 
 
       $Conf->linkWithPaperId("$title",
-			     "../PC/PCAllAnonReviewsForPaper.php",
+			     "../review.php",
 			     $paperId);
 
       print "</td> </tr>";

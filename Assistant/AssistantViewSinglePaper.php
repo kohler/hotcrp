@@ -61,7 +61,7 @@ if (!IsSet($_REQUEST['paperId']) || $_REQUEST['paperId'] == 0) {
 
     print "<td>";
     $Conf->linkWithPaperId("See Reviews",
-			   "../PC/PCAllAnonReviewsForPaper.php",
+			   "../review.php",
 			   $_REQUEST['paperId']);
     print "</td>";
 

@@ -51,7 +51,7 @@ if ( !DB::isError($result) ) {
     print "<td>";
 
     $Conf->linkWithPaperId($title,
-			   "../PC/PCAllAnonReviewsForPaper.php",
+			   "../review.php",
 			   $paperId);
 
     print "<br> review requested of $first $last ($email) ";
@@ -114,7 +114,7 @@ if ( ! DB::isError($result) ) {
     print "<td>";
 
     $Conf->linkWithPaperId($title,
-			   "../PC/PCAllAnonReviewsForPaper.php",
+			   "../review.php",
 			   $paperId);
 
     print "<br> review requested of $first $last ($email) ";

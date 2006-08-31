@@ -115,7 +115,7 @@ while ($row=$result->fetchRow()) {
   print "<td> ";
 
   $Conf->linkWithPaperId($title,
-			 "PCAllAnonReviewsForPaper.php",
+			 "../review.php",
 			 $paperId);
   print "</td> \n";
 
@@ -216,7 +216,7 @@ while ($row=$result->fetchRow()) {
   $title = $row[1];
   print "<tr> <td> $paperId </td>";
   print "<td> ";
-  print "<a href=\"PCAllAnonReviewsForPaper.php?paperId=$paperId\" target=_blank>";
+  print "<a href=\"../review.php?paperId=$paperId\" target=_blank>";
   print "$title </a> </td> \n";
 
   $count = $Conf->retCount("SELECT Count(reviewSubmitted) "

@@ -156,7 +156,7 @@ while ($row=$result->fetchRow()) {
     print "value=$paperId>\n";
     print "<td> ";
     $Conf->linkWithPaperId($title, 
-			   "../PC/PCAllAnonReviewsForPaper.php", 
+			   "../review.php", 
 			   $paperId);
     if ( $pcConflicts[$paperId] ) {
       print "<br> <b> PC Paper </b>";

@@ -169,7 +169,7 @@ while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)){
     print "<td> ";
 
     $Conf->linkWithPaperId($title,
-                           "../PC/PCAllAnonReviewsForPaper.php",
+                           "../review.php",
                            $paperId);
 
     $didBr = 0;

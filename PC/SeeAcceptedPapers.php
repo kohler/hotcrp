@@ -38,7 +38,7 @@ $Conf -> goIfInvalidActivity("EndOfTheMeeting", $Conf->paperSite);
 
 	if( $_SESSION['Me']->isChair ){
 	  $Conf->linkWithPaperId($title,
-				 "PCAllAnonReviewsForPaper.php",
+				 "../review.php",
 				 $paperId);
 	} else {
 	  print $Conf->safeHtml($title);

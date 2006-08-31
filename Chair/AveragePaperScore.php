@@ -481,7 +481,7 @@ foreach( $grouped_rows[$group] as $row ){
   if( $paperId == 'X' ){
     print "<TD $redText>X</TD>";
   } else {
-    print "<td> <A HREF=\"/PC/PCAllAnonReviewsForPaper.php?paperId=$paperId&SeeUnfinishedReviews=1&SeeAuthorInfo=1&SeeReviewerInfo=1\" TARGET=\"_blank\">";
+    print "<td> <A HREF=\"${ConfSiteBase}review.php?paperId=$paperId\" TARGET=\"_blank\">";
     print htmlentities($paperTitle);
     print "</A></td> \n";
   }
