@@ -1,10 +1,10 @@
 <?php 
-include('../Code/confHeader.inc');
-$_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
-$_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
-$Conf -> goIfInvalidActivity("PCGradePapers",
-			     $Conf->paperSite);
-$Conf -> connect();
+require_once('../Code/confHeader.inc');
+$Conf->connect();
+$Me = $_SESSION["Me"];
+$Me->goIfInvalid();
+$Me->goIfNotPC();
+$Conf->goIfInvalidActivity("PCGradePapers", "../");
 
 include('gradeNames.inc');
 
@@ -21,28 +21,24 @@ if ( IsSet($_REQUEST['gradeForPaper']) ) {
     $grade = addSlashes( $grade );
 
     $q = "DELETE FROM PaperGrade "
-      . " WHERE paperId='$paperId' AND contactId=" . $_SESSION["Me"]->contactId. " ";
+      . " WHERE paperId=$paperId AND contactId=" . $_SESSION["Me"]->contactId. " ";
     $Conf->qe($q);
 
     if ($grade > 0) {
       $q = "INSERT INTO PaperGrade "
-	. " SET paperId='$paperId', contactId=" . $_SESSION["Me"]->contactId. ", grade='$grade' ";
+	. " SET paperId=$paperId, contactId=" . $_SESSION["Me"]->contactId. ", grade='$grade' ";
       $Conf->qe($q);
     }
   }
 }
 
-?>
 
-<html>
+$Conf->header("Grade Papers");
 
-<?php  $Conf->header("Grade Papers") ?>
+$Conf->infoMsg( "You may enter grades " .
+		$Conf -> printableTimeRange('PCGradePapers') ); ?>
 
-<body>
-<?php $Conf->infoMsg( "You may enter grades " .
-	$Conf -> printableTimeRange('PCGradePapers') ); ?>
-
-<table align=center width=75%>
+<table align='center' width='75%'>
 <tr bgcolor=<?php echo $Conf->infoColor?>>
 <th> How To Grade Papers </td>
 </tr>
@@ -90,10 +86,7 @@ $meritRange = $Conf->reviewRange('overAllMerit', 'PaperReview');
 $gradeRange = $Conf->reviewRange('grade', 'PaperGrade');
 
 
-$result=$Conf->qe("SELECT Paper.paperId, Paper.title FROM Paper, PrimaryReviewer "
-		  . " WHERE PrimaryReviewer.reviewer='" . $_SESSION["Me"]->contactId . "' "
-		  . " AND Paper.paperId=PrimaryReviewer.paperId "
-		  . " ORDER BY Paper.paperId");
+$result=$Conf->qe("SELECT Paper.paperId, Paper.title FROM Paper join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$Me->contactId and PaperReview.reviewType=" . REVIEW_PRIMARY . ") order by Paper.paperId");
 
 if (DB::isError($result)) {
   $Conf->errorMsg("Error in sql ");
@@ -126,7 +119,7 @@ while ($row=$result->fetchRow()) {
 			 $paperId);
   print "</td> \n";
 
-  $count = $Conf->retCount("SELECT Count(reviewSubmitted) "
+  $count = $Conf->retCount("SELECT count(reviewSubmitted) "
 			   . " FROM PaperReview "
 			   . " WHERE PaperReview.paperId='$paperId'"
 			   . " AND PaperReview.reviewSubmitted>0 "
@@ -143,7 +136,7 @@ while ($row=$result->fetchRow()) {
     print "<td>";
     $q = "SELECT overAllMerit FROM PaperReview "
       . " WHERE paperId=$paperId "
-      . " AND finalized = 1";
+      . " AND reviewSubmitted>0";
     $Conf->graphValues($q, "overAllMerit", $meritRange['min'], $meritRange['max']);
 
     print "</td>";
@@ -198,10 +191,7 @@ $Conf->infoMsg("You can assign grades for any paper for which you are a secondar
 );
 
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title "
-		  . " FROM Paper, SecondaryReviewer "
-		  . " WHERE SecondaryReviewer.reviewer='" . $_SESSION["Me"]->contactId . "' "
-		  . " AND Paper.paperId=SecondaryReviewer.paperId "
-		  . " ORDER BY Paper.paperId");
+		  . " FROM Paper join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$Me->contactId and PaperReview.reviewType=" . REVIEW_SECONDARY . ") order by Paper.paperId");
 
 if (DB::isError($result)) {
   $Conf->errorMsg("Error in sql" );
@@ -214,11 +204,11 @@ if (DB::isError($result)) {
 <th colspan=5> Secondary Papers </th> </tr>
 
 <tr>
-<th width=1%> Paper # </th>
-<th width=25%> Title </th>
-<th width=5%> Merit </th>
-<th width=5%> All Grades </th>
-<th width=5%> Your Grade </th>
+<th width='1%'> Paper # </th>
+<th width='25%'> Title </th>
+<th width='5%'> Merit </th>
+<th width='5%'> All Grades </th>
+<th width='5%'> Your Grade </th>
 </tr>
 <?php 
 while ($row=$result->fetchRow()) {
