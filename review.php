@@ -150,6 +150,7 @@ if (isset($_REQUEST['text']))
 
 // refuse review action
 function archiveReview($rrow) {
+    global $reviewFields, $Conf;
     $fields = "reviewId, paperId, contactId, reviewType, requestedBy,
 		requestedOn, acceptedOn, reviewModified, reviewSubmitted, "
 	. join(", ", array_keys($reviewFields));
@@ -157,7 +158,7 @@ function archiveReview($rrow) {
 }
 
 function refuseReview() {
-    global $ConfSiteBase, $Conf, $Opt, $Me, $prow, $rrow, $reviewFields;
+    global $ConfSiteBase, $Conf, $Opt, $Me, $prow, $rrow;
     
     $while = "while refusing review";
     $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperReviewArchive write", $while);
@@ -198,9 +199,10 @@ function refuseReview() {
 }
 
 if (isset($_REQUEST['refuse'])) {
-    if (!$rrow || ($rrow->contactId != $Me->contactId && !$Me->amAssistant())
-	|| $rrow->reviewType != REVIEW_REQUESTED)
+    if (!$rrow || ($rrow->contactId != $Me->contactId && !$Me->amAssistant()))
 	$Conf->errorMsg("This review was not requested of you, so you cannot refuse it.");
+    else if ($rrow->reviewType >= REVIEW_SECONDARY)
+	$Conf->errorMsg("PC members cannot refuse reviews that were explicitly assigned to them.  Contact the PC chairs directly if you really cannot finish this review.");
     else if ($rrow->reviewSubmitted > 0)
 	$Conf->errorMsg("This review has already been submitted; you can't refuse it now.");
     else {
@@ -342,7 +344,7 @@ if ($rrow && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
 // XXX "<td class='entry'>", contactHtml($rrow), "</td>"
 
 function reviewView($prow, $rrow, $editMode) {
-    global $Conf, $Me, $rf, $forceShow, $useRequest;
+    global $Conf, $ConfSiteBase, $Me, $rf, $forceShow, $useRequest;
     
     echo "<div class='gap'></div>\n\n";
 
@@ -381,6 +383,23 @@ function reviewView($prow, $rrow, $editMode) {
     
 
     if ($editMode) {
+	// refuse?
+	if ($rrow && $rrow->reviewSubmitted <= 0 && $rrow->reviewType < REVIEW_SECONDARY) {
+	    echo "\n<tr class='rev_ref'>\n  <td class='caption'></td>\n  <td class='entry' colspan='2'>";
+	    echo "<div id='foldref' class='folded' style='position: relative'><a href=\"javascript:fold('ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it
+  <div class='popupdialog extension'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p>
+    <form action='${ConfSiteBase}review.php?reviewId=$rrow->reviewId&amp;post=1' method='post' enctype='multipart/form-data'>\n";
+	    if ($forceShow)
+		echo "      <input type='hidden' name='forceShow' value='1' />\n";
+	    echo "      <input class='textlite' type='text' name='reason' value='' size='40' />
+      <hr class='smgap' />
+      <input class='button' type='submit' name='refuse' value='Refuse review' />
+      <button type='button' onclick=\"fold('ref', 1)\">Cancel</button>
+    </form>
+  </div></div>";
+	}
+
+	// download?
 	echo "\n<tr class='rev_rev'>
   <td class='caption'></td>
   <td class='entry' colspan='2'>";

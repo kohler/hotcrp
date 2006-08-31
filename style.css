@@ -366,7 +366,7 @@ tr.id td.caption {
 	border-right: none;
 	background: white;
 }
-table.comment tr.id td.entry {
+table.comment tr.id td.entry, table.review tr.id td.entry {
 	font-size: small;
 }
 tr.last td, table.review, table.comment {

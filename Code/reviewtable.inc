@@ -140,22 +140,6 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	$notes[] = "<a href=\"${ConfSiteBase}assign.php?paperId=$prow->paperId" . ($forceShow ? "&amp;forceShow=1" : "") . "\">$t</a>";
     }
 
-    // refuse review
-    if ($mode != "req" && $rrow && $rrow->reviewType == REVIEW_REQUESTED && $rrow->reviewSubmitted <= 0) {
-	$t = "<div id='foldref' class='folded' style='position: relative'><a href=\"javascript:fold('ref', 0)\">I cannot finish this review</a>
-  <div class='popupdialog extension'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p>
-    <form action='${ConfSiteBase}review.php?reviewId=$rrow->reviewId&amp;post=1' method='post' enctype='multipart/form-data'>\n";
-	if ($forceShow)
-	    $t .= "      <input type='hidden' name='forceShow' value='1' />\n";
-	$t .= "      <input class='textlite' type='text' name='reason' value='' size='40' />
-      <hr class='smgap' />
-      <input class='button' type='submit' name='refuse' value='Refuse review' />
-      <button type='button' onclick=\"fold('ref', 1)\">Cancel</button>
-    </form>
-  </div></div>";
-	$notes[] = $t;
-    }
-
     if (count($notes)) {
 	$t = ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "");
 	$nonsubrev[] = "    <tr>$t<td class='revnotes' colspan='" . ($anyScores ? 4 + $nNumeric : 4) . "'>" . join("<br />\n", $notes) . "</td></tr>\n";
