@@ -121,7 +121,7 @@ $result = $Conf->qe("SELECT PaperReview.contactId, "
 		    . " FROM PaperReview, ContactInfo "
 		    . " WHERE PaperReview.paperId='" . $_REQUEST["paperId"] . "'"
 		    . " AND PaperReview.contactId=ContactInfo.contactId"
-		    . " AND PaperReview.reviewSubmitted=1"
+		    . " AND PaperReview.reviewSubmitted>0"
 		    );
 
 $num_reviews = $result->numRows();
