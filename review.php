@@ -508,7 +508,8 @@ if ($mode == "view" && !$rrow) {
 	if ($rr->reviewSubmitted > 0)
 	    reviewView($prow, $rr, false);
     foreach ($rrows as $rr)
-	if ($rr->reviewSubmitted <= 0 && $rr->reviewModified > 0)
+	if ($rr->reviewSubmitted <= 0 && $rr->reviewModified > 0
+	    && $Me->canViewReview($prow, $rr, $Conf))
 	    reviewView($prow, $rr, false);
 } else
     reviewView($prow, $rrow, $mode == "edit");

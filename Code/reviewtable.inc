@@ -133,9 +133,9 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	&& $Me->canViewReview($prow, null, $Conf)) {
 	$qualifier = (count($subrev) + count($nonsubrev) ? " additional" : "");
 	if ($notShown == 1)
-	    $t = "1$qualifier review was requested, but has not been submitted yet.  ";
+	    $t = "1$qualifier review remains outstanding.  ";
 	else
-	    $t = "$notShown$qualifier reviews were requested, but have not been submitted yet.  ";
+	    $t = "$notShown$qualifier reviews remain outstanding.  ";
 	$t .= "You will be emailed when$qualifier reviews are submitted and if any existing reviews are changed.";
 	$notes[] = $t;
     }
