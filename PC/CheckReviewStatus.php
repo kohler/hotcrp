@@ -11,28 +11,28 @@ $Conf -> connect();
 
 <?php 
 
-If( !IsSet($_REQUEST[emailSubject])) {
-  $_REQUEST[emailSubject] = "URGENT: Reminder to Review Paper(s) for $Conf->shortName";
+If( !IsSet($_REQUEST['emailSubject'])) {
+  $_REQUEST['emailSubject'] = "URGENT: Reminder to Review Paper(s) for $Conf->shortName";
 }
-if (!IsSet($_REQUEST[emailBody])) {
-  $_REQUEST[emailBody] = "Greetings %FIRST% %LAST%,\n\n";
-  $_REQUEST[emailBody] .= $_SESSION["Me"]->firstName . " " . $_SESSION["Me"]->lastName . "(" . $_SESSION["Me"]->email . ") ";
-  $_REQUEST[emailBody] .= "is reminding you to finish your review for\n";
-  $_REQUEST[emailBody] .= "paper #%NUMBER%, %TITLE%\n";
-  $_REQUEST[emailBody] .= "for the $Conf->longName ($Conf->shortName) conference.\n";
-  $_REQUEST[emailBody] .= "\n";
-  $_REQUEST[emailBody] .= "You can continue to modify your review(s)\n";
-  $_REQUEST[emailBody] .= $Conf->printableTimeRange('reviewerSubmitReview');
-  $_REQUEST[emailBody] .= "or until you finalize them.\n";
-  $_REQUEST[emailBody] .= "\n";
-  $_REQUEST[emailBody] .= "If you are unable to complete the review by the deadline,\n";
-  $_REQUEST[emailBody] .= "please contact " . $_SESSION["Me"]->firstName . " " . $_SESSION["Me"]->lastName. " (" . $_SESSION["Me"]->email .")\n";
-  $_REQUEST[emailBody] .= "\n";
-  $_REQUEST[emailBody] .= "You can access the reviewing website at this URL\n";
-  $_REQUEST[emailBody] .= "$Conf->paperSite\n";
-  $_REQUEST[emailBody] .= "or use the link at the bottom of this email to automatically log in.\n\n";
-  $_REQUEST[emailBody] .= "Contact $Conf->contactName ($Conf->contactEmail) about problems with the website.\n\n";
-  $_REQUEST[emailBody] .= "Thank you for helping $Conf->shortName - I understand that reviewing is hard work.\n";
+if (!IsSet($_REQUEST['emailBody'])) {
+  $_REQUEST['emailBody'] = "Greetings %FIRST% %LAST%,\n\n";
+  $_REQUEST['emailBody'] .= $_SESSION["Me"]->firstName . " " . $_SESSION["Me"]->lastName . "(" . $_SESSION["Me"]->email . ") ";
+  $_REQUEST['emailBody'] .= "is reminding you to finish your review for\n";
+  $_REQUEST['emailBody'] .= "paper #%NUMBER%, %TITLE%\n";
+  $_REQUEST['emailBody'] .= "for the $Conf->longName ($Conf->shortName) conference.\n";
+  $_REQUEST['emailBody'] .= "\n";
+  $_REQUEST['emailBody'] .= "You can continue to modify your review(s)\n";
+  $_REQUEST['emailBody'] .= $Conf->printableTimeRange('reviewerSubmitReview');
+  $_REQUEST['emailBody'] .= "or until you finalize them.\n";
+  $_REQUEST['emailBody'] .= "\n";
+  $_REQUEST['emailBody'] .= "If you are unable to complete the review by the deadline,\n";
+  $_REQUEST['emailBody'] .= "please contact " . $_SESSION["Me"]->firstName . " " . $_SESSION["Me"]->lastName. " (" . $_SESSION["Me"]->email .")\n";
+  $_REQUEST['emailBody'] .= "\n";
+  $_REQUEST['emailBody'] .= "You can access the reviewing website at this URL\n";
+  $_REQUEST['emailBody'] .= "$Conf->paperSite\n";
+  $_REQUEST['emailBody'] .= "or use the link at the bottom of this email to automatically log in.\n\n";
+  $_REQUEST['emailBody'] .= "Contact $Conf->contactName ($Conf->contactEmail) about problems with the website.\n\n";
+  $_REQUEST['emailBody'] .= "Thank you for helping $Conf->shortName - I understand that reviewing is hard work.\n";
 }
 
 //
@@ -166,7 +166,7 @@ There are three degrees of review status: <br>
 </ol>
 </h4>
 
-<form method='post' action="<?php echo $_SERVER[PHP_SELF] ?>" target='_blank'>
+<form method='post' action="CheckReviewStatus.php" target='_blank'>
 <?php 
 $result=$Conf->qe("select Paper.paperId, Paper.Title, ContactInfo.email,
 		ContactInfo.contactId, PaperReview.reviewId
@@ -227,7 +227,7 @@ else {
 
 	if ( $finalized != 1 ) {
 	  print "<INPUT type=checkbox NAME=nagList[] VALUE='$requestId'";
-	  if ( $nagMe[$requestId] == 1 ) {
+	  if (defval($nagMe[$requestId])) {
 	    print " CHECKED";
 	  }
 	  print ">";
@@ -287,23 +287,17 @@ $Conf->infoMsg(
 <tr>
 <th> Subject: </th>
 <th>
-<INPUT type=text name="emailSubject" size=80 value="<?php echo $_REQUEST[emailSubject]?>">
+<INPUT type=text name="emailSubject" size=80 value="<?php echo htmlspecialchars($_REQUEST['emailSubject']) ?>">
 </th>
 </tr>
 <tr> <td colspan=2>
-<textarea rows=30 name="emailBody" cols=80><?php echo $_REQUEST[emailBody]?></textarea>
+<textarea rows=30 name="emailBody" cols=80><?php echo htmlspecialchars($_REQUEST['emailBody']) ?></textarea>
 </td> </tr>
 </table>
 </FORM>
 
 <?php 
    }
-?>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
-
-
-
+$Conf->footer();
 

@@ -142,16 +142,16 @@ while ($row=$result->fetchRow()) {
   if ( ! $conflicts[$paperId] ) {
 
     if ( IsSet($_REQUEST[selectAll]) ) {
-      $_SESSION[paperReviewsToPrint][$paperId] = 1;
+      $_SESSION['paperReviewsToPrint'][$paperId] = 1;
     }
 
     if (IsSet($_REQUEST[deselectAll])) {
-      $_SESSION[paperReviewsToPrint][$paperId] = 0;
+      $_SESSION['paperReviewsToPrint'][$paperId] = 0;
     }
 
     print "<tr> <td> $rowNum </td> <td> $paperId </td>";
     print "<td> <input type=checkbox name=paperReviewsToPrint[] ";
-    if ( $_SESSION[paperReviewsToPrint][$paperId] ) {
+    if ( $_SESSION['paperReviewsToPrint'][$paperId] ) {
       print " CHECKED ";
     }
     print "value=$paperId>\n";

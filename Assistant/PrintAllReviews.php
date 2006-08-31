@@ -1,15 +1,10 @@
 <?php 
-include('../Code/confHeader.inc');
-$_SESSION["Me"] -> goIfInvalid("../index.php");
-$_SESSION["Me"] -> goIfNotAssistant('../index.php');
-$Conf -> connect();
-include('../Code/confConfigReview.inc');
+require_once('../Code/confHeader.inc');
+$Conf->connect();
+$Me = $_SESSION["Me"];
+$Me->goIfInvalid();
+$Me->goIfNotAssistant('../index.php');
 include('../PC/gradeNames.inc');
-
-function olink($key,$string)
-{
-  return "<a href=\"" . $_SERVER[PHP_SELF] . "?orderBy=$key\"> $string </a>";
-}
 
 if (IsSet($_REQUEST['ShowPCPapers'])) {
   $showpc = $_REQUEST['ShowPCPapers'];
@@ -23,23 +18,11 @@ $showpc_options = array(
   'all' => 'Show All Papers'
 );
 
-?>
 
-<html>
-<style type=text/css>
-p.page {page-break-after: always}
-</style>
+$Conf->header("List All Paper Reviews");
 
-
-<?php  $Conf->header("List All Paper Reviews") ?>
-
-<body>
-<?php 
 
 $ORDER="ORDER BY Paper.paperId";
-if (IsSet($_REQUEST[orderBy])) {
-  $ORDER = "ORDER BY " . $_REQUEST[orderBy];
-}
 ?>
 <h2> List of submitted Reviews </h2>
 <p>
@@ -49,39 +32,35 @@ will print a single abstract per page (overly long abstracts may print on two pa
 I am not certain if this works under Netscape or other browsers.
 </p>
 
-<FORM method="POST" action="<?php echo $_SERVER[PHP_SELF] ?>">
-<INPUT type=checkbox name=SeeOnlyFinalized value=1
-   <?php  if ($_REQUEST["SeeOnlyFinalized"]) {echo "checked";}?> > See Only Finalized Reviews </br>
-
-<INPUT type=checkbox name=SeeAuthorInfo value=1
-   <?php  if ($_REQUEST["SeeAuthorInfo"]) {echo "checked";}?> > See Author Information </br>
-
-<INPUT type=checkbox name=SeeReviewerInfo value=1
-   <?php  if ($_REQUEST["SeeReviewerInfo"]) {echo "checked";}?> > See Reviewer Information </br>
-
-<SELECT name="ShowPCPapers">
 <?php
-  foreach( $showpc_options as $name => $desc ){
-    print "<OPTION VALUE='$name'";
-    if( $name == $showpc ){
-      print " SELECTED";
-    }
-    print ">$desc</A>\n";
-  }
+echo "<form method='get' action='PrintAllReviews.php'>\n";
+foreach (array('SeeOnlyFinalized' => 'See Only Finalized Reviews',
+	       'SeeAuthorInfo' => 'See Author Information',
+	       'SeeReviewerInfo' => 'See Reviewer Information') as $k => $v) {
+    echo "<input type='checkbox' name='$k' value='1'",
+	(defval($_REQUEST[$k]) ? " checked='checked'" : ""),
+	" />&nbsp;", $v, "<br />\n";
+}
+
+echo "<select name='ShowPCPapers'>\n";
+foreach ($showpc_options as $name => $desc) {
+    echo "<option value='$name'",
+	($name == $showpc ? " selected='selected'" : ""), ">", $desc, "</option>\n";
+}
+echo "</select>\n";
 ?>
-</SELECT>
 
 <input type="submit" value="Update View" name="submit">
 
-</FORM>
+</form>
 
 
 <?php 
 
-if (IsSet($_REQUEST[paperReviewsToPrint])) {
+if (IsSet($_REQUEST["paperReviewsToPrint"])) {
   $printThese = array();
-  for ($i = 0; $i < sizeof($_REQUEST[paperReviewsToPrint]); $i++) {
-    $id = $_REQUEST[paperReviewsToPrint][$i];
+  for ($i = 0; $i < sizeof($_REQUEST["paperReviewsToPrint"]); $i++) {
+    $id = $_REQUEST["paperReviewsToPrint"][$i];
     $printThese[$id] = 1;
   }
 }
@@ -103,7 +82,7 @@ $query="SELECT Paper.paperId, Paper.title, Paper.abstract, Paper.authorsResponse
 
 $result=$Conf->qe($query);
 print "<p> Found " .  $result->numRows() . " papers. </p>";
-print "<P CLASS=page> You should see a page break following this when printing. </p>";
+print "<p class='page'> You should see a page break following this when printing. </p>";
 
 if (DB::isError($result)) {
   $Conf->errorMsg("Error in retrieving paper list " . $result->getMessage());
@@ -113,11 +92,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
   $paperId=$row['paperId'];
   $printMe = 1;
 
-  if (IsSet($_REQUEST[paperReviewsToPrint]) && ! $printThese[$paperId]) {
-    $printMe = 0;
-  }
-
-  if ($conflicts[$paperId]) {
+  if (isset($_REQUEST["paperReviewsToPrint"]) && !defval($printThese[$paperId])) {
     $printMe = 0;
   }
 
@@ -388,9 +363,6 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
     print "<p CLASS=page> </p>\n";
   }
 }
-?>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
 
+$Conf->footer();
