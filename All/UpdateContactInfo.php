@@ -4,12 +4,26 @@ $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $RealMe = $Me;
+$newProfile = false;
 
-$newProfile = (isset($_REQUEST["new"]) && $Me->amAssistant());
-if ($newProfile) {
+if (!$Me->amAssistant())
+    /* always this contact */;
+else if (isset($_REQUEST["new"])) {
     $Me = new Contact;
     $Me->invalidate();
+    $newProfile = true;
+} else if (isset($_REQUEST["contact"])) {
+    $Me = new Contact;
+    if (($id = cvtint($_REQUEST["contact"])) > 0)
+	$Me->lookupById($id, $Conf);
+    else
+	$Me->lookupByEmail($_REQUEST["contact"], $Conf);
+    if (!$Me->valid($Conf)) {
+	$Conf->errorMsg("Invalid contact.");
+	$Me = $RealMe;
+    }
 }
+
 
 if (isset($_REQUEST["register"])) {
     $needFields = array('email', 'firstName', 'lastName', 'affiliation');
@@ -40,16 +54,22 @@ if (isset($_REQUEST['register']) && $OK) {
 		$Me->sendAccountInfo($Conf, true);
 		$Conf->log("Created account", $Me);
 	    }
-	    
+	}
+
+	if ($RealMe->amAssistant() && $Me->contactId != $RealMe->contactId) {
 	    // initialize roles too
 	    if (isset($_REQUEST["ass"]) || isset($_REQUEST["chair"]))
 		$_REQUEST["pc"] = 1;
+	    $while = "while initializing roles";
+	    $Conf->qe("delete from PCMember where contactId=$Me->contactId", $while);
+	    $Conf->qe("delete from ChairAssistant where contactId=$Me->contactId", $while);
+	    $Conf->qe("delete from Chair where contactId=$Me->contactId", $while);
 	    if (isset($_REQUEST["pc"]))
-		$Conf->qe("insert into PCMember (contactId) values ($Me->contactId)", "while initializing roles");
+		$Conf->qe("insert into PCMember (contactId) values ($Me->contactId)", $while);
 	    if (isset($_REQUEST["ass"]))
-		$Conf->qe("insert into ChairAssistant (contactId) values ($Me->contactId)", "while initializing roles");
+		$Conf->qe("insert into ChairAssistant (contactId) values ($Me->contactId)", $while);
 	    if (isset($_REQUEST["chair"]))
-		$Conf->qe("insert into Chair (contactId) values ($Me->contactId)", "while initializing roles");
+		$Conf->qe("insert into Chair (contactId) values ($Me->contactId)", $while);
 	}
 	
 	$Me->firstName = $_REQUEST["firstName"];
@@ -84,6 +104,7 @@ if (isset($_REQUEST['register']) && $OK) {
 	if ($OK) {
 	    // Refresh the results
 	    $Me->lookupByEmail($_REQUEST["email"], $Conf);
+	    $Me->valid($Conf);
 	    if ($newProfile) {
 		$Conf->log("New account", $RealMe);
 		$Conf->confirmMsg("Successfully created an account for " . htmlspecialchars($Me->email) . ".  A password has been emailed to that address.");
@@ -91,7 +112,8 @@ if (isset($_REQUEST['register']) && $OK) {
 		$Conf->log("Updated account", $RealMe);
 		$Conf->confirmMsg("Account profile successfully updated.");
 	    }
-	    $RealMe->go("../");
+	    if ($Me->contactId == $RealMe->contactId)
+		$RealMe->go("../");
 	}
     }
  }
@@ -105,24 +127,13 @@ function crpformvalue($val) {
 	echo htmlspecialchars($Me->$val);
 }
 
-$title = ($newProfile ? "Create Account" : "Edit Profile");
-$Conf->header_head($title);
-?>
-<script type="text/javascript"><!--
-function doRole(what) {
-    var pc = document.getElementById("pc");
-    var ass = document.getElementById("ass");
-    var chair = document.getElementById("chair");
-    if (pc == what && !pc.checked)
-	ass.checked = chair.checked = false;
-    if (pc != what && (ass.checked || chair.checked))
-	pc.checked = true;
-}
-// -->
-</script>
+$_REQUEST["pc"] = $Me->isPC;
+$_REQUEST["ass"] = $Me->isAssistant;
+$_REQUEST["chair"] = $Me->isChair;
 
-<?php
-$Conf->header($title);
+
+$Conf->header($newProfile ? "Create Account" : "Edit Profile");
+
 
 if (isset($UpdateError))
     $Conf->errorMsg($UpdateError);
@@ -138,76 +149,80 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 2;
     $Conf->infoMsg("Please take a moment to update your contact information.");
  }
-?>
 
-<form class='updateProfile' method='post' action='UpdateContactInfo.php'>
-<?php if ($newProfile) echo "<input type='hidden' name='new' value='1' />\n"; ?>
-<table class='form'>
+
+echo "<form class='updateProfile' method='post' action='UpdateContactInfo.php'>\n";
+if ($newProfile)
+    echo "<input type='hidden' name='new' value='1' />\n";
+else if ($Me->contactId != $RealMe->contactId)
+    echo "<input type='hidden' name='contact' value='$Me->contactId' />\n";
+
+
+echo "<table class='form'>
 <tr>
   <td class='caption'>Email</td>
-  <td class='entry' colspan='3'><input class='textlite' type='text' name='email' size='50' value="<?php crpformvalue('email') ?>" /></td>
-</tr>
+  <td class='entry' colspan='3'><input class='textlite' type='text' name='email' size='50' value=\"", crpformvalue('email'), "\" /></td>
+</tr>\n\n";
 
-<tr>
+echo "<tr>
   <td class='caption'>First&nbsp;name</td>
-  <td class='entry'><input class='textlite' type='text' name='firstName' size='20' value="<?php crpformvalue('firstName') ?>" /></td>
+  <td class='entry'><input class='textlite' type='text' name='firstName' size='20' value=\"", crpformvalue('firstName'), "\" /></td>
   <td class='caption'>Last&nbsp;name</td>
-  <td class='entry'><input class='textlite' type='text' name='lastName' size='20' value="<?php crpformvalue('lastName') ?>" /></td>
-</tr>
+  <td class='entry'><input class='textlite' type='text' name='lastName' size='20' value=\"", crpformvalue('lastName'), "\" /></td>
+</tr>\n\n";
 
-<?php if (!$newProfile) { ?>
-<tr>
+if (!$newProfile) {
+    echo "<tr>
   <td class='caption'>Password</td>
-  <td class='entry'><input class='textlite' type='password' name='password' size='20' value="<?php crpformvalue('password') ?>" /></td>
+  <td class='entry'><input class='textlite' type='password' name='password' size='20' value=\"", crpformvalue('password'), "\" /></td>
   <td class='caption'>Repeat password</td>
-  <td class='entry'><input class='textlite' type='password' name='password2' size='20' value="<?php crpformvalue('password') ?>" /></td>
+  <td class='entry'><input class='textlite' type='password' name='password2' size='20' value=\"", crpformvalue('password'), "\" /></td>
 </tr>
 
 <tr>
   <td class='caption'></td>
   <td class='hint' colspan='4'>Please note that the password is stored in our database in cleartext, and will be mailed to you if you have forgotten it.  Thus, you should not use a login password or any other password that is important to you.</td>
-</tr>
-<?php } ?>
+</tr>\n\n";
+}
 
-<tr>
+
+echo "<tr>
   <td class='caption'>Affiliation</td>
-  <td class='entry' colspan='3'><input class='textlite' type='text' name='affiliation' size='50' value="<?php crpformvalue('affiliation') ?>" /></td>
-</tr>
+  <td class='entry' colspan='3'><input class='textlite' type='text' name='affiliation' size='50' value=\"", crpformvalue('affiliation'), "\" /></td>
+</tr>\n\n";
 
-<tr>
+
+echo "<tr>
   <td class='caption'>Phone</td>
-  <td class='entry'><input class='textlite' type='text' name='voicePhoneNumber' size='20' value="<?php crpformvalue('voicePhoneNumber') ?>" /></td>
+  <td class='entry'><input class='textlite' type='text' name='voicePhoneNumber' size='20' value=\"", crpformvalue('voicePhoneNumber'), "\" /></td>
   <td class='caption'>Fax</td>
-  <td class='entry'><input class='textlite' type='text' name='faxPhoneNumber' size='20' value="<?php crpformvalue('faxPhoneNumber') ?>" /></td>
-</tr>
+  <td class='entry'><input class='textlite' type='text' name='faxPhoneNumber' size='20' value=\"", crpformvalue('faxPhoneNumber'), "\" /></td>
+</tr>\n\n";
 
-<?php if ($newProfile) { ?>
 
-<tr>
+if ($newProfile || $RealMe->contactId != $Me->contactId) {
+    echo "<tr>
   <td class='caption'>Roles</td>
-  <td colspan='3' class='entry'>
-<?php
+  <td colspan='3' class='entry'>\n";
     foreach (array("pc" => "PC&nbsp;member", "ass" => "Chair's&nbsp;assistant", "chair" => "PC&nbsp;chair") as $key => $value) {
 	echo "    <input type='checkbox' name='$key' id='$key' value='1' ";
-	if (isset($_REQUEST["$key"]))
+	if (defval($_REQUEST["$key"]))
 	    echo "checked='checked' ";
 	echo "onclick='doRole(this)' />&nbsp;", $value, "&nbsp;&nbsp;\n";
     }
-?>
-  </td>
-</tr>
+    echo "  </td>\n</tr>\n\n";
 
-<tr>
+    echo "<tr>
   <td></td>
   <td colspan='4'><hr/><strong>PC/Reviewer Information</td>
-</tr>
+</tr>\n\n";
+}
 
-<?php } ?>
 
-<?php if ($Me->isPC || $newProfile) { ?>
-<tr>
+if ($Me->isPC || $newProfile) {
+    echo "<tr>
   <td class='caption'>Collaborators and other affiliations</td>
-  <td class='entry textarea' colspan='3'><textarea class='textlite' name='collaborators' rows='5'><?php echo htmlspecialchars($Me->collaborators) ?></textarea></td>
+  <td class='entry textarea' colspan='3'><textarea class='textlite' name='collaborators' rows='5'>", htmlspecialchars($Me->collaborators), "</textarea></td>
   <td class='hint'>List your recent (~2 years) coauthors, collaborators,
     and affiliations, and any advisor or student relationships, one per line.
     We use this information to
@@ -216,9 +231,8 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
 Ludwig van Beethoven (Colorado)
 Zhang, Ping Yen (INRIA)
 (IIT Madras)</pre></td>
-</tr>
+</tr>\n\n";
 
-<?php
     $result = $Conf->q("select TopicArea.topicId, TopicArea.topicName, TopicInterest.interest from TopicArea left join TopicInterest on TopicInterest.contactId=$Me->contactId and TopicInterest.topicId=TopicArea.topicId order by TopicArea.topicName");
     if (!DB::isError($result) && $result->numRows() > 0) {
 	echo "<tr id='topicinterest'>
@@ -244,22 +258,17 @@ Zhang, Ping Yen (INRIA)
 	to reviewers.</td>
 </tr>";
     }
-} ?>
+}
 
-<tr>
+
+echo "<tr>
   <td class='caption'></td>
-  <td class='entry'><input class='button_default' type='submit' value='<?php
-    if ($newProfile)
-	echo "Create Account";
-    else
-	echo "Save Profile";
-?>' name='register' /></td>
+  <td class='entry'><input class='button_default' type='submit' value='",
+    ($newProfile ? "Create Account" : "Save Profile"),
+    "' name='register' /></td>
 </tr>
 
 </table>
-</form>
+</form>\n";
 
-</div>
-<?php $Conf->footer() ?>
-</body>
-</html>
+$Conf->footer();

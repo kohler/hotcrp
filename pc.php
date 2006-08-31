@@ -163,8 +163,9 @@ while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
 	    echo " disabled='disabled'";
 	echo " onclick='highlightChange($id)' /></td>\n";
 	echo "  <td class='pc_action'>";
+	echo "<a href='${ConfSiteBase}All/UpdateContactInfo.php?contact=$id'>Edit profile</a>";
 	if ($id != $Me->contactId)
-	    echo "<a class='extension' href='javascript:doRemove($id)'>Remove from PC</a><a class='ellipsis' href='javascript:doRemove($id)'>Do not remove</a>";
+	    echo " &nbsp;|&nbsp; <a class='extension' href='javascript:doRemove($id)'>Remove from PC</a><a class='ellipsis' href='javascript:doRemove($id)'>Do not remove</a>";
 	//&nbsp;|&nbsp; ";
 	echo "
     <input type='hidden' value='' name='chg$id' id='chg$id' /></td>\n";

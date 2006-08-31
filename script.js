@@ -112,3 +112,13 @@ function selassign(elt, which) {
 	setTimeout("selassign_blur = 0;", 300);
     }
 }
+
+function doRole(what) {
+    var pc = document.getElementById("pc");
+    var ass = document.getElementById("ass");
+    var chair = document.getElementById("chair");
+    if (pc == what && !pc.checked)
+	ass.checked = chair.checked = false;
+    if (pc != what && (ass.checked || chair.checked))
+	pc.checked = true;
+}

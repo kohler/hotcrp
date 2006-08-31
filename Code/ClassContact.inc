@@ -294,40 +294,41 @@ class Contact {
 	return $this->lookupByEmail($this->email, $conf);
     }
 
-  function updateFromQuery($query, $conf) {
-      $result = $conf->q($query);
-      if (!DB::isError($result) && $result->numRows() >= 1) {
-	  $fromdb = $result->fetchRow(DB_FETCHMODE_OBJECT);
+    function updateFromQuery($query, $conf) {
+	$result = $conf->q($query);
+	if (!DB::isError($result) && $result->numRows() >= 1) {
+	    $fromdb = $result->fetchRow(DB_FETCHMODE_OBJECT);
 	  
-	  $this->contactId = $fromdb->contactId;
-	  $this->visits = $fromdb->visits;
-	  $this->firstName = $fromdb->firstName;
-	  $this->lastName = $fromdb->lastName;
-	  $this->email = $fromdb->email;
-	  $this->affiliation = $fromdb->affiliation;
-	  $this->voicePhoneNumber = $fromdb->voicePhoneNumber;
-	  $this->faxPhoneNumber = $fromdb->faxPhoneNumber;
-	  $this->password = $fromdb->password;
-	  $this->note = $fromdb->note;
-	  $this->collaborators = $fromdb->collaborators;
-	  $this->anyTopicInterest = isset($fromdb->topicId);
+	    $this->contactId = $fromdb->contactId;
+	    $this->visits = $fromdb->visits;
+	    $this->firstName = $fromdb->firstName;
+	    $this->lastName = $fromdb->lastName;
+	    $this->email = $fromdb->email;
+	    $this->affiliation = $fromdb->affiliation;
+	    $this->voicePhoneNumber = $fromdb->voicePhoneNumber;
+	    $this->faxPhoneNumber = $fromdb->faxPhoneNumber;
+	    $this->password = $fromdb->password;
+	    $this->note = $fromdb->note;
+	    $this->collaborators = $fromdb->collaborators;
+	    $this->anyTopicInterest = isset($fromdb->topicId);
 
-	  $this->shortConfName = $conf->shortName;
+	    $this->shortConfName = $conf->shortName;
 
-	  $this->trim();
-      } else {
-	  // Not found - zero out the context
-	  $this->invalidate();
-      }
-      return $result;
-  }
+	    $this->trim();
+	    $this->validated = false;
+	} else {
+	    // Not found - zero out the context
+	    $this->invalidate();
+	}
+	return $result;
+    }
 
-  function lookupByEmail($email, $conf) {
-      return $this->updateFromQuery(sprintf(
+    function lookupByEmail($email, $conf) {
+	return $this->updateFromQuery(sprintf(
 		"select ContactInfo.*, TopicInterest.topicId from ContactInfo
 		left join TopicInterest using (contactId)
 		where email='%s' limit 0,1", sqlqtrim($email)), $conf);
-  }
+    }
 
     function lookupById($contactId, $conf) {
 	return $this->updateFromQuery("select ContactInfo.*, TopicInterest.topicId from ContactInfo
