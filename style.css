@@ -676,8 +676,11 @@ table.pltable td.pl_desirability, table.pltable td.pl_download {
 	text-align: right;
 	padding-right: 0.4em;
 }
-table.pltable td.pl_download, table.pltable td.pl_title img {
+table.pltable td.pl_download {
 	vertical-align: middle;
+}
+table.pltable td.pl_title img {
+	vertical-align: text-bottom;
 }
 td.pl_callout {
 	padding-left: 4em;
