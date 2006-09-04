@@ -358,7 +358,7 @@ if ($Me->amAssistant()) {
 
 
 // reviewer information
-$revTable = reviewTable($prow, $rrows, null, "req");
+$revTable = reviewTable($prow, $rrows, null, "assign");
 $revTableClass = (preg_match("/<th/", $revTable) ? "rev_reviewers_hdr" : "rev_reviewers");
 echo "<tr class='", $revTableClass, "'>\n";
 echo "  <td class='caption'>Reviews</td>\n";

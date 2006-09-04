@@ -2,7 +2,8 @@
 
 // reviewer information
 function reviewTable($prow, $rrows, $rrow, $mode) {
-    global $Conf, $ConfSiteBase, $Me, $rf, $forceShow, $reviewTableFolder;
+    global $Conf, $ConfSiteBase, $Me, $rf, $forceShow, $reviewTableFolder,
+	$reviewTypeName;
     
     $subrev = array();
     $nonsubrev = array();
@@ -48,41 +49,47 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	else if (!$canView)
 	    $t .= "<td>$id</td>";
 	else
-	    $t .= "<td><a href='review.php?reviewId=$rr->reviewId$forceShow'>$id</a></td>";
+	    $t .= "<td><a href='${ConfSiteBase}review.php?reviewId=$rr->reviewId$forceShow'>$id</a></td>";
+
+	// primary/secondary glyph
+	if ($prow->conflict > 0 && !$effAssistant)
+	    $x = "";
+	else if ($rr->reviewType > 0)
+	    $x = "<img src='${ConfSiteBase}images/ass" . $rr->reviewType . ".png' alt='" . $reviewTypeName[$rr->reviewType] . "' />";
+	else
+	    $x = "";
 
 	// reviewer identity
 	if (!$Me->canViewReviewerIdentity($prow, $rr, $Conf))
-	    $t .= "<td class='empty'></td>";
+	    $t .= ($x ? "<td>$x</td>" : "<td class='empty'></td>");
+	else if ($mode == "assign")
+	    $t .= "<td><a href=\"mailto:" . htmlspecialchars($rr->email) . "\">" . contactHtml($rr) . "</a></td>";
 	else
-	    $t .= "<td>" . contactHtml($rr) . "</td>";
+	    $t .= "<td><a href=\"mailto:" . htmlspecialchars($rr->email) . "\">" . contactHtml($rr->firstName, $rr->lastName) . "</a>" . ($x ? " $x" : "") . "</td>";
 
 	// review type
-	if ($prow->conflict > 0 && !$effAssistant)
+	if ($mode != "assign")
+	    /* nothing */;
+	else if ($prow->conflict > 0 && !$effAssistant)
 	    $t .= "<td class='empty'></td>";
-	else if ($rr->reviewType == REVIEW_PRIMARY)
-	    $t .= "<td>Primary</td>";
-	else if ($rr->reviewType == REVIEW_SECONDARY)
-	    $t .= "<td>Secondary</td>";
-	else if ($rr->reviewType == REVIEW_REQUESTED && $rr->reqContactId == $Me->contactId)
-	    $t .= "<td>Requested by you</td>";
-	else if ($rr->reviewType == REVIEW_REQUESTED) {
-	    $class = ($mode == "req" ? "" : " class='extension'");
-	    $t .= "<td>Requested<br /><small$class>by " . contactHtml($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail) . "</small></td>";
-	    if ($class)
-		$reviewTableFolder = true;
-	} else
-	    $t .= "<td class='empty'></td>";
+	else {
+	    $t .= "<td>" . $reviewTypeName[$rr->reviewType];
+	    if ($rr->reviewType == REVIEW_REQUESTED)
+		$t .= "<br /><small>by " . contactHtml($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail) . "</small>";
+	    $t .= "</td>";
+	}
 
 	// scores or retract request
 	if ($rr->reviewModified <= 0
 	    && $rr->reviewType == REVIEW_REQUESTED
 	    && ($rr->requestedBy == $Me->contactId || $effAssistant)) {
-	    if ($mode == "req") {
-		$t .= "<td colspan='" . (1 + $nNumeric) . "'>";
-		$t .= "<a class='button_small' href=\"${ConfSiteBase}assign.php?paperId=$prow->paperId&amp;retract=$rr->reviewId$forceShow\">Retract review request</a></td>";
+	    if ($mode == "assign") {
+		$t .= "<td><a href=\"${ConfSiteBase}assign.php?paperId=$prow->paperId&amp;retract=$rr->reviewId$forceShow\">Retract review request</a></td>";
 	    } else
 		$nRetractable++;
-	} else 
+	} else if ($mode == "assign")
+	    $t .= "<td class='empty'></td>";
+	else
 	    $t .= $rf->webNumericScoresRow($rr, $prow, $Me, $Conf, $anyScores);
 
 	$t .= "<td></td></tr>\n";
@@ -105,7 +112,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     $numericHeaders = "";
     if ($anyScores) {
 	$t = ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "");
-	$numericHeaders = "    <tr>$t<td class='empty' colspan='3'></td>" . $rf->webNumericScoresHeader($prow, $Me, $Conf) . "</tr>\n";
+	$numericHeaders = "    <tr>$t<td class='empty' colspan='2'></td>" . $rf->webNumericScoresHeader($prow, $Me, $Conf) . "</tr>\n";
     }
     
     $t = '';
@@ -115,7 +122,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	|| ($mode == "edit" && $Me->canViewReview($prow, null, $Conf)))
 	$t .= "<a href='review.php?paperId=$prow->paperId&amp;mode=view$forceShow'>All reviews on one page</a>";
     // review assignments
-    if ($mode != "req" && ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
+    if ($mode != "assign" && ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
 	if ($Me->amAssistant())
 	    $x = "Assign or request reviewers";
 	else
