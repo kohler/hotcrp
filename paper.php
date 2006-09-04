@@ -126,7 +126,7 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 	    $PaperError[$x] = 1;
 	else {
 	    if ($x == "title")
-		$_REQUEST[$x] = preg_replace("/\\s*[\r\n]+\\s*/s", " ", $_REQUEST[$x]);
+		$_REQUEST[$x] = preg_replace("/\\s*[\t\f\v\r\n]+\\s*/s", " ", $_REQUEST[$x]);
 	    $q .= "$x='" . sqlqtrim($_REQUEST[$x]) . "', ";
 	}
 
