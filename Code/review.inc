@@ -591,13 +591,20 @@ class ReviewForm {
 	foreach ($this->fieldOrder as $field)
 	    if (($this->authorView[$field] || $viewAllFields)
 		&& isset($this->options[$field])) {
-		$a = preg_split("/\s+/", $this->shortName[$field]);
-		array_splice($a, min(3, count($a)));
+		$a = preg_split("/\s+/", ucwords($this->shortName[$field]));
+
+		// try to filter out noninteresting words
+		$b = array();
+		foreach ($a as $w)
+		    if ($w != "Be" && $w != "The" && $w != "A" && $w != "An")
+			$b[] = $w;
+		if (count($b) == 0)
+		    $b = $a;
+		
+		array_splice($b, min(3, count($a)));
 		$x .= "<th><acronym title=\"" . htmlspecialchars($this->shortName[$field]) . "\">";
-		foreach ($a as $wd) {
-		    $wd = ucfirst($wd);
-		    $x .= htmlspecialchars(substr($wd, 0, 3));
-		}
+		foreach ($b as $w)
+		    $x .= htmlspecialchars(substr($w, 0, 3));
 		$x .= "</acronym></th>";
 	    }
 	return $x;
