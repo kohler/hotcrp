@@ -8,6 +8,7 @@ class PaperList {
     const FIELD_TITLE = 11;
     const FIELD_TITLE_MANAGE = 12;
     const FIELD_TITLE_REVIEW = 13;
+    const FIELD_TITLE_REVIEW_DOWNLOAD = 14;
     const FIELD_STATUS = 27;
     const FIELD_DOWNLOAD = 28;
     const FIELD_REVIEWER_TYPE = 29;
@@ -100,6 +101,7 @@ class PaperList {
 	case self::FIELD_TITLE:
 	case self::FIELD_TITLE_MANAGE:
 	case self::FIELD_TITLE_REVIEW:
+	case self::FIELD_TITLE_REVIEW_DOWNLOAD:
 	    return "order by Paper.title $up";
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
@@ -133,6 +135,7 @@ class PaperList {
 	case self::FIELD_TITLE:
 	case self::FIELD_TITLE_MANAGE:
 	case self::FIELD_TITLE_REVIEW:
+	case self::FIELD_TITLE_REVIEW_DOWNLOAD:
 	    return "Title";
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
@@ -189,6 +192,17 @@ class PaperList {
 	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
 	case self::FIELD_TITLE_REVIEW:
 	    return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
+	case self::FIELD_TITLE_REVIEW_DOWNLOAD:
+	    $t = "<a href='${ConfSiteBase}review.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
+	    if ($row->size == 0)
+		/* nothing */;
+	    else if ($row->mimetype == "application/pdf")
+		$t .= "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\"><img src=\"${ConfSiteBase}images/pdf.png\" alt='[PDF]' /></a>";
+	    else if ($row->mimetype == "application/postscript")
+		$t .= "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\"><img src=\"${ConfSiteBase}images/postscript.png\" alt='[PS]' /></a>";
+	    else
+		$t .= "&nbsp;<small><a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\">[Download]</a></small>";
+	    return $t;
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
