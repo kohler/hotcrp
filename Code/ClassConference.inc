@@ -458,15 +458,42 @@ class Conference {
 		group by ContactInfo.contactId", "while looking up contact authors to send email");
 	if (!DB::isError($result)) {
 	    while (($row = $result->fetchRow())) {
-		$contacts[] = $c = contactText($row[0], $row[1], $row[2]);
+		$contacts[] = $c = contactText($row[0], $row[1]);
 		$m = "Dear $c,\n\n" . $message;
 		if ($this->allowEmailTo($row[2]))
-		    mail($row[2], $subject, $m, "From: $Conf->emailFrom");
+		    mail(contactEmailTo($row), $subject, $m, "From: $Conf->emailFrom");
 		else
 		    $this->infoMsg("<pre>" . htmlspecialchars($subject) . "\n\n" . htmlspecialchars($m) . "</pre>");
 	    }
 	    if ($prow->author <= 0 && count($contacts) > 0 && $Me->amAssistant())
 		$this->infoMsg("Sent \"" . htmlspecialchars($subject) . "\" email to paper #$prow->paperId's contact author" . (count($contacts) == 1 ? "" : "s") . ", " . htmlspecialchars(join(", ", $contacts)) . ".");
+	}
+    }
+
+    function emailReviewersChair($prow, $subject, $message) {
+	global $Opt, $Me;
+	if (!$Opt['sendEmail'])
+	    return;
+
+	if ($subject[0] != '[')
+	    $subject = "[$this->shortName] $subject";
+	$result = $this->qe("select firstName, lastName, email
+		from ContactInfo join PaperReview using (contactId)
+		where paperId=$prow->paperId
+		group by ContactInfo.contactId", "while looking up reviewers to send email");
+	if (!DB::isError($result)) {
+	    $m = "Greetings,\n\n" . $message;
+	    while (($row = $result->fetchRow())) {
+		$reviewers[] = contactText($row);
+		if ($this->allowEmailTo($row[2]))
+		    $recipients[] = contactEmailTo($row);
+	    }
+	    if (count($recipients))
+		mail(join(", ", $recipients), $subject, $m, "From: $Conf->emailFrom\nCc: $Conf->contactName <$Conf->contactEmail>");
+	    else if (count($reviewers))
+		$this->infoMsg("<pre>" . htmlspecialchars(join(", ", $recipients)) . "\n\n" . htmlspecialchars($subject) . "\n\n" . htmlspecialchars($m) . "</pre>");
+	    if ($prow->author <= 0 && count($reviewers) && $Me->amAssistant())
+		$this->infoMsg("Sent \"" . htmlspecialchars($subject) . "\" email to paper #$prow->paperId's reviewer" . (count($recipients) == 1 ? "" : "s") . ", " . htmlspecialchars(join(", ", $reviewers)) . ".");
 	}
     }
     

@@ -45,7 +45,7 @@ class PaperList {
 	$this->showHeader = 1;
 
 	$s = ($sortable ? defval($_REQUEST["sort"], "") : "");
-	$x = (strlen($s) ? $sortVal[strlen($s)-1] : "");
+	$x = (strlen($s) ? $s[strlen($s)-1] : "");
 	$this->reverseSort = ($x == "R");
 	if ($x == "R" || $x == "N")
 	    $sortVal = substr($s, 0, -1);

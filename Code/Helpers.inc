@@ -16,6 +16,10 @@ function sqlq($value) {
     return mysql_real_escape_string($value);
 }
 
+function simplifyWhitespace($x) {
+    return preg_replace("/\\s*[\t\f\v\r\n]+\\s*/s", " ", $x);
+}
+
 function sqlq_cleannl($value) {
     $value = str_replace("\r\n", "\n", $value);
     return mysql_real_escape_string(strtr($value, "\r", "\n"));
@@ -322,7 +326,7 @@ function contactText($firstName, $lastName=null, $email=null) {
     if ($firstName || $lastName) {
 	$x = trim("$firstName $lastName");
 	if ($email)
-	    $x .= " ($email)";
+	    $x .= " <$email>";
     } else
 	$x = $email;
     return $x;
@@ -330,19 +334,26 @@ function contactText($firstName, $lastName=null, $email=null) {
 
 function contactHtml($firstName, $lastName=null, $email=null) {
     return htmlspecialchars(contactText($firstName, $lastName, $email));
+}
+
+function contactEmailTo($firstName, $lastName=null, $email=null) {
     if (is_array($firstName)) {
-	$email = $firstName[2];
+	if ($email === null && count($firstName) >= 2)
+	    $email = $firstName[2];
 	$lastName = $firstName[1];
 	$firstName = $firstName[0];
     } else if (is_object($firstName)) {
-	$email = isset($firstName->email) ? $firstName->email : "";
+	if ($email === null && isset($firstName->email))
+	    $email = $firstName->email;
 	$lastName = $firstName->lastName;
 	$firstName = $firstName->firstName;
     }
     if ($firstName || $lastName) {
 	$x = trim("$firstName $lastName");
+	if (preg_match("/[^-A-Za-z0-9 !#\$%&'*+/=?^_`{|}~]/", $x))
+	    $x = "\"" . addslashes($x) . "\"";
 	if ($email)
-	    $x .= " ($email)";
+	    $x .= " <$email>";
     } else
 	$x = $email;
     return $x;

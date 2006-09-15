@@ -199,18 +199,18 @@ class Contact {
 	echo "</p> </td> </tr> </table>";
     }
 
-  function trim() {
-      $this->contactId = trim($this->contactId);
-      $this->visits = trim($this->visits);
-      $this->firstName = trim($this->firstName);
-      $this->lastName = trim($this->lastName);
-      $this->email = trim($this->email);
-      $this->affiliation = trim($this->affiliation);
-      $this->voicePhoneNumber = trim($this->voicePhoneNumber);
-      $this->faxPhoneNumber = trim($this->faxPhoneNumber);
-      $this->password = trim($this->password);
-      $this->note = trim($this->note);
-  }
+    function trim() {
+	$this->contactId = trim($this->contactId);
+	$this->visits = trim($this->visits);
+	$this->firstName = trim(simplifyWhitespace($this->firstName));
+	$this->lastName = trim(simplifyWhitespace($this->lastName));
+	$this->email = trim($this->email);
+	$this->affiliation = trim($this->affiliation);
+	$this->voicePhoneNumber = trim($this->voicePhoneNumber);
+	$this->faxPhoneNumber = trim($this->faxPhoneNumber);
+	$this->password = trim($this->password);
+	$this->note = trim($this->note);
+    }
 
     function go($url) {
 	go($url);
