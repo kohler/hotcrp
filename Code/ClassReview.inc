@@ -365,6 +365,7 @@ class ReviewForm {
 		$x .= "\n==-== " . $conf->shortName . " allows either anonymous or open review.
 ==-== To submit a non-anonymous review, change 'Anonymous' to 'Open' here.
 ==+== $blind Review\n";
+	    }
 	} else {
 	    $x .= "==+== Begin Review #$prow->paperId";
 	    if ($req && isset($req['reviewOrdinal']))
