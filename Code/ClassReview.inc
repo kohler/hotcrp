@@ -358,10 +358,13 @@ class ReviewForm {
 	    $x .= "\n==-== Uploading this form will submit the review, making it available to
 ==-== authors and the PC, unless you delete the following line.
 ==+== Submit Review\n";
-	    if ($conf->blindReview() == 1)
+	    if ($conf->blindReview() == 1) {
+		$blind = "Anonymous";
+		if ($rrow && !(isset($rrow->reviewBlind) ? $rrow->reviewBlind : $rrow->blind))
+		    $blind = "Open";
 		$x .= "\n==-== " . $conf->shortName . " allows either anonymous or open review.
 ==-== To submit a non-anonymous review, change 'Anonymous' to 'Open' here.
-==+== " . ($rrow && !$rrow->blind ? "Open" : "Anonymous") . " Review\n";
+==+== $blind Review\n";
 	} else {
 	    $x .= "==+== Begin Review #$prow->paperId";
 	    if ($req && isset($req['reviewOrdinal']))
