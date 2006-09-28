@@ -226,13 +226,11 @@ class Contact {
 	go($url);
     }
 
-    function goIfInvalid($url = null, $string = "") {
+    function goIfInvalid() {
 	global $ConfSiteBase;
 	if (!$this->valid()) {
-	    if ($url === null)
-		$url = selfHref();
-	    $_SESSION["afterLogin"] = $url;
-	    $this->goAlert("${ConfSiteBase}login.php", $string ? $string : "You have invalid credentials and need to log in.");
+	    $_SESSION["afterLogin"] = selfHref();
+	    $this->goAlert("${ConfSiteBase}login.php", "You have invalid credentials and need to log in.");
 	}
     }
 

@@ -22,7 +22,7 @@
 //
 // This is a magic 
 include('../Code/confHeader.inc');
-//$Me -> goIfInvalid("../index.php");
+//$Me -> goIfInvalid();
 //$Me -> goIfNotAssistant('../index.php');
 $Conf -> connect();
 include('../Code/confConfigReview.inc');
