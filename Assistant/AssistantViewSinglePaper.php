@@ -1,8 +1,9 @@
 <?php 
-include('../Code/confHeader.inc');
-$_SESSION['Me'] -> goIfInvalid("../index.php");
-$_SESSION['Me'] -> goIfNotAssistant('../index.php');
-$Conf -> connect();
+require_once('../Code/confHeader.inc');
+$Conf->connect();
+$Me = $_SESSION["Me"];
+$Me->goIfInvalid();
+$Me->goIfNotAssistant('../index.php');
 ?>
 
 <html>

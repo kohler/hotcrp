@@ -1,11 +1,12 @@
 <?php 
-include('../Code/confHeader.inc');
-$_SESSION["Me"] -> goIfInvalid("../index.php");
-if ( !$_SESSION["Me"]->isChair ) {
-  $_SESSION["Me"] -> goIfNotAuthor("../index.php");
-  $Conf -> goIfInvalidActivity("authorViewDecision", "../index.php");
+require_once('../Code/confHeader.inc');
+$Conf->connect();
+$Me = $_SESSION["Me"];
+$Me->goIfInvalid();
+if (!$Me->isChair) {
+  $Me->goIfNotAuthor("../index.php");
+  $Conf->goIfInvalidActivity("authorViewDecision", "../index.php");
 }
-$Conf -> connect();
 include('../Code/confConfigReview.inc');
 
 ?>

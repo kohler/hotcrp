@@ -1,8 +1,9 @@
 <?php 
-include('../Code/confHeader.inc');
-$_SESSION['Me'] -> goIfInvalid($Conf->paperSite);
-$Conf -> connect();
-$Conf -> goIfInvalidActivity("AtTheMeeting", $Conf->paperSite);
+require_once('../Code/confHeader.inc');
+$Conf->connect();
+$Me = $_SESSION["Me"];
+$Me->goIfInvalid();
+$Conf->goIfInvalidActivity("AtTheMeeting", "../");
 
 function person_ok( $who )
 {

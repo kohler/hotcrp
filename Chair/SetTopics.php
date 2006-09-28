@@ -1,9 +1,9 @@
 <?php 
-include('../Code/confHeader.inc');
+require_once('../Code/confHeader.inc');
 $Conf->connect();
-$_SESSION["Me"]->goIfInvalid("../");
-$_SESSION["Me"]->goIfNotChair('../');
-include('Code.inc');
+$Me = $_SESSION["Me"];
+$Me->goIfInvalid();
+$Me->goIfNotChair('../');
 $Conf->header_head("Edit Topics");
 ?>
 <script type="text/javascript"><!--

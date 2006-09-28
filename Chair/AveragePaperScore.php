@@ -1,8 +1,9 @@
 <?php 
-include('../Code/confHeader.inc');
-$_SESSION["Me"] -> goIfInvalid("../index.php");
-$_SESSION["Me"] -> goIfNotPC('../index.php');
-$Conf -> connect();
+require_once('../Code/confHeader.inc');
+$Conf->connect();
+$Me = $_SESSION["Me"];
+$Me->goIfInvalid();
+$Me->goIfNotPC('../index.php');
 
 $isChair = $_SESSION['Me']->isChair;
 $meetingTime = $Conf->validTimeFor('AtTheMeeting', 0);

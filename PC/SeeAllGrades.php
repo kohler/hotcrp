@@ -1,8 +1,9 @@
 <?php 
-include('../Code/confHeader.inc');
-$_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
-$_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
-$Conf -> connect();
+require_once('../Code/confHeader.inc');
+$Conf->connect();
+$Me = $_SESSION["Me"];
+$Me->goIfInvalid();
+$Me->goIfNotPC("../index.php");
 
 // we are disabling register_globals in php.ini, so we don't need to
 // register the following session variable anymore

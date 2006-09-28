@@ -1,9 +1,10 @@
 <?php 
-include('../Code/confHeader.inc');
+require_once('../Code/confHeader.inc');
 include('../Code/Calendar.inc');
-$_SESSION["Me"] -> goIfInvalid("../index.php");
-$_SESSION["Me"] -> goIfNotChair('../index.php');
-$Conf -> connect();
+$Conf->connect();
+$Me = $_SESSION["Me"];
+$Me->goIfInvalid();
+$Me->goIfNotChair('../index.php');
 include('Code.inc');
 
 ?>

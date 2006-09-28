@@ -1,9 +1,10 @@
 <?php 
-include('../Code/confHeader.inc');
-$_SESSION["Me"] -> goIfInvalid("../index.php");
-$_SESSION["Me"] -> goIfNotAuthor("../index.php");
-$Conf -> goIfInvalidActivity("authorViewReviews", "../index.php");
-$Conf -> connect();
+require_once('../Code/confHeader.inc');
+$Conf->connect();
+$Me = $_SESSION["Me"];
+$Me->goIfInvalid();
+$Me->goIfNotAuthor("../index.php");
+$Conf->goIfInvalidActivity("authorViewReviews", "../index.php");
 $rf = reviewForm();
 
 if ( $Conf -> validTimeFor('authorViewReviews', 0) ) {

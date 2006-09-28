@@ -1,8 +1,9 @@
 <?php 
-include('../Code/confHeader.inc');
+require_once('../Code/confHeader.inc');
 $Conf->connect();
-$_SESSION["Me"]->goIfInvalid("../");
-$_SESSION["Me"]->goIfNotChair('../');
+$Me = $_SESSION["Me"];
+$Me->goIfInvalid();
+$Me->goIfNotChair('../');
 ?>
 
 <html>

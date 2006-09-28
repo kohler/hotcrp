@@ -1,9 +1,10 @@
 <?php 
-include('../Code/confHeader.inc');
-$_SESSION["Me"] -> goIfInvalid($Conf->paperSite);
-$_SESSION["Me"] -> goIfNotPC($Conf->paperSite);
-$Conf -> connect();
-$Conf -> goIfInvalidActivity("EndOfTheMeeting", $Conf->paperSite);
+require_once('../Code/confHeader.inc');
+$Conf->connect();
+$Me = $_SESSION["Me"];
+$Me->goIfInvalid();
+$Me->goIfNotPC("../index.php");
+$Conf->goIfInvalidActivity("EndOfTheMeeting", "../");
 ?>
 
 <html>

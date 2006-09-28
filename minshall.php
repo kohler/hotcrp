@@ -3,7 +3,7 @@ require_once('Code/confHeader.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotChair("../");
+$Me->goIfNotChair("index.php");
 
 
 // download blank review form action

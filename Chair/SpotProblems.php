@@ -1,8 +1,9 @@
 <?php 
 require_once('../Code/confHeader.inc');
-$_SESSION["Me"] -> goIfInvalid("../index.php");
-$_SESSION["Me"] -> goIfNotPC('../index.php');
-$Conf -> connect();
+$Conf->connect();
+$Me = $_SESSION["Me"];
+$Me->goIfInvalid();
+$Me->goIfNotPC('../index.php');
 
 function spotSecondaryReviewers($howmany)
 {
