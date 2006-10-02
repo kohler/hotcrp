@@ -350,7 +350,7 @@ function contactEmailTo($firstName, $lastName=null, $email=null) {
     }
     if ($firstName || $lastName) {
 	$x = trim("$firstName $lastName");
-	if (preg_match("/[^-A-Za-z0-9 !#\$%&'*+/=?^_`{|}~]/", $x))
+	if (preg_match("/[^-A-Za-z0-9 !#\$%&'*+\\/=?^_`{|}~]/", $x))
 	    $x = "\"" . addslashes($x) . "\"";
 	if ($email)
 	    $x .= " <$email>";
