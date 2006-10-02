@@ -127,11 +127,8 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 	if (trim($_REQUEST[$x]) == "" && ($isSubmit || $x != "collaborators"))
 	    $PaperError[$x] = 1;
 	else {
-	    if ($x == "title") {
-		$Conf->errorMsg(htmlspecialchars("title = " . $_REQUEST['title']));
+	    if ($x == "title")
 		$_REQUEST[$x] = simplifyWhitespace($_REQUEST[$x]);
-		$Conf->errorMsg(htmlspecialchars("title = " . $_REQUEST['title']));
-	    }
 	    $q .= "$x='" . sqlqtrim($_REQUEST[$x]) . "', ";
 	}
 
