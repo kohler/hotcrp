@@ -89,7 +89,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 		$nRetractable++;
 	} else if ($mode == "assign")
 	    $t .= "<td class='empty'></td>";
-	else
+	else if ($mode != "edit")
 	    $t .= $rf->webNumericScoresRow($rr, $prow, $Me, $Conf, $anyScores);
 
 	$t .= "<td></td></tr>\n";
