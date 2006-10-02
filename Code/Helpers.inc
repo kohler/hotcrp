@@ -17,7 +17,7 @@ function sqlq($value) {
 }
 
 function simplifyWhitespace($x) {
-    return preg_replace("/\\s*[\t\f\v\r\n]+\\s*/s", " ", $x);
+    return trim(preg_replace('/\s+/', " ", $x));
 }
 
 function sqlq_cleannl($value) {

@@ -5,7 +5,7 @@ $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $useRequest = false;
-if (isset($_REQUEST["emailNote"]) && $_REQUEST["emailNote"] == "Explanation")
+if (isset($_REQUEST["emailNote"]) && $_REQUEST["emailNote"] == "Explanation (sent to authors)")
     unset($_REQUEST["emailNote"]);
 
 
@@ -127,8 +127,11 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 	if (trim($_REQUEST[$x]) == "" && ($isSubmit || $x != "collaborators"))
 	    $PaperError[$x] = 1;
 	else {
-	    if ($x == "title")
+	    if ($x == "title") {
+		$Conf->errorMsg(htmlspecialchars("title = " . $_REQUEST['title']));
 		$_REQUEST[$x] = simplifyWhitespace($_REQUEST[$x]);
+		$Conf->errorMsg(htmlspecialchars("title = " . $_REQUEST['title']));
+	    }
 	    $q .= "$x='" . sqlqtrim($_REQUEST[$x]) . "', ";
 	}
 
@@ -221,7 +224,7 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 	. wordWrapIndent(trim($prow->title), "Title: ") . "\n"
 	. wordWrapIndent(trim($prow->authorInformation), "Authors: ") . "\n"
 	. "      Paper site: $Conf->paperSite/paper.php?paperId=$paperId\n\n";
-    if ($isSubmit)
+    if ($isSubmit || $prow->timeSubmitted > 0)
 	$mx = "The paper will be considered for inclusion in the conference.  You will receive email when reviews are available for you to view.";
     else {
 	$mx = "The paper has not been submitted yet.";
@@ -233,7 +236,9 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 	    $mx .= "  If you do not officially submit the paper by $deadline, it will not be considered for the conference.";
     }
     if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
-	$mx .= "\n\n" . $_REQUEST["emailNote"];
+	$mx .= "\n\nA conference administrator provided the following reason for this update: " . $_REQUEST["emailNote"];
+    else if ($Me->amAssistant() && $prow->author <= 0)
+	$mx .= "\n\nA conference administrator performed this update.";
     $m .= wordwrap("$mx\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.
 
 - $Conf->shortName Conference Submissions\n");
@@ -291,7 +296,9 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	// email contact authors themselves
 	$m = "Paper #$paperId, \"$prow->title\", has been withdrawn from consideration for the $Conf->shortName conference.";
 	if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
-	    $m .= "\n\n" . trim($_REQUEST["emailNote"]);
+	    $m .= "\n\nA conference administrator provided the following reason for withdrawing the paper: " . trim($_REQUEST["emailNote"]);
+	else if ($Me->amAssistant() && $prow->author <= 0)
+	    $m .= "\n\nA conference administrator withdrew the paper.";
 	$m = wordwrap("$m\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
 	$Conf->emailContactAuthors($prow, "Paper #$paperId withdrawn", $m);
 
@@ -332,7 +339,7 @@ if (isset($_REQUEST['delete'])) {
 	// mail first, before contact info goes away
 	$m = "Your $Conf->shortName paper submission #$paperId, \"$prow->title\", has been removed from the conference database by the program chairs.  This is usually done to remove duplicate entries or submissions.";
 	if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
-	    $m .= "\n\n" . $_REQUEST["emailNote"];
+	    $m .= "\n\nA conference administrator provided the following reason for deleting the paper: " . $_REQUEST["emailNote"];
 	$m = wordwrap("$m\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
 	$Conf->emailContactAuthors($prow, "Paper #$paperId deleted", $m);
 	// XXX email self?
@@ -581,7 +588,7 @@ if ($mode == "edit") {
 	//	($prow->timeSubmitted > 0 ? "" : " checked='checked'"),
 	//	" />&nbsp;Email&nbsp;authors\n",
 	//	"    <span class='sep'></span>\n";
-	echo "    <input type='text' name='emailNote' value='Explanation' size='30' onfocus=\"tempText(this, 'Explanation', 1)\" onblur=\"tempText(this, 'Explanation', 0)\" />\n";
+	echo "    <input type='text' name='emailNote' value='Explanation (sent to authors)' size='30' onfocus=\"tempText(this, 'Explanation (sent to authors)', 1)\" onblur=\"tempText(this, 'Explanation (sent to authors)', 0)\" />\n";
 	echo "    <span class='sep'></span>\n";
 	echo "    <input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines\n";
 	echo "  </td>\n</tr>\n\n";
