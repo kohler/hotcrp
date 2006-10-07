@@ -413,15 +413,11 @@ function reviewView($prow, $rrow, $editMode) {
 	if ($rrow && $rrow->reviewSubmitted <= 0 && $rrow->reviewType < REVIEW_SECONDARY) {
 	    echo "\n<tr class='rev_ref'>\n  <td class='caption'></td>\n  <td class='entry' colspan='2'>";
 	    echo "<div id='foldref' class='folded' style='position: relative'><a href=\"javascript:fold('ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it
-  <div class='popupdialog extension'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p>
-    <form action='${ConfSiteBase}review.php?reviewId=$rrow->reviewId&amp;post=1' method='post' enctype='multipart/form-data'>\n";
-	    if ($forceShow)
-		echo "      <input type='hidden' name='forceShow' value='1' />\n";
-	    echo "      <input class='textlite' type='text' name='reason' value='' size='40' />
-      <hr class='smgap' />
-      <input class='button' type='submit' name='refuse' value='Refuse review' />
-      <button type='button' onclick=\"fold('ref', 1)\">Cancel</button>
-    </form>
+  <div class='popupdialog extension'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p>\n";
+	    echo "    <input class='textlite' type='text' name='reason' value='' size='40' />
+    <hr class='smgap' />
+    <input class='button' type='submit' name='refuse' value='Refuse review' />
+    <button type='button' onclick=\"fold('ref', 1)\">Cancel</button>
   </div></div>";
 	    echo "</td>\n</tr>\n";
 	}
