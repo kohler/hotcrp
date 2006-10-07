@@ -755,6 +755,9 @@ div#assignpc div.topicinterest {
 	margin-left: 3em;
 }
 
+span.nowrap {
+	white-space: nowrap;
+}
 span.autblentry {
 	margin-right: 0.75em;
 	white-space: nowrap;
