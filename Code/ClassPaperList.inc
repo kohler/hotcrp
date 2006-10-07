@@ -441,7 +441,7 @@ class PaperList {
 	$body = '';
 	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
 	    $ids[] = $row->paperId;
-	    $trclass = "k" . ($this->count % 6 < 3 ? 0 : 1);
+	    $trclass = "k" . ($this->count % 2);
 	    $this->count++;
 	    
 	    $body .= "  <tr class=\"" . $trclass;
