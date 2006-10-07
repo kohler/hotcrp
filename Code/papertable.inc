@@ -98,7 +98,7 @@ class PaperTable {
 	    $text = $prow->$fieldName;
 	else
 	    $text = "";
-	
+
 	if ($this->highlight && isset($textAreaRows[$fieldName]))
 	    $text = preg_replace($_SESSION["matchPreg"], "<span class='match'>\$1</span>", htmlspecialchars($text));
 	else

@@ -103,7 +103,7 @@ if (isset($_REQUEST["search"]) && trim($_REQUEST["search"]) != "") {
     $result = $Conf->qe($q, $while);
     if (!DB::isError($result)) {
 	$pl = new PaperList(true, "list");
-	$_SESSION["whichList"] = "list";
+	$_SESSION["whichList"] = ($searchall ? "matchesAll" : "matches");
 	$_SESSION["matchPreg"] = "/($re)/i";
 	echo "<div class='maintabsep'></div>\n\n";
 	echo $pl->text(($searchall ? "matchesAll" : "matches"), $Me);
