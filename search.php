@@ -51,7 +51,7 @@ foreach (array('ti' => 'Titles', 'ab' => 'Abstracts',
 
 echo "  <br />\n";
 if (!$Me->amAssistant() && $Conf->blindSubmission() == 1)
-    echo "  <small>Non-blind submissions only</small><br />\n";
+    echo "  <small>*Non-blind submissions only</small><br />\n";
 
 if ($Me->amAssistant())
     echo "  Papers: <input type='radio' name='all' value='0'",
