@@ -695,7 +695,7 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
 	$goBase = "$mode.php";
     else
 	$goBase = "paper.php";
-    $xmode = (isset($_REQUEST["mode"]) ? array("mode" => $_REQUEST["mode"]) : array());
+    $xmode = (isset($_REQUEST["mode"]) && $goBase == "paper.php" ? array("mode" => $_REQUEST["mode"]) : array());
     if ($prow && ($zz = listLinks($prow->paperId, $goBase, $xmode)))
 	$x .= "  <td class='listlinks' nowrap='nowrap'>" . $zz . "</td>\n";
     $x .= "  <td class='gopaper' nowrap='nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n";
