@@ -3,38 +3,40 @@
 class PaperSearch {
 
     var $fields;
-    var $searchAll;
+    var $allPapers;
     var $nonblind;
     var $matchPreg;
     
-    function PaperSearch($fields, $all = false, $me = null) {
+    function PaperSearch($fields, $allPapers = false, $me = null) {
 	global $Conf;
 	$t = 0;
 	foreach (array('ti', 'ab', 'au', 'co', 're') as $f)
 	    $t += ($this->fields[$f] = (defval($fields[$f], 0) != 0));
 	if ($t == 0)
 	    $this->fields['ti'] = $this->fields['ab'] = $this->fields['au'] = $this->fields['co'] = $this->fields['re'] = 1;
-	$this->searchAll = $all;
+	$this->allPapers = $allPapers;
 	$this->nonblind = false;
 	if ($me != null) {
 	    if (!$me->amAssistant() && $Conf->blindSubmission() > 1)
 		$this->fields['au'] = $this->fields['co'] = -1;
 	    if (!$me->amAssistant()) {
 		$this->fields['re'] = -1;
-		$this->searchAll = false;
+		$this->allPapers = false;
 		$this->nonblind = true;
 	    }
 	}
     }
 
-    function searchQuery($str) {
-	$re = $q = "";
+    function searchQuery($str, $allWords) {
+	$re = "";
 	$auextra = ($this->nonblind ? "blind=0 and " : "");
+	$qs = array();
 	foreach (preg_split("/\\s+/", $str) as $word)
 	    if ($word != "") {
 		$re .= ($re == "" ? "" : "|") . preg_quote($word);
 		$word = preg_replace("/([%_\\\\])/", "\\\$1", $word);
 		$word = sqlq($word);
+		$q = "";
 		if ($this->fields['ti'] > 0)
 		    $q .= " or (title like '%$word%')";
 		if ($this->fields['ab'] > 0)
@@ -45,27 +47,32 @@ class PaperSearch {
 		    $q .= " or (${auextra}Paper.collaborators like '%$word%')";
 		if ($this->fields['re'] > 0)
 		    $q .= " or (firstName like '%$word%') or (lastName like '%$word%') or (email like '%$word%')";
+		if ($q)
+		    $qs[] = "(" . substr($q, 4) . ")";
 	    }
 	
 	// create a temporary table
+	$q = join($allWords ? " and " : " or ", $qs);
+	if (!$this->allPapers)
+	    $q = "($q) and Paper.timeSubmitted>0";
 	if ($this->fields['re'] > 0)
-	    $q = "create temporary table Matches select Paper.paperId from Paper left join PaperReview using (paperId) left join ContactInfo on (PaperReview.contactId=ContactInfo.contactId) where" . substr($q, 3) . " group by Paper.paperId";
+	    $q = "create temporary table Matches select Paper.paperId from Paper left join PaperReview using (paperId) left join ContactInfo on (PaperReview.contactId=ContactInfo.contactId) where $q group by Paper.paperId";
 	else
-	    $q = "create temporary table Matches select paperId from Paper where" . substr($q, 3);
-    
+	    $q = "create temporary table Matches select paperId from Paper where $q";
+	
 	return array($q, $re);
     }
 
-    function search($str) {
+    function search($str, $allWords) {
 	global $Conf;
-	$x = $this->searchQuery($str);
+	$x = $this->searchQuery($str, $allWords);
 	$this->matchPreg = $x[1];
 	return $Conf->qe($x[0], "while searching papers");
     }
 
-    function paperList($str) {
+    function paperList($str, $allWords) {
 	global $Conf;
-	$x = $this->searchQuery($str);
+	$x = $this->searchQuery($str, $allWords);
 	$result = $Conf->qe($x[0], "while searching papers");
 	if (DB::isError($result))
 	    return array();

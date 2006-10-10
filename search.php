@@ -47,9 +47,9 @@ if (!$Me->amAssistant() && $Conf->blindSubmission() == 1)
 
 if ($Me->amAssistant())
     echo "  Papers: <input type='radio' name='all' value='0'",
-	($Search->searchAll ? "" : " checked='checked'"),
+	($Search->allPapers ? "" : " checked='checked'"),
 	" />&nbsp;Submitted <span class='sep'></span> <input type='radio' name='all' value='1'",
-	($Search->searchAll ? " checked='checked'" : ""),
+	($Search->allPapers ? " checked='checked'" : ""),
 	" />&nbsp;All\n";
 
 echo "</td>\n</tr>\n";
@@ -58,14 +58,14 @@ echo "</table>\n</form>\n\n";
 
 if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) != "") {
     // develop query
-    $result = $Search->search($_REQUEST["q"]);
+    $result = $Search->search($_REQUEST["q"], false);
 
     if (!DB::isError($result)) {
 	$pl = new PaperList(true, "list");
-	$_SESSION["whichList"] = ($Search->searchAll ? "matchesAll" : "matches");
+	$_SESSION["whichList"] = ($Search->allPapers ? "matchesAll" : "matches");
 	$_SESSION["matchPreg"] = "/(" . $Search->matchPreg . ")/i";
 	echo "<div class='maintabsep'></div>\n\n";
-	echo $pl->text(($Search->searchAll ? "matchesAll" : "matches"), $Me);
+	echo $pl->text(($Search->allPapers ? "matchesAll" : "matches"), $Me);
     }
 }
 

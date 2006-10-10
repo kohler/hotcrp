@@ -757,7 +757,7 @@ function maybeSearchPaperId($base, $me) {
 	return false;
     require_once("search.inc");
     $s = new PaperSearch(array("ti" => 1, "au" => 1, "ab" => 1), false, $me);
-    $pl = $s->paperList($_REQUEST["paperId"]);
+    $pl = $s->paperList($_REQUEST["paperId"], true);
     if (count($pl) == 1) {
 	$_REQUEST["paperId"] = $pl[0];
 	return true;
