@@ -762,7 +762,7 @@ function maybeSearchPaperId($base, $me) {
 	$_REQUEST["paperId"] = $pl[0];
 	return true;
     } else {
-	$Conf->go("${ConfSiteBase}search.php?q=" . urlencode($_REQUEST["paperId"]));
+	$Conf->go("${ConfSiteBase}search.php?q=" . urlencode($_REQUEST["paperId"]) . "&ti=1&au=1&ab=1");
 	exit;
     }
 }
