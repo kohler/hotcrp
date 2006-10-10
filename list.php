@@ -97,7 +97,7 @@ $t = $pl->text($list, $Me, $contactId);
 
 // header
 $title = "List " . htmlspecialchars($pl->shortDescription) . " Papers";
-$Conf->header($title);
+$Conf->header($title, "", actionBar(null, false, ""));
 
 
 // print contact selector

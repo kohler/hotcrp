@@ -8,7 +8,7 @@ $Me->goIfInvalid();
 $Me->goIfNotPC('index.php');
 
 
-$Conf->header("Search", 'search');
+$Conf->header("Search", 'search', actionBar(null, false, ""));
 
 
 $Search = new PaperSearch($_REQUEST, defval($_REQUEST["all"], 0) != 0, $Me);
