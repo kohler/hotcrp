@@ -402,8 +402,8 @@ function goPaperForm($baseUrl = "paper.php", $args = array()) {
     $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get'><div class='inform'>";
     foreach ($args as $what => $val)
 	$x .= "<input type='hidden' name=\"" . htmlspecialchars($what) . "\" value=\"" . htmlspecialchars($val) . "\" />";
-    $x .= "#<input class='textlite' type='text' size='3' name='paperId' />";
-    $x .= "&nbsp;<input class='button_default' type='submit' name='go' value='Go to paper' /></div></form>";
+    $x .= "#<input class='textlite' type='text' size='6' name='paperId' />";
+    $x .= "&nbsp;<input class='button_default' type='submit' name='go' value='Search' /></div></form>";
     return $x;
 }
 
@@ -741,4 +741,28 @@ function cvtpref($n) {
 	return round($n);
     else
 	return -1000001;
+}
+
+function maybeSearchPaperId($base, $me) {
+    global $Conf, $ConfSiteBase;
+    if (!$me->isPC)
+	return false;
+    foreach ($_REQUEST as $k => $v)
+	if ($k != "paperId" && $k != "mode" && $k != "forceShow" && $k != "go"
+	    && $k != "viewContact" && $k != "chairMode"
+	    && !isset($_COOKIE[$k]))
+	    return false;
+    if (defval($_REQUEST["paperId"], "") == ""
+	|| preg_match('/^\s*\d+\s*$/s', $_REQUEST["paperId"]))
+	return false;
+    require_once("search.inc");
+    $s = new PaperSearch(array("ti" => 1, "au" => 1, "ab" => 1), false, $me);
+    $pl = $s->paperList($_REQUEST["paperId"]);
+    if (count($pl) == 1) {
+	$_REQUEST["paperId"] = $pl[0];
+	return true;
+    } else {
+	$Conf->go("${ConfSiteBase}search.php?q=" . urlencode($_REQUEST["paperId"]));
+	exit;
+    }
 }

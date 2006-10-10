@@ -730,7 +730,7 @@ insert into PaperListColumns set paperListId=9, fieldId=37, col=6;
 
 insert into PaperList set paperListId=10, paperListName='matches',
 	shortDescription='Search matches', description='Search matches',
-	listHome='search.php?search=*',
+	listHome='search.php?q=*',
 	queryType='pc', sortCol=3, query='';
 insert into PaperListColumns set paperListId=10, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=10, fieldId=11, col=1;
@@ -738,7 +738,7 @@ insert into PaperListColumns set paperListId=10, fieldId=42, col=2;
 
 insert into PaperList set paperListId=11, paperListName='matchesAll',
 	shortDescription='Search matches', description='Search matches',
-	listHome='search.php?search=*&all=1',
+	listHome='search.php?q=*&all=1',
 	queryType='chair', sortCol=3, query='';
 insert into PaperListColumns set paperListId=11, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=11, fieldId=11, col=1;

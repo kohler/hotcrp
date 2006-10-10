@@ -30,9 +30,10 @@ function loadRows() {
     global $Conf, $Me, $ConfSiteBase, $prow, $crows, $crow;
     if (isset($_REQUEST["commentId"]))
 	$sel = array("commentId" => $_REQUEST["commentId"]);
-    else if (isset($_REQUEST["paperId"]))
+    else if (isset($_REQUEST["paperId"])) {
+	maybeSearchPaperId("comment.php", $Me);
 	$sel = array("paperId" => $_REQUEST["paperId"]);
-    else
+    } else
 	errorMsgExit("Select a paper ID above, or <a href='${ConfSiteBase}list.php'>list the papers you can view</a>.");
     if (!(($prow = $Conf->paperRow($sel, $Me->contactId, $whyNot))
 	  && $Me->canViewPaper($prow, $Conf, $whyNot)))

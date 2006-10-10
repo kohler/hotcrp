@@ -21,6 +21,7 @@ function errorMsgExit($msg) {
 
 
 // collect paper ID
+maybeSearchPaperId("contactauthors.php", $Me);
 $paperId = cvtint($_REQUEST["paperId"]);
 
 // grab paper row

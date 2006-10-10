@@ -35,8 +35,10 @@ if (!isset($_REQUEST["paperId"]))
     /* nada */;
 else if (trim($_REQUEST["paperId"]) == "new")
     $newPaper = true;
-else
+else {
+    maybeSearchPaperId("paper.php", $Me);
     $paperId = cvtint($_REQUEST["paperId"]);
+}
 
 
 // mode

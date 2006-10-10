@@ -119,7 +119,7 @@ if ($Me->isPC || $Me->amReviewer()) {
   <li><a href='list.php?list=submitted'>List submitted papers</a></li>\n";
 	if ($Me->amAssistant())
 	    $body .= "  <li><a href='list.php?list=all'>List all papers</a></li>\n";
-	$body .= "  <li><form method='get' action='search.php'><input class='textlite' type='text' size='20' name='search' value='' /> <input class='button_small' type='submit' name='go' value='Search' /></form>
+	$body .= "  <li><form method='get' action='search.php'><input class='textlite' type='text' size='20' name='q' value='' /> <input class='button_small' type='submit' name='go' value='Search' /></form>
     <span class='sep'></span><small><a href='search.php'>Advanced search</a></small></li>\n";
 	$body .= "</ul>\n\n";
     }

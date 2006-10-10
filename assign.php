@@ -51,6 +51,7 @@ if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->amAssistant(
     $forceShow = "&amp;forceShow=1";
 else
     $forceShow = "";
+maybeSearchPaperId("assign.php", $Me);
 
 
 confHeader();
