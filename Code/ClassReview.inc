@@ -354,7 +354,7 @@ class ReviewForm {
 	    else
 		$x .= "000000\n==-== Replace '000000' with the actual paper number.\n";
 	    if ($prow)
-		$x .= "==-== Title: $prow->title\n";
+		$x .= wordWrapIndent($prow->title, "==-== Title: ", 13) . "\n";
 	    $x .= "\n==-== Uploading this form will submit the review, making it available to
 ==-== authors and the PC, unless you delete the following line.
 ==+== Submit Review\n";
@@ -390,11 +390,10 @@ class ReviewForm {
 		$x .= " (PC only)";
 	    $x .= "\n";
 	    if (isset($this->options[$field]) && $reviewer) {
-		foreach ($this->options[$field] as $num => $value)
-		    if ($num == 1)
-			$x .= "==-== Choices: $num. $value\n";
-		    else
-			$x .= "==-==          $num. $value\n";
+		foreach ($this->options[$field] as $num => $value) {
+		    $y = ($num == 1 ? "==-== Choices: 1. " : "==-==          $num. ");
+		    $x .= wordWrapIndent($value, $y, strlen($y)) . "\n";
+		}
 		if ($numericMessage++ == 0)
 		    $x .= "==-== Enter the number of your choice here.\n";
 	    }
@@ -404,7 +403,7 @@ class ReviewForm {
 	    if ($req && isset($req[$field]))
 		$fval = rtrim($req[$field]);
 	    else if ($rrow != null)
-		$fval = rtrim($rrow->$field);
+		$fval = rtrim(str_replace("\r\n", "\n", $rrow->$field));
 	    if (isset($this->options[$field]) && $fval == "0")
 		$fval = "";
 	    else if (isset($this->options[$field]) && isset($this->options[$field][$fval]))
