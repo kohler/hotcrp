@@ -119,12 +119,12 @@ if (isset($_REQUEST['register']) && $OK) {
  }
 
 
-function crpformvalue($val) {
+function crpformvalue($val, $field = null) {
     global $Me;
     if (isset($_REQUEST[$val]))
 	echo htmlspecialchars($_REQUEST[$val]);
     else
-	echo htmlspecialchars($Me->$val);
+	echo htmlspecialchars($field ? $Me->$field : $Me->$val);
 }
 
 $_REQUEST["pc"] = $Me->isPC;
@@ -161,7 +161,7 @@ else if ($Me->contactId != $RealMe->contactId)
 echo "<table class='form'>
 <tr>
   <td class='caption'>Email</td>
-  <td class='entry' colspan='3'><input class='textlite' type='text' name='uemail' size='50' value=\"", crpformvalue('uemail'), "\" /></td>
+  <td class='entry' colspan='3'><input class='textlite' type='text' name='uemail' size='50' value=\"", crpformvalue('uemail', 'email'), "\" /></td>
 </tr>\n\n";
 
 echo "<tr>
@@ -174,9 +174,9 @@ echo "<tr>
 if (!$newProfile) {
     echo "<tr>
   <td class='caption'>Password</td>
-  <td class='entry'><input class='textlite' type='password' name='upassword' size='20' value=\"", crpformvalue('upassword'), "\" /></td>
+  <td class='entry'><input class='textlite' type='password' name='upassword' size='20' value=\"", crpformvalue('upassword', 'password'), "\" /></td>
   <td class='caption'>Repeat password</td>
-  <td class='entry'><input class='textlite' type='password' name='upassword2' size='20' value=\"", crpformvalue('upassword'), "\" /></td>
+  <td class='entry'><input class='textlite' type='password' name='upassword2' size='20' value=\"", crpformvalue('upassword', 'password'), "\" /></td>
 </tr>
 
 <tr>
