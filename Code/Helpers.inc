@@ -679,8 +679,11 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
 	    || (($mode == "comment" || $prow->numAuthorComments > 0)
 		&& $Me->canViewComment($prow, null, $Conf))
 	    || ($Me->isPC && $prow->timeSubmitted > 0
-		&& $Conf->timeReviewOpen())))
-	$x .= actionTab("Comments", "${ConfSiteBase}comment.php?paperId=$paperId", $mode == "comment");
+		&& $Conf->timeReviewOpen()))) {
+	$n = ($prow->author > 0 ? $prow->numAuthorComments : $prow->numComments);
+	$n = ($n ? " ($n)" : "");
+	$x .= actionTab("Comments$n", "${ConfSiteBase}comment.php?paperId=$paperId", $mode == "comment");
+    }
 
     if ($mode == "assign"
 	|| ($Me->amAssistant() && $prow && $prow->timeSubmitted > 0))
