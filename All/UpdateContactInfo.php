@@ -26,9 +26,9 @@ else if (isset($_REQUEST["new"])) {
 
 
 if (isset($_REQUEST["register"])) {
-    $needFields = array('email', 'firstName', 'lastName', 'affiliation');
+    $needFields = array('uemail', 'firstName', 'lastName', 'affiliation');
     if (!$newProfile)
-	$needFields[] = "password";
+	$needFields[] = "upassword";
     foreach ($needFields as $field)
 	if (!isset($_REQUEST[$field])) {
 	    $Conf->errorMsg("Required form fields missing.");
@@ -37,19 +37,19 @@ if (isset($_REQUEST["register"])) {
  }
 
 if (isset($_REQUEST['register']) && $OK) {
-    $_REQUEST["email"] = trim($_REQUEST["email"]);
-    if ($_REQUEST["password"] == "" && !$newProfile)
+    $_REQUEST["uemail"] = trim($_REQUEST["uemail"]);
+    if ($_REQUEST["upassword"] == "" && !$newProfile)
 	$UpdateError = "Blank passwords are not allowed.";
-    else if ($_REQUEST["password"] != $_REQUEST["password2"] && !$newProfile)
+    else if ($_REQUEST["upassword"] != $_REQUEST["upassword2"] && !$newProfile)
 	$UpdateError = "The two passwords you entered did not match.";
-    else if (trim($_REQUEST["password"]) != $_REQUEST["password"] && !$newProfile)
+    else if (trim($_REQUEST["upassword"]) != $_REQUEST["upassword"] && !$newProfile)
 	$UpdateError = "Passwords cannot begin or end with spaces.";
-    else if ($_REQUEST["email"] != $Me->email
-	     && $Conf->getContactId($_REQUEST["email"]))
-	$UpdateError = "Can't change your email address to " . htmlspecialchars($_REQUEST["email"]) . ", since an account is already registered with that email address.  You may want to <a href='MergeAccounts.php'>merge these accounts</a>.";
+    else if ($_REQUEST["uemail"] != $Me->email
+	     && $Conf->getContactId($_REQUEST["uemail"]))
+	$UpdateError = "Can't change your email address to " . htmlspecialchars($_REQUEST["uemail"]) . ", since an account is already registered with that email address.  You may want to <a href='MergeAccounts.php'>merge these accounts</a>.";
     else {
 	if ($newProfile) {
-	    $result = $Me->initialize($_REQUEST["email"], $Conf);
+	    $result = $Me->initialize($_REQUEST["uemail"], $Conf);
 	    if ($OK) {
 		$Me->sendAccountInfo($Conf, true);
 		$Conf->log("Created account", $Me);
@@ -74,14 +74,14 @@ if (isset($_REQUEST['register']) && $OK) {
 	
 	$Me->firstName = $_REQUEST["firstName"];
 	$Me->lastName = $_REQUEST["lastName"];
-	$Me->email = $_REQUEST["email"];
+	$Me->email = $_REQUEST["uemail"];
 	$Me->affiliation = $_REQUEST["affiliation"];
 	if (isset($_REQUEST["voicePhoneNumber"]))
 	    $Me->voicePhoneNumber = $_REQUEST["voicePhoneNumber"];
 	if (isset($_REQUEST["faxPhoneNumber"]))
 	    $Me->faxPhoneNumber = $_REQUEST["faxPhoneNumber"];
 	if (!$newProfile)
-	    $Me->password = $_REQUEST["password"];
+	    $Me->password = $_REQUEST["upassword"];
 	if (isset($_REQUEST['collaborators']))
 	    $Me->collaborators = $_REQUEST['collaborators'];
 
@@ -103,7 +103,7 @@ if (isset($_REQUEST['register']) && $OK) {
 
 	if ($OK) {
 	    // Refresh the results
-	    $Me->lookupByEmail($_REQUEST["email"], $Conf);
+	    $Me->lookupByEmail($_REQUEST["uemail"], $Conf);
 	    $Me->valid($Conf);
 	    if ($newProfile) {
 		$Conf->log("New account", $RealMe);
@@ -161,7 +161,7 @@ else if ($Me->contactId != $RealMe->contactId)
 echo "<table class='form'>
 <tr>
   <td class='caption'>Email</td>
-  <td class='entry' colspan='3'><input class='textlite' type='text' name='email' size='50' value=\"", crpformvalue('email'), "\" /></td>
+  <td class='entry' colspan='3'><input class='textlite' type='text' name='uemail' size='50' value=\"", crpformvalue('uemail'), "\" /></td>
 </tr>\n\n";
 
 echo "<tr>
@@ -174,9 +174,9 @@ echo "<tr>
 if (!$newProfile) {
     echo "<tr>
   <td class='caption'>Password</td>
-  <td class='entry'><input class='textlite' type='password' name='password' size='20' value=\"", crpformvalue('password'), "\" /></td>
+  <td class='entry'><input class='textlite' type='password' name='upassword' size='20' value=\"", crpformvalue('upassword'), "\" /></td>
   <td class='caption'>Repeat password</td>
-  <td class='entry'><input class='textlite' type='password' name='password2' size='20' value=\"", crpformvalue('password'), "\" /></td>
+  <td class='entry'><input class='textlite' type='password' name='upassword2' size='20' value=\"", crpformvalue('upassword'), "\" /></td>
 </tr>
 
 <tr>
