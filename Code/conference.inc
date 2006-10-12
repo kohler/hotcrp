@@ -786,6 +786,7 @@ class Conference {
 		PaperReview.reviewId,
 		PaperReview.reviewModified,
 		PaperReview.reviewSubmitted,
+		PaperReview.reviewOrdinal,
 		PaperReview.blind as reviewBlind,
 		PaperReview.contactId as reviewContactId";
 	if (isset($options['reviewerName']))
@@ -892,7 +893,7 @@ class Conference {
 	else {
 	    $pq .= "		order by Paper.paperId";
 	    if ($reviewerQuery)
-		$pq .= ", PaperReview.reviewId";
+		$pq .= ", PaperReview.reviewOrdinal";
 	}
 
 	//$this->infoMsg(htmlspecialchars($pq));

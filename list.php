@@ -4,10 +4,11 @@ require_once('Code/ClassPaperList.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
+$action = defval($_REQUEST["action"], "");
 
 
 // download selected papers
-if (isset($_REQUEST["download"])) {
+if ($action == "paper") {
     if (!isset($_REQUEST["papersel"]) || !is_array($_REQUEST["papersel"]))
 	$_REQUEST["papersel"] = array();
     $q = $Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"]));
@@ -30,13 +31,13 @@ if (isset($_REQUEST["download"])) {
 
 // download review form for selected papers
 // (or blank form if no papers selected)
-if (isset($_REQUEST["downloadReview"]) && !isset($_REQUEST["papersel"])) {
+if ($action == "revform" && !isset($_REQUEST["papersel"])) {
     $rf = reviewForm();
     $text = $rf->textFormHeader($Conf, false)
-	. $rf->textForm(null, null, $Conf, null, true) . "\n";
+	. $rf->textForm(null, null, $Conf, null, ReviewForm::REV_FORM) . "\n";
     downloadText($text, $Conf->downloadPrefix . "review.txt", "review form");
     exit;
-} else if (isset($_REQUEST["downloadReview"])) {
+} else if ($action == "revform") {
     $rf = reviewForm();
 
     if (!is_array($_REQUEST["papersel"]))
@@ -51,7 +52,7 @@ if (isset($_REQUEST["downloadReview"]) && !isset($_REQUEST["papersel"])) {
 		$errors[] = whyNotText($whyNot, "review") . "<br />";
 	    else {
 		$rfSuffix = ($text == "" ? "-$row->paperId" : "s");
-		$text .= $rf->textForm($row, $row, $Conf, null, true) . "\n";
+		$text .= $rf->textForm($row, $row, $Conf, null, ReviewForm::REV_FORM) . "\n";
 	    }
 	}
 
@@ -61,6 +62,43 @@ if (isset($_REQUEST["downloadReview"]) && !isset($_REQUEST["papersel"])) {
 	$text = $rf->textFormHeader($Conf, $rfSuffix == "s") . $text;
 	if (count($errors)) {
 	    $e = "==-== Some review forms are missing due to errors in your paper selection:\n";
+	    foreach ($errors as $ee)
+		$e .= "==-== " . preg_replace('|\s+<.*|', "", $ee) . "\n";
+	    $text = "$e\n$text";
+	}
+	downloadText($text, $Conf->downloadPrefix . "review$rfSuffix.txt", "review forms");
+	exit;
+    }
+}
+
+
+// download review form for selected papers
+// (or blank form if no papers selected)
+if ($action == "rev") {
+    $rf = reviewForm();
+
+    if (!is_array($_REQUEST["papersel"]))
+	$_REQUEST["papersel"] = array();
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"], "allReviews" => 1, "reviewerName" => 1)), "while selecting papers for review");
+
+    $text = '';
+    $errors = array();
+    if (!DB::isError($result))
+	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
+	    if (!$Me->canViewReview($row, null, $Conf, $whyNot))
+		$errors[] = whyNotText($whyNot, "view review") . "<br />";
+	    else if ($row->reviewSubmitted > 0) {
+		$rfSuffix = ($text == "" ? "-$row->paperId" : "s");
+		$text .= $rf->textForm($row, $row, $Conf, null, ReviewForm::REV_PC) . "\n";
+	    }
+	}
+
+    if ($text == "")
+	$Conf->errorMsg(join("", $errors) . "No papers selected.");
+    else {
+	$text = $rf->textFormHeader($Conf, $rfSuffix == "s", false) . $text;
+	if (count($errors)) {
+	    $e = "==-== Some reviews are missing due to errors in your paper selection:\n";
 	    foreach ($errors as $ee)
 		$e .= "==-== " . preg_replace('|\s+<.*|', "", $ee) . "\n";
 	    $text = "$e\n$text";
@@ -104,7 +142,7 @@ $Conf->header($title, "", actionBar(null, false, ""));
 if ($Me->amAssistant() && $listContact) {
     $contactId = defval($_REQUEST[$listContact], $Me->contactId);
 
-    echo "<form action='list.php' method='get' name='selectContact'>
+    echo "<form action='list.php' method='get' name='form'>
 <input type='hidden' name='list' value=\"", htmlspecialchars($list), "\" />\n";
     if (defval($_REQUEST["sort"]))
 	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />\n";
@@ -128,8 +166,9 @@ if ($Me->amAssistant() && $listContact) {
 echo "<hr class='smgap' />\n";
 
 if ($pl->anySelector)
-    echo "<form action='list.php' method='get'>
-<input type='hidden' name='list' value=\"", htmlspecialchars($list), "\" />\n";
+    echo "<form action='list.php' method='get' id='sel'>
+<input type='hidden' name='list' value=\"", htmlspecialchars($list), "\" />
+<input type='hidden' id='selaction' name='action' value='' />\n";
 
 echo $t;
 
@@ -137,12 +176,27 @@ echo "<hr class='smgap' />\n<small>", plural($pl->count, "paper"), " total</smal
 
 if ($pl->anySelector) {
     echo "<div class='plist_form'>
-<button type='button' id='plb_selall' onclick='checkPapersel(true)'>Select all</button>
-<button type='button' id='plb_selnone' onclick='checkPapersel(false)'>Deselect all</button>
-<button class='button_default' type='submit' id='plb_download' name='download'>Download selected papers</button>
-<button class='button_default' type='submit' id='plb_downloadReview' name='downloadReview'>Download selected review forms</button>
-</div>
-</form>\n";
+  <a href='javascript:void checkPapersel(true)'>Select all</a> &nbsp;|&nbsp;
+  <a href='javascript:void checkPapersel(false)'>Select none</a> &nbsp; &nbsp;
+  Download selected:
+  <a href='javascript:submitForm(\"sel\", \"paper\")'>Papers</a>
+  &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"revform\")'>Your reviews</a>\n";
+
+    if ($Me->amAssistant() || ($Me->isPC && $Conf->validTimeFor('PCMeetingView', 0)))
+	echo "  &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"rev\")'>All reviews (except for conflicts)</a>\n";
+
+    echo "</div>\n";
+
+    
+    // echo "<div class='plist_form'>
+    // <button type='button' id='plb_selall' onclick='checkPapersel(true)'>Select all</button>
+    // <button type='button' id='plb_selnone' onclick='checkPapersel(false)'>Deselect all</button> &nbsp; &nbsp;
+    // Download selected:
+    // <button class='button' type='submit' name='download'>Papers</button>
+    // <button class='button' type='submit' name='downloadForm'>Review forms</button>
+    // <button class='button' type='submit' name='downloadReview'>Reviews</button>
+    // </div>
+    // </form>\n";
 }
 
 $Conf->footer() ?>

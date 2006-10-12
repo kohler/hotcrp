@@ -142,7 +142,7 @@ function downloadForm($inline) {
     $text = $rf->textFormHeader($Conf, false, $Me->canViewAllReviewFields($prow, $Conf))
 	. $rf->textForm($prow, $editRrow, $Conf,
 			($prow->reviewType > 0 ? $_REQUEST : null),
-			$Me->canViewAllReviewFields($prow, $Conf)) . "\n";
+			$Me->canViewAllReviewFields($prow, $Conf) ? ReviewForm::REV_PC : ReviewForm::REV_AUTHOR) . "\n";
     downloadText($text, $Conf->downloadPrefix . "review-" . $prow->paperId . ".txt", "review form", $inline);
     exit;
 }

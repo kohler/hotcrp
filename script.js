@@ -122,3 +122,10 @@ function doRole(what) {
     if (pc != what && (ass.checked || chair.checked))
 	pc.checked = true;
 }
+
+function submitForm(formname, value) {
+    var form = document.getElementById(formname);
+    var which = document.getElementById(formname + "action");
+    which.value = value;
+    form.submit();
+}

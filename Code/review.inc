@@ -20,6 +20,10 @@ $reviewFields = array('paperSummary' => 0,
 
 class ReviewForm {
 
+    const REV_FORM = 1;
+    const REV_PC = 2;
+    const REV_AUTHOR = 3;
+    
     var $updatedWhen;
 
     var $fieldOrder;
@@ -336,13 +340,13 @@ class ReviewForm {
 	return $x;
     }
     
-    function textForm($prow, $rrow, $conf, $req = null, $reviewer = true) {
+    function textForm($prow, $rrow, $conf, $req = null, $revtype = self::REV_PC) {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
 
 	$x = "==+== =========================================================================\n";
 
-	if ($reviewer || !$prow) {
+	if ($revtype == self::REV_FORM) {
 	    $x .= "==+== Begin Review";
 	    if ($req && isset($req['reviewOrdinal']))
 		$x .= " #" . $prow->paperId . unparseReviewOrdinal($req['reviewOrdinal']);
@@ -374,8 +378,13 @@ class ReviewForm {
 		$x .= unparseReviewOrdinal($rrow->reviewOrdinal);
 	    $x .= "\n";
 	    if ($conf->blindReview() > 1
-		|| ($conf->blindReview() == 1 && !$rrow->blind))
-		$x .= "==-== by " . contactText($rrow) . "\n";
+		|| ($conf->blindReview() == 1 && !$rrow->blind)
+		|| $revtype == ReviewForm::REV_PC) {
+		if (isset($rrow->reviewFirstName))
+		    $x .= "==-== by " . contactText($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail) . "\n";
+		else
+		    $x .= "==-== by " . contactText($rrow) . "\n";
+	    }
 	    if ($rrow->reviewModified)
 		$x .= "==-== Modified " . $conf->printableTime($rrow->reviewModified) . "\n";
 	}
@@ -383,22 +392,9 @@ class ReviewForm {
 	$i = 0;
 	$numericMessage = 0;
 	foreach ($this->fieldOrder as $field) {
-	    if (!$reviewer && !$this->authorView[$field])
+	    if ($revtype == self::REV_AUTHOR && !$this->authorView[$field])
 		continue;
-	    $x .= "\n==+== " . chr(65 + $i++) . ". " . $this->shortName[$field];
-	    if (!$this->authorView[$field])
-		$x .= " (PC only)";
-	    $x .= "\n";
-	    if (isset($this->options[$field]) && $reviewer) {
-		foreach ($this->options[$field] as $num => $value) {
-		    $y = ($num == 1 ? "==-== Choices: 1. " : "==-==          $num. ");
-		    $x .= wordWrapIndent($value, $y, strlen($y)) . "\n";
-		}
-		if ($numericMessage++ == 0)
-		    $x .= "==-== Enter the number of your choice here.\n";
-	    }
-	    $x .= "\n";
-	    
+
 	    $fval = "";
 	    if ($req && isset($req[$field]))
 		$fval = rtrim($req[$field]);
@@ -408,9 +404,22 @@ class ReviewForm {
 		$fval = "";
 	    else if (isset($this->options[$field]) && isset($this->options[$field][$fval]))
 		$fval = "$fval. " . $this->options[$field][$fval];
-	    $x .= preg_replace("/^==\\+==/m", "\\==+==", $fval);
+	    if ($revtype != self::REV_FORM && $fval == "")
+		continue;
 
+	    $x .= "\n==+== " . chr(65 + $i++) . ". " . $this->shortName[$field];
+	    if (!$this->authorView[$field])
+		$x .= " (PC only)";
 	    $x .= "\n";
+	    if (isset($this->options[$field]) && $revtype == self::REV_FORM) {
+		foreach ($this->options[$field] as $num => $value) {
+		    $y = ($num == 1 ? "==-== Choices: 1. " : "==-==          $num. ");
+		    $x .= wordWrapIndent($value, $y, strlen($y)) . "\n";
+		}
+		if ($numericMessage++ == 0)
+		    $x .= "==-== Enter the number of your choice here.\n";
+	    }
+	    $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
 	}
 	return $x . "\n==+== End Review\n";
     }
