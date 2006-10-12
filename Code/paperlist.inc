@@ -259,7 +259,8 @@ class PaperList {
 		$a2 = "</a>";
 	    } else
 		$a1 = $a2 = "";
-	    return "$a1<img src='${ConfSiteBase}images/ass" . $row->reviewType . ".png</img>$a2";
+	    $which = ($row->reviewType === null ? 0 : $row->reviewType);
+	    return "$a1<img src='${ConfSiteBase}images/ass$which.png' />$a2";
 	case self::FIELD_REVIEWER_STATUS:
 	    return reviewStatus($row, 0);
 	case self::FIELD_REVIEWS_STATUS:
