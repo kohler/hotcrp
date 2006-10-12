@@ -180,10 +180,10 @@ if ($pl->anySelector) {
   <a href='javascript:void checkPapersel(false)'>Select none</a> &nbsp; &nbsp;
   Download selected:
   <a href='javascript:submitForm(\"sel\", \"paper\")'>Papers</a>
-  &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"revform\")'>Your reviews</a>\n";
+  &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"revform\")'>Your review forms</a>\n";
 
     if ($Me->amAssistant() || ($Me->isPC && $Conf->validTimeFor('PCMeetingView', 0)))
-	echo "  &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"rev\")'>All reviews (except for conflicts)</a>\n";
+	echo "  &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"rev\")'>Reviews (no conflicts)</a>\n";
 
     echo "</div>\n";
 
