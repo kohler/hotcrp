@@ -1,0 +1,94 @@
++ reviewer cannot see reviews until has submitted their own (option)
+- can view any review for a paper you're associated with (or PC)
+- ViewPaper.php handles withdrawn reviews correctly
++ paper comments
+- PaperConflict has unique rows
+- nag late reviewers
+- uploading request forms for others?
++ cannot view your own reviews if haven't finished others
+- users can say whether reviewers can view other reviews? 
+- show authors in paper lists
+- pretty printing reviews
+- secondary reviews: can view reviews before completing your own
+- add more extra textual fields
++ withdrawing a paper late sends mail to the chairs and reviewers
++ [PDF]
+- "Text version of all reviews"
++ delete comments
++ authors don't get add-comment form
++ authors can't see not-for-authors comments
++ reviewers can't see not-for-reviewers comments
+- "No comments" if no comments for a paper
+- send mail to authors when a new comment is received
+- send mail to authors when a review was submitted during response period
+- error messages in comment.php
+- error messages in paper.php appear in the right place
+- review.php: conflict error message
+- error messages in a table
+- grading: secondary can grade
+- do grades at all????
++ when a review form is changed to have fewer options, remove the nonmatches
+- check for correct use of $Conf->footer()
+
+
++ Novelty, Discussability, Invite reject author to workshop
++ "You are an author/You have a conflict" only in view mode
++ Edit mode: status not labeled, no download link
++ Reviews mode: combine status & download link
++ View mode: combine status & download link
++ Reviews view on home page
++ ranking papers for review
++ delete paper
++ entering reviews
++ assigning papers for review
++ nonexistent reviews don't show up in reviews view
++ enter topics for HotNets
++ mv OfflineReviews.php offline.php
++ mv Author/PaperContacts.php papercontacts.php
++ program chair is member of program committee
++ Review type:/Review status: for just-started reviews
++ Shorter abstract with JavaScript
++ Style/base.css => style.css
++ All/ListPapers.php => list.php
++ review uploading can submit
++ if a paperlist column is all empty, elide the heading
++ PC Chair can edit authors, abstract even for submitted papers
++ download withdrawn paper from edit screen
++ log submission, withdrawal events
+x move other paper lists into list.php (First, reviewprefs.php)
++ smaller banner
++ assigned pc reviews is a table on reqreview
++ get rid of "You" in review table
++ pulldown: /????? gray out current reviewers
++ removing a PC preference before reviewing time: no email
++ home page tab-based revamp
++ PC last login date
++ review requests
++ checkbox dates are really checkboxes
++ list all view: can download withdrawn papers
++ mark PC-only review fields
++ blind option on review
++ "Text version" shows in browser
++ true review numbering
++ preferred reviews
++ show date in reviewpaper screen
+x removing a PC member from the reviewers removes their review?
+
+
+     $Conf->infoMsg("Enter your review of this paper below. "
+		    . "Note that you will be automatically logged "
+		    . " out if you are idle for more than "
+		    . round(ini_get("session.gc_maxlifetime")/3600) 
+		    . " hours, so you may want to save your review "
+		    . "periodically (by marking \"don't finalize\" "
+		    . " and hitting \"Submit your paper review\") "
+		    . " and then return to edit them later. "
+		    );
+     $Conf->infoMsg( '<P>Please see <a href="../Reviewer/ratings.html" ' .
+                     'target="_blank"> rating description information</a> ' .
+                     'to decide your review scores.</P><P>' .
+                     'The tone of your review is important. When you write ' .
+		     'an anonymous review, you are acting as a ' .
+		     'representative of our field. It is <em> always </em> ' .
+		     'possible to be constructive.</P>'
+		    );
