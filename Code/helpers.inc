@@ -458,7 +458,11 @@ function tabLength($text) {
 }
 
 function htmlWrapText($text) {
-    return nl2br($text);//"<pre>$text</pre>";
+    while (strpos($text, "\t"))
+	$text = preg_replace("/^(.*?)\t/me", "'\$1' . substr('        ', 0, 8 - (strlen(\$1) % 8))", $text);
+    $text = preg_replace("/^( +)/me", "str_repeat('&nbsp;', strlen('\$1'))", $text);
+    $text = preg_replace("/\r\n?/", "\n", $text);
+    return str_replace("\n", "<br />\n", $text);
     $lines = explode("\n", $text);
     // Rules: Indented line that starts with "-", "*", or "#[.]" starts
     //   indented text.
