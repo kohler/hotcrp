@@ -643,6 +643,7 @@ insert into PaperFields set fieldId=41, fieldName='reviewsStatus', description='
 insert into PaperFields set fieldId=42, fieldName='matches', description='Matches', display=0;
 insert into PaperFields set fieldId=43, fieldName='desirability', description='Desirability';
 insert into PaperFields set fieldId=44, fieldName='allPreferences', description='Reviewer preferences', sortable=0, display=2;
+insert into PaperFields set fieldId=45, fieldName='reviewerTypeIcon', description='Reviewer type';
 
 insert into PaperList set paperListId=1, paperListName='author',
 	shortDescription='Authored', description='Authored papers',
@@ -661,8 +662,9 @@ insert into PaperListColumns set paperListId=2, fieldId=31, col=0;
 insert into PaperListColumns set paperListId=2, fieldId=1, col=1;
 insert into PaperListColumns set paperListId=2, fieldId=11, col=2;
 insert into PaperListColumns set paperListId=2, fieldId=29, col=3;
-insert into PaperListColumns set paperListId=2, fieldId=41, col=4;
-insert into PaperListColumns set paperListId=2, fieldId=33, col=5;
+insert into PaperListColumns set paperListId=2, fieldId=45, col=4;
+insert into PaperListColumns set paperListId=2, fieldId=41, col=5;
+insert into PaperListColumns set paperListId=2, fieldId=33, col=6;
 
 insert into PaperList set paperListId=3, paperListName='all',
 	shortDescription='All', description='All papers', 

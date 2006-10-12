@@ -27,6 +27,7 @@ class PaperList {
     const FIELD_MATCHES = 42;
     const FIELD_DESIRABILITY = 43;
     const FIELD_ALL_PREFERENCES = 44;
+    const FIELD_REVIEWER_TYPE_ICON = 45;
 
     var $showHeader;
     var $sortField;
@@ -107,6 +108,7 @@ class PaperList {
 	case self::FIELD_STATUS_SHORT:
 	    return "order by Paper.outcome $down, (Paper.timeWithdrawn > 0) $up, (Paper.timeSubmitted > 0) $down, (paperStorageId > 1) $down, Paper.paperId $up";
 	case self::FIELD_REVIEWER_TYPE:
+	case self::FIELD_REVIEWER_TYPE_ICON:
 	    return "order by PaperReview.reviewType $down";
 	case self::FIELD_REVIEWER_NAME:
 	    return "order by ReviewerContactInfo.lastName $up, ReviewerContactInfo.firstName $up, ReviewerContactInfo.email $up";
@@ -144,6 +146,8 @@ class PaperList {
 	    return "";
 	case self::FIELD_REVIEWER_TYPE:
 	    return "Review";
+	case self::FIELD_REVIEWER_TYPE_ICON:
+	    return "Rev";
 	case self::FIELD_REVIEWER_STATUS:
 	    return "Reviewer status";
 	case self::FIELD_REVIEWS_STATUS:
@@ -247,6 +251,15 @@ class PaperList {
 		return "<span class='rtype rtype_con'>Conflict</span>";
 	    else
 		return "";
+	case self::FIELD_REVIEWER_TYPE_ICON:
+	    if ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted))
+		$this->needSubmitReview++;
+	    if ($row->reviewId) {
+		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId\">";
+		$a2 = "</a>";
+	    } else
+		$a1 = $a2 = "";
+	    return "$a1<img src='${ConfSiteBase}images/ass" . $row->reviewType . ".png</img>$a2";
 	case self::FIELD_REVIEWER_STATUS:
 	    return reviewStatus($row, 0);
 	case self::FIELD_REVIEWS_STATUS:
