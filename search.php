@@ -93,6 +93,7 @@ if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) != "") {
 
 	    if ($Me->amAssistant())
 		echo "  &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"tag\")'>Tag</a>:&nbsp;<input class='textlite' type='text' name='tag' value='' size='10' />\n";
+	    echo "</div></form>\n";
 	}
     }
 }
