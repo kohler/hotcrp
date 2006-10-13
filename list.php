@@ -72,13 +72,9 @@ if ($action == "revform" && !isset($_REQUEST["papersel"])) {
 }
 
 
-// download review form for selected papers
-// (or blank form if no papers selected)
-if ($action == "rev") {
+// download all reviews for selected papers
+if ($action == "rev" && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
     $rf = reviewForm();
-
-    if (!is_array($_REQUEST["papersel"]))
-	$_REQUEST["papersel"] = array();
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"], "allReviews" => 1, "reviewerName" => 1)), "while selecting papers for review");
 
     $text = '';
@@ -106,6 +102,24 @@ if ($action == "rev") {
 	downloadText($text, $Conf->downloadPrefix . "review$rfSuffix.txt", "review forms");
 	exit;
     }
+}
+
+
+// download all reviews for selected papers
+if ($action == "tag" && $Me->amAssistant() && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"]) && isset($_REQUEST["tag"])) {
+    $while = "while tagging papers";
+    $Conf->qe("lock tables PaperTag write", $while);
+    $idq = "";
+    foreach ($_REQUEST["papersel"] as $id)
+	if (($id = cvtint($id)) > 0)
+	    $idq .= " or paperId=$id";
+    $idq = substr($idq, 4);
+    $tag = sqlq($_REQUEST["tag"]);
+    $Conf->qe("delete from PaperTag where tag='$tag' and ($idq)", $while);
+    foreach ($_REQUEST["papersel"] as $id)
+	if (($id = cvtint($id)) > 0)
+	    $Conf->qe("insert into PaperTag (paperId, tag) values ($id, '$tag')", $while);
+    $Conf->qe("unlock tables", $while);
 }
 
 
@@ -184,6 +198,9 @@ if ($pl->anySelector) {
 
     if ($Me->amAssistant() || ($Me->isPC && $Conf->validTimeFor('PCMeetingView', 0)))
 	echo "  &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"rev\")'>Reviews (no conflicts)</a>\n";
+
+    if ($Me->amAssistant())
+	echo "  &nbsp;|&nbsp; <input class='textlite' type='text' name='tag' value='' />&nbsp;<a href='javascript:submitForm(\"sel\", \"tag\")'>Tag</a>\n";
 
     echo "</div>\n";
 

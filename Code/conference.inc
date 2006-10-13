@@ -769,6 +769,7 @@ class Conference {
 	//   "allReviews"	All reviews (multiple rows per paper)
 	//   "reviewerName"	Include reviewer names
 	//   "joinTable"	A table with paperId columns to join
+	//   "tags"		Include paperTags
 	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
 
 	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']) || isset($options['myReviewsOpt']);
@@ -803,6 +804,9 @@ class Conference {
 	    $pq .= ",
 		group_concat(PaperTopic.topicId) as topicIds,
 		group_concat(TopicInterest.interest) as topicInterest";
+	if (isset($options['tags']))
+	    $pq .= ",
+		group_concat(PaperTag.tag) as paperTags";
 	if (isset($options['topicInterestScore']))
 	    $pq .= ",
 		sum(if(interest=2,2,interest-1)) as topicInterestScore";
@@ -852,6 +856,9 @@ class Conference {
 	if (isset($options['topics']) || isset($options['topicInterestScore']))
 	    $pq .= "		left join PaperTopic on (PaperTopic.paperId=Paper.paperId)
 		left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$contactId)\n";
+
+	if (isset($options['tags']))
+	    $pq .= "		left join PaperTag on (PaperTag.paperId=Paper.paperId)\n";
 	
 	if (defval($options['reviewerPreference']))
 	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$contactId)\n";

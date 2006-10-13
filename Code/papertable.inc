@@ -298,6 +298,11 @@ Zhang, Ping Yen (INRIA)</pre>";
 	}
     }
 
+    function echoTags($prow) {
+	if (isset($prow->paperTags) && $prow->paperTags)
+	    echo "<tr class='pt_tags'>\n  <td clas='caption'>Tags</td>\n  <td class='entry'>", htmlspecialchars($prow->paperTags), "</td>\n</tr>\n\n";
+    }
+
     function echoOutcomeSelector($prow) {
 	echo "<tr class='pt_outcome'>
   <td class='caption'>Outcome</td>

@@ -286,6 +286,7 @@ if ($canViewAuthors || $Me->amAssistant()) {
     $paperTable->echoCollaborators($prow);
 }
 $paperTable->echoTopics($prow);
+$paperTable->echoTags($prow);
 
 
 // PC assignments

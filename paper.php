@@ -516,6 +516,11 @@ if ($newPaper || $canViewAuthors || $Me->amAssistant())
 $paperTable->echoTopics($prow);
 
 
+// Tags
+if ($Me->isPC)
+    $paperTable->echoTags($prow);
+
+
 // Review preference
 if ($mode != "edit" && $mainPreferences) {
     $x = (isset($prow->reviewerPreference) ? htmlspecialchars($prow->reviewerPreference) : "0");

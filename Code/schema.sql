@@ -197,6 +197,22 @@ CREATE TABLE PaperComment (
 
 
 #
+# Table structure for table 'PaperTag'
+#
+
+drop table if exists PaperTag;
+CREATE TABLE PaperTag (
+  paperId int(11) NOT NULL,
+  tag varchar(40) NOT NULL,
+  UNIQUE KEY paperTag (paperId,tag)
+) TYPE=MyISAM;
+
+#
+# Dumping data for table 'PaperTag'
+#
+
+
+#
 # Table structure for table 'PaperConflict'
 #
 
