@@ -66,9 +66,34 @@ if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) != "") {
 	$pl = new PaperList(true, "list");
 	$_SESSION["whichList"] = "list";
 	$_SESSION["matchPreg"] = "/(" . $Search->matchPreg . ")/i";
+	$listname = ($Search->allPapers ? "matchesAll" : "matches");
+	$t = $pl->text($listname, $Me);
+
 	echo "<div class='maintabsep'></div>\n\n";
-	echo $pl->text(($Search->allPapers ? "matchesAll" : "matches"), $Me);
+
+	if ($pl->anySelector)
+	    echo "<form action='list.php' method='get' id='sel'>
+<input type='hidden' name='list' value=\"", htmlspecialchars($listname), "\" />
+<input type='hidden' id='selaction' name='action' value='' />\n";
+	
+	echo $t;
+	
 	echo "<hr class='smgap' />\n<small>", plural($pl->count, "paper"), " total</small>\n\n";
+	
+	if ($pl->anySelector) {
+	    echo "<div class='plist_form'>
+  <a href='javascript:void checkPapersel(true)'>Select all</a> &nbsp;|&nbsp;
+  <a href='javascript:void checkPapersel(false)'>Select none</a> &nbsp; &nbsp;
+  Download selected:
+  <a href='javascript:submitForm(\"sel\", \"paper\")'>Papers</a>
+  &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"revform\")'>Your review forms</a>\n";
+
+	    if ($Me->amAssistant() || ($Me->isPC && $Conf->validTimeFor('PCMeetingView', 0)))
+		echo "  &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"rev\")'>Reviews (no conflicts)</a>\n";
+
+	    if ($Me->amAssistant())
+		echo "  &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"tag\")'>Tag</a>:&nbsp;<input class='textlite' type='text' name='tag' value='' size='10' />\n";
+	}
     }
 }
 
