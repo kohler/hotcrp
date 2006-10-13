@@ -116,9 +116,11 @@ if ($action == "tag" && $Me->amAssistant() && isset($_REQUEST["papersel"]) && is
     $idq = substr($idq, 4);
     $tag = sqlq($_REQUEST["tag"]);
     $Conf->qe("delete from PaperTag where tag='$tag' and ($idq)", $while);
+    $q = "insert into PaperTag (paperId, tag) values ";
     foreach ($_REQUEST["papersel"] as $id)
 	if (($id = cvtint($id)) > 0)
-	    $Conf->qe("insert into PaperTag (paperId, tag) values ($id, '$tag')", $while);
+	    $q .= "($id, '$tag'), ";
+    $Conf->qe(substr($q, 0, strlen($q) - 2), $while);
     $Conf->qe("unlock tables", $while);
 }
 
