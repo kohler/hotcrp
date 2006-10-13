@@ -64,7 +64,7 @@ $prow = null;
 function getProw($contactId) {
     global $prow, $paperId, $Conf, $Me, $mainPreferences;
     if (!($prow = $Conf->paperRow(array('paperId' => $paperId,
-					'topics' => 1,
+					'topics' => 1, 'tags' => 1,
 					'reviewerPreference' => $mainPreferences),
 				  $contactId, $whyNot))
 	|| !$Me->canViewPaper($prow, $Conf, $whyNot))
