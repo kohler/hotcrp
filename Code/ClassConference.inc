@@ -1615,7 +1615,7 @@ class Conference {
 	$text = "";
 	while (($row = $result->fetchRow(DB_FETCHMODE_ASSOC)))
 	    $text .= $row[$what] . " ";
-	return textValuesGraph($text, $max, $style);
+	return $this->textValuesGraph($text, $max, $style);
     }
 
     function graphValues($query, $what, $max) {
