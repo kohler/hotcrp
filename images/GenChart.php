@@ -42,8 +42,10 @@ $pic=ImageCreate($picWidth+1,$picHeight+1);
 $cWhite=ImageColorAllocate($pic,255,255,255);
 $cBlack=ImageColorAllocate($pic,0,0,0);
 
-ImageFilledRectangle($pic,0,0,$picWidth+1,$picHeight+1,$cBlack);
-ImageFilledRectangle($pic,1,1,$picWidth-1,$picHeight-1,$cWhite);
+if ($s == 0) {
+    ImageFilledRectangle($pic,0,0,$picWidth+1,$picHeight+1,$cBlack);
+    ImageFilledRectangle($pic,1,1,$picWidth-1,$picHeight-1,$cWhite);
+}
 
 for ($value = $valMin; $value < $valMax; $value++) {
   //
