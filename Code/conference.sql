@@ -682,6 +682,7 @@ insert into PaperListColumns set paperListId=2, fieldId=29, col=3;
 insert into PaperListColumns set paperListId=2, fieldId=45, col=4;
 insert into PaperListColumns set paperListId=2, fieldId=41, col=5;
 insert into PaperListColumns set paperListId=2, fieldId=33, col=6;
+insert into PaperListColumns set paperListId=2, fieldId=46, col=7;
 
 insert into PaperList set paperListId=3, paperListName='all',
 	shortDescription='All', description='All papers', 
@@ -734,6 +735,7 @@ insert into PaperListColumns set paperListId=8, fieldId=35, col=5;
 insert into PaperListColumns set paperListId=8, fieldId=37, col=6;
 insert into PaperListColumns set paperListId=8, fieldId=38, col=7;
 insert into PaperListColumns set paperListId=8, fieldId=44, col=8;
+insert into PaperListColumns set paperListId=8, fieldId=46, col=9;
 
 insert into PaperList set paperListId=9, paperListName='editReviewPreference',
 	shortDescription='Review preferences', description='Edit reviewer preferences',
@@ -754,7 +756,8 @@ insert into PaperList set paperListId=10, paperListName='matches',
 insert into PaperListColumns set paperListId=10, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=10, fieldId=11, col=1;
 insert into PaperListColumns set paperListId=10, fieldId=45, col=2;
-insert into PaperListColumns set paperListId=10, fieldId=42, col=3;
+insert into PaperListColumns set paperListId=10, fieldId=46, col=3;
+insert into PaperListColumns set paperListId=10, fieldId=42, col=4;
 
 insert into PaperList set paperListId=11, paperListName='matchesAll',
 	shortDescription='Search matches', description='Search matches',
@@ -764,7 +767,8 @@ insert into PaperListColumns set paperListId=11, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=11, fieldId=11, col=1;
 insert into PaperListColumns set paperListId=11, fieldId=27, col=2;
 insert into PaperListColumns set paperListId=11, fieldId=45, col=3;
-insert into PaperListColumns set paperListId=11, fieldId=42, col=4;
+insert into PaperListColumns set paperListId=11, fieldId=46, col=4;
+insert into PaperListColumns set paperListId=11, fieldId=42, col=5;
 
 delete from ImportantDates where name='paperListUpdate';
 insert into ImportantDates set name='paperListUpdate', start=current_timestamp;
