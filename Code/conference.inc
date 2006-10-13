@@ -1572,7 +1572,7 @@ class Conference {
 	$merit = ($max ? array_fill(1, $max, 0) : array());
 
 	$sum = $n = $sumsq = 0;
-	foreach (split($text) as $i)
+	foreach (preg_split('/\s+/', $text) as $i)
 	    if (($i = cvtint($i)) >= 0) {
 		if (!isset($merit[$i]))
 		    $merit[$i] = 1;
@@ -1615,7 +1615,7 @@ class Conference {
 	$text = "";
 	while (($row = $result->fetchRow(DB_FETCHMODE_ASSOC)))
 	    $text .= $row[$what] . " ";
-	return textValuesGraph($text, $max, $style);
+	return $this->textValuesGraph($text, $max, $style);
     }
 
     function graphValues($query, $what, $max) {

@@ -763,7 +763,7 @@ insert into PaperList set paperListId=11, paperListName='matchesAll',
 insert into PaperListColumns set paperListId=11, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=11, fieldId=11, col=1;
 insert into PaperListColumns set paperListId=11, fieldId=27, col=2;
-insert into PaperListColumns set paperListId=10, fieldId=45, col=3;
+insert into PaperListColumns set paperListId=11, fieldId=45, col=3;
 insert into PaperListColumns set paperListId=11, fieldId=42, col=4;
 
 delete from ImportantDates where name='paperListUpdate';

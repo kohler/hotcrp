@@ -4,14 +4,15 @@
 // Arguments are passed in as v
 //
 
-$blockHeight = 8;
-$blockWidth = 8; // Was 16
-
-$blockSkip = 2; // along vertical
-$blockPad = 4; // pad from left/right side
-
 if (!isset($_REQUEST["v"]))
     exit;
+
+$s = (isset($_REQUEST["s"]) ? $_REQUEST["s"] : 0);
+
+$blockHeight = ($s == 1 ? 4 : 8);
+$blockWidth = ($s == 1 ? 5 : 8); // Was 16
+$blockSkip = 2; // along vertical
+$blockPad = ($s == 1 ? 2 : 4); // pad from left/right side
 
 if (isset($_REQUEST["first"]) && is_numeric($_REQUEST["first"]))
     $valMin = $valMax = intval($_REQUEST["first"]);
@@ -74,8 +75,8 @@ for ($value = $valMin; $value < $valMax; $value++) {
 
 }
 
-ImageStringUp($pic, 2, 0, 40, "Bad", $cBlack);
-ImageStringUp($pic, 2, $picWidth-$textWidth, 40, "Good", $cBlack);
+ImageStringUp($pic, 2, 0, 40, ($s == 1 ? "-" : "Bad"), $cBlack);
+ImageStringUp($pic, 2, $picWidth-$textWidth, 40, ($s == 1 ? "+" : "Good"), $cBlack);
 
 Header("Content-type: image/png");
 Header("Cache-Control: public");

@@ -28,6 +28,7 @@ class PaperList {
     const FIELD_DESIRABILITY = 43;
     const FIELD_ALL_PREFERENCES = 44;
     const FIELD_REVIEWER_TYPE_ICON = 45;
+    const FIELD_OPT_MERIT_ICON = 46;
 
     var $showHeader;
     var $sortField;
@@ -41,6 +42,8 @@ class PaperList {
     var $description;
     var $sessionVar;
     var $contact;
+    var $scoresOk;
+    var $meritMax;
     
     function PaperList($sortable = true, $sessionVar = null) {
 	$this->showHeader = 1;
@@ -86,9 +89,17 @@ class PaperList {
 	case self::FIELD_ALL_PREFERENCES:
 	    $queryOptions['allReviewerPreference'] = 1;
 	    break;
+	case self::FIELD_OPT_MERIT_ICON:
+	    if (!$this->scoresOk)
+		return false;
+	    $queryOptions['overallMeritScores'] = 1;
+	    $rf = reviewForm();
+	    $this->meritMax = $rf->maxNumericScore('overAllMerit');
+	    break;
 	}
 	if ($this->sortField == $fieldId && ($order = $this->sort($fieldId)))
 	    $queryOptions['order'] = $order;
+	return true;
     }
 
     function sort($fieldId) {
@@ -123,6 +134,8 @@ class PaperList {
 	    return "order by reviewerPreference $down";
 	case self::FIELD_DESIRABILITY:
 	    return "order by desirability $down";
+	case self::FIELD_OPT_MERIT_ICON:
+	    return "order by overallMeritAvg $down";
 	default:
 	    return null;
 	}
@@ -176,6 +189,8 @@ class PaperList {
 	    return "Desirability";
 	case self::FIELD_ALL_PREFERENCES:
 	    return "Preferences";
+	case self::FIELD_OPT_MERIT_ICON:
+	    return "Merit!";
 	default:
 	    return "&lt;$fieldId&gt;?";
 	}
@@ -323,6 +338,8 @@ class PaperList {
 		    $x .= " [" . htmlspecialchars($what[3]) . "]";
 		}
 	    return $x;
+	case self::FIELD_OPT_MERIT_ICON:
+	    return $Conf->textValuesGraph($row->overallMeritScores, $this->meritMax, 1);
 	default:
 	    return "";
 	}
@@ -387,6 +404,7 @@ class PaperList {
 	}
 	if (!$me->amAssistant() || $contactId < 0)
 	    $contactId = $me->contactId;
+	$this->scoresOk = $me->amAssistant() || ($me->isPC && $Conf->validTimeFor("PCGradePapers", 0));
 
 	// initialize query
 	$queryOptions = array();
@@ -413,10 +431,11 @@ class PaperList {
 	$fieldId = array();
 	$ncol = 0;
 	while ($row = $result->fetchRow()) {
+	    if ($this->selector($row[0], $queryOptions) === false)
+		continue;
 	    $fieldId[] = array($row[0], htmlspecialchars($row[1]), $row[2]);
 	    if ($row[2] == 1)
 		$ncol++;
-	    $this->selector($row[0], $queryOptions);
 	}
 
 	// prepare review query
