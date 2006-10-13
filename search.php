@@ -66,6 +66,7 @@ if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) != "") {
 	$_SESSION["matchPreg"] = "/(" . $Search->matchPreg . ")/i";
 	echo "<div class='maintabsep'></div>\n\n";
 	echo $pl->text(($Search->allPapers ? "matchesAll" : "matches"), $Me);
+	echo "<hr class='smgap' />\n<small>", plural($pl->count, "paper"), " total</small>\n\n";
     }
 }
 
