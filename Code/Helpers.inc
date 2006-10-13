@@ -759,7 +759,7 @@ function maybeSearchPaperId($base, $me) {
 	    && $k != "viewContact" && $k != "chairMode"
 	    && !isset($_COOKIE[$k]))
 	    return false;
-    if (defval($_REQUEST["paperId"], "") == ""
+    if (!isset($_REQUEST["paperId"])
 	|| preg_match('/^\s*\d+\s*$/s', $_REQUEST["paperId"]))
 	return false;
     require_once("search.inc");

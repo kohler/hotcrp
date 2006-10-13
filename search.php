@@ -12,6 +12,8 @@ $Conf->header("Search", 'search', actionBar(null, false, ""));
 
 
 $Search = new PaperSearch($_REQUEST, defval($_REQUEST["all"], 0) != 0, $Me);
+if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "")
+    unset($_REQUEST["q"]);
 
 echo "<form method='get' action='search.php'>
 <table class='simple'>
