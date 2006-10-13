@@ -865,7 +865,7 @@ class Conference {
 	    $pq .= "		left join (select paperId, group_concat(tag) as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)\n";
 
 	if (isset($options['overallMeritScores']))
-	    $pq .= "		left join (select paperId, group_concat(overallMerit) as overallMeritScores, average(overallMerit) as overallMeritAvg from PaperReview group by paperId) as PaperScores on (PaperScores.paperId=Paper.paperId)\n";
+	    $pq .= "		left join (select paperId, group_concat(overallMerit) as overallMeritScores, avg(overallMerit) as overallMeritAvg from PaperReview group by paperId) as PaperScores on (PaperScores.paperId=Paper.paperId)\n";
 	
 	if (defval($options['reviewerPreference']))
 	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$contactId)\n";
