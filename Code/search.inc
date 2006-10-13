@@ -41,7 +41,7 @@ class PaperSearch {
 	    foreach (preg_split("/\\s+/", $str) as $word)
 		if ($word != "")
 		    $q .= "paperId=$word or ";
-	    return substr($q, 0, strlen($q) - 4);
+	    return array(substr($q, 0, strlen($q) - 4), "");
 	}
 	
 	$re = "";
