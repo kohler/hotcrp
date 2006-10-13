@@ -298,9 +298,20 @@ Zhang, Ping Yen (INRIA)</pre>";
 	}
     }
 
-    function echoTags($prow) {
-	if (isset($prow->paperTags) && $prow->paperTags)
-	    echo "<tr class='pt_tags'>\n  <td class='caption'>Tags</td>\n  <td class='entry'>", htmlspecialchars($prow->paperTags), "</td>\n</tr>\n\n";
+    function echoTags($prow, $site) {
+	global $ConfSiteBase;
+	$t = defval($prow->paperTags, "");
+	if ($site || $t) {
+	    echo "<tr class='pt_tags'>\n  <td class='caption'>Tags</td>\n  <td class='entry'>";
+	    if ($site) {
+		echo "<form method='post' action=\"$site\" enctype='multipart/form-data'>";
+		echo "<div id='foldtags' class='folded'><span class='ellipsis'>", ($t == "" ? "none" : htmlspecialchars($t)), "&nbsp;</span><img class='unfolder' src='${ConfSiteBase}images/next.png' alt='[Edit]' />";
+		echo "<span class='extension'><input class='textlite' type='text' size='20' name='tags' value=\"", htmlspecialchars($t), "\" /><input class='submit' name='settags' value='Set tags' />&nbsp;<img class='folder' src='${ConfSiteBase}images/prev.png' alt='[Hide]' /></span>";
+		echo "</div></form>";
+	    } else
+		echo htmlspecialchars($t);
+	    echo "</td>\n</tr>\n\n";
+	}
     }
 
     function echoOutcomeSelector($prow) {
