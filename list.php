@@ -200,7 +200,7 @@ if ($pl->anySelector) {
 	echo "  &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"rev\")'>Reviews (no conflicts)</a>\n";
 
     if ($Me->amAssistant())
-	echo "  &nbsp;|&nbsp; <input class='textlite' type='text' name='tag' value='' />&nbsp;<a href='javascript:submitForm(\"sel\", \"tag\")'>Tag</a>\n";
+	echo "  &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"tag\")'>Tag</a>:&nbsp;<input class='textlite' type='text' name='tag' value='' size='10' />\n";
 
     echo "</div>\n";
 
