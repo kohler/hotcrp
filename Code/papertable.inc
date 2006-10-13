@@ -298,7 +298,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 	}
     }
 
-    function echoTags($prow, $site) {
+    function echoTags($prow, $site = null) {
 	global $ConfSiteBase;
 	$t = defval($prow->paperTags, "");
 	if ($site || $t) {
