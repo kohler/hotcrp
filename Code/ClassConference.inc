@@ -806,7 +806,7 @@ class Conference {
 		group_concat(TopicInterest.interest) as topicInterest";
 	if (isset($options['tags']))
 	    $pq .= ",
-		group_concat(PaperTag.tag) as paperTags";
+		PaperTags.paperTags";
 	if (isset($options['topicInterestScore']))
 	    $pq .= ",
 		sum(if(interest=2,2,interest-1)) as topicInterestScore";
@@ -858,7 +858,7 @@ class Conference {
 		left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$contactId)\n";
 
 	if (isset($options['tags']))
-	    $pq .= "		left join PaperTag on (PaperTag.paperId=Paper.paperId)\n";
+	    $pq .= "		left join (select paperId, group_concat(tag) as paperTags from PaperTag group by paperId) as PaperTags where (PaperTags.paperId=Paper.paperId)\n";
 	
 	if (defval($options['reviewerPreference']))
 	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$contactId)\n";
