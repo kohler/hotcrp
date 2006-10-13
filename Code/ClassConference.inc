@@ -858,7 +858,7 @@ class Conference {
 		left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$contactId)\n";
 
 	if (isset($options['tags']))
-	    $pq .= "		left join (select paperId, group_concat(tag) as paperTags from PaperTag group by paperId) as PaperTags where (PaperTags.paperId=Paper.paperId)\n";
+	    $pq .= "		left join (select paperId, group_concat(tag) as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)\n";
 	
 	if (defval($options['reviewerPreference']))
 	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$contactId)\n";
