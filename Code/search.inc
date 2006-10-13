@@ -1,4 +1,11 @@
-<?php 
+<?php
+
+$searchTags = array('ti:' => 'ti', 'title:' => 'ti',
+		    'ab:' => 'ab', 'abstract:' => 'ab',
+		    'au:' => 'au', 'author:' => 'au',
+		    'co:' => 'co', 'collab:' => 'co', 'collaborators:' => 'co',
+		    're:' => 're', 'reviewer:' => 're',
+		    'tag:' => 'tag');
 
 class PaperSearch {
 
@@ -31,32 +38,42 @@ class PaperSearch {
 	$re = "";
 	$auextra = ($this->nonblind ? "blind=0 and " : "");
 	$qs = array();
-	foreach (preg_split("/\\s+/", $str) as $word)
-	    if ($word != "") {
-		$special = null;
-		if (substr($word, 0, 4) == 'tag:') {
-		    $special = "tag";
-		    $word = substr($word, 4);
+	while (($str = ltrim($str)) != "") {
+	    preg_match('/^("[^"]+"?|[a-z]+:"[^"]+"?|[^"\s]+)/', $str, $m);
+	    $word = $m[0];
+	    $str = substr($str, strlen($word));
+	    
+	    $special = null;
+	    if (($colon = strpos($word, ':')) !== false) {
+		$x = substr($word, 0, $colon + 1);
+		if (isset($searchTags[$x])) {
+		    $special = $searchTags[$x];
+		    $word = substr($word, $colon + 1);
 		}
-		$re .= ($re == "" ? "" : "|") . preg_quote($word);
-		$word = preg_replace("/([%_\\\\])/", "\\\$1", $word);
-		$word = sqlq($word);
-		$q = "";
-		if ($special ? $special == "ti" : $this->fields['ti'] > 0)
-		    $q .= " or (title like '%$word%')";
-		if ($special ? $special == "ab" : $this->fields['ab'] > 0)
-		    $q .= " or (abstract like '%$word%')";
-		if ($special ? $special == "au" : $this->fields['au'] > 0)
-		    $q .= " or (${auextra}authorInformation like '%$word%')";
-		if ($special ? $special == "co" : $this->fields['co'] > 0)
-		    $q .= " or (${auextra}Paper.collaborators like '%$word%')";
-		if ($special ? $special == "re" : $this->fields['re'] > 0)
-		    $q .= " or (firstName like '%$word%') or (lastName like '%$word%') or (email like '%$word%')";
-		if ($special ? $special == "tag" : $this->fields['tag'] > 0)
-		    $q .= " or (tag = '$word')";
-		if ($q)
-		    $qs[] = "(" . substr($q, 4) . ")";
 	    }
+
+	    if ($word[0] == '"')
+		$word = str_replace('"', '', $word);
+
+	    $re .= ($re == "" ? "" : "|") . preg_quote($word);
+	    $word = preg_replace("/([%_\\\\])/", "\\\$1", $word);
+	    $word = sqlq($word);
+	    $q = "";
+	    if ($special ? $special == "ti" : $this->fields['ti'] > 0)
+		$q .= " or (title like '%$word%')";
+	    if ($special ? $special == "ab" : $this->fields['ab'] > 0)
+		$q .= " or (abstract like '%$word%')";
+	    if ($special ? $special == "au" : $this->fields['au'] > 0)
+		$q .= " or (${auextra}authorInformation like '%$word%')";
+	    if ($special ? $special == "co" : $this->fields['co'] > 0)
+		$q .= " or (${auextra}Paper.collaborators like '%$word%')";
+	    if ($special ? $special == "re" : $this->fields['re'] > 0)
+		$q .= " or (firstName like '%$word%') or (lastName like '%$word%') or (email like '%$word%')";
+	    if ($special ? $special == "tag" : $this->fields['tag'] > 0)
+		$q .= " or (tag = '$word')";
+	    if ($q)
+		$qs[] = "(" . substr($q, 4) . ")";
+	}
 	
 	// create a temporary table
 	$q = join($allWords ? " and " : " or ", $qs);
