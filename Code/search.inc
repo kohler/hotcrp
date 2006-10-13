@@ -35,6 +35,8 @@ class PaperSearch {
     }
 
     function searchQuery($str, $allWords) {
+	global $searchTags;
+
 	// paper IDs?
 	if (preg_match('/^\s*\d[\d\s]+$/s', $str)) {
 	    $q = "create temporary table Matches select paperId from Paper where ";
