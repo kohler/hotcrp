@@ -1568,6 +1568,8 @@ class Conference {
     }
 
     function textValuesGraph($text, $max, $style) {
+	global $ConfSiteBase;
+	
 	$result = "";
 	$merit = ($max ? array_fill(1, $max, 0) : array());
 

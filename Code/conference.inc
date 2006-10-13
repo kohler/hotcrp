@@ -1568,11 +1568,13 @@ class Conference {
     }
 
     function textValuesGraph($text, $max, $style) {
+	global $ConfSiteBase;
+	
 	$result = "";
 	$merit = ($max ? array_fill(1, $max, 0) : array());
 
 	$sum = $n = $sumsq = 0;
-	foreach (split($text) as $i)
+	foreach (preg_split('/\s+/', $text) as $i)
 	    if (($i = cvtint($i)) >= 0) {
 		if (!isset($merit[$i]))
 		    $merit[$i] = 1;
