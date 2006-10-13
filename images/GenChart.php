@@ -88,10 +88,10 @@ if ($s == 0) {
     ImageStringUp($pic, 2, 0, 40, "Bad", $cBlack);
     ImageStringUp($pic, 2, $picWidth-$textWidth, 40, "Good", $cBlack);
 } else {
-    if ($values[$minValue] == 0)
-	imagestring($pic, 1, $textWidth + $blockPad, $picHeight - $blockHeight - $blockSkip - 2, "-", $cgrey);
-    if ($values[$maxValue - 1] == 0)
-	imagestring($pic, 1, $picWidth - $blockWidth - $textWidth - $blockPad - 1, $picHeight - $blockHeight - $blockSkip - 2, "+", $cgrey);
+    if ($values[$valMin] == 0)
+	imagestring($pic, 1, $textWidth + $blockPad, $picHeight - $blockHeight - $blockSkip - 3, "L", $cgrey);
+    if ($values[$valMax - 1] == 0)
+	imagestring($pic, 1, $picWidth - $blockWidth - $textWidth - $blockPad, $picHeight - $blockHeight - $blockSkip - 3, "H", $cgrey);
 }
 
 Header("Content-type: image/png");
