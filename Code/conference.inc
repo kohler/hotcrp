@@ -770,6 +770,7 @@ class Conference {
 	//   "reviewerName"	Include reviewer names
 	//   "joinTable"	A table with paperId columns to join
 	//   "tags"		Include paperTags
+	//   "overallMeritScores"
 	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
 
 	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']) || isset($options['myReviewsOpt']);
@@ -807,6 +808,9 @@ class Conference {
 	if (isset($options['tags']))
 	    $pq .= ",
 		PaperTags.paperTags";
+	if (isset($options['overallMeritScores']))
+	    $pq .= ",
+		PaperScores.overallMeritScores, PaperScores.overallMeritAvg";
 	if (isset($options['topicInterestScore']))
 	    $pq .= ",
 		sum(if(interest=2,2,interest-1)) as topicInterestScore";
@@ -859,6 +863,9 @@ class Conference {
 
 	if (isset($options['tags']))
 	    $pq .= "		left join (select paperId, group_concat(tag) as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)\n";
+
+	if (isset($options['overallMeritScores']))
+	    $pq .= "		left join (select paperId, group_concat(overallMerit) as overallMeritScores, average(overallMerit) as overallMeritAvg from PaperReview group by paperId) as PaperScores on (PaperScores.paperId=Paper.paperId)\n";
 	
 	if (defval($options['reviewerPreference']))
 	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$contactId)\n";
@@ -1560,29 +1567,22 @@ class Conference {
 	return $this->retCount("select count($field) as foo from $table where $field=$who $extra");
     }
 
-    function graphValuesStr($query, $what, $max) {
-	global $ConfSiteBase;
-	
+    function textValuesGraph($text, $max, $style) {
 	$result = "";
-
 	$merit = ($max ? array_fill(1, $max, 0) : array());
 
-	$result = $this->qe($query);
-	if (DB::isError($result))
-	    $this->errorMsg("Error: " . $result->getMessage());
-
 	$sum = $n = $sumsq = 0;
-	while (($row = $result->fetchRow(DB_FETCHMODE_ASSOC))) {
-	    $value = $row[$what];
-	    if (!isset($merit[$value])) {
-		$merit[$value] = 1;
-	    } else {
-		$merit[$value] += 1;
+	foreach (split($text) as $i)
+	    if (($i = cvtint($i)) >= 0) {
+		if (!isset($merit[$i]))
+		    $merit[$i] = 1;
+		else
+		    $merit[$i]++;
+		$sum += $i;
+		$sumsq += $i * $i;
+		$n++;
 	    }
-	    $sum += $value;
-	    $sumsq += $value * $value;
-	    $n++;
-	}
+
 	$avg = ($n > 0 ? $sum / $n : 0);
 	$dev = ($n > 1 ? sqrt(($sumsq - $sum*$sum/$n) / ($n - 1)) : 0);
 
@@ -1590,23 +1590,36 @@ class Conference {
 	for ($key = 1; $key <= $max; $key++)
 	    $url .= ($url == "" ? "" : ",") . $merit[$key];
 	$url = "${ConfSiteBase}images/GenChart.php?v=$url";
-	
-	$retstr = "<table><tr><td align=\"center\">";
-	$retstr .= "<img src=\"" . htmlspecialchars($url) . "\" ";
-	$retstr .= sprintf("alt=\"avg=%0.2f\" ", $avg);
-	$retstr .= "align=bottom>";
-	$retstr .= "</td><tr><td align=\"center\"><font size=-2>";
-	if ($n > 0)
-	    $retstr .= sprintf("avg=%0.2f", $avg);
-	if ($n > 1)
-	    $retstr .= sprintf(" std=%0.2f", $dev);
-	$retstr .= "</font></td></tr></table>";
+
+	if ($style == 0) {
+	    $retstr = "<table><tr><td align=\"center\">";
+	    $retstr .= "<img src=\"" . htmlspecialchars($url) . "\" ";
+	    $retstr .= sprintf("alt=\"avg=%0.2f\" ", $avg);
+	    $retstr .= "align=bottom>";
+	    $retstr .= "</td><tr><td align=\"center\"><font size=-2>";
+	    if ($n > 0)
+		$retstr .= sprintf("avg=%0.2f", $avg);
+	    if ($n > 1)
+		$retstr .= sprintf(" std=%0.2f", $dev);
+	    $retstr .= "</font></td></tr></table>";
+	} else
+	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&s=$style\" " . sprintf("alt=\"avg=%0.2f\" ", $avg) . "/>";
 	
 	return $retstr;
     }
+    
+    function queryValuesGraph($query, $what, $max, $style) {
+	$result = $this->qe($query);
+	if (DB::isError($result))
+	    $this->errorMsg("Error: " . $result->getMessage());
+	$text = "";
+	while (($row = $result->fetchRow(DB_FETCHMODE_ASSOC)))
+	    $text .= $row[$what] . " ";
+	return textValuesGraph($text, $max, $style);
+    }
 
     function graphValues($query, $what, $max) {
-	print $this->graphValuesStr($query, $what, $max);
+	print $this->queryValuesGraph($query, $what, $max, 0);
     }
 
   //

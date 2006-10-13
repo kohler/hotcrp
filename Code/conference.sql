@@ -660,6 +660,7 @@ insert into PaperFields set fieldId=42, fieldName='matches', description='Matche
 insert into PaperFields set fieldId=43, fieldName='desirability', description='Desirability';
 insert into PaperFields set fieldId=44, fieldName='allPreferences', description='Reviewer preferences', sortable=0, display=2;
 insert into PaperFields set fieldId=45, fieldName='reviewerTypeIcon', description='Reviewer type';
+insert into PaperFields set fieldId=46, fieldName='optOverallMeritIcon', description='Overall merit (icon)';
 
 insert into PaperList set paperListId=1, paperListName='author',
 	shortDescription='Authored', description='Authored papers',
@@ -752,7 +753,8 @@ insert into PaperList set paperListId=10, paperListName='matches',
 	queryType='pc', sortCol=3, query='';
 insert into PaperListColumns set paperListId=10, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=10, fieldId=11, col=1;
-insert into PaperListColumns set paperListId=10, fieldId=42, col=2;
+insert into PaperListColumns set paperListId=10, fieldId=45, col=2;
+insert into PaperListColumns set paperListId=10, fieldId=42, col=3;
 
 insert into PaperList set paperListId=11, paperListName='matchesAll',
 	shortDescription='Search matches', description='Search matches',
@@ -761,7 +763,8 @@ insert into PaperList set paperListId=11, paperListName='matchesAll',
 insert into PaperListColumns set paperListId=11, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=11, fieldId=11, col=1;
 insert into PaperListColumns set paperListId=11, fieldId=27, col=2;
-insert into PaperListColumns set paperListId=11, fieldId=42, col=3;
+insert into PaperListColumns set paperListId=10, fieldId=45, col=3;
+insert into PaperListColumns set paperListId=11, fieldId=42, col=4;
 
 delete from ImportantDates where name='paperListUpdate';
 insert into ImportantDates set name='paperListUpdate', start=current_timestamp;
