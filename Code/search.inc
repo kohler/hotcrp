@@ -35,11 +35,20 @@ class PaperSearch {
     }
 
     function searchQuery($str, $allWords) {
+	// paper IDs?
+	if (preg_match('/^\s*\d[\d\s]+$/s', $str)) {
+	    $q = "create temporary table Matches select paperId from Paper where ";
+	    foreach (preg_split("/\\s+/", $str) as $word)
+		if ($word != "")
+		    $q .= "paperId=$word or ";
+	    return substr($q, 0, strlen($q) - 4);
+	}
+	
 	$re = "";
 	$auextra = ($this->nonblind ? "blind=0 and " : "");
 	$qs = array();
 	while (($str = ltrim($str)) != "") {
-	    preg_match('/^("[^"]+"?|[a-z]+:"[^"]+"?|[^"\s]+)/', $str, $m);
+	    preg_match('/^("[^"]+"?|[a-z]+:"[^"]+"?|[^"\s]+)/s', $str, $m);
 	    $word = $m[0];
 	    $str = substr($str, strlen($word));
 	    
