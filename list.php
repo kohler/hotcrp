@@ -247,8 +247,11 @@ if ($pl->anySelector) {
     
     echo "</ul>\n";
 
-    if ($Me->amAssistant())
-	echo "</td><td><h4>Actions</h4>\n<ul>\n  <li><a href='javascript:submitForm(\"sel\", \"tag\")'>Tag</a>:&nbsp;<input class='textlite' type='text' name='tag' value='' size='10' /></li>\n</ul>\n";
+    if ($Me->amAssistant()) {
+	echo "</td><td><h4>Actions</h4>\n<ul>\n  <li><a href='javascript:submitForm(\"sel\", \"tag\")'>Set tag</a>:&nbsp;<input class='textlite' type='text' name='tag' value='' size='10' /></li>\n";
+	echo "  <li>", outcomeSelector(), "<a href='javascript:submitForm(\"sel\", \"setoutcome\")'>Set outcome</a></li>\n";
+	echo "</ul>\n";
+    }
 
     echo "</td></tr></table></div>\n";
 
