@@ -5,7 +5,8 @@ $searchTags = array('ti:' => 'ti', 'title:' => 'ti',
 		    'au:' => 'au', 'author:' => 'au',
 		    'co:' => 'co', 'collab:' => 'co', 'collaborators:' => 'co',
 		    're:' => 're', 'reviewer:' => 're',
-		    'tag:' => 'tag');
+		    'tag:' => 'tag',
+		    'outcome:' => 'outcome', 'out:' => 'outcome');
 
 class PaperSearch {
 
@@ -17,7 +18,7 @@ class PaperSearch {
     function PaperSearch($fields, $allPapers = false, $me = null) {
 	global $Conf;
 	$t = 0;
-	foreach (array('ti', 'ab', 'au', 'co', 're', 'tag') as $f)
+	foreach (array('ti', 'ab', 'au', 'co', 're', 'tag', 'outcome') as $f)
 	    $t += ($this->fields[$f] = (defval($fields[$f], 0) != 0));
 	if ($t == 0)
 	    $this->fields['ti'] = $this->fields['ab'] = $this->fields['au'] = $this->fields['co'] = $this->fields['re'] = $this->fields['tag'] = 1;
@@ -82,6 +83,14 @@ class PaperSearch {
 		$q .= " or (firstName like '%$word%') or (lastName like '%$word%') or (email like '%$word%')";
 	    if ($special ? $special == "tag" : $this->fields['tag'] > 0)
 		$q .= " or (tag = '$word')";
+	    if ($special ? $special == "outcome" : $this->fields['outcome'] > 0) {
+		$rf = reviewForm();
+		foreach ($rf->options['outcome'] as $num => $what)
+		    if (strcmp($word, $num) == 0 || strcasecmp($word, $what) == 0) {
+			$q .= " or (outcome = '$num')";
+			break;
+		    }
+	    }
 	    if ($q)
 		$qs[] = "(" . substr($q, 4) . ")";
 	}

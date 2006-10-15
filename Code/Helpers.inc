@@ -773,3 +773,15 @@ function maybeSearchPaperId($base, $me) {
 	exit;
     }
 }
+
+function outcomeSelector($curOutcome = 0) {
+    $text = "<select class='outcome' name='outcome'>\n";
+    $rf = reviewForm();
+    $outcomeMap = $rf->options['outcome'];
+    $outcomes = array_keys($outcomeMap);
+    sort($outcomes);
+    $outcomes = array_unique(array_merge(array(0), $outcomes));
+    foreach ($outcomes as $key)
+	$text .= "    <option value='$key'" . ($curOutcome == $key ? " selected='selected'" : "") . ">" . htmlspecialchars($outcomeMap[$key]) . "</option>\n";
+    return $text . "  </select>";
+}

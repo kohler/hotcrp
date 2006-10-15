@@ -793,7 +793,7 @@ class Contact {
     function canSetOutcome($prow) {
 	if (!$this->amAssistant())
 	    return false;
-	if (($prow->author > 0 || $prow->conflict > 0)
+	if ($prow && ($prow->author > 0 || $prow->conflict > 0)
 	    && !(isset($_REQUEST['forceShow']) && $_REQUEST['forceShow']))
 	    return false;
 	return true;

@@ -125,7 +125,7 @@ if ($action == "tag" && $Me->amAssistant() && isset($_REQUEST["papersel"]) && is
 }
 
 
-// download text form for selected papers
+// download text author information for selected papers
 if ($action == "authors" && $Me->amAssistant() && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
     $idq = "";
     foreach ($_REQUEST["papersel"] as $id)
@@ -145,6 +145,24 @@ if ($action == "authors" && $Me->amAssistant() && isset($_REQUEST["papersel"]) &
     }
 }
 
+
+// set outcome for selected papers
+if ($action == "setoutcome")
+    if (!$Me->canSetOutcome(null))
+	$Conf->errorMsg("You cannot set paper outcomes.");
+    else {
+	$o = cvtint(trim($_REQUEST['outcome']));
+	$rf = reviewForm();
+	if (isset($rf->options['outcome'][$o])) {
+	    $idq = "";
+	    foreach ($_REQUEST["papersel"] as $id)
+		if (($id = cvtint($id)) > 0)
+		    $idq .= " or paperId=$id";
+	    $idq = substr($idq, 4);
+	    $result = $Conf->qe("update Paper set outcome=$o where $idq", "while changing outcome");
+	} else
+	    $Conf->errorMsg("Bad outcome value!");
+    }
 
 
 // get list

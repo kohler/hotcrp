@@ -322,15 +322,8 @@ Zhang, Ping Yen (INRIA)</pre>";
   <td class='entry'><form method='get' action='review.php'><div class='inform'><input type='hidden' name='paperId' value='$prow->paperId' />";
 	if (isset($_REQUEST['forceShow']))
 	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
-	echo "<select class='outcome' name='outcome'>\n";
-	$rf = reviewForm();
-	$outcomeMap = $rf->options['outcome'];
-	$outcomes = array_keys($outcomeMap);
-	sort($outcomes);
-	$outcomes = array_unique(array_merge(array(0), $outcomes));
-	foreach ($outcomes as $key)
-	    echo "    <option value='", $key, "'", ($prow->outcome == $key ? " selected='selected'" : ""), ">", htmlspecialchars($outcomeMap[$key]), "</option>\n";
-	echo "  </select>&nbsp;<input class='button_small' type='submit' name='setoutcome' value='Set outcome' /></div></form></td>\n</tr>\n";
+	echo outcomeSelector($prow->outcome);
+	echo "&nbsp;<input class='button_small' type='submit' name='setoutcome' value='Set outcome' /></div></form></td>\n</tr>\n";
     }
 
 }
