@@ -1,3 +1,11 @@
+- global tag application
+- "Email author?" on change
+- simplifyWhitespace on author information
+
+
+-*-
+
+
 + reviewer cannot see reviews until has submitted their own (option)
 - can view any review for a paper you're associated with (or PC)
 - ViewPaper.php handles withdrawn reviews correctly

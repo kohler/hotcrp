@@ -91,7 +91,7 @@ include("$ConfSitePATH/Code/confConfig.inc");
 // Note that on some Debian installations, a cron job garbage-collects old
 // sessions.  That cron job ignores local 'session.gc_maxlifetime' settings,
 // so you'll also need to change the system-wide setting in 'php.ini'.
-ini_alter('session.gc_maxlifetime', '10800');
+ini_alter('session.gc_maxlifetime', '864000');
 
 session_name($Conf->sessionName);
 session_start();

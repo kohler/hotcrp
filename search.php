@@ -84,16 +84,23 @@ if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) != "") {
 	    echo "<div class='plist_form'>
   <a href='javascript:void checkPapersel(true)'>Select all</a> &nbsp;|&nbsp;
   <a href='javascript:void checkPapersel(false)'>Select none</a> &nbsp; &nbsp;
-  Download selected:
-  <a href='javascript:submitForm(\"sel\", \"paper\")'>Papers</a>
-  &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"revform\")'>Your review forms</a>\n";
+<table class='bullets'><tr><td><h4>Downloads</h4>
+
+<ul>
+  <li><a href='javascript:submitForm(\"sel\", \"paper\")'>Papers</a></li>
+  <li><a href='javascript:submitForm(\"sel\", \"revform\")'>Your reviews and review forms</a></li>\n";
 
 	    if ($Me->amAssistant() || ($Me->isPC && $Conf->validTimeFor('PCMeetingView', 0)))
-		echo "  &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"rev\")'>Reviews (no conflicts)</a>\n";
-
+		echo "  <li><a href='javascript:submitForm(\"sel\", \"rev\")'>All reviews (no conflicts)</a></li>\n";
 	    if ($Me->amAssistant())
-		echo "  &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"tag\")'>Tag</a>:&nbsp;<input class='textlite' type='text' name='tag' value='' size='10' />\n";
-	    echo "</div></form>\n";
+		echo "  <li><a href='javascript:submitForm(\"sel\", \"authors\")'>Authors (text file)</a></li>\n";
+	    
+	    echo "</ul>\n";
+	    
+	    if ($Me->amAssistant())
+		echo "</td><td><h4>Actions</h4>\n<ul>\n  <li><a href='javascript:submitForm(\"sel\", \"tag\")'>Tag</a>:&nbsp;<input class='textlite' type='text' name='tag' value='' size='10' /></li>\n</ul>\n";
+	    
+	    echo "</td></tr></table></div></form>\n";
 	}
     }
 }
