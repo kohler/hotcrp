@@ -376,6 +376,9 @@ class Conference {
     function timePCViewAllReviews() {
 	return $this->validPeriod("PCMeetingView") > 0;
     }
+    function timeViewAcceptedAuthors() {
+	return $this->validPeriod("PCMeetingView") > 0;
+    }
     function timeReviewerViewSubmission() {
 	return true;
     }
