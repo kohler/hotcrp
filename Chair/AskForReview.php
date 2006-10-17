@@ -34,9 +34,9 @@ if (IsSet($_REQUEST["SendReviews"]) && sizeof($_REQUEST["Requests"]) > 0) {
     $newguy -> initialize($firstName, $lastName, $_REQUEST[firstEmail], $affiliation,
 			  $phone, $fax);
     $result = $newguy -> addToDB($Conf);
-    if ( $result ) {
-	$newguy->sendAccountInfo($Conf, true);
-    } else {
+    if ($result)
+	$newguy->sendAccountInfo($Conf, true, false);
+    else {
       $Conf->errorMsg("Had trouble creating an account for $_REQUEST[firstEmail]");
     }
     $id = $Conf->getContactId($_REQUEST[firstEmail]);

@@ -4,71 +4,55 @@ $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotChair('../index.php');
-?>
+$rf = reviewForm();
 
-<html>
+$Conf->header("Send Mail");
 
-<?php  $Conf->header("Send Mail To Various Groups Of People") ?>
+echo "<form method='post' action='SendMail2.php' enctype='multipart/form-data'>
+<table class='form'>
+<tr>
+  <td class='caption'>Mail to</td>
+  <td class='entry'><select name='recipients'>
+    <option value='submit-not-finalize'>Contact authors who started, but didn't submit a paper</option>
+    <option value='submit-and-finalize'>Contact authors who submitted a paper</option>
+    <option value='review-finalized'>Reviewers who submitted at least one review</option>
+    <option value='review-not-finalize'>Reviewers who haven't submitted at least one review</option>\n";
+foreach ($rf->options["outcome"] as $num => $what)
+    echo "    <option value='author-outcome$num'>", htmlspecialchars($what), " outcome contact authors</option>\n";
+echo "    <option value='author-late-review'>Contact authors who received late reviews</option>
+  </select></td>
+</tr>
 
-<body>
+<tr>
+  <td class='caption'>Subject</td>
+  <td class='entry'><tt>[", htmlspecialchars($Conf->shortName), "]&nbsp;</tt><input type='text' class='textlite tt' name='subject' value='Paper #%NUMBER%' size='64' /></td>
+</tr>
 
-<FORM METHOD="POST" ACTION="SendMail2.php">
+<tr>
+  <td class='caption'>Body</td>
+  <td class='entry'>Type the email you want to send.
+    Use %FIRST%, %LAST% and %EMAIL% for contact details, and %TITLE%
+    and %NUMBER% for paper details. For emailing reviews to authors, use
+    %REVIEWS% and %COMMENTS%.
 
-<p> <input type="submit" value="Prepare Mail" name="submit"> </p>
+    <textarea class='tt' rows='20' name='emailBody' cols='80'>Greetings,
 
+         Title: %TITLE%
+    Paper site: ", htmlspecialchars($Conf->paperSite), "/paper.php?paperId=%NUMBER%
 
-<p> Select the parties to whom you wish to send mail:
-<SELECT name=recipients>
+Your message here.
 
-<OPTION value="submit-not-finalize">
-People who submited, but didn't finalize a paper.
-</OPTION>
+", wordwrap("Contact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.
 
-<OPTION value="submit-and-finalize">
-People who submited AND finalized a paper
-</OPTION>
+- $Conf->shortName Conference Submissions"), "\n</textarea></td>
+</tr>
 
-<OPTION value="asked-to-review">
-People who were ASKED (<i> started or not </i>) to review a paper and have not finalized that review
-</OPTION>
+<tr>
+  <td class='caption'></td>
+  <td class='entry'><input type='submit' name='send' value='Send' class='button' /></td>
+</tr>
 
-<OPTION value="review-not-finalize">
-People who STARTED a paper review and DID NOT finalize that review
-</OPTION>
+</table>
+</form>\n";
 
-<OPTION value="author-accepted">
-Contacts for papers selected for the conference
-</OPTION>
-
-<OPTION value="author-rejected">
-Contacts for papers <b> not </b> selected for the conference
-</OPTION>
-
-<OPTION value="review-finalized">
-Anyone who reviewed a paper and finalized that review
-</OPTION>
-
-<OPTION value="author-late-review">
-Anyone who received late reviews.
-</OPTION>
-
-</SELECT>
-</p>
-
-<p> 
- Now, type the email you want to send. Use %FIRST%, %LAST% and %EMAIL%
-for contact details; %TITLE% and %NUMBER% for paper details. For
-emailing reviews to authors, use %REVIEWS% and %COMMENTS%.
- </p>
-
-<textarea rows=30 name="emailBody" cols=75></textarea>
-
-<p> <input type="submit" value="Prepare Mail" name="submit"> </p>
-
-</FORM>
-
-</body>
-<?php  $Conf->footer() ?>
-</html>
-
-
+$Conf->footer();

@@ -4,25 +4,38 @@ $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotChair('../index.php');
-include('../Code/confConfigReview.inc');
+$rf = reviewForm();
 
-function queryFromRecipients($who)
-{
-  if ( $who == "submit-not-finalize" ) {
-    $query = "SELECT Paper.paperId, Paper.title, "
-      . "ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
-       . " Paper.paperId, Paper.title "
-      . "FROM Paper, ContactInfo "
-      . " WHERE Paper.contactId=ContactInfo.contactID AND Paper.timeSubmitted<=0";
-    return $query;
-  } else if ($who == "submit-and-finalize" ) {
-    $query = "SELECT Paper.paperId, Paper.title, "
-      . "ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
-       . " Paper.paperId, Paper.title "
-      . "FROM Paper, ContactInfo "
-      . " WHERE Paper.contactId=ContactInfo.contactID AND Paper.timeSubmitted>0";
-    return $query;
-  } else if ($who == "asked-to-review") {
+function queryFromRecipients($who) {
+    global $rf;
+    
+    if ($who == "submit-not-finalize")
+	return "select Paper.paperId, Paper.title, Paper.authorInformation,
+		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
+		from Paper join PaperConflict using (paperId)
+		join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId)
+		where Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0 and PaperConflict.author>0
+		order by Paper.paperId";
+
+    if ($who == "submit-and-finalize")
+	return "select Paper.paperId, Paper.title, Paper.authorInformation,
+		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
+		from Paper join PaperConflict using (paperId)
+		join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId)
+		where Paper.timeSubmitted>0 and PaperConflict.author>0
+		order by Paper.paperId";
+
+    if (substr($who, 0, 14) == "author-outcome"
+	&& ($out = cvtint(substr($who, 14), -1000)) > -1000
+	&& isset($rf->options['outcome'][$out]))
+	return "select Paper.paperId, Paper.title, Paper.authorInformation,
+		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
+		from Paper join PaperConflict using (paperId)
+		join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId)
+		where Paper.timeSubmitted>0 and Paper.outcome=$out and PaperConflict.author>0
+		order by Paper.paperId";
+    
+    if ($who == "asked-to-review") {
     $query = "
 		SELECT
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
@@ -100,172 +113,146 @@ function queryFromRecipients($who)
 }
 
 function getReviews($paperId, $finalized) {
-  global $Conf;
+    global $Conf, $rf;
 
-  $finalizedStr = "";
-  if ($finalized) {
-     $finalizedStr = " AND PaperReview.reviewSubmitted>0";
-  }
-
-  $result2 = $Conf->qe("SELECT PaperReview.contactId, "
-		       . " PaperReview.reviewId, PaperReview.reviewSubmitted "
-		       . " FROM PaperReview "
-		       . " WHERE PaperReview.paperId='$paperId' "
-		      . $finalizedStr
-		      );
-
-  if (DB::isError($result2)) {
-    $Conf->errorMsg("Error in retrieving reveiws " . $result2->getMessage());
-    return "";
-  }
-
-  $reviews = "";
-  if ($result2->numRows() > 0) {
-    $i = 1;
-    while($row = $result2->fetchRow(DB_FETCHMODE_ASSOC)) {
-     $reviews .= "\n<Review #$i>\n\n";
-     $reviewer=$row['contactId'];
-      $reviewId=$row['reviewId'];
-      
-      $Review=ReviewFactory($Conf, $reviewer, $paperId);
-
-      if ($Review->valid) {
-	$reviews .= $Review -> getTextForAuthors();
-      }
-      
-      $reviews .= "\n\n</Review #$i>\n\n";
-      $i++;
-      
+    $result = $Conf->qe("select PaperReview.*,
+		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
+ 		from PaperReview
+		join ContactInfo using (contactId)
+		where paperId=$paperId order by reviewOrdinal", "while retrieving reviews");
+    if (!DB::isError($result)) {
+	$text = $rf->textFormHeader($Conf, false, false);
+	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT)))
+	    if ($row->reviewSubmitted>0)
+		$text .= $rf->textForm($row, $row, $Conf, null, ReviewForm::REV_AUTHOR) . "\n";
     }
-  }
-
-  return $reviews;
-}
+    return $text;
+}	
 
 function getComments ($paperId) {
-  global $Conf;
+    global $Conf;
 
-  $comResult = $Conf -> qe("SELECT * "
-			   . " FROM PaperComment "
-			   . " WHERE paperId=$paperId AND "
-			   . " forAuthor=1 ");
-
-  if (DB::isError($comResult)) {
-    $Conf->errorMsg("Error in retrieving comments " . $comResult->getMessage());
-    return "";
-  }
-
-  $comments = "";
-  if ($comResult->numRows()) {
-    $i=1;
-    while ($row=$comResult->fetchRow(DB_FETCHMODE_ASSOC) ) {
-      $comments .= "<Comment #$i>\n\n";
-      $comments .= $row['comment'];
-      $comments .= "\n\n</Comment #$i>\n\n";
-      $i++;
+    $result = $Conf->qe("select PaperComment.*,
+ 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
+		from PaperComment
+ 		join ContactInfo using(contactId)
+		where paperId=$paperId and forAuthors>0 order by commentId", "while retrieving comments");
+    $text = "";
+    if (!DB::isError($result)) {
+	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
+	    $text .= "==+== =========================================================================
+==-== Comment";
+	    if ($row->blind <= 0)
+		$text .= " by " . contactText($row);
+	    $text .= "\n==-== Modified " . $Conf->printableTime($row->timeModified) . "\n\n";
+	    $text .= $row->comment . "\n";
+	}
     }
-  }
-
-  return $comments;
+    return $text;
 }
 
-$query = queryFromRecipients($_REQUEST[recipients]);
+$query = queryFromRecipients($_REQUEST["recipients"]);
 
-?>
 
-<html>
+$Conf->header("Confirm Sending Mail") ?>
 
-<?php  $Conf->header("Confirm Sending Mail") ?>
+<p> recipients is <?php echo htmlspecialchars($_REQUEST["recipients"]) ?>, query is <?php echo htmlspecialchars($query) ?> </p>
 
-<body>
-
-<p> recipients is <?php echo $_REQUEST[recipients]?>, query is <?php echo $query?> </p>
-
-<?php  if (!IsSet($_REQUEST[sendTheMail])) { ?>
- <FORM METHOD="POST" ACTION="<?php echo $_SERVER[PHP_SELF]?>">
+<?php  if (!IsSet($_REQUEST["sendTheMail"])) { ?>
+ <form method="post" action="SendMail2.php">
    <p> <input type="submit" value="Yes, Send this mail" name="sendTheMail"> </p>
-   <input type=hidden name=recipients value="<?php echo $_REQUEST[recipients]?>">
-   <input type=hidden name=emailBody
-    value="<?php echo base64_encode($_REQUEST[emailBody])?>">
+   <input type='hidden' name='recipients' value="<?php echo htmlspecialchars($_REQUEST["recipients"]) ?>" />
+   <input type='hidden' name='subject' value="<?php echo htmlspecialchars($_REQUEST["subject"]) ?>" />
+   <input type='hidden' name='emailBody'
+    value="<?php echo base64_encode($_REQUEST["emailBody"])?>" />
    </FORM>
 <?php 
    }
 
-if (IsSet($_REQUEST[sendTheMail])) {
+if (isset($_REQUEST["sendTheMail"])) {
   //
   // Turn from mime back to something else..
   //
-  $_REQUEST[emailBody]=base64_decode($_REQUEST[emailBody]);
+  $_REQUEST["emailBody"]=base64_decode($_REQUEST["emailBody"]);
 }
 
 $result = $Conf->qe($query);
 if (!DB::isError($result)) {
-  while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
-    $msg = $_REQUEST[emailBody];
+    while (($row = $result->fetchRow(DB_FETCHMODE_ASSOC))) {
+	$subj = $_REQUEST["subject"];
+	$msg = $_REQUEST["emailBody"];
 
-    $msg=str_replace("%TITLE%", $row['title'], $msg);
-    $msg=str_replace("%NUMBER%", $row['paperId'], $msg);
-    $msg=str_replace("%FIRST%", $row['firstName'], $msg);
-    $msg=str_replace("%LAST%", $row['lastName'], $msg);
-    $msg=str_replace("%EMAIL%", $row['email'], $msg);
+	$subj = str_replace("%TITLE%", $row['title'], $subj);
+	$subj = str_replace("%NUMBER%", $row['paperId'], $subj);
+	$subj = str_replace("%FIRST%", $row['firstName'], $subj);
+	$subj = str_replace("%LAST%", $row['lastName'], $subj);
+	$subj = str_replace("%EMAIL%", $row['email'], $subj);
 
-    if ($_REQUEST[recipients] == "author-rejected" || 
-	$_REQUEST[recipients] == "author-accepted" ) {
-      $paperId = $row['paperId'];
-      if (substr_count($msg, "%REVIEWS%") != 0) {
-	$reviews = getReviews($paperId, false);
-	$msg=str_replace("%REVIEWS%", $reviews, $msg);
-      }
+	$msg = str_replace("%TITLE%", $row['title'], $msg);
+	$msg = str_replace("%NUMBER%", $row['paperId'], $msg);
+	$msg = str_replace("%FIRST%", $row['firstName'], $msg);
+	$msg = str_replace("%LAST%", $row['lastName'], $msg);
+	$msg = str_replace("%EMAIL%", $row['email'], $msg);
 
-      if (substr_count($msg, "%COMMENTS%") != 0) {
-	$comments = getComments($paperId);
-	if ($comments != "") {
-	  $comments = "The comments below summarize the discussion during the PC meeting.\n\n".$comments;
+	if (substr($_REQUEST["recipients"], 0, 14) == "author-outcome") {
+	    $paperId = $row['paperId'];
+	    if (substr_count($msg, "%REVIEWS%") != 0) {
+		$reviews = getReviews($paperId, false);
+		$msg=str_replace("%REVIEWS%", $reviews, $msg);
+	    }
+
+	    if (substr_count($msg, "%COMMENTS%") != 0) {
+		$comments = getComments($paperId);
+		if ($comments != "") {
+		    $comments = "The comments below summarize the discussion during the PC meeting.\n\n".$comments;
+		}
+		$msg=str_replace("%COMMENTS%", $comments, $msg);
+	    }
 	}
-	$msg=str_replace("%COMMENTS%", $comments, $msg);
-      }
-    }
 
-    print "<table border=1 width=75%> <tr> <td> To: ";
-    print nl2br(htmlspecialchars($row['email']));
-    print  "</td> </tr>\n ";
-    print "<tr> <td>";
-    print nl2br(htmlspecialchars($msg));
-    print "</td> </tr> </table> <br> ";
+	print "<table border=1 width=75%> <tr> <td> To: ";
+	echo htmlspecialchars($row['email']), "<br />Subject: [", htmlspecialchars($Conf->shortName), "] ", htmlspecialchars($subj);
+	print  "</td> </tr>\n ";
+	print "<tr> <td><pre>";
+	print htmlspecialchars($msg);
+	print "</pre></td> </tr> </table> <br> ";
 
-    if ( IsSet($_REQUEST[sendTheMail]) ) {
-	if ($Conf->allowEmailTo($row['email']))
-	    mail($row['email'],
-		 "[$Conf->shortName] Mail concerning $Conf->shortName",
-		 $msg,
-		 "From: $Conf->emailFrom");
-	if ($Conf->allowEmailTo($Conf->contactEmail))
-	    mail($Conf->contactEmail,
-		 "[$Conf->shortName] Mail to " . $row['email'] .
-		 "  concerning $Conf->shortName",
-		 $msg,
-		 "From: $Conf->emailFrom");
-	print"<p> <b> Sent to " . $row['email'] . "</b> </p>\n";
+	if (isset($_REQUEST["sendTheMail"]) ) {
+	    if ($Conf->allowEmailTo($row['email']))
+		mail($row['email'],
+		     "[$Conf->shortName] $subj",
+		     $msg,
+		     "From: $Conf->emailFrom");
+	    else
+		$Conf->infoMsg("<pre>" . htmlspecialchars("[$Conf->shortName] Mail concerning $Conf->shortName
+
+$msg") . "</pre>");
+	    if ($Conf->allowEmailTo($Conf->contactEmail))
+		mail($Conf->contactEmail,
+		     "[$Conf->shortName] Mail to " . $row['email'] .
+		     "  concerning $subj",
+		     $msg,
+		     "From: $Conf->emailFrom");
+	    else
+		$Conf->infoMsg("<pre>" . htmlspecialchars("[$Conf->shortName] Mail concerning $Conf->shortName
+
+$msg") . "</pre>");
+	    print"<p> <b> Sent to " . $row['email'] . "</b> </p>\n";
+	}
     }
-  }
 }
 
-if (!IsSet($_REQUEST[sendTheMail])) {
+if (!isset($_REQUEST["sendTheMail"])) {
 ?>
- <FORM METHOD="POST" ACTION="<?php echo $_SERVER[PHP_SELF]?>">
+ <form method="post" action="SendMail2.php" enctype='multipart/form-data'>
    <p> <input type="submit" value="Yes, Send this mail" name="sendTheMail"> </p>
-   <input type=hidden name=recipients value="<?php echo $_REQUEST[recipients]?>">
-   <input type=hidden name=emailBody
-    value="<?php echo base64_encode($_REQUEST[emailBody])?>">
+   <input type='hidden' name='recipients' value="<?php echo htmlspecialchars($_REQUEST["recipients"]) ?>" />
+   <input type='hidden' name='subject' value="<?php echo htmlspecialchars($_REQUEST["subject"]) ?>" />
+   <input type='hidden' name='emailBody'
+    value="<?php echo base64_encode($_REQUEST["emailBody"])?>">
    </FORM>
 <?php 
 }
 
 
-?>
-
-</body>
-<?php  $Conf->footer() ?>
-</html>
-
-
+echo $Conf->footer();

@@ -858,7 +858,7 @@ class Contact {
 	return substr($password, 0, $length);  
     }
 
-    function sendAccountInfo($conf, $create) {
+    function sendAccountInfo($conf, $create, $sensitive) {
 	$m = "Greetings,\n\n";
 	if ($create)
 	    $m .= wordwrap("An account has been created for you at the $conf->shortName conference submission site, and an initial password has been assigned.\n\n");
@@ -880,10 +880,16 @@ and paste it into your web browser's location field.
 
 	$s = "[$conf->shortName] Account information";
 	
-	if ($conf->allowEmailTo($this->email))
+	if ($conf->allowEmailTo($this->email)) {
 	    $results = mail($this->email, $s, $m, "From: $conf->emailFrom");
-	else
+	    return true;
+	} else if (!$sensitive) {
 	    $conf->infoMsg("<pre>" . htmlspecialchars("$s\n\n$m") . "</pre>");
+	    return true;
+	} else {
+	    $conf->errorMsg("Mail cannot be sent to your email address &lt;" . htmlspecialchars($this->email) . "&gt; at this time.");
+	    return false;
+	}
     }
 
   //

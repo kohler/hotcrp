@@ -13,7 +13,6 @@ class Conference {
     var $contactName;
     var $contactEmail;
     var $emailFrom;
-    var $allowEmail;
     //
     // Paper formats
     //
@@ -253,7 +252,7 @@ class Conference {
 	
 	if (!DB::isError($result)) {
 	    $this->infoMsg("Created account for " . htmlspecialchars($email) . ".");
-	    $newguy->sendAccountInfo($this, true);
+	    $newguy->sendAccountInfo($this, true, false);
 	    $this->log("$Me->contactId created account", $newguy);
 	} else
 	    $this->log("$Me->contactId account creation failure", $newguy);

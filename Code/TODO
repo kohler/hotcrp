@@ -1,6 +1,9 @@
 - global tag application
 - "Email author?" on change
 - simplifyWhitespace on author information
+- override deadlines in review
+- click PC name in reviewer view, donot send email
+- anonymous comments highlighted
 
 
 -*-

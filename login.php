@@ -25,7 +25,7 @@ function doLogin() {
 	if (DB::isError($result))
 	    return $Conf->errorMsg($result->dbErrorText($result, "while adding your account"));
 
-	$_SESSION["Me"]->sendAccountInfo($Conf, true);
+	$_SESSION["Me"]->sendAccountInfo($Conf, true, false);
 	$Conf->log("Created account", $_SESSION["Me"]);
 	$msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".  ";
 	if ($Conf->allowEmailTo($_SESSION["Me"]->email))
@@ -42,9 +42,11 @@ function doLogin() {
 	return $Conf->errorMsg("No account for " . htmlspecialchars($_REQUEST["email"]) . " exists.  Did you enter the correct email address?");
 
     if (isset($_REQUEST["forgot"])) {
-	$_SESSION["Me"]->sendAccountInfo($Conf, false);
+	$worked = $_SESSION["Me"]->sendAccountInfo($Conf, false, true);
 	$Conf->log("Sent password", $_SESSION["Me"]);
-	return $Conf->confirmMsg("The account information for " . $_REQUEST["email"] . " has been emailed to that address.  When you receive that email, return here to complete the login process.");
+	if ($worked)
+	    $Conf->confirmMsg("The account information for " . $_REQUEST["email"] . " has been emailed to that address.  When you receive that email, return here to complete the login process.");
+	return null;
     }
 
     if (!isset($_REQUEST["password"]) || $_REQUEST["password"] == "")
