@@ -763,8 +763,8 @@ function maybeSearchPaperId($base, $me) {
 	|| preg_match('/^\s*\d+\s*$/s', $_REQUEST["paperId"]))
 	return false;
     require_once("search.inc");
-    $s = new PaperSearch(array("ti" => 1, "au" => 1, "ab" => 1), false, $me);
-    $pl = $s->paperList($_REQUEST["paperId"], true);
+    $s = new PaperSearch("n", $me);
+    $pl = $s->paperList("", $_REQUEST["paperId"], "");
     if (count($pl) == 1) {
 	$_REQUEST["paperId"] = $pl[0];
 	return true;

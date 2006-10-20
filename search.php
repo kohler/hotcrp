@@ -7,60 +7,82 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPC('index.php');
 
+$Conf->header("Search", 'search');
 
-$Conf->header("Search", 'search', actionBar(null, false, ""));
+$Search = new PaperSearch(defval($_REQUEST["t"], "n"), $Me);
+if (defval($_REQUEST["all"], 0) > 0)
+    $Search->setAllPapers();
 
 
-$Search = new PaperSearch($_REQUEST, defval($_REQUEST["all"], 0) != 0, $Me);
-if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "")
-    unset($_REQUEST["q"]);
+// set up the search form
+if (defval($_REQUEST["qx"], "") != "" || defval($_REQUEST["qa"], "") != ""
+    || $Search->allPapers || defval($_REQUEST["t"], "n") != "n")
+    $folded = 'unfolded';
+else
+    $folded = 'folded';
 
-echo "<form method='get' action='search.php'>
-<table class='simple'>
-  <tr>
-    <td>
-      <span class='nowrap'><input class='textlite' type='text' size='40' name='q' value=\"";
-if (isset($_REQUEST["q"]))
-    echo htmlspecialchars($_REQUEST["q"]);
-echo "\" /> <input class='button' type='submit' name='go' value='Search' /></span>
-      <br />
-      <small>Finds <b>any</b> of the words</small>
-    </td>
-    <td>\n";
+echo "
+<hr class='smgap' />
 
-$aufoot = ($Conf->blindSubmission() == 1 && !$Me->amAssistant() ? "*" : "");
-foreach (array('ti' => 'Titles', 'ab' => 'Abstracts',
-	       'au' => "Authors$aufoot", 'co' => "Collaborators$aufoot",
-	       're' => 'Reviewers') as $tag => $name) {
-    if ($Search->fields[$tag] >= 0) {
-	if ($tag != 'ti')
-	    echo "  <span class='sep'></span>";
-	echo "  <span class='nowrap'><input type='checkbox' name='$tag' value='1'";
-	if ($Search->fields[$tag] > 0)
-	    echo " checked='checked'";
-	echo " />&nbsp;", $name, "</span>\n";
-    }
-}
-   
+<div id='foldq' class='$folded' style='text-align: center'>
+<form method='get' action='search.php'>
+<span class='ellipsis nowrap'>
+  <input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /> &nbsp;
+  <input class='button' type='submit' name='go' value='Search' /> &nbsp;
+  <a class='unfolder' href=\"javascript:fold('q', 0)\">Options &raquo;</a>
+</span>
+</form>
 
-echo "  <br />\n";
-if (!$Me->amAssistant() && $Conf->blindSubmission() == 1)
-    echo "  <small>*Non-blind submissions only</small><br />\n";
-
+<form method='get' action='search.php'>
+<table class='advsearch extension'><tr><td class='advsearch'><table class='simple'>
+<tr>
+  <td>With <b>any</b> of the words&nbsp;&nbsp;&nbsp;</td>
+  <td><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /></td>
+  <td class='x' rowspan='3'><input class='button' type='submit' name='go' value='Search' /></td>
+</tr><tr>
+  <td>With <b>all</b> the words&nbsp;&nbsp;&nbsp;</td>
+  <td><input class='textlite' type='text' size='40' name='qa' value=\"", htmlspecialchars(defval($_REQUEST["qa"], "")), "\" /></td>
+</tr><tr>
+  <td><b>Without</b> the words</td>
+  <td><input class='textlite' type='text' size='40' name='qx' value=\"", htmlspecialchars(defval($_REQUEST["qx"], "")), "\" /></td>
+</tr>
+<tr><td colspan='2'><hr class='smgap' /></td></tr>
+<tr>
+  <td>Search type</td>
+  <td><select name='t'>";
+$opts = array("ti" => "Title only",
+	      "ab" => "Abstract only");
+if ($Me->amAssistant() || $Conf->blindSubmission() == 0) {
+    $opts["au"] = "Authors only";
+    $opts["n"] = "Title, abstract, authors";
+} else if ($Conf->blindSubmission() == 1) {
+    $opts["au"] = "Non-blind authors only";
+    $opts["n"] = "Title, abstract, non-blind authors";
+} else
+    $opts["n"] = "Title, abstract";
 if ($Me->amAssistant())
-    echo "  Papers: <input type='radio' name='all' value='0'",
+    $opts["ac"] = "Authors, collaborators";
+if ($Me->canViewAllReviewerIdentities($Conf))
+    $opts["re"] = "Reviewers";
+if (!isset($opts[defval($_REQUEST["t"], "")]))
+    $_REQUEST["t"] = "n";
+foreach ($opts as $v => $text)
+    echo "<option value='$v'", ($v == $_REQUEST["t"] ? " selected='selected'" : ""), ">$text</option>";
+echo "</select></td>\n";
+if ($Me->amAssistant())
+    echo "</tr><tr>
+  <td>Paper selection</td>
+  <td><input type='radio' name='all' value='0'",
 	($Search->allPapers ? "" : " checked='checked'"),
 	" />&nbsp;Submitted <span class='sep'></span> <input type='radio' name='all' value='1'",
 	($Search->allPapers ? " checked='checked'" : ""),
-	" />&nbsp;All\n";
-
-echo "</td>\n</tr>\n";
-echo "</table>\n</form>\n\n";
+	" />&nbsp;All</td>\n";
+echo "</tr></table></td></tr></table></div>\n</form>\n\n</div>\n";
 
 
-if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) != "") {
+if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
     // develop query
-    $result = $Search->search($_REQUEST["q"], false);
+    $result = $Search->search(defval($_REQUEST["q"], ""), defval($_REQUEST["qa"], ""), defval($_REQUEST["qx"], ""));
 
     if (!DB::isError($result)) {
 	$pl = new PaperList(true, "list");

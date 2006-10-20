@@ -742,6 +742,10 @@ class Contact {
     function timeReview($prow, $conf) {
 	return $conf->timeReviewPaper($_SESSION['Me']->isPC, $prow->reviewType || $prow->reviewId, true);
     }
+
+    function canViewAllReviewerIdentities($conf) {
+	return ($this->amAssistant() || $conf->timePCViewAllReviews());
+    }
     
     function canViewReviewerIdentity($prow, $rrow, $conf) {
 	if (($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])

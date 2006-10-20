@@ -102,7 +102,7 @@ input.button, button, a.button {
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
 	padding: 0px 6px 0px 6px;
-	margin: 3px 0px;
+	/*margin: 3px 0px;*/
 	text-decoration: none;
 	color: black;
 	white-space: nowrap;
@@ -553,6 +553,9 @@ pre.entryexample {
 table.simple tr td {
 	padding-right: 2em;
 }
+table.simple tr td.x {
+	padding-right: 0em;
+}
 
 tr#topicinterest td.caption, tr#topicinterest td.hint {
 	padding-top: 1.3em;
@@ -854,6 +857,16 @@ span.contactpulldown {
 }
 span.contactpulldown select {
 	vertical-align: top;
+}
+
+table.advsearch {
+	margin: 0px auto;
+	text-align: left;
+}
+table.advsearch tr td.advsearch {
+	background: #f0f9fd;
+	margin: 1ex 0em;
+	padding: 3px 5px;
 }
 
 p.page {
