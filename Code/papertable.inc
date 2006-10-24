@@ -163,7 +163,7 @@ class PaperTable {
     }
 
     function echoDownloadRow($prow, $flags) {
-	$final = (($flags & self::FINALCOPY) != 0);
+	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0);
 	$canUpload = ($this->editable && (!$prow || $final || $prow->timeSubmitted <= 0));
 	
 	echo "<tr class='pt_paper$this->trClasses' id='foldpa'>\n";
@@ -172,14 +172,14 @@ class PaperTable {
 	    echo "Paper", ($flags & self::OPTIONAL ? " (optional)" : "");
 	echo "</td>\n";
 	echo "  ", $this->tdEntry("paper");
+
 	if ($final && $prow->finalPaperStorageId > 0)
-	    echo paperDownload($prow, true), ($canUpload ? "<br />\n  " : "");
-	else if (!$final && $prow && $prow->size > 0)
-	    echo paperDownload($prow), ($canUpload ? "<br />\n  " : "");
+	    echo "Final copy: ", paperDownload($prow, true), " &nbsp;|&nbsp; Submission: ", paperDownload($prow);
+	else if ($prow && $prow->size > 0)
+	    echo ($canUpload && $final ? "Submission: " : ""), paperDownload($prow);	
 	if ($canUpload)
-	    echo "<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='30' />";
-	if ($final)
-	    echo "<br />\n  Submission: ", paperDownload($prow);
+	    echo ($prow && $prow->size > 0 ? "<br />\n  " : ""), "<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='30' />";
+
 	echo "</td>\n";
 	if ($canUpload)
 	    echo "  ", $this->tdHint("paper"), "Max size: ", ini_get("upload_max_filesize"), "B</td>\n";

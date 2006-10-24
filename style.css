@@ -837,6 +837,7 @@ div.popupdialog {
 	top: -4em;
 	left: 0%;
 	min-width: 15em;
+	z-index: 2;
 }
 div.popupdialog .unpopup {
 	position: absolute;
