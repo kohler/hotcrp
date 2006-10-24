@@ -379,7 +379,7 @@ class Contact {
 
     // viewing permissions
 
-    function _fetchPaperRow($prow, $conf, &$whyNot, $type) {
+    function _fetchPaperRow($prow, $conf, &$whyNot) {
 	if (!is_object($prow))
 	    return $conf->paperRow($prow, $this->contactId, $whyNot);
 	else {
@@ -404,7 +404,7 @@ class Contact {
     
     function canUpdatePaper($prow, $conf, &$whyNot = null) {
 	// fetch paper
-	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "update")))
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
 	if (($prow->author > 0 || $this->amAssistant())
@@ -428,7 +428,7 @@ class Contact {
     
     function canFinalizePaper($prow, $conf, &$whyNot = null) {
 	// fetch paper
-	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "submit")))
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
 	if (($prow->author > 0 || $this->amAssistant())
@@ -451,7 +451,7 @@ class Contact {
     
     function canWithdrawPaper($prow, $conf, &$whyNot = null) {
 	// fetch paper
-	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "withdraw")))
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
 	if (($prow->author > 0 || $this->amAssistant())
@@ -467,7 +467,7 @@ class Contact {
     
     function canRevivePaper($prow, $conf, &$whyNot = null) {
 	// fetch paper
-	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "revive")))
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
 	if (($prow->author > 0 || $this->amAssistant())
@@ -486,9 +486,32 @@ class Contact {
 	return false;
     }
     
+    function canSubmitFinalPaper($prow, $conf, &$whyNot = null) {
+	// fetch paper
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
+	    return false;
+	// policy
+	if (($prow->author > 0 || $this->amAssistant())
+	    && $prow->timeWithdrawn <= 0 && $prow->outcome > 0
+	    && ($conf->timeSubmitFinalPaper() || $this->amAssistantOverride()))
+	    return true;
+	// collect failure reasons
+	if ($prow->author <= 0 && !$this->amAssistant())
+	    $whyNot["author"] = 1;
+	if ($prow->timeWithdrawn > 0)
+	    $whyNot["withdrawn"] = 1;
+	if ($prow->outcome <= 0)
+	    $whyNot["notAccepted"] = 1;
+	if (!$conf->timeSubmitFinalPaper() && !$this->amAssistantOverride())
+	    $whyNot["deadline"] = "authorUpdateFinal";
+	if ($this->amAssistant())
+	    $whyNot["override"] = 1;
+	return false;
+    }
+
     function canViewPaper($prow, $conf, &$whyNot = null) {
 	// fetch paper
-	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "view")))
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
 	if ($prow->author > 0
@@ -517,7 +540,7 @@ class Contact {
     
     function canViewAuthors($prow, $conf, $blindWins, &$whyNot = null) {
 	// fetch paper
-	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "auview")))
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
 	if (($prow->author > 0
@@ -543,7 +566,7 @@ class Contact {
 
     function canViewReview($prow, $rrow, $conf, &$whyNot = null, $type = "revview") {
 	// fetch paper
-	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, $type)))
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
 	$rrsub = (!$rrow || $rrow->reviewSubmitted > 0);
@@ -582,7 +605,7 @@ class Contact {
     function canRequestReview($prow, $conf, $time, &$whyNot = null) {
 	global $ConfSiteBase;
 	// fetch paper
-	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "rev")))
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
 	if (($prow->reviewType >= REVIEW_SECONDARY || $this->amAssistant())
@@ -602,7 +625,7 @@ class Contact {
     function canReview($prow, $rrow, $conf, &$whyNot = null, $submit = false) {
 	global $ConfSiteBase;
 	// fetch paper
-	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "rev")))
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
 	// policy
@@ -647,7 +670,7 @@ class Contact {
     function canComment($prow, $crow, $conf, &$whyNot = null, $submit = false) {
 	global $ConfSiteBase;
 	// fetch paper
-	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "rev")))
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
 	// policy
@@ -688,7 +711,7 @@ class Contact {
 
     function canViewComment($prow, $crow, $conf, &$whyNot = null) {
 	// fetch paper
-	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot, "comment")))
+	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
 	$forceShow = ($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"]);

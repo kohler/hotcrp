@@ -31,6 +31,7 @@ $DateName['PCSubmitReviewDeadline'][1] = "Hard deadline for PC reviews";
 $DateName['authorViewReviews'] = "Reviews visible to authors";
 $DateName['authorRespondToReviews'] = "Authors may respond";
 $DateName['authorViewDecision'] = "Outcomes visible to authors";
+$DateName['authorUpdateFinal'] = "Authors upload final copies";
 
 $DateName['reviewerViewDecision'] = "Outcomes and responses visible to reviewers";
 
@@ -119,6 +120,7 @@ if (isset($_REQUEST['update']) && $Me->amAssistant()) {
     foreach (array('startPaperSubmission', 'updatePaperSubmission',
 		   'finalizePaperSubmission', 'authorViewReviews',
 		   'authorRespondToReviews', 'authorViewDecision',
+		   'authorUpdateFinal',
 		   'reviewerSubmitReview', 'reviewerSubmitReviewDeadline',
 		   'reviewerViewDecision', 'PCReviewPreferences',
 		   'PCSubmitReview', 'PCSubmitReviewDeadline',
@@ -364,6 +366,7 @@ if ($Me->amAssistant()) {
     crp_showdate('authorViewReviews');
     crp_showdate('authorRespondToReviews');
     crp_showdate('authorViewDecision');
+    crp_showdate('authorUpdateFinal');
     echo "</table>
 
 <table>

@@ -211,29 +211,22 @@ function reviewButton($paperId, $row = null, $buttonType = 0, $conf = null) {
     return str_replace("~", $revulink, $button);
 }
 
-function paperDownload($paperId, $row = null, $long = 0, $conf = null) {
+function paperDownload($prow, $final = false, $conf = null) {
     global $Conf, $ConfSiteBase;
-    if ($conf == null)
-	$conf = $Conf;
+    $conf = ($conf == null ? $Conf : $conf);
+    if ($final && !$prow->finalPaperStorageId)
+	$final = false;
     
-    if ($row == null) {
-	$result = $conf->q("select length(PaperStorage.paper) as size, mimetype
-		from Paper left join PaperStorage using (paperStorageId)
-		where Paper.paperId=$paperId");
-	if (DB::isError($result))
-	    return "Database error";
-	$row = $result->fetchRow(DB_FETCHMODE_OBJECT);
-    }
-
-    $p = $conf->makeDownloadPath($paperId, $row->mimetype);
+    $p = $conf->makeDownloadPath($prow->paperId, $prow->mimetype, $final);
     $x = "<a class='download' href='" . $p . "'>View</a>&nbsp;";
     $x .= "<a class='download' href='" . $p . "?save=1'>Save</a>";
-    if ($long && (isset($row->size) || isset($row->mimetype))) {
+    if (($final || !$prow->finalPaperStorageId)
+	&& (isset($prow->size) || isset($prow->mimetype))) {
 	$x .= "&nbsp;(";
-	if (isset($row->size))
-	    $x .= round($row->size/1024) . "kB" . (isset($row->mimetype) ? "&nbsp;" : "");
-	if (isset($row->mimetype))
-	    $x .= htmlspecialchars($conf->getFileTypeAbbrev($row->mimetype));
+	if (isset($prow->size))
+	    $x .= round($prow->size/1024) . "kB" . (isset($prow->mimetype) ? "&nbsp;" : "");
+	if (isset($prow->mimetype))
+	    $x .= htmlspecialchars($conf->getFileTypeAbbrev($prow->mimetype));
 	$x .= ")";
     }
     return $x;
@@ -559,6 +552,8 @@ function whyNotText($whyNot, $action) {
 	$text .= ucfirst($thisPaper) . " has not been withdrawn.  ";
     if (isset($whyNot['notSubmitted']))
 	$text .= ucfirst($thisPaper) . " was never officially submitted.  ";
+    if (isset($whyNot['notAccepted']))
+	$text .= ucfirst($thisPaper) . " was not accepted for publication.  ";
     if (isset($whyNot['updateSubmitted']))
 	$text .= ucfirst($thisPaper) . " has already been submitted and can no longer be updated.  ";
     if (isset($whyNot['notUploaded']))

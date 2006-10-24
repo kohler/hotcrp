@@ -1,4 +1,4 @@
-<?php 
+<?php
 require_once('Code/confHeader.inc');
 require_once('Code/papertable.inc');
 $Conf->connect();
@@ -106,9 +106,9 @@ function requestSameAsPaper($prow) {
     return true;
 }
 
-function uploadPaper() {
+function uploadPaper($isSubmitFinal) {
     global $prow, $Conf;
-    $result = $Conf->storePaper('paperUpload', $prow);
+    $result = $Conf->storePaper('paperUpload', $prow, $isSubmitFinal);
     if ($result == 0 || PEAR::isError($result)) {
 	$Conf->errorMsg("There was an error while trying to update your paper.  Please try again.");
 	return false;
@@ -116,9 +116,11 @@ function uploadPaper() {
     return true;
 }
 
-function updatePaper($Me, $isSubmit, $isUploadOnly) {
+function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     global $paperId, $newPaper, $PaperError, $Conf, $prow;
     $contactId = $Me->contactId;
+    if ($isSubmitFinal)
+	$isSubmit = false;
 
     // XXX lock tables
 
@@ -149,8 +151,10 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 	}
 
     // blind?
-    if ($Conf->blindSubmission() > 1
-	|| ($Conf->blindSubmission() == 1 && defval($_REQUEST['blind'])))
+    if ($isSubmitFinal)
+	/* do nothing */;
+    else if ($Conf->blindSubmission() > 1
+	     || ($Conf->blindSubmission() == 1 && defval($_REQUEST['blind'])))
 	$q .= "blind=1, ";
     else
 	$q .= "blind=0, ";
@@ -160,9 +164,9 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 	$q .= "contactId=$contactId, paperStorageId=1";
     else
 	$q = substr($q, 0, -2) . " where paperId=$paperId"
-	    . ($Me->amAssistant() ? "" : " and timeSubmitted<=0")
+	    . ($Me->amAssistant() || $isSubmitFinal ? "" : " and timeSubmitted<=0")
 	    . " and timeWithdrawn<=0";
-    
+
     $result = $Conf->qe(($newPaper ? "insert into" : "update") . " Paper set $q", "while updating paper information");
     if (DB::isError($result))
 	return false;
@@ -181,49 +185,64 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
     }
 
     // update topics table
-    $result = $Conf->qe("delete from PaperTopic where paperId=$paperId", "while updating paper topics");
-    if (DB::isError($result))
-	return false;
-    foreach ($_REQUEST as $key => $value)
-	if ($key[0] == 't' && $key[1] == 'o' && $key[2] == 'p'
-	    && ($id = cvtint(substr($key, 3))) > 0 && $value > 0) {
-	    $result = $Conf->qe("insert into PaperTopic (paperId, topicId) values ($paperId, $id)", "while updating paper topics");
-	    if (DB::isError($result))
-		return false;
-	}
+    if (!$isSubmitFinal) {
+	$result = $Conf->qe("delete from PaperTopic where paperId=$paperId", "while updating paper topics");
+	if (DB::isError($result))
+	    return false;
+	foreach ($_REQUEST as $key => $value)
+	    if ($key[0] == 't' && $key[1] == 'o' && $key[2] == 'p'
+		&& ($id = cvtint(substr($key, 3))) > 0 && $value > 0) {
+		$result = $Conf->qe("insert into PaperTopic (paperId, topicId) values ($paperId, $id)", "while updating paper topics");
+		if (DB::isError($result))
+		    return false;
+	    }
+    }
 
     // upload paper if appropriate
     if (fileUploaded($_FILES['paperUpload'], $Conf)) {
 	if ($newPaper)
 	    getProw($contactId);
-	if (!uploadPaper())
+	if (!uploadPaper($isSubmitFinal))
 	    return false;
     }
 
     // submit paper if appropriate
-    if ($isSubmit) {
+    if ($isSubmitFinal || $isSubmit) {
 	getProw($contactId);
-	if ($prow->paperStorageId == 1) {
+	if (($isSubmitFinal ? $prow->finalPaperStorageId : $prow->paperStorageId) <= 1) {
 	    $PaperError["paper"] = 1;
-	    return $Conf->errorMsg(whyNotText("notUploaded", "submit", $paperId));
+	    return $Conf->errorMsg(whyNotText("notUploaded", ($isSubmitFinal ? "submit a final copy for" : "submit"), $paperId));
 	}
-	$result = $Conf->qe("update Paper set timeSubmitted=" . time() . " where paperId=$paperId", "while submitting paper");
+	$result = $Conf->qe("update Paper set " . ($isSubmitFinal ? "timeFinalSubmitted" : "timeSubmitted") . "=" . time() . " where paperId=$paperId",
+			    ($isSubmitFinal ? "while submitting final copy for paper" : "while submitting paper"));
 	if (DB::isError($result))
 	    return false;
     }
     
     // confirmation message
     getProw($contactId);
-    $what = ($isSubmit ? "Submitted" : ($newPaper ? "Created" : "Updated"));
+    if ($isSubmitFinal) {
+	$what = "Submitted final copy for";
+	$subject = "Paper #$paperId final copy submitted";
+    } else {
+	$what = ($isSubmit ? "Submitted" : ($newPaper ? "Created" : "Updated"));
+	$subject = "Paper #$paperId " . strtolower($what);
+    }
     $Conf->confirmMsg("$what paper #$paperId.");
 
     // send paper email
-    $subject = "Paper #$paperId " . strtolower($what);
-    $m = wordwrap("This mail confirms the " . ($isSubmit ? "submission" : ($newPaper ? "creation" : "update")) . " of paper #$paperId at the $Conf->shortName conference submission site.") . "\n\n"
+    $m = wordwrap("This mail confirms the "
+	. ($isSubmitFinal ? "submission of a final copy for"
+	   : ($isSubmit ? "submission of"
+	      : ($newPaper ? "creation of" : "update of")))
+	. " paper #$paperId at the $Conf->shortName conference submission site.") . "\n\n"
 	. wordWrapIndent(trim($prow->title), "Title: ") . "\n"
 	. wordWrapIndent(trim($prow->authorInformation), "Authors: ") . "\n"
 	. "      Paper site: $Conf->paperSite/paper.php?paperId=$paperId\n\n";
-    if ($isSubmit || $prow->timeSubmitted > 0)
+    if ($isSubmitFinal) {
+	$deadline = $Conf->printableEndTime("authorUpdateFinal");
+	$mx = ($deadline != "N/A" ? "You have until $deadline to make further changes." : "");
+    } else if ($isSubmit || $prow->timeSubmitted > 0)
 	$mx = "The paper will be considered for inclusion in the conference.  You will receive email when reviews are available for you to view.";
     else {
 	$mx = "The paper has not been submitted yet.";
@@ -238,7 +257,8 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
 	$mx .= "\n\nA conference administrator provided the following reason for this update: " . $_REQUEST["emailNote"];
     else if ($Me->amAssistant() && $prow->author <= 0)
 	$mx .= "\n\nA conference administrator performed this update.";
-    $m .= wordwrap("$mx\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.
+    $mx .= ($mx == "" ? "" : "\n\n");
+    $m .= wordwrap($mx . "Contact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.
 
 - $Conf->shortName Conference Submissions\n");
 
@@ -250,7 +270,7 @@ function updatePaper($Me, $isSubmit, $isUploadOnly) {
     return true;
 }
 
-if (isset($_REQUEST["update"]) || isset($_REQUEST["submit"])) {
+if (isset($_REQUEST["update"]) || isset($_REQUEST["submit"]) || isset($_REQUEST["submitfinal"])) {
     // get missing parts of request
     if (!$newPaper)
 	setRequestFromPaper($prow);
@@ -259,7 +279,9 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submit"])) {
     if ($newPaper)
 	$ok = $Me->canStartPaper($Conf, $whyNot);
     else {
-	if (isset($_REQUEST["submit"]) && requestSameAsPaper($prow))
+	if (isset($_REQUEST["submitfinal"]))
+	    $ok = $Me->canSubmitFinalPaper($prow, $Conf, $whyNot);
+	else if (isset($_REQUEST["submit"]) && requestSameAsPaper($prow))
 	    $ok = $Me->canFinalizePaper($prow, $Conf, $whyNot);
 	else
 	    $ok = $Me->canUpdatePaper($prow, $Conf, $whyNot);
@@ -267,8 +289,8 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submit"])) {
 
     // actually update
     if (!$ok)
-	$Conf->errorMsg(whyNotText($whyNot, "update"));
-    else if (updatePaper($Me, isset($_REQUEST["submit"]), false)) {
+	$Conf->errorMsg(whyNotText($whyNot, (isset($_REQUEST["submitfinal"]) ? "submit final copy for" : "update")));
+    else if (updatePaper($Me, isset($_REQUEST["submit"]), isset($_REQUEST["submitfinal"]))) {
 	if ($newPaper)
 	    $Conf->go("paper.php?paperId=$paperId&mode=edit");
     }
@@ -425,6 +447,7 @@ confHeader();
 
 
 // begin table
+$finalEditMode = false;
 if ($mode == "edit") {
     echo "<form method='post' action=\"paper.php?paperId=",
 	($newPaper ? "new" : $paperId),
@@ -432,6 +455,8 @@ if ($mode == "edit") {
     $editable = $newPaper || (($prow->timeSubmitted <= 0 || $Me->amAssistant())
 			      && $prow->timeWithdrawn <= 0
 			      && ($Conf->timeUpdatePaper() || $Me->amAssistant()));
+    if (!$editable && $prow && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper())
+	$editable = $finalEditMode = true;
 } else
     $editable = false;
 echo "<table class='paper", ($mode == "edit" ? " editpaper" : ""), "'>\n\n";
@@ -474,7 +499,9 @@ if ($editable)
 if ($newPaper
     || ($prow->timeWithdrawn <= 0 && ($editable || $prow->size > 0))
     || ($prow->timeWithdrawn > 0 && $mode == "edit" && $prow->size > 0)) {
-    if ($mode == "edit")
+    if ($finalEditMode)
+	$paperTable->echoDownloadRow($prow, PaperTable::FINALCOPY);
+    else if ($mode == "edit")
 	$paperTable->echoDownloadRow($prow, ($newPaper ? PaperTable::OPTIONAL : 0));
     else
 	$paperTable->echoDownloadRow($prow, PaperTable::NOCAPTION);
@@ -488,15 +515,18 @@ $paperTable->echoAbstractRow($prow);
 // Authors
 if ($newPaper || $canViewAuthors || $Me->amAssistant())
     $paperTable->echoAuthorInformation($prow);
-if (($newPaper || $mode == "edit") && $Conf->blindSubmission() == 1) {
-    echo "<tr class='pt_blind'>
-  <td class='caption'></td>
-  <td class='entry'><input type='checkbox' name='blind' value='1'";
-    if ($useRequest ? isset($_REQUEST['blind']) : (!$prow || $prow->blind))
-	echo " checked='checked'";
-    echo " />&nbsp;Anonymous submission</td>
-  <td class='hint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (the PC and any external reviewers won't be shown the author list).</td>
-</tr>\n";
+if (($newPaper || $mode == "edit") && $Conf->blindSubmission() == 1 && !$finalEditMode) {
+    echo "<tr class='pt_blind'>\n  <td class='caption'></td>\n";
+    $blind = ($useRequest ? isset($_REQUEST['blind']) : (!$prow || $prow->blind));
+    if ($paperTable->editable) {
+	echo "  <td class='entry'><input type='checkbox' name='blind' value='1'";
+	if ($blind)
+	    echo " checked='checked'";
+	echo " />&nbsp;Anonymous submission</td>
+  <td class='hint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (the PC and any external reviewers won't be shown the author list).</td>\n";
+    } else
+	echo "  <td class='entry'>", ($blind ? "Anonymous submission" : "Non-anonymous submission"), "</td>\n";
+    echo "</tr>\n";
 }
 
 
@@ -508,12 +538,13 @@ else if ($canViewAuthors || $Me->amAssistant())
 
 
 // Collaborators
-if ($newPaper || $canViewAuthors || $Me->amAssistant())
+if (($newPaper || $canViewAuthors || $Me->amAssistant()) && !$finalEditMode)
     $paperTable->echoCollaborators($prow);
 
 
 // Topics
-$paperTable->echoTopics($prow);
+if (!$finalEditMode)
+    $paperTable->echoTopics($prow);
 
 
 // Tags
@@ -557,6 +588,8 @@ if ($mode == "edit") {
     else if ($prow->timeWithdrawn > 0)
 	$buttons[] = "The paper has been withdrawn, and the <a href='deadlines.php'>deadline</a> for reviving it has passed.";
     else {
+	if ($prow->outcome > 0 && ($Conf->timeSubmitFinalPaper() || $Me->amAssistant()))
+	    $buttons[] = array("<input class='button' type='submit' name='submitfinal' value='Submit final copy' />", "");
 	if ($prow->timeSubmitted <= 0) {
 	    if ($Conf->timeUpdatePaper() || $Me->amAssistant())
 		$buttons[] = array("<input class='button' type='submit' name='update' value='Save changes' />", "(does not submit)");
@@ -610,4 +643,4 @@ echo "<div class='clear'></div>\n\n";
 
 echo "<div class='gapbottom'></div>\n";
 
-$Conf->footer(); ?>
+$Conf->footer();

@@ -8,12 +8,13 @@ class PaperTable {
 
     const NOCAPTION = 1;
     const OPTIONAL = 2;
+    const FINALCOPY = 4;
     
-    const STATUS_DATE = 4;
-    const STATUS_DOWNLOAD = 8;
-    const STATUS_CONFLICTINFO = 16;
-    const STATUS_CONFLICTINFO_PC = 32;
-    const STATUS_REVIEWERINFO = 64;
+    const STATUS_DATE = 8;
+    const STATUS_DOWNLOAD = 16;
+    const STATUS_CONFLICTINFO = 32;
+    const STATUS_CONFLICTINFO_PC = 64;
+    const STATUS_REVIEWERINFO = 128;
 
     var $editable;
     var $useRequest;
@@ -134,7 +135,7 @@ class PaperTable {
 	echo "  <td class='entry'>",
 	    $Me->paperStatus($prow->paperId, $prow, ($flags & self::STATUS_DATE) != 0);
 	if ($flags & self::STATUS_DOWNLOAD)
-	    echo " ", paperDownload($prow->paperId, $prow, 1);
+	    echo " ", paperDownload($prow);
 	if (($flags & self::STATUS_CONFLICTINFO) && $prow->author > 0)
 	    echo "<br/>\nYou are an <span class='author'>author</span> of this paper.";
 	else if ((($flags & self::STATUS_CONFLICTINFO) && $prow->conflict > 0)
@@ -162,22 +163,25 @@ class PaperTable {
     }
 
     function echoDownloadRow($prow, $flags) {
+	$final = (($flags & self::FINALCOPY) != 0);
+	$canUpload = ($this->editable && (!$prow || $final || $prow->timeSubmitted <= 0));
+	
 	echo "<tr class='pt_paper$this->trClasses' id='foldpa'>\n";
 	echo "  ", $this->tdCaption('paper');
 	if (!($flags & self::NOCAPTION))
 	    echo "Paper", ($flags & self::OPTIONAL ? " (optional)" : "");
 	echo "</td>\n";
 	echo "  ", $this->tdEntry("paper");
-	if ($prow && $prow->size > 0)
-	    echo paperDownload($prow->paperId, $prow, 1);
-	if ($this->editable && (!$prow || $prow->timeSubmitted <= 0)) {
-	    if ($prow && $prow->size > 0)
-		echo "<br/>\n    ";
+	if ($final && $prow->finalPaperStorageId > 0)
+	    echo paperDownload($prow, true), ($canUpload ? "<br />\n  " : "");
+	else if (!$final && $prow && $prow->size > 0)
+	    echo paperDownload($prow), ($canUpload ? "<br />\n  " : "");
+	if ($canUpload)
 	    echo "<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='30' />";
-	    //echo "&nbsp;<input class='button' type='submit' name='upload' value='Upload paper' />";
-	}
+	if ($final)
+	    echo "<br />\n  Submission: ", paperDownload($prow);
 	echo "</td>\n";
-	if ($this->editable && (!$prow || $prow->timeSubmitted <= 0))
+	if ($canUpload)
 	    echo "  ", $this->tdHint("paper"), "Max size: ", ini_get("upload_max_filesize"), "B</td>\n";
 	echo "</tr>\n\n";
     }

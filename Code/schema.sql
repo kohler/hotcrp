@@ -139,9 +139,11 @@ CREATE TABLE Paper (
 
   timeSubmitted int(11) NOT NULL default 0,
   timeWithdrawn int(11) NOT NULL default 0,
+  timeFinalSubmitted int(11) NOT NULL default 0,
   pcPaper tinyint(11) NOT NULL default 0,
 
   paperStorageId int(11) NOT NULL default 0,
+  finalPaperStorageId int(11) NOT NULL default 0,
   # copied from PaperStorage to reduce joins
   size int(11) NOT NULL default 0,
   mimetype varchar(40) NOT NULL default '',

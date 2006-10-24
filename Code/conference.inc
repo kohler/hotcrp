@@ -349,6 +349,9 @@ class Conference {
     function timeFinalizePaper() {
 	return $this->validPeriod('finalizePaperSubmission') > 0;
     }
+    function timeSubmitFinalPaper() {
+	return $this->validPeriod('authorUpdateFinal') > 0;
+    }
     function timeAuthorViewReviews() {
 	return $this->validPeriod('authorViewReviews') > 0;
     }
@@ -449,8 +452,6 @@ class Conference {
 
     function emailContactAuthors($prow, $subject, $message) {
 	global $Opt, $Me;
-	if (!$Opt['sendEmail'])
-	    return;
 
 	if ($subject[0] != '[')
 	    $subject = "[$this->shortName] $subject";
@@ -504,7 +505,7 @@ class Conference {
     // Paper storage
     //
 
-    function storePaper($uploadId, $prow) {
+    function storePaper($uploadId, $prow, $final = false) {
 	global $Opt;
 
 	$paperId = (is_numeric($prow) ? $prow : $prow->paperId);
@@ -575,9 +576,11 @@ class Conference {
 	}
     
 	if (!DB::isError($result))
-	    $result = $this->qe("update Paper
-		set paperStorageId=$paperStorageId, size=" . strlen($contents) . ", mimetype='" . sqlq($mimetype) . "', timestamp=$timestamp
-		where paperId=$paperId and timeWithdrawn<=0 and timeSubmitted<=0", $while);
+	    $result = $this->qe("update Paper set "
+		. ($final ? "finalPaperStorageId" : "paperStorageId") . "=$paperStorageId, "
+		. "size=" . strlen($contents) . ", mimetype='" . sqlq($mimetype) . "', timestamp=$timestamp"
+		. " where paperId=$paperId and timeWithdrawn<=0"
+		. ($final ? "" : " and timeSubmitted<=0"), $while);
 
 	$this->qe("unlock tables", $while);
 
@@ -612,7 +615,7 @@ class Conference {
 	    
 	    $mime = new Mail_mime("\n");
 	    $mime->setTXTBody($message);
-	    $mime->addAttachment($contents, $mimetype, $this->downloadPaperName($paperId, $mimetype), false);
+	    $mime->addAttachment($contents, $mimetype, $this->downloadPaperName($paperId, $mimetype, false), false);
 
 	    $body = $mime->get();
 	    $hdrs = $mime->headers(array("From" => $this->emailFrom,
@@ -628,15 +631,17 @@ class Conference {
 	return strlen($contents);
     }
 
-    function downloadPaperName($paperId, $mimetype) {
-	return $this->downloadPrefix . "paper$paperId" . $this->getFileExtension($mimetype);
+    function downloadPaperName($paperId, $mimetype, $final) {
+	$title = $this->downloadPrefix . ($final ? "final" : "paper");
+	return $title . $paperId . $this->getFileExtension($mimetype);
     }
     
-    function __downloadPaper($paperId, $saveit) {
+    function __downloadPaper($paperId, $saveit, $final) {
 	// Database query
-	$result = $this->q("select mimetype, paper, PaperStorage.paperStorageId, compression
+	$storefield = ($final ? "finalPaperStorageId" : "paperStorageId");
+	$result = $this->q("select PaperStorage.mimetype, paper, PaperStorage.paperStorageId, compression
 	from Paper
-	left join PaperStorage using (paperStorageId)
+	left join PaperStorage on (PaperStorage.paperStorageId=Paper.$storefield)
 	where Paper.paperId=$paperId");
 	if (DB::isError($result)) {
 	    $this->log("Error downloading #$paperId for review" . $result->getMessage(), $_SESSION["Me"]);
@@ -650,7 +655,7 @@ class Conference {
 	$content = $row[1];
 	$compression = $row[3];
 	$length = strlen($content);
-	if ($row[2] == 1)
+	if ($row[2] <= 1)
 	    return new PEAR_Error("Paper #$paperId has not been uploaded yet.");
 	else if ($length == 0)
 	    return new PEAR_Error("Paper #$paperId appears to be empty.");
@@ -658,7 +663,7 @@ class Conference {
 	// Print paper
 	header("Content-Type: $mimetype");
 	header("Content-Description: PHP Generated Data");
-	$name = $this->downloadPaperName($paperId, $mimetype);
+	$name = $this->downloadPaperName($paperId, $mimetype, $final);
 	header("Content-Disposition: " . ($saveit ? "attachment" : "inline") . "; filename=$name");
 	header("Content-Length: $length"); 
 	if ($compression == 1)
@@ -668,8 +673,8 @@ class Conference {
 	return 1;
     }
 
-    function downloadPaper($paperId, $saveit) {
-	$result = $this->__downloadPaper($paperId, $saveit);
+    function downloadPaper($paperId, $saveit, $final = false) {
+	$result = $this->__downloadPaper($paperId, $saveit, $final);
 	if (DB::isError($result))
 	    $this->errorMsg($this->dbErrorText($result, "while downloading paper", 1));
 	else if (PEAR::isError($result))
@@ -679,15 +684,15 @@ class Conference {
 	return $result;
     }
 
-    function __downloadPapers($paperIds, &$tmpdir) {
+    function __downloadPapers($paperIds, &$tmpdir, $final) {
 	// special cases
 	if (count($paperIds) == 0)
 	    return new PEAR_Error("No papers selected for download.");
 	else if (count($paperIds) == 1)
-	    return $this->__downloadPaper($paperIds[0], 1);
+	    return $this->__downloadPaper($paperIds[0], 1, $final);
 
 	// paper query
-	$q = "select Paper.paperId, paper, mimetype, compression from PaperStorage join Paper using (paperStorageId) where (";
+	$q = "select Paper.paperId, paper, mimetype, compression from PaperStorage join Paper on (PaperStorage.paperStorageId=Paper." . ($final ? "finalPaperStorageId" : "paperStorageId") . ") where (";
 	foreach ($paperIds as $paperId)
 	    $downloadQ[] = "Paper.paperId=$paperId";
 	$q .= join(" or ", $downloadQ) . ")";
@@ -701,7 +706,7 @@ class Conference {
 
 	// write papers into temporary directory
 	while ($row = $result->fetchRow()) {
-	    $path = "$tmpdir/" . $this->downloadPaperName($row[0], $row[2]);
+	    $path = "$tmpdir/" . $this->downloadPaperName($row[0], $row[2], $final);
 	    if ($row[3] == 1)
 		$row[1] = gzinflate($row[1]);
 	    if (($len = file_put_contents($path, $row[1])) != strlen($row[1]))
@@ -734,8 +739,8 @@ class Conference {
 	return 1;
     }
 
-    function downloadPapers($paperIds) {
-	$result = $this->__downloadPapers($paperIds, $tmpdir);
+    function downloadPapers($paperIds, $final = false) {
+	$result = $this->__downloadPapers($paperIds, $tmpdir, $final);
 	if (DB::isError($result))
 	    $this->errorMsg($this->dbErrorText($result, "while downloading paper", 1));
 	else if (PEAR::isError($result))
@@ -1253,12 +1258,12 @@ class Conference {
       //    return $suffix;
   }
 
-  function makeDownloadPath($paperId, &$mimetype) {
+  function makeDownloadPath($paperId, &$mimetype, $final = false) {
       //$ext = $this->getFileExtension($mimetype);
       //$path = $this->paperSite . "/Download/GetPaper/" . 
       //   $this->downloadPrefix . "paper$paperId." . $ext;
       global $ConfSiteBase;
-      return $ConfSiteBase . "Download/GetPaper/" . $this->downloadPaperName($paperId, $mimetype);
+      return $ConfSiteBase . "Download/GetPaper/" . $this->downloadPaperName($paperId, $mimetype, $final);
   }
 
   

@@ -10,9 +10,10 @@ $Conf->connect();
 $Me = $_SESSION['Me'];
 $Me->goIfInvalid();
 
-//
 // Determine the intended paper
-//
+
+$final = (defval($_REQUEST['final'], 0) != 0);
+
 if (isset($_REQUEST['paperId']))
     $paperId = cvtint($_REQUEST["paperId"]);
 else {
@@ -20,32 +21,30 @@ else {
     if (preg_match("/^(" . $Conf->downloadPrefix . ")?(paper-?)?(\d+).*$/", $paper, $match)
 	&& $match[3] > 0)
 	$paperId = $match[3];
-    else
+    else if (preg_match("/^(" . $Conf->downloadPrefix . ")?(final-?)(\d+).*$/", $paper, $match)
+	     && $match[3] > 0) {
+	$paperId = $match[3];
+	$final = true;
+    } else
 	$Error = "Invalid paper name '" . htmlspecialchars($paper) . "'.";
 }
 
-//
+
 // Security checks - people who can download all paperss
 // are assistants, chairs & PC members. Otherwise, you need
 // to be a contact person for that paper.
-//
 if (!isset($Error) && !$Me->canViewPaper($paperId, $Conf, $whyNot))
     $Error = whyNotText($whyNot, "view");
 
-//
 // Actually download paper.
-//
 if (!isset($Error)) {
-    $result = $Conf->downloadPaper($paperId, cvtint($_REQUEST['save']) > 0);
+    $result = $Conf->downloadPaper($paperId, cvtint($_REQUEST['save']) > 0, $final);
     if (!PEAR::isError($result))
 	exit;
 }
 
-//
 // If we get here, there is an error.
-//
-$Conf->header("Download Paper #$paperId");
+$Conf->header(isset($paperId) ? "Download Paper #$paperId" : "Download Paper");
 if (isset($Error))
     $Conf->errorMsg($Error);
-
-$Conf->footer() ?>
+$Conf->footer();
