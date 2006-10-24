@@ -433,6 +433,9 @@ else if ($newPaper) {
 	$Conf->infoMsg("You cannot make any changes as the <a href='deadlines.php'>deadline</a> has passed, but the current version can still be officially submitted.  Only officially submitted papers will be considered for the conference.$submitDeadline$override");
     else if ($prow->timeWithdrawn <= 0)
 	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting this paper has passed.  The paper will not be considered.$submitDeadline$override");
+} else if ($prow->author > 0 && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper()) {
+    $updateDeadline = deadlineIs("authorUpdateFinal", $Conf);
+    $Conf->infoMsg("Congratulations!  This paper was accepted.  Submit a final copy for your paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or add contact authors, allowing others to view reviews and make changes.");
 } else if ($prow->author > 0) {
     $override2 = ($Me->amAssistant() ? "  As PC Chair, you can unsubmit the paper, which will allow further changes, using the \"Undo submit\" button." : "");
     $Conf->infoMsg("This paper has been submitted and can no longer be changed.  You can still withdraw the paper or add contact authors, allowing others to view reviews as they become available.$override2");
@@ -455,7 +458,7 @@ if ($mode == "edit") {
     $editable = $newPaper || (($prow->timeSubmitted <= 0 || $Me->amAssistant())
 			      && $prow->timeWithdrawn <= 0
 			      && ($Conf->timeUpdatePaper() || $Me->amAssistant()));
-    if (!$editable && $prow && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper())
+    if ($prow && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper())
 	$editable = $finalEditMode = true;
 } else
     $editable = false;
@@ -599,7 +602,10 @@ if ($mode == "edit") {
 	    $buttons[] = array("<input class='button' type='submit' name='update' value='Save changes' />", "(PC chair only)");
 	    $buttons[] = array("<input class='button' type='submit' name='unsubmit' value='Undo submit' />", "(PC chair only)");
 	}
-	$buttons[] = "<input class='button' type='submit' name='withdraw' value='Withdraw paper' />";
+	if ($prow->timeSubmitted <= 0)
+	    $buttons[] = "<input class='button' type='submit' name='withdraw' value='Withdraw paper' />";
+	else
+	    $buttons[] = "<div id='foldw' class='folded' style='position: relative'><button type='button' onclick=\"fold('w', 0)\">Withdraw paper</button><div class='popupdialog extension'><p>Are you sure you want to withdraw this paper from consideration or publication?  Only the PC chair can undo this step.</p><input class='button' type='submit' name='withdraw' value='Withdraw paper' /> <button type='button' onclick=\"fold('w', 1)\">Cancel</button></div></div>";
     }
     if ($Me->amAssistant() && !$newPaper)
 	$buttons[] = array("<div id='folddel' class='folded' style='position: relative'><button type='button' onclick=\"fold('del', 0)\">Delete paper</button><div class='popupdialog extension'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><input class='button' type='submit' name='delete' value='Delete paper' /> <button type='button' onclick=\"fold('del', 1)\">Cancel</button></div></div>", "(PC chair only)");
