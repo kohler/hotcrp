@@ -306,7 +306,8 @@ if ($canViewAuthors || $Me->amAssistant()) {
     $paperTable->echoCollaborators($prow);
 }
 $paperTable->echoTopics($prow);
-$paperTable->echoTags($prow, "${ConfSiteBase}review.php?paperId=$prow->paperId");
+if ($Me->isPC)
+    $paperTable->echoTags($prow, "${ConfSiteBase}review.php?paperId=$prow->paperId");
 if ($Me->amAssistant())
     $paperTable->echoPCConflicts($prow);
 
