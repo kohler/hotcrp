@@ -6,8 +6,13 @@ $Me->goIfInvalid();
 $Me->goIfNotChair('../index.php');
 $rf = reviewForm();
 
-function queryFromRecipients($who) {
+function queryFromRecipients($who, $per_paper) {
     global $rf;
+
+    if ($per_paper)
+	$group_order = "group by Paper.paperId order by Paper.paperId";
+    else
+	$group_order = "group by ContactInfo.email order by ContactInfo.lastName, ContactInfo.email";
     
     if ($who == "submit-not-finalize")
 	return "select Paper.paperId, Paper.title, Paper.authorInformation,
@@ -15,7 +20,7 @@ function queryFromRecipients($who) {
 		from Paper join PaperConflict using (paperId)
 		join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId)
 		where Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0 and PaperConflict.author>0
-		order by Paper.paperId";
+		$group_order";
 
     if ($who == "submit-and-finalize")
 	return "select Paper.paperId, Paper.title, Paper.authorInformation,
@@ -23,7 +28,7 @@ function queryFromRecipients($who) {
 		from Paper join PaperConflict using (paperId)
 		join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId)
 		where Paper.timeSubmitted>0 and PaperConflict.author>0
-		order by Paper.paperId";
+		$group_order";
 
     if (substr($who, 0, 14) == "author-outcome"
 	&& ($out = cvtint(substr($who, 14), -1000)) > -1000
@@ -33,7 +38,7 @@ function queryFromRecipients($who) {
 		from Paper join PaperConflict using (paperId)
 		join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId)
 		where Paper.timeSubmitted>0 and Paper.outcome=$out and PaperConflict.author>0
-		order by Paper.paperId";
+		$group_order";
     
     if ($who == "asked-to-review") {
     $query = "
@@ -81,7 +86,7 @@ function queryFromRecipients($who) {
        . " FROM ContactInfo, Paper "
        . " WHERE Paper.contactId=ContactInfo.contactID "
        . " AND ( Paper.outcome='accepted' OR Paper.outcome='acceptedShort' )"
-       . " ORDER BY ContactInfo.email "
+       . " $group_order"
        ;
     return $query;
   } else if ($who == "author-rejected") {
@@ -93,7 +98,7 @@ function queryFromRecipients($who) {
        . " FROM ContactInfo, Paper "
        . " WHERE Paper.contactId=ContactInfo.contactID "
        . " AND Paper.outcome='rejected' "
-       . " ORDER BY ContactInfo.email "
+       . " $group_order"
        ;
     return $query;
   } else if ($who == "author-late-review") {
@@ -105,7 +110,7 @@ function queryFromRecipients($who) {
 	     . "AND PaperReview.reviewSubmitted>0 "
 	     . "AND PaperReview.lastModified > ImportantDates.start "
 	     . "AND ImportantDates.name = 'authorRespondToReviews' "
-	     . "ORDER BY email, Paper.paperId ";
+	     . " $group_order";
     return $query;
   } else {
     return null;
@@ -151,7 +156,9 @@ function getComments ($paperId) {
     return $text;
 }
 
-$query = queryFromRecipients($_REQUEST["recipients"]);
+$per_paper = (preg_match("/%(TITLE|NUMBER|REVIEWS|COMMENTS)%/", $_REQUEST["subject"] . " " . $_REQUEST["emailBody"]) > 0);
+
+$query = queryFromRecipients($_REQUEST["recipients"], $per_paper);
 
 
 $Conf->header("Confirm Sending Mail") ?>
@@ -170,10 +177,10 @@ $Conf->header("Confirm Sending Mail") ?>
    }
 
 if (isset($_REQUEST["sendTheMail"])) {
-  //
-  // Turn from mime back to something else..
-  //
-  $_REQUEST["emailBody"]=base64_decode($_REQUEST["emailBody"]);
+    //
+    // Turn from mime back to something else..
+    //
+    $_REQUEST["emailBody"]=base64_decode($_REQUEST["emailBody"]);
 }
 
 $result = $Conf->qe($query);
@@ -181,7 +188,7 @@ if (!DB::isError($result)) {
     while (($row = $result->fetchRow(DB_FETCHMODE_ASSOC))) {
 	$subj = $_REQUEST["subject"];
 	$msg = $_REQUEST["emailBody"];
-
+	
 	$subj = str_replace("%TITLE%", $row['title'], $subj);
 	$subj = str_replace("%NUMBER%", $row['paperId'], $subj);
 	$subj = str_replace("%FIRST%", $row['firstName'], $subj);
