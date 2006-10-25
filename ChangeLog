@@ -1,3 +1,36 @@
+2006-10-23 Monday 23:50  kohler
+
+	* paper.php (1.67), style.css (1.101), Code/papertable.inc (1.32):
+	  more finalcopy nonsense
+
+2006-10-23 Monday 23:33  kohler
+
+	* paper.php (1.66): nbetter message
+
+2006-10-23 Monday 23:00  kohler
+
+	* review.php (1.48): only report tags to reviewers
+
+2006-10-23 Monday 22:59  kohler
+
+	* deadlines.php (1.11), paper.php (1.65), Code/ClassConference.inc
+	  (1.107), Code/ClassContact.inc (1.65), Code/Helpers.inc (1.87),
+	  Code/conference.sql (1.63), Code/papertable.inc (1.31),
+	  Download/GetPaper (1.12), Download/GetPaper.php (1.12): final
+	  copy submissions
+
+2006-10-23 Monday 21:09  kohler
+
+	* Chair/SendMail2.php (1.10): if the mail has no
+	  paper/title/reviews/comments info, do not send multiple times per
+	  contact author
+
+2006-10-20 Friday 16:56  kohler
+
+	* search.php (1.21), style.css (1.100), Code/ClassContact.inc
+	  (1.64), Code/Helpers.inc (1.86), Code/TODO (1.4), Code/search.inc
+	  (1.9): new search box
+
 2006-10-17 Tuesday 01:17  kohler
 
 	* login.php (1.8), style.css (1.99), All/UpdateContactInfo.php
