@@ -1,6 +1,6 @@
 <?php
 require_once('Code/header.inc');
-require_once('Code/ClassPaperList.inc');
+require_once('Code/paperlist.inc');
 $Conf->connect();
 
 $testCookieStatus = 0;
