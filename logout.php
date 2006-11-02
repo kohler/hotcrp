@@ -1,5 +1,5 @@
 <?php 
-require_once('Code/confHeader.inc');
+require_once('Code/header.inc');
 $_SESSION["Me"]->invalidate();
 unset($_SESSION["AskedYouToUpdateContactInfo"]);
 unset($_SESSION["GradeSortKey"]);

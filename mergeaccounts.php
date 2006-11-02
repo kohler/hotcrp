@@ -1,5 +1,5 @@
 <?php 
-include('../Code/confHeader.inc');
+include('../Code/header.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();

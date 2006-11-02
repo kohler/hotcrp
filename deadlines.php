@@ -1,5 +1,5 @@
 <?php 
-require_once('Code/confHeader.inc');
+require_once('Code/header.inc');
 require_once('Code/Calendar.inc');
 $Conf->connect();
 $Me = $_SESSION["Me"];

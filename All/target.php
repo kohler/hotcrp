@@ -17,9 +17,9 @@ function targetopener(mylink, closeme, closeonly)
 <?php 
 echo $popupMessage;
 $here=substr($_SERVER[SCRIPT_FILENAME],0,strrpos($_SERVER[SCRIPT_FILENAME],'/'));
-if ( file_exists($here . "/Code/confHeader.inc")) {
+if ( file_exists($here . "/Code/header.inc")) {
   print "<p> I am in index </p>\n";
-} else if ( file_exists($here . "/../Code/confHeader.inc")) {
+} else if ( file_exists($here . "/../Code/header.inc")) {
   print "<p> I am in subdir </p>\n";
   $here=substr($here,0,strrpos($here,'/'));
 }

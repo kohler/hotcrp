@@ -4,7 +4,7 @@
 // This takes a single argument which is the paper number. You need to change '$dir' below.
 //
 
-include('../Code/confHeader.inc');
+include('../Code/header.inc');
 $Conf -> connect();
 
 print "Hi!\n";

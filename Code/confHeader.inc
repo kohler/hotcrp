@@ -38,9 +38,9 @@ header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
 // automatically determine path to conference site
 //
 $here = substr(__FILE__,0,strrpos(__FILE__,'/'));
-if (file_exists($here . "/Code/confHeader.inc")) {
+if (file_exists($here . "/Code/header.inc")) {
     $ConfSitePATH = $here;
-} else if (file_exists($here . "/../Code/confHeader.inc")) {
+} else if (file_exists($here . "/../Code/header.inc")) {
     $ConfSitePATH = substr($here, 0, strrpos($here,'/'));
 } else {
     //  print "<p> CRP is mis-configured? </p>\n";

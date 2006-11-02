@@ -21,7 +21,7 @@
 //
 //
 // This is a magic 
-include('../Code/confHeader.inc');
+include('../Code/header.inc');
 //$Me -> goIfInvalid();
 //$Me -> goIfNotAssistant('../index.php');
 $Conf -> connect();

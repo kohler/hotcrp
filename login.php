@@ -1,5 +1,5 @@
 <?php 
-require_once('Code/confHeader.inc');
+require_once('Code/header.inc');
 $Conf->connect();
 
 // If they're here, the contact is invalid.

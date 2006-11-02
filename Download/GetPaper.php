@@ -5,7 +5,7 @@
 // suffix to the GetPaper request. It's necessary to have automatic file naming
 // work for specific browsers (I think Mozilla/netscape).
 //
-require_once('../Code/confHeader.inc');
+require_once('../Code/header.inc');
 $Conf->connect();
 $Me = $_SESSION['Me'];
 $Me->goIfInvalid();

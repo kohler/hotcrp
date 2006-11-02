@@ -1,5 +1,5 @@
 <?php 
-include('../Code/confHeader.inc');
+include('../Code/header.inc');
 
 $Conf->header("Activities for all Users") ?>
 <body>

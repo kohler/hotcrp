@@ -1,5 +1,5 @@
 <?php
-require_once('Code/confHeader.inc');
+require_once('Code/header.inc');
 
 if (isset($_REQUEST["var"])) {
     $v = $_REQUEST["var"];

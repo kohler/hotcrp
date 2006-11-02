@@ -1,5 +1,5 @@
 <?php 
-include('../Code/confHeader.inc');
+include('../Code/header.inc');
 ?>
 
 <html>

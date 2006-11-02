@@ -1,5 +1,5 @@
 <?php 
-require_once('Code/confHeader.inc');
+require_once('Code/header.inc');
 require_once('Code/papertable.inc');
 require_once('Code/reviewtable.inc');
 $Conf->connect();
