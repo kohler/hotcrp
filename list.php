@@ -35,7 +35,7 @@ if ($action == "revform" && !isset($_REQUEST["papersel"])) {
     $rf = reviewForm();
     $text = $rf->textFormHeader($Conf, false)
 	. $rf->textForm(null, null, $Conf, null, ReviewForm::REV_FORM) . "\n";
-    downloadText($text, $Conf->downloadPrefix . "review.txt", "review form");
+    downloadText($text, $Opt['downloadPrefix'] . "review.txt", "review form");
     exit;
 } else if ($action == "revform") {
     $rf = reviewForm();
@@ -66,7 +66,7 @@ if ($action == "revform" && !isset($_REQUEST["papersel"])) {
 		$e .= "==-== " . preg_replace('|\s+<.*|', "", $ee) . "\n";
 	    $text = "$e\n$text";
 	}
-	downloadText($text, $Conf->downloadPrefix . "review$rfSuffix.txt", "review forms");
+	downloadText($text, $Opt['downloadPrefix'] . "review$rfSuffix.txt", "review forms");
 	exit;
     }
 }
@@ -99,7 +99,7 @@ if ($action == "rev" && isset($_REQUEST["papersel"]) && is_array($_REQUEST["pape
 		$e .= "==-== " . preg_replace('|\s+<.*|', "", $ee) . "\n";
 	    $text = "$e\n$text";
 	}
-	downloadText($text, $Conf->downloadPrefix . "review$rfSuffix.txt", "review forms");
+	downloadText($text, $Opt['downloadPrefix'] . "review$rfSuffix.txt", "review forms");
 	exit;
     }
 }
@@ -140,7 +140,7 @@ if ($action == "authors" && $Me->amAssistant() && isset($_REQUEST["papersel"]) &
 		if (($au = trim(simplifyWhitespace($au))) != "")
 		    $text .= $row[0] . "\t" . $row[1] . "\t" . $au . "\n";
 	}
-	downloadText($text, $Conf->downloadPrefix . "authors.txt", "authors");
+	downloadText($text, $Opt['downloadPrefix'] . "authors.txt", "authors");
 	exit;
     }
 }

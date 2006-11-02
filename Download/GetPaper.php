@@ -18,10 +18,10 @@ if (isset($_REQUEST['paperId']))
     $paperId = cvtint($_REQUEST["paperId"]);
 else {
     $paper = preg_replace("|.*/GetPaper/*|", "", $_SERVER["PHP_SELF"]);
-    if (preg_match("/^(" . $Conf->downloadPrefix . ")?(paper-?)?(\d+).*$/", $paper, $match)
+    if (preg_match("/^(" . $Opt['downloadPrefix'] . ")?(paper-?)?(\d+).*$/", $paper, $match)
 	&& $match[3] > 0)
 	$paperId = $match[3];
-    else if (preg_match("/^(" . $Conf->downloadPrefix . ")?(final-?)(\d+).*$/", $paper, $match)
+    else if (preg_match("/^(" . $Opt['downloadPrefix'] . ")?(final-?)(\d+).*$/", $paper, $match)
 	     && $match[3] > 0) {
 	$paperId = $match[3];
 	$final = true;

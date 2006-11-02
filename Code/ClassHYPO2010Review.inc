@@ -1,5 +1,5 @@
 <?php 
-include('../Code/ClassReview.inc');
+include('../Code/review.inc');
 //
 // This is the configuration file the sample HYPO conference that comes with
 // the CRP distribution. This is adapted from the MICRO36 review form

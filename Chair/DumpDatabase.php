@@ -15,9 +15,10 @@ $Me->goIfNotChair('../index.php');
 <?php 
 if ( IsSet($_REQUEST[submitted]) ) {
     $time=mktime();
-    $dumpname = "$Conf->dbDumpDir/$Conf->dbName-$time";
-    $cmd = "/usr/bin/mysqldump -u $Conf->dbUser -p$Conf->dbPassword "
-      . " -h $Conf->dbHost $Conf->dbName > $dumpname";
+    $dumpname = $Opt['dbDumpDir'] . "/" . $Opt['dbName'] . "-$time";
+    $cmd = "/usr/bin/mysqldump -u " . $Opt['dbUser'] . " -p"
+	. $Opt['dbPassword'] . " -h " . $Opt['dbHost'] . " "
+	. $Opt['dbName'] . " > $dumpname";
 
     $Conf->infoMsg("Dump command is $cmd");
 

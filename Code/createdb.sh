@@ -1,4 +1,4 @@
-#!/bin/sh
+#! /bin/sh
 ##
 ## Create the database. The assumption is that database
 ## name and user name and password are all the same
@@ -161,4 +161,4 @@ echo "(if you need to restore from a backup you don't want to populate)"
 read foo
 
 echo mysql -u $DBNAME -p"$DBNAME" $DBNAME 
-mysql -u $DBNAME -p"$DBNAME" $DBNAME < ./conference.sql || exit 1
+mysql -u $DBNAME -p"$DBNAME" $DBNAME < ./schema.sql || exit 1

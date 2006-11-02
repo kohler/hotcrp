@@ -137,14 +137,14 @@ if (isset($_REQUEST['delete']) && $Me->amAssistant())
 
 // download review form action
 function downloadForm($inline) {
-    global $rf, $Conf, $Me, $prow, $editRrow, $rrows, $myRrow;
+    global $rf, $Conf, $Me, $prow, $editRrow, $rrows, $myRrow, $Opt;
     if (!$Me->canViewReview($prow, $editRrow, $Conf, $whyNot))
 	return $Conf->errorMsg(whyNotText($whyNot, "review"));
     $text = $rf->textFormHeader($Conf, false, $Me->canViewAllReviewFields($prow, $Conf))
 	. $rf->textForm($prow, $editRrow, $Conf,
 			($prow->reviewType > 0 ? $_REQUEST : null),
 			$Me->canViewAllReviewFields($prow, $Conf) ? ReviewForm::REV_PC : ReviewForm::REV_AUTHOR) . "\n";
-    downloadText($text, $Conf->downloadPrefix . "review-" . $prow->paperId . ".txt", "review form", $inline);
+    downloadText($text, $Opt['downloadPrefix'] . "review-" . $prow->paperId . ".txt", "review form", $inline);
     exit;
 }
 if (isset($_REQUEST['downloadForm']))

@@ -3,22 +3,12 @@
 class Conference {
     
     var $connected;
-    var $sessionName; // name of this session, security
     var $shortName;
     var $longName;
-    var $theme;
     var $paperSite;
-    var $conferenceSite;
-    var $downloadPrefix;
     var $contactName;
     var $contactEmail;
     var $emailFrom;
-    //
-    // Paper formats
-    //
-    var $allowPDF;
-    var $allowPS;
-
     var $allowReviewerPreferences;
   
     //
@@ -57,21 +47,25 @@ class Conference {
     var $errorColor = "fuchsia"; // should be pink!
     var $warnColor = "lightBlue"; // should be pink!
 
-    function Conference($dbUser, $dbPassword, $dbHost, $dbName) {
-	$this->dbHost = $dbHost;
-	$this->dbUser = $dbUser;
-	$this->dbPassword = $dbPassword;
-	$this->dbName = $dbName;
-	$this->dsn = "mysql://" . ($this->dbUser) . ":" . ($this->dbPassword) . "@" . ($this->dbHost) . "/" . ($this->dbName) ;
+    function Conference() {
+	global $Opt;
+	$this->dsn = "mysql://" . $Opt['dbUser'] . ":" . $Opt['dbPassword'] . "@" . $Opt['dbHost'] . "/" . $Opt['dbName'];
 	$this->connected = 0;
 	$this->startTime = array();
 	$this->endTime = array();
 	$this->saveMessages = true;
 	$this->headerPrinted = 0;
 	$this->tableMessages = false;
+	
+	$this->contactName = $Opt['contactName'];
+	$this->contactEmail = $Opt['contactEmail'];
+	$this->emailFrom = $Opt['emailFrom'];
+	$this->paperSite = $Opt['paperSite'];
+	$this->shortName = $Opt['shortName'];
+	$this->longName = $Opt['longName'];
     }
 
-  function dump() {
+    function dump() {
       global $Opt;
       echo "<table border=\"1\" width=\"83%\" bgcolor=$bgOne>";
       echo "<tr> <td>";
@@ -80,18 +74,17 @@ class Conference {
       echo "setupPhase is " . $Opt['setupPhase'] . " <br>";
       echo "shortName is " . $this -> shortName . " <br>";
       echo "longName is " . $this -> longName . " <br>";
-      //      echo "theme is " . $this -> theme . " <br>";
       echo "paperSite is " . $this -> paperSite . " <br>";
-      echo "conferenceSite is " . $this -> conferenceSite . " <br>";
-      echo "downloadPrefix is " . $this->downloadPrefix . " <br>";
+      echo "conferenceSite is " . htmlspecialchars($Opt['conferenceSite']) . " <br/>";
+      echo "downloadPrefix is " . htmlspecialchars($Opt['downloadPrefix']) . " <br>";
       echo "contactName is " . $this -> contactName . " <br>";
       echo "contactEmail is " . $this -> contactEmail . " <br>";
       echo "emailFrom is " . $this -> emailFrom . " <br>";
-      echo "dbHost is " . $this -> dbHost . " <br>";
-      echo "dbUser is " . $this -> dbUser . " <br>";
-      echo "dbPassword is " . $this -> dbPassword . " <br>";
-      echo "dbDumpDir is " . $this -> dbDumpDir . " <br>";
-      echo "dbName is " . $this -> dbName . " <br>";
+      echo "dbHost is " . htmlspecialchars($Opt['dbHost']) . " <br>";
+      echo "dbUser is " . htmlspecialchars($Opt['dbUser']) . " <br>";
+      echo "dbPassword is " . htmlspecialchars($Opt['dbPassword']) . " <br>";
+      echo "dbDumpDir is " . htmlspecialchars($Opt['dbDumpDir']) . " <br>";
+      echo "dbName is " . htmlspecialchars($Opt['dbName']) . " <br>";
       echo "dbhandle is " . $this -> dbhandle . " <br>";
 
       echo "Starting times: <br>";
@@ -109,27 +102,26 @@ class Conference {
       echo "</p> </td> </tr> </table>";
     }
 
-  //
-  // Initialization functions
-  //
+    //
+    // Initialization functions
+    //
 
-  function connect() {
-      if (!$this->connected) {
-	  if (!IsSet($this->dsn)) {
-	      $this->errorMsg("Package misconfigured: dsn is not set");
-	  }
+    function connect() {
+	if (!$this->connected) {
+	    if (!isset($this->dsn))
+		$this->errorMsg("Package misconfigured: dsn is not set");
 
-	  $this->DB = DB::connect($this->dsn);
+	    $this->DB = DB::connect($this->dsn);
 
-	  if (DB::isError($this->DB)) {
-	      $this->errorMsg("Unable to connect to database");
-	      die($this->DB->getMessage());
-	  }
+	    if (DB::isError($this->DB)) {
+		$this->errorMsg("Unable to connect to database");
+		die($this->DB->getMessage());
+	    }
 
-	  $this->connected = 1;
-	  $this->updateImportantDates();
-      }
-  }
+	    $this->connected = 1;
+	    $this->updateImportantDates();
+	}
+    }
 
     function updateImportantDates() {
 	// Suck in the start/end dates
@@ -522,20 +514,20 @@ class Conference {
 
 	    // Check if paper is postscript or PDF, only kinds allowed.
 	    // We ignore the mimetype since MacOS browsers get this wrong
-	    if ($this->allowPDF && strncasecmp("%PDF-", $contents, 5) == 0)
+	    if ($Opt['allowPDF'] && strncasecmp("%PDF-", $contents, 5) == 0)
 		$mimetype = "application/pdf";
-	    else if ($this->allowPS && strncasecmp("%!PS-", $contents, 5) == 0)
+	    else if ($Opt['allowPS'] && strncasecmp("%!PS-", $contents, 5) == 0)
 		$mimetype = "application/postscript";
 	    else {
 		$mimetype = "application/octet-stream";
 		if (isset($_FILES[$uploadid]["type"]))
 		    $mimetype = $_FILES[$uploadid]["type"];
 		$message = "You appear to be submitting a file that's not in a valid format for this conference.  ";
-		if ($this->allowPDF && $this->allowPS)
+		if ($Opt['allowPDF'] && $Opt['allowPS'])
 		    $message .= "Valid formats are PDF and PostScript.  ";
-		else if ($this->allowPDF)
+		else if ($Opt['allowPDF'])
 		    $message .= "PDF is the only valid format.  ";
-		else if ($this->allowPS)
+		else if ($Opt['allowPS'])
 		    $message .= "PostScript is the only valid format.  ";
 		else
 		    $message .= "Internal error: there are no valid formats.  ";
@@ -632,7 +624,8 @@ class Conference {
     }
 
     function downloadPaperName($paperId, $mimetype, $final) {
-	$title = $this->downloadPrefix . ($final ? "final" : "paper");
+	global $Opt;
+	$title = $Opt['downloadPrefix'] . ($final ? "final" : "paper");
 	return $title . $paperId . $this->getFileExtension($mimetype);
     }
     
@@ -685,6 +678,8 @@ class Conference {
     }
 
     function __downloadPapers($paperIds, &$tmpdir, $final) {
+	global $Opt;
+	
 	// special cases
 	if (count($paperIds) == 0)
 	    return new PEAR_Error("No papers selected for download.");
@@ -732,7 +727,7 @@ class Conference {
 
 	// output
 	header("Content-Description: PHP Generated Data");
-	header("Content-Disposition: attachment; filename=" . $this->downloadPrefix . "papers.zip");
+	header("Content-Disposition: attachment; filename=" . $Opt['downloadPrefix'] . "papers.zip");
 	header("Content-Type: application/zip");
 	header("Content-Length: " . strlen($contents));
 	print $contents;
@@ -1073,7 +1068,7 @@ class Conference {
     // Conference header, footer
     //
     function header_head($title) {
-	global $ConfSiteBase;
+	global $ConfSiteBase, $Opt;
 	if (!$this->headerPrinted) {
 	    echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n";
 	    // PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n";
@@ -1082,13 +1077,13 @@ class Conference {
 	    echo "<meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />\n";
 	    echo "<title>", $title, " - ", $this->shortName, "</title>\n";
 	    echo "<script src=\"${ConfSiteBase}script.js\" type=\"text/javascript\"></script>\n";
-	    echo $this->theme;
+	    echo $Opt['theme'];
 	    $this->headerPrinted = 1;
 	}
     }
 
     function header($title, $id = "", $actionBar = "<div class='gaptop'></div>", $showTitle = true) {
-	global $ConfSiteBase;
+	global $ConfSiteBase, $Opt;
 	if ($this->headerPrinted >= 2)
 	    return;
 	
@@ -1117,7 +1112,7 @@ class Conference {
 	    echo " &nbsp;|&nbsp; ";
 	}
 	echo date("l j M Y g:i:sa T"), "</div>\n";
-	//echo "    <div id='header_public'><a href='", $this->conferenceSite, "'>", $this->shortName, " Public Site</a></div>\n";
+	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", $this->shortName, " Public Site</a></div>\n";
 	
 	$id = ($id ? " id='$id'" : "");
 	print "  <div class='clear'></div>\n</div>\n";
@@ -1259,9 +1254,6 @@ class Conference {
   }
 
   function makeDownloadPath($paperId, &$mimetype, $final = false) {
-      //$ext = $this->getFileExtension($mimetype);
-      //$path = $this->paperSite . "/Download/GetPaper/" . 
-      //   $this->downloadPrefix . "paper$paperId." . $ext;
       global $ConfSiteBase;
       return $ConfSiteBase . "Download/GetPaper/" . $this->downloadPaperName($paperId, $mimetype, $final);
   }
@@ -1729,36 +1721,6 @@ class Conference {
       return nl2br(htmlspecialchars($string));
     }
   }
-
-  function okSeeReviewers() {
-      global $Me;
-      return $Me -> isChair
-	|| ($Me -> isPC
-	    && $this -> optionLetPCSeeReviewers
-	    && $this -> validTimeFor('PCMeetingView', 0)
-	    )
-	;
-  }
-  function okSeeUnfinishedReviews()
-    {
-      global $Me;
-      return $Me -> isChair
-	|| ($Me -> isPC
-	    && $this -> optionLetPCSeeUnfinishedReviews
-	    && $this -> validTimeFor('PCMeetingView', 0)
-	    )
-	;
-    }
-  function okSeeAuthorInfo()
-    {
-      global $Me;
-      return $Me -> isChair
-	|| ($Me -> isPC
-	    && $this -> optionLetPCSeeAuthorInfo
-	    && $this -> validTimeFor('PCMeetingView', 0)
-	    )
-	;
-    }
 
   function thereAreTopics() {
     $query = "SELECT * from PaperTopic";

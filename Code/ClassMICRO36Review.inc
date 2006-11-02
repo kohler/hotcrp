@@ -1,5 +1,5 @@
 <?php 
-include('../Code/ClassReview.inc');
+include('../Code/review.inc');
 
 //
 // Create strings we use for labels

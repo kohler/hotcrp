@@ -15,7 +15,7 @@ if (defval($_REQUEST["post"]) && !count($_POST))
 if (isset($_REQUEST['downloadForm'])) {
     $text = $rf->textFormHeader($Conf, false)
 	. $rf->textForm(null, null, $Conf, null, ReviewForm::REV_FORM) . "\n";
-    downloadText($text, $Conf->downloadPrefix . "review.txt", "review form");
+    downloadText($text, $Opt['downloadPrefix'] . "review.txt", "review form");
     exit;
 }
 

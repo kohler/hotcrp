@@ -21,7 +21,7 @@ if (isset($_REQUEST['pcconflicts'])) {
 	$text = "#paperId\ttitle\tPC conflicts\n";
 	while (($row = $result->fetchRow()))
 	    $text .= $row[0] . "\t" . $row[1] . "\t" . ($row[2] ? $row[2] : "-") . "\n";
-	downloadText($text, $Conf->downloadPrefix . "pcconflicts.txt", "PC conflicts");
+	downloadText($text, $Opt['downloadPrefix'] . "pcconflicts.txt", "PC conflicts");
 	exit;
     }
 }

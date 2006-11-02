@@ -7,9 +7,6 @@
 // we automatically determine the configuration paths.
 //
 
-$posixinfo = posix_uname();
-$hostname = $posixinfo['nodename'];
-
 define("ROLE_EXISTS", 0);
 define("ROLE_PC", 3);
 define("ROLE_ASSISTANT", 4);
@@ -73,9 +70,9 @@ if (file_exists($here . "/Code/confHeader.inc")) {
 
 // Bring in code
 require_once("$ConfSitePATH/Code/Helpers.inc");
-require_once("$ConfSitePATH/Code/ClassConference.inc");
-require_once("$ConfSitePATH/Code/ClassContact.inc");
-require_once("$ConfSitePATH/Code/ClassReview.inc");
+require_once("$ConfSitePATH/Code/conference.inc");
+require_once("$ConfSitePATH/Code/contact.inc");
+require_once("$ConfSitePATH/Code/review.inc");
 
 // If you have the PEAR::DB library installed globally, you
 // should just require_once() the DB interface you need.
@@ -83,7 +80,7 @@ ini_set("include_path", ini_get("include_path") . ":$ConfSitePATH/Code/DB-1.7.6:
 require_once("$ConfSitePATH/Code/DB-1.7.6/DB.php");
 
 include("$ConfSitePATH/Code/options.inc");
-include("$ConfSitePATH/Code/confConfig.inc");
+$Conf = new Conference();
 
 
 // How long before a session is automatically logged out?
@@ -93,7 +90,7 @@ include("$ConfSitePATH/Code/confConfig.inc");
 // so you'll also need to change the system-wide setting in 'php.ini'.
 ini_alter('session.gc_maxlifetime', '864000');
 
-session_name($Conf->sessionName);
+session_name($Opt['sessionName']);
 session_start();
 
 if (!isset($_SESSION['Me']))
