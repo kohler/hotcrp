@@ -687,7 +687,7 @@ class Conference {
 	    return $this->__downloadPaper($paperIds[0], 1, $final);
 
 	// paper query
-	$q = "select Paper.paperId, paper, mimetype, compression from PaperStorage join Paper on (PaperStorage.paperStorageId=Paper." . ($final ? "finalPaperStorageId" : "paperStorageId") . ") where (";
+	$q = "select Paper.paperId, paper, PaperStorage.mimetype, compression from PaperStorage join Paper on (PaperStorage.paperStorageId=Paper." . ($final ? "finalPaperStorageId" : "paperStorageId") . ") where (";
 	foreach ($paperIds as $paperId)
 	    $downloadQ[] = "Paper.paperId=$paperId";
 	$q .= join(" or ", $downloadQ) . ")";
