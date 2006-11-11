@@ -6,7 +6,7 @@ $Me->goIfInvalid();
 $Me->goIfNotChair("index.php");
 
 
-// download blank review form action
+// download PC conflicts action
 if (isset($_REQUEST['pcconflicts'])) {
     $result = $Conf->qe("select Paper.paperId, title, group_concat(email)
 	from Paper
@@ -27,12 +27,32 @@ if (isset($_REQUEST['pcconflicts'])) {
 }
 
 
+// download all authors action
+if (isset($_REQUEST['authors'])) {
+    $result = $Conf->qe("select paperId, authorInformation
+	from Paper
+	where Paper.timeSubmitted>0
+	order by Paper.paperId", "while getting authors");
+    if (!DB::isError($result)) {
+	$text = "#paperId\tauthor\n";
+	while (($row = $result->fetchRow())) {
+	    $authors = preg_split('/[\r\n]+/', $row[1]);
+	    foreach ($authors as $au)
+		$text .= $row[0] . "\t" . $au . "\n";
+	}
+	downloadText($text, $Opt['downloadPrefix'] . "authors.txt", "paper authors");
+	exit;
+    }
+}
+
+
 $Conf->header("Text Downloads", 'textdownloads');
 
 $Conf->infoMsg("Download text files with information from the database here.");
 
 echo "<ul>
   <li><a href='minshall.php?pcconflicts=1'>PC conflicts for submitted papers</a></li>
+  <li><a href='minshall.php?authors=1'>Authors for submitted papers</a></li>
 </ul>\n";
 
 $Conf->footer();

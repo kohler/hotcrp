@@ -667,27 +667,28 @@ table.pltable th, table.setreviewform th, table.memberlist th {
         padding-right: 0.25em;
 	vertical-align: bottom;
 }
-table.pltable td {
+.pl_title, .pl_reviewer, .pl_status {
 	padding-right: 1em;
 }
-table.pltable th.pl_id, table.pltable th.pl_topicMatch,
-table.pltable th.pl_reviewsStatus {
+table.pltable th.pl_id, table.pltable th.pl_topicMatch, 
+table.pltable th.pl_reviewsStatus,
+.pl_reviewerTypeIcon, .pl_optOverallMeritIcon {
 	text-align: center;
+	padding-right: 0em;
 }
-table.pltable td.pl_reviewsStatus {
+td.pl_reviewsStatus {
 	text-align: center;
 	padding-right: 0.2em;
 }
-table.pltable td.pl_id, table.pltable td.pl_selector,
-table.pltable td.pl_topicMatch, table.pltable td.pl_reviewPreference,
-table.pltable td.pl_desirability, table.pltable td.pl_download {
+td.pl_id, td.pl_selector, td.pl_topicMatch, td.pl_reviewPreference,
+td.pl_desirability, td.pl_download {
 	text-align: right;
 	padding-right: 0.4em;
 }
-table.pltable td.pl_download {
+td.pl_download {
 	vertical-align: middle;
 }
-table.pltable td.pl_title img {
+td.pl_title img {
 	vertical-align: text-bottom;
 }
 td.pl_callout {
@@ -703,6 +704,11 @@ span.pl_callouthdr:after {
 tr.pl_headrow td, tr.pl_headrow th, table.setreviewform th, table.memberlist th {
 	border-bottom: 1px solid #cc9900;
 	font-size: small;
+}
+tr.pl_footrow td {
+	margin-top: 3px;
+	border-top: 1px solid #cc9900;
+	padding-top: 3px;
 }
 tr.pl_firstrow td {
 	padding-top: 2px;

@@ -29,6 +29,28 @@ if ($action == "paper") {
 }
 
 
+// download selected final copies
+if ($action == "final") {
+    if (!isset($_REQUEST["papersel"]) || !is_array($_REQUEST["papersel"]))
+	$_REQUEST["papersel"] = array();
+    $q = $Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"]));
+    $result = $Conf->qe($q, "while selecting papers for download");
+    if (DB::isError($result))
+	/* do nothing */;
+    else
+	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
+	    if (!$Me->canViewPaper($row, $Conf, $whyNot))
+		$Conf->errorMsg(whyNotText($whyNot, "view"));
+	    else
+		$downloads[] = $row->paperId;
+	}
+
+    $result = $Conf->downloadPapers($downloads, true);
+    if (!PEAR::isError($result))
+	exit;
+}
+
+
 // download review form for selected papers
 // (or blank form if no papers selected)
 if ($action == "revform" && !isset($_REQUEST["papersel"])) {

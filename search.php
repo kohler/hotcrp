@@ -100,17 +100,15 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
 	
 	echo $t;
 	
-	echo "<hr class='smgap' />\n<small>", plural($pl->count, "paper"), " total</small>\n\n";
-	
 	if ($pl->anySelector) {
 	    echo "<div class='plist_form'>
-  <a href='javascript:void checkPapersel(true)'>Select all</a> &nbsp;|&nbsp;
-  <a href='javascript:void checkPapersel(false)'>Select none</a> &nbsp; &nbsp;
 <table class='bullets'><tr><td><h4>Downloads</h4>
 
 <ul>
-  <li><a href='javascript:submitForm(\"sel\", \"paper\")'>Papers</a></li>
-  <li><a href='javascript:submitForm(\"sel\", \"revform\")'>Your reviews and review forms</a></li>\n";
+  <li><a href='javascript:submitForm(\"sel\", \"paper\")'>Papers</a></li>\n";
+
+	    echo "  <li><a href='javascript:submitForm(\"sel\", \"final\")'>Final copies</a></li>\n";
+	    echo "  <li><a href='javascript:submitForm(\"sel\", \"revform\")'>Your reviews and review forms</a></li>\n";
 
 	    if ($Me->amAssistant() || ($Me->isPC && $Conf->validTimeFor('PCMeetingView', 0)))
 		echo "  <li><a href='javascript:submitForm(\"sel\", \"rev\")'>All reviews (no conflicts)</a></li>\n";

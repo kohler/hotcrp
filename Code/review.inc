@@ -618,13 +618,17 @@ class ReviewForm {
 	return $x;
     }
 
+    function webFieldAbbrev($field) {
+	return "<acronym title=\"" . htmlspecialchars($this->shortName[$field]) . "\">" . htmlspecialchars($this->abbrevName[$field]) . "</acronym>";
+    }
+    
     function webNumericScoresHeader($prow, $contact, $conf) {
 	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
 	$x = "";
 	foreach ($this->fieldOrder as $field)
 	    if (($this->authorView[$field] || $viewAllFields)
 		&& isset($this->options[$field]))
-		$x .= "<th><acronym title=\"" . htmlspecialchars($this->shortName[$field]) . "\">" . htmlspecialchars($this->abbrevName[$field]) . "</acronym></th>";
+		$x .= "<th>" . $this->webFieldAbbrev($field) . "</th>";
 	return $x;
     }
 

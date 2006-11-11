@@ -8,7 +8,6 @@ class PaperList {
     const FIELD_TITLE = 11;
     const FIELD_TITLE_MANAGE = 12;
     const FIELD_TITLE_REVIEW = 13;
-    const FIELD_TITLE_REVIEW_DOWNLOAD = 14;
     const FIELD_STATUS = 27;
     const FIELD_DOWNLOAD = 28;
     const FIELD_REVIEWER_TYPE = 29;
@@ -113,7 +112,6 @@ class PaperList {
 	case self::FIELD_TITLE:
 	case self::FIELD_TITLE_MANAGE:
 	case self::FIELD_TITLE_REVIEW:
-	case self::FIELD_TITLE_REVIEW_DOWNLOAD:
 	    return "order by Paper.title $up";
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
@@ -150,7 +148,6 @@ class PaperList {
 	case self::FIELD_TITLE:
 	case self::FIELD_TITLE_MANAGE:
 	case self::FIELD_TITLE_REVIEW:
-	case self::FIELD_TITLE_REVIEW_DOWNLOAD:
 	    return "Title";
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
@@ -160,7 +157,7 @@ class PaperList {
 	case self::FIELD_REVIEWER_TYPE:
 	    return "Review";
 	case self::FIELD_REVIEWER_TYPE_ICON:
-	    return "Rev";
+	    return "<acronym title='Reviewer type'>Review</acronym>";
 	case self::FIELD_REVIEWER_STATUS:
 	    return "Reviewer status";
 	case self::FIELD_REVIEWS_STATUS:
@@ -189,11 +186,25 @@ class PaperList {
 	    return "Desirability";
 	case self::FIELD_ALL_PREFERENCES:
 	    return "Preferences";
-	case self::FIELD_OPT_MERIT_ICON:
-	    return "Merit!";
+	case self::FIELD_OPT_MERIT_ICON: {
+	    $rf = reviewForm();
+	    return $rf->webFieldAbbrev("overAllMerit");
+	}
 	default:
 	    return "&lt;$fieldId&gt;?";
 	}
+    }
+
+    function _contentDownload($row) {
+	global $ConfSiteBase, $Conf;
+	if ($row->size == 0)
+	    return "";
+	else if ($row->mimetype == "application/pdf")
+	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\"><img src=\"${ConfSiteBase}images/pdf.png\" alt='[PDF]' /></a>";
+	else if ($row->mimetype == "application/postscript")
+	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\"><img src=\"${ConfSiteBase}images/postscript.png\" alt='[PS]' /></a>";
+	else
+	    return "&nbsp;<small><a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\">[Download]</a></small>";
     }
     
     function content($fieldId, $row, $plist, $reviewList) {
@@ -206,22 +217,11 @@ class PaperList {
 	case self::FIELD_ID_REVIEW:
 	    return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId' tabindex='2'>#$row->paperId</a>";
 	case self::FIELD_TITLE:
-	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
+	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_TITLE_MANAGE:
-	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
+	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_TITLE_REVIEW:
-	    return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
-	case self::FIELD_TITLE_REVIEW_DOWNLOAD:
-	    $t = "<a href='${ConfSiteBase}review.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>";
-	    if ($row->size == 0)
-		/* nothing */;
-	    else if ($row->mimetype == "application/pdf")
-		$t .= "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\"><img src=\"${ConfSiteBase}images/pdf.png\" alt='[PDF]' /></a>";
-	    else if ($row->mimetype == "application/postscript")
-		$t .= "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\"><img src=\"${ConfSiteBase}images/postscript.png\" alt='[PS]' /></a>";
-	    else
-		$t .= "&nbsp;<small><a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\">[Download]</a></small>";
-	    return $t;
+	    return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
@@ -375,7 +375,18 @@ class PaperList {
 	else
 	    return '';
     }
-    
+
+    function footer($ncol) {
+	global $Conf, $ConfSiteBase;
+	if ($this->count == 0)
+	    return "";
+	$t = "  <tr class='pl_footrow'>\n    <td class='pl_selector'><img src=\"${ConfSiteBase}images/bendulft.png\" /></td>\n";
+	$t .= "    <td colspan='" . ($ncol - 1) . "'><a href='javascript:void checkPapersel(true)'>Select all " . $this->count . "</a>
+    &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"paper\")'>Download selected papers</a></td>
+  </tr>\n";
+	return $t;
+    }
+
     function text($listname, $me, $contactId = -1) {
 	global $Conf, $ConfSiteBase;
 
@@ -540,7 +551,10 @@ class PaperList {
 	    $x .= "  </tr>\n";
 	}
 
-	$x .= $body . "</table>";
+	$x .= $body;
+	if ($fieldId[0][0] == self::FIELD_SELECTOR)
+	    $x .= $this->footer($ncol);
+	$x .= "</table>";
 
 	// session variable to remember the list
 	if ($this->sessionVar) {
