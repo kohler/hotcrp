@@ -458,7 +458,7 @@ if ($mode == "edit") {
     $editable = $newPaper || (($prow->timeSubmitted <= 0 || $Me->amAssistant())
 			      && $prow->timeWithdrawn <= 0
 			      && ($Conf->timeUpdatePaper() || $Me->amAssistant()));
-    if ($prow && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper())
+    if ($prow && $prow->outcome > 0 && ($Conf->timeSubmitFinalPaper() || $Me->amAssistant()))
 	$editable = $finalEditMode = true;
 } else
     $editable = false;
