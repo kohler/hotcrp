@@ -693,7 +693,7 @@ class Conference {
 	$q .= join(" or ", $downloadQ) . ")";
 	$result = $this->q($q);
 	if (DB::isError($result)) {
-	    $Conf->infoMsg(htmlspecialchars($q));
+	    $this->infoMsg(htmlspecialchars($q));
 	    return $result;
 	}
 	
