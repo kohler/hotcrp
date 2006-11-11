@@ -692,10 +692,8 @@ class Conference {
 	    $downloadQ[] = "Paper.paperId=$paperId";
 	$q .= join(" or ", $downloadQ) . ")";
 	$result = $this->q($q);
-	if (DB::isError($result)) {
-	    $this->infoMsg(htmlspecialchars($q));
+	if (DB::isError($result))
 	    return $result;
-	}
 	
 	// set up temporary directory
 	if (($tmpdir = tempdir(null, "crp")) === false)
