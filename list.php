@@ -7,6 +7,16 @@ $Me->goIfInvalid();
 $action = defval($_REQUEST["action"], "");
 
 
+// redo search
+if (isset($_REQUEST["q"]) || isset($_REQUEST["qx"]) || isset($_REQUEST["qa"])) {
+    require_once('Code/search.inc');
+    $Search = new PaperSearch(defval($_REQUEST["t"], "n"), $Me);
+    if (defval($_REQUEST["all"], 0) > 0)
+	$Search->setAllPapers();
+    $result = $Search->search(defval($_REQUEST["q"], ""), defval($_REQUEST["qa"], ""), defval($_REQUEST["qx"], ""));
+}
+    
+
 // download selected papers
 if ($action == "paper") {
     if (!isset($_REQUEST["papersel"]) || !is_array($_REQUEST["papersel"]))

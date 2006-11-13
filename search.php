@@ -93,10 +93,16 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
 
 	echo "<div class='maintabsep'></div>\n\n";
 
-	if ($pl->anySelector)
+	if ($pl->anySelector) {
 	    echo "<form action='list.php' method='get' id='sel'>
 <input type='hidden' name='list' value=\"", htmlspecialchars($listname), "\" />
 <input type='hidden' id='selaction' name='action' value='' />\n";
+	    foreach (array("q", "qx", "qa", "t") as $v)
+		if (defval($_REQUEST[$v], "") != "")
+		    echo "<input type='hidden' name='$v' value=\"", htmlspecialchars($_REQUEST[$v]), "\" />\n";
+	    if ($Search->allPapers)
+		echo "<input type='hidden' name='all' value='1' />\n";
+	}
 	
 	echo $t;
 	
