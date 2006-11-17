@@ -208,7 +208,7 @@ class PaperList {
     }
     
     function content($fieldId, $row, $plist, $reviewList) {
-	global $ConfSiteBase, $Conf;
+	global $ConfSiteBase, $Conf, $reviewTypeName;
 	switch ($fieldId) {
 	case self::FIELD_ID:
 	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='2'>#$row->paperId</a>";
@@ -267,15 +267,29 @@ class PaperList {
 	    else
 		return "";
 	case self::FIELD_REVIEWER_TYPE_ICON:
-	    if ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted))
+	    $needSubmit = ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted));
+	    if ($needSubmit)
 		$this->needSubmitReview++;
+	    $a1 = $a2 = "";
 	    if ($row->reviewId) {
 		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId\">";
 		$a2 = "</a>";
-	    } else
-		$a1 = $a2 = "";
-	    $which = ($row->reviewType === null ? 0 : $row->reviewType);
-	    return "$a1<img src='${ConfSiteBase}images/ass$which.png' />$a2";
+	    }
+	    if ($row->author > 0 || $row->conflict > 0) {
+		$which = -1;
+		$alt = "Conflict";
+	    } else if ($row->reviewType === null) {
+		$which = 0;
+		$alt = "";
+	    } else {
+		$which = $row->reviewType;
+		$alt = $reviewTypeName[$row->reviewType];
+		if ($needSubmit) {
+		    $which .= "n";
+		    $alt .= " (not complete)";
+		}
+	    }
+	    return "$a1<img src='${ConfSiteBase}images/ass$which.png' alt='$alt' title='$alt' />$a2";
 	case self::FIELD_REVIEWER_STATUS:
 	    return reviewStatus($row, 0);
 	case self::FIELD_REVIEWS_STATUS:
@@ -380,9 +394,20 @@ class PaperList {
 	global $Conf, $ConfSiteBase;
 	if ($this->count == 0)
 	    return "";
-	$t = "  <tr class='pl_footrow'>\n    <td class='pl_selector'><img src=\"${ConfSiteBase}images/bendulft.png\" /></td>\n";
-	$t .= "    <td colspan='" . ($ncol - 1) . "'><a href='javascript:void checkPapersel(true)'>Select all " . $this->count . "</a>
-    &nbsp;|&nbsp; <a href='javascript:submitForm(\"sel\", \"paper\")'>Download selected papers</a></td>
+	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 4 < 2 ? 0 : 1) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
+	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector'><img src=\"${ConfSiteBase}images/bendulft.png\" /></td>\n";
+	$t .= "    <td colspan='" . ($ncol - 1) . "'><b>Select papers</b> (or <a href='javascript:void checkPapersel(true)'>select all " . $this->count . "</a>), then: &nbsp;
+    <select id='plget' onchange='if (this.value) submitForm(\"sel\", this.value)'>
+    <option value='paper' selected='selected'>Get papers</option>
+    <option value='revform'>Get review forms</option>\n";
+	if ($this->contact->isPC && $Conf->timeSubmitFinalPaper())
+	    $t .= "    <option value='final'>Get final papers</option>\n";
+	if ($this->contact->amAssistant() || ($this->contact->isPC && $Conf->validTimeFor('PCMeetingView', 0)))
+	    $t .= "    <option value='rev'>Get all reviews (no conflicts)</option>\n";
+	if ($this->contact->amAssistant() || ($this->contact->isReviewer && $Conf->blindSubmission() < 2))
+	    $t .= "    <option value='authors'>Get authors (text file)</option>\n";
+	$t .= "</select>  <input type='submit' class='button_small' name='get' value='Go' />
+    &nbsp;|&nbsp; <a>More &raquo;</a></td>
   </tr>\n";
 	return $t;
     }
@@ -488,10 +513,7 @@ class PaperList {
 	    $trclass = "k" . ($this->count % 4 < 2 ? 0 : 1);
 	    $this->count++;
 	    
-	    $body .= "  <tr class=\"" . $trclass;
-	    if ($this->showHeader && $this->count == 1)
-		$body .= " pl_firstrow";
-	    $body .= "\">\n";
+	    $body .= "  <tr class=\"" . $trclass . "\">\n";
 	    foreach ($fieldId as $f)
 		if ($f[2] == 1) {
 		    $c = $this->content($f[0], $row, $plist, $reviewList);
@@ -549,6 +571,7 @@ class PaperList {
 	    }
 	    
 	    $x .= "  </tr>\n";
+	    $x .= "  <tr><td class='pl_headgap' colspan='$ncol'></td></tr>\n";
 	}
 
 	$x .= $body;

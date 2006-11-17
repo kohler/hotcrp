@@ -108,23 +108,10 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
 	
 	if ($pl->anySelector) {
 	    echo "<div class='plist_form'>
-<table class='bullets'><tr><td><h4>Downloads</h4>
-
-<ul>
-  <li><a href='javascript:submitForm(\"sel\", \"paper\")'>Papers</a></li>\n";
-
-	    echo "  <li><a href='javascript:submitForm(\"sel\", \"final\")'>Final copies</a></li>\n";
-	    echo "  <li><a href='javascript:submitForm(\"sel\", \"revform\")'>Your reviews and review forms</a></li>\n";
-
-	    if ($Me->amAssistant() || ($Me->isPC && $Conf->validTimeFor('PCMeetingView', 0)))
-		echo "  <li><a href='javascript:submitForm(\"sel\", \"rev\")'>All reviews (no conflicts)</a></li>\n";
-	    if ($Me->amAssistant())
-		echo "  <li><a href='javascript:submitForm(\"sel\", \"authors\")'>Authors (text file)</a></li>\n";
-	    
-	    echo "</ul>\n";
+<table class='bullets'><tr><td>\n";
 	    
 	    if ($Me->amAssistant()) {
-		echo "</td><td><h4>Actions</h4>\n<ul>\n  <li><a href='javascript:submitForm(\"sel\", \"tag\")'>Set tag</a>:&nbsp;<input class='textlite' type='text' name='tag' value='' size='10' /></li>\n";
+		echo "</td><td><ul>\n  <li><a href='javascript:submitForm(\"sel\", \"tag\")'>Set tag</a>:&nbsp;<input class='textlite' type='text' name='tag' value='' size='10' /></li>\n";
 		echo "  <li>", outcomeSelector(), "<a href='javascript:submitForm(\"sel\", \"setoutcome\")'>Set outcome</a></li>\n";
 		echo "</ul>\n";
 	    }

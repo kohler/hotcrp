@@ -706,12 +706,14 @@ tr.pl_headrow td, tr.pl_headrow th, table.setreviewform th, table.memberlist th 
 	font-size: small;
 }
 tr.pl_footrow td {
-	margin-top: 3px;
-	border-top: 1px solid #cc9900;
 	padding-top: 3px;
 }
-tr.pl_firstrow td {
+tr.pl_headgap td {
 	padding-top: 2px;
+}
+tr.pl_footgap td {
+	padding-top: 3px;
+	border-bottom: 1px solid #cc9900;
 }
 table.plt_reviewerHome tr.pl_headrow th {
 	border-bottom: none;

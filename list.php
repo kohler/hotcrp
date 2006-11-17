@@ -23,6 +23,7 @@ if ($action == "paper") {
 	$_REQUEST["papersel"] = array();
     $q = $Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"]));
     $result = $Conf->qe($q, "while selecting papers for download");
+    $downloads = array();
     if (DB::isError($result))
 	/* do nothing */;
     else
@@ -45,6 +46,7 @@ if ($action == "final") {
 	$_REQUEST["papersel"] = array();
     $q = $Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"]));
     $result = $Conf->qe($q, "while selecting papers for download");
+    $downloads = array();
     if (DB::isError($result))
 	/* do nothing */;
     else
@@ -158,12 +160,16 @@ if ($action == "tag" && $Me->amAssistant() && isset($_REQUEST["papersel"]) && is
 
 
 // download text author information for selected papers
-if ($action == "authors" && $Me->amAssistant() && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
+if ($action == "authors"
+    && ($Me->amAssistant() || ($Me->isPC && $Conf->blindSubmission() < 2))
+    && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
     $idq = "";
     foreach ($_REQUEST["papersel"] as $id)
 	if (($id = cvtint($id)) > 0)
 	    $idq .= " or paperId=$id";
     $idq = substr($idq, 4);
+    if (!$Me->amAssistant())
+	$idq = "($idq) and blind=0";
     $result = $Conf->qe("select paperId, title, authorInformation from Paper where $idq", "while fetching authors");
     if (!DB::isError($result)) {
 	$text = "#paperId\ttitle\tauthor\n";
@@ -260,24 +266,9 @@ if ($pl->anySelector)
 
 echo $t;
 
-echo "<hr class='smgap' />\n<small>", plural($pl->count, "paper"), " total</small>\n\n";
-
 if ($pl->anySelector) {
     echo "<div class='plist_form'>
-  <a href='javascript:void checkPapersel(true)'>Select all</a> &nbsp;|&nbsp;
-  <a href='javascript:void checkPapersel(false)'>Select none</a> &nbsp; &nbsp;
-<table class='bullets'><tr><td><h4>Downloads</h4>
-
-<ul>
-  <li><a href='javascript:submitForm(\"sel\", \"paper\")'>Papers</a></li>
-  <li><a href='javascript:submitForm(\"sel\", \"revform\")'>Your reviews and review forms</a></li>\n";
-
-    if ($Me->amAssistant() || ($Me->isPC && $Conf->validTimeFor('PCMeetingView', 0)))
-	echo "  <li><a href='javascript:submitForm(\"sel\", \"rev\")'>All reviews (no conflicts)</a></li>\n";
-    if ($Me->amAssistant())
-	echo "  <li><a href='javascript:submitForm(\"sel\", \"authors\")'>Authors (text file)</a></li>\n";
-    
-    echo "</ul>\n";
+<table class='bullets'><tr><td>\n";
 
     if ($Me->amAssistant()) {
 	echo "</td><td><h4>Actions</h4>\n<ul>\n  <li><a href='javascript:submitForm(\"sel\", \"tag\")'>Set tag</a>:&nbsp;<input class='textlite' type='text' name='tag' value='' size='10' /></li>\n";

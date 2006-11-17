@@ -678,11 +678,10 @@ insert into PaperList set paperListId=2, paperListName='submitted',
 insert into PaperListColumns set paperListId=2, fieldId=31, col=0;
 insert into PaperListColumns set paperListId=2, fieldId=1, col=1;
 insert into PaperListColumns set paperListId=2, fieldId=11, col=2;
-insert into PaperListColumns set paperListId=2, fieldId=29, col=3;
-insert into PaperListColumns set paperListId=2, fieldId=45, col=4;
-insert into PaperListColumns set paperListId=2, fieldId=41, col=5;
-insert into PaperListColumns set paperListId=2, fieldId=33, col=6;
-insert into PaperListColumns set paperListId=2, fieldId=46, col=7;
+insert into PaperListColumns set paperListId=2, fieldId=45, col=3;
+insert into PaperListColumns set paperListId=2, fieldId=41, col=4;
+insert into PaperListColumns set paperListId=2, fieldId=33, col=5;
+insert into PaperListColumns set paperListId=2, fieldId=46, col=6;
 
 insert into PaperList set paperListId=3, paperListName='all',
 	shortDescription='All', description='All papers', 
@@ -692,7 +691,7 @@ insert into PaperListColumns set paperListId=3, fieldId=31, col=0;
 insert into PaperListColumns set paperListId=3, fieldId=1, col=1;
 insert into PaperListColumns set paperListId=3, fieldId=11, col=2;
 insert into PaperListColumns set paperListId=3, fieldId=27, col=3;
-insert into PaperListColumns set paperListId=3, fieldId=29, col=5;
+insert into PaperListColumns set paperListId=3, fieldId=45, col=5;
 
 insert into PaperList set paperListId=4, paperListName='authorHome',
 	shortDescription='Your papers', description='My papers (homepage view)', 
@@ -708,7 +707,7 @@ insert into PaperList set paperListId=6, paperListName='reviewerHome',
 	queryType='myReviews', sortCol=0, query='';
 insert into PaperListColumns set paperListId=6, fieldId=3, col=0;
 insert into PaperListColumns set paperListId=6, fieldId=13, col=1;
-insert into PaperListColumns set paperListId=6, fieldId=29, col=2;
+insert into PaperListColumns set paperListId=6, fieldId=45, col=2;
 insert into PaperListColumns set paperListId=6, fieldId=33, col=3;
 
 insert into PaperList set paperListId=7, paperListName='reviewer',
@@ -718,7 +717,7 @@ insert into PaperList set paperListId=7, paperListName='reviewer',
 insert into PaperListColumns set paperListId=7, fieldId=31, col=0;
 insert into PaperListColumns set paperListId=7, fieldId=3, col=1;
 insert into PaperListColumns set paperListId=7, fieldId=13, col=2;
-insert into PaperListColumns set paperListId=7, fieldId=29, col=3;
+insert into PaperListColumns set paperListId=7, fieldId=45, col=3;
 insert into PaperListColumns set paperListId=7, fieldId=41, col=4;
 insert into PaperListColumns set paperListId=7, fieldId=33, col=5;
 
@@ -744,7 +743,7 @@ insert into PaperList set paperListId=9, paperListName='editReviewPreference',
 insert into PaperListColumns set paperListId=9, fieldId=1, col=0;
 insert into PaperListColumns set paperListId=9, fieldId=11, col=1;
 insert into PaperListColumns set paperListId=9, fieldId=36, col=2;
-insert into PaperListColumns set paperListId=9, fieldId=29, col=3;
+insert into PaperListColumns set paperListId=9, fieldId=45, col=3;
 insert into PaperListColumns set paperListId=9, fieldId=40, col=4;
 insert into PaperListColumns set paperListId=9, fieldId=37, col=5;
 
