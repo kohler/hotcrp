@@ -37,7 +37,7 @@ function savePreferences($reviewer) {
 
     $while = "while saving review preferences";
     $result = $Conf->qe("lock tables PaperReviewPreference write", $while);
-    if (DB::isError($result))
+    if (MDB2::isError($result))
 	return $result;
 
     $delete = "delete from PaperReviewPreference where contactId=$reviewer and (";
@@ -95,8 +95,8 @@ if ($Me->amAssistant()) {
 		group by contactId
 		order by lastName, firstName, email";
     $result = $Conf->qe($query);
-    if (!DB::isError($result))
-	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
+    if (!MDB2::isError($result))
+	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
 	    echo "<option value='$row->contactId'";
 	    if ($row->contactId == $reviewer)
 		echo " selected='selected'";

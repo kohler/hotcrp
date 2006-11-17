@@ -8,16 +8,16 @@ $MergeError = "";
 function crpmergeone($table, $field, $oldid, $newid) {
     global $Conf;
     $result = $Conf->q("update $table set $field=$newid where $field=$oldid");
-    if (DB::isError($result))
+    if (MDB2::isError($result))
 	$MergeError .= $Conf->dbErrorText($result, "", 0);
 }
 
 function crpmergeonex($table, $field, $oldid, $newid) {
     global $Conf;
     $result = $Conf->q("update $table set $field=$newid where $field=$oldid");
-    if (DB::isError($result)) {
+    if (MDB2::isError($result)) {
 	$result = $Conf->q("delete from $table where $field=$oldid");
-	if (DB::isError($result))
+	if (MDB2::isError($result))
 	    $MergeError .= $Conf->dbErrorText($result, "", 0);
     }
 }
@@ -83,7 +83,7 @@ If you suspect something fishy, contact the site administrator at\n\
 	    //
 	    if ($MergeError == "") {
 		$result = $Conf->q("delete from ContactInfo where contactId=$oldid");
-		if (DB::isError($result))
+		if (MDB2::isError($result))
 		    $MergeError .= $Conf->dbErrorText($result, "", 0);
 	    }
 

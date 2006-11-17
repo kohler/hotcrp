@@ -28,11 +28,11 @@ function spotSecondaryReviewers($howmany)
 		       . " ORDER BY Paper.paperId ");
   }
 
-  if (!DB::isError($result)) {
+  if (!MDB2::isError($result)) {
     $count=$result->numRows();
     print "<table align=center width=80% border=1> ";
     print "<tr> <th colspan=2> There are $count Papers With $howmany Assigned Secondary </th> </tr>";
-    while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
+    while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
       $paperId=$row['paperId'];
       $title=$row['title'];
       print "<tr> <td> $paperId </td><td> ";
@@ -76,7 +76,7 @@ function spotReviews($howmany, $finalized=0)
 		       . " HAVING COUNT(PaperReview.paperId)=$howmany "
 		       . " ORDER BY Paper.paperId ");
   }
-  if (!DB::isError($result)) {
+  if (!MDB2::isError($result)) {
     $count=$result->numRows();
     print "<table align=center width=80% border=1> ";
     if ( $finalized ) {
@@ -84,7 +84,7 @@ function spotReviews($howmany, $finalized=0)
     } else {
       print "<tr> <th colspan=2> There are $count Papers With $howmany Started Reviews </th> </tr>";
     }
-    while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
+    while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
       $paperId=$row['paperId'];
       $title=$row['title'];
       print "<tr> <td> $paperId </td><td> ";

@@ -24,7 +24,7 @@ $result=$Conf->q("select Paper.paperId, Paper.title,
 		join ContactInfo on (ContactInfo.contactId=ReviewRequest.contactId)
 		order by Paper.paperId ");
 $i = 0;
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
   $Conf->errorMsg("Error in retrieving reviewer list " . $result->getMessage());
 } else {
   ?>
@@ -35,7 +35,7 @@ if (DB::isError($result)) {
 </tr>
 </thead>
 <?php  
-   while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
+   while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
     print "<tr>";
     print "<td> " . $row['paperId'] . " </td>";
     print "<td> ". $row['title'] . " <br> being reviewed by ";

@@ -75,9 +75,9 @@ class ReviewForm {
 	$while = "while updating review form information";
 	
 	$result = $conf->qe("select fieldName, shortName, description, sortOrder, rows, authorView from ReviewFormField order by sortOrder, shortName", $while);
-	if (DB::isError($result))
+	if (MDB2::isError($result))
 	    return;
-	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
+	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
 	    if ($row->sortOrder >= 0)
 		$this->fieldOrder[] = $row->fieldName;
 	    $this->shortName[$row->fieldName] = $row->shortName;
@@ -89,13 +89,13 @@ class ReviewForm {
 	}
 	
 	$result = $conf->qe("select fieldName, level, description from ReviewFormOptions order by fieldName, level", $while);
-	if (DB::isError($result))
+	if (MDB2::isError($result))
 	    return;
 	while (($row = $result->fetchRow()))
 	    $this->options[$row[0]][$row[1]] = $row[2];
 
 	$result = $conf->qe("select topicId, topicName from TopicArea order by topicName", $while);
-	if (DB::isError($result))
+	if (MDB2::isError($result))
 	    return;
 	$i = 0;
 	while (($row = $result->fetchRow())) {
@@ -231,11 +231,11 @@ class ReviewForm {
 	    $q .= "reviewSubmitted=" . time() . ", reviewNeedsSubmit=0, ";
 	    if (!$rrow || !$rrow->reviewOrdinal) {
 		$result = $conf->qe("lock tables PaperReview write", $while);
-		if (DB::isError($result))
+		if (MDB2::isError($result))
 		    return $result;
 		$locked = true;
 		$result = $conf->qe("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=$prow->paperId group by paperId", $while);
-		if (!DB::isError($result)) {
+		if (!MDB2::isError($result)) {
 		    $crow = $result->fetchRow();
 		    $q .= "reviewOrdinal=coalesce(reviewOrdinal, " . ($crow[0] + 1) . "), ";
 		}
@@ -258,7 +258,7 @@ class ReviewForm {
 	// unlock tables even if problem
 	if ($locked)
 	    $conf->qe("unlock tables", $while);
-	if (DB::isError($result))
+	if (MDB2::isError($result))
 	    return $result;
 
 	// look up review ID
@@ -266,7 +266,7 @@ class ReviewForm {
 	    $req['reviewId'] = $reviewId = $rrow->reviewId;
 	else {
 	    $result2 = $conf->qe("select last_insert_id()", $while);
-	    if (DB::isError($result2))
+	    if (MDB2::isError($result2))
 		return $result2;
 	    $crow = $result2->fetchRow();
 	    $req['reviewId'] = $reviewId = $crow[0];
@@ -283,7 +283,7 @@ class ReviewForm {
 	    // fetch review ordinal
 	    if (!$rrow || !$rrow->reviewSubmitted) {
 		$result = $conf->q("select reviewOrdinal from PaperReview where reviewId=$reviewId");
-		if (!DB::isError($result) && $result->numRows() == 1) {
+		if (!MDB2::isError($result) && $result->numRows() == 1) {
 		    $crow = $result->fetchRow();
 		    $req['reviewOrdinal'] = $crow[0];
 		}

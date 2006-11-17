@@ -53,14 +53,14 @@ if (IsSet($_REQUEST["SendReviews"]) && sizeof($_REQUEST["Requests"]) > 0) {
     $query = "SELECT reviewRequestId, paperId FROM ReviewRequest WHERE paperId=$paperId AND asked=$id";
     $result=$Conf->qe($query);
 
-    if ( DB::isError($result) && $result->numRows() >= 1 ) {
+    if ( MDB2::isError($result) && $result->numRows() >= 1 ) {
       $Conf->errorMsg("Reviewer #$id ($_REQUEST[firstEmail]) has already been asked to review $paperId");
     } else {
       //
       // Pull up the paper information to get the title, etc
       //
       $result=$Conf->qe("SELECT title FROM Paper WHERE paperId='$paperId'");
-      if ( DB::isError($result) || $result->numRows() == 0 ) {
+      if ( MDB2::isError($result) || $result->numRows() == 0 ) {
 	$Conf->errorMsg("Odd - couldn't find paper #$paperId - skipping assignment"
 			. $result->getMessage());
       } else {
@@ -73,7 +73,7 @@ if (IsSet($_REQUEST["SendReviews"]) && sizeof($_REQUEST["Requests"]) > 0) {
 	  . " asked=$id, "
 	  . " paperId=$paperId";
 	$request=$Conf->qe($query);
-	if (DB::isError($result)) {
+	if (MDB2::isError($result)) {
 	  $Conf->errorMsg("Request to review paper $paperId failed for $query: " . $result->getMessage());
 	}
       }
@@ -117,7 +117,7 @@ $query = "SELECT Paper.paperId, Paper.Title, ContactInfo.email "
 
 $result=$Conf->qe($query);
 
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
   $Conf->errorMsg("Error in retrieving list of reviews: " . $result->getMessage());
 } else {
 ?>
@@ -152,7 +152,7 @@ $result=$Conf->q("SELECT Paper.paperId, Paper.title "
 . "FROM Paper "
 . "ORDER BY Paper.paperId ");
 
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
   $Conf->errorMsg("Error in sql " . $result->getMessage());
 } else {
   $ids=array();

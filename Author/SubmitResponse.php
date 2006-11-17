@@ -94,7 +94,7 @@ if (IsSet($_REQUEST['submit'])) {
     $query="UPDATE Paper SET $set WHERE paperId='$_REQUEST[paperId]' and contactId='" . $_SESSION["Me"]->contactId . "'";
     $result = $Conf->qe($query);
 
-    if ( !DB::isError($result) ) {
+    if ( !MDB2::isError($result) ) {
       $Conf->confirmMsg("Successfully updated response");
     } else {
       $Conf->errorMsg("Error in updating response: " . $result->getMessage());
@@ -110,7 +110,7 @@ if (IsSet($_REQUEST['submit'])) {
   $query = "SELECT authorsResponse FROM Paper WHERE paperId='$_REQUEST[paperId]'";
 
   $result=$Conf->qe($query);
-  if (!DB::isError($result)) {
+  if (!MDB2::isError($result)) {
     if ( $row=$result->fetchRow() ) {
       $_REQUEST[authorsResponse] = stripslashes($row[0]);
     }

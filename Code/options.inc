@@ -55,11 +55,9 @@ $Opt['theme'] = "<link rel='stylesheet' type='text/css' href='" . $ConfSiteBase 
 
 //
 // Database configuration information
+// Format: "mysql://DBUSER:DBPASSWORD@127.0.0.1/DBNAME"
 //
-$Opt['dbHost'] = "127.0.0.1";
-$Opt['dbUser'] = "HotNetsV";
-$Opt['dbPassword'] = "HotNetsV";
-$Opt['dbName'] = "HotNetsV";
+$Opt['dsn'] = "mysql://HotNetsV:HotNetsV@127.0.0.1/HotNetsV";
 
 //
 // This is where dumps of the database are placed

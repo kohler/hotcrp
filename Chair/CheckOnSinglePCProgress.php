@@ -31,12 +31,12 @@ $query="SELECT "
 ;
 
 $result = $Conf->qe($query);
-if ( !DB::isError($result) ) {
+if ( !MDB2::isError($result) ) {
   print "<table width=75% border=1 align=center>";
   print "<tr> <th> Review # </th> <th> Paper # </th> <th> Info </th> </tr>";
 
   $i = 0;
-  while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
+  while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
     $i++;
     $first=$row['firstName'];
     $last=$row['lastName'];
@@ -95,12 +95,12 @@ $query="SELECT "
 ;
 
 $result = $Conf->qe($query);
-if ( ! DB::isError($result) ) {
+if ( ! MDB2::isError($result) ) {
   print "<table width=75% border=1 align=center>";
   print "<tr> <th> Review # </th> <th> Paper # </th> <th> Info </th> </tr>";
 
   $i = 0;
-  while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
+  while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
     $i++;
     $first=$row['firstName'];
     $last=$row['lastName'];

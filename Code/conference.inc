@@ -49,7 +49,7 @@ class Conference {
 
     function Conference() {
 	global $Opt;
-	$this->dsn = "mysql://" . $Opt['dbUser'] . ":" . $Opt['dbPassword'] . "@" . $Opt['dbHost'] . "/" . $Opt['dbName'];
+	$this->dsn = $Opt['dsn'];
 	$this->connected = 0;
 	$this->startTime = array();
 	$this->endTime = array();
@@ -80,11 +80,8 @@ class Conference {
       echo "contactName is " . $this -> contactName . " <br>";
       echo "contactEmail is " . $this -> contactEmail . " <br>";
       echo "emailFrom is " . $this -> emailFrom . " <br>";
-      echo "dbHost is " . htmlspecialchars($Opt['dbHost']) . " <br>";
-      echo "dbUser is " . htmlspecialchars($Opt['dbUser']) . " <br>";
-      echo "dbPassword is " . htmlspecialchars($Opt['dbPassword']) . " <br>";
+      echo "dsn is " . htmlspecialchars($this->dsn) . " <br>";
       echo "dbDumpDir is " . htmlspecialchars($Opt['dbDumpDir']) . " <br>";
-      echo "dbName is " . htmlspecialchars($Opt['dbName']) . " <br>";
       echo "dbhandle is " . $this -> dbhandle . " <br>";
 
       echo "Starting times: <br>";
@@ -111,11 +108,11 @@ class Conference {
 	    if (!isset($this->dsn))
 		$this->errorMsg("Package misconfigured: dsn is not set");
 
-	    $this->DB = DB::connect($this->dsn);
+	    $this->DB =& MDB2::singleton($this->dsn, array("portability" => MDB2_PORTABILITY_NONE));
 
-	    if (DB::isError($this->DB)) {
+	    if (MDB2::isError($this->DB)) {
 		$this->errorMsg("Unable to connect to database");
-		die($this->DB->getMessage());
+		die($this->DB->getMessage() . ": " . $this->dsn);
 	    }
 
 	    $this->connected = 1;
@@ -128,7 +125,7 @@ class Conference {
 	$this->startTime = array();
 	$this->endTime = array();
 	$result = $this->q("select name, unix_timestamp(start) as st, unix_timestamp(end) as en from ImportantDates");
-	if (!DB::isError($result))
+	if (!MDB2::isError($result))
 	    while ($row = $result->fetchRow()) {
 		$this->startTime[$row[0]] = $row[1];
 		$this->endTime[$row[0]] = $row[2];
@@ -148,7 +145,7 @@ class Conference {
 	if (!$this->connected)
 	    $this->connect();
 	$result = $this->DB->query($query);
-	if (DB::isError($result))
+	if (MDB2::isError($result))
 	    $OK = 0;
 	return $result;
     }
@@ -170,8 +167,18 @@ class Conference {
 	if (!$this->connected)
 	    $this->connect();
 	$result = $this->DB->query($query);
-	if (DB::isError($result)) {
+	if (MDB2::isError($result)) {
 	    $this->errorMsg($this->dbErrorText($result, $while . " (" . htmlspecialchars($query) . ")", $suggestRetry));
+	    $OK = 0;
+	}
+	return $result;
+    }
+
+    function lastInsertId($while = "", $suggestRetry = 0) {
+	global $OK;
+	$result = $this->DB->lastInsertId();
+	if (PEAR::isError($result)) {
+	    $this->errorMsg($this->dbErrorText($result, $while, $suggestRetry));
 	    $OK = 0;
 	}
 	return $result;
@@ -211,7 +218,7 @@ class Conference {
 	// try to add them
 	$newguy = new Contact();
 	$result = $newguy->initialize($email, $this);
-	if (!DB::isError($result)) {
+	if (!MDB2::isError($result)) {
 	    
 	    // rigamarole to handle separate or joined first and last names
 	    if (isset($_REQUEST["${p}firstName"]) || isset($_REQUEST["${p}lastName"])) {
@@ -242,7 +249,7 @@ class Conference {
 	    $result = $newguy->updateDB($this, "while creating account for " . htmlspecialchars($email));
 	}
 	
-	if (!DB::isError($result)) {
+	if (!MDB2::isError($result)) {
 	    $this->infoMsg("Created account for " . htmlspecialchars($email) . ".");
 	    $newguy->sendAccountInfo($this, true, false);
 	    $this->log("$Me->contactId created account", $newguy);
@@ -268,8 +275,8 @@ class Conference {
       $q = "select paperId from PaperReview where contactId=$contactId and reviewType>0 and reviewSubmitted<=0 order by paperId";
 
       $result = $this->qe($q);
-      if (!DB::isError($result))
-	  while($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
+      if (!MDB2::isError($result))
+	  while($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
 	      $this->errorMsg("Missing review for paper #" . $row['paperId']);
 	      $missingReviews = 1;
 	  }
@@ -451,7 +458,7 @@ class Conference {
 		from ContactInfo join PaperConflict using (contactId)
 		where paperId=$prow->paperId and author>0
 		group by ContactInfo.contactId", "while looking up contact authors to send email");
-	if (!DB::isError($result)) {
+	if (!MDB2::isError($result)) {
 	    while (($row = $result->fetchRow())) {
 		$contacts[] = $c = contactText($row[0], $row[1]);
 		$m = "Dear $c,\n\n" . $message;
@@ -476,7 +483,7 @@ class Conference {
 		from ContactInfo join PaperReview using (contactId)
 		where paperId=$prow->paperId
 		group by ContactInfo.contactId", "while looking up reviewers to send email");
-	if (!DB::isError($result)) {
+	if (!MDB2::isError($result)) {
 	    $m = "Greetings,\n\n" . $message;
 	    while (($row = $result->fetchRow())) {
 		$reviewers[] = contactText($row);
@@ -538,24 +545,24 @@ class Conference {
 	}
 
 	$result = $this->qe("lock tables Paper write, PaperStorage write", $while);
-	if (DB::isError($result))
+	if (MDB2::isError($result))
 	    return $result;
 
 	$timestamp = time();
 	$result = $this->qe("insert into PaperStorage set paperId=$paperId, timestamp=$timestamp, mimetype='" . sqlq($mimetype) . "', paper='" . sqlq(substr($contents, 0, 400000)) . "'", $while);
-	if (!DB::isError($result))
+	if (!MDB2::isError($result))
 	    $result = $this->qe("select last_insert_id()", $while);
-	if (!DB::isError($result)) {
+	if (!MDB2::isError($result)) {
 	    $row = $result->fetchRow();
 	    $paperStorageId = $row[0];
-	    for ($pos = 400000; $pos < strlen($contents) && !DB::isError($result); $pos += 400000)
+	    for ($pos = 400000; $pos < strlen($contents) && !MDB2::isError($result); $pos += 400000)
 		$result = $this->qe("update PaperStorage set paper=concat(paper,'" . sqlq(substr($contents, $pos, 400000)) . "') where paperStorageId=$paperStorageId", $while);
 	}
 
 	// check that paper storage succeeded
-	if (!DB::isError($result))
+	if (!MDB2::isError($result))
 	    $result = $this->qe("select length(paper) from PaperStorage where paperStorageId=$paperStorageId", $while);
-	if (!DB::isError($result)) {
+	if (!MDB2::isError($result)) {
 	    if ($result->numRows() == 0)
 		$result = new PEAR_Error("Paper upload unsuccessful!");
 	    else {
@@ -567,7 +574,7 @@ class Conference {
 		$this->errorMsg($result->getMessage());
 	}
     
-	if (!DB::isError($result))
+	if (!MDB2::isError($result))
 	    $result = $this->qe("update Paper set "
 		. ($final ? "finalPaperStorageId" : "paperStorageId") . "=$paperStorageId, "
 		. "size=" . strlen($contents) . ", mimetype='" . sqlq($mimetype) . "', timestamp=$timestamp"
@@ -636,7 +643,7 @@ class Conference {
 	from Paper
 	left join PaperStorage on (PaperStorage.paperStorageId=Paper.$storefield)
 	where Paper.paperId=$paperId");
-	if (DB::isError($result)) {
+	if (MDB2::isError($result)) {
 	    $this->log("Error downloading #$paperId for review" . $result->getMessage(), $_SESSION["Me"]);
 	    return $result;
 	} else if ($result->numRows() == 0)
@@ -668,7 +675,7 @@ class Conference {
 
     function downloadPaper($paperId, $saveit, $final = false) {
 	$result = $this->__downloadPaper($paperId, $saveit, $final);
-	if (DB::isError($result))
+	if (MDB2::isError($result))
 	    $this->errorMsg($this->dbErrorText($result, "while downloading paper", 1));
 	else if (PEAR::isError($result))
 	    $this->errorMsg($result->getMessage());
@@ -692,7 +699,7 @@ class Conference {
 	    $downloadQ[] = "Paper.paperId=$paperId";
 	$q .= join(" or ", $downloadQ) . ")";
 	$result = $this->q($q);
-	if (DB::isError($result))
+	if (MDB2::isError($result))
 	    return $result;
 	
 	// set up temporary directory
@@ -736,7 +743,7 @@ class Conference {
 
     function downloadPapers($paperIds, $final = false) {
 	$result = $this->__downloadPapers($paperIds, $tmpdir, $final);
-	if (DB::isError($result))
+	if (MDB2::isError($result))
 	    $this->errorMsg($this->dbErrorText($result, "while downloading paper", 1));
 	else if (PEAR::isError($result))
 	    $this->errorMsg($result->getMessage());
@@ -932,12 +939,12 @@ class Conference {
 	    $q = $this->paperQuery($contactId, $sel);
 	    $result = $this->q($q);
 	    
-	    if (DB::isError($result))
+	    if (MDB2::isError($result))
 		$whyNot['dbError'] = "Database error while fetching paper (" . htmlspecialchars($q) . "): " . htmlspecialchars($result->getMessage());
 	    else if ($result->numRows() == 0)
 		$whyNot['noPaper'] = 1;
 	    else
-		return $result->fetchRow(DB_FETCHMODE_OBJECT);
+		return $result->fetchRow(MDB2_FETCHMODE_OBJECT);
 	}
 
 	return null;
@@ -947,7 +954,7 @@ class Conference {
     function paperContactAuthors($paperId) {
 	$result = $this->qe("select firstName, lastName, email, contactId from ContactInfo join PaperConflict using (contactId) where paperId=$paperId and author>0", "while looking up paper contact authors");
 	$aus = array();
-	if (!DB::isError($result))
+	if (!MDB2::isError($result))
 	    while (($row = $result->fetchRow()))
 		$aus[] = $row;
 	return $aus;
@@ -1000,13 +1007,13 @@ class Conference {
 	$q = $q . " where " . join(" and ", $where) . " group by PaperReview.reviewId order by paperId, reviewOrdinal, reviewType desc, reviewId";
 
 	$result = $this->q($q);
-	if (DB::isError($result)) {
+	if (MDB2::isError($result)) {
 	    $whyNot['dbError'] = "Database error while fetching review (" . htmlspecialchars($q) . "): " . htmlspecialchars($result->getMessage());
 	    return null;
 	}
 
 	$x = array();
-	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT)))
+	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
 	    $x[] = $row;
 	
 	if (isset($selector['array']))
@@ -1332,7 +1339,7 @@ class Conference {
 	. " ContactInfo.email='$email')";
       $r = $this->q($q);
       $retval = "";
-      if (DB::isError($r)) {
+      if (MDB2::isError($r)) {
 	$this->errorMsg("Unable to get list of papers for $email: " . $r->getMessage());
       } else {
 	$i = 0;
@@ -1395,7 +1402,7 @@ class Conference {
 	$result = $this->qe("select reviewType, count(contactId)
 		from ReviewRequest where contactId=$contactId
 		group by reviewType order by null", "while counting review requests");
-	if (DB::isError($result))
+	if (MDB2::isError($result))
 	    $rreq = array(REVIEW_PRIMARY => '0?', REVIEW_SECONDARY => '0?', REVIEW_REQUESTED => '0?');
 	else {
 	    $rreq = array(REVIEW_PRIMARY => 0, REVIEW_SECONDARY => 0, REVIEW_REQUESTED => 0);
@@ -1413,8 +1420,8 @@ class Conference {
 	;
 
 	$pcresult = $this -> qe($query);
-	if (!DB::isError($pcresult)) {
-	    $row=$pcresult->fetchRow(DB_FETCHMODE_ASSOC);
+	if (!MDB2::isError($pcresult)) {
+	    $row=$pcresult->fetchRow(MDB2_FETCHMODE_ASSOC);
 
 	    $first = $row['firstName'];
 	    $last = $row['lastName'];
@@ -1475,7 +1482,7 @@ class Conference {
 		    . " ORDER by Paper.paperId ";
 		$r=$this->qe($query);
 
-		if (!DB::isError($r)) {
+		if (!MDB2::isError($r)) {
 		    $conflicts = $r -> numRows();
 		    print "<tr> <td>";
 		    if ( $conflicts < 1) {
@@ -1483,7 +1490,7 @@ class Conference {
 		    } else {
 			print "<br> This program committee member has the following conflicts";
 			print "<table>\n";
-			while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
+			while ($row=$r->fetchRow(MDB2_FETCHMODE_ASSOC)) {
 			    $paperId=$row['paperId'];
 			    $title=$row['title'];
 			    print "<tr> <td> $paperId </td> <td> $title </td> </tr>\n";
@@ -1500,11 +1507,11 @@ class Conference {
 		    . " AND TopicInterest.interest = 2 "
 		    . " AND TopicArea.topicId=TopicInterest.topicId ";
 		$r=$this->qe($query);
-		if (!DB::isError($r) && $r -> numRows() > 0) {
+		if (!MDB2::isError($r) && $r -> numRows() > 0) {
 		    print "<tr> <td>";
 		    print "They have high interest in ";
 		    print "<ul>";
-		    while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
+		    while ($row=$r->fetchRow(MDB2_FETCHMODE_ASSOC)) {
 			print "<li> " . $row["topicName"] . "</li>";
 		    }
 		    print "</ul>";
@@ -1516,11 +1523,11 @@ class Conference {
 		    . " AND TopicInterest.interest = 1 "
 		    . " AND TopicArea.topicId=TopicInterest.topicId ";
 		$r=$this->qe($query);
-		if (!DB::isError($r) && $r -> numRows() > 0) {
+		if (!MDB2::isError($r) && $r -> numRows() > 0) {
 		    print "<tr> <td>";
 		    print "They have medium interest in ";
 		    print "<ul>";
-		    while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
+		    while ($row=$r->fetchRow(MDB2_FETCHMODE_ASSOC)) {
 			print "<li> " . $row["topicName"] . "</li>";
 		    }
 		    print "</ul>";
@@ -1532,11 +1539,11 @@ class Conference {
 		    . " AND TopicInterest.interest = 0 "
 		    . " AND TopicArea.topicId=TopicInterest.topicId ";
 		$r=$this->qe($query);
-		if (!DB::isError($r) && $r -> numRows() > 0) {
+		if (!MDB2::isError($r) && $r -> numRows() > 0) {
 		    print "<tr> <td>";
 		    print "They have NO interest in ";
 		    print "<ul>";
-		    while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
+		    while ($row=$r->fetchRow(MDB2_FETCHMODE_ASSOC)) {
 			print "<li> " . $row["topicName"] . "</li>";
 		    }
 		    print "</ul>";
@@ -1553,7 +1560,7 @@ class Conference {
   function retCount($query)
     {
       $result = $this->qe($query);
-      if (!DB::isError($result)) {
+      if (!MDB2::isError($result)) {
 	$row = $result->fetchRow();
 	return $row[0];
       } else {
@@ -1610,10 +1617,10 @@ class Conference {
     
     function queryValuesGraph($query, $what, $max, $style) {
 	$result = $this->qe($query);
-	if (DB::isError($result))
+	if (MDB2::isError($result))
 	    $this->errorMsg("Error: " . $result->getMessage());
 	$text = "";
-	while (($row = $result->fetchRow(DB_FETCHMODE_ASSOC)))
+	while (($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)))
 	    $text .= $row[$what] . " ";
 	return $this->textValuesGraph($text, $max, $style);
     }
@@ -1668,14 +1675,14 @@ class Conference {
     function checkConflict($paperId, $contactId) {
 	$result = $this->qe("select paperId from PaperConflict
 		where contactId=$contactId and paperId=$paperId", "while examining conflicts");
-	return !DB::isError($result) && $result->numRows() > 0;
+	return !MDB2::isError($result) && $result->numRows() > 0;
     }
 
     function allMyConflicts($contactId) {
 	$result = $this->qe("select paperId from PaperConflict
 		where contactId=$contactId", "while examining conflicts");
 	$conflicts = array();
-	if (!DB::isError($result))
+	if (!MDB2::isError($result))
 	    while ($row = $result->fetchRow())
 		$conflicts[$row[0]] = 1;
 	return $conflicts;
@@ -1685,7 +1692,7 @@ class Conference {
 	$result=$this->qe("select paperId from PaperConflict
 		join PCMember using (contactId)", "while examining conflicts");
 	$conflicts = array();
-	if (!DB::isError($result))
+	if (!MDB2::isError($result))
 	    while ($row = $result->fetchRow())
 		$conflicts[$row[0]] = 1;
 	return $conflicts;
@@ -1701,7 +1708,7 @@ class Conference {
       . " from ContactInfo join PCMember using (contactId) "
       . " ORDER BY lastName, firstName ";
     $result = $this->qe($query);
-    if (!DB::isError($result)) {
+    if (!MDB2::isError($result)) {
       while($row=$result->fetchRow()) {
 	print "<option value=\"$row[0]\" ";
 	if ($row[0] == $selected) {
@@ -1724,7 +1731,7 @@ class Conference {
   function thereAreTopics() {
     $query = "SELECT * from PaperTopic";
     $result = $this->q($query);
-    if ( ! DB::isError($result) ) {
+    if ( ! MDB2::isError($result) ) {
       return $result -> numRows() > 0;
     } else {
       return 0;
@@ -1736,7 +1743,7 @@ class Conference {
       . "WHERE PaperTopic.paperId='$paperId' "
       . "AND PaperTopic.topicId=TopicArea.topicId ";
     $result = $this->qe($query);
-    if ( ! DB::isError($result) ) {
+    if ( ! MDB2::isError($result) ) {
       print "<ul>";
       while ($row=$result->fetchRow()) {
 	print "<li>" . $row[0] . "</li>\n";
@@ -1751,7 +1758,7 @@ class Conference {
 		       . " FROM ContactInfo, $type" . "Reviewer "
 		       . " WHERE ( $type" . "Reviewer.paperId='$paperId' "
 		       . "         AND $type" . "Reviewer.contactId=ContactInfo.contactId)");
-   if (!DB::isError($result)) {
+   if (!MDB2::isError($result)) {
      while($row = $result->fetchRow() ) {
        print "<a href=\"ChairRemoveReviewer.php?paperId=$paperId&who=$row[3]&reviewType=$type\">" . $row[0]. " " . $row[1] . " (" . $row[2] . "), " . "</a>";
        print "<br>";
@@ -1783,13 +1790,13 @@ class Conference {
 
     //$this->warnMsg($query);
     $result = $this->qe($query);
-    if (DB::isError($result)) {
+    if (MDB2::isError($result)) {
 	$this->errorMsg("That's odd - paper #$paperId cannot be displayed. "
 			. $result->getMessage());
 	exit();
     }
  
-    $row = $result->fetchRow(DB_FETCHMODE_ASSOC);
+    $row = $result->fetchRow(MDB2_FETCHMODE_ASSOC);
 
     $title = htmlspecialchars($row['title']);
     $abstract = htmlspecialchars($row['abstract']);
@@ -1861,7 +1868,7 @@ class Conference {
 	. "AND PaperTopic.topicId=TopicArea.topicId ";
       
       $result = $this->qe($query);
-      if ( ! DB::isError($result) && $result->numRows() > 0 ) {
+      if ( ! MDB2::isError($result) && $result->numRows() > 0 ) {
 	print "<tr>";
 	print "<td class='caption'>Topics:</td>";
 	print "<td>";
@@ -1885,7 +1892,7 @@ class Conference {
 
       $result = $this->qe($query);
 
-      if ( ! DB::isError($result) && $result -> numRows() > 0) {
+      if ( ! MDB2::isError($result) && $result -> numRows() > 0) {
 	print "<tr>";
 	print "<td> Indicated PC Reviewer Preferences</td>";
 	print "<td>";

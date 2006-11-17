@@ -60,11 +60,11 @@ $query="SELECT Paper.paperId, Paper.title, Paper.abstract, Paper.authorsResponse
 
 $result=$Conf->qe($query);
 
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
   $Conf->errorMsg("Error in retrieving paper list " . $result->getMessage());
   exit();
 }
-while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
+while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
   $paperId=$row['paperId'];
   $printMe = 1;
 

@@ -90,7 +90,7 @@ if ($_SESSION["GradeSortKey"]=="byReviews") {
   exit();
 }
 
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
   $Conf->errorMsg("Error in sql " . $result->getMessage() );
   exit();
 } 

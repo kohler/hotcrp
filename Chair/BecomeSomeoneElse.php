@@ -18,9 +18,9 @@ $result = $Conf->qe("select contactId, firstName, lastName, email,
 	left join ChairAssistant using (contactId)
 	left join PCMember using (contactId)
 	order by chair desc, ass desc, pc desc, lastName, firstName, email");
-if (!DB::isError($result)) {
+if (!MDB2::isError($result)) {
     $oldtype = "";
-    while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
+    while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
 	$type = ($row->chair ? "PC Chair" : ($row->ass ? "PC Chair's Assistant" : ($row->pc ? "PC Member" : "Others")));
 	if ($type != $oldtype)
 	    echo "<option value='-1' disabled='disabled'>", $type, "</option>\n";

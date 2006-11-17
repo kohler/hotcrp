@@ -31,7 +31,7 @@ $result=$Conf->qe("SELECT ContactInfo.contactId, ContactInfo.email, "
 		  );
 
 $i = 0;
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
   $Conf->errorMsg("Error in retrieving reviewer list "
 		  . $result->getMessage());
 } else {
@@ -75,7 +75,7 @@ for($i = 0; $i < sizeof($allReviewers); $i++) {
     . " (PaperReview.contactId='$id' )";
 
   $result = $Conf->qe($query);
-  if ( DB::isError($result) ) {
+  if ( MDB2::isError($result) ) {
     $Conf->errorMsg("Problem with reviewer paper review lookup . "
 		    . $result->getMessage() );
   } else {

@@ -80,7 +80,7 @@ if (IsSet($_REQUEST["nagList"])
 
 	$result=$Conf->qe($query);
 	if ( $result ) {
-	  $row = $result->fetchRow(DB_FETCHMODE_ASSOC);
+	  $row = $result->fetchRow(MDB2_FETCHMODE_ASSOC);
 
 	  $msg = $_REQUEST["emailBody"];
 	  
@@ -177,7 +177,7 @@ $result=$Conf->qe("select Paper.paperId, Paper.Title, ContactInfo.email,
 		where PaperReview.reviewType<" . REVIEW_PC . "
 		order by Paper.paperId");
 
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
   $Conf->errorMsg("Error in retrieving list of reviews: " . $result->getMessage());
 } 
 else {
@@ -206,7 +206,7 @@ else {
       ;
 
       $review_result = $Conf->qe($query);
-      if ( DB::isError($review_result) ) {
+      if (MDB2::isError($review_result) ) {
 	$Conf->errorMsg("That's odd - no information on reivew. "
 			. $review_result->getMessage());
       } else {

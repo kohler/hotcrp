@@ -20,7 +20,7 @@ $Conf->goIfInvalidActivity("EndOfTheMeeting", "../");
 		    . " ORDER BY paperId"
 		    );
 
-  if (DB::isError($result)) {
+  if (MDB2::isError($result)) {
     $Conf->errorMsg("Error in retrieving paper list " . $result->getMessage());
   } else {
     print "<table align=center width=75% border=1>\n";
@@ -28,7 +28,7 @@ $Conf->goIfInvalidActivity("EndOfTheMeeting", "../");
     print "<th align=center> # </th> ";
     print "<th align=center> Paper # </th> <th align=cetner > Title </th> </tr>\n";
     $i = 1;
-    while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
+    while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
       if ($row['timeWithdrawn'] <= 0) {
 	$paperId=$row['paperId'];
 	$title=$row['title'];

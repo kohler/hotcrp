@@ -24,10 +24,10 @@ if ($action == "paper") {
     $q = $Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"]));
     $result = $Conf->qe($q, "while selecting papers for download");
     $downloads = array();
-    if (DB::isError($result))
+    if (MDB2::isError($result))
 	/* do nothing */;
     else
-	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
+	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
 	    if (!$Me->canViewPaper($row, $Conf, $whyNot))
 		$Conf->errorMsg(whyNotText($whyNot, "view"));
 	    else
@@ -47,10 +47,10 @@ if ($action == "final") {
     $q = $Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"]));
     $result = $Conf->qe($q, "while selecting papers for download");
     $downloads = array();
-    if (DB::isError($result))
+    if (MDB2::isError($result))
 	/* do nothing */;
     else
-	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
+	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
 	    if (!$Me->canViewPaper($row, $Conf, $whyNot))
 		$Conf->errorMsg(whyNotText($whyNot, "view"));
 	    else
@@ -80,8 +80,8 @@ if ($action == "revform" && !isset($_REQUEST["papersel"])) {
 
     $text = '';
     $errors = array();
-    if (!DB::isError($result))
-	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
+    if (!MDB2::isError($result))
+	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
 	    if (!$Me->canReview($row, null, $Conf, $whyNot))
 		$errors[] = whyNotText($whyNot, "review") . "<br />";
 	    else {
@@ -113,8 +113,8 @@ if ($action == "rev" && isset($_REQUEST["papersel"]) && is_array($_REQUEST["pape
 
     $text = '';
     $errors = array();
-    if (!DB::isError($result))
-	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
+    if (!MDB2::isError($result))
+	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
 	    if (!$Me->canViewReview($row, null, $Conf, $whyNot))
 		$errors[] = whyNotText($whyNot, "view review") . "<br />";
 	    else if ($row->reviewSubmitted > 0) {
@@ -171,7 +171,7 @@ if ($action == "authors"
     if (!$Me->amAssistant())
 	$idq = "($idq) and blind=0";
     $result = $Conf->qe("select paperId, title, authorInformation from Paper where $idq", "while fetching authors");
-    if (!DB::isError($result)) {
+    if (!MDB2::isError($result)) {
 	$text = "#paperId\ttitle\tauthor\n";
 	while (($row = $result->fetchRow())) {
 	    foreach (preg_split('/[\r\n]+/', $row[2]) as $au)
@@ -250,7 +250,7 @@ if ($Me->amAssistant() && $listContact) {
 	$q .= " join PCMember using (contactId)";
     $q .= " order by lastName, firstName, email";
     $result = $Conf->qe($q, "while looking up other people");
-    if (!DB::isError($result))
+    if (!MDB2::isError($result))
 	while (($row = $result->fetchRow()))
 	    echo "<option value='$row[3]'", ($row[3] == $contactId ? " selected='selected'" : ""), ">", contactHtml($row), "</option>\n";
     echo "</select> <input class='button_small' type='submit' name='go' value='Go' /></form>\n\n";

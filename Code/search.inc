@@ -160,7 +160,7 @@ class PaperSearch {
 	global $Conf;
 	$x = $this->_searchQuery($q, $qa, $qx);
 	$result = $Conf->qe($x[0], "while searching papers");
-	if (DB::isError($result))
+	if (MDB2::isError($result))
 	    return array();
 	$x = array();
 	$result = $Conf->qe("select * from Matches", "while searching papers");

@@ -29,7 +29,7 @@ $query = "SELECT ContactInfo.contactId FROM PCMember,ContactInfo "
 $pcresult = $Conf -> qe($query);
 
 if ( $pcresult ) {
-  while ($row = $pcresult->fetchRow(DB_FETCHMODE_ASSOC)) {
+  while ($row = $pcresult->fetchRow(MDB2_FETCHMODE_ASSOC)) {
     $pcId=$row['contactId'];
 
     if ( $_SESSION["Me"] -> isChair ) {

@@ -20,12 +20,12 @@ function showPCConflictPapers()
     . " join PCMember on (ContactInfo.contactId=PCMember.contactId)"
     . " ORDER by ContactInfo.lastName, Paper.paperId ";
   $r=$Conf->qe($query);
-  if (!DB::isError($r)) {
+  if (!MDB2::isError($r)) {
     print "<FORM METHOD=post action=$_SERVER[PHP_SELF]>\n";
     print "<INPUT type=submit name=removeConflict value=\"Remove Indicated Conflicts\">\n";
     print "<table align=center width=75% border=1>\n";
 
-    while($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
+    while($row=$r->fetchRow(MDB2_FETCHMODE_ASSOC)) {
       $paperId=$row['paperId'];
       $title = $row['title'];
       $who = $row['firstName'] . " " . $row['lastName']

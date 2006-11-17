@@ -88,7 +88,7 @@ $gradeMax = $rf->maxNumericScore('grade');
 
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title FROM Paper join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$Me->contactId and PaperReview.reviewType=" . REVIEW_PRIMARY . ") order by Paper.paperId");
 
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
   $Conf->errorMsg("Error in sql ");
   exit();
 } 
@@ -152,10 +152,10 @@ while ($row=$result->fetchRow()) {
       . " WHERE paperId=$paperId AND contactId=" . $_SESSION["Me"]->contactId . " ";
       
     $r = $Conf->qe($q);
-    if (DB::isError($r) ) {
+    if (MDB2::isError($r) ) {
       $Conf->errorMsg("Error in query");
     } else {
-      $row = $r->fetchRow(DB_FETCHMODE_ASSOC);
+      $row = $r->fetchRow(MDB2_FETCHMODE_ASSOC);
       $grade = $row['grade'];
     }
 
@@ -193,7 +193,7 @@ $Conf->infoMsg("You can assign grades for any paper for which you are a secondar
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title "
 		  . " FROM Paper join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$Me->contactId and PaperReview.reviewType=" . REVIEW_SECONDARY . ") order by Paper.paperId");
 
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
   $Conf->errorMsg("Error in sql" );
   exit();
 } 
@@ -262,10 +262,10 @@ while ($row=$result->fetchRow()) {
       . " WHERE paperId=$paperId AND contactId=" . $_SESSION["Me"]->contactId . " ";
       
     $r = $Conf->qe($q);
-    if (DB::isError($r) ) {
+    if (MDB2::isError($r) ) {
       $Conf->errorMsg("Error in query");
     } else {
-      $row = $r->fetchRow(DB_FETCHMODE_ASSOC);
+      $row = $r->fetchRow(MDB2_FETCHMODE_ASSOC);
       $grade = $row['grade'];
     }
 

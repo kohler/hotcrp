@@ -125,9 +125,9 @@ function getReviews($paperId, $finalized) {
  		from PaperReview
 		join ContactInfo using (contactId)
 		where paperId=$paperId order by reviewOrdinal", "while retrieving reviews");
-    if (!DB::isError($result)) {
+    if (!MDB2::isError($result)) {
 	$text = $rf->textFormHeader($Conf, false, false);
-	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT)))
+	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
 	    if ($row->reviewSubmitted>0)
 		$text .= $rf->textForm($row, $row, $Conf, null, ReviewForm::REV_AUTHOR) . "\n";
     }
@@ -143,8 +143,8 @@ function getComments ($paperId) {
  		join ContactInfo using(contactId)
 		where paperId=$paperId and forAuthors>0 order by commentId", "while retrieving comments");
     $text = "";
-    if (!DB::isError($result)) {
-	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
+    if (!MDB2::isError($result)) {
+	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
 	    $text .= "==+== =========================================================================
 ==-== Comment";
 	    if ($row->blind <= 0)
@@ -184,8 +184,8 @@ if (isset($_REQUEST["sendTheMail"])) {
 }
 
 $result = $Conf->qe($query);
-if (!DB::isError($result)) {
-    while (($row = $result->fetchRow(DB_FETCHMODE_ASSOC))) {
+if (!MDB2::isError($result)) {
+    while (($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC))) {
 	$subj = $_REQUEST["subject"];
 	$msg = $_REQUEST["emailBody"];
 	

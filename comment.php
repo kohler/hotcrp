@@ -46,8 +46,8 @@ function loadRows() {
 		order by commentId");
     $crows = array();
     $crow = null;
-    if (!DB::isError($result))
-	while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT)) {
+    if (!MDB2::isError($result))
+	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
 	    $crows[] = $row;
 	    if (isset($_REQUEST['commentId']) && $row->commentId == $_REQUEST['commentId'])
 		$crow = $row;
@@ -89,22 +89,20 @@ function saveComment($text) {
 
     $while = "while saving comment";
     $result = $Conf->qe($q, $while);
-    if (DB::isError($result))
+    if (MDB2::isError($result))
 	return;
 
     // comment ID
     if ($crow)
 	$commentId = $crow->commentId;
     else {
-	$result = $Conf->qe("select last_insert_id()", $while);
-	if (DB::isError($result) || $result->numRows() == 0)
+	$commentId = $Conf->lastInsertId($while);
+	if (MDB2::isError($commentId))
 	    return;
-	$r = $result->fetchRow();
-	$commentId = $r[0];
     }
 
     // log, end
-    if (!DB::isError($result)) {
+    if (!MDB2::isError($result)) {
 	$action = ($text == "" ? "deleted" : "saved");
 	$Conf->confirmMsg("Comment $action");
 	$Conf->log("Comment $commentId for paper $prow->paperId $action", $Me);

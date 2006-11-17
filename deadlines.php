@@ -187,7 +187,7 @@ if (isset($_REQUEST['update']) && $Me->amAssistant()) {
 	$Conf->errorMsg(join("<br/>\n", $Error));
     else {
 	$result = $Conf->qe("delete from ImportantDates");
-	if (!DB::isError($result))
+	if (!MDB2::isError($result))
 	    foreach ($Dates as $n => $v) {
 		$sx = ($v[0] > 0 ? "from_unixtime($v[0])" : "'0'");
 		$ex = ($v[1] > 0 ? "from_unixtime($v[1])" : "'0'");

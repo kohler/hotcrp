@@ -244,9 +244,9 @@ Zhang, Ping Yen (INRIA)</pre>";
 		order by lastName, firstName, email", "while finding contact authors");
 	echo "<tr class='pt_contactAuthor$this->autrClasses' id='foldca'>\n";
 	echo "  ", $this->tdCaption("contactAuthor");
-	echo (!DB::isError($result) && $result->numRows() == 1 ? "Contact author" : "Contact authors");
+	echo (!MDB2::isError($result) && $result->numRows() == 1 ? "Contact author" : "Contact authors");
 	echo "</td>\n  ", $this->tdEntry('contactAuthor');
-	if (!DB::isError($result)) {
+	if (!MDB2::isError($result)) {
 	    $aus = array();
 	    while (($row = $result->fetchRow())) {
 		$au = contactText($row[0], $row[1], $row[2]);
@@ -293,7 +293,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 		join PaperConflict using (contactId)
 		where paperId=$prow->paperId group by ContactInfo.contactId";
 	$result = $Conf->qe($q, "while finding conflicted PC members");
-	if (!DB::isError($result)) {
+	if (!MDB2::isError($result)) {
 	    while ($row = $result->fetchRow())
 		$pcConflicts[] = "$row[0] $row[1]";
 	    if (!isset($pcConflicts))

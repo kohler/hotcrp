@@ -24,11 +24,11 @@ if (!IsSet($_REQUEST['paperId']) || $_REQUEST['paperId'] == 0) {
     . " WHERE Paper.paperId=" . $_REQUEST['paperId'] . " AND ContactInfo.contactId=Paper.ContactId"
     ;
   $result = $Conf->qe($query);
-  if ( DB::isError($result) ) {
+  if ( MDB2::isError($result) ) {
     $Conf->errorMsg("That's odd - paper #" . $_REQUEST['paperId'] . " isn't suitable for finalizing. "
 		    . $result -> getMessage());
   } else {
-    $row = $result->fetchRow(DB_FETCHMODE_ASSOC);
+    $row = $result->fetchRow(MDB2_FETCHMODE_ASSOC);
     $title = $Conf->safeHtml($row['title']);
     $abstract = $Conf->safeHtml($row['abstract']);
     $authorInfo = $Conf->safeHtml($row['authorInformation']);

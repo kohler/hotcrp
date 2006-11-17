@@ -24,7 +24,7 @@ if (IsSet($_REQUEST[updateContacts])) {
   if ( ! $r ) {
     $Conf->errorMsg("Unable to update names?");
   } else {
-    while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC) ) {
+    while ($row=$r->fetchRow(MDB2_FETCHMODE_ASSOC) ) {
       $first = $row['firstName'];
       $last = $row['lastName'];
       $id = $row['contactId'];
@@ -73,7 +73,7 @@ if ($r) {
   print "<table align=center width=85% border=1 >\n";
   print "<tr> <th> First </th> <th> Last </th> <th> Email </th> </tr>\n";
 
-  while ($row=$r->fetchRow(DB_FETCHMODE_ASSOC)) {
+  while ($row=$r->fetchRow(MDB2_FETCHMODE_ASSOC)) {
     $first = $row['firstName'];
     $last = $row['lastName'];
     $email = $row['email'];

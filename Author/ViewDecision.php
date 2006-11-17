@@ -127,12 +127,12 @@ $result = $Conf->qe("SELECT PaperReview.contactId, "
 
 $num_reviews = $result->numRows();
 
-if (!DB::isError($result) && $result->numRows() > 0) {
+if (!MDB2::isError($result) && $result->numRows() > 0) {
   $header = 0;
   $reviewerId = array();
 
   $i = 1;
-  while($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
+  while($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
     $reviewer=$row['contactId'];
     $reviewId=$row['reviewId'];
     $first=$row['firstName'];
@@ -173,7 +173,7 @@ $result = $Conf -> qe("SELECT *, UNIX_TIMESTAMP(time) as unixtime "
 		      . " WHERE paperId=" . $_REQUEST["paperId"]
 		      . " ORDER BY time ");
 
-if (DB::isError($result) ) {
+if (MDB2::isError($result) ) {
   $Conf->errorMsg("Error in SQL " . $result->getMessage());
 }
 
@@ -183,7 +183,7 @@ if ($result->numRows() < 1) {
   //
   // $Conf->infoMsg("There are no comments");
 } else {
-  while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)) {
+  while ($row=$result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
     if ($row['forAuthor']) {
       print "<table width=75% align=center>\n";
 

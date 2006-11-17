@@ -125,12 +125,12 @@ $result = $Conf->qe("select PaperReview.contactId, "
 		    . " and PaperReview.reviewSubmitted>0 $laterestrict "
 		    );
 
-if (!DB::isError($result) && $result->numRows() > 0) {
+if (!MDB2::isError($result) && $result->numRows() > 0) {
   $header = 0;
   $reviewerId = array();
 
   $i = 1;
-  while($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
+  while($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
     $reviewer=$row['contactId'];
     $reviewId=$row['reviewId'];
     $first=$row['firstName'];

@@ -122,7 +122,7 @@ $result=$Conf->qe("SELECT Paper.paperId, Paper.title, Paper.outcome, "
 . $order
 );
 
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
   $Conf->errorMsg("Error in sql " . $result->getMessage());
   exit();
 } 
@@ -158,7 +158,7 @@ $meritMax = $rf->maxNumericScore('overAllMerit');
 $gradeMax = $rf->maxNumericScore('grade');
 
 $rowNum = 0;
-while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)){
+while ($row=$result->fetchRow(MDB2_FETCHMODE_ASSOC)){
   $rowNum++;
   $paperId = $row['paperId'];
   $title = $row['title'];
@@ -227,7 +227,7 @@ while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)){
       if (! $r ) {
 	$Conf->errorMsg("Bummer .. " . $result->getMessage());
       } else {
-	$row = $r->fetchRow(DB_FETCHMODE_ASSOC);
+	$row = $r->fetchRow(MDB2_FETCHMODE_ASSOC);
 	$grade = $row['grade'];
       }
 

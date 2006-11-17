@@ -54,7 +54,7 @@ if (isset($_REQUEST['update'])) {
 		    $Conf->qe("insert into ReviewFormOptions (fieldName, level, description) values ('" . sqlq($field) . "', $i, '" . sqlq($options[$i]) . "')", $while);
 		
 		$result = $Conf->qe("update PaperReview set $field=0 where $field>" . count($options), $while);
-		if (!DB::isError($result) && $Conf->DB->affectedRows() > 0)
+		if (!MDB2::isError($result) && $Conf->DB->affectedRows() > 0)
 		    $scoreModified[] = htmlspecialchars($_REQUEST["shortName_$field"]);
 		
 		unset($_REQUEST["options_$field"]);
@@ -67,7 +67,7 @@ if (isset($_REQUEST['update'])) {
 	}
 	if ($req != '') {
 	    $result = $Conf->qe("update ReviewFormField set " . substr($req, 0, -2) . " where fieldName='" . sqlq($field) . "'", $while);
-	    if (!DB::isError($result)) {
+	    if (!MDB2::isError($result)) {
 		unset($_REQUEST["order_$field"], $_REQUEST["shortName_$field"], $_REQUEST["description_$field"]);
 		$updates = 1;
 	    }
@@ -167,14 +167,14 @@ function formFieldText($row, $ordinalOrder, $numRows) {
 }
 
 $result = $Conf->qe("select * from ReviewFormField order by sortOrder, shortName", "while loading review form");
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
     $Conf->footer();
     exit;
 }
 
 $ordinalOrder = 0;
 $notShown = '';
-while ($row = $result->fetchRow(DB_FETCHMODE_OBJECT))
+while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))
     if ($row->sortOrder < 0)
 	$notShown .= formFieldText($row, -1, $result->numRows());
     else

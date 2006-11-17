@@ -261,7 +261,7 @@ if( $_SESSION['Me']->isChair && IsSet($_REQUEST['judgement']) ){
       //$Conf->infoMsg($query);
     $result=$Conf->qe( $query );
 
-    if (DB::isError($result)) {
+    if (MDB2::isError($result)) {
       $Conf->errorMsg("Error in sql " . $result->getMessage());
     } 
   }
@@ -331,7 +331,7 @@ $query  = "SELECT $table.paperId, Paper.title, Paper.pcPaper, "
 $result=$Conf->qe( $query );
 
 
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
   $Conf->errorMsg("Error in sql " . $result->getMessage());
   exit();
 } 
@@ -383,7 +383,7 @@ if( $use_groups ){
   $dest = 'all';
 }
 
-while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)) {
+while ($row=$result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
   if( $use_groups ){
     $query = "SELECT grade, COUNT(grade) AS count FROM PaperGrade WHERE " .
 	     "paperId = " . $row['paperId'] ." GROUP BY grade";
@@ -391,7 +391,7 @@ while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)) {
 
     $gresult=$Conf->qe( $query );
 
-    while ($grow=$gresult->fetchRow(DB_FETCHMODE_ASSOC)) {
+    while ($grow=$gresult->fetchRow(MDB2_FETCHMODE_ASSOC)) {
       $grades[$grow['grade']] = $grow['count'];
     }
 

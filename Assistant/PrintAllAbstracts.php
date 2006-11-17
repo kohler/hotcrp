@@ -65,10 +65,10 @@ I'm not certain if this works under Netscape or other browsers.
 
 $result=$Conf->q($query);
 
-  if (DB::isError($result) ) {
+  if (MDB2::isError($result) ) {
     $Conf->errorMsg("Error in retrieving paper list " . $result->getMessage());
   } else {
-   while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC) ) {
+   while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC) ) {
      $paperId=$row['paperId'];
      $title=$row['title'];
      $affiliation=nl2br($row['authorInformation']);
@@ -103,7 +103,7 @@ $result=$Conf->q($query);
    . "WHERE PaperTopic.paperId=$paperId "
    . "AND PaperTopic.topicId=TopicArea.topicId ";
     $result2 = $Conf->qe($query);
-    if ( ! DB::isError($result) ) {
+    if ( ! MDB2::isError($result) ) {
       print "<ul>";
       while ($top=$result2->fetchRow()) {
 	print "<li>" . $top[0] . "</li>\n";

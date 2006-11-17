@@ -50,7 +50,7 @@ if (isset($_REQUEST["update"])) {
 	    // remove?
 	    if ($value == "rem") {
 		$result = $Conf->qe("delete from TopicArea where topicId='$id'", "while deleting topic");
-		if (!DB::isError($result))
+		if (!MDB2::isError($result))
 		    $Conf->log("Removed a topic", $_SESSION["Me"]);
 		continue;
 	    }
@@ -77,7 +77,7 @@ function outrow($id, $name) {
 
 $query = "select topicId, topicName from TopicArea order by topicName";
 $result = $Conf->q($query);
-if (DB::isError($result))
+if (MDB2::isError($result))
     $Conf->errorMsg("Database error: " . $result->getMessage());
 else {
     echo "<hr class='smgap' />

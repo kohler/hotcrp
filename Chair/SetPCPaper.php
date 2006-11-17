@@ -21,7 +21,7 @@ if (IsSet($_REQUEST['Requests']) ) {
   }
     //$Conf->infoMsg($query);
   $result=$Conf->q($query);
-  if (DB::isError($result)) {
+  if (MDB2::isError($result)) {
     $Conf->errorMsg("Error in sql " . $result->getMessage());
   }
   $query = "update Paper set pcPaper = 1 where paperId < 0 ";
@@ -31,7 +31,7 @@ if (IsSet($_REQUEST['Requests']) ) {
   }
     //$Conf->infoMsg($query);
   $result=$Conf->q($query);
-  if (DB::isError($result)) {
+  if (MDB2::isError($result)) {
     $Conf->errorMsg("Error in sql " . $result->getMessage());
   }
 }
@@ -49,7 +49,7 @@ $result=$Conf->q("SELECT Paper.paperId, Paper.title, Paper.pcPaper "
 . "FROM Paper "
 . "ORDER BY Paper.paperId ");
 
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
   $Conf->errorMsg("Error in sql " . $result->getMessage());
 } else {
   $ids=array();

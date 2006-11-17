@@ -74,10 +74,10 @@ require_once("$ConfSitePATH/Code/conference.inc");
 require_once("$ConfSitePATH/Code/contact.inc");
 require_once("$ConfSitePATH/Code/review.inc");
 
-// If you have the PEAR::DB library installed globally, you
-// should just require_once() the DB interface you need.
-ini_set("include_path", ini_get("include_path") . ":$ConfSitePATH/Code/DB-1.7.6:$ConfSitePATH/Code/Mail-1.1.10");
-require_once("$ConfSitePATH/Code/DB-1.7.6/DB.php");
+// If you have the PEAR::MDB2 and PEAR::Mail libraries installed globally,
+// there's no need to change the include path.
+ini_set("include_path", ini_get("include_path") . ":$ConfSitePATH/Code/MDB2-2.3.0:$ConfSitePATH/Code/Mail-1.1.10");
+require_once("MDB2.php");
 
 include("$ConfSitePATH/Code/options.inc");
 $Conf = new Conference();

@@ -50,7 +50,7 @@ $result=$Conf->qe("SELECT ContactInfo.firstName, ContactInfo.lastName,"
 		  );
 
 
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
   $Conf->errorMsg("Error in sql " . $result->getMessage());
   exit();
 } 
@@ -72,7 +72,7 @@ $rf = reviewForm();
 $meritMax = $rf->maxNumericScore('overAllMerit');
 
 $rowNum = 0;
-while ($row=$result->fetchRow(DB_FETCHMODE_ASSOC)) {
+while ($row=$result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
   $rowNum++;
 
   $first=$row['firstName'];

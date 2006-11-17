@@ -84,7 +84,7 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
     // develop query
     $result = $Search->search(defval($_REQUEST["q"], ""), defval($_REQUEST["qa"], ""), defval($_REQUEST["qx"], ""));
 
-    if (!DB::isError($result)) {
+    if (!MDB2::isError($result)) {
 	$pl = new PaperList(true, "list");
 	$_SESSION["whichList"] = "list";
 	$_SESSION["matchPreg"] = "/(" . $Search->matchPreg . ")/i";

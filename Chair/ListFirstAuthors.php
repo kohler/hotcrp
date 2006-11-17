@@ -35,7 +35,7 @@ This page shows you all the first authors that have entered papers into the data
 		    . " Paper.authorInformation, Paper.contactId"
 		    . " FROM Paper");
   $i = 0;
-  if (DB::isError($result)) {
+  if (MDB2::isError($result)) {
     $Conf->errorMsg("Error in retrieving paper list " . $result->getMessage());
   } else {
     while ($row = $result->fetchRow()) {
@@ -80,7 +80,7 @@ There are <?php  echo $i ?> submissions with corresponding first-authors.
                  . " FROM ContactInfo WHERE "
                  . " (ContactInfo.contactId='$contactid' )";
        $result = $Conf->qe($query);
-        if ( DB::isError($result) ) {
+        if ( MDB2::isError($result) ) {
         $Conf->errorMsg("That's odd - paper #$paperId doesn't have contact info. "
 			. $result->getMessage());
       } else {

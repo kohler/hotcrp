@@ -18,7 +18,7 @@ function saveAssignments($reviewer) {
 
     $while = "while saving review assignments";
     $result = $Conf->qe("lock tables Paper read, PaperReview write, PaperConflict write", $while);
-    if (DB::isError($result))
+    if (MDB2::isError($result))
 	return $result;
 
     $result = $Conf->qe("select Paper.paperId,
@@ -31,8 +31,8 @@ function saveAssignments($reviewer) {
 	order by paperId asc, reviewId asc", $while);
 
     $lastPaperId = -1;
-    if (!DB::isError($result))
-	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
+    if (!MDB2::isError($result))
+	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
 	    if ($row->paperId == $lastPaperId || $row->author > 0)
 		continue;
 	    $lastPaperId = $row->paperId;
@@ -81,8 +81,8 @@ $query = "select ContactInfo.contactId, firstName, lastName,
 		group by contactId
 		order by lastName, firstName, email";
 $result = $Conf->qe($query);
-if (!DB::isError($result)) {
-    while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
+if (!MDB2::isError($result)) {
+    while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
 	echo "<option value='$row->contactId'";
 	if ($row->contactId == $reviewer)
 	    echo " selected='selected'";
@@ -97,7 +97,7 @@ echo "</select>\n</form>\n\n";
 
 if ($reviewer >= 0) {
     $result = $Conf->qe("select topicName, interest from TopicArea join TopicInterest using (topicId) where contactId=$reviewer order by topicName");
-    if (!DB::isError($result)) {
+    if (!MDB2::isError($result)) {
 	while (($row = $result->fetchRow()))
 	    $interest[$row[1]][] = $row[0];
 	if (isset($interest[0]) || isset($interest[2])) {

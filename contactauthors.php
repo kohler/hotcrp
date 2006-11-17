@@ -53,11 +53,11 @@ function addContactAuthor($paperId, $contactId) {
     global $Conf;
     
     $result = $Conf->qe("lock tables PaperConflict write", "while adding contact author");
-    if (DB::isError($result))
+    if (MDB2::isError($result))
 	return $result;
 
     $result = $Conf->qe("select author from PaperConflict where paperId=$paperId and contactId=$contactId", "while adding contact author");
-    if (!DB::isError($result) && $result->numRows() > 0)
+    if (!MDB2::isError($result) && $result->numRows() > 0)
 	$q = "update PaperConflict set author=1 where paperId=$paperId and contactId=$contactId";
     else
 	$q = "insert into PaperConflict (paperId, contactId, author) values ($paperId, $contactId, 1)";
@@ -84,7 +84,7 @@ else if (isset($_REQUEST["update"])) {
 	$Conf->errorMsg("You must enter the new contact author's email address."); 
     else if (($id = $Conf->getContactId($_REQUEST["email"])) > 0) {
 	$result = addContactAuthor($paperId, $id);
-	if (!DB::isError($result))
+	if (!MDB2::isError($result))
 	    $Conf->confirmMsg("Contact author added.");
     }
 } else if (isset($_REQUEST["remove"])) {
@@ -94,7 +94,7 @@ else if (isset($_REQUEST["update"])) {
 	$Conf->errorMsg("Invalid contact author ID in request.");
     else {
 	$result = removeContactAuthor($paperId, $id);
-	if (!DB::isError($result))
+	if (!MDB2::isError($result))
 	    $Conf->confirmMsg("Contact author removed.");
     }
 } else
@@ -132,7 +132,7 @@ if ($OK) {
 	where paperId=$paperId and author=1
 	order by lastName, firstName, email";
     $result = $Conf->qe($q, "while finding contact authors");
-    if (!DB::isError($result)) {
+    if (!MDB2::isError($result)) {
 	while ($row = $result->fetchRow()) {
 	    echo "<tr><td>", contactHtml($row[0], $row[1]), "</td> <td>", htmlspecialchars($row[2]), "</td>";
 	    if ($Me->amAssistant())

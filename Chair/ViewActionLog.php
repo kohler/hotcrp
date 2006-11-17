@@ -107,7 +107,7 @@ $query="SELECT ActionLog.logId, UNIX_TIMESTAMP(ActionLog.time), "
 
 $result = $Conf->q($query);
 
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
   $Conf->errorMsg("Query failed" . $result->getMessage());
   $Conf->errorMsg("Query is $query");
 } else {

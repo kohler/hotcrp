@@ -78,7 +78,7 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 	$tf['err'][] = $tf['firstLineno'] . ": " . whyNotText($whyNot, "review");
     else if ($rf->checkRequestFields($req, $editRrow, $tf)) {
 	$result = $rf->saveRequest($req, $editRrow, $prow, $Me->contactId);
-	if (!DB::isError($result))
+	if (!MDB2::isError($result))
 	    $tf['confirm'][] = "Uploaded review for paper #$prow->paperId.";
     }
 
@@ -97,7 +97,7 @@ if (isset($_REQUEST['update']) || isset($_REQUEST['submit']) || isset($_REQUEST[
 	$Conf->errorMsg(whyNotText($whyNot, "review"));
     else if ($rf->checkRequestFields($_REQUEST, $editRrow)) {
 	$result = $rf->saveRequest($_REQUEST, $editRrow, $prow, $Me->contactId);
-	if (!DB::isError($result))
+	if (!MDB2::isError($result))
 	    $Conf->confirmMsg(isset($_REQUEST['submit']) ? "Review submitted." : "Review saved.");
 	loadRows();
     } else
@@ -110,7 +110,7 @@ if (isset($_REQUEST['unsubmit']) && $Me->amAssistant())
 	$Conf->errorMsg("This review has not been submitted.");
     else {
 	$result = $Conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=1 where reviewId=$editRrow->reviewId", "while unsubmitting review");
-	if (!DB::isError($result)) {
+	if (!MDB2::isError($result)) {
 	    $Conf->log("Review $editRrow->reviewId for $prow->paperId by $editRrow->contactId unsubmitted", $Me);
 	    $Conf->confirmMsg("Unsubmitted review.");
 	}
@@ -125,7 +125,7 @@ if (isset($_REQUEST['delete']) && $Me->amAssistant())
     else {
 	archiveReview($editRrow);
 	$result = $Conf->qe("delete from PaperReview where reviewId=$editRrow->reviewId", "while deleting review");
-	if (!DB::isError($result)) {
+	if (!MDB2::isError($result)) {
 	    $Conf->log("Review $editRrow->reviewId for $prow->paperId by $editRrow->contactId deleted", $Me);
 	    $Conf->confirmMsg("Deleted review.");
 	    unset($_REQUEST["reviewId"]);
@@ -173,17 +173,17 @@ function refuseReview() {
 	archiveReview($rrow);
 
     $result = $Conf->qe("delete from PaperReview where reviewId=$rrow->reviewId", $while);
-    if (DB::isError($result))
+    if (MDB2::isError($result))
 	return;
     $reason = defval($_REQUEST['reason'], "");
     $result = $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($rrow->paperId, $rrow->contactId, $rrow->requestedBy, '" . sqlqtrim($reason) . "')", $while);
-    if (DB::isError($result))
+    if (MDB2::isError($result))
 	return;
 
     // now the requester must potentially complete their review
     if ($rrow->requestedBy > 0) {
 	$result = $Conf->qe("select reviewId from PaperReview where requestedBy=$rrow->requestedBy and paperId=$rrow->paperId", $while);
-	if (!DB::isError($result) && $result->numRows() == 0)
+	if (!MDB2::isError($result) && $result->numRows() == 0)
 	    $Conf->qe("update PaperReview set reviewNeedsSubmit=1 where reviewType=" . REVIEW_SECONDARY . " and paperId=$rrow->paperId and contactId=$rrow->requestedBy and reviewSubmitted<=0", $while);
     }
 
@@ -250,7 +250,7 @@ if (isset($_REQUEST['setoutcome'])) {
 	$rf = reviewForm();
 	if (isset($rf->options['outcome'][$o])) {
 	    $result = $Conf->qe("update Paper set outcome=$o where paperId=$prow->paperId", "while changing outcome");
-	    if (!DB::isError($result))
+	    if (!MDB2::isError($result))
 		$Conf->confirmMsg("Outcome for paper #$prow->paperId set to " . htmlspecialchars($rf->options['outcome'][$o]) . ".");
 	} else
 	    $Conf->errorMsg("Bad outcome value!");

@@ -17,7 +17,7 @@ if (isset($_REQUEST['pcconflicts'])) {
 	where Paper.timeSubmitted>0
 	group by Paper.paperId
 	order by Paper.paperId", "while getting PC conflicts");
-    if (!DB::isError($result)) {
+    if (!MDB2::isError($result)) {
 	$text = "#paperId\ttitle\tPC conflicts\n";
 	while (($row = $result->fetchRow()))
 	    $text .= $row[0] . "\t" . $row[1] . "\t" . ($row[2] ? $row[2] : "-") . "\n";
@@ -33,7 +33,7 @@ if (isset($_REQUEST['authors'])) {
 	from Paper
 	where Paper.timeSubmitted>0
 	order by Paper.paperId", "while getting authors");
-    if (!DB::isError($result)) {
+    if (!MDB2::isError($result)) {
 	$text = "#paperId\tauthor\n";
 	while (($row = $result->fetchRow())) {
 	    $authors = preg_split('/[\r\n]+/', $row[1]);

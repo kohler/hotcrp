@@ -71,14 +71,14 @@ $qpc = "SELECT ContactInfo.contactId, firstName, lastName, email, collaborators"
 
 $rpc = $Conf->qe($qpc);
 
-if (DB::isError($rpc)) {
+if (MDB2::isError($rpc)) {
   $Conf->errorMsg("Error in query " . $rpc->getMessage());
   exit;
 }
 
 $useless = array ( "university" => 1, "the" => 1, "and" => 1, "univ" => 1 );
 
-while($pcdata=$rpc->fetchRow(DB_FETCHMODE_ASSOC)) {
+while($pcdata=$rpc->fetchRow(MDB2_FETCHMODE_ASSOC)) {
 
   flush();
 
@@ -160,8 +160,8 @@ while($pcdata=$rpc->fetchRow(DB_FETCHMODE_ASSOC)) {
 
   $rc = $Conf->qe($qc);
 
-  if (!DB::isError($rc)) {
-    while ($rowc=$rc->fetchRow(DB_FETCHMODE_ASSOC)) {
+  if (!MDB2::isError($rc)) {
+    while ($rowc=$rc->fetchRow(MDB2_FETCHMODE_ASSOC)) {
       $paperId=$rowc['paperId'];
       $title=$rowc['title'];
 

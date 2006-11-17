@@ -142,7 +142,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
     $msg = ($Me->lastName ? "" : "Please take a moment to update your contact information.  ");
     $msg .= "We need a list of your recent collaborators to detect paper conflicts.  If you have no collaborators, enter \"None\".";
     $result = $Conf->q("select * from TopicArea");
-    if (!DB::isError($result) && $result->numRows() > 0)
+    if (!MDB2::isError($result) && $result->numRows() > 0)
 	$msg .= "  Additionally, we use your topic interests to assign you papers you might like.";
     $Conf->infoMsg($msg);
 } else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1) {
@@ -234,7 +234,7 @@ Zhang, Ping Yen (INRIA)
 </tr>\n\n";
 
     $result = $Conf->q("select TopicArea.topicId, TopicArea.topicName, TopicInterest.interest from TopicArea left join TopicInterest on TopicInterest.contactId=$Me->contactId and TopicInterest.topicId=TopicArea.topicId order by TopicArea.topicName");
-    if (!DB::isError($result) && $result->numRows() > 0) {
+    if (!MDB2::isError($result) && $result->numRows() > 0) {
 	echo "<tr id='topicinterest'>
   <td class='caption'>Topic interests</td>
   <td class='entry' colspan='3' id='topicinterest'><table class='topicinterest'>

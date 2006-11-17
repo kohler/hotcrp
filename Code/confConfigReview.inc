@@ -27,8 +27,8 @@ function& ReviewFactoryById($conf, $reviewId)
   $query="SELECT contactId, paperId FROM PaperReview "
     . " WHERE paperReviewid='$reviewId'";
   $result = $conf->q($query);
-  if ( DB::isError($result) ) {
-    $row=$result->fetchRow(DB_FETCHMODE_ASSOC);
+  if ( MDB2::isError($result) ) {
+    $row=$result->fetchRow(MDB2_FETCHMODE_ASSOC);
     return new HYPO2010($conf, $row['contactId'], $row['paperId']);
   } else {
     return 0;

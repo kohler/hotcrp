@@ -366,8 +366,8 @@ class PaperList {
 	    || $_SESSION["paperLists"]["date"] <= $Conf->startTime["paperListUpdate"]) {
 	    $pl = array();
 	    $result = $Conf->qe("select * from PaperList");
-	    if (!DB::isError($result))
-		while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT)))
+	    if (!MDB2::isError($result))
+		while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
 		    $pl[$row->paperListName] = $row;
 	    $pl["date"] = defval($Conf->startTime["paperListUpdate"]);
 	    $_SESSION["paperLists"] = $pl;
@@ -461,7 +461,7 @@ class PaperList {
 		from PaperListColumns join PaperFields using (fieldId)
 		where PaperListColumns.paperListId=$plist->paperListId
 		order by PaperListColumns.col", "while looking up paper list information");
-	if (DB::isError($result))
+	if (MDB2::isError($result))
 	    return NULL;
 	
 	$fieldId = array();
@@ -485,8 +485,8 @@ class PaperList {
 		join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
 		where " . ($plist->queryType == 'pc' ? "timeSubmitted>0" : "paperId=-1") . "
 		order by lastName, firstName, email", "while fetching reviews");
-	    if (!DB::isError($result))
-		while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT)))
+	    if (!MDB2::isError($result))
+		while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
 		    $reviewList[$row->paperId][] = $row;
 	}
 	
@@ -498,7 +498,7 @@ class PaperList {
 
 	// make query
 	$result = $Conf->qe($pq, "while selecting papers");
-	if (DB::isError($result))
+	if (MDB2::isError($result))
 	    return NULL;
 
 	if ($result->numRows() == 0)
@@ -508,7 +508,7 @@ class PaperList {
 	$ids = array();
 	$anyData = array();
 	$body = '';
-	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
+	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
 	    $ids[] = $row->paperId;
 	    $trclass = "k" . ($this->count % 4 < 2 ? 0 : 1);
 	    $this->count++;

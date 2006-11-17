@@ -23,7 +23,7 @@ if (isset($_REQUEST["nag"])) {
     . " FROM ContactInfo join PCMember using (contactId) "
     . " ORDER BY ContactInfo.lastName";
 $result = $Conf->qe($query);
-  if (DB::isError($result)) {
+  if (MDB2::isError($result)) {
     $Conf->errorMsg("There are no program committee memebers? "
 		    . $result->getMessage());
   } else {
@@ -48,14 +48,14 @@ $result = $Conf->qe($query);
       $query="SELECT TopicArea.topicId, TopicArea.topicName FROM TopicArea";
       $result2 = $Conf->q($query);
 
-      if ( DB::isError($result2)) {
+      if ( MDB2::isError($result2)) {
 	$Conf->errorMsg("Error in query for topics: " . $result2->getMessage());
       } else if ($result2->numRows() > 0) {
 	
 	// query for this guy's interests
 	$query="SELECT TopicInterest.topicId, TopicInterest.interest FROM TopicInterest WHERE TopicInterest.contactId = " . $id;
 	$result1 = $Conf->q($query);
-	if ( DB::isError($result1)) {
+	if ( MDB2::isError($result1)) {
 	  $Conf->errorMsg("Error in query for interests: " . $result1->getMessage());
 	} else {
 	  $interests=array();
@@ -96,7 +96,7 @@ $query = "select ContactInfo.contactId, ContactInfo.firstName, ContactInfo.lastN
     . "order by ContactInfo.lastName";
 $result = $Conf->q($query);
 
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
     $Conf->errorMsg("Database error: " . $result->getMessage());
  } else if ($result->numRows() == 0) {
     $Conf->infoMsg("There are no program committee members.");
@@ -121,14 +121,14 @@ if (DB::isError($result)) {
       $query="SELECT TopicArea.topicId, TopicArea.topicName FROM TopicArea";
       $result2 = $Conf->q($query);
 
-      if ( DB::isError($result2)) {
+      if ( MDB2::isError($result2)) {
 	$Conf->errorMsg("Error in query for topics: " . $result2->getMessage());
       } else if ($result2->numRows() > 0) {
 	
 	// query for this guy's interests
 	$query="SELECT TopicInterest.topicId, TopicInterest.interest FROM TopicInterest WHERE TopicInterest.contactId = " . $id;
 	$result1 = $Conf->q($query);
-	if ( DB::isError($result1)) {
+	if ( MDB2::isError($result1)) {
 	  $Conf->errorMsg("Error in query for interests: " . $result1->getMessage());
 	} else {
 	  $interests=array();

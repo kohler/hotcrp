@@ -259,13 +259,13 @@ function topicTable($prow, $active = 0, $conf = null) {
 	$extraQ = " join PaperTopic using (topicId) where PaperTopic.paperId=$paperId";
     else if ($paperId > 0) {
 	$result = $Conf->q("select topicId from PaperTopic where paperId=$paperId");
-	if (!DB::isError($result))
+	if (!MDB2::isError($result))
 	    while ($row = $result->fetchRow())
 		$paperTopic[$row[0]] = 1;
     }
 
     $result = $Conf->q("select TopicArea.topicId, topicName from TopicArea$extraQ order by topicName");
-    if (!DB::isError($result) && $result->numRows() > 0) {
+    if (!MDB2::isError($result) && $result->numRows() > 0) {
 	$out = "<table class='simple'><tr>\n	<td>";
 	$colheight = (int) (($result->numRows() + 1) / 2);
 	for ($i = 0; $i < $result->numRows(); $i++) {
@@ -626,7 +626,7 @@ function contactPulldown($id, $name, $conf, $contact) {
     echo "<input class='textlite' id='${id}_email' name='${name}_email' type='text' value=\"", htmlspecialchars($contact->email), "\" />&nbsp;&nbsp;";
     
     $result = $conf->q("select firstName, lastName, email from ContactInfo order by lastName, firstName, email");
-    if (!DB::isError($result)) {
+    if (!MDB2::isError($result)) {
 	echo "<span class='folded' id='fold$id'><a class='button_small unfolder' href=\"javascript:fold('${id}', 0)\">Show&nbsp;list</a>";
 	echo "<span class='contactpulldown extension'>";
 	echo "<select id='${id}_pulldown' name='${name}_pulldown' onchange='contactPulldown(\"$id\")' size='6'>";

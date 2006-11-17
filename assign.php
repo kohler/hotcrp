@@ -77,12 +77,12 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
 		from PaperReview
 		join ContactInfo using (contactId)
 		where reviewId=$reviewId", $while);
-    if (DB::isError($result))
+    if (MDB2::isError($result))
 	return false;
     else if ($result->numRows() == 0)
 	return $Conf->errorMsg("No such review request.");
 
-    $row = $result->fetchRow(DB_FETCHMODE_OBJECT);
+    $row = $result->fetchRow(MDB2_FETCHMODE_OBJECT);
     if ($row->paperId != $prow->paperId)
 	return $Conf->errorMsg("Weird!  Retracted review is for a different paper.");
     else if ($row->reviewModified > 0)
@@ -135,8 +135,8 @@ function pcAssignments() {
 	from PCMember
 	left join PaperConflict on (PaperConflict.contactId=PCMember.contactId and PaperConflict.paperId=$prow->paperId)
 	left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.paperId=$prow->paperId)", $while);
-    if (!DB::isError($result))
-	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT))) {
+    if (!MDB2::isError($result))
+	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
 	    $val = defval($_REQUEST["pcs$row->contactId"], 0);
 	    if ($row->author)
 		continue;
@@ -175,14 +175,14 @@ function requestReview($email) {
 
     // check for outstanding review request
     $result = $Conf->qe("select reviewId, firstName, lastName, email from PaperReview join ContactInfo on (ContactInfo.contactId=PaperReview.requestedBy) where paperId=$prow->paperId and PaperReview.contactId=$reqId", $while);
-    if (DB::isError($result))
+    if (MDB2::isError($result))
 	return false;
-    else if (($row = $result->fetchRow(DB_FETCHMODE_OBJECT)))
+    else if (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
 	return $Conf->errorMsg(contactHtml($row) . " has already requested a review from " . contactHtml($Them) . ".");
 
     // check for outstanding refusal to review
     $result = $Conf->qe("select paperId, '<conflict>' from PaperConflict where paperId=$prow->paperId and contactId=$reqId union select paperId, reason from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
-    if (!DB::isError($result) && $result->numRows() > 0) {
+    if (!MDB2::isError($result) && $result->numRows() > 0) {
 	$row = $result->fetchRow();
 	if ($row[1] == "<conflict>")
 	    return $Conf->errorMsg(contactHtml($Them) . " has a conflict registered with paper #$prow->paperId and cannot be asked to review it.");
@@ -304,8 +304,8 @@ if ($Me->amAssistant()) {
 	left join PaperReview as AllReviews on (AllReviews.contactId=ContactInfo.contactId)
 	group by email
 	order by lastName, firstName, email", "while looking up PC");
-    if (!DB::isError($result))
-	while (($row = $result->fetchRow(DB_FETCHMODE_OBJECT)))
+    if (!MDB2::isError($result))
+	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
 	    $pc[] = $row;
 
     // PC conflicts row

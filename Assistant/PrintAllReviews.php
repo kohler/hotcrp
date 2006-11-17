@@ -84,11 +84,11 @@ $result=$Conf->qe($query);
 print "<p> Found " .  $result->numRows() . " papers. </p>";
 print "<p class='page'> You should see a page break following this when printing. </p>";
 
-if (DB::isError($result)) {
+if (MDB2::isError($result)) {
   $Conf->errorMsg("Error in retrieving paper list " . $result->getMessage());
   exit();
 }
-while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
+while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
   $paperId=$row['paperId'];
   $printMe = 1;
 
@@ -232,12 +232,12 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
 			 . $finalizedStr
 			 );
 
-    if (!DB::isError($result2) && $result2->numRows() > 0) {
+    if (!MDB2::isError($result2) && $result2->numRows() > 0) {
       $header = 0;
       $reviewerId = array();
 
       $i = 1;
-      while($row = $result2->fetchRow(DB_FETCHMODE_ASSOC)) {
+      while($row = $result2->fetchRow(MDB2_FETCHMODE_ASSOC)) {
 	$reviewer=$row['contactId'];
 	$reviewId=$row['reviewId'];
 	$first=$row['firstName'];
@@ -276,7 +276,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
       $Conf->errorMsg("Error in SQL " . $result->getMessage());
     }
 
-    if ($gradeRow = $gradeRes->fetchRow(DB_FETCHMODE_ASSOC)) {
+    if ($gradeRow = $gradeRes->fetchRow(MDB2_FETCHMODE_ASSOC)) {
       $grade = "<EM>" . $gradeName[$gradeRow['grade']] . "</EM>";
     } else {
       $grade = "not entered yet";
@@ -314,7 +314,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
 			  . " FROM PaperComment "
 			  . " WHERE paperId=$paperId "
 			  . " ORDER BY time ");
-    if (DB::isError($comResult)) {
+    if (MDB2::isError($comResult)) {
       $Conf->errorMsg("Error in SQL " . $comResult->getMessage());
     }
     
@@ -324,7 +324,7 @@ while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
       //
       // $Conf->infoMsg("There are no comments");
     } else {
-      while ($row=$comResult->fetchRow(DB_FETCHMODE_ASSOC) ) {
+      while ($row=$comResult->fetchRow(MDB2_FETCHMODE_ASSOC) ) {
 	print "<table width=75% align=center>\n";
 
 	$when = date ("l dS of F Y h:i:s A",

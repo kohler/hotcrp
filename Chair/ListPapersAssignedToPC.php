@@ -16,7 +16,7 @@ function paperList($query, $kind)
   // global $_REQUEST[showAuthorInfo];
 
   $result = $Conf->qe($query);
-  if ( !DB::isError($result) ) { 
+  if ( !MDB2::isError($result) ) { 
 
     $num = $result->numRows();
 
@@ -25,7 +25,7 @@ function paperList($query, $kind)
     print "<tr> <th width=5%> # </th> <th width=5%> Id </th> <th> Title </th> </tr>";
 
     $i = 0;
-    while ($row = $result->fetchRow(DB_FETCHMODE_ASSOC)) {
+    while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
       $i++;
      $paperId=$row['paperId'];
      $title=$row['title'];
@@ -82,7 +82,7 @@ $query = "SELECT ContactInfo.contactId, firstName, lastName, email "
 
 $result1 = $Conf -> qe($query);
 
-if (DB::isError($result1) ) {
+if (MDB2::isError($result1) ) {
 
   print "<table width=75% align=center border=1>\n";
   print "<tr> <th> Primary </th> <th> Secondary </th> ";
@@ -118,9 +118,9 @@ $query = "SELECT ContactInfo.contactId, firstName, lastName, email "
 
 $result1 = $Conf -> qe($query);
 
-if (!DB::isError($result1) ) {
+if (!MDB2::isError($result1) ) {
 
-  while ($row = $result1->fetchRow(DB_FETCHMODE_ASSOC)) {
+  while ($row = $result1->fetchRow(MDB2_FETCHMODE_ASSOC)) {
     $pc = $row['contactId'];
     $firstName = $row['firstName'];
     $lastName = $row['lastName'];
