@@ -25,7 +25,6 @@ include('../Code/header.inc');
 //$Me -> goIfInvalid();
 //$Me -> goIfNotAssistant('../index.php');
 $Conf -> connect();
-include('../Code/confConfigReview.inc');
 
 
 $SeeReviewerInfo=$argv[1];

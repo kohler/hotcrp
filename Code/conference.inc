@@ -1400,7 +1400,7 @@ class Conference {
 
     function countReviewRequests($contactId) {
 	$result = $this->qe("select reviewType, count(contactId)
-		from ReviewRequest where contactId=$contactId
+		from PaperReview where contactId=$contactId
 		group by reviewType order by null", "while counting review requests");
 	if (MDB2::isError($result))
 	    $rreq = array(REVIEW_PRIMARY => '0?', REVIEW_SECONDARY => '0?', REVIEW_REQUESTED => '0?');
@@ -1439,21 +1439,21 @@ class Conference {
 					    "PaperReview",
 					    " AND PaperReview.reviewSubmitted>0 ");
 
-	    $asked = $this->countEntries("ReviewRequest.requestedBy",
-					 $pcId, "ReviewRequest");
+	    $asked = $this->countEntries("PaperReview.requestedBy",
+					 $pcId, "PaperReview");
 
 	    $graded = $this->countEntries("PaperGrade.contactId",
 					  $pcId, "PaperGrade");
 
 	    $askedReviews = $this->retCount(
-		"select count(PaperReview.contactId) as foo
-		from PaperReview join ReviewRequest using (contactId, paperId)
-		where ReviewRequest.requestedBy=$pcId");
+		"select count(reviewId) as foo
+		from PaperReview
+		where requestedBy=$pcId");
 
 	    $askedFinished = $this->retCount(
-		"select count(ReviewRequest.requestedBy) as foo
-		from PaperReview join ReviewRequest using (contactId, paperId)
-		where ReviewRequest.requestedBy=$pcId");
+		"select count(reviewId) as foo
+		from PaperReview
+		where requestedBy=$pcId and reviewSubmitted>0");
 
 	    print "<table width=75% align=center border=1>\n";
 	    print "<tr> <td>\n";
@@ -1557,15 +1557,13 @@ class Conference {
 	}
     }
 
-  function retCount($query)
-    {
-      $result = $this->qe($query);
-      if (!MDB2::isError($result)) {
-	$row = $result->fetchRow();
-	return $row[0];
-      } else {
-	return 0;
-      }
+    function retCount($query) {
+	$result = $this->qe($query);
+	if (!MDB2::isError($result)) {
+	    $row = $result->fetchRow();
+	    return $row[0];
+	} else
+	    return 0;
     }
 
     function countEntries($field, $who, $table, $extra="") {
@@ -1629,47 +1627,36 @@ class Conference {
 	print $this->queryValuesGraph($query, $what, $max, 0);
     }
 
-  //
-  // Functions to implement a stateful toggle button
-  //
-  function toggleButtonUpdate($varName)
-    {
-      $toggleName = 'toggle' . $varName;
-
-      if (IsSet($_REQUEST[$toggleName])) {
-        $_REQUEST[$varName] = $_REQUEST[$toggleName];
-      }
-      else {
-        $_REQUEST[$varName] = 0;
-      }
+    //
+    // Functions to implement a stateful toggle button
+    //
+    function toggleButtonUpdate($varName) {
+	$toggleName = 'toggle' . $varName;
+	if (isset($_REQUEST[$toggleName]))
+	    $_REQUEST[$varName] = $_REQUEST[$toggleName];
+	else
+	    $_REQUEST[$varName] = 0;
     }
 
-  function toggleButton($varName, $whenSet, $whenUnset, $extra="", $getstuff="")
-    {
-      $toggleName = 'toggle' . $varName;
-      $toggleButton = 'toggleButton' . $varName;
+    function toggleButton($varName, $whenSet, $whenUnset, $extra="", $getstuff="") {
+	$toggleName = 'toggle' . $varName;
+	$toggleButton = 'toggleButton' . $varName;
 
-      echo "<FORM METHOD=POST ACTION=", $_SERVER["PHP_SELF"], "$getstuff>\n";
-      if ($_REQUEST[$varName]) {
-	print "<input TYPE=SUBMIT NAME=$toggleButton VALUE=\"$whenSet\">\n";
-	print "<input TYPE=hidden NAME=$toggleName VALUE=0>\n";
-	print $extra;
-      } else {
-	print "<input TYPE=SUBMIT NAME=$toggleButton VALUE=\"$whenUnset\">\n";
-	print "<input TYPE=hidden NAME=$toggleName VALUE=1>\n";
-	print $extra;
-      }
-      print "</FORM>\n";
+	echo "<form method='post' action=\"", htmlspecialchars($_SERVER["PHP_SELF"]), "$getstuff\">\n";
+	if ($_REQUEST[$varName]) {
+	    print "<input type='submit' name='$toggleButton' value=\"$whenSet\" />\n";
+	    print "<input type='hidden' name='$toggleName' value='0' />\n";
+	    print $extra;
+	} else {
+	    print "<input type='submit' name='$toggleButton' value=\"$whenUnset\" />\n";
+	    print "<input type='hidden' name='$toggleName' value='1' />\n";
+	    print $extra;
+	}
+	print "</form>\n";
     }
 
-  function toggleButtonWithPaperId($varName, $whenSet, $whenUnset, $paperId) 
-    {
-      $this -> toggleButton($varName, $whenSet, $whenUnset, "", "?paperId=$paperId");
-    }
-
-  function mkHiddenVar($name, $value)
-    {
-      return "<INPUT type=hidden name=$name value=$value>\n";
+    function mkHiddenVar($name, $value) {
+	return "<input type='hidden' name='$name' value='$value' />\n";
     }
 
     function checkConflict($paperId, $contactId) {
@@ -1727,191 +1714,5 @@ class Conference {
       return nl2br(htmlspecialchars($string));
     }
   }
-
-  function thereAreTopics() {
-    $query = "SELECT * from PaperTopic";
-    $result = $this->q($query);
-    if ( ! MDB2::isError($result) ) {
-      return $result -> numRows() > 0;
-    } else {
-      return 0;
-    }
-  }
-
-  function listTopicsForPaper($paperId) {
-    $query="SELECT topicName from TopicArea, PaperTopic "
-      . "WHERE PaperTopic.paperId='$paperId' "
-      . "AND PaperTopic.topicId=TopicArea.topicId ";
-    $result = $this->qe($query);
-    if ( ! MDB2::isError($result) ) {
-      print "<ul>";
-      while ($row=$result->fetchRow()) {
-	print "<li>" . $row[0] . "</li>\n";
-      }
-      print "</ul>";
-    }
-  }
-
-  function showReviewers( $paperId, $type ) {
-  print "<TR><TD>$type:</TD><TD>";
-   $result = $this->qe("SELECT ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.contactId "
-		       . " FROM ContactInfo, $type" . "Reviewer "
-		       . " WHERE ( $type" . "Reviewer.paperId='$paperId' "
-		       . "         AND $type" . "Reviewer.contactId=ContactInfo.contactId)");
-   if (!MDB2::isError($result)) {
-     while($row = $result->fetchRow() ) {
-       print "<a href=\"ChairRemoveReviewer.php?paperId=$paperId&who=$row[3]&reviewType=$type\">" . $row[0]. " " . $row[1] . " (" . $row[2] . "), " . "</a>";
-       print "<br>";
-     }
-   } else {
-     print "<p> Error: " . $result->getMessage() . " </p>";
-   }
-  print "</TD></TR>\n";
-  }
-
-  function paperTable($showAuthor = true, $showAbs = true, $paperId = -1,
-		      $showRev = false, $showTopics = true, $showCollab = -1) {
-    if ($showCollab < 0)
-	$showCollab = $showAuthor;
-    if ($paperId < 0)
-	$paperId = $_REQUEST["paperId"];
-
-    $query = "select Paper.title, Paper.abstract, Paper.authorInformation,
-	Paper.size, Paper.mimetype, collaborators, pcPaper,
-	timeSubmitted, timeWithdrawn
-	from Paper";
-
-    $Me = $_SESSION["Me"];
-    if (!($Me->isChair || $Me->isPC || $Me->isAssistant))
-	$query .= " join PaperConflict using (contactId)";
-    $query .= " where Paper.paperId=$paperId";
-    if (!($Me->isChair || $Me->isPC || $Me->isAssistant))
-	$query .= " and PaperConflict.author=1";
-
-    //$this->warnMsg($query);
-    $result = $this->qe($query);
-    if (MDB2::isError($result)) {
-	$this->errorMsg("That's odd - paper #$paperId cannot be displayed. "
-			. $result->getMessage());
-	exit();
-    }
- 
-    $row = $result->fetchRow(MDB2_FETCHMODE_ASSOC);
-
-    $title = htmlspecialchars($row['title']);
-    $abstract = htmlspecialchars($row['abstract']);
-    $authorInfo = htmlspecialchars($row['authorInformation']);
-    $paperLength = $row['size'];
-    $mimetype = $row['mimetype'];
-    $collaborators = htmlspecialchars($row['collaborators']);
-  
-    $badPaper = $paperLength < 100 && $mimetype == 'text/plain';
-    ?>
-    <table class='papertable'>
-       <tr> <th colspan=2 align=center><font size=+1>
-       <b> Paper #<?php echo $paperId ?></b> </font> </th> </tr>
-   <tr> <td class='caption'>Title:</td> <td> <?php  echo $title ?> </td> </tr>
-<?php
-    if ( $_SESSION["Me"]->isChair && $row['pcPaper'] ){
-?>
-   <tr> <td colspan='2' align='center' bgcolor='Red'> This is a PC paper. </td> </tr>
-<?php
-    }
-?>
-<?php
-    echo "  <tr><td class='caption'>Status:</td> <td>";
-    if ($paperLength < 100 && $mimetype == 'text/plain')
-	echo "Not yet uploaded";
-    else if ($row['timeWithdrawn'] > 0)
-	echo "Withdrawn";
-    else {
-	echo "<a href=\"", $this->makeDownloadPath($paperId, $mimetype), "\">";
-	echo ($row['timeSubmitted'] > 0 ? "Submitted" : "In progress");
-	echo " (", round($paperLength/1024), "&nbsp;kB ";
-	if ($mimetype == "application/pdf")
-	    echo "PDF";
-	else if ($mimetype == "application/postscript")
-	    echo "PostScript";
-	else
-	    echo $mimetype;
-	echo ")</a>";
-    }
-    echo "</td></tr>\n";
-	
-    if( $showAuthor ){
-?>
-   <tr> <td class='caption'>Authors:</td> <td> <?php  echo $authorInfo ?> </td> </tr>
-<?php
-    }
-?>
-<?php
-    if( $showAbs ){
-?>
-	<tr> <td class='caption'>Abstract:</td> <td> <?php  echo $abstract ?> </td> </tr>
-<?php
-    }
-?>
-<?php
-    if( $showCollab ){
-?>
-   <tr> <td class='caption'> Collaborators: </td> <td> <?php  echo $collaborators ?> </td> </tr>
-<?php
-    }
-    if( $showRev ){
-      $this->showReviewers( $paperId, 'Primary' );
-      $this->showReviewers( $paperId, 'Secondary' );
-    }
-
-    if( $showTopics ){
-      $query="SELECT topicName from TopicArea, PaperTopic "
-	. "WHERE PaperTopic.paperId=$paperId "
-	. "AND PaperTopic.topicId=TopicArea.topicId ";
-      
-      $result = $this->qe($query);
-      if ( ! MDB2::isError($result) && $result->numRows() > 0 ) {
-	print "<tr>";
-	print "<td class='caption'>Topics:</td>";
-	print "<td>";
-	print "<ul>";
-	while ($row=$result->fetchRow()) {
-	  print "<li>" . $row[0] . "</li>\n";
-	}
-	print "</ul>";
-	print "</td>";
-	print "</tr>";
-      }
-    }
-
-    if ( $this->allowReviewerPreferences ) {
-      $query="SELECT ContactInfo.contactId, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email "
-	. " FROM ContactInfo join PaperReviewerPreference "
-	. " join PCMember on (contactId)"
-	. " WHERE PaperReviewerPreference.paperId='$paperId' "
-	. " AND ContactInfo.contactId=PaperReviewerPreference.contactId "
-	. " ORDER BY ContactInfo.lastName, ContactInfo.firstName, ContactInfo.email";
-
-      $result = $this->qe($query);
-
-      if ( ! MDB2::isError($result) && $result -> numRows() > 0) {
-	print "<tr>";
-	print "<td> Indicated PC Reviewer Preferences</td>";
-	print "<td>";
-	print "<ul>";
-	while ($row=$result->fetchRow()) {
-	  $id = $row[0];
-	  $fn = $row[1];
-	  $ln = $row[2];
-	  $em = $row[3];
-	  print "<li> $fn $ln ($em) </li>";
-	}
-	print "</ul>";
-      }
-      print "</td>";
-      print "</tr>";
-    }
-?>
-</table>
-<?php
-}
 
 }

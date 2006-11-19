@@ -9,26 +9,61 @@ $Me->goIfNotPC('index.php');
 
 $Conf->header("Search", 'search');
 
-$Search = new PaperSearch(defval($_REQUEST["t"], "n"), $Me);
-if (defval($_REQUEST["all"], 0) > 0)
-    $Search->setAllPapers();
+
+// paper group
+$opt = array();
+if ($Me->isPC)
+    $opt["s"] = "Submitted papers";
+if ($Me->amReviewer())
+    $opt["r"] = "Review assignment";
+if ($Me->isAuthor)
+    $opt["a"] = "Authored papers";
+if ($Me->amAssistant())
+    $opt["all"] = "All papers";
+if (count($opt) == 0) {
+    $Conf->errorMsg("There are no papers for you to search.");
+    exit;
+}
+if (isset($_REQUEST["t"]) && !isset($opt[$_REQUEST["t"]])) {
+    $Conf->errorMsg("You aren't allowed to search that paper collection.");
+    unset($_REQUEST["t"]);
+}
+if (!isset($_REQUEST["t"]))
+    $_REQUEST["t"] = key($opt);
+
+
+// search
+$Search = new PaperSearch(defval($_REQUEST["qt"], "n"), $_REQUEST["t"], $Me);
 
 
 // set up the search form
 if (defval($_REQUEST["qx"], "") != "" || defval($_REQUEST["qa"], "") != ""
-    || $Search->allPapers || defval($_REQUEST["t"], "n") != "n")
+    || defval($_REQUEST["qt"], "n") != "n")
     $folded = 'unfolded';
 else
     $folded = 'folded';
+
+if (count($opt) > 1) {
+    $tselect = "<select name='t'>";
+    foreach ($opt as $k => $v) {
+	$tselect .= "<option value='$k'";
+	if ($_REQUEST["t"] == $k)
+	    $tselect .= " selected='selected'";
+	$tselect .= ">$v</option>";
+    }
+    $tselect .= "</select>";
+} else
+    $tselect = current($opt);
+
 
 echo "
 <hr class='smgap' />
 
 <div id='foldq' class='$folded' style='text-align: center'>
 <form method='get' action='search.php'>
-<span class='ellipsis nowrap'>
+<span class='ellipsis nowrap'>$tselect <span class='sep'></span>
   <input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /> &nbsp;
-  <input class='button' type='submit' name='go' value='Search' /> &nbsp;
+  <input class='button' type='submit' name='go' value='Search' /> <span class='sep'></span>
   <a class='unfolder' href=\"javascript:fold('q', 0)\">Options &raquo;</a>
 </span>
 </form>
@@ -48,8 +83,12 @@ echo "
 </tr>
 <tr><td colspan='2'><hr class='smgap' /></td></tr>
 <tr>
-  <td>Search type</td>
-  <td><select name='t'>";
+  <td>Paper selection</td>
+  <td>$tselect</td>
+</tr>
+<tr>
+  <td>Search in</td>
+  <td><select name='qt'>";
 $opts = array("ti" => "Title only",
 	      "ab" => "Abstract only");
 if ($Me->amAssistant() || $Conf->blindSubmission() == 0) {
@@ -64,20 +103,12 @@ if ($Me->amAssistant())
     $opts["ac"] = "Authors, collaborators";
 if ($Me->canViewAllReviewerIdentities($Conf))
     $opts["re"] = "Reviewers";
-if (!isset($opts[defval($_REQUEST["t"], "")]))
-    $_REQUEST["t"] = "n";
+if (!isset($opts[defval($_REQUEST["qt"], "")]))
+    $_REQUEST["qt"] = "n";
 foreach ($opts as $v => $text)
-    echo "<option value='$v'", ($v == $_REQUEST["t"] ? " selected='selected'" : ""), ">$text</option>";
-echo "</select></td>\n";
-if ($Me->amAssistant())
-    echo "</tr><tr>
-  <td>Paper selection</td>
-  <td><input type='radio' name='all' value='0'",
-	($Search->allPapers ? "" : " checked='checked'"),
-	" />&nbsp;Submitted <span class='sep'></span> <input type='radio' name='all' value='1'",
-	($Search->allPapers ? " checked='checked'" : ""),
-	" />&nbsp;All</td>\n";
-echo "</tr></table></td></tr></table></div>\n</form>\n\n</div>\n";
+    echo "<option value='$v'", ($v == $_REQUEST["qt"] ? " selected='selected'" : ""), ">$text</option>";
+echo "</select></td>
+</tr></table></td></tr></table></div>\n</form>\n\n</div>\n";
 
 
 if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
@@ -88,7 +119,7 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
 	$pl = new PaperList(true, "list");
 	$_SESSION["whichList"] = "list";
 	$_SESSION["matchPreg"] = "/(" . $Search->matchPreg . ")/i";
-	$listname = ($Search->allPapers ? "matchesAll" : "matches");
+	$listname = ($Search->limitName == "all" ? "matchesAll" : "matches");
 	$t = $pl->text($listname, $Me);
 
 	echo "<div class='maintabsep'></div>\n\n";
@@ -97,11 +128,9 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
 	    echo "<form action='list.php' method='get' id='sel'>
 <input type='hidden' name='list' value=\"", htmlspecialchars($listname), "\" />
 <input type='hidden' id='selaction' name='action' value='' />\n";
-	    foreach (array("q", "qx", "qa", "t") as $v)
+	    foreach (array("q", "qx", "qa", "qt", "t") as $v)
 		if (defval($_REQUEST[$v], "") != "")
 		    echo "<input type='hidden' name='$v' value=\"", htmlspecialchars($_REQUEST[$v]), "\" />\n";
-	    if ($Search->allPapers)
-		echo "<input type='hidden' name='all' value='1' />\n";
 	}
 	
 	echo $t;

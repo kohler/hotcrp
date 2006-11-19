@@ -226,11 +226,9 @@ while ($row=$result->fetchRow()) {
 			   );
 
   $done = $Conf->retCount("SELECT PaperReview.reviewSubmitted "
-			  . " FROM PaperReview, ReviewRequest "
-			  . " WHERE PaperReview.paperId='$paperId' "
-			  . " AND ReviewRequest.paperId=$paperId "
-			  . " AND ReviewRequest.requestedBy='" . $_SESSION["Me"]->contactId . "'"
-			  . " AND PaperReview.contactId=ReviewRequest.asked "
+			  . " FROM PaperReview "
+			  . " WHERE PaperReview.paperId=$paperId "
+			  . " AND PaperReview.requestedBy=" . $_SESSION["Me"]->contactId
 			  );
 
   $doneByMe = $Conf->retCount("SELECT PaperReview.reviewSubmitted "

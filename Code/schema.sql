@@ -1,12 +1,11 @@
-# MySQL dump 8.14
-#
-# Host: 127.0.0.1    Database: OSDI2002
-#--------------------------------------------------------
-# Server version	3.23.41-log
+drop table if exists ImportantDates;
+CREATE TABLE ImportantDates (
+  name char(40) NOT NULL,
+  start timestamp(14) NOT NULL,
+  end timestamp(14) NOT NULL default 0,
+  UNIQUE KEY name (name)
+) TYPE=MyISAM;
 
-#
-# Table structure for table 'ActionLog'
-#
 
 drop table if exists ActionLog;
 CREATE TABLE ActionLog (
@@ -22,15 +21,6 @@ CREATE TABLE ActionLog (
   KEY paperId (paperId)
 ) TYPE=MyISAM;
 
-#
-# Dumping data for table 'ActionLog'
-#
-
-
-
-#
-# Table structure for table 'ContactInfo'
-#
 
 drop table if exists ContactInfo;
 CREATE TABLE ContactInfo (
@@ -57,14 +47,6 @@ CREATE TABLE ContactInfo (
   FULLTEXT KEY lastName (lastName)
 ) TYPE=MyISAM;
 
-#
-# Dumping data for table 'ContactInfo'
-#
-
-
-#
-# Table structure for table 'PCMember'
-#
 
 drop table if exists PCMember;
 CREATE TABLE PCMember (
@@ -72,14 +54,6 @@ CREATE TABLE PCMember (
   UNIQUE KEY contactId (contactId)
 ) TYPE=MyISAM;
 
-#
-# Dumping data for table 'PCMember'
-#
-
-
-#
-# Table structure for table 'Chair'
-#
 
 drop table if exists Chair;
 CREATE TABLE Chair (
@@ -87,14 +61,6 @@ CREATE TABLE Chair (
   UNIQUE KEY contactId (contactId)
 ) TYPE=MyISAM;
 
-#
-# Dumping data for table 'Chair'
-#
-
-
-#
-# Table structure for table 'ChairAssistant'
-#
 
 drop table if exists ChairAssistant;
 CREATE TABLE ChairAssistant (
@@ -102,31 +68,6 @@ CREATE TABLE ChairAssistant (
   UNIQUE KEY contactId (contactId)
 ) TYPE=MyISAM;
 
-#
-# Dumping data for table 'ChairAssistant'
-#
-
-
-#
-# Table structure for table 'ImportantDates'
-#
-
-drop table if exists ImportantDates;
-CREATE TABLE ImportantDates (
-  name char(40) NOT NULL,
-  start timestamp(14) NOT NULL,
-  end timestamp(14) NOT NULL default 0,
-  UNIQUE KEY name (name)
-) TYPE=MyISAM;
-
-#
-# Dumping data for table 'ImportantDates'
-#
-
-
-#
-# Table structure for table 'Paper'
-#
 
 drop table if exists Paper;
 CREATE TABLE Paper (
@@ -168,14 +109,33 @@ CREATE TABLE Paper (
   FULLTEXT KEY authorText (authorInformation,collaborators)
 ) TYPE=MyISAM;
 
-#
-# Dumping data for table 'Paper'
-#
+
+drop table if exists PaperStorage;
+CREATE TABLE PaperStorage (
+  paperStorageId int(11) NOT NULL auto_increment,
+  paperId int(11) NOT NULL,
+  timestamp int(11) NOT NULL,
+  mimetype varchar(40) NOT NULL default '',
+  paper longblob,
+  compression tinyint(1) NOT NULL default 0,
+  PRIMARY KEY (paperStorageId),
+  UNIQUE KEY paperStorageId (paperStorageId),
+  KEY paperId (paperId),
+  KEY mimetype (mimetype)
+) TYPE=MyISAM;
+
+insert into PaperStorage set paperId=0, timestamp=0, mimetype='text/plain', paper='';
 
 
-#
-# Table structure for table 'PaperComment'
-#
+drop table if exists PaperConflict;
+CREATE TABLE PaperConflict (
+  paperId int(11) NOT NULL,
+  contactId int(11) NOT NULL,
+  author tinyint(1) NOT NULL default 0,
+  UNIQUE KEY contactPaper (contactId,paperId),
+  UNIQUE KEY contactPaperAuthor (contactId,paperId,author)
+) TYPE=MyISAM;
+
 
 drop table if exists PaperComment;
 CREATE TABLE PaperComment (
@@ -193,14 +153,6 @@ CREATE TABLE PaperComment (
   KEY paperId (paperId)
 ) TYPE=MyISAM;
 
-#
-# Dumping data for table 'PaperComment'
-#
-
-
-#
-# Table structure for table 'PaperTag'
-#
 
 drop table if exists PaperTag;
 CREATE TABLE PaperTag (
@@ -209,32 +161,6 @@ CREATE TABLE PaperTag (
   UNIQUE KEY paperTag (paperId,tag)
 ) TYPE=MyISAM;
 
-#
-# Dumping data for table 'PaperTag'
-#
-
-
-#
-# Table structure for table 'PaperConflict'
-#
-
-drop table if exists PaperConflict;
-CREATE TABLE PaperConflict (
-  paperId int(11) NOT NULL,
-  contactId int(11) NOT NULL,
-  author tinyint(1) NOT NULL default 0,
-  UNIQUE KEY contactPaper (contactId,paperId),
-  UNIQUE KEY contactPaperAuthor (contactId,paperId,author)
-) TYPE=MyISAM;
-
-#
-# Dumping data for table 'PaperConflict'
-#
-
-
-#
-# Table structure for table 'PaperGrade'
-#
 
 drop table if exists PaperGrade;
 CREATE TABLE PaperGrade (
@@ -249,14 +175,6 @@ CREATE TABLE PaperGrade (
   KEY paperId (paperId)
 ) TYPE=MyISAM;
 
-#
-# Dumping data for table 'PaperGrade'
-#
-
-
-#
-# Table structure for table 'ReviewRequest'
-#
 
 drop table if exists ReviewRequest;
 CREATE TABLE ReviewRequest (
@@ -274,14 +192,6 @@ CREATE TABLE ReviewRequest (
   KEY requestedBy (requestedBy)
 ) TYPE=MyISAM;
 
-#
-# Dumping data for table 'ReviewRequest'
-#
-
-
-#
-# Table structure for table 'PaperReview'
-#
 
 drop table if exists PaperReview;
 CREATE TABLE PaperReview (
@@ -329,6 +239,7 @@ CREATE TABLE PaperReview (
   KEY requestedBy (requestedBy)
 ) TYPE=MyISAM;
 
+
 drop table if exists PaperReviewRefused;
 CREATE TABLE PaperReviewRefused (
   paperId int(11) NOT NULL,
@@ -339,6 +250,7 @@ CREATE TABLE PaperReviewRefused (
   KEY contactId (contactId),
   KEY requestedBy (requestedBy)
 ) TYPE=MyISAM;
+
 
 drop table if exists PaperReviewArchive;
 CREATE TABLE PaperReviewArchive (  
@@ -388,36 +300,6 @@ CREATE TABLE PaperReviewArchive (
   KEY requestedBy (requestedBy)
 ) TYPE=MyISAM;
 
-#
-# Dumping data for table 'PaperReview'
-#
-
-
-#
-# Table structure for table 'PaperStorage'
-#
-
-drop table if exists PaperStorage;
-CREATE TABLE PaperStorage (
-  paperStorageId int(11) NOT NULL auto_increment,
-  paperId int(11) NOT NULL,
-  timestamp int(11) NOT NULL,
-  mimetype varchar(40) NOT NULL default '',
-  paper longblob,
-  compression tinyint(1) NOT NULL default 0,
-  PRIMARY KEY (paperStorageId),
-  UNIQUE KEY paperStorageId (paperStorageId),
-  KEY paperId (paperId),
-  KEY mimetype (mimetype)
-) TYPE=MyISAM;
-
-insert into PaperStorage set paperId=0, timestamp=0, mimetype='text/plain', paper='';
-
-#
-# Dumping data for table 'PaperStorage'
-#
-
-
 
 drop table if exists PaperReviewPreference;
 CREATE TABLE PaperReviewPreference (
@@ -428,12 +310,6 @@ CREATE TABLE PaperReviewPreference (
 ) TYPE=MyISAM;
 
 
-
-
-#
-# Table structure for table 'TopicArea'
-#
-
 drop table if exists TopicArea;
 CREATE TABLE TopicArea (
   topicId int(11) NOT NULL auto_increment,
@@ -443,14 +319,6 @@ CREATE TABLE TopicArea (
   KEY topicName (topicName)
 ) TYPE=MyISAM;
 
-#
-# Dumping data for table 'TopicArea'
-#
-
-
-#
-# Table structure for table 'PaperTopic'
-#
 
 drop table if exists PaperTopic;
 CREATE TABLE PaperTopic (
@@ -459,14 +327,6 @@ CREATE TABLE PaperTopic (
   UNIQUE KEY paperTopic (paperId,topicId)
 ) TYPE=MyISAM;
 
-#
-# Dumping data for table 'PaperTopic'
-#
-
-
-#
-# Table structure for table 'TopicInterest'
-#
 
 drop table if exists TopicInterest;
 CREATE TABLE TopicInterest (
@@ -476,14 +336,6 @@ CREATE TABLE TopicInterest (
   UNIQUE KEY contactTopic (contactId,topicId)
 ) TYPE=MyISAM;
 
-#
-# Dumping data for table 'TopicInterest'
-#
-
-
-#
-# Review form
-#
 
 drop table if exists ReviewFormField;
 create table ReviewFormField (
@@ -497,6 +349,7 @@ create table ReviewFormField (
   UNIQUE KEY fieldName (fieldName),
   KEY shortName (shortName)
 ) TYPE=MyISAM;
+
 
 drop table if exists ReviewFormOptions;
 create table ReviewFormOptions (
@@ -595,10 +448,6 @@ insert into ReviewFormOptions set fieldName='outcome', level=2, description='Acc
 delete from ImportantDates where name='reviewFormUpdate';
 insert into ImportantDates set name='reviewFormUpdate', start=current_timestamp;
 
-
-#
-# Paper lists
-#
 
 drop table if exists PaperList;
 create table PaperList (

@@ -45,14 +45,9 @@ function queryFromRecipients($who, $per_paper) {
 		SELECT
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
 		Paper.paperId, Paper.title
-		from ContactInfo, ReviewRequest, Paper LEFT JOIN
-		PaperReview using (contactID)
-		WHERE
-		      ( ReviewRequest.asked=ContactInfo.contactID
-		        AND
-		        PaperReview.reviewSubmitted = 0 )
-		AND
-		        Paper.paperId=ReviewRequest.paperId
+		from ContactInfo join PaperReview using (contactId)
+		join Paper using (paperId)
+		where PaperReview.reviewSubmitted<=0 and PaperReview.reviewType=" . REVIEW_REQUESTED . "
       	GROUP BY ContactInfo.email
       	ORDER BY ContactInfo.email
 	";

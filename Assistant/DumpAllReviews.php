@@ -4,7 +4,6 @@ $Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotAssistant('../index.php');
-include('../Code/confConfigReview.inc');
 
 function olink($key,$string)
 {

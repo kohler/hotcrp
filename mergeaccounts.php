@@ -67,8 +67,6 @@ If you suspect something fishy, contact the site administrator at\n\
 	    crpmergeonex("ChairAssistant", "contactId", $oldid, $newid);
 	    crpmergeonex("Chair", "contactId", $oldid, $newid);
 	    crpmergeone("TopicInterest", "contactId", $oldid, $newid);
-	    crpmergeone("ReviewRequest", "contactId", $oldid, $newid);
-	    crpmergeone("ReviewRequest", "requestedBy", $oldid, $newid);
 	    crpmergeone("PaperReview", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReview", "requestedBy", $oldid, $newid);
 	    crpmergeone("PaperReviewArchive", "contactId", $oldid, $newid);

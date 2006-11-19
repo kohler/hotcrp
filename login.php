@@ -77,9 +77,9 @@ if ((isset($_REQUEST["email"]) && isset($_REQUEST["password"]))
 }
 
 
-$Conf->header("Login", 'login');
+$Conf->header("Sign in", 'login');
 
-$Conf->infoMsg("Log in to the conference management system here.
+$Conf->infoMsg("Sign in to the conference management system here.
 You'll use the same account information throughout the paper evaluation
 process, whether you are submitting a paper, co-authoring a paper,
 reviewing papers, or a member of the program committee.");
@@ -100,7 +100,7 @@ reviewing papers, or a member of the program committee.");
 </tr>
 
 <tr><td></td>
-  <td class='entry'><input class='button_default' type='submit' value='Login' name='login' tabindex='1' /></td>
+  <td class='entry'><input class='button_default' type='submit' value='Sign in' name='login' tabindex='1' /></td>
 </tr>
   
 <tr><td></td>

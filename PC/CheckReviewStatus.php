@@ -69,14 +69,11 @@ if (IsSet($_REQUEST["nagList"])
 	// We send out nag notices one at a time
 	//
 	$them=$_REQUEST["nagList"][$i];
-	$query="SELECT Paper.paperId, Paper.Title, "
+	$query="select Paper.paperId, Paper.title, "
 	. " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
-	. " ContactInfo.password, "
-	. " Paper.title, Paper.paperId "
-	. "FROM Paper,ContactInfo,ReviewRequest "
-	. "WHERE ReviewRequest.reviewRequestId=$them "
-	. "AND Paper.paperId=ReviewRequest.paperId "
-	. "AND ContactInfo.contactId=ReviewRequest.asked";
+	. " ContactInfo.password "
+	. "from PaperReview join Paper using (paperId) join ContactInfo on (ContactInfo.contactId=PaperReview.contactId) "
+	    . "where PaperReview.reviewId=$them";
 
 	$result=$Conf->qe($query);
 	if ( $result ) {
@@ -199,34 +196,23 @@ else {
       $contactId = $row[3];
       $requestId = $row[4];
 
-      $query = "select contactId, reviewSubmitted, reviewModified"
+      $query = "select contactId, reviewModified, reviewSubmitted"
       . " from PaperReview "
       . " where PaperReview.paperId='$paperId' "
       . " and PaperReview.contactId='$contactId' "
       ;
 
       $review_result = $Conf->qe($query);
-      if (MDB2::isError($review_result) ) {
-	$Conf->errorMsg("That's odd - no information on reivew. "
+      if (MDB2::isError($review_result) || $review_result->numRows() == 0) {
+	$Conf->errorMsg("That's odd - no information on review. "
 			. $review_result->getMessage());
       } else {
-
 	$review_row = $review_result->fetchRow();
-
-	$num = $review_result->numRows();
-	if ($num == 0) {
-	  $finalized = -1;
-	  $reviewer = "";
-	}
-	else if ($num == 1) {
-	  $finalized = ($review_row[2] ? $review_row[1] : -1);
-	  $reviewer = $review_row[0];
-	}
 
 	print "<tr>";
 	print "<td>";
 
-	if ( $finalized != 1 ) {
+	if ($review_row[2] <= 0) {
 	  print "<INPUT type=checkbox NAME=nagList[] VALUE='$requestId'";
 	  if (defval($nagMe[$requestId])) {
 	    print " CHECKED";
@@ -238,23 +224,21 @@ else {
 
 	print "</td>";
 
-	print "<td> $paperId </td> <td> $contactEmail </td>";
+	print "<td><a href='${ConfSiteBase}review.php?paperId=$paperId'>$paperId</a></td> <td> $contactEmail </td>";
 
-	if ($finalized ==1) {
+	if ($review_row[2] > 0) {
 	  $status = "<b> Done </b>";
 	  print "<td> $status </td>";
 	  print "<td> <b> <a href=\"${ConfSiteBase}review.php?reviewId=$requestId\" target=_blank> See review </a> </b>";
 	  print "</td>";
 	  print "<td> $title </td> </tr>\n";
-	}
-	else if ($finalized ==0) {
+	} else if ($review_row[1] > 0) {
 	  $status = "Not finalized";
 	  print "<td> $status </td> \n";
 	  print "<td> <b> <a href=\"${ConfSiteBase}review.php?reviewId=$requestId\" target=_blank> See partial review </a> </b>";
 	  print "</td>";
 	  print "<td> $title </td>";
-	}
-	else {
+	} else {
 	  $status = "Not started";
 	  print "<td> Not started </td> <td> no review available</td>  <td> $title </td>";
 	}

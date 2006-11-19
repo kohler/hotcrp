@@ -7,7 +7,6 @@ if (!$Me->isChair) {
   $Me->goIfNotAuthor("../index.php");
   $Conf->goIfInvalidActivity("authorViewDecision", "../index.php");
 }
-include('../Code/confConfigReview.inc');
 
 ?>
 

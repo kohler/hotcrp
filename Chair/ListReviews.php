@@ -8,7 +8,7 @@ $Me->goIfNotChair('../index.php');
 
 <html>
 
-<?php  $Conf->header("List All Review Requests ") ?>
+<?php  $Conf->header("List All Review Requests") ?>
 
 <body>
 <p>

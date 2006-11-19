@@ -12,11 +12,9 @@ function spotSecondaryReviewers($howmany)
   if ( $howmany == 0 ) {
     $result =$Conf->qe(
 		       " SELECT Paper.paperId, Paper.title "
-		       . " FROM Paper, SecondaryReviewer "
-		       . " LEFT JOIN ReviewRequest "
-		       . " ON ReviewRequest.paperId=Paper.paperId "
-		       . " WHERE ReviewRequest.paperId IS NULL "
-		       . " AND SecondaryReviewer.paperId=Paper.paperId "
+		       . " from PaperReview join Paper using (paperId) "
+		       . " where PaperReview.reviewType=" . REVIEW_SECONDARY
+		       . " and SecondaryReviewer.paperId=Paper.paperId "
 		       . " AND SecondaryReviewer.reviewer=" . $_SESSION["Me"]->contactId. " "
 		       . " ORDER BY Paper.paperId ");
   } else {
@@ -50,38 +48,25 @@ function spotSecondaryReviewers($howmany)
   }
 }
 
-function spotReviews($howmany, $finalized, $table)
+function spotReviews($howmany, $finalized, $reviewType)
 {
   global $Conf;
 
-  if ( $howmany == 0 ) {
+  if ( $howmany == 0 && 0 ) {
     $query=
-      " SELECT Paper.paperId, Paper.title "
-      . " FROM Paper, $table "
-      . " LEFT JOIN PaperReview "
-      . " ON PaperReview.paperId=Paper.paperId "
-      . " WHERE PaperReview.paperId IS NULL "
-      . " AND $table" . ".paperId=Paper.paperId "
-      . " AND $table" . ".contactId=" . $_SESSION["Me"]->contactId . " "
+      " select Paper.paperId, Paper.title "
+      . " from Paper join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.reviewType=$reviewType and PaperReview.contactId=" . $_SESSION["Me"]->contactId . " and PaperReview.review) "
       . " ORDER BY Paper.paperId ";
 
   } else {
-    if ( $finalized ) {
-      $fin = " AND PaperReview.reviewSubmitted>0 ";
-    }
+      $fin = ($finalized ? "reviewSubmitted" : "reviewModified");
 
-    $query=
-      " SELECT Paper.paperId, Paper.title "
-      . " FROM Paper,$table "
-      . " LEFT JOIN PaperReview "
-      . " ON PaperReview.paperId=Paper.paperId "
-      . " WHERE "
-      . "     $table" . ".paperId=Paper.paperId "
-      . " AND $table" . ".contactId=" . $_SESSION["Me"]->contactId . " "
-      . $fin
-      . " GROUP BY PaperReview.paperId "
-      . " HAVING COUNT(PaperReview.paperId)=$howmany "
-      . " ORDER BY Paper.paperId ";
+      $query=
+	  "select Paper.paperId, Paper.title "
+	  . " from Paper join PaperReview as MyReview on (MyReview.paperId=Paper.paperId and MyReview.contactId=" . $_SESSION["Me"]->contactId . ") "
+	  . " left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.$fin>0) "
+	  . " group by Paper.paperId having count(PaperReview.paperId)=$howmany "
+	  . " order by Paper.paperId ";
   }
 
   //  print "<p> query is $query </p>";
@@ -137,26 +122,26 @@ spotSecondaryReviewers(1);
 should get to work! </p>
 
 <?php 
-spotReviews(0,0,"PrimaryReviewer");
+spotReviews(0,0,REVIEW_PRIMARY);
 print "<br> <br>";
-spotReviews(1,0,"PrimaryReviewer");
+spotReviews(1,0,REVIEW_PRIMARY);
 print "<br> <br>";
-spotReviews(2,0,"PrimaryReviewer");
+spotReviews(2,0,REVIEW_PRIMARY);
 print "<br> <br>";
-spotReviews(3,0,"PrimaryReviewer");
+spotReviews(3,0,REVIEW_PRIMARY);
 ?>
 
 <h2> You're supposed to be have assigned reviews for the following papers. </h2>
 <p> If you see entries in these tables, it means your reviewers haven't started
 and neither has anyone else -- start nagging now! </p>
 <?php 
-spotReviews(0,0,"SecondaryReviewer");
+spotReviews(0,0,REVIEW_SECONDARY);
 print "<br> <br>";
-spotReviews(1,0,"SecondaryReviewer");
+spotReviews(1,0,REVIEW_SECONDARY);
 print "<br> <br>";
-spotReviews(2,0,"SecondaryReviewer");
+spotReviews(2,0,REVIEW_SECONDARY);
 print "<br> <br>";
-spotReviews(3,0,"SecondaryReviewer");
+spotReviews(3,0,REVIEW_SECONDARY);
 ?>
 
 <h1> Which papers do not have enough <b> <i> finished </i> </b> reviews? </h1>
@@ -167,26 +152,26 @@ spotReviews(3,0,"SecondaryReviewer");
 should get to work! </p>
 
 <?php 
-spotReviews(0,1,"PrimaryReviewer");
+spotReviews(0,1,REVIEW_PRIMARY);
 print "<br> <br>";
-spotReviews(1,1,"PrimaryReviewer");
+spotReviews(1,1,REVIEW_PRIMARY);
 print "<br> <br>";
-spotReviews(2,1,"PrimaryReviewer");
+spotReviews(2,1,REVIEW_PRIMARY);
 print "<br> <br>";
-spotReviews(3,1,"PrimaryReviewer");
+spotReviews(3,1,REVIEW_PRIMARY);
 ?>
 
 <h2> You're supposed to be have assigned reviews for the following papers. </h2>
 <p> If you see entries in these tables, it means your reviewers haven't started
 and neither has anyone else -- start nagging now! </p>
 <?php 
-spotReviews(0,1,"SecondaryReviewer");
+spotReviews(0,1,REVIEW_SECONDARY);
 print "<br> <br>";
-spotReviews(1,1,"SecondaryReviewer");
+spotReviews(1,1,REVIEW_SECONDARY);
 print "<br> <br>";
-spotReviews(2,1,"SecondaryReviewer");
+spotReviews(2,1,REVIEW_SECONDARY);
 print "<br> <br>";
-spotReviews(3,1,"SecondaryReviewer");
+spotReviews(3,1,REVIEW_SECONDARY);
 ?>
 
 </body>

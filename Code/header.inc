@@ -76,7 +76,7 @@ require_once("$ConfSitePATH/Code/review.inc");
 
 // If you have the PEAR::MDB2 and PEAR::Mail libraries installed globally,
 // there's no need to change the include path.
-ini_set("include_path", ini_get("include_path") . ":$ConfSitePATH/Code/MDB2-2.3.0:$ConfSitePATH/Code/Mail-1.1.10");
+ini_set("include_path", ini_get("include_path") . ":$ConfSitePATH/Code/MDB2-2.3.0:$ConfSitePATH/Code/Mail-1.1.14");
 require_once("MDB2.php");
 
 include("$ConfSitePATH/Code/options.inc");

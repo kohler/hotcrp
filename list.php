@@ -10,9 +10,7 @@ $action = defval($_REQUEST["action"], "");
 // redo search
 if (isset($_REQUEST["q"]) || isset($_REQUEST["qx"]) || isset($_REQUEST["qa"])) {
     require_once('Code/search.inc');
-    $Search = new PaperSearch(defval($_REQUEST["t"], "n"), $Me);
-    if (defval($_REQUEST["all"], 0) > 0)
-	$Search->setAllPapers();
+    $Search = new PaperSearch(defval($_REQUEST["qt"], "n"), defval($_REQUEST["t"], 0), $Me);
     $result = $Search->search(defval($_REQUEST["q"], ""), defval($_REQUEST["qa"], ""), defval($_REQUEST["qx"], ""));
 }
     

@@ -758,14 +758,13 @@ function maybeSearchPaperId($base, $me) {
 	|| preg_match('/^\s*\d+\s*$/s', $_REQUEST["paperId"]))
 	return false;
     require_once("search.inc");
-    $s = new PaperSearch("n", $me);
+    $s = new PaperSearch("n", 0, $me);
     $pl = $s->paperList($_REQUEST["paperId"], "", "");
     if (count($pl) == 1) {
-	$Conf->infoMsg("!XYZ");
 	$_REQUEST["paperId"] = $pl[0];
 	return true;
     } else {
-	$Conf->go("${ConfSiteBase}search.php?q=" . urlencode($_REQUEST["paperId"]) . "&ti=1&au=1&ab=1");
+	$Conf->go("${ConfSiteBase}search.php?q=" . urlencode($_REQUEST["paperId"]));
 	exit;
     }
 }

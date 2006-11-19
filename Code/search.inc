@@ -4,47 +4,57 @@ $searchTags = array('ti:' => 'ti', 'title:' => 'ti',
 		    'ab:' => 'ab', 'abstract:' => 'ab',
 		    'au:' => 'au', 'author:' => 'au',
 		    'co:' => 'co', 'collab:' => 'co', 'collaborators:' => 'co',
-		    're:' => 're', 'reviewer:' => 're',
+		    're:' => 're', 'rev:' => 're', 'reviewer:' => 're',
 		    'tag:' => 'tag',
 		    'outcome:' => 'outcome', 'out:' => 'outcome');
 
 class PaperSearch {
 
+    var $contactId;
     var $amAssistant;
-    var $allPapers;
+    var $limitName;
     var $allowReviewer;
     var $allowAuthor;
     var $allowOutcome;
     var $fields;
     var $anyReviewer;
+    var $anyTag;
     var $matchPreg;
     
-    function PaperSearch($type, $me) {
+    function PaperSearch($qtype, $ptype, $me) {
 	global $Conf;
 
+	$this->contactId = $me->contactId;
 	$this->amAssistant = $me->amAssistant();
 	$this->allowReviewer = $me->canViewAllReviewerIdentities($Conf);
 	$this->allowAuthor = ($Conf->blindSubmission() > 1 || $me->amAssistant());
 	$this->allowOutcome = $me->isPC;
-	$this->allPapers = ($me->amAssistant() ? 0 : -1);
 	$this->anyReviewer = false;
+	$this->anyTag = false;
 
 	$this->fields = array();
-	if ($type == "n" || $type == "ti")
+	if ($qtype == "n" || $qtype == "ti")
 	    $this->fields["ti"] = 1;
-	if ($type == "n" || $type == "ab")
+	if ($qtype == "n" || $qtype == "ab")
 	    $this->fields["ab"] = 1;
-	if ($this->allowAuthor && ($type == "n" || $type == "au" || $type == "ac"))
+	if ($this->allowAuthor && ($qtype == "n" || $qtype == "au" || $qtype == "ac"))
 	    $this->fields["au"] = 1;
-	if ($me->amAssistant() && $type == "ac")
+	if ($me->amAssistant() && $qtype == "ac")
 	    $this->fields["co"] = 1;
-	if ($this->allowReviewer && $type == "re")
+	if ($this->allowReviewer && $qtype == "re")
 	    $this->fields["re"] = 1;
-    }
 
-    function setAllPapers() {
-	if ($this->allPapers == 0)
-	    $this->allPapers = 1;
+	if ($me->isPC && (!$ptype || $ptype == "s"))
+	    $this->limitName = "s";
+	else if ($this->amAssistant && $ptype == "all")
+	    $this->limitName = "all";
+	else if ($me->amReviewer() && (!$ptype || $ptype == "r")) {
+	    $this->limitName = "r";
+	    $this->anyReviewer = true;
+	} else if ($me->isAuthor && (!$ptype || $ptype == "a"))
+	    $this->limitName = "a";
+	else
+	    $this->limitName = "x";
     }
     
     function _searchQueryType($str, $type = "any") {
@@ -98,11 +108,13 @@ class PaperSearch {
 	    if (($special ? $special == "co" : isset($this->fields['co'])) && $this->amAssistant)
 		$qp .= " or (${auextra}Paper.collaborators like '%$word%')";
 	    if (($special ? $special == "re" : isset($this->fields['re'])) && $this->allowReviewer) {
-		$qp .= " or (firstName like '%$word%') or (lastName like '%$word%') or (email like '%$word%')";
+		$qp .= " or (reviewerInfo like '%$word%')";
 		$this->anyReviewer = true;
 	    }
-	    if ($special ? $special == "tag" : isset($this->fields['tag']))
+	    if ($special ? $special == "tag" : isset($this->fields['tag'])) {
 		$qp .= " or (tag = '$word')";
+		$this->anyTag = true;
+	    }
 	    if (($special ? $special == "outcome" : isset($this->fields['outcome'])) && $this->allowOutcome) {
 		$rf = reviewForm();
 		foreach ($rf->options['outcome'] as $num => $what)
@@ -136,17 +148,30 @@ class PaperSearch {
     }
     
     function _searchQuery($q, $qa, $qx) {
+	if ($this->limitName == "x")
+	    return array("create temporary table Matches select Paper.paperId from Paper where false", ""); 
+	
 	$res = $this->_searchQueryType($q, "any");
 	$res = $this->_combineQuery($res, $this->_searchQueryType($qa, "all"));
 	$res = $this->_combineQuery($res, $this->_searchQueryType($qx, "none"));
-	if (!$this->allPapers)
+	if ($this->limitName == "s")
 	    $res = $this->_combineQuery($res, array("Paper.timeSubmitted>0", ""));
-	$q = ($res[0] ? $res[0] : "true");
+
+	$q = "select Paper.paperId from Paper";
+	if ($this->limitName == "r")
+	    $q .= " join PaperReview as ReviewLimit on (ReviewLimit.paperId=Paper.paperId and ReviewLimit.contactId=" . $this->contactId . ")";
+	else if ($this->limitName == "a")
+	    $q .= " join PaperConflict as ReviewLimit on (ReviewLimit.paperId=Paper.paperId and ReviewLimit.contactId=" . $this->contactId . " and ReviewLimit.author>0)";
+
 	if ($this->anyReviewer)
-	    $q = "create temporary table Matches select Paper.paperId from Paper left join PaperReview using (paperId) left join ContactInfo on (PaperReview.contactId=ContactInfo.contactId) left join PaperTag on (PaperTag.paperId=Paper.paperId) where $q group by Paper.paperId";
-	else
-	    $q = "create temporary table Matches select Paper.paperId from Paper left join PaperTag on (PaperTag.paperId=Paper.paperId) where $q group by Paper.paperId";
-	return array($q, $res[1]);
+	    $q .= " left join (select paperId, group_concat(firstName, lastName, email) as reviewerInfo from PaperReview join ContactInfo using (contactId) group by paperId) as ReviewerInfo on (ReviewerInfo.paperId=Paper.paperId)";
+	if ($this->anyTag)
+	    $q .= " left join PaperTag on (PaperTag.paperId=Paper.paperId)";
+
+	if ($res[0])
+	    $q .= " where " . $res[0];
+
+	return array("create temporary table Matches $q group by Paper.paperId", $res[1]);
     }
     
     function search($q, $qa = "", $qx = "") {
@@ -170,10 +195,3 @@ class PaperSearch {
     }
     
 }
-
-    /* $find = sqlqtrim($_REQUEST["search"]);
-    if ($Me->amAssistant())
-	$q .= "	where match(title, abstract, authorInformation, collaborators) against ('" . sqlqtrim($_REQUEST["search"]) . "' in boolean mode)\n";
-    else
-	$q .= "	where match(title, abstract) against ('" . sqlqtrim($_REQUEST["search"]) . "' in boolean mode)
-	or (blind=0 and match(authorInformation, collaborators) against ('" . sqlqtrim($_REQUEST["search"]) . "' in boolean mode)\n"; */
