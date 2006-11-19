@@ -1,7 +1,6 @@
 <?php 
 require_once('Code/header.inc');
 require_once('Code/papertable.inc');
-$Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 

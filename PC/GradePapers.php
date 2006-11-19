@@ -1,6 +1,5 @@
 <?php 
 require_once('../Code/header.inc');
-$Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPC("../");
@@ -219,7 +218,7 @@ while ($row=$result->fetchRow()) {
   print "<a href=\"../review.php?paperId=$paperId\" target=_blank>";
   print "$title </a> </td> \n";
 
-  $count = $Conf->retCount("SELECT Count(reviewSubmitted) "
+  $count = $Conf->retCount("SELECT count(reviewSubmitted) "
 			   . " FROM PaperReview "
 			   . " WHERE PaperReview.paperId='$paperId'"
 			   . " AND PaperReview.reviewSubmitted>0 "

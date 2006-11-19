@@ -2,7 +2,6 @@
 require_once('Code/header.inc');
 require_once('Code/paperlist.inc');
 require_once('Code/search.inc');
-$Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPC('index.php');
@@ -16,6 +15,8 @@ if ($Me->isPC)
     $opt["s"] = "Submitted papers";
 if ($Me->amReviewer())
     $opt["r"] = "Review assignment";
+if ($Me->isPC)
+    $opt["req"] = "Requested reviews";
 if ($Me->isAuthor)
     $opt["a"] = "Authored papers";
 if ($Me->amAssistant())

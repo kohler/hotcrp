@@ -1,7 +1,6 @@
 <?
 require_once('../Code/header.inc');
 require_once('../Code/paperlist.inc');
-$Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotChair('../index.php');

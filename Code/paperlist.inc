@@ -396,16 +396,18 @@ class PaperList {
 	    return "";
 	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 4 < 2 ? 0 : 1) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
 	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector'><img src=\"${ConfSiteBase}images/bendulft.png\" /></td>\n";
-	$t .= "    <td colspan='" . ($ncol - 1) . "'><b>Select papers</b> (or <a href='javascript:void checkPapersel(true)'>select all " . $this->count . "</a>), then: &nbsp;
+	$t .= "    <td colspan='" . ($ncol - 1) . "'><b>Select papers</b> (or <a href='javascript:void checkPapersel(true)'>select all " . $this->count . "</a>), then get: &nbsp;
     <select id='plget' onchange='if (this.value) submitForm(\"sel\", this.value)'>
-    <option value='paper' selected='selected'>Get papers</option>
-    <option value='revform'>Get review forms</option>\n";
+    <option value='paper' selected='selected'>Papers</option>
+    <option value='revform'>Review forms</option>\n";
 	if ($this->contact->isPC && $Conf->timeSubmitFinalPaper())
-	    $t .= "    <option value='final'>Get final papers</option>\n";
+	    $t .= "    <option value='final'>Final papers</option>\n";
 	if ($this->contact->amAssistant() || ($this->contact->isPC && $Conf->validTimeFor('PCMeetingView', 0)))
-	    $t .= "    <option value='rev'>Get all reviews (no conflicts)</option>\n";
+	    $t .= "    <option value='rev'>All reviews (no conflicts)</option>\n";
 	if ($this->contact->amAssistant() || ($this->contact->isReviewer && $Conf->blindSubmission() < 2))
-	    $t .= "    <option value='authors'>Get authors (text file)</option>\n";
+	    $t .= "    <option value='authors'>Authors (text)</option>\n";
+	if ($this->contact->amAssistant())
+	    $t .= "    <option value='contact'>Contact emails (text)</option>\n";
 	$t .= "</select>  <input type='submit' class='button_small' name='get' value='Go' />
     &nbsp;|&nbsp; <a>More &raquo;</a></td>
   </tr>\n";

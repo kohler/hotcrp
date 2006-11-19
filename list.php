@@ -1,7 +1,6 @@
 <?php 
 require_once('Code/header.inc');
 require_once('Code/paperlist.inc');
-$Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $action = defval($_REQUEST["action"], "");
@@ -177,6 +176,28 @@ if ($action == "authors"
 		    $text .= $row[0] . "\t" . $row[1] . "\t" . $au . "\n";
 	}
 	downloadText($text, $Opt['downloadPrefix'] . "authors.txt", "authors");
+	exit;
+    }
+}
+
+
+// download text contact author information, with email, for selected papers
+if ($action == "contact" && $Me->amAssistant()
+    && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
+    $idq = "";
+    foreach ($_REQUEST["papersel"] as $id)
+	if (($id = cvtint($id)) > 0)
+	    $idq .= " or Paper.paperId=$id";
+    $idq = substr($idq, 4);
+    if (!$Me->amAssistant())
+	$idq = "($idq) and blind=0";
+    $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.author>0) join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq", "while fetching contact authors");
+    if (!MDB2::isError($result)) {
+	$text = "#paperId\ttitle\tlast, first\temail\n";
+	while (($row = $result->fetchRow())) {
+	    $text .= $row[0] . "\t" . $row[1] . "\t" . $row[3] . ", " . $row[2] . "\t" . $row[4] . "\n";
+	}
+	downloadText($text, $Opt['downloadPrefix'] . "contacts.txt", "contacts");
 	exit;
     }
 }

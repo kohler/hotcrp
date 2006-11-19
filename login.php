@@ -1,6 +1,5 @@
 <?php 
 require_once('Code/header.inc');
-$Conf->connect();
 
 // If they're here, the contact is invalid.
 if (isset($_SESSION['Me']))

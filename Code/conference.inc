@@ -2,7 +2,6 @@
 
 class Conference {
     
-    var $connected;
     var $shortName;
     var $longName;
     var $paperSite;
@@ -14,7 +13,6 @@ class Conference {
     //
     // Database specific stuff
     //
-    var $dsn;
     var $DB;
 
     //
@@ -49,8 +47,7 @@ class Conference {
 
     function Conference() {
 	global $Opt;
-	$this->dsn = $Opt['dsn'];
-	$this->connected = 0;
+
 	$this->startTime = array();
 	$this->endTime = array();
 	$this->saveMessages = true;
@@ -63,6 +60,18 @@ class Conference {
 	$this->paperSite = $Opt['paperSite'];
 	$this->shortName = $Opt['shortName'];
 	$this->longName = $Opt['longName'];
+
+	if (!isset($Opt['dsn']))
+	    $this->errorMsg("Package misconfigured: dsn is not set");
+
+	$this->DB =& MDB2::singleton($Opt['dsn'], array("portability" => MDB2_PORTABILITY_NONE));
+
+	if (MDB2::isError($this->DB)) {
+	    $this->errorMsg("Unable to connect to database");
+	    die($this->DB->getMessage() . ": " . $Opt['dsn']);
+	}
+
+	$this->updateImportantDates();
     }
 
     function dump() {
@@ -80,7 +89,6 @@ class Conference {
       echo "contactName is " . $this -> contactName . " <br>";
       echo "contactEmail is " . $this -> contactEmail . " <br>";
       echo "emailFrom is " . $this -> emailFrom . " <br>";
-      echo "dsn is " . htmlspecialchars($this->dsn) . " <br>";
       echo "dbDumpDir is " . htmlspecialchars($Opt['dbDumpDir']) . " <br>";
       echo "dbhandle is " . $this -> dbhandle . " <br>";
 
@@ -102,23 +110,6 @@ class Conference {
     //
     // Initialization functions
     //
-
-    function connect() {
-	if (!$this->connected) {
-	    if (!isset($this->dsn))
-		$this->errorMsg("Package misconfigured: dsn is not set");
-
-	    $this->DB =& MDB2::singleton($this->dsn, array("portability" => MDB2_PORTABILITY_NONE));
-
-	    if (MDB2::isError($this->DB)) {
-		$this->errorMsg("Unable to connect to database");
-		die($this->DB->getMessage() . ": " . $this->dsn);
-	    }
-
-	    $this->connected = 1;
-	    $this->updateImportantDates();
-	}
-    }
 
     function updateImportantDates() {
 	// Suck in the start/end dates
@@ -142,8 +133,6 @@ class Conference {
 
     function q($query) {
 	global $OK;
-	if (!$this->connected)
-	    $this->connect();
 	$result = $this->DB->query($query);
 	if (MDB2::isError($result))
 	    $OK = 0;
@@ -164,8 +153,6 @@ class Conference {
   
     function qe($query, $while = "", $suggestRetry = 0) {
 	global $OK;
-	if (!$this->connected)
-	    $this->connect();
 	$result = $this->DB->query($query);
 	if (MDB2::isError($result)) {
 	    $this->errorMsg($this->dbErrorText($result, $while . " (" . htmlspecialchars($query) . ")", $suggestRetry));
@@ -438,9 +425,6 @@ class Conference {
       //
       // Hack to avoid modifying lots of files
       //
-      if ( ! $this -> connected ) {
-	$this -> connect();
-      }
       if ( ! $this -> validTimeFor($what, 0) ) {
 	$this -> go($url);
       }

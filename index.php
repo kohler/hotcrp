@@ -1,7 +1,6 @@
 <?php
 require_once('Code/header.inc');
 require_once('Code/paperlist.inc');
-$Conf->connect();
 
 $testCookieStatus = 0;
 if (isset($_COOKIE["CRPTestCookie"]) && $_COOKIE["CRPTestCookie"] == "ChocChip")

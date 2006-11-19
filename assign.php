@@ -2,7 +2,6 @@
 require_once('Code/header.inc');
 require_once('Code/papertable.inc');
 require_once('Code/reviewtable.inc');
-$Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $_REQUEST["forceShow"] = 1;

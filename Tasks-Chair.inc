@@ -44,9 +44,6 @@
 <li> Contact authors & prepare facesheets
 <ul>
 <li> <a href="Chair/SendMail.php"> Send mail to various groups of people (authors, reviewers) </a> 
-<li> <a href="Chair/ListFirstAuthors.php"> List email addresses
-	for all contact authors </a>
-	<br>(used for creating ane email list for sending announcements) </a>
 <li> <a href="Chair/ListReviewers.php"> List all reviewers
 	(email and name) </a>.
 </ul>

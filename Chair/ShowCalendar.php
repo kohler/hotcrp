@@ -1,7 +1,6 @@
 <?php 
 require_once('../Code/header.inc');
 include('../Code/Calendar.inc');
-$Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotChair('../index.php');

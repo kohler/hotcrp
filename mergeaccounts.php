@@ -1,6 +1,5 @@
 <?php 
 include('../Code/header.inc');
-$Conf->connect();
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $MergeError = "";

@@ -48,11 +48,12 @@ class PaperSearch {
 	    $this->limitName = "s";
 	else if ($this->amAssistant && $ptype == "all")
 	    $this->limitName = "all";
-	else if ($me->amReviewer() && (!$ptype || $ptype == "r")) {
+	else if ($me->amReviewer() && (!$ptype || $ptype == "r"))
 	    $this->limitName = "r";
-	    $this->anyReviewer = true;
-	} else if ($me->isAuthor && (!$ptype || $ptype == "a"))
+	else if ($me->isAuthor && (!$ptype || $ptype == "a"))
 	    $this->limitName = "a";
+	else if ($me->isPC && $ptype == "req")
+	    $this->limitName = "req";
 	else
 	    $this->limitName = "x";
     }
@@ -159,9 +160,11 @@ class PaperSearch {
 
 	$q = "select Paper.paperId from Paper";
 	if ($this->limitName == "r")
-	    $q .= " join PaperReview as ReviewLimit on (ReviewLimit.paperId=Paper.paperId and ReviewLimit.contactId=" . $this->contactId . ")";
+	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . ")";
 	else if ($this->limitName == "a")
-	    $q .= " join PaperConflict as ReviewLimit on (ReviewLimit.paperId=Paper.paperId and ReviewLimit.contactId=" . $this->contactId . " and ReviewLimit.author>0)";
+	    $q .= " join PaperConflict as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . " and Limiter.author>0)";
+	else if ($this->limitName == "req")
+	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.requestedBy=" . $this->contactId . " and Limiter.reviewType=" . REVIEW_REQUESTED . ")";
 
 	if ($this->anyReviewer)
 	    $q .= " left join (select paperId, group_concat(firstName, lastName, email) as reviewerInfo from PaperReview join ContactInfo using (contactId) group by paperId) as ReviewerInfo on (ReviewerInfo.paperId=Paper.paperId)";
