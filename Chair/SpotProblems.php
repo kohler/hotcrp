@@ -5,28 +5,15 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPC('../index.php');
 
-function spotSecondaryReviewers($howmany)
-{
-  global $Conf;
-
-  if ( $howmany == 0 ) {
-    $result =$Conf->qe(
-		       " SELECT Paper.paperId, Paper.title "
-		       . " FROM Paper "
-		       . " LEFT JOIN ReviewRequest "
-		       . " ON ReviewRequest.paperId=Paper.paperId "
-		       . " WHERE ReviewRequest.paperId IS NULL "
-		       . " ORDER BY Paper.paperId ");
-  } else {
-    $result =$Conf->qe(
-		       " SELECT Paper.paperId, Paper.title "
-		       . " FROM Paper "
-		       . " LEFT JOIN ReviewRequest "
-		       . " ON ReviewRequest.paperId=Paper.paperId "
-		       . " GROUP BY ReviewRequest.paperId "
-		       . " HAVING COUNT(ReviewRequest.paperId)=$howmany "
-		       . " ORDER BY Paper.paperId ");
-  }
+function spotSecondaryReviewers($howmany) {
+    global $Conf;
+    $q = "select Paper.paperId, Paper.title from Paper join PaperReview as MPR on (MPR.paperId=Paper.paperId and MPR.reviewType=" . REVIEW_SECONDARY . ") left join PaperReview as SPR on (SPR.paperId=Paper.paperId and SPR.requestedBy=MPR.contactId and SPR.reviewType=" . REVIEW_REQUESTED . ")";
+    if ($howmany == 0)
+	$q .= " where MPR.reviewModified is null and SPR.reviewId is null";
+    else
+	$q .= " where MPR.reviewModified is not null or SPR.reviewId is not null";
+    $q .= " group by Paper.paperId order by Paper.paperId";
+    $result = $Conf->qe($q);
 
   if (!MDB2::isError($result)) {
     $count=$result->numRows();
@@ -47,35 +34,21 @@ function spotSecondaryReviewers($howmany)
   }
 }
 
-function spotReviews($howmany, $finalized=0)
-{
-  global $Conf;
+function spotReviews($howmany, $finalized=0) {
+    global $Conf, $reviewTypeName, $ConfSiteBase;
+    $fin = ($finalized ? "reviewSubmitted" : "reviewModified");
 
+    $query =
+	"select Paper.paperId, Paper.title "
+	. " from Paper"
+	. " left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.$fin is not null) "
+	. " where Paper.timeSubmitted>0 and Paper.timeWithdrawn<=0 "
+	. " group by Paper.paperId having count(PaperReview.paperId)=$howmany "
+	. " order by Paper.paperId ";
 
-  if ( $howmany == 0 ) {
-    $result =$Conf->qe(
-		       " SELECT Paper.paperId, Paper.title "
-		       . " FROM Paper "
-		       . " LEFT JOIN PaperReview "
-		       . " ON PaperReview.paperId=Paper.paperId "
-		       . " WHERE PaperReview.paperId IS NULL "
-		       . " ORDER BY Paper.paperId ");
+    //  print "<p> query is $query </p>";
+    $result=$Conf->qe($query);
 
-  } else {
-    if ( $finalized ) {
-      $fin = " AND PaperReview.reviewSubmitted>0 ";
-    }
-
-    $result =$Conf->qe(
-		       " SELECT Paper.paperId, Paper.title "
-		       . " FROM Paper "
-		       . " LEFT JOIN PaperReview "
-		       . " ON PaperReview.paperId=Paper.paperId "
-		       . $fin
-		       . " GROUP BY PaperReview.paperId "
-		       . " HAVING COUNT(PaperReview.paperId)=$howmany "
-		       . " ORDER BY Paper.paperId ");
-  }
   if (!MDB2::isError($result)) {
     $count=$result->numRows();
     print "<table align=center width=80% border=1> ";

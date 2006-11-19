@@ -5,30 +5,15 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPC("../index.php");
 
-function spotSecondaryReviewers($howmany)
-{
-  global $Conf;
-
-  if ( $howmany == 0 ) {
-    $result =$Conf->qe(
-		       " SELECT Paper.paperId, Paper.title "
-		       . " from PaperReview join Paper using (paperId) "
-		       . " where PaperReview.reviewType=" . REVIEW_SECONDARY
-		       . " and SecondaryReviewer.paperId=Paper.paperId "
-		       . " AND SecondaryReviewer.reviewer=" . $_SESSION["Me"]->contactId. " "
-		       . " ORDER BY Paper.paperId ");
-  } else {
-    $result =$Conf->qe(
-		       " SELECT Paper.paperId, Paper.title "
-		       . " FROM Paper, SecondaryReviewer "
-		       . " LEFT JOIN ReviewRequest "
-		       . " ON ReviewRequest.paperId=Paper.paperId "
-		       . " WHERE SecondaryReviewer.paperId=Paper.paperId "
-		       . " AND SecondaryReviewer.reviewer=" . $_SESSION["Me"]->contactId. " "
-		       . " GROUP BY ReviewRequest.paperId "
-		       . " HAVING COUNT(ReviewRequest.paperId)=$howmany "
-		       . " ORDER BY Paper.paperId ");
-  }
+function spotSecondaryReviewers($howmany) {
+    global $Conf, $Me;
+    $q = "select Paper.paperId, Paper.title from Paper join PaperReview as MPR on (MPR.paperId=Paper.paperId and MPR.contactId=" . $Me->contactId . " and MPR.reviewType=" . REVIEW_SECONDARY . ") left join PaperReview as SPR on (SPR.paperId=Paper.paperId and SPR.requestedBy=" . $Me->contactId . " and SPR.reviewType=" . REVIEW_REQUESTED . ")";
+    if ($howmany == 0)
+	$q .= " where MPR.reviewModified is null and SPR.reviewId is null";
+    else
+	$q .= " where MPR.reviewModified is not null or SPR.reviewId is not null";
+    $q .= " group by Paper.paperId order by Paper.paperId";
+    $result = $Conf->qe($q);
 
   if (!MDB2::isError($result)) {
     print "<table align=center width=80% border=1> ";
@@ -48,36 +33,26 @@ function spotSecondaryReviewers($howmany)
   }
 }
 
-function spotReviews($howmany, $finalized, $reviewType)
-{
-  global $Conf;
+function spotReviews($howmany, $finalized, $reviewType) {
+    global $Conf, $reviewTypeName, $ConfSiteBase;
+    $fin = ($finalized ? "reviewSubmitted" : "reviewModified");
 
-  if ( $howmany == 0 && 0 ) {
     $query=
-      " select Paper.paperId, Paper.title "
-      . " from Paper join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.reviewType=$reviewType and PaperReview.contactId=" . $_SESSION["Me"]->contactId . " and PaperReview.review) "
-      . " ORDER BY Paper.paperId ";
+	"select Paper.paperId, Paper.title "
+	. " from Paper join PaperReview as MyReview on (MyReview.paperId=Paper.paperId and MyReview.contactId=" . $_SESSION["Me"]->contactId . ") "
+	. " left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.$fin is not null) "
+	. " group by Paper.paperId having count(PaperReview.paperId)=$howmany "
+	. " order by Paper.paperId ";
 
-  } else {
-      $fin = ($finalized ? "reviewSubmitted" : "reviewModified");
-
-      $query=
-	  "select Paper.paperId, Paper.title "
-	  . " from Paper join PaperReview as MyReview on (MyReview.paperId=Paper.paperId and MyReview.contactId=" . $_SESSION["Me"]->contactId . ") "
-	  . " left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.$fin>0) "
-	  . " group by Paper.paperId having count(PaperReview.paperId)=$howmany "
-	  . " order by Paper.paperId ";
-  }
-
-  //  print "<p> query is $query </p>";
-  $result=$Conf->qe($query);
+    //  print "<p> query is $query </p>";
+    $result=$Conf->qe($query);
 
   if (!MDB2::isError($result)) {
     print "<table align=center width=80% border=1> ";
     if ( $finalized ) {
-      print "<tr> <th colspan=2> Papers With $howmany Finalized $table Reviews </th> </tr>";
+      print "<tr> <th colspan=2> Papers With $howmany Finalized " . $reviewTypeName[$reviewType] . " Reviews </th> </tr>";
     } else {
-      print "<tr> <th colspan=2> Papers With $howmany Started $table Reviews </th> </tr>";
+      print "<tr> <th colspan=2> Papers With $howmany Started " . $reviewTypeName[$reviewType] . " Reviews </th> </tr>";
     }
     while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
       $paperId=$row['paperId'];
@@ -85,7 +60,7 @@ function spotReviews($howmany, $finalized, $reviewType)
       print "<tr> <td> $paperId </td><td> ";
 
       $Conf->linkWithPaperId($title,
-			     "ShowAbstract.php",
+			     "${ConfSiteBase}review.php",
 			     $paperId);
 
       print "</td> </tr>";
@@ -103,7 +78,7 @@ function spotReviews($howmany, $finalized, $reviewType)
 <h1> Which papers do not have enough assigned secondary reviewers? </h1>
 
 <p> These are papers for which you are supposed to find a secondary reviewer.
-These tables simply show you how many "review requests" have been made.
+These tables simply show you how many "review requests" you've made.
 If you've assigned all your secondary reviews, the first table will
 be empty and you can ignore this.
 </p>
