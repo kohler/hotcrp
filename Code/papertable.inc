@@ -48,7 +48,7 @@ class PaperTable {
 	    $this->autrClasses = "";
 	$this->autrClasses .= $this->trClasses;
 
-	$this->highlight = (defval($_SESSION["whichList"]) == "matches" && isset($_SESSION["matchPreg"]));
+	$this->highlight = (defval($_SESSION["whichList"]) == "search" && isset($_SESSION["matchPreg"]));
     }
 
     function tdCaption($what) {

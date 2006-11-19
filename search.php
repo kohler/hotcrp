@@ -328,8 +328,8 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
     $result = $Search->search(defval($_REQUEST["q"], ""), defval($_REQUEST["qa"], ""), defval($_REQUEST["qx"], ""));
 
     if (!MDB2::isError($result)) {
-	$pl = new PaperList(true, "list");
-	$_SESSION["whichList"] = "list";
+	$pl = new PaperList(true, "search");
+	$_SESSION["whichList"] = "search";
 	if ($Search->matchPreg)
 	    $_SESSION["matchPreg"] = "/(" . $Search->matchPreg . ")/i";
 	else
