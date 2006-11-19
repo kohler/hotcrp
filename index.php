@@ -61,16 +61,16 @@ if ($Me->isPC || $Me->amReviewer()) {
     unset($plist);
     if ($Conf->timeReviewOpen()) {
 	$plist = new PaperList(false, "list_tabre");
-	$ptext = $plist->text("reviewerHome", $Me);
+	$ptext = $plist->text("reviewerHome", $Me, "${ConfSiteBase}search.php?q=&t=r");
     }
     
     $deadlines = array();
     $rtyp = ($Me->isPC ? "PC" : "reviewer");
     unset($d);
     if ($Me->isReviewer)
-	$deadlines[] = "<a href='list.php?list=reviewer'>List your assigned papers</a> to download papers and review forms.";
+	$deadlines[] = "<a href='search.php?q=&amp;t=r'>List your assigned papers</a> to download papers and review forms.";
     if ($Me->isPC && $Conf->timeReviewPaper(true, false, true))
-	$deadlines[] = "PC members may review <a href='list.php?list=submitted'>any submitted paper</a>, whether or not a review has been assigned.";
+	$deadlines[] = "PC members may review <a href='search.php?q=&amp;t=s'>any submitted paper</a>, whether or not a review has been assigned.";
     if (isset($plist) && $plist->needSubmitReview == 0) {
 	/* nada */
 	//if ($plist->count > 0)
@@ -115,9 +115,9 @@ if ($Me->isPC || $Me->amReviewer()) {
 </td><td>\n\n";
     if ($Me->isPC) {
 	$body .= "<ul>
-  <li><a href='list.php?list=submitted'>List submitted papers</a></li>\n";
+  <li><a href='search.php?q=&amp;t=s'>List submitted papers</a></li>\n";
 	if ($Me->amAssistant())
-	    $body .= "  <li><a href='list.php?list=all'>List all papers</a></li>\n";
+	    $body .= "  <li><a href='search.php?q=&amp;t=all'>List all papers</a></li>\n";
 	$body .= "  <li><form method='get' action='search.php'><input class='textlite' type='text' size='20' name='q' value='' /> <input class='button_small' type='submit' name='go' value='Search' /></form>
     <span class='sep'></span><small><a href='search.php'>Advanced search</a></small></li>\n";
 	$body .= "</ul>\n\n";
@@ -148,7 +148,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
     if ($Me->isAuthor) {
 	$plist = new PaperList(false, "list_tabsu");
 	$plist->showHeader = 0;
-	$ptext = $plist->text("authorHome", $Me);
+	$ptext = $plist->text("authorHome", $Me, "${ConfSiteBase}search.php?q=&t=a");
 	$deadlines = array();
 	if ($plist->count > 0) {
 	    $body .= $sep . $ptext;

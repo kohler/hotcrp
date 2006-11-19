@@ -10,17 +10,8 @@ class Conference {
     var $emailFrom;
     var $allowReviewerPreferences;
   
-    //
-    // Database specific stuff
-    //
     var $DB;
 
-    //
-    // Various optional deadlines
-    //
-    var $submissionDeadline;
-    var $reviewDeadline;
-    
     var $startTime;
     var $endTime;
 

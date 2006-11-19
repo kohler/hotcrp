@@ -4,9 +4,9 @@ require_once('Code/paperlist.inc');
 require_once('Code/search.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPC('index.php');
-
-$Conf->header("Search", 'search');
+$getaction = "";
+if (isset($_REQUEST["get"]) && isset($_REQUEST["getaction"]))
+    $getaction = $_REQUEST["getaction"];
 
 
 // paper group
@@ -22,10 +22,12 @@ if ($Me->isAuthor)
 if ($Me->amAssistant())
     $opt["all"] = "All papers";
 if (count($opt) == 0) {
-    $Conf->errorMsg("There are no papers for you to search.");
+    $Conf->header("Search", 'search');
+    $Conf->errorMsg("You are not allowed to search for papers.");
     exit;
 }
 if (isset($_REQUEST["t"]) && !isset($opt[$_REQUEST["t"]])) {
+    $Conf->header("Search", 'search');
     $Conf->errorMsg("You aren't allowed to search that paper collection.");
     unset($_REQUEST["t"]);
 }
@@ -33,7 +35,216 @@ if (!isset($_REQUEST["t"]))
     $_REQUEST["t"] = key($opt);
 
 
+// download selected papers
+if ($getaction == "paper") {
+    if (!isset($_REQUEST["papersel"]) || !is_array($_REQUEST["papersel"]))
+	$_REQUEST["papersel"] = array();
+    $q = $Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"]));
+    $result = $Conf->qe($q, "while selecting papers for download");
+    $downloads = array();
+    if (MDB2::isError($result))
+	/* do nothing */;
+    else
+	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
+	    if (!$Me->canViewPaper($row, $Conf, $whyNot))
+		$Conf->errorMsg(whyNotText($whyNot, "view"));
+	    else
+		$downloads[] = $row->paperId;
+	}
+
+    $result = $Conf->downloadPapers($downloads);
+    if (!PEAR::isError($result))
+	exit;
+}
+
+
+// download selected final copies
+if ($getaction == "final") {
+    if (!isset($_REQUEST["papersel"]) || !is_array($_REQUEST["papersel"]))
+	$_REQUEST["papersel"] = array();
+    $q = $Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"]));
+    $result = $Conf->qe($q, "while selecting papers for download");
+    $downloads = array();
+    if (MDB2::isError($result))
+	/* do nothing */;
+    else
+	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
+	    if (!$Me->canViewPaper($row, $Conf, $whyNot))
+		$Conf->errorMsg(whyNotText($whyNot, "view"));
+	    else
+		$downloads[] = $row->paperId;
+	}
+
+    $result = $Conf->downloadPapers($downloads, true);
+    if (!PEAR::isError($result))
+	exit;
+}
+
+
+// download review form for selected papers
+// (or blank form if no papers selected)
+if ($getaction == "revform" && !isset($_REQUEST["papersel"])) {
+    $rf = reviewForm();
+    $text = $rf->textFormHeader($Conf, false)
+	. $rf->textForm(null, null, $Conf, null, ReviewForm::REV_FORM) . "\n";
+    downloadText($text, $Opt['downloadPrefix'] . "review.txt", "review form");
+    exit;
+} else if ($getaction == "revform") {
+    $rf = reviewForm();
+
+    if (!is_array($_REQUEST["papersel"]))
+	$_REQUEST["papersel"] = array();
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"], "myReviewsOpt" => 1)), "while selecting papers for review");
+
+    $text = '';
+    $errors = array();
+    if (!MDB2::isError($result))
+	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
+	    if (!$Me->canReview($row, null, $Conf, $whyNot))
+		$errors[] = whyNotText($whyNot, "review") . "<br />";
+	    else {
+		$rfSuffix = ($text == "" ? "-$row->paperId" : "s");
+		$text .= $rf->textForm($row, $row, $Conf, null, ReviewForm::REV_FORM) . "\n";
+	    }
+	}
+
+    if ($text == "")
+	$Conf->errorMsg(join("", $errors) . "No papers selected.");
+    else {
+	$text = $rf->textFormHeader($Conf, $rfSuffix == "s") . $text;
+	if (count($errors)) {
+	    $e = "==-== Some review forms are missing due to errors in your paper selection:\n";
+	    foreach ($errors as $ee)
+		$e .= "==-== " . preg_replace('|\s+<.*|', "", $ee) . "\n";
+	    $text = "$e\n$text";
+	}
+	downloadText($text, $Opt['downloadPrefix'] . "review$rfSuffix.txt", "review forms");
+	exit;
+    }
+}
+
+
+// download all reviews for selected papers
+if ($getaction == "rev" && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
+    $rf = reviewForm();
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"], "allReviews" => 1, "reviewerName" => 1)), "while selecting papers for review");
+
+    $text = '';
+    $errors = array();
+    if (!MDB2::isError($result))
+	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
+	    if (!$Me->canViewReview($row, null, $Conf, $whyNot))
+		$errors[] = whyNotText($whyNot, "view review") . "<br />";
+	    else if ($row->reviewSubmitted > 0) {
+		$rfSuffix = ($text == "" ? "-$row->paperId" : "s");
+		$text .= $rf->textForm($row, $row, $Conf, null, ReviewForm::REV_PC) . "\n";
+	    }
+	}
+
+    if ($text == "")
+	$Conf->errorMsg(join("", $errors) . "No papers selected.");
+    else {
+	$text = $rf->textFormHeader($Conf, $rfSuffix == "s", false) . $text;
+	if (count($errors)) {
+	    $e = "==-== Some reviews are missing due to errors in your paper selection:\n";
+	    foreach ($errors as $ee)
+		$e .= "==-== " . preg_replace('|\s+<.*|', "", $ee) . "\n";
+	    $text = "$e\n$text";
+	}
+	downloadText($text, $Opt['downloadPrefix'] . "review$rfSuffix.txt", "review forms");
+	exit;
+    }
+}
+
+
+// set tags for selected papers
+if (isset($_REQUEST["addtag"]) && $Me->amAssistant() && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"]) && isset($_REQUEST["tag"])) {
+    $while = "while tagging papers";
+    $Conf->qe("lock tables PaperTag write", $while);
+    $idq = "";
+    foreach ($_REQUEST["papersel"] as $id)
+	if (($id = cvtint($id)) > 0)
+	    $idq .= " or paperId=$id";
+    $idq = substr($idq, 4);
+    $tag = sqlq($_REQUEST["tag"]);
+    $Conf->qe("delete from PaperTag where tag='$tag' and ($idq)", $while);
+    $q = "insert into PaperTag (paperId, tag) values ";
+    foreach ($_REQUEST["papersel"] as $id)
+	if (($id = cvtint($id)) > 0)
+	    $q .= "($id, '$tag'), ";
+    $Conf->qe(substr($q, 0, strlen($q) - 2), $while);
+    $Conf->qe("unlock tables", $while);
+}
+
+
+// download text author information for selected papers
+if ($getaction == "authors"
+    && ($Me->amAssistant() || ($Me->isPC && $Conf->blindSubmission() < 2))
+    && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
+    $idq = "";
+    foreach ($_REQUEST["papersel"] as $id)
+	if (($id = cvtint($id)) > 0)
+	    $idq .= " or paperId=$id";
+    $idq = substr($idq, 4);
+    if (!$Me->amAssistant())
+	$idq = "($idq) and blind=0";
+    $result = $Conf->qe("select paperId, title, authorInformation from Paper where $idq", "while fetching authors");
+    if (!MDB2::isError($result)) {
+	$text = "#paperId\ttitle\tauthor\n";
+	while (($row = $result->fetchRow())) {
+	    foreach (preg_split('/[\r\n]+/', $row[2]) as $au)
+		if (($au = trim(simplifyWhitespace($au))) != "")
+		    $text .= $row[0] . "\t" . $row[1] . "\t" . $au . "\n";
+	}
+	downloadText($text, $Opt['downloadPrefix'] . "authors.txt", "authors");
+	exit;
+    }
+}
+
+
+// download text contact author information, with email, for selected papers
+if ($getaction == "contact" && $Me->amAssistant()
+    && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
+    $idq = "";
+    foreach ($_REQUEST["papersel"] as $id)
+	if (($id = cvtint($id)) > 0)
+	    $idq .= " or Paper.paperId=$id";
+    $idq = substr($idq, 4);
+    if (!$Me->amAssistant())
+	$idq = "($idq) and blind=0";
+    $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.author>0) join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq", "while fetching contact authors");
+    if (!MDB2::isError($result)) {
+	$text = "#paperId\ttitle\tlast, first\temail\n";
+	while (($row = $result->fetchRow())) {
+	    $text .= $row[0] . "\t" . $row[1] . "\t" . $row[3] . ", " . $row[2] . "\t" . $row[4] . "\n";
+	}
+	downloadText($text, $Opt['downloadPrefix'] . "contacts.txt", "contacts");
+	exit;
+    }
+}
+
+
+// set outcome for selected papers
+if (isset($_REQUEST["setoutcome"]))
+    if (!$Me->canSetOutcome(null))
+	$Conf->errorMsg("You cannot set paper outcomes.");
+    else {
+	$o = cvtint(trim($_REQUEST['outcome']));
+	$rf = reviewForm();
+	if (isset($rf->options['outcome'][$o])) {
+	    $idq = "";
+	    foreach ($_REQUEST["papersel"] as $id)
+		if (($id = cvtint($id)) > 0)
+		    $idq .= " or paperId=$id";
+	    $idq = substr($idq, 4);
+	    $result = $Conf->qe("update Paper set outcome=$o where $idq", "while changing outcome");
+	} else
+	    $Conf->errorMsg("Bad outcome value!");
+    }
+
+
 // search
+$Conf->header("Search", 'search');
 $Search = new PaperSearch(defval($_REQUEST["qt"], "n"), $_REQUEST["t"], $Me);
 
 
@@ -119,35 +330,28 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
     if (!MDB2::isError($result)) {
 	$pl = new PaperList(true, "list");
 	$_SESSION["whichList"] = "list";
-	$_SESSION["matchPreg"] = "/(" . $Search->matchPreg . ")/i";
+	if ($Search->matchPreg)
+	    $_SESSION["matchPreg"] = "/(" . $Search->matchPreg . ")/i";
+	else
+	    unset($_SESSION["matchPreg"]);
 	$listname = ($Search->limitName == "all" ? "matchesAll" : "matches");
-	$t = $pl->text($listname, $Me);
+	$t = $pl->text($listname, $Me, $Search->url);
 
 	echo "<div class='maintabsep'></div>\n\n";
 
 	if ($pl->anySelector) {
-	    echo "<form action='list.php' method='get' id='sel'>
-<input type='hidden' name='list' value=\"", htmlspecialchars($listname), "\" />
-<input type='hidden' id='selaction' name='action' value='' />\n";
+	    echo "<form action='search.php' method='get' id='sel'>\n";
 	    foreach (array("q", "qx", "qa", "qt", "t") as $v)
 		if (defval($_REQUEST[$v], "") != "")
 		    echo "<input type='hidden' name='$v' value=\"", htmlspecialchars($_REQUEST[$v]), "\" />\n";
+	    if (isset($_REQUEST["q"]) && $_REQUEST["q"] == "")
+		echo "<input type='hidden' name='q' value='' />\n";
 	}
 	
 	echo $t;
 	
-	if ($pl->anySelector) {
-	    echo "<div class='plist_form'>
-<table class='bullets'><tr><td>\n";
-	    
-	    if ($Me->amAssistant()) {
-		echo "</td><td><ul>\n  <li><a href='javascript:submitForm(\"sel\", \"tag\")'>Set tag</a>:&nbsp;<input class='textlite' type='text' name='tag' value='' size='10' /></li>\n";
-		echo "  <li>", outcomeSelector(), "<a href='javascript:submitForm(\"sel\", \"setoutcome\")'>Set outcome</a></li>\n";
-		echo "</ul>\n";
-	    }
-	    
-	    echo "</td></tr></table></div></form>\n";
-	}
+	if ($pl->anySelector)
+	    echo "</form>\n";
     }
 }
 

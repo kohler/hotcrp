@@ -35,7 +35,7 @@ function loadRows() {
 	maybeSearchPaperId("review.php", $Me);
 	$sel = array("paperId" => $_REQUEST["paperId"]);
     } else
-	errorMsgExit("Select a paper ID above, or <a href='${ConfSiteBase}list.php'>list the papers you can view</a>.");
+	errorMsgExit("Select a paper ID above, or <a href='${ConfSiteBase}search.php?q='>list the papers you can view</a>.");
     $sel["tags"] = 1;
     if (!(($prow = $Conf->paperRow($sel, $Me->contactId, $whyNot))
 	  && $Me->canViewPaper($prow, $Conf, $whyNot)))

@@ -396,8 +396,8 @@ class PaperList {
 	    return "";
 	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 4 < 2 ? 0 : 1) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
 	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector'><img src=\"${ConfSiteBase}images/bendulft.png\" /></td>\n";
-	$t .= "    <td colspan='" . ($ncol - 1) . "'><b>Select papers</b> (or <a href='javascript:void checkPapersel(true)'>select all " . $this->count . "</a>), then get: &nbsp;
-    <select id='plget' onchange='if (this.value) submitForm(\"sel\", this.value)'>
+	$t .= "    <td id='foldplact' class='folded' colspan='" . ($ncol - 1) . "'><b>Select papers</b> (or <a href='javascript:void checkPapersel(true)'>select all " . $this->count . "</a>), then get: &nbsp;
+    <select name='getaction'>
     <option value='paper' selected='selected'>Papers</option>
     <option value='revform'>Review forms</option>\n";
 	if ($this->contact->isPC && $Conf->timeSubmitFinalPaper())
@@ -408,13 +408,20 @@ class PaperList {
 	    $t .= "    <option value='authors'>Authors (text)</option>\n";
 	if ($this->contact->amAssistant())
 	    $t .= "    <option value='contact'>Contact emails (text)</option>\n";
-	$t .= "</select>  <input type='submit' class='button_small' name='get' value='Go' />
-    &nbsp;|&nbsp; <a>More &raquo;</a></td>
-  </tr>\n";
-	return $t;
+	$t .= "</select>  <input type='submit' class='button_small' name='get' value='Go' />\n";
+
+	if ($this->contact->amAssistant()) {
+	    $t .= "  &nbsp;|&nbsp; <a class='unfolder' href='javascript:fold(\"plact\", 0)'>More &raquo;</a><a class='folder' href='javascript:fold(\"plact\", 1)'>Less &laquo;</a>
+<div class='extension'><table>
+  <tr><td><input class='textlite' type='text' name='tag' value='' size='15' /> <input type='submit' class='button_small' name='addtag' value='Add tag' /></td>
+  <td>" . outcomeSelector() . " <input type='submit' class='button_small' name='setoutcome' value='Set outcome' /></td></tr>
+</table></div>\n";
+	}
+	
+	return $t . "</td></tr>\n";
     }
 
-    function text($listname, $me, $contactId = -1) {
+    function text($listname, $me, $url, $contactId = -1) {
 	global $Conf, $ConfSiteBase;
 
 	$this->contact = $me;
@@ -451,12 +458,6 @@ class PaperList {
 	else if ($plist->queryType == 'author' || $plist->queryType == 'myReviews' || $plist->queryType == 'myReviewRequests')
 	    $queryOptions[$plist->queryType] = 1;
 
-	// get URL
-	$url = $ConfSiteBase . $plist->listHome;
-	if ($plist->listContact && $contactId != $me->contactId)
-	    $url .= (strpos($url, "?") ? "&" : "?") . $plist->listContact . "=" . $contactId;
-	$url = preg_replace_callback("|(\\w+)=\\*|", create_function('$m', 'return $m[1] . "=" . urlencode($_REQUEST[$m[1]]);'), $url);
-	
 	// get field array
 	$result = $Conf->qe(
 		"select PaperFields.fieldId, fieldName, display
@@ -505,7 +506,6 @@ class PaperList {
 
 	if ($result->numRows() == 0)
 	    return "No papers";
-	// $x .= "  <tr class=\"pl_firstrow\">\n    <td class=\"pl_nopapers\" colspan='$ncol'>No papers available for this query</td>\n  </tr>\n";
 
 	$ids = array();
 	$anyData = array();

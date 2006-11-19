@@ -20,6 +20,8 @@ class PaperSearch {
     var $anyReviewer;
     var $anyTag;
     var $matchPreg;
+    var $urlBase;
+    var $url;
     
     function PaperSearch($qtype, $ptype, $me) {
 	global $Conf;
@@ -56,6 +58,10 @@ class PaperSearch {
 	    $this->limitName = "req";
 	else
 	    $this->limitName = "x";
+
+	$this->urlBase = "search.php?t=" . urlencode($this->limitName);
+	if ($qtype != "n")
+	    $this->urlBase .= "&qt=" . urlencode($qtype);
     }
     
     function _searchQueryType($str, $type = "any") {
@@ -178,9 +184,16 @@ class PaperSearch {
     }
     
     function search($q, $qa = "", $qx = "") {
-	global $Conf;
+	global $Conf, $ConfSiteBase;
 	$x = $this->_searchQuery($q, $qa, $qx);
 	$this->matchPreg = $x[1];
+	
+	$this->url = $this->urlBase . "&q=" . urlencode($q);
+	if ($qa != "")
+	    $this->url .= "&qa=" . urlencode($qa);
+	if ($qx != "")
+	    $this->url .= "&qx=" . urlencode($qx);
+	
 	return $Conf->qe($x[0], "while searching papers");
     }
 

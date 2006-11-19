@@ -33,7 +33,7 @@ function loadRows() {
 	maybeSearchPaperId("comment.php", $Me);
 	$sel = array("paperId" => $_REQUEST["paperId"]);
     } else
-	errorMsgExit("Select a paper ID above, or <a href='${ConfSiteBase}list.php'>list the papers you can view</a>.");
+	errorMsgExit("Select a paper ID above, or <a href='${ConfSiteBase}search.php?q='>list the papers you can view</a>.");
     if (!(($prow = $Conf->paperRow($sel, $Me->contactId, $whyNot))
 	  && $Me->canViewPaper($prow, $Conf, $whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));

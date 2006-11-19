@@ -671,12 +671,11 @@ table.pltable th, table.setreviewform th, table.memberlist th {
 	padding-right: 1em;
 }
 table.pltable th.pl_id, table.pltable th.pl_topicMatch, 
-table.pltable th.pl_reviewsStatus,
 .pl_reviewerTypeIcon, .pl_optOverallMeritIcon {
 	text-align: center;
 	padding-right: 0em;
 }
-td.pl_reviewsStatus {
+.pl_reviewsStatus {
 	text-align: center;
 	padding-right: 0.2em;
 }

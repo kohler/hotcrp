@@ -596,7 +596,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['reviewNotComplete']))
 	$text .= "Your own review for $thisPaper is not complete, so you can't view other people's reviews.  ";
     if (isset($whyNot['reviewsOutstanding']))
-	$text .= "You must complete <a href=\"${ConfSiteBase}list.php?list=reviewer\">your own reviews for other papers</a> before you can view the reviews for papers you authored.  If you can't complete your reviews, please let the conference organizers know via the relevant \"Refuse review\" links.  ";
+	$text .= "You must complete <a href=\"${ConfSiteBase}search.php?q=&amp;t=r\">your own reviews for other papers</a> before you can view the reviews for papers you authored.  If you can't complete your reviews, please let the conference organizers know via the relevant \"Refuse review\" links.  ";
     if (isset($whyNot['externalReviewer']))
 	$text .= "External reviewers may not view other reviews for the papers they review.  ";
     if (isset($whyNot['reviewNotAssigned']))
@@ -609,7 +609,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['forceShow']))
 	$text .= "<a href=\"". htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Show reviews anyway</a>  ";
     if ($text && $action == "view")
-	$text .= "Enter a paper number above, or <a href='${ConfSiteBase}list.php'>list the papers you can view</a>.  ";
+	$text .= "Enter a paper number above, or <a href='${ConfSiteBase}search.php?q='>list the papers you can view</a>.  ";
     return ($text ? substr($text, 0, -2) : $text);
 }
 

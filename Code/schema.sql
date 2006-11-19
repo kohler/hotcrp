@@ -176,23 +176,6 @@ CREATE TABLE PaperGrade (
 ) TYPE=MyISAM;
 
 
-drop table if exists ReviewRequest;
-CREATE TABLE ReviewRequest (
-  paperId int(11) NOT NULL,
-  contactId int(11) NOT NULL,
-  reviewType tinyint(1) NOT NULL default '0',
-
-  requestedBy int(11) NOT NULL default 0,
-  requestMadeOn timestamp(14) NOT NULL,
-  acceptedOn timestamp(14) NOT NULL default 0,
-
-  KEY paperId (paperId),
-  KEY contactId (contactId),
-  KEY reviewType (reviewType),
-  KEY requestedBy (requestedBy)
-) TYPE=MyISAM;
-
-
 drop table if exists PaperReview;
 CREATE TABLE PaperReview (
   reviewId int(11) NOT NULL auto_increment,
@@ -456,7 +439,6 @@ create table PaperList (
   shortDescription varchar(40) NOT NULL default '',
   description varchar(80) NOT NULL default '',
   queryType varchar(20) NOT NULL default 'any',
-  listHome varchar(40) NOT NULL default '',
   listContact varchar(20) NOT NULL default '',
   listContactType varchar(20) NOT NULL default 'any',
   sortCol int,
@@ -514,110 +496,74 @@ insert into PaperFields set fieldId=46, fieldName='optOverallMeritIcon', descrip
 
 insert into PaperList set paperListId=1, paperListName='author',
 	shortDescription='Authored', description='Authored papers',
-	listHome='list.php?list=author', listContact='contactId',
-	queryType='author', sortCol=0, query='';
-insert into PaperListColumns set paperListId=1, fieldId=2, col=0;
-insert into PaperListColumns set paperListId=1, fieldId=12, col=1;
-insert into PaperListColumns set paperListId=1, fieldId=27, col=2;
+	listContact='contactId', queryType='author', sortCol=0, query='';
+insert into PaperListColumns (paperListId, fieldId, col) values
+	(1, 2, 0), (1, 12, 1), (1, 27, 2);
 
 insert into PaperList set paperListId=2, paperListName='submitted',
 	shortDescription='Submitted', description='Submitted papers',
-	listHome='list.php?list=submitted',
 	queryType='pc', sortCol=0, query='';
-insert into PaperListColumns set paperListId=2, fieldId=31, col=0;
-insert into PaperListColumns set paperListId=2, fieldId=1, col=1;
-insert into PaperListColumns set paperListId=2, fieldId=11, col=2;
-insert into PaperListColumns set paperListId=2, fieldId=45, col=3;
-insert into PaperListColumns set paperListId=2, fieldId=41, col=4;
-insert into PaperListColumns set paperListId=2, fieldId=33, col=5;
-insert into PaperListColumns set paperListId=2, fieldId=46, col=6;
+insert into PaperListColumns (paperListId, fieldId, col) values
+	(2, 31, 0), (2, 1, 1), (2, 11, 2), (2, 45, 3), (2, 41, 4),
+	(2, 33, 5), (2, 46, 6);
 
 insert into PaperList set paperListId=3, paperListName='all',
 	shortDescription='All', description='All papers', 
-	listHome='list.php?list=all',
 	queryType='chair', sortCol=0, query='';
-insert into PaperListColumns set paperListId=3, fieldId=31, col=0;
-insert into PaperListColumns set paperListId=3, fieldId=1, col=1;
-insert into PaperListColumns set paperListId=3, fieldId=11, col=2;
-insert into PaperListColumns set paperListId=3, fieldId=27, col=3;
-insert into PaperListColumns set paperListId=3, fieldId=45, col=5;
+insert into PaperListColumns (paperListId, fieldId, col) values
+	(3, 31, 0), (3, 1, 1), (3, 11, 2), (3, 27, 3), (3, 45, 4);
 
 insert into PaperList set paperListId=4, paperListName='authorHome',
 	shortDescription='Your papers', description='My papers (homepage view)', 
-	listHome='list.php?list=author', listContact='contactId',
+	listContact='contactId',
 	queryType='author', sortCol=0, query='';
-insert into PaperListColumns set paperListId=4, fieldId=2, col=0;
-insert into PaperListColumns set paperListId=4, fieldId=12, col=1;
-insert into PaperListColumns set paperListId=4, fieldId=27, col=2;
+insert into PaperListColumns (paperListId, fieldId, col) values
+	(4, 2, 0), (4, 12, 1), (4, 27, 2);
 
 insert into PaperList set paperListId=6, paperListName='reviewerHome',
 	shortDescription='Your reviews', description='Papers to review (homepage view)',
-	listHome='list.php?list=reviewer', listContact='reviewer', listContactType='reviewer',
+	listContact='reviewer', listContactType='reviewer',
 	queryType='myReviews', sortCol=0, query='';
-insert into PaperListColumns set paperListId=6, fieldId=3, col=0;
-insert into PaperListColumns set paperListId=6, fieldId=13, col=1;
-insert into PaperListColumns set paperListId=6, fieldId=45, col=2;
-insert into PaperListColumns set paperListId=6, fieldId=33, col=3;
+insert into PaperListColumns (paperListId, fieldId, col) values
+	(6, 3, 0), (6, 13, 1), (6, 45, 2), (6, 33, 3);
 
 insert into PaperList set paperListId=7, paperListName='reviewer',
 	shortDescription='Your reviews', description='Papers to review',
-	listHome='list.php?list=reviewer', listContact='reviewer', listContactType='reviewer',
+	listContact='reviewer', listContactType='reviewer',
 	queryType='myReviews', sortCol=0, query='';
-insert into PaperListColumns set paperListId=7, fieldId=31, col=0;
-insert into PaperListColumns set paperListId=7, fieldId=3, col=1;
-insert into PaperListColumns set paperListId=7, fieldId=13, col=2;
-insert into PaperListColumns set paperListId=7, fieldId=45, col=3;
-insert into PaperListColumns set paperListId=7, fieldId=41, col=4;
-insert into PaperListColumns set paperListId=7, fieldId=33, col=5;
+insert into PaperListColumns (paperListId, fieldId, col) values
+	(7, 31, 0), (7, 3, 1), (7, 13, 2), (7, 45, 3), (7, 41, 4),
+	(7, 33, 5);
 
 insert into PaperList set paperListId=8, paperListName='reviewAssignment',
 	shortDescription='Review assignment', description='Review assignments',
-	listHome='Chair/AssignPapers.php', listContact='reviewer', listContactType='pc',
+	listContact='reviewer', listContactType='pc',
 	queryType='pc', sortCol=3, query='';
-insert into PaperListColumns set paperListId=8, fieldId=3, col=0;
-insert into PaperListColumns set paperListId=8, fieldId=13, col=1;
-insert into PaperListColumns set paperListId=8, fieldId=39, col=2;
-insert into PaperListColumns set paperListId=8, fieldId=36, col=3;
-insert into PaperListColumns set paperListId=8, fieldId=43, col=4;
-insert into PaperListColumns set paperListId=8, fieldId=35, col=5;
-insert into PaperListColumns set paperListId=8, fieldId=37, col=6;
-insert into PaperListColumns set paperListId=8, fieldId=38, col=7;
-insert into PaperListColumns set paperListId=8, fieldId=44, col=8;
-insert into PaperListColumns set paperListId=8, fieldId=46, col=9;
+insert into PaperListColumns (paperListId, fieldId, col) values
+	(8, 3, 0), (8, 13, 1), (8, 39, 2), (8, 36, 3), (8, 43, 4), 
+	(8, 35, 5), (8, 37, 6), (8, 38, 7), (8, 44, 8), (8, 46, 9);
 
 insert into PaperList set paperListId=9, paperListName='editReviewPreference',
 	shortDescription='Review preferences', description='Edit reviewer preferences',
-	listHome='PC/reviewprefs.php', listContact='reviewer', listContactType='pc',
+	listContact='reviewer', listContactType='pc',
 	queryType='pc', sortCol=3, query='';
-insert into PaperListColumns set paperListId=9, fieldId=1, col=0;
-insert into PaperListColumns set paperListId=9, fieldId=11, col=1;
-insert into PaperListColumns set paperListId=9, fieldId=36, col=2;
-insert into PaperListColumns set paperListId=9, fieldId=45, col=3;
-insert into PaperListColumns set paperListId=9, fieldId=40, col=4;
-insert into PaperListColumns set paperListId=9, fieldId=37, col=5;
+insert into PaperListColumns (paperListId, fieldId, col) values
+	(9, 1, 0), (9, 11, 1), (9, 36, 2), (9, 45, 3), (9, 40, 4), 
+	(9, 37, 5);
 
 insert into PaperList set paperListId=10, paperListName='matches',
 	shortDescription='Search matches', description='Search matches',
-	listHome='search.php?q=*',
 	queryType='pc', sortCol=3, query='';
-insert into PaperListColumns set paperListId=10, fieldId=31, col=0;
-insert into PaperListColumns set paperListId=10, fieldId=1, col=1;
-insert into PaperListColumns set paperListId=10, fieldId=11, col=2;
-insert into PaperListColumns set paperListId=10, fieldId=45, col=3;
-insert into PaperListColumns set paperListId=10, fieldId=46, col=4;
-insert into PaperListColumns set paperListId=10, fieldId=42, col=5;
+insert into PaperListColumns (paperListId, fieldId, col) values
+	(10, 31, 0), (10, 1, 1), (10, 11, 2), (10, 45, 3), (10, 46, 4),
+	(10, 42, 5);
 
 insert into PaperList set paperListId=11, paperListName='matchesAll',
 	shortDescription='Search matches', description='Search matches',
-	listHome='search.php?q=*&all=1',
 	queryType='chair', sortCol=3, query='';
-insert into PaperListColumns set paperListId=11, fieldId=31, col=0;
-insert into PaperListColumns set paperListId=11, fieldId=1, col=1;
-insert into PaperListColumns set paperListId=11, fieldId=11, col=2;
-insert into PaperListColumns set paperListId=11, fieldId=27, col=3;
-insert into PaperListColumns set paperListId=11, fieldId=45, col=4;
-insert into PaperListColumns set paperListId=11, fieldId=46, col=5;
-insert into PaperListColumns set paperListId=11, fieldId=42, col=6;
+insert into PaperListColumns (paperListId, fieldId, col) values
+	(11, 31, 0), (11, 1, 1), (11, 11, 2), (11, 27, 3), (11, 45, 4),
+	(11, 46, 5), (11, 42, 6);
 
 delete from ImportantDates where name='paperListUpdate';
 insert into ImportantDates set name='paperListUpdate', start=current_timestamp;
