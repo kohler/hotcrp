@@ -61,7 +61,7 @@ if ($Me->isPC || $Me->amReviewer()) {
     unset($plist);
     if ($Conf->timeReviewOpen()) {
 	$plist = new PaperList(false, "list_tabre");
-	$ptext = $plist->text("reviewerHome", $Me, "${ConfSiteBase}search.php?q=&t=r");
+	$ptext = $plist->text("reviewerHome", $Me, "search.php?q=&t=r");
     }
     
     $deadlines = array();
@@ -148,7 +148,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
     if ($Me->isAuthor) {
 	$plist = new PaperList(false, "list_tabsu");
 	$plist->showHeader = 0;
-	$ptext = $plist->text("authorHome", $Me, "${ConfSiteBase}search.php?q=&t=a");
+	$ptext = $plist->text("authorHome", $Me, "search.php?q=&t=a");
 	$deadlines = array();
 	if ($plist->count > 0) {
 	    $body .= $sep . $ptext;

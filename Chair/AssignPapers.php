@@ -115,7 +115,7 @@ if ($reviewer >= 0) {
     if (isset($_REQUEST["sort"]))
 	echo "&amp;sort=", urlencode($_REQUEST["sort"]);
     echo "\" enctype='multipart/form-data'>\n";
-    echo $paperList->text("reviewAssignment", $_SESSION['Me'], "${ConfSiteBase}Chair/AssignPapers.php?reviewer=$reviewer", $reviewer);
+    echo $paperList->text("reviewAssignment", $_SESSION['Me'], "Chair/AssignPapers.php?reviewer=$reviewer", $reviewer);
     echo "<input class='button_default' type='submit' name='update' value='Save assignments' />\n";
     echo "</form>\n";
 }

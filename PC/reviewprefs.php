@@ -110,7 +110,7 @@ if ($Me->amAssistant()) {
 $paperList = new PaperList(true, "list");
 $_SESSION["whichList"] = "list";
 echo "<form class='assignpc' method='post' action=\"reviewprefs.php?reviewer=$reviewer&amp;post=1\" enctype='multipart/form-data'>\n";
-echo $paperList->text("editReviewPreference", $_SESSION['Me'], "${ConfSiteBase}PC/reviewprefs.php?reviewer=$reviewer", $reviewer);
+echo $paperList->text("editReviewPreference", $_SESSION['Me'], "PC/reviewprefs.php?reviewer=$reviewer", $reviewer);
 echo "<input class='button_default' type='submit' name='update' value='Save preferences' />\n";
 echo "</form>\n";
 
