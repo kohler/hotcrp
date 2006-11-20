@@ -20,32 +20,27 @@ class PaperSearch {
     var $anyReviewer;
     var $anyTag;
     var $matchPreg;
-    var $urlBase;
-    var $url;
+    var $urlbase;
     
-    function PaperSearch($qtype, $ptype, $me) {
+    var $q;
+    var $qa;
+    var $qx;
+    
+    function PaperSearch($me, $opt) {
 	global $Conf;
 
-	$this->contactId = $me->contactId;
 	$this->amAssistant = $me->amAssistant();
 	$this->allowReviewer = $me->canViewAllReviewerIdentities($Conf);
 	$this->allowAuthor = ($Conf->blindSubmission() > 1 || $me->amAssistant());
 	$this->allowOutcome = $me->isPC;
 	$this->anyReviewer = false;
 	$this->anyTag = false;
+	$this->contactId = $me->contactId;
+	if ($this->amAssistant && cvtint($opt["c"]) > 0)
+	    $this->contactId = cvtint($opt["c"]);
 
-	$this->fields = array();
-	if ($qtype == "n" || $qtype == "ti")
-	    $this->fields["ti"] = 1;
-	if ($qtype == "n" || $qtype == "ab")
-	    $this->fields["ab"] = 1;
-	if ($this->allowAuthor && ($qtype == "n" || $qtype == "au" || $qtype == "ac"))
-	    $this->fields["au"] = 1;
-	if ($me->amAssistant() && $qtype == "ac")
-	    $this->fields["co"] = 1;
-	if ($this->allowReviewer && $qtype == "re")
-	    $this->fields["re"] = 1;
-
+	// paper selection
+	$ptype = defval($opt["t"], 0);
 	if ($me->isPC && (!$ptype || $ptype == "s"))
 	    $this->limitName = "s";
 	else if ($this->amAssistant && $ptype == "all")
@@ -59,9 +54,33 @@ class PaperSearch {
 	else
 	    $this->limitName = "x";
 
-	$this->urlBase = "search.php?t=" . urlencode($this->limitName);
-	if ($qtype != "n")
-	    $this->urlBase .= "&qt=" . urlencode($qtype);
+	// query type
+	$this->fields = array();
+	$qtype = defval($opt["qt"], "n");
+	if ($qtype == "n" || $qtype == "ti")
+	    $this->fields["ti"] = 1;
+	if ($qtype == "n" || $qtype == "ab")
+	    $this->fields["ab"] = 1;
+	if ($this->allowAuthor && ($qtype == "n" || $qtype == "au" || $qtype == "ac"))
+	    $this->fields["au"] = 1;
+	if ($me->amAssistant() && $qtype == "ac")
+	    $this->fields["co"] = 1;
+	if ($this->allowReviewer && $qtype == "re")
+	    $this->fields["re"] = 1;
+
+	// the query itself
+	$this->q = trim(defval($opt["q"], ""));
+	$this->qa = trim(defval($opt["qa"], ""));
+	$this->qx = trim(defval($opt["qx"], ""));
+
+	// URL base
+	if (isset($opt["urlbase"]))
+	    $this->urlbase = $opt["urlbase"];
+	else {
+	    $this->urlbase = "search.php?t=" . urlencode($this->limitName);
+	    if ($qtype != "n")
+		$this->urlbase .= "&qt=" . urlencode($qtype);
+	}
     }
     
     function _searchQueryType($str, $type = "any") {
@@ -154,13 +173,13 @@ class PaperSearch {
 	}
     }
     
-    function _searchQuery($q, $qa, $qx) {
+    function _searchQuery() {
 	if ($this->limitName == "x")
-	    return array("create temporary table Matches select Paper.paperId from Paper where false", ""); 
+	    return array("create temporary table Matches select Paper.paperId from Paper where false", "");
 	
-	$res = $this->_searchQueryType($q, "any");
-	$res = $this->_combineQuery($res, $this->_searchQueryType($qa, "all"));
-	$res = $this->_combineQuery($res, $this->_searchQueryType($qx, "none"));
+	$res = $this->_searchQueryType($this->q, "any");
+	$res = $this->_combineQuery($res, $this->_searchQueryType($this->qa, "all"));
+	$res = $this->_combineQuery($res, $this->_searchQueryType($this->qx, "none"));
 	if ($this->limitName == "s")
 	    $res = $this->_combineQuery($res, array("Paper.timeSubmitted>0", ""));
 
@@ -182,24 +201,31 @@ class PaperSearch {
 
 	return array("create temporary table Matches $q group by Paper.paperId", $res[1]);
     }
+
+    function complexSearch(&$queryOptions) {
+	if ($this->q || $this->qa || $this->qx)
+	    return true;
+	if ($this->limitName == "s")
+	    $queryOptions["finalized"] = 1;
+	else if ($this->limitName == "r")
+	    $queryOptions["myReviews"] = 1;
+	else if ($this->limitName == "a")
+	    $queryOptions["author"] = 1;
+	else if ($this->limitName == "req")
+	    $queryOptions["myReviewRequests"] = 1;
+	return false;
+    }
     
-    function search($q, $qa = "", $qx = "") {
+    function search() {
 	global $Conf, $ConfSiteBase;
-	$x = $this->_searchQuery($q, $qa, $qx);
+	$x = $this->_searchQuery();
 	$this->matchPreg = $x[1];
-	
-	$this->url = $this->urlBase . "&q=" . urlencode($q);
-	if ($qa != "")
-	    $this->url .= "&qa=" . urlencode($qa);
-	if ($qx != "")
-	    $this->url .= "&qx=" . urlencode($qx);
-	
 	return $Conf->qe($x[0], "while searching papers");
     }
 
-    function paperList($q, $qa, $qx) {
+    function paperList() {
 	global $Conf;
-	$x = $this->_searchQuery($q, $qa, $qx);
+	$x = $this->_searchQuery();
 	$result = $Conf->qe($x[0], "while searching papers");
 	if (MDB2::isError($result))
 	    return array();
@@ -208,6 +234,17 @@ class PaperSearch {
 	while (($row = $result->fetchRow()))
 	    $x[] = $row[0];
 	return $x;
+    }
+
+    function url() {
+	$url = $this->urlbase;
+	if (substr($this->urlbase, 0, 10) == "search.php" || $this->q != "")
+	    $url .= "&q=" . urlencode($this->q);
+	if ($this->qa != "")
+	    $url .= "&qa=" . urlencode($this->qa);
+	if ($this->qx != "")
+	    $url .= "&qx=" . urlencode($this->qx);
+	return $url;
     }
     
 }

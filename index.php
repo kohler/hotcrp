@@ -1,6 +1,7 @@
 <?php
 require_once('Code/header.inc');
 require_once('Code/paperlist.inc');
+require_once('Code/search.inc');
 
 $testCookieStatus = 0;
 if (isset($_COOKIE["CRPTestCookie"]) && $_COOKIE["CRPTestCookie"] == "ChocChip")
@@ -60,8 +61,8 @@ if ($Me->isPC || $Me->amReviewer()) {
 
     unset($plist);
     if ($Conf->timeReviewOpen()) {
-	$plist = new PaperList(false, "list_tabre");
-	$ptext = $plist->text("reviewerHome", $Me, "search.php?q=&t=r");
+	$plist = new PaperList(false, "list_tabre", new PaperSearch($Me, array("t" => "r")));
+	$ptext = $plist->text("reviewerHome", $Me, "Review assignment");
     }
     
     $deadlines = array();
@@ -146,9 +147,9 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
     }
 
     if ($Me->isAuthor) {
-	$plist = new PaperList(false, "list_tabsu");
+	$plist = new PaperList(false, "list_tabsu", new PaperSearch($Me, array("t" => "a")));
 	$plist->showHeader = 0;
-	$ptext = $plist->text("authorHome", $Me, "search.php?q=&t=a");
+	$ptext = $plist->text("authorHome", $Me, "Authored papers");
 	$deadlines = array();
 	if ($plist->count > 0) {
 	    $body .= $sep . $ptext;

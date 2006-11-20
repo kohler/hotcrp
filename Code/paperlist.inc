@@ -37,15 +37,15 @@ class PaperList {
     var $needFinalize;
     var $needSubmitReview;
     var $anySelector;
-    var $shortDescription;
     var $description;
     var $sessionVar;
     var $contact;
     var $scoresOk;
     var $meritMax;
+    var $search;
     
-    function PaperList($sortable = true, $sessionVar = null) {
-	$this->showHeader = 1;
+    function PaperList($sortable = true, $sessionVar = null, $search = null) {
+	$this->showHeader = true;
 
 	$s = ($sortable ? defval($_REQUEST["sort"], "") : "");
 	$x = (strlen($s) ? $s[strlen($s)-1] : "");
@@ -59,6 +59,8 @@ class PaperList {
 	$this->sortable = $sortable;
 
 	$this->sessionVar = $sessionVar;
+
+	$this->search = $search;
     }
 
     function selector($fieldId, &$queryOptions) {
@@ -421,7 +423,7 @@ class PaperList {
 	return $t . "</td></tr>\n";
     }
 
-    function text($listname, $me, $url, $contactId = -1) {
+    function text($listname, $me, $listDescription) {
 	global $Conf, $ConfSiteBase;
 
 	$this->contact = $me;
@@ -429,6 +431,7 @@ class PaperList {
 	$this->needFinalize = 0;
 	$this->needSubmitReview = 0;
 	$this->anySelector = 0;
+	$url = $this->search->url();
 
 	// get paper list id
 	self::updatePaperLists();
@@ -437,26 +440,17 @@ class PaperList {
 	    return NULL;
 	}
 	$this->description = $plist->description;
-	$this->shortDescription = $plist->shortDescription;
 
 	// check role type
-	if ($plist->queryType == 'pc' && !$me->isPC) {
-	    $Conf->errorMsg("Only PC members may view this type of paper list.");
-	    return NULL;
-	} else if ($plist->queryType == 'chair' && !$me->amAssistant()) {
-	    $Conf->errorMsg("Only PC chairs and their assistants may view this type of paper list.");
-	    return NULL;
-	}
-	if (!$me->amAssistant() || $contactId < 0)
-	    $contactId = $me->contactId;
 	$this->scoresOk = $me->amAssistant() || ($me->isPC && $Conf->validTimeFor("PCGradePapers", 0));
 
 	// initialize query
 	$queryOptions = array();
-	if ($plist->queryType == 'pc')
-	    $queryOptions['finalized'] = 1;
-	else if ($plist->queryType == 'author' || $plist->queryType == 'myReviews' || $plist->queryType == 'myReviewRequests')
-	    $queryOptions[$plist->queryType] = 1;
+	if ($this->search->complexSearch($queryOptions)) {
+	    if (MDB2::isError($this->search->search()))
+		return NULL;
+	    $queryOptions["joinTable"] = "Matches";
+	}
 
 	// get field array
 	$result = $Conf->qe(
@@ -486,7 +480,7 @@ class PaperList {
 		from Paper
 		join PaperReview using (paperId)
 		join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
-		where " . ($plist->queryType == 'pc' ? "timeSubmitted>0" : "paperId=-1") . "
+		where " . ($this->search->limitName != 'a' ? "timeSubmitted>0" : "paperId=-1") . "
 		order by lastName, firstName, email", "while fetching reviews");
 	    if (!MDB2::isError($result))
 		while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
@@ -494,10 +488,10 @@ class PaperList {
 	}
 	
 	// prepare query text
-	if ($me->contactId == $contactId)
+	if ($me->contactId == $this->search->contactId)
 	    $pq = $Conf->paperQuery($me, $queryOptions);
 	else
-	    $pq = $Conf->paperQuery($contactId, $queryOptions);
+	    $pq = $Conf->paperQuery($this->search->contactId, $queryOptions);
 
 	// make query
 	$result = $Conf->qe($pq, "while selecting papers");
@@ -586,7 +580,7 @@ class PaperList {
 	    if (isset($_REQUEST["sort"]))
 		$url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
 	    $_SESSION[$this->sessionVar] = $ids;
-	    $_SESSION[$this->sessionVar . "!"] = array($url, $this->shortDescription);
+	    $_SESSION[$this->sessionVar . "!"] = array($url, $listDescription);
 	}
 	
 	return $x;

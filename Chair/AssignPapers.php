@@ -109,13 +109,13 @@ if ($reviewer >= 0) {
 	}
     }
 
-    $paperList = new PaperList(true, "list");
+    $paperList = new PaperList(true, "list", new PaperSearch($Me, array("t" => "s", "c" => $reviewer, "urlbase" => "Chair/AssignPapers.php?reviewer=$reviewer")));
     $_SESSION["whichList"] = "list";
     echo "<form class='assignpc' method='post' action=\"AssignPapers.php?reviewer=$reviewer&amp;post=1";
     if (isset($_REQUEST["sort"]))
 	echo "&amp;sort=", urlencode($_REQUEST["sort"]);
     echo "\" enctype='multipart/form-data'>\n";
-    echo $paperList->text("reviewAssignment", $_SESSION['Me'], "Chair/AssignPapers.php?reviewer=$reviewer", $reviewer);
+    echo $paperList->text("reviewAssignment", $Me, "Review assignment");
     echo "<input class='button_default' type='submit' name='update' value='Save assignments' />\n";
     echo "</form>\n";
 }

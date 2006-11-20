@@ -436,13 +436,8 @@ drop table if exists PaperList;
 create table PaperList (
   paperListId int(11) NOT NULL auto_increment,
   paperListName varchar(20) NOT NULL,
-  shortDescription varchar(40) NOT NULL default '',
   description varchar(80) NOT NULL default '',
-  queryType varchar(20) NOT NULL default 'any',
-  listContact varchar(20) NOT NULL default '',
-  listContactType varchar(20) NOT NULL default 'any',
   sortCol int,
-  query varchar(120),
   PRIMARY KEY (paperListId),
   UNIQUE KEY paperListId (paperListId),
   KEY paperListName (paperListName)
@@ -494,76 +489,55 @@ insert into PaperFields set fieldId=44, fieldName='allPreferences', description=
 insert into PaperFields set fieldId=45, fieldName='reviewerTypeIcon', description='Reviewer type';
 insert into PaperFields set fieldId=46, fieldName='optOverallMeritIcon', description='Overall merit (icon)';
 
-insert into PaperList set paperListId=1, paperListName='author',
-	shortDescription='Authored', description='Authored papers',
-	listContact='contactId', queryType='author', sortCol=0, query='';
+insert into PaperList set paperListId=1, paperListName='a',
+	description='Authored papers', sortCol=0;
 insert into PaperListColumns (paperListId, fieldId, col) values
 	(1, 2, 0), (1, 12, 1), (1, 27, 2);
 
-insert into PaperList set paperListId=2, paperListName='submitted',
-	shortDescription='Submitted', description='Submitted papers',
-	queryType='pc', sortCol=0, query='';
+insert into PaperList set paperListId=2, paperListName='s',
+	description='Submitted papers', sortCol=0;
 insert into PaperListColumns (paperListId, fieldId, col) values
 	(2, 31, 0), (2, 1, 1), (2, 11, 2), (2, 45, 3), (2, 41, 4),
 	(2, 33, 5), (2, 46, 6);
 
 insert into PaperList set paperListId=3, paperListName='all',
-	shortDescription='All', description='All papers', 
-	queryType='chair', sortCol=0, query='';
+	description='All papers', sortCol=0;
 insert into PaperListColumns (paperListId, fieldId, col) values
 	(3, 31, 0), (3, 1, 1), (3, 11, 2), (3, 27, 3), (3, 45, 4);
 
 insert into PaperList set paperListId=4, paperListName='authorHome',
-	shortDescription='Your papers', description='My papers (homepage view)', 
-	listContact='contactId',
-	queryType='author', sortCol=0, query='';
+	description='My papers (homepage view)', sortCol=0;
 insert into PaperListColumns (paperListId, fieldId, col) values
 	(4, 2, 0), (4, 12, 1), (4, 27, 2);
 
 insert into PaperList set paperListId=6, paperListName='reviewerHome',
-	shortDescription='Your reviews', description='Papers to review (homepage view)',
-	listContact='reviewer', listContactType='reviewer',
-	queryType='myReviews', sortCol=0, query='';
+	description='Papers to review (homepage view)', sortCol=0;
 insert into PaperListColumns (paperListId, fieldId, col) values
 	(6, 3, 0), (6, 13, 1), (6, 45, 2), (6, 33, 3);
 
-insert into PaperList set paperListId=7, paperListName='reviewer',
-	shortDescription='Your reviews', description='Papers to review',
-	listContact='reviewer', listContactType='reviewer',
-	queryType='myReviews', sortCol=0, query='';
+insert into PaperList set paperListId=7, paperListName='r',
+	description='Papers to review', sortCol=0;
 insert into PaperListColumns (paperListId, fieldId, col) values
 	(7, 31, 0), (7, 3, 1), (7, 13, 2), (7, 45, 3), (7, 41, 4),
 	(7, 33, 5);
 
 insert into PaperList set paperListId=8, paperListName='reviewAssignment',
-	shortDescription='Review assignment', description='Review assignments',
-	listContact='reviewer', listContactType='pc',
-	queryType='pc', sortCol=3, query='';
+	description='Review assignments', sortCol=3;
 insert into PaperListColumns (paperListId, fieldId, col) values
 	(8, 3, 0), (8, 13, 1), (8, 39, 2), (8, 36, 3), (8, 43, 4), 
 	(8, 35, 5), (8, 37, 6), (8, 38, 7), (8, 44, 8), (8, 46, 9);
 
 insert into PaperList set paperListId=9, paperListName='editReviewPreference',
-	shortDescription='Review preferences', description='Edit reviewer preferences',
-	listContact='reviewer', listContactType='pc',
-	queryType='pc', sortCol=3, query='';
+	description='Edit reviewer preferences', sortCol=3;
 insert into PaperListColumns (paperListId, fieldId, col) values
 	(9, 1, 0), (9, 11, 1), (9, 36, 2), (9, 45, 3), (9, 40, 4), 
 	(9, 37, 5);
 
-insert into PaperList set paperListId=10, paperListName='matches',
-	shortDescription='Search matches', description='Search matches',
-	queryType='pc', sortCol=3, query='';
+insert into PaperList set paperListId=12, paperListName='req',
+	description='Papers to review', sortCol=0;
 insert into PaperListColumns (paperListId, fieldId, col) values
-	(10, 31, 0), (10, 1, 1), (10, 11, 2), (10, 45, 3), (10, 46, 4),
-	(10, 42, 5);
-
-insert into PaperList set paperListId=11, paperListName='matchesAll',
-	shortDescription='Search matches', description='Search matches',
-	queryType='chair', sortCol=3, query='';
-insert into PaperListColumns (paperListId, fieldId, col) values
-	(11, 31, 0), (11, 1, 1), (11, 11, 2), (11, 27, 3), (11, 45, 4),
-	(11, 46, 5), (11, 42, 6);
+	(12, 31, 0), (12, 3, 1), (12, 13, 2), (12, 45, 3), (12, 41, 4),
+	(12, 33, 5);
 
 delete from ImportantDates where name='paperListUpdate';
 insert into ImportantDates set name='paperListUpdate', start=current_timestamp;

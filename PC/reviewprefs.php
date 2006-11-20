@@ -1,6 +1,7 @@
 <?php
 require_once('../Code/header.inc');
 require_once('../Code/paperlist.inc');
+require_once('../Code/search.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPC('../index.php');
@@ -106,11 +107,11 @@ if ($Me->amAssistant()) {
 	}
     echo "</select>\n</form>\n<hr />\n\n";
 }
-    
-$paperList = new PaperList(true, "list");
+
+$paperList = new PaperList(true, "list", new PaperSearch($Me, array("t" => "r", "c" => $reviewer, "urlbase" => "PC/reviewprefs.php?reviewer=$reviewer")));
 $_SESSION["whichList"] = "list";
 echo "<form class='assignpc' method='post' action=\"reviewprefs.php?reviewer=$reviewer&amp;post=1\" enctype='multipart/form-data'>\n";
-echo $paperList->text("editReviewPreference", $_SESSION['Me'], "PC/reviewprefs.php?reviewer=$reviewer", $reviewer);
+echo $paperList->text("editReviewPreference", $Me, "Review preferences");
 echo "<input class='button_default' type='submit' name='update' value='Save preferences' />\n";
 echo "</form>\n";
 

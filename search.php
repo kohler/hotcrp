@@ -10,29 +10,29 @@ if (isset($_REQUEST["get"]) && isset($_REQUEST["getaction"]))
 
 
 // paper group
-$opt = array();
+$tOpt = array();
 if ($Me->isPC)
-    $opt["s"] = "Submitted papers";
+    $tOpt["s"] = "Submitted papers";
 if ($Me->amReviewer())
-    $opt["r"] = "Review assignment";
+    $tOpt["r"] = "Review assignment";
 if ($Me->isPC)
-    $opt["req"] = "Requested reviews";
+    $tOpt["req"] = "Requested reviews";
 if ($Me->isAuthor)
-    $opt["a"] = "Authored papers";
+    $tOpt["a"] = "Authored papers";
 if ($Me->amAssistant())
-    $opt["all"] = "All papers";
-if (count($opt) == 0) {
+    $tOpt["all"] = "All papers";
+if (count($tOpt) == 0) {
     $Conf->header("Search", 'search');
     $Conf->errorMsg("You are not allowed to search for papers.");
     exit;
 }
-if (isset($_REQUEST["t"]) && !isset($opt[$_REQUEST["t"]])) {
+if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
     $Conf->header("Search", 'search');
     $Conf->errorMsg("You aren't allowed to search that paper collection.");
     unset($_REQUEST["t"]);
 }
 if (!isset($_REQUEST["t"]))
-    $_REQUEST["t"] = key($opt);
+    $_REQUEST["t"] = key($tOpt);
 
 
 // download selected papers
@@ -245,7 +245,8 @@ if (isset($_REQUEST["setoutcome"]))
 
 // search
 $Conf->header("Search", 'search');
-$Search = new PaperSearch(defval($_REQUEST["qt"], "n"), $_REQUEST["t"], $Me);
+unset($_REQUEST["urlbase"]);
+$Search = new PaperSearch($Me, $_REQUEST);
 
 
 // set up the search form
@@ -255,9 +256,9 @@ if (defval($_REQUEST["qx"], "") != "" || defval($_REQUEST["qa"], "") != ""
 else
     $folded = 'folded';
 
-if (count($opt) > 1) {
+if (count($tOpt) > 1) {
     $tselect = "<select name='t'>";
-    foreach ($opt as $k => $v) {
+    foreach ($tOpt as $k => $v) {
 	$tselect .= "<option value='$k'";
 	if ($_REQUEST["t"] == $k)
 	    $tselect .= " selected='selected'";
@@ -265,7 +266,7 @@ if (count($opt) > 1) {
     }
     $tselect .= "</select>";
 } else
-    $tselect = current($opt);
+    $tselect = current($tOpt);
 
 
 echo "
@@ -301,58 +302,53 @@ echo "
 <tr>
   <td>Search in</td>
   <td><select name='qt'>";
-$opts = array("ti" => "Title only",
+$qtOpt = array("ti" => "Title only",
 	      "ab" => "Abstract only");
 if ($Me->amAssistant() || $Conf->blindSubmission() == 0) {
-    $opts["au"] = "Authors only";
-    $opts["n"] = "Title, abstract, authors";
+    $qtOpt["au"] = "Authors only";
+    $qtOpt["n"] = "Title, abstract, authors";
 } else if ($Conf->blindSubmission() == 1) {
-    $opts["au"] = "Non-blind authors only";
-    $opts["n"] = "Title, abstract, non-blind authors";
+    $qtOpt["au"] = "Non-blind authors only";
+    $qtOpt["n"] = "Title, abstract, non-blind authors";
 } else
-    $opts["n"] = "Title, abstract";
+    $qtOpt["n"] = "Title, abstract";
 if ($Me->amAssistant())
-    $opts["ac"] = "Authors, collaborators";
+    $qtOpt["ac"] = "Authors, collaborators";
 if ($Me->canViewAllReviewerIdentities($Conf))
-    $opts["re"] = "Reviewers";
-if (!isset($opts[defval($_REQUEST["qt"], "")]))
+    $qtOpt["re"] = "Reviewers";
+if (!isset($qtOpt[defval($_REQUEST["qt"], "")]))
     $_REQUEST["qt"] = "n";
-foreach ($opts as $v => $text)
+foreach ($qtOpt as $v => $text)
     echo "<option value='$v'", ($v == $_REQUEST["qt"] ? " selected='selected'" : ""), ">$text</option>";
 echo "</select></td>
 </tr></table></td></tr></table></div>\n</form>\n\n</div>\n";
 
 
 if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
-    // develop query
-    $result = $Search->search(defval($_REQUEST["q"], ""), defval($_REQUEST["qa"], ""), defval($_REQUEST["qx"], ""));
+    $pl = new PaperList(true, "search", $Search);
+    $t = $pl->text($Search->limitName, $Me, ($Search->matchPreg ? "This search" : $tOpt[$Search->limitName]));
 
-    if (!MDB2::isError($result)) {
-	$pl = new PaperList(true, "search");
-	$_SESSION["whichList"] = "search";
-	if ($Search->matchPreg)
-	    $_SESSION["matchPreg"] = "/(" . $Search->matchPreg . ")/i";
-	else
-	    unset($_SESSION["matchPreg"]);
-	$listname = ($Search->limitName == "all" ? "matchesAll" : "matches");
-	$t = $pl->text($listname, $Me, $Search->url);
+    $_SESSION["whichList"] = "search";
+    if ($Search->matchPreg)
+	$_SESSION["matchPreg"] = "/(" . $Search->matchPreg . ")/i";
+    else
+	unset($_SESSION["matchPreg"]);
 
-	echo "<div class='maintabsep'></div>\n\n";
+    echo "<div class='maintabsep'></div>\n\n";
 
-	if ($pl->anySelector) {
-	    echo "<form action='search.php' method='get' id='sel'>\n";
-	    foreach (array("q", "qx", "qa", "qt", "t") as $v)
-		if (defval($_REQUEST[$v], "") != "")
-		    echo "<input type='hidden' name='$v' value=\"", htmlspecialchars($_REQUEST[$v]), "\" />\n";
-	    if (isset($_REQUEST["q"]) && $_REQUEST["q"] == "")
-		echo "<input type='hidden' name='q' value='' />\n";
-	}
-	
-	echo $t;
-	
-	if ($pl->anySelector)
-	    echo "</form>\n";
+    if ($pl->anySelector) {
+	echo "<form action='search.php' method='get' id='sel'>\n";
+	foreach (array("q", "qx", "qa", "qt", "t") as $v)
+	    if (defval($_REQUEST[$v], "") != "")
+		echo "<input type='hidden' name='$v' value=\"", htmlspecialchars($_REQUEST[$v]), "\" />\n";
+	if (isset($_REQUEST["q"]) && $_REQUEST["q"] == "")
+	    echo "<input type='hidden' name='q' value='' />\n";
     }
+    
+    echo $t;
+    
+    if ($pl->anySelector)
+	echo "</form>\n";
 }
 
 $Conf->footer();
