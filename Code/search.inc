@@ -12,10 +12,10 @@ class PaperSearch {
 
     var $contactId;
     var $amAssistant;
+    var $amPC;
     var $limitName;
     var $allowReviewer;
     var $allowAuthor;
-    var $allowOutcome;
     var $fields;
     var $anyReviewer;
     var $anyTag;
@@ -30,9 +30,9 @@ class PaperSearch {
 	global $Conf;
 
 	$this->amAssistant = $me->amAssistant();
+	$this->amPC = $me->isPC;
 	$this->allowReviewer = $me->canViewAllReviewerIdentities($Conf);
 	$this->allowAuthor = ($Conf->blindSubmission() > 1 || $me->amAssistant());
-	$this->allowOutcome = $me->isPC;
 	$this->anyReviewer = false;
 	$this->anyTag = false;
 	$this->contactId = $me->contactId;
@@ -137,11 +137,11 @@ class PaperSearch {
 		$qp .= " or (reviewerInfo like '%$word%')";
 		$this->anyReviewer = true;
 	    }
-	    if ($special ? $special == "tag" : isset($this->fields['tag'])) {
+	    if (($special ? $special == "tag" : isset($this->fields['tag'])) && $this->amPC) {
 		$qp .= " or (tag = '$word')";
 		$this->anyTag = true;
 	    }
-	    if (($special ? $special == "outcome" : isset($this->fields['outcome'])) && $this->allowOutcome) {
+	    if (($special ? $special == "outcome" : isset($this->fields['outcome'])) && $this->amPC) {
 		$rf = reviewForm();
 		foreach ($rf->options['outcome'] as $num => $what)
 		    if (strcmp($word, $num) == 0 || strcasecmp($word, $what) == 0) {
