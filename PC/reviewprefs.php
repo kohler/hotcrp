@@ -108,7 +108,7 @@ if ($Me->amAssistant()) {
     echo "</select>\n</form>\n<hr />\n\n";
 }
 
-$paperList = new PaperList(true, "list", new PaperSearch($Me, array("t" => "r", "c" => $reviewer, "urlbase" => "PC/reviewprefs.php?reviewer=$reviewer")));
+$paperList = new PaperList(true, "list", new PaperSearch($Me, array("t" => "s", "c" => $reviewer, "urlbase" => "PC/reviewprefs.php?reviewer=$reviewer")));
 $_SESSION["whichList"] = "list";
 echo "<form class='assignpc' method='post' action=\"reviewprefs.php?reviewer=$reviewer&amp;post=1\" enctype='multipart/form-data'>\n";
 echo $paperList->text("editReviewPreference", $Me, "Review preferences");
