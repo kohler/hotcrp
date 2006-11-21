@@ -607,7 +607,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['chairMode']))
 	$text .= "<a href=\"" . selfHref(array("forceShow" => 1)) . "\">" . ucfirst($action) . " the paper anyway</a>  ";
     if (isset($whyNot['forceShow']))
-	$text .= "<a href=\"". htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Show reviews anyway</a>  ";
+	$text .= "<a href=\"". htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Show " . ($action == "comment" ? "comments" : "reviews") . " anyway</a>  ";
     if ($text && $action == "view")
 	$text .= "Enter a paper number above, or <a href='${ConfSiteBase}search.php?q='>list the papers you can view</a>.  ";
     return ($text ? substr($text, 0, -2) : $text);

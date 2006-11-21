@@ -726,7 +726,6 @@ class Contact {
 		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0
 		&& (!$crow || $crow->forReviewers)))
 	    return true;
-	return false;
 	// collect failure reasons
 	if ($prow->author <= 0 && !$this->isPC && $prow->reviewType <= 0)
 	    $whyNot['permission'] = 1;
