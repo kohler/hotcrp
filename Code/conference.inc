@@ -751,6 +751,7 @@ class Conference {
 	//   "myReviews"	All reviews authored by $contactId
 	//   "myReviewsOpt"	myReviews, + include papers not yet reviewed
 	//   "allReviews"	All reviews (multiple rows per paper)
+	//   "allReviewScores"	All review scores (multiple rows per paper)
 	//   "reviewerName"	Include reviewer names
 	//   "joinTable"	A table with paperId columns to join
 	//   "tags"		Include paperTags
@@ -758,6 +759,7 @@ class Conference {
 	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
 
 	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']) || isset($options['myReviewsOpt']);
+	$scoresQuery = !$reviewerQuery && isset($options['allReviewScores']);
 	$contactId = (is_object($contact) ? $contact->contactId : $contact);
 
 	// fields
@@ -780,10 +782,11 @@ class Conference {
 		ReviewerContactInfo.firstName as reviewFirstName,
 		ReviewerContactInfo.lastName as reviewLastName,
 		ReviewerContactInfo.email as reviewEmail";
-	if ($reviewerQuery) {
+	if ($reviewerQuery || $scoresQuery) {
 	    global $reviewFields;
 	    foreach ($reviewFields as $k => $v)
-		$pq .= ",\t\tPaperReview.$k as $k";
+		if (!$scoresQuery || $v)
+		    $pq .= ",\t\tPaperReview.$k as $k";
 	}
 	if (isset($options['topics']))
 	    $pq .= ",
@@ -833,7 +836,7 @@ class Conference {
 	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$contactId)\n";
 	else if (isset($options['myReviewsOpt']))
 	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$contactId)\n";
-	else if (isset($options['allReviews']))
+	else if (isset($options['allReviews']) || isset($options['allReviewScores']))
 	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
 	else if (!isset($options['author']))
 	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$contactId)\n";
@@ -848,7 +851,7 @@ class Conference {
 	    $pq .= "		left join (select paperId, group_concat(tag) as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)\n";
 
 	if (isset($options['overallMeritScores']))
-	    $pq .= "		left join (select paperId, group_concat(overallMerit) as overallMeritScores, avg(overallMerit) as overallMeritAvg from PaperReview group by paperId) as PaperScores on (PaperScores.paperId=Paper.paperId)\n";
+	    $pq .= "		left join (select paperId, group_concat(overallMerit) as overallMeritScores, avg(overallMerit) as overallMeritAvg from PaperReview where reviewSubmitted>0 group by paperId) as PaperScores on (PaperScores.paperId=Paper.paperId)\n";
 	
 	if (defval($options['reviewerPreference']))
 	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$contactId)\n";
@@ -881,7 +884,7 @@ class Conference {
 	    $pq .= "		where " . join(" and ", $where) . "\n";
 
 	// grouping and ordering
-	if ($reviewerQuery)
+	if ($reviewerQuery || $scoresQuery)
 	    $pq .= "		group by Paper.paperId, PaperReview.reviewId\n";
 	else
 	    $pq .= "		group by Paper.paperId\n";
@@ -889,7 +892,7 @@ class Conference {
 	    $pq .= "		" . $options['order'];
 	else {
 	    $pq .= "		order by Paper.paperId";
-	    if ($reviewerQuery)
+	    if ($reviewerQuery || $scoresQuery)
 		$pq .= ", PaperReview.reviewOrdinal";
 	}
 

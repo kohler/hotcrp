@@ -40,7 +40,7 @@ if ($getaction == "paper") {
     if (!isset($_REQUEST["papersel"]) || !is_array($_REQUEST["papersel"]))
 	$_REQUEST["papersel"] = array();
     $q = $Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"]));
-    $result = $Conf->qe($q, "while selecting papers for download");
+    $result = $Conf->qe($q, "while selecting papers");
     $downloads = array();
     if (MDB2::isError($result))
 	/* do nothing */;
@@ -63,7 +63,7 @@ if ($getaction == "final") {
     if (!isset($_REQUEST["papersel"]) || !is_array($_REQUEST["papersel"]))
 	$_REQUEST["papersel"] = array();
     $q = $Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"]));
-    $result = $Conf->qe($q, "while selecting papers for download");
+    $result = $Conf->qe($q, "while selecting papers");
     $downloads = array();
     if (MDB2::isError($result))
 	/* do nothing */;
@@ -94,7 +94,7 @@ if ($getaction == "revform" && !isset($_REQUEST["papersel"])) {
 
     if (!is_array($_REQUEST["papersel"]))
 	$_REQUEST["papersel"] = array();
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"], "myReviewsOpt" => 1)), "while selecting papers for review");
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"], "myReviewsOpt" => 1)), "while selecting papers");
 
     $text = '';
     $errors = array();
@@ -127,10 +127,12 @@ if ($getaction == "revform" && !isset($_REQUEST["papersel"])) {
 // download all reviews for selected papers
 if ($getaction == "rev" && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
     $rf = reviewForm();
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"], "allReviews" => 1, "reviewerName" => 1)), "while selecting papers for review");
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"], "allReviews" => 1, "reviewerName" => 1)), "while selecting papers");
 
     $text = '';
     $errors = array();
+    if ($Me->amAssistant())
+	$_REQUEST["forceShow"] = 1;
     if (!MDB2::isError($result))
 	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
 	    if (!$Me->canViewReview($row, null, $Conf, $whyNot))
@@ -219,6 +221,53 @@ if ($getaction == "contact" && $Me->amAssistant()
 	    $text .= $row[0] . "\t" . $row[1] . "\t" . $row[3] . ", " . $row[2] . "\t" . $row[4] . "\n";
 	}
 	downloadText($text, $Opt['downloadPrefix'] . "contacts.txt", "contacts");
+	exit;
+    }
+}
+
+
+// download scores and, maybe, anonymity for selected papers
+if ($getaction == "scores" && $Me->amAssistant()
+    && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
+    $rf = reviewForm();
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"], "allReviewScores" => 1, "reviewerName" => 1)), "while selecting papers");
+
+    // compose scores
+    $scores = array();
+    foreach ($rf->fieldOrder as $field)
+	if (isset($rf->options[$field]))
+	    $scores[] = $field;
+    
+    $text = '#paperId';
+    if ($Conf->blindSubmission() == 1)
+	$text .= "\tblind";
+    $text .= "\toutcome";
+    foreach ($scores as $score)
+	$text .= "\t" . $rf->abbrevName[$score];
+    $text .= "\n";
+    
+    $errors = array();
+    if ($Me->amAssistant())
+	$_REQUEST["forceShow"] = 1;
+    if (!MDB2::isError($result))
+	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
+	    if (!$Me->canViewReview($row, null, $Conf, $whyNot))
+		$errors[] = whyNotText($whyNot, "view review") . "<br />";
+	    else if ($row->reviewSubmitted > 0) {
+		$text .= $row->paperId;
+		if ($Conf->blindSubmission() == 1)
+		    $text .= "\t" . $row->blind;
+		$text .= "\t" . $row->outcome;
+		foreach ($scores as $score)
+		    $text .= "\t" . $row->$score;
+		$text .= "\n";
+	    }
+	}
+
+    if ($text == "")
+	$Conf->errorMsg(join("", $errors) . "No papers selected.");
+    else {
+	downloadText($text, $Opt['downloadPrefix'] . "scores.txt", "scores");
 	exit;
     }
 }

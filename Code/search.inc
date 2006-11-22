@@ -19,6 +19,7 @@ class PaperSearch {
     var $fields;
     var $anyReviewer;
     var $anyTag;
+    var $anyAlltags;
     var $matchPreg;
     var $urlbase;
     
@@ -33,8 +34,7 @@ class PaperSearch {
 	$this->amPC = $me->isPC;
 	$this->allowReviewer = $me->canViewAllReviewerIdentities($Conf);
 	$this->allowAuthor = ($Conf->blindSubmission() > 1 || $me->amAssistant());
-	$this->anyReviewer = false;
-	$this->anyTag = false;
+	$this->anyReviewer = $this->anyTag = $this->anyAlltags = false;
 	$this->contactId = $me->contactId;
 	if ($this->amAssistant && cvtint($opt["c"]) > 0)
 	    $this->contactId = cvtint($opt["c"]);
@@ -134,12 +134,23 @@ class PaperSearch {
 	    if (($special ? $special == "co" : isset($this->fields['co'])) && $this->amAssistant)
 		$qp .= " or (${auextra}Paper.collaborators like '%$word%')";
 	    if (($special ? $special == "re" : isset($this->fields['re'])) && $this->allowReviewer) {
-		$qp .= " or (reviewerInfo like '%$word%')";
+		if ($type != "none")
+		    $qp .= " or (reviewerInfo like '%$word%')";
+		else
+		    $qp .= " or (reviewerInfo is not null and reviewerInfo like '%$word%')";
 		$this->anyReviewer = true;
 	    }
 	    if (($special ? $special == "tag" : isset($this->fields['tag'])) && $this->amPC) {
-		$qp .= " or (tag = '$word')";
-		$this->anyTag = true;
+		if ($type == "any") {
+		    $qp .= " or (tag = '$word')";
+		    $this->anyTag = true;
+		} else if ($type == "all") {
+		    $qp .= " or (alltags like '%#$word#%')";
+		    $this->anyAlltags = true;
+		} else {
+		    $qp .= " or (alltags is not null and alltags like '%#$word#%')";
+		    $this->anyAlltags = true;
+		}
 	    }
 	    if (($special ? $special == "outcome" : isset($this->fields['outcome'])) && $this->amPC) {
 		$rf = reviewForm();
@@ -195,6 +206,8 @@ class PaperSearch {
 	    $q .= " left join (select paperId, group_concat(firstName, lastName, email) as reviewerInfo from PaperReview join ContactInfo using (contactId) group by paperId) as ReviewerInfo on (ReviewerInfo.paperId=Paper.paperId)";
 	if ($this->anyTag)
 	    $q .= " left join PaperTag on (PaperTag.paperId=Paper.paperId)";
+	if ($this->anyAlltags)
+	    $q .= " left join (select paperId, group_concat('#', tag, '#') as alltags from PaperTag group by paperId) as AllPaperTags on (AllPaperTags.paperId=Paper.paperId)";
 
 	if ($res[0])
 	    $q .= " where " . $res[0];

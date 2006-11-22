@@ -404,12 +404,16 @@ class PaperList {
     <option value='revform'>Review forms</option>\n";
 	if ($this->contact->isPC && $Conf->timeSubmitFinalPaper())
 	    $t .= "    <option value='final'>Final papers</option>\n";
-	if ($this->contact->amAssistant() || ($this->contact->isPC && $Conf->validTimeFor('PCMeetingView', 0)))
+	if ($this->contact->amAssistant())
+	    $t .= "    <option value='rev'>All reviews</option>\n";
+	else if ($this->contact->isPC && $Conf->validTimeFor('PCMeetingView', 0))
 	    $t .= "    <option value='rev'>All reviews (no conflicts)</option>\n";
 	if ($this->contact->amAssistant() || ($this->contact->isReviewer && $Conf->blindSubmission() < 2))
 	    $t .= "    <option value='authors'>Authors (text)</option>\n";
 	if ($this->contact->amAssistant())
 	    $t .= "    <option value='contact'>Contact emails (text)</option>\n";
+	if ($this->contact->amAssistant() || ($this->contact->isPC && $Conf->validTimeFor('PCMeetingView', 0)))
+	    $t .= "    <option value='scores'>All scores (text)</option>\n";
 	$t .= "</select>  <input type='submit' class='button_small' name='get' value='Go' />\n";
 
 	if ($this->contact->amAssistant()) {
