@@ -275,6 +275,30 @@ if ($getaction == "scores" && $Me->amAssistant()
 }
 
 
+// download topics for selected papers
+if ($getaction == "topics" && $Me->amAssistant()
+    && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
+    $idq = "";
+    foreach ($_REQUEST["papersel"] as $id)
+	if (($id = cvtint($id)) > 0)
+	    $idq .= " or paperId=$id";
+    $result = $Conf->qe("select paperId, title, topicName from Paper join PaperTopic using (paperId) join TopicArea using (topicId) where " . substr($idq, 4), "while fetching topics");
+
+    // compose scores
+    $text = "#paperId\ttitle\ttopic\n";
+    if (!MDB2::isError($result))
+	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))
+	    $text .= $row->paperId . "\t" . $row->title . "\t" . $row->topicName . "\n";
+
+    if ($text == "")
+	$Conf->errorMsg(join("", $errors) . "No papers selected.");
+    else {
+	downloadText($text, $Opt['downloadPrefix'] . "topics.txt", "topics");
+	exit;
+    }
+}
+
+
 // set outcome for selected papers
 if (isset($_REQUEST["setoutcome"]))
     if (!$Me->canSetOutcome(null))

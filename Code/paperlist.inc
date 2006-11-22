@@ -412,6 +412,8 @@ class PaperList {
 	    $t .= "    <option value='authors'>Authors (text)</option>\n";
 	if ($this->contact->amAssistant())
 	    $t .= "    <option value='contact'>Contact emails (text)</option>\n";
+	if ($this->contact->isPC)
+	    $t .= "    <option value='topics'>Topics (text)</option>\n";
 	if ($this->contact->amAssistant() || ($this->contact->isPC && $Conf->validTimeFor('PCMeetingView', 0)))
 	    $t .= "    <option value='scores'>All scores (text)</option>\n";
 	$t .= "</select>  <input type='submit' class='button_small' name='get' value='Go' />\n";
