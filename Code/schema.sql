@@ -186,7 +186,7 @@ CREATE TABLE PaperReview (
   requestedBy int(11) NOT NULL default 0,
   requestedOn timestamp(14) NOT NULL,
   acceptedOn timestamp(14) NOT NULL default 0,
-  blind tinyint(1) NOT NULL default 1,
+  reviewBlind tinyint(1) NOT NULL default 1,
 
   reviewModified int(1),
   reviewSubmitted int(1),
@@ -246,7 +246,7 @@ CREATE TABLE PaperReviewArchive (
   requestedBy int(11) NOT NULL default 0,
   requestedOn timestamp(14) NOT NULL,
   acceptedOn timestamp(14) NOT NULL default 0,
-  blind tinyint(1) NOT NULL default 1,
+  reviewBlind tinyint(1) NOT NULL default 1,
 
   reviewModified int(1),
   reviewSubmitted int(1),

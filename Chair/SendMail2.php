@@ -141,7 +141,7 @@ function getComments ($paperId) {
 	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
 	    $text .= "==+== =========================================================================
 ==-== Comment";
-	    if ($row->blind <= 0)
+	    if ($row->reviewBlind <= 0)
 		$text .= " by " . contactText($row);
 	    $text .= "\n==-== Modified " . $Conf->printableTime($row->timeModified) . "\n\n";
 	    $text .= $row->comment . "\n";

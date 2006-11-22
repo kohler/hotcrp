@@ -245,9 +245,9 @@ class ReviewForm {
 	// blind?
 	if ($conf->blindReview() > 1
 	    || ($conf->blindReview() == 1 && defval($req['blind'])))
-	    $q .= "blind=1, ";
+	    $q .= "reviewBlind=1, ";
 	else
-	    $q .= "blind=0, ";
+	    $q .= "reviewBlind=0, ";
 
 	// actually affect database
 	if ($rrow)
@@ -364,7 +364,7 @@ class ReviewForm {
 ==+== Submit Review\n";
 	    if ($conf->blindReview() == 1) {
 		$blind = "Anonymous";
-		if ($rrow && !(isset($rrow->reviewBlind) ? $rrow->reviewBlind : $rrow->blind))
+		if ($rrow && !$rrow->reviewBlind)
 		    $blind = "Open";
 		$x .= "\n==-== " . $conf->shortName . " allows either anonymous or open review.
 ==-== To submit a non-anonymous review, change 'Anonymous' to 'Open' here.
@@ -378,7 +378,7 @@ class ReviewForm {
 		$x .= unparseReviewOrdinal($rrow->reviewOrdinal);
 	    $x .= "\n";
 	    if ($conf->blindReview() > 1
-		|| ($conf->blindReview() == 1 && !$rrow->blind)
+		|| ($conf->blindReview() == 1 && !$rrow->reviewBlind)
 		|| $revtype == ReviewForm::REV_PC) {
 		if (isset($rrow->reviewFirstName))
 		    $x .= "==-== by " . contactText($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail) . "\n";

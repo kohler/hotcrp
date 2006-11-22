@@ -471,7 +471,7 @@ function reviewView($prow, $rrow, $editMode) {
 	    echo "<tr class='rev_blind'>
   <td class='caption'></td>
   <td class='entry'><input type='checkbox' name='blind' value='1'";
-	    if ($useRequest ? defval($_REQUEST['blind']) : (!$rrow || $rrow->blind))
+	    if ($useRequest ? defval($_REQUEST['blind']) : (!$rrow || $rrow->reviewBlind))
 		echo " checked='checked'";
 	    echo " />&nbsp;Anonymous review</td>
   <td class='hint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won't know who wrote the review).</td>

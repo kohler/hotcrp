@@ -775,7 +775,7 @@ class Conference {
 		PaperReview.reviewModified,
 		PaperReview.reviewSubmitted,
 		PaperReview.reviewOrdinal,
-		PaperReview.blind as reviewBlind,
+		PaperReview.reviewBlind,
 		PaperReview.contactId as reviewContactId";
 	if (isset($options['reviewerName']))
 	    $pq .= ",
