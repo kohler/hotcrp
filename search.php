@@ -244,7 +244,7 @@ if ($getaction == "scores" && $Me->amAssistant()
     $text .= "\toutcome";
     foreach ($scores as $score)
 	$text .= "\t" . $rf->abbrevName[$score];
-    $text .= "\n";
+    $text .= "\trevieweremail\treviewername\n";
     
     $errors = array();
     if ($Me->amAssistant())
@@ -260,6 +260,8 @@ if ($getaction == "scores" && $Me->amAssistant()
 		$text .= "\t" . $row->outcome;
 		foreach ($scores as $score)
 		    $text .= "\t" . $row->$score;
+		if ($Me->canViewReviewerIdentity($row, null, $Conf))
+		    $text .= "\t" . $row->reviewEmail . "\t" . trim($row->reviewFirstName . " " . $row->reviewLastName);
 		$text .= "\n";
 	    }
 	}

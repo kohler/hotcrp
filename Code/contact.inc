@@ -766,7 +766,8 @@ class Contact {
     }
 
     function canViewAllReviewerIdentities($conf) {
-	return ($this->amAssistant() || $conf->timePCViewAllReviews());
+	return ($this->amAssistant()
+		|| ($this->isPC && $conf->timePCViewAllReviews()));
     }
     
     function canViewReviewerIdentity($prow, $rrow, $conf) {
@@ -779,7 +780,8 @@ class Contact {
 	    return true;
 	$blind = $conf->blindReview();
 	if ($blind > 1
-	    || ($blind == 1 && $rrow && $rrow->reviewBlind == 0))
+	    || ($blind == 1 && $rrow && $rrow->reviewBlind == 0)
+	    || ($blind == 1 && isset($prow->reviewBlind) && $prow->reviewBlind == 0))
 	    return true;
 	return false;
     }
