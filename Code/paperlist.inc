@@ -418,12 +418,14 @@ class PaperList {
 	    $t .= "    <option value='scores'>All scores (text)</option>\n";
 	$t .= "</select>  <input type='submit' class='button_small' name='get' value='Go' />\n";
 
-	if ($this->contact->amAssistant()) {
+	if ($this->contact->isPC) {
 	    $t .= "  &nbsp;|&nbsp; <a class='unfolder' href='javascript:fold(\"plact\", 0)'>More &raquo;</a><a class='folder' href='javascript:fold(\"plact\", 1)'>Less &laquo;</a>
 <div class='extension'><table>
-  <tr><td><input class='textlite' type='text' name='tag' value='' size='15' /> <input type='submit' class='button_small' name='addtag' value='Add tag' /></td>
-  <td>" . outcomeSelector() . " <input type='submit' class='button_small' name='setoutcome' value='Set outcome' /></td></tr>
-</table></div>\n";
+  <tr><td><input class='textlite' type='text' name='tag' value='' size='15' /> <input type='submit' class='button_small' name='addtag' value='Add tags' /> <input type='submit' class='button_small' name='deltag' value='Remove tags' /></td>\n";
+	    if ($this->contact->amAssistant())
+		$t .= "  <td><span class='lgsep'></span></td>
+  <td>" . outcomeSelector() . " <input type='submit' class='button_small' name='setoutcome' value='Set outcome' /></td>";
+	    $t .= "</tr></table></div>\n";
 	}
 	
 	return $t . "</td></tr>\n";

@@ -780,3 +780,81 @@ function outcomeSelector($curOutcome = 0) {
 	$text .= "    <option value='$key'" . ($curOutcome == $key ? " selected='selected'" : "") . ">" . htmlspecialchars($outcomeMap[$key]) . "</option>\n";
     return $text . "  </select>";
 }
+
+function checkTag($tag, $reporterr = true) {
+    global $Conf;
+    if ($tag == "")
+	$e = "Empty tag.";
+    else if (strlen($tag) > TAG_MAXLEN)
+	$e = "Tag '" . htmlspecialchars($tag) . "' too long; maximum " . TAG_MAXLEN . " characters.";
+    else if (!preg_match('/\A[-a-zA-Z0-9!@#$%^&*_=+:.\/?]+\Z/', $tag))
+	$e = "Tag '" . htmlspecialchars($tag) . "' contains odd characters.";
+    else
+	return true;
+    if ($reporterr)
+	$Conf->errorMsg($e);
+    return false;
+}
+    
+function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
+    global $Conf;
+    if (!is_array($pids))
+	$pids = array($pids);
+
+    // check tags for direct validity
+    $ok = true;
+    $tags = array();
+    foreach (preg_split('/\s+/', $tagtext) as $tag)
+	if ($tag != "" && ($ok = ($ok && checkTag($tag, $reporterr))))
+	    $tags[] = $tag;
+    if (!$ok)
+	return false;
+    
+    // lock
+    $while = "while tagging papers";
+    $Conf->qe("lock tables PaperTag write, ChairTag write", $while);
+
+    // check chair tags
+    if (!$chair) {
+	$result = $Conf->qe("select tag from ChairTag", $while);
+	if (!MDB2::isError($result)) {
+	    $chtags = array();
+	    while (($row = $result->fetchRow()))
+		$chtags[] = $row[0];
+	    if ($mode != '=' && $reporterr) {
+		$isect = array_intersect($chtags, $tags);
+		if (count($isect))
+		    $Conf->warnMsg("Tag(s) '" . htmlspecialchars(join(" ", $isect)) . "' may be added and/or removed only by the PC chairs.");
+	    }
+	    $tags = array_diff($tags, $chtags);
+	}
+    }
+    
+    // delete tags
+    $q = "delete from PaperTag where (";
+    foreach ($pids as $pid)
+	$q .= "paperId=$pid or ";
+    $q = substr($q, 0, strlen($q) - 4) . ")";
+    if (($mode == "+" || $mode == "-") && count($tags)) {
+	$q .= " and (";
+	foreach ($tags as $tag)
+	    $q .= "tag='" . sqlq($tag) . "' or ";
+	$q = substr($q, 0, strlen($q) - 4) . ")";
+    }
+    if (!$chair)
+	$q .= " and tag not in (select tag from ChairTag)";
+    $Conf->qe($q, $while);
+
+    // add tags
+    if ($mode != "-" && count($tags)) {
+	$q = "insert into PaperTag (paperId, tag) values ";
+	foreach ($pids as $pid) {
+	    foreach ($tags as $tag)
+		$q .= "($pid, '" . sqlq($tag) . "'), ";
+	}
+	$Conf->qe(substr($q, 0, strlen($q) - 2), $while);
+    }
+
+    $Conf->qe("unlock tables", $while);
+    return true;
+}

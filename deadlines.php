@@ -186,15 +186,34 @@ if (isset($_REQUEST['update']) && $Me->amAssistant()) {
 	$Conf->errorMsg(join("<br/>\n", $Error));
     else {
 	$result = $Conf->qe("delete from ImportantDates");
-	if (!MDB2::isError($result))
+	if (!MDB2::isError($result)) {
+	    $q = "insert into ImportantDates (name, start, end) values ";
 	    foreach ($Dates as $n => $v) {
 		$sx = ($v[0] > 0 ? "from_unixtime($v[0])" : "'0'");
 		$ex = ($v[1] > 0 ? "from_unixtime($v[1])" : "'0'");
-		$Conf->qe("insert into ImportantDates (name, start, end) values ('$n', $sx, $ex)");
+		$q .= "('$n', $sx, $ex), ";
 		unset($_REQUEST["${n}_start"]);
 		unset($_REQUEST["${n}_end"]);
 		unset($_REQUEST[$n]);
 	    }
+	    $Conf->qe(substr($q, 0, strlen($q) - 2));
+	}
+    }
+
+    // check tags
+    if (isset($_REQUEST["chairtags"])) {
+	$chairtags = preg_split('/\s+/', $_REQUEST["chairtags"]);
+	$ok = true;
+	foreach ($chairtags as $ct)
+	    $ok = ($ok && checkTag($ct));
+	if ($ok)
+	    $Conf->qe("delete from ChairTag");
+	if ($ok && count($chairtags) > 0) {
+	    $q = "insert into ChairTag (tag) values ";
+	    foreach ($chairtags as $ct)
+		$q .= "('" . sqlq($ct) . "'), ";
+	    $Conf->qe(substr($q, 0, strlen($q) - 2));
+	}
     }
 
     $Conf->updateImportantDates();
@@ -321,6 +340,13 @@ echo "</ul>\n\n";
 
 
 if ($Me->amAssistant()) {
+    $result = $Conf->qe("select group_concat(tag separator ' ') from ChairTag");
+    if (!MDB2::isError($result)) {
+	$row = $result->fetchRow();
+	$chairtags = $row[0];
+    } else
+	$chairtags = '';
+    
     echo "<hr />";
 
     echo "<h2>Set deadlines and conference options</h2>\n";
@@ -405,13 +431,13 @@ if ($Me->amAssistant()) {
     if (isset($_REQUEST["PCReviewAnyPaper"])
 	|| cvtint($Conf->startTime["PCReviewAnyPaper"]) > 0)
 	echo "checked='checked' ";
-    echo "onchange='highlightUpdate()' tabindex='1' />&nbsp;PC can review any submitted paper during the review period<br />\n";
+    echo "onchange='highlightUpdate()' tabindex='1' />&nbsp;PC members can review any submitted paper during the review period<br />\n";
 
     echo "<input type='checkbox' name='notifyChairAboutReviews' value='1' ";
     if (isset($_REQUEST["notifyChairAboutReviews"])
 	|| cvtint($Conf->startTime["notifyChairAboutReviews"]) > 0)
 	echo "checked='checked' ";
-    echo "onchange='highlightUpdate()' tabindex='1' />&nbsp;PC Chairs are notified via email about new reviews<br />\n";
+    echo "onchange='highlightUpdate()' tabindex='1' />&nbsp;PC chairs are notified via email about new reviews<br />\n";
     
     echo "<div class='maintabsep'></div>\nExternal reviewers can view other reviews for their papers:<br />";
     $x = cvtint($_REQUEST["reviewerViewReviews"]);
@@ -420,6 +446,8 @@ if ($Me->amAssistant()) {
     echo "<input type='radio' name='reviewerViewReviews' value='0'", ($x <= 0 || $x > 2 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;Never </span><br />";
     echo "<input type='radio' name='reviewerViewReviews' value='1'", ($x == 1 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;After they submit their reviews, but they cannot see reviewer identities<br />";
     echo "<input type='radio' name='reviewerViewReviews' value='2'", ($x == 2 ? " checked='checked'" : "") , " onchange='highlightUpdate()' />&nbsp;After they submit their reviews, including reviewer identities";
+    echo "<div class='maintabsep'></div>\nSpecial tags (only chairs can add/remove):<br />
+<input type='text' class='textlite' name='chairtags' value=\"", htmlspecialchars($chairtags), "\" size='40' />\n";
     echo "</td>\n</tr>\n";
 
     echo "</table></td></tr>
@@ -460,4 +488,3 @@ if ($Me->amAssistant()) {
 }
 
 $Conf->footer();
-?>

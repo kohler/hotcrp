@@ -260,19 +260,11 @@ if (isset($_REQUEST['setoutcome'])) {
 
 // set tags action
 if (isset($_REQUEST["settags"])) {
-    if (!$Me->amAssistant())
-	$Conf->errorMsg("You cannot set tags for paper #$prow->paperId." . ($Me->amAssistant() ? "  (<a href='" . selfHref(array("forceShow" => 1)) . "'>Override conflict</a>)" : ""));
-    else {
-	$while = "while tagging papers";
-	$Conf->qe("lock tables PaperTag write", $while);
-	$Conf->qe("delete from PaperTag where paperId=$prow->paperId", $while);
-	$q = "insert into PaperTag (paperId, tag) values ";
-	foreach (preg_split('/\s+/', defval($_REQUEST["tags"], "")) as $word)
-	    $q .= "($prow->paperId, '" . sqlq($word) . "'), ";
-	$Conf->qe(substr($q, 0, strlen($q) - 2), $while);
-	$Conf->qe("unlock tables", $while);
+    if ($Me->isPC && ($prow->conflict <= 0 || ($Me->amAssistant() && $forceShow))) {
+	setTags($prow->paperId, defval($_REQUEST["tags"], ""), "=", $Me->amAssistant());
 	loadRows();
-    }
+    } else
+	$Conf->errorMsg("You cannot set tags for paper #$prow->paperId." . ($Me->amAssistant() ? "  (<a href='" . selfHref(array("forceShow" => 1)) . "'>Override conflict</a>)" : ""));
 }
 
 

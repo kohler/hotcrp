@@ -157,9 +157,17 @@ CREATE TABLE PaperComment (
 drop table if exists PaperTag;
 CREATE TABLE PaperTag (
   paperId int(11) NOT NULL,
-  tag varchar(40) NOT NULL,
+  tag varchar(40) NOT NULL,		# see TAG_MAXLEN in header.php
   UNIQUE KEY paperTag (paperId,tag)
 ) TYPE=MyISAM;
+
+
+drop table if exists ChairTag;
+CREATE TABLE ChairTag (
+  tag varchar(40) NOT NULL,
+  UNIQUE KEY tag (tag)
+) TYPE=MyISAM;
+insert into ChairTag (tag) values ('accept'), ('reject');
 
 
 drop table if exists PaperGrade;

@@ -848,7 +848,7 @@ class Conference {
 	    $pq .= "		left join (select paperId, group_concat(PaperTopic.topicId) as topicIds, group_concat(TopicInterest.interest) as topicInterest, sum(if(interest=2,2,interest-1)) as topicInterestScore from PaperTopic left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$contactId) group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)\n";
 
 	if (isset($options['tags']))
-	    $pq .= "		left join (select paperId, group_concat(tag) as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)\n";
+	    $pq .= "		left join (select paperId, group_concat(tag separator ' ') as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)\n";
 
 	if (isset($options['overallMeritScores']))
 	    $pq .= "		left join (select paperId, group_concat(overallMerit) as overallMeritScores, avg(overallMerit) as overallMeritAvg from PaperReview where reviewSubmitted>0 group by paperId) as PaperScores on (PaperScores.paperId=Paper.paperId)\n";

@@ -160,22 +160,27 @@ if ($getaction == "rev" && isset($_REQUEST["papersel"]) && is_array($_REQUEST["p
 
 
 // set tags for selected papers
-if (isset($_REQUEST["addtag"]) && $Me->amAssistant() && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"]) && isset($_REQUEST["tag"])) {
-    $while = "while tagging papers";
-    $Conf->qe("lock tables PaperTag write", $while);
-    $idq = "";
-    foreach ($_REQUEST["papersel"] as $id)
-	if (($id = cvtint($id)) > 0)
-	    $idq .= " or paperId=$id";
-    $idq = substr($idq, 4);
-    $tag = sqlq($_REQUEST["tag"]);
-    $Conf->qe("delete from PaperTag where tag='$tag' and ($idq)", $while);
-    $q = "insert into PaperTag (paperId, tag) values ";
-    foreach ($_REQUEST["papersel"] as $id)
-	if (($id = cvtint($id)) > 0)
-	    $q .= "($id, '$tag'), ";
-    $Conf->qe(substr($q, 0, strlen($q) - 2), $while);
-    $Conf->qe("unlock tables", $while);
+if ((isset($_REQUEST["addtag"]) || isset($_REQUEST["deltag"]))
+    && $Me->isPC && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"]) && isset($_REQUEST["tag"])) {
+    $errors = array();
+    $papers = array();
+    if (!$Me->amAssistant()) {
+	$result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"])), "while selecting papers");
+	if (!MDB2::isError($result))
+	    while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
+		if ($row->conflict > 0)
+		    $errors[] = whyNotText(array("conflict" => 1, "paperId" => $row->paperId));
+		else
+		    $papers[] = $row->paperId;
+    } else
+	foreach ($_REQUEST["papersel"] as $id)
+	    if (($id = cvtint($id)) > 0)
+		$papers[] = $id;
+
+    if (count($errors))
+	$Conf->errorMsg(join("<br/>", $errors));
+    if (count($papers))
+	setTags($papers, $_REQUEST["tag"], (isset($_REQUEST["addtag"]) ? "+" : "-"), $Me->amAssistant());
 }
 
 

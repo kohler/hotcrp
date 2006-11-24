@@ -23,6 +23,8 @@ define("OUTCOME_ACCEPTED", 1);
 define("OUTCOME_ACCEPTED_SHORT", 2);
 define("OUTCOME_REJECTED", -1);
 
+define("TAG_MAXLEN", 40);
+
 $OK = 1;
 
 $Msg["unknown"] = "Unknown error.";
