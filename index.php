@@ -25,7 +25,7 @@ if (($_SESSION["AskedYouToUpdateContactInfo"] < 2
     || ($_SESSION["AskedYouToUpdateContactInfo"] < 3 && $Me->isPC
 	&& !($Me->collaborators || $Me->anyTopicInterest))) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 1;
-    $Me->go("All/UpdateContactInfo.php");
+    $Me->go("account.php");
 }
 
 
@@ -43,6 +43,17 @@ if ($Me->amAssistant()) {
     if (get_magic_quotes_gpc())
 	$Conf->errorMsg("The PHP <code>magic_quotes_gpc</code> feature is on.  This is a bad idea; disable it in your <code>php.ini</code> configuration file.");
 }
+
+
+echo "<table class='main'><tr><td class='l'>";
+
+
+// General information
+echo "<div class='main_general'><div class='main_head'>General</div><div class='main_body'></div><ul>
+<li><a href='account.php'>Your account</a></div>";
+
+
+echo "</td><td class='r'></td></tr></table>\n";
 
 
 $tabName = array();
@@ -185,13 +196,13 @@ $body = "<table class='bullets'><tr>";
 
 $body .= "<td><h4>Your account</h4>
 <ul>
-  <li><a href='All/UpdateContactInfo.php'>Account settings</a>: your name, email, affiliation</li>
-  <li><a href='All/MergeAccounts.php'>Merge accounts</a></li>
+  <li><a href='account.php'>Account settings</a>: your name, email, affiliation</li>
+  <li><a href='mergeaccounts.php'>Merge accounts</a></li>
 </ul>";
 if ($Me->amAssistant())
     $body .= "\n<h4>Other accounts</h4>
 <ul>
-  <li><a href='All/UpdateContactInfo.php?new=1'>Create new account</a></li>
+  <li><a href='account.php?new=1'>Create new account</a></li>
   <li><a href='Chair/BecomeSomeoneElse.php'>Act on someone else's behalf</a></li>
   <li><a href='Chair/ListPC.php'>Program committee accounts</a></li>
 </ul>";
@@ -326,6 +337,6 @@ if (0) {
   print $Me->dump();
   print "</p>";
 }
-?>
 
-<?php $Conf->footer() ?>
+$Conf->footer();
+

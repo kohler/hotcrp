@@ -242,7 +242,7 @@ function topicTable($prow, $active = 0, $conf = null) {
     if ($paperId > 0 && $active < 0 && isset($prow->topicIds)) {
 	$rf = reviewForm();
 	$top = $rf->webTopicArray($prow->topicIds, defval($prow->topicInterest));
-	$out = "<table class='simple'><tr>\n	<td>";
+	$out = "<table class='rpad'><tr>\n	<td>";
 	$colheight = (int) ((count($top) + 1) / 2);
 	for ($i = 0; $i < count($top); $i++) {
 	    if ($i > 0 && ($i % $colheight) == 0)

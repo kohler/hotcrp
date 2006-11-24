@@ -354,33 +354,34 @@ echo "
 
 <div id='foldq' class='$folded' style='text-align: center'>
 <form method='get' action='search.php'>
-<span class='ellipsis nowrap'>$tselect <span class='sep'></span>
+<span class='ellipsis nowrap'><b>Search:</b>&nbsp; $tselect&nbsp; for&nbsp;
   <input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /> &nbsp;
-  <input class='button' type='submit' name='go' value='Search' /> <span class='sep'></span>
+  <input class='button' type='submit' name='go' value='Go' /> <span class='sep'></span>
   <a class='unfolder' href=\"javascript:fold('q', 0)\">Options &raquo;</a>
 </span>
 </form>
 
 <form method='get' action='search.php'>
-<table class='advsearch extension'><tr><td class='advsearch'><table class='simple'>
+<table class='advsearch extension'><tr><td class='advsearch'><table>
 <tr>
-  <td>With <b>any</b> of the words&nbsp;&nbsp;&nbsp;</td>
+  <td class='mcaption'>With <b>any</b> of the words</td>
   <td><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /></td>
-  <td class='x' rowspan='3'><input class='button' type='submit' name='go' value='Search' /></td>
+  <td><span class='sep'></span></td>
+  <td rowspan='3'><input class='button' type='submit' name='go' value='Search' /></td>
 </tr><tr>
-  <td>With <b>all</b> the words&nbsp;&nbsp;&nbsp;</td>
+  <td class='mcaption'>With <b>all</b> the words</td>
   <td><input class='textlite' type='text' size='40' name='qa' value=\"", htmlspecialchars(defval($_REQUEST["qa"], "")), "\" /></td>
 </tr><tr>
-  <td><b>Without</b> the words</td>
+  <td class='mcaption'><b>Without</b> the words</td>
   <td><input class='textlite' type='text' size='40' name='qx' value=\"", htmlspecialchars(defval($_REQUEST["qx"], "")), "\" /></td>
 </tr>
 <tr><td colspan='2'><hr class='smgap' /></td></tr>
 <tr>
-  <td>Paper selection</td>
+  <td class='mcaption'>Paper selection</td>
   <td>$tselect</td>
 </tr>
 <tr>
-  <td>Search in</td>
+  <td class='mcaption'>Search in</td>
   <td><select name='qt'>";
 $qtOpt = array("ti" => "Title only",
 	      "ab" => "Abstract only");

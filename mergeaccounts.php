@@ -1,5 +1,5 @@
 <?php 
-include('../Code/header.inc');
+include('Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $MergeError = "";
@@ -36,7 +36,7 @@ if (isset($_REQUEST["merge"])) {
 	    $MergeError = "That password is incorrect.";
 	else if ($MiniMe->contactId == $Me->contactId) {
 	    $Conf->confirmMsg("Accounts successfully merged.");
-	    $Me->go("../");
+	    $Me->go("index.php");
 	} else {
 	    // Do they prefer the account they named?
 	    if (defval($_REQUEST['prefer'])) {
@@ -87,7 +87,7 @@ If you suspect something fishy, contact the site administrator at\n\
 	    if ($MergeError == "") {
 		$Conf->confirmMsg("Account " . htmlspecialchars($MiniMe->email) . " successfully merged.");
 		$Conf->log("Merged account $oldid into " . $Me->contactId, $Me);
-		$Me->go("../");
+		$Me->go("index.php");
 	    } else {
 		$Conf->log("Merged account $oldid into " . $Me->contactId . " with errors", $Me);
 		$MergeError .= $Conf->dbErrorText(null);
@@ -117,7 +117,7 @@ else
 );
 ?>
 
-<form class='mergeAccounts' method='post' action='MergeAccounts.php'>
+<form class='mergeAccounts' method='post' action='mergeaccounts.php'>
 <table class='form'>
 
 <tr>

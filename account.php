@@ -1,5 +1,5 @@
 <?php 
-require_once('../Code/header.inc');
+require_once('Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $RealMe = $Me;
@@ -45,7 +45,7 @@ if (isset($_REQUEST['register']) && $OK) {
 	$UpdateError = "Passwords cannot begin or end with spaces.";
     else if ($_REQUEST["uemail"] != $Me->email
 	     && $Conf->getContactId($_REQUEST["uemail"]))
-	$UpdateError = "Can't change your email address to " . htmlspecialchars($_REQUEST["uemail"]) . ", since an account is already registered with that email address.  You may want to <a href='MergeAccounts.php'>merge these accounts</a>.";
+	$UpdateError = "Can't change your email address to " . htmlspecialchars($_REQUEST["uemail"]) . ", since an account is already registered with that email address.  You may want to <a href='mergeaccounts.php'>merge these accounts</a>.";
     else {
 	if ($newProfile) {
 	    $result = $Me->initialize($_REQUEST["uemail"], $Conf);
@@ -112,7 +112,7 @@ if (isset($_REQUEST['register']) && $OK) {
 		$Conf->confirmMsg("Account profile successfully updated.");
 	    }
 	    if ($Me->contactId == $RealMe->contactId)
-		$RealMe->go("../");
+		$RealMe->go("index.php");
 	}
     }
  }
@@ -150,7 +150,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
  }
 
 
-echo "<form class='updateProfile' method='post' action='UpdateContactInfo.php'>\n";
+echo "<form class='updateProfile' method='post' action='account.php'>\n";
 if ($newProfile)
     echo "<input type='hidden' name='new' value='1' />\n";
 else if ($Me->contactId != $RealMe->contactId)

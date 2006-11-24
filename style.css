@@ -208,6 +208,31 @@ td.listlinks a {
 }
 
 
+/* Main */
+table.main {
+	width: 100%;
+}
+table.main tr td.l {
+	width: 50%;
+	padding-right: 0.5em;
+}
+table.main tr td.r {
+	width: 50%;
+	padding-left: 0.5em;
+}
+div.main_general {
+	border: 2px solid #f0f0ff;
+	background: #f8f8ff;
+}
+div.main_general div.main_head {
+	background: #f0f0ff;
+	padding: 2px 3px;
+}
+div.main_general div.main_body {
+	padding: 2px 3px;
+}
+
+
 /* */
 div.maintab {
 	position: relative;
@@ -550,11 +575,8 @@ pre.entryexample {
 	background: #eeeeee;
 }
 
-table.simple tr td {
+table.rpad tr td {
 	padding-right: 2em;
-}
-table.simple tr td.x {
-	padding-right: 0em;
 }
 
 tr#topicinterest td.caption, tr#topicinterest td.hint {
@@ -683,6 +705,10 @@ td.pl_id, td.pl_selector, td.pl_topicMatch, td.pl_reviewPreference,
 td.pl_desirability, td.pl_download {
 	text-align: right;
 	padding-right: 0.4em;
+}
+td.mcaption {
+	text-align: right;
+	padding-right: 1em;
 }
 td.pl_download {
 	vertical-align: middle;
