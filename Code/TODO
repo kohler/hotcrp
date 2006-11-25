@@ -1,12 +1,14 @@
-- comments: allow chair view if conflicted
-- global tag application
++ comments: allow chair view if conflicted
++ global tag application
 - "Email author?" on change
 - simplifyWhitespace on author information
 - override deadlines in review
 - click PC name in reviewer view, donot send email
 - anonymous comments highlighted in PC view
-- mailing all authors, do not mail multiple copies if not %PAPER%/%TITLE%
++ mailing all authors, do not mail multiple copies if not %PAPER%/%TITLE%
 - not started reviews don't get reported
+- "AtTheMeeting" restoration? -- prevents looking at conflicted papers at the
+  meeting, lame
 
 
 -*-

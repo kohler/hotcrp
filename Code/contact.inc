@@ -811,10 +811,12 @@ class Contact {
     }
     
     function canViewDecision($prow, $conf) {
-	if (($prow->author > 0 && $conf->timeAuthorViewDecision())
-	    || $this->isPC
-	    || ($prow->reviewType > 0
-		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0))
+	if (($prow && $prow->author > 0 && $conf->timeAuthorViewDecision())
+	    || $this->amAssistant()
+	    || ($this->isPC && $conf->timePCViewDecision())
+	    || ($prow && $prow->reviewType > 0
+		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0
+		&& $conf->timeReviewerViewDecision()))
 	    return true;
 	return false;
     }

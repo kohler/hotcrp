@@ -153,12 +153,18 @@ class PaperSearch {
 		}
 	    }
 	    if (($special ? $special == "outcome" : isset($this->fields['outcome'])) && $this->amPC) {
-		$rf = reviewForm();
-		foreach ($rf->options['outcome'] as $num => $what)
-		    if (strcmp($word, $num) == 0 || strcasecmp($word, $what) == 0) {
-			$qp .= " or (outcome = '$num')";
-			break;
-		    }
+		if (strcasecmp($word, "yes") == 0)
+		    $qp .= " or (outcome > 0)";
+		else if (strcasecmp($word, "no") == 0)
+		    $qp .= " or (outcome < 0)";
+		else {
+		    $rf = reviewForm();
+		    foreach ($rf->options['outcome'] as $num => $what)
+			if (strcmp($word, $num) == 0 || strcasecmp($word, $what) == 0) {
+			    $qp .= " or (outcome = '$num')";
+			    break;
+			}
+		}
 	    }
 	    if ($qp)
 		$q .= $qjoin . "(" . substr($qp, 4) . ")";

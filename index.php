@@ -91,12 +91,14 @@ if ($Me->isPC) {
     echo "<div class='main_sub'><div class='main_head'>Submissions</div><div class='main_body'>\n";
     echo "<form method='get' action='search.php'><input class='textlite' type='text' size='32' name='q' value='' /> <input class='button_small' type='submit' name='go' value='Search' /></form>\n";
     echo "<span class='sep'></span><a href='search.php'>Advanced search</a>";
-    echo "<table class='half'><tr><td class='l'><ul class='compact'>
-<li><a href='search.php?q=&amp;t=s'>List submitted papers</a></li>\n";
+    echo "<table class='half'><tr><td class='l'><ul class='compact'>\n";
+    if ($Me->canViewDecision(null, $Conf))
+	echo "<li><a href='search.php?q=outcome:yes&amp;t=s'>List accepted papers</a></li>\n";
+    echo "<li><a href='search.php?q=&amp;t=s'>List submitted papers</a></li>\n";
+    echo "</ul></td><td class='r'><ul class='compact'>";
     if ($Me->amAssistant())
 	echo "<li><a href='search.php?q=&amp;t=all'>List <i>all</i> papers</a></li>\n";
-    echo "</ul></td><td class='r'></td></tr></table>";
-    echo "</div></div>\n";
+    echo "</ul></td></tr></table></div></div>\n";
 }
 
 

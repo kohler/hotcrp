@@ -99,7 +99,7 @@ print "</center>";
 
 if ( $Conf->validTimeFor('AtTheMeeting', 0) ) {
   $Conf->errorMsg("Papers authored by program committee members (and other "
-		  . " conflicting papers ) are not shown at thise time. To "
+		  . " conflicting papers) are not shown at this time. To "
 		  . " maintain confidentiality, please do not discuss or "
 		  . " distribute review information about papers you do not "
 		  . " see listed here. ");
@@ -127,7 +127,7 @@ while ($row=$result->fetchRow()) {
 
   //
   // Don't show the paper if there is a personal conflict OR
-  // if it's the meeting and you're not the PC. Otherwise, another
+  // if it's the meeting and you're not the PC chair. Otherwise, another
   // program member can lean over and see the paper
   //
   $noShow = $conflicts[$paperId]

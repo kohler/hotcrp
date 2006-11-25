@@ -471,7 +471,6 @@ if ($Me->amAssistant()) {
 <table class='imptdates'>\n";
     crp_showdate('PCGradePapers');
     crp_showdate('PCMeetingView');
-    crp_showdate('AtTheMeeting');
     crp_showdate('EndOfTheMeeting');
     echo "</table>
 

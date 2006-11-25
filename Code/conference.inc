@@ -335,6 +335,12 @@ class Conference {
     function timeAuthorViewDecision() {
 	return $this->validPeriod('authorViewDecision') > 0;
     }
+    function timePCViewDecision() {
+	return $this->validPeriod('EndOfTheMeeting') > 0;
+    }
+    function timeReviewerViewDecision() {
+	return $this->validPeriod('authorViewDecision') > 0;
+    }
     function timePCReviewPreferences() {
 	return $this->validPeriod('PCReviewPreferences') > 0;
     }
