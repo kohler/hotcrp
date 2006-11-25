@@ -8,5 +8,6 @@ if (isset($_SESSION["whichList"])) {
     unset($_SESSION[$_SESSION["whichList"]]);
 }
 unset($_SESSION["whichList"]);
-$Conf->confirmMsg("You have been logged out, but you can log in again if you'd like.");
+unset($_SESSION["matchPreg"]);
+$Conf->confirmMsg("You have been signed out, but you can sign in again if you'd like.");
 go("login.php");

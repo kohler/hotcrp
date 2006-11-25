@@ -115,3 +115,6 @@ if (!isset($_SESSION['AskedYouToUpdateContactInfo']))
 
 if (!isset($_SESSION['ShowChairGrades']))
     $_SESSION['ShowChairGrades'] = 0;
+
+if (isset($_REQUEST['whichList']))
+    $_SESSION['whichList'] = $_REQUEST['whichList'];

@@ -32,4 +32,4 @@ echo "</select>
 <input class='button_default' type='submit' name='go' value='Become contact' />
 </form>";
 
-$Conf->footer() ?>
+$Conf->footer();

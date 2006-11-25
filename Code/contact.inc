@@ -343,6 +343,15 @@ class Contact {
 	    return "";
     }
 
+    function fullnameOrEmail() {
+	if ($this->firstName && $this->lastName)
+	    return $this->firstName . " " . $this->lastName;
+	else if ($this->firstName || $this->lastName)
+	    return $this->firstName . $this->lastName;
+	else
+	    return $this->email;
+    }
+
     function fullnameAndEmail() {
 	$n = $this->fullname();
 	return ($n ? $n . " (" . $this->email . ")" : $this->email);

@@ -110,6 +110,8 @@ if ($Me->amAssistant()) {
 
 $paperList = new PaperList(true, "list", new PaperSearch($Me, array("t" => "s", "c" => $reviewer, "urlbase" => "PC/reviewprefs.php?reviewer=$reviewer")));
 $_SESSION["whichList"] = "list";
+unset($_SESSION["matchPreg"]);
+
 echo "<form class='assignpc' method='post' action=\"reviewprefs.php?reviewer=$reviewer&amp;post=1\" enctype='multipart/form-data'>\n";
 echo $paperList->text("editReviewPreference", $Me, "Review preferences");
 echo "<input class='button_default' type='submit' name='update' value='Save preferences' />\n";

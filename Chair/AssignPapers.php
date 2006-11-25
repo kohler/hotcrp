@@ -1,6 +1,7 @@
 <?
 require_once('../Code/header.inc');
 require_once('../Code/paperlist.inc');
+require_once('../Code/search.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotChair('../index.php');
@@ -111,6 +112,7 @@ if ($reviewer >= 0) {
 
     $paperList = new PaperList(true, "list", new PaperSearch($Me, array("t" => "s", "c" => $reviewer, "urlbase" => "Chair/AssignPapers.php?reviewer=$reviewer")));
     $_SESSION["whichList"] = "list";
+    unset($_SESSION["matchPreg"]);
     echo "<form class='assignpc' method='post' action=\"AssignPapers.php?reviewer=$reviewer&amp;post=1";
     if (isset($_REQUEST["sort"]))
 	echo "&amp;sort=", urlencode($_REQUEST["sort"]);

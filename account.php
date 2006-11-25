@@ -131,7 +131,7 @@ $_REQUEST["ass"] = $Me->isAssistant;
 $_REQUEST["chair"] = $Me->isChair;
 
 
-$Conf->header($newProfile ? "Create Account" : "Edit Profile");
+$Conf->header($newProfile ? "Create Account" : "Account Settings");
 
 
 if (isset($UpdateError))
@@ -263,7 +263,7 @@ Zhang, Ping Yen (INRIA)
 echo "<tr>
   <td class='caption'></td>
   <td class='entry'><input class='button_default' type='submit' value='",
-    ($newProfile ? "Create Account" : "Save Profile"),
+    ($newProfile ? "Create Account" : "Save Changes"),
     "' name='register' /></td>
 </tr>
 

@@ -162,7 +162,7 @@ while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
 	    echo " disabled='disabled'";
 	echo " onclick='highlightChange($id)' /></td>\n";
 	echo "  <td class='pc_action'>";
-	echo "<a href='${ConfSiteBase}account.php?contact=$id'>Edit profile</a>";
+	echo "<a href='${ConfSiteBase}account.php?contact=$id'>Edit account</a>";
 	if ($id != $Me->contactId)
 	    echo " &nbsp;|&nbsp; <a class='extension' href='javascript:doRemove($id)'>Remove from PC</a><a class='ellipsis' href='javascript:doRemove($id)'>Do not remove</a>";
 	//&nbsp;|&nbsp; ";

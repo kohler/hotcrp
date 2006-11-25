@@ -45,42 +45,135 @@ if ($Me->amAssistant()) {
 }
 
 
-echo "<table class='main'><tr><td class='l'>";
+echo "<table class='half'><tr><td class='l'>";
 
 
 // General information
-echo "<div class='main_general'><div class='main_head'>General</div><div class='main_body'></div><ul>
-<li><a href='account.php'>Your account</a></div>";
+echo "<div class='main_general'><div class='main_head'>General</div><div class='main_body'>
+Welcome, ", htmlspecialchars($Me->fullnameOrEmail()), ".  (If you're not ", htmlspecialchars($Me->fullnameOrEmail()), ", please <a href='${ConfSiteBase}logout.php'>sign out</a>.)  You will be automatically signed out if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.
+
+<table class='half'><tr><td class='l'><ul class='compact'>
+<li><a href='account.php'>Your account settings</a></li>
+<li><a href='mergeaccounts.php'>Merge accounts</a></li>
+</ul></td><td class='r'><ul class='compact'>
+<li><a href='deadlines.php'>Conference deadlines</a></li>
+<li><a href='pc.php'>Meet the program committee</a></li>
+</ul></td></tr></table>";
+
+if ($Me->amAssistant())
+    echo "\n<div class='smgap'></div>
+<table class='half'><tr><td class='l'><ul class='compact'>
+<li><a href='account.php?new=1'>Create new account</a></li>
+<li><a href='Chair/BecomeSomeoneElse.php'>Act on someone else's behalf</a></li>
+</ul></td><td class='r'><ul class='compact'>
+<li><a href='Chair/SendMail.php'>Send users mail</a></li>
+<li><a href='Chair/ViewActionLog.php'>View action log</a></li>
+</ul></td></tr></table>";
+
+echo "</div></div>\n";
 
 
-echo "</td><td class='r'></td></tr></table>\n";
+
+// Conference settings
+if ($Me->amAssistant()) {
+    echo "<div class='main_settings folded' id='foldset'><div class='main_head'><a href=\"javascript:fold('set', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('set', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;Conference settings</div><div class='main_body extension'>
+<ul class='compact'>
+<li><a href='deadlines.php'>Deadlines and options</a></li>
+<li><a href='Chair/SetTopics.php'>Paper topics</a></li>
+<li><a href='pc.php'>Program committee</a></li>
+<li><a href='Chair/SetReviewForm.php'>Review form</a></li>
+</ul></div></div>";
+}
 
 
-$tabName = array();
-$tabText = array();
-$tabBody = array();
-$tabSep = "<div class='maintabsep'></div>\n";
+// Submissions
+if ($Me->isPC) {
+    echo "<div class='main_sub'><div class='main_head'>Submissions</div><div class='main_body'>\n";
+    echo "<form method='get' action='search.php'><input class='textlite' type='text' size='32' name='q' value='' /> <input class='button_small' type='submit' name='go' value='Search' /></form>\n";
+    echo "<span class='sep'></span><a href='search.php'>Advanced search</a>";
+    echo "<table class='half'><tr><td class='l'><ul class='compact'>
+<li><a href='search.php?q=&amp;t=s'>List submitted papers</a></li>\n";
+    if ($Me->amAssistant())
+	echo "<li><a href='search.php?q=&amp;t=all'>List <i>all</i> papers</a></li>\n";
+    echo "</ul></td><td class='r'></td></tr></table>";
+    echo "</div></div>\n";
+}
 
 
-if ($Me->isPC || $Me->amReviewer()) {
-    $tabName[] = "re";
-    $tabText[] = "Reviews";
-    if (!isset($defaultTabName))
-	$defaultTabName = 're';
-    $body = "";
+echo "</td><td class='r'>";
+
+
+// Authored papers
+if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
+    echo "<div class='main_au'><div class='main_head'>Authored papers</div><div class='main_body'>\n";
     $sep = "";
 
+    $startable = $Conf->timeStartPaper();
+    if ($startable || $Me->amAssistant()) {
+	echo $sep, "<div><strong><a href='paper.php?paperId=new'>Start new paper</a></strong> <span class='deadline'>(" . $Conf->printDeadline('startPaperSubmission') . ")</span>";
+	if ($Me->amAssistant())
+	    echo "<br/>\n<small>As PC Chair, you can start papers regardless of deadlines and on other people's behalf.</small>";
+	echo "</div>\n";
+	$sep = "<div class='smgap'></div>";
+    }
+
+    if ($Me->isAuthor) {
+	$plist = new PaperList(false, "aulist", new PaperSearch($Me, array("t" => "a")));
+	$plist->showHeader = 0;
+	$ptext = $plist->text("authorHome", $Me, "Authored papers");
+	$deadlines = array();
+	if ($plist->count > 0) {
+	    echo $sep, $ptext;
+	    $sep = "<div class='smgap'></div>";
+	}
+	if ($plist->needFinalize > 0) {
+	    $time = $Conf->printableEndTime('updatePaperSubmission');
+	    if (!$Conf->timeFinalizePaper())
+		$deadlines[] = "The <a href='deadlines.php'>deadline</a> for submitting papers in progress has passed.";
+	    else if (!$Conf->timeUpdatePaper()) {
+		$deadlines[] = "The <a href='deadlines.php'>deadline</a> for updating papers in progress has passed, but you can still submit.";
+		$time = $Conf->printableEndTime('finalizePaperSubmission');
+		if ($time != 'N/A')
+		    $deadlines[] = "You have until $time to submit any papers in progress.";
+	    } else if (($time = $Conf->printableEndTime('updatePaperSubmission')) != 'N/A')
+		$deadlines[] = "You have until $time to submit any papers in progress.";
+	}
+	if (!$startable && !$Conf->timeAuthorViewReviews())
+	    $deadlines[] = "The <a href='deadlines.php'>deadline</a> for starting new papers has passed.";
+	if (count($deadlines) > 0)
+	    echo $sep, join("<br/>", $deadlines);
+    }
+
+    echo "</div></div>\n";
+}
+
+
+// Review assignment
+if ($Me->isPC || $Me->amReviewer()) {
+    echo "<div class='main_re folded' id='foldre'><div class='main_head'><a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;Review assignments</div><div class='main_body'>\n";
+    $sep = "";
+
+    echo "<table class='half'><tr><td class='l'><ul class='compact'>\n";
+    if ($Me->amReviewer())
+	echo "<li><a href='search.php?q=&amp;t=r'>List assigned papers</a></li>\n";
+    if ($Me->isPC)
+	echo "<li><a href='PC/reviewprefs.php'>Mark review preferences</a></li>\n";
+    echo "</ul></td><td class='r'><ul class='compact'>\n";
+    if ($Me->amReviewer())
+	echo "<li><a href='uploadreview.php'>Offline reviewing</a></li>\n";
+    if ($Me->amAssistant())
+	echo "<li><a href='Chair/AssignPapers.php'>PC review assignments and conflicts</a></li>\n";
+    echo "</ul></td></tr></table>\n<div class='smgap'></div>\n";
+    
     unset($plist);
     if ($Conf->timeReviewOpen()) {
-	$plist = new PaperList(false, "list_tabre", new PaperSearch($Me, array("t" => "r")));
+	$plist = new PaperList(false, "relist", new PaperSearch($Me, array("t" => "r")));
 	$ptext = $plist->text("reviewerHome", $Me, "Review assignment");
     }
     
     $deadlines = array();
     $rtyp = ($Me->isPC ? "PC" : "reviewer");
     unset($d);
-    if ($Me->isReviewer)
-	$deadlines[] = "<a href='search.php?q=&amp;t=r'>List your assigned papers</a> to download papers and review forms.";
     if ($Me->isPC && $Conf->timeReviewPaper(true, false, true))
 	$deadlines[] = "PC members may review <a href='search.php?q=&amp;t=s'>any submitted paper</a>, whether or not a review has been assigned.";
     if (isset($plist) && $plist->needSubmitReview == 0) {
@@ -102,241 +195,114 @@ if ($Me->isPC || $Me->amReviewer()) {
 	    $deadlines[] = "Please submit your reviews by $d.";
     }
     if (count($deadlines) > 0) {
-	$body .= $sep . join("<br/>", $deadlines);
-	$sep = $tabSep;
+	echo $sep, join("<br />", $deadlines);
+	$sep = "<div class='smgap'></div>";
     }
 
     if (isset($plist) && $plist->count > 0) {
-	$body .= $sep . $ptext;
-	$sep = $tabSep;
+	echo "<div class='smgap extension'>", $ptext, "</div>";
+	$sep = "<div class='smgap'></div>";
     }
 
-    if ($body)
-	$body .= "<hr />\n\n";
+    echo "</div></div>\n";
+}
 
-    $body .= "<table class='bullets'><tr><td>
 
-<ul>
-  <li><a href='uploadreview.php'>Download and upload review forms</a></li>\n";
-    if ($Me->isPC)
-	$body .= "  <li><a href='PC/reviewprefs.php'>Review preferences</a></li>\n";
-    if ($Me->amAssistant())
-	$body .= "  <li><a href='Chair/AssignPapers.php'>Assign PC reviews and conflicts</a></li>\n";
-    $body .= "</ul>
+// PC tasks (old CRP)
+if ($Me->isPC) {
+    echo "<div class='main_pc folded' id='foldpc'><div class='main_head'><a href=\"javascript:fold('pc', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('pc', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;PC member tasks (old CRP)</div><div class='main_body extension'>\n";
 
-</td><td>\n\n";
-    if ($Me->isPC) {
-	$body .= "<ul>
-  <li><a href='search.php?q=&amp;t=s'>List submitted papers</a></li>\n";
-	if ($Me->amAssistant())
-	    $body .= "  <li><a href='search.php?q=&amp;t=all'>List all papers</a></li>\n";
-	$body .= "  <li><form method='get' action='search.php'><input class='textlite' type='text' size='20' name='q' value='' /> <input class='button_small' type='submit' name='go' value='Search' /></form>
-    <span class='sep'></span><small><a href='search.php'>Advanced search</a></small></li>\n";
-	$body .= "</ul>\n\n";
+    $Conf->infoMsg(" You need to write up your own review for any "
+		  . " assigned Primary paper, and ask one or more other people "
+		  . " for reviews for your assigned Secondary papers");
+
+    $Conf->reviewerSummary($Me->contactId);
+
+    echo "<ul>
+<li>Reviewer assignments  (asking others to review papers)
+  <ul>
+  <li><a href='PC/CheckReviewStatus.php'>Check on reviewer progress</a> (and possibly nag reviewers)</li>
+  <li><a href='PC/SpotMyProblems.php'>See which missing reviews are most important</a> based on how many reviews have been submitted by everyone</li>
+  </ul></li>
+
+<li>The End Game - Activities Prior to the PC Meeting
+  <ul>\n";
+    if ($Conf->validTimeFor('PCGradePapers', 0))
+	echo "  <li><a href='PC/GradePapers.php'>Grade Papers</a>
+-- arrive at a consensus and determine discussion order of papers at PC meeting</li>\n";
+    if ($Conf->validTimeFor('PCMeetingView', 0))
+	echo "  <li><a href='PC/SeeAllGrades.php'>See overall merit and grades for all papers</a> -- you can get to reviews from here as well</li>\n";
+    if ($Conf->validTimeFor('PCMeetingView', 0)) {
+	echo "  <li><a href='PC/ListReviews.php'>Quickly see reviews</a> -- but only for papers which you do not have conflicts</li>\n";
+	echo "  <li><a href='PC/CheckOnPCProgress.php'>Spy On Your Neighbours</a> -- See progress of entire PC</li>\n";
+	echo "  <li><a href='Chair/SpotProblems.php'>Spot problems across all papers</a></li>\n";
+	echo "  <li><a href='Chair/AverageReviewerScore.php'>See average reviewer ratings</a> -- this compares the overall merit ratings of different reviewers</li>\n";
     }
-    $body .= "</td></tr></table>\n";
+    if ($Conf->validTimeFor('PCGradePapers', 0) || $Conf->validTimeFor('AtTheMeeting', 0))
+	echo "  <li><a href='Chair/AveragePaperScore.php'>See Average Paper Scores</a></li>\n";
+    echo "</ul></li>\n";
+
+    if ($Conf->validTimeFor('EndOfTheMeeting', 0)) {
+	echo "\n<li>The aftermath\n  <ul>\n";
+	echo "  <li><a href='PC/SeeAcceptedPapers.php'>See Accepted Papers</a></li>\n";
+	echo "  </ul></li>\n";
+    }
+
+    echo "</ul></div></div>\n";
+}    
+
+
+// Chair/assistant tasks (old CRP)
+if ($Me->amAssistant()) {
+    echo "<div class='main_ch folded' id='foldch'><div class='main_head'><a href=\"javascript:fold('ch', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('ch', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;PC chair tasks (old CRP)</div><div class='main_body extension'>\n";
+
+    echo "<ul>
+<li>Manage all papers
+  <ul>
+  <li><a href='Chair/SetPCPaper.php'>Mark Papers as PC Papers</a></li>
+  <li><a href='Chair/GradeAllPapers.php'>Assign Paper Grades</a></li>
+  </ul></li>
+
+<li>Assign papers
+  <ul> 
+  <li><a href='Chair/FindPCConflicts.php'>Look for conflicts</a> -- by searching for PC names</li>
+  <li><a href='Chair/AskForReview.php'>Ask someone to review a paper (any paper)</a></li>
+  </ul></li>
+
+<li>Check on reviewing progress
+  <ul>
+  <li><a href='Chair/ListReviews.php'>See all the people</a> that PC members have requested to review papers.</li>
+  <li><a href='Chair/CheckOnPCProgress.php'>See PC progress</a> on reviewing; you can also see the review requests made	by this specific PC member.</li>
+  <li><a href='Chair/SpotProblems.php'>Spot Reviewing Problems</a></li>
+  <li><a href='Chair/AverageReviewerScore.php'>See average reviewer score</a></li>
+  <li><a href='Chair/AveragePaperScore.php'>See Average Paper Scores</a></li>
+  </ul></li>
+
+<li>Contact authors &amp; prepare facesheets
+  <ul>
+  <li><a href='Chair/ListReviewers.php'>List all reviewers (email and name)</a></li>
+  </ul></li>
+
+<li>Manage the conference 
+  <ul>
+  <li><a href='Chair/DumpDatabase.php'>Make a backup of the database</a></li>
+  </ul></li>
+
+<li>Help prepare information about paper
+  <ul>
+  <li><a href='Assistant/PrintAllAbstracts.php'>Show all abstracts for printing</a></li>
+  <li><a href='Assistant/PrintAllReviews.php'>Show all reviews for printing</a></li>
+  <li><a href='Assistant/PrintSomeReviews.php'>Show <b>some</b> reviews for printing</a> -- you can use this to eliminate papers unlikely to be accepted</li>
+  <li><a href='Assistant/ModifyUserNames.php'>Modify user names</a> in account database prior to preparing face sheets</li>
+  <li><a href='Assistant/PrepareFacesheets.php'>Prepare information for face sheets</a></li>
+  </ul></li>\n";
     
-    $tabBody[] = $body;
-}
+    echo "</ul></div></div>\n";
+}    
 
 
-if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
-    $tabName[] = "su";
-    $tabText[] = "Submissions";
-    if (!isset($defaultTabName))
-	$defaultTabName = 'su';
-    $body = "";
-    $sep = "";
+echo "</td></tr></table>\n";
 
-    $startable = $Conf->timeStartPaper();
-    if ($startable || $Me->amAssistant()) {
-	$body .= "$sep<div><strong><a href='paper.php?paperId=new'>Start new paper</a></strong> <span class='deadline'>(" . $Conf->printDeadline('startPaperSubmission') . ")</span>";
-	if ($Me->amAssistant())
-	    $body .= "<br/>\n<small>As PC Chair, you can start papers regardless of deadlines and on other people's behalf.</small>";
-	$body .= "</div>\n";
-	$sep = $tabSep;
-    }
-
-    if ($Me->isAuthor) {
-	$plist = new PaperList(false, "list_tabsu", new PaperSearch($Me, array("t" => "a")));
-	$plist->showHeader = 0;
-	$ptext = $plist->text("authorHome", $Me, "Authored papers");
-	$deadlines = array();
-	if ($plist->count > 0) {
-	    $body .= $sep . $ptext;
-	    $sep = $tabSep;
-	}
-	if ($plist->needFinalize > 0) {
-	    $time = $Conf->printableEndTime('updatePaperSubmission');
-	    if (!$Conf->timeFinalizePaper())
-		$deadlines[] = "The <a href='deadlines.php'>deadline</a> for submitting papers in progress has passed.";
-	    else if (!$Conf->timeUpdatePaper()) {
-		$deadlines[] = "The <a href='deadlines.php'>deadline</a> for updating papers in progress has passed, but you can still submit.";
-		$time = $Conf->printableEndTime('finalizePaperSubmission');
-		if ($time != 'N/A')
-		    $deadlines[] = "You have until $time to submit any papers in progress.";
-	    } else if (($time = $Conf->printableEndTime('updatePaperSubmission')) != 'N/A')
-		$deadlines[] = "You have until $time to submit any papers in progress.";
-	}
-	if (!$startable && !$Conf->timeAuthorViewReviews())
-	    $deadlines[] = "The <a href='deadlines.php'>deadline</a> for starting new papers has passed.";
-	if (count($deadlines) > 0)
-	    $body .= $sep . join("<br/>", $deadlines);
-    }
-
-    $tabBody[] = $body;
-}
-
-
-$tabName[] = "se";
-$tabText[] = "Settings";
-if (!isset($defaultTabName))
-    $defaultTabName = 'se';
-$body = "<table class='bullets'><tr>";
-
-$body .= "<td><h4>Your account</h4>
-<ul>
-  <li><a href='account.php'>Account settings</a>: your name, email, affiliation</li>
-  <li><a href='mergeaccounts.php'>Merge accounts</a></li>
-</ul>";
-if ($Me->amAssistant())
-    $body .= "\n<h4>Other accounts</h4>
-<ul>
-  <li><a href='account.php?new=1'>Create new account</a></li>
-  <li><a href='Chair/BecomeSomeoneElse.php'>Act on someone else's behalf</a></li>
-  <li><a href='Chair/ListPC.php'>Program committee accounts</a></li>
-</ul>";
-$body .= "</td>\n";
-
-$body .= "<td><h4>Conference information</h4>
-<ul>
-  <li><a href='deadlines.php'>Important dates";
-if ($Me->amAssistant())
-    $body .= " and conference options";
-$body .= "</a></li>
-  <li><a href='pc.php'>Program committee</a>";
-if ($Me->amAssistant())
-    $body .= ": view and/or modify";
-$body .= "</li>\n";
-if ($Me->amAssistant())
-    $body .= "  <li><a href='Chair/SetTopics.php'>Set conference topics</a></li>
-  <li><a href='Chair/SetReviewForm.php'>Set review form</a></li>\n";
-$body .= "</ul></td>\n";
-
-$body .= "</tr></table>";
-$tabBody[] = $body;
-
-
-if (isset($_SESSION["mainTab"]) && in_array($_SESSION["mainTab"], $tabName))
-    $defaultTabName = $_SESSION["mainTab"];
-if (!isset($_SESSION["mainTab"]) || $_SESSION["mainTab"] != $defaultTabName)
-    $_SESSION["mainTab"] = $defaultTabName;
-$_SESSION["whichList"] = "mainTab";
-
-						      
-// now we know the default tab name, print the introduction
-echo "<p>You're logged in as ", htmlspecialchars($Me->fullnameAndEmail()), ".
-If this is not you, please <a href='", $ConfSiteBase, "logout.php'>log out</a>.
-You will be automatically logged out if you are idle for more than ",
-    round(ini_get("session.gc_maxlifetime")/3600), " hours.";
-echo "<img id='tabsv' alt='' src='", $ConfSiteBase, "sessionvar.php?var=mainTab&amp;val=", $defaultTabName, "&amp;cache=1' /></p>\n\n";
-
-
-
-echo "<div class='maintab'><table class='top'><tr>\n  <td><table><tr>\n";
-$tns = "[";
-foreach ($tabName as $tn)
-    $tns .= "'$tn',";
-$tns = substr($tns, 0, -1) . "]";
-for ($i = 0; $i < count($tabBody); $i++) {
-    echo "    <td class='sep'></td>\n";
-    echo "    <td class='", ($tabName[$i] == $defaultTabName ? "tab_default" : "tab"), "' id='tab$tabName[$i]' nowrap='nowrap'><a href=\"javascript:tabfold($tns,'", $tabName[$i], "',0,'tabsv')\">", $tabText[$i], "</a></td>\n";
-}
-echo "  </tr></table></td>\n  <td style='width:100%'><table style='width:100%'><tr><td class='spanner'></td></tr></table></td>\n</tr></table>\n";
-for ($i = 0; $i < count($tabBody); $i++) {
-    echo "<div class='", ($tabName[$i] == $defaultTabName ? " unfolded" : " folded"), "' id='fold", $tabName[$i], "'><div class='bot extension'>", $tabBody[$i], "</div></div>\n";
-}
-echo "</div>\n";
-
-
-
-$homeSep = "<span class='sep'></span>";
-?>
-
-
-<?php
-function printDeadlines(&$da, $colspan) {
-    if (isset($da) && count($da))
-	echo "<tr>\n  <td colspan='$colspan'>", join("<br/>\n", $da), "</td>\n</tr>\n";
-}
-
-function reviewerDeadlines($isPC, $plist) {
-    global $Conf;
-    $rtyp = ($isPC ? "PC" : "reviewer");
-    if ($plist->needSubmitReview == 0)
-	/* do nothing */;
-    else if (!$Conf->timeReviewPaper($isPC, true, true))
-	$deadlines[] = "The <a href='deadlines.php'>deadline</a> for submitting " . ($isPC ? "PC" : "external") . " reviews has passed.";
-    else if (!$Conf->timeReviewPaper($isPC, true, false))
-	$deadlines[] = "Reviews were requested by " . $Conf->printableEndTime("${rtyp}SubmitReview") . ".";
-    else {
-	$d = $Conf->printableEndTime("${rtyp}SubmitReview");
-	if ($d != "N/A")
-	    if (!$isPC && $_SESSION["Me"]->isPC)
-		$deadlines[] = "External reviewers should submit reviews by $d.";
-	    else
-		$deadlines[] = "Please submit your reviews by $d.";
-    }
-    if ($isPC && $Conf->timeReviewPaper(true, false, true)) {
-	$d = (isset($d) ? "N/A" : $Conf->printableEndTime("PCSubmitReview"));
-	$deadlines[] = "PC members may review any submitted paper" . ($d == "N/A" ? "." : " until $d.");
-    }
-    printDeadlines($deadlines, 6);
-}
-
-
-
-
-function taskbutton($name,$label) {
-    global $Conf;
-    if ($_SESSION["WhichTaskView"] == $name )
-	$color = $Conf->taskHeaderColor;
-    else
-	$color = $Conf->contrastColorTwo;
-    print "<td bgcolor=$color width=20% align=center> ";
-    echo "<form action='index.php' method='get'>\n";
-    print "<input type=submit value='$label'>";
-    print "<input type=hidden name='setRole' value='$name'>";
-    print "</form>";
-    print "</td>";
-}
-
-
-if ($Me->isPC || $Me->amAssistant()) { ?>
-
-<table width=100%>
-<tr>
-<? if ($Me->isPC) { taskbutton("PC", "PC Members"); }?>
-<? if ($Me->isChair) {taskbutton("Chair", "PC Chair");}?>
-<? if ($Me->amAssistant()) {taskbutton("Assistant", "PC Chair Assistant");}?>
-</tr>
-</table>
-
-<?
-    if ($_SESSION["WhichTaskView"] == "PC") {
-	include("Tasks-PC.inc");
-    } else if ($_SESSION["WhichTaskView"] == "Chair") {
-	include("Tasks-Chair.inc");
-    } else if ($_SESSION["WhichTaskView"] == "Assistant") {
-	include("Tasks-Assistant.inc");
-    }
-}
-
-if (0) {
-  print "<p> ";
-  print $Me->dump();
-  print "</p>";
-}
 
 $Conf->footer();
 

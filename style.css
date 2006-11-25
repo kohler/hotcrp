@@ -137,6 +137,9 @@ div.gaptop {
 	height: 0.75em;
 	border-bottom: 1px solid #cc9900;
 }
+div.smgap {
+	padding: 0.375em 0em;
+}
 
 
 a img {
@@ -169,7 +172,7 @@ table.vubar td.spanner, table.vubar td.gopaper, table.vubar td.listlinks {
 table.vubar td.tab, table.vubar td.tab_disabled {
 	background: #e6e6ff;
 }
-table.vubar td.sep, div.maintab td.sep {
+table.vubar td.sep {
 	padding: 0em 0.75em;
 }
 table.vubar td.sep:first-child {
@@ -209,16 +212,19 @@ td.listlinks a {
 
 
 /* Main */
-table.main {
+table.half {
 	width: 100%;
 }
-table.main tr td.l {
+table.half tr td.l {
 	width: 50%;
 	padding-right: 0.5em;
 }
-table.main tr td.r {
+table.half tr td.r {
 	width: 50%;
 	padding-left: 0.5em;
+}
+div.main_general, div.main_settings, div.main_sub, div.main_au, div.main_re, div.main_pc, div.main_ch {
+	margin: 0.5em 0em;
 }
 div.main_general {
 	border: 2px solid #f0f0ff;
@@ -226,46 +232,42 @@ div.main_general {
 }
 div.main_general div.main_head {
 	background: #f0f0ff;
-	padding: 2px 3px;
 }
-div.main_general div.main_body {
-	padding: 2px 3px;
-}
-
-
-/* */
-div.maintab {
-	position: relative;
-	width: 100%;
-	margin-bottom: 1em;
-}
-div.maintab .bot {
-	padding: 1em;
-}
-div.maintab .bot {
-	border-left: 2px solid #cc9900;
-	border-bottom: 2px solid #cc9900;
-	border-right: 2px solid #cc9900;
-}
-div.maintab table.top td.sep, div.maintab table.top td.spanner {
-	border-bottom: 2px solid #cc9900;
-}
-div.maintab table.top td.tab_default {
-	border-left: 2px solid #cc9900;
-	border-top: 2px solid #cc9900;
-	border-right: 2px solid #cc9900;
-	padding: 0em 1em 3px 1em;
+div.main_head {
+	padding: 2px 6px;
 	font-weight: bold;
 }
-div.maintab table.top td.tab {
-	border-bottom: 2px solid #cc9900;
-	padding: 0em 1em 2px 1em;
-	font-weight: normal;
+div.main_body {
+	padding: 4px 6px;
 }
-div.maintabsep {
-	padding: 0.25em 0em;
+div.main_settings {
+	border: 2px solid #f0f0ff;
+	background: #f8f8ff;
 }
-
+div.main_settings div.main_head {
+	background: #f0f0ff;
+}
+div.main_sub {
+	border: 2px solid #f0f0ff;
+	background: #f8f8ff;
+}
+div.main_sub div.main_head {
+	background: #f0f0ff;
+}
+div.main_au {
+	border: 2px solid #f0f0ff;
+	background: #f8f8ff;
+}
+div.main_au div.main_head {
+	background: #f0f0ff;
+}
+div.main_re {
+	border: 2px solid #f0f0ff;
+	background: #f8f8ff;
+}
+div.main_re div.main_head {
+	background: #f0f0ff;
+}
 
 
 /* gopaper form */
@@ -431,7 +433,7 @@ h4:first-child {
 h4 {
 	margin-bottom: 0.5em;
 }
-div.maintab ul {
+ul.compact {
 	margin-top: 0.5em;
 	margin-bottom: 0em;
 	padding-left: 1em;
@@ -439,47 +441,7 @@ div.maintab ul {
 table.bullets td ul:first-child {
 	margin-top: 0em;
 }
-div.maintab table.bullets {
-	width: 100%;
-}
-div.maintab table.bullets td {
-	width: 50%;
-	padding-right: 1em;
-}
 
-div.home_tasks {
-	border-left: 1px solid #eeee66;
-	border-right: 1px solid #eeee66;
-	border-top: 1px solid #eeee66;
-}
-div.home_tasks div.taskname {
-	float: left;
-	width: 25%;
-	background: #ffffdd;
-	padding: 0.5em;
-}
-div.home_tasks div.taskdetail {
-	float: left;
-	padding-left: 0.5em;
-	padding-bottom: 0.25em;
-}
-div.home_tasks h2 {
-	font-size: large;
-	margin: 0em;
-}
-
-div.home_tasks th {
-	text-align: left;
-	padding-right: 0.5em;
-}
-
-div#home_tasks_all {
-	border-bottom: 1px solid #eeee66;
-}
-div#home_tasks_author td, div#home_tasks_author tr, div#home_tasks_author th {
-	padding-bottom: 0px;
-	padding-top: 0px;
-}
 
 tr.pcrow td {
 	padding-top: 2px;

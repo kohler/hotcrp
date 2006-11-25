@@ -355,12 +355,8 @@ function contactEmailTo($firstName, $lastName=null, $email=null) {
 function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
     global $ConfSiteBase;
     
-    if (isset($_SESSION["whichList"])) {
-	if ($_SESSION["whichList"] == "mainTab" && isset($_SESSION["mainTab"]))
-	    $listname = "list_tab" . $_SESSION["mainTab"];
-	else
-	    $listname = $_SESSION["whichList"];
-    }
+    if (isset($_SESSION["whichList"]))
+	$listname = $_SESSION["whichList"];
     if (!isset($listname) || !($list = defval($_SESSION[$listname]))
 	|| !is_array($list) || !count($list)
 	|| ($k = array_search($paperId, $list)) === false)

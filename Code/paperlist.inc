@@ -39,6 +39,7 @@ class PaperList {
     var $anySelector;
     var $description;
     var $sessionVar;
+    var $paperLink;
     var $contact;
     var $scoresOk;
     var $meritMax;
@@ -59,6 +60,9 @@ class PaperList {
 	$this->sortable = $sortable;
 
 	$this->sessionVar = $sessionVar;
+	$this->paperLink = "";
+	if ($this->sessionVar && $this->sessionVar != "list")
+	    $this->paperLink = "&amp;whichList=" . $this->sessionVar;
 
 	$this->search = $search;
     }
@@ -213,17 +217,17 @@ class PaperList {
 	global $ConfSiteBase, $Conf, $reviewTypeName;
 	switch ($fieldId) {
 	case self::FIELD_ID:
-	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='2'>#$row->paperId</a>";
+	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='2'>#$row->paperId</a>";
 	case self::FIELD_ID_MANAGE:
-	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='2'>#$row->paperId</a>";
+	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='2'>#$row->paperId</a>";
 	case self::FIELD_ID_REVIEW:
-	    return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId' tabindex='2'>#$row->paperId</a>";
+	    return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='2'>#$row->paperId</a>";
 	case self::FIELD_TITLE:
-	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
+	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_TITLE_MANAGE:
-	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
+	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_TITLE_REVIEW:
-	    return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
+	    return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
@@ -242,7 +246,7 @@ class PaperList {
 	    if ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted))
 		$this->needSubmitReview++;
 	    if ($row->reviewId) {
-		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId\">";
+		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLink . "\">";
 		$a2 = "</a>&nbsp;";
 		if ($row->reviewSubmitted > 0)
 		    $a2 .= "<span class='rstat rstat_done'>(Complete)</span>";
@@ -274,7 +278,7 @@ class PaperList {
 		$this->needSubmitReview++;
 	    $a1 = $a2 = "";
 	    if ($row->reviewId) {
-		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId\">";
+		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLink . "\">";
 		$a2 = "</a>";
 	    }
 	    if ($row->author > 0 || $row->conflict > 0) {

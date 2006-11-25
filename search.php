@@ -406,10 +406,10 @@ echo "</select></td>
 
 
 if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
-    $pl = new PaperList(true, "search", $Search);
+    $pl = new PaperList(true, "list", $Search);
     $t = $pl->text($Search->limitName, $Me, ($Search->matchPreg ? "This search" : $tOpt[$Search->limitName]));
 
-    $_SESSION["whichList"] = "search";
+    $_SESSION["whichList"] = "list";
     if ($Search->matchPreg)
 	$_SESSION["matchPreg"] = "/(" . $Search->matchPreg . ")/i";
     else
