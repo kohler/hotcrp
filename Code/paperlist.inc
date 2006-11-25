@@ -464,7 +464,11 @@ class PaperList {
 	    if ($this->contact->amAssistant()) {
 		$t .= "<tr><td><b>Conflicts:</b> <select name='mark'>\n";
 		$t .= "<option value='pcpaper' selected='selected'>PC-authored paper</option>\n";
-		$t .= "</select> <input type='submit' class='button_small' name='setmark' value='Mark' /> <input type='submit' class='button_small' name='clearmark' value='Clear' />";
+		$result = $Conf->q("select firstName, lastName, email from ContactInfo join PCMember using (contactId) order by lastName, firstName");
+		if (!MDB2::isError($result))
+		    while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
+			$t .= "<option value=\"" . htmlspecialchars($row->email) . "\">" . contactHtml($row->firstName, $row->lastName) . "</option>\n";
+		$t .= "</select> <input type='submit' class='button_small' name='setmark' value='Mark' /> <input type='submit' class='button_small' name='clearmark' value='Unmark' />";
 		$t .= "</td></tr>\n";
 	    }
 	    $t .= "</table></div>\n";

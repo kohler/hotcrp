@@ -1663,34 +1663,11 @@ class Conference {
 	return $conflicts;
     }
 
-  //
-  // Make a selection option with the specified name
-  // selected on the specified contactId
-  //
-  function makePCSelector($varName, $selected, $size=10) {
-    print "<select name='$varName' size='$size'>\n";
-    $query = "SELECT ContactInfo.contactId, firstName, lastName, email "
-      . " from ContactInfo join PCMember using (contactId) "
-      . " ORDER BY lastName, firstName ";
-    $result = $this->qe($query);
-    if (!MDB2::isError($result)) {
-      while($row=$result->fetchRow()) {
-	print "<option value=\"$row[0]\" ";
-	if ($row[0] == $selected) {
-	  print "selected='selected' ";
-	}
-	print "> $row[1] $row[2] ($row[3]) </option>";
-      }
+    function safeHtml($string) {
+	if ($string == "")
+	    return "&nbsp;";
+	else
+	    return nl2br(htmlspecialchars($string));
     }
-    print "</select>";
-  }
-
-  function safeHtml($string) {
-    if ( $string == "") {
-      return "&nbsp;";
-    } else {
-      return nl2br(htmlspecialchars($string));
-    }
-  }
 
 }

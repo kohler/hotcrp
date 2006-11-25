@@ -311,7 +311,15 @@ if (isset($_REQUEST["setmark"]) && defval($_REQUEST["mark"], "") != "" && isset(
     if (!$Me->amAssistant())
 	$Conf->errorMsg("Only the PC chairs can set PC conflicts.");
     else if ($_REQUEST["mark"] == "pcpaper")
-	$result = $Conf->qe("update Paper set pcPaper=1 where " . paperselPredicate($papersel), "while setting PC papers");
+	$result = $Conf->qe("update Paper set pcPaper=1 where " . paperselPredicate($papersel), "while marking PC papers");
+    else {
+	$pc = new Contact;
+	if ($pc->lookupByEmail($_REQUEST["mark"], $Conf)) {
+	    $while = "while marking conflicts";
+	    $result = $Conf->qe("insert into PaperConflict (paperId, contactId) (select Paper.paperId, $pc->contactId from Paper left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=$pc->contactId) where PaperConflict.author is null and (" . paperselPredicate($papersel, "Paper.") . "))", $while);
+	} else
+	    $Conf->errorMsg(htmlspecialchars($_REQUEST["mark"]) . " is not a PC member");
+    }
 
 
 // unmark conflicts/PC-authored papers
@@ -319,7 +327,15 @@ if (isset($_REQUEST["clearmark"]) && defval($_REQUEST["mark"], "") != "" && isse
     if (!$Me->amAssistant())
 	$Conf->errorMsg("Only the PC chairs can clear PC conflicts.");
     else if ($_REQUEST["mark"] == "pcpaper")
-	$result = $Conf->qe("update Paper set pcPaper=0 where " . paperselPredicate($papersel), "while setting PC papers");
+	$result = $Conf->qe("update Paper set pcPaper=0 where " . paperselPredicate($papersel), "while unmarking PC papers");
+    else {
+	$pc = new Contact;
+	if ($pc->lookupByEmail($_REQUEST["mark"], $Conf)) {
+	    $while = "while unmarking conflicts";
+	    $result = $Conf->qe("delete from PaperConflict where contactId=" . $pc->contactId . " and author=0 and (" . paperselPredicate($papersel) . ")", $while);
+	} else
+	    $Conf->errorMsg(htmlspecialchars($_REQUEST["mark"]) . " is not a PC member");
+    }
 
 
 // search
