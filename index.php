@@ -259,7 +259,6 @@ if ($Me->amAssistant()) {
     echo "<ul>
 <li>Manage all papers
   <ul>
-  <li><a href='Chair/SetPCPaper.php'>Mark Papers as PC Papers</a></li>
   <li><a href='Chair/GradeAllPapers.php'>Assign Paper Grades</a></li>
   </ul></li>
 

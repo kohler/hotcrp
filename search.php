@@ -7,6 +7,19 @@ $Me->goIfInvalid();
 $getaction = "";
 if (isset($_REQUEST["get"]) && isset($_REQUEST["getaction"]))
     $getaction = $_REQUEST["getaction"];
+if (isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
+    $papersel = array();
+    foreach ($_REQUEST["papersel"] as $p)
+	if (($p = cvtint($p)) > 0)
+	    $papersel[] = $p;
+    if (count($papersel) == 0)
+	unset($papersel);
+}
+
+
+function paperselPredicate($papersel, $prefix = "") {
+    return "${prefix}paperId=" . join(" or ${prefix}paperId=", $papersel);
+}
 
 
 // paper group
@@ -36,10 +49,8 @@ if (!isset($_REQUEST["t"]))
 
 
 // download selected papers
-if ($getaction == "paper") {
-    if (!isset($_REQUEST["papersel"]) || !is_array($_REQUEST["papersel"]))
-	$_REQUEST["papersel"] = array();
-    $q = $Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"]));
+if ($getaction == "paper" && isset($papersel)) {
+    $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
     $result = $Conf->qe($q, "while selecting papers");
     $downloads = array();
     if (MDB2::isError($result))
@@ -59,10 +70,8 @@ if ($getaction == "paper") {
 
 
 // download selected final copies
-if ($getaction == "final") {
-    if (!isset($_REQUEST["papersel"]) || !is_array($_REQUEST["papersel"]))
-	$_REQUEST["papersel"] = array();
-    $q = $Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"]));
+if ($getaction == "final" && isset($papersel)) {
+    $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
     $result = $Conf->qe($q, "while selecting papers");
     $downloads = array();
     if (MDB2::isError($result))
@@ -83,7 +92,7 @@ if ($getaction == "final") {
 
 // download review form for selected papers
 // (or blank form if no papers selected)
-if ($getaction == "revform" && !isset($_REQUEST["papersel"])) {
+if ($getaction == "revform" && !isset($papersel)) {
     $rf = reviewForm();
     $text = $rf->textFormHeader($Conf, false)
 	. $rf->textForm(null, null, $Conf, null, ReviewForm::REV_FORM) . "\n";
@@ -91,10 +100,7 @@ if ($getaction == "revform" && !isset($_REQUEST["papersel"])) {
     exit;
 } else if ($getaction == "revform") {
     $rf = reviewForm();
-
-    if (!is_array($_REQUEST["papersel"]))
-	$_REQUEST["papersel"] = array();
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"], "myReviewsOpt" => 1)), "while selecting papers");
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "myReviewsOpt" => 1)), "while selecting papers");
 
     $text = '';
     $errors = array();
@@ -125,9 +131,9 @@ if ($getaction == "revform" && !isset($_REQUEST["papersel"])) {
 
 
 // download all reviews for selected papers
-if ($getaction == "rev" && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
+if ($getaction == "rev" && isset($papersel)) {
     $rf = reviewForm();
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"], "allReviews" => 1, "reviewerName" => 1)), "while selecting papers");
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "allReviews" => 1, "reviewerName" => 1)), "while selecting papers");
 
     $text = '';
     $errors = array();
@@ -161,11 +167,11 @@ if ($getaction == "rev" && isset($_REQUEST["papersel"]) && is_array($_REQUEST["p
 
 // set tags for selected papers
 if ((isset($_REQUEST["addtag"]) || isset($_REQUEST["deltag"]))
-    && $Me->isPC && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"]) && isset($_REQUEST["tag"])) {
+    && $Me->isPC && isset($papersel) && isset($_REQUEST["tag"])) {
     $errors = array();
     $papers = array();
     if (!$Me->amAssistant()) {
-	$result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"])), "while selecting papers");
+	$result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel)), "while selecting papers");
 	if (!MDB2::isError($result))
 	    while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
 		if ($row->conflict > 0)
@@ -173,9 +179,7 @@ if ((isset($_REQUEST["addtag"]) || isset($_REQUEST["deltag"]))
 		else
 		    $papers[] = $row->paperId;
     } else
-	foreach ($_REQUEST["papersel"] as $id)
-	    if (($id = cvtint($id)) > 0)
-		$papers[] = $id;
+	$papers = $papersel;
 
     if (count($errors))
 	$Conf->errorMsg(join("<br/>", $errors));
@@ -185,14 +189,9 @@ if ((isset($_REQUEST["addtag"]) || isset($_REQUEST["deltag"]))
 
 
 // download text author information for selected papers
-if ($getaction == "authors"
-    && ($Me->amAssistant() || ($Me->isPC && $Conf->blindSubmission() < 2))
-    && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
-    $idq = "";
-    foreach ($_REQUEST["papersel"] as $id)
-	if (($id = cvtint($id)) > 0)
-	    $idq .= " or paperId=$id";
-    $idq = substr($idq, 4);
+if ($getaction == "authors" && isset($papersel)
+    && ($Me->amAssistant() || ($Me->isPC && $Conf->blindSubmission() < 2))) {
+    $idq = paperselPredicate($papersel);
     if (!$Me->amAssistant())
 	$idq = "($idq) and blind=0";
     $result = $Conf->qe("select paperId, title, authorInformation from Paper where $idq", "while fetching authors");
@@ -210,13 +209,8 @@ if ($getaction == "authors"
 
 
 // download text contact author information, with email, for selected papers
-if ($getaction == "contact" && $Me->amAssistant()
-    && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
-    $idq = "";
-    foreach ($_REQUEST["papersel"] as $id)
-	if (($id = cvtint($id)) > 0)
-	    $idq .= " or Paper.paperId=$id";
-    $idq = substr($idq, 4);
+if ($getaction == "contact" && $Me->amAssistant() && isset($papersel)) {
+    $idq = paperselPredicate($papersel, "Paper.");
     if (!$Me->amAssistant())
 	$idq = "($idq) and blind=0";
     $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.author>0) join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq", "while fetching contact authors");
@@ -232,10 +226,9 @@ if ($getaction == "contact" && $Me->amAssistant()
 
 
 // download scores and, maybe, anonymity for selected papers
-if ($getaction == "scores" && $Me->amAssistant()
-    && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
+if ($getaction == "scores" && $Me->amAssistant() && isset($papersel)) {
     $rf = reviewForm();
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $_REQUEST["papersel"], "allReviewScores" => 1, "reviewerName" => 1)), "while selecting papers");
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "allReviewScores" => 1, "reviewerName" => 1)), "while selecting papers");
 
     // compose scores
     $scores = array();
@@ -281,13 +274,8 @@ if ($getaction == "scores" && $Me->amAssistant()
 
 
 // download topics for selected papers
-if ($getaction == "topics" && $Me->amAssistant()
-    && isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
-    $idq = "";
-    foreach ($_REQUEST["papersel"] as $id)
-	if (($id = cvtint($id)) > 0)
-	    $idq .= " or paperId=$id";
-    $result = $Conf->qe("select paperId, title, topicName from Paper join PaperTopic using (paperId) join TopicArea using (topicId) where " . substr($idq, 4), "while fetching topics");
+if ($getaction == "topics" && $Me->amAssistant() && isset($papersel)) {
+    $result = $Conf->qe("select paperId, title, topicName from Paper join PaperTopic using (paperId) join TopicArea using (topicId) where " . paperselPredicate($papersel), "while fetching topics");
 
     // compose scores
     $text = "#paperId\ttitle\ttopic\n";
@@ -305,22 +293,33 @@ if ($getaction == "topics" && $Me->amAssistant()
 
 
 // set outcome for selected papers
-if (isset($_REQUEST["setoutcome"]))
+if (isset($_REQUEST["setoutcome"]) && defval($_REQUEST['outcome'], "") != "" && isset($papersel))
     if (!$Me->canSetOutcome(null))
 	$Conf->errorMsg("You cannot set paper outcomes.");
     else {
 	$o = cvtint(trim($_REQUEST['outcome']));
 	$rf = reviewForm();
-	if (isset($rf->options['outcome'][$o])) {
-	    $idq = "";
-	    foreach ($_REQUEST["papersel"] as $id)
-		if (($id = cvtint($id)) > 0)
-		    $idq .= " or paperId=$id";
-	    $idq = substr($idq, 4);
-	    $result = $Conf->qe("update Paper set outcome=$o where $idq", "while changing outcome");
-	} else
+	if (isset($rf->options['outcome'][$o]))
+	    $result = $Conf->qe("update Paper set outcome=$o where " . paperselPredicate($papersel), "while changing outcome");
+	else
 	    $Conf->errorMsg("Bad outcome value!");
     }
+
+
+// mark conflicts/PC-authored papers
+if (isset($_REQUEST["setmark"]) && defval($_REQUEST["mark"], "") != "" && isset($papersel))
+    if (!$Me->amAssistant())
+	$Conf->errorMsg("Only the PC chairs can set PC conflicts.");
+    else if ($_REQUEST["mark"] == "pcpaper")
+	$result = $Conf->qe("update Paper set pcPaper=1 where " . paperselPredicate($papersel), "while setting PC papers");
+
+
+// unmark conflicts/PC-authored papers
+if (isset($_REQUEST["clearmark"]) && defval($_REQUEST["mark"], "") != "" && isset($papersel))
+    if (!$Me->amAssistant())
+	$Conf->errorMsg("Only the PC chairs can clear PC conflicts.");
+    else if ($_REQUEST["mark"] == "pcpaper")
+	$result = $Conf->qe("update Paper set pcPaper=0 where " . paperselPredicate($papersel), "while setting PC papers");
 
 
 // search

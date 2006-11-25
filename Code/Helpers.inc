@@ -772,8 +772,10 @@ function outcomeSelector($curOutcome = 0) {
     $outcomes = array_keys($outcomeMap);
     sort($outcomes);
     $outcomes = array_unique(array_merge(array(0), $outcomes));
+    if ($curOutcome === null)
+	$text .= "    <option value='' selected='selected'><b>Set outcome...</b></option>\n";
     foreach ($outcomes as $key)
-	$text .= "    <option value='$key'" . ($curOutcome == $key ? " selected='selected'" : "") . ">" . htmlspecialchars($outcomeMap[$key]) . "</option>\n";
+	$text .= "    <option value='$key'" . ($curOutcome == $key && $curOutcome !== null ? " selected='selected'" : "") . ">" . htmlspecialchars($outcomeMap[$key]) . "</option>\n";
     return $text . "  </select>";
 }
 

@@ -454,13 +454,20 @@ class PaperList {
 	$t .= "</select>  <input type='submit' class='button_small' name='get' value='Go' />\n";
 
 	if ($this->contact->isPC) {
-	    $t .= "  &nbsp;|&nbsp; <a class='unfolder' href='javascript:fold(\"plact\", 0)'>More &raquo;</a><a class='folder' href='javascript:fold(\"plact\", 1)'>Less &laquo;</a>
+	    $t .= "<span class='sep'></span> <a class='unfolder' href='javascript:fold(\"plact\", 0)'>More &raquo;</a><a class='folder' href='javascript:fold(\"plact\", 1)'>Less &laquo;</a>
 <div class='extension'><table>
-  <tr><td><input class='textlite' type='text' name='tag' value='' size='15' /> <input type='submit' class='button_small' name='addtag' value='Add tags' /> <input type='submit' class='button_small' name='deltag' value='Remove tags' /></td>\n";
+  <tr><td><b>Tags:</b> <input class='textlite' type='text' name='tag' value='' size='15' /> <input type='submit' class='button_small' name='addtag' value='Add' /> <input type='submit' class='button_small' name='deltag' value='Remove' /></td>\n";
 	    if ($this->contact->amAssistant())
 		$t .= "  <td><span class='lgsep'></span></td>
-  <td>" . outcomeSelector() . " <input type='submit' class='button_small' name='setoutcome' value='Set outcome' /></td>";
-	    $t .= "</tr></table></div>\n";
+  <td>" . outcomeSelector(null) . " <input type='submit' class='button_small' name='setoutcome' value='Go' /></td>";
+	    $t .= "</tr>";
+	    if ($this->contact->amAssistant()) {
+		$t .= "<tr><td><b>Conflicts:</b> <select name='mark'>\n";
+		$t .= "<option value='pcpaper' selected='selected'>PC-authored paper</option>\n";
+		$t .= "</select> <input type='submit' class='button_small' name='setmark' value='Mark' /> <input type='submit' class='button_small' name='clearmark' value='Clear' />";
+		$t .= "</td></tr>\n";
+	    }
+	    $t .= "</table></div>\n";
 	}
 	
 	return $t . "</td></tr>\n";
