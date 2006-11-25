@@ -28,7 +28,9 @@ class PaperList {
     const FIELD_ALL_PREFERENCES = 44;
     const FIELD_REVIEWER_TYPE_ICON = 45;
     const FIELD_OPT_MERIT_ICON = 46;
-
+    const FIELD_AUTHOR_MATCH = 47;
+    const FIELD_COLLABORATORS_MATCH = 48;
+    
     var $showHeader;
     var $sortField;
     var $reverseSort;
@@ -44,6 +46,8 @@ class PaperList {
     var $scoresOk;
     var $meritMax;
     var $search;
+    var $authorMatch;
+    var $collaboratorsMatch;
     
     function PaperList($sortable = true, $sessionVar = null, $search = null) {
 	$this->showHeader = true;
@@ -196,6 +200,10 @@ class PaperList {
 	    $rf = reviewForm();
 	    return $rf->webFieldAbbrev("overAllMerit");
 	}
+	case self::FIELD_AUTHOR_MATCH:
+	    return "Author matches";
+	case self::FIELD_COLLABORATORS_MATCH:
+	    return "Collaborator matches";
 	default:
 	    return "&lt;$fieldId&gt;?";
 	}
@@ -211,6 +219,19 @@ class PaperList {
 	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\"><img src=\"${ConfSiteBase}images/postscript.png\" alt='[PS]' /></a>";
 	else
 	    return "&nbsp;<small><a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\">[Download]</a></small>";
+    }
+
+    function _joinMatches($m) {
+	$x = array();
+	$out = "";
+	foreach ($m[0] as $T) {
+	    $t = strtolower($T);
+	    if (!isset($x[$t])) {
+		$x[$t] = 1;
+		$out .= $T . " ";
+	    }
+	}
+	return ($out ? htmlspecialchars(substr($out, 0, strlen($out) - 1)) : "");
     }
     
     function content($fieldId, $row, $plist, $reviewList) {
@@ -360,6 +381,16 @@ class PaperList {
 	    return $x;
 	case self::FIELD_OPT_MERIT_ICON:
 	    return $Conf->textValuesGraph($row->overallMeritScores, $this->meritMax, 1);
+	case self::FIELD_AUTHOR_MATCH:
+	    if (!isset($this->authorMatch))
+		return "";
+	    preg_match_all("/(" . $this->authorMatch . ")/i", $row->authorInformation, $matches);
+	    return $this->_joinMatches($matches);
+	case self::FIELD_COLLABORATORS_MATCH:
+	    if (!isset($this->collaboratorsMatch))
+		return "";
+	    preg_match_all("/(" . $this->collaboratorsMatch . ")/i", $row->collaborators, $matches);
+	    return $this->_joinMatches($matches);
 	default:
 	    return "";
 	}

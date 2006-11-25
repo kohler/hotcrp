@@ -72,7 +72,8 @@ entering your preferences.
 Preferences are integers; the higher the number, the more you want to
 review the paper.  0 is neutral (no preference).
 For short, \"+\" means \"+1\", \"&minus;\" means \"&minus;1\",
-\"++\" means \"+2\", and so forth.</p>
+\"++\" means \"+2\", and so forth.
+Use \"&minus;100\" to represent a conflict.</p>
 
 <p>The paper list shows all submitted papers and their topics.  You have high
 interest in <span class='topic2'>bold topics</span>, and low interest in <span
