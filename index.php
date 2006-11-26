@@ -232,9 +232,8 @@ if ($Me->isPC) {
     if ($Conf->validTimeFor('PCGradePapers', 0))
 	echo "  <li><a href='PC/GradePapers.php'>Grade Papers</a>
 -- arrive at a consensus and determine discussion order of papers at PC meeting</li>\n";
-    if ($Conf->validTimeFor('PCMeetingView', 0))
-	echo "  <li><a href='PC/SeeAllGrades.php'>See overall merit and grades for all papers</a> -- you can get to reviews from here as well</li>\n";
     if ($Conf->validTimeFor('PCMeetingView', 0)) {
+	echo "  <li><a href='PC/SeeAllGrades.php'>See overall merit and grades for all papers</a> -- you can get to reviews from here as well</li>\n";
 	echo "  <li><a href='PC/ListReviews.php'>Quickly see reviews</a> -- but only for papers which you do not have conflicts</li>\n";
 	echo "  <li><a href='PC/CheckOnPCProgress.php'>Spy On Your Neighbours</a> -- See progress of entire PC</li>\n";
 	echo "  <li><a href='Chair/SpotProblems.php'>Spot problems across all papers</a></li>\n";
@@ -243,13 +242,6 @@ if ($Me->isPC) {
     if ($Conf->validTimeFor('PCGradePapers', 0) || $Conf->validTimeFor('AtTheMeeting', 0))
 	echo "  <li><a href='Chair/AveragePaperScore.php'>See Average Paper Scores</a></li>\n";
     echo "</ul></li>\n";
-
-    if ($Conf->validTimeFor('EndOfTheMeeting', 0)) {
-	echo "\n<li>The aftermath\n  <ul>\n";
-	echo "  <li><a href='PC/SeeAcceptedPapers.php'>See Accepted Papers</a></li>\n";
-	echo "  </ul></li>\n";
-    }
-
     echo "</ul></div></div>\n";
 }    
 

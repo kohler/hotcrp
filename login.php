@@ -6,6 +6,41 @@ if (isset($_SESSION['Me']))
     $_SESSION['Me']->invalidate();
 unset($_SESSION["AskedYouToUpdateContactInfo"]);
 
+// Create an account
+function doCreateAccount() {
+    global $Conf;
+
+    if ($_SESSION["Me"]->valid())
+	return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ".  To retrieve your password, select \"Mail me my password\".");
+
+    $result = $_SESSION["Me"]->initialize($_REQUEST["email"], $Conf);
+    if (MDB2::isError($result))
+	return $Conf->errorMsg($result->dbErrorText($result, "while adding your account"));
+
+    $_SESSION["Me"]->sendAccountInfo($Conf, true, false);
+    $Conf->log("Created account", $_SESSION["Me"]);
+    $msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".  ";
+
+    // handle setup phase
+    if ($Conf->validPeriod("setupPhase")) {
+	$msg .= "  As the first user, you have been assigned PC chair privilege and are being automatically logged in.  Your password is \"<tt>" . htmlspecialchars($_SESSION["Me"]->password) . "</tt>\".  All later users will have to log in normally.";
+	$Conf->confirmMsg($msg);
+	$Conf->qe("insert into Chair (contactId) values (" . $_SESSION["Me"]->contactId . ")", "while granting PC chair privilege");
+	$Conf->qe("insert into PCMember (contactId) values (" . $_SESSION["Me"]->contactId . ")", "while granting PC chair privilege");
+	$Conf->qe("delete from ImportantDates where name='setupPhase'", "while leaving setup phase");
+	return true;
+    }
+
+    if ($Conf->allowEmailTo($_SESSION["Me"]->email))
+	$msg .= "  A password has been emailed to this address.  When you receive that email, return here to complete the registration process.";
+    else
+	$msg .= "  The email address you provided seems invalid (it doesn't contain an @).  Although an account was created for you, you need the site administrator's help to retrieve your password.";
+    if (isset($_REQUEST["password"]) && $_REQUEST["password"] != "")
+	$msg .= "  Note that the password you supplied on the login screen was ignored.";
+    $Conf->confirmMsg($msg);
+    return null;
+}
+
 // Actual login code
 function doLogin() {
     global $Conf;
@@ -17,24 +52,9 @@ function doLogin() {
 
     $_SESSION["Me"]->lookupByEmail($_REQUEST["email"], $Conf);
     if (isset($_REQUEST["register"])) {
-	if ($_SESSION["Me"]->valid())
-	    return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ".  To retrieve your password, select \"Mail me my password\".");
-
-	$result = $_SESSION["Me"]->initialize($_REQUEST["email"], $Conf);
-	if (MDB2::isError($result))
-	    return $Conf->errorMsg($result->dbErrorText($result, "while adding your account"));
-
-	$_SESSION["Me"]->sendAccountInfo($Conf, true, false);
-	$Conf->log("Created account", $_SESSION["Me"]);
-	$msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".  ";
-	if ($Conf->allowEmailTo($_SESSION["Me"]->email))
-	    $msg .= "  A password has been emailed to this address.  When you receive that email, return here to complete the registration process.";
-	else
-	    $msg .= "  The email address you provided seems invalid (it doesn't contain an @).  Although an account was created for you, you need the site administrator's help to retrieve your password.";
-	if (isset($_REQUEST["password"]) && $_REQUEST["password"] != "")
-	    $msg .= "  Note that the password you supplied on the login screen was ignored.";
-	$Conf->confirmMsg($msg);
-	return null;
+	if (($reg = doCreateAccount()) === null)
+	    return $reg;
+	$_REQUEST["password"] = $_SESSION["Me"]->password;
     }
 
     if (!$_SESSION["Me"]->valid())

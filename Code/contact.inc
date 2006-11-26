@@ -74,8 +74,6 @@ class Contact {
 		    if ($row[5] > 0)
 			$this->reviewsOutstanding = true;
 		}
-		if ($Opt['setupPhase'])
-		    $this->isChair = true;
 		if ($this->isChair)
 		    $this->chairContactId = $this->contactId;
 		// change view ID or chair mode

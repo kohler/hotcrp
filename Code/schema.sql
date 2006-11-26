@@ -5,6 +5,7 @@ CREATE TABLE ImportantDates (
   end timestamp(14) NOT NULL default 0,
   UNIQUE KEY name (name)
 ) TYPE=MyISAM;
+insert into ImportantDates (name, start) values ('setupPhase', current_timestamp);
 
 
 drop table if exists ActionLog;

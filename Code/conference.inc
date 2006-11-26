@@ -71,7 +71,6 @@ class Conference {
       echo "<tr> <td>";
       echo "<p>";
 
-      echo "setupPhase is " . $Opt['setupPhase'] . " <br>";
       echo "shortName is " . $this -> shortName . " <br>";
       echo "longName is " . $this -> longName . " <br>";
       echo "paperSite is " . $this -> paperSite . " <br>";
@@ -312,7 +311,7 @@ class Conference {
 	$now = time();
 	$t = &$this->startTime[$name];
 	if (!isset($t) || $t <= 0 || $t >= $now)
-	    return 0;
+	    return false;
 	$t = &$this->endTime[$name];
 	return !isset($t) || $t <= 0 || $now <= $t;
     }
@@ -502,20 +501,22 @@ class Conference {
 
 	    // Check if paper is postscript or PDF, only kinds allowed.
 	    // We ignore the mimetype since MacOS browsers get this wrong
-	    if ($Opt['allowPDF'] && strncasecmp("%PDF-", $contents, 5) == 0)
+	    $allowPDF = defval($Opt['allowPDF'], true);
+	    $allowPS = defval($Opt['allowPS'], true);
+	    if ($allowPDF && strncasecmp("%PDF-", $contents, 5) == 0)
 		$mimetype = "application/pdf";
-	    else if ($Opt['allowPS'] && strncasecmp("%!PS-", $contents, 5) == 0)
+	    else if ($allowPS && strncasecmp("%!PS-", $contents, 5) == 0)
 		$mimetype = "application/postscript";
 	    else {
 		$mimetype = "application/octet-stream";
 		if (isset($_FILES[$uploadid]["type"]))
 		    $mimetype = $_FILES[$uploadid]["type"];
 		$message = "You appear to be submitting a file that's not in a valid format for this conference.  ";
-		if ($Opt['allowPDF'] && $Opt['allowPS'])
+		if ($allowPDF && $Opt['allowPS'])
 		    $message .= "Valid formats are PDF and PostScript.  ";
-		else if ($Opt['allowPDF'])
+		else if ($allowPDF)
 		    $message .= "PDF is the only valid format.  ";
-		else if ($Opt['allowPS'])
+		else if ($allowPS)
 		    $message .= "PostScript is the only valid format.  ";
 		else
 		    $message .= "Internal error: there are no valid formats.  ";
@@ -1067,7 +1068,10 @@ class Conference {
 	    echo "<meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />\n";
 	    echo "<title>", $title, " - ", $this->shortName, "</title>\n";
 	    echo "<script src=\"${ConfSiteBase}script.js\" type=\"text/javascript\"></script>\n";
-	    echo $Opt['theme'];
+	    if (isset($Opt['theme']))
+		echo $Opt['theme'];
+	    else
+		echo "<link rel='stylesheet' type='text/css' href='${ConfSiteBase}style.css' />\n";
 	    $this->headerPrinted = 1;
 	}
     }
