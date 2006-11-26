@@ -18,7 +18,10 @@ if (isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
 
 
 function paperselPredicate($papersel, $prefix = "") {
-    return "${prefix}paperId=" . join(" or ${prefix}paperId=", $papersel);
+    if (count($papersel) == 1)
+	return "${prefix}paperId=$papersel[0]";
+    else
+	return "${prefix}paperId in (" . join(", ", $papersel) . ")";
 }
 
 
@@ -203,6 +206,28 @@ if ($getaction == "authors" && isset($papersel)
 		    $text .= $row[0] . "\t" . $row[1] . "\t" . $au . "\n";
 	}
 	downloadText($text, $Opt['downloadPrefix'] . "authors.txt", "authors");
+	exit;
+    }
+}
+
+
+// download text PC conflict information for selected papers
+if ($getaction == "pcconflicts" && isset($papersel) && $Me->amAssistant()) {
+    $idq = paperselPredicate($papersel, "Paper.");
+    $result = $Conf->qe("select Paper.paperId, title, group_concat(email separator ' ')
+		from Paper
+		left join (select PaperConflict.paperId, email
+ 			from PaperConflict join PCMember using (contactId)
+			join ContactInfo on (PCMember.contactId=ContactInfo.contactId))
+			as PCConflict on (PCConflict.paperId=Paper.paperId)
+		where $idq
+		group by Paper.paperId", "while fetching PC conflicts");
+    if (!MDB2::isError($result)) {
+	$text = "#paperId\ttitle\tPC conflicts\n";
+	while (($row = $result->fetchRow()))
+	    if ($row[2])
+		$text .= $row[0] . "\t" . $row[1] . "\t" . $row[2] . "\n";
+	downloadText($text, $Opt['downloadPrefix'] . "pcconflicts.txt", "PC conflicts");
 	exit;
     }
 }

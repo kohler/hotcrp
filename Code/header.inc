@@ -99,9 +99,6 @@ if (!isset($_SESSION['Me']))
     $_SESSION['Me'] = new Contact;
 $_SESSION['Me']->validated = 0;
 
-if (!isset($_SESSION['WhichTaskView']))
-    $_SESSION['WhichTaskView'] = 'All';
-
 if (!isset($_SESSION['SeeReviewerInfo']))
     $_SESSION['SeeReviewerInfo'] = 0;
 if (!isset($_SESSION['SeeUnfinishedReviews']))

@@ -445,8 +445,10 @@ class PaperList {
 	    $t .= "    <option value='rev'>All reviews (no conflicts)</option>\n";
 	if ($this->contact->amAssistant() || ($this->contact->isReviewer && $Conf->blindSubmission() < 2))
 	    $t .= "    <option value='authors'>Authors (text)</option>\n";
-	if ($this->contact->amAssistant())
+	if ($this->contact->amAssistant()) {
 	    $t .= "    <option value='contact'>Contact emails (text)</option>\n";
+	    $t .= "    <option value='pcconflicts'>PC conflicts (text)</option>\n";
+	}
 	if ($this->contact->isPC)
 	    $t .= "    <option value='topics'>Topics (text)</option>\n";
 	if ($this->contact->amAssistant() || ($this->contact->isPC && $Conf->validTimeFor('PCMeetingView', 0)))

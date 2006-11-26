@@ -29,12 +29,6 @@ if (($_SESSION["AskedYouToUpdateContactInfo"] < 2
 }
 
 
-//
-// Check for updated menu
-//
-if (isset($_REQUEST["setRole"]))
-    $_SESSION["WhichTaskView"] = $_REQUEST["setRole"];
-
 $Conf->header("Home", "", actionBar(null, false, ""));
 
 
