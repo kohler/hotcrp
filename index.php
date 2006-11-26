@@ -156,7 +156,7 @@ if ($Me->isPC || $Me->amReviewer()) {
 	echo "<li><a href='PC/reviewprefs.php'>Mark review preferences</a></li>\n";
     echo "</ul></td><td class='r'><ul class='compact'>\n";
     if ($Me->amReviewer())
-	echo "<li><a href='uploadreview.php'>Offline reviewing</a></li>\n";
+	echo "<li><a href='offline.php'>Offline reviewing</a></li>\n";
     if ($Me->amAssistant())
 	echo "<li><a href='Chair/AssignPapers.php'>PC review assignments and conflicts</a></li>\n";
     echo "</ul></td></tr></table>\n<div class='smgap'></div>\n";

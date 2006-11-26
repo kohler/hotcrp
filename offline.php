@@ -53,13 +53,13 @@ if ($Me->amReviewer()) {
 
 echo "<table>
 <tr class='pt_actions'>
-  <td class='form_entry'><form method='get' action='uploadreview.php'><input class='button_default' type='submit' name='downloadForm' value='Download review form' /></form></td>\n\n";
+  <td class='form_entry'><form method='get' action='offline.php'><input class='button_default' type='submit' name='downloadForm' value='Download review form' /></form></td>\n\n";
 
 if ($Me->amReviewer()) {
     $disabled = ($pastDeadline && !$Me->amAssistant() ? " disabled='disabled'" : "");
     echo "  <td class='form_entry' id='upload'><table class='compact'>
     <tr>
-      <td><form action='uploadreview.php?post=1' method='post' enctype='multipart/form-data'>
+      <td><form action='offline.php?post=1' method='post' enctype='multipart/form-data'>
 	<input type='hidden' name='redirect' value='offline' />
 	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp;<input class='button_default' type='submit' value='Upload filled-out review form' name='uploadForm' $disabled/>
       </form></td>
@@ -76,4 +76,3 @@ echo "</tr>\n</table>\n\n";
 if (($text = $rf->webGuidanceRows($Me->amReviewer())))
     echo "<hr/>\n\n<table>\n<tr class='id'>\n  <td class='caption'></td>\n  <td class='entry'><h3>Review form guidance</h3></td>\n</tr>\n", $text, "</table>\n";
 $Conf->footer();
-?>

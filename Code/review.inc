@@ -333,7 +333,7 @@ class ReviewForm {
 ==-== through \"End Review\".  Make sure to change the paper number.\n";
 	    $x .= "==-== DO NOT CHANGE \"==+==\" LINES EXCEPT AS NOTED!
 ==-== When you are done, upload the review form at this address:
-==-== $conf->paperSite/uploadreview.php
+==-== $conf->paperSite/offline.php
 ==-== That site also has further guidance on the review form.\n\n";
 	} else
 	    $x .= "\n\n";
