@@ -33,9 +33,9 @@ $Opt['downloadPrefix'] = "hotnets5-";
 //                   it is safe to set this to true.
 //   emailFrom       Email sent by CRP appears to come from this address.
 //                   Should be a plausible email address for mail originating
-//                   at the conference site.  (E.g., things like SPF shouldn't
-//                   think the mail is spam.)
-//
+//                   at the conference site, so things like SPF don't mistake
+//                   the mail for spam.
+
 $Opt['contactName'] = "Eddie Kohler";
 $Opt['contactEmail'] = "kohler@cs.ucla.edu";
 $Opt['sendEmail'] = 0;
@@ -73,3 +73,21 @@ $Opt['dbDumpDir'] = "/var/spool/conference";
 
 $Opt['conferenceSite'] = "http://www.acm.org/sigs/sigcomm/HotNets-V/";
 $Opt['paperSite'] = "http://www.read.cs.ucla.edu/hotnets5";
+
+
+// SESSIONS AND WEB SETUP
+//
+//   theme           <head> code used to define the theme.  Default should
+//                   not be changed.
+//   sessionLifetime Number of seconds a user may be idle before their session
+//                   is garbage collected and they must log in again.  Defaults
+//                   to 86400 (24 hours).
+//                   DEBIAN NOTE: On some Debian installations, a cron job
+//                   garbage-collects old sessions.  That cron job ignores
+//                   local 'session.gc_maxlifetime' settings, and thus
+//                   $Opt['sessionLifetime'], so in addition to this variable,
+//                   you'll also need to change the system-wide setting in
+//                   'php.ini'.
+
+// $Opt['theme'] = "whatever";
+// $Opt['sessionLifetime'] = 86400;

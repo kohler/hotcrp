@@ -90,7 +90,7 @@ $Conf = new Conference();
 // Note that on some Debian installations, a cron job garbage-collects old
 // sessions.  That cron job ignores local 'session.gc_maxlifetime' settings,
 // so you'll also need to change the system-wide setting in 'php.ini'.
-ini_alter('session.gc_maxlifetime', '864000');
+ini_alter('session.gc_maxlifetime', defval($Opt["sessionLifetime"], 86400));
 
 session_name($Opt['sessionName']);
 session_start();
