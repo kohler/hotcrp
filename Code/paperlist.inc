@@ -591,7 +591,7 @@ class PaperList {
 	    $ord = 0;
 
 	    if ($this->sortable && $url) {
-		$sortUrl = $url . (strpos($url, "?") ? "&" : "?") . "sort=";
+		$sortUrl = $ConfSiteBase . $url . (strpos($url, "?") ? "&" : "?") . "sort=";
 		$q = "<a class='pl_sort' href=\"" . $sortUrl;
 		foreach ($fieldId as $f) {
 		    if ($f[2] != 1)
@@ -636,7 +636,7 @@ class PaperList {
 	    if (isset($_REQUEST["sort"]))
 		$url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
 	    $_SESSION[$this->sessionVar] = $ids;
-	    $_SESSION[$this->sessionVar . "!"] = array($url, $listDescription);
+	    $_SESSION[$this->sessionVar . "!"] = array($ConfSiteBase . $url, $listDescription);
 	}
 	
 	return $x;
