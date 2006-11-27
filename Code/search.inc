@@ -104,10 +104,17 @@ class PaperSearch {
 	$re = "";
 	$auextra = ($this->amAssistant ? "" : "blind=0 and ");
 	$qjoin = ($type == "all" ? " and " : " or ");
+	$qpapers = "";
 	while (($str = ltrim($str)) != "") {
 	    preg_match('/^("[^"]+"?|[a-z]+:"[^"]+"?|[^"\s]+)/s', $str, $m);
 	    $word = $m[0];
 	    $str = substr($str, strlen($word));
+
+	    // check for paper number
+	    if (preg_match('/^[0-9]+$/s', $word)) {
+		$qpapers .= " or paperId=$word";
+		continue;
+	    }
 	    
 	    $special = null;
 	    if (($colon = strpos($word, ':')) !== false) {
@@ -171,12 +178,14 @@ class PaperSearch {
 	}
 
 	// construct table
-	if (!$q)
+	if (!$q && !$qpapers)
 	    return array("true", "");
-	else if ($type == "none")
-	    return array("not (" . substr($q, strlen($qjoin)) . ")", $re);
+
+	if ($qpapers)
+	    $q = "(" . substr($qpapers, 4) . ")" . $q;
 	else
-	    return array(substr($q, strlen($qjoin)), $re);
+	    $q = substr($q, strlen($qjoin));
+	return array(($type == "none" ? "not ($q)" : $q), $re);
     }
     
     function _combineQuery($res, $qr) {

@@ -76,6 +76,14 @@ div.info, div.warning, div.confirm, div.error {
 	margin-bottom: 0.5em;
 	min-height: 45px;
 }
+div.help {
+	padding: 0.5em 0.5em 0.5em 0.5em;
+	border: 1px solid #cccccc;
+	margin-top: 0.5em;
+	margin-bottom: 0.5em;
+	max-width: 100em;
+	background: #f8f8f8;
+}
 div.error {
 	background: #ffeeee url(images/stophand45.png) 10px 10px no-repeat;
 	border: 1px solid #eecccc;
@@ -84,10 +92,10 @@ div.confirm {
 	background: #eeffee url(images/info45.png) 10px 10px no-repeat;
 	border: 1px solid #cceecc;
 }
-div.error p:first-child, div.info p:first-child, div.warning p:first-child, div.confirm p:first-child {
+div.error p:first-child, div.info p:first-child, div.warning p:first-child, div.confirm p:first-child, div.help p:first-child {
 	margin-top: 0em;
 }
-div.error p, div.info p, div.warning p, div.confirm p {
+div.error p, div.info p, div.warning p, div.confirm p, div.help p {
 	margin-top: 0.75em;
 	margin-bottom: 0em;
 }
@@ -387,11 +395,13 @@ td.caption {
 	width: 11em;
 	border-right: 1px solid #cc9900;
 	background: #fffdf0;
+	color: #555555;
 }
 tr.id td.caption {
 	border-bottom: 1px solid #cc9900;
 	border-right: none;
 	background: white;
+	color: black;
 }
 table.comment tr.id td.entry, table.review tr.id td.entry {
 	font-size: small;
@@ -475,9 +485,12 @@ td.datedesc {
 table.daterange {
 }
 
+span.textlite {
+	border: solid 1px #aaaadd;
+	padding: 0px 4px;
+	background: #fcfcfc;
+}
 input.textlite, textarea {
-	/*border: none;*/
-	/*border-bottom: dashed 1px #ddddff;*/
 	border: solid 1px #aaaadd;
 	padding: 0px 0px 0px 4px;
 	background: #fcfcfc;
