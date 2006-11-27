@@ -454,7 +454,12 @@ if (defval($_REQUEST["x"], 0)) {
   <td class='rcaption'>Paging&nbsp;through&nbsp;results</td>
   <td class='entry'>All paper screens have links in the upper right corner that let you page through the most recent search results:<br />
   <img src='${ConfSiteBase}images/pageresultsex.png' alt='[Result paging example]' /><br />
-  Using these links can speed up many tasks.</td>
+  Using these links can speed up many tasks.  Additionally, search matches are <span class='match'>highlighted</span> on the paper screens.  This makes it easier to tell whether a conflict is real, for example.</td>
+</tr><tr>
+  <td class='rcaption'>Quick search</td>
+  <td class='entry'>Most screens have a quick search box in the upper right corner:<br />
+  <img src='${ConfSiteBase}images/quicksearchex.png' alt='[Quick search example]' /><br />
+  Entering a single paper number, or any search term that matches exactly one paper, will take you directly to that paper.</td>
 </tr><tr>
   <td class='rcaption'>Paper number search</td>
   <td class='entry'>Enter a paper number to add that paper to the search results.<br />
