@@ -5,12 +5,10 @@ $Me->goIfInvalid();
 $Me->goIfNotChair('../');
 
 function olink($key, $string) {
+    global $dir;
     if (isset($_REQUEST["sort"]) && $_REQUEST["sort"] == $key) {
-	if (isset($_REQUEST["dir"]))
-	    $dir = ($_REQUEST["dir"] == "desc" ? "asc" : "desc");
-	else
-	    $dir = "desc";
-	return "<a href=\"ViewActionLog.php?sort=$key&amp;dir=$dir\">$string</a>";
+	$d = ($dir == "desc" ? "asc" : "desc");
+	return "<a href=\"ViewActionLog.php?sort=$key&amp;dir=$d\">$string</a>";
     } else
 	return "<a href=\"ViewActionLog.php?sort=$key\">$string</a>";
 }
@@ -33,15 +31,14 @@ function navigationBar() {
 }
 
 
-if (isset($_REQUEST["sort"])) {
-    $okorder = array("ActionLog.logId", "ActionLog.paperId", "ActionLog.ipaddr", "ContactInfo.email");
-    if (isset($okorder[$_REQUEST["sort"]]))
-	$ORDER = $_REQUEST["sort"];
-}
-if (!isset($ORDER))
-    $ORDER = "order by ActionLog.logId desc";
+$okorder = array("ActionLog.logId", "ActionLog.paperId", "ActionLog.ipaddr", "ContactInfo.email");
+if (!isset($_REQUEST["sort"]) || !in_array($_REQUEST["sort"], $okorder))
+    $_REQUEST["sort"] = "ActionLog.logId";
 if (isset($_REQUEST["dir"]) && ($_REQUEST["dir"] == "asc" || $_REQUEST["dir"] == "desc"))
-    $ORDER .= " " . $_REQUEST["dir"];
+    $dir = $_REQUEST["dir"];
+else
+    $dir = ($_REQUEST["sort"] == "ActionLog.logId" ? "desc" : "asc");
+$ORDER = "order by " . $_REQUEST["sort"] . " " . $dir;
 
 if (($start = cvtint($_REQUEST["start"], -1)) < 0)
     $start = 0;
