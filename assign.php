@@ -227,7 +227,7 @@ Thank you for your help -- we appreciate that reviewing is hard work!
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
     $Conf->qe("unlock tables");
-    $Conf->log("Asked $Them->contactId ($Them->email) to review $prow->paperId", $Me);
+    $Conf->log("Asked $Them->contactId ($Them->email) to review", $Me, $prow->paperId);
     return true;
 }
 

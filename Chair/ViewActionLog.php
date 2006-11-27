@@ -2,128 +2,89 @@
 require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotChair('../index.php');
+$Me->goIfNotChair('../');
 
-function olink($key,$string)
-{
-  // global $_REQUEST[orderBy];
-  global $Dir;
-
-  if (IsSet($_REQUEST[orderBy]) && $_REQUEST[orderBy]==$key) {
-    if (IsSet($Dir) ) {
-      if ($Dir == "DESC") {
-	$dir="ASC";
-      } else {
-	$dir="DESC";
-      }
-    } else {
-      $dir="DESC";
-    }
-    return "<a href=\"$_SERVER[PHP_SELF]?orderBy=$key&Dir=$dir\"> $string </a>";
-  } else {
-    return "<a href=\"$_SERVER[PHP_SELF]?orderBy=$key\"> $string </a>";
-  }
+function olink($key, $string) {
+    if (isset($_REQUEST["sort"]) && $_REQUEST["sort"] == $key) {
+	if (isset($_REQUEST["dir"]))
+	    $dir = ($_REQUEST["dir"] == "desc" ? "asc" : "desc");
+	else
+	    $dir = "desc";
+	return "<a href=\"ViewActionLog.php?sort=$key&amp;dir=$dir\">$string</a>";
+    } else
+	return "<a href=\"ViewActionLog.php?sort=$key\">$string</a>";
 }
 
-function navigationBar()
-{
-  //global $_REQUEST["ChunkSize"];
-  //global $_REQUEST["StartFrom"];
-  ?>
-    <table align=center border=1>
-       <tr>
+function navigationBar() {
+    global $start, $count;
+    echo "<table align='center' border='1'>
+ <tr><td><form method=\"get\" action=\"ViewActionLog.php\">
+       <input type='hidden' name='start' value=\"", $start - $count, "\" />
+       <input type='submit' name='prev' value='Prev' />
+       <input type='text' name='count' value='$count' />
+       </form></td>
 
-       <td>
-       <FORM METHOD="POST" ACTION="<?php echo $_SERVER[PHP_SELF] ?>">
-       <input type=hidden name=StartFrom Value="<?php echo $_REQUEST["StartFrom"]-$_REQUEST["ChunkSize"]?>">
-       <input type=submit name="Prev" Value="Prev">
-       <input type=text name="ChunkSize" Value="<?php echo $_REQUEST["ChunkSize"]?>">
-       </form>
-       </td>
-
-
-       <td> <big> Records #<?php echo $_REQUEST["StartFrom"]?> to #<?php echo $_REQUEST["StartFrom"]+$_REQUEST["ChunkSize"]?> </big> </td>
-       <td>
-       <FORM METHOD="POST" ACTION="<?php echo $_SERVER[PHP_SELF] ?>">
-       <input type=hidden name=StartFrom Value="<?php echo $_REQUEST["StartFrom"]+$_REQUEST["ChunkSize"]?>">
-       <input type=submit name="Next" Value="Next">
-       <input type=text name="ChunkSize" Value="<?php echo $_REQUEST["ChunkSize"]?>">
-       </form>
-       </td>
-       </tr>
-       </table>
-       <?php 
+       <td><big>Records #", $start, " to #", $start + $count - 1, "</big></td>
+       <td><form method='get' action='ViewActionLog.php'>
+       <input type='hidden' name='start' value='", $start + $count, "' />
+       <input type='submit' name='next' value='Next' />
+       <input type='text' name='count' value='$count' />
+       </form></td></tr></table>\n";
 }
 
-if (IsSet($_REQUEST[orderBy])) {
-  $ORDER = "ORDER BY $_REQUEST[orderBy]";
-} else {
-  $ORDER = "ORDER BY ActionLog.logId DESC";
+
+if (isset($_REQUEST["sort"])) {
+    $okorder = array("ActionLog.logId", "ActionLog.paperId", "ActionLog.ipaddr", "ContactInfo.email");
+    if (isset($okorder[$_REQUEST["sort"]]))
+	$ORDER = $_REQUEST["sort"];
 }
+if (!isset($ORDER))
+    $ORDER = "order by ActionLog.logId desc";
+if (isset($_REQUEST["dir"]) && ($_REQUEST["dir"] == "asc" || $_REQUEST["dir"] == "desc"))
+    $ORDER .= " " . $_REQUEST["dir"];
 
-if (IsSet($Dir)) {
-  $ORDER = $ORDER . " " . $Dir;
-}
+if (($start = cvtint($_REQUEST["start"], -1)) < 0)
+    $start = 0;
+if (($count = cvtint($_REQUEST["count"], -1)) <= 0)
+    $count = 25;
 
-if (!IsSet($_REQUEST["StartFrom"])) {
-  $_REQUEST["StartFrom"] = 0;
-}
+$Conf->header("Conference Log");
 
-if (!IsSet($_REQUEST["ChunkSize"])) {
-  $_REQUEST["ChunkSize"] = 10;
-}
+navigationBar();
 
-if ($_REQUEST["StartFrom"] < 0) {
-  $_REQUEST["StartFrom"] = 0;
-}
+echo "<table border='1'><tr>
+  <th width='5%'>", olink("ActionLog.logId", "#"), "</th>
+  <th width='5%'>", olink("ActionLog.paperId", "Paper"), "</th>
+  <th width='10%'>Time</th>
+  <th width='10%'>", olink("ActionLog.ipaddr", "IP"), "</th>
+  <th>", olink("ContactInfo.email", "Email"), "<br/>Action</th>
+</tr>\n";
 
-?>
-
-<html>
-
-<?php  $Conf->header("List All Actions") ?>
-
-<body>
-
-
-<?php  navigationBar() ?>
-
-<table border=1>
-<tr>
-<th width=5%> <?php  echo olink("ActionLog.logId","#") ?> </th>
-<th width=10%> Time </th>
-<th width=10%> <?php  echo olink("ActionLog.ipaddr", "IP") ?> </th>
-<th> <?php  echo olink("ContactInfo.email", "Email") ?> <br> 
-Action </th>
-</tr>
-
-<?php 
-$query="SELECT ActionLog.logId, UNIX_TIMESTAMP(ActionLog.time), "
+$query="select ActionLog.logId, unix_timestamp(ActionLog.time), "
 . " ActionLog.ipaddr, ActionLog.contactId, ActionLog.action, "
-. " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email "
-. " FROM ActionLog, ContactInfo WHERE ActionLog.contactId=ContactInfo.contactId $ORDER "
-. " LIMIT " . $_REQUEST["StartFrom"] . "," . $_REQUEST["ChunkSize"];
+. " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ActionLog.paperId "
+. " from ActionLog join ContactInfo using (contactId) $ORDER limit $start,$count";
 
 $result = $Conf->q($query);
 
 if (MDB2::isError($result)) {
-  $Conf->errorMsg("Query failed" . $result->getMessage());
-  $Conf->errorMsg("Query is $query");
+    $Conf->errorMsg("Query failed" . $result->getMessage());
+    $Conf->errorMsg("Query is $query");
 } else {
-  while($row = $result->fetchRow()) {
-    print "<tr>";
-    print "<td> $row[0] </td>";
-    print "<td> ".   date("D M j G:i:s Y", $row[1]) . "</td>";
-    print "<td> $row[2] </td>";
-    print "<td> $row[5] $row[6] ($row[7]) <br> $row[4] </td>";
-    print "</tr>\n";
-  }
+    while($row = $result->fetchRow()) {
+	print "<tr>";
+	echo "<td>", htmlspecialchars($row[0]), "</td>";
+	echo "<td>", htmlspecialchars($row[8] ? $row[8] : ""), "</td>";
+	echo "<td>",  date("D M j G:i:s Y", $row[1]), "</td>";
+	echo "<td>", htmlspecialchars($row[2]), "</td>";
+	echo "<td>", contactHtml($row[5], $row[6], $row[7]), "<br/>", htmlspecialchars($row[4]), "</td>";
+	echo "</tr>\n";
+    }
 }
-?>
 
-</table>
+echo "</table>\n";
 
-<?php  navigationBar() ?>
+navigationBar();
 
-<?php $Conf->footer() ?>
+$Conf->footer();
 

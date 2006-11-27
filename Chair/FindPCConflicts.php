@@ -31,7 +31,7 @@ if (IsSet($_REQUEST["assignConflicts"])) {
 	$query="INSERT INTO PaperConflict SET paperId='$paperId', "
 	  . " contactId='" . $_REQUEST["pcMember"] . "'";
 	$Conf -> qe($query);
-	$Conf->log("Added reviewer conflict for " . $_REQUEST["pcMember"] . " for paper $paper", $_SESSION["Me"]);
+	$Conf->log("Added reviewer conflict for " . $_REQUEST["pcMember"], $_SESSION["Me"], $paperId);
       }
     }
   }

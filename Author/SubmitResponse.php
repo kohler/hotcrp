@@ -97,7 +97,7 @@ if (IsSet($_REQUEST['submit'])) {
       $Conf->confirmMsg("Successfully updated response");
     } else {
       $Conf->errorMsg("Error in updating response: " . $result->getMessage());
-      $Conf->log("Error in updating response for  $_REQUEST[paperId]: " . $result->getMessage(), $_SESSION["Me"]);
+      $Conf->log("Error in updating response: " . $result->getMessage(), $_SESSION["Me"], $_REQUEST["paperId"]);
     }
   }
 } else {

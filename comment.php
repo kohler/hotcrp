@@ -104,7 +104,7 @@ function saveComment($text) {
     if (!MDB2::isError($result)) {
 	$action = ($text == "" ? "deleted" : "saved");
 	$Conf->confirmMsg("Comment $action");
-	$Conf->log("Comment $commentId for paper $prow->paperId $action", $Me);
+	$Conf->log("Comment $commentId $action", $Me, $prow->paperId);
 
 	// adjust comment counts
 	if ($change)

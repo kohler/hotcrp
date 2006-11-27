@@ -265,7 +265,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     if (!$Me->amAssistant() || isset($_REQUEST["emailNote"]))
 	$Conf->emailContactAuthors($prow, $subject, $m);
     
-    $Conf->log("$what #$paperId", $Me);
+    $Conf->log($what, $Me, $paperId);
     return true;
 }
 
@@ -304,7 +304,7 @@ if (isset($_REQUEST["unsubmit"]) && !$newPaper) {
     if ($Me->amAssistant()) {
 	$Conf->qe("update Paper set timeSubmitted=0 where paperId=$paperId", "while undoing paper submit");
 	getProw($Me->contactId);
-	$Conf->log("Unsubmitted #$paperId", $Me);
+	$Conf->log("Unsubmitted", $Me, $paperId);
     } else
 	$Conf->errorMsg("Only the program chairs can undo paper submission.");
 }
@@ -335,7 +335,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	    $Conf->emailReviewersChair($prow, "Paper #$paperId withdrawn", $m);
 	}
 	
-	$Conf->log("Withdrew #$paperId", $Me);
+	$Conf->log("Withdrew", $Me, $paperId);
     } else
 	$Conf->errorMsg(whyNotText($whyNot, "withdraw"));
 }
@@ -343,7 +343,7 @@ if (isset($_REQUEST["revive"]) && !$newPaper) {
     if ($Me->canRevivePaper($prow, $Conf, $whyNot)) {
 	$Conf->qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100," . time() . ",0) where paperId=$paperId", "while reviving paper");
 	getProw($Me->contactId);
-	$Conf->log("Revived #$paperId", $Me);
+	$Conf->log("Revived", $Me, $paperId);
     } else
 	$Conf->errorMsg(whyNotText($whyNot, "revive"));
 }
@@ -371,7 +371,7 @@ if (isset($_REQUEST['delete'])) {
 	}
 	if (!$error) {
 	    $Conf->confirmMsg("Paper #$paperId deleted.");
-	    $Conf->log("Deleted #$paperId", $Me);
+	    $Conf->log("Deleted", $Me, $paperId);
 	}
 	
 	$prow = null;

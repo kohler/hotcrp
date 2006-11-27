@@ -94,7 +94,7 @@ if (IsSet($_REQUEST["nagList"])
 	  $extraMsg .= "to login:\n";
 	  $extraMsg .= "$Conf->paperSite/Reviewer/RequestedReviews.php?loginEmail=$cleanEmail&password=$cleanPasswd\n";
 	    
-	  $Conf->log("Nag $cleanEmail about reviews for paper #" . $row['paperId'], $_SESSION["Me"]);
+	  $Conf->log("Nag $cleanEmail about reviews", $_SESSION["Me"], $row['paperId']);
 
 	  if (IsSet($_REQUEST["SendReviews"])) {
 

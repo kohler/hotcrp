@@ -989,7 +989,7 @@ and paste it into your web browser's location field.
 	
 	$result = $conf->qe($q, "while assigning review");
 	if (!MDB2::isError($result))
-	    $conf->log("Added $reviewTypeName[$type] reviewer $reviewer for paper $paperId", $this);
+	    $conf->log("Added $reviewTypeName[$type] reviewer $reviewer", $this, $paperId);
     }
 
 }

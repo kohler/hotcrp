@@ -625,7 +625,7 @@ class Conference {
 	left join PaperStorage on (PaperStorage.paperStorageId=Paper.$storefield)
 	where Paper.paperId=$paperId");
 	if (MDB2::isError($result)) {
-	    $this->log("Error downloading #$paperId for review" . $result->getMessage(), $_SESSION["Me"]);
+	    $this->log("Error downloading for review" . $result->getMessage(), $_SESSION["Me"], $paperId);
 	    return $result;
 	} else if ($result->numRows() == 0)
 	    return new PEAR_Error("There is no paper #$paperId.");
@@ -661,7 +661,7 @@ class Conference {
 	else if (PEAR::isError($result))
 	    $this->errorMsg($result->getMessage());
 	else
-	    $this->log("Downloaded #$paperId", $_SESSION["Me"]);
+	    $this->log("Downloaded paper", $_SESSION["Me"], $paperId);
 	return $result;
     }
 
@@ -1340,13 +1340,10 @@ class Conference {
     }
 
 
-    function log($text, $who) {
-	global $REMOTE_ADDR;
-
-	$text=addslashes($text);
-	$this->q("INSERT INTO ActionLog SET  "
-		 . " ipaddr='$REMOTE_ADDR', "
-		 . " contactId='$who->contactId', action='$text'" );
+    function log($text, $who, $paperId = null) {
+	if ($paperId === null)
+	    $paperId = "null";
+	$this->q("insert into ActionLog (ipaddr, contactId, paperId, action) values ('" . sqlq($_SERVER['REMOTE_ADDR']) . "', " . $who->contactId . ", $paperId, '" . sqlq($text) . "')");
     }
 
     ///////////////////////////////////////////////////////////////////////////

@@ -35,7 +35,8 @@ Configuration
   - Sign in to the site to create an account.  The first account created
     automatically receives PC chair privilege.
 
-You're done!
+Now you're done, and can set up everything else through the web site
+itself.  Chairs should particularly check out the "Advanced search" notes.
 
 * Configuration notes
   - CRP users upload papers and reviews to the CRP web server.  Several PHP
