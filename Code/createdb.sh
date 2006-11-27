@@ -9,33 +9,35 @@ export FLAGS=""
 while [ $# -gt 0 ]; do
     case "$1" in
     -*)	FLAGS="$FLAGS $1";;
-    *)	echo "Usage: ./CreateDatabase.sh [MYSQL-OPTIONS]" 1>&2; exit 1;;
+    *)	echo "Usage: $PROG [MYSQL-OPTIONS]" 1>&2; exit 1;;
     esac
     shift
 done
 
+PROGDIR=`echo "$0" | sed 's/[^\/]*$//'`
+
+
 echo "This will create the database for your conference."
-echo "The assumption is that the database name and name used to"
-echo "attach to the database AND the password are all the same"
-echo "The database is created with access only from the local host."
-echo ""
-echo "Note: this will delete any existing database and user "
-echo "with the specified name -- make certain this is what you want"
+echo "The database name, database user, and database password are all set to"
+echo "the same thing.  Access is allowed only from the local host."
 
-
-echo -n "Enter database name: "
+echo -n "Enter database name (NO SPACES): "
 read DBNAME
 echo "DBNAME is $DBNAME"
 
 echo
-echo "Creating database. "
-echo "This attmpts to connect to mysql without a password"
-echo "This should work if you haven't changed the default administrative"
-echo "password for mysql. If you have, you will need to exit"
-echo "and run '$PROG -p' or '$PROG -pPASSWD' (no space)."
+echo "Creating database."
+if [ -z "$FLAGS" ]; then
+    echo "This should work if you are root and haven't changed the default mysql"
+    echo "administrative password.  If you have changed the password, you will need to"
+    echo "run '$PROG -p' or '$PROG -pPASSWD' (no space)."
+fi
 echo "+ echo 'show databases;' | mysql | grep $DBNAME"
 echo 'show databases;' | mysql $FLAGS | grep $DBNAME >/dev/null 2>&1
 if [ $? = 0 ]; then
+    echo
+    echo "A database named '$DBNAME' already exists!  Make sure you want to"
+    echo "delete this database and user."
     echo "+ mysqladmin $FLAGS drop $DBNAME"
     mysqladmin $FLAGS drop $DBNAME
 fi
@@ -44,7 +46,6 @@ mysqladmin $FLAGS create $DBNAME || exit 1
 
 echo
 echo "Creating $DBNAME user and password."
-echo "If you're asked for a password, use the mysql administrative password."
 mysql $FLAGS mysql <<__EOF__ || exit 1
 DELETE FROM user WHERE user="$DBNAME";
 INSERT INTO user SET
@@ -145,20 +146,24 @@ __EOF__
 ##
 
 echo
-echo "Now reloading the grant tables.."
+echo "Reloading grant tables."
 mysqladmin $FLAGS reload || exit 1
+
+if [ ! -r "${PROGDIR}schema.sql" ]; then
+    echo "Can't read schema.sql!  You'll have to populate the database yourself."
+    exit
+fi
 
 ##
 ## Populate the database schema
 ##
 echo
 echo "Now, we will populate the database with the schema."
-echo "If the preceeding steps worked, you won't need to"
-echo "enter a password"
+echo "If the preceeding steps worked, you won't need to enter a password."
 
-echo "Hit ^C if you don't want to populate the DB, <RETURN> otherwise"
-echo "(if you need to restore from a backup you don't want to populate)"
+echo "Hit <RETURN> to populate the database, Control-C to cancel."
+echo "(If you need to restore from a backup you don't want to populate.)"
 read foo
 
-echo mysql -u $DBNAME -p"$DBNAME" $DBNAME 
-mysql -u $DBNAME -p"$DBNAME" $DBNAME < ./schema.sql || exit 1
+echo mysql -u $DBNAME -p"$DBNAME" $DBNAME "<" ${PROGDIR}schema.sql
+mysql -u"$DBNAME" -p"$DBNAME" "$DBNAME" < ${PROGDIR}schema.sql || exit 1

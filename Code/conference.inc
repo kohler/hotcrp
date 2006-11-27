@@ -28,7 +28,6 @@ class Conference {
     var $contrastColorOne = "#eeeeee";
     var $contrastColorTwo = "#cccccc";
 
-    var $taskHeaderColor = "#006633";
     var $headerBg = "#eeeeff";
 
     var $infoColor = "yellow"; // blue
@@ -501,8 +500,8 @@ class Conference {
 
 	    // Check if paper is postscript or PDF, only kinds allowed.
 	    // We ignore the mimetype since MacOS browsers get this wrong
-	    $allowPDF = defval($Opt['allowPDF'], true);
-	    $allowPS = defval($Opt['allowPS'], true);
+	    $allowPDF = !isset($Opt['disablePDF']);
+	    $allowPS = !isset($Opt['disablePS']);
 	    if ($allowPDF && strncasecmp("%PDF-", $contents, 5) == 0)
 		$mimetype = "application/pdf";
 	    else if ($allowPS && strncasecmp("%!PS-", $contents, 5) == 0)
@@ -512,7 +511,7 @@ class Conference {
 		if (isset($_FILES[$uploadid]["type"]))
 		    $mimetype = $_FILES[$uploadid]["type"];
 		$message = "You appear to be submitting a file that's not in a valid format for this conference.  ";
-		if ($allowPDF && $Opt['allowPS'])
+		if ($allowPDF && $allowPS)
 		    $message .= "Valid formats are PDF and PostScript.  ";
 		else if ($allowPDF)
 		    $message .= "PDF is the only valid format.  ";
@@ -569,7 +568,7 @@ class Conference {
 	    return $result;
 
 	// potentially email the paper to Greg Minshall
-	if ($Opt['emailSubmissions']) {
+	if (defval($Opt['emailSubmissions'], false)) {
 	    if (is_numeric($prow))
 		$prow = $this->paperRow($paperId);
 	    
@@ -1068,10 +1067,7 @@ class Conference {
 	    echo "<meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />\n";
 	    echo "<title>", $title, " - ", $this->shortName, "</title>\n";
 	    echo "<script src=\"${ConfSiteBase}script.js\" type=\"text/javascript\"></script>\n";
-	    if (isset($Opt['theme']))
-		echo $Opt['theme'];
-	    else
-		echo "<link rel='stylesheet' type='text/css' href='${ConfSiteBase}style.css' />\n";
+	    echo "<link rel='stylesheet' type='text/css' href='${ConfSiteBase}style.css' />\n";
 	    $this->headerPrinted = 1;
 	}
     }
@@ -1172,35 +1168,6 @@ class Conference {
       $this->textButton($text, $url,
 			$this->mkHiddenVar("paperId", $paperId)
 			);
-  }
-
-  //
-  // Functions that make use of the javascript inf confJavaScript.inc
-  //
-  function popupWindow($label, $text) {
-      $target="$this->paperSite/genericPopup.php";
-      $message=urlencode($text);
-
-      print "<script type\"text/javascript\">";
-      print "popup(\"$target?popupMessage=$message\", \"$label\");";
-      print "</script>";
-  }
-
-  function popupWarning($text) {
-      $this->popupWindow("Warning",
-			 "<center> <h1> <big> Warning </big> </h1> </center>"
-			 . "<p> $text </p>");
-  }
-
-  function taskHeader($what) {
-      if ( !IsSet($span) ) {
-	$span = "100";
-      }
-      print "<table bgcolor=" . 
-	$this->taskHeaderColor . " width=100%>\n";
-      print "<tr> <td align=center width=100%>\n";
-      print "<font size=+2 color=white> $what </font>\n";
-      print "</td> </tr> </table>\n";
   }
 
   function alternatingContrast($i) {

@@ -9,8 +9,8 @@
 
 // CONFERENCE NAMES
 //
-//   sessionName     Internal name used to distinguish conference sessions
-//                   running on the same server. NO SPACES ALLOWED.
+//   dbName          Database name.  Use the name you supplied to
+//                   "Code/createdb.sh".  NO SPACES ALLOWED.
 //   shortName       Short name of the conference.  Examples: "SIGCOMM 2007",
 //                   "HotNets V".
 //   longName        Longer name of the conference.  Example: "ACM SIGCOMM
@@ -18,7 +18,7 @@
 //   downloadPrefix  Prefix for downloaded files, such as papers.  Should
 //                   end in a dash.
 
-$Opt['sessionName'] = "HotNetsV";
+$Opt['dbName'] = "HotNetsV";
 $Opt['shortName'] = "HotNets V";
 $Opt['longName'] = "HotNets V";
 $Opt['downloadPrefix'] = "hotnets5-";
@@ -33,7 +33,7 @@ $Opt['downloadPrefix'] = "hotnets5-";
 //                   it is safe to set this to true.
 //   emailFrom       Email sent by CRP appears to come from this address.
 //                   Should be a plausible email address for mail originating
-//                   at the conference site, so things like SPF don't mistake
+//                   at the conference server, so things like SPF don't mistake
 //                   the mail for spam.
 
 $Opt['contactName'] = "Eddie Kohler";
@@ -44,26 +44,11 @@ $Opt['emailFrom'] = "kohler@read.cs.ucla.edu";
 
 // SUBMISSIONS
 //
-//   allowPDF        Allow PDF format submissions?  Defaults to true.
-//   allowPS         Allow PostScript format submissions?  Defaults to true.
 //   emailSubmissions  If this is non-zero, then it should be an email address.
 //                   All submissions are MIME-encoded and sent to this address
 //                   as a backup.  Note that this will increase server load.
 
-// $Opt['allowPDF'] = false;   // uncomment to disable PDF submissions
-// $Opt['allowPS'] = false;    // uncomment to disable PostScript submissions
 $Opt['emailSubmissions'] = 0;
-
-
-// DATABASE
-//
-//   dsn             Database configuration information in the format
-//                   "mysql://DBUSER:DBPASSWORD@127.0.0.1/DBNAME".
-//                   Example: "mysql:HotNetsV:HotNetsV@127.0.0.1/HotNetsV".
-//   dbDumpDir       Directory where user-requested database dumps are stored.
-
-$Opt['dsn'] = "mysql://HotNetsV:HotNetsV@127.0.0.1/HotNetsV";
-$Opt['dbDumpDir'] = "/var/spool/conference";
 
 
 // URLS
@@ -75,19 +60,25 @@ $Opt['conferenceSite'] = "http://www.acm.org/sigs/sigcomm/HotNets-V/";
 $Opt['paperSite'] = "http://www.read.cs.ucla.edu/hotnets5";
 
 
-// SESSIONS AND WEB SETUP
+// OPTIONAL SETTINGS (the defaults are reasonable)
 //
-//   theme           <head> code used to define the theme.  Default should
-//                   not be changed.
+//   sessionName     Internal name used to distinguish conference sessions
+//                   running on the same server.  NO SPACES ALLOWED.  Defaults
+//		     to $Opt["dbName"].
 //   sessionLifetime Number of seconds a user may be idle before their session
 //                   is garbage collected and they must log in again.  Defaults
 //                   to 86400 (24 hours).
 //                   DEBIAN NOTE: On some Debian installations, a cron job
 //                   garbage-collects old sessions.  That cron job ignores
 //                   local 'session.gc_maxlifetime' settings, and thus
-//                   $Opt['sessionLifetime'], so in addition to this variable,
-//                   you'll also need to change the system-wide setting in
-//                   'php.ini'.
-
-// $Opt['theme'] = "whatever";
-// $Opt['sessionLifetime'] = 86400;
+//                   $Opt['sessionLifetime'], so you'll also need to change
+//		     the system-wide setting in 'php.ini'.
+//   disablePDF      Set to disable PDF format submissions.
+//   disablePS       Set to disable PostScript format submissions.
+//   dsn             Database configuration information in the format
+//                   "mysql://DBUSER:DBPASSWORD@127.0.0.1/DBNAME".
+//                   The default is derived from $Opt["dbName"], assuming
+//		     that DBUSER, DBPASSWORD, and DBNAME are all the same.
+//                   Example: "mysql://HotNetsV:HotNetsV@127.0.0.1/HotNetsV".
+//   dbDumpDir       (Optional) Directory where user-requested database dumps
+//		     are stored.

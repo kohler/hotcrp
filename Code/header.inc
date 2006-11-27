@@ -29,25 +29,18 @@ $OK = 1;
 
 $Msg["unknown"] = "Unknown error.";
 
-//
 // Disable caching
-//
 header("Cache-Control: no-cache, must-revalidate");  // HTTP/1.1
 header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
-// session_cache_limiter('nocache');
 
-//
-// automatically determine path to conference site
-//
+// Automatically determine path to conference site
 $here = substr(__FILE__,0,strrpos(__FILE__,'/'));
-if (file_exists($here . "/Code/header.inc")) {
+if (file_exists($here . "/Code/header.inc"))
     $ConfSitePATH = $here;
-} else if (file_exists($here . "/../Code/header.inc")) {
+else if (file_exists($here . "/../Code/header.inc"))
     $ConfSitePATH = substr($here, 0, strrpos($here,'/'));
-} else {
-    //  print "<p> CRP is mis-configured? </p>\n";
+else
     $ConfSitePATH = "/var/www/html";
-}
 
 // special handling for Download URLs
 {
@@ -71,7 +64,7 @@ if (file_exists($here . "/Code/header.inc")) {
 
 
 // Bring in code
-require_once("$ConfSitePATH/Code/Helpers.inc");
+require_once("$ConfSitePATH/Code/helpers.inc");
 require_once("$ConfSitePATH/Code/conference.inc");
 require_once("$ConfSitePATH/Code/contact.inc");
 require_once("$ConfSitePATH/Code/review.inc");
@@ -81,7 +74,16 @@ require_once("$ConfSitePATH/Code/review.inc");
 ini_set("include_path", ini_get("include_path") . ":$ConfSitePATH/Code/MDB2-2.3.0:$ConfSitePATH/Code/Mail-1.1.14");
 require_once("MDB2.php");
 
+// Set up conference options
 include("$ConfSitePATH/Code/options.inc");
+
+if (!isset($Opt['sessionName']))
+    $Opt['sessionName'] = $Opt['dbName'];
+if (!isset($Opt['dsn']))
+    $Opt['dsn'] = "mysql://" . $Opt['dbName'] . ":" . $Opt['dbName'] . "@127.0.0.1/" . $Opt['dbName'];
+
+
+// Create the conference
 $Conf = new Conference();
 
 

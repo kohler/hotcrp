@@ -86,9 +86,9 @@ if ($Me->isPC) {
     echo "<form method='get' action='search.php'><input class='textlite' type='text' size='32' name='q' value='' /> <input class='button_small' type='submit' name='go' value='Search' /></form>\n";
     echo "<span class='sep'></span><a href='search.php'>Advanced search</a>";
     echo "<table class='half'><tr><td class='l'><ul class='compact'>\n";
+    echo "<li><a href='search.php?q=&amp;t=s'>List submitted papers</a></li>\n";
     if ($Me->canViewDecision(null, $Conf))
 	echo "<li><a href='search.php?q=outcome:yes&amp;t=s'>List accepted papers</a></li>\n";
-    echo "<li><a href='search.php?q=&amp;t=s'>List submitted papers</a></li>\n";
     echo "</ul></td><td class='r'><ul class='compact'>";
     if ($Me->amAssistant())
 	echo "<li><a href='search.php?q=&amp;t=all'>List <i>all</i> papers</a></li>\n";
@@ -268,14 +268,12 @@ if ($Me->amAssistant()) {
 <li>Contact authors &amp; prepare facesheets
   <ul>
   <li><a href='Chair/ListReviewers.php'>List all reviewers (email and name)</a></li>
-  </ul></li>
+  </ul></li>\n";
 
-<li>Manage the conference 
-  <ul>
-  <li><a href='Chair/DumpDatabase.php'>Make a backup of the database</a></li>
-  </ul></li>
+    if (isset($Opt['dbDumpDir']))
+	echo "<li><a href='Chair/DumpDatabase.php'>Make a backup of the database</a></li>\n";
 
-<li>Help prepare information about paper
+    echo "<li>Help prepare information about paper
   <ul>
   <li><a href='Assistant/PrintAllAbstracts.php'>Show all abstracts for printing</a></li>
   <li><a href='Assistant/PrintAllReviews.php'>Show all reviews for printing</a></li>
