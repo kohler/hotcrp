@@ -1,4 +1,4 @@
-export VERSION=2.0.0
+export VERSION=2.0b1
 
 mkdistdir () {
     crpd=crp-$VERSION
@@ -16,6 +16,8 @@ mkdistdir () {
 	    fi
 	fi
     done
+
+    tar czf $crpd.tar.gz $crpd
 }
 
 mkdistdir <<EOF
@@ -75,6 +77,7 @@ images/ass4n.png
 images/bendulft.png
 images/info45.png
 images/next.png
+images/pageresultsex.png
 images/pdf.png
 images/postscript.png
 images/prev.png
