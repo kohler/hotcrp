@@ -77,7 +77,7 @@ Use \"&minus;100\" to represent a conflict.</p>
 
 <p>The paper list shows all submitted papers and their topics.  You have high
 interest in <span class='topic2'>bold topics</span>, and low interest in <span
-class='topic0'>grey topics</span>.  \"Topic score\" is higher the more the you
+class='topic0'>grey topics</span>.  \"Topic score\" is higher the more you
 are interested in the paper's topics.  Click on a column heading to sort by
 that column.  You may also enter preferences on the paper pages, which are
 accessible by clicking the paper title.</p>");
