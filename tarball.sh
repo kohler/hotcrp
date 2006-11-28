@@ -1,7 +1,7 @@
 export VERSION=2.0b1
 
 mkdistdir () {
-    crpd=crp-$VERSION
+    crpd=hotcrp-$VERSION
     rm -rf $crpd
     mkdir $crpd
     

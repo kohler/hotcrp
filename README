@@ -1,8 +1,8 @@
-Conference Review Package 2
-===========================
+HotCRP: Conference Review Package 2
+===================================
 
 New version by Eddie Kohler, UCLA
-Originally by Dirk Grunwald, University of Colorado
+CRP originally by Dirk Grunwald, University of Colorado
 
 Prerequisites
 -------------
@@ -51,3 +51,6 @@ itself.  Chairs should particularly check out the "Advanced search" notes.
     change the system-wide "session.gc_maxlifetime" setting in /etc/php.ini
     to exceed the desired CRP session lifetime.  This setting is measured
     in seconds, so 86400 corresponds to 24 hours.
+  - CRP PHP scripts can take a lot of memory, particularly if they're doing
+    things like generating MIME-encoded mail messages.  By default CRP sets
+    the PHP memory limit to 128MB.

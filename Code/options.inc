@@ -1,7 +1,7 @@
 <?php
 
 /*****************************************************************************
- * CRP User Settings
+ * HotCRP User Settings
  * Required for all installations.
  * Set up this file before running CRP for the first time.
  *
@@ -73,6 +73,8 @@ $Opt['paperSite'] = "http://www.read.cs.ucla.edu/hotnets5";
 //                   local 'session.gc_maxlifetime' settings, and thus
 //                   $Opt['sessionLifetime'], so you'll also need to change
 //		     the system-wide setting in 'php.ini'.
+//   memoryLimit     Maximum amount of memory a PHP script can use.  Defaults
+//		     to 128MB.
 //   disablePDF      Set to disable PDF format submissions.
 //   disablePS       Set to disable PostScript format submissions.
 //   dsn             Database configuration information in the format
@@ -80,5 +82,4 @@ $Opt['paperSite'] = "http://www.read.cs.ucla.edu/hotnets5";
 //                   The default is derived from $Opt["dbName"], assuming
 //		     that DBUSER, DBPASSWORD, and DBNAME are all the same.
 //                   Example: "mysql://HotNetsV:HotNetsV@127.0.0.1/HotNetsV".
-//   dbDumpDir       (Optional) Directory where user-requested database dumps
-//		     are stored.
+//   dbDumpDir       Directory where user-requested database dumps are stored.

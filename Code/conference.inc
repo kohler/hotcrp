@@ -1130,7 +1130,7 @@ class Conference {
 	// site, button to close & pointer to CRP at sourceforge
 	echo "</div>\n"; // <div id='body'>
 	echo "<div id='footer'>\n";
-	echo "  <div id='footer_crp'><a href='http://crp.sourceforge.net/'>CRP</a> Conference Management Software</div>\n";
+	echo "  <div id='footer_crp'><a href='http://crp.sourceforge.net/'>HotCRP</a> Conference Management Software</div>\n";
 	echo "  <div class='clear'></div></div>\n";
 	echo "</body>\n</html>\n";
     }
