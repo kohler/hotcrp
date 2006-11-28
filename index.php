@@ -145,12 +145,15 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
 
 
 // Review assignment
-if ($Me->isPC || $Me->amReviewer()) {
-    echo "<div class='main_re folded' id='foldre'><div class='main_head'><a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;Review assignments</div><div class='main_body'>\n";
+if ($Me->amReviewer()) {
+    echo "<div class='main_re folded' id='foldre'><div class='main_head'>";
+    if ($Me->isReviewer)
+	echo "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;";
+    echo "Review assignments</div><div class='main_body'>\n";
     $sep = "";
 
     echo "<table class='half'><tr><td class='l'><ul class='compact'>\n";
-    if ($Me->amReviewer())
+    if ($Me->isReviewer)
 	echo "<li><a href='search.php?q=&amp;t=r'>List assigned papers</a></li>\n";
     if ($Me->isPC)
 	echo "<li><a href='PC/reviewprefs.php'>Mark review preferences</a></li>\n";
