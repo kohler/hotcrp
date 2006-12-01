@@ -55,7 +55,7 @@ function addContactAuthor($paperId, $contactId) {
     if (MDB2::isError($result))
 	return $result;
 
-    $result = $Conf->qe("select author from PaperConflict where paperId=$paperId and contactId=$contactId", "while adding contact author");
+    $result = $Conf->qe("select conflictType from PaperConflict where paperId=$paperId and contactId=$contactId", "while adding contact author");
     if (!MDB2::isError($result) && $result->numRows() > 0)
 	$q = "update PaperConflict set conflictType=" . CONFLICT_AUTHOR . " where paperId=$paperId and contactId=$contactId";
     else
