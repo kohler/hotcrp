@@ -42,7 +42,7 @@ class Contact {
 	if ($conf == null)
 	    $conf = $Conf;
 	if (!$this->validated && $this->contactId > 0) {
-	    $result = $conf->q("select max(author) as author,
+	    $result = $conf->q("select max(conflictType),
 			PaperReview.contactId as reviewer,
 			PCMember.contactId as pcMember,
 			ChairAssistant.contactId as assistant,
@@ -61,7 +61,7 @@ class Contact {
 	    else {
 		$this->isAuthor = $this->isReviewer = $this->isPC = $this->isChair = $this->isAssistant = $this->reviewsOutstanding = false;
 		while (($row = $result->fetchRow())) {
-		    if ($row[0] > 0)
+		    if ($row[0] == CONFLICT_AUTHOR)
 			$this->isAuthor = true;
 		    if ($row[1] > 0)
 			$this->isReviewer = true;
