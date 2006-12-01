@@ -1,4 +1,4 @@
-export VERSION=2.0b1
+export VERSION=2.0b2
 
 mkdistdir () {
     crpd=hotcrp-$VERSION
@@ -18,6 +18,7 @@ mkdistdir () {
     done
 
     tar czf $crpd.tar.gz $crpd
+    rm -rf $crpd
 }
 
 mkdistdir <<EOF
@@ -58,6 +59,7 @@ Code/review.inc
 Code/reviewtable.inc
 Code/schema.sql
 Code/search.inc
+Code/tags.inc
 
 Code/MDB2-2.3.0
 Code/Mail-1.1.14

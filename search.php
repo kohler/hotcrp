@@ -490,7 +490,7 @@ if (defval($_REQUEST["x"], 0)) {
   <span class='textlite'>co:</span> for collaborators,
   <span class='textlite'>rev:</span> for reviewer names,
   <span class='textlite'>out:</span> for outcomes,
-  and <span class='textlite'>tag:</span> for tags.</td>
+  and <span class='textlite'>tag:</span> or <span class='textlite'>order:</span> for tags.</td>
 </tr><tr>
   <td class='rcaption'>Paper actions</td>
   <td class='entry'>To act on many papers at once, select their checkboxes and choose an action underneath the paper list.
