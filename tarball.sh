@@ -43,7 +43,6 @@ script.js
 search.php
 sessionvar.php
 style.css
-YouMustAllowCookies.php
 
 Code/.htaccess
 Code/Calendar.inc

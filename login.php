@@ -50,6 +50,10 @@ function doLogin() {
     if (!isset($_REQUEST["email"]) || $_REQUEST["email"] == "")
 	return $Conf->errorMsg("Enter your email address.");
 
+    // Check for the cookie
+    if (!isset($_COOKIE["CRPTestCookie"]))
+	return $Conf->errorMsg("You appear to have disabled cookies in your browser, but this site needs to set cookies to function.  Google has <a href='http://www.google.com/cookies.html'>an informative article on how to enable them</a>.");
+
     $_SESSION["Me"]->lookupByEmail($_REQUEST["email"], $Conf);
     if (isset($_REQUEST["register"])) {
 	if (($reg = doCreateAccount()) === null)
@@ -83,7 +87,8 @@ function doLogin() {
 	unset($_SESSION["afterLogin"]);
     } else
 	$where = "index.php";
-    
+
+    setcookie("CRPTestCookie", false);
     $_SESSION["Me"]->go($where);
     exit;
 }
@@ -95,6 +100,8 @@ if ((isset($_REQUEST["email"]) && isset($_REQUEST["password"]))
     $_SESSION["Me"]->invalidate();
 }
 
+// set a cookie to test that their browser supports cookies
+setcookie("CRPTestCookie", true);
 
 $Conf->header("Sign in", 'login');
 

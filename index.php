@@ -3,19 +3,6 @@ require_once('Code/header.inc');
 require_once('Code/paperlist.inc');
 require_once('Code/search.inc');
 
-$testCookieStatus = 0;
-if (isset($_COOKIE["CRPTestCookie"]) && $_COOKIE["CRPTestCookie"] == "ChocChip")
-    $testCookieStatus = 1;
-if (!isset($_GET["cc"]) && !$testCookieStatus) {
-    setcookie("CRPTestCookie", "ChocChip");
-    header("Location: http://" . $_SERVER["HTTP_HOST"] . $_SERVER["PHP_SELF"] . "?cc=1");
-    exit;
-}
-if (!$testCookieStatus) {
-    $here = dirname($_SERVER["SCRIPT_NAME"]);
-    header("Location: http://" . $_SERVER["HTTP_HOST"] . "$here/YouMustAllowCookies.php");
-}
-
 if (!isset($_SESSION["Me"]) || !$_SESSION["Me"]->valid())
     go("login.php");
 $Me = $_SESSION["Me"];
