@@ -57,9 +57,9 @@ function addContactAuthor($paperId, $contactId) {
 
     $result = $Conf->qe("select author from PaperConflict where paperId=$paperId and contactId=$contactId", "while adding contact author");
     if (!MDB2::isError($result) && $result->numRows() > 0)
-	$q = "update PaperConflict set author=1 where paperId=$paperId and contactId=$contactId";
+	$q = "update PaperConflict set conflictType=" . CONFLICT_AUTHOR . " where paperId=$paperId and contactId=$contactId";
     else
-	$q = "insert into PaperConflict (paperId, contactId, author) values ($paperId, $contactId, 1)";
+	$q = "insert into PaperConflict (paperId, contactId, conflictType) values ($paperId, $contactId, " . CONFLICT_AUTHOR . ")";
 
     $result = $Conf->qe($q, "while adding contact author");
 
@@ -128,7 +128,7 @@ if ($OK) {
     $q = "select firstName, lastName, email, contactId
 	from ContactInfo
 	join PaperConflict using (contactId)
-	where paperId=$paperId and author=1
+	where paperId=$paperId and conflictType=" . CONFLICT_AUTHOR . "
 	order by lastName, firstName, email";
     $result = $Conf->qe($q, "while finding contact authors");
     if (!MDB2::isError($result)) {

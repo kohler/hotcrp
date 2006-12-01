@@ -755,7 +755,7 @@ class Contact {
     function amPaperAuthor($paperId, $conf, $prow = null) {
 	if ($prow === null) {
 	    // Query for a specific match of the author and paper
-	    $query = "select paperId from PaperConflict where paperId=$paperId and contactId=$this->contactId and author>0";
+	    $query = "select paperId from PaperConflict where paperId=$paperId and contactId=$this->contactId and conflictType=" . CONFLICT_AUTHOR;
 	    $result = $conf->qe($query);
 	    return !MDB2::isError($result) && $result->numRows() > 0;
 	} else

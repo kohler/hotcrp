@@ -3,7 +3,7 @@ function removePCConflictPapers($ExistingConflicts) {
     global $Conf;
     for($i=0; $i < sizeof($ExistingConflicts); $i++)
 	if (preg_match("/\\A(\\d+)x(\\d+)\\Z/", $ExistingConflicts[$i], $matches)) {
-	    $query = "delete from PaperConflict where paperId='$matches[2]' and contactId='$matches[1]' and author='0'";
+	    $query = "delete from PaperConflict where paperId='$matches[2]' and contactId='$matches[1]' and conflictType<" . CONFLICT_AUTHOR;
 	    $Conf->q($query);
 	}
 }
@@ -16,7 +16,7 @@ function showPCConflictPapers()
     . " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
     . " ContactInfo.contactId "
     . " from Paper join ContactInfo "
-    . " join PaperConflict on (ContactInfo.contactId=PaperConflict.contactId and PaperConflict.paperId=Paper.paperId and author=0) "
+    . " join PaperConflict on (ContactInfo.contactId=PaperConflict.contactId and PaperConflict.paperId=Paper.paperId and conflictType<" . CONFLICT_AUTHOR . ") "
     . " join PCMember on (ContactInfo.contactId=PCMember.contactId)"
     . " ORDER by ContactInfo.lastName, Paper.paperId ";
   $r=$Conf->qe($query);

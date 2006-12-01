@@ -178,7 +178,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$row = $result->fetchRow();
 	$paperId = $row[0];
 
-	$result = $Conf->qe("insert into PaperConflict (paperId, contactId, author) values ($paperId, $contactId, 1)", "while updating paper information");
+	$result = $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($paperId, $contactId, " . CONFLICT_AUTHOR . ")", "while updating paper information");
 	if (MDB2::isError($result))
 	    return false;
     }

@@ -370,7 +370,7 @@ if (isset($_REQUEST["clearmark"]) && defval($_REQUEST["mark"], "") != "" && isse
 	$pc = new Contact;
 	if ($pc->lookupByEmail($_REQUEST["mark"], $Conf)) {
 	    $while = "while unmarking conflicts";
-	    $result = $Conf->qe("delete from PaperConflict where contactId=" . $pc->contactId . " and author=0 and (" . paperselPredicate($papersel) . ")", $while);
+	    $result = $Conf->qe("delete from PaperConflict where contactId=" . $pc->contactId . " and conflictType<" . CONFLICT_AUTHOR . " and (" . paperselPredicate($papersel) . ")", $while);
 	} else
 	    $Conf->errorMsg(htmlspecialchars($_REQUEST["mark"]) . " is not a PC member");
     }
