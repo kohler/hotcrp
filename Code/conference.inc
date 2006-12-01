@@ -759,7 +759,7 @@ class Conference {
 	//   "allReviews"	All reviews (multiple rows per paper)
 	//   "allReviewScores"	All review scores (multiple rows per paper)
 	//   "reviewerName"	Include reviewer names
-	//   "joinTable"	A table with paperId columns to join
+	//   "joins"		Table(s) to join
 	//   "tags"		Include paperTags
 	//   "overallMeritScores"
 	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
@@ -831,8 +831,9 @@ class Conference {
 	else
 	    $pq .= "		left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)\n";
 
-	if (isset($options['joinTable']))
-	    $pq .= "		join " . $options['joinTable'] . " on (" . $options['joinTable'] . ".paperId=Paper.paperId)\n";
+	if (isset($options['joins']))
+	    foreach ($options['joins'] as $jt)
+		$pq .= "		join $jt\n";
 	
 	$pq .= "		left join PaperReview as AllReviews on (AllReviews.paperId=Paper.paperId)\n";
 
@@ -854,7 +855,7 @@ class Conference {
 	    $pq .= "		left join (select paperId, group_concat(PaperTopic.topicId) as topicIds, group_concat(TopicInterest.interest) as topicInterest, sum(if(interest=2,2,interest-1)) as topicInterestScore from PaperTopic left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$contactId) group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)\n";
 
 	if (isset($options['tags']))
-	    $pq .= "		left join (select paperId, group_concat(tag separator ' ') as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)\n";
+	    $pq .= "		left join (select paperId, group_concat(tag, '#', tagIndex separator ' ') as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)\n";
 
 	if (isset($options['overallMeritScores']))
 	    $pq .= "		left join (select paperId, group_concat(overallMerit) as overallMeritScores, avg(overallMerit) as overallMeritAvg from PaperReview where reviewSubmitted>0 group by paperId) as PaperScores on (PaperScores.paperId=Paper.paperId)\n";

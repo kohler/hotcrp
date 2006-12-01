@@ -57,7 +57,7 @@ class PaperList {
 	$this->reverseSort = ($x == "R");
 	if ($x == "R" || $x == "N")
 	    $sortVal = substr($s, 0, -1);
-	if ((int) $s == $s)
+	if ("x" . (int) $s == "x" . $s)
 	    $this->sortField = (int) $s;
 	else
 	    $this->sortField = null;
@@ -88,9 +88,6 @@ class PaperList {
 	case self::FIELD_REVIEWER_PREFERENCE:
 	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
 	    $queryOptions['reviewerPreference'] = 1;
-	    break;
-	case self::FIELD_MATCHES:
-	    $queryOptions['joinTable'] = 'Matches';
 	    break;
 	case self::FIELD_DESIRABILITY:
 	    $queryOptions['desirability'] = 1;
@@ -458,13 +455,13 @@ class PaperList {
 	if ($this->contact->isPC) {
 	    $t .= "<span class='sep'></span> <a class='unfolder' href='javascript:fold(\"plact\", 0)'>More &raquo;</a><a class='folder' href='javascript:fold(\"plact\", 1)'>Less &laquo;</a>
 <div class='extension'><table>
-  <tr><td><b>Tags:</b> <input class='textlite' type='text' name='tag' value='' size='15' /> <input type='submit' class='button_small' name='addtag' value='Add' /> <input type='submit' class='button_small' name='deltag' value='Remove' /></td>\n";
+  <tr><td class='rcaption'>Tags:</td><td><select name='tagtype'>
+    <option value='a' selected='selected'>Add</option><option value='d'>Remove</option><option value='s'>Define</option><option value='so'>Define ordered</option><option value='ao'>Add ordered</option>
+  </select> &nbsp;tag(s) &nbsp;<input class='textlite' type='text' name='tag' value='' size='15' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></td></tr>\n";
 	    if ($this->contact->amAssistant())
-		$t .= "  <td><span class='lgsep'></span></td>
-  <td>" . outcomeSelector(null) . " <input type='submit' class='button_small' name='setoutcome' value='Go' /></td>";
-	    $t .= "</tr>";
+		$t .= "  <tr><td class='rcaption'>Outcome:</td><td>" . outcomeSelector() . " <input type='submit' class='button_small' name='setoutcome' value='Set outcome' /></td></tr>\n";
 	    if ($this->contact->amAssistant()) {
-		$t .= "<tr><td><b>Conflicts:</b> <select name='mark'>\n";
+		$t .= "  <tr><td class='rcaption'>Conflicts:</td><td><select name='mark'>\n";
 		$t .= "<option value='pcpaper' selected='selected'>PC-authored paper</option>\n";
 		$result = $Conf->q("select firstName, lastName, email from ContactInfo join PCMember using (contactId) order by lastName, firstName");
 		if (!MDB2::isError($result))
@@ -505,9 +502,21 @@ class PaperList {
 	if ($this->search->complexSearch($queryOptions)) {
 	    if (MDB2::isError($this->search->search()))
 		return NULL;
-	    $queryOptions["joinTable"] = "Matches";
+	    $queryOptions["joins"] = array("Matches on (Paper.paperId=Matches.paperId)");
 	}
 
+	// paper list query?
+	$pidarray = null;
+	if ($this->sortField === null) {
+	    $pidarray = $this->search->simplePaperList();
+	    if ($this->search->orderTag) {
+		if (!isset($queryOptions['joins']))
+		    $queryOptions['joins'] = array();
+		$queryOptions['joins'][] = "PaperTag on (Paper.paperId=PaperTag.paperId and PaperTag.tag='" . sqlq($this->search->orderTag) . "')";
+		$queryOptions['order'] = "order by PaperTag.tagIndex, Paper.paperId";
+	    }
+	}
+	    
 	// get field array
 	$result = $Conf->qe(
 		"select PaperFields.fieldId, fieldName, display
@@ -559,31 +568,43 @@ class PaperList {
 
 	$ids = array();
 	$anyData = array();
+	$byPaperId = array();
 	$body = '';
 	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
 	    $ids[] = $row->paperId;
 	    $trclass = "k" . ($this->count % 4 < 2 ? 0 : 1);
 	    $this->count++;
 	    
-	    $body .= "  <tr class=\"" . $trclass . "\">\n";
+	    $t = "  <tr class=\"" . $trclass . "\">\n";
 	    foreach ($fieldId as $f)
 		if ($f[2] == 1) {
 		    $c = $this->content($f[0], $row, $plist, $reviewList);
-		    $body .= "    <td class=\"pl_$f[1]\">$c</td>\n";
+		    $t .= "    <td class=\"pl_$f[1]\">$c</td>\n";
 		    if ($c != "")
 			$anyData[$f[0]] = 1;
 		}
-	    $body .= "  </tr>\n";
+	    $t .= "  </tr>\n";
 	    
 	    foreach ($fieldId as $f)
 		if ($f[2] == 2 && ($d = $this->content($f[0], $row, $plist, $reviewList))) {
-		    $body .= "  <tr class=\"pl_$f[1] pl_callout $trclass\">\n";
-		    $body .= "<td class=\"pl_$f[1] pl_callout\" colspan='$ncol'>";
-		    $body .= "<span class='pl_callouthdr'>" . $this->header($f[0], -1, $row, $reviewList) . "</span>";
-		    $body .= $d . "</td>\n  </tr>\n";
+		    $t .= "  <tr class=\"pl_$f[1] pl_callout $trclass\">\n";
+		    $t .= "<td class=\"pl_$f[1] pl_callout\" colspan='$ncol'>";
+		    $t .= "<span class='pl_callouthdr'>" . $this->header($f[0], -1, $row, $reviewList) . "</span>";
+		    $t .= $d . "</td>\n  </tr>\n";
 		}
+
+	    if ($pidarray === null)
+		$body .= $t;
+	    else
+		$byPaperId[$row->paperId] = $t;
 	}
 
+	// collect paper IDs by order user specified
+	if ($pidarray !== null)
+	    foreach ($pidarray as $pid)
+		if (isset($byPaperId[$pid]))
+		    $body .= $byPaperId[$pid];
+	
 	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname) . "\">\n";
 
 	if ($this->showHeader) {
@@ -602,7 +623,8 @@ class PaperList {
 		    }
 		    $x .= "    <th class=\"pl_$f[1]\">";
 		    $ftext = $this->header($f[0], $ord++);
-		    if ($this->sortField == null && $f[0] < 10)
+		    if ($this->sortField == null && $f[0] < 10
+			&& $pidarray === null && !$this->search->orderTag)
 			$this->sortField = $f[0];
 		    if ($f[0] == $this->sortField)
 			$x .= "<a class='pl_sort_def" . ($this->reverseSort ? "_rev" : "") . "' href=\"" . $sortUrl . $f[0] . ($this->reverseSort ? "N" : "R") . "\">" . $ftext . "</a>";

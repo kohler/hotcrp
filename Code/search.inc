@@ -6,6 +6,7 @@ $searchTags = array('ti:' => 'ti', 'title:' => 'ti',
 		    'co:' => 'co', 'collab:' => 'co', 'collaborators:' => 'co',
 		    're:' => 're', 'rev:' => 're', 'reviewer:' => 're',
 		    'tag:' => 'tag',
+		    'ord:' => 'order', 'order:' => 'order',
 		    'outcome:' => 'outcome', 'out:' => 'outcome');
 
 class PaperSearch {
@@ -20,6 +21,7 @@ class PaperSearch {
     var $anyReviewer;
     var $anyTag;
     var $anyAlltags;
+    var $orderTag;
     var $matchPreg;
     var $urlbase;
     
@@ -34,7 +36,7 @@ class PaperSearch {
 	$this->amPC = $me->isPC;
 	$this->allowReviewer = $me->canViewAllReviewerIdentities($Conf);
 	$this->allowAuthor = ($Conf->blindSubmission() > 1 || $me->amAssistant());
-	$this->anyReviewer = $this->anyTag = $this->anyAlltags = false;
+	$this->anyReviewer = $this->anyTag = $this->anyAlltags = $this->orderTag = false;
 	$this->contactId = $me->contactId;
 	if ($this->amAssistant && cvtint($opt["c"]) > 0)
 	    $this->contactId = cvtint($opt["c"]);
@@ -147,7 +149,11 @@ class PaperSearch {
 		    $qp .= " or (reviewerInfo is not null and reviewerInfo like '%$word%')";
 		$this->anyReviewer = true;
 	    }
-	    if (($special ? $special == "tag" : isset($this->fields['tag'])) && $this->amPC) {
+	    if ((($special ? $special == "tag" : isset($this->fields['tag']))
+		 || ($special ? $special == "order" : isset($this->fields['order'])))
+		&& $this->amPC) {
+		if ($special ? $special == "order" : isset($this->fields['order']))
+		    $this->orderTag = ($this->orderTag === false ? $word : null);
 		if ($type == "any") {
 		    $qp .= " or (tag = '$word')";
 		    $this->anyTag = true;
@@ -243,7 +249,20 @@ class PaperSearch {
 	    $queryOptions["myReviewRequests"] = 1;
 	return false;
     }
-    
+
+    function simplePaperList() {
+	if (!$this->qa && !$this->qx && preg_match('/^\s*\d[\d\s]*$/s', $this->q)) {
+	    $a = array();
+	    foreach (preg_split('/\s+/', $this->q) as $word)
+		if ($word != "")
+		    $a[] = $word;
+	    return $a;
+	} else if (!$this->qx && !$this->q && preg_match('/^\s*\d+\s*$/s', $this->qa))
+	    return array(trim($this-qa));
+	else
+	    return null;
+    }
+
     function search() {
 	global $Conf, $ConfSiteBase;
 	$x = $this->_searchQuery();

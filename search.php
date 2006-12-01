@@ -169,8 +169,10 @@ if ($getaction == "rev" && isset($papersel)) {
 
 
 // set tags for selected papers
-if ((isset($_REQUEST["addtag"]) || isset($_REQUEST["deltag"]))
-    && $Me->isPC && isset($papersel) && isset($_REQUEST["tag"])) {
+function tagaction() {
+    global $Conf, $Me, $papersel;
+    require_once("Code/tags.inc");
+    
     $errors = array();
     $papers = array();
     if (!$Me->amAssistant()) {
@@ -186,9 +188,20 @@ if ((isset($_REQUEST["addtag"]) || isset($_REQUEST["deltag"]))
 
     if (count($errors))
 	$Conf->errorMsg(join("<br/>", $errors));
-    if (count($papers))
-	setTags($papers, $_REQUEST["tag"], (isset($_REQUEST["addtag"]) ? "+" : "-"), $Me->amAssistant());
+    
+    $act = $_REQUEST["tagtype"];
+    $tag = $_REQUEST["tag"];
+    if ($act == "so") {
+	$tag = trim($tag) . '#';
+	if (!checkTag($tag, true))
+	    return;
+	$act = "s";
+    }
+    if (count($papers) && ($act == "a" || $act == "d" || $act == "s" || $act == "so" || $act == "ao"))
+	setTags($papers, $tag, $act, $Me->amAssistant());
 }
+if (isset($_REQUEST["tagact"]) && $Me->isPC && isset($papersel) && isset($_REQUEST["tag"]))
+    tagaction();
 
 
 // download text author information for selected papers

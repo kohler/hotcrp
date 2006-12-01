@@ -34,7 +34,6 @@ function getProw() {
 	if ($rr->reviewType == REVIEW_PRIMARY)
 	    $anyPrimary = true;
 }
-getProw();
 
 function findRrow($contactId) {
     global $rrows;
@@ -51,6 +50,7 @@ if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->amAssistant(
 else
     $forceShow = "";
 maybeSearchPaperId("assign.php", $Me);
+getProw();
 
 
 confHeader();

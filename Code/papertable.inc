@@ -306,6 +306,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 	global $ConfSiteBase;
 	$t = defval($prow->paperTags, "");
 	if ($site || $t) {
+	    $t = str_replace('#0', '', $t);
 	    echo "<tr class='pt_tags'>\n  <td class='caption'>Tags</td>\n  <td class='entry'>";
 	    if ($site) {
 		echo "<div id='foldtags' class='folded'><form method='post' action=\"$site\" enctype='multipart/form-data'>";

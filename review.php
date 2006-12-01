@@ -261,7 +261,8 @@ if (isset($_REQUEST['setoutcome'])) {
 // set tags action
 if (isset($_REQUEST["settags"])) {
     if ($Me->isPC && ($prow->conflict <= 0 || ($Me->amAssistant() && $forceShow))) {
-	setTags($prow->paperId, defval($_REQUEST["tags"], ""), "=", $Me->amAssistant());
+	require_once("Code/tags.inc");
+	setTags($prow->paperId, defval($_REQUEST["tags"], ""), 'p', $Me->amAssistant());
 	loadRows();
     } else
 	$Conf->errorMsg("You cannot set tags for paper #$prow->paperId." . ($Me->amAssistant() ? "  (<a href='" . selfHref(array("forceShow" => 1)) . "'>Override conflict</a>)" : ""));

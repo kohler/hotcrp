@@ -159,6 +159,7 @@ drop table if exists PaperTag;
 CREATE TABLE PaperTag (
   paperId int(11) NOT NULL,
   tag varchar(40) NOT NULL,		# see TAG_MAXLEN in header.php
+  tagIndex int(11) NOT NULL default 0,
   UNIQUE KEY paperTag (paperId,tag)
 ) TYPE=MyISAM;
 

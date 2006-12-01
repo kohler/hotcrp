@@ -124,7 +124,7 @@ if (isset($_REQUEST['update']) && $Me->amAssistant()) {
 		   'reviewerViewDecision', 'PCReviewPreferences',
 		   'PCSubmitReview', 'PCSubmitReviewDeadline',
 		   'PCGradePapers', 'PCMeetingView',
-		   'AtTheMeeting', 'EndOfTheMeeting'
+		   'EndOfTheMeeting'
 		   ) as $s) {
 	$Dates[$s][0] = crp_strtotime($s, 0);
 	$Dates[$s][1] = crp_strtotime($s, 1);
@@ -201,7 +201,8 @@ if (isset($_REQUEST['update']) && $Me->amAssistant()) {
     }
 
     // check tags
-    if (isset($_REQUEST["chairtags"])) {
+    if (isset($_REQUEST["chairtags"]) && trim($_REQUEST["chairtags"])) {
+	require_once("Code/tags.inc");
 	$chairtags = preg_split('/\s+/', $_REQUEST["chairtags"]);
 	$ok = true;
 	foreach ($chairtags as $ct)
