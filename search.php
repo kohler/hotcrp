@@ -179,7 +179,7 @@ function tagaction() {
 	$result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel)), "while selecting papers");
 	if (!MDB2::isError($result))
 	    while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
-		if ($row->conflict > 0)
+		if ($row->conflictType > 0)
 		    $errors[] = whyNotText(array("conflict" => 1, "paperId" => $row->paperId));
 		else
 		    $papers[] = $row->paperId;
@@ -251,7 +251,7 @@ if ($getaction == "contact" && $Me->amAssistant() && isset($papersel)) {
     $idq = paperselPredicate($papersel, "Paper.");
     if (!$Me->amAssistant())
 	$idq = "($idq) and blind=0";
-    $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.author>0) join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq", "while fetching contact authors");
+    $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq", "while fetching contact authors");
     if (!MDB2::isError($result)) {
 	$text = "#paperId\ttitle\tlast, first\temail\n";
 	while (($row = $result->fetchRow())) {
@@ -354,7 +354,7 @@ if (isset($_REQUEST["setmark"]) && defval($_REQUEST["mark"], "") != "" && isset(
 	$pc = new Contact;
 	if ($pc->lookupByEmail($_REQUEST["mark"], $Conf)) {
 	    $while = "while marking conflicts";
-	    $result = $Conf->qe("insert into PaperConflict (paperId, contactId) (select Paper.paperId, $pc->contactId from Paper left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=$pc->contactId) where PaperConflict.author is null and (" . paperselPredicate($papersel, "Paper.") . "))", $while);
+	    $result = $Conf->qe("insert into PaperConflict (paperId, contactId) (select Paper.paperId, $pc->contactId from Paper left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=$pc->contactId) where PaperConflict.conflictType is null and (" . paperselPredicate($papersel, "Paper.") . "))", $while);
 	} else
 	    $Conf->errorMsg(htmlspecialchars($_REQUEST["mark"]) . " is not a PC member");
     }

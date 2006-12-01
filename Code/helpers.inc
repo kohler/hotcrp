@@ -127,9 +127,9 @@ function reviewType($paperId, $row, $long = 0) {
 	return "<span class='rtype rtype_sec'>Secondary</span>";
     else if ($row->reviewType == REVIEW_REQUESTED)
 	return "<span class='rtype rtype_req'>Requested</span>";
-    else if ($row->author > 0)
+    else if ($row->conflictType == CONFLICT_AUTHOR)
 	return "<span class='author'>Author</span>";
-    else if ($row->conflict > 0)
+    else if ($row->conflictType > 0)
 	return "<span class='conflict'>Conflict</span>";
     else if (!($row->reviewId === null) || $long)
 	return "<span class='rtype rtype_pc'>PC</span>";
@@ -174,7 +174,7 @@ function reviewButton($paperId, $row = null, $buttonType = 0, $conf = null) {
     $timeGood = $Conf->timeReviewPaper($Me->isPC, $rreq, false);
     $timeOK = $Conf->timeReviewPaper($Me->isPC, $rreq, true);
     $need = ($reviewType > 0 || $row->reviewId);
-    $conflict = (isset($row->conflict) ? $row->conflict : 0);
+    $conflict = (isset($row->conflictType) ? $row->conflictType : 0);
     $acknowledged = defval($row->timeSubmitted, 0);
     $withdrawn = defval($row->timeWithdrawn, 0);
     
@@ -189,7 +189,7 @@ function reviewButton($paperId, $row = null, $buttonType = 0, $conf = null) {
 	$type = "edit";
     else if ($rreq)
 	$type = "view";
-    else if ($Me->isPC && $row->author > 0)
+    else if ($Me->isPC && $row->CONFLICT_TYPE == CONFLICT_AUTHOR)
 	$type = "author";
     else if ($Me->isPC && $conflict > 0)
 	$type = "conflict";
@@ -659,7 +659,7 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
     if (!$newPaper && $paperId > 0)
 	$x .= actionTab("View", "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=view", $mode == "view");
     
-    if ($newPaper || ($paperId > 0 && ($prow->author > 0 || $Me->amAssistant())))
+    if ($newPaper || ($paperId > 0 && ($prow->conflictType == CONFLICT_AUTHOR || $Me->amAssistant())))
 	$x .= actionTab("Edit", "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=edit", $mode == "edit");
 
     if (!$newPaper && $prow
@@ -675,7 +675,7 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
 		&& $Me->canViewComment($prow, null, $Conf))
 	    || ($Me->isPC && $prow->timeSubmitted > 0
 		&& $Conf->timeReviewOpen()))) {
-	$n = ($prow->author > 0 ? $prow->numAuthorComments : $prow->numComments);
+	$n = ($prow->conflictType == CONFLICT_AUTHOR ? $prow->numAuthorComments : $prow->numComments);
 	$n = ($n ? " ($n)" : "");
 	$x .= actionTab("Comments$n", "${ConfSiteBase}comment.php?paperId=$paperId", $mode == "comment");
     }

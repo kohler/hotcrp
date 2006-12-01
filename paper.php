@@ -74,7 +74,7 @@ if (!$newPaper) {
     // perfect mode: default to edit for non-submitted papers
     if ($mode == "view"
 	&& (!isset($_REQUEST["mode"]) || $_REQUEST["mode"] != "view")
-	&& $prow->author > 0 && $prow->timeSubmitted <= 0)
+	&& $prow->conflictType == CONFLICT_AUTHOR && $prow->timeSubmitted <= 0)
 	$mode = "edit";
 }
 
@@ -254,7 +254,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     }
     if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
 	$mx .= "\n\nA conference administrator provided the following reason for this update: " . $_REQUEST["emailNote"];
-    else if ($Me->amAssistant() && $prow->author <= 0)
+    else if ($Me->amAssistant() && $prow->conflictType < CONFLICT_AUTHOR)
 	$mx .= "\n\nA conference administrator performed this update.";
     $mx .= ($mx == "" ? "" : "\n\n");
     $m .= wordwrap($mx . "Contact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.
@@ -317,7 +317,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	$m = "Paper #$paperId, \"$prow->title\", has been withdrawn from consideration for the $Conf->shortName conference.";
 	if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
 	    $m .= "\n\nA conference administrator provided the following reason for withdrawing the paper: " . trim($_REQUEST["emailNote"]);
-	else if ($Me->amAssistant() && $prow->author <= 0)
+	else if ($Me->amAssistant() && $prow->conflictType < CONFLICT_AUTHOR)
 	    $m .= "\n\nA conference administrator withdrew the paper.";
 	$m = wordwrap("$m\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
 	$Conf->emailContactAuthors($prow, "Paper #$paperId withdrawn", $m);
@@ -419,7 +419,7 @@ else if ($newPaper) {
 	    errorMsgExit($msg);
 	$Conf->infoMsg($msg);
     }
-} else if ($prow->author > 0 && $prow->timeSubmitted <= 0) {
+} else if ($prow->conflictType == CONFLICT_AUTHOR && $prow->timeSubmitted <= 0) {
     $timeUpdate = $Conf->timeUpdatePaper();
     $updateDeadline = deadlineIs("updatePaperSubmission", $Conf);
     $timeSubmit = $Conf->timeFinalizePaper();
@@ -432,10 +432,10 @@ else if ($newPaper) {
 	$Conf->infoMsg("You cannot make any changes as the <a href='deadlines.php'>deadline</a> has passed, but the current version can still be officially submitted.  Only officially submitted papers will be considered for the conference.$submitDeadline$override");
     else if ($prow->timeWithdrawn <= 0)
 	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting this paper has passed.  The paper will not be considered.$submitDeadline$override");
-} else if ($prow->author > 0 && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper()) {
+} else if ($prow->conflictType == CONFLICT_AUTHOR && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper()) {
     $updateDeadline = deadlineIs("authorUpdateFinal", $Conf);
     $Conf->infoMsg("Congratulations!  This paper was accepted.  Submit a final copy for your paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or add contact authors, allowing others to view reviews and make changes.");
-} else if ($prow->author > 0) {
+} else if ($prow->conflictType == CONFLICT_AUTHOR) {
     $override2 = ($Me->amAssistant() ? "  As PC Chair, you can unsubmit the paper, which will allow further changes, using the \"Undo submit\" button." : "");
     $Conf->infoMsg("This paper has been submitted and can no longer be changed.  You can still withdraw the paper or add contact authors, allowing others to view reviews as they become available.$override2");
 } else if (!$Me->amAssistant())
@@ -623,7 +623,7 @@ if ($mode == "edit") {
 	echo "<tr>
   <td class='caption'></td>
   <td class='entry' colspan='2'>\n";
-	//if ($prow && (($prow->author <= 0 && $prow->timeSubmitted <= 0)
+	//if ($prow && (($prow->conflictType < CONFLICT_AUTHOR && $prow->timeSubmitted <= 0)
 	//	      || $prow->timeSubmitted > 0))
 	//   echo "    <span class='sep'></span>\n";
 	// echo "<input type='checkbox' name='emailUpdate' value='1'",

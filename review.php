@@ -260,7 +260,7 @@ if (isset($_REQUEST['setoutcome'])) {
 
 // set tags action
 if (isset($_REQUEST["settags"])) {
-    if ($Me->isPC && ($prow->conflict <= 0 || ($Me->amAssistant() && $forceShow))) {
+    if ($Me->isPC && ($prow->conflictType == 0 || ($Me->amAssistant() && $forceShow))) {
 	require_once("Code/tags.inc");
 	setTags($prow->paperId, defval($_REQUEST["tags"], ""), 'p', $Me->amAssistant());
 	loadRows();
@@ -318,7 +318,7 @@ if (defval($_REQUEST["mode"]) == "edit")
 else if (defval($_REQUEST["mode"]) == "view")
     $mode = "view";
 else if ($rrow && ($Me->canReview($prow, $rrow, $Conf)
-		   || ($Me->amAssistant() && ($prow->conflict <= 0 || $forceShow))))
+		   || ($Me->amAssistant() && ($prow->conflictType == 0 || $forceShow))))
     $mode = "edit";
 else if (!$rrow && (($prow->reviewType > 0 && $prow->reviewSubmitted <= 0)
 		    || ($Me->isPC && !$viewAny)))
@@ -326,7 +326,7 @@ else if (!$rrow && (($prow->reviewType > 0 && $prow->reviewSubmitted <= 0)
 else
     $mode = "view";
 // then fix impossible modes
-if ($mode == "view" && $prow->conflict <= 0
+if ($mode == "view" && $prow->conflictType == 0
     && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot)
     && $Me->canReview($prow, $myRrow, $Conf)) {
     if (isset($whyNot['reviewNotComplete']) || isset($whyNot['externalReviewer'])) {

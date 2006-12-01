@@ -284,9 +284,9 @@ class PaperList {
 		return "$a1<span class='rtype rtype_req'>Requested</span>$a2";
 	    else if ($row->reviewType)
 		return "$a1<span class='rtype'>Review</span>$a2";
-	    else if ($row->author > 0)
+	    else if ($row->conflictType == CONFLICT_AUTHOR)
 		return "<span class='rtype rtype_con'>Author</span>";
-	    else if ($row->conflict > 0)
+	    else if ($row->conflictType > 0)
 		return "<span class='rtype rtype_con'>Conflict</span>";
 	    else
 		return "";
@@ -299,7 +299,7 @@ class PaperList {
 		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLink . "\">";
 		$a2 = "</a>";
 	    }
-	    if ($row->author > 0 || $row->conflict > 0) {
+	    if ($row->conflictType > 0) {
 		$which = -1;
 		$alt = "Conflict";
 	    } else if ($row->reviewType === null) {
@@ -329,9 +329,9 @@ class PaperList {
 	case self::FIELD_REVIEWER_NAME:
 	    return contactHtml($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail);
 	case self::FIELD_ASSIGN_REVIEW:
-	    if ($row->author > 0)
+	    if ($row->conflictType == CONFLICT_AUTHOR)
 		return "<span class='author'>Author</span>";
-	    $rt = ($row->conflict > 0 ? -1 : min(max($row->reviewType, 0), REVIEW_PRIMARY));
+	    $rt = ($row->conflictType > 0 ? -1 : min(max($row->reviewType, 0), REVIEW_PRIMARY));
 	    $x = "<select name='assrev$row->paperId' tabindex='1' onchange='highlightUpdate()'>";
 	    $x .= "<option value='0'" . ($rt == 0 ? " selected='selected'" : "") . ">None</option>";
 	    $x .= "<option value='" . REVIEW_PRIMARY . "'" . ($rt == REVIEW_PRIMARY ? " selected='selected'" : "") . ">Primary</option>";
@@ -360,7 +360,7 @@ class PaperList {
 	case self::FIELD_REVIEWER_PREFERENCE:
 	    return (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
 	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
-	    if ($row->conflict > 0)
+	    if ($row->conflictType > 0)
 		return "N/A";
 	    $x = (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
 	    return "<input class='textlite revpref' type='text' size='4' name='revpref$row->paperId' value=\"$x\" />";

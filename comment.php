@@ -224,7 +224,7 @@ function commentView($prow, $crow, $editMode) {
 	echo $sep, $Conf->printableTime($crow->timeModified);
 	$sep = " &nbsp;|&nbsp; ";
     }
-    if (!$crow || $prow->author > 0)
+    if (!$crow || $prow->conflictType == CONFLICT_AUTHOR)
 	/* do nothing */;
     else if (!$crow->forAuthors && !$crow->forReviewers)
 	echo $sep, "For PC only";

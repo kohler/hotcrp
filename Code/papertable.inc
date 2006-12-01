@@ -136,10 +136,10 @@ class PaperTable {
 	    $Me->paperStatus($prow->paperId, $prow, ($flags & self::STATUS_DATE) != 0);
 	if ($flags & self::STATUS_DOWNLOAD)
 	    echo " ", paperDownload($prow);
-	if (($flags & self::STATUS_CONFLICTINFO) && $prow->author > 0)
+	if (($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType == CONFLICT_AUTHOR)
 	    echo "<br/>\nYou are an <span class='author'>author</span> of this paper.";
-	else if ((($flags & self::STATUS_CONFLICTINFO) && $prow->conflict > 0)
-		 || (($flags & self::STATUS_CONFLICTINFO_PC) && $Me->isPC && $prow->conflict > 0))
+	else if ((($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType > 0)
+		 || (($flags & self::STATUS_CONFLICTINFO_PC) && $Me->isPC && $prow->conflictType > 0))
 	    echo "<br/>\nYou have a <span class='conflict'>conflict</span> with this paper.";
 	if ($prow->reviewType != null && ($flags & self::STATUS_REVIEWERINFO)) {
 	    if ($prow->reviewType == REVIEW_PRIMARY)

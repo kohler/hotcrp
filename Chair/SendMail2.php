@@ -18,7 +18,7 @@ function queryFromRecipients($who, $per_paper) {
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
 		from Paper join PaperConflict using (paperId)
 		join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId)
-		where Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0 and PaperConflict.author>0
+		where Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0 and PaperConflict.conflictType=" . CONFLICT_AUTHOR . "
 		$group_order";
 
     if ($who == "submit-and-finalize")
@@ -26,7 +26,7 @@ function queryFromRecipients($who, $per_paper) {
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
 		from Paper join PaperConflict using (paperId)
 		join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId)
-		where Paper.timeSubmitted>0 and PaperConflict.author>0
+		where Paper.timeSubmitted>0 and PaperConflict.conflictType" . CONFLICT_AUTHOR . "
 		$group_order";
 
     if (substr($who, 0, 14) == "author-outcome"
@@ -36,7 +36,7 @@ function queryFromRecipients($who, $per_paper) {
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
 		from Paper join PaperConflict using (paperId)
 		join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId)
-		where Paper.timeSubmitted>0 and Paper.outcome=$out and PaperConflict.author>0
+		where Paper.timeSubmitted>0 and Paper.outcome=$out and PaperConflict.conflictType=" . CONFLICT_AUTHOR . "
 		$group_order";
     
     if ($who == "asked-to-review") {

@@ -435,7 +435,7 @@ class Conference {
 	    $subject = "[$this->shortName] $subject";
 	$result = $this->qe("select firstName, lastName, email
 		from ContactInfo join PaperConflict using (contactId)
-		where paperId=$prow->paperId and author>0
+		where paperId=$prow->paperId and conflictType=" . CONFLICT_AUTHOR . "
 		group by ContactInfo.contactId", "while looking up contact authors to send email");
 	if (!MDB2::isError($result)) {
 	    while (($row = $result->fetchRow())) {
@@ -446,7 +446,7 @@ class Conference {
 		else
 		    $this->infoMsg("<pre>" . htmlspecialchars($subject) . "\n\n" . htmlspecialchars($m) . "</pre>");
 	    }
-	    if ($prow->author <= 0 && count($contacts) > 0 && $Me->amAssistant())
+	    if ($prow->conflictType < CONFLICT_AUTHOR && count($contacts) > 0 && $Me->amAssistant())
 		$this->infoMsg("Sent \"" . htmlspecialchars($subject) . "\" email to paper #$prow->paperId's contact author" . (count($contacts) == 1 ? "" : "s") . ", " . htmlspecialchars(join(", ", $contacts)) . ".");
 	}
     }
@@ -473,7 +473,7 @@ class Conference {
 		mail(join(", ", $recipients), $subject, $m, "From: $Conf->emailFrom\nCc: $Conf->contactName <$Conf->contactEmail>");
 	    else if (count($reviewers))
 		$this->infoMsg("<pre>" . htmlspecialchars(join(", ", $recipients)) . "\n\n" . htmlspecialchars($subject) . "\n\n" . htmlspecialchars($m) . "</pre>");
-	    if ($prow->author <= 0 && count($reviewers) && $Me->amAssistant())
+	    if ($prow->conflictType < CONFLICT_AUTHOR && count($reviewers) && $Me->amAssistant())
 		$this->infoMsg("Sent \"" . htmlspecialchars($subject) . "\" email to paper #$prow->paperId's reviewer" . (count($recipients) == 1 ? "" : "s") . ", " . htmlspecialchars(join(", ", $reviewers)) . ".");
 	}
     }
@@ -769,9 +769,7 @@ class Conference {
 	$contactId = (is_object($contact) ? $contact->contactId : $contact);
 
 	// fields
-	$pq = "select Paper.*,
-		PaperConflict.author as author,
-		PaperConflict.contactId as conflict,
+	$pq = "select Paper.*, PaperConflict.conflictType,
 		count(AllReviews.reviewSubmitted) as reviewCount,
 		count(AllReviews.paperId) as startedReviewCount";
 	if (!isset($options['author']))
@@ -827,7 +825,7 @@ class Conference {
 	    $pq .= "		join PaperComment as CommentSelector on (CommentSelector.paperId=Paper.paperId)\n";
 	
 	if (isset($options['author']))
-	    $pq .= "		join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.author>0 and PaperConflict.contactId=$contactId)\n";
+	    $pq .= "		join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType=" . CONFLICT_AUTHOR . " and PaperConflict.contactId=$contactId)\n";
 	else
 	    $pq .= "		left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)\n";
 
@@ -937,7 +935,7 @@ class Conference {
 
     
     function paperContactAuthors($paperId) {
-	$result = $this->qe("select firstName, lastName, email, contactId from ContactInfo join PaperConflict using (contactId) where paperId=$paperId and author>0", "while looking up paper contact authors");
+	$result = $this->qe("select firstName, lastName, email, contactId from ContactInfo join PaperConflict using (contactId) where paperId=$paperId and conflictType=" . CONFLICT_AUTHOR, "while looking up paper contact authors");
 	$aus = array();
 	if (!MDB2::isError($result))
 	    while (($row = $result->fetchRow()))

@@ -414,13 +414,13 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
-	if (($prow->author > 0 || $this->amAssistant())
+	if (($prow->conflictType == CONFLICT_AUTHOR || $this->amAssistant())
 	    && $prow->timeWithdrawn <= 0
 	    && ($prow->timeSubmitted <= 0 || $this->amAssistantOverride())
 	    && ($conf->timeUpdatePaper() || $this->amAssistantOverride()))
 	    return true;
 	// collect failure reasons
-	if ($prow->author <= 0 && !$this->amAssistant())
+	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->amAssistant())
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
@@ -438,12 +438,12 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
-	if (($prow->author > 0 || $this->amAssistant())
+	if (($prow->conflictType == CONFLICT_AUTHOR || $this->amAssistant())
 	    && $prow->timeWithdrawn <= 0 && $prow->timeSubmitted <= 0
 	    && ($conf->timeFinalizePaper() || $this->amAssistantOverride()))
 	    return true;
 	// collect failure reasons
-	if ($prow->author <= 0 && !$this->amAssistant())
+	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->amAssistant())
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
@@ -461,13 +461,13 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
-	if (($prow->author > 0 || $this->amAssistant())
+	if (($prow->conflictType == CONFLICT_AUTHOR || $this->amAssistant())
 	    && $prow->timeWithdrawn <= 0)
 	    return true;
 	// collect failure reasons
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
-	if ($prow->author <= 0 && !$this->amAssistant())
+	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->amAssistant())
 	    $whyNot["author"] = 1;
 	return false;
     }
@@ -477,12 +477,12 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
-	if (($prow->author > 0 || $this->amAssistant())
+	if (($prow->conflictType == CONFLICT_AUTHOR || $this->amAssistant())
 	    && $prow->timeWithdrawn > 0
 	    && ($conf->timeUpdatePaper() || $this->amAssistantOverride()))
 	    return true;
 	// collect failure reasons
-	if ($prow->author <= 0 && !$this->amAssistant())
+	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->amAssistant())
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn <= 0)
 	    $whyNot["notWithdrawn"] = 1;
@@ -498,12 +498,12 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
-	if (($prow->author > 0 || $this->amAssistant())
+	if (($prow->conflictType == CONFLICT_AUTHOR || $this->amAssistant())
 	    && $prow->timeWithdrawn <= 0 && $prow->outcome > 0
 	    && ($conf->timeSubmitFinalPaper() || $this->amAssistantOverride()))
 	    return true;
 	// collect failure reasons
-	if ($prow->author <= 0 && !$this->amAssistant())
+	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->amAssistant())
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
@@ -521,14 +521,14 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
-	if ($prow->author > 0
+	if ($prow->conflictType == CONFLICT_AUTHOR
 	    || $this->amAssistant()
 	    || ($prow->timeSubmitted > 0
 		&& (($this->isPC && $conf->timePCViewSubmission())
 		    || ($prow->reviewType > 0 && $conf->timeReviewerViewSubmission()))))
 	    return true;
 	// collect failure reasons
-	if (!$this->isPC && $prow->author <= 0 && $prow->reviewType <= 0) {
+	if (!$this->isPC && $prow->conflictType < CONFLICT_AUTHOR && $prow->reviewType <= 0) {
 	    $whyNot["permission"] = 1;
 	    return false;
 	}
@@ -550,7 +550,7 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
-	if (($prow->author > 0
+	if (($prow->conflictType == CONFLICT_AUTHOR
 	     && (!$this->isPC || !$blindWins || !$prow->blind))
 	    || ($prow->timeSubmitted > 0
 		&& ($this->isPC || $prow->reviewType > 0)
@@ -578,27 +578,28 @@ class Contact {
 	// policy
 	$rrsub = (!$rrow || $rrow->reviewSubmitted > 0);
 	$forceShow = ($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"]);
-	if (($prow->author > 0 && $conf->timeAuthorViewReviews() && $rrsub
+	if (($prow->conflictType == CONFLICT_AUTHOR
+	     && $conf->timeAuthorViewReviews() && $rrsub
 	     && (!$this->reviewsOutstanding || !$this->isReviewer))
-	    || ($this->amAssistant() && ($prow->conflict <= 0 || $forceShow))
-	    || ($this->isPC && $prow->conflict <= 0 && $rrsub
+	    || ($this->amAssistant() && ($prow->conflictType == 0 || $forceShow))
+	    || ($this->isPC && $prow->conflictType == 0 && $rrsub
 		&& ($conf->timePCViewAllReviews()
 		    || defval($prow->reviewSubmitted) > 0))
-	    || ($prow->reviewType > 0 && $prow->conflict <= 0 && $rrsub
+	    || ($prow->reviewType > 0 && $prow->conflictType == 0 && $rrsub
 		&& defval($prow->reviewSubmitted) > 0
 		&& ($this->isPC || $conf->startTime["reviewerViewReviews"] >= 1))
 	    || ($rrow && $rrow->paperId == $prow->paperId
 		&& $rrow->contactId == $this->contactId))
 	    return true;
 	// collect failure reasons
-	if ($prow->author <= 0 && !$this->isPC && $prow->reviewType <= 0)
+	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->isPC && $prow->reviewType <= 0)
 	    $whyNot['permission'] = 1;
-	else if ($prow->author > 0 && $conf->timeAuthorViewReviews()
+	else if ($prow->conflictType == CONFLICT_AUTHOR && $conf->timeAuthorViewReviews()
 		 && $this->reviewsOutstanding && $this->isReviewer)
 	    $whyNot['reviewsOutstanding'] = 1;
-	else if ($prow->author > 0)
+	else if ($prow->conflictType == CONFLICT_AUTHOR)
 	    $whyNot['deadline'] = 'authorViewReviews';
-	else if ($prow->conflict > 0)
+	else if ($prow->conflictType > 0)
 	    $whyNot['conflict'] = 1;
 	else if ($prow->reviewType > 0 && !$this->isPC && $prow->reviewSubmitted > 0)
 	    $whyNot['externalReviewer'] = 1;
@@ -637,8 +638,8 @@ class Contact {
 	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
 	// policy
 	if ($prow->timeSubmitted > 0
-	    && (($this->amAssistant() && ($forceShow || $prow->conflict <= 0))
-		|| ($this->isPC && $prow->conflict <= 0)
+	    && (($this->amAssistant() && ($forceShow || $prow->conflictType == 0))
+		|| ($this->isPC && $prow->conflictType == 0)
 		|| $prow->reviewType > 0)
 	    && ($conf->timeReviewPaper($this->isPC, $prow->reviewType > 0, true)
 		|| $this->amAssistantOverride()
@@ -655,13 +656,13 @@ class Contact {
 	else if ($prow->timeSubmitted <= 0)
 	    $whyNot['notSubmitted'] = 1;
 	else {
-	    if ($prow->conflict > 0)
+	    if ($prow->conflictType > 0)
 		$whyNot['conflict'] = 1;
 	    else if ($this->isPC && $prow->reviewType <= 0 && !$conf->timeReviewPaper(true, false, true))
 		$whyNot['reviewNotAssigned'] = 1;
 	    else
 		$whyNot['deadline'] = ($this->isPC ? "PCSubmitReviewDeadline" : "reviewerSubmitReviewDeadline");
-	    if ($this->amAssistant() && $prow->conflict > 0)
+	    if ($this->amAssistant() && $prow->conflictType > 0)
 		$whyNot['chairMode'] = 1;
 	    if ($this->amAssistant() && isset($whyNot['deadline']))
 		$whyNot['override'] = 1;
@@ -682,8 +683,8 @@ class Contact {
 	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
 	// policy
 	if ($prow->timeSubmitted > 0
-	    && (($this->amAssistant() && ($forceShow || $prow->conflict <= 0))
-		|| ($this->isPC && $prow->conflict <= 0)
+	    && (($this->amAssistant() && ($forceShow || $prow->conflictType == 0))
+		|| ($this->isPC && $prow->conflictType == 0)
 		|| $prow->reviewType > 0)
 	    && ($conf->timeReviewPaper($this->isPC, true, true)
 		|| $this->amAssistantOverride()
@@ -700,11 +701,11 @@ class Contact {
 	else if ($prow->timeSubmitted <= 0)
 	    $whyNot['notSubmitted'] = 1;
 	else {
-	    if ($prow->conflict > 0)
+	    if ($prow->conflictType > 0)
 		$whyNot['conflict'] = 1;
 	    else
 		$whyNot['deadline'] = ($this->isPC ? "PCSubmitReviewDeadline" : "reviewerSubmitReviewDeadline");
-	    if ($this->amAssistant() && $prow->conflict > 0)
+	    if ($this->amAssistant() && $prow->conflictType > 0)
 		$whyNot['chairMode'] = 1;
 	    if ($this->amAssistant() && isset($whyNot['deadline']))
 		$whyNot['override'] = 1;
@@ -722,23 +723,24 @@ class Contact {
 	    return false;
 	// policy
 	$forceShow = ($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"]);
-	if (($prow->author > 0 && $conf->timeAuthorViewReviews()
+	if (($prow->conflictType == CONFLICT_AUTHOR
+	     && $conf->timeAuthorViewReviews()
 	     && (!$crow || $crow->forAuthors))
-	    || ($prow->conflict > 0 && $forceShow)
-	    || ($this->amAssistant() && $prow->conflict <= 0)
-	    || ($this->isPC && $prow->conflict <= 0
+	    || ($prow->conflictType > 0 && $forceShow)
+	    || ($this->amAssistant() && $prow->conflictType == 0)
+	    || ($this->isPC && $prow->conflictType == 0
 		&& ($conf->timePCViewAllReviews()
 		    || !$crow || $crow->forPC))
-	    || ($prow->reviewType > 0 && $prow->conflict <= 0
+	    || ($prow->reviewType > 0 && $prow->conflictType == 0
 		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0
 		&& (!$crow || $crow->forReviewers)))
 	    return true;
 	// collect failure reasons
-	if ($prow->author <= 0 && !$this->isPC && $prow->reviewType <= 0)
+	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->isPC && $prow->reviewType <= 0)
 	    $whyNot['permission'] = 1;
-	else if ($prow->author > 0)
+	else if ($prow->conflictType == CONFLICT_AUTHOR)
 	    $whyNot['deadline'] = 'authorViewReviews';
-	else if ($prow->conflict > 0)
+	else if ($prow->conflictType > 0)
 	    $whyNot['conflict'] = 1;
 	else if ($prow->reviewType > 0 && !$this->isPC && $prow->reviewSubmitted > 0)
 	    $whyNot['externalReviewer'] = 1;
@@ -757,7 +759,7 @@ class Contact {
 	    $result = $conf->qe($query);
 	    return !MDB2::isError($result) && $result->numRows() > 0;
 	} else
-	    return $prow->author > 0;
+	    return $prow->conflictType == CONFLICT_AUTHOR;
     }
 
     function checkConflict($paperId, $conf) {
@@ -765,7 +767,7 @@ class Contact {
     }
 
     function canManagePaper($prow) {
-	return ($prow->author > 0 || $this->amAssistant());
+	return ($prow->conflictType == CONFLICT_AUTHOR || $this->amAssistant());
     }
     
     function timeReview($prow, $conf) {
@@ -780,7 +782,7 @@ class Contact {
     function canViewReviewerIdentity($prow, $rrow, $conf) {
 	if (($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
 	    || ($rrow && $rrow->contactId == $this->contactId)
-	    || ($this->isPC && $prow->author <= 0 && $prow->conflict <= 0)
+	    || ($this->isPC && $prow->conflictType == 0)
 	    || ($prow->reviewType > 0
 		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0
 		&& $conf->startTime["reviewerViewReviews"] >= 2))
@@ -796,7 +798,7 @@ class Contact {
     function canViewCommentIdentity($prow, $crow, $conf) {
 	if (($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
 	    || ($crow && $crow->contactId == $this->contactId)
-	    || ($this->isPC && $prow->author <= 0 && $prow->conflict <= 0)
+	    || ($this->isPC && $prow->conflictType == 0)
 	    || ($prow->reviewType > 0
 		&& isset($prow->reviewSubmitted) && $prow->reviewSubmitted > 0
 		&& $conf->startTime["reviewerViewReviews"] >= 2))
@@ -809,7 +811,7 @@ class Contact {
     }
     
     function canViewDecision($prow, $conf) {
-	if (($prow && $prow->author > 0 && $conf->timeAuthorViewDecision())
+	if (($prow && $prow->conflictType == CONFLICT_AUTHOR && $conf->timeAuthorViewDecision())
 	    || $this->amAssistant()
 	    || ($this->isPC && $conf->timePCViewDecision())
 	    || ($prow && $prow->reviewType > 0
@@ -821,7 +823,7 @@ class Contact {
     
     function canViewAllReviewFields($prow, $conf) {
 	if (($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
-	    || ($prow->author <= 0 && $prow->conflict <= 0 && $this->isPC)
+	    || ($prow->conflictType == 0 && $this->isPC)
 	    || $prow->reviewType > 0)
 	    return true;
 	return false;
@@ -830,7 +832,7 @@ class Contact {
     function canSetOutcome($prow) {
 	if (!$this->amAssistant())
 	    return false;
-	if ($prow && ($prow->author > 0 || $prow->conflict > 0)
+	if ($prow && $prow->conflictType > 0
 	    && !(isset($_REQUEST['forceShow']) && $_REQUEST['forceShow']))
 	    return false;
 	return true;
@@ -839,7 +841,7 @@ class Contact {
     function paperStatus($paperId, $row, $long = 0, $conf = null) {
 	global $ConfSiteBase, $Conf;
 	$conf = ($conf ? $conf : $Conf);
-	if (!$this->amAssistant() && $row->author <= 0)
+	if (!$this->amAssistant() && $row->conflictType < CONFLICT_AUTHOR)
 	    $long = 0;
 
 	if ($row->timeWithdrawn > 0) {
@@ -855,7 +857,7 @@ class Contact {
 	    else
 		return "<span class='pstat'>Unknown outcome \"" . htmlspecialchars($row->outcome) . "\"</span>";
 	//} else if (isset($row->reviewCount) && $row->reviewCount > 0) {
-	//    if ($long < 0 && $row->author <= 0)
+	//    if ($long < 0 && $row->conflictType < CONFLICT_AUTHOR)
 	//	return "";
 	//    else if ($this->canViewReview($row, null, $conf))
 	//	return "<span class='pstat pstat_rev'>Reviews&nbsp;available</span>";

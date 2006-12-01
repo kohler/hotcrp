@@ -23,6 +23,11 @@ define("OUTCOME_ACCEPTED", 1);
 define("OUTCOME_ACCEPTED_SHORT", 2);
 define("OUTCOME_REJECTED", -1);
 
+define("CONFLICT_NONE", 0);
+define("CONFLICT_PCMARK", 1);
+define("CONFLICT_CHAIRMARK", 2);
+define("CONFLICT_AUTHOR", 3);
+
 define("TAG_MAXLEN", 40);
 
 $OK = 1;

@@ -8,7 +8,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     $subrev = array();
     $nonsubrev = array();
     $foundRrow = $foundMyReview = $notShown = $nRetractable = 0;
-    $actingConflict = ($prow->conflict > 0 && !$forceShow);
+    $actingConflict = ($prow->conflictType > 0 && !$forceShow);
     $effAssistant = $Me->amAssistant() && !$actingConflict;
     $anyScores = false;
     $nNumeric = $rf->numNumericScores($prow, $Me, $Conf);
@@ -52,7 +52,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	    $t .= "<td><a href='${ConfSiteBase}review.php?reviewId=$rr->reviewId$forceShow'>$id</a></td>";
 
 	// primary/secondary glyph
-	if ($prow->conflict > 0 && !$effAssistant)
+	if ($prow->conflictType > 0 && !$effAssistant)
 	    $x = "";
 	else if ($rr->reviewType > 0)
 	    $x = "<img src='${ConfSiteBase}images/ass" . $rr->reviewType . ".png' alt='" . $reviewTypeName[$rr->reviewType] . "' />";
@@ -70,7 +70,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	// review type
 	if ($mode != "assign")
 	    /* nothing */;
-	else if ($prow->conflict > 0 && !$effAssistant)
+	else if ($prow->conflictType > 0 && !$effAssistant)
 	    $t .= "<td class='empty'></td>";
 	else {
 	    $t .= "<td>" . $reviewTypeName[$rr->reviewType];
@@ -141,7 +141,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     
     // unfinished review notification
     $notes = array();
-    if ($prow->author > 0 && !$effAssistant && $notShown
+    if ($prow->conflictType == CONFLICT_AUTHOR && !$effAssistant && $notShown
 	&& $Me->canViewReview($prow, null, $Conf)) {
 	$qualifier = (count($subrev) + count($nonsubrev) ? " additional" : "");
 	if ($notShown == 1)

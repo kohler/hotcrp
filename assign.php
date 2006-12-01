@@ -129,22 +129,21 @@ function pcAssignments() {
     
     // don't record separate PC conflicts on author conflicts
     $result = $Conf->qe("select PCMember.contactId,
-	PaperConflict.author, PaperConflict.contactId as conflictId,
-	reviewType, reviewModified, reviewId
+	PaperConflict.conflictType, reviewType, reviewModified, reviewId
 	from PCMember
 	left join PaperConflict on (PaperConflict.contactId=PCMember.contactId and PaperConflict.paperId=$prow->paperId)
 	left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.paperId=$prow->paperId)", $while);
     if (!MDB2::isError($result))
 	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
 	    $val = defval($_REQUEST["pcs$row->contactId"], 0);
-	    if ($row->author)
+	    if ($row->conflictType == CONFLICT_AUTHOR)
 		continue;
 
 	    // manage conflicts
-	    if ($row->conflictId && $val >= 0)
+	    if ($row->conflictType && $val >= 0)
 		$Conf->qe("delete from PaperConflict where paperId=$prow->paperId and contactId=$row->conflictId", $while);
-	    else if (!$row->conflictId && $val < 0)
-		$Conf->qe("insert into PaperConflict (paperId, contactId, author) values ($prow->paperId, $row->contactId, 0)", $while);
+	    else if (!$row->conflictType && $val < 0)
+		$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($prow->paperId, $row->contactId, " . CONFLICT_CHAIRMARK . ")", $while);
 
 	    // manage assignments
 	    $val = max($val, 0);
@@ -291,8 +290,7 @@ $paperTable->echoTags($prow);
 // PC assignments
 if ($Me->amAssistant()) {
     $result = $Conf->qe("select ContactInfo.contactId, firstName, lastName,
-	PaperConflict.contactId as conflict,
-	PaperConflict.author as author,
+	PaperConflict.conflictType,
 	PaperReview.reviewType,	preference,
 	group_concat(AllReviews.reviewType separator '') as allReviews
 	from ContactInfo
@@ -319,23 +317,23 @@ if ($Me->amAssistant()) {
 
 	// first, name and assignment
 	echo "      <tr>";
-	if ($p->author > 0) {
+	if ($p->conflictType == CONFLICT_AUTHOR) {
 	    echo "<td id='ass$p->contactId' class='name-1' colspan='2'>";
 	    echo str_replace(' ', "&nbsp;", contactHtml($p));
 	    echo " <small>(Author)</small></td>";
 	} else {
-	    $cid = ($p->conflict > 0 ? -1 : $p->reviewType + 0);
+	    $cid = ($p->conflictType > 0 ? -1 : $p->reviewType + 0);
 	    echo "<td id='ass$p->contactId' class='name$cid'>";
 	    echo str_replace(' ', "&nbsp;", contactHtml($p));
-	    if ($p->conflict <= 0 && $p->author <= 0 && $p->preference)
+	    if ($p->conflictType == 0 && $p->preference)
 		echo " [", htmlspecialchars($p->preference), "]";
 	    echo "</td><td class='ass' nowrap='nowrap'>";
 	    echo "<div id='foldass$p->contactId' class='folded' style='position: relative'><a id='folderass$p->contactId' href=\"javascript:foldassign($p->contactId)\"><img alt='Assignment' name='assimg$p->contactId' src=\"${ConfSiteBase}images/ass$cid.png\" /><img alt='&gt;' src=\"${ConfSiteBase}images/next.png\" /></a>&nbsp;";
 	    echo "<select id='pcs", $p->contactId, "' name='pcs", $p->contactId, "' class='extension' size='4' onchange='selassign(this, $p->contactId)' onclick='selassign(null, $p->contactId)' onblur='selassign(0, $p->contactId)' style='position: absolute'>
-	<option value='0'", ($p->conflict <= 0 && $p->reviewType < REVIEW_SECONDARY ? " selected='selected'" : ""), ">None</option>
-	<option value='", REVIEW_PRIMARY, "' ", ($p->conflict <= 0 && $p->reviewType == REVIEW_PRIMARY ? " selected='selected'" : ""), ">Primary</option>
-	<option value='", REVIEW_SECONDARY, "' ", ($p->conflict <= 0 && $p->reviewType == REVIEW_SECONDARY ? " selected='selected'" : ""), ">Secondary</option>
-	<option value='-1'", ($p->conflict > 0 ? " selected='selected'" : ""), ">Conflict</option>
+	<option value='0'", ($p->conflictType == 0 && $p->reviewType < REVIEW_SECONDARY ? " selected='selected'" : ""), ">None</option>
+	<option value='", REVIEW_PRIMARY, "' ", ($p->conflictType == 0 && $p->reviewType == REVIEW_PRIMARY ? " selected='selected'" : ""), ">Primary</option>
+	<option value='", REVIEW_SECONDARY, "' ", ($p->conflictType == 0 && $p->reviewType == REVIEW_SECONDARY ? " selected='selected'" : ""), ">Secondary</option>
+	<option value='-1'", ($p->conflictType > 0 ? " selected='selected'" : ""), ">Conflict</option>
       </select>";
 	    echo "</div>";
 	    echo "</td>";

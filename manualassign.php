@@ -21,8 +21,7 @@ function saveAssignments($reviewer) {
     if (MDB2::isError($result))
 	return $result;
 
-    $result = $Conf->qe("select Paper.paperId,
-	PaperConflict.author, PaperConflict.contactId as conflict,
+    $result = $Conf->qe("select Paper.paperId, PaperConflict.conflictType,
 	reviewId, reviewType, reviewModified
 	from Paper
 	left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=$reviewer)
@@ -33,14 +32,14 @@ function saveAssignments($reviewer) {
     $lastPaperId = -1;
     if (!MDB2::isError($result))
 	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
-	    if ($row->paperId == $lastPaperId || $row->author > 0)
+	    if ($row->paperId == $lastPaperId || $row->conflictType == CONFLICT_AUTHOR)
 		continue;
 	    $lastPaperId = $row->paperId;
 	    $type = cvtint($_REQUEST["assrev$row->paperId"]);
-	    if ($type >= 0 && $row->conflict)
+	    if ($type >= 0 && $row->conflictType > 0)
 		$Conf->qe("delete from PaperConflict where paperId=$row->paperId and contactId=$reviewer", $while);
-	    if ($type < 0 && !$row->conflict)
-		$Conf->qe("insert into PaperConflict (paperId, contactId) values ($row->paperId, $reviewer)", $while);
+	    if ($type < 0 && $row->conflictType == 0)
+		$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($row->paperId, $reviewer, " . CONFLICT_CHAIRMARK . ")", $while);
 	    $Me->assignPaper($row->paperId, $row, $reviewer, $type, $Conf);
 	}
 
