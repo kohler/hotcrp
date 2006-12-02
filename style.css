@@ -231,50 +231,22 @@ table.half tr td.r {
 	width: 50%;
 	padding-left: 0.5em;
 }
-div.main_general, div.main_settings, div.main_sub, div.main_au, div.main_re, div.main_pc, div.main_ch {
+div.bgrp {
 	margin: 0.5em 0em;
+	background: #f8fff8;
 }
-div.main_general {
-	border: 2px solid #f0f0ff;
-	background: #f8f8ff;
-}
-div.main_general div.main_head {
-	background: #f0f0ff;
-}
-div.main_head {
+div.bgrp div.bgrp_head {
+	background: #e0ffe0;
 	padding: 2px 6px;
 	font-weight: bold;
 }
-div.main_body {
+div.bgrp div.bgrp_body {
 	padding: 4px 6px;
+	border: 2px solid #e0ffe0;
 }
-div.main_settings {
-	border: 2px solid #f0f0ff;
-	background: #f8f8ff;
-}
-div.main_settings div.main_head {
-	background: #f0f0ff;
-}
-div.main_sub {
-	border: 2px solid #f0f0ff;
-	background: #f8f8ff;
-}
-div.main_sub div.main_head {
-	background: #f0f0ff;
-}
-div.main_au {
-	border: 2px solid #f0f0ff;
-	background: #f8f8ff;
-}
-div.main_au div.main_head {
-	background: #f0f0ff;
-}
-div.main_re {
-	border: 2px solid #f0f0ff;
-	background: #f8f8ff;
-}
-div.main_re div.main_head {
-	background: #f0f0ff;
+table.center {
+	margin-left: auto;
+	margin-right: auto;
 }
 
 

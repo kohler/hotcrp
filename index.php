@@ -30,7 +30,7 @@ echo "<table class='half'><tr><td class='l'>";
 
 
 // General information
-echo "<div class='main_general'><div class='main_head'>General</div><div class='main_body'>
+echo "<div class='bgrp'><div class='bgrp_head'>General</div><div class='bgrp_body'>
 Welcome, ", htmlspecialchars($Me->fullnameOrEmail()), ".  (If you're not ", htmlspecialchars($Me->fullnameOrEmail()), ", please <a href='${ConfSiteBase}logout.php'>sign out</a>.)  You will be automatically signed out if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.
 
 <table class='half'><tr><td class='l'><ul class='compact'>
@@ -57,7 +57,7 @@ echo "</div></div>\n";
 
 // Conference settings
 if ($Me->amAssistant()) {
-    echo "<div class='main_settings folded' id='foldset'><div class='main_head'><a href=\"javascript:fold('set', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('set', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;Conference settings</div><div class='main_body extension'>
+    echo "<div class='bgrp folded' id='foldset'><div class='bgrp_head'><a href=\"javascript:fold('set', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('set', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;Conference settings</div><div class='bgrp_body extension'>
 <ul class='compact'>
 <li><a href='deadlines.php'>Deadlines and options</a></li>
 <li><a href='Chair/SetTopics.php'>Paper topics</a></li>
@@ -69,7 +69,7 @@ if ($Me->amAssistant()) {
 
 // Submissions
 if ($Me->isPC) {
-    echo "<div class='main_sub'><div class='main_head'>Submissions</div><div class='main_body'>\n";
+    echo "<div class='bgrp'><div class='bgrp_head'>Submissions</div><div class='bgrp_body'>\n";
     echo "<form method='get' action='search.php'><input class='textlite' type='text' size='32' name='q' value='' /> <input class='button_small' type='submit' name='go' value='Search' /></form>\n";
     echo "<span class='sep'></span><a href='search.php?x=1'>Advanced search</a>";
     echo "<table class='half'><tr><td class='l'><ul class='compact'>\n";
@@ -88,7 +88,7 @@ echo "</td><td class='r'>";
 
 // Authored papers
 if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
-    echo "<div class='main_au'><div class='main_head'>Authored papers</div><div class='main_body'>\n";
+    echo "<div class='bgrp'><div class='bgrp_head'>Authored papers</div><div class='bgrp_body'>\n";
     $sep = "";
 
     $startable = $Conf->timeStartPaper();
@@ -133,10 +133,10 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
 
 // Review assignment
 if ($Me->amReviewer()) {
-    echo "<div class='main_re folded' id='foldre'><div class='main_head'>";
+    echo "<div class='bgrp folded' id='foldre'><div class='bgrp_head'>";
     if ($Me->isReviewer)
 	echo "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;";
-    echo "Review assignments</div><div class='main_body'>\n";
+    echo "Review assignments</div><div class='bgrp_body'>\n";
     $sep = "";
 
     echo "<table class='half'><tr><td class='l'><ul class='compact'>\n";
@@ -196,7 +196,7 @@ if ($Me->amReviewer()) {
 
 // PC tasks (old CRP)
 if ($Me->isPC) {
-    echo "<div class='main_pc folded' id='foldpc'><div class='main_head'><a href=\"javascript:fold('pc', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('pc', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;PC member tasks (old CRP)</div><div class='main_body extension'>\n";
+    echo "<div class='bgrp folded' id='foldpc'><div class='bgrp_head'><a href=\"javascript:fold('pc', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('pc', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;PC member tasks (old CRP)</div><div class='bgrp_body extension'>\n";
 
     $Conf->infoMsg(" You need to write up your own review for any "
 		  . " assigned Primary paper, and ask one or more other people "
@@ -232,7 +232,7 @@ if ($Me->isPC) {
 
 // Chair/assistant tasks (old CRP)
 if ($Me->amAssistant()) {
-    echo "<div class='main_ch folded' id='foldch'><div class='main_head'><a href=\"javascript:fold('ch', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('ch', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;PC chair tasks (old CRP)</div><div class='main_body extension'>\n";
+    echo "<div class='bgrp folded' id='foldch'><div class='bgrp_head'><a href=\"javascript:fold('ch', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('ch', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;PC chair tasks (old CRP)</div><div class='bgrp_body extension'>\n";
 
     echo "<ul>
 <li>Manage all papers
