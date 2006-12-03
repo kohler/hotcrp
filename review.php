@@ -243,16 +243,16 @@ if (isset($_REQUEST['delegate'])) {
 // set outcome action
 if (isset($_REQUEST['setoutcome'])) {
     if (!$Me->canSetOutcome($prow))
-	$Conf->errorMsg("You cannot set the outcome for paper #$prow->paperId." . ($Me->amAssistant() ? "  (<a href='" . selfHref(array("forceShow" => 1)) . "'>Override conflict</a>)" : ""));
+	$Conf->errorMsg("You cannot set the decision for paper #$prow->paperId." . ($Me->amAssistant() ? "  (<a href='" . selfHref(array("forceShow" => 1)) . "'>Override conflict</a>)" : ""));
     else {
 	$o = cvtint(trim($_REQUEST['outcome']));
 	$rf = reviewForm();
 	if (isset($rf->options['outcome'][$o])) {
-	    $result = $Conf->qe("update Paper set outcome=$o where paperId=$prow->paperId", "while changing outcome");
+	    $result = $Conf->qe("update Paper set outcome=$o where paperId=$prow->paperId", "while changing decision");
 	    if (!MDB2::isError($result))
-		$Conf->confirmMsg("Outcome for paper #$prow->paperId set to " . htmlspecialchars($rf->options['outcome'][$o]) . ".");
+		$Conf->confirmMsg("Decision for paper #$prow->paperId set to " . htmlspecialchars($rf->options['outcome'][$o]) . ".");
 	} else
-	    $Conf->errorMsg("Bad outcome value!");
+	    $Conf->errorMsg("Bad decision value!");
 	loadRows();
     }
 }

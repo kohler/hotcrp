@@ -12,8 +12,7 @@ class Conference {
   
     var $DB;
 
-    var $startTime;
-    var $endTime;
+    var $settings;
 
     var $saveMessages;
     var $headerPrinted;
@@ -38,8 +37,6 @@ class Conference {
     function Conference() {
 	global $Opt;
 
-	$this->startTime = array();
-	$this->endTime = array();
 	$this->saveMessages = true;
 	$this->headerPrinted = 0;
 	$this->tableMessages = false;
@@ -81,18 +78,6 @@ class Conference {
       echo "dbDumpDir is " . htmlspecialchars($Opt['dbDumpDir']) . " <br>";
       echo "dbhandle is " . $this -> dbhandle . " <br>";
 
-      echo "Starting times: <br>";
-      reset($this -> startTime);
-      while(list($key,$value) = each($this -> startTime)) {
-	echo "startTime($key) " . $value . " <br>";
-      }
-
-      echo "Ending times: <br>";
-      reset($this -> endTime);
-      while(list($key,$value) = each($this -> endTime)) {
-	echo "endTime($key) " . $value . " <br>";
-      }
-
       echo "</p> </td> </tr> </table>";
     }
 
@@ -102,22 +87,18 @@ class Conference {
 
     function updateImportantDates() {
 	// Suck in the start/end dates
-	$this->startTime = array();
-	$this->endTime = array();
-	$result = $this->q("select name, unix_timestamp(start) as st, unix_timestamp(end) as en from ImportantDates");
+	$this->settings = array();
+	$result = $this->q("select name, value from Settings");
 	if (!MDB2::isError($result))
-	    while ($row = $result->fetchRow()) {
-		$this->startTime[$row[0]] = $row[1];
-		$this->endTime[$row[0]] = $row[2];
-	    }
-	foreach (array("PCReviewAnyPaper", "reviewerViewReviews",
-		       "notifyChairAboutReviews") as $x)
-	    if (!isset($this->startTime[$x]))
-		$this->startTime[$x] = 0;
-	if (!isset($this->startTime["blindSubmission"]))
-	    $this->startTime["blindSubmission"] = 2;
-	if (!isset($this->startTime["blindReview"]))
-	    $this->startTime["blindReview"] = 2;
+	    while ($row = $result->fetchRow())
+		$this->settings[$row[0]] = $row[1];
+	foreach (array("pcrev_any", "extrev_view", "rev_notifychair") as $x)
+	    if (!isset($this->settings[$x]))
+		$this->settings[$x] = 0;
+	if (!isset($this->settings["sub_blind"]))
+	    $this->settings["sub_blind"] = 2;
+	if (!isset($this->settings["rev_blind"]))
+	    $this->settings["rev_blind"] = 2;
     }
 
     function q($query) {
@@ -261,9 +242,6 @@ class Conference {
     }
 
 
-    //
-    // Can be overridden by subclass
-    //
     function parseableTime($value) {
 	return date("j M Y g:i:sa",$value);
     }
@@ -273,22 +251,20 @@ class Conference {
 	else
 	    return "N/A";
     }
-    function printableStartTime($what) {
-	return $this->printableTime($this->startTime[$what]);
+
+    function printableTimeSetting($what) {
+	return $this->printableTime($this->settings[$what]);
     }
-    function printableEndTime($what) {
-	return $this->printableTime($this->endTime[$what]);
-    }
-    function printDeadline($what) {
-	if (!isset($this->endTime[$what]) || $this->endTime[$what] <= 0)
+    function printableDeadlineSetting($what) {
+	if (!isset($this->settings[$what]) || $this->settings[$what] <= 0)
 	    return "No deadline";
 	else
-	    return "Deadline: " . $this->printableTime($this->endTime[$what]);
+	    return "Deadline: " . $this->printableTime($this->settings[$what]);
     }
 
-    function printableTimeRange($what, $type = "until") {
-	$start = &$this->startTime[$what];
-	$end = &$this->endTime[$what];
+    function printableTimeRange($from, $to) {
+	$start = &$this->settings[$from];
+	$end = &$this->settings[$to];
 	$now = time();
       
 	$str = "";
@@ -298,131 +274,105 @@ class Conference {
 		$str .= " and ";
 	}
 
-	if (isset($end) && $end > 0) {
-	    $str .= ($type == "by" ? "by " : "until ");
-	    $str .= $this->printableTime($end);
-	}
+	if (isset($end) && $end > 0)
+	    $str .= "until " . $this->printableTime($end);
 	
 	return $str;
     }
 
-    function validPeriod($name) {
+    function settingsAfter($name) {
+	$t = &$this->settings[$name];
+	return (isset($t) && $t > 0 && $t <= time());
+    }
+    function settingsBetween($name1, $name2, $grace = null) {
 	$now = time();
-	$t = &$this->startTime[$name];
-	if (!isset($t) || $t <= 0 || $t >= $now)
+	$t = &$this->settings[$name1];
+	if (!isset($t) || $t <= 0 && $t > $now)
 	    return false;
-	$t = &$this->endTime[$name];
-	return !isset($t) || $t <= 0 || $now <= $t;
+	$t = &$this->settings[$name2];
+	if (isset($t) && $t > 0 && $grace && isset($this->settings[$grace]))
+	    $t += $this->settings[$grace];
+	return (!isset($t) || $t <= 0 || $t >= $now);
     }
 
     function timeStartPaper() {
-	return $this->validPeriod('startPaperSubmission') > 0;
+	return $this->settingsBetween('sub_open', 'sub_reg');
     }
     function timeUpdatePaper() {
-	return $this->validPeriod('updatePaperSubmission') > 0;
+	return $this->settingsBetween('sub_open', 'sub_update', 'sub_grace');
     }
     function timeFinalizePaper() {
-	return $this->validPeriod('finalizePaperSubmission') > 0;
+	return $this->settingsBetween('sub_open', 'sub_sub', 'sub_grace');
     }
     function timeSubmitFinalPaper() {
-	return $this->validPeriod('authorUpdateFinal') > 0;
+	return $this->settingsBetween('final_open', 'final_done', 'final_grace');
     }
     function timeAuthorViewReviews() {
-	return $this->validPeriod('authorViewReviews') > 0;
+	return $this->settingsAfter('au_seerev');
+    }
+    function timeAuthorRespond() {
+	return $this->settingsBetween('resp_open', 'resp_done', 'resp_grace');
     }
     function timeAuthorViewDecision() {
-	return $this->validPeriod('authorViewDecision') > 0;
-    }
-    function timePCViewDecision() {
-	return $this->validPeriod('EndOfTheMeeting') > 0;
-    }
-    function timeReviewerViewDecision() {
-	return $this->validPeriod('authorViewDecision') > 0;
-    }
-    function timePCReviewPreferences() {
-	return $this->validPeriod('PCReviewPreferences') > 0;
+	return $this->settingsAfter('au_seedec');
     }
     function timeReviewOpen() {
-	$st = defval($this->startTime['reviewerSubmitReview'], 0);
+	$st = defval($this->settings['rev_open'], 0);
 	return $st > 0 && time() >= $st;
     }
     function timeReviewPaper($isPC = false, $requested = true, $hard = true) {
 	if (!($requested
-	      || ($isPC && $this->startTime["PCReviewAnyPaper"] > 0)))
+	      || ($isPC && $this->settings['pcrev_any'] > 0)))
 	    return false;
-	$d = ($isPC ? "PC" : "reviewer") . "SubmitReview" . ($hard ? "Deadline" : "");
-	return $this->validPeriod($d) > 0;
+	$d = ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft");
+	return $this->settingsBetween('rev_open', $d, 'rev_grace') > 0;
+    }
+    function timePCReviewPreferences() {
+	return $this->settingsAfter('paper_lastsub');
+    }
+    function timePCViewAllReviews() {
+	return $this->settingsAfter('pc_seeallrev');
+    }
+    function timePCViewGrades() {
+	return $this->settingsAfter('pc_seeallrev');
+    }
+    function timePCViewDecision() {
+	return $this->settingsAfter('pc_seeallrev'); // EndOfTheMeeting
+    }
+    function timeReviewerViewDecision() {
+	return $this->settingsAfter('rev_seedec');
+    }
+    function timeReviewerViewAcceptedAuthors() {
+	return $this->settingsAfter('rev_seedec');
     }
     function timePCViewSubmission() {
 	return true;
-    }
-    function timePCViewAllReviews() {
-	return $this->validPeriod("PCMeetingView") > 0;
-    }
-    function timeViewAcceptedAuthors() {
-	return $this->validPeriod("PCMeetingView") > 0;
     }
     function timeReviewerViewSubmission() {
 	return true;
     }
     function timeEmailChairAboutReview() {
-	return $this->startTime["notifyChairAboutReviews"] > 0;
+	return $this->settings['rev_notifychair'] > 0;
     }
     function timeEmailAuthorsAboutReview() {
-	return $this->validPeriod("authorViewReviews") > 0;
+	return $this->settingsAfter('au_seerev');
     }
 
     function blindSubmission() {
-	return $this->startTime['blindSubmission'];
+	return $this->settings['sub_blind'];
     }
     function blindReview() {
-	return $this->startTime['blindReview'];
+	return $this->settings['rev_blind'];
     }
     
 
-    //
-    // Is this particular event/deadline defined?
-    //
-    function validDeadline($what) {
-	return isset($this->startTime[$what]) && isset($this->endTime[$what])
-	    && $this->startTime[$what] > 0 && $this->endTime[$what] > 0;
-    }
-
-    //
-    // 'default' is returned in the time is not set
-    // OR if the time value was specified as zero
-    //
-    function validTimeFor($what, $default) {
-	if (!isset($this->startTime[$what]))
-	    return $default;
-	$start = $this->startTime[$what];
-	$end = $this->endTime[$what];
-	if ($start <= 0)
-	    return $default;
-
-	$now = time();
-	if ($now < $start || (IsSet($end) && $end > 0 && $now > $end))
-	    return false;
-	else
-	    return true;
-    }
-
-  function go($url) {
-      header("Location: $url");
-      echo "<html>";
-      echo "<body> <p> You should not be here. ";
-      echo "You need to <a href=\"$url\"> login </a> </p> </body>";
-      echo "</html>";
-      exit();
-  }
-
-  function goIfInvalidActivity($what,$url) {
-      //
-      // Hack to avoid modifying lots of files
-      //
-      if ( ! $this -> validTimeFor($what, 0) ) {
-	$this -> go($url);
-      }
+    function go($url) {
+	header("Location: $url");
+	echo "<html>";
+	echo "<body> <p> You should not be here. ";
+	echo "You need to <a href=\"$url\"> login </a> </p> </body>";
+	echo "</html>";
+	exit();
     }
 
 
@@ -1227,8 +1177,8 @@ class Conference {
 	$message .= "The $this->longName ($this->shortName).\n\n";
 	$message .= $paperList;
 	$message .= "\n";
-	$message .= "You can continue to modify your review(s)\n";
-	$message .= $this->printableTimeRange('reviewerSubmitReview');
+	$message .= "You can continue to modify your review(s) until\n";
+	$message .= $this->printableTimeSetting('extrev_soft');
 	$message .= "or until you finalize them.\n";
 	$message .= "\n\n";
 	$message .= "If you are unable to complete the review by the deadline,\n";

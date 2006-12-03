@@ -233,16 +233,16 @@ table.half tr td.r {
 }
 div.bgrp {
 	margin: 0.5em 0em;
-	background: #f8fff8;
+	background: #eff1ff;
 }
 div.bgrp div.bgrp_head {
-	background: #e0ffe0;
+	background: #d8deff;
 	padding: 2px 6px;
 	font-weight: bold;
 }
 div.bgrp div.bgrp_body {
 	padding: 4px 6px;
-	border: 2px solid #e0ffe0;
+	border: 2px solid #d8deff;
 }
 table.center {
 	margin-left: auto;
@@ -360,6 +360,10 @@ td.rcaption {
 	padding: 3px 0.5em 3px 0em;
 	font-weight: bold;
 }
+td.xcaption {
+	text-align: right;
+	padding: 3px 0.5em 3px 0em;
+}
 td.caption {
 	text-align: right;
 	padding: 3px 0.5em 3px 0em;
@@ -447,7 +451,7 @@ table.memberlist td.pl_callout {
 td.datename, td.datename_error {
 	padding-right: 1em;
 }
-td.datename_error {
+td.datename_error, span.error {
 	color: #ff0000;
 }
 td.datedesc {
@@ -505,7 +509,7 @@ td.entry button {
 td.entry textarea {
 	width: 100%;
 }
-tr.pt_actions td, tr.pt_outcome td {
+tr.pt_actions td, tr.pt_outcome td, td.nowrap {
 	white-space: nowrap;
 }
 tr.pt_abstract td.entry {

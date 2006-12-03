@@ -25,10 +25,10 @@ if (IsSet($_REQUEST[setSortKey])) {
 
 <?php 
 print "<p> You can see this information ";
-print $Conf->printableTimeRange('PCMeetingView');
+print $Conf->printableTimeRange('pc_seeallrev', '');
 print "</p>";
 
-if ( ! $Conf -> validTimeFor('PCMeetingView', 0) ) {
+if (!$Conf->timePCViewGrades()) {
   $Conf->errorMsg("You can not see this information right now");
   exit();
 }
@@ -97,7 +97,7 @@ $Conf->textButtonPopup("Click here to assign grades to papers ",
 print "</center>";
 
 
-if ( $Conf->validTimeFor('AtTheMeeting', 0) ) {
+if ($Conf->timePCViewGrades()) {
   $Conf->errorMsg("Papers authored by program committee members (and other "
 		  . " conflicting papers) are not shown at this time. To "
 		  . " maintain confidentiality, please do not discuss or "
@@ -131,9 +131,9 @@ while ($row=$result->fetchRow()) {
   // program member can lean over and see the paper
   //
   $noShow = $conflicts[$paperId]
-    || ( $Conf->validTimeFor('AtTheMeeting',0)
-	 && $pcConflicts[$paperId]
-	 && ! $_SESSION["Me"]->isChair );
+    || ($Conf->timePCViewGrades()
+	&& $pcConflicts[$paperId]
+	&& !$_SESSION["Me"]->amAssistant());
 
 
   if ( ! $noShow ) {

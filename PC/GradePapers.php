@@ -3,7 +3,8 @@ require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPC("../");
-$Conf->goIfInvalidActivity("PCGradePapers", "../");
+if (!$Conf->timePCViewGrades())
+    $Conf->go("../");
 
 include('gradeNames.inc');
 
@@ -35,7 +36,7 @@ if ( IsSet($_REQUEST['gradeForPaper']) ) {
 $Conf->header("Grade Papers");
 
 $Conf->infoMsg( "You may enter grades " .
-		$Conf -> printableTimeRange('PCGradePapers') ); ?>
+		$Conf->printableTimeRange('pc_seeallrev', '') ); ?>
 
 <table align='center' width='75%'>
 <tr bgcolor=<?php echo $Conf->infoColor?>>

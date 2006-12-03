@@ -7,7 +7,8 @@ $searchTags = array('ti:' => 'ti', 'title:' => 'ti',
 		    're:' => 're', 'rev:' => 're', 'reviewer:' => 're',
 		    'tag:' => 'tag',
 		    'ord:' => 'order', 'order:' => 'order',
-		    'outcome:' => 'outcome', 'out:' => 'outcome');
+		    'outcome:' => 'outcome', 'out:' => 'outcome',
+		    'decision:' => 'outcome', 'dec:' => 'outcome');
 
 class PaperSearch {
 

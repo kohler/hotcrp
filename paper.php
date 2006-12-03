@@ -216,6 +216,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 			    ($isSubmitFinal ? "while submitting final copy for paper" : "while submitting paper"));
 	if (MDB2::isError($result))
 	    return false;
+	$Conf->qe("insert into Settings (name, value) values ('paper_lastsub', " . time() . ") on duplicate key update name=name");
     }
     
     // confirmation message
@@ -239,16 +240,16 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	. wordWrapIndent(trim($prow->authorInformation), "Authors: ") . "\n"
 	. "      Paper site: $Conf->paperSite/paper.php?paperId=$paperId\n\n";
     if ($isSubmitFinal) {
-	$deadline = $Conf->printableEndTime("authorUpdateFinal");
+	$deadline = $Conf->printableTimeSetting("final_done");
 	$mx = ($deadline != "N/A" ? "You have until $deadline to make further changes." : "");
     } else if ($isSubmit || $prow->timeSubmitted > 0)
 	$mx = "The paper will be considered for inclusion in the conference.  You will receive email when reviews are available for you to view.";
     else {
 	$mx = "The paper has not been submitted yet.";
-	$deadline = $Conf->printableEndTime("updatePaperSubmission");
+	$deadline = $Conf->printableTimeSetting("sub_update");
 	if ($deadline != "N/A")
 	    $mx .= "  You have until $deadline to update the paper further.";
-	$deadline = $Conf->printableEndTime("finalizePaperSubmission");
+	$deadline = $Conf->printableTimeSetting("sub_sub");
 	if ($deadline != "N/A")
 	    $mx .= "  If you do not officially submit the paper by $deadline, it will not be considered for the conference.";
     }
@@ -397,11 +398,11 @@ if (isset($_REQUEST['setrevpref']) && $prow && isset($_REQUEST['revpref'])) {
 
 
 // messages for the author
-function deadlineIs($dname, $conf) {
-    $deadline = $conf->printableEndTime($dname);
+function deadlineSettingIs($dname, $conf) {
+    $deadline = $conf->printableTimeSetting($dname);
     if ($deadline == "N/A")
 	return "";
-    else if (time() < $conf->endTime[$dname])
+    else if (time() < $conf->settings[$dname])
 	return "  The deadline is $deadline.";
     else
 	return "  The deadline was $deadline.";
@@ -412,7 +413,7 @@ if ($mode != "edit")
     /* do nothing */;
 else if ($newPaper) {
     $timeStart = $Conf->timeStartPaper();
-    $startDeadline = deadlineIs("startPaperSubmission", $Conf);
+    $startDeadline = deadlineSettingIs("sub_reg", $Conf);
     if (!$timeStart) {
 	$msg = "You cannot start new papers since the <a href='deadlines.php'>deadline</a> has passed.$startDeadline$override";
 	if (!$Me->amAssistant())
@@ -421,9 +422,9 @@ else if ($newPaper) {
     }
 } else if ($prow->conflictType == CONFLICT_AUTHOR && $prow->timeSubmitted <= 0) {
     $timeUpdate = $Conf->timeUpdatePaper();
-    $updateDeadline = deadlineIs("updatePaperSubmission", $Conf);
+    $updateDeadline = deadlineSettingIs("sub_update", $Conf);
     $timeSubmit = $Conf->timeFinalizePaper();
-    $submitDeadline = deadlineIs("finalizePaperSubmission", $Conf); 
+    $submitDeadline = deadlineSettingIs("sub_sub", $Conf); 
     if ($timeUpdate && $prow->timeWithdrawn > 0)
 	$Conf->infoMsg("Your paper has been withdrawn, but you can still revive it.$updateDeadline");
     else if ($timeUpdate)
@@ -433,7 +434,7 @@ else if ($newPaper) {
     else if ($prow->timeWithdrawn <= 0)
 	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting this paper has passed.  The paper will not be considered.$submitDeadline$override");
 } else if ($prow->conflictType == CONFLICT_AUTHOR && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper()) {
-    $updateDeadline = deadlineIs("authorUpdateFinal", $Conf);
+    $updateDeadline = deadlineSettingIs("final_done", $Conf);
     $Conf->infoMsg("Congratulations!  This paper was accepted.  Submit a final copy for your paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or add contact authors, allowing others to view reviews and make changes.");
 } else if ($prow->conflictType == CONFLICT_AUTHOR) {
     $override2 = ($Me->amAssistant() ? "  As PC Chair, you can unsubmit the paper, which will allow further changes, using the \"Undo submit\" button." : "");

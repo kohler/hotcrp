@@ -59,7 +59,7 @@ echo "</div></div>\n";
 if ($Me->amAssistant()) {
     echo "<div class='bgrp folded' id='foldset'><div class='bgrp_head'><a href=\"javascript:fold('set', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('set', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;Conference settings</div><div class='bgrp_body extension'>
 <ul class='compact'>
-<li><a href='deadlines.php'>Deadlines and options</a></li>
+<li><a href='settings.php'>Deadlines and options</a> / <a href='deadlines.php'>Old</a></li>
 <li><a href='Chair/SetTopics.php'>Paper topics</a></li>
 <li><a href='pc.php'>Program committee</a></li>
 <li><a href='Chair/SetReviewForm.php'>Review form</a></li>
@@ -75,7 +75,7 @@ if ($Me->isPC) {
     echo "<table class='half'><tr><td class='l'><ul class='compact'>\n";
     echo "<li><a href='search.php?q=&amp;t=s'>List submitted papers</a></li>\n";
     if ($Me->canViewDecision(null, $Conf))
-	echo "<li><a href='search.php?q=outcome:yes&amp;t=s'>List accepted papers</a></li>\n";
+	echo "<li><a href='search.php?q=decision:yes&amp;t=s'>List accepted papers</a></li>\n";
     echo "</ul></td><td class='r'><ul class='compact'>";
     if ($Me->amAssistant())
 	echo "<li><a href='search.php?q=&amp;t=all'>List <i>all</i> papers</a></li>\n";
@@ -93,7 +93,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
 
     $startable = $Conf->timeStartPaper();
     if ($startable || $Me->amAssistant()) {
-	echo $sep, "<div><strong><a href='paper.php?paperId=new'>Start new paper</a></strong> <span class='deadline'>(" . $Conf->printDeadline('startPaperSubmission') . ")</span>";
+	echo $sep, "<div><strong><a href='paper.php?paperId=new'>Start new paper</a></strong> <span class='deadline'>(" . $Conf->printableDeadlineSetting('sub_reg') . ")</span>";
 	if ($Me->amAssistant())
 	    echo "<br/>\n<small>As PC Chair, you can start papers regardless of deadlines and on other people's behalf.</small>";
 	echo "</div>\n";
@@ -110,15 +110,14 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
 	    $sep = "<div class='smgap'></div>";
 	}
 	if ($plist->needFinalize > 0) {
-	    $time = $Conf->printableEndTime('updatePaperSubmission');
 	    if (!$Conf->timeFinalizePaper())
 		$deadlines[] = "The <a href='deadlines.php'>deadline</a> for submitting papers in progress has passed.";
 	    else if (!$Conf->timeUpdatePaper()) {
 		$deadlines[] = "The <a href='deadlines.php'>deadline</a> for updating papers in progress has passed, but you can still submit.";
-		$time = $Conf->printableEndTime('finalizePaperSubmission');
+		$time = $Conf->printableTimeSetting('sub_sub');
 		if ($time != 'N/A')
 		    $deadlines[] = "You have until $time to submit any papers in progress.";
-	    } else if (($time = $Conf->printableEndTime('updatePaperSubmission')) != 'N/A')
+	    } else if (($time = $Conf->printableTimeSetting('sub_update')) != 'N/A')
 		$deadlines[] = "You have until $time to submit any papers in progress.";
 	}
 	if (!$startable && !$Conf->timeAuthorViewReviews())
@@ -142,7 +141,7 @@ if ($Me->amReviewer()) {
     echo "<table class='half'><tr><td class='l'><ul class='compact'>\n";
     if ($Me->isReviewer)
 	echo "<li><a href='search.php?q=&amp;t=r'>List assigned papers</a></li>\n";
-    if ($Me->isPC)
+    if ($Me->isPC && $Conf->timePCReviewPreferences())
 	echo "<li><a href='PC/reviewprefs.php'>Mark review preferences</a></li>\n";
     echo "</ul></td><td class='r'><ul class='compact'>\n";
     if ($Me->amReviewer())
@@ -158,7 +157,7 @@ if ($Me->amReviewer()) {
     }
     
     $deadlines = array();
-    $rtyp = ($Me->isPC ? "PC" : "reviewer");
+    $rtyp = ($Me->isPC ? "pcrev_" : "extrev_");
     unset($d);
     if ($Me->isPC && $Conf->timeReviewPaper(true, false, true))
 	$deadlines[] = "PC members may review <a href='search.php?q=&amp;t=s'>any submitted paper</a>, whether or not a review has been assigned.";
@@ -169,14 +168,14 @@ if ($Me->amReviewer()) {
     } else if (!$Conf->timeReviewPaper($Me->isPC, true, true))
 	$deadlines[] = "The <a href='deadlines.php'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.";
     else if (!$Conf->timeReviewPaper($Me->isPC, true, false))
-	$deadlines[] = "Reviews were requested by " . $Conf->printableEndTime("${rtyp}SubmitReview") . ".";
+	$deadlines[] = "Reviews were requested by " . $Conf->printableTimeSetting("${rtyp}soft") . ".";
     else {
-	$d = $Conf->printableEndTime("${rtyp}SubmitReview");
+	$d = $Conf->printableTimeSetting("${rtyp}soft");
 	if ($d != "N/A")
 	    $deadlines[] = "Please submit your reviews by $d.";
     }
     if ($Me->isPC && $Conf->timeReviewPaper(true, false, true)) {
-	$d = (isset($d) ? "N/A" : $Conf->printableEndTime("PCSubmitReview"));
+	$d = (isset($d) ? "N/A" : $Conf->printableTimeSetting("pcrev_soft"));
 	if ($d != "N/A")
 	    $deadlines[] = "Please submit your reviews by $d.";
     }
@@ -213,17 +212,17 @@ if ($Me->isPC) {
 
 <li>The End Game - Activities Prior to the PC Meeting
   <ul>\n";
-    if ($Conf->validTimeFor('PCGradePapers', 0))
+    if ($Conf->timePCViewGrades())
 	echo "  <li><a href='PC/GradePapers.php'>Grade Papers</a>
 -- arrive at a consensus and determine discussion order of papers at PC meeting</li>\n";
-    if ($Conf->validTimeFor('PCMeetingView', 0)) {
+    if ($Conf->timePCViewAllReviews()) {
 	echo "  <li><a href='PC/SeeAllGrades.php'>See overall merit and grades for all papers</a> -- you can get to reviews from here as well</li>\n";
 	echo "  <li><a href='PC/ListReviews.php'>Quickly see reviews</a> -- but only for papers which you do not have conflicts</li>\n";
 	echo "  <li><a href='PC/CheckOnPCProgress.php'>Spy On Your Neighbours</a> -- See progress of entire PC</li>\n";
 	echo "  <li><a href='Chair/SpotProblems.php'>Spot problems across all papers</a></li>\n";
 	echo "  <li><a href='Chair/AverageReviewerScore.php'>See average reviewer ratings</a> -- this compares the overall merit ratings of different reviewers</li>\n";
     }
-    if ($Conf->validTimeFor('PCGradePapers', 0) || $Conf->validTimeFor('AtTheMeeting', 0))
+    if ($Conf->timePCViewGrades())
 	echo "  <li><a href='Chair/AveragePaperScore.php'>See Average Paper Scores</a></li>\n";
     echo "</ul></li>\n";
     echo "</ul></div></div>\n";

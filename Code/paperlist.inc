@@ -395,15 +395,15 @@ class PaperList {
 
     function updatePaperLists() {
 	global $Conf;
-	if (!isset($_SESSION["paperLists"])
-	    || defval($Conf->startTime["paperListUpdate"]) <= 0
-	    || $_SESSION["paperLists"]["date"] <= $Conf->startTime["paperListUpdate"]) {
+	$t = defval($Conf->settings["paperlist_update"]);
+	if (!isset($_SESSION["paperLists"]) || $t <= 0
+	    || $_SESSION["paperLists"]["date"] <= $t) {
 	    $pl = array();
 	    $result = $Conf->qe("select * from PaperList");
 	    if (!MDB2::isError($result))
 		while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
 		    $pl[$row->paperListName] = $row;
-	    $pl["date"] = defval($Conf->startTime["paperListUpdate"]);
+	    $pl["date"] = $t;
 	    $_SESSION["paperLists"] = $pl;
 	}
     }
@@ -438,7 +438,7 @@ class PaperList {
 	    $t .= "    <option value='final'>Final papers</option>\n";
 	if ($this->contact->amAssistant())
 	    $t .= "    <option value='rev'>All reviews</option>\n";
-	else if ($this->contact->isPC && $Conf->validTimeFor('PCMeetingView', 0))
+	else if ($this->contact->isPC && $Conf->timePCViewAllReviews())
 	    $t .= "    <option value='rev'>All reviews (no conflicts)</option>\n";
 	if ($this->contact->amAssistant() || ($this->contact->isReviewer && $Conf->blindSubmission() < 2))
 	    $t .= "    <option value='authors'>Authors (text)</option>\n";
@@ -448,7 +448,7 @@ class PaperList {
 	}
 	if ($this->contact->isPC)
 	    $t .= "    <option value='topics'>Topics (text)</option>\n";
-	if ($this->contact->amAssistant() || ($this->contact->isPC && $Conf->validTimeFor('PCMeetingView', 0)))
+	if ($this->contact->amAssistant() || ($this->contact->isPC && $Conf->timePCViewAllReviews()))
 	    $t .= "    <option value='scores'>All scores (text)</option>\n";
 	$t .= "</select>  <input type='submit' class='button_small' name='get' value='Go' />\n";
 
@@ -459,7 +459,7 @@ class PaperList {
     <option value='a' selected='selected'>Add</option><option value='d'>Remove</option><option value='s'>Define</option><option value='so'>Define ordered</option><option value='ao'>Add ordered</option>
   </select> &nbsp;tag(s) &nbsp;<input class='textlite' type='text' name='tag' value='' size='15' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></td></tr>\n";
 	    if ($this->contact->amAssistant())
-		$t .= "  <tr><td class='rcaption'>Outcome:</td><td>" . outcomeSelector() . " <input type='submit' class='button_small' name='setoutcome' value='Set outcome' /></td></tr>\n";
+		$t .= "  <tr><td class='rcaption'>Decision:</td><td>" . outcomeSelector() . " <input type='submit' class='button_small' name='setoutcome' value='Set decision' /></td></tr>\n";
 	    if ($this->contact->amAssistant()) {
 		$t .= "  <tr><td class='rcaption'>Conflicts:</td><td><select name='mark'>\n";
 		$t .= "<option value='pcpaper' selected='selected'>PC-authored paper</option>\n";
@@ -495,7 +495,7 @@ class PaperList {
 	$this->description = $plist->description;
 
 	// check role type
-	$this->scoresOk = $me->amAssistant() || ($me->isPC && $Conf->validTimeFor("PCGradePapers", 0));
+	$this->scoresOk = $me->amAssistant() || ($me->isPC && $Conf->timePCViewGrades());
 
 	// initialize query
 	$queryOptions = array();

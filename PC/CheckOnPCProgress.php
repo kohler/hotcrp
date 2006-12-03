@@ -13,10 +13,10 @@ $Me->goIfNotPC('../index.php');
 <?php 
 
 print "<p> You can see this information ";
-print $Conf->printableTimeRange('PCMeetingView');
+print $Conf->printableTimeRange('pc_seeallrev', '');
 print "</p>";
 
-if ( ! $Conf -> validTimeFor('PCMeetingView', 0) ) {
+if (!$Conf->timePCViewAllReviews()) {
   $Conf->errorMsg("You can not see this information right now");
   exit();
 }

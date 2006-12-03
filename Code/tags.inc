@@ -6,7 +6,7 @@ function checkTag($tag, $reporterr = true) {
 	$e = "Empty tag.";
     else if (strlen($tag) > TAG_MAXLEN)
 	$e = "Tag '" . htmlspecialchars($tag) . "' too long; maximum " . TAG_MAXLEN . " characters.";
-    else if (!preg_match('/\A[-a-zA-Z0-9!@*_=+:.\/?]+#?\d*\Z/', $tag))
+    else if (!preg_match('/\A[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*#?\d*\Z/', $tag))
 	$e = "Tag '" . htmlspecialchars($tag) . "' contains odd characters.";
     else
 	return true;

@@ -556,26 +556,31 @@ function whyNotText($whyNot, $action) {
 	$text .= ucfirst($thisPaper) . " can't be submitted because you haven't yet uploaded the paper itself.  Upload the paper and try again.  ";
     if (isset($whyNot['deadline'])) {
 	$dname = $whyNot['deadline'];
-	$start = $Conf->startTime[$dname];
-	$end = $Conf->endTime[$dname];
+	if ($dname[0] == "s")
+	    $start = defval($Conf->settings["sub_open"], -1);
+	else if ($dname[0] == "p" || $dname[0] == "e")
+	    $start = defval($Conf->settings["rev_open"], -1);
+	$end = $Conf->settings[$dname];
 	$now = time();
-	if ($start > 0 && $now < $start)
-	    $text .= "You can't $action $thisPaper until " . $Conf->printableStartTime($dname) . ".  ";
+	if ($start <= 0)
+	    $text .= "You can't $action $thisPaper yet.  ";
+	else if ($start > 0 && $now < $start)
+	    $text .= "You can't $action $thisPaper until " . $Conf->printableTime($start) . ".  ";
 	else if ($end > 0 && $now > $end) {
-	    if ($dname == "startPaperSubmission")
-		$text .= "The deadline to start new paper submissions has passed.  ";
-	    else if ($dname == "updatePaperSubmission")
-		$text .= "The deadline to update paper submissions has passed.  ";
-	    else if ($dname == "finalizePaperSubmission")
-		$text .= "The deadline to officially submit $thisPaper has passed.  ";
-	    else if ($dname == "reviewerSubmitReviewDeadline")
+	    if ($dname == "sub_reg")
+		$text .= "The paper registration deadline has passed.  ";
+	    else if ($dname == "sub_update")
+		$text .= "The deadline to update papers in progress has passed.  ";
+	    else if ($dname == "sub_sub")
+		$text .= "The paper submission deadline has passed.  ";
+	    else if ($dname == "extrev_hard")
 		$text .= "The external review deadline has passed.  ";
-	    else if ($dname == "PCSubmitReviewDeadline")
+	    else if ($dname == "pcrev_hard")
 		$text .= "The PC review deadline has passed.  ";
 	    else
 		$text .= "The deadline to $action $thisPaper has passed.  ";
-	    $text .= "It was " . $Conf->printableEndTime($dname) . ".  ";
-	} else if ($dname == "authorViewReviews")
+	    $text .= "It was " . $Conf->printableTime($end) . ".  ";
+	} else if ($dname == "au_seerev")
 	    $text .= "Authors can't view paper reviews at the moment.  ";
 	else
 	    $text .= "You can't $action $thisPaper at the moment.  ";
@@ -773,7 +778,7 @@ function outcomeSelector($curOutcome = 0) {
     sort($outcomes);
     $outcomes = array_unique(array_merge(array(0), $outcomes));
     if ($curOutcome === null)
-	$text .= "    <option value='' selected='selected'><b>Set outcome...</b></option>\n";
+	$text .= "    <option value='' selected='selected'><b>Set decision...</b></option>\n";
     foreach ($outcomes as $key)
 	$text .= "    <option value='$key'" . ($curOutcome == $key && $curOutcome !== null ? " selected='selected'" : "") . ">" . htmlspecialchars($outcomeMap[$key]) . "</option>\n";
     return $text . "  </select>";

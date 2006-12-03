@@ -2,7 +2,8 @@
 require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Conf->goIfInvalidActivity("AtTheMeeting", "../");
+if (!$Conf->timePCViewGrades())
+    $Conf->go("../");
 
 function person_ok( $who )
 {

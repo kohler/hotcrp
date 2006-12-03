@@ -277,7 +277,7 @@ if ($getaction == "scores" && $Me->amAssistant() && isset($papersel)) {
     $text = '#paperId';
     if ($Conf->blindSubmission() == 1)
 	$text .= "\tblind";
-    $text .= "\toutcome";
+    $text .= "\tdecision";
     foreach ($scores as $score)
 	$text .= "\t" . $rf->abbrevName[$score];
     $text .= "\trevieweremail\treviewername\n";
@@ -333,14 +333,14 @@ if ($getaction == "topics" && $Me->amAssistant() && isset($papersel)) {
 // set outcome for selected papers
 if (isset($_REQUEST["setoutcome"]) && defval($_REQUEST['outcome'], "") != "" && isset($papersel))
     if (!$Me->canSetOutcome(null))
-	$Conf->errorMsg("You cannot set paper outcomes.");
+	$Conf->errorMsg("You cannot set paper decisions.");
     else {
 	$o = cvtint(trim($_REQUEST['outcome']));
 	$rf = reviewForm();
 	if (isset($rf->options['outcome'][$o]))
-	    $result = $Conf->qe("update Paper set outcome=$o where " . paperselPredicate($papersel), "while changing outcome");
+	    $result = $Conf->qe("update Paper set outcome=$o where " . paperselPredicate($papersel), "while changing decision");
 	else
-	    $Conf->errorMsg("Bad outcome value!");
+	    $Conf->errorMsg("Bad decision value!");
     }
 
 
@@ -489,13 +489,13 @@ if (defval($_REQUEST["x"], 0)) {
   <span class='textlite'>au:</span> for authors,
   <span class='textlite'>co:</span> for collaborators,
   <span class='textlite'>rev:</span> for reviewer names,
-  <span class='textlite'>out:</span> for outcomes,
+  <span class='textlite'>dec:</span> for decisions,
   and <span class='textlite'>tag:</span> or <span class='textlite'>order:</span> for tags.</td>
 </tr><tr>
   <td class='rcaption'>Paper actions</td>
   <td class='entry'>To act on many papers at once, select their checkboxes and choose an action underneath the paper list.
 For example, to download a <tt>.zip</tt> file with all submitted papers, PC members can search for all submitted papers, choose the \"select all\" link, then \"get: Papers\".  Pull down the menu to see what else you can do.
-The \"More &raquo;\" link allows PC members and chairs to add tags, set conflicts, set outcomes, and so forth.  The easiest way to tag a set of papers is to enter their numbers in the search box, search, \"select all\", and add the tag.</td>
+The \"More &raquo;\" link allows PC members and chairs to add tags, set conflicts, set decisions, and so forth.  The easiest way to tag a set of papers is to enter their numbers in the search box, search, \"select all\", and add the tag.</td>
 </tr><tr>
   <td class='rcaption'>Limitations</td>
   <td class='entry'>Search won't show you information you aren't supposed to see.  For example, authors can only search their own submissions, and if the conference used anonymous submission, then only the PC chairs can search by author.</td>

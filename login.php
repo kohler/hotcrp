@@ -22,12 +22,12 @@ function doCreateAccount() {
     $msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".  ";
 
     // handle setup phase
-    if ($Conf->validPeriod("setupPhase")) {
-	$msg .= "  As the first user, you have been assigned PC chair privilege and are being automatically logged in.  Your password is \"<tt>" . htmlspecialchars($_SESSION["Me"]->password) . "</tt>\".  All later users will have to log in normally.";
+    if (isset($Conf->settings["setupPhase"])) {
+	$msg .= "  As the first user, you have been automatically signed in and assigned PC chair privilege.  Your password is \"<tt>" . htmlspecialchars($_SESSION["Me"]->password) . "</tt>\".  All later users will have to sign in normally.";
 	$Conf->confirmMsg($msg);
 	$Conf->qe("insert into Chair (contactId) values (" . $_SESSION["Me"]->contactId . ")", "while granting PC chair privilege");
 	$Conf->qe("insert into PCMember (contactId) values (" . $_SESSION["Me"]->contactId . ")", "while granting PC chair privilege");
-	$Conf->qe("delete from ImportantDates where name='setupPhase'", "while leaving setup phase");
+	$Conf->qe("delete from Settings where name='setupPhase'", "while leaving setup phase");
 	return true;
     }
 

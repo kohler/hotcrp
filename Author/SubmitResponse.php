@@ -2,8 +2,9 @@
 require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotAuthor("../index.php");
-$Conf->goIfInvalidActivity("authorRespondToReviews", "../index.php");
+$Me->goIfNotAuthor("../");
+if (!$Conf->timeAuthorRespond())
+    $Conf->go("../");
 
 $word_limit = 800;
 ?>
@@ -16,7 +17,7 @@ $word_limit = 800;
 
 <p>
 You can submit responses to your paper review
-<?php  echo $Conf->printableTimeRange('authorRespondToReviews') ?>. <br>
+<?php  echo $Conf->printableTimeRange('resp_open', 'resp_done') ?>. <br>
 You can continue modifying or  updating the stored response until then.
 You will receive email messages each time a new review is finalized, but you
 should periodically submit your response as you revise the response to

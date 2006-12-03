@@ -74,7 +74,7 @@ function spotReviews($howmany, $finalized=0) {
   }
 }
 
-if (! $_SESSION["Me"] -> isChair && ! $Conf -> validTimeFor('PCMeetingView', 0) ) {
+if (!$_SESSION["Me"]->isChair && !$Conf->timePCViewAllReviews()) {
   $Conf->infoMsg("You shouldn't be here");
   exit();
 }

@@ -1,11 +1,11 @@
-drop table if exists ImportantDates;
-CREATE TABLE ImportantDates (
+drop table if exists Settings;
+CREATE TABLE Settings (
   name char(40) NOT NULL,
-  start timestamp(14) NOT NULL,
-  end timestamp(14) NOT NULL default 0,
+  value int(11) NOT NULL,
+  data text default NULL, 
   UNIQUE KEY name (name)
 ) TYPE=MyISAM;
-insert into ImportantDates (name, start) values ('setupPhase', current_timestamp);
+insert into Settings (name, value) values ('setupPhase', 1);
 
 
 drop table if exists ActionLog;
@@ -438,8 +438,8 @@ insert into ReviewFormOptions set fieldName='outcome', level=-1, description='Re
 insert into ReviewFormOptions set fieldName='outcome', level=1, description='Accepted as short paper';
 insert into ReviewFormOptions set fieldName='outcome', level=2, description='Accepted';
 
-delete from ImportantDates where name='reviewFormUpdate';
-insert into ImportantDates set name='reviewFormUpdate', start=current_timestamp;
+delete from Settings where name='revform_update';
+insert into Settings set name='revform_update', value=unix_timestamp(current_timestamp);
 
 
 drop table if exists PaperList;
@@ -552,5 +552,5 @@ insert into PaperListColumns (paperListId, fieldId, col) values
 	(12, 31, 0), (12, 3, 1), (12, 13, 2), (12, 45, 3), (12, 41, 4),
 	(12, 33, 5);
 
-delete from ImportantDates where name='paperListUpdate';
-insert into ImportantDates set name='paperListUpdate', start=current_timestamp;
+delete from Settings where name='paperlist_update';
+insert into Settings set name='paperlist_update', value=unix_timestamp(current_timestamp);

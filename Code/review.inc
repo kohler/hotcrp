@@ -107,7 +107,7 @@ class ReviewForm {
     }
 
     function validate($conf, $always = false) {
-	if ($always || !$this->updatedWhen || $this->updatedWhen <= $conf->startTime['reviewFormUpdate'])
+	if ($always || !$this->updatedWhen || $this->updatedWhen <= $conf->settings['revform_update'])
 	    $this->updateFromDB($conf);
     }
 

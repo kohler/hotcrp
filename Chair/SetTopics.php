@@ -62,8 +62,8 @@ if (isset($_REQUEST["update"])) {
 	}
 
     // Finally mark the form
-    $Conf->qe("delete from ImportantDates where name='reviewFormUpdate'"); 
-    $Conf->qe("insert into ImportantDates (name, start) values ('reviewFormUpdate', current_timestamp)"); 
+    $Conf->qe("delete from Settings where name='revform_update'"); 
+    $Conf->qe("insert into Settings (name, value) values ('revform_update', unix_timestamp(current_timestamp))"); 
 }
 
 function outrow($id, $name) {

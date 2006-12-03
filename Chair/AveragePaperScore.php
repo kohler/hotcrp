@@ -5,7 +5,7 @@ $Me->goIfInvalid();
 $Me->goIfNotPC('../index.php');
 
 $isChair = $_SESSION['Me']->isChair;
-$meetingTime = $Conf->validTimeFor('AtTheMeeting', 0);
+$meetingTime = $Conf->timePCViewGrades();
 
 $outcomeName = array(
   "unspecified" => "Unspecified",
@@ -99,7 +99,7 @@ if( IsSet($_REQUEST['use_groups']) ){
   $use_groups = 0;
 }
 
-if( (! $_SESSION['Me']->isChair) && ($Conf->validTimeFor('AtTheMeeting', 0)) ) {
+if( (! $_SESSION['Me']->isChair) && $Conf->timePCViewGrades()) ) {
   $use_groups = 1;
   foreach( $groups as $key => $val ){
     $kept_groups[$key] = 1;
@@ -173,7 +173,7 @@ foreach($graphs as $val => $name){
 
 print "</P>\n";
 
-if( ($_SESSION['Me']->isChair) || (! $Conf->validTimeFor('AtTheMeeting', 0)) ) {
+if( ($_SESSION['Me']->isChair) || (! $Conf->timePCViewGrades()) ) {
 ?>
 <H2>Sort Order and Row Selection</H2>
 <SELECT NAME="target">
@@ -215,7 +215,7 @@ if( $_SESSION['Me']->isChair ){
   print '</SELECT>';
 }
 
-//if( ($_SESSION['Me']->isChair) || ($Conf->validTimeFor('AtTheMeeting', 0)) ) {
+//if( ($_SESSION['Me']->isChair) || ($Conf->timePCViewGrades()) ) {
 if( ($_SESSION['Me']->isChair) ) {
   print "<H2>Discussion Order</H2>\n";
 

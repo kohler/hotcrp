@@ -323,12 +323,12 @@ Zhang, Ping Yen (INRIA)</pre>";
 
     function echoOutcomeSelector($prow) {
 	echo "<tr class='pt_outcome'>
-  <td class='caption'>Outcome</td>
+  <td class='caption'>Decision</td>
   <td class='entry'><form method='get' action='review.php'><div class='inform'><input type='hidden' name='paperId' value='$prow->paperId' />";
 	if (isset($_REQUEST['forceShow']))
 	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
 	echo outcomeSelector($prow->outcome);
-	echo "&nbsp;<input class='button_small' type='submit' name='setoutcome' value='Set outcome' /></div></form></td>\n</tr>\n";
+	echo "&nbsp;<input class='button_small' type='submit' name='setoutcome' value='Set decision' /></div></form></td>\n</tr>\n";
     }
 
 }
