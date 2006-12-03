@@ -509,7 +509,7 @@ td.entry button {
 td.entry textarea {
 	width: 100%;
 }
-tr.pt_actions td, tr.pt_outcome td, td.nowrap {
+tr.pt_actions td, tr.pt_outcome td, td.nowrap, th.nowrap {
 	white-space: nowrap;
 }
 tr.pt_abstract td.entry {

@@ -17,7 +17,7 @@ for this conference, which is shown at the top
 of each page in the conference review system.</p>
 
 <table>
-<tr><th></th><th>Deadline</th><th>Time left</th></tr>\n";
+<tr><th></th><th>Deadline</th><th>Time&nbsp;left</th></tr>\n";
 
 
 function printableInterval($amt) {
