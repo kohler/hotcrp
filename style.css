@@ -424,7 +424,7 @@ ul.compact {
 	margin-bottom: 0em;
 	padding-left: 1em;
 }
-table.bullets td ul:first-child {
+div.bgrp_body table.half:first-child ul {
 	margin-top: 0em;
 }
 
