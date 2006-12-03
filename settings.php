@@ -117,7 +117,7 @@ function accountValue($name, $type) {
 	    return;
 	$v = 0;
     }
-    if ($v <= 0 && $type == "date")
+    if ($v <= 0 && !is_int($type))
 	$Values[$name] = null;
     else
 	$Values[$name] = $v;
