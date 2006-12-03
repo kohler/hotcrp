@@ -97,13 +97,13 @@ function queryFromRecipients($who, $per_paper) {
     return $query;
   } else if ($who == "author-late-review") {
       $query = "SELECT DISTINCT firstName, lastName, email, Paper.paperId, title "
-             . "FROM ContactInfo, Paper, PaperReview, ImportantDates "
+             . "FROM ContactInfo, Paper, PaperReview, Settings "
 	     . "WHERE Paper.timeSubmitted>0 "
 	     . "AND PaperReview.paperId = Paper.paperId "
 	     . "AND Paper.contactId = ContactInfo.contactId "
 	     . "AND PaperReview.reviewSubmitted>0 "
-	     . "AND PaperReview.lastModified > ImportantDates.start "
-	     . "AND ImportantDates.name = 'authorRespondToReviews' "
+	     . "AND PaperReview.reviewModified > Settings.value "
+	     . "AND Settings.name = 'resp_open' "
 	     . " $group_order";
     return $query;
   } else {

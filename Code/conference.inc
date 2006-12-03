@@ -58,7 +58,7 @@ class Conference {
 	    die($this->DB->getMessage() . ": " . $Opt['dsn']);
 	}
 
-	$this->updateImportantDates();
+	$this->updateSettings();
     }
 
     function dump() {
@@ -85,8 +85,7 @@ class Conference {
     // Initialization functions
     //
 
-    function updateImportantDates() {
-	// Suck in the start/end dates
+    function updateSettings() {
 	$this->settings = array();
 	$result = $this->q("select name, value from Settings");
 	if (!MDB2::isError($result))

@@ -159,6 +159,10 @@ if (isset($_REQUEST["update"])) {
 	}
     if (isset($Values["sub_sub"]))
 	$Values["sub_update"] = $Values["sub_sub"];
+    // need to set 'resp_open' to a timestamp,
+    // so we can join on later review changes
+    if (isset($Values["resp_open"]) && defval($Conf->settings["resp_open"]) <= 0)
+	$Values["resp_open"] = time();
 
     // warn on other relationships
     if (defval($Values["resp_open"], 0) > 0 && defval($Values["au_seerev"], 0) <= 0)
@@ -222,7 +226,7 @@ if (isset($_REQUEST["update"])) {
 	}
 	
 	$Conf->qe("unlock tables", $while);
-	$Conf->updateImportantDates();
+	$Conf->updateSettings();
     }
 }
 
