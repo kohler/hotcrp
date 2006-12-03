@@ -234,13 +234,13 @@ function paperDownload($prow, $final = false, $conf = null) {
 
 function topicTable($prow, $active = 0, $conf = null) {
     global $Conf;
+    $rf = reviewForm();
     if ($conf == null)
 	$conf = $Conf;
     $paperId = ($prow ? $prow->paperId : -1);
 
     // read from paper row if appropriate
     if ($paperId > 0 && $active < 0 && isset($prow->topicIds)) {
-	$rf = reviewForm();
 	$top = $rf->webTopicArray($prow->topicIds, defval($prow->topicInterest));
 	$out = "<table class='rpad'><tr>\n	<td>";
 	$colheight = (int) ((count($top) + 1) / 2);
@@ -252,39 +252,38 @@ function topicTable($prow, $active = 0, $conf = null) {
 	return $out . "</td>\n</tr></table>";
     }
 
-
     // get current topics
-    $extraQ = '';
-    if ($paperId > 0 && $active < 0)
-	$extraQ = " join PaperTopic using (topicId) where PaperTopic.paperId=$paperId";
-    else if ($paperId > 0) {
+    if ($paperId > 0) {
 	$result = $Conf->q("select topicId from PaperTopic where paperId=$paperId");
 	if (!MDB2::isError($result))
 	    while ($row = $result->fetchRow())
-		$paperTopic[$row[0]] = 1;
-    }
-
-    $result = $Conf->q("select TopicArea.topicId, topicName from TopicArea$extraQ order by topicName");
-    if (!MDB2::isError($result) && $result->numRows() > 0) {
-	$out = "<table class='simple'><tr>\n	<td>";
-	$colheight = (int) (($result->numRows() + 1) / 2);
-	for ($i = 0; $i < $result->numRows(); $i++) {
-	    if ($i > 0 && ($i % $colheight) == 0)
-		$out .= "</td>\n	<td>";
-	    $row = $result->fetchRow();
-	    if ($paperId <= 0 || $active >= 0) {
-		$out .= "<input type='checkbox' name='top$row[0]' value='1' ";
-		if ($active > 0 ? isset($_REQUEST["top$row[0]"]) : isset($paperTopic[$row[0]]))
-		    $out .= "checked='checked' ";
-		if ($active < 0)
-		    $out .= "disabled='disabled' ";
-		$out .= "onclick='highlightUpdate()' />&nbsp;";
-	    }
-	    $out .= htmlspecialchars($row[1]) . "<br />\n";
-	}
-	return $out . "</td>\n</tr></table>";
+		$paperTopic[$row[0]] = $rf->topicName[$row[0]];
     } else
+	$paperTopic = array();
+    $allTopics = ($active < 0 ? $paperTopic : $rf->topicName);
+    if ($active < 0 && count($paperTopic) == 0)
 	return "";
+
+    $out = "<table><tr><td class='pad'>";
+    $colheight = (int) ((count($allTopics) + 1) / 2);
+    $i = 0;
+    foreach ($rf->topicOrder as $tid => $bogus) {
+	if (!isset($allTopics[$tid]))
+	    continue;
+	if ($i > 0 && ($i % $colheight) == 0)
+	    $out .= "</td><td>";
+	if ($paperId <= 0 || $active >= 0) {
+	    $out .= "<input type='checkbox' name='top$tid' value='1' ";
+	    if ($active > 0 ? isset($_REQUEST["top$tid"]) : isset($paperTopic[$tid]))
+		$out .= "checked='checked' ";
+	    if ($active < 0)
+		$out .= "disabled='disabled' ";
+	    $out .= "onclick='highlightUpdate()' />&nbsp;";
+	}
+	$out .= htmlspecialchars($rf->topicName[$tid]) . "<br />\n";
+	$i++;
+    }
+    return $out . "</td></tr></table>";
 }
 
 function authorTable($aus, $htmlspecial = true) {

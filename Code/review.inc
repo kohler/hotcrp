@@ -98,10 +98,16 @@ class ReviewForm {
 	if (MDB2::isError($result))
 	    return;
 	$i = 0;
+	$leftovers = array();
 	while (($row = $result->fetchRow())) {
 	    $this->topicName[$row[0]] = $row[1];
-	    $this->topicOrder[$row[0]] = $i++;
+	    if (substr(strtolower($row[1]), 0, 7) != "none of")
+		$this->topicOrder[$row[0]] = $i++;
+	    else
+		$leftovers[] = $row[0];
 	}
+	foreach ($leftovers as $topicid)
+	    $this->topicOrder[$topicid] = $i++;
 	
 	$this->updatedWhen = time();
     }

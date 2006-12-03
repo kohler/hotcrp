@@ -42,6 +42,7 @@ review.php
 script.js
 search.php
 sessionvar.php
+settings.php
 style.css
 
 Code/.htaccess
@@ -118,7 +119,6 @@ Chair/ListReviews.php
 Chair/SendMail.php
 Chair/SendMail2.php
 Chair/SetReviewForm.php
-Chair/SetTopics.php
 Chair/ShowCalendar.php
 Chair/SpotProblems.php
 Chair/ViewActionLog.php

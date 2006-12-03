@@ -448,7 +448,7 @@ table.memberlist td.pl_callout {
 	font-size: small;
 }
 
-td.datename, td.datename_error {
+td.datename, td.datename_error, td.pad {
 	padding-right: 1em;
 }
 td.datename_error, span.error {

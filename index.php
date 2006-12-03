@@ -57,13 +57,13 @@ echo "</div></div>\n";
 
 // Conference settings
 if ($Me->amAssistant()) {
-    echo "<div class='bgrp folded' id='foldset'><div class='bgrp_head'><a href=\"javascript:fold('set', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('set', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;Conference settings</div><div class='bgrp_body extension'>
-<ul class='compact'>
-<li><a href='settings.php'>Deadlines and options</a> / <a href='deadlines.php'>Old</a></li>
-<li><a href='Chair/SetTopics.php'>Paper topics</a></li>
-<li><a href='pc.php'>Program committee</a></li>
+    echo "<div class='bgrp'><div class='bgrp_head'>Conference settings</div><div class='bgrp_body'>
+<table class='half'><tr><td class='l'><ul class='compact'>
+<li><a href='settings.php'>Conference settings</a></li>
 <li><a href='Chair/SetReviewForm.php'>Review form</a></li>
-</ul></div></div>";
+</ul></td><td class='r'><ul class='compact'>
+<li><a href='pc.php'>Program committee</a></li>
+</ul></td></tr></table></div></div>";
 }
 
 
@@ -151,7 +151,7 @@ if ($Me->amReviewer()) {
     echo "</ul></td></tr></table>\n<div class='smgap'></div>\n";
     
     unset($plist);
-    if ($Conf->timeReviewOpen()) {
+    if ($Me->isReviewer) {
 	$plist = new PaperList(false, "relist", new PaperSearch($Me, array("t" => "r")));
 	$ptext = $plist->text("reviewerHome", $Me, "Review assignment");
     }

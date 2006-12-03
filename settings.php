@@ -1,6 +1,7 @@
 <?php 
 require_once('Code/header.inc');
 require_once('Code/tags.inc');
+require_once('Code/review.inc');
 require_once('Code/Calendar.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
@@ -176,8 +177,11 @@ if (isset($_REQUEST["update"])) {
     if (count($Error) > 0)
 	$Conf->errorMsg(join("<br/>\n", $Error));
     else if (count($Values) > 0) {
+	$rf = reviewForm();
 	$while = "updating settings";
-	$Conf->qe("lock tables Settings write, ChairTag write", $while);
+	$Conf->qe("lock tables Settings write, ChairTag write, TopicArea write, PaperTopic write", $while);
+	// alert others since we're changing settings
+	$Values['revform_update'] = time();
 
 	// first, settings
 	$dq = $aq = "";
@@ -201,6 +205,21 @@ if (isset($_REQUEST["update"])) {
 		$Conf->qe(substr($q, 0, strlen($q) - 2), $while);
 	    }
 	}
+
+	// then, paper topics
+	foreach ($_REQUEST as $k => $v) {
+	    if (!($k[0] == "t" && $k[1] == "o" && $k[2] == "p"))
+		continue;
+	    if ($k[3] == "n" && $v != "")
+		$Conf->qe("insert into TopicArea (topicName) values ('" . sqlq($v) . "')", $while);
+	    else if (($k = cvtint(substr($k, 3), -1)) >= 0) {
+		if ($v == "") {
+		    $Conf->qe("delete from TopicArea where topicId=$k", $while);
+		    $Conf->qe("delete from PaperTopic where topicId=$k", $while);
+		} else if (isset($rf->topicName[$k]) && $v != $rf->topicName[$k])
+		    $Conf->qe("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k", $while);
+	    }
+	}
 	
 	$Conf->qe("unlock tables", $while);
 	$Conf->updateImportantDates();
@@ -212,7 +231,7 @@ if (isset($_REQUEST["update"])) {
 $Conf->header("Conference Settings");
 
 
-echo "<form method='post' action='settings.php'>\n";
+echo "<form method='post' action='settings.php?post=1' enctype='multipart/form-data'>\n";
 echo "<input type='hidden' name='update' value='1' />\n";
 echo "<table class='half'><tr><td class='l'>";
 
@@ -287,6 +306,26 @@ echo "</table>\n";
 
 echo "<input type='submit' class='button' name='sub_go' value='Save all' />\n";
 echo "</div></div>\n\n";
+
+
+// Paper topics
+$rf = reviewForm();
+echo "<div class='bgrp ", (count($rf->topicName) ? "folded" : "unfolded"), "' id='foldtopic'><div class='bgrp_head'><a href=\"javascript:fold('topic', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('topic', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;Paper topics</div><div class='bgrp_body extension'>\n";
+echo "<table>";
+$td1 = "<td class='rcaption'>Current</td>";
+foreach ($rf->topicOrder as $tid => $crap) {
+    echo "<tr>$td1<td><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($rf->topicName[$tid]), "\" size='50' /></td></tr>\n";
+    $td1 = "<td class='rcaption'><br /></td>";
+}
+$td1 = "<td class='rcaption'>New</td>";
+for ($i = 1; $i <= 5; $i++) {
+    echo "<tr>$td1<td><input type='text' class='textlite' name='topn$i' value=\"\" size='50' /></td></tr>\n";
+    $td1 = "<td class='rcaption'><br /></td>";
+}
+
+echo "</table>\n";
+echo "<div class='smgap'></div>\n<small>Enter topics one per line.  Authors identify the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its text.  Add topics in batches of up to 5 at a time.</small>\n";
+echo "</div></div>";
 
 
 // Responses and decisions
