@@ -798,8 +798,14 @@ class Conference {
 	if (isset($options['reviewerName']))
 	    $pq .= "		left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperReview.contactId)\n";
 	
-	if (isset($options['topics']) || isset($options['topicInterestScore']))
-	    $pq .= "		left join (select paperId, group_concat(PaperTopic.topicId) as topicIds, group_concat(TopicInterest.interest) as topicInterest, sum(if(interest=2,2,interest-1)) as topicInterestScore from PaperTopic left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$contactId) group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)\n";
+	if (isset($options['topics']) || isset($options['topicInterestScore'])) {
+	    $pq .= "		left join (select paperId";
+	    if (isset($options['topics']))
+		$pq .= ", group_concat(PaperTopic.topicId) as topicIds, group_concat(TopicInterest.interest) as topicInterest";
+	    if (isset($options['topicInterestScore']))
+		$pq .= ", sum(if(interest=2,2,interest-1)) as topicInterestScore";
+	    $pq .= " from PaperTopic left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$contactId) group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)\n";
+	}
 
 	if (isset($options['tags']))
 	    $pq .= "		left join (select paperId, group_concat(tag, '#', tagIndex separator ' ') as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)\n";

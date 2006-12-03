@@ -488,6 +488,7 @@ if (defval($_REQUEST["x"], 0)) {
   <span class='textlite'>ab:</span> for abstracts,
   <span class='textlite'>au:</span> for authors,
   <span class='textlite'>co:</span> for collaborators,
+  <span class='textlite'>topic:</span> for paper topics,
   <span class='textlite'>rev:</span> for reviewer names,
   <span class='textlite'>dec:</span> for decisions,
   and <span class='textlite'>tag:</span> or <span class='textlite'>order:</span> for tags.</td>

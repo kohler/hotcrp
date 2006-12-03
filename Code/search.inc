@@ -8,7 +8,8 @@ $searchTags = array('ti:' => 'ti', 'title:' => 'ti',
 		    'tag:' => 'tag',
 		    'ord:' => 'order', 'order:' => 'order',
 		    'outcome:' => 'outcome', 'out:' => 'outcome',
-		    'decision:' => 'outcome', 'dec:' => 'outcome');
+		    'decision:' => 'outcome', 'dec:' => 'outcome',
+		    'topic:' => 'topic');
 
 class PaperSearch {
 
@@ -22,6 +23,7 @@ class PaperSearch {
     var $anyReviewer;
     var $anyTag;
     var $anyAlltags;
+    var $anyTopics;
     var $orderTag;
     var $matchPreg;
     var $urlbase;
@@ -37,7 +39,7 @@ class PaperSearch {
 	$this->amPC = $me->isPC;
 	$this->allowReviewer = $me->canViewAllReviewerIdentities($Conf);
 	$this->allowAuthor = ($Conf->blindSubmission() > 1 || $me->amAssistant());
-	$this->anyReviewer = $this->anyTag = $this->anyAlltags = $this->orderTag = false;
+	$this->anyReviewer = $this->anyTag = $this->anyAlltags = $this->anyTopics = $this->orderTag = false;
 	$this->contactId = $me->contactId;
 	if ($this->amAssistant && cvtint($opt["c"]) > 0)
 	    $this->contactId = cvtint($opt["c"]);
@@ -180,6 +182,16 @@ class PaperSearch {
 			}
 		}
 	    }
+	    if (($special ? $special == "topic" : isset($this->fields['topic']))) {
+		$rf = reviewForm();
+		$x = strtolower($word);
+		foreach ($rf->topicName as $tid => $n)
+		    if (strstr(strtolower($n), $x) !== false) {
+			$qp .= " or (topicIds like '%#$tid#%')";
+			$this->anyTopics = true;
+		    }
+	    }
+	    
 	    if ($qp)
 		$q .= $qjoin . "(" . substr($qp, 4) . ")";
 	}
@@ -230,6 +242,8 @@ class PaperSearch {
 	    $q .= " left join PaperTag on (PaperTag.paperId=Paper.paperId)";
 	if ($this->anyAlltags)
 	    $q .= " left join (select paperId, group_concat('#', tag, '#') as alltags from PaperTag group by paperId) as AllPaperTags on (AllPaperTags.paperId=Paper.paperId)";
+	if ($this->anyTopics)
+	    $q .= " left join (select paperId, group_concat('#', topicId, '#') as topicIds from PaperTopic group by paperId) as AllPaperTopics on (AllPaperTopics.paperId=Paper.paperId)";
 
 	if ($res[0])
 	    $q .= " where " . $res[0];
@@ -268,6 +282,7 @@ class PaperSearch {
 	global $Conf, $ConfSiteBase;
 	$x = $this->_searchQuery();
 	$this->matchPreg = $x[1];
+	// $Conf->infoMsg(htmlspecialchars($x[0]));
 	return $Conf->qe($x[0], "while searching papers");
     }
 
