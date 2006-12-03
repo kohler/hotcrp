@@ -142,6 +142,7 @@ if (isset($_REQUEST["update"])) {
     accountValue("final_grace", "grace", $q);
     accountValue("resp_open", "check", $q);
     accountValue("resp_grace", "grace", $q);
+    accountValue("pc_seeallrev", "check", $q);
 
     // check date relationships
     foreach (array("sub_reg" => "sub_sub", "pcrev_soft" => "pcrev_hard",
