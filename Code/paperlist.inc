@@ -430,7 +430,8 @@ class PaperList {
 	    return "";
 	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
 	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'><img src=\"${ConfSiteBase}images/bendulft.png\" style='position: relative; top: 11px' /></td>\n";
-	$t .= "    <td id='foldplact' class='folded' colspan='" . ($ncol - 1) . "'><table>
+	$fclass = (defval($_SESSION["plactFold"], 1) ? "folded" : "unfolded");
+	$t .= "    <td id='foldplact' class='$fclass' colspan='" . ($ncol - 1) . "'><table>
   <tr><td class='xcaption'><b>Select papers</b> (or <a href='javascript:void checkPapersel(true)'>select all " . $this->count . "</a>), then <b>Get:</b></td>
     <td><select name='getaction'>
     <option value='paper' selected='selected'>Papers</option>
@@ -454,7 +455,10 @@ class PaperList {
 	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='get' value='Go' />";
 
 	if ($this->contact->isPC) {
-	    $t .= "<span class='sep'></span> <a class='unfolder' href='javascript:fold(\"plact\", 0)'>More &raquo;</a><a class='folder' href='javascript:fold(\"plact\", 1)'>Less &laquo;</a></td></tr>\n";
+	    $t .= "<span class='sep'></span> <a class='unfolder' href='javascript:fold(\"plact\", 0);foldsession(\"plact\", \"plactFold\")'>More &raquo;</a>";
+	    $t .= "<a class='folder' href='javascript:fold(\"plact\", 1);foldsession(\"plact\", \"plactFold\")'>Less &laquo;</a>";
+	    $t .= "<img id='plactFold' alt='' src='${ConfSiteBase}sessionvar.php?var=plactFold&amp;val=" . defval($_SESSION["plactFold"], 1) . "&amp;cache=1' width='1' height='1' />";
+	    $t .= "</td></tr>\n";
 
 	    $t .= "  <tr class='extension'><td class='rcaption'>Tags:</td><td><select name='tagtype'>
     <option value='a' selected='selected'>Add</option><option value='d'>Remove</option><option value='s'>Define</option><option value='so'>Define ordered</option><option value='ao'>Add ordered</option>

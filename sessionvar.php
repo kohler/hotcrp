@@ -3,9 +3,9 @@ require_once('Code/header.inc');
 
 if (isset($_REQUEST["var"])) {
     $v = $_REQUEST["var"];
-    if ($v == "mainTab" || $v == "assignFold") {
+    if ($v == "assignFold" || $v == "paperFold" || $v == "plactFold") {
 	if (isset($_REQUEST["val"]))
-	    $_SESSION[$v] = $_REQUEST["val"];
+	    $_SESSION[$v] = intval($_REQUEST["val"]);
 	else
 	    unset($_SESSION[$v]);
     }

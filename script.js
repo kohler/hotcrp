@@ -24,26 +24,10 @@ function fold(which, dofold, foldnum) {
     }
 }
 
-function tabfold(tabset, unfolded, foldnum, sessioner) {
-    for (var i = 0; i < tabset.length; i++) {
-	fold(tabset[i], tabset[i] != unfolded, foldnum);
-	var tab = document.getElementById('tab' + tabset[i]);
-	if (!tab)
-	    /* nada */;
-	else if (tabset[i] == unfolded)
-	    tab.className = "tab_default";
-	else
-	    tab.className = "tab";
-	if (sessioner) {
-	    var si = document.getElementById(sessioner);
-	    if (si)
-		si.src = si.src.replace(/val=.*/, 'val=' + unfolded);
-	}
-    }
-}
-
 function foldsession(foldset, sessioner) {
     var foldval = 0;
+    if (!(foldset instanceof Array))
+	foldset = [foldset];
     for (var i = 0; i < foldset.length; i++) {
 	var e = document.getElementById('fold' + foldset[i]);
 	if (e && e.className.match("\\bfold" + (i ? i : "") + "ed\\b"))

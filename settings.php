@@ -236,7 +236,10 @@ $Conf->header("Conference Settings");
 
 
 echo "<form method='post' action='settings.php?post=1' enctype='multipart/form-data'>\n";
-echo "<input type='hidden' name='update' value='1' />\n";
+echo "<div class='smgap'></div>\n";
+echo "<table class='center'><tr><td><input type='submit' class='button' name='update' value='Save changes' /> ";
+echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />";
+echo "</td></tr></table>\n";
 echo "<table class='half'><tr><td class='l'>";
 
 
@@ -261,7 +264,7 @@ function doCheckbox($name, $text, $tr = false) {
     echo ($tr ? "<tr><td class='nowrap'>" : ""), "<input type='checkbox' name='$name' value='1'";
     if ($x !== null && $x > 0)
 	echo " checked='checked'";
-    echo " />&nbsp;", ($tr ? "</td><td>" : ""), decorateSettingText($name, $text), ($tr ? "</td></tr>\n" : "<br />\n");
+    echo " onchange='highlightUpdate()' />&nbsp;", ($tr ? "</td><td>" : ""), decorateSettingText($name, $text), ($tr ? "</td></tr>\n" : "<br />\n");
 }
 
 function doRadio($name, $varr) {
@@ -272,7 +275,7 @@ function doRadio($name, $varr) {
 	echo "<input type='radio' name='$name' value='$k'";
 	if ($k == $x)
 	    echo " checked='checked'";
-	echo " />&nbsp;", decorateSettingText($name, $text), "<br />\n";
+	echo " onchange='highlightUpdate()' />&nbsp;", decorateSettingText($name, $text), "<br />\n";
     }
 }
 
@@ -285,11 +288,11 @@ function doDateRow($name, $text, $capclass = "rcaption") {
 	$v = $Conf->parseableTime($x);
     else
 	$v = $x;
-    echo "<tr><td class='$capclass'>", decorateSettingText($name, $text), "</td><td><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='30' /></td></tr>\n";
+    echo "<tr><td class='$capclass'>", decorateSettingText($name, $text), "</td><td><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='30' onchange='highlightUpdate()' /></td></tr>\n";
 }
 
 function doGraceRow($name, $text, $capclass = "rcaption") {
-    echo "<tr><td class='$capclass'>", decorateSettingText($name, "Grace period"), "</td><td><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars(unparseGrace(setting($name))), "\" size='15' />";
+    echo "<tr><td class='$capclass'>", decorateSettingText($name, "Grace period"), "</td><td><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars(unparseGrace(setting($name))), "\" size='15' onchange='highlightUpdate()' />";
     if ($capclass == "rcaption")
 	echo "<br /><small>Example: \"15 min\"</small>";
     echo "</td></tr>\n";
@@ -308,7 +311,6 @@ doDateRow("sub_sub", "Paper submission deadline");
 doGraceRow("sub_grace", 'Grace period');
 echo "</table>\n";
 
-echo "<input type='submit' class='button' name='sub_go' value='Save all' />\n";
 echo "</div></div>\n\n";
 
 
@@ -318,12 +320,12 @@ echo "<div class='bgrp ", (count($rf->topicName) ? "folded" : "unfolded"), "' id
 echo "<table>";
 $td1 = "<td class='rcaption'>Current</td>";
 foreach ($rf->topicOrder as $tid => $crap) {
-    echo "<tr>$td1<td><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($rf->topicName[$tid]), "\" size='50' /></td></tr>\n";
+    echo "<tr>$td1<td><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($rf->topicName[$tid]), "\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
     $td1 = "<td class='rcaption'><br /></td>";
 }
 $td1 = "<td class='rcaption'>New</td>";
 for ($i = 1; $i <= 5; $i++) {
-    echo "<tr>$td1<td><input type='text' class='textlite' name='topn$i' value=\"\" size='50' /></td></tr>\n";
+    echo "<tr>$td1<td><input type='text' class='textlite' name='topn$i' value=\"\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
     $td1 = "<td class='rcaption'><br /></td>";
 }
 
@@ -417,7 +419,7 @@ else {
     sort($t);
     $v = join(" ", $t);
 }
-echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='50' /><br /><small>Only PC chairs can change these tags.</small></td></tr></table>";
+echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='50' onchange='highlightUpdate()' /><br /><small>Only PC chairs can change these tags.</small></td></tr></table>";
 echo "</div></div>\n\n";
 
 

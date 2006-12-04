@@ -157,14 +157,15 @@ class PaperSearch {
 		&& $this->amPC) {
 		if ($special ? $special == "order" : isset($this->fields['order']))
 		    $this->orderTag = ($this->orderTag === false ? $word : null);
+		$tagConflict = ($this->amAssistant() ? "" : " and conflictType=0");
 		if ($type == "any") {
-		    $qp .= " or (tag = '$word')";
+		    $qp .= " or (tag='$word'$tagConflict)";
 		    $this->anyTag = true;
 		} else if ($type == "all") {
-		    $qp .= " or (alltags like '%#$word#%')";
+		    $qp .= " or (alltags like '%#$word#%'$tagConflict)";
 		    $this->anyAlltags = true;
 		} else {
-		    $qp .= " or (alltags is not null and alltags like '%#$word#%')";
+		    $qp .= " or (alltags is not null and alltags like '%#$word#%'$tagConflict)";
 		    $this->anyAlltags = true;
 		}
 	    }

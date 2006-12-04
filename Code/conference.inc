@@ -1034,18 +1034,12 @@ class Conference {
 	$this->header_head($title);
 	echo "</head><body>\n";
 	echo "<div id='header'>\n";
-	echo "  <div id='header_left'>\n";
+	echo "  <div id='header_left'><h1>";
 	if ($title && $showTitle && $title == "Home")
-	    echo "<h1>", $this->shortName, "</h1>";
-	else {
-	    echo "    <a href='",
-		$ConfSiteBase, "index.php'>", $this->shortName,
-		"</a>";
-	    if ($title && $showTitle)
-		echo " &nbsp;:&nbsp; <h1>", $title, "</h1>\n";
-	}
-	echo "  </div>\n";
-	echo "  <div id='header_user'>";
+	    echo htmlspecialchars($this->shortName);
+	else
+	    echo "<a href='${ConfSiteBase}index.php'>", htmlspecialchars($this->shortName), "</a> &nbsp;&gt;&nbsp; ", $title;
+	echo "</h1></div><div id='header_user'>";
 	if ($_SESSION["Me"]->valid()) {
 	    echo "<strong>",
 		htmlspecialchars($_SESSION["Me"]->email),

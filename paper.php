@@ -472,9 +472,7 @@ $canViewAuthors = $Me->canViewAuthors($prow, $Conf, false);
 if ($mode == "edit" && $Me->amAssistant())
     $canViewAuthors = true;
 
-$paperTable = new PaperTable($editable, $editable && $useRequest,
-			     false,
-			     !$canViewAuthors && $Me->amAssistant());
+$paperTable = new PaperTable($editable, $editable && $useRequest, false, !$canViewAuthors && $Me->amAssistant(), "paperFold");
 
 
 // title

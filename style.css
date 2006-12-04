@@ -8,27 +8,18 @@ body {
 
 /* header */
 div#header {
-	padding: 8px 8px 0px 8px;
+	padding: 8px 12px 0px 12px;
 }
 div#header_user {
 	font-size: small;
-	padding: 0.25em 0.5em 0em 0em;
+	padding: 0.25em 0em 0em 0em;
 	float: right;
 }
 div#header_left {
 	font-size: small;
-	padding: 0.1em 0em 0em 1em;
 	float: left;
 	margin-right: 5%;
 	margin-bottom: 0em;
-}
-div#header_left a {
-	text-decoration: none;
-	font-weight: bold;
-	font-size: large;
-}
-div#header_left a:hover {
-	text-decoration: underline;
 }
 h1 {
 	display: inline;
@@ -87,14 +78,11 @@ table.vubar .tab_default {
 	color: #000000;
 	font-weight: bold;
 }
-.tab a {
+.tab a, td.listlinks a, div#header_left a {
 	text-decoration: none;
 }
-.tab_default a:hover, .tab a:hover, td.listlinks a:hover {
+.tab a:hover, td.listlinks a:hover, div#header_left a:hover {
 	text-decoration: underline;
-}
-td.listlinks a {
-	text-decoration: none;
 }
 
 
@@ -134,16 +122,18 @@ div.inform {
 }
 
 
+/* footer */
 div#footer {
 	margin-top: 0.5em;
-	padding: 0.2em 0.5em;
+	padding: 0em 12px;
 }
 div#footer_crp {
 	float: right;
 	font-size: small;
-	margin-top: 3px;
 }
 
+
+/* infoboxes */
 div.info, div.warning, div.confirm, div.error {
 	background: #eeeeff url(images/info45.png) 10px 10px no-repeat;
 	padding: 0.5em 0.5em 0.5em 65px;
