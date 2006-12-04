@@ -2,9 +2,10 @@
 body {
 	font-family: sans-serif;
 	color: black;
-	background-color: #e6dcc1; /*#ccc3ab;*/
+	background: #f3ebd5; /*#ccc3ab;*/
 	margin: 0px;
 }
+
 
 /* header */
 div#header {
@@ -45,7 +46,7 @@ table.vubar td.spanner, table.vubar td.gopaper, table.vubar td.listlinks {
 	border-bottom: 1px solid #9999cc;
 }
 table.vubar td.tab, table.vubar td.tab_disabled {
-	background: #e6e6ff;
+	background: #e6dcc1;
 }
 table.vubar td.sep {
 	padding: 0em 0.75em;
@@ -106,6 +107,7 @@ table, tr, td {
 	border-spacing: 0px;
 	empty-cells: show;
 }
+
 
 .clear {
 	clear: both;
