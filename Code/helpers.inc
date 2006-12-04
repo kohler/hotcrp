@@ -761,6 +761,8 @@ function maybeSearchPaperId($base, $me) {
     $s = new PaperSearch($me, array("q" => $_REQUEST["paperId"]));
     $pl = $s->paperList();
     if (count($pl) == 1) {
+	global $thisMatchPreg;
+	$thisMatchPreg = "/(" . $s->matchPreg . ")/i";
 	$_REQUEST["paperId"] = $pl[0];
 	return true;
     } else {

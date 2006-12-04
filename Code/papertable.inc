@@ -25,9 +25,12 @@ class PaperTable {
     var $foldsession;
     var $foldState;
     var $highlight;
+    var $matchPreg;
     
     function PaperTable($editable, $useRequest, $allFolded, $authorsFolded,
 			$foldsession = null) {
+	global $thisMatchPreg;
+	
 	$this->editable = $editable;
 	$this->useRequest = $useRequest;
 
@@ -48,7 +51,8 @@ class PaperTable {
 	    $this->autrClasses = "";
 	$this->autrClasses .= $this->trClasses;
 
-	$this->highlight = (defval($_SESSION["whichList"]) == "list" && isset($_SESSION["matchPreg"]));
+	$this->matchPreg = defval($thisMatchPreg, defval($_SESSION["matchPreg"], null));
+	$this->highlight = ($this->matchPreg !== null && (isset($thisMatchPreg) || defval($_SESSION["whichList"]) == "list"));
     }
 
     function tdCaption($what) {
@@ -100,8 +104,8 @@ class PaperTable {
 	else
 	    $text = "";
 
-	if ($this->highlight && isset($textAreaRows[$fieldName]))
-	    $text = preg_replace($_SESSION["matchPreg"], "<span class='match'>\$1</span>", htmlspecialchars($text));
+	if ($this->highlight && isset($textAreaRows[$fieldName]) && !$this->editable)
+	    $text = preg_replace($this->matchPreg, "<span class='match'>\$1</span>", htmlspecialchars($text));
 	else
 	    $text = htmlspecialchars($text);
 	
@@ -116,7 +120,7 @@ class PaperTable {
 
     function echoTitle($prow) {
 	if ($this->highlight)
-	    echo preg_replace($_SESSION["matchPreg"], "<span class='match'>\$1</span>", htmlspecialchars($prow->title));
+	    echo preg_replace($this->matchPreg, "<span class='match'>\$1</span>", htmlspecialchars($prow->title));
 	else
 	    echo htmlspecialchars($prow->title);
     }

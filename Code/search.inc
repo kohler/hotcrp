@@ -290,6 +290,7 @@ class PaperSearch {
     function paperList() {
 	global $Conf;
 	$x = $this->_searchQuery();
+	$this->matchPreg = $x[1];
 	$result = $Conf->qe($x[0], "while searching papers");
 	if (MDB2::isError($result))
 	    return array();
