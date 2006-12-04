@@ -85,8 +85,8 @@ if (isset($_REQUEST['update'])) {
 
     // alert consumers of change to form
     if (isset($updates)) {
-	$Conf->qe("delete from Settings where name='revform_update'"); 
-	$Conf->qe("insert into Settings (name, value) values ('reviewFormUpdate', unix_timestamp(current_timestamp))");
+	$t = time();
+	$Conf->qe("insert into Settings (name, value) values ('revform_update', $t) on duplicate key update value=$t");
 	$Conf->confirmMsg("Review form updated.");
 	$rf->validate($Conf, true);
     }

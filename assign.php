@@ -54,6 +54,7 @@ getProw();
 
 
 confHeader();
+echo "<div class='bodyexpander'>";
 
 
 if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
@@ -263,7 +264,7 @@ if (isset($_REQUEST['addpc']) && $Me->amAssistant()) {
 
 // begin form and table
 echo "<form action='assign.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>
-<table class='review'>\n\n";
+<table class='assign'>\n\n";
 
 
 // paper table
@@ -395,6 +396,6 @@ echo "</td>\n</tr>\n\n";
 // close this table
 echo "</table>\n\n";
 
-echo "<div class='gapbottom'></div>\n";
 
-$Conf->footer(); ?>
+echo "</div>"; /* bodyexpander */
+$Conf->footer();

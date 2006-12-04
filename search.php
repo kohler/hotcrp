@@ -345,35 +345,28 @@ if (isset($_REQUEST["setoutcome"]) && defval($_REQUEST['outcome'], "") != "" && 
 
 
 // mark conflicts/PC-authored papers
-if (isset($_REQUEST["setmark"]) && defval($_REQUEST["mark"], "") != "" && isset($papersel))
+if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && isset($papersel)) {
+    $mt = $_REQUEST["marktype"];
+    $mpc = defval($_REQUEST["markpc"], "");
     if (!$Me->amAssistant())
 	$Conf->errorMsg("Only the PC chairs can set PC conflicts.");
-    else if ($_REQUEST["mark"] == "pcpaper")
-	$result = $Conf->qe("update Paper set pcPaper=1 where " . paperselPredicate($papersel), "while marking PC papers");
-    else {
+    else if ($mt == "pcpaper" || $mt == "unpcpaper") {
+	$result = $Conf->qe("update Paper set pcPaper=" . ($mt == "pcpaper" ? 1 : 0) . " where " . paperselPredicate($papersel), "while marking PC papers");
+	$Conf->log("Change PC paper status", $Me, $papersel);
+    } else if ($mpc && ($mt == "conflict" || $mt == "unconflict")) {
 	$pc = new Contact;
-	if ($pc->lookupByEmail($_REQUEST["mark"], $Conf)) {
-	    $while = "while marking conflicts";
-	    $result = $Conf->qe("insert into PaperConflict (paperId, contactId) (select Paper.paperId, $pc->contactId from Paper left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=$pc->contactId) where PaperConflict.conflictType is null and (" . paperselPredicate($papersel, "Paper.") . "))", $while);
-	} else
-	    $Conf->errorMsg(htmlspecialchars($_REQUEST["mark"]) . " is not a PC member");
+	$while = "while marking conflicts";
+	if (!$pc->lookupByEmail($mpc, $Conf))
+	    $Conf->errorMsg(htmlspecialchars($mpc) . " is not a PC member");
+	else if ($mt == "conflict") {
+	    $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) (select Paper.paperId, $pc->contactId, " . CONFLICT_CHAIRMARK . " from Paper left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=$pc->contactId) where PaperConflict.conflictType is null and (" . paperselPredicate($papersel, "Paper.") . "))", $while);
+	    $Conf->log("Mark conflicts with $mpc", $Me, $papersel);
+	} else {
+	    $Conf->qe("delete from PaperConflict where PaperConflict.conflictType<" . CONFLICT_AUTHOR . " and (" . paperselPredicate($papersel) . ")", $while);
+	    $Conf->log("Remove conflicts with $mpc", $Me, $papersel);
+	}
     }
-
-
-// unmark conflicts/PC-authored papers
-if (isset($_REQUEST["clearmark"]) && defval($_REQUEST["mark"], "") != "" && isset($papersel))
-    if (!$Me->amAssistant())
-	$Conf->errorMsg("Only the PC chairs can clear PC conflicts.");
-    else if ($_REQUEST["mark"] == "pcpaper")
-	$result = $Conf->qe("update Paper set pcPaper=0 where " . paperselPredicate($papersel), "while unmarking PC papers");
-    else {
-	$pc = new Contact;
-	if ($pc->lookupByEmail($_REQUEST["mark"], $Conf)) {
-	    $while = "while unmarking conflicts";
-	    $result = $Conf->qe("delete from PaperConflict where contactId=" . $pc->contactId . " and conflictType<" . CONFLICT_AUTHOR . " and (" . paperselPredicate($papersel) . ")", $while);
-	} else
-	    $Conf->errorMsg(htmlspecialchars($_REQUEST["mark"]) . " is not a PC member");
-    }
+}
 
 
 // search
@@ -517,7 +510,7 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
     else
 	unset($_SESSION["matchPreg"]);
 
-    echo "<div class='maintabsep'></div>\n\n";
+    echo "<div class='maintabsep'></div>\n\n<div class='searchresult'>";
 
     if ($pl->anySelector) {
 	echo "<form action='search.php' method='get' id='sel'>\n";
@@ -531,7 +524,8 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
     echo $t;
     
     if ($pl->anySelector)
-	echo "</form>\n";
+	echo "</form>";
+    echo "</div>";
 }
 
 $Conf->footer();

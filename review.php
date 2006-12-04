@@ -271,6 +271,7 @@ if (isset($_REQUEST["settags"])) {
 
 // page header
 confHeader();
+echo "<div class='bodyexpander'>";
 
 
 // begin table
@@ -386,8 +387,6 @@ if ($rrow && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
 function reviewView($prow, $rrow, $editMode) {
     global $Conf, $ConfSiteBase, $Me, $rf, $forceShow, $useRequest, $nExternalRequests;
     
-    echo "<div class='gap'></div>\n\n";
-
     if ($editMode) {
 	echo "<form action='review.php?";
 	if ($rrow)
@@ -525,6 +524,5 @@ if ($mode == "view" && !$rrow) {
     reviewView($prow, $rrow, $mode == "edit");
 
 
-echo "<div class='gapbottom'></div>\n";
-
+echo "</div>"; /* bodyexpander */
 $Conf->footer();

@@ -73,11 +73,15 @@ If you suspect something fishy, contact the site administrator at\n\
 	    crpmergeone("PaperReviewRefused", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReviewRefused", "requestedBy", $oldid, $newid);
 
-	    // XXX ensure uniqueness in PaperConflict
+	    // XXX ensure uniqueness in PaperConflict, PaperReview
+
+	    // Update PC settings if we need to
+	    if ($MiniMe->isPC) {
+		$t = time();
+		$Conf->qe("insert into Settings (name, value) values ('pc', $t) on duplicate key update value=$t");
+	    }
 	    
-	    //
-	    // Remove the contact record
-	    //
+	    // Remove the old contact record
 	    if ($MergeError == "") {
 		$result = $Conf->q("delete from ContactInfo where contactId=$oldid");
 		if (MDB2::isError($result))

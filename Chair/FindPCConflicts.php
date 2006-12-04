@@ -182,7 +182,7 @@ while($pcdata=$rpc->fetchRow(MDB2_FETCHMODE_ASSOC)) {
 			     $paperId);
       print "</TH></TR>";
 
-  if( $rowc['contactID'] == $contactId ){
+      if(isset($rowc['contactId']) &&  $rowc['contactID'] == $contactId ){
       print "<TR><TD ALIGN='LEFT' COLSPAN=2>Is listed as the contact for this paper.</TD>";
   }
 

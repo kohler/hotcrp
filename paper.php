@@ -216,7 +216,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 			    ($isSubmitFinal ? "while submitting final copy for paper" : "while submitting paper"));
 	if (MDB2::isError($result))
 	    return false;
-	$Conf->qe("insert into Settings (name, value) values ('paper_lastsub', " . time() . ") on duplicate key update name=name");
+	if (defval($Conf->settings["papersub"], 0) <= 0)
+	    $Conf->qe("insert into Settings (name, value) values ('papersub', " . time() . ") on duplicate key update name=name");
     }
     
     // confirmation message
@@ -447,6 +448,7 @@ else
 
 // page header
 confHeader();
+echo "<div class='bodyexpander'>";
 
 
 // begin table
@@ -647,6 +649,5 @@ if ($mode == "edit")
 echo "<div class='clear'></div>\n\n";
 
 
-echo "<div class='gapbottom'></div>\n";
-
+echo "</div>"; /* bodyexpander */
 $Conf->footer();

@@ -253,13 +253,13 @@ function topicTable($prow, $active = 0, $conf = null) {
     }
 
     // get current topics
+    $paperTopic = array();
     if ($paperId > 0) {
 	$result = $Conf->q("select topicId from PaperTopic where paperId=$paperId");
 	if (!MDB2::isError($result))
 	    while ($row = $result->fetchRow())
 		$paperTopic[$row[0]] = $rf->topicName[$row[0]];
-    } else
-	$paperTopic = array();
+    }
     $allTopics = ($active < 0 ? $paperTopic : $rf->topicName);
     if ($active < 0 && count($paperTopic) == 0)
 	return "";
@@ -701,7 +701,7 @@ function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
     if ($prow && ($zz = listLinks($prow->paperId, $goBase, $xmode)))
 	$x .= "  <td class='listlinks' nowrap='nowrap'>" . $zz . "</td>\n";
     $x .= "  <td class='gopaper' nowrap='nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n";
-    return $x . "</tr></table>\n";;
+    return $x . "</tr></table>";
 }
 
 function parseReviewOrdinal($n) {
@@ -781,4 +781,19 @@ function outcomeSelector($curOutcome = 0) {
     foreach ($outcomes as $key)
 	$text .= "    <option value='$key'" . ($curOutcome == $key && $curOutcome !== null ? " selected='selected'" : "") . ">" . htmlspecialchars($outcomeMap[$key]) . "</option>\n";
     return $text . "  </select>";
+}
+
+function pcMembers() {
+    global $Conf;
+    if (!isset($_SESSION["pcmembers"]) || !is_array($_SESSION["pcmembers"])
+	|| defval($Conf->settings['pc'], 0) <= 0
+	|| $_SESSION["pcmembers"][0] <= $Conf->settings['pc']) {
+	$pc = array();
+	$result = $Conf->q("select firstName, lastName, email, PCMember.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair from ContactInfo join PCMember using (contactId) left join ChairAssistant on (PCMember.contactId=ChairAssistant.contactId) left join Chair on (PCMember.contactId=Chair.contactId) order by lastName, firstName");
+	if (!MDB2::isError($result))
+	    while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
+		$pc[$row->contactId] = $row;
+	$_SESSION["pcmembers"] = array(defval($Conf->settings['pc'], 0), $pc);
+    }
+    return $_SESSION["pcmembers"][1];
 }

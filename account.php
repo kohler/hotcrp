@@ -69,6 +69,10 @@ if (isset($_REQUEST['register']) && $OK) {
 		$Conf->qe("insert into ChairAssistant (contactId) values ($Me->contactId)", $while);
 	    if (isset($_REQUEST["chair"]))
 		$Conf->qe("insert into Chair (contactId) values ($Me->contactId)", $while);
+	    if ($Me->isPC || isset($_REQUEST["pc"])) {
+		$t = time();
+		$Conf->qe("insert into Settings (name, value) values ('pc', $t) on duplicate key update value=$t");
+	    }
 	}
 	
 	$Me->firstName = $_REQUEST["firstName"];

@@ -428,10 +428,11 @@ class PaperList {
 	global $Conf, $ConfSiteBase;
 	if ($this->count == 0)
 	    return "";
-	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 4 < 2 ? 0 : 1) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
-	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector'><img src=\"${ConfSiteBase}images/bendulft.png\" /></td>\n";
-	$t .= "    <td id='foldplact' class='folded' colspan='" . ($ncol - 1) . "'><b>Select papers</b> (or <a href='javascript:void checkPapersel(true)'>select all " . $this->count . "</a>), then get: &nbsp;
-    <select name='getaction'>
+	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
+	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'><img src=\"${ConfSiteBase}images/bendulft.png\" style='position: relative; top: 11px' /></td>\n";
+	$t .= "    <td id='foldplact' class='folded' colspan='" . ($ncol - 1) . "'><table>
+  <tr><td class='xcaption'><b>Select papers</b> (or <a href='javascript:void checkPapersel(true)'>select all " . $this->count . "</a>), then <b>Get:</b></td>
+    <td><select name='getaction'>
     <option value='paper' selected='selected'>Papers</option>
     <option value='revform'>Review forms</option>\n";
 	if ($this->contact->isPC && $Conf->timeSubmitFinalPaper())
@@ -450,30 +451,37 @@ class PaperList {
 	    $t .= "    <option value='topics'>Topics (text)</option>\n";
 	if ($this->contact->amAssistant() || ($this->contact->isPC && $Conf->timePCViewAllReviews()))
 	    $t .= "    <option value='scores'>All scores (text)</option>\n";
-	$t .= "</select>  <input type='submit' class='button_small' name='get' value='Go' />\n";
+	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='get' value='Go' />";
 
 	if ($this->contact->isPC) {
-	    $t .= "<span class='sep'></span> <a class='unfolder' href='javascript:fold(\"plact\", 0)'>More &raquo;</a><a class='folder' href='javascript:fold(\"plact\", 1)'>Less &laquo;</a>
-<div class='extension'><table>
-  <tr><td class='rcaption'>Tags:</td><td><select name='tagtype'>
+	    $t .= "<span class='sep'></span> <a class='unfolder' href='javascript:fold(\"plact\", 0)'>More &raquo;</a><a class='folder' href='javascript:fold(\"plact\", 1)'>Less &laquo;</a></td></tr>\n";
+
+	    $t .= "  <tr class='extension'><td class='rcaption'>Tags:</td><td><select name='tagtype'>
     <option value='a' selected='selected'>Add</option><option value='d'>Remove</option><option value='s'>Define</option><option value='so'>Define ordered</option><option value='ao'>Add ordered</option>
   </select> &nbsp;tag(s) &nbsp;<input class='textlite' type='text' name='tag' value='' size='15' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></td></tr>\n";
+	    
 	    if ($this->contact->amAssistant())
-		$t .= "  <tr><td class='rcaption'>Decision:</td><td>" . outcomeSelector() . " <input type='submit' class='button_small' name='setoutcome' value='Set decision' /></td></tr>\n";
+		$t .= "  <tr class='extension'><td class='rcaption'>Decision:</td><td>Set decision to&nbsp; " . outcomeSelector() . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></td></tr>\n";
+	    
 	    if ($this->contact->amAssistant()) {
-		$t .= "  <tr><td class='rcaption'>Conflicts:</td><td><select name='mark'>\n";
-		$t .= "<option value='pcpaper' selected='selected'>PC-authored paper</option>\n";
-		$result = $Conf->q("select firstName, lastName, email from ContactInfo join PCMember using (contactId) order by lastName, firstName");
-		if (!MDB2::isError($result))
-		    while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
-			$t .= "<option value=\"" . htmlspecialchars($row->email) . "\">" . contactHtml($row->firstName, $row->lastName) . "</option>\n";
-		$t .= "</select> <input type='submit' class='button_small' name='setmark' value='Mark' /> <input type='submit' class='button_small' name='clearmark' value='Unmark' />";
+		$t .= "  <tr class='extension'><td class='rcaption'>Conflicts:</td>
+    <td><select name='marktype' onchange='document.getElementById(\"markpc\").disabled = (this.value == \"pcpaper\" || this.value == \"unpcpaper\")'>
+      <option value='conflict' selected='selected'>Mark conflict</option>
+      <option value='unconflict'>Remove conflict</option>
+      <option value='pcpaper'>Mark as PC-authored</option>
+      <option value='unpcpaper'>Mark as not PC-authored</option>
+    </select> &nbsp;for &nbsp;";
+		$t .= "<select name='markpc' id='markpc'>\n";
+		$pc = pcMembers();
+		foreach ($pc as $id => $row)
+		    $t .= "<option value=\"" . htmlspecialchars($row->email) . "\">" . contactHtml($row->firstName, $row->lastName) . "</option>\n";
+		$t .= "</select> &nbsp;<input type='submit' class='button_small' name='setassign' value='Go' />";
 		$t .= "</td></tr>\n";
 	    }
-	    $t .= "</table></div>\n";
-	}
+	} else
+	    $t .= "</td></tr>";
 	
-	return $t . "</td></tr>\n";
+	return $t . "</table></td></tr>\n";
     }
 
     function text($listname, $me, $listDescription) {
@@ -572,10 +580,10 @@ class PaperList {
 	$body = '';
 	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
 	    $ids[] = $row->paperId;
-	    $trclass = "k" . ($this->count % 4 < 2 ? 0 : 1);
+	    $trclass = "k" . ($this->count % 2);
 	    $this->count++;
 	    
-	    $t = "  <tr class=\"" . $trclass . "\">\n";
+	    $t = "  <tr class=\"pl " . $trclass . "\">\n";
 	    foreach ($fieldId as $f)
 		if ($f[2] == 1) {
 		    $c = $this->content($f[0], $row, $plist, $reviewList);

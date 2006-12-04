@@ -1,35 +1,13 @@
+/* page background */
 body {
 	font-family: sans-serif;
 	color: black;
-	background-color: white;
+	background-color: #ccc3ab;
 	margin: 0px;
 }
-table, tr, td {
-	padding: 0px;
-	border-spacing: 0px;
-	empty-cells: show;
-}
 
-.clear {
-	clear: both;
-}
-div.clear, div.min {
-	margin: 0em;
-}
-form {
-	display: inline;
-}
-div.inform {
-	margin: 0em;
-	display: inline;
-}
-
-div.body {
-	padding: 0px 8px;
-}
-
+/* header */
 div#header {
-	background: #f6f6ff;
 	padding: 8px 8px 0px 8px;
 }
 div#header_user {
@@ -57,6 +35,104 @@ h1 {
 	font-size: x-large;
 	margin: 0em;
 }
+div.nvubar {
+	margin: 0px 12px;
+	height: 0.75em;
+	border-bottom: 1px solid #9999cc;
+}
+table.vubar {
+	padding: 0px 12px;
+	position: relative;
+	width: 100%;
+	font-size: small;
+}
+table.vubar td {
+	vertical-align: bottom;
+}
+table.vubar td.sep, table.vubar td.tab, table.vubar td.tab_disabled, 
+table.vubar td.spanner, table.vubar td.gopaper, table.vubar td.listlinks {
+	border-bottom: 1px solid #9999cc;
+}
+table.vubar td.tab, table.vubar td.tab_disabled {
+	background: #e6e6ff;
+}
+table.vubar td.sep {
+	padding: 0em 0.75em;
+}
+table.vubar td.sep:first-child {
+	padding: 0em 0.5em;
+}
+td.spanner {
+	width: 100%;
+}
+table.vubar .tab, table.vubar .tab_disabled, table.vubar .tab_default {
+	padding: 0em 1em 0.1em 1em;
+}
+table.vubar td.gopaper, table.vubar td.listlinks {
+	vertical-align: middle;
+	padding: 4px 0.5em;
+}
+table.vubar td {
+	min-height: 4px;
+}
+table.vubar .tab_default {
+	background: white;
+	border-top: 1px solid #9999cc;
+	border-left: 1px solid #9999cc;
+	border-right: 1px solid #9999cc;
+	border-bottom: 1px solid white;
+}
+.tab_default a {
+	text-decoration: none;
+	color: #000000;
+	font-weight: bold;
+}
+.tab a {
+	text-decoration: none;
+}
+.tab_default a:hover, .tab a:hover, td.listlinks a:hover {
+	text-decoration: underline;
+}
+td.listlinks a {
+	text-decoration: none;
+}
+
+
+/* body */
+div.body {
+	padding: 2px 8px;
+	margin: 0px 12px;
+	background-color: white;
+	border-right: 1px solid #9999cc;
+	border-left: 1px solid #9999cc;
+	border-bottom: 1px solid #9999cc;
+}
+div.bodyexpander {
+	margin: -2px -8px;
+}
+
+
+/* general */
+table, tr, td {
+	padding: 0px;
+	border-spacing: 0px;
+	empty-cells: show;
+}
+
+.clear {
+	clear: both;
+}
+div.clear, div.min {
+	margin: 0em;
+}
+form {
+	display: inline;
+}
+div.inform {
+	margin: 0em;
+	display: inline;
+}
+
 
 div#footer {
 	margin-top: 0.5em;
@@ -130,21 +206,6 @@ form {
 }
 
 
-div.gap, div.gapbottom {
-	background-color: #f6f6ff;
-	height: 0.75em;
-}
-div.gap {
-	border-bottom: 1px solid #cc9900;
-}
-div.gapbottom {
-	margin-bottom: -0.5em;
-}
-div.gaptop {
-	background-color: #f6f6ff;
-	height: 0.75em;
-	border-bottom: 1px solid #cc9900;
-}
 div.smgap {
 	padding: 0.375em 0em;
 }
@@ -160,62 +221,6 @@ span.topic0 {
 }
 span.topic2 {
 	font-weight: bold;
-}
-
-/* view bar */
-table.vubar {
-	margin-bottom: 0.25em;
-	background-color: #f6f6ff;
-	position: relative;
-	width: 100%;
-	font-size: small;
-}
-table.vubar td {
-	vertical-align: bottom;
-}
-table.vubar td.sep, table.vubar td.tab, table.vubar td.tab_disabled, 
-table.vubar td.spanner, table.vubar td.gopaper, table.vubar td.listlinks {
-	border-bottom: 1px solid #cc9900;
-}
-table.vubar td.tab, table.vubar td.tab_disabled {
-	background: #e6e6ff;
-}
-table.vubar td.sep {
-	padding: 0em 0.75em;
-}
-table.vubar td.sep:first-child {
-	padding: 0em 0.5em;
-}
-td.spanner {
-	width: 100%;
-}
-table.vubar .tab, table.vubar .tab_disabled, table.vubar .tab_default {
-	padding: 0em 1em 0.1em 1em;
-}
-table.vubar td.gopaper, table.vubar td.listlinks {
-	vertical-align: middle;
-	padding: 4px 0.5em;
-}
-table.vubar td {
-	min-height: 4px;
-}
-table.vubar .tab_default {
-	background: white;
-	border-top: 1px solid #cc9900;
-	border-left: 1px solid #cc9900;
-	border-right: 1px solid #cc9900;
-	border-bottom: 1px solid white;
-}
-.tab_default a {
-	text-decoration: none;
-	color: #000000;
-	font-weight: bold;
-}
-.tab_default a:hover, td.listlinks a:hover {
-	text-decoration: underline;
-}
-td.listlinks a {
-	text-decoration: none;
 }
 
 
@@ -346,7 +351,7 @@ span.author, span.conflict {
 
 
 /* Captions and entries */
-table.paper, table.review, table.comment {
+table.paper, table.review, table.comment, table.assign {
 	width: 100%;
 }
 tr, textarea, select {
@@ -366,15 +371,15 @@ td.xcaption {
 }
 td.caption {
 	text-align: right;
-	padding: 3px 0.5em 3px 0em;
+	padding: 3px 0.5em 3px 4px;
 	font-weight: bold;
 	width: 11em;
-	border-right: 1px solid #cc9900;
+	border-right: 1px solid #9999cc; /* #cc9900 */
 	background: #fffdf0;
 	color: #555555;
 }
 tr.id td.caption {
-	border-bottom: 1px solid #cc9900;
+	border-bottom: 1px solid #9999cc;
 	border-right: none;
 	background: white;
 	color: black;
@@ -382,8 +387,9 @@ tr.id td.caption {
 table.comment tr.id td.entry, table.review tr.id td.entry {
 	font-size: small;
 }
-tr.last td, table.review, table.comment {
-	border-bottom: 1px solid #cc9900;
+table.review, table.comment {
+	border-top: 1px solid #9999cc;
+	padding-top: 10px;
 }
 td.leftentry {
 	width: 15em;
@@ -399,7 +405,7 @@ td.hint {
 	padding-left: 0.5em;
 	font-size: small;
 }
-div#aumg td.hint, table.paper td.hint, table.review td.hint, table.comment td.hint {
+div#aumg td.hint, table.paper td.hint, table.review td.hint, table.comment td.hint, table.assign td.hint {
 	width: 25%;
 }
 td h2, td h3 {
@@ -635,6 +641,12 @@ table.pt_buttons td.ptb_button {
 	padding: 0px 1em 0px 0px;
 }
 
+div.searchresult {
+	padding: 0.75em 0.75em;
+}
+div.searchresult table.pltable {
+	width: 100%;
+}
 table.pltable th, table.setreviewform th, table.memberlist th {
 	text-align: left;
         padding-right: 0.25em;
@@ -677,8 +689,12 @@ span.pl_callouthdr {
 span.pl_callouthdr:after {
 	content: ":";
 }
+tr.pl td {
+	padding-top: 2px;
+	padding-bottom: 2px;
+}
 tr.pl_headrow td, tr.pl_headrow th, table.setreviewform th, table.memberlist th {
-	border-bottom: 1px solid #cc9900;
+	border-bottom: 1px solid #999999;
 	font-size: small;
 }
 tr.pl_footrow td {
@@ -689,14 +705,11 @@ tr.pl_headgap td {
 }
 tr.pl_footgap td {
 	padding-top: 3px;
-	border-bottom: 1px solid #cc9900;
+	border-bottom: 1px solid #9999cc;
 }
 table.plt_reviewerHome tr.pl_headrow th {
 	border-bottom: none;
 	font-size: small;
-}
-table.plt_reviewerHome tr.pl_firstrow td {
-	padding-top: 0px;
 }
 
 span.match {
@@ -803,7 +816,7 @@ a.pl_sort_def_rev {
 }
 
 tr.k1 td {
-	background: #f8f8ff;
+	background: #f0f0ff;
 }
 
 .folded .extension, .folded .folder, .unfolded .ellipsis, .unfolded .unfolder {

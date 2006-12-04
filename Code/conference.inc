@@ -327,7 +327,7 @@ class Conference {
 	return $this->settingsBetween('rev_open', $d, 'rev_grace') > 0;
     }
     function timePCReviewPreferences() {
-	return $this->settingsAfter('paper_lastsub');
+	return $this->settingsAfter('papersub');
     }
     function timePCViewAllReviews() {
 	return $this->settingsAfter('pc_seeallrev');
@@ -678,7 +678,7 @@ class Conference {
 	else if (PEAR::isError($result))
 	    $this->errorMsg($result->getMessage());
 	else
-	    $this->log("Downloaded papers from set " . join(", ", $paperIds), $_SESSION["Me"]);
+	    $this->log("Downloaded papers", $_SESSION["Me"], $paperIds);
 	if (isset($tmpdir))
 	    exec("/bin/rm -rf $tmpdir");
 	return $result;
@@ -1026,7 +1026,7 @@ class Conference {
 	}
     }
 
-    function header($title, $id = "", $actionBar = "<div class='gaptop'></div>", $showTitle = true) {
+    function header($title, $id = "", $actionBar = "<div class='nvubar'></div>", $showTitle = true) {
 	global $ConfSiteBase, $Opt;
 	if ($this->headerPrinted >= 2)
 	    return;
@@ -1059,7 +1059,7 @@ class Conference {
 	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", $this->shortName, " Public Site</a></div>\n";
 	
 	$id = ($id ? " id='$id'" : "");
-	print "  <div class='clear'></div>\n</div>\n";
+	print "  <div class='clear'></div>\n</div>";
 
 	print $actionBar;
 
@@ -1082,7 +1082,7 @@ class Conference {
 	
 	// Output standard footer - button to go to main submission
 	// site, button to close & pointer to CRP at sourceforge
-	echo "</div>\n"; // <div id='body'>
+	echo "</div>\n"; // <div class='body'>
 	echo "<div id='footer'>\n";
 	echo "  <div id='footer_crp'><a href='http://crp.sourceforge.net/'>HotCRP</a> Conference Management Software</div>\n";
 	echo "  <div class='clear'></div></div>\n";
@@ -1295,11 +1295,22 @@ class Conference {
 
 
     function log($text, $who, $paperId = null) {
+	if (is_array($paperId)) {
+	    if (count($paperId) == 0)
+		$paperId = null;
+	    else if (count($paperId) == 1)
+		$paperId = $paperId[1];
+	    else {
+		$text .= " (papers " . join(", ", $paperId) . ")";
+		$paperId = null;
+	    }
+	}
 	if ($paperId === null)
 	    $paperId = "null";
-	$this->q("insert into ActionLog (ipaddr, contactId, paperId, action) values ('" . sqlq($_SERVER['REMOTE_ADDR']) . "', " . $who->contactId . ", $paperId, '" . sqlq($text) . "')");
+	$this->q("insert into ActionLog (ipaddr, contactId, paperId, action) values ('" . sqlq($_SERVER['REMOTE_ADDR']) . "', " . (is_int($who) ? $who : $who->contactId) . ", $paperId, '" . sqlq($text) . "')");
     }
 
+    
     ///////////////////////////////////////////////////////////////////////////
     // output summary of review status
     ///////////////////////////////////////////////////////////////////////////

@@ -70,19 +70,26 @@ if (isset($_REQUEST["update"]) && $Me->amAssistant()) {
     }
 
     // Now, update existing members
+    $didAnything = false;
     foreach ($_REQUEST as $key => $value)
 	if ($key[0] == 'c' && $key[1] == 'h' && $key[2] == 'g'
 	    && ($id = cvtint(substr($key, 3))) > 0 && $id != $Me->contactId) {
 	    // remove?
-	    if ($value == "rem") {
+	    if ($value == "rem")
 		unset($_REQUEST["pc$id"], $_REQUEST["ass$id"], $_REQUEST["chair$id"]);
-		$log = "Removed someone";
-	    } else {
+	    else
 		$_REQUEST["pc$id"] = 1;
-		$log = "Changed someone's status";
-	    }
 	    updateRoles($id, $id, "ID $id");
+	    $didAnything = true;
 	}
+
+    // Log and update settings
+    if ($didAnything) {
+	$Conf->log("Updated composition of PC", $Me->contactId);
+	$t = time();
+	$Conf->qe("insert into Settings (name, value) values ('pc', $t) on duplicate key update value=$t");
+    }
+    
 } else if (isset($_REQUEST["update"]))
     $Conf->errorMsg("You don't have permission to update the PC.");
 

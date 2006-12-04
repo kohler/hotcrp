@@ -141,6 +141,7 @@ else
 
 // page header
 confHeader();
+echo "<div class='bodyexpander'>";
 
 
 // begin table
@@ -197,8 +198,6 @@ function commentView($prow, $crow, $editMode) {
     if ($editMode && !$Me->canComment($prow, $crow, $Conf))
 	$editMode = false;
     
-    echo "<div class='gap'></div>\n\n";
-
     if ($editMode) {
 	echo "<form action='comment.php?";
 	if ($crow)
@@ -319,6 +318,6 @@ else {
 	commentView($prow, null, true);
 }
 
-echo "<div class='gapbottom'></div>\n";
 
-$Conf->footer(); ?>
+echo "</div>"; /* bodyexpander */
+$Conf->footer();
