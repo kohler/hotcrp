@@ -488,7 +488,7 @@ if (defval($_REQUEST["x"], 0)) {
 </tr><tr>
   <td class='rcaption'>Paper actions</td>
   <td class='entry'>To act on many papers at once, select their checkboxes and choose an action underneath the paper list.
-For example, to download a <tt>.zip</tt> file with all submitted papers, PC members can search for all submitted papers, choose the \"select all\" link, then \"get: Papers\".  Pull down the menu to see what else you can do.
+For example, to download a <tt>.zip</tt> file with all submitted papers, PC members can search for all submitted papers, choose the \"select all\" link, then \"Get: Papers\".  Pull down the menu to see what else you can do.
 The \"More &raquo;\" link allows PC members and chairs to add tags, set conflicts, set decisions, and so forth.  The easiest way to tag a set of papers is to enter their numbers in the search box, search, \"select all\", and add the tag.</td>
 </tr><tr>
   <td class='rcaption'>Limitations</td>
