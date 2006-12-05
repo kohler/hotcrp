@@ -99,7 +99,7 @@ if( IsSet($_REQUEST['use_groups']) ){
   $use_groups = 0;
 }
 
-if( (! $_SESSION['Me']->isChair) && $Conf->timePCViewGrades()) ) {
+if( (! $_SESSION['Me']->isChair) && $Conf->timePCViewGrades() ) {
   $use_groups = 1;
   foreach( $groups as $key => $val ){
     $kept_groups[$key] = 1;

@@ -160,7 +160,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     
     // update Paper table
     if ($newPaper)
-	$q .= "contactId=$contactId, paperStorageId=1";
+	$q .= "paperStorageId=1";
     else
 	$q = substr($q, 0, -2) . " where paperId=$paperId"
 	    . ($Me->amAssistant() || $isSubmitFinal ? "" : " and timeSubmitted<=0")

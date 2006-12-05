@@ -26,7 +26,7 @@ function queryFromRecipients($who, $per_paper) {
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
 		from Paper join PaperConflict using (paperId)
 		join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId)
-		where Paper.timeSubmitted>0 and PaperConflict.conflictType" . CONFLICT_AUTHOR . "
+		where Paper.timeSubmitted>0 and PaperConflict.conflictType=" . CONFLICT_AUTHOR . "
 		$group_order";
 
     if (substr($who, 0, 14) == "author-outcome"

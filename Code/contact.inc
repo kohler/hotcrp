@@ -874,7 +874,7 @@ class Contact {
 	    } else {
 		$x = "<span class='pstat pstat_prog'>In progress</span>";
 		if ($long > 0)
-		    $x .= "; updated at " . $conf->printableTime($row->timestamp);
+		    $x .= "updated at " . $conf->printableTime($row->timestamp);
 	    }
 	    return $x;
 	}

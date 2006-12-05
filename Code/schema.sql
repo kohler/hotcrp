@@ -77,7 +77,6 @@ CREATE TABLE Paper (
   authorInformation text,
   abstract text,
   collaborators text,
-  contactId int(11) default NULL,
 
   timeSubmitted int(11) NOT NULL default 0,
   timeWithdrawn int(11) NOT NULL default 0,
@@ -94,8 +93,6 @@ CREATE TABLE Paper (
   blind tinyint(1) NOT NULL default 1,
   authorsResponse mediumtext,
   outcome tinyint(1) NOT NULL default 0,
-  showReviewsToReviewers tinyint(1) NOT NULL default 0,
-  showResponseToReviewers tinyint(1) NOT NULL default 0,
 
   # calculated from PaperComment to reduce joins
   numComments int(11) NOT NULL default 0,
