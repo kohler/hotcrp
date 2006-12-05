@@ -468,12 +468,15 @@ class PaperList {
 		$t .= "  <tr class='extension'><td class='rcaption'>Decision:</td><td>Set decision to&nbsp; " . outcomeSelector() . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></td></tr>\n";
 	    
 	    if ($this->contact->amAssistant()) {
-		$t .= "  <tr class='extension'><td class='rcaption'>Conflicts:</td>
+		$t .= "  <tr class='extension'><td class='rcaption'>Conflicts &amp; assignments:</td>
     <td><select name='marktype' onchange='document.getElementById(\"markpc\").disabled = (this.value == \"pcpaper\" || this.value == \"unpcpaper\")'>
       <option value='conflict' selected='selected'>Mark conflict</option>
       <option value='unconflict'>Remove conflict</option>
       <option value='pcpaper'>Mark as PC-authored</option>
       <option value='unpcpaper'>Mark as not PC-authored</option>
+      <option value='assign" . REVIEW_PRIMARY . "'>Assign primary review</option>
+      <option value='assign" . REVIEW_SECONDARY . "'>Assign secondary review</option>
+      <option value='assign0'>Unassign reviews</option>
     </select> &nbsp;for &nbsp;";
 		$t .= "<select name='markpc' id='markpc'>\n";
 		$pc = pcMembers();

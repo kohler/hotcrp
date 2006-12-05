@@ -348,23 +348,49 @@ if (isset($_REQUEST["setoutcome"]) && defval($_REQUEST['outcome'], "") != "" && 
 if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && isset($papersel)) {
     $mt = $_REQUEST["marktype"];
     $mpc = defval($_REQUEST["markpc"], "");
+    $pc = new Contact;
     if (!$Me->amAssistant())
 	$Conf->errorMsg("Only the PC chairs can set PC conflicts.");
     else if ($mt == "pcpaper" || $mt == "unpcpaper") {
 	$result = $Conf->qe("update Paper set pcPaper=" . ($mt == "pcpaper" ? 1 : 0) . " where " . paperselPredicate($papersel), "while marking PC papers");
 	$Conf->log("Change PC paper status", $Me, $papersel);
-    } else if ($mpc && ($mt == "conflict" || $mt == "unconflict")) {
-	$pc = new Contact;
+    } else if (!$mpc || !$pc->lookupByEmail($mpc, $Conf))
+	$Conf->errorMsg("'" . htmlspecialchars($mpc) . " is not a PC member.");
+    else if ($mt == "conflict" || $mt == "unconflict") {
 	$while = "while marking conflicts";
-	if (!$pc->lookupByEmail($mpc, $Conf))
-	    $Conf->errorMsg(htmlspecialchars($mpc) . " is not a PC member");
-	else if ($mt == "conflict") {
+	if ($mt == "conflict") {
 	    $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) (select Paper.paperId, $pc->contactId, " . CONFLICT_CHAIRMARK . " from Paper left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=$pc->contactId) where PaperConflict.conflictType is null and (" . paperselPredicate($papersel, "Paper.") . "))", $while);
 	    $Conf->log("Mark conflicts with $mpc", $Me, $papersel);
 	} else {
-	    $Conf->qe("delete from PaperConflict where PaperConflict.conflictType<" . CONFLICT_AUTHOR . " and (" . paperselPredicate($papersel) . ")", $while);
+	    $Conf->qe("delete from PaperConflict where PaperConflict.conflictType<" . CONFLICT_AUTHOR . " and contactId=$pc->contactId and (" . paperselPredicate($papersel) . ")", $while);
 	    $Conf->log("Remove conflicts with $mpc", $Me, $papersel);
 	}
+    } else if (substr($mt, 0, 6) == "assign"
+	       && isset($reviewTypeName[($asstype = substr($mt, 6))])) {
+	$while = "while making assignments";
+	$Conf->qe("lock tables PaperConflict write, PaperReview write, Paper write");
+	$result = $Conf->qe("select Paper.paperId, reviewId, reviewType, reviewModified, conflictType from Paper left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=" . $pc->contactId . ") left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=" . $pc->contactId .") where " . paperselPredicate($papersel, "Paper."), $while);
+	$conflicts = array();
+	$assigned = array();
+	$nworked = 0;
+	if (!MDB2::isError($result))
+	    while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
+		if ($asstype && $row->conflictType > 0)
+		    $conflicts[] = $row->paperId;
+		else if ($asstype && $row->reviewType > REVIEW_PC && $asstype != $row->reviewType)
+		    $assigned[] = $row->paperId;
+		else {
+		    $Me->assignPaper($row->paperId, $row, $pc->contactId, $asstype, $Conf);
+		    $nworked++;
+		}
+	    }
+	if (count($conflicts))
+	    $Conf->errorMsg("Some papers were not assigned because of conflicts (" . join(", ", $conflicts) . ").  If these conflicts are in error, remove them and try to assign again.");
+	if (count($assigned))
+	    $Conf->errorMsg("Some papers were not assigned because the PC member already had an assignment (" . join(", ", $assigned) . ").");
+	if ($nworked)
+	    $Conf->confirmMsg(($asstype == 0 ? "Unassigned reviews." : "Assigned reviews."));
+	$Conf->qe("unlock tables");
     }
 }
 
