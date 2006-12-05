@@ -412,8 +412,6 @@ echo "
 <tr>
   <td class='mcaption'>With <b>any</b> of the words</td>
   <td><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /></td>
-  <td><span class='sep'></span></td>
-  <td rowspan='3'><input class='button' type='submit' name='go' value='Search' /></td>
 </tr><tr>
   <td class='mcaption'>With <b>all</b> the words</td>
   <td><input class='textlite' type='text' size='40' name='qa' value=\"", htmlspecialchars(defval($_REQUEST["qa"], "")), "\" /></td>
@@ -421,7 +419,7 @@ echo "
   <td class='mcaption'><b>Without</b> the words</td>
   <td><input class='textlite' type='text' size='40' name='qx' value=\"", htmlspecialchars(defval($_REQUEST["qx"], "")), "\" /></td>
 </tr>
-<tr><td colspan='2'><hr class='smgap' /></td></tr>
+<tr><td><hr class='smgap' /></td></tr>
 <tr>
   <td class='mcaption'>Paper selection</td>
   <td>$tselect</td>
@@ -448,7 +446,9 @@ if (!isset($qtOpt[defval($_REQUEST["qt"], "")]))
 foreach ($qtOpt as $v => $text)
     echo "<option value='$v'", ($v == $_REQUEST["qt"] ? " selected='selected'" : ""), ">$text</option>";
 echo "</select></td>
-</tr></table></td></tr></table>\n</form>\n\n</div>\n";
+</tr></table></td>
+  <td class='advsearch' style='vertical-align: top'><input class='button' type='submit' name='go' value='Search' /></td>
+</tr></table>\n</form>\n\n</div>\n";
 
 
 // search information
@@ -482,7 +482,7 @@ if (defval($_REQUEST["x"], 0)) {
   <span class='textlite'>au:</span> for authors,
   <span class='textlite'>co:</span> for collaborators,
   <span class='textlite'>topic:</span> for paper topics,
-  <span class='textlite'>rev:</span> for reviewer names,
+  <span class='textlite'>rev:</span> for reviewer names, emails, and counts,
   <span class='textlite'>dec:</span> for decisions,
   and <span class='textlite'>tag:</span> or <span class='textlite'>order:</span> for tags.</td>
 </tr><tr>

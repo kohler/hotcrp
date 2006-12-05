@@ -146,7 +146,9 @@ class PaperSearch {
 	    if (($special ? $special == "co" : isset($this->fields['co'])) && $this->amAssistant)
 		$qp .= " or (${auextra}Paper.collaborators like '%$word%')";
 	    if (($special ? $special == "re" : isset($this->fields['re'])) && $this->allowReviewer) {
-		if ($type != "none")
+		if (preg_match('/^([<>]?=?\s*)?(\d+)$/s', $word, $m))
+		    $qp .= " or (numReviews" . ($m[1] ? $m[1] : "=") . $m[2] . ")";
+		else if ($type != "none")
 		    $qp .= " or (reviewerInfo like '%$word%')";
 		else
 		    $qp .= " or (reviewerInfo is not null and reviewerInfo like '%$word%')";
@@ -238,7 +240,7 @@ class PaperSearch {
 	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.requestedBy=" . $this->contactId . " and Limiter.reviewType=" . REVIEW_REQUESTED . ")";
 
 	if ($this->anyReviewer)
-	    $q .= " left join (select paperId, group_concat(firstName, lastName, email) as reviewerInfo from PaperReview join ContactInfo using (contactId) group by paperId) as ReviewerInfo on (ReviewerInfo.paperId=Paper.paperId)";
+	    $q .= " left join (select paperId, group_concat(firstName, lastName, email) as reviewerInfo, count(reviewId) as numReviews from PaperReview join ContactInfo using (contactId) where reviewNeedsSubmit=1 or reviewSubmitted>0 group by paperId) as ReviewerInfo on (ReviewerInfo.paperId=Paper.paperId)";
 	if ($this->anyTag)
 	    $q .= " left join PaperTag on (PaperTag.paperId=Paper.paperId)";
 	if ($this->anyAlltags)
@@ -283,7 +285,7 @@ class PaperSearch {
 	global $Conf, $ConfSiteBase;
 	$x = $this->_searchQuery();
 	$this->matchPreg = $x[1];
-	// $Conf->infoMsg(htmlspecialchars($x[0]));
+	//$Conf->infoMsg(htmlspecialchars($x[0]));
 	return $Conf->qe($x[0], "while searching papers");
     }
 

@@ -324,13 +324,13 @@ foreach ($rf->topicOrder as $tid => $crap) {
     $td1 = "<td class='rcaption'><br /></td>";
 }
 $td1 = "<td class='rcaption'>New</td>";
-for ($i = 1; $i <= 5; $i++) {
+for ($i = 1; $i <= 3; $i++) {
     echo "<tr>$td1<td><input type='text' class='textlite' name='topn$i' value=\"\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
     $td1 = "<td class='rcaption'><br /></td>";
 }
 
 echo "</table>\n";
-echo "<div class='smgap'></div>\n<small>Enter topics one per line.  Authors identify the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its text.  Add topics in batches of up to 5 at a time.</small>\n";
+echo "<div class='smgap'></div>\n<small>Enter topics one per line.  Authors identify the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its text.  Add topics in batches of up to 3 at a time.</small>\n";
 echo "</div></div>";
 
 
