@@ -184,7 +184,7 @@ if (!$newProfile) {
 
 <tr>
   <td class='caption'></td>
-  <td class='hint' colspan='4'>Please note that the password is stored in our database in cleartext, and will be mailed to you if you have forgotten it.  Thus, you should not use a login password or any other password that is important to you.</td>
+  <td class='hint' colspan='4'>The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don't use a login password or any other high-security password.</td>
 </tr>\n\n";
 }
 

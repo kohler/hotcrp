@@ -18,12 +18,23 @@ PROGDIR=`echo "$0" | sed 's/[^\/]*$//'`
 
 
 echo "This will create the database for your conference."
-echo "The database name, database user, and database password are all set to"
-echo "the same thing.  Access is allowed only from the local host."
+echo "The database name and database user are set to the same thing."
+echo "Access is allowed only from the local host."
+echo
 
 echo -n "Enter database name (NO SPACES): "
 read DBNAME
-echo "DBNAME is $DBNAME"
+
+if echo -n "$DBNAME" | grep '[^-.a-zA-Z0-9_]' >/dev/null; then
+    echo "Database name contains special characters!  Only [-.a-zA-Z0-9_], please." 1>&2
+    exit 1
+fi
+
+echo -n "Enter password for mysql user $DBNAME [default $DBNAME]: "
+read DBPASS
+if [ -z "$DBPASS" ]; then DBPASS="$DBNAME"; fi
+
+DBPASS=`echo -n "$DBPASS" | sed -e 's/\([\0\n\r\\'"'"'"\032]\)/\\\\\\1/g'`
 
 echo
 echo "Creating database."
@@ -34,10 +45,17 @@ if [ -z "$FLAGS" ]; then
 fi
 echo "+ echo 'show databases;' | mysql | grep $DBNAME"
 echo 'show databases;' | mysql $FLAGS | grep $DBNAME >/dev/null 2>&1
-if [ $? = 0 ]; then
+dbexists="$?"
+echo "+ echo 'select User from user group by User;' | mysql mysql | grep $DBNAME"
+echo 'select User from user group by User;' | mysql $FLAGS mysql | grep '^'$DBNAME'$' >/dev/null 2>&1
+userexists="$?"
+if [ $dbexists = 0 -o $userexists = 0 ]; then
     echo
-    echo "A database named '$DBNAME' already exists!  Make sure you want to"
-    echo "delete this database and user."
+    test $dbexists = 0 && echo "A database named '$DBNAME' already exists!"
+    test $userexists = 0 && echo "A user named '$DBNAME' already exists!"
+    echo "Hit Enter to delete and recreate, Control-C to cancel." 
+    read foo
+
     echo "+ mysqladmin $FLAGS drop $DBNAME"
     mysqladmin $FLAGS drop $DBNAME
 fi
@@ -47,101 +65,101 @@ mysqladmin $FLAGS create $DBNAME || exit 1
 echo
 echo "Creating $DBNAME user and password."
 mysql $FLAGS mysql <<__EOF__ || exit 1
-DELETE FROM user WHERE user="$DBNAME";
+DELETE FROM user WHERE user='$DBNAME';
 INSERT INTO user SET
     Host='127.0.0.1',
-    User="$DBNAME",
-    Password=PASSWORD("$DBNAME"),
-    select_priv='Y',
-    insert_priv='Y',
-    update_priv='Y',
-    delete_priv='Y',
-    create_priv='Y',
-    drop_priv='Y',
-    index_priv='Y',
-    alter_priv='Y',
-    lock_tables_priv='Y',
-    Create_tmp_table_priv='Y'
-    ;
+    User='$DBNAME',
+    Password=PASSWORD('$DBPASS'),
+    Select_priv='Y',
+    Insert_priv='Y',
+    Update_priv='Y',
+    Delete_priv='Y',
+    Create_priv='Y',
+    Drop_priv='Y',
+    Index_priv='Y',
+    Alter_priv='Y',
+    Lock_tables_priv='Y',
+    Create_tmp_table_priv='Y';
+
 INSERT INTO user SET
     Host='localhost.localdomain',
-    User="$DBNAME",
-    Password=PASSWORD("$DBNAME"),
-    select_priv='Y',
-    insert_priv='Y',
-    update_priv='Y',
-    delete_priv='Y',
-    create_priv='Y',
-    drop_priv='Y',
-    index_priv='Y',
-    alter_priv='Y',
-    lock_tables_priv='Y',
-    Create_tmp_table_priv='Y'
-    ;
+    User='$DBNAME',
+    Password=PASSWORD('$DBPASS'),
+    Select_priv='Y',
+    Insert_priv='Y',
+    Update_priv='Y',
+    Delete_priv='Y',
+    Create_priv='Y',
+    Drop_priv='Y',
+    Index_priv='Y',
+    Alter_priv='Y',
+    Lock_tables_priv='Y',
+    Create_tmp_table_priv='Y';
+
 INSERT INTO user SET
     Host='localhost',
-    User="$DBNAME",
-    Password=PASSWORD("$DBNAME"),
-    select_priv='Y',
-    insert_priv='Y',
-    update_priv='Y',
-    delete_priv='Y',
-    create_priv='Y',
-    drop_priv='Y',
-    index_priv='Y',
-    alter_priv='Y',
-    lock_tables_priv='Y',
-    Create_tmp_table_priv='Y'
-    ;
-DELETE FROM db WHERE db="$DBNAME";
+    User='$DBNAME',
+    Password=PASSWORD('$DBPASS'),
+    Select_priv='Y',
+    Insert_priv='Y',
+    Update_priv='Y',
+    Delete_priv='Y',
+    Create_priv='Y',
+    Drop_priv='Y',
+    Index_priv='Y',
+    Alter_priv='Y',
+    Lock_tables_priv='Y',
+    Create_tmp_table_priv='Y';
+
+DELETE FROM db WHERE db='$DBNAME';
 INSERT INTO db SET
-    host='127.0.0.1',
-    db="$DBNAME",
-    user="$DBNAME",
-    select_priv='Y',
-    insert_priv='Y',
-    update_priv='Y',
-    delete_priv='Y',
-    create_priv='Y',
-    drop_priv='Y',
-    index_priv='Y',
-    references_priv='Y',
-    alter_priv='Y',
-    lock_tables_priv='Y',
-    Create_tmp_table_priv='Y'
-    ;
+    Host='127.0.0.1',
+    Db='$DBNAME',
+    User='$DBNAME',
+    Select_priv='Y',
+    Insert_priv='Y',
+    Update_priv='Y',
+    Delete_priv='Y',
+    Create_priv='Y',
+    Drop_priv='Y',
+    Index_priv='Y',
+    References_priv='Y',
+    Alter_priv='Y',
+    Lock_tables_priv='Y',
+    Create_tmp_table_priv='Y';
+
 INSERT INTO db SET
-    host='localhost.localdomain',
-    Db="$DBNAME",
-    user="$DBNAME",
-    select_priv='Y',
-    insert_priv='Y',
-    update_priv='Y',
-    delete_priv='Y',
-    create_priv='Y',
-    drop_priv='Y',
-    index_priv='Y',
-    references_priv='Y',
-    alter_priv='Y',
-    lock_tables_priv='Y',
-    Create_tmp_table_priv='Y'
-    ;
+    Host='localhost.localdomain',
+    Db='$DBNAME',
+    User='$DBNAME',
+    Select_priv='Y',
+    Insert_priv='Y',
+    Update_priv='Y',
+    Delete_priv='Y',
+    Create_priv='Y',
+    Drop_priv='Y',
+    Index_priv='Y',
+    References_priv='Y',
+    Alter_priv='Y',
+    Lock_tables_priv='Y',
+    Create_tmp_table_priv='Y';
+
 INSERT INTO db SET
-    host='localhost',
-    Db="$DBNAME",
-    user="$DBNAME",
-    select_priv='Y',
-    insert_priv='Y',
-    update_priv='Y',
-    delete_priv='Y',
-    create_priv='Y',
-    drop_priv='Y',
-    index_priv='Y',
-    references_priv='Y',
-    alter_priv='Y',
-    lock_tables_priv='Y',
-    Create_tmp_table_priv='Y'
-    ;
+    Host='localhost',
+    Db='$DBNAME',
+    User='$DBNAME',
+    Select_priv='Y',
+    Insert_priv='Y',
+    Update_priv='Y',
+    Delete_priv='Y',
+    Create_priv='Y',
+    Drop_priv='Y',
+    Index_priv='Y',
+    References_priv='Y',
+    Alter_priv='Y',
+    Lock_tables_priv='Y',
+    Create_tmp_table_priv='Y';
+
 __EOF__
 ##
 
@@ -165,5 +183,5 @@ echo "Hit <RETURN> to populate the database, Control-C to cancel."
 echo "(If you need to restore from a backup you don't want to populate.)"
 read foo
 
-echo mysql -u $DBNAME -p"$DBNAME" $DBNAME "<" ${PROGDIR}schema.sql
-mysql -u"$DBNAME" -p"$DBNAME" "$DBNAME" < ${PROGDIR}schema.sql || exit 1
+echo mysql -u $DBNAME -p"$DBPASS" $DBNAME "<" ${PROGDIR}schema.sql
+mysql -u "$DBNAME" -p"$DBPASS" "$DBNAME" < ${PROGDIR}schema.sql || exit 1

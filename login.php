@@ -125,11 +125,11 @@ reviewing papers, or a member of the program committee.");
   <td class='entry'><input type='password' name='password' size='50' tabindex='1' /></td>
 </tr>
 
-<tr><td></td>
+<tr><td class='caption'></td>
   <td class='entry'><input class='button_default' type='submit' value='Sign in' name='login' tabindex='1' /></td>
 </tr>
   
-<tr><td></td>
+<tr><td class='caption'></td>
   <td class='entry'>
     <input class='button' type='submit' value='Mail me my password' name='forgot' tabindex='1' />
     <input class='button' type='submit' value='Create new account' name='register' tabindex='1' />

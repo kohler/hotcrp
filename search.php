@@ -251,7 +251,7 @@ if ($getaction == "contact" && $Me->amAssistant() && isset($papersel)) {
     $idq = paperselPredicate($papersel, "Paper.");
     if (!$Me->amAssistant())
 	$idq = "($idq) and blind=0";
-    $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq", "while fetching contact authors");
+    $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq order by Paper.paperId", "while fetching contact authors");
     if (!MDB2::isError($result)) {
 	$text = "#paperId\ttitle\tlast, first\temail\n";
 	while (($row = $result->fetchRow())) {
@@ -313,7 +313,7 @@ if ($getaction == "scores" && $Me->amAssistant() && isset($papersel)) {
 
 // download topics for selected papers
 if ($getaction == "topics" && $Me->amAssistant() && isset($papersel)) {
-    $result = $Conf->qe("select paperId, title, topicName from Paper join PaperTopic using (paperId) join TopicArea using (topicId) where " . paperselPredicate($papersel), "while fetching topics");
+    $result = $Conf->qe("select paperId, title, topicName from Paper join PaperTopic using (paperId) join TopicArea using (topicId) where " . paperselPredicate($papersel) . " order by paperId", "while fetching topics");
 
     // compose scores
     $text = "#paperId\ttitle\ttopic\n";

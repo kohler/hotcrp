@@ -472,8 +472,10 @@ class PaperList {
     <td><select name='marktype' onchange='document.getElementById(\"markpc\").disabled = (this.value == \"pcpaper\" || this.value == \"unpcpaper\")'>
       <option value='conflict' selected='selected'>Mark conflict</option>
       <option value='unconflict'>Remove conflict</option>
+      <option value='-1' disabled='disabled'></option>
       <option value='pcpaper'>Mark as PC-authored</option>
       <option value='unpcpaper'>Mark as not PC-authored</option>
+      <option value='-1' disabled='disabled'></option>
       <option value='assign" . REVIEW_PRIMARY . "'>Assign primary review</option>
       <option value='assign" . REVIEW_SECONDARY . "'>Assign secondary review</option>
       <option value='assign0'>Unassign reviews</option>

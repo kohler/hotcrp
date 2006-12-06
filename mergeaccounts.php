@@ -100,7 +100,7 @@ If you suspect something fishy, contact the site administrator at\n\
     }
 }
 
-$Conf->header("Merge Account Information");
+$Conf->header("Merge Accounts");
 ?>
 
 <?php
@@ -142,7 +142,7 @@ else
     <input type='radio' name='prefer' value='1' />&nbsp;Keep the account named above, delete my current account</td>
 </tr>
 
-<tr><td></td><td><input class='button_default' type='submit' value='Merge Account' name='merge' /></td></tr>
+<tr><td class='caption'></td><td class='entry'><input class='button_default' type='submit' value='Merge Account' name='merge' /></td></tr>
 </table>
 </form>
 
