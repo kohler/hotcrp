@@ -427,7 +427,7 @@ echo "</td></tr></table>\n</form>\n";
 
 
 if ($Me->amAssistant()) {
-    echo "<p><a href='ShowCalendar.php' target='_blank'>Show calendar</a> &mdash;
+    echo "<p><a href='Chair/ShowCalendar.php' target='_blank'>Show calendar</a> &mdash;
 <a href='http://www.php.net/manual/en/function.strtotime.php' target='_blank'>How to specify a date</a></p>\n";
 
     //crp_showdate('reviewerViewDecision');
