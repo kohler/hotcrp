@@ -60,15 +60,15 @@ CREATE TABLE `ContactInfo` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 
-DROP TABLE IF EXISTS PCMember;
-CREATE TABLE PCMember (
+DROP TABLE IF EXISTS `PCMember`;
+CREATE TABLE `PCMember` (
   `contactId` int(11) NOT NULL,
   UNIQUE KEY `contactId` (`contactId`)
-) TYPE=MyISAM;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 
-DROP TABLE IF EXISTS Paper;
-CREATE TABLE Paper (
+DROP TABLE IF EXISTS `Paper`;
+CREATE TABLE `Paper` (
   `paperId` int(11) NOT NULL auto_increment,
   `title` varchar(200) default NULL,
   `authorInformation` text,
@@ -93,7 +93,6 @@ CREATE TABLE Paper (
   PRIMARY KEY  (`paperId`),
   UNIQUE KEY `paperId` (`paperId`),
   KEY `title` (`title`),
-  KEY `contactId` (`contactId`),
   FULLTEXT KEY `titleAbstractText` (`title`,`abstract`),
   FULLTEXT KEY `allText` (`title`,`abstract`,`authorInformation`,`collaborators`),
   FULLTEXT KEY `authorText` (`authorInformation`,`collaborators`)
@@ -130,8 +129,8 @@ CREATE TABLE `PaperConflict` (
 DROP TABLE IF EXISTS `PaperFields`;
 CREATE TABLE `PaperFields` (
   `fieldId` int(11) NOT NULL,
-  `fieldName` varchar(20),
-  `description` varchar(80),
+  `fieldName` varchar(20) NOT NULL default '',
+  `description` varchar(80) NOT NULL default '',
   `sortable` tinyint(1) default '1',
   `display` tinyint(1) default '1',
   PRIMARY KEY  (`fieldId`),
@@ -145,7 +144,7 @@ CREATE TABLE PaperGrade (
   `paperId` int(11) NOT NULL,
   `time` timestamp(14) NOT NULL default CURRENT_TIMESTAMP,
   `grade` int(11) NOT NULL,
-  UNIQUE KEY `contactPaper` (`contactId`,`paperId`)
+  UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
   KEY `contactId` (`contactId`),
   KEY `paperId` (`paperId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -252,7 +251,7 @@ CREATE TABLE `PaperReviewArchive` (
   KEY `contactPaper` (`contactId`,`paperId`),
   KEY `paperId` (`paperId`),
   KEY `reviewSubmitted` (`reviewSubmitted`),
-  KEY reviewNeedsSubmit (`reviewNeedsSubmit`),
+  KEY `reviewNeedsSubmit` (`reviewNeedsSubmit`),
   KEY `reviewType` (`reviewType`),
   KEY `requestedBy` (`requestedBy`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -304,7 +303,7 @@ CREATE TABLE `PaperTag` (
 
 
 DROP TABLE IF EXISTS `PaperTopic`;
-CREATE TABLE PaperTopic (
+CREATE TABLE `PaperTopic` (
   `topicId` int(11) default NULL,
   `paperId` int(11) default NULL,
   UNIQUE KEY `paperTopic` (`paperId`,`topicId`)
