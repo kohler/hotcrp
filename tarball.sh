@@ -126,7 +126,6 @@ Chair/ViewButtons.php
 Chair/index.php
 
 Download/.htaccess
-Download/GetConfStuff.php
 Download/GetPaper
 Download/GetPaper.php
 

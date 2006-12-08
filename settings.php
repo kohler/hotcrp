@@ -38,7 +38,7 @@ function parseGrace($v) {
     $v = trim($v);
     if ($v == "" || strtoupper($v) == "N/A" || strtoupper($v) == "NONE" || $v == "0")
 	return -1;
-    if (is_numeric($v))
+    if (ctype_digit($v))
 	return $v * 60;
     if (preg_match('/^\s*([\d]+):([\d.]+)\s*$/', $v, $m))
 	return $m[1] * 60 + $m[2];
@@ -98,7 +98,7 @@ function parseValue($name, $type) {
 	else
 	    $err = $SettingText[$name] . ": parse error.";
     } else if (is_int($type)) {
-	if (is_numeric($v) && $v == intval($v) && $v >= 0 && $v <= $type)
+	if (ctype_digit($v) && $v >= 0 && $v <= $type)
 	    return intval($v);
 	else
 	    $err = $SettingText[$name] . ": parse error.";

@@ -22,7 +22,7 @@ else
 $values = array();
 $maxY = 3;
 foreach (explode(",", $_REQUEST["v"]) as $value) {
-    $value = (is_numeric($value) && $value > 0 ? intval($value) : 0);
+    $value = (ctype_digit($value) && $value > 0 ? intval($value) : 0);
     $values[$valMax++] = $value;
     $maxY = max($value, $maxY);
 }

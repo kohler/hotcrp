@@ -4,7 +4,9 @@ $searchTags = array('ti:' => 'ti', 'title:' => 'ti',
 		    'ab:' => 'ab', 'abstract:' => 'ab',
 		    'au:' => 'au', 'author:' => 'au',
 		    'co:' => 'co', 'collab:' => 'co', 'collaborators:' => 'co',
-		    're:' => 're', 'rev:' => 're', 'reviewer:' => 're',
+		    're:' => 're', 'rev:' => 're', 'review:' => 're',
+		    'sre:' => 'sre', 'srev:' => 'sre', 'sreview:' => 'sre',
+		    'subre:' => 'sre', 'subrev:' => 'sre', 'subreview:' => 'sre',
 		    'tag:' => 'tag',
 		    'ord:' => 'order', 'order:' => 'order',
 		    'outcome:' => 'outcome', 'out:' => 'outcome',
@@ -13,17 +15,23 @@ $searchTags = array('ti:' => 'ti', 'title:' => 'ti',
 
 class PaperSearch {
 
+    const ANY_REVIEWER = 1;
+    const ANY_SUB_REVIEWER = 2;		// must be 2*ANY_REVIEWER
+    const ANY_NUM_REVIEW = 4;
+    const ANY_SUB_NUM_REVIEW = 8;	// must be 2*ANY_NUM_REVIEW
+    const ANY_TAG = 16;
+    const ANY_ALLTAGS = 32;
+    const ANY_TOPICS = 64;
+    
     var $contactId;
     var $amAssistant;
     var $amPC;
     var $limitName;
     var $allowReviewer;
+    var $allowNumReview;
     var $allowAuthor;
     var $fields;
-    var $anyReviewer;
-    var $anyTag;
-    var $anyAlltags;
-    var $anyTopics;
+    var $any;
     var $orderTag;
     var $matchPreg;
     var $urlbase;
@@ -38,8 +46,10 @@ class PaperSearch {
 	$this->amAssistant = $me->amAssistant();
 	$this->amPC = $me->isPC;
 	$this->allowReviewer = $me->canViewAllReviewerIdentities($Conf);
+	$this->allowNumReview = $me->canViewNumReviews($Conf);
 	$this->allowAuthor = ($Conf->blindSubmission() > 1 || $me->amAssistant());
-	$this->anyReviewer = $this->anyTag = $this->anyAlltags = $this->anyTopics = $this->orderTag = false;
+	$this->orderTag = false;
+	$this->any = 0;
 	$this->contactId = $me->contactId;
 	if ($this->amAssistant && cvtint($opt["c"]) > 0)
 	    $this->contactId = cvtint($opt["c"]);
@@ -87,6 +97,31 @@ class PaperSearch {
 		$this->urlbase .= "&qt=" . urlencode($qtype);
 	}
     }
+
+    function _searchReviewer($word, $type, $stype) {
+	$sub = ($stype == "sre" ? "Sub" : "");
+	$anyfac = ($stype == "sre" ? 2 : 1);
+	if (preg_match('/^([<>]?=?\s*)?(\d+)$/s', $word, $m) && $this->allowNumReview) {
+	    if ($m[2] == 0 && $m[1] == "<")
+		return " or false";
+	    if ($m[2] == 0 && $m[1] == ">=")
+		return " or true";
+	    $this->any |= self::ANY_NUM_REVIEW * $anyfac;
+	    $q = ($m[1][0] == "<" ? " or (numReviews$sub is null)" : "");
+	    if ($m[2] == 0 && (!$m[1] || $m[1] == "=" || $m[1] == "<="))
+		return $q;
+	    else
+		return $q . " or (numReviews$sub" . ($m[1] ? $m[1] : "=") . $m[2] . ")";
+	} else if (!$this->allowReviewer)
+	    return "";
+	else {
+	    $this->any |= self::ANY_REVIEWER * $anyfac;
+	    if ($type != "none")
+		return " or (reviewerInfo$sub like '%$word%')";
+	    else
+		return " or (reviewerInfo$sub is not null and reviewerInfo$sub like '%$word%')";
+	}
+    }
     
     function _searchQueryType($str, $type = "any") {
 	global $searchTags;
@@ -116,8 +151,12 @@ class PaperSearch {
 	    $str = substr($str, strlen($word));
 
 	    // check for paper number
-	    if (preg_match('/^[0-9]+$/s', $word)) {
-		$qpapers .= " or paperId=$word";
+	    if (ctype_digit($word)) {
+		$qpapers .= " or Paper.paperId=$word";
+		continue;
+	    } else if (preg_match('/^(\d+)-(\d+)$/i', $word, $m)) {
+		for ($i = $m[1]; $i <= $m[2]; $i++)
+		    $qpapers .= " or Paper.paperId=$i";
 		continue;
 	    }
 	    
@@ -145,15 +184,10 @@ class PaperSearch {
 		$qp .= " or (${auextra}authorInformation like '%$word%')";
 	    if (($special ? $special == "co" : isset($this->fields['co'])) && $this->amAssistant)
 		$qp .= " or (${auextra}Paper.collaborators like '%$word%')";
-	    if (($special ? $special == "re" : isset($this->fields['re'])) && $this->allowReviewer) {
-		if (preg_match('/^([<>]?=?\s*)?(\d+)$/s', $word, $m))
-		    $qp .= " or (numReviews" . ($m[1] ? $m[1] : "=") . $m[2] . ")";
-		else if ($type != "none")
-		    $qp .= " or (reviewerInfo like '%$word%')";
-		else
-		    $qp .= " or (reviewerInfo is not null and reviewerInfo like '%$word%')";
-		$this->anyReviewer = true;
-	    }
+	    if ($special ? $special == "re" : isset($this->fields['re']))
+		$qp .= $this->_searchReviewer($word, $type, 're');
+	    if ($special ? $special == "sre" : isset($this->fields['sre']))
+		$qp .= $this->_searchReviewer($word, $type, 'sre');
 	    if ((($special ? $special == "tag" : isset($this->fields['tag']))
 		 || ($special ? $special == "order" : isset($this->fields['order'])))
 		&& $this->amPC) {
@@ -162,13 +196,13 @@ class PaperSearch {
 		$tagConflict = ($this->amAssistant() ? "" : " and conflictType=0");
 		if ($type == "any") {
 		    $qp .= " or (tag='$word'$tagConflict)";
-		    $this->anyTag = true;
+		    $this->any |= self::ANY_TAG;
 		} else if ($type == "all") {
 		    $qp .= " or (alltags like '%#$word#%'$tagConflict)";
-		    $this->anyAlltags = true;
+		    $this->any |= self::ANY_ALLTAGS;
 		} else {
 		    $qp .= " or (alltags is not null and alltags like '%#$word#%'$tagConflict)";
-		    $this->anyAlltags = true;
+		    $this->any |= self::ANY_ALLTAGS;
 		}
 	    }
 	    if (($special ? $special == "outcome" : isset($this->fields['outcome'])) && $this->amPC) {
@@ -191,7 +225,7 @@ class PaperSearch {
 		foreach ($rf->topicName as $tid => $n)
 		    if (strstr(strtolower($n), $x) !== false) {
 			$qp .= " or (topicIds like '%#$tid#%')";
-			$this->anyTopics = true;
+			$this->any |= self::ANY_TOPICS;
 		    }
 	    }
 	    
@@ -239,13 +273,34 @@ class PaperSearch {
 	else if ($this->limitName == "req")
 	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.requestedBy=" . $this->contactId . " and Limiter.reviewType=" . REVIEW_REQUESTED . ")";
 
-	if ($this->anyReviewer)
-	    $q .= " left join (select paperId, group_concat(firstName, lastName, email) as reviewerInfo, count(reviewId) as numReviews from PaperReview join ContactInfo using (contactId) where reviewNeedsSubmit=1 or reviewSubmitted>0 group by paperId) as ReviewerInfo on (ReviewerInfo.paperId=Paper.paperId)";
-	if ($this->anyTag)
+	if ($this->any & (self::ANY_REVIEWER | self::ANY_NUM_REVIEW)) {
+	    $q .= " left join (select paperId";
+	    if ($this->any & self::ANY_REVIEWER)
+		$q .= ", group_concat(firstName, lastName, email) as reviewerInfo";
+	    if ($this->any & self::ANY_NUM_REVIEW)
+		$q .= ", count(reviewId) as numReviews";
+	    $q .= " from PaperReview join ContactInfo using (contactId)
+		where reviewNeedsSubmit=1 or reviewSubmitted>0
+		group by paperId) as ReviewerInfo
+		on (ReviewerInfo.paperId=Paper.paperId)";
+	}
+
+	if ($this->any & (self::ANY_SUB_REVIEWER | self::ANY_SUB_NUM_REVIEW)) {
+	    $q .= " left join (select paperId";
+	    if ($this->any & self::ANY_SUB_REVIEWER)
+		$q .= ", group_concat(firstName, lastName, email) as reviewerInfoSub";
+	    if ($this->any & self::ANY_SUB_NUM_REVIEW)
+		$q .= ", count(reviewId) as numReviewsSub";
+	    $q .= " from PaperReview join ContactInfo using (contactId)
+		where reviewSubmitted>0	group by paperId) as SubReviewerInfo
+		on (SubReviewerInfo.paperId=Paper.paperId)";
+	}
+
+	if ($this->any & self::ANY_TAG)
 	    $q .= " left join PaperTag on (PaperTag.paperId=Paper.paperId)";
-	if ($this->anyAlltags)
+	if ($this->any & self::ANY_ALLTAGS)
 	    $q .= " left join (select paperId, group_concat('#', tag, '#') as alltags from PaperTag group by paperId) as AllPaperTags on (AllPaperTags.paperId=Paper.paperId)";
-	if ($this->anyTopics)
+	if ($this->any & self::ANY_TOPICS)
 	    $q .= " left join (select paperId, group_concat('#', topicId, '#') as topicIds from PaperTopic group by paperId) as AllPaperTopics on (AllPaperTopics.paperId=Paper.paperId)";
 
 	if ($res[0])
@@ -269,14 +324,19 @@ class PaperSearch {
     }
 
     function simplePaperList() {
-	if (!$this->qa && !$this->qx && preg_match('/^\s*\d[\d\s]*$/s', $this->q)) {
+	if (!$this->qa && !$this->qx && preg_match('/^\s*\d[-\d\s]*$/s', $this->q)) {
 	    $a = array();
 	    foreach (preg_split('/\s+/', $this->q) as $word)
-		if ($word != "")
+		if (ctype_digit($word))
 		    $a[] = $word;
+		else if (preg_match('/^(\d+)-(\d+)$/s', $word, $m)) {
+		    for ($i = $m[1]; $i <= $m[2]; $i++)
+			$a[] = $i;
+		} else
+		    return null;
 	    return $a;
 	} else if (!$this->qx && !$this->q && preg_match('/^\s*\d+\s*$/s', $this->qa))
-	    return array(trim($this-qa));
+	    return array(trim($this->qa));
 	else
 	    return null;
     }
