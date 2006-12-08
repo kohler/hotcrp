@@ -6,11 +6,11 @@ $searchTags = array('ti:' => 'ti', 'title:' => 'ti',
 		    'co:' => 'co', 'collab:' => 'co', 'collaborators:' => 'co',
 		    're:' => 're', 'rev:' => 're', 'review:' => 're',
 		    'sre:' => 'sre', 'srev:' => 'sre', 'sreview:' => 'sre',
+		    'cre:' => 'sre', 'crev:' => 'sre', 'creview:' => 'sre',
 		    'subre:' => 'sre', 'subrev:' => 'sre', 'subreview:' => 'sre',
 		    'tag:' => 'tag',
 		    'ord:' => 'order', 'order:' => 'order',
-		    'outcome:' => 'outcome', 'out:' => 'outcome',
-		    'decision:' => 'outcome', 'dec:' => 'outcome',
+		    'decision:' => 'decision', 'dec:' => 'decision',
 		    'topic:' => 'topic');
 
 class PaperSearch {
@@ -205,11 +205,13 @@ class PaperSearch {
 		    $this->any |= self::ANY_ALLTAGS;
 		}
 	    }
-	    if (($special ? $special == "outcome" : isset($this->fields['outcome'])) && $this->amPC) {
+	    if (($special ? $special == "decision" : isset($this->fields['decision'])) && $this->amPC) {
 		if (strcasecmp($word, "yes") == 0)
-		    $qp .= " or (outcome > 0)";
+		    $qp .= " or (outcome>0)";
 		else if (strcasecmp($word, "no") == 0)
-		    $qp .= " or (outcome < 0)";
+		    $qp .= " or (outcome<0)";
+		else if ($word == "?")
+		    $qp .= " or (outcome=0)";
 		else {
 		    $rf = reviewForm();
 		    foreach ($rf->options['outcome'] as $num => $what)

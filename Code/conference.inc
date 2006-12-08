@@ -1019,6 +1019,8 @@ class Conference {
 	    echo "<html>\n<head>\n";
 	    echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n";
 	    echo "<meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />\n";
+	    if (strstr($title, "<") !== false)
+		$title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
 	    echo "<title>", $title, " - ", $this->shortName, "</title>\n";
 	    echo "<script src=\"${ConfSiteBase}script.js\" type=\"text/javascript\"></script>\n";
 	    echo "<link rel='stylesheet' type='text/css' href='${ConfSiteBase}style.css' />\n";

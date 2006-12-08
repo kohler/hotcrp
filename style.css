@@ -364,9 +364,17 @@ td.rcaption {
 	padding: 3px 0.5em 3px 0em;
 	font-weight: bold;
 }
-td.xcaption {
+td.srcaption {
 	text-align: right;
-	padding: 3px 0.5em 3px 0em;
+	padding: 3px 0.75em 3px 0.75em;
+	font-weight: bold;
+}
+td.slcaption {
+	padding: 3px 0.75em 3px 0.75em;
+	font-weight: bold;
+}
+td.sentry {
+	padding: 3px 0.75em 3px 0.75em;
 }
 td.caption {
 	text-align: right;

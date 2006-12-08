@@ -403,7 +403,7 @@ $Search = new PaperSearch($Me, $_REQUEST);
 
 // set up the search form
 if (defval($_REQUEST["qx"], "") != "" || defval($_REQUEST["qa"], "") != ""
-    || defval($_REQUEST["qt"], "n") != "n")
+    || defval($_REQUEST["qt"], "n") != "n" || defval($_REQUEST["opt"], 0) > 0)
     $folded = 'unfolded';
 else
     $folded = 'folded';
@@ -477,54 +477,6 @@ echo "</select></td>
 </tr></table>\n</form>\n\n</div>\n";
 
 
-// search information
-if (defval($_REQUEST["x"], 0)) {
-    echo "<div class='help'><table><tr>
-  <td class='rcaption'>Listing all papers</td>
-  <td class='entry'>To list all papers in a search category, simply perform the search with no search terms.</td>
-</tr><tr>
-  <td class='rcaption'>Paging&nbsp;through&nbsp;results</td>
-  <td class='entry'>All paper screens have links in the upper right corner that let you page through the most recent search results:<br />
-  <img src='${ConfSiteBase}images/pageresultsex.png' alt='[Result paging example]' /><br />
-  Using these links can speed up many tasks.  Additionally, search matches are <span class='match'>highlighted</span> on the paper screens.  This makes it easier to tell whether a conflict is real, for example.</td>
-</tr><tr>
-  <td class='rcaption'>Quick search</td>
-  <td class='entry'>Most screens have a quick search box in the upper right corner:<br />
-  <img src='${ConfSiteBase}images/quicksearchex.png' alt='[Quick search example]' /><br />
-  Entering a single paper number, or any search term that matches exactly one paper, will take you directly to that paper.</td>
-</tr><tr>
-  <td class='rcaption'>Paper number search</td>
-  <td class='entry'>Enter a paper number to add that paper to the search results.<br />
-  Example: Search <span class='textlite'>1 2 3 4 5 6 7 8</span> will return papers 1-8.<br />
-  Example: Search <span class='textlite'>100 case</span> will return papers matching \"case\", plus paper 100.<br />
-  To actually search for a number in a paper's title, abstract, or whatever, put it in quotes: <span class='textlite'>\"119\"</span></td>
-</tr><tr>
-  <td class='rcaption'>Keywords</td>
-  <td class='entry'>  Keywords are <span class='textlite'>ti:</span> for titles,
-  <span class='textlite'>ab:</span> for abstracts,
-  <span class='textlite'>au:</span> for authors,
-  <span class='textlite'>co:</span> for collaborators,
-  <span class='textlite'>topic:</span> for paper topics,
-  <span class='textlite'>rev:</span> for reviewer names, emails, and counts,
-  <span class='textlite'>dec:</span> for decisions,
-  and <span class='textlite'>tag:</span> or <span class='textlite'>order:</span> for tags.<br />
-  Example: Search <span class='textlite'>ti:system</span> to find papers with \"System\" in the title.<br />
-  Example: Search <span class='textlite'>ab:\"very novel\"</span> to find papers with the phrase \"very novel\" in the abstract.</td>
-</tr><tr>
-  <td class='rcaption'>Paper actions</td>
-  <td class='entry'>To act on many papers at once, select their checkboxes and choose an action underneath the paper list.
-For example, to download a <tt>.zip</tt> file with all submitted papers, PC members can search for all submitted papers, choose the \"select all\" link, then \"Get: Papers\".  Pull down the menu to see what else you can do.
-The \"More &raquo;\" link allows PC members and chairs to add tags, set conflicts, set decisions, and so forth.  The easiest way to tag a set of papers is to enter their numbers in the search box, search, \"select all\", and add the tag.</td>
-</tr><tr>
-  <td class='rcaption'>Limitations</td>
-  <td class='entry'>Search won't show you information you aren't supposed to see.  For example, authors can only search their own submissions, and if the conference used anonymous submission, then only the PC chairs can search by author.</td>
-</tr></table>
-
-<p><b>
-</div>\n";
-}
-
-
 if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
     $pl = new PaperList(true, "list", $Search);
     $t = $pl->text($Search->limitName, $Me, ($Search->q || $Search->qa || $Search->qx ? "This search" : $tOpt[$Search->limitName]));
@@ -550,7 +502,8 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
     
     if ($pl->anySelector)
 	echo "</form>";
-    echo "</div>";
-}
+    echo "</div>\n";
+} else
+    echo "<div class='smgap'></div>\n";
 
 $Conf->footer();

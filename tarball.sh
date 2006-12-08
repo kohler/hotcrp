@@ -30,6 +30,7 @@ assign.php
 comment.php
 contactauthors.php
 deadlines.php
+help.php
 index.php
 login.php
 logout.php
