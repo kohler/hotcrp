@@ -217,7 +217,6 @@ if ($Me->isPC) {
 -- arrive at a consensus and determine discussion order of papers at PC meeting</li>\n";
     if ($Conf->timePCViewAllReviews()) {
 	echo "  <li><a href='PC/SeeAllGrades.php'>See overall merit and grades for all papers</a> -- you can get to reviews from here as well</li>\n";
-	echo "  <li><a href='PC/ListReviews.php'>Quickly see reviews</a> -- but only for papers which you do not have conflicts</li>\n";
 	echo "  <li><a href='PC/CheckOnPCProgress.php'>Spy On Your Neighbours</a> -- See progress of entire PC</li>\n";
 	echo "  <li><a href='Chair/SpotProblems.php'>Spot problems across all papers</a></li>\n";
 	echo "  <li><a href='Chair/AverageReviewerScore.php'>See average reviewer ratings</a> -- this compares the overall merit ratings of different reviewers</li>\n";

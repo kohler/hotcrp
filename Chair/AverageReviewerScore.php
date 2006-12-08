@@ -33,18 +33,15 @@ $Conf->toggleButton('showPC',
 print "</center>";
 
 
-if ($_REQUEST[showPC]) {
-  $extra = " AND ContactInfo.contactId=PCMember.contactId ";
-}
-
 $result=$Conf->qe("SELECT ContactInfo.firstName, ContactInfo.lastName,"
 		  . " ContactInfo.email, ContactInfo.contactId,"
 		  . " AVG(PaperReview.overAllMerit) as merit, "
 		  . " COUNT(PaperReview.reviewSubmitted) as count "
-		  . " FROM ContactInfo, PCMember "
-		  . " LEFT JOIN PaperReview using (contactId) "
-		  . " WHERE PaperReview.reviewSubmitted>0 $extra "
+		  . " FROM ContactInfo "
+		  . ($_REQUEST["showPC"] ? " join PCMember using (contactId) " : "")
+		  . " LEFT JOIN PaperReview on (PaperReview.reviewSubmitted>0 and PaperReview.contactId=ContactInfo.contactId) "
 		  . " GROUP BY ContactInfo.contactId "
+		  . " HAVING COALESCE(SUM(PaperReview.reviewSubmitted),0) > 0 "
 		  . " ORDER BY merit DESC, count DESC, merit DESC, ContactInfo.lastName "
 		  );
 
