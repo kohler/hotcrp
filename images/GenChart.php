@@ -85,8 +85,8 @@ for ($value = $valMin; $value < $valMax; $value++) {
 }
 
 if ($s == 0) {
-    ImageStringUp($pic, 2, 0, 40, "Bad", $cBlack);
-    ImageStringUp($pic, 2, $picWidth-$textWidth, 40, "Good", $cBlack);
+    ImageStringUp($pic, 2, 0, 30, "Bad", $cBlack);
+    ImageStringUp($pic, 2, $picWidth-$textWidth, 30, "Good", $cBlack);
 } else {
     if ($values[$valMin] == 0)
 	imagestring($pic, 1, $textWidth + $blockPad, $picHeight - $blockHeight - $blockSkip - 3, "L", $cgrey);
