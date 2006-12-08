@@ -31,7 +31,7 @@ echo "<table class='half'><tr><td class='l'>";
 
 // General information
 echo "<div class='bgrp'><div class='bgrp_head'>General</div><div class='bgrp_body'>
-Welcome, ", htmlspecialchars($Me->fullnameOrEmail()), ".  (If you're not ", htmlspecialchars($Me->fullnameOrEmail()), ", please <a href='${ConfSiteBase}logout.php'>sign out</a>.)  You will be automatically signed out if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.
+Welcome, ", htmlspecialchars($Me->fullnameOrEmail()), ".  (If this isn't you, please <a href='${ConfSiteBase}logout.php'>sign out</a>.)  You will be automatically signed out if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.
 
 <table class='half'><tr><td class='l'><ul class='compact'>
 <li><a href='account.php'>Your account settings</a></li>
@@ -45,7 +45,7 @@ if ($Me->amAssistant())
     echo "\n<div class='smgap'></div>
 <table class='half'><tr><td class='l'><ul class='compact'>
 <li><a href='account.php?new=1'>Create new account</a></li>
-<li><a href='Chair/BecomeSomeoneElse.php'>Act on someone else's behalf</a></li>
+<li><a href='Chair/BecomeSomeoneElse.php'>Sign in as someone else</a></li>
 </ul></td><td class='r'><ul class='compact'>
 <li><a href='Chair/SendMail.php'>Send users mail</a></li>
 <li><a href='Chair/ViewActionLog.php'>View action log</a></li>

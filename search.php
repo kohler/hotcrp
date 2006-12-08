@@ -500,17 +500,16 @@ if (defval($_REQUEST["x"], 0)) {
   To actually search for a number in a paper's title, abstract, or whatever, put it in quotes: <span class='textlite'>\"119\"</span></td>
 </tr><tr>
   <td class='rcaption'>Keywords</td>
-  <td class='entry'>Change the search type for a word or phrase by preceding it with a search keyword.<br />
-  Example: Search <span class='textlite'>ti:system</span> to find papers with \"System\" in the title.<br />
-  Example: Search <span class='textlite'>ab:\"very novel\"</span> to find papers with the phrase \"very novel\" in the abstract.<br />
-  Keywords are <span class='textlite'>ti:</span> for titles,
+  <td class='entry'>  Keywords are <span class='textlite'>ti:</span> for titles,
   <span class='textlite'>ab:</span> for abstracts,
   <span class='textlite'>au:</span> for authors,
   <span class='textlite'>co:</span> for collaborators,
   <span class='textlite'>topic:</span> for paper topics,
   <span class='textlite'>rev:</span> for reviewer names, emails, and counts,
   <span class='textlite'>dec:</span> for decisions,
-  and <span class='textlite'>tag:</span> or <span class='textlite'>order:</span> for tags.</td>
+  and <span class='textlite'>tag:</span> or <span class='textlite'>order:</span> for tags.<br />
+  Example: Search <span class='textlite'>ti:system</span> to find papers with \"System\" in the title.<br />
+  Example: Search <span class='textlite'>ab:\"very novel\"</span> to find papers with the phrase \"very novel\" in the abstract.</td>
 </tr><tr>
   <td class='rcaption'>Paper actions</td>
   <td class='entry'>To act on many papers at once, select their checkboxes and choose an action underneath the paper list.

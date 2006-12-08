@@ -141,8 +141,8 @@ while($pcdata=$rpc->fetchRow(MDB2_FETCHMODE_ASSOC)) {
   // Version using regexp..
   //
 
-  $qc = "SELECT paperId, title, authorInformation, collaborators, Paper.contactId FROM Paper "
-     . " WHERE Paper.contactId=$contactId "
+  $qc = "SELECT Paper.paperId, title, authorInformation, collaborators, PaperConflict.contactId FROM Paper LEFT JOIN PaperConflict ON (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId and PaperConflict.conflictType=" . CONFLICT_AUTHOR . ") "
+     . " WHERE PaperConflict.contactId IS NOT NULL "
     . " OR Paper.authorInformation REGEXP '$sqlsearchstr'"
     . " OR Paper.collaborators REGEXP '$sqlcollabsearchstr' "
     // . " OR (Paper.abstract REGEXP '$searchstr') "

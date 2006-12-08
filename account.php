@@ -5,6 +5,7 @@ $Me->goIfInvalid();
 $RealMe = $Me;
 $newProfile = false;
 
+
 if (!$Me->amAssistant())
     /* always this contact */;
 else if (isset($_REQUEST["new"])) {
@@ -33,7 +34,7 @@ if (isset($_REQUEST["register"])) {
 	    $Conf->errorMsg("Required form fields missing.");
 	    $OK = 0;
 	}
- }
+}
 
 if (isset($_REQUEST['register']) && $OK) {
     $_REQUEST["uemail"] = trim($_REQUEST["uemail"]);
@@ -154,7 +155,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
  }
 
 
-echo "<form class='updateProfile' method='post' action='account.php'>\n";
+echo "<form method='post' action='account.php'>\n";
 if ($newProfile)
     echo "<input type='hidden' name='new' value='1' />\n";
 else if ($Me->contactId != $RealMe->contactId)
@@ -203,6 +204,10 @@ echo "<tr>
 </tr>\n\n";
 
 
+if ($Me->isPC || $newProfile)
+    echo "<tr><td class='caption'></td><td colspan='4' class='entry'><div class='smgap'></div><strong>Program committee-specific information</strong></td></tr>\n";
+
+
 if ($newProfile || $RealMe->contactId != $Me->contactId) {
     echo "<tr>
   <td class='caption'>Roles</td>
@@ -214,11 +219,6 @@ if ($newProfile || $RealMe->contactId != $Me->contactId) {
 	echo "onclick='doRole(this)' />&nbsp;", $value, "&nbsp;&nbsp;\n";
     }
     echo "  </td>\n</tr>\n\n";
-
-    echo "<tr>
-  <td></td>
-  <td colspan='4'><hr/><strong>PC/Reviewer Information</td>
-</tr>\n\n";
 }
 
 
@@ -264,14 +264,24 @@ Zhang, Ping Yen (INRIA)
 }
 
 
-echo "<tr>
-  <td class='caption'></td>
+echo "<tr><td class='caption'></td>
   <td class='entry'><input class='button_default' type='submit' value='",
     ($newProfile ? "Create Account" : "Save Changes"),
     "' name='register' /></td>
 </tr>
+</table></form>";
 
-</table>
-</form>\n";
 
+// if (!$newAccount) {
+//     echo "<form method='post' action='account.php'>\n";
+//     if ($Me->contactId != $RealMe->contactId)
+// 	echo "<input type='hidden' name='contact' value='$Me->contactId' />\n";
+//     echo "<table>
+// <tr><td class='caption'></td><td class='entry'><div class='smgap'></div>
+//   <h2>Merge accounts</h2></td></tr>\n";
+//     echo "</table></form>";
+// }
+
+
+echo "\n";
 $Conf->footer();

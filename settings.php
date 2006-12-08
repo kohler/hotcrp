@@ -316,7 +316,7 @@ echo "</div></div>\n\n";
 
 // Paper topics
 $rf = reviewForm();
-echo "<div class='bgrp ", (count($rf->topicName) ? "folded" : "unfolded"), "' id='foldtopic'><div class='bgrp_head'><a href=\"javascript:fold('topic', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('topic', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;Paper topics</div><div class='bgrp_body extension'>\n";
+echo "<div class='bgrp ", (count($rf->topicName) && defval($Conf->settings["sub_open"]) ? "folded" : "unfolded"), "' id='foldtopic'><div class='bgrp_head'><a href=\"javascript:fold('topic', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('topic', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;Paper topics</div><div class='bgrp_body extension'>\n";
 echo "<table>";
 $td1 = "<td class='rcaption'>Current</td>";
 foreach ($rf->topicOrder as $tid => $crap) {

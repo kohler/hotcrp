@@ -322,6 +322,13 @@ td.caption a.foldbutton {
 	border-bottom: 1px solid #999966;
 	border-right: 1px solid #999966;
 }
+div.bgrp_head a.foldbutton {
+	background: #ececff; /*#c6cdf8;*/
+	border-top: 1px solid #ccccff;
+	border-left: 1px solid #ccccff;
+	border-bottom: 1px solid #666699;
+	border-right: 1px solid #666699;
+}
 a.rev_past {
 	font-size: small;
 	font-weight: bold;
