@@ -426,12 +426,11 @@ echo "
 
 <div id='foldq' class='$folded' style='text-align: center'>
 <form method='get' action='search.php'>
-<span class='ellipsis nowrap'><b>Search:</b>&nbsp; $tselect&nbsp; for&nbsp;
-  <input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /> &nbsp;
+<table class='advsearch ellipsis'><tr><td><span class='ellipsis nowrap'><b>Search:</b>&nbsp; $tselect&nbsp; for&nbsp; </td>
+  <td><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /> &nbsp;
   <input class='button' type='submit' name='go' value='Go' /> <span class='sep'></span>
   <a class='unfolder' href=\"javascript:fold('q', 0)\">Options &raquo;</a> <span class='sep'></span>
-  <a href='help.php?t=syntax'>Help</a>
-</span>
+  <a href='help.php?t=search'>Help</a></td></tr></table>
 </form>
 
 <form method='get' action='search.php'>
