@@ -15,8 +15,11 @@ if (!isset($topicTitles[$topic]))
 
 $abar = "<table class='vubar'><tr><td><table><tr>\n";
 $abar .= actionTab("Help topics", "help.php?t=topics", $topic == "topics");
-$abar .= actionTab("Search syntax", "help.php?t=syntax", $topic == "syntax");
-if ($topic != "topics" && $topic != "syntax")
+if ($topic == "search" || $topic == "syntax")
+    $abar .= actionTab("Search help", "help.php?t=search", $topic == "search");
+if ($topic == "search" || $topic == "syntax")
+    $abar .= actionTab("Search syntax", "help.php?t=syntax", $topic == "syntax");
+if ($topic != "topics" && $topic != "search" && $topic != "syntax")
     $abar .= actionTab($topicTitles[$topic], "help.php?t=$topic", true);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper' nowrap='nowrap'>" . goPaperForm() . "</td></tr></table>\n";
 
@@ -108,8 +111,6 @@ function _searchQuickrefRow($caption, $search, $explanation) {
 function searchQuickref() {
     global $rowidx;
     echo "<table>\n";
-    echo "<tr class='k0'><td class='srcaption nowrap'></td><td class='sentry nowrap' colspan='2'><a href='help.php?t=search'><b>General search help</b></a></td></tr>\n";
-    $rowidx = 0;
     _searchQuickrefRow("Basics", "story", "\"story\" in title, abstract, possibly authors");
     _searchQuickrefRow("", "119", "paper #119");
     _searchQuickrefRow("", "1 2 5 12-24 kernel", "the numbered papers, plus papers with \"kernel\" in title, abstract, possibly authors");
@@ -184,7 +185,7 @@ the order by editing the tag numbers.
 <a href='${ConfSiteBase}search.php'>search screen</a>.  Search for the
 papers you want, sort them into the right order, select them, and
 choose <b>Define ordered</b> in the tag action area.  If no sort order
-gives the order you want, just type the paper numbers in order into the
+gives the order you want, just enter the paper numbers in order into the
 search box; for instance, search for \"<a href='${ConfSiteBase}search.php?q=4+1+12+9'>4 1 12 19</a>\".</p>");
     echo "</table>\n";
 }

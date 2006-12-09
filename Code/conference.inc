@@ -17,6 +17,7 @@ class Conference {
     var $saveMessages;
     var $headerPrinted;
     var $tableMessages;
+    var $bodyexpander;
 
     //
     // Useful colors
@@ -39,7 +40,7 @@ class Conference {
 
 	$this->saveMessages = true;
 	$this->headerPrinted = 0;
-	$this->tableMessages = false;
+	$this->tableMessages = $this->bodyexpander = false;
 	
 	$this->contactName = $Opt['contactName'];
 	$this->contactEmail = $Opt['contactEmail'];
@@ -1070,14 +1071,18 @@ class Conference {
 	$this->headerPrinted = 2;
     }
 
+    function expandBody() {
+	print "<div class='bodyexpander'>";
+	$this->bodyexpander = true;
+    }
+
     function footer() {
 	global $ConfSiteBase;
 
 	if ($this->tableMessages)
 	    echo "</table>\n\n";
-	
-	// Output standard footer - button to go to main submission
-	// site, button to close & pointer to CRP at sourceforge
+	if ($this->bodyexpander)
+	    echo "</div>";
 	echo "</div>\n"; // <div class='body'>
 	echo "<div id='footer'>\n";
 	echo "  <div id='footer_crp'><a href='http://crp.sourceforge.net/'>HotCRP</a> Conference Management Software</div>\n";

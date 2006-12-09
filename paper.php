@@ -18,6 +18,7 @@ function confHeader() {
     if ($mode == "edit")
 	$title = "Edit $title";
     $Conf->header($title, "paper_" . $mode, actionBar($prow, $newPaper, $mode), false);
+    $Conf->expandBody();
 }
 
 function errorMsgExit($msg) {
@@ -448,7 +449,6 @@ else
 
 // page header
 confHeader();
-echo "<div class='bodyexpander'>";
 
 
 // begin table
@@ -647,5 +647,4 @@ if ($mode == "edit")
 echo "<div class='clear'></div>\n\n";
 
 
-echo "</div>"; /* bodyexpander */
 $Conf->footer();

@@ -15,6 +15,7 @@ function confHeader() {
     else
 	$title = "Paper Comments";
     $Conf->header($title, "comment", actionBar($prow, false, "comment"), false);
+    $Conf->expandBody();
 }
 
 function errorMsgExit($msg) {
@@ -141,7 +142,6 @@ else
 
 // page header
 confHeader();
-echo "<div class='bodyexpander'>";
 
 
 // begin table
@@ -319,5 +319,4 @@ else {
 }
 
 
-echo "</div>"; /* bodyexpander */
 $Conf->footer();

@@ -13,6 +13,7 @@ function confHeader() {
     global $prow, $Conf, $ConfSiteBase;
     $title = ($prow ? "Paper #$prow->paperId Review Assignments" : "Paper Review Assignments");
     $Conf->header($title, "assign", actionBar($prow, false, "assign"), false);
+    $Conf->expandBody();
 }
 
 function errorMsgExit($msg) {
@@ -54,7 +55,6 @@ getProw();
 
 
 confHeader();
-echo "<div class='bodyexpander'>";
 
 
 if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
@@ -397,5 +397,4 @@ echo "</td>\n</tr>\n\n";
 echo "</table>\n\n";
 
 
-echo "</div>"; /* bodyexpander */
 $Conf->footer();

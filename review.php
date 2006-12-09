@@ -17,6 +17,7 @@ function confHeader() {
     else
 	$title = "Paper Reviews";
     $Conf->header($title, "review", actionBar($prow, false, "review"), false);
+    $Conf->expandBody();
 }
 
 function errorMsgExit($msg) {
@@ -271,7 +272,6 @@ if (isset($_REQUEST["settags"])) {
 
 // page header
 confHeader();
-echo "<div class='bodyexpander'>";
 
 
 // begin table
@@ -524,5 +524,4 @@ if ($mode == "view" && !$rrow) {
     reviewView($prow, $rrow, $mode == "edit");
 
 
-echo "</div>"; /* bodyexpander */
 $Conf->footer();
