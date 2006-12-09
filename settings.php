@@ -29,6 +29,7 @@ $SettingText = array(
 	"tag_chair" => "Chair tags",
 	"au_seerev" => "Allow authors to see reviews setting",
 	"au_seedec" => "Allow authors to see decisions setting",
+	"rev_seedec" => "Allow reviewers to see decisions setting",
 	"final_open" => "Collect final copies setting",
 	"final_done" => "Final copy upload deadline"
 	);
@@ -139,6 +140,7 @@ if (isset($_REQUEST["update"])) {
     accountValue("extrev_view", 2, $q);
     accountValue("au_seerev", "check", $q);
     accountValue("au_seedec", "check", $q);
+    accountValue("rev_seedec", "check", $q);
     accountValue("final_open", "check", $q);
     accountValue("final_grace", "grace", $q);
     accountValue("resp_open", "check", $q);
@@ -347,6 +349,7 @@ echo "</table></td></tr></table>";
 
 echo "<div class='smgap'></div>\n";
 doCheckbox('au_seedec', '<b>Allow authors to see decisions</b> (accept/reject)');
+doCheckbox('rev_seedec', 'Allow reviewers to see decisions and accepted authors');
 
 echo "</div></div>\n\n";
 

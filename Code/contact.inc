@@ -555,7 +555,7 @@ class Contact {
 	    || ($prow->timeSubmitted > 0
 		&& ($this->isPC || $prow->reviewType > 0)
 		&& !$prow->blind)
-	    || (paperAccepted($prow)
+	    || ($prow->outcome > 0
 		&& ($this->isPC || $prow->reviewType > 0)
 		&& $conf->timeReviewerViewAcceptedAuthors()))
 	    return true;

@@ -395,10 +395,6 @@ function goPaperForm($baseUrl = "paper.php", $args = array()) {
     return $x;
 }
 
-function paperAccepted($prow) {
-    return $prow->outcome > 0;
-}
-
 function textArrayJoin($arr) {
     if (count($arr) == 1)
 	return $arr[0];

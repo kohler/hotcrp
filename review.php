@@ -280,7 +280,8 @@ echo "<table class='paper'>\n\n";
 
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, $forceShow);
-$paperTable = new PaperTable(false, false, true, ($Me->amAssistant() && $prow->blind ? 1 : 2));
+$authorsFolded = (!$canViewAuthors && $Me->amAssistant() && $prow->blind ? 1 : 2);
+$paperTable = new PaperTable(false, false, true, $authorsFolded);
 
 
 // title
