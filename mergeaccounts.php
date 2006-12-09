@@ -60,7 +60,8 @@ If you suspect something fishy, contact the site administrator at\n\
 	    $oldid = $MiniMe->contactId;
 	    $newid = $Me->contactId;
 	    
-	    crpmergeone("Paper", "contactId", $oldid, $newid);
+	    crpmergeone("Paper", "leadContactId", $oldid, $newid);
+	    crpmergeone("Paper", "shepherdContactId", $oldid, $newid);
 	    crpmergeone("PaperConflict", "contactId", $oldid, $newid);
 	    crpmergeonex("PCMember", "contactId", $oldid, $newid);
 	    crpmergeonex("ChairAssistant", "contactId", $oldid, $newid);

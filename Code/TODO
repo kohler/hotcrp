@@ -1,4 +1,5 @@
 + comments: allow chair view if conflicted
+- comments: allow chair to enter if conflicted
 + global tag application
 - "Email author?" on change
 - simplifyWhitespace on author information

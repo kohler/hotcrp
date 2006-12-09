@@ -78,6 +78,9 @@ images/ass3n.png
 images/ass4.png
 images/ass4n.png
 images/bendulft.png
+images/extagsnone.png
+images/extagssearch.png
+images/extagsset.png
 images/info45.png
 images/next.png
 images/pageresultsex.png

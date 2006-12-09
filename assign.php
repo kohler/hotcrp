@@ -6,6 +6,7 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $_REQUEST["forceShow"] = 1;
 $rf = reviewForm();
+$PC = pcMembers();
 
 
 // header
@@ -262,6 +263,25 @@ if (isset($_REQUEST['addpc']) && $Me->amAssistant()) {
 }
 
 
+// set lead/shepherd
+function _setLeadOrShepherd($type) {
+    global $Conf, $Me, $prow;
+    $email = defval($_REQUEST[$type], "");
+    $row = ($email === "0" ? 0 : pcByEmail($email));
+    if ($row === null)
+	$Conf->errorMsg("Suggested $type '" . htmlspecialchars($email) . "' is not a valid PC member.");
+    else {
+	$Conf->qe("update Paper set ${type}ContactId=" . ($email ? $row->contactId : 0) . " where paperId=$prow->paperId", "while updating $type");
+	$Conf->log("set $type to $email", $Me, $prow->paperId);
+	getProw();
+    }
+}
+if (isset($_REQUEST["setlead"]))
+    _setLeadOrShepherd("lead");
+if (isset($_REQUEST["setshepherd"]))
+    _setLeadOrShepherd("shepherd");
+
+
 // begin form and table
 echo "<form action='assign.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>
 <table class='assign'>\n\n";
@@ -360,6 +380,44 @@ if ($Me->amAssistant()) {
 }
 
 
+// discussion lead
+function _pcSelector($name, $current) {
+    global $PC;
+    echo "<select name='$name'>";
+    if (!$current || !isset($PC[$current]))
+	$current = 0;
+    echo "<option value='0'", ($current == 0 ? " selected='selected'" : ""), ">None</option>";
+    foreach ($PC as $id => $row)
+	echo "<option value=\"", htmlspecialchars($row->email), "\"", ($current == $id ? " selected='selected'" : ""), ">", contactHtml($row->firstName, $row->lastName), "</option>";
+    echo "</select>";
+}
+
+if ($Me->amAssistant() || ($Me->isPC && $prow->leadContactId && isset($PC[$prow->leadContactId]))) {
+    echo "<tr><td class='caption'>Discussion lead</td><td class='entry'>";
+    if ($Me->amAssistant()) {
+	_pcSelector("lead", $prow->leadContactId);
+	echo " &nbsp;<input type='submit' class='button_small' name='setlead' value='Set lead' />";
+    } else 
+	echo contactHtml($PC[$prow->leadContactId]->firstName,
+			 $PC[$prow->leadContactId]->lastName);
+    echo "</td></tr>\n";
+}
+
+
+// shepherd
+if (($prow->outcome > 0 && $Me->amAssistant())
+    || ($Me->isPC && $prow->shepherdContactId && isset($PC[$prow->shepherdContactId]))) {
+    echo "<tr><td class='caption'>Shepherd</td><td class='entry'>";
+    if ($Me->amAssistant()) {
+	_pcSelector("shepherd", $prow->shepherdContactId);
+	echo " &nbsp;<input type='submit' class='button_small' name='setshepherd' value='Set shepherd' />";
+    } else 
+	echo contactHtml($PC[$prow->shepherdContactId]->firstName,
+			 $PC[$prow->shepherdContactId]->lastName);
+    echo "</td></tr>\n";
+}
+
+
 // reviewer information
 $revTable = reviewTable($prow, $rrows, null, "assign");
 $revTableClass = (preg_match("/<th/", $revTable) ? "rev_reviewers_hdr" : "rev_reviewers");
@@ -368,8 +426,7 @@ echo "  <td class='caption'>Reviews</td>\n";
 echo "  <td class='entry'>", ($revTable ? $revTable : "None");
 
 // add reviewers
-$Conf->infoMsg("External reviewers are given access to those papers assigned
- to them for review, including "
+$Conf->infoMsg("External reviewers get access to their assigned papers, including "
 	       . ($Conf->settings["extrev_view"] >= 2 ? "the other reviewers' identities and " : "")
 	       . "any eventual decision.  Before requesting an external review,
  you should generally check personally whether they are interested.");
@@ -377,8 +434,7 @@ $Conf->infoMsg("External reviewers are given access to those papers assigned
 
 echo "<table class='reviewers'>\n";
 
-echo "    <tr><td>
-	<input class='textlite' type='text' name='name' value=\"";
+echo "    <tr><td nowrap='nowrap'><input class='textlite' type='text' name='name' value=\"";
 echo (isset($_REQUEST['name']) ? htmlspecialchars($_REQUEST['name']) : "Name");
 echo "\" onfocus=\"tempText(this, 'Name', 1)\" onblur=\"tempText(this, 'Name', 0)\" />
 	<input class='textlite' type='text' name='email' value=\"";

@@ -83,6 +83,8 @@ CREATE TABLE `Paper` (
   `blind` tinyint(1) NOT NULL default '1',
   `authorsResponse` mediumtext,
   `outcome` tinyint(1) NOT NULL default '0',
+  `leadContactId` int(11) NOT NULL default '0',
+  `shepherdContactId` int(11) NOT NULL default '0',
   # next 3 fields copied from PaperStorage to reduce joins
   `size` int(11) NOT NULL default '0',
   `mimetype` varchar(40) NOT NULL default '',
@@ -95,7 +97,10 @@ CREATE TABLE `Paper` (
   KEY `title` (`title`),
   FULLTEXT KEY `titleAbstractText` (`title`,`abstract`),
   FULLTEXT KEY `allText` (`title`,`abstract`,`authorInformation`,`collaborators`),
-  FULLTEXT KEY `authorText` (`authorInformation`,`collaborators`)
+  FULLTEXT KEY `authorText` (`authorInformation`,`collaborators`),
+  KEY `timeSubmitted` (`timeSubmitted`),
+  KEY `leadContactId` (`leadContactId`),
+  KEY `shepherdContactId` (`shepherdContactId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 

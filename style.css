@@ -286,7 +286,6 @@ input.button_small, a.button_small, button.button_small {
 	border-right: 2px solid #999966;
 	text-decoration: none;
 	color: black;
-	margin: 3px 0px;
 	white-space: nowrap;
 }
 a.button_small {

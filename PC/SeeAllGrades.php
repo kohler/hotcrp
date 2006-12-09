@@ -53,6 +53,7 @@ if ($_SESSION["GradeSortKey"]=="byReviews") {
 		    . " LEFT JOIN PaperReview "
 		    . " ON PaperReview.paperId=Paper.paperId "
 		    . " WHERE PaperReview.reviewSubmitted>0 "
+		    . " AND Paper.timeSubmitted>0 "
 		    . " GROUP BY PaperReview.paperId "
 		    . " ORDER BY merit DESC, Paper.paperId "
 		    );
@@ -64,6 +65,7 @@ if ($_SESSION["GradeSortKey"]=="byReviews") {
 		    . " FROM Paper "
 		    . " LEFT JOIN PaperGrade "
 		    . " ON PaperGrade.paperId=Paper.paperId "
+		    . " AND Paper.timeSubmitted>0 "
 		    . " GROUP BY PaperGrade.paperId "
 		    . " ORDER BY merit DESC, Paper.paperId "
 		    );
@@ -72,6 +74,7 @@ if ($_SESSION["GradeSortKey"]=="byReviews") {
   $Conf->infoMsg("Sorting By Paper Number");
   $result=$Conf->qe("SELECT Paper.paperId, Paper.title "
 		    . " FROM Paper "
+		    . " WHERE Paper.timeSubmitted>0 "
 		    . " ORDER BY Paper.paperId "
 		    );
 

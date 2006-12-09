@@ -290,6 +290,11 @@ $paperTable->echoTitle($prow);
 echo "</h2></td>\n</tr>\n\n";
 
 
+// can we view/edit reviews?
+$viewAny = $Me->canViewReview($prow, null, $Conf, $whyNotView);
+$editAny = $Me->canReview($prow, null, $Conf, $whyNotEdit);
+
+
 // paper data
 $paperTable->echoStatusRow($prow, PaperTable::STATUS_DOWNLOAD | PaperTable::STATUS_CONFLICTINFO_PC);
 $paperTable->echoAbstractRow($prow);
@@ -299,16 +304,18 @@ if ($canViewAuthors || $Me->amAssistant()) {
     $paperTable->echoCollaborators($prow);
 }
 $paperTable->echoTopics($prow);
-if ($Me->isPC)
+if ($Me->isPC && ($prow->conflictType == 0 || ($Me->amAssistant() && $forceShow)))
     $paperTable->echoTags($prow, "${ConfSiteBase}review.php?paperId=$prow->paperId");
 if ($Me->amAssistant())
     $paperTable->echoPCConflicts($prow);
+if ($Me->isPC && ($prow->conflictType == 0 || ($Me->amAssistant() && $forceShow)))
+    $paperTable->echoLead($prow);
+if ($viewAny)
+    $paperTable->echoShepherd($prow);
 
 
 // can we see any reviews?
 $Conf->tableMsg(1);
-$viewAny = $Me->canViewReview($prow, null, $Conf, $whyNotView);
-$editAny = $Me->canReview($prow, null, $Conf, $whyNotEdit);
 if (!$viewAny && !$editAny)
     errorMsgExit("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
 

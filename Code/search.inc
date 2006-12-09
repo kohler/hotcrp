@@ -11,7 +11,9 @@ $searchTags = array('ti:' => 'ti', 'title:' => 'ti',
 		    'tag:' => 'tag',
 		    'ord:' => 'order', 'order:' => 'order',
 		    'decision:' => 'decision', 'dec:' => 'decision',
-		    'topic:' => 'topic');
+		    'topic:' => 'topic',
+		    'lead:' => 'lead',
+		    'shepherd:' => 'shepherd', 'shep:' => 'shepherd');
 
 class PaperSearch {
 
@@ -22,6 +24,8 @@ class PaperSearch {
     const ANY_TAG = 16;
     const ANY_ALLTAGS = 32;
     const ANY_TOPICS = 64;
+    const ANY_LEAD = 128;
+    const ANY_SHEPHERD = 256;
     
     var $contactId;
     var $amAssistant;
@@ -240,6 +244,20 @@ class PaperSearch {
 			$this->any |= self::ANY_TOPICS;
 		    }
 	    }
+	    if (($special ? $special == "lead" : isset($this->fields['lead'])) && $this->amPC) {
+		$this->any |= self::ANY_LEAD;
+		if ($type != "none")
+		    $qp .= " or (leadInfo like '%$word%')";
+		else
+		    $qp .= " or (leadInfo is not null and leadInfo like '%$word%')";
+	    }
+	    if ($special ? $special == "shepherd" : isset($this->fields['shepherd'])) {
+		$this->any |= self::ANY_SHEPHERD;
+		if ($type != "none")
+		    $qp .= " or (shepherdInfo like '%$word%')";
+		else
+		    $qp .= " or (shepherdInfo is not null and shepherdInfo like '%$word%')";
+	    }
 	    
 	    if ($qp)
 		$q .= $qjoin . "(" . substr($qp, 4) . ")";
@@ -288,7 +306,7 @@ class PaperSearch {
 	if ($this->any & (self::ANY_REVIEWER | self::ANY_NUM_REVIEW)) {
 	    $q .= " left join (select paperId";
 	    if ($this->any & self::ANY_REVIEWER)
-		$q .= ", group_concat(firstName, lastName, email) as reviewerInfo";
+		$q .= ", group_concat(firstName, ' ', lastName, ' ', email) as reviewerInfo";
 	    if ($this->any & self::ANY_NUM_REVIEW)
 		$q .= ", count(reviewId) as numReviews";
 	    $q .= " from PaperReview join ContactInfo using (contactId)
@@ -300,7 +318,7 @@ class PaperSearch {
 	if ($this->any & (self::ANY_SUB_REVIEWER | self::ANY_SUB_NUM_REVIEW)) {
 	    $q .= " left join (select paperId";
 	    if ($this->any & self::ANY_SUB_REVIEWER)
-		$q .= ", group_concat(firstName, lastName, email) as reviewerInfoSub";
+		$q .= ", group_concat(firstName, ' ', lastName, ' ', email) as reviewerInfoSub";
 	    if ($this->any & self::ANY_SUB_NUM_REVIEW)
 		$q .= ", count(reviewId) as numReviewsSub";
 	    $q .= " from PaperReview join ContactInfo using (contactId)
@@ -308,6 +326,11 @@ class PaperSearch {
 		on (SubReviewerInfo.paperId=Paper.paperId)";
 	}
 
+	if ($this->any & self::ANY_LEAD)
+	    $q .= " left join (select paperId, concat(firstName, ' ', lastName, ' ', email) as leadInfo from Paper join ContactInfo on (Paper.leadContactId=ContactInfo.contactId)) as LeadInfo on (LeadInfo.paperId=Paper.paperId)";
+	if ($this->any & self::ANY_SHEPHERD)
+	    $q .= " left join (select paperId, concat(firstName, ' ', lastName, ' ', email) as shepherdInfo from Paper join ContactInfo on (Paper.shepherdContactId=ContactInfo.contactId)) as ShepherdInfo on (ShepherdInfo.paperId=Paper.paperId)";
+	
 	if ($this->any & self::ANY_TAG)
 	    $q .= " left join PaperTag on (PaperTag.paperId=Paper.paperId)";
 	if ($this->any & self::ANY_ALLTAGS)

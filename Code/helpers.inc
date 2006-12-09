@@ -799,3 +799,11 @@ function pcMembers() {
     }
     return $_SESSION["pcmembers"][1];
 }
+
+function pcByEmail($email) {
+    $pc = pcMembers();
+    foreach ($pc as $id => $row)
+	if ($row->email == $email)
+	    return $row;
+    return null;
+}

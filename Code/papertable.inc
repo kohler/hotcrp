@@ -298,11 +298,37 @@ Zhang, Ping Yen (INRIA)</pre>";
 		where paperId=$prow->paperId group by ContactInfo.contactId";
 	$result = $Conf->qe($q, "while finding conflicted PC members");
 	if (!MDB2::isError($result)) {
-	    while ($row = $result->fetchRow())
-		$pcConflicts[] = "$row[0] $row[1]";
+	    while (($row = $result->fetchRow()))
+		$pcConflicts[] = contactHtml($row[0], $row[1]);
+	    if ($prow->pcPaper)
+		$pcConflicts[] = "<b>PC paper</b>";
 	    if (!isset($pcConflicts))
 		$pcConflicts[] = "None";
-	    echo "<tr class='pt_conflict'>\n  <td class='caption'>PC conflicts</td>\n  <td class='entry'>", authorTable($pcConflicts), "</td>\n</tr>\n\n";
+	    echo "<tr class='pt_conflict'>\n  <td class='caption'>PC conflicts</td>\n  <td class='entry'>", authorTable($pcConflicts, false), "</td>\n</tr>\n\n";
+	}
+    }
+
+    function echoLead($prow) {
+	if ($prow->leadContactId) {
+	    $pc = pcMembers();
+	    echo "<tr class='pt_conflict'><td class='caption'>Discussion lead</td><td class='entry'>";
+	    if (($row = defval($pc[$prow->leadContactId], null)))
+		echo contactHtml($row->firstName, $row->lastName);
+	    else
+		echo "(Unknown contact ID!)";
+	    echo "</td></tr>\n";
+	}
+    }
+
+    function echoShepherd($prow) {
+	if ($prow->shepherdContactId) {
+	    $pc = pcMembers();
+	    echo "<tr class='pt_conflict'><td class='caption'>Shepherd</td><td class='entry'>";
+	    if (($row = defval($pc[$prow->shepherdContactId], null)))
+		echo contactHtml($row->firstName, $row->lastName);
+	    else
+		echo "(Unknown contact ID!)";
+	    echo "</td></tr>\n";
 	}
     }
 
