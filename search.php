@@ -429,7 +429,8 @@ echo "
 <span class='ellipsis nowrap'><b>Search:</b>&nbsp; $tselect&nbsp; for&nbsp;
   <input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /> &nbsp;
   <input class='button' type='submit' name='go' value='Go' /> <span class='sep'></span>
-  <a class='unfolder' href=\"javascript:fold('q', 0)\">Options &raquo;</a>
+  <a class='unfolder' href=\"javascript:fold('q', 0)\">Options &raquo;</a> <span class='sep'></span>
+  <a href='help.php?t=syntax'>Help</a>
 </span>
 </form>
 
@@ -437,13 +438,18 @@ echo "
 <table class='advsearch extension'><tr><td class='advsearch'><table>
 <tr>
   <td class='mcaption'>With <b>any</b> of the words</td>
-  <td><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /></td>
+  <td><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /><span class='sep'></span></td>
+  <td rowspan='3'><input class='button' type='submit' name='go' value='Search' /></td>
 </tr><tr>
   <td class='mcaption'>With <b>all</b> the words</td>
   <td><input class='textlite' type='text' size='40' name='qa' value=\"", htmlspecialchars(defval($_REQUEST["qa"], "")), "\" /></td>
 </tr><tr>
   <td class='mcaption'><b>Without</b> the words</td>
   <td><input class='textlite' type='text' size='40' name='qx' value=\"", htmlspecialchars(defval($_REQUEST["qx"], "")), "\" /></td>
+</tr>
+<tr>
+  <td class='mcaption'></td>
+  <td><small><a href='help.php?t=search'>Search help</a> &nbsp;|&nbsp; <a href='help.php?t=syntax'>Syntax quick reference</a></small></td>
 </tr>
 <tr><td><hr class='smgap' /></td></tr>
 <tr>
@@ -472,9 +478,7 @@ if (!isset($qtOpt[defval($_REQUEST["qt"], "")]))
 foreach ($qtOpt as $v => $text)
     echo "<option value='$v'", ($v == $_REQUEST["qt"] ? " selected='selected'" : ""), ">$text</option>";
 echo "</select></td>
-</tr></table></td>
-  <td class='advsearch' style='vertical-align: top'><input class='button' type='submit' name='go' value='Search' /></td>
-</tr></table>\n</form>\n\n</div>\n";
+</tr></table></td></tr></table>\n</form>\n\n</div>\n";
 
 
 if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {

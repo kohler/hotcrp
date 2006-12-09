@@ -364,6 +364,10 @@ td.rcaption {
 	padding: 3px 0.5em 3px 0em;
 	font-weight: bold;
 }
+td.xcaption {
+	text-align: right;
+	padding: 3px 0.5em 3px 0em;
+}
 td.srcaption {
 	text-align: right;
 	padding: 3px 0.75em 3px 0.75em;

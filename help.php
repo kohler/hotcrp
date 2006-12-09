@@ -36,15 +36,17 @@ function _alternateRow($caption, $entry) {
 
 
 function topics() {
+    global $ConfSiteBase;
     echo "<table>";
     _alternateRow("<a href='help.php?t=search'>Search</a>", "About paper searching.");
     _alternateRow("<a href='help.php?t=syntax'>Search syntax</a>", "Quick reference to search syntax.");
-    _alternateRow("<a href='help.php?t=tags'>Tags</a>", "How to use tags and ordered tags to define sets of papers, discussion orders, and so forth.");
+    _alternateRow("<a href='help.php?t=tags'>Tags</a>", "How to use tags and ordered tags to define sets of papers and discussion orders.");
     echo "</table>";
 }
 
 
 function search() {
+    global $ConfSiteBase;
     echo "<table>";
     _alternateRow("Basics", "
 Enter search terms in the <a href='${ConfSiteBase}search.php'>search box</a>
@@ -54,13 +56,23 @@ the terms you enter, or that <b>don't</b> match some terms, expand the search
 box with the <a href='${ConfSiteBase}search.php?opt=1'>Options&nbsp;&raquo;</a>
 link and use \"With <b>all</b> the words\" and \"<b>Without</b> the words\".");
     _alternateRow("Paper selection", "
-A dropdown list lets you select what paper class to search.  Options are:
-<ul>
-<li><b>Submitted papers</b> (PC only) &mdash; all submitted papers.</li>
-<li><b>Review assignment</b> (PC and external reviewers) &mdash; papers that you've been assigned to review.</li>
+You can search in several paper classes, depending on your role in the
+conference. Options include:
+<ul class='compact'>
+<li><b>Submitted papers</b> &mdash; all submitted papers.</li>
+<li><b>Review assignment</b> &mdash; papers that you've been assigned to review.</li>
 <li><b>Authored papers</b> &mdash; papers for which you're a contact author.</li>
-<li><b>All papers</b> (PC chairs only) &mdash; all papers, including withdrawn and other non-submitted papers.</li>
+<li><b>All papers</b> &mdash; all papers, including withdrawn and other non-submitted papers.</li>
 </ul>");
+    _alternateRow("Search type", "
+By default, search examines title, abstract, and author fields.
+Expand the search box with the <a href='${ConfSiteBase}search.php?opt=1'>Options&nbsp;&raquo;</a> link to search other fields, including
+authors/collaborators and reviewers.");
+    _alternateRow("Syntax", "
+You can also specify what fields to search on a word-by-word basis with
+keywords like <span class='textlite'>ti:</span>, which means \"search in
+titles\".  For information on available keywords, see the
+<a href='help.php?t=syntax'>search syntax quick reference</a>.");
     _alternateRow("Listing all papers", "To list all papers in a search category, simply perform the search with no search terms.");
     _alternateRow("Paging through results", "All paper screens have links in the upper right corner that let you page through the most recent search results:<br />
   <img src='${ConfSiteBase}images/pageresultsex.png' alt='[Result paging example]' /><br />
@@ -72,20 +84,19 @@ A dropdown list lets you select what paper class to search.  Options are:
   Example: Search <span class='textlite'>1 2 3 4 5 6 7 8</span> will return papers 1-8.<br />
   Example: Search <span class='textlite'>100 case</span> will return papers matching \"case\", plus paper 100.<br />
   To actually search for a number in a paper's title, abstract, or whatever, put it in quotes: <span class='textlite'>\"119\"</span>");
-    _alternateRow("Syntax", "Specify what to search with keywords like <span class='textlite'>ti:</span>, which means \"search in titles\".  For information on available keywords, see the <a href='help.php?t=syntax'>search syntax quick reference</a>.");
     _alternateRow("Paper actions", "To act on many papers at once, select their checkboxes and choose an action underneath the paper list.
 For example, to download a <tt>.zip</tt> file with all submitted papers, PC members can search for all submitted papers, choose the \"select all\" link, then \"Get: Papers\".  Pull down the menu to see what else you can do.
-The \"More &raquo;\" link allows PC members and chairs to add tags, set conflicts, set decisions, and so forth.  The easiest way to tag a set of papers is to enter their numbers in the search box, search, \"select all\", and add the tag.");
+The \"More &raquo;\" link allows PC members and chairs to <a href='help.php?t=tags'>add tags</a>, set conflicts, set decisions, and so forth.  The easiest way to tag a set of papers is to enter their numbers in the search box, search, \"select all\", and add the tag.");
     _alternateRow("Limitations", "Search won't show you information you aren't supposed to see.  For example, authors can only search their own submissions, and if the conference used anonymous submission, then only the PC chairs can search by author.");
     echo "</table>\n";
 }
 
 
 function _searchQuickrefRow($caption, $search, $explanation) {
-    global $rowidx;
+    global $rowidx, $ConfSiteBase;
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
     echo "<tr class='k", ($rowidx % 2), "'>";
-    echo "<td class='srcaption nowrap'>", htmlspecialchars($caption), "</td>";
+    echo "<td class='srcaption nowrap'>", $caption, "</td>";
     echo "<td class='sentry nowrap'>",
 	"<form action='${ConfSiteBase}search.php' method='get'>",
 	"<input type='text' class='textlite' name='q' value=\"", htmlspecialchars($search), "\" size='20' />",
@@ -95,8 +106,11 @@ function _searchQuickrefRow($caption, $search, $explanation) {
 }
 
 function searchQuickref() {
+    global $rowidx;
     echo "<table>\n";
-    _searchQuickrefRow("General", "story", "\"story\" in title, abstract, possibly authors");
+    echo "<tr class='k0'><td class='srcaption nowrap'></td><td class='sentry nowrap' colspan='2'><a href='help.php?t=search'><b>General search help</b></a></td></tr>\n";
+    $rowidx = 0;
+    _searchQuickrefRow("Basics", "story", "\"story\" in title, abstract, possibly authors");
     _searchQuickrefRow("", "119", "paper #119");
     _searchQuickrefRow("", "1 2 5 12-24 kernel", "the numbered papers, plus papers with \"kernel\" in title, abstract, possibly authors");
     _searchQuickrefRow("", "very new", "\"very\" <i>or</i> \"new\" in title, abstract, possibly authors");
@@ -111,12 +125,67 @@ function searchQuickref() {
     _searchQuickrefRow("", "cre:fdabek", "\"fdabek\" (reviewer name/email) has completed a review");
     _searchQuickrefRow("", "re:4", "four reviewers (assigned and/or completed)");
     _searchQuickrefRow("", "cre:<3", "less than three completed reviews");
-    _searchQuickrefRow("Tags", "tag:discuss", "tagged \"discuss\"");
+    _searchQuickrefRow("<a href='help.php?t=tags'>Tags</a>", "tag:discuss", "tagged \"discuss\"");
     _searchQuickrefRow("", "order:discuss", "tagged \"discuss\", sort by tag order");
     _searchQuickrefRow("Decision", "dec:accept", "decision matches \"accept\"");
     _searchQuickrefRow("", "dec:yes", "one of the accept decisions");
     _searchQuickrefRow("", "dec:no", "one of the reject decisions");
     _searchQuickrefRow("", "dec:?", "decision unspecified");
+    echo "</table>\n";
+}
+
+
+
+
+function tags() {
+    global $ConfSiteBase;
+    echo "<table>";
+    _alternateRow("Basics", "
+The <i>tag</i> system keeps track of named paper sets.
+PC members can add tags to papers,
+remove tags from papers, and list all papers with a given tag.
+It is also possible to define <i>ordered</i> tags, which preserve a particular
+paper order.");
+    _alternateRow("Tagging a paper", "
+View and set a single paper's tags on its <a href='${ConfSiteBase}review.php'>review screen</a>.
+Current tags are shown in a list:<br />
+<img src='${ConfSiteBase}images/extagsnone.png' alt='[Tag list on review screen]' /><br />
+Only non-conflicted PC members can see and edit tags.
+Click on the <img src='${ConfSiteBase}images/next.png' alt='right arrow' />
+to edit the tags, then enter one or more tags separated by spaces.<br />
+<img src='${ConfSiteBase}images/extagsset.png' alt='[Tags entry on review screen]' /><br />
+Tags should be mostly alphanumeric.");
+    _alternateRow("Tag search", "
+To find all papers with tag \"discuss\", simply <a href='${ConfSiteBase}search.php?q=tag:discuss'>search for \"tag:discuss\"</a>.");
+    _alternateRow("Tagging multiple papers", "
+To tag multiple papers at once, find the papers in a
+<a href='${ConfSiteBase}search.php'>search</a>, select the papers you want
+using their checkboxes, and add tags using the action area.
+
+<p><img src='${ConfSiteBase}images/extagssearch.png' alt='[Setting tags on the search page]' /></p>
+
+You can <b>Add</b> and <b>Remove</b> a tag to/from the selected papers, or
+<b>Define</b> a tag, which adds the tag to all selected papers and removes it
+from all non-selected ones.");
+    _alternateRow("Special tags", "
+PC chairs can define special tags that only they can add and remove
+on the <a href='${ConfSiteBase}settings.php'>conference settings page</a>.
+By default, the tags \"accept\" and \"reject\" are special.
+PC members can still search special tags.");
+    _alternateRow("Ordered tags<br />and discussion orders", "
+An ordered tag names an <i>ordered</i> set of papers.  Searching for the
+tag with \"<a href='${ConfSiteBase}search.php?q=order:tagname'>order:tagname</a>\" will return the papers in the order
+you defined.  This is useful for PC meeting discussion orders, for example.
+In tag listings, the first paper in the \"discuss\" ordered tag will appear as
+\"discuss#1\", the second as \"discuss#2\", and so forth; you can change
+the order by editing the tag numbers.
+
+<p>It's easiest to define ordered tags using the
+<a href='${ConfSiteBase}search.php'>search screen</a>.  Search for the
+papers you want, sort them into the right order, select them, and
+choose <b>Define ordered</b> in the tag action area.  If no sort order
+gives the order you want, just type the paper numbers in order into the
+search box; for instance, search for \"<a href='${ConfSiteBase}search.php?q=4+1+12+9'>4 1 12 19</a>\".</p>");
     echo "</table>\n";
 }
 
@@ -127,6 +196,7 @@ else if ($topic == "search")
     search();
 else if ($topic == "syntax")
     searchQuickref();
-
+else if ($topic == "tags")
+    tags();
 
 $Conf->footer();

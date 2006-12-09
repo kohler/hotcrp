@@ -316,7 +316,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 		echo "<div id='foldtags' class='folded'><form method='post' action=\"$site\" enctype='multipart/form-data'>";
 		echo "<span class='ellipsis'>", ($t == "" ? "none" : htmlspecialchars($t)), "&nbsp;</span>";
 		echo "<a href='javascript:fold(\"tags\", 0)'><img class='unfolder' src='${ConfSiteBase}images/next.png' alt='[Edit]' /></a>";
-		echo "<span class='extension'><input class='textlite' type='text' size='40' name='tags' value=\"", htmlspecialchars($t), "\" /> <input class='button_small' type='submit' name='settags' value='Set tags' /> &nbsp; ";
+		echo "<span class='extension'><input class='textlite' type='text' size='40' name='tags' value=\"", htmlspecialchars($t), "\" /> &nbsp;<input class='button_small' type='submit' name='settags' value='Set tags' /> &nbsp; ";
 		echo "<a href='javascript:fold(\"tags\", 1)'><img class='folder' src='${ConfSiteBase}images/prev.png' alt='[Hide]' /></a></span>";
 		echo "</form></div>";
 	    } else

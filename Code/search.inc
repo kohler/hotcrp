@@ -78,7 +78,7 @@ class PaperSearch {
 	    $this->fields["ab"] = 1;
 	if ($this->allowAuthor && ($qtype == "n" || $qtype == "au" || $qtype == "ac"))
 	    $this->fields["au"] = 1;
-	if ($me->amAssistant() && $qtype == "ac")
+	if ($this->amAssistant && $qtype == "ac")
 	    $this->fields["co"] = 1;
 	if ($this->allowReviewer && $qtype == "re")
 	    $this->fields["re"] = 1;
@@ -193,7 +193,7 @@ class PaperSearch {
 		&& $this->amPC) {
 		if ($special ? $special == "order" : isset($this->fields['order']))
 		    $this->orderTag = ($this->orderTag === false ? $word : null);
-		$tagConflict = ($this->amAssistant() ? "" : " and conflictType=0");
+		$tagConflict = ($this->amAssistant ? "" : " and conflictType=0");
 		if ($type == "any") {
 		    $qp .= " or (tag='$word'$tagConflict)";
 		    $this->any |= self::ANY_TAG;
@@ -214,11 +214,21 @@ class PaperSearch {
 		    $qp .= " or (outcome=0)";
 		else {
 		    $rf = reviewForm();
+		    $any = false;
 		    foreach ($rf->options['outcome'] as $num => $what)
 			if (strcmp($word, $num) == 0 || strcasecmp($word, $what) == 0) {
-			    $qp .= " or (outcome = '$num')";
+			    $qp .= " or (outcome=$num)";
+			    $any = true;
 			    break;
 			}
+		    if (!$any)
+			foreach ($rf->options['outcome'] as $num => $what)
+			    if (strstr(strtolower($what), strtolower($word)) !== false) {
+				$qp .= " or (outcome=$num)";
+				$any = true;
+			    }
+		    if (!$any)
+			$qp .= " or false";
 		}
 	    }
 	    if (($special ? $special == "topic" : isset($this->fields['topic']))) {
