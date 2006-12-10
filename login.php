@@ -14,7 +14,7 @@ function doCreateAccount() {
 	return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ".  To retrieve your password, select \"Mail me my password\".");
 
     $result = $_SESSION["Me"]->initialize($_REQUEST["email"], $Conf);
-    if (MDB2::isError($result))
+    if (!$result)
 	return $Conf->errorMsg($result->dbErrorText($result, "while adding your account"));
 
     $_SESSION["Me"]->sendAccountInfo($Conf, true, false);

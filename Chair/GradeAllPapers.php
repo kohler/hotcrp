@@ -121,10 +121,8 @@ $result=$Conf->qe("SELECT Paper.paperId, Paper.title, Paper.outcome, "
 . $order
 );
 
-if (MDB2::isError($result)) {
-  $Conf->errorMsg("Error in sql " . $result->getMessage());
+if (!$result)
   exit();
-} 
 
 ?>
 
@@ -157,7 +155,7 @@ $meritMax = $rf->maxNumericScore('overAllMerit');
 $gradeMax = $rf->maxNumericScore('grade');
 
 $rowNum = 0;
-while ($row=$result->fetchRow(MDB2_FETCHMODE_ASSOC)){
+while ($row=edb_arow($result)) {
   $rowNum++;
   $paperId = $row['paperId'];
   $title = $row['title'];
@@ -223,12 +221,8 @@ while ($row=$result->fetchRow(MDB2_FETCHMODE_ASSOC)){
       $q = "SELECT grade FROM PaperGrade "
 	. " WHERE paperId=$paperId AND contactId=" . $_SESSION["Me"]->contactId . " ";
       $r = $Conf->qe($q);
-      if (! $r ) {
-	$Conf->errorMsg("Bummer .. " . $result->getMessage());
-      } else {
-	$row = $r->fetchRow(MDB2_FETCHMODE_ASSOC);
-	$grade = $row['grade'];
-      }
+      $row = edb_arow($r);
+      $grade = defval($row['grade'], 0);
 
       print "<input type=hidden name=paperId value=$paperId>\n";
       print "<input type=hidden name=ShowGrades value=$_REQUEST["ShowGrades"]>\n";

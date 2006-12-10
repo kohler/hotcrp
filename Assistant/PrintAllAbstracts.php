@@ -62,12 +62,9 @@ I'm not certain if this works under Netscape or other browsers.
   . $finalizedStr
   . $ORDER;
 
-$result=$Conf->q($query);
+$result=$Conf->qe($query);
 
-  if (MDB2::isError($result) ) {
-    $Conf->errorMsg("Error in retrieving paper list " . $result->getMessage());
-  } else {
-   while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC) ) {
+   while ($row = edb_arow($result) ) {
      $paperId=$row['paperId'];
      $title=$row['title'];
      $affiliation=nl2br($row['authorInformation']);
@@ -102,9 +99,9 @@ $result=$Conf->q($query);
    . "WHERE PaperTopic.paperId=$paperId "
    . "AND PaperTopic.topicId=TopicArea.topicId ";
     $result2 = $Conf->qe($query);
-    if ( ! MDB2::isError($result) ) {
+    if (edb_nrows($result2)) {
       print "<ul>";
-      while ($top=$result2->fetchRow()) {
+      while ($top=edb_row($result2)) {
 	print "<li>" . $top[0] . "</li>\n";
       }
       print "</ul>";
@@ -115,7 +112,6 @@ $result=$Conf->q($query);
 
 <p class='page'> End of <?php  echo $paperId ?> </p>
   <?php 
-}
 }
 ?>
 

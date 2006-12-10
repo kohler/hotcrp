@@ -37,7 +37,7 @@ function savePreferences($reviewer) {
 
     $while = "while saving review preferences";
     $result = $Conf->qe("lock tables PaperReviewPreference write", $while);
-    if (MDB2::isError($result))
+    if (!$result)
 	return $result;
 
     $delete = "delete from PaperReviewPreference where contactId=$reviewer and (";
@@ -57,9 +57,12 @@ function savePreferences($reviewer) {
 	}
     $Conf->qe($delete . ")", $while);
 
+    $q = "";
     for ($p = 1; $p <= $pmax; $p++)
 	if (isset($setting[$p]))
-	    $Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values ($p, $reviewer, $setting[$p])", $while);
+	    $q .= "($p, $reviewer, $setting[$p]), ";
+    if (strlen($q))
+	$Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values " . substr($q, 0, strlen($q) - 2), $while);
 
     $Conf->qe("unlock tables", $while);
 }
@@ -96,16 +99,15 @@ if ($Me->amAssistant()) {
 		group by contactId
 		order by lastName, firstName, email";
     $result = $Conf->qe($query);
-    if (!MDB2::isError($result))
-	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
-	    echo "<option value='$row->contactId'";
-	    if ($row->contactId == $reviewer)
-		echo " selected='selected'";
-	    echo ">", contactHtml($row);
-	    if ($row->preferenceCount <= 0)
-		echo " (no preferences)";
-	    echo "</option>";
-	}
+    while (($row = edb_orow($result))) {
+	echo "<option value='$row->contactId'";
+	if ($row->contactId == $reviewer)
+	    echo " selected='selected'";
+	echo ">", contactHtml($row);
+	if ($row->preferenceCount <= 0)
+	    echo " (no preferences)";
+	echo "</option>";
+    }
     echo "</select>\n</form>\n<hr />\n\n";
 }
 

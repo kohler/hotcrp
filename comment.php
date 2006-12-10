@@ -46,12 +46,11 @@ function loadRows() {
 		order by commentId");
     $crows = array();
     $crow = null;
-    if (!MDB2::isError($result))
-	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
-	    $crows[] = $row;
-	    if (isset($_REQUEST['commentId']) && $row->commentId == $_REQUEST['commentId'])
-		$crow = $row;
-	}
+    while ($row = edb_orow($result)) {
+	$crows[] = $row;
+	if (isset($_REQUEST['commentId']) && $row->commentId == $_REQUEST['commentId'])
+	    $crow = $row;
+    }
     if (isset($_REQUEST['commentId']) && !$crow)
 	errorMsgExit("That comment does not exist.");
 }
@@ -89,7 +88,7 @@ function saveComment($text) {
 
     $while = "while saving comment";
     $result = $Conf->qe($q, $while);
-    if (MDB2::isError($result))
+    if (!$result)
 	return;
 
     // comment ID
@@ -97,24 +96,22 @@ function saveComment($text) {
 	$commentId = $crow->commentId;
     else {
 	$commentId = $Conf->lastInsertId($while);
-	if (MDB2::isError($commentId))
+	if (!$commentId)
 	    return;
     }
 
     // log, end
-    if (!MDB2::isError($result)) {
-	$action = ($text == "" ? "deleted" : "saved");
-	$Conf->confirmMsg("Comment $action");
-	$Conf->log("Comment $commentId $action", $Me, $prow->paperId);
+    $action = ($text == "" ? "deleted" : "saved");
+    $Conf->confirmMsg("Comment $action");
+    $Conf->log("Comment $commentId $action", $Me, $prow->paperId);
 
-	// adjust comment counts
-	if ($change)
-	    $Conf->qe("update Paper set numComments=(select count(commentId) from PaperComment where paperId=$prow->paperId), numAuthorComments=(select count(commentId) from PaperComment where paperId=$prow->paperId and forAuthors>0) where paperId=$prow->paperId", $while);
-	
-	$_REQUEST["paperId"] = $prow->paperId;
-	unset($_REQUEST["commentId"]);
-	loadRows();
-    }
+    // adjust comment counts
+    if ($change)
+	$Conf->qe("update Paper set numComments=(select count(commentId) from PaperComment where paperId=$prow->paperId), numAuthorComments=(select count(commentId) from PaperComment where paperId=$prow->paperId and forAuthors>0) where paperId=$prow->paperId", $while);
+    
+    $_REQUEST["paperId"] = $prow->paperId;
+    unset($_REQUEST["commentId"]);
+    loadRows();
 }
 
 if (isset($_REQUEST['submit'])) {

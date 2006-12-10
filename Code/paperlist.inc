@@ -400,9 +400,8 @@ class PaperList {
 	    || $_SESSION["paperLists"]["date"] <= $t) {
 	    $pl = array();
 	    $result = $Conf->qe("select * from PaperList");
-	    if (!MDB2::isError($result))
-		while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
-		    $pl[$row->paperListName] = $row;
+	    while (($row = edb_orow($result)))
+		$pl[$row->paperListName] = $row;
 	    $pl["date"] = $t;
 	    $_SESSION["paperLists"] = $pl;
 	}
@@ -517,7 +516,7 @@ class PaperList {
 	// initialize query
 	$queryOptions = array();
 	if ($this->search->complexSearch($queryOptions)) {
-	    if (MDB2::isError($this->search->search()))
+	    if (!$this->search->search())
 		return NULL;
 	    $queryOptions["joins"] = array("Matches on (Paper.paperId=Matches.paperId)");
 	}
@@ -540,12 +539,12 @@ class PaperList {
 		from PaperListColumns join PaperFields using (fieldId)
 		where PaperListColumns.paperListId=$plist->paperListId
 		order by PaperListColumns.col", "while looking up paper list information");
-	if (MDB2::isError($result))
+	if (!$result)
 	    return NULL;
 	
 	$fieldId = array();
 	$ncol = 0;
-	while ($row = $result->fetchRow()) {
+	while ($row = edb_row($result)) {
 	    if ($this->selector($row[0], $queryOptions) === false)
 		continue;
 	    $fieldId[] = array($row[0], htmlspecialchars($row[1]), $row[2]);
@@ -564,9 +563,8 @@ class PaperList {
 		join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
 		where " . ($this->search->limitName != 'a' ? "timeSubmitted>0" : "paperId=-1") . "
 		order by lastName, firstName, email", "while fetching reviews");
-	    if (!MDB2::isError($result))
-		while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
-		    $reviewList[$row->paperId][] = $row;
+	    while (($row = edb_orow($result)))
+		$reviewList[$row->paperId][] = $row;
 	}
 	
 	// prepare query text
@@ -577,17 +575,17 @@ class PaperList {
 
 	// make query
 	$result = $Conf->qe($pq, "while selecting papers");
-	if (MDB2::isError($result))
+	if (!$result)
 	    return NULL;
 
-	if ($result->numRows() == 0)
+	if (edb_nrows($result) == 0)
 	    return "No papers";
 
 	$ids = array();
 	$anyData = array();
 	$byPaperId = array();
 	$body = '';
-	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
+	while (($row = edb_orow($result))) {
 	    $ids[] = $row->paperId;
 	    $trclass = "k" . ($this->count % 2);
 	    $this->count++;

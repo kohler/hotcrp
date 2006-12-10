@@ -30,12 +30,12 @@ $query="SELECT "
 ;
 
 $result = $Conf->qe($query);
-if ( !MDB2::isError($result) ) {
+if ($result) {
   print "<table width=75% border=1 align=center>";
   print "<tr> <th> Review # </th> <th> Paper # </th> <th> Info </th> </tr>";
 
   $i = 0;
-  while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+  while ($row = edb_arow($result)) {
     $i++;
     $first=$row['firstName'];
     $last=$row['lastName'];
@@ -60,7 +60,7 @@ if ( !MDB2::isError($result) ) {
       . " WHERE paperId=$paperId AND contactId=$id";
     $r2 = $Conf->qe($query2);
     if ($r2) {
-      $foo = $r2->fetchRow();
+      $foo = edb_row($r2);
       if ($foo == null) {
 	print " <b> not started </b> ";
       } else {
@@ -94,12 +94,12 @@ $query="SELECT "
 ;
 
 $result = $Conf->qe($query);
-if ( ! MDB2::isError($result) ) {
+if ($result) {
   print "<table width=75% border=1 align=center>";
   print "<tr> <th> Review # </th> <th> Paper # </th> <th> Info </th> </tr>";
 
   $i = 0;
-  while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+  while ($row = edb_arow($result)) {
     $i++;
     $first=$row['firstName'];
     $last=$row['lastName'];
@@ -123,7 +123,7 @@ if ( ! MDB2::isError($result) ) {
       . " WHERE paperId=$paperId AND contactId=$id";
     $r2 = $Conf->qe($query2);
     if ($r2) {
-      $foo = $r2->fetchRow();
+      $foo = edb_row($r2);
       if ($foo == null) {
 	print " <b> not started </b> ";
       } else {

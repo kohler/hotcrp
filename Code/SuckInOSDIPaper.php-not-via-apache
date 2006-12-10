@@ -62,7 +62,7 @@ $query="INSERT INTO Paper SET "
 ;
 //print "Query is $query\n";
 $result = $Conf->q($query);
-if (MDB2::isError($result)) {
+if (!$result) {
   print "Error in insert for paper\n";
 }
 

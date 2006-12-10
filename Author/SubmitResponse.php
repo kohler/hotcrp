@@ -93,12 +93,10 @@ if (IsSet($_REQUEST['submit'])) {
     $set = "authorsResponse='" . addslashes($_REQUEST[authorsResponse]) . "'";
     $query="UPDATE Paper SET $set WHERE paperId='$_REQUEST[paperId]' and contactId='" . $_SESSION["Me"]->contactId . "'";
     $result = $Conf->qe($query);
-
-    if ( !MDB2::isError($result) ) {
+    if ($result) {
       $Conf->confirmMsg("Successfully updated response");
     } else {
-      $Conf->errorMsg("Error in updating response: " . $result->getMessage());
-      $Conf->log("Error in updating response: " . $result->getMessage(), $_SESSION["Me"], $_REQUEST["paperId"]);
+      $Conf->log("Error in updating response", $_SESSION["Me"], $_REQUEST["paperId"]);
     }
   }
 } else {
@@ -110,13 +108,8 @@ if (IsSet($_REQUEST['submit'])) {
   $query = "SELECT authorsResponse FROM Paper WHERE paperId='$_REQUEST[paperId]'";
 
   $result=$Conf->qe($query);
-  if (!MDB2::isError($result)) {
-    if ( $row=$result->fetchRow() ) {
+  if (($row=edb_row($result)))
       $_REQUEST[authorsResponse] = stripslashes($row[0]);
-    }
-  } else {
-    $Conf->errorMsg("Error in query: " . $result->getMessage());
-  }
 }
 ?>
 

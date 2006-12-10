@@ -119,13 +119,14 @@ function getReviews($paperId, $finalized) {
  		from PaperReview
 		join ContactInfo using (contactId)
 		where paperId=$paperId order by reviewOrdinal", "while retrieving reviews");
-    if (!MDB2::isError($result)) {
+    if ($result) {
 	$text = $rf->textFormHeader($Conf, false, false);
-	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
+	while (($row = edb_orow($result)))
 	    if ($row->reviewSubmitted>0)
 		$text .= $rf->textForm($row, $row, $Conf, null, ReviewForm::REV_AUTHOR) . "\n";
-    }
-    return $text;
+	return $text;
+    } else
+	return "";
 }	
 
 function getComments ($paperId) {
@@ -137,15 +138,13 @@ function getComments ($paperId) {
  		join ContactInfo using(contactId)
 		where paperId=$paperId and forAuthors>0 order by commentId", "while retrieving comments");
     $text = "";
-    if (!MDB2::isError($result)) {
-	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
-	    $text .= "==+== =========================================================================
+    while (($row = edb_orow($result))) {
+	$text .= "==+== =========================================================================
 ==-== Comment";
-	    if ($row->reviewBlind <= 0)
-		$text .= " by " . contactText($row);
-	    $text .= "\n==-== Modified " . $Conf->printableTime($row->timeModified) . "\n\n";
-	    $text .= $row->comment . "\n";
-	}
+	if ($row->reviewBlind <= 0)
+	    $text .= " by " . contactText($row);
+	$text .= "\n==-== Modified " . $Conf->printableTime($row->timeModified) . "\n\n";
+	$text .= $row->comment . "\n";
     }
     return $text;
 }
@@ -178,68 +177,66 @@ if (isset($_REQUEST["sendTheMail"])) {
 }
 
 $result = $Conf->qe($query);
-if (!MDB2::isError($result)) {
-    while (($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC))) {
-	$subj = $_REQUEST["subject"];
-	$msg = $_REQUEST["emailBody"];
-	
-	$subj = str_replace("%TITLE%", $row['title'], $subj);
-	$subj = str_replace("%NUMBER%", $row['paperId'], $subj);
-	$subj = str_replace("%FIRST%", $row['firstName'], $subj);
-	$subj = str_replace("%LAST%", $row['lastName'], $subj);
-	$subj = str_replace("%EMAIL%", $row['email'], $subj);
+while (($row = edb_arow($result))) {
+    $subj = $_REQUEST["subject"];
+    $msg = $_REQUEST["emailBody"];
+    
+    $subj = str_replace("%TITLE%", $row['title'], $subj);
+    $subj = str_replace("%NUMBER%", $row['paperId'], $subj);
+    $subj = str_replace("%FIRST%", $row['firstName'], $subj);
+    $subj = str_replace("%LAST%", $row['lastName'], $subj);
+    $subj = str_replace("%EMAIL%", $row['email'], $subj);
 
-	$msg = str_replace("%TITLE%", $row['title'], $msg);
-	$msg = str_replace("%NUMBER%", $row['paperId'], $msg);
-	$msg = str_replace("%FIRST%", $row['firstName'], $msg);
-	$msg = str_replace("%LAST%", $row['lastName'], $msg);
-	$msg = str_replace("%EMAIL%", $row['email'], $msg);
+    $msg = str_replace("%TITLE%", $row['title'], $msg);
+    $msg = str_replace("%NUMBER%", $row['paperId'], $msg);
+    $msg = str_replace("%FIRST%", $row['firstName'], $msg);
+    $msg = str_replace("%LAST%", $row['lastName'], $msg);
+    $msg = str_replace("%EMAIL%", $row['email'], $msg);
 
-	if (substr($_REQUEST["recipients"], 0, 14) == "author-outcome") {
-	    $paperId = $row['paperId'];
-	    if (substr_count($msg, "%REVIEWS%") != 0) {
-		$reviews = getReviews($paperId, false);
-		$msg=str_replace("%REVIEWS%", $reviews, $msg);
-	    }
-
-	    if (substr_count($msg, "%COMMENTS%") != 0) {
-		$comments = getComments($paperId);
-		if ($comments != "") {
-		    $comments = "The comments below summarize the discussion during the PC meeting.\n\n".$comments;
-		}
-		$msg=str_replace("%COMMENTS%", $comments, $msg);
-	    }
+    if (substr($_REQUEST["recipients"], 0, 14) == "author-outcome") {
+	$paperId = $row['paperId'];
+	if (substr_count($msg, "%REVIEWS%") != 0) {
+	    $reviews = getReviews($paperId, false);
+	    $msg=str_replace("%REVIEWS%", $reviews, $msg);
 	}
 
-	print "<table border=1 width=75%> <tr> <td> To: ";
-	echo htmlspecialchars($row['email']), "<br />Subject: [", htmlspecialchars($Conf->shortName), "] ", htmlspecialchars($subj);
-	print  "</td> </tr>\n ";
-	print "<tr> <td><pre>";
-	print htmlspecialchars($msg);
-	print "</pre></td> </tr> </table> <br> ";
-
-	if (isset($_REQUEST["sendTheMail"]) ) {
-	    if ($Conf->allowEmailTo($row['email']))
-		mail($row['email'],
-		     "[$Conf->shortName] $subj",
-		     $msg,
-		     "From: $Conf->emailFrom");
-	    else
-		$Conf->infoMsg("<pre>" . htmlspecialchars("[$Conf->shortName] Mail concerning $Conf->shortName
-
-$msg") . "</pre>");
-	    if ($Conf->allowEmailTo($Conf->contactEmail))
-		mail($Conf->contactEmail,
-		     "[$Conf->shortName] Mail to " . $row['email'] .
-		     "  concerning $subj",
-		     $msg,
-		     "From: $Conf->emailFrom");
-	    else
-		$Conf->infoMsg("<pre>" . htmlspecialchars("[$Conf->shortName] Mail concerning $Conf->shortName
-
-$msg") . "</pre>");
-	    print"<p> <b> Sent to " . $row['email'] . "</b> </p>\n";
+	if (substr_count($msg, "%COMMENTS%") != 0) {
+	    $comments = getComments($paperId);
+	    if ($comments != "") {
+		$comments = "The comments below summarize the discussion during the PC meeting.\n\n".$comments;
+	    }
+	    $msg=str_replace("%COMMENTS%", $comments, $msg);
 	}
+    }
+
+    print "<table border=1 width=75%> <tr> <td> To: ";
+    echo htmlspecialchars($row['email']), "<br />Subject: [", htmlspecialchars($Conf->shortName), "] ", htmlspecialchars($subj);
+    print  "</td> </tr>\n ";
+    print "<tr> <td><pre>";
+    print htmlspecialchars($msg);
+    print "</pre></td> </tr> </table> <br> ";
+
+    if (isset($_REQUEST["sendTheMail"]) ) {
+	if ($Conf->allowEmailTo($row['email']))
+	    mail($row['email'],
+		 "[$Conf->shortName] $subj",
+		 $msg,
+		 "From: $Conf->emailFrom");
+	else
+	    $Conf->infoMsg("<pre>" . htmlspecialchars("[$Conf->shortName] Mail concerning $Conf->shortName
+
+$msg") . "</pre>");
+	if ($Conf->allowEmailTo($Conf->contactEmail))
+	    mail($Conf->contactEmail,
+		 "[$Conf->shortName] Mail to " . $row['email'] .
+		 "  concerning $subj",
+		 $msg,
+		 "From: $Conf->emailFrom");
+	else
+	    $Conf->infoMsg("<pre>" . htmlspecialchars("[$Conf->shortName] Mail concerning $Conf->shortName
+
+$msg") . "</pre>");
+	print"<p> <b> Sent to " . $row['email'] . "</b> </p>\n";
     }
 }
 

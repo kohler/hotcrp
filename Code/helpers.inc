@@ -8,21 +8,54 @@ function vtrim(&$var) {
     return (isset($var) ? trim($var) : "");
 }
 
-function sqlqtrim($value) {
-    return mysql_real_escape_string(trim($value));
+
+// database helpers
+
+// number of rows returned by a select query, or 'false' if result is an error
+function edb_nrows($result) {
+    return ($result ? mysql_num_rows($result) : false);
 }
 
+// number of rows affected by an update/insert query, or 'false' if result is
+// an error
+function edb_nrows_affected($result) {
+    return ($result ? mysql_affected_rows($result) : false);
+}
+
+// next row as an array, or 'false' if no more rows or result is an error
+function edb_row($result) {
+    return ($result ? mysql_fetch_row($result) : false);
+}
+
+// next row as an associative array, or 'false' if no more rows or result is
+// an error
+function edb_arow($result) {
+    return ($result ? mysql_fetch_array($result) : false);
+}
+
+// next row as an object, or 'false' if no more rows or result is an error
+function edb_orow($result) {
+    return ($result ? mysql_fetch_object($result) : false);
+}
+
+// quoting for SQL
 function sqlq($value) {
     return mysql_real_escape_string($value);
 }
 
-function simplifyWhitespace($x) {
-    return trim(preg_replace('/\s+/', " ", $x));
+function sqlqtrim($value) {
+    return mysql_real_escape_string(trim($value));
 }
 
 function sqlq_cleannl($value) {
     $value = str_replace("\r\n", "\n", $value);
     return mysql_real_escape_string(strtr($value, "\r", "\n"));
+}
+
+
+// other helpers
+function simplifyWhitespace($x) {
+    return trim(preg_replace('/\s+/', " ", $x));
 }
 
 function cvtint(&$value, $default = -1) {
@@ -256,9 +289,8 @@ function topicTable($prow, $active = 0, $conf = null) {
     $paperTopic = array();
     if ($paperId > 0) {
 	$result = $Conf->q("select topicId from PaperTopic where paperId=$paperId");
-	if (!MDB2::isError($result))
-	    while ($row = $result->fetchRow())
-		$paperTopic[$row[0]] = $rf->topicName[$row[0]];
+	while ($row = edb_row($result))
+	    $paperTopic[$row[0]] = $rf->topicName[$row[0]];
     }
     $allTopics = ($active < 0 ? $paperTopic : $rf->topicName);
     if ($active < 0 && count($paperTopic) == 0)
@@ -622,11 +654,11 @@ function contactPulldown($id, $name, $conf, $contact) {
     echo "<input class='textlite' id='${id}_email' name='${name}_email' type='text' value=\"", htmlspecialchars($contact->email), "\" />&nbsp;&nbsp;";
     
     $result = $conf->q("select firstName, lastName, email from ContactInfo order by lastName, firstName, email");
-    if (!MDB2::isError($result)) {
+    if ($result) {
 	echo "<span class='folded' id='fold$id'><a class='button_small unfolder' href=\"javascript:fold('${id}', 0)\">Show&nbsp;list</a>";
 	echo "<span class='contactpulldown extension'>";
 	echo "<select id='${id}_pulldown' name='${name}_pulldown' onchange='contactPulldown(\"$id\")' size='6'>";
-	while (($row = $result->fetchRow())) {
+	while (($row = edb_row($result))) {
 	    $selected = ($row[2] == $contact->email ? " selected='selected'" : "");
 	    if ($row[0] || $row[1]) {
 		echo "<option$selected value=\"", htmlspecialchars($row[2]), "`````", htmlspecialchars(trim("$row[0] $row[1]")), "\">", htmlspecialchars(trim("$row[0] $row[1]")), " (", htmlspecialchars($row[2]), ")</option>\n";
@@ -788,9 +820,8 @@ function pcMembers() {
 	|| $_SESSION["pcmembers"][0] <= $Conf->settings['pc']) {
 	$pc = array();
 	$result = $Conf->q("select firstName, lastName, email, PCMember.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair from ContactInfo join PCMember using (contactId) left join ChairAssistant on (PCMember.contactId=ChairAssistant.contactId) left join Chair on (PCMember.contactId=Chair.contactId) order by lastName, firstName");
-	if (!MDB2::isError($result))
-	    while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
-		$pc[$row->contactId] = $row;
+	while (($row = edb_orow($result)))
+	    $pc[$row->contactId] = $row;
 	$_SESSION["pcmembers"] = array(defval($Conf->settings['pc'], 0), $pc);
     }
     return $_SESSION["pcmembers"][1];

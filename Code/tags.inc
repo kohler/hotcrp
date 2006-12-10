@@ -26,9 +26,8 @@ function chairTags() {
     global $Conf;
     $result = $Conf->q("select tag from ChairTag");
     $c = array();
-    if (!MDB2::isError($result))
-	while (($row = $result->fetchRow()))
-	    $c[$row[0]] = 1;
+    while (($row = edb_row($result)))
+	$c[$row[0]] = 1;
     return $c;
 }
 
@@ -107,7 +106,7 @@ function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
 		else {
 		    if (!isset($tagIndex[$base])) {
 			$result = $Conf->qe("select max(tagIndex) from PaperTag where tag='" . sqlq($base) . "'", $while);
-			if (!MDB2::isError($result) && ($row = $result->fetchRow()))
+			if (($row = edb_row($result)))
 			    $tagIndex[$base] = $row[0] + 1;
 			else
 			    $tagIndex[$base] = 1;

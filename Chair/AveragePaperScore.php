@@ -259,10 +259,6 @@ if( $_SESSION['Me']->isChair && IsSet($_REQUEST['judgement']) ){
 
       //$Conf->infoMsg($query);
     $result=$Conf->qe( $query );
-
-    if (MDB2::isError($result)) {
-      $Conf->errorMsg("Error in sql " . $result->getMessage());
-    } 
   }
 }
 
@@ -328,12 +324,8 @@ $query  = "SELECT $table.paperId, Paper.title, Paper.pcPaper, "
 //$Conf->infoMsg( $query  );
 
 $result=$Conf->qe( $query );
-
-
-if (MDB2::isError($result)) {
-  $Conf->errorMsg("Error in sql " . $result->getMessage());
+if (!$result)
   exit();
-} 
 
 if( $judgeCol ){
   print "<FORM METHOD='POST' ACTION='" . $_SERVER['PHP_SELF'] . "'>\n";
@@ -382,7 +374,7 @@ if( $use_groups ){
   $dest = 'all';
 }
 
-while ($row=$result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+while ($row=edb_arow($result)) {
   if( $use_groups ){
     $query = "SELECT grade, COUNT(grade) AS count FROM PaperGrade WHERE " .
 	     "paperId = " . $row['paperId'] ." GROUP BY grade";
@@ -390,7 +382,7 @@ while ($row=$result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
 
     $gresult=$Conf->qe( $query );
 
-    while ($grow=$gresult->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+    while ($grow=edb_arow($gresult)) {
       $grades[$grow['grade']] = $grow['count'];
     }
 

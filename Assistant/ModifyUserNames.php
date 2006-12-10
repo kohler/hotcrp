@@ -20,19 +20,15 @@ if (IsSet($_REQUEST[updateContacts])) {
 		 . " ORDER BY contactId");
   $oldFirst = array();
   $oldLast = array();
-  if ( ! $r ) {
-    $Conf->errorMsg("Unable to update names?");
-  } else {
-    while ($row=$r->fetchRow(MDB2_FETCHMODE_ASSOC) ) {
+  while ($row=edb_arow($r) ) {
       $first = $row['firstName'];
       $last = $row['lastName'];
       $id = $row['contactId'];
       $oldFirst[$id] = $first;
       $oldLast[$id] = $last;
-    }
   }
 
-  while (list($id,$first) = each($_REQUEST[newFirst])) {
+  while (list($id,$first) = each($_REQUEST["newFirst"])) {
     //
     // Now, compare new name with old to see if it
     // changed, and if so, update database
@@ -72,7 +68,7 @@ if ($r) {
   print "<table align=center width=85% border=1 >\n";
   print "<tr> <th> First </th> <th> Last </th> <th> Email </th> </tr>\n";
 
-  while ($row=$r->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+  while ($row=edb_arow($r)) {
     $first = $row['firstName'];
     $last = $row['lastName'];
     $email = $row['email'];

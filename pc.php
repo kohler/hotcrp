@@ -45,7 +45,7 @@ function updateRoles($id, $suff, $email) {
     foreach (array("pc$suff" => "PCMember", "ass$suff" => "ChairAssistant", "chair$suff" => "Chair") as $key => $table)
 	if (isset($_REQUEST[$key]) && $_REQUEST[$key] > 0) {
 	    $result = $Conf->qe("insert into $table (contactId) values ($id)");
-	    if (!MDB2::isError($result))
+	    if ($result)
 		$Conf->log("Added $email as $table", $_SESSION["Me"]);
 	}
 }
@@ -118,7 +118,7 @@ $query = "select ContactInfo.contactId, ContactInfo.firstName,
 	group by ContactInfo.contactId
 	order by ContactInfo.lastName";
 $result = $Conf->qe($query, "while fetching program committee");
-if (MDB2::isError($result))
+if (!$result)
     $Conf->errorMsgExit("");
 
 
@@ -146,7 +146,7 @@ echo "</tr>\n\n";
 $ncol = ($Me->amAssistant() ? 6 : ($Me->isPC ? 4 : 3));
 
 
-while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
+while ($row = edb_orow($result)) {
     $id = $row->contactId;
 
     // main row

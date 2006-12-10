@@ -16,16 +16,14 @@ papers.
 </p>
 
 <?php 
-$result=$Conf->q("select Paper.paperId, Paper.title,
+$result=$Conf->qe("select Paper.paperId, Paper.title,
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
 		from Paper
 		join ReviewRequest using (paperId)
 		join ContactInfo on (ContactInfo.contactId=ReviewRequest.contactId)
 		order by Paper.paperId ");
 $i = 0;
-if (MDB2::isError($result)) {
-  $Conf->errorMsg("Error in retrieving reviewer list " . $result->getMessage());
-} else {
+if ($result) {
   ?>
 <table border=1>
 <thead> <tr>
@@ -34,7 +32,7 @@ if (MDB2::isError($result)) {
 </tr>
 </thead>
 <?php  
-   while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+while ($row = edb_arow($result)) {
     print "<tr>";
     print "<td> " . $row['paperId'] . " </td>";
     print "<td> ". $row['title'] . " <br> being reviewed by ";

@@ -76,7 +76,7 @@ if (IsSet($_REQUEST["nagList"])
 
 	$result=$Conf->qe($query);
 	if ( $result ) {
-	  $row = $result->fetchRow(MDB2_FETCHMODE_ASSOC);
+	  $row = edb_arow($result);
 
 	  $msg = $_REQUEST["emailBody"];
 	  
@@ -127,8 +127,6 @@ if (IsSet($_REQUEST["nagList"])
 	    print "</table>";
 	    print "<br> <br>";
 	  }
-	} else {
-	  $Conf->errorMsg("hmm - can't nag on review #$them" . $result->getMessage());
 	}
       }
 } else {
@@ -173,10 +171,7 @@ $result=$Conf->qe("select Paper.paperId, Paper.Title, ContactInfo.email,
 		where PaperReview.reviewType<" . REVIEW_PC . "
 		order by Paper.paperId");
 
-if (MDB2::isError($result)) {
-  $Conf->errorMsg("Error in retrieving list of reviews: " . $result->getMessage());
-} 
-else {
+if ($result) {
   ?>
  <table border=1>
     <tr>
@@ -188,7 +183,7 @@ else {
     <th> Title </th>
     </tr>
     <?php 
-    while ($row=$result->fetchRow()) {
+	while ($row=edb_row($result)) {
       $paperId = $row[0];
       $title = $row[1];
       $contactEmail = $row[2];
@@ -202,11 +197,10 @@ else {
       ;
 
       $review_result = $Conf->qe($query);
-      if (MDB2::isError($review_result) || $review_result->numRows() == 0) {
-	$Conf->errorMsg("That's odd - no information on review. "
-			. $review_result->getMessage());
+      if (edb_nrows($review_result) == 0) {
+	$Conf->errorMsg("That's odd - no information on review. ");
       } else {
-	$review_row = $review_result->fetchRow();
+	$review_row = edb_row($review_result);
 
 	print "<tr>";
 	print "<td>";

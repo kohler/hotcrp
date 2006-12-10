@@ -90,7 +90,7 @@ if (isset($_REQUEST['register']) && $OK) {
 	    $Me->collaborators = $_REQUEST['collaborators'];
 
 	if ($OK)
-	    $result = $Me->updateDB($Conf);
+	    $Me->updateDB($Conf);
 
 	// if PC member, update collaborators and areas of expertise
 	if (($Me->isPC || $newProfile) && $OK) {
@@ -146,7 +146,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Me->isPC) {
     $msg = ($Me->lastName ? "" : "Please take a moment to update your contact information.  ");
     $msg .= "We need a list of your recent collaborators to detect paper conflicts.  If you have no collaborators, enter \"None\".";
     $result = $Conf->q("select * from TopicArea");
-    if (!MDB2::isError($result) && $result->numRows() > 0)
+    if (edb_nrows($result) > 0)
 	$msg .= "  Additionally, we use your topic interests to assign you papers you might like.";
     $Conf->infoMsg($msg);
 } else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1) {
@@ -237,13 +237,13 @@ Zhang, Ping Yen (INRIA)
 </tr>\n\n";
 
     $result = $Conf->q("select TopicArea.topicId, TopicArea.topicName, TopicInterest.interest from TopicArea left join TopicInterest on TopicInterest.contactId=$Me->contactId and TopicInterest.topicId=TopicArea.topicId order by TopicArea.topicName");
-    if (!MDB2::isError($result) && $result->numRows() > 0) {
+    if (edb_nrows($result) > 0) {
 	echo "<tr id='topicinterest'>
   <td class='caption'>Topic interests</td>
   <td class='entry' colspan='3' id='topicinterest'><table class='topicinterest'>
        <tr><td></td><th>Low</th><th>Med.</th><th>High</th></tr>\n";
-	for ($i = 0; $i < $result->numRows(); $i++) {
-	    $row = $result->fetchRow();
+	for ($i = 0; $i < edb_nrows($result); $i++) {
+	    $row = edb_row($result);
 	    echo "      <tr><td class='ti_topic'>", htmlspecialchars($row[1]), "</td>";
 	    $interest = isset($row[2]) ? $row[2] : 1;
 	    for ($j = 0; $j < 3; $j++) {

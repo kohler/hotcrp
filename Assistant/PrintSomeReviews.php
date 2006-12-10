@@ -89,10 +89,8 @@ if ($_SESSION["GradeSortKey"]=="byReviews") {
   exit();
 }
 
-if (MDB2::isError($result)) {
-  $Conf->errorMsg("Error in sql " . $result->getMessage() );
+if (!$result)
   exit();
-} 
 
 ?>
 
@@ -135,7 +133,7 @@ $gradeMax = $rf->maxNumericScore('grade');
 
 
 $rowNum = 0;
-while ($row=$result->fetchRow()) {
+while ($row=edb_row($result)) {
   $rowNum++;
   $paperId = $row[0];
   $title = $row[1];

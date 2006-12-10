@@ -62,21 +62,16 @@ $query="select ActionLog.logId, unix_timestamp(ActionLog.time), "
 . " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ActionLog.paperId "
 . " from ActionLog join ContactInfo using (contactId) $ORDER limit $start,$count";
 
-$result = $Conf->q($query);
+$result = $Conf->qe($query);
 
-if (MDB2::isError($result)) {
-    $Conf->errorMsg("Query failed" . $result->getMessage());
-    $Conf->errorMsg("Query is $query");
-} else {
-    while($row = $result->fetchRow()) {
-	print "<tr>";
-	echo "<td>", htmlspecialchars($row[0]), "</td>";
-	echo "<td>", htmlspecialchars($row[8] ? $row[8] : ""), "</td>";
-	echo "<td>",  date("D M j G:i:s Y", $row[1]), "</td>";
-	echo "<td>", htmlspecialchars($row[2]), "</td>";
-	echo "<td>", contactHtml($row[5], $row[6], $row[7]), "<br/>", htmlspecialchars($row[4]), "</td>";
-	echo "</tr>\n";
-    }
+while($row = edb_row($result)) {
+    print "<tr>";
+    echo "<td>", htmlspecialchars($row[0]), "</td>";
+    echo "<td>", htmlspecialchars($row[8] ? $row[8] : ""), "</td>";
+    echo "<td>",  date("D M j G:i:s Y", $row[1]), "</td>";
+    echo "<td>", htmlspecialchars($row[2]), "</td>";
+    echo "<td>", contactHtml($row[5], $row[6], $row[7]), "<br/>", htmlspecialchars($row[4]), "</td>";
+    echo "</tr>\n";
 }
 
 echo "</table>\n";

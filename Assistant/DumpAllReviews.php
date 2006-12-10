@@ -85,14 +85,13 @@ $query="SELECT Paper.paperId, Paper.title, Paper.abstract, Paper.authorsResponse
     . " ORDER BY paperId ";
 
 $result=$Conf->qe($query);
-print "<p> Found " .  $result->numRows() . " papers. </p>";
+print "<p> Found " .  edb_nrows($result) . " papers. </p>";
 print "<P CLASS=page> You should see a page break following this when printing. </p>";
 
-if (MDB2::isError($result)) {
-  $Conf->errorMsg("Error in retrieving paper list " . $result->getMessage());
+if (!$result)
   exit();
-}
-while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC) ) {
+
+while ($row = edb_arow($result) ) {
   $paperId=$row['paperId'];
   $printMe = 1;
 
@@ -138,7 +137,7 @@ while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC) ) {
       $revR = $Conf->qe($revQ);
       if ($revR) {
 	$sep = "";
-	while($row=$revR->fetchRow()) {
+	while($row=edb_row($revR)) {
 	  print "<a href=\"mailto:$row[2]?Subject=Concerning%20Paper%20$paperId\">";
 	  print "$sep$row[0] $row[1] ($row[2]) ";
 	  print "</a>";
@@ -157,7 +156,7 @@ while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC) ) {
       $revR = $Conf->qe($revQ);
       if ($revR) {
 	$sep = "";
-	while($row=$revR->fetchRow()) {
+	while($row=edb_row($revR)) {
 	  print "<a href=\"mailto:$row[2]?Subject=Concerning%20Paper%20$paperId\">";
 	  print "$sep$row[0] $row[1] ($row[2]) ";
 	  print "</a>";
@@ -177,7 +176,7 @@ while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC) ) {
       $revR = $Conf->qe($revQ);
       if ($revR) {
 	$sep = "";
-	while($row=$revR->fetchRow()) {
+	while($row=edb_row($revR)) {
 	  print "<a href=\"mailto:$row[2]?Subject=Concerning%20Paper%20$paperId\">";
 	  print "$sep$row[0] $row[1] ($row[2]) ";
 	  print "</a>";
@@ -235,13 +234,13 @@ while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC) ) {
 			 );
 
 
-    if (! MDB2::isError($result2) ) {
-    $num_reviews = $result2->numRows();
+    if ($result2) {
+    $num_reviews = edb_nrows($result2);
       $header = 0;
       $reviewerId = array();
 
       $i = 1;
-      while($row = $result2->fetchRow(MDB2_FETCHMODE_ASSOC) ) {
+      while($row = edb_arow($result2) ) {
 	$reviewer=$row['contactId'];
 	$reviewId=$row['reviewId'];
 	$first=$row['firstName'];
@@ -300,17 +299,14 @@ while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC) ) {
 			  . " FROM PaperComment "
 			  . " WHERE paperId=$paperId "
 			  . " ORDER BY time ");
-    if (MDB2::isError($comResult) ) {
-      $Conf->errorMsg("Error in SQL " . $comResult->getMessage() );
-    }
 
-    if ($comResult->numRows() == 0) {
+    if (edb_nrows($comResult) == 0) {
       //
       // No comment if there are none...
       //
       //$Conf->infoMsg("There are no comments");
     } else {
-      while ($row=$comResult->fetchRow(MDB2_FETCHMODE_ASSOC) ) {
+      while ($row=edb_arow($comResult) ) {
 	print "<table width=75% align=center>\n";
 
 	$when = date ("l dS of F Y h:i:s A",

@@ -18,7 +18,7 @@ function saveAssignments($reviewer) {
 
     $while = "while saving review assignments";
     $result = $Conf->qe("lock tables Paper read, PaperReview write, PaperConflict write", $while);
-    if (MDB2::isError($result))
+    if (!$result)
 	return $result;
 
     $result = $Conf->qe("select Paper.paperId, PaperConflict.conflictType,
@@ -30,18 +30,17 @@ function saveAssignments($reviewer) {
 	order by paperId asc, reviewId asc", $while);
 
     $lastPaperId = -1;
-    if (!MDB2::isError($result))
-	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
-	    if ($row->paperId == $lastPaperId || $row->conflictType == CONFLICT_AUTHOR)
-		continue;
-	    $lastPaperId = $row->paperId;
-	    $type = cvtint($_REQUEST["assrev$row->paperId"]);
-	    if ($type >= 0 && $row->conflictType > 0)
-		$Conf->qe("delete from PaperConflict where paperId=$row->paperId and contactId=$reviewer", $while);
-	    if ($type < 0 && $row->conflictType == 0)
-		$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($row->paperId, $reviewer, " . CONFLICT_CHAIRMARK . ")", $while);
-	    $Me->assignPaper($row->paperId, $row, $reviewer, $type, $Conf);
-	}
+    while (($row = edb_orow($result))) {
+	if ($row->paperId == $lastPaperId || $row->conflictType == CONFLICT_AUTHOR)
+	    continue;
+	$lastPaperId = $row->paperId;
+	$type = cvtint($_REQUEST["assrev$row->paperId"]);
+	if ($type >= 0 && $row->conflictType > 0)
+	    $Conf->qe("delete from PaperConflict where paperId=$row->paperId and contactId=$reviewer", $while);
+	if ($type < 0 && $row->conflictType == 0)
+	    $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($row->paperId, $reviewer, " . CONFLICT_CHAIRMARK . ")", $while);
+	$Me->assignPaper($row->paperId, $row, $reviewer, $type, $Conf);
+    }
 
     $Conf->qe("unlock tables", $while);
 }
@@ -80,15 +79,13 @@ $query = "select ContactInfo.contactId, firstName, lastName,
 		group by contactId
 		order by lastName, firstName, email";
 $result = $Conf->qe($query);
-if (!MDB2::isError($result)) {
-    while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
-	echo "<option value='$row->contactId'";
-	if ($row->contactId == $reviewer)
-	    echo " selected='selected'";
-	echo ">", contactHtml($row);
-	echo " (", plural($row->reviewCount, "assignment"), ")";
-	echo "</option>";
-    }
+while (($row = edb_orow($result))) {
+    echo "<option value='$row->contactId'";
+    if ($row->contactId == $reviewer)
+	echo " selected='selected'";
+    echo ">", contactHtml($row);
+    echo " (", plural($row->reviewCount, "assignment"), ")";
+    echo "</option>";
 }
 
 echo "</select>\n</form>\n\n";
@@ -96,24 +93,21 @@ echo "</select>\n</form>\n\n";
 
 if ($reviewer >= 0) {
     $result = $Conf->qe("select topicName, interest from TopicArea join TopicInterest using (topicId) where contactId=$reviewer order by topicName");
-    if (!MDB2::isError($result)) {
-	while (($row = $result->fetchRow()))
-	    $interest[$row[1]][] = $row[0];
-	if (isset($interest[0]) || isset($interest[2])) {
-	    echo "<div class='topicinterest'>";
-	    if (isset($interest[2]))
-		echo "<strong>High interest topics:</strong> ", join(", ", $interest[2]), "<br/>";
-	    if (isset($interest[0]))
-		echo "<strong>Low interest topics:</strong> ", join(", ", $interest[0]), "<br/>";
-	    echo "</div>\n";
-	}
+    $interest = array();
+    while (($row = edb_row($result)))
+	$interest[$row[1]][] = $row[0];
+    if (isset($interest[0]) || isset($interest[2])) {
+	echo "<div class='topicinterest'>";
+	if (isset($interest[2]))
+	    echo "<strong>High interest topics:</strong> ", join(", ", $interest[2]), "<br/>";
+	if (isset($interest[0]))
+	    echo "<strong>Low interest topics:</strong> ", join(", ", $interest[0]), "<br/>";
+	echo "</div>\n";
     }
 
     // link to conflict search
     $result = $Conf->qe("select firstName, lastName, affiliation, collaborators from ContactInfo where contactId=$reviewer");
-    if (!MDB2::isError($result)) {
-	$row = $result->fetchRow(MDB2_FETCHMODE_OBJECT);
-
+    if ($result && ($row = edb_orow($result))) {
 	// search outline from old CRP, done here in a very different way
 	preg_match_all('/[a-z]{3,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation), $match);
 	$useless = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1, "david" => 1, "john" => 1);

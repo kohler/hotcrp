@@ -78,12 +78,10 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
 		from PaperReview
 		join ContactInfo using (contactId)
 		where reviewId=$reviewId", $while);
-    if (MDB2::isError($result))
-	return false;
-    else if ($result->numRows() == 0)
+    if (edb_nrows($result) == 0)
 	return $Conf->errorMsg("No such review request.");
 
-    $row = $result->fetchRow(MDB2_FETCHMODE_OBJECT);
+    $row = edb_orow($result);
     if ($row->paperId != $prow->paperId)
 	return $Conf->errorMsg("Weird!  Retracted review is for a different paper.");
     else if ($row->reviewModified > 0)
@@ -135,23 +133,22 @@ function pcAssignments() {
 	from PCMember
 	left join PaperConflict on (PaperConflict.contactId=PCMember.contactId and PaperConflict.paperId=$prow->paperId)
 	left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.paperId=$prow->paperId)", $while);
-    if (!MDB2::isError($result))
-	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
-	    $val = defval($_REQUEST["pcs$row->contactId"], 0);
-	    if ($row->conflictType == CONFLICT_AUTHOR)
-		continue;
+    while (($row = edb_orow($result))) {
+	$val = defval($_REQUEST["pcs$row->contactId"], 0);
+	if ($row->conflictType == CONFLICT_AUTHOR)
+	    continue;
 
-	    // manage conflicts
-	    if ($row->conflictType && $val >= 0)
-		$Conf->qe("delete from PaperConflict where paperId=$prow->paperId and contactId=$row->conflictId", $while);
-	    else if (!$row->conflictType && $val < 0)
-		$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($prow->paperId, $row->contactId, " . CONFLICT_CHAIRMARK . ")", $while);
+	// manage conflicts
+	if ($row->conflictType && $val >= 0)
+	    $Conf->qe("delete from PaperConflict where paperId=$prow->paperId and contactId=$row->conflictId", $while);
+	else if (!$row->conflictType && $val < 0)
+	    $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($prow->paperId, $row->contactId, " . CONFLICT_CHAIRMARK . ")", $while);
 
-	    // manage assignments
-	    $val = max($val, 0);
-	    if ($val != $row->reviewType && ($val == 0 || $val == REVIEW_PRIMARY || $val == REVIEW_SECONDARY))
-		$Me->assignPaper($prow->paperId, $row, $row->contactId, $val, $Conf);
-	}
+	// manage assignments
+	$val = max($val, 0);
+	if ($val != $row->reviewType && ($val == 0 || $val == REVIEW_PRIMARY || $val == REVIEW_SECONDARY))
+	    $Me->assignPaper($prow->paperId, $row, $row->contactId, $val, $Conf);
+    }
 }
 if (isset($_REQUEST['update']) && $Me->amAssistant()) {
     pcAssignments();
@@ -175,15 +172,15 @@ function requestReview($email) {
 
     // check for outstanding review request
     $result = $Conf->qe("select reviewId, firstName, lastName, email from PaperReview join ContactInfo on (ContactInfo.contactId=PaperReview.requestedBy) where paperId=$prow->paperId and PaperReview.contactId=$reqId", $while);
-    if (MDB2::isError($result))
+    if (!$result)
 	return false;
-    else if (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
+    else if (($row = edb_orow($result)))
 	return $Conf->errorMsg(contactHtml($row) . " has already requested a review from " . contactHtml($Them) . ".");
 
     // check for outstanding refusal to review
     $result = $Conf->qe("select paperId, '<conflict>' from PaperConflict where paperId=$prow->paperId and contactId=$reqId union select paperId, reason from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
-    if (!MDB2::isError($result) && $result->numRows() > 0) {
-	$row = $result->fetchRow();
+    if (edb_nrows($result) > 0) {
+	$row = edb_row($result);
 	if ($row[1] == "<conflict>")
 	    return $Conf->errorMsg(contactHtml($Them) . " has a conflict registered with paper #$prow->paperId and cannot be asked to review it.");
 	else if ($Me->amAssistantOverride()) {
@@ -325,19 +322,19 @@ if ($Me->amAssistant()) {
 	left join PaperReview as AllReviews on (AllReviews.contactId=ContactInfo.contactId)
 	group by email
 	order by lastName, firstName, email", "while looking up PC");
-    if (!MDB2::isError($result))
-	while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
-	    $pc[] = $row;
+    $pcx = array();
+    while (($row = edb_orow($result)))
+	$pcx[] = $row;
 
     // PC conflicts row
     echo "<tr class='pt_conflict_ass'>
   <td class='caption'>PC assignments<br /><span class='hint'>Any review preferences are in brackets</span></td>
   <td class='entry'><table class='pcass'><tr><td><table>\n";
-    $n = intval((count($pc) + 2) / 3);
-    for ($i = 0; $i < count($pc); $i++) {
+    $n = intval((count($pcx) + 2) / 3);
+    for ($i = 0; $i < count($pcx); $i++) {
 	if (($i % $n) == 0 && $i)
 	    echo "    </table></td><td class='colmid'><table>\n";
-	$p = $pc[$i];
+	$p = $pcx[$i];
 
 	// first, name and assignment
 	echo "      <tr>";

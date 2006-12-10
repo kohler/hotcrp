@@ -62,7 +62,6 @@ Code/schema.sql
 Code/search.inc
 Code/tags.inc
 
-Code/MDB2-2.3.0
 Code/Mail-1.1.14
 
 images/GenChart.php

@@ -26,9 +26,7 @@ $query = "SELECT ContactInfo.contactId FROM PCMember,ContactInfo "
   . " ORDER BY ContactInfo.lastName, ContactInfo.FirstName ";
 
 $pcresult = $Conf -> qe($query);
-
-if ( $pcresult ) {
-  while ($row = $pcresult->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+while ($row = edb_arow($pcresult)) {
     $pcId=$row['contactId'];
 
     if ( $_SESSION["Me"] -> isChair ) {
@@ -45,7 +43,6 @@ if ( $pcresult ) {
     $Conf->reviewerSummary($pcId, 0, $extra);
 
     print "<br> <br>";
-  }
 }
 
 ?>

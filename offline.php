@@ -28,7 +28,7 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 	    $rrow = $Conf->reviewRow(array('paperId' => $prow->paperId, 'contactId' => $Me->contactId));
 	    if ($rf->checkRequestFields($req, $rrow, $tf)) {
 		$result = $rf->saveRequest($req, $rrow, $prow, $Me->contactId);
-		if (!MDB2::isError($result))
+		if ($result)
 		    $tf['confirm'][] = (isset($req['submit']) ? "Submitted" : "Uploaded") . " review for paper #$prow->paperId.";
 	    }
 	} else

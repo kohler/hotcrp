@@ -14,10 +14,10 @@ function spotSecondaryReviewers($howmany) {
     $q .= " group by Paper.paperId order by Paper.paperId";
     $result = $Conf->qe($q);
 
-  if (!MDB2::isError($result)) {
+  if ($result) {
     print "<table align=center width=80% border=1> ";
     print "<tr> <th colspan=2> Papers With $howmany Assigned Secondary </th> </tr>";
-    while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+    while ($row = edb_arow($result)) {
       $paperId=$row['paperId'];
       $title=$row['title'];
       print "<tr> <td> $paperId </td><td> ";
@@ -46,14 +46,14 @@ function spotReviews($howmany, $finalized, $reviewType) {
     //  print "<p> query is $query </p>";
     $result=$Conf->qe($query);
 
-  if (!MDB2::isError($result)) {
+  if ($result) {
     print "<table align=center width=80% border=1> ";
     if ( $finalized ) {
       print "<tr> <th colspan=2> Papers With $howmany Finalized " . $reviewTypeName[$reviewType] . " Reviews </th> </tr>";
     } else {
       print "<tr> <th colspan=2> Papers With $howmany Started " . $reviewTypeName[$reviewType] . " Reviews </th> </tr>";
     }
-    while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+    while ($row = edb_arow($result)) {
       $paperId=$row['paperId'];
       $title=$row['title'];
       print "<tr> <td> $paperId </td><td> ";

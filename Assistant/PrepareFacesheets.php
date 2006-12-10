@@ -24,17 +24,14 @@ $query = "SELECT firstName, lastName, email, "
 
 $result = $Conf->qe($query);
 
-if (MDB2::isError($result)) {
-  $Conf->errorMsg("Error in retrieving author list "
-		  . $result->getMessage());
-} else {
+if ($result) {
   print "<table align=center border=1>\n";
   print "<tr> <th> # </th> <th> Paper # </th> ";
   print "<th> Contact Authors</th>\n";
   print "<th> Paper Title </th> </tr>\n";
 
   $num = 1;
-  while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+  while ($row = edb_arow($result)) {
     print "<tr> <td> $num </td> <td> " . $row['paperId'] . " </td> ";
     print "<td> "
       . $row['firstName']
@@ -67,17 +64,14 @@ $query = "SELECT firstName, lastName, email, "
 
 $result = $Conf->qe($query);
 
-if (MDB2::isError($result)) {
-  $Conf->errorMsg("Error in retrieving author list "
-		  . $result->getMessage());
-} else {
+if ($result) {
   print "<table align=center border=1>\n";
   print "<tr> <th> # </th> ";
   print "<th> Reviewers </th>\n";
   print "</tr>\n";
 
   $num = 1;
-  while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+  while ($row = edb_arow($result)) {
       print "<tr> <td> $num </td> ";
       print "<td> "
 	. $row['firstName']
@@ -108,17 +102,14 @@ $query = "SELECT firstName, lastName, email, "
 
 $result = $Conf->qe($query);
 
-if (MDB2::isError($result)) {
-  $Conf->errorMsg("Error in retrieving author list "
-		  . $result->getMessage());
-} else {
+if ($result) {
   print "<table align=center border=1>\n";
   print "<tr> <th> # </th> ";
   print "<th> Reviewers </th>\n";
   print "</tr>\n";
 
   $num = 1;
-  while ($row = $result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+  while ($row = edb_arow($result)) {
     print "<tr> <td> $num </td> ";
     print "<td> "
       . $row['firstName']

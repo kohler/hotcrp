@@ -88,10 +88,8 @@ $gradeMax = $rf->maxNumericScore('grade');
 
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title FROM Paper join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$Me->contactId and PaperReview.reviewType=" . REVIEW_PRIMARY . ") order by Paper.paperId");
 
-if (MDB2::isError($result)) {
-  $Conf->errorMsg("Error in sql ");
+if (!$result)
   exit();
-} 
 
 print "<FORM name='Paper' method=\"POST\" action=\"$_SERVER[PHP_SELF]\">";
 ?>
@@ -108,7 +106,7 @@ print "<FORM name='Paper' method=\"POST\" action=\"$_SERVER[PHP_SELF]\">";
 <th width=5%> Your Grade </th>
 </tr>
 <?php 
-while ($row=$result->fetchRow()) {
+while ($row=edb_row($result)) {
   $paperId = $row[0];
   $title = $row[1];
   print "<tr> <td> $paperId </td>";
@@ -152,12 +150,8 @@ while ($row=$result->fetchRow()) {
       . " WHERE paperId=$paperId AND contactId=" . $_SESSION["Me"]->contactId . " ";
       
     $r = $Conf->qe($q);
-    if (MDB2::isError($r) ) {
-      $Conf->errorMsg("Error in query");
-    } else {
-      $row = $r->fetchRow(MDB2_FETCHMODE_ASSOC);
-      $grade = $row['grade'];
-    }
+    $row = edb_arow($r);
+    $grade = defval($row['grade'], 0);
 
     print "<SELECT NAME='gradeForPaper[$paperId]'>\n";
     for ($i = 5; $i >= 0; $i--) {
@@ -193,10 +187,8 @@ $Conf->infoMsg("You can assign grades for any paper for which you are a secondar
 $result=$Conf->qe("SELECT Paper.paperId, Paper.title "
 		  . " FROM Paper join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$Me->contactId and PaperReview.reviewType=" . REVIEW_SECONDARY . ") order by Paper.paperId");
 
-if (MDB2::isError($result)) {
-  $Conf->errorMsg("Error in sql" );
+if (!$result)
   exit();
-} 
 ?>
 
 <table border=1>
@@ -211,7 +203,7 @@ if (MDB2::isError($result)) {
 <th width='5%'> Your Grade </th>
 </tr>
 <?php 
-while ($row=$result->fetchRow()) {
+while ($row=edb_row($result)) {
   $paperId = $row[0];
   $title = $row[1];
   print "<tr> <td> $paperId </td>";
@@ -260,12 +252,8 @@ while ($row=$result->fetchRow()) {
       . " WHERE paperId=$paperId AND contactId=" . $_SESSION["Me"]->contactId . " ";
       
     $r = $Conf->qe($q);
-    if (MDB2::isError($r) ) {
-      $Conf->errorMsg("Error in query");
-    } else {
-      $row = $r->fetchRow(MDB2_FETCHMODE_ASSOC);
-      $grade = $row['grade'];
-    }
+    $row = edb_arow($r);
+    $grade = defval($row['grade'], 0);
 
     print "<SELECT NAME='gradeForPaper[$paperId]'>\n";
     for ($i = 5; $i >= 0; $i--) {

@@ -52,11 +52,11 @@ function addContactAuthor($paperId, $contactId) {
     global $Conf;
     
     $result = $Conf->qe("lock tables PaperConflict write", "while adding contact author");
-    if (MDB2::isError($result))
-	return $result;
+    if (!$result)
+	return false;
 
     $result = $Conf->qe("select conflictType from PaperConflict where paperId=$paperId and contactId=$contactId", "while adding contact author");
-    if (!MDB2::isError($result) && $result->numRows() > 0)
+    if (edb_nrows($result) > 0)
 	$q = "update PaperConflict set conflictType=" . CONFLICT_AUTHOR . " where paperId=$paperId and contactId=$contactId";
     else
 	$q = "insert into PaperConflict (paperId, contactId, conflictType) values ($paperId, $contactId, " . CONFLICT_AUTHOR . ")";
@@ -82,8 +82,7 @@ else if (isset($_REQUEST["update"])) {
     if (!isset($_REQUEST["email"]) || trim($_REQUEST["email"]) == "")
 	$Conf->errorMsg("You must enter the new contact author's email address."); 
     else if (($id = $Conf->getContactId($_REQUEST["email"])) > 0) {
-	$result = addContactAuthor($paperId, $id);
-	if (!MDB2::isError($result))
+	if (addContactAuthor($paperId, $id))
 	    $Conf->confirmMsg("Contact author added.");
     }
 } else if (isset($_REQUEST["remove"])) {
@@ -92,8 +91,7 @@ else if (isset($_REQUEST["update"])) {
     else if (($id = cvtint($_REQUEST['remove'])) <= 0)
 	$Conf->errorMsg("Invalid contact author ID in request.");
     else {
-	$result = removeContactAuthor($paperId, $id);
-	if (!MDB2::isError($result))
+	if (removeContactAuthor($paperId, $id))
 	    $Conf->confirmMsg("Contact author removed.");
     }
 } else
@@ -131,13 +129,11 @@ if ($OK) {
 	where paperId=$paperId and conflictType=" . CONFLICT_AUTHOR . "
 	order by lastName, firstName, email";
     $result = $Conf->qe($q, "while finding contact authors");
-    if (!MDB2::isError($result)) {
-	while ($row = $result->fetchRow()) {
-	    echo "<tr><td>", contactHtml($row[0], $row[1]), "</td> <td>", htmlspecialchars($row[2]), "</td>";
-	    if ($Me->amAssistant())
-		echo " <td><button class='button_small' type='submit' name='remove' value='$row[3]'>Remove contact author</button></td>";
-	    echo "</tr>\n    ";
-	}
+    while ($row = edb_row($result)) {
+	echo "<tr><td>", contactHtml($row[0], $row[1]), "</td> <td>", htmlspecialchars($row[2]), "</td>";
+	if ($Me->amAssistant())
+	    echo " <td><button class='button_small' type='submit' name='remove' value='$row[3]'>Remove contact author</button></td>";
+	echo "</tr>\n    ";
     }
 
     echo "    <tr><td><input class='textlite' type='text' name='name' size='20' onchange='highlightUpdate()' /></td>

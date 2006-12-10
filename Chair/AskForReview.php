@@ -52,18 +52,17 @@ if (IsSet($_REQUEST["SendReviews"]) && sizeof($_REQUEST["Requests"]) > 0) {
     $query = "SELECT reviewRequestId, paperId FROM ReviewRequest WHERE paperId=$paperId AND asked=$id";
     $result=$Conf->qe($query);
 
-    if ( MDB2::isError($result) && $result->numRows() >= 1 ) {
+    if ($result && edb_nrows($result) >= 1 ) {
       $Conf->errorMsg("Reviewer #$id (" . $_REQUEST["firstEmail"] . ") has already been asked to review $paperId");
     } else {
       //
       // Pull up the paper information to get the title, etc
       //
       $result=$Conf->qe("SELECT title FROM Paper WHERE paperId='$paperId'");
-      if ( MDB2::isError($result) || $result->numRows() == 0 ) {
-	$Conf->errorMsg("Odd - couldn't find paper #$paperId - skipping assignment"
-			. $result->getMessage());
+      if (!$result || edb_nrows($result) == 0 ) {
+	$Conf->errorMsg("Odd - couldn't find paper #$paperId - skipping assignment");
       } else {
-	$row=$result->fetchRow();
+	$row=edb_row($result);
 	$title=$row[0];
 	$paperList= $paperList . "Paper #$paperId, $title\n";
 	// $Conf->errorMsg("Do $paperId");
@@ -71,10 +70,7 @@ if (IsSet($_REQUEST["SendReviews"]) && sizeof($_REQUEST["Requests"]) > 0) {
 	  . " requestedBy=" . $_SESSION["Me"]->contactId . ", "
 	  . " asked=$id, "
 	  . " paperId=$paperId";
-	$request=$Conf->qe($query);
-	if (MDB2::isError($result)) {
-	  $Conf->errorMsg("Request to review paper $paperId failed for $query: " . $result->getMessage());
-	}
+	$Conf->qe($query);
       }
     }
   }
@@ -114,9 +110,7 @@ $query = "SELECT Paper.paperId, Paper.Title, ContactInfo.email "
 
 $result=$Conf->qe($query);
 
-if (MDB2::isError($result)) {
-  $Conf->errorMsg("Error in retrieving list of reviews: " . $result->getMessage());
-} else {
+if ($result) {
 ?>
 <table border=1>
 <tr> <th width=5%> Paper # </th>
@@ -124,7 +118,7 @@ if (MDB2::isError($result)) {
 <th> Title </th>
 </tr>
 <?php 
- while ($row=$result->fetchRow()) {
+ while ($row=edb_row($result)) {
   print "<tr> <td> $row[0] </td> <td> $row[2] </td> <td> $row[1] </td> </tr>\n";
  }
 ?>
@@ -145,13 +139,11 @@ if (MDB2::isError($result)) {
 <INPUT TYPE=SUBMIT name="SendReviews" value="Send the Review Requests">
 <br>
 <?php 
-$result=$Conf->q("SELECT Paper.paperId, Paper.title "
+$result=$Conf->qe("SELECT Paper.paperId, Paper.title "
 . "FROM Paper where timeSubmitted>0 and timeWithdrawn<=0 "
 . "ORDER BY Paper.paperId ");
 
-if (MDB2::isError($result)) {
-  $Conf->errorMsg("Error in sql " . $result->getMessage());
-} else {
+if ($result) {
   $ids=array();
   $titles=array();
   $i = 0;
@@ -163,14 +155,14 @@ if (MDB2::isError($result)) {
 <th> Title </th>
 </tr>
 <?php 
-  while ($row=$result->fetchRow()) {
+  while ($row=edb_row($result)) {
     $id = $row[0];
     $title = $row[1];
     $me =$_SESSION["Me"]->contactId;
     $r2 = $Conf->q("SELECT COUNT(*) FROM PaperReview WHERE "
 	 . " PaperReview.paperId=$id");
     if ( $r2 ) {
-	$rr = $r2->fetchRow();
+	$rr = edb_row($r2);
 	$num = $rr[0];
     } else {
 	$num = "??";

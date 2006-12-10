@@ -56,11 +56,11 @@ class Contact {
 		left join Chair using (contactId)
 		where ContactInfo.contactId=$this->contactId
 		group by ContactInfo.contactId");
-	    if (MDB2::isError($result) || $result->numRows() == 0)
+	    if (edb_nrows($result) == 0)
 		$this->invalidate();
 	    else {
 		$this->isAuthor = $this->isReviewer = $this->isPC = $this->isChair = $this->isAssistant = $this->reviewsOutstanding = false;
-		while (($row = $result->fetchRow())) {
+		while (($row = edb_row($result))) {
 		    if ($row[0] == CONFLICT_AUTHOR)
 			$this->isAuthor = true;
 		    if ($row[1] > 0)
@@ -133,8 +133,8 @@ class Contact {
 	$query = "select count(*) FROM PaperReview WHERE "
 	    . " contactId=" . $this->contactId;
 	$result = $Conf->q($query);
-	if ( !MDB2::isError($result) && $result->numRows() == 1 ) {
-	    $row = $result->fetchRow();
+	if (edb_nrows($result) == 1) {
+	    $row = edb_row($result);
 	    return $row[0];
 	} else {
 	    return 0;
@@ -146,8 +146,8 @@ class Contact {
 	$query = "select count(*) from PaperReview where "
 	    . " contactId=" . $this->contactId . " and reviewType=" . REVIEW_PRIMARY;
 	$result = $Conf->q($query);
-	if ( !MDB2::isError($result) && $result->numRows() == 1 ) {
-	    $row = $result->fetchRow();
+	if (edb_nrows($result) == 1) {
+	    $row = edb_row($result);
 	    return $row[0];
 	} else {
 	    return 0;
@@ -159,8 +159,8 @@ class Contact {
 	$query = "select count(*) FROM PaperReview where "
 	    . " contactId=" . $this->contactId . " and reviewType=" . REVIEW_SECONDARY;
 	$result = $Conf->q($query);
-	if ( !MDB2::isError($result) && $result->numRows() == 1 ) {
-	    $row = $result->fetchRow();
+	if (edb_nrows($result) == 1) {
+	    $row = edb_row($result);
 	    return $row[0];
 	} else {
 	    return 0;
@@ -285,15 +285,15 @@ class Contact {
 	$this->email = trim($email);
 	$this->password = $this->generatePassword(10);
 	$result = $conf->q(sprintf("insert into ContactInfo (email, password) values ('%s', '%s')", sqlqtrim($this->email), sqlqtrim($this->password)));
-	if (MDB2::isError($result))
+	if (!$result)
 	    return $result;
 	return $this->lookupByEmail($this->email, $conf);
     }
 
     function updateFromQuery($query, $conf) {
 	$result = $conf->q($query);
-	if (!MDB2::isError($result) && $result->numRows() >= 1) {
-	    $fromdb = $result->fetchRow(MDB2_FETCHMODE_OBJECT);
+	if (edb_nrows($result) >= 1) {
+	    $fromdb = edb_orow($result);
 	  
 	    $this->contactId = $fromdb->contactId;
 	    $this->visits = $fromdb->visits;
@@ -361,7 +361,7 @@ class Contact {
 	$message = date ("l dS of F Y h:i:s A", $time) . "\n";
 	$query = "UPDATE ContactInfo SET visits='$this->visits', "
 	    . " note='$message' WHERE contactId='$this->contactId'";
-	$result = $conf->qe($query);
+	$conf->qe($query);
     }
 
 
@@ -757,7 +757,7 @@ class Contact {
 	    // Query for a specific match of the author and paper
 	    $query = "select paperId from PaperConflict where paperId=$paperId and contactId=$this->contactId and conflictType=" . CONFLICT_AUTHOR;
 	    $result = $conf->qe($query);
-	    return !MDB2::isError($result) && $result->numRows() > 0;
+	    return edb_nrows($result) > 0;
 	} else
 	    return $prow->conflictType == CONFLICT_AUTHOR;
     }
@@ -945,16 +945,12 @@ and paste it into your web browser's location field.
 
       $query="SELECT paperId, reviewSubmitted FROM PaperReview WHERE contactId='$this->contactId'";
       $result = $conf->qe($query);
-      if (!MDB2::isError($result)) {
-	while ($row = $result->fetchRow()) {
+      while ($row = edb_row($result)) {
 	  if ($row[1]) {
-	    $paperStatus[$row[0]] = "Finalized";
+	      $paperStatus[$row[0]] = "Finalized";
 	  } else {
-	    $paperStatus[$row[0]] = "Started";
+	      $paperStatus[$row[0]] = "Started";
 	  }
-	}
-      } else {
-	$conf->errorMsg("Error in review query: " . $result->getMessage());
       }
       //
       // Now, print out the papers w/hyper links
@@ -995,7 +991,7 @@ and paste it into your web browser's location field.
 	    return;
 	
 	$result = $conf->qe($q, "while assigning review");
-	if (!MDB2::isError($result))
+	if ($result)
 	    $conf->log("Added $reviewTypeName[$type] reviewer $reviewer", $this, $paperId);
     }
 

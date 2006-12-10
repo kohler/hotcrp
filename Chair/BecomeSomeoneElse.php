@@ -17,15 +17,13 @@ $result = $Conf->qe("select contactId, firstName, lastName, email,
 	left join ChairAssistant using (contactId)
 	left join PCMember using (contactId)
 	order by chair desc, ass desc, pc desc, lastName, firstName, email");
-if (!MDB2::isError($result)) {
-    $oldtype = "";
-    while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
-	$type = ($row->chair ? "PC Chair" : ($row->ass ? "PC Chair's Assistant" : ($row->pc ? "PC Member" : "Others")));
-	if ($type != $oldtype)
-	    echo "<option value='-1' disabled='disabled'>", $type, "</option>\n";
-	echo "<option value='$row->contactId'>&nbsp;&nbsp;", contactHtml($row), "</option>\n";
-	$oldtype = $type;
-    }
+$oldtype = "";
+while (($row = edb_orow($result))) {
+    $type = ($row->chair ? "PC Chair" : ($row->ass ? "PC Chair's Assistant" : ($row->pc ? "PC Member" : "Others")));
+    if ($type != $oldtype)
+	echo "<option value='-1' disabled='disabled'>", $type, "</option>\n";
+    echo "<option value='$row->contactId'>&nbsp;&nbsp;", contactHtml($row), "</option>\n";
+    $oldtype = $type;
 }
 
 echo "</select>

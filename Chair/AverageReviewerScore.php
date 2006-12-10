@@ -46,10 +46,8 @@ $result=$Conf->qe("SELECT ContactInfo.firstName, ContactInfo.lastName,"
 		  );
 
 
-if (MDB2::isError($result)) {
-  $Conf->errorMsg("Error in sql " . $result->getMessage());
+if (!$result)
   exit();
-} 
 
 ?>
 
@@ -68,7 +66,7 @@ $rf = reviewForm();
 $meritMax = $rf->maxNumericScore('overAllMerit');
 
 $rowNum = 0;
-while ($row=$result->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+while ($row=edb_arow($result)) {
   $rowNum++;
 
   $first=$row['firstName'];

@@ -389,11 +389,11 @@ class PaperSearch {
 	$x = $this->_searchQuery();
 	$this->matchPreg = $x[1];
 	$result = $Conf->qe($x[0], "while searching papers");
-	if (MDB2::isError($result))
+	if (!$result)
 	    return array();
 	$x = array();
 	$result = $Conf->qe("select * from Matches", "while searching papers");
-	while (($row = $result->fetchRow()))
+	while (($row = edb_row($result)))
 	    $x[] = $row[0];
 	return $x;
     }

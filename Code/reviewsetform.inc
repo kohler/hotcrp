@@ -49,11 +49,14 @@ if (isset($_REQUEST['update'])) {
 	if ($reviewFields[$field]) {
 	    if (checkOptions($_REQUEST["options_$field"], $options, $_REQUEST["order_$field"])) {
 		$Conf->qe("delete from ReviewFormOptions where fieldName='" . sqlq($field) . "'", $while);
+		$optext = "";
 		for ($i = 1; $i <= count($options); $i++)
-		    $Conf->qe("insert into ReviewFormOptions (fieldName, level, description) values ('" . sqlq($field) . "', $i, '" . sqlq($options[$i]) . "')", $while);
+		    $optext .= "('" . sqlq($field) . "', $i, '" . sqlq($options[$i]) . "'), ";
+		if ($optext)
+		    $Conf->qe("insert into ReviewFormOptions (fieldName, level, description) values " . substr($optext, 0, strlen($optext) - 2), $while);
 		
 		$result = $Conf->qe("update PaperReview set $field=0 where $field>" . count($options), $while);
-		if (!MDB2::isError($result) && $Conf->DB->affectedRows() > 0)
+		if (edb_nrows_affected($result) > 0)
 		    $scoreModified[] = htmlspecialchars($_REQUEST["shortName_$field"]);
 		
 		unset($_REQUEST["options_$field"]);
@@ -66,7 +69,7 @@ if (isset($_REQUEST['update'])) {
 	}
 	if ($req != '') {
 	    $result = $Conf->qe("update ReviewFormField set " . substr($req, 0, -2) . " where fieldName='" . sqlq($field) . "'", $while);
-	    if (!MDB2::isError($result)) {
+	    if ($result) {
 		unset($_REQUEST["order_$field"], $_REQUEST["shortName_$field"], $_REQUEST["description_$field"]);
 		$updates = 1;
 	    }
@@ -166,18 +169,18 @@ function formFieldText($row, $ordinalOrder, $numRows) {
 }
 
 $result = $Conf->qe("select * from ReviewFormField order by sortOrder, shortName", "while loading review form");
-if (MDB2::isError($result)) {
+if (!$result) {
     $Conf->footer();
     exit;
 }
 
 $ordinalOrder = 0;
 $notShown = '';
-while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))
+while ($row = edb_orow($result))
     if ($row->sortOrder < 0)
-	$notShown .= formFieldText($row, -1, $result->numRows());
+	$notShown .= formFieldText($row, -1, edb_nrows($result));
     else
-	echo formFieldText($row, $ordinalOrder++, $result->numRows());
+	echo formFieldText($row, $ordinalOrder++, edb_nrows($result));
 echo $notShown;
 
 ?>

@@ -18,8 +18,8 @@ $query = "SELECT ContactInfo.contactId FROM ContactInfo "
 
 $pcresult = $Conf -> qe($query);
 
-if ( !MDB2::isError($pcresult) ) {
-  while ($row = $pcresult->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+if ($pcresult) {
+  while ($row = edb_arow($pcresult)) {
     $pcId=$row['contactId'];
 
     $Conf->reviewerSummary($pcId,

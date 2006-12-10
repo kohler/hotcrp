@@ -6,19 +6,15 @@ $MergeError = "";
 
 function crpmergeone($table, $field, $oldid, $newid) {
     global $Conf;
-    $result = $Conf->q("update $table set $field=$newid where $field=$oldid");
-    if (MDB2::isError($result))
-	$MergeError .= $Conf->dbErrorText($result, "", 0);
+    if (!$Conf->q("update $table set $field=$newid where $field=$oldid"))
+	$MergeError .= $Conf->dbErrorText(true, "", 0);
 }
 
 function crpmergeonex($table, $field, $oldid, $newid) {
     global $Conf;
-    $result = $Conf->q("update $table set $field=$newid where $field=$oldid");
-    if (MDB2::isError($result)) {
-	$result = $Conf->q("delete from $table where $field=$oldid");
-	if (MDB2::isError($result))
-	    $MergeError .= $Conf->dbErrorText($result, "", 0);
-    }
+    if (!$Conf->q("update $table set $field=$newid where $field=$oldid")
+	&& !$Conf->q("delete from $table where $field=$oldid"))
+	$MergeError .= $Conf->dbErrorText(true, "", 0);
 }
 
 if (isset($_REQUEST["merge"])) {
@@ -84,8 +80,7 @@ If you suspect something fishy, contact the site administrator at\n\
 	    
 	    // Remove the old contact record
 	    if ($MergeError == "") {
-		$result = $Conf->q("delete from ContactInfo where contactId=$oldid");
-		if (MDB2::isError($result))
+		if (!$Conf->q("delete from ContactInfo where contactId=$oldid"))
 		    $MergeError .= $Conf->dbErrorText($result, "", 0);
 	    }
 

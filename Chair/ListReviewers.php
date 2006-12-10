@@ -28,10 +28,7 @@ $result=$Conf->qe("SELECT ContactInfo.contactId, ContactInfo.email, "
 		  . " ContactInfo.firstName, ContactInfo.lastName"
 		  . " FROM ContactInfo ORDER BY ContactInfo.lastName, ContactInfo.firstName");
 $i = 0;
-if (MDB2::isError($result)) {
-  $Conf->errorMsg("Error in retrieving reviewer list " . $result->getMessage());
-} else {
-  while ($row = $result->fetchRow()) {
+while ($row = edb_row($result)) {
     $f = 0;
     $id = $row[$f++];
     $allReviewers[$i] = $id;
@@ -39,7 +36,6 @@ if (MDB2::isError($result)) {
     $allReviewersFirstName[$id] = $row[$f++];
     $allReviewersLastName[$id] = $row[$f++];
     $i++;
-  }
 }
 //
 // Determine the number of completed and started reviews for all papers
@@ -72,11 +68,7 @@ for($i = 0; $i < sizeof($allReviewers); $i++) {
     . " (PaperReview.contactId='$id' )";
 
   $result = $Conf->qe($query);
-  if ( MDB2::isError($result) ) {
-    $Conf->errorMsg("Problem with reviewer paper review lookup . "
-		    . $result->getMessage());
-  } else {
-    $row = $result->fetchRow();
+  if ($result && ($row = edb_row($result))) {
     $cnt = $row[0];
     if ($cnt > 0) {
       $num_reviewers++;

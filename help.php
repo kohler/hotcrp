@@ -72,9 +72,9 @@ By default, search examines title, abstract, and author fields.
 Expand the search box with the <a href='${ConfSiteBase}search.php?opt=1'>Options&nbsp;&raquo;</a> link to search other fields, including
 authors/collaborators and reviewers.");
     _alternateRow("Syntax", "
-You can also specify what fields to search on a word-by-word basis with
-keywords like <span class='textlite'>ti:</span>, which means \"search in
-titles\".  For information on available keywords, see the
+Specify search fields on a word-by-word basis with
+markers like <span class='textlite'>ti:</span>, which means \"search in
+titles\".  For information on available markers, see the
 <a href='help.php?t=syntax'>search syntax quick reference</a>.");
     _alternateRow("Listing all papers", "To list all papers in a search category, simply perform the search with no search terms.");
     _alternateRow("Paging through results", "All paper screens have links in the upper right corner that let you page through the most recent search results:<br />
@@ -122,12 +122,14 @@ function searchQuickref() {
     _searchQuickrefRow("Authors", "au:poletto", "author list contains \"poletto\"");
     _searchQuickrefRow("Collaborators", "co:liskov", "collaborators contains \"liskov\"");
     _searchQuickrefRow("Topics", "topic:link", "author-selected topics match \"link\"");
-    _searchQuickrefRow("Reviews", "re:fdabek", "\"fdabek\" in reviewer name/email");
-    _searchQuickrefRow("", "cre:fdabek", "\"fdabek\" (reviewer name/email) has completed a review");
-    _searchQuickrefRow("", "re:4", "four reviewers (assigned and/or completed)");
-    _searchQuickrefRow("", "cre:<3", "less than three completed reviews");
     _searchQuickrefRow("<a href='help.php?t=tags'>Tags</a>", "tag:discuss", "tagged \"discuss\"");
     _searchQuickrefRow("", "order:discuss", "tagged \"discuss\", sort by tag order");
+    _searchQuickrefRow("Reviews", "re:fdabek", "\"fdabek\" in reviewer name/email");
+    _searchQuickrefRow("", "cre:fdabek", "\"fdabek\" (in reviewer name/email) has completed a review");
+    _searchQuickrefRow("", "re:4", "four reviewers (assigned and/or completed)");
+    _searchQuickrefRow("", "cre:<3", "less than three completed reviews");
+    _searchQuickrefRow("", "lead:fdabek", "\"fdabek\" (in name/email) is discussion lead");
+    _searchQuickrefRow("", "shep:fdabek", "\"fdabek\" (in name/email) is shepherd");
     _searchQuickrefRow("Decision", "dec:accept", "decision matches \"accept\"");
     _searchQuickrefRow("", "dec:yes", "one of the accept decisions");
     _searchQuickrefRow("", "dec:no", "one of the reject decisions");

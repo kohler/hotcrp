@@ -97,12 +97,11 @@ function requestSameAsPaper($prow) {
     if (fileUploaded($_FILES['paperUpload'], $Conf))
 	return false;
     $result = $Conf->q("select TopicArea.topicId, PaperTopic.paperId from TopicArea left join PaperTopic on PaperTopic.paperId=$prow->paperId and PaperTopic.topicId=TopicArea.topicId");
-    if (!MDB2::isError($result))
-	while (($row = $result->fetchRow())) {
-	    $got = isset($_REQUEST["top$row[0]"]) && cvtint($_REQUEST["top$row[0]"]) > 0;
-	    if (($row[1] > 0) != $got)
-		return false;
-	}
+    while (($row = edb_row($result))) {
+	$got = isset($_REQUEST["top$row[0]"]) && cvtint($_REQUEST["top$row[0]"]) > 0;
+	if (($row[1] > 0) != $got)
+	    return false;
+    }
     return true;
 }
 
@@ -168,32 +167,32 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    . " and timeWithdrawn<=0";
 
     $result = $Conf->qe(($newPaper ? "insert into" : "update") . " Paper set $q", "while updating paper information");
-    if (MDB2::isError($result))
+    if (!$result)
 	return false;
 
     // fetch paper ID
     if ($newPaper) {
 	$result = $Conf->qe("select last_insert_id()", "while updating paper information");
-	if (MDB2::isError($result) || $result->numRows() == 0)
+	if (edb_nrows($result) == 0)
 	    return false;
-	$row = $result->fetchRow();
+	$row = edb_row($result);
 	$paperId = $row[0];
 
 	$result = $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($paperId, $contactId, " . CONFLICT_AUTHOR . ")", "while updating paper information");
-	if (MDB2::isError($result))
+	if (!$result)
 	    return false;
     }
 
     // update topics table
     if (!$isSubmitFinal) {
 	$result = $Conf->qe("delete from PaperTopic where paperId=$paperId", "while updating paper topics");
-	if (MDB2::isError($result))
+	if (!$result)
 	    return false;
 	foreach ($_REQUEST as $key => $value)
 	    if ($key[0] == 't' && $key[1] == 'o' && $key[2] == 'p'
 		&& ($id = cvtint(substr($key, 3))) > 0 && $value > 0) {
 		$result = $Conf->qe("insert into PaperTopic (paperId, topicId) values ($paperId, $id)", "while updating paper topics");
-		if (MDB2::isError($result))
+		if (!$result)
 		    return false;
 	    }
     }
@@ -215,7 +214,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	}
 	$result = $Conf->qe("update Paper set " . ($isSubmitFinal ? "timeFinalSubmitted" : "timeSubmitted") . "=" . time() . " where paperId=$paperId",
 			    ($isSubmitFinal ? "while submitting final copy for paper" : "while submitting paper"));
-	if (MDB2::isError($result))
+	if (!$result)
 	    return false;
 	if (defval($Conf->settings["papersub"], 0) <= 0)
 	    $Conf->qe("insert into Settings (name, value) values ('papersub', " . time() . ") on duplicate key update name=name");
@@ -370,7 +369,7 @@ if (isset($_REQUEST['delete'])) {
 	$error = false;
 	foreach (array('Paper', 'PaperStorage', 'PaperComment', 'PaperConflict', 'PaperGrade', 'PaperReview', 'PaperReviewSubmission', 'PaperReviewPreference', 'PaperTopic') as $table) {
 	    $result = $Conf->qe("delete from $table where paperId=$paperId", "while deleting paper");
-	    $error |= MDB2::isError($result);
+	    $error |= ($result == false);
 	}
 	if (!$error) {
 	    $Conf->confirmMsg("Paper #$paperId deleted.");
@@ -391,7 +390,7 @@ if (isset($_REQUEST['setrevpref']) && $prow && isset($_REQUEST['revpref'])) {
 	$Conf->qe("delete from PaperReviewPreference where contactId=$Me->contactId and paperId=$prow->paperId", $while);
 	$result = $Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values ($prow->paperId, $Me->contactId, $v)", $while);
 	$Conf->qe("unlock tables", $while);
-	if (!MDB2::isError($result))
+	if ($result)
 	    $Conf->confirmMsg("Review preference saved.");
 	getProw($Me->contactId);
     } else

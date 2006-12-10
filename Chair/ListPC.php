@@ -21,13 +21,9 @@ if (isset($_REQUEST["nag"])) {
   $query = "select ContactInfo.contactId, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.visits, ContactInfo.note, ContactInfo.collaborators "
     . " FROM ContactInfo join PCMember using (contactId) "
     . " ORDER BY ContactInfo.lastName";
-$result = $Conf->qe($query);
-  if (MDB2::isError($result)) {
-    $Conf->errorMsg("There are no program committee memebers? "
-		    . $result->getMessage());
-  } else {
-    $cnt = $result->numRows();
-    while ($row = $result->fetchRow() ) {
+  $result = $Conf->qe($query);
+  $cnt = edb_nrows($result);
+  while ($row = edb_row($result)) {
       $i = 0;
       $id = $row[$i++];
       $first = $row[$i++];
@@ -44,45 +40,24 @@ $result = $Conf->qe($query);
       print "<tr> <td colspan=4> Collaborators: <br> $collaborators </td></tr>";
       print "<tr> <td colspan=4> Interests: <br>";
 
-      $query="SELECT TopicArea.topicId, TopicArea.topicName FROM TopicArea";
-      $result2 = $Conf->q($query);
+      $query="SELECT TopicArea.topicId, TopicArea.topicName, TopicInterest.interest FROM TopicArea left join TopicInterest on (TopicInterest.contactId=$id and TopicInterest.topicId=TopicArea.topicId)";
+      $result2 = $Conf->qe($query);
 
-      if ( MDB2::isError($result2)) {
-	$Conf->errorMsg("Error in query for topics: " . $result2->getMessage());
-      } else if ($result2->numRows() > 0) {
-	
-	// query for this guy's interests
-	$query="SELECT TopicInterest.topicId, TopicInterest.interest FROM TopicInterest WHERE TopicInterest.contactId = " . $id;
-	$result1 = $Conf->q($query);
-	if ( MDB2::isError($result1)) {
-	  $Conf->errorMsg("Error in query for interests: " . $result1->getMessage());
-	} else {
-	  $interests=array();
-	  
-	  // load interests into array
-	  while ( $row = $result1->fetchRow()) {
-	    $interests[$row[0]] = $row[1];
-	  }
-	  // load topics into array
-	  while ( $row = $result2->fetchRow()) {
-	    $topics[$row[0]] = $row[1];
-	  }
-	  print "Highly qualified:<br>"; 
-	  foreach($topics as $id => $topic) {
-	      if (defval($interests[$id], 1) == 2)
-		  print "&nbsp;&nbsp;$topic<br>";
-	  }
-	  print "Somewhat qualified:<br>"; 
-	  foreach($topics as $id => $topic) {
-	      if (defval($interests[$id], 1) == 1)
-		  print "&nbsp;&nbsp;$topic<br>";
-          }
-	}
-      }
+      $high = $somewhat = "";
+      while ($row = edb_row($result2))
+	  if ($row[2] == 2)
+	      $high .= "&nbsp;&nbsp;" . htmlspecialchars($row[1]) . "<br />";
+	  else if ($row[2] == 1)
+	      $somewhat .= "&nbsp;&nbsp;" . htmlspecialchars($row[1]) . "<br />";
+
+      if ($high)
+	  echo "Highly qualified:<br />", $high;
+      if ($somewhat)
+	  echo "Somewhat qualified:<br />", $somewhat;
+
       print "</td></tr>";
       print "<tr><td colspan=4> <a href=$_SERVER[PHP_SELF]?nag=$email>Send email to $email about filling in their collaborators and interests</a></td></tr></table>";
       
-    }
   }
 }
 ?>
@@ -93,14 +68,12 @@ $query = "select ContactInfo.contactId, ContactInfo.firstName, ContactInfo.lastN
     . "from ContactInfo, PCMember "
     . "where (PCMember.contactId=ContactInfo.contactId) "
     . "order by ContactInfo.lastName";
-$result = $Conf->q($query);
+$result = $Conf->qe($query);
 
-if (MDB2::isError($result)) {
-    $Conf->errorMsg("Database error: " . $result->getMessage());
- } else if ($result->numRows() == 0) {
+if (edb_nrows($result) == 0) {
     $Conf->infoMsg("There are no program committee members.");
  } else {
-    while ($row = $result->fetchRow() ) {
+    while ($row = edb_row($result)) {
       $i = 0;
       $id = $row[$i++];
       $first = $row[$i++];
@@ -117,41 +90,21 @@ if (MDB2::isError($result)) {
       print "<tr> <td colspan=4> Collaborators: <br> $collaborators </td></tr>";
       print "<tr> <td colspan=4> Interests: <br>";
 
-      $query="SELECT TopicArea.topicId, TopicArea.topicName FROM TopicArea";
-      $result2 = $Conf->q($query);
+      $query="SELECT TopicArea.topicId, TopicArea.topicName, TopicInterest.interest FROM TopicArea left join TopicInterest on (TopicInterest.contactId=$id and TopicInterest.topicId=TopicArea.topicId)";
+      $result2 = $Conf->qe($query);
 
-      if ( MDB2::isError($result2)) {
-	$Conf->errorMsg("Error in query for topics: " . $result2->getMessage());
-      } else if ($result2->numRows() > 0) {
-	
-	// query for this guy's interests
-	$query="SELECT TopicInterest.topicId, TopicInterest.interest FROM TopicInterest WHERE TopicInterest.contactId = " . $id;
-	$result1 = $Conf->q($query);
-	if ( MDB2::isError($result1)) {
-	  $Conf->errorMsg("Error in query for interests: " . $result1->getMessage());
-	} else {
-	  $interests=array();
-	  
-	  // load interests into array
-	  while ( $row = $result1->fetchRow()) {
-	    $interests[$row[0]] = $row[1];
-	  }
-	  // load topics into array
-	  while ( $row = $result2->fetchRow()) {
-	    $topics[$row[0]] = $row[1];
-	  }
-	  print "Highly qualified:<br>"; 
-	  foreach($topics as $id => $topic) {
-	      if (defval($interests[$id], 1) == 2)
-		  print "&nbsp;&nbsp;$topic<br>";
-	  }
-	  print "Somewhat qualified:<br>"; 
-	  foreach($topics as $id => $topic) {
-	      if (defval($interests[$id], 1) == 1)
-		  print "&nbsp;&nbsp;$topic<br>";
-          }
-	}
-      }
+      $high = $somewhat = "";
+      while ($row = edb_row($result2))
+	  if ($row[2] == 2)
+	      $high .= "&nbsp;&nbsp;" . htmlspecialchars($row[1]) . "<br />";
+	  else if ($row[2] == 1)
+	      $somewhat .= "&nbsp;&nbsp;" . htmlspecialchars($row[1]) . "<br />";
+
+      if ($high)
+	  echo "Highly qualified:<br />", $high;
+      if ($somewhat)
+	  echo "Somewhat qualified:<br />", $somewhat;
+
       print "</td></tr>";
       print "<tr><td colspan=4> <a href=$_SERVER[PHP_SELF]?nag=$email>Send email to $email about filling in their collaborators and interests</a></td></tr></table>";
       

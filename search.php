@@ -56,15 +56,12 @@ if ($getaction == "paper" && isset($papersel)) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
     $result = $Conf->qe($q, "while selecting papers");
     $downloads = array();
-    if (MDB2::isError($result))
-	/* do nothing */;
-    else
-	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
-	    if (!$Me->canViewPaper($row, $Conf, $whyNot))
-		$Conf->errorMsg(whyNotText($whyNot, "view"));
-	    else
-		$downloads[] = $row->paperId;
-	}
+    while ($row = edb_orow($result)) {
+	if (!$Me->canViewPaper($row, $Conf, $whyNot))
+	    $Conf->errorMsg(whyNotText($whyNot, "view"));
+	else
+	    $downloads[] = $row->paperId;
+    }
 
     $result = $Conf->downloadPapers($downloads);
     if (!PEAR::isError($result))
@@ -77,15 +74,12 @@ if ($getaction == "final" && isset($papersel)) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
     $result = $Conf->qe($q, "while selecting papers");
     $downloads = array();
-    if (MDB2::isError($result))
-	/* do nothing */;
-    else
-	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
-	    if (!$Me->canViewPaper($row, $Conf, $whyNot))
-		$Conf->errorMsg(whyNotText($whyNot, "view"));
-	    else
-		$downloads[] = $row->paperId;
-	}
+    while ($row = edb_orow($result)) {
+	if (!$Me->canViewPaper($row, $Conf, $whyNot))
+	    $Conf->errorMsg(whyNotText($whyNot, "view"));
+	else
+	    $downloads[] = $row->paperId;
+    }
 
     $result = $Conf->downloadPapers($downloads, true);
     if (!PEAR::isError($result))
@@ -107,15 +101,14 @@ if ($getaction == "revform" && !isset($papersel)) {
 
     $text = '';
     $errors = array();
-    if (!MDB2::isError($result))
-	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
-	    if (!$Me->canReview($row, null, $Conf, $whyNot))
-		$errors[] = whyNotText($whyNot, "review") . "<br />";
-	    else {
-		$rfSuffix = ($text == "" ? "-$row->paperId" : "s");
-		$text .= $rf->textForm($row, $row, $Conf, null, ReviewForm::REV_FORM) . "\n";
-	    }
+    while ($row = edb_orow($result)) {
+	if (!$Me->canReview($row, null, $Conf, $whyNot))
+	    $errors[] = whyNotText($whyNot, "review") . "<br />";
+	else {
+	    $rfSuffix = ($text == "" ? "-$row->paperId" : "s");
+	    $text .= $rf->textForm($row, $row, $Conf, null, ReviewForm::REV_FORM) . "\n";
 	}
+    }
 
     if ($text == "")
 	$Conf->errorMsg(join("", $errors) . "No papers selected.");
@@ -142,15 +135,14 @@ if ($getaction == "rev" && isset($papersel)) {
     $errors = array();
     if ($Me->amAssistant())
 	$_REQUEST["forceShow"] = 1;
-    if (!MDB2::isError($result))
-	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
-	    if (!$Me->canViewReview($row, null, $Conf, $whyNot))
-		$errors[] = whyNotText($whyNot, "view review") . "<br />";
-	    else if ($row->reviewSubmitted > 0) {
-		$rfSuffix = ($text == "" ? "-$row->paperId" : "s");
-		$text .= $rf->textForm($row, $row, $Conf, null, ReviewForm::REV_PC) . "\n";
-	    }
+    while ($row = edb_orow($result)) {
+	if (!$Me->canViewReview($row, null, $Conf, $whyNot))
+	    $errors[] = whyNotText($whyNot, "view review") . "<br />";
+	else if ($row->reviewSubmitted > 0) {
+	    $rfSuffix = ($text == "" ? "-$row->paperId" : "s");
+	    $text .= $rf->textForm($row, $row, $Conf, null, ReviewForm::REV_PC) . "\n";
 	}
+    }
 
     if ($text == "")
 	$Conf->errorMsg(join("", $errors) . "No papers selected.");
@@ -177,12 +169,11 @@ function tagaction() {
     $papers = array();
     if (!$Me->amAssistant()) {
 	$result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel)), "while selecting papers");
-	if (!MDB2::isError($result))
-	    while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)))
-		if ($row->conflictType > 0)
-		    $errors[] = whyNotText(array("conflict" => 1, "paperId" => $row->paperId));
-		else
-		    $papers[] = $row->paperId;
+	while (($row = edb_orow($result)))
+	    if ($row->conflictType > 0)
+		$errors[] = whyNotText(array("conflict" => 1, "paperId" => $row->paperId));
+	    else
+		$papers[] = $row->paperId;
     } else
 	$papers = $papersel;
 
@@ -211,9 +202,9 @@ if ($getaction == "authors" && isset($papersel)
     if (!$Me->amAssistant())
 	$idq = "($idq) and blind=0";
     $result = $Conf->qe("select paperId, title, authorInformation from Paper where $idq", "while fetching authors");
-    if (!MDB2::isError($result)) {
+    if ($result) {
 	$text = "#paperId\ttitle\tauthor\n";
-	while (($row = $result->fetchRow())) {
+	while (($row = edb_row($result))) {
 	    foreach (preg_split('/[\r\n]+/', $row[2]) as $au)
 		if (($au = trim(simplifyWhitespace($au))) != "")
 		    $text .= $row[0] . "\t" . $row[1] . "\t" . $au . "\n";
@@ -235,9 +226,9 @@ if ($getaction == "pcconflicts" && isset($papersel) && $Me->amAssistant()) {
 			as PCConflict on (PCConflict.paperId=Paper.paperId)
 		where $idq
 		group by Paper.paperId", "while fetching PC conflicts");
-    if (!MDB2::isError($result)) {
+    if ($result) {
 	$text = "#paperId\ttitle\tPC conflicts\n";
-	while (($row = $result->fetchRow()))
+	while (($row = edb_row($result)))
 	    if ($row[2])
 		$text .= $row[0] . "\t" . $row[1] . "\t" . $row[2] . "\n";
 	downloadText($text, $Opt['downloadPrefix'] . "pcconflicts.txt", "PC conflicts");
@@ -252,9 +243,9 @@ if ($getaction == "contact" && $Me->amAssistant() && isset($papersel)) {
     if (!$Me->amAssistant())
 	$idq = "($idq) and blind=0";
     $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq order by Paper.paperId", "while fetching contact authors");
-    if (!MDB2::isError($result)) {
+    if ($result) {
 	$text = "#paperId\ttitle\tlast, first\temail\n";
-	while (($row = $result->fetchRow())) {
+	while (($row = edb_row($result))) {
 	    $text .= $row[0] . "\t" . $row[1] . "\t" . $row[3] . ", " . $row[2] . "\t" . $row[4] . "\n";
 	}
 	downloadText($text, $Opt['downloadPrefix'] . "contacts.txt", "contacts");
@@ -274,38 +265,38 @@ if ($getaction == "scores" && $Me->amAssistant() && isset($papersel)) {
 	if (isset($rf->options[$field]))
 	    $scores[] = $field;
     
-    $text = '#paperId';
+    $header = '#paperId';
     if ($Conf->blindSubmission() == 1)
-	$text .= "\tblind";
-    $text .= "\tdecision";
+	$header .= "\tblind";
+    $header .= "\tdecision";
     foreach ($scores as $score)
-	$text .= "\t" . $rf->abbrevName[$score];
-    $text .= "\trevieweremail\treviewername\n";
+	$header .= "\t" . $rf->abbrevName[$score];
+    $header .= "\trevieweremail\treviewername\n";
     
     $errors = array();
     if ($Me->amAssistant())
 	$_REQUEST["forceShow"] = 1;
-    if (!MDB2::isError($result))
-	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT)) {
-	    if (!$Me->canViewReview($row, null, $Conf, $whyNot))
-		$errors[] = whyNotText($whyNot, "view review") . "<br />";
-	    else if ($row->reviewSubmitted > 0) {
-		$text .= $row->paperId;
-		if ($Conf->blindSubmission() == 1)
-		    $text .= "\t" . $row->blind;
-		$text .= "\t" . $row->outcome;
-		foreach ($scores as $score)
-		    $text .= "\t" . $row->$score;
-		if ($Me->canViewReviewerIdentity($row, null, $Conf))
-		    $text .= "\t" . $row->reviewEmail . "\t" . trim($row->reviewFirstName . " " . $row->reviewLastName);
-		$text .= "\n";
-	    }
+    $text = "";
+    while ($row = edb_orow($result)) {
+	if (!$Me->canViewReview($row, null, $Conf, $whyNot))
+	    $errors[] = whyNotText($whyNot, "view review") . "<br />";
+	else if ($row->reviewSubmitted > 0) {
+	    $text .= $row->paperId;
+	    if ($Conf->blindSubmission() == 1)
+		$text .= "\t" . $row->blind;
+	    $text .= "\t" . $row->outcome;
+	    foreach ($scores as $score)
+		$text .= "\t" . $row->$score;
+	    if ($Me->canViewReviewerIdentity($row, null, $Conf))
+		$text .= "\t" . $row->reviewEmail . "\t" . trim($row->reviewFirstName . " " . $row->reviewLastName);
+	    $text .= "\n";
 	}
+    }
 
     if ($text == "")
 	$Conf->errorMsg(join("", $errors) . "No papers selected.");
     else {
-	downloadText($text, $Opt['downloadPrefix'] . "scores.txt", "scores");
+	downloadText($header . $text, $Opt['downloadPrefix'] . "scores.txt", "scores");
 	exit;
     }
 }
@@ -316,14 +307,14 @@ if ($getaction == "topics" && $Me->amAssistant() && isset($papersel)) {
     $result = $Conf->qe("select paperId, title, topicName from Paper join PaperTopic using (paperId) join TopicArea using (topicId) where " . paperselPredicate($papersel) . " order by paperId", "while fetching topics");
 
     // compose scores
-    $text = "#paperId\ttitle\ttopic\n";
-    if (!MDB2::isError($result))
-	while ($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))
-	    $text .= $row->paperId . "\t" . $row->title . "\t" . $row->topicName . "\n";
+    $text = "";
+    while ($row = edb_orow($result))
+	$text .= $row->paperId . "\t" . $row->title . "\t" . $row->topicName . "\n";
 
     if ($text == "")
 	$Conf->errorMsg(join("", $errors) . "No papers selected.");
     else {
+	$text = "#paperId\ttitle\ttopic\n" . $text;
 	downloadText($text, $Opt['downloadPrefix'] . "topics.txt", "topics");
 	exit;
     }
@@ -338,7 +329,7 @@ if (isset($_REQUEST["setoutcome"]) && defval($_REQUEST['outcome'], "") != "" && 
 	$o = cvtint(trim($_REQUEST['outcome']));
 	$rf = reviewForm();
 	if (isset($rf->options['outcome'][$o]))
-	    $result = $Conf->qe("update Paper set outcome=$o where " . paperselPredicate($papersel), "while changing decision");
+	    $Conf->qe("update Paper set outcome=$o where " . paperselPredicate($papersel), "while changing decision");
 	else
 	    $Conf->errorMsg("Bad decision value!");
     }
@@ -352,7 +343,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && 
     if (!$Me->amAssistant())
 	$Conf->errorMsg("Only the PC chairs can set PC conflicts.");
     else if ($mt == "pcpaper" || $mt == "unpcpaper") {
-	$result = $Conf->qe("update Paper set pcPaper=" . ($mt == "pcpaper" ? 1 : 0) . " where " . paperselPredicate($papersel), "while marking PC papers");
+	$Conf->qe("update Paper set pcPaper=" . ($mt == "pcpaper" ? 1 : 0) . " where " . paperselPredicate($papersel), "while marking PC papers");
 	$Conf->log("Change PC paper status", $Me, $papersel);
     } else if (!$mpc || !$pc->lookupByEmail($mpc, $Conf))
 	$Conf->errorMsg("'" . htmlspecialchars($mpc) . " is not a PC member.");
@@ -373,17 +364,16 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && 
 	$conflicts = array();
 	$assigned = array();
 	$nworked = 0;
-	if (!MDB2::isError($result))
-	    while (($row = $result->fetchRow(MDB2_FETCHMODE_OBJECT))) {
-		if ($asstype && $row->conflictType > 0)
-		    $conflicts[] = $row->paperId;
-		else if ($asstype && $row->reviewType > REVIEW_PC && $asstype != $row->reviewType)
-		    $assigned[] = $row->paperId;
-		else {
-		    $Me->assignPaper($row->paperId, $row, $pc->contactId, $asstype, $Conf);
-		    $nworked++;
-		}
+	while (($row = edb_orow($result))) {
+	    if ($asstype && $row->conflictType > 0)
+		$conflicts[] = $row->paperId;
+	    else if ($asstype && $row->reviewType > REVIEW_PC && $asstype != $row->reviewType)
+		$assigned[] = $row->paperId;
+	    else {
+		$Me->assignPaper($row->paperId, $row, $pc->contactId, $asstype, $Conf);
+		$nworked++;
 	    }
+	}
 	if (count($conflicts))
 	    $Conf->errorMsg("Some papers were not assigned because of conflicts (" . join(", ", $conflicts) . ").  If these conflicts are in error, remove them and try to assign again.");
 	if (count($assigned))

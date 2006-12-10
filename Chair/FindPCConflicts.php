@@ -68,16 +68,12 @@ $qpc = "SELECT ContactInfo.contactId, firstName, lastName, email, collaborators"
 . " from ContactInfo join PCMember using (contactId)"
 . " ORDER BY lastName, firstName ";
 
-$rpc = $Conf->qe($qpc);
-
-if (MDB2::isError($rpc)) {
-  $Conf->errorMsg("Error in query " . $rpc->getMessage());
-  exit;
-}
+if (!($rpc = $Conf->qe($qpc)))
+    exit;
 
 $useless = array ( "university" => 1, "the" => 1, "and" => 1, "univ" => 1 );
 
-while($pcdata=$rpc->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+while($pcdata=edb_arow($rpc)) {
 
   flush();
 
@@ -159,8 +155,7 @@ while($pcdata=$rpc->fetchRow(MDB2_FETCHMODE_ASSOC)) {
 
   $rc = $Conf->qe($qc);
 
-  if (!MDB2::isError($rc)) {
-    while ($rowc=$rc->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+  while ($rowc=edb_arow($rc)) {
       $paperId=$rowc['paperId'];
       $title=$rowc['title'];
 
@@ -183,35 +178,33 @@ while($pcdata=$rpc->fetchRow(MDB2_FETCHMODE_ASSOC)) {
       print "</TH></TR>";
 
       if(isset($rowc['contactId']) &&  $rowc['contactID'] == $contactId ){
-      print "<TR><TD ALIGN='LEFT' COLSPAN=2>Is listed as the contact for this paper.</TD>";
-  }
+	  print "<TR><TD ALIGN='LEFT' COLSPAN=2>Is listed as the contact for this paper.</TD>";
+      }
 
-  preg_match_all( "/[a-z]*($collabsearchstr)[a-z]*/i", $rowc['authorInformation'], $strs, PREG_PATTERN_ORDER );
-  if( count($strs[0]) ){
-      print "<TR><TD ALIGN='LEFT'>PC-member &amp; Submit-Author:</TD><TD ALIGN='LEFT'>";
-      foreach( $strs[0] as $str ){ print htmlquote(" $str");}
-      print "</TD></TR>";
-  }
+      preg_match_all( "/[a-z]*($collabsearchstr)[a-z]*/i", $rowc['authorInformation'], $strs, PREG_PATTERN_ORDER );
+      if( count($strs[0]) ){
+	  print "<TR><TD ALIGN='LEFT'>PC-member &amp; Submit-Author:</TD><TD ALIGN='LEFT'>";
+	  foreach( $strs[0] as $str ){ print htmlquote(" $str");}
+	  print "</TD></TR>";
+      }
 
-  preg_match_all( "/[a-z]*($searchstr)[a-z]*/i", $rowc['authorInformation'], $strs, PREG_PATTERN_ORDER );
-  if( count($strs[0]) ){
-      print "<TR><TD ALIGN='LEFT'>PC-Collab &amp; Submit-Author:</TD><TD ALIGN='LEFT'>";
-      foreach( $strs[0] as $str ){ print htmlquote(" $str");}
-      print "</TD></TR>";
-  }
+      preg_match_all( "/[a-z]*($searchstr)[a-z]*/i", $rowc['authorInformation'], $strs, PREG_PATTERN_ORDER );
+      if( count($strs[0]) ){
+	  print "<TR><TD ALIGN='LEFT'>PC-Collab &amp; Submit-Author:</TD><TD ALIGN='LEFT'>";
+	  foreach( $strs[0] as $str ){ print htmlquote(" $str");}
+	  print "</TD></TR>";
+      }
 
-  preg_match_all( "/[a-z]*($collabsearchstr)[a-z]*/i", $rowc['collaborators'], $strs, PREG_PATTERN_ORDER );
-  if( count($strs[0]) ){
-      print "<TR><TD ALIGN='LEFT'> PC-member &amp; Submit-Collab:</TD><TD ALIGN='LEFT'>";
-      foreach( $strs[0] as $str ){ print htmlquote(" $str");}
-      print "</TD></TR>";
-  }
-  print "</TABLE></td> </tr> ";
+      preg_match_all( "/[a-z]*($collabsearchstr)[a-z]*/i", $rowc['collaborators'], $strs, PREG_PATTERN_ORDER );
+      if( count($strs[0]) ){
+	  print "<TR><TD ALIGN='LEFT'> PC-member &amp; Submit-Collab:</TD><TD ALIGN='LEFT'>";
+	  foreach( $strs[0] as $str ){ print htmlquote(" $str");}
+	  print "</TD></TR>";
+      }
+      print "</TABLE></td> </tr> ";
 
 
       flush();
-
-    }
   }
   print "<tr> <td colspan=3 align=center> ";
   print "<INPUT type=submit name=\"assignConflicts\" value=\"Assign These Conflicts\">\n";
