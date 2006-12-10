@@ -438,7 +438,7 @@ echo "
 </tr>
 <tr>
   <td class='mcaption'></td>
-  <td><small><a href='help.php?t=search'>Search help</a> &nbsp;|&nbsp; <a href='help.php?t=syntax'>Syntax quick reference</a></small></td>
+  <td><span style='font-size: x-small'><a href='help.php?t=search'>Search help</a> &nbsp;|&nbsp; <a href='help.php?t=syntax'>Syntax quick reference</a></span></td>
 </tr>
 <tr><td><hr class='smgap' /></td></tr>
 <tr>
