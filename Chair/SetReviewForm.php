@@ -56,7 +56,7 @@ if (isset($_REQUEST['update'])) {
 		    $Conf->qe("insert into ReviewFormOptions (fieldName, level, description) values " . substr($optext, 0, strlen($optext) - 2), $while);
 		
 		$result = $Conf->qe("update PaperReview set $field=0 where $field>" . count($options), $while);
-		if (edb_nrows_affected($result) > 0)
+		if (edb_nrows_affected($result, $Conf) > 0)
 		    $scoreModified[] = htmlspecialchars($_REQUEST["shortName_$field"]);
 		
 		unset($_REQUEST["options_$field"]);
