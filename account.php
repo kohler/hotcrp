@@ -38,11 +38,11 @@ if (isset($_REQUEST["register"])) {
 
 if (isset($_REQUEST['register']) && $OK) {
     $_REQUEST["uemail"] = trim($_REQUEST["uemail"]);
-    if ($_REQUEST["upassword"] == "" && !$newProfile)
+    if (!$newProfile && defval($_REQUEST["upassword"], "") == "")
 	$UpdateError = "Blank passwords are not allowed.";
-    else if ($_REQUEST["upassword"] != $_REQUEST["upassword2"] && !$newProfile)
+    else if (!$newProfile && $_REQUEST["upassword"] != defval($_REQUEST["upassword2"], ""))
 	$UpdateError = "The two passwords you entered did not match.";
-    else if (trim($_REQUEST["upassword"]) != $_REQUEST["upassword"] && !$newProfile)
+    else if (!$newProfile && trim($_REQUEST["upassword"]) != $_REQUEST["upassword"])
 	$UpdateError = "Passwords cannot begin or end with spaces.";
     else if ($_REQUEST["uemail"] != $Me->email
 	     && $Conf->getContactId($_REQUEST["uemail"]))
