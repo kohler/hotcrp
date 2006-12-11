@@ -86,6 +86,7 @@ images/pageresultsex.png
 images/pdf.png
 images/postscript.png
 images/prev.png
+images/quicksearchex.png
 images/sortdown.png
 images/sortup.png
 images/stophand45.png

@@ -1304,7 +1304,7 @@ class Conference {
 	    if (count($paperId) == 0)
 		$paperId = null;
 	    else if (count($paperId) == 1)
-		$paperId = $paperId[1];
+		$paperId = $paperId[0];
 	    else {
 		$text .= " (papers " . join(", ", $paperId) . ")";
 		$paperId = null;
@@ -1325,9 +1325,9 @@ class Conference {
 		from PaperReview where contactId=$contactId
 		group by reviewType order by null", "while counting review requests");
 	if (!$result)
-	    $rreq = array(REVIEW_PRIMARY => '0?', REVIEW_SECONDARY => '0?', REVIEW_REQUESTED => '0?');
+	    $rreq = array(REVIEW_PRIMARY => '0?', REVIEW_SECONDARY => '0?', REVIEW_REQUESTED => '0?', REVIEW_PC => '0?');
 	else {
-	    $rreq = array(REVIEW_PRIMARY => 0, REVIEW_SECONDARY => 0, REVIEW_REQUESTED => 0);
+	    $rreq = array(REVIEW_PRIMARY => 0, REVIEW_SECONDARY => 0, REVIEW_REQUESTED => 0, REVIEW_PC => 0);
 	    while ($row = edb_row($result))
 		$rreq[$row[0]] += $row[1];
 	}

@@ -40,6 +40,7 @@
 + reviewers can't see not-for-reviewers comments
 - "No comments" if no comments for a paper
 - send mail to authors when a new comment is received
+- paper checkbox: "source code", "shadow PC" (SOSP)
 - send mail to authors when a review was submitted during response period
 - error messages in comment.php
 - error messages in paper.php appear in the right place
