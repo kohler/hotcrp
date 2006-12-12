@@ -44,7 +44,7 @@ if ($year == "")
   $year = $d["year"];
 }
 
-$cal = new MyCalendar;
+$cal = new MyCalendar();
 ?>
 <table align=center>
 <tr> <td>

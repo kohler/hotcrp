@@ -109,7 +109,7 @@ session_name($Opt['sessionName']);
 session_start();
 
 if (!isset($_SESSION['Me']))
-    $_SESSION['Me'] = new Contact;
+    $_SESSION['Me'] = new Contact();
 $_SESSION['Me']->validated = 0;
 
 if (!isset($_SESSION['SeeReviewerInfo']))

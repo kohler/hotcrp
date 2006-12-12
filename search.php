@@ -339,7 +339,7 @@ if (isset($_REQUEST["setoutcome"]) && defval($_REQUEST['outcome'], "") != "" && 
 if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && isset($papersel)) {
     $mt = $_REQUEST["marktype"];
     $mpc = defval($_REQUEST["markpc"], "");
-    $pc = new Contact;
+    $pc = new Contact();
     if (!$Me->amAssistant())
 	$Conf->errorMsg("Only the PC chairs can set PC conflicts.");
     else if ($mt == "pcpaper" || $mt == "unpcpaper") {

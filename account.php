@@ -10,11 +10,11 @@ $Error = array();
 if (!$Me->amAssistant())
     /* always this contact */;
 else if (isset($_REQUEST["new"])) {
-    $Acct = new Contact;
+    $Acct = new Contact();
     $Acct->invalidate();
     $newProfile = true;
 } else if (isset($_REQUEST["contact"])) {
-    $Acct = new Contact;
+    $Acct = new Contact();
     if (($id = cvtint($_REQUEST["contact"])) > 0)
 	$Acct->lookupById($id, $Conf);
     else
