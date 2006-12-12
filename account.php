@@ -60,7 +60,7 @@ if (isset($_REQUEST['register']) && $OK) {
 	    $result = $Acct->initialize($_REQUEST["uemail"], $Conf);
 	    if ($OK) {
 		$Acct->sendAccountInfo($Conf, true, false);
-		$Conf->log("Created account ($Me->email)", $Acct);
+		$Conf->log("Account created by $Me->email", $Acct);
 	    }
 	}
 
@@ -120,7 +120,7 @@ if (isset($_REQUEST['register']) && $OK) {
 	    if ($newProfile)
 		$Conf->confirmMsg("Successfully created an account for " . htmlspecialchars($Acct->email) . ".  A password has been emailed to that address.  You may now create another account if you'd like.");
 	    else {
-		$Conf->log("Updated account" . ($Me->contactId == $Acct->contactId ? "" : " ($Me->email)"), $Acct);
+		$Conf->log("Account updated" . ($Me->contactId == $Acct->contactId ? "" : " by $Me->email"), $Acct);
 		$Conf->confirmMsg("Account profile successfully updated.");
 	    }
 	    if ($Me->contactId == $Acct->contactId)

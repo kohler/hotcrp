@@ -18,7 +18,7 @@ function doCreateAccount() {
 	return $Conf->errorMsg($result->dbErrorText($result, "while adding your account"));
 
     $_SESSION["Me"]->sendAccountInfo($Conf, true, false);
-    $Conf->log("Created account", $_SESSION["Me"]);
+    $Conf->log("Account created", $_SESSION["Me"]);
     $msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".  ";
 
     // handle setup phase
