@@ -5,6 +5,10 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 
 
+// *** NB If you change this script, also change the logic in index.php ***
+// *** that hides the link when there are no deadlines to show.         ***
+
+
 // header and script
 $Conf->header("Deadlines");
 
@@ -14,7 +18,12 @@ submission and review functions can be accessed.
 the conference review software.</em>
 Each time is specified in the timezone of the server
 for this conference, which is shown at the top
-of each page in the conference review system.</p>
+of each page in the conference review system.";
+
+if ($Me->amAssistant())
+    echo " As PC chair, you can also <a href='settings.php'>change the deadlines</a>.";
+
+echo "</p>
 
 <table>
 <tr><th></th><th>Deadline</th><th>Time&nbsp;left</th></tr>\n";

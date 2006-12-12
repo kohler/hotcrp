@@ -39,7 +39,7 @@ $Opt['downloadPrefix'] = "hotnets5-";
 
 $Opt['contactName'] = "Eddie Kohler";
 $Opt['contactEmail'] = "kohler@cs.ucla.edu";
-$Opt['sendEmail'] = 0;
+$Opt['sendEmail'] = true;
 $Opt['emailFrom'] = "kohler@read.cs.ucla.edu";
 
 

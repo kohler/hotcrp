@@ -36,9 +36,16 @@ Welcome, ", htmlspecialchars($Me->fullnameOrEmail()), ".  (If this isn't you, pl
 <table class='half'><tr><td class='l'><ul class='compact'>
 <li><a href='account.php'>Your account settings</a></li>
 <li><a href='mergeaccounts.php'>Merge accounts</a></li>
-</ul></td><td class='r'><ul class='compact'>
-<li><a href='deadlines.php'>Conference deadlines</a></li>
-<li><a href='pc.php'>Meet the program committee</a></li>
+</ul></td><td class='r'><ul class='compact'>\n";
+
+// Any deadlines set?
+if (defval($Conf->settings['sub_reg'], 0) || defval($Conf->settings['sub_update'], 0) || defval($Conf->settings['sub_sub'], 0)
+    || ($Me->isAuthor && defval($Conf->settings['resp_open'], 0) > 0 && defval($Conf->settings['resp_done'], 0))
+    || ($Me->isPC && defval($Conf->settings['rev_open'], 0) && defval($Conf->settings['pcrev_hard'], 0))
+    || ($Me->amReviewer() && defval($Conf->settings['rev_open'], 0) && defval($Conf->settings['extrev_hard'], 0)))
+    echo "<li><a href='deadlines.php'>Conference deadlines</a></li>\n";
+
+echo "<li><a href='pc.php'>Meet the program committee</a></li>
 </ul></td></tr></table>";
 
 if ($Me->amAssistant())

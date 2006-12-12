@@ -917,7 +917,7 @@ and paste it into your web browser's location field.
 
     $conf->paperSite/login.php?email=" . urlencode($this->email) . "&password=" . urlencode($this->password) . "\n\n";
 	if ($create)
-	    $m .= wordwrap("If you already have an account at the $conf->shortName site, you may merge this new account into that one.  Log in to the conference site and select \"Merge accounts\" on the \"Settings\" tab.\n\n");
+	    $m .= wordwrap("If you already have an account at the $conf->shortName site, you may merge this new account into that one.  Log in to the conference site and select \"Merge accounts\".\n\n");
 	$m .= wordwrap("Contact the site administrator, $conf->contactName ($conf->contactEmail), with any questions or concerns.
 
 - $conf->shortName Conference Submissions\n");

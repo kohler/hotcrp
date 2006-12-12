@@ -129,23 +129,23 @@ if (isset($_REQUEST["update"])) {
     foreach (array("sub_reg", "sub_sub", "pcrev_soft", "pcrev_hard",
 		   "extrev_soft", "extrev_hard", "final_done", "resp_done")
 	     as $date)
-	accountValue($date, "date", $q);
-    accountValue("sub_grace", "grace", $q);
-    accountValue("sub_open", "cdate", $q);
-    accountValue("rev_open", "cdate", $q);
-    accountValue("sub_blind", 2, $q);
-    accountValue("rev_blind", 2, $q);
-    accountValue("rev_notifychair", "check", $q);
-    accountValue("pcrev_any", "check", $q);
-    accountValue("extrev_view", 2, $q);
-    accountValue("au_seerev", "check", $q);
-    accountValue("au_seedec", "check", $q);
-    accountValue("rev_seedec", "check", $q);
-    accountValue("final_open", "check", $q);
-    accountValue("final_grace", "grace", $q);
-    accountValue("resp_open", "check", $q);
-    accountValue("resp_grace", "grace", $q);
-    accountValue("pc_seeallrev", "check", $q);
+	accountValue($date, "date");
+    accountValue("sub_grace", "grace");
+    accountValue("sub_open", "cdate");
+    accountValue("rev_open", "cdate");
+    accountValue("sub_blind", 2);
+    accountValue("rev_blind", 2);
+    accountValue("rev_notifychair", "check");
+    accountValue("pcrev_any", "check");
+    accountValue("extrev_view", 2);
+    accountValue("au_seerev", "check");
+    accountValue("au_seedec", "check");
+    accountValue("rev_seedec", "check");
+    accountValue("final_open", "check");
+    accountValue("final_grace", "grace");
+    accountValue("resp_open", "check");
+    accountValue("resp_grace", "grace");
+    accountValue("pc_seeallrev", "check");
 
     // check date relationships
     foreach (array("sub_reg" => "sub_sub", "pcrev_soft" => "pcrev_hard",
@@ -159,7 +159,7 @@ if (isset($_REQUEST["update"])) {
 		$SettingError[$second] = true;
 	    }
 	}
-    if (isset($Values["sub_sub"]))
+    if (array_key_exists("sub_sub", $Values))
 	$Values["sub_update"] = $Values["sub_sub"];
     // need to set 'resp_open' to a timestamp,
     // so we can join on later review changes
