@@ -184,7 +184,7 @@ CREATE TABLE `PaperReview` (
   `reviewType` tinyint(1) NOT NULL default '0',
   `requestedBy` int(11) NOT NULL default '0',
   `requestedOn` timestamp(14) NOT NULL default CURRENT_TIMESTAMP,
-  `acceptedOn` timestamp(14) NOT NULL default '0',
+  `acceptedOn` timestamp(14) NOT NULL default 0,
   `reviewBlind` tinyint(1) NOT NULL default '1',
   `reviewModified` int(1),
   `reviewSubmitted` int(1),
@@ -227,7 +227,7 @@ CREATE TABLE `PaperReviewArchive` (
   `reviewType` tinyint(1) NOT NULL default '0',
   `requestedBy` int(11) NOT NULL default '0',
   `requestedOn` timestamp(14) NOT NULL default CURRENT_TIMESTAMP,
-  `acceptedOn` timestamp(14) NOT NULL default '0',
+  `acceptedOn` timestamp(14) NOT NULL default 0,
   `reviewBlind` tinyint(1) NOT NULL default '1',
   `reviewModified` int(1),
   `reviewSubmitted` int(1),
@@ -287,7 +287,7 @@ DROP TABLE IF EXISTS `PaperStorage`;
 CREATE TABLE `PaperStorage` (
   `paperStorageId` int(11) NOT NULL auto_increment,
   `paperId` int(11) NOT NULL,
-  `timestamp` int(11) NOT NULL default CURRENT_TIMESTAMP,
+  `timestamp` int(11) NOT NULL,
   `mimetype` varchar(40) NOT NULL default '',
   `paper` longblob,
   `compression` tinyint(1) NOT NULL default '0',
@@ -370,7 +370,7 @@ CREATE TABLE `TopicInterest` (
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
 
-insert into PaperStorage set paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain', paper='' on duplicate key update set paper='';
+insert into PaperStorage set paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain', paper='' on duplicate key update paper='';
 
 
 insert into ReviewFormField set fieldName='overAllMerit',
