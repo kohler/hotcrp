@@ -2,13 +2,12 @@
 require_once('Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Acct = $Me;
 $newProfile = false;
 $Error = array();
 
 
 if (!$Me->amAssistant())
-    /* always this contact */;
+    $Acct = $Me;		// always this contact
 else if (isset($_REQUEST["new"])) {
     $Acct = new Contact();
     $Acct->invalidate();
@@ -23,7 +22,8 @@ else if (isset($_REQUEST["new"])) {
 	$Conf->errorMsg("Invalid contact.");
 	$Acct = $Me;
     }
-}
+} else
+    $Acct = $Me;
 
 
 if (isset($_REQUEST["register"])) {
