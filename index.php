@@ -168,11 +168,9 @@ if ($Me->amReviewer()) {
     unset($d);
     if ($Me->isPC && $Conf->timeReviewPaper(true, false, true))
 	$deadlines[] = "PC members may review <a href='search.php?q=&amp;t=s'>any submitted paper</a>, whether or not a review has been assigned.";
-    if (isset($plist) && $plist->needSubmitReview == 0) {
-	/* nada */
-	//if ($plist->count > 0)
-	//   $deadlines[] = "Thank you for submitting your requested reviews!";
-    } else if (!$Conf->timeReviewPaper($Me->isPC, true, true))
+    if ((isset($plist) && $plist->needSubmitReview == 0) || !$Me->isReviewer)
+	/* do nothing */;
+    else if (!$Conf->timeReviewPaper($Me->isPC, true, true))
 	$deadlines[] = "The <a href='deadlines.php'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.";
     else if (!$Conf->timeReviewPaper($Me->isPC, true, false))
 	$deadlines[] = "Reviews were requested by " . $Conf->printableTimeSetting("${rtyp}soft") . ".";
