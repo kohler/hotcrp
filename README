@@ -41,7 +41,16 @@ itself.  Chairs should particularly check out the "Advanced search" notes.
   - HotCRP's .htaccess files set various PHP options.  If your server
     configuration doesn't allow .htaccess files to set options, Apache will
     report an "Error 500" when you try to load HotCRP.  Change your Apache
-    configuration to "AllowOverride All" in the HotCRP directory.
+    configuration to "AllowOverride All" in the HotCRP directory.  An example
+    <Directory> specification:
+
+	<Directory "/home/kohler/testconf-crp">
+	        Options Indexes Includes FollowSymLinks MultiViews
+	        AllowOverride all
+	        Order allow,deny
+	        Allow from all
+	</Directory>
+
   - HotCRP users upload papers and reviews to the HotCRP web server.  Several 
     PHP configuration variables affect the maximum attachment size the server
     will accept.  These variables are set in the base directory's ".htaccess"
