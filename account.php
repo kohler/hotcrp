@@ -69,16 +69,20 @@ if (isset($_REQUEST['register']) && $OK) {
 	    if (isset($_REQUEST["ass"]) || isset($_REQUEST["chair"]))
 		$_REQUEST["pc"] = 1;
 	    $while = "while initializing roles";
-	    $Conf->qe("delete from PCMember where contactId=$Acct->contactId", $while);
-	    $Conf->qe("delete from ChairAssistant where contactId=$Acct->contactId", $while);
-	    $Conf->qe("delete from Chair where contactId=$Acct->contactId", $while);
-	    if (isset($_REQUEST["pc"]))
-		$Conf->qe("insert into PCMember (contactId) values ($Acct->contactId)", $while);
-	    if (isset($_REQUEST["ass"]))
-		$Conf->qe("insert into ChairAssistant (contactId) values ($Acct->contactId)", $while);
-	    if (isset($_REQUEST["chair"]))
-		$Conf->qe("insert into Chair (contactId) values ($Acct->contactId)", $while);
-	    if ($Acct->isPC || isset($_REQUEST["pc"])) {
+	    $changed = false;
+	    foreach (array("pc" => "PCMember", "ass" => "ChairAssistant", "chair" => "Chair") as $k => $table) {
+		$now = ($k == "pc" ? $Acct->isPC : ($k == "ass" ? $Acct->isAssistant : $Acct->isChair));
+		if ($now && !isset($_REQUEST[$k])) {
+		    $Conf->qe("delete from $table where contactId=$Acct->contactId", $while);
+		    $Conf->log("Removed as $table by $Me->email", $Acct);
+		    $changed = true;
+		} else if (!$now && isset($_REQUEST[$k])) {
+		    $Conf->qe("insert into $table (contactId) values ($Acct->contactId)", $while);
+		    $Conf->log("Added as $table by $Me->email", $Acct);
+		    $changed = true;
+		}
+	    }
+	    if ($changed) {
 		$t = time();
 		$Conf->qe("insert into Settings (name, value) values ('pc', $t) on duplicate key update value=$t");
 	    }

@@ -34,7 +34,7 @@ function doRemove(id) {
 $Conf->header("Program Committee");
 
 function updateRoles($id, $suff, $email) {
-    global $Conf;
+    global $Conf, $Me;
     // successfully looked up member, now make them a PC member
     $Conf->qe("delete from PCMember where contactId=$id");
     $Conf->qe("delete from ChairAssistant where contactId=$id");
@@ -46,7 +46,7 @@ function updateRoles($id, $suff, $email) {
 	if (isset($_REQUEST[$key]) && $_REQUEST[$key] > 0) {
 	    $result = $Conf->qe("insert into $table (contactId) values ($id)");
 	    if ($result)
-		$Conf->log("Added $email as $table", $_SESSION["Me"]);
+		$Conf->log("Added as $table by " . $Me->email, $id);
 	}
 }
 
