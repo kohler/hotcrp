@@ -378,7 +378,7 @@ echo "<div class='smgap'></div>\n";
 doCheckbox('rev_notifychair', 'PC chairs are notified of new reviews by email');
 
 echo "<div class='smgap'></div>\n<table>\n";
-doCheckbox('pc_seeallrev', "<b>Allow PC to see all reviews</b> except for conflicts<br /><small>If the box is unchecked, a PC member can see reviews for a paper only if they've already submitted their own review for that paper.</small>", true);
+doCheckbox('pc_seeallrev', "<b>Allow PC to see all reviews</b> except for conflicts<br /><small>If the box is unchecked, a PC member can see reviews for a paper only after submitting their own review for that paper.</small>", true);
 echo "</table>\n";
 
 echo "</div></div>\n\n";
