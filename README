@@ -6,7 +6,7 @@ CRP originally by Dirk Grunwald, University of Colorado
 
 Prerequisites
 -------------
-CRP requires the following packages.  Tested versions are in parentheses.
+HotCRP requires the following packages.  Tested versions are in parentheses.
 
 * Apache			http://apache.org/
   (You may be able to use another web server that works with PHP.)
@@ -16,7 +16,7 @@ CRP requires the following packages.  Tested versions are in parentheses.
   - Mail (1.1.14)		http://pear.php.net/package/Mail
   - Mail_Mime (1.3.1)		http://pear.php.net/package/Mail_Mime
 
-The PHP PEAR packages are currently distributed as part of the CRP tarball.
+The PHP PEAR packages are currently distributed as part of the HotCRP tarball.
 
 Configuration
 -------------
@@ -29,7 +29,8 @@ Configuration
 
 * Site configuration
   - Edit "Code/options.inc", which is annotated to guide you.
-  - Redirect Apache so your server URL will point at the CRP directory.
+  - Redirect Apache so your server URL will point at the HotCRP directory.
+    (If you get an Error 500, see "Configuration notes".)
   - Sign in to the site to create an account.  The first account created
     automatically receives PC chair privilege.
 
@@ -37,18 +38,22 @@ Now you're done, and can set up everything else through the web site
 itself.  Chairs should particularly check out the "Advanced search" notes.
 
 * Configuration notes
-  - CRP users upload papers and reviews to the CRP web server.  Several PHP
-    configuration variables affect the maximum attachment size the server will
-    accept.  These variables are set in the base directory's ".htaccess" to
-    20 megabytes; you may want to lower them.
-  - CRP users are given session cookies, allowing them to use the web site
+  - HotCRP's .htaccess files set various PHP options.  If your server
+    configuration doesn't allow .htaccess files to set options, Apache will
+    report an "Error 500" when you try to load HotCRP.  Change your Apache
+    configuration to "AllowOverride All" in the HotCRP directory.
+  - HotCRP users upload papers and reviews to the HotCRP web server.  Several 
+    PHP configuration variables affect the maximum attachment size the server
+    will accept.  These variables are set in the base directory's ".htaccess"
+    to 20 megabytes; you may want to lower them.
+  - HotCRP users are given session cookies, allowing them to use the web site
     for a while (usually 24 hours) before having to sign in again.
     However, on some Debian Linux systems, a system cron job
     garbage-collects old sessions based on the system-wide session
     lifetime, which can be quite short.  On these systems, you will need to
     change the system-wide "session.gc_maxlifetime" setting in /etc/php.ini
-    to exceed the desired CRP session lifetime.  This setting is measured
+    to exceed the desired HotCRP session lifetime.  This setting is measured
     in seconds, so 86400 corresponds to 24 hours.
-  - CRP PHP scripts can take a lot of memory, particularly if they're doing
-    things like generating MIME-encoded mail messages.  By default CRP sets
-    the PHP memory limit to 128MB.
+  - HotCRP PHP scripts can take a lot of memory, particularly if they're
+    doing things like generating MIME-encoded mail messages.  By default
+    HotCRP sets the PHP memory limit to 128MB.

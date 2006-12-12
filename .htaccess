@@ -1,16 +1,14 @@
 # These directives limit how large a paper can be uploaded.
 # post_max_size should be >= upload_max_filesize.
-
 php_value upload_max_filesize 20M
 php_value post_max_size 20M
 
+# Turn off the hateful magic_quotes_gpc.
+php_flag magic_quotes_gpc off
 
-# Prevent access to CVS and README directories, and turn off the hateful
-# magic_quotes_gpc.
 
+# Prevent access to CVS and README directories.
 <FilesMatch "^(CVS|\.svn|README|.*\.sh)$">
 Order allow,deny
 Deny from all
 </FilesMatch>
-
-php_flag magic_quotes_gpc off
