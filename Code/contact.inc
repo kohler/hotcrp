@@ -128,45 +128,6 @@ class Contact {
 	$this->chairContactId = 0;
     }
   
-    function countRequestedReviews() {
-	global $Conf;
-	$query = "select count(*) FROM PaperReview WHERE "
-	    . " contactId=" . $this->contactId;
-	$result = $Conf->q($query);
-	if (edb_nrows($result) == 1) {
-	    $row = edb_row($result);
-	    return $row[0];
-	} else {
-	    return 0;
-	}
-    }
-    
-    function countRequestedPrimary() {
-	global $Conf;
-	$query = "select count(*) from PaperReview where "
-	    . " contactId=" . $this->contactId . " and reviewType=" . REVIEW_PRIMARY;
-	$result = $Conf->q($query);
-	if (edb_nrows($result) == 1) {
-	    $row = edb_row($result);
-	    return $row[0];
-	} else {
-	    return 0;
-	}
-    }
-
-    function countRequestedSecondary() {
-	global $Conf;
-	$query = "select count(*) FROM PaperReview where "
-	    . " contactId=" . $this->contactId . " and reviewType=" . REVIEW_SECONDARY;
-	$result = $Conf->q($query);
-	if (edb_nrows($result) == 1) {
-	    $row = edb_row($result);
-	    return $row[0];
-	} else {
-	    return 0;
-	}
-    }
-
     function amAssistant() {
 	return $this->isAssistant || $this->isChair;
     }
