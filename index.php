@@ -75,7 +75,8 @@ if ($Me->amAssistant()) {
 
 
 // Submissions
-if ($Me->isPC) {
+$papersub = defval($Conf->settings["papersub"], 0);
+if ($Me->amAssistant() || ($Me->isPC && $papersub)) {
     echo "<div class='bgrp'><div class='bgrp_head'>Submissions</div><div class='bgrp_body'>\n";
     echo "<form method='get' action='search.php'><input class='textlite' type='text' size='32' name='q' value='' /> <input class='button_small' type='submit' name='go' value='Search' /></form>\n";
     echo "<span class='sep'></span><a href='search.php?opt=1'>Advanced search</a>";
@@ -138,7 +139,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
 
 
 // Review assignment
-if ($Me->amReviewer()) {
+if ($Me->amReviewer() && ($Me->amAssistant() || $papersub)) {
     echo "<div class='bgrp folded' id='foldre'><div class='bgrp_head'>";
     if ($Me->isReviewer)
 	echo "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;";

@@ -216,8 +216,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 			    ($isSubmitFinal ? "while submitting final copy for paper" : "while submitting paper"));
 	if (!$result)
 	    return false;
-	if (defval($Conf->settings["papersub"], 0) <= 0)
-	    $Conf->qe("insert into Settings (name, value) values ('papersub', " . time() . ") on duplicate key update name=name");
+	$Conf->updatePapersubSetting(true);
     }
     
     // confirmation message
@@ -305,6 +304,7 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submit"]) || isset($_REQUEST[
 if (isset($_REQUEST["unsubmit"]) && !$newPaper) {
     if ($Me->amAssistant()) {
 	$Conf->qe("update Paper set timeSubmitted=0 where paperId=$paperId", "while undoing paper submit");
+	$Conf->updatePapersubSetting(false);
 	getProw($Me->contactId);
 	$Conf->log("Unsubmitted", $Me, $paperId);
     } else
@@ -313,6 +313,7 @@ if (isset($_REQUEST["unsubmit"]) && !$newPaper) {
 if (isset($_REQUEST["withdraw"]) && !$newPaper) {
     if ($Me->canWithdrawPaper($prow, $Conf, $whyNot)) {
 	$Conf->qe("update Paper set timeWithdrawn=" . time() . ", timeSubmitted=if(timeSubmitted>0,-100,0) where paperId=$paperId", "while withdrawing paper");
+	$Conf->updatePapersubSetting(false);
 	getProw($Me->contactId);
 
 	// email contact authors themselves
@@ -344,6 +345,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 if (isset($_REQUEST["revive"]) && !$newPaper) {
     if ($Me->canRevivePaper($prow, $Conf, $whyNot)) {
 	$Conf->qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100," . time() . ",0) where paperId=$paperId", "while reviving paper");
+	$Conf->updatePapersubSetting(true);
 	getProw($Me->contactId);
 	$Conf->log("Revived", $Me, $paperId);
     } else
@@ -373,6 +375,7 @@ if (isset($_REQUEST['delete'])) {
 	}
 	if (!$error) {
 	    $Conf->confirmMsg("Paper #$paperId deleted.");
+	    $Conf->updatePapersubSetting(false);
 	    $Conf->log("Deleted", $Me, $paperId);
 	}
 	

@@ -108,6 +108,14 @@ class Conference {
 	    $this->settings["rev_blind"] = 2;
     }
 
+    // update the 'papersub' setting: are there any submitted papers?
+    function updatePapersubSetting($forsubmit) {
+	if (!isset($this->settings["papersub"]) && $forsubmit)
+	    $this->q("insert into Settings (name, value) values ('papersub', " . time() . ") on duplicate key update name=name");
+	else if (defval($this->settings["papersub"]) <= 0 || !$forsubmit)
+	    $this->q("update Settings set value=(select coalesce(timeSubmitted, 0) from Paper where timeSubmitted>0 group by timeSubmitted>0) where name='papersub'");
+    }
+
     function q($query) {
 	global $OK;
 	$result = mysql_query($query, $this->dblink);
