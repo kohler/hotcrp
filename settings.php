@@ -313,7 +313,7 @@ echo "</table>\n";
 
 echo "<div class='smgap'></div>\n";
 doCheckbox("sub_pcconf", "Collect authors' PC conflicts with checkboxes");
-doCheckbox("sub_collab", "Collect authors' collaborators");
+doCheckbox("sub_collab", "Collect authors' potential conflicts as text");
 
 echo "</div></div>\n\n";
 
