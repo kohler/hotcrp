@@ -23,6 +23,8 @@ $SettingText = array(
 	"sub_grace" => "Submissions grace period",
 	"sub_blind" => "Blind submission setting",
 	"rev_blind" => "Blind review setting",
+	"sub_pcconf" => "Collect PC conflicts setting",
+	"sub_collab" => "Collect collaborators setting",
 	"rev_notifychair" => "Notify chairs about reviews setting",
 	"pcrev_any" => "PC can review any paper setting",
 	"extrev_view" => "External reviewers can view reviewer identities setting",
@@ -130,22 +132,18 @@ if (isset($_REQUEST["update"])) {
 		   "extrev_soft", "extrev_hard", "final_done", "resp_done")
 	     as $date)
 	accountValue($date, "date");
+    foreach (array("rev_notifychair", "pcrev_any", "au_seerev", "au_seedec",
+		   "final_open", "resp_open", "pc_seeallrev", "sub_pcconf",
+		   "sub_collab") as $item)
+	accountValue($item, "check");
     accountValue("sub_grace", "grace");
     accountValue("sub_open", "cdate");
     accountValue("rev_open", "cdate");
     accountValue("sub_blind", 2);
     accountValue("rev_blind", 2);
-    accountValue("rev_notifychair", "check");
-    accountValue("pcrev_any", "check");
     accountValue("extrev_view", 2);
-    accountValue("au_seerev", "check");
-    accountValue("au_seedec", "check");
-    accountValue("rev_seedec", "check");
-    accountValue("final_open", "check");
     accountValue("final_grace", "grace");
-    accountValue("resp_open", "check");
     accountValue("resp_grace", "grace");
-    accountValue("pc_seeallrev", "check");
 
     // check date relationships
     foreach (array("sub_reg" => "sub_sub", "pcrev_soft" => "pcrev_hard",
@@ -312,6 +310,10 @@ doDateRow("sub_reg", "Paper registration deadline");
 doDateRow("sub_sub", "Paper submission deadline");
 doGraceRow("sub_grace", 'Grace period');
 echo "</table>\n";
+
+echo "<div class='smgap'></div>\n";
+doCheckbox("sub_pcconf", "Collect authors' PC conflicts with checkboxes");
+doCheckbox("sub_collab", "Collect authors' collaborators");
 
 echo "</div></div>\n\n";
 

@@ -126,14 +126,16 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // check that all required information has been entered
     array_ensure($_REQUEST, "", "title", "abstract", "authorInformation", "collaborators");
     $q = "";
-    foreach (array("title", "abstract", "authorInformation", "collaborators") as $x)
-	if (trim($_REQUEST[$x]) == "" && ($isSubmit || $x != "collaborators"))
-	    $PaperError[$x] = 1;
-	else {
-	    if ($x == "title")
-		$_REQUEST[$x] = simplifyWhitespace($_REQUEST[$x]);
-	    $q .= "$x='" . sqlqtrim($_REQUEST[$x]) . "', ";
+    foreach (array("title", "abstract", "authorInformation", "collaborators") as $x) {
+	if (trim($_REQUEST[$x]) == "") {
+	    if ($x != "collaborators"
+		|| (defval($Conf->settings["sub_collab"]) && $isSubmit))
+		$PaperError[$x] = 1;
 	}
+	if ($x == "title")
+	    $_REQUEST[$x] = simplifyWhitespace($_REQUEST[$x]);
+	$q .= "$x='" . sqlqtrim($_REQUEST[$x]) . "', ";
+    }
 
     // any missing fields?
     if (count($PaperError) > 0) {
@@ -185,18 +187,34 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 
     // update topics table
     if (!$isSubmitFinal) {
-	$result = $Conf->qe("delete from PaperTopic where paperId=$paperId", "while updating paper topics");
-	if (!$result)
+	if (!$Conf->qe("delete from PaperTopic where paperId=$paperId", "while updating paper topics"))
 	    return false;
+	$q = "";
 	foreach ($_REQUEST as $key => $value)
 	    if ($key[0] == 't' && $key[1] == 'o' && $key[2] == 'p'
-		&& ($id = cvtint(substr($key, 3))) > 0 && $value > 0) {
-		$result = $Conf->qe("insert into PaperTopic (paperId, topicId) values ($paperId, $id)", "while updating paper topics");
-		if (!$result)
-		    return false;
-	    }
+		&& ($id = cvtint(substr($key, 3))) > 0 && $value > 0)
+		$q .= "($paperId, $id), ";
+	if ($q && !$Conf->qe("insert into PaperTopic (paperId, topicId) values " . substr($q, 0, strlen($q) - 2), "while updating paper topics"))
+	    return false;
     }
 
+    // update PC conflicts if appropriate
+    if (defval($Conf->settings["sub_pcconf"])) {
+	if (!$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType=" . CONFLICT_AUTHORMARK, "while updating conflicts"))
+	    return false;
+	$q = "";
+	foreach ($_REQUEST as $key => $value)
+	    if ($key[0] == 'p' && $key[1] == 'c' && $key[2] == 'c'
+		&& ($id = cvtint(substr($key, 3))) > 0 && $value > 0)
+		$q .= ",$id";
+	if ($q && !$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType)
+	select $paperId, PCMember.contactId, " . CONFLICT_AUTHORMARK . "
+	from PCMember left join PaperConflict on (PCMember.contactId=PaperConflict.contactId and PaperConflict.paperId=$paperId)
+	where conflictType is null and PCMember.contactId in (" . substr($q, 1) . ")",
+			     "while updating conflicts"))
+	    return false;
+    }
+    
     // upload paper if appropriate
     if (fileUploaded($_FILES['paperUpload'], $Conf)) {
 	if ($newPaper)
@@ -542,7 +560,9 @@ else if ($canViewAuthors || $Me->amAssistant())
     $paperTable->echoContactAuthor($prow, $mode == "edit");
 
 
-// Collaborators
+// Potential conflicts
+if ($paperTable->editable || $Me->amAssistant())
+    $paperTable->echoPCConflicts($prow);
 if (($newPaper || $canViewAuthors || $Me->amAssistant()) && !$finalEditMode)
     $paperTable->echoCollaborators($prow);
 
@@ -568,11 +588,6 @@ if ($mode != "edit" && $mainPreferences) {
   </form></td>
 </tr>\n\n";
 }
-
-
-// PC conflicts
-if ($mode != "edit" && $Me->amAssistant())
-    $paperTable->echoPCConflicts($prow);
 
 
 // Outcome

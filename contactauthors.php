@@ -49,22 +49,7 @@ function pt_data_html($what, $row) {
 
 function addContactAuthor($paperId, $contactId) {
     // don't want two entries for the same contact, if we can avoid it
-    global $Conf;
-    
-    $result = $Conf->qe("lock tables PaperConflict write", "while adding contact author");
-    if (!$result)
-	return false;
-
-    $result = $Conf->qe("select conflictType from PaperConflict where paperId=$paperId and contactId=$contactId", "while adding contact author");
-    if (edb_nrows($result) > 0)
-	$q = "update PaperConflict set conflictType=" . CONFLICT_AUTHOR . " where paperId=$paperId and contactId=$contactId";
-    else
-	$q = "insert into PaperConflict (paperId, contactId, conflictType) values ($paperId, $contactId, " . CONFLICT_AUTHOR . ")";
-
-    $result = $Conf->qe($q, "while adding contact author");
-
-    $Conf->qe("unlock tables");
-    return $result;
+    return $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($paperId, $contactId, " . CONFLICT_AUTHOR . ") on duplicate key update conflictType=" . CONFLICT_AUTHOR, "while adding contact author");
 }
 
 function removeContactAuthor($paperId, $contactId) {

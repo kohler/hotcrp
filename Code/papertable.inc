@@ -264,13 +264,27 @@ Zhang, Ping Yen (INRIA)</pre>";
     }
 
     function echoCollaborators($prow) {
+	global $Conf, $ConfSiteBase;
+	if (!defval($Conf->settings["sub_collab"]))
+	    return;
+	$sub_pcconf = defval($Conf->settings["sub_pcconf"]);
 	echo "<tr class='pt_collaborators$this->autrClasses' id='foldco'>\n";
-	echo "  ", $this->tdCaption("collaborators"), "Collaborators</td>\n";
-	echo "  ", $this->tdEntry("collaborators");
-	$this->echoEntryData("collaborators", $prow, 5, true);
+	echo "  ", $this->tdCaption("collaborators"),
+	    ($sub_pcconf ? "External conflicts" : "Potential conflicts"),
+	    "</td>\n  ", $this->tdEntry("collaborators");
+	$this->echoEntryData("collaborators", $prow, 6, true);
 	echo "</td>\n";
-	if ($this->editable)
-	    echo "  ", $this->tdHint("collaborators"), "List the authors' recent (~2 years) coauthors and collaborators, and any advisor or student relationships.  Be sure to include PC members when appropriate.  We use this information to avoid conflicts of interest when reviewers are assigned.  Use the same format as for authors, above.</td>\n";
+	if ($this->editable) {
+	    echo "  ", $this->tdHint("collaborators"), "List people and
+	institutions with which the authors have conflicts of interest.
+	This usually includes recent coauthors and collaborators, and
+	any advisor/student relationships.  No need to list people at the
+	authors' own institutions.";
+	    if (!defval($Conf->settings["sub_pcconf"]))
+		echo "  Be sure to include conflicted <a href='${ConfSiteBase}pc.php'>PC members</a>.";
+	    echo "  We use this information when assigning PC and external
+	reviewers.  Use the same format as for authors,	above.</td>\n";
+	}
 	echo "</tr>\n\n";
     }
 
@@ -291,20 +305,45 @@ Zhang, Ping Yen (INRIA)</pre>";
 
     function echoPCConflicts($prow) {
 	global $Conf;
-	$q = "select firstName, lastName
-		from ContactInfo
-		join PCMember using (contactId)
-		join PaperConflict using (contactId)
-		where paperId=$prow->paperId group by ContactInfo.contactId";
-	$result = $Conf->qe($q, "while finding conflicted PC members");
-	if ($result) {
+	if ($this->editable && !defval($Conf->settings["sub_pcconf"]))
+	    return;
+	$pcm = pcMembers();
+	if (!count($pcm))
+	    return;
+	if ($prow) {
+	    $result = $Conf->qe("select contactId, conflictType from PaperConflict where paperId=$prow->paperId", "while finding conflicted PC members");
 	    while (($row = edb_row($result)))
-		$pcConflicts[] = contactHtml($row[0], $row[1]);
+		$conflict[$row[0]] = $row[1];
+	}
+
+	if ($this->editable) {
+	    foreach ($pcm as $id => $p) {
+		$c = "<input type='checkbox' name='pcc$id' value='1'";
+		if (defval($conflict[$id]) > 0) {
+		    $c .= " checked='checked'";
+		    if ($conflict[$id] != CONFLICT_AUTHORMARK)
+			$c .= " disabled='disabled'";
+		}
+		$pcconfs[] = $c . " onchange='highlightUpdate()' /> " . contactHtml($p->firstName, $p->lastName);
+	    }
+	    echo "<tr class='pt_conflict_ass'><td class='caption'>PC conflicts</td>\n  <td class='entry'><table class='rpad'><tr><td>";
+	    $n = intval((count($pcconfs) + 2) / 3);
+	    for ($i = 0; $i < count($pcconfs); $i++) {
+		if (($i % $n) == 0 && $i)
+		    echo "</td><td class='colmid'>";
+		echo $pcconfs[$i], "<br />";
+	    }
+	    echo "</td></tr></table></td>\n  <td class='hint'>Select the PC members who have conflicts with this paper.</td></tr>\n\n";
+	    
+	} else {
+	    foreach ($pcm as $id => $p)
+		if (defval($conflict[$id]))
+		    $pcconfs[] = contactHtml($p->firstName, $p->lastName);
 	    if ($prow->pcPaper)
-		$pcConflicts[] = "<b>PC paper</b>";
-	    if (!isset($pcConflicts))
-		$pcConflicts[] = "None";
-	    echo "<tr class='pt_conflict'>\n  <td class='caption'>PC conflicts</td>\n  <td class='entry'>", authorTable($pcConflicts, false), "</td>\n</tr>\n\n";
+		$pcconfs[] = "<b>PC paper</b>";
+	    if (!isset($pcconfs))
+		$pcconfs[] = "None";
+	    echo "<tr class='pt_conflict'><td class='caption'>PC conflicts</td><td class='entry'>", authorTable($pcconfs, false), "</td></tr>\n\n";
 	}
     }
 

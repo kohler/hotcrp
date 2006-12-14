@@ -350,7 +350,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && 
     else if ($mt == "conflict" || $mt == "unconflict") {
 	$while = "while marking conflicts";
 	if ($mt == "conflict") {
-	    $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) (select Paper.paperId, $pc->contactId, " . CONFLICT_CHAIRMARK . " from Paper left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=$pc->contactId) where PaperConflict.conflictType is null and (" . paperselPredicate($papersel, "Paper.") . "))", $while);
+	    $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) (select Paper.paperId, $pc->contactId, " . CONFLICT_CHAIRMARK . " from Paper left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=$pc->contactId) where coalesce(PaperConflict.conflictType, 0)<" . CONFLICT_AUTHOR . " and (" . paperselPredicate($papersel, "Paper.") . "))", $while);
 	    $Conf->log("Mark conflicts with $mpc", $Me, $papersel);
 	} else {
 	    $Conf->qe("delete from PaperConflict where PaperConflict.conflictType<" . CONFLICT_AUTHOR . " and contactId=$pc->contactId and (" . paperselPredicate($papersel) . ")", $while);
