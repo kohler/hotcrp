@@ -56,8 +56,8 @@ if [ $dbexists = 0 -o $userexists = 0 ]; then
     echo "Hit Enter to delete and recreate, Control-C to cancel." 
     read foo
 
-    echo "+ mysqladmin $FLAGS drop $DBNAME"
-    mysqladmin $FLAGS drop $DBNAME
+    echo "+ mysqladmin $FLAGS -f drop $DBNAME"
+    mysqladmin $FLAGS -f drop $DBNAME
 fi
 echo "+ mysqladmin $FLAGS create $DBNAME"
 mysqladmin $FLAGS create $DBNAME || exit 1

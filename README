@@ -21,28 +21,25 @@ The PHP PEAR packages are currently distributed as part of the HotCRP tarball.
 Configuration
 -------------
 * Database configuration
+
   - Decide on a name for your database (no spaces allowed).
+
   - Run "sudo Code/createdb.sh" to create the database.
+
   - Edit 'my.cnf' (typical location: '/etc/my.cnf') to ensure that MySQL
     can handle large objects.  In the [mysqld] section, add a line like:
     max_allowed_packet=32M
 
 * Site configuration
+
   - Edit "Code/options.inc", which is annotated to guide you.
+
   - Redirect Apache so your server URL will point at the HotCRP directory.
-    (If you get an Error 500, see "Configuration notes".)
-  - Sign in to the site to create an account.  The first account created
-    automatically receives PC chair privilege.
-
-Now you're done, and can set up everything else through the web site
-itself.  Chairs should particularly check out the "Advanced search" notes.
-
-* Configuration notes
-  - HotCRP's .htaccess files set various PHP options.  If your server
-    configuration doesn't allow .htaccess files to set options, Apache will
-    report an "Error 500" when you try to load HotCRP.  Change your Apache
-    configuration to "AllowOverride All" in the HotCRP directory.  An example
-    <Directory> specification:
+    (If you get an Error 500, see "Configuration notes".)  This will
+    generally require adding a <Directory> for the HotCRP directory, and an
+    Alias redirecting a particular URL to that directory.  For example,
+    this section of httpd.conf makes the "/testconf" URL point at a HotCRP
+    installation in /home/kohler/testconf-crp.
 
 	<Directory "/home/kohler/testconf-crp">
 	        Options Indexes Includes FollowSymLinks MultiViews
@@ -50,19 +47,33 @@ itself.  Chairs should particularly check out the "Advanced search" notes.
 	        Order allow,deny
 	        Allow from all
 	</Directory>
+	Alias /testconf /home/kohler/hotnets-crp
+
+  - Sign in to the site to create an account.  The first account created
+    automatically receives PC chair privilege.
+
+    (If your server configuration doesn't allow .htaccess files to set
+    options, Apache will report an "Error 500" when you try to load HotCRP.
+    Change your Apache configuration to "AllowOverride All" in the HotCRP
+    directory, as our example does above.)
+
+Now you're done, and can set up everything else through the web site
+itself.
+
+
+* Configuration notes
 
   - HotCRP users upload papers and reviews to the HotCRP web server.  Several 
     PHP configuration variables affect the maximum attachment size the server
     will accept.  These variables are set in the base directory's ".htaccess"
     to 20 megabytes; you may want to lower them.
-  - HotCRP users are given session cookies, allowing them to use the web site
-    for a while (usually 24 hours) before having to sign in again.
-    However, on some Debian Linux systems, a system cron job
-    garbage-collects old sessions based on the system-wide session
-    lifetime, which can be quite short.  On these systems, you will need to
-    change the system-wide "session.gc_maxlifetime" setting in /etc/php.ini
-    to exceed the desired HotCRP session lifetime.  This setting is measured
-    in seconds, so 86400 corresponds to 24 hours.
+
+  - On some Debian Linux systems, a cron job garbage-collects old sessions
+    based on the system-wide session lifetime, which can be quite short.
+    You will need to change the system-wide "session.gc_maxlifetime"
+    setting in /etc/php.ini to exceed the desired HotCRP session lifetime.
+    This setting is measured in seconds, so 86400 corresponds to 24 hours.
+
   - HotCRP PHP scripts can take a lot of memory, particularly if they're
     doing things like generating MIME-encoded mail messages.  By default
     HotCRP sets the PHP memory limit to 128MB.
