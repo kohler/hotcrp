@@ -137,7 +137,7 @@ function formFieldText($row, $ordinalOrder, $numRows) {
     $x .= "\n</select> <span class='sep'></span>";
 
     // author view
-    $x .= "<input type='checkbox' name='authorView_$row->fieldName' value='1' ";
+    $x .= "<input type='checkbox' name='authorView_" . $row->fieldName . "' value='1' ";
     if (isset($_REQUEST["shortName_$row"]) && !isset($_REQUEST["authorView_$row"]))
 	$_REQUEST["authorView_$row"] = 0;
     if (getField($row, 'authorView') > 0)
