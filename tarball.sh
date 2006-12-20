@@ -128,6 +128,7 @@ Chair/SpotProblems.php
 Chair/ViewActionLog.php
 Chair/ViewButtons.php
 Chair/index.php
+Chair/sampleforms.inc
 
 Download/.htaccess
 Download/GetPaper
