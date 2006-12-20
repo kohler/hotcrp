@@ -29,6 +29,29 @@ function checkOptions(&$var, &$options, &$order) {
     return ($expect >= 2 || (isset($order) && cvtint($order) < 0));
 }
 
+if (isset($_REQUEST['loadsample']) && isset($_REQUEST['sample'])) {
+    require_once('sampleforms.inc');
+    if ($_REQUEST['sample'] == 'sigcomm2005')
+	sigcomm2005Form();
+    else if ($_REQUEST['sample'] == 'worlds2005')
+	worlds2005Form();
+    else if ($_REQUEST['sample'] == 'cgo2004')
+	cgo36Form();
+    else if ($_REQUEST['sample'] == 'hotnetsv')
+	hotnetsVForm();
+    else if ($_REQUEST['sample'] == 'none')
+	noForm();
+    else {
+	$Conf->errorMsg("unknown sample form");
+	$_REQUEST['sample'] = 'none';
+    }
+} else if (isset($_REQUEST['cancel'])) {
+    require_once('sampleforms.inc');
+    noForm();
+    $_REQUEST['sample'] = 'none';
+} else
+    $_REQUEST['sample'] = 'none';
+    
 if (isset($_REQUEST['update'])) {
     $while = "while updating review form";
     $scoreModified = array();
@@ -36,14 +59,21 @@ if (isset($_REQUEST['update'])) {
     
     foreach (array_keys($reviewFields) as $field) {
 	$req = '';
-	if (isset($_REQUEST["shortName_$field"]))
-	    $req .= "shortName='" . sqlq($_REQUEST["shortName_$field"]) . "', ";
+	if (isset($_REQUEST["shortName_$field"])) {
+	    $sn = trim($_REQUEST["shortName_$field"]);
+	    if ($sn == "" || $sn == "<None>") {
+		$FormError[$field] = 1;
+		$shortNameError = true;
+		$sn = "<None>";
+	    }
+	    $req .= "shortName='" . sqlq($sn) . "', ";
+	}
 	if (isset($_REQUEST["authorView_$field"]))
 	    $req .= "authorView=1, ";
 	else
 	    $req .= "authorView=0, ";
 	if (isset($_REQUEST["description_$field"]))
-	    $req .= "description='" . sqlq($_REQUEST["description_$field"]) . "', ";
+	    $req .= "description='" . sqlq(trim($_REQUEST["description_$field"])) . "', ";
 	if (isset($_REQUEST["order_$field"]))
 	    $req .= "sortOrder='" . cvtint($_REQUEST["order_$field"]) . "', ";
 	if ($reviewFields[$field]) {
@@ -75,7 +105,9 @@ if (isset($_REQUEST['update'])) {
 	    }
 	}
     }
-    
+
+    if (isset($shortNameError))
+	$Conf->errorMsg("Each review field should have a name.  Please edit the highlighted fields and save again.");
     if (isset($optionError))
 	$Conf->errorMsg("Review fields with options must have at least two choices, numbered sequentially from 1.  Enter them like this:  <pre>1. Low quality
 2. Medium quality
@@ -124,13 +156,12 @@ function formFieldText($row, $ordinalOrder, $numRows) {
     $x .= "<$trclass><td class='xcaption' nowrap='nowrap'><span class='lgsep'></span>Form position</td><td class='entry'>"
 	. "<select name='order_$row->fieldName' onchange='highlightUpdate()'>\n"
 	. "  <option value='-1'";
-    $order = getField($row, 'order', $ordinalOrder);
-    if ($order < 0)
+    if ($ordinalOrder < 0)
 	$x .= " selected='selected'";
     $x .= ">Off form</option>";
     for ($i = 0; $i < $numRows; $i++) {
 	$x .= "<option value='$i'";
-	if ($order == $i)
+	if ($ordinalOrder == $i)
 	    $x .= " selected='selected'";
 	$x .= ">" . ($i + 1) . ($i == 0 ? "st" : ($i == 1 ? "nd" : ($i == 2 ? "rd" : "th"))) . "</option>";
     }
@@ -178,7 +209,7 @@ function formFieldText($row, $ordinalOrder, $numRows) {
     return $x . "<$trclass><td colspan='4'><div class='tinygap'></div></td></tr>\n";
 }
 
-$result = $Conf->qe("select * from ReviewFormField order by sortOrder, shortName", "while loading review form");
+$result = $Conf->qe("select * from ReviewFormField", "while loading review form");
 if (!$result) {
     $Conf->footer();
     exit;
@@ -187,7 +218,7 @@ if (!$result) {
 
 $captions = array
     ("description" => "Enter an HTML description for the review	field here,
-	including any guidance you'd like to provide to reviewers.",
+	including any guidance you'd like to provide to reviewers and authors.",
      "options" => "Enter the allowed options for this field, one per line,
 	numbered starting from 1.  For example:
 	<pre class='entryexample'>1. Reject
@@ -195,25 +226,56 @@ $captions = array
 3. Weak accept
 4. Accept</pre>");
 
+
+
 echo "<form action='SetReviewForm.php' method='post'>
 
-<table class='center'><tr><td><input type='submit' class='button' name='update' value='Save changes' /></td></tr></table>
+<table class='center'><tr><td><b>Sample review forms:</b>&nbsp;
+<select name='sample'>";
+foreach (array("none" => "Current form",
+	       "hotnetsv" => "HotNets V workshop",
+	       "sigcomm2005" => "SIGCOMM 2005",
+	       "worlds2005" => "WORLDS 2005 workshop",
+	       "cgo2004" => "CGO 2004 conference") as $k => $v) {
+    echo "<option value='$k'";
+    if ($k == $_REQUEST['sample'])
+	echo " selected='selected'";
+    echo ">$v</option>";
+}
+echo "</select> &nbsp;
+<input type='submit' class='button' name='loadsample' value='Go' /></td></tr></table>
+
+<hr />
+
+<table class='center'><tr><td><input type='submit' class='button",
+    ($_REQUEST['sample'] == 'none' ? "" : "_alert"),
+    "' name='update' value='Save changes' />
+    <input type='submit' class='button' name='cancel' value='Cancel' /></td></tr></table>
 
 <table class='setreviewform'>\n";
 
+$out = array();
+while ($row = edb_orow($result)) {
+    $order = defval($_REQUEST["order_$row->fieldName"], $row->sortOrder);
+    if ($order < 0)
+	$order = 100;
+    $sn = defval($_REQUEST["shortName_$row->fieldName"], $row->shortName);
+    $out[sprintf("%03d.%s", $order, strtolower($sn))] = $row;
+}
+
+ksort($out);
 $ordinalOrder = 0;
-$notShown = array();
-while ($row = edb_orow($result))
-    if ($row->sortOrder < 0)
-	$notShown[] = $row;
-    else
-	echo formFieldText($row, $ordinalOrder++, edb_nrows($result));
-foreach ($notShown as $row)
-    echo formFieldText($row, -1, edb_nrows($result));
+foreach ($out as $row) {
+    $order = defval($_REQUEST["order_$row->fieldName"], $row->sortOrder);
+    if ($order >= 0)
+	$order = $ordinalOrder++;
+    echo formFieldText($row, $order, count($out));
+}
 
 echo "</table>
 
-<table class='center'><tr><td><input type='submit' class='button' name='update' value='Save changes' /></td></tr></table>
+<table class='center'><tr><td><input type='submit' class='button' name='update' value='Save changes' />
+    <input type='submit' class='button' name='cancel' value='Cancel' /></td></tr></table>
 
 </form>\n";
 

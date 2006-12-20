@@ -167,9 +167,9 @@ using their checkboxes, and add tags using the action area.
 
 <p><img src='${ConfSiteBase}images/extagssearch.png' alt='[Setting tags on the search page]' /></p>
 
-You can <b>Add</b> and <b>Remove</b> a tag to/from the selected papers, or
+You can <b>Add</b> and <b>Remove</b> tags to/from the selected papers, or
 <b>Define</b> a tag, which adds the tag to all selected papers and removes it
-from all non-selected ones.");
+from all non-selected papers.");
     _alternateRow("Special tags", "
 PC chairs can define special tags that only they can add and remove
 on the <a href='${ConfSiteBase}settings.php'>conference settings page</a>.

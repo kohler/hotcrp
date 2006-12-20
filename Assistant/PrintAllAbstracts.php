@@ -24,12 +24,12 @@ p.page {page-break-after: always}
 
 $finalizedStr = "";
 if (defval($_REQUEST["onlyFinalized"])) {
-  $finalizedStr =  " AND Paper.timeSubmitted>0 ";
+  $finalizedStr =  " where Paper.timeSubmitted>0 ";
 }
 
-$ORDER="ORDER BY Paper.paperId";
+$ORDER=" order by Paper.paperId";
 if (isset($_REQUEST["orderBy"])) {
-  $ORDER = "ORDER BY " . $_REQUEST["orderBy"];
+  $ORDER = " order by " . $_REQUEST["orderBy"];
 }
 ?>
 <h2> List of submitted papers and authors </h2>
@@ -53,13 +53,12 @@ I'm not certain if this works under Netscape or other browsers.
 <?php 
   $query="SELECT Paper.paperId, Paper.title, "
   . " Paper.timeSubmitted, Paper.timeWithdrawn, "
-  . " Paper.authorInformation, Paper.abstract, Paper.contactId, "
-  . " ContactInfo.firstName, ContactInfo.lastName, "
-  . " ContactInfo.email, ContactInfo.affiliation, "
+  . " Paper.authorInformation, Paper.abstract, "
+  . " group_concat(firstName, ' ', lastName, ' (', email, ')' separator ', ') as contactInfo,"
   . " Paper.size, Paper.mimetype "
-  . " FROM Paper, ContactInfo "
-  . " WHERE ContactInfo.contactId = Paper.ContactId "
+  . " from Paper left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType=" . CONFLICT_AUTHOR . ") left join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId)"
   . $finalizedStr
+  . " group by Paper.paperId"
   . $ORDER;
 
 $result=$Conf->qe($query);
@@ -68,8 +67,7 @@ $result=$Conf->qe($query);
      $paperId=$row['paperId'];
      $title=$row['title'];
      $affiliation=nl2br($row['authorInformation']);
-     $contactInfo = $row['firstName'] . " " . $row['lastName']
-     . " ( " . $row['email'] . " ) ";
+     $contactInfo = $row['contactInfo'];
      $abstract=$row['abstract'];
      $mimetype=$row['mimetype'];
      $length=$row['size'];
@@ -113,7 +111,5 @@ $result=$Conf->qe($query);
 <p class='page'> End of <?php  echo $paperId ?> </p>
   <?php 
 }
-?>
 
-<?php $Conf->footer() ?>
-
+$Conf->footer();

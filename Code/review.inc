@@ -135,7 +135,9 @@ class ReviewForm {
 	    if (isset($this->options[$field]))
 		$x .= " textarea";
 	    $x .= "'>" . htmlspecialchars($this->shortName[$field]);
-	    if (!$this->authorView[$field])
+	    if ($this->authorView[$field] < 0)
+		$x .= "<br /><span class='hint'>Chairs only</span>";
+	    else if ($this->authorView[$field] == 0)
 		$x .= "<br /><span class='hint'>PC only</span>";
 	    $x .= "</td>\n";
 	    
@@ -398,7 +400,7 @@ class ReviewForm {
 	$i = 0;
 	$numericMessage = 0;
 	foreach ($this->fieldOrder as $field) {
-	    if ($revtype == self::REV_AUTHOR && !$this->authorView[$field])
+	    if ($revtype == self::REV_AUTHOR && $this->authorView[$field] <= 0)
 		continue;
 
 	    $fval = "";
@@ -414,7 +416,9 @@ class ReviewForm {
 		continue;
 
 	    $x .= "\n==+== " . chr(65 + $i++) . ". " . $this->shortName[$field];
-	    if (!$this->authorView[$field])
+	    if ($this->authorView[$field] < 0)
+		$x .= " (Chairs only)";
+	    else if ($this->authorView[$field] == 0)
 		$x .= " (PC only)";
 	    $x .= "\n";
 	    if (isset($this->options[$field]) && $revtype == self::REV_FORM) {
@@ -553,7 +557,7 @@ class ReviewForm {
 	    $options = isset($this->options[$field]);
 	    if (!$options && $fval == "")
 		continue;
-	    if (!$this->authorView[$field] && !$viewAllFields)
+	    if ($this->authorView[$field] <= 0 && !$viewAllFields)
 		continue;
 	    
 	    if ($needRow == 0 && (!$options || $rowColumns == 2)) {
@@ -570,7 +574,9 @@ class ReviewForm {
 	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))
 		$n = preg_replace("/\\s+/", "&nbsp;", $n);
 	    $x .= "$n";
-	    if (!$this->authorView[$field])
+	    if ($this->authorView[$field] < 0)
+		$x .= "<br /><span class='hint'>Chairs only</span>";
+	    else if ($this->authorView[$field] == 0)
 		$x .= "<br /><span class='hint'>PC only</span>";
 	    $x .= "</td>\n";
 	    
@@ -598,7 +604,7 @@ class ReviewForm {
 	$needRow = 1;
 	
 	foreach ($this->fieldOrder as $field) {
-	    if (!$this->authorView[$field] && !$viewAllFields)
+	    if ($this->authorView[$field] <= 0 && !$viewAllFields)
 		continue;
 	    $options = isset($this->options[$field]);
 	    if (!$this->description[$field] && !$options)
@@ -632,7 +638,7 @@ class ReviewForm {
 	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
 	$x = "";
 	foreach ($this->fieldOrder as $field)
-	    if (($this->authorView[$field] || $viewAllFields)
+	    if (($this->authorView[$field] > 0 || $viewAllFields)
 		&& isset($this->options[$field]))
 		$x .= "<th>" . $this->webFieldAbbrev($field) . "</th>";
 	return $x;
@@ -643,7 +649,7 @@ class ReviewForm {
 	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
 	$x = "";
 	foreach ($this->fieldOrder as $field)
-	    if (($this->authorView[$field] || $viewAllFields)
+	    if (($this->authorView[$field] > 0 || $viewAllFields)
 		&& isset($this->options[$field])) {
 		if ($view && $rrow->$field) {
 		    $x .= "<td class='revscore rs_$field'>" . $rrow->$field . "</td>";
@@ -658,7 +664,7 @@ class ReviewForm {
 	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
 	$x = "<table class='reviewscores'>\n<tr class='rs_heading'><td></td><td></td>";
 	foreach ($this->fieldOrder as $field) {
-	    if (($this->authorView[$field] || $viewAllFields)
+	    if (($this->authorView[$field] > 0 || $viewAllFields)
 		&& isset($this->options[$field]))
 		$x .= "<td>" . htmlspecialchars($this->shortName[$field]) . "</td>";
 	}
@@ -675,7 +681,7 @@ class ReviewForm {
 	    else
 		$x .= "<td></td>";
 	    foreach ($this->fieldOrder as $field) {
-		if (($this->authorView[$field] || $viewAllFields)
+		if (($this->authorView[$field] > 0 || $viewAllFields)
 		    && isset($this->options[$field]))
 		    $x .= "<td class='rs_$field'>" . $rrow->$field . "</td>";
 	    }
@@ -705,7 +711,7 @@ class ReviewForm {
 	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
 	$n = 0;
 	foreach ($this->fieldOrder as $field)
-	    if (($this->authorView[$field] || $viewAllFields)
+	    if (($this->authorView[$field] > 0 || $viewAllFields)
 		&& isset($this->options[$field]))
 		$n++;
 	return $n;

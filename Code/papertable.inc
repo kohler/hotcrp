@@ -270,7 +270,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 	$sub_pcconf = defval($Conf->settings["sub_pcconf"]);
 	echo "<tr class='pt_collaborators$this->autrClasses' id='foldco'>\n";
 	echo "  ", $this->tdCaption("collaborators"),
-	    ($sub_pcconf ? "External conflicts" : "Potential conflicts"),
+	    ($sub_pcconf ? "Other conflicts" : "Potential conflicts"),
 	    "</td>\n  ", $this->tdEntry("collaborators");
 	$this->echoEntryData("collaborators", $prow, 6, true);
 	echo "</td>\n";
@@ -333,7 +333,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 		    echo "</td><td class='colmid'>";
 		echo $pcconfs[$i], "<br />";
 	    }
-	    echo "</td></tr></table></td>\n  <td class='hint'>Select the PC members who have conflicts with this paper.</td></tr>\n\n";
+	    echo "</td></tr></table></td>\n  <td class='hint'>Select the PC members who have conflicts of interest with this paper.</td></tr>\n\n";
 	    
 	} else {
 	    foreach ($pcm as $id => $p)
