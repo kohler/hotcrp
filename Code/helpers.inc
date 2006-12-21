@@ -293,7 +293,7 @@ function topicTable($prow, $active = 0, $conf = null) {
 	    $paperTopic[$row[0]] = $rf->topicName[$row[0]];
     }
     $allTopics = ($active < 0 ? $paperTopic : $rf->topicName);
-    if ($active < 0 && count($paperTopic) == 0)
+    if (count($allTopics) == 0)
 	return "";
 
     $out = "<table><tr><td class='pad'>";
