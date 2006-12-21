@@ -131,8 +131,8 @@ class PaperTable {
 	echo "  <td class='caption'>";
 	if ($this->allFolded) {
 	    $fs = ($this->foldsession ? ";foldsession(['au','st'], '$this->foldsession')" : "");
-	    echo "<a href=\"javascript:fold(['st','ti','pa','ab','ca','au','co','to'], 0, 1)$fs\" class='foldbutton unfolder1'>+</a>",
-		"<a href=\"javascript:fold(['st','ti','pa','ab','ca','au','co','to'], 1, 1)$fs\" class='foldbutton folder1'>&minus;</a> ";
+	    echo "<a href=\"javascript:fold(['st','ti','pa','ab','ca','au','co','to','op'], 0, 1)$fs\" class='foldbutton unfolder1'>+</a>",
+		"<a href=\"javascript:fold(['st','ti','pa','ab','ca','au','co','to','op'], 1, 1)$fs\" class='foldbutton folder1'>&minus;</a> ";
 	}
 	if (!($flags & self::NOCAPTION))
 	    echo "Paper</td>\n";
@@ -265,9 +265,9 @@ Zhang, Ping Yen (INRIA)</pre>";
 
     function echoCollaborators($prow) {
 	global $Conf, $ConfSiteBase;
-	if (!defval($Conf->settings["sub_collab"]))
+	if (!$Conf->setting("sub_collab"))
 	    return;
-	$sub_pcconf = defval($Conf->settings["sub_pcconf"]);
+	$sub_pcconf = $Conf->setting("sub_pcconf");
 	echo "<tr class='pt_collaborators$this->autrClasses' id='foldco'>\n";
 	echo "  ", $this->tdCaption("collaborators"),
 	    ($sub_pcconf ? "Other conflicts" : "Potential conflicts"),
@@ -280,7 +280,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 	This usually includes recent coauthors and collaborators, and
 	any advisor/student relationships.  No need to list people at the
 	authors' own institutions.";
-	    if (!defval($Conf->settings["sub_pcconf"]))
+	    if (!$Conf->setting("sub_pcconf"))
 		echo "  Be sure to include conflicted <a href='${ConfSiteBase}pc.php'>PC members</a>.";
 	    echo "  We use this information when assigning PC and external
 	reviewers.  Use the same format as for authors,	above.</td>\n";
@@ -303,9 +303,39 @@ Zhang, Ping Yen (INRIA)</pre>";
 	}
     }
 
+    function echoOptions($prow, $showAll) {
+	global $Conf;
+	if ((!$this->editable && $prow->optionIds == "")
+	    || !($opt = paperOptions()))
+	    return;
+	$optsel = array_flip(explode(",", defval($prow->optionIds, "")));
+	if ($this->editable) {
+	    foreach ($opt as $o) {
+		echo "<tr class='pt_option$this->trClasses'>\n";
+		echo "  ", $this->tdCaption("option"), htmlspecialchars($o->optionName), "</td>\n";
+		echo "  ", $this->tdEntry("option"), "<input type='checkbox' name='opt$o->optionId' value='1'", (isset($optsel[$o->optionId]) ? " checked='checked'" : ""), " />&nbsp;", $o->description, "</td>\n";
+		echo "</tr>\n\n";
+	    }
+	} else {
+	    $sep = $t = "";
+	    foreach ($opt as $o)
+		if (isset($optsel[$o->optionId])
+		    && ($o->pcView || $showAll || $prow->conflictType == CONFLICT_AUTHOR)) {
+		    $t .= $sep . htmlspecialchars($o->optionName);
+		    $sep = "<span class='sep'> </span>";
+		}
+	    if ($t) {
+		echo "<tr class='pt_option$this->trClasses' id='foldop'>\n";
+		echo "  ", $this->tdCaption("option"), "Options</td>\n";
+		echo "  ", $this->tdEntry("option"), $t, "</td>\n";
+		echo "</tr>\n\n";
+	    }
+	}
+    }
+    
     function echoPCConflicts($prow) {
 	global $Conf;
-	if ($this->editable && !defval($Conf->settings["sub_pcconf"]))
+	if ($this->editable && !$Conf->setting("sub_pcconf"))
 	    return;
 	$pcm = pcMembers();
 	if (!count($pcm))

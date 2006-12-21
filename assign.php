@@ -202,7 +202,7 @@ function requestReview($email) {
 	$m .= wordWrapIndent(trim($prow->authorInformation), "Authors: ", 14) . "\n";
     $m .= "  Paper site: $Conf->paperSite/review.php?paperId=$prow->paperId\n\n";
     $mm = "";
-    if (defval($Conf->settings["extrev_soft"], 0) > 0)
+    if ($Conf->setting("extrev_soft") > 0)
 	$mm = "If you are willing to review this paper, please enter your review by " . $Conf->printableTimeSetting("extrev_soft") . ".  ";
     $m .= wordwrap($mm . "You may also complete a review form offline and upload it to the site.  If you cannot complete the review, you may refuse the review on the paper site or contact " . contactText($Me) . " directly.  For reference, your account information is as follows:\n\n");
     $m .= "        Site: $Conf->paperSite
@@ -305,6 +305,7 @@ if ($canViewAuthors || $Me->amAssistant()) {
     $paperTable->echoCollaborators($prow);
 }
 $paperTable->echoTopics($prow);
+$paperTable->echoOptions($prow, $Me->amAssistant());
 $paperTable->echoTags($prow);
 
 
@@ -424,7 +425,7 @@ echo "  <td class='entry'>", ($revTable ? $revTable : "None");
 
 // add reviewers
 $Conf->infoMsg("External reviewers get access to their assigned papers, including "
-	       . ($Conf->settings["extrev_view"] >= 2 ? "the other reviewers' identities and " : "")
+	       . ($Conf->setting("extrev_view") >= 2 ? "the other reviewers' identities and " : "")
 	       . "any eventual decision.  Before requesting an external review,
  you should generally check personally whether they are interested.");
 

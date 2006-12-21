@@ -108,6 +108,10 @@ class Conference {
 	    $this->settings["rev_blind"] = 2;
     }
 
+    function setting($name, $defval = false) {
+	return defval($this->settings[$name], $defval);
+    }
+    
     // update the 'papersub' setting: are there any submitted papers?
     function updatePapersubSetting($forsubmit) {
 	if (!isset($this->settings["papersub"]) && $forsubmit)
@@ -729,6 +733,8 @@ class Conference {
 	//   "reviewerName"	Include reviewer names
 	//   "joins"		Table(s) to join
 	//   "tags"		Include paperTags
+	//   "topics"
+	//   "options"
 	//   "overallMeritScores"
 	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
 
@@ -764,6 +770,12 @@ class Conference {
 	    $pq .= ",
 		PaperTopics.topicIds,
 		PaperTopics.topicInterest";
+	if (isset($options['options']) && defval($this->settings["paperOption"]))
+	    $pq .= ",
+		PaperOptions.optionIds";
+	else if (isset($options['options']))
+	    $pq .= ",
+		'' as optionIds";
 	if (isset($options['tags']))
 	    $pq .= ",
 		PaperTags.paperTags";
@@ -824,6 +836,10 @@ class Conference {
 	    if (isset($options['topicInterestScore']))
 		$pq .= ", sum(if(interest=2,2,interest-1)) as topicInterestScore";
 	    $pq .= " from PaperTopic left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$contactId) group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)\n";
+	}
+
+	if (isset($options['options']) && defval($this->settings["paperOption"])) {
+	    $pq .= "		left join (select paperId, group_concat(PaperOption.optionId) as optionIds from PaperOption group by paperId) as PaperOptions on (PaperOptions.paperId=Paper.paperId)\n";
 	}
 
 	if (isset($options['tags']))

@@ -35,6 +35,7 @@ function loadRows() {
 	$sel = array("paperId" => $_REQUEST["paperId"]);
     } else
 	errorMsgExit("Select a paper ID above, or <a href='${ConfSiteBase}search.php?q='>list the papers you can view</a>.");
+    $sel['topics'] = $sel['options'] = 1;
     if (!(($prow = $Conf->paperRow($sel, $Me->contactId, $whyNot))
 	  && $Me->canViewPaper($prow, $Conf, $whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
@@ -166,7 +167,9 @@ if ($canViewAuthors || $Me->amAssistant()) {
     $paperTable->echoCollaborators($prow);
 }
 $paperTable->echoTopics($prow);
-$paperTable->echoTags($prow);
+$paperTable->echoOptions($prow, $Me->amAssistant());
+if ($Me->isPC && ($prow->conflictType == 0 || ($Me->amAssistant() && $forceShow)))
+    $paperTable->echoTags($prow);
 if ($Me->amAssistant())
     $paperTable->echoPCConflicts($prow);
 if ($crow)

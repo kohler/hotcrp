@@ -39,10 +39,10 @@ Welcome, ", htmlspecialchars($Me->fullnameOrEmail()), ".  (If this isn't you, pl
 </ul></td><td class='r'><ul class='compact'>\n";
 
 // Any deadlines set?
-if (defval($Conf->settings['sub_reg'], 0) || defval($Conf->settings['sub_update'], 0) || defval($Conf->settings['sub_sub'], 0)
-    || ($Me->isAuthor && defval($Conf->settings['resp_open'], 0) > 0 && defval($Conf->settings['resp_done'], 0))
-    || ($Me->isPC && defval($Conf->settings['rev_open'], 0) && defval($Conf->settings['pcrev_hard'], 0))
-    || ($Me->amReviewer() && defval($Conf->settings['rev_open'], 0) && defval($Conf->settings['extrev_hard'], 0)))
+if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting('sub_sub')
+    || ($Me->isAuthor && $Conf->setting('resp_open') > 0 && $Conf->setting('resp_done'))
+    || ($Me->isPC && $Conf->setting('rev_open') && $Conf->setting('pcrev_hard'))
+    || ($Me->amReviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard')))
     echo "<li><a href='deadlines.php'>Conference deadlines</a></li>\n";
 
 echo "<li><a href='pc.php'>Meet the program committee</a></li>
@@ -75,7 +75,7 @@ if ($Me->amAssistant()) {
 
 
 // Submissions
-$papersub = defval($Conf->settings["papersub"], 0);
+$papersub = $Conf->setting("papersub");
 if ($Me->amAssistant() || ($Me->isPC && $papersub)) {
     echo "<div class='bgrp'><div class='bgrp_head'>Submissions</div><div class='bgrp_body'>\n";
     echo "<form method='get' action='search.php'><input class='textlite' type='text' size='32' name='q' value='' /> <input class='button_small' type='submit' name='go' value='Search' /></form>\n";

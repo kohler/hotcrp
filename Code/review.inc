@@ -74,7 +74,7 @@ class ReviewForm {
 
 	$while = "while updating review form information";
 	
-	$result = $conf->qe("select fieldName, shortName, description, sortOrder, rows, authorView from ReviewFormField order by sortOrder, shortName", $while);
+	$result = $conf->qe("select * from ReviewFormField order by sortOrder, shortName", $while);
 	if (!$result)
 	    return;
 	while (($row = edb_orow($result))) {

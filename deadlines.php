@@ -48,9 +48,9 @@ function printableInterval($amt) {
 
 $now = time();
 
-$sub_reg = defval($Conf->settings['sub_reg'], 0);
-$sub_update = defval($Conf->settings['sub_update'], 0);
-$sub_sub = defval($Conf->settings['sub_sub'], 0);
+$sub_reg = $Conf->setting('sub_reg');
+$sub_update = $Conf->setting('sub_update');
+$sub_sub = $Conf->setting('sub_sub');
 
 if ($sub_reg && $sub_update != $sub_reg) {
     echo "<tr><td class='rcaption nowrap'>Paper registration deadline</td>";
@@ -73,20 +73,20 @@ if ($sub_sub) {
     echo "<td>This deadline controls when you can submit papers to the conference.  Submissions received after this time will not be considered.</td></tr>\n";
 }
 
-$resp_done = defval($Conf->settings['resp_done'], 0);
+$resp_done = $Conf->setting('resp_done');
 
-if (defval($Conf->settings['resp_open'], 0) > 0 && $resp_done) {
+if ($Conf->setting('resp_open') > 0 && $resp_done) {
     echo "<tr><td class='rcaption nowrap'>Response deadline</td>";
     echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('resp_done'), "</td>";
     echo "<td class='nowrap entry'>", printableInterval($resp_done - $now), "</td>";
     echo "<td>This deadline controls when you can submit a response to the reviews.</td></tr>\n";
 }
 
-$rev_open = defval($Conf->settings['rev_open'], 0);
-$pcrev_soft = defval($Conf->settings['pcrev_soft'], 0);
-$pcrev_hard = defval($Conf->settings['pcrev_hard'], 0);
-$extrev_soft = defval($Conf->settings['extrev_soft'], 0);
-$extrev_hard = defval($Conf->settings['extrev_hard'], 0);
+$rev_open = $Conf->setting('rev_open');
+$pcrev_soft = $Conf->setting('pcrev_soft');
+$pcrev_hard = $Conf->setting('pcrev_hard');
+$extrev_soft = $Conf->setting('extrev_soft');
+$extrev_hard = $Conf->setting('extrev_hard');
 
 if ($Me->isPC && $rev_open && $pcrev_soft && $pcrev_soft > $now) {
     echo "<tr><td class='rcaption nowrap'>PC review deadline</td>";

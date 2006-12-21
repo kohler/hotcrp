@@ -64,7 +64,7 @@ $prow = null;
 function getProw($contactId) {
     global $prow, $paperId, $Conf, $Me, $mainPreferences;
     if (!($prow = $Conf->paperRow(array('paperId' => $paperId,
-					'topics' => 1, 'tags' => 1,
+					'topics' => 1, 'tags' => 1, 'options' => 1,
 					'reviewerPreference' => $mainPreferences),
 				  $contactId, $whyNot))
 	|| !$Me->canViewPaper($prow, $Conf, $whyNot))
@@ -102,6 +102,14 @@ function requestSameAsPaper($prow) {
 	if (($row[1] > 0) != $got)
 	    return false;
     }
+    if ($Conf->setting("paperOption")) {
+	$result = $Conf->q("select OptionType.optionId, PaperOption.paperId from OptionType left join PaperOption on PaperOption.paperId=$prow->paperId and PaperOption.optionId=OptionType.optionId");
+	while (($row = edb_row($result))) {
+	    $got = isset($_REQUEST["opt$row[0]"]) && cvtint($_REQUEST["opt$row[0]"]) > 0;
+	    if (($row[1] > 0) != $got)
+		return false;
+	}
+    }
     return true;
 }
 
@@ -129,7 +137,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     foreach (array("title", "abstract", "authorInformation", "collaborators") as $x) {
 	if (trim($_REQUEST[$x]) == "") {
 	    if ($x != "collaborators"
-		|| (defval($Conf->settings["sub_collab"]) && $isSubmit))
+		|| ($Conf->setting("sub_collab") && $isSubmit))
 		$PaperError[$x] = 1;
 	}
 	if ($x == "title")
@@ -198,8 +206,20 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    return false;
     }
 
+    // update options table
+    if (!$isSubmitFinal && $Conf->setting("paperOption")) {
+	if (!$Conf->qe("delete from PaperOption where paperId=$paperId", "while updating paper options"))
+	    return false;
+	$q = "";
+	foreach (paperOptions() as $opt)
+	    if (defval($_REQUEST["opt$opt->optionId"]) > 0)
+		$q .= "($paperId, $opt->optionId, 1), ";
+	if ($q && !$Conf->qe("insert into PaperOption (paperId, optionId, value) values " . substr($q, 0, strlen($q) - 2), "while updating paper options"))
+	    return false;
+    }
+
     // update PC conflicts if appropriate
-    if (defval($Conf->settings["sub_pcconf"])) {
+    if ($Conf->setting("sub_pcconf")) {
 	if (!$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType=" . CONFLICT_AUTHORMARK, "while updating conflicts"))
 	    return false;
 	$q = "";
@@ -424,7 +444,7 @@ function deadlineSettingIs($dname, $conf) {
     $deadline = $conf->printableTimeSetting($dname);
     if ($deadline == "N/A")
 	return "";
-    else if (time() < $conf->settings[$dname])
+    else if (time() < $conf->setting($dname))
 	return "  The deadline is $deadline.";
     else
 	return "  The deadline was $deadline.";
@@ -538,8 +558,23 @@ $paperTable->echoAbstractRow($prow);
 // Authors
 if ($newPaper || $canViewAuthors || $Me->amAssistant())
     $paperTable->echoAuthorInformation($prow);
+
+
+// Contact authors
+if ($newPaper)
+    $paperTable->echoNewContactAuthor($Me->amAssistant());
+else if ($canViewAuthors || $Me->amAssistant())
+    $paperTable->echoContactAuthor($prow, $mode == "edit");
+
+
+// Topics
+if (!$finalEditMode)
+    $paperTable->echoTopics($prow);
+
+
+// Anonymity
 if (($newPaper || $mode == "edit") && $Conf->blindSubmission() == 1 && !$finalEditMode) {
-    echo "<tr class='pt_blind'>\n  <td class='caption'></td>\n";
+    echo "<tr class='pt_blind'>\n  <td class='caption'>Anonymity</td>\n";
     $blind = ($useRequest ? isset($_REQUEST['blind']) : (!$prow || $prow->blind));
     if ($paperTable->editable) {
 	echo "  <td class='entry'><input type='checkbox' name='blind' value='1'";
@@ -553,11 +588,13 @@ if (($newPaper || $mode == "edit") && $Conf->blindSubmission() == 1 && !$finalEd
 }
 
 
-// Contact authors
-if ($newPaper)
-    $paperTable->echoNewContactAuthor($Me->amAssistant());
-else if ($canViewAuthors || $Me->amAssistant())
-    $paperTable->echoContactAuthor($prow, $mode == "edit");
+// Options
+$paperTable->echoOptions($prow, $Me->amAssistant());
+
+
+// Tags
+if ($Me->isPC && ($Me->amAssistant() || $prow->conflictType <= 0))
+    $paperTable->echoTags($prow);
 
 
 // Potential conflicts
@@ -565,16 +602,6 @@ if ($paperTable->editable || $Me->amAssistant())
     $paperTable->echoPCConflicts($prow);
 if (($newPaper || $canViewAuthors || $Me->amAssistant()) && !$finalEditMode)
     $paperTable->echoCollaborators($prow);
-
-
-// Topics
-if (!$finalEditMode)
-    $paperTable->echoTopics($prow);
-
-
-// Tags
-if ($Me->isPC)
-    $paperTable->echoTags($prow);
 
 
 // Review preference

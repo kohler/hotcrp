@@ -60,6 +60,16 @@ CREATE TABLE `ContactInfo` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 
+DROP TABLE IF EXISTS `OptionType`;
+CREATE TABLE `OptionType` (
+  `optionId` int(11) NOT NULL auto_increment,
+  `optionName` varchar(200) NOT NULL,
+  `description` text,
+  `pcView` tinyint(1) NOT NULL default '1',
+  PRIMARY KEY  (`optionId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 DROP TABLE IF EXISTS `PCMember`;
 CREATE TABLE `PCMember` (
   `contactId` int(11) NOT NULL,
@@ -173,6 +183,15 @@ CREATE TABLE `PaperListColumns` (
   `fieldId` int(11) NOT NULL,
   `col` int(3) NOT NULL,
   UNIQUE KEY `paperListCol` (`paperListId`,`col`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
+DROP TABLE IF EXISTS `PaperOption`;
+CREATE TABLE `PaperOption` (
+  `paperId` int(11) NOT NULL,
+  `optionId` int(11) NOT NULL,
+  `value` int(11) NOT NULL default '0', 
+  UNIQUE KEY `paperOption` (`paperId`,`optionId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 
@@ -309,8 +328,8 @@ CREATE TABLE `PaperTag` (
 
 DROP TABLE IF EXISTS `PaperTopic`;
 CREATE TABLE `PaperTopic` (
-  `topicId` int(11) default NULL,
-  `paperId` int(11) default NULL,
+  `topicId` int(11) NOT NULL,
+  `paperId` int(11) NOT NULL,
   UNIQUE KEY `paperTopic` (`paperId`,`topicId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -369,6 +388,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
+insert into Settings (name, value) values ('allowPaperOption', 1);
 # collect collaborators from authors by default
 insert into Settings (name, value) values ('sub_collab', 1);
 

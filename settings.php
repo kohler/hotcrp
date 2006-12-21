@@ -183,7 +183,10 @@ if (isset($_REQUEST["update"])) {
     else if (count($Values) > 0) {
 	$rf = reviewForm();
 	$while = "updating settings";
-	$Conf->qe("lock tables Settings write, ChairTag write, TopicArea write, PaperTopic write", $while);
+	$tables = "Settings write, ChairTag write, TopicArea write, PaperTopic write";
+	if ($Conf->setting("allowPaperOption"))
+	    $tables .= ", OptionType write, PaperOption write";
+	$Conf->qe("lock tables $tables", $while);
 	// alert others since we're changing settings
 	$Values['revform_update'] = time();
 
@@ -222,6 +225,39 @@ if (isset($_REQUEST["update"])) {
 		    $Conf->qe("delete from PaperTopic where topicId=$k", $while);
 		} else if (isset($rf->topicName[$k]) && $v != $rf->topicName[$k])
 		    $Conf->qe("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k", $while);
+	    }
+	}
+
+	// then, if appropriate, paper options
+	if ($Conf->setting("allowPaperOption")) {
+	    $ochange = false;
+	    $anyo = false;
+	    foreach (paperOptions() as $id => $o)
+		if (isset($_REQUEST["optn$id"])
+		    && ($_REQUEST["optn$id"] != $o->optionName
+			|| defval($_REQUEST["optd$id"]) != $o->description
+			|| defval($_REQUEST["optp$id"], 0) != $o->pcView)) {
+		    if ($_REQUEST["optn$id"] == "") {
+			$Conf->qe("delete from OptionType where optionId=$id", $while);
+			$Conf->qe("delete from PaperOption where optionId=$id", $while);
+		    } else {
+			$Conf->qe("update OptionType set optionName='" . sqlq($_REQUEST["optn$id"]) . "', description='" . sqlq(defval($_REQUEST["optd$id"])) . "', pcView=" . (defval($_REQUEST["optp$id"]) ? 1 : 0) . " where optionId=$id", $while);
+			$anyo = true;
+		    }
+		    $ochange = true;
+		} else
+		    $anyo = true;
+	    
+	    if (defval($_REQUEST["optnn"]) && $_REQUEST["optnn"] != "New option") {
+		$Conf->qe("insert into OptionType (optionName, description, pcView) values ('" . sqlq($_REQUEST["optnn"]) . "', '" . sqlq(defval($_REQUEST["optdn"], "")) . "', " . (defval($_REQUEST["optpn"]) ? 1 : 0) . ")", $while);
+		$ochange = $anyo = true;
+	    }
+
+	    if (!$anyo)
+		$Conf->qe("delete from Settings where name='paperOption'", $while);
+	    else if ($ochange) {
+		$t = time();
+		$Conf->qe("insert into Settings (name, value) values ('paperOption', $t) on duplicate key update value=$t", $while);
 	    }
 	}
 	
@@ -334,8 +370,37 @@ for ($i = 1; $i <= 3; $i++) {
 }
 
 echo "</table>\n";
-echo "<div class='smgap'></div>\n<small>Enter topics one per line.  Authors identify the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its text.  Add topics in batches of up to 3 at a time.</small>\n";
+echo "<div class='smgap'></div>\n<small>Enter topics one per line.  Authors use checkboxes to identify the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its text.  Add topics in batches of up to 3 at a time.</small>\n";
 echo "</div></div>";
+
+
+// Paper options
+if ($Conf->setting("allowPaperOption")) {
+    echo "<div class='bgrp folded' id='foldoption'><div class='bgrp_head'>",
+	"<a href=\"javascript:fold('option', 0)\" class='foldbutton unfolder'>+</a>",
+	"<a href=\"javascript:fold('option', 1)\" class='foldbutton folder'>&minus;</a>",
+	"&nbsp;Paper options</div><div class='bgrp_body extension'>\n";
+    echo "<table>";
+    $opt = paperOptions();
+    $sep = "";
+    foreach ($opt as $o) {
+	echo $sep;
+	echo "<tr><td class='xcaption'>Option name</td><td><input type='text' class='textlite' name='optn$o->optionId' value=\"", htmlspecialchars($o->optionName), "\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
+	echo "<tr><td class='xcaption'>Description</td><td><textarea class='textlite' name='optd$o->optionId' rows='2' cols='50' onchange='highlightUpdate()'>", htmlspecialchars($o->description), "</textarea></td></tr>\n";
+	echo "<tr><td></td><td><input type='checkbox' name='optp$o->optionId' value='1'", ($o->pcView ? " checked='checked'" : ""), " />&nbsp;Visible to PC</td></tr>\n";
+	$sep = "<tr><td></td><td><div class='smgap'></div></td></tr>\n";
+    }
+    
+    echo ($sep ? "<tr><td colspan='2'><hr /></td></tr>\n" : "");
+    
+    echo "<tr><td class='xcaption'>Option name</td><td><input type='text' class='textlite' name='optnn' value=\"New option\" size='50' onchange='highlightUpdate()' onfocus=\"tempText(this, 'New option', 1)\" onblur=\"tempText(this, 'New option', 0)\" /></td></tr>\n";
+    echo "<tr><td class='xcaption'>Description</td><td><textarea class='textlite' name='optdn' rows='2' cols='50' onchange='highlightUpdate()'></textarea></td></tr>\n";
+    echo "<tr><td></td><td><input type='checkbox' name='optpn' value='1' checked='checked' />&nbsp;Visible to PC</td></tr>\n";
+
+    echo "</table>\n";
+    echo "<div class='smgap'></div>\n<small>Paper options are things like \"Consider this paper for a Best Student Paper award\" or \"Allow the shadow PC to see this paper\" selected by authors at submission time.  The \"option name\" should be brief, three or four words at most; it appears as caption text to the left of the option.  The description should be longer and may use HTML.  To delete an option, delete its name.  Add options one at a time.</small>\n";
+    echo "</div></div>";
+}
 
 
 // Responses and decisions
@@ -380,7 +445,7 @@ echo "<div class='smgap'></div>\n";
 doCheckbox('rev_notifychair', 'PC chairs are notified of new reviews by email');
 
 echo "<div class='smgap'></div>\n<table>\n";
-doCheckbox('pc_seeallrev', "<b>Allow PC to see all reviews</b> except for conflicts<br /><small>If the box is unchecked, a PC member can see reviews for a paper only after submitting their own review for that paper.</small>", true);
+doCheckbox('pc_seeallrev', "<b>Allow PC to see all reviews</b> except for conflicts<br /><small>When unchecked, a PC member can see reviews for a paper only after submitting their own review for that paper.</small>", true);
 echo "</table>\n";
 
 echo "</div></div>\n\n";

@@ -816,13 +816,13 @@ function outcomeSelector($curOutcome = 0) {
 function pcMembers() {
     global $Conf;
     if (!isset($_SESSION["pcmembers"]) || !is_array($_SESSION["pcmembers"])
-	|| defval($Conf->settings['pc'], 0) <= 0
-	|| $_SESSION["pcmembers"][0] <= $Conf->settings['pc']) {
+	|| $Conf->setting('pc') <= 0
+	|| $_SESSION["pcmembers"][0] <= $Conf->setting('pc')) {
 	$pc = array();
 	$result = $Conf->q("select firstName, lastName, email, PCMember.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair from ContactInfo join PCMember using (contactId) left join ChairAssistant on (PCMember.contactId=ChairAssistant.contactId) left join Chair on (PCMember.contactId=Chair.contactId) order by lastName, firstName");
 	while (($row = edb_orow($result)))
 	    $pc[$row->contactId] = $row;
-	$_SESSION["pcmembers"] = array(defval($Conf->settings['pc'], 0), $pc);
+	$_SESSION["pcmembers"] = array($Conf->setting('pc'), $pc);
     }
     return $_SESSION["pcmembers"][1];
 }
@@ -833,4 +833,19 @@ function pcByEmail($email) {
 	if ($row->email == $email)
 	    return $row;
     return null;
+}
+
+function paperOptions() {
+    global $Conf;
+    if ($Conf->setting('paperOption') <= 0 || $Conf->setting('allowPaperOption') <= 0)
+	return array();
+    if (!isset($_SESSION["paperOption"]) || !is_array($_SESSION["paperOption"])
+	|| $_SESSION["paperOption"][0] <= $Conf->setting("paperOption")) {
+	$opt = array();
+	$result = $Conf->q("select * from OptionType order by optionName");
+	while (($row = edb_orow($result)))
+	    $opt[$row->optionId] = $row;
+	$_SESSION["paperOption"] = array($Conf->setting("paperOption"), $opt);
+    }
+    return $_SESSION["paperOption"][1];
 }
