@@ -407,7 +407,10 @@ if (isset($_REQUEST['delete'])) {
 	// XXX email self?
 
 	$error = false;
-	foreach (array('Paper', 'PaperStorage', 'PaperComment', 'PaperConflict', 'PaperGrade', 'PaperReview', 'PaperReviewArchive', 'PaperReviewPreference', 'PaperTopic') as $table) {
+	$tables = array('Paper', 'PaperStorage', 'PaperComment', 'PaperConflict', 'PaperGrade', 'PaperReview', 'PaperReviewArchive', 'PaperReviewPreference', 'PaperTopic');
+	if ($Conf->setting("allowPaperOption"))
+	    $tables[] = 'PaperOption';
+	foreach ($tables as $table) {
 	    $result = $Conf->qe("delete from $table where paperId=$paperId", "while deleting paper");
 	    $error |= ($result == false);
 	}
