@@ -231,6 +231,11 @@ table.half tr td.r {
 	width: 50%;
 	padding-left: 0.5em;
 }
+table.halfc {
+	width: 50%;
+	margin-left: auto;
+	margin-right: auto;
+}
 div.bgrp {
 	margin: 0.5em 0em;
 	background: #eff1ff;
@@ -561,8 +566,8 @@ table.pcass td.colmid {
 	padding-left: 0.5em;
 	vertical-align: top;
 }
-table.pcass td.name-1, table.pcass td.name0, table.pcass td.name1,
-table.pcass td.name3, table.pcass td.name4 {
+table.pcass td.name, table.pcass td.name-1, table.pcass td.name0,
+table.pcass td.name1, table.pcass td.name3, table.pcass td.name4 {
 	padding-right: 1em;
 }
 table.pcass td.name-1 {
@@ -577,7 +582,7 @@ table.pcass td.ass {
 	font-size: small;
 }
 table.pcass td.nrev {
-	font-size: small;
+	font-size: x-small;
 	padding-bottom: 2px;
 	padding-right: 0.65em;
 }
