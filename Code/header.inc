@@ -13,6 +13,7 @@ define("ROLE_ASSISTANT", 4);
 define("ROLE_CHAIR", 5);
 define("ROLE_REVIEWER", 100);	// does not appear in Roles table
 
+// All review types must be 1 digit
 define("REVIEW_PRIMARY", 4);
 define("REVIEW_SECONDARY", 3);
 define("REVIEW_PC", 2);

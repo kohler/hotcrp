@@ -677,7 +677,7 @@ function actionTab($text, $url, $default) {
 	return "$sep    <td class='tab' nowrap='nowrap'><a href='$url'>$text</a></td>\n";
 }
 
-function actionBar($prow, $newPaper, $mode, $thisUrl = "") {
+function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
     global $Me, $Conf, $ConfSiteBase;
     if ($newPaper)
 	$paperId = "new";

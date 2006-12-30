@@ -305,7 +305,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 
     function echoOptions($prow, $showAll) {
 	global $Conf;
-	if ((!$this->editable && $prow->optionIds == "")
+	if ((!$this->editable && defval($prow->optionIds, "") == "")
 	    || !($opt = paperOptions()))
 	    return;
 	$optsel = array_flip(explode(",", defval($prow->optionIds, "")));

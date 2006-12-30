@@ -113,3 +113,24 @@ function submitForm(formname, value) {
     which.value = value;
     form.submit();
 }
+
+var pselclick_last = null;
+function pselClick(evt, elt, thisnum) {
+    var i, sel;
+    if (!evt.shiftKey || !pselclick_last)
+	/* nada */;
+    else if (pselclick_last <= thisnum)
+	for (i = thisnum - 1; i >= pselclick_last; i--) {
+	    sel = document.getElementById("psel" + i);
+	    if (sel)
+		sel.checked = elt.checked;
+	}
+    else
+	for (i = thisnum + 1; i <= pselclick_last; i++) {
+	    sel = document.getElementById("psel" + i);
+	    if (sel)
+		sel.checked = elt.checked;
+	}
+    pselclick_last = thisnum;
+    return true;
+}

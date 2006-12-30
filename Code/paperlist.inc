@@ -267,13 +267,13 @@ class PaperList {
 		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLink . "\">";
 		$a2 = "</a>&nbsp;";
 		if ($row->reviewSubmitted > 0)
-		    $a2 .= "<span class='rstat rstat_done'>(Complete)</span>";
+		    $a2 .= "<span class='rstat'>(Complete)</span>";
 		else if ($row->reviewType == REVIEW_SECONDARY && $row->reviewNeedsSubmit == 0)
-		    $a2 .= "<span class='rstat rstat_no'>(Delegated)</span>";
+		    $a2 .= "<span class='rstat'>(Delegated)</span>";
 		else if ($row->reviewModified == 0)
-		    $a2 .= "<span class='rstat rstat_no'>(Not&nbsp;started)</span>";
+		    $a2 .= "<span class='rstat'>(Not&nbsp;started)</span>";
 		else
-		    $a2 .= "<span class='rstat rstat_prog'>(In&nbsp;progress)</span>";
+		    $a2 .= "<span class='rstat'>(In&nbsp;progress)</span>";
 	    } else
 		$a1 = $a2 = "";
 	    if ($row->reviewType == REVIEW_PRIMARY)
@@ -323,7 +323,7 @@ class PaperList {
 		return "<b>$row->reviewCount</b>";
 	case self::FIELD_SELECTOR:
 	    $this->anySelector = 1;
-	    return "<input class='rstat rstat_sel' type='checkbox' name='papersel[]' value='$row->paperId' tabindex='1' />";
+	    return "<input type='checkbox' name='papersel[]' value='$row->paperId' tabindex='1' id='psel$this->count' onclick='pselClick(event, this, $this->count)' />";
 	case self::FIELD_REVIEW:
 	    return reviewButton($row->paperId, $row);
 	case self::FIELD_REVIEWER_NAME:
