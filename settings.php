@@ -398,7 +398,7 @@ if ($Conf->setting("allowPaperOption")) {
     echo "<tr><td></td><td><input type='checkbox' name='optpn' value='1' checked='checked' />&nbsp;Visible to PC</td></tr>\n";
 
     echo "</table>\n";
-    echo "<div class='smgap'></div>\n<small>Paper options are things like \"Consider this paper for a Best Student Paper award\" or \"Allow the shadow PC to see this paper\" selected by authors at submission time.  The \"option name\" should be brief, three or four words at most; it appears as caption text to the left of the option.  The description should be longer and may use HTML.  To delete an option, delete its name.  Add options one at a time.</small>\n";
+    echo "<div class='smgap'></div>\n<small>Paper options are selected by authors at submission time, and might include \"Consider this paper for a Best Student Paper award\" or \"Allow the shadow PC to see this paper\".  The \"option name\" should be brief, three or four words at most; it appears as caption text to the left of the option.  The description should be longer and may use HTML.  To delete an option, delete its name.  Add options one at a time.</small>\n";
     echo "</div></div>";
 }
 
