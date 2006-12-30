@@ -366,7 +366,7 @@ if ($Me->amAssistant()) {
 	echo "      <tr><td colspan='2' class='nrev'>";
 	$numReviews = strlen($p->allReviews);
 	$numPrimary = preg_match_all("|" . REVIEW_PRIMARY . "|", $p->allReviews, $matches);
-	echo "<small>", plural($numReviews, "review");
+	echo plural($numReviews, "review");
 	if ($numPrimary && $numPrimary < $numReviews)
 	    echo ", ", $numPrimary, " primary";
 	echo "</td></tr>\n";
