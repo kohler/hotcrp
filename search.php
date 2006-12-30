@@ -412,7 +412,7 @@ if (count($tOpt) > 1) {
 
 
 echo "
-<hr class='smgap' />
+<div class='xsmgap'></div>
 
 <div id='foldq' class='$folded' style='text-align: center'>
 <form method='get' action='search.php'>
@@ -440,7 +440,7 @@ echo "
   <td class='mcaption'></td>
   <td><span style='font-size: x-small'><a href='help.php?t=search'>Search help</a> &nbsp;|&nbsp; <a href='help.php?t=syntax'>Syntax quick reference</a></span></td>
 </tr>
-<tr><td><hr class='smgap' /></td></tr>
+<tr><td><div class='xsmgap'></div></td></tr>
 <tr>
   <td class='mcaption'>Paper selection</td>
   <td>$tselect</td>

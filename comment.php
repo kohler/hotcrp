@@ -142,13 +142,14 @@ else
 confHeader();
 
 
-// begin table
-echo "<table class='paper'>\n\n";
-
-
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, $forceShow);
 $paperTable = new PaperTable(false, false, true, ($Me->amAssistant() && $prow->blind ? 1 : 2));
+
+
+// begin table
+$paperTable->echoDivEnter();
+echo "<table class='paper'>\n\n";
 
 
 // title
@@ -178,7 +179,8 @@ if ($crow)
 
 // extra space
 echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>
-</table>\n\n";
+</table>";
+$paperTable->echoDivExit();
 
 
 // exit on certain errors

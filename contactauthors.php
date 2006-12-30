@@ -88,8 +88,9 @@ else if (isset($_REQUEST["update"])) {
 if ($OK) {    
     $paperTable = new PaperTable(false, false, true, false);
     
-    echo "<form method='post' action=\"contactauthors.php?paperId=$paperId&amp;post=1\" enctype='multipart/form-data'>
-<table class='paper'>\n";
+    echo "<form method='post' action=\"contactauthors.php?paperId=$paperId&amp;post=1\" enctype='multipart/form-data'>";
+    $paperTable->echoDivEnter();
+    echo "<table class='paper'>\n";
 
     // title
     echo "<tr class='id'>\n  <td class='caption'><h2>#$paperId</h2></td>\n";
@@ -128,8 +129,9 @@ if ($OK) {
   </table></td>
 </tr>
 
-</table>
-</form>\n";
+</table>";
+    $paperTable->echoDivExit();
+    echo "</form>\n";
     
 } else {
     $Conf->errorMsg("The paper disappeared!");

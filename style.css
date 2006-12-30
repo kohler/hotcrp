@@ -32,8 +32,10 @@ div.nvubar {
 	height: 0.75em;
 	border-bottom: 1px solid #9999cc;
 }
+div.vubar {
+	margin: 0px 12px;
+}
 table.vubar {
-	padding: 0px 12px;
 	position: relative;
 	width: 100%;
 	font-size: small;
@@ -105,6 +107,8 @@ div.bodyexpander {
 table, tr, td {
 	padding: 0px;
 	border-spacing: 0px;
+	border: 0px none;
+	border-collapse: collapse;
 	empty-cells: show;
 }
 
@@ -200,6 +204,9 @@ form {
 
 div.tinygap {
 	padding: 0.175em 0em;
+}
+div.xsmgap {
+	margin: 0.25em 0em;
 }
 div.smgap {
 	padding: 0.375em 0em;
@@ -391,6 +398,7 @@ td.caption {
 	font-weight: bold;
 	width: 11em;
 	border-right: 1px solid #9999cc; /* #cc9900 */
+	margin: 0px;
 	background: #fffdf0;
 	color: #555555;
 }
@@ -752,7 +760,7 @@ hr {
 }
 hr.smgap {
 	margin: 0.25em 0em;
-	border: none;
+	border: 0px none;
 }
 table.review input#downloadForm {
 	margin-right: 3em;
@@ -839,6 +847,12 @@ tr.k1 td {
 	display: none;
 }
 .fold1ed .extension1, .fold1ed .folder1, .unfold1ed .ellipsis1, .unfold1ed .unfolder1 {
+	display: none;
+}
+.fold8ed .extension8, .fold8ed .folder8, .unfold8ed .ellipsis8, .unfold8ed .unfolder8 {
+	display: none;
+}
+.fold9ed .extension9, .fold9ed .folder9, .unfold9ed .ellipsis9, .unfold9ed .unfolder9 {
 	display: none;
 }
 

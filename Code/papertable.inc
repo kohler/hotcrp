@@ -20,8 +20,6 @@ class PaperTable {
     var $useRequest;
     var $allFolded;
     var $authorsFolded;
-    var $trClasses;
-    var $autrClasses;
     var $foldsession;
     var $foldState;
     var $highlight;
@@ -39,20 +37,24 @@ class PaperTable {
 	$this->foldState = $foldState;
 	
 	$this->allFolded = $allFolded;
-	if ($allFolded)
-	    $this->trClasses = ($foldState & 2 ? " fold1ed" : " unfold1ed");
-	else
-	    $this->trClasses = "";
-	
 	$this->authorsFolded = $authorsFolded;
-	if ($authorsFolded)
-	    $this->autrClasses = ($foldState & 1 ? " folded" : " unfolded");
-	else
-	    $this->autrClasses = "";
-	$this->autrClasses .= $this->trClasses;
 
 	$this->matchPreg = defval($thisMatchPreg, defval($_SESSION["matchPreg"], null));
 	$this->highlight = ($this->matchPreg !== null && (isset($thisMatchPreg) || defval($_SESSION["whichList"]) == "list"));
+    }
+
+    function echoDivEnter() {
+	if ($this->allFolded)
+	    echo "<div id='foldpaper' class='", ($this->foldState & 2 ? "fold9ed" : "unfold9ed"), "'>";
+	if ($this->authorsFolded)
+	    echo "<div id='foldauthors' class='", ($this->foldState & 1 ? "fold8ed" : "unfold8ed"), "'>";
+    }
+
+    function echoDivExit() {
+	if ($this->authorsFolded)
+	    echo "</div>";
+	if ($this->allFolded)
+	    echo "</div>";
     }
 
     function tdCaption($what) {
@@ -61,9 +63,9 @@ class PaperTable {
 	if (isset($PaperError[$what]))
 	    $c .= " error";
 	if ($this->allFolded)
-	    $c .= " extension1";
+	    $c .= " extension9";
 	if ($this->authorsFolded && isset($authorFoldedRows[$what]))
-	    $c .= " extension";
+	    $c .= " extension8";
 	return $c . "'>";
     }
 
@@ -71,9 +73,9 @@ class PaperTable {
 	global $authorFoldedRows, $textAreaRows;
 	$c = "<td class='entry";
 	if ($this->allFolded)
-	    $c .= " extension1";
+	    $c .= " extension9";
 	if ($this->authorsFolded && isset($authorFoldedRows[$what]))
-	    $c .= " extension";
+	    $c .= " extension8";
 	if ($this->editable && isset($textAreaRows[$what]))
 	    $c .= " textarea";
 	if (!$this->editable)
@@ -85,9 +87,9 @@ class PaperTable {
 	global $authorFoldedRows;
 	$c = "<td class='hint";
 	if ($this->allFolded)
-	    $c .= " extension1";
+	    $c .= " extension9";
 	if ($this->authorsFolded && isset($authorFoldedRows[$what]))
-	    $c .= " extension";
+	    $c .= " extension8";
 	return $c . "'>";
     }
 
@@ -127,12 +129,12 @@ class PaperTable {
     
     function echoStatusRow($prow, $flags) {
 	global $Me;
-	echo "<tr class='pt_status", $this->trClasses, "' id='foldst'>\n";
+	echo "<tr class='pt_status'>\n";
 	echo "  <td class='caption'>";
 	if ($this->allFolded) {
-	    $fs = ($this->foldsession ? ";foldsession(['au','st'], '$this->foldsession')" : "");
-	    echo "<a href=\"javascript:fold(['st','ti','pa','ab','ca','au','co','to','op'], 0, 1)$fs\" class='foldbutton unfolder1'>+</a>",
-		"<a href=\"javascript:fold(['st','ti','pa','ab','ca','au','co','to','op'], 1, 1)$fs\" class='foldbutton folder1'>&minus;</a> ";
+	    $fs = ($this->foldsession ? ";foldsession(['authors','paper'], '$this->foldsession')" : "");
+	    echo "<a href=\"javascript:fold('paper', 0, 9)$fs\" class='foldbutton unfolder9'>+</a>",
+		"<a href=\"javascript:fold('paper', 1, 9)$fs\" class='foldbutton folder9'>&minus;</a> ";
 	}
 	if (!($flags & self::NOCAPTION))
 	    echo "Paper</td>\n";
@@ -159,7 +161,7 @@ class PaperTable {
     }
 
     function echoTitleRow($prow) {
-	echo "<tr class='pt_title$this->trClasses' id='foldti'>\n";
+	echo "<tr class='pt_title'>\n";
 	echo "  ", $this->tdCaption("title"), "Title</td>\n";
 	echo "  ", $this->tdEntry("title");
 	$this->echoEntryData("title", $prow, 1);
@@ -170,7 +172,7 @@ class PaperTable {
 	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0);
 	$canUpload = ($this->editable && (!$prow || $final || $prow->timeSubmitted <= 0));
 	
-	echo "<tr class='pt_paper$this->trClasses' id='foldpa'>\n";
+	echo "<tr class='pt_paper'>\n";
 	echo "  ", $this->tdCaption('paper');
 	if (!($flags & self::NOCAPTION))
 	    echo "Paper", ($flags & self::OPTIONAL ? " (optional)" : "");
@@ -191,7 +193,7 @@ class PaperTable {
     }
 
     function echoAbstractRow($prow) {
-	echo "<tr class='pt_abstract$this->trClasses' id='foldab'>\n";
+	echo "<tr class='pt_abstract'>\n";
 	echo "  ", $this->tdCaption("abstract"), "Abstract</td>\n";
 	echo "  ", $this->tdEntry("abstract");
 	$this->echoEntryData("abstract", $prow, 5);
@@ -200,17 +202,17 @@ class PaperTable {
 
     function echoAuthorInformation($prow) {
 	global $Conf;
-	echo "<tr class='pt_authorInformation$this->autrClasses' id='foldau'>\n";
+	echo "<tr class='pt_authorInformation'>\n";
 	echo "  ", $this->tdCaption("authorInformation");
 	if ($this->authorsFolded) {
-	    $fs = ($this->foldsession ? ";foldsession(['au','st'], '$this->foldsession')" : "");
-	    echo "<a href=\"javascript:fold(['au','ca','co'], 0)$fs\" class='foldbutton unfolder'>+</a>",
-	    "<a href=\"javascript:fold(['au','ca','co'], 1)$fs\" class='foldbutton folder'>&minus;</a> ";
+	    $fs = ($this->foldsession ? ";foldsession(['authors','paper'], '$this->foldsession')" : "");
+	    echo "<a href=\"javascript:fold('authors', 0, 8)$fs\" class='foldbutton unfolder8'>+</a>",
+	    "<a href=\"javascript:fold('authors', 1, 8)$fs\" class='foldbutton folder8'>&minus;</a> ";
 	}
 	echo "Authors</td>\n";
 	echo "  ", $this->tdEntry("authorInformation");
 	if ($this->authorsFolded == 1)
-	    echo"<span class='ellipsis'><i>Hidden for blind review</i></span><span class='extension'>";
+	    echo"<span class='ellipsis8'><i>Hidden for blind review</i></span><span class='extension8'>";
 	$this->echoEntryData("authorInformation", $prow, 5, true);
 	if ($this->authorsFolded == 1)
 	    echo "</span>";
@@ -228,7 +230,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 
     function echoNewContactAuthor($pulldown) {
 	global $Me, $Conf;
-	echo "<tr class='pt_contactAuthor$this->autrClasses' id='foldca'>\n";
+	echo "<tr class='pt_contactAuthor'>\n";
 	echo "  ", $this->tdCaption('contactAuthor'), "Contact author</td>\n";
 	echo "  ", $this->tdEntry('contactAuthor');
 	if ($pulldown)
@@ -246,7 +248,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 		join PaperConflict using (contactId)
 		where paperId=$prow->paperId and conflictType=" . CONFLICT_AUTHOR . "
 		order by lastName, firstName, email", "while finding contact authors");
-	echo "<tr class='pt_contactAuthor$this->autrClasses' id='foldca'>\n";
+	echo "<tr class='pt_contactAuthor'>\n";
 	echo "  ", $this->tdCaption("contactAuthor");
 	echo (edb_nrows($result) == 1 ? "Contact author" : "Contact authors");
 	echo "</td>\n  ", $this->tdEntry('contactAuthor');
@@ -268,7 +270,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 	if (!$Conf->setting("sub_collab"))
 	    return;
 	$sub_pcconf = $Conf->setting("sub_pcconf");
-	echo "<tr class='pt_collaborators$this->autrClasses' id='foldco'>\n";
+	echo "<tr class='pt_collaborators'>\n";
 	echo "  ", $this->tdCaption("collaborators"),
 	    ($sub_pcconf ? "Other conflicts" : "Potential conflicts"),
 	    "</td>\n  ", $this->tdEntry("collaborators");
@@ -296,7 +298,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 	    //		   || $prow->timeWithdrawn > 0))))
 	    $topicMode = -1;
 	if ($topicTable = topicTable($prow, $topicMode, $Conf)) { 
-	    echo "<tr class='pt_topics$this->trClasses' id='foldto'>\n";
+	    echo "<tr class='pt_topics'>\n";
 	    echo "  ", $this->tdCaption("topics"), "Topics</td>\n";
 	    echo "  ", $this->tdEntry("topics"), $topicTable, "</td>\n";
 	    echo "</tr>\n\n";
@@ -311,7 +313,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 	$optsel = array_flip(explode(",", defval($prow->optionIds, "")));
 	if ($this->editable) {
 	    foreach ($opt as $o) {
-		echo "<tr class='pt_option$this->trClasses'>\n";
+		echo "<tr class='pt_option'>\n";
 		echo "  ", $this->tdCaption("option"), htmlspecialchars($o->optionName), "</td>\n";
 		echo "  ", $this->tdEntry("option"), "<input type='checkbox' name='opt$o->optionId' value='1'", (isset($optsel[$o->optionId]) ? " checked='checked'" : ""), " />&nbsp;", $o->description, "</td>\n";
 		echo "</tr>\n\n";
@@ -325,7 +327,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 		    $sep = "<span class='sep'> </span>";
 		}
 	    if ($t) {
-		echo "<tr class='pt_option$this->trClasses' id='foldop'>\n";
+		echo "<tr class='pt_option'>\n";
 		echo "  ", $this->tdCaption("option"), "Options</td>\n";
 		echo "  ", $this->tdEntry("option"), $t, "</td>\n";
 		echo "</tr>\n\n";

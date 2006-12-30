@@ -21,16 +21,20 @@ function fold(which, dofold, foldnum) {
 	    folded.className = folded.className.replace(unftext, ftext);
 	else
 	    folded.className = folded.className.replace(ftext, unftext);
+	// IE won't actually do the fold unless we yell at it
+	if (document.recalc)
+	    folded.innerHTML = folded.innerHTML + "";
     }
 }
 
 function foldsession(foldset, sessioner) {
+    // NB starts at fold8
     var foldval = 0;
     if (!(foldset instanceof Array))
 	foldset = [foldset];
     for (var i = 0; i < foldset.length; i++) {
 	var e = document.getElementById('fold' + foldset[i]);
-	if (e && e.className.match("\\bfold" + (i ? i : "") + "ed\\b"))
+	if (e && e.className.match("\\bfold" + (i + 8) + "ed\\b"))
             foldval |= (1 << i);
     }
     var si = document.getElementById(sessioner);

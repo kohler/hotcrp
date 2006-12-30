@@ -686,7 +686,7 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
     $disableView = (!$newPaper && $paperId < 0);
     $forceShow = ($Me->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] ? "&amp;forceShow=1" : "");
 
-    $x = "<table class='vubar'><tr>\n  <td><table><tr>\n";
+    $x = "<div class='vubar'><table class='vubar'><tr>\n  <td><table><tr>\n";
     
     if (!$newPaper && $paperId > 0)
 	$x .= actionTab("View", "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=view", $mode == "view");
@@ -729,7 +729,7 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
     if ($prow && ($zz = listLinks($prow->paperId, $goBase, $xmode)))
 	$x .= "  <td class='listlinks' nowrap='nowrap'>" . $zz . "</td>\n";
     $x .= "  <td class='gopaper' nowrap='nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n";
-    return $x . "</tr></table>";
+    return $x . "</tr></table></div>";
 }
 
 function parseReviewOrdinal($n) {

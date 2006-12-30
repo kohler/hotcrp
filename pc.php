@@ -123,7 +123,7 @@ if (!$result)
 
 
 // form
-echo "<hr class='smgap' />\n";
+echo "<div class='xsmgap'></div>\n";
 
 if ($Me->amAssistant())
     echo "<form method='post' action='pc.php?post=1'>\n";

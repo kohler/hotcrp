@@ -507,7 +507,6 @@ if ($mode == "edit") {
 	$editable = $finalEditMode = true;
 } else
     $editable = false;
-echo "<table class='paper", ($mode == "edit" ? " editpaper" : ""), "'>\n\n";
 
 
 // prepare paper table
@@ -516,6 +515,9 @@ if ($mode == "edit" && $Me->amAssistant())
     $canViewAuthors = true;
 
 $paperTable = new PaperTable($editable, $editable && $useRequest, false, !$canViewAuthors && $Me->amAssistant(), "paperFold");
+
+$paperTable->echoDivEnter();
+echo "<table class='paper", ($mode == "edit" ? " editpaper" : ""), "'>\n\n";
 
 
 // title
@@ -688,7 +690,9 @@ if ($mode == "edit") {
 
 // End paper view
 echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>
-</table>\n";
+</table>";
+$paperTable->echoDivExit();
+
 if ($mode == "edit")
     echo "</form>\n";
 echo "<div class='clear'></div>\n\n";

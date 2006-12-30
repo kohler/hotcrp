@@ -272,14 +272,15 @@ if (isset($_REQUEST["settags"])) {
 confHeader();
 
 
-// begin table
-echo "<table class='paper'>\n\n";
-
-
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, $forceShow);
 $authorsFolded = (!$canViewAuthors && $Me->amAssistant() && $prow->blind ? 1 : 2);
 $paperTable = new PaperTable(false, false, true, $authorsFolded);
+
+
+// begin table
+$paperTable->echoDivEnter();
+echo "<table class='paper'>\n\n";
 
 
 // title
@@ -378,7 +379,8 @@ if ($Me->canSetOutcome($prow))
 
 // extra space
 echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>
-</table>\n\n";
+</table>";
+$paperTable->echoDivExit();
 $Conf->tableMsg(0);
 
 
@@ -435,7 +437,7 @@ function reviewView($prow, $rrow, $editMode) {
 	    echo "<div id='foldref' class='folded' style='position: relative'><a href=\"javascript:fold('ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it
   <div class='popupdialog extension'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p>\n";
 	    echo "    <input class='textlite' type='text' name='reason' value='' size='40' />
-    <hr class='smgap' />
+    <div class='xsmgap'></div>
     <input class='button' type='submit' name='refuse' value='Refuse review' />
     <button type='button' onclick=\"fold('ref', 1)\">Cancel</button>
   </div></div>";

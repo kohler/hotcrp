@@ -279,14 +279,15 @@ if (isset($_REQUEST["setshepherd"]))
     _setLeadOrShepherd("shepherd");
 
 
-// begin form and table
-echo "<form action='assign.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>
-<table class='assign'>\n\n";
-
-
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, true);
 $paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->amAssistant(), "assignFold");
+
+
+// begin form and table
+echo "<form action='assign.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>";
+$paperTable->echoDivEnter();
+echo "<table class='assign'>\n\n";
 
 
 // title
@@ -443,12 +444,13 @@ if ($Me->amAssistant())
     echo "<br />\n	<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines and any previous refusal";
 echo "\n    </td></tr>\n";
 
-echo "    </table>\n  </form>";
-echo "</td>\n</tr>\n\n";
+echo "    </table></td>\n</tr>\n\n";
 
 
 // close this table
-echo "</table>\n\n";
+echo "</table>";
+$paperTable->echoDivExit();
+echo "</form>";
 
 
 $Conf->footer();
