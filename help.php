@@ -13,7 +13,7 @@ $topic = defval($_REQUEST["t"], "topics");
 if (!isset($topicTitles[$topic]))
     $topic = "topics";
 
-$abar = "<table class='vubar'><tr><td><table><tr>\n";
+$abar = "<div class='vubar'><table class='vubar'><tr><td><table><tr>\n";
 $abar .= actionTab("Help topics", "help.php?t=topics", $topic == "topics");
 if ($topic == "search" || $topic == "syntax")
     $abar .= actionTab("Search help", "help.php?t=search", $topic == "search");
@@ -21,7 +21,7 @@ if ($topic == "search" || $topic == "syntax")
     $abar .= actionTab("Search syntax", "help.php?t=syntax", $topic == "syntax");
 if ($topic != "topics" && $topic != "search" && $topic != "syntax")
     $abar .= actionTab($topicTitles[$topic], "help.php?t=$topic", true);
-$abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper' nowrap='nowrap'>" . goPaperForm() . "</td></tr></table>\n";
+$abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper' nowrap='nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 if ($topic == "topics")
     $Conf->header("Help", null, $abar);
