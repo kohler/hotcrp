@@ -24,7 +24,7 @@ echo "    <option value='author-late-review'>Contact authors who received late r
 
 <tr>
   <td class='caption'>Subject</td>
-  <td class='entry'><tt>[", htmlspecialchars($Conf->shortName), "]&nbsp;</tt><input type='text' class='textlite tt' name='subject' value='Paper #%NUMBER%' size='64' /></td>
+  <td class='entry'><tt>[", htmlspecialchars($Conf->shortName), "]&nbsp;</tt><input type='text' class='textlite-tt' name='subject' value='Paper #%NUMBER%' size='64' /></td>
 </tr>
 
 <tr>

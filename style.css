@@ -229,6 +229,7 @@ span.topic2 {
 /* Main */
 table.half {
 	width: 100%;
+	border-collapse: separate;
 }
 table.half tr td.l {
 	width: 50%;
@@ -496,12 +497,12 @@ span.textlite {
 	padding: 0px 4px;
 	background: #fcfcfc;
 }
-input.textlite, textarea {
+input.textlite, input.textlite-tt, textarea {
 	border: solid 1px #aaaadd;
 	padding: 0px 0px 0px 4px;
 	background: #fcfcfc;
 }
-input.textlite.tt, textarea.tt {
+input.textlite-tt, textarea.tt {
 	font-family: monospace;
 	white-space: nowrap;
 }
