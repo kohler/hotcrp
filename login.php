@@ -55,8 +55,8 @@ function doLogin() {
 	return $Conf->errorMsg("You appear to have disabled cookies in your browser, but this site needs to set cookies to function.  Google has <a href='http://www.google.com/cookies.html'>an informative article on how to enable them</a>.");
 
     $_SESSION["Me"]->lookupByEmail($_REQUEST["email"], $Conf);
-    if (isset($_REQUEST["register"])) {
-	if (($reg = doCreateAccount()) === null)
+    if ($_REQUEST["action"] == "new") {
+	if (!($reg = doCreateAccount()))
 	    return $reg;
 	$_REQUEST["password"] = $_SESSION["Me"]->password;
     }
@@ -64,16 +64,16 @@ function doLogin() {
     if (!$_SESSION["Me"]->valid())
 	return $Conf->errorMsg("No account for " . htmlspecialchars($_REQUEST["email"]) . " exists.  Did you enter the correct email address?");
 
-    if (isset($_REQUEST["forgot"])) {
+    if ($_REQUEST["action"] == "forgot") {
 	$worked = $_SESSION["Me"]->sendAccountInfo($Conf, false, true);
 	$Conf->log("Sent password", $_SESSION["Me"]);
 	if ($worked)
-	    $Conf->confirmMsg("The account information for " . $_REQUEST["email"] . " has been emailed to that address.  When you receive that email, return here to complete the login process.");
+	    $Conf->confirmMsg("Your password has been emailed to " . $_REQUEST["email"] . ".  When you receive that email, return here to sign in.");
 	return null;
     }
 
     if (!isset($_REQUEST["password"]) || $_REQUEST["password"] == "")
-	return $Conf->errorMsg("Enter your password, or select \"Mail me my password\".");
+	return $Conf->errorMsg("You tried to sign in without providing a password.  Please enter your password and try again.  If you've forgotten your password, enter your email address and sign in using the \"I forgot my password, email it to me\" option.");
 
     if ($_SESSION["Me"]->password != $_REQUEST["password"])
 	return $Conf->errorMsg("That password is incorrect.");
@@ -93,8 +93,7 @@ function doLogin() {
     exit;
 }
 
-if ((isset($_REQUEST["email"]) && isset($_REQUEST["password"]))
-    || isset($_REQUEST["login"]) || isset($_REQUEST["register"]) || isset($_REQUEST["forgot"])) {
+if (isset($_REQUEST["email"]) && isset($_REQUEST["action"]) && isset($_REQUEST["signin"])) {
     doLogin();
     // if we get here, login failed
     $_SESSION["Me"]->invalidate();
@@ -105,35 +104,30 @@ setcookie("CRPTestCookie", true);
 
 $Conf->header("Sign in", 'login');
 
-$Conf->infoMsg("Sign in to the conference management system here.
-You'll use the same account information throughout the paper evaluation
-process, whether you are submitting a paper, co-authoring a paper,
-reviewing papers, or a member of the program committee.");
 ?>
 
 <form class='login' method='post' action='login.php'>
 <table class='form'>
 <tr>
   <td class='caption'>Email</td>
-  <td class='entry'><input type='text' name='email' size='50' tabindex='1'
+  <td class='entry'><input type='text' class='textlite' name='email' size='50' tabindex='1'
     <?php if (isset($_REQUEST["email"])) echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" "; ?>
   /></td>
 </tr>
 
 <tr>
   <td class='caption'>Password</td>
-  <td class='entry'><input type='password' name='password' size='50' tabindex='1' /></td>
+  <td class='entry'><input type='password' class='textlite' name='password' size='50' tabindex='1' /></td>
 </tr>
 
 <tr><td class='caption'></td>
-  <td class='entry'><input class='button_default' type='submit' value='Sign in' name='login' tabindex='1' /></td>
+  <td class='entry'><input type='radio' name='action' value='login' checked='checked' tabindex='2' />&nbsp;<b>Sign me in</b><br />
+  <input type='radio' name='action' value='forgot' tabindex='2' />&nbsp;I forgot my password, email it to me<br />
+  <input type='radio' name='action' value='new' tabindex='2' />&nbsp;I'm a new user and want to create an account using this email address</td>
 </tr>
-  
+
 <tr><td class='caption'></td>
-  <td class='entry'>
-    <input class='button' type='submit' value='Mail me my password' name='forgot' tabindex='1' />
-    <input class='button' type='submit' value='Create new account' name='register' tabindex='1' />
-  </td>
+  <td class='entry' colspan='2'><input class='button_default' type='submit' value='Sign in' name='signin' tabindex='1' /></td>
 </tr>
 
 </table>
