@@ -72,10 +72,11 @@ By default, search examines title, abstract, and author fields.
 Expand the search box with the <a href='${ConfSiteBase}search.php?opt=1'>Options&nbsp;&raquo;</a> link to search other fields, including
 authors/collaborators and reviewers.");
     _alternateRow("Syntax", "
-Specify search fields on a word-by-word basis with
-markers like <span class='textlite'>ti:</span>, which means \"search in
-titles\".  For information on available markers, see the
-<a href='help.php?t=syntax'>search syntax quick reference</a>.");
+Keywords let you search individual characteristics such as titles,
+authors, reviewer names, even numbers of reviewers.  For example,
+<span class='textlite'>ti:foo</span> means \"search for 'foo' in paper
+titles\".  Keywords are listed in the
+<a href='help.php?t=syntax'>search syntax reference</a>.");
     _alternateRow("Listing all papers", "To list all papers in a search category, simply perform the search with no search terms.");
     _alternateRow("Paging through results", "All paper screens have links in the upper right corner that let you page through the most recent search results:<br />
   <img src='${ConfSiteBase}images/pageresultsex.png' alt='[Result paging example]' /><br />
@@ -88,6 +89,7 @@ titles\".  For information on available markers, see the
   Example: Search <span class='textlite'>100 case</span> will return papers matching \"case\", plus paper 100.<br />
   To actually search for a number in a paper's title, abstract, or whatever, put it in quotes: <span class='textlite'>\"119\"</span>");
     _alternateRow("Paper actions", "To act on many papers at once, select their checkboxes and choose an action underneath the paper list.
+You can select a range of checkboxes by shift-clicking.
 For example, to download a <tt>.zip</tt> file with all submitted papers, PC members can search for all submitted papers, choose the \"select all\" link, then \"Get: Papers\".  Pull down the menu to see what else you can do.
 The \"More &raquo;\" link allows PC members and chairs to <a href='help.php?t=tags'>add tags</a>, set conflicts, set decisions, and so forth.  The easiest way to tag a set of papers is to enter their numbers in the search box, search, \"select all\", and add the tag.");
     _alternateRow("Limitations", "Search won't show you information you aren't supposed to see.  For example, authors can only search their own submissions, and if the conference used anonymous submission, then only the PC chairs can search by author.");
@@ -186,8 +188,8 @@ the order by editing the tag numbers.
 <p>It's easiest to define ordered tags using the
 <a href='${ConfSiteBase}search.php'>search screen</a>.  Search for the
 papers you want, sort them into the right order, select them, and
-choose <b>Define ordered</b> in the tag action area.  If no sort order
-gives the order you want, just enter the paper numbers in order into the
+choose <b>Define ordered</b> in the tag action area.  If no sort
+gives what you want, enter the desired paper numbers in order into the
 search box; for instance, search for \"<a href='${ConfSiteBase}search.php?q=4+1+12+9'>4 1 12 19</a>\".</p>");
     echo "</table>\n";
 }
