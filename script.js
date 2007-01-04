@@ -65,7 +65,7 @@ function tempText(elt, text, on) {
 function checkPapersel(onoff) {
     var ins = document.getElementsByTagName("input");
     for (var i = 0; i < ins.length; i++)
-	if (ins[i].name == "papersel[]")
+	if (ins[i].name == "pap[]")
 	    ins[i].checked = onoff;
 }
 

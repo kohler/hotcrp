@@ -48,8 +48,9 @@ class PaperList {
     var $search;
     var $authorMatch;
     var $collaboratorsMatch;
+    var $extraText;
     
-    function PaperList($sortable = true, $sessionVar = null, $search = null) {
+    function PaperList($sortable = true, $sessionVar = null, $search = null, $extraText = null) {
 	$this->showHeader = true;
 
 	$s = ($sortable ? defval($_REQUEST["sort"], "") : "");
@@ -69,6 +70,7 @@ class PaperList {
 	    $this->paperLink = "&amp;whichList=" . $this->sessionVar;
 
 	$this->search = $search;
+	$this->extraText = $extraText;
     }
 
     function selector($fieldId, &$queryOptions) {
@@ -323,7 +325,7 @@ class PaperList {
 		return "<b>$row->reviewCount</b>";
 	case self::FIELD_SELECTOR:
 	    $this->anySelector = 1;
-	    return "<input type='checkbox' name='papersel[]' value='$row->paperId' tabindex='1' id='psel$this->count' onclick='pselClick(event, this, $this->count)' />";
+	    return "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='1' id='psel$this->count' onclick='pselClick(event, this, $this->count)' />";
 	case self::FIELD_REVIEW:
 	    return reviewButton($row->paperId, $row);
 	case self::FIELD_REVIEWER_NAME:
@@ -604,9 +606,15 @@ class PaperList {
 		if ($f[2] == 2 && ($d = $this->content($f[0], $row, $plist, $reviewList))) {
 		    $t .= "  <tr class=\"pl_$f[1] pl_callout $trclass\">\n";
 		    $t .= "<td class=\"pl_$f[1] pl_callout\" colspan='$ncol'>";
-		    $t .= "<span class='pl_callouthdr'>" . $this->header($f[0], -1, $row, $reviewList) . "</span>";
+		    $t .= "<span class='pl_callouthdr'>" . $this->header($f[0], -1, $row, $reviewList) . ":</span>";
 		    $t .= $d . "</td>\n  </tr>\n";
 		}
+
+	    if ($this->extraText && isset($this->extraText[$row->paperId]))
+		$t .= "  <tr class=\"pl_extra pl_callout $trclass\"\n"
+		    . "<td class=\"pl_extra pl_callout\" colspan='$ncol'>"
+		    . $this->extraText[$row->paperId]
+		    . "</td>\n  </tr>\n";
 
 	    if ($pidarray === null)
 		$body .= $t;

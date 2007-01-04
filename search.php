@@ -7,9 +7,9 @@ $Me->goIfInvalid();
 $getaction = "";
 if (isset($_REQUEST["get"]) && isset($_REQUEST["getaction"]))
     $getaction = $_REQUEST["getaction"];
-if (isset($_REQUEST["papersel"]) && is_array($_REQUEST["papersel"])) {
+if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
     $papersel = array();
-    foreach ($_REQUEST["papersel"] as $p)
+    foreach ($_REQUEST["pap"] as $p)
 	if (($p = cvtint($p)) > 0)
 	    $papersel[] = $p;
     if (count($papersel) == 0)

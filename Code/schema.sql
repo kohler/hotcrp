@@ -486,6 +486,11 @@ delete from Settings where name='revform_update';
 insert into Settings set name='revform_update', value=unix_timestamp(current_timestamp);
 
 
+# RELOAD HERE
+truncate table PaperFields;
+truncate table PaperList;
+truncate table PaperListColumns;
+
 insert into PaperFields set fieldId=1, fieldName='id', description='ID';
 insert into PaperFields set fieldId=2, fieldName='id', description='ID (manage link)';
 insert into PaperFields set fieldId=3, fieldName='id', description='ID (review link)';
@@ -559,6 +564,11 @@ insert into PaperList set paperListId=9, paperListName='editReviewPreference',
 insert into PaperListColumns (paperListId, fieldId, col) values
 	(9, 1, 0), (9, 11, 1), (9, 36, 2), (9, 45, 3), (9, 40, 4), 
 	(9, 37, 5);
+
+insert into PaperList set paperListId=10, paperListName='reviewers',
+	description='Review assignments', sortCol=0;
+insert into PaperListColumns (paperListId, fieldId, col) values
+	(10, 3, 0), (10, 13, 1), (10, 38, 2);
 
 insert into PaperList set paperListId=12, paperListName='req',
 	description='Papers to review', sortCol=0;

@@ -565,7 +565,7 @@ tr#topicinterest td.caption, tr#topicinterest td.hint {
 tr#topicinterest td#topicinterest, tr.pt_topics td.entry, tr.pt_actions td,
 td.plholder, tr.rev_actions td.entry, tr.pt_reviews td.entry,
 tr.rev_reviewers td.entry, tr.rev_reviewers_hdr td.entry,
-tr.pt_conflict_ass td.entry {
+tr.pt_conflict_ass td.entry, tr.propass td.entry {
 	vertical-align: top;
 }
 table.pcass td.colmid {
@@ -708,9 +708,6 @@ td.pl_callout {
 span.pl_callouthdr {
 	font-style: italic;
 	padding-right: 0.5em;
-}
-span.pl_callouthdr:after {
-	content: ":";
 }
 tr.pl td {
 	padding-top: 2px;
