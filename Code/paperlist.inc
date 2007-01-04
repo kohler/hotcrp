@@ -611,7 +611,7 @@ class PaperList {
 		}
 
 	    if ($this->extraText && isset($this->extraText[$row->paperId]))
-		$t .= "  <tr class=\"pl_extra pl_callout $trclass\"\n"
+		$t .= "  <tr class=\"pl_extra pl_callout $trclass\">\n"
 		    . "<td class=\"pl_extra pl_callout\" colspan='$ncol'>"
 		    . $this->extraText[$row->paperId]
 		    . "</td>\n  </tr>\n";

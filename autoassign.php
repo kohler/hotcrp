@@ -45,7 +45,7 @@ if (!function_exists('array_fill_keys')) {
     }
 }
 
-function checkRequest(&$atype, &$reviewtype) {
+function checkRequest(&$atype, &$reviewtype, $save) {
     global $Error, $Conf;
     
     $atype = $_REQUEST["a"];
@@ -64,8 +64,10 @@ function checkRequest(&$atype, &$reviewtype) {
 	$Error["ass"] = true;
 	return $Conf->errorMsg("Malformed request!");
     }
-    
-    if ($atype == "rev" && cvtint($_REQUEST["revct"], -1) <= 0) {
+
+    if ($save)
+	/* no check */;
+    else if ($atype == "rev" && cvtint($_REQUEST["revct"], -1) <= 0) {
 	$Error["rev"] = $Error["ass"] = true;
 	return $Conf->errorMsg("Enter the number of reviews you want to assign.");
     } else if ($atype == "revadd" && cvtint($_REQUEST["revaddct"], -1) <= 0) {
@@ -80,7 +82,7 @@ function doAssign() {
     global $Conf, $ConfSiteBase, $papersel, $assignments, $assignmentWarning;
 
     // check request
-    if (!checkRequest($atype, $reviewtype))
+    if (!checkRequest($atype, $reviewtype, false))
 	return false;
 
     // fetch PC members, initialize preferences arrays
@@ -131,7 +133,7 @@ function doAssign() {
 	coalesce(PaperReview.overAllMerit, 0) as overAllMerit,
 	topicInterestScore
 	from Paper join PCMember
-	left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PCMember.contactId=PaperConflict.paperId)
+	left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PCMember.contactId=PaperConflict.contactId)
 	left join PaperReviewPreference on (Paper.paperId=PaperReviewPreference.paperId and PCMember.contactId=PaperReviewPreference.contactId)
 	left join PaperReview on (Paper.paperId=PaperReview.paperId and PCMember.contactId=PaperReview.contactId)
 	left join (select paperId, PCMember.contactId,
@@ -143,7 +145,7 @@ function doAssign() {
     
     if ($atype == "rev" || $atype == "revadd") {
 	while (($row = edb_orow($result))) {
-	    if ($row->conflictType || $row->reviewType)
+	    if ($row->conflictType > 0 || $row->reviewType > 0)
 		$prefs[$row->contactId][$row->paperId] = -10000;
 	    else
 		$prefs[$row->contactId][$row->paperId] = max($row->preference, -1000) + ($row->topicInterestScore / 100);
@@ -217,8 +219,57 @@ function doAssign() {
     }
 }
 
+function saveAssign() {
+    global $Conf, $Me, $ConfSiteBase;
+
+    // check request
+    if (!checkRequest($atype, $reviewtype, true))
+	return false;
+
+    $Conf->qe("lock tables ContactInfo read, PCMember read,
+		ChairAssistant read, Chair read, PaperReview write");
+    
+    // parse assignment
+    $pcm = pcMembers();
+    $ass = array();
+    foreach (split(" ", $_REQUEST["ass"]) as $req) {
+	$a = split(",", $req);
+	if (count($a) == 0 || ($pid = cvtint($a[0])) <= 0)
+	    continue;
+	$ass[$pid] = array();
+	for ($i = 1; $i < count($a); $i++)
+	    if (($pc = cvtint($a[$i])) > 0 && isset($pcm[$pc]))
+		$ass[$pid][$pc] = true;
+    }
+
+    // magnanimous
+    if ($atype == "rev") {
+	$result = $Conf->qe("select PCMember.contactId, paperId,
+		reviewType, reviewModified
+		from PCMember join PaperReview using (contactId)",
+			"while getting existing reviews");
+	while (($row = edb_orow($result)))
+	    if (isset($ass[$row->paperId][$row->contactId])) {
+		$Me->assignPaper($row->paperId, $row, $row->contactId,
+				 $reviewtype, $Conf);
+		unset($ass[$row->paperId][$row->contactId]);
+	    }
+	foreach ($ass as $pid => $pcs) {
+	    foreach ($pcs as $pc => $ignore)
+		$Me->assignPaper($pid, null, $pc, $reviewtype, $Conf);
+	}
+    }
+
+    $Conf->confirmMsg("Assignments saved!");
+    
+    // kersplunk
+    $Conf->qe("unlock tables");
+}
+
 if (isset($_REQUEST["assign"]) && isset($_REQUEST["a"]) && isset($_REQUEST["pctyp"]))
     doAssign();
+else if (isset($_REQUEST["saveassign"]) && isset($_REQUEST["a"]) && isset($_REQUEST["ass"]))
+    saveAssign();
 
 
 $Conf->header("Automatic Assignments", "autoassign", actionBar());
@@ -253,7 +304,7 @@ function tdClass($entry, $name) {
 if (isset($assignments)) {
     echo "<table>";
     echo "<tr class='propass'>", tdClass(false, "propass"), "Proposed assignment</td><td class='entry'>";
-    $Conf->infoMsg("You must explicitly apply this assignment before it will take effect.");
+    $Conf->infoMsg("If this assignment looks OK to you, select \"Save assignment\" to apply it.  (You can make minor changes afterwards.)");
     if (isset($assignmentWarning))
 	$Conf->warnMsg($assignmentWarning);
     
@@ -273,8 +324,21 @@ if (isset($assignments)) {
     echo $plist->text("reviewers", $Me, "Proposed assignment");
 
     echo "<div class='smgap'></div>";
-    echo "<form method='post' action='autoassign.php?apply=1'>";
-    echo "<input type='submit' class='button' name='go' value='Save assignment' />";
+    echo "<form method='post' action='autoassign.php?apply=1'>\n";
+    echo "<input type='submit' class='button' name='saveassign' value='Save assignment' />\n";
+
+    // save the assignment
+    $atype = $_REQUEST["a"];
+    if ($atype == "rev" || $atype == "revadd") {
+	echo "<input type='hidden' name='a' value='rev' />\n";
+	echo "<input type='hidden' name='revtype' value='", $_REQUEST["${atype}type"], "' />\n";
+    } else
+	echo "<input type='hidden' name='a' value='$atype' />\n";
+    echo "<input type='hidden' name='ass' value=\"";
+    foreach ($assignments as $pid => $pcs)
+	echo $pid, ",", join(",", $pcs), " ";
+    echo "\" />\n";
+    
     echo "</form></td></tr>\n";
 
     echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></td></tr>\n";
