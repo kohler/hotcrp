@@ -474,22 +474,24 @@ class PaperList {
 	    
 	    if ($this->contact->amAssistant()) {
 		$t .= "  <tr class='extension'><td class='rcaption'>Conflicts &amp; assignments:</td>
-    <td><select name='marktype' onchange='document.getElementById(\"markpc\").disabled = (this.value == \"pcpaper\" || this.value == \"unpcpaper\")'>
-      <option value='conflict' selected='selected'>Mark conflict</option>
+    <td id='foldass' class='fold1ed'><select name='marktype' onchange='fold(\"ass\", (this.value[0] == \"x\"), 1)'>
+      <option value='xauto' selected='selected'>Automatic assignments</option>
+      <option value='-1' disabled='disabled'></option>
+      <option value='conflict'>Mark conflict</option>
       <option value='unconflict'>Remove conflict</option>
-      <option value='-1' disabled='disabled'></option>
-      <option value='pcpaper'>Mark as PC-authored</option>
-      <option value='unpcpaper'>Mark as not PC-authored</option>
-      <option value='-1' disabled='disabled'></option>
+      <option value='-2' disabled='disabled'></option>
+      <option value='xpcpaper'>Mark as PC-authored</option>
+      <option value='xunpcpaper'>Mark as not PC-authored</option>
+      <option value='-3' disabled='disabled'></option>
       <option value='assign" . REVIEW_PRIMARY . "'>Assign primary review</option>
       <option value='assign" . REVIEW_SECONDARY . "'>Assign secondary review</option>
       <option value='assign0'>Unassign reviews</option>
-    </select> &nbsp;for &nbsp;";
+    </select><span class='extension1'> &nbsp;for &nbsp;";
 		$t .= "<select name='markpc' id='markpc'>\n";
 		$pc = pcMembers();
 		foreach ($pc as $id => $row)
 		    $t .= "<option value=\"" . htmlspecialchars($row->email) . "\">" . contactHtml($row->firstName, $row->lastName) . "</option>\n";
-		$t .= "</select> &nbsp;<input type='submit' class='button_small' name='setassign' value='Go' />";
+		$t .= "</select></span> &nbsp;<input type='submit' class='button_small' name='setassign' value='Go' />";
 		$t .= "</td></tr>\n";
 	    }
 	} else
@@ -676,7 +678,7 @@ class PaperList {
 	}
 
 	$x .= $body;
-	if ($fieldId[0][0] == self::FIELD_SELECTOR || $fieldId[0][0] == self::FIELD_SELECTOR_ON)
+	if ($fieldId[0][0] == self::FIELD_SELECTOR)
 	    $x .= $this->footer($ncol);
 	$x .= "</table>";
 

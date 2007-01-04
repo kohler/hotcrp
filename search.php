@@ -7,6 +7,8 @@ $Me->goIfInvalid();
 $getaction = "";
 if (isset($_REQUEST["get"]) && isset($_REQUEST["getaction"]))
     $getaction = $_REQUEST["getaction"];
+if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
+    $_REQUEST["pap"] = split(" +", $_REQUEST["pap"]);
 if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
     $papersel = array();
     foreach ($_REQUEST["pap"] as $p)
@@ -341,9 +343,11 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && 
     $mpc = defval($_REQUEST["markpc"], "");
     $pc = new Contact();
     if (!$Me->amAssistant())
-	$Conf->errorMsg("Only the PC chairs can set PC conflicts.");
-    else if ($mt == "pcpaper" || $mt == "unpcpaper") {
-	$Conf->qe("update Paper set pcPaper=" . ($mt == "pcpaper" ? 1 : 0) . " where " . paperselPredicate($papersel), "while marking PC papers");
+	$Conf->errorMsg("Only the PC chairs can set conflicts and/or assignments.");
+    else if ($mt == "xauto")
+	$Me->go("${ConfSiteBase}autoassign.php?pap=" . join($papersel, "+"));
+    else if ($mt == "xpcpaper" || $mt == "xunpcpaper") {
+	$Conf->qe("update Paper set pcPaper=" . ($mt == "xpcpaper" ? 1 : 0) . " where " . paperselPredicate($papersel), "while marking PC papers");
 	$Conf->log("Change PC paper status", $Me, $papersel);
     } else if (!$mpc || !$pc->lookupByEmail($mpc, $Conf))
 	$Conf->errorMsg("'" . htmlspecialchars($mpc) . " is not a PC member.");
@@ -359,7 +363,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && 
     } else if (substr($mt, 0, 6) == "assign"
 	       && isset($reviewTypeName[($asstype = substr($mt, 6))])) {
 	$while = "while making assignments";
-	$Conf->qe("lock tables PaperConflict write, PaperReview write, Paper write");
+	$Conf->qe("lock tables PaperConflict write, PaperReview write, Paper write, ActionLog write");
 	$result = $Conf->qe("select Paper.paperId, reviewId, reviewType, reviewModified, conflictType from Paper left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=" . $pc->contactId . ") left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=" . $pc->contactId .") where " . paperselPredicate($papersel, "Paper."), $while);
 	$conflicts = array();
 	$assigned = array();

@@ -5,7 +5,8 @@ require_once('Code/search.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotChair('index.php');
-
+if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
+    $_REQUEST["pap"] = split(" +", $_REQUEST["pap"]);
 if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
     $papersel = array();
     foreach ($_REQUEST["pap"] as $p)
@@ -306,7 +307,7 @@ function tdClass($entry, $name) {
 if (isset($assignments) && count($assignments) > 0) {
     echo "<table>";
     echo "<tr class='propass'>", tdClass(false, "propass"), "Proposed assignment</td><td class='entry'>";
-    $Conf->infoMsg("If this assignment looks OK to you, select \"Save assignment\" to apply it.  (You can make minor changes afterwards.)");
+    $Conf->infoMsg("If this assignment looks OK to you, select \"Save assignment\" to apply it.  (You can always change it afterwards too.)");
     
     ksort($assignments);
     $atext = array();
