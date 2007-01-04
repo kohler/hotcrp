@@ -226,8 +226,7 @@ function saveAssign() {
     if (!checkRequest($atype, $reviewtype, true))
 	return false;
 
-    $Conf->qe("lock tables ContactInfo read, PCMember read,
-		ChairAssistant read, Chair read, PaperReview write");
+    $Conf->qe("lock tables ContactInfo read, PCMember read, ChairAssistant read, Chair read, PaperReview write, ActionLog write");
     
     // parse assignment
     $pcm = pcMembers();

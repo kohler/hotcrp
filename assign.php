@@ -125,7 +125,7 @@ if (isset($_REQUEST['retract']) && ($retract = cvtint($_REQUEST['retract'])) > 0
 function pcAssignments() {
     global $Conf, $Me, $prow;
     $while = "while updating PC conflicts";
-    $Conf->qe("lock tables PaperReview write, PaperConflict write, PCMember read, ContactInfo read", $while);
+    $Conf->qe("lock tables PaperReview write, PaperConflict write, PCMember read, ContactInfo read, ActionLog write", $while);
     
     // don't record separate PC conflicts on author conflicts
     $result = $Conf->qe("select PCMember.contactId,

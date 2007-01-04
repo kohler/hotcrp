@@ -587,6 +587,8 @@ function whyNotText($whyNot, $action) {
 	    $start = defval($Conf->settings["sub_open"], -1);
 	else if ($dname[0] == "p" || $dname[0] == "e")
 	    $start = defval($Conf->settings["rev_open"], -1);
+	else
+	    $start = 1;
 	$end = $Conf->settings[$dname];
 	$now = time();
 	if ($start <= 0)
