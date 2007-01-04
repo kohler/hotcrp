@@ -938,10 +938,11 @@ and paste it into your web browser's location field.
 
     function assignPaper($paperId, $row, $reviewer, $type, $conf) {
 	global $reviewTypeName;
+	$reviewerContactId = (is_object($reviewer) ? $reviewer->contactId : $reviewer);
 	if ($type == 0 && $row && ($row->reviewType == REVIEW_REQUESTED || $row->reviewType == REVIEW_PC))
 	    return;
 	if ($type > 0 && (!$row || !$row->reviewType))
-	    $q = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($paperId, $reviewer, $type, $this->contactId, current_timestamp)";
+	    $q = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($paperId, $reviewerContactId, $type, $this->contactId, current_timestamp)";
 	else if ($type > 0 && $row->reviewType != $type)
 	    $q = "update PaperReview set reviewType=$type where reviewId=$row->reviewId";
 	else if ($type <= 0 && $row && $row->reviewType && !$row->reviewModified)
@@ -951,11 +952,8 @@ and paste it into your web browser's location field.
 	else
 	    return;
 	
-	$result = $conf->qe($q, "while assigning review");
-	if ($result)
-	    $conf->log("Added $reviewTypeName[$type] reviewer $reviewer", $this, $paperId);
-	else
-	    $conf->log("?Added $reviewTypeName[$type] reviewer $reviewer", $this, $paperId);
+	if ($conf->qe($q, "while assigning review"))
+	    $conf->log("Added $reviewTypeName[$type] reviewer " . (is_object($reviewer) ? $reviewer->email : $reviewer), $this, $paperId);
     }
 
 }

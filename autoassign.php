@@ -49,8 +49,8 @@ function checkRequest(&$atype, &$reviewtype, $save) {
     global $Error, $Conf;
     
     $atype = $_REQUEST["a"];
-    if ($atype != "rev" && $atype != "revadd" && $atype != "pclead"
-	&& $atype != "shep") {
+    if ($atype != "rev" && $atype != "revadd" && $atype != "lead"
+	&& $atype != "shepherd") {
 	$Error["ass"] = true;
 	return $Conf->errorMsg("Malformed request!");
     }
@@ -104,22 +104,16 @@ function doAssign() {
     }
 
     // prepare to balance load
-    $load = array();
-    if (defval($_REQUEST["balance"], "new") == "new") {
-	foreach ($pcm as $pc)
-	    $load[$pc->contactId] = 0;
-    } else {
+    $load = array_fill_keys(array_keys($pcm), 0);
+    if (defval($_REQUEST["balance"], "new") != "new") {
 	if ($atype == "rev" || $atype == "revadd")
 	    $result = $Conf->qe("select PCMember.contactId, count(reviewId)
 		from PCMember left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.reviewType=$reviewtype)
 		group by PCMember.contactId", "while counting reviews");
-	else if ($atype == "pclead")
-	    $result = $Conf->qe("select PCMember.contactId, count(paperId)
-		from PCMember left join Paper on (Paper.leadContactId=PCMember.contactId)
-		group by PCMember.contactId", "while counting leads");
 	else
 	    $result = $Conf->qe("select PCMember.contactId, count(paperId)
-		from PCMember left join Paper on (Paper.shepherdContactId=PCMember.contactId)
+		from PCMember left join Paper on (Paper.${atype}ContactId=PCMember.contactId)
+		where not (paperId in (" . join(",", $papersel) . "))
 		group by PCMember.contactId", "while counting leads");
 	while (($row = edb_row($result)))
 	    $load[$row[0]] = $row[1] + 0;
@@ -150,6 +144,13 @@ function doAssign() {
 	    else
 		$prefs[$row->contactId][$row->paperId] = max($row->preference, -1000) + ($row->topicInterestScore / 100);
 	}
+    } else {
+	while (($row = edb_orow($result))) {
+	    if ($row->conflictType > 0 || $row->reviewType == 0)
+		$prefs[$row->contactId][$row->paperId] = -10000;
+	    else
+		$prefs[$row->contactId][$row->paperId] = max($row->overAllMerit * 50 + $row->preference + ($row->topicInterestScore / 100), -9999);
+	}
     }
 
     // sort preferences
@@ -166,7 +167,8 @@ function doAssign() {
 	while (($row = edb_row($result)))
 	    if (isset($papers[$row[0]]))
 		$papers[$row[0]] -= $row[1];
-    }
+    } else
+	$papers = array_fill_keys($papersel, 1);
     
     // now, loop forever
     $pcids = array_keys($pcm);
@@ -230,7 +232,7 @@ function saveAssign() {
     if (!checkRequest($atype, $reviewtype, true))
 	return false;
 
-    $Conf->qe("lock tables ContactInfo read, PCMember read, ChairAssistant read, Chair read, PaperReview write, ActionLog write");
+    $Conf->qe("lock tables ContactInfo read, PCMember read, ChairAssistant read, Chair read, PaperReview write, Paper write, ActionLog write");
     
     // parse assignment
     $pcm = pcMembers();
@@ -253,14 +255,20 @@ function saveAssign() {
 			"while getting existing reviews");
 	while (($row = edb_orow($result)))
 	    if (isset($ass[$row->paperId][$row->contactId])) {
-		$Me->assignPaper($row->paperId, $row, $row->contactId,
+		$Me->assignPaper($row->paperId, $row, $pcm[$row->contactId],
 				 $reviewtype, $Conf);
 		unset($ass[$row->paperId][$row->contactId]);
 	    }
 	foreach ($ass as $pid => $pcs) {
 	    foreach ($pcs as $pc => $ignore)
-		$Me->assignPaper($pid, null, $pc, $reviewtype, $Conf);
+		$Me->assignPaper($pid, null, $pcm[$pc], $reviewtype, $Conf);
 	}
+    } else {
+	foreach ($ass as $pid => $pcs)
+	    if (count($pcs) == 1) {
+		$Conf->qe("update Paper set ${atype}ContactId=" . key($pcs) . " where paperId=$pid", "while updating $atype");
+		$Conf->log("set $atype to " . $pcm[key($pcs)]->email, $Me, $pid);
+	    }
     }
 
     $Conf->confirmMsg("Assignments saved!");
@@ -365,12 +373,12 @@ echo "&nbsp; <input type='text' class='textlite' name='revaddct' value=\"", html
 doOptions('revaddtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
 echo "</select>&nbsp; reviewer(s)</td></tr>\n";
 
-echo "<tr><td class='caption'></td>", tdClass(true, "pclead");
-doRadio('a', 'pclead', 'Assign discussion lead');
+echo "<tr><td class='caption'></td>", tdClass(true, "lead");
+doRadio('a', 'lead', 'Assign discussion lead from reviewers, preferring high scores');
 echo "</td></tr>\n";
 
-echo "<tr><td class='caption'></td>", tdClass(true, "shep");
-doRadio('a', 'shep', 'Assign shepherd');
+echo "<tr><td class='caption'></td>", tdClass(true, "shepherd");
+doRadio('a', 'shepherd', 'Assign shepherd from reviewers, preferring high scores');
 echo "</td></tr>\n";
 
 
