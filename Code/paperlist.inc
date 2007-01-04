@@ -30,6 +30,7 @@ class PaperList {
     const FIELD_OPT_MERIT_ICON = 46;
     const FIELD_AUTHOR_MATCH = 47;
     const FIELD_COLLABORATORS_MATCH = 48;
+    const FIELD_SELECTOR_ON = 49;
     
     var $showHeader;
     var $sortField;
@@ -172,6 +173,7 @@ class PaperList {
 	case self::FIELD_REVIEWS_STATUS:
 	    return "<acronym title='\"1/2\" means 1 complete review out of 2 assigned reviews'>#&nbsp;Reviews</acronym>";
 	case self::FIELD_SELECTOR:
+	case self::FIELD_SELECTOR_ON:
 	    return ($ordinal ? "&nbsp;" : "");
 	case self::FIELD_REVIEW:
 	    return "&nbsp;";
@@ -324,8 +326,10 @@ class PaperList {
 	    else
 		return "<b>$row->reviewCount</b>";
 	case self::FIELD_SELECTOR:
+	case self::FIELD_SELECTOR_ON:
 	    $this->anySelector = 1;
-	    return "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='1' id='psel$this->count' onclick='pselClick(event, this, $this->count)' />";
+	    $c = ($fieldId == self::FIELD_SELECTOR_ON ? " checked='checked'" : "");
+	    return "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='1' id='psel$this->count' onclick='pselClick(event, this, $this->count)' $c/>";
 	case self::FIELD_REVIEW:
 	    return reviewButton($row->paperId, $row);
 	case self::FIELD_REVIEWER_NAME:
@@ -672,7 +676,7 @@ class PaperList {
 	}
 
 	$x .= $body;
-	if ($fieldId[0][0] == self::FIELD_SELECTOR)
+	if ($fieldId[0][0] == self::FIELD_SELECTOR || $fieldId[0][0] == self::FIELD_SELECTOR_ON)
 	    $x .= $this->footer($ncol);
 	$x .= "</table>";
 

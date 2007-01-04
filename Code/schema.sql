@@ -519,6 +519,7 @@ insert into PaperFields set fieldId=45, fieldName='reviewerTypeIcon', descriptio
 insert into PaperFields set fieldId=46, fieldName='optOverallMeritIcon', description='Overall merit (icon)';
 insert into PaperFields set fieldId=47, fieldName='authorsMatch', description='Authors match', sortable=0, display=2;
 insert into PaperFields set fieldId=48, fieldName='collaboratorsMatch', description='Collaborators match', sortable=0, display=2;
+insert into PaperFields set fieldId=49, fieldName='selectorOn', description='Selector on';
 
 insert into PaperList set paperListId=1, paperListName='a',
 	description='Authored papers', sortCol=0;
@@ -569,6 +570,11 @@ insert into PaperList set paperListId=10, paperListName='reviewers',
 	description='Review assignments', sortCol=0;
 insert into PaperListColumns (paperListId, fieldId, col) values
 	(10, 3, 0), (10, 13, 1), (10, 38, 2);
+
+insert into PaperList set paperListId=11, paperListName='reviewersSel',
+	description='Review assignments', sortCol=1;
+insert into PaperListColumns (paperListId, fieldId, col) values
+	(11, 49, 0), (11, 3, 1), (11, 13, 2), (11, 38, 3);
 
 insert into PaperList set paperListId=12, paperListName='req',
 	description='Papers to review', sortCol=0;

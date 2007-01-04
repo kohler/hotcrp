@@ -11,14 +11,13 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
     foreach ($_REQUEST["pap"] as $p)
 	if (($p = cvtint($p)) > 0)
 	    $papersel[] = $p;
-    if (count($papersel) == 0)
-	unset($papersel);
 } else {
     $papersel = array();
     $result = $Conf->q("select paperId from Paper where timeSubmitted>0");
     while (($row = edb_row($result)))
 	$papersel[] = $row[0];
 }
+sort($papersel);
 
 $Error = array();
 
@@ -79,7 +78,7 @@ function checkRequest(&$atype, &$reviewtype, $save) {
 }
 
 function doAssign() {
-    global $Conf, $ConfSiteBase, $papersel, $assignments, $assignmentWarning;
+    global $Conf, $ConfSiteBase, $papersel, $assignments;
 
     // check request
     if (!checkRequest($atype, $reviewtype, false))
@@ -215,7 +214,11 @@ function doAssign() {
 	$b = array();
 	foreach ($badpids as $pid)
 	    $b[] = "<a href='${ConfSiteBase}paper.php?paperId=$pid'>$pid</a>";
-	$assignmentWarning = "I wasn't able to complete the assignment, probably because of some conflicts in the PC members you selected.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . " (<a href='${ConfSiteBase}search.php?q=" . join("+", $badpids) . "'>list them all</a>).";
+	$Conf->warnMsg("I wasn't able to complete the assignment, probably because of some conflicts in the PC members you selected.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . " (<a href='${ConfSiteBase}search.php?q=" . join("+", $badpids) . "'>list them all</a>).");
+    }
+    if (count($assignments) == 0) {
+	$Conf->warnMsg("Nothing to assign.");
+	unset($assignments);
     }
 }
 
@@ -300,12 +303,10 @@ function tdClass($entry, $name) {
     return $td . (isset($Error[$name]) ? " error'>" : "'>");
 }
 
-if (isset($assignments)) {
+if (isset($assignments) && count($assignments) > 0) {
     echo "<table>";
     echo "<tr class='propass'>", tdClass(false, "propass"), "Proposed assignment</td><td class='entry'>";
     $Conf->infoMsg("If this assignment looks OK to you, select \"Save assignment\" to apply it.  (You can make minor changes afterwards.)");
-    if (isset($assignmentWarning))
-	$Conf->warnMsg($assignmentWarning);
     
     ksort($assignments);
     $atext = array();
@@ -317,7 +318,7 @@ if (isset($assignments)) {
 		$t = $t . ($t ? ", " : "") . contactHtml($pc->firstName, $pc->lastName);
 	$atext[$pid] = "<span class='pl_callouthdr'>Proposed assignment:</span> $t";
     }
-    
+
     $search = new PaperSearch($Me, array("t" => "s", "q" => join(" ", array_keys($assignments))));
     $plist = new PaperList(false, null, $search, $atext);
     echo $plist->text("reviewers", $Me, "Proposed assignment");
@@ -423,6 +424,15 @@ echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></
 
 echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='button' name='assign' value='Create assignment' /></td></tr>\n";
 
+echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></td></tr>\n";
+
+if (!isset($assignments) || count($assignments) == 0) {
+    echo "<tr><td class='caption'>Paper selection</td><td class='entry'><div>Assignments will be applied to the following papers.</div>\n";
+    $search = new PaperSearch($Me, array("t" => "s", "q" => join(" ", $papersel)));
+    $plist = new PaperList(false, null, $search);
+    echo $plist->text("reviewersSel", $Me, "Proposed assignment");
+    echo "</td></tr>\n";
+}
 
 echo "</table>\n";
 
