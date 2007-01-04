@@ -1,3 +1,277 @@
+2007-01-03 Wednesday 23:56  kohler
+
+	* autoassign.php (1.1), reload.sh (1.5), script.js (1.21),
+	  search.php (1.64), style.css (1.129), Code/paperlist.inc (1.72),
+	  Code/schema.sql (1.83): add automatic assignment (initial
+	  version)
+
+2006-12-30 Saturday 12:06  kohler
+
+	* style.css (1.128): tinynit
+
+2006-12-30 Saturday 11:58  kohler
+
+	* style.css (1.127), Chair/SendMail.php (1.7): no double-selectors
+
+2006-12-30 Saturday 10:36  kohler
+
+	* help.php (1.7): nit
+
+2006-12-30 Saturday 10:28  kohler
+
+	* assign.php (1.51), comment.php (1.19), contactauthors.php (1.21),
+	  paper.php (1.86), pc.php (1.19), review.php (1.67), script.js
+	  (1.20), search.php (1.63), style.css (1.126), Code/createdb.sh
+	  (1.10), Code/helpers.inc (1.111), Code/options.inc (1.2.2.4),
+	  Code/papertable.inc (1.49): make a bit nicer for internet
+	  explorer
+
+2006-12-30 Saturday 07:51  kohler
+
+	* script.js (1.19), Code/header.inc (1.36), Code/helpers.inc
+	  (1.110), Code/paperlist.inc (1.71), Code/papertable.inc (1.48):
+	  shift-click, plus a couple nits
+
+2006-12-30 Saturday 07:50  kohler
+
+	* style.css (1.125): random fixes
+
+2006-12-30 Saturday 07:49  kohler
+
+	* settings.php (1.17): better explanation of options
+
+2006-12-30 Saturday 07:49  kohler
+
+	* login.php (1.20): radio buttons on signin page
+
+2006-12-30 Saturday 07:48  kohler
+
+	* help.php (1.6): small help corrections
+
+2006-12-30 Saturday 07:48  kohler
+
+	* assign.php (1.50): fix HTML
+
+2006-12-23 Saturday 09:15  kohler
+
+	* paper.php (1.85): PaperOption too
+
+2006-12-21 Thursday 11:22  kohler
+
+	* paper.php (1.84), Code/TODO (1.12): PaperReviewArchive (thanks
+	  Bernhard)
+
+2006-12-20 Wednesday 22:11  kohler
+
+	* Code/helpers.inc (1.109): no topic table if lame
+
+2006-12-20 Wednesday 22:09  kohler
+
+	* assign.php (1.49), comment.php (1.18), deadlines.php (1.21),
+	  index.php (1.87), login.php (1.19), paper.php (1.83), review.php
+	  (1.66), settings.php (1.16), Code/TODO (1.11),
+	  Code/conference.inc (1.140), Code/helpers.inc (1.108),
+	  Code/papertable.inc (1.47), Code/review.inc (1.54),
+	  Code/schema.sql (1.82): paper options, for frans
+
+2006-12-19 Tuesday 21:24  kohler
+
+	* tarball.sh (1.13): nit
+
+2006-12-19 Tuesday 21:09  kohler
+
+	* help.php (1.5), Assistant/PrintAllAbstracts.php (1.13),
+	  Chair/SetReviewForm.php (1.24), Chair/sampleforms.inc (1.1),
+	  Code/ClassCGO2004Review.inc (1.5), Code/ClassHYPO2010Review.inc
+	  (1.5), Code/ClassISCA2002Review.inc (1.5),
+	  Code/ClassMICRO36Review.inc (1.5), Code/TODO (1.10),
+	  Code/papertable.inc (1.46), Code/review.inc (1.53): add sample
+	  review forms
+
+2006-12-17 Sunday 18:37  kohler
+
+	* Chair/SetReviewForm.php (1.23): another try
+
+2006-12-17 Sunday 18:35  kohler
+
+	* Chair/SetReviewForm.php (1.22): try to fix a frans issue
+
+2006-12-17 Sunday 18:27  kohler
+
+	* Code/createdb.sh (1.9): createdb: allow passwords with "0"
+
+2006-12-15 Friday 22:15  kohler
+
+	* README (1.7), Code/createdb.sh (1.8): a bit more help in README
+
+2006-12-13 Wednesday 23:09  kohler
+
+	* settings.php (1.15): potential conflicts
+
+2006-12-13 Wednesday 23:02  kohler
+
+	* style.css (1.124): nit
+
+2006-12-13 Wednesday 22:59  kohler
+
+	* contactauthors.php (1.20), paper.php (1.82), search.php (1.62),
+	  settings.php (1.14), style.css (1.123), Code/header.inc (1.35),
+	  Code/papertable.inc (1.45), Code/schema.sql (1.81): PC conflicts
+	  checkboxes
+
+2006-12-12 Tuesday 21:26  kohler
+
+	* index.php (1.86), paper.php (1.81), Code/conference.inc (1.139):
+	  update papersub setting for withdrawn/etc papers.  (Why do this?
+	  Because submitting a test paper is totally typical chair
+	  behavior.)
+
+2006-12-12 Tuesday 15:29  kohler
+
+	* account.php (1.42): another fixlet
+
+2006-12-12 Tuesday 15:21  kohler
+
+	* account.php (1.41), search.php (1.61), Chair/ShowCalendar.php
+	  (1.6), Code/header.inc (1.34): new X()
+
+2006-12-12 Tuesday 09:11  kohler
+
+	* account.php (1.40), pc.php (1.18): better log messages
+
+2006-12-12 Tuesday 09:04  kohler
+
+	* account.php (1.39), login.php (1.18): log nits
+
+2006-12-12 Tuesday 08:59  kohler
+
+	* account.php (1.38): rename $Me=>$Acct, error highlighting
+
+2006-12-12 Tuesday 08:59  kohler
+
+	* Code/contact.inc (1.83): not used
+
+2006-12-12 Tuesday 08:59  kohler
+
+	* Code/options.inc (1.15.2.1): dont send emial locally
+
+2006-12-11 Monday 23:51  kohler
+
+	* Code/conference.inc (1.138): avoid PHP notice?
+
+2006-12-11 Monday 23:29  kohler
+
+	* README (1.6): add specifics
+
+2006-12-11 Monday 22:50  kohler
+
+	* .htaccess (1.5), README (1.5): Mention Jeff Chase issue with
+	  error 500
+
+2006-12-11 Monday 22:39  kohler
+
+	* settings.php (1.13): settings nt
+
+2006-12-11 Monday 22:35  kohler
+
+	* index.php (1.85): avoid spurious "no pc reviews"
+
+2006-12-11 Monday 22:28  kohler
+
+	* deadlines.php (1.20), index.php (1.84), settings.php (1.12),
+	  Code/contact.inc (1.82), Code/options.inc (1.15): deadlines dont
+	  appear as an option if there are no deadlines; other nits
+
+2006-12-11 Monday 21:31  kohler
+
+	* Code/schema.sql (1.80): fix schema
+
+2006-12-10 Sunday 20:47  kohler
+
+	* account.php (1.37): avoid warnings
+
+2006-12-10 Sunday 19:48  kohler
+
+	* tarball.sh (1.12), Code/TODO (1.9), Code/conference.inc (1.137):
+	  nits
+
+2006-12-10 Sunday 14:41  kohler
+
+	* search.php (1.60): x-small
+
+2006-12-10 Sunday 14:39  kohler
+
+	* style.css (1.122), tarball.sh (1.11), Chair/SetReviewForm.php
+	  (1.21): better set-review-form
+
+2006-12-10 Sunday 11:50  kohler
+
+	* Chair/SetReviewForm.php (1.20), Code/helpers.inc (1.107): nit
+
+2006-12-10 Sunday 11:47  kohler
+
+	* README (1.4), account.php (1.36), assign.php (1.48), comment.php
+	  (1.17), contactauthors.php (1.19), help.php (1.4), login.php
+	  (1.17), mergeaccounts.php (1.28), offline.php (1.14), paper.php
+	  (1.80), pc.php (1.17), review.php (1.65), search.php (1.59),
+	  tarball.sh (1.10), Assistant/DumpAllReviews.php (1.15),
+	  Assistant/ListReviewers.php (1.8), Assistant/ModifyUserNames.php
+	  (1.9), Assistant/PrepareFacesheets.php (1.12),
+	  Assistant/PrintAllAbstracts.php (1.12),
+	  Assistant/PrintAllReviews.php (1.14),
+	  Assistant/PrintSomeReviews.php (1.12), Author/SubmitResponse.php
+	  (1.11), Chair/AskForReview.php (1.12), Chair/AssignPapers.php
+	  (1.34), Chair/AveragePaperScore.php (1.14),
+	  Chair/AverageReviewerScore.php (1.11),
+	  Chair/BecomeSomeoneElse.php (1.11), Chair/CheckOnPCProgress.php
+	  (1.9), Chair/CheckOnSinglePCProgress.php (1.10), Chair/Code.inc
+	  (1.10), Chair/FindPCConflicts.php (1.14),
+	  Chair/GradeAllPapers.php (1.12), Chair/ListPC.php (1.15),
+	  Chair/ListReviewers.php (1.8), Chair/ListReviews.php (1.9),
+	  Chair/SendMail2.php (1.19), Chair/SetReviewForm.php (1.19),
+	  Chair/SpotProblems.php (1.13), Chair/ViewActionLog.php (1.11),
+	  Code/DumpAllReviews.php-not-via-apache (1.8),
+	  Code/DumpSingleReview.php-not-via-apache (1.13),
+	  Code/SuckInOSDIPaper.php-not-via-apache (1.6),
+	  Code/conference.inc (1.136), Code/contact.inc (1.81),
+	  Code/header.inc (1.33), Code/helpers.inc (1.106),
+	  Code/paperlist.inc (1.70), Code/papertable.inc (1.44),
+	  Code/review.inc (1.52), Code/search.inc (1.30), Code/tags.inc
+	  (1.3), PC/CheckOnPCProgress.php (1.9), PC/CheckReviewStatus.php
+	  (1.15), PC/GradePapers.php (1.13), PC/SeeAllGrades.php (1.15),
+	  PC/SpotMyProblems.php (1.11), PC/reviewprefs.php (1.24): remove
+	  MDB2 abstraction layer
+
+2006-12-09 Saturday 13:26  kohler
+
+	* review.php (1.64), settings.php (1.11), Code/contact.inc (1.80),
+	  Code/helpers.inc (1.105): rev_seedec
+
+2006-12-09 Saturday 13:15  kohler
+
+	* assign.php (1.47), mergeaccounts.php (1.27), review.php (1.63),
+	  style.css (1.121), tarball.sh (1.9), Code/TODO (1.8),
+	  Code/helpers.inc (1.104), Code/papertable.inc (1.43),
+	  Code/schema.sql (1.79), Code/search.inc (1.29),
+	  PC/SeeAllGrades.php (1.14): lead, shepherd
+
+2006-12-09 Saturday 09:17  kohler
+
+	* assign.php (1.46), comment.php (1.16), help.php (1.3), paper.php
+	  (1.79), review.php (1.62), Code/conference.inc (1.135):
+	  expandBody, help nits
+
+2006-12-08 Friday 22:19  kohler
+
+	* index.php (1.83), search.php (1.58): more
+
+2006-12-08 Friday 22:13  kohler
+
+	* help.php (1.2), search.php (1.57), style.css (1.120),
+	  Code/papertable.inc (1.42), Code/search.inc (1.28),
+	  images/extagsnone.png (1.1), images/extagssearch.png (1.1),
+	  images/extagsset.png (1.1): help for tags, help linked in
+
 2006-12-08 Friday 12:13  kohler
 
 	* help.php (1.1), search.php (1.56), style.css (1.119), tarball.sh
