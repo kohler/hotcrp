@@ -398,9 +398,9 @@ $Search = new PaperSearch($Me, $_REQUEST);
 // set up the search form
 if (defval($_REQUEST["qx"], "") != "" || defval($_REQUEST["qa"], "") != ""
     || defval($_REQUEST["qt"], "n") != "n" || defval($_REQUEST["opt"], 0) > 0)
-    $folded = 'unfolded';
+    $folded = 'foldo';
 else
-    $folded = 'folded';
+    $folded = 'foldc';
 
 if (count($tOpt) > 1) {
     $tselect = "<select name='t'>";

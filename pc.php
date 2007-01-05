@@ -23,9 +23,9 @@ function doRemove(id) {
     var rem = !row.className.match(/ removed/);
     chg.value = (rem ? "rem" : "chg");
     if (rem)
-	row.className = row.className.replace(/unfolded/, 'folded') + " removed";
+	row.className = row.className.replace(/foldo/, 'foldc') + " removed";
     else
-	row.className = row.className.replace(/\bfolded/, 'unfolded').replace(/\s*removed/, '');
+	row.className = row.className.replace(/foldc/, 'foldo').replace(/\s*removed/, '');
     highlightChange(id);
 }
 </script>
@@ -150,7 +150,7 @@ while ($row = edb_orow($result)) {
     $id = $row->contactId;
 
     // main row
-    echo "<tr id='pcrow$id' class='pcrow unfolded'>
+    echo "<tr id='pcrow$id' class='pcrow foldo'>
   <td class='pc_name'>", htmlspecialchars(trim("$row->firstName $row->lastName")), "</td>\n";
     if ($Me->isPC)
 	echo "  <td class='pc_email'><a href=\"mailto:", htmlspecialchars($row->email), "\">", htmlspecialchars($row->email), "</a></td>\n";

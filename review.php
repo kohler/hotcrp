@@ -363,7 +363,7 @@ if ($mode == "edit" && $prow->reviewType <= 0)
 $revTable = reviewTable($prow, $rrows, $rrow, $mode);
 $revTableClass = (preg_match("/<th/", $revTable) ? "rev_reviewers_hdr" : "rev_reviewers");
 if ($reviewTableFolder)
-    $revTableClass .= " folded' id='foldrt";
+    $revTableClass .= " foldc' id='foldrt";
 echo "<tr class='", $revTableClass, "'>\n";
 echo "  <td class='caption'>";
 if ($reviewTableFolder)
@@ -434,7 +434,7 @@ function reviewView($prow, $rrow, $editMode) {
 	// refuse?
 	if ($rrow && $rrow->reviewSubmitted <= 0 && $rrow->reviewType < REVIEW_SECONDARY) {
 	    echo "\n<tr class='rev_ref'>\n  <td class='caption'></td>\n  <td class='entry' colspan='2'>";
-	    echo "<div id='foldref' class='folded' style='position: relative'><a href=\"javascript:fold('ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it
+	    echo "<div id='foldref' class='foldc' style='position: relative'><a href=\"javascript:fold('ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it
   <div class='popupdialog extension'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p>\n";
 	    echo "    <input class='textlite' type='text' name='reason' value='' size='40' />
     <div class='xsmgap'></div>
@@ -497,7 +497,7 @@ function reviewView($prow, $rrow, $editMode) {
 		    $buttons[] = array("<input class='button' type='submit' value='Unsubmit' name='unsubmit' />", "(PC chair only)");
 	    }
 	    if ($rrow && $Me->amAssistant())
-		$buttons[] = array("<div id='folddel' class='folded' style='position: relative'><button type='button' onclick=\"fold('del', 0)\">Delete review</button><div class='popupdialog extension'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><input class='button' type='submit' name='delete' value='Delete review' /> <button type='button' onclick=\"fold('del', 1)\">Cancel</button></div></div>", "(PC chair only)");
+		$buttons[] = array("<div id='folddel' class='foldc' style='position: relative'><button type='button' onclick=\"fold('del', 0)\">Delete review</button><div class='popupdialog extension'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><input class='button' type='submit' name='delete' value='Delete review' /> <button type='button' onclick=\"fold('del', 1)\">Cancel</button></div></div>", "(PC chair only)");
 
 	    echo "    <tr>\n";
 	    foreach ($buttons as $b) {

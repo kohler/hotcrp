@@ -10,20 +10,20 @@ function fold(which, dofold, foldnum) {
 	for (var i = 0; i < which.length; i++)
 	    fold(which[i], dofold, foldnum);
     } else {
-	var folded = document.getElementById('fold' + which);
-	var ftext = "fold" + (foldnum ? foldnum : "") + "ed";
-	var unftext = "un" + ftext;
-	if (folded && dofold == null && folded.className.indexOf(unftext) >= 0)
+	var elt = document.getElementById('fold' + which);
+	var opentxt = "fold" + (foldnum ? foldnum : "") + "o";
+	var closetxt = "fold" + (foldnum ? foldnum : "") + "c";
+	if (elt && dofold == null && elt.className.indexOf(opentxt) >= 0)
 	    dofold = true;
-	if (!folded)
+	if (!elt)
 	    /* nada */;
 	else if (dofold)
-	    folded.className = folded.className.replace(unftext, ftext);
+	    elt.className = elt.className.replace(opentxt, closetxt);
 	else
-	    folded.className = folded.className.replace(ftext, unftext);
+	    elt.className = elt.className.replace(closetxt, opentxt);
 	// IE won't actually do the fold unless we yell at it
 	if (document.recalc)
-	    folded.innerHTML = folded.innerHTML + "";
+	    elt.innerHTML = elt.innerHTML + "";
     }
 }
 
@@ -34,7 +34,7 @@ function foldsession(foldset, sessioner) {
 	foldset = [foldset];
     for (var i = 0; i < foldset.length; i++) {
 	var e = document.getElementById('fold' + foldset[i]);
-	if (e && e.className.match("\\bfold" + (i + 8) + "ed\\b"))
+	if (e && e.className.match("\\bfold" + (i + 8) + "c\\b"))
             foldval |= (1 << i);
     }
     var si = document.getElementById(sessioner);
@@ -52,7 +52,7 @@ function contactPulldown(which) {
 	name.value = (parse.length > 1 ? parse[1] : "");
     }
     var folder = document.getElementById('fold' + which);
-    folder.className = folder.className.replace("unfolded", "folded");
+    folder.className = folder.className.replace("foldo", "foldc");
 }
 
 function tempText(elt, text, on) {
@@ -73,7 +73,7 @@ var selassign_blur = 0;
 
 function foldassign(which) {
     var folder = document.getElementById("foldass" + which);
-    if (folder.className.indexOf("unfolded") < 0
+    if (folder.className.indexOf("foldo") < 0
 	&& selassign_blur != which) {
 	fold("ass" + which, false);
 	document.getElementById("pcs" + which).focus();
@@ -89,7 +89,7 @@ function selassign(elt, which) {
     }
     var folder = document.getElementById("foldass" + which);
     if (folder)
-	folder.className = folder.className.replace("unfolded", "folded");
+	folder.className = folder.className.replace("foldo", "foldc");
     if (elt)
 	highlightUpdate();
     folder = document.getElementById("folderass" + which);

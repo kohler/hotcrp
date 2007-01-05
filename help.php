@@ -189,8 +189,8 @@ the order by editing the tag numbers.
 <a href='${ConfSiteBase}search.php'>search screen</a>.  Search for the
 papers you want, sort them into the right order, select them, and
 choose <b>Define ordered</b> in the tag action area.  If no sort
-gives what you want, enter the desired paper numbers in order into the
-search box; for instance, search for \"<a href='${ConfSiteBase}search.php?q=4+1+12+9'>4 1 12 19</a>\".</p>");
+gives what you want, search for the desired paper numbers in order.
+For instance, you might search for \"<a href='${ConfSiteBase}search.php?q=4+1+12+9'>4 1 12 19</a>\", then <b>Select all</b> and <b>Define ordered</b>.</p>");
     echo "</table>\n";
 }
 

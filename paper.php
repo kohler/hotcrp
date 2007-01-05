@@ -654,10 +654,10 @@ if ($mode == "edit") {
 	if ($prow->timeSubmitted <= 0)
 	    $buttons[] = "<input class='button' type='submit' name='withdraw' value='Withdraw paper' />";
 	else
-	    $buttons[] = "<div id='foldw' class='folded' style='position: relative'><button type='button' onclick=\"fold('w', 0)\">Withdraw paper</button><div class='popupdialog extension'><p>Are you sure you want to withdraw this paper from consideration and/or publication?  Only the PC chair can undo this step.</p><input class='button' type='submit' name='withdraw' value='Withdraw paper' /> <button type='button' onclick=\"fold('w', 1)\">Cancel</button></div></div>";
+	    $buttons[] = "<div id='foldw' class='foldc' style='position: relative'><button type='button' onclick=\"fold('w', 0)\">Withdraw paper</button><div class='popupdialog extension'><p>Are you sure you want to withdraw this paper from consideration and/or publication?  Only the PC chair can undo this step.</p><input class='button' type='submit' name='withdraw' value='Withdraw paper' /> <button type='button' onclick=\"fold('w', 1)\">Cancel</button></div></div>";
     }
     if ($Me->amAssistant() && !$newPaper)
-	$buttons[] = array("<div id='folddel' class='folded' style='position: relative'><button type='button' onclick=\"fold('del', 0)\">Delete paper</button><div class='popupdialog extension'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><input class='button' type='submit' name='delete' value='Delete paper' /> <button type='button' onclick=\"fold('del', 1)\">Cancel</button></div></div>", "(PC chair only)");
+	$buttons[] = array("<div id='folddel' class='foldc' style='position: relative'><button type='button' onclick=\"fold('del', 0)\">Delete paper</button><div class='popupdialog extension'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><input class='button' type='submit' name='delete' value='Delete paper' /> <button type='button' onclick=\"fold('del', 1)\">Cancel</button></div></div>", "(PC chair only)");
     echo "    <tr>\n";
     foreach ($buttons as $b) {
 	$x = (is_array($b) ? $b[0] : $b);

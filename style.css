@@ -839,16 +839,16 @@ tr.k1 td {
 	background: #f0f0ff;
 }
 
-.folded .extension, .folded .folder, .unfolded .ellipsis, .unfolded .unfolder {
+.foldc .extension, .foldc .folder, .foldo .ellipsis, .foldo .unfolder {
 	display: none;
 }
-.fold1ed .extension1, .fold1ed .folder1, .unfold1ed .ellipsis1, .unfold1ed .unfolder1 {
+.fold1c .extension1, .fold1c .folder1, .fold1o .ellipsis1, .fold1o .unfolder1 {
 	display: none;
 }
-.fold8ed .extension8, .fold8ed .folder8, .unfold8ed .ellipsis8, .unfold8ed .unfolder8 {
+.fold8c .extension8, .fold8c .folder8, .fold8o .ellipsis8, .fold8o .unfolder8 {
 	display: none;
 }
-.fold9ed .extension9, .fold9ed .folder9, .unfold9ed .ellipsis9, .unfold9ed .unfolder9 {
+.fold9c .extension9, .fold9c .folder9, .fold9o .ellipsis9, .fold9o .unfolder9 {
 	display: none;
 }
 

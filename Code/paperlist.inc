@@ -435,7 +435,7 @@ class PaperList {
 	    return "";
 	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
 	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'><img src=\"${ConfSiteBase}images/bendulft.png\" style='position: relative; top: 11px' /></td>\n";
-	$fclass = (defval($_SESSION["plactFold"], 1) ? "folded" : "unfolded");
+	$fclass = (defval($_SESSION["plactFold"], 1) ? "foldc" : "foldo");
 	$t .= "    <td id='foldplact' class='$fclass' colspan='" . ($ncol - 1) . "'><table>
   <tr><td class='xcaption'><b>Select papers</b> (or <a href='javascript:void checkPapersel(true)'>select all " . $this->count . "</a>), then <b>Get:</b></td>
     <td><select name='getaction'>
@@ -473,8 +473,8 @@ class PaperList {
 		$t .= "  <tr class='extension'><td class='rcaption'>Decision:</td><td>Set decision to&nbsp; " . outcomeSelector() . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></td></tr>\n";
 	    
 	    if ($this->contact->amAssistant()) {
-		$t .= "  <tr class='extension'><td class='rcaption'>Conflicts &amp; assignments:</td>
-    <td id='foldass' class='fold1ed'><select name='marktype' onchange='fold(\"ass\", (this.value[0] == \"x\"), 1)'>
+		$t .= "  <tr class='extension'><td class='rcaption'>Assignments &amp; conflicts:</td>
+    <td id='foldass' class='fold1c'><select name='marktype' onchange='fold(\"ass\", (this.value[0] == \"x\"), 1)'>
       <option value='xauto' selected='selected'>Automatic assignments</option>
       <option value='-1' disabled='disabled'></option>
       <option value='conflict'>Mark conflict</option>

@@ -140,7 +140,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
 
 // Review assignment
 if ($Me->amReviewer() && ($Me->amAssistant() || $papersub)) {
-    echo "<div class='bgrp folded' id='foldre'><div class='bgrp_head'>";
+    echo "<div class='bgrp foldc' id='foldre'><div class='bgrp_head'>";
     if ($Me->isReviewer)
 	echo "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;";
     echo "Review assignments</div><div class='bgrp_body'>\n";
@@ -201,7 +201,7 @@ if ($Me->amReviewer() && ($Me->amAssistant() || $papersub)) {
 
 // PC tasks (old CRP)
 if ($Me->isPC) {
-    echo "<div class='bgrp folded' id='foldpc'><div class='bgrp_head'><a href=\"javascript:fold('pc', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('pc', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;PC member tasks (old CRP)</div><div class='bgrp_body extension'>\n";
+    echo "<div class='bgrp foldc' id='foldpc'><div class='bgrp_head'><a href=\"javascript:fold('pc', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('pc', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;PC member tasks (old CRP)</div><div class='bgrp_body extension'>\n";
 
     $Conf->infoMsg(" You need to write up your own review for any "
 		  . " assigned Primary paper, and ask one or more other people "
@@ -236,7 +236,7 @@ if ($Me->isPC) {
 
 // Chair/assistant tasks (old CRP)
 if ($Me->amAssistant()) {
-    echo "<div class='bgrp folded' id='foldch'><div class='bgrp_head'><a href=\"javascript:fold('ch', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('ch', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;PC chair tasks (old CRP)</div><div class='bgrp_body extension'>\n";
+    echo "<div class='bgrp foldc' id='foldch'><div class='bgrp_head'><a href=\"javascript:fold('ch', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('ch', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;PC chair tasks (old CRP)</div><div class='bgrp_body extension'>\n";
 
     echo "<ul>
 <li>Manage all papers

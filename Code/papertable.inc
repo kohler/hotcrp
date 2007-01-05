@@ -45,9 +45,9 @@ class PaperTable {
 
     function echoDivEnter() {
 	if ($this->allFolded)
-	    echo "<div id='foldpaper' class='", ($this->foldState & 2 ? "fold9ed" : "unfold9ed"), "'>";
+	    echo "<div id='foldpaper' class='", ($this->foldState & 2 ? "fold9c" : "fold9o"), "'>";
 	if ($this->authorsFolded)
-	    echo "<div id='foldauthors' class='", ($this->foldState & 1 ? "fold8ed" : "unfold8ed"), "'>";
+	    echo "<div id='foldauthors' class='", ($this->foldState & 1 ? "fold8c" : "fold8o"), "'>";
     }
 
     function echoDivExit() {
@@ -410,7 +410,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 	    $t = str_replace('#0', '', $t);
 	    echo "<tr class='pt_tags'>\n  <td class='caption'>Tags</td>\n  <td class='entry'>";
 	    if ($site) {
-		echo "<div id='foldtags' class='folded'><form method='post' action=\"$site\" enctype='multipart/form-data'>";
+		echo "<div id='foldtags' class='foldc'><form method='post' action=\"$site\" enctype='multipart/form-data'>";
 		echo "<span class='ellipsis'>", ($t == "" ? "none" : htmlspecialchars($t)), "&nbsp;</span>";
 		echo "<a href='javascript:fold(\"tags\", 0)'><img class='unfolder' src='${ConfSiteBase}images/next.png' alt='[Edit]' /></a>";
 		echo "<span class='extension'><input class='textlite' type='text' size='40' name='tags' value=\"", htmlspecialchars($t), "\" /> &nbsp;<input class='button_small' type='submit' name='settags' value='Set tags' /> &nbsp; ";
