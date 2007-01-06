@@ -7,7 +7,8 @@ $Me->goIfInvalid();
 $topicTitles = array("topics" => "Help topics",
 		     "syntax" => "Search syntax",
 		     "search" => "Search",
-		     "tags" => "Tags");
+		     "tags" => "Tags",
+		     "assign" => "Assigning papers");
 
 $topic = defval($_REQUEST["t"], "topics");
 if (!isset($topicTitles[$topic]))
@@ -44,6 +45,7 @@ function topics() {
     _alternateRow("<a href='help.php?t=search'>Search</a>", "About paper searching.");
     _alternateRow("<a href='help.php?t=syntax'>Search syntax</a>", "Quick reference to search syntax.");
     _alternateRow("<a href='help.php?t=tags'>Tags</a>", "How to use tags and ordered tags to define sets of papers and discussion orders.");
+    _alternateRow("<a href='help.php?t=assign'>Assigning papers</a>", "How to assign papers for review.");
     echo "</table>";
 }
 
@@ -77,7 +79,7 @@ authors, reviewer names, even numbers of reviewers.  For example,
 <span class='textlite'>ti:foo</span> means \"search for 'foo' in paper
 titles\".  Keywords are listed in the
 <a href='help.php?t=syntax'>search syntax reference</a>.");
-    _alternateRow("Listing all papers", "To list all papers in a search category, simply perform the search with no search terms.");
+    _alternateRow("Listing all papers", "To list all papers in a search category, perform a search with no search terms.");
     _alternateRow("Paging through results", "All paper screens have links in the upper right corner that let you page through the most recent search results:<br />
   <img src='${ConfSiteBase}images/pageresultsex.png' alt='[Result paging example]' /><br />
   Using these links can speed up many tasks.  Additionally, search matches are <span class='match'>highlighted</span> on the paper screens.  This makes it easier to tell whether a conflict is real, for example.");
@@ -131,7 +133,9 @@ function searchQuickref() {
     _searchQuickrefRow("", "re:4", "four reviewers (assigned and/or completed)");
     _searchQuickrefRow("", "cre:<3", "less than three completed reviews");
     _searchQuickrefRow("", "lead:fdabek", "\"fdabek\" (in name/email) is discussion lead");
-    _searchQuickrefRow("", "shep:fdabek", "\"fdabek\" (in name/email) is shepherd");
+    _searchQuickrefRow("", "lead:none", "no assigned discussion lead");
+    _searchQuickrefRow("", "lead:any", "some assigned discussion lead");
+    _searchQuickrefRow("", "shep:fdabek", "\"fdabek\" (in name/email) is shepherd (\"none\" and \"any\" also work)");
     _searchQuickrefRow("Decision", "dec:accept", "decision matches \"accept\"");
     _searchQuickrefRow("", "dec:yes", "one of the accept decisions");
     _searchQuickrefRow("", "dec:no", "one of the reject decisions");
@@ -195,6 +199,55 @@ For instance, you might search for \"<a href='${ConfSiteBase}search.php?q=4+1+12
 }
 
 
+
+
+function assign() {
+    global $ConfSiteBase;
+    echo "<table>";
+    _alternateRow("Types of review", "
+HotCRP reviews fall into several categories, which are frequently shown as
+icons.
+
+<table class='rpad1'><tr>
+  <td><img src='${ConfSiteBase}images/ass" . REVIEW_PRIMARY . ".png' alt='[Primary]' /></td>
+  <td><b>Primary</b></td>
+  <td>Primary PC assignments.  The PC member is expected to complete the
+  review themselves.</td>
+</tr><tr>
+  <td><img src='${ConfSiteBase}images/ass" . REVIEW_SECONDARY . ".png' alt='[Secondary]' /></td>
+  <td><b>Secondary</b></td>
+  <td>Secondary PC assignments.  The PC member will generally complete the
+  review themselves, but may also <i>delegate</i> the review to an external
+  reviewer.</td>
+</tr><tr>
+  <td><img src='${ConfSiteBase}images/ass" . REVIEW_PC . ".png' alt='[PC]' /></td>
+  <td><b>PC review</b></td>
+  <td>A review by a PC member who wasn't explicitly assigned to review the
+  paper.  (Chairs can allow PC members to review any submitted paper on
+  the <a href='${ConfSiteBase}settings.php'>conference settings page</a>.)</td>
+</tr><tr>
+  <td><img src='${ConfSiteBase}images/ass" . REVIEW_EXTERNAL . ".png' alt='[External]' /></td>
+  <td><b>External</b></td>
+  <td>An external review by someone not on the PC.</td>
+</tr><tr>
+  <td><img src='${ConfSiteBase}images/ass-1.png' alt='[Conflict]' /></td>
+  <td><b>Conflict</b></td>
+  <td>This PC member has a conflict with the paper.</td>
+</tr></table>");
+    _alternateRow("One at a time", "
+Assign reviewers for a single paper using its
+<a href='${ConfSiteBase}assign.php?paperId=1'>assignments page</a>,
+which is accessible by the paper's \"Assignments\" tab.  The assignments
+page will show you the current reviewers, and allows you to change
+assignments and conflicts.  To change an assignment, click the
+\"<img src='${ConfSiteBase}images/next.png' alt='arrow' />\" icon next
+to the PC member's name:<br />
+<img src='${ConfSiteBase}images/exassignone.png' alt='[Assigning papers on the paper assignment page]' />
+");
+    echo "</table>\n";
+}
+
+
 if ($topic == "topics")
     topics();
 else if ($topic == "search")
@@ -203,5 +256,7 @@ else if ($topic == "syntax")
     searchQuickref();
 else if ($topic == "tags")
     tags();
+else if ($topic == "assign")
+    assign();
 
 $Conf->footer();

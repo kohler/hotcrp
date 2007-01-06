@@ -74,14 +74,14 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	    $t .= "<td class='empty'></td>";
 	else {
 	    $t .= "<td>" . $reviewTypeName[$rr->reviewType];
-	    if ($rr->reviewType == REVIEW_REQUESTED)
+	    if ($rr->reviewType == REVIEW_EXTERNAL)
 		$t .= "<br /><small>by " . contactHtml($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail) . "</small>";
 	    $t .= "</td>";
 	}
 
 	// scores or retract request
 	if ($rr->reviewModified <= 0
-	    && $rr->reviewType == REVIEW_REQUESTED
+	    && $rr->reviewType == REVIEW_EXTERNAL
 	    && ($rr->requestedBy == $Me->contactId || $effAssistant)) {
 	    if ($mode == "assign") {
 		$t .= "<td><a href=\"${ConfSiteBase}assign.php?paperId=$prow->paperId&amp;retract=$rr->reviewId$forceShow\">Retract review request</a></td>";

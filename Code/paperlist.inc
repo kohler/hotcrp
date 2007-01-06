@@ -284,8 +284,8 @@ class PaperList {
 		return "$a1<span class='rtype rtype_pri'>Primary</span>$a2";
 	    else if ($row->reviewType == REVIEW_SECONDARY)
 		return "$a1<span class='rtype rtype_sec'>Secondary</span>$a2";
-	    else if ($row->reviewType == REVIEW_REQUESTED)
-		return "$a1<span class='rtype rtype_req'>Requested</span>$a2";
+	    else if ($row->reviewType == REVIEW_EXTERNAL)
+		return "$a1<span class='rtype rtype_req'>External</span>$a2";
 	    else if ($row->reviewType)
 		return "$a1<span class='rtype'>Review</span>$a2";
 	    else if ($row->conflictType == CONFLICT_AUTHOR)
@@ -434,8 +434,8 @@ class PaperList {
 	if ($this->count == 0)
 	    return "";
 	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
-	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'><img src=\"${ConfSiteBase}images/bendulft.png\" style='position: relative; top: 11px' /></td>\n";
-	$fclass = (defval($_SESSION["plactFold"], 1) ? "foldc" : "foldo");
+	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'><img src=\"${ConfSiteBase}images/bendulft.png\" style='position: relative; top: 8px' /></td>\n";
+	$fclass = (defval($_SESSION["plactFold"], 1) ? "fold8c" : "fold8o");
 	$t .= "    <td id='foldplact' class='$fclass' colspan='" . ($ncol - 1) . "'><table>
   <tr><td class='xcaption'><b>Select papers</b> (or <a href='javascript:void checkPapersel(true)'>select all " . $this->count . "</a>), then <b>Get:</b></td>
     <td><select name='getaction'>
@@ -460,20 +460,20 @@ class PaperList {
 	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='get' value='Go' />";
 
 	if ($this->contact->isPC) {
-	    $t .= "<span class='sep'></span> <a class='unfolder' href='javascript:fold(\"plact\", 0);foldsession(\"plact\", \"plactFold\")'>More &raquo;</a>";
-	    $t .= "<a class='folder' href='javascript:fold(\"plact\", 1);foldsession(\"plact\", \"plactFold\")'>Less &laquo;</a>";
+	    $t .= "<span class='sep'></span> <a class='unfolder8' href='javascript:fold(\"plact\",0,8);foldsession(\"plact\",\"plactFold\")'>More &raquo;</a>";
+	    $t .= "<a class='folder8' href='javascript:fold(\"plact\",1,8);foldsession(\"plact\",\"plactFold\")'>Less &laquo;</a>";
 	    $t .= "<img id='plactFold' alt='' src='${ConfSiteBase}sessionvar.php?var=plactFold&amp;val=" . defval($_SESSION["plactFold"], 1) . "&amp;cache=1' width='1' height='1' />";
 	    $t .= "</td></tr>\n";
 
-	    $t .= "  <tr class='extension'><td class='rcaption'>Tags:</td><td><select name='tagtype'>
+	    $t .= "  <tr class='extension8'><td class='rcaption'>Tags:</td><td><select name='tagtype'>
     <option value='a' selected='selected'>Add</option><option value='d'>Remove</option><option value='s'>Define</option><option value='so'>Define ordered</option><option value='ao'>Add ordered</option>
   </select> &nbsp;tag(s) &nbsp;<input class='textlite' type='text' name='tag' value='' size='15' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></td></tr>\n";
 	    
 	    if ($this->contact->amAssistant())
-		$t .= "  <tr class='extension'><td class='rcaption'>Decision:</td><td>Set decision to&nbsp; " . outcomeSelector() . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></td></tr>\n";
+		$t .= "  <tr class='extension8'><td class='rcaption'>Decision:</td><td>Set decision to&nbsp; " . outcomeSelector() . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></td></tr>\n";
 	    
 	    if ($this->contact->amAssistant()) {
-		$t .= "  <tr class='extension'><td class='rcaption'>Assignments &amp; conflicts:</td>
+		$t .= "  <tr class='extension8'><td class='rcaption'>Assignments &amp; conflicts:</td>
     <td id='foldass' class='fold1c'><select name='marktype' onchange='fold(\"ass\", (this.value[0] == \"x\"), 1)'>
       <option value='xauto' selected='selected'>Automatic assignments</option>
       <option value='-1' disabled='disabled'></option>

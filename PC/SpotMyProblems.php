@@ -6,7 +6,7 @@ $Me->goIfNotPC("../index.php");
 
 function spotSecondaryReviewers($howmany) {
     global $Conf, $Me;
-    $q = "select Paper.paperId, Paper.title from Paper join PaperReview as MPR on (MPR.paperId=Paper.paperId and MPR.contactId=" . $Me->contactId . " and MPR.reviewType=" . REVIEW_SECONDARY . ") left join PaperReview as SPR on (SPR.paperId=Paper.paperId and SPR.requestedBy=" . $Me->contactId . " and SPR.reviewType=" . REVIEW_REQUESTED . ")";
+    $q = "select Paper.paperId, Paper.title from Paper join PaperReview as MPR on (MPR.paperId=Paper.paperId and MPR.contactId=" . $Me->contactId . " and MPR.reviewType=" . REVIEW_SECONDARY . ") left join PaperReview as SPR on (SPR.paperId=Paper.paperId and SPR.requestedBy=" . $Me->contactId . " and SPR.reviewType=" . REVIEW_EXTERNAL . ")";
     if ($howmany == 0)
 	$q .= " where MPR.reviewModified is null and SPR.reviewId is null";
     else

@@ -104,7 +104,7 @@ list available to you as a program committee member).
 <?php 
 
 $query = "SELECT Paper.paperId, Paper.Title, ContactInfo.email "
-	. "FROM Paper join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.reviewType=" . REVIEW_REQUESTED . " and PaperReview.requestedBy=" . $_SESSION["Me"]->contactId . ")"
+	. "FROM Paper join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.reviewType=" . REVIEW_EXTERNAL . " and PaperReview.requestedBy=" . $_SESSION["Me"]->contactId . ")"
 	. " join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)"
 	. " order by Paper.paperId ";
 

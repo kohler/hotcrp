@@ -17,8 +17,8 @@ define("ROLE_REVIEWER", 100);	// does not appear in Roles table
 define("REVIEW_PRIMARY", 4);
 define("REVIEW_SECONDARY", 3);
 define("REVIEW_PC", 2);
-define("REVIEW_REQUESTED", 1);
-$reviewTypeName = array("None", "Requested", "PC", "Secondary", "Primary");
+define("REVIEW_EXTERNAL", 1);
+$reviewTypeName = array("None", "External", "PC", "Secondary", "Primary");
 
 define("OUTCOME_ACCEPTED", 1);
 define("OUTCOME_ACCEPTED_SHORT", 2);

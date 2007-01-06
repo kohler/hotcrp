@@ -555,6 +555,9 @@ pre.entryexample {
 	background: #eeeeee;
 }
 
+table.rpad1 tr td {
+	padding-right: 1em;
+}
 table.rpad tr td {
 	padding-right: 2em;
 }

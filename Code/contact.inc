@@ -939,7 +939,7 @@ and paste it into your web browser's location field.
     function assignPaper($paperId, $row, $reviewer, $type, $conf) {
 	global $reviewTypeName;
 	$reviewerContactId = (is_object($reviewer) ? $reviewer->contactId : $reviewer);
-	if ($type == 0 && $row && ($row->reviewType == REVIEW_REQUESTED || $row->reviewType == REVIEW_PC))
+	if ($type == 0 && $row && ($row->reviewType == REVIEW_EXTERNAL || $row->reviewType == REVIEW_PC))
 	    return;
 	if ($type > 0 && (!$row || !$row->reviewType))
 	    $q = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($paperId, $reviewerContactId, $type, $this->contactId, current_timestamp)";

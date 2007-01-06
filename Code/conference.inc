@@ -816,7 +816,7 @@ class Conference {
 	$pq .= "		left join PaperReview as AllReviews on (AllReviews.paperId=Paper.paperId)\n";
 
 	if (isset($options['myReviewRequests']))
-	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.requestedBy=$contactId and PaperReview.reviewType=" . REVIEW_REQUESTED . ")\n";
+	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.requestedBy=$contactId and PaperReview.reviewType=" . REVIEW_EXTERNAL . ")\n";
 	else if (isset($options['myReviews']))
 	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$contactId)\n";
 	else if (isset($options['myReviewsOpt']))
@@ -1349,9 +1349,9 @@ class Conference {
 		from PaperReview where contactId=$contactId
 		group by reviewType order by null", "while counting review requests");
 	if (!$result)
-	    $rreq = array(REVIEW_PRIMARY => '0?', REVIEW_SECONDARY => '0?', REVIEW_REQUESTED => '0?', REVIEW_PC => '0?');
+	    $rreq = array(REVIEW_PRIMARY => '0?', REVIEW_SECONDARY => '0?', REVIEW_EXTERNAL => '0?', REVIEW_PC => '0?');
 	else {
-	    $rreq = array(REVIEW_PRIMARY => 0, REVIEW_SECONDARY => 0, REVIEW_REQUESTED => 0, REVIEW_PC => 0);
+	    $rreq = array(REVIEW_PRIMARY => 0, REVIEW_SECONDARY => 0, REVIEW_EXTERNAL => 0, REVIEW_PC => 0);
 	    while ($row = edb_row($result))
 		$rreq[$row[0]] += $row[1];
 	}

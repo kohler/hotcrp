@@ -124,7 +124,7 @@ if (isset($_REQUEST['retract']) && ($retract = cvtint($_REQUEST['retract'])) > 0
 // change PC assignments
 function pcAssignments() {
     global $Conf, $Me, $prow;
-    $while = "while updating PC conflicts";
+    $while = "while updating PC assignments";
     $Conf->qe("lock tables PaperReview write, PaperConflict write, PCMember read, ContactInfo read, ActionLog write", $while);
     
     // don't record separate PC conflicts on author conflicts
@@ -150,9 +150,24 @@ function pcAssignments() {
 	    $Me->assignPaper($prow->paperId, $row, $row->contactId, $val, $Conf);
     }
 }
+
+function _setLeadOrShepherd($type) {
+    global $Conf, $Me, $prow;
+    $row = ($_REQUEST[$type] === "0" ? null : pcByEmail($_REQUEST[$type]));
+    $contactId = ($row ? $row->contactId : 0);
+    if ($contactId != ($type == "lead" ? $prow->leadContactId : $prow->shepherdContactId)) {
+	$Conf->qe("update Paper set ${type}ContactId=$contactId where paperId=$prow->paperId", "while updating $type");
+	$Conf->log("set $type to " . $_REQUEST[$type], $Me, $prow->paperId);
+    }
+}
+
 if (isset($_REQUEST['update']) && $Me->amAssistant()) {
     pcAssignments();
     $Conf->qe("unlock tables");
+    if (isset($_REQUEST["lead"]))
+	_setLeadOrShepherd("lead");
+    if (isset($_REQUEST["shepherd"]))
+	_setLeadOrShepherd("shepherd");
     getProw();
 }
 
@@ -192,7 +207,7 @@ function requestReview($email) {
 
     // at this point, we think we've succeeded.
     // store the review request
-    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($prow->paperId, $reqId, " . REVIEW_REQUESTED . ", $Me->contactId, current_timestamp)", $while);
+    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Me->contactId, current_timestamp)", $while);
     
     // send confirmation email
     $m = "Dear " . contactText($Them) . ",\n\n";
@@ -258,25 +273,6 @@ if (isset($_REQUEST['addpc']) && $Me->amAssistant()) {
 	$Me->assignPaper($prow->paperId, findRrow($pcid), $pcid, $pctype, $Conf);
     getProw();
 }
-
-
-// set lead/shepherd
-function _setLeadOrShepherd($type) {
-    global $Conf, $Me, $prow;
-    $email = defval($_REQUEST[$type], "");
-    $row = ($email === "0" ? 0 : pcByEmail($email));
-    if ($row === null)
-	$Conf->errorMsg("Suggested $type '" . htmlspecialchars($email) . "' is not a valid PC member.");
-    else {
-	$Conf->qe("update Paper set ${type}ContactId=" . ($email ? $row->contactId : 0) . " where paperId=$prow->paperId", "while updating $type");
-	$Conf->log("set $type to $email", $Me, $prow->paperId);
-	getProw();
-    }
-}
-if (isset($_REQUEST["setlead"]))
-    _setLeadOrShepherd("lead");
-if (isset($_REQUEST["setshepherd"]))
-    _setLeadOrShepherd("shepherd");
 
 
 // paper table
@@ -372,9 +368,7 @@ if ($Me->amAssistant()) {
 	    echo ", ", $numPrimary, " primary";
 	echo "</td></tr>\n";
     }
-    echo "    </table></td></tr><tr>
-      <td colspan='3'><input class='button_small' type='submit' name='update' value='Save assignments' /></td>
-    </tr>
+    echo "    </table></td></tr>
   </table></td>\n</tr>\n\n";
 }
 
@@ -382,7 +376,7 @@ if ($Me->amAssistant()) {
 // discussion lead
 function _pcSelector($name, $current) {
     global $PC;
-    echo "<select name='$name'>";
+    echo "<select name='$name' onchange='highlightUpdate()'>";
     if (!$current || !isset($PC[$current]))
 	$current = 0;
     echo "<option value='0'", ($current == 0 ? " selected='selected'" : ""), ">None</option>";
@@ -393,10 +387,9 @@ function _pcSelector($name, $current) {
 
 if ($Me->amAssistant() || ($Me->isPC && $prow->leadContactId && isset($PC[$prow->leadContactId]))) {
     echo "<tr><td class='caption'>Discussion lead</td><td class='entry'>";
-    if ($Me->amAssistant()) {
+    if ($Me->amAssistant())
 	_pcSelector("lead", $prow->leadContactId);
-	echo " &nbsp;<input type='submit' class='button_small' name='setlead' value='Set lead' />";
-    } else 
+    else
 	echo contactHtml($PC[$prow->leadContactId]->firstName,
 			 $PC[$prow->leadContactId]->lastName);
     echo "</td></tr>\n";
@@ -407,14 +400,19 @@ if ($Me->amAssistant() || ($Me->isPC && $prow->leadContactId && isset($PC[$prow-
 if (($prow->outcome > 0 && $Me->amAssistant())
     || ($Me->isPC && $prow->shepherdContactId && isset($PC[$prow->shepherdContactId]))) {
     echo "<tr><td class='caption'>Shepherd</td><td class='entry'>";
-    if ($Me->amAssistant()) {
+    if ($Me->amAssistant())
 	_pcSelector("shepherd", $prow->shepherdContactId);
-	echo " &nbsp;<input type='submit' class='button_small' name='setshepherd' value='Set shepherd' />";
-    } else 
+    else
 	echo contactHtml($PC[$prow->shepherdContactId]->firstName,
 			 $PC[$prow->shepherdContactId]->lastName);
     echo "</td></tr>\n";
 }
+
+
+// "Save assignments" button
+if ($Me->amAssistant())
+    echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='button_small' name='update' value='Save assignments' /></td></tr>\n";
+
 
 
 // reviewer information

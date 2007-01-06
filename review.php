@@ -50,7 +50,7 @@ function loadRows() {
 	    $rrow = $rr;
 	if ($rr->contactId == $Me->contactId)
 	    $myRrow = $rr;
-	if ($rr->reviewType == REVIEW_REQUESTED && $rr->requestedBy == $Me->contactId)
+	if ($rr->reviewType == REVIEW_EXTERNAL && $rr->requestedBy == $Me->contactId)
 	    $nExternalRequests++;
     }
     if (isset($_REQUEST['reviewId']) && !$rrow)

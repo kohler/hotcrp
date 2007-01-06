@@ -246,14 +246,22 @@ class PaperSearch {
 	    }
 	    if (($special ? $special == "lead" : isset($this->fields['lead'])) && $this->amPC) {
 		$this->any |= self::ANY_LEAD;
-		if ($type != "none")
+		if ($word == "none")
+		    $qp .= " or (leadInfo is null)";
+		else if ($word == "any")
+		    $qp .= " or (leadInfo is not null)";
+		else if ($type != "none")
 		    $qp .= " or (leadInfo like '%$word%')";
 		else
 		    $qp .= " or (leadInfo is not null and leadInfo like '%$word%')";
 	    }
 	    if ($special ? $special == "shepherd" : isset($this->fields['shepherd'])) {
 		$this->any |= self::ANY_SHEPHERD;
-		if ($type != "none")
+		if ($word == "none")
+		    $qp .= " or (shepherdInfo is null)";
+		else if ($word == "any")
+		    $qp .= " or (shepherdInfo is not null)";
+		else if ($type != "none")
 		    $qp .= " or (shepherdInfo like '%$word%')";
 		else
 		    $qp .= " or (shepherdInfo is not null and shepherdInfo like '%$word%')";
@@ -301,7 +309,7 @@ class PaperSearch {
 	else if ($this->limitName == "a")
 	    $q .= " join PaperConflict as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . " and Limiter.conflictType=" . CONFLICT_AUTHOR . ")";
 	else if ($this->limitName == "req")
-	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.requestedBy=" . $this->contactId . " and Limiter.reviewType=" . REVIEW_REQUESTED . ")";
+	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.requestedBy=" . $this->contactId . " and Limiter.reviewType=" . REVIEW_EXTERNAL . ")";
 
 	if ($this->any & (self::ANY_REVIEWER | self::ANY_NUM_REVIEW)) {
 	    $q .= " left join (select paperId";

@@ -152,7 +152,7 @@ class PaperTable {
 		echo "<br/>\nYou are a primary reviewer for this paper.";
 	    else if ($prow->reviewType == REVIEW_SECONDARY)
 		echo "<br/>\nYou are a secondary reviewer for this paper.";
-	    else if ($prow->reviewType == REVIEW_REQUESTED)
+	    else if ($prow->reviewType == REVIEW_EXTERNAL)
 		echo "<br/>\nYou were requested to review this paper.";
 	    else
 		echo "<br/>\nYou began a review for this paper.";
