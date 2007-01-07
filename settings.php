@@ -10,6 +10,47 @@ $SettingError = array();
 $Error = array();
 $Values = array();
 
+$SettingGroups = array("sub" => array(
+			     "sub_open" => "cdate",
+			     "sub_blind" => 2,
+			     "sub_reg" => "date",
+			     "sub_sub" => "date",
+			     "sub_grace" => "grace",
+			     "sub_pcconf" => "check",
+			     "sub_collab" => "check",
+			     "next" => "opt"),
+		       "opt" => array(
+			     "topics" => "special",
+			     "options" => "special",
+			     "next" => "rev"),
+		       "rev" => array(
+			     "rev_open" => "cdate",
+			     "rev_blind" => 2,
+			     "rev_notifychair" => "check",
+			     "pcrev_any" => "check",
+			     "pcrev_soft" => "date",
+			     "pcrev_hard" => "date",
+			     "pc_seeallrev" => "check",
+			     "tags" => "special",
+			     "extrev_soft" => "date",
+			     "extrev_hard" => "date",
+			     "extrev_view" => 2,
+			     "next" => "dec"),
+		       "dec" => array(
+			     "au_seerev" => "check",
+			     "au_seedec" => "check",
+			     "rev_seedec" => "check",
+			     "resp_open" => "check",
+			     "resp_done" => "date",
+			     "resp_grace" => "grace",
+			     "final_open" => "check",
+			     "final_done" => "date",
+			     "final_grace" => "grace"));
+
+$Group = defval($_REQUEST["group"]);
+if (!isset($SettingGroups[$Group]))
+    $Group = "sub";
+
 
 $SettingText = array(
 	"sub_open" => "Submissions open setting",
@@ -27,6 +68,7 @@ $SettingText = array(
 	"sub_collab" => "Collect collaborators setting",
 	"rev_notifychair" => "Notify chairs about reviews setting",
 	"pcrev_any" => "PC can review any paper setting",
+	"pc_seeallrev" => "PC can see all reviews setting",
 	"extrev_view" => "External reviewers can view reviewer identities setting",
 	"tag_chair" => "Chair tags",
 	"au_seerev" => "Allow authors to see reviews setting",
@@ -113,37 +155,117 @@ function parseValue($name, $type) {
     return null;
 }
 
+function doTags($set) {
+    global $Conf, $Values, $Error, $SettingError;
+    if (!$set && isset($_REQUEST["tag_chair"])) {
+	$Values["tags"] = preg_split('/\s+/', $_REQUEST["tag_chair"]);
+	foreach ($Values["tags"] as $ct)
+	    if ($ct && !checkTag($ct, false)) {
+		$Error[] = "One of the special tags contains odd characters.";
+		$SettingError["tag_chair"] = true;
+	    }
+    } else if ($set) {
+	$Conf->qe("delete from ChairTag", $while);
+	if (count($Values["tags"]) > 0) {
+	    $q = "insert into ChairTag (tag) values ";
+	    foreach ($Values["tags"] as $ct)
+		if ($ct)
+		    $q .= "('" . sqlq($ct) . "'), ";
+	    $Conf->qe(substr($q, 0, strlen($q) - 2), $while);
+	}
+    }
+}
+
+function doTopics($set) {
+    global $Conf, $Values;
+    if (!$set) {
+	$Values["topics"] = true;
+	return;
+    }
+
+    $rf = reviewForm();
+    foreach ($_REQUEST as $k => $v) {
+	if (!($k[0] == "t" && $k[1] == "o" && $k[2] == "p"))
+	    continue;
+	if ($k[3] == "n" && $v != "")
+	    $Conf->qe("insert into TopicArea (topicName) values ('" . sqlq($v) . "')", $while);
+	else if (($k = cvtint(substr($k, 3), -1)) >= 0) {
+	    if ($v == "") {
+		$Conf->qe("delete from TopicArea where topicId=$k", $while);
+		$Conf->qe("delete from PaperTopic where topicId=$k", $while);
+	    } else if (isset($rf->topicName[$k]) && $v != $rf->topicName[$k])
+		$Conf->qe("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k", $while);
+	}
+    }
+}
+
+function doOptions($set) {
+    global $Conf, $Values;
+    if (!$set) {
+	if ($Conf->setting("allowPaperOption"))
+	    $Values["options"] = true;
+	return;
+    }
+    
+    $ochange = false;
+    $anyo = false;
+    foreach (paperOptions() as $id => $o)
+	if (isset($_REQUEST["optn$id"])
+	    && ($_REQUEST["optn$id"] != $o->optionName
+		|| defval($_REQUEST["optd$id"]) != $o->description
+		|| defval($_REQUEST["optp$id"], 0) != $o->pcView)) {
+	    if ($_REQUEST["optn$id"] == "") {
+		$Conf->qe("delete from OptionType where optionId=$id", $while);
+		$Conf->qe("delete from PaperOption where optionId=$id", $while);
+	    } else {
+		$Conf->qe("update OptionType set optionName='" . sqlq($_REQUEST["optn$id"]) . "', description='" . sqlq(defval($_REQUEST["optd$id"])) . "', pcView=" . (defval($_REQUEST["optp$id"]) ? 1 : 0) . " where optionId=$id", $while);
+		$anyo = true;
+	    }
+	    $ochange = true;
+	} else
+	    $anyo = true;
+    
+    if (defval($_REQUEST["optnn"]) && $_REQUEST["optnn"] != "New option") {
+	$Conf->qe("insert into OptionType (optionName, description, pcView) values ('" . sqlq($_REQUEST["optnn"]) . "', '" . sqlq(defval($_REQUEST["optdn"], "")) . "', " . (defval($_REQUEST["optpn"]) ? 1 : 0) . ")", $while);
+	$ochange = $anyo = true;
+    }
+
+    if (!$anyo)
+	$Conf->qe("delete from Settings where name='paperOption'", $while);
+    else if ($ochange) {
+	$t = time();
+	$Conf->qe("insert into Settings (name, value) values ('paperOption', $t) on duplicate key update value=$t", $while);
+    }
+}
+
 function accountValue($name, $type) {
     global $Values;
-    $v = parseValue($name, $type);
-    if ($v === null) {
-	if ($type != "cdate" && $type != "check")
-	    return;
-	$v = 0;
+    if ($type == "special") {
+	if ($name == "tags")
+	    doTags(false);
+	else if ($name == "topics")
+	    doTopics(false);
+	else if ($name == "options")
+	    doOptions(false);
+    } else if ($name != "next") {
+	$v = parseValue($name, $type);
+	if ($v === null) {
+	    if ($type != "cdate" && $type != "check")
+		return;
+	    $v = 0;
+	}
+	if ($v <= 0 && !is_int($type))
+	    $Values[$name] = null;
+	else
+	    $Values[$name] = $v;
     }
-    if ($v <= 0 && !is_int($type))
-	$Values[$name] = null;
-    else
-	$Values[$name] = $v;
 }
 
 if (isset($_REQUEST["update"])) {
-    foreach (array("sub_reg", "sub_sub", "pcrev_soft", "pcrev_hard",
-		   "extrev_soft", "extrev_hard", "final_done", "resp_done")
-	     as $date)
-	accountValue($date, "date");
-    foreach (array("rev_notifychair", "pcrev_any", "au_seerev", "au_seedec",
-		   "final_open", "resp_open", "pc_seeallrev", "sub_pcconf",
-		   "sub_collab") as $item)
-	accountValue($item, "check");
-    accountValue("sub_grace", "grace");
-    accountValue("sub_open", "cdate");
-    accountValue("rev_open", "cdate");
-    accountValue("sub_blind", 2);
-    accountValue("rev_blind", 2);
-    accountValue("extrev_view", 2);
-    accountValue("final_grace", "grace");
-    accountValue("resp_grace", "grace");
+    // parse settings
+    $settings = $SettingGroups[$Group];
+    foreach ($settings as $name => $value)
+	accountValue($name, $value);
 
     // check date relationships
     foreach (array("sub_reg" => "sub_sub", "pcrev_soft" => "pcrev_hard",
@@ -167,21 +289,11 @@ if (isset($_REQUEST["update"])) {
     // warn on other relationships
     if (defval($Values["resp_open"], 0) > 0 && defval($Values["au_seerev"], 0) <= 0)
 	$Conf->warnMsg("You have allowed authors to respond to the reviews, but authors can't see the reviews.  This seems odd.");
-    
-    // check tags
-    if (isset($_REQUEST["tag_chair"])) {
-	$chairtags = preg_split('/\s+/', $_REQUEST["tag_chair"]);
-	foreach ($chairtags as $ct)
-	    if ($ct && !checkTag($ct, false)) {
-		$Error[] = "One of the special tags contains odd characters.";
-		$SettingError["tag_chair"] = true;
-	    }
-    }
-    
+
+    // report errors
     if (count($Error) > 0)
 	$Conf->errorMsg(join("<br/>\n", $Error));
     else if (count($Values) > 0) {
-	$rf = reviewForm();
 	$while = "updating settings";
 	$tables = "Settings write, ChairTag write, TopicArea write, PaperTopic write";
 	if ($Conf->setting("allowPaperOption"))
@@ -190,79 +302,29 @@ if (isset($_REQUEST["update"])) {
 	// alert others since we're changing settings
 	$Values['revform_update'] = time();
 
-	// first, settings
+	// apply settings
 	$dq = $aq = "";
-	foreach ($Values as $n => $v) {
-	    $dq .= " or name='$n'";
-	    if ($v !== null)
-		$aq .= ", ('$n', '" . sqlq($v) . "')";
-	}
+	foreach ($Values as $n => $v)
+	    if ($n == "tags")
+		doTags(true);
+	    else if ($n == "topics")
+		doTopics(true);
+	    else if ($n == "options")
+		doOptions(true);
+	    else {
+		$dq .= " or name='$n'";
+		if ($v !== null)
+		    $aq .= ", ('$n', '" . sqlq($v) . "')";
+	    }
 	$Conf->qe("delete from Settings where " . substr($dq, 4), $while);
 	if (strlen($aq))
 	    $Conf->qe("insert into Settings (name, value) values " . substr($aq, 2), $while);
-
-	// then, chair-only tags
-	if (isset($_REQUEST["tag_chair"])) {
-	    $Conf->qe("delete from ChairTag", $while);
-	    if (count($chairtags) > 0) {
-		$q = "insert into ChairTag (tag) values ";
-		foreach ($chairtags as $ct)
-		    if ($ct)
-			$q .= "('" . sqlq($ct) . "'), ";
-		$Conf->qe(substr($q, 0, strlen($q) - 2), $while);
-	    }
-	}
-
-	// then, paper topics
-	foreach ($_REQUEST as $k => $v) {
-	    if (!($k[0] == "t" && $k[1] == "o" && $k[2] == "p"))
-		continue;
-	    if ($k[3] == "n" && $v != "")
-		$Conf->qe("insert into TopicArea (topicName) values ('" . sqlq($v) . "')", $while);
-	    else if (($k = cvtint(substr($k, 3), -1)) >= 0) {
-		if ($v == "") {
-		    $Conf->qe("delete from TopicArea where topicId=$k", $while);
-		    $Conf->qe("delete from PaperTopic where topicId=$k", $while);
-		} else if (isset($rf->topicName[$k]) && $v != $rf->topicName[$k])
-		    $Conf->qe("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k", $while);
-	    }
-	}
-
-	// then, if appropriate, paper options
-	if ($Conf->setting("allowPaperOption")) {
-	    $ochange = false;
-	    $anyo = false;
-	    foreach (paperOptions() as $id => $o)
-		if (isset($_REQUEST["optn$id"])
-		    && ($_REQUEST["optn$id"] != $o->optionName
-			|| defval($_REQUEST["optd$id"]) != $o->description
-			|| defval($_REQUEST["optp$id"], 0) != $o->pcView)) {
-		    if ($_REQUEST["optn$id"] == "") {
-			$Conf->qe("delete from OptionType where optionId=$id", $while);
-			$Conf->qe("delete from PaperOption where optionId=$id", $while);
-		    } else {
-			$Conf->qe("update OptionType set optionName='" . sqlq($_REQUEST["optn$id"]) . "', description='" . sqlq(defval($_REQUEST["optd$id"])) . "', pcView=" . (defval($_REQUEST["optp$id"]) ? 1 : 0) . " where optionId=$id", $while);
-			$anyo = true;
-		    }
-		    $ochange = true;
-		} else
-		    $anyo = true;
-	    
-	    if (defval($_REQUEST["optnn"]) && $_REQUEST["optnn"] != "New option") {
-		$Conf->qe("insert into OptionType (optionName, description, pcView) values ('" . sqlq($_REQUEST["optnn"]) . "', '" . sqlq(defval($_REQUEST["optdn"], "")) . "', " . (defval($_REQUEST["optpn"]) ? 1 : 0) . ")", $while);
-		$ochange = $anyo = true;
-	    }
-
-	    if (!$anyo)
-		$Conf->qe("delete from Settings where name='paperOption'", $while);
-	    else if ($ochange) {
-		$t = time();
-		$Conf->qe("insert into Settings (name, value) values ('paperOption', $t) on duplicate key update value=$t", $while);
-	    }
-	}
 	
 	$Conf->qe("unlock tables", $while);
 	$Conf->updateSettings();
+
+	if ($settings["next"])
+	    $Group = $settings["next"];
     }
 }
 
@@ -271,12 +333,21 @@ if (isset($_REQUEST["update"])) {
 $Conf->header("Conference Settings");
 
 
-echo "<form method='post' action='settings.php?post=1' enctype='multipart/form-data'>\n";
+echo "<form method='post' action='settings.php?post=1' enctype='multipart/form-data'>
+<input type='hidden' name='group' value='$Group' />
+<div class='smgap'></div>\n";
+echo "<table class='center'><tr><td><div class='hgrp'>";
+foreach (array("sub" => "<b>Submissions</b>",
+	       "opt" => "Submission Options",
+	       "rev" => "<b>Reviews</b>",
+	       "dec" => "<b>Decisions</b>") as $k => $v) {
+    if ($k != "sub")
+	echo " &nbsp;&gt;&nbsp; ";
+    echo ($Group == $k ? "<a class='current'" : "<a"), " href='settings.php?group=$k'>$v</a>";
+}
+echo "</div></td></tr></table>\n";
+
 echo "<div class='smgap'></div>\n";
-echo "<table class='center'><tr><td><input type='submit' class='button' name='update' value='Save changes' /> ";
-echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />";
-echo "</td></tr></table>\n";
-echo "<table class='half'><tr><td class='l'>";
 
 
 function decorateSettingText($name, $text) {
@@ -316,7 +387,7 @@ function doRadio($name, $varr) {
 }
 
 function doDateRow($name, $text, $capclass = "rcaption") {
-    global $Conf, $Error;
+    global $Conf, $Error, $DateExplanation;
     $x = setting($name);
     if ($x === null || (count($Error) == 0 && $x <= 0))
 	$v = "N/A";
@@ -324,7 +395,12 @@ function doDateRow($name, $text, $capclass = "rcaption") {
 	$v = $Conf->parseableTime($x);
     else
 	$v = $x;
-    echo "<tr><td class='$capclass'>", decorateSettingText($name, $text), "</td><td><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='30' onchange='highlightUpdate()' /></td></tr>\n";
+    echo "<tr><td class='$capclass'>", decorateSettingText($name, $text), "</td><td><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='30' onchange='highlightUpdate()' />";
+    if (!isset($DateExplanation)) {
+	echo "<br /><small>Examples: \"now\", \"10 Dec 2006 11:59:59pm PST\"</small>";
+	$DateExplanation = true;
+    }
+    echo "</td></tr>\n";
 }
 
 function doGraceRow($name, $text, $capclass = "rcaption") {
@@ -334,166 +410,183 @@ function doGraceRow($name, $text, $capclass = "rcaption") {
     echo "</td></tr>\n";
 }
 
+
 // Submissions
-echo "<div class='bgrp'><div class='bgrp_head'>Submissions</div><div class='bgrp_body'>";
-doCheckbox('sub_open', '<b>Open site for submissions</b>');
+if ($Group == "sub") {
+    echo "<table class='halfc'><tr><td>";
+    echo "<div class='bgrp'><div class='bgrp_head'>Submissions</div><div class='bgrp_body'>";
+    doCheckbox('sub_open', '<b>Open site for submissions</b>');
 
-echo "<div class='smgap'></div>\n";
-doRadio("sub_blind", array(2 => "Blind submission", 1 => "Optionally blind submission", 0 => "Non-blind submission"));
+    echo "<div class='smgap'></div>\n";
+    doRadio("sub_blind", array(2 => "Blind submission", 1 => "Optionally blind submission", 0 => "Non-blind submission"));
 
-echo "<div class='smgap'></div>\n<table>\n";
-doDateRow("sub_reg", "Paper registration deadline");
-doDateRow("sub_sub", "Paper submission deadline");
-doGraceRow("sub_grace", 'Grace period');
-echo "</table>\n";
+    echo "<div class='smgap'></div>\n<table>\n";
+    doDateRow("sub_reg", "Paper registration deadline");
+    doDateRow("sub_sub", "Paper submission deadline");
+    doGraceRow("sub_grace", 'Grace period');
+    echo "</table>\n";
 
-echo "<div class='smgap'></div>\n";
-doCheckbox("sub_pcconf", "Collect authors' PC conflicts with checkboxes");
-doCheckbox("sub_collab", "Collect authors' potential conflicts as text");
+    echo "<div class='smgap'></div>\n";
+    doCheckbox("sub_pcconf", "Collect authors' PC conflicts with checkboxes");
+    doCheckbox("sub_collab", "Collect authors' potential conflicts as text");
 
-echo "</div></div>\n\n";
-
-
-// Paper topics
-$rf = reviewForm();
-echo "<div class='bgrp ", (count($rf->topicName) && defval($Conf->settings["sub_open"]) ? "foldc" : "foldo"), "' id='foldtopic'><div class='bgrp_head'><a href=\"javascript:fold('topic', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('topic', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;Paper topics</div><div class='bgrp_body extension'>\n";
-echo "<table>";
-$td1 = "<td class='rcaption'>Current</td>";
-foreach ($rf->topicOrder as $tid => $crap) {
-    echo "<tr>$td1<td><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($rf->topicName[$tid]), "\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
-    $td1 = "<td class='rcaption'><br /></td>";
-}
-$td1 = "<td class='rcaption'>New</td>";
-for ($i = 1; $i <= 3; $i++) {
-    echo "<tr>$td1<td><input type='text' class='textlite' name='topn$i' value=\"\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
-    $td1 = "<td class='rcaption'><br /></td>";
+    echo "</div></div></td></tr></table>\n\n";
 }
 
-echo "</table>\n";
-echo "<div class='smgap'></div>\n<small>Enter topics one per line.  Authors use checkboxes to identify the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its text.  Add topics in batches of up to 3 at a time.</small>\n";
-echo "</div></div>";
 
 
-// Paper options
-if ($Conf->setting("allowPaperOption")) {
-    echo "<div class='bgrp foldc' id='foldoption'><div class='bgrp_head'>",
-	"<a href=\"javascript:fold('option', 0)\" class='foldbutton unfolder'>+</a>",
-	"<a href=\"javascript:fold('option', 1)\" class='foldbutton folder'>&minus;</a>",
-	"&nbsp;Paper options</div><div class='bgrp_body extension'>\n";
+// Submission options
+if ($Group == "opt") {
+    $rf = reviewForm();
+    echo "<table class='half'><tr><td class='l'>";
+    echo "<div class='bgrp'><div class='bgrp_head'>Submission options</div><div class='bgrp_body'>\n";
+    if ($Conf->setting("allowPaperOption")) {
+	echo "<table>";
+	$opt = paperOptions();
+	$sep = "";
+	foreach ($opt as $o) {
+	    echo $sep;
+	    echo "<tr><td class='xcaption'>Option name</td><td><input type='text' class='textlite' name='optn$o->optionId' value=\"", htmlspecialchars($o->optionName), "\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
+	    echo "<tr><td class='xcaption'>Description</td><td><textarea class='textlite' name='optd$o->optionId' rows='2' cols='50' onchange='highlightUpdate()'>", htmlspecialchars($o->description), "</textarea></td></tr>\n";
+	    echo "<tr><td></td><td><input type='checkbox' name='optp$o->optionId' value='1'", ($o->pcView ? " checked='checked'" : ""), " />&nbsp;Visible to PC</td></tr>\n";
+	    $sep = "<tr><td></td><td><div class='smgap'></div></td></tr>\n";
+	}
+    
+	echo ($sep ? "<tr><td colspan='2'><hr /></td></tr>\n" : "");
+	
+	echo "<tr><td class='xcaption'>Option name</td><td><input type='text' class='textlite' name='optnn' value=\"New option\" size='50' onchange='highlightUpdate()' onfocus=\"tempText(this, 'New option', 1)\" onblur=\"tempText(this, 'New option', 0)\" /></td></tr>\n";
+	echo "<tr><td class='xcaption'>Description</td><td><textarea class='textlite' name='optdn' rows='2' cols='50' onchange='highlightUpdate()'></textarea></td></tr>\n";
+	echo "<tr><td></td><td><input type='checkbox' name='optpn' value='1' checked='checked' />&nbsp;Visible to PC</td></tr>\n";
+	
+	echo "</table>\n";
+	echo "<div class='smgap'></div>\n<small>Paper options are selected by authors at submission time, and might include \"Consider this paper for a Best Student Paper award\" or \"Allow the shadow PC to see this paper\".  The \"option name\" should be brief, three or four words at most; it appears as caption text to the left of the option.  The description should be longer and may use HTML.  To delete an option, delete its name.  Add options one at a time.</small>\n";
+	echo "</div></div>";
+    } else
+	echo "Not allowed in this setup</div></div>";
+    echo "</td>";
+
+
+    // Topics
+    echo "<td class='r'>";
+    echo "<div class='bgrp'><div class='bgrp_head'>Topics</div><div class='bgrp_body'>\n";
     echo "<table>";
-    $opt = paperOptions();
-    $sep = "";
-    foreach ($opt as $o) {
-	echo $sep;
-	echo "<tr><td class='xcaption'>Option name</td><td><input type='text' class='textlite' name='optn$o->optionId' value=\"", htmlspecialchars($o->optionName), "\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
-	echo "<tr><td class='xcaption'>Description</td><td><textarea class='textlite' name='optd$o->optionId' rows='2' cols='50' onchange='highlightUpdate()'>", htmlspecialchars($o->description), "</textarea></td></tr>\n";
-	echo "<tr><td></td><td><input type='checkbox' name='optp$o->optionId' value='1'", ($o->pcView ? " checked='checked'" : ""), " />&nbsp;Visible to PC</td></tr>\n";
-	$sep = "<tr><td></td><td><div class='smgap'></div></td></tr>\n";
+    $td1 = "<td class='rcaption'>Current</td>";
+    foreach ($rf->topicOrder as $tid => $crap) {
+	echo "<tr>$td1<td><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($rf->topicName[$tid]), "\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
+	$td1 = "<td class='rcaption'><br /></td>";
     }
-    
-    echo ($sep ? "<tr><td colspan='2'><hr /></td></tr>\n" : "");
-    
-    echo "<tr><td class='xcaption'>Option name</td><td><input type='text' class='textlite' name='optnn' value=\"New option\" size='50' onchange='highlightUpdate()' onfocus=\"tempText(this, 'New option', 1)\" onblur=\"tempText(this, 'New option', 0)\" /></td></tr>\n";
-    echo "<tr><td class='xcaption'>Description</td><td><textarea class='textlite' name='optdn' rows='2' cols='50' onchange='highlightUpdate()'></textarea></td></tr>\n";
-    echo "<tr><td></td><td><input type='checkbox' name='optpn' value='1' checked='checked' />&nbsp;Visible to PC</td></tr>\n";
+    $td1 = "<td class='rcaption'>New</td>";
+    for ($i = 1; $i <= 3; $i++) {
+	echo "<tr>$td1<td><input type='text' class='textlite' name='topn$i' value=\"\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
+	$td1 = "<td class='rcaption'><br /></td>";
+    }
 
     echo "</table>\n";
-    echo "<div class='smgap'></div>\n<small>Paper options are selected by authors at submission time, and might include \"Consider this paper for a Best Student Paper award\" or \"Allow the shadow PC to see this paper\".  The \"option name\" should be brief, three or four words at most; it appears as caption text to the left of the option.  The description should be longer and may use HTML.  To delete an option, delete its name.  Add options one at a time.</small>\n";
+    echo "<div class='smgap'></div>\n<small>Enter topics one per line.  Authors use checkboxes to identify the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its text.  Add topics in batches of up to 3 at a time.</small>\n";
     echo "</div></div>";
+    echo "</td></tr></table>\n";
+}
+
+
+
+// Reviews
+if ($Group == "rev") {
+    echo "<table class='halfc'><tr><td>";
+    echo "<div class='bgrp'><div class='bgrp_head'>Reviews</div><div class='bgrp_body'>";
+    doCheckbox('rev_open', '<b>Open site for reviewing</b>');
+
+    echo "<div class='smgap'></div>\n";
+    doRadio("rev_blind", array(2 => "Blind review", 1 => "Optionally blind review", 0 => "Non-blind review"));
+
+    echo "<div class='smgap'></div>\n";
+    doCheckbox('rev_notifychair', 'PC chairs are notified of new reviews by email');
+
+    echo "</div></div></td></tr></table>\n\n";
+
+
+    // PC reviews
+    echo "<table class='half'><tr><td class='l'>";
+    echo "<div class='bgrp'><div class='bgrp_head'>PC reviews</div><div class='bgrp_body'>";
+
+    doCheckbox('pcrev_any', 'PC members can review <i>any</i> submitted paper');
+
+    echo "<div class='smgap'></div>\n<table>\n";
+    doDateRow("pcrev_soft", "Soft deadline");
+    doDateRow("pcrev_hard", "Hard deadline");
+    echo "</table>\n";
+
+    echo "<div class='smgap'></div>\n<table>\n";
+    doCheckbox('pc_seeallrev', "<b>Allow PC to see all reviews</b> except for conflicts<br /><small>When unchecked, a PC member can see reviews for a paper only after submitting their own review for that paper.</small>", true);
+    echo "</table>\n";
+
+    echo "<div class='smgap'></div>\n";
+    echo "<table><tr><td class='rcaption'>", decorateSettingText("tag_chair", "Special tags"), "</td>";
+    if (count($Error) > 0)
+	$v = defval($_REQUEST["tag_chair"], "");
+    else {
+	$t = array_keys(chairTags());
+	sort($t);
+	$v = join(" ", $t);
+    }
+    echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='50' onchange='highlightUpdate()' /><br /><small>Only PC chairs can change these tags.</small></td></tr></table>";
+
+    echo "</div></div>\n\n";
+
+
+    // External reviews
+    echo "<td class='r'>";
+    echo "<div class='bgrp'><div class='bgrp_head'>External reviews</div><div class='bgrp_body'>";
+
+    echo "<table>\n";
+    doDateRow("extrev_soft", "Soft deadline");
+    doDateRow("extrev_hard", "Hard deadline");
+    echo "</table>\n";
+
+    echo "<div class='smgap'></div>";
+    echo "Can external reviewers view the other reviews for their assigned papers, once they've submitted their own?<br />\n";
+    doRadio("extrev_view", array(0 => "No", 2 => "Yes", 1 => "Yes, but they can't see who wrote the reviews"));
+
+    echo "</div></div></td></tr></table>\n\n";
 }
 
 
 // Responses and decisions
-echo "<div class='bgrp'><div class='bgrp_head'>Decisions</div><div class='bgrp_body'>";
-doCheckbox('au_seerev', '<b>Allow authors to see reviews</b>');
+if ($Group == "dec") {
+    echo "<table class='halfc'><tr><td>";
+    echo "<div class='bgrp'><div class='bgrp_head'>Decisions</div><div class='bgrp_body'>";
+    doCheckbox('au_seerev', '<b>Allow authors to see reviews</b>');
 
-echo "<div class='smgap'></div>\n<table>";
-doCheckbox('resp_open', '<b>Collect responses to the reviews:</b>', true);
-echo "<tr><td></td><td><table>";
-doDateRow('resp_done', 'Deadline', "xcaption");
-doGraceRow('resp_grace', 'Grace period', "xcaption");
-echo "</table></td></tr></table>";
+    echo "<div class='smgap'></div>\n<table>";
+    doCheckbox('resp_open', '<b>Collect responses to the reviews:</b>', true);
+    echo "<tr><td></td><td><table>";
+    doDateRow('resp_done', 'Deadline', "xcaption");
+    doGraceRow('resp_grace', 'Grace period', "xcaption");
+    echo "</table></td></tr></table>";
 
-echo "<div class='smgap'></div>\n";
-doCheckbox('au_seedec', '<b>Allow authors to see decisions</b> (accept/reject)');
-doCheckbox('rev_seedec', 'Allow reviewers to see decisions and accepted authors');
-
-echo "</div></div>\n\n";
-
-
-// Final copies
-echo "<div class='bgrp'><div class='bgrp_head'>Final copies</div><div class='bgrp_body'>";
-echo "<table>";
-doCheckbox('final_open', '<b>Collect final copies of accepted papers:</b>', true);
-echo "<tr><td></td><td><table>";
-doDateRow("final_done", "Deadline", "xcaption");
-doGraceRow("final_grace", "Grace period", "xcaption");
-echo "</table></td></tr></table></div></div>\n\n";
+    echo "<div class='smgap'></div>\n";
+    doCheckbox('au_seedec', '<b>Allow authors to see decisions</b> (accept/reject)');
+    doCheckbox('rev_seedec', 'Allow reviewers to see decisions and accepted authors');
+    
+    echo "</div></div>\n\n";
 
 
-echo "</td><td class='r'>";
-
-
-// Reviews
-echo "<div class='bgrp'><div class='bgrp_head'>Reviews</div><div class='bgrp_body'>";
-doCheckbox('rev_open', '<b>Open site for reviewing</b>');
-
-echo "<div class='smgap'></div>\n";
-doRadio("rev_blind", array(2 => "Blind review", 1 => "Optionally blind review", 0 => "Non-blind review"));
-
-echo "<div class='smgap'></div>\n";
-doCheckbox('rev_notifychair', 'PC chairs are notified of new reviews by email');
-
-echo "<div class='smgap'></div>\n<table>\n";
-doCheckbox('pc_seeallrev', "<b>Allow PC to see all reviews</b> except for conflicts<br /><small>When unchecked, a PC member can see reviews for a paper only after submitting their own review for that paper.</small>", true);
-echo "</table>\n";
-
-echo "</div></div>\n\n";
-
-
-// PC reviews
-echo "<div class='bgrp'><div class='bgrp_head'>PC reviews</div><div class='bgrp_body'>";
-
-doCheckbox('pcrev_any', 'PC members can review <i>any</i> submitted paper');
-
-echo "<div class='smgap'></div>\n<table>\n";
-doDateRow("pcrev_soft", "Soft deadline");
-doDateRow("pcrev_hard", "Hard deadline");
-echo "</table>\n";
-
-echo "</div></div>\n\n";
-
-
-// External reviews
-echo "<div class='bgrp'><div class='bgrp_head'>External reviews</div><div class='bgrp_body'>";
-
-echo "<table>\n";
-doDateRow("extrev_soft", "Soft deadline");
-doDateRow("extrev_hard", "Hard deadline");
-echo "</table>\n";
-
-echo "<div class='smgap'></div>";
-echo "Can external reviewers view the other reviews for their assigned papers, once they've submitted their own?<br />\n";
-doRadio("extrev_view", array(0 => "No", 2 => "Yes", 1 => "Yes, but they can't see who wrote the reviews"));
-
-echo "</div></div>\n\n";
-
-
-// Tags
-echo "<div class='bgrp'><div class='bgrp_head'>Tags</div><div class='bgrp_body'>";
-echo "<table><tr><td class='rcaption'>", decorateSettingText("tag_chair", "Special tags"), "</td>";
-if (count($Error) > 0)
-    $v = defval($_REQUEST["tag_chair"], "");
-else {
-    $t = array_keys(chairTags());
-    sort($t);
-    $v = join(" ", $t);
+    // Final copies
+    echo "<div class='bgrp'><div class='bgrp_head'>Final copies</div><div class='bgrp_body'>";
+    echo "<table>";
+    doCheckbox('final_open', '<b>Collect final copies of accepted papers:</b>', true);
+    echo "<tr><td></td><td><table>";
+    doDateRow("final_done", "Deadline", "xcaption");
+    doGraceRow("final_grace", "Grace period", "xcaption");
+    echo "</table></td></tr></table></div></div></td></tr></table>\n\n";
 }
-echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='50' onchange='highlightUpdate()' /><br /><small>Only PC chairs can change these tags.</small></td></tr></table>";
-echo "</div></div>\n\n";
 
 
-echo "</td></tr></table>\n</form>\n";
+echo "<div class='smgap'></div>\n";
+echo "<table class='center'><tr><td><input type='submit' class='button' name='update' value='Save changes' /> ";
+echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />";
+echo "</td></tr></table>\n";
+
+echo "</form>\n";
 
 
 if ($Me->amAssistant()) {

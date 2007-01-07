@@ -81,10 +81,13 @@ table.vubar .tab_default {
 	color: #000000;
 	font-weight: bold;
 }
-.tab a, td.listlinks a, div#header_left a {
+.tab a, td.listlinks a, div#header_left a, a.current {
 	text-decoration: none;
 }
-.tab a:hover, td.listlinks a:hover, div#header_left a:hover {
+a.current {
+	color: #000000;
+}
+.tab a:hover, td.listlinks a:hover, div#header_left a:hover, a.current:hover {
 	text-decoration: underline;
 }
 
@@ -254,6 +257,11 @@ div.bgrp div.bgrp_head {
 div.bgrp div.bgrp_body {
 	padding: 4px 6px;
 	border: 2px solid #d8deff;
+}
+div.hgrp {
+	padding: 4px 6px;
+	border: 2px solid #e6cbc1;
+	background: #fff3ef;
 }
 table.center {
 	margin-left: auto;
