@@ -1,12 +1,6 @@
 <?php 
-require_once('../Code/header.inc');
-$Me = $_SESSION["Me"];
-$Me->goIfInvalid();
-$Me->goIfNotChair('../');
-$Conf->header("Edit Review Form");
-$rf = reviewForm();
 
-function checkOptions(&$var, &$options, &$order) {
+function rf_checkOptions(&$var, &$options, &$order) {
     if (!isset($var))
 	return false;
     $var = str_replace("\r\n", "\n", $var);
@@ -29,40 +23,46 @@ function checkOptions(&$var, &$options, &$order) {
     return ($expect >= 2 || (isset($order) && cvtint($order) < 0));
 }
 
-if (isset($_REQUEST['loadsample']) && isset($_REQUEST['sample'])) {
-    require_once('sampleforms.inc');
-    if ($_REQUEST['sample'] == 'sigcomm2005')
-	sigcomm2005Form();
-    else if ($_REQUEST['sample'] == 'worlds2005')
-	worlds2005Form();
-    else if ($_REQUEST['sample'] == 'cgo2004')
-	cgo36Form();
-    else if ($_REQUEST['sample'] == 'hotnetsv')
-	hotnetsVForm();
-    else if ($_REQUEST['sample'] == 'none')
-	noForm();
-    else {
-	$Conf->errorMsg("unknown sample form");
-	$_REQUEST['sample'] = 'none';
-    }
-} else if (isset($_REQUEST['cancel'])) {
-    require_once('sampleforms.inc');
-    noForm();
-    $_REQUEST['sample'] = 'none';
-} else
-    $_REQUEST['sample'] = 'none';
+function rf_update($lock) {
+    global $Conf, $reviewFields, $rf, $Error;
     
-if (isset($_REQUEST['update'])) {
+    if (isset($_REQUEST['loadsample']) && isset($_REQUEST['sample'])) {
+	require_once('sampleforms.inc');
+	if ($_REQUEST['sample'] == 'sigcomm2005')
+	    sigcomm2005Form();
+	else if ($_REQUEST['sample'] == 'worlds2005')
+	    worlds2005Form();
+	else if ($_REQUEST['sample'] == 'cgo2004')
+	    cgo36Form();
+	else if ($_REQUEST['sample'] == 'hotnetsv')
+	    hotnetsVForm();
+	else if ($_REQUEST['sample'] == 'none')
+	    noForm();
+	else {
+	    $Conf->errorMsg("unknown sample form");
+	    $_REQUEST['sample'] = 'none';
+	}
+    } else if (isset($_REQUEST['cancel'])) {
+	require_once('sampleforms.inc');
+	noForm();
+	$_REQUEST['sample'] = 'none';
+    } else
+	$_REQUEST['sample'] = 'none';
+
+    if (!isset($_REQUEST['update']))
+	return;
+    
     $while = "while updating review form";
     $scoreModified = array();
-    $Conf->qe("lock tables ReviewFormField write, PaperReview write, ReviewFormOptions write");
+    if ($lock)
+	$Conf->qe("lock tables ReviewFormField write, PaperReview write, ReviewFormOptions write");
     
     foreach (array_keys($reviewFields) as $field) {
 	$req = '';
 	if (isset($_REQUEST["shortName_$field"])) {
 	    $sn = trim($_REQUEST["shortName_$field"]);
 	    if ($sn == "" || $sn == "<None>") {
-		$FormError[$field] = 1;
+		$Error[$field] = 1;
 		$shortNameError = true;
 		$sn = "<None>";
 	    }
@@ -77,7 +77,7 @@ if (isset($_REQUEST['update'])) {
 	if (isset($_REQUEST["order_$field"]))
 	    $req .= "sortOrder='" . cvtint($_REQUEST["order_$field"]) . "', ";
 	if ($reviewFields[$field]) {
-	    if (checkOptions($_REQUEST["options_$field"], $options, $_REQUEST["order_$field"])) {
+	    if (rf_checkOptions($_REQUEST["options_$field"], $options, $_REQUEST["order_$field"])) {
 		$Conf->qe("delete from ReviewFormOptions where fieldName='" . sqlq($field) . "'", $while);
 		$optext = "";
 		for ($i = 1; $i <= count($options); $i++)
@@ -92,7 +92,7 @@ if (isset($_REQUEST['update'])) {
 		unset($_REQUEST["options_$field"]);
 		$updates = 1;
 	    } else {
-		$FormError[$field] = 1;
+		$Error[$field] = 1;
 		$optionError = 1;
 		continue;
 	    }
@@ -116,10 +116,11 @@ if (isset($_REQUEST['update'])) {
     if (count($scoreModified))
 	$Conf->warnMsg("Your changes invalidated some existing review scores.  The invalid scores have been reset to \"Unknown\".  The relevant fields were: " . join(", ", $scoreModified) . ".");
 
-    $Conf->qe("unlock tables");
+    if ($lock)
+	$Conf->qe("unlock tables");
 
     // alert consumers of change to form
-    if (isset($updates)) {
+    if ($lock && isset($updates)) {
 	$t = time();
 	$Conf->qe("insert into Settings (name, value) values ('revform_update', $t) on duplicate key update value=$t");
 	$Conf->confirmMsg("Review form updated.");
@@ -127,8 +128,7 @@ if (isset($_REQUEST['update'])) {
     }
 }
 
-
-function getField($row, $name, $ordinalOrder = null) {
+function rf_getField($row, $name, $ordinalOrder = null) {
     if (isset($_REQUEST["${name}_$row->fieldName"]))
 	return $_REQUEST["${name}_$row->fieldName"];
     else if ($ordinalOrder === null)
@@ -137,8 +137,8 @@ function getField($row, $name, $ordinalOrder = null) {
 	return $ordinalOrder;
 }
 
-function formFieldText($row, $ordinalOrder, $numRows) {
-    global $rf, $reviewFields, $FormError, $rowidx, $captions;
+function rf_formFieldText($row, $ordinalOrder, $numRows) {
+    global $rf, $reviewFields, $Error, $rowidx, $captions;
 
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
     $trclass = "tr class='k" . ($rowidx % 2) . "'";
@@ -146,10 +146,10 @@ function formFieldText($row, $ordinalOrder, $numRows) {
     
     // field name
     $x .= "<$trclass><td colspan='4' class='";
-    if ($FormError[$row->fieldName])
-	$x .= "error ";
+    if (isset($Error[$row->fieldName]))
+	$x .= "error";
     $x .= "'>&nbsp;<b><input type='text' size='50' class='textlite' name='shortName_$row->fieldName' value=\""
-	. htmlspecialchars(getField($row, 'shortName'))
+	. htmlspecialchars(rf_getField($row, 'shortName'))
 	. "\" onchange='highlightUpdate()' /></b></td></tr>\n";
 
     // form position
@@ -172,14 +172,14 @@ function formFieldText($row, $ordinalOrder, $numRows) {
     $fname = $row->fieldName;
     if (isset($_REQUEST["shortName_$fname"]) && !isset($_REQUEST["authorView_$fname"]))
 	$_REQUEST["authorView_$fname"] = 0;
-    if (getField($row, 'authorView') > 0)
+    if (rf_getField($row, 'authorView') > 0)
 	$x .= "checked='checked' ";
     $x .= "/>&nbsp;Visible&nbsp;to&nbsp;authors<td></tr>\n";
 
     // description
     $x .= "<$trclass><td class='xcaption'>Description</td>"
 	. "<td class='entry'><textarea name='description_$row->fieldName' rows='6' cols='80' onchange='highlightUpdate()'>"
-	. htmlentities(getField($row, 'description'))
+	. htmlentities(rf_getField($row, 'description'))
 	. "</textarea></td>";
     if (isset($captions['description'])) {
 	$x .= "<td class='hint'>" . $captions['description'] . "</td>";
@@ -196,7 +196,7 @@ function formFieldText($row, $ordinalOrder, $numRows) {
 	    for ($i = 1; $i <= count($rf->options[$row->fieldName]); $i++)
 		$y .= "$i. " . $rf->options[$row->fieldName][$i] . "\n";
 	}
-	$x .= htmlentities(getField($row, 'options', $y))
+	$x .= htmlentities(rf_getField($row, 'options', $y))
 	    . "</textarea></td>";
 	if (isset($captions['options'])) {
 	    $x .= "<td class='hint'>" . $captions['options'] . "</td>";
@@ -209,17 +209,16 @@ function formFieldText($row, $ordinalOrder, $numRows) {
     return $x . "<$trclass><td colspan='4'><div class='tinygap'></div></td></tr>\n";
 }
 
-$result = $Conf->qe("select * from ReviewFormField", "while loading review form");
-if (!$result) {
-    $Conf->footer();
-    exit;
-}
+function rf_show() {
+    global $Conf, $captions;
+    $result = $Conf->qe("select * from ReviewFormField", "while loading review form");
+    if (!$result)
+	return;
 
-
-$captions = array
-    ("description" => "Enter an HTML description for the review	field here,
+    $captions = array
+	("description" => "Enter an HTML description for the review field here,
 	including any guidance you'd like to provide to reviewers and authors.",
-     "options" => "Enter the allowed options for this field, one per line,
+	 "options" => "Enter the allowed options for this field, one per line,
 	numbered starting from 1.  For example:
 	<pre class='entryexample'>1. Reject
 2. Weak reject
@@ -227,57 +226,68 @@ $captions = array
 4. Accept</pre>");
 
 
-
-echo "<form action='SetReviewForm.php' method='post'>
-
-<table class='center'><tr><td><b>Sample review forms:</b>&nbsp;
+    echo "<table class='center'><tr><td><div class='hgrp'><b>Sample review forms:</b>&nbsp;
 <select name='sample'>";
-foreach (array("none" => "Current form",
-	       "hotnetsv" => "HotNets V workshop",
-	       "sigcomm2005" => "SIGCOMM 2005",
-	       "worlds2005" => "WORLDS 2005 workshop",
-	       "cgo2004" => "CGO 2004 conference") as $k => $v) {
-    echo "<option value='$k'";
-    if ($k == $_REQUEST['sample'])
-	echo " selected='selected'";
-    echo ">$v</option>";
-}
-echo "</select> &nbsp;
-<input type='submit' class='button' name='loadsample' value='Go' /></td></tr></table>
+    foreach (array("none" => "Current form",
+		   "hotnetsv" => "HotNets V workshop",
+		   "sigcomm2005" => "SIGCOMM 2005",
+		   "worlds2005" => "WORLDS 2005 workshop",
+		   "cgo2004" => "CGO 2004 conference") as $k => $v) {
+	echo "<option value='$k'";
+	if ($k == $_REQUEST['sample'])
+	    echo " selected='selected'";
+	echo ">$v</option>";
+    }
+    echo "</select> &nbsp;
+<input type='submit' class='button' name='loadsample' value='Go' /></div></td></tr></table>
 
-<hr />
+<div class='smgap'></div>
 
 <table class='center'><tr><td><input type='submit' class='button",
-    ($_REQUEST['sample'] == 'none' ? "" : "_alert"),
-    "' name='update' value='Save changes' />
-    <input type='submit' class='button' name='cancel' value='Cancel' /></td></tr></table>
+    (defval($_REQUEST["sample"], "none") == "none" ? "" : "_alert"),
+	"' name='update' value='Save changes' />
+&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' /></td></tr></table>
+
+<div class='smgap'></div>
 
 <table class='setreviewform'>\n";
 
-$out = array();
-while ($row = edb_orow($result)) {
-    $order = defval($_REQUEST["order_$row->fieldName"], $row->sortOrder);
-    if ($order < 0)
-	$order = 100;
-    $sn = defval($_REQUEST["shortName_$row->fieldName"], $row->shortName);
-    $out[sprintf("%03d.%s", $order, strtolower($sn))] = $row;
+    $out = array();
+    while ($row = edb_orow($result)) {
+	$order = defval($_REQUEST["order_$row->fieldName"], $row->sortOrder);
+	if ($order < 0)
+	    $order = 100;
+	$sn = defval($_REQUEST["shortName_$row->fieldName"], $row->shortName);
+	$out[sprintf("%03d.%s", $order, strtolower($sn))] = $row;
+    }
+
+    ksort($out);
+    $ordinalOrder = 0;
+    foreach ($out as $row) {
+	$order = defval($_REQUEST["order_$row->fieldName"], $row->sortOrder);
+	if ($order >= 0)
+	    $order = $ordinalOrder++;
+	echo rf_formFieldText($row, $order, count($out));
+    }
+
+    echo "</table>\n";
 }
 
-ksort($out);
-$ordinalOrder = 0;
-foreach ($out as $row) {
-    $order = defval($_REQUEST["order_$row->fieldName"], $row->sortOrder);
-    if ($order >= 0)
-	$order = $ordinalOrder++;
-    echo formFieldText($row, $order, count($out));
-}
 
-echo "</table>
-
-<table class='center'><tr><td><input type='submit' class='button' name='update' value='Save changes' />
+if (!isset($Me)) {
+    require_once('../Code/header.inc');
+    $Me = $_SESSION["Me"];
+    $Me->goIfInvalid();
+    $Me->goIfNotChair('../');
+    $Conf->header("Edit Review Form");
+    $rf = reviewForm();
+    rf_update(true);
+    echo "<form action='SetReviewForm.php' method='post'>
+<div class='smgap'></div>\n";
+    rf_show();
+    echo "<table class='center'><tr><td><input type='submit' class='button' name='update' value='Save changes' />
     <input type='submit' class='button' name='cancel' value='Cancel' /></td></tr></table>
 
 </form>\n";
-
-
-$Conf->footer();
+    $Conf->footer();
+}

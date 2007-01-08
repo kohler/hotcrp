@@ -1,7 +1,6 @@
 <?php 
 require_once('Code/header.inc');
 require_once('Code/tags.inc');
-require_once('Code/review.inc');
 require_once('Code/Calendar.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
@@ -9,6 +8,7 @@ $Me->goIfNotChair('index.php');
 $SettingError = array();
 $Error = array();
 $Values = array();
+$rf = reviewForm();
 
 $SettingGroups = array("sub" => array(
 			     "sub_open" => "cdate",
@@ -35,6 +35,9 @@ $SettingGroups = array("sub" => array(
 			     "extrev_soft" => "date",
 			     "extrev_hard" => "date",
 			     "extrev_view" => 2,
+			     "next" => "rfo"),
+		       "rfo" => array(
+			     "reviewform" => "special",
 			     "next" => "dec"),
 		       "dec" => array(
 			     "au_seerev" => "check",
@@ -43,6 +46,7 @@ $SettingGroups = array("sub" => array(
 			     "resp_open" => "check",
 			     "resp_done" => "date",
 			     "resp_grace" => "grace",
+			     "decisions" => "special",
 			     "final_open" => "check",
 			     "final_done" => "date",
 			     "final_grace" => "grace"));
@@ -50,6 +54,8 @@ $SettingGroups = array("sub" => array(
 $Group = defval($_REQUEST["group"]);
 if (!isset($SettingGroups[$Group]))
     $Group = "sub";
+if ($Group == "rfo")
+    require_once("Chair/SetReviewForm.php");
 
 
 $SettingText = array(
@@ -177,13 +183,12 @@ function doTags($set) {
 }
 
 function doTopics($set) {
-    global $Conf, $Values;
+    global $Conf, $Values, $rf;
     if (!$set) {
 	$Values["topics"] = true;
 	return;
     }
 
-    $rf = reviewForm();
     foreach ($_REQUEST as $k => $v) {
 	if (!($k[0] == "t" && $k[1] == "o" && $k[2] == "p"))
 	    continue;
@@ -238,16 +243,60 @@ function doOptions($set) {
     }
 }
 
+function doDecisions($set) {
+    global $Conf, $Values, $rf;
+    if (!$set) {
+	$Values["decisions"] = true;
+	return;
+    }
+
+    // mark all used decisions
+    $while = "while updating decisions";
+    $dec = $rf->options["outcome"];
+    $update = false;
+    foreach ($_REQUEST as $k => $v)
+	if ($k[0] == "d" && $k[1] == "e" && $k[2] == "c"
+	    && ($k = cvtint(substr($k, 3), 0)) != 0) {
+	    if ($v == "") {
+		$Conf->qe("delete from ReviewFormOptions where fieldName='outcome' and level=$k", $while);
+		$Conf->qe("update Paper set outcome=0 where outcome=$k", $while);
+	    } else if ($v != $dec[$k])
+		$Conf->qe("update ReviewFormOptions set description='" . sqlq($v) . "' where fieldName='outcome' and level=$k", $while);
+	}
+
+    if (defval($_REQUEST["decn"], "") != "") {
+	$delta = (defval($_REQUEST["dtypn"], 1) > 0 ? 1 : -1);
+	for ($k = $delta; true; $k += $delta)
+	    if (!isset($dec[$k]))
+		break;
+	
+	$Conf->qe("insert into ReviewFormOptions set fieldName='outcome', level=$k, description='" . sqlq($_REQUEST["decn"]) . "'");
+    }
+}
+
+function doSpecial($name, $set) {
+    global $Values;
+    if ($name == "tags")
+	doTags($set);
+    else if ($name == "topics")
+	doTopics($set);
+    else if ($name == "options")
+	doOptions($set);
+    else if ($name == "decisions")
+	doDecisions($set);
+    else if ($name == "reviewform") {
+	if (!$set)
+	    $Values["reviewform"] = true;
+	else
+	    rf_update(false);
+    }
+}
+
 function accountValue($name, $type) {
     global $Values;
-    if ($type == "special") {
-	if ($name == "tags")
-	    doTags(false);
-	else if ($name == "topics")
-	    doTopics(false);
-	else if ($name == "options")
-	    doOptions(false);
-    } else if ($name != "next") {
+    if ($type == "special")
+	doSpecial($name, false);
+    else if ($name != "next") {
 	$v = parseValue($name, $type);
 	if ($v === null) {
 	    if ($type != "cdate" && $type != "check")
@@ -298,6 +347,16 @@ if (isset($_REQUEST["update"])) {
 	$tables = "Settings write, ChairTag write, TopicArea write, PaperTopic write";
 	if ($Conf->setting("allowPaperOption"))
 	    $tables .= ", OptionType write, PaperOption write";
+	if (isset($Values['decisions']) || isset($Values['reviewform']))
+	    $tables .= ", ReviewFormOptions write";
+	else
+	    $tables .= ", ReviewFormOptions read";
+	if (isset($Values['decisions']))
+	    $tables .= ", Paper write";
+	if (isset($Values['reviewform']))
+	    $tables .= ", ReviewFormField write, PaperReview write";
+	else
+	    $tables .= ", ReviewFormField read";
 	$Conf->qe("lock tables $tables", $while);
 	// alert others since we're changing settings
 	$Values['revform_update'] = time();
@@ -305,12 +364,8 @@ if (isset($_REQUEST["update"])) {
 	// apply settings
 	$dq = $aq = "";
 	foreach ($Values as $n => $v)
-	    if ($n == "tags")
-		doTags(true);
-	    else if ($n == "topics")
-		doTopics(true);
-	    else if ($n == "options")
-		doOptions(true);
+	    if (defval($settings[$n]) == "special")
+		doSpecial($n, true);
 	    else {
 		$dq .= " or name='$n'";
 		if ($v !== null)
@@ -322,15 +377,17 @@ if (isset($_REQUEST["update"])) {
 	
 	$Conf->qe("unlock tables", $while);
 	$Conf->updateSettings();
+	$rf->validate($Conf, true);
 
-	if ($settings["next"])
+	if ($settings["next"] && count($Error) == 0)
 	    $Group = $settings["next"];
     }
-}
+} else if ($Group == "rfo")
+    rf_update(false);
 
 
 // header and script
-$Conf->header("Conference Settings");
+$Conf->header("Conference Settings", "settings", actionBar());
 
 
 echo "<form method='post' action='settings.php?post=1' enctype='multipart/form-data'>
@@ -338,8 +395,9 @@ echo "<form method='post' action='settings.php?post=1' enctype='multipart/form-d
 <div class='smgap'></div>\n";
 echo "<table class='center'><tr><td><div class='hgrp'>";
 foreach (array("sub" => "<b>Submissions</b>",
-	       "opt" => "Submission Options",
+	       "opt" => "Submission options",
 	       "rev" => "<b>Reviews</b>",
+	       "rfo" => "Review form",
 	       "dec" => "<b>Decisions</b>") as $k => $v) {
     if ($k != "sub")
 	echo " &nbsp;&gt;&nbsp; ";
@@ -437,7 +495,6 @@ if ($Group == "sub") {
 
 // Submission options
 if ($Group == "opt") {
-    $rf = reviewForm();
     echo "<table class='half'><tr><td class='l'>";
     echo "<div class='bgrp'><div class='bgrp_head'>Submission options</div><div class='bgrp_body'>\n";
     if ($Conf->setting("allowPaperOption")) {
@@ -459,7 +516,7 @@ if ($Group == "opt") {
 	echo "<tr><td></td><td><input type='checkbox' name='optpn' value='1' checked='checked' />&nbsp;Visible to PC</td></tr>\n";
 	
 	echo "</table>\n";
-	echo "<div class='smgap'></div>\n<small>Paper options are selected by authors at submission time, and might include \"Consider this paper for a Best Student Paper award\" or \"Allow the shadow PC to see this paper\".  The \"option name\" should be brief, three or four words at most; it appears as caption text to the left of the option.  The description should be longer and may use HTML.  To delete an option, delete its name.  Add options one at a time.</small>\n";
+	echo "<div class='smgap'></div>\n<small>Options are selected by authors at submission time, and might include \"Consider this paper for a Best Student Paper award\" or \"Allow the shadow PC to see this paper\".  The \"option name\" should be brief, three or four words at most; it appears as caption text to the left of the option.  The description should be longer and may use HTML.  To delete an option, delete its name.  Add options one at a time.</small>\n";
 	echo "</div></div>";
     } else
 	echo "Not allowed in this setup</div></div>";
@@ -550,6 +607,13 @@ if ($Group == "rev") {
 }
 
 
+// Review form
+if ($Group == "rfo") {
+    require_once("Chair/SetReviewForm.php");
+    rf_show();
+}
+
+
 // Responses and decisions
 if ($Group == "dec") {
     echo "<table class='halfc'><tr><td>";
@@ -566,6 +630,20 @@ if ($Group == "dec") {
     echo "<div class='smgap'></div>\n";
     doCheckbox('au_seedec', '<b>Allow authors to see decisions</b> (accept/reject)');
     doCheckbox('rev_seedec', 'Allow reviewers to see decisions and accepted authors');
+
+    echo "<div class='smgap'></div>\n";
+    echo "<table>\n";
+    $decs = $rf->options['outcome'];
+    krsort($decs);
+    $lastdec = "Current decision types<br />";
+    foreach ($decs as $k => $v)
+	if ($k) {
+	    echo "<tr><td class='rcaption'>$lastdec</td><td>";
+	    echo "<input type='text' class='textlite' name='dec$k' value=\"", htmlspecialchars($v), "\" size='35' /> &nbsp; ", ($k > 0 ? "Accept" : "Reject"), "</td></tr>\n";
+	    $lastdec = "<br />";
+	}
+    echo "<tr><td class='rcaption'>New decision type<br /></td><td><input type='text' class='textlite' name='decn' value=\"\" size='35' /> &nbsp; <select name='dtypn'><option value='1' selected='selected'>Accept</option><option value='-1'>Reject</option></select></td></tr>\n";
+    echo "</table>\n";
     
     echo "</div></div>\n\n";
 
@@ -582,7 +660,9 @@ if ($Group == "dec") {
 
 
 echo "<div class='smgap'></div>\n";
-echo "<table class='center'><tr><td><input type='submit' class='button' name='update' value='Save changes' /> ";
+echo "<table class='center'><tr><td><input type='submit' class='button",
+    (defval($_REQUEST["sample"], "none") == "none" ? "" : "_alert"),
+    "' name='update' value='Save changes' /> ";
 echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />";
 echo "</td></tr></table>\n";
 
@@ -592,11 +672,6 @@ echo "</form>\n";
 if ($Me->amAssistant()) {
     echo "<p><a href='Chair/ShowCalendar.php' target='_blank'>Show calendar</a> &mdash;
 <a href='http://www.php.net/manual/en/function.strtotime.php' target='_blank'>How to specify a date</a></p>\n";
-
-    //crp_showdate('reviewerViewDecision');
-    //crp_showdate('PCGradePapers');
-    //crp_showdate('PCMeetingView');
-    //crp_showdate('EndOfTheMeeting');
 }
 
 $Conf->footer();

@@ -67,7 +67,6 @@ if ($Me->amAssistant()) {
     echo "<div class='bgrp'><div class='bgrp_head'>Conference settings</div><div class='bgrp_body'>
 <table class='half'><tr><td class='l'><ul class='compact'>
 <li><a href='settings.php'>Conference settings</a></li>
-<li><a href='Chair/SetReviewForm.php'>Review form</a></li>
 </ul></td><td class='r'><ul class='compact'>
 <li><a href='pc.php'>Program committee</a></li>
 </ul></td></tr></table></div></div>";

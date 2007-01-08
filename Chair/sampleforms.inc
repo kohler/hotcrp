@@ -29,6 +29,7 @@ function unsetWholeField($field) {
     unset($_REQUEST["order_$field"]);
     unset($_REQUEST["authorView_$field"]);
     unset($_REQUEST["description_$field"]);
+    unset($_REQUEST["options_$field"]);
 }
 
 function loadedForm($conf) {
