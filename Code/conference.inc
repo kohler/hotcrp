@@ -419,7 +419,7 @@ class Conference {
 	    $contacts[] = $c = contactText($row[0], $row[1]);
 	    $m = "Dear $c,\n\n" . $message;
 	    if ($this->allowEmailTo($row[2]))
-		mail(contactEmailTo($row), $subject, $m, "From: $Conf->emailFrom");
+		mail(contactEmailTo($row), $subject, $m, "From: $this->emailFrom");
 	    else
 		$this->infoMsg("<pre>" . htmlspecialchars($subject) . "\n\n" . htmlspecialchars($m) . "</pre>");
 	}
@@ -446,7 +446,7 @@ class Conference {
 		    $recipients[] = contactEmailTo($row);
 	    }
 	    if (count($recipients))
-		mail(join(", ", $recipients), $subject, $m, "From: $Conf->emailFrom\nCc: $Conf->contactName <$Conf->contactEmail>");
+		mail(join(", ", $recipients), $subject, $m, "From: $this->emailFrom\nCc: $this->contactName <$this->contactEmail>");
 	    else if (count($reviewers))
 		$this->infoMsg("<pre>" . htmlspecialchars(join(", ", $recipients)) . "\n\n" . htmlspecialchars($subject) . "\n\n" . htmlspecialchars($m) . "</pre>");
 	    if ($prow->conflictType < CONFLICT_AUTHOR && count($reviewers) && $Me->amAssistant())
@@ -1288,38 +1288,6 @@ class Conference {
 	  $retval = $retval . "#$row[0] - $row[1]\n\n";
       }
       return "\nYou have $i papers on file. They are listed below\n" . $retval;
-    }
-
-  function sendPaperStartNotice($email, $paperId, $title) {
-      $message = "This is a confirmation notice that you've started\n"
-	. " the submission process for your paper, #$paperId, titled\n"
-	. " $title\n"
-	. "\n"
-	. "Remember that you still need to submit your final copy and\n"
-	. "finalize your paper before it can be reviewed.\n";
-	//. "You have the following papers on record\n";
-
-      if ($this->allowEmailTo($email))
-	  mail($email,
-	       "[$this->shortName] Paper #$paperId started",
-	       $message,
-	       "From: $this->emailFrom",
-	       "-f$this->emailFrom");
-    }
-
-  function sendPaperFinalizeNotice($email, $paperId, $title)
-    {
-      $message = "This is a confirmation notice that you've finalized\n"
-	. " the submission process for your paper, #$paperId, titled\n"
-	. " $title\n"
-	. "\n"
-	. "Keep this email as confirmation of your paper being submitted.\n";
-      if ($this->allowEmailTo($email))
-	  mail($email,
-	       "[$this->shortName] Paper #$paperId submit confirmation",
-	       $message,
-	       "From: $this->emailFrom",
-	       "-f$this->emailFrom");
     }
 
 
