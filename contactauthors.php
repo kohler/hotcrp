@@ -48,6 +48,7 @@ function pt_data_html($what, $row) {
 }
 
 function addContactAuthor($paperId, $contactId) {
+    global $Conf;
     // don't want two entries for the same contact, if we can avoid it
     return $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($paperId, $contactId, " . CONFLICT_AUTHOR . ") on duplicate key update conflictType=" . CONFLICT_AUTHOR, "while adding contact author");
 }
