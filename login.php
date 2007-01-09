@@ -51,7 +51,15 @@ function doLogin() {
 	return $Conf->errorMsg("Enter your email address.");
 
     // Check for the cookie
-    if (!isset($_COOKIE["CRPTestCookie"]))
+    if (!isset($_COOKIE["CRPTestCookie"]) && !isset($_REQUEST["cookie"])) {
+	// set a cookie to test that their browser supports cookies
+	setcookie("CRPTestCookie", true);
+	$url = "cookie=1";
+	foreach (array("email", "password", "action", "go", "afterLogin", "signin") as $a)
+	    if (isset($_REQUEST[$a]))
+		$url .= "&$a=" . urlencode($_REQUEST[$a]);
+	$Conf->go("login.php?" . $url);
+    } else if (!isset($_COOKIE["CRPTestCookie"]))
 	return $Conf->errorMsg("You appear to have disabled cookies in your browser, but this site needs to set cookies to function.  Google has <a href='http://www.google.com/cookies.html'>an informative article on how to enable them</a>.");
 
     $_SESSION["Me"]->lookupByEmail($_REQUEST["email"], $Conf);
@@ -93,6 +101,12 @@ function doLogin() {
     exit;
 }
 
+// Email links don't mention action or signin
+if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])) {
+    $_REQUEST["action"] = defval($_REQUEST["action"], "login");
+    $_REQUEST["signin"] = defval($_REQUEST["signin"], "go");
+}
+
 if (isset($_REQUEST["email"]) && isset($_REQUEST["action"]) && isset($_REQUEST["signin"])) {
     doLogin();
     // if we get here, login failed
@@ -107,6 +121,7 @@ $Conf->header("Sign in", 'login');
 ?>
 
 <form class='login' method='post' action='login.php'>
+<input type='hidden' name='cookie' value='1' />
 <table class='form'>
 <tr>
   <td class='caption'>Email</td>
