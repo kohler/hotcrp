@@ -869,7 +869,7 @@ class Contact {
 	    $m .= wordwrap("An account has been created for you at the $conf->shortName conference submission site, and an initial password has been assigned.\n\n");
 	else
 	    $m .= wordwrap("Here is your account information for the $conf->shortName conference submission site.\n\n");
-	$m .= "        Site: $conf->paperSite
+	$m .= "        Site: $conf->paperSite/
        Email: $this->email
     Password: $this->password
 

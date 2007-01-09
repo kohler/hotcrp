@@ -45,13 +45,16 @@ class Conference {
 	$this->contactName = $Opt['contactName'];
 	$this->contactEmail = $Opt['contactEmail'];
 	$this->emailFrom = $Opt['emailFrom'];
-	$this->paperSite = $Opt['paperSite'];
+	// remove final slash from $Opt['paperSite']
+	$this->paperSite = preg_replace('|/+\Z|', '', $Opt['paperSite']);
+	if (!$this->paperSite)
+	    die("Package misconfigured: \$Opt['paperSite'] is not set");
 	$this->shortName = $Opt['shortName'];
 	$this->longName = $Opt['longName'];
 
 	// unpack dsn and connect to database
 	if (!isset($Opt['dsn']))
-	    die("Package misconfigured: dsn is not set");
+	    die("Package misconfigured: \$Opt['dsn'] is not set");
 	else if (preg_match('|^mysql://([^:@/]*)/(.*)|', $Opt['dsn'], $m)) {
 	    $this->dblink = mysql_connect(urldecode($m[1]));
 	    $dbname = urldecode($m[2]);
@@ -78,7 +81,7 @@ class Conference {
 
       echo "shortName is " . $this -> shortName . " <br>";
       echo "longName is " . $this -> longName . " <br>";
-      echo "paperSite is " . $this -> paperSite . " <br>";
+      echo "paperSite is " . $this -> paperSite . "/ <br>";
       echo "conferenceSite is " . htmlspecialchars($Opt['conferenceSite']) . " <br/>";
       echo "downloadPrefix is " . htmlspecialchars($Opt['downloadPrefix']) . " <br>";
       echo "contactName is " . $this -> contactName . " <br>";
@@ -1224,7 +1227,7 @@ class Conference {
 	$message .= "please contact " . $who->firstName . " " . $who->lastName ." (" . $who->email . ")\n";
 	$message .= "\n";
 	$message .= "You can access the website for making your review:\n\n";
-	$message .= "Web site: $this->paperSite\n";
+	$message .= "Web site: $this->paperSite/\n";
 
 	$result = $this->q("SELECT password FROM ContactInfo WHERE email='$email'");
 	

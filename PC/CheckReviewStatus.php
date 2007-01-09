@@ -29,7 +29,7 @@ if (!IsSet($_REQUEST['emailBody'])) {
   $_REQUEST['emailBody'] .= "please contact " . $_SESSION["Me"]->firstName . " " . $_SESSION["Me"]->lastName. " (" . $_SESSION["Me"]->email .")\n";
   $_REQUEST['emailBody'] .= "\n";
   $_REQUEST['emailBody'] .= "You can access the reviewing website at this URL\n";
-  $_REQUEST['emailBody'] .= "$Conf->paperSite\n";
+  $_REQUEST['emailBody'] .= "$Conf->paperSite/\n";
   $_REQUEST['emailBody'] .= "or use the link at the bottom of this email to automatically log in.\n\n";
   $_REQUEST['emailBody'] .= "Contact $Conf->contactName ($Conf->contactEmail) about problems with the website.\n\n";
   $_REQUEST['emailBody'] .= "Thank you for helping $Conf->shortName - I understand that reviewing is hard work.\n";

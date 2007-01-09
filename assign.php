@@ -220,7 +220,7 @@ function requestReview($email) {
     if ($Conf->setting("extrev_soft") > 0)
 	$mm = "If you are willing to review this paper, please enter your review by " . $Conf->printableTimeSetting("extrev_soft") . ".  ";
     $m .= wordwrap($mm . "You may also complete a review form offline and upload it to the site.  If you cannot complete the review, you may refuse the review on the paper site or contact " . contactText($Me) . " directly.  For reference, your account information is as follows:\n\n");
-    $m .= "        Site: $Conf->paperSite
+    $m .= "        Site: $Conf->paperSite/
        Email: $Them->email
     Password: $Them->password
 
