@@ -1,3 +1,74 @@
+2007-01-07 Sunday 16:56  kohler
+
+	* Code/conference.inc (1.142): bonehead error
+
+2007-01-07 Sunday 16:51  kohler
+
+	* index.php (1.89), settings.php (1.20), Chair/SetReviewForm.php
+	  (1.25), Chair/sampleforms.inc (1.2): add decisions setting, and
+	  integrate review form with conference settings
+
+2007-01-07 Sunday 15:17  kohler
+
+	* settings.php (1.19), style.css (1.132): break up the conference
+	  settings
+
+2007-01-06 Saturday 14:12  kohler
+
+	* assign.php (1.54), help.php (1.9), review.php (1.69), style.css
+	  (1.131), Chair/AskForReview.php (1.13), Chair/SendMail2.php
+	  (1.20), Chair/SpotProblems.php (1.14), Code/conference.inc
+	  (1.141), Code/contact.inc (1.86), Code/header.inc (1.37),
+	  Code/helpers.inc (1.114), Code/paperlist.inc (1.77),
+	  Code/papertable.inc (1.51), Code/reviewtable.inc (1.23),
+	  Code/search.inc (1.31), PC/SpotMyProblems.php (1.12),
+	  images/exassignone.png (1.1):
+	  s/REVIEW_REQUESTED/REVIEW_EXTERNAL/; add initial assignment
+	  process help; simplify assignment page (lead and shepherd saved
+	  by same button as PC assignmnets)
+
+2007-01-06 Saturday 14:05  kohler
+
+	* Code/createdb.sh (1.11): get rid of debugging (thanks Frans)
+
+2007-01-04 Thursday 18:22  kohler
+
+	* assign.php (1.53), help.php (1.8), index.php (1.88), paper.php
+	  (1.87), pc.php (1.20), review.php (1.68), script.js (1.22),
+	  search.php (1.66), settings.php (1.18), style.css (1.130),
+	  Code/helpers.inc (1.113), Code/paperlist.inc (1.76),
+	  Code/papertable.inc (1.50): fold improvements
+
+2007-01-04 Thursday 14:55  kohler
+
+	* autoassign.php (1.6), Code/contact.inc (1.85): hook in lead and
+	  shepherd assignments
+
+2007-01-04 Thursday 09:40  kohler
+
+	* Chair/AssignPapers.php (1.35): hook up autoassign page to main
+	  assignments page
+
+2007-01-04 Thursday 09:38  kohler
+
+	* autoassign.php (1.5), search.php (1.65), Code/paperlist.inc
+	  (1.75): hook up to search
+
+2007-01-04 Thursday 09:25  kohler
+
+	* autoassign.php (1.4), Code/paperlist.inc (1.74), Code/schema.sql
+	  (1.84): paper selectors
+
+2007-01-04 Thursday 09:12  kohler
+
+	* assign.php (1.52), autoassign.php (1.3), Code/helpers.inc
+	  (1.112): must lock the action log!
+
+2007-01-04 Thursday 09:09  kohler
+
+	* autoassign.php (1.2), Code/contact.inc (1.84), Code/paperlist.inc
+	  (1.73): automatic assignments work!
+
 2007-01-03 Wednesday 23:56  kohler
 
 	* autoassign.php (1.1), reload.sh (1.5), script.js (1.21),
@@ -22,9 +93,8 @@
 	* assign.php (1.51), comment.php (1.19), contactauthors.php (1.21),
 	  paper.php (1.86), pc.php (1.19), review.php (1.67), script.js
 	  (1.20), search.php (1.63), style.css (1.126), Code/createdb.sh
-	  (1.10), Code/helpers.inc (1.111), Code/options.inc (1.2.2.4),
-	  Code/papertable.inc (1.49): make a bit nicer for internet
-	  explorer
+	  (1.10), Code/helpers.inc (1.111), Code/papertable.inc (1.49):
+	  make a bit nicer for internet explorer
 
 2006-12-30 Saturday 07:51  kohler
 
@@ -150,10 +220,6 @@
 2006-12-12 Tuesday 08:59  kohler
 
 	* Code/contact.inc (1.83): not used
-
-2006-12-12 Tuesday 08:59  kohler
-
-	* Code/options.inc (1.15.2.1): dont send emial locally
 
 2006-12-11 Monday 23:51  kohler
 
@@ -456,15 +522,10 @@
 
 	* reload.sh (1.4): oops
 
-2006-11-28 Tuesday 08:55  kohler
-
-	* Code/confConfig.inc (1.8.2.4): not needed
-
 2006-11-28 Tuesday 08:54  kohler
 
-	* index.php (1.76), reload.sh (1.3), Code/confConfig.inc (1.8.2.3),
-	  Code/options.inc (1.2.2.3): improve reviewer panel if there are
-	  no reviews assigned
+	* index.php (1.76), reload.sh (1.3): improve reviewer panel if
+	  there are no reviews assigned
 
 2006-11-28 Tuesday 01:06  kohler
 
@@ -2260,10 +2321,6 @@
 
 2006-07-31 Monday 09:05  kohler
 
-	* Code/options.inc (1.2.2.2): allow validator
-
-2006-07-31 Monday 09:05  kohler
-
 	* paper.php (1.17), Code/ClassConference.inc (1.45),
 	  Code/Helpers.inc (1.32), Code/conference.inc (1.45),
 	  Code/helpers.inc (1.32): valid XHTML 1.0 Transitional
@@ -2349,17 +2406,9 @@
 	* paper.php (1.6), style.css (1.34), Chair/SetDates.php (1.16),
 	  Code/options.inc (1.4): more stylin
 
-2006-07-25 Tuesday 12:11  kohler
-
-	* Code/options.inc (1.2.2.1): minshall
-
 2006-07-25 Tuesday 12:10  kohler
 
 	* Code/options.inc (1.3): email
-
-2006-07-25 Tuesday 12:09  kohler
-
-	* Code/confConfig.inc (1.8.2.2): update
 
 2006-07-25 Tuesday 11:28  kohler
 
@@ -2492,8 +2541,7 @@
 
 2006-07-10 Monday 00:43  kohler
 
-	* Code/: ClassConference.inc (1.32), confConfig.inc (1.8.2.1),
-	  conference.inc (1.32): moron
+	* Code/: ClassConference.inc (1.32), conference.inc (1.32): moron
 
 2006-07-10 Monday 00:40  kohler
 
@@ -3070,107 +3118,6 @@
 	  Reviewer/RequestedReviewsFromIndex.inc (1.2),
 	  Reviewer/ReviewerSubmitReview.php (1.2), Reviewer/SeeDecision.php
 	  (1.2), Reviewer/SeeDecisions.php (1.2): update for newer PHPs
-
-2006-06-29 Thursday 16:34  kohler
-
-	* .htaccess (1.1.1.1), Tasks-All.inc (1.1.1.1), Tasks-Assistant.inc
-	  (1.1.1.1), Tasks-Author.inc (1.1.1.1), Tasks-Chair.inc (1.1.1.1),
-	  Tasks-PC.inc (1.1.1.1), Tasks-Reviewer.inc (1.1.1.1),
-	  YouMustAllowCookies.php (1.1.1.1), account.php (1.1.1.1),
-	  genericPopup.php (1.1.1.1), index.php (1.1.1.1), javascript.inc
-	  (1.1.1.1), mergeaccounts.php (1.1.1.1), testcookie.php (1.1.1.1),
-	  Assistant/AssistantListPapers.php (1.1.1.1),
-	  Assistant/AssistantViewSinglePaper.php (1.1.1.1),
-	  Assistant/DownloadPaper.php (1.1.1.1),
-	  Assistant/DumpAllReviews.php (1.1.1.1), Assistant/DumpPapers.php
-	  (1.1.1.1), Assistant/ListFirstAuthors.php (1.1.1.1),
-	  Assistant/ListReviewers.php (1.1.1.1),
-	  Assistant/ModifyUserNames.php (1.1.1.1),
-	  Assistant/PrepareFacesheets.php (1.1.1.1),
-	  Assistant/PrintAllAbstracts.php (1.1.1.1),
-	  Assistant/PrintAllReviews.php (1.1.1.1),
-	  Assistant/PrintSomeReviews.php (1.1.1.1), Assistant/foo.php
-	  (1.1.1.1), Assistant/index.php (1.1.1.1),
-	  Author/AuthorViewPaper.php (1.1.1.1), Author/DeletePaper.php
-	  (1.1.1.1), Author/FinalizePaper.php (1.1.1.1),
-	  Author/ModifyPaper.php (1.1.1.1), Author/PaperActions.php
-	  (1.1.1.1), Author/PaperForm.inc (1.1.1.1), Author/PaperTable.inc
-	  (1.1.1.1), Author/SubmitPaper.php (1.1.1.1),
-	  Author/SubmitPaper2.php (1.1.1.1), Author/SubmitResponse.php
-	  (1.1.1.1), Author/UploadPaper.php (1.1.1.1),
-	  Author/ViewDecision.php (1.1.1.1), Author/ViewReview.php
-	  (1.1.1.1), Author/index.php (1.1.1.1), Chair/AskForReview.php
-	  (1.1.1.1), Chair/AssignConflicts.php (1.1.1.1),
-	  Chair/AssignPapers.php (1.1.1.1), Chair/AveragePaperScore.php
-	  (1.1.1.1), Chair/AverageReviewerScore.php (1.1.1.1),
-	  Chair/BecomeSomeoneElse.php (1.1.1.1), Chair/ChairAddContact.php
-	  (1.1.1.1), Chair/ChairRemoveReviewer.php (1.1.1.1),
-	  Chair/ChairViewSinglePaper.php (1.1.1.1),
-	  Chair/CheckOnPCProgress.php (1.1.1.1),
-	  Chair/CheckOnSinglePCProgress.php (1.1.1.1), Chair/Code.inc
-	  (1.1.1.1), Chair/CommonAddToCommittee.inc (1.1.1.1),
-	  Chair/DeletePaper.php (1.1.1.1), Chair/DeletePaper2.php
-	  (1.1.1.1), Chair/DeletePaper3.php (1.1.1.1),
-	  Chair/DumpDatabase.php (1.1.1.1), Chair/FindPCConflicts.php
-	  (1.1.1.1), Chair/GradeAllPapers.php (1.1.1.1),
-	  Chair/ListFirstAuthors.php (1.1.1.1), Chair/ListPC.php (1.1.1.1),
-	  Chair/ListPapersAssignedToPC.php (1.1.1.1),
-	  Chair/ListReviewers.php (1.1.1.1), Chair/ListReviews.php
-	  (1.1.1.1), Chair/ModifyPaper.php (1.1.1.1),
-	  Chair/NewAssignPapers.php (1.1.1.1), Chair/OldAssignPapers.php
-	  (1.1.1.1), Chair/ReviewAssistants.php (1.1.1.1),
-	  Chair/ReviewChairs.php (1.1.1.1), Chair/ReviewContacts.php
-	  (1.1.1.1), Chair/ReviewPC.php (1.1.1.1), Chair/SearchPapers.php
-	  (1.1.1.1), Chair/SendMail.php (1.1.1.1), Chair/SendMail2.php
-	  (1.1.1.1), Chair/SetDates.php (1.1.1.1), Chair/SetPCPaper.php
-	  (1.1.1.1), Chair/SetTopics.php (1.1.1.1), Chair/ShowCalendar.php
-	  (1.1.1.1), Chair/SpotProblems.php (1.1.1.1),
-	  Chair/SubmitPaper.php (1.1.1.1), Chair/SubmitPaper2.php
-	  (1.1.1.1), Chair/UnfinalizeReview.php (1.1.1.1),
-	  Chair/ViewActionLog.php (1.1.1.1), Chair/ViewButtons.php
-	  (1.1.1.1), Chair/index.php (1.1.1.1), Code/.htaccess (1.1.1.1),
-	  Code/Calendar.inc (1.1.1.1), Code/ClassCGO2004Review.inc
-	  (1.1.1.1), Code/ClassConference.inc (1.1.1.1),
-	  Code/ClassContact.inc (1.1.1.1), Code/ClassHYPO2010Review.inc
-	  (1.1.1.1), Code/ClassISCA2002Review.inc (1.1.1.1),
-	  Code/ClassMICRO36Review.inc (1.1.1.1), Code/ClassPaper.inc
-	  (1.1.1.1), Code/ClassReview.inc (1.1.1.1), Code/CreateDatabase.sh
-	  (1.1.1.1), Code/DumpAllReviews.php-not-via-apache (1.1.1.1),
-	  Code/DumpSingleReview.php-not-via-apache (1.1.1.1),
-	  Code/SuckInOSDIPaper.php-not-via-apache (1.1.1.1),
-	  Code/animate.js (1.1.1.1), Code/confConfig.inc (1.1.1.1),
-	  Code/confConfig.inc.dist (1.1.1.1), Code/confConfigReview.inc
-	  (1.1.1.1), Code/confConfigReview.inc.dist (1.1.1.1),
-	  Code/confHeader.inc (1.1.1.1), Code/confHeader.inc.dist
-	  (1.1.1.1), Code/confJavaScript.inc (1.1.1.1), Code/conference.inc
-	  (1.1.1.1), Code/conference.sql (1.1.1.1), Code/contact.inc
-	  (1.1.1.1), Code/createdb.sh (1.1.1.1), Code/header.inc (1.1.1.1),
-	  Code/review.inc (1.1.1.1), Code/schema.sql (1.1.1.1),
-	  Download/.htaccess (1.1.1.1), Download/GetConfStuff.php
-	  (1.1.1.1), Download/GetPaper (1.1.1.1), Download/GetPaper.php
-	  (1.1.1.1), Download/index.html (1.1.1.1),
-	  PC/AskForReviewCommon.inc (1.1.1.1), PC/AskForSecondaryReview.php
-	  (1.1.1.1), PC/CheckAssignedPapers.php (1.1.1.1),
-	  PC/GradePapers.php (1.1.1.1), PC/ListReviews.php (1.1.1.1),
-	  PC/PCAllAnonReviewsForPaper.php (1.1.1.1), PC/PCListPapers.php
-	  (1.1.1.1), PC/PCNotes.php (1.1.1.1), PC/PCReviewsForPaper.php
-	  (1.1.1.1), PC/PCSubmitReview.php (1.1.1.1),
-	  PC/RemoveAskReview.php (1.1.1.1), PC/ReviewAnyPaper.php
-	  (1.1.1.1), PC/ReviewPapers.php (1.1.1.1),
-	  PC/SeeAcceptedPapers.php (1.1.1.1), PC/SeeAllGrades.php
-	  (1.1.1.1), PC/ShowAbstract.php (1.1.1.1), PC/SpotMyProblems.php
-	  (1.1.1.1), PC/ValidPapers.inc (1.1.1.1), PC/gradeNames.inc
-	  (1.1.1.1), PC/index.php (1.1.1.1), Reviewer/CommonPrintReview.php
-	  (1.1.1.1), Reviewer/CommonSubmitReview.php (1.1.1.1),
-	  Reviewer/RequestedReviews.php (1.1.1.1),
-	  Reviewer/RequestedReviewsFromIndex.inc (1.1.1.1),
-	  Reviewer/ReviewerSubmitReview.php (1.1.1.1),
-	  Reviewer/SeeDecision.php (1.1.1.1), Reviewer/SeeDecisions.php
-	  (1.1.1.1), Reviewer/ratings.html (1.1.1.1), Reviewer/ratings.php
-	  (1.1.1.1), images/CheckMark.gif (1.1.1.1), images/GenChart.php
-	  (1.1.1.1), images/GeneralChart.php (1.1.1.1),
-	  PC/AskForPrimaryReview.php (1.1.1.1), PC/CheckOnPCProgress.php
-	  (1.1.1.1), PC/CheckReviewStatus.php (1.1.1.1): CRP import
 
 2006-06-29 Thursday 16:34  kohler
 
