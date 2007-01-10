@@ -327,7 +327,7 @@ class Conference {
     }
 
     function timeStartPaper() {
-	return $this->settingsBetween('sub_open', 'sub_reg');
+	return $this->settingsBetween('sub_open', 'sub_reg', 'sub_grace');
     }
     function timeUpdatePaper() {
 	return $this->settingsBetween('sub_open', 'sub_update', 'sub_grace');
