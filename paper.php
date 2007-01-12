@@ -301,7 +301,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 - $Conf->shortName Conference Submissions\n");
 
     // send email to all contact authors
-    if (!$Me->amAssistant() || isset($_REQUEST["emailNote"]))
+    if (!$Me->amAssistant() || $prow->conflict == CONFLICT_AUTHOR || isset($_REQUEST["emailNote"]))
 	$Conf->emailContactAuthors($prow, $subject, $m);
     
     $Conf->log($what, $Me, $paperId);
