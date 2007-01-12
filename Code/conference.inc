@@ -23,17 +23,9 @@ class Conference {
     // Useful colors
     //
     var $bgOne = "#9999cc"; // blue
-    var $bgTwo = "#669999"; // green
-    var $bgInfo = "#ffcccc" ; // gred - uses in informational messages
     var $contrastColorOne = "#eeeeee";
     var $contrastColorTwo = "#cccccc";
-
-    var $headerBg = "#eeeeff";
-
     var $infoColor = "yellow"; // blue
-    var $confirmColor = "lime"; // green
-    var $errorColor = "fuchsia"; // should be pink!
-    var $warnColor = "lightBlue"; // should be pink!
 
     function Conference() {
 	global $Opt;
@@ -75,7 +67,7 @@ class Conference {
 
     function dump() {
       global $Opt;
-      echo "<table border=\"1\" width=\"83%\" bgcolor=$bgOne>";
+      echo "<table border=\"1\" width=\"83%\" bgcolor=$this->bgOne>";
       echo "<tr> <td>";
       echo "<p>";
 
