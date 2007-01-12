@@ -317,13 +317,13 @@ class Conference {
     }
     function settingsBetween($name1, $name2, $grace = null) {
 	$now = time();
-	$t = &$this->settings[$name1];
-	if (!isset($t) || $t <= 0 && $t > $now)
+	$t = defval($this->settings[$name1], null);
+	if ($t === null || ($t <= 0 && $t > $now))
 	    return false;
-	$t = &$this->settings[$name2];
-	if (isset($t) && $t > 0 && $grace && isset($this->settings[$grace]))
+	$t = defval($this->settings[$name2], null);
+	if ($t !== null && $t > 0 && $grace && isset($this->settings[$grace]))
 	    $t += $this->settings[$grace];
-	return (!isset($t) || $t <= 0 || $t >= $now);
+	return ($t === null || $t <= 0 || $t >= $now);
     }
 
     function timeStartPaper() {
