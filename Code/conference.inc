@@ -8,7 +8,6 @@ class Conference {
     var $contactName;
     var $contactEmail;
     var $emailFrom;
-    var $allowReviewerPreferences;
   
     var $dblink;
 

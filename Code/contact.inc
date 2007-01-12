@@ -137,7 +137,8 @@ class Contact {
     }
 
     function dump() {
-	echo "<table border=\"1\" width=\"83%\" bgcolor=$bgOne>";
+	global $Conf;
+	echo "<table border=\"1\" width=\"83%\" bgcolor=$Conf->bgOne>";
 	echo "<tr> <td>";
 
 	echo "<p>";
