@@ -3,7 +3,8 @@ require_once('Code/header.inc');
 
 if (isset($_REQUEST["var"])) {
     $v = $_REQUEST["var"];
-    if ($v == "assignFold" || $v == "paperFold" || $v == "plactFold") {
+    if ($v == "foldassigna" || $v == "foldassignp"
+	|| $v == "foldpapera" || $v == "foldpaperp" || $v == "foldplact") {
 	if (isset($_REQUEST["val"]))
 	    $_SESSION[$v] = intval($_REQUEST["val"]);
 	else

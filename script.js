@@ -24,22 +24,11 @@ function fold(which, dofold, foldnum) {
 	// IE won't actually do the fold unless we yell at it
 	if (document.recalc)
 	    elt.innerHTML = elt.innerHTML + "";
+	// check for session
+	var selt = document.getElementById('fold' + which + 'session');
+	if (selt)
+	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0));
     }
-}
-
-function foldsession(foldset, sessioner) {
-    // NB starts at fold8
-    var foldval = 0;
-    if (!(foldset instanceof Array))
-	foldset = [foldset];
-    for (var i = 0; i < foldset.length; i++) {
-	var e = document.getElementById('fold' + foldset[i]);
-	if (e && e.className.match("\\bfold" + (i + 8) + "c\\b"))
-            foldval |= (1 << i);
-    }
-    var si = document.getElementById(sessioner);
-    if (si)
-	si.src = si.src.replace(/val=.*/, 'val=' + foldval);
 }
 
 function contactPulldown(which) {

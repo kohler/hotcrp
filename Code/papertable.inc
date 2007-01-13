@@ -20,7 +20,6 @@ class PaperTable {
     var $useRequest;
     var $allFolded;
     var $authorsFolded;
-    var $foldsession;
     var $foldState;
     var $highlight;
     var $matchPreg;
@@ -32,9 +31,11 @@ class PaperTable {
 	$this->editable = $editable;
 	$this->useRequest = $useRequest;
 
-	$this->foldsession = $foldsession;
-	$foldState = ($foldsession ? defval($_SESSION[$foldsession], 3) : 3);
-	$this->foldState = $foldState;
+	$this->foldState = 3;
+	if ($foldsession && !defval($_SESSION["fold${foldsession}a"], 1))
+	    $this->foldState &= ~1;
+	if ($foldsession && !defval($_SESSION["fold${foldsession}p"], 1))
+	    $this->foldState &= ~2;
 	
 	$this->allFolded = $allFolded;
 	$this->authorsFolded = $authorsFolded;
@@ -131,11 +132,9 @@ class PaperTable {
 	global $Me;
 	echo "<tr class='pt_status'>\n";
 	echo "  <td class='caption'>";
-	if ($this->allFolded) {
-	    $fs = ($this->foldsession ? ";foldsession(['authors','paper'], '$this->foldsession')" : "");
-	    echo "<a href=\"javascript:fold('paper', 0, 9)$fs\" class='foldbutton unfolder9'>+</a>",
-		"<a href=\"javascript:fold('paper', 1, 9)$fs\" class='foldbutton folder9'>&minus;</a> ";
-	}
+	if ($this->allFolded)
+	    echo "<a href=\"javascript:fold('paper', 0, 9)\" class='foldbutton unfolder9'>+</a>",
+		"<a href=\"javascript:fold('paper', 1, 9)\" class='foldbutton folder9'>&minus;</a> ";
 	if (!($flags & self::NOCAPTION))
 	    echo "Paper</td>\n";
 	echo "  <td class='entry'>",
@@ -204,11 +203,9 @@ class PaperTable {
 	global $Conf;
 	echo "<tr class='pt_authorInformation'>\n";
 	echo "  ", $this->tdCaption("authorInformation");
-	if ($this->authorsFolded) {
-	    $fs = ($this->foldsession ? ";foldsession(['authors','paper'], '$this->foldsession')" : "");
-	    echo "<a href=\"javascript:fold('authors', 0, 8)$fs\" class='foldbutton unfolder8'>+</a>",
-	    "<a href=\"javascript:fold('authors', 1, 8)$fs\" class='foldbutton folder8'>&minus;</a> ";
-	}
+	if ($this->authorsFolded)
+	    echo "<a href=\"javascript:fold('authors', 0, 8)\" class='foldbutton unfolder8'>+</a>",
+	    "<a href=\"javascript:fold('authors', 1, 8)\" class='foldbutton folder8'>&minus;</a> ";
 	echo "Authors</td>\n";
 	echo "  ", $this->tdEntry("authorInformation");
 	if ($this->authorsFolded == 1)

@@ -686,6 +686,9 @@ table.pltable th, table.setreviewform th, table.memberlist th {
         padding-right: 0.25em;
 	vertical-align: bottom;
 }
+table.pltable th a.unfolder1, table.pltable th a.unfolder2, table.pltable th a.folder1, table.pltable th a.folder2 {
+	font-weight: normal;
+}
 .pl_title, .pl_reviewer, .pl_status {
 	padding-right: 1em;
 }
@@ -854,6 +857,9 @@ tr.k1 td {
 	display: none;
 }
 .fold1c .extension1, .fold1c .folder1, .fold1o .ellipsis1, .fold1o .unfolder1 {
+	display: none;
+}
+.fold2c .extension2, .fold2c .folder2, .fold2o .ellipsis2, .fold2o .unfolder2 {
 	display: none;
 }
 .fold8c .extension8, .fold8c .folder8, .fold8o .ellipsis8, .fold8o .unfolder8 {

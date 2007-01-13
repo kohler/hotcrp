@@ -8,6 +8,7 @@ class PaperList {
     const FIELD_TITLE = 11;
     const FIELD_TITLE_MANAGE = 12;
     const FIELD_TITLE_REVIEW = 13;
+    const FIELD_TITLE_LAST = 19;
     const FIELD_STATUS = 27;
     const FIELD_DOWNLOAD = 28;
     const FIELD_REVIEWER_TYPE = 29;
@@ -31,6 +32,7 @@ class PaperList {
     const FIELD_AUTHOR_MATCH = 47;
     const FIELD_COLLABORATORS_MATCH = 48;
     const FIELD_SELECTOR_ON = 49;
+    const FIELD_OPT_AUTHORS = 50;
     
     var $showHeader;
     var $sortField;
@@ -205,6 +207,8 @@ class PaperList {
 	    return "Author matches";
 	case self::FIELD_COLLABORATORS_MATCH:
 	    return "Collaborator matches";
+	case self::FIELD_OPT_AUTHORS:
+	    return "Authors";
 	default:
 	    return "&lt;$fieldId&gt;?";
 	}
@@ -394,6 +398,20 @@ class PaperList {
 		return "";
 	    preg_match_all("/(" . $this->collaboratorsMatch . ")/i", $row->collaborators, $matches);
 	    return $this->_joinMatches($matches);
+	case self::FIELD_OPT_AUTHORS:
+	    if (!$this->contact->amAssistant() && $row->blind)
+		return "";
+	    $aus = array();
+	    foreach (explode("\n", $row->authorInformation) as $au) {
+		$au = preg_replace('|\s*\(.*|', '', $au);
+		if (($pos = strpos($au, ",")) !== false)
+		    $aus[] = substr($au, 0, $pos);
+		else if (preg_match('^(von\s+|van\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$^', $au, $matches))
+		    $aus[] = $matches[0];
+		else
+		    $aus[] = $au;
+	    }
+	    return htmlspecialchars(join(", ", $aus));
 	default:
 	    return "";
 	}
@@ -413,29 +431,13 @@ class PaperList {
 	}
     }
 
-    function listContact($listname) {
-	self::updatePaperLists();
-	if (($plist = defval($_SESSION["paperLists"][$listname])))
-	    return $plist->listContact;
-	else
-	    return '';
-    }
-
-    function listContactType($listname) {
-	self::updatePaperLists();
-	if (($plist = defval($_SESSION["paperLists"][$listname])))
-	    return $plist->listContactType;
-	else
-	    return '';
-    }
-
     function footer($ncol) {
 	global $Conf, $ConfSiteBase;
 	if ($this->count == 0)
 	    return "";
 	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
 	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'><img src=\"${ConfSiteBase}images/bendulft.png\" style='position: relative; top: 8px' /></td>\n";
-	$fclass = (defval($_SESSION["plactFold"], 1) ? "fold8c" : "fold8o");
+	$fclass = (defval($_SESSION["foldplact"], 1) ? "fold8c" : "fold8o");
 	$t .= "    <td id='foldplact' class='$fclass' colspan='" . ($ncol - 1) . "'><table>
   <tr><td class='xcaption'><b>Select papers</b> (or <a href='javascript:void checkPapersel(true)'>select all " . $this->count . "</a>), then <b>Get:</b></td>
     <td><select name='getaction'>
@@ -460,9 +462,9 @@ class PaperList {
 	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='get' value='Go' />";
 
 	if ($this->contact->isPC) {
-	    $t .= "<span class='sep'></span> <a class='unfolder8' href='javascript:fold(\"plact\",0,8);foldsession(\"plact\",\"plactFold\")'>More &raquo;</a>";
-	    $t .= "<a class='folder8' href='javascript:fold(\"plact\",1,8);foldsession(\"plact\",\"plactFold\")'>Less &laquo;</a>";
-	    $t .= "<img id='plactFold' alt='' src='${ConfSiteBase}sessionvar.php?var=plactFold&amp;val=" . defval($_SESSION["plactFold"], 1) . "&amp;cache=1' width='1' height='1' />";
+	    $t .= "<span class='sep'></span> <a class='unfolder8' href='javascript:fold(\"plact\",0,8)'>More &raquo;</a>";
+	    $t .= "<a class='folder8' href='javascript:fold(\"plact\",1,8)'>Less &laquo;</a>";
+	    $t .= "<img id='foldplactsession' alt='' src='${ConfSiteBase}sessionvar.php?var=foldplact&amp;val=" . defval($_SESSION["foldplact"], 1) . "&amp;cache=1' width='1' height='1' />";
 	    $t .= "</td></tr>\n";
 
 	    $t .= "  <tr class='extension8'><td class='rcaption'>Tags:</td><td><select name='tagtype'>
@@ -474,7 +476,7 @@ class PaperList {
 	    
 	    if ($this->contact->amAssistant()) {
 		$t .= "  <tr class='extension8'><td class='rcaption'>Assignments &amp; conflicts:</td>
-    <td id='foldass' class='fold1c'><select name='marktype' onchange='fold(\"ass\", (this.value[0] == \"x\"), 1)'>
+    <td id='foldass' class='foldc'><select name='marktype' onchange='fold(\"ass\", (this.value[0] == \"x\"))'>
       <option value='xauto' selected='selected'>Automatic assignments</option>
       <option value='-1' disabled='disabled'></option>
       <option value='conflict'>Mark conflict</option>
@@ -486,7 +488,7 @@ class PaperList {
       <option value='assign" . REVIEW_PRIMARY . "'>Assign primary review</option>
       <option value='assign" . REVIEW_SECONDARY . "'>Assign secondary review</option>
       <option value='assign0'>Unassign reviews</option>
-    </select><span class='extension1'> &nbsp;for &nbsp;";
+    </select><span class='extension'> &nbsp;for &nbsp;";
 		$t .= "<select name='markpc' id='markpc'>\n";
 		$pc = pcMembers();
 		foreach ($pc as $id => $row)
@@ -540,19 +542,24 @@ class PaperList {
 		$queryOptions['order'] = "order by PaperTag.tagIndex, Paper.paperId";
 	    }
 	}
-	    
+	
 	// get field array
-	$result = $Conf->qe(
+	if (!isset($plist->fields)) {
+	    $result = $Conf->qe(
 		"select PaperFields.fieldId, fieldName, display
 		from PaperListColumns join PaperFields using (fieldId)
 		where PaperListColumns.paperListId=$plist->paperListId
 		order by PaperListColumns.col", "while looking up paper list information");
-	if (!$result)
-	    return NULL;
+	    if (!$result)
+		return NULL;
+	    $plist->fields = array();
+	    while ($row = edb_row($result))
+		$plist->fields[] = $row;
+	}
 	
 	$fieldId = array();
 	$ncol = 0;
-	while ($row = edb_row($result)) {
+	foreach ($plist->fields as $row) {
 	    if ($this->selector($row[0], $queryOptions) === false)
 		continue;
 	    $fieldId[] = array($row[0], htmlspecialchars($row[1]), $row[2]);
@@ -593,6 +600,8 @@ class PaperList {
 	$anyData = array();
 	$byPaperId = array();
 	$body = '';
+	$aufoldclass = defval($_SESSION["plauFold"], 3);
+	$authorinfo = false;
 	while (($row = edb_orow($result))) {
 	    $ids[] = $row->paperId;
 	    $trclass = "k" . ($this->count % 2);
@@ -609,8 +618,13 @@ class PaperList {
 	    $t .= "  </tr>\n";
 	    
 	    foreach ($fieldId as $f)
-		if ($f[2] == 2 && ($d = $this->content($f[0], $row, $plist, $reviewList))) {
-		    $t .= "  <tr class=\"pl_$f[1] pl_callout $trclass\">\n";
+		if ($f[2] >= 2 && ($d = $this->content($f[0], $row, $plist, $reviewList))) {
+		    $t .= "  <tr class=\"pl_$f[1] pl_callout $trclass";
+		    if ($f[2] == 3) {
+			$authorinfo |= ($row->blind ? 2 : 1);
+			$t .= " extension1" . ($row->blind ? " extension2" : "");
+		    }
+		    $t .= "\">\n";
 		    $t .= "<td class=\"pl_$f[1] pl_callout\" colspan='$ncol'>";
 		    $t .= "<span class='pl_callouthdr'>" . $this->header($f[0], -1, $row, $reviewList) . ":</span>";
 		    $t .= $d . "</td>\n  </tr>\n";
@@ -633,13 +647,27 @@ class PaperList {
 	    foreach ($pidarray as $pid)
 		if (isset($byPaperId[$pid]))
 		    $body .= $byPaperId[$pid];
-	
-	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname) . "\">\n";
+
+	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname);
+	if ($authorinfo)
+	    $x .= " fold1c fold2c\" id=\"foldplau";
+	$x .= "\">\n";
 
 	if ($this->showHeader) {
 	    $x .= "  <tr class=\"pl_headrow\">\n";
 	    $ord = 0;
 
+	    if ($authorinfo) {
+		$authorfolder = "<span class='sep'></span>";
+		if ($Conf->blindSubmission() == 0)
+		    $authorfolder .= "<a class='unfolder1' href='javascript:fold(\"plau\",0,1)'>Show authors</a><a class='folder1' href='javascript:fold(\"plau\",1,1)'>Hide authors</a>";
+		else if ($this->contact->amAssistant() && $authorinfo > 1)
+		    $authorfolder .= "<a class='unfolder1' href='javascript:fold(\"plau\",0,1)'>Show non-anonymous authors</a><a class='extension1 unfolder2' href='javascript:fold(\"plau\",0,2)'>Show all authors</a><a class='folder2' href='javascript:fold(\"plau\",1,1);fold(\"plau\",1,2)'>Hide authors</a>";
+		else
+		    $authorfolder .= "<a class='unfolder1' href='javascript:fold(\"plau\",0,1)'>Show non-anonymous authors</a><a class='folder1' href='javascript:fold(\"plau\",1,1)'>Hide authors</a>";
+	    } else
+		$authorfolder = '';
+	    
 	    if ($this->sortable && $url) {
 		$sortUrl = $ConfSiteBase . $url . (strpos($url, "?") ? "&" : "?") . "sort=";
 		$q = "<a class='pl_sort' href=\"" . $sortUrl;
@@ -661,6 +689,10 @@ class PaperList {
 			$x .= $q . $f[0] . "\">" . $ftext . "</a>";
 		    else
 			$x .= $ftext;
+		    if ($authorfolder && $f[0] >= self::FIELD_TITLE && $f[0] <= self::FIELD_TITLE_LAST) {
+			$x .= $authorfolder;
+			$authorfolder = false;
+		    }
 		    $x .= "</th>\n";
 		}
 		

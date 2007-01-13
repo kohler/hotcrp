@@ -277,7 +277,7 @@ if (isset($_REQUEST['addpc']) && $Me->amAssistant()) {
 
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, true);
-$paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->amAssistant(), "assignFold");
+$paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->amAssistant(), "assign");
 
 
 // begin form and table
@@ -290,7 +290,11 @@ echo "<table class='assign'>\n\n";
 echo "<tr class='id'>\n  <td class='caption'><h2>#", $prow->paperId, "</h2></td>\n";
 echo "  <td class='entry' colspan='2'><h2>";
 $paperTable->echoTitle($prow);
-echo "</h2><img id='assignFold' alt='' src='", $ConfSiteBase, "sessionvar.php?var=assignFold&amp;val=", defval($_SESSION["assignFold"], 3), "&amp;cache=1' width='1' height='1' /></td>\n</tr>\n\n";
+echo "</h2>";
+// session folders
+echo "<img id='foldpapersession' alt='' src='", $ConfSiteBase, "sessionvar.php?var=foldassignp&amp;val=", defval($_SESSION["foldassignp"], 1), "&amp;cache=1' width='1' height='1' />";
+echo "<img id='foldauthorssession' alt='' src='", $ConfSiteBase, "sessionvar.php?var=foldassigna&amp;val=", defval($_SESSION["foldassigna"], 1), "&amp;cache=1' width='1' height='1' />";
+echo "</td>\n</tr>\n\n";
 
 
 // paper body

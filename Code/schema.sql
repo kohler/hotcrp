@@ -520,6 +520,7 @@ insert into PaperFields set fieldId=46, fieldName='optOverallMeritIcon', descrip
 insert into PaperFields set fieldId=47, fieldName='authorsMatch', description='Authors match', sortable=0, display=2;
 insert into PaperFields set fieldId=48, fieldName='collaboratorsMatch', description='Collaborators match', sortable=0, display=2;
 insert into PaperFields set fieldId=49, fieldName='selectorOn', description='Selector on';
+insert into PaperFields set fieldId=50, fieldName='optAuthors', description='Optional authors', sortable=0, display=3;
 
 insert into PaperList set paperListId=1, paperListName='a',
 	description='Authored papers', sortCol=0;
@@ -530,7 +531,7 @@ insert into PaperList set paperListId=2, paperListName='s',
 	description='Submitted papers', sortCol=0;
 insert into PaperListColumns (paperListId, fieldId, col) values
 	(2, 31, 0), (2, 1, 1), (2, 11, 2), (2, 45, 3), (2, 41, 4),
-	(2, 33, 5), (2, 46, 6);
+	(2, 33, 5), (2, 46, 6), (2, 50, 7);
 
 insert into PaperList set paperListId=3, paperListName='all',
 	description='All papers', sortCol=0;
@@ -557,14 +558,14 @@ insert into PaperList set paperListId=8, paperListName='reviewAssignment',
 	description='Review assignments', sortCol=3;
 insert into PaperListColumns (paperListId, fieldId, col) values
 	(8, 3, 0), (8, 13, 1), (8, 39, 2), (8, 36, 3), (8, 43, 4), 
-	(8, 35, 5), (8, 37, 6), (8, 38, 7), (8, 44, 8), (8, 46, 9),
-	(8, 47, 10), (8, 48, 11);
+	(8, 35, 5), (8, 50, 6), (8, 37, 7), (8, 38, 8), (8, 44, 9), 
+	(8, 46, 10), (8, 47, 11), (8, 48, 12);
 
 insert into PaperList set paperListId=9, paperListName='editReviewPreference',
 	description='Edit reviewer preferences', sortCol=3;
 insert into PaperListColumns (paperListId, fieldId, col) values
 	(9, 1, 0), (9, 11, 1), (9, 36, 2), (9, 45, 3), (9, 40, 4), 
-	(9, 37, 5);
+	(9, 50, 5), (9, 37, 6);
 
 insert into PaperList set paperListId=10, paperListName='reviewers',
 	description='Review assignments', sortCol=0;
