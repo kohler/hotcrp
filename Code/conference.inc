@@ -60,6 +60,7 @@ class Conference {
 
 	if (!$this->dblink || !mysql_select_db($dbname, $this->dblink))
 	    die("Unable to connect to database");
+	mysql_query("set character set utf8", $this->dblink);
 
 	$this->updateSettings();
     }
@@ -1076,8 +1077,8 @@ class Conference {
 		"</strong> &nbsp;|&nbsp; ";
 	    if (!$_SESSION["Me"]->amAssistant() && $_SESSION["Me"]->chairContactId > 0)
 		echo "<a href=\"", htmlspecialchars(selfHref(array("chairMode" => 0))), "\">Return&nbsp;to&nbsp;chair&nbsp;view</a> &nbsp;|&nbsp; ";
-	    echo "<a href='", $ConfSiteBase, "logout.php'>Sign&nbsp;out</a>";
-	    echo " &nbsp;|&nbsp; ";
+	    echo "<a href='", $ConfSiteBase, "help.php'>Help</a> &nbsp;|&nbsp; ";
+	    echo "<a href='", $ConfSiteBase, "logout.php'>Sign&nbsp;out</a> &nbsp;|&nbsp; ";
 	}
 	echo date("l j M Y g:i:sa T"), "</div>\n";
 	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", $this->shortName, " Public Site</a></div>\n";
