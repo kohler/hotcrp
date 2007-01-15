@@ -48,6 +48,7 @@ style.css
 
 Code/.htaccess
 Code/Calendar.inc
+Code/backupdb.sh
 Code/conference.inc
 Code/contact.inc
 Code/createdb.sh

@@ -81,3 +81,9 @@ itself.
   - HotCRP PHP scripts can take a lot of memory, particularly if they're
     doing things like generating MIME-encoded mail messages.  By default
     HotCRP sets the PHP memory limit to 128MB.
+
+
+Backing up the database
+-----------------------
+Run 'Code/backupdb.sh' at the shell prompt to back up the database.  This will
+write the database's current structure and comments to the standard output.
