@@ -27,6 +27,7 @@ mkdistdir <<EOF
 README
 account.php
 assign.php
+autoassign.php
 comment.php
 contactauthors.php
 deadlines.php
@@ -79,6 +80,7 @@ images/ass3n.png
 images/ass4.png
 images/ass4n.png
 images/bendulft.png
+images/exassignone.png
 images/extagsnone.png
 images/extagssearch.png
 images/extagsset.png
