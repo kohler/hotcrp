@@ -182,7 +182,7 @@ Here are some example usage scenarios for tags.
  <a href='${ConfSiteBase}search.php?q=tag:nodiscuss'>search for \"tag:nodiscuss\"</a>.
  (You might make the \"nodiscuss\" tag chair-only so an evil PC member couldn't add it to a high-ranked paper, but I tend to err on the side of trust.)
  PC members can easily check the list for controversial papers they'd like to discuss despite their ranking.
- They can email the chairs about such papers, or, even easier, add a \"discuss\" tag.</li>
+ They can email the chairs about such papers, or, even easier, add a \"discussanyway\" tag.</li>
 
 <li>Controversial papers might benefit from additional review.
  You ask PC members to add the tag \"controversy\" when the current reviewers disagree.

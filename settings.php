@@ -167,7 +167,7 @@ function doTags($set) {
 	$Values["tags"] = preg_split('/\s+/', $_REQUEST["tag_chair"]);
 	foreach ($Values["tags"] as $ct)
 	    if ($ct && !checkTag($ct, false)) {
-		$Error[] = "One of the special tags contains odd characters.";
+		$Error[] = "One of the chair-only tags contains odd characters.";
 		$SettingError["tag_chair"] = true;
 	    }
     } else if ($set) {
@@ -558,11 +558,22 @@ if ($Group == "rev") {
     echo "<div class='smgap'></div>\n";
     doCheckbox('rev_notifychair', 'PC chairs are notified of new reviews by email');
 
+    echo "<div class='smgap'></div>\n";
+    echo "<table><tr><td class='rcaption'>", decorateSettingText("tag_chair", "Chair-only tags"), "</td>";
+    if (count($Error) > 0)
+	$v = defval($_REQUEST["tag_chair"], "");
+    else {
+	$t = array_keys(chairTags());
+	sort($t);
+	$v = join(" ", $t);
+    }
+    echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='50' onchange='highlightUpdate()' /><br /><small>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</small></td></tr></table>";
+
     echo "</div></div></td></tr></table>\n\n";
 
 
     // PC reviews
-    echo "<table class='half'><tr><td class='l'>";
+    echo "<table class='halfc'><tr><td>";
     echo "<div class='bgrp'><div class='bgrp_head'>PC reviews</div><div class='bgrp_body'>";
 
     doCheckbox('pcrev_any', 'PC members can review <i>any</i> submitted paper');
@@ -576,22 +587,11 @@ if ($Group == "rev") {
     doCheckbox('pc_seeallrev', "<b>Allow PC to see all reviews</b> except for conflicts<br /><small>When unchecked, a PC member can see reviews for a paper only after submitting their own review for that paper.</small>", true);
     echo "</table>\n";
 
-    echo "<div class='smgap'></div>\n";
-    echo "<table><tr><td class='rcaption'>", decorateSettingText("tag_chair", "Special tags"), "</td>";
-    if (count($Error) > 0)
-	$v = defval($_REQUEST["tag_chair"], "");
-    else {
-	$t = array_keys(chairTags());
-	sort($t);
-	$v = join(" ", $t);
-    }
-    echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='50' onchange='highlightUpdate()' /><br /><small>Only PC chairs can change these tags.</small></td></tr></table>";
-
-    echo "</div></div>\n\n";
+    echo "</div></div></td></tr></table>\n\n";
 
 
     // External reviews
-    echo "<td class='r'>";
+    echo "<table class='halfc'><tr><td>";
     echo "<div class='bgrp'><div class='bgrp_head'>External reviews</div><div class='bgrp_body'>";
 
     echo "<table>\n";
