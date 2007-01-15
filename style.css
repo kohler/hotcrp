@@ -152,6 +152,10 @@ div.info, div.warning, div.confirm, div.error {
 	margin-bottom: 0.5em;
 	min-height: 45px;
 }
+div.bodyexpander>div.info, div.bodyexpander>div.warning, div.bodyexpander>div.confirm, div.bodyexpander>div.error {
+	margin-left: 8px;
+	margin-right: 8px;
+}
 div.help {
 	padding: 0.5em 0.5em 0.5em 0.5em;
 	border: 1px solid #cccccc;
