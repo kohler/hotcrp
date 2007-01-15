@@ -128,7 +128,7 @@ class PaperSearch {
     }
     
     function _searchQueryType($str, $type = "any") {
-	global $searchTags;
+	global $searchTags, $Conf;
 	$q = "";
 
 	// quick emptiness check
@@ -213,7 +213,9 @@ class PaperSearch {
 		}
 	    }
 	    if (($special ? $special == "decision" : isset($this->fields['decision'])) && $this->amPC) {
-		$confpart = ($this->amAssistant ? "" : " and conflictType=0");
+		$confpart = "";
+		if (!$this->amAssistant && !$Conf->timeAuthorViewDecision())
+		    $confpart = " and conflictType=0";
 		if (strcasecmp($word, "yes") == 0)
 		    $qp .= " or (outcome>0$confpart)";
 		else if (strcasecmp($word, "no") == 0)
