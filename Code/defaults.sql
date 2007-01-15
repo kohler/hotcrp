@@ -47,7 +47,7 @@ insert into PaperListColumns (paperListId, fieldId, col) values
 insert into PaperList set paperListId=3, paperListName='all',
 	description='All papers', sortCol=0;
 insert into PaperListColumns (paperListId, fieldId, col) values
-	(3, 31, 0), (3, 1, 1), (3, 11, 2), (3, 27, 3), (3, 45, 4);
+	(3, 31, 0), (3, 1, 1), (3, 11, 2), (3, 27, 3), (3, 45, 4), (3, 50, 5);
 
 insert into PaperList set paperListId=4, paperListName='authorHome',
 	description='My papers (homepage view)', sortCol=0;
