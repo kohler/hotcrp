@@ -60,7 +60,7 @@ class Conference {
 
 	if (!$this->dblink || !mysql_select_db($dbname, $this->dblink))
 	    die("Unable to connect to database");
-	mysql_query("set character set utf8", $this->dblink);
+	mysql_query("set names 'utf8'", $this->dblink);
 
 	$this->updateSettings();
     }
