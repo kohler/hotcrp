@@ -201,7 +201,8 @@ A list of each paper's tags is shown on its <a href='${ConfSiteBase}review.php?p
 
 <p><img src='${ConfSiteBase}images/extagsnone.png' alt='[Tag list on review screen]' /></p>
 
-To find all papers with tag \"discuss\":&nbsp; " . _searchForm("tag:discuss") . "<br />
+<p>To find all papers with tag \"discuss\":&nbsp; " . _searchForm("tag:discuss") . "</p>
+
 Only PC members can view a paper's tags.
 If a PC member has a conflict with a paper, they can't see its tags either
 directly or through searches.");
