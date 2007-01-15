@@ -193,7 +193,8 @@ Here are some example usage scenarios for tags.
  You define an ordered tag such as \"discuss\" (see below for how), then ask the PC to <a href='${ConfSiteBase}search.php?q=order:discuss'>search for \"order:discuss\"</a>.
  The PC can now see the order and use quick links to go from paper to paper.</li>
 
-<li>During the PC meeting, chairs might add \"accept\" and \"reject\" tags as decisions are tentatively made, leaving the explicit decision setting for the end of the meeting.</li>
+<li>During the PC meeting, chairs might add \"accept\" and \"reject\" tags as decisions are tentatively made, leaving the explicit decision setting for the end of the meeting.
+ Among the reasons for this: PC members can see decisions as soon as they are entered into the system, even for conflicted papers, but they can never see tags for conflicted papers.</li>
 </ul>
 ");
     _alternateRow("Finding tags", "

@@ -214,8 +214,8 @@ class PaperSearch {
 	    }
 	    if (($special ? $special == "decision" : isset($this->fields['decision'])) && $this->amPC) {
 		$confpart = "";
-		if (!$this->amAssistant && !$Conf->timeAuthorViewDecision())
-		    $confpart = " and conflictType=0";
+		//if (!$this->amAssistant && !$Conf->timeAuthorViewDecision())
+		//    $confpart = " and conflictType=0";
 		if (strcasecmp($word, "yes") == 0)
 		    $qp .= " or (outcome>0$confpart)";
 		else if (strcasecmp($word, "no") == 0)
