@@ -649,8 +649,12 @@ class PaperList {
 		    $body .= $byPaperId[$pid];
 
 	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname);
+	if ($authorinfo & 1)
+	    $x .= " fold1c";
+	if ($authorinfo & 2)
+	    $x .= " fold2c";
 	if ($authorinfo)
-	    $x .= " fold1c fold2c\" id=\"foldplau";
+	    $x .= "\" id=\"foldplau";
 	$x .= "\">\n";
 
 	if ($this->showHeader) {
@@ -661,6 +665,8 @@ class PaperList {
 		$authorfolder = "<span class='sep'></span>";
 		if ($Conf->blindSubmission() == 0)
 		    $authorfolder .= "<a class='unfolder1' href='javascript:fold(\"plau\",0,1)'>Show authors</a><a class='folder1' href='javascript:fold(\"plau\",1,1)'>Hide authors</a>";
+		else if ($this->contact->amAssistant() && $authorinfo == 2)
+		    $authorfolder .= "<a class='unfolder2' href='javascript:fold(\"plau\",0,2)'>Show authors</a><a class='folder2' href='javascript:fold(\"plau\",1,2)'>Hide authors</a>";
 		else if ($this->contact->amAssistant() && $authorinfo > 1)
 		    $authorfolder .= "<a class='unfolder1' href='javascript:fold(\"plau\",0,1)'>Show non-anonymous authors</a><a class='extension1 unfolder2' href='javascript:fold(\"plau\",0,2)'>Show all authors</a><a class='folder2' href='javascript:fold(\"plau\",1,1);fold(\"plau\",1,2)'>Hide authors</a>";
 		else
