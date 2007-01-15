@@ -86,10 +86,12 @@ include("$ConfSitePATH/Code/options.inc");
 
 if (!isset($Opt['sessionName']))
     $Opt['sessionName'] = $Opt['dbName'];
+if (!isset($Opt['dbUser']))
+    $Opt['dbUser'] = $Opt['dbName'];
 if (!isset($Opt['dbPassword']))
     $Opt['dbPassword'] = $Opt['dbName'];
 if (!isset($Opt['dsn']))
-    $Opt['dsn'] = "mysql://" . $Opt['dbName'] . ":" . $Opt['dbPassword'] . "@127.0.0.1/" . $Opt['dbName'];
+    $Opt['dsn'] = "mysql://" . $Opt['dbUser'] . ":" . $Opt['dbPassword'] . "@127.0.0.1/" . $Opt['dbName'];
 
 
 // Create the conference

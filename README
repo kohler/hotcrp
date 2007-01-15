@@ -29,6 +29,8 @@ Configuration
   - Edit 'my.cnf' (typical location: '/etc/my.cnf') to ensure that MySQL
     can handle large objects.  In the [mysqld] section, add a line like:
     max_allowed_packet=32M
+    Some deployments, such as Macintoshes, may not have a 'my.cnf' by
+    default.  Just create one.
 
 * Site configuration
 
@@ -49,13 +51,15 @@ Configuration
 	</Directory>
 	Alias /testconf /home/kohler/hotnets-crp
 
+    Note that the first argument to Alias should NOT end in a slash.
+
   - Sign in to the site to create an account.  The first account created
     automatically receives PC chair privilege.
 
-    (If your server configuration doesn't allow .htaccess files to set
+    If your server configuration doesn't allow .htaccess files to set
     options, Apache will report an "Error 500" when you try to load HotCRP.
     Change your Apache configuration to "AllowOverride All" in the HotCRP
-    directory, as our example does above.)
+    directory, as our example does above.
 
 Now you're done, and can set up everything else through the web site
 itself.
