@@ -1113,7 +1113,7 @@ class Conference {
 	    echo "</div>";
 	echo "</div>\n"; // <div class='body'>
 	echo "<div id='footer'>\n";
-	echo "  <div id='footer_crp'><a href='http://crp.sourceforge.net/'>HotCRP</a> Conference Management Software</div>\n";
+	echo "  <div id='footer_crp'><a href='http://www.cs.ucla.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software</div>\n";
 	echo "  <div class='clear'></div></div>\n";
 	echo "</body>\n</html>\n";
     }
