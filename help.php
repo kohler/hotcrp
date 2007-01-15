@@ -201,11 +201,11 @@ A list of each paper's tags is shown on its <a href='${ConfSiteBase}review.php?p
 
 <p><img src='${ConfSiteBase}images/extagsnone.png' alt='[Tag list on review screen]' /></p>
 
-<p>To find all papers with tag \"discuss\":&nbsp; " . _searchForm("tag:discuss") . "</p>
+To find all papers with tag \"discuss\":&nbsp; " . _searchForm("tag:discuss") . "
 
-Only PC members can view a paper's tags.
+<p>Only PC members can view a paper's tags.
 If a PC member has a conflict with a paper, they can't see its tags either
-directly or through searches.");
+directly or through searches.</p>");
     _alternateRow("Changing tags", "
 To change a single paper's tags, go to the Tags entry on its <a href='${ConfSiteBase}review.php?paperId=1'>review page</a>,
 click the <img src='${ConfSiteBase}images/next.png' alt='right arrow' />,
@@ -251,10 +251,7 @@ function assign() {
     global $ConfSiteBase;
     echo "<table>";
     _alternateRow("Types of review", "
-HotCRP reviews fall into several categories, which are frequently shown as
-icons.
-
-<table class='rpad1'><tr>
+<br /><table class='rpad1'><tr>
   <td><img src='${ConfSiteBase}images/ass" . REVIEW_PRIMARY . ".png' alt='[Primary]' /></td>
   <td><b>Primary</b></td>
   <td>Primary PC assignments.  The PC member is expected to complete the
@@ -283,8 +280,8 @@ icons.
     _alternateRow("One at a time", "
 Assign reviewers for a single paper using its
 <a href='${ConfSiteBase}assign.php?paperId=1'>assignments page</a>,
-which is accessible by the paper's \"Assignments\" tab.  The assignments
-page will show you the current reviewers, and allows you to change
+which is accessible via the \"Assignments\" tab.  This
+page shows you the current reviewers, and allows you to change
 assignments and conflicts.  To change an assignment, click the
 \"<img src='${ConfSiteBase}images/next.png' alt='arrow' />\" icon next
 to the PC member's name:<br />
