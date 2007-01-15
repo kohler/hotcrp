@@ -11,6 +11,7 @@
 //
 //   dbName          Database name.  Use the name you supplied to
 //                   "Code/createdb.sh".  NO SPACES ALLOWED.
+//   dbUser	     Database user name.  Defaults to $Opt['dbUser'].
 //   dbPassword      Password for database user.  Defaults to $Opt['dbName'].
 //   shortName       Short name of the conference.  Examples: "SIGCOMM 2007",
 //                   "HotNets V".
