@@ -98,17 +98,21 @@ The \"More &raquo;\" link allows PC members and chairs to <a href='help.php?t=ta
     echo "</table>\n";
 }
 
+function _searchForm($forwhat) {
+    global $ConfSiteBase;
+    return "<form action='${ConfSiteBase}search.php' method='get'>"
+	. "<input type='text' class='textlite' name='q' value=\""
+	. htmlspecialchars($forwhat) . "\" size='20' /> &nbsp;"
+	. "<input type='submit' class='button' name='go' value='Search' />"
+	. "</form>";
+}
 
 function _searchQuickrefRow($caption, $search, $explanation) {
     global $rowidx, $ConfSiteBase;
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
     echo "<tr class='k", ($rowidx % 2), "'>";
     echo "<td class='srcaption nowrap'>", $caption, "</td>";
-    echo "<td class='sentry nowrap'>",
-	"<form action='${ConfSiteBase}search.php' method='get'>",
-	"<input type='text' class='textlite' name='q' value=\"", htmlspecialchars($search), "\" size='20' />",
-	" &nbsp;<input type='submit' class='button' name='go' value='Search' />",
-	"</form></td>";
+    echo "<td class='sentry nowrap'>", _searchForm($search), "</td>";
     echo "<td class='sentry'>", $explanation, "<span class='sep'></span></td></tr>\n";
 }
 
@@ -148,39 +152,80 @@ function searchQuickref() {
 
 function tags() {
     global $ConfSiteBase;
+
+    // get current chair-only tags
+    require_once('Code/tags.inc');
+    $ct = array_keys(chairTags());
+    if (count($ct)) {
+	sort($ct);
+	$ctxt = " (currently ";
+	foreach ($ct as $c)
+	    $ctxt .= "\"$c\", ";
+	$ctxt = substr($ctxt, 0, strlen($ctxt) - 2) . ")";
+    } else
+	$ctxt = "";
+
     echo "<table>";
     _alternateRow("Basics", "
-The <i>tag</i> system keeps track of named paper sets.
-PC members can add tags to papers,
-remove tags from papers, and list all papers with a given tag.
-It is also possible to define <i>ordered</i> tags, which preserve a particular
-paper order.");
-    _alternateRow("Tagging a paper", "
-View and set a single paper's tags on its <a href='${ConfSiteBase}review.php'>review screen</a>.
-Current tags are shown in a list:<br />
-<img src='${ConfSiteBase}images/extagsnone.png' alt='[Tag list on review screen]' /><br />
-Only non-conflicted PC members can see and edit tags.
-Click on the <img src='${ConfSiteBase}images/next.png' alt='right arrow' />
-to edit the tags, then enter one or more tags separated by spaces.<br />
-<img src='${ConfSiteBase}images/extagsset.png' alt='[Tags entry on review screen]' /><br />
-Tags should be mostly alphanumeric.");
-    _alternateRow("Tag search", "
-To find all papers with tag \"discuss\", simply <a href='${ConfSiteBase}search.php?q=tag:discuss'>search for \"tag:discuss\"</a>.");
-    _alternateRow("Tagging multiple papers", "
-To tag multiple papers at once, find the papers in a
-<a href='${ConfSiteBase}search.php'>search</a>, select the papers you want
-using their checkboxes, and add tags using the action area.
+Tags are names that PC members and chairs can attach to papers.
+Any paper can have any number of tags, and there's no need to predefine which
+tags are allowed; you can invent new ones on the fly.
+Tags are never shown to authors or conflicted PC members.
+It's easy to add and remove tags and to list all papers with a given tag,
+and <i>ordered</i> tags preserve a particular paper order.");
+    _alternateRow("Using tags", "
+Here are some example usage scenarios for tags.
+
+<ul>
+<li>You don't plan to discuss the lowest-ranked submissions at the PC meeting.
+ Mark those submissions with tag \"nodiscuss\", then ask the PC to
+ <a href='${ConfSiteBase}search.php?q=tag:nodiscuss'>search for \"tag:nodiscuss\"</a>.
+ (You might make the \"nodiscuss\" tag chair-only so an evil PC member couldn't add it to a high-ranked paper, but I tend to err on the side of trust.)
+ PC members can easily check the list for controversial papers they'd like to discuss despite their ranking.
+ They can email the chairs about such papers, or, even easier, add a \"discuss\" tag.</li>
+
+<li>Controversial papers might benefit from additional review.
+ You ask PC members to add the tag \"controversy\" when the current reviewers disagree.
+ A <a href='${ConfSiteBase}search.php?q=tag:controversy'>simple search</a> shows you where the PC thinks more review is needed.</li>
+
+<li>At the meeting, you want to discuss the papers in a particular order.
+ You'd like the PC to see the order so they can prepare to discuss papers they reviewed.
+ You define an ordered tag such as \"discuss\" (see below for how), then ask the PC to <a href='${ConfSiteBase}search.php?q=order:discuss'>search for \"order:discuss\"</a>.
+ The PC can now see the order and use quick links to go from paper to paper.</li>
+
+<li>During the PC meeting, chairs might add \"accept\" and \"reject\" tags as decisions are tentatively made, leaving the explicit decision setting for the end of the meeting.</li>
+</ul>
+");
+    _alternateRow("Finding tags", "
+A list of each paper's tags is shown on its <a href='${ConfSiteBase}review.php?paperId=1'>review page</a>, and the other paper pages.
+
+<p><img src='${ConfSiteBase}images/extagsnone.png' alt='[Tag list on review screen]' /></p>
+
+To find all papers with tag \"discuss\":&nbsp; " . _searchForm("tag:discuss") . "<br />
+Only PC members can view a paper's tags.
+If a PC member has a conflict with a paper, they can't see its tags either
+directly or through searches.");
+    _alternateRow("Changing tags", "
+To change a single paper's tags, go to the Tags entry on its <a href='${ConfSiteBase}review.php?paperId=1'>review page</a>,
+click the <img src='${ConfSiteBase}images/next.png' alt='right arrow' />,
+then enter one or more alphanumeric tags separated by spaces.
+
+<p><img src='${ConfSiteBase}images/extagsset.png' alt='[Tags entry on review screen]' /></p>
+
+<p>To tag multiple papers at once, find the papers in a
+<a href='${ConfSiteBase}search.php'>search</a>, select
+their checkboxes, and add tags using the action area.</p>
 
 <p><img src='${ConfSiteBase}images/extagssearch.png' alt='[Setting tags on the search page]' /></p>
 
-You can <b>Add</b> and <b>Remove</b> tags to/from the selected papers, or
+<p>You can <b>Add</b> and <b>Remove</b> tags to/from the selected papers, or
 <b>Define</b> a tag, which adds the tag to all selected papers and removes it
-from all non-selected papers.");
-    _alternateRow("Special tags", "
-PC chairs can define special tags that only they can add and remove
-on the <a href='${ConfSiteBase}settings.php'>conference settings page</a>.
-By default, the tags \"accept\" and \"reject\" are special.
-PC members can still search special tags.");
+from all non-selected papers.</p>
+
+Although any PC member can view or search
+any tag, only PC chairs can change certain tags$ctxt.
+Change the set of chair-only tags on the
+<a href='${ConfSiteBase}settings.php?group=rev'>conference settings page</a>.");
     _alternateRow("Ordered tags<br />and discussion orders", "
 An ordered tag names an <i>ordered</i> set of papers.  Searching for the
 tag with \"<a href='${ConfSiteBase}search.php?q=order:tagname'>order:tagname</a>\" will return the papers in the order

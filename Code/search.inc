@@ -197,38 +197,42 @@ class PaperSearch {
 		&& $this->amPC) {
 		if ($special ? $special == "order" : isset($this->fields['order']))
 		    $this->orderTag = ($this->orderTag === false ? $word : null);
-		$tagConflict = ($this->amAssistant ? "" : " and conflictType=0");
-		if ($type == "any") {
-		    $qp .= " or (tag='$word'$tagConflict)";
+		$confpart = ($this->amAssistant ? "" : " and conflictType=0");
+		if ($word == "none") {
+		    $qp .= " or (alltags is null$confpart)";
+		    $this->any |= self::ANY_ALLTAGS;
+		} else if ($type == "any") {
+		    $qp .= " or (tag='$word'$confpart)";
 		    $this->any |= self::ANY_TAG;
 		} else if ($type == "all") {
-		    $qp .= " or (alltags like '%#$word#%'$tagConflict)";
+		    $qp .= " or (alltags like '%#$word#%'$confpart)";
 		    $this->any |= self::ANY_ALLTAGS;
 		} else {
-		    $qp .= " or (alltags is not null and alltags like '%#$word#%'$tagConflict)";
+		    $qp .= " or (alltags is not null and alltags like '%#$word#%'$confpart)";
 		    $this->any |= self::ANY_ALLTAGS;
 		}
 	    }
 	    if (($special ? $special == "decision" : isset($this->fields['decision'])) && $this->amPC) {
+		$confpart = ($this->amAssistant ? "" : " and conflictType=0");
 		if (strcasecmp($word, "yes") == 0)
-		    $qp .= " or (outcome>0)";
+		    $qp .= " or (outcome>0$confpart)";
 		else if (strcasecmp($word, "no") == 0)
-		    $qp .= " or (outcome<0)";
+		    $qp .= " or (outcome<0$confpart)";
 		else if ($word == "?")
-		    $qp .= " or (outcome=0)";
+		    $qp .= " or (outcome=0$confpart)";
 		else {
 		    $rf = reviewForm();
 		    $any = false;
 		    foreach ($rf->options['outcome'] as $num => $what)
 			if (strcmp($word, $num) == 0 || strcasecmp($word, $what) == 0) {
-			    $qp .= " or (outcome=$num)";
+			    $qp .= " or (outcome=$num$confpart)";
 			    $any = true;
 			    break;
 			}
 		    if (!$any)
 			foreach ($rf->options['outcome'] as $num => $what)
 			    if (strstr(strtolower($what), strtolower($word)) !== false) {
-				$qp .= " or (outcome=$num)";
+				$qp .= " or (outcome=$num$confpart)";
 				$any = true;
 			    }
 		    if (!$any)
