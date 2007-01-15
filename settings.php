@@ -171,13 +171,13 @@ function doTags($set) {
 		$SettingError["tag_chair"] = true;
 	    }
     } else if ($set) {
-	$Conf->qe("delete from ChairTag", $while);
+	$Conf->qe("delete from ChairTag", "while updating tags");
 	if (count($Values["tags"]) > 0) {
 	    $q = "insert into ChairTag (tag) values ";
 	    foreach ($Values["tags"] as $ct)
 		if ($ct)
 		    $q .= "('" . sqlq($ct) . "'), ";
-	    $Conf->qe(substr($q, 0, strlen($q) - 2), $while);
+	    $Conf->qe(substr($q, 0, strlen($q) - 2), "while updating tags");
 	}
     }
 }

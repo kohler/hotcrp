@@ -234,7 +234,7 @@ function rf_show() {
 		   "worlds2005" => "WORLDS 2005 workshop",
 		   "cgo2004" => "CGO 2004 conference") as $k => $v) {
 	echo "<option value='$k'";
-	if ($k == $_REQUEST['sample'])
+	if ($k == defval($_REQUEST['sample'], 'none'))
 	    echo " selected='selected'";
 	echo ">$v</option>";
     }
