@@ -31,9 +31,9 @@ echo "<table class='half'><tr><td class='l'>";
 
 // General information
 echo "<div class='bgrp'><div class='bgrp_head'>General</div><div class='bgrp_body'>
-Welcome, ", htmlspecialchars($Me->fullnameOrEmail()), ".  (If this isn't you, please <a href='${ConfSiteBase}logout.php'>sign out</a>.)  You will be automatically signed out if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.
+Welcome, ", htmlspecialchars($Me->fullnameOrEmail()), ".  (If this isn't you, please <a href='${ConfSiteBase}logout.php'>sign out</a>.)  You will be automatically signed out if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.\n";
 
-<table class='half'><tr><td class='l'><ul class='compact'>
+echo "<table class='half'><tr><td class='l'><ul class='compact'>
 <li><a href='account.php'>Your account settings</a></li>
 <li><a href='mergeaccounts.php'>Merge accounts</a></li>
 </ul></td><td class='r'><ul class='compact'>\n";
@@ -43,13 +43,18 @@ if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting(
     || ($Me->isAuthor && $Conf->setting('resp_open') > 0 && $Conf->setting('resp_done'))
     || ($Me->isPC && $Conf->setting('rev_open') && $Conf->setting('pcrev_hard'))
     || ($Me->amReviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard')))
-    echo "<li><a href='deadlines.php'>Conference deadlines</a></li>\n";
+    echo "<li><a href='deadlines.php'>Deadlines</a></li>\n";
 
-echo "<li><a href='pc.php'>Meet the program committee</a></li>
-</ul></td></tr></table>";
+echo "<li><a href='pc.php'>Program committee membership</a></li>\n";
+
+echo "</ul></td></tr></table>";
 
 if ($Me->amAssistant())
     echo "\n<div class='smgap'></div>
+<table class='half'><tr><td class='l'><ul class='compact'>
+<li><a href='settings.php'><b>Conference settings</b></a></li>
+</ul></td></tr></table>
+<div class='smgap'></div>
 <table class='half'><tr><td class='l'><ul class='compact'>
 <li><a href='account.php?new=1'>Create new account</a></li>
 <li><a href='Chair/BecomeSomeoneElse.php'>Sign in as someone else</a></li>
@@ -60,17 +65,6 @@ if ($Me->amAssistant())
 
 echo "</div></div>\n";
 
-
-
-// Conference settings
-if ($Me->amAssistant()) {
-    echo "<div class='bgrp'><div class='bgrp_head'>Conference settings</div><div class='bgrp_body'>
-<table class='half'><tr><td class='l'><ul class='compact'>
-<li><a href='settings.php'>Conference settings</a></li>
-</ul></td><td class='r'><ul class='compact'>
-<li><a href='pc.php'>Program committee</a></li>
-</ul></td></tr></table></div></div>";
-}
 
 
 // Submissions
