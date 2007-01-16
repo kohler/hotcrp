@@ -725,7 +725,7 @@ class PaperList {
 	    if (isset($_REQUEST["sort"]))
 		$url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
 	    $_SESSION[$this->sessionVar] = $ids;
-	    $_SESSION[$this->sessionVar . "!"] = array($ConfSiteBase . $url, $listDescription);
+	    $_SESSION[$this->sessionVar . "!"] = array($url, $listDescription);
 	}
 	
 	return $x;
