@@ -54,8 +54,7 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
 
 // date mode
 $mainPreferences = false;
-if ($mode == "view" && $Me->isPC && $Conf->timePCReviewPreferences()
-    && !$Conf->timeReviewPaper(true, true, true))
+if ($mode == "view" && $Me->isPC && $Conf->timePCReviewPreferences())
     $mainPreferences = true;
 
 
