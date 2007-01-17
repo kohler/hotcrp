@@ -33,6 +33,13 @@ echo "<table class='half'><tr><td class='l'>";
 echo "<div class='bgrp'><div class='bgrp_head'>General</div><div class='bgrp_body'>
 Welcome, ", htmlspecialchars($Me->fullnameOrEmail()), ".  (If this isn't you, please <a href='${ConfSiteBase}logout.php'>sign out</a>.)  You will be automatically signed out if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.\n";
 
+// Conference settings
+if ($Me->amAssistant())
+    echo "<table class='half'><tr><td class='l'><ul class='compact'>
+<li><a href='settings.php'><b>Conference settings</b></a></li>
+</ul></td></tr></table>
+<div class='smgap'></div>\n";
+
 echo "<table class='half'><tr><td class='l'><ul class='compact'>
 <li><a href='account.php'>Your account settings</a></li>
 <li><a href='mergeaccounts.php'>Merge accounts</a></li>
@@ -51,10 +58,6 @@ echo "</ul></td></tr></table>";
 
 if ($Me->amAssistant())
     echo "\n<div class='smgap'></div>
-<table class='half'><tr><td class='l'><ul class='compact'>
-<li><a href='settings.php'><b>Conference settings</b></a></li>
-</ul></td></tr></table>
-<div class='smgap'></div>
 <table class='half'><tr><td class='l'><ul class='compact'>
 <li><a href='account.php?new=1'>Create new account</a></li>
 <li><a href='Chair/BecomeSomeoneElse.php'>Sign in as someone else</a></li>
