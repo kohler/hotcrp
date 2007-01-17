@@ -611,7 +611,7 @@ if (($newPaper || $canViewAuthors || $Me->amAssistant()) && !$finalEditMode)
 
 
 // Review preference
-if ($mode != "edit" && $mainPreferences) {
+if ($mode != "edit" && $mainPreferences && $prow->conflictType <= 0) {
     $x = (isset($prow->reviewerPreference) ? htmlspecialchars($prow->reviewerPreference) : "0");
     echo "<tr class='pt_preferences'>
   <td class='caption";
