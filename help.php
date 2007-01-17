@@ -50,54 +50,6 @@ function topics() {
 }
 
 
-function search() {
-    global $ConfSiteBase;
-    echo "<table>";
-    _alternateRow("Basics", "
-Enter search terms in the <a href='${ConfSiteBase}search.php'>search box</a>
-separated by spaces.  The default search box returns papers that match
-<b>any</b> of the terms you enter.  To search for papers that match <b>all</b>
-the terms you enter, or that <b>don't</b> match some terms, expand the search
-box with the <a href='${ConfSiteBase}search.php?opt=1'>Options&nbsp;&raquo;</a>
-link and use \"With <b>all</b> the words\" and \"<b>Without</b> the words\".");
-    _alternateRow("Paper selection", "
-You can search in several paper classes, depending on your role in the
-conference. Options include:
-<ul class='compact'>
-<li><b>Submitted papers</b> &mdash; all submitted papers.</li>
-<li><b>Review assignment</b> &mdash; papers that you've been assigned to review.</li>
-<li><b>Authored papers</b> &mdash; papers for which you're a contact author.</li>
-<li><b>All papers</b> &mdash; all papers, including withdrawn and other non-submitted papers.</li>
-</ul>");
-    _alternateRow("Search type", "
-By default, search examines title, abstract, and author fields.
-Expand the search box with the <a href='${ConfSiteBase}search.php?opt=1'>Options&nbsp;&raquo;</a> link to search other fields, including
-authors/collaborators and reviewers.");
-    _alternateRow("Syntax", "
-Keywords let you search individual characteristics such as titles,
-authors, reviewer names, even numbers of reviewers.  For example,
-<span class='textlite'>ti:foo</span> means \"search for 'foo' in paper
-titles\".  Keywords are listed in the
-<a href='help.php?t=syntax'>search syntax reference</a>.");
-    _alternateRow("Listing all papers", "To list all papers in a search category, perform a search with no search terms.");
-    _alternateRow("Paging through results", "All paper screens have links in the upper right corner that let you page through the most recent search results:<br />
-  <img src='${ConfSiteBase}images/pageresultsex.png' alt='[Result paging example]' /><br />
-  Using these links can speed up many tasks.  Additionally, search matches are <span class='match'>highlighted</span> on the paper screens.  This makes it easier to tell whether a conflict is real, for example.");
-    _alternateRow("Quick search", "Most screens have a quick search box in the upper right corner:<br />
-  <img src='${ConfSiteBase}images/quicksearchex.png' alt='[Quick search example]' /><br />
-  Entering a single paper number, or any search term that matches exactly one paper, will take you directly to that paper.");
-    _alternateRow("Paper number search", "Enter a paper number to add that paper to the search results.<br />
-  Example: Search <span class='textlite'>1 2 3 4 5 6 7 8</span> will return papers 1-8.<br />
-  Example: Search <span class='textlite'>100 case</span> will return papers matching \"case\", plus paper 100.<br />
-  To actually search for a number in a paper's title, abstract, or whatever, put it in quotes: <span class='textlite'>\"119\"</span>");
-    _alternateRow("Paper actions", "To act on many papers at once, select their checkboxes and choose an action underneath the paper list.
-You can select a range of checkboxes by shift-clicking.
-For example, to download a <tt>.zip</tt> file with all submitted papers, PC members can search for all submitted papers, choose the \"select all\" link, then \"Get: Papers\".  Pull down the menu to see what else you can do.
-The \"More &raquo;\" link allows PC members and chairs to <a href='help.php?t=tags'>add tags</a>, set conflicts, set decisions, and so forth.  The easiest way to tag a set of papers is to enter their numbers in the search box, search, \"select all\", and add the tag.");
-    _alternateRow("Limitations", "Search won't show you information you aren't supposed to see.  For example, authors can only search their own submissions, and if the conference used anonymous submission, then only the PC chairs can search by author.");
-    echo "</table>\n";
-}
-
 function _searchForm($forwhat) {
     global $ConfSiteBase;
     return "<form action='${ConfSiteBase}search.php' method='get'>"
@@ -105,6 +57,100 @@ function _searchForm($forwhat) {
 	. htmlspecialchars($forwhat) . "\" size='20' /> &nbsp;"
 	. "<input type='submit' class='button' name='go' value='Search' />"
 	. "</form>";
+}
+
+function search() {
+    global $ConfSiteBase;
+    echo "<table>";
+    _alternateRow("Basics", "
+Paper search is the heart of HotCRP.
+All paper lists are obtained through search, search syntax is flexible,
+and it's possible to download all matching papers and/or reviews at once.
+
+<p>Some useful, and perhaps nonobvious, hints for PC members and chairs:</p>
+
+<ul class='compact'>
+<li>" . _searchForm("") . "&nbsp; finds all papers.  (Leave the search field blank.)</li>
+<li>" . _searchForm("12") . "&nbsp; finds paper #12.  When entered from a
+ <a href='#quicklinks'>quicksearch</a> box, this search will <i>jump</i> to
+ paper #12 directly.</li>
+<li>Investigate <a href='${ConfSiteBase}help.php?t=syntax'>search syntax</a>.</li>
+<li>Use <a href='#quicklinks'>quicklinks</a> on paper pages to navigate
+ through search results.</li>
+<li>On search results pages, <i>shift-click</i> the checkboxes to
+ select paper ranges.</li>
+</ul>
+");
+    _alternateRow("How to search", "
+The default search box returns papers that match
+<i>any</i> of the space-separated terms you enter.
+To search for papers that match <i>all</i>
+the terms, or that <i>don't</i> match some terms, click on
+<a href='${ConfSiteBase}search.php?opt=1'>Options&nbsp;&raquo;</a>
+and use \"With <b>all</b> the words\" and \"<b>Without</b> the words\".
+
+<p>You can search in several paper classes, depending on your role in the
+conference. Options include:</p>
+<ul class='compact'>
+<li><b>Submitted papers</b> &mdash; all submitted papers.</li>
+<li><b>Review assignment</b> &mdash; papers that you've been assigned to review.</li>
+<li><b>Authored papers</b> &mdash; papers for which you're a contact author.</li>
+<li><b>All papers</b> &mdash; all papers, including withdrawn and other non-submitted papers.</li>
+</ul>
+
+<p>Search won't show you information you aren't supposed to see.  For example,
+authors can only search their own submissions, and if the conference used
+anonymous submission, then only the PC chairs can search by author.</p>
+
+<p>By default, search examines paper titles, abstracts, and authors.
+Click on <a href='${ConfSiteBase}search.php?opt=1'>Options&nbsp;&raquo;</a>
+to search other fields, including authors/collaborators and reviewers.
+Or use <b>keywords</b> to search individual characteristics such as titles,
+authors, reviewer names, or even numbers of reviewers.  For example,
+<span class='textlite'>ti:foo</span> means \"search for 'foo' in paper
+titles\".  Keywords are listed in the
+<a href='help.php?t=syntax'>search syntax reference</a>.</p>");
+    _alternateRow("Search results", "
+Click on a paper number or paper title to jump to that paper's screen.
+Search matches are <span class='match'>highlighted</span> there, which,
+for example, makes it easier to tell whether a conflict is real.
+
+<p>The search results screen also lets you act on many papers at once.
+Select the checkboxes for the interesting papers, then choose an action
+underneath the paper list.  You can:</p>
+
+<ul class='compact'>
+<li>Download a <tt>.zip</tt> file with the selected papers.</li>
+<li>Download all reviews for the selected papers.</li>
+<li>Download tab-separated text files with authors, PC
+ conflicts, review scores, and so forth (some options only
+ available to chairs).</li>
+<li>Add, remove, and define <a href='${ConfSiteBase}help.php?t=tags'>tags</a>.</li>
+<li>Mark conflicts, assign reviewers, or assign reviewers automatically (chairs only).</li>
+<li>Set decisions (chairs only).</li>
+</ul>
+
+<p>Interact with the action area to see what you can do.
+Select papers by clicking their checkboxes, by <i>shift</i>-clicking on
+either end of a <i>range</i> of checkboxes, or by clicking the \"Select all\"
+link underneath the list.
+For instance, the easiest way to tag a set of papers is to enter their numbers
+in the search box, search, \"Select all\", and add the tag.</p>
+");
+    _alternateRow("<a name='quicklinks'>Quicksearch<br />and quicklinks</a>", "
+Most screens have a quicksearch box in the upper right corner:<br />
+<img src='${ConfSiteBase}images/quicksearchex.png' alt='[Quick search example]' /><br />
+This box supports the full search syntax, but entering
+a single paper number, or any search terms that match exactly
+one paper, will take you directly to that paper's screen.
+
+<p>All paper screens have quicklinks in the upper right corner that navigate
+through the most recent search results:<br />
+<img src='${ConfSiteBase}images/pageresultsex.png' alt='[Result paging example]' /><br />
+Using these links can speed up many tasks.  Click on the search description
+(here, \"This search\") to return to the search results.</p>
+");
+    echo "</table>\n";
 }
 
 function _searchQuickrefRow($caption, $search, $explanation) {
