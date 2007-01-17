@@ -119,12 +119,13 @@ function _searchQuickrefRow($caption, $search, $explanation) {
 function searchQuickref() {
     global $rowidx;
     echo "<table>\n";
-    _searchQuickrefRow("Basics", "story", "\"story\" in title, abstract, possibly authors");
+    _searchQuickrefRow("Basics", "", "all papers in the search category");
+    _searchQuickrefRow("", "story", "\"story\" in title, abstract, possibly authors");
     _searchQuickrefRow("", "119", "paper #119");
     _searchQuickrefRow("", "1 2 5 12-24 kernel", "the numbered papers, plus papers with \"kernel\" in title, abstract, possibly authors");
+    _searchQuickrefRow("", "\"802\"", "\"802\" in title, abstract, possibly authors (not paper #802)");
     _searchQuickrefRow("", "very new", "\"very\" <i>or</i> \"new\" in title, abstract, possibly authors");
     _searchQuickrefRow("", "\"very new\"", "the phrase \"very new\" in title, abstract, possibly authors<br />(To search for papers matching both \"very\" and \"new\", but not necessarily the phrase, expand the search options and use \"With <i>all</i> the words\".)");
-    _searchQuickrefRow("", "", "all papers in the search category");
     _searchQuickrefRow("Title", "ti:flexible", "title contains \"flexible\"");
     _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains \"very novel\"");
     _searchQuickrefRow("Authors", "au:poletto", "author list contains \"poletto\"");
