@@ -1,8 +1,21 @@
-function highlightUpdate() {
-    var ins = document.getElementsByTagName("input");
-    for (var i = 0; i < ins.length; i++)
-	if (ins[i].name == "update" || ins[i].name == "submit")
-	    ins[i].className = "button_alert";
+function highlightUpdate(which, classmod) {
+    if (which == null) {
+	var ins = document.getElementsByTagName("input");
+	for (var i = 0; i < ins.length; i++)
+	    if (ins[i].name == "update" || ins[i].name == "submit")
+		highlightUpdate(ins[i], classmod);
+    } else {
+	if (!(which instanceof Element))
+	    which = document.getElementById(which);
+	if (!which)
+	    return;
+	var cc = which.className;
+	if (cc.length > 6 && cc.substring(cc.length - 6) == "_alert")
+	    cc = cc.substring(0, cc.length - 6);
+	if (cc.length > 8 && cc.substring(cc.length - 8) == "_confirm")
+	    cc = cc.substring(0, cc.length - 8);
+	which.className = cc + (classmod == null ? "_alert" : classmod);
+    }
 }
 
 function fold(which, dofold, foldnum) {
@@ -100,30 +113,32 @@ function doRole(what) {
 	pc.checked = true;
 }
 
-function submitForm(formname, value) {
-    var form = document.getElementById(formname);
-    var which = document.getElementById(formname + "action");
-    which.value = value;
-    form.submit();
-}
-
 var pselclick_last = null;
 function pselClick(evt, elt, thisnum) {
-    var i, sel;
     if (!evt.shiftKey || !pselclick_last)
 	/* nada */;
-    else if (pselclick_last <= thisnum)
-	for (i = thisnum - 1; i >= pselclick_last; i--) {
-	    sel = document.getElementById("psel" + i);
+    else {
+	var i = (pselclick_last <= thisnum ? pselclick_last : thisnum + 1);
+	var j = (pselclick_last <= thisnum ? thisnum - 1 : pselclick_last);
+	for (; i <= j; i++) {
+	    var sel = document.getElementById("psel" + i);
 	    if (sel)
 		sel.checked = elt.checked;
 	}
-    else
-	for (i = thisnum + 1; i <= pselclick_last; i++) {
-	    sel = document.getElementById("psel" + i);
-	    if (sel)
-		sel.checked = elt.checked;
-	}
+    }
     pselclick_last = thisnum;
     return true;
+}
+
+function cheapAjaxSubmit(name, url, value) {
+    var img = document.getElementById(name + "img");
+    var val = document.getElementById(name);
+    if (!img || !val || !(img instanceof Image) || !val.value
+	|| (!img.complete && !img.onload))
+	return true;
+    var submit = document.getElementById(name + "submit");
+    if (submit)
+	img.onload = function () { highlightUpdate(submit, ""); fold(name, 0); };
+    img.src = url + encodeURI(val.value);
+    return false;
 }

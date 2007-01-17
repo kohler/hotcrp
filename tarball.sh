@@ -28,6 +28,7 @@ README
 account.php
 assign.php
 autoassign.php
+cheapajax.php
 comment.php
 contactauthors.php
 deadlines.php
@@ -67,6 +68,7 @@ Code/tags.inc
 
 Code/Mail-1.1.14
 
+images/_.gif
 images/GenChart.php
 images/GeneralChart.php
 images/ass-1.png

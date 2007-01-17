@@ -613,9 +613,10 @@ if ($mode != "edit" && $mainPreferences) {
     $x = (isset($prow->reviewerPreference) ? htmlspecialchars($prow->reviewerPreference) : "0");
     echo "<tr class='pt_preferences'>
   <td class='caption'>Review preference</td>
-  <td class='entry'><form action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1\" method='post' enctype='multipart/form-data'>
-    <input class='textlite revpref' type='text' size='4' name='revpref' value=\"$x\" />
-    <input class='button_small' type='submit' name='setrevpref' value='Set preference' />
+  <td id='foldrevpref' class='entry foldc'><form id='revprefform' action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1\" method='post' enctype='multipart/form-data' onsubmit='return cheapAjaxSubmit(\"revpref\", \"${ConfSiteBase}cheapajax.php?paperId=$prow->paperId&amp;revpref=\")'>
+    <input id='revpref' class='textlite' type='text' size='4' name='revpref' value=\"$x\" onfocus=\"tempText(this, '0', 1)\" onblur=\"tempText(this, '0', 0)\" onchange='highlightUpdate(\"revprefsubmit\");fold(\"revpref\",1)' />&nbsp;
+    <input id='revprefsubmit' class='button_small' type='submit' name='setrevpref' value='Save preference' />
+    <img id='revprefimg' alt='' width='1' height='1' src='${ConfSiteBase}images/_.gif' /><span class='confirm extension'><span class='sep'></span>Preference saved!</span>
   </form></td>
 </tr>\n\n";
 }

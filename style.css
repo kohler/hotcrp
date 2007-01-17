@@ -179,6 +179,10 @@ div.error p, div.info p, div.warning p, div.confirm p, div.help p {
 	margin-top: 0.75em;
 	margin-bottom: 0em;
 }
+span.confirm {
+	font-style: italic;
+	color: #006600;
+}
 
 input, button, textarea, select {
 	font-family: sans-serif;
@@ -250,7 +254,7 @@ table.halfc {
 	margin-right: auto;
 }
 div.bgrp {
-	margin: 0.5em 0em 1em 0em;
+	margin: 0.5em 0em 0.75em 0em;
 	background: #eff1ff;
 }
 div.bgrp div.bgrp_head {
@@ -308,6 +312,19 @@ input.button_small, a.button_small, button.button_small {
 	border-left: 2px solid #eeee66;
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
+	text-decoration: none;
+	color: black;
+	white-space: nowrap;
+}
+input.button_small_alert, a.button_small_alert, button.button_small_alert {
+	font-size: small;
+	font-weight: bold;
+	padding: 1px 0.25em;
+	background: #ffaaaa;
+	border-top: 1px solid #ee6666;
+	border-left: 2px solid #ee6666;
+	border-bottom: 1px solid #996666;
+	border-right: 2px solid #996666;
 	text-decoration: none;
 	color: black;
 	white-space: nowrap;
