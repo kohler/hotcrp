@@ -436,8 +436,10 @@ if (isset($_REQUEST['setrevpref']) && $prow && isset($_REQUEST['revpref'])) {
 	if ($result)
 	    $Conf->confirmMsg("Review preference saved.");
 	getProw($Me->contactId);
-    } else
-	$Conf->errorMsg("Bad preference setting.  Example settings include '0' or '' (don't care), '+' (want to review, same as +1), '++' (really want to review, same as +2), '&minus;' (don't want to review, same as &minus;1), '&minus;&minus;' (really don't want to review, same as &minus;2), and numbers between &minus;1000000 and 1000000.");
+    } else {
+	$Conf->errorMsg("Preferences should be small positive or negative integers.  0 means don't care; positive numbers mean you want to review a paper, negative numbers mean you don't.  The greater the absolute value, the stronger your feelings about the paper.");
+	$PaperError['revpref'] = true;
+    }
 }
 
 
@@ -612,11 +614,14 @@ if (($newPaper || $canViewAuthors || $Me->amAssistant()) && !$finalEditMode)
 if ($mode != "edit" && $mainPreferences) {
     $x = (isset($prow->reviewerPreference) ? htmlspecialchars($prow->reviewerPreference) : "0");
     echo "<tr class='pt_preferences'>
-  <td class='caption'>Review preference</td>
-  <td id='foldrevpref' class='entry foldc'><form id='revprefform' action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1\" method='post' enctype='multipart/form-data' onsubmit='return cheapAjaxSubmit(\"revpref\", \"${ConfSiteBase}cheapajax.php?paperId=$prow->paperId&amp;revpref=\")'>
-    <input id='revpref' class='textlite' type='text' size='4' name='revpref' value=\"$x\" onfocus=\"tempText(this, '0', 1)\" onblur=\"tempText(this, '0', 0)\" onchange='highlightUpdate(\"revprefsubmit\");fold(\"revpref\",1)' />&nbsp;
+  <td class='caption";
+    if (isset($PaperError['revpref']))
+	echo " error";
+    echo "'>Review preference</td>
+  <td id='foldrevpref' class='entry foldc fold1c'><form id='revprefform' action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1\" method='post' enctype='multipart/form-data' onsubmit='return cheapAjaxSubmit(\"revpref\", \"${ConfSiteBase}cheapajax.php?paperId=$prow->paperId&amp;revpref=\");'>
+    <input id='revpref' class='textlite' type='text' size='4' name='revpref' value=\"$x\" onfocus=\"tempText(this, '0', 1)\" onblur=\"tempText(this, '0', 0)\" onchange='highlightUpdate(\"revprefsubmit\");fold(\"revpref\",1);fold(\"revpref\",1,1)' />&nbsp;
     <input id='revprefsubmit' class='button_small' type='submit' name='setrevpref' value='Save preference' />
-    <img id='revprefimg' alt='' width='1' height='1' src='${ConfSiteBase}images/_.gif' /><span class='confirm extension'><span class='sep'></span>Preference saved!</span>
+    <span class='confirm extension'><span class='sep'></span>Preference saved!</span><span class='error extension1'><span class='sep'></span>Preferences must be small positive or negative integers.</span>
   </form></td>
 </tr>\n\n";
 }

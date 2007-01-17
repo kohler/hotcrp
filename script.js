@@ -5,15 +5,13 @@ function highlightUpdate(which, classmod) {
 	    if (ins[i].name == "update" || ins[i].name == "submit")
 		highlightUpdate(ins[i], classmod);
     } else {
-	if (!(which instanceof Element))
+	if (!which.className)
 	    which = document.getElementById(which);
 	if (!which)
 	    return;
 	var cc = which.className;
 	if (cc.length > 6 && cc.substring(cc.length - 6) == "_alert")
 	    cc = cc.substring(0, cc.length - 6);
-	if (cc.length > 8 && cc.substring(cc.length - 8) == "_confirm")
-	    cc = cc.substring(0, cc.length - 8);
 	which.className = cc + (classmod == null ? "_alert" : classmod);
     }
 }
@@ -130,15 +128,26 @@ function pselClick(evt, elt, thisnum) {
     return true;
 }
 
+var cheapAjax = {count: 0};
 function cheapAjaxSubmit(name, url, value) {
-    var img = document.getElementById(name + "img");
     var val = document.getElementById(name);
-    if (!img || !val || !(img instanceof Image) || !val.value
-	|| (!img.complete && !img.onload))
+    if (!val || val.value == null)
 	return true;
     var submit = document.getElementById(name + "submit");
-    if (submit)
-	img.onload = function () { highlightUpdate(submit, ""); fold(name, 0); };
-    img.src = url + encodeURI(val.value);
+    cheapAjax[name] = new Image();
+    cheapAjax[name].onload = function () {
+	if (cheapAjax[name].height) {
+	    if (submit) highlightUpdate(submit, "");
+	    fold(name, 0);
+	    fold(name, 1, 1);
+	} else
+	    cheapAjax[name].onerror();
+    };
+    cheapAjax[name].onerror = function () {
+	fold(name, 1);
+	fold(name, 0, 1);
+    };
+    cheapAjax[name].src = url + encodeURI(val.value) + "&count=" + cheapAjax.count;
+    cheapAjax.count++;
     return false;
 }

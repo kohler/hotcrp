@@ -1,8 +1,10 @@
 <?php
 require_once('Code/header.inc');
 $Me = $_SESSION["Me"];
-if (!$Me->valid())
-    die("Invalid contact");
+if (!$Me->valid()) {
+    header("HTTP/1.0 403 Missing contact information");
+    exit;
+}
 
 if (isset($_REQUEST["revpref"]) && $Me->isPC
     && ($paperId = cvtint($_REQUEST["paperId"])) > 0
@@ -15,6 +17,9 @@ if (isset($_REQUEST["revpref"]) && $Me->isPC
     $Conf->q("unlock tables", $while);
     if (!$OK)
 	die("Cannot set preference");
+} else {
+    header("HTTP/1.0 403 Bad Request"); 
+    exit;
 }
 
 if (isset($_REQUEST["cache"])) { // allow caching

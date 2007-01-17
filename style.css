@@ -183,6 +183,10 @@ span.confirm {
 	font-style: italic;
 	color: #006600;
 }
+span.error {
+	font-style: italic;
+	color: #660000;
+}
 
 input, button, textarea, select {
 	font-family: sans-serif;
