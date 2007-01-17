@@ -29,7 +29,7 @@ function savePreferences($reviewer) {
 	}
 
     if ($error)
-	$Conf->errorMsg("Bad preference setting.  Example settings include '0' or '' (don't care), '+' (want to review, same as +1), '++' (really want to review, same as +2), '&minus;' (don't want to review, same as &minus;1), '&minus;&minus;' (really don't want to review, same as &minus;2), and numbers between &minus;1000000 and 1000000.");
+	$Conf->errorMsg("Bad preference setting.");
     if ($pmax == 0 && !$error)
 	$Conf->errorMsg("No reviewer preferences to update.");
     if ($pmax == 0)
@@ -70,20 +70,28 @@ if (isset($_REQUEST["update"]))
     savePreferences($reviewer);
 
 
-$Conf->infoMsg("<p>Help us assign you papers you want by
-entering your preferences.
-Preferences are integers; the higher the number, the more you want to
-review the paper.  0 is neutral (no preference).
-For short, \"+\" means \"+1\", \"&minus;\" means \"&minus;1\",
-\"++\" means \"+2\", and so forth.
-Use \"&minus;100\" to represent a conflict.</p>
-
-<p>The paper list shows all submitted papers and their topics.  You have high
+$rf = reviewForm();
+if (count($rf->topicName))
+    $topicnote = " and their topics.  You have high
 interest in <span class='topic2'>bold topics</span>, and low interest in <span
 class='topic0'>grey topics</span>.  \"Topic score\" is higher the more you
-are interested in the paper's topics.  Click on a column heading to sort by
-that column.  You may also enter preferences on the paper pages, which are
-accessible by clicking the paper title.</p>");
+are interested in the paper's topics";
+else
+    $topicnote = "";
+
+$Conf->infoMsg("<p>Help us assign you papers you want by
+entering your preferences.
+Preferences are small integers.  0 means don't care; positive numbers
+mean you want to review a paper, negative numbers mean you don't.
+The greater the absolute value, the stronger your feelings.
+You can also say \"+\" or \"&minus;\" for short.
+Use \"&minus;100\" or less to represent a conflict.</p>
+
+<p>The list shows all submitted papers$topicnote.
+Click on a column heading to sort by
+that column.  You may also enter preferences on the paper pages, which 
+show abstracts and other information.  Access a paper page by clicking
+the paper title.</p>");
 
 
 if ($Me->amAssistant()) {

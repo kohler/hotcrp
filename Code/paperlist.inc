@@ -82,6 +82,9 @@ class PaperList {
 	    $queryOptions['reviewerName'] = 1;
 	    break;
 	case self::FIELD_TOPIC_INTEREST:
+	    $rf = reviewForm();
+	    if (!count($rf->topicName))
+		return false;
 	    $queryOptions['topicInterestScore'] = 1;
 	    break;
 	case self::FIELD_TOPIC_NAMES:

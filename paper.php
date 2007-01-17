@@ -437,7 +437,7 @@ if (isset($_REQUEST['setrevpref']) && $prow && isset($_REQUEST['revpref'])) {
 	    $Conf->confirmMsg("Review preference saved.");
 	getProw($Me->contactId);
     } else {
-	$Conf->errorMsg("Preferences should be small positive or negative integers.  0 means don't care; positive numbers mean you want to review a paper, negative numbers mean you don't.  The greater the absolute value, the stronger your feelings about the paper.");
+	$Conf->errorMsg("Preferences should be small integers.  0 means don't care; positive numbers mean you want to review a paper, negative numbers mean you don't.  The greater the absolute value, the stronger your feelings.");
 	$PaperError['revpref'] = true;
     }
 }

@@ -771,6 +771,9 @@ function cvtpref($n) {
 	return 0;
     else if (is_numeric($n))
 	return round($n);
+    else if (strpos($n, "\xE2") !== false)
+	// Translate UTF-8 for minus sign into a real minus sign ;)
+	return cvtpref(str_replace("\xE2\x88\x92", '-', $n));
     else
 	return -1000001;
 }
