@@ -34,7 +34,7 @@ function chairTags() {
 }
 
 function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
-    global $Conf;
+    global $Conf, $Me;
     if (!is_array($pids))
 	$pids = array($pids);
 
@@ -56,7 +56,7 @@ function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
     
     // lock
     $while = "while tagging papers";
-    $Conf->qe("lock tables PaperTag write, ChairTag write", $while);
+    $Conf->qe("lock tables PaperTag write, ChairTag write, ActionLog write", $while);
 
     // check chair tags
     if (!$chair) {
@@ -121,6 +121,9 @@ function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
 	$Conf->qe(substr($q, 0, strlen($q) - 2) . " on duplicate key update tagIndex=tagIndex", $while);
     }
 
+    $modeexplanation = array("so" => "define ordered", "ao" => "add ordered", "d" => "remove", "s" => "define", "a" => "add", "p" => "set");
+    $Conf->log("Tag " . $modeexplanation[$mode] . ": " . join(", ", $tags), $Me, $pids);
+    
     $Conf->qe("unlock tables", $while);
     return true;
 }
