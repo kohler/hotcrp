@@ -111,9 +111,12 @@ authors, reviewer names, or even numbers of reviewers.  For example,
 titles\".  Keywords are listed in the
 <a href='help.php?t=syntax'>search syntax reference</a>.</p>");
     _alternateRow("Search results", "
-Click on a paper number or paper title to jump to that paper's screen.
+When looking at search results, click on a paper number or paper title
+to jump to that paper's screen.
 Search matches are <span class='match'>highlighted</span> there, which,
 for example, makes it easier to tell whether a conflict is real.
+Once on a paper screen you can use <a href='#quicklinks'>quicklinks</a>
+to navigate through the rest of the search matches.
 
 <p>The search results screen also lets you act on many papers at once.
 Select the checkboxes for the interesting papers, then choose an action
@@ -193,8 +196,6 @@ function searchQuickref() {
     _searchQuickrefRow("", "dec:?", "decision unspecified");
     echo "</table>\n";
 }
-
-
 
 
 function tags() {
@@ -294,7 +295,6 @@ For instance, you might search for \"<a href='${ConfSiteBase}search.php?q=4+1+12
 
 
 
-
 function assign() {
     global $ConfSiteBase;
     echo "<table>";
@@ -337,6 +337,7 @@ to the PC member's name:<br />
 ");
     echo "</table>\n";
 }
+
 
 
 if ($topic == "topics")
