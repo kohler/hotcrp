@@ -1,3 +1,5 @@
+- AJAX for review preferences
+- check correctness of border on paper view/expansion
 - fold review form
 + comments: allow chair view if conflicted
 - comments: allow chair to enter if conflicted

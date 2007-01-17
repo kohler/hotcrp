@@ -88,7 +88,7 @@ accessible by clicking the paper title.</p>");
 
 if ($Me->amAssistant()) {
     echo "<form method='get' action='reviewprefs.php' name='selectReviewer'>
-  <b>Showing preferences for</b>
+  <b>Showing preferences for:&nbsp;</b>
   <select name='reviewer' onchange='document.selectReviewer.submit()'>\n";
 
     $query = "select ContactInfo.contactId, firstName, lastName,
