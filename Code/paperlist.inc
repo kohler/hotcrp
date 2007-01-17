@@ -442,7 +442,7 @@ class PaperList {
 	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'><img src=\"${ConfSiteBase}images/bendulft.png\" style='position: relative; top: 8px' /></td>\n";
 	$fclass = (defval($_SESSION["foldplact"], 1) ? "fold8c" : "fold8o");
 	$t .= "    <td id='foldplact' class='$fclass' colspan='" . ($ncol - 1) . "'><table>
-  <tr><td class='xcaption'><b>Select papers</b> (or <a href='javascript:void checkPapersel(true)'>select all " . $this->count . "</a>), then <b>Get:</b></td>
+  <tr><td class='xcaption'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then <b>Get:</b></td>
     <td><select name='getaction'>
     <option value='paper' selected='selected'>Papers</option>
     <option value='revform'>Review forms</option>\n";
@@ -474,9 +474,6 @@ class PaperList {
     <option value='a' selected='selected'>Add</option><option value='d'>Remove</option><option value='s'>Define</option><option value='so'>Define ordered</option><option value='ao'>Add ordered</option>
   </select> &nbsp;tag(s) &nbsp;<input class='textlite' type='text' name='tag' value='' size='15' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></td></tr>\n";
 	    
-	    if ($this->contact->amAssistant())
-		$t .= "  <tr class='extension8'><td class='rcaption'>Decision:</td><td>Set decision to&nbsp; " . outcomeSelector() . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></td></tr>\n";
-	    
 	    if ($this->contact->amAssistant()) {
 		$t .= "  <tr class='extension8'><td class='rcaption'>Assignments &amp; conflicts:</td>
     <td id='foldass' class='foldc'><select name='marktype' onchange='fold(\"ass\", (this.value[0] == \"x\"))'>
@@ -499,6 +496,10 @@ class PaperList {
 		$t .= "</select></span> &nbsp;<input type='submit' class='button_small' name='setassign' value='Go' />";
 		$t .= "</td></tr>\n";
 	    }
+
+	    if ($this->contact->amAssistant())
+		$t .= "  <tr class='extension8'><td class='rcaption'>Decision:</td><td>Set decision to&nbsp; " . outcomeSelector() . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></td></tr>\n";
+	    
 	} else
 	    $t .= "</td></tr>";
 	

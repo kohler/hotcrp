@@ -62,11 +62,20 @@ function tempText(elt, text, on) {
 	elt.value = text;
 }
 
-function checkPapersel(onoff) {
+function papersel(onoff) {
     var ins = document.getElementsByTagName("input");
     for (var i = 0; i < ins.length; i++)
 	if (ins[i].name == "pap[]")
 	    ins[i].checked = onoff;
+}
+
+function paperselCheck() {
+    var ins = document.getElementsByTagName("input");
+    for (var i = 0; i < ins.length; i++)
+	if (ins[i].name == "pap[]" && ins[i].checked)
+	    return true;
+    alert("Select one or more papers first.");
+    return false;
 }
 
 var selassign_blur = 0;

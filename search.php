@@ -487,7 +487,7 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
     echo "<div class='maintabsep'></div>\n\n<div class='searchresult'>";
 
     if ($pl->anySelector) {
-	echo "<form action='search.php' method='get' id='sel'>\n";
+	echo "<form action='search.php' method='get' id='sel' onsubmit='return paperselCheck();'>\n";
 	foreach (array("q", "qx", "qa", "qt", "t") as $v)
 	    if (defval($_REQUEST[$v], "") != "")
 		echo "<input type='hidden' name='$v' value=\"", htmlspecialchars($_REQUEST[$v]), "\" />\n";
