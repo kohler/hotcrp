@@ -533,13 +533,13 @@ class Contact {
 	return false;
     }
 
-    function canViewReview($prow, $rrow, $conf, &$whyNot = null, $type = "revview") {
+    function canViewReview($prow, $rrow, $conf, &$whyNot = null, $ignoreForceShow = false) {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
 	$rrsub = (!$rrow || $rrow->reviewSubmitted > 0);
-	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
+	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && !$ignoreForceShow;
 	if (($prow->conflictType == CONFLICT_AUTHOR
 	     && $conf->timeAuthorViewReviews() && $rrsub
 	     && (!$this->reviewsOutstanding || !$this->isReviewer))

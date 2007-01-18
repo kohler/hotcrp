@@ -319,6 +319,8 @@ if ($viewAny)
 // can we see any reviews?
 if (!$viewAny && !$editAny)
     errorMsgExit("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
+if ($Me->amAssistant() && $prow->conflictType > 0 && !$Me->canViewReview($prow, null, $Conf, $fakeWhyNotView, true))
+    $Conf->infoMsg("You have explicitly overridden your conflict and are able to view and edit reviews for this paper.");
 
 
 // mode
