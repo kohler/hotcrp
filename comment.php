@@ -184,6 +184,8 @@ echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></
 // exit on certain errors
 if (!$Me->canViewComment($prow, $crow, $Conf, $whyNot))
     errorMsgExit(whyNotText($whyNot, "comment"));
+if ($Me->amAssistant() && $prow->conflictType > 0 && !$Me->canViewComment($prow, $crow, $Conf, null, true))
+    $Conf->infoMsg("As PC chair, you can see these comments despite your conflict.");
 
 echo "</table>";
 $paperTable->echoDivExit();

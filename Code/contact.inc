@@ -539,7 +539,7 @@ class Contact {
 	    return false;
 	// policy
 	$rrsub = (!$rrow || $rrow->reviewSubmitted > 0);
-	$forceShow = ($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"]);
+	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
 	if (($prow->conflictType == CONFLICT_AUTHOR
 	     && $conf->timeAuthorViewReviews() && $rrsub
 	     && (!$this->reviewsOutstanding || !$this->isReviewer))
@@ -679,17 +679,16 @@ class Contact {
 	return $this->canComment($prow, $crow, $conf, $whyNot, true);
     }
 
-    function canViewComment($prow, $crow, $conf, &$whyNot = null) {
+    function canViewComment($prow, $crow, $conf, &$whyNot = null, $ignoreForceShow = false) {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
-	$forceShow = ($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"]);
+	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && !$ignoreForceShow;
 	if (($prow->conflictType == CONFLICT_AUTHOR
 	     && $conf->timeAuthorViewReviews()
 	     && (!$crow || $crow->forAuthors))
-	    || ($prow->conflictType > 0 && $forceShow)
-	    || ($this->amAssistant() && $prow->conflictType == 0)
+	    || ($this->amAssistant() && ($forceShow || $prow->conflictType == 0))
 	    || ($this->isPC && $prow->conflictType == 0
 		&& ($conf->timePCViewAllReviews()
 		    || !$crow || $crow->forPC))
@@ -746,7 +745,8 @@ class Contact {
     }
     
     function canViewReviewerIdentity($prow, $rrow, $conf) {
-	if (($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
+	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
+	if (($this->amAssistant() && $forceShow)
 	    || ($rrow && $rrow->contactId == $this->contactId)
 	    || ($this->isPC && $prow->conflictType == 0)
 	    || ($prow->reviewType > 0
