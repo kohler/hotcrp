@@ -150,7 +150,7 @@ $paperTable = new PaperTable(false, false, true, ($Me->amAssistant() && $prow->b
 // begin table
 $paperTable->echoDivEnter();
 echo "<table class='paper'>\n\n";
-$Conf->tableMsg(2);
+$Conf->tableMsg(2, $paperTable);
 
 
 // title

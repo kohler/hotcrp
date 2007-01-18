@@ -281,6 +281,7 @@ $paperTable = new PaperTable(false, false, true, $authorsFolded);
 // begin table
 $paperTable->echoDivEnter();
 echo "<table class='paper'>\n\n";
+$Conf->tableMsg(2, $paperTable);
 
 
 // title
@@ -316,7 +317,6 @@ if ($viewAny)
 
 
 // can we see any reviews?
-$Conf->tableMsg(1);
 if (!$viewAny && !$editAny)
     errorMsgExit("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
 

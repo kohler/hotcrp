@@ -16,6 +16,7 @@ class Conference {
     var $saveMessages;
     var $headerPrinted;
     var $tableMessages;
+    var $tableMessagesObj;
     var $bodyexpander;
 
     //
@@ -1032,8 +1033,9 @@ class Conference {
 	exit;
     }
 
-    function tableMsg($colspan) {
+    function tableMsg($colspan, $obj) {
 	$this->tableMessages = $colspan;
+	$this->tableMessagesObj = $obj;
     }
     
 
@@ -1109,8 +1111,11 @@ class Conference {
     function footer() {
 	global $ConfSiteBase;
 
-	if ($this->tableMessages)
+	if ($this->tableMessages) {
 	    echo "</table>\n\n";
+	    if ($this->tableMessagesObj)
+		$this->tableMessagesObj->echoDivExit();
+	}
 	if ($this->bodyexpander)
 	    echo "</div>";
 	echo "</div>\n"; // <div class='body'>
