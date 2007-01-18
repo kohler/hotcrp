@@ -17,7 +17,6 @@
 - hole: chair can view tags on Paper View screen
 - comments error message appears in odd position (out of an inner <div>)
 - "Put 'Silent' in the explanation box to not send email to the contact authors."
-- Are checkins NOW error-free??
 
 - can view any review for a paper you're associated with (or PC)
 - ViewPaper.php handles withdrawn reviews correctly
