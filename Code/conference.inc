@@ -1100,8 +1100,10 @@ class Conference {
     }
 
     function expandBody() {
-	print "<div class='bodyexpander'>";
-	$this->bodyexpander = true;
+	if (!$this->bodyexpander) {
+	    print "<div class='bodyexpander'>";
+	    $this->bodyexpander = true;
+	}
     }
 
     function footer() {

@@ -150,6 +150,7 @@ $paperTable = new PaperTable(false, false, true, ($Me->amAssistant() && $prow->b
 // begin table
 $paperTable->echoDivEnter();
 echo "<table class='paper'>\n\n";
+$Conf->tableMsg(2);
 
 
 // title
@@ -178,14 +179,16 @@ if ($crow)
 
 
 // extra space
-echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>
-</table>";
-$paperTable->echoDivExit();
-
+echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>\n";
 
 // exit on certain errors
 if (!$Me->canViewComment($prow, $crow, $Conf, $whyNot))
     errorMsgExit(whyNotText($whyNot, "comment"));
+
+echo "</table>";
+$paperTable->echoDivExit();
+$Conf->tableMsg(0);
+
 
 
 // review information
