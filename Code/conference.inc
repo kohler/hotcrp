@@ -1033,7 +1033,7 @@ class Conference {
 	exit;
     }
 
-    function tableMsg($colspan, $obj) {
+    function tableMsg($colspan, $obj = null) {
 	$this->tableMessages = $colspan;
 	$this->tableMessagesObj = $obj;
     }
