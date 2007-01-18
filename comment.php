@@ -185,7 +185,7 @@ echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></
 if (!$Me->canViewComment($prow, $crow, $Conf, $whyNot))
     errorMsgExit(whyNotText($whyNot, "comment"));
 if ($Me->amAssistant() && $prow->conflictType > 0 && !$Me->canViewComment($prow, $crow, $Conf, $fakeWhyNot, true))
-    $Conf->infoMsg("As PC chair, you can see these comments despite your conflict.");
+    $Conf->infoMsg("You have explicitly overridden your conflict and are able to view and edit comments for this paper.");
 
 echo "</table>";
 $paperTable->echoDivExit();
