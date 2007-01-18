@@ -1,4 +1,4 @@
-- AJAX for review preferences
+- true Ajax for review preferences
 - check correctness of border on paper view/expansion
 - fold review form
 - "Email author?" on change
@@ -7,8 +7,6 @@
 - click PC name in reviewer view, donot send email
 - anonymous comments highlighted in PC view
 - not started reviews don't get reported
-- "AtTheMeeting" restoration? -- prevents looking at conflicted papers at the
-  meeting, lame
 - "Educating reviewers is a difficult process.
   [ ] Allow all reviewers to see your response
   [ ] Allow reviewers to see all reviews"
