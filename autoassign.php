@@ -140,22 +140,24 @@ function doAssign() {
     if ($atype == "rev" || $atype == "revadd") {
 	while (($row = edb_orow($result))) {
 	    if ($row->conflictType > 0 || $row->reviewType > 0)
-		$prefs[$row->contactId][$row->paperId] = -10000;
+		$prefs[$row->contactId][$row->paperId] = -1000001;
 	    else
 		$prefs[$row->contactId][$row->paperId] = max($row->preference, -1000) + ($row->topicInterestScore / 100);
 	}
     } else {
 	while (($row = edb_orow($result))) {
 	    if ($row->conflictType > 0 || $row->reviewType == 0)
-		$prefs[$row->contactId][$row->paperId] = -10000;
+		$prefs[$row->contactId][$row->paperId] = -1000001;
 	    else
-		$prefs[$row->contactId][$row->paperId] = max($row->overAllMerit * 50 + $row->preference + ($row->topicInterestScore / 100), -9999);
+		$prefs[$row->contactId][$row->paperId] = max($row->overAllMerit * 50 + $row->preference + ($row->topicInterestScore / 100), -1000000);
 	}
     }
 
     // sort preferences
-    foreach ($pcm as $pc)
+    foreach ($pcm as $pc) {
 	arsort($prefs[$pc->contactId]);
+	reset($prefs[$pc->contactId]);
+    }
 
     // get papers
     $papers = array();
@@ -192,12 +194,13 @@ function doAssign() {
 	while (($pid = key($prefs[$pc])) !== null) {
 	    $pref = current($prefs[$pc]);
 	    next($prefs[$pc]);
-	    if ($pref > -10000 && isset($papers[$pid]) && $papers[$pid] > 0) {
+	    if ($pref >= -1000000 && isset($papers[$pid]) && $papers[$pid] > 0) {
 		// make assignment
 		if (!isset($assignments[$pid]))
 		    $assignments[$pid] = array();
 		$assignments[$pid][] = $pc;
 		$papers[$pid]--;
+		$load[$pc]++;
 		break;
 	    }
 	}
@@ -320,17 +323,34 @@ if (isset($assignments) && count($assignments) > 0) {
     ksort($assignments);
     $atext = array();
     $pcm = pcMembers();
+    $pc_nass = array();
     foreach ($assignments as $pid => $pcs) {
 	$t = "";
 	foreach ($pcm as $pc)
-	    if (in_array($pc->contactId, $pcs))
+	    if (in_array($pc->contactId, $pcs)) {
 		$t = $t . ($t ? ", " : "") . contactHtml($pc->firstName, $pc->lastName);
+		$pc_nass[$pc->contactId] = defval($pc_nass[$pc->contactId], 0) + 1;
+	    }
 	$atext[$pid] = "<span class='pl_callouthdr'>Proposed assignment:</span> $t";
     }
 
     $search = new PaperSearch($Me, array("t" => "s", "q" => join(" ", array_keys($assignments))));
     $plist = new PaperList(false, null, $search, $atext);
     echo $plist->text("reviewers", $Me, "Proposed assignment");
+
+    echo "<div class='smgap'></div>";
+    echo "<b>New assignments:</b><br />\n";
+    echo "<table class='pcass'><tr><td><table>";
+    $pcsel = array();
+    foreach ($pcm as $id => $p)
+	$pcsel[] = "<tr><td class='name'>" . contactHtml($p->firstName, $p->lastName) . ": " . plural(defval($pc_nass[$p->contactId], 0), "assignment") . "</td></tr>";
+    $n = intval((count($pcsel) + 2) / 3);
+    for ($i = 0; $i < count($pcsel); $i++) {
+	if (($i % $n) == 0 && $i)
+	    echo "</table></td><td class='colmid'><table>";
+	echo $pcsel[$i];
+    }
+    echo "</table></td></tr></table>\n";
 
     echo "<div class='smgap'></div>";
     echo "<form method='post' action='autoassign.php?apply=1'>\n";
