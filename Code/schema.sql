@@ -172,21 +172,6 @@ CREATE TABLE `PaperConflict` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
--- Table structure for table `PaperFields`
---
-
-DROP TABLE IF EXISTS `PaperFields`;
-CREATE TABLE `PaperFields` (
-  `fieldId` int(11) NOT NULL,
-  `fieldName` varchar(20) NOT NULL default '',
-  `description` varchar(80) NOT NULL default '',
-  `sortable` tinyint(1) default '1',
-  `display` tinyint(1) default '1',
-  PRIMARY KEY  (`fieldId`),
-  UNIQUE KEY `fieldId` (`fieldId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
---
 -- Table structure for table `PaperGrade`
 --
 
@@ -199,33 +184,6 @@ CREATE TABLE PaperGrade (
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
   KEY `contactId` (`contactId`),
   KEY `paperId` (`paperId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
---
--- Table structure for table `PaperList`
---
-
-DROP TABLE IF EXISTS `PaperList`;
-CREATE TABLE `PaperList` (
-  `paperListId` int(11) NOT NULL auto_increment,
-  `paperListName` varchar(20) NOT NULL,
-  `description` varchar(80) NOT NULL default '',
-  `sortCol` int,
-  PRIMARY KEY  (`paperListId`),
-  UNIQUE KEY `paperListId` (`paperListId`),
-  KEY `paperListName` (`paperListName`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
---
--- Table structure for table `PaperListColumns`
---
-
-DROP TABLE IF EXISTS `PaperListColumns`;
-CREATE TABLE `PaperListColumns` (
-  `paperListId` int(11) NOT NULL,
-  `fieldId` int(11) NOT NULL,
-  `col` int(3) NOT NULL,
-  UNIQUE KEY `paperListCol` (`paperListId`,`col`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --

@@ -280,4 +280,3 @@ echo "</td></tr></table>\n";
 
 
 $Conf->footer();
-

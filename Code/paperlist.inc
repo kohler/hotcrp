@@ -420,20 +420,6 @@ class PaperList {
 	}
     }
 
-    function updatePaperLists() {
-	global $Conf;
-	$t = defval($Conf->settings["paperlist_update"]);
-	if (!isset($_SESSION["paperLists"]) || $t <= 0
-	    || $_SESSION["paperLists"]["date"] <= $t) {
-	    $pl = array();
-	    $result = $Conf->qe("select * from PaperList");
-	    while (($row = edb_orow($result)))
-		$pl[$row->paperListName] = $row;
-	    $pl["date"] = $t;
-	    $_SESSION["paperLists"] = $pl;
-	}
-    }
-
     function footer($ncol) {
 	global $Conf, $ConfSiteBase;
 	if ($this->count == 0)
@@ -506,8 +492,48 @@ class PaperList {
 	return $t . "</table></td></tr>\n";
     }
 
+    function _fields($listname) {
+	switch ($listname) {
+	  case "a":
+	    $this->description = "Authored papers";
+	    return array(2, 12, 27);
+	  case "s":
+	    $this->description = "Submitted papers";
+	    return array(31, 1, 11, 45, 41, 33, 46, 50);
+	  case "all":
+	    $this->description = "All papers";
+	    return array(31, 1, 11, 27, 45, 50);
+	  case "authorHome":
+	    $this->description = "Authored papers";
+	    return array(2, 12, 27);
+	  case "reviewerHome":
+	    $this->description = "Papers to review";
+	    return array(3, 13, 45, 33);
+	  case "r":
+	    $this->description = "Papers to review";
+	    return array(31, 3, 13, 45, 41, 33);
+	  case "reviewAssignment":
+	    $this->description = "Review assignment";
+	    return array(3, 13, 39, 36, 43, 35, 50, 37, 38, 44, 46, 47, 48);
+	  case "editReviewPreference":
+	    $this->description = "Reviewer preferences";
+	    return array(1, 11, 36, 45, 40, 50, 37);
+	  case "reviewers":
+	    $this->description = "Review assignments";
+	    return array(3, 13, 38);
+	  case "reviewersSel":
+	    $this->description = "Review assignments";
+	    return array(49, 3, 13, 38);
+	  case "req":
+	    $this->description = "Papers to review";
+	    return array(31, 3, 13, 45, 41, 33);
+	  default:
+	    return null;
+	}
+    }
+
     function text($listname, $me, $listDescription) {
-	global $Conf, $ConfSiteBase;
+	global $Conf, $ConfSiteBase, $paperListFields;
 
 	$this->contact = $me;
 	$this->count = 0;
@@ -516,14 +542,12 @@ class PaperList {
 	$this->anySelector = 0;
 	$url = $this->search->url();
 
-	// get paper list id
-	self::updatePaperLists();
-	if (!($plist = defval($_SESSION["paperLists"][$listname]))) {
+	// get paper list
+	if (!($baseFieldId = $this->_fields($listname))) {
 	    $Conf->errorMsg("There is no paper list query named '" . htmlspecialchars($listname) . "'.");
-	    return NULL;
+	    return null;
 	}
-	$this->description = $plist->description;
-
+	
 	// check role type
 	$this->scoresOk = $me->amAssistant() || ($me->isPC && $Conf->timePCViewGrades());
 
@@ -548,26 +572,13 @@ class PaperList {
 	}
 	
 	// get field array
-	if (!isset($plist->fields)) {
-	    $result = $Conf->qe(
-		"select PaperFields.fieldId, fieldName, display
-		from PaperListColumns join PaperFields using (fieldId)
-		where PaperListColumns.paperListId=$plist->paperListId
-		order by PaperListColumns.col", "while looking up paper list information");
-	    if (!$result)
-		return NULL;
-	    $plist->fields = array();
-	    while ($row = edb_row($result))
-		$plist->fields[] = $row;
-	}
-	
 	$fieldId = array();
 	$ncol = 0;
-	foreach ($plist->fields as $row) {
-	    if ($this->selector($row[0], $queryOptions) === false)
+	foreach ($baseFieldId as $fid) {
+	    if ($this->selector($fid, $queryOptions) === false)
 		continue;
-	    $fieldId[] = array($row[0], htmlspecialchars($row[1]), $row[2]);
-	    if ($row[2] == 1)
+	    $fieldId[] = array($fid, $paperListFields[$fid][0], $paperListFields[$fid][1]);
+	    if ($paperListFields[$fid][1] == 1)
 		$ncol++;
 	}
 
@@ -736,3 +747,37 @@ class PaperList {
     }
 
 }
+
+
+$paperListFields = array(
+	PaperList::FIELD_ID => array('id', 1),
+	PaperList::FIELD_ID_MANAGE => array('id', 1),
+	PaperList::FIELD_ID_REVIEW => array('id', 1),
+	PaperList::FIELD_TITLE => array('title', 1),
+	PaperList::FIELD_TITLE_MANAGE => array('title', 1),
+	PaperList::FIELD_TITLE_REVIEW => array('title', 1),
+	PaperList::FIELD_STATUS => array('status', 1),
+	PaperList::FIELD_DOWNLOAD => array('download', 1),
+	PaperList::FIELD_REVIEWER_TYPE => array('reviewer', 1),
+	PaperList::FIELD_REVIEWER_STATUS => array('reviewerStatus', 1),
+	PaperList::FIELD_SELECTOR => array('selector', 1),
+	PaperList::FIELD_REVIEW => array('review', 1),
+	PaperList::FIELD_STATUS_SHORT => array('status', 1),
+	PaperList::FIELD_REVIEWER_NAME => array('reviewerName', 1),
+	PaperList::FIELD_ASSIGN_REVIEW => array('reviewAssignment', 1),
+	PaperList::FIELD_TOPIC_INTEREST => array('topicMatch', 1),
+	PaperList::FIELD_TOPIC_NAMES => array('topicNames', 2),
+	PaperList::FIELD_ALL_REVIEWER_NAMES => array('reviewerNames', 2),
+	PaperList::FIELD_REVIEWER_PREFERENCE => array('reviewPreference', 1),
+	PaperList::FIELD_EDIT_REVIEWER_PREFERENCE => array('editReviewPreference', 1),
+	PaperList::FIELD_REVIEWS_STATUS => array('reviewsStatus', 1),
+	PaperList::FIELD_MATCHES => array('matches', 0),
+	PaperList::FIELD_DESIRABILITY => array('desirability', 1),
+	PaperList::FIELD_ALL_PREFERENCES => array('allPreferences', 2),
+	PaperList::FIELD_REVIEWER_TYPE_ICON => array('reviewerTypeIcon', 1),
+	PaperList::FIELD_OPT_MERIT_ICON => array('optOverallMeritIcon', 1),
+	PaperList::FIELD_AUTHOR_MATCH => array('authorsMatch', 2),
+	PaperList::FIELD_COLLABORATORS_MATCH => array('collaboratorsMatch', 2),
+	PaperList::FIELD_SELECTOR_ON => array('selectorOn', 1),
+	PaperList::FIELD_OPT_AUTHORS => array('optAuthors', 3)
+	);

@@ -111,10 +111,9 @@ authors, reviewer names, or even numbers of reviewers.  For example,
 titles\".  Keywords are listed in the
 <a href='help.php?t=syntax'>search syntax reference</a>.</p>");
     _alternateRow("Search results", "
-When looking at search results, click on a paper number or paper title
-to jump to that paper's screen.
-Search matches are <span class='match'>highlighted</span> there, which,
-for example, makes it easier to tell whether a conflict is real.
+Click on a paper number or paper title to jump to that paper's screen.
+Search matches are <span class='match'>highlighted</span> on paper screens,
+which, for example, makes it easier to tell whether a conflict is real.
 Once on a paper screen you can use <a href='#quicklinks'>quicklinks</a>
 to navigate through the rest of the search matches.
 

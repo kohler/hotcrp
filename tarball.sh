@@ -54,7 +54,6 @@ Code/backupdb.sh
 Code/conference.inc
 Code/contact.inc
 Code/createdb.sh
-Code/defaults.sql
 Code/header.inc
 Code/helpers.inc
 Code/options.inc
