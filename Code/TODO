@@ -1,10 +1,9 @@
+- "proposed" external reviewers
 - true Ajax for review preferences
 - consider putting explanations and hints ABOVE form fields, rather
   than to the right hand side
 - check correctness of border on paper view/expansion
 - fold review form
-- "Email author?" on change
-- "Put 'Silent' in the explanation box to not send email to the contact authors."
 - simplifyWhitespace on author information
 - override deadlines in review
 - click PC name in reviewer view does not send email

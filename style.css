@@ -307,6 +307,15 @@ input.button_alert {
 	border-bottom: 2px solid #996666;
 	border-right: 3px solid #996666;
 }
+input.button_default_alert {
+	font-weight: bold;
+	background: #ffaaaa;
+	border-top: 2px solid #ee6666;
+	border-left: 3px solid #ee6666;
+	border-bottom: 2px solid #996666;
+	border-right: 3px solid #996666;
+}
+
 a.download, a.rev_start, a.rev_comp, a.rev_edit, a.rev_view,
 input.button_small, a.button_small, button.button_small {
 	font-size: small;

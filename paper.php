@@ -4,7 +4,7 @@ require_once('Code/papertable.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $useRequest = false;
-if (isset($_REQUEST["emailNote"]) && $_REQUEST["emailNote"] == "Explanation (sent to authors)")
+if (isset($_REQUEST["emailNote"]) && $_REQUEST["emailNote"] == "Optional explanation")
     unset($_REQUEST["emailNote"]);
 
 
@@ -300,7 +300,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 - $Conf->shortName Conference Submissions\n");
 
     // send email to all contact authors
-    if (!$Me->amAssistant() || $prow->conflictType == CONFLICT_AUTHOR || isset($_REQUEST["emailNote"]))
+    if (!$Me->amAssistant() || defval($_REQUEST["doemail"]) > 0)
 	$Conf->emailContactAuthors($prow, $subject, $m);
     
     $Conf->log($what, $Me, $paperId);
@@ -360,7 +360,8 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	else if ($Me->amAssistant() && $prow->conflictType < CONFLICT_AUTHOR)
 	    $m .= "\n\nA conference administrator withdrew the paper.";
 	$m = wordwrap("$m\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
-	$Conf->emailContactAuthors($prow, "Paper #$paperId withdrawn", $m);
+	if (!$Me->amAssistant() || defval($_REQUEST["doemail"]) > 0)
+	    $Conf->emailContactAuthors($prow, "Paper #$paperId withdrawn", $m);
 
 	// email reviewers
 	if ($prow->startedReviewCount > 0) {
@@ -402,7 +403,8 @@ if (isset($_REQUEST['delete'])) {
 	if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
 	    $m .= "\n\nA conference administrator provided the following reason for deleting the paper: " . $_REQUEST["emailNote"];
 	$m = wordwrap("$m\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
-	$Conf->emailContactAuthors($prow, "Paper #$paperId deleted", $m);
+	if (!$Me->amAssistant() || defval($_REQUEST["doemail"]) > 0)
+	    $Conf->emailContactAuthors($prow, "Paper #$paperId deleted", $m);
 	// XXX email self?
 
 	$error = false;
@@ -677,7 +679,7 @@ if ($mode == "edit") {
     if ($Me->amAssistant()) {
 	echo "<tr>
   <td class='caption'></td>
-  <td class='entry' colspan='2'>\n";
+  <td class='entry' colspan='2'><table>\n";
 	//if ($prow && (($prow->conflictType < CONFLICT_AUTHOR && $prow->timeSubmitted <= 0)
 	//	      || $prow->timeSubmitted > 0))
 	//   echo "    <span class='sep'></span>\n";
@@ -685,10 +687,10 @@ if ($mode == "edit") {
 	//	($prow->timeSubmitted > 0 ? "" : " checked='checked'"),
 	//	" />&nbsp;Email&nbsp;authors\n",
 	//	"    <span class='sep'></span>\n";
-	echo "    <input type='text' name='emailNote' value='Explanation (sent to authors)' size='30' onfocus=\"tempText(this, 'Explanation (sent to authors)', 1)\" onblur=\"tempText(this, 'Explanation (sent to authors)', 0)\" />\n";
-	echo "    <span class='sep'></span>\n";
-	echo "    <input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines\n";
-	echo "  </td>\n</tr>\n\n";
+	echo "      <tr><td><input type='checkbox' name='doemail' value='1' checked='checked' />&nbsp;Email authors, adding:&nbsp; ";
+	echo "<input type='text' class='textlite' name='emailNote' size='30' value='Optional explanation' onfocus=\"tempText(this, 'Optional explanation', 1)\" onblur=\"tempText(this, 'Optional explanation', 0)\" /></tr></td>\n";
+	echo "      <tr><td><input type='checkbox' name='override' value='1' />&nbsp;Override deadlines</td></tr>\n";
+	echo "  </table></td>\n</tr>\n\n";
     }
 }
 
