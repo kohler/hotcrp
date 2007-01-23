@@ -10,7 +10,6 @@ class PaperList {
     const FIELD_TITLE_REVIEW = 13;
     const FIELD_TITLE_LAST = 19;
     const FIELD_STATUS = 27;
-    const FIELD_DOWNLOAD = 28;
     const FIELD_REVIEWER_TYPE = 29;
     const FIELD_REVIEWER_STATUS = 30;
     const FIELD_SELECTOR = 31;
@@ -167,8 +166,6 @@ class PaperList {
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    return "Status";
-	case self::FIELD_DOWNLOAD:
-	    return "";
 	case self::FIELD_REVIEWER_TYPE:
 	    return "Review";
 	case self::FIELD_REVIEWER_TYPE_ICON:
@@ -207,9 +204,9 @@ class PaperList {
 	    return $rf->webFieldAbbrev("overAllMerit");
 	}
 	case self::FIELD_AUTHOR_MATCH:
-	    return "Author matches";
+	    return "<span class='match'>Potential conflict in authors</span>";
 	case self::FIELD_COLLABORATORS_MATCH:
-	    return "Collaborator matches";
+	    return "<span class='match'>Potential conflict in collaborators</span>";
 	case self::FIELD_OPT_AUTHORS:
 	    return "Authors";
 	default:
@@ -262,15 +259,6 @@ class PaperList {
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
 		$this->needFinalize++;
 	    return $this->contact->paperStatus($row->paperId, $row, $fieldId == self::FIELD_STATUS ? 0 : -1);
-	case self::FIELD_DOWNLOAD:
-	    if ($row->size == 0)
-		return "";
-	    else if ($row->mimetype == "application/pdf")
-		return "<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\"><img src=\"${ConfSiteBase}images/pdf.png\" alt='[PDF]' /></a>";
-	    else if ($row->mimetype == "application/postscript")
-		return "<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\"><img src=\"${ConfSiteBase}images/postscript.png\" alt='[PS]' /></a>";
-	    else
-		return "<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\">Paper</a>";
 	case self::FIELD_REVIEWER_TYPE:
 	    if ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted))
 		$this->needSubmitReview++;
@@ -757,7 +745,6 @@ $paperListFields = array(
 	PaperList::FIELD_TITLE_MANAGE => array('title', 1),
 	PaperList::FIELD_TITLE_REVIEW => array('title', 1),
 	PaperList::FIELD_STATUS => array('status', 1),
-	PaperList::FIELD_DOWNLOAD => array('download', 1),
 	PaperList::FIELD_REVIEWER_TYPE => array('reviewer', 1),
 	PaperList::FIELD_REVIEWER_STATUS => array('reviewerStatus', 1),
 	PaperList::FIELD_SELECTOR => array('selector', 1),
