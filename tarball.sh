@@ -120,7 +120,6 @@ Chair/CheckOnPCProgress.php
 Chair/CheckOnSinglePCProgress.php
 Chair/Code.inc
 Chair/DumpDatabase.php
-Chair/FindPCConflicts.php
 Chair/GradeAllPapers.php
 Chair/ListPC.php
 Chair/ListReviewers.php

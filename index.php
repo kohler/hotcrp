@@ -242,7 +242,6 @@ if ($Me->amAssistant()) {
 
 <li>Assign papers
   <ul> 
-  <li><a href='Chair/FindPCConflicts.php'>Look for conflicts</a> -- by searching for PC names</li>
   <li><a href='Chair/AskForReview.php'>Ask someone to review a paper (any paper)</a></li>
   </ul></li>
 

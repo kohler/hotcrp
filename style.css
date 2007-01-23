@@ -896,6 +896,9 @@ tr.k1 td {
 .fold2c .extension2, .fold2c .folder2, .fold2o .ellipsis2, .fold2o .unfolder2 {
 	display: none;
 }
+.fold3c .extension3, .fold3c .folder3, .fold3o .ellipsis3, .fold3o .unfolder3 {
+	display: none;
+}
 .fold8c .extension8, .fold8c .folder8, .fold8o .ellipsis8, .fold8o .unfolder8 {
 	display: none;
 }

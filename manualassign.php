@@ -5,6 +5,16 @@ require_once('../Code/search.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotChair('../index.php');
+$kind = defval($_REQUEST["kind"], "a");
+if ($kind != "a" && $kind != "c")
+    $kind = "a";
+if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
+    $_REQUEST["pap"] = split(" +", $_REQUEST["pap"]);
+if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && $kind == "c") {
+    foreach ($_REQUEST["pap"] as $p)
+	if (($p = cvtint($p)) > 0)
+	    $_REQUEST["assrev$p"] = -1;
+}
 
 $Conf->header("PC Assignments", "assignpc");
 
@@ -14,7 +24,7 @@ if ($reviewer < 0)
 
 
 function saveAssignments($reviewer) {
-    global $Conf, $Me, $reviewTypeName;
+    global $Conf, $Me, $reviewTypeName, $kind;
 
     $while = "while saving review assignments";
     $result = $Conf->qe("lock tables Paper read, PaperReview write, PaperConflict write", $while);
@@ -34,12 +44,13 @@ function saveAssignments($reviewer) {
 	if ($row->paperId == $lastPaperId || $row->conflictType == CONFLICT_AUTHOR)
 	    continue;
 	$lastPaperId = $row->paperId;
-	$type = cvtint($_REQUEST["assrev$row->paperId"]);
+	$type = cvtint($_REQUEST["assrev$row->paperId"], 0);
 	if ($type >= 0 && $row->conflictType > 0)
 	    $Conf->qe("delete from PaperConflict where paperId=$row->paperId and contactId=$reviewer", $while);
 	if ($type < 0 && $row->conflictType == 0)
 	    $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($row->paperId, $reviewer, " . CONFLICT_CHAIRMARK . ")", $while);
-	$Me->assignPaper($row->paperId, $row, $reviewer, $type, $Conf);
+	if ($kind == "a")
+	    $Me->assignPaper($row->paperId, $row, $reviewer, $type, $Conf);
     }
 
     $Conf->qe("unlock tables", $while);
@@ -89,7 +100,10 @@ while (($row = edb_orow($result))) {
     echo "</option>";
 }
 
-echo "</select>\n</form>\n\n";
+echo "</select><span class='lgsep'></span>Show:&nbsp; <select name='kind' onchange='document.selectReviewer.submit()'>\n";
+echo "  <option value='c'", ($kind == "c" ? " selected='selected'" : ""), ">Conflicts only</option>\n";
+echo "  <option value='a'", ($kind == "a" ? " selected='selected'" : ""), ">Assignments and conflicts</option>\n";
+echo "</select></form>\n\n";
 
 
 if ($reviewer >= 0) {
@@ -111,20 +125,23 @@ if ($reviewer >= 0) {
     if ($result && ($row = edb_orow($result))) {
 	// search outline from old CRP, done here in a very different way
 	preg_match_all('/[a-z]{3,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation), $match);
-	$useless = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1, "david" => 1, "john" => 1);
+	$useless = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1);
 	$sco = $showco = "";
 	foreach ($match[0] as $s)
 	    if (!isset($useless[$s])) {
 		$sco .= "co:" . $s . " ";
 		$showco .= $s . " ";
+		$useless[$s] = 1;
 	    }
 
 	preg_match_all('/[a-z]{3,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation . " " . $row->collaborators), $match);
+	$useless = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1);
 	$sau = $showau = "";
 	foreach ($match[0] as $s)
 	    if (!isset($useless[$s])) {
 		$sau .= "au:" . $s . " ";
 		$showau .= $s . " ";
+		$useless[$s] = 1;
 	    }
 	
 	echo "<div class='topicinterest'><a href=\"${ConfSiteBase}search.php?q=", urlencode($sco), "+", urlencode($sau), "&amp;qt=ac\"><b>Search for conflicts</b></a> (authors match one of \"", htmlspecialchars(substr($showau, 0, strlen($showau) - 1)), "\" or collaborators match one of \"", htmlspecialchars(substr($showco, 0, strlen($showco) - 1)), "\")</div>\n";
@@ -137,11 +154,11 @@ if ($reviewer >= 0) {
     }
     $_SESSION["whichList"] = "list";
     unset($_SESSION["matchPreg"]);
-    echo "<form class='assignpc' method='post' action=\"AssignPapers.php?reviewer=$reviewer&amp;post=1";
+    echo "<form class='assignpc' method='post' action=\"AssignPapers.php?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
     if (isset($_REQUEST["sort"]))
 	echo "&amp;sort=", urlencode($_REQUEST["sort"]);
     echo "\" enctype='multipart/form-data'>\n";
-    echo $paperList->text("reviewAssignment", $Me, "Review assignment");
+    echo $paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me, "Review assignment");
     echo "<input class='button_default' type='submit' name='update' value='Save assignments' />\n";
     echo "</form>\n";
 }

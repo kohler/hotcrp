@@ -2,17 +2,21 @@
 
 class PaperList {
 
+    const FIELD_SELECTOR = 100;
+    const FIELD_SELECTOR_ON = 101;
+    const FIELD_SELECTOR_CONFLICT = 102;
+    
     const FIELD_ID = 1;
     const FIELD_ID_MANAGE = 2;
     const FIELD_ID_REVIEW = 3;
+    
     const FIELD_TITLE = 11;
     const FIELD_TITLE_MANAGE = 12;
     const FIELD_TITLE_REVIEW = 13;
     const FIELD_TITLE_LAST = 19;
+    
     const FIELD_STATUS = 27;
     const FIELD_REVIEWER_TYPE = 29;
-    const FIELD_REVIEWER_STATUS = 30;
-    const FIELD_SELECTOR = 31;
     const FIELD_REVIEW = 32;
     const FIELD_STATUS_SHORT = 33;
     const FIELD_REVIEWER_NAME = 34;
@@ -23,15 +27,14 @@ class PaperList {
     const FIELD_REVIEWER_PREFERENCE = 39;
     const FIELD_EDIT_REVIEWER_PREFERENCE = 40;
     const FIELD_REVIEWS_STATUS = 41;
-    const FIELD_MATCHES = 42;
     const FIELD_DESIRABILITY = 43;
     const FIELD_ALL_PREFERENCES = 44;
     const FIELD_REVIEWER_TYPE_ICON = 45;
     const FIELD_OPT_MERIT_ICON = 46;
     const FIELD_AUTHOR_MATCH = 47;
     const FIELD_COLLABORATORS_MATCH = 48;
-    const FIELD_SELECTOR_ON = 49;
     const FIELD_OPT_AUTHORS = 50;
+    const FIELD_FOLD = 60;
     
     var $showHeader;
     var $sortField;
@@ -51,6 +54,7 @@ class PaperList {
     var $authorMatch;
     var $collaboratorsMatch;
     var $extraText;
+    var $unfolded;
     
     function PaperList($sortable = true, $sessionVar = null, $search = null, $extraText = null) {
 	$this->showHeader = true;
@@ -108,6 +112,9 @@ class PaperList {
 	    $queryOptions['overallMeritScores'] = 1;
 	    $rf = reviewForm();
 	    $this->meritMax = $rf->maxNumericScore('overAllMerit');
+	    break;
+	case self::FIELD_FOLD:
+	    $this->unfolded = false;
 	    break;
 	}
 	if ($this->sortField == $fieldId && ($order = $this->sort($fieldId)))
@@ -170,12 +177,11 @@ class PaperList {
 	    return "Review";
 	case self::FIELD_REVIEWER_TYPE_ICON:
 	    return "<acronym title='Reviewer type'>Review</acronym>";
-	case self::FIELD_REVIEWER_STATUS:
-	    return "Reviewer status";
 	case self::FIELD_REVIEWS_STATUS:
 	    return "<acronym title='\"1/2\" means 1 complete review out of 2 assigned reviews'>#&nbsp;Reviews</acronym>";
 	case self::FIELD_SELECTOR:
 	case self::FIELD_SELECTOR_ON:
+	case self::FIELD_SELECTOR_CONFLICT:
 	    return ($ordinal ? "&nbsp;" : "");
 	case self::FIELD_REVIEW:
 	    return "&nbsp;";
@@ -236,7 +242,11 @@ class PaperList {
 		$out .= $T . " ";
 	    }
 	}
-	return ($out ? htmlspecialchars(substr($out, 0, strlen($out) - 1)) : "");
+	if ($out) {
+	    $this->unfolded = true;
+	    return htmlspecialchars(substr($out, 0, strlen($out) - 1));
+	} else
+	    return "";
     }
     
     function content($fieldId, $row, $plist, $reviewList) {
@@ -313,8 +323,6 @@ class PaperList {
 		}
 	    }
 	    return "$a1<img src='${ConfSiteBase}images/ass$which.png' alt='$alt' title='$alt' />$a2";
-	case self::FIELD_REVIEWER_STATUS:
-	    return reviewStatus($row, 0);
 	case self::FIELD_REVIEWS_STATUS:
 	    if ($row->reviewCount != $row->startedReviewCount)
 		return "<b>$row->reviewCount</b>/$row->startedReviewCount";
@@ -322,8 +330,16 @@ class PaperList {
 		return "<b>$row->reviewCount</b>";
 	case self::FIELD_SELECTOR:
 	case self::FIELD_SELECTOR_ON:
+	case self::FIELD_SELECTOR_CONFLICT:
 	    $this->anySelector = 1;
-	    $c = ($fieldId == self::FIELD_SELECTOR_ON ? " checked='checked'" : "");
+	    $c = "";
+	    if ($fieldId == self::FIELD_SELECTOR_ON
+		|| ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType > 0)) {
+		$c = " checked='checked'";
+		$this->unfolded = true;
+	    }
+	    if ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType == CONFLICT_AUTHOR)
+		$c .= " disabled='disabled'";
 	    return "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='1' id='psel$this->count' onclick='pselClick(event, this, $this->count)' $c/>";
 	case self::FIELD_REVIEW:
 	    return reviewButton($row->paperId, $row);
@@ -487,10 +503,10 @@ class PaperList {
 	    return array(2, 12, 27);
 	  case "s":
 	    $this->description = "Submitted papers";
-	    return array(31, 1, 11, 45, 41, 33, 46, 50);
+	    return array(100, 1, 11, 45, 41, 33, 46, 50);
 	  case "all":
 	    $this->description = "All papers";
-	    return array(31, 1, 11, 27, 45, 50);
+	    return array(100, 1, 11, 27, 45, 50);
 	  case "authorHome":
 	    $this->description = "Authored papers";
 	    return array(2, 12, 27);
@@ -499,10 +515,13 @@ class PaperList {
 	    return array(3, 13, 45, 33);
 	  case "r":
 	    $this->description = "Papers to review";
-	    return array(31, 3, 13, 45, 41, 33);
+	    return array(100, 3, 13, 45, 41, 33);
 	  case "reviewAssignment":
 	    $this->description = "Review assignment";
 	    return array(3, 13, 39, 36, 43, 35, 50, 37, 38, 44, 46, 47, 48);
+	  case "conflict":
+	    $this->description = "Potential conflicts";
+	    return array(102, 1, 11, self::FIELD_OPT_AUTHORS, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
 	  case "editReviewPreference":
 	    $this->description = "Reviewer preferences";
 	    return array(1, 11, 36, 45, 40, 50, 37);
@@ -511,10 +530,10 @@ class PaperList {
 	    return array(3, 13, 38);
 	  case "reviewersSel":
 	    $this->description = "Review assignments";
-	    return array(49, 3, 13, 38);
+	    return array(101, 3, 13, 38);
 	  case "req":
 	    $this->description = "Papers to review";
-	    return array(31, 3, 13, 45, 41, 33);
+	    return array(100, 3, 13, 45, 41, 33);
 	  default:
 	    return null;
 	}
@@ -562,6 +581,7 @@ class PaperList {
 	// get field array
 	$fieldId = array();
 	$ncol = 0;
+	$this->unfolded = true;
 	foreach ($baseFieldId as $fid) {
 	    if ($this->selector($fid, $queryOptions) === false)
 		continue;
@@ -569,6 +589,7 @@ class PaperList {
 	    if ($paperListFields[$fid][1] == 1)
 		$ncol++;
 	}
+	$unfolded = $this->unfolded;
 
 	// prepare review query
 	$reviewList = array();
@@ -603,14 +624,15 @@ class PaperList {
 	$anyData = array();
 	$byPaperId = array();
 	$body = '';
-	$aufoldclass = defval($_SESSION["plauFold"], 3);
+	$aufoldclass = defval($_SESSION["plFold"], 3);
 	$authorinfo = false;
 	while (($row = edb_orow($result))) {
 	    $ids[] = $row->paperId;
 	    $trclass = "k" . ($this->count % 2);
 	    $this->count++;
-	    
-	    $t = "  <tr class=\"pl " . $trclass . "\">\n";
+	    $this->unfolded = $unfolded;
+
+	    $t = "  <tr class=\"pl $trclass\">\n";
 	    foreach ($fieldId as $f)
 		if ($f[2] == 1) {
 		    $c = $this->content($f[0], $row, $plist, $reviewList);
@@ -639,6 +661,9 @@ class PaperList {
 		    . $this->extraText[$row->paperId]
 		    . "</td>\n  </tr>\n";
 
+	    if (!$this->unfolded)
+		$t = str_replace("<tr class=\"", "<tr class=\"extension3 ", $t);
+
 	    if ($pidarray === null)
 		$body .= $t;
 	    else
@@ -656,26 +681,30 @@ class PaperList {
 	    $x .= " fold1c";
 	if ($authorinfo & 2)
 	    $x .= " fold2c";
-	if ($authorinfo)
-	    $x .= "\" id=\"foldplau";
+	if (!$unfolded)
+	    $x .= " fold3c";
+	if ($authorinfo || !$unfolded)
+	    $x .= "\" id=\"foldpl";
 	$x .= "\">\n";
 
 	if ($this->showHeader) {
 	    $x .= "  <tr class=\"pl_headrow\">\n";
 	    $ord = 0;
 
+	    $titleextra = "";
+	    if (!$unfolded)
+		$titleextra .= "<span class='sep'></span><a class='unfolder3' href='javascript:fold(\"pl\",0,3)'>Show all papers</a>";
 	    if ($authorinfo) {
-		$authorfolder = "<span class='sep'></span>";
+		$titleextra .= "<span class='sep'></span>";
 		if ($Conf->blindSubmission() == 0)
-		    $authorfolder .= "<a class='unfolder1' href='javascript:fold(\"plau\",0,1)'>Show authors</a><a class='folder1' href='javascript:fold(\"plau\",1,1)'>Hide authors</a>";
+		    $titleextra .= "<a class='unfolder1' href='javascript:fold(\"pl\",0,1)'>Show authors</a><a class='folder1' href='javascript:fold(\"pl\",1,1)'>Hide authors</a>";
 		else if ($this->contact->amAssistant() && $authorinfo == 2)
-		    $authorfolder .= "<a class='unfolder2' href='javascript:fold(\"plau\",0,2)'>Show authors</a><a class='folder2' href='javascript:fold(\"plau\",1,2)'>Hide authors</a>";
+		    $titleextra .= "<a class='unfolder2' href='javascript:fold(\"pl\",0,2)'>Show authors</a><a class='folder2' href='javascript:fold(\"pl\",1,2)'>Hide authors</a>";
 		else if ($this->contact->amAssistant() && $authorinfo > 1)
-		    $authorfolder .= "<a class='unfolder1' href='javascript:fold(\"plau\",0,1)'>Show non-anonymous authors</a><a class='extension1 unfolder2' href='javascript:fold(\"plau\",0,2)'>Show all authors</a><a class='folder2' href='javascript:fold(\"plau\",1,1);fold(\"plau\",1,2)'>Hide authors</a>";
+		    $titleextra .= "<a class='unfolder1' href='javascript:fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='extension1 unfolder2' href='javascript:fold(\"pl\",0,2)'>Show all authors</a><a class='folder2' href='javascript:fold(\"pl\",1,1);fold(\"pl\",1,2)'>Hide authors</a>";
 		else
-		    $authorfolder .= "<a class='unfolder1' href='javascript:fold(\"plau\",0,1)'>Show non-anonymous authors</a><a class='folder1' href='javascript:fold(\"plau\",1,1)'>Hide authors</a>";
-	    } else
-		$authorfolder = '';
+		    $titleextra .= "<a class='unfolder1' href='javascript:fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='folder1' href='javascript:fold(\"pl\",1,1)'>Hide authors</a>";
+	    }
 	    
 	    if ($this->sortable && $url) {
 		$sortUrl = $ConfSiteBase . $url . (strpos($url, "?") ? "&" : "?") . "sort=";
@@ -698,9 +727,9 @@ class PaperList {
 			$x .= $q . $f[0] . "\">" . $ftext . "</a>";
 		    else
 			$x .= $ftext;
-		    if ($authorfolder && $f[0] >= self::FIELD_TITLE && $f[0] <= self::FIELD_TITLE_LAST) {
-			$x .= $authorfolder;
-			$authorfolder = false;
+		    if ($titleextra && $f[0] >= self::FIELD_TITLE && $f[0] <= self::FIELD_TITLE_LAST) {
+			$x .= $titleextra;
+			$titleextra = false;
 		    }
 		    $x .= "</th>\n";
 		}
@@ -738,6 +767,9 @@ class PaperList {
 
 
 $paperListFields = array(
+	PaperList::FIELD_SELECTOR => array('selector', 1),
+	PaperList::FIELD_SELECTOR_ON => array('selector', 1),
+	PaperList::FIELD_SELECTOR_CONFLICT => array('selector', 1),
 	PaperList::FIELD_ID => array('id', 1),
 	PaperList::FIELD_ID_MANAGE => array('id', 1),
 	PaperList::FIELD_ID_REVIEW => array('id', 1),
@@ -746,8 +778,6 @@ $paperListFields = array(
 	PaperList::FIELD_TITLE_REVIEW => array('title', 1),
 	PaperList::FIELD_STATUS => array('status', 1),
 	PaperList::FIELD_REVIEWER_TYPE => array('reviewer', 1),
-	PaperList::FIELD_REVIEWER_STATUS => array('reviewerStatus', 1),
-	PaperList::FIELD_SELECTOR => array('selector', 1),
 	PaperList::FIELD_REVIEW => array('review', 1),
 	PaperList::FIELD_STATUS_SHORT => array('status', 1),
 	PaperList::FIELD_REVIEWER_NAME => array('reviewerName', 1),
@@ -758,13 +788,11 @@ $paperListFields = array(
 	PaperList::FIELD_REVIEWER_PREFERENCE => array('reviewPreference', 1),
 	PaperList::FIELD_EDIT_REVIEWER_PREFERENCE => array('editReviewPreference', 1),
 	PaperList::FIELD_REVIEWS_STATUS => array('reviewsStatus', 1),
-	PaperList::FIELD_MATCHES => array('matches', 0),
 	PaperList::FIELD_DESIRABILITY => array('desirability', 1),
 	PaperList::FIELD_ALL_PREFERENCES => array('allPreferences', 2),
 	PaperList::FIELD_REVIEWER_TYPE_ICON => array('reviewerTypeIcon', 1),
 	PaperList::FIELD_OPT_MERIT_ICON => array('optOverallMeritIcon', 1),
 	PaperList::FIELD_AUTHOR_MATCH => array('authorsMatch', 2),
 	PaperList::FIELD_COLLABORATORS_MATCH => array('collaboratorsMatch', 2),
-	PaperList::FIELD_SELECTOR_ON => array('selectorOn', 1),
 	PaperList::FIELD_OPT_AUTHORS => array('optAuthors', 3)
 	);
