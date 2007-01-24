@@ -13,7 +13,6 @@
   [ ] Allow all reviewers to see your response
   [ ] Allow reviewers to see all reviews"
 - "Comments to the Program Chair" on review form
-- hole: chair can view tags on Paper View screen
 - can view any review for a paper you're associated with (or PC)
 - ViewPaper.php handles withdrawn reviews correctly
 - PaperConflict has unique rows

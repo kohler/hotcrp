@@ -601,7 +601,7 @@ $paperTable->echoOptions($prow, $Me->amAssistant());
 
 
 // Tags
-if ($Me->isPC && ($Me->amAssistant() || $prow->conflictType <= 0))
+if ($Me->isPC && $prow->conflictType <= 0)
     $paperTable->echoTags($prow);
 
 
@@ -687,7 +687,7 @@ if ($mode == "edit") {
 	//	($prow->timeSubmitted > 0 ? "" : " checked='checked'"),
 	//	" />&nbsp;Email&nbsp;authors\n",
 	//	"    <span class='sep'></span>\n";
-	echo "      <tr><td><input type='checkbox' name='doemail' value='1' checked='checked' />&nbsp;Email authors, adding:&nbsp; ";
+	echo "      <tr><td><input type='checkbox' name='doemail' value='1' checked='checked' />&nbsp;Email authors, including:&nbsp; ";
 	echo "<input type='text' class='textlite' name='emailNote' size='30' value='Optional explanation' onfocus=\"tempText(this, 'Optional explanation', 1)\" onblur=\"tempText(this, 'Optional explanation', 0)\" /></tr></td>\n";
 	echo "      <tr><td><input type='checkbox' name='override' value='1' />&nbsp;Override deadlines</td></tr>\n";
 	echo "  </table></td>\n</tr>\n\n";
