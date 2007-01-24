@@ -181,8 +181,9 @@ class PaperList {
 	    return "<acronym title='\"1/2\" means 1 complete review out of 2 assigned reviews'>#&nbsp;Reviews</acronym>";
 	case self::FIELD_SELECTOR:
 	case self::FIELD_SELECTOR_ON:
-	case self::FIELD_SELECTOR_CONFLICT:
 	    return ($ordinal ? "&nbsp;" : "");
+	case self::FIELD_SELECTOR_CONFLICT:
+	    return "Conflict";
 	case self::FIELD_REVIEW:
 	    return "&nbsp;";
 	case self::FIELD_REVIEWER_NAME:
