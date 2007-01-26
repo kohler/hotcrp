@@ -79,7 +79,7 @@ function checkRequest(&$atype, &$reviewtype, $save) {
 }
 
 function doAssign() {
-    global $Conf, $ConfSiteBase, $papersel, $assignments;
+    global $Conf, $ConfSiteBase, $papersel, $assignments, $assignprefs;
 
     // check request
     if (!checkRequest($atype, $reviewtype, false))
@@ -175,6 +175,7 @@ function doAssign() {
     // now, loop forever
     $pcids = array_keys($pcm);
     $assignments = array();
+    $assignprefs = array();
     $progress = false;
     while (count($pcm)) {
 	// choose a pc member at random, equalizing load
@@ -199,6 +200,7 @@ function doAssign() {
 		if (!isset($assignments[$pid]))
 		    $assignments[$pid] = array();
 		$assignments[$pid][] = $pc;
+		$assignprefs["$pid:$pc"] = $pref;
 		$papers[$pid]--;
 		$load[$pc]++;
 		break;
@@ -318,7 +320,7 @@ function tdClass($entry, $name) {
 if (isset($assignments) && count($assignments) > 0) {
     echo "<table>";
     echo "<tr class='propass'>", tdClass(false, "propass"), "Proposed assignment</td><td class='entry'>";
-    $Conf->infoMsg("If this assignment looks OK to you, select \"Save assignment\" to apply it.  (You can always alter the assignment afterwards.)");
+    $Conf->infoMsg("If this assignment looks OK to you, select \"Save assignment\" to apply it.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown in square brackets.");
     
     ksort($assignments);
     $atext = array();
@@ -330,6 +332,8 @@ if (isset($assignments) && count($assignments) > 0) {
 	foreach ($pcm as $pc)
 	    if (in_array($pc->contactId, $pcs)) {
 		$t = $t . ($t ? ", " : "") . contactHtml($pc->firstName, $pc->lastName);
+		if ($assignprefs["$pid:$pc->contactId"] != 0)
+		    $t .= " [" . $assignprefs["$pid:$pc->contactId"] . "]";
 		$pc_nass[$pc->contactId] = defval($pc_nass[$pc->contactId], 0) + 1;
 	    }
 	$atext[$pid] = "<span class='pl_callouthdr'>Proposed assignment:</span> $t";
