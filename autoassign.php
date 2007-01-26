@@ -318,11 +318,12 @@ function tdClass($entry, $name) {
 if (isset($assignments) && count($assignments) > 0) {
     echo "<table>";
     echo "<tr class='propass'>", tdClass(false, "propass"), "Proposed assignment</td><td class='entry'>";
-    $Conf->infoMsg("If this assignment looks OK to you, select \"Save assignment\" to apply it.  (You can always change it afterwards too.)");
+    $Conf->infoMsg("If this assignment looks OK to you, select \"Save assignment\" to apply it.  (You can always alter the assignment afterwards.)");
     
     ksort($assignments);
     $atext = array();
     $pcm = pcMembers();
+    countReviews($nreviews, $nprimary, $nsecondary);
     $pc_nass = array();
     foreach ($assignments as $pid => $pcs) {
 	$t = "";
@@ -339,11 +340,27 @@ if (isset($assignments) && count($assignments) > 0) {
     echo $plist->text("reviewers", $Me, "Proposed assignment");
 
     echo "<div class='smgap'></div>";
-    echo "<b>New assignments:</b><br />\n";
+    echo "<b>Summary</b><br />\n";
     echo "<table class='pcass'><tr><td><table>";
+    $atype = $_REQUEST["a"];
     $pcsel = array();
-    foreach ($pcm as $id => $p)
-	$pcsel[] = "<tr><td class='name'>" . contactHtml($p->firstName, $p->lastName) . ": " . plural(defval($pc_nass[$p->contactId], 0), "assignment") . "</td></tr>";
+    foreach ($pcm as $id => $p) {
+	$nnew = defval($pc_nass[$id], 0);
+	if ($atype == "rev" || $atype == "revadd") {
+	    $nreviews[$id] += $nnew;
+	    if ($_REQUEST["${atype}type"] == REVIEW_PRIMARY)
+		$nprimary[$id] += $nnew;
+	    else
+		$nsecondary[$id] += $nnew;
+	}
+	$c = "<tr><td class='name'>" . contactHtml($p->firstName, $p->lastName)
+	    . ": " . plural($nnew, "assignment")
+	    . "</td></tr><tr><td class='nrev'>After assignment: "
+	    . plural($nreviews[$id], "review");
+	if ($nprimary[$id] && $nprimary[$id] < $nreviews[$id])
+	    $c .= ", " . $nprimary[$id] . " primary";
+	$pcsel[] = $c . "</td></tr>\n";
+    }
     $n = intval((count($pcsel) + 2) / 3);
     for ($i = 0; $i < count($pcsel); $i++) {
 	if (($i % $n) == 0 && $i)
@@ -357,7 +374,6 @@ if (isset($assignments) && count($assignments) > 0) {
     echo "<input type='submit' class='button' name='saveassign' value='Save assignment' />\n";
 
     // save the assignment
-    $atype = $_REQUEST["a"];
     if ($atype == "rev" || $atype == "revadd") {
 	echo "<input type='hidden' name='a' value='rev' />\n";
 	echo "<input type='hidden' name='revtype' value='", $_REQUEST["${atype}type"], "' />\n";
@@ -379,11 +395,11 @@ echo "<form method='post' action='autoassign.php'>";
 echo "<table>";
 
 echo "<tr>", tdClass(false, "ass"), "Action</td>", tdClass(true, "rev");
-doRadio('a', 'rev', 'Ensure papers have <i>at least</i>');
+doRadio('a', 'rev', 'Ensure each paper has <i>at least</i>');
 echo "&nbsp; <input type='text' class='textlite' name='revct' value=\"", htmlspecialchars(defval($_REQUEST["revct"], 1)), "\" size='3' />&nbsp; ",
     "<select name='revtype'>";
 doOptions('revtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
-echo "</select>&nbsp; reviewer(s)</td></tr>\n";
+echo "</select>&nbsp; review(s)</td></tr>\n";
 
 echo "<tr><td class='caption'></td>", tdClass(true, "revadd");
 doRadio('a', 'revadd', 'Assign');
@@ -391,7 +407,7 @@ echo "&nbsp; <input type='text' class='textlite' name='revaddct' value=\"", html
     "<i>additional</i>&nbsp; ",
     "<select name='revaddtype'>";
 doOptions('revaddtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
-echo "</select>&nbsp; reviewer(s)</td></tr>\n";
+echo "</select>&nbsp; review(s) per paper</td></tr>\n";
 
 echo "<tr><td class='caption'></td>", tdClass(true, "lead");
 doRadio('a', 'lead', 'Assign discussion lead from reviewers, preferring high scores');
