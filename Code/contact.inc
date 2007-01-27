@@ -740,8 +740,7 @@ class Contact {
     }
 
     function canViewAllReviewerIdentities($conf) {
-	return ($this->amAssistant()
-		|| ($this->isPC && $conf->timePCViewAllReviews()));
+	return $this->isPC;
     }
     
     function canViewReviewerIdentity($prow, $rrow, $conf) {
