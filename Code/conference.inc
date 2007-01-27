@@ -723,6 +723,7 @@ class Conference {
 	//   "author"		Only papers authored by $contactId
 	//   "myReviewRequests"	Only reviews requested by $contactId
 	//   "myReviews"	All reviews authored by $contactId
+	//   "myOutstandingReviews" All unsubmitted reviews auth by $contactId
 	//   "myReviewsOpt"	myReviews, + include papers not yet reviewed
 	//   "allReviews"	All reviews (multiple rows per paper)
 	//   "allReviewScores"	All review scores (multiple rows per paper)
@@ -734,7 +735,7 @@ class Conference {
 	//   "overallMeritScores"
 	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
 
-	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']) || isset($options['myReviewsOpt']);
+	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']) || isset($options['myReviewsOpt']) || isset($options['myOutstandingReviews']);
 	$scoresQuery = !$reviewerQuery && isset($options['allReviewScores']);
 	$contactId = (is_object($contact) ? $contact->contactId : $contact);
 
@@ -815,6 +816,8 @@ class Conference {
 	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.requestedBy=$contactId and PaperReview.reviewType=" . REVIEW_EXTERNAL . ")\n";
 	else if (isset($options['myReviews']))
 	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$contactId)\n";
+	else if (isset($options['myOutstandingReviews']))
+	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$contactId and PaperReview.reviewNeedsSubmit>0)\n";
 	else if (isset($options['myReviewsOpt']))
 	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$contactId)\n";
 	else if (isset($options['allReviews']) || isset($options['allReviewScores']))
@@ -1102,7 +1105,10 @@ class Conference {
 		"</strong> &nbsp;|&nbsp; ";
 	    if (!$_SESSION["Me"]->amAssistant() && $_SESSION["Me"]->chairContactId > 0)
 		echo "<a href=\"", htmlspecialchars(selfHref(array("chairMode" => 0))), "\">Return&nbsp;to&nbsp;chair&nbsp;view</a> &nbsp;|&nbsp; ";
-	    echo "<a href='", $ConfSiteBase, "help.php'>Help</a> &nbsp;|&nbsp; ";
+	    echo "<a href='", $ConfSiteBase, "help.php";
+	    if ($id == "search")
+		echo "?t=", $id;
+	    echo "'>Help</a> &nbsp;|&nbsp; ";
 	    echo "<a href='", $ConfSiteBase, "logout.php'>Sign&nbsp;out</a> &nbsp;|&nbsp; ";
 	}
 	echo date("l j M Y g:i:sa T"), "</div>\n";

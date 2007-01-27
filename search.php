@@ -33,6 +33,8 @@ if ($Me->isPC)
     $tOpt["s"] = "Submitted papers";
 if ($Me->amReviewer())
     $tOpt["r"] = "Review assignment";
+if ($Me->reviewsOutstanding)
+    $tOpt["rout"] = "Unsubmitted reviews";
 if ($Me->isPC)
     $tOpt["req"] = "Requested reviews";
 if ($Me->isAuthor)
@@ -423,8 +425,7 @@ echo "
 <table class='advsearch ellipsis'><tr><td><span class='ellipsis nowrap'><b>Search:</b>&nbsp; $tselect&nbsp; for&nbsp; </td>
   <td><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /> &nbsp;
   <input class='button' type='submit' name='go' value='Go' /> <span class='sep'></span>
-  <a class='unfolder' href=\"javascript:fold('q', 0)\">Options &raquo;</a> <span class='sep'></span>
-  <a href='help.php?t=search'>Help</a></td></tr></table>
+  <a class='unfolder' href=\"javascript:fold('q', 0)\">Options &raquo;</a></td></tr></table>
 </form>
 
 <form method='get' action='search.php'>

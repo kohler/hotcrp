@@ -93,7 +93,8 @@ and use \"With <b>all</b> the words\" and \"<b>Without</b> the words\".
 conference. Options include:</p>
 <ul class='compact'>
 <li><b>Submitted papers</b> &mdash; all submitted papers.</li>
-<li><b>Review assignment</b> &mdash; papers that you've been assigned to review.</li>
+<li><b>Review assignment</b> &mdash; papers you've been assigned to review.</li>
+<li><b>Unsubmitted reviews</b> &mdash; papers you've been assigned to review, but haven't submitted a review yet.</li>
 <li><b>Authored papers</b> &mdash; papers for which you're a contact author.</li>
 <li><b>All papers</b> &mdash; all papers, including withdrawn and other non-submitted papers.</li>
 </ul>

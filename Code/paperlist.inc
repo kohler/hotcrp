@@ -517,6 +517,9 @@ class PaperList {
 	  case "r":
 	    $this->description = "Papers to review";
 	    return array(100, 3, 13, 45, 41, 33);
+	  case "rout":
+	    $this->description = "Papers to review";
+	    return array(100, 3, 13, 45, 41, 33);
 	  case "reviewAssignment":
 	    $this->description = "Review assignment";
 	    return array(3, 13, 39, 36, 43, 35, 50, 37, 38, 44, 46, 47, 48);

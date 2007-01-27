@@ -66,6 +66,8 @@ class PaperSearch {
 	    $this->limitName = "all";
 	else if ($me->amReviewer() && (!$ptype || $ptype == "r"))
 	    $this->limitName = "r";
+	else if ($me->amReviewer() && $ptype == "rout")
+	    $this->limitName = "rout";
 	else if ($me->isAuthor && (!$ptype || $ptype == "a"))
 	    $this->limitName = "a";
 	else if ($me->isPC && $ptype == "req")
@@ -312,6 +314,8 @@ class PaperSearch {
 	$q = "select Paper.paperId from Paper";
 	if ($this->limitName == "r")
 	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . ")";
+	else if ($this->limitName == "rout")
+	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . " and Limiter.reviewNeedsSubmit>0)";
 	else if ($this->limitName == "a")
 	    $q .= " join PaperConflict as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . " and Limiter.conflictType=" . CONFLICT_AUTHOR . ")";
 	else if ($this->limitName == "req")
@@ -365,6 +369,8 @@ class PaperSearch {
 	    $queryOptions["finalized"] = 1;
 	else if ($this->limitName == "r")
 	    $queryOptions["myReviews"] = 1;
+	else if ($this->limitName == "rout")
+	    $queryOptions["myOutstandingReviews"] = 1;
 	else if ($this->limitName == "a")
 	    $queryOptions["author"] = 1;
 	else if ($this->limitName == "req")
