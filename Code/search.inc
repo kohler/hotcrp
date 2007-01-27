@@ -8,6 +8,10 @@ $searchTags = array('ti:' => 'ti', 'title:' => 'ti',
 		    'sre:' => 'sre', 'srev:' => 'sre', 'sreview:' => 'sre',
 		    'cre:' => 'sre', 'crev:' => 'sre', 'creview:' => 'sre',
 		    'subre:' => 'sre', 'subrev:' => 'sre', 'subreview:' => 'sre',
+		    'pri:' => 'pri', 'primary:' => 'pri',
+		    'cpri:' => 'spri', 'cprimary:' => 'spri',
+		    'sec:' => 'sec', 'secondary:' => 'sec',
+		    'csec:' => 'ssec', 'csecondary:' => 'ssec',
 		    'tag:' => 'tag',
 		    'ord:' => 'order', 'order:' => 'order',
 		    'decision:' => 'decision', 'dec:' => 'decision',
@@ -21,11 +25,20 @@ class PaperSearch {
     const ANY_SUB_REVIEWER = 2;		// must be 2*ANY_REVIEWER
     const ANY_NUM_REVIEW = 4;
     const ANY_SUB_NUM_REVIEW = 8;	// must be 2*ANY_NUM_REVIEW
-    const ANY_TAG = 16;
-    const ANY_ALLTAGS = 32;
-    const ANY_TOPICS = 64;
-    const ANY_LEAD = 128;
-    const ANY_SHEPHERD = 256;
+    const ANY_PRIMARY = 16;		// 16 * ANY_REVIEWER series
+    const ANY_SUB_PRIMARY = 32;
+    const ANY_NUM_PRIMARY = 64;
+    const ANY_SUB_NUM_PRIMARY = 128;
+    const ANY_SECONDARY = 256;		// 256 * ANY_REVIEWER series
+    const ANY_SUB_SECONDARY = 512;
+    const ANY_NUM_SECONDARY = 1024;
+    const ANY_SUB_NUM_SECONDARY = 2048;
+    const ANY_TAG = 4096;
+    const ANY_ALLTAGS = 8192;
+    const ANY_TOPICS = 16384;
+    const ANY_LEAD = 32768;
+    const ANY_SHEPHERD = 65536;
+    const ANY_CONFLICT = 131072;
     
     var $contactId;
     var $amAssistant;
@@ -104,9 +117,20 @@ class PaperSearch {
 	}
     }
 
-    function _searchReviewer($word, $type, $stype) {
-	$sub = ($stype == "sre" ? "Sub" : "");
-	$anyfac = ($stype == "sre" ? 2 : 1);
+    function _searchSuffixFactor($submitted, $type, &$suffix, &$factor) {
+	$factor = ($submitted ? 2 : 1);
+	$suffix = ($submitted ? "Sub" : "");
+	if ($type == REVIEW_PRIMARY) {
+	    $factor *= 16;
+	    $suffix .= "Primary";
+	} else if ($type == REVIEW_SECONDARY) {
+	    $factor *= 256;
+	    $suffix .= "Secondary";
+	}
+    }
+    
+    function _searchReviewer($word, $type, $submitted, $what = null) {
+	$this->_searchSuffixFactor($submitted, $what, $sub, $anyfac);
 	if (preg_match('/^([<>]?=?\s*)?(\d+)$/s', $word, $m) && $this->allowNumReview) {
 	    if ($m[2] == 0 && $m[1] == "<")
 		return " or false";
@@ -122,13 +146,18 @@ class PaperSearch {
 	    return "";
 	else {
 	    $this->any |= self::ANY_REVIEWER * $anyfac;
+	    $and = "";
+	    if (!$this->amAssistant) {
+		$this->any |= self::ANY_CONFLICT;
+		$and = " and conflictType is null";
+	    }
 	    if ($type != "none")
-		return " or (reviewerInfo$sub like '%$word%')";
+		return " or (reviewerInfo$sub like '%$word%'$and)";
 	    else
-		return " or (reviewerInfo$sub is not null and reviewerInfo$sub like '%$word%')";
+		return " or (reviewerInfo$sub is not null and reviewerInfo$sub like '%$word%'$and)";
 	}
     }
-    
+
     function _searchQueryType($str, $type = "any") {
 	global $searchTags, $Conf;
 	$q = "";
@@ -191,15 +220,27 @@ class PaperSearch {
 	    if (($special ? $special == "co" : isset($this->fields['co'])) && $this->amAssistant)
 		$qp .= " or (${auextra}Paper.collaborators like '%$word%')";
 	    if ($special ? $special == "re" : isset($this->fields['re']))
-		$qp .= $this->_searchReviewer($word, $type, 're');
+		$qp .= $this->_searchReviewer($word, $type, false);
 	    if ($special ? $special == "sre" : isset($this->fields['sre']))
-		$qp .= $this->_searchReviewer($word, $type, 'sre');
+		$qp .= $this->_searchReviewer($word, $type, true);
+	    if ($special ? $special == "pri" : isset($this->fields['pri']))
+		$qp .= $this->_searchReviewer($word, $type, false, REVIEW_PRIMARY);
+	    if ($special ? $special == "spri" : isset($this->fields['spri']))
+		$qp .= $this->_searchReviewer($word, $type, true, REVIEW_PRIMARY);
+	    if ($special ? $special == "sec" : isset($this->fields['sec']))
+		$qp .= $this->_searchReviewer($word, $type, false, REVIEW_SECONDARY);
+	    if ($special ? $special == "ssec" : isset($this->fields['ssec']))
+		$qp .= $this->_searchReviewer($word, $type, true, REVIEW_SECONDARY);
 	    if ((($special ? $special == "tag" : isset($this->fields['tag']))
 		 || ($special ? $special == "order" : isset($this->fields['order'])))
 		&& $this->amPC) {
 		if ($special ? $special == "order" : isset($this->fields['order']))
 		    $this->orderTag = ($this->orderTag === false ? $word : null);
-		$confpart = ($this->amAssistant ? "" : " and conflictType=0");
+		$confpart = "";
+		if (!$this->amAssistant) {
+		    $confpart = " and conflictType is null";
+		    $this->any |= self::ANY_CONFLICT;
+		}
 		if ($word == "none") {
 		    $qp .= " or (alltags is null$confpart)";
 		    $this->any |= self::ANY_ALLTAGS;
@@ -301,6 +342,26 @@ class PaperSearch {
 	}
     }
     
+    function _searchReviewerLimiter($submitted, $type) {
+	$this->_searchSuffixFactor($submitted, $type, $suffix, $fac);
+	$q = " left join (select paperId";
+	if ($this->any & (self::ANY_REVIEWER * $fac))
+	    $q .= ", group_concat(firstName, ' ', lastName, ' ', email) as reviewerInfo$suffix";
+	if ($this->any & (self::ANY_NUM_REVIEW * $fac))
+	    $q .= ", count(reviewId) as numReviews$suffix";
+	$q .= " from PaperReview join ContactInfo using (contactId)
+		where ";
+	if ($type)
+	    $q .= "reviewType=$type and ";
+	if ($submitted)
+	    $q .= "reviewSubmitted>0";
+	else
+	    $q .= "(reviewNeedsSubmit=1 or reviewSubmitted>0)";
+	$q .= "\n		group by paperId) as ReviewerInfo$suffix
+		on (ReviewerInfo$suffix.paperId=Paper.paperId)";
+	return $q;
+    }
+    
     function _searchQuery() {
 	if ($this->limitName == "x")
 	    return array("create temporary table Matches select Paper.paperId from Paper where false", "");
@@ -321,28 +382,21 @@ class PaperSearch {
 	else if ($this->limitName == "req")
 	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.requestedBy=" . $this->contactId . " and Limiter.reviewType=" . REVIEW_EXTERNAL . ")";
 
-	if ($this->any & (self::ANY_REVIEWER | self::ANY_NUM_REVIEW)) {
-	    $q .= " left join (select paperId";
-	    if ($this->any & self::ANY_REVIEWER)
-		$q .= ", group_concat(firstName, ' ', lastName, ' ', email) as reviewerInfo";
-	    if ($this->any & self::ANY_NUM_REVIEW)
-		$q .= ", count(reviewId) as numReviews";
-	    $q .= " from PaperReview join ContactInfo using (contactId)
-		where reviewNeedsSubmit=1 or reviewSubmitted>0
-		group by paperId) as ReviewerInfo
-		on (ReviewerInfo.paperId=Paper.paperId)";
-	}
+	if (($this->any & self::ANY_CONFLICT) && $this->limitName != "a")
+	    $q .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->contactId . ")";
 
-	if ($this->any & (self::ANY_SUB_REVIEWER | self::ANY_SUB_NUM_REVIEW)) {
-	    $q .= " left join (select paperId";
-	    if ($this->any & self::ANY_SUB_REVIEWER)
-		$q .= ", group_concat(firstName, ' ', lastName, ' ', email) as reviewerInfoSub";
-	    if ($this->any & self::ANY_SUB_NUM_REVIEW)
-		$q .= ", count(reviewId) as numReviewsSub";
-	    $q .= " from PaperReview join ContactInfo using (contactId)
-		where reviewSubmitted>0	group by paperId) as SubReviewerInfo
-		on (SubReviewerInfo.paperId=Paper.paperId)";
-	}
+	if ($this->any & (self::ANY_REVIEWER | self::ANY_NUM_REVIEW))
+	    $q .= $this->_searchReviewerLimiter(false, 0);
+	if ($this->any & (self::ANY_SUB_REVIEWER | self::ANY_SUB_NUM_REVIEW))
+	    $q .= $this->_searchReviewerLimiter(true, 0);
+	if ($this->any & (self::ANY_PRIMARY | self::ANY_NUM_PRIMARY))
+	    $q .= $this->_searchReviewerLimiter(false, REVIEW_PRIMARY);
+	if ($this->any & (self::ANY_SUB_PRIMARY | self::ANY_SUB_NUM_PRIMARY))
+	    $q .= $this->_searchReviewerLimiter(true, REVIEW_PRIMARY);
+	if ($this->any & (self::ANY_SECONDARY | self::ANY_NUM_SECONDARY))
+	    $q .= $this->_searchReviewerLimiter(false, REVIEW_SECONDARY);
+	if ($this->any & (self::ANY_SUB_SECONDARY | self::ANY_SUB_NUM_SECONDARY))
+	    $q .= $this->_searchReviewerLimiter(true, REVIEW_SECONDARY);
 
 	if ($this->any & self::ANY_LEAD)
 	    $q .= " left join (select paperId, concat(firstName, ' ', lastName, ' ', email) as leadInfo from Paper join ContactInfo on (Paper.leadContactId=ContactInfo.contactId)) as LeadInfo on (LeadInfo.paperId=Paper.paperId)";

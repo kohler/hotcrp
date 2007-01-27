@@ -186,6 +186,8 @@ function searchQuickref() {
     _searchQuickrefRow("", "cre:fdabek", "\"fdabek\" (in reviewer name/email) has completed a review");
     _searchQuickrefRow("", "re:4", "four reviewers (assigned and/or completed)");
     _searchQuickrefRow("", "cre:<3", "less than three completed reviews");
+    _searchQuickrefRow("", "pri:>=1", "at least one primary reviewer (\"cpri:\" and reviewer name/email also work)");
+    _searchQuickrefRow("", "sec:pai", "\"pai\" (reviewer name/email) is secondary reviewer (\"csec:\" and review counts also work)");
     _searchQuickrefRow("", "lead:fdabek", "\"fdabek\" (in name/email) is discussion lead");
     _searchQuickrefRow("", "lead:none", "no assigned discussion lead");
     _searchQuickrefRow("", "lead:any", "some assigned discussion lead");
