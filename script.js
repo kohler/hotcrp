@@ -10,7 +10,7 @@ function highlightUpdate(which, classmod) {
     if (which.tagName != "INPUT" && which.tagName != "BUTTON") {
 	var ins = which.getElementsByTagName("input");
 	for (var i = 0; i < ins.length; i++)
-	    if (ins[i].name == "update" || ins[i].name == "submit")
+	    if (ins[i].name == "update" || ins[i].name == "submit" || !ins[i].name)
 		highlightUpdate(ins[i], classmod);
     }
     if (which.className) {
@@ -181,9 +181,9 @@ Miniajax.submit = function(formname, extra) {
 	    return;
 	clearTimeout(timer);
 	if (req.status == 200) {
-	    var retval = eval(req.responseText);
-	    resultelt.innerHTML = retval.response;
-	    if (retval.ok)
+	    var rv = eval(req.responseText);
+	    resultelt.innerHTML = rv.response;
+	    if (rv.ok)
 		highlightUpdate(form, "");
 	} else {
 	    resultelt.innerHTML = "<span class='error'>Network error.  Please try again.</span>";
@@ -193,7 +193,7 @@ Miniajax.submit = function(formname, extra) {
     
     // collect form value
     var pairs = [], regexp = /%20/g;
-    for (var i in form.elements) {
+    for (var i = 0; i < form.elements.length; i++) {
 	var e = form.elements[i];
 	if (e.name && e.value && e.type != "submit" && e.type != "cancel")
 	    pairs.push(encodeURIComponent(e.name).replace(regexp, "+") + "="

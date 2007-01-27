@@ -428,7 +428,7 @@ if (isset($_REQUEST['delete'])) {
 
 
 // set review preference action
-if (isset($_REQUEST['setrevpref']) && $prow && isset($_REQUEST['revpref'])) {
+if (isset($_REQUEST['revpref']) && $prow) {
     $ajax = defval($_REQUEST["ajax"], 0);
     if (($v = cvtpref($_REQUEST['revpref'])) >= -1000000 && $v <= 1000000) {
 	$while = "while saving review preference";
@@ -625,7 +625,7 @@ if ($mode != "edit" && $mainPreferences && $prow->conflictType <= 0) {
     echo "'>Review preference</td>
   <td class='entry'><form id='revpref' name='revpref' action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1\" method='post' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"revpref\", {setrevpref:1})'>
     <input class='textlite' type='text' size='4' name='revpref' value=\"$x\" onfocus=\"tempText(this, '0', 1)\" onblur=\"tempText(this, '0', 0)\" onchange='highlightUpdate(\"revpref\")' tabindex='1' />&nbsp;
-    <input class='button_small' type='submit' name='submit' value='Save preference' tabindex='1' />
+    <input class='button_small' type='submit' value='Save preference' tabindex='1' />
     <span id='revprefresult' style='padding-left:1em'></span>
   </form></td>
 </tr>\n\n";
