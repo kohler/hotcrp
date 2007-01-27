@@ -55,8 +55,6 @@ maybeSearchPaperId("assign.php", $Me);
 getProw();
 
 
-confHeader();
-
 
 if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
     $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  Any changes were lost.");
@@ -168,6 +166,11 @@ if (isset($_REQUEST['update']) && $Me->amAssistant()) {
 	_setLeadOrShepherd("lead");
     if (isset($_REQUEST["shepherd"]))
 	_setLeadOrShepherd("shepherd");
+    if (defval($_REQUEST["ajax"])) {
+	if ($OK)
+	    $Conf->confirmMsg("Assignments saved.");
+	$Conf->ajaxExit(array("ok" => $OK));
+    }
     getProw();
 }
 
@@ -276,12 +279,16 @@ if (isset($_REQUEST['addpc']) && $Me->amAssistant()) {
 
 
 // paper table
+confHeader();
+
+
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, true);
 $paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->amAssistant(), "assign");
 
 
 // begin form and table
-echo "<form action='assign.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>";
+echo "<form name='ass' action='assign.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>";
+	// onsubmit='return Miniajax.submit(\"ass\", {update:1})'>";
 $paperTable->echoDivEnter();
 echo "<table class='assign'>\n\n";
 
@@ -415,7 +422,9 @@ if (($prow->outcome > 0 && $Me->amAssistant())
 
 // "Save assignments" button
 if ($Me->amAssistant())
-    echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='button_small' name='update' value='Save assignments' /></td></tr>\n";
+    echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='button_small' name='update' value='Save assignments' />
+    <span id='assresult' style='padding-left:1em'></span>
+</td></tr>\n";
 
 
 

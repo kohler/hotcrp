@@ -1000,9 +1000,9 @@ class Conference {
     // Message routines
     //
     function msg($text, $type) {
-	$x = "<div class='$type'>$text</div>\n";
+	$x = "<div class=\"$type\">$text</div>\n";
 	if ($this->saveMessages)
-	    $_SESSION["msgs"] = (isset($_SESSION["msgs"]) ? $_SESSION["msgs"] . $x : $x);
+	    $_SESSION["msgs"][] = $x;
 	else if ($this->tableMessages)
 	    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry' colspan='", $this->tableMessages, "'>", $x, "</td>\n</tr>\n\n";
 	else
@@ -1036,6 +1036,29 @@ class Conference {
     function tableMsg($colspan, $obj = null) {
 	$this->tableMessages = $colspan;
 	$this->tableMessagesObj = $obj;
+    }
+
+
+    function ajaxExit($others = null) {
+	$t = "";
+	foreach ($_SESSION["msgs"] as $msg)
+	    if (preg_match('|\A<div class="(.*?)">(.*)</div>\Z|', $msg, $m))
+		$t .= "<span class=\"$m[1]\">$m[2]</span>\n";
+	unset($_SESSION["msgs"]);
+	header("Content-Type: text/json");
+	echo "({ response: \"", addcslashes($t, "\n\""), "\"";
+	if ($others)
+	    foreach ($others as $name => $value) {
+		echo ", ", $name, ": ";
+		if ($value === null || $value === 0 || $value === false)
+		    echo "0";
+		else if ($value === true || $value === 1)
+		    echo "1";
+		else
+		    echo "\"", addcslashes($value, "\n\""), "\"";
+	    }
+	echo "})";
+	exit;
     }
     
 
@@ -1093,7 +1116,8 @@ class Conference {
 	print "<div class='body'$id>\n";
 	
 	if (isset($_SESSION["msgs"])) {
-	    echo $_SESSION["msgs"];
+	    foreach ($_SESSION["msgs"] as $m)
+		echo $m;
 	    unset($_SESSION["msgs"]);
 	}
 	$this->saveMessages = false;

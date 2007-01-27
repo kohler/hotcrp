@@ -28,7 +28,6 @@ README
 account.php
 assign.php
 autoassign.php
-cheapajax.php
 comment.php
 contactauthors.php
 deadlines.php

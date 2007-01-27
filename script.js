@@ -1,14 +1,19 @@
 function highlightUpdate(which, classmod) {
-    if (which == null) {
-	var ins = document.getElementsByTagName("input");
+    if (typeof which == "string") {
+	var result = document.getElementById(which + "result");
+	if (result && classmod == null)
+	    result.innerHTML = "";
+	which = document.getElementById(which);
+    }
+    if (!which)
+	which = document;
+    if (which.tagName != "INPUT" && which.tagName != "BUTTON") {
+	var ins = which.getElementsByTagName("input");
 	for (var i = 0; i < ins.length; i++)
 	    if (ins[i].name == "update" || ins[i].name == "submit")
 		highlightUpdate(ins[i], classmod);
-    } else {
-	if (!which.className)
-	    which = document.getElementById(which);
-	if (!which)
-	    return;
+    }
+    if (which.className) {
 	var cc = which.className;
 	if (cc.length > 6 && cc.substring(cc.length - 6) == "_alert")
 	    cc = cc.substring(0, cc.length - 6);
@@ -137,26 +142,71 @@ function pselClick(evt, elt, thisnum) {
     return true;
 }
 
-var cheapAjax = {count: 0};
-function cheapAjaxSubmit(name, url, value) {
-    var val = document.getElementById(name);
-    if (!val || val.value == null)
+
+// Thank you David Flanagan
+var Miniajax = {};
+Miniajax._factories = [
+    function() { return new XMLHttpRequest(); },
+    function() { return new ActiveXObject("Msxml2.XMLHTTP"); },
+    function() { return new ActiveXObject("Microsoft.XMLHTTP"); }
+];
+Miniajax.newRequest = function() {
+    while (Miniajax._factories.length) {
+	try {
+	    var req = Miniajax._factories[0]();
+	    if (req != null)
+		return req;
+	} catch (e) {
+	}
+	Miniajax._factories.shift();
+    }
+    return null;
+};
+Miniajax.submit = function(formname, extra) {
+    var form = document.forms[formname], req = Miniajax.newRequest();
+    if (!form || !req || form.method != "post")
 	return true;
-    var submit = document.getElementById(name + "submit");
-    cheapAjax[name] = new Image();
-    cheapAjax[name].onload = function () {
-	if (cheapAjax[name].height) {
-	    if (submit) highlightUpdate(submit, "");
-	    fold(name, 0);
-	    fold(name, 1, 1);
-	} else
-	    cheapAjax[name].onerror();
-    };
-    cheapAjax[name].onerror = function () {
-	fold(name, 1);
-	fold(name, 0, 1);
-    };
-    cheapAjax[name].src = url + encodeURI(val.value) + "&count=" + cheapAjax.count;
-    cheapAjax.count++;
+    var resultelt = document.getElementById(formname + "result");
+    if (!resultelt) resultelt = {};
+    
+    // set request
+    var timer = setTimeout(function() {
+			       req.abort();
+			       resultelt.innerHTML = "<span class='error'>Network timeout.  Please try again.</span>";
+			       form.onsubmit = "";
+			   }, 4000);
+    
+    req.onreadystatechange = function() {
+	if (req.readyState != 4)
+	    return;
+	clearTimeout(timer);
+	if (req.status == 200) {
+	    var retval = eval(req.responseText);
+	    resultelt.innerHTML = retval.response;
+	    if (retval.ok)
+		highlightUpdate(form, "");
+	} else {
+	    resultelt.innerHTML = "<span class='error'>Network error.  Please try again.</span>";
+	    form.onsubmit = "";
+	}
+    }
+    
+    // collect form value
+    var pairs = [], regexp = /%20/g;
+    for (var i in form.elements) {
+	var e = form.elements[i];
+	if (e.name && e.value && e.type != "submit" && e.type != "cancel")
+	    pairs.push(encodeURIComponent(e.name).replace(regexp, "+") + "="
+		       + encodeURIComponent(e.value).replace(regexp, "+"));
+    }
+    for (var i in extra)
+	pairs.push(encodeURIComponent(i).replace(regexp, "+") + "="
+		   + encodeURIComponent(extra[i]).replace(regexp, "+"));
+    pairs.push("ajax=1");
+
+    // send
+    req.open("POST", form.action);
+    req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    req.send(pairs.join("&"));
     return false;
-}
+};

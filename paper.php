@@ -429,6 +429,7 @@ if (isset($_REQUEST['delete'])) {
 
 // set review preference action
 if (isset($_REQUEST['setrevpref']) && $prow && isset($_REQUEST['revpref'])) {
+    $ajax = defval($_REQUEST["ajax"], 0);
     if (($v = cvtpref($_REQUEST['revpref'])) >= -1000000 && $v <= 1000000) {
 	$while = "while saving review preference";
 	$Conf->qe("lock tables PaperReviewPreference write", $while);
@@ -439,9 +440,11 @@ if (isset($_REQUEST['setrevpref']) && $prow && isset($_REQUEST['revpref'])) {
 	    $Conf->confirmMsg("Review preference saved.");
 	getProw($Me->contactId);
     } else {
-	$Conf->errorMsg("Preferences should be small integers.  0 means don't care; positive numbers mean you want to review a paper, negative numbers mean you don't.  The greater the absolute value, the stronger your feelings.");
+	$Conf->errorMsg($ajax ? "Preferences must be small positive or negative integers." : "Preferences must be small integers.  0 means don't care; positive numbers mean you want to review a paper, negative numbers mean you don't.  The greater the absolute value, the stronger your feelings.");
 	$PaperError['revpref'] = true;
     }
+    if ($ajax)
+	$Conf->ajaxExit(array("ok" => $OK && !defval($PaperError['revpref'])));
 }
 
 
@@ -620,10 +623,10 @@ if ($mode != "edit" && $mainPreferences && $prow->conflictType <= 0) {
     if (isset($PaperError['revpref']))
 	echo " error";
     echo "'>Review preference</td>
-  <td id='foldrevpref' class='entry foldc fold1c'><form id='revprefform' action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1\" method='post' enctype='multipart/form-data' onsubmit='return cheapAjaxSubmit(\"revpref\", \"${ConfSiteBase}cheapajax.php?paperId=$prow->paperId&amp;revpref=\");'>
-    <input id='revpref' class='textlite' type='text' size='4' name='revpref' value=\"$x\" onfocus=\"tempText(this, '0', 1)\" onblur=\"tempText(this, '0', 0)\" onchange='highlightUpdate(\"revprefsubmit\");fold(\"revpref\",1);fold(\"revpref\",1,1)' />&nbsp;
-    <input id='revprefsubmit' class='button_small' type='submit' name='setrevpref' value='Save preference' />
-    <span class='confirm extension'><span class='sep'></span>Preference saved!</span><span class='error extension1'><span class='sep'></span>Preferences must be small positive or negative integers.</span>
+  <td class='entry'><form id='revpref' name='revpref' action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1\" method='post' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"revpref\", {setrevpref:1})'>
+    <input class='textlite' type='text' size='4' name='revpref' value=\"$x\" onfocus=\"tempText(this, '0', 1)\" onblur=\"tempText(this, '0', 0)\" onchange='highlightUpdate(\"revpref\")' tabindex='1' />&nbsp;
+    <input class='button_small' type='submit' name='submit' value='Save preference' tabindex='1' />
+    <span id='revprefresult' style='padding-left:1em'></span>
   </form></td>
 </tr>\n\n";
 }
