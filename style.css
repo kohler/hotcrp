@@ -790,6 +790,10 @@ div.error div.parseerr p, div.confirm div.parseerr p {
 	padding: 0px 0px 0px 3em;
 	text-indent: -3em;
 }
+div.parseerr span.lineno {
+	font-style: italic;
+	font-size: smaller;
+}
 
 div.error pre {
 	padding: 0.5em;

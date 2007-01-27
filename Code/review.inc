@@ -164,6 +164,19 @@ class ReviewForm {
 	return $x;
     }
 
+    function tfError(&$tf, $text, $field = null) {
+	$e = htmlspecialchars($tf['filename']) . ":";
+	if (is_int($field))
+	    $e .= $field;
+	else if ($field === null || !isset($tf['fieldLineno'][$field]))
+	    $e .= $tf['firstLineno'];
+	else
+	    $e .= $tf['fieldLineno'][$field];
+	if (defval($tf['paperId']))
+	    $e .= " (paper #" . $tf['paperId'] . ")";
+	$tf['err'][] = "<span class='lineno'>" . $e . ":</span> " . $text;
+    }
+
     function checkRequestFields($req, $rrow, &$tf = null, $conf = null) {
 	global $ReviewFormError, $Conf;
 	$conf = ($conf ? $conf : $Conf);
@@ -171,7 +184,9 @@ class ReviewForm {
 	foreach ($this->fieldOrder as $field) {
 	    if (!isset($req[$field]) && !$submit)
 		continue;
-	    $fval = (isset($req[$field]) ? $req[$field] : ($rrow ? $rrow->$field : ""));
+	    $fval = defval($req[$field], ($rrow ? $rrow->$field : ""));
+	    if (!isset($req[$field]))
+		$missing[] = $this->shortName[$field];
 	    if (isset($this->options[$field])) {
 		$fval = trim($fval);
 		$max = count($this->options[$field]);
@@ -191,14 +206,20 @@ class ReviewForm {
 		}
 	    }
 	}
+	if (isset($missing) && $tf)
+	    self::tfError($tf, "Warning: " . textArrayJoin($missing) . " " . pluralx($missing, "field") . " missing from form.  Preserving any existing values.");
 	if (!isset($provide) && !isset($outofrange))
 	    return 1;
-	if (isset($provide))
-	    $conf->errorMsg("You must choose values for " . textArrayJoin($provide) . " before submitting your review.  Please fix this and submit again.");
+	if (isset($provide)) {
+	    if ($tf)
+		self::tfError($tf, "You must set " . textArrayJoin($provide) . " before you can submit your review.");
+	    else
+		$conf->errorMsg("You must set " . textArrayJoin($provide) . " before you can submit your review.  Please fix this and submit again.");
+	}
 	if (isset($outofrange)) {
 	    if ($tf)
 		foreach ($outofrange as $field)
-		    $tf['err'][] = $tf['fieldLineno'][$field] . ": Bad value for field \"" . htmlentities($this->shortName[$field]) . "\".";
+		    self::tfError($tf, "Bad value for field \"" . htmlentities($this->shortName[$field]) . "\"", $field);
 	    else {
 		foreach ($outofrange as $field)
 		    $oor2[] = htmlspecialchars($this->shortName[$field]);
@@ -436,7 +457,7 @@ class ReviewForm {
 
     function garbageMessage(&$tf, $lineno, &$garbage) {
 	if (isset($garbage))
-	    $tf['err'][] = "$lineno: Review form appears to begin with garbage; ignoring it.";
+	    self::tfError($tf, "Review form appears to begin with garbage; ignoring it.", $lineno);
 	unset($garbage);
     }
 
@@ -470,25 +491,30 @@ class ReviewForm {
 	    $lineno++;
 
 	    if (substr($line, 0, 6) == "==+== ") {
+		// make sure we record that we saw the last field
+		if ($mode && $field != null && !isset($req[$field]))
+		    $req[$field] = "";
+		
 		$anyDirectives++;
-		if (preg_match("/Paper Form/", $line)
-		    && !preg_match("/$conf->shortName Paper Form/", $line)) {
+		if (preg_match("/Paper Review Form/", $line)
+		    && !preg_match("/$conf->shortName Paper Review Form/", $line)) {
+		    preg_match('/\A==\+==\s+(.*?)\s+Paper Review Form/', $line, $m);
 		    $this->garbageMessage($tf, $lineno, $garbage);
-		    $tf['err'][] = "$lineno: This review form appears to be for the wrong conference!";
+		    self::tfError($tf, "This review form appears to be for the wrong conference!  (I was expecting \"" . htmlentities($conf->shortName) . " Paper Review Form\", but found \"" . htmlentities($m[1]) . " Paper Review Form\".)", $lineno);
 		    return null;
-		} else if (preg_match("/^==\\+== Paper \#?(\\d+)/i", $line, $match)) {
+		} else if (preg_match('/^==\+== Paper #?(\d+)/i', $line, $match)) {
 		    if ($nfields > 0)
 			break;
 		    else {
-			$req['paperId'] = $match[1];
+			$req['paperId'] = $tf['paperId'] = $match[1];
 			$req['blind'] = 1;
 			$tf['firstLineno'] = $lineno;
 		    }
-		} else if (preg_match("/^==\\+== Submit Review\\s*\$/i", $line)) {
-		    $req["submit"] = true;
-		} else if (preg_match("/^==\\+== Open Review\\s*\$/i", $line)) {
+		} else if (preg_match('/^==\+== Submit Review\s*$/i', $line)) {
+		    $req['submit'] = true;
+		} else if (preg_match('/^==\+== Open Review\s*$/i', $line)) {
 		    $req['blind'] = 0;
-		} else if (preg_match("/^==\\+== [A-Z]\\.\\s*(.*?)\\s*\$/", $line, $match)) {
+		} else if (preg_match('/^==\+== [A-Z]\.\s*(.*?)\s*$/', $line, $match)) {
 		    $fname = str_replace(" (PC only)", "", $match[1]);
 		    $fn =& $this->fieldName[strtolower($fname)];
 		    if (isset($fn)) {
@@ -497,7 +523,7 @@ class ReviewForm {
 			$nfields++;
 		    } else {
 			$this->garbageMessage($tf, $lineno, $garbage);
-			$tf['err'][] = "$lineno: Review field \"" . htmlentities($fname) . "\" is not used for $conf->shortName reviews.  Ignoring this section.";
+			self::tfError($tf, "Review field \"" . htmlentities($fname) . "\" is not used for $conf->shortName reviews.  Ignoring this section.", $lineno);
 			$field = null;
 		    }
 		    $mode = 1;
@@ -513,7 +539,7 @@ class ReviewForm {
 		    $field = null;
 		}
 		if ($field != null)
-		    $req[$field] = (isset($req[$field]) ? $req[$field] . $line : $line);
+		    $req[$field] = defval($req[$field], "") . $line;
 		$mode = 2;
 	    }
 
@@ -521,7 +547,7 @@ class ReviewForm {
 	}
 
 	if ($nfields == 0 && $anyDirectives)
-	    $tf['err'][] = "$lineno: That didn't appear to be a review form; I was not able to extract any information from it.  Please check its formatting and try again.";
+	    self::tfError($tf, "That didn't appear to be a review form; I was not able to extract any information from it.  Please check its formatting and try again.", $lineno);
 
 	$tf['text'] = $text;
 	$tf['lineno'] = $lineno - 1;
@@ -538,37 +564,46 @@ class ReviewForm {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
 
-	if (count($tf['err']) > 0) {
-	    $filename = htmlspecialchars($tf['filename']);
-	    $conf->errorMsg("There were some errors while parsing the uploaded reviews file. <div class='parseerr'><p>$filename:" . join("</p>\n<p>$filename:", $tf['err']) . "</p></div>");
-	}
+	if (count($tf['err']) > 0)
+	    $conf->errorMsg("There were some errors while parsing the uploaded reviews file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf['err']) . "</p></div>");
 
 	if (count($tf['confirm']) > 0)
 	    $conf->confirmMsg("<div class='parseerr'><p>" . join("</p>\n<p>", $tf['confirm']) . "</p></div>");
     }
-    
+
     function webDisplayRows($rrow, $viewAllFields) {
 	global $ReviewFormError;
 	$x = '';
-	$needRow = 1;
-	
+
+	$showFields = array();
+	$lastFieldOptions = 0;
 	foreach ($this->fieldOrder as $field) {
 	    $fval = ($rrow ? $rrow->$field : "");
 	    $options = isset($this->options[$field]);
-	    if (!$options && $fval == "")
+	    if ((!$options && $fval == "")
+		|| ($this->authorView[$field] <= 0 && !$viewAllFields))
 		continue;
-	    if ($this->authorView[$field] <= 0 && !$viewAllFields)
-		continue;
-	    
-	    if ($needRow == 0 && (!$options || $rowColumns == 2)) {
-		$x .= "</tr>\n";
-		$needRow = 1;
+	    if ($lastFieldOptions && !$options)
+		$showFields[$lastFieldOptions] = 0;
+	    if ($lastFieldOptions && $options) {
+		$showFields[$field] = 2;
+		$lastFieldOptions = 0;
+	    } else if ($options) {
+		$showFields[$field] = 1;
+		$lastFieldOptions = $field;
+	    } else {
+		$showFields[$field] = 0;
+		$lastFieldOptions = 0;
 	    }
-	    if ($needRow) {
+	}
+	
+	foreach ($showFields as $field => $display) {
+	    $fval = ($rrow ? $rrow->$field : "");
+	    $options = isset($this->options[$field]);
+
+	    if ($display <= 1)
 		$x .= "\n<tr class='rev_$field'>\n";
-		$rowColumns = 0;
-	    }
-	    
+
 	    $x .= "  <td class='caption rev_$field'>";
 	    $n = htmlspecialchars($this->shortName[$field]);
 	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))
@@ -581,21 +616,24 @@ class ReviewForm {
 	    $x .= "</td>\n";
 	    
 	    $x .= "  <td class='entry rev_$field";
+	    if ($display >= 1)
+		$x .= ($display == 1 ? " leftentry'>" : " rightentry'>");
+	    else
+		$x .= "' colspan='3'>";
 	    if ($options) {
-		$x .= ($rowColumns == 0 ? " leftentry'" : " rightentry'");
 		if ($fval == "" || $fval <= 0 || $fval > count($this->options[$field]))
-		    $x .= "><span class='rev_${field}_0'>Unknown</span>";
+		    $x .= "<span class='rev_${field}_0 rev_unknown'>Unknown</span>";
 		else
-		    $x .= "><span class='rev_${field}_$fval'><span class='rev_num rev_num_$fval'>$fval.</span> " . htmlspecialchars($this->options[$field][$fval]) . "</span>";
+		    $x .= "<span class='rev_${field}_$fval'><span class='rev_num rev_num_$fval'>$fval.</span> " . htmlspecialchars($this->options[$field][$fval]) . "</span>";
 	    } else
-		$x .= "' colspan='3'>" . htmlWrapText(htmlspecialchars($fval));
+		$x .= htmlWrapText(htmlspecialchars($fval));
 	    $x .= "</td>\n";
 
-	    $needRow = !$options;
-	    $rowColumns++;
+	    if ($display != 1)
+		$x .= "</tr>\n";
 	}
 
-	return $x . "</tr>\n";
+	return $x;
     }
     
     function webGuidanceRows($viewAllFields) {

@@ -449,11 +449,14 @@ function tempdir($dir, $prefix, $mode = 0700) {
     return false;
 }
 
+function pluralx($n, $what) {
+    if (is_array($n))
+	$n = count($n);
+    return ($n == 1 ? $what : $what . 's');
+}
+
 function plural($n, $what) {
-    if ($n == 1)
-	return "$n $what";
-    else
-	return "$n ${what}s";
+    return $n . ' ' . pluralx($n, $what);
 }
 
 function setRet(&$var, $val, $ret = false) {

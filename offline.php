@@ -32,14 +32,14 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 		    $tf['confirm'][] = (isset($req['submit']) ? "Submitted" : "Uploaded") . " review for paper #$prow->paperId.";
 	    }
 	} else
-	    $tf['err'][] = $tf['firstLineno'] . ": " . whyNotText($whyNot, "review");
+	    $rf->tfError($tf, whyNotText($whyNot, "review"));
     }
     $rf->textFormMessages($tf, $Conf);
 } else if (isset($_REQUEST['uploadForm']))
     $Conf->errorMsg("Select a review form to upload.");
 
 
-$Conf->header("Offline Reviewing", 'offrev');
+$Conf->header("Offline Reviewing", 'offrev', actionBar());
 
 $pastDeadline = !$Conf->timeReviewPaper($Me->isPC, true, true);
 
@@ -53,7 +53,7 @@ if ($Me->amReviewer()) {
 
 echo "<table>
 <tr class='pt_actions'>
-  <td class='form_entry'><form method='get' action='offline.php'><input class='button_default' type='submit' name='downloadForm' value='Download review form' /></form></td>\n\n";
+  <td class='form_entry'><form method='get' action='offline.php'><input class='button' type='submit' name='downloadForm' value='Download review form' /></form></td>\n\n";
 
 if ($Me->amReviewer()) {
     $disabled = ($pastDeadline && !$Me->amAssistant() ? " disabled='disabled'" : "");
@@ -61,7 +61,7 @@ if ($Me->amReviewer()) {
     <tr>
       <td><form action='offline.php?post=1' method='post' enctype='multipart/form-data'>
 	<input type='hidden' name='redirect' value='offline' />
-	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp;<input class='button_default' type='submit' value='Upload filled-out review form' name='uploadForm' $disabled/>
+	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp;<input class='button' type='submit' value='Upload filled-out review form' name='uploadForm' $disabled/>
       </form></td>
     </tr>\n";
     if ($pastDeadline && $Me->amAssistant())
