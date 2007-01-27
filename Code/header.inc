@@ -7,12 +7,6 @@
 // we automatically determine the configuration paths.
 //
 
-define("ROLE_EXISTS", 0);
-define("ROLE_PC", 3);
-define("ROLE_ASSISTANT", 4);
-define("ROLE_CHAIR", 5);
-define("ROLE_REVIEWER", 100);	// does not appear in Roles table
-
 // All review types must be 1 digit
 define("REVIEW_PRIMARY", 4);
 define("REVIEW_SECONDARY", 3);
