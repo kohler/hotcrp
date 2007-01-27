@@ -250,7 +250,7 @@ class PaperList {
 	    return "";
     }
     
-    function content($fieldId, $row, $plist, $reviewList) {
+    function content($fieldId, $row, $reviewList) {
 	global $ConfSiteBase, $Conf, $reviewTypeName;
 	switch ($fieldId) {
 	case self::FIELD_ID:
@@ -636,7 +636,7 @@ class PaperList {
 	    $t = "  <tr class=\"pl $trclass\">\n";
 	    foreach ($fieldId as $f)
 		if ($f[2] == 1) {
-		    $c = $this->content($f[0], $row, $plist, $reviewList);
+		    $c = $this->content($f[0], $row, $reviewList);
 		    $t .= "    <td class=\"pl_$f[1]\">$c</td>\n";
 		    if ($c != "")
 			$anyData[$f[0]] = 1;
@@ -644,7 +644,7 @@ class PaperList {
 	    $t .= "  </tr>\n";
 	    
 	    foreach ($fieldId as $f)
-		if ($f[2] >= 2 && ($d = $this->content($f[0], $row, $plist, $reviewList))) {
+		if ($f[2] >= 2 && ($d = $this->content($f[0], $row, $reviewList))) {
 		    $t .= "  <tr class=\"pl_$f[1] pl_callout $trclass";
 		    if ($f[2] == 3) {
 			$authorinfo |= ($row->blind ? 2 : 1);
