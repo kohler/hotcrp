@@ -153,12 +153,11 @@ class PaperSearch {
 		$this->any |= self::ANY_CONFLICT;
 		$and = " and conflictType is null";
 	    }
-	    if ($type != "none")
-		return " or (reviewerInfo$sub like '%$word%'$and)";
-	    else {
+	    if ($type != "none") {
 		$this->reviewerName = ($this->reviewerName === false ? $word : null);
+		return " or (reviewerInfo$sub like '%$word%'$and)";
+	    } else
 		return " or (reviewerInfo$sub is not null and reviewerInfo$sub like '%$word%'$and)";
-	    }
 	}
     }
 
