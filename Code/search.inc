@@ -50,6 +50,7 @@ class PaperSearch {
     var $fields;
     var $any;
     var $orderTag;
+    var $reviewerName;
     var $matchPreg;
     var $urlbase;
     
@@ -66,6 +67,7 @@ class PaperSearch {
 	$this->allowNumReview = $me->canViewNumReviews($Conf);
 	$this->allowAuthor = ($Conf->blindSubmission() > 1 || $me->amAssistant());
 	$this->orderTag = false;
+	$this->reviewerName = false;
 	$this->any = 0;
 	$this->contactId = $me->contactId;
 	if ($this->amAssistant && cvtint($opt["c"]) > 0)
@@ -153,8 +155,10 @@ class PaperSearch {
 	    }
 	    if ($type != "none")
 		return " or (reviewerInfo$sub like '%$word%'$and)";
-	    else
+	    else {
+		$this->reviewerName = ($this->reviewerName === false ? $word : null);
 		return " or (reviewerInfo$sub is not null and reviewerInfo$sub like '%$word%'$and)";
+	    }
 	}
     }
 

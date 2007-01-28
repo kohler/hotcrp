@@ -79,6 +79,7 @@ class PaperList {
     }
 
     function selector($fieldId, &$queryOptions) {
+	global $Conf;
 	switch ($fieldId) {
 	case self::FIELD_REVIEWER_NAME:
 	    $queryOptions['reviewerName'] = 1;
@@ -114,6 +115,18 @@ class PaperList {
 	    break;
 	case self::FIELD_FOLD:
 	    $this->unfolded = false;
+	    break;
+	case self::FIELD_REVIEWER_TYPE:
+	case self::FIELD_REVIEWER_TYPE_ICON:
+	    if ($this->search->reviewerName) {
+		// if reviewer name is unique, use that to decide icons to show
+		// NB $this->search->reviewerName is sqlq'd already
+		$result = $Conf->q("select contactId from ContactInfo where concat(firstName, ' ', lastName, ' ', email) like '%" . $this->search->reviewerName . "%'");
+		if (edb_nrows($result) == 1) {
+		    $row = edb_row($result);
+		    $queryOptions['reviewerContact'] = $row[0];
+		}
+	    }
 	    break;
 	}
 	if ($this->sortField == $fieldId && ($order = $this->sort($fieldId)))

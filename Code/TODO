@@ -1,3 +1,4 @@
+- ?? add to ContactInfo a preconcatenated field "firstName lastName email"
 - author's response
 - "proposed" external reviewers
 - consider putting explanations and hints ABOVE form fields, rather
