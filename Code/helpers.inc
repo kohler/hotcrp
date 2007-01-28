@@ -131,28 +131,6 @@ function selfHref($extra = array()) {
 }
 
 
-$reviewButton[0] = array
-    ("past" => "<a class='rev_past' ~>Review&nbsp;overdue</a>",
-     "start" => "<a class='rev_start' ~>Start&nbsp;review</a>",
-     "comp" => "<a class='rev_comp' ~>Complete&nbsp;review</a>",
-     "edit" => "<a class='rev_edit' ~>Edit&nbsp;review</a>",
-     "view" => "<a class='rev_view' ~>See&nbsp;review</a>",
-     "author" => "", // <span class='author'>Author</span>",
-     "conflict" => "", // <span class='conflict'>Conflict</span>",
-     "" => "");
-$reviewButton[1] = array
-    ("past" => "<button class='rev_past' type='submit'>Review&nbsp;past&nbsp;due</button>",
-     "start" => "<button class='rev_start' type='submit'>Start&nbsp;review</button>",
-     "comp" => "<button class='rev_comp' type='submit'>Complete&nbsp;review</button>",
-     "edit" => "<button class='rev_edit' type='submit'>Edit&nbsp;review</button>",
-     "view" => "<button class='rev_view' type='submit'>See&nbsp;review</button>",
-     "author" => "<button class='rev_author' type='button' disabled='disabled'>Review</button>",
-     "conflict" => "<button class='rev_conflict' type='button' disabled='disabled'>Review</button>",
-     "" => "<button class='rev_other' type='button' disabled='disabled'>Review</button>");
-     //"author" => "",
-     //"conflict" => "",
-     //"" => "");
-
 function reviewType($paperId, $row, $long = 0) {
     if ($row->reviewType == REVIEW_PRIMARY)
 	return "<span class='rtype rtype_pri'>Primary</span>";
@@ -192,56 +170,6 @@ function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
 function viewContactButton($href, $contactId) {
     $href .= (strpos($href, "?") === false ? "?" : "&amp;") . "viewContact=$contactId";
     return "<a class='button_small' href=\"$href\">View as</a>";
-}
-
-function reviewButton($paperId, $row = null, $buttonType = 0, $conf = null) {
-    global $Conf, $ConfSiteBase, $reviewButton;
-    $conf = ($conf ? $conf : $Conf);
-    $Me = $_SESSION["Me"];
-    
-    if ($row === null && ($row = $conf->paperRow($paperId, $Me->contactId)) === null)
-	return "Database error";
-
-    $reviewType = (isset($row->reviewType) ? $row->reviewType : 0);
-    $rreq = ($reviewType > 0 || $row->reviewId);
-    $timeGood = $Conf->timeReviewPaper($Me->isPC, $rreq, false);
-    $timeOK = $Conf->timeReviewPaper($Me->isPC, $rreq, true);
-    $need = ($reviewType > 0 || $row->reviewId);
-    $conflict = (isset($row->conflictType) ? $row->conflictType : 0);
-    $acknowledged = defval($row->timeSubmitted, 0);
-    $withdrawn = defval($row->timeWithdrawn, 0);
-    
-    if ($rreq && !$row->reviewSubmitted && !$timeGood)
-	$type = "past";
-    else if (($rreq && $row->reviewSubmitted === null)
-	     || (!$rreq && $conflict <= 0 && $timeOK && $acknowledged > 0 && $withdrawn <= 0))
-	$type = "start";
-    else if ($rreq && !$row->reviewSubmitted)
-	$type = "comp";
-    else if ($rreq && $timeOK)
-	$type = "edit";
-    else if ($rreq)
-	$type = "view";
-    else if ($Me->isPC && $row->CONFLICT_TYPE == CONFLICT_AUTHOR)
-	$type = "author";
-    else if ($Me->isPC && $conflict > 0)
-	$type = "conflict";
-    else
-	$type = "";
-
-    if ($row->reviewId === null)
-	$revulink = "href='${ConfSiteBase}review.php?paperId=$paperId'";
-    else
-	$revulink = "href='${ConfSiteBase}review.php?reviewId=$row->reviewId'";
-    $button = $reviewButton[$buttonType][$type];
-    if ($reviewType == REVIEW_PRIMARY) {
-	$button = str_replace("review", "primary&nbsp;review", $button);
-	$button = str_replace("Review", "Primary&nbsp;review", $button);
-    } else if ($reviewType == REVIEW_SECONDARY) {
-	$button = str_replace("review", "secondary&nbsp;review", $button);
-	$button = str_replace("Review", "Secondary&nbsp;review", $button);
-    }
-    return str_replace("~", $revulink, $button);
 }
 
 function paperDownload($prow, $final = false, $conf = null) {

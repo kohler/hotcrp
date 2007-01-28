@@ -17,7 +17,6 @@ class PaperList {
     
     const FIELD_STATUS = 27;
     const FIELD_REVIEWER_TYPE = 29;
-    const FIELD_REVIEW = 32;
     const FIELD_STATUS_SHORT = 33;
     const FIELD_REVIEWER_NAME = 34;
     const FIELD_ASSIGN_REVIEW = 35;
@@ -184,8 +183,6 @@ class PaperList {
 	    return ($ordinal ? "&nbsp;" : "");
 	case self::FIELD_SELECTOR_CONFLICT:
 	    return "Conflict";
-	case self::FIELD_REVIEW:
-	    return "&nbsp;";
 	case self::FIELD_REVIEWER_NAME:
 	    return "Reviewer name";
 	case self::FIELD_ASSIGN_REVIEW:
@@ -342,8 +339,6 @@ class PaperList {
 	    if ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType == CONFLICT_AUTHOR)
 		$c .= " disabled='disabled'";
 	    return "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='1' id='psel$this->count' onclick='pselClick(event, this, $this->count)' $c/>";
-	case self::FIELD_REVIEW:
-	    return reviewButton($row->paperId, $row);
 	case self::FIELD_REVIEWER_NAME:
 	    return contactHtml($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail);
 	case self::FIELD_ASSIGN_REVIEW:
@@ -782,7 +777,6 @@ $paperListFields = array(
 	PaperList::FIELD_TITLE_REVIEW => array('title', 1),
 	PaperList::FIELD_STATUS => array('status', 1),
 	PaperList::FIELD_REVIEWER_TYPE => array('reviewer', 1),
-	PaperList::FIELD_REVIEW => array('review', 1),
 	PaperList::FIELD_STATUS_SHORT => array('status', 1),
 	PaperList::FIELD_REVIEWER_NAME => array('reviewerName', 1),
 	PaperList::FIELD_ASSIGN_REVIEW => array('reviewAssignment', 1),
