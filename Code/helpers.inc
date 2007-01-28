@@ -253,9 +253,9 @@ function paperDownload($prow, $final = false, $conf = null) {
     $mimetype = defval($prow->mimetype, "");
     $p = $conf->makeDownloadPath($prow->paperId, $mimetype, $final);
     if ($mimetype == "application/postscript")
-	$x = "<a href=\"$p\" class='current'><img src='${ConfSiteBase}images/postscript24.png' alt='[PS]' class='dlimg' />";
+	$x = "<a href=\"$p\" class='q'><img src='${ConfSiteBase}images/postscript24.png' alt='[PS]' class='dlimg' />";
     else if ($mimetype == "application/pdf")
-	$x = "<a href=\"$p\" class='current'><img src='${ConfSiteBase}images/pdf24.png' alt='[PDF]' class='dlimg' />";
+	$x = "<a href=\"$p\" class='q'><img src='${ConfSiteBase}images/pdf24.png' alt='[PDF]' class='dlimg' />";
     else
 	$x .= "<a href=\"$p\">View paper";
 

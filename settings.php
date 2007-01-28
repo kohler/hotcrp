@@ -401,7 +401,7 @@ foreach (array("sub" => "<b>Submissions</b>",
 	       "dec" => "<b>Decisions</b>") as $k => $v) {
     if ($k != "sub")
 	echo " &nbsp;&gt;&nbsp; ";
-    echo ($Group == $k ? "<a class='current'" : "<a"), " href='settings.php?group=$k'>$v</a>";
+    echo ($Group == $k ? "<a class='q'" : "<a"), " href='settings.php?group=$k'>$v</a>";
 }
 echo "</div></td></tr></table>\n";
 

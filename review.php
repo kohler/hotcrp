@@ -412,9 +412,14 @@ function reviewView($prow, $rrow, $editMode) {
   <td class='caption'><h3";
     if ($rrow)
 	echo " id='review$rrow->reviewId'";
-    echo ">Review";
-    if ($rrow && $rrow->reviewSubmitted > 0)
-	echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
+    echo ">";
+    if ($rrow) {
+	echo "<a href='review.php?reviewId=$rrow->reviewId$forceShow' class='q'>Review";
+	if ($rrow->reviewSubmitted > 0)
+	    echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
+	echo "</a>";
+    } else
+	echo "Review";
     echo "</h3></td>
   <td class='entry' colspan='", ($editMode ? 2 : 3), "'>";
     $sep = "";

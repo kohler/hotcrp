@@ -81,13 +81,13 @@ table.vubar .tab_default {
 	color: #000000;
 	font-weight: bold;
 }
-.tab a, td.listlinks a, div#header_left a, a.current {
+.tab a, td.listlinks a, div#header_left a, a.q {
 	text-decoration: none;
 }
-a.current {
+a.q {
 	color: #000000;
 }
-.tab a:hover, td.listlinks a:hover, div#header_left a:hover, a.current:hover {
+.tab a:hover, td.listlinks a:hover, div#header_left a:hover, a.q:hover {
 	text-decoration: underline;
 }
 
