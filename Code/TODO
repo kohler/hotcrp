@@ -6,12 +6,10 @@
 - fold review form
 - simplifyWhitespace on author information
 - override deadlines in review
+- override deadlines in offline reviewing
 - click PC name in reviewer view does not send email
 - anonymous comments highlighted in PC view
 - not started reviews don't get reported
-- "Educating reviewers is a difficult process.
-  [ ] Allow all reviewers to see your response
-  [ ] Allow reviewers to see all reviews"
 - "Comments to the Program Chair" on review form
 - can view any review for a paper you're associated with (or PC)
 - ViewPaper.php handles withdrawn reviews correctly
@@ -34,16 +32,6 @@
 - START-style enter multiple contact authors with explicit First Name,
   Last Name, Affiliation, Email fields?
 
-
-     $Conf->infoMsg("Enter your review of this paper below. "
-		    . "Note that you will be automatically logged "
-		    . " out if you are idle for more than "
-		    . round(ini_get("session.gc_maxlifetime")/3600) 
-		    . " hours, so you may want to save your review "
-		    . "periodically (by marking \"don't finalize\" "
-		    . " and hitting \"Submit your paper review\") "
-		    . " and then return to edit them later. "
-		    );
      $Conf->infoMsg( '<P>Please see <a href="../Reviewer/ratings.html" ' .
                      'target="_blank"> rating description information</a> ' .
                      'to decide your review scores.</P><P>' .

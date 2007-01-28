@@ -169,7 +169,8 @@ class PaperTable {
 
     function echoDownloadRow($prow, $flags) {
 	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0);
-	$canUpload = ($this->editable && (!$prow || $final || $prow->timeSubmitted <= 0));
+	$canUpload = $this->editable;
+	//$canUpload = ($this->editable && (!$prow || $final || $prow->timeSubmitted <= 0));
 	
 	echo "<tr class='pt_paper'>\n";
 	echo "  ", $this->tdCaption('paper');
@@ -183,7 +184,9 @@ class PaperTable {
 	else if ($prow && $prow->size > 0)
 	    echo ($canUpload && $final ? "Submission: " : ""), paperDownload($prow);	
 	if ($canUpload)
-	    echo ($prow && $prow->size > 0 ? "<br />\n  " : ""), "<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='30' />";
+	    echo ($prow && $prow->size > 0 ? "<br />\n  " : ""),
+		($final ? "Final copy upload:" : "Upload:"), "&nbsp; ",
+		"<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='30' />";
 
 	echo "</td>\n";
 	if ($canUpload)
@@ -426,7 +429,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 	if (isset($_REQUEST['forceShow']))
 	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
 	echo outcomeSelector($prow->outcome);
-	echo "&nbsp;<input class='button_small' type='submit' name='setoutcome' value='Set decision' /></div></form></td>\n</tr>\n";
+	echo "&nbsp; <input class='button_small' type='submit' name='setoutcome' value='Set decision' /></div></form></td>\n</tr>\n";
     }
 
 }

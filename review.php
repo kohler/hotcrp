@@ -357,7 +357,7 @@ if ($mode == "edit" && !$rrow)
 
 
 // messages for review viewers
-if ($mode == "edit" && $prow->reviewType <= 0)
+if ($mode == "edit" && $prow->reviewType <= 0 && !$rrow)
     $Conf->infoMsg("You haven't been assigned to review this paper, but you can review it anyway.");
 
 
@@ -491,10 +491,10 @@ function reviewView($prow, $rrow, $editMode) {
   <td class='entry'><table class='pt_buttons'>\n";
 	    $buttons = array();
 	    if (!$rrow || $rrow->reviewSubmitted <= 0) {
-		$buttons[] = array("<input class='button_default' type='submit' value='Save changes' name='update' />", "(does not submit review)");
-		$buttons[] = array("<input class='button_default' type='submit' value='Submit' name='submit' />", "(cannot undo)");
+		$buttons[] = array("<input class='button' type='submit' value='Save changes' name='update' />", "(does not submit review)");
+		$buttons[] = array("<input class='button' type='submit' value='Submit' name='submit' />", "(cannot undo)");
 	    } else {
-		$buttons[] = "<input class='button_default' type='submit' value='Resubmit' name='submit' />";
+		$buttons[] = "<input class='button' type='submit' value='Resubmit' name='submit' />";
 		if ($Me->amAssistant())
 		    $buttons[] = array("<input class='button' type='submit' value='Unsubmit' name='unsubmit' />", "(PC chair only)");
 	    }

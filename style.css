@@ -532,6 +532,10 @@ td.datedesc {
 table.daterange {
 }
 
+img.dlimg {
+	vertical-align: -6px;
+}
+
 span.textlite {
 	border: solid 1px #aaaadd;
 	padding: 0px 4px;

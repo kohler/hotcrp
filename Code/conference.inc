@@ -1198,46 +1198,23 @@ class Conference {
       }
   }
 
-  function getFileExtension(&$mimetype) {
-      if (!isset($mimetype) || $mimetype == null || $mimetype == "")
-	  return "";
-      else if ($mimetype == "application/postscript")
-	  return ".ps";
-      else if ($mimetype == "application/pdf")
-	  return ".pdf";
-      else if ($mimetype == "text/plain")
-	  return ".txt";
-      else
-	  return "";
-      //$suffix=sscanf($mimetype,"application/%s");
-      //if ( $suffix == "" ) {
-      //    return $mimetype;
-      //else
-      //    return $suffix;
-  }
+    function getFileExtension(&$mimetype) {
+	if (!isset($mimetype) || $mimetype == null || $mimetype == "")
+	    return "";
+	else if ($mimetype == "application/postscript")
+	    return ".ps";
+	else if ($mimetype == "application/pdf")
+	    return ".pdf";
+	else if ($mimetype == "text/plain")
+	    return ".txt";
+	else
+	    return "";
+    }
 
-  function getFileTypeAbbrev(&$mimetype) {
-      if (!isset($mimetype) || $mimetype == null || $mimetype == "")
-	  return "Unknown";
-      else if ($mimetype == "application/postscript")
-	  return "PostScript";
-      else if ($mimetype == "application/pdf")
-	  return "PDF";
-      else if ($mimetype == "text/plain")
-	  return "Text";
-      else
-	  return $mimetype;
-      //$suffix=sscanf($mimetype,"application/%s");
-      //if ( $suffix == "" ) {
-      //    return $mimetype;
-      //else
-      //    return $suffix;
-  }
-
-  function makeDownloadPath($paperId, &$mimetype, $final = false) {
-      global $ConfSiteBase;
-      return $ConfSiteBase . "Download/GetPaper/" . $this->downloadPaperName($paperId, $mimetype, $final);
-  }
+    function makeDownloadPath($paperId, &$mimetype, $final = false) {
+	global $ConfSiteBase;
+	return $ConfSiteBase . "Download/GetPaper/" . $this->downloadPaperName($paperId, $mimetype, $final);
+    }
 
   
   function composeReviewerRequest($request, $who, $email, $paperList)

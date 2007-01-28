@@ -1,4 +1,4 @@
-export VERSION=2.0b4
+export VERSION=2.0b5
 
 mkdistdir () {
     crpd=hotcrp-$VERSION
@@ -88,7 +88,9 @@ images/info45.png
 images/next.png
 images/pageresultsex.png
 images/pdf.png
+images/pdf24.png
 images/postscript.png
+images/postscript24.png
 images/prev.png
 images/quicksearchex.png
 images/sortdown.png

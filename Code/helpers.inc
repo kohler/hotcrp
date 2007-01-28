@@ -249,19 +249,22 @@ function paperDownload($prow, $final = false, $conf = null) {
     $conf = ($conf == null ? $Conf : $conf);
     if ($final && !$prow->finalPaperStorageId)
 	$final = false;
-    
-    $p = $conf->makeDownloadPath($prow->paperId, $prow->mimetype, $final);
-    $x = "<a class='download' href='" . $p . "'>View</a>&nbsp;";
-    $x .= "<a class='download' href='" . $p . "?save=1'>Save</a>";
-    if (($final || !$prow->finalPaperStorageId)
-	&& (isset($prow->size) || isset($prow->mimetype))) {
-	$x .= "&nbsp;(";
-	if (isset($prow->size))
-	    $x .= round($prow->size/1024) . "kB" . (isset($prow->mimetype) ? "&nbsp;" : "");
-	if (isset($prow->mimetype))
-	    $x .= htmlspecialchars($conf->getFileTypeAbbrev($prow->mimetype));
-	$x .= ")";
-    }
+
+    $mimetype = defval($prow->mimetype, "");
+    $p = $conf->makeDownloadPath($prow->paperId, $mimetype, $final);
+    if ($mimetype == "application/postscript")
+	$x = "<a href=\"$p\" class='current'><img src='${ConfSiteBase}images/postscript24.png' alt='[PS]' class='dlimg' />";
+    else if ($mimetype == "application/pdf")
+	$x = "<a href=\"$p\" class='current'><img src='${ConfSiteBase}images/pdf24.png' alt='[PDF]' class='dlimg' />";
+    else
+	$x .= "<a href=\"$p\">View paper";
+
+    if (($final || !$prow->finalPaperStorageId)	&& isset($prow->size))
+	$x .= "&nbsp;<span class='dlsize'>"
+	    . round($prow->size/1024) . "kB</span>";
+
+    $x .= "</a>";
+    //$x .= "&nbsp;<span class='dlsave'><a href=\"$p?save=1\">Save to disk</a></span>";
     return $x;
 }
 
