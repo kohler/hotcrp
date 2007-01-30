@@ -1,3 +1,232 @@
+2007-01-29 Monday 16:03  kohler
+
+	* comment.php (1.25), index.php (1.94), tarball.sh (1.23),
+	  Assistant/DumpAllReviews.php (1.16),
+	  Assistant/PrintAllReviews.php (1.15), Author/SubmitResponse.php
+	  (1.12), Author/index.php (1.5), Chair/AveragePaperScore.php
+	  (1.15), Chair/GradeAllPapers.php (1.13), Code/TODO (1.38),
+	  Code/contact.inc (1.93), Code/helpers.inc (1.120),
+	  Code/schema.sql (1.89), PC/SeeAllGrades.php (1.16): collect
+	  authors responses via the Comments tab; remove unused pages
+
+2007-01-29 Monday 16:01  kohler
+
+	* contactauthors.php (1.23), settings.php (1.25): nits
+
+2007-01-29 Monday 16:01  kohler
+
+	* Code/papertable.inc (1.54): chairs get a link in the contact
+	  authors section that says "View as author", allowing the chair to
+	  see the page as the authors do
+
+2007-01-27 Saturday 22:50  kohler
+
+	* Code/search.inc (1.38): oops
+
+2007-01-27 Saturday 22:50  kohler
+
+	* Code/: TODO (1.37), conference.inc (1.158), paperlist.inc (1.90),
+	  search.inc (1.37): an re: query will return review information
+	  for the named reviewer when appropriate, so searching for
+	  "re:dabek" will give you a Review column showing whether dabek is
+	  primary/secondary/pc
+
+2007-01-27 Saturday 22:40  kohler
+
+	* Code/: helpers.inc (1.119), paperlist.inc (1.89): clean up unused
+	  code
+
+2007-01-27 Saturday 22:31  kohler
+
+	* review.php (1.74), settings.php (1.24), style.css (1.142),
+	  Code/helpers.inc (1.118): rename a.current to a.q for quiet; add
+	  links to individual reviews
+
+2007-01-27 Saturday 22:25  kohler
+
+	* review.php (1.73), style.css (1.141), tarball.sh (1.22),
+	  Code/TODO (1.36), Code/conference.inc (1.157), Code/helpers.inc
+	  (1.117), Code/papertable.inc (1.53), Code/reviewtable.inc (1.24),
+	  images/pdf24.png (1.1), images/postscript24.png (1.1): small
+	  improvements to paper screens: prefer larger icon to View/Save
+	  buttons, Save button considered non useful; avoid some messages
+	  at incorrect times
+
+2007-01-27 Saturday 14:01  kohler
+
+	* Code/contact.inc (1.92): allow PC to view reviewer identities
+	  whenever, now that the conflict story is correct
+
+2007-01-27 Saturday 13:59  kohler
+
+	* help.php (1.20), Code/TODO (1.35), Code/search.inc (1.36): add
+	  pri:, cpri:, sec:, csec: query types; fix a bug where PC members
+	  could have found through search who had reviewed their papers (I
+	  Need Asbestos!)
+
+2007-01-27 Saturday 13:53  kohler
+
+	* Code/header.inc (1.39): remove unused cruft
+
+2007-01-27 Saturday 12:43  kohler
+
+	* help.php (1.19), search.php (1.68), Code/TODO (1.34),
+	  Code/conference.inc (1.156), Code/paperlist.inc (1.88),
+	  Code/search.inc (1.35): add "Unsubmitted reviews" search type
+
+2007-01-27 Saturday 12:28  kohler
+
+	* Code/: TODO (1.32), TODO (1.33): more things to do later
+
+2007-01-27 Saturday 12:18  kohler
+
+	* offline.php (1.15), review.php (1.72), style.css (1.140),
+	  Code/TODO (1.31), Code/helpers.inc (1.116), Code/review.inc
+	  (1.55): improve error messages for uploaded review forms: include
+	  paper numbers and line numbers for more types of errors, warn
+	  when fields are missing.  also improve review display a bit
+
+2007-01-27 Saturday 11:02  kohler
+
+	* Code/TODO (1.30): document todo
+
+2007-01-27 Saturday 01:57  kohler
+
+	* paper.php (1.99), script.js (1.28): correct errors revealed by
+	  firefox
+
+2007-01-27 Saturday 01:31  kohler
+
+	* assign.php (1.57), cheapajax.php (1.3), paper.php (1.98),
+	  script.js (1.27), tarball.sh (1.21), Code/TODO (1.29),
+	  Code/conference.inc (1.155): add true ajax support, initially
+	  used only for review preferences
+
+2007-01-27 Saturday 01:30  kohler
+
+	* Code/paperlist.inc (1.87): remove warnings due to useless field
+
+2007-01-25 Thursday 18:57  kohler
+
+	* autoassign.php (1.9): jeff chase suggests reporting reviewer
+	  preferences in the proposed assignment
+
+2007-01-25 Thursday 18:52  kohler
+
+	* autoassign.php (1.8): assignment summary lists total number of
+	  reviews post-assignment, since the existing text had confused
+	  jeff chase
+
+2007-01-23 Tuesday 21:08  kohler
+
+	* paper.php (1.97), Code/TODO (1.28): hide tags from PC chairs on
+	  paper view screens (they can see them by going to review screen
+	  and explicitly overriding conflict)
+
+2007-01-23 Tuesday 20:51  kohler
+
+	* Code/paperlist.inc (1.86): add column heading
+
+2007-01-23 Tuesday 20:51  kohler
+
+	* Code/conference.inc (1.154): order tags alphabetically
+
+2007-01-23 Tuesday 15:36  kohler
+
+	* index.php (1.93), style.css (1.139), Chair/AssignPapers.php
+	  (1.36), Chair/FindPCConflicts.php (1.15), Code/paperlist.inc
+	  (1.85), tarball.sh (1.20): add a mode to the paper assignment
+	  screen that allows the concise assignment of conflicts
+
+2007-01-23 Tuesday 13:41  kohler
+
+	* Code/paperlist.inc (1.84): remove unused code
+
+2007-01-23 Tuesday 11:56  kohler
+
+	* paper.php (1.96), style.css (1.138), Code/TODO (1.27): add a
+	  checkbox so chairs can change a paper without emailing the
+	  authors
+
+2007-01-22 Monday 13:26  kohler
+
+	* help.php (1.18), index.php (1.92), tarball.sh (1.19),
+	  Code/createdb.sh (1.14), Code/defaults.sql (1.3),
+	  Code/paperlist.inc (1.83), Code/schema.sql (1.88): move paper
+	  list contents into code (no more refreshing the database when i
+	  change a paper list)
+
+2007-01-21 Sunday 01:22  kohler
+
+	* autoassign.php (1.7): fix autoassignment to actually balance load
+
+2007-01-18 Thursday 08:34  kohler
+
+	* Code/TODO (1.26): TODO maintenance
+
+2007-01-18 Thursday 08:24  kohler
+
+	* Code/TODO (1.25): nits
+
+2007-01-17 Wednesday 18:20  kohler
+
+	* README (1.12), Code/TODO (1.24): the emailer appears to work
+
+2007-01-17 Wednesday 18:18  kohler
+
+	* README (1.11): just testing the emailer
+
+2007-01-17 Wednesday 17:14  kohler
+
+	* review.php (1.71), Code/contact.inc (1.91): same thing for
+	  reviews
+
+2007-01-17 Wednesday 17:11  kohler
+
+	* comment.php (1.24): more informative message
+
+2007-01-17 Wednesday 17:10  kohler
+
+	* comment.php (1.23): oops
+
+2007-01-17 Wednesday 17:10  kohler
+
+	* comment.php (1.22), Code/contact.inc (1.90): produce a message
+	  when forceShow is in effect
+
+2007-01-17 Wednesday 17:01  kohler
+
+	* Code/conference.inc (1.153): forgot
+
+2007-01-17 Wednesday 17:01  kohler
+
+	* comment.php (1.21), review.php (1.70), Code/conference.inc
+	  (1.152): error message fix again: account for the right number of
+	  </div> closing tags
+
+2007-01-17 Wednesday 16:55  kohler
+
+	* comment.php (1.20), Code/conference.inc (1.151): fix error
+	  message display for comments
+
+2007-01-17 Wednesday 16:33  kohler
+
+	* Code/TODO (1.23): we now have email checkin notifications
+
+2007-01-17 Wednesday 16:26  kohler
+
+	* Code/: TODO (1.18), TODO (1.19), TODO (1.20), TODO (1.21), TODO
+	  (1.22): there will be many of these in succession
+
+2007-01-17 Wednesday 16:24  kohler
+
+	* Code/TODO (1.17): another check: probably this will break
+	  everything
+
+2007-01-17 Wednesday 16:05  kohler
+
+	* Code/TODO (1.16): check whether checkins are error-free
+
 2007-01-17 Wednesday 15:01  kohler
 
 	* help.php (1.17): nits
