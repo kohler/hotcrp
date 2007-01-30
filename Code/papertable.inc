@@ -242,7 +242,7 @@ Zhang, Ping Yen (INRIA)</pre>";
     }
 
     function echoContactAuthor($prow, $editMode = null) {
-	global $Conf, $ConfSiteBase;
+	global $Conf, $ConfSiteBase, $Me;
 	$result = $Conf->qe("select firstName, lastName, email, contactId
 		from ContactInfo
 		join PaperConflict using (contactId)
@@ -253,12 +253,17 @@ Zhang, Ping Yen (INRIA)</pre>";
 	echo (edb_nrows($result) == 1 ? "Contact author" : "Contact authors");
 	echo "</td>\n  ", $this->tdEntry('contactAuthor');
 	if ($result) {
+	    $contacter = null;
 	    $aus = array();
 	    while (($row = edb_row($result))) {
 		$au = contactText($row[0], $row[1], $row[2]);
 		$aus[] = $au;
+		if ($contacter !== false)
+		    $contacter = ($Me->contactId == $row[3] ? false : $row[2]);
 	    }
 	    echo authorTable($aus);
+	    if ($contacter && $Me->amAssistant() && !$editMode)
+		echo "<a href=\"", selfHref(array("viewContact" => $contacter)), "\">View as author</a>";
 	}
 	if ($editMode || ($editMode === null && $this->editable))
 	    echo "<a href='${ConfSiteBase}contactauthors.php?paperId=$prow->paperId'>Edit&nbsp;contact&nbsp;authors</a>";
