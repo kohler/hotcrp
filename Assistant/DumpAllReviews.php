@@ -77,7 +77,7 @@ if (IsSet($_REQUEST[paperReviewsToPrint])) {
   }
 }
 
-$query="SELECT Paper.paperId, Paper.title, Paper.abstract, Paper.authorsResponse, "
+$query="SELECT Paper.paperId, Paper.title, Paper.abstract, "
     . " ContactInfo.firstName, ContactInfo.lastName, "
     . " ContactInfo.email, ContactInfo.affiliation, Paper.authorInformation "
     . " FROM Paper,ContactInfo "
@@ -106,7 +106,6 @@ while ($row = edb_arow($result) ) {
   if ( $printMe ) {
     $title=$row['title'];
     $abstract=$row['abstract'];
-    $authorsResponse=$row['authorsResponse'];
     $authorInfo = $row['authorInformation'];
     $contactInfo = $row['firstName'] . " " . $row['lastName']
       . " ( " . $row['email'] . " ) ";
@@ -209,9 +208,6 @@ while ($row = edb_arow($result) ) {
     print "</td> </tr>\n";
 
 
-    print "<tr> <th> Authors Response: </th> <td ALIGN=LEFT>";
-    echo nl2br(htmlentities($authorsResponse));
-    print "</td> </tr>\n";
     print "</table>\n";
     
     //

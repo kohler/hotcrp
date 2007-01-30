@@ -1,5 +1,6 @@
 - ?? add to ContactInfo a preconcatenated field "firstName lastName email"
-- author's response
+- show multiple review fields in paper lists
+- authors' response: emails, etc.
 - "proposed" external reviewers
 - consider putting explanations and hints ABOVE form fields, rather
   than to the right hand side
@@ -9,15 +10,11 @@
 - override deadlines in review
 - override deadlines in offline reviewing
 - click PC name in reviewer view does not send email
-- anonymous comments highlighted in PC view
 - not started reviews don't get reported
-- "Comments to the Program Chair" on review form
-- can view any review for a paper you're associated with (or PC)
 - ViewPaper.php handles withdrawn reviews correctly
 - PaperConflict has unique rows
 - nag late reviewers
 - uploading request forms for others?
-- users can say whether reviewers can view other reviews? 
 - pretty printing reviews
 - secondary reviews: can view reviews before completing your own
 - add more extra textual fields

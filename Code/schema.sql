@@ -116,7 +116,6 @@ CREATE TABLE `Paper` (
   `paperStorageId` int(11) NOT NULL default '0',
   `finalPaperStorageId` int(11) NOT NULL default '0',
   `blind` tinyint(1) NOT NULL default '1',
-  `authorsResponse` mediumtext,
   `outcome` tinyint(1) NOT NULL default '0',
   `leadContactId` int(11) NOT NULL default '0',
   `shepherdContactId` int(11) NOT NULL default '0',

@@ -639,13 +639,14 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 
     if (!$newPaper && $prow
 	&& ($prow->reviewType > 0
-	    || (($mode == "comment" || $prow->numAuthorComments > 0)
+	    || (($mode == "comment" || $prow->numAuthorComments > 0
+		 || $Conf->timeAuthorRespond())
 		&& $Me->canViewComment($prow, null, $Conf))
 	    || ($Me->isPC && $prow->timeSubmitted > 0
 		&& $Conf->timeReviewOpen()))) {
 	$n = ($prow->conflictType == CONFLICT_AUTHOR ? $prow->numAuthorComments : $prow->numComments);
-	$n = ($n ? " ($n)" : "");
-	$x .= actionTab("Comments$n", "${ConfSiteBase}comment.php?paperId=$paperId", $mode == "comment");
+	$txt = ($n ? "Comments ($n)" : "Comments");
+	$x .= actionTab($txt, "${ConfSiteBase}comment.php?paperId=$paperId", $mode == "comment");
     }
 
     if ($mode == "assign"

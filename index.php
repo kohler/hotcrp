@@ -218,13 +218,10 @@ if ($Me->isPC) {
 	echo "  <li><a href='PC/GradePapers.php'>Grade Papers</a>
 -- arrive at a consensus and determine discussion order of papers at PC meeting</li>\n";
     if ($Conf->timePCViewAllReviews()) {
-	echo "  <li><a href='PC/SeeAllGrades.php'>See overall merit and grades for all papers</a> -- you can get to reviews from here as well</li>\n";
 	echo "  <li><a href='PC/CheckOnPCProgress.php'>Spy On Your Neighbours</a> -- See progress of entire PC</li>\n";
 	echo "  <li><a href='Chair/SpotProblems.php'>Spot problems across all papers</a></li>\n";
 	echo "  <li><a href='Chair/AverageReviewerScore.php'>See average reviewer ratings</a> -- this compares the overall merit ratings of different reviewers</li>\n";
     }
-    if ($Conf->timePCViewGrades())
-	echo "  <li><a href='Chair/AveragePaperScore.php'>See Average Paper Scores</a></li>\n";
     echo "</ul></li>\n";
     echo "</ul></div></div>\n";
 }    
@@ -251,7 +248,6 @@ if ($Me->amAssistant()) {
   <li><a href='Chair/CheckOnPCProgress.php'>See PC progress</a> on reviewing; you can also see the review requests made	by this specific PC member.</li>
   <li><a href='Chair/SpotProblems.php'>Spot Reviewing Problems</a></li>
   <li><a href='Chair/AverageReviewerScore.php'>See average reviewer score</a></li>
-  <li><a href='Chair/AveragePaperScore.php'>See Average Paper Scores</a></li>
   </ul></li>
 
 <li>Contact authors &amp; prepare facesheets

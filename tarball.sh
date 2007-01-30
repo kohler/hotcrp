@@ -107,14 +107,9 @@ Assistant/PrintAllReviews.php
 Assistant/PrintSomeReviews.php
 Assistant/index.php
 
-Author/.htaccess
-Author/SubmitResponse.php
-Author/index.php
-
 Chair/.htaccess
 Chair/AskForReview.php
 Chair/AssignPapers.php
-Chair/AveragePaperScore.php
 Chair/AverageReviewerScore.php
 Chair/BecomeSomeoneElse.php
 Chair/CheckOnPCProgress.php
@@ -143,7 +138,6 @@ PC/.htaccess
 PC/CheckOnPCProgress.php
 PC/CheckReviewStatus.php
 PC/GradePapers.php
-PC/SeeAllGrades.php
 PC/SpotMyProblems.php
 PC/gradeNames.inc
 PC/index.php

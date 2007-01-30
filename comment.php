@@ -5,6 +5,7 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $rf = reviewForm();
 $useRequest = false;
+$sawResponse = false;
 
 
 // header
@@ -63,7 +64,7 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
     $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  The file was ignored.");
 
 
-// update review action
+// update comment action
 function saveComment($text) {
     global $Me, $Conf, $prow, $crow;
 
@@ -74,6 +75,11 @@ function saveComment($text) {
     if ($Conf->blindReview() > 1
 	|| ($Conf->blindReview() == 1 && defval($_REQUEST["blind"])))
 	$blind = 1;
+    if (isset($_REQUEST["response"])) {
+	$forReviewers = 1;
+	$forAuthors = 2;
+	$blind = $prow->blind;
+    }
 
     // query
     if (!$text) {
@@ -107,27 +113,57 @@ function saveComment($text) {
     $Conf->log("Comment $commentId $action", $Me, $prow->paperId);
 
     // adjust comment counts
-    if ($change)
+    if ($change) {
+	$Conf->q("unlock tables");	// just in case
 	$Conf->qe("update Paper set numComments=(select count(commentId) from PaperComment where paperId=$prow->paperId), numAuthorComments=(select count(commentId) from PaperComment where paperId=$prow->paperId and forAuthors>0) where paperId=$prow->paperId", $while);
+    }
     
     $_REQUEST["paperId"] = $prow->paperId;
     unset($_REQUEST["commentId"]);
-    loadRows();
 }
 
-if (isset($_REQUEST['submit'])) {
+function saveResponse($text) {
+    global $Me, $Conf, $prow, $crow;
+
+    // make sure there is exactly one response
+    if (!$crow) {
+	$result = $Conf->qe("select commentId from PaperComment where paperId=$prow->paperId and forAuthors>1");
+	if (($row = edb_row($result)))
+	    return $Conf->errorMsg("A paper response has already been entered.  <a href=\"comment.php?commentId=$row[0]\">Edit that response</a>");
+    }
+
+    saveComment($text);
+}
+
+if (isset($_REQUEST['submit']) && defval($_REQUEST['response'])) {
+    if (!$Me->canRespond($prow, $crow, $Conf, $whyNot, true))
+	$Conf->errorMsg(whyNotText($whyNot, "respond"));
+    else if (!($text = defval($_REQUEST['comment'])) && !$crow) {
+	$Conf->errorMsg("Enter a comment.");
+	$useRequest = true;
+    } else {
+	$Conf->qe("lock tables Paper write, PaperComment write, ActionLog write");
+	saveResponse($text);
+	$Conf->qe("unlock tables");
+	loadRows();
+    }
+} else if (isset($_REQUEST['submit'])) {
     if (!$Me->canSubmitComment($prow, $crow, $Conf, $whyNot))
 	$Conf->errorMsg(whyNotText($whyNot, "comment"));
     else if (!($text = defval($_REQUEST['comment'])) && !$crow) {
 	$Conf->errorMsg("Enter a comment.");
 	$useRequest = true;
-    } else
+    } else {
 	saveComment($text);
+	loadRows();
+    }
 } else if (isset($_REQUEST['delete']) && $crow) {
     if (!$Me->canSubmitComment($prow, $crow, $Conf, $whyNot))
 	$Conf->errorMsg(whyNotText($whyNot, "comment"));
-    else
+    else {
 	saveComment("");
+	loadRows();
+    }
 }
 
 
@@ -200,6 +236,9 @@ $Conf->tableMsg(0);
 function commentView($prow, $crow, $editMode) {
     global $Conf, $Me, $rf, $forceShow, $useRequest;
 
+    if ($crow && $crow->forAuthors > 1)
+	return responseView($prow, $crow, $editMode);
+    
     if (!$Me->canViewComment($prow, $crow, $Conf))
 	return;
     if ($editMode && !$Me->canComment($prow, $crow, $Conf))
@@ -238,15 +277,13 @@ function commentView($prow, $crow, $editMode) {
 	echo $sep, "For PC";
 	if ($crow->forReviewers)
 	    echo " + reviewers";
-	if ($crow->forAuthors)
+	if ($crow->forAuthors && $crow->blind)
+	    echo " + authors (anonymous to authors)";
+	else if ($crow->forAuthors)
 	    echo " + authors";
     }
-    if ($crow && ($crow->contactId == $Me->contactId || $Me->amAssistant())) {
-	if (isset($_REQUEST["commentId"]) && $editMode)
-	    echo " &nbsp;|&nbsp; <b>Edit</b>";
-	else
-	    echo " &nbsp;|&nbsp; <a href='comment.php?commentId=$crow->commentId'>Edit</a>";
-    }
+    if ($crow && ($crow->contactId == $Me->contactId || $Me->amAssistant()) && !$editMode)
+	echo " &nbsp;|&nbsp; <a href='comment.php?commentId=$crow->commentId'>Edit</a>";
     echo "</td>\n</tr>\n\n";
 
     if ($editMode && $crow && $crow->contactId != $Me->contactId) {
@@ -316,13 +353,100 @@ function commentView($prow, $crow, $editMode) {
 }
 
 
+function responseView($prow, $crow, $editMode) {
+    global $Conf, $Me, $rf, $forceShow, $useRequest, $sawResponse;
+
+    if (!$Me->canViewComment($prow, $crow, $Conf))
+	return;
+    if ($prow->conflictType != CONFLICT_AUTHOR && !$Me->amAssistant())
+	$editMode = false;
+    $sawResponse = true;
+    $wordlimit = $Conf->setting("resp_words", 0);
+    
+    if ($editMode) {
+	echo "<form action='comment.php?";
+	if ($crow)
+	    echo "commentId=$crow->commentId";
+	else
+	    echo "paperId=$prow->paperId";
+	echo "$forceShow&amp;response=1&amp;post=1' method='post' enctype='multipart/form-data'>\n";
+    }
+
+    echo "<table class='comment'>
+<tr class='id'>
+  <td class='caption'><h3";
+    if ($crow)
+	echo " id='comment$crow->commentId'";
+    echo ">", ($crow ? "Response" : "Add Response"), "</h3></td>
+  <td class='entry'>";
+    $sep = "";
+    if ($crow && $crow->timeModified > 0) {
+	echo $sep, $Conf->printableTime($crow->timeModified);
+	$sep = " &nbsp;|&nbsp; ";
+    }
+    if ($crow && ($prow->conflictType == CONFLICT_AUTHOR || $Me->amAssistant()) && !$editMode)
+	echo " &nbsp;|&nbsp; <a href='comment.php?commentId=$crow->commentId'>Edit</a>";
+    echo "</td>\n</tr>\n\n";
+
+    if ($editMode) {
+	// form body
+	echo "<tr>
+  <td class='caption'></td>
+  <td class='entry'>";
+
+	$limittext = ($wordlimit ? ": the conference system will enforce a limit of $wordlimit words" : "");
+	$Conf->infoMsg("The authors' response is a mechanism to address
+reviewer concerns and correct reviewer misunderstandings.
+The response should be addressed to the program committee, who
+will consider it when making their decision.  It is <i>not</i> a mechanism
+to augment the content or form of the paper&mdash;the conference deadline
+has passed.  Please keep the response short and to the point" . $limittext . ".");
+	if ($prow->conflictType != CONFLICT_AUTHOR)
+	    $Conf->infoMsg("Although you aren't a contact author for this paper, you can edit the authors' response as PC Chair.");
+	
+	echo "<textarea name='comment' rows='10' cols='80'>";
+	if ($crow)
+	    echo htmlspecialchars($crow->comment);
+	echo "</textarea></td>
+</tr>\n\n";
+
+	// review actions
+	if (1) {
+	    echo "<tr class='rev_actions'>
+  <td class='caption'></td>
+  <td class='entry'><table class='pt_buttons'>
+    <tr>\n";
+	    echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save' name='submit' /></td>\n";
+	    if ($crow)
+		echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Delete response' name='delete' /></td>\n";
+	    if (!$Conf->timeAuthorRespond())
+		echo "    </tr>\n    <tr>\n      <td colspan='2'><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td>\n";
+	    echo "    </tr>\n  </table></td>\n</tr>\n\n";
+	}
+
+	echo "</table>\n</form>\n\n";
+	
+    } else {
+	echo "<tr>
+  <td class='caption'></td>
+  <td class='entry'>", htmlWrapText(htmlspecialchars($crow->comment)), "</td>
+</tr>
+</table>\n";
+    }
+    
+}
+
+
 if ($crow)
     commentView($prow, $crow, true);
 else {
     foreach ($crows as $cr)
-	commentView($prow, $cr, false);
+	commentView($prow, $cr, $cr->forAuthors > 1 && $prow->conflictType == CONFLICT_AUTHOR);
     if ($Me->canComment($prow, null, $Conf))
 	commentView($prow, null, true);
+    if (!$sawResponse && $Conf->timeAuthorRespond()
+	&& ($prow->conflictType == CONFLICT_AUTHOR || $Me->amAssistant()))
+	responseView($prow, null, true);
 }
 
 

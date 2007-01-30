@@ -225,10 +225,10 @@ while ($row=edb_arow($result)) {
       $grade = defval($row['grade'], 0);
 
       print "<input type=hidden name=paperId value=$paperId>\n";
-      print "<input type=hidden name=ShowGrades value=$_REQUEST["ShowGrades"]>\n";
-      print "<input type=hidden name=ShowChairGrades value=$_REQUEST["ShowChairGrades"]>\n";
-      print "<input type=hidden name=ShowOutcome value=$_REQUEST["ShowOutcome"]>\n";
-      print "<input type=hidden name=ShowPCPapers value=$_REQUEST["ShowPCPapers"]>\n";
+      print "<input type=hidden name=ShowGrades value=".$_REQUEST["ShowGrades"].">\n";
+      print "<input type=hidden name=ShowChairGrades value=".$_REQUEST["ShowChairGrades"].">\n";
+      print "<input type=hidden name=ShowOutcome value=".$_REQUEST["ShowOutcome"].">\n";
+      print "<input type=hidden name=ShowPCPapers value=".$_REQUEST["ShowPCPapers"].">\n";
 
       print "<SELECT NAME=gradeForPaper "
 	. " onChange=document.Paper$paperId.submit() >\n";
@@ -249,10 +249,10 @@ while ($row=edb_arow($result)) {
       print "<FORM name=Outcome$paperId method=\"POST\" action=\"$_SERVER[PHP_SELF]\">";
 
       print "<input type=hidden name=paperId value=$paperId>\n";
-      print "<input type=hidden name=ShowGrades value=$_REQUEST["ShowGrades"]>\n";
-      print "<input type=hidden name=ShowChairGrades value=$_REQUEST["ShowChairGrades"]>\n";
-      print "<input type=hidden name=ShowOutcome value=$_REQUEST["ShowOutcome"]>\n";
-      print "<input type=hidden name=ShowPCPapers value=$_REQUEST["ShowPCPapers"]>\n";
+      print "<input type=hidden name=ShowGrades value=".$_REQUEST["ShowGrades"].">\n";
+      print "<input type=hidden name=ShowChairGrades value=".$_REQUEST["ShowChairGrades"].">\n";
+      print "<input type=hidden name=ShowOutcome value=".$_REQUEST["ShowOutcome"].">\n";
+      print "<input type=hidden name=ShowPCPapers value=".$_REQUEST["ShowPCPapers"].">\n";
 
       print "<SELECT NAME=outcomeForPaper "
 	. " onChange=document.Outcome$paperId.submit() >\n";
