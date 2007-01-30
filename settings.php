@@ -636,14 +636,18 @@ if ($Group == "dec") {
     echo "<table>\n";
     $decs = $rf->options['outcome'];
     krsort($decs);
-    $lastdec = "Current decision types<br />";
+    $n = 0;
+    foreach ($decs as $k => $v)
+	if ($k)
+	    $n++;
+    $caption = "<td class='rcaption' rowspan='$n'>Current decision types</td>";
     foreach ($decs as $k => $v)
 	if ($k) {
-	    echo "<tr><td class='rcaption'>$lastdec</td><td>";
+	    echo "<tr>$caption<td nowrap='nowrap'>";
 	    echo "<input type='text' class='textlite' name='dec$k' value=\"", htmlspecialchars($v), "\" size='35' /> &nbsp; ", ($k > 0 ? "Accept" : "Reject"), "</td></tr>\n";
-	    $lastdec = "<br />";
+	    $caption = "";
 	}
-    echo "<tr><td class='rcaption'>New decision type<br /></td><td><input type='text' class='textlite' name='decn' value=\"\" size='35' /> &nbsp; <select name='dtypn'><option value='1' selected='selected'>Accept</option><option value='-1'>Reject</option></select></td></tr>\n";
+    echo "<tr><td class='rcaption'>New decision type<br /></td><td nowrap='nowrap'><input type='text' class='textlite' name='decn' value=\"\" size='35' /> &nbsp; <select name='dtypn'><option value='1' selected='selected'>Accept</option><option value='-1'>Reject</option></select></td></tr>\n";
     echo "</table>\n";
     
     echo "</div></div>\n\n";

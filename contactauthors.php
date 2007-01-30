@@ -117,15 +117,15 @@ if ($OK) {
 	order by lastName, firstName, email";
     $result = $Conf->qe($q, "while finding contact authors");
     while ($row = edb_row($result)) {
-	echo "<tr><td>", contactHtml($row[0], $row[1]), "</td> <td>", htmlspecialchars($row[2]), "</td>";
+	echo "<tr><td class='pad'>", contactHtml($row[0], $row[1]), "</td> <td class='pad'>", htmlspecialchars($row[2]), "</td>";
 	if ($Me->amAssistant())
-	    echo " <td><button class='button_small' type='submit' name='remove' value='$row[3]'>Remove contact author</button></td>";
+	    echo " <td class='pad'><button class='button_small' type='submit' name='remove' value='$row[3]'>Remove contact author</button></td>";
 	echo "</tr>\n    ";
     }
 
-    echo "    <tr><td><input class='textlite' type='text' name='name' size='20' onchange='highlightUpdate()' /></td>
-	<td><input class='textlite' type='text' name='email' size='20' onchange='highlightUpdate()' /></td>
-	<td><input class='button_default' type='submit' name='update' value='Add contact author' /></td>
+    echo "    <tr><td class='pad'><input class='textlite' type='text' name='name' size='20' onchange='highlightUpdate()' /></td>
+	<td class='pad'><input class='textlite' type='text' name='email' size='20' onchange='highlightUpdate()' /></td>
+	<td class='pad'><input class='button' type='submit' name='update' value='Add contact author' /></td>
     </tr>
   </table></td>
 </tr>
