@@ -47,7 +47,7 @@ if ($Me->amReviewer()) {
     if ($pastDeadline)
 	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting reviews has passed.");
     else
-	$Conf->infoMsg("Use this site to download a blank review form, or to upload a review form you've already filled out.");
+	$Conf->infoMsg("Use this page to download a blank review form, or to upload a review form you've already filled out.");
 } else
     $Conf->infoMsg("You aren't registered as a reviewer or PC member for this conference, but for your information, you may download the review form anyway.");
 
