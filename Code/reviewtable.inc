@@ -102,14 +102,13 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     }
 
     // bottom links
+    $hilite = ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "");
+    
     // edit your own review
     if ($mode == "edit" && !$rrow)
 	$nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Enter&nbsp;review</b></td><td>" . contactHtml($Me->firstName, $Me->lastName) . "</td><td class='empty'></td></tr>\n";
     else if (!$foundMyReview && $Me->canReview($prow, null, $Conf)) {
-	$x = "    <tr>";
-	if ($mode == "edit")
-	    $x .= "<td></td>";
-	$x .= "<td colspan='2'><a href='review.php?paperId=$prow->paperId&amp;mode=edit$forceShow'>Enter&nbsp;your&nbsp;own&nbsp;review</a></td></tr>\n";
+	$x = "    <tr>$hilite<td colspan='2'><a href='review.php?paperId=$prow->paperId&amp;mode=edit$forceShow'>Enter&nbsp;your&nbsp;own&nbsp;review</a></td></tr>\n";
 	$nonsubrev[] = $x;
     }
 
@@ -121,7 +120,6 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     }
     
     $t = '';
-    $hilite = ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "");
     // see all reviews
     if (($mode != "edit" && $rrow && $Me->canViewReview($prow, null, $Conf))
 	|| ($mode == "edit" && $Me->canViewReview($prow, null, $Conf)))

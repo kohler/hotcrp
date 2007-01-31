@@ -430,7 +430,7 @@ function reviewView($prow, $rrow, $editMode) {
 	echo $sep, "Modified ", $Conf->printableTime($rrow->reviewModified);
 	$sep = " &nbsp;|&nbsp; ";
     }
-    if ($rrow && !$editMode)
+    if ($rrow)
 	echo $sep, "<a href='review.php?paperId=$prow->paperId&amp;reviewId=$rrow->reviewId&amp;text=1'>Text version</a>";
     echo "</td>
 </tr>\n";
