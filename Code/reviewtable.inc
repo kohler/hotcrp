@@ -63,9 +63,9 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	if (!$Me->canViewReviewerIdentity($prow, $rr, $Conf))
 	    $t .= ($x ? "<td>$x</td>" : "<td class='empty'></td>");
 	else if ($mode == "assign")
-	    $t .= "<td><a href=\"mailto:" . htmlspecialchars($rr->email) . "\">" . contactHtml($rr) . "</a></td>";
+	    $t .= "<td>" . contactHtml($rr) . "</td>";
 	else
-	    $t .= "<td><a href=\"mailto:" . htmlspecialchars($rr->email) . "\">" . contactHtml($rr->firstName, $rr->lastName) . "</a>" . ($x ? " $x" : "") . "</td>";
+	    $t .= "<td>" . contactHtml($rr->firstName, $rr->lastName) . ($x ? " $x" : "") . "</td>";
 
 	// review type
 	if ($mode != "assign")

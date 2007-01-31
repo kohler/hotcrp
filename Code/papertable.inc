@@ -256,12 +256,12 @@ Zhang, Ping Yen (INRIA)</pre>";
 	    $contacter = null;
 	    $aus = array();
 	    while (($row = edb_row($result))) {
-		$au = contactText($row[0], $row[1], $row[2]);
+		$au = contactHtml($row[0], $row[1], $row[2]);
 		$aus[] = $au;
 		if ($contacter !== false)
 		    $contacter = ($Me->contactId == $row[3] ? false : $row[2]);
 	    }
-	    echo authorTable($aus);
+	    echo authorTable($aus, false);
 	    if ($contacter && $Me->amAssistant() && !$editMode)
 		echo "<a href=\"", selfHref(array("viewContact" => $contacter)), "\">View as author</a>";
 	}

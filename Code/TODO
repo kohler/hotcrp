@@ -12,7 +12,6 @@
 - simplifyWhitespace on author information
 - override deadlines in review
 - override deadlines in offline reviewing
-- click PC name in reviewer view does not send email
 - not started reviews don't get reported
 - ViewPaper.php handles withdrawn reviews correctly
 - nag late reviewers

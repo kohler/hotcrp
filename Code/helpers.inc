@@ -287,8 +287,9 @@ function contactText($firstName, $lastName=null, $email=null) {
     return $x;
 }
 
-function contactHtml($firstName, $lastName=null, $email=null) {
-    return htmlspecialchars(contactText($firstName, $lastName, $email));
+function contactHtml($firstName, $lastName = null, $email = null) {
+    $h = htmlspecialchars(contactText($firstName, $lastName, $email));
+    return preg_replace('|&lt;(\S+?)&gt;$|', '&lt;<a href="mailto:$1">$1</a>&gt;', $h);
 }
 
 function contactEmailTo($firstName, $lastName=null, $email=null) {
