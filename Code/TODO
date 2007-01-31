@@ -1,3 +1,6 @@
+- negative conflictTypes in PaperConflict represent review assignments?
+- add a "review assignment" link to the "submitted/accepted/all" papers
+  business on the homepage
 - ?? add to ContactInfo a preconcatenated field "firstName lastName email"
 - show multiple review fields in paper lists
 - authors' response: emails, etc.
@@ -24,7 +27,6 @@
 - review.php: conflict error message
 - grading: secondary can grade
 - do grades at all????
-- check for correct use of $Conf->footer()
 - START-style enter-paper-all-at-once (no email verification)?
 - START-style enter multiple contact authors with explicit First Name,
   Last Name, Affiliation, Email fields?

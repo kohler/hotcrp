@@ -13,15 +13,9 @@ if (IsSet($_REQUEST[toggleChairGrades])) {
 }
 
 
-?>
+$Conf->header("View Configuration Buttons ");
 
-<html>
 
-<?php  $Conf->header("View Configuration Buttons ") ?>
-
-<body>
-
-<?php 
 $Conf->infoMsg("Change the configuration parameters.<br> "
 	       . "You'll need to refresh other views to have <br>"
 	       . "the change affect other windows");

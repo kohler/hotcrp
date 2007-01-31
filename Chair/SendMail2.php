@@ -253,4 +253,4 @@ if (!isset($_REQUEST["sendTheMail"])) {
 }
 
 
-echo $Conf->footer();
+$Conf->footer();

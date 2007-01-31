@@ -217,4 +217,3 @@ if ($Me->amAssistant())
     echo "</form>\n\n";
 
 $Conf->footer();
-?>

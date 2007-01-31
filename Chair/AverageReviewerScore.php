@@ -3,16 +3,10 @@ require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPC('../index.php');
-?>
-
-<html>
-
-<?php  $Conf->header("Distribution of Overall Merit Scores By Reviewer ") ?>
-
-<body>
 
 
-<?php 
+$Conf->header("Distribution of Overall Merit Scores By Reviewer ");
+
 
 $Conf->infoMsg("This table is sorted by the number of reviews, "
 	       . "then the desending merit within that group "
@@ -88,10 +82,8 @@ while ($row=edb_arow($result)) {
 
   print "<tr> \n";
 }
-?>
-</table>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+echo "</table>\n";
+
+$Conf->footer();
 

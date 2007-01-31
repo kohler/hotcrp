@@ -9,18 +9,17 @@ function olink($key,$string)
   return "<a href=\"$_SERVER[PHP_SELF]?orderBy=$key\"> $string </a>";
 }
 
-?>
 
-<html>
-<style type=text/css>
+$Conf->header_head("List All Submitted Papers");
+
+
+echo "<style type='text/css'>
 p.page {page-break-after: always}
-</style>
+</style>\n";
 
 
-<?php  $Conf->header("List All Submitted Papers") ?>
+$Conf->header("List All Submitted Papers");
 
-<body>
-<?php 
 
 $finalizedStr = "";
 if (defval($_REQUEST["onlyFinalized"])) {

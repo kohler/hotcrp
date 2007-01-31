@@ -140,4 +140,3 @@ if ($OK) {
 }
 
 $Conf->footer();
-?>

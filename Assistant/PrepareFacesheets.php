@@ -3,13 +3,10 @@ require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotAssistant('../index.php');
+
+
+$Conf->header("Prepare Facesheet Material");
 ?>
-
-<html>
-
-<?php  $Conf->header("Prepare Facesheet Material") ?>
-
-<body>
 
 <h2> List of paper contacts for Accepted Papers (names and email addresses) </h2>
 
@@ -122,7 +119,5 @@ if ($result) {
   }
   print "</table>";
 }
-?>
 
-<?php $Conf->footer() ?>
-
+$Conf->footer();

@@ -3,13 +3,10 @@ require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotChair('../index.php');
-?>
 
-<html>
 
-<?php  $Conf->header("List All Reviewers ") ?>
+$Conf->header("List All Reviewers "); ?>
 
-<body>
 <p>
 This page shows you all the reviewers.
 </p>
@@ -88,7 +85,5 @@ for($i = 0; $i < sizeof($allReviewers); $i++) {
 </table>
 There are the <?php  echo $num_reviewers ?> reviewers.
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+<?php  $Conf->footer();
 

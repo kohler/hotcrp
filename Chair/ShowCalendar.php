@@ -6,13 +6,10 @@ $Me->goIfInvalid();
 $Me->goIfNotChair('../index.php');
 include('Code.inc');
 
-?>
 
-<html>
+$Conf->header("Interactive Calendar");
 
-<?php  $Conf->header("Interactive Calendar") ?>
 
-<?php 
 class MyCalendar extends Calendar
 {
   function getCalendarLink($month, $year)
@@ -51,7 +48,6 @@ $cal = new MyCalendar();
 <?php echo $cal->getYearView($year);?>
 </td> </tr>
 </table>
-</body>
-<?php  $Conf->footer() ?>
-</html>
+
+<?php  $Conf->footer();
 

@@ -3,14 +3,11 @@ require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotChair('../index.php');
-?>
 
-<html>
 
-<?php  $Conf->header("Ask People to be Reviewers For  Papers") ?>
+$Conf->header("Ask People to be Reviewers For  Papers");
 
-<body>
-<?php 
+
 if (IsSet($_REQUEST["SendReviews"]) && sizeof($_REQUEST["Requests"]) > 0) {
   $_REQUEST['firstEmail'] = trim($_REQUEST['firstEmail']);
   if ( $_REQUEST['firstEmail'] == "" ) {
@@ -186,6 +183,4 @@ if ($result) {
 <INPUT TYPE=SUBMIT name="SendReviews" value="Send the Review Requests">
 </FORM>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+<?php  $Conf->footer();

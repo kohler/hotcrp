@@ -3,13 +3,10 @@ require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotChair('../index.php');
-?>
 
-<html>
 
-<?php  $Conf->header("List All Review Requests") ?>
+$Conf->header("List All Review Requests"); ?>
 
-<body>
 <p>
 This page shows you all the reviewers who have been requested to review
 papers.
@@ -50,7 +47,5 @@ while ($row = edb_arow($result)) {
 ?>
 </table>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+<?php  $Conf->footer();
 

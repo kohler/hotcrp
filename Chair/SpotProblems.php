@@ -79,11 +79,8 @@ if (!$_SESSION["Me"]->isChair && !$Conf->timePCViewAllReviews()) {
   exit();
 }
 
-?>
 
-<html>
-<?php  $Conf->header("Spot Problem Papers") ?>
-<body>
+$Conf->header("Spot Problem Papers") ?>
 
 <h1> Which papers do not have enough assigned secondary reviewers? </h1>
 
@@ -113,8 +110,6 @@ print "<br> <br>";
 spotReviews(2,1);
 print "<br> <br>";
 spotReviews(3,1);
-?>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+
+$Conf->footer();

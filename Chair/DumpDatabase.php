@@ -3,15 +3,11 @@ require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotChair('../index.php');
-?>
 
-<html>
 
-<?php  $Conf->header("Prepare a backup of the $Conf->ShortName Database") ?>
+$Conf->header("Prepare a backup of the $Conf->ShortName Database");
 
-<body>
 
-<?php 
 if ( IsSet($_REQUEST[submitted]) ) {
     $time=mktime();
     $dumpname = $Opt['dbDumpDir'] . "/" . $Opt['dbName'] . "-$time";
@@ -41,6 +37,6 @@ if ( IsSet($_REQUEST[submitted]) ) {
 
 <p> If you do not want to backup the database, return to the task index. </p>
 
-<?php }?>
+<?php }
 
-<?php $Conf->footer() ?>
+$Conf->footer();

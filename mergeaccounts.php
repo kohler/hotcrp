@@ -120,9 +120,8 @@ If you suspect something fishy, contact the site administrator at\n\
 }
 
 $Conf->header("Merge Accounts");
-?>
 
-<?php
+
 if ($MergeError)
     $Conf->errorMsg($MergeError);
 else
@@ -165,8 +164,5 @@ else
 </table>
 </form>
 
-</div>
-<?php $Conf->footer() ?>
-</body>
-</html>
 
+<?php $Conf->footer();

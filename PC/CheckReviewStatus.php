@@ -3,15 +3,12 @@ require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPC("../index.php");
-?>
 
-<html>
 
-<?php  $Conf->header("Check reviews of your assigned reviewers and send reminders") ?>
+$Conf->header("Check reviews of your assigned reviewers and send reminders");
 
-<?php 
 
-If( !IsSet($_REQUEST['emailSubject'])) {
+if( !IsSet($_REQUEST['emailSubject'])) {
   $_REQUEST['emailSubject'] = "URGENT: Reminder to Review Paper(s) for $Conf->shortName";
 }
 if (!IsSet($_REQUEST['emailBody'])) {

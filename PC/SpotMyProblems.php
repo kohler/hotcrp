@@ -68,11 +68,10 @@ function spotReviews($howmany, $finalized, $reviewType) {
   }
 }
 
-?>
 
-<html>
-<?php  $Conf->header("Spot Problem Papers") ?>
-<body>
+$Conf->header("Spot Problem Papers");
+
+?>
 
 <h1> Which papers do not have enough assigned secondary reviewers? </h1>
 
@@ -146,8 +145,6 @@ print "<br> <br>";
 spotReviews(2,1,REVIEW_SECONDARY);
 print "<br> <br>";
 spotReviews(3,1,REVIEW_SECONDARY);
-?>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+
+$Conf->footer();

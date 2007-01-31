@@ -55,11 +55,7 @@ if (IsSet($_REQUEST[setSortKey])) {
 }
 
 
-?>
-
-<html>
-
-<?php  $Conf->header("Grade Or Accept/Reject All Papers") ?>
+$Conf->header("Grade Or Accept/Reject All Papers") ?>
 
 <body>
 <FORM method="POST" action="<?php echo $_SERVER[PHP_SELF] ?>">
@@ -271,10 +267,8 @@ while ($row=edb_arow($result)) {
     print "<tr> \n";
   }
 }
-?>
-</table>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+echo "</table>\n";
+
+$Conf->footer();
 

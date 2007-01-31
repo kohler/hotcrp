@@ -4,13 +4,9 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotChair('../index.php');
 
-?>
 
-<html>
+$Conf->header("Check on PC Reviewing Progress ");
 
-<?php  $Conf->header("Check on PC Reviewing Progress ") ?>
-
-<?php 
 
 $query = "SELECT ContactInfo.contactId FROM ContactInfo "
   . " join PCMember using (contactId)"
@@ -35,13 +31,7 @@ if ($pcresult) {
   }
 }
 
-?>
 
-<body>
-
-
-</body>
-<?php  $Conf->footer() ?>
-</html>
+$Conf->footer();
 
 

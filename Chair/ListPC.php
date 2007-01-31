@@ -3,12 +3,10 @@ require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotChair('../');
-?>
 
-<html>
-<?php $Conf->header("Program Committee Members") ?>
 
-<?php
+$Conf->header("Program Committee Members");
+
 if (isset($_REQUEST["nag"])) {
   $from="From: $Conf->emailFrom";
   $subject="[$Conf->shortName] nag nag nag";
@@ -60,10 +58,8 @@ if (isset($_REQUEST["nag"])) {
       
   }
 }
-?>
 
 
-<?php
 $query = "select ContactInfo.contactId, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.visits, ContactInfo.note, ContactInfo.collaborators "
     . "from ContactInfo, PCMember "
     . "where (PCMember.contactId=ContactInfo.contactId) "
@@ -110,10 +106,6 @@ if (edb_nrows($result) == 0) {
       
     }
  }
-?>
 
-</div>
-<?php  $Conf->footer() ?>
-</body>
-</html>
 
+$Conf->footer();

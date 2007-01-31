@@ -276,11 +276,7 @@ while ($row=edb_row($result)) {
 }
 ?>
 </table>
-<?php } ?>
+<?php }
 
-
-
-</body>
-<?php  $Conf->footer() ?>
-</html>
+$Conf->footer();
 

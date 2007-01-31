@@ -4,13 +4,7 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPC('../index.php');
 
-?>
-
-<html>
-
-<?php  $Conf->header("Check on PC Reviewing Progress ") ?>
-
-<?php 
+$Conf->header("Check on PC Reviewing Progress ");
 
 print "<p> You can see this information ";
 print $Conf->printableTimeRange('pc_seeallrev', '');
@@ -45,13 +39,6 @@ while ($row = edb_arow($pcresult)) {
     print "<br> <br>";
 }
 
-?>
-
-<body>
-
-
-</body>
-<?php  $Conf->footer() ?>
-</html>
+$Conf->footer();
 
 

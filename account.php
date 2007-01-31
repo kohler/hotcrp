@@ -285,7 +285,7 @@ echo "<tr><td class='caption'></td>
     ($newProfile ? "Create Account" : "Save Changes"),
     "' name='register' /></td>
 </tr>
-</table></form>";
+</table></form>\n";
 
 
 // if (!$newAccount) {
@@ -299,5 +299,4 @@ echo "<tr><td class='caption'></td>
 // }
 
 
-echo "\n";
 $Conf->footer();

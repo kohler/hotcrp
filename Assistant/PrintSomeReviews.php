@@ -13,13 +13,8 @@ if (IsSet($_REQUEST[setSortKey])) {
   $_SESSION["GradeSortKey"]=$_REQUEST[setSortKey];
 }
 
-?>
 
-<html>
-
-<?php  $Conf->header("Select Reviews To Print") ?>
-
-<body>
+$Conf->header("Select Reviews To Print"); ?>
 
 <table align=center>
 <tr>
@@ -183,7 +178,5 @@ while ($row=edb_row($result)) {
 </table>
 </FORM>
 
-</body>
-<?php  $Conf->footer() ?>
-</html>
+<?php  $Conf->footer();
 

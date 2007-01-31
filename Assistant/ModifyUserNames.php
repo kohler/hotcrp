@@ -3,15 +3,10 @@ require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotAssistant('../index.php');
-?>
 
-<html>
 
-<?php  $Conf->header("Modify Names In Contact Base") ?>
+$Conf->header("Modify Names In Contact Base");
 
-<body>
-
-<?php 
 
 if (IsSet($_REQUEST[updateContacts])) {
   $Conf->infoMsg("<center>...updating, may be slow...</center>");
@@ -84,7 +79,4 @@ if ($r) {
 }
 
 
-?>
-
-<?php $Conf->footer() ?>
-
+$Conf->footer();

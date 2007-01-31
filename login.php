@@ -148,4 +148,4 @@ $Conf->header("Sign in", 'login');
 </table>
 </form>
 
-<?php $Conf->footer() ?>
+<?php $Conf->footer();

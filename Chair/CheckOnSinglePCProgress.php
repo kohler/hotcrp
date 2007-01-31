@@ -4,13 +4,9 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotChair('../index.php');
 
-?>
 
-<html>
+$Conf->header("Check on A Single PC's Reviewing Progress ");
 
-<?php  $Conf->header("Check on A Single PC's Reviewing Progress ") ?>
-
-<?php 
 
 $Conf->reviewerSummary($_REQUEST[pcId], 1, 1);
 print "<br> <br>";
@@ -143,13 +139,6 @@ if ($result) {
   print "</table>";
 }
 
-?>
-
-<body>
-
-
-</body>
-<?php  $Conf->footer() ?>
-</html>
+$Conf->footer();
 
 
