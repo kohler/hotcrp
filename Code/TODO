@@ -28,6 +28,10 @@
 - START-style enter-paper-all-at-once (no email verification)?
 - START-style enter multiple contact authors with explicit First Name,
   Last Name, Affiliation, Email fields?
+- double-check contact policies (UGH)
+- reviewers/authors can search submitted papers, seeing only those papers they
+  are allowed to see (e.g. both reviewers + authors)?
+- allow authors to download paper info, such as all submitted reviews
 
      $Conf->infoMsg( '<P>Please see <a href="../Reviewer/ratings.html" ' .
                      'target="_blank"> rating description information</a> ' .
