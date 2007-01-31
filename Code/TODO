@@ -12,7 +12,6 @@
 - click PC name in reviewer view does not send email
 - not started reviews don't get reported
 - ViewPaper.php handles withdrawn reviews correctly
-- PaperConflict has unique rows
 - nag late reviewers
 - uploading request forms for others?
 - pretty printing reviews

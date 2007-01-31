@@ -58,15 +58,38 @@ If you suspect something fishy, contact the site administrator at\n\
 	    
 	    crpmergeone("Paper", "leadContactId", $oldid, $newid);
 	    crpmergeone("Paper", "shepherdContactId", $oldid, $newid);
-	    crpmergeone("PaperConflict", "contactId", $oldid, $newid);
+
+	    // ensure uniqueness in PaperConflict
+	    $while = "while merging conflicts";
+	    // MySQL has some odd table locking behavior here!  Despite the
+	    // fact that PaperConflict is locked, renamed versions of it do
+	    // not appear to be locked.  So forget locking.  Oh, well.
+	    $result = $Conf->qe("select PC1.paperId, PC1.conflictType, PC2.conflictType from PaperConflict PC1 left join PaperConflict PC2 on (PC1.paperId=PC2.paperId and PC1.contactId=$oldid and PC2.contactId=$newid) where PC1.contactId=$oldid", $while);
+	    $ins = "";
+	    $del = "";
+	    while (($row = edb_row($result)))
+		if ($row[1] > $row[2]) {
+		    $ins .= ", ($row[0], $newid, $row[1])";
+		    $del .= " or paperId=$row[0]";
+		}
+	    if ($ins) {
+		$Conf->qe("delete from PaperConflict where contactId=$newid and (" . substr($del, 4) . ")", $while);
+		$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($ins, 2), $while);
+	    }
+	    $Conf->qe("delete from PaperConflict where contactId=$oldid", $while);
+	    
 	    crpmergeonex("PCMember", "contactId", $oldid, $newid);
 	    crpmergeonex("ChairAssistant", "contactId", $oldid, $newid);
 	    crpmergeonex("Chair", "contactId", $oldid, $newid);
+	    crpmergeone("ActionLog", "contactId", $oldid, $newid);
 	    crpmergeone("TopicInterest", "contactId", $oldid, $newid);
+	    crpmergeone("PaperComment", "contactId", $oldid, $newid);
+	    crpmergeone("PaperGrade", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReview", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReview", "requestedBy", $oldid, $newid);
 	    crpmergeone("PaperReviewArchive", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReviewArchive", "requestedBy", $oldid, $newid);
+	    crpmergeone("PaperReviewPreference", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReviewRefused", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReviewRefused", "requestedBy", $oldid, $newid);
 
@@ -122,14 +145,14 @@ else
 
 <tr>
   <td class='caption'>Email:</td>
-  <td class='entry'><input type='text' name='email' size='50'
+  <td class='entry'><input type='text' class='textlite' name='email' size='50'
     <?php if (isset($_REQUEST["email"])) echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" "; ?>
   /></td>
 </tr>
 
 <tr>
   <td class='caption'>Password:</td>
-  <td class='entry'><input type='password' name='password' size='50' /></td>
+  <td class='entry'><input type='password' class='textlite' name='password' size='50' /></td>
 </tr>
 
 <tr>

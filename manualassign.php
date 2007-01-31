@@ -40,19 +40,25 @@ function saveAssignments($reviewer) {
 	order by paperId asc, reviewId asc", $while);
 
     $lastPaperId = -1;
+    $del = $ins = "";
     while (($row = edb_orow($result))) {
 	if ($row->paperId == $lastPaperId || $row->conflictType == CONFLICT_AUTHOR)
 	    continue;
 	$lastPaperId = $row->paperId;
 	$type = cvtint($_REQUEST["assrev$row->paperId"], 0);
-	if ($type >= 0 && $row->conflictType > 0)
-	    $Conf->qe("delete from PaperConflict where paperId=$row->paperId and contactId=$reviewer", $while);
-	if ($type < 0 && $row->conflictType == 0)
-	    $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($row->paperId, $reviewer, " . CONFLICT_CHAIRMARK . ")", $while);
+	if ($type >= 0 && $row->conflictType > 0 && $row->conflictType < CONFLICT_AUTHOR)
+	    $del .= " or paperId=$row->paperId";
+	if ($type < 0 && $row->conflictType < CONFLICT_CHAIRMARK)
+	    $ins .= ", ($row->paperId, $reviewer, " . CONFLICT_CHAIRMARK . ")";
 	if ($kind == "a")
 	    $Me->assignPaper($row->paperId, $row, $reviewer, $type, $Conf);
     }
 
+    if ($ins)
+	$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($ins, 2) . " on duplicate key update conflictType=greatest(conflictType,values(conflictType))", $while);
+    if ($del)
+	$Conf->qe("delete from PaperConflict where contactId=$reviewer and (" . substr($del, 4) . ")", $while);
+    
     $Conf->qe("unlock tables", $while);
 }
 
