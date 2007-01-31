@@ -602,7 +602,7 @@ if ($Group == "rev") {
 
     echo "<div class='smgap'></div>";
     echo "Can external reviewers view the other reviews for their assigned papers, once they've submitted their own?<br />\n";
-    doRadio("extrev_view", array(0 => "No", 2 => "Yes", 1 => "Yes, but they can't see who wrote the reviews"));
+    doRadio("extrev_view", array(0 => "No", 2 => "Yes", 1 => "Yes, but they can't see who wrote blind reviews"));
 
     echo "</div></div></td></tr></table>\n\n";
 }
