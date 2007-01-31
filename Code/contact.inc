@@ -777,8 +777,7 @@ class Contact {
 	    return true;
 	$blind = $conf->blindReview();
 	if ($blind > 1
-	    || ($blind == 1 && $rrow && $rrow->reviewBlind == 0)
-	    || ($blind == 1 && $prow && isset($prow->reviewBlind) && $prow->reviewBlind == 0))
+	    || ($blind == 1 && $rrow && $rrow->reviewBlind == 0))
 	    return true;
 	return false;
     }

@@ -291,7 +291,7 @@ if ($getaction == "scores" && $Me->amAssistant() && isset($papersel)) {
 	    $text .= "\t" . $row->outcome;
 	    foreach ($scores as $score)
 		$text .= "\t" . $row->$score;
-	    if ($Me->canViewReviewerIdentity($row, null, $Conf))
+	    if ($Me->canViewReviewerIdentity($row, $row, $Conf))
 		$text .= "\t" . $row->reviewEmail . "\t" . trim($row->reviewFirstName . " " . $row->reviewLastName);
 	    $text .= "\n";
 	}
