@@ -224,7 +224,7 @@ function rf_show() {
 4. Accept</pre>");
 
 
-    echo "<table class='center'><tr><td><div class='hgrp'><b>Sample review forms:</b>&nbsp;
+    echo "<table class='center'><tr><td><div class='hgrp'><b>Load canned review form:</b>&nbsp;
 <select name='sample'>";
     foreach (array("none" => "Current form",
 		   "hotnetsv" => "HotNets V workshop",
