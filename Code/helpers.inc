@@ -457,10 +457,16 @@ function htmlFold($text, $maxWords) {
 }
 
 function wordWrapIndent($text, $info, $indent = 18, $totWidth = 75, $rjinfo = true) {
-    $text = preg_replace("/^(?!\\Z)/m", str_pad("", $indent), wordwrap($text, $totWidth - $indent));
-    if (strlen($info) <= $indent) {
-	$info = str_pad($info, $indent, " ", ($rjinfo ? STR_PAD_LEFT : STR_PAD_RIGHT));
-	return $info . substr($text, $indent);
+    if (is_int($indent)) {
+	$indentlen = $indent;
+	$indent = str_pad("", $indent);
+    } else
+	$indentlen = strlen($indent);
+    
+    $text = preg_replace("/^(?!\\Z)/m", $indent, wordwrap($text, $totWidth - $indentlen));
+    if (strlen($info) <= $indentlen) {
+	$info = str_pad($info, $indentlen, " ", ($rjinfo ? STR_PAD_LEFT : STR_PAD_RIGHT));
+	return $info . substr($text, $indentlen);
     } else
 	return $info . "\n" . $text;
 }

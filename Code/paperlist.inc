@@ -447,10 +447,8 @@ class PaperList {
     <option value='revform'>Review forms</option>\n";
 	if ($this->contact->isPC && $Conf->timeSubmitFinalPaper())
 	    $t .= "    <option value='final'>Final papers</option>\n";
-	if ($this->contact->amAssistant())
+	if ($this->contact->isPC || $this->contact->isReviewer)
 	    $t .= "    <option value='rev'>All reviews</option>\n";
-	else if ($this->contact->isPC && $Conf->timePCViewAllReviews())
-	    $t .= "    <option value='rev'>All reviews (no conflicts)</option>\n";
 	if ($this->contact->amAssistant() || ($this->contact->isReviewer && $Conf->blindSubmission() < 2))
 	    $t .= "    <option value='authors'>Authors (text)</option>\n";
 	if ($this->contact->amAssistant()) {

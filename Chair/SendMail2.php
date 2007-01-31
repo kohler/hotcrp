@@ -123,7 +123,7 @@ function getReviews($paperId, $finalized) {
 	$text = $rf->textFormHeader($Conf, false, false);
 	while (($row = edb_orow($result)))
 	    if ($row->reviewSubmitted>0)
-		$text .= $rf->textForm($row, $row, $Conf, null, ReviewForm::REV_AUTHOR) . "\n";
+		$text .= $rf->textForm($row, $row, $Me, $Conf, null) . "\n";
 	return $text;
     } else
 	return "";

@@ -65,7 +65,7 @@ class PaperSearch {
 	$this->amPC = $me->isPC;
 	$this->allowReviewer = $me->canViewAllReviewerIdentities($Conf);
 	$this->allowNumReview = $me->canViewNumReviews($Conf);
-	$this->allowAuthor = ($Conf->blindSubmission() > 1 || $me->amAssistant());
+	$this->allowAuthor = ($this->amPC && ($Conf->blindSubmission() >= 1 || $me->amAssistant()));
 	$this->orderTag = false;
 	$this->reviewerName = false;
 	$this->any = 0;

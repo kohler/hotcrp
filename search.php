@@ -96,7 +96,7 @@ if ($getaction == "final" && isset($papersel)) {
 if ($getaction == "revform" && !isset($papersel)) {
     $rf = reviewForm();
     $text = $rf->textFormHeader($Conf, false)
-	. $rf->textForm(null, null, $Conf, null, ReviewForm::REV_FORM) . "\n";
+	. $rf->textForm(null, null, $Me, $Conf, null) . "\n";
     downloadText($text, $Opt['downloadPrefix'] . "review.txt", "review form");
     exit;
 } else if ($getaction == "revform") {
@@ -107,21 +107,21 @@ if ($getaction == "revform" && !isset($papersel)) {
     $errors = array();
     while ($row = edb_orow($result)) {
 	if (!$Me->canReview($row, null, $Conf, $whyNot))
-	    $errors[] = whyNotText($whyNot, "review") . "<br />";
+	    $errors[whyNotText($whyNot, "review")] = true;
 	else {
 	    $rfSuffix = ($text == "" ? "-$row->paperId" : "s");
-	    $text .= $rf->textForm($row, $row, $Conf, null, ReviewForm::REV_FORM) . "\n";
+	    $text .= $rf->textForm($row, $row, $Me, $Conf, null) . "\n";
 	}
     }
 
     if ($text == "")
-	$Conf->errorMsg(join("", $errors) . "No papers selected.");
+	$Conf->errorMsg(join("<br/>\n", array_keys($errors)) . "<br/>\nNo papers selected.");
     else {
 	$text = $rf->textFormHeader($Conf, $rfSuffix == "s") . $text;
 	if (count($errors)) {
-	    $e = "==-== Some review forms are missing due to errors in your paper selection:\n";
-	    foreach ($errors as $ee)
-		$e .= "==-== " . preg_replace('|\s+<.*|', "", $ee) . "\n";
+	    $e = "==-== Some review forms are missing:\n";
+	    foreach ($errors as $ee => $junk)
+		$e .= "==-== " . preg_replace('|\s*<.*|', "", $ee) . "\n";
 	    $text = "$e\n$text";
 	}
 	downloadText($text, $Opt['downloadPrefix'] . "review$rfSuffix.txt", "review forms");
@@ -141,21 +141,21 @@ if ($getaction == "rev" && isset($papersel)) {
 	$_REQUEST["forceShow"] = 1;
     while ($row = edb_orow($result)) {
 	if (!$Me->canViewReview($row, null, $Conf, $whyNot))
-	    $errors[] = whyNotText($whyNot, "view review") . "<br />";
+	    $errors[whyNotText($whyNot, "view review")] = true;
 	else if ($row->reviewSubmitted > 0) {
 	    $rfSuffix = ($text == "" ? "-$row->paperId" : "s");
-	    $text .= $rf->textForm($row, $row, $Conf, null, ReviewForm::REV_PC) . "\n";
+	    $text .= $rf->textForm($row, $row, $Me, $Conf, null, true) . "\n";
 	}
     }
 
     if ($text == "")
-	$Conf->errorMsg(join("", $errors) . "No papers selected.");
+	$Conf->errorMsg(join("<br/>\n", array_keys($errors)) . "<br/>\nNo papers selected.");
     else {
 	$text = $rf->textFormHeader($Conf, $rfSuffix == "s", false) . $text;
 	if (count($errors)) {
-	    $e = "==-== Some reviews are missing due to errors in your paper selection:\n";
-	    foreach ($errors as $ee)
-		$e .= "==-== " . preg_replace('|\s+<.*|', "", $ee) . "\n";
+	    $e = "==-== Some reviews are missing:\n";
+	    foreach ($errors as $ee => $junk)
+		$e .= "==-== " . preg_replace('|\s*<.*|', "", $ee) . "\n";
 	    $text = "$e\n$text";
 	}
 	downloadText($text, $Opt['downloadPrefix'] . "review$rfSuffix.txt", "review forms");

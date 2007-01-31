@@ -737,6 +737,7 @@ class Conference {
 	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
 
 	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']) || isset($options['myReviewsOpt']) || isset($options['myOutstandingReviews']);
+	$allReviewerQuery = isset($options['allReviews']) || isset($options['allReviewScores']);
 	$scoresQuery = !$reviewerQuery && isset($options['allReviewScores']);
 	$contactId = (is_object($contact) ? $contact->contactId : $contact);
 	$reviewContactId = $contactId;
@@ -747,7 +748,7 @@ class Conference {
 	$pq = "select Paper.*, PaperConflict.conflictType,
 		count(AllReviews.reviewSubmitted) as reviewCount,
 		count(AllReviews.paperId) as startedReviewCount";
-	if (!isset($options['author']))
+	if (!isset($options['author'])) {
 	    $pq .= ",
 		PaperReview.reviewType,
 		PaperReview.reviewId,
@@ -756,6 +757,13 @@ class Conference {
 		PaperReview.reviewOrdinal,
 		PaperReview.reviewBlind,
 		PaperReview.contactId as reviewContactId";
+	    if (!$allReviewerQuery)
+		$pq .= ",
+		PaperReview.reviewType as myReviewType";
+	    else
+		$pq .= ",
+		MyPaperReview.reviewType as myReviewType";
+	}
 	if (isset($options['reviewerName']))
 	    $pq .= ",
 		ReviewerContactInfo.firstName as reviewFirstName,
@@ -828,6 +836,8 @@ class Conference {
 	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
 	else if (!isset($options['author']))
 	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$reviewContactId)\n";
+	if ($allReviewerQuery)
+	    $pq .= "		left join PaperReview as MyPaperReview on (MyPaperReview.paperId=Paper.paperId and MyPaperReview.contactId=$reviewContactId)\n";
 
 	if (isset($options['reviewerName']))
 	    $pq .= "		left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperReview.contactId)\n";

@@ -13,7 +13,7 @@ if (defval($_REQUEST["post"]) && !count($_POST))
 // download blank review form action
 if (isset($_REQUEST['downloadForm'])) {
     $text = $rf->textFormHeader($Conf, false)
-	. $rf->textForm(null, null, $Conf, null, ReviewForm::REV_FORM) . "\n";
+	. $rf->textForm(null, null, $Me, $Conf, null) . "\n";
     downloadText($text, $Opt['downloadPrefix'] . "review.txt", "review form");
     exit;
 }
@@ -61,7 +61,7 @@ if ($Me->amReviewer()) {
     <tr>
       <td><form action='offline.php?post=1' method='post' enctype='multipart/form-data'>
 	<input type='hidden' name='redirect' value='offline' />
-	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp;<input class='button' type='submit' value='Upload filled-out review form' name='uploadForm' $disabled/>
+	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='button' type='submit' value='Upload filled-out review form' name='uploadForm' $disabled/>
       </form></td>
     </tr>\n";
     if ($pastDeadline && $Me->amAssistant())

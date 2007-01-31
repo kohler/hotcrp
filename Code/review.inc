@@ -20,10 +20,6 @@ $reviewFields = array('paperSummary' => 0,
 
 class ReviewForm {
 
-    const REV_FORM = 1;
-    const REV_PC = 2;
-    const REV_AUTHOR = 3;
-    
     var $updatedWhen;
 
     var $fieldOrder;
@@ -355,7 +351,7 @@ class ReviewForm {
 	
 	$x = "==+== $conf->shortName Paper Review";
 	if ($editable) {
-	    $x .= " Form
+	    $x .= " Form" . ($multiple ? "s" : "") . "
 ==-== Fill out lettered sections A through " . chr(65 + count($this->fieldOrder) - 1) . ".\n";
 	    if (!$multiple)
 		$x .= "==-== To review multiple papers, duplicate the form body from \"Begin Review\"
@@ -365,29 +361,53 @@ class ReviewForm {
 ==-== $conf->paperSite/offline.php
 ==-== That site also has further guidance on the review form.\n\n";
 	} else
-	    $x .= "\n\n";
+	    $x .= ($multiple ? "s\n\n" : "\n\n");
 	return $x;
     }
     
-    function textForm($prow, $rrow, $conf, $req = null, $revtype = self::REV_PC) {
+    function textForm($prow, $rrow, $contact, $conf, $req = null, $neverMyReview = false) {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
 
-	$x = "==+== =========================================================================\n";
+	$rrow_contactId = 0;
+	if (isset($rrow) && isset($rrow->reviewContactId))
+	    $rrow_contactId = $rrow->reviewContactId;
+	else if (isset($rrow) && isset($rrow->contactId))
+	    $rrow_contactId = $rrow->contactId;
+	$myReview = !$neverMyReview
+	    && (!$rrow || $rrow_contactId == 0 || $rrow_contactId == $contact->contactId);
+	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
 
-	if ($revtype == self::REV_FORM) {
-	    $x .= "==+== Begin Review";
-	    if ($req && isset($req['reviewOrdinal']))
-		$x .= " #" . $prow->paperId . unparseReviewOrdinal($req['reviewOrdinal']);
-	    else if ($rrow && isset($rrow->reviewOrdinal))
-		$x .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
-	    $x .= "\n\n==+== Paper #";
+	$x = "==+== =========================================================================\n";
+	//$x .= "$prow->paperId:$myReview:$viewAllFields:$rrow->contactId:$rrow->reviewContactId;;$prow->conflictType;;$prow->reviewType\n";
+
+	$x .= "==+== Begin Review";
+	if ($req && isset($req['reviewOrdinal']))
+	    $x .= " #" . $prow->paperId . unparseReviewOrdinal($req['reviewOrdinal']);
+	else if ($rrow && isset($rrow->reviewOrdinal))
+	    $x .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
+	$x .= "\n";
+	if (!$myReview && $prow)
+	    $x .= wordWrapIndent($prow->title, "==-== Paper: ", "==-==        ") . "\n";
+	if ($contact->canViewReviewerIdentity($prow, $rrow, $conf)) {
+	    if ($rrow && isset($rrow->reviewFirstName))
+		$x .= "==+== Review by " . contactText($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail) . "\n";
+	    else if ($myReview)
+		$x .= "==+== Review by " . contactText($contact) . "\n";
+	    else if ($rrow && isset($rrow->lastName))
+		$x .= "==+== Review by " . contactText($rrow) . "\n";
+	}
+	if ($rrow && $rrow->reviewModified)
+	    $x .= "==-== Modified " . $conf->printableTime($rrow->reviewModified) . "\n";
+
+	if ($myReview) {
+	    $x .= "\n==+== Paper #";
 	    if ($prow)
 		$x .= "$prow->paperId\n";
 	    else
 		$x .= "000000\n==-== Replace '000000' with the actual paper number.\n";
 	    if ($prow)
-		$x .= wordWrapIndent($prow->title, "==-== Title: ", 13) . "\n";
+		$x .= wordWrapIndent($prow->title, "==-== Title: ", "==-==        ") . "\n";
 	    $x .= "\n==-== Uploading this form will submit the review, making it available to
 ==-== authors and the PC, unless you delete the following line.
 ==+== Submit Review\n";
@@ -399,41 +419,24 @@ class ReviewForm {
 ==-== To submit a non-anonymous review, change 'Anonymous' to 'Open' here.
 ==+== $blind Review\n";
 	    }
-	} else {
-	    $x .= "==+== Begin Review #$prow->paperId";
-	    if ($req && isset($req['reviewOrdinal']))
-		$x .= unparseReviewOrdinal($req['reviewOrdinal']);
-	    else if ($rrow && isset($rrow->reviewOrdinal))
-		$x .= unparseReviewOrdinal($rrow->reviewOrdinal);
-	    $x .= "\n";
-	    if ($conf->blindReview() > 1
-		|| ($conf->blindReview() == 1 && !$rrow->reviewBlind)
-		|| $revtype == ReviewForm::REV_PC) {
-		if (isset($rrow->reviewFirstName))
-		    $x .= "==-== by " . contactText($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail) . "\n";
-		else
-		    $x .= "==-== by " . contactText($rrow) . "\n";
-	    }
-	    if ($rrow->reviewModified)
-		$x .= "==-== Modified " . $conf->printableTime($rrow->reviewModified) . "\n";
 	}
 
 	$i = 0;
 	$numericMessage = 0;
 	foreach ($this->fieldOrder as $field) {
-	    if ($revtype == self::REV_AUTHOR && $this->authorView[$field] <= 0)
+	    if (!$viewAllFields && $this->authorView[$field] <= 0)
 		continue;
 
 	    $fval = "";
 	    if ($req && isset($req[$field]))
 		$fval = rtrim($req[$field]);
-	    else if ($rrow != null)
+	    else if ($rrow != null && isset($rrow->$field))
 		$fval = rtrim(str_replace("\r\n", "\n", $rrow->$field));
 	    if (isset($this->options[$field]) && $fval == "0")
 		$fval = "";
 	    else if (isset($this->options[$field]) && isset($this->options[$field][$fval]))
 		$fval = "$fval. " . $this->options[$field][$fval];
-	    if ($revtype != self::REV_FORM && $fval == "")
+	    if (!$myReview && $fval == "")
 		continue;
 
 	    $x .= "\n==+== " . chr(65 + $i++) . ". " . $this->shortName[$field];
@@ -442,13 +445,13 @@ class ReviewForm {
 	    else if ($this->authorView[$field] == 0)
 		$x .= " (PC only)";
 	    $x .= "\n";
-	    if (isset($this->options[$field]) && $revtype == self::REV_FORM) {
+	    if (isset($this->options[$field]) && $myReview) {
 		foreach ($this->options[$field] as $num => $value) {
 		    $y = ($num == 1 ? "==-== Choices: 1. " : "==-==          $num. ");
 		    $x .= wordWrapIndent($value, $y, strlen($y)) . "\n";
 		}
 		if ($numericMessage++ == 0)
-		    $x .= "==-== Enter the number of your choice here.\n";
+		    $x .= "==-== Enter the number of your choice in the space below.\n";
 	    }
 	    $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
 	}
