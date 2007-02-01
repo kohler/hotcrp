@@ -18,7 +18,6 @@
 - add more extra textual fields
 - send mail to authors when a new comment is received
 - send mail to authors when a review was submitted during response period
-- review.php: conflict error message
 - grading: secondary can grade
 - do grades at all????
 - START-style enter-paper-all-at-once (no email verification)?
