@@ -61,13 +61,10 @@ if ($Me->amReviewer()) {
     <tr>
       <td><form action='offline.php?post=1' method='post' enctype='multipart/form-data'>
 	<input type='hidden' name='redirect' value='offline' />
-	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='button' type='submit' value='Upload filled-out review form' name='uploadForm' $disabled/>
-      </form></td>
-    </tr>\n";
+	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='button' type='submit' value='Upload filled-out review form' name='uploadForm' $disabled/>";
     if ($pastDeadline && $Me->amAssistant())
-	echo "    <tr>
-      <td><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td>
-    </tr>\n";
+	echo "<br /><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
+    echo "\n      </form></td>\n    </tr>\n";
     echo "  </table></td>\n";
 }
 

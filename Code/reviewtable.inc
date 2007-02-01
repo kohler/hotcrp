@@ -45,7 +45,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	else
 	    $id .= "&nbsp;(not&nbsp;started)";
 	if ($rrow && $rrow->reviewId == $rr->reviewId)
-	    $t .= "<td><b>$id</b></td>";
+	    $t .= "<td><a href='${ConfSiteBase}review.php?reviewId=$rr->reviewId$forceShow' class='q'><b>$id</b></a></td>";
 	else if (!$canView)
 	    $t .= "<td>$id</td>";
 	else

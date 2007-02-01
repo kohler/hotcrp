@@ -234,7 +234,7 @@ $Conf->tableMsg(0);
 // XXX "<td class='entry'>", contactHtml($rrow), "</td>"
 
 function commentView($prow, $crow, $editMode) {
-    global $Conf, $Me, $rf, $forceShow, $useRequest, $anyComments;
+    global $Conf, $Me, $rf, $forceShow, $useRequest, $anyComment;
 
     if ($crow && $crow->forAuthors > 1)
 	return responseView($prow, $crow, $editMode);
@@ -243,7 +243,7 @@ function commentView($prow, $crow, $editMode) {
 	return;
     if ($editMode && !$Me->canComment($prow, $crow, $Conf))
 	$editMode = false;
-    $anyComments = true;
+    $anyComment = true;
     
     if ($editMode) {
 	echo "<form action='comment.php?";

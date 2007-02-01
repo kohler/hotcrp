@@ -482,6 +482,8 @@ class ReviewForm {
 	$tf['firstLineno'] = $lineno + 1;
 	$tf['fieldLineno'] = array();
 	$req = array();
+	if (isset($_REQUEST["override"]))
+	    $req["override"] = $_REQUEST["override"];
 
 	$mode = 0;
 	$nfields = 0;

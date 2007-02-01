@@ -9,8 +9,6 @@
   than to the right hand side
 - fold review form
 - simplifyWhitespace on author information
-- override deadlines in review
-- override deadlines in offline reviewing
 - nag late reviewers
 - uploading request forms for others?
 - pretty printing reviews

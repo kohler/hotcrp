@@ -474,7 +474,8 @@ function reviewView($prow, $rrow, $editMode) {
 	if ($rrow && $rrow->contactId != $Me->contactId)
 	    $Conf->infoMsg("You didn't write this review, but you can still make changes as PC Chair.");
 	echo "<input class='button_small' type='submit' value='Download", ($editMode ? " form" : ""), "' name='downloadForm' id='downloadForm' />";
-	echo "<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp; <input class='button_small' type='submit' value='Upload form' name='uploadForm' /></td>\n</tr>\n";
+	echo "<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp; <input class='button_small' type='submit' value='Upload form' name='uploadForm' />";
+	echo "</td>\n</tr>\n";
     }
     
     if ($editMode) {
@@ -520,7 +521,10 @@ function reviewView($prow, $rrow, $editMode) {
 		$x = (is_array($b) ? $b[1] : "");
 		echo "      <td class='ptb_explain'>", $x, "</td>\n";
 	    }
-	    echo "    </tr>\n  </table></td>\n</tr>\n\n";
+	    echo "    </tr>\n";
+	    if ($Me->amAssistant())
+		echo "      <tr><td colspan='" . count($buttons) . "'><input type='checkbox' name='override' value='1' />&nbsp;Override deadlines</td></tr>\n";
+	    echo "  </table></td>\n</tr>\n\n";
 	}
 
 	echo "</table>\n</form>\n\n";
