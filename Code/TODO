@@ -20,7 +20,6 @@
 - secondary reviews: can view reviews before completing your own
 - add more extra textual fields
 - "Text version of all reviews"
-- "No comments" if no comments for a paper
 - send mail to authors when a new comment is received
 - send mail to authors when a review was submitted during response period
 - review.php: conflict error message

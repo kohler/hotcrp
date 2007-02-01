@@ -234,7 +234,7 @@ $Conf->tableMsg(0);
 // XXX "<td class='entry'>", contactHtml($rrow), "</td>"
 
 function commentView($prow, $crow, $editMode) {
-    global $Conf, $Me, $rf, $forceShow, $useRequest;
+    global $Conf, $Me, $rf, $forceShow, $useRequest, $anyComments;
 
     if ($crow && $crow->forAuthors > 1)
 	return responseView($prow, $crow, $editMode);
@@ -243,6 +243,7 @@ function commentView($prow, $crow, $editMode) {
 	return;
     if ($editMode && !$Me->canComment($prow, $crow, $Conf))
 	$editMode = false;
+    $anyComments = true;
     
     if ($editMode) {
 	echo "<form action='comment.php?";
@@ -440,6 +441,7 @@ has passed.  Please keep the response short and to the point" . $limittext . "."
 if ($crow)
     commentView($prow, $crow, true);
 else {
+    $anyComment = false;
     foreach ($crows as $cr)
 	commentView($prow, $cr, $cr->forAuthors > 1 && $prow->conflictType == CONFLICT_AUTHOR);
     if ($Me->canComment($prow, null, $Conf))
@@ -447,6 +449,10 @@ else {
     if (!$sawResponse && $Conf->timeAuthorRespond()
 	&& ($prow->conflictType == CONFLICT_AUTHOR || $Me->amAssistant()))
 	responseView($prow, null, true);
+    if (!$anyComment && !$sawResponse) {
+	echo "<table class='comment'><tr class='id'><td></td></tr></table>\n";
+	$Conf->infoMsg("No comments are available for this paper.");
+    }
 }
 
 
