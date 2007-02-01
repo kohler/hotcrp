@@ -1,29 +1,34 @@
-- negative conflictTypes in PaperConflict represent review assignments?
-- add a "review assignment" link to the "submitted/accepted/all" papers
-  business on the homepage
-- ?? add to ContactInfo a preconcatenated field "firstName lastName email"
+Minor features
 - show multiple review fields in paper lists
 - authors' response: emails, etc.
+- uploading request forms for others?
+- pretty printing reviews
+- grading: secondary can grade
+- do grades at all????
+- allow authors to download paper info, such as all submitted reviews
+- reviewers/authors can search submitted papers, seeing only those papers they
+  are allowed to see (e.g. both reviewers + authors)?
+- START-style enter-paper-all-at-once (no email verification)?
+- START-style enter multiple contact authors with explicit First Name,
+  Last Name, Affiliation, Email fields?
+
+Tiny features
+- add a "review assignment" link to the "submitted/accepted/all" papers
+  business on the homepage
 - consider putting explanations and hints ABOVE form fields, rather
   than to the right hand side
 - fold review form
 - simplifyWhitespace on author information
 - nag late reviewers
-- uploading request forms for others?
-- pretty printing reviews
-- secondary reviews: can view reviews before completing your own
 - add more extra textual fields
+- secondary reviews: can view reviews before completing your own
 - send mail to authors when a new comment is received
 - send mail to authors when a review was submitted during response period
-- grading: secondary can grade
-- do grades at all????
-- START-style enter-paper-all-at-once (no email verification)?
-- START-style enter multiple contact authors with explicit First Name,
-  Last Name, Affiliation, Email fields?
+
+Internals
+- negative conflictTypes in PaperConflict represent review assignments?
+- ?? add to ContactInfo a preconcatenated field "firstName lastName email"
 - double-check contact policies (UGH)
-- reviewers/authors can search submitted papers, seeing only those papers they
-  are allowed to see (e.g. both reviewers + authors)?
-- allow authors to download paper info, such as all submitted reviews
 
      $Conf->infoMsg( '<P>Please see <a href="../Reviewer/ratings.html" ' .
                      'target="_blank"> rating description information</a> ' .
