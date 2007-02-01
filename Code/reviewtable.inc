@@ -23,7 +23,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 
 	// skip unsubmitted reviews
 	if (!$canView && $actingConflict) {
-	    if ($rr->reviewNeedsSubmit == 1)
+	    if ($rr->reviewNeedsSubmit == 1 && $rr->reviewModified)
 		$notShown++;
 	    continue;
 	}
@@ -121,8 +121,9 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     
     $t = '';
     // see all reviews
-    if (($mode != "edit" && $rrow && $Me->canViewReview($prow, null, $Conf))
-	|| ($mode == "edit" && $Me->canViewReview($prow, null, $Conf)))
+    if ((($mode != "edit" && $rrow && $Me->canViewReview($prow, null, $Conf))
+	 || ($mode == "edit" && $Me->canViewReview($prow, null, $Conf)))
+	&& (count($nonsubrev) || count($subrev)))
 	$t .= "<a href='review.php?paperId=$prow->paperId&amp;mode=view$forceShow'>All reviews on one page</a>";
     // review assignments
     if ($mode != "assign" && ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
@@ -154,8 +155,10 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     if ($Me->amAssistant() && !$effAssistant)
 	$notes[] = "<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\"><b>Override your conflict</b> to show reviewer identities and allow editing</a>";
 
-    if (count($notes))
-	$nonsubrev[] = "    <tr>$hilite<td class='revnotes' colspan='" . ($anyScores ? 4 + $nNumeric : 4) . "'>" . join("<br />\n", $notes) . "</td></tr>\n";
+    if (count($notes)) {
+	$class = (count($nonsubrev) || count($subrev) ? "revnotes" : "");
+	$nonsubrev[] = "    <tr>$hilite<td class='$class' colspan='" . ($anyScores ? 4 + $nNumeric : 4) . "'>" . join("<br />\n", $notes) . "</td></tr>\n";
+    }
 
     // completion
     if (count($nonsubrev) || count($subrev))
