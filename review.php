@@ -469,7 +469,7 @@ function reviewView($prow, $rrow, $editMode) {
 	if ($rrow && $rrow->contactId != $Me->contactId)
 	    $Conf->infoMsg("You didn't write this review, but you can still make changes as PC Chair.");
 	echo "<input class='button_small' type='submit' value='Download", ($editMode ? " form" : ""), "' name='downloadForm' id='downloadForm' />";
-	echo "<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp;<input class='button_small' type='submit' value='Upload form' name='uploadForm' /></td>\n</tr>\n";
+	echo "<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp; <input class='button_small' type='submit' value='Upload form' name='uploadForm' /></td>\n</tr>\n";
     }
     
     if ($editMode) {
