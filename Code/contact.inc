@@ -199,33 +199,20 @@ class Contact {
 	    $this->goAlert($url, "That page is only accessible to paper authors.");
     }
 
-  function goIfNotPC($url) {
-    if ( $this->valid() && ($this->isChair || $this->isPC)) {
-      return;
-    } else {
-      $this->goAlert($url,
-		     "This page is only accessible by Program Committee members"
-		     );
+    function goIfNotPC($url) {
+	if (!$this->valid() || !($this->isChair || $this->isPC))
+	    $this->goAlert($url, "That page is only accessible to program committee members.");
     }
-  }
 
-  function goIfNotChair($url) {
-    if (!$this->valid() || ! $this->isChair ) {
-      $this->goAlert($url,
-		     "This page is only accessible by Program Chairs"
-		     );
+    function goIfNotChair($url) {
+	if (!$this->valid() || !$this->isChair)
+	    $this->goAlert($url, "That page is only accessible by program chairs.");
     }
-  }
 
-  function goIfNotAssistant($url) {
-    if ( $this->valid() && ($this->isChair || $this->isAssistant)) {
-      return;
-    } else {
-      $this->goAlert($url,
-		     "This page is only accessible by Program Chair Assistants"
-		     );
+    function goIfNotAssistant($url) {
+	if (!$this->valid() || !$this->amAssistant())
+	    $this->goAlert($url, "That page is only accessible to program chairs and their assistants.");
     }
-  }
 
     function updateDB($conf, $where = "") {
 	$this->trim();

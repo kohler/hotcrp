@@ -7,7 +7,6 @@
 - "proposed" external reviewers
 - consider putting explanations and hints ABOVE form fields, rather
   than to the right hand side
-- check correctness of border on paper view/expansion
 - fold review form
 - simplifyWhitespace on author information
 - override deadlines in review
