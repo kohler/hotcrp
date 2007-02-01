@@ -29,7 +29,7 @@ $Opt['downloadPrefix'] = "hotnets5-";
 // EMAIL
 //
 //   contactName     Full name for site administrator (the person to contact
-//                   about site problems).
+//                   about site problems).  Usually the PC chair(s).
 //   contactEmail    Email address for site administrator.
 //   sendEmail       Boolean.  If false, CRP will send no email.  Generally
 //                   it is safe to set this to true.
