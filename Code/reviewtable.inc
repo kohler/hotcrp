@@ -119,25 +119,6 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	$numericHeaders = "    <tr>$t<td class='empty' colspan='2'></td>" . $rf->webNumericScoresHeader($prow, $Me, $Conf) . "</tr>\n";
     }
     
-    $t = '';
-    // see all reviews
-    if ((($mode != "edit" && $rrow && $Me->canViewReview($prow, null, $Conf))
-	 || ($mode == "edit" && $Me->canViewReview($prow, null, $Conf)))
-	&& (count($nonsubrev) || count($subrev)))
-	$t .= "<a href='review.php?paperId=$prow->paperId&amp;mode=view$forceShow'>All reviews on one page</a>";
-    // review assignments
-    if ($mode != "assign" && ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
-	if ($Me->amAssistant())
-	    $x = "Assign or request reviewers";
-	else
-	    $x = "Request an external review" . ($nRetractable ? " or retract outstanding review requests" : "");
-	$t .= ($t == "" ? "" : " &nbsp;|&nbsp; ") . "<a href=\"${ConfSiteBase}assign.php?paperId=$prow->paperId" . ($forceShow ? "&amp;forceShow=1" : "") . "\">$x</a>";
-    }
-    // extra action row
-    if ($t)
-	$nonsubrev[] = "    <tr>$hilite<td colspan='"
-	    . ($anyScores ? 4 + $nNumeric : 4) . "'>" . $t . "</td></tr>\n";
-    
     // unfinished review notification
     $notes = array();
     if ($prow->conflictType == CONFLICT_AUTHOR && !$effAssistant && $notShown
@@ -155,6 +136,27 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     if ($Me->amAssistant() && !$effAssistant)
 	$notes[] = "<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\"><b>Override your conflict</b> to show reviewer identities and allow editing</a>";
 
+    // see all reviews
+    $t = "";
+    if (count($nonsubrev) + count($subrev) == 0)
+	/* no reviews to view */;
+    else if (($mode != "edit" && $rrow && $Me->canViewReview($prow, null, $Conf))
+	     || ($mode == "edit" && $Me->canViewReview($prow, null, $Conf)))
+	$t .= "<a href='review.php?paperId=$prow->paperId&amp;mode=view$forceShow'>All reviews on one page</a>";
+    else if ($mode == "view" && !$rrow && $Me->canViewReview($prow, null, $Conf))
+	$t .= "<a href='review.php?paperId=$prow->paperId&amp;mode=view&amp;text=1$forceShow'>Text version of the reviews</a>";
+    // review assignments
+    if ($mode != "assign" && ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
+	if ($Me->amAssistant())
+	    $x = "Assign or request reviewers";
+	else
+	    $x = "Request an external review" . ($nRetractable ? " or retract outstanding review requests" : "");
+	$t .= ($t == "" ? "" : " &nbsp;|&nbsp; ") . "<a href=\"${ConfSiteBase}assign.php?paperId=$prow->paperId" . ($forceShow ? "&amp;forceShow=1" : "") . "\">$x</a>";
+    }
+    if ($t)
+	$notes[] = $t;
+
+    // collect notes
     if (count($notes)) {
 	$class = (count($nonsubrev) || count($subrev) ? "revnotes" : "");
 	$notetxt = "<div class='$class'>" . join("<br />\n", $notes) . "</div>\n";
