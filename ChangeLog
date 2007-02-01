@@ -1,3 +1,102 @@
+2007-01-31 Wednesday 17:47  kohler
+
+	* comment.php (1.27), offline.php (1.18), review.php (1.80),
+	  Code/TODO (1.48), Code/review.inc (1.57), Code/reviewtable.inc
+	  (1.30): add working override deadlines checkboxes for PC chairs
+	  to enter reviews after the deadline has passed
+
+2007-01-31 Wednesday 17:02  kohler
+
+	* Code/TODO (1.47): remove irrelevant TODO
+
+2007-01-31 Wednesday 17:02  kohler
+
+	* review.php (1.79), style.css (1.144), Code/TODO (1.46),
+	  Code/reviewtable.inc (1.29): add link for text version of all the
+	  reviews to the reviews page, improve review links
+
+2007-01-31 Wednesday 16:34  kohler
+
+	* review.php (1.78), style.css (1.143), Code/contact.inc (1.97),
+	  Code/reviewtable.inc (1.28): improve message appearance
+
+2007-01-31 Wednesday 16:25  kohler
+
+	* Code/: TODO (1.45), reviewtable.inc (1.27): do not report to
+	  authors outstanding reviews that haven't even been started
+
+2007-01-31 Wednesday 16:07  kohler
+
+	* Code/: TODO (1.44), contact.inc (1.96): improve error messages
+
+2007-01-31 Wednesday 16:01  kohler
+
+	* review.php (1.77): tiny nit
+
+2007-01-31 Wednesday 16:00  kohler
+
+	* comment.php (1.26), Code/TODO (1.43): report "no comments" if
+	  there are no comments
+
+2007-01-31 Wednesday 15:52  kohler
+
+	* Code/: TODO (1.42), helpers.inc (1.122), papertable.inc (1.55),
+	  reviewtable.inc (1.26): add mailto: email links when appropriate,
+	  do not link reviewer names to their emails though
+
+2007-01-31 Wednesday 15:39  kohler
+
+	* review.php (1.76), Code/reviewtable.inc (1.25): some appearance
+	  fixes
+
+2007-01-31 Wednesday 15:23  kohler
+
+	* account.php (1.43), contactauthors.php (1.24), login.php (1.23),
+	  mergeaccounts.php (1.30), pc.php (1.21),
+	  Assistant/DumpAllReviews.php (1.17), Assistant/ListReviewers.php
+	  (1.9), Assistant/ModifyUserNames.php (1.10),
+	  Assistant/PrepareFacesheets.php (1.13),
+	  Assistant/PrintAllAbstracts.php (1.14),
+	  Assistant/PrintSomeReviews.php (1.13), Chair/AskForReview.php
+	  (1.14), Chair/AverageReviewerScore.php (1.12),
+	  Chair/CheckOnPCProgress.php (1.10),
+	  Chair/CheckOnSinglePCProgress.php (1.11), Chair/DumpDatabase.php
+	  (1.8), Chair/GradeAllPapers.php (1.14), Chair/ListPC.php (1.16),
+	  Chair/ListReviewers.php (1.9), Chair/ListReviews.php (1.10),
+	  Chair/SendMail2.php (1.22), Chair/ShowCalendar.php (1.7),
+	  Chair/SpotProblems.php (1.15), Chair/ViewButtons.php (1.6),
+	  Code/TODO (1.41), PC/CheckOnPCProgress.php (1.10),
+	  PC/CheckReviewStatus.php (1.17), PC/GradePapers.php (1.14),
+	  PC/SpotMyProblems.php (1.13): clean up use of $Conf->header and
+	  $Conf->footer
+
+2007-01-31 Wednesday 14:01  kohler
+
+	* settings.php (1.26): option meaning clarification
+
+2007-01-31 Wednesday 13:50  kohler
+
+	* Chair/SetReviewForm.php (1.28): be more precise
+
+2007-01-31 Wednesday 13:49  kohler
+
+	* Code/paperlist.inc (1.92): add non-anonymous authors to the
+	  review assignment listing
+
+2007-01-31 Wednesday 13:46  kohler
+
+	* search.php (1.71), Code/contact.inc (1.95): correctly hide
+	  reviewer identities from external reviewers when the policy
+	  demands it
+
+2007-01-31 Wednesday 13:39  kohler
+
+	* offline.php (1.17): page != site
+
+2007-01-31 Wednesday 13:08  kohler
+
+	* Code/TODO (1.40): some more todos
+
 2007-01-31 Wednesday 13:01  kohler
 
 	* offline.php (1.16), review.php (1.75), search.php (1.70),
