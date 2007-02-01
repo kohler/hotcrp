@@ -157,14 +157,15 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 
     if (count($notes)) {
 	$class = (count($nonsubrev) || count($subrev) ? "revnotes" : "");
-	$nonsubrev[] = "    <tr>$hilite<td class='$class' colspan='" . ($anyScores ? 4 + $nNumeric : 4) . "'>" . join("<br />\n", $notes) . "</td></tr>\n";
-    }
+	$notetxt = "<div class='$class'>" . join("<br />\n", $notes) . "</div>\n";
+    } else
+	$notetxt = "";
 
     // completion
     if (count($nonsubrev) || count($subrev))
 	return "<table class='reviewers'>\n"
 	    . $numericHeaders . join("", $subrev) . join("", $nonsubrev)
-	    . "  </table>\n";
+	    . "  </table>\n" . $notetxt;
     else
-	return "";
+	return $notetxt;
 }

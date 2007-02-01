@@ -674,7 +674,7 @@ table.reviewers td.revscore {
 table.reviewers td.rs_id, table.reviewscores td.rs_num {
 	text-align: left;
 }
-table.reviewers td.revnotes {
+div.revnotes {
 	padding-top: 0.5em;
 }
 table.reviewers td.empty {

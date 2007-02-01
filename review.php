@@ -339,6 +339,7 @@ else
 if ($mode == "view" && $prow->conflictType == 0
     && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot)
     && $Me->canReview($prow, $myRrow, $Conf)) {
+    $Conf->errorMsg("?");
     if (isset($whyNot['reviewNotComplete']) || isset($whyNot['externalReviewer'])) {
 	if (isset($_REQUEST["mode"]) || isset($whyNot['forceShow']))
 	    $Conf->infoMsg(whyNotText($whyNot, "review"));
@@ -348,6 +349,7 @@ if ($mode == "view" && $prow->conflictType == 0
     $rrow = $myRrow;
 }
 if ($mode == "edit" && !$Me->canReview($prow, $rrow, $Conf, $whyNot)) {
+    $Conf->errorMsg("!");
     $Conf->errorMsg(whyNotText($whyNot, "review"));
     $mode = "view";
 }

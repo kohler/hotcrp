@@ -527,6 +527,8 @@ class Contact {
 	else if ($prow->conflictType == CONFLICT_AUTHOR && $conf->timeAuthorViewReviews()
 		 && $this->reviewsOutstanding && $this->isReviewer)
 	    $whyNot['reviewsOutstanding'] = 1;
+	else if ($prow->conflictType == CONFLICT_AUTHOR && !$rrsub)
+	    $whyNot['permission'] = 1;
 	else if ($prow->conflictType == CONFLICT_AUTHOR)
 	    $whyNot['deadline'] = 'au_seerev';
 	else if ($prow->conflictType > 0)
