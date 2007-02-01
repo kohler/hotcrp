@@ -153,7 +153,7 @@ while ($row = edb_orow($result)) {
     echo "<tr id='pcrow$id' class='pcrow foldo'>
   <td class='pc_name'>", htmlspecialchars(trim("$row->firstName $row->lastName")), "</td>\n";
     if ($Me->isPC)
-	echo "  <td class='pc_email'><a href=\"mailto:", htmlspecialchars($row->email), "\">", htmlspecialchars($row->email), "</a></td>\n";
+	echo "  <td class='pc_email'><a href=\"mailto:", urlencode($row->email), "\">", htmlspecialchars($row->email), "</a></td>\n";
     echo "  <td class='pc_aff'>", htmlspecialchars($row->affiliation), "</td>\n";
     if ($Me->amAssistant()) {
 	echo "  <td class='pc_chairbox'><input type='checkbox' name='chair$id' value='1'";

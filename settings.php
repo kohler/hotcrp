@@ -31,6 +31,7 @@ $SettingGroups = array("sub" => array(
 			     "pcrev_soft" => "date",
 			     "pcrev_hard" => "date",
 			     "pc_seeallrev" => "check",
+			     "extrev_chairreq" => "check",
 			     "tags" => "special",
 			     "extrev_soft" => "date",
 			     "extrev_hard" => "date",
@@ -74,6 +75,7 @@ $SettingText = array(
 	"sub_collab" => "Collect collaborators setting",
 	"rev_notifychair" => "Notify chairs about reviews setting",
 	"pcrev_any" => "PC can review any paper setting",
+	"extrev_chairreq" => "PC chair must approve proposed external reviewers",
 	"pc_seeallrev" => "PC can see all reviews setting",
 	"extrev_view" => "External reviewers can view reviewer identities setting",
 	"tag_chair" => "Chair tags",
@@ -378,9 +380,6 @@ if (isset($_REQUEST["update"])) {
 	$Conf->qe("unlock tables", $while);
 	$Conf->updateSettings();
 	$rf->validate($Conf, true);
-
-	if ($settings["next"] && count($Error) == 0)
-	    $Group = $settings["next"];
     }
 } else if ($Group == "rfo")
     rf_update(false);
@@ -595,6 +594,11 @@ if ($Group == "rev") {
     echo "<table class='halfc'><tr><td>";
     echo "<div class='bgrp'><div class='bgrp_head'>External reviews</div><div class='bgrp_body'>";
 
+    if ($Conf->setting("allowPaperOption") > 1) {
+	doCheckbox('extrev_chairreq', "PC chair must approve proposed external reviewers");
+	echo "<div class='smgap'></div>";
+    }
+    
     echo "<table>\n";
     doDateRow("extrev_soft", "Soft deadline");
     doDateRow("extrev_hard", "Hard deadline");

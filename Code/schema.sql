@@ -388,6 +388,21 @@ CREATE TABLE `ReviewFormOptions` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
+-- Table structure for table `ReviewRequest`
+--
+
+DROP TABLE IF EXISTS `ReviewRequest`;
+CREATE TABLE `ReviewRequest` (
+  `paperId` int(11) NOT NULL,
+  `name` varchar(120) default NULL,
+  `email` varchar(120) default NULL,
+  `requestedBy` int(11) NOT NULL,
+  KEY `paperId` (`paperId`),
+  UNIQUE KEY `paperEmail` (`paperId`,`email`),
+  KEY `requestedBy` (`requestedBy`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
 -- Table structure for table `Settings`
 --
 
@@ -427,7 +442,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 1);
+insert into Settings (name, value) values ('allowPaperOption', 2);
 # collect collaborators from authors by default
 insert into Settings (name, value) values ('sub_collab', 1);
 

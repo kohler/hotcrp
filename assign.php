@@ -176,6 +176,34 @@ if (isset($_REQUEST['update']) && $Me->amAssistant()) {
 
 
 // add review requests
+function requestReviewChecks($themHtml, $reqId) {
+    global $Conf, $Me, $Opt, $prow;
+
+    $while = "while requesting review";
+
+    // check for outstanding review request
+    $result = $Conf->qe("select reviewId, firstName, lastName, email from PaperReview join ContactInfo on (ContactInfo.contactId=PaperReview.requestedBy) where paperId=$prow->paperId and PaperReview.contactId=$reqId", $while);
+    if (!$result)
+	return false;
+    else if (($row = edb_orow($result)))
+	return $Conf->errorMsg(contactHtml($row) . " has already requested a review from $themHtml.");
+
+    // check for outstanding refusal to review
+    $result = $Conf->qe("select paperId, '<conflict>' from PaperConflict where paperId=$prow->paperId and contactId=$reqId union select paperId, reason from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
+    if (edb_nrows($result) > 0) {
+	$row = edb_row($result);
+	if ($row[1] == "<conflict>")
+	    return $Conf->errorMsg("$themHtml has a conflict registered with paper #$prow->paperId and cannot be asked to review it.");
+	else if ($Me->amAssistantOverride()) {
+	    $Conf->infoMsg("Overriding previous refusal to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was \"" . htmlspecialchars($row[1]) . "\".)" : ""));
+	    $Conf->qe("delete from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
+	} else
+	    return $Conf->errorMsg("$themHtml refused a previous request to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was \"" . htmlspecialchars($row[1]) . "\".)" : "") . ($Me->amAssistant() ? "  As PC Chair, you can override this refusal with the \"Override...\" checkbox." : ""));
+    }
+
+    return true;
+}
+
 function requestReview($email) {
     global $Conf, $Me, $Opt, $prow;
     
@@ -185,36 +213,31 @@ function requestReview($email) {
     $Them->lookupById($reqId, $Conf);
     
     $while = "while requesting review";
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo read, PaperConflict read", $while);
+    $otherTables = ($Conf->setting("extrev_chairreq") ? ", ReviewRequest write" : "");
+    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo read, PaperConflict read" . $otherTables, $while);
     // NB caller unlocks tables on error
 
     // check for outstanding review request
-    $result = $Conf->qe("select reviewId, firstName, lastName, email from PaperReview join ContactInfo on (ContactInfo.contactId=PaperReview.requestedBy) where paperId=$prow->paperId and PaperReview.contactId=$reqId", $while);
-    if (!$result)
-	return false;
-    else if (($row = edb_orow($result)))
-	return $Conf->errorMsg(contactHtml($row) . " has already requested a review from " . contactHtml($Them) . ".");
-
-    // check for outstanding refusal to review
-    $result = $Conf->qe("select paperId, '<conflict>' from PaperConflict where paperId=$prow->paperId and contactId=$reqId union select paperId, reason from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
-    if (edb_nrows($result) > 0) {
-	$row = edb_row($result);
-	if ($row[1] == "<conflict>")
-	    return $Conf->errorMsg(contactHtml($Them) . " has a conflict registered with paper #$prow->paperId and cannot be asked to review it.");
-	else if ($Me->amAssistantOverride()) {
-	    $Conf->infoMsg("Overriding previous refusal to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was \"" . htmlspecialchars($row[1]) . "\".)" : ""));
-	    $Conf->qe("delete from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
-	} else
-	    return $Conf->errorMsg(contactHtml($Them) . " refused a previous request to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was \"" . htmlspecialchars($row[1]) . "\".)" : "") . ($Me->amAssistant() ? "  As PC Chair, you can override this refusal with the \"Override...\" checkbox." : ""));
-    }
+    if (!($result = requestReviewChecks(contactHtml($Them), $reqId)))
+	return $result;
 
     // at this point, we think we've succeeded.
-    // store the review request
-    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Me->contactId, current_timestamp)", $while);
+    // potentially send the email from the requester
+    $Requester = $Me;
+    if ($Conf->setting("extrev_chairreq")) {
+	$result = $Conf->qe("select firstName, lastName, ContactInfo.email, ContactInfo.contactId from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($Them->email) . "'", $while);
+	if (($row = edb_orow($result))) {
+	    $Requester = $row;
+	    $Conf->qe("delete from ReviewRequest where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($Them->email) . "'", $while);
+	}
+    }
     
+    // store the review request
+    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Requester->contactId, current_timestamp)", $while);
+
     // send confirmation email
     $m = "Dear " . contactText($Them) . ",\n\n";
-    $m .= wordwrap(contactText($Me) . " has asked you to review $Conf->longName" . ($Conf->shortName != $Conf->longName ? " ($Conf->shortName)" : "") . " paper #$prow->paperId.\n\n")
+    $m .= wordwrap(contactText($Requester) . " has asked you to review $Conf->longName" . ($Conf->shortName != $Conf->longName ? " ($Conf->shortName)" : "") . " paper #$prow->paperId.\n\n")
 	. wordWrapIndent(trim($prow->title), "Title: ", 14) . "\n";
     if (!$prow->blind)
 	$m .= wordWrapIndent(trim($prow->authorInformation), "Authors: ", 14) . "\n";
@@ -222,7 +245,7 @@ function requestReview($email) {
     $mm = "";
     if ($Conf->setting("extrev_soft") > 0)
 	$mm = "If you are willing to review this paper, please enter your review by " . $Conf->printableTimeSetting("extrev_soft") . ".  ";
-    $m .= wordwrap($mm . "You may also complete a review form offline and upload it to the site.  If you cannot complete the review, you may refuse the review on the paper site or contact " . contactText($Me) . " directly.  For reference, your account information is as follows:\n\n");
+    $m .= wordwrap($mm . "You may also complete a review form offline and upload it to the site.  If you cannot complete the review, you may refuse the review on the paper site or contact " . contactText($Requester) . " directly.  For reference, your account information is as follows:\n\n");
     $m .= "        Site: $Conf->paperSite/
        Email: $Them->email
     Password: $Them->password
@@ -239,14 +262,56 @@ Thank you for your help -- we appreciate that reviewing is hard work!
     $s = "[$Conf->shortName] Review request for paper #$prow->paperId";
 
     if ($Conf->allowEmailTo($Them->email))
-	$results = mail($Them->email, $s, $m, "From: $Conf->emailFrom");
+	$results = mail($Them->email, $s, $m, "From: $Conf->emailFrom\nCc: $Requester->email");
     else
-	$Conf->infoMsg("<pre>" . htmlspecialchars("$s\n\n$m") . "</pre>");
+	$Conf->infoMsg("<pre>" . htmlspecialchars("$s\nCc: $Requester->email\n\n$m") . "</pre>");
 
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
     $Conf->qe("unlock tables");
     $Conf->log("Asked $Them->contactId ($Them->email) to review", $Me, $prow->paperId);
+
+    return true;
+}
+
+function proposeReview($name, $email) {
+    global $Conf, $Me, $Opt, $prow;
+
+    $email = trim($email);
+    $name = trim($name);
+    $reqId = $Conf->getContactId($email, false);
+    
+    $while = "while recording review request";
+    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ReviewRequest write, ContactInfo read, PaperConflict read", $while);
+    // NB caller unlocks tables on error
+
+    if ($reqId > 0
+	&& !($result = requestReviewChecks(htmlspecialchars($email), $reqId)))
+	return $result;
+
+    // check for outstanding review request
+    $result = $Conf->qe("insert into ReviewRequest (paperId, name, email, requestedBy) values ($prow->paperId, '" . sqlq($name) . "', '" . sqlq($email) . "', $Me->contactId) on duplicate key update paperId=paperId", $while);
+    
+    // send confirmation email
+    $m = "Greetings,\n\n";
+    $m .= wordwrap(contactText($Me) . " would like $name <$email> to review $Conf->longName" . ($Conf->shortName != $Conf->longName ? " ($Conf->shortName)" : "") . " paper #$prow->paperId.  Visit the following page at your leisure to approve or deny the request.\n\n")
+	. "  Paper site: $Conf->paperSite/assign.php?paperId=$prow->paperId\n"
+	. wordWrapIndent(trim($prow->title), "Title: ", 14) . "\n";
+    if (!$prow->blind)
+	$m .= wordWrapIndent(trim($prow->authorInformation), "Authors: ", 14) . "\n";
+    $m .= "\n" . wordwrap("- $Conf->shortName Conference Submissions\n");
+
+    $s = "[$Conf->shortName] Proposed reviewer for paper #$prow->paperId";
+
+    if ($Conf->allowEmailTo($Opt['contactEmail']))
+	$results = mail($Opt['contactEmail'], $s, $m, "From: $Conf->emailFrom\nCc: $Me->email");
+    else
+	$Conf->infoMsg("<pre>" . htmlspecialchars("$s\nCc: $Me->email\n\n$m") . "</pre>");
+
+    // confirmation message
+    $Conf->confirmMsg("Proposed that " . htmlspecialchars("$name <$email>") . " review paper #$prow->paperId.  The chair must approve this proposal for it to take effect.");
+    $Conf->qe("unlock tables");
+    $Conf->log("Logged proposal for $email to review", $Me, $prow->paperId);
     return true;
 }
 
@@ -257,13 +322,54 @@ if (isset($_REQUEST['add'])) {
 	     || $email == "Email")
 	$Conf->errorMsg("An email address is required to request a review.");
     else {
-	if (requestReview($email)) {
+	if ($Conf->setting("extrev_chairreq") && !$Me->amAssistant())
+	    $ok = proposeReview($_REQUEST["name"], $email);
+	else
+	    $ok = requestReview($email);
+	if ($ok) {
 	    unset($_REQUEST['email']);
 	    unset($_REQUEST['name']);
 	} else
 	    $Conf->qe("unlock tables");
 	getProw();
     }
+}
+
+
+// deny review request
+if (isset($_REQUEST['deny']) && $Me->amAssistant()
+    && ($email = vtrim($_REQUEST['email']))) {
+    $Conf->qe("lock tables ReviewRequest write, ContactInfo read, PaperReviewRefused write");
+    $while = "while denying review request";
+    $result = $Conf->qe("select name, firstName, lastName, ContactInfo.email, ContactInfo.contactId from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($email) . "'", $while);
+    if (($Requester = edb_orow($result))) {
+	$Conf->qe("delete from ReviewRequest where paperId=$prow->paperId and email='" . sqlq($email) . "'", $while);
+	if (($reqId = $Conf->getContactId($email, false)) > 0)
+	    $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($prow->paperId, $reqId, $Requester->contactId, 'request denied by chair')", $while);
+
+	// send anticonfirmation email
+	$m = "Dear " . contactText($Requester) . ",\n\n";
+	$m .= wordwrap("Your proposal that $Requester->name <$email> review $Conf->longName" . ($Conf->shortName != $Conf->longName ? " ($Conf->shortName)" : "") . " paper #$prow->paperId has been denied by a program chair.  You may want to propose someone else.\n\n")
+	    . wordWrapIndent(trim($prow->title), "Title: ", 14) . "\n";
+	if (!$prow->blind)
+	    $m .= wordWrapIndent(trim($prow->authorInformation), "Authors: ", 14) . "\n";
+	$m .= "  Paper site: $Conf->paperSite/review.php?paperId=$prow->paperId\n\n";
+	$m .= wordwrap("Contact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.
+
+- $Conf->shortName Conference Submissions\n");
+
+	$s = "[$Conf->shortName] Proposed reviewer for paper #$prow->paperId denied";
+
+	if ($Conf->allowEmailTo($Requester->email))
+	    $results = mail($Requester->email, $s, $m, "From: $Conf->emailFrom");
+	else
+	    $Conf->infoMsg("<pre>" . htmlspecialchars("$s\n\n$m") . "</pre>");
+
+	$Conf->confirmMsg("Proposed reviewer denied.");
+    } else
+	$Conf->errorMsg("No one has proposed that " . htmlspecialchars($email) . " review this paper.");
+    $Conf->qe("unlock tables");
+    unset($_REQUEST['email']);
 }
 
 
@@ -456,6 +562,27 @@ if ($Me->amAssistant())
 echo "\n    </td></tr>\n";
 
 echo "    </table></td>\n</tr>\n\n";
+
+
+// outstanding requests
+if ($Conf->setting("extrev_chairreq") && $Me->amAssistant()) {
+    $result = $Conf->qe("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=$prow->paperId", "while finding outstanding requests");
+    if (edb_nrows($result) > 0) {
+	echo "<tr class='rev_reviewers'>\n  <td class='caption'>Proposed reviewers</td>\n  <td class='entry'><table class='reviewers'>\n";
+	while (($row = edb_orow($result))) {
+	    echo "<tr><td>", htmlspecialchars($row->name), "</td><td>&lt;",
+		"<a href=\"mailto:", urlencode($row->email), "\">",
+		htmlspecialchars($row->email), "</a>&gt;</td>",
+		"<td><a class='button_small' href=\"assign.php?paperId=$prow->paperId&amp;name=",
+		urlencode($row->name), "&amp;email=", urlencode($row->email),
+		"&amp;add=1$forceShow\">Approve</a>&nbsp; ",
+		"<a class='button_small' href=\"assign.php?paperId=$prow->paperId&amp;email=",
+		urlencode($row->email), "&amp;deny=1$forceShow\">Deny</a></td></tr>\n",
+		"<tr><td colspan='3'><small>Requester: ", contactHtml($row->reqFirstName, $row->reqLastName, $row->reqEmail), "</small></td></tr>\n";
+	}
+	echo "</table>\n  </td>\n</tr>\n\n";
+    }
+}
 
 
 // close this table

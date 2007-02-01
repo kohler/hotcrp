@@ -1269,7 +1269,7 @@ class Conference {
     function allowEmailTo($email) {
 	global $Opt;
 	return $Opt['sendEmail'] && strstr($email, "@")
-	    && !preg_match('/@_.com$/', $email);
+	    && !preg_match('/@_\.com$/', $email);
     }
   
   function sendReviewerRequest($who, $email, $paperList) {

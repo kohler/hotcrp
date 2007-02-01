@@ -4,7 +4,6 @@
 - ?? add to ContactInfo a preconcatenated field "firstName lastName email"
 - show multiple review fields in paper lists
 - authors' response: emails, etc.
-- "proposed" external reviewers
 - consider putting explanations and hints ABOVE form fields, rather
   than to the right hand side
 - fold review form
