@@ -118,7 +118,7 @@ function fileUploaded(&$var, $conf) {
 function selfHref($extra = array()) {
     $x = $_SERVER["PHP_SELF"];
     $sep = "?";
-    foreach (array("paperId", "reviewId", "commentId", "list", "mode", "forceShow", "validator") as $what)
+    foreach (array("paperId", "reviewId", "commentId", "mode", "forceShow", "validator") as $what)
 	if (isset($_REQUEST[$what]) && !isset($extra[$what])) {
 	    $x .= "$sep$what=" . urlencode($_REQUEST[$what]);
 	    $sep = "&";
@@ -315,33 +315,61 @@ function contactEmailTo($firstName, $lastName=null, $email=null) {
     return $x;
 }
 
+function _tryNewList($opt) {
+    global $Conf, $Me;
+    require_once("search.inc");
+    require_once("paperlist.inc");
+    $search = new PaperSearch($Me, $opt);
+    $_SESSION["list"] = $search->paperList();
+    $_SESSION["list"]["url"] = $search->url();
+    $fields = PaperList::listFields($search->limitName);
+    $_SESSION["list"]["description"] = $fields[0];
+    unset($_SESSION["matchPreg"]);
+    $Conf->q("drop temporary table Matches");
+}
+
 function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
-    global $ConfSiteBase;
-    
-    if (isset($_SESSION["whichList"]))
-	$listname = $_SESSION["whichList"];
-    if (!isset($listname) || !($list = defval($_SESSION[$listname]))
-	|| !is_array($list) || !count($list)
-	|| ($k = array_search($paperId, $list)) === false)
-	return "";
+    global $Me, $ConfSiteBase;
+
+    if (isset($_REQUEST["list"]) && substr($_REQUEST["list"], 0, 4) == "list"
+	&& strlen($_REQUEST["list"]) > 4 && isset($_SESSION[$_REQUEST["list"]])) {
+	$_SESSION["list"] = $_SESSION[$_REQUEST["list"]];
+	unset($_SESSION[$_REQUEST["list"]]);
+	unset($_SESSION["matchPreg"]);
+    } else if (isset($_REQUEST["list"]))
+	_tryNewList(array("t" => $_REQUEST["list"]));
+
+    if (!isset($_SESSION["list"]) || !is_array($_SESSION["list"]))
+	$_SESSION["list"] = array();
+
+    $k = array_search($paperId, $_SESSION["list"]);
+    if ($paperId > 0 && $k === false && !isset($_REQUEST["list"])) {
+	_tryNewList(array());
+	$k = array_search($paperId, $_SESSION["list"]);
+	if ($k === false && $Me->amAssistant()) {
+	    _tryNewList(array("t" => "all"));
+	    $k = array_search($paperId, $_SESSION["list"]);
+	}
+    }
 
     $urlrest = "";
     foreach ($args as $what => $val)
 	$urlrest .= "&amp;" . htmlspecialchars($what) . "=" . htmlspecialchars($val);
 
+    $list = $_SESSION["list"];
     $x = "";
     if ($k > 0)
 	$x .= "<a href=\"${ConfSiteBase}$baseUrl?paperId="
 	    . $list[$k - 1] . $urlrest . "\"><img src=\"${ConfSiteBase}images/prev.png\" />#" . $list[$k - 1] . "</a>";
-    if (($listinfo = defval($_SESSION[$listname . "!"])) && $listinfo[1]) {
+    if (isset($list["description"])) {
 	$x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
-	if ($listinfo[0])
-	    $x .= "<a href=\"${ConfSiteBase}" . htmlspecialchars($listinfo[0]) . "\">" . htmlspecialchars($listinfo[1]) . "</a>";
+	if (defval($list["url"]))
+	    $x .= "<a href=\"${ConfSiteBase}" . htmlspecialchars($list["url"]) . "\">" . htmlspecialchars($list["description"]) . "</a>";
 	else
-	    $x .= htmlspecialchars($listinfo[1]);
+	    $x .= htmlspecialchars($listinfo["description"]);
     }
-    if ($k < count($list) - 1) {
-	$x .= ($k > 0 || $listinfo ? "&nbsp;&nbsp;" : "");
+    if (isset($list[$k + 1])) {
+	$x .= ($k > 0 || isset($list["description"]) ? "&nbsp;&nbsp;" : "");
 	$x .= "<a href=\"${ConfSiteBase}$baseUrl?paperId="
 	    . $list[$k + 1] . $urlrest . "\">#" . $list[$k + 1]
 	    . "<img src=\"${ConfSiteBase}images/next.png\" /></a>";

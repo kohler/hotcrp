@@ -42,7 +42,7 @@ class PaperTable {
 	$this->authorsFolded = $authorsFolded;
 
 	$this->matchPreg = defval($thisMatchPreg, defval($_SESSION["matchPreg"], null));
-	$this->highlight = ($this->matchPreg !== null && (isset($thisMatchPreg) || defval($_SESSION["whichList"]) == "list"));
+	$this->highlight = $this->matchPreg !== null;
     }
 
     function echoDivEnter() {

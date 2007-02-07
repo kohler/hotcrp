@@ -370,7 +370,7 @@ if (isset($assignments) && count($assignments) > 0) {
 
     $search = new PaperSearch($Me, array("t" => "s", "q" => join(" ", array_keys($assignments))));
     $plist = new PaperList(false, null, $search, $atext);
-    echo $plist->text("reviewers", $Me, "Proposed assignment");
+    echo $plist->text("reviewers", $Me);
 
     $atype = $_REQUEST["a"];
     if ($atype != "prefconflict") {
@@ -515,7 +515,7 @@ if (!isset($assignments) || count($assignments) == 0) {
     echo "<tr><td class='caption'>Paper selection</td><td class='entry'><div>Assignments will be applied to the following papers.</div>\n";
     $search = new PaperSearch($Me, array("t" => "s", "q" => join(" ", $papersel)));
     $plist = new PaperList(false, null, $search);
-    echo $plist->text("reviewersSel", $Me, "Proposed assignment");
+    echo $plist->text("reviewersSel", $Me);
     echo "</td></tr>\n";
 }
 

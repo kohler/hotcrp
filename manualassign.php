@@ -158,13 +158,13 @@ if ($reviewer >= 0) {
 	$paperList->authorMatch = strtr(substr($showau, 0, strlen($showau) - 1), " ", "|");
 	$paperList->collaboratorsMatch = strtr(substr($showco, 0, strlen($showco) - 1), " ", "|");
     }
-    $_SESSION["whichList"] = "list";
-    unset($_SESSION["matchPreg"]);
     echo "<form class='assignpc' method='post' action=\"AssignPapers.php?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
     if (isset($_REQUEST["sort"]))
 	echo "&amp;sort=", urlencode($_REQUEST["sort"]);
     echo "\" enctype='multipart/form-data'>\n";
-    echo $paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me, "Review assignment");
+    echo $paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me);
+    //if (isset($sau) && ($paperList->authorMatch || $paperList->collaboratorsMatch))
+    //   $_SESSION["matchPreg"] = "/(" . $paperList->authorMatch . ($paperList->authorMatch && $paperList->collaboratorsMatch ? "|" : "") . $paperList->collaboratorsMatch . ")/i";
     echo "<input class='button_default' type='submit' name='update' value='Save assignments' />\n";
     echo "</form>\n";
 }

@@ -72,7 +72,7 @@ class PaperList {
 	$this->sessionVar = $sessionVar;
 	$this->paperLink = "";
 	if ($this->sessionVar && $this->sessionVar != "list")
-	    $this->paperLink = "&amp;whichList=" . $this->sessionVar;
+	    $this->paperLink = "&amp;list=" . $this->sessionVar;
 
 	$this->search = $search;
 	$this->extraText = $extraText;
@@ -503,53 +503,39 @@ class PaperList {
 	return $t . "</table></td></tr>\n";
     }
 
-    function _fields($listname) {
+    function listFields($listname) {
 	switch ($listname) {
 	  case "a":
-	    $this->description = "Authored papers";
-	    return array(2, 12, 27);
-	  case "s":
-	    $this->description = "Submitted papers";
-	    return array(100, 1, 11, 45, 41, 33, 46, 50);
-	  case "all":
-	    $this->description = "All papers";
-	    return array(100, 1, 11, 27, 45, 50);
 	  case "authorHome":
-	    $this->description = "Authored papers";
-	    return array(2, 12, 27);
+	    return array("Authored papers", 2, 12, 27);
+	  case "s":
+	    return array("Submitted papers", 100, 1, 11, 45, 41, 33, 46, 50);
+	  case "all":
+	    return array("All papers", 100, 1, 11, 27, 45, 50);
 	  case "reviewerHome":
-	    $this->description = "Papers to review";
-	    return array(3, 13, 45, 33);
+	    return array("Review assignment", 3, 13, 45, 33);
 	  case "r":
-	    $this->description = "Papers to review";
-	    return array(100, 3, 13, 45, 41, 33, 50);
+	    return array("Review assignment", 100, 3, 13, 45, 41, 33, 50);
 	  case "rout":
-	    $this->description = "Papers to review";
-	    return array(100, 3, 13, 45, 41, 33, 50);
-	  case "reviewAssignment":
-	    $this->description = "Review assignment";
-	    return array(3, 13, 39, 36, 43, 35, 50, 37, 38, 44, 46, 47, 48);
-	  case "conflict":
-	    $this->description = "Potential conflicts";
-	    return array(102, 1, 11, self::FIELD_OPT_AUTHORS, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
-	  case "editReviewPreference":
-	    $this->description = "Reviewer preferences";
-	    return array(1, 11, 36, 45, 40, 50, 37);
-	  case "reviewers":
-	    $this->description = "Review assignments";
-	    return array(3, 13, 38);
-	  case "reviewersSel":
-	    $this->description = "Review assignments";
-	    return array(101, 3, 13, 38);
+	    return array("Unsubmitted reviews", 100, 3, 13, 45, 41, 33, 50);
 	  case "req":
-	    $this->description = "Papers to review";
-	    return array(100, 3, 13, 45, 41, 33);
+	    return array("Requested reviews", 100, 3, 13, 45, 41, 33, 50);
+	  case "reviewAssignment":
+	    return array("Review assignment", 3, 13, 39, 36, 43, 35, 50, 37, 38, 44, 46, 47, 48);
+	  case "conflict":
+	    return array("Potential conflicts", 102, 1, 11, self::FIELD_OPT_AUTHORS, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
+	  case "editReviewPreference":
+	    return array("Reviewer preferences", 1, 11, 36, 45, 40, 50, 37);
+	  case "reviewers":
+	    return array("Proposed assignments", 3, 13, 38);
+	  case "reviewersSel":
+	    return array("Proposed assignments", 101, 3, 13, 38);
 	  default:
 	    return null;
 	}
     }
 
-    function text($listname, $me, $listDescription) {
+    function text($listname, $me) {
 	global $Conf, $ConfSiteBase, $paperListFields;
 
 	$this->contact = $me;
@@ -560,10 +546,11 @@ class PaperList {
 	$url = $this->search->url();
 
 	// get paper list
-	if (!($baseFieldId = $this->_fields($listname))) {
+	if (!($baseFieldId = $this->listFields($listname))) {
 	    $Conf->errorMsg("There is no paper list query named '" . htmlspecialchars($listname) . "'.");
 	    return null;
 	}
+	$description = array_shift($baseFieldId);
 	
 	// check role type
 	$this->scoresOk = $me->amAssistant() || ($me->isPC && $Conf->timePCViewGrades());
@@ -766,8 +753,12 @@ class PaperList {
 	if ($this->sessionVar) {
 	    if (isset($_REQUEST["sort"]))
 		$url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
+	    if ($this->search->q || $this->search->qa || $this->search->qx)
+		$description .= " search";
+	    $ids["url"] = $url;
+	    $ids["description"] = $description;
 	    $_SESSION[$this->sessionVar] = $ids;
-	    $_SESSION[$this->sessionVar . "!"] = array($url, $listDescription);
+	    unset($_SESSION["matchPreg"]);
 	}
 	
 	return $x;

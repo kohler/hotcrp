@@ -485,5 +485,5 @@ class PaperSearch {
 	    $url .= "&qx=" . urlencode($this->qx);
 	return $url;
     }
-    
+
 }

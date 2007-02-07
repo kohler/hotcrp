@@ -105,9 +105,9 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
     }
 
     if ($Me->isAuthor) {
-	$plist = new PaperList(false, "aulist", new PaperSearch($Me, array("t" => "a")));
+	$plist = new PaperList(false, "listau", new PaperSearch($Me, array("t" => "a")));
 	$plist->showHeader = 0;
-	$ptext = $plist->text("authorHome", $Me, "Authored papers");
+	$ptext = $plist->text("authorHome", $Me);
 	$deadlines = array();
 	if ($plist->count > 0) {
 	    echo $sep, $ptext;
@@ -156,8 +156,8 @@ if ($Me->amReviewer() && ($Me->amAssistant() || $papersub)) {
     
     unset($plist);
     if ($Me->isReviewer) {
-	$plist = new PaperList(false, "relist", new PaperSearch($Me, array("t" => "r")));
-	$ptext = $plist->text("reviewerHome", $Me, "Review assignment");
+	$plist = new PaperList(false, "listre", new PaperSearch($Me, array("t" => "r")));
+	$ptext = $plist->text("reviewerHome", $Me);
     }
     
     $deadlines = array();

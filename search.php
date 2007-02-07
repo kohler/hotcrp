@@ -477,13 +477,9 @@ echo "</select></td>
 
 if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
     $pl = new PaperList(true, "list", $Search);
-    $t = $pl->text($Search->limitName, $Me, ($Search->q || $Search->qa || $Search->qx ? "This search" : $tOpt[$Search->limitName]));
-
-    $_SESSION["whichList"] = "list";
+    $t = $pl->text($Search->limitName, $Me);
     if ($Search->matchPreg)
 	$_SESSION["matchPreg"] = "/(" . $Search->matchPreg . ")/i";
-    else
-	unset($_SESSION["matchPreg"]);
 
     echo "<div class='maintabsep'></div>\n\n<div class='searchresult'>";
 
