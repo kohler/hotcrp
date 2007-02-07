@@ -14,7 +14,10 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
 	    $papersel[] = $p;
 } else {
     $papersel = array();
-    $result = $Conf->q("select paperId from Paper where timeSubmitted>0");
+    if (defval($_REQUEST["papset"]) == "acc")
+	$result = $Conf->q("select paperId from Paper where timeSubmitted>0 and outcome>0");
+    else
+	$result = $Conf->q("select paperId from Paper where timeSubmitted>0");
     while (($row = edb_row($result)))
 	$papersel[] = $row[0];
 }

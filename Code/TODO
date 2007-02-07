@@ -15,7 +15,8 @@ Minor features
 - search for paper options
 - search for paper topics
 - search for scores
-- autoassign.php conflicts
+- paper pages: if paperId not set, choose the first valid paper ID (easier
+  help links)
 
 Tiny features
 - add a "review assignment" link to the "submitted/accepted/all" papers

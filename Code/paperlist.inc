@@ -29,7 +29,7 @@ class PaperList {
     const FIELD_DESIRABILITY = 43;
     const FIELD_ALL_PREFERENCES = 44;
     const FIELD_REVIEWER_TYPE_ICON = 45;
-    const FIELD_OPT_MERIT_ICON = 46;
+    const FIELD_OPT_MERIT_ICON = 46; // also used in help.php
     const FIELD_AUTHOR_MATCH = 47;
     const FIELD_COLLABORATORS_MATCH = 48;
     const FIELD_OPT_AUTHORS = 50;
@@ -439,7 +439,11 @@ class PaperList {
 	    return "";
 	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
 	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'><img src=\"${ConfSiteBase}images/bendulft.png\" style='position: relative; top: 8px' /></td>\n";
-	$fclass = (defval($_SESSION["foldplact"], 1) ? "fold8c" : "fold8o");
+	if (($plact = defval($_REQUEST["showact"])) !== null)
+	    $plact = !$plact;
+	else
+	    $plact = defval($_REQUEST["foldplact"], 1);
+	$fclass = ($plact ? "fold8c" : "fold8o");
 	$t .= "    <td id='foldplact' class='$fclass' colspan='" . ($ncol - 1) . "'><table>
   <tr><td class='xcaption'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then <b>Get:</b></td>
     <td><select name='getaction'>
@@ -527,9 +531,9 @@ class PaperList {
 	  case "editReviewPreference":
 	    return array("Reviewer preferences", 1, 11, 36, 45, 40, 50, 37);
 	  case "reviewers":
-	    return array("Proposed assignments", 3, 13, 38);
+	    return array("Proposed assignments", 3, 13, 33, 38);
 	  case "reviewersSel":
-	    return array("Proposed assignments", 101, 3, 13, 38);
+	    return array("Proposed assignments", 101, 3, 13, 33, 38);
 	  default:
 	    return null;
 	}
