@@ -480,7 +480,8 @@ supposedly reduces bias.)
 
 <li><p><strong>Shepherding (optional).</strong> If your conference uses
   shepherding for accepted papers, you can assign shepherds either <a
-  href='${ConfSiteBase}assign.php?paperId=1'>paper by paper</a> or <a
+  href='${ConfSiteBase}assign.php?paperId=1'>paper by paper</a> on the
+  assignments screen or <a
   href='${ConfSiteBase}autoassign.php?papset=acc'>automatically</a>.</p></li>
 
 </ol>
