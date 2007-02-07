@@ -656,7 +656,7 @@ if ($mode == "edit") {
 	    if ($Conf->timeUpdatePaper() || $Me->amAssistant())
 		$buttons[] = array("<input class='button' type='submit' name='update' value='Save changes' />", "(does not submit)");
 	    if ($Conf->timeFinalizePaper() || $Me->amAssistant())
-		$buttons[] = array("<input class='button_default' type='submit' name='submit' value='Submit paper' />", "(cannot undo)");
+		$buttons[] = array("<input class='button_default' type='submit' name='submit' value='Submit paper' />", "(and freeze submission)");
 	} else if ($Me->amAssistant()) {
 	    $buttons[] = array("<input class='button' type='submit' name='update' value='Save changes' />", "(PC chair only)");
 	    $buttons[] = array("<input class='button' type='submit' name='unsubmit' value='Undo submit' />", "(PC chair only)");
