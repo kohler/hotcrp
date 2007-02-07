@@ -110,19 +110,7 @@ if (!isset($_SESSION['Me']))
     $_SESSION['Me'] = new Contact();
 $_SESSION['Me']->validated = 0;
 
-if (!isset($_SESSION['SeeReviewerInfo']))
-    $_SESSION['SeeReviewerInfo'] = 0;
-if (!isset($_SESSION['SeeUnfinishedReviews']))
-    $_SESSION['SeeUnfinishedReviews'] = 0;
-if (!isset($_SESSION['SeeAuthorInfo']))
-    $_SESSION['SeeAuthorInfo'] = 0;
-if (!isset($_SESSION['ToldYouAboutNetscape47']))
-    $_SESSION['ToldYouAboutNetscape47'] = 0;
 if (!isset($_SESSION['AskedYouToUpdateContactInfo']))
     $_SESSION['AskedYouToUpdateContactInfo'] = 0;
-
 if (!isset($_SESSION['ShowChairGrades']))
     $_SESSION['ShowChairGrades'] = 0;
-
-if (isset($_REQUEST['whichList']))
-    $_SESSION['whichList'] = $_REQUEST['whichList'];
