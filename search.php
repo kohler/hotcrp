@@ -481,6 +481,11 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
     if ($Search->matchPreg)
 	$_SESSION["matchPreg"] = "/(" . $Search->matchPreg . ")/i";
 
+    if ($Search->warnings) {
+	echo "<div class='maintabsep'></div>\n";
+	$Conf->warnMsg(join("<br />\n", $Search->warnings));
+    }
+
     echo "<div class='maintabsep'></div>\n\n<div class='searchresult'>";
 
     if ($pl->anySelector) {

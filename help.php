@@ -181,7 +181,8 @@ function searchQuickref() {
     _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains \"very novel\"");
     _searchQuickrefRow("Authors", "au:poletto", "author list contains \"poletto\"");
     _searchQuickrefRow("Collaborators", "co:liskov", "collaborators contains \"liskov\"");
-    _searchQuickrefRow("Topics", "topic:link", "author-selected topics match \"link\"");
+    _searchQuickrefRow("Topics", "topic:link", "selected topics match \"link\"");
+    _searchQuickrefRow("Options", "option:shadow", "selected submission options match \"shadow\"");
     _searchQuickrefRow("<a href='help.php?t=tags'>Tags</a>", "tag:discuss", "tagged \"discuss\"");
     _searchQuickrefRow("", "order:discuss", "tagged \"discuss\", sort by tag order");
     _searchQuickrefRow("Reviews", "re:fdabek", "\"fdabek\" in reviewer name/email");

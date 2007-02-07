@@ -11,8 +11,6 @@ Minor features
 - START-style enter-paper-all-at-once (no email verification)?
 - START-style enter multiple contact authors with explicit First Name,
   Last Name, Affiliation, Email fields?
-- search for paper options
-- search for paper topics
 - search for scores
 - paper pages: if paperId not set, choose the first valid paper ID (easier
   help links)

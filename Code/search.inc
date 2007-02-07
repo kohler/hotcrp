@@ -16,6 +16,7 @@ $searchTags = array('ti:' => 'ti', 'title:' => 'ti',
 		    'ord:' => 'order', 'order:' => 'order',
 		    'decision:' => 'decision', 'dec:' => 'decision',
 		    'topic:' => 'topic',
+		    'option:' => 'option', 'opt:' => 'option',
 		    'lead:' => 'lead',
 		    'shepherd:' => 'shepherd', 'shep:' => 'shepherd');
 
@@ -39,6 +40,7 @@ class PaperSearch {
     const ANY_LEAD = 32768;
     const ANY_SHEPHERD = 65536;
     const ANY_CONFLICT = 131072;
+    const ANY_OPTIONS = 262144;
     
     var $contactId;
     var $amAssistant;
@@ -53,6 +55,7 @@ class PaperSearch {
     var $reviewerName;
     var $matchPreg;
     var $urlbase;
+    var $warnings;
     
     var $q;
     var $qa;
@@ -70,6 +73,7 @@ class PaperSearch {
 	$this->reviewerName = false;
 	$this->any = 0;
 	$this->contactId = $me->contactId;
+	$this->warnings = null;
 	if ($this->amAssistant && cvtint($opt["c"]) > 0)
 	    $this->contactId = cvtint($opt["c"]);
 
@@ -119,6 +123,12 @@ class PaperSearch {
 	    if ($qtype != "n")
 		$this->urlbase .= "&qt=" . urlencode($qtype);
 	}
+    }
+
+    function warn($text) {
+	if (!$this->warnings)
+	    $this->warnings = array();
+	$this->warnings[] = $text;
     }
 
     function _searchSuffixFactor($submitted, $type, &$suffix, &$factor) {
@@ -292,11 +302,30 @@ class PaperSearch {
 	    if (($special ? $special == "topic" : isset($this->fields['topic']))) {
 		$rf = reviewForm();
 		$x = strtolower($word);
+		$got = false;
 		foreach ($rf->topicName as $tid => $n)
 		    if (strstr(strtolower($n), $x) !== false) {
 			$qp .= " or (topicIds like '%#$tid#%')";
-			$this->any |= self::ANY_TOPICS;
+			$got = true;
 		    }
+		if ($got)
+		    $this->any |= self::ANY_TOPICS;
+		else
+		    $this->warn("'" . htmlspecialchars($x) . "' does not match any defined paper topic.");
+	    }
+	    if (($special ? $special == "option" : isset($this->fields['option']))) {
+		$opt = paperOptions();
+		$x = strtolower($word);
+		$got = false;
+		foreach ($opt as $oid => $o)
+		    if (strstr(strtolower($o->optionName), $x) !== false) {
+			$qp .= " or (optionIds like '%#${oid}:%')";
+			$got = true;
+		    }
+		if ($got)
+		    $this->any |= self::ANY_OPTIONS;
+		else
+		    $this->warn("'" . htmlspecialchars($x) . "' does not match any defined submission option.");
 	    }
 	    if (($special ? $special == "lead" : isset($this->fields['lead'])) && $this->amPC) {
 		$this->any |= self::ANY_LEAD;
@@ -414,6 +443,8 @@ class PaperSearch {
 	    $q .= " left join (select paperId, group_concat('#', tag, '#') as alltags from PaperTag group by paperId) as AllPaperTags on (AllPaperTags.paperId=Paper.paperId)";
 	if ($this->any & self::ANY_TOPICS)
 	    $q .= " left join (select paperId, group_concat('#', topicId, '#') as topicIds from PaperTopic group by paperId) as AllPaperTopics on (AllPaperTopics.paperId=Paper.paperId)";
+	if ($this->any & self::ANY_OPTIONS)
+	    $q .= " left join (select paperId, group_concat('#', optionId, ':', value) as optionIds from PaperOption group by paperId) as AllPaperOptions on (AllPaperOptions.paperId=Paper.paperId)";
 
 	if ($res[0])
 	    $q .= " where " . $res[0];
