@@ -8,6 +8,7 @@ $topicTitles = array("topics" => "Help topics",
 		     "syntax" => "Search syntax",
 		     "search" => "Search",
 		     "tags" => "Tags",
+		     "chair" => "Chair's guide",
 		     "assign" => "Assigning papers");
 
 $topic = defval($_REQUEST["t"], "topics");
@@ -45,6 +46,7 @@ function topics() {
     _alternateRow("<a href='help.php?t=search'>Search</a>", "About paper searching.");
     _alternateRow("<a href='help.php?t=syntax'>Search syntax</a>", "Quick reference to search syntax.");
     _alternateRow("<a href='help.php?t=tags'>Tags</a>", "How to use tags and ordered tags to define sets of papers and discussion orders.");
+    _alternateRow("<a href='help.php?t=chair'>Chair's guide</a>", "How to run a conference using HotCRP.");
     _alternateRow("<a href='help.php?t=assign'>Assigning papers</a>", "How to assign papers for review.");
     echo "</table>";
 }
@@ -297,9 +299,93 @@ For instance, you might search for \"<a href='${ConfSiteBase}search.php?q=4+1+12
 
 
 
-function assign() {
+function chair() {
     global $ConfSiteBase;
     echo "<table>";
+    _alternateRow("Initial setup", "
+Follow these steps to prepare to accept paper submissions.
+
+<ol>
+
+<li><strong><a href='${ConfSiteBase}settings.php?group=sub'>Set submission
+  policies</a></strong>, including whether submission is blind, whether
+  authors check off conflicted PC members (\"Collect authors' PC conflicts
+  with checkboxes\"), and whether authors must enter additional collaborators,
+  which can help detect conflicts with external reviewers (\"Collect authors'
+  potential conflicts as text\").</li>
+
+<li><strong><a href='${ConfSiteBase}settings.php?group=sub'>Set submission
+  deadlines.</a></strong> Authors first <em>register</em> their submissions,
+  then optionally update them, and finally <em>submit</em> them when they're
+  ready.  Papers cannot be changed after they are submitted (except by the PC
+  chairs).  The only deadline that really matters is the paper submission
+  deadline, but HotCRP also supports a separate paper registration deadline,
+  which will force authors to register a few days before they submit.  The
+  optional <em>grace period</em>, which applies to both deadlines, gives
+  authors a bit of slack; HotCRP reports the deadlines in emails and
+  announcements, but allows post-deadline submissions and updates for the
+  specified grace period.</li>
+
+<li><strong><a href='${ConfSiteBase}settings.php?group=opt'>Define submission
+  options (optional).</a></strong> If desired, the paper submission form can
+  contain additional selectable options, such as \"Consider this paper for the
+  Best Student Paper award\" or \"Provide this paper to the European shadow
+  PC\".</li>
+
+<li><strong><a href='${ConfSiteBase}settings.php?group=opt'>Define paper
+  topics (optional).</a></strong> These are topics, such as \"Applications\"
+  or \"Network databases\", that authors can check off to help define their
+  paper's subject area.  PC members express topics for which they have high,
+  medium, and low interest, improving automatic paper assignment.  Although
+  explicit preferences (see below) are better than topic-based assignments,
+  busy PC members might not specify their preferences; topic matching lets you
+  do a reasonable job at assigning papers anyway.</li>
+
+<li><strong><a href='${ConfSiteBase}pc.php'>Set up PC accounts.</a></strong>
+  This is particularly important if you selected \"Collect authors' PC
+  conflicts with checkboxes\".</li>
+
+<li>Take a look at a <a href='${ConfSiteBase}paper.php?paperId=new'>paper
+  submission page</a> to make sure it looks right.</li>
+
+<li><strong><a href='${ConfSiteBase}settings.php?group=sub'>Open the site for
+  submissions.</a></strong> Submissions will be accepted only until the listed
+  deadline.</li>
+
+</ol>");
+    _alternateRow("Assignments", "
+After the submission deadline has passed, you may want to look through <a
+href='${ConfSiteBase}search.php?q=&amp;t=all'>all papers</a> for anomalies.
+You can withdraw and delete papers and update their details on the edit
+screens.  You might want to contact the authors of any papers that never
+got officially submitted.  Then:
+
+<ol>
+
+<li><strong><a href='${ConfSiteBase}settings.php?group=rfo'>Prepare the review
+  form.</a></strong> Take a look at the canned review forms to get ideas.</li>
+
+<li><strong><a href='${ConfSiteBase}settings.php?group=rev'>Set review
+  policies and deadlines</a></strong>, including whether review is blind and
+  deadlines for reviewing.</li>
+
+<li><strong><a href='${ConfSiteBase}PC/reviewprefs.php'>Collect review
+  preferences from the PC.</a></strong> PC members can rank-order papers they
+  want to review, and papers they don't want to review.  PC members can either
+  set their preferences <a href='${ConfSiteBase}PC/reviewprefs.php'>all at
+  once</a>, or (actually more convenient) page through the <a
+  href='${ConfSiteBase}search.php?q=&amp;t=s'>list of submitted papers</a>
+  setting their preferences on the <a
+  href='${ConfSiteBase}paper.php?paperId=1'>paper pages</a>.</li>
+
+<li><strong><a href='${ConfSiteBase}Chair/AssignPapers.php'>Make review
+  assignments.</a></strong> You can make assignments <a
+  href='${ConfSiteBase}assign.php?paperId=1'>by paging through papers</a>, <a
+  href='${ConfSiteBase}Chair/AssignPapers.php'>by PC member</a>, or, even
+  easier, <a href='${ConfSiteBase}autoassign.php'>automatically</a>.</li>
+
+</ol>
+");
     _alternateRow("Types of review", "
 <br /><table class='rpad1'><tr>
   <td><img src='${ConfSiteBase}images/ass" . REVIEW_PRIMARY . ".png' alt='[Primary]' /></td>
@@ -352,5 +438,7 @@ else if ($topic == "tags")
     tags();
 else if ($topic == "assign")
     assign();
+else if ($topic == "chair")
+    chair();
 
 $Conf->footer();
