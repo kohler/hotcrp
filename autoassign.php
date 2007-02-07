@@ -50,7 +50,7 @@ function checkRequest(&$atype, &$reviewtype, $save) {
     
     $atype = $_REQUEST["a"];
     if ($atype != "rev" && $atype != "revadd" && $atype != "lead"
-	&& $atype != "shepherd") {
+	&& $atype != "shepherd" && $atype != "prefconflict") {
 	$Error["ass"] = true;
 	return $Conf->errorMsg("Malformed request!");
     }
@@ -103,6 +103,24 @@ function doAssign() {
 	}
     }
 
+    // prefconflict is a special case
+    if ($atype == "prefconflict") {
+	$result = $Conf->qe("select paperId, contactId, preference from PaperReviewPreference where preference<=-100", "while fetching preferences");
+	$assignments = array();
+	$assignprefs = array();
+	while (($row = edb_row($result))) {
+	    if (!isset($assignments[$row[0]]))
+		$assignments[$row[0]] = array();
+	    $assignments[$row[0]][] = $row[1];
+	    $assignprefs["$row[0]:$row[1]"] = $row[2];
+	}
+	if (count($assignments) == 0) {
+	    $Conf->warnMsg("Nothing to assign.");
+	    unset($assignments);
+	}
+	return;
+    }
+    
     // prepare to balance load
     $load = array_fill_keys(array_keys($pcm), 0);
     if (defval($_REQUEST["balance"], "new") != "new") {
@@ -237,7 +255,7 @@ function saveAssign() {
     if (!checkRequest($atype, $reviewtype, true))
 	return false;
 
-    $Conf->qe("lock tables ContactInfo read, PCMember read, ChairAssistant read, Chair read, PaperReview write, Paper write, ActionLog write");
+    $Conf->qe("lock tables ContactInfo read, PCMember read, ChairAssistant read, Chair read, PaperReview write, Paper write, PaperConflict write, ActionLog write");
     
     // parse assignment
     $pcm = pcMembers();
@@ -268,6 +286,17 @@ function saveAssign() {
 	    foreach ($pcs as $pc => $ignore)
 		$Me->assignPaper($pid, null, $pcm[$pc], $reviewtype, $Conf);
 	}
+    } else if ($atype == "prefconflict") {
+	$q = "";
+	foreach ($ass as $pid => $pcs) {
+	    foreach ($pcs as $pc => $ignore)
+		$q .= ", ($pid, $pc, " . CONFLICT_CHAIRMARK . ")";
+	}
+	$q = "insert into PaperConflict (paperId, contactId, conflictType) values "
+	    . substr($q, 2)
+	    . " on duplicate key update conflictType=greatest(conflictType," . CONFLICT_CHAIRMARK . ")";
+	$Conf->qe($q, "while storing conflicts");
+	$Conf->log("stored conflicts based on preferences", $Me);
     } else {
 	foreach ($ass as $pid => $pcs)
 	    if (count($pcs) == 1) {
@@ -343,35 +372,38 @@ if (isset($assignments) && count($assignments) > 0) {
     $plist = new PaperList(false, null, $search, $atext);
     echo $plist->text("reviewers", $Me, "Proposed assignment");
 
-    echo "<div class='smgap'></div>";
-    echo "<b>Summary</b><br />\n";
-    echo "<table class='pcass'><tr><td><table>";
     $atype = $_REQUEST["a"];
-    $pcsel = array();
-    foreach ($pcm as $id => $p) {
-	$nnew = defval($pc_nass[$id], 0);
-	if ($atype == "rev" || $atype == "revadd") {
-	    $nreviews[$id] += $nnew;
-	    if ($_REQUEST["${atype}type"] == REVIEW_PRIMARY)
-		$nprimary[$id] += $nnew;
-	    else
-		$nsecondary[$id] += $nnew;
+    if ($atype != "prefconflict") {
+	echo "<div class='smgap'></div>";
+	echo "<b>Summary</b><br />\n";
+	echo "<table class='pcass'><tr><td><table>";
+	$pcsel = array();
+	foreach ($pcm as $id => $p) {
+	    $nnew = defval($pc_nass[$id], 0);
+	    if ($atype == "rev" || $atype == "revadd") {
+		$nreviews[$id] += $nnew;
+		if ($_REQUEST["${atype}type"] == REVIEW_PRIMARY)
+		    $nprimary[$id] += $nnew;
+		else
+		    $nsecondary[$id] += $nnew;
+	    }
+	    $c = "<tr><td class='name'>"
+		. contactHtml($p->firstName, $p->lastName)
+		. ": " . plural($nnew, "assignment")
+		. "</td></tr><tr><td class='nrev'>After assignment: "
+		. plural($nreviews[$id], "review");
+	    if ($nprimary[$id] && $nprimary[$id] < $nreviews[$id])
+		$c .= ", " . $nprimary[$id] . " primary";
+	    $pcsel[] = $c . "</td></tr>\n";
 	}
-	$c = "<tr><td class='name'>" . contactHtml($p->firstName, $p->lastName)
-	    . ": " . plural($nnew, "assignment")
-	    . "</td></tr><tr><td class='nrev'>After assignment: "
-	    . plural($nreviews[$id], "review");
-	if ($nprimary[$id] && $nprimary[$id] < $nreviews[$id])
-	    $c .= ", " . $nprimary[$id] . " primary";
-	$pcsel[] = $c . "</td></tr>\n";
+	$n = intval((count($pcsel) + 2) / 3);
+	for ($i = 0; $i < count($pcsel); $i++) {
+	    if (($i % $n) == 0 && $i)
+		echo "</table></td><td class='colmid'><table>";
+	    echo $pcsel[$i];
+	}
+	echo "</table></td></tr></table>\n";
     }
-    $n = intval((count($pcsel) + 2) / 3);
-    for ($i = 0; $i < count($pcsel); $i++) {
-	if (($i % $n) == 0 && $i)
-	    echo "</table></td><td class='colmid'><table>";
-	echo $pcsel[$i];
-    }
-    echo "</table></td></tr></table>\n";
 
     echo "<div class='smgap'></div>";
     echo "<form method='post' action='autoassign.php?apply=1'>\n";
@@ -419,6 +451,10 @@ echo "</td></tr>\n";
 
 echo "<tr><td class='caption'></td>", tdClass(true, "shepherd");
 doRadio('a', 'shepherd', 'Assign shepherd from reviewers, preferring high scores');
+echo "</td></tr>\n";
+
+echo "<tr><td class='caption'></td>", tdClass(true, "prefconflict");
+doRadio('a', 'prefconflict', 'Assign conflicts when PC members have review preferences of &minus;100 or less');
 echo "</td></tr>\n";
 
 
