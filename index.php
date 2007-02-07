@@ -274,4 +274,5 @@ if ($Me->amAssistant()) {
 echo "</td></tr></table>\n";
 
 
+unset($_SESSION["list"]);
 $Conf->footer();
