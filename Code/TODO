@@ -13,6 +13,7 @@ Minor features
   Last Name, Affiliation, Email fields?
 - paper registration page has a Submit button
 - document workflow
+- "Undo submit" button also saves changes
 
 Tiny features
 - add a "review assignment" link to the "submitted/accepted/all" papers
