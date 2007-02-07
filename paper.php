@@ -580,11 +580,6 @@ else if ($canViewAuthors || $Me->amAssistant())
     $paperTable->echoContactAuthor($prow, $mode == "edit");
 
 
-// Topics
-if (!$finalEditMode)
-    $paperTable->echoTopics($prow);
-
-
 // Anonymity
 if (($newPaper || $mode == "edit") && $Conf->blindSubmission() == 1 && !$finalEditMode) {
     echo "<tr class='pt_blind'>\n  <td class='caption'>Anonymity</td>\n";
@@ -599,6 +594,11 @@ if (($newPaper || $mode == "edit") && $Conf->blindSubmission() == 1 && !$finalEd
 	echo "  <td class='entry'>", ($blind ? "Anonymous submission" : "Non-anonymous submission"), "</td>\n";
     echo "</tr>\n";
 }
+
+
+// Topics
+if (!$finalEditMode)
+    $paperTable->echoTopics($prow);
 
 
 // Options
