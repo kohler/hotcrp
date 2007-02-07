@@ -9,12 +9,13 @@ class PaperTable {
     const NOCAPTION = 1;
     const OPTIONAL = 2;
     const FINALCOPY = 4;
+    const ENABLESUBMIT = 8;
     
-    const STATUS_DATE = 8;
-    const STATUS_DOWNLOAD = 16;
-    const STATUS_CONFLICTINFO = 32;
-    const STATUS_CONFLICTINFO_PC = 64;
-    const STATUS_REVIEWERINFO = 128;
+    const STATUS_DATE = 16;
+    const STATUS_DOWNLOAD = 32;
+    const STATUS_CONFLICTINFO = 64;
+    const STATUS_CONFLICTINFO_PC = 128;
+    const STATUS_REVIEWERINFO = 256;
 
     var $editable;
     var $useRequest;
@@ -183,10 +184,13 @@ class PaperTable {
 	    echo "Final copy: ", paperDownload($prow, true), " &nbsp;|&nbsp; Submission: ", paperDownload($prow);
 	else if ($prow && $prow->size > 0)
 	    echo ($canUpload && $final ? "Submission: " : ""), paperDownload($prow);	
-	if ($canUpload)
+	if ($canUpload) {
 	    echo ($prow && $prow->size > 0 ? "<br />\n  " : ""),
 		($final ? "Final copy upload:" : "Upload:"), "&nbsp; ",
-		"<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='30' />";
+		"<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='30' onchange='highlightUpdate()",
+		($flags & self::ENABLESUBMIT ? ";form.submit.disabled=false" : ""),
+		"' />";
+	}
 
 	echo "</td>\n";
 	if ($canUpload)

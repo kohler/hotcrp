@@ -147,7 +147,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // any missing fields?
     if (count($PaperError) > 0) {
 	$Conf->errorMsg("One or more required fields were left blank.  Fill in the highlighted fields and try again." . (isset($PaperError["collaborators"]) ? "  If none of the authors have recent collaborators, just enter \"None\" in the Collaborators field." : ""));
-	return false;
+	$isSubmit = false;
     }
 
     // defined contact ID
@@ -314,6 +314,7 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submit"]) || isset($_REQUEST[
 
     // check deadlines
     if ($newPaper)
+	// we know that canStartPaper implies canFinalizePaper
 	$ok = $Me->canStartPaper($Conf, $whyNot);
     else {
 	if (isset($_REQUEST["submitfinal"]))
@@ -399,7 +400,7 @@ if (isset($_REQUEST['delete'])) {
 	$Conf->errorMsg("Only the program chairs can permanently delete papers.  Authors can withdraw papers, which is effectively the same.");
     else {
 	// mail first, before contact info goes away
-	$m = "Your $Conf->shortName paper submission #$paperId, \"$prow->title\", has been removed from the conference database by the program chairs.  This is usually done to remove duplicate entries or submissions.";
+	$m = "Your $Conf->shortName paper submission #$paperId, \"$prow->title\", has been removed from the conference database by the program chairs.  This is usually done to remove duplicate papers.";
 	if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
 	    $m .= "\n\nA conference administrator provided the following reason for deleting the paper: " . $_REQUEST["emailNote"];
 	$m = wordwrap("$m\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
@@ -556,7 +557,7 @@ if ($newPaper
     if ($finalEditMode)
 	$paperTable->echoDownloadRow($prow, PaperTable::FINALCOPY);
     else if ($mode == "edit")
-	$paperTable->echoDownloadRow($prow, ($newPaper ? PaperTable::OPTIONAL : 0));
+	$paperTable->echoDownloadRow($prow, ($newPaper ? PaperTable::OPTIONAL : 0) + (!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0));
     else
 	$paperTable->echoDownloadRow($prow, PaperTable::NOCAPTION | PaperTable::FINALCOPY);
 }
@@ -643,9 +644,10 @@ if ($mode == "edit") {
   <td class='caption'></td>
   <td class='entry' colspan='2'><table class='pt_buttons'>\n";
     $buttons = array();
-    if ($newPaper)
+    if ($newPaper) {
 	$buttons[] = "<input class='button_default' type='submit' name='update' value='Create paper' />";
-    else if ($prow->timeWithdrawn > 0 && ($Conf->timeFinalizePaper() || $Me->amAssistant()))
+	$buttons[] = array("<input class='button' type='submit' name='submit' value='Submit paper' disabled='disabled' />", "(freezes submission)");
+    } else if ($prow->timeWithdrawn > 0 && ($Conf->timeFinalizePaper() || $Me->amAssistant()))
 	$buttons[] = "<input class='button' type='submit' name='revive' value='Revive paper' />";
     else if ($prow->timeWithdrawn > 0)
 	$buttons[] = "The paper has been withdrawn, and the <a href='deadlines.php'>deadline</a> for reviving it has passed.";
