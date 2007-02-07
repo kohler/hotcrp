@@ -334,7 +334,7 @@ Follow these steps to prepare to accept paper submissions.
 
 <li><p><strong><a href='${ConfSiteBase}settings.php?group=opt'>Define paper
   topics (optional).</a></strong> These are topics, such as \"Applications\"
-  or \"Network databases\", that authors can check off to help define their
+  or \"Network databases\", that authors can check to characterize their
   paper's subject area.  PC members express topics for which they have high,
   medium, and low interest, improving automatic paper assignment.  Although
   explicit preferences (see below) are better than topic-based assignments,
