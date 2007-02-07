@@ -79,6 +79,62 @@ if (!$newPaper) {
 }
 
 
+// unfinalize, withdraw, and revive actions
+if (isset($_REQUEST["unsubmit"]) && !$newPaper) {
+    if ($Me->amAssistant()) {
+	$Conf->qe("update Paper set timeSubmitted=0 where paperId=$paperId", "while undoing paper submit");
+	$Conf->updatePapersubSetting(false);
+	getProw($Me->contactId);
+	$Conf->log("Unsubmitted", $Me, $paperId);
+	$_REQUEST["update"] = true;
+    } else
+	$Conf->errorMsg("Only the program chairs can undo paper submission.");
+}
+if (isset($_REQUEST["withdraw"]) && !$newPaper) {
+    if ($Me->canWithdrawPaper($prow, $Conf, $whyNot)) {
+	$Conf->qe("update Paper set timeWithdrawn=" . time() . ", timeSubmitted=if(timeSubmitted>0,-100,0) where paperId=$paperId", "while withdrawing paper");
+	$Conf->updatePapersubSetting(false);
+	getProw($Me->contactId);
+
+	// email contact authors themselves
+	$m = "Paper #$paperId, \"$prow->title\", has been withdrawn from consideration for the $Conf->shortName conference.";
+	if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
+	    $m .= "\n\nA conference administrator provided the following reason for withdrawing the paper: " . trim($_REQUEST["emailNote"]);
+	else if ($Me->amAssistant() && $prow->conflictType < CONFLICT_AUTHOR)
+	    $m .= "\n\nA conference administrator withdrew the paper.";
+	$m = wordwrap("$m\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
+	if (!$Me->amAssistant() || defval($_REQUEST["doemail"]) > 0)
+	    $Conf->emailContactAuthors($prow, "Paper #$paperId withdrawn", $m);
+
+	// email reviewers
+	if ($prow->startedReviewCount > 0) {
+	    $m = wordwrap("$Conf->shortName Paper #$paperId, which you reviewed or have been assigned to review, has been withdrawn from consideration for the conference.\n\n");
+	    $n = "Authors can voluntarily withdraw a submission at any time, as can the chair.";
+	    if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
+		$n .= "  " . trim($_REQUEST["emailNote"]);
+	    $m .= wordwrap($n . "\n\n")
+		. wordWrapIndent(trim($prow->title), "Title: ", 14) . "\n"
+		. "  Paper site: $Conf->paperSite/review.php?paperId=$prow->paperId\n\n"
+		. wordwrap("You are not expected to complete your review; in fact the conference system will not allow it unless the chair revives the paper.\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
+	    $Conf->emailReviewersChair($prow, "Paper #$paperId withdrawn", $m);
+	}
+	
+	$Conf->log("Withdrew", $Me, $paperId);
+    } else
+	$Conf->errorMsg(whyNotText($whyNot, "withdraw"));
+}
+if (isset($_REQUEST["revive"]) && !$newPaper) {
+    if ($Me->canRevivePaper($prow, $Conf, $whyNot)) {
+	$Conf->qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100," . time() . ",0) where paperId=$paperId", "while reviving paper");
+	$Conf->updatePapersubSetting(true);
+	getProw($Me->contactId);
+	$Conf->log("Revived", $Me, $paperId);
+	$_REQUEST["update"] = true;
+    } else
+	$Conf->errorMsg(whyNotText($whyNot, "revive"));
+}
+
+
 // update paper action
 $PaperError = array();
 
@@ -316,13 +372,12 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submit"]) || isset($_REQUEST[
     if ($newPaper)
 	// we know that canStartPaper implies canFinalizePaper
 	$ok = $Me->canStartPaper($Conf, $whyNot);
+    else if (isset($_REQUEST["submitfinal"]))
+	$ok = $Me->canSubmitFinalPaper($prow, $Conf, $whyNot);
     else {
-	if (isset($_REQUEST["submitfinal"]))
-	    $ok = $Me->canSubmitFinalPaper($prow, $Conf, $whyNot);
-	else if (isset($_REQUEST["submit"]) && requestSameAsPaper($prow))
+	$ok = $Me->canUpdatePaper($prow, $Conf, $whyNot);
+	if (!$ok && isset($_REQUEST["submit"]) && requestSameAsPaper($prow))
 	    $ok = $Me->canFinalizePaper($prow, $Conf, $whyNot);
-	else
-	    $ok = $Me->canUpdatePaper($prow, $Conf, $whyNot);
     }
 
     // actually update
@@ -335,60 +390,6 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submit"]) || isset($_REQUEST[
 
     // use request?
     $useRequest = ($ok || $Me->amAssistant());
-}
-
-
-// unfinalize, withdraw, and revive actions
-if (isset($_REQUEST["unsubmit"]) && !$newPaper) {
-    if ($Me->amAssistant()) {
-	$Conf->qe("update Paper set timeSubmitted=0 where paperId=$paperId", "while undoing paper submit");
-	$Conf->updatePapersubSetting(false);
-	getProw($Me->contactId);
-	$Conf->log("Unsubmitted", $Me, $paperId);
-    } else
-	$Conf->errorMsg("Only the program chairs can undo paper submission.");
-}
-if (isset($_REQUEST["withdraw"]) && !$newPaper) {
-    if ($Me->canWithdrawPaper($prow, $Conf, $whyNot)) {
-	$Conf->qe("update Paper set timeWithdrawn=" . time() . ", timeSubmitted=if(timeSubmitted>0,-100,0) where paperId=$paperId", "while withdrawing paper");
-	$Conf->updatePapersubSetting(false);
-	getProw($Me->contactId);
-
-	// email contact authors themselves
-	$m = "Paper #$paperId, \"$prow->title\", has been withdrawn from consideration for the $Conf->shortName conference.";
-	if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
-	    $m .= "\n\nA conference administrator provided the following reason for withdrawing the paper: " . trim($_REQUEST["emailNote"]);
-	else if ($Me->amAssistant() && $prow->conflictType < CONFLICT_AUTHOR)
-	    $m .= "\n\nA conference administrator withdrew the paper.";
-	$m = wordwrap("$m\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
-	if (!$Me->amAssistant() || defval($_REQUEST["doemail"]) > 0)
-	    $Conf->emailContactAuthors($prow, "Paper #$paperId withdrawn", $m);
-
-	// email reviewers
-	if ($prow->startedReviewCount > 0) {
-	    $m = wordwrap("$Conf->shortName Paper #$paperId, which you reviewed or have been assigned to review, has been withdrawn from consideration for the conference.\n\n");
-	    $n = "Authors can voluntarily withdraw a submission at any time, as can the chair.";
-	    if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
-		$n .= "  " . trim($_REQUEST["emailNote"]);
-	    $m .= wordwrap($n . "\n\n")
-		. wordWrapIndent(trim($prow->title), "Title: ", 14) . "\n"
-		. "  Paper site: $Conf->paperSite/review.php?paperId=$prow->paperId\n\n"
-		. wordwrap("You are not expected to complete your review; in fact the conference system will not allow it unless the chair revives the paper.\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
-	    $Conf->emailReviewersChair($prow, "Paper #$paperId withdrawn", $m);
-	}
-	
-	$Conf->log("Withdrew", $Me, $paperId);
-    } else
-	$Conf->errorMsg(whyNotText($whyNot, "withdraw"));
-}
-if (isset($_REQUEST["revive"]) && !$newPaper) {
-    if ($Me->canRevivePaper($prow, $Conf, $whyNot)) {
-	$Conf->qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100," . time() . ",0) where paperId=$paperId", "while reviving paper");
-	$Conf->updatePapersubSetting(true);
-	getProw($Me->contactId);
-	$Conf->log("Revived", $Me, $paperId);
-    } else
-	$Conf->errorMsg(whyNotText($whyNot, "revive"));
 }
 
 
@@ -480,7 +481,7 @@ else if ($newPaper) {
     if ($timeUpdate && $prow->timeWithdrawn > 0)
 	$Conf->infoMsg("Your paper has been withdrawn, but you can still revive it.$updateDeadline");
     else if ($timeUpdate)
-	$Conf->infoMsg("You must officially submit your paper before it can be reviewed.  <strong>This step cannot be undone</strong> and you can't make changes afterwards, so make all necessary changes first.$updateDeadline");
+	$Conf->infoMsg("You must officially submit your paper before it can be reviewed.  <strong>This step freezes your submission</strong> (you can't change it afterwards), so make all necessary changes first.$updateDeadline");
     else if ($prow->timeWithdrawn <= 0 && $timeSubmit)
 	$Conf->infoMsg("You cannot make any changes as the <a href='deadlines.php'>deadline</a> has passed, but the current version can still be officially submitted.  Only officially submitted papers will be considered for the conference.$submitDeadline$override");
     else if ($prow->timeWithdrawn <= 0)
