@@ -1122,6 +1122,8 @@ class Conference {
 	    echo "<a href='", $ConfSiteBase, "help.php";
 	    if ($id == "search")
 		echo "?t=", $id;
+	    else if ($id == "settings")
+		echo "?t=chair";
 	    echo "'>Help</a> &nbsp;|&nbsp; ";
 	    echo "<a href='", $ConfSiteBase, "logout.php'>Sign&nbsp;out</a> &nbsp;|&nbsp; ";
 	}
