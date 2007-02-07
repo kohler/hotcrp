@@ -75,7 +75,9 @@ class PaperSearch {
 
 	// paper selection
 	$ptype = defval($opt["t"], 0);
-	if ($me->isPC && (!$ptype || $ptype == "s"))
+	if ($this->amAssistant && !$ptype && $Conf->timeUpdatePaper())
+	    $this->limitName = "all";
+	else if ($me->isPC && (!$ptype || $ptype == "s"))
 	    $this->limitName = "s";
 	else if ($this->amAssistant && $ptype == "all")
 	    $this->limitName = "all";
