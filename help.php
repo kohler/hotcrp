@@ -307,14 +307,14 @@ Follow these steps to prepare to accept paper submissions.
 
 <ol>
 
-<li><strong><a href='${ConfSiteBase}settings.php?group=sub'>Set submission
+<li><p><strong><a href='${ConfSiteBase}settings.php?group=sub'>Set submission
   policies</a></strong>, including whether submission is blind, whether
   authors check off conflicted PC members (\"Collect authors' PC conflicts
   with checkboxes\"), and whether authors must enter additional collaborators,
   which can help detect conflicts with external reviewers (\"Collect authors'
-  potential conflicts as text\").</li>
+  potential conflicts as text\").</p></li>
 
-<li><strong><a href='${ConfSiteBase}settings.php?group=sub'>Set submission
+<li><p><strong><a href='${ConfSiteBase}settings.php?group=sub'>Set submission
   deadlines.</a></strong> Authors first <em>register</em> their submissions,
   then optionally update them, and finally <em>submit</em> them when they're
   ready.  Papers cannot be changed after they are submitted (except by the PC
@@ -324,33 +324,33 @@ Follow these steps to prepare to accept paper submissions.
   optional <em>grace period</em>, which applies to both deadlines, gives
   authors a bit of slack; HotCRP reports the deadlines in emails and
   announcements, but allows post-deadline submissions and updates for the
-  specified grace period.</li>
+  specified grace period.</p></li>
 
-<li><strong><a href='${ConfSiteBase}settings.php?group=opt'>Define submission
-  options (optional).</a></strong> If desired, the paper submission form can
-  contain additional selectable options, such as \"Consider this paper for the
-  Best Student Paper award\" or \"Provide this paper to the European shadow
-  PC\".</li>
+<li><p><strong><a href='${ConfSiteBase}settings.php?group=opt'>Define
+  submission options (optional).</a></strong> If desired, the paper submission
+  form can contain additional selectable options, such as \"Consider this
+  paper for the Best Student Paper award\" or \"Provide this paper to the
+  European shadow PC\".</p></li>
 
-<li><strong><a href='${ConfSiteBase}settings.php?group=opt'>Define paper
+<li><p><strong><a href='${ConfSiteBase}settings.php?group=opt'>Define paper
   topics (optional).</a></strong> These are topics, such as \"Applications\"
   or \"Network databases\", that authors can check off to help define their
   paper's subject area.  PC members express topics for which they have high,
   medium, and low interest, improving automatic paper assignment.  Although
   explicit preferences (see below) are better than topic-based assignments,
   busy PC members might not specify their preferences; topic matching lets you
-  do a reasonable job at assigning papers anyway.</li>
+  do a reasonable job at assigning papers anyway.</p></li>
 
-<li><strong><a href='${ConfSiteBase}pc.php'>Set up PC accounts.</a></strong>
-  Definitely do this ahead of time if you selected \"Collect authors' PC
-  conflicts with checkboxes\".</li>
+<li><p><strong><a href='${ConfSiteBase}pc.php'>Set up PC
+  accounts.</a></strong> Definitely do this ahead of time if you selected
+  \"Collect authors' PC conflicts with checkboxes\".</p></li>
 
-<li>Take a look at a <a href='${ConfSiteBase}paper.php?paperId=new'>paper
-  submission page</a> to make sure it looks right.</li>
+<li><p>Take a look at a <a href='${ConfSiteBase}paper.php?paperId=new'>paper
+  submission page</a> to make sure it looks right.</p></li>
 
-<li><strong><a href='${ConfSiteBase}settings.php?group=sub'>Open the site for
-  submissions.</a></strong> Submissions will be accepted only until the listed
-  deadline.</li>
+<li><p><strong><a href='${ConfSiteBase}settings.php?group=sub'>Open the site
+  for submissions.</a></strong> Submissions will be accepted only until the
+  listed deadline.</p></li>
 
 </ol>");
     _alternateRow("Assignments", "
@@ -362,32 +362,33 @@ got officially submitted.  Then:
 
 <ol>
 
-<li><strong><a href='${ConfSiteBase}settings.php?group=rfo'>Prepare the review
-  form.</a></strong> Take a look at the canned review forms to get ideas.</li>
+<li><p><strong><a href='${ConfSiteBase}settings.php?group=rfo'>Prepare the
+  review form.</a></strong> Take a look at the canned review forms to get
+  ideas.</p></li>
 
-<li><strong><a href='${ConfSiteBase}settings.php?group=rev'>Set review
+<li><p><strong><a href='${ConfSiteBase}settings.php?group=rev'>Set review
   policies and deadlines</a></strong>, including reviewing deadlines, whether
   review is blind, and whether PC members may review non-assigned papers
-  (usually \"yes\" is the right answer).</li>
+  (usually \"yes\" is the right answer).</p></li>
 
-<li><strong><a href='${ConfSiteBase}PC/reviewprefs.php'>Collect review
+<li><p><strong><a href='${ConfSiteBase}PC/reviewprefs.php'>Collect review
   preferences from the PC.</a></strong> PC members can rank-order papers they
   want or don't want to review.  They can either set their preferences <a
   href='${ConfSiteBase}PC/reviewprefs.php'>all at once</a>, or (often more
   convenient) page through the <a
   href='${ConfSiteBase}search.php?q=&amp;t=s'>list of submitted papers</a>
   setting their preferences on the <a
-  href='${ConfSiteBase}paper.php?paperId=1'>paper pages</a>.</li>
+  href='${ConfSiteBase}paper.php?paperId=1'>paper pages</a>.</p></li>
 
-<li><strong><a href='${ConfSiteBase}Chair/AssignPapers.php?kind=c'>Assign
+<li><p><strong><a href='${ConfSiteBase}Chair/AssignPapers.php?kind=c'>Assign
   conflicts.</a></strong> You can assign conflicts <a
   href='${ConfSiteBase}Chair/AssignPapers.php?kind=c'>by PC member</a> or, if
   PC members have entered preferences, <a
   href='${ConfSiteBase}autoassign.php'>automatically</a> by searching for
   preferences of &minus;100 or less.  It's also easy to combine this step
-  with:</li>
+  with:</p></li>
 
-<li><strong><a href='${ConfSiteBase}Chair/AssignPapers.php'>Make review
+<li><p><strong><a href='${ConfSiteBase}Chair/AssignPapers.php'>Make review
   assignments.</a></strong> You can make assignments <a
   href='${ConfSiteBase}assign.php?paperId=1'>by paging through papers</a>, <a
   href='${ConfSiteBase}Chair/AssignPapers.php'>by PC member</a>, or, even
@@ -395,16 +396,16 @@ got officially submitted.  Then:
   review assignments can be \"primary\" or \"secondary\"; the difference is
   that primary reviewers are expected to complete their review, but a
   secondary reviewer can choose to delegate their review to someone else (once
-  they've invited an external reviewer).
+  they've invited an external reviewer).</p>
 
   <p>The default assignments pages apply to all submitted papers.  You can
   also assign subsets of papers obtained through <a
   href='help.php?t=search'>search</a>, such as <a
   href='${ConfSiteBase}search.php?q=cre:%3C3&amp;t=s&amp;showact=1'>papers
-  with fewer than three completed reviews</a>.</li>
+  with fewer than three completed reviews</a>.</p></li>
 
-<li><strong><a href='${ConfSiteBase}settings.php?group=rev'>Open the site for
-  reviewing.</a></strong></li>
+<li><p><strong><a href='${ConfSiteBase}settings.php?group=rev'>Open the site
+  for reviewing.</a></strong></p></li>
 
 </ol>
 ");
@@ -417,96 +418,100 @@ supposedly reduces bias.)
 
 <ol>
 
-<li><strong><a href='${ConfSiteBase}settings.php?group=dec'>Collect authors'
-  responses to the reviews (optional).</a></strong> Some conferences allow
-  authors to respond to the reviews before decisions are made, giving them a
-  chance to correct misconceptions and such.  Responses are entered into the
-  system as <a href='${ConfSiteBase}comment.php?paperId=1'>comments</a>.  On
-  the <a href='${ConfSiteBase}settings.php?group=dec'>decision settings
-  page</a>, select \"Allow authors to see reviews\" and \"Collect responses to
-  the reviews\", then <a href='${ConfSiteBase}Chair/SendMail.php'>send mail to
+<li><p><strong><a href='${ConfSiteBase}settings.php?group=dec'>Collect
+  authors' responses to the reviews (optional).</a></strong> Some conferences
+  allow authors to respond to the reviews before decisions are made, giving
+  them a chance to correct misconceptions and such.  Responses are entered
+  into the system as <a
+  href='${ConfSiteBase}comment.php?paperId=1'>comments</a>.  On the <a
+  href='${ConfSiteBase}settings.php?group=dec'>decision settings page</a>,
+  select \"Allow authors to see reviews\" and \"Collect responses to the
+  reviews\", then <a href='${ConfSiteBase}Chair/SendMail.php'>send mail to
   authors</a> informing them of the response deadlines.  PC members will still
   be able to update their reviews, assuming it's before the <a
-  href='${ConfSiteBase}settings.php?group=rev'>review deadline</a>; authors are
-  informed via email of any review changes.  At the end of the response period
-  it's generally good to <a href='${ConfSiteBase}settings.php?group=dec'>turn
-  off \"Allow authors to see reviews\"</a> so PC members can update their
-  reviews in peace.</li>
+  href='${ConfSiteBase}settings.php?group=rev'>review deadline</a>; authors
+  are informed via email of any review changes.  At the end of the response
+  period it's generally good to <a
+  href='${ConfSiteBase}settings.php?group=dec'>turn off \"Allow authors to see
+  reviews\"</a> so PC members can update their reviews in peace.</p></li>
 
-<li><strong><a href='${ConfSiteBase}settings.php?group=rev'>Allow the PC to
-  see all submitted reviews.</a></strong></li>
+<li><p><strong><a href='${ConfSiteBase}settings.php?group=rev'>Allow the PC to
+  see all submitted reviews.</a></strong></p></li>
 
-<li><strong><a href='${ConfSiteBase}search.php?q=&amp;t=s&amp;sort=46'>Examine
-  paper scores</a></strong>, either one at a time or en masse, and decide
-  which papers will be discussed.  The <a href='help.php?t=tags'>tags</a>
-  system lets you prepare discussion sets and even discussion orders.</li>
+<li><p><strong><a
+  href='${ConfSiteBase}search.php?q=&amp;t=s&amp;sort=46'>Examine paper
+  scores</a></strong>, either one at a time or en masse, and decide which
+  papers will be discussed.  The <a href='help.php?t=tags'>tags</a> system
+  lets you prepare discussion sets and even discussion orders.</p></li>
 
-<li><strong><a href='${ConfSiteBase}autoassign.php'>Assign discussion leads
+<li><p><strong><a href='${ConfSiteBase}autoassign.php'>Assign discussion leads
   (optional).</a></strong> Discussion leads are expected to be able to
   summarize the paper and the reviews.  You can assign leads either <a
   href='${ConfSiteBase}assign.php?paperId=1'>paper by paper</a> or <a
-  href='${ConfSiteBase}autoassign.php'>automatically</a>.</li>
+  href='${ConfSiteBase}autoassign.php'>automatically</a>.</p></li>
 
-<li><strong><a href='${ConfSiteBase}settings.php?group=dec'>Define decision
+<li><p><strong><a href='${ConfSiteBase}settings.php?group=dec'>Define decision
   types (optional).</a></strong> By default, HotCRP has two decision types,
   \"accept\" and \"reject\", but you can add other types of acceptance and
-  rejection, such as \"accept as short paper\".</li>
+  rejection, such as \"accept as short paper\".</p></li>
 
-<li>The night before the meeting, <strong><a
+<li><p>The night before the meeting, <strong><a
   href='${ConfSiteBase}search.php?q=&amp;t=s&amp;showact=1'>download all
   reviews onto a laptop</a></strong> (Get &gt; All reviews) just in case the
-  Internet explodes and you can't reach HotCRP from the meeting place.</li>
+  Internet explodes and you can't reach HotCRP from the meeting
+  place.</p></li>
 
 </ol>
 ");
     _alternateRow("At the meeting", "
 <ol>
 
-<li>It's often useful to have a PC member or scribe capture the discussion
+<li><p>It's often useful to have a PC member or scribe capture the discussion
   about a paper and enter it as a <a
   href='${ConfSiteBase}comment.php?paperId=1'>comment</a> for the authors'
-  reference.</li>
+  reference.</p></li>
 
-<li><strong>Paper decisions</strong> can be recorded either <a
+<li><p><strong>Paper decisions</strong> can be recorded either <a
   href='${ConfSiteBase}review.php?paperId=1'>paper by paper</a> or using <a
   href='help.php?t=tags'>tags</a>.  You can also enter decisions later en
   masse via the <a
   href='${ConfSiteBase}search.php?q=&amp;t=s&amp;showact=1'>search
-  screen</a>.</li>
+  screen</a>.</p></li>
 
-<li><strong>Shepherding (optional).</strong> If your conference uses
+<li><p><strong>Shepherding (optional).</strong> If your conference uses
   shepherding for accepted papers, you can assign shepherds either <a
   href='${ConfSiteBase}assign.php?paperId=1'>paper by paper</a> or <a
-  href='${ConfSiteBase}autoassign.php?papset=acc'>automatically</a>.</li>
+  href='${ConfSiteBase}autoassign.php?papset=acc'>automatically</a>.</p></li>
 
 </ol>
 ");
     _alternateRow("After the meeting", "
 <ol>
 
-<li><strong><a href='${ConfSiteBase}search.php?q=&amp;t=s&amp;showact=1'>Enter
+<li><p><strong><a
+  href='${ConfSiteBase}search.php?q=&amp;t=s&amp;showact=1'>Enter
   decisions</a> and <a
   href='${ConfSiteBase}search.php?q=dec:yes&amp;t=s&amp;showact=1'>shepherds</a></strong>
-  if you didn't do this at the meeting.</li>
+  if you didn't do this at the meeting.</p></li>
 
-<li>Give reviewers some time to <strong>update their reviews</strong> in
-  response to PC discussion (optional).</li>
+<li><p>Give reviewers some time to <strong>update their reviews</strong> in
+  response to PC discussion (optional).</p></li>
 
-<li><strong><a href='${ConfSiteBase}settings.php?group=dec'>Allow authors to
-  see reviews and decisions.</a></strong></li>
+<li><p><strong><a href='${ConfSiteBase}settings.php?group=dec'>Allow authors to
+  see reviews and decisions.</a></strong></p></li>
 
-<li><strong><a href='${ConfSiteBase}Chair/SendMail.php'>Send mail to
+<li><p><strong><a href='${ConfSiteBase}Chair/SendMail.php'>Send mail to
   authors</a></strong> informing them that reviews and decisions are
   available.  The mail can also contain the reviews and comments
-  themselves.</li>
+  themselves.</p></li>
 
-<li><strong><a href='${ConfSiteBase}settings.php?group=dec'>Collect final
+<li><p><strong><a href='${ConfSiteBase}settings.php?group=dec'>Collect final
   papers (optional).</a></strong> If you're putting together the program
   yourself, it can be convenient to collect final copies using HotCRP.
   Authors upload final copies the same way they did the submission, although
   the submitted version is archived for reference.  You can then <a
   href='${ConfSiteBase}search.php?q=dec:yes&amp;t=s&amp;showact=1'>download
-  all final copies as a <tt>.zip</tt> archive</a>.</li>
+  all final copies as a <tt>.zip</tt> archive</a>.</p></li>
 
 </ol>
 ");
