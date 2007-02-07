@@ -138,7 +138,7 @@ function pcAssignments() {
 
 	// manage conflicts
 	if ($row->conflictType && $val >= 0)
-	    $Conf->qe("delete from PaperConflict where paperId=$prow->paperId and contactId=$row->conflictId", $while);
+	    $Conf->qe("delete from PaperConflict where paperId=$prow->paperId and contactId=$row->contactId", $while);
 	else if (!$row->conflictType && $val < 0)
 	    $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($prow->paperId, $row->contactId, " . CONFLICT_CHAIRMARK . ")", $while);
 
