@@ -104,7 +104,7 @@ class Contact {
     }
 
     function invalidate() {
-	$this->confShortName = 0;
+	$this->shortConfName = 0;
 
 	$this->contactId = 0;
 	$this->visits = 0;
@@ -281,6 +281,19 @@ class Contact {
 		where ContactInfo.contactId=$contactId limit 0,1", $conf);
     }
 
+    function makeMinicontact($o) {
+	$this->invalidate();
+	$this->contactId = $o->contactId;
+	$this->firstName = defval($o->firstName, '');
+	$this->lastName = defval($o->lastName, '');
+	$this->email = defval($o->email, '');
+	$this->isAuthor = defval($o->isAuthor, false) != 0;
+	$this->isReviewer = defval($o->isReviewer, false) != 0;
+	$this->isPC = defval($o->isPC, false) != 0;
+	$this->isChair = defval($o->isChair, false) != 0;
+	$this->isAssistant = defval($o->isAssistant, false) != 0;
+    }
+    
     function fullname() {
 	if ($this->firstName && $this->lastName)
 	    return $this->firstName . " " . $this->lastName;

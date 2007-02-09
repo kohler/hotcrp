@@ -18,7 +18,7 @@ echo "<form method='post' action='SendMail2.php' enctype='multipart/form-data'>
     <option value='review-not-finalize'>Reviewers who haven't submitted at least one review</option>\n";
 foreach ($rf->options["outcome"] as $num => $what)
     echo "    <option value='author-outcome$num'>", htmlspecialchars($what), " outcome contact authors</option>\n";
-echo "    <option value='author-late-review'>Contact authors who received late reviews</option>
+echo "    <option value='author-late-review'>Contact authors who received late reviews (DO NOT USE)</option>
   </select></td>
 </tr>
 
