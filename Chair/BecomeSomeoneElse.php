@@ -21,12 +21,12 @@ $oldtype = "";
 while (($row = edb_orow($result))) {
     $type = ($row->chair ? "PC Chair" : ($row->ass ? "PC Chair's Assistant" : ($row->pc ? "PC Member" : "Others")));
     if ($type != $oldtype)
-	echo "<option value='-1' disabled='disabled'>", $type, "</option>\n";
-    echo "<option value='$row->contactId'>&nbsp;&nbsp;", contactHtml($row), "</option>\n";
+	echo ($oldtype ? "</optgroup>" : ""), "<optgroup label=\"$type\">\n";
+    echo "<option value='$row->contactId'>", contactHtml($row), "</option>\n";
     $oldtype = $type;
 }
 
-echo "</select>
+echo "</optgroup></select>&nbsp;
 <input class='button_default' type='submit' name='go' value='Become contact' />
 </form>";
 
