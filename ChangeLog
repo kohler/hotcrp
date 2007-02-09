@@ -1,3 +1,134 @@
+2007-02-07 Wednesday 14:56  kohler
+
+	* help.php (1.26), search.php (1.73), settings.php (1.28),
+	  Code/TODO (1.58), Code/search.inc (1.42): allow searches for
+	  paper options
+
+2007-02-07 Wednesday 14:19  kohler
+
+	* help.php (1.25): nit
+
+2007-02-07 Wednesday 14:19  kohler
+
+	* Code/conference.inc (1.161): help on the settings page goes right
+	  to the chair guide
+
+2007-02-07 Wednesday 14:04  kohler
+
+	* help.php (1.24): english nits
+
+2007-02-07 Wednesday 14:03  kohler
+
+	* Code/helpers.inc (1.124): include a couple more options in
+	  selfHref
+
+2007-02-07 Wednesday 14:00  kohler
+
+	* help.php (1.23): paragraphs make it look a little better
+
+2007-02-07 Wednesday 13:54  kohler
+
+	* Code/TODO (1.57): did that
+
+2007-02-07 Wednesday 13:54  kohler
+
+	* autoassign.php (1.12), help.php (1.22), Code/TODO (1.56),
+	  Code/paperlist.inc (1.94): complete chairs guide help screen,
+	  plus small changes to support that (can ask for the action area
+	  to get unfolded using a link, and autoassign page gives paper
+	  status)
+
+2007-02-07 Wednesday 12:54  kohler
+
+	* Code/search.inc (1.41): default chair search is all papers if
+	  papers are still in progress
+
+2007-02-07 Wednesday 12:51  kohler
+
+	* index.php (1.96): index has no single quicklinks list
+
+2007-02-07 Wednesday 12:50  kohler
+
+	* autoassign.php (1.11), index.php (1.95), logout.php (1.5),
+	  search.php (1.72), Chair/AssignPapers.php (1.38), Code/TODO
+	  (1.55), Code/helpers.inc (1.123), Code/paperlist.inc (1.93),
+	  Code/papertable.inc (1.57), Code/search.inc (1.40),
+	  PC/reviewprefs.php (1.27): quicklinks list setting cleanup: move
+	  list descriptions into PaperList general code from specific code
+	  elsewhere; simplify session variables arrangement; allow links to
+	  create a new quicklinks list; create a new quicklinks list on the
+	  fly if you jump to a paper not on the list
+
+2007-02-07 Wednesday 12:49  kohler
+
+	* Code/header.inc (1.40): clean up unused session variables
+
+2007-02-07 Wednesday 12:44  kohler
+
+	* help.php (1.21): add beginnings of a workflow guide
+
+2007-02-07 Wednesday 09:32  kohler
+
+	* autoassign.php (1.10): add autoassignment of conflicts for pc
+	  members with preferences <= -100
+
+2007-02-07 Wednesday 09:31  kohler
+
+	* paper.php (1.104): shift where topics appear on form
+
+2007-02-07 Wednesday 09:25  kohler
+
+	* assign.php (1.59): fix stupid BUG: allow removing a conflict from
+	  assignments page
+
+2007-02-06 Tuesday 23:06  kohler
+
+	* paper.php (1.103), Code/TODO (1.54): "undo submit" and "revive
+	  paper" actions also update paper
+
+2007-02-06 Tuesday 22:53  kohler
+
+	* Code/TODO (1.53): record todo reduction
+
+2007-02-06 Tuesday 22:53  kohler
+
+	* paper.php (1.102), Code/options.inc (1.15.2.5),
+	  Code/papertable.inc (1.56): allow people to submit a paper in one
+	  step if they want by adding a "Submit paper" button to the new
+	  paper screen.  Also, if uploading a paper & you make a mistake,
+	  the system remembers the paper you uploaded.
+
+2007-02-06 Tuesday 19:29  kohler
+
+	* Code/: TODO (1.51), TODO (1.52): document todos
+
+2007-02-06 Tuesday 19:28  kohler
+
+	* paper.php (1.101): this reads better
+
+2007-02-06 Tuesday 19:19  kohler
+
+	* paper.php (1.100): try another wording (Frans/Jason Flinn)
+
+2007-02-01 Thursday 12:20  kohler
+
+	* Code/TODO (1.50): categorize TODO
+
+2007-02-01 Thursday 10:26  kohler
+
+	* tarball.sh (1.24): new version
+
+2007-02-01 Thursday 10:09  kohler
+
+	* Code/options.inc (1.17): more info in options
+
+2007-02-01 Thursday 10:08  kohler
+
+	* assign.php (1.58), pc.php (1.22), settings.php (1.27), Code/TODO
+	  (1.49), Code/conference.inc (1.160), Code/options.inc (1.15.2.4),
+	  Code/schema.sql (1.90): add support for proposed external
+	  reviewers
+
 2007-01-31 Wednesday 17:47  kohler
 
 	* comment.php (1.27), offline.php (1.18), review.php (1.80),
