@@ -424,6 +424,7 @@ class ReviewForm {
 	$i = 0;
 	$numericMessage = 0;
 	foreach ($this->fieldOrder as $field) {
+	    $i++;
 	    if (!$viewAllFields && $this->authorView[$field] <= 0)
 		continue;
 
@@ -439,7 +440,7 @@ class ReviewForm {
 	    if (!$myReview && $fval == "")
 		continue;
 
-	    $x .= "\n==+== " . chr(65 + $i++) . ". " . $this->shortName[$field];
+	    $x .= "\n==+== " . chr(64 + $i) . ". " . $this->shortName[$field];
 	    if ($this->authorView[$field] < 0)
 		$x .= " (Chairs only)";
 	    else if ($this->authorView[$field] == 0)
