@@ -119,7 +119,8 @@ if ($Me->amAssistant()) {
     echo "</select>\n</form>\n<hr />\n\n";
 }
 
-$paperList = new PaperList(true, "list", new PaperSearch($Me, array("t" => "s", "c" => $reviewer, "urlbase" => "PC/reviewprefs.php?reviewer=$reviewer")));
+$searchType = ($Conf->setting("pc_seeall") > 0 ? "all" : "s");
+$paperList = new PaperList(true, "list", new PaperSearch($Me, array("t" => $searchType, "c" => $reviewer, "urlbase" => "PC/reviewprefs.php?reviewer=$reviewer")));
 unset($_SESSION["matchPreg"]);
 
 echo "<form class='assignpc' method='post' action=\"reviewprefs.php?reviewer=$reviewer&amp;post=1\" enctype='multipart/form-data'>\n";
