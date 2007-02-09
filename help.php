@@ -379,7 +379,13 @@ got officially submitted.  Then:
   convenient) page through the <a
   href='${ConfSiteBase}search.php?q=&amp;t=s'>list of submitted papers</a>
   setting their preferences on the <a
-  href='${ConfSiteBase}paper.php?paperId=1'>paper pages</a>.</p></li>
+  href='${ConfSiteBase}paper.php?paperId=1'>paper pages</a>.</p>
+
+  <p>If you'd like, you can collect review preferences before the submission
+  deadline.  Select <a href='${ConfSiteBase}settings.php?group=sub'>\"PC can
+  see <i>all registered papers</i> until submission deadline\"</a>, which
+  allows PC members to see abstracts for registered papers that haven't yet
+  been submitted.</li>
 
 <li><p><strong><a href='${ConfSiteBase}Chair/AssignPapers.php?kind=c'>Assign
   conflicts.</a></strong> You can assign conflicts <a

@@ -95,13 +95,15 @@ class Conference {
 	$result = $this->q("select name, value from Settings");
 	while (($row = edb_row($result)))
 	    $this->settings[$row[0]] = $row[1];
-	foreach (array("pcrev_any", "extrev_view", "rev_notifychair") as $x)
+	foreach (array("pc_seeall", "pcrev_any", "extrev_view", "rev_notifychair") as $x)
 	    if (!isset($this->settings[$x]))
 		$this->settings[$x] = 0;
 	if (!isset($this->settings["sub_blind"]))
 	    $this->settings["sub_blind"] = 2;
 	if (!isset($this->settings["rev_blind"]))
 	    $this->settings["rev_blind"] = 2;
+	if ($this->settings["pc_seeall"] && !$this->timeFinalizePaper())
+	    $this->settings["pc_seeall"] = -1;
     }
 
     function setting($name, $defval = false) {
@@ -720,6 +722,7 @@ class Conference {
 	//   "reviewId" => $rid Only paper reviewed by $rid
 	//   "commentId" => $c  Only paper where comment is $c
 	//   "finalized"	Only submitted papers
+	//   "active"		Only nonwithdrawn papers
 	//   "author"		Only papers authored by $contactId
 	//   "myReviewRequests"	Only reviews requested by $contactId
 	//   "myReviews"	All reviews authored by $contactId
@@ -887,6 +890,8 @@ class Conference {
 	    $where[] = $this->_paperQuery_where($options['commentId'], "CommentSelector.commentId");
 	if (isset($options['finalized']))
 	    $where[] = "timeSubmitted>0";
+	if (isset($options['active']))
+	    $where[] = "timeWithdrawn<=0";
 	
 	if (isset($where))
 	    $pq .= "		where " . join(" and ", $where) . "\n";

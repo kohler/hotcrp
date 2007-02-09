@@ -39,7 +39,7 @@ if ($Me->isPC)
     $tOpt["req"] = "Requested reviews";
 if ($Me->isAuthor)
     $tOpt["a"] = "Authored papers";
-if ($Me->amAssistant())
+if ($Me->amAssistant() || ($Me->isPC && $Conf->setting("pc_seeall") > 0))
     $tOpt["all"] = "All papers";
 if (count($tOpt) == 0) {
     $Conf->header("Search", 'search');

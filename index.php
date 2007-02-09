@@ -81,7 +81,7 @@ if ($Me->amAssistant() || ($Me->isPC && $papersub)) {
     if ($Me->canViewDecision(null, $Conf))
 	echo "<li><a href='search.php?q=decision:yes&amp;t=s'>List accepted papers</a></li>\n";
     echo "</ul></td><td class='r'><ul class='compact'>";
-    if ($Me->amAssistant())
+    if ($Me->amAssistant() || ($Me->isPC && $Conf->setting("pc_seeall") > 0))
 	echo "<li><a href='search.php?q=&amp;t=all'>List <i>all</i> papers</a></li>\n";
     echo "</ul></td></tr></table></div></div>\n";
 }

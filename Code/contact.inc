@@ -206,7 +206,7 @@ class Contact {
 
     function goIfNotChair($url) {
 	if (!$this->valid() || !$this->isChair)
-	    $this->goAlert($url, "That page is only accessible by program chairs.");
+	    $this->goAlert($url, "That page is only accessible to program chairs.");
     }
 
     function goIfNotAssistant($url) {
@@ -459,7 +459,7 @@ class Contact {
 	return false;
     }
 
-    function canViewPaper($prow, $conf, &$whyNot = null) {
+    function canViewPaper($prow, $conf, &$whyNot = null, $download = false) {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
@@ -468,7 +468,9 @@ class Contact {
 	    || $this->amAssistant()
 	    || ($prow->timeSubmitted > 0
 		&& (($this->isPC && $conf->timePCViewSubmission())
-		    || ($prow->myReviewType > 0 && $conf->timeReviewerViewSubmission()))))
+		    || ($prow->myReviewType > 0 && $conf->timeReviewerViewSubmission())))
+	    || ($this->isPC && $prow->timeWithdrawn <= 0 && !$download
+		&& $conf->setting("pc_seeall") > 0))
 	    return true;
 	// collect failure reasons
 	if (!$this->isPC && $prow->conflictType < CONFLICT_AUTHOR && $prow->myReviewType <= 0) {
@@ -488,6 +490,10 @@ class Contact {
 	return false;
     }
     
+    function canDownloadPaper($prow, $conf, &$whyNot = null) {
+	return $this->canViewPaper($prow, $conf, $whyNot, true);
+    }
+    
     function canViewAuthors($prow, $conf, $blindWins, &$whyNot = null) {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
@@ -500,7 +506,9 @@ class Contact {
 		&& !$prow->blind)
 	    || ($prow->outcome > 0
 		&& ($this->isPC || $prow->myReviewType > 0)
-		&& $conf->timeReviewerViewAcceptedAuthors()))
+		&& $conf->timeReviewerViewAcceptedAuthors())
+	    || ($this->isPC && !$prow->blind && $prow->timeWithdrawn <= 0
+		&& $conf->setting("pc_seeall") > 0))
 	    return true;
 	// collect failure reasons
 	if ($prow->timeWithdrawn > 0)
@@ -521,21 +529,28 @@ class Contact {
 	// policy
 	$rrsub = (!$rrow || $rrow->reviewSubmitted > 0);
 	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && !$ignoreForceShow;
-	if (($prow->conflictType == CONFLICT_AUTHOR
-	     && $conf->timeAuthorViewReviews() && $rrsub
-	     && (!$this->reviewsOutstanding || !$this->isReviewer))
-	    || ($this->amAssistant() && ($prow->conflictType == 0 || $forceShow))
-	    || ($this->isPC && $prow->conflictType == 0 && $rrsub
-		&& ($conf->timePCViewAllReviews()
-		    || defval($prow->reviewSubmitted) > 0))
-	    || ($prow->myReviewType > 0 && $prow->conflictType == 0 && $rrsub
-		&& defval($prow->reviewSubmitted) > 0
-		&& ($this->isPC || $conf->settings["extrev_view"] >= 1))
-	    || ($rrow && $rrow->paperId == $prow->paperId
-		&& $rrow->contactId == $this->contactId))
+	if ($prow->timeSubmitted > 0
+	    && (($prow->conflictType == CONFLICT_AUTHOR
+		 && $conf->timeAuthorViewReviews() && $rrsub
+		 && (!$this->reviewsOutstanding || !$this->isReviewer))
+		|| ($this->amAssistant()
+		    && ($prow->conflictType == 0 || $forceShow))
+		|| ($this->isPC && $prow->conflictType == 0 && $rrsub
+		    && ($conf->timePCViewAllReviews()
+			|| defval($prow->reviewSubmitted) > 0))
+		|| ($prow->myReviewType > 0
+		    && $prow->conflictType == 0 && $rrsub
+		    && defval($prow->reviewSubmitted) > 0
+		    && ($this->isPC || $conf->settings["extrev_view"] >= 1))
+		|| ($rrow && $rrow->paperId == $prow->paperId
+		    && $rrow->contactId == $this->contactId)))
 	    return true;
 	// collect failure reasons
-	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->isPC && $prow->myReviewType <= 0)
+	if ($prow->timeWithdrawn > 0)
+	    $whyNot["withdrawn"] = 1;
+	else if ($prow->timeSubmitted <= 0)
+	    $whyNot["notSubmitted"] = 1;
+	else if ($prow->conflictType < CONFLICT_AUTHOR && !$this->isPC && $prow->myReviewType <= 0)
 	    $whyNot['permission'] = 1;
 	else if ($prow->conflictType == CONFLICT_AUTHOR && $conf->timeAuthorViewReviews()
 		 && $this->reviewsOutstanding && $this->isReviewer)

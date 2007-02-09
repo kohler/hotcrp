@@ -81,6 +81,9 @@ class PaperSearch {
 	$ptype = defval($opt["t"], 0);
 	if ($this->amAssistant && !$ptype && $Conf->timeUpdatePaper())
 	    $this->limitName = "all";
+	else if ($me->isPC && (!$ptype || $ptype == "all")
+		 && $Conf->setting("pc_seeall") > 0)
+	    $this->limitName = "all";
 	else if ($me->isPC && (!$ptype || $ptype == "s"))
 	    $this->limitName = "s";
 	else if ($this->amAssistant && $ptype == "all")
@@ -465,6 +468,8 @@ class PaperSearch {
 	    $queryOptions["author"] = 1;
 	else if ($this->limitName == "req")
 	    $queryOptions["myReviewRequests"] = 1;
+	else if ($this->limitName == "all" && !$this->amAssistant)
+	    $queryOptions["active"] = 1;
 	return false;
     }
 

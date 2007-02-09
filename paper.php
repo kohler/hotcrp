@@ -606,7 +606,7 @@ $paperTable->echoOptions($prow, $Me->amAssistant());
 
 
 // Tags
-if ($Me->isPC && $prow->conflictType <= 0)
+if ($Me->isPC && $prow && $prow->conflictType <= 0)
     $paperTable->echoTags($prow);
 
 

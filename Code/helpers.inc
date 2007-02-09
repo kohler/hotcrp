@@ -173,11 +173,15 @@ function viewContactButton($href, $contactId) {
 }
 
 function paperDownload($prow, $final = false, $conf = null) {
-    global $Conf, $ConfSiteBase;
+    global $Conf, $ConfSiteBase, $Me;
     $conf = ($conf == null ? $Conf : $conf);
     if ($final && !$prow->finalPaperStorageId)
 	$final = false;
 
+    // don't allow PC to download papers in progress
+    if ($prow->timeSubmitted <= 0 && !$Me->canDownloadPaper($prow, $conf))
+	return "";
+    
     $mimetype = defval($prow->mimetype, "");
     $p = $conf->makeDownloadPath($prow->paperId, $mimetype, $final);
     if ($mimetype == "application/postscript")

@@ -18,6 +18,7 @@ $SettingGroups = array("sub" => array(
 			     "sub_grace" => "grace",
 			     "sub_pcconf" => "check",
 			     "sub_collab" => "check",
+			     "pc_seeall" => "check",
 			     "next" => "opt"),
 		       "opt" => array(
 			     "topics" => "special",
@@ -74,6 +75,7 @@ $SettingText = array(
 	"sub_pcconf" => "Collect PC conflicts setting",
 	"sub_collab" => "Collect collaborators setting",
 	"rev_notifychair" => "Notify chairs about reviews setting",
+	"pc_seeall" => "PC can see all papers setting",
 	"pcrev_any" => "PC can review any paper setting",
 	"extrev_chairreq" => "PC chair must approve proposed external reviewers",
 	"pc_seeallrev" => "PC can see all reviews setting",
@@ -488,7 +490,12 @@ if ($Group == "sub") {
     doCheckbox("sub_pcconf", "Collect authors' PC conflicts with checkboxes");
     doCheckbox("sub_collab", "Collect authors' potential conflicts as text");
 
-    echo "</div></div></td></tr></table>\n\n";
+    echo "<div class='smgap'></div><table>\n";
+    // compensate for pc_seeall magic
+    if ($Conf->setting("pc_seeall") < 0)
+	$Conf->settings["pc_seeall"] = 1;
+    doCheckbox('pc_seeall', "PC can see <i>all registered papers</i> until submission deadline<br /><small>Check this box if you want to collect review preferences before the submission deadline. After the submission deadline, PC members can only see submitted papers.</small>", true);
+    echo "</table></div></div></td></tr></table>\n\n";
 }
 
 

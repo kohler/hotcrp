@@ -9,10 +9,12 @@ class PaperList {
     const FIELD_ID = 1;
     const FIELD_ID_MANAGE = 2;
     const FIELD_ID_REVIEW = 3;
+    const FIELD_ID_ASSIGN = 4;
     
     const FIELD_TITLE = 11;
     const FIELD_TITLE_MANAGE = 12;
     const FIELD_TITLE_REVIEW = 13;
+    const FIELD_TITLE_ASSIGN = 14;
     const FIELD_TITLE_LAST = 19;
     
     const FIELD_STATUS = 27;
@@ -141,10 +143,12 @@ class PaperList {
 	case self::FIELD_ID:
 	case self::FIELD_ID_MANAGE:
 	case self::FIELD_ID_REVIEW:
+	case self::FIELD_ID_ASSIGN:
 	    return "order by Paper.paperId $up";
 	case self::FIELD_TITLE:
 	case self::FIELD_TITLE_MANAGE:
 	case self::FIELD_TITLE_REVIEW:
+	case self::FIELD_TITLE_ASSIGN:
 	    return "order by Paper.title $up";
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
@@ -177,10 +181,12 @@ class PaperList {
 	case self::FIELD_ID:
 	case self::FIELD_ID_MANAGE:
 	case self::FIELD_ID_REVIEW:
+	case self::FIELD_ID_ASSIGN:
 	    return "ID";
 	case self::FIELD_TITLE:
 	case self::FIELD_TITLE_MANAGE:
 	case self::FIELD_TITLE_REVIEW:
+	case self::FIELD_TITLE_ASSIGN:
 	    return "Title";
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
@@ -233,7 +239,8 @@ class PaperList {
 
     function _contentDownload($row) {
 	global $ConfSiteBase, $Conf;
-	if ($row->size == 0)
+	if ($row->size == 0
+	    || ($row->timeSubmitted <= 0 && !$this->contact->canDownloadPaper($row, $Conf)))
 	    return "";
 	else if ($row->mimetype == "application/pdf")
 	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\"><img src=\"${ConfSiteBase}images/pdf.png\" alt='[PDF]' /></a>";
@@ -269,12 +276,16 @@ class PaperList {
 	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='2'>#$row->paperId</a>";
 	case self::FIELD_ID_REVIEW:
 	    return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='2'>#$row->paperId</a>";
+	case self::FIELD_ID_ASSIGN:
+	    return "<a href='${ConfSiteBase}assign.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='2'>#$row->paperId</a>";
 	case self::FIELD_TITLE:
 	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_TITLE_MANAGE:
 	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_TITLE_REVIEW:
 	    return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
+	case self::FIELD_TITLE_ASSIGN:
+	    return "<a href='${ConfSiteBase}assign.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
@@ -525,9 +536,9 @@ class PaperList {
 	  case "req":
 	    return array("Requested reviews", 100, 3, 13, 45, 41, 33, 50);
 	  case "reviewAssignment":
-	    return array("Review assignment", 3, 13, 39, 36, 43, 35, 50, 37, 38, 44, 46, 47, 48);
+	    return array("Review assignment", 4, 14, 39, 36, 43, 35, 50, 37, 38, 44, 46, 47, 48);
 	  case "conflict":
-	    return array("Potential conflicts", 102, 1, 11, self::FIELD_OPT_AUTHORS, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
+	    return array("Potential conflicts", 102, 4, 14, self::FIELD_OPT_AUTHORS, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
 	  case "editReviewPreference":
 	    return array("Reviewer preferences", 1, 11, 36, 45, 40, 50, 37);
 	  case "reviewers":
@@ -778,9 +789,11 @@ $paperListFields = array(
 	PaperList::FIELD_ID => array('id', 1),
 	PaperList::FIELD_ID_MANAGE => array('id', 1),
 	PaperList::FIELD_ID_REVIEW => array('id', 1),
+	PaperList::FIELD_ID_ASSIGN => array('id', 1),
 	PaperList::FIELD_TITLE => array('title', 1),
 	PaperList::FIELD_TITLE_MANAGE => array('title', 1),
 	PaperList::FIELD_TITLE_REVIEW => array('title', 1),
+	PaperList::FIELD_TITLE_ASSIGN => array('title', 1),
 	PaperList::FIELD_STATUS => array('status', 1),
 	PaperList::FIELD_REVIEWER_TYPE => array('reviewer', 1),
 	PaperList::FIELD_STATUS_SHORT => array('status', 1),
