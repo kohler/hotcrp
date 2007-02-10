@@ -1113,7 +1113,8 @@ class Conference {
 	    return;
 	
 	$this->header_head($title);
-	echo "</head><body>\n";
+	$time = time();
+	echo "</head><body onload='hotcrpLoad($time)'>\n";
 	echo "<div id='header'>\n";
 	echo "  <div id='header_left'><h1>";
 	if ($title && $showTitle && $title == "Home")
@@ -1135,7 +1136,7 @@ class Conference {
 	    echo "'>Help</a> &nbsp;|&nbsp; ";
 	    echo "<a href='", $ConfSiteBase, "logout.php'>Sign&nbsp;out</a> &nbsp;|&nbsp; ";
 	}
-	echo date("l j M Y g:i:sa T"), "</div>\n";
+	echo date("l j M Y g:i:sa T", $time), "<br /><span id='usertime'></span></div>\n";
 	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", $this->shortName, " Public Site</a></div>\n";
 	
 	$id = ($id ? " id='$id'" : "");

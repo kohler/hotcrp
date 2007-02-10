@@ -20,6 +20,10 @@ div#header_user {
 	padding: 0.25em 0em 0em 0em;
 	float: right;
 }
+span#usertime {
+	font-size: x-small;
+	float: right;
+}
 div#header_left {
 	font-size: small;
 	float: left;

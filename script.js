@@ -2,6 +2,23 @@
 // HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+function hotcrpLoad(when) {
+    var e = document.getElementById("usertime");
+    if (e && Math.abs) {
+	var d = new Date();
+	if (Math.abs(d.getTime()/1000 - when) <= 200 * 60)
+	    return;
+	var s = ["Sun", "Mon", "Tues", "Wednes", "Thurs", "Fri", "Satur"][d.getDay()];
+	s += "day " + d.getDate() + " ";
+	s += ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
+	s += " " + d.getFullYear() + " " + (((d.getHours() + 11) % 12) + 1);
+	s += ":" + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
+	s += ":" + (d.getSeconds() < 10 ? "0" : "") + d.getSeconds();
+	s += (d.getHours() < 12 ? "am" : "pm");
+	e.innerHTML = "Your time: " + s;
+    }
+}
+
 function highlightUpdate(which, classmod) {
     if (typeof which == "string") {
 	var result = document.getElementById(which + "result");
