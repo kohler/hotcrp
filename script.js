@@ -2,11 +2,14 @@
 // HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-function hotcrpLoad(when) {
+function hotcrpLoad(servtime, servzone) {
     var e = document.getElementById("usertime");
     if (e && Math.abs) {
 	var d = new Date();
-	if (Math.abs(d.getTime()/1000 - when) <= 200 * 60)
+	// print local time if local time is more than 10 minutes off,
+	// or if server time is more than 3 time zones distant
+	if (Math.abs(d.getTime()/1000 - servtime) <= 10 * 60
+	    && Math.abs(d.getTimezoneOffset() - servzone) <= 3 * 60)
 	    return;
 	var s = ["Sun", "Mon", "Tues", "Wednes", "Thurs", "Fri", "Satur"][d.getDay()];
 	s += "day " + d.getDate() + " ";
@@ -15,7 +18,7 @@ function hotcrpLoad(when) {
 	s += ":" + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
 	s += ":" + (d.getSeconds() < 10 ? "0" : "") + d.getSeconds();
 	s += (d.getHours() < 12 ? "am" : "pm");
-	e.innerHTML = "Your time: " + s;
+	e.innerHTML = "Your local time: " + s;
     }
 }
 

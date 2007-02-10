@@ -1114,7 +1114,8 @@ class Conference {
 	
 	$this->header_head($title);
 	$time = time();
-	echo "</head><body onload='hotcrpLoad($time)'>\n";
+	// JavaScript's idea of a timezone offset is the negative of PHP's
+	echo "</head><body onload='hotcrpLoad($time, ", -date("Z", $time) / 60, ")'>\n";
 	echo "<div id='header'>\n";
 	echo "  <div id='header_left'><h1>";
 	if ($title && $showTitle && $title == "Home")

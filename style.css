@@ -21,6 +21,7 @@ div#header_user {
 	float: right;
 }
 span#usertime {
+	padding-top: 1px;
 	font-size: x-small;
 	float: right;
 }
