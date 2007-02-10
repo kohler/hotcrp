@@ -1,10 +1,13 @@
 <?php 
-//
+// Download/GetPaper -- HotCRP paper download page
+// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// Distributed under an MIT-like license; see LICENSE
+
 // GetPaper -- this is a PHP script where execution is specified in a .htaccess
 // file. This is done so the paper that is being requested is specified as a
 // suffix to the GetPaper request. It's necessary to have automatic file naming
 // work for specific browsers (I think Mozilla/netscape).
-//
+
 require_once('../Code/header.inc');
 $Me = $_SESSION['Me'];
 $Me->goIfInvalid();

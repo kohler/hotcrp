@@ -1,4 +1,6 @@
 <?php 
+// Chair/sampleforms.inc -- HotCRP sample review forms
+// Placed in the public domain
 
 function setField($field, $shortname, $authorview, $description, $order, $options = null) {
     $_REQUEST["shortName_$field"] = $shortname;

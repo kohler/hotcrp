@@ -1,3 +1,7 @@
+// script.js -- HotCRP JavaScript library
+// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// Distributed under an MIT-like license; see LICENSE
+
 function highlightUpdate(which, classmod) {
     if (typeof which == "string") {
 	var result = document.getElementById(which + "result");

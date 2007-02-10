@@ -24,6 +24,7 @@ mkdistdir () {
 mkdistdir <<EOF
 
 .htaccess
+LICENSE
 README
 account.php
 assign.php

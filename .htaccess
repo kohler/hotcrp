@@ -8,7 +8,7 @@ php_flag magic_quotes_gpc off
 
 
 # Prevent access to CVS and README directories.
-<FilesMatch "^(CVS|\.svn|README|.*\.sh)$">
+<FilesMatch "^(CVS|\.svn|README|LICENSE|.*\.sh)$">
 Order allow,deny
 Deny from all
 </FilesMatch>

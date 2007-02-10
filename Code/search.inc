@@ -1,4 +1,7 @@
 <?php
+// search.inc -- HotCRP helper class for searching for papers
+// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// Distributed under an MIT-like license; see LICENSE
 
 $searchTags = array('ti:' => 'ti', 'title:' => 'ti',
 		    'ab:' => 'ab', 'abstract:' => 'ab',

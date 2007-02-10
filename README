@@ -66,9 +66,7 @@ Configuration
 
 	        DirectoryIndex index.html index.php
 
-Now you're done, and can set up everything else through the web site
-itself.
-
+  - You can set up everything else through the web site itself.
 
 * Configuration notes
 
@@ -92,3 +90,9 @@ Backing up the database
 -----------------------
 Run 'Code/backupdb.sh' at the shell prompt to back up the database.  This will
 write the database's current structure and comments to the standard output.
+
+
+License
+-------
+HotCRP is available under the Click license, a BSD-like license. See the 
+LICENSE file for full license terms.

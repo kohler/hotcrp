@@ -1,4 +1,8 @@
 <?php
+// pc.php -- HotCRP program committee listing/editing page
+// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// Distributed under an MIT-like license; see LICENSE
+
 require_once('Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();

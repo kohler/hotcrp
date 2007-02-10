@@ -1,11 +1,7 @@
 <?php 
-//
-// This needs to be included in each file - it defines the session
-// variables used throughout the application.
-//
-// You should not need to modify any information in this file since
-// we automatically determine the configuration paths.
-//
+// header.inc -- HotCRP central helper file; includes other helpers
+// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// Distributed under an MIT-like license; see LICENSE
 
 // All review types must be 1 digit
 define("REVIEW_PRIMARY", 4);

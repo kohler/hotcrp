@@ -1,4 +1,7 @@
 <?php 
+// Chair/SetReviewForm.php -- HotCRP review form definition page
+// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// Distributed under an MIT-like license; see LICENSE
 
 function rf_checkOptions(&$var, &$options, &$order) {
     if (!isset($var))

@@ -1,4 +1,7 @@
 <?php
+// reviewtable.inc -- HotCRP helper class for table of all reviews
+// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// Distributed under an MIT-like license; see LICENSE
 
 // reviewer information
 function reviewTable($prow, $rrows, $rrow, $mode) {

@@ -1,10 +1,11 @@
 <?php
+// options.inc -- HotCRP conference options
+// Placed in the public domain
 
 /*****************************************************************************
  * HotCRP User Settings
  * Required for all installations.
- * Set up this file before running CRP for the first time.
- *
+ * Set up this file before running HotCRP for the first time.
  *****************************************************************************/
 
 // CONFERENCE NAMES
@@ -31,9 +32,9 @@ $Opt['downloadPrefix'] = "hotnets5-";
 //   contactName     Full name for site administrator (the person to contact
 //                   about site problems).  Usually the PC chair(s).
 //   contactEmail    Email address for site administrator.
-//   sendEmail       Boolean.  If false, CRP will send no email.  Generally
+//   sendEmail       Boolean.  If false, HotCRP will send no email.  Generally
 //                   it is safe to set this to true.
-//   emailFrom       Email sent by CRP appears to come from this address.
+//   emailFrom       Email sent by HotCRP appears to come from this address.
 //                   Should be a plausible email address for mail originating
 //                   at the conference server, so things like SPF don't mistake
 //                   the mail for spam.
@@ -56,7 +57,7 @@ $Opt['emailSubmissions'] = 0;
 // URLS
 //
 //   conferenceSite  Conference site URL (e.g., CFP, registration).
-//   paperSite       URL for this CRP installation.  Used in emails.
+//   paperSite       URL for this HotCRP installation.  Used in emails.
 
 $Opt['conferenceSite'] = "http://www.acm.org/sigs/sigcomm/HotNets-V/";
 $Opt['paperSite'] = "http://www.read.cs.ucla.edu/hotnets5";

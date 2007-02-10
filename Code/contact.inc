@@ -1,7 +1,7 @@
 <?php 
-//
-// Configuration for a Contact (i.e. someone using the reviewing system)
-//
+// contact.inc -- HotCRP helper class representing system users
+// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// Distributed under an MIT-like license; see LICENSE
 
 class Contact {
     
