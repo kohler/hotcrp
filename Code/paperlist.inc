@@ -531,9 +531,9 @@ class PaperList {
 	  case "all":
 	    return array("All papers", 100, 1, 11, 27, 45, 50);
 	  case "reviewerHome":
-	    return array("Review assignment", 3, 13, 45, 33);
+	    return array("Your review assignment", 3, 13, 45, 33);
 	  case "r":
-	    return array("Review assignment", 100, 3, 13, 45, 41, 33, 50);
+	    return array("Your review assignment", 100, 3, 13, 45, 41, 33, 50);
 	  case "rout":
 	    return array("Unsubmitted reviews", 100, 3, 13, 45, 41, 33, 50);
 	  case "req":

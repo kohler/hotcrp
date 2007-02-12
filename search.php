@@ -36,7 +36,7 @@ $tOpt = array();
 if ($Me->isPC)
     $tOpt["s"] = "Submitted papers";
 if ($Me->amReviewer())
-    $tOpt["r"] = "Review assignment";
+    $tOpt["r"] = "Your review assignment";
 if ($Me->reviewsOutstanding)
     $tOpt["rout"] = "Unsubmitted reviews";
 if ($Me->isPC)
@@ -428,7 +428,7 @@ echo "
 <form method='get' action='search.php'>
 <table class='advsearch ellipsis'><tr><td><span class='ellipsis nowrap'><b>Search:</b>&nbsp; $tselect&nbsp; for&nbsp; </td>
   <td><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /> &nbsp;
-  <input class='button' type='submit' name='go' value='Go' /> <span class='sep'></span>
+  <input class='button' type='submit' value='Go' /> <span class='sep'></span>
   <a class='unfolder' href=\"javascript:fold('q', 0)\">Options &raquo;</a></td></tr></table>
 </form>
 
@@ -437,7 +437,7 @@ echo "
 <tr>
   <td class='mcaption'>With <b>any</b> of the words</td>
   <td><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /><span class='sep'></span></td>
-  <td rowspan='3'><input class='button' type='submit' name='go' value='Search' /></td>
+  <td rowspan='3'><input class='button' type='submit' value='Search' /></td>
 </tr><tr>
   <td class='mcaption'>With <b>all</b> the words</td>
   <td><input class='textlite' type='text' size='40' name='qa' value=\"", htmlspecialchars(defval($_REQUEST["qa"], "")), "\" /></td>
