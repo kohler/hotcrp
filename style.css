@@ -18,12 +18,12 @@ div#header {
 div#header_user {
 	font-size: small;
 	padding: 0.25em 0em 0em 0em;
+	text-align: right;
 	float: right;
 }
 span#usertime {
 	padding-top: 1px;
 	font-size: x-small;
-	float: right;
 }
 div#header_left {
 	font-size: small;
