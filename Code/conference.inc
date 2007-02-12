@@ -739,7 +739,7 @@ class Conference {
 	//   "tags"		Include paperTags
 	//   "topics"
 	//   "options"
-	//   "overallMeritScores"
+	//   "scores" => array(fields to score)
 	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
 
 	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']) || isset($options['myReviewsOpt']) || isset($options['myOutstandingReviews']);
@@ -794,9 +794,11 @@ class Conference {
 	if (isset($options['tags']))
 	    $pq .= ",
 		PaperTags.paperTags";
-	if (isset($options['overallMeritScores']))
-	    $pq .= ",
-		PaperScores.overallMeritScores, PaperScores.overallMeritAvg";
+	if (isset($options['scores'])) {
+	    foreach ($options['scores'] as $field)
+		$pq .= ",
+		PaperScores.${field}Scores, PaperScores.${field}Avg";
+	}
 	if (isset($options['topicInterestScore']))
 	    $pq .= ",
 		coalesce(PaperTopics.topicInterestScore, 0) as topicInterestScore";
@@ -864,8 +866,12 @@ class Conference {
 	if (isset($options['tags']))
 	    $pq .= "		left join (select paperId, group_concat(tag, '#', tagIndex order by tag separator ' ') as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)\n";
 
-	if (isset($options['overallMeritScores']))
-	    $pq .= "		left join (select paperId, group_concat(overallMerit) as overallMeritScores, avg(overallMerit) as overallMeritAvg from PaperReview where reviewSubmitted>0 group by paperId) as PaperScores on (PaperScores.paperId=Paper.paperId)\n";
+	if (isset($options['scores'])) {
+	    $pq .= "		left join (select paperId";
+	    foreach ($options['scores'] as $field)
+		$pq .= ", group_concat($field) as ${field}Scores, avg($field) as ${field}Avg";
+	    $pq .= " from PaperReview where reviewSubmitted>0 group by paperId) as PaperScores on (PaperScores.paperId=Paper.paperId)\n";
+	}
 	
 	if (defval($options['reviewerPreference']))
 	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$reviewContactId)\n";

@@ -34,11 +34,15 @@ class PaperList {
     const FIELD_DESIRABILITY = 43;
     const FIELD_ALL_PREFERENCES = 44;
     const FIELD_REVIEWER_TYPE_ICON = 45;
-    const FIELD_OPT_MERIT_ICON = 46; // also used in help.php
     const FIELD_AUTHOR_MATCH = 47;
     const FIELD_COLLABORATORS_MATCH = 48;
-    const FIELD_OPT_AUTHORS = 50;
-    const FIELD_FOLD = 60;
+
+    const FIELD_SCORE = 50;
+    const FIELD_NUMSCORES = 11;
+    const FIELD_SCORE_OVERALL_MERIT = 50; // also used in help.php
+    
+    const FIELD_OPT_AUTHORS = 70;
+    const FIELD_FOLD = 75;
     
     var $showHeader;
     var $sortField;
@@ -53,7 +57,7 @@ class PaperList {
     var $paperLink;
     var $contact;
     var $scoresOk;
-    var $meritMax;
+    var $scoreMax;
     var $search;
     var $authorMatch;
     var $collaboratorsMatch;
@@ -81,11 +85,19 @@ class PaperList {
 
 	$this->search = $search;
 	$this->extraText = $extraText;
+	$this->scores = false;
     }
 
+    function _normalizeField($fieldId) {
+	if ($fieldId >= self::FIELD_SCORE && $fieldId < self::FIELD_SCORE + self::FIELD_NUMSCORES)
+	    return self::FIELD_SCORE;
+	else
+	    return $fieldId;
+    }
+    
     function selector($fieldId, &$queryOptions) {
-	global $Conf;
-	switch ($fieldId) {
+	global $Conf, $paperListScoreNames;
+	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_REVIEWER_NAME:
 	    $queryOptions['reviewerName'] = 1;
 	    break;
@@ -111,12 +123,15 @@ class PaperList {
 	case self::FIELD_ALL_PREFERENCES:
 	    $queryOptions['allReviewerPreference'] = 1;
 	    break;
-	case self::FIELD_OPT_MERIT_ICON:
+	case self::FIELD_SCORE:
 	    if (!$this->scoresOk)
 		return false;
-	    $queryOptions['overallMeritScores'] = 1;
+	    if (!isset($queryOptions['scores']))
+		$queryOptions['scores'] = array();
+	    $scoreName = $paperListScoreNames[$fieldId - self::FIELD_SCORE];
+	    $queryOptions['scores'][] = $scoreName;
 	    $rf = reviewForm();
-	    $this->meritMax = $rf->maxNumericScore('overAllMerit');
+	    $this->scoreMax[$scoreName] = $rf->maxNumericScore($scoreName);
 	    break;
 	case self::FIELD_FOLD:
 	    $this->unfolded = false;
@@ -140,9 +155,10 @@ class PaperList {
     }
 
     function sort($fieldId) {
+	global $paperListScoreNames;
 	$up = ($this->reverseSort ? "desc" : "asc");
 	$down = ($this->reverseSort ? "asc" : "desc");
-	switch ($fieldId) {
+	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
 	case self::FIELD_ID_MANAGE:
 	case self::FIELD_ID_REVIEW:
@@ -172,15 +188,17 @@ class PaperList {
 	    return "order by reviewerPreference $down";
 	case self::FIELD_DESIRABILITY:
 	    return "order by desirability $down";
-	case self::FIELD_OPT_MERIT_ICON:
-	    return "order by overallMeritAvg $down";
+	case self::FIELD_SCORE:
+	    $scoreName = $paperListScoreNames[$fieldId - self::FIELD_SCORE];
+	    return "order by ${scoreName}Avg $down";
 	default:
 	    return null;
 	}
     }
     
     function header($fieldId, $ordinal, $row = null, $reviewList = null) {
-	switch ($fieldId) {
+	global $paperListScoreNames;
+	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
 	case self::FIELD_ID_MANAGE:
 	case self::FIELD_ID_REVIEW:
@@ -225,9 +243,10 @@ class PaperList {
 	    return "Desirability";
 	case self::FIELD_ALL_PREFERENCES:
 	    return "Preferences";
-	case self::FIELD_OPT_MERIT_ICON: {
+	case self::FIELD_SCORE: {
 	    $rf = reviewForm();
-	    return $rf->webFieldAbbrev("overAllMerit");
+	    $scoreName = $paperListScoreNames[$fieldId - self::FIELD_SCORE];
+	    return $rf->webFieldAbbrev($scoreName);
 	}
 	case self::FIELD_AUTHOR_MATCH:
 	    return "<span class='match'>Potential conflict in authors</span>";
@@ -271,8 +290,8 @@ class PaperList {
     }
     
     function content($fieldId, $row, $reviewList) {
-	global $ConfSiteBase, $Conf, $reviewTypeName;
-	switch ($fieldId) {
+	global $ConfSiteBase, $Conf, $reviewTypeName, $paperListScoreNames;
+	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
 	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='2'>#$row->paperId</a>";
 	case self::FIELD_ID_MANAGE:
@@ -416,8 +435,11 @@ class PaperList {
 		    $x .= " [" . htmlspecialchars($what[3]) . "]";
 		}
 	    return $x;
-	case self::FIELD_OPT_MERIT_ICON:
-	    return $Conf->textValuesGraph($row->overallMeritScores, $this->meritMax, 1);
+	case self::FIELD_SCORE: {
+	    $scoreName = $paperListScoreNames[$fieldId - self::FIELD_SCORE];
+	    $itemName = "${scoreName}Scores";
+	    return $Conf->textValuesGraph($row->$itemName, $this->scoreMax[$scoreName], 1);
+	}
 	case self::FIELD_AUTHOR_MATCH:
 	    if (!isset($this->authorMatch))
 		return "";
@@ -448,9 +470,10 @@ class PaperList {
     }
 
     function footer($ncol) {
-	global $Conf, $ConfSiteBase;
+	global $Conf, $ConfSiteBase, $paperListScoreNames;
 	if ($this->count == 0)
 	    return "";
+	
 	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
 	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'><img src=\"${ConfSiteBase}images/bendulft.png\" style='position: relative; top: 8px' /></td>\n";
 	if (($plact = defval($_REQUEST["showact"])) !== null)
@@ -458,7 +481,7 @@ class PaperList {
 	else
 	    $plact = defval($_REQUEST["foldplact"], 1);
 	$fclass = ($plact ? "fold8c" : "fold8o");
-	$t .= "    <td id='foldplact' class='$fclass' colspan='" . ($ncol - 1) . "'><table>
+	$t .= "    <td id='foldplact' class='$fclass' colspan='" . ($ncol - 1) . "'><table class='floatleft'>
   <tr><td class='xcaption'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then <b>Get:</b></td>
     <td><select name='getaction'>
     <option value='paper' selected='selected'>Papers</option>
@@ -517,33 +540,68 @@ class PaperList {
 	    
 	} else
 	    $t .= "</td></tr>";
+
+	$t .= "</table>";
+
+	if (isset($this->scoreMax)) {
+	    $t .= "<div style='float: right; padding-top: 5px; padding-right: 10px'>";
+	    $t .= "<div id='foldscores' class='foldc' style='position: relative'>";
+	    $t .= "<a href='javascript:void(fold(\"scores\", 0))'>Graph scores</a>";
+	    $t .= "&nbsp; <img src=\"${ConfSiteBase}images/bendurt.png\" />";
+	    $t .= "<div class='scoredialog extension'>";
+	    $rf = reviewForm();
+	    $theScores = defval($_SESSION["scores"], 1);
+	    $t .= "<b>Show graphs for:</b><br />";
+	    for ($i = 0; $i < self::FIELD_NUMSCORES; $i++) {
+		$score = $paperListScoreNames[$i];
+		if (in_array($score, $rf->fieldOrder)) {
+		    $t .= "<input type='checkbox' name='score[]' value='$i' ";
+		    if ($theScores & (1 << $i))
+			$t .= "checked='checked' ";
+		    $t .= "/>&nbsp;" . htmlspecialchars($rf->shortName[$score]) . "<br />";
+		}
+	    }
+	    $t .= "<div class='smgap'></div><input type='submit' class='button' name='showscores' value='OK' onclick='paperselDocheck=false;return true' />&nbsp; <button class='button' type='button' onclick='void(fold(\"scores\", 1))'>Cancel</button>";
+	    $t .= "</div></div></div>";
+	}
 	
-	return $t . "</table></td></tr>\n";
+	return $t . "</td></tr>\n";
     }
 
+    function addScores($a) {
+	if ($this->scoresOk) {
+	    $scores = defval($_SESSION["scores"], 1);
+	    for ($i = 0; $i < self::FIELD_NUMSCORES; $i++)
+		if ($scores & (1 << $i))
+		    array_push($a, self::FIELD_SCORE + $i);
+	    $this->scoreMax = array();
+	}
+	return $a;
+    }
+    
     function listFields($listname) {
 	switch ($listname) {
 	  case "a":
 	  case "authorHome":
 	    return array("Authored papers", 2, 12, 27);
 	  case "s":
-	    return array("Submitted papers", 100, 1, 11, 45, 41, 33, 46, 50);
+	    return $this->addScores(array("Submitted papers", 100, 1, 11, 45, 41, 33, 70));
 	  case "all":
-	    return array("All papers", 100, 1, 11, 27, 45, 50);
+	    return array("All papers", 100, 1, 11, 27, 45, 70);
 	  case "reviewerHome":
 	    return array("Your review assignment", 3, 13, 45, 33);
 	  case "r":
-	    return array("Your review assignment", 100, 3, 13, 45, 41, 33, 50);
+	    return array("Your review assignment", 100, 3, 13, 45, 41, 33, 70);
 	  case "rout":
-	    return array("Unsubmitted reviews", 100, 3, 13, 45, 41, 33, 50);
+	    return array("Unsubmitted reviews", 100, 3, 13, 45, 41, 33, 70);
 	  case "req":
-	    return array("Requested reviews", 100, 3, 13, 45, 41, 33, 50);
+	    return array("Requested reviews", 100, 3, 13, 45, 41, 33, 70);
 	  case "reviewAssignment":
-	    return array("Review assignment", 4, 14, 39, 36, 43, 35, 50, 37, 38, 44, 46, 47, 48);
+	    return $this->addScores(array("Review assignment", 4, 14, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48));
 	  case "conflict":
 	    return array("Potential conflicts", 102, 4, 14, self::FIELD_OPT_AUTHORS, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
 	  case "editReviewPreference":
-	    return array("Reviewer preferences", 1, 11, 36, 45, 40, 50, 37);
+	    return array("Reviewer preferences", 1, 11, 36, 45, 40, 70, 37);
 	  case "reviewers":
 	    return array("Proposed assignments", 3, 13, 33, 38);
 	  case "reviewersSel":
@@ -563,6 +621,9 @@ class PaperList {
 	$this->anySelector = 0;
 	$url = $this->search->url();
 
+	// check role type
+	$this->scoresOk = $me->amAssistant() || ($me->isPC && $Conf->timePCViewGrades());
+
 	// get paper list
 	if (!($baseFieldId = $this->listFields($listname))) {
 	    $Conf->errorMsg("There is no paper list query named '" . htmlspecialchars($listname) . "'.");
@@ -570,9 +631,6 @@ class PaperList {
 	}
 	$description = array_shift($baseFieldId);
 	
-	// check role type
-	$this->scoresOk = $me->amAssistant() || ($me->isPC && $Conf->timePCViewGrades());
-
 	// initialize query
 	$queryOptions = array();
 	if ($this->search->complexSearch($queryOptions)) {
@@ -600,8 +658,9 @@ class PaperList {
 	foreach ($baseFieldId as $fid) {
 	    if ($this->selector($fid, $queryOptions) === false)
 		continue;
-	    $fieldId[] = array($fid, $paperListFields[$fid][0], $paperListFields[$fid][1]);
-	    if ($paperListFields[$fid][1] == 1)
+	    $normFid = self::_normalizeField($fid);
+	    $fieldId[] = array($fid, $paperListFields[$normFid][0], $paperListFields[$normFid][1]);
+	    if ($paperListFields[$normFid][1] == 1)
 		$ncol++;
 	}
 	$unfolded = $this->unfolded;
@@ -811,8 +870,13 @@ $paperListFields = array(
 	PaperList::FIELD_DESIRABILITY => array('desirability', 1),
 	PaperList::FIELD_ALL_PREFERENCES => array('allPreferences', 2),
 	PaperList::FIELD_REVIEWER_TYPE_ICON => array('reviewerTypeIcon', 1),
-	PaperList::FIELD_OPT_MERIT_ICON => array('optOverallMeritIcon', 1),
+	PaperList::FIELD_SCORE => array('scoreIcon', 1),
 	PaperList::FIELD_AUTHOR_MATCH => array('authorsMatch', 2),
 	PaperList::FIELD_COLLABORATORS_MATCH => array('collaboratorsMatch', 2),
 	PaperList::FIELD_OPT_AUTHORS => array('optAuthors', 3)
 	);
+
+$paperListScoreNames = array("overAllMerit", "technicalMerit", "novelty",
+			     "grammar", "reviewerQualification", "potential",
+			     "fixability", "interestToCommunity", "longevity",
+			     "likelyPresentation", "suitableForShort");

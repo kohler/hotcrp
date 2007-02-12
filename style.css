@@ -564,11 +564,11 @@ select {
 	border: solid 1px #aaaadd;
 }
 
-div.prevpaperlink {
+div.prevpaperlink, table.floatleft {
 	float: left;
 	margin: 0em;
 }
-div.nextpaperlink {
+div.nextpaperlink, div.floatright {
 	float: right;
 	margin: 0em;
 }
@@ -740,7 +740,7 @@ table.pltable th a.unfolder1, table.pltable th a.unfolder2, table.pltable th a.f
 	padding-right: 1em;
 }
 table.pltable th.pl_id, table.pltable th.pl_topicMatch, 
-.pl_reviewerTypeIcon, .pl_optOverallMeritIcon {
+.pl_reviewerTypeIcon, .pl_scoreIcon {
 	text-align: center;
 	padding-right: 0em;
 }
@@ -941,6 +941,16 @@ div.popupdialog .unpopup {
 }
 div.popupdialog p:first-child {
 	margin-top: 0px;
+}
+div.scoredialog {
+	border: 3px solid red;
+	padding: 0.5em;
+	background: #fff2f2;
+	position: absolute;
+	bottom: -2em;
+	right: 0%;
+	min-width: 15em;
+	z-index: 2;
 }
 
 div#offrev td#upload {

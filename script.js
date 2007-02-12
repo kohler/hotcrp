@@ -98,7 +98,11 @@ function papersel(onoff) {
 	    ins[i].checked = onoff;
 }
 
+var paperselDocheck = true;
+
 function paperselCheck() {
+    if (!paperselDocheck)
+	return true;
     var ins = document.getElementsByTagName("input");
     for (var i = 0; i < ins.length; i++)
 	if (ins[i].name == "pap[]" && ins[i].checked)

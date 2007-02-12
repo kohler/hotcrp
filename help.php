@@ -450,7 +450,7 @@ supposedly reduces bias.)
   see all submitted reviews.</a></strong></p></li>
 
 <li><p><strong><a
-  href='${ConfSiteBase}search.php?q=&amp;t=s&amp;sort=46'>Examine paper
+  href='${ConfSiteBase}search.php?q=&amp;t=s&amp;sort=50'>Examine paper
   scores</a></strong>, either one at a time or en masse, and decide which
   papers will be discussed.  The <a href='help.php?t=tags'>tags</a> system
   lets you prepare discussion sets and even discussion orders.</p></li>
