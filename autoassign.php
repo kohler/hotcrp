@@ -452,16 +452,16 @@ echo "&nbsp; <input type='text' class='textlite' name='revaddct' value=\"", html
 doOptions('revaddtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
 echo "</select>&nbsp; review(s) per paper</td></tr>\n";
 
+echo "<tr><td class='caption'></td>", tdClass(true, "prefconflict");
+doRadio('a', 'prefconflict', 'Assign conflicts when PC members have review preferences of &minus;100 or less');
+echo "</td></tr>\n";
+
 echo "<tr><td class='caption'></td>", tdClass(true, "lead");
 doRadio('a', 'lead', 'Assign discussion lead from reviewers, preferring high scores');
 echo "</td></tr>\n";
 
 echo "<tr><td class='caption'></td>", tdClass(true, "shepherd");
 doRadio('a', 'shepherd', 'Assign shepherd from reviewers, preferring high scores');
-echo "</td></tr>\n";
-
-echo "<tr><td class='caption'></td>", tdClass(true, "prefconflict");
-doRadio('a', 'prefconflict', 'Assign conflicts when PC members have review preferences of &minus;100 or less');
 echo "</td></tr>\n";
 
 
