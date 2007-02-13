@@ -743,7 +743,8 @@ class PaperList {
 	$srows = array();
 	if ($pidarray !== null) {
 	    foreach ($pidarray as $pid)
-		$srows[] = $rows[$pid];
+		if ($rows[$pid])
+		    $srows[] = $rows[$pid];
 	} else
 	    $srows = $this->_sort($rows);
 
