@@ -797,7 +797,7 @@ class Conference {
 	if (isset($options['scores'])) {
 	    foreach ($options['scores'] as $field)
 		$pq .= ",
-		PaperScores.${field}Scores, PaperScores.${field}Avg";
+		PaperScores.${field}Scores";
 	}
 	if (isset($options['topicInterestScore']))
 	    $pq .= ",
@@ -869,7 +869,7 @@ class Conference {
 	if (isset($options['scores'])) {
 	    $pq .= "		left join (select paperId";
 	    foreach ($options['scores'] as $field)
-		$pq .= ", group_concat($field) as ${field}Scores, avg($field) as ${field}Avg";
+		$pq .= ", group_concat($field) as ${field}Scores";
 	    $pq .= " from PaperReview where reviewSubmitted>0 group by paperId) as PaperScores on (PaperScores.paperId=Paper.paperId)\n";
 	}
 	
