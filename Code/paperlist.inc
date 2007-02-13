@@ -23,7 +23,6 @@ class PaperList {
     const FIELD_STATUS = 27;
     const FIELD_REVIEWER_TYPE = 29;
     const FIELD_STATUS_SHORT = 33;
-    const FIELD_REVIEWER_NAME = 34;
     const FIELD_ASSIGN_REVIEW = 35;
     const FIELD_TOPIC_INTEREST = 36;
     const FIELD_TOPIC_NAMES = 37;
@@ -46,6 +45,7 @@ class PaperList {
     
     var $showHeader;
     var $sortField;
+    var $sortInfo;
     var $reverseSort;
     var $sortable;
     var $count;
@@ -65,14 +65,15 @@ class PaperList {
     var $unfolded;
     
     function PaperList($sortable = true, $sessionVar = null, $search = null, $extraText = null) {
+	global $paperListFields;
 	$this->showHeader = true;
 
 	$s = ($sortable ? defval($_REQUEST["sort"], "") : "");
 	$x = (strlen($s) ? $s[strlen($s)-1] : "");
 	$this->reverseSort = ($x == "R");
 	if ($x == "R" || $x == "N")
-	    $sortVal = substr($s, 0, -1);
-	if ("x" . (int) $s == "x" . $s)
+	    $s = substr($s, 0, strlen($s) - 1);
+	if (("x" . (int) $s) == ("x" . $s))
 	    $this->sortField = (int) $s;
 	else
 	    $this->sortField = null;
@@ -98,9 +99,6 @@ class PaperList {
     function selector($fieldId, &$queryOptions) {
 	global $Conf, $paperListScoreNames;
 	switch (self::_normalizeField($fieldId)) {
-	case self::FIELD_REVIEWER_NAME:
-	    $queryOptions['reviewerName'] = 1;
-	    break;
 	case self::FIELD_TOPIC_INTEREST:
 	    $rf = reviewForm();
 	    if (!count($rf->topicName))
@@ -149,51 +147,112 @@ class PaperList {
 	    }
 	    break;
 	}
-	if ($this->sortField == $fieldId && ($order = $this->sort($fieldId)))
-	    $queryOptions['order'] = $order;
 	return true;
     }
 
-    function sort($fieldId) {
-	global $paperListScoreNames;
-	$up = ($this->reverseSort ? "desc" : "asc");
-	$down = ($this->reverseSort ? "asc" : "desc");
-	switch (self::_normalizeField($fieldId)) {
+    function _sortTitle($a, $b) {
+	$x = strcasecmp($a->title, $b->title);
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+    
+    function _sortStatus($a, $b) {
+	$x = $b->outcome - $a->outcome;
+	$x = $x ? $x : ($a->timeWithdrawn > 0) - ($b->timeWithdrawn > 0);
+	$x = $x ? $x : ($b->timeSubmitted > 0) - ($a->timeSubmitted > 0);
+	$x = $x ? $x : ($b->paperStorageId > 1) - ($a->paperStorageId > 1);
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+    
+    function _sortReviewType($a, $b) {
+	$x = $b->reviewType - $a->reviewType;
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+
+    function _sortReviewsStatus($a, $b) {
+	$x = $a->reviewCount - $b->reviewCount;
+	$x = $x ? $x : $a->startedReviewCount - $b->startedReviewCount;
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+
+    function _sortTopicInterest($a, $b) {
+	$x = $b->topicInterestScore - $a->topicInterestScore;
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+    
+    function _sortReviewerPreference($a, $b) {
+	$x = $b->reviewerPreference - $a->reviewerPreference;
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+    
+    function _sortDesirability($a, $b) {
+	$x = $b->desirability - $a->desirability;
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+
+    function _sortScore($a, $b) {
+	$x = strcmp($this->sortInfo[$b->paperId], $this->sortInfo[$a->paperId]);
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+    
+    function _sort($rows) {
+	global $Conf, $paperListScoreNames;
+	switch (self::_normalizeField($this->sortField)) {
 	case self::FIELD_ID:
 	case self::FIELD_ID_MANAGE:
 	case self::FIELD_ID_REVIEW:
 	case self::FIELD_ID_ASSIGN:
-	    return "order by Paper.paperId $up";
+	    ksort($rows);
+	    break;
 	case self::FIELD_TITLE:
 	case self::FIELD_TITLE_MANAGE:
 	case self::FIELD_TITLE_REVIEW:
 	case self::FIELD_TITLE_ASSIGN:
-	    return "order by Paper.title $up";
+	    usort($rows, array("PaperList", "_sortTitle"));
+	    break;
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
-	    return "order by Paper.outcome $down, (Paper.timeWithdrawn > 0) $up, (Paper.timeSubmitted > 0) $down, (paperStorageId > 1) $down, Paper.paperId $up";
+	    usort($rows, array("PaperList", "_sortStatus"));
+	    break;
 	case self::FIELD_REVIEWER_TYPE:
 	case self::FIELD_REVIEWER_TYPE_ICON:
-	    return "order by PaperReview.reviewType $down";
-	case self::FIELD_REVIEWER_NAME:
-	    return "order by ReviewerContactInfo.lastName $up, ReviewerContactInfo.firstName $up, ReviewerContactInfo.email $up";
-	case self::FIELD_REVIEWS_STATUS:
-	    return "order by reviewCount $up, startedReviewCount $up";
 	case self::FIELD_ASSIGN_REVIEW:
-	    return "order by PaperReview.reviewType $down, Paper.paperId $up";
+	    usort($rows, array("PaperList", "_sortReviewType"));
+	    break;
+	case self::FIELD_REVIEWS_STATUS:
+	    usort($rows, array("PaperList", "_sortReviewsStatus"));
+	    break;
 	case self::FIELD_TOPIC_INTEREST:
-	    return "order by topicInterestScore $down, Paper.paperId $up";
+	    usort($rows, array("PaperList", "_sortTopicInterest"));
+	    break;
 	case self::FIELD_REVIEWER_PREFERENCE:
 	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
-	    return "order by reviewerPreference $down";
+	    usort($rows, array("PaperList", "_sortReviewerPreference"));
+	    break;
 	case self::FIELD_DESIRABILITY:
-	    return "order by desirability $down";
+	    usort($rows, array("PaperList", "_sortDesirability"));
+	    break;
 	case self::FIELD_SCORE:
-	    $scoreName = $paperListScoreNames[$fieldId - self::FIELD_SCORE];
-	    return "order by ${scoreName}Avg $down";
-	default:
-	    return null;
+	    $scoreName = $paperListScoreNames[$this->sortField - self::FIELD_SCORE] . "Scores";
+	    $this->sortInfo = array();
+	    $zeros = "00000000000000";
+	    foreach ($rows as $row)
+		if (!$this->contact->amAssistant() && !$this->contact->canViewReview($row, null, $Conf))
+		    $this->sortInfo[$row->paperId] = $zeros;
+		else {
+		    $x = array();
+		    foreach (preg_split('/[\s,]+/', $row->$scoreName) as $i)
+			if (($i = cvtint($i)) > 0)
+			    $x[] = chr($i + 48);
+		    rsort($x);
+		    $this->sortInfo[$row->paperId] = implode($x) . $zeros;
+		}
+	    usort($rows, array($this, "_sortScore"));
+	    break;
 	}
+	if ($this->reverseSort)
+	    return array_reverse($rows);
+	else
+	    return $rows;
     }
     
     function header($fieldId, $ordinal, $row = null, $reviewList = null) {
@@ -223,8 +282,6 @@ class PaperList {
 	    return ($ordinal ? "&nbsp;" : "");
 	case self::FIELD_SELECTOR_CONFLICT:
 	    return "Conflict";
-	case self::FIELD_REVIEWER_NAME:
-	    return "Reviewer name";
 	case self::FIELD_ASSIGN_REVIEW:
 	    return "Assignment";
 	case self::FIELD_TOPIC_INTEREST:
@@ -385,8 +442,6 @@ class PaperList {
 	    if ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType == CONFLICT_AUTHOR)
 		$c .= " disabled='disabled'";
 	    return "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='1' id='psel$this->count' onclick='pselClick(event, this, $this->count)' $c/>";
-	case self::FIELD_REVIEWER_NAME:
-	    return contactHtml($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail);
 	case self::FIELD_ASSIGN_REVIEW:
 	    if ($row->conflictType == CONFLICT_AUTHOR)
 		return "<span class='author'>Author</span>";
@@ -435,11 +490,13 @@ class PaperList {
 		    $x .= " [" . htmlspecialchars($what[3]) . "]";
 		}
 	    return $x;
-	case self::FIELD_SCORE: {
-	    $scoreName = $paperListScoreNames[$fieldId - self::FIELD_SCORE];
-	    $itemName = "${scoreName}Scores";
-	    return $Conf->textValuesGraph($row->$itemName, $this->scoreMax[$scoreName], 1);
-	}
+	case self::FIELD_SCORE:
+	    if ($this->contact->amAssistant() || $this->contact->canViewReview($row, null, $Conf)) {
+		$scoreName = $paperListScoreNames[$fieldId - self::FIELD_SCORE];
+		$itemName = "${scoreName}Scores";
+		return $Conf->textValuesGraph($row->$itemName, $this->scoreMax[$scoreName], 1);
+	    } else
+		return "";
 	case self::FIELD_AUTHOR_MATCH:
 	    if (!isset($this->authorMatch))
 		return "";
@@ -591,13 +648,13 @@ class PaperList {
 	  case "reviewerHome":
 	    return array("Your review assignment", 3, 13, 45, 33);
 	  case "r":
-	    return array("Your review assignment", 100, 3, 13, 45, 41, 33, 70);
+	    return $this->addScores(array("Your review assignment", 100, 3, 13, 45, 41, 33, 70));
 	  case "rout":
-	    return array("Unsubmitted reviews", 100, 3, 13, 45, 41, 33, 70);
+	    return $this->addScores(array("Unsubmitted reviews", 100, 3, 13, 45, 41, 33, 70));
 	  case "req":
-	    return array("Requested reviews", 100, 3, 13, 45, 41, 33, 70);
+	    return $this->addScores(array("Requested reviews", 100, 3, 13, 45, 41, 33, 70));
 	  case "reviewAssignment":
-	    return $this->addScores(array("Review assignment", 4, 14, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48));
+	    return array("Review assignment", 4, 14, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48);
 	  case "conflict":
 	    return array("Potential conflicts", 102, 4, 14, self::FIELD_OPT_AUTHORS, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
 	  case "editReviewPreference":
@@ -652,14 +709,14 @@ class PaperList {
 	}
 	
 	// get field array
-	$fieldId = array();
+	$fieldDef = array();
 	$ncol = 0;
 	$this->unfolded = true;
 	foreach ($baseFieldId as $fid) {
 	    if ($this->selector($fid, $queryOptions) === false)
 		continue;
 	    $normFid = self::_normalizeField($fid);
-	    $fieldId[] = array($fid, $paperListFields[$normFid][0], $paperListFields[$normFid][1]);
+	    $fieldDef[$fid] = $paperListFields[$normFid];
 	    if ($paperListFields[$normFid][1] == 1)
 		$ncol++;
 	}
@@ -691,8 +748,20 @@ class PaperList {
 	if (!$result)
 	    return NULL;
 
+	// fetch data
 	if (edb_nrows($result) == 0)
 	    return "No papers";
+	$rows = array();
+	while (($row = edb_orow($result)))
+	    $rows[$row->paperId] = $row;
+
+	// sort rows
+	$srows = array();
+	if ($pidarray !== null) {
+	    foreach ($pidarray as $pid)
+		$srows[] = $rows[$pid];
+	} else
+	    $srows = $this->_sort($rows);
 
 	$ids = array();
 	$anyData = array();
@@ -700,37 +769,37 @@ class PaperList {
 	$body = '';
 	$aufoldclass = defval($_SESSION["plFold"], 3);
 	$authorinfo = false;
-	while (($row = edb_orow($result))) {
+	foreach ($srows as $row) {
 	    $ids[] = $row->paperId;
 	    $trclass = "k" . ($this->count % 2);
 	    $this->count++;
 	    $this->unfolded = $unfolded;
 
 	    $t = "  <tr class=\"pl $trclass\">\n";
-	    foreach ($fieldId as $f)
-		if ($f[2] == 1) {
-		    $c = $this->content($f[0], $row, $reviewList);
-		    $t .= "    <td class=\"pl_$f[1]\">$c</td>\n";
+	    foreach ($fieldDef as $fieldId => $fdef)
+		if ($fdef[1] == 1) {
+		    $c = $this->content($fieldId, $row, $reviewList);
+		    $t .= "    <td class=\"pl_$fdef[0]\">$c</td>\n";
 		    if ($c != "")
-			$anyData[$f[0]] = 1;
+			$anyData[$fieldId] = 1;
 		}
 	    $t .= "  </tr>\n";
 	    
-	    foreach ($fieldId as $f)
-		if ($f[2] >= 2 && ($d = $this->content($f[0], $row, $reviewList))) {
-		    $t .= "  <tr class=\"pl_$f[1] pl_callout $trclass";
-		    if ($f[2] == 3) {
+	    foreach ($fieldDef as $fieldId => $fdef)
+		if ($fdef[1] >= 2 && ($d = $this->content($fieldId, $row, $reviewList))) {
+		    $t .= "  <tr class=\"pl_$fdef[0] pl_callout $trclass";
+		    if ($fdef[1] == 3) {
 			$authorinfo |= ($row->blind ? 2 : 1);
 			$t .= " extension1" . ($row->blind ? " extension2" : "");
 		    }
 		    $t .= "\">\n";
-		    $t .= "<td class=\"pl_$f[1] pl_callout\" colspan='$ncol'>";
-		    $t .= "<span class='pl_callouthdr'>" . $this->header($f[0], -1, $row, $reviewList) . ":</span>";
+		    $t .= "<td class=\"pl_$fdef[0] pl_callout\" colspan='$ncol'>";
+		    $t .= "<span class='pl_callouthdr'>" . $this->header($fieldId, -1, $row, $reviewList) . ":</span>";
 		    $t .= $d . "</td>\n  </tr>\n";
 		}
 
 	    if ($this->extraText && isset($this->extraText[$row->paperId]))
-		$t .= "  <tr class=\"pl_extra pl_callout $trclass\">\n"
+		$t .= "  <tr class=\"pl_extra $trclass\">\n"
 		    . "<td class=\"pl_extra pl_callout\" colspan='$ncol'>"
 		    . $this->extraText[$row->paperId]
 		    . "</td>\n  </tr>\n";
@@ -738,17 +807,8 @@ class PaperList {
 	    if (!$this->unfolded)
 		$t = str_replace("<tr class=\"", "<tr class=\"extension3 ", $t);
 
-	    if ($pidarray === null)
-		$body .= $t;
-	    else
-		$byPaperId[$row->paperId] = $t;
+	    $body .= $t;
 	}
-
-	// collect paper IDs by order user specified
-	if ($pidarray !== null)
-	    foreach ($pidarray as $pid)
-		if (isset($byPaperId[$pid]))
-		    $body .= $byPaperId[$pid];
 
 	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname);
 	if ($authorinfo & 1)
@@ -783,25 +843,25 @@ class PaperList {
 	    if ($this->sortable && $url) {
 		$sortUrl = $ConfSiteBase . $url . (strpos($url, "?") ? "&" : "?") . "sort=";
 		$q = "<a class='pl_sort' href=\"" . $sortUrl;
-		foreach ($fieldId as $f) {
-		    if ($f[2] != 1)
+		foreach ($fieldDef as $fieldId => $fdef) {
+		    if ($fdef[1] != 1)
 			continue;
-		    else if (!isset($anyData[$f[0]])) {
-			$x .= "    <th class=\"pl_$f[1]\"></th>\n";
+		    else if (!isset($anyData[$fieldId])) {
+			$x .= "    <th class=\"pl_$fdef[0]\"></th>\n";
 			continue;
 		    }
-		    $x .= "    <th class=\"pl_$f[1]\">";
-		    $ftext = $this->header($f[0], $ord++);
-		    if ($this->sortField == null && $f[0] < 10
+		    $x .= "    <th class=\"pl_$fdef[0]\">";
+		    $ftext = $this->header($fieldId, $ord++);
+		    if ($this->sortField == null && $fieldId < 10
 			&& $pidarray === null && !$this->search->orderTag)
-			$this->sortField = $f[0];
-		    if ($f[0] == $this->sortField)
-			$x .= "<a class='pl_sort_def" . ($this->reverseSort ? "_rev" : "") . "' href=\"" . $sortUrl . $f[0] . ($this->reverseSort ? "N" : "R") . "\">" . $ftext . "</a>";
-		    else if ($this->sort($f[0]))
-			$x .= $q . $f[0] . "\">" . $ftext . "</a>";
+			$this->sortField = $fieldId;
+		    if ($fieldId == $this->sortField)
+			$x .= "<a class='pl_sort_def" . ($this->reverseSort ? "_rev" : "") . "' href=\"" . $sortUrl . $fieldId . ($this->reverseSort ? "N" : "R") . "\">" . $ftext . "</a>";
+		    else if ($fdef[2])
+			$x .= $q . $fieldId . "\">" . $ftext . "</a>";
 		    else
 			$x .= $ftext;
-		    if ($titleextra && $f[0] >= self::FIELD_TITLE && $f[0] <= self::FIELD_TITLE_LAST) {
+		    if ($titleextra && $fieldId >= self::FIELD_TITLE && $fieldId <= self::FIELD_TITLE_LAST) {
 			$x .= $titleextra;
 			$titleextra = false;
 		    }
@@ -809,12 +869,12 @@ class PaperList {
 		}
 		
 	    } else {
-		foreach ($fieldId as $f)
-		    if ($f[2] == 1 && isset($anyData[$f[0]]))
-			$x .= "    <th class=\"pl_$f[1]\">"
-			    . $this->header($f[0], $ord++) . "</th>\n";
-		    else if ($f[2] == 1)
-			$x .= "    <th class=\"pl_$f[1]\"></th>\n";
+		foreach ($fieldDef as $fieldId => $fdef)
+		    if ($fdef[1] == 1 && isset($anyData[$fieldId]))
+			$x .= "    <th class=\"pl_$fdef[0]\">"
+			    . $this->header($fieldId, $ord++) . "</th>\n";
+		    else if ($fdef[1] == 1)
+			$x .= "    <th class=\"pl_$fdef[0]\"></th>\n";
 	    }
 	    
 	    $x .= "  </tr>\n";
@@ -822,7 +882,8 @@ class PaperList {
 	}
 
 	$x .= $body;
-	if ($fieldId[0][0] == self::FIELD_SELECTOR)
+	reset($fieldDef);
+	if (key($fieldDef) == self::FIELD_SELECTOR)
 	    $x .= $this->footer($ncol);
 	$x .= "</table>";
 
@@ -845,35 +906,34 @@ class PaperList {
 
 
 $paperListFields = array(
-	PaperList::FIELD_SELECTOR => array('selector', 1),
-	PaperList::FIELD_SELECTOR_ON => array('selector', 1),
-	PaperList::FIELD_SELECTOR_CONFLICT => array('selector', 1),
-	PaperList::FIELD_ID => array('id', 1),
-	PaperList::FIELD_ID_MANAGE => array('id', 1),
-	PaperList::FIELD_ID_REVIEW => array('id', 1),
-	PaperList::FIELD_ID_ASSIGN => array('id', 1),
-	PaperList::FIELD_TITLE => array('title', 1),
-	PaperList::FIELD_TITLE_MANAGE => array('title', 1),
-	PaperList::FIELD_TITLE_REVIEW => array('title', 1),
-	PaperList::FIELD_TITLE_ASSIGN => array('title', 1),
-	PaperList::FIELD_STATUS => array('status', 1),
-	PaperList::FIELD_REVIEWER_TYPE => array('reviewer', 1),
-	PaperList::FIELD_STATUS_SHORT => array('status', 1),
-	PaperList::FIELD_REVIEWER_NAME => array('reviewerName', 1),
-	PaperList::FIELD_ASSIGN_REVIEW => array('reviewAssignment', 1),
-	PaperList::FIELD_TOPIC_INTEREST => array('topicMatch', 1),
-	PaperList::FIELD_TOPIC_NAMES => array('topicNames', 2),
-	PaperList::FIELD_ALL_REVIEWER_NAMES => array('reviewerNames', 2),
-	PaperList::FIELD_REVIEWER_PREFERENCE => array('reviewPreference', 1),
-	PaperList::FIELD_EDIT_REVIEWER_PREFERENCE => array('editReviewPreference', 1),
-	PaperList::FIELD_REVIEWS_STATUS => array('reviewsStatus', 1),
-	PaperList::FIELD_DESIRABILITY => array('desirability', 1),
-	PaperList::FIELD_ALL_PREFERENCES => array('allPreferences', 2),
-	PaperList::FIELD_REVIEWER_TYPE_ICON => array('reviewerTypeIcon', 1),
-	PaperList::FIELD_SCORE => array('scoreIcon', 1),
-	PaperList::FIELD_AUTHOR_MATCH => array('authorsMatch', 2),
-	PaperList::FIELD_COLLABORATORS_MATCH => array('collaboratorsMatch', 2),
-	PaperList::FIELD_OPT_AUTHORS => array('optAuthors', 3)
+	PaperList::FIELD_SELECTOR => array('selector', 1, 0),
+	PaperList::FIELD_SELECTOR_ON => array('selector', 1, 0),
+	PaperList::FIELD_SELECTOR_CONFLICT => array('selector', 1, 0),
+	PaperList::FIELD_ID => array('id', 1, 1),
+	PaperList::FIELD_ID_MANAGE => array('id', 1, 1),
+	PaperList::FIELD_ID_REVIEW => array('id', 1, 1),
+	PaperList::FIELD_ID_ASSIGN => array('id', 1, 1),
+	PaperList::FIELD_TITLE => array('title', 1, 1),
+	PaperList::FIELD_TITLE_MANAGE => array('title', 1, 1),
+	PaperList::FIELD_TITLE_REVIEW => array('title', 1, 1),
+	PaperList::FIELD_TITLE_ASSIGN => array('title', 1, 1),
+	PaperList::FIELD_STATUS => array('status', 1, 1),
+	PaperList::FIELD_REVIEWER_TYPE => array('reviewer', 1, 1),
+	PaperList::FIELD_STATUS_SHORT => array('status', 1, 1),
+	PaperList::FIELD_ASSIGN_REVIEW => array('reviewAssignment', 1, 1),
+	PaperList::FIELD_TOPIC_INTEREST => array('topicMatch', 1, 1),
+	PaperList::FIELD_TOPIC_NAMES => array('topicNames', 2, 0),
+	PaperList::FIELD_ALL_REVIEWER_NAMES => array('reviewerNames', 2, 0),
+	PaperList::FIELD_REVIEWER_PREFERENCE => array('reviewPreference', 1, 1),
+	PaperList::FIELD_EDIT_REVIEWER_PREFERENCE => array('editReviewPreference', 1, 1),
+	PaperList::FIELD_REVIEWS_STATUS => array('reviewsStatus', 1, 1),
+	PaperList::FIELD_DESIRABILITY => array('desirability', 1, 1),
+	PaperList::FIELD_ALL_PREFERENCES => array('allPreferences', 2, 0),
+	PaperList::FIELD_REVIEWER_TYPE_ICON => array('reviewerTypeIcon', 1, 1),
+	PaperList::FIELD_SCORE => array('scoreIcon', 1, 1),
+	PaperList::FIELD_AUTHOR_MATCH => array('authorsMatch', 2, 0),
+	PaperList::FIELD_COLLABORATORS_MATCH => array('collaboratorsMatch', 2, 0),
+	PaperList::FIELD_OPT_AUTHORS => array('optAuthors', 3, 0)
 	);
 
 $paperListScoreNames = array("overAllMerit", "technicalMerit", "novelty",

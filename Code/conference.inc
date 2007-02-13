@@ -1530,7 +1530,7 @@ class Conference {
 
 	$sum = $n = $sumsq = 0;
 	foreach (preg_split('/[\s,]+/', $text) as $i)
-	    if (($i = cvtint($i)) >= 0) {
+	    if (($i = cvtint($i)) > 0) {
 		if (!isset($merit[$i]))
 		    $merit[$i] = 1;
 		else
@@ -1560,7 +1560,7 @@ class Conference {
 		$retstr .= sprintf(" std=%0.2f", $dev);
 	    $retstr .= "</font></td></tr></table>";
 	} else
-	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&s=$style\" " . sprintf("alt=\"avg=%0.2f\" ", $avg) . "/>";
+	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=$style\" " . sprintf("alt=\"avg=%0.2f\" ", $avg) . "/>";
 	
 	return $retstr;
     }
