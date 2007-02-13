@@ -1559,8 +1559,13 @@ class Conference {
 	    if ($n > 1)
 		$retstr .= sprintf(" std=%0.2f", $dev);
 	    $retstr .= "</font></td></tr></table>";
-	} else
-	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=$style\" " . sprintf("alt=\"avg=%0.2f\" ", $avg) . "/>";
+	} else {
+	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=$style\" " . sprintf("alt=\"avg=%0.2f\" ", $avg);
+	    if ($style == 1)
+		$retstr .= "width='" . (5 * $max + 3)
+		    . "' height='" . (5 * max(3, max($merit)) + 3) . "' ";
+	    $retstr .= "/>";
+	}
 	
 	return $retstr;
     }

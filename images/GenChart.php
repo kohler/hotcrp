@@ -1,8 +1,9 @@
 <?php
-//
-// Generates a GIF image of a bar chat.
-// Arguments are passed in as v
-//
+// Generates a PNG image of a bar chat.
+// Arguments are passed in as v.
+// Don't forget to change the width and height calculations in
+// Conference::textValuesGraph if you change the width and height here.
+
 
 if (!isset($_REQUEST["v"]))
     exit;
@@ -31,7 +32,7 @@ $picWidth = ($blockWidth + $blockPad) * ($valMax - $valMin)
     + $blockPad
     + 2 * $textWidth;
 
-$picHeight=$blockHeight * $maxY + $blockSkip * ($maxY+1);
+$picHeight = $blockHeight * $maxY + $blockSkip * ($maxY+1);
 
 $pic=ImageCreate($picWidth+1,$picHeight+1);
 
@@ -94,7 +95,9 @@ if ($s == 0) {
 	imagestring($pic, 1, $picWidth - $blockWidth - $textWidth - $blockPad, $picHeight - $blockHeight - $blockSkip - 3, "H", $cgrey);
 }
 
-Header("Content-type: image/png");
-Header("Cache-Control: public");
+header("Content-Type: image/png");
+header("Cache-Control: public, max-age=31557600");
+header("Expires: " . date("r", time() + 31557600));
+header("Pragma: "); // don't know where the pragma is coming from; oh well
 ImagePNG($pic);
 exit();
