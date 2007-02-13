@@ -330,7 +330,7 @@ function _tryNewList($opt) {
     $_SESSION["list"] = $search->paperList();
     $_SESSION["list"]["url"] = $search->url();
     $pl = new PaperList(false);
-    $fields = PaperList::listFields($search->limitName);
+    $fields = $pl->listFields($search->limitName);
     $_SESSION["list"]["description"] = $fields[0];
     unset($_SESSION["matchPreg"]);
     $Conf->q("drop temporary table Matches");
