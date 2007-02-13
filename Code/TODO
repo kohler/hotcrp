@@ -16,6 +16,10 @@ Minor features
   help links)
 - "System administrator" role == PCAssistant but not member of PC?
 - layout checker from ager@
+- see scores: if conflict, do not show scores
+- see scores: if sort by score, separate conflicts
+- when email off: do not show authors to PC members, do not show reviewers
+  to authors
 
 Tiny features
 - add a "review assignment" link to the "submitted/accepted/all" papers
