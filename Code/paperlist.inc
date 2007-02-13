@@ -10,15 +10,8 @@ class PaperList {
     const FIELD_SELECTOR_CONFLICT = 102;
     
     const FIELD_ID = 1;
-    const FIELD_ID_MANAGE = 2;
-    const FIELD_ID_REVIEW = 3;
-    const FIELD_ID_ASSIGN = 4;
     
     const FIELD_TITLE = 11;
-    const FIELD_TITLE_MANAGE = 12;
-    const FIELD_TITLE_REVIEW = 13;
-    const FIELD_TITLE_ASSIGN = 14;
-    const FIELD_TITLE_LAST = 19;
     
     const FIELD_STATUS = 27;
     const FIELD_REVIEWER_TYPE = 29;
@@ -54,7 +47,6 @@ class PaperList {
     var $anySelector;
     var $description;
     var $sessionVar;
-    var $paperLink;
     var $contact;
     var $scoresOk;
     var $scoreMax;
@@ -63,6 +55,8 @@ class PaperList {
     var $collaboratorsMatch;
     var $extraText;
     var $unfolded;
+    var $paperLink;
+    var $paperLinkArgs;
     
     function PaperList($sortable = true, $sessionVar = null, $search = null, $extraText = null) {
 	global $paperListFields;
@@ -80,13 +74,15 @@ class PaperList {
 	$this->sortable = $sortable;
 
 	$this->sessionVar = $sessionVar;
-	$this->paperLink = "";
+
+	$this->paperLink = "paper";
+	$this->paperLinkArgs = "";
 	if ($this->sessionVar && $this->sessionVar != "list")
-	    $this->paperLink = "&amp;list=" . $this->sessionVar;
+	    $this->paperLinkArgs = "&amp;list=" . $this->sessionVar;
 
 	$this->search = $search;
 	$this->extraText = $extraText;
-	$this->scores = false;
+	$this->scoresOk = false;
     }
 
     function _normalizeField($fieldId) {
@@ -198,15 +194,9 @@ class PaperList {
 	global $Conf, $paperListScoreNames;
 	switch (self::_normalizeField($this->sortField)) {
 	case self::FIELD_ID:
-	case self::FIELD_ID_MANAGE:
-	case self::FIELD_ID_REVIEW:
-	case self::FIELD_ID_ASSIGN:
 	    ksort($rows);
 	    break;
 	case self::FIELD_TITLE:
-	case self::FIELD_TITLE_MANAGE:
-	case self::FIELD_TITLE_REVIEW:
-	case self::FIELD_TITLE_ASSIGN:
 	    usort($rows, array("PaperList", "_sortTitle"));
 	    break;
 	case self::FIELD_STATUS:
@@ -259,14 +249,8 @@ class PaperList {
 	global $paperListScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
-	case self::FIELD_ID_MANAGE:
-	case self::FIELD_ID_REVIEW:
-	case self::FIELD_ID_ASSIGN:
 	    return "ID";
 	case self::FIELD_TITLE:
-	case self::FIELD_TITLE_MANAGE:
-	case self::FIELD_TITLE_REVIEW:
-	case self::FIELD_TITLE_ASSIGN:
 	    return "Title";
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
@@ -350,21 +334,9 @@ class PaperList {
 	global $ConfSiteBase, $Conf, $reviewTypeName, $paperListScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
-	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='2'>#$row->paperId</a>";
-	case self::FIELD_ID_MANAGE:
-	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='2'>#$row->paperId</a>";
-	case self::FIELD_ID_REVIEW:
-	    return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='2'>#$row->paperId</a>";
-	case self::FIELD_ID_ASSIGN:
-	    return "<a href='${ConfSiteBase}assign.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='2'>#$row->paperId</a>";
+	    return "<a href='${ConfSiteBase}$this->paperLink.php?paperId=$row->paperId" . $this->paperLinkArgs . "' tabindex='2'>#$row->paperId</a>";
 	case self::FIELD_TITLE:
-	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
-	case self::FIELD_TITLE_MANAGE:
-	    return "<a href='${ConfSiteBase}paper.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
-	case self::FIELD_TITLE_REVIEW:
-	    return "<a href='${ConfSiteBase}review.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
-	case self::FIELD_TITLE_ASSIGN:
-	    return "<a href='${ConfSiteBase}assign.php?paperId=$row->paperId" . $this->paperLink . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
+	    return "<a href='${ConfSiteBase}$this->paperLink.php?paperId=$row->paperId" . $this->paperLinkArgs . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
@@ -374,7 +346,7 @@ class PaperList {
 	    if ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted))
 		$this->needSubmitReview++;
 	    if ($row->reviewId) {
-		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLink . "\">";
+		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "\">";
 		$a2 = "</a>&nbsp;";
 		if ($row->reviewSubmitted > 0)
 		    $a2 .= "<span class='rstat'>(Complete)</span>";
@@ -406,7 +378,7 @@ class PaperList {
 		$this->needSubmitReview++;
 	    $a1 = $a2 = "";
 	    if ($row->reviewId) {
-		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLink . "\">";
+		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "\">";
 		$a2 = "</a>";
 	    }
 	    if ($row->conflictType > 0) {
@@ -640,29 +612,37 @@ class PaperList {
 	switch ($listname) {
 	  case "a":
 	  case "authorHome":
-	    return array("Authored papers", 2, 12, 27);
+	    return array("Authored papers", 1, 11, 27);
 	  case "s":
 	    return $this->addScores(array("Submitted papers", 100, 1, 11, 45, 41, 33, 70));
 	  case "all":
 	    return array("All papers", 100, 1, 11, 27, 45, 70);
 	  case "reviewerHome":
-	    return array("Your review assignment", 3, 13, 45, 33);
+	    $this->paperLink = "review";
+	    return array("Your review assignment", 1, 11, 45, 33);
 	  case "r":
-	    return $this->addScores(array("Your review assignment", 100, 3, 13, 45, 41, 33, 70));
+	    $this->paperLink = "review";
+	    return $this->addScores(array("Your review assignment", 100, 1, 11, 45, 41, 33, 70));
 	  case "rout":
-	    return $this->addScores(array("Unsubmitted reviews", 100, 3, 13, 45, 41, 33, 70));
+	    $this->paperLink = "review";
+	    return $this->addScores(array("Unsubmitted reviews", 100, 1, 11, 45, 41, 33, 70));
 	  case "req":
-	    return $this->addScores(array("Requested reviews", 100, 3, 13, 45, 41, 33, 70));
+	    $this->paperLink = "review";
+	    return $this->addScores(array("Requested reviews", 100, 1, 11, 45, 41, 33, 70));
 	  case "reviewAssignment":
-	    return array("Review assignment", 4, 14, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48);
+	    $this->paperLink = "assign";
+	    return array("Review assignment", 1, 11, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48);
 	  case "conflict":
-	    return array("Potential conflicts", 102, 4, 14, self::FIELD_OPT_AUTHORS, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
+	    $this->paperLink = "assign";
+	    return array("Potential conflicts", 102, 1, 11, self::FIELD_OPT_AUTHORS, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
 	  case "editReviewPreference":
 	    return array("Reviewer preferences", 1, 11, 36, 45, 40, 70, 37);
 	  case "reviewers":
-	    return array("Proposed assignments", 3, 13, 33, 38);
+	    $this->paperLink = "assign";
+	    return array("Proposed assignments", 1, 11, 33, 38);
 	  case "reviewersSel":
-	    return array("Proposed assignments", 101, 3, 13, 33, 38);
+	    $this->paperLink = "assign";
+	    return array("Proposed assignments", 101, 1, 11, 33, 38);
 	  default:
 	    return null;
 	}
@@ -687,6 +667,10 @@ class PaperList {
 	    return null;
 	}
 	$description = array_shift($baseFieldId);
+
+	// check paper link destination
+	if (isset($_REQUEST["linkto"]) && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
+	    $this->paperLink = $_REQUEST["linkto"];
 	
 	// initialize query
 	$queryOptions = array();
@@ -861,7 +845,7 @@ class PaperList {
 			$x .= $q . $fieldId . "\">" . $ftext . "</a>";
 		    else
 			$x .= $ftext;
-		    if ($titleextra && $fieldId >= self::FIELD_TITLE && $fieldId <= self::FIELD_TITLE_LAST) {
+		    if ($titleextra && $fieldId == self::FIELD_TITLE) {
 			$x .= $titleextra;
 			$titleextra = false;
 		    }
@@ -910,13 +894,7 @@ $paperListFields = array(
 	PaperList::FIELD_SELECTOR_ON => array('selector', 1, 0),
 	PaperList::FIELD_SELECTOR_CONFLICT => array('selector', 1, 0),
 	PaperList::FIELD_ID => array('id', 1, 1),
-	PaperList::FIELD_ID_MANAGE => array('id', 1, 1),
-	PaperList::FIELD_ID_REVIEW => array('id', 1, 1),
-	PaperList::FIELD_ID_ASSIGN => array('id', 1, 1),
 	PaperList::FIELD_TITLE => array('title', 1, 1),
-	PaperList::FIELD_TITLE_MANAGE => array('title', 1, 1),
-	PaperList::FIELD_TITLE_REVIEW => array('title', 1, 1),
-	PaperList::FIELD_TITLE_ASSIGN => array('title', 1, 1),
 	PaperList::FIELD_STATUS => array('status', 1, 1),
 	PaperList::FIELD_REVIEWER_TYPE => array('reviewer', 1, 1),
 	PaperList::FIELD_STATUS_SHORT => array('status', 1, 1),

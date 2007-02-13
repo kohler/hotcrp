@@ -154,7 +154,7 @@ if ($reviewer >= 0) {
 		$useless[$s] = 1;
 	    }
 	
-	echo "<div class='topicinterest'><a href=\"${ConfSiteBase}search.php?q=", urlencode($sco), "+", urlencode($sau), "&amp;qt=ac\"><b>Search for conflicts</b></a> (authors match one of \"", htmlspecialchars(substr($showau, 0, strlen($showau) - 1)), "\" or collaborators match one of \"", htmlspecialchars(substr($showco, 0, strlen($showco) - 1)), "\")</div>\n";
+	echo "<div class='topicinterest'><a href=\"${ConfSiteBase}search.php?q=", urlencode($sco), "+", urlencode($sau), "&amp;qt=ac&amp;linkto=assign\"><b>Search for conflicts</b></a> (authors match one of \"", htmlspecialchars(substr($showau, 0, strlen($showau) - 1)), "\" or collaborators match one of \"", htmlspecialchars(substr($showco, 0, strlen($showco) - 1)), "\")</div>\n";
     }
 
     $paperList = new PaperList(true, "list", new PaperSearch($Me, array("t" => "s", "c" => $reviewer, "urlbase" => "Chair/AssignPapers.php?reviewer=$reviewer")));
