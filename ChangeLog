@@ -1,3 +1,152 @@
+2007-02-13 Tuesday 22:42  kohler
+
+	* index.php (1.100), tarball.sh (1.26), PC/SpotMyProblems.php
+	  (1.14): remove SpotMyProblems; this information is easily
+	  available in things like the "number of reviews" search column
+
+2007-02-13 Tuesday 22:38  kohler
+
+	* Chair/CheckOnSinglePCProgress.php (1.12): fix database errors
+
+2007-02-12 Monday 23:13  kohler
+
+	* autoassign.php (1.14), Code/paperlist.inc (1.102): avoid
+	  undefined index warnings
+
+2007-02-12 Monday 22:38  kohler
+
+	* Code/paperlist.inc (1.101): ignore nonexistent papers
+
+2007-02-12 Monday 20:37  kohler
+
+	* Code/helpers.inc (1.128): You Big Dummy
+
+2007-02-12 Monday 20:32  kohler
+
+	* Chair/AssignPapers.php (1.40), Code/helpers.inc (1.127),
+	  Code/paperlist.inc (1.100): the search on the "PC Assignments"
+	  page links to the assignments pages (Bernhard Ager comment)
+
+2007-02-12 Monday 20:04  kohler
+
+	* Code/conference.inc (1.169), images/GenChart.php (1.11): improve
+	  rendering time for submission lists by (1) giving explicit widths
+	  and heights for GenChart graphs, and (2) making GenChart graphs
+	  cacheable
+
+2007-02-12 Monday 19:47  kohler
+
+	* images/bendurt.png (1.1): forgot this image
+
+2007-02-12 Monday 19:33  kohler
+
+	* Code/conference.inc (1.168): nobody uses the Avg fields any more,
+	  so dont ask sql to compute them
+
+2007-02-12 Monday 19:32  kohler
+
+	* Code/: TODO (1.61), conference.inc (1.167), paperlist.inc (1.99):
+	  do paper list sorting in PHP rather than SQL, which allows us to
+	  do smart things like not showing scores for conflicted papers to
+	  PC members, either in the text or the sort order
+
+2007-02-12 Monday 17:34  kohler
+
+	* Code/TODO (1.60): mark some todos
+
+2007-02-11 Sunday 22:19  kohler
+
+	* Code/contact.inc (1.101): consistency above all
+
+2007-02-11 Sunday 21:42  kohler
+
+	* help.php (1.29), script.js (1.32), search.php (1.77), style.css
+	  (1.149), Code/conference.inc (1.166), Code/paperlist.inc (1.98):
+	  allow users to select which score diagrams to show in paper
+	  search results
+
+2007-02-11 Sunday 20:34  kohler
+
+	* style.css (1.148): little CSS fix for improved appearance
+
+2007-02-11 Sunday 20:22  kohler
+
+	* index.php (1.99), search.php (1.76), Code/paperlist.inc (1.97):
+	  call it "Your review assignment" rather than "Review assignment"
+	  to clarify
+
+2007-02-09 Friday 18:39  kohler
+
+	* script.js (1.31), style.css (1.147), Code/conference.inc (1.165):
+	  actually need to compare TIME ZONES as well as times
+
+2007-02-09 Friday 18:22  kohler
+
+	* script.js (1.30), style.css (1.146), Code/conference.inc (1.164):
+	  based on a Bernhard Ager/Anja Feldmann idea: If the user's
+	  timezone is too different from the server's (i.e., more than 200
+	  minutes away in either direction), then report the time in the
+	  user's timezone as well as the time in the server's timezone
+
+2007-02-09 Friday 16:39  kohler
+
+	* .htaccess (1.6), LICENSE (1.1), README (1.13), account.php
+	  (1.44), assign.php (1.60), autoassign.php (1.13), comment.php
+	  (1.28), contactauthors.php (1.25), deadlines.php (1.22), help.php
+	  (1.28), index.php (1.98), login.php (1.24), logout.php (1.6),
+	  mergeaccounts.php (1.31), offline.php (1.19), paper.php (1.106),
+	  pc.php (1.23), review.php (1.81), script.js (1.29), search.php
+	  (1.75), sessionvar.php (1.8), settings.php (1.30), style.css
+	  (1.145), tarball.sh (1.25), Chair/AssignPapers.php (1.39),
+	  Chair/BecomeSomeoneElse.php (1.13), Chair/SetReviewForm.php
+	  (1.29), Chair/sampleforms.inc (1.3), Code/conference.inc (1.163),
+	  Code/contact.inc (1.100), Code/createdb.sh (1.15),
+	  Code/header.inc (1.41), Code/helpers.inc (1.126),
+	  Code/options.inc (1.18), Code/paperlist.inc (1.96),
+	  Code/papertable.inc (1.58), Code/review.inc (1.59),
+	  Code/reviewtable.inc (1.31), Code/search.inc (1.44),
+	  Code/tags.inc (1.6), Download/GetPaper (1.17),
+	  Download/GetPaper.php (1.17), PC/reviewprefs.php (1.29):
+	  file-level comments, include license, claim copyright where
+	  appropriate
+
+2007-02-08 Thursday 22:19  kohler
+
+	* Chair/BecomeSomeoneElse.php (1.12): use <optgroup>, why not
+
+2007-02-08 Thursday 20:47  kohler
+
+	* Code/TODO (1.59), PC/reviewprefs.php (1.28): little nit for
+	  pc_seeall setting; document TODOs
+
+2007-02-08 Thursday 20:42  kohler
+
+	* help.php (1.27), index.php (1.97), paper.php (1.105), search.php
+	  (1.74), settings.php (1.29), Code/conference.inc (1.162),
+	  Code/contact.inc (1.99), Code/helpers.inc (1.125),
+	  Code/paperlist.inc (1.95), Code/search.inc (1.43),
+	  Download/GetPaper (1.16), Download/GetPaper.php (1.16): changes
+	  requested by Bernhard Ager: (1) Add a "PC members can see all
+	  registered papers until submission deadline" checkbox setting.
+	  That way PC members can see pape rabstracts for registered, but
+	  not submitted, papers in between the registration and submission
+	  deadlines, helping them give better preferences.  However, PC
+	  members cant DOWNLOAD paper PDFs until submission time.  (2)
+	  Review assignment page links to assign.php.
+
+2007-02-08 Thursday 19:43  kohler
+
+	* Chair/SendMail.php (1.8), Chair/SendMail2.php (1.23),
+	  Code/contact.inc (1.98): fix large leak reported by Bernhard
+	  Ager: when sending email including reviews, do not report all
+	  information the CHAIR can see.  Thats obviously bogus.  Report
+	  only the information the RECIPIENT can see.
+
+2007-02-08 Thursday 19:40  kohler
+
+	* Code/review.inc (1.58): increment the field letter in a textual
+	  review form even if the author cant see the field
+
 2007-02-07 Wednesday 14:56  kohler
 
 	* help.php (1.26), search.php (1.73), settings.php (1.28),
