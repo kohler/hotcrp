@@ -17,7 +17,7 @@ $query="SELECT "
 . " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
 . " ContactInfo.contactId, "
 . " Paper.paperId, Paper.title "
-. " from ReviewRequest "
+. " from PaperReview "
 . " join ContactInfo using (contactId) "
 . " join Paper using (paperId) "
 . " where ContactInfo.contactId=" . $_REQUEST[pcId]
@@ -82,11 +82,12 @@ $query="SELECT "
 . " ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
 . " ContactInfo.contactId, "
 . " Paper.paperId, Paper.title "
-. " FROM ReviewRequest, ContactInfo, Paper "
-. " WHERE ReviewRequest.requestedBy=$_REQUEST[pcId] "
-. " AND ReviewRequest.asked=ContactInfo.contactId "
-. " AND ReviewRequest.paperId=Paper.paperId "
-. " ORDER BY Paper.paperId "
+. " from PaperReview "
+. " join ContactInfo using (contactId) "
+. " join Paper using (paperId) "
+. " where ContactInfo.contactId=" . $_REQUEST[pcId]
+. " and reviewType=" . REVIEW_SECONDARY
+. " order by Paper.paperId "
 ;
 
 $result = $Conf->qe($query);
