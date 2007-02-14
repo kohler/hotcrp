@@ -139,7 +139,6 @@ PC/.htaccess
 PC/CheckOnPCProgress.php
 PC/CheckReviewStatus.php
 PC/GradePapers.php
-PC/SpotMyProblems.php
 PC/gradeNames.inc
 PC/index.php
 PC/reviewprefs.php

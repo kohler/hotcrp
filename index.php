@@ -213,7 +213,6 @@ if ($Me->isPC) {
 <li>Reviewer assignments  (asking others to review papers)
   <ul>
   <li><a href='PC/CheckReviewStatus.php'>Check on reviewer progress</a> (and possibly nag reviewers)</li>
-  <li><a href='PC/SpotMyProblems.php'>See which missing reviews are most important</a> based on how many reviews have been submitted by everyone</li>
   </ul></li>
 
 <li>The End Game - Activities Prior to the PC Meeting
