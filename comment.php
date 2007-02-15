@@ -266,8 +266,8 @@ function commentView($prow, $crow, $editMode) {
   <td class='entry'>";
     $sep = "";
     if ($crow && $Me->canViewCommentIdentity($prow, $crow, $Conf)) {
-	echo "by ", contactHtml($crow);
-	$sep = " &nbsp;|&nbsp; ";
+	echo ($crow->blind ? "[" : ""), "by ", contactHtml($crow);
+	$sep = ($crow->blind ? "]" : "") . " &nbsp;|&nbsp; ";
     }
     if ($crow && $crow->timeModified > 0) {
 	echo $sep, $Conf->printableTime($crow->timeModified);
