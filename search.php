@@ -398,7 +398,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && 
 // set scores to view
 if (isset($_REQUEST["showscores"])) {
     $_SESSION["scores"] = 0;
-    if (is_array($_REQUEST["score"]))
+    if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"]))
 	foreach ($_REQUEST["score"] as $s)
 	    $_SESSION["scores"] |= (1 << $s);
 }

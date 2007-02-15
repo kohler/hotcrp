@@ -39,6 +39,7 @@ class PaperList {
     var $showHeader;
     var $sortField;
     var $sortInfo;
+    var $sortAverage;
     var $reverseSort;
     var $sortable;
     var $count;
@@ -192,6 +193,7 @@ class PaperList {
     
     function _sortScoreNum($a, $b) {
 	$x = $this->sortInfo[$b->paperId] - $this->sortInfo[$a->paperId];
+	$x = $x ? $x : $this->sortAverage[$b->paperId] - $this->sortAverage[$a->paperId];
 	return $x ? ($x < 0 ? -1 : 1) : $a->paperId - $b->paperId;
     }
     
@@ -231,6 +233,7 @@ class PaperList {
 	    $scoreMax = $this->scoreMax[$scoreName];
 	    $scoreName .= "Scores";
 	    $this->sortInfo = array();
+	    $this->sortAverage = array();
 	    $zeros = "00000000000000";
 	    $scoresort = defval($_SESSION["scoresort"], 0);
 	    foreach ($rows as $row)
@@ -261,7 +264,8 @@ class PaperList {
 		    else if ($scoresort == 2)
 			$this->sortInfo[$row->paperId] = ($x2 / ($n - 1)) - ($x * $x / (($n - 1) * $n));
 		    else
-			$this->sortInfo[$row->paperId] = ($max - $min) + ($x / $n) / ($scoreMax + 1);
+			$this->sortInfo[$row->paperId] = $max - $min;
+		    $this->sortAverage[$row->paperId] = ($n ? $x / $n : 0);
 		}
 	    usort($rows, array($this, ($scoresort ? "_sortScoreNum" : "_sortScore")));
 	    break;
@@ -725,7 +729,8 @@ class PaperList {
 		$queryOptions['joins'][] = "PaperTag on (Paper.paperId=PaperTag.paperId and PaperTag.tag='" . sqlq($this->search->orderTag) . "')";
 		$queryOptions['order'] = "order by PaperTag.tagIndex, Paper.paperId";
 	    }
-	}
+	} else if (!in_array($this->sortField, $baseFieldId))
+	    $this->sortField = null;
 	
 	// get field array
 	$fieldDef = array();
