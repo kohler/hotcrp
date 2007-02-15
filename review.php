@@ -431,8 +431,8 @@ function reviewView($prow, $rrow, $editMode) {
   <td class='entry' colspan='", ($editMode ? 2 : 3), "'>";
     $sep = "";
     if ($rrow && $Me->canViewReviewerIdentity($prow, $rrow, $Conf)) {
-	echo "by ", contactHtml($rrow);
-	$sep = " &nbsp;|&nbsp; ";
+	echo ($rrow->reviewBlind ? "[" : ""), "by ", contactHtml($rrow);
+	$sep = ($rrow->reviewBlind ? "]" : "") . " &nbsp;|&nbsp; ";
     }
     if ($rrow && $rrow->reviewModified > 0) {
 	echo $sep, "Modified ", $Conf->printableTime($rrow->reviewModified);

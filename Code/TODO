@@ -12,8 +12,6 @@ Minor features
 - START-style enter multiple contact authors with explicit First Name,
   Last Name, Affiliation, Email fields?
 - search for scores
-- paper pages: if paperId not set, choose the first valid paper ID (easier
-  help links)
 - "System administrator" role == PCAssistant but not member of PC?
 - layout checker from ager@
 - when email off: do not show authors to PC members, do not show reviewers
