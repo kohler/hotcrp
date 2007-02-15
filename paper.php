@@ -35,9 +35,7 @@ function errorMsgExit($msg) {
 // collect paper ID: either a number or "new"
 $newPaper = false;
 $paperId = -1;
-if (!isset($_REQUEST["paperId"]))
-    /* nada */;
-else if (trim($_REQUEST["paperId"]) == "new")
+if (isset($_REQUEST["paperId"]) && trim($_REQUEST["paperId"]) == "new")
     $newPaper = true;
 else {
     maybeSearchPaperId("paper.php", $Me);

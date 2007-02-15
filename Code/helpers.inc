@@ -758,16 +758,34 @@ function cvtpref($n) {
 
 function maybeSearchPaperId($base, $me) {
     global $Conf, $ConfSiteBase;
-    if (!$me->isPC)
-	return false;
+
+    // if a complex request, or a form upload, don't search
     foreach ($_REQUEST as $k => $v)
 	if ($k != "paperId" && $k != "mode" && $k != "forceShow" && $k != "go"
 	    && $k != "viewContact" && $k != "chairMode"
 	    && !isset($_COOKIE[$k]))
 	    return false;
-    if (!isset($_REQUEST["paperId"])
-	|| preg_match('/^\s*\d+\s*$/s', $_REQUEST["paperId"]))
+
+    // if no paper ID set, find one
+    if (!isset($_REQUEST["paperId"])) {
+	$q = "select min(Paper.paperId) from Paper ";
+	if ($me->isPC)
+	    $q .= "where timeSubmitted>0";
+	else if ($me->isReviewer)
+	    $q .= "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$me->contactId)";
+	else
+	    $q .= "join ContactInfo on (ContactInfo.paperId=Paper.paperId and ContactInfo.contactId=$me->contactId and ContactInfo.conflitType=" . CONFLICT_AUTHOR . ")";
+	$result = $Conf->q($q);
+	if (($paperId = edb_row($result)))
+	    $_REQUEST["paperId"] = $paperId[0];
 	return false;
+    }
+
+    // if you can't search, or it looks like a number, don't search
+    if (!$me->isPC || preg_match('/^\s*\d+\s*$/s', $_REQUEST["paperId"]))
+	return false;
+
+    // actually try to search
     require_once("search.inc");
     $s = new PaperSearch($me, array("q" => $_REQUEST["paperId"]));
     $pl = $s->paperList();

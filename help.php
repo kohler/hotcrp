@@ -255,7 +255,7 @@ Here are some example usage scenarios for tags.
 </ul>
 ");
     _alternateRow("Finding tags", "
-A list of each paper's tags is shown on its <a href='${ConfSiteBase}review.php?paperId=1'>review page</a>, and the other paper pages.
+A list of each paper's tags is shown on its <a href='${ConfSiteBase}review.php'>review page</a>, and the other paper pages.
 
 <p><img src='${ConfSiteBase}images/extagsnone.png' alt='[Tag list on review screen]' /></p>
 
@@ -265,7 +265,7 @@ To find all papers with tag \"discuss\":&nbsp; " . _searchForm("tag:discuss") . 
 If a PC member has a conflict with a paper, they can't see its tags either
 directly or through searches.</p>");
     _alternateRow("Changing tags", "
-To change a single paper's tags, go to the Tags entry on its <a href='${ConfSiteBase}review.php?paperId=1'>review page</a>,
+To change a single paper's tags, go to the Tags entry on its <a href='${ConfSiteBase}review.php'>review page</a>,
 click the <img src='${ConfSiteBase}images/next.png' alt='right arrow' />,
 then enter one or more alphanumeric tags separated by spaces.
 
@@ -383,7 +383,7 @@ got officially submitted.  Then:
   convenient) page through the <a
   href='${ConfSiteBase}search.php?q=&amp;t=s'>list of submitted papers</a>
   setting their preferences on the <a
-  href='${ConfSiteBase}paper.php?paperId=1'>paper pages</a>.</p>
+  href='${ConfSiteBase}paper.php'>paper pages</a>.</p>
 
   <p>If you'd like, you can collect review preferences before the submission
   deadline.  Select <a href='${ConfSiteBase}settings.php?group=sub'>\"PC can
@@ -401,7 +401,7 @@ got officially submitted.  Then:
 
 <li><p><strong><a href='${ConfSiteBase}Chair/AssignPapers.php'>Make review
   assignments.</a></strong> You can make assignments <a
-  href='${ConfSiteBase}assign.php?paperId=1'>by paging through papers</a>, <a
+  href='${ConfSiteBase}assign.php'>by paging through papers</a>, <a
   href='${ConfSiteBase}Chair/AssignPapers.php'>by PC member</a>, or, even
   easier, <a href='${ConfSiteBase}autoassign.php'>automatically</a>.  PC
   review assignments can be \"primary\" or \"secondary\"; the difference is
@@ -434,7 +434,7 @@ supposedly reduces bias.)
   allow authors to respond to the reviews before decisions are made, giving
   them a chance to correct misconceptions and such.  Responses are entered
   into the system as <a
-  href='${ConfSiteBase}comment.php?paperId=1'>comments</a>.  On the <a
+  href='${ConfSiteBase}comment.php'>comments</a>.  On the <a
   href='${ConfSiteBase}settings.php?group=dec'>decision settings page</a>,
   select \"Allow authors to see reviews\" and \"Collect responses to the
   reviews\", then <a href='${ConfSiteBase}Chair/SendMail.php'>send mail to
@@ -458,7 +458,7 @@ supposedly reduces bias.)
 <li><p><strong><a href='${ConfSiteBase}autoassign.php'>Assign discussion leads
   (optional).</a></strong> Discussion leads are expected to be able to
   summarize the paper and the reviews.  You can assign leads either <a
-  href='${ConfSiteBase}assign.php?paperId=1'>paper by paper</a> or <a
+  href='${ConfSiteBase}assign.php'>paper by paper</a> or <a
   href='${ConfSiteBase}autoassign.php'>automatically</a>.</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}settings.php?group=dec'>Define decision
@@ -479,11 +479,11 @@ supposedly reduces bias.)
 
 <li><p>It's often useful to have a PC member or scribe capture the discussion
   about a paper and enter it as a <a
-  href='${ConfSiteBase}comment.php?paperId=1'>comment</a> for the authors'
+  href='${ConfSiteBase}comment.php'>comment</a> for the authors'
   reference.</p></li>
 
 <li><p><strong>Paper decisions</strong> can be recorded either <a
-  href='${ConfSiteBase}review.php?paperId=1'>paper by paper</a> or using <a
+  href='${ConfSiteBase}review.php'>paper by paper</a> or using <a
   href='help.php?t=tags'>tags</a>.  You can also enter decisions later en
   masse via the <a
   href='${ConfSiteBase}search.php?q=&amp;t=s&amp;showact=1'>search
@@ -491,7 +491,7 @@ supposedly reduces bias.)
 
 <li><p><strong>Shepherding (optional).</strong> If your conference uses
   shepherding for accepted papers, you can assign shepherds either <a
-  href='${ConfSiteBase}assign.php?paperId=1'>paper by paper</a> on the
+  href='${ConfSiteBase}assign.php'>paper by paper</a> on the
   assignments screen or <a
   href='${ConfSiteBase}autoassign.php?papset=acc'>automatically</a>.</p></li>
 
