@@ -498,7 +498,7 @@ if ($Group == "sub") {
     // compensate for pc_seeall magic
     if ($Conf->setting("pc_seeall") < 0)
 	$Conf->settings["pc_seeall"] = 1;
-    doCheckbox('pc_seeall', "PC can see <i>all registered papers</i> until submission deadline<br /><small>Check this box if you want to collect review preferences before the submission deadline. After the submission deadline, PC members can only see submitted papers.</small>", true);
+    doCheckbox('pc_seeall', "PC can see <i>all registered papers</i> until submission deadline<br /><small>Check this box if you want to collect review preferences <em>before</em> most papers are submitted. After the submission deadline, PC members can only see submitted papers.</small>", true);
     echo "</table></div></div></td></tr></table>\n\n";
 }
 
