@@ -402,6 +402,11 @@ if (isset($_REQUEST["showscores"])) {
 	foreach ($_REQUEST["score"] as $s)
 	    $_SESSION["scores"] |= (1 << $s);
 }
+if (isset($_REQUEST["scoresort"])) {
+    $_SESSION["scoresort"] = cvtint($_REQUEST["scoresort"]);
+    if ($_SESSION["scoresort"] < 0 || $_SESSION["scoresort"] > 3)
+	$_SESSION["scoresort"] = 0;
+}
     
 
 // search
@@ -503,7 +508,7 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
 
     if ($pl->anySelector) {
 	echo "<form action='search.php' method='get' id='sel' onsubmit='return paperselCheck();'>\n";
-	foreach (array("q", "qx", "qa", "qt", "t") as $v)
+	foreach (array("q", "qx", "qa", "qt", "t", "sort") as $v)
 	    if (defval($_REQUEST[$v], "") != "")
 		echo "<input type='hidden' name='$v' value=\"", htmlspecialchars($_REQUEST[$v]), "\" />\n";
 	if (isset($_REQUEST["q"]) && $_REQUEST["q"] == "")

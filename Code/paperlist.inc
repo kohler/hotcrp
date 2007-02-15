@@ -190,6 +190,11 @@ class PaperList {
 	return $x ? $x : $a->paperId - $b->paperId;
     }
     
+    function _sortScoreNum($a, $b) {
+	$x = $this->sortInfo[$b->paperId] - $this->sortInfo[$a->paperId];
+	return $x ? ($x < 0 ? -1 : 1) : $a->paperId - $b->paperId;
+    }
+    
     function _sort($rows) {
 	global $Conf, $paperListScoreNames;
 	switch (self::_normalizeField($this->sortField)) {
@@ -222,21 +227,43 @@ class PaperList {
 	    usort($rows, array("PaperList", "_sortDesirability"));
 	    break;
 	case self::FIELD_SCORE:
-	    $scoreName = $paperListScoreNames[$this->sortField - self::FIELD_SCORE] . "Scores";
+	    $scoreName = $paperListScoreNames[$this->sortField - self::FIELD_SCORE];
+	    $scoreMax = $this->scoreMax[$scoreName];
+	    $scoreName .= "Scores";
 	    $this->sortInfo = array();
 	    $zeros = "00000000000000";
+	    $scoresort = defval($_SESSION["scoresort"], 0);
 	    foreach ($rows as $row)
 		if (!$this->contact->amAssistant() && !$this->contact->canViewReview($row, null, $Conf))
 		    $this->sortInfo[$row->paperId] = $zeros;
-		else {
+		else if ($scoresort == 0) {
 		    $x = array();
 		    foreach (preg_split('/[\s,]+/', $row->$scoreName) as $i)
 			if (($i = cvtint($i)) > 0)
 			    $x[] = chr($i + 48);
 		    rsort($x);
 		    $this->sortInfo[$row->paperId] = implode($x) . $zeros;
+		} else {
+		    $x = $x2 = $n = $max = 0;
+		    $min = $scoreMax;
+		    foreach (preg_split('/[\s,]+/', $row->$scoreName) as $i)
+			if (($i = cvtint($i)) > 0) {
+			    $x += $i;
+			    $x2 += $i * $i;
+			    $min = min($min, $i);
+			    $max = max($max, $i);
+			    $n++;
+			}
+		    if ($n == 0)
+			$this->sortInfo[$row->paperId] = 0;
+		    else if ($scoresort == 1)
+			$this->sortInfo[$row->paperId] = $x / $n;
+		    else if ($scoresort == 2)
+			$this->sortInfo[$row->paperId] = ($x2 / ($n - 1)) - ($x * $x / (($n - 1) * $n));
+		    else
+			$this->sortInfo[$row->paperId] = ($max - $min) + ($x / $n) / ($scoreMax + 1);
 		}
-	    usort($rows, array($this, "_sortScore"));
+	    usort($rows, array($this, ($scoresort ? "_sortScoreNum" : "_sortScore")));
 	    break;
 	}
 	if ($this->reverseSort)
@@ -590,6 +617,14 @@ class PaperList {
 		    $t .= "/>&nbsp;" . htmlspecialchars($rf->shortName[$score]) . "<br />";
 		}
 	    }
+	    $t .= "<div class='smgap'></div><b>Sort by:</b> &nbsp;<select name='scoresort'>";
+	    foreach (array("Minshall score", "Average", "Variance", "Max &minus; min") as $k => $v) {
+		$t .= "<option value='$k'";
+		if (defval($_SESSION["scoresort"], 0) == $k)
+		    $t .= " selected='selected'";
+		$t .= ">$v</option>";
+	    }
+	    $t .= "</select>";
 	    $t .= "<div class='smgap'></div><input type='submit' class='button' name='showscores' value='OK' onclick='paperselDocheck=false;return true' />&nbsp; <button class='button' type='button' onclick='void(fold(\"scores\", 1))'>Cancel</button>";
 	    $t .= "</div></div></div>";
 	}
