@@ -736,29 +736,28 @@ table.pltable th, table.setreviewform th, table.memberlist th {
 table.pltable th a.unfolder1, table.pltable th a.unfolder2, table.pltable th a.folder1, table.pltable th a.folder2 {
 	font-weight: normal;
 }
-.pl_title, .pl_reviewer, .pl_status {
+.pl_title, .pl_reviewer {
 	padding-right: 1em;
 }
-table.pltable th.pl_id, table.pltable th.pl_topicMatch, 
-.pl_reviewerTypeIcon, .pl_scoreIcon {
+table.pltable th.pl_topicMatch {
 	text-align: center;
-	padding-right: 0em;
+	padding: 0em 0.5em;
+}
+table.pltable th.pl_id, .pl_reviewerTypeIcon, .pl_scoreIcon {
+	text-align: center;
+	padding: 0em 0.1em;
+}
+.pl_status {
+	padding-right: 0.2em;
 }
 .pl_reviewsStatus {
 	text-align: center;
 	padding-right: 0.2em;
 }
 td.pl_id, td.pl_selector, td.pl_topicMatch, td.pl_reviewPreference,
-td.pl_desirability, td.pl_download {
+td.pl_desirability {
 	text-align: right;
 	padding-right: 0.4em;
-}
-td.mcaption {
-	text-align: right;
-	padding-right: 1em;
-}
-td.pl_download {
-	vertical-align: middle;
 }
 td.pl_title img {
 	vertical-align: text-bottom;
@@ -769,6 +768,10 @@ td.pl_callout {
 span.pl_callouthdr {
 	font-style: italic;
 	padding-right: 0.5em;
+}
+td.mcaption {
+	text-align: right;
+	padding-right: 1em;
 }
 tr.pl td {
 	padding-top: 2px;
@@ -888,13 +891,15 @@ a.pl_sort {
 	color: black;
 }
 a.pl_sort_def {
-	padding-right: 12px;
+	padding-right: 11px;
+	margin-right: 0.4em;
 	background: url("images/sortdown.png") 100% 75% no-repeat;
 	text-decoration: none;
 	color: #660000;
 }
 a.pl_sort_def_rev {
-	padding-right: 12px;
+	padding-right: 11px;
+	margin-right: 0.4em;
 	background: url("images/sortup.png") 100% 75% no-repeat;
 	text-decoration: none;
 	color: #660000;
