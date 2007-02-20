@@ -89,6 +89,8 @@ class PaperSearch {
 	    $this->limitName = "all";
 	else if ($me->isPC && (!$ptype || $ptype == "s"))
 	    $this->limitName = "s";
+	else if ($me->isPC && $ptype == "revs")
+	    $this->limitName = "revs";
 	else if ($this->amAssistant && $ptype == "all")
 	    $this->limitName = "all";
 	else if ($me->amReviewer() && (!$ptype || $ptype == "r"))
@@ -137,7 +139,7 @@ class PaperSearch {
 	$this->warnings[] = $text;
     }
 
-    function _searchSuffixFactor($submitted, $type, &$suffix, &$factor) {
+    function _searchReviewSuffixFactor($submitted, $type, &$suffix, &$factor) {
 	$factor = ($submitted ? 2 : 1);
 	$suffix = ($submitted ? "Sub" : "");
 	if ($type == REVIEW_PRIMARY) {
@@ -150,7 +152,7 @@ class PaperSearch {
     }
     
     function _searchReviewer($word, $type, $submitted, $what = null) {
-	$this->_searchSuffixFactor($submitted, $what, $sub, $anyfac);
+	$this->_searchReviewSuffixFactor($submitted, $what, $sub, $anyfac);
 	if (preg_match('/^([<>]?=?\s*)?(\d+)$/s', $word, $m) && $this->allowNumReview) {
 	    if ($m[2] == 0 && $m[1] == "<")
 		return " or false";
@@ -383,7 +385,7 @@ class PaperSearch {
     }
     
     function _searchReviewerLimiter($submitted, $type) {
-	$this->_searchSuffixFactor($submitted, $type, $suffix, $fac);
+	$this->_searchReviewSuffixFactor($submitted, $type, $suffix, $fac);
 	$q = " left join (select paperId";
 	if ($this->any & (self::ANY_REVIEWER * $fac))
 	    $q .= ", group_concat(firstName, ' ', lastName, ' ', email) as reviewerInfo$suffix";
@@ -409,7 +411,7 @@ class PaperSearch {
 	$res = $this->_searchQueryType($this->q, "any");
 	$res = $this->_combineQuery($res, $this->_searchQueryType($this->qa, "all"));
 	$res = $this->_combineQuery($res, $this->_searchQueryType($this->qx, "none"));
-	if ($this->limitName == "s")
+	if ($this->limitName == "s" || $this->limitName == "revs")
 	    $res = $this->_combineQuery($res, array("Paper.timeSubmitted>0", ""));
 
 	$q = "select Paper.paperId from Paper";
@@ -461,7 +463,7 @@ class PaperSearch {
     function complexSearch(&$queryOptions) {
 	if ($this->q || $this->qa || $this->qx)
 	    return true;
-	if ($this->limitName == "s")
+	if ($this->limitName == "s" || $this->limitName == "revs")
 	    $queryOptions["finalized"] = 1;
 	else if ($this->limitName == "r")
 	    $queryOptions["myReviews"] = 1;
