@@ -13,9 +13,11 @@ class PaperList {
     
     const FIELD_TITLE = 11;
     
-    const FIELD_STATUS = 27;
-    const FIELD_REVIEWER_TYPE = 29;
-    const FIELD_STATUS_SHORT = 33;
+    const FIELD_STATUS = 20;
+    const FIELD_STATUS_SHORT = 21;
+    const FIELD_REVIEWER = 25;
+    const FIELD_REVIEWER_TYPE = 26;
+    const FIELD_REVIEWER_TYPE_ICON = 27;
     const FIELD_ASSIGN_REVIEW = 35;
     const FIELD_TOPIC_INTEREST = 36;
     const FIELD_TOPIC_NAMES = 37;
@@ -25,7 +27,6 @@ class PaperList {
     const FIELD_REVIEWS_STATUS = 41;
     const FIELD_DESIRABILITY = 43;
     const FIELD_ALL_PREFERENCES = 44;
-    const FIELD_REVIEWER_TYPE_ICON = 45;
     const FIELD_AUTHOR_MATCH = 47;
     const FIELD_COLLABORATORS_MATCH = 48;
 
@@ -46,7 +47,6 @@ class PaperList {
     var $needFinalize;
     var $needSubmitReview;
     var $anySelector;
-    var $description;
     var $sessionVar;
     var $contact;
     var $scoresOk;
@@ -131,9 +131,13 @@ class PaperList {
 	case self::FIELD_FOLD:
 	    $this->unfolded = false;
 	    break;
+	case self::FIELD_REVIEWER:
+	    $queryOptions['allReviewScores'] = 1;
+	    $queryOptions['reviewerName'] = 1;
+	    break;
 	case self::FIELD_REVIEWER_TYPE:
 	case self::FIELD_REVIEWER_TYPE_ICON:
-	    if ($this->search->reviewerName) {
+	    if ($this->search->reviewerName && !isset($queryOptions['allReviewScores'])) {
 		// if reviewer name is unique, use that to decide icons to show
 		// NB $this->search->reviewerName is sqlq'd already
 		$result = $Conf->q("select contactId from ContactInfo where concat(firstName, ' ', lastName, ' ', email) like '%" . $this->search->reviewerName . "%'");
@@ -160,6 +164,13 @@ class PaperList {
 	return $x ? $x : $a->paperId - $b->paperId;
     }
     
+    function _sortReviewer($a, $b) {
+	$x = strcmp($a->reviewLastName, $b->reviewLastName);
+	$x = $x ? $x : strcmp($a->reviewFirstName, $b->reviewFirstName);
+	$x = $x ? $x : strcmp($a->reviewEmail, $b->reviewEmail);
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+
     function _sortReviewType($a, $b) {
 	$x = $b->reviewType - $a->reviewType;
 	return $x ? $x : $a->paperId - $b->paperId;
@@ -209,6 +220,9 @@ class PaperList {
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    usort($rows, array("PaperList", "_sortStatus"));
+	    break;
+	case self::FIELD_REVIEWER:
+	    usort($rows, array("PaperList", "_sortReviewer"));
 	    break;
 	case self::FIELD_REVIEWER_TYPE:
 	case self::FIELD_REVIEWER_TYPE_ICON:
@@ -286,8 +300,9 @@ class PaperList {
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    return "Status";
+	case self::FIELD_REVIEWER:
+	    return "Reviewer";
 	case self::FIELD_REVIEWER_TYPE:
-	    return "Review";
 	case self::FIELD_REVIEWER_TYPE_ICON:
 	    return "<acronym title='Reviewer type'>Review</acronym>";
 	case self::FIELD_REVIEWS_STATUS:
@@ -373,6 +388,8 @@ class PaperList {
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
 		$this->needFinalize++;
 	    return $this->contact->paperStatus($row->paperId, $row, $fieldId == self::FIELD_STATUS ? 0 : -1);
+	case self::FIELD_REVIEWER:
+	    return contactHtml($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail);
 	case self::FIELD_REVIEWER_TYPE:
 	    if ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted))
 		$this->needSubmitReview++;
@@ -651,23 +668,23 @@ class PaperList {
 	switch ($listname) {
 	  case "a":
 	  case "authorHome":
-	    return array("Authored papers", 1, 11, 27);
+	    return array("Authored papers", 1, 11, 20);
 	  case "s":
-	    return $this->addScores(array("Submitted papers", 100, 1, 11, 45, 41, 33, 70));
+	    return $this->addScores(array("Submitted papers", 100, 1, 11, 27, 41, 21, 70));
 	  case "all":
-	    return array("All papers", 100, 1, 11, 27, 45, 70);
+	    return array("All papers", 100, 1, 11, 20, 27, 70);
 	  case "reviewerHome":
 	    $this->paperLink = "review";
-	    return array("Your review assignment", 1, 11, 45, 33);
+	    return array("Your review assignment", 1, 11, 27, 21);
 	  case "r":
 	    $this->paperLink = "review";
-	    return $this->addScores(array("Your review assignment", 100, 1, 11, 45, 41, 33, 70));
+	    return $this->addScores(array("Your review assignment", 100, 1, 11, 27, 41, 21, 70));
 	  case "rout":
 	    $this->paperLink = "review";
-	    return $this->addScores(array("Unsubmitted reviews", 100, 1, 11, 45, 41, 33, 70));
+	    return $this->addScores(array("Unsubmitted reviews", 100, 1, 11, 27, 41, 21, 70));
 	  case "req":
 	    $this->paperLink = "review";
-	    return $this->addScores(array("Requested reviews", 100, 1, 11, 45, 41, 33, 70));
+	    return $this->addScores(array("Requested reviews", 100, 1, 11, 27, 41, 21, 70));
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
 	    return array("Review assignment", 1, 11, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48);
@@ -675,13 +692,16 @@ class PaperList {
 	    $this->paperLink = "assign";
 	    return array("Potential conflicts", 102, 1, 11, self::FIELD_OPT_AUTHORS, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
 	  case "editReviewPreference":
-	    return array("Reviewer preferences", 1, 11, 36, 45, 40, 70, 37);
+	    return array("Reviewer preferences", 1, 11, 36, 27, 40, 70, 37);
 	  case "reviewers":
 	    $this->paperLink = "assign";
-	    return array("Proposed assignments", 1, 11, 33, 38);
+	    return array("Proposed assignments", 1, 11, 21, 38);
 	  case "reviewersSel":
 	    $this->paperLink = "assign";
-	    return array("Proposed assignments", 101, 1, 11, 33, 38);
+	    return array("Proposed assignments", 101, 1, 11, 21, 38);
+	  case "revs":
+	    $this->paperLink = "review";
+	    return array("Reviews", 1, 11, 25, 27);
 	  default:
 	    return null;
 	}
@@ -776,8 +796,12 @@ class PaperList {
 	if (edb_nrows($result) == 0)
 	    return "No papers";
 	$rows = array();
-	while (($row = edb_orow($result)))
-	    $rows[$row->paperId] = $row;
+	if (isset($queryOptions['reviewerName']))
+	    while (($row = edb_orow($result)))
+		$rows[] = $row;
+	else
+	    while (($row = edb_orow($result)))
+		$rows[$row->paperId] = $row;
 
 	// sort rows
 	$srows = array();
@@ -790,7 +814,6 @@ class PaperList {
 
 	$ids = array();
 	$anyData = array();
-	$byPaperId = array();
 	$body = '';
 	$aufoldclass = defval($_SESSION["plFold"], 3);
 	$authorinfo = false;
@@ -937,7 +960,9 @@ $paperListFields = array(
 	PaperList::FIELD_ID => array('id', 1, 1),
 	PaperList::FIELD_TITLE => array('title', 1, 1),
 	PaperList::FIELD_STATUS => array('status', 1, 1),
+	PaperList::FIELD_REVIEWER => array('reviewer', 1, 1),
 	PaperList::FIELD_REVIEWER_TYPE => array('reviewer', 1, 1),
+	PaperList::FIELD_REVIEWER_TYPE_ICON => array('reviewerTypeIcon', 1, 1),
 	PaperList::FIELD_STATUS_SHORT => array('status', 1, 1),
 	PaperList::FIELD_ASSIGN_REVIEW => array('reviewAssignment', 1, 1),
 	PaperList::FIELD_TOPIC_INTEREST => array('topicMatch', 1, 1),
@@ -948,7 +973,6 @@ $paperListFields = array(
 	PaperList::FIELD_REVIEWS_STATUS => array('reviewsStatus', 1, 1),
 	PaperList::FIELD_DESIRABILITY => array('desirability', 1, 1),
 	PaperList::FIELD_ALL_PREFERENCES => array('allPreferences', 2, 0),
-	PaperList::FIELD_REVIEWER_TYPE_ICON => array('reviewerTypeIcon', 1, 1),
 	PaperList::FIELD_SCORE => array('scoreIcon', 1, 1),
 	PaperList::FIELD_AUTHOR_MATCH => array('authorsMatch', 2, 0),
 	PaperList::FIELD_COLLABORATORS_MATCH => array('collaboratorsMatch', 2, 0),
