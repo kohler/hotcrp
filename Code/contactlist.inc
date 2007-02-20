@@ -198,7 +198,7 @@ class ContactList {
 	case self::FIELD_REVIEWS:
 	    if (!$row->numReviews && !$row->numReviewsSubmitted)
 		return "";
-	    $a1 = "<a href=\"${ConfSiteBase}search.php?t=s&amp;q=re:" . htmlspecialchars($row->email) . "\">";
+	    $a1 = "<a href=\"${ConfSiteBase}search.php?t=s&amp;q=re:" . urlencode($row->email) . "\">";
 	    if ($row->numReviews == $row->numReviewsSubmitted)
 		return "$a1<b>$row->numReviewsSubmitted</b></a>";
 	    else
