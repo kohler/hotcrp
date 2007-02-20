@@ -58,6 +58,7 @@ class PaperList {
     var $unfolded;
     var $paperLink;
     var $paperLinkArgs;
+    var $showConflict;
     
     function PaperList($sortable = true, $sessionVar = null, $search = null, $extraText = null) {
 	global $paperListFields;
@@ -84,6 +85,7 @@ class PaperList {
 	$this->search = $search;
 	$this->extraText = $extraText;
 	$this->scoresOk = false;
+	$this->showConflict = true;
     }
 
     function _normalizeField($fieldId) {
@@ -144,6 +146,7 @@ class PaperList {
 		if (edb_nrows($result) == 1) {
 		    $row = edb_row($result);
 		    $queryOptions['reviewerContact'] = $row[0];
+		    $this->showConflict = false;
 		}
 	    }
 	    break;
@@ -429,7 +432,7 @@ class PaperList {
 		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "\">";
 		$a2 = "</a>";
 	    }
-	    if ($row->conflictType > 0) {
+	    if ($row->conflictType > 0 && $this->showConflict) {
 		$which = -1;
 		$alt = "Conflict";
 	    } else if ($row->reviewType === null) {

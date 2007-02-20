@@ -56,7 +56,7 @@ if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting(
     || ($Me->amReviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard')))
     echo "<li><a href='deadlines.php'>Deadlines</a></li>\n";
 
-echo "<li><a href='pc.php'>Program committee membership</a></li>\n";
+echo "<li><a href='pc.php'>List program committee</a></li>\n";
 
 echo "</ul></td></tr></table>";
 
@@ -156,6 +156,8 @@ if ($Me->amReviewer() && ($Me->amAssistant() || $papersub)) {
 	echo "<li><a href='offline.php'>Offline reviewing</a></li>\n";
     if ($Me->amAssistant())
 	echo "<li><a href='Chair/AssignPapers.php'>PC review assignments and conflicts</a></li>\n";
+    if ($Me->amAssistant() || $Conf->timePCViewAllReviews())
+	echo "<li><a href='pc.php'>Check on PC progress</a></li>\n";
     echo "</ul></td></tr></table>\n<div class='smgap'></div>\n";
     
     unset($plist);
@@ -221,7 +223,6 @@ if ($Me->isPC) {
 	echo "  <li><a href='PC/GradePapers.php'>Grade Papers</a>
 -- arrive at a consensus and determine discussion order of papers at PC meeting</li>\n";
     if ($Conf->timePCViewAllReviews()) {
-	echo "  <li><a href='PC/CheckOnPCProgress.php'>Spy On Your Neighbours</a> -- See progress of entire PC</li>\n";
 	echo "  <li><a href='Chair/SpotProblems.php'>Spot problems across all papers</a></li>\n";
 	echo "  <li><a href='Chair/AverageReviewerScore.php'>See average reviewer ratings</a> -- this compares the overall merit ratings of different reviewers</li>\n";
     }
@@ -248,14 +249,13 @@ if ($Me->amAssistant()) {
 <li>Check on reviewing progress
   <ul>
   <li><a href='Chair/ListReviews.php'>See all the people</a> that PC members have requested to review papers.</li>
-  <li><a href='Chair/CheckOnPCProgress.php'>See PC progress</a> on reviewing; you can also see the review requests made	by this specific PC member.</li>
   <li><a href='Chair/SpotProblems.php'>Spot Reviewing Problems</a></li>
   <li><a href='Chair/AverageReviewerScore.php'>See average reviewer score</a></li>
   </ul></li>
 
 <li>Contact authors &amp; prepare facesheets
   <ul>
-  <li><a href='Chair/ListReviewers.php'>List all reviewers (email and name)</a></li>
+  <li><a href='contacts.php?t=re'>List all reviewers (email and name)</a></li>
   </ul></li>\n";
 
     if (isset($Opt['dbDumpDir']))

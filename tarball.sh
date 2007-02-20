@@ -30,6 +30,7 @@ account.php
 assign.php
 autoassign.php
 comment.php
+contacts.php
 contactauthors.php
 deadlines.php
 help.php
@@ -53,6 +54,7 @@ Code/Calendar.inc
 Code/backupdb.sh
 Code/conference.inc
 Code/contact.inc
+Code/contactlist.inc
 Code/createdb.sh
 Code/header.inc
 Code/helpers.inc
@@ -113,13 +115,9 @@ Chair/AskForReview.php
 Chair/AssignPapers.php
 Chair/AverageReviewerScore.php
 Chair/BecomeSomeoneElse.php
-Chair/CheckOnPCProgress.php
-Chair/CheckOnSinglePCProgress.php
 Chair/Code.inc
 Chair/DumpDatabase.php
 Chair/GradeAllPapers.php
-Chair/ListPC.php
-Chair/ListReviewers.php
 Chair/ListReviews.php
 Chair/SendMail.php
 Chair/SendMail2.php
@@ -136,7 +134,6 @@ Download/GetPaper
 Download/GetPaper.php
 
 PC/.htaccess
-PC/CheckOnPCProgress.php
 PC/CheckReviewStatus.php
 PC/GradePapers.php
 PC/gradeNames.inc

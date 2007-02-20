@@ -151,9 +151,11 @@ function capclass($what) {
     return (isset($Error[$what]) ? "caption error" : "caption");
 }
 
-$_REQUEST["pc"] = $Acct->isPC;
-$_REQUEST["ass"] = $Acct->isAssistant;
-$_REQUEST["chair"] = $Acct->isChair;
+if (!$newProfile) {
+    $_REQUEST["pc"] = $Acct->isPC;
+    $_REQUEST["ass"] = $Acct->isAssistant;
+    $_REQUEST["chair"] = $Acct->isChair;
+}
 
 
 $Conf->header($newProfile ? "Create Account" : "Account Settings");

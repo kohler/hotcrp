@@ -246,6 +246,11 @@ span.topic0 {
 span.topic2 {
 	font-weight: bold;
 }
+table.ppltable td.pl_topics span.topic0, table.ppltable td.pl_topics span.topic2 {
+	color: black;
+	text-decoration: none;
+	font-weight: normal;
+}
 
 
 /* Main */
@@ -728,7 +733,7 @@ div.searchresult {
 div.searchresult table.pltable {
 	width: 100%;
 }
-table.pltable th, table.setreviewform th, table.memberlist th {
+table.pltable th, table.ppltable th, table.setreviewform th, table.memberlist th {
 	text-align: left;
         padding-right: 0.25em;
 	vertical-align: bottom;
@@ -736,7 +741,7 @@ table.pltable th, table.setreviewform th, table.memberlist th {
 table.pltable th a.unfolder1, table.pltable th a.unfolder2, table.pltable th a.folder1, table.pltable th a.folder2 {
 	font-weight: normal;
 }
-.pl_title, .pl_reviewer {
+.pl_title, .pl_reviewer, .pl_name, .pl_email, .pl_affiliation {
 	padding-right: 1em;
 }
 table.pltable th.pl_topicMatch {
@@ -755,7 +760,7 @@ table.pltable th.pl_id, .pl_reviewerTypeIcon, .pl_scoreIcon {
 	padding-right: 0.2em;
 }
 td.pl_id, td.pl_selector, td.pl_topicMatch, td.pl_reviewPreference,
-td.pl_desirability {
+td.pl_desirability, td.pl_visits {
 	text-align: right;
 	padding-right: 0.4em;
 }
@@ -768,6 +773,10 @@ td.pl_callout {
 span.pl_callouthdr {
 	font-style: italic;
 	padding-right: 0.5em;
+}
+span.pcrole {
+	font-weight: bold;
+	font-size: smaller;
 }
 td.mcaption {
 	text-align: right;

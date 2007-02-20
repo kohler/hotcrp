@@ -280,6 +280,12 @@ class Conference {
 	else
 	    return "N/A";
     }
+    function printableTimeShort(&$value) {
+	if (isset($value) && $value > 0)
+	    return date("j M Y g:i:sa", $value);
+	else
+	    return "N/A";
+    }
 
     function printableTimeSetting($what) {
 	return $this->printableTime($this->settings[$what]);

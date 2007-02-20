@@ -16,6 +16,9 @@ Minor features
 - layout checker from ager@
 - when email off: do not show authors to PC members, do not show reviewers
   to authors
+- send mail from pc.php
+- link in contacts.php and send mail from there
+- combine pc.php and contacts.php
 
 Tiny features
 - add a "review assignment" link to the "submitted/accepted/all" papers
