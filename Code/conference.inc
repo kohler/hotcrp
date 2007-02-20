@@ -776,9 +776,11 @@ class Conference {
 		ReviewerContactInfo.lastName as reviewLastName,
 		ReviewerContactInfo.email as reviewEmail";
 	if ($reviewerQuery || $scoresQuery) {
+	    require_once('review.inc');
+	    $rf = reviewForm();
 	    global $reviewFields;
-	    foreach ($reviewFields as $k => $v)
-		if (!$scoresQuery || $v)
+	    foreach ($rf->fieldOrder as $k)
+		if (!$scoresQuery || $reviewFields[$k])
 		    $pq .= ",\t\tPaperReview.$k as $k";
 	}
 	if (isset($options['topics']))
