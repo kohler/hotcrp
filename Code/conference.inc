@@ -849,7 +849,7 @@ class Conference {
 	else if (isset($options['myReviewsOpt']))
 	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$reviewContactId)\n";
 	else if (isset($options['allReviews']) || isset($options['allReviewScores']))
-	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
+	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
 	else if (!isset($options['author']))
 	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$reviewContactId)\n";
 	if ($allReviewerQuery)

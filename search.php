@@ -38,7 +38,7 @@ if ($Me->isPC)
 if ($Me->amReviewer())
     $tOpt["r"] = "Your review assignment";
 if ($Me->reviewsOutstanding)
-    $tOpt["rout"] = "Unsubmitted reviews";
+    $tOpt["rout"] = "Your missing reviews";
 if ($Me->isPC)
     $tOpt["req"] = "Requested reviews";
 if ($Me->isAuthor)

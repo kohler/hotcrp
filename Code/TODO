@@ -19,6 +19,7 @@ Minor features
 - send mail from pc.php
 - link in contacts.php and send mail from there
 - combine pc.php and contacts.php
+- contacts.php: accepted contact authors
 
 Tiny features
 - add a "review assignment" link to the "submitted/accepted/all" papers

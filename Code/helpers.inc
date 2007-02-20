@@ -723,7 +723,7 @@ function parseReviewOrdinal($n) {
 
 function unparseReviewOrdinal($ord) {
     if ($ord === null)
-	return "";
+	return "x";
     else if ($ord <= 26)
 	return chr($ord + 64);
     else

@@ -10,8 +10,11 @@ class PaperList {
     const FIELD_SELECTOR_CONFLICT = 102;
     
     const FIELD_ID = 1;
+    const FIELD_REVIEWID = 2;
+    const FIELD_PIDARRAY = 9;
     
     const FIELD_TITLE = 11;
+    const FIELD_REVIEWTITLE = 12;
     
     const FIELD_STATUS = 20;
     const FIELD_STATUS_SHORT = 21;
@@ -154,6 +157,10 @@ class PaperList {
 	return true;
     }
 
+    function _sortPidarray($a, $b) {
+	return $this->sortInfo[$a->paperId] - $this->sortInfo[$b->paperId];
+    }
+    
     function _sortTitle($a, $b) {
 	$x = strcasecmp($a->title, $b->title);
 	return $x ? $x : $a->paperId - $b->paperId;
@@ -168,9 +175,9 @@ class PaperList {
     }
     
     function _sortReviewer($a, $b) {
-	$x = strcmp($a->reviewLastName, $b->reviewLastName);
-	$x = $x ? $x : strcmp($a->reviewFirstName, $b->reviewFirstName);
-	$x = $x ? $x : strcmp($a->reviewEmail, $b->reviewEmail);
+	$x = strcasecmp($a->reviewLastName, $b->reviewLastName);
+	$x = $x ? $x : strcasecmp($a->reviewFirstName, $b->reviewFirstName);
+	$x = $x ? $x : strcasecmp($a->reviewEmail, $b->reviewEmail);
 	return $x ? $x : $a->paperId - $b->paperId;
     }
 
@@ -211,13 +218,19 @@ class PaperList {
 	return $x ? ($x < 0 ? -1 : 1) : $a->paperId - $b->paperId;
     }
     
-    function _sort($rows) {
+    function _sort($rows, $pidarray) {
 	global $Conf, $paperListScoreNames;
 	switch (self::_normalizeField($this->sortField)) {
 	case self::FIELD_ID:
+	case self::FIELD_REVIEWID:
 	    ksort($rows);
 	    break;
+	case self::FIELD_PIDARRAY:
+	    $this->sortInfo = array_flip($pidarray);
+	    usort($rows, array($this, "_sortPidarray"));
+	    break;
 	case self::FIELD_TITLE:
+	case self::FIELD_REVIEWTITLE:
 	    usort($rows, array("PaperList", "_sortTitle"));
 	    break;
 	case self::FIELD_STATUS:
@@ -287,18 +300,41 @@ class PaperList {
 	    usort($rows, array($this, ($scoresort ? "_sortScoreNum" : "_sortScore")));
 	    break;
 	}
-	if ($this->reverseSort)
-	    return array_reverse($rows);
-	else
-	    return $rows;
+	return $rows;
+    }
+
+    function _sortReviewOrdinal(&$rows) {
+	for ($i = 0; $i < count($rows); $i++) {
+	    for ($j = $i + 1; $j < count($rows) && $rows[$i]->paperId == $rows[$j]->paperId; $j++)
+		/* do nothing */;
+	    // insertion sort
+	    for ($k = $i + 1; $k < $j; $k++) {
+		$v = $rows[$k];
+		for ($l = $k - 1; $l >= $i; $l--) {
+		    $w = $rows[$l];
+		    if ($v->reviewOrdinal && $w->reviewOrdinal)
+			$cmp = $v->reviewOrdinal - $w->reviewOrdinal;
+		    else if ($v->reviewOrdinal || $w->reviewOrdinal)
+			$cmp = $v->reviewOrdinal ? -1 : 1;
+		    else
+			$cmp = $v->reviewId - $w->reviewId;
+		    if ($cmp >= 0)
+			break;
+		    $rows[$l + 1] = $rows[$l];
+		}
+		$rows[$l + 1] = $v;
+	    }
+	}
     }
     
     function header($fieldId, $ordinal, $row = null, $reviewList = null) {
 	global $paperListScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
+	case self::FIELD_REVIEWID:
 	    return "ID";
 	case self::FIELD_TITLE:
+	case self::FIELD_REVIEWTITLE:
 	    return "Title";
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
@@ -384,8 +420,12 @@ class PaperList {
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
 	    return "<a href='${ConfSiteBase}$this->paperLink.php?paperId=$row->paperId" . $this->paperLinkArgs . "' tabindex='2'>#$row->paperId</a>";
+	case self::FIELD_REVIEWID:
+	    return "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "' tabindex='2'>#$row->paperId" . unparseReviewOrdinal($row->reviewOrdinal) . "</a>";
 	case self::FIELD_TITLE:
 	    return "<a href='${ConfSiteBase}$this->paperLink.php?paperId=$row->paperId" . $this->paperLinkArgs . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
+	case self::FIELD_REVIEWTITLE:
+	    return "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
@@ -704,7 +744,7 @@ class PaperList {
 	    return array("Proposed assignments", 101, 1, 11, 21, 38);
 	  case "revs":
 	    $this->paperLink = "review";
-	    return array("Reviews", 1, 11, 25, 27);
+	    return array("Reviews", 2, 12, 25, 27);
 	  default:
 	    return null;
 	}
@@ -746,6 +786,8 @@ class PaperList {
 	$pidarray = null;
 	if ($this->sortField === null) {
 	    $pidarray = $this->search->simplePaperList();
+	    if ($pidarray !== null)
+		$this->sortField = self::FIELD_PIDARRAY;
 	    if ($this->search->orderTag) {
 		if (!isset($queryOptions['joins']))
 		    $queryOptions['joins'] = array();
@@ -799,21 +841,15 @@ class PaperList {
 	if (edb_nrows($result) == 0)
 	    return "No papers";
 	$rows = array();
-	if (isset($queryOptions['reviewerName']))
-	    while (($row = edb_orow($result)))
-		$rows[] = $row;
-	else
-	    while (($row = edb_orow($result)))
-		$rows[$row->paperId] = $row;
+	while (($row = edb_orow($result)))
+	    $rows[] = $row;
 
 	// sort rows
-	$srows = array();
-	if ($pidarray !== null) {
-	    foreach ($pidarray as $pid)
-		if (isset($rows[$pid]))
-		    $srows[] = $rows[$pid];
-	} else
-	    $srows = $this->_sort($rows);
+	$srows = $this->_sort($rows, $pidarray);
+	if ($this->reverseSort)
+	    $srows = array_reverse($srows);
+	if (isset($queryOptions["allReviewScores"]))
+	    $this->_sortReviewOrdinal($srows);
 
 	$ids = array();
 	$anyData = array();
@@ -912,7 +948,7 @@ class PaperList {
 			$x .= $q . $fieldId . "\">" . $ftext . "</a>";
 		    else
 			$x .= $ftext;
-		    if ($titleextra && $fieldId == self::FIELD_TITLE) {
+		    if ($titleextra && $fdef[0] == "title") {
 			$x .= $titleextra;
 			$titleextra = false;
 		    }
@@ -961,7 +997,9 @@ $paperListFields = array(
 	PaperList::FIELD_SELECTOR_ON => array('selector', 1, 0),
 	PaperList::FIELD_SELECTOR_CONFLICT => array('selector', 1, 0),
 	PaperList::FIELD_ID => array('id', 1, 1),
+	PaperList::FIELD_REVIEWID => array('id', 1, 1),
 	PaperList::FIELD_TITLE => array('title', 1, 1),
+	PaperList::FIELD_REVIEWTITLE => array('title', 1, 1),
 	PaperList::FIELD_STATUS => array('status', 1, 1),
 	PaperList::FIELD_REVIEWER => array('reviewer', 1, 1),
 	PaperList::FIELD_REVIEWER_TYPE => array('reviewer', 1, 1),

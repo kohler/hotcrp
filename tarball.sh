@@ -102,7 +102,6 @@ images/stophand45.png
 
 Assistant/.htaccess
 Assistant/DumpAllReviews.php
-Assistant/ListReviewers.php
 Assistant/ModifyUserNames.php
 Assistant/PrepareFacesheets.php
 Assistant/PrintAllAbstracts.php
