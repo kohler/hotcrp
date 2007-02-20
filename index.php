@@ -156,7 +156,7 @@ if ($Me->amReviewer() && ($Me->amAssistant() || $papersub)) {
 	echo "<li><a href='offline.php'>Offline reviewing</a></li>\n";
     if ($Me->amAssistant())
 	echo "<li><a href='Chair/AssignPapers.php'>PC review assignments and conflicts</a></li>\n";
-    if ($Me->amAssistant() || $Conf->timePCViewAllReviews())
+    if ($Me->amAssistant() || ($Me->isPC && $Conf->timePCViewAllReviews()))
 	echo "<li><a href='pc.php'>Check on PC progress</a></li>\n";
     echo "</ul></td></tr></table>\n<div class='smgap'></div>\n";
     
