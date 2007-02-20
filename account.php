@@ -228,7 +228,7 @@ if ($Acct->isPC || $newProfile)
     echo "<tr><td class='caption'></td><td colspan='4' class='entry'><div class='smgap'></div><strong>Program committee-specific information</strong></td></tr>\n";
 
 
-if ($newProfile || $Acct->contactId != $Me->contactId) {
+if ($newProfile || $Acct->contactId != $Me->contactId || $Me->amAssistant()) {
     echo "<tr>
   <td class='caption'>Roles</td>
   <td colspan='3' class='entry'>\n";
@@ -236,6 +236,8 @@ if ($newProfile || $Acct->contactId != $Me->contactId) {
 	echo "    <input type='checkbox' name='$key' id='$key' value='1' ";
 	if (defval($_REQUEST["$key"]))
 	    echo "checked='checked' ";
+	if ($Acct->contactId == $Me->contactId)
+	    echo "disabled='disabled' ";
 	echo "onclick='doRole(this)' />&nbsp;", $value, "&nbsp;&nbsp;\n";
     }
     echo "  </td>\n</tr>\n\n";
