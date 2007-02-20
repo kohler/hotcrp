@@ -45,8 +45,6 @@ if ($Me->isAuthor)
     $tOpt["a"] = "Authored papers";
 if ($Me->amAssistant() || ($Me->isPC && $Conf->setting("pc_seeall") > 0))
     $tOpt["all"] = "All papers";
-if ($Me->canViewAllReviewerIdentities($Conf))
-    $tOpt["revs"] = "All reviews";
 if (count($tOpt) == 0) {
     $Conf->header("Search", 'search');
     $Conf->errorMsg("You are not allowed to search for papers.");
