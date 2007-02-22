@@ -218,7 +218,6 @@ if ($Me->isPC) {
 	echo "  <li><a href='PC/GradePapers.php'>Grade Papers</a>
 -- arrive at a consensus and determine discussion order of papers at PC meeting</li>\n";
     if ($Conf->timePCViewAllReviews()) {
-	echo "  <li><a href='Chair/SpotProblems.php'>Spot problems across all papers</a></li>\n";
 	echo "  <li><a href='Chair/AverageReviewerScore.php'>See average reviewer ratings</a> -- this compares the overall merit ratings of different reviewers</li>\n";
     }
     echo "</ul></li>\n";
@@ -244,7 +243,6 @@ if ($Me->amAssistant()) {
 <li>Check on reviewing progress
   <ul>
   <li><a href='Chair/ListReviews.php'>See all the people</a> that PC members have requested to review papers.</li>
-  <li><a href='Chair/SpotProblems.php'>Spot Reviewing Problems</a></li>
   <li><a href='Chair/AverageReviewerScore.php'>See average reviewer score</a></li>
   </ul></li>\n";
 

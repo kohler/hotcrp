@@ -119,7 +119,6 @@ Chair/SendMail.php
 Chair/SendMail2.php
 Chair/SetReviewForm.php
 Chair/ShowCalendar.php
-Chair/SpotProblems.php
 Chair/ViewActionLog.php
 Chair/ViewButtons.php
 Chair/index.php
