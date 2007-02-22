@@ -136,29 +136,6 @@ class Contact {
 	return $this->isPC || $this->isReviewer;
     }
 
-    function dump() {
-	global $Conf;
-	echo "<table border=\"1\" width=\"83%\" bgcolor=$Conf->bgOne>";
-	echo "<tr> <td>";
-
-	echo "<p>";
-	echo "contactId = " . $this->contactId . "<br>";
-	echo "visits = " . $this->visits . "<br>";
-	echo "firstName = " . $this->firstName . "<br>";
-	echo "lastName = " . $this->lastName . "<br>";
-	echo "email = " . $this->email . "<br>";
-	echo "affiliation = " . $this->affiliation . "<br>";
-	echo "voicePhoneNumber = " . $this->voicePhoneNumber . "<br>";
-	echo "faxPhoneNumber = " . $this->faxPhoneNumber . "<br>";
-	echo "password = " . $this->password . "<br>";
-	echo "note = " . $this->note . "<br>";
-	echo "isAuthor = " . $this->isAuthor . "<br>";
-	echo "isPC = " . $this->isPC . "<br>";
-	echo "isChair = " . $this->isChair . "<br>";
-	echo "isAssistant = " . $this->isAssistant . "<br>";
-	echo "</p> </td> </tr> </table>";
-    }
-
     function trim() {
 	$this->contactId = trim($this->contactId);
 	$this->visits = trim($this->visits);
@@ -758,10 +735,6 @@ class Contact {
 	    return $prow->conflictType == CONFLICT_AUTHOR;
     }
 
-    function checkConflict($paperId, $conf) {
-	return $conf->checkConflict($paperId, $this->contactId);
-    }
-
     function canManagePaper($prow) {
 	return ($prow->conflictType == CONFLICT_AUTHOR || $this->amAssistant());
     }
@@ -935,44 +908,6 @@ and paste it into your web browser's location field.
 	    $conf->errorMsg("Mail cannot be sent to your email address &lt;" . htmlspecialchars($this->email) . "&gt; at this time.");
 	    return false;
 	}
-    }
-
-  //
-  // Print all the papers and review links.
-  //
-  function printReviewables($papersList, $papersTitles, $submit, $conf)
-    {
-      $paperStatus=array();
-
-      $query="SELECT paperId, reviewSubmitted FROM PaperReview WHERE contactId='$this->contactId'";
-      $result = $conf->qe($query);
-      while ($row = edb_row($result)) {
-	  if ($row[1]) {
-	      $paperStatus[$row[0]] = "Finalized";
-	  } else {
-	      $paperStatus[$row[0]] = "Started";
-	  }
-      }
-      //
-      // Now, print out the papers w/hyper links
-      //
-      print "<table width=\"100%\" border=1>\n";
-      print "<tr> <th width=10%> Paper #</th> <th width=10%> Status </th> <th> Title </th> </tr>\n";
-      for($i = 0; $i < sizeof($papersList); $i++) {
-	$id = $papersList[$i];
-	$title = $papersTitles[$i];
-	if (IsSet($paperStatus[$id])) {
-	  $status = $paperStatus[$id];
-	} else {
-	  $status = "Not Started";
-	}
-	print " <tr> <td> $id </td> <td> $status </td> <td> ";
-
-	$conf->linkWithPaperId($title, $submit, $id);
-	
-	print "</td> </tr>";
-      }
-      print "</table>";
     }
 
 

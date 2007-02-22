@@ -100,7 +100,6 @@ images/sortup.png
 images/stophand45.png
 
 Assistant/.htaccess
-Assistant/DumpAllReviews.php
 Assistant/ModifyUserNames.php
 Assistant/PrintAllAbstracts.php
 Assistant/PrintAllReviews.php

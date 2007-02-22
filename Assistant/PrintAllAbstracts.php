@@ -77,7 +77,7 @@ $result=$Conf->qe($query);
 <h2> Paper # <?php  echo $paperId ?> </h2>
 </div>
 
-<table align=center width="100%" border=1 bgcolor="<?php echo $Conf->bgOne?>" >
+<table align=center width="100%" border="1">
 <tr> <h3> <b> Paper # <?php  echo $paperId ?>
 (Paper is ~<?php echo $length?> bytes, <?php  echo $mimetype ?> format) </b>
 <h3> <tr>

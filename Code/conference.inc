@@ -25,7 +25,6 @@ class Conference {
     //
     // Useful colors
     //
-    var $bgOne = "#9999cc"; // blue
     var $contrastColorOne = "#eeeeee";
     var $contrastColorTwo = "#cccccc";
     var $infoColor = "yellow"; // blue
@@ -67,26 +66,6 @@ class Conference {
 	mysql_query("set names 'utf8'", $this->dblink);
 
 	$this->updateSettings();
-    }
-
-    function dump() {
-      global $Opt;
-      echo "<table border=\"1\" width=\"83%\" bgcolor=$this->bgOne>";
-      echo "<tr> <td>";
-      echo "<p>";
-
-      echo "shortName is " . $this -> shortName . " <br>";
-      echo "longName is " . $this -> longName . " <br>";
-      echo "paperSite is " . $this -> paperSite . "/ <br>";
-      echo "conferenceSite is " . htmlspecialchars($Opt['conferenceSite']) . " <br/>";
-      echo "downloadPrefix is " . htmlspecialchars($Opt['downloadPrefix']) . " <br>";
-      echo "contactName is " . $this -> contactName . " <br>";
-      echo "contactEmail is " . $this -> contactEmail . " <br>";
-      echo "emailFrom is " . $this -> emailFrom . " <br>";
-      echo "dbDumpDir is " . htmlspecialchars($Opt['dbDumpDir']) . " <br>";
-      echo "dbhandle is " . $this -> dbhandle . " <br>";
-
-      echo "</p> </td> </tr> </table>";
     }
 
     //
@@ -244,30 +223,6 @@ class Conference {
 	    $this->log("$Me->contactId account creation failure", $newguy);
 	
 	return $newguy->contactId;
-    }
-
-
-  function listMissingReviews($contactId)
-    {
-      //
-      // Make certain that the author has submitted all their reviews
-      // prior to viewing their own reviews
-
-      $missingReviews=0;
-
-      //
-      //
-      // First, check to see if I should have review for requests...
-      //
-      $q = "select paperId from PaperReview where contactId=$contactId and reviewType>0 and reviewSubmitted<=0 order by paperId";
-
-      $result = $this->qe($q);
-      while (($row = edb_orow($result))) {
-	  $this->errorMsg("Missing review for paper #" . $row->paperId);
-	  $missingReviews = 1;
-      }
-      
-      return $missingReviews;
     }
 
 
@@ -1195,48 +1150,9 @@ class Conference {
 	echo "</body>\n</html>\n";
     }
 
-  function mkTextButton($text, $url, $extra="") {
-      return "<form method=\"POST\" action=\"$url\">"
-	  . "<input type=\"submit\" value=\"$text\" name=\"textButton\" />"
-	  . $extra
-	  . "</form>";
-  }
-
-  function mkTextButtonPopup($text, $url, $extra="") {
-      return "<form method=\"POST\" action=\"$url\" target=_blank>"
-	  . "<input type=\"submit\" value=\"$text\" name=\"textButton\" />"
-	  . $extra
-	  . "</form>";
-  }
-
-  function textButton($text, $url, $extra="") {
-      print $this->mkTextButton($text, $url, $extra);
-  }
-
-  function textButtonPopup($text, $url, $extra="") {
-      print $this->mkTextButtonPopup($text, $url, $extra);
-  }
-
-  function linkWithPaperId($text, $url, $paperId) {
-      print "<a href=\"$url?paperId=$paperId\">" . $text . "</a>";
-      //      $this->textButton($text, $url,
-      //		 $this->mkHiddenVar("paperId", $paperId)
-      //		 );
-  }
-
-  function buttonWithPaperId($text, $url, $paperId) {
-      $this->textButton($text, $url,
-			$this->mkHiddenVar("paperId", $paperId)
-			);
-  }
-
-  function alternatingContrast($i) {
-      if ($i % 2 == 0) {
-	  return $this->contrastColorOne;
-      } else {
-	  return $this->contrastColorTwo;
-      }
-  }
+    function linkWithPaperId($text, $url, $paperId) {
+	print "<a href=\"$url?paperId=$paperId\">" . $text . "</a>";
+    }
 
     function getFileExtension(&$mimetype) {
 	if (!isset($mimetype) || $mimetype == null || $mimetype == "")
@@ -1319,26 +1235,6 @@ class Conference {
 	       "From: $this->emailFrom",
 	       "-f$this->emailFrom");
     }
-
-  //
-  // Should really use a contactId for this, but the functions
-  // calling it don't have one..
-  //
-  function getPaperList($email)
-    {
-      $q = "SELECT paperId, title FROM Paper, ContactInfo "
-	. " WHERE (Paper.contactId=ContactInfo.contactId AND "
-	. " ContactInfo.email='$email')";
-      $r = $this->qe($q);
-      $retval = "";
-      $i = 0;
-      while( $row=edb_row($r) ) {
-	  $i++;
-	  $retval = $retval . "#$row[0] - $row[1]\n\n";
-      }
-      return "\nYou have $i papers on file. They are listed below\n" . $retval;
-    }
-
 
     function log($text, $who, $paperId = null) {
 	if (is_array($paperId)) {
@@ -1455,16 +1351,6 @@ class Conference {
 	    print $extra;
 	}
 	print "</form>\n";
-    }
-
-    function mkHiddenVar($name, $value) {
-	return "<input type='hidden' name='$name' value='$value' />\n";
-    }
-
-    function checkConflict($paperId, $contactId) {
-	$result = $this->qe("select paperId from PaperConflict
-		where contactId=$contactId and paperId=$paperId", "while examining conflicts");
-	return edb_nrows($result) > 0;
     }
 
     function allMyConflicts($contactId) {

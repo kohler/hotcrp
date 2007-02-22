@@ -3,7 +3,9 @@ require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotAssistant('../index.php');
+require_once('../Code/review.inc');
 include('../PC/gradeNames.inc');
+$forceShow = "";
 
 if (IsSet($_REQUEST['ShowPCPapers'])) {
   $showpc = $_REQUEST['ShowPCPapers'];
@@ -73,10 +75,9 @@ if( $showpc == "yes" ){
 }
 
 $query="SELECT Paper.paperId, Paper.title, Paper.abstract, Paper.pcPaper, "
-    . " ContactInfo.firstName, ContactInfo.lastName, "
-    . " ContactInfo.email, ContactInfo.affiliation, Paper.authorInformation "
-    . " FROM Paper,ContactInfo "
-    . " WHERE Paper.contactId=ContactInfo.contactId AND Paper.timeSubmitted>0 "
+    . " Paper.authorInformation "
+    . " FROM Paper "
+    . " WHERE Paper.timeSubmitted>0 "
     . " $restrict ORDER BY paperId ";
 
 $result=$Conf->qe($query);
@@ -85,6 +86,7 @@ print "<p class='page'> You should see a page break following this when printing
 
 if (!$result)
   exit();
+$rf = reviewForm();
 while ($row = edb_arow($result)) {
   $paperId=$row['paperId'];
   $printMe = 1;
@@ -97,8 +99,6 @@ while ($row = edb_arow($result)) {
     $title=$row['title'];
     $abstract=$row['abstract'];
     $authorInfo = $row['authorInformation'];
-    $contactInfo = $row['firstName'] . " " . $row['lastName']
-      . " ( " . $row['email'] . " ) ";
 
     print "<p> \n";
     print "<table align=center width=100% border=1>\n";
@@ -127,7 +127,7 @@ while ($row = edb_arow($result)) {
       print "<td> Primary Reviewers: </td>\n";
       print "<td>\n";
       $revQ="SELECT firstName, lastName, email "
-	. " FROM ContactInfo join ReviewRequest using (contactId) "
+	. " FROM ContactInfo join PaperReview using (contactId) "
 	. " WHERE paperId='$paperId' and reviewType=" . REVIEW_PRIMARY;
       $revR = $Conf->qe($revQ);
       if ($revR) {
@@ -165,9 +165,8 @@ while ($row = edb_arow($result)) {
       print "<td> Reviews requested from: </td>\n";
       print "<td>\n";
       $revQ="SELECT firstName, lastName, email "
-	. " FROM ContactInfo, ReviewRequest "
-	. " WHERE ReviewRequest.asked=ContactInfo.contactId "
-	. " AND ReviewRequest.paperId='$paperId'";
+	. " FROM PaperReview join ContactInfo using (contactId) "
+	. " WHERE PaperReview.paperId='$paperId'";
       $revR = $Conf->qe($revQ);
       if ($revR) {
 	$sep = "";
@@ -190,10 +189,6 @@ while ($row = edb_arow($result)) {
     print " </td> </tr>\n";
 
     if ($_REQUEST["SeeAuthorInfo"]) {
-      print "<tr> <th> Contact </th> <td> ";
-      print nl2br(htmlentities($contactInfo));
-      print " </td> </tr>\n";
-
       print "<tr> <th> Author Info </th> <td> ";
       print nl2br(htmlentities($authorInfo));
       print " </td> </tr>\n";
@@ -215,14 +210,13 @@ while ($row = edb_arow($result)) {
       $finalizedStr ="";
     }
 
-    $result2 = $Conf->qe("SELECT PaperReview.contactId, "
-			 . " PaperReview.reviewId, PaperReview.reviewSubmitted, "
+    $result2 = $Conf->qe("SELECT PaperReview.*, "
 			 . " ContactInfo.firstName, ContactInfo.lastName, "
 			 . " ContactInfo.email "
-			 . " FROM PaperReview, ContactInfo "
+			 . " FROM PaperReview join ContactInfo using (contactId) "
 			 . " WHERE PaperReview.paperId='$paperId'"
-			 . " AND PaperReview.contactId=ContactInfo.contactId"
 			 . $finalizedStr
+			 . " ORDER BY coalesce(reviewOrdinal, 9999), reviewId"
 			 );
 
     if (edb_nrows($result2) > 0) {
@@ -230,63 +224,55 @@ while ($row = edb_arow($result)) {
       $reviewerId = array();
 
       $i = 1;
-      while($row = edb_arow($result2)) {
-	$reviewer=$row['contactId'];
-	$reviewId=$row['reviewId'];
-	$first=$row['firstName'];
-	$last=$row['lastName'];
-	$email=$row['email'];
-	$finalized=$row['reviewSubmitted'];
+      while($row = edb_orow($result2)) {
+	$reviewer=$row->contactId;
+	$reviewId=$row->reviewId;
+	$first=$row->firstName;
+	$last=$row->lastName;
+	$email=$row->email;
+	$finalized=$row->reviewSubmitted;
 
-	$Review=ReviewFactory($Conf, $reviewer, $paperId);
 	$lastModified=$Conf->printableTime($Review->reviewFields['timestamp']);
-	print "<table width=100%>";
-	if ($i & 0x1 ) {
-	  $color = $Conf->contrastColorOne;
+	print "<table class='review'>\n";
+	echo "<tr class='id'>
+  <td class='caption'><h3>";
+	echo "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId$forceShow' class='q'>Review";
+	if ($row->reviewSubmitted > 0)
+	    echo "&nbsp;#", $row->paperId, unparseReviewOrdinal($row->reviewOrdinal);
+	echo "</a></h3></td>
+  <td class='entry' colspan='3'>";
+	$sep = "";
+	if ($_REQUEST["SeeReviewerInfo"]) {
+	    echo ($row->reviewBlind ? "[" : ""), "by ", contactHtml($row);
+	    $sep = ($row->reviewBlind ? "]" : "") . " &nbsp;|&nbsp; ";
+	}
+	echo $sep, "Modified ", $Conf->printableTime($row->reviewModified);
+	$sep = " &nbsp;|&nbsp; ";
+	echo $sep, "<a href='${ConfSiteBase}review.php?paperId=$row->paperId&amp;reviewId=$row->reviewId&amp;text=1'>Text version</a>";
+	echo "</td>
+</tr>\n";
+
+	$gradeRes = $Conf -> qe("SELECT grade"
+				. " FROM PaperGrade "
+				. " WHERE paperId='$paperId' "
+				. "       AND contactId=$reviewer ");
+
+	if ($gradeRow = edb_arow($gradeRes)) {
+	    $grade = "<EM>" . $gradeName[$gradeRow['grade']] . "</EM>";
 	} else {
-	  $color = $Conf->contrastColorTwo;
+	    $grade = "not entered yet";
 	}
 
-	print "<tr bgcolor=$color>";
-
-	if ($_REQUEST["SeeReviewerInfo"]==1) {
-	  $reviewBy = "By $first $last ($email)";
-	} else {
-	  $reviewBy = "";
-	}
-	print "<th> <big> <big> Review #$reviewId For Paper #$paperId </big> $reviewBy </big> </th>";
-	print "</tr>";
-
-    print "<tr bgcolor=$color>";
-    print "<th> (review last modified $lastModified) </th> </tr>\n";
-
-    $gradeRes = $Conf -> qe("SELECT grade"
-			  . " FROM PaperGrade "
-			  . " WHERE paperId='$paperId' "
-			  . "       AND contactId=$reviewer ");
-
-    if ($gradeRow = edb_arow($gradeRes)) {
-      $grade = "<EM>" . $gradeName[$gradeRow['grade']] . "</EM>";
-    } else {
-      $grade = "not entered yet";
-    }
-
-    print "<tr bgcolor=$color>";
-    print "<th> Grade is $grade </th> </tr>\n";
+	print "<tr><td class='caption'>Grade</td><td class='entry'>$grade</td></tr>\n";
 
 	if ( ! $finalized ) {
-	  print "<tr bgcolor=$color>";
-	  print "<th> <big> <big> NOT FINALIZED </big></big> </th>";
-	  print "</tr>";
+	    print "<tr><td class='caption'></td>";
+	    print "<th> <big> <big> NOT FINALIZED </big></big> </th>";
+	    print "</tr>";
 	}
     
-	print "<tr bgcolor=$color> <td> ";
+	echo $rf->webDisplayRows($row, true);
 
-	if ($Review->valid) {
-	  $Review -> printViewable();
-	}
-
-	print "</td> </tr>";
 	print "</table>";
 
 	//    print "<tr> <td> <br> <br> <br> </td> </tr>";
@@ -299,16 +285,15 @@ while ($row = edb_arow($result)) {
 // Now, print out the comments
 //
 
-    $comResult = $Conf -> qe("SELECT *, UNIX_TIMESTAMP(time) as unixtime "
+    $comResult = $Conf -> qe("SELECT * "
 			  . " FROM PaperComment "
 			  . " WHERE paperId=$paperId "
-			  . " ORDER BY time ");
+			  . " ORDER BY commentId ");
     
     while ($row=edb_arow($comResult) ) {
 	print "<table width=75% align=center>\n";
 
-	$when = date ("l dS of F Y h:i:s A",
-		      $row['unixtime']);
+	$when = date ("l dS o F Y h:i:s A", $row['timeModified']);
 
 	print "<tr bgcolor=$Conf->infoColor>";
 	print "<th align=left> Comment: $when </th>";
@@ -316,17 +301,13 @@ while ($row = edb_arow($result)) {
 	if ($row['forReviewers']) {
 	  print ", Reviewers";
 	}
-	if ($row['forAuthor']) {
+	if ($row['forAuthors']) {
 	  print " and Author.";
 	}
 	print ". </th>";
 	if ( $row['contactId'] == $_SESSION["Me"]->contactId ) {
 	  print "<th>";
 	  $id=$row['commentId'];
-	  $Conf->textButton("Delete?",
-			    "PCNotes.php",
-			    $Conf->mkHiddenVar('paperId', $paperId) .
-			    $Conf->mkHiddenVar('killCommentId', $id));
 	  print "</th>";
 	}
 	print "</tr>";
