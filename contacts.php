@@ -7,7 +7,6 @@ require_once('Code/header.inc');
 require_once('Code/contactlist.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPC("index.php");
 $rf = reviewForm();
 
 // list type
@@ -43,18 +42,20 @@ $Conf->header($title, "accounts", actionBar());
 
 // form
 echo "<div class='xsmgap'></div>\n";
-echo "<form method='get' action='contacts.php'>";
-if (isset($_REQUEST["sort"]))
-    echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />";
-echo "<strong>Show:</strong> &nbsp;<select name='t'>";
-foreach ($tOpt as $k => $v) {
-    echo "<option value='$k'";
-    if ($_REQUEST["t"] == $k)
-	echo " selected='selected'";
-    echo ">$v</option>";
+if (count($tOpt) > 1) {
+    echo "<form method='get' action='contacts.php'>";
+    if (isset($_REQUEST["sort"]))
+	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />";
+    echo "<strong>Show:</strong> &nbsp;<select name='t'>";
+    foreach ($tOpt as $k => $v) {
+	echo "<option value='$k'";
+	if ($_REQUEST["t"] == $k)
+	    echo " selected='selected'";
+	echo ">$v</option>";
 }
-echo "</select> &nbsp;<input class='button' type='submit' value='Go' /></form>
+    echo "</select> &nbsp;<input class='button' type='submit' value='Go' /></form>
 <div class='smgap'></div>\n";
+}
 
 
 if ($Me->amAssistant() && $_REQUEST["t"] == "pc")
