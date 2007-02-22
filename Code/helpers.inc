@@ -344,8 +344,15 @@ function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
 	$_SESSION["list"] = $_SESSION[$_REQUEST["list"]];
 	unset($_SESSION[$_REQUEST["list"]]);
 	unset($_SESSION["matchPreg"]);
-    } else if (isset($_REQUEST["list"]))
-	_tryNewList(array("t" => $_REQUEST["list"]));
+    } else if (isset($_REQUEST["list"])) {
+	$l = $_REQUEST["list"];
+	if (preg_match('/\A[a-z]+\Z/', $l))
+	    _tryNewList(array("t" => $l));
+	else if (preg_match('/\A(all|s):(.*)\Z/s', $l, $m))
+	    _tryNewList(array("t" => $m[1], "q" => $m[2]));
+	else
+	    _tryNewList(array("q" => $l));
+    }
 
     if (!isset($_SESSION["list"]) || !is_array($_SESSION["list"]))
 	$_SESSION["list"] = array();

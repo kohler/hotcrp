@@ -40,7 +40,6 @@ logout.php
 mergeaccounts.php
 offline.php
 paper.php
-pc.php
 reload.sh
 review.php
 script.js
@@ -103,7 +102,6 @@ images/stophand45.png
 Assistant/.htaccess
 Assistant/DumpAllReviews.php
 Assistant/ModifyUserNames.php
-Assistant/PrepareFacesheets.php
 Assistant/PrintAllAbstracts.php
 Assistant/PrintAllReviews.php
 Assistant/PrintSomeReviews.php

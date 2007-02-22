@@ -16,6 +16,7 @@ class ContactList {
     const FIELD_HIGHTOPICS = 6;
     const FIELD_LOWTOPICS = 7;
     const FIELD_REVIEWS = 8;
+    const FIELD_PAPERS = 9;
     
     var $showHeader;
     var $sortField;
@@ -60,6 +61,8 @@ class ContactList {
 	    $queryOptions['topics'] = true;
 	if ($fieldId == self::FIELD_REVIEWS)
 	    $queryOptions['reviews'] = true;
+	if ($fieldId == self::FIELD_PAPERS)
+	    $queryOptions['papers'] = true;
 	return true;
     }
 
@@ -94,6 +97,12 @@ class ContactList {
 	return $x ? $x : self::_sortName($a, $b);
     }
 
+    function _sortPapers($a, $b) {
+	$x = (int) $a->paperIds - (int) $b->paperIds;
+	$x = $x ? $x : strcmp($a->paperIds, $b->paperIds);
+	return $x ? $x : self::_sortName($a, $b);
+    }
+
     function _sort($rows) {
 	global $Conf;
 	switch (self::_normalizeField($this->sortField)) {
@@ -111,6 +120,9 @@ class ContactList {
 	    break;
 	case self::FIELD_REVIEWS:
 	    usort($rows, array("ContactList", "_sortReviews"));
+	    break;
+	case self::FIELD_PAPERS:
+	    usort($rows, array("ContactList", "_sortPapers"));
 	    break;
 	}
 	if ($this->reverseSort)
@@ -139,6 +151,8 @@ class ContactList {
 	    return "<acronym title='\"1/2\" means 1 complete review out of 2 assigned reviews'>Reviews</acronym>";
 	case self::FIELD_SELECTOR:
 	    return "";
+	case self::FIELD_PAPERS:
+	    return "Papers";
 	default:
 	    return "&lt;$fieldId&gt;?";
 	}
@@ -149,6 +163,8 @@ class ContactList {
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_NAME:
 	    $t = contactHtml($row->firstName, $row->lastName);
+	    if (trim($t) == "")
+		$t = "[none]";
 	    if ($this->contact->amAssistant())
 		$t = "<a href='${ConfSiteBase}account.php?contact=$row->contactId'>$t</a>";
 	    if ($row->chair)
@@ -203,6 +219,15 @@ class ContactList {
 		return "$a1<b>$row->numReviewsSubmitted</b></a>";
 	    else
 		return "$a1<b>$row->numReviewsSubmitted</b>/$row->numReviews</a>";
+	case self::FIELD_PAPERS:
+	    if (!$row->paperIds)
+		return "";
+	    $x = explode(",", $row->paperIds);
+	    sort($x, SORT_NUMERIC);
+	    $extra = "&amp;list=" . ($this->limit == "auuns" ? "all:" : "s:") . join("+", $x);
+	    for ($i = 0; $i < count($x); $i++)
+		$x[$i] = "<a href=\"${ConfSiteBase}paper.php?paperId=$x[$i]$extra\">$x[$i]</a>";
+	    return join(", ", $x);
 	default:
 	    return "";
 	}
@@ -218,6 +243,11 @@ class ContactList {
 	    return array("ext", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS);
 	  case "req":
 	    return array("req", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS);
+	  case "au":
+	  case "aurej":
+	  case "auacc":
+	  case "auuns":
+	    return array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_PAPERS);
 	  default:
 	    return null;
 	}
@@ -259,7 +289,7 @@ class ContactList {
 	$pq = "select ContactInfo.contactId,
 	firstName, lastName, email, affiliation,
 	voicePhoneNumber, faxPhoneNumber,
-	collaborators, lastLogin, visits, note,
+	ContactInfo.collaborators, lastLogin, visits, note,
 	PCMember.contactId as pc, Chair.contactId as chair,
 	ChairAssistant.contactId as assistant";
 	if (isset($queryOptions['topics']))
@@ -268,10 +298,13 @@ class ContactList {
 	    $pq .= ",
 	count(coalesce(PaperReview.reviewSubmitted,nullif(PaperReview.reviewNeedsSubmit,0))) as numReviews,
 	count(PaperReview.reviewSubmitted) as numReviewsSubmitted";
+	if (isset($queryOptions['papers']))
+	    $pq .= ",
+	group_concat(Paper.paperId) as paperIds";
 	
-	$pq .= "\n	from ContactInfo
-	" . ($this->limit == "pc" ? "join" : "left join") . " PCMember on (PCMember.contactId=ContactInfo.contactId)
-	left join Chair on (Chair.contactId=ContactInfo.contactId)
+	$pq .= "\n	from ContactInfo\n";
+	$pq .= ($this->limit == "pc" ? "\tjoin" : "\tleft join") . " PCMember on (PCMember.contactId=ContactInfo.contactId)\n";
+	$pq .= "\tleft join Chair on (Chair.contactId=ContactInfo.contactId)
 	left join ChairAssistant on (ChairAssistant.contactId=ContactInfo.contactId)\n";
 	if (isset($queryOptions['topics']))
 	    $pq .= "	left join (select contactId, group_concat(topicId) as topicIds, group_concat(interest) as topicInterest from TopicInterest group by contactId) as TopicInterests on (TopicInterests.contactId=ContactInfo.contactId)\n";
@@ -286,6 +319,16 @@ class ContactList {
 		$pq .= " and PaperReview.requestedBy=" . $this->contact->contactId;
 	    $pq .= ")\n";
 	}
+	if ($this->limit == "au" || $this->limit == "aurej" || $this->limit == "auacc" || $this->limit == "auuns")
+	    $pq .= "\tjoin PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.conflictType=" . CONFLICT_AUTHOR . ")\n";
+	if ($this->limit == "au")
+	    $pq .= "\tjoin Paper on (Paper.paperId=PaperConflict.paperId and Paper.timeSubmitted>0)\n";
+	if ($this->limit == "aurej")
+	    $pq .= "\tjoin Paper on (Paper.paperId=PaperConflict.paperId and Paper.outcome<0)\n";
+	if ($this->limit == "auacc")
+	    $pq .= "\tjoin Paper on (Paper.paperId=PaperConflict.paperId and Paper.outcome>0)\n";
+	if ($this->limit == "auuns")
+	    $pq .= "\tjoin Paper on (Paper.paperId=PaperConflict.paperId and Paper.timeSubmitted<=0)\n";
 	
 	$pq .= "	group by ContactInfo.contactId
 	order by lastName, firstName, email";
@@ -397,10 +440,6 @@ class ContactList {
 	if ($extrainfo || ($this->limit == "pc" && $this->contact->amAssistant())) {
 	    $x .= "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
 	    $x .= "  <tr class='pl_footrow'>\n    <td colspan='$ncol'>";
-	    if ($this->limit == "pc" && $this->contact->amAssistant())
-		$x .= "<a href='${ConfSiteBase}account.php?new=1&amp;pc=1'>Add program committee member</a>";
-	    if ($extrainfo && ($this->limit == "pc" && $this->contact->amAssistant()))
-		$x .= "<span class='sep'></span>";
 	    if ($extrainfo)
 		$x .= "<a class='unfolder1' href='javascript:fold(\"ppl\",0,1)'>Show topic interests</a><a class='folder1' href='javascript:fold(\"ppl\",1,1)'>Hide topic interests</a>";
 	    $x .= "</td></tr>\n";
@@ -424,5 +463,6 @@ $contactListFields = array(
 	ContactList::FIELD_LASTVISIT => array('lastvisit', 1, 1),
 	ContactList::FIELD_HIGHTOPICS => array('topics', 3, 0),
 	ContactList::FIELD_LOWTOPICS => array('topics', 3, 0),
-	ContactList::FIELD_REVIEWS => array('reviewsStatus', 1, 1)
+	ContactList::FIELD_REVIEWS => array('reviewsStatus', 1, 1),
+	ContactList::FIELD_PAPERS => array('papers', 1, 1)
 	);

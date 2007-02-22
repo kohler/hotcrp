@@ -56,13 +56,14 @@ if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting(
     || ($Me->amReviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard')))
     echo "<li><a href='deadlines.php'>Deadlines</a></li>\n";
 
-echo "<li><a href='pc.php'>List program committee</a></li>\n";
+echo "<li><a href='contacts.php?t=pc'>List program committee</a></li>\n";
 
 echo "</ul></td></tr></table>";
 
 if ($Me->amAssistant())
     echo "\n<div class='smgap'></div>
 <table class='half'><tr><td class='l'><ul class='compact'>
+<li><a href='contacts.php'>List accounts</a></li>
 <li><a href='account.php?new=1'>Create new account</a></li>
 <li><a href='Chair/BecomeSomeoneElse.php'>Sign in as someone else</a></li>
 </ul></td><td class='r'><ul class='compact'>
@@ -157,7 +158,7 @@ if ($Me->amReviewer() && ($Me->amAssistant() || $papersub)) {
     if ($Me->amAssistant())
 	echo "<li><a href='Chair/AssignPapers.php'>PC review assignments and conflicts</a></li>\n";
     if ($Me->amAssistant() || ($Me->isPC && $Conf->timePCViewAllReviews()))
-	echo "<li><a href='pc.php'>Check on PC progress</a></li>\n";
+	echo "<li><a href='contacts.php?t=pc'>Check on PC progress</a></li>\n";
     echo "</ul></td></tr></table>\n<div class='smgap'></div>\n";
     
     unset($plist);
@@ -267,7 +268,6 @@ if ($Me->amAssistant()) {
   <li><a href='Assistant/PrintAllReviews.php'>Show all reviews for printing</a></li>
   <li><a href='Assistant/PrintSomeReviews.php'>Show <b>some</b> reviews for printing</a> -- you can use this to eliminate papers unlikely to be accepted</li>
   <li><a href='Assistant/ModifyUserNames.php'>Modify user names</a> in account database prior to preparing face sheets</li>
-  <li><a href='Assistant/PrepareFacesheets.php'>Prepare information for face sheets</a></li>
   </ul></li>\n";
     
     echo "</ul></div></div>\n";

@@ -10,11 +10,6 @@ $Me->goIfInvalid();
 $Me->goIfNotPC("index.php");
 $rf = reviewForm();
 
-$Conf->header("Account Listing", "pc", actionBar());
-
-// form
-echo "<div class='xsmgap'></div>\n";
-
 // list type
 $tOpt = array();
 $tOpt["pc"] = "Program committee";
@@ -24,6 +19,16 @@ if ($Me->amAssistant() || ($Me->isPC && $Conf->timePCViewAllReviews())) {
 }
 if ($Me->isPC)
     $tOpt["req"] = "External reviewers you requested";
+if ($Me->amAssistant() || ($Me->isPC && !$Conf->blindSubmission()))
+    $tOpt["au"] = "Contact authors of submitted papers";
+if ($Me->amAssistant()
+    || ($Me->isPC && $Conf->timeReviewerViewDecision()))
+    $tOpt["auacc"] = "Contact authors of accepted papers";
+if ($Me->amAssistant()
+    || ($Me->isPC && !$Conf->blindSubmission() && $Conf->timeReviewerViewDecision()))
+    $tOpt["aurej"] = "Contact authors of rejected papers";
+if ($Me->amAssistant())
+    $tOpt["auuns"] = "Contact authors of non-submitted papers";
 if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
     $Conf->errorMsg("You aren't allowed to list those accounts.");
     unset($_REQUEST["t"]);
@@ -31,21 +36,32 @@ if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
 if (!isset($_REQUEST["t"]))
     $_REQUEST["t"] = key($tOpt);
 
+
+$title = ($_REQUEST["t"] == "pc" ? "Program Committee" : "Account Listing");
+$Conf->header($title, "accounts", actionBar());
+
+
+// form
+echo "<div class='xsmgap'></div>\n";
 echo "<form method='get' action='contacts.php'>";
 if (isset($_REQUEST["sort"]))
     echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />";
-echo "<select name='t'>";
+echo "<strong>Show:</strong> &nbsp;<select name='t'>";
 foreach ($tOpt as $k => $v) {
     echo "<option value='$k'";
     if ($_REQUEST["t"] == $k)
 	echo " selected='selected'";
     echo ">$v</option>";
 }
-echo "</select> &nbsp;<input class='button' type='submit' value='Go' /></form>\n";
+echo "</select> &nbsp;<input class='button' type='submit' value='Go' /></form>
+<div class='smgap'></div>\n";
 
+
+if ($Me->amAssistant() && $_REQUEST["t"] == "pc")
+    $Conf->infoMsg("<p><a href='${ConfSiteBase}account.php?new=1&amp;pc=1' class='button'>Add PC member</a></p><p>Click on a PC member's name to edit their information or remove them from the PC.</p>");
 
 
 $pl = new ContactList(true);
-echo $pl->text($_REQUEST["t"], $Me, "${ConfSiteBase}contacts.php");
+echo $pl->text($_REQUEST["t"], $Me, "${ConfSiteBase}contacts.php?t=" . $_REQUEST["t"]);
 
 $Conf->footer();

@@ -752,7 +752,7 @@ table.pltable th.pl_id, .pl_reviewerTypeIcon, .pl_scoreIcon {
 	text-align: center;
 	padding: 0em 0.1em;
 }
-.pl_status {
+.pl_status, .pl_lastvisit, .pl_papers {
 	padding-right: 0.2em;
 }
 .pl_reviewsStatus {

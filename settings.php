@@ -477,7 +477,7 @@ function doGraceRow($name, $text, $capclass = "rcaption") {
 // Submissions
 if ($Group == "sub") {
     echo "<table class='halfc'><tr><td>";
-    echo "<div class='bgrp'><div class='bgrp_head'><a href='${ConfSiteBase}pc.php'>Edit program committee</a></div></div>\n";
+    echo "<div class='bgrp'><div class='bgrp_head'><a href='${ConfSiteBase}contacts.php?t=pc'>Edit program committee</a></div></div>\n";
     echo "<div class='bgrp'><div class='bgrp_head'>Submissions</div><div class='bgrp_body'>";
     doCheckbox('sub_open', '<b>Open site for submissions</b>');
 

@@ -295,7 +295,7 @@ Zhang, Ping Yen (INRIA)</pre>";
 	any advisor/student relationships.  No need to list people at the
 	authors' own institutions.";
 	    if (!$Conf->setting("sub_pcconf"))
-		echo "  Be sure to include conflicted <a href='${ConfSiteBase}pc.php'>PC members</a>.";
+		echo "  Be sure to include conflicted <a href='${ConfSiteBase}contacts.php?t=pc'>PC members</a>.";
 	    echo "  We use this information when assigning PC and external
 	reviewers.  Use the same format as for authors,	above.</td>\n";
 	}

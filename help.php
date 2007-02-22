@@ -346,7 +346,7 @@ Follow these steps to prepare to accept paper submissions.
   busy PC members might not specify their preferences; topic matching lets you
   do a reasonable job at assigning papers anyway.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}pc.php'>Set up PC
+<li><p><strong><a href='${ConfSiteBase}contacts.php?t=pc'>Set up PC
   accounts.</a></strong> Definitely do this ahead of time if you selected
   \"Collect authors' PC conflicts with checkboxes\".</p></li>
 
