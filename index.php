@@ -206,12 +206,6 @@ if ($Me->amReviewer() && ($Me->amAssistant() || $papersub)) {
 if ($Me->isPC) {
     echo "<div class='bgrp foldc' id='foldpc'><div class='bgrp_head'><a href=\"javascript:fold('pc', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('pc', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;PC member tasks (old CRP)</div><div class='bgrp_body extension'>\n";
 
-    $Conf->infoMsg(" You need to write up your own review for any "
-		  . " assigned Primary paper, and ask one or more other people "
-		  . " for reviews for your assigned Secondary papers");
-
-    $Conf->reviewerSummary($Me->contactId);
-
     echo "<ul>
 <li>Reviewer assignments  (asking others to review papers)
   <ul>
@@ -252,11 +246,6 @@ if ($Me->amAssistant()) {
   <li><a href='Chair/ListReviews.php'>See all the people</a> that PC members have requested to review papers.</li>
   <li><a href='Chair/SpotProblems.php'>Spot Reviewing Problems</a></li>
   <li><a href='Chair/AverageReviewerScore.php'>See average reviewer score</a></li>
-  </ul></li>
-
-<li>Contact authors &amp; prepare facesheets
-  <ul>
-  <li><a href='contacts.php?t=re'>List all reviewers (email and name)</a></li>
   </ul></li>\n";
 
     if (isset($Opt['dbDumpDir']))
