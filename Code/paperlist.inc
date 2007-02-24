@@ -761,7 +761,7 @@ class PaperList {
 	$url = $this->search->url();
 
 	// check role type
-	$this->scoresOk = $me->amAssistant() || ($me->isPC && $Conf->timePCViewGrades());
+	$this->scoresOk = $me->amAssistant() || ($me->isPC && $Conf->timePCViewAllReviews());
 
 	// get paper list
 	if (!($baseFieldId = $this->listFields($listname))) {

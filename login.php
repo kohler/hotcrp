@@ -141,8 +141,8 @@ $Conf->header("Sign in", 'login');
 
 <tr><td class='caption'></td>
   <td class='entry'><input type='radio' name='action' value='login' checked='checked' tabindex='2' />&nbsp;<b>Sign me in</b><br />
-  <input type='radio' name='action' value='forgot' tabindex='2' />&nbsp;I forgot my password, email it to me<br />
   <input type='radio' name='action' value='new' tabindex='2' />&nbsp;I'm a new user and want to create an account using this email address</td>
+  <input type='radio' name='action' value='forgot' tabindex='2' />&nbsp;I forgot my password, email it to me<br />
 </tr>
 
 <tr><td class='caption'></td>

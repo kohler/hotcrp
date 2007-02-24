@@ -412,7 +412,7 @@ if (isset($_REQUEST['delete'])) {
 	// XXX email self?
 
 	$error = false;
-	$tables = array('Paper', 'PaperStorage', 'PaperComment', 'PaperConflict', 'PaperGrade', 'PaperReview', 'PaperReviewArchive', 'PaperReviewPreference', 'PaperTopic');
+	$tables = array('Paper', 'PaperStorage', 'PaperComment', 'PaperConflict', 'PaperReview', 'PaperReviewArchive', 'PaperReviewPreference', 'PaperTopic');
 	if ($Conf->setting("allowPaperOption"))
 	    $tables[] = 'PaperOption';
 	foreach ($tables as $table) {

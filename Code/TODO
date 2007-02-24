@@ -3,8 +3,6 @@ Minor features
 - authors' response: emails, etc.
 - uploading request forms for others?
 - pretty printing reviews
-- grading: secondary can grade
-- do grades at all????
 - allow authors to download paper info, such as all submitted reviews
 - reviewers/authors can search submitted papers, seeing only those papers they
   are allowed to see (e.g. both reviewers + authors)?
@@ -18,8 +16,6 @@ Minor features
   to authors
 - send mail from pc.php
 - link in contacts.php and send mail from there
-- combine pc.php and contacts.php
-- contacts.php: accepted contact authors
 
 Tiny features
 - add a "review assignment" link to the "submitted/accepted/all" papers
@@ -48,3 +44,27 @@ Internals
 		     'representative of our field. It is <em> always </em> ' .
 		     'possible to be constructive.</P>'
 		    );
+
+Please read in detail ALL of the reviews and the authors rebuttal. After
+you have done that, please enter a PC grade for the paper. During this
+process only PC members will be entering a PC grade. If your grade differs
+from other PC members, please send email and discuss the issues over the
+next few days to arrive at an agreed upon grade. You can update the grades
+as often as you like up until the end of the grading period specified by
+the above date.
+
+In addition to entering a PC grade you can enter additional comments for
+the program committee and/or authors to see. These may be additional
+comments you have after reading the other reviews or the rebuttal, or
+additional comments to back up your PC grade. To enter additional comments
+click on the paper link, and enter comments at the bottom.
+
+You should only use "Accept, I will Champion this paper" if you are willing
+to champion the paper for an accept at the PC meeting. Likewise, you also
+should only use "Reject, I will argue against accept" if you are willing to
+argue against the paper from being accepted at the PC meeting.
+
+Note, if you are not going to be at the PC meeting, and want to choose an A
+or E for the PC grade, make sure you communicate to another PC member your
+praises/arguments ( someone else who is also a reviewer of the paper) so
+they can express them at the PC meeting.

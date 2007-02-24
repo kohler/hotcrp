@@ -323,9 +323,6 @@ class Conference {
     function timePCViewAllReviews() {
 	return $this->settingsAfter('pc_seeallrev');
     }
-    function timePCViewGrades() {
-	return $this->settingsAfter('pc_seeallrev');
-    }
     function timePCViewDecision() {
 	return $this->settingsAfter('pc_seeallrev'); // EndOfTheMeeting
     }
@@ -1253,18 +1250,6 @@ class Conference {
     }
 
     
-    function retCount($query) {
-	$result = $this->qe($query);
-	if (($row = edb_row($result)))
-	    return $row[0];
-	else
-	    return 0;
-    }
-
-    function countEntries($field, $who, $table, $extra="") {
-	return $this->retCount("select count($field) as foo from $table where $field=$who $extra");
-    }
-
     function textValuesGraph($text, $max, $style) {
 	global $ConfSiteBase;
 	

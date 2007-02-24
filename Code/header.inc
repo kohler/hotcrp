@@ -108,5 +108,3 @@ $_SESSION['Me']->validated = 0;
 
 if (!isset($_SESSION['AskedYouToUpdateContactInfo']))
     $_SESSION['AskedYouToUpdateContactInfo'] = 0;
-if (!isset($_SESSION['ShowChairGrades']))
-    $_SESSION['ShowChairGrades'] = 0;

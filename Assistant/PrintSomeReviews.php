@@ -9,8 +9,8 @@ $Me->goIfNotChair('../index.php');
 
 // session_register('GradeSortKey');
 
-if (IsSet($_REQUEST[setSortKey])) {
-  $_SESSION["GradeSortKey"]=$_REQUEST[setSortKey];
+if (IsSet($_REQUEST["setSortKey"])) {
+  $_SESSION["GradeSortKey"]=$_REQUEST["setSortKey"];
 }
 
 
@@ -61,17 +61,6 @@ if ($_SESSION["GradeSortKey"]=="byReviews") {
 		    . " ORDER BY merit DESC, Paper.paperId "
 		    );
 
-} elseif ($_SESSION["GradeSortKey"]=="byGrades") {
-  $Conf->infoMsg("Sorting By Grades (assigned by PC members)");
-  $result=$Conf->qe("SELECT Paper.paperId, Paper.title, "
-		    . " AVG(PaperGrade.grade) as merit "
-		    . " FROM Paper "
-		    . " LEFT JOIN PaperGrade "
-		    . " ON PaperGrade.paperId=Paper.paperId "
-		    . " GROUP BY PaperGrade.paperId "
-		    . " ORDER BY merit DESC, Paper.paperId "
-		    );
-
 } elseif ($_SESSION["GradeSortKey"]=="byPapers") {
   $Conf->infoMsg("Sorting By Paper Number");
   $result=$Conf->qe("SELECT Paper.paperId, Paper.title "
@@ -118,13 +107,11 @@ if (!$result)
 <th width=5%> Print? </th>
 <th width=25%> Title </th>
 <th width=5%> <a href="<?php echo $_SERVER[PHP_SELF]?>?setSortKey=byReviews"> Merit </a> </th>
-<th width=5%> <a href="<?php echo $_SERVER[PHP_SELF]?>?setSortKey=byGrades"> Grades </a> </th>
 </tr>
 <td> <b> 
 <?php
 $rf = reviewForm();
 $meritMax = $rf->maxNumericScore('overAllMerit');
-$gradeMax = $rf->maxNumericScore('grade');
 
 
 $rowNum = 0;
@@ -166,11 +153,6 @@ while ($row=edb_row($result)) {
 
     print "</td>";
 
-    print "<td align=center>";
-    $q = "SELECT grade FROM PaperGrade "
-      . " WHERE paperId=$paperId ";
-    $Conf->graphValues($q, "grade", $gradeMax);
-    print "</td>";
     print "<tr> \n";
   }
 }

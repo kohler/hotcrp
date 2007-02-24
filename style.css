@@ -770,6 +770,10 @@ td.pl_title img {
 td.pl_callout {
 	padding-left: 4em;
 }
+td.pl_lastvisit {
+	font-size: smaller;
+	white-space: nowrap;
+}
 span.pl_callouthdr {
 	font-style: italic;
 	padding-right: 0.5em;

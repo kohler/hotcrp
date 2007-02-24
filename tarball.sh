@@ -113,7 +113,6 @@ Chair/AverageReviewerScore.php
 Chair/BecomeSomeoneElse.php
 Chair/Code.inc
 Chair/DumpDatabase.php
-Chair/GradeAllPapers.php
 Chair/ListReviews.php
 Chair/SendMail.php
 Chair/SendMail2.php
@@ -130,8 +129,6 @@ Download/GetPaper.php
 
 PC/.htaccess
 PC/CheckReviewStatus.php
-PC/GradePapers.php
-PC/gradeNames.inc
 PC/index.php
 PC/reviewprefs.php
 

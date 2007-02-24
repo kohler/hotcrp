@@ -4,7 +4,6 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotAssistant('../index.php');
 require_once('../Code/review.inc');
-include('../PC/gradeNames.inc');
 $forceShow = "";
 
 if (IsSet($_REQUEST['ShowPCPapers'])) {
@@ -251,19 +250,6 @@ while ($row = edb_arow($result)) {
 	echo $sep, "<a href='${ConfSiteBase}review.php?paperId=$row->paperId&amp;reviewId=$row->reviewId&amp;text=1'>Text version</a>";
 	echo "</td>
 </tr>\n";
-
-	$gradeRes = $Conf -> qe("SELECT grade"
-				. " FROM PaperGrade "
-				. " WHERE paperId='$paperId' "
-				. "       AND contactId=$reviewer ");
-
-	if ($gradeRow = edb_arow($gradeRes)) {
-	    $grade = "<EM>" . $gradeName[$gradeRow['grade']] . "</EM>";
-	} else {
-	    $grade = "not entered yet";
-	}
-
-	print "<tr><td class='caption'>Grade</td><td class='entry'>$grade</td></tr>\n";
 
 	if ( ! $finalized ) {
 	    print "<tr><td class='caption'></td>";

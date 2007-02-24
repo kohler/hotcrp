@@ -171,21 +171,6 @@ CREATE TABLE `PaperConflict` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
--- Table structure for table `PaperGrade`
---
-
-DROP TABLE IF EXISTS `PaperGrade`;
-CREATE TABLE PaperGrade (
-  `contactId` int(11) NOT NULL,
-  `paperId` int(11) NOT NULL,
-  `time` timestamp(14) NOT NULL default CURRENT_TIMESTAMP,
-  `grade` int(11) NOT NULL,
-  UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
-  KEY `contactId` (`contactId`),
-  KEY `paperId` (`paperId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
---
 -- Table structure for table `PaperOption`
 --
 

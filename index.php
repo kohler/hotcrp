@@ -214,9 +214,6 @@ if ($Me->isPC) {
 
 <li>The End Game - Activities Prior to the PC Meeting
   <ul>\n";
-    if ($Conf->timePCViewGrades())
-	echo "  <li><a href='PC/GradePapers.php'>Grade Papers</a>
--- arrive at a consensus and determine discussion order of papers at PC meeting</li>\n";
     if ($Conf->timePCViewAllReviews()) {
 	echo "  <li><a href='Chair/AverageReviewerScore.php'>See average reviewer ratings</a> -- this compares the overall merit ratings of different reviewers</li>\n";
     }
@@ -230,11 +227,6 @@ if ($Me->amAssistant()) {
     echo "<div class='bgrp foldc' id='foldch'><div class='bgrp_head'><a href=\"javascript:fold('ch', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('ch', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;PC chair tasks (old CRP)</div><div class='bgrp_body extension'>\n";
 
     echo "<ul>
-<li>Manage all papers
-  <ul>
-  <li><a href='Chair/GradeAllPapers.php'>Assign Paper Grades</a></li>
-  </ul></li>
-
 <li>Assign papers
   <ul> 
   <li><a href='Chair/AskForReview.php'>Ask someone to review a paper (any paper)</a></li>
