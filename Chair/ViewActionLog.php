@@ -67,7 +67,10 @@ $result = $Conf->qe($query);
 while($row = edb_row($result)) {
     print "<tr>";
     echo "<td>", htmlspecialchars($row[0]), "</td>";
-    echo "<td>", htmlspecialchars($row[8] ? $row[8] : ""), "</td>";
+    if ($row[8])
+	echo "<td><a href=\"${ConfSiteBase}paper.php?paperId=", urlencode($row[8]), "\">", htmlspecialchars($row[8]), "</a></td>";
+    else
+	echo "<td></td>";
     echo "<td>",  date("D M j G:i:s Y", $row[1]), "</td>";
     echo "<td>", htmlspecialchars($row[2]), "</td>";
     echo "<td>", contactHtml($row[5], $row[6], $row[7]), "<br/>", htmlspecialchars($row[4]), "</td>";
