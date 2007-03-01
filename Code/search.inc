@@ -411,7 +411,8 @@ class PaperSearch {
 	$res = $this->_searchQueryType($this->q, "any");
 	$res = $this->_combineQuery($res, $this->_searchQueryType($this->qa, "all"));
 	$res = $this->_combineQuery($res, $this->_searchQueryType($this->qx, "none"));
-	if ($this->limitName == "s" || $this->limitName == "revs")
+	if ($this->limitName == "s" || $this->limitName == "r"
+	    || $this->limitName == "req" || $this->limitName == "revs")
 	    $res = $this->_combineQuery($res, array("Paper.timeSubmitted>0", ""));
 
 	$q = "select Paper.paperId from Paper";
@@ -465,11 +466,13 @@ class PaperSearch {
 	    return true;
 	if ($this->limitName == "s" || $this->limitName == "revs")
 	    $queryOptions["finalized"] = 1;
-	else if ($this->limitName == "r")
+	else if ($this->limitName == "r") {
+	    $queryOptions["finalized"] = 1;
 	    $queryOptions["myReviews"] = 1;
-	else if ($this->limitName == "rout")
+	} else if ($this->limitName == "rout") {
+	    $queryOptions["finalized"] = 1;
 	    $queryOptions["myOutstandingReviews"] = 1;
-	else if ($this->limitName == "a")
+	} else if ($this->limitName == "a")
 	    $queryOptions["author"] = 1;
 	else if ($this->limitName == "req")
 	    $queryOptions["myReviewRequests"] = 1;
