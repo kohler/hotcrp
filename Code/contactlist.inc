@@ -312,12 +312,12 @@ class ContactList {
 	    $j = "left join";
 	    if ($this->limit == "re" || $this->limit == "req" || $this->limit == "ext")
 		$j = "join";
-	    $pq .= "	$j PaperReview on (PaperReview.contactId=ContactInfo.contactId";
+	    $pq .= "	$j (select PaperReview.* from PaperReview join Paper on (Paper.paperId=PaperReview.paperId) where Paper.timeSubmitted>0";
 	    if ($this->limit == "req" || $this->limit == "ext")
 		$pq .= " and PaperReview.reviewType=" . REVIEW_EXTERNAL;
 	    if ($this->limit == "req")
 		$pq .= " and PaperReview.requestedBy=" . $this->contact->contactId;
-	    $pq .= ")\n";
+	    $pq .= ") as PaperReview on (PaperReview.contactId=ContactInfo.contactId)\n";
 	}
 	if ($this->limit == "au" || $this->limit == "aurej" || $this->limit == "auacc" || $this->limit == "auuns")
 	    $pq .= "\tjoin PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.conflictType=" . CONFLICT_AUTHOR . ")\n";
