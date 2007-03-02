@@ -1,3 +1,78 @@
+2007-02-28 Wednesday 21:49  kohler
+
+	* Code/search.inc (1.46): review assignment listings only include
+	  submitted papers
+
+2007-02-28 Wednesday 21:48  kohler
+
+	* Chair/ViewActionLog.php (1.12): include paper links in the action
+	  log
+
+2007-02-28 Wednesday 21:42  kohler
+
+	* login.php (1.26): duh! get the closing tags right
+
+2007-02-23 Friday 17:24  kohler
+
+	* index.php (1.107), login.php (1.25), logout.php (1.7), paper.php
+	  (1.108), style.css (1.153), tarball.sh (1.32),
+	  Assistant/PrintAllReviews.php (1.17),
+	  Assistant/PrintSomeReviews.php (1.14), Chair/GradeAllPapers.php
+	  (1.15), Code/TODO (1.65), Code/conference.inc (1.175),
+	  Code/header.inc (1.42), Code/paperlist.inc (1.108),
+	  Code/schema.sql (1.91), PC/GradePapers.php (1.15),
+	  PC/gradeNames.inc (1.2): remove paper grading as essentially an
+	  annoyance
+
+2007-02-22 Thursday 09:35  kohler
+
+	* contacts.php (1.3): others can view the contacts page
+
+2007-02-21 Wednesday 23:35  kohler
+
+	* index.php (1.106): mininit
+
+2007-02-21 Wednesday 23:22  kohler
+
+	* index.php (1.105), tarball.sh (1.31), Chair/SpotProblems.php
+	  (1.16): remove SpotProblems as redundant; search for, e.g.,
+	  "cre:<2" instead
+
+2007-02-21 Wednesday 23:20  kohler
+
+	* tarball.sh (1.30), Assistant/DumpAllReviews.php (1.18),
+	  Assistant/PrintAllAbstracts.php (1.15),
+	  Assistant/PrintAllReviews.php (1.16), Code/conference.inc
+	  (1.174), Code/contact.inc (1.102): make PrintAllReviews work for
+	  some reason (although who cares); remove much unused code
+
+2007-02-21 Wednesday 22:50  kohler
+
+	* index.php (1.104), Code/conference.inc (1.173): remove the last
+	  reviewer summary, and the accompanying code
+
+2007-02-21 Wednesday 22:46  kohler
+
+	* contacts.php (1.2), help.php (1.31), index.php (1.103), pc.php
+	  (1.25), settings.php (1.32), style.css (1.152), tarball.sh
+	  (1.29), Assistant/PrepareFacesheets.php (1.14),
+	  Code/contactlist.inc (1.3), Code/helpers.inc (1.131),
+	  Code/papertable.inc (1.59): contacts.php can list contact
+	  authors, and supply paper links; use contacts.php for pc.php
+	  (delete pc.php); remove PrepareFacesheets.php (info is in
+	  contacts.php); minor cleanups
+
+2007-02-20 Tuesday 09:23  kohler
+
+	* search.php (1.82), tarball.sh (1.28), Code/TODO (1.64),
+	  Code/conference.inc (1.172), Code/helpers.inc (1.130),
+	  Code/paperlist.inc (1.107): more progress towards listing reviews
+	  (rather than papers) in the search screen, but not there yet
+
+2007-02-20 Tuesday 09:21  kohler
+
+	* Assistant/ListReviewers.php (1.10): redundant page (contacts.php)
+
 2007-02-20 Tuesday 08:06  kohler
 
 	* index.php (1.102): only PC can check on PC progress
