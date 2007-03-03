@@ -351,7 +351,7 @@ class ContactList {
 	if ($this->limit == "auuns")
 	    $pq .= "\tjoin Paper on (Paper.paperId=PaperConflict.paperId and Paper.timeSubmitted<=0)\n";
 	if ($this->limit == "all")
-	    $pq .= "\tleft join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId)\n";
+	    $pq .= "\tleft join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.conflictType=" . CONFLICT_AUTHOR . ")\n";
 	
 	$pq .= "	group by ContactInfo.contactId
 	order by lastName, firstName, email";
