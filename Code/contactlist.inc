@@ -248,6 +248,8 @@ class ContactList {
 	  case "auacc":
 	  case "auuns":
 	    return array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_PAPERS);
+	  case "all":
+	    return array("all", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_PAPERS);
 	  default:
 	    return null;
 	}
@@ -300,7 +302,7 @@ class ContactList {
 	count(PaperReview.reviewSubmitted) as numReviewsSubmitted";
 	if (isset($queryOptions['papers']))
 	    $pq .= ",
-	group_concat(Paper.paperId) as paperIds";
+	group_concat(PaperConflict.paperId) as paperIds";
 	
 	$pq .= "\n	from ContactInfo\n";
 	$pq .= ($this->limit == "pc" ? "\tjoin" : "\tleft join") . " PCMember on (PCMember.contactId=ContactInfo.contactId)\n";
@@ -329,6 +331,8 @@ class ContactList {
 	    $pq .= "\tjoin Paper on (Paper.paperId=PaperConflict.paperId and Paper.outcome>0)\n";
 	if ($this->limit == "auuns")
 	    $pq .= "\tjoin Paper on (Paper.paperId=PaperConflict.paperId and Paper.timeSubmitted<=0)\n";
+	if ($this->limit == "all")
+	    $pq .= "\tleft join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId)\n";
 	
 	$pq .= "	group by ContactInfo.contactId
 	order by lastName, firstName, email";

@@ -26,8 +26,10 @@ if ($Me->amAssistant()
 if ($Me->amAssistant()
     || ($Me->isPC && !$Conf->blindSubmission() && $Conf->timeReviewerViewDecision()))
     $tOpt["aurej"] = "Contact authors of rejected papers";
-if ($Me->amAssistant())
+if ($Me->amAssistant()) {
     $tOpt["auuns"] = "Contact authors of non-submitted papers";
+    $tOpt["all"] = "All accounts";
+}
 if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
     $Conf->errorMsg("You aren't allowed to list those accounts.");
     unset($_REQUEST["t"]);
