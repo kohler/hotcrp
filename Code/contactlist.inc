@@ -17,6 +17,7 @@ class ContactList {
     const FIELD_LOWTOPICS = 7;
     const FIELD_REVIEWS = 8;
     const FIELD_PAPERS = 9;
+    const FIELD_REVIEW_PAPERS = 10;
     
     var $showHeader;
     var $sortField;
@@ -63,6 +64,8 @@ class ContactList {
 	    $queryOptions['reviews'] = true;
 	if ($fieldId == self::FIELD_PAPERS)
 	    $queryOptions['papers'] = true;
+	if ($fieldId == self::FIELD_REVIEW_PAPERS)
+	    $queryOptions['repapers'] = true;
 	return true;
     }
 
@@ -122,6 +125,7 @@ class ContactList {
 	    usort($rows, array("ContactList", "_sortReviews"));
 	    break;
 	case self::FIELD_PAPERS:
+	case self::FIELD_REVIEW_PAPERS:
 	    usort($rows, array("ContactList", "_sortPapers"));
 	    break;
 	}
@@ -152,6 +156,7 @@ class ContactList {
 	case self::FIELD_SELECTOR:
 	    return "";
 	case self::FIELD_PAPERS:
+	case self::FIELD_REVIEW_PAPERS:
 	    return "Papers";
 	default:
 	    return "&lt;$fieldId&gt;?";
@@ -225,9 +230,20 @@ class ContactList {
 	    $x = explode(",", $row->paperIds);
 	    sort($x, SORT_NUMERIC);
 	    $extra = "&amp;list=" . ($this->limit == "auuns" ? "all:" : "s:") . join("+", $x);
-	    for ($i = 0; $i < count($x); $i++)
-		$x[$i] = "<a href=\"${ConfSiteBase}paper.php?paperId=$x[$i]$extra\">$x[$i]</a>";
-	    return join(", ", $x);
+	    $m = array();
+	    foreach ($x as $v)
+		$m[] = "<a href=\"${ConfSiteBase}paper.php?paperId=$v$extra\">$v</a>";
+	    return join(", ", $m);
+	case self::FIELD_REVIEW_PAPERS:
+	    if (!$row->paperIds)
+		return "";
+	    $x = array_combine(explode(",", $row->paperIds), explode(",", $row->reviewIds));
+	    ksort($x, SORT_NUMERIC);
+	    $extra = "&amp;list=" . ($this->limit == "auuns" ? "all:" : "s:") . join("+", array_keys($x));
+	    $m = array();
+	    foreach ($x as $k => $v)
+		$m[] = "<a href=\"${ConfSiteBase}review.php?reviewId=$v$extra\">$k</a>";
+	    return join(", ", $m);
 	default:
 	    return "";
 	}
@@ -240,9 +256,9 @@ class ContactList {
 	  case "re":
 	    return array("re", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS);
 	  case "ext":
-	    return array("ext", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS);
+	    return array("ext", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_PAPERS);
 	  case "req":
-	    return array("req", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS);
+	    return array("req", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_PAPERS);
 	  case "au":
 	  case "aurej":
 	  case "auacc":
@@ -288,6 +304,7 @@ class ContactList {
 	$unfolded = $this->unfolded;
 
 	// prepare query text
+	$aulimit = (strlen($this->limit) >= 2 && $this->limit[0] == 'a' && $this->limit[1] == 'u');
 	$pq = "select ContactInfo.contactId,
 	firstName, lastName, email, affiliation,
 	voicePhoneNumber, faxPhoneNumber,
@@ -300,9 +317,11 @@ class ContactList {
 	    $pq .= ",
 	count(coalesce(PaperReview.reviewSubmitted,nullif(PaperReview.reviewNeedsSubmit,0))) as numReviews,
 	count(PaperReview.reviewSubmitted) as numReviewsSubmitted";
-	if (isset($queryOptions['papers']))
-	    $pq .= ",
-	group_concat(PaperConflict.paperId) as paperIds";
+	if (isset($queryOptions['repapers']))
+	    $pq .= ",\n\tgroup_concat(PaperReview.paperId) as paperIds,
+	group_concat(PaperReview.reviewId) as reviewIds";
+	else if (isset($queryOptions['papers']))
+	    $pq .= ",\n\tgroup_concat(PaperConflict.paperId) as paperIds";
 	
 	$pq .= "\n	from ContactInfo\n";
 	$pq .= ($this->limit == "pc" ? "\tjoin" : "\tleft join") . " PCMember on (PCMember.contactId=ContactInfo.contactId)\n";
@@ -321,7 +340,7 @@ class ContactList {
 		$pq .= " and PaperReview.requestedBy=" . $this->contact->contactId;
 	    $pq .= ") as PaperReview on (PaperReview.contactId=ContactInfo.contactId)\n";
 	}
-	if ($this->limit == "au" || $this->limit == "aurej" || $this->limit == "auacc" || $this->limit == "auuns")
+	if ($aulimit)
 	    $pq .= "\tjoin PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.conflictType=" . CONFLICT_AUTHOR . ")\n";
 	if ($this->limit == "au")
 	    $pq .= "\tjoin Paper on (Paper.paperId=PaperConflict.paperId and Paper.timeSubmitted>0)\n";
@@ -468,5 +487,6 @@ $contactListFields = array(
 	ContactList::FIELD_HIGHTOPICS => array('topics', 3, 0),
 	ContactList::FIELD_LOWTOPICS => array('topics', 3, 0),
 	ContactList::FIELD_REVIEWS => array('reviewsStatus', 1, 1),
-	ContactList::FIELD_PAPERS => array('papers', 1, 1)
+	ContactList::FIELD_PAPERS => array('papers', 1, 1),
+	ContactList::FIELD_REVIEW_PAPERS => array('papers', 1, 1)
 	);

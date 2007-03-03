@@ -234,7 +234,6 @@ if ($Me->amAssistant()) {
 
 <li>Check on reviewing progress
   <ul>
-  <li><a href='Chair/ListReviews.php'>See all the people</a> that PC members have requested to review papers.</li>
   <li><a href='Chair/AverageReviewerScore.php'>See average reviewer score</a></li>
   </ul></li>\n";
 

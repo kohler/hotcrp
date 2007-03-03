@@ -112,13 +112,11 @@ Chair/AverageReviewerScore.php
 Chair/BecomeSomeoneElse.php
 Chair/Code.inc
 Chair/DumpDatabase.php
-Chair/ListReviews.php
 Chair/SendMail.php
 Chair/SendMail2.php
 Chair/SetReviewForm.php
 Chair/ShowCalendar.php
 Chair/ViewActionLog.php
-Chair/ViewButtons.php
 Chair/index.php
 Chair/sampleforms.inc
 
