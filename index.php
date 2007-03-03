@@ -246,7 +246,6 @@ if ($Me->amAssistant()) {
   <li><a href='Assistant/PrintAllAbstracts.php'>Show all abstracts for printing</a></li>
   <li><a href='Assistant/PrintAllReviews.php'>Show all reviews for printing</a></li>
   <li><a href='Assistant/PrintSomeReviews.php'>Show <b>some</b> reviews for printing</a> -- you can use this to eliminate papers unlikely to be accepted</li>
-  <li><a href='Assistant/ModifyUserNames.php'>Modify user names</a> in account database prior to preparing face sheets</li>
   </ul></li>\n";
     
     echo "</ul></div></div>\n";
