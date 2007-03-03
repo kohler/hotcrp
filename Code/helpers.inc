@@ -568,9 +568,9 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['deadline'])) {
 	$dname = $whyNot['deadline'];
 	if ($dname[0] == "s")
-	    $start = defval($Conf->settings["sub_open"], -1);
+	    $start = $Conf->setting("sub_open", -1);
 	else if ($dname[0] == "p" || $dname[0] == "e")
-	    $start = defval($Conf->settings["rev_open"], -1);
+	    $start = $Conf->setting("rev_open", -1);
 	else
 	    $start = 1;
 	$end = $Conf->settings[$dname];

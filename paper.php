@@ -383,9 +383,13 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submit"]) || isset($_REQUEST[
     }
 
     // actually update
-    if (!$ok)
-	$Conf->errorMsg(whyNotText($whyNot, (isset($_REQUEST["submitfinal"]) ? "submit final copy for" : "update")));
-    else if (updatePaper($Me, isset($_REQUEST["submit"]), isset($_REQUEST["submitfinal"]))) {
+    if (!$ok) {
+	if (isset($_REQUEST["submitfinal"]))
+	    $action = "submit final copy for";
+	else
+	    $action = ($newPaper ? "register" : "update");
+	$Conf->errorMsg(whyNotText($whyNot, $action));
+    } else if (updatePaper($Me, isset($_REQUEST["submit"]), isset($_REQUEST["submitfinal"]))) {
 	if ($newPaper)
 	    $Conf->go("paper.php?paperId=$paperId&mode=edit");
     }
@@ -470,7 +474,10 @@ else if ($newPaper) {
     $timeStart = $Conf->timeStartPaper();
     $startDeadline = deadlineSettingIs("sub_reg", $Conf);
     if (!$timeStart) {
-	$msg = "You cannot start new papers since the <a href='deadlines.php'>deadline</a> has passed.$startDeadline$override";
+	if ($Conf->setting("sub_open") <= 0)
+	    $msg = "You can't register new papers because the conference site has not been opened for submissions.$override";
+	else
+	    $msg = "You can't register new papers since the <a href='deadlines.php'>deadline</a> has passed.$startDeadline$override";
 	if (!$Me->amAssistant())
 	    errorMsgExit($msg);
 	$Conf->infoMsg($msg);
