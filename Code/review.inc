@@ -411,8 +411,9 @@ class ReviewForm {
 		$x .= "000000\n==-== Replace '000000' with the actual paper number.\n";
 	    if ($prow)
 		$x .= wordWrapIndent($prow->title, "==-== Title: ", "==-==        ") . "\n";
-	    $x .= "\n==-== Uploading this form will submit the review, making it available to
-==-== authors and the PC, unless you delete the following line.
+	    $x .= "
+==-== The PC and authors can't see your review until you officially submit it.
+==-== \"Submit Review\" means submit, else save changes without submitting:
 ==+== Submit Review\n";
 	    if ($conf->blindReview() == 1) {
 		$blind = "Anonymous";
