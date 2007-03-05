@@ -80,7 +80,7 @@ class PaperList {
 
 	$this->sessionVar = $sessionVar;
 
-	$this->paperLink = "paper";
+	$this->paperLink = "";
 	$this->paperLinkArgs = "";
 	if ($this->sessionVar && $this->sessionVar != "list")
 	    $this->paperLinkArgs = "&amp;list=" . $this->sessionVar;
@@ -419,11 +419,23 @@ class PaperList {
 	global $ConfSiteBase, $Conf, $reviewTypeName, $paperListScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
-	    return "<a href='${ConfSiteBase}$this->paperLink.php?paperId=$row->paperId" . $this->paperLinkArgs . "' tabindex='2'>#$row->paperId</a>";
+	    if (!($pl = $this->paperLink)) {
+		if ($row->reviewCount && $this->contact->canViewReview($row, null, $Conf))
+		    $pl = "review";
+		else
+		    $pl = "paper";
+	    }
+	    return "<a href='${ConfSiteBase}$pl.php?paperId=$row->paperId" . $this->paperLinkArgs . "' tabindex='2'>#$row->paperId</a>";
 	case self::FIELD_REVIEWID:
 	    return "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "' tabindex='2'>#$row->paperId" . unparseReviewOrdinal($row->reviewOrdinal) . "</a>";
 	case self::FIELD_TITLE:
-	    return "<a href='${ConfSiteBase}$this->paperLink.php?paperId=$row->paperId" . $this->paperLinkArgs . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
+	    if (!($pl = $this->paperLink)) {
+		if ($row->reviewCount && $this->contact->canViewReview($row, null, $Conf))
+		    $pl = "review";
+		else
+		    $pl = "paper";
+	    }
+	    return "<a href='${ConfSiteBase}$pl.php?paperId=$row->paperId" . $this->paperLinkArgs . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_REVIEWTITLE:
 	    return "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_STATUS:
@@ -735,6 +747,7 @@ class PaperList {
 	    $this->paperLink = "assign";
 	    return array("Potential conflicts", 102, 1, 11, self::FIELD_OPT_AUTHORS, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
 	  case "editReviewPreference":
+	    $this->paperLink = "paper";
 	    return array("Reviewer preferences", 1, 11, 36, 27, 40, 70, 37);
 	  case "reviewers":
 	    $this->paperLink = "assign";

@@ -515,7 +515,7 @@ class Contact {
 		|| ($this->isPC && $prow->conflictType == 0 && $rrsub
 		    && ($conf->timePCViewAllReviews()
 			|| defval($prow->reviewSubmitted) > 0))
-		|| ($prow->myReviewType > 0
+		|| (defval($prow->myReviewType) > 0
 		    && $prow->conflictType == 0 && $rrsub
 		    && defval($prow->reviewSubmitted) > 0
 		    && ($this->isPC || $conf->settings["extrev_view"] >= 1))
