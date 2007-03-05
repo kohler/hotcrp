@@ -9,8 +9,8 @@ require_once('Code/reviewtable.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $rf = reviewForm();
-$useRequest = false;
-$forceShow = (defval($_REQUEST['forceShow']) && $Me->amAssistant() ? "&amp;forceShow=1" : "");
+$useRequest = isset($_REQUEST["afterLogin"]);
+$forceShow = (defval($_REQUEST["forceShow"]) && $Me->amAssistant() ? "&amp;forceShow=1" : "");
 
 
 // header
@@ -411,7 +411,7 @@ function reviewView($prow, $rrow, $editMode) {
 	    echo "reviewId=$rrow->reviewId";
 	else
 	    echo "paperId=$prow->paperId";
-	echo "$forceShow&amp;post=1' method='post' enctype='multipart/form-data'>\n";
+	echo "$forceShow&amp;mode=edit&amp;post=1' method='post' enctype='multipart/form-data'>\n";
     }
     
     echo "<table class='review'>

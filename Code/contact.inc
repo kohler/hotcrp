@@ -164,9 +164,14 @@ class Contact {
     }
 
     function goIfInvalid() {
-	global $ConfSiteBase;
+	global $ConfSiteBase, $reviewFields;
 	if (!$this->valid()) {
-	    $_SESSION["afterLogin"] = selfHref();
+	    require_once("review.inc");
+	    $x = array("afterLogin" => 1, "blind" => 1);
+	    foreach ($reviewFields as $k => $v)
+		if (isset($_REQUEST[$k]))
+		    $x[$k] = $_REQUEST[$k];
+	    $_SESSION["afterLogin"] = selfHref($x);
 	    $this->goAlert("${ConfSiteBase}login.php", "You have invalid credentials and need to log in.");
 	}
     }

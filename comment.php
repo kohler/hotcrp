@@ -402,8 +402,8 @@ function responseView($prow, $crow, $editMode) {
 	$Conf->infoMsg("The authors' response is a mechanism to address
 reviewer concerns and correct reviewer misunderstandings.
 The response should be addressed to the program committee, who
-will consider it when making their decision.  It is <i>not</i> a mechanism
-to augment the content or form of the paper&mdash;the conference deadline
+will consider it when making their decision.  Don't try to
+augment the paper's content or form&mdash;the conference deadline
 has passed.  Please keep the response short and to the point" . $limittext . ".");
 	if ($prow->conflictType != CONFLICT_AUTHOR)
 	    $Conf->infoMsg("Although you aren't a contact author for this paper, you can edit the authors' response as PC Chair.");
