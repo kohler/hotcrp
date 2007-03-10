@@ -771,7 +771,7 @@ class Contact {
 		&& $conf->settings["extrev_view"] >= 2))
 	    return true;
 	$blind = $conf->blindReview();
-	if ($blind > 1
+	if ($blind <= 0
 	    || ($blind == 1 && $rrow && $rrow->reviewBlind == 0))
 	    return true;
 	return false;
@@ -786,7 +786,7 @@ class Contact {
 		&& $conf->settings["extrev_view"] >= 2))
 	    return true;
 	$blind = $conf->blindReview();
-	if ($blind > 1
+	if ($blind <= 0
 	    || ($blind == 1 && $crow && $crow->blind == 0))
 	    return true;
 	return false;
