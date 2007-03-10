@@ -420,7 +420,7 @@ class ReviewForm {
 		if ($rrow && !$rrow->reviewBlind)
 		    $blind = "Open";
 		$x .= "\n==-== " . $conf->shortName . " allows either anonymous or open review.
-==-== To submit a non-anonymous review, change 'Anonymous' to 'Open' here.
+==-== \"Anonymous\" will hide your name from authors, \"Open\" will not:
 ==+== $blind Review\n";
 	    }
 	}

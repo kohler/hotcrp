@@ -598,7 +598,7 @@ if (($newPaper || $mode == "edit") && $Conf->blindSubmission() == 1 && !$finalEd
 	if ($blind)
 	    echo " checked='checked'";
 	echo " />&nbsp;Anonymous submission</td>
-  <td class='hint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (the PC and any external reviewers won't be shown the author list).</td>\n";
+  <td class='hint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (the PC and any external reviewers won't be shown the author list).  Make sure you also remove your name from the paper itself!</td>\n";
     } else
 	echo "  <td class='entry'>", ($blind ? "Anonymous submission" : "Non-anonymous submission"), "</td>\n";
     echo "</tr>\n";
