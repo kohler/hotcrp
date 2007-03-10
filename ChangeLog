@@ -1,3 +1,57 @@
+2007-03-05 Monday 14:15  kohler
+
+	* comment.php (1.31), review.php (1.84), Code/contact.inc (1.104):
+	  try and save people's reviews if a session problem intervenes,
+	  since people keep having session problems
+
+2007-03-05 Monday 11:21  kohler
+
+	* tarball.sh (1.35), Code/contact.inc (1.103), Code/paperlist.inc
+	  (1.109): paper lists for authored, submitted, and all papers
+	  point to either review or paper, depending on whether reviews are
+	  available and viewable
+
+2007-03-05 Monday 08:38  kohler
+
+	* Code/review.inc (1.60): better help on submitting offline reviews
+
+2007-03-03 Saturday 15:42  kohler
+
+	* Code/contactlist.inc (1.7): oops: only list authored papers
+
+2007-03-03 Saturday 15:37  kohler
+
+	* genericPopup.php (1.2): more not needed
+
+2007-03-03 Saturday 15:24  kohler
+
+	* index.php (1.109), tarball.sh (1.34), Chair/ListReviews.php
+	  (1.12), Chair/ViewButtons.php (1.7), Code/contactlist.inc (1.6):
+	  remove unused/redundant pages; external review lists of contacts
+	  actually have review links
+
+2007-03-03 Saturday 14:55  kohler
+
+	* index.php (1.108), tarball.sh (1.33),
+	  Assistant/ModifyUserNames.php (1.11): modify user names is not
+	  necessary
+
+2007-03-03 Saturday 14:53  kohler
+
+	* contacts.php (1.4), Code/contactlist.inc (1.5): add "all
+	  accounts"
+
+2007-03-03 Saturday 09:42  kohler
+
+	* paper.php (1.109), Code/helpers.inc (1.132): if conference site
+	  is not yet open for submissions, report that instead of "deadline
+	  has passed" (Akos Ledeczi)
+
+2007-03-02 Friday 08:48  kohler
+
+	* Code/contactlist.inc (1.4): don't include withdrawn papers in
+	  review counts
+
 2007-02-28 Wednesday 21:49  kohler
 
 	* Code/search.inc (1.46): review assignment listings only include
