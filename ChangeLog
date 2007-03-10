@@ -1,3 +1,16 @@
+2007-03-10 Saturday 12:32  kohler
+
+	* paper.php (1.110), Code/review.inc (1.61), Code/search.inc
+	  (1.47): audit other uses of "blind" settings, find one bug
+	  (although it wouldnt actually expose information inappropriately)
+
+2007-03-10 Saturday 12:21  kohler
+
+	* Code/contact.inc (1.105): Holy shit: correct the sense of
+	  canViewReviewerIdentity(). We want to return true if you CAN view
+	  the review. Previous code got it the wrong way round for one
+	  case. [Jeff Chase]
+
 2007-03-05 Monday 14:15  kohler
 
 	* comment.php (1.31), review.php (1.84), Code/contact.inc (1.104):
