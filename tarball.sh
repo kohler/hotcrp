@@ -1,4 +1,4 @@
-export VERSION=2.0b7
+export VERSION=2.0b8
 
 mkdistdir () {
     crpd=hotcrp-$VERSION
