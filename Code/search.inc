@@ -518,6 +518,7 @@ class PaperSearch {
 	$result = $Conf->qe("select * from Matches", "while searching papers");
 	while (($row = edb_row($result)))
 	    $x[] = $row[0];
+	$Conf->q("drop temporary table Matches");
 	return $x;
     }
 
