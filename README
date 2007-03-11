@@ -19,7 +19,9 @@ HotCRP requires the following software.  Tested versions are in parentheses.
 
 The Mail and Mail_Mime PEAR packages are currently distributed as part of
 the HotCRP tarball.  You may need to install additional packages to enable
-PHP's MySQL and PEAR support (on Fedora, php-mysql and php-pear).
+PHP's MySQL, PEAR, and mail support.  On Fedora, the "php-mysql" and
+"php-pear" packages are required.  On Ubuntu, you may additionally need to
+install the "postfix" package for SMTP support.
 
 Configuration
 -------------
