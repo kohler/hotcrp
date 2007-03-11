@@ -384,6 +384,7 @@ if (isset($_REQUEST["update"])) {
 	    $Conf->qe("insert into Settings (name, value) values " . substr($aq, 2), $while);
 	
 	$Conf->qe("unlock tables", $while);
+	$Conf->log("Updated settings group '$Group'", $Me);
 	$Conf->updateSettings();
 	$rf->validate($Conf, true);
     }
