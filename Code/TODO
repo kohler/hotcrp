@@ -1,3 +1,8 @@
+Major features
+- mail tool
+- mail tool: do not let people leave the page until it is done loading
+  (probably, don't even SHOW the page until it is ready)
+
 Minor features
 - show multiple review fields in paper lists
 - authors' response: emails, etc.
