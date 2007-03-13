@@ -171,6 +171,16 @@ function pselClick(evt, elt, thisnum) {
 }
 
 
+function revprefAjax(paperId, value) {
+    var form = document.forms["revpref"];
+    if (form && form.paperId && form.revpref) {
+	form.paperId.value = paperId;
+	form.revpref.value = value;
+	Miniajax.submit("revpref");
+    }
+}
+
+
 // Thank you David Flanagan
 var Miniajax = {};
 Miniajax._factories = [
@@ -227,9 +237,10 @@ Miniajax.submit = function(formname, extra) {
 	    pairs.push(encodeURIComponent(e.name).replace(regexp, "+") + "="
 		       + encodeURIComponent(e.value).replace(regexp, "+"));
     }
-    for (var i in extra)
-	pairs.push(encodeURIComponent(i).replace(regexp, "+") + "="
-		   + encodeURIComponent(extra[i]).replace(regexp, "+"));
+    if (extra)
+	for (var i in extra)
+	    pairs.push(encodeURIComponent(i).replace(regexp, "+") + "="
+		       + encodeURIComponent(extra[i]).replace(regexp, "+"));
     pairs.push("ajax=1");
 
     // send

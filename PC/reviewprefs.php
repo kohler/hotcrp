@@ -13,7 +13,7 @@ $reviewer = cvtint($_REQUEST["reviewer"]);
 if ($reviewer <= 0 || !$Me->amAssistant())
     $reviewer = $Me->contactId;
 
-$Conf->header("Review Preferences", "revpref");
+$Conf->header("Review Preferences", "revpref", actionBar());
 
 function savePreferences($reviewer) {
     global $Conf, $Me, $reviewTypeName;
@@ -126,6 +126,13 @@ if ($Me->amAssistant()) {
 $searchType = ($Conf->setting("pc_seeall") > 0 ? "all" : "s");
 $paperList = new PaperList(true, "list", new PaperSearch($Me, array("t" => $searchType, "c" => $reviewer, "urlbase" => "PC/reviewprefs.php?reviewer=$reviewer")));
 unset($_SESSION["matchPreg"]);
+
+echo "<form name='revpref' method='post' action=\"${ConfSiteBase}paper.php\" enctype='multipart/form-data'>
+  <input type='hidden' name='paperId' value='' />
+  <input type='hidden' name='revpref' value='' />\n";
+if ($Me->amAssistant())
+    echo "  <input type='hidden' name='contactId' value='$reviewer' />\n";
+echo "</form>\n\n";
 
 echo "<form class='assignpc' method='post' action=\"reviewprefs.php?reviewer=$reviewer&amp;post=1\" enctype='multipart/form-data'>\n";
 echo $paperList->text("editReviewPreference", $Me);

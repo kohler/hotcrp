@@ -81,6 +81,30 @@ if (!$newPaper) {
 }
 
 
+// set review preference action
+if (isset($_REQUEST['revpref']) && $prow) {
+    $ajax = defval($_REQUEST["ajax"], 0);
+    if (!$Me->amAssistant()
+	|| ($contactId = cvtint($_REQUEST["contactId"])) <= 0)
+	$contactId = $Me->contactId;
+    if (($v = cvtpref($_REQUEST['revpref'])) >= -1000000 && $v <= 1000000) {
+	$while = "while saving review preference";
+	$Conf->qe("lock tables PaperReviewPreference write", $while);
+	$Conf->qe("delete from PaperReviewPreference where contactId=$contactId and paperId=$prow->paperId", $while);
+	$result = $Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values ($prow->paperId, $contactId, $v)", $while);
+	$Conf->qe("unlock tables", $while);
+	if ($result)
+	    $Conf->confirmMsg("Review preference saved.");
+	getProw($Me->contactId);
+    } else {
+	$Conf->errorMsg($ajax ? "Preferences must be small positive or negative integers." : "Preferences must be small integers.  0 means don't care; positive numbers mean you want to review a paper, negative numbers mean you don't.  The greater the absolute value, the stronger your feelings.");
+	$PaperError['revpref'] = true;
+    }
+    if ($ajax)
+	$Conf->ajaxExit(array("ok" => $OK && !defval($PaperError['revpref'])));
+}
+
+
 // unfinalize, withdraw, and revive actions
 if (isset($_REQUEST["unsubmit"]) && !$newPaper) {
     if ($Me->amAssistant()) {
@@ -432,27 +456,6 @@ if (isset($_REQUEST['delete'])) {
 	$prow = null;
 	errorMsgExit("");
     }
-}
-
-
-// set review preference action
-if (isset($_REQUEST['revpref']) && $prow) {
-    $ajax = defval($_REQUEST["ajax"], 0);
-    if (($v = cvtpref($_REQUEST['revpref'])) >= -1000000 && $v <= 1000000) {
-	$while = "while saving review preference";
-	$Conf->qe("lock tables PaperReviewPreference write", $while);
-	$Conf->qe("delete from PaperReviewPreference where contactId=$Me->contactId and paperId=$prow->paperId", $while);
-	$result = $Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values ($prow->paperId, $Me->contactId, $v)", $while);
-	$Conf->qe("unlock tables", $while);
-	if ($result)
-	    $Conf->confirmMsg("Review preference saved.");
-	getProw($Me->contactId);
-    } else {
-	$Conf->errorMsg($ajax ? "Preferences must be small positive or negative integers." : "Preferences must be small integers.  0 means don't care; positive numbers mean you want to review a paper, negative numbers mean you don't.  The greater the absolute value, the stronger your feelings.");
-	$PaperError['revpref'] = true;
-    }
-    if ($ajax)
-	$Conf->ajaxExit(array("ok" => $OK && !defval($PaperError['revpref'])));
 }
 
 
