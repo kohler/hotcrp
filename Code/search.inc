@@ -330,6 +330,8 @@ class PaperSearch {
 			$qp .= " or (optionIds like '%#${oid}:%')";
 			$got = true;
 		    }
+		if ($type == "none")
+		    $qp = " or (optionIds is not null and (" . substr($qp, 4) . "))";
 		if ($got)
 		    $this->any |= self::ANY_OPTIONS;
 		else
