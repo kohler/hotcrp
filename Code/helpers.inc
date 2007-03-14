@@ -81,9 +81,9 @@ function mkarray($value) {
 }
 
 function alert($string = "") {
-  print "<script language=javascript>\n";
-  print "alert(\"" . addslashes($string).  "\");";
-  print "</script>";
+    print "<script language='javascript'>\n";
+    print "alert(\"" . addslashes($string).  "\");";
+    print "</script>";
 }
 
 function go($url) {
