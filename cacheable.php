@@ -20,6 +20,19 @@ else {
     exit;
 }
 
-header("Last-Modified: " . gmdate("D, d M Y H:i:s", filemtime($file)) . " GMT");
-header("Content-Length: " . filesize($file));
-readfile($file);
+$last_modified = gmdate("D, d M Y H:i:s", filemtime($file)) . " GMT";
+$etag = '"' . md5($last_modified) . '"';
+header("Last-Modified: $last_modified");
+header("ETag: $etag");
+
+// check for a conditional request
+$if_modified_since = isset($_SERVER["HTTP_IF_MODIFIED_SINCE"]) ? $_SERVER["HTTP_IF_MODIFIED_SINCE"] : false;
+$if_none_match = isset($_SERVER["HTTP_IF_NONE_MATCH"]) ? $_SERVER["HTTP_IF_NONE_MATCH"] : false;
+if (($if_modified_since || $if_none_match)
+    && (!$if_modified_since || $if_modified_since == $last_modified)
+    && (!$if_none_match || $if_none_match == $etag))
+    header("HTTP/1.0 304 Not Modified");
+else {
+    header("Content-Length: " . filesize($file));
+    readfile($file);
+}
