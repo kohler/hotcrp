@@ -20,5 +20,6 @@ else {
     exit;
 }
 
+header("Last-Modified: " . gmdate("D, d M Y H:i:s", filemtime($file)) . " GMT");
 header("Content-Length: " . filesize($file));
 readfile($file);
