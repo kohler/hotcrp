@@ -1057,7 +1057,7 @@ class Conference {
     // Conference header, footer
     //
     function header_head($title) {
-	global $ConfSiteBase, $Opt;
+	global $ConfSiteBase, $ConfSitePATH, $Opt;
 	if (!$this->headerPrinted) {
 	    echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n";
 	    // PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n";
@@ -1067,8 +1067,8 @@ class Conference {
 	    if (strstr($title, "<") !== false)
 		$title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
 	    echo "<title>", $title, " - ", $this->shortName, "</title>\n";
-	    echo "<script src=\"${ConfSiteBase}script.js\" type=\"text/javascript\"></script>\n";
-	    echo "<link rel='stylesheet' type='text/css' href='${ConfSiteBase}style.css' />\n";
+	    echo "<script type='text/javascript' src='${ConfSiteBase}cacheable.php?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "' defer='defer'></script>\n";
+	    echo "<link rel='stylesheet' type='text/css' href='${ConfSiteBase}cacheable.php?file=style.css&amp;mtime=" . filemtime("$ConfSitePATH/style.css") . "' />\n";
 	    $this->headerPrinted = 1;
 	}
     }

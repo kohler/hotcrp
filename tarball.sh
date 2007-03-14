@@ -29,6 +29,7 @@ README
 account.php
 assign.php
 autoassign.php
+cacheable.php
 comment.php
 contacts.php
 contactauthors.php

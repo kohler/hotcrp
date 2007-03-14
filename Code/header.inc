@@ -26,12 +26,8 @@ $OK = 1;
 
 $Msg["unknown"] = "Unknown error.";
 
-// Disable caching
-header("Cache-Control: no-cache, must-revalidate");  // HTTP/1.1
-header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
-
 // Automatically determine path to conference site
-$here = substr(__FILE__,0,strrpos(__FILE__,'/'));
+$here = substr(__FILE__, 0, strrpos(__FILE__,'/'));
 if (file_exists($here . "/Code/header.inc"))
     $ConfSitePATH = $here;
 else if (file_exists($here . "/../Code/header.inc"))
@@ -83,7 +79,6 @@ if (!isset($Opt['dbPassword']))
 if (!isset($Opt['dsn']))
     $Opt['dsn'] = "mysql://" . $Opt['dbUser'] . ":" . $Opt['dbPassword'] . "@127.0.0.1/" . $Opt['dbName'];
 
-
 // Create the conference
 $Conf = new Conference();
 
@@ -108,3 +103,9 @@ $_SESSION['Me']->validated = 0;
 
 if (!isset($_SESSION['AskedYouToUpdateContactInfo']))
     $_SESSION['AskedYouToUpdateContactInfo'] = 0;
+
+// Mark as already expired to discourage caching, but allow the browser
+// to cache for history buttons
+header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+header("Cache-Control: private");
+header("Pragma: ");
