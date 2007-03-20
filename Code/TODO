@@ -26,6 +26,7 @@ Minor features
 - send mail from pc.php
 - link in contacts.php and send mail from there
 - scrub author information from PDFs
+- UTF-8 mail(): what is required?
 
 Tiny features
 - add a "review assignment" link to the "submitted/accepted/all" papers
