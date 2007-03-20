@@ -139,7 +139,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	    if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
 		$n .= "  " . trim($_REQUEST["emailNote"]);
 	    $m .= wordwrap($n . "\n\n")
-		. wordWrapIndent(trim($prow->title), "Title: ", 14) . "\n"
+		. wordWrapIndent($prow->title, "Title: ", 14) . "\n"
 		. "  Paper site: $Conf->paperSite/review.php?paperId=$prow->paperId\n\n"
 		. wordwrap("You are not expected to complete your review; in fact the conference system will not allow it unless the chair revives the paper.\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
 	    $Conf->emailReviewersChair($prow, "Paper #$paperId withdrawn", $m);
@@ -344,12 +344,15 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     getProw($contactId);
     if ($isSubmitFinal) {
 	$what = "Submitted final copy for";
-	$subject = "Paper #$paperId final copy submitted";
+	$subject = "Updated Paper #$paperId final copy";
     } else {
 	$what = ($isSubmit ? "Submitted" : ($newPaper ? "Created" : "Updated"));
-	$subject = "Paper #$paperId " . strtolower($what);
+	$subject = $what . " Paper #$paperId";
     }
+    if (($titleWords = titleWords($prow->title)))
+	$subject .= " \"$titleWords\"";
     $Conf->confirmMsg("$what paper #$paperId.");
+    
 
     // send paper email
     $m = wordwrap("This mail confirms the "

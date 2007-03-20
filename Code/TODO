@@ -25,7 +25,6 @@ Minor features
   to authors
 - send mail from pc.php
 - link in contacts.php and send mail from there
-- emails about paper have first two words of the title in them
 - scrub author information from PDFs
 
 Tiny features

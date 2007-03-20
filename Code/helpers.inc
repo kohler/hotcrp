@@ -737,6 +737,21 @@ function unparseReviewOrdinal($ord) {
 	return chr(intval(($ord - 1) / 26) + 65) . chr(($ord % 26) + 64);
 }
 
+function titleWords($title) {
+    // assume that title whitespace has been simplified
+    $pos = 0;
+    $len = strlen($title);
+    while (1) {
+	$npos = strpos($title, " ", ($pos ? $pos + 1 : 0));
+	if ($npos === false && ($pos == 0 || $len <= 40))
+	    return $title;
+	else if ($npos === false || $npos > 40)
+	    return substr($title, 0, $pos) . "...";
+	else
+	    $pos = $npos;
+    }
+}
+
 function downloadText($text, $filename, $description, $inline = false) {
     global $Conf;
     header("Content-Description: $Conf->shortName $description, PHP generated data");
