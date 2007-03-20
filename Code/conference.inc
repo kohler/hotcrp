@@ -418,7 +418,7 @@ class Conference {
     // Paper storage
     //
 
-    function storePaper($uploadId, $prow, $final = false) {
+    function storePaper($uploadId, $prow, $final, $override) {
 	global $Opt;
 
 	$paperId = (is_numeric($prow) ? $prow : $prow->paperId);
@@ -495,7 +495,7 @@ class Conference {
 		. ($final ? "finalPaperStorageId" : "paperStorageId") . "=$paperStorageId, "
 		. "size=" . strlen($contents) . ", mimetype='" . sqlq($mimetype) . "', timestamp=$timestamp"
 		. " where paperId=$paperId and timeWithdrawn<=0"
-		. ($final ? "" : " and timeSubmitted<=0"), $while);
+		. ($final || $override ? "" : " and timeSubmitted<=0"), $while);
 
 	$this->qe2("unlock tables", $while);
 

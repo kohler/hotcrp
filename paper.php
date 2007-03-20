@@ -195,8 +195,9 @@ function requestSameAsPaper($prow) {
 }
 
 function uploadPaper($isSubmitFinal) {
-    global $prow, $Conf;
-    $result = $Conf->storePaper('paperUpload', $prow, $isSubmitFinal);
+    global $prow, $Conf, $Me;
+    $result = $Conf->storePaper('paperUpload', $prow, $isSubmitFinal,
+				$Me->amAssistant() && defval($_REQUEST["override"]));
     if ($result == 0 || PEAR::isError($result)) {
 	$Conf->errorMsg("There was an error while trying to update your paper.  Please try again.");
 	return false;
@@ -254,7 +255,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$q .= "paperStorageId=1";
     else
 	$q = substr($q, 0, -2) . " where paperId=$paperId"
-	    . ($Me->amAssistant() || $isSubmitFinal ? "" : " and timeSubmitted<=0")
+	    . (($Me->amAssistant() && defval($_REQUEST["override"]))
+	       || $isSubmitFinal ? "" : " and timeSubmitted<=0")
 	    . " and timeWithdrawn<=0";
 
     $result = $Conf->qe(($newPaper ? "insert into" : "update") . " Paper set $q", "while updating paper information");
