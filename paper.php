@@ -498,11 +498,11 @@ else if ($newPaper) {
 	    if ($Conf->setting('sub_freeze'))
 		$Conf->infoMsg("You must submit a final version of your paper before it can be reviewed.$updateDeadline");
 	    else
-		$Conf->infoMsg("The current version of the paper is marked as not ready to review.  If you don't submit a reviewable version of the paper, it will not be considered.$updateDeadline"); 
+		$Conf->infoMsg("The current version of the paper is marked as not ready for review.  If you don't submit a reviewable version of the paper, it will not be considered.$updateDeadline"); 
 	} else
-	    $Conf->infoMsg("The current version of the paper will be reviewed, or you can still make changes if you like.$updateDeadline");
+	    $Conf->infoMsg("Your paper is ready for review and will be considered for the conference.  However, you still have time to make changes before submissions are frozen.$updateDeadline");
     } else if ($prow->timeWithdrawn <= 0 && $timeSubmit)
-	$Conf->infoMsg("You cannot make any changes as the <a href='deadlines.php'>deadline</a> has passed, but the current version can still be officially submitted.  Only officially submitted papers will be reviewed.$submitDeadline$override");
+	$Conf->infoMsg("You cannot make any changes as the <a href='deadlines.php'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override");
     else if ($prow->timeWithdrawn <= 0)
 	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override");
 } else if ($prow->conflictType == CONFLICT_AUTHOR && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper()) {
