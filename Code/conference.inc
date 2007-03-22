@@ -270,9 +270,11 @@ class Conference {
 	return $str;
     }
 
-    function settingsAfter($name) {
-	$t = &$this->settings[$name];
-	return (isset($t) && $t > 0 && $t <= time());
+    function settingsAfter($name, $grace = null) {
+	$t = defval($this->settings[$name], null);
+	if ($t !== null && $t > 0 && $grace && isset($this->settings[$grace]))
+	    $t += $this->settings[$grace];
+	return ($t !== null && $t > 0 && $t <= time());
     }
     function settingsBetween($name1, $name2, $grace = null) {
 	$now = time();
@@ -288,11 +290,13 @@ class Conference {
     function timeStartPaper() {
 	return $this->settingsBetween('sub_open', 'sub_reg', 'sub_grace');
     }
-    function timeUpdatePaper() {
-	return $this->settingsBetween('sub_open', 'sub_update', 'sub_grace');
+    function timeUpdatePaper($prow = null) {
+	return $this->settingsBetween('sub_open', 'sub_update', 'sub_grace')
+	    && (!$prow || $prow->timeSubmitted <= 0 || $this->setting('sub_freeze') <= 0);
     }
-    function timeFinalizePaper() {
-	return $this->settingsBetween('sub_open', 'sub_sub', 'sub_grace');
+    function timeFinalizePaper($prow = null) {
+	return $this->settingsBetween('sub_open', 'sub_sub', 'sub_grace')
+	    && (!$prow || $prow->timeSubmitted <= 0 || $this->setting('sub_freeze') <= 0);
     }
     function timeSubmitFinalPaper() {
 	return $this->settingsBetween('final_open', 'final_done', 'final_grace');
@@ -332,10 +336,15 @@ class Conference {
     function timeReviewerViewAcceptedAuthors() {
 	return $this->settingsAfter('rev_seedec');
     }
-    function timePCViewSubmission() {
-	return true;
+    function timePCViewPaper($prow, $download) {
+	if ($prow->timeWithdrawn > 0)
+	    return false;
+	else if ($prow->timeSubmitted > 0)
+	    return $this->settingsAfter('sub_sub', 'sub_grace') || !$download || $this->setting('sub_freeze') > 0;
+	else
+	    return !$download && $this->setting('pc_seeall') > 0;
     }
-    function timeReviewerViewSubmission() {
+    function timeReviewerViewSubmittedPaper() {
 	return true;
     }
     function timeEmailChairAboutReview() {
@@ -494,8 +503,7 @@ class Conference {
 	    $result = $this->qe2("update Paper set "
 		. ($final ? "finalPaperStorageId" : "paperStorageId") . "=$paperStorageId, "
 		. "size=" . strlen($contents) . ", mimetype='" . sqlq($mimetype) . "', timestamp=$timestamp"
-		. " where paperId=$paperId and timeWithdrawn<=0"
-		. ($final || $override ? "" : " and timeSubmitted<=0"), $while);
+		. " where paperId=$paperId and timeWithdrawn<=0", $while);
 
 	$this->qe2("unlock tables", $while);
 

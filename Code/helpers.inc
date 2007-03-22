@@ -583,7 +583,7 @@ function whyNotText($whyNot, $action) {
 	    if ($dname == "sub_reg")
 		$text .= "The paper registration deadline has passed.  ";
 	    else if ($dname == "sub_update")
-		$text .= "The deadline to update papers in progress has passed.  ";
+		$text .= "The deadline to update papers has passed.  ";
 	    else if ($dname == "sub_sub")
 		$text .= "The paper submission deadline has passed.  ";
 	    else if ($dname == "extrev_hard")

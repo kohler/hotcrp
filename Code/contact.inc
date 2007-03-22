@@ -341,17 +341,16 @@ class Contact {
 	// policy
 	if (($prow->conflictType == CONFLICT_AUTHOR || $this->amAssistant())
 	    && $prow->timeWithdrawn <= 0
-	    && ($prow->timeSubmitted <= 0 || $this->amAssistantOverride())
-	    && ($conf->timeUpdatePaper() || $this->amAssistantOverride()))
+	    && ($conf->timeUpdatePaper($prow) || $this->amAssistantOverride()))
 	    return true;
 	// collect failure reasons
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->amAssistant())
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
-	if ($prow->timeSubmitted > 0)
+	if ($prow->timeSubmitted > 0 && $conf->setting('sub_freeze') > 0)
 	    $whyNot["updateSubmitted"] = 1;
-	if (!$conf->timeUpdatePaper() && !$this->amAssistantOverride())
+	if (!$conf->timeUpdatePaper($prow) && !$this->amAssistantOverride())
 	    $whyNot["deadline"] = "sub_update";
 	if ($this->amAssistant())
 	    $whyNot["override"] = 1;
@@ -365,7 +364,7 @@ class Contact {
 	// policy
 	if (($prow->conflictType == CONFLICT_AUTHOR || $this->amAssistant())
 	    && $prow->timeWithdrawn <= 0 && $prow->timeSubmitted <= 0
-	    && ($conf->timeFinalizePaper() || $this->amAssistantOverride()))
+	    && ($conf->timeFinalizePaper($prow) || $this->amAssistantOverride()))
 	    return true;
 	// collect failure reasons
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->amAssistant())
@@ -374,7 +373,7 @@ class Contact {
 	    $whyNot["withdrawn"] = 1;
 	if ($prow->timeSubmitted > 0)
 	    $whyNot["updateSubmitted"] = 1;
-	if (!$conf->timeFinalizePaper() && !$this->amAssistantOverride())
+	if (!$conf->timeFinalizePaper($prow) && !$this->amAssistantOverride())
 	    $whyNot["deadline"] = "finalizePaperSubmission";
 	if ($this->amAssistant())
 	    $whyNot["override"] = 1;
@@ -404,14 +403,14 @@ class Contact {
 	// policy
 	if (($prow->conflictType == CONFLICT_AUTHOR || $this->amAssistant())
 	    && $prow->timeWithdrawn > 0
-	    && ($conf->timeUpdatePaper() || $this->amAssistantOverride()))
+	    && ($conf->timeUpdatePaper($prow) || $this->amAssistantOverride()))
 	    return true;
 	// collect failure reasons
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->amAssistant())
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn <= 0)
 	    $whyNot["notWithdrawn"] = 1;
-	if (!$conf->timeUpdatePaper() && !$this->amAssistantOverride())
+	if (!$conf->timeUpdatePaper($prow) && !$this->amAssistantOverride())
 	    $whyNot["deadline"] = "sub_update";
 	if ($this->amAssistant())
 	    $whyNot["override"] = 1;
@@ -448,11 +447,8 @@ class Contact {
 	// policy
 	if ($prow->conflictType == CONFLICT_AUTHOR
 	    || $this->amAssistant()
-	    || ($prow->timeSubmitted > 0
-		&& (($this->isPC && $conf->timePCViewSubmission())
-		    || ($prow->myReviewType > 0 && $conf->timeReviewerViewSubmission())))
-	    || ($this->isPC && $prow->timeWithdrawn <= 0 && !$download
-		&& $conf->setting("pc_seeall") > 0))
+	    || ($prow->myReviewType > 0 && $prow->timeSubmitted > 0 && $conf->timeReviewerViewSubmittedPaper())
+	    || ($this->isPC && $conf->timePCViewPaper($prow, $download)))
 	    return true;
 	// collect failure reasons
 	if (!$this->isPC && $prow->conflictType < CONFLICT_AUTHOR && $prow->myReviewType <= 0) {
@@ -463,10 +459,10 @@ class Contact {
 	    $whyNot["withdrawn"] = 1;
 	else if ($prow->timeSubmitted <= 0)
 	    $whyNot["notSubmitted"] = 1;
-	if ($this->isPC && !$conf->timePCViewSubmission())
-	    $whyNot["deadline"] = "PCViewSubmission";
-	else if ($prow->myReviewType > 0 && !$conf->timeReviewerViewSubmission())
-	    $whyNot["deadline"] = "ReviewerViewSubmission";
+	if ($this->isPC && !$conf->timePCViewPaper($prow, $download))
+	    $whyNot["deadline"] = "sub_sub";
+	else if ($prow->myReviewType > 0 && !$conf->timeReviewerViewSubmittedPaper())
+	    $whyNot["deadline"] = "sub_sub";
 	if ((!$this->isPC && $prow->myReviewType <= 0) || count($whyNot) == 1)
 	    $whyNot["permission"] = 1;
 	return false;
@@ -855,7 +851,7 @@ class Contact {
 		if ($long > 0)
 		    $x .= " at " . $conf->printableTime($row->timeSubmitted);
 	    } else {
-		$x = "<span class='pstat pstat_prog'>In progress</span>";
+		$x = "<span class='pstat pstat_prog'>Registered</span>";
 		if ($long > 0)
 		    $x .= "updated at " . $conf->printableTime($row->timestamp);
 	    }

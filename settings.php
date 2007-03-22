@@ -22,6 +22,7 @@ $SettingGroups = array("sub" => array(
 			     "sub_grace" => "grace",
 			     "sub_pcconf" => "check",
 			     "sub_collab" => "check",
+			     "sub_freeze" => 1,
 			     "pc_seeall" => "check",
 			     "next" => "opt"),
 		       "opt" => array(
@@ -78,6 +79,7 @@ $SettingText = array(
 	"rev_blind" => "Blind review setting",
 	"sub_pcconf" => "Collect PC conflicts setting",
 	"sub_collab" => "Collect collaborators setting",
+	"sub_freeze" => "Submitters can update until the deadline setting",
 	"rev_notifychair" => "Notify chairs about reviews setting",
 	"pc_seeall" => "PC can see all papers setting",
 	"pcrev_any" => "PC can review any paper setting",
@@ -442,12 +444,19 @@ function doRadio($name, $varr) {
     $x = setting($name);
     if ($x === null || !isset($varr[$x]))
 	$x = 0;
+    echo "<table>\n";
     foreach ($varr as $k => $text) {
-	echo "<input type='radio' name='$name' value='$k'";
+	echo "<tr><td class='nowrap'><input type='radio' name='$name' value='$k'";
 	if ($k == $x)
 	    echo " checked='checked'";
-	echo " onchange='highlightUpdate()' />&nbsp;", decorateSettingText($name, $text), "<br />\n";
+	echo " onchange='highlightUpdate()' />&nbsp;</td><td>";
+	if (is_array($text))
+	    echo decorateSettingText($name, $text[0]), "</td></tr><tr><td></td><td><small>", $text[1], "</small>";
+	else
+	    echo decorateSettingText($name, $text);
+	echo "</td></tr>\n";
     }
+    echo "</table>\n";
 }
 
 function doDateRow($name, $text, $capclass = "rcaption") {
@@ -495,6 +504,9 @@ if ($Group == "sub") {
     doCheckbox("sub_pcconf", "Collect authors' PC conflicts with checkboxes");
     doCheckbox("sub_collab", "Collect authors' potential conflicts as text");
 
+    echo "<div class='smgap'></div>\n";
+    doRadio("sub_freeze", array(0 => array("Authors can update submissions until the deadline", "PC members cannot download submitted papers until the submission deadline passes."), 1 => array("Authors freeze the final version of each submission", "PC members can download papers as soon as they are submitted.")));
+    
     echo "<div class='smgap'></div><table>\n";
     // compensate for pc_seeall magic
     if ($Conf->setting("pc_seeall") < 0)

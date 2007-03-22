@@ -76,7 +76,8 @@ if (!$newPaper) {
     // perfect mode: default to edit for non-submitted papers
     if ($mode == "view"
 	&& (!isset($_REQUEST["mode"]) || $_REQUEST["mode"] != "view")
-	&& $prow->conflictType == CONFLICT_AUTHOR && $prow->timeSubmitted <= 0)
+	&& $prow->conflictType == CONFLICT_AUTHOR
+	&& $Conf->timeUpdatePaper($prow))
 	$mode = "edit";
 }
 
@@ -105,17 +106,7 @@ if (isset($_REQUEST['revpref']) && $prow) {
 }
 
 
-// unfinalize, withdraw, and revive actions
-if (isset($_REQUEST["unsubmit"]) && !$newPaper) {
-    if ($Me->amAssistant()) {
-	$Conf->qe("update Paper set timeSubmitted=0 where paperId=$paperId", "while undoing paper submit");
-	$Conf->updatePapersubSetting(false);
-	getProw($Me->contactId);
-	$Conf->log("Unsubmitted", $Me, $paperId);
-	$_REQUEST["update"] = true;
-    } else
-	$Conf->errorMsg("Only the program chairs can undo paper submission.");
-}
+// withdraw and revive actions
 if (isset($_REQUEST["withdraw"]) && !$newPaper) {
     if ($Me->canWithdrawPaper($prow, $Conf, $whyNot)) {
 	$Conf->qe("update Paper set timeWithdrawn=" . time() . ", timeSubmitted=if(timeSubmitted>0,-100,0) where paperId=$paperId", "while withdrawing paper");
@@ -254,10 +245,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     if ($newPaper)
 	$q .= "paperStorageId=1";
     else
-	$q = substr($q, 0, -2) . " where paperId=$paperId"
-	    . (($Me->amAssistant() && defval($_REQUEST["override"]))
-	       || $isSubmitFinal ? "" : " and timeSubmitted<=0")
-	    . " and timeWithdrawn<=0";
+	$q = substr($q, 0, -2) . " where paperId=$paperId and timeWithdrawn<=0";
 
     $result = $Conf->qe(($newPaper ? "insert into" : "update") . " Paper set $q", "while updating paper information");
     if (!$result)
@@ -338,6 +326,10 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	if (!$result)
 	    return false;
 	$Conf->updatePapersubSetting(true);
+    } else {
+	$result = $Conf->qe("update Paper set timeSubmitted=0 where paperId=$paperId", "while unsubmitting paper");
+	if (!$result)
+	    return false;
     }
     
     // confirmation message
@@ -346,7 +338,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$what = "Submitted final copy for";
 	$subject = "Updated Paper #$paperId final copy";
     } else {
-	$what = ($isSubmit ? "Submitted" : ($newPaper ? "Created" : "Updated"));
+	$what = ($isSubmit ? "Submitted" : ($newPaper ? "Registered" : "Updated"));
 	$subject = $what . " Paper #$paperId";
     }
     if (($titleWords = titleWords($prow->title)))
@@ -366,16 +358,19 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     if ($isSubmitFinal) {
 	$deadline = $Conf->printableTimeSetting("final_done");
 	$mx = ($deadline != "N/A" ? "You have until $deadline to make further changes." : "");
-    } else if ($isSubmit || $prow->timeSubmitted > 0)
-	$mx = "The paper will be considered for inclusion in the conference.  You will receive email when reviews are available for you to view.";
-    else {
-	$mx = "The paper has not been submitted yet.";
+    } else {
+	if ($isSubmit || $prow->timeSubmitted > 0)
+	    $mx = "You will receive email when reviews are available.";
+	else if ($Conf->setting("sub_freeze") > 0)
+	    $mx = "You have not yet submitted a final version of this paper.";
+	else
+	    $mx = "This version of the paper is marked as not ready for review.";
 	$deadline = $Conf->printableTimeSetting("sub_update");
-	if ($deadline != "N/A")
+	if ($deadline != "N/A" && ($prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0))
 	    $mx .= "  You have until $deadline to update the paper further.";
 	$deadline = $Conf->printableTimeSetting("sub_sub");
-	if ($deadline != "N/A")
-	    $mx .= "  If you do not officially submit the paper by $deadline, it will not be considered for the conference.";
+	if ($deadline != "N/A" && $prow->timeSubmitted <= 0)
+	    $mx .= "  If you do not submit the paper by $deadline, it will not be considered for the conference.";
     }
     if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
 	$mx .= "\n\nA conference administrator provided the following reason for this update: " . $_REQUEST["emailNote"];
@@ -394,7 +389,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     return true;
 }
 
-if (isset($_REQUEST["update"]) || isset($_REQUEST["submit"]) || isset($_REQUEST["submitfinal"])) {
+if (isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"])) {
     // get missing parts of request
     if (!$newPaper)
 	setRequestFromPaper($prow);
@@ -490,25 +485,32 @@ else if ($newPaper) {
 	    errorMsgExit($msg);
 	$Conf->infoMsg($msg);
     }
-} else if ($prow->conflictType == CONFLICT_AUTHOR && $prow->timeSubmitted <= 0) {
-    $timeUpdate = $Conf->timeUpdatePaper();
+} else if ($prow->conflictType == CONFLICT_AUTHOR
+	   && ($Conf->timeUpdatePaper($prow) || $prow->timeSubmitted <= 0)) {
+    $timeUpdate = $Conf->timeUpdatePaper($prow);
     $updateDeadline = deadlineSettingIs("sub_update", $Conf);
-    $timeSubmit = $Conf->timeFinalizePaper();
+    $timeSubmit = $Conf->timeFinalizePaper($prow);
     $submitDeadline = deadlineSettingIs("sub_sub", $Conf); 
     if ($timeUpdate && $prow->timeWithdrawn > 0)
 	$Conf->infoMsg("Your paper has been withdrawn, but you can still revive it.$updateDeadline");
-    else if ($timeUpdate)
-	$Conf->infoMsg("You must officially submit your paper before it can be reviewed.  <strong>This step freezes your submission</strong> (you can't change it afterwards), so make all necessary changes first.$updateDeadline");
-    else if ($prow->timeWithdrawn <= 0 && $timeSubmit)
-	$Conf->infoMsg("You cannot make any changes as the <a href='deadlines.php'>deadline</a> has passed, but the current version can still be officially submitted.  Only officially submitted papers will be considered for the conference.$submitDeadline$override");
+    else if ($timeUpdate) {
+	if ($prow->timeSubmitted <= 0) {
+	    if ($Conf->setting('sub_freeze'))
+		$Conf->infoMsg("You must submit a final version of your paper before it can be reviewed.$updateDeadline");
+	    else
+		$Conf->infoMsg("The current version of the paper is marked as not ready to review.  If you don't submit a reviewable version of the paper, it will not be considered.$updateDeadline"); 
+	} else
+	    $Conf->infoMsg("The current version of the paper will be reviewed, or you can still make changes if you like.$updateDeadline");
+    } else if ($prow->timeWithdrawn <= 0 && $timeSubmit)
+	$Conf->infoMsg("You cannot make any changes as the <a href='deadlines.php'>deadline</a> has passed, but the current version can still be officially submitted.  Only officially submitted papers will be reviewed.$submitDeadline$override");
     else if ($prow->timeWithdrawn <= 0)
-	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting this paper has passed.  The paper will not be considered.$submitDeadline$override");
+	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override");
 } else if ($prow->conflictType == CONFLICT_AUTHOR && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper()) {
     $updateDeadline = deadlineSettingIs("final_done", $Conf);
     $Conf->infoMsg("Congratulations!  This paper was accepted.  Submit a final copy for your paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or add contact authors, allowing others to view reviews and make changes.");
 } else if ($prow->conflictType == CONFLICT_AUTHOR) {
-    $override2 = ($Me->amAssistant() ? "  As PC Chair, you can unsubmit the paper, which will allow further changes, using the \"Undo submit\" button." : "");
-    $Conf->infoMsg("This paper has been submitted and can no longer be changed.  You can still withdraw the paper or add contact authors, allowing others to view reviews as they become available.$override2");
+    $override2 = ($Me->amAssistant() ? "  However, as PC Chair, you can update the paper anyway by selecting \"Override deadlines\"." : "");
+    $Conf->infoMsg("This paper is under review and can no longer be changed.  You can still withdraw the paper or add contact authors, allowing others to view reviews as they become available.$override2");
 } else if (!$Me->amAssistant())
     errorMsgExit("You can't edit paper #$paperId since you aren't one of its contact authors.");
 else
@@ -525,9 +527,8 @@ if ($mode == "edit") {
     echo "<form method='post' action=\"paper.php?paperId=",
 	($newPaper ? "new" : $paperId),
 	"&amp;post=1&amp;mode=edit\" enctype='multipart/form-data'>";
-    $editable = $newPaper || (($prow->timeSubmitted <= 0 || $Me->amAssistant())
-			      && $prow->timeWithdrawn <= 0
-			      && ($Conf->timeUpdatePaper() || $Me->amAssistant()));
+    $editable = $newPaper || ($prow->timeWithdrawn <= 0
+			      && ($Conf->timeUpdatePaper($prow) || $Me->amAssistant()));
     if ($prow && $prow->outcome > 0 && ($Conf->timeSubmitFinalPaper() || $Me->amAssistant()))
 	$editable = $finalEditMode = true;
 } else
@@ -569,9 +570,7 @@ if ($editable)
 
 
 // Paper
-if ($newPaper
-    || ($prow->timeWithdrawn <= 0 && ($editable || $prow->size > 0))
-    || ($prow->timeWithdrawn > 0 && $mode == "edit" && $prow->size > 0)) {
+if ($newPaper || $Me->canViewPaper($prow, $Conf, $whyNot, true)) {
     if ($finalEditMode)
 	$paperTable->echoDownloadRow($prow, PaperTable::FINALCOPY);
     else if ($mode == "edit")
@@ -662,25 +661,19 @@ if ($mode == "edit") {
   <td class='caption'></td>
   <td class='entry' colspan='2'><table class='pt_buttons'>\n";
     $buttons = array();
-    if ($newPaper) {
-	$buttons[] = "<input class='button_default' type='submit' name='update' value='Create paper' />";
-	$buttons[] = array("<input class='button' type='submit' name='submit' value='Submit paper' disabled='disabled' />", "(freezes submission)");
-    } else if ($prow->timeWithdrawn > 0 && ($Conf->timeFinalizePaper() || $Me->amAssistant()))
+    if ($newPaper)
+	$buttons[] = "<input class='button' type='submit' name='update' value='Register paper' />";
+    else if ($prow->timeWithdrawn > 0 && ($Conf->timeFinalizePaper($prow) || $Me->amAssistant()))
 	$buttons[] = "<input class='button' type='submit' name='revive' value='Revive paper' />";
     else if ($prow->timeWithdrawn > 0)
 	$buttons[] = "The paper has been withdrawn, and the <a href='deadlines.php'>deadline</a> for reviving it has passed.";
     else {
 	if ($prow->outcome > 0 && ($Conf->timeSubmitFinalPaper() || $Me->amAssistant()))
 	    $buttons[] = array("<input class='button' type='submit' name='submitfinal' value='Submit final copy' />", "");
-	if ($prow->timeSubmitted <= 0) {
-	    if ($Conf->timeUpdatePaper() || $Me->amAssistant())
-		$buttons[] = array("<input class='button' type='submit' name='update' value='Save changes' />", "(does not submit)");
-	    if ($Conf->timeFinalizePaper() || $Me->amAssistant())
-		$buttons[] = array("<input class='button_default' type='submit' name='submit' value='Submit paper' />", "(freezes submission)");
-	} else if ($Me->amAssistant()) {
-	    $buttons[] = array("<input class='button' type='submit' name='update' value='Save changes' />", "(PC chair only)");
-	    $buttons[] = array("<input class='button' type='submit' name='unsubmit' value='Undo submit' />", "(PC chair only)");
-	}
+	if ($Conf->timeUpdatePaper($prow))
+	    $buttons[] = array("<input class='button' type='submit' name='update' value='Update paper' />", "");
+	else if ($Me->amAssistant())
+	    $buttons[] = array("<input class='button' type='submit' name='update' value='Update paper' />", "(PC chair only)");
 	if ($prow->timeSubmitted <= 0)
 	    $buttons[] = "<input class='button' type='submit' name='withdraw' value='Withdraw paper' />";
 	else

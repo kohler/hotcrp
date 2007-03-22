@@ -172,6 +172,7 @@ class PaperTable {
     }
 
     function echoDownloadRow($prow, $flags) {
+	global $Conf;
 	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0);
 	$canUpload = $this->editable;
 	//$canUpload = ($this->editable && (!$prow || $final || $prow->timeSubmitted <= 0));
@@ -190,9 +191,30 @@ class PaperTable {
 	if ($canUpload) {
 	    echo ($prow && $prow->size > 0 ? "<br />\n  " : ""),
 		($final ? "Final copy upload:" : "Upload:"), "&nbsp; ",
-		"<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='30' onchange='highlightUpdate()",
-		($flags & self::ENABLESUBMIT ? ";form.submit.disabled=false" : ""),
-		"' />";
+		"<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='30' onchange='highlightUpdate()";
+	    if (!$final)
+		echo ";fold(\"isready\",0)";
+	    if ($flags & self::ENABLESUBMIT)
+		echo ";form.submit.disabled=false";
+	    echo "' />";
+	    if (!$final) {
+		if ($this->useRequest)
+		    $checked = defval($_REQUEST["submit"]);
+		else if ($Conf->setting('sub_freeze'))
+		    $checked = $prow && $prow->timeSubmitted > 0;
+		else
+		    $checked = !$prow || $prow->paperStorageId <= 1 || $prow->timeSubmitted > 0;
+		echo "<div id='foldisready' class='",
+		    ($prow && $prow->paperStorageId > 1 ? "foldo" : "foldc"),
+		    "'><table class='extension'><tr><td class='nowrap'><input type='checkbox' name='submit' value='1'",
+		    ($checked ? " checked='checked'" : ""),
+		    "/>&nbsp;<td>";
+		if ($Conf->setting('sub_freeze'))
+		    echo "<strong>This is the final submission.</strong></td></tr><tr><td></td><td><small>You must submit a final version before the deadline or your paper will not be reviewed.  Once you submit a final version you will not be able to make further changes.</small>";
+		else
+		    echo "This version is ready for review.";
+		echo "</td></tr></table></div>\n";
+	    }
 	}
 
 	echo "</td>\n";
