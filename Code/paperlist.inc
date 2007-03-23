@@ -387,8 +387,7 @@ class PaperList {
 
     function _contentDownload($row) {
 	global $ConfSiteBase, $Conf;
-	if ($row->size == 0
-	    || ($row->timeSubmitted <= 0 && !$this->contact->canDownloadPaper($row, $Conf)))
+	if ($row->size == 0 || !$this->contact->canDownloadPaper($row, $Conf))
 	    return "";
 	else if ($row->mimetype == "application/pdf")
 	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\"><img src=\"${ConfSiteBase}images/pdf.png\" alt='[PDF]' /></a>";
