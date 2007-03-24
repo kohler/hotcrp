@@ -9,13 +9,11 @@ $textAreaRows = array("title" => 1, "abstract" => 1, "authorInformation" => 1,
 
 class PaperTable {
 
-    const NOCAPTION = 1;
     const OPTIONAL = 2;
     const FINALCOPY = 4;
     const ENABLESUBMIT = 8;
     
     const STATUS_DATE = 16;
-    const STATUS_DOWNLOAD = 32;
     const STATUS_CONFLICTINFO = 64;
     const STATUS_CONFLICTINFO_PC = 128;
     const STATUS_REVIEWERINFO = 256;
@@ -132,19 +130,39 @@ class PaperTable {
 	    echo htmlspecialchars($prow->title);
     }
     
-    function echoStatusRow($prow, $flags) {
-	global $Me;
+    function echoTitleRow($prow) {
+	echo "<tr class='pt_title'>\n";
+	echo "  ", $this->tdCaption("title"), "Title</td>\n";
+	echo "  ", $this->tdEntry("title");
+	$this->echoEntryData("title", $prow, 1);
+	echo "</td>\n</tr>\n\n";
+    }
+    
+    function echoPaperRow($prow, $flags) {
+	global $Conf, $Me;
+	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0);
+	$canUpload = $this->editable;
+
 	echo "<tr class='pt_status'>\n";
 	echo "  <td class='caption'>";
 	if ($this->allFolded)
 	    echo "<a href=\"javascript:fold('paper', 0, 9)\" class='foldbutton unfolder9'>+</a>",
 		"<a href=\"javascript:fold('paper', 1, 9)\" class='foldbutton folder9'>&minus;</a> ";
-	if (!($flags & self::NOCAPTION))
-	    echo "Paper</td>\n";
-	echo "  <td class='entry'>",
-	    $Me->paperStatus($prow->paperId, $prow, ($flags & self::STATUS_DATE) != 0);
-	if ($flags & self::STATUS_DOWNLOAD)
-	    echo " ", paperDownload($prow);
+	echo ($canUpload ? "Status" : "Paper"), "</td>\n";
+	echo "  <td class='entry'>";
+
+	// status
+	echo $Me->paperStatus($prow->paperId, $prow, 0);
+	if ($Me->canDownloadPaper($prow, $Conf)) {
+	    if ($final && $prow->finalPaperStorageId > 0)
+		echo " Final copy: ", paperDownload($prow, true), " &nbsp;|&nbsp; Submission: ", paperDownload($prow);
+	    else if ($prow && $prow->size > 0)
+		echo ($canUpload && $final ? " Submission: " : " "), paperDownload($prow);	
+	}
+	if ($flags & self::STATUS_DATE)
+	    echo " (last updated ", $Conf->printableTime($prow->timestamp), ")";
+
+	// conflicts
 	if (($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType == CONFLICT_AUTHOR)
 	    echo "<br/>\nYou are an <span class='author'>author</span> of this paper.";
 	else if ((($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType > 0)
@@ -163,71 +181,54 @@ class PaperTable {
 	echo "</td>\n</tr>\n\n";
     }
 
-    function echoTitleRow($prow) {
-	echo "<tr class='pt_title'>\n";
-	echo "  ", $this->tdCaption("title"), "Title</td>\n";
-	echo "  ", $this->tdEntry("title");
-	$this->echoEntryData("title", $prow, 1);
-	echo "</td>\n</tr>\n\n";
-    }
-
-    function echoDownloadRow($prow, $flags) {
+    function echoUploadRow($prow, $flags) {
 	global $Conf;
 	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0);
-	$canUpload = $this->editable;
-	//$canUpload = ($this->editable && (!$prow || $final || $prow->timeSubmitted <= 0));
 	
 	echo "<tr class='pt_paper'>\n";
-	echo "  ", $this->tdCaption('paper');
-	if (!($flags & self::NOCAPTION))
-	    echo "Paper", ($flags & self::OPTIONAL ? " (optional)" : "");
+	echo "  ", $this->tdCaption('paper'), "Upload paper<br />";
+	$maxSize = ini_get("upload_max_filesize") . "B";
+	if ($flags & self::OPTIONAL)
+	    echo " <span class='hint'>(optional; max size: $maxSize)</span>";
+	else
+	    echo " <span class='hint'>(max size: $maxSize)</span>";
 	echo "</td>\n";
 	echo "  ", $this->tdEntry("paper");
 
-	if ($final && $prow->finalPaperStorageId > 0)
-	    echo "Final copy: ", paperDownload($prow, true), " &nbsp;|&nbsp; Submission: ", paperDownload($prow);
-	else if ($prow && $prow->size > 0)
-	    echo ($canUpload && $final ? "Submission: " : ""), paperDownload($prow);	
-	if ($canUpload) {
-	    echo ($prow && $prow->size > 0 ? "<br />\n  " : ""),
-		($final ? "Final copy upload:" : "Upload:"), "&nbsp; ",
-		"<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='30' onchange='highlightUpdate()";
-	    if (!$final)
-		echo ";fold(\"isready\",0)";
-	    if ($flags & self::ENABLESUBMIT)
-		echo ";form.submit.disabled=false";
-	    echo "' />";
-	    if (!$final) {
-		if ($this->useRequest)
-		    $checked = defval($_REQUEST["submit"]);
-		else if ($Conf->setting('sub_freeze'))
-		    $checked = $prow && $prow->timeSubmitted > 0;
-		else
-		    $checked = !$prow || $prow->paperStorageId <= 1 || $prow->timeSubmitted > 0;
-		echo "<div id='foldisready' class='",
-		    ($prow && $prow->paperStorageId > 1 ? "foldo" : "foldc"),
-		    "'><table class='extension'><tr><td class='nowrap'><input type='checkbox' name='submit' value='1'",
-		    ($checked ? " checked='checked'" : ""),
-		    "/>&nbsp;<td>";
-		if ($Conf->setting('sub_freeze'))
-		    echo "<strong>This is the final submission.</strong></td></tr><tr><td></td><td><small>You must submit a final version before the deadline or your paper will not be reviewed.  Once you submit a final version you will not be able to make further changes.</small>";
-		else
-		    echo "This version is ready for review.";
-		echo "</td></tr></table></div>\n";
-	    }
+	echo ($final ? "Final copy:&nbsp; " : ""),
+	    "<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='30' onchange='highlightUpdate()";
+	if (!$final)
+	    echo ";fold(\"isready\",0)";
+	if ($flags & self::ENABLESUBMIT)
+	    echo ";form.submit.disabled=false";
+	echo "' />";
+	if (!$final) {
+	    if ($this->useRequest)
+		$checked = defval($_REQUEST["submit"]);
+	    else if ($Conf->setting('sub_freeze'))
+		$checked = $prow && $prow->timeSubmitted > 0;
+	    else
+		$checked = !$prow || $prow->paperStorageId <= 1 || $prow->timeSubmitted > 0;
+	    echo "<div id='foldisready' class='",
+		($prow && $prow->paperStorageId > 1 ? "foldo" : "foldc"),
+		"'><table class='extension'><tr><td class='nowrap'><input type='checkbox' name='submit' value='1'",
+		($checked ? " checked='checked'" : ""),
+		"/>&nbsp;<td>";
+	    if ($Conf->setting('sub_freeze'))
+		echo "<strong>This is the final submission.</strong></td></tr><tr><td></td><td><small>You must submit a final version before the deadline or your paper will not be reviewed.  Once you submit a final version you will not be able to make further changes.</small>";
+	    else
+		echo "This version is ready for review.";
+	    echo "</td></tr></table></div>\n";
 	}
 
-	echo "</td>\n";
-	if ($canUpload)
-	    echo "  ", $this->tdHint("paper"), "Max size: ", ini_get("upload_max_filesize"), "B</td>\n";
-	echo "</tr>\n\n";
+	echo "</td>\n</tr>\n\n";
     }
 
     function echoAbstractRow($prow) {
 	echo "<tr class='pt_abstract'>\n";
 	echo "  ", $this->tdCaption("abstract"), "Abstract</td>\n";
 	echo "  ", $this->tdEntry("abstract");
-	$this->echoEntryData("abstract", $prow, 5);
+	$this->echoEntryData("abstract", $prow, 12);
 	echo "</td>\n</tr>\n\n";
     }
 

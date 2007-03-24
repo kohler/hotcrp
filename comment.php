@@ -200,7 +200,7 @@ echo "</h2></td>\n</tr>\n\n";
 
 
 // paper body
-$paperTable->echoStatusRow($prow, PaperTable::STATUS_DOWNLOAD | PaperTable::STATUS_CONFLICTINFO_PC);
+$paperTable->echoPaperRow($prow, PaperTable::STATUS_CONFLICTINFO_PC);
 $paperTable->echoAbstractRow($prow);
 if ($canViewAuthors || $Me->amAssistant()) {
     $paperTable->echoAuthorInformation($prow);

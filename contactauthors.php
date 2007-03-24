@@ -104,7 +104,7 @@ if ($OK) {
     echo "</h2></td>\n</tr>\n\n";
 
     // Paper contents
-    $paperTable->echoStatusRow($prow, PaperTable::STATUS_DOWNLOAD);
+    $paperTable->echoPaperRow($prow, 0);
     $paperTable->echoAbstractRow($prow);
     $paperTable->echoAuthorInformation($prow);
     $paperTable->echoCollaborators($prow);

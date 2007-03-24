@@ -540,6 +540,11 @@ $canViewAuthors = $Me->canViewAuthors($prow, $Conf, false);
 if ($mode == "edit" && $Me->amAssistant())
     $canViewAuthors = true;
 
+if ($editable)
+    $spacer = "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></td></tr>\n";
+else
+    $spacer = "";
+
 $paperTable = new PaperTable($editable, $editable && $useRequest, false, !$canViewAuthors && $Me->amAssistant(), "paper");
 
 $paperTable->echoDivEnter();
@@ -555,33 +560,31 @@ if (!$newPaper) {
 }
 
 
-// paper status
-if (!$newPaper) {
-    if ($mode == "edit")
-	$paperTable->echoStatusRow($prow, PaperTable::STATUS_DATE | PaperTable::NOCAPTION);
-    else
-	$paperTable->echoStatusRow($prow, PaperTable::STATUS_DATE | PaperTable::STATUS_CONFLICTINFO | PaperTable::STATUS_REVIEWERINFO);
-}
-
-
 // Editable title
 if ($editable)
     $paperTable->echoTitleRow($prow);
 
 
-// Paper
-if ($newPaper || $Me->canViewPaper($prow, $Conf, $whyNot, true)) {
-    if ($finalEditMode)
-	$paperTable->echoDownloadRow($prow, PaperTable::FINALCOPY);
-    else if ($mode == "edit")
-	$paperTable->echoDownloadRow($prow, ($newPaper ? PaperTable::OPTIONAL : 0) + (!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0));
-    else
-	$paperTable->echoDownloadRow($prow, PaperTable::NOCAPTION | PaperTable::FINALCOPY);
-}
+// Current status
+$flags = PaperTable::STATUS_DATE;
+if ($finalEditMode)
+    $flags += PaperTable::FINALCOPY;
+if ($editable && $newPaper)
+    $flags += PaperTable::OPTIONAL;
+if (!$editable)
+    $flags += PaperTable::STATUS_CONFLICTINFO | PaperTable::STATUS_REVIEWERINFO;
+if (!$newPaper)
+    $paperTable->echoPaperRow($prow, $flags);
 
 
-// Abstract
-$paperTable->echoAbstractRow($prow);
+// Upload paper
+if ($editable)
+    $paperTable->echoUploadRow($prow,
+		($finalEditMode ? PaperTable::FINALCOPY : 0)
+		+ ($newPaper ? PaperTable::OPTIONAL : 0)
+		+ (!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0));
+
+echo $spacer;
 
 
 // Authors
@@ -611,6 +614,14 @@ if (($newPaper || $mode == "edit") && $Conf->blindSubmission() == 1 && !$finalEd
     echo "</tr>\n";
 }
 
+echo $spacer;
+
+
+// Abstract
+$paperTable->echoAbstractRow($prow);
+
+echo $spacer;
+
 
 // Topics
 if (!$finalEditMode)
@@ -622,7 +633,7 @@ $paperTable->echoOptions($prow, $Me->amAssistant());
 
 
 // Tags
-if ($Me->isPC && $prow && $prow->conflictType <= 0)
+if ($Me->isPC && $prow && $prow->conflictType <= 0 && !$editable)
     $paperTable->echoTags($prow);
 
 

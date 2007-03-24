@@ -302,7 +302,7 @@ $editAny = $Me->canReview($prow, null, $Conf, $whyNotEdit);
 
 
 // paper data
-$paperTable->echoStatusRow($prow, PaperTable::STATUS_DOWNLOAD | PaperTable::STATUS_CONFLICTINFO_PC);
+$paperTable->echoPaperRow($prow, PaperTable::STATUS_CONFLICTINFO_PC);
 $paperTable->echoAbstractRow($prow);
 if ($canViewAuthors || $Me->amAssistant()) {
     $paperTable->echoAuthorInformation($prow);
