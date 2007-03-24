@@ -121,6 +121,7 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["action"]) && isset($_REQUEST["
 setcookie("CRPTestCookie", true);
 
 $Conf->header("Sign in", 'login');
+$Conf->expandBody();
 
 ?>
 

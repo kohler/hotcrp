@@ -159,6 +159,7 @@ if (!$newProfile) {
 
 
 $Conf->header($newProfile ? "Create Account" : "Account Settings");
+$Conf->expandBody();
 
 
 if (isset($UpdateError))
