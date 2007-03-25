@@ -280,17 +280,10 @@ class PaperTable {
 	echo (edb_nrows($result) == 1 ? "Contact author" : "Contact authors");
 	echo "</td>\n  ", $this->tdEntry('contactAuthor');
 	if ($result) {
-	    $contacter = null;
 	    $aus = array();
-	    while (($row = edb_row($result))) {
-		$au = contactHtml($row[0], $row[1], $row[2]);
-		$aus[] = $au;
-		if ($contacter !== false)
-		    $contacter = ($Me->contactId == $row[3] ? false : $row[2]);
-	    }
-	    echo authorTable($aus, false);
-	    if ($contacter && $Me->amAssistant() && !$editMode)
-		echo "<a href=\"", selfHref(array("viewContact" => $contacter)), "\">View as author</a>";
+	    while (($row = edb_row($result)))
+		$aus[] = $row;
+	    echo authorTable($aus, false, ($Me->amAssistant() ? $Me : null));
 	}
 	if ($editMode || ($editMode === null && $this->editable))
 	    echo "<a href='${ConfSiteBase}contactauthors.php?paperId=$prow->paperId'>", ($Me->amAssistant() ? "Edit" : "Add"), "&nbsp;contact&nbsp;authors</a>";

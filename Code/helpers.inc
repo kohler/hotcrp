@@ -256,18 +256,22 @@ function topicTable($prow, $active = 0, $conf = null) {
     return $out . "</td></tr></table>";
 }
 
-function authorTable($aus, $htmlspecial = true) {
+function authorTable($aus, $htmlspecial = true, $contacter = null) {
+    global $ConfSiteBase;
     $out = "";
     if (!is_array($aus))
 	$aus = explode("\n", $aus);
-    foreach ($aus as $au) {
-	$au = trim($au);
+    foreach ($aus as $aux) {
+	$au = trim(is_array($aux) ? contactHtml($aux) : $aux);
 	if ($au != '') {
 	    if (strlen($au) > 40)
 		$out .= "<span class='autblentry_long'>";
 	    else
 		$out .= "<span class='autblentry'>";
-	    $out .= ($htmlspecial ? htmlspecialchars($au) : $au) . "</span> ";
+	    $out .= ($htmlspecial ? htmlspecialchars($au) : $au);
+	    if ($contacter !== null && is_array($aux) && count($aux) >= 2 && $contacter->email != $aux[2])
+		$out .= " <a href=\"" . selfHref(array("viewContact" => $aux[2])) . "\"><img src='${ConfSiteBase}images/viewas.png' title=\"View as " . contactHtml($aux[0], $aux[1]) . "\" /></a>";
+	    $out .= "</span> ";
 	}
     }
     return $out;

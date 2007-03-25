@@ -99,6 +99,7 @@ images/quicksearchex.png
 images/sortdown.png
 images/sortup.png
 images/stophand45.png
+images/viewas.png
 
 Assistant/.htaccess
 Assistant/PrintAllAbstracts.php
