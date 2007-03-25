@@ -303,12 +303,12 @@ $editAny = $Me->canReview($prow, null, $Conf, $whyNotEdit);
 
 // paper data
 $paperTable->echoPaperRow($prow, PaperTable::STATUS_CONFLICTINFO_PC);
-$paperTable->echoAbstractRow($prow);
 if ($canViewAuthors || $Me->amAssistant()) {
     $paperTable->echoAuthorInformation($prow);
     $paperTable->echoContactAuthor($prow);
     $paperTable->echoCollaborators($prow);
 }
+$paperTable->echoAbstractRow($prow);
 $paperTable->echoTopics($prow);
 $paperTable->echoOptions($prow, $Me->amAssistant());
 if ($Me->isPC && ($prow->conflictType == 0 || ($Me->amAssistant() && $forceShow)))
@@ -485,13 +485,12 @@ function reviewView($prow, $rrow, $editMode) {
 	// blind?
 	if ($Conf->blindReview() == 1) {
 	    echo "<tr class='rev_blind'>
-  <td class='caption'></td>
-  <td class='entry'><input type='checkbox' name='blind' value='1'";
+  <td class='caption'>Anonymity</td>
+  <td class='entry'><div class='hint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won't know who wrote the review).</div>
+    <input type='checkbox' name='blind' value='1'";
 	    if ($useRequest ? defval($_REQUEST['blind']) : (!$rrow || $rrow->reviewBlind))
 		echo " checked='checked'";
-	    echo " />&nbsp;Anonymous review</td>
-  <td class='hint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won't know who wrote the review).</td>
-</tr>\n";
+	    echo " />&nbsp;Anonymous review</td>\n</tr>\n";
 	}
 	
 	// form body
@@ -501,7 +500,7 @@ function reviewView($prow, $rrow, $editMode) {
 	if ($Me->timeReview($prow, $Conf) || $Me->amAssistant()) {
 	    echo "<tr class='rev_actions'>
   <td class='caption'></td>
-  <td class='entry'><table class='pt_buttons'>\n";
+  <td class='entry'><div class='smgap'></div><table class='pt_buttons'>\n";
 	    $buttons = array();
 	    if (!$rrow || $rrow->reviewSubmitted <= 0) {
 		$buttons[] = array("<input class='button' type='submit' value='Save changes' name='update' />", "(does not submit review)");

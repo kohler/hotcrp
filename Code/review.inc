@@ -141,6 +141,8 @@ class ReviewForm {
 	    $x .= "</td>\n";
 	    
 	    $x .= "  <td class='entry'>";
+	    if ($this->description[$field])
+		$x .= "<div class='hint'>" . $this->description[$field] . "</div>\n";
 	    if (isset($this->options[$field])) {
 		$x .= "<select name='$field' onchange='highlightUpdate()'>\n";
 		if ($fval == "" || $fval <= 0 || $fval > count($this->options[$field]))
@@ -156,8 +158,6 @@ class ReviewForm {
 		$x .= "<textarea name='$field' onchange='highlightUpdate()' cols='80' rows='" . $this->fieldRows[$field] . "'>" . htmlspecialchars($fval) . "</textarea>";
 	    }
 	    $x .= "</td>\n";
-	    if ($this->description[$field])
-		$x .= "  <td class='hint'>" . $this->description[$field] . "</td>\n";
 	    $x .= "</tr>\n";
 	}
 	return $x;

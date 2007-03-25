@@ -604,11 +604,12 @@ if (($newPaper || $mode == "edit") && $Conf->blindSubmission() == 1 && !$finalEd
     echo "<tr class='pt_blind'>\n  <td class='caption'>Anonymity</td>\n";
     $blind = ($useRequest ? isset($_REQUEST['blind']) : (!$prow || $prow->blind));
     if ($paperTable->editable) {
-	echo "  <td class='entry'><input type='checkbox' name='blind' value='1'";
+	echo "  <td class='entry'>";
+	echo "<div class='hint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (reviewers won't be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n";
+	echo "<input type='checkbox' name='blind' value='1'";
 	if ($blind)
 	    echo " checked='checked'";
-	echo " />&nbsp;Anonymous submission</td>
-  <td class='hint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (the PC and any external reviewers won't be shown the author list).  Make sure you also remove your name from the paper itself!</td>\n";
+	echo " />&nbsp;Anonymous submission</td>\n";
     } else
 	echo "  <td class='entry'>", ($blind ? "Anonymous submission" : "Non-anonymous submission"), "</td>\n";
     echo "</tr>\n";
@@ -668,6 +669,7 @@ if ($mode != "edit" && $mainPreferences && $prow->conflictType <= 0) {
 
 // Submit button
 if ($mode == "edit") {
+    echo $spacer;
     echo "<tr class='pt_edit'>
   <td class='caption'></td>
   <td class='entry' colspan='2'><table class='pt_buttons'>\n";

@@ -79,8 +79,6 @@ class PaperTable {
 	    $c .= " extension9";
 	if ($this->authorsFolded && isset($authorFoldedRows[$what]))
 	    $c .= " extension8";
-	if ($this->editable && isset($textAreaRows[$what]))
-	    $c .= " textarea";
 	if (!$this->editable)
 	    $c .= "' colspan='2";
 	return $c . "'>";
@@ -160,7 +158,7 @@ class PaperTable {
 		echo ($canUpload && $final ? " Submission: " : " "), paperDownload($prow);	
 	}
 	if ($flags & self::STATUS_DATE)
-	    echo " (last updated ", $Conf->printableTime($prow->timestamp), ")";
+	    echo "<span class='sep'></span> (last updated ", $Conf->printableTime($prow->timestamp), ")";
 
 	// conflicts
 	if (($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType == CONFLICT_AUTHOR)
@@ -241,21 +239,18 @@ class PaperTable {
 	    "<a href=\"javascript:fold('authors', 1, 8)\" class='foldbutton folder8'>&minus;</a> ";
 	echo "Authors</td>\n";
 	echo "  ", $this->tdEntry("authorInformation");
+	if ($this->editable) {
+	    echo "<div class='hint'>List the paper's authors one per line, including their affiliations in parentheses.  For example: &ldquo;<tt>Francine Johnson (UCLA)</tt>&rdquo;";
+	    if ($Conf->blindSubmission() == 2)
+		echo " Submission is blind, so reviewers will not be able to see author information.";
+	    echo "</div>\n";
+	}	    
 	if ($this->authorsFolded == 1)
 	    echo"<span class='ellipsis8'><i>Hidden for blind review</i></span><span class='extension8'>";
 	$this->echoEntryData("authorInformation", $prow, 5, true);
 	if ($this->authorsFolded == 1)
 	    echo "</span>";
-	echo "</td>\n";
-	if ($this->editable) {
-	    echo "  ", $this->tdHint("authorInformation"), "List the paper's authors one per line, including any affiliations.  Example: <pre class='entryexample'>Bob Roberts (UCLA)
-Ludwig van Beethoven (Colorado)
-Zhang, Ping Yen (INRIA)</pre>";
-	    if ($Conf->blindSubmission() == 2)
-		echo " Submission is blind, so author information will not be shown to the PC or to external reviewers.";
-	    echo "</td>\n";
-	}
-	echo "</tr>\n\n";
+	echo "</td>\n</tr>\n\n";
     }
 
     function echoNewContactAuthor($pulldown) {
@@ -309,33 +304,37 @@ Zhang, Ping Yen (INRIA)</pre>";
 	echo "  ", $this->tdCaption("collaborators"),
 	    ($sub_pcconf ? "Other conflicts" : "Potential conflicts"),
 	    "</td>\n  ", $this->tdEntry("collaborators");
-	$this->echoEntryData("collaborators", $prow, 6, true);
-	echo "</td>\n";
 	if ($this->editable) {
-	    echo "  ", $this->tdHint("collaborators"), "List people and
-	institutions with which the authors have conflicts of interest.
-	This usually includes recent coauthors and collaborators, and
-	any advisor/student relationships.  No need to list people at the
-	authors' own institutions.";
-	    if (!$Conf->setting("sub_pcconf"))
-		echo "  Be sure to include conflicted <a href='${ConfSiteBase}contacts.php?t=pc'>PC members</a>.";
-	    echo "  We use this information when assigning PC and external
-	reviewers.  Use the same format as for authors,	above.</td>\n";
+	    echo "<div class='hint'>";
+	    if ($Conf->setting("sub_pcconf"))
+		echo "List <em>other</em> people and institutions with which
+	the authors have conflicts of interest.  This will help us avoid
+	conflicts when assigning external reviews.  No need to list people
+	at the authors' own institutions.";
+	    else
+		echo "List people and institutions with which the authors have
+	conflicts of interest.  This usually includes any advisor/student
+	relationships and recent (~2 years) coauthors and collaborators.
+	Be sure to include conflicted <a href='${ConfSiteBase}contacts.php?t=pc'>PC members</a>.
+	We use this information when assigning PC and external reviews.";
+	    echo "  List one conflict per line, with any affiliation in parentheses.  For example: &ldquo;<tt>Jelena Markovic (EPFL)</tt>&rdquo;</div>\n";
 	}
-	echo "</tr>\n\n";
+	$this->echoEntryData("collaborators", $prow, 6, true);
+	echo "</td>\n</tr>\n\n";
     }
 
     function echoTopics($prow) {
 	global $Conf;
 	$topicMode = (int) $this->useRequest;
 	if (!$this->editable)
-	    //    || ($prow && (($prow->timeSubmitted > 0
-	    //		   || $prow->timeWithdrawn > 0))))
 	    $topicMode = -1;
 	if ($topicTable = topicTable($prow, $topicMode, $Conf)) { 
 	    echo "<tr class='pt_topics'>\n";
 	    echo "  ", $this->tdCaption("topics"), "Topics</td>\n";
-	    echo "  ", $this->tdEntry("topics"), $topicTable, "</td>\n";
+	    echo "  ", $this->tdEntry("topics");
+	    if ($this->editable)
+		echo "<div class='hint'>Select the topic or topics that seem most appropriate for your paper.</div>\n";
+	    echo $topicTable, "</td>\n";
 	    echo "</tr>\n\n";
 	}
     }
@@ -393,14 +392,16 @@ Zhang, Ping Yen (INRIA)</pre>";
 		}
 		$pcconfs[] = $c . " onchange='highlightUpdate()' /> " . contactHtml($p->firstName, $p->lastName);
 	    }
-	    echo "<tr class='pt_conflict_ass'><td class='caption'>PC conflicts</td>\n  <td class='entry'><table class='rpad'><tr><td>";
+	    echo "<tr class='pt_conflict_ass'><td class='caption'>PC conflicts</td>\n  <td class='entry'>";
+	    echo "<div class='hint'>Select the PC members who have conflicts of interest with this paper.  This includes advisor/student relationships, people with the same affiliation as one of the authors, and any recent (~2 years) coauthors and collaborators.</div>\n";
+	    echo "<table class='rpad'><tr><td>";
 	    $n = intval((count($pcconfs) + 2) / 3);
 	    for ($i = 0; $i < count($pcconfs); $i++) {
 		if (($i % $n) == 0 && $i)
 		    echo "</td><td class='colmid'>";
 		echo $pcconfs[$i], "<br />";
 	    }
-	    echo "</td></tr></table></td>\n  <td class='hint'>Select the PC members who have conflicts of interest with this paper.</td></tr>\n\n";
+	    echo "</td></tr></table></td></tr>\n\n";
 	    
 	} else {
 	    foreach ($pcm as $id => $p)

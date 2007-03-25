@@ -201,12 +201,12 @@ echo "</h2></td>\n</tr>\n\n";
 
 // paper body
 $paperTable->echoPaperRow($prow, PaperTable::STATUS_CONFLICTINFO_PC);
-$paperTable->echoAbstractRow($prow);
 if ($canViewAuthors || $Me->amAssistant()) {
     $paperTable->echoAuthorInformation($prow);
     $paperTable->echoContactAuthor($prow);
     $paperTable->echoCollaborators($prow);
 }
+$paperTable->echoAbstractRow($prow);
 $paperTable->echoTopics($prow);
 $paperTable->echoOptions($prow, $Me->amAssistant());
 if ($Me->isPC && ($prow->conflictType == 0 || ($Me->amAssistant() && $forceShow)))

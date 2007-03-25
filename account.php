@@ -158,7 +158,7 @@ if (!$newProfile) {
 }
 
 
-$Conf->header($newProfile ? "Create Account" : "Account Settings");
+$Conf->header($newProfile ? "Create Account" : "Account Settings", "account", actionBar());
 $Conf->expandBody();
 
 
@@ -228,7 +228,7 @@ echo "<tr>
 
 
 if ($Acct->isPC || $newProfile)
-    echo "<tr><td class='caption'></td><td colspan='4' class='entry'><div class='smgap'></div><strong>Program committee-specific information</strong></td></tr>\n";
+    echo "<tr><td class='caption'></td><td colspan='4' class='entry'><div class='smgap'></div><strong>Program committee information</strong></td></tr>\n";
 
 
 if ($newProfile || $Acct->contactId != $Me->contactId || $Me->amAssistant()) {
@@ -250,22 +250,22 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->amAssistant()) {
 if ($Acct->isPC || $newProfile) {
     echo "<tr>
   <td class='caption'>Collaborators and other affiliations</td>
-  <td class='entry textarea' colspan='3'><textarea class='textlite' name='collaborators' rows='5'>", htmlspecialchars($Acct->collaborators), "</textarea></td>
-  <td class='hint'>List your recent (~2 years) coauthors, collaborators,
-    and affiliations, and any advisor or student relationships, one per line.
-    We use this information to
-    avoid conflicts of interest when assigning reviews.  Example:
-    <pre class='entryexample'>Bob Roberts (UCLA)
-Ludwig van Beethoven (Colorado)
-Zhang, Ping Yen (INRIA)
-(IIT Madras)</pre></td>
+  <td class='entry' colspan='3'><div class='hint'>List any
+    advisor/student relationships, and your recent (~2 years) coauthors,
+    collaborators, and affiliations, one per line.
+    We use this information to avoid conflicts of interest when assigning
+    reviews.  For example: &ldquo;<tt>Ping Yen Zhang (INRIA)</tt>&rdquo;</div>
+    <textarea class='textlite' name='collaborators' rows='5' cols='50'>", htmlspecialchars($Acct->collaborators), "</textarea></td>
 </tr>\n\n";
 
     $result = $Conf->q("select TopicArea.topicId, TopicArea.topicName, TopicInterest.interest from TopicArea left join TopicInterest on TopicInterest.contactId=$Acct->contactId and TopicInterest.topicId=TopicArea.topicId order by TopicArea.topicName");
     if (edb_nrows($result) > 0) {
 	echo "<tr id='topicinterest'>
   <td class='caption'>Topic interests</td>
-  <td class='entry' colspan='3' id='topicinterest'><table class='topicinterest'>
+  <td class='entry' colspan='3' id='topicinterest'><div class='hint'>
+    Please indicate your interest in reviewing papers on these conference
+    topics. We use this information to help match papers to reviewers.</div>
+    <table class='topicinterest'>
        <tr><td></td><th>Low</th><th>Med.</th><th>High</th></tr>\n";
 	for ($i = 0; $i < edb_nrows($result); $i++) {
 	    $row = edb_row($result);
@@ -281,9 +281,6 @@ Zhang, Ping Yen (INRIA)
 	    echo "</td></tr>\n";
 	}
 	echo "    </table></td>
-  <td class='hint'>Please indicate how much you would want to review
-	these conference topics.  We use this information to help match papers
-	to reviewers.</td>
 </tr>";
     }
 }

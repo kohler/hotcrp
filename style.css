@@ -484,6 +484,10 @@ td.hint {
 	padding: 0em 0.5em;
 	font-size: small;
 }
+div.hint {
+	font-size: small;
+	margin-bottom: 0.5ex;
+}
 div#aumg td.hint, table.paper td.hint, table.review td.hint, table.comment td.hint, table.assign td.hint, table.setreviewform td.hint {
 	width: 25%;
 }
@@ -595,9 +599,6 @@ td.entry form {
 td.entry button {
 	margin-right: 0.5em;
 }
-td.entry textarea {
-	width: 100%;
-}
 tr.pt_actions td, tr.pt_outcome td, td.nowrap, th.nowrap {
 	white-space: nowrap;
 }
@@ -622,10 +623,7 @@ table.rpad tr td {
 	padding-right: 2em;
 }
 
-tr#topicinterest td.caption, tr#topicinterest td.hint {
-	padding-top: 1.3em;
-}
-tr#topicinterest td#topicinterest, tr.pt_topics td.entry, tr.pt_actions td,
+tr.pt_topics td.entry, tr.pt_actions td,
 td.plholder, tr.rev_actions td.entry, tr.pt_reviews td.entry,
 tr.rev_reviewers td.entry, tr.rev_reviewers_hdr td.entry,
 tr.pt_conflict_ass td.entry, tr.propass td.entry {
