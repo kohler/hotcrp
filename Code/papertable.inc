@@ -159,7 +159,7 @@ class PaperTable {
 	    else if ($prow && $prow->size > 0)
 		echo ($canUpload && $final ? " Submission: " : " "), paperDownload($prow);	
 	}
-	if ($flags & self::STATUS_DATE)
+	if (($flags & self::STATUS_DATE) && $prow->timestamp)
 	    echo "<span class='sep'></span> (last updated ", $Conf->printableTime($prow->timestamp), ")";
 
 	// conflicts
