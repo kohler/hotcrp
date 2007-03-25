@@ -428,8 +428,8 @@ CREATE TABLE `TopicInterest` (
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
 insert into Settings (name, value) values ('allowPaperOption', 2);
-# collect collaborators from authors by default
-insert into Settings (name, value) values ('sub_collab', 1);
+# collect PC conflicts from authors by default, but not collaborators
+insert into Settings (name, value) values ('sub_pcconf', 1);
 
 insert into PaperStorage set paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain', paper='' on duplicate key update paper='';
 
