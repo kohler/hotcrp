@@ -221,7 +221,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // any missing fields?
     if (count($PaperError) > 0) {
 	$Conf->errorMsg("One or more required fields were left blank.  Fill in the highlighted fields and try again." . (isset($PaperError["collaborators"]) ? "  If none of the authors have recent collaborators, just enter \"None\" in the Collaborators field." : ""));
-	$isSubmit = false;
+	return false;
     }
 
     // defined contact ID
