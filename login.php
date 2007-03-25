@@ -6,8 +6,7 @@
 require_once('Code/header.inc');
 
 // If they're here, the contact is invalid.
-if (isset($_SESSION['Me']))
-    $_SESSION['Me']->invalidate();
+$_SESSION['Me']->invalidate();
 unset($_SESSION["AskedYouToUpdateContactInfo"]);
 
 // Create an account
@@ -15,7 +14,7 @@ function doCreateAccount() {
     global $Conf;
 
     if ($_SESSION["Me"]->valid())
-	return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ".  To retrieve your password, select \"Mail me my password\".");
+	return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ".  To retrieve your password, select \"I forgot my password, email it to me\".");
 
     $result = $_SESSION["Me"]->initialize($_REQUEST["email"], $Conf);
     if (!$result)
