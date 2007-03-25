@@ -232,7 +232,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    $collab = ($Conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
 	    $fields[] = $collab;
 	}
-	$Conf->errorMsg("Before " . ($isSubmit ? "submitting" : "registering") . " your paper, you must enter values for the " . commajoin($fields) . " " . pluralx($fields, "field") . "." . ($collab ? "  If none of the authors have potential conflicts, just enter \"None\" in the $collab field." : "") . "  Fix the highlighted fields and try again.");
+	$Conf->errorMsg("Before " . ($isSubmit ? "submitting" : "registering") . " your paper, you must enter values for the " . commajoin($fields) . " " . pluralx($fields, "field") . "." . ($collab ? "  If none of the authors have potential conflicts, just enter \"None\" in the $collab field." : "") . "  Fix the highlighted fields and try again." . (fileUploaded($_FILES['paperUpload'], $Conf) ? "  <strong>Please note that the paper you tried to upload was ignored.</strong>" : ""));
 	return false;
     }
 
