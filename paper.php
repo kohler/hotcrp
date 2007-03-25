@@ -220,7 +220,19 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 
     // any missing fields?
     if (count($PaperError) > 0) {
-	$Conf->errorMsg("One or more required fields were left blank.  Fill in the highlighted fields and try again." . (isset($PaperError["collaborators"]) ? "  If none of the authors have recent collaborators, just enter \"None\" in the Collaborators field." : ""));
+	$fields = array();
+	$collab = false;
+	if (isset($PaperError["title"]))
+	    $fields[] = "Title";
+	if (isset($PaperError["authorInformation"]))
+	    $fields[] = "Authors";
+	if (isset($PaperError["abstract"]))
+	    $fields[] = "Abstract";
+	if (isset($PaperError["collaborators"])) {
+	    $collab = ($Conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
+	    $fields[] = $collab;
+	}
+	$Conf->errorMsg("Before " . ($isSubmit ? "submitting" : "registering") . " your paper, you must enter values for the " . commajoin($fields) . " " . pluralx($fields, "field") . "." . ($collab ? "  If none of the authors have potential conflicts, just enter \"None\" in the $collab field." : "") . "  Fix the highlighted fields and try again.");
 	return false;
     }
 
@@ -312,7 +324,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    getProw($contactId);
 	if (!uploadPaper($isSubmitFinal))
 	    return false;
-    }
+    } else if ($newPaper || $prow->size == 0)
+	$isSubmit = false;
 
     // submit paper if appropriate
     if ($isSubmitFinal || $isSubmit) {
@@ -363,6 +376,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    $mx = "You will receive email when reviews are available.";
 	else if ($Conf->setting("sub_freeze") > 0)
 	    $mx = "You have not yet submitted a final version of this paper.";
+	else if ($prow->size == 0)
+	    $mx = "You have not yet uploaded the paper itself.";
 	else
 	    $mx = "This version of the paper is marked as not ready for review.";
 	$deadline = $Conf->printableTimeSetting("sub_update");

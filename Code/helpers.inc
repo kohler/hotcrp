@@ -434,6 +434,14 @@ function plural($n, $what) {
     return $n . ' ' . pluralx($n, $what);
 }
 
+function commajoin($what) {
+    if (count($what) == 2)
+	return $what[0] . " and " . $what[1];
+    if (count($what) == 1)
+	return $what[0];
+    return join(", ", array_slice($what, 0, -1)) . " and " . $what[count($what) - 1];
+}
+
 function setRet(&$var, $val, $ret = false) {
     $var = $val;
     return $ret;
