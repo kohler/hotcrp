@@ -2,13 +2,11 @@ Major features
 - mail tool
 - mail tool: do not let people leave the page until it is done loading
   (probably, don't even SHOW the page until all mails have been sent)
-- ensure that adding a contact author who isn't yet registered will register
-  the person
-- [X] This PDF is ready to be considered for review.  [wording?]
 - "status:withdrawn"
+- email on comments and reviews
+- View + Edit ==> Paper ?
 
 Minor features
-- show multiple review fields in paper lists
 - authors' response: emails, etc.
 - uploading request forms for others?
 - pretty printing reviews
@@ -23,16 +21,13 @@ Minor features
 - layout checker from ager@
 - when email off: do not show authors to PC members, do not show reviewers
   to authors
-- send mail from pc.php
-- link in contacts.php and send mail from there
+- send mail from contacts.php
 - scrub author information from PDFs
 - UTF-8 mail(): what is required?
 
 Tiny features
 - add a "review assignment" link to the "submitted/accepted/all" papers
   business on the homepage
-- consider putting explanations and hints ABOVE form fields, rather
-  than to the right hand side
 - fold review form
 - simplifyWhitespace on author information
 - nag late reviewers

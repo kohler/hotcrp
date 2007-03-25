@@ -293,7 +293,7 @@ class PaperTable {
 		echo "<a href=\"", selfHref(array("viewContact" => $contacter)), "\">View as author</a>";
 	}
 	if ($editMode || ($editMode === null && $this->editable))
-	    echo "<a href='${ConfSiteBase}contactauthors.php?paperId=$prow->paperId'>Edit&nbsp;contact&nbsp;authors</a>";
+	    echo "<a href='${ConfSiteBase}contactauthors.php?paperId=$prow->paperId'>", ($Me->amAssistant() ? "Edit" : "Add"), "&nbsp;contact&nbsp;authors</a>";
 	echo "</td>\n</tr>\n\n";
     }
 

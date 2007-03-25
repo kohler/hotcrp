@@ -14,6 +14,7 @@ function confHeader() {
     global $paperId, $prow, $Conf;
     $title = ($paperId > 0 ? "Paper #$paperId Contact Authors" : "Paper Contact Authors");
     $Conf->header($title, "contactauthors", actionBar($prow, false, "Contact Authors", "contactauthors.php?paperId=$paperId"), false);
+    $Conf->expandBody();
 }
 
 function errorMsgExit($msg) {
@@ -71,7 +72,7 @@ if (!$Me->canManagePaper($prow))
 else if (isset($_REQUEST["update"])) {
     if (!isset($_REQUEST["email"]) || trim($_REQUEST["email"]) == "")
 	$Conf->errorMsg("You must enter the new contact author's email address."); 
-    else if (($id = $Conf->getContactId($_REQUEST["email"])) > 0) {
+    else if (($id = $Conf->getContactId($_REQUEST["email"], true)) > 0) {
 	if (addContactAuthor($paperId, $id))
 	    $Conf->confirmMsg("Contact author added.");
     }
