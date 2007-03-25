@@ -60,21 +60,21 @@ if ($sub_reg && $sub_update != $sub_reg) {
     echo "<tr><td class='rcaption nowrap'>Paper registration deadline</td>";
     echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('sub_reg'), "</td>";
     echo "<td class='nowrap entry'>", printableInterval($sub_reg - $now), "</td>";
-    echo "<td>This deadline controls when you can enter new paper submissions.</td></tr>\n";
+    echo "<td>You can register new papers until this deadline.</td></tr>\n";
 }
 
 if ($sub_update && $sub_sub != $sub_update) {
     echo "<tr><td class='rcaption nowrap'>Paper update deadline</td>";
     echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('sub_update'), "</td>";
     echo "<td class='nowrap entry'>", printableInterval($sub_update - $now), "</td>";
-    echo "<td>This deadline controls when you can upload new versions of your paper and change other paper information.</td></tr>\n";
+    echo "<td>You can upload new versions of your paper and change other paper information until this deadline.</td></tr>\n";
 }
 
 if ($sub_sub) {
     echo "<tr><td class='rcaption nowrap'>Paper submission deadline</td>";
     echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('sub_sub'), "</td>";
     echo "<td class='nowrap entry'>", printableInterval($sub_sub - $now), "</td>";
-    echo "<td>This deadline controls when you can submit papers to the conference.  Submissions received after this time will not be considered.</td></tr>\n";
+    echo "<td>You can submit registered papers until this deadline.  Only submitted papers will be reviewed.</td></tr>\n";
 }
 
 $resp_done = $Conf->setting('resp_done');

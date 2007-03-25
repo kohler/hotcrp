@@ -518,36 +518,39 @@ div.bgrp_body table.half:first-child ul {
 }
 
 
-tr.pcrow td {
-	padding-top: 2px;
+/* vertically arranged forms */
+div.f-i:first-child {
+	margin-top: 0px;
 }
-td.pc_name, td.pc_email, td.pc_aff, td.pc_chairbox, td.pc_assbox {
-	padding-right: 0.5em;
+div.f-i {
+	margin: 1ex 0px;
+	width: auto;
+	clear: both;
 }
-tr.removed td {
-	text-decoration: line-through;
+div.f-ix {
+	margin: 0px 1em 0px 0px;
+	width: auto;
+	float: left;
 }
-tr.removed td.pc_action {
-	text-decoration: none;
+div.f-c {
+	font-weight: bold;
+	color: #555555;
+	font-size: smaller;
 }
-td.pc_chairbox, td.pc_assbox {
-	text-align: center;
+div.f-h {
+	font-size: smaller;
+	clear: both;
 }
-table.memberlist td.pl_callout {
-	font-size: small;
+span.f-cx {
+	font-weight: normal;
 }
 
-td.datename, td.datename_error, td.pad {
+
+td.pad {
 	padding-right: 1em;
 }
-td.datename_error, span.error {
+span.error {
 	color: #ff0000;
-}
-td.datedesc {
-	font-size: small;
-	padding-left: 2em;
-}
-table.daterange {
 }
 
 img.dlimg {
@@ -731,7 +734,7 @@ div.searchresult {
 div.searchresult table.pltable {
 	width: 100%;
 }
-table.pltable th, table.ppltable th, table.setreviewform th, table.memberlist th {
+table.pltable th, table.ppltable th, table.setreviewform th {
 	text-align: left;
         padding-right: 0.25em;
 	vertical-align: bottom;
@@ -788,7 +791,7 @@ tr.pl td {
 	padding-top: 2px;
 	padding-bottom: 2px;
 }
-tr.pl_headrow td, tr.pl_headrow th, table.setreviewform th, table.memberlist th {
+tr.pl_headrow td, tr.pl_headrow th, table.setreviewform th {
 	border-bottom: 1px solid #999999;
 	font-size: small;
 }

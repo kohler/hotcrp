@@ -146,6 +146,16 @@ function crpformvalue($val, $field = null) {
 	echo htmlspecialchars($field ? $Acct->$field : $Acct->$val);
 }
 
+function fcclass($what) {
+    global $Error;
+    return (isset($Error[$what]) ? "f-c error" : "f-c");
+}
+
+function feclass($what) {
+    global $Error;
+    return (isset($Error[$what]) ? "f-e error" : "f-e");
+}
+
 function capclass($what) {
     global $Error;
     return (isset($Error[$what]) ? "caption error" : "caption");
@@ -187,54 +197,58 @@ else if ($Me->contactId != $Acct->contactId)
 
 echo "<table class='form'>
 <tr>
-  <td class='", capclass('email'), "'>Email</td>
-  <td class='entry' colspan='3'><input class='textlite' type='text' name='uemail' size='50' value=\"", crpformvalue('uemail', 'email'), "\" /></td>
-</tr>\n\n";
+  <td class='caption'>Contact information</td>
+  <td class='entry'><div class='f-contain'>
 
-echo "<tr>
-  <td class='", capclass('firstName'), "'>First&nbsp;name</td>
-  <td class='entry'><input class='textlite' type='text' name='firstName' size='20' value=\"", crpformvalue('firstName'), "\" /></td>
-  <td class='", capclass('lastName'), "'>Last&nbsp;name</td>
-  <td class='entry'><input class='textlite' type='text' name='lastName' size='20' value=\"", crpformvalue('lastName'), "\" /></td>
-</tr>\n\n";
+<div class='f-i'>
+  <div class='", fcclass('email'), "'>Email</div>
+  <div class='", feclass('email'), "'><input class='textlite' type='text' name='uemail' size='52' value=\"", crpformvalue('uemail', 'email'), "\" /></div>
+</div>\n\n";
+
+echo "<div class='f-i'><div class='f-ix'>
+  <div class='", fcclass('firstName'), "'>First&nbsp;name</div>
+  <div class='", feclass('firstName'), "'><input class='textlite' type='text' name='firstName' size='24' value=\"", crpformvalue('firstName'), "\" /></div>
+</div><div class='f-ix'>
+  <div class='", fcclass('lastName'), "'>Last&nbsp;name</div>
+  <div class='", feclass('lastName'), "'><input class='textlite' type='text' name='lastName' size='24' value=\"", crpformvalue('lastName'), "\" /></div>
+</div><div class='clear'></div></div>\n\n";
 
 if (!$newProfile) {
-    echo "<tr>
-  <td class='", capclass('password'), "'>Password</td>
-  <td class='entry'><input class='textlite' type='password' name='upassword' size='20' value=\"", crpformvalue('upassword', 'password'), "\" /></td>
-  <td class='", capclass('password'), "'>Repeat password</td>
-  <td class='entry'><input class='textlite' type='password' name='upassword2' size='20' value=\"", crpformvalue('upassword', 'password'), "\" /></td>
-</tr>
-
-<tr>
-  <td class='caption'></td>
-  <td class='hint' colspan='4'>The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don't use a login password or any other high-security password.</td>
-</tr>\n\n";
+    echo "<div class='f-i'><div class='f-ix'>
+  <div class='", fcclass('password'), "'>Password</div>
+  <div class='", feclass('password'), "'><input class='textlite' type='password' name='upassword' size='24' value=\"", crpformvalue('upassword', 'password'), "\" /></div>
+</div><div class='f-ix'>
+  <div class='", fcclass('password'), "'>Repeat password</div>
+  <div class='", feclass('password'), "'><input class='textlite' type='password' name='upassword2' size='24' value=\"", crpformvalue('upassword', 'password'), "\" /></div>
+</div>
+  <div class='f-h'>The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don't use a login password or any other high-security password.</div>
+  <div class='clear'></div></div>\n\n";
 }
 
 
-echo "<tr>
-  <td class='", capclass('affiliation'), "'>Affiliation</td>
-  <td class='entry' colspan='3'><input class='textlite' type='text' name='affiliation' size='50' value=\"", crpformvalue('affiliation'), "\" /></td>
-</tr>\n\n";
+echo "<div class='f-i'>
+  <div class='", fcclass('affiliation'), "'>Affiliation</div>
+  <div class='", feclass('affiliation'), "'><input class='textlite' type='text' name='affiliation' size='52' value=\"", crpformvalue('affiliation'), "\" /></div>
+</div>\n\n";
 
 
-echo "<tr>
-  <td class='caption'>Phone</td>
-  <td class='entry'><input class='textlite' type='text' name='voicePhoneNumber' size='20' value=\"", crpformvalue('voicePhoneNumber'), "\" /></td>
-  <td class='caption'>Fax</td>
-  <td class='entry'><input class='textlite' type='text' name='faxPhoneNumber' size='20' value=\"", crpformvalue('faxPhoneNumber'), "\" /></td>
-</tr>\n\n";
+echo "<div class='f-i'><div class='f-ix'>
+  <div class='f-c'>Phone <span class='f-cx'>(optional)</span></div>
+  <div class='f-e'><input class='textlite' type='text' name='voicePhoneNumber' size='24' value=\"", crpformvalue('voicePhoneNumber'), "\" /></div>
+</div><div class='f-ix'>
+  <div class='f-c'>Fax <span class='f-cx'>(optional)</span></div>
+  <div class='f-e'><input class='textlite' type='text' name='faxPhoneNumber' size='24' value=\"", crpformvalue('faxPhoneNumber'), "\" /></div>
+</div><div class='clear'></div></div>\n</td>\n</tr>\n\n";
 
 
 if ($Acct->isPC || $newProfile)
-    echo "<tr><td class='caption'></td><td colspan='4' class='entry'><div class='smgap'></div><strong>Program committee information</strong></td></tr>\n";
+    echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div><strong>Program committee information</strong></td></tr>\n";
 
 
 if ($newProfile || $Acct->contactId != $Me->contactId || $Me->amAssistant()) {
     echo "<tr>
   <td class='caption'>Roles</td>
-  <td colspan='3' class='entry'>\n";
+  <td class='entry'>\n";
     foreach (array("pc" => "PC&nbsp;member", "ass" => "Chair's&nbsp;assistant", "chair" => "PC&nbsp;chair") as $key => $value) {
 	echo "    <input type='checkbox' name='$key' id='$key' value='1' ";
 	if (defval($_REQUEST["$key"]))
@@ -250,7 +264,7 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->amAssistant()) {
 if ($Acct->isPC || $newProfile) {
     echo "<tr>
   <td class='caption'>Collaborators and other affiliations</td>
-  <td class='entry' colspan='3'><div class='hint'>List any
+  <td class='entry'><div class='hint'>List any
     advisor/student relationships, and your recent (~2 years) coauthors,
     collaborators, and affiliations, one per line.
     We use this information to avoid conflicts of interest when assigning
@@ -262,7 +276,7 @@ if ($Acct->isPC || $newProfile) {
     if (edb_nrows($result) > 0) {
 	echo "<tr id='topicinterest'>
   <td class='caption'>Topic interests</td>
-  <td class='entry' colspan='3' id='topicinterest'><div class='hint'>
+  <td class='entry' id='topicinterest'><div class='hint'>
     Please indicate your interest in reviewing papers on these conference
     topics. We use this information to help match papers to reviewers.</div>
     <table class='topicinterest'>
@@ -287,22 +301,13 @@ if ($Acct->isPC || $newProfile) {
 
 
 echo "<tr><td class='caption'></td>
-  <td class='entry'><input class='button_default' type='submit' value='",
-    ($newProfile ? "Create Account" : "Save Changes"),
-    "' name='register' /></td>
+  <td class='entry'><div class='smgap'></div>
+    <input class='button' type='submit' value='",
+    ($newProfile ? "Create account" : "Save changes"),
+    "' name='register' />
+    <div class='smgap'></div></td>
 </tr>
 </table></form>\n";
-
-
-// if (!$newAccount) {
-//     echo "<form method='post' action='account.php'>\n";
-//     if ($Acct->contactId != $Me->contactId)
-// 	echo "<input type='hidden' name='contact' value='$Acct->contactId' />\n";
-//     echo "<table>
-// <tr><td class='caption'></td><td class='entry'><div class='smgap'></div>
-//   <h2>Merge accounts</h2></td></tr>\n";
-//     echo "</table></form>";
-// }
 
 
 $Conf->footer();
