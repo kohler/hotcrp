@@ -69,6 +69,8 @@ class PaperTable {
 	    $c .= " extension9";
 	if ($this->authorsFolded && isset($authorFoldedRows[$what]))
 	    $c .= " extension8";
+	if ($what == "abstract")
+	    $c .= " textarea";
 	return $c . "'>";
     }
 
@@ -258,12 +260,12 @@ class PaperTable {
 	echo "<tr class='pt_contactAuthor'>\n";
 	echo "  ", $this->tdCaption('contactAuthor'), "Contact author</td>\n";
 	echo "  ", $this->tdEntry('contactAuthor');
+	echo "<div class='hint'>You will be able to add more contact authors after you register the paper.</div>\n";
 	if ($pulldown)
 	    contactPulldown("contact", "contact", $Conf, $Me);
 	else
 	    echo contactHtml($Me);
-	echo "</td>\n";
-	echo "  ", $this->tdHint('contactAuthor'), "You will be able to add more contact authors after you submit the paper.</td>\n";
+	echo "</td>\n</tr>\n\n";
     }
 
     function echoContactAuthor($prow, $editMode = null) {
@@ -393,7 +395,7 @@ class PaperTable {
 		$pcconfs[] = $c . " onchange='highlightUpdate()' /> " . contactHtml($p->firstName, $p->lastName);
 	    }
 	    echo "<tr class='pt_conflict_ass'><td class='caption'>PC conflicts</td>\n  <td class='entry'>";
-	    echo "<div class='hint'>Select the PC members who have conflicts of interest with this paper.  This includes advisor/student relationships, people with the same affiliation as one of the authors, and any recent (~2 years) coauthors and collaborators.</div>\n";
+	    echo "<div class='hint'>Select the PC members who have conflicts of interest with this paper.  This includes the authors' past advisors and/or students, people with the same affiliation as one of the authors, and any recent (~2 years) coauthors and collaborators.</div>\n";
 	    echo "<table class='rpad'><tr><td>";
 	    $n = intval((count($pcconfs) + 2) / 3);
 	    for ($i = 0; $i < count($pcconfs); $i++) {

@@ -131,7 +131,7 @@ class ReviewForm {
 	    $x .= "  <td class='caption";
 	    if (isset($ReviewFormError[$field]))
 		$x .= " error";
-	    if (isset($this->options[$field]))
+	    if (!$this->description[$field])
 		$x .= " textarea";
 	    $x .= "'>" . htmlspecialchars($this->shortName[$field]);
 	    if ($this->authorView[$field] < 0)

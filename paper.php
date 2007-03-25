@@ -541,7 +541,7 @@ if ($mode == "edit" && $Me->amAssistant())
     $canViewAuthors = true;
 
 if ($editable)
-    $spacer = "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></td></tr>\n";
+    $spacer = "<tr><td class='caption'></td><td class='entry'><hr class='smgap' /></td></tr>\n";
 else
     $spacer = "";
 
