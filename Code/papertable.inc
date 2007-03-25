@@ -69,7 +69,7 @@ class PaperTable {
 	    $c .= " extension9";
 	if ($this->authorsFolded && isset($authorFoldedRows[$what]))
 	    $c .= " extension8";
-	if ($what == "abstract")
+	if ($what == "abstract" && $this->editable)
 	    $c .= " textarea";
 	return $c . "'>";
     }
