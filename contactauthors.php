@@ -106,8 +106,8 @@ if ($OK) {
 
     // Paper contents
     $paperTable->echoPaperRow($prow, 0);
-    $paperTable->echoAbstractRow($prow);
     $paperTable->echoAuthorInformation($prow);
+    $paperTable->echoAbstractRow($prow);
     $paperTable->echoCollaborators($prow);
     $paperTable->echoTopics($prow);
 

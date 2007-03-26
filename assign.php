@@ -416,15 +416,16 @@ echo "</td>\n</tr>\n\n";
 
 // paper body
 $paperTable->echoPaperRow($prow, PaperTable::STATUS_CONFLICTINFO);
-$paperTable->echoAbstractRow($prow);
 if ($canViewAuthors || $Me->amAssistant()) {
     $paperTable->echoAuthorInformation($prow);
     $paperTable->echoContactAuthor($prow);
-    $paperTable->echoCollaborators($prow);
 }
+$paperTable->echoAbstractRow($prow);
 $paperTable->echoTopics($prow);
 $paperTable->echoOptions($prow, $Me->amAssistant());
 $paperTable->echoTags($prow);
+if ($canViewAuthors || $Me->amAssistant())
+    $paperTable->echoCollaborators($prow);
 
 
 // PC assignments
@@ -582,7 +583,7 @@ if ($Conf->setting("extrev_chairreq") && $Me->amAssistant()) {
 		"&amp;add=1$forceShow\">Approve</a>&nbsp; ",
 		"<a class='button_small' href=\"assign.php?paperId=$prow->paperId&amp;email=",
 		urlencode($row->email), "&amp;deny=1$forceShow\">Deny</a></td></tr>\n",
-		"<tr><td colspan='3'><small>Requester: ", contactHtml($row->reqFirstName, $row->reqLastName, $row->reqEmail), "</small></td></tr>\n";
+		"<tr><td colspan='3'><small>Requester: ", contactHtml($row->reqFirstName, $row->reqLastName), "</small></td></tr>\n";
 	}
 	echo "</table>\n  </td>\n</tr>\n\n";
     }

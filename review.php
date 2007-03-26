@@ -306,7 +306,6 @@ $paperTable->echoPaperRow($prow, PaperTable::STATUS_CONFLICTINFO_PC);
 if ($canViewAuthors || $Me->amAssistant()) {
     $paperTable->echoAuthorInformation($prow);
     $paperTable->echoContactAuthor($prow);
-    $paperTable->echoCollaborators($prow);
 }
 $paperTable->echoAbstractRow($prow);
 $paperTable->echoTopics($prow);
@@ -315,6 +314,8 @@ if ($Me->isPC && ($prow->conflictType == 0 || ($Me->amAssistant() && $forceShow)
     $paperTable->echoTags($prow, "${ConfSiteBase}review.php?paperId=$prow->paperId");
 if ($Me->amAssistant())
     $paperTable->echoPCConflicts($prow);
+if ($canViewAuthors || $Me->amAssistant())
+    $paperTable->echoCollaborators($prow);
 if ($Me->isPC && ($prow->conflictType == 0 || ($Me->amAssistant() && $forceShow)))
     $paperTable->echoLead($prow);
 if ($viewAny)

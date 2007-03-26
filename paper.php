@@ -606,29 +606,15 @@ echo $spacer;
 if ($newPaper || $canViewAuthors || $Me->amAssistant())
     $paperTable->echoAuthorInformation($prow);
 
-
 // Contact authors
 if ($newPaper)
     $paperTable->echoNewContactAuthor($Me->amAssistant());
 else if ($canViewAuthors || $Me->amAssistant())
     $paperTable->echoContactAuthor($prow, $mode == "edit");
 
-
 // Anonymity
-if (($newPaper || $mode == "edit") && $Conf->blindSubmission() == 1 && !$finalEditMode) {
-    echo "<tr class='pt_blind'>\n  <td class='caption'>Anonymity</td>\n";
-    $blind = ($useRequest ? isset($_REQUEST['blind']) : (!$prow || $prow->blind));
-    if ($paperTable->editable) {
-	echo "  <td class='entry'>";
-	echo "<div class='hint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (reviewers won't be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n";
-	echo "<input type='checkbox' name='blind' value='1'";
-	if ($blind)
-	    echo " checked='checked'";
-	echo " />&nbsp;Anonymous submission</td>\n";
-    } else
-	echo "  <td class='entry'>", ($blind ? "Anonymous submission" : "Non-anonymous submission"), "</td>\n";
-    echo "</tr>\n";
-}
+if ($Conf->blindSubmission() == 1 && !$finalEditMode)
+    $paperTable->echoAnonymity($prow);
 
 echo $spacer;
 
@@ -724,13 +710,6 @@ if ($mode == "edit") {
 	echo "<tr>
   <td class='caption'></td>
   <td class='entry' colspan='2'><table>\n";
-	//if ($prow && (($prow->conflictType < CONFLICT_AUTHOR && $prow->timeSubmitted <= 0)
-	//	      || $prow->timeSubmitted > 0))
-	//   echo "    <span class='sep'></span>\n";
-	// echo "<input type='checkbox' name='emailUpdate' value='1'",
-	//	($prow->timeSubmitted > 0 ? "" : " checked='checked'"),
-	//	" />&nbsp;Email&nbsp;authors\n",
-	//	"    <span class='sep'></span>\n";
 	echo "      <tr><td><input type='checkbox' name='doemail' value='1' checked='checked' />&nbsp;Email authors, including:&nbsp; ";
 	echo "<input type='text' class='textlite' name='emailNote' size='30' value='Optional explanation' onfocus=\"tempText(this, 'Optional explanation', 1)\" onblur=\"tempText(this, 'Optional explanation', 0)\" /></tr></td>\n";
 	echo "      <tr><td><input type='checkbox' name='override' value='1' />&nbsp;Override deadlines</td></tr>\n";

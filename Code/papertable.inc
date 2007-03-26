@@ -290,6 +290,23 @@ class PaperTable {
 	echo "</td>\n</tr>\n\n";
     }
 
+    function echoAnonymity($prow) {
+	global $Conf;
+	echo "<tr class='pt_blind'>\n";
+	echo "  ", $this->tdCaption("blind"), "Anonymity</td>\n";
+	echo "  ", $this->tdEntry("blind");
+	$blind = ($this->useRequest ? isset($_REQUEST['blind']) : (!$prow || $prow->blind));
+	if ($this->editable) {
+	    echo "<div class='hint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (reviewers won't be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n";
+	    echo "<input type='checkbox' name='blind' value='1'";
+	    if ($blind)
+		echo " checked='checked'";
+	    echo " />&nbsp;Anonymous submission";
+	} else
+	    echo ($blind ? "Anonymous" : "Non-anonymous"), " submission";
+	echo "</td>\n</tr>\n";
+    }
+
     function echoCollaborators($prow) {
 	global $Conf, $ConfSiteBase;
 	if (!$Conf->setting("sub_collab"))
@@ -328,7 +345,7 @@ class PaperTable {
 	    echo "  ", $this->tdCaption("topics"), "Topics</td>\n";
 	    echo "  ", $this->tdEntry("topics");
 	    if ($this->editable)
-		echo "<div class='hint'>Select the topic or topics that seem most appropriate for your paper.</div>\n";
+		echo "<div class='hint'>Select any topics that apply to your paper.</div>\n";
 	    echo $topicTable, "</td>\n";
 	    echo "</tr>\n\n";
 	}

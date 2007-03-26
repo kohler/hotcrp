@@ -710,7 +710,7 @@ class Contact {
 	    && (!$crow || $crow->forAuthors > 1))
 	    return true;
 	// collect failure reasons
-	if (!$Me->amAssistant() && $prow->conflictType != CONFLICT_AUTHOR)
+	if (!$this->amAssistant() && $prow->conflictType != CONFLICT_AUTHOR)
 	    $whyNot['permission'] = 1;
 	else if ($prow->timeWithdrawn > 0)
 	    $whyNot['withdrawn'] = 1;

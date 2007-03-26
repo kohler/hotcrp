@@ -78,7 +78,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	else {
 	    $t .= "<td>" . $reviewTypeName[$rr->reviewType];
 	    if ($rr->reviewType == REVIEW_EXTERNAL)
-		$t .= "<br /><small>Requester: " . contactHtml($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail) . "</small>";
+		$t .= "<br /><small>Requester: " . contactHtml($rr->reqFirstName, $rr->reqLastName) . "</small>";
 	    $t .= "</td>";
 	}
 

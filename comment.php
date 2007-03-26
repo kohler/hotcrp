@@ -336,9 +336,9 @@ function commentView($prow, $crow, $editMode) {
   <td class='caption'></td>
   <td class='entry'><table class='pt_buttons'>
     <tr>\n";
-	    echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save' name='submit' /></td>\n";
+	    echo "      <td class='ptb_button'><input class='button' type='submit' value='Save' name='submit' /></td>\n";
 	    if ($crow)
-		echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Delete comment' name='delete' /></td>\n";
+		echo "      <td class='ptb_button'><input class='button' type='submit' value='Delete comment' name='delete' /></td>\n";
 	    if (!$Me->timeReview($prow, $Conf))
 		echo "    </tr>\n    <tr>\n      <td colspan='2'><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td>\n";
 	    echo "    </tr>\n  </table></td>\n</tr>\n\n";
@@ -362,7 +362,7 @@ function responseView($prow, $crow, $editMode) {
 
     if (!$Me->canViewComment($prow, $crow, $Conf))
 	return;
-    if ($prow->conflictType != CONFLICT_AUTHOR && !$Me->amAssistant())
+    if ($editMode && !$Me->canRespond($prow, $crow, $Conf))
 	$editMode = false;
     $sawResponse = true;
     $wordlimit = $Conf->setting("resp_words", 0);
@@ -388,8 +388,8 @@ function responseView($prow, $crow, $editMode) {
 	echo $sep, $Conf->printableTime($crow->timeModified);
 	$sep = " &nbsp;|&nbsp; ";
     }
-    if ($crow && ($prow->conflictType == CONFLICT_AUTHOR || $Me->amAssistant()) && !$editMode)
-	echo " &nbsp;|&nbsp; <a href='comment.php?commentId=$crow->commentId'>Edit</a>";
+    if ($crow && ($prow->conflictType == CONFLICT_AUTHOR || $Me->amAssistant()) && !$editMode && $Me->canRespond($prow, $crow, $Conf))
+	echo $sep, "<a href='comment.php?commentId=$crow->commentId'>Edit</a>";
     echo "</td>\n</tr>\n\n";
 
     if ($editMode) {
@@ -400,7 +400,7 @@ function responseView($prow, $crow, $editMode) {
 
 	$limittext = ($wordlimit ? ": the conference system will enforce a limit of $wordlimit words" : "");
 	$Conf->infoMsg("The authors' response is a mechanism to address
-reviewer concerns and correct reviewer misunderstandings.
+reviewer concerns and correct misunderstandings.
 The response should be addressed to the program committee, who
 will consider it when making their decision.  Don't try to
 augment the paper's content or form&mdash;the conference deadline
@@ -420,9 +420,9 @@ has passed.  Please keep the response short and to the point" . $limittext . "."
   <td class='caption'></td>
   <td class='entry'><table class='pt_buttons'>
     <tr>\n";
-	    echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Save' name='submit' /></td>\n";
+	    echo "      <td class='ptb_button'><input class='button' type='submit' value='Save' name='submit' /></td>\n";
 	    if ($crow)
-		echo "      <td class='ptb_button'><input class='button_default' type='submit' value='Delete response' name='delete' /></td>\n";
+		echo "      <td class='ptb_button'><input class='button' type='submit' value='Delete response' name='delete' /></td>\n";
 	    if (!$Conf->timeAuthorRespond())
 		echo "    </tr>\n    <tr>\n      <td colspan='2'><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td>\n";
 	    echo "    </tr>\n  </table></td>\n</tr>\n\n";

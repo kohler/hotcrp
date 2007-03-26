@@ -84,10 +84,10 @@ function doLogin() {
     }
 
     if (!isset($_REQUEST["password"]) || $_REQUEST["password"] == "")
-	return $Conf->errorMsg("You tried to sign in without providing a password.  Please enter your password and try again.  If you've forgotten your password, enter your email address and sign in using the \"I forgot my password, email it to me\" option.");
+	return $Conf->errorMsg("You tried to sign in without providing a password.  Please enter your password and try again.  If you've forgotten your password, enter your email address and use the \"I forgot my password, email it to me\" option.");
 
     if ($_SESSION["Me"]->password != $_REQUEST["password"])
-	return $Conf->errorMsg("That password is incorrect.");
+	return $Conf->errorMsg("That password doesn't match.  If you've forgotten your password, enter your email address and use the \"I forgot my password, email it to me\" option.");
 
     $Conf->qe("update ContactInfo set visits=visits+1, lastLogin=" . time() . " where contactId=" . $_SESSION["Me"]->contactId, "while recording login statistics");
     

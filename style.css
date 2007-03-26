@@ -599,9 +599,6 @@ table.auview td.caption {
 td.entry form {
 	padding-right: 0.5em;
 }
-td.entry button {
-	margin-right: 0.5em;
-}
 tr.pt_actions td, tr.pt_outcome td, td.nowrap, th.nowrap {
 	white-space: nowrap;
 }

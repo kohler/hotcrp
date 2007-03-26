@@ -585,7 +585,7 @@ function whyNotText($whyNot, $action) {
 	    $start = $Conf->setting("rev_open", -1);
 	else
 	    $start = 1;
-	$end = $Conf->settings[$dname];
+	$end = $Conf->setting($dname, -1);
 	$now = time();
 	if ($start <= 0)
 	    $text .= "You can't $action $thisPaper yet.  ";
