@@ -8,7 +8,7 @@ require_once('Code/tags.inc');
 require_once('Code/Calendar.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotChair('index.php');
+$Me->goIfNotAssistant('index.php');
 $SettingError = array();
 $Error = array();
 $Values = array();
