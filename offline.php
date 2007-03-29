@@ -60,13 +60,13 @@ echo "<table>
   <td class='form_entry'><form method='get' action='offline.php'><input class='button' type='submit' name='downloadForm' value='Download review form' /></form></td>\n\n";
 
 if ($Me->amReviewer()) {
-    $disabled = ($pastDeadline && !$Me->amAssistant() ? " disabled='disabled'" : "");
+    $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
     echo "  <td class='form_entry' id='upload'><table class='compact'>
     <tr>
       <td><form action='offline.php?post=1' method='post' enctype='multipart/form-data'>
 	<input type='hidden' name='redirect' value='offline' />
 	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='button' type='submit' value='Upload filled-out review form' name='uploadForm' $disabled/>";
-    if ($pastDeadline && $Me->amAssistant())
+    if ($pastDeadline && $Me->privChair)
 	echo "<br /><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
     echo "\n      </form></td>\n    </tr>\n";
     echo "  </table></td>\n";

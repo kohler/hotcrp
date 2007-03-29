@@ -2,7 +2,7 @@
 require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotAssistant('../index.php');
+$Me->goIfNotPrivChair('../index.php');
 $rf = reviewForm();
 
 $Conf->header("Send Mail");

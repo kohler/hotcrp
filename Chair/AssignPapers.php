@@ -8,7 +8,7 @@ require_once('../Code/paperlist.inc');
 require_once('../Code/search.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotAssistant('../index.php');
+$Me->goIfNotPrivChair('../index.php');
 $kind = defval($_REQUEST["kind"], "a");
 if ($kind != "a" && $kind != "c")
     $kind = "a";

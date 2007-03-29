@@ -6,7 +6,7 @@
 require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotAssistant("../");
+$Me->goIfNotPrivChair("../");
 
 $Conf->header("Switch Roles");
 
@@ -23,7 +23,7 @@ $result = $Conf->qe("select contactId, firstName, lastName, email,
 	order by chair desc, ass desc, pc desc, lastName, firstName, email");
 $oldtype = "";
 while (($row = edb_orow($result))) {
-    $type = ($row->chair ? "PC Chair" : ($row->ass ? "PC Chair's Assistant" : ($row->pc ? "PC Member" : "Others")));
+    $type = ($row->chair ? "PC Chair" : ($row->ass ? "System Administrator" : ($row->pc ? "PC Member" : "Others")));
     if ($type != $oldtype)
 	echo ($oldtype ? "</optgroup>" : ""), "<optgroup label=\"$type\">\n";
     echo "<option value='$row->contactId'>", contactHtml($row), "</option>\n";

@@ -43,7 +43,7 @@ if ($Me->isPC)
     $tOpt["req"] = "Requested reviews";
 if ($Me->isAuthor)
     $tOpt["a"] = "Authored papers";
-if ($Me->amAssistant() || ($Me->isPC && $Conf->setting("pc_seeall") > 0))
+if ($Me->privChair || ($Me->isPC && $Conf->setting("pc_seeall") > 0))
     $tOpt["all"] = "All papers";
 if (count($tOpt) == 0) {
     $Conf->header("Search", 'search');
@@ -141,7 +141,7 @@ if ($getaction == "rev" && isset($papersel)) {
 
     $text = '';
     $errors = array();
-    if ($Me->amAssistant())
+    if ($Me->privChair)
 	$_REQUEST["forceShow"] = 1;
     while ($row = edb_orow($result)) {
 	if (!$Me->canViewReview($row, null, $Conf, $whyNot))
@@ -175,7 +175,7 @@ function tagaction() {
     
     $errors = array();
     $papers = array();
-    if (!$Me->amAssistant()) {
+    if (!$Me->privChair) {
 	$result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel)), "while selecting papers");
 	while (($row = edb_orow($result)))
 	    if ($row->conflictType > 0)
@@ -197,7 +197,7 @@ function tagaction() {
 	$act = "s";
     }
     if (count($papers) && ($act == "a" || $act == "d" || $act == "s" || $act == "so" || $act == "ao"))
-	setTags($papers, $tag, $act, $Me->amAssistant());
+	setTags($papers, $tag, $act, $Me->privChair);
 }
 if (isset($_REQUEST["tagact"]) && $Me->isPC && isset($papersel) && isset($_REQUEST["tag"]))
     tagaction();
@@ -205,9 +205,9 @@ if (isset($_REQUEST["tagact"]) && $Me->isPC && isset($papersel) && isset($_REQUE
 
 // download text author information for selected papers
 if ($getaction == "authors" && isset($papersel)
-    && ($Me->amAssistant() || ($Me->isPC && $Conf->blindSubmission() < 2))) {
+    && ($Me->privChair || ($Me->isPC && $Conf->blindSubmission() < 2))) {
     $idq = paperselPredicate($papersel);
-    if (!$Me->amAssistant())
+    if (!$Me->privChair)
 	$idq = "($idq) and blind=0";
     $result = $Conf->qe("select paperId, title, authorInformation from Paper where $idq", "while fetching authors");
     if ($result) {
@@ -224,7 +224,7 @@ if ($getaction == "authors" && isset($papersel)
 
 
 // download text PC conflict information for selected papers
-if ($getaction == "pcconflicts" && isset($papersel) && $Me->amAssistant()) {
+if ($getaction == "pcconflicts" && isset($papersel) && $Me->privChair) {
     $idq = paperselPredicate($papersel, "Paper.");
     $result = $Conf->qe("select Paper.paperId, title, group_concat(email separator ' ')
 		from Paper
@@ -246,9 +246,9 @@ if ($getaction == "pcconflicts" && isset($papersel) && $Me->amAssistant()) {
 
 
 // download text contact author information, with email, for selected papers
-if ($getaction == "contact" && $Me->amAssistant() && isset($papersel)) {
+if ($getaction == "contact" && $Me->privChair && isset($papersel)) {
     $idq = paperselPredicate($papersel, "Paper.");
-    if (!$Me->amAssistant())
+    if (!$Me->privChair)
 	$idq = "($idq) and blind=0";
     $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq order by Paper.paperId", "while fetching contact authors");
     if ($result) {
@@ -263,7 +263,7 @@ if ($getaction == "contact" && $Me->amAssistant() && isset($papersel)) {
 
 
 // download scores and, maybe, anonymity for selected papers
-if ($getaction == "scores" && $Me->amAssistant() && isset($papersel)) {
+if ($getaction == "scores" && $Me->privChair && isset($papersel)) {
     $rf = reviewForm();
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "allReviewScores" => 1, "reviewerName" => 1)), "while selecting papers");
 
@@ -282,7 +282,7 @@ if ($getaction == "scores" && $Me->amAssistant() && isset($papersel)) {
     $header .= "\trevieweremail\treviewername\n";
     
     $errors = array();
-    if ($Me->amAssistant())
+    if ($Me->privChair)
 	$_REQUEST["forceShow"] = 1;
     $text = "";
     while ($row = edb_orow($result)) {
@@ -311,7 +311,7 @@ if ($getaction == "scores" && $Me->amAssistant() && isset($papersel)) {
 
 
 // download topics for selected papers
-if ($getaction == "topics" && $Me->amAssistant() && isset($papersel)) {
+if ($getaction == "topics" && $Me->privChair && isset($papersel)) {
     $result = $Conf->qe("select paperId, title, topicName from Paper join PaperTopic using (paperId) join TopicArea using (topicId) where " . paperselPredicate($papersel) . " order by paperId", "while fetching topics");
 
     // compose scores
@@ -348,7 +348,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && 
     $mt = $_REQUEST["marktype"];
     $mpc = defval($_REQUEST["markpc"], "");
     $pc = new Contact();
-    if (!$Me->amAssistant())
+    if (!$Me->privChair)
 	$Conf->errorMsg("Only the PC chairs can set conflicts and/or assignments.");
     else if ($mt == "xauto")
 	$Me->go("${ConfSiteBase}autoassign.php?pap=" . join($papersel, "+"));
@@ -473,7 +473,7 @@ echo "
   <td><select name='qt'>";
 $qtOpt = array("ti" => "Title only",
 	      "ab" => "Abstract only");
-if ($Me->amAssistant() || $Conf->blindSubmission() == 0) {
+if ($Me->privChair || $Conf->blindSubmission() == 0) {
     $qtOpt["au"] = "Authors only";
     $qtOpt["n"] = "Title, abstract, authors";
 } else if ($Conf->blindSubmission() == 1) {
@@ -481,7 +481,7 @@ if ($Me->amAssistant() || $Conf->blindSubmission() == 0) {
     $qtOpt["n"] = "Title, abstract, non-blind authors";
 } else
     $qtOpt["n"] = "Title, abstract";
-if ($Me->amAssistant())
+if ($Me->privChair)
     $qtOpt["ac"] = "Authors, collaborators";
 if ($Me->canViewAllReviewerIdentities($Conf))
     $qtOpt["re"] = "Reviewers";

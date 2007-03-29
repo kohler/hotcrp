@@ -10,7 +10,7 @@ $newProfile = false;
 $Error = array();
 
 
-if (!$Me->amAssistant())
+if (!$Me->privChair)
     $Acct = $Me;		// always this contact
 else if (isset($_REQUEST["new"])) {
     $Acct = new Contact();
@@ -68,14 +68,19 @@ if (isset($_REQUEST['register']) && $OK) {
 	    }
 	}
 
-	if ($Me->amAssistant() && $Me->contactId != $Acct->contactId) {
+	if ($Me->privChair && $Me->contactId != $Acct->contactId) {
 	    // initialize roles too
-	    if (isset($_REQUEST["ass"]) || isset($_REQUEST["chair"]))
+	    if (isset($_REQUEST["chair"]))
 		$_REQUEST["pc"] = 1;
 	    $while = "while initializing roles";
 	    $changed = false;
 	    foreach (array("pc" => "PCMember", "ass" => "ChairAssistant", "chair" => "Chair") as $k => $table) {
-		$now = ($k == "pc" ? $Acct->isPC : ($k == "ass" ? $Acct->isAssistant : $Acct->isChair));
+		if ($k == "pc")
+		    $now = ($Acct->roles & Contact::ROLE_PC) != 0;
+		else if ($k == "ass")
+		    $now = ($Acct->roles & Contact::ROLE_ASSISTANT) != 0;
+		else
+		    $now = ($Acct->roles & Contact::ROLE_CHAIR) != 0;
 		if ($now && !isset($_REQUEST[$k])) {
 		    $Conf->qe("delete from $table where contactId=$Acct->contactId", $while);
 		    $Conf->log("Removed as $table by $Me->email", $Acct);
@@ -162,9 +167,9 @@ function capclass($what) {
 }
 
 if (!$newProfile) {
-    $_REQUEST["pc"] = $Acct->isPC;
-    $_REQUEST["ass"] = $Acct->isAssistant;
-    $_REQUEST["chair"] = $Acct->isChair;
+    $_REQUEST["pc"] = ($Acct->roles & Contact::ROLE_PC) != 0;
+    $_REQUEST["ass"] = ($Acct->roles & Contact::ROLE_ASSISTANT) != 0;
+    $_REQUEST["chair"] = ($Acct->roles & Contact::ROLE_CHAIR) != 0;
 }
 
 
@@ -245,11 +250,11 @@ if ($Acct->isPC || $newProfile)
     echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div><strong>Program committee information</strong></td></tr>\n";
 
 
-if ($newProfile || $Acct->contactId != $Me->contactId || $Me->amAssistant()) {
+if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     echo "<tr>
   <td class='caption'>Roles</td>
   <td class='entry'>\n";
-    foreach (array("pc" => "PC&nbsp;member", "ass" => "Chair's&nbsp;assistant", "chair" => "PC&nbsp;chair") as $key => $value) {
+    foreach (array("pc" => "PC&nbsp;member", "chair" => "PC&nbsp;chair", "ass" => "System&nbsp;administrator", "chair" => "PC&nbsp;chair") as $key => $value) {
 	echo "    <input type='checkbox' name='$key' id='$key' value='1' ";
 	if (defval($_REQUEST["$key"]))
 	    echo "checked='checked' ";
@@ -257,6 +262,7 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->amAssistant()) {
 	    echo "disabled='disabled' ";
 	echo "onclick='doRole(this)' />&nbsp;", $value, "&nbsp;&nbsp;\n";
     }
+    echo "<div class='hint'>PC chairs and system administrators have full privilege over all operations of the site.  Administrators need not be members of the PC.</div>\n";
     echo "  </td>\n</tr>\n\n";
 }
 

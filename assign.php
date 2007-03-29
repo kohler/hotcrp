@@ -51,7 +51,7 @@ function findRrow($contactId) {
 
 
 // forceShow
-if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->amAssistant())
+if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->privChair)
     $forceShow = "&amp;forceShow=1";
 else
     $forceShow = "";
@@ -88,7 +88,7 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
 	return $Conf->errorMsg("Weird!  Retracted review is for a different paper.");
     else if ($row->reviewModified > 0)
 	return $Conf->errorMsg("You can't retract that review request since the reviewer has already started their review.");
-    else if (!$Me->amAssistant() && $Me->contactId != $row->requestedBy)
+    else if (!$Me->privChair && $Me->contactId != $row->requestedBy)
 	return $Conf->errorMsg("You can't retract that review request since you didn't make the request in the first place.");
 
     // at this point, success; remove the review request
@@ -163,7 +163,7 @@ function _setLeadOrShepherd($type) {
     }
 }
 
-if (isset($_REQUEST['update']) && $Me->amAssistant()) {
+if (isset($_REQUEST['update']) && $Me->privChair) {
     pcAssignments();
     $Conf->qe("unlock tables");
     if (isset($_REQUEST["lead"]))
@@ -198,11 +198,11 @@ function requestReviewChecks($themHtml, $reqId) {
 	$row = edb_row($result);
 	if ($row[1] == "<conflict>")
 	    return $Conf->errorMsg("$themHtml has a conflict registered with paper #$prow->paperId and cannot be asked to review it.");
-	else if ($Me->amAssistantOverride()) {
+	else if ($Me->privChairOverride()) {
 	    $Conf->infoMsg("Overriding previous refusal to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was \"" . htmlspecialchars($row[1]) . "\".)" : ""));
 	    $Conf->qe("delete from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
 	} else
-	    return $Conf->errorMsg("$themHtml refused a previous request to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was \"" . htmlspecialchars($row[1]) . "\".)" : "") . ($Me->amAssistant() ? "  As PC Chair, you can override this refusal with the \"Override...\" checkbox." : ""));
+	    return $Conf->errorMsg("$themHtml refused a previous request to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was \"" . htmlspecialchars($row[1]) . "\".)" : "") . ($Me->privChair ? "  As an administrator, you can override this refusal with the \"Override...\" checkbox." : ""));
     }
 
     return true;
@@ -326,7 +326,7 @@ if (isset($_REQUEST['add'])) {
 	     || $email == "Email")
 	$Conf->errorMsg("An email address is required to request a review.");
     else {
-	if ($Conf->setting("extrev_chairreq") && !$Me->amAssistant())
+	if ($Conf->setting("extrev_chairreq") && !$Me->privChair)
 	    $ok = proposeReview($_REQUEST["name"], $email);
 	else
 	    $ok = requestReview($email);
@@ -341,7 +341,7 @@ if (isset($_REQUEST['add'])) {
 
 
 // deny review request
-if (isset($_REQUEST['deny']) && $Me->amAssistant()
+if (isset($_REQUEST['deny']) && $Me->privChair
     && ($email = vtrim($_REQUEST['email']))) {
     $Conf->qe("lock tables ReviewRequest write, ContactInfo read, PaperReviewRefused write");
     $while = "while denying review request";
@@ -378,7 +378,7 @@ if (isset($_REQUEST['deny']) && $Me->amAssistant()
 
 
 // add primary or secondary reviewer
-if (isset($_REQUEST['addpc']) && $Me->amAssistant()) {
+if (isset($_REQUEST['addpc']) && $Me->privChair) {
     if (($pcid = cvtint($_REQUEST['pcid'])) <= 0)
 	$Conf->errorMsg("Enter a PC member.");
     else if (($pctype = cvtint($_REQUEST['pctype'])) == REVIEW_PRIMARY
@@ -393,7 +393,7 @@ confHeader();
 
 
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, true);
-$paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->amAssistant(), "assign");
+$paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->privChair, "assign");
 
 
 // begin form and table
@@ -416,20 +416,20 @@ echo "</td>\n</tr>\n\n";
 
 // paper body
 $paperTable->echoPaperRow($prow, PaperTable::STATUS_CONFLICTINFO);
-if ($canViewAuthors || $Me->amAssistant()) {
+if ($canViewAuthors || $Me->privChair) {
     $paperTable->echoAuthorInformation($prow);
     $paperTable->echoContactAuthor($prow);
 }
 $paperTable->echoAbstractRow($prow);
 $paperTable->echoTopics($prow);
-$paperTable->echoOptions($prow, $Me->amAssistant());
+$paperTable->echoOptions($prow, $Me->privChair);
 $paperTable->echoTags($prow);
-if ($canViewAuthors || $Me->amAssistant())
+if ($canViewAuthors || $Me->privChair)
     $paperTable->echoCollaborators($prow);
 
 
 // PC assignments
-if ($Me->amAssistant()) {
+if ($Me->privChair) {
     $result = $Conf->qe("select ContactInfo.contactId, firstName, lastName,
 	PaperConflict.conflictType,
 	PaperReview.reviewType,	preference,
@@ -507,9 +507,9 @@ function _pcSelector($name, $current) {
     echo "</select>";
 }
 
-if ($Me->amAssistant() || ($Me->isPC && $prow->leadContactId && isset($PC[$prow->leadContactId]))) {
+if ($Me->privChair || ($Me->isPC && $prow->leadContactId && isset($PC[$prow->leadContactId]))) {
     echo "<tr><td class='caption'>Discussion lead</td><td class='entry'>";
-    if ($Me->amAssistant())
+    if ($Me->privChair)
 	_pcSelector("lead", $prow->leadContactId);
     else
 	echo contactHtml($PC[$prow->leadContactId]->firstName,
@@ -519,10 +519,10 @@ if ($Me->amAssistant() || ($Me->isPC && $prow->leadContactId && isset($PC[$prow-
 
 
 // shepherd
-if (($prow->outcome > 0 && $Me->amAssistant())
+if (($prow->outcome > 0 && $Me->privChair)
     || ($Me->isPC && $prow->shepherdContactId && isset($PC[$prow->shepherdContactId]))) {
     echo "<tr><td class='caption'>Shepherd</td><td class='entry'>";
-    if ($Me->amAssistant())
+    if ($Me->privChair)
 	_pcSelector("shepherd", $prow->shepherdContactId);
     else
 	echo contactHtml($PC[$prow->shepherdContactId]->firstName,
@@ -532,7 +532,7 @@ if (($prow->outcome > 0 && $Me->amAssistant())
 
 
 // "Save assignments" button
-if ($Me->amAssistant())
+if ($Me->privChair)
     echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='button_small' name='update' value='Save assignments' />
     <span id='assresult' style='padding-left:1em'></span>
 </td></tr>\n";
@@ -562,7 +562,7 @@ echo "\" onfocus=\"tempText(this, 'Name', 1)\" onblur=\"tempText(this, 'Name', 0
 echo (isset($_REQUEST['email']) ? htmlspecialchars($_REQUEST['email']) : "Email");
 echo "\" onfocus=\"tempText(this, 'Email', 1)\" onblur=\"tempText(this, 'Email', 0)\" />
       </td><td><input class='button_small' type='submit' name='add' value='Request an external review' />";
-if ($Me->amAssistant())
+if ($Me->privChair)
     echo "<br />\n	<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines and any previous refusal";
 echo "\n    </td></tr>\n";
 
@@ -570,7 +570,7 @@ echo "    </table></td>\n</tr>\n\n";
 
 
 // outstanding requests
-if ($Conf->setting("extrev_chairreq") && $Me->amAssistant()) {
+if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
     $result = $Conf->qe("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=$prow->paperId", "while finding outstanding requests");
     if (edb_nrows($result) > 0) {
 	echo "<tr class='rev_reviewers'>\n  <td class='caption'>Proposed reviewers</td>\n  <td class='entry'><table class='reviewers'>\n";

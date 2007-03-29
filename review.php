@@ -10,7 +10,7 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $rf = reviewForm();
 $useRequest = isset($_REQUEST["afterLogin"]);
-$forceShow = (defval($_REQUEST["forceShow"]) && $Me->amAssistant() ? "&amp;forceShow=1" : "");
+$forceShow = (defval($_REQUEST["forceShow"]) && $Me->privChair ? "&amp;forceShow=1" : "");
 
 
 // header
@@ -106,7 +106,7 @@ if (isset($_REQUEST['update']) || isset($_REQUEST['submit']) || isset($_REQUEST[
 
 
 // unsubmit review action
-if (isset($_REQUEST['unsubmit']) && $Me->amAssistant())
+if (isset($_REQUEST['unsubmit']) && $Me->privChair)
     if (!$editRrow || $editRrow->reviewSubmitted <= 0)
 	$Conf->errorMsg("This review has not been submitted.");
     else {
@@ -120,7 +120,7 @@ if (isset($_REQUEST['unsubmit']) && $Me->amAssistant())
 
 
 // delete review action
-if (isset($_REQUEST['delete']) && $Me->amAssistant())
+if (isset($_REQUEST['delete']) && $Me->privChair)
     if (!$editRrow)
 	$Conf->errorMsg("No review to delete.");
     else {
@@ -215,7 +215,7 @@ function refuseReview() {
 }
 
 if (isset($_REQUEST['refuse'])) {
-    if (!$rrow || ($rrow->contactId != $Me->contactId && !$Me->amAssistant()))
+    if (!$rrow || ($rrow->contactId != $Me->contactId && !$Me->privChair))
 	$Conf->errorMsg("This review was not assigned to you, so you cannot refuse it.");
     else if ($rrow->reviewType >= REVIEW_SECONDARY)
 	$Conf->errorMsg("PC members cannot refuse reviews that were explicitly assigned to them.  Contact the PC chairs directly if you really cannot finish this review.");
@@ -229,7 +229,7 @@ if (isset($_REQUEST['refuse'])) {
 }
 
 if (isset($_REQUEST['delegate'])) {
-    if (!$rrow || ($rrow->contactId != $Me->contactId && !$Me->amAssistant()))
+    if (!$rrow || ($rrow->contactId != $Me->contactId && !$Me->privChair))
 	$Conf->errorMsg("This review was not assigned to you, so you cannot delegate it.");
     else if ($rrow->reviewType != REVIEW_SECONDARY)
 	$Conf->errorMsg("Only secondary reviewers can delegate their reviews to others.");
@@ -247,7 +247,7 @@ if (isset($_REQUEST['delegate'])) {
 // set outcome action
 if (isset($_REQUEST['setoutcome'])) {
     if (!$Me->canSetOutcome($prow))
-	$Conf->errorMsg("You cannot set the decision for paper #$prow->paperId." . ($Me->amAssistant() ? "  (<a href='" . selfHref(array("forceShow" => 1)) . "'>Override conflict</a>)" : ""));
+	$Conf->errorMsg("You cannot set the decision for paper #$prow->paperId." . ($Me->privChair ? "  (<a href='" . selfHref(array("forceShow" => 1)) . "'>Override conflict</a>)" : ""));
     else {
 	$o = cvtint(trim($_REQUEST['outcome']));
 	$rf = reviewForm();
@@ -264,12 +264,12 @@ if (isset($_REQUEST['setoutcome'])) {
 
 // set tags action
 if (isset($_REQUEST["settags"])) {
-    if ($Me->isPC && ($prow->conflictType == 0 || ($Me->amAssistant() && $forceShow))) {
+    if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow))) {
 	require_once("Code/tags.inc");
-	setTags($prow->paperId, defval($_REQUEST["tags"], ""), 'p', $Me->amAssistant());
+	setTags($prow->paperId, defval($_REQUEST["tags"], ""), 'p', $Me->privChair);
 	loadRows();
     } else
-	$Conf->errorMsg("You cannot set tags for paper #$prow->paperId." . ($Me->amAssistant() ? "  (<a href='" . selfHref(array("forceShow" => 1)) . "'>Override conflict</a>)" : ""));
+	$Conf->errorMsg("You cannot set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href='" . selfHref(array("forceShow" => 1)) . "'>Override conflict</a>)" : ""));
 }
 
 
@@ -279,7 +279,7 @@ confHeader();
 
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, $forceShow);
-$authorsFolded = (!$canViewAuthors && $Me->amAssistant() && $prow->blind ? 1 : 2);
+$authorsFolded = (!$canViewAuthors && $Me->privChair && $prow->blind ? 1 : 2);
 $paperTable = new PaperTable(false, false, true, $authorsFolded);
 
 
@@ -303,20 +303,20 @@ $editAny = $Me->canReview($prow, null, $Conf, $whyNotEdit);
 
 // paper data
 $paperTable->echoPaperRow($prow, PaperTable::STATUS_CONFLICTINFO_PC);
-if ($canViewAuthors || $Me->amAssistant()) {
+if ($canViewAuthors || $Me->privChair) {
     $paperTable->echoAuthorInformation($prow);
     $paperTable->echoContactAuthor($prow);
 }
 $paperTable->echoAbstractRow($prow);
 $paperTable->echoTopics($prow);
-$paperTable->echoOptions($prow, $Me->amAssistant());
-if ($Me->isPC && ($prow->conflictType == 0 || ($Me->amAssistant() && $forceShow)))
+$paperTable->echoOptions($prow, $Me->privChair);
+if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow)))
     $paperTable->echoTags($prow, "${ConfSiteBase}review.php?paperId=$prow->paperId");
-if ($Me->amAssistant())
+if ($Me->privChair)
     $paperTable->echoPCConflicts($prow);
-if ($canViewAuthors || $Me->amAssistant())
+if ($canViewAuthors || $Me->privChair)
     $paperTable->echoCollaborators($prow);
-if ($Me->isPC && ($prow->conflictType == 0 || ($Me->amAssistant() && $forceShow)))
+if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow)))
     $paperTable->echoLead($prow);
 if ($viewAny)
     $paperTable->echoShepherd($prow);
@@ -325,7 +325,7 @@ if ($viewAny)
 // can we see any reviews?
 if (!$viewAny && !$editAny)
     errorMsgExit("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
-if ($Me->amAssistant() && $prow->conflictType > 0 && !$Me->canViewReview($prow, null, $Conf, $fakeWhyNotView, true))
+if ($Me->privChair && $prow->conflictType > 0 && !$Me->canViewReview($prow, null, $Conf, $fakeWhyNotView, true))
     $Conf->infoMsg("You have explicitly overridden your conflict and are able to view and edit reviews for this paper.");
 
 
@@ -335,7 +335,7 @@ if (defval($_REQUEST["mode"]) == "edit")
 else if (defval($_REQUEST["mode"]) == "view")
     $mode = "view";
 else if ($rrow && ($Me->canReview($prow, $rrow, $Conf)
-		   || ($Me->amAssistant() && ($prow->conflictType == 0 || $forceShow))))
+		   || ($Me->privChair && ($prow->conflictType == 0 || $forceShow))))
     $mode = "edit";
 else if (!$rrow && (($prow->reviewType > 0 && $prow->reviewSubmitted <= 0)
 		    || ($Me->isPC && !$viewAny)))
@@ -476,7 +476,7 @@ function reviewView($prow, $rrow, $editMode) {
   <td class='caption'></td>
   <td class='entry' colspan='2'>";
 	if ($rrow && $rrow->contactId != $Me->contactId)
-	    $Conf->infoMsg("You didn't write this review, but you can still make changes as PC Chair.");
+	    $Conf->infoMsg("You didn't write this review, but as an administrator you can still make changes.");
 	echo "<input class='button_small' type='submit' value='Download", ($editMode ? " form" : ""), "' name='downloadForm' id='downloadForm' />";
 	echo "<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp; <input class='button_small' type='submit' value='Upload form' name='uploadForm' />";
 	echo "</td>\n</tr>\n";
@@ -498,7 +498,7 @@ function reviewView($prow, $rrow, $editMode) {
 	echo $rf->webFormRows($rrow, $useRequest);
 
 	// review actions
-	if ($Me->timeReview($prow, $Conf) || $Me->amAssistant()) {
+	if ($Me->timeReview($prow, $Conf) || $Me->privChair) {
 	    echo "<tr class='rev_actions'>
   <td class='caption'></td>
   <td class='entry'><div class='smgap'></div><table class='pt_buttons'>\n";
@@ -508,10 +508,10 @@ function reviewView($prow, $rrow, $editMode) {
 		$buttons[] = array("<input class='button' type='submit' value='Submit' name='submit' />", "(cannot undo)");
 	    } else {
 		$buttons[] = "<input class='button' type='submit' value='Resubmit' name='submit' />";
-		if ($Me->amAssistant())
+		if ($Me->privChair)
 		    $buttons[] = array("<input class='button' type='submit' value='Unsubmit' name='unsubmit' />", "(PC chair only)");
 	    }
-	    if ($rrow && $Me->amAssistant())
+	    if ($rrow && $Me->privChair)
 		$buttons[] = array("<div id='folddel' class='foldc' style='position: relative'><button type='button' onclick=\"fold('del', 0)\">Delete review</button><div class='popupdialog extension'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><input class='button' type='submit' name='delete' value='Delete review' /> <button type='button' onclick=\"fold('del', 1)\">Cancel</button></div></div>", "(PC chair only)");
 
 	    echo "    <tr>\n";
@@ -525,7 +525,7 @@ function reviewView($prow, $rrow, $editMode) {
 		echo "      <td class='ptb_explain'>", $x, "</td>\n";
 	    }
 	    echo "    </tr>\n";
-	    if ($Me->amAssistant())
+	    if ($Me->privChair)
 		echo "      <tr><td colspan='" . count($buttons) . "'><input type='checkbox' name='override' value='1' />&nbsp;Override deadlines</td></tr>\n";
 	    echo "  </table></td>\n</tr>\n\n";
 	}

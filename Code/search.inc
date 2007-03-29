@@ -46,7 +46,7 @@ class PaperSearch {
     const ANY_OPTIONS = 262144;
     
     var $contactId;
-    var $amAssistant;
+    var $privChair;
     var $amPC;
     var $limitName;
     var $allowReviewer;
@@ -67,22 +67,22 @@ class PaperSearch {
     function PaperSearch($me, $opt) {
 	global $Conf;
 
-	$this->amAssistant = $me->amAssistant();
+	$this->privChair = $me->privChair;
 	$this->amPC = $me->isPC;
 	$this->allowReviewer = $me->canViewAllReviewerIdentities($Conf);
 	$this->allowNumReview = $me->canViewNumReviews($Conf);
-	$this->allowAuthor = ($this->amPC && ($Conf->blindSubmission() <= 1 || $me->amAssistant()));
+	$this->allowAuthor = ($this->amPC && ($Conf->blindSubmission() <= 1 || $me->privChair));
 	$this->orderTag = false;
 	$this->reviewerName = false;
 	$this->any = 0;
 	$this->contactId = $me->contactId;
 	$this->warnings = null;
-	if ($this->amAssistant && cvtint($opt["c"]) > 0)
+	if ($this->privChair && cvtint($opt["c"]) > 0)
 	    $this->contactId = cvtint($opt["c"]);
 
 	// paper selection
 	$ptype = defval($opt["t"], 0);
-	if ($this->amAssistant && !$ptype && $Conf->timeUpdatePaper())
+	if ($this->privChair && !$ptype && $Conf->timeUpdatePaper())
 	    $this->limitName = "all";
 	else if ($me->isPC && (!$ptype || $ptype == "all")
 		 && $Conf->setting("pc_seeall") > 0)
@@ -91,7 +91,7 @@ class PaperSearch {
 	    $this->limitName = "s";
 	else if ($me->isPC && $ptype == "revs")
 	    $this->limitName = "revs";
-	else if ($this->amAssistant && $ptype == "all")
+	else if ($this->privChair && $ptype == "all")
 	    $this->limitName = "all";
 	else if ($me->amReviewer() && (!$ptype || $ptype == "r"))
 	    $this->limitName = "r";
@@ -113,7 +113,7 @@ class PaperSearch {
 	    $this->fields["ab"] = 1;
 	if ($this->allowAuthor && ($qtype == "n" || $qtype == "au" || $qtype == "ac"))
 	    $this->fields["au"] = 1;
-	if ($this->amAssistant && $qtype == "ac")
+	if ($this->privChair && $qtype == "ac")
 	    $this->fields["co"] = 1;
 	if ($this->allowReviewer && $qtype == "re")
 	    $this->fields["re"] = 1;
@@ -169,7 +169,7 @@ class PaperSearch {
 	else {
 	    $this->any |= self::ANY_REVIEWER * $anyfac;
 	    $and = "";
-	    if (!$this->amAssistant) {
+	    if (!$this->privChair) {
 		$this->any |= self::ANY_CONFLICT;
 		$and = " and conflictType is null";
 	    }
@@ -200,7 +200,7 @@ class PaperSearch {
 
 	// construct query portion
 	$re = "";
-	$auextra = ($this->amAssistant ? "" : "blind=0 and ");
+	$auextra = ($this->privChair ? "" : "blind=0 and ");
 	$qjoin = ($type == "all" ? " and " : " or ");
 	$qpapers = "";
 	while (($str = ltrim($str)) != "") {
@@ -240,7 +240,7 @@ class PaperSearch {
 		$qp .= " or (abstract like '%$word%')";
 	    if (($special ? $special == "au" : isset($this->fields['au'])) && $this->allowAuthor)
 		$qp .= " or (${auextra}authorInformation like '%$word%')";
-	    if (($special ? $special == "co" : isset($this->fields['co'])) && $this->amAssistant)
+	    if (($special ? $special == "co" : isset($this->fields['co'])) && $this->privChair)
 		$qp .= " or (${auextra}Paper.collaborators like '%$word%')";
 	    if ($special ? $special == "re" : isset($this->fields['re']))
 		$qp .= $this->_searchReviewer($word, $type, false);
@@ -260,7 +260,7 @@ class PaperSearch {
 		if ($special ? $special == "order" : isset($this->fields['order']))
 		    $this->orderTag = ($this->orderTag === false ? $word : null);
 		$confpart = "";
-		if (!$this->amAssistant) {
+		if (!$this->privChair) {
 		    $confpart = " and conflictType is null";
 		    $this->any |= self::ANY_CONFLICT;
 		}
@@ -280,7 +280,7 @@ class PaperSearch {
 	    }
 	    if (($special ? $special == "decision" : isset($this->fields['decision'])) && $this->amPC) {
 		$confpart = "";
-		//if (!$this->amAssistant && !$Conf->timeAuthorViewDecision())
+		//if (!$this->privChair && !$Conf->timeAuthorViewDecision())
 		//    $confpart = " and conflictType=0";
 		if (strcasecmp($word, "yes") == 0)
 		    $qp .= " or (outcome>0$confpart)";
@@ -478,7 +478,7 @@ class PaperSearch {
 	    $queryOptions["author"] = 1;
 	else if ($this->limitName == "req")
 	    $queryOptions["myReviewRequests"] = 1;
-	else if ($this->limitName == "all" && !$this->amAssistant)
+	else if ($this->limitName == "all" && !$this->privChair)
 	    $queryOptions["active"] = 1;
 	return false;
     }

@@ -24,7 +24,7 @@ Each time is specified in the timezone of the server
 for this conference, which is shown at the top
 of each page in the conference review system.";
 
-if ($Me->amAssistant())
+if ($Me->privChair)
     echo " As PC chair, you can also <a href='settings.php'>change the deadlines</a>.";
 
 echo "</p>

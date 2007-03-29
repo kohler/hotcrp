@@ -170,12 +170,12 @@ class ContactList {
 	    $t = contactHtml($row->firstName, $row->lastName);
 	    if (trim($t) == "")
 		$t = "[none]";
-	    if ($this->contact->amAssistant())
+	    if ($this->contact->privChair)
 		$t = "<a href='${ConfSiteBase}account.php?contact=$row->contactId'>$t</a>";
 	    if ($row->chair)
 		$t .= " <span class='pcrole'>(Chair)</span>";
 	    else if ($row->assistant)
-		$t .= " <span class='pcrole'>(Chair's assistant)</span>";
+		$t .= " <span class='pcrole'>(Administrator)</span>";
 	    else if ($row->pc && $this->limit != "pc")
 		$t .= " <span class='pcrole'>(PC)</span>";
 	    return $t;
@@ -252,7 +252,8 @@ class ContactList {
     function listFields($listname) {
 	switch ($listname) {
 	  case "pc":
-	    return array("pc", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS);
+	  case "admin":
+	    return array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS);
 	  case "re":
 	    return array("re", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS);
 	  case "ext":
@@ -352,6 +353,9 @@ class ContactList {
 	    $pq .= "\tjoin Paper on (Paper.paperId=PaperConflict.paperId and Paper.timeSubmitted<=0)\n";
 	if ($this->limit == "all")
 	    $pq .= "\tleft join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.conflictType=" . CONFLICT_AUTHOR . ")\n";
+
+	if ($this->limit == "admin")
+	    $pq .= "\twhere Chair.contactId is not null or ChairAssistant.contactId is not null\n";
 	
 	$pq .= "	group by ContactInfo.contactId
 	order by lastName, firstName, email";
@@ -460,7 +464,7 @@ class ContactList {
 
 	$x .= $body;
 
-	if ($extrainfo || ($this->limit == "pc" && $this->contact->amAssistant())) {
+	if ($extrainfo || ($this->limit == "pc" && $this->contact->privChair)) {
 	    $x .= "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
 	    $x .= "  <tr class='pl_footrow'>\n    <td colspan='$ncol'>";
 	    if ($extrainfo)

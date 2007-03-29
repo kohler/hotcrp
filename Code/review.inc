@@ -236,8 +236,8 @@ class ReviewForm {
 	$while = "while storing review";
 
 	if (!$Me->timeReview($prow, $conf)
-	    && (!isset($req['override']) || !$Me->amAssistant()))
-	    return $conf->errorMsg("The <a href='${ConfSiteBase}deadlines.php'>deadline</a> for entering this review has passed." . ($Me->amAssistant() ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
+	    && (!isset($req['override']) || !$Me->privChair))
+	    return $conf->errorMsg("The <a href='${ConfSiteBase}deadlines.php'>deadline</a> for entering this review has passed." . ($Me->privChair ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
 	
 	$q = "";
 	foreach ($this->fieldOrder as $field)

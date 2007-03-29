@@ -41,7 +41,7 @@ getProw($Me->contactId);
 
 // check permissions
 $notAuthor = !$Me->amPaperAuthor($paperId, $Conf);
-if ($notAuthor && !$Me->amAssistant())
+if ($notAuthor && !$Me->privChair)
     errorMsgExit("You are not an author of paper #$paperId.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
 
 function pt_data_html($what, $row) {
@@ -77,7 +77,7 @@ else if (isset($_REQUEST["update"])) {
 	    $Conf->confirmMsg("Contact author added.");
     }
 } else if (isset($_REQUEST["remove"])) {
-    if (!$Me->amAssistant())
+    if (!$Me->privChair)
 	$Conf->errorMsg("Only the PC chair can remove contact authors from a paper.");
     else if (($id = cvtint($_REQUEST['remove'])) <= 0)
 	$Conf->errorMsg("Invalid contact author ID in request.");
@@ -86,7 +86,7 @@ else if (isset($_REQUEST["update"])) {
 	    $Conf->confirmMsg("Contact author removed.");
     }
 } else
-    $Conf->infoMsg("Use this screen to add more contact authors for your paper.  Any contact author can edit paper information, upload new versions, submit the paper, and view reviews." . ($Me->amAssistant() ? "" : "  Only the PC chair can <i>remove</i> contact authors from the paper, so act carefully."));
+    $Conf->infoMsg("Use this screen to add more contact authors for your paper.  Any contact author can edit paper information, upload new versions, submit the paper, and view reviews." . ($Me->privChair ? "" : "  Only the PC chair can <i>remove</i> contact authors from the paper, so act carefully."));
     
 
 
@@ -123,7 +123,7 @@ if ($OK) {
     $result = $Conf->qe($q, "while finding contact authors");
     while ($row = edb_row($result)) {
 	echo "<tr><td class='pad'>", contactHtml($row[0], $row[1]), "</td> <td class='pad'>", htmlspecialchars($row[2]), "</td>";
-	if ($Me->amAssistant())
+	if ($Me->privChair)
 	    echo " <td class='pad'><button class='button_small' type='submit' name='remove' value='$row[3]'>Remove contact author</button></td>";
 	echo "</tr>\n    ";
     }

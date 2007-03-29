@@ -171,7 +171,7 @@ if (isset($_REQUEST['submit']) && defval($_REQUEST['response'])) {
 
 
 // forceShow
-if (defval($_REQUEST['forceShow']) && $Me->amAssistant())
+if (defval($_REQUEST['forceShow']) && $Me->privChair)
     $forceShow = "&amp;forceShow=1";
 else
     $forceShow = "";
@@ -183,7 +183,7 @@ confHeader();
 
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, $forceShow);
-$paperTable = new PaperTable(false, false, true, ($Me->amAssistant() && $prow->blind ? 1 : 2));
+$paperTable = new PaperTable(false, false, true, ($Me->privChair && $prow->blind ? 1 : 2));
 
 
 // begin table
@@ -201,17 +201,17 @@ echo "</h2></td>\n</tr>\n\n";
 
 // paper body
 $paperTable->echoPaperRow($prow, PaperTable::STATUS_CONFLICTINFO_PC);
-if ($canViewAuthors || $Me->amAssistant()) {
+if ($canViewAuthors || $Me->privChair) {
     $paperTable->echoAuthorInformation($prow);
     $paperTable->echoContactAuthor($prow);
     $paperTable->echoCollaborators($prow);
 }
 $paperTable->echoAbstractRow($prow);
 $paperTable->echoTopics($prow);
-$paperTable->echoOptions($prow, $Me->amAssistant());
-if ($Me->isPC && ($prow->conflictType == 0 || ($Me->amAssistant() && $forceShow)))
+$paperTable->echoOptions($prow, $Me->privChair);
+if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow)))
     $paperTable->echoTags($prow);
-if ($Me->amAssistant())
+if ($Me->privChair)
     $paperTable->echoPCConflicts($prow);
 if ($crow)
     echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><a href='comment.php?paperId=$prow->paperId'>All comments</a></td>\n</tr>\n\n";
@@ -223,7 +223,7 @@ echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></
 // exit on certain errors
 if (!$Me->canViewComment($prow, $crow, $Conf, $whyNot))
     errorMsgExit(whyNotText($whyNot, "comment"));
-if ($Me->amAssistant() && $prow->conflictType > 0 && !$Me->canViewComment($prow, $crow, $Conf, $fakeWhyNot, true))
+if ($Me->privChair && $prow->conflictType > 0 && !$Me->canViewComment($prow, $crow, $Conf, $fakeWhyNot, true))
     $Conf->infoMsg("You have explicitly overridden your conflict and are able to view and edit comments for this paper.");
 
 echo "</table>";
@@ -286,7 +286,7 @@ function commentView($prow, $crow, $editMode) {
 	else if ($crow->forAuthors)
 	    echo " + authors";
     }
-    if ($crow && ($crow->contactId == $Me->contactId || $Me->amAssistant()) && !$editMode)
+    if ($crow && ($crow->contactId == $Me->contactId || $Me->privChair) && !$editMode)
 	echo " &nbsp;|&nbsp; <a href='comment.php?commentId=$crow->commentId'>Edit</a>";
     echo "</td>\n</tr>\n\n";
 
@@ -294,7 +294,7 @@ function commentView($prow, $crow, $editMode) {
 	echo "<tr class='rev_rev'>
   <td class='caption'></td>
   <td class='entry'>";
-	$Conf->infoMsg("You didn't write this comment, but you can still make changes as PC Chair.");
+	$Conf->infoMsg("You didn't write this comment, but as an administrator you can still make changes.");
 	echo "</td>\n</tr>\n\n";
     }
 
@@ -388,7 +388,7 @@ function responseView($prow, $crow, $editMode) {
 	echo $sep, $Conf->printableTime($crow->timeModified);
 	$sep = " &nbsp;|&nbsp; ";
     }
-    if ($crow && ($prow->conflictType == CONFLICT_AUTHOR || $Me->amAssistant()) && !$editMode && $Me->canRespond($prow, $crow, $Conf))
+    if ($crow && ($prow->conflictType == CONFLICT_AUTHOR || $Me->privChair) && !$editMode && $Me->canRespond($prow, $crow, $Conf))
 	echo $sep, "<a href='comment.php?commentId=$crow->commentId'>Edit</a>";
     echo "</td>\n</tr>\n\n";
 
@@ -406,7 +406,7 @@ will consider it when making their decision.  Don't try to
 augment the paper's content or form&mdash;the conference deadline
 has passed.  Please keep the response short and to the point" . $limittext . ".");
 	if ($prow->conflictType != CONFLICT_AUTHOR)
-	    $Conf->infoMsg("Although you aren't a contact author for this paper, you can edit the authors' response as PC Chair.");
+	    $Conf->infoMsg("Although you aren't a contact author for this paper, as an administrator you can edit the authors' response.");
 	
 	echo "<textarea name='comment' rows='10' cols='80'>";
 	if ($crow)
@@ -450,7 +450,7 @@ else {
     if ($Me->canComment($prow, null, $Conf))
 	commentView($prow, null, true);
     if (!$sawResponse && $Conf->timeAuthorRespond()
-	&& ($prow->conflictType == CONFLICT_AUTHOR || $Me->amAssistant()))
+	&& ($prow->conflictType == CONFLICT_AUTHOR || $Me->privChair))
 	responseView($prow, null, true);
     if (!$anyComment && !$sawResponse) {
 	echo "<table class='comment'><tr class='id'><td></td></tr></table>\n";

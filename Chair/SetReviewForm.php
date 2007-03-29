@@ -279,7 +279,7 @@ if (!isset($Me)) {
     require_once('../Code/header.inc');
     $Me = $_SESSION["Me"];
     $Me->goIfInvalid();
-    $Me->goIfNotAssistant('../');
+    $Me->goIfNotPrivChair('../');
     $Conf->header("Edit Review Form");
     $rf = reviewForm();
     rf_update(true);

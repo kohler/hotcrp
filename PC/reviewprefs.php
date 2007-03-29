@@ -10,7 +10,7 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPC('../index.php');
 $reviewer = cvtint($_REQUEST["reviewer"]);
-if ($reviewer <= 0 || !$Me->amAssistant())
+if ($reviewer <= 0 || !$Me->privChair)
     $reviewer = $Me->contactId;
 
 $Conf->header("Review Preferences", "revpref", actionBar());
@@ -98,7 +98,7 @@ show abstracts and other information.  Access a paper page by clicking
 the paper title.</p>");
 
 
-if ($Me->amAssistant()) {
+if ($Me->privChair) {
     echo "<form method='get' action='reviewprefs.php' name='selectReviewer'>
   <b>Showing preferences for:&nbsp;</b>
   <select name='reviewer' onchange='document.selectReviewer.submit()'>\n";
@@ -130,7 +130,7 @@ unset($_SESSION["matchPreg"]);
 echo "<form name='revpref' method='post' action=\"${ConfSiteBase}paper.php\" enctype='multipart/form-data'>
   <input type='hidden' name='paperId' value='' />
   <input type='hidden' name='revpref' value='' />\n";
-if ($Me->amAssistant())
+if ($Me->privChair)
     echo "  <input type='hidden' name='contactId' value='$reviewer' />\n";
 echo "</form>\n\n";
 

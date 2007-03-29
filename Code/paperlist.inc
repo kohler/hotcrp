@@ -267,7 +267,7 @@ class PaperList {
 	    $zeros = "00000000000000";
 	    $scoresort = defval($_SESSION["scoresort"], 0);
 	    foreach ($rows as $row)
-		if (!$this->contact->amAssistant() && !$this->contact->canViewReview($row, null, $Conf))
+		if (!$this->contact->privChair && !$this->contact->canViewReview($row, null, $Conf))
 		    $this->sortInfo[$row->paperId] = $zeros;
 		else if ($scoresort == 0) {
 		    $x = array();
@@ -565,7 +565,7 @@ class PaperList {
 		}
 	    return $x;
 	case self::FIELD_SCORE:
-	    if ($this->contact->amAssistant() || $this->contact->canViewReview($row, null, $Conf)) {
+	    if ($this->contact->privChair || $this->contact->canViewReview($row, null, $Conf)) {
 		$scoreName = $paperListScoreNames[$fieldId - self::FIELD_SCORE];
 		$itemName = "${scoreName}Scores";
 		return $Conf->textValuesGraph($row->$itemName, $this->scoreMax[$scoreName], 1);
@@ -582,7 +582,7 @@ class PaperList {
 	    preg_match_all("/(" . $this->collaboratorsMatch . ")/i", $row->collaborators, $matches);
 	    return $this->_joinMatches($matches);
 	case self::FIELD_OPT_AUTHORS:
-	    if (!$this->contact->amAssistant() && $row->blind)
+	    if (!$this->contact->privChair && $row->blind)
 		return "";
 	    $aus = array();
 	    foreach (explode("\n", $row->authorInformation) as $au) {
@@ -621,15 +621,15 @@ class PaperList {
 	    $t .= "    <option value='final'>Final papers</option>\n";
 	if ($this->contact->isPC || $this->contact->isReviewer)
 	    $t .= "    <option value='rev'>All reviews</option>\n";
-	if ($this->contact->amAssistant() || ($this->contact->isReviewer && $Conf->blindSubmission() < 2))
+	if ($this->contact->privChair || ($this->contact->isReviewer && $Conf->blindSubmission() < 2))
 	    $t .= "    <option value='authors'>Authors (text)</option>\n";
-	if ($this->contact->amAssistant()) {
+	if ($this->contact->privChair) {
 	    $t .= "    <option value='contact'>Contact emails (text)</option>\n";
 	    $t .= "    <option value='pcconflicts'>PC conflicts (text)</option>\n";
 	}
 	if ($this->contact->isPC)
 	    $t .= "    <option value='topics'>Topics (text)</option>\n";
-	if ($this->contact->amAssistant() || ($this->contact->isPC && $Conf->timePCViewAllReviews()))
+	if ($this->contact->privChair || ($this->contact->isPC && $Conf->timePCViewAllReviews()))
 	    $t .= "    <option value='scores'>All scores (text)</option>\n";
 	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='get' value='Go' />";
 
@@ -643,7 +643,7 @@ class PaperList {
     <option value='a' selected='selected'>Add</option><option value='d'>Remove</option><option value='s'>Define</option><option value='so'>Define ordered</option><option value='ao'>Add ordered</option>
   </select> &nbsp;tag(s) &nbsp;<input class='textlite' type='text' name='tag' value='' size='15' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></td></tr>\n";
 	    
-	    if ($this->contact->amAssistant()) {
+	    if ($this->contact->privChair) {
 		$t .= "  <tr class='extension8'><td class='rcaption'>Assignments &amp; conflicts:</td>
     <td id='foldass' class='foldc'><select name='marktype' onchange='fold(\"ass\", (this.value[0] == \"x\"))'>
       <option value='xauto' selected='selected'>Automatic assignments</option>
@@ -666,7 +666,7 @@ class PaperList {
 		$t .= "</td></tr>\n";
 	    }
 
-	    if ($this->contact->amAssistant())
+	    if ($this->contact->privChair)
 		$t .= "  <tr class='extension8'><td class='rcaption'>Decision:</td><td>Set decision to&nbsp; " . outcomeSelector() . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></td></tr>\n";
 	    
 	} else
@@ -773,7 +773,7 @@ class PaperList {
 	$url = $this->search->url();
 
 	// check role type
-	$this->scoresOk = $me->amAssistant() || ($me->isPC && $Conf->timePCViewAllReviews());
+	$this->scoresOk = $me->privChair || ($me->isPC && $Conf->timePCViewAllReviews());
 
 	// get paper list
 	if (!($baseFieldId = $this->listFields($listname))) {
@@ -931,9 +931,9 @@ class PaperList {
 		$titleextra .= "<span class='sep'></span>";
 		if ($Conf->blindSubmission() == 0)
 		    $titleextra .= "<a class='unfolder1' href='javascript:fold(\"pl\",0,1)'>Show authors</a><a class='folder1' href='javascript:fold(\"pl\",1,1)'>Hide authors</a>";
-		else if ($this->contact->amAssistant() && $authorinfo == 2)
+		else if ($this->contact->privChair && $authorinfo == 2)
 		    $titleextra .= "<a class='unfolder2' href='javascript:fold(\"pl\",0,2)'>Show authors</a><a class='folder2' href='javascript:fold(\"pl\",1,2)'>Hide authors</a>";
-		else if ($this->contact->amAssistant() && $authorinfo > 1)
+		else if ($this->contact->privChair && $authorinfo > 1)
 		    $titleextra .= "<a class='unfolder1' href='javascript:fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='extension1 unfolder2' href='javascript:fold(\"pl\",0,2)'>Show all authors</a><a class='folder2' href='javascript:fold(\"pl\",1,1);fold(\"pl\",1,2)'>Hide authors</a>";
 		else
 		    $titleextra .= "<a class='unfolder1' href='javascript:fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='folder1' href='javascript:fold(\"pl\",1,1)'>Hide authors</a>";

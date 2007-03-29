@@ -283,10 +283,10 @@ class PaperTable {
 	    $aus = array();
 	    while (($row = edb_row($result)))
 		$aus[] = $row;
-	    echo authorTable($aus, false, ($Me->amAssistant() ? $Me : null));
+	    echo authorTable($aus, false, ($Me->privChair ? $Me : null));
 	}
 	if ($editMode || ($editMode === null && $this->editable))
-	    echo "<a href='${ConfSiteBase}contactauthors.php?paperId=$prow->paperId'>", ($Me->amAssistant() ? "Edit" : "Add"), "&nbsp;contact&nbsp;authors</a>";
+	    echo "<a href='${ConfSiteBase}contactauthors.php?paperId=$prow->paperId'>", ($Me->privChair ? "Edit" : "Add"), "&nbsp;contact&nbsp;authors</a>";
 	echo "</td>\n</tr>\n\n";
     }
 

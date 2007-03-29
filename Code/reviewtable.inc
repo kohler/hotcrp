@@ -12,7 +12,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     $nonsubrev = array();
     $foundRrow = $foundMyReview = $notShown = $nRetractable = 0;
     $actingConflict = ($prow->conflictType > 0 && !$forceShow);
-    $effAssistant = $Me->amAssistant() && !$actingConflict;
+    $effAssistant = $Me->privChair && !$actingConflict;
     $anyScores = false;
     $nNumeric = $rf->numNumericScores($prow, $Me, $Conf);
     $reviewTableFolder = false;
@@ -136,7 +136,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     }
 
     // forceShow
-    if ($Me->amAssistant() && !$effAssistant)
+    if ($Me->privChair && !$effAssistant)
 	$notes[] = "<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\"><b>Override your conflict</b> to show reviewer identities and allow editing</a>";
 
     // see all reviews
@@ -150,7 +150,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	$t .= "<a href='review.php?paperId=$prow->paperId&amp;mode=view&amp;text=1$forceShow'>Text version of the reviews</a>";
     // review assignments
     if ($mode != "assign" && ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
-	if ($Me->amAssistant())
+	if ($Me->privChair)
 	    $x = "Assign or request reviewers";
 	else
 	    $x = "Request an external review" . ($nRetractable ? " or retract outstanding review requests" : "");

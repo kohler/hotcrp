@@ -2,7 +2,7 @@
 require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotAssistant('../');
+$Me->goIfNotPrivChair('../');
 
 function olink($key, $string) {
     global $dir;

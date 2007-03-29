@@ -12,21 +12,23 @@ $rf = reviewForm();
 // list type
 $tOpt = array();
 $tOpt["pc"] = "Program committee";
-if ($Me->amAssistant() || ($Me->isPC && $Conf->timePCViewAllReviews())) {
+if ($Me->isPC)
+    $tOpt["admin"] = "System administrators";
+if ($Me->privChair || ($Me->isPC && $Conf->timePCViewAllReviews())) {
     $tOpt["re"] = "All reviewers";
     $tOpt["ext"] = "External reviewers";
 }
 if ($Me->isPC)
     $tOpt["req"] = "External reviewers you requested";
-if ($Me->amAssistant() || ($Me->isPC && !$Conf->blindSubmission()))
+if ($Me->privChair || ($Me->isPC && !$Conf->blindSubmission()))
     $tOpt["au"] = "Contact authors of submitted papers";
-if ($Me->amAssistant()
+if ($Me->privChair
     || ($Me->isPC && $Conf->timeReviewerViewDecision()))
     $tOpt["auacc"] = "Contact authors of accepted papers";
-if ($Me->amAssistant()
+if ($Me->privChair
     || ($Me->isPC && !$Conf->blindSubmission() && $Conf->timeReviewerViewDecision()))
     $tOpt["aurej"] = "Contact authors of rejected papers";
-if ($Me->amAssistant()) {
+if ($Me->privChair) {
     $tOpt["auuns"] = "Contact authors of non-submitted papers";
     $tOpt["all"] = "All accounts";
 }
@@ -60,7 +62,7 @@ if (count($tOpt) > 1) {
 }
 
 
-if ($Me->amAssistant() && $_REQUEST["t"] == "pc")
+if ($Me->privChair && $_REQUEST["t"] == "pc")
     $Conf->infoMsg("<p><a href='${ConfSiteBase}account.php?new=1&amp;pc=1' class='button'>Add PC member</a></p><p>Click on a PC member's name to edit their information or remove them from the PC.</p>");
 
 

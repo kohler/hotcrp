@@ -24,7 +24,7 @@ $Conf->header("Home", "", actionBar(null, false, ""));
 
 
 // if chair, check PHP setup
-if ($Me->amAssistant()) {
+if ($Me->privChair) {
     if (get_magic_quotes_gpc())
 	$Conf->errorMsg("The PHP <code>magic_quotes_gpc</code> feature is on.  This is a bad idea; disable it in your <code>php.ini</code> configuration file.");
 }
@@ -38,7 +38,7 @@ echo "<div class='bgrp'><div class='bgrp_head'>General</div><div class='bgrp_bod
 Welcome, ", htmlspecialchars($Me->fullnameOrEmail()), ".  (If this isn't you, please <a href='${ConfSiteBase}logout.php'>sign out</a>.)  You will be automatically signed out if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.\n";
 
 // Conference settings
-if ($Me->amAssistant())
+if ($Me->privChair)
     echo "<table class='half'><tr><td class='l'><ul class='compact'>
 <li><a href='settings.php'><b>Conference settings</b></a></li>
 </ul></td></tr></table>
@@ -60,7 +60,7 @@ echo "<li><a href='contacts.php?t=pc'>List program committee</a></li>\n";
 
 echo "</ul></td></tr></table>";
 
-if ($Me->amAssistant())
+if ($Me->privChair)
     echo "\n<div class='smgap'></div>
 <table class='half'><tr><td class='l'><ul class='compact'>
 <li><a href='contacts.php'>List accounts</a></li>
@@ -77,7 +77,7 @@ echo "</div></div>\n";
 
 // Submissions
 $papersub = $Conf->setting("papersub");
-if ($Me->amAssistant() || ($Me->isPC && $papersub)) {
+if ($Me->privChair || ($Me->isPC && $papersub)) {
     echo "<div class='bgrp'><div class='bgrp_head'>Submissions</div><div class='bgrp_body'>\n";
     echo "<form method='get' action='search.php'><input class='textlite' type='text' size='32' name='q' value='' /> &nbsp;<input class='button_small' type='submit' value='Search' /></form>\n";
     echo "<span class='sep'></span><a href='search.php?opt=1'>Advanced search</a>";
@@ -86,7 +86,7 @@ if ($Me->amAssistant() || ($Me->isPC && $papersub)) {
     if ($Me->canViewDecision(null, $Conf))
 	echo "<li><a href='search.php?q=decision:yes&amp;t=s'>List accepted papers</a></li>\n";
     echo "</ul></td><td class='r'><ul class='compact'>";
-    if ($Me->amAssistant() || ($Me->isPC && $Conf->setting("pc_seeall") > 0))
+    if ($Me->privChair || ($Me->isPC && $Conf->setting("pc_seeall") > 0))
 	echo "<li><a href='search.php?q=&amp;t=all'>List <i>all</i> papers</a></li>\n";
     echo "</ul></td></tr></table></div></div>\n";
 }
@@ -96,15 +96,15 @@ echo "</td><td class='r'>";
 
 
 // Authored papers
-if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
+if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair) {
     echo "<div class='bgrp'><div class='bgrp_head'>Authored papers</div><div class='bgrp_body'>\n";
     $sep = "";
 
     $startable = $Conf->timeStartPaper();
-    if ($startable || $Me->amAssistant()) {
+    if ($startable || $Me->privChair) {
 	echo $sep, "<div><strong><a href='paper.php?paperId=new'>Start new paper</a></strong> <span class='deadline'>(" . $Conf->printableDeadlineSetting('sub_reg') . ")</span>";
-	if ($Me->amAssistant())
-	    echo "<br/>\n<small>As PC Chair, you can start papers regardless of deadlines and on other people's behalf.</small>";
+	if ($Me->privChair)
+	    echo "<br/>\n<small>As an administrator, you can start papers regardless of deadlines and on other people's behalf.</small>";
 	echo "</div>\n";
 	$sep = "<div class='smgap'></div>";
     }
@@ -140,7 +140,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->amAssistant()) {
 
 
 // Review assignment
-if ($Me->amReviewer() && ($Me->amAssistant() || $papersub)) {
+if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     echo "<div class='bgrp foldc' id='foldre'><div class='bgrp_head'>";
     if ($Me->isReviewer)
 	echo "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;";
@@ -155,9 +155,9 @@ if ($Me->amReviewer() && ($Me->amAssistant() || $papersub)) {
     echo "</ul></td><td class='r'><ul class='compact'>\n";
     if ($Me->amReviewer())
 	echo "<li><a href='offline.php'>Offline reviewing</a></li>\n";
-    if ($Me->amAssistant())
+    if ($Me->privChair)
 	echo "<li><a href='Chair/AssignPapers.php'>PC review assignments and conflicts</a></li>\n";
-    if ($Me->amAssistant() || ($Me->isPC && $Conf->timePCViewAllReviews()))
+    if ($Me->privChair || ($Me->isPC && $Conf->timePCViewAllReviews()))
 	echo "<li><a href='contacts.php?t=pc'>Check on PC progress</a></li>\n";
     echo "</ul></td></tr></table>\n<div class='smgap'></div>\n";
     
@@ -223,7 +223,7 @@ if ($Me->isPC) {
 
 
 // Chair/assistant tasks (old CRP)
-if ($Me->amAssistant()) {
+if ($Me->privChair) {
     echo "<div class='bgrp foldc' id='foldch'><div class='bgrp_head'><a href=\"javascript:fold('ch', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('ch', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;PC chair tasks (old CRP)</div><div class='bgrp_body extension'>\n";
 
     echo "<ul>

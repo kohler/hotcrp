@@ -391,7 +391,7 @@ class Conference {
 	    else
 		$this->infoMsg("<pre>" . htmlspecialchars($subject) . "\n\n" . htmlspecialchars($m) . "</pre>");
 	}
-	if ($prow->conflictType < CONFLICT_AUTHOR && count($contacts) > 0 && $Me->amAssistant())
+	if ($prow->conflictType < CONFLICT_AUTHOR && count($contacts) > 0 && $Me->privChair)
 	    $this->infoMsg("Sent \"" . htmlspecialchars($subject) . "\" email to paper #$prow->paperId's contact author" . (count($contacts) == 1 ? "" : "s") . ", " . htmlspecialchars(join(", ", $contacts)) . ".");
     }
 
@@ -417,7 +417,7 @@ class Conference {
 		mail(join(", ", $recipients), $subject, $m, "From: $this->emailFrom\nCc: $this->contactName <$this->contactEmail>");
 	    else if (count($reviewers))
 		$this->infoMsg("<pre>" . htmlspecialchars(join(", ", $recipients)) . "\n\n" . htmlspecialchars($subject) . "\n\n" . htmlspecialchars($m) . "</pre>");
-	    if ($prow->conflictType < CONFLICT_AUTHOR && count($reviewers) && $Me->amAssistant())
+	    if ($prow->conflictType < CONFLICT_AUTHOR && count($reviewers) && $Me->privChair)
 		$this->infoMsg("Sent \"" . htmlspecialchars($subject) . "\" email to paper #$prow->paperId's reviewer" . (count($recipients) == 1 ? "" : "s") . ", " . htmlspecialchars(join(", ", $reviewers)) . ".");
 	}
     }
@@ -1101,7 +1101,7 @@ class Conference {
 	    echo "<strong>",
 		htmlspecialchars($_SESSION["Me"]->email),
 		"</strong> &nbsp;|&nbsp; ";
-	    if (!$_SESSION["Me"]->amAssistant() && $_SESSION["Me"]->chairContactId > 0)
+	    if (!$_SESSION["Me"]->privChair && $_SESSION["Me"]->chairContactId > 0)
 		echo "<a href=\"", htmlspecialchars(selfHref(array("chairMode" => 0))), "\">Return&nbsp;to&nbsp;chair&nbsp;view</a> &nbsp;|&nbsp; ";
 	    echo "<a href='", $ConfSiteBase, "help.php";
 	    if ($id == "search")

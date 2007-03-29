@@ -23,11 +23,14 @@ class Contact {
     var $anyTopicInterest;
 
     // Roles
+    const ROLE_PC = 1;
+    const ROLE_ASSISTANT = 2;
+    const ROLE_CHAIR = 4;
     var $isAuthor;
     var $isReviewer;
+    var $roles;
     var $isPC;
-    var $isChair;
-    var $isAssistant;
+    var $privChair;
     var $reviewsOutstanding;
     var $chairContactId;
     var $validated;
@@ -59,25 +62,28 @@ class Contact {
 	    if (edb_nrows($result) == 0)
 		$this->invalidate();
 	    else {
-		$this->isAuthor = $this->isReviewer = $this->isPC = $this->isChair = $this->isAssistant = $this->reviewsOutstanding = false;
+		$this->roles = 0;
+		$this->isAuthor = $this->isReviewer = $this->isPC = $this->privChair = $this->reviewsOutstanding = false;
 		while (($row = edb_row($result))) {
 		    if ($row[0] == CONFLICT_AUTHOR)
 			$this->isAuthor = true;
 		    if ($row[1] > 0)
 			$this->isReviewer = true;
 		    if ($row[2] > 0)
-			$this->isPC = true;
+			$this->roles |= self::ROLE_PC;
 		    if ($row[3] > 0)
-			$this->isAssistant = true;
+			$this->roles |= self::ROLE_ASSISTANT;
 		    if ($row[4] > 0)
-			$this->isChair = true;
+			$this->roles |= self::ROLE_CHAIR;
 		    if ($row[5] > 0)
 			$this->reviewsOutstanding = true;
 		}
-		if ($this->isChair)
+		$this->isPC = ($this->roles & (self::ROLE_PC | self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
+		$this->privChair = ($this->roles & (self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
+		if ($this->privChair)
 		    $this->chairContactId = $this->contactId;
 		// change view ID or chair mode
-		if ($this->isChair || $this->chairContactId > 0) {
+		if ($this->privChair || $this->chairContactId > 0) {
 		    $viewContact = cvtint($_REQUEST['viewContact']);
 		    if ($viewContact <= 0 && isset($_REQUEST['viewContact']))
 			$viewContact = $Conf->getContactId($_REQUEST['viewContact']);
@@ -88,7 +94,7 @@ class Contact {
 			unset($_SESSION["list"]);
 			return $this->valid($conf, true);
 		    }
-		    if ($chairMode >= 0 && !$this->isChair) {
+		    if ($chairMode >= 0 && !$this->privChair) {
 			$this->contactId = $this->chairContactId;
 			return $this->valid($conf, true);
 		    }
@@ -119,20 +125,13 @@ class Contact {
 	$this->note = 0;
 	$this->collaborators = '';
 	$this->anyTopicInterest = 0;
-	
-	$this->isAuthor = false;
-	$this->isReviewer = false;
-	$this->isPC = false;
-	$this->isChair = false;
-	$this->isAssistant = false;
+
+	$this->roles = 0;
+	$this->isAuthor = $this->isReviewer = $this->isPC = $this->privChair = false;
 	$this->reviewsOustanding = false;
 	$this->chairContactId = 0;
     }
   
-    function amAssistant() {
-	return $this->isAssistant || $this->isChair;
-    }
-
     function amReviewer() {
 	return $this->isPC || $this->isReviewer;
     }
@@ -183,12 +182,12 @@ class Contact {
     }
 
     function goIfNotPC($url) {
-	if (!$this->valid() || !($this->isChair || $this->isPC))
+	if (!$this->valid() || !($this->privChair || $this->isPC))
 	    $this->goAlert($url, "That page is only accessible to program committee members.");
     }
 
-    function goIfNotAssistant($url) {
-	if (!$this->valid() || !$this->amAssistant())
+    function goIfNotPrivChair($url) {
+	if (!$this->valid() || !$this->privChair)
 	    $this->goAlert($url, "That page is only accessible to program chairs and their assistants.");
     }
 
@@ -267,9 +266,15 @@ class Contact {
 	$this->email = defval($o->email, '');
 	$this->isAuthor = defval($o->isAuthor, false) != 0;
 	$this->isReviewer = defval($o->isReviewer, false) != 0;
-	$this->isPC = defval($o->isPC, false) != 0;
-	$this->isChair = defval($o->isChair, false) != 0;
-	$this->isAssistant = defval($o->isAssistant, false) != 0;
+	$this->roles = 0;
+	if (defval($o->isPC, false))
+	    $this->roles |= self::ROLE_PC;
+	if (defval($o->isAssistant, false))
+	    $this->roles |= self::ROLE_ASSISTANT;
+	if (defval($o->isChair, false))
+	    $this->roles |= self::ROLE_CHAIR;
+	$this->isPC = ($this->roles & (self::ROLE_PC | self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
+	$this->privChair = ($this->roles & (self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
     }
     
     function fullname() {
@@ -316,16 +321,16 @@ class Contact {
 	}
     }
 
-    function amAssistantOverride() {
-	return $this->amAssistant() && isset($_REQUEST["override"]) && $_REQUEST["override"] > 0;
+    function privChairOverride() {
+	return $this->privChair && isset($_REQUEST["override"]) && $_REQUEST["override"] > 0;
     }
     
     function canStartPaper($conf, &$whyNot = null) {
 	$whyNot = array();
-	if ($this->amAssistantOverride() || $conf->timeStartPaper())
+	if ($this->privChairOverride() || $conf->timeStartPaper())
 	    return true;
 	$whyNot["deadline"] = "sub_reg";
-	if ($this->amAssistant())
+	if ($this->privChair)
 	    $whyNot["override"] = 1;
 	return false;
     }
@@ -335,20 +340,20 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
-	if (($prow->conflictType == CONFLICT_AUTHOR || $this->amAssistant())
+	if (($prow->conflictType == CONFLICT_AUTHOR || $this->privChair)
 	    && $prow->timeWithdrawn <= 0
-	    && ($conf->timeUpdatePaper($prow) || $this->amAssistantOverride()))
+	    && ($conf->timeUpdatePaper($prow) || $this->privChairOverride()))
 	    return true;
 	// collect failure reasons
-	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->amAssistant())
+	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->privChair)
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
 	if ($prow->timeSubmitted > 0 && $conf->setting('sub_freeze') > 0)
 	    $whyNot["updateSubmitted"] = 1;
-	if (!$conf->timeUpdatePaper($prow) && !$this->amAssistantOverride())
+	if (!$conf->timeUpdatePaper($prow) && !$this->privChairOverride())
 	    $whyNot["deadline"] = "sub_update";
-	if ($this->amAssistant())
+	if ($this->privChair)
 	    $whyNot["override"] = 1;
 	return false;
     }
@@ -358,20 +363,20 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
-	if (($prow->conflictType == CONFLICT_AUTHOR || $this->amAssistant())
+	if (($prow->conflictType == CONFLICT_AUTHOR || $this->privChair)
 	    && $prow->timeWithdrawn <= 0 && $prow->timeSubmitted <= 0
-	    && ($conf->timeFinalizePaper($prow) || $this->amAssistantOverride()))
+	    && ($conf->timeFinalizePaper($prow) || $this->privChairOverride()))
 	    return true;
 	// collect failure reasons
-	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->amAssistant())
+	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->privChair)
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
 	if ($prow->timeSubmitted > 0)
 	    $whyNot["updateSubmitted"] = 1;
-	if (!$conf->timeFinalizePaper($prow) && !$this->amAssistantOverride())
+	if (!$conf->timeFinalizePaper($prow) && !$this->privChairOverride())
 	    $whyNot["deadline"] = "finalizePaperSubmission";
-	if ($this->amAssistant())
+	if ($this->privChair)
 	    $whyNot["override"] = 1;
 	return false;
     }
@@ -381,13 +386,13 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
-	if (($prow->conflictType == CONFLICT_AUTHOR || $this->amAssistant())
+	if (($prow->conflictType == CONFLICT_AUTHOR || $this->privChair)
 	    && $prow->timeWithdrawn <= 0)
 	    return true;
 	// collect failure reasons
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
-	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->amAssistant())
+	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->privChair)
 	    $whyNot["author"] = 1;
 	return false;
     }
@@ -397,18 +402,18 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
-	if (($prow->conflictType == CONFLICT_AUTHOR || $this->amAssistant())
+	if (($prow->conflictType == CONFLICT_AUTHOR || $this->privChair)
 	    && $prow->timeWithdrawn > 0
-	    && ($conf->timeUpdatePaper($prow) || $this->amAssistantOverride()))
+	    && ($conf->timeUpdatePaper($prow) || $this->privChairOverride()))
 	    return true;
 	// collect failure reasons
-	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->amAssistant())
+	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->privChair)
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn <= 0)
 	    $whyNot["notWithdrawn"] = 1;
-	if (!$conf->timeUpdatePaper($prow) && !$this->amAssistantOverride())
+	if (!$conf->timeUpdatePaper($prow) && !$this->privChairOverride())
 	    $whyNot["deadline"] = "sub_update";
-	if ($this->amAssistant())
+	if ($this->privChair)
 	    $whyNot["override"] = 1;
 	return false;
     }
@@ -418,20 +423,20 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
-	if (($prow->conflictType == CONFLICT_AUTHOR || $this->amAssistant())
+	if (($prow->conflictType == CONFLICT_AUTHOR || $this->privChair)
 	    && $prow->timeWithdrawn <= 0 && $prow->outcome > 0
-	    && ($conf->timeSubmitFinalPaper() || $this->amAssistantOverride()))
+	    && ($conf->timeSubmitFinalPaper() || $this->privChairOverride()))
 	    return true;
 	// collect failure reasons
-	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->amAssistant())
+	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->privChair)
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
 	if ($prow->outcome <= 0)
 	    $whyNot["notAccepted"] = 1;
-	if (!$conf->timeSubmitFinalPaper() && !$this->amAssistantOverride())
+	if (!$conf->timeSubmitFinalPaper() && !$this->privChairOverride())
 	    $whyNot["deadline"] = "final_done";
-	if ($this->amAssistant())
+	if ($this->privChair)
 	    $whyNot["override"] = 1;
 	return false;
     }
@@ -442,7 +447,7 @@ class Contact {
 	    return false;
 	// policy
 	if ($prow->conflictType == CONFLICT_AUTHOR
-	    || $this->amAssistant()
+	    || $this->privChair
 	    || ($prow->myReviewType > 0 && $prow->timeSubmitted > 0 && $conf->timeReviewerViewSubmittedPaper())
 	    || ($this->isPC && $conf->timePCViewPaper($prow, $download)))
 	    return true;
@@ -507,7 +512,7 @@ class Contact {
 	    && (($prow->conflictType == CONFLICT_AUTHOR
 		 && $conf->timeAuthorViewReviews() && $rrsub
 		 && (!$this->reviewsOutstanding || !$this->isReviewer))
-		|| ($this->amAssistant()
+		|| ($this->privChair
 		    && ($prow->conflictType == 0 || $forceShow))
 		|| ($this->isPC && $prow->conflictType == 0 && $rrsub
 		    && ($conf->timePCViewAllReviews()
@@ -539,7 +544,7 @@ class Contact {
 	    $whyNot['externalReviewer'] = 1;
 	else
 	    $whyNot['reviewNotComplete'] = 1;
-	if ($this->amAssistant())
+	if ($this->privChair)
 	    $whyNot['forceShow'] = 1;
 	return false;
     }
@@ -550,15 +555,15 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
-	if (($prow->myReviewType >= REVIEW_SECONDARY || $this->amAssistant())
-	    && ($conf->timeReviewPaper(false, true, true) || $this->amAssistantOverride() || !$time))
+	if (($prow->myReviewType >= REVIEW_SECONDARY || $this->privChair)
+	    && ($conf->timeReviewPaper(false, true, true) || $this->privChairOverride() || !$time))
 	    return true;
 	// collect failure reasons
 	if ($prow->myReviewType < REVIEW_SECONDARY)
 	    $whyNot['permission'] = 1;
 	else {
 	    $whyNot['deadline'] = ($this->isPC ? "pcrev_hard" : "extrev_hard");
-	    if ($this->amAssistant())
+	    if ($this->privChair)
 		$whyNot['override'] = 1;
 	}
 	return false;
@@ -572,16 +577,16 @@ class Contact {
 	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
 	// policy
 	if ($prow->timeSubmitted > 0
-	    && (($this->amAssistant() && ($forceShow || $prow->conflictType == 0))
+	    && (($this->privChair && ($forceShow || $prow->conflictType == 0))
 		|| ($this->isPC && $prow->conflictType == 0)
 		|| $prow->myReviewType > 0)
 	    && ($conf->timeReviewPaper($this->isPC, $prow->myReviewType > 0, true)
-		|| $this->amAssistantOverride()
-		|| ($this->amAssistant() && !$submit))
-	    && (!$rrow || $rrow->contactId == $this->contactId || $this->amAssistant()))
+		|| $this->privChairOverride()
+		|| ($this->privChair && !$submit))
+	    && (!$rrow || $rrow->contactId == $this->contactId || $this->privChair))
 	    return true;
 	// collect failure reasons
-	if ($rrow && $rrow->contactId != $this->contactId && !$this->amAssistant())
+	if ($rrow && $rrow->contactId != $this->contactId && !$this->privChair)
 	    $whyNot['differentReviewer'] = 1;
 	else if (!$this->isPC && $prow->myReviewType <= 0)
 	    $whyNot['permission'] = 1;
@@ -596,9 +601,9 @@ class Contact {
 		$whyNot['reviewNotAssigned'] = 1;
 	    else
 		$whyNot['deadline'] = ($this->isPC ? "pcrev_hard" : "extrev_hard");
-	    if ($this->amAssistant() && $prow->conflictType > 0)
+	    if ($this->privChair && $prow->conflictType > 0)
 		$whyNot['chairMode'] = 1;
-	    if ($this->amAssistant() && isset($whyNot['deadline']))
+	    if ($this->privChair && isset($whyNot['deadline']))
 		$whyNot['override'] = 1;
 	}
 	return false;
@@ -620,18 +625,18 @@ class Contact {
 	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
 	// policy
 	if ($prow->timeSubmitted > 0
-	    && (($this->amAssistant() && ($forceShow || $prow->conflictType == 0))
+	    && (($this->privChair && ($forceShow || $prow->conflictType == 0))
 		|| ($this->isPC && $prow->conflictType == 0)
 		|| $prow->myReviewType > 0)
 	    && ($conf->timeReviewPaper($this->isPC, true, true)
-		|| $this->amAssistantOverride()
-		|| ($this->amAssistant() && !$submit))
+		|| $this->privChairOverride()
+		|| ($this->privChair && !$submit))
 	    && (!$crow
 		|| $crow->contactId == $this->contactId
-		|| $this->amAssistant()))
+		|| $this->privChair))
 	    return true;
 	// collect failure reasons
-	if ($crow && $crow->contactId != $this->contactId && !$this->amAssistant())
+	if ($crow && $crow->contactId != $this->contactId && !$this->privChair)
 	    $whyNot['differentReviewer'] = 1;
 	else if (!$this->isPC && $prow->myReviewType <= 0)
 	    $whyNot['permission'] = 1;
@@ -644,9 +649,9 @@ class Contact {
 		$whyNot['conflict'] = 1;
 	    else
 		$whyNot['deadline'] = ($this->isPC ? "pcrev_hard" : "extrev_hard");
-	    if ($this->amAssistant() && $prow->conflictType > 0)
+	    if ($this->privChair && $prow->conflictType > 0)
 		$whyNot['chairMode'] = 1;
-	    if ($this->amAssistant() && isset($whyNot['deadline']))
+	    if ($this->privChair && isset($whyNot['deadline']))
 		$whyNot['override'] = 1;
 	}
 	return false;
@@ -665,7 +670,7 @@ class Contact {
 	if (($prow->conflictType == CONFLICT_AUTHOR
 	     && $conf->timeAuthorViewReviews()
 	     && (!$crow || $crow->forAuthors))
-	    || ($this->amAssistant() && ($forceShow || $prow->conflictType == 0))
+	    || ($this->privChair && ($forceShow || $prow->conflictType == 0))
 	    || ($this->isPC && $prow->conflictType == 0
 		&& ($conf->timePCViewAllReviews()
 		    || !$crow || $crow->forPC))
@@ -684,7 +689,7 @@ class Contact {
 	    $whyNot['externalReviewer'] = 1;
 	else
 	    $whyNot['reviewNotComplete'] = 1;
-	if ($this->amAssistant())
+	if ($this->privChair)
 	    $whyNot['forceShow'] = 1;
 	return false;
     }
@@ -697,15 +702,15 @@ class Contact {
 	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
 	// policy
 	if ($prow->timeSubmitted > 0
-	    && (($this->amAssistant() && ($forceShow || $prow->conflictType == 0))
+	    && (($this->privChair && ($forceShow || $prow->conflictType == 0))
 		|| $prow->conflictType == CONFLICT_AUTHOR)
 	    && ($conf->timeAuthorRespond()
-		|| $this->amAssistantOverride()
-		|| ($this->amAssistant() && !$submit))
+		|| $this->privChairOverride()
+		|| ($this->privChair && !$submit))
 	    && (!$crow || $crow->forAuthors > 1))
 	    return true;
 	// collect failure reasons
-	if (!$this->amAssistant() && $prow->conflictType != CONFLICT_AUTHOR)
+	if (!$this->privChair && $prow->conflictType != CONFLICT_AUTHOR)
 	    $whyNot['permission'] = 1;
 	else if ($prow->timeWithdrawn > 0)
 	    $whyNot['withdrawn'] = 1;
@@ -713,9 +718,9 @@ class Contact {
 	    $whyNot['notSubmitted'] = 1;
 	else {
 	    $whyNot['deadline'] = "resp_done";
-	    if ($this->amAssistant() && $prow->conflictType > 0)
+	    if ($this->privChair && $prow->conflictType > 0)
 		$whyNot['chairMode'] = 1;
-	    if ($this->amAssistant() && isset($whyNot['deadline']))
+	    if ($this->privChair && isset($whyNot['deadline']))
 		$whyNot['override'] = 1;
 	}
 	return false;
@@ -733,11 +738,11 @@ class Contact {
     }
 
     function canManagePaper($prow) {
-	return ($prow->conflictType == CONFLICT_AUTHOR || $this->amAssistant());
+	return ($prow->conflictType == CONFLICT_AUTHOR || $this->privChair);
     }
     
     function timeReview($prow, $conf) {
-	return $conf->timeReviewPaper($_SESSION['Me']->isPC, $prow->myReviewType || $prow->reviewId, true);
+	return $conf->timeReviewPaper($this->isPC, $prow->myReviewType || $prow->reviewId, true);
     }
 
     function canViewNumReviews($conf) {
@@ -755,7 +760,7 @@ class Contact {
 	    $rrow_contactId = $rrow->reviewContactId;
 	else if ($rrow && isset($rrow->contactId))
 	    $rrow_contactId = $rrow->contactId;
-	if (($this->amAssistant() && $forceShow)
+	if (($this->privChair && $forceShow)
 	    || ($rrow && $rrow_contactId == $this->contactId)
 	    || ($this->isPC && $prow && $prow->conflictType == 0)
 	    || ($prow && $prow->myReviewType > 0
@@ -770,7 +775,7 @@ class Contact {
     }
     
     function canViewCommentIdentity($prow, $crow, $conf) {
-	if (($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
+	if (($this->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
 	    || ($crow && $crow->contactId == $this->contactId)
 	    || ($this->isPC && $prow->conflictType == 0)
 	    || ($prow->myReviewType > 0
@@ -798,7 +803,7 @@ class Contact {
     }
     
     function canViewAllReviewFields($prow, $conf) {
-	if (($this->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
+	if (($this->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
 	    || !$prow
 	    || ($prow->conflictType == 0 && ($this->isPC || $prow->myReviewType > 0)))
 	    return true;
@@ -806,7 +811,7 @@ class Contact {
     }
 
     function canSetOutcome($prow) {
-	if (!$this->amAssistant())
+	if (!$this->privChair)
 	    return false;
 	if ($prow && $prow->conflictType > 0
 	    && !(isset($_REQUEST['forceShow']) && $_REQUEST['forceShow']))
@@ -817,7 +822,7 @@ class Contact {
     function paperStatus($paperId, $row, $long = 0, $conf = null) {
 	global $ConfSiteBase, $Conf;
 	$conf = ($conf ? $conf : $Conf);
-	if (!$this->amAssistant() && $row->conflictType < CONFLICT_AUTHOR)
+	if (!$this->privChair && $row->conflictType < CONFLICT_AUTHOR)
 	    $long = 0;
 
 	if ($row->timeWithdrawn > 0) {

@@ -365,7 +365,7 @@ function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
     if ($paperId > 0 && $k === false && !isset($_REQUEST["list"])) {
 	_tryNewList(array());
 	$k = array_search($paperId, $_SESSION["list"]);
-	if ($k === false && $Me->amAssistant()) {
+	if ($k === false && $Me->privChair) {
 	    _tryNewList(array("t" => "all"));
 	    $k = array_search($paperId, $_SESSION["list"]);
 	}
@@ -611,7 +611,7 @@ function whyNotText($whyNot, $action) {
 	    $text .= "You can't $action $thisPaper at the moment.  ";
 	$text .= "(<a href='${ConfSiteBase}deadlines.php'>View deadlines</a>)  ";
 	if (isset($whyNot['override']) && $whyNot['override'])
-	    $text .= "Select the \"Override deadlines\" checkbox to override this deadline as PC Chair.  ";
+	    $text .= "Select the \"Override deadlines\" checkbox to override this deadline as an administrator.  ";
     }
     if (isset($whyNot['blindSubmission']))
 	$text .= "Submission to this conference is blind.  ";
@@ -682,14 +682,14 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
     else
 	$paperId = ($prow == null ? -1 : $prow->paperId);
     $disableView = (!$newPaper && $paperId < 0);
-    $forceShow = ($Me->amAssistant() && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] ? "&amp;forceShow=1" : "");
+    $forceShow = ($Me->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] ? "&amp;forceShow=1" : "");
 
     $x = "<div class='vubar'><table class='vubar'><tr>\n  <td><table><tr>\n";
     
     if (!$newPaper && $paperId > 0)
 	$x .= actionTab("View", "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=view", $mode == "view");
     
-    if ($newPaper || ($paperId > 0 && ($prow->conflictType == CONFLICT_AUTHOR || $Me->amAssistant())))
+    if ($newPaper || ($paperId > 0 && ($prow->conflictType == CONFLICT_AUTHOR || $Me->privChair)))
 	$x .= actionTab("Edit", "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=edit", $mode == "edit");
 
     if (!$newPaper && $prow
@@ -712,7 +712,7 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
     }
 
     if ($mode == "assign"
-	|| ($Me->amAssistant() && $prow && $prow->timeSubmitted > 0))
+	|| ($Me->privChair && $prow && $prow->timeSubmitted > 0))
 	$x .= actionTab("Assignments", "${ConfSiteBase}assign.php?paperId=$paperId", $mode == "assign");
     
     if ($thisUrl)

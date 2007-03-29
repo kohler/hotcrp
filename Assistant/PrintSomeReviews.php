@@ -2,7 +2,7 @@
 require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotAssistant('../index.php');
+$Me->goIfNotPrivChair('../index.php');
 
 // we are disabling register_globals in php.ini, so we don't need to
 // register the following session variable anymore

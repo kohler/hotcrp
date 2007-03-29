@@ -8,7 +8,7 @@ require_once('Code/tags.inc');
 require_once('Code/Calendar.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotAssistant('index.php');
+$Me->goIfNotPrivChair('index.php');
 $SettingError = array();
 $Error = array();
 $Values = array();
@@ -702,7 +702,7 @@ echo "</td></tr></table>\n";
 echo "</form>\n";
 
 
-if ($Me->amAssistant()) {
+if ($Me->privChair) {
     echo "<p><a href='Chair/ShowCalendar.php' target='_blank'>Show calendar</a> &mdash;
 <a href='http://www.php.net/manual/en/function.strtotime.php' target='_blank'>How to specify a date</a></p>\n";
 }

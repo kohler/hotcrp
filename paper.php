@@ -85,7 +85,7 @@ if (!$newPaper) {
 // set review preference action
 if (isset($_REQUEST['revpref']) && $prow) {
     $ajax = defval($_REQUEST["ajax"], 0);
-    if (!$Me->amAssistant()
+    if (!$Me->privChair
 	|| ($contactId = cvtint($_REQUEST["contactId"])) <= 0)
 	$contactId = $Me->contactId;
     if (($v = cvtpref($_REQUEST['revpref'])) >= -1000000 && $v <= 1000000) {
@@ -115,19 +115,19 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 
 	// email contact authors themselves
 	$m = "Paper #$paperId, \"$prow->title\", has been withdrawn from consideration for the $Conf->shortName conference.";
-	if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
+	if ($Me->privChair && isset($_REQUEST["emailNote"]))
 	    $m .= "\n\nA conference administrator provided the following reason for withdrawing the paper: " . trim($_REQUEST["emailNote"]);
-	else if ($Me->amAssistant() && $prow->conflictType < CONFLICT_AUTHOR)
+	else if ($Me->privChair && $prow->conflictType < CONFLICT_AUTHOR)
 	    $m .= "\n\nA conference administrator withdrew the paper.";
 	$m = wordwrap("$m\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
-	if (!$Me->amAssistant() || defval($_REQUEST["doemail"]) > 0)
+	if (!$Me->privChair || defval($_REQUEST["doemail"]) > 0)
 	    $Conf->emailContactAuthors($prow, "Paper #$paperId withdrawn", $m);
 
 	// email reviewers
 	if ($prow->startedReviewCount > 0) {
 	    $m = wordwrap("$Conf->shortName Paper #$paperId, which you reviewed or have been assigned to review, has been withdrawn from consideration for the conference.\n\n");
 	    $n = "Authors can voluntarily withdraw a submission at any time, as can the chair.";
-	    if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
+	    if ($Me->privChair && isset($_REQUEST["emailNote"]))
 		$n .= "  " . trim($_REQUEST["emailNote"]);
 	    $m .= wordwrap($n . "\n\n")
 		. wordWrapIndent($prow->title, "Title: ", 14) . "\n"
@@ -188,7 +188,7 @@ function requestSameAsPaper($prow) {
 function uploadPaper($isSubmitFinal) {
     global $prow, $Conf, $Me;
     $result = $Conf->storePaper('paperUpload', $prow, $isSubmitFinal,
-				$Me->amAssistant() && defval($_REQUEST["override"]));
+				$Me->privChair && defval($_REQUEST["override"]));
     if ($result == 0 || PEAR::isError($result)) {
 	$Conf->errorMsg("There was an error while trying to update your paper.  Please try again.");
 	return false;
@@ -204,6 +204,10 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 
     // XXX lock tables
 
+    // clear 'isSubmit' if no paper has been uploaded
+    if (!fileUploaded($_FILES['paperUpload'], $Conf) && ($newPaper || $prow->size == 0))
+	$isSubmit = false;
+    
     // check that all required information has been entered
     array_ensure($_REQUEST, "", "title", "abstract", "authorInformation", "collaborators");
     $q = "";
@@ -237,7 +241,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     }
 
     // defined contact ID
-    if ($newPaper && (isset($_REQUEST["contact_email"]) || isset($_REQUEST["contact_name"])) && $Me->amAssistant())
+    if ($newPaper && (isset($_REQUEST["contact_email"]) || isset($_REQUEST["contact_name"])) && $Me->privChair)
 	if (!($contactId = $Conf->getContactId($_REQUEST["contact_email"], "contact_"))) {
 	    $Conf->errorMsg("You must supply a valid email address for the contact author.");
 	    $PaperError["contactAuthor"] = 1;
@@ -324,8 +328,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    getProw($contactId);
 	if (!uploadPaper($isSubmitFinal))
 	    return false;
-    } else if ($newPaper || $prow->size == 0)
-	$isSubmit = false;
+    }
 
     // submit paper if appropriate
     if ($isSubmitFinal || $isSubmit) {
@@ -387,9 +390,9 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	if ($deadline != "N/A" && $prow->timeSubmitted <= 0)
 	    $mx .= "  If you do not submit the paper by $deadline, it will not be considered for the conference.";
     }
-    if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
+    if ($Me->privChair && isset($_REQUEST["emailNote"]))
 	$mx .= "\n\nA conference administrator provided the following reason for this update: " . $_REQUEST["emailNote"];
-    else if ($Me->amAssistant() && $prow->conflictType < CONFLICT_AUTHOR)
+    else if ($Me->privChair && $prow->conflictType < CONFLICT_AUTHOR)
 	$mx .= "\n\nA conference administrator performed this update.";
     $mx .= ($mx == "" ? "" : "\n\n");
     $m .= wordwrap($mx . "Contact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.
@@ -397,7 +400,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 - $Conf->shortName Conference Submissions\n");
 
     // send email to all contact authors
-    if (!$Me->amAssistant() || defval($_REQUEST["doemail"]) > 0)
+    if (!$Me->privChair || defval($_REQUEST["doemail"]) > 0)
 	$Conf->emailContactAuthors($prow, $subject, $m);
     
     $Conf->log($what, $Me, $paperId);
@@ -434,7 +437,7 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"])) {
     }
 
     // use request?
-    $useRequest = ($ok || $Me->amAssistant());
+    $useRequest = ($ok || $Me->privChair);
 }
 
 
@@ -442,15 +445,15 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"])) {
 if (isset($_REQUEST['delete'])) {
     if ($newPaper)
 	$Conf->confirmMsg("Paper deleted.");
-    else if (!$Me->amAssistant())
+    else if (!$Me->privChair)
 	$Conf->errorMsg("Only the program chairs can permanently delete papers.  Authors can withdraw papers, which is effectively the same.");
     else {
 	// mail first, before contact info goes away
 	$m = "Your $Conf->shortName paper submission #$paperId, \"$prow->title\", has been removed from the conference database by the program chairs.  This is usually done to remove duplicate papers.";
-	if ($Me->amAssistant() && isset($_REQUEST["emailNote"]))
+	if ($Me->privChair && isset($_REQUEST["emailNote"]))
 	    $m .= "\n\nA conference administrator provided the following reason for deleting the paper: " . $_REQUEST["emailNote"];
 	$m = wordwrap("$m\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
-	if (!$Me->amAssistant() || defval($_REQUEST["doemail"]) > 0)
+	if (!$Me->privChair || defval($_REQUEST["doemail"]) > 0)
 	    $Conf->emailContactAuthors($prow, "Paper #$paperId deleted", $m);
 	// XXX email self?
 
@@ -485,7 +488,7 @@ function deadlineSettingIs($dname, $conf) {
 	return "  The deadline was $deadline.";
 }
 
-$override = ($Me->amAssistant() ? "  As PC Chair, you can override this deadline using the \"Override deadlines\" checkbox." : "");
+$override = ($Me->privChair ? "  As an administrator, you can override this deadline using the \"Override deadlines\" checkbox." : "");
 if ($mode != "edit")
     /* do nothing */;
 else if ($newPaper) {
@@ -496,7 +499,7 @@ else if ($newPaper) {
 	    $msg = "You can't register new papers because the conference site has not been opened for submissions.$override";
 	else
 	    $msg = "You can't register new papers since the <a href='deadlines.php'>deadline</a> has passed.$startDeadline$override";
-	if (!$Me->amAssistant())
+	if (!$Me->privChair)
 	    errorMsgExit($msg);
 	$Conf->infoMsg($msg);
     }
@@ -524,12 +527,12 @@ else if ($newPaper) {
     $updateDeadline = deadlineSettingIs("final_done", $Conf);
     $Conf->infoMsg("Congratulations!  This paper was accepted.  Submit a final copy for your paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or add contact authors, allowing others to view reviews and make changes.");
 } else if ($prow->conflictType == CONFLICT_AUTHOR) {
-    $override2 = ($Me->amAssistant() ? "  However, as PC Chair, you can update the paper anyway by selecting \"Override deadlines\"." : "");
+    $override2 = ($Me->privChair ? "  However, as an administrator, you can update the paper anyway by selecting \"Override deadlines\"." : "");
     $Conf->infoMsg("This paper is under review and can no longer be changed.  You can still withdraw the paper or add contact authors, allowing others to view reviews as they become available.$override2");
-} else if (!$Me->amAssistant())
+} else if (!$Me->privChair)
     errorMsgExit("You can't edit paper #$paperId since you aren't one of its contact authors.");
 else
-    $Conf->infoMsg("You aren't a contact author for this paper, but can still make changes as PC Chair.");
+    $Conf->infoMsg("You aren't a contact author for this paper, but as an administrator you can still make changes.");
 
 
 // page header
@@ -543,8 +546,8 @@ if ($mode == "edit") {
 	($newPaper ? "new" : $paperId),
 	"&amp;post=1&amp;mode=edit\" enctype='multipart/form-data'>";
     $editable = $newPaper || ($prow->timeWithdrawn <= 0
-			      && ($Conf->timeUpdatePaper($prow) || $Me->amAssistant()));
-    if ($prow && $prow->outcome > 0 && ($Conf->timeSubmitFinalPaper() || $Me->amAssistant()))
+			      && ($Conf->timeUpdatePaper($prow) || $Me->privChair));
+    if ($prow && $prow->outcome > 0 && ($Conf->timeSubmitFinalPaper() || $Me->privChair))
 	$editable = $finalEditMode = true;
 } else
     $editable = false;
@@ -552,7 +555,7 @@ if ($mode == "edit") {
 
 // prepare paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, false);
-if ($mode == "edit" && $Me->amAssistant())
+if ($mode == "edit" && $Me->privChair)
     $canViewAuthors = true;
 
 if ($editable)
@@ -560,7 +563,7 @@ if ($editable)
 else
     $spacer = "";
 
-$paperTable = new PaperTable($editable, $editable && $useRequest, false, !$canViewAuthors && $Me->amAssistant(), "paper");
+$paperTable = new PaperTable($editable, $editable && $useRequest, false, !$canViewAuthors && $Me->privChair, "paper");
 
 $paperTable->echoDivEnter();
 echo "<table class='paper", ($mode == "edit" ? " editpaper" : ""), "'>\n\n";
@@ -603,13 +606,13 @@ echo $spacer;
 
 
 // Authors
-if ($newPaper || $canViewAuthors || $Me->amAssistant())
+if ($newPaper || $canViewAuthors || $Me->privChair)
     $paperTable->echoAuthorInformation($prow);
 
 // Contact authors
 if ($newPaper)
-    $paperTable->echoNewContactAuthor($Me->amAssistant());
-else if ($canViewAuthors || $Me->amAssistant())
+    $paperTable->echoNewContactAuthor($Me->privChair);
+else if ($canViewAuthors || $Me->privChair)
     $paperTable->echoContactAuthor($prow, $mode == "edit");
 
 // Anonymity
@@ -631,7 +634,7 @@ if (!$finalEditMode)
 
 
 // Options
-$paperTable->echoOptions($prow, $Me->amAssistant());
+$paperTable->echoOptions($prow, $Me->privChair);
 
 
 // Tags
@@ -640,9 +643,9 @@ if ($Me->isPC && $prow && $prow->conflictType <= 0 && !$editable)
 
 
 // Potential conflicts
-if ($paperTable->editable || $Me->amAssistant())
+if ($paperTable->editable || $Me->privChair)
     $paperTable->echoPCConflicts($prow);
-if (($newPaper || $canViewAuthors || $Me->amAssistant()) && !$finalEditMode)
+if (($newPaper || $canViewAuthors || $Me->privChair) && !$finalEditMode)
     $paperTable->echoCollaborators($prow);
 
 
@@ -677,23 +680,23 @@ if ($mode == "edit") {
     $buttons = array();
     if ($newPaper)
 	$buttons[] = "<input class='button' type='submit' name='update' value='Register paper' />";
-    else if ($prow->timeWithdrawn > 0 && ($Conf->timeFinalizePaper($prow) || $Me->amAssistant()))
+    else if ($prow->timeWithdrawn > 0 && ($Conf->timeFinalizePaper($prow) || $Me->privChair))
 	$buttons[] = "<input class='button' type='submit' name='revive' value='Revive paper' />";
     else if ($prow->timeWithdrawn > 0)
 	$buttons[] = "The paper has been withdrawn, and the <a href='deadlines.php'>deadline</a> for reviving it has passed.";
     else {
-	if ($prow->outcome > 0 && ($Conf->timeSubmitFinalPaper() || $Me->amAssistant()))
+	if ($prow->outcome > 0 && ($Conf->timeSubmitFinalPaper() || $Me->privChair))
 	    $buttons[] = array("<input class='button' type='submit' name='submitfinal' value='Submit final copy' />", "");
 	if ($Conf->timeUpdatePaper($prow))
 	    $buttons[] = array("<input class='button' type='submit' name='update' value='Update paper' />", "");
-	else if ($Me->amAssistant())
+	else if ($Me->privChair)
 	    $buttons[] = array("<input class='button' type='submit' name='update' value='Update paper' />", "(PC chair only)");
 	if ($prow->timeSubmitted <= 0)
 	    $buttons[] = "<input class='button' type='submit' name='withdraw' value='Withdraw paper' />";
 	else
 	    $buttons[] = "<div id='foldw' class='foldc' style='position: relative'><button type='button' onclick=\"fold('w', 0)\">Withdraw paper</button><div class='popupdialog extension'><p>Are you sure you want to withdraw this paper from consideration and/or publication?  Only the PC chair can undo this step.</p><input class='button' type='submit' name='withdraw' value='Withdraw paper' /> <button type='button' onclick=\"fold('w', 1)\">Cancel</button></div></div>";
     }
-    if ($Me->amAssistant() && !$newPaper)
+    if ($Me->privChair && !$newPaper)
 	$buttons[] = array("<div id='folddel' class='foldc' style='position: relative'><button type='button' onclick=\"fold('del', 0)\">Delete paper</button><div class='popupdialog extension'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><input class='button' type='submit' name='delete' value='Delete paper' /> <button type='button' onclick=\"fold('del', 1)\">Cancel</button></div></div>", "(PC chair only)");
     echo "    <tr>\n";
     foreach ($buttons as $b) {
@@ -706,7 +709,7 @@ if ($mode == "edit") {
 	echo "      <td class='ptb_explain'>", $x, "</td>\n";
     }
     echo "    </tr>\n  </table></td>\n</tr>\n\n";
-    if ($Me->amAssistant()) {
+    if ($Me->privChair) {
 	echo "<tr>
   <td class='caption'></td>
   <td class='entry' colspan='2'><table>\n";

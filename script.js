@@ -145,11 +145,10 @@ function selassign(elt, which) {
 
 function doRole(what) {
     var pc = document.getElementById("pc");
-    var ass = document.getElementById("ass");
     var chair = document.getElementById("chair");
     if (pc == what && !pc.checked)
-	ass.checked = chair.checked = false;
-    if (pc != what && (ass.checked || chair.checked))
+	chair.checked = false;
+    if (pc != what && chair.checked)
 	pc.checked = true;
 }
 
