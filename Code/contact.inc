@@ -187,11 +187,6 @@ class Contact {
 	    $this->goAlert($url, "That page is only accessible to program committee members.");
     }
 
-    function goIfNotChair($url) {
-	if (!$this->valid() || !$this->isChair)
-	    $this->goAlert($url, "That page is only accessible to program chairs.");
-    }
-
     function goIfNotAssistant($url) {
 	if (!$this->valid() || !$this->amAssistant())
 	    $this->goAlert($url, "That page is only accessible to program chairs and their assistants.");

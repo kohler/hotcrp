@@ -2,7 +2,7 @@
 require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotChair('../index.php');
+$Me->goIfNotAssistant('../index.php');
 $rf = reviewForm();
 
 function queryFromRecipients($who, $per_paper) {

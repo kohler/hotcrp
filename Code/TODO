@@ -36,7 +36,6 @@ Tiny features
 - secondary reviews: can view reviews before completing your own
 - send mail to authors when a new comment is received
 - send mail to authors when a review was submitted during response period
-- better centering on paper buttons
 
 Internals
 - negative conflictTypes in PaperConflict represent review assignments?

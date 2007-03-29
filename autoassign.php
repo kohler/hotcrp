@@ -8,7 +8,7 @@ require_once('Code/paperlist.inc');
 require_once('Code/search.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotChair('index.php');
+$Me->goIfNotAssistant('index.php');
 if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
     $_REQUEST["pap"] = split(" +", $_REQUEST["pap"]);
 if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {

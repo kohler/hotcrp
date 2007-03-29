@@ -3,7 +3,7 @@ require_once('../Code/header.inc');
 include('../Code/Calendar.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotChair('../index.php');
+$Me->goIfNotAssistant('../index.php');
 include('Code.inc');
 
 
