@@ -1,3 +1,269 @@
+2007-03-29 Thursday 17:00  kohler
+
+	* help.php (1.32), index.php (1.111), login.php (1.30), search.php
+	  (1.84), Code/TODO (1.76), Code/conference.inc (1.180),
+	  Code/contactlist.inc (1.9), Code/helpers.inc (1.140),
+	  Code/paperlist.inc (1.113), Code/papertable.inc (1.71),
+	  Code/search.inc (1.51), images/viewas.png (1.2): improve
+	  appearance of paper list links on homepage contact lists allow
+	  administrators to "view as" add "accepted papers" search type
+
+2007-03-29 Thursday 16:19  kohler
+
+	* account.php (1.50), assign.php (1.63), autoassign.php (1.16),
+	  comment.php (1.35), contactauthors.php (1.29), contacts.php
+	  (1.5), deadlines.php (1.24), index.php (1.110), offline.php
+	  (1.20), paper.php (1.123), review.php (1.88), script.js (1.34),
+	  search.php (1.83), settings.php (1.36),
+	  Assistant/PrintAllAbstracts.php (1.16),
+	  Assistant/PrintAllReviews.php (1.18),
+	  Assistant/PrintSomeReviews.php (1.16), Chair/AskForReview.php
+	  (1.16), Chair/AssignPapers.php (1.42),
+	  Chair/BecomeSomeoneElse.php (1.15), Chair/SendMail.php (1.10),
+	  Chair/SendMail2.php (1.25), Chair/SetReviewForm.php (1.31),
+	  Chair/ShowCalendar.php (1.9), Chair/ViewActionLog.php (1.14),
+	  Code/TODO (1.75), Code/conference.inc (1.179), Code/contact.inc
+	  (1.111), Code/contactlist.inc (1.8), Code/helpers.inc (1.139),
+	  Code/paperlist.inc (1.112), Code/papertable.inc (1.70),
+	  Code/review.inc (1.64), Code/reviewtable.inc (1.33),
+	  Code/search.inc (1.50), PC/reviewprefs.php (1.31): Another idea
+	  from Bernhard Ager: Change the "chairs assistant" role into a
+	  "system administrator".  The sysadmin has all chair privileges,
+	  but is not necessarily listed as a member of the PC; non-PC
+	  members cant necessarily find out who the assistants are.  Also,
+	  for clarity, rename "amAssistant()" to "privChair".  And fix a
+	  small bug in paper upload (dont set isSubmit if cannot submit
+	  yet).
+
+2007-03-29 Thursday 15:27  kohler
+
+	* autoassign.php (1.15), Assistant/PrintSomeReviews.php (1.15),
+	  Chair/AskForReview.php (1.15), Chair/AssignPapers.php (1.41),
+	  Chair/BecomeSomeoneElse.php (1.14), Chair/SendMail.php (1.9),
+	  Chair/SendMail2.php (1.24), Chair/SetReviewForm.php (1.30),
+	  Chair/ShowCalendar.php (1.8), Chair/ViewActionLog.php (1.13),
+	  Code/TODO (1.74), Code/contact.inc (1.110): chairs assistants
+	  have chair privileges
+
+2007-03-28 Wednesday 14:13  kohler
+
+	* settings.php (1.35): allow PC Chair Assistants to modify settings
+
+2007-03-26 Monday 09:25  kohler
+
+	* assign.php (1.62), comment.php (1.34), contactauthors.php (1.28),
+	  login.php (1.29), paper.php (1.122), review.php (1.87), style.css
+	  (1.156), Code/TODO (1.73), Code/contact.inc (1.109),
+	  Code/helpers.inc (1.138), Code/papertable.inc (1.69),
+	  Code/reviewtable.inc (1.32): correct some errors in the
+	  Comment/Response functionality; rearrange order of information on
+	  paper pages
+
+2007-03-25 Sunday 09:37  kohler
+
+	* login.php (1.28): correct error message.  (but cant replicate
+	  frans problem)
+
+2007-03-25 Sunday 01:35  kohler
+
+	* tarball.sh (1.38), Code/helpers.inc (1.137), Code/papertable.inc
+	  (1.68), images/viewas.png (1.1): a little icon for "view as
+	  author"
+
+2007-03-25 Sunday 01:35  kohler
+
+	* Code/schema.sql (1.92): default to collecting PC conflicts with
+	  checkboxes
+
+2007-03-25 Sunday 00:33  kohler
+
+	* contactauthors.php (1.27), Code/TODO (1.72), Code/contact.inc
+	  (1.108), Code/papertable.inc (1.67): editing contact authors will
+	  successfully add a contact author who didnt previously have an
+	  account
+
+2007-03-24 Saturday 22:37  kohler
+
+	* Code/papertable.inc (1.66): slightly better text
+
+2007-03-24 Saturday 19:25  kohler
+
+	* paper.php (1.121): draw users attention to the fact that the
+	  paper they tried to upload might be ignored
+
+2007-03-24 Saturday 19:19  kohler
+
+	* Code/papertable.inc (1.65): don't report "last updated N/A"
+
+2007-03-24 Saturday 19:17  kohler
+
+	* paper.php (1.120), Code/helpers.inc (1.136): there were some bugs
+	  with new paper registration: it refused to register a new paper
+	  until you uploaded a PDF. That is fixed. Also better error
+	  messages on missing fields.
+
+2007-03-24 Saturday 18:54  kohler
+
+	* paper.php (1.119): do not save any changes to the paper if there
+	  are errors
+
+2007-03-24 Saturday 18:51  kohler
+
+	* account.php (1.49), deadlines.php (1.23), style.css (1.155):
+	  remove unused styles; empretty account settings page with a more
+	  compact form
+
+2007-03-24 Saturday 17:36  kohler
+
+	* Code/papertable.inc (1.64): tweak
+
+2007-03-24 Saturday 17:19  kohler
+
+	* paper.php (1.118), Code/papertable.inc (1.63), Code/review.inc
+	  (1.63): correct for internet explorer
+
+2007-03-24 Saturday 17:04  kohler
+
+	* account.php (1.48), comment.php (1.33), paper.php (1.117),
+	  review.php (1.86), style.css (1.154), Code/papertable.inc (1.62),
+	  Code/review.inc (1.62): put hints above entry fields, rather than
+	  to the side: this actually looks better and probably works better
+	  on IE
+
+2007-03-24 Saturday 16:33  kohler
+
+	* assign.php (1.61), comment.php (1.32), contactauthors.php (1.26),
+	  paper.php (1.116), review.php (1.85), Code/papertable.inc (1.61):
+	  improve paper registration page with a little extra spacing and
+	  some tweaks to the upload row
+
+2007-03-24 Saturday 16:04  kohler
+
+	* account.php (1.47), login.php (1.27): expand login and account
+	  screens
+
+2007-03-23 Friday 10:09  kohler
+
+	* Code/paperlist.inc (1.111): in paper lists, dont put download
+	  links when the viewer cant download
+
+2007-03-23 Friday 09:58  kohler
+
+	* Code/contact.inc (1.107): get rid of the current list when you
+	  change identity
+
+2007-03-22 Thursday 15:31  kohler
+
+	* paper.php (1.115): fine tune message
+
+2007-03-22 Thursday 14:23  kohler
+
+	* paper.php (1.114), settings.php (1.34), Code/conference.inc
+	  (1.178), Code/contact.inc (1.106), Code/helpers.inc (1.135),
+	  Code/papertable.inc (1.60): A new setting allows authors to
+	  update their submissions until the submission deadline.  If
+	  "sub_freeze" <= 0 (the default), then (1) authors can update
+	  their submissions until the deadline (there is no separate
+	  finalization step), and (2) PC members cannot view submitted
+	  papers until the deadline.  If "sub_freeze" > 0, then (1) authors
+	  must explicitly mark a version as final, and (2) PC members can
+	  view submitted papers as soon as they are finalized.	In either
+	  case, the interface is easier: no separate "Finalize"/"Submit"
+	  button, just a check box that says "This version is ready for
+	  review." or "This is the final submission."
+
+2007-03-20 Tuesday 13:16  kohler
+
+	* Code/TODO (1.71): more todo documentation
+
+2007-03-20 Tuesday 13:13  kohler
+
+	* paper.php (1.113), Code/TODO (1.70), Code/helpers.inc (1.134):
+	  include title words in emails generated by the system (relies on
+	  simplifyWhitespace)
+
+2007-03-20 Tuesday 12:55  kohler
+
+	* paper.php (1.112), Code/conference.inc (1.177): allow updates to
+	  a submitted paper without first unsubmitting the paper (Frans)
+
+2007-03-20 Tuesday 11:17  kohler
+
+	* Code/TODO (1.69): todos
+
+2007-03-20 Tuesday 07:29  kohler
+
+	* Code/TODO (1.68): some possible todos
+
+2007-03-13 Tuesday 17:52  kohler
+
+	* cacheable.php (1.5): this appears to work, although firebug is
+	  reporting confusing information
+
+2007-03-13 Tuesday 17:31  kohler
+
+	* cacheable.php (1.4): yet more
+
+2007-03-13 Tuesday 17:25  kohler
+
+	* cacheable.php (1.3): more
+
+2007-03-13 Tuesday 17:22  kohler
+
+	* cacheable.php (1.2), sessionvar.php (1.9), images/GenChart.php
+	  (1.12): generate correct Expires headers
+
+2007-03-13 Tuesday 17:06  kohler
+
+	* cacheable.php (1.1), tarball.sh (1.37), Code/conference.inc
+	  (1.176), Code/header.inc (1.43): allow the browser to cache page
+	  output in the history buffer (fix Myers problem?). Attempt to
+	  allow the browser to cache javascript and style files, although
+	  this doesnt work yet
+
+2007-03-13 Tuesday 17:05  kohler
+
+	* Code/helpers.inc (1.133): nits
+
+2007-03-13 Tuesday 15:43  kohler
+
+	* Code/search.inc (1.49): fix searching for "without the words:
+	  option:whatever"
+
+2007-03-13 Tuesday 15:18  kohler
+
+	* paper.php (1.111), script.js (1.33), Code/paperlist.inc (1.110),
+	  PC/reviewprefs.php (1.30): add Ajax on the review preferences
+	  page, so preferences are saved incrementally as they are changed
+	  (for Andrew Myers). Potential TODO: there is no feedback that the
+	  preferences are being saved
+
+2007-03-12 Monday 22:31  kohler
+
+	* Code/TODO (1.67): a TODO from Chris
+
+2007-03-12 Monday 08:25  kohler
+
+	* Code/TODO (1.66): document mailtool requirement
+
+2007-03-11 Sunday 14:31  kohler
+
+	* README (1.15): mention "postfix" package requirement [Yuvraj
+	  Agarwal]
+
+2007-03-11 Sunday 14:12  kohler
+
+	* tarball.sh (1.36): release bug fix
+
+2007-03-11 Sunday 11:28  kohler
+
+	* settings.php (1.33): log when settings are updated
+
+2007-03-11 Sunday 11:13  kohler
+
+	* Code/search.inc (1.48): avoid spurious error about "temporary
+	  table Matches"
+
 2007-03-10 Saturday 12:32  kohler
 
 	* paper.php (1.110), Code/review.inc (1.61), Code/search.inc
