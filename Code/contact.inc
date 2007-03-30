@@ -188,7 +188,7 @@ class Contact {
 
     function goIfNotPrivChair($url) {
 	if (!$this->valid() || !$this->privChair)
-	    $this->goAlert($url, "That page is only accessible to program chairs and their assistants.");
+	    $this->goAlert($url, "That page is only accessible to conference administrators.");
     }
 
     function updateDB($conf, $where = "") {
