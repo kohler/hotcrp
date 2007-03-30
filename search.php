@@ -35,6 +35,8 @@ function paperselPredicate($papersel, $prefix = "") {
 $tOpt = array();
 if ($Me->isPC)
     $tOpt["s"] = "Submitted papers";
+if ($Me->canViewDecision(null, $Conf))
+    $tOpt["acc"] = "Accepted papers";
 if ($Me->amReviewer())
     $tOpt["r"] = "Your review assignment";
 if ($Me->reviewsOutstanding)

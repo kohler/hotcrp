@@ -69,8 +69,7 @@ function search() {
     global $ConfSiteBase;
     echo "<table>";
     _alternateRow("Basics", "
-Paper search is the heart of HotCRP.
-All paper lists are obtained through search, search syntax is flexible,
+All HotCRP paper lists are obtained through search, search syntax is flexible,
 and it's possible to download all matching papers and/or reviews at once.
 
 <p>Some useful, and perhaps nonobvious, hints for PC members and chairs:</p>

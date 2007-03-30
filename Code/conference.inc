@@ -691,6 +691,7 @@ class Conference {
 	//   "reviewId" => $rid Only paper reviewed by $rid
 	//   "commentId" => $c  Only paper where comment is $c
 	//   "finalized"	Only submitted papers
+	//   "accepted"		Only accepted papers
 	//   "active"		Only nonwithdrawn papers
 	//   "author"		Only papers authored by $contactId
 	//   "myReviewRequests"	Only reviews requested by $contactId
@@ -867,6 +868,8 @@ class Conference {
 	    $where[] = $this->_paperQuery_where($options['commentId'], "CommentSelector.commentId");
 	if (isset($options['finalized']))
 	    $where[] = "timeSubmitted>0";
+	if (isset($options['accepted']))
+	    $where[] = "outcome>0";
 	if (isset($options['active']))
 	    $where[] = "timeWithdrawn<=0";
 	

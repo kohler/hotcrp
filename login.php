@@ -30,6 +30,7 @@ function doCreateAccount() {
 	$Conf->qe("insert into Chair (contactId) values (" . $_SESSION["Me"]->contactId . ")", "while granting PC chair privilege");
 	$Conf->qe("insert into PCMember (contactId) values (" . $_SESSION["Me"]->contactId . ")", "while granting PC chair privilege");
 	$Conf->qe("delete from Settings where name='setupPhase'", "while leaving setup phase");
+	$Conf->log("Granted PC chair privilege to first user", $_SESSION["Me"]);
 	$Conf->confirmMsg($msg);
 	return true;
     }

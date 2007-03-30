@@ -256,7 +256,7 @@ function topicTable($prow, $active = 0, $conf = null) {
     return $out . "</td></tr></table>";
 }
 
-function authorTable($aus, $htmlspecial = true, $contacter = null) {
+function authorTable($aus, $viewAs = null) {
     global $ConfSiteBase;
     $out = "";
     if (!is_array($aus))
@@ -268,8 +268,8 @@ function authorTable($aus, $htmlspecial = true, $contacter = null) {
 		$out .= "<span class='autblentry_long'>";
 	    else
 		$out .= "<span class='autblentry'>";
-	    $out .= ($htmlspecial ? htmlspecialchars($au) : $au);
-	    if ($contacter !== null && is_array($aux) && count($aux) >= 2 && $contacter->email != $aux[2])
+	    $out .= $au;
+	    if ($viewAs !== null && is_array($aux) && count($aux) >= 2 && $viewAs->email != $aux[2] && $viewAs->privChair)
 		$out .= " <a href=\"" . selfHref(array("viewContact" => $aux[2])) . "\"><img src='${ConfSiteBase}images/viewas.png' title=\"View as " . contactHtml($aux[0], $aux[1]) . "\" /></a>";
 	    $out .= "</span> ";
 	}

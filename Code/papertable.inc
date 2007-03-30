@@ -115,7 +115,7 @@ class PaperTable {
 	    $text = htmlspecialchars($text);
 	
 	if ($authorTable && !$this->editable)
-	    echo authorTable($text, false);
+	    echo authorTable($text);
 	else
 	    echo $text;
 	
@@ -283,7 +283,7 @@ class PaperTable {
 	    $aus = array();
 	    while (($row = edb_row($result)))
 		$aus[] = $row;
-	    echo authorTable($aus, false, ($Me->privChair ? $Me : null));
+	    echo authorTable($aus, $Me);
 	}
 	if ($editMode || ($editMode === null && $this->editable))
 	    echo "<a href='${ConfSiteBase}contactauthors.php?paperId=$prow->paperId'>", ($Me->privChair ? "Edit" : "Add"), "&nbsp;contact&nbsp;authors</a>";
@@ -423,7 +423,7 @@ class PaperTable {
 		$pcconfs[] = "<b>PC paper</b>";
 	    if (!isset($pcconfs))
 		$pcconfs[] = "None";
-	    echo "<tr class='pt_conflict'><td class='caption'>PC conflicts</td><td class='entry'>", authorTable($pcconfs, false), "</td></tr>\n\n";
+	    echo "<tr class='pt_conflict'><td class='caption'>PC conflicts</td><td class='entry'>", authorTable($pcconfs), "</td></tr>\n\n";
 	}
     }
 

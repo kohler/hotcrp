@@ -77,18 +77,29 @@ echo "</div></div>\n";
 
 // Submissions
 $papersub = $Conf->setting("papersub");
-if ($Me->privChair || ($Me->isPC && $papersub)) {
+if ($Me->privChair || ($Me->isPC && $papersub) || ($Me->amReviewer() && $papersub)) {
     echo "<div class='bgrp'><div class='bgrp_head'>Submissions</div><div class='bgrp_body'>\n";
     echo "<form method='get' action='search.php'><input class='textlite' type='text' size='32' name='q' value='' /> &nbsp;<input class='button_small' type='submit' value='Search' /></form>\n";
     echo "<span class='sep'></span><a href='search.php?opt=1'>Advanced search</a>";
-    echo "<table class='half'><tr><td class='l'><ul class='compact'>\n";
-    echo "<li><a href='search.php?q=&amp;t=s'>List submitted papers</a></li>\n";
-    if ($Me->canViewDecision(null, $Conf))
-	echo "<li><a href='search.php?q=decision:yes&amp;t=s'>List accepted papers</a></li>\n";
-    echo "</ul></td><td class='r'><ul class='compact'>";
-    if ($Me->privChair || ($Me->isPC && $Conf->setting("pc_seeall") > 0))
-	echo "<li><a href='search.php?q=&amp;t=all'>List <i>all</i> papers</a></li>\n";
-    echo "</ul></td></tr></table></div></div>\n";
+    echo "<p><table><tr><td><strong>List papers: &nbsp;</strong> </td><td>";
+    $sep = "";
+    if ($Me->isReviewer) {
+	echo $sep, "<a href='search.php?q=&amp;t=r'>Your review assignment</a>";
+	$sep = " &nbsp;|&nbsp; ";
+    }
+    if ($Me->isPC) {
+	echo $sep, "<a href='search.php?q=&amp;t=s'>Submitted</a>";
+	$sep = " &nbsp;|&nbsp; ";
+    }
+    if ($Me->canViewDecision(null, $Conf)) {
+	echo $sep, "<a href='search.php?q=&amp;t=acc'>Accepted</a>";
+	$sep = " &nbsp;|&nbsp; ";
+    }
+    if ($Me->privChair) {
+	echo $sep, "<a href='search.php?q=&amp;t=all'>All</a>";
+	$sep = " &nbsp;|&nbsp; ";
+    }
+    echo "</td></tr></table></p></div></div>\n";
 }
 
 
@@ -148,13 +159,11 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     $sep = "";
 
     echo "<table class='half'><tr><td class='l'><ul class='compact'>\n";
-    if ($Me->isReviewer)
-	echo "<li><a href='search.php?q=&amp;t=r'>List assigned papers</a></li>\n";
     if ($Me->isPC && $Conf->timePCReviewPreferences())
 	echo "<li><a href='PC/reviewprefs.php'>Mark review preferences</a></li>\n";
-    echo "</ul></td><td class='r'><ul class='compact'>\n";
     if ($Me->amReviewer())
 	echo "<li><a href='offline.php'>Offline reviewing</a></li>\n";
+    echo "</ul></td><td class='r'><ul class='compact'>\n";
     if ($Me->privChair)
 	echo "<li><a href='Chair/AssignPapers.php'>PC review assignments and conflicts</a></li>\n";
     if ($Me->privChair || ($Me->isPC && $Conf->timePCViewAllReviews()))

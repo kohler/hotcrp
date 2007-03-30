@@ -724,7 +724,9 @@ class PaperList {
 	  case "authorHome":
 	    return array("Authored papers", 1, 11, 20);
 	  case "s":
-	    return $this->addScores(array("Submitted papers", 100, 1, 11, 27, 41, 21, 70));
+	  case "acc":
+	    $name = ($listname == "s" ? "Submitted" : "Accepted");
+	    return $this->addScores(array($name . " papers", 100, 1, 11, 27, 41, 21, 70));
 	  case "all":
 	    return array("All papers", 100, 1, 11, 20, 27, 70);
 	  case "reviewerHome":

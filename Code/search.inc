@@ -89,6 +89,8 @@ class PaperSearch {
 	    $this->limitName = "all";
 	else if ($me->isPC && (!$ptype || $ptype == "s"))
 	    $this->limitName = "s";
+	else if ($me->isPC && $ptype == "acc")
+	    $this->limitName = "acc";
 	else if ($me->isPC && $ptype == "revs")
 	    $this->limitName = "revs";
 	else if ($this->privChair && $ptype == "all")
@@ -416,6 +418,8 @@ class PaperSearch {
 	if ($this->limitName == "s" || $this->limitName == "r"
 	    || $this->limitName == "req" || $this->limitName == "revs")
 	    $res = $this->_combineQuery($res, array("Paper.timeSubmitted>0", ""));
+	else if ($this->limitName == "acc")
+	    $res = $this->_combineQuery($res, array("Paper.outcome>0", ""));
 
 	$q = "select Paper.paperId from Paper";
 	if ($this->limitName == "r")
@@ -468,6 +472,8 @@ class PaperSearch {
 	    return true;
 	if ($this->limitName == "s" || $this->limitName == "revs")
 	    $queryOptions["finalized"] = 1;
+	else if ($this->limitName == "acc")
+	    $queryOptions["accepted"] = 1;
 	else if ($this->limitName == "r") {
 	    $queryOptions["finalized"] = 1;
 	    $queryOptions["myReviews"] = 1;
