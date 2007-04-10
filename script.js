@@ -115,8 +115,7 @@ var selassign_blur = 0;
 
 function foldassign(which) {
     var folder = document.getElementById("foldass" + which);
-    if (folder.className.indexOf("foldo") < 0
-	&& selassign_blur != which) {
+    if (folder.className.indexOf("foldo") < 0 && selassign_blur != which) {
 	fold("ass" + which, false);
 	document.getElementById("pcs" + which).focus();
     }
@@ -128,15 +127,12 @@ function selassign(elt, which) {
 	document.getElementById("ass" + which).className = "name" + elt.value;
 	var i = document.images["assimg" + which];
 	i.src = i.src.replace(/ass-?\d/, "ass" + elt.value);
-    }
-    var folder = document.getElementById("foldass" + which);
-    if (folder)
-	folder.className = folder.className.replace("foldo", "foldc");
-    if (elt)
 	highlightUpdate();
-    folder = document.getElementById("folderass" + which);
+    }
+    var folder = document.getElementById("folderass" + which);
     if (folder && elt !== 0)
 	folder.focus();
+    setTimeout("fold(\"ass" + which + "\", true)", 50);
     if (elt === 0) {
 	selassign_blur = which;
 	setTimeout("selassign_blur = 0;", 300);
