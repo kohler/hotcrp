@@ -19,6 +19,9 @@ if (($_SESSION["AskedYouToUpdateContactInfo"] < 2
     $Me->go("account.php");
 }
 
+if ($Me->privChair && $Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
+    $Conf->warnMsg("The systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP's preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users will likely be booted off the system earlier than you expect.");
+
 
 $Conf->header("Home", "", actionBar(null, false, ""));
 
