@@ -181,6 +181,10 @@ div.confirm {
 	background: #eeffee url(images/info45.png) 10px 10px no-repeat;
 	border: 1px solid #cceecc;
 }
+div.warning {
+	background: #ffffdd url(images/info45.png) 10px 10px no-repeat;
+	border: 1px solid #ddddcc;
+}
 div.error p:first-child, div.info p:first-child, div.warning p:first-child, div.confirm p:first-child, div.help p:first-child {
 	margin-top: 0em;
 }
