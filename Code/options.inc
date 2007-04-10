@@ -70,12 +70,9 @@ $Opt['paperSite'] = "http://www.read.cs.ucla.edu/hotnets5";
 //		     to $Opt["dbName"].
 //   sessionLifetime Number of seconds a user may be idle before their session
 //                   is garbage collected and they must log in again.  Defaults
-//                   to 86400 (24 hours).
-//                   DEBIAN NOTE: On some Debian installations, a cron job
-//                   garbage-collects old sessions.  That cron job ignores
-//                   local 'session.gc_maxlifetime' settings, and thus
-//                   $Opt['sessionLifetime'], so you'll also need to change
-//		     the system-wide setting in 'php.ini'.
+//                   to 86400 (24 hours).  Should be less than or equal to the
+//		     system-wide setting for 'session.gc_maxlifetime' in
+//		     the PHP initialization file, 'php.ini'.
 //   memoryLimit     Maximum amount of memory a PHP script can use.  Defaults
 //		     to 128MB.
 //   disablePDF      Set to disable PDF format submissions.

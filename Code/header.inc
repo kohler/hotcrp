@@ -85,9 +85,14 @@ $Conf = new Conference();
 
 // How long before a session is automatically logged out?
 //
-// Note that on some Debian installations, a cron job garbage-collects old
+// Note that on many installations, a cron job garbage-collects old
 // sessions.  That cron job ignores local 'session.gc_maxlifetime' settings,
 // so you'll also need to change the system-wide setting in 'php.ini'.
+if (!isset($Opt["sessionLifetime"]))
+    $Opt["sessionLifetime"] = 86400;
+if (isset($_SESSION['Me']) && $_SESSION['Me']->privChair
+    && ini_get('session.gc_maxlifetime') < $Opt["sessionLifetime"])
+    $Conf->warnMsg("The systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars(ini_get('session.gc_maxlifetime')) . " seconds, is less than HotCRP's preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> or users will likely be booted off the system earlier than you want.");
 ini_set('session.gc_maxlifetime', defval($Opt["sessionLifetime"], 86400));
 
 // Allow lots of memory.
