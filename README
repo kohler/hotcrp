@@ -32,10 +32,16 @@ Configuration
   - Run "sudo Code/createdb.sh" to create the database.
 
   - Edit 'my.cnf' (typical location: '/etc/my.cnf') to ensure that MySQL
-    can handle large objects.  In the [mysqld] section, add a line like:
+    can handle large objects.  It should contain something like this:
+
+    [mysqld]
     max_allowed_packet=32M
-    Some deployments, such as Macintoshes, may not have a 'my.cnf' by
-    default.  Just create one.
+
+    If you are accepting very large papers, make max_allowed_packet even
+    larger.  Some deployments, such as Macintoshes, may not have a 'my.cnf'
+    by default; just create one.  If you need to edit my.cnf, you must
+    restart the mysqld server; on Linux boxes "sudo /etc/init.d/mysqld
+    restart" often suffices.
 
 * Site configuration
 
