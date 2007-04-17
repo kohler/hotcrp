@@ -505,7 +505,7 @@ if ($Group == "sub") {
     doCheckbox("sub_collab", "Collect authors' potential conflicts as text");
 
     echo "<div class='smgap'></div>\n";
-    doRadio("sub_freeze", array(0 => array("Authors can update submissions until the deadline", "PC members cannot download submitted papers until the submission deadline passes."), 1 => array("Authors freeze the final version of each submission", "PC members can download papers as soon as they are submitted.")));
+    doRadio("sub_freeze", array(0 => array("Authors can update submissions until the deadline", "PC members cannot download submitted papers until the submission deadline passes."), 1 => array("Authors must freeze the final version of each submission", "PC members can download papers as soon as they are submitted.")));
     
     echo "<div class='smgap'></div><table>\n";
     // compensate for pc_seeall magic

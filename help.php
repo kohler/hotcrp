@@ -319,10 +319,13 @@ Follow these steps to prepare to accept paper submissions.
   potential conflicts as text\").</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}settings.php?group=sub'>Set submission
-  deadlines.</a></strong> Authors first <em>register</em> their submissions,
-  then optionally update them, and finally <em>submit</em> them when they're
-  ready.  Papers cannot be changed after they are submitted (except by the PC
-  chairs).  The only deadline that really matters is the paper submission
+  deadlines.</a></strong> Authors first <em>register</em>, then <em>submit</em>
+  their papers, possibly multiple times; authors choose for each submitted
+  version whether that version is ready for review.  Normally, HotCRP allows
+  authors to update their papers until the deadline, but you can also require
+  that authors \"freeze\" each submission explicitly; only PC chairs and
+  administrators can update frozen submissions.
+  The only deadline that really matters is the paper submission
   deadline, but HotCRP also supports a separate paper registration deadline,
   which will force authors to register a few days before they submit.  The
   optional <em>grace period</em>, which applies to both deadlines, gives
@@ -332,9 +335,11 @@ Follow these steps to prepare to accept paper submissions.
 
 <li><p><strong><a href='${ConfSiteBase}settings.php?group=opt'>Define
   submission options (optional).</a></strong> If desired, the paper submission
-  form can contain additional selectable options, such as \"Consider this
+  form can list additional checkboxes, such as \"Consider this
   paper for the Best Student Paper award\" or \"Provide this paper to the
-  European shadow PC\".</p></li>
+  European shadow PC\", that submitters can select.  You can
+  <a href='${ConfSiteBase}search.php'>search</a> for papers with or without
+  each option.</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}settings.php?group=opt'>Define paper
   topics (optional).</a></strong> These are topics, such as \"Applications\"
@@ -467,7 +472,7 @@ supposedly reduces bias.)
 
 <li><p>The night before the meeting, <strong><a
   href='${ConfSiteBase}search.php?q=&amp;t=s&amp;showact=1'>download all
-  reviews onto a laptop</a></strong> (Get &gt; All reviews) just in case the
+  reviews onto a laptop</a></strong> (Get &gt; All reviews) in case the
   Internet explodes and you can't reach HotCRP from the meeting
   place.</p></li>
 
