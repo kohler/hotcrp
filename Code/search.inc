@@ -233,32 +233,32 @@ class PaperSearch {
 		$word = str_replace('"', '', $word);
 
 	    $re .= ($re == "" ? "" : "|") . preg_quote($word);
-	    $word = preg_replace("/([%_\\\\])/", "\\\$1", $word);
-	    $word = sqlq($word);
+	    $lword = sqlq_for_like($word);
 	    $qp = "";
 	    if ($special ? $special == "ti" : isset($this->fields['ti']))
-		$qp .= " or (title like '%$word%')";
+		$qp .= " or (title like '%$lword%')";
 	    if ($special ? $special == "ab" : isset($this->fields['ab']))
-		$qp .= " or (abstract like '%$word%')";
+		$qp .= " or (abstract like '%$lword%')";
 	    if (($special ? $special == "au" : isset($this->fields['au'])) && $this->allowAuthor)
-		$qp .= " or (${auextra}authorInformation like '%$word%')";
+		$qp .= " or (${auextra}authorInformation like '%$lword%')";
 	    if (($special ? $special == "co" : isset($this->fields['co'])) && $this->privChair)
-		$qp .= " or (${auextra}Paper.collaborators like '%$word%')";
+		$qp .= " or (${auextra}Paper.collaborators like '%$lword%')";
 	    if ($special ? $special == "re" : isset($this->fields['re']))
-		$qp .= $this->_searchReviewer($word, $type, false);
+		$qp .= $this->_searchReviewer($lword, $type, false);
 	    if ($special ? $special == "sre" : isset($this->fields['sre']))
-		$qp .= $this->_searchReviewer($word, $type, true);
+		$qp .= $this->_searchReviewer($lword, $type, true);
 	    if ($special ? $special == "pri" : isset($this->fields['pri']))
-		$qp .= $this->_searchReviewer($word, $type, false, REVIEW_PRIMARY);
+		$qp .= $this->_searchReviewer($lword, $type, false, REVIEW_PRIMARY);
 	    if ($special ? $special == "spri" : isset($this->fields['spri']))
-		$qp .= $this->_searchReviewer($word, $type, true, REVIEW_PRIMARY);
+		$qp .= $this->_searchReviewer($lword, $type, true, REVIEW_PRIMARY);
 	    if ($special ? $special == "sec" : isset($this->fields['sec']))
-		$qp .= $this->_searchReviewer($word, $type, false, REVIEW_SECONDARY);
+		$qp .= $this->_searchReviewer($lword, $type, false, REVIEW_SECONDARY);
 	    if ($special ? $special == "ssec" : isset($this->fields['ssec']))
-		$qp .= $this->_searchReviewer($word, $type, true, REVIEW_SECONDARY);
+		$qp .= $this->_searchReviewer($lword, $type, true, REVIEW_SECONDARY);
 	    if ((($special ? $special == "tag" : isset($this->fields['tag']))
 		 || ($special ? $special == "order" : isset($this->fields['order'])))
 		&& $this->amPC) {
+		require_once("tags.inc");
 		if ($special ? $special == "order" : isset($this->fields['order']))
 		    $this->orderTag = ($this->orderTag === false ? $word : null);
 		$confpart = "";
@@ -266,17 +266,19 @@ class PaperSearch {
 		    $confpart = " and conflictType is null";
 		    $this->any |= self::ANY_CONFLICT;
 		}
+		if (($e = checkTagError($word)))
+		    $this->warn(htmlspecialchars($e));
 		if ($word == "none") {
 		    $qp .= " or (alltags is null$confpart)";
 		    $this->any |= self::ANY_ALLTAGS;
 		} else if ($type == "any") {
-		    $qp .= " or (tag='$word'$confpart)";
+		    $qp .= " or (tag='" . sqlq($word) . "'$confpart)";
 		    $this->any |= self::ANY_TAG;
 		} else if ($type == "all") {
-		    $qp .= " or (alltags like '%#$word#%'$confpart)";
+		    $qp .= " or (alltags like '%#$lword#%'$confpart)";
 		    $this->any |= self::ANY_ALLTAGS;
 		} else {
-		    $qp .= " or (alltags is not null and alltags like '%#$word#%'$confpart)";
+		    $qp .= " or (alltags is not null and alltags like '%#$lword#%'$confpart)";
 		    $this->any |= self::ANY_ALLTAGS;
 		}
 	    }
@@ -346,9 +348,9 @@ class PaperSearch {
 		else if ($word == "any")
 		    $qp .= " or (leadInfo is not null)";
 		else if ($type != "none")
-		    $qp .= " or (leadInfo like '%$word%')";
+		    $qp .= " or (leadInfo like '%$lword%')";
 		else
-		    $qp .= " or (leadInfo is not null and leadInfo like '%$word%')";
+		    $qp .= " or (leadInfo is not null and leadInfo like '%$lword%')";
 	    }
 	    if ($special ? $special == "shepherd" : isset($this->fields['shepherd'])) {
 		$this->any |= self::ANY_SHEPHERD;
@@ -357,9 +359,9 @@ class PaperSearch {
 		else if ($word == "any")
 		    $qp .= " or (shepherdInfo is not null)";
 		else if ($type != "none")
-		    $qp .= " or (shepherdInfo like '%$word%')";
+		    $qp .= " or (shepherdInfo like '%$lword%')";
 		else
-		    $qp .= " or (shepherdInfo is not null and shepherdInfo like '%$word%')";
+		    $qp .= " or (shepherdInfo is not null and shepherdInfo like '%$lword%')";
 	    }
 	    
 	    if ($qp)

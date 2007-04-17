@@ -46,6 +46,10 @@ function sqlq($value) {
     return mysql_real_escape_string($value);
 }
 
+function sqlq_for_like($value) {
+    return preg_replace("/(?=[%_\\\\'\"\\x00\\n\\r\\x1a])/", "\\", $value);
+}
+
 function sqlqtrim($value) {
     return mysql_real_escape_string(trim($value));
 }

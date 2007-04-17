@@ -3,21 +3,25 @@
 // HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+function checkTagError($tag) {
+    if ($tag == "")
+	return "Empty tag.";
+    else if (strlen($tag) > TAG_MAXLEN)
+	return "Tag '$tag' too long; maximum " . TAG_MAXLEN . " characters.";
+    else if (!preg_match('/\A[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*#?\d*\Z/', $tag))
+	return "Tag '$tag' contains odd characters.";
+    else if ($tag == "none")
+	return "Tag '$tag' is reserved.";
+    else
+	return "";
+}
+
 function checkTag($tag, $reporterr = true) {
     global $Conf;
-    if ($tag == "")
-	$e = "Empty tag.";
-    else if (strlen($tag) > TAG_MAXLEN)
-	$e = "Tag '" . htmlspecialchars($tag) . "' too long; maximum " . TAG_MAXLEN . " characters.";
-    else if (!preg_match('/\A[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*#?\d*\Z/', $tag))
-	$e = "Tag '" . htmlspecialchars($tag) . "' contains odd characters.";
-    else if ($tag == "none")
-	$e = "Tag '" . htmlspecialchars($tag) . "' is reserved.";
-    else
-	return true;
-    if ($reporterr)
-	$Conf->errorMsg($e);
-    return false;
+    $e = checkTagError($tag);
+    if ($e && $reporterr)
+	$Conf->errorMsg(htmlspecialchars($e));
+    return $e == "";
 }
 
 function tagBase($tag) {
