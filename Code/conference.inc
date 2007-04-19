@@ -1281,6 +1281,7 @@ class Conference {
 
 	$avg = ($n > 0 ? $sum / $n : 0);
 	$dev = ($n > 1 ? sqrt(($sumsq - $sum*$sum/$n) / ($n - 1)) : 0);
+	$avgtext = ($n > 1 ? sprintf("%0.2f &plusmn; %0.2f", $avg, $dev) : sprintf("%0.2f", $avg));
 
 	$url = "";
 	for ($key = 1; $key <= $max; $key++)
@@ -1289,17 +1290,10 @@ class Conference {
 
 	if ($style == 0) {
 	    $retstr = "<table><tr><td align=\"center\">";
-	    $retstr .= "<img src=\"" . htmlspecialchars($url) . "\" ";
-	    $retstr .= sprintf("alt=\"avg=%0.2f\" ", $avg);
-	    $retstr .= "align=bottom>";
-	    $retstr .= "</td><tr><td align=\"center\"><font size=-2>";
-	    if ($n > 0)
-		$retstr .= sprintf("avg=%0.2f", $avg);
-	    if ($n > 1)
-		$retstr .= sprintf(" std=%0.2f", $dev);
-	    $retstr .= "</font></td></tr></table>";
+	    $retstr .= "<img src=\"" . htmlspecialchars($url) . "\" alt=\"$avgtext\" title=\"$avgtext\" align='bottom' />";
+	    $retstr .= "</td><tr><td align=\"center\"><font size='-2'>$avgtext</font></td></tr></table>";
 	} else {
-	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=$style\" " . sprintf("alt=\"avg=%0.2f\" ", $avg);
+	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=$style\" alt=\"$avgtext\" title=\"$avgtext\" ";
 	    if ($style == 1)
 		$retstr .= "width='" . (5 * $max + 3)
 		    . "' height='" . (5 * max(3, max($merit)) + 3) . "' ";
