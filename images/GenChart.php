@@ -34,7 +34,7 @@ $picWidth = ($blockWidth + $blockPad) * ($valMax - $valMin)
 
 $picHeight = $blockHeight * $maxY + $blockSkip * ($maxY+1);
 
-$pic=ImageCreate($picWidth+1,$picHeight+1);
+$pic = @imagecreate($picWidth+1, $picHeight+1);
 
 //
 // White background, black outline
@@ -44,8 +44,8 @@ $cBlack = imagecolorallocate($pic,0,0,0);
 $cgrey = imagecolorallocate($pic, 190, 190, 255);
 
 if ($s == 0) {
-    ImageFilledRectangle($pic,0,0,$picWidth+1,$picHeight+1,$cBlack);
-    ImageFilledRectangle($pic,1,1,$picWidth-1,$picHeight-1,$cWhite);
+    imagefilledrectangle($pic,0,0,$picWidth+1,$picHeight+1,$cBlack);
+    imagefilledrectangle($pic,1,1,$picWidth-1,$picHeight-1,$cWhite);
 } else {
     imagecolortransparent($pic, $cWhite);
     imagefilledrectangle($pic, 0, $picHeight, $picWidth + 1, $picHeight + 1, $cgrey);
@@ -61,7 +61,7 @@ for ($value = $valMin; $value < $valMax; $value++) {
     $frac = ($value - $valMin) / ($valMax - $valMin);
 
     //  print "frac is $frac\n";
-    $cFill=ImageColorAllocate($pic, $cgood[0] * $frac + $cbad[0] * (1 - $frac),
+    $cFill=imagecolorallocate($pic, $cgood[0] * $frac + $cbad[0] * (1 - $frac),
 	$cgood[1] * $frac + $cbad[1] * (1 - $frac),
 	$cgood[2] * $frac + $cbad[2] * (1 - $frac));
 
@@ -75,7 +75,7 @@ for ($value = $valMin; $value < $valMax; $value++) {
 
   for ($h = 1; $h <= $height; $h++) {
     //    print "Do $value/$h - curx is $curX, $curY\n";
-    $i = ImageFilledRectangle($pic,
+    $i = imagefilledrectangle($pic,
 			      $curX, $curY - $blockHeight,
 			      $curX + $blockWidth,
 			      $curY,
@@ -86,8 +86,8 @@ for ($value = $valMin; $value < $valMax; $value++) {
 }
 
 if ($s == 0) {
-    ImageStringUp($pic, 2, 0, 30, "Bad", $cBlack);
-    ImageStringUp($pic, 2, $picWidth-$textWidth, 30, "Good", $cBlack);
+    imagestringup($pic, 2, 0, 30, "Bad", $cBlack);
+    imagestringup($pic, 2, $picWidth-$textWidth, 30, "Good", $cBlack);
 } else {
     if ($values[$valMin] == 0)
 	imagestring($pic, 1, $textWidth + $blockPad, $picHeight - $blockHeight - $blockSkip - 3, "L", $cgrey);
@@ -99,5 +99,5 @@ header("Content-Type: image/png");
 header("Cache-Control: public, max-age=31557600");
 header("Expires: " . gmdate("D, d M Y H:i:s", time() + 31557600) . " GMT");
 header("Pragma: "); // don't know where the pragma is coming from; oh well
-ImagePNG($pic);
+imagepng($pic);
 exit();
