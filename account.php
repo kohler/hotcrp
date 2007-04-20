@@ -254,7 +254,7 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     echo "<tr>
   <td class='caption'>Roles</td>
   <td class='entry'>\n";
-    foreach (array("pc" => "PC&nbsp;member", "chair" => "PC&nbsp;chair", "ass" => "System&nbsp;administrator", "chair" => "PC&nbsp;chair") as $key => $value) {
+    foreach (array("pc" => "PC&nbsp;member", "chair" => "PC&nbsp;chair", "ass" => "System&nbsp;administrator") as $key => $value) {
 	echo "    <input type='checkbox' name='$key' id='$key' value='1' ";
 	if (defval($_REQUEST["$key"]))
 	    echo "checked='checked' ";
