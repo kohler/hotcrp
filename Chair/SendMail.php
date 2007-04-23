@@ -41,9 +41,10 @@ echo "    <option value='author-late-review'>Contact authors who received late r
 
 Your message here.
 
-", wordwrap("Contact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.
+Contact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.
 
-- $Conf->shortName Conference Submissions"), "\n</textarea></td>
+- $Conf->shortName Conference Submissions
+</textarea></td>
 </tr>
 
 <tr>

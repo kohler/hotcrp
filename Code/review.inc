@@ -381,7 +381,7 @@ class ReviewForm {
 	    && (!$rrow || $rrow_contactId == 0 || $rrow_contactId == $contact->contactId);
 	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
 
-	$x = "==+== =========================================================================\n";
+	$x = "==+== =====================================================================\n";
 	//$x .= "$prow->paperId:$myReview:$viewAllFields:$rrow->contactId:$rrow->reviewContactId;;$prow->conflictType;;$prow->reviewType\n";
 
 	$x .= "==+== Begin Review";
@@ -394,14 +394,14 @@ class ReviewForm {
 	    $x .= wordWrapIndent($prow->title, "==-== Paper: ", "==-==        ") . "\n";
 	if ($contact->canViewReviewerIdentity($prow, $rrow, $conf)) {
 	    if ($rrow && isset($rrow->reviewFirstName))
-		$x .= "==+== Review by " . contactText($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail) . "\n";
+		$x .= "==+== Reviewer: " . contactText($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail) . "\n";
 	    else if ($myReview)
-		$x .= "==+== Review by " . contactText($contact) . "\n";
+		$x .= "==+== Reviewer: " . contactText($contact) . "\n";
 	    else if ($rrow && isset($rrow->lastName))
-		$x .= "==+== Review by " . contactText($rrow) . "\n";
+		$x .= "==+== Reviewer: " . contactText($rrow) . "\n";
 	}
 	if ($rrow && $rrow->reviewModified)
-	    $x .= "==-== Modified " . $conf->printableTime($rrow->reviewModified) . "\n";
+	    $x .= "==-== Updated " . $conf->printableTime($rrow->reviewModified) . "\n";
 
 	if ($myReview) {
 	    $x .= "\n==+== Paper #";
@@ -461,6 +461,74 @@ class ReviewForm {
 	    $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
 	}
 	return $x . "\n==+== End Review\n";
+    }
+
+    function authorTextForm($prow, $rrow, $contact, $conf) {
+	global $Conf;
+	$conf = ($conf ? $conf : $Conf);
+
+	$rrow_contactId = 0;
+	if (isset($rrow) && isset($rrow->reviewContactId))
+	    $rrow_contactId = $rrow->reviewContactId;
+	else if (isset($rrow) && isset($rrow->contactId))
+	    $rrow_contactId = $rrow->contactId;
+
+	$x = "===========================================================================\n";
+	$n = "$conf->shortName Review";
+	if ($rrow && isset($rrow->reviewOrdinal))
+	    $n .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
+	$x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
+	if ($rrow && $rrow->reviewModified) {
+	    $n = "Updated " . $conf->printableTime($rrow->reviewModified);
+	    $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
+	}
+	$x .= "---------------------------------------------------------------------------\n";
+	$n = "Paper #" . $prow->paperId . ": ";
+	$l = max(14, (int) ((75.5 - strlen($prow->title) - strlen($n)) / 2) + strlen($n));
+	$x .= wordWrapIndent($prow->title, $n, $l) . "\n";
+	if ($rrow && $contact->canViewReviewerIdentity($prow, $rrow, $conf)) {
+	    if (isset($rrow->reviewFirstName))
+		$n = contactText($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
+	    else if (isset($rrow->lastName))
+		$n = contactText($rrow);
+	    else
+		continue;
+	    $x .= wordWrapIndent($n, "Reviewer: ", $l) . "\n";
+	}
+	$x .= "---------------------------------------------------------------------------\n\n";
+
+	$i = 0;
+	$lastNumeric = false;
+	foreach ($this->fieldOrder as $field) {
+	    $i++;
+	    if ($this->authorView[$field] <= 0)
+		continue;
+
+	    $fval = "";
+	    if ($rrow != null && isset($rrow->$field))
+		$fval = rtrim(str_replace("\r\n", "\n", $rrow->$field));
+	    if (isset($this->options[$field]) && $fval == "0")
+		$fval = "";
+	    if ($fval == "")
+		continue;
+
+	    if (isset($this->options[$field])) {
+		$y = defval($this->options[$field][$fval], "");
+		$sn = $this->shortName[$field] . ":";
+		# "(1-" . count($this->options[$field]) . "):";
+		if (strlen($this->shortName[$field]) > 39 + strlen($fval))
+		    $x .= $sn . "\n" . wordWrapIndent($y, $fval . ". ", 39 + strlen($fval)) . "\n";
+		else
+		    $x .= wordWrapIndent($y, $sn . " " . $fval . ". ", 39 + strlen($fval)) . "\n";
+		$lastNumeric = true;
+	    } else {
+		$n = "===== " . $this->shortName[$field] . " =====";
+		$x .= "\n" . str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
+		$x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
+		$lastNumeric = false;
+	    }
+	}
+	return $x;
     }
 
     function garbageMessage(&$tf, $lineno, &$garbage) {

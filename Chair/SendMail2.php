@@ -5,6 +5,75 @@ $Me->goIfInvalid();
 $Me->goIfNotPrivChair('../index.php');
 $rf = reviewForm();
 
+function mailExpand($what, $row) {
+    global $Conf;
+
+    if ($what == "%FIRST%")
+	return $row->firstName;
+    if ($what == "%LAST%")
+	return $row->lastName;
+    if ($what == "%EMAIL%")
+	return $row->email;
+    if ($what == "%NAME%")
+	return contactText($row->firstName, $row->lastName);
+
+    // rest is only there if we have a real paper
+    if (defval($row->paperId) <= 0)
+	return $what;
+    
+    if ($what == "%TITLE%")
+	return $row->title;
+    if ($what == "%NUMBER%")
+	return $row->paperId;
+    if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
+	if ($Conf->blindSubmission() > 1
+	    || ($Conf->blindSubmission() == 1 && $row->blind))
+	    return "Hidden for blind review";
+	return $row->authorInformation;
+    }
+    if ($what == "%REVIEWS%") {
+	$contact = new Contact;
+	$contact->makeMinicontact($row);
+	return getReviews($row->paperId, $contact, false);
+    }
+    if ($what == "%COMMENTS%")
+	return getComments($row->paperId);
+
+    return $what;
+}
+    
+function wordWrapMail($text, $row) {
+    $lines = explode("\n", $text);
+    $t = "";
+    for ($i = 0; $i < count($lines); $i++) {
+	$line = rtrim($lines[$i]);
+	if ($line != "" && ctype_alpha($line[0]))
+	    while ($i+1 < count($lines) && ($linex = rtrim($lines[$i+1])) != ""
+		   && ctype_alpha($linex[0])) {
+		$line .= " " . $linex;
+		$i++;
+	    }
+
+	if ($line == "")
+	    $t .= "\n";
+	else if (preg_match('/^%\w+%$/', $line))
+	    $t .= mailExpand($line, $row) . "\n";
+	else if (preg_match('/^([ \t][ \t]*.*?: )(%\w+%)$/', $line, $m))
+	    $t .= wordWrapIndent(mailExpand($m[2], $row), $m[1], strlen($m[1])) . "\n";
+	else if (strpos($line, '%') !== false) {
+	    $l = "";
+	    while (preg_match('/^(.*?)(%\w+%)(.*)$/s', $line, $m)) {
+		$l .= $m[1] . mailExpand($m[2], $row);
+		$line = $m[3];
+	    }
+	    $l .= $line;
+	    $t .= wordWrapIndent($l, "", 0) . "\n";
+	} else
+	    $t .= wordWrapIndent($line, "", 0) . "\n";
+    }
+    return $t;
+}
+
 function queryFromRecipients($who, $per_paper) {
     global $rf;
 
@@ -16,7 +85,7 @@ function queryFromRecipients($who, $per_paper) {
     if ($who == "submit-not-finalize")
 	return "select ContactInfo.contactId, PCMember.contactId as isPC,
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
-		Paper.paperId, Paper.title, Paper.authorInformation
+		Paper.paperId, Paper.title, Paper.authorInformation, Paper.blind
 		from Paper
 		join PaperConflict using (paperId)
 		join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId)
@@ -27,7 +96,7 @@ function queryFromRecipients($who, $per_paper) {
     if ($who == "submit-and-finalize")
 	return "select ContactInfo.contactId, PCMember.contactId as isPC,
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
-		Paper.paperId, Paper.title, Paper.authorInformation
+		Paper.paperId, Paper.title, Paper.authorInformation, Paper.blind
 		from Paper
 		join PaperConflict using (paperId)
 		join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId)
@@ -40,7 +109,7 @@ function queryFromRecipients($who, $per_paper) {
 	&& isset($rf->options['outcome'][$out]))
 	return "select ContactInfo.contactId, PCMember.contactId as isPC,
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
-		Paper.paperId, Paper.title, Paper.authorInformation
+		Paper.paperId, Paper.title, Paper.authorInformation, Paper.blind
 		from Paper
 		join PaperConflict using (paperId)
 		join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId)
@@ -52,7 +121,7 @@ function queryFromRecipients($who, $per_paper) {
     $query = "
 		SELECT
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
-		Paper.paperId, Paper.title
+		Paper.paperId, Paper.title, Paper.authorInformation, Paper.blind
 		from ContactInfo join PaperReview using (contactId)
 		join Paper using (paperId)
 		where PaperReview.reviewSubmitted<=0 and PaperReview.reviewType=" . REVIEW_EXTERNAL . "
@@ -61,8 +130,8 @@ function queryFromRecipients($who, $per_paper) {
 	";
     return $query;
   } else if ($who == "review-not-finalize") {
-    $query = "SELECT ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
-       . " Paper.paperId, Paper.title "
+	$query = "SELECT ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
+       . " Paper.paperId, Paper.title, Paper.authorInformation, Paper.blind "
       . " FROM ContactInfo, PaperReview, Paper "
       . " WHERE PaperReview.contactId=ContactInfo.contactID AND PaperReview.reviewSubmitted=0 "
       . " AND PaperReview.paperId=Paper.paperId "
@@ -72,7 +141,7 @@ function queryFromRecipients($who, $per_paper) {
     return $query;
   } else if ($who == "review-finalized") {
     $query = "SELECT ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, "
-       . " Paper.paperId, Paper.title "
+       . " Paper.paperId, Paper.title, Paper.authorInformation, Paper.blind "
       . " FROM ContactInfo, Paper, PaperReview "
       . " WHERE PaperReview.contactId=ContactInfo.contactID AND PaperReview.reviewSubmitted>0 "
       . " AND PaperReview.paperId=Paper.paperId "
@@ -81,7 +150,7 @@ function queryFromRecipients($who, $per_paper) {
       ;
     return $query;
   } else if ($who == "author-late-review") {
-      $query = "SELECT DISTINCT firstName, lastName, email, Paper.paperId, title "
+      $query = "SELECT DISTINCT firstName, lastName, email, Paper.paperId, Paper.title, Paper.authorInformation, Paper.blind "
              . "FROM ContactInfo, Paper, PaperReview, Settings "
 	     . "WHERE Paper.timeSubmitted>0 "
 	     . "AND PaperReview.paperId = Paper.paperId "
@@ -109,10 +178,10 @@ function getReviews($paperId, $contact, $finalized) {
 		left join PaperReview as ContactReview on (ContactReview.contactId=$contact->contactId and ContactReview.paperId=PaperReview.paperId)
 		where PaperReview.paperId=$paperId order by reviewOrdinal", "while retrieving reviews");
     if (edb_nrows($result)) {
-	$text = $rf->textFormHeader($Conf, edb_nrows($result) > 1, false);
+	$text = "";
 	while (($row = edb_orow($result)))
 	    if ($row->reviewSubmitted > 0) {
-		$text .= $rf->textForm($row, $row, $contact, $Conf, null) . "\n";
+		$text .= $rf->authorTextForm($row, $row, $contact, $Conf, null) . "\n";
 	    }
 	return $text;
     } else
@@ -123,23 +192,28 @@ function getComments($paperId) {
     global $Conf;
 
     $result = $Conf->qe("select PaperComment.*,
- 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
+ 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
+		PaperConflict.conflictType
 		from PaperComment
- 		join ContactInfo using(contactId)
+ 		join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
+		left join PaperConflict on (PaperConflict.paperId=PaperComment.paperId and PaperConflict.contactId=PaperComment.contactId)
 		where PaperComment.paperId=$paperId and forAuthors>0 order by commentId", "while retrieving comments");
     $text = "";
     while (($row = edb_orow($result))) {
-	$text .= "==+== =========================================================================
-==-== Comment";
+	$text .= "===========================================================================\n";
+	$n = ($row->conflictType == CONFLICT_AUTHOR ? "Author's Response" : "Comment");
 	if ($row->blind <= 0)
-	    $text .= " by " . contactText($row);
-	$text .= "\n==-== Modified " . $Conf->printableTime($row->timeModified) . "\n\n";
-	$text .= $row->comment . "\n";
+	    $n .= " by " . contactText($row);
+	$text .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
+	$n = "Updated " . $Conf->printableTime($row->timeModified);
+	$text .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
+	$text .= "---------------------------------------------------------------------------\n";
+	$text .= $row->comment . "\n\n";
     }
     return $text;
 }
 
-$per_paper = (preg_match("/%(TITLE|NUMBER|REVIEWS|COMMENTS)%/", $_REQUEST["subject"] . " " . $_REQUEST["emailBody"]) > 0);
+$per_paper = (preg_match("/%(TITLE|AUTHORS|NUMBER|REVIEWS|COMMENTS)%/", $_REQUEST["subject"] . " " . $_REQUEST["emailBody"]) > 0);
 
 $query = queryFromRecipients($_REQUEST["recipients"], $per_paper);
 
@@ -177,33 +251,14 @@ while (($row = edb_orow($result))) {
     $subj = str_replace("%LAST%", $row->lastName, $subj);
     $subj = str_replace("%EMAIL%", $row->email, $subj);
 
-    $msg = str_replace("%TITLE%", $row->title, $msg);
-    $msg = str_replace("%NUMBER%", $row->paperId, $msg);
-    $msg = str_replace("%FIRST%", $row->firstName, $msg);
-    $msg = str_replace("%LAST%", $row->lastName, $msg);
-    $msg = str_replace("%EMAIL%", $row->email, $msg);
-
-    if (defval($row->paperId) > 0) {
-	$paperId = $row->paperId;
-	if (substr_count($msg, "%REVIEWS%") != 0) {
-	    $contact = new Contact;
-	    $contact->makeMinicontact($row);
-	    $reviews = getReviews($paperId, $contact, false);
-	    $msg=str_replace("%REVIEWS%", $reviews, $msg);
-	}
-
-	if (substr_count($msg, "%COMMENTS%") != 0) {
-	    $comments = getComments($paperId);
-	    $msg=str_replace("%COMMENTS%", $comments, $msg);
-	}
-    }
+    $msg = wordWrapMail($msg, $row);
 
     print "<table border=1 width=75%> <tr> <td> To: ";
     echo htmlspecialchars($row->email), "<br />Subject: [", htmlspecialchars($Conf->shortName), "] ", htmlspecialchars($subj);
     print  "</td> </tr>\n ";
     print "<tr> <td><pre>";
     print htmlspecialchars($msg);
-    print "</pre></td> </tr> </table> <br> ";
+    print "</pre><hr /></td> </tr> </table> <br> ";
 
     if (isset($_REQUEST["sendTheMail"]) ) {
 	if ($Conf->allowEmailTo($row->email))
