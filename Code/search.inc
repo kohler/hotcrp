@@ -284,14 +284,11 @@ class PaperSearch {
 		}
 	    }
 	    if ($special ? $special == "status" : isset($this->fields['status'])) {
-		if ((strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
-		    && ($this->privChair || $this->limitName == "a"))
+		if (strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
 		    $qp .= " or (timeWithdrawn>0)";
-		else if ((strcasecmp($word, "submitted") == 0 || strcasecmp($word, "submit") == 0 || strcasecmp($word, "sub") == 0)
-			 && ($this->amPC || $this->limitName == "a"))
+		else if (strcasecmp($word, "submitted") == 0 || strcasecmp($word, "submit") == 0 || strcasecmp($word, "sub") == 0)
 		    $qp .= " or (timeSubmitted>0)";
-		else if ((strcasecmp($word, "unsubmitted") == 0 || strcasecmp($word, "unsubmit") == 0 || strcasecmp($word, "unsub") == 0)
-			 && ($this->privChair || $this->limitName == "a"))
+		else if (strcasecmp($word, "unsubmitted") == 0 || strcasecmp($word, "unsubmit") == 0 || strcasecmp($word, "unsub") == 0)
 		    $qp .= " or (timeSubmitted<=0 and timeWithdrawn<=0)";
 		else
 		    $this->warn("Valid search statuses are 'withdrawn', 'submitted', and 'unsubmitted'.");
