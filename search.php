@@ -9,26 +9,10 @@ require_once('Code/search.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $getaction = "";
-if (isset($_REQUEST["get"]) && isset($_REQUEST["getaction"]))
+if (isset($_REQUEST["get"]))
+    $getaction = $_REQUEST["get"];
+else if (isset($_REQUEST["getgo"]) && isset($_REQUEST["getaction"]))
     $getaction = $_REQUEST["getaction"];
-if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
-    $_REQUEST["pap"] = split(" +", $_REQUEST["pap"]);
-if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
-    $papersel = array();
-    foreach ($_REQUEST["pap"] as $p)
-	if (($p = cvtint($p)) > 0)
-	    $papersel[] = $p;
-    if (count($papersel) == 0)
-	unset($papersel);
-}
-
-
-function paperselPredicate($papersel, $prefix = "") {
-    if (count($papersel) == 1)
-	return "${prefix}paperId=$papersel[0]";
-    else
-	return "${prefix}paperId in (" . join(", ", $papersel) . ")";
-}
 
 
 // paper group
@@ -59,6 +43,30 @@ if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
 }
 if (!isset($_REQUEST["t"]))
     $_REQUEST["t"] = key($tOpt);
+
+
+// paper selection
+function paperselPredicate($papersel, $prefix = "") {
+    if (count($papersel) == 1)
+	return "${prefix}paperId=$papersel[0]";
+    else
+	return "${prefix}paperId in (" . join(", ", $papersel) . ")";
+}
+
+if (isset($_REQUEST["pap"]) && $_REQUEST["pap"] == "all") {
+    $Search = new PaperSearch($Me, $_REQUEST);
+    $_REQUEST["pap"] = $Search->paperList();
+}
+if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
+    $_REQUEST["pap"] = split(" +", $_REQUEST["pap"]);
+if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
+    $papersel = array();
+    foreach ($_REQUEST["pap"] as $p)
+	if (($p = cvtint($p)) > 0)
+	    $papersel[] = $p;
+    if (count($papersel) == 0)
+	unset($papersel);
+}
 
 
 // download selected papers

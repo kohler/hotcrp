@@ -49,7 +49,7 @@ Contact the site administrator, $Conf->contactName <$Conf->contactEmail>, with a
 
 <tr>
   <td class='caption'></td>
-  <td class='entry'><input type='submit' name='send' value='Send' class='button' /></td>
+  <td class='entry'><input type='submit' name='send' value='Prepare mail' class='button' /></td>
 </tr>
 
 </table>

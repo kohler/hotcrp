@@ -631,7 +631,7 @@ class PaperList {
 	    $t .= "    <option value='topics'>Topics (text)</option>\n";
 	if ($this->contact->privChair || ($this->contact->isPC && $Conf->timePCViewAllReviews()))
 	    $t .= "    <option value='scores'>All scores (text)</option>\n";
-	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='get' value='Go' />";
+	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='getgo' value='Go' />";
 
 	if ($this->contact->isPC) {
 	    $t .= "<span class='sep'></span> <a class='unfolder8' href='javascript:fold(\"plact\",0,8)'>More &raquo;</a>";
