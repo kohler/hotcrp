@@ -453,10 +453,10 @@ class ReviewForm {
 	    if (isset($this->options[$field]) && $myReview) {
 		foreach ($this->options[$field] as $num => $value) {
 		    $y = ($num == 1 ? "==-== Choices: 1. " : "==-==          $num. ");
-		    $x .= wordWrapIndent($value, $y, strlen($y)) . "\n";
+		    $x .= wordWrapIndent($value, $y, str_pad("==-==", strlen($y))) . "\n";
 		}
 		if ($numericMessage++ == 0)
-		    $x .= "==-== Enter the number of your choice in the space below.\n";
+		    $x .= "==-== Enter the number of your choice here:\n";
 	    }
 	    $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
 	}
