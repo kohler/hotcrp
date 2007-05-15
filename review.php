@@ -440,7 +440,7 @@ function reviewView($prow, $rrow, $editMode) {
 	$sep = " &nbsp;|&nbsp; ";
     }
     if ($rrow)
-	echo $sep, "<a href='review.php?paperId=$prow->paperId&amp;reviewId=$rrow->reviewId&amp;text=1'>Text version</a>";
+	echo $sep, "<a href='review.php?paperId=$prow->paperId&amp;reviewId=$rrow->reviewId&amp;text=1$forceShow'>Text version</a>";
     echo "</td>
 </tr>\n";
     
