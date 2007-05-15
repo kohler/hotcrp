@@ -47,6 +47,7 @@ function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
 
     // check tags for direct validity
     $ok = true;
+    $tags = array();
     foreach (preg_split('/\s+/', $tagtext) as $tag) {
 	if ($mode == "so" || $mode == "ao")
 	    $tag .= "#";
