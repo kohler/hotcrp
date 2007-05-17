@@ -38,6 +38,7 @@ class PaperList {
     const FIELD_SCORE_OVERALL_MERIT = 50; // also used in help.php
     
     const FIELD_OPT_AUTHORS = 70;
+    const FIELD_TAGS = 71;
     const FIELD_FOLD = 75;
     
     var $showHeader;
@@ -152,6 +153,11 @@ class PaperList {
 		    $this->showConflict = false;
 		}
 	    }
+	    break;
+	case self::FIELD_TAGS:
+	    if (!$this->contact->isPC)
+		return false;
+	    $queryOptions['tags'] = 1;
 	    break;
 	}
 	return true;
@@ -380,6 +386,8 @@ class PaperList {
 	    return "<span class='match'>Potential conflict in collaborators</span>";
 	case self::FIELD_OPT_AUTHORS:
 	    return "Authors";
+	case self::FIELD_TAGS:
+	    return "Tags";
 	default:
 	    return "&lt;$fieldId&gt;?";
 	}
@@ -595,6 +603,11 @@ class PaperList {
 		    $aus[] = $au;
 	    }
 	    return htmlspecialchars(join(", ", $aus));
+	case self::FIELD_TAGS:
+	    if (!$this->contact->isPC
+		|| (!$this->contact->privChair && $row->conflictType > 0))
+		return "";
+	    return htmlspecialchars(str_replace("#0", "", $row->paperTags));
 	default:
 	    return "";
 	}
@@ -610,7 +623,7 @@ class PaperList {
 	if (($plact = defval($_REQUEST["showact"])) !== null)
 	    $plact = !$plact;
 	else
-	    $plact = defval($_REQUEST["foldplact"], 1);
+	    $plact = defval($_SESSION["foldplact"], 1);
 	$fclass = ($plact ? "fold8c" : "fold8o");
 	$t .= "    <td id='foldplact' class='$fclass' colspan='" . ($ncol - 1) . "'><table class='floatleft'>
   <tr><td class='xcaption'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then <b>Get:</b></td>
@@ -636,7 +649,7 @@ class PaperList {
 	if ($this->contact->isPC) {
 	    $t .= "<span class='sep'></span> <a class='unfolder8' href='javascript:fold(\"plact\",0,8)'>More &raquo;</a>";
 	    $t .= "<a class='folder8' href='javascript:fold(\"plact\",1,8)'>Less &laquo;</a>";
-	    $t .= "<img id='foldplactsession' alt='' src='${ConfSiteBase}sessionvar.php?var=foldplact&amp;val=" . defval($_SESSION["foldplact"], 1) . "&amp;cache=1' width='1' height='1' />";
+	    $t .= "<img id='foldsession.plact8' alt='' src='${ConfSiteBase}sessionvar.php?var=foldplact&amp;val=" . defval($_SESSION["foldplact"], 1) . "&amp;cache=1' width='1' height='1' />";
 	    $t .= "</td></tr>\n";
 
 	    $t .= "  <tr class='extension8'><td class='rcaption'>Tags:</td><td><select name='tagtype'>
@@ -726,21 +739,21 @@ class PaperList {
 	  case "s":
 	  case "acc":
 	    $name = ($listname == "s" ? "Submitted" : "Accepted");
-	    return $this->addScores(array($name . " papers", 100, 1, 11, 27, 41, 21, 70));
+	    return $this->addScores(array($name . " papers", 100, 1, 11, 27, 41, 21, 70, 71));
 	  case "all":
-	    return array("All papers", 100, 1, 11, 20, 27, 70);
+	    return array("All papers", 100, 1, 11, 20, 27, 70, 71);
 	  case "reviewerHome":
 	    $this->paperLink = "review";
 	    return array("Your review assignment", 1, 11, 27, 21);
 	  case "r":
 	    $this->paperLink = "review";
-	    return $this->addScores(array("Your review assignment", 100, 1, 11, 27, 41, 21, 70));
+	    return $this->addScores(array("Your review assignment", 100, 1, 11, 27, 41, 21, 70, 71));
 	  case "rout":
 	    $this->paperLink = "review";
-	    return $this->addScores(array("Unsubmitted reviews", 100, 1, 11, 27, 41, 21, 70));
+	    return $this->addScores(array("Unsubmitted reviews", 100, 1, 11, 27, 41, 21, 70, 71));
 	  case "req":
 	    $this->paperLink = "review";
-	    return $this->addScores(array("Requested reviews", 100, 1, 11, 27, 41, 21, 70));
+	    return $this->addScores(array("Requested reviews", 100, 1, 11, 27, 41, 21, 70, 71));
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
 	    return array("Review assignment", 1, 11, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48);
@@ -868,8 +881,8 @@ class PaperList {
 	$ids = array();
 	$anyData = array();
 	$body = '';
-	$aufoldclass = defval($_SESSION["plFold"], 3);
 	$authorinfo = false;
+	$taginfo = false;
 	foreach ($srows as $row) {
 	    $ids[] = $row->paperId;
 	    $trclass = "k" . ($this->count % 2);
@@ -892,6 +905,9 @@ class PaperList {
 		    if ($fdef[1] == 3) {
 			$authorinfo |= ($row->blind ? 2 : 1);
 			$t .= " extension1" . ($row->blind ? " extension2" : "");
+		    } else if ($fdef[1] == 4) {
+			$taginfo = true;
+			$t .= " extension4";
 		    }
 		    $t .= "\">\n";
 		    $t .= "<td class=\"pl_$fdef[0] pl_callout\" colspan='$ncol'>";
@@ -918,9 +934,13 @@ class PaperList {
 	    $x .= " fold2c";
 	if (!$unfolded)
 	    $x .= " fold3c";
-	if ($authorinfo || !$unfolded)
+	if ($taginfo)
+	    $x .= (defval($_SESSION["foldpltags"], 1) ? " fold4c" : " fold4o");
+	if ($authorinfo || !$unfolded || $taginfo)
 	    $x .= "\" id=\"foldpl";
 	$x .= "\">\n";
+
+	$t .= "<img id='foldplactsession' alt='' src='${ConfSiteBase}sessionvar.php?var=foldplact&amp;val=" . defval($_SESSION["foldplact"], 1) . "&amp;cache=1' width='1' height='1' />";
 
 	if ($this->showHeader) {
 	    $x .= "  <tr class=\"pl_headrow\">\n";
@@ -940,9 +960,14 @@ class PaperList {
 		else
 		    $titleextra .= "<a class='unfolder1' href='javascript:fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='folder1' href='javascript:fold(\"pl\",1,1)'>Hide authors</a>";
 	    }
+	    if ($taginfo) {
+		$titleextra .= "<span class='sep'></span>";
+		$titleextra .= "<a class='unfolder4' href='javascript:fold(\"pl\",0,4)'>Show tags</a><a class='folder4' href='javascript:fold(\"pl\",1,4)'>Hide tags</a>";
+		$titleextra .= "<img id='foldsession.pl4' alt='' src='${ConfSiteBase}sessionvar.php?var=foldpltags&amp;val=" . defval($_SESSION["foldpltags"], 1) . "&amp;cache=1' width='1' height='1' />";
+	    }
 	    
 	    if ($this->sortable && $url) {
-		$sortUrl = $ConfSiteBase . $url . (strpos($url, "?") ? "&" : "?") . "sort=";
+		$sortUrl = $ConfSiteBase . $url . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
 		$q = "<a class='pl_sort' href=\"" . $sortUrl;
 		foreach ($fieldDef as $fieldId => $fdef) {
 		    if ($fdef[1] != 1)
@@ -1031,7 +1056,8 @@ $paperListFields = array(
 	PaperList::FIELD_SCORE => array('scoreIcon', 1, 1),
 	PaperList::FIELD_AUTHOR_MATCH => array('authorsMatch', 2, 0),
 	PaperList::FIELD_COLLABORATORS_MATCH => array('collaboratorsMatch', 2, 0),
-	PaperList::FIELD_OPT_AUTHORS => array('optAuthors', 3, 0)
+	PaperList::FIELD_OPT_AUTHORS => array('optAuthors', 3, 0),
+	PaperList::FIELD_TAGS => array('tags', 4, 0)
 	);
 
 $paperListScoreNames = array("overAllMerit", "technicalMerit", "novelty",

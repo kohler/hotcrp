@@ -51,8 +51,9 @@ function fold(which, dofold, foldnum) {
 	    fold(which[i], dofold, foldnum);
     } else {
 	var elt = document.getElementById('fold' + which);
-	var opentxt = "fold" + (foldnum ? foldnum : "") + "o";
-	var closetxt = "fold" + (foldnum ? foldnum : "") + "c";
+	var foldnumid = (foldnum ? foldnum : "");
+	var opentxt = "fold" + foldnumid + "o";
+	var closetxt = "fold" + foldnumid + "c";
 	if (elt && dofold == null && elt.className.indexOf(opentxt) >= 0)
 	    dofold = true;
 	if (!elt)
@@ -65,7 +66,7 @@ function fold(which, dofold, foldnum) {
 	if (document.recalc)
 	    elt.innerHTML = elt.innerHTML + "";
 	// check for session
-	var selt = document.getElementById('fold' + which + 'session');
+	var selt = document.getElementById('foldsession.' + which + foldnumid);
 	if (selt)
 	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0));
     }

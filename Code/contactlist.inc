@@ -379,7 +379,6 @@ class ContactList {
 
 	$anyData = array();
 	$body = '';
-	$foldclass = defval($_SESSION["pplFold"], 1);
 	$extrainfo = false;
 	foreach ($srows as $row) {
 	    $trclass = "k" . ($this->count % 2);
