@@ -461,6 +461,9 @@ td.caption {
 	background: #fffdf0;
 	color: #555555;
 }
+tr.topspace td.caption {
+	padding: 7px 0.5em 3px 4px;
+}
 tr.id td.caption {
 	border-bottom: 1px solid #9999cc;
 	border-right: none;

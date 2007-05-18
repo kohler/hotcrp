@@ -128,7 +128,7 @@ $Conf->expandBody();
 <form class='login' method='post' action='login.php'>
 <input type='hidden' name='cookie' value='1' />
 <table class='form'>
-<tr>
+<tr class='topspace'>
   <td class='caption'>Email</td>
   <td class='entry'><input type='text' class='textlite' name='email' size='50' tabindex='1'
     <?php if (isset($_REQUEST["email"])) echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" "; ?>
