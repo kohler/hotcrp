@@ -193,14 +193,14 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Acct->isPC) {
  }
 
 
-echo "<form method='post' action='account.php'>\n";
+echo "<form name='account' method='post' action='account.php'>\n";
 if ($newProfile)
     echo "<input type='hidden' name='new' value='1' />\n";
 else if ($Me->contactId != $Acct->contactId)
     echo "<input type='hidden' name='contact' value='$Acct->contactId' />\n";
 
 
-echo "<table class='form'>
+echo "<table id='foldpass' class='form foldc'>
 <tr>
   <td class='caption'>Contact information</td>
   <td class='entry'><div class='f-contain'>
@@ -220,14 +220,20 @@ echo "<div class='f-i'><div class='f-ix'>
 
 if (!$newProfile) {
     echo "<div class='f-i'><div class='f-ix'>
-  <div class='", fcclass('password'), "'>Password</div>
-  <div class='", feclass('password'), "'><input class='textlite' type='password' name='upassword' size='24' value=\"", crpformvalue('upassword', 'password'), "\" /></div>
-</div><div class='f-ix'>
+  <div class='", fcclass('password'), "'>Password";
+    echo "</div>
+  <div class='", feclass('password'), "'><input class='textlite ellipsis' type='password' name='upassword' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='shiftPassword(1)' />";
+    if ($Me->privChair)
+	echo "<input class='textlite extension' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='shiftPassword(0)' />";
+    echo "</div>
+</div><div class='ellipsis f-ix'>
   <div class='", fcclass('password'), "'>Repeat password</div>
   <div class='", feclass('password'), "'><input class='textlite' type='password' name='upassword2' size='24' value=\"", crpformvalue('upassword', 'password'), "\" /></div>
 </div>
-  <div class='f-h'>The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don't use a login password or any other high-security password.</div>
-  <div class='clear'></div></div>\n\n";
+  <div class='f-h'>The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don't use a login password or any other high-security password.";
+    if ($Me->privChair)
+	echo "  <span class='sep'></span><span class='f-cx'><a class='unfolder' href='javascript:void fold(\"pass\")'>Show password</a><a class='folder' href='javascript:void fold(\"pass\")'>Hide password</a></span>";
+    echo "</div>\n  <div class='clear'></div></div>\n\n";
 }
 
 

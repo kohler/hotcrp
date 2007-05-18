@@ -176,6 +176,15 @@ function revprefAjax(paperId, value) {
     }
 }
 
+function shiftPassword(direction) {
+    var form = document.forms["account"];
+    if (form && form.upassword && form.upasswordt && form.upassword.value != form.upasswordt.value)
+	if (direction)
+	    form.upasswordt.value = form.upassword.value;
+	else
+	    form.upassword.value = form.upassword2.value = form.upasswordt.value;
+}
+
 
 // Thank you David Flanagan
 var Miniajax = {};
