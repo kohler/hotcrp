@@ -3,6 +3,7 @@
 // HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+global $reviewFields;
 $reviewFields = array('paperSummary' => 0,
 		      'commentsToAuthor' => 0,
 		      'commentsToPC' => 0,

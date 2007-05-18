@@ -879,32 +879,19 @@ class Contact {
     }
 
     function sendAccountInfo($conf, $create, $sensitive) {
-	$m = "Greetings,\n\n";
+	require_once("mailtemplate.inc");
+	global $mailTemplates;
+	$mailer = new Mailer(null, $this);
 	if ($create)
-	    $m .= wordwrap("An account has been created for you at the $conf->shortName conference submission site, and an initial password has been assigned.\n\n");
+	    $m = $mailer->expand($mailTemplates["createaccount"]);
 	else
-	    $m .= wordwrap("Here is your account information for the $conf->shortName conference submission site.\n\n");
-	$m .= "        Site: $conf->paperSite/
-       Email: $this->email
-    Password: $this->password
-
-Click the link below to sign in.  If the link isn't clickable, you may copy
-and paste it into your web browser's location field.
-
-    $conf->paperSite/login.php?email=" . urlencode($this->email) . "&password=" . urlencode($this->password) . "\n\n";
-	if ($create)
-	    $m .= wordwrap("If you already have an account at the $conf->shortName site, you may merge this new account into that one.  Sign in to the conference site and select \"Merge accounts\".\n\n");
-	$m .= wordwrap("Contact the site administrator, $conf->contactName <$conf->contactEmail>, with any questions or concerns.
-
-- $conf->shortName Conference Submissions\n");
-
-	$s = "[$conf->shortName] Account information";
+	    $m = $mailer->expand($mailTemplates["accountinfo"]);
 	
 	if ($conf->allowEmailTo($this->email)) {
-	    $results = mail($this->email, $s, $m, "From: $conf->emailFrom");
+	    $results = mail(contactEmailTo($this), rtrim($m[0]), $m[1], "From: $conf->emailFrom");
 	    return true;
 	} else if (!$sensitive) {
-	    $conf->infoMsg("<pre>" . htmlspecialchars("$s\n\n$m") . "</pre>");
+	    $conf->infoMsg("<pre>" . htmlspecialchars("To: " . contactEmailTo($this) . "\nSubject: " . rtrim($m[0]) . "\n\n$m[1]") . "</pre>");
 	    return true;
 	} else {
 	    $conf->errorMsg("Mail cannot be sent to your email address &lt;" . htmlspecialchars($this->email) . "&gt; at this time.");

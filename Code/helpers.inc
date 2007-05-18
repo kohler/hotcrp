@@ -281,7 +281,7 @@ function authorTable($aus, $viewAs = null) {
     return $out;
 }
 
-function contactText($firstName, $lastName=null, $email=null) {
+function contactText($firstName, $lastName = null, $email = null) {
     if (is_array($firstName)) {
 	if ($email === null && count($firstName) >= 2)
 	    $email = $firstName[2];
@@ -290,8 +290,13 @@ function contactText($firstName, $lastName=null, $email=null) {
     } else if (is_object($firstName)) {
 	if ($email === null && isset($firstName->email))
 	    $email = $firstName->email;
-	$lastName = $firstName->lastName;
-	$firstName = $firstName->firstName;
+	if (isset($firstName->lastName) || isset($firstName->firstName)) {
+	    $lastName = defval($firstName->lastName, "");
+	    $firstName = defval($firstName->firstName, "");
+	} else {
+	    $lastName = defval($firstName->fullName, "");
+	    $firstName = "";
+	}
     }
     if ($firstName || $lastName) {
 	$x = trim("$firstName $lastName");
@@ -299,6 +304,13 @@ function contactText($firstName, $lastName=null, $email=null) {
 	    $x .= " <$email>";
     } else
 	$x = $email;
+    return $x;
+}
+
+function contactNameText($firstName, $lastName = null, $email = null) {
+    $x = contactText($firstName, $lastName, $email);
+    if ($x[strlen($x) - 1] == '>')
+	$x = preg_replace('/\s+<[^<]*>$/', '', $x);
     return $x;
 }
 
@@ -432,6 +444,7 @@ function tempdir($dir, $prefix, $mode = 0700) {
     return false;
 }
 
+
 function pluralx($n, $what) {
     if (is_array($n))
 	$n = count($n);
@@ -455,15 +468,17 @@ function setRet(&$var, $val, $ret = false) {
     return $ret;
 }
 
-function tabLength($text) {
+function tabLength($text, $all) {
     $len = 0;
     for ($i = 0; $i < strlen($text); $i++)
 	if ($text[$i] == ' ')
 	    $len++;
 	else if ($text[$i] == '\t')
 	    $len += 8 - ($len % 8);
-	else
+	else if (!$all)
 	    break;
+	else
+	    $len++;
     return $len;
 }
 
@@ -492,7 +507,7 @@ function htmlWrapText($text) {
 	} else if ($state == 1 && ctype_isspace($line[0]))
 	    $out .= $line . "\n";
 	else if (preg_match("/^(\\s+)(-+|\\*+|\\d+\\.?)\\s/", $line, $matches)) {
-	    $x = tabLength($line);
+	    $x = tabLength($line, false);
 	} 
     }
 }
@@ -522,13 +537,19 @@ function wordWrapIndent($text, $info, $indent = 18, $totWidth = 75, $rjinfo = tr
 	$indent = str_pad("", $indent);
     } else
 	$indentlen = strlen($indent);
+
+    $out = "";
+    while (ctype_space($text[0])) {
+	$out .= $text[0];
+	$text = substr($text, 1);
+    }
     
-    $text = preg_replace("/^(?!\\Z)/m", $indent, wordwrap($text, $totWidth - $indentlen));
+    $out .= preg_replace("/^(?!\\Z)/m", $indent, wordwrap($text, $totWidth - $indentlen));
     if (strlen($info) <= $indentlen) {
 	$info = str_pad($info, $indentlen, " ", ($rjinfo ? STR_PAD_LEFT : STR_PAD_RIGHT));
-	return $info . substr($text, $indentlen);
+	return $info . substr($out, $indentlen);
     } else
-	return $info . "\n" . $text;
+	return $info . "\n" . $out;
 }
 
 function ini_get_bytes($varname) {

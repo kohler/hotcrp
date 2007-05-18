@@ -191,19 +191,9 @@ function refuseReview() {
     }
 
     // send confirmation email
-    $m = "Dear " . contactText($rrow->reqFirstName, $rrow->reqLastName, $rrow->reqEmail) . ",\n\n";
-    $m .= wordwrap(contactText($rrow) . " cannot complete the review of $Conf->shortName paper #$prow->paperId that you requested.  " . ($reason ? "They gave the reason \"$reason\".  " : "") . "You may want to find an alternate reviewer.\n\n")
-	. wordWrapIndent(trim($prow->title), "Title: ", 14) . "\n"
-	. "  Paper site: $Conf->paperSite/review.php?paperId=$prow->paperId
-
-- $Conf->shortName Conference Submissions\n";
-
-    $s = "[$Conf->shortName] Review request for paper #$prow->paperId refused";
-
-    if ($Conf->allowEmailTo($rrow->reqEmail))
-	$results = mail($rrow->reqEmail, $s, $m, "From: $Conf->emailFrom");
-    else
-	$Conf->infoMsg("<pre>" . htmlspecialchars("$s\n\n$m") . "</pre>");
+    require_once("Code/mailtemplate.inc");
+    $Requester = (object) array("firstName" => $rrow->reqFirstName, "lastName" => $rrow->reqLastName, "email" => $rrow->reqEmail);
+    Mailer::sendTemplate("@refusereviewrequest", $prow, $Requester, $rrow, array("reason" => $reason));
 
     // confirmation message
     $Conf->confirmMsg("The request for you to review paper #$prow->paperId has been removed.  Mail was sent to the person who originally requested the review.");

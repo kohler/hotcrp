@@ -1031,6 +1031,7 @@ class PaperList {
 }
 
 
+global $paperListFields;
 $paperListFields = array(
 	PaperList::FIELD_SELECTOR => array('selector', 1, 0),
 	PaperList::FIELD_SELECTOR_ON => array('selector', 1, 0),
@@ -1060,6 +1061,8 @@ $paperListFields = array(
 	PaperList::FIELD_TAGS => array('tags', 4, 0)
 	);
 
+
+global $paperListScoreNames;
 $paperListScoreNames = array("overAllMerit", "technicalMerit", "novelty",
 			     "grammar", "reviewerQualification", "potential",
 			     "fixability", "interestToCommunity", "longevity",

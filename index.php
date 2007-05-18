@@ -70,7 +70,7 @@ if ($Me->privChair)
 <li><a href='account.php?new=1'>Create new account</a></li>
 <li><a href='Chair/BecomeSomeoneElse.php'>Sign in as someone else</a></li>
 </ul></td><td class='r'><ul class='compact'>
-<li><a href='Chair/SendMail.php'>Send users mail</a></li>
+<li><a href='mail.php'>Send users mail</a></li>
 <li><a href='Chair/ViewActionLog.php'>View action log</a></li>
 </ul></td></tr></table>";
 

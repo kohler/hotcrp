@@ -45,14 +45,8 @@ if (isset($_REQUEST["merge"])) {
 		$MiniMe = $mm;
 	    }
 	    
-	    $message = "\
-Your account at the " . $Conf->shortName . "submissions site has been\n\
-merged with the account of " . $Me->fullnameAndEmail() . ".\n\
-If you suspect something fishy, contact the site administrator at\n\
-" . $Conf->contactEmail . ".\n";
-	    if ($Conf->allowEmailTo($MiniMe->email))
-		mail($MiniMe->email, "[$Conf->shortName] Account Information",
-		     $message, "From: $Conf->emailFrom");
+	    require_once("Code/mailtemplate.inc");
+	    Mailer::sendTemplate("@mergeaccount", null, $MiniMe, $Me, array("headers" => "Cc: " . contactEmailTo($Me)));
 	    
 	    // Now, scan through all the tables that possibly
 	    // specify a contactID and change it from their 2nd

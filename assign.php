@@ -94,22 +94,11 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
     // at this point, success; remove the review request
     $Conf->qe("delete from PaperReview where reviewId=$reviewId", $while);
 
-    // send confirmation email
-    $m = "Dear " . contactText($row) . ",\n\n";
-    $m .= wordwrap(contactText($Me) . " has retracted a previous request that you review Paper #$prow->paperId for the $Conf->longName" . ($Conf->shortName != $Conf->longName ? " ($Conf->shortName)" : "") . " conference.  Contact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.
-
-Thank you,
-- $Conf->shortName Conference Submissions\n");
-
-    $s = "[$Conf->shortName] Retracted review request for paper #$prow->paperId";
-
-    // don't send email if the review site isn't open yet
-    if (!$Conf->timeReviewOpen())
-	/* do nothing */;
-    else if ($Conf->allowEmailTo($row->email))
-	$results = mail($row->email, $s, $m, "From: $Conf->emailFrom");
-    else
-	$Conf->infoMsg("<pre>" . htmlspecialchars("$s\n\n$m") . "</pre>");
+    // send confirmation email, if the review site is open
+    if ($Conf->timeReviewOpen()) {
+	require_once("Code/mailtemplate.inc");
+	Mailer::sendTemplate("@retractrequest", $prow, $row, $Me, array("headers" => "Cc: " . contactEmailTo($Me)));
+    }
 
     // confirmation message
     if ($confirm)
@@ -240,35 +229,8 @@ function requestReview($email) {
     $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Requester->contactId, current_timestamp)", $while);
 
     // send confirmation email
-    $m = "Dear " . contactText($Them) . ",\n\n";
-    $m .= wordwrap(contactText($Requester) . " has asked you to review $Conf->longName" . ($Conf->shortName != $Conf->longName ? " ($Conf->shortName)" : "") . " paper #$prow->paperId.\n\n")
-	. wordWrapIndent(trim($prow->title), "Title: ", 14) . "\n";
-    if (!$prow->blind)
-	$m .= wordWrapIndent(trim($prow->authorInformation), "Authors: ", 14) . "\n";
-    $m .= "  Paper site: $Conf->paperSite/review.php?paperId=$prow->paperId\n\n";
-    $mm = "";
-    if ($Conf->setting("extrev_soft") > 0)
-	$mm = "If you are willing to review this paper, please enter your review by " . $Conf->printableTimeSetting("extrev_soft") . ".  ";
-    $m .= wordwrap($mm . "You may also complete a review form offline and upload it to the site.  If you cannot complete the review, you may refuse the review on the paper site or contact " . contactText($Requester) . " directly.  For reference, your account information is as follows:\n\n");
-    $m .= "        Site: $Conf->paperSite/
-       Email: $Them->email
-    Password: $Them->password
-
-Click the link below to sign in, or copy and paste it into your web 
-browser's location field.
-
-    $Conf->paperSite/login.php?email=" . urlencode($Them->email) . "&password=" . urlencode($Them->password) . "\n\n";
-    $m .= wordwrap("Contact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.
-
-Thank you for your help -- we appreciate that reviewing is hard work!
-- $Conf->shortName Conference Submissions\n");
-
-    $s = "[$Conf->shortName] Review request for paper #$prow->paperId";
-
-    if ($Conf->allowEmailTo($Them->email))
-	$results = mail($Them->email, $s, $m, "From: $Conf->emailFrom\nCc: $Requester->email");
-    else
-	$Conf->infoMsg("<pre>" . htmlspecialchars("$s\nCc: $Requester->email\n\n$m") . "</pre>");
+    require_once("Code/mailtemplate.inc");
+    Mailer::sendTemplate("@requestreview", $prow, $Them, $Requester, array("headers" => "Cc: " . contactEmailTo($Requester)));
 
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
@@ -297,20 +259,8 @@ function proposeReview($name, $email) {
     $result = $Conf->qe("insert into ReviewRequest (paperId, name, email, requestedBy) values ($prow->paperId, '" . sqlq($name) . "', '" . sqlq($email) . "', $Me->contactId) on duplicate key update paperId=paperId", $while);
     
     // send confirmation email
-    $m = "Greetings,\n\n";
-    $m .= wordwrap(contactText($Me) . " would like $name <$email> to review $Conf->longName" . ($Conf->shortName != $Conf->longName ? " ($Conf->shortName)" : "") . " paper #$prow->paperId.  Visit the following page at your leisure to approve or deny the request.\n\n")
-	. "  Paper site: $Conf->paperSite/assign.php?paperId=$prow->paperId\n"
-	. wordWrapIndent(trim($prow->title), "Title: ", 14) . "\n";
-    if (!$prow->blind)
-	$m .= wordWrapIndent(trim($prow->authorInformation), "Authors: ", 14) . "\n";
-    $m .= "\n" . wordwrap("- $Conf->shortName Conference Submissions\n");
-
-    $s = "[$Conf->shortName] Proposed reviewer for paper #$prow->paperId";
-
-    if ($Conf->allowEmailTo($Opt['contactEmail']))
-	$results = mail($Opt['contactEmail'], $s, $m, "From: $Conf->emailFrom\nCc: $Me->email");
-    else
-	$Conf->infoMsg("<pre>" . htmlspecialchars("$s\nCc: $Me->email\n\n$m") . "</pre>");
+    require_once("Code/mailtemplate.inc");
+    Mailer::sendTemplate("@proposereview", $prow, (object) array("fullName" => $name, "email" => $email), $Me, array("emailTo" => $Opt['contactEmail'], "headers" => "Cc: " . contactEmailTo($Me)));
 
     // confirmation message
     $Conf->confirmMsg("Proposed that " . htmlspecialchars("$name <$email>") . " review paper #$prow->paperId.  The chair must approve this proposal for it to take effect.");
@@ -352,22 +302,8 @@ if (isset($_REQUEST['deny']) && $Me->privChair
 	    $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($prow->paperId, $reqId, $Requester->contactId, 'request denied by chair')", $while);
 
 	// send anticonfirmation email
-	$m = "Dear " . contactText($Requester) . ",\n\n";
-	$m .= wordwrap("Your proposal that $Requester->name <$email> review $Conf->longName" . ($Conf->shortName != $Conf->longName ? " ($Conf->shortName)" : "") . " paper #$prow->paperId has been denied by a program chair.  You may want to propose someone else.\n\n")
-	    . wordWrapIndent(trim($prow->title), "Title: ", 14) . "\n";
-	if (!$prow->blind)
-	    $m .= wordWrapIndent(trim($prow->authorInformation), "Authors: ", 14) . "\n";
-	$m .= "  Paper site: $Conf->paperSite/review.php?paperId=$prow->paperId\n\n";
-	$m .= wordwrap("Contact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.
-
-- $Conf->shortName Conference Submissions\n");
-
-	$s = "[$Conf->shortName] Proposed reviewer for paper #$prow->paperId denied";
-
-	if ($Conf->allowEmailTo($Requester->email))
-	    $results = mail($Requester->email, $s, $m, "From: $Conf->emailFrom");
-	else
-	    $Conf->infoMsg("<pre>" . htmlspecialchars("$s\n\n$m") . "</pre>");
+	require_once("Code/mailtemplate.inc");
+	Mailer::sendTemplate("@denyreviewrequest", $prow, $Requester, (object) array("fullName" => vtrim($_REQUEST["name"]), "email" => $email));
 
 	$Conf->confirmMsg("Proposed reviewer denied.");
     } else
@@ -538,7 +474,6 @@ if ($Me->privChair)
 </td></tr>\n";
 
 
-
 // reviewer information
 $revTable = reviewTable($prow, $rrows, null, "assign");
 $revTableClass = (preg_match("/<th/", $revTable) ? "rev_reviewers_hdr" : "rev_reviewers");
@@ -581,8 +516,9 @@ if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
 		"<td><a class='button_small' href=\"assign.php?paperId=$prow->paperId&amp;name=",
 		urlencode($row->name), "&amp;email=", urlencode($row->email),
 		"&amp;add=1$forceShow\">Approve</a>&nbsp; ",
-		"<a class='button_small' href=\"assign.php?paperId=$prow->paperId&amp;email=",
-		urlencode($row->email), "&amp;deny=1$forceShow\">Deny</a></td></tr>\n",
+		"<a class='button_small' href=\"assign.php?paperId=$prow->paperId&amp;name=",
+		urlencode($row->name), "&amp;email=", urlencode($row->email),
+		"&amp;deny=1$forceShow\">Deny</a></td></tr>\n",
 		"<tr><td colspan='3'><small>Requester: ", contactHtml($row->reqFirstName, $row->reqLastName), "</small></td></tr>\n";
 	}
 	echo "</table>\n  </td>\n</tr>\n\n";
