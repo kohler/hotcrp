@@ -272,11 +272,8 @@ class ReviewForm {
 	}
 
 	// blind?
-	if ($conf->blindReview() > 1
-	    || ($conf->blindReview() == 1 && defval($req['blind'])))
-	    $q .= "reviewBlind=1, ";
-	else
-	    $q .= "reviewBlind=0, ";
+	$reviewBlind = ($conf->blindReview() > 1 || ($conf->blindReview() == 1 && defval($req['blind'])) ? 1 : 0);
+	$q .= "reviewBlind=$reviewBlind, ";
 
 	// actually affect database
 	if ($rrow)
@@ -325,24 +322,25 @@ class ReviewForm {
 		$reviewnum = unparseReviewOrdinal($rrow->reviewOrdinal);
 	    else
 		$reviewnum = "x";
+
+	    // need an up-to-date review row to send email successfully
+	    $fake_rrow = (object) array("contactId" => $contactId, "reviewBlind" => $reviewBlind);
+
+	    require_once("mailtemplate.inc");
 	    
-	    $m = wordwrap("Review #$prow->paperId$reviewnum for paper #$prow->paperId, \"$prow->title\", " . ($rrow && $rrow->reviewSubmitted ? "has been updated.  " : "has been submitted.  ") . "The review is available at the following address:\n\n");
-	    $m .= "  $conf->paperSite/review.php?paperId=$prow->paperId\n\n";
-	    $m .= wordwrap("Contact the site administrator, $Conf->contactName ($Conf->contactEmail), with any questions or concerns.
+	    $tmpl = ($rrow && $rrow->reviewSubmitted ? "@reviewupdate" : "@reviewsubmit");
+	    $submitter = $Me;
+	    if ($contactId != $submitter->contactId) {
+		$submitter = new Contact();
+		$submitter->lookupById($contactId, $Conf);
+	    }
+	    $rest = array("rrow" => $fake_rrow, "reviewNumber" => $prow->paperId . $reviewnum);
 
-- $Conf->shortName Conference Submissions\n");
-
-	    $s = "[$conf->shortName] Review #$prow->paperId$reviewnum " . ($rrow && $rrow->reviewSubmitted ? "updated" : "submitted");
-
-	    // actually mail
 	    if ($conf->timeEmailChairAboutReview())
-		if ($conf->allowEmailTo($conf->contactEmail))
-		    mail($conf->contactEmail, $s, $m, "From: $conf->emailFrom");
-		else
-		    $conf->infoMsg("<pre>" . htmlspecialchars("$s\n\n$m") . "</pre>");
+		Mailer::send($tmpl, $prow, (object) array("email" => $Conf->contactEmail, "fullName" => $Conf->contactName, "privChair" => 1), $submitter, $rest);
 
 	    if ($conf->timeEmailAuthorsAboutReview())
-		$conf->emailContactAuthors($prow, $s, $m);
+		Mailer::sendContactAuthors($tmpl, $prow, $submitter, $rest);
 	}
 	
 	return $result;

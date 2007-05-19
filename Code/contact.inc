@@ -730,8 +730,8 @@ class Contact {
 	return $this->isPC;
     }
     
-    function canViewReviewerIdentity($prow, $rrow, $conf) {
-	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
+    function canViewReviewerIdentity($prow, $rrow, $conf, $ignoreForceShow = false) {
+	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && !$ignoreForceShow;
 	$rrow_contactId = 0;
 	if ($rrow && isset($rrow->reviewContactId))
 	    $rrow_contactId = $rrow->reviewContactId;

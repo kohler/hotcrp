@@ -372,30 +372,6 @@ class Conference {
     }
 
 
-    // Emailing
-
-    function emailContactAuthors($prow, $subject, $message) {
-	global $Opt, $Me;
-
-	if ($subject[0] != '[')
-	    $subject = "[$this->shortName] $subject";
-	$result = $this->qe("select firstName, lastName, email
-		from ContactInfo join PaperConflict using (contactId)
-		where paperId=$prow->paperId and conflictType=" . CONFLICT_AUTHOR . "
-		group by ContactInfo.contactId", "while looking up contact authors to send email");
-	while (($row = edb_row($result))) {
-	    $contacts[] = $c = contactText($row[0], $row[1]);
-	    $m = "Dear $c,\n\n" . $message;
-	    if ($this->allowEmailTo($row[2]))
-		mail(contactEmailTo($row), $subject, $m, "From: $this->emailFrom");
-	    else
-		$this->infoMsg("<pre>" . htmlspecialchars($subject) . "\n\n" . htmlspecialchars($m) . "</pre>");
-	}
-	if ($prow->conflictType < CONFLICT_AUTHOR && count($contacts) > 0 && $Me->privChair)
-	    $this->infoMsg("Sent \"" . htmlspecialchars($subject) . "\" email to paper #$prow->paperId's contact author" . (count($contacts) == 1 ? "" : "s") . ", " . htmlspecialchars(join(", ", $contacts)) . ".");
-    }
-
-  
     //
     // Paper storage
     //

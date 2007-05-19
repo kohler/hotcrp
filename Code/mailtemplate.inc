@@ -192,6 +192,36 @@ Your %CONFNAME% paper #%NUMBER% has been removed from the submission database by
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
+- %CONFSHORTNAME% Submissions\n"),
+
+     "reviewsubmit" =>
+     array("Review #%REVIEWNUMBER% submitted %TITLEHINT%",
+	   "Dear %NAME%,
+
+Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been submitted.  The review is available at the following site.
+
+  Paper site: %URL%/review.php?paperId=%NUMBER%
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+   Review by: %OPT(REVIEWAUTHOR)%
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+- %CONFSHORTNAME% Submissions\n"),
+
+     "reviewupdate" =>
+     array("Review #%REVIEWNUMBER% updated %TITLEHINT%",
+	   "Dear %NAME%,
+
+Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated.  The review is available at the following site.
+
+  Paper site: %URL%/review.php?paperId=%NUMBER%
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+   Review by: %OPT(REVIEWAUTHOR)%
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
 - %CONFSHORTNAME% Submissions\n"));
 
 
@@ -204,6 +234,8 @@ class Mailer {
     var $text;
     var $textstart;
     var $reason;
+    var $rrow;
+    var $reviewNumber;
 
     function Mailer($row, $contact, $otherContact = null, $rest = array()) {
 	$this->row = $row;
@@ -213,6 +245,8 @@ class Mailer {
 	$this->text = "";
 	$this->textstart = 0;
 	$this->reason = defval($rest["reason"], "");
+	$this->rrow = defval($rest["rrow"], null);
+	$this->reviewNumber = defval($rest["reviewNumber"], "");
     }
     
     function _pushIf($yes) {
@@ -311,6 +345,7 @@ class Mailer {
 	    return contactText($this->otherContact, null, "");
 	if ($what == "%OTHEREMAIL%" && $this->otherContact)
 	    return $this->otherContact->email;
+
 	if ($what == "%REASON%")
 	    return $this->reason;
 
@@ -328,6 +363,8 @@ class Mailer {
 	}
 	if ($what == "%NUMBER%")
 	    return $this->row->paperId;
+	if ($what == "%REVIEWNUMBER%")
+	    return $this->reviewNumber;
 	if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
 	    if (($Conf->blindSubmission() > 1
 		 || ($Conf->blindSubmission() == 1 && $this->row->blind))
@@ -336,6 +373,17 @@ class Mailer {
 		return ($isbool ? false : "Hidden for blind review");
 	    return $this->row->authorInformation;
 	}
+
+	if ($what == "%REVIEWAUTHOR%" && $this->otherContact) {
+	    if (($Conf->blindReview() > 1
+		 || ($Conf->blindReview() == 1 && (!$this->rrow || $this->rrow->reviewBlind)))
+		&& defval($this->contact->privChair) <= 0
+		&& (!isset($this->contact->canViewReviewerIdentity)
+		    || !$this->contact->canViewReviewerIdentity($this->row, $this->rrow, $Conf, true)))
+		return ($isbool ? false : "Hidden for blind review");
+	    return contactText($this->otherContact);
+	}
+	
 	if ($what == "%REVIEWS%") {
 	    $contact = new Contact;
 	    $contact->makeMinicontact($this->row);
@@ -344,7 +392,7 @@ class Mailer {
 	if ($what == "%COMMENTS%")
 	    return $this->getComments($this->row->paperId);
 
-	return $what;
+	return ($isbool ? false : $what);
     }
 
     function getReviews($paperId, $contact, $finalized) {
