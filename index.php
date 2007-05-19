@@ -239,11 +239,6 @@ if ($Me->privChair) {
     echo "<div class='bgrp foldc' id='foldch'><div class='bgrp_head'><a href=\"javascript:fold('ch', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('ch', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;PC chair tasks (old CRP)</div><div class='bgrp_body extension'>\n";
 
     echo "<ul>
-<li>Assign papers
-  <ul> 
-  <li><a href='Chair/AskForReview.php'>Ask someone to review a paper (any paper)</a></li>
-  </ul></li>
-
 <li>Check on reviewing progress
   <ul>
   <li><a href='Chair/AverageReviewerScore.php'>See average reviewer score</a></li>

@@ -1292,29 +1292,4 @@ class Conference {
 	print "</form>\n";
     }
 
-    function allMyConflicts($contactId) {
-	$result = $this->qe("select paperId from PaperConflict
-		where contactId=$contactId", "while examining conflicts");
-	$conflicts = array();
-	while ($row = edb_row($result))
-	    $conflicts[$row[0]] = 1;
-	return $conflicts;
-    }
-
-    function allPCConflicts() {
-	$result=$this->qe("select paperId from PaperConflict
-		join PCMember using (contactId)", "while examining conflicts");
-	$conflicts = array();
-	while ($row = edb_row($result))
-	    $conflicts[$row[0]] = 1;
-	return $conflicts;
-    }
-
-    function safeHtml($string) {
-	if ($string == "")
-	    return "&nbsp;";
-	else
-	    return nl2br(htmlspecialchars($string));
-    }
-
 }

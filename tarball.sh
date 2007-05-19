@@ -38,6 +38,7 @@ help.php
 index.php
 login.php
 logout.php
+mail.php
 mergeaccounts.php
 offline.php
 paper.php
@@ -58,6 +59,7 @@ Code/contactlist.inc
 Code/createdb.sh
 Code/header.inc
 Code/helpers.inc
+Code/mailtemplate.inc
 Code/options.inc
 Code/paperlist.inc
 Code/papertable.inc
@@ -102,7 +104,6 @@ images/stophand45.png
 images/viewas.png
 
 Chair/.htaccess
-Chair/AskForReview.php
 Chair/AssignPapers.php
 Chair/AverageReviewerScore.php
 Chair/BecomeSomeoneElse.php
