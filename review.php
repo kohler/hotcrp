@@ -193,7 +193,7 @@ function refuseReview() {
     // send confirmation email
     require_once("Code/mailtemplate.inc");
     $Requester = (object) array("firstName" => $rrow->reqFirstName, "lastName" => $rrow->reqLastName, "email" => $rrow->reqEmail);
-    Mailer::sendTemplate("@refusereviewrequest", $prow, $Requester, $rrow, array("reason" => $reason));
+    Mailer::send("@refusereviewrequest", $prow, $Requester, $rrow, array("reason" => $reason));
 
     // confirmation message
     $Conf->confirmMsg("The request for you to review paper #$prow->paperId has been removed.  Mail was sent to the person who originally requested the review.");

@@ -38,7 +38,7 @@ echo "<table class='half'><tr><td class='l'>";
 
 // General information
 echo "<div class='bgrp'><div class='bgrp_head'>General</div><div class='bgrp_body'>
-Welcome, ", htmlspecialchars($Me->fullnameOrEmail()), ".  (If this isn't you, please <a href='${ConfSiteBase}logout.php'>sign out</a>.)  You will be automatically signed out if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.\n";
+Welcome, ", contactHtml($Me, null, ""), ".  (If this isn't you, please <a href='${ConfSiteBase}logout.php'>sign out</a>.)  You will be automatically signed out if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.\n";
 
 // Conference settings
 if ($Me->privChair)

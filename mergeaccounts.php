@@ -46,7 +46,7 @@ if (isset($_REQUEST["merge"])) {
 	    }
 	    
 	    require_once("Code/mailtemplate.inc");
-	    Mailer::sendTemplate("@mergeaccount", null, $MiniMe, $Me, array("headers" => "Cc: " . contactEmailTo($Me)));
+	    Mailer::send("@mergeaccount", null, $MiniMe, $Me, array("headers" => "Cc: " . contactEmailTo($Me)));
 	    
 	    // Now, scan through all the tables that possibly
 	    // specify a contactID and change it from their 2nd

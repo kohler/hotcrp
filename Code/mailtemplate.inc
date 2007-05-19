@@ -129,6 +129,69 @@ Thank you,
      Authors: %OPT(AUTHORS)%
   Paper site: %URL%/paper.php?paperId=%NUMBER%
 
+- %CONFSHORTNAME% Submissions\n"),
+
+     "authorwithdraw" =>
+     array("Paper #%NUMBER% withdrawn %TITLEHINT%",
+	   "Dear %CONTACT%,
+
+An author of %CONFNAME% paper #%NUMBER% has withdrawn the paper from consideration.  The paper will not be reviewed.
+
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+  Paper site: %URL%/paper.php?paperId=%NUMBER%
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+Thank you,
+- %CONFSHORTNAME% Submissions\n"),
+
+     "adminwithdraw" =>
+     array("Paper #%NUMBER% withdrawn %TITLEHINT%",
+	   "Dear %CONTACT%,
+
+%CONFNAME% paper #%NUMBER% has been withdrawn from consideration and will not be reviewed.
+
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+  Paper site: %URL%/paper.php?paperId=%NUMBER%
+
+%IF(REASON)%The paper was withdrawn by an administrator, who provided the following reason: %REASON%%ELSE%The paper was withdrawn by an administrator.%ENDIF%
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+Thank you,
+- %CONFSHORTNAME% Submissions\n"),     
+     
+     "withdrawreviewer" =>
+     array("Paper #%NUMBER% withdrawn %TITLEHINT%",
+	   "Dear %CONTACT%,
+
+%CONFSHORTNAME% paper #%NUMBER%, which you reviewed or have been assigned to review, has been withdrawn from consideration for the conference.
+
+Authors can voluntarily withdraw a submission at any time, as can the chair.  %REASON%
+
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+  Paper site: %URL%/paper.php?paperId=%NUMBER%
+
+You are not expected to complete your review; in fact the system will not allow it unless the paper is revived.
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+- %CONFSHORTNAME% Submissions\n"),
+
+     "deletepaper" =>
+     array("Deleted paper #%NUMBER% %TITLEHINT%",
+	   "Dear %CONTACT%,
+
+Your %CONFNAME% paper #%NUMBER% has been removed from the submission database by an administrator.  This is usually done to remove duplicate papers.  %IF(REASON)%The following reason was provided for deleting the paper: %REASON%%ENDIF%
+
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
 - %CONFSHORTNAME% Submissions\n"));
 
 
@@ -161,13 +224,14 @@ class Mailer {
 
     function _popIf() {
 	if (count($this->ifstack) == 0)
-	    /* ignore */;
+	    return null;
 	else if (($pop = array_pop($this->ifstack)) === true)
-	    /* ignore */;
+	    return true;
 	else {
 	    $this->text = $pop;
 	    if ($this->textstart > strlen($this->text))
 		$this->textstart = strlen($this->text);
+	    return false;
 	}
     }
     
@@ -179,8 +243,10 @@ class Mailer {
 	    $inner = "%" . substr($what, 4, $len - 6) . "%";
 	    $this->_pushIf($this->expandvar($inner, true));
 	    return "";
-	}
-	if ($what == "%ENDIF%") {
+	} else if ($what == "%ELSE%") {
+	    $this->_pushIf(!$this->_popIf());
+	    return "";
+	} if ($what == "%ENDIF%") {
 	    $this->_popIf();
 	    return "";
 	}
@@ -233,7 +299,7 @@ class Mailer {
 	if ($what == "%CONTACT%")
 	    return contactText($this->contact);
 	if ($what == "%NAME%")
-	    return contactNameText($this->contact);
+	    return contactText($this->contact, null, "");
 	if ($what == "%FIRST%")
 	    return $this->contact->firstName;
 	if ($what == "%LAST%")
@@ -242,7 +308,7 @@ class Mailer {
 	if ($what == "%OTHERCONTACT%" && $this->otherContact)
 	    return contactText($this->otherContact);
 	if ($what == "%OTHERNAME%" && $this->otherContact)
-	    return contactNameText($this->otherContact);
+	    return contactText($this->otherContact, null, "");
 	if ($what == "%OTHEREMAIL%" && $this->otherContact)
 	    return $this->otherContact->email;
 	if ($what == "%REASON%")
@@ -254,11 +320,19 @@ class Mailer {
     
 	if ($what == "%TITLE%")
 	    return $this->row->title;
+	if ($what == "%TITLEHINT%") {
+	    if (($tw = titleWords($this->row->title)))
+		return "\"$tw\"";
+	    else
+		return "";
+	}
 	if ($what == "%NUMBER%")
 	    return $this->row->paperId;
 	if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
-	    if ($Conf->blindSubmission() > 1
-		|| ($Conf->blindSubmission() == 1 && $this->row->blind))
+	    if (($Conf->blindSubmission() > 1
+		 || ($Conf->blindSubmission() == 1 && $this->row->blind))
+		&& defval($this->row->conflictType) < CONFLICT_AUTHOR
+		&& defval($this->contact->conflictType) < CONFLICT_AUTHOR)
 		return ($isbool ? false : "Hidden for blind review");
 	    return $this->row->authorInformation;
 	}
@@ -366,7 +440,7 @@ class Mailer {
 	return $this->text;
     }
 
-    function sendTemplate($template, $row, $contact, $otherContact = null, $rest = array()) {
+    function send($template, $row, $contact, $otherContact = null, $rest = array()) {
 	global $Conf, $mailTemplates;
 
 	if (is_string($template) && $template[0] == "@")
@@ -379,7 +453,7 @@ class Mailer {
 	else
 	    $emailTo = $rest["emailTo"];
 	if (!$emailTo || !$emailTo->email)
-	    return $Conf->errorMsg("no email in sendTemplate");
+	    return $Conf->errorMsg("no email in Mailer::send");
 	$headers = defval($rest["headers"], "");
 	if ($headers && $headers[strlen($headers) - 1] != '\n')
 	    $headers .= "\n";
@@ -391,6 +465,44 @@ class Mailer {
 	    return mail(contactEmailTo($emailTo), $m[0], $m[1], "${headers}From: $Conf->emailFrom");
 	else
 	    return $Conf->infoMsg("<pre>" . htmlspecialchars("To: " . contactEmailTo($emailTo) . "\nSubject: $m[0]\n$headers\n$m[1]") . "</pre>");
+    }
+
+    function sendContactAuthors($template, $row, $otherContact = null, $rest = array()) {
+	global $Conf, $Me, $mailTemplates;
+
+	$result = $Conf->qe("select firstName, lastName, email, conflictType
+		from ContactInfo join PaperConflict using (contactId)
+		where paperId=$row->paperId and conflictType=" . CONFLICT_AUTHOR . "
+		group by ContactInfo.contactId", "while looking up contact authors to send email");
+
+	$contacts = array();
+	while (($contact = edb_orow($result))) {
+	    Mailer::send($template, $row, $contact, $otherContact, $rest);
+	    $contacts[] = contactHtml($contact);
+	}
+
+	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts) && $Me->privChair)
+	    $Conf->infoMsg("Send email to paper #$row->paperId's " . pluralx($contacts, "contact author") . ", " . commajoin($contacts) . ".");
+    }
+
+    function sendReviewers($template, $row, $otherContact = null, $rest = array()) {
+	global $Conf, $Me, $mailTemplates;
+
+	$result = $Conf->qe("select firstName, lastName, email
+		from ContactInfo join PaperReview using (contactId)
+		where paperId=$row->paperId
+		group by ContactInfo.contactId", "while looking up reviewers to send email");
+
+	$rest["headers"] = "Cc: $Conf->contactName <$this->contactEmail>";
+	
+	$contacts = array();
+	while (($contact = edb_orow($result))) {
+	    Mailer::send($template, $row, $contact, $otherContact, $rest);
+	    $contacts[] = contactHtml($contact);
+	}
+
+	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts) && $Me->privChair)
+	    $Conf->infoMsg("Send email to paper #$row->paperId's " . pluralx($contacts, "reviewer") . ", " . commajoin($contacts) . ".");
     }
     
 }

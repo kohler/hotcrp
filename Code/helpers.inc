@@ -281,23 +281,27 @@ function authorTable($aus, $viewAs = null) {
     return $out;
 }
 
-function contactText($firstName, $lastName = null, $email = null) {
-    if (is_array($firstName)) {
-	if ($email === null && count($firstName) >= 2)
-	    $email = $firstName[2];
-	$lastName = $firstName[1];
-	$firstName = $firstName[0];
-    } else if (is_object($firstName)) {
-	if ($email === null && isset($firstName->email))
-	    $email = $firstName->email;
-	if (isset($firstName->lastName) || isset($firstName->firstName)) {
-	    $lastName = defval($firstName->lastName, "");
-	    $firstName = defval($firstName->firstName, "");
+function _cleanContactText(&$f, &$l, &$e) {
+    if (is_array($f)) {
+	if ($e === null && count($f) > 2)
+	    $e = $f[2];
+	$l = $f[1];
+	$f = $f[0];
+    } else if (is_object($f)) {
+	if ($e === null && isset($f->email))
+	    $e = $f->email;
+	if (isset($f->lastName) || isset($f->firstName)) {
+	    $l = defval($f->lastName, "");
+	    $f = defval($f->firstName, "");
 	} else {
-	    $lastName = defval($firstName->fullName, "");
-	    $firstName = "";
+	    $l = defval($f->fullName, "");
+	    $f = "";
 	}
     }
+}
+
+function contactText($firstName, $lastName = null, $email = null) {
+    _cleanContactText($firstName, $lastName, $email);
     if ($firstName || $lastName) {
 	$x = trim("$firstName $lastName");
 	if ($email)
@@ -307,30 +311,13 @@ function contactText($firstName, $lastName = null, $email = null) {
     return $x;
 }
 
-function contactNameText($firstName, $lastName = null, $email = null) {
-    $x = contactText($firstName, $lastName, $email);
-    if ($x[strlen($x) - 1] == '>')
-	$x = preg_replace('/\s+<[^<]*>$/', '', $x);
-    return $x;
-}
-
 function contactHtml($firstName, $lastName = null, $email = null) {
     $h = htmlspecialchars(contactText($firstName, $lastName, $email));
     return preg_replace('|&lt;(\S+?)&gt;$|', '&lt;<a href="mailto:$1">$1</a>&gt;', $h);
 }
 
-function contactEmailTo($firstName, $lastName=null, $email=null) {
-    if (is_array($firstName)) {
-	if ($email === null && count($firstName) >= 2)
-	    $email = $firstName[2];
-	$lastName = $firstName[1];
-	$firstName = $firstName[0];
-    } else if (is_object($firstName)) {
-	if ($email === null && isset($firstName->email))
-	    $email = $firstName->email;
-	$lastName = $firstName->lastName;
-	$firstName = $firstName->firstName;
-    }
+function contactEmailTo($firstName, $lastName = null, $email = null) {
+    _cleanContactText($firstName, $lastName, $email);
     if ($firstName || $lastName) {
 	$x = trim("$firstName $lastName");
 	if (preg_match("/[^-A-Za-z0-9 !#\$%&'*+\\/=?^_`{|}~]/", $x))

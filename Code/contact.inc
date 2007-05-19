@@ -277,29 +277,6 @@ class Contact {
 	$this->privChair = ($this->roles & (self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
     }
     
-    function fullname() {
-	if ($this->firstName && $this->lastName)
-	    return $this->firstName . " " . $this->lastName;
-	else if ($this->firstName || $this->lastName)
-	    return $this->firstName . $this->lastName;
-	else
-	    return "";
-    }
-
-    function fullnameOrEmail() {
-	if ($this->firstName && $this->lastName)
-	    return $this->firstName . " " . $this->lastName;
-	else if ($this->firstName || $this->lastName)
-	    return $this->firstName . $this->lastName;
-	else
-	    return $this->email;
-    }
-
-    function fullnameAndEmail() {
-	$n = $this->fullname();
-	return ($n ? $n . " (" . $this->email . ")" : $this->email);
-    }
-    
     function bumpVisits($conf) {
 	$this->visits += 1;
 	$time=mktime();

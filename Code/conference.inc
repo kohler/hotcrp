@@ -395,33 +395,6 @@ class Conference {
 	    $this->infoMsg("Sent \"" . htmlspecialchars($subject) . "\" email to paper #$prow->paperId's contact author" . (count($contacts) == 1 ? "" : "s") . ", " . htmlspecialchars(join(", ", $contacts)) . ".");
     }
 
-    function emailReviewersChair($prow, $subject, $message) {
-	global $Opt, $Me;
-	if (!$Opt['sendEmail'])
-	    return;
-
-	if ($subject[0] != '[')
-	    $subject = "[$this->shortName] $subject";
-	$result = $this->qe("select firstName, lastName, email
-		from ContactInfo join PaperReview using (contactId)
-		where paperId=$prow->paperId
-		group by ContactInfo.contactId", "while looking up reviewers to send email");
-	if ($result) {
-	    $m = "Greetings,\n\n" . $message;
-	    while (($row = edb_row($result))) {
-		$reviewers[] = contactText($row);
-		if ($this->allowEmailTo($row[2]))
-		    $recipients[] = contactEmailTo($row);
-	    }
-	    if (count($recipients))
-		mail(join(", ", $recipients), $subject, $m, "From: $this->emailFrom\nCc: $this->contactName <$this->contactEmail>");
-	    else if (count($reviewers))
-		$this->infoMsg("<pre>" . htmlspecialchars(join(", ", $recipients)) . "\n\n" . htmlspecialchars($subject) . "\n\n" . htmlspecialchars($m) . "</pre>");
-	    if ($prow->conflictType < CONFLICT_AUTHOR && count($reviewers) && $Me->privChair)
-		$this->infoMsg("Sent \"" . htmlspecialchars($subject) . "\" email to paper #$prow->paperId's reviewer" . (count($recipients) == 1 ? "" : "s") . ", " . htmlspecialchars(join(", ", $reviewers)) . ".");
-	}
-    }
-    
   
     //
     // Paper storage

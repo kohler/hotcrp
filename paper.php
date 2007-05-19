@@ -114,27 +114,17 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	getProw($Me->contactId);
 
 	// email contact authors themselves
-	$m = "Paper #$paperId, \"$prow->title\", has been withdrawn from consideration for the $Conf->shortName conference.";
-	if ($Me->privChair && isset($_REQUEST["emailNote"]))
-	    $m .= "\n\nA conference administrator provided the following reason for withdrawing the paper: " . trim($_REQUEST["emailNote"]);
-	else if ($Me->privChair && $prow->conflictType < CONFLICT_AUTHOR)
-	    $m .= "\n\nA conference administrator withdrew the paper.";
-	$m = wordwrap("$m\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
-	if (!$Me->privChair || defval($_REQUEST["doemail"]) > 0)
-	    $Conf->emailContactAuthors($prow, "Paper #$paperId withdrawn", $m);
-
+	require_once("Code/mailtemplate.inc");
+	if ($Me->privChair && defval($_REQUEST["doemail"]) <= 0)
+	    /* do nothing */;
+	else if ($prow->conflictType >= CONFLICT_AUTHOR)
+	    Mailer::sendContactAuthors("@authorwithdraw", $prow);
+	else
+	    Mailer::sendContactAuthors("@adminwithdraw", $prow, null, array("reason" => defval($_REQUEST["emailNote"], "")));
+	    
 	// email reviewers
-	if ($prow->startedReviewCount > 0) {
-	    $m = wordwrap("$Conf->shortName Paper #$paperId, which you reviewed or have been assigned to review, has been withdrawn from consideration for the conference.\n\n");
-	    $n = "Authors can voluntarily withdraw a submission at any time, as can the chair.";
-	    if ($Me->privChair && isset($_REQUEST["emailNote"]))
-		$n .= "  " . trim($_REQUEST["emailNote"]);
-	    $m .= wordwrap($n . "\n\n")
-		. wordWrapIndent($prow->title, "Title: ", 14) . "\n"
-		. "  Paper site: $Conf->paperSite/review.php?paperId=$prow->paperId\n\n"
-		. wordwrap("You are not expected to complete your review; in fact the conference system will not allow it unless the chair revives the paper.\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
-	    $Conf->emailReviewersChair($prow, "Paper #$paperId withdrawn", $m);
-	}
+	if ($prow->startedReviewCount > 0)
+	    Mailer::sendReviewers("@withdrawreviewer", $prow, null, array("reason" => defval($_REQUEST["emailNote"], "")));
 	
 	$Conf->log("Withdrew", $Me, $paperId);
     } else
@@ -352,56 +342,57 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     getProw($contactId);
     if ($isSubmitFinal) {
 	$what = "Submitted final copy for";
-	$subject = "Updated Paper #$paperId final copy";
+	$subject = "Updated paper #$paperId final copy";
     } else {
 	$what = ($isSubmit ? "Submitted" : ($newPaper ? "Registered" : "Updated"));
-	$subject = $what . " Paper #$paperId";
+	$subject = $what . " paper #$paperId";
     }
-    if (($titleWords = titleWords($prow->title)))
-	$subject .= " \"$titleWords\"";
     $Conf->confirmMsg("$what paper #$paperId.");
     
 
     // send paper email
-    $m = wordwrap("This mail confirms the "
+    $m = "This mail confirms the "
 	. ($isSubmitFinal ? "submission of a final copy for"
 	   : ($isSubmit ? "submission of"
-	      : ($newPaper ? "creation of" : "update of")))
-	. " paper #$paperId at the $Conf->shortName conference submission site.") . "\n\n"
-	. wordWrapIndent(trim($prow->title), "Title: ") . "\n"
-	. wordWrapIndent(trim($prow->authorInformation), "Authors: ") . "\n"
-	. "      Paper site: $Conf->paperSite/paper.php?paperId=$paperId\n\n";
+	      : ($newPaper ? "registration of" : "update of")))
+	. " paper #$paperId at the %CONFNAME% submission site.
+
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+  Paper site: %URL%/paper.php?paperId=%NUMBER%\n\n";
     if ($isSubmitFinal) {
 	$deadline = $Conf->printableTimeSetting("final_done");
-	$mx = ($deadline != "N/A" ? "You have until $deadline to make further changes." : "");
+	$m .= ($deadline != "N/A" ? "You have until $deadline to make further changes.\n\n" : "");
     } else {
 	if ($isSubmit || $prow->timeSubmitted > 0)
-	    $mx = "You will receive email when reviews are available.";
+	    $m .= "You will receive email when reviews are available.";
 	else if ($Conf->setting("sub_freeze") > 0)
-	    $mx = "You have not yet submitted a final version of this paper.";
+	    $m .= "You have not yet submitted a final version of this paper.";
 	else if ($prow->size == 0)
-	    $mx = "You have not yet uploaded the paper itself.";
+	    $m .= "You have not yet uploaded the paper itself.";
 	else
-	    $mx = "This version of the paper is marked as not ready for review.";
+	    $m .= "This version of the paper is marked as not ready for review.";
 	$deadline = $Conf->printableTimeSetting("sub_update");
 	if ($deadline != "N/A" && ($prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0))
-	    $mx .= "  You have until $deadline to update the paper further.";
+	    $m .= "  You have until $deadline to update the paper further.";
 	$deadline = $Conf->printableTimeSetting("sub_sub");
 	if ($deadline != "N/A" && $prow->timeSubmitted <= 0)
-	    $mx .= "  If you do not submit the paper by $deadline, it will not be considered for the conference.";
+	    $m .= "  If you do not submit the paper by $deadline, it will not be considered for the conference.";
+	$m .= "\n\n";
     }
     if ($Me->privChair && isset($_REQUEST["emailNote"]))
-	$mx .= "\n\nA conference administrator provided the following reason for this update: " . $_REQUEST["emailNote"];
+	$m .= "A conference administrator provided the following reason for this update: %REASON%\n\n";
     else if ($Me->privChair && $prow->conflictType < CONFLICT_AUTHOR)
-	$mx .= "\n\nA conference administrator performed this update.";
-    $mx .= ($mx == "" ? "" : "\n\n");
-    $m .= wordwrap($mx . "Contact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.
+	$m .= "A conference administrator performed this update.\n\n";
+    $m .= "Contact the site administrator, %ADMIN%, with any questions or concerns.
 
-- $Conf->shortName Conference Submissions\n");
+- %CONFSHORTNAME% Submissions\n";
 
     // send email to all contact authors
-    if (!$Me->privChair || defval($_REQUEST["doemail"]) > 0)
-	$Conf->emailContactAuthors($prow, $subject, $m);
+    if (!$Me->privChair || defval($_REQUEST["doemail"]) > 0) {
+	require_once("Code/mailtemplate.inc");
+	Mailer::sendContactAuthors(array("$subject %TITLEHINT%", $m), $prow, null, array("reason" => defval($_REQUEST["emailNote"], "")));
+    }
     
     $Conf->log($what, $Me, $paperId);
     return true;
@@ -449,12 +440,10 @@ if (isset($_REQUEST['delete'])) {
 	$Conf->errorMsg("Only the program chairs can permanently delete papers.  Authors can withdraw papers, which is effectively the same.");
     else {
 	// mail first, before contact info goes away
-	$m = "Your $Conf->shortName paper submission #$paperId, \"$prow->title\", has been removed from the conference database by the program chairs.  This is usually done to remove duplicate papers.";
-	if ($Me->privChair && isset($_REQUEST["emailNote"]))
-	    $m .= "\n\nA conference administrator provided the following reason for deleting the paper: " . $_REQUEST["emailNote"];
-	$m = wordwrap("$m\n\nContact the site administrator, $Conf->contactName <$Conf->contactEmail>, with any questions or concerns.\n\n- $Conf->shortName Conference Submissions\n");
-	if (!$Me->privChair || defval($_REQUEST["doemail"]) > 0)
-	    $Conf->emailContactAuthors($prow, "Paper #$paperId deleted", $m);
+	if (!$Me->privChair || defval($_REQUEST["doemail"]) > 0) {
+	    require_once("Code/mailtemplate.inc");
+	    Mailer::sendContactAuthors("@deletepaper", $prow, null, array("reason" => defval($_REQUEST["emailNote"], "")));
+	}
 	// XXX email self?
 
 	$error = false;

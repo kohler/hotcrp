@@ -97,7 +97,7 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
     // send confirmation email, if the review site is open
     if ($Conf->timeReviewOpen()) {
 	require_once("Code/mailtemplate.inc");
-	Mailer::sendTemplate("@retractrequest", $prow, $row, $Me, array("headers" => "Cc: " . contactEmailTo($Me)));
+	Mailer::send("@retractrequest", $prow, $row, $Me, array("headers" => "Cc: " . contactEmailTo($Me)));
     }
 
     // confirmation message
@@ -230,7 +230,7 @@ function requestReview($email) {
 
     // send confirmation email
     require_once("Code/mailtemplate.inc");
-    Mailer::sendTemplate("@requestreview", $prow, $Them, $Requester, array("headers" => "Cc: " . contactEmailTo($Requester)));
+    Mailer::send("@requestreview", $prow, $Them, $Requester, array("headers" => "Cc: " . contactEmailTo($Requester)));
 
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
@@ -260,7 +260,7 @@ function proposeReview($name, $email) {
     
     // send confirmation email
     require_once("Code/mailtemplate.inc");
-    Mailer::sendTemplate("@proposereview", $prow, (object) array("fullName" => $name, "email" => $email), $Me, array("emailTo" => $Opt['contactEmail'], "headers" => "Cc: " . contactEmailTo($Me)));
+    Mailer::send("@proposereview", $prow, (object) array("fullName" => $name, "email" => $email), $Me, array("emailTo" => $Opt['contactEmail'], "headers" => "Cc: " . contactEmailTo($Me)));
 
     // confirmation message
     $Conf->confirmMsg("Proposed that " . htmlspecialchars("$name <$email>") . " review paper #$prow->paperId.  The chair must approve this proposal for it to take effect.");
@@ -303,7 +303,7 @@ if (isset($_REQUEST['deny']) && $Me->privChair
 
 	// send anticonfirmation email
 	require_once("Code/mailtemplate.inc");
-	Mailer::sendTemplate("@denyreviewrequest", $prow, $Requester, (object) array("fullName" => vtrim($_REQUEST["name"]), "email" => $email));
+	Mailer::send("@denyreviewrequest", $prow, $Requester, (object) array("fullName" => vtrim($_REQUEST["name"]), "email" => $email));
 
 	$Conf->confirmMsg("Proposed reviewer denied.");
     } else
