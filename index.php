@@ -224,27 +224,14 @@ if ($Me->isPC) {
   <li><a href='PC/CheckReviewStatus.php'>Check on reviewer progress</a> (and possibly nag reviewers)</li>
   </ul></li>
 
-<li>The End Game - Activities Prior to the PC Meeting
+<li>Check on reviewer progress
   <ul>\n";
-    if ($Conf->timePCViewAllReviews()) {
+    if ($Conf->timePCViewAllReviews() || $Me->privChair) {
 	echo "  <li><a href='Chair/AverageReviewerScore.php'>See average reviewer ratings</a> -- this compares the overall merit ratings of different reviewers</li>\n";
     }
     echo "</ul></li>\n";
-    echo "</ul></div></div>\n";
-}    
 
-
-// Chair/assistant tasks (old CRP)
-if ($Me->privChair) {
-    echo "<div class='bgrp foldc' id='foldch'><div class='bgrp_head'><a href=\"javascript:fold('ch', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('ch', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;PC chair tasks (old CRP)</div><div class='bgrp_body extension'>\n";
-
-    echo "<ul>
-<li>Check on reviewing progress
-  <ul>
-  <li><a href='Chair/AverageReviewerScore.php'>See average reviewer score</a></li>
-  </ul></li>\n";
-
-    if (isset($Opt['dbDumpDir']))
+    if ($Me->privChair && isset($Opt['dbDumpDir']))
 	echo "<li><a href='Chair/DumpDatabase.php'>Make a backup of the database</a></li>\n";
 
     echo "</ul></div></div>\n";

@@ -18,6 +18,7 @@ Minor features
 - allow authors to download paper info, such as all submitted reviews
 - reviewers/authors can search submitted papers, seeing only those papers they
   are allowed to see (e.g. both reviewers + authors)?
+- Search: Assignments & conflicts: [External reviewer]
 - START-style enter-paper-all-at-once (no email verification)?
 - START-style enter multiple contact authors with explicit First Name,
   Last Name, Affiliation, Email fields?
