@@ -101,12 +101,6 @@ images/sortup.png
 images/stophand45.png
 images/viewas.png
 
-Assistant/.htaccess
-Assistant/PrintAllAbstracts.php
-Assistant/PrintAllReviews.php
-Assistant/PrintSomeReviews.php
-Assistant/index.php
-
 Chair/.htaccess
 Chair/AskForReview.php
 Chair/AssignPapers.php

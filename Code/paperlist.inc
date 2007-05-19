@@ -629,6 +629,7 @@ class PaperList {
   <tr><td class='xcaption'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then <b>Get:</b></td>
     <td><select name='getaction'>
     <option value='paper' selected='selected'>Papers</option>
+    <option value='abstracts'>Abstracts</option>
     <option value='revform'>Review forms</option>\n";
 	if ($this->contact->isPC && $Conf->timeSubmitFinalPaper())
 	    $t .= "    <option value='final'>Final papers</option>\n";

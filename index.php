@@ -252,13 +252,6 @@ if ($Me->privChair) {
     if (isset($Opt['dbDumpDir']))
 	echo "<li><a href='Chair/DumpDatabase.php'>Make a backup of the database</a></li>\n";
 
-    echo "<li>Help prepare information about paper
-  <ul>
-  <li><a href='Assistant/PrintAllAbstracts.php'>Show all abstracts for printing</a></li>
-  <li><a href='Assistant/PrintAllReviews.php'>Show all reviews for printing</a></li>
-  <li><a href='Assistant/PrintSomeReviews.php'>Show <b>some</b> reviews for printing</a> -- you can use this to eliminate papers unlikely to be accepted</li>
-  </ul></li>\n";
-    
     echo "</ul></div></div>\n";
 }    
 

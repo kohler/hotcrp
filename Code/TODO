@@ -9,6 +9,7 @@ Major features
 - offline reviewing: John Heidemann would like some redundancy 
 - "show author"/"hide author" do not work on IE? [Fernando]
 - fix downloadable review form "Submit Review" explanation
+- downloading reviews from the search screen gets comments as well
 
 Minor features
 - authors' response: emails, etc.

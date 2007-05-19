@@ -87,6 +87,46 @@ if ($getaction == "paper" && isset($papersel)) {
 }
 
 
+// download selected abstracts
+if ($getaction == "abstracts" && isset($papersel)) {
+    $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "topics" => 1));
+    $result = $Conf->qe($q, "while selecting papers");
+    $text = "";
+    $rf = reviewForm();
+    while ($prow = edb_orow($result)) {
+	if (!$Me->canViewPaper($prow, $Conf, $whyNot))
+	    $Conf->errorMsg(whyNotText($whyNot, "view"));
+	else {
+	    $rfSuffix = ($text == "" ? "-$prow->paperId" : "s");
+	    $text .= "===========================================================================\n";
+	    $n = "Paper #" . $prow->paperId . ": ";
+	    $l = max(14, (int) ((75.5 - strlen($prow->title) - strlen($n)) / 2) + strlen($n));
+	    $text .= wordWrapIndent($prow->title, $n, $l) . "\n";
+	    $text .= "---------------------------------------------------------------------------\n";
+	    $l = strlen($text);
+	    if ($Me->canViewAuthors($prow, $Conf, $_REQUEST["t"] != "a"))
+		$text .= wordWrapIndent($prow->authorInformation, "Authors: ", 14) . "\n";
+	    if ($prow->topicIds != "") {
+		$t = "";
+		$topics = ",$prow->topicIds,";
+		foreach ($rf->topicName as $tid => $tname)
+		    if (strpos($topics, ",$tid,") !== false)
+			$t .= ", " . $tname;
+		$text .= wordWrapIndent(substr($t, 2), "Topics: ", 14) . "\n";
+	    }
+	    if ($l != strlen($text))
+		$text .= "---------------------------------------------------------------------------\n";
+	    $text .= rtrim($prow->abstract) . "\n\n";
+	}
+    }
+
+    if ($text) {
+	downloadText($text, $Opt['downloadPrefix'] . "abstract$rfSuffix.txt", "abstracts");
+	exit;
+    }
+}
+
+
 // download selected final copies
 if ($getaction == "final" && isset($papersel)) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
