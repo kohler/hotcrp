@@ -411,7 +411,7 @@ class Mailer {
 	    $text = "";
 	    while (($row = edb_orow($result)))
 		if ($row->reviewSubmitted > 0) {
-		    $text .= $rf->authorTextForm($row, $row, $contact, $Conf, null) . "\n";
+		    $text .= $rf->prettyTextForm($row, $row, $contact, $Conf, true) . "\n";
 		}
 	    return $text;
 	} else

@@ -462,7 +462,7 @@ class ReviewForm {
 	return $x . "\n==+== End Review\n";
     }
 
-    function authorTextForm($prow, $rrow, $contact, $conf) {
+    function prettyTextForm($prow, $rrow, $contact, $conf, $alwaysAuthorView = true) {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
 
@@ -471,6 +471,7 @@ class ReviewForm {
 	    $rrow_contactId = $rrow->reviewContactId;
 	else if (isset($rrow) && isset($rrow->contactId))
 	    $rrow_contactId = $rrow->contactId;
+	$viewAllFields = !$alwaysAuthorView && $contact->canViewAllReviewFields($prow, $conf);
 
 	$x = "===========================================================================\n";
 	$n = "$conf->shortName Review";
@@ -497,10 +498,10 @@ class ReviewForm {
 	$x .= "---------------------------------------------------------------------------\n\n";
 
 	$i = 0;
-	$lastNumeric = false;
+	$lastNumeric = true;
 	foreach ($this->fieldOrder as $field) {
 	    $i++;
-	    if ($this->authorView[$field] <= 0)
+	    if (!$viewAllFields && $this->authorView[$field] <= 0)
 		continue;
 
 	    $fval = "";
@@ -514,7 +515,9 @@ class ReviewForm {
 	    if (isset($this->options[$field])) {
 		$y = defval($this->options[$field][$fval], "");
 		$sn = $this->shortName[$field] . ":";
-		# "(1-" . count($this->options[$field]) . "):";
+		/* "(1-" . count($this->options[$field]) . "):"; */
+		if (!$lastNumeric)
+		    $x .= "\n";
 		if (strlen($this->shortName[$field]) > 39 + strlen($fval))
 		    $x .= $sn . "\n" . wordWrapIndent($y, $fval . ". ", 39 + strlen($fval)) . "\n";
 		else

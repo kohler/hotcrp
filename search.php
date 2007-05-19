@@ -158,18 +158,17 @@ if ($getaction == "rev" && isset($papersel)) {
 	    $errors[whyNotText($whyNot, "view review")] = true;
 	else if ($row->reviewSubmitted > 0) {
 	    $rfSuffix = ($text == "" ? "-$row->paperId" : "s");
-	    $text .= $rf->textForm($row, $row, $Me, $Conf, null, true) . "\n";
+	    $text .= $rf->prettyTextForm($row, $row, $Me, $Conf, false) . "\n";
 	}
     }
 
     if ($text == "")
 	$Conf->errorMsg(join("<br/>\n", array_keys($errors)) . "<br/>\nNo papers selected.");
     else {
-	$text = $rf->textFormHeader($Conf, $rfSuffix == "s", false) . $text;
 	if (count($errors)) {
-	    $e = "==-== Some reviews are missing:\n";
+	    $e = "Some reviews are missing:\n";
 	    foreach ($errors as $ee => $junk)
-		$e .= "==-== " . preg_replace('|\s*<.*|', "", $ee) . "\n";
+		$e .= preg_replace('|\s*<.*|', "", $ee) . "\n";
 	    $text = "$e\n$text";
 	}
 	downloadText($text, $Opt['downloadPrefix'] . "review$rfSuffix.txt", "review forms");
