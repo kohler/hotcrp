@@ -22,12 +22,9 @@ class Conference {
     var $tableMessagesObj;
     var $bodyexpander;
 
-    //
     // Useful colors
-    //
     var $contrastColorOne = "#eeeeee";
     var $contrastColorTwo = "#cccccc";
-    var $infoColor = "yellow"; // blue
 
     function Conference() {
 	global $Opt;
@@ -1107,10 +1104,6 @@ class Conference {
 	echo "</body>\n</html>\n";
     }
 
-    function linkWithPaperId($text, $url, $paperId) {
-	print "<a href=\"$url?paperId=$paperId\">" . $text . "</a>";
-    }
-
     function getFileExtension(&$mimetype) {
 	if (!isset($mimetype) || $mimetype == null || $mimetype == "")
 	    return "";
@@ -1130,69 +1123,12 @@ class Conference {
     }
 
   
-  function composeReviewerRequest($request, $who, $email, $paperList)
-    {
-	$message = "Greetings,\n\n";
-	$message .= "$who->firstName " . $who->lastName . " (" . $who->email . ")";
-	$message .= $request . " for ";
-	$message .= "The $this->longName ($this->shortName).\n\n";
-	$message .= $paperList;
-	$message .= "\n";
-	$message .= "You can continue to modify your review(s) until\n";
-	$message .= $this->printableTimeSetting('extrev_soft');
-	$message .= "or until you finalize them.\n";
-	$message .= "\n\n";
-	$message .= "If you are unable to complete the review by the deadline,\n";
-	$message .= "please contact " . $who->firstName . " " . $who->lastName ." (" . $who->email . ")\n";
-	$message .= "\n";
-	$message .= "You can access the website for making your review:\n\n";
-	$message .= "Web site: $this->paperSite/\n";
-
-	$result = $this->q("SELECT password FROM ContactInfo WHERE email='$email'");
-	
-	if ( $result && edb_nrows($result) == 1 ) {
-	  $row = edb_row($result);
-	  $passwd = $row[0];
-	  $cleanPasswd=htmlspecialchars($passwd);
-	  $cleanEmail=htmlspecialchars($email);
-
-	  $message .= "Login: $cleanEmail   Password: $cleanPasswd\n\n";
-	}
-
-	$message .= "Contact $this->contactName ($this->contactEmail) about problems.\n\n";
-	$message .= "Thank you for helping $this->shortName - we understand that reviewing is hard work.\n";
-      
-	return $message;
-    }
-
     function allowEmailTo($email) {
 	global $Opt;
 	return $Opt['sendEmail'] && strstr($email, "@")
 	    && !preg_match('/@_\.com$/', $email);
     }
   
-  function sendReviewerRequest($who, $email, $paperList) {
-      $message = $this -> composeReviewerRequest("has asked you to review the following papers",
-						 $who, $email, $paperList);
-      if ($this->allowEmailTo($email))
-	  mail($email,
-	       "[$this->shortName] Review request",
-	       $message,
-	       "From: $this->emailFrom",
-	       "-f$this->emailFrom");
-  }
-
-  function sendUrgentReviewRequest($who, $email, $paperList) {
-      $message = $this -> composeReviewerRequest("\nis reminding you to finish your review(s) for the following papers",
-						 $who, $email, $paperList);
-      if ($this->allowEmailTo($email))
-	  mail($email,
-	       "[$this->shortName] URGENT: Review reminder",
-	       $message,
-	       "From: $this->emailFrom",
-	       "-f$this->emailFrom");
-    }
-
     function log($text, $who, $paperId = null) {
 	if (is_array($paperId)) {
 	    if (count($paperId) == 0)
