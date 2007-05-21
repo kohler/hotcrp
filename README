@@ -68,8 +68,9 @@ Configuration
   - Update the systemwide setting for PHP's 'session.gc_maxlifetime'
     configuration variable.  This provides an upper bound on HotCRP session
     lifetimes (the amount of idle time before a user is logged out
-    automatically).  The suggested value for this setting is 86400, e.g.,
-    24 hours:
+    automatically).  On Unix machines, systemwide PHP settings are often
+    stored in '/etc/php.ini'.  The suggested value for this setting is
+    86400, e.g., 24 hours:
 
 	session.gc_maxlifetime = 86400
 
@@ -98,12 +99,6 @@ Configuration
     PHP configuration variables affect the maximum attachment size the server
     will accept.  These variables are set in the base directory's ".htaccess"
     to 20 megabytes; you may want to lower them.
-
-  - On some Debian Linux systems, a cron job garbage-collects old sessions
-    based on the system-wide session lifetime, which can be quite short.
-    You will need to change the system-wide "session.gc_maxlifetime"
-    setting in /etc/php.ini to exceed the desired HotCRP session lifetime.
-    This setting is measured in seconds, so 86400 corresponds to 24 hours.
 
   - HotCRP PHP scripts can take a lot of memory, particularly if they're
     doing things like generating MIME-encoded mail messages.  By default
