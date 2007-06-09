@@ -678,10 +678,12 @@ class Conference {
 		PaperReview.contactId as reviewContactId";
 	    if (!$allReviewerQuery)
 		$pq .= ",
-		PaperReview.reviewType as myReviewType";
+		PaperReview.reviewType as myReviewType,
+		PaperReview.reviewSubmitted as myReviewSubmitted";
 	    else
 		$pq .= ",
-		MyPaperReview.reviewType as myReviewType";
+		MyPaperReview.reviewType as myReviewType,
+		MyPaperReview.reviewSubmitted as myReviewSubmitted";
 	}
 	if (isset($options['reviewerName']))
 	    $pq .= ",
