@@ -65,9 +65,12 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	// reviewer identity
 	if (!$Me->canViewReviewerIdentity($prow, $rr, $Conf))
 	    $t .= ($x ? "<td>$x</td>" : "<td class='empty'></td>");
-	else if ($mode == "assign")
-	    $t .= "<td>" . contactHtml($rr) . "</td>";
-	else
+	else if ($mode == "assign") {
+	    $t .= "<td>" . contactHtml($rr);
+	    if ($Me->privChair && $rr->email != $Me->email)
+		$t .= " <a href=\"" . selfHref(array("viewContact" => $rr->email)) . "\"><img src='${ConfSiteBase}images/viewas.png' title=\"View as " . contactHtml($rr->firstName, $rr->lastName) . "\" /></a>";
+	    $t .= "</td>";
+	} else
 	    $t .= "<td>" . contactHtml($rr->firstName, $rr->lastName) . ($x ? " $x" : "") . "</td>";
 
 	// review type
