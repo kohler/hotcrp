@@ -23,6 +23,7 @@ $searchTags = array('ti:' => 'ti', 'title:' => 'ti',
 		    'option:' => 'option', 'opt:' => 'option',
 		    'lead:' => 'lead',
 		    'shepherd:' => 'shepherd', 'shep:' => 'shepherd',
+		    'conflict:' => 'conflict', 'conf:' => 'conflict',
 		    'status:' => 'status');
 
 class PaperSearch {
@@ -46,6 +47,7 @@ class PaperSearch {
     const ANY_SHEPHERD = 65536;
     const ANY_CONFLICT = 131072;
     const ANY_OPTIONS = 262144;
+    const ANY_CONFLICTINFO = 524288;
     
     var $contactId;
     var $privChair;
@@ -375,6 +377,13 @@ class PaperSearch {
 		else
 		    $qp .= " or (shepherdInfo is not null and shepherdInfo like '%$lword%')";
 	    }
+	    if ($special ? $special == "conflict" : isset($this->fields['conflict'])) {
+		$this->any |= self::ANY_CONFLICTINFO;
+		if ($type != "none")
+		    $qp .= " or (conflictInfo like '%$lword%')";
+		else
+		    $qp .= " or (conflictInfo is not null and conflictInfo like '%$lword%')";
+	    }
 	    
 	    if ($qp)
 		$q .= $qjoin . "(" . substr($qp, 4) . ")";
@@ -465,6 +474,8 @@ class PaperSearch {
 	    $q .= " left join (select paperId, concat(firstName, ' ', lastName, ' ', email) as leadInfo from Paper join ContactInfo on (Paper.leadContactId=ContactInfo.contactId)) as LeadInfo on (LeadInfo.paperId=Paper.paperId)";
 	if ($this->any & self::ANY_SHEPHERD)
 	    $q .= " left join (select paperId, concat(firstName, ' ', lastName, ' ', email) as shepherdInfo from Paper join ContactInfo on (Paper.shepherdContactId=ContactInfo.contactId)) as ShepherdInfo on (ShepherdInfo.paperId=Paper.paperId)";
+	if ($this->any & self::ANY_CONFLICTINFO)
+	    $q .= " left join (select Paper.paperId, group_concat(firstName, ' ', lastName, ' ', email separator ' ') as conflictInfo from Paper left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.conflictType>0) join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId) group by Paper.paperId) as ConflictInfo on (ConflictInfo.paperId=Paper.paperId)";
 	
 	if ($this->any & self::ANY_TAG)
 	    $q .= " left join PaperTag on (PaperTag.paperId=Paper.paperId)";

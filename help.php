@@ -198,6 +198,7 @@ function searchQuickref() {
     _searchQuickrefRow("", "lead:none", "no assigned discussion lead");
     _searchQuickrefRow("", "lead:any", "some assigned discussion lead");
     _searchQuickrefRow("", "shep:fdabek", "\"fdabek\" (in name/email) is shepherd (\"none\" and \"any\" also work)");
+    _searchQuickrefRow("", "conflict:fdabek", "\"fdabek\" (in name/email) has a conflict with the paper");
     _searchQuickrefRow("Status", "status:sub", "paper is submitted for review");
     _searchQuickrefRow("", "status:unsub", "paper has not been submitted or withdrawn");
     _searchQuickrefRow("", "status:with", "paper has been withdrawn");
