@@ -84,22 +84,27 @@ if ($Me->privChair || ($Me->isPC && $papersub) || ($Me->amReviewer() && $papersu
     echo "<div class='bgrp'><div class='bgrp_head'>Submissions</div><div class='bgrp_body'>\n";
     echo "<form method='get' action='search.php'><input class='textlite' type='text' size='32' name='q' value='' /> &nbsp;<input class='button_small' type='submit' value='Search' /></form>\n";
     echo "<span class='sep'></span><a href='search.php?opt=1'>Advanced search</a>";
-    echo "<p><table><tr><td><strong>List papers: &nbsp;</strong> </td><td>";
+    echo "<p><table><tr><td class='nowrap'><strong>List papers: &nbsp;</strong> </td><td>";
     $sep = "";
     if ($Me->isReviewer) {
-	echo $sep, "<a href='search.php?q=&amp;t=r'>Your review assignment</a>";
+	echo $sep, "<a href='search.php?q=&amp;t=r' class='nowrap'>Your review assignment</a>";
 	$sep = " &nbsp;|&nbsp; ";
     }
-    if ($Me->isPC) {
-	echo $sep, "<a href='search.php?q=&amp;t=s'>Submitted</a>";
+    if ($Me->isPC && $Conf->timePCViewAllReviews()
+	&& $Me->amDiscussionLead(0, $Conf)) {
+	echo $sep, "<a href=\"search.php?q=lead:", urlencode($Me->email), "&amp;t=s\" class='nowrap'>Your discussion lead</a>";
 	$sep = " &nbsp;|&nbsp; ";
     }
-    if ($Me->canViewDecision(null, $Conf)) {
-	echo $sep, "<a href='search.php?q=&amp;t=acc'>Accepted</a>";
+    if ($Me->isPC && $papersub) {
+	echo $sep, "<a href='search.php?q=&amp;t=s' class='nowrap'>Submitted</a>";
+	$sep = " &nbsp;|&nbsp; ";
+    }
+    if ($Me->canViewDecision(null, $Conf) && $papersub) {
+	echo $sep, "<a href='search.php?q=&amp;t=acc' class='nowrap'>Accepted</a>";
 	$sep = " &nbsp;|&nbsp; ";
     }
     if ($Me->privChair) {
-	echo $sep, "<a href='search.php?q=&amp;t=all'>All</a>";
+	echo $sep, "<a href='search.php?q=&amp;t=all' class='nowrap'>All</a>";
 	$sep = " &nbsp;|&nbsp; ";
     }
     echo "</td></tr></table></p></div></div>\n";

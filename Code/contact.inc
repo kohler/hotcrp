@@ -714,6 +714,18 @@ class Contact {
 	    return $prow->conflictType == CONFLICT_AUTHOR;
     }
 
+    function amDiscussionLead($paperId, $conf, $prow = null) {
+	if ($prow === null && $paperId <= 0) {
+	    $result = $conf->qe("select count(paperId) from Paper where leadContactId=$this->contactId");
+	    $row = edb_row($result);
+	    return $row && $row[0] > 0;
+	} else if ($prow === null) {
+	    $result = $conf->qe("select paperId from Paper where paperId=$paperId and leadContactId=$this->contactId");
+	    return edb_nrows($result) > 0;
+	} else
+	    return $prow->leadContactId == $this->contactId;
+    }
+
     function canManagePaper($prow) {
 	return ($prow->conflictType == CONFLICT_AUTHOR || $this->privChair);
     }

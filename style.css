@@ -609,7 +609,7 @@ table.auview td.caption {
 td.entry form {
 	padding-right: 0.5em;
 }
-tr.pt_actions td, tr.pt_outcome td, td.nowrap, th.nowrap {
+tr.pt_actions td, tr.pt_outcome td {
 	white-space: nowrap;
 }
 tr.pt_abstract td.entry {
@@ -873,7 +873,7 @@ div#assignpc div.topicinterest {
 	margin-left: 3em;
 }
 
-span.nowrap {
+.nowrap {
 	white-space: nowrap;
 }
 span.autblentry {
