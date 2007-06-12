@@ -36,6 +36,9 @@ h1 {
 	font-size: x-large;
 	margin: 0em;
 }
+h1 span.crumbsep {
+	font-weight: normal;
+}
 div.nvubar {
 	margin: 0px 12px;
 	height: 0.75em;
