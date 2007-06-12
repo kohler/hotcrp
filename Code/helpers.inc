@@ -174,11 +174,6 @@ function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
     return $x;
 }
 
-function viewContactButton($href, $contactId) {
-    $href .= (strpos($href, "?") === false ? "?" : "&amp;") . "viewContact=$contactId";
-    return "<a class='button_small' href=\"$href\">View as</a>";
-}
-
 function paperDownload($prow, $final = false, $conf = null) {
     global $Conf, $ConfSiteBase, $Me;
     $conf = ($conf == null ? $Conf : $conf);
@@ -274,7 +269,7 @@ function authorTable($aus, $viewAs = null) {
 		$out .= "<span class='autblentry'>";
 	    $out .= $au;
 	    if ($viewAs !== null && is_array($aux) && count($aux) >= 2 && $viewAs->email != $aux[2] && $viewAs->privChair)
-		$out .= " <a href=\"" . selfHref(array("viewContact" => $aux[2])) . "\"><img src='${ConfSiteBase}images/viewas.png' title=\"View as " . contactHtml($aux[0], $aux[1]) . "\" /></a>";
+		$out .= " <a href=\"" . selfHref(array("viewContact" => $aux[2])) . "\"><img src='${ConfSiteBase}images/viewas.png' title=\"Act as " . contactHtml($aux[0], $aux[1]) . "\" /></a>";
 	    $out .= "</span> ";
 	}
     }
