@@ -2,9 +2,13 @@
 // HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+function e(id) {
+    return document.getElementById(id);
+}
+
 function hotcrpLoad(servtime, servzone) {
-    var e = document.getElementById("usertime");
-    if (e && Math.abs) {
+    var elt = e("usertime");
+    if (elt && Math.abs) {
 	var d = new Date();
 	// print local time if local time is more than 10 minutes off,
 	// or if server time is more than 3 time zones distant
@@ -18,16 +22,16 @@ function hotcrpLoad(servtime, servzone) {
 	s += ":" + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
 	s += ":" + (d.getSeconds() < 10 ? "0" : "") + d.getSeconds();
 	s += (d.getHours() < 12 ? "am" : "pm");
-	e.innerHTML = "Your local time: " + s;
+	elt.innerHTML = "Your local time: " + s;
     }
 }
 
 function highlightUpdate(which, classmod) {
     if (typeof which == "string") {
-	var result = document.getElementById(which + "result");
+	var result = e(which + "result");
 	if (result && classmod == null)
 	    result.innerHTML = "";
-	which = document.getElementById(which);
+	which = e(which);
     }
     if (!which)
 	which = document;
@@ -50,7 +54,7 @@ function fold(which, dofold, foldnum) {
 	for (var i = 0; i < which.length; i++)
 	    fold(which[i], dofold, foldnum);
     } else {
-	var elt = document.getElementById('fold' + which);
+	var elt = e('fold' + which);
 	var foldnumid = (foldnum ? foldnum : "");
 	var opentxt = "fold" + foldnumid + "o";
 	var closetxt = "fold" + foldnumid + "c";
@@ -66,22 +70,34 @@ function fold(which, dofold, foldnum) {
 	if (document.recalc)
 	    elt.innerHTML = elt.innerHTML + "";
 	// check for session
-	var selt = document.getElementById('foldsession.' + which + foldnumid);
+	var selt = e('foldsession.' + which + foldnumid);
 	if (selt)
 	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0));
     }
 }
 
+function tablink(which, num) {
+    var selt = e(which);
+    if (selt) {
+	selt.className = selt.className.replace(/links[0-9]*/, 'links' + num);
+	var felt = e(which + num + "_d");
+	if (felt)
+	    felt.focus();
+	return false;
+    } else
+	return true;
+}
+
 function contactPulldown(which) {
-    var pulldown = document.getElementById(which + "_pulldown");
+    var pulldown = e(which + "_pulldown");
     if (pulldown.value != "") {
-	var name = document.getElementById(which + "_name");
-	var email = document.getElementById(which + "_email");
+	var name = e(which + "_name");
+	var email = e(which + "_email");
 	var parse = pulldown.value.split("`````");
 	email.value = parse[0];
 	name.value = (parse.length > 1 ? parse[1] : "");
     }
-    var folder = document.getElementById('fold' + which);
+    var folder = e('fold' + which);
     folder.className = folder.className.replace("foldo", "foldc");
 }
 
@@ -115,22 +131,22 @@ function paperselCheck() {
 var selassign_blur = 0;
 
 function foldassign(which) {
-    var folder = document.getElementById("foldass" + which);
+    var folder = e("foldass" + which);
     if (folder.className.indexOf("foldo") < 0 && selassign_blur != which) {
 	fold("ass" + which, false);
-	document.getElementById("pcs" + which).focus();
+	e("pcs" + which).focus();
     }
     selassign_blur = 0;
 }
 
 function selassign(elt, which) {
     if (elt) {
-	document.getElementById("ass" + which).className = "name" + elt.value;
+	e("ass" + which).className = "name" + elt.value;
 	var i = document.images["assimg" + which];
 	i.src = i.src.replace(/ass-?\d/, "ass" + elt.value);
 	highlightUpdate();
     }
-    var folder = document.getElementById("folderass" + which);
+    var folder = e("folderass" + which);
     if (folder && elt !== 0)
 	folder.focus();
     setTimeout("fold(\"ass" + which + "\", true)", 50);
@@ -141,8 +157,8 @@ function selassign(elt, which) {
 }
 
 function doRole(what) {
-    var pc = document.getElementById("pc");
-    var chair = document.getElementById("chair");
+    var pc = e("pc");
+    var chair = e("chair");
     if (pc == what && !pc.checked)
 	chair.checked = false;
     if (pc != what && chair.checked)
@@ -157,7 +173,7 @@ function pselClick(evt, elt, thisnum) {
 	var i = (pselclick_last <= thisnum ? pselclick_last : thisnum + 1);
 	var j = (pselclick_last <= thisnum ? thisnum - 1 : pselclick_last);
 	for (; i <= j; i++) {
-	    var sel = document.getElementById("psel" + i);
+	    var sel = e("psel" + i);
 	    if (sel)
 		sel.checked = elt.checked;
 	}
@@ -209,7 +225,7 @@ Miniajax.submit = function(formname, extra) {
     var form = document.forms[formname], req = Miniajax.newRequest();
     if (!form || !req || form.method != "post")
 	return true;
-    var resultelt = document.getElementById(formname + "result");
+    var resultelt = e(formname + "result");
     if (!resultelt) resultelt = {};
     
     // set request
@@ -237,10 +253,10 @@ Miniajax.submit = function(formname, extra) {
     // collect form value
     var pairs = [], regexp = /%20/g;
     for (var i = 0; i < form.elements.length; i++) {
-	var e = form.elements[i];
-	if (e.name && e.value && e.type != "submit" && e.type != "cancel")
-	    pairs.push(encodeURIComponent(e.name).replace(regexp, "+") + "="
-		       + encodeURIComponent(e.value).replace(regexp, "+"));
+	var elt = form.elements[i];
+	if (elt.name && elt.value && elt.type != "submit" && elt.type != "cancel")
+	    pairs.push(encodeURIComponent(elt.name).replace(regexp, "+") + "="
+		       + encodeURIComponent(elt.value).replace(regexp, "+"));
     }
     if (extra)
 	for (var i in extra)

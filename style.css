@@ -231,6 +231,74 @@ input.button_default, button.button_default {
 }
 
 
+/* Tab links, as in search form */
+.tablinks1 .tll1, .tablinks2 .tll2, .tablinks3 .tll3 {
+	background: #ffffee;
+	border-left: 2px solid #ffff00;
+	border-bottom: 2px solid #ffff00;
+	border-right: 2px solid #ffff00;
+	font-weight: bold;
+}
+.tablinks1 .tll1 a, .tablinks2 .tll2 a, .tablinks3 .tll3 a {
+	text-decoration: none;
+	color: black;
+}
+.tablinks1 .tll1 a:hover, .tll2 .link2 a:hover, .tablinks3 .tll3 a:hover {
+	text-decoration: underline;
+}
+.tll1, .tll2, .tll3 {
+	position: relative;
+	top: -3px;
+	z-index: 2;
+	padding: 3px 0.75em 2px 0.75em;
+	font-size: smaller;
+}
+.tablinks1 .tld1, .tablinks2 .tld2, .tablinks3 .tld3 {
+	display: block;
+}
+.tld1, .tld2, .tld3 {
+	display: none;
+	position: relative;
+	z-index: 3;
+	padding: 4px 0px;
+	background-color: #ffffff;
+}
+.tlx {
+	border-bottom: 2px solid #ffff00;
+}
+.tllx {
+	padding-left: 7px;
+}
+#searchform {
+	margin: 0px auto;
+}
+#searchform .tld3 {
+	font-size: smaller;
+}
+
+
+/* Line links, as in bottom of search table */
+.linelinks1 .lll1, .linelinks2 .lll2, .linelinks3 .lll3, .linelinks4 .lll4 {
+	font-weight: bold;
+}
+.linelinks1 .lll1 a, .linelinks2 .lll2 a,
+.linelinks3 .lll3 a, .linelinks4 .lll4 a {
+	text-decoration: none;
+	color: black;
+}
+.linelinks1 .lll1 a:hover, .linelinks2 .lll2 a:hover,
+.linelinks3 .lll3 a:hover, .linelinks4 .lll4 a:hover {
+	text-decoration: underline;
+}
+.linelinks1 .lld1, .linelinks2 .lld2, .linelinks3 .lld3, .linelinks4 .lld4 {
+	display: inline;
+}
+.lld1, .lld2, .lld3, .lld4 {
+ 	display: none;
+}
+
+
+/* PRESENTATION BAD FIX ME */
 div.tinygap {
 	padding: 0.175em 0em;
 }
@@ -773,7 +841,7 @@ td.pl_desirability, td.pl_visits {
 	text-align: right;
 	padding-right: 0.4em;
 }
-td.pl_tags {
+td.pl_authors, td.pl_tags {
 	font-size: smaller;
 }
 td.pl_title img {
@@ -798,6 +866,12 @@ td.mcaption {
 	text-align: right;
 	padding-right: 1em;
 }
+td.lcaption {
+	padding-right: 1em;
+}
+td.lentry {
+	padding: 2px 0px;
+}
 tr.pl td {
 	padding-top: 2px;
 	padding-bottom: 2px;
@@ -808,6 +882,7 @@ tr.pl_headrow td, tr.pl_headrow th, table.setreviewform th {
 }
 tr.pl_footrow td {
 	padding-top: 3px;
+	font-size: small;
 }
 tr.pl_headgap td {
 	padding-top: 2px;

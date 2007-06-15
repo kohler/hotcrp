@@ -445,11 +445,10 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && 
 
 
 // set scores to view
-if (isset($_REQUEST["showscores"])) {
+if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
     $_SESSION["scores"] = 0;
-    if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"]))
-	foreach ($_REQUEST["score"] as $s)
-	    $_SESSION["scores"] |= (1 << $s);
+    foreach ($_REQUEST["score"] as $s)
+	$_SESSION["scores"] |= (1 << $s);
 }
 if (isset($_REQUEST["scoresort"])) {
     $_SESSION["scoresort"] = cvtint($_REQUEST["scoresort"]);
@@ -462,14 +461,19 @@ if (isset($_REQUEST["scoresort"])) {
 $Conf->header("Search", 'search');
 unset($_REQUEST["urlbase"]);
 $Search = new PaperSearch($Me, $_REQUEST);
+if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
+    $pl = new PaperList(true, "list", $Search);
+    $pl->showHeader = PaperList::HEADER_TITLES;
+    $pl_text = $pl->text($Search->limitName, $Me);
+}
 
 
 // set up the search form
 if (defval($_REQUEST["qx"], "") != "" || defval($_REQUEST["qa"], "") != ""
     || defval($_REQUEST["qt"], "n") != "n" || defval($_REQUEST["opt"], 0) > 0)
-    $folded = 'foldo';
+    $activetab = 2;
 else
-    $folded = 'foldc';
+    $activetab = 1;
 
 if (count($tOpt) > 1) {
     $tselect = "<select name='t'>";
@@ -484,42 +488,27 @@ if (count($tOpt) > 1) {
     $tselect = current($tOpt);
 
 
-echo "
-<div class='xsmgap'></div>
+// SEARCH FORMS
+echo "<table id='searchform' class='tablinks$activetab'>
+<tr><td><div class='tlx'><div class='tld1'>";
 
-<div id='foldq' class='$folded' style='text-align: center'>
-<form method='get' action='search.php'>
-<table class='advsearch ellipsis'><tr><td><span class='ellipsis nowrap'><b>Search:</b>&nbsp; $tselect&nbsp; for&nbsp; </td>
-  <td><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /> &nbsp;
-  <input class='button' type='submit' value='Go' /> <span class='sep'></span>
-  <a class='unfolder' href=\"javascript:fold('q', 0)\">Options &raquo;</a></td></tr></table>
-</form>
+// Basic Search
+echo "<form method='get' action='search.php'>
+  <input id='searchform1_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /> &nbsp;in &nbsp;$tselect &nbsp;
+  <input class='button' name='go' type='submit' value='Search' />
+</form>";
 
-<form method='get' action='search.php'>
-<table class='advsearch extension'><tr><td class='advsearch'><table>
-<tr>
-  <td class='mcaption'>With <b>any</b> of the words</td>
-  <td><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /><span class='sep'></span></td>
-  <td rowspan='3'><input class='button' type='submit' value='Search' /></td>
-</tr><tr>
-  <td class='mcaption'>With <b>all</b> the words</td>
-  <td><input class='textlite' type='text' size='40' name='qa' value=\"", htmlspecialchars(defval($_REQUEST["qa"], "")), "\" /></td>
-</tr><tr>
-  <td class='mcaption'><b>Without</b> the words</td>
-  <td><input class='textlite' type='text' size='40' name='qx' value=\"", htmlspecialchars(defval($_REQUEST["qx"], "")), "\" /></td>
+echo "</div><div class='tld2'>";
+
+// Advanced Search
+echo "<form method='get' action='search.php'>
+<table><tr>
+  <td class='lcaption'>Paper selection</td>
+  <td class='lentry'>$tselect</td>
 </tr>
 <tr>
-  <td class='mcaption'></td>
-  <td><span style='font-size: x-small'><a href='help.php?t=search'>Search help</a> &nbsp;|&nbsp; <a href='help.php?t=syntax'>Syntax quick reference</a></span></td>
-</tr>
-<tr><td><div class='xsmgap'></div></td></tr>
-<tr>
-  <td class='mcaption'>Paper selection</td>
-  <td>$tselect</td>
-</tr>
-<tr>
-  <td class='mcaption'>Search in</td>
-  <td><select name='qt'>";
+  <td class='lcaption'>Search in</td>
+  <td class='lentry'><select name='qt'>";
 $qtOpt = array("ti" => "Title only",
 	      "ab" => "Abstract only");
 if ($Me->privChair || $Conf->blindSubmission() == 0) {
@@ -539,12 +528,91 @@ if (!isset($qtOpt[defval($_REQUEST["qt"], "")]))
 foreach ($qtOpt as $v => $text)
     echo "<option value='$v'", ($v == $_REQUEST["qt"] ? " selected='selected'" : ""), ">$text</option>";
 echo "</select></td>
-</tr></table></td></tr></table>\n</form>\n\n</div>\n";
+<tr><td><div class='xsmgap'></div></td></tr>
+<tr>
+  <td class='lcaption'>With <b>any</b> of the words</td>
+  <td class='lentry'><input id='searchform2_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /><span class='sep'></span></td>
+  <td rowspan='3'><input class='button' type='submit' value='Search' /></td>
+</tr><tr>
+  <td class='lcaption'>With <b>all</b> the words</td>
+  <td class='lentry'><input class='textlite' type='text' size='40' name='qa' value=\"", htmlspecialchars(defval($_REQUEST["qa"], "")), "\" /></td>
+</tr><tr>
+  <td class='lcaption'><b>Without</b> the words</td>
+  <td class='lentry'><input class='textlite' type='text' size='40' name='qx' value=\"", htmlspecialchars(defval($_REQUEST["qx"], "")), "\" /></td>
+</tr>
+<tr>
+  <td class='lcaption'></td>
+  <td><span style='font-size: x-small'><a href='help.php?t=search'>Search help</a> &nbsp;|&nbsp; <a href='help.php?t=syntax'>Syntax quick reference</a></span></td>
+</tr></table></form>";
+
+echo "</div><div class='tld3'>";
+
+// Display options
+echo "<form method='get' action='search.php'>\n";
+foreach (array("q", "qx", "qa", "qt", "t", "sort") as $x)
+    if (isset($_REQUEST[$x]))
+	echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
+
+echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
+  <td class='pad'>";
+if ($Conf->blindSubmission() <= 1 || $Me->privChair
+    || ($_REQUEST["t"] == "acc" && $Conf->timeReviewerViewAcceptedAuthors())) {
+    echo "<input type='checkbox' name='showau' value='1'";
+    echo " onclick='fold(\"pl\",!this.checked,1)' />&nbsp;Authors<br />\n";
+}
+if ($Conf->blindSubmission() == 1 && $Me->privChair) {
+    echo "<input type='checkbox' name='showanonau' value='1'";
+    echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;Anonymous authors<br />\n";
+}
+if ($Me->isPC) {
+    echo "<input type='checkbox' name='showtags' value='1'";
+    if ($_REQUEST["t"] == "a" && !$Me->privChair)
+	echo " disabled='disabled'";
+    if (defval($_SESSION["foldpltags"], 1) == 0)
+	echo " checked='checked'";
+    echo " onclick='fold(\"pl\",!this.checked,4)' />&nbsp;Tags<br />\n";
+}
+echo "</td>";
+if (isset($pl->scoreMax)) {
+    echo "<td class='pad'>";
+    $rf = reviewForm();
+    $theScores = defval($_SESSION["scores"], 1);
+    $seeAllScores = ($Me->amReviewer() && $_REQUEST["t"] != "a");
+    for ($i = 0; $i < PaperList::FIELD_NUMSCORES; $i++) {
+	$score = $paperListScoreNames[$i];
+	if (in_array($score, $rf->fieldOrder)
+	    && ($seeAllScores || $rf->authorView[$score] > 0)) {
+	    echo "<input type='checkbox' name='score[]' value='$i' ";
+	    if ($theScores & (1 << $i))
+		echo "checked='checked' ";
+	    echo "/>&nbsp;" . htmlspecialchars($rf->shortName[$score]) . "<br />";
+	}
+    }
+    echo "</td>";
+}
+echo "<td><input class='button' type='submit' value='Redisplay' /></td></tr>\n";
+if (isset($pl->scoreMax)) {
+    echo "<tr><td colspan='3'><div class='smgap'></div><b>Sort scores by:</b> &nbsp;<select name='scoresort'>";
+    foreach (array("Minshall score", "Average", "Variance", "Max &minus; min") as $k => $v) {
+	echo "<option value='$k'";
+	if (defval($_SESSION["scoresort"], 0) == $k)
+	    echo " selected='selected'";
+	echo ">$v</option>";
+    }
+    echo "</select></td></tr>";
+}
+echo "</table></form></div></div></td></tr>\n";
+
+// Tab selectors
+echo "<tr><td class='tllx'><table><tr>
+  <td><div class='tll1'><a onclick='return tablink(\"searchform\", 1)' href=''>Basic search</a></div></td>
+  <td><div class='tll2'><a onclick='return tablink(\"searchform\", 2)' href=''>Advanced search</a></div></td>
+  <td><div class='tll3'><a onclick='return tablink(\"searchform\", 3)' href=''>Display options</a></div></td>
+</tr></table></td></tr>
+</table>\n\n";
 
 
 if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
-    $pl = new PaperList(true, "list", $Search);
-    $t = $pl->text($Search->limitName, $Me);
     if ($Search->matchPreg)
 	$_SESSION["matchPreg"] = "/(" . $Search->matchPreg . ")/i";
 
@@ -564,7 +632,7 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
 	    echo "<input type='hidden' name='q' value='' />\n";
     }
     
-    echo $t;
+    echo $pl_text;
     
     if ($pl->anySelector)
 	echo "</form>";

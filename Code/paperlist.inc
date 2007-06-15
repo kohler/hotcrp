@@ -40,6 +40,10 @@ class PaperList {
     const FIELD_OPT_AUTHORS = 70;
     const FIELD_TAGS = 71;
     const FIELD_FOLD = 75;
+
+    const HEADER_ALL = 2;
+    const HEADER_TITLES = 1;
+    const HEADER_NONE = 0;
     
     var $showHeader;
     var $sortField;
@@ -63,10 +67,11 @@ class PaperList {
     var $paperLink;
     var $paperLinkArgs;
     var $showConflict;
+    var $headerInfo;
     
     function PaperList($sortable = true, $sessionVar = null, $search = null, $extraText = null) {
 	global $paperListFields;
-	$this->showHeader = true;
+	$this->showHeader = self::HEADER_ALL;
 
 	$s = ($sortable ? defval($_REQUEST["sort"], "") : "");
 	$x = (strlen($s) ? $s[strlen($s)-1] : "");
@@ -620,14 +625,12 @@ class PaperList {
 	
 	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
 	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'><img src=\"${ConfSiteBase}images/bendulft.png\" style='position: relative; top: 8px' /></td>\n";
-	if (($plact = defval($_REQUEST["showact"])) !== null)
-	    $plact = !$plact;
-	else
-	    $plact = defval($_SESSION["foldplact"], 1);
-	$fclass = ($plact ? "fold8c" : "fold8o");
-	$t .= "    <td id='foldplact' class='$fclass' colspan='" . ($ncol - 1) . "'><table class='floatleft'>
-  <tr><td class='xcaption'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then <b>Get:</b></td>
-    <td><select name='getaction'>
+	$t .= "    <td id='plact' class='linelinks1' colspan='" . ($ncol - 1) . "'><table class='floatleft'>
+  <tr><td class='xcaption'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
+
+	// Begin linelinks
+	$t .= "<span class='lll1'><a href='javascript:void tablink(\"plact\",1)'>Get</a></span><span class='lld1'><b>:</b> &nbsp;";
+	$t .= "<select id='plact1_d' name='getaction'>
     <option value='paper' selected='selected'>Papers</option>
     <option value='abstracts'>Abstracts</option>
     <option value='revform'>Review forms</option>\n";
@@ -645,21 +648,20 @@ class PaperList {
 	    $t .= "    <option value='topics'>Topics (text)</option>\n";
 	if ($this->contact->privChair || ($this->contact->isPC && $Conf->timePCViewAllReviews()))
 	    $t .= "    <option value='scores'>All scores (text)</option>\n";
-	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='getgo' value='Go' />";
+	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='getgo' value='Go' /></span>";
 
 	if ($this->contact->isPC) {
-	    $t .= "<span class='sep'></span> <a class='unfolder8' href='javascript:fold(\"plact\",0,8)'>More &raquo;</a>";
-	    $t .= "<a class='folder8' href='javascript:fold(\"plact\",1,8)'>Less &laquo;</a>";
-	    $t .= "<img id='foldsession.plact8' alt='' src='${ConfSiteBase}sessionvar.php?var=foldplact&amp;val=" . defval($_SESSION["foldplact"], 1) . "&amp;cache=1' width='1' height='1' />";
-	    $t .= "</td></tr>\n";
-
-	    $t .= "  <tr class='extension8'><td class='rcaption'>Tags:</td><td><select name='tagtype'>
+	    $t .= " &nbsp;|&nbsp; ";
+	    $t .= "<span class='lll2'><a href='javascript:void tablink(\"plact\",2)'>Tags</a></span><span class='lld2'><b>:</b> &nbsp;";
+	    $t .= "<select name='tagtype'>
     <option value='a' selected='selected'>Add</option><option value='d'>Remove</option><option value='s'>Define</option><option value='so'>Define ordered</option><option value='ao'>Add ordered</option>
-  </select> &nbsp;tag(s) &nbsp;<input class='textlite' type='text' name='tag' value='' size='15' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></td></tr>\n";
-	    
-	    if ($this->contact->privChair) {
-		$t .= "  <tr class='extension8'><td class='rcaption'>Assignments &amp; conflicts:</td>
-    <td id='foldass' class='foldc'><select name='marktype' onchange='fold(\"ass\", (this.value[0] == \"x\"))'>
+  </select> &nbsp;tag(s) &nbsp;<input id='plact2_d' class='textlite' type='text' name='tag' value='' size='15' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></span>";
+	}
+	
+	if ($this->contact->privChair) {
+	    $t .= " &nbsp;|&nbsp; ";
+	    $t .= "<span class='lll3'><a href='javascript:void tablink(\"plact\",3)'>Assignments</a></span><span id='foldass' class='lld3 foldc'><b>:</b> &nbsp;";
+	    $t .= "<select id='plact3_d' name='marktype' onchange='fold(\"ass\", (this.value[0] == \"x\"))'>
       <option value='xauto' selected='selected'>Automatic assignments</option>
       <option value='-1' disabled='disabled'></option>
       <option value='conflict'>Mark conflict</option>
@@ -672,52 +674,53 @@ class PaperList {
       <option value='assign" . REVIEW_SECONDARY . "'>Assign secondary review</option>
       <option value='assign0'>Unassign reviews</option>
     </select><span class='extension'> &nbsp;for &nbsp;";
-		$t .= "<select name='markpc' id='markpc'>\n";
-		$pc = pcMembers();
-		foreach ($pc as $id => $row)
-		    $t .= "<option value=\"" . htmlspecialchars($row->email) . "\">" . contactHtml($row->firstName, $row->lastName) . "</option>\n";
-		$t .= "</select></span> &nbsp;<input type='submit' class='button_small' name='setassign' value='Go' />";
-		$t .= "</td></tr>\n";
-	    }
-
-	    if ($this->contact->privChair)
-		$t .= "  <tr class='extension8'><td class='rcaption'>Decision:</td><td>Set decision to&nbsp; " . outcomeSelector() . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></td></tr>\n";
-	    
-	} else
-	    $t .= "</td></tr>";
-
-	$t .= "</table>";
-
-	if (isset($this->scoreMax)) {
-	    $t .= "<div style='float: right; padding-top: 5px; padding-right: 10px'>";
-	    $t .= "<div id='foldscores' class='foldc' style='position: relative'>";
-	    $t .= "<a href='javascript:void(fold(\"scores\", 0))'>Graph scores</a>";
-	    $t .= "&nbsp; <img src=\"${ConfSiteBase}images/bendurt.png\" />";
-	    $t .= "<div class='scoredialog extension'>";
-	    $rf = reviewForm();
-	    $theScores = defval($_SESSION["scores"], 1);
-	    $t .= "<b>Show graphs for:</b><br />";
-	    for ($i = 0; $i < self::FIELD_NUMSCORES; $i++) {
-		$score = $paperListScoreNames[$i];
-		if (in_array($score, $rf->fieldOrder)) {
-		    $t .= "<input type='checkbox' name='score[]' value='$i' ";
-		    if ($theScores & (1 << $i))
-			$t .= "checked='checked' ";
-		    $t .= "/>&nbsp;" . htmlspecialchars($rf->shortName[$score]) . "<br />";
-		}
-	    }
-	    $t .= "<div class='smgap'></div><b>Sort by:</b> &nbsp;<select name='scoresort'>";
-	    foreach (array("Minshall score", "Average", "Variance", "Max &minus; min") as $k => $v) {
-		$t .= "<option value='$k'";
-		if (defval($_SESSION["scoresort"], 0) == $k)
-		    $t .= " selected='selected'";
-		$t .= ">$v</option>";
-	    }
-	    $t .= "</select>";
-	    $t .= "<div class='smgap'></div><input type='submit' class='button' name='showscores' value='OK' onclick='paperselDocheck=false;return true' />&nbsp; <button class='button' type='button' onclick='void(fold(\"scores\", 1))'>Cancel</button>";
-	    $t .= "</div></div></div>";
+	    $t .= "<select name='markpc' id='markpc'>\n";
+	    $pc = pcMembers();
+	    foreach ($pc as $id => $row)
+		$t .= "<option value=\"" . htmlspecialchars($row->email) . "\">" . contactHtml($row->firstName, $row->lastName) . "</option>\n";
+	    $t .= "</select></span> &nbsp;<input type='submit' class='button_small' name='setassign' value='Go' /></span>";
+	    $t .= "</span>";
 	}
-	
+
+	if ($this->contact->privChair) {
+	    $t .= " &nbsp;|&nbsp; ";
+	    $t .= "<span class='lll4'><a href='javascript:void tablink(\"plact\",4)'>Decisions</a></span><span class='lld4'><b>:</b> &nbsp;";
+	    $t .= "Set decision to&nbsp; " . outcomeSelector(0, "plact4_d") . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></span>\n";
+	    
+	}
+
+	$t .= "</td></tr></table>";
+
+	//if (isset($this->scoreMax)) {
+	//    $t .= "<div style='float: right; padding-top: 5px; padding-right: 10px'>";
+	//    $t .= "<div id='foldscores' class='foldc' style='position: relative'>";
+	//    $t .= "<a href='javascript:void(fold(\"scores\", 0))'>Graph scores</a>";
+	//    $t .= "&nbsp; <img src=\"${ConfSiteBase}images/bendurt.png\" />";
+	//    $t .= "<div class='scoredialog extension'>";
+	//    $rf = reviewForm();
+	//    $theScores = defval($_SESSION["scores"], 1);
+	//    $t .= "<b>Show graphs for:</b><br />";
+	//    for ($i = 0; $i < self::FIELD_NUMSCORES; $i++) {
+	//	$score = $paperListScoreNames[$i];
+	//	if (in_array($score, $rf->fieldOrder)) {
+	//	    $t .= "<input type='checkbox' name='score[]' value='$i' ";
+	//	    if ($theScores & (1 << $i))
+	//		$t .= "checked='checked' ";
+	//	    $t .= "/>&nbsp;" . htmlspecialchars($rf->shortName[$score]) . "<br />";
+	//	}
+	//    }
+	//    $t .= "<div class='smgap'></div><b>Sort by:</b> &nbsp;<select name='scoresort'>";
+	//    foreach (array("Minshall score", "Average", "Variance", "Max &minus; min") as $k => $v) {
+	//	$t .= "<option value='$k'";
+	//	if (defval($_SESSION["scoresort"], 0) == $k)
+	//	    $t .= " selected='selected'";
+	//	$t .= ">$v</option>";
+	//    }
+	//    $t .= "</select>";
+	//    $t .= "<div class='smgap'></div><input type='submit' class='button' name='showscores' value='OK' onclick='paperselDocheck=false;return true' />&nbsp; <button class='button' type='button' onclick='void(fold(\"scores\", 1))'>Cancel</button>";
+	//    $t .= "</div></div></div>";
+	//}
+
 	return $t . "</td></tr>\n";
     }
 
@@ -905,7 +908,7 @@ class PaperList {
 		    $t .= "  <tr class=\"pl_$fdef[0] pl_callout $trclass";
 		    if ($fdef[1] == 3) {
 			$authorinfo |= ($row->blind ? 2 : 1);
-			$t .= " extension1" . ($row->blind ? " extension2" : "");
+			$t .= " extension" . ($row->blind ? 2 : 1);
 		    } else if ($fdef[1] == 4) {
 			$taginfo = true;
 			$t .= " extension4";
@@ -950,7 +953,7 @@ class PaperList {
 	    $titleextra = "";
 	    if (!$unfolded)
 		$titleextra .= "<span class='sep'></span><a class='unfolder3' href='javascript:fold(\"pl\",0,3)'>Show all papers</a>";
-	    if ($authorinfo) {
+	    if ($authorinfo && $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
 		if ($Conf->blindSubmission() == 0)
 		    $titleextra .= "<a class='unfolder1' href='javascript:fold(\"pl\",0,1)'>Show authors</a><a class='folder1' href='javascript:fold(\"pl\",1,1)'>Hide authors</a>";
@@ -961,7 +964,7 @@ class PaperList {
 		else
 		    $titleextra .= "<a class='unfolder1' href='javascript:fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='folder1' href='javascript:fold(\"pl\",1,1)'>Hide authors</a>";
 	    }
-	    if ($taginfo) {
+	    if ($taginfo && $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
 		$titleextra .= "<a class='unfolder4' href='javascript:fold(\"pl\",0,4)'>Show tags</a><a class='folder4' href='javascript:fold(\"pl\",1,4)'>Hide tags</a>";
 		$titleextra .= "<img id='foldsession.pl4' alt='' src='${ConfSiteBase}sessionvar.php?var=foldpltags&amp;val=" . defval($_SESSION["foldpltags"], 1) . "&amp;cache=1' width='1' height='1' />";
@@ -1025,6 +1028,17 @@ class PaperList {
 	    $_SESSION[$this->sessionVar] = $ids;
 	    unset($_SESSION["matchPreg"]);
 	}
+
+	// track info for header
+	$this->headerInfo = array("author" => 0);
+	if (!$authorinfo)
+	    /* do nothing */;
+	else if ($authorinfo == 1)
+	    $this->headerInfo["author"] = 1;
+	else if ($this->contact->privChair)
+	    $this->headerInfo["author"] = $authorinfo;
+	else if ($authorinfo & 1)
+	    $this->headerInfo["author"] = 5;
 	
 	return $x;
     }
@@ -1058,7 +1072,7 @@ $paperListFields = array(
 	PaperList::FIELD_SCORE => array('scoreIcon', 1, 1),
 	PaperList::FIELD_AUTHOR_MATCH => array('authorsMatch', 2, 0),
 	PaperList::FIELD_COLLABORATORS_MATCH => array('collaboratorsMatch', 2, 0),
-	PaperList::FIELD_OPT_AUTHORS => array('optAuthors', 3, 0),
+	PaperList::FIELD_OPT_AUTHORS => array('authors', 3, 0),
 	PaperList::FIELD_TAGS => array('tags', 4, 0)
 	);
 
