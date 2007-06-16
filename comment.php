@@ -344,6 +344,7 @@ function commentView($prow, $crow, $editMode) {
 	    echo "    </tr>\n  </table></td>\n</tr>\n\n";
 	}
 
+	echo "<tr class='last'><td class='caption'></td></tr>\n";
 	echo "</table>\n</form>\n\n";
 	
     } else {
@@ -351,6 +352,7 @@ function commentView($prow, $crow, $editMode) {
   <td class='caption'></td>
   <td class='entry'>", htmlWrapText(htmlspecialchars($crow->comment)), "</td>
 </tr>
+<tr class='last'><td class='caption'></td></tr>
 </table>\n";
     }
     
@@ -428,6 +430,7 @@ has passed.  Please keep the response short and to the point" . $limittext . "."
 	    echo "    </tr>\n  </table></td>\n</tr>\n\n";
 	}
 
+	echo "<tr class='last'><td class='caption'></td></tr>\n";
 	echo "</table>\n</form>\n\n";
 	
     } else {
@@ -435,6 +438,7 @@ has passed.  Please keep the response short and to the point" . $limittext . "."
   <td class='caption'></td>
   <td class='entry'>", htmlWrapText(htmlspecialchars($crow->comment)), "</td>
 </tr>
+<tr class='last'><td class='caption'></td></tr>
 </table>\n";
     }
     

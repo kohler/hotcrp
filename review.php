@@ -520,9 +520,11 @@ function reviewView($prow, $rrow, $editMode) {
 	    echo "  </table></td>\n</tr>\n\n";
 	}
 
+	echo "<tr class='last'><td class='caption'></td></tr>\n";
 	echo "</table>\n</form>\n\n";
     } else {
 	echo $rf->webDisplayRows($rrow, $Me->canViewAllReviewFields($prow, $Conf));
+	echo "<tr class='last'><td class='caption'></td></tr>\n";
 	echo "</table>\n";
     }
     

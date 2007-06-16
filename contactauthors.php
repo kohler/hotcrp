@@ -135,6 +135,7 @@ if ($OK) {
   </table></td>
 </tr>
 
+<tr class='last'><td class='caption'></td></tr>
 </table>";
     $paperTable->echoDivExit();
     echo "</form>\n";

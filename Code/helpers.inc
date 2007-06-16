@@ -675,11 +675,10 @@ function contactPulldown($id, $name, $conf, $contact) {
 }
 
 function actionTab($text, $url, $default) {
-    $sep = "    <td class='sep'></td>\n";
     if ($default)
-	return "$sep    <td class='tab_default' nowrap='nowrap'><a href='$url'>$text</a></td>\n";
+	return "    <td><div class='vbtab1'><a href='$url'>$text</a><div class='vbtab1x'></div></div></td>\n";
     else
-	return "$sep    <td class='tab' nowrap='nowrap'><a href='$url'>$text</a></td>\n";
+	return "    <td><div class='vbtab'><a href='$url'>$text</a></div></td>\n";
 }
 
 function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
@@ -691,7 +690,7 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
     $disableView = (!$newPaper && $paperId < 0);
     $forceShow = ($Me->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] ? "&amp;forceShow=1" : "");
 
-    $x = "<div class='vubar'><table class='vubar'><tr>\n  <td><table><tr>\n";
+    $x = "<div class='vbar'><table class='vbar'><tr>\n  <td><table><tr>\n";
     
     if (!$newPaper && $paperId > 0)
 	$x .= actionTab("View", "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=view", $mode == "view");
@@ -733,8 +732,8 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 	$goBase = "paper.php";
     $xmode = (isset($_REQUEST["mode"]) && $goBase == "paper.php" ? array("mode" => $_REQUEST["mode"]) : array());
     if ($prow && ($zz = listLinks($prow->paperId, $goBase, $xmode)))
-	$x .= "  <td class='listlinks' nowrap='nowrap'>" . $zz . "</td>\n";
-    $x .= "  <td class='gopaper' nowrap='nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n";
+	$x .= "  <td class='listlinks nowrap'>" . $zz . "</td>\n";
+    $x .= "  <td class='gopaper nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n";
     return $x . "</tr></table></div>";
 }
 

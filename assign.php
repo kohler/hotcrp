@@ -527,6 +527,7 @@ if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
 
 
 // close this table
+echo "<tr class='last'><td class='caption'></td></tr>\n";
 echo "</table>";
 $paperTable->echoDivExit();
 echo "</form>";

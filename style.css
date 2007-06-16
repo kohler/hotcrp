@@ -6,7 +6,6 @@
 body {
 	font-family: sans-serif;
 	color: black;
-	background: #f3ebd5; /*#ccc3ab;*/
 	margin: 0px;
 }
 
@@ -14,6 +13,7 @@ body {
 /* header */
 div#header {
 	padding: 8px 12px 0px 12px;
+	background: #f3ebd5;
 }
 div#header_user {
 	font-size: small;
@@ -39,79 +39,86 @@ h1 {
 h1 span.crumbsep {
 	font-weight: normal;
 }
+
+/* Tab bar */
 div.nvubar {
-	margin: 0px 12px;
+	padding: 0px 12px;
 	height: 0.75em;
-	border-bottom: 1px solid #9999cc;
+	background: #f3ebd5;
+	border-bottom: 2px solid #9999cc;
 }
-div.vubar {
-	margin: 0px 12px;
+div.vbar {
+	padding: 0px 12px;
+	background: #f3ebd5;
+	border-bottom: 2px solid #9999cc;
 }
-table.vubar {
+table.vbar {
 	position: relative;
 	width: 100%;
 	font-size: small;
 }
-table.vubar td {
+table.vbar td {
 	vertical-align: bottom;
-}
-table.vubar td.sep, table.vubar td.tab, table.vubar td.tab_disabled, 
-table.vubar td.spanner, table.vubar td.gopaper, table.vubar td.listlinks {
-	border-bottom: 1px solid #9999cc;
-}
-table.vubar td.tab, table.vubar td.tab_disabled {
-	background: #e6dcc1;
-}
-table.vubar td.sep {
-	padding: 0em 0.75em;
-}
-table.vubar td.sep:first-child {
-	padding: 0em 0.5em;
-}
-td.spanner {
-	width: 100%;
-}
-table.vubar .tab, table.vubar .tab_disabled, table.vubar .tab_default {
-	padding: 0em 1em 0.1em 1em;
-}
-table.vubar td.gopaper, table.vubar td.listlinks {
-	vertical-align: middle;
-	padding: 4px 0.5em;
-}
-table.vubar td {
 	min-height: 4px;
 }
-table.vubar .tab_default {
-	background: white;
-	border-top: 1px solid #9999cc;
-	border-left: 1px solid #9999cc;
-	border-right: 1px solid #9999cc;
-	border-bottom: 1px solid white;
+table.vbar .vbtab, table.vbar .vbtab1 {
+	padding: 0px 1em 1px 1em;
+	margin: 0px 0.75em;
+	white-space: nowrap;
 }
-.tab_default a {
+table.vbar .vbtab {
+	background: #e6dcc1;
+	border-top: 2px solid #e6dcc1;
+	border-left: 1px solid #e6dcc1;
+	border-right: 1px solid #e6dcc1;
+}
+table.vbar .vbtab1 {
+	background: #ffffff;
+	border-top: 2px solid #9999cc;
+	border-right: 1px solid #9999cc;
+	border-left: 1px solid #9999cc;
+	position: relative;
+}
+table.vbar .vbtab1x {
+	background: #ffffff;
+	position: absolute;
+	width: 100%;
+	height: 5px;
+	left: 0px;
+	z-index: 2;
+}
+.vbtab1 a {
 	text-decoration: none;
 	color: #000000;
 	font-weight: bold;
 }
-.tab a, td.listlinks a, div#header_left a, a.q {
+.vbtab a, td.listlinks a, div#header_left a {
 	text-decoration: none;
 }
-a.q {
-	color: #000000;
-}
-.tab a:hover, td.listlinks a:hover, div#header_left a:hover, a.q:hover {
+.vbtab a:hover, td.listlinks a:hover, div#header_left a:hover, a.q:hover {
 	text-decoration: underline;
+}
+table.vbar td.gopaper, table.vbar td.listlinks {
+	vertical-align: middle;
+	padding: 4px 0.5em;
+}
+td.spanner {
+	width: 100%;
+}
+
+
+a.q {
+	text-decoration: none;
+	color: #000000;
 }
 
 
 /* body */
 div.body {
 	padding: 2px 8px;
-	margin: 0px 12px;
 	background-color: white;
-	border-right: 1px solid #9999cc;
-	border-left: 1px solid #9999cc;
-	border-bottom: 1px solid #9999cc;
+	position: relative;
+	z-index: 3;
 }
 div.bodyexpander {
 	margin: -2px -8px;
@@ -147,11 +154,11 @@ div.inform {
 /* footer */
 div#footer {
 	margin-top: 0.5em;
-	padding: 0em 12px;
+	padding: 0em 12px 3px 12px;
 }
 div#footer_crp {
 	float: right;
-	font-size: small;
+	font-size: x-small;
 }
 
 
@@ -249,7 +256,7 @@ input.button_default, button.button_default {
 .tll1, .tll2, .tll3 {
 	position: relative;
 	top: -3px;
-	z-index: 2;
+	z-index: 4;
 	padding: 3px 0.75em 2px 0.75em;
 	font-size: smaller;
 }
@@ -259,7 +266,7 @@ input.button_default, button.button_default {
 .tld1, .tld2, .tld3 {
 	display: none;
 	position: relative;
-	z-index: 3;
+	z-index: 5;
 	padding: 4px 0px;
 	background-color: #ffffff;
 }
@@ -547,6 +554,13 @@ table.comment tr.id td.entry, table.review tr.id td.entry {
 table.review, table.comment {
 	border-top: 1px solid #9999cc;
 	padding-top: 10px;
+}
+tr.last td.caption {
+	padding: 0px;
+	border-bottom: 1px solid #9999cc;
+}
+tr.last td.entry {
+	padding: 0px;
 }
 td.leftentry {
 	width: 15em;
@@ -1027,7 +1041,7 @@ div.popupdialog {
 	top: -4em;
 	left: 0%;
 	min-width: 15em;
-	z-index: 2;
+	z-index: 4;
 }
 div.popupdialog .unpopup {
 	position: absolute;
@@ -1046,7 +1060,7 @@ div.scoredialog {
 	bottom: -2em;
 	right: 0%;
 	min-width: 15em;
-	z-index: 2;
+	z-index: 4;
 }
 
 div#offrev td#upload {
