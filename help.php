@@ -332,10 +332,9 @@ Follow these steps to prepare to accept paper submissions.
   The only deadline that really matters is the paper submission
   deadline, but HotCRP also supports a separate paper registration deadline,
   which will force authors to register a few days before they submit.  The
-  optional <em>grace period</em>, which applies to both deadlines, gives
-  authors a bit of slack; HotCRP reports the deadlines in emails and
-  announcements, but allows post-deadline submissions and updates for the
-  specified grace period.</p></li>
+  optional <em>grace period</em>, which applies to both deadlines, can give
+  authors some slack. HotCRP will allow post-deadline submissions and updates
+  for the specified grace period.</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}settings.php?group=opt'>Define
   submission options (optional).</a></strong> If desired, the paper submission
@@ -346,9 +345,9 @@ Follow these steps to prepare to accept paper submissions.
   each option.</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}settings.php?group=opt'>Define paper
-  topics (optional).</a></strong> These are topics, such as \"Applications\"
-  or \"Network databases\", that authors can check to characterize their
-  paper's subject area.  PC members express topics for which they have high,
+  topics (optional).</a></strong> Authors can select topics, such as
+  \"Applications\" or \"Network databases\", that characterize their
+  paper's subject areas.  PC members express topics for which they have high,
   medium, and low interest, improving automatic paper assignment.  Although
   explicit preferences (see below) are better than topic-based assignments,
   busy PC members might not specify their preferences; topic matching lets you
@@ -370,8 +369,8 @@ Follow these steps to prepare to accept paper submissions.
 After the submission deadline has passed, you may want to look through <a
 href='${ConfSiteBase}search.php?q=&amp;t=all'>all papers</a> for anomalies.
 You can withdraw and delete papers and update their details on the edit
-screens.  You might want to contact the authors of any papers that never
-got officially submitted.  Then:
+screens (select \"Edit paper\").  You might want to contact the authors of any
+papers that never got officially submitted.  Then:
 
 <ol>
 
@@ -404,8 +403,7 @@ got officially submitted.  Then:
   href='${ConfSiteBase}Chair/AssignPapers.php?kind=c'>by PC member</a> or, if
   PC members have entered preferences, <a
   href='${ConfSiteBase}autoassign.php'>automatically</a> by searching for
-  preferences of &minus;100 or less.  It's also easy to combine this step
-  with:</p></li>
+  preferences of &minus;100 or less.</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}Chair/AssignPapers.php'>Make review
   assignments.</a></strong> You can make assignments <a
