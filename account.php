@@ -317,8 +317,9 @@ echo "<tr><td class='caption'></td>
     <input class='button' type='submit' value='",
     ($newProfile ? "Create account" : "Save changes"),
     "' name='register' />
-    <div class='smgap'></div></td>
+    <div class='xsmgap'></div></td>
 </tr>
+<tr class='last'><td class='caption'></td></tr>
 </table></form>\n";
 
 

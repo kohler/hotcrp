@@ -181,6 +181,16 @@ class PaperTable {
 	echo "</td>\n</tr>\n\n";
     }
 
+    function echoEditRow($prow) {
+	global $Conf, $Me, $ConfSiteBase;
+	if (!$this->editable) {
+	    echo "<tr class='pt_mode'>\n";
+	    echo "  <td class='caption'></td>\n";
+	    echo "  <td class='entry'><a href=\"${ConfSiteBase}paper.php?paperId=$prow->paperId&amp;mode=edit\" class='button'>Edit paper</a></td>\n";
+	    echo "</tr>\n";
+	}
+    }
+
     function echoUploadRow($prow, $flags) {
 	global $Conf;
 	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0);

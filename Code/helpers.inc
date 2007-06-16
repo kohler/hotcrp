@@ -687,17 +687,13 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 	$paperId = "new";
     else
 	$paperId = ($prow == null ? -1 : $prow->paperId);
-    $disableView = (!$newPaper && $paperId < 0);
     $forceShow = ($Me->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] ? "&amp;forceShow=1" : "");
 
     $x = "<div class='vbar'><table class='vbar'><tr>\n  <td><table><tr>\n";
     
-    if (!$newPaper && $paperId > 0)
-	$x .= actionTab("View", "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=view", $mode == "view");
+    if ($newPaper || $paperId > 0)
+	$x .= actionTab("Paper", "${ConfSiteBase}paper.php?paperId=$paperId", $mode == "view" || $mode == "edit");
     
-    if ($newPaper || ($paperId > 0 && ($prow->conflictType == CONFLICT_AUTHOR || $Me->privChair)))
-	$x .= actionTab("Edit", "${ConfSiteBase}paper.php?paperId=$paperId&amp;mode=edit", $mode == "edit");
-
     if (!$newPaper && $prow
 	&& ($prow->reviewType > 0
 	    || $Me->canViewReview($prow, null, $Conf)

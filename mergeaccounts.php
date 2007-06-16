@@ -128,8 +128,8 @@ else
 .  $Conf->shortName . " conference, usually because "
 . "multiple people asked you to review a paper using "
 . "different email addresses. "
-. "This may make it "
-. "more difficult to keep track of your different papers. "
+. "This can make it "
+. "harder to keep track of your papers. "
 . "If you have been informed of multiple accounts, "
 . "enter the email address and the password "
 . "of the secondary account. This will merge all the information from "
@@ -159,6 +159,7 @@ else
 </tr>
 
 <tr><td class='caption'></td><td class='entry'><input class='button_default' type='submit' value='Merge Account' name='merge' /></td></tr>
+<tr class='last'><td class='caption'></td></tr>
 </table>
 </form>
 
