@@ -15,7 +15,7 @@ HotCRP requires the following software.  Tested versions are in parentheses.
 * MySQL version 5 or higher	http://mysql.org/
 * Several PHP PEAR packages:	http://pear.php.net/
   - Mail (1.1.14)		http://pear.php.net/package/Mail
-  - Mail_Mime (1.3.1)		http://pear.php.net/package/Mail_Mime
+  - Mail_Mime (1.4.0)		http://pear.php.net/package/Mail_Mime
 
 The Mail and Mail_Mime PEAR packages are currently distributed as part of
 the HotCRP tarball.  You may need to install additional packages to enable

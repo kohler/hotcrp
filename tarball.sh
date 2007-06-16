@@ -1,4 +1,4 @@
-export VERSION=2.0b8
+export VERSION=2.0b9
 
 mkdistdir () {
     crpd=hotcrp-$VERSION
@@ -31,8 +31,8 @@ assign.php
 autoassign.php
 cacheable.php
 comment.php
-contacts.php
 contactauthors.php
+contacts.php
 deadlines.php
 help.php
 index.php
@@ -73,7 +73,6 @@ Code/Mail-1.1.14
 
 images/_.gif
 images/GenChart.php
-images/GeneralChart.php
 images/ass-1.png
 images/ass0.png
 images/ass1.png
