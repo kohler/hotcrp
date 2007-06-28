@@ -196,7 +196,7 @@ if ($getaction == "rev" && isset($papersel)) {
     while ($row = edb_orow($result)) {
 	if (!$Me->canViewReview($row, null, $Conf, $whyNot))
 	    $errors[whyNotText($whyNot, "view review")] = true;
-	else if ($row->reviewSubmitted > 0) {
+	else if ($row->reviewSubmitted) {
 	    $rfSuffix = ($text == "" ? "-$row->paperId" : "s");
 	    $text .= $rf->prettyTextForm($row, $row, $Me, $Conf, false) . "\n";
 	}
@@ -337,7 +337,7 @@ if ($getaction == "scores" && $Me->privChair && isset($papersel)) {
     while ($row = edb_orow($result)) {
 	if (!$Me->canViewReview($row, null, $Conf, $whyNot))
 	    $errors[] = whyNotText($whyNot, "view review") . "<br />";
-	else if ($row->reviewSubmitted > 0) {
+	else if ($row->reviewSubmitted) {
 	    $text .= $row->paperId;
 	    if ($Conf->blindSubmission() == 1)
 		$text .= "\t" . $row->blind;
@@ -503,11 +503,11 @@ echo "</div><div class='tld2'>";
 // Advanced Search
 echo "<form method='get' action='search.php'>
 <table><tr>
-  <td class='lcaption'>Paper selection</td>
+  <td class='lcaption'>Search these papers</td>
   <td class='lentry'>$tselect</td>
 </tr>
 <tr>
-  <td class='lcaption'>Search in</td>
+  <td class='lcaption'>In these fields</td>
   <td class='lentry'><select name='qt'>";
 $qtOpt = array("ti" => "Title only",
 	      "ab" => "Abstract only");
