@@ -228,6 +228,9 @@ function requestReview($email) {
     // store the review request
     $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Requester->contactId, current_timestamp)", $while);
 
+    // mark secondary as delegated
+    $Conf->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and reviewType=" . REVIEW_SECONDARY . " and contactId=$Requester->contactId and reviewSubmitted is null and reviewNeedsSubmit=1", $while);
+
     // send confirmation email
     require_once("Code/mailtemplate.inc");
     Mailer::send("@requestreview", $prow, $Them, $Requester, array("headers" => "Cc: " . contactEmailTo($Requester)));

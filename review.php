@@ -137,10 +137,26 @@ if (isset($_REQUEST['delete']) && $Me->privChair)
 	$Conf->errorMsg("No review to delete.");
     else {
 	archiveReview($editRrow);
-	$result = $Conf->qe("delete from PaperReview where reviewId=$editRrow->reviewId", "while deleting review");
+	$while = "while deleting review";
+	$result = $Conf->qe("delete from PaperReview where reviewId=$editRrow->reviewId", $while);
 	if ($result) {
 	    $Conf->log("Review $editRrow->reviewId by $editRrow->contactId deleted", $Me, $prow->paperId);
 	    $Conf->confirmMsg("Deleted review.");
+
+	    // perhaps a delegatee needs to redelegate
+	    if ($editRrow->reviewType == REVIEW_EXTERNAL && $editRrow->requestedBy) {
+		$result = $Conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$editRrow->paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy=$editRrow->requestedBy group by paperId", $while);
+		$row = edb_row($result);
+		if (!$row || $row[1] == 0)
+		    $needsSubmit = 1;
+		else if ($row[0] == 0)
+		    $needsSubmit = 0;
+		else
+		    $needsSubmit = null;
+		if ($needsSubmit !== null)
+		    $Conf->qe("update PaperReview set reviewNeedsSubmit=$needsSubmit where paperId=$editRrow->paperId and contactId=$editRrow->requestedBy and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null", $while);
+	    }
+	    
 	    unset($_REQUEST["reviewId"]);
 	    $_REQUEST["paperId"] = $editRrow->paperId;
 	}
@@ -226,29 +242,6 @@ if (isset($_REQUEST['refuse'])) {
     else {
 	refuseReview();
 	$Conf->qe("unlock tables");
-	loadRows();
-    }
-}
-
-if (isset($_REQUEST['delegate'])) {
-    if (!$rrow || ($rrow->contactId != $Me->contactId && !$Me->privChair))
-	$Conf->errorMsg("This review was not assigned to you, so you cannot delegate it.");
-    else if ($rrow->reviewType != REVIEW_SECONDARY)
-	$Conf->errorMsg("Only secondary reviewers can delegate their reviews to others.");
-    else if ($rrow->reviewSubmitted)
-	$Conf->errorMsg("This review has already been submitted; there's no point in delegating.");
-    else if ($nExternalRequests == 0)
-	$Conf->errorMsg("You can't delegate your secondary review for this paper since you haven't actually asked anyone to review it.  <a href=\"assign.php?paperId=$prow->paperId\">Request one or more external reviews</a> then try again.");
-    else {
-	$while = "while delegating review";
-	$Conf->qe("lock tables PaperReview write", $while);
-	if ($Conf->setting("allowPaperOption") >= 3) {
-	    $result = $Conf->qe("select paperId from PaperReview where paperId=$rrow->paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy=$rrow->contactId and reviewSubmitted>0", $while);
-	    $needsSubmit = (edb_nrows($result) ? "null" : 0);
-	} else
-	    $needsSubmit = 0;
-	$Conf->qe("update PaperReview set reviewNeedsSubmit=$needsSubmit where reviewId=$rrow->reviewId", "while delegating review");
-	$Conf->qe("unlock tables", $while);
 	loadRows();
     }
 }
@@ -472,9 +465,7 @@ function reviewView($prow, $rrow, $editMode) {
 	if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType == REVIEW_SECONDARY) {
 	    echo "\n<tr class='rev_del'>\n  <td class='caption'></td>\n  <td class='entry' colspan='2'>";
 	    if ($nExternalRequests == 0)
-		echo "As a secondary reviewer, you can delegate your review, expressing your intention not to write a review yourself, once you have <a href=\"assign.php?paperId=$rrow->paperId$forceShow\">requested at least one external review</a>.";
-	    else if ($rrow->reviewNeedsSubmit)
-		echo "<a href=\"review.php?reviewId=$rrow->reviewId&amp;delegate=1$forceShow\">Delegate review</a> if you don't plan to finish this review yourself";
+		echo "As a secondary reviewer, you can <a href=\"assign.php?paperId=$rrow->paperId$forceShow\">delegate this review to an external reviewer</a>, but if your external reviewer refuses to review the paper, you should complete the review yourself.";
 	    else
 		echo "This secondary review has been delegated, but you can still complete it if you'd like.";
 	    echo "</td>\n</tr>\n";
