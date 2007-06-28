@@ -342,6 +342,11 @@ class ReviewForm {
 	    if ($conf->timeEmailAuthorsAboutReview())
 		Mailer::sendContactAuthors($tmpl, $prow, $submitter, $rest);
 	}
+
+	// if external, forgive the requestor from finishing their review
+	if ($rrow && $rrow->reviewType == REVIEW_EXTERNAL && $submit
+	    && $conf->setting("allowPaperOption") >= 3)
+	    $conf->q("update PaperReview set reviewNeedsSubmit=null where paperId=$prow->paperId and contactId=$rrow->requestedBy and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
 	
 	return $result;
     }

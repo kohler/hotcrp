@@ -666,7 +666,7 @@ class Conference {
 	// fields
 	$pq = "select Paper.*, PaperConflict.conflictType,
 		count(AllReviews.reviewSubmitted) as reviewCount,
-		count(AllReviews.paperId) as startedReviewCount";
+		count(AllReviews.reviewNeedsSubmit) as startedReviewCount";
 	if (!isset($options['author'])) {
 	    $pq .= ",
 		PaperReview.reviewType,
@@ -679,11 +679,13 @@ class Conference {
 	    if (!$allReviewerQuery)
 		$pq .= ",
 		PaperReview.reviewType as myReviewType,
-		PaperReview.reviewSubmitted as myReviewSubmitted";
+		PaperReview.reviewSubmitted as myReviewSubmitted,
+		PaperReview.reviewNeedsSubmit as myReviewNeedsSubmit";
 	    else
 		$pq .= ",
 		MyPaperReview.reviewType as myReviewType,
-		MyPaperReview.reviewSubmitted as myReviewSubmitted";
+		MyPaperReview.reviewSubmitted as myReviewSubmitted,
+		MyPaperReview.reviewNeedsSubmit as myReviewNeedsSubmit";
 	}
 	if (isset($options['reviewerName']))
 	    $pq .= ",

@@ -39,7 +39,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 
 	// review ID
 	$id = "Review";
-	if ($rr->reviewSubmitted > 0)
+	if ($rr->reviewSubmitted)
 	    $id .= "&nbsp;#" . $prow->paperId . unparseReviewOrdinal($rr->reviewOrdinal);
 	else if ($rr->reviewType == REVIEW_SECONDARY && $rr->reviewNeedsSubmit == 0)
 	    $id .= "&nbsp;(delegated)";
@@ -101,7 +101,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	$t .= "<td></td></tr>\n";
 
 	// affix
-	if ($rr->reviewSubmitted <= 0)
+	if (!$rr->reviewSubmitted)
 	    $nonsubrev[] = $t;
 	else
 	    $subrev[] = $t;

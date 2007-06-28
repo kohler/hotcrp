@@ -463,7 +463,7 @@ class PaperList {
 	    if ($row->reviewId) {
 		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "\">";
 		$a2 = "</a>&nbsp;";
-		if ($row->reviewSubmitted > 0)
+		if ($row->reviewSubmitted)
 		    $a2 .= "<span class='rstat'>(Complete)</span>";
 		else if ($row->reviewType == REVIEW_SECONDARY && $row->reviewNeedsSubmit == 0)
 		    $a2 .= "<span class='rstat'>(Delegated)</span>";

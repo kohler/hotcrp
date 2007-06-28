@@ -491,13 +491,17 @@ class Contact {
 		 && (!$this->reviewsOutstanding || !$this->isReviewer))
 		|| ($this->privChair
 		    && ($prow->conflictType == 0 || $forceShow))
-		|| ($this->isPC && $prow->conflictType == 0 && $rrowSubmitted
+		|| ($this->isPC
+		    && $prow->conflictType == 0 && $rrowSubmitted
 		    && ($conf->timePCViewAllReviews()
 			|| defval($prow->myReviewSubmitted) > 0))
 		|| (defval($prow->myReviewType) > 0
 		    && $prow->conflictType == 0 && $rrowSubmitted
 		    && defval($prow->myReviewSubmitted) > 0
 		    && ($this->isPC || $conf->settings["extrev_view"] >= 1))
+		|| (defval($prow->myReviewType) == REVIEW_SECONDARY
+		    && $prow->conflictType == 0 && $rrowSubmitted
+		    && $prow->myReviewNeedsSubmit === null)
 		|| ($rrow && $rrow->paperId == $prow->paperId
 		    && $rrow->contactId == $this->contactId)))
 	    return true;

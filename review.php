@@ -107,10 +107,22 @@ if (isset($_REQUEST['update']) || isset($_REQUEST['submit']) || isset($_REQUEST[
 
 // unsubmit review action
 if (isset($_REQUEST['unsubmit']) && $Me->privChair)
-    if (!$editRrow || $editRrow->reviewSubmitted <= 0)
+    if (!$editRrow || !$editRrow->reviewSubmitted)
 	$Conf->errorMsg("This review has not been submitted.");
     else {
-	$result = $Conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=1 where reviewId=$editRrow->reviewId", "while unsubmitting review");
+	$while = "while unsubmitting review";
+	$Conf->qe("lock tables PaperReview write", $while);
+	$needsSubmit = 1;
+	if ($editRrow->reviewType == REVIEW_SECONDARY) {
+	    $result = $Conf->qe("select reviewSubmitted from PaperReview where paperId=$prow->paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy=$editRrow->contactId", $while);
+	    $row = edb_row($result);
+	    if ($row && $row[0] > 0 && $Conf->setting("allowPaperOption") >= 3)
+		$needsSubmit = "null";
+	    else
+		$needsSubmit = 0;
+	}
+	$result = $Conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=$needsSubmit where reviewId=$editRrow->reviewId", $while);
+	$Conf->qe("unlock tables", $while);
 	if ($result) {
 	    $Conf->log("Review $editRrow->reviewId by $editRrow->contactId unsubmitted", $Me, $prow->paperId);
 	    $Conf->confirmMsg("Unsubmitted review.");
@@ -187,7 +199,7 @@ function refuseReview() {
     if ($rrow->requestedBy > 0) {
 	$result = $Conf->qe("select reviewId from PaperReview where requestedBy=$rrow->requestedBy and paperId=$rrow->paperId", $while);
 	if ($result && edb_nrows($result) == 0)
-	    $Conf->qe("update PaperReview set reviewNeedsSubmit=1 where reviewType=" . REVIEW_SECONDARY . " and paperId=$rrow->paperId and contactId=$rrow->requestedBy and reviewSubmitted<=0", $while);
+	    $Conf->qe("update PaperReview set reviewNeedsSubmit=1 where reviewType=" . REVIEW_SECONDARY . " and paperId=$rrow->paperId and contactId=$rrow->requestedBy and reviewSubmitted is null", $while);
     }
 
     // send confirmation email
@@ -209,7 +221,7 @@ if (isset($_REQUEST['refuse'])) {
 	$Conf->errorMsg("This review was not assigned to you, so you cannot refuse it.");
     else if ($rrow->reviewType >= REVIEW_SECONDARY)
 	$Conf->errorMsg("PC members cannot refuse reviews that were explicitly assigned to them.  Contact the PC chairs directly if you really cannot finish this review.");
-    else if ($rrow->reviewSubmitted > 0)
+    else if ($rrow->reviewSubmitted)
 	$Conf->errorMsg("This review has already been submitted; you can't refuse it now.");
     else {
 	refuseReview();
@@ -223,12 +235,20 @@ if (isset($_REQUEST['delegate'])) {
 	$Conf->errorMsg("This review was not assigned to you, so you cannot delegate it.");
     else if ($rrow->reviewType != REVIEW_SECONDARY)
 	$Conf->errorMsg("Only secondary reviewers can delegate their reviews to others.");
-    else if ($rrow->reviewSubmitted > 0)
+    else if ($rrow->reviewSubmitted)
 	$Conf->errorMsg("This review has already been submitted; there's no point in delegating.");
     else if ($nExternalRequests == 0)
 	$Conf->errorMsg("You can't delegate your secondary review for this paper since you haven't actually asked anyone to review it.  <a href=\"assign.php?paperId=$prow->paperId\">Request one or more external reviews</a> then try again.");
     else {
-	$Conf->qe("update PaperReview set reviewNeedsSubmit=0 where reviewId=$rrow->reviewId", "while delegating review");
+	$while = "while delegating review";
+	$Conf->qe("lock tables PaperReview write", $while);
+	if ($Conf->setting("allowPaperOption") >= 3) {
+	    $result = $Conf->qe("select paperId from PaperReview where paperId=$rrow->paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy=$rrow->contactId and reviewSubmitted>0", $while);
+	    $needsSubmit = (edb_nrows($result) ? "null" : 0);
+	} else
+	    $needsSubmit = 0;
+	$Conf->qe("update PaperReview set reviewNeedsSubmit=$needsSubmit where reviewId=$rrow->reviewId", "while delegating review");
+	$Conf->qe("unlock tables", $while);
 	loadRows();
     }
 }
@@ -327,8 +347,7 @@ else if (defval($_REQUEST["mode"]) == "view")
 else if ($rrow && ($Me->canReview($prow, $rrow, $Conf)
 		   || ($Me->privChair && ($prow->conflictType == 0 || $forceShow))))
     $mode = "edit";
-else if (!$rrow && (($prow->reviewType > 0 && $prow->reviewSubmitted <= 0)
-		    || ($Me->isPC && !$viewAny)))
+ else if (!$rrow && $editAny && !$viewAny)
     $mode = "edit";
 else
     $mode = "view";
@@ -413,7 +432,7 @@ function reviewView($prow, $rrow, $editMode) {
     echo ">";
     if ($rrow) {
 	echo "<a href='review.php?reviewId=$rrow->reviewId$forceShow' class='q'>Review";
-	if ($rrow->reviewSubmitted > 0)
+	if ($rrow->reviewSubmitted)
 	    echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
 	echo "</a>";
     } else
@@ -437,7 +456,7 @@ function reviewView($prow, $rrow, $editMode) {
 
     if ($editMode) {
 	// refuse?
-	if ($rrow && $rrow->reviewSubmitted <= 0 && $rrow->reviewType < REVIEW_SECONDARY) {
+	if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType < REVIEW_SECONDARY) {
 	    echo "\n<tr class='rev_ref'>\n  <td class='caption'></td>\n  <td class='entry' colspan='2'>";
 	    echo "<div id='foldref' class='foldc' style='position: relative'><a href=\"javascript:fold('ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it
   <div class='popupdialog extension'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p>\n";
@@ -450,7 +469,7 @@ function reviewView($prow, $rrow, $editMode) {
 	}
 
 	// delegate?
-	if ($rrow && $rrow->reviewSubmitted <= 0 && $rrow->reviewType == REVIEW_SECONDARY) {
+	if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType == REVIEW_SECONDARY) {
 	    echo "\n<tr class='rev_del'>\n  <td class='caption'></td>\n  <td class='entry' colspan='2'>";
 	    if ($nExternalRequests == 0)
 		echo "As a secondary reviewer, you can delegate your review, expressing your intention not to write a review yourself, once you have <a href=\"assign.php?paperId=$rrow->paperId$forceShow\">requested at least one external review</a>.";
@@ -493,7 +512,7 @@ function reviewView($prow, $rrow, $editMode) {
   <td class='caption'></td>
   <td class='entry'><div class='smgap'></div><table class='pt_buttons'>\n";
 	    $buttons = array();
-	    if (!$rrow || $rrow->reviewSubmitted <= 0) {
+	    if (!$rrow || !$rrow->reviewSubmitted) {
 		$buttons[] = array("<input class='button' type='submit' value='Save changes' name='update' />", "(does not submit review)");
 		$buttons[] = array("<input class='button' type='submit' value='Submit' name='submit' />", "(cannot undo)");
 	    } else {
@@ -533,10 +552,10 @@ function reviewView($prow, $rrow, $editMode) {
 
 if ($mode == "view" && !$rrow) {
     foreach ($rrows as $rr)
-	if ($rr->reviewSubmitted > 0)
+	if ($rr->reviewSubmitted)
 	    reviewView($prow, $rr, false);
     foreach ($rrows as $rr)
-	if ($rr->reviewSubmitted <= 0 && $rr->reviewModified > 0
+	if (!$rr->reviewSubmitted && $rr->reviewModified > 0
 	    && $Me->canViewReview($prow, $rr, $Conf))
 	    reviewView($prow, $rr, false);
 } else
