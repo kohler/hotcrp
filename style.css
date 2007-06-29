@@ -833,6 +833,9 @@ table.pltable th a.unfolder1, table.pltable th a.unfolder2, table.pltable th a.u
 table.pltable th a.folder1, table.pltable th a.folder2, table.pltable th a.folder4 {
 	font-weight: normal;
 }
+td#plact {
+	padding-top: 5px;
+}
 .pl_title, .pl_reviewer, .pl_name, .pl_email, .pl_affiliation {
 	padding-right: 1em;
 }
