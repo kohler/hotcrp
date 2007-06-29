@@ -90,8 +90,8 @@ and it's possible to download all matching papers and/or reviews at once.
 The default search box returns papers that match
 <i>any</i> of the space-separated terms you enter.
 To search for papers that match <i>all</i>
-the terms, or that <i>don't</i> match some terms, click on
-<a href='${ConfSiteBase}search.php?opt=1'>Options&nbsp;&raquo;</a>
+the terms, or that <i>don't</i> match some terms, select
+<a href='${ConfSiteBase}search.php?opt=1'>Advanced search</a>
 and use \"With <b>all</b> the words\" and \"<b>Without</b> the words\".
 
 <p>You can search in several paper classes, depending on your role in the
@@ -109,7 +109,7 @@ authors can only search their own submissions, and if the conference used
 anonymous submission, then only the PC chairs can search by author.</p>
 
 <p>By default, search examines paper titles, abstracts, and authors.
-Click on <a href='${ConfSiteBase}search.php?opt=1'>Options&nbsp;&raquo;</a>
+Use <a href='${ConfSiteBase}search.php?opt=1'>Advanced search</a>
 to search other fields, including authors/collaborators and reviewers.
 Or use <b>keywords</b> to search individual characteristics such as titles,
 authors, reviewer names, or even numbers of reviewers.  For example,

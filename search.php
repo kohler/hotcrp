@@ -507,7 +507,7 @@ echo "<form method='get' action='search.php'>
   <td class='lentry'>$tselect</td>
 </tr>
 <tr>
-  <td class='lcaption'>In these fields</td>
+  <td class='lcaption'>Using these fields</td>
   <td class='lentry'><select name='qt'>";
 $qtOpt = array("ti" => "Title only",
 	      "ab" => "Abstract only");
