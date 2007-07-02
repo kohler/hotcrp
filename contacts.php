@@ -40,6 +40,24 @@ if (!isset($_REQUEST["t"]))
     $_REQUEST["t"] = key($tOpt);
 
 
+// set scores to view
+if (isset($_REQUEST["redisplay"])) {
+    $_SESSION["foldpplaff"] = !defval($_REQUEST["showaff"], 0);
+    $_SESSION["foldppltopics"] = !defval($_REQUEST["showtop"], 0);
+    $_SESSION["pplscores"] = 0;
+}
+if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
+    $_SESSION["pplscores"] = 0;
+    foreach ($_REQUEST["score"] as $s)
+	$_SESSION["pplscores"] |= (1 << $s);
+}
+if (isset($_REQUEST["scoresort"])) {
+    $_SESSION["pplscoresort"] = cvtint($_REQUEST["scoresort"]);
+    if ($_SESSION["pplscoresort"] < 1 || $_SESSION["pplscoresort"] > 3)
+	$_SESSION["pplscoresort"] = 1;
+}
+
+
 $title = ($_REQUEST["t"] == "pc" ? "Program Committee" : "Account Listing");
 $Conf->header($title, "accounts", actionBar());
 
@@ -51,7 +69,7 @@ $pl_text = $pl->text($_REQUEST["t"], $Me, "${ConfSiteBase}contacts.php?t=" . $_R
 // form
 echo "<div class='xsmgap'></div>\n";
 if (count($tOpt) > 1) {
-    echo "<table id='searchform' class='tablinks1'>
+    echo "<table id='contactsform' class='tablinks1'>
 <tr><td><div class='tlx'><div class='tld1'>";
     
     echo "<form method='get' action='contacts.php'>";
@@ -76,24 +94,26 @@ if (count($tOpt) > 1) {
 
     echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
   <td class='pad'>";
-    if ($pl->haveAffrow) {
+    if ($pl->haveAffrow !== null) {
 	echo "<input type='checkbox' name='showaff' value='1'";
+	if ($pl->haveAffrow)
+	    echo " checked='checked'";
 	echo " onclick='fold(\"ppl\",!this.checked,2)' />&nbsp;Affiliations<br />\n";
     }
-    if ($pl->haveTopics) {
+    if ($pl->haveTopics !== null) {
 	echo "<input type='checkbox' name='showtop' value='1'";
+	if ($pl->haveTopics)
+	    echo " checked='checked'";
 	echo " onclick='fold(\"ppl\",!this.checked,1)' />&nbsp;Topic interests<br />\n";
     }
     echo "</td>";
     if (isset($pl->scoreMax)) {
 	echo "<td class='pad'>";
 	$rf = reviewForm();
-	$theScores = defval($_SESSION["scores"], 1);
-	$seeAllScores = ($Me->amReviewer() && $_REQUEST["t"] != "a");
+	$theScores = defval($_SESSION["pplscores"], 1);
 	for ($i = 0; $i < ContactList::FIELD_NUMSCORES; $i++) {
 	    $score = $reviewScoreNames[$i];
-	    if (in_array($score, $rf->fieldOrder)
-		&& ($seeAllScores || $rf->authorView[$score] > 0)) {
+	    if (in_array($score, $rf->fieldOrder)) {
 		echo "<input type='checkbox' name='score[]' value='$i' ";
 		if ($theScores & (1 << $i))
 		    echo "checked='checked' ";
@@ -102,12 +122,12 @@ if (count($tOpt) > 1) {
 	}
 	echo "</td>";
     }
-    echo "<td><input class='button' type='submit' value='Redisplay' /></td></tr>\n";
+    echo "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
     if (isset($pl->scoreMax)) {
 	echo "<tr><td colspan='3'><div class='smgap'></div><b>Sort scores by:</b> &nbsp;<select name='scoresort'>";
 	foreach (array("Average", "Variance", "Max &minus; min") as $k => $v) {
 	    echo "<option value='", $k + 1, "'";
-	    if (defval($_SESSION["scoresort"], 1) == $k + 1)
+	    if (defval($_SESSION["pplscoresort"], 1) == $k + 1)
 		echo " selected='selected'";
 	    echo ">$v</option>";
 	}
@@ -119,8 +139,8 @@ if (count($tOpt) > 1) {
 
     // Tab selectors
     echo "<tr><td class='tllx'><table><tr>
-  <td><div class='tll1'><a onclick='return tablink(\"searchform\", 1)' href=''>Account types</a></div></td>
-  <td><div class='tll2'><a onclick='return tablink(\"searchform\", 2)' href=''>Display options</a></div></td>
+  <td><div class='tll1'><a onclick='return tablink(\"contactsform\", 1)' href=''>Account types</a></div></td>
+  <td><div class='tll2'><a onclick='return tablink(\"contactsform\", 2)' href=''>Display options</a></div></td>
 </tr></table></td></tr>
 </table>\n\n";
 }

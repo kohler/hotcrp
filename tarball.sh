@@ -105,7 +105,6 @@ images/viewas.png
 
 Chair/.htaccess
 Chair/AssignPapers.php
-Chair/AverageReviewerScore.php
 Chair/BecomeSomeoneElse.php
 Chair/Code.inc
 Chair/DumpDatabase.php

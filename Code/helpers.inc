@@ -888,3 +888,21 @@ function paperOptions() {
     }
     return $_SESSION["paperOption"][1];
 }
+
+function scoreCounts($text, $max = null) {
+    $merit = ($max ? array_fill(1, $max, 0) : array());
+    $sum = $sumsq = 0;
+    foreach (preg_split('/[\s,]+/', $text) as $i)
+	if (($i = cvtint($i)) > 0) {
+	    while ($i > count($merit))
+		$merit[count($merit) + 1] = 0;
+	    $merit[$i]++;
+	    $sum += $i;
+	    $sumsq += $i * $i;
+	    $n++;
+	}
+    $avg = ($n > 0 ? $sum / $n : 0);
+    $dev = ($n > 1 ? sqrt(($sumsq - $sum*$sum/$n) / ($n - 1)) : 0);
+    return (object) array("v" => $merit, "max" => count($merit),
+			  "n" => $n, "avg" => $avg, "stddev" => $dev);
+}

@@ -275,10 +275,10 @@ input.button_default, button.button_default {
 .tllx {
 	padding-left: 7px;
 }
-#searchform {
+#searchform, #contactsform {
 	margin: 0px auto;
 }
-#searchform .tld3 {
+#searchform .tld3, #contactsform .tld2 {
 	font-size: smaller;
 }
 

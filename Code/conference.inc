@@ -1150,31 +1150,17 @@ class Conference {
     }
 
     
-    function textValuesGraph($text, $max, $style) {
+    function textValuesGraph($v, $max, $style) {
 	global $ConfSiteBase;
 	
-	$result = "";
-	$merit = ($max ? array_fill(1, $max, 0) : array());
+	if (is_string($v))
+	    $v = scoreCounts($v, $max);
 
-	$sum = $n = $sumsq = 0;
-	foreach (preg_split('/[\s,]+/', $text) as $i)
-	    if (($i = cvtint($i)) > 0) {
-		if (!isset($merit[$i]))
-		    $merit[$i] = 1;
-		else
-		    $merit[$i]++;
-		$sum += $i;
-		$sumsq += $i * $i;
-		$n++;
-	    }
-
-	$avg = ($n > 0 ? $sum / $n : 0);
-	$dev = ($n > 1 ? sqrt(($sumsq - $sum*$sum/$n) / ($n - 1)) : 0);
-	$avgtext = ($n > 1 ? sprintf("%0.2f &plusmn; %0.2f", $avg, $dev) : sprintf("%0.2f", $avg));
+	$avgtext = ($v->n > 1 ? sprintf("%0.2f &plusmn; %0.2f", $v->avg, $v->stddev) : sprintf("%0.2f", $v->avg));
 
 	$url = "";
-	for ($key = 1; $key <= $max; $key++)
-	    $url .= ($url == "" ? "" : ",") . $merit[$key];
+	for ($key = 1; $key <= $v->max; $key++)
+	    $url .= ($url == "" ? "" : ",") . $v->v[$key];
 	$url = "${ConfSiteBase}images/GenChart.php?v=$url";
 
 	if ($style == 0) {
@@ -1182,12 +1168,12 @@ class Conference {
 	    $retstr .= "<img src=\"" . htmlspecialchars($url) . "\" alt=\"$avgtext\" title=\"$avgtext\" align='bottom' />";
 	    $retstr .= "</td><tr><td align=\"center\"><span class='sc_sum'>$avgtext</span></td></tr></table>";
 	} else if ($style == 1) {
-	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=1\" alt=\"$avgtext\" title=\"$avgtext\" width='" . (5 * $max + 3)
-		. "' height='" . (5 * max(3, max($merit)) + 3) . "' />";
+	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=1\" alt=\"$avgtext\" title=\"$avgtext\" width='" . (5 * $v->max + 3)
+		. "' height='" . (5 * max(3, max($v->v)) + 3) . "' />";
 	} else if ($style == 2) {
 	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=2\" alt=\"$avgtext\" title=\"$avgtext\" /><br />";
-	    for ($key = 1; $key <= $max; $key++)
-		$retstr .= ($key > 1 ? " " : "") . "<span class='sc$key'>" . $merit[$key] . "</span>";
+	    for ($key = 1; $key <= $v->max; $key++)
+		$retstr .= ($key > 1 ? " " : "") . "<span class='sc$key'>" . $v->v[$key] . "</span>";
 	    $retstr .= "<br /><span class='sc_sum'>" . $avgtext . "</span>";
 	}
 	

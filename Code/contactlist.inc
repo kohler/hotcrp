@@ -50,7 +50,7 @@ class ContactList extends BaseList {
 	else
 	    $this->sortField = null;
 	$this->sortable = $sortable;
-	$this->haveAffrow = $this->haveTopics = false;
+	$this->haveAffrow = $this->haveTopics = null;
     }
 
     function _normalizeField($fieldId) {
@@ -157,7 +157,7 @@ class ContactList extends BaseList {
 	    $scoreMax = $this->scoreMax[$scoreName];
 	    $this->sortInfo = array();
 	    $this->sortAverage = array();
-	    $scoresort = defval($_SESSION["scoresort"], 1);
+	    $scoresort = defval($_SESSION["pplscoresort"], 1);
 	    if ($scoresort == 0)
 		$scoresort = 1;
 	    foreach ($rows as $row)
@@ -288,19 +288,14 @@ class ContactList extends BaseList {
 		$m[] = "<a href=\"${ConfSiteBase}review.php?reviewId=$v$extra\">$k</a>";
 	    return join(", ", $m);
 	case self::FIELD_SCORE:
+	    if (!$row->pc && !$this->contact->privChair
+		&& $this->limit != "req")
+		return "";
 	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
-	    $scores = array_fill(1, $this->scoreMax[$scoreName], 0);
-	    $sum = $n = $sumsq = 0;
-	    foreach (explode(',', $row->$scoreName) as $score)
-		if ($score) {
-		    $scores[$score]++;
-		    $sum += $score;
-		    $sumsq += $score * $score;
-		    $n++;
-		}
+	    $v = scoreCounts($row->$scoreName, $this->scoreMax[$scoreName]);
 	    $m = "";
-	    if ($n > 0) {
-		$m = $Conf->textValuesGraph($row->$scoreName, $this->scoreMax[$scoreName], 2);
+	    if ($v->n > 0) {
+		$m = $Conf->textValuesGraph($v, 0, 2);
 		/*foreach ($scores as $score => $count)
 		    $m .= ($m ? " " : "") . "<span class='sc$score'>$count</span>";
 		$avg = $sum / $n;
@@ -314,17 +309,28 @@ class ContactList extends BaseList {
 	}
     }
 
+    function addScores($a) {
+	if ($this->contact->isPC) {
+	    $scores = defval($_SESSION["pplscores"], 1);
+	    for ($i = 0; $i < self::FIELD_NUMSCORES; $i++)
+		if ($scores & (1 << $i))
+		    array_push($a, self::FIELD_SCORE + $i);
+	    $this->scoreMax = array();
+	}
+	return $a;
+    }
+
     function listFields($listname) {
 	switch ($listname) {
 	  case "pc":
 	  case "admin":
-	    return array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS);
+	    return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS));
 	  case "re":
-	    return array("re", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_SCORE_OVERALL_MERIT);
+	    return $this->addScores(array("re", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS));
 	  case "ext":
-	    return array("ext", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_PAPERS);
+	    return $this->addScores(array("ext", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_PAPERS));
 	  case "req":
-	    return array("req", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_PAPERS);
+	    return $this->addScores(array("req", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_PAPERS));
 	  case "au":
 	  case "aurej":
 	  case "auacc":
@@ -462,10 +468,8 @@ class ContactList extends BaseList {
 	    foreach ($fieldDef as $fieldId => $fdef)
 		if ($fdef[1] >= 2 && ($d = $this->content($fieldId, $row))) {
 		    $t .= "  <tr class=\"pl_$fdef[0] pl_callout $trclass";
-		    if ($fdef[1] == 3 || $fdef[1] == 4) {
-			$extrainfo = true;
+		    if ($fdef[1] == 3 || $fdef[1] == 4)
 			$t .= " extension" . ($fdef[1] - 2);
-		    }
 		    $t .= "\">\n";
 		    $t .= "<td class=\"pl_$fdef[0] pl_callout\" colspan='$ncol'>";
 		    $t .= "<span class='pl_callouthdr'>" . $this->header($fieldId, -1, $row) . ":</span>";
@@ -476,12 +480,14 @@ class ContactList extends BaseList {
 	}
 
 	$x = "<table class=\"ppltable plt_" . htmlspecialchars($listname);
-	if ($extrainfo)
-	    $x .= " fold1c";
-	if ($this->haveAffrow)
-	    $x .= " fold2o";
-	if ($this->haveTopics)
-	    $x .= " fold3c";
+	if ($this->haveAffrow !== null) {
+	    $this->haveAffrow = (defval($_SESSION["foldpplaff"], 0) == 0);
+	    $x .= ($this->haveAffrow ? " fold2o" : " fold2c");
+	}
+	if ($this->haveTopics !== null) {
+	    $this->haveTopics = (defval($_SESSION["foldppltopics"], 1) == 0);
+	    $x .= ($this->haveTopics ? " fold1o" : " fold1c");
+	}
 	$x .= "\" id=\"foldppl\">\n";
 
 	if ($this->showHeader) {

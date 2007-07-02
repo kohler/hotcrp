@@ -72,6 +72,46 @@ if ($Me->privChair || ($Me->isPC && $papersub) || ($Me->amReviewer() && $papersu
 }
 
 
+// Review assignment
+if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
+    echo "<table id='mainsub' class='center'><tr><td id='mainrev'>";
+    
+    // Lists
+    echo "<strong>Reviewing: &nbsp;</strong> ";
+    $result = $Conf->qe("select PaperReview.contactId, count(reviewSubmitted), count(reviewNeedsSubmit), group_concat(overAllMerit), PCMember.contactId as pc from PaperReview join Paper using (paperId) left join PCMember on (PaperReview.contactId=PCMember.contactId) where Paper.timeSubmitted>0 group by PaperReview.contactId", "while fetching review status");
+    $rf = reviewForm();
+    $maxOverAllMerit = $rf->maxNumericScore("overAllMerit");
+    $npc = $npcScore = $sumpcScore = $sumpcSubmit = 0;
+    $myrow = null;
+    while (($row = edb_row($result))) {
+	$row[3] = scoreCounts($row[3], $maxOverAllMerit);
+	if ($row[0] == $Me->contactId)
+	    $myrow = $row;
+	if ($row[4]) {
+	    $npc++;
+	    $sumpcSubmit += $row[1];
+	}
+	if ($row[4] && $row[1]) {
+	    $npcScore++;
+	    $sumpcScore += $row[3]->avg;
+	}
+    }
+    if ($myrow) {
+	echo "You have submitted ", $myrow[1], " of <a href='search.php?q=&amp;t=r'>", $myrow[2], " reviews</a>";
+	if (in_array("overAllMerit", $rf->fieldOrder) && $myrow[1])
+	    echo " with an average ", htmlspecialchars(strtolower($rf->shortName["overAllMerit"])), " score of ", sprintf("%.2f", $myrow[3]->avg);
+	echo ".<br />";
+	echo sprintf("The average PC member has submitted %.1f reviews", $sumpcSubmit / $npc);
+	if (in_array("overAllMerit", $rf->fieldOrder) && $npcScore)
+	    echo " with an average ", htmlspecialchars(strtolower($rf->shortName["overAllMerit"])), " score of ", sprintf("%.2f", $sumpcScore / $npcScore);
+	echo ".";
+	if ($Me->isPC || $Me->privChair)
+	    echo "&nbsp; <small>(<a href='contacts.php?t=pc&amp;score%5B%5D=0'>More info</a>)</small>";
+    }
+
+    echo "</td></tr></table>\n";
+    echo "<hr class='main' />\n";
+}
 
 
 echo "<table class='half'><tr><td class='l'>";
@@ -234,14 +274,7 @@ if ($Me->isPC) {
 <li>Reviewer assignments  (asking others to review papers)
   <ul>
   <li><a href='PC/CheckReviewStatus.php'>Check on reviewer progress</a> (and possibly nag reviewers)</li>
-  </ul></li>
-
-<li>Check on reviewer progress
-  <ul>\n";
-    if ($Conf->timePCViewAllReviews() || $Me->privChair) {
-	echo "  <li><a href='Chair/AverageReviewerScore.php'>See average reviewer ratings</a> -- this compares the overall merit ratings of different reviewers</li>\n";
-    }
-    echo "</ul></li>\n";
+  </ul></li>\n";
 
     if ($Me->privChair && isset($Opt['dbDumpDir']))
 	echo "<li><a href='Chair/DumpDatabase.php'>Make a backup of the database</a></li>\n";

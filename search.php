@@ -445,6 +445,9 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && 
 
 
 // set scores to view
+if (isset($_REQUEST["redisplay"])) {
+    $_SESSION["scores"] = 0;
+}
 if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
     $_SESSION["scores"] = 0;
     foreach ($_REQUEST["score"] as $s)
@@ -590,7 +593,7 @@ if (isset($pl->scoreMax)) {
     }
     echo "</td>";
 }
-echo "<td><input class='button' type='submit' value='Redisplay' /></td></tr>\n";
+echo "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
 if (isset($pl->scoreMax)) {
     echo "<tr><td colspan='3'><div class='smgap'></div><b>Sort scores by:</b> &nbsp;<select name='scoresort'>";
     foreach (array("Minshall score", "Average", "Variance", "Max &minus; min") as $k => $v) {
