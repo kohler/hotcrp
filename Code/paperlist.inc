@@ -3,7 +3,9 @@
 // HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class PaperList {
+require_once("baselist.inc");
+
+class PaperList extends BaseList {
 
     const FIELD_SELECTOR = 100;
     const FIELD_SELECTOR_ON = 101;
@@ -32,10 +34,6 @@ class PaperList {
     const FIELD_ALL_PREFERENCES = 44;
     const FIELD_AUTHOR_MATCH = 47;
     const FIELD_COLLABORATORS_MATCH = 48;
-
-    const FIELD_SCORE = 50;
-    const FIELD_NUMSCORES = 11;
-    const FIELD_SCORE_OVERALL_MERIT = 50; // also used in help.php
     
     const FIELD_OPT_AUTHORS = 70;
     const FIELD_TAGS = 71;
@@ -97,15 +95,8 @@ class PaperList {
 	$this->showConflict = true;
     }
 
-    function _normalizeField($fieldId) {
-	if ($fieldId >= self::FIELD_SCORE && $fieldId < self::FIELD_SCORE + self::FIELD_NUMSCORES)
-	    return self::FIELD_SCORE;
-	else
-	    return $fieldId;
-    }
-    
     function selector($fieldId, &$queryOptions) {
-	global $Conf, $paperListScoreNames;
+	global $Conf, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_TOPIC_INTEREST:
 	    $rf = reviewForm();
@@ -134,9 +125,9 @@ class PaperList {
 		return false;
 	    if (!isset($queryOptions['scores']))
 		$queryOptions['scores'] = array();
-	    $scoreName = $paperListScoreNames[$fieldId - self::FIELD_SCORE];
-	    $queryOptions['scores'][] = $scoreName;
 	    $rf = reviewForm();
+	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
+	    $queryOptions['scores'][] = $scoreName;
 	    $this->scoreMax[$scoreName] = $rf->maxNumericScore($scoreName);
 	    break;
 	case self::FIELD_FOLD:
@@ -168,6 +159,10 @@ class PaperList {
 	return true;
     }
 
+    function _sortBase($a, $b) {
+	return $a->paperId - $b->paperId;
+    }
+    
     function _sortPidarray($a, $b) {
 	return $this->sortInfo[$a->paperId] - $this->sortInfo[$b->paperId];
     }
@@ -218,19 +213,8 @@ class PaperList {
 	return $x ? $x : $a->paperId - $b->paperId;
     }
 
-    function _sortScore($a, $b) {
-	$x = strcmp($this->sortInfo[$b->paperId], $this->sortInfo[$a->paperId]);
-	return $x ? $x : $a->paperId - $b->paperId;
-    }
-    
-    function _sortScoreNum($a, $b) {
-	$x = $this->sortInfo[$b->paperId] - $this->sortInfo[$a->paperId];
-	$x = $x ? $x : $this->sortAverage[$b->paperId] - $this->sortAverage[$a->paperId];
-	return $x ? ($x < 0 ? -1 : 1) : $a->paperId - $b->paperId;
-    }
-    
     function _sort($rows, $pidarray) {
-	global $Conf, $paperListScoreNames;
+	global $Conf, $reviewScoreNames;
 	switch (self::_normalizeField($this->sortField)) {
 	case self::FIELD_ID:
 	case self::FIELD_REVIEWID:
@@ -270,44 +254,17 @@ class PaperList {
 	    usort($rows, array("PaperList", "_sortDesirability"));
 	    break;
 	case self::FIELD_SCORE:
-	    $scoreName = $paperListScoreNames[$this->sortField - self::FIELD_SCORE];
+	    $scoreName = $reviewScoreNames[$this->sortField - self::FIELD_SCORE];
 	    $scoreMax = $this->scoreMax[$scoreName];
 	    $scoreName .= "Scores";
 	    $this->sortInfo = array();
 	    $this->sortAverage = array();
-	    $zeros = "00000000000000";
 	    $scoresort = defval($_SESSION["scoresort"], 0);
 	    foreach ($rows as $row)
 		if (!$this->contact->privChair && !$this->contact->canViewReview($row, null, $Conf))
-		    $this->sortInfo[$row->paperId] = $zeros;
-		else if ($scoresort == 0) {
-		    $x = array();
-		    foreach (preg_split('/[\s,]+/', $row->$scoreName) as $i)
-			if (($i = cvtint($i)) > 0)
-			    $x[] = chr($i + 48);
-		    rsort($x);
-		    $this->sortInfo[$row->paperId] = implode($x) . $zeros;
-		} else {
-		    $x = $x2 = $n = $max = 0;
-		    $min = $scoreMax;
-		    foreach (preg_split('/[\s,]+/', $row->$scoreName) as $i)
-			if (($i = cvtint($i)) > 0) {
-			    $x += $i;
-			    $x2 += $i * $i;
-			    $min = min($min, $i);
-			    $max = max($max, $i);
-			    $n++;
-			}
-		    if ($n == 0)
-			$this->sortInfo[$row->paperId] = 0;
-		    else if ($scoresort == 1)
-			$this->sortInfo[$row->paperId] = $x / $n;
-		    else if ($scoresort == 2)
-			$this->sortInfo[$row->paperId] = ($x2 / ($n - 1)) - ($x * $x / (($n - 1) * $n));
-		    else
-			$this->sortInfo[$row->paperId] = $max - $min;
-		    $this->sortAverage[$row->paperId] = ($n ? $x / $n : 0);
-		}
+		    $this->sortInfo[$row->paperId] = self::LOTSAZEROS;
+		else
+		    $this->_setSortRow($row, $scoreName, $scoreMax, $scoresort);
 	    usort($rows, array($this, ($scoresort ? "_sortScoreNum" : "_sortScore")));
 	    break;
 	}
@@ -339,7 +296,7 @@ class PaperList {
     }
     
     function header($fieldId, $ordinal, $row = null, $reviewList = null) {
-	global $paperListScoreNames;
+	global $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
 	case self::FIELD_REVIEWID:
@@ -382,7 +339,7 @@ class PaperList {
 	    return "Preferences";
 	case self::FIELD_SCORE: {
 	    $rf = reviewForm();
-	    $scoreName = $paperListScoreNames[$fieldId - self::FIELD_SCORE];
+	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
 	    return $rf->webFieldAbbrev($scoreName);
 	}
 	case self::FIELD_AUTHOR_MATCH:
@@ -428,7 +385,7 @@ class PaperList {
     }
     
     function content($fieldId, $row, $reviewList) {
-	global $ConfSiteBase, $Conf, $reviewTypeName, $paperListScoreNames;
+	global $ConfSiteBase, $Conf, $reviewTypeName, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
 	    if (!($pl = $this->paperLink)) {
@@ -579,11 +536,12 @@ class PaperList {
 	    return $x;
 	case self::FIELD_SCORE:
 	    if ($this->contact->privChair || $this->contact->canViewReview($row, null, $Conf)) {
-		$scoreName = $paperListScoreNames[$fieldId - self::FIELD_SCORE];
+		$scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
 		$itemName = "${scoreName}Scores";
-		return $Conf->textValuesGraph($row->$itemName, $this->scoreMax[$scoreName], 1);
-	    } else
-		return "";
+		if ($row->$itemName)
+		    return $Conf->textValuesGraph($row->$itemName, $this->scoreMax[$scoreName], 1);
+	    }
+	    return "";
 	case self::FIELD_AUTHOR_MATCH:
 	    if (!isset($this->authorMatch))
 		return "";
@@ -619,7 +577,7 @@ class PaperList {
     }
 
     function footer($ncol) {
-	global $Conf, $ConfSiteBase, $paperListScoreNames;
+	global $Conf, $ConfSiteBase;
 	if ($this->count == 0)
 	    return "";
 	
@@ -687,36 +645,6 @@ class PaperList {
 	    $t .= outcomeSelector(0, "plact4_d") . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></span>\n";
 	    
 	}
-
-	//if (isset($this->scoreMax)) {
-	//    $t .= "<div style='float: right; padding-top: 5px; padding-right: 10px'>";
-	//    $t .= "<div id='foldscores' class='foldc' style='position: relative'>";
-	//    $t .= "<a href='javascript:void(fold(\"scores\", 0))'>Graph scores</a>";
-	//    $t .= "&nbsp; <img src=\"${ConfSiteBase}images/bendurt.png\" />";
-	//    $t .= "<div class='scoredialog extension'>";
-	//    $rf = reviewForm();
-	//    $theScores = defval($_SESSION["scores"], 1);
-	//    $t .= "<b>Show graphs for:</b><br />";
-	//    for ($i = 0; $i < self::FIELD_NUMSCORES; $i++) {
-	//	$score = $paperListScoreNames[$i];
-	//	if (in_array($score, $rf->fieldOrder)) {
-	//	    $t .= "<input type='checkbox' name='score[]' value='$i' ";
-	//	    if ($theScores & (1 << $i))
-	//		$t .= "checked='checked' ";
-	//	    $t .= "/>&nbsp;" . htmlspecialchars($rf->shortName[$score]) . "<br />";
-	//	}
-	//    }
-	//    $t .= "<div class='smgap'></div><b>Sort by:</b> &nbsp;<select name='scoresort'>";
-	//    foreach (array("Minshall score", "Average", "Variance", "Max &minus; min") as $k => $v) {
-	//	$t .= "<option value='$k'";
-	//	if (defval($_SESSION["scoresort"], 0) == $k)
-	//	    $t .= " selected='selected'";
-	//	$t .= ">$v</option>";
-	//    }
-	//    $t .= "</select>";
-	//    $t .= "<div class='smgap'></div><input type='submit' class='button' name='showscores' value='OK' onclick='paperselDocheck=false;return true' />&nbsp; <button class='button' type='button' onclick='void(fold(\"scores\", 1))'>Cancel</button>";
-	//    $t .= "</div></div></div>";
-	//}
 
 	return $t . "</td></tr>\n";
     }
@@ -1066,16 +994,9 @@ $paperListFields = array(
 	PaperList::FIELD_REVIEWS_STATUS => array('reviewsStatus', 1, 1),
 	PaperList::FIELD_DESIRABILITY => array('desirability', 1, 1),
 	PaperList::FIELD_ALL_PREFERENCES => array('allPreferences', 2, 0),
-	PaperList::FIELD_SCORE => array('scoreIcon', 1, 1),
+	PaperList::FIELD_SCORE => array('score', 1, 1),
 	PaperList::FIELD_AUTHOR_MATCH => array('authorsMatch', 2, 0),
 	PaperList::FIELD_COLLABORATORS_MATCH => array('collaboratorsMatch', 2, 0),
 	PaperList::FIELD_OPT_AUTHORS => array('authors', 3, 0),
 	PaperList::FIELD_TAGS => array('tags', 4, 0)
 	);
-
-
-global $paperListScoreNames;
-$paperListScoreNames = array("overAllMerit", "technicalMerit", "novelty",
-			     "grammar", "reviewerQualification", "potential",
-			     "fixability", "interestToCommunity", "longevity",
-			     "likelyPresentation", "suitableForShort");

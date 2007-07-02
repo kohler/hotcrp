@@ -22,6 +22,12 @@ $reviewFields = array('paperSummary' => 0,
 		      'likelyPresentation' => 1,
 		      'suitableForShort' => 1);
 
+global $reviewScoreNames;
+$reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
+			  "grammar", "reviewerQualification", "potential",
+			  "fixability", "interestToCommunity", "longevity",
+			  "likelyPresentation", "suitableForShort");
+
 class ReviewForm {
 
     var $updatedWhen;

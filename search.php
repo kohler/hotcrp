@@ -579,7 +579,7 @@ if (isset($pl->scoreMax)) {
     $theScores = defval($_SESSION["scores"], 1);
     $seeAllScores = ($Me->amReviewer() && $_REQUEST["t"] != "a");
     for ($i = 0; $i < PaperList::FIELD_NUMSCORES; $i++) {
-	$score = $paperListScoreNames[$i];
+	$score = $reviewScoreNames[$i];
 	if (in_array($score, $rf->fieldOrder)
 	    && ($seeAllScores || $rf->authorView[$score] > 0)) {
 	    echo "<input type='checkbox' name='score[]' value='$i' ";

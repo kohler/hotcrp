@@ -3,7 +3,9 @@
 // HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class ContactList {
+require_once("baselist.inc");
+
+class ContactList extends BaseList {
 
     const FIELD_SELECTOR = 100;
     const FIELD_SELECTOR_ON = 101;
@@ -18,11 +20,10 @@ class ContactList {
     const FIELD_REVIEWS = 8;
     const FIELD_PAPERS = 9;
     const FIELD_REVIEW_PAPERS = 10;
+    const FIELD_AFFILIATION_ROW = 11;
     
     var $showHeader;
     var $sortField;
-    var $sortInfo;
-    var $sortAverage;
     var $reverseSort;
     var $sortable;
     var $count;
@@ -31,8 +32,9 @@ class ContactList {
     var $scoreMax;
     var $authorMatch;
     var $collaboratorsMatch;
-    var $unfolded;
     var $limit;
+    var $haveAffrow;
+    var $haveTopics;
     
     function ContactList($sortable = true) {
 	global $contactListFields;
@@ -48,28 +50,49 @@ class ContactList {
 	else
 	    $this->sortField = null;
 	$this->sortable = $sortable;
+	$this->haveAffrow = $this->haveTopics = false;
     }
 
     function _normalizeField($fieldId) {
-	return $fieldId;
+	if ($fieldId >= self::FIELD_SCORE && $fieldId < self::FIELD_SCORE + self::FIELD_NUMSCORES)
+	    return self::FIELD_SCORE;
+	else
+	    return $fieldId;
     }
     
     function selector($fieldId, &$queryOptions) {
+	global $reviewScoreNames;
 	if (!$this->contact->isPC
-	    && $fieldId != self::FIELD_NAME && $fieldId != self::FIELD_AFFILIATION)
+	    && $fieldId != self::FIELD_NAME
+	    && $fieldId != self::FIELD_AFFILIATION
+	    && $fieldId != self::FIELD_AFFILIATION_ROW)
 	    return false;
-	if ($fieldId == self::FIELD_HIGHTOPICS || $fieldId == self::FIELD_LOWTOPICS)
+	if ($fieldId == self::FIELD_HIGHTOPICS || $fieldId == self::FIELD_LOWTOPICS) {
 	    $queryOptions['topics'] = true;
+	    $this->haveTopics = true;
+	}
 	if ($fieldId == self::FIELD_REVIEWS)
 	    $queryOptions['reviews'] = true;
 	if ($fieldId == self::FIELD_PAPERS)
 	    $queryOptions['papers'] = true;
 	if ($fieldId == self::FIELD_REVIEW_PAPERS)
 	    $queryOptions['repapers'] = true;
+	if ($fieldId == self::FIELD_AFFILIATION_ROW)
+	    $this->haveAffrow = true;
+	if (self::_normalizeField($fieldId) == self::FIELD_SCORE) {
+	    // XXX scoresOk
+	    if (!isset($queryOptions['scores']))
+		$queryOptions['scores'] = array();
+	    $rf = reviewForm();
+	    $queryOptions['reviews'] = true;
+	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
+	    $queryOptions['scores'][] = $scoreName;
+	    $this->scoreMax[$scoreName] = $rf->maxNumericScore($scoreName);
+	}
 	return true;
     }
 
-    function _sortName($a, $b) {
+    function _sortBase($a, $b) {
 	$x = strcasecmp($a->lastName, $b->lastName);
 	$x = $x ? $x : strcasecmp($a->firstName, $b->firstName);
 	return $x ? $x : strcasecmp($a->email, $b->email);
@@ -81,38 +104,39 @@ class ContactList {
     
     function _sortAffiliation($a, $b) {
 	$x = strcasecmp($a->affiliation, $b->affiliation);
-	return $x ? $x : self::_sortName($a, $b);
+	return $x ? $x : self::_sortBase($a, $b);
     }
 
     function _sortVisits($a, $b) {
 	$x = $b->visits - $a->visits;
-	return $x ? $x : self::_sortName($a, $b);
+	return $x ? $x : self::_sortBase($a, $b);
     }
  
     function _sortLastVisit($a, $b) {
 	$x = $b->lastLogin - $a->lastLogin;
-	return $x ? $x : self::_sortName($a, $b);
+	return $x ? $x : self::_sortBase($a, $b);
     }
 
     function _sortReviews($a, $b) {
 	$x = $b->numReviewsSubmitted - $a->numReviewsSubmitted;
 	$x = $x ? $x : $b->numReviews - $a->numReviews;
-	return $x ? $x : self::_sortName($a, $b);
+	return $x ? $x : self::_sortBase($a, $b);
     }
 
     function _sortPapers($a, $b) {
 	$x = (int) $a->paperIds - (int) $b->paperIds;
 	$x = $x ? $x : strcmp($a->paperIds, $b->paperIds);
-	return $x ? $x : self::_sortName($a, $b);
+	return $x ? $x : self::_sortBase($a, $b);
     }
 
     function _sort($rows) {
-	global $Conf;
+	global $Conf, $reviewScoreNames;
 	switch (self::_normalizeField($this->sortField)) {
 	case self::FIELD_EMAIL:
 	    usort($rows, array("ContactList", "_sortEmail"));
 	    break;
 	case self::FIELD_AFFILIATION:
+	case self::FIELD_AFFILIATION_ROW:
 	    usort($rows, array("ContactList", "_sortAffiliation"));
 	    break;
 	case self::FIELD_VISITS:
@@ -128,6 +152,17 @@ class ContactList {
 	case self::FIELD_REVIEW_PAPERS:
 	    usort($rows, array("ContactList", "_sortPapers"));
 	    break;
+	case self::FIELD_SCORE:
+	    $scoreName = $reviewScoreNames[$this->sortField - self::FIELD_SCORE];
+	    $scoreMax = $this->scoreMax[$scoreName];
+	    $this->sortInfo = array();
+	    $this->sortAverage = array();
+	    $scoresort = defval($_SESSION["scoresort"], 1);
+	    if ($scoresort == 0)
+		$scoresort = 1;
+	    foreach ($rows as $row)
+		$this->_setSortRow($row, $scoreName, $scoreMax, $scoresort);
+	    usort($rows, array($this, ($scoresort ? "_sortScoreNum" : "_sortScore")));
 	}
 	if ($this->reverseSort)
 	    return array_reverse($rows);
@@ -136,12 +171,14 @@ class ContactList {
     }
     
     function header($fieldId, $ordinal, $row = null) {
+	global $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_NAME:
 	    return "Name";
 	case self::FIELD_EMAIL:
 	    return "Email";
 	case self::FIELD_AFFILIATION:
+	case self::FIELD_AFFILIATION_ROW:
 	    return "Affiliation";
 	case self::FIELD_VISITS:
 	    return "Visits";
@@ -158,13 +195,18 @@ class ContactList {
 	case self::FIELD_PAPERS:
 	case self::FIELD_REVIEW_PAPERS:
 	    return "Papers";
+	case self::FIELD_SCORE: {
+	    $rf = reviewForm();
+	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
+	    return $rf->webFieldAbbrev($scoreName);
+	}
 	default:
 	    return "&lt;$fieldId&gt;?";
 	}
     }
     
     function content($fieldId, $row) {
-	global $ConfSiteBase, $Conf, $reviewTypeName, $paperListScoreNames;
+	global $ConfSiteBase, $Conf, $reviewTypeName, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_NAME:
 	    $t = contactHtml($row->firstName, $row->lastName);
@@ -186,6 +228,7 @@ class ContactList {
 		return "";
 	    return "<a href=\"mailto:" . htmlspecialchars($row->email) . "\">" . htmlspecialchars($row->email) . "</a>";
 	case self::FIELD_AFFILIATION:
+	case self::FIELD_AFFILIATION_ROW:
 	    return htmlspecialchars($row->affiliation);
 	case self::FIELD_VISITS:
 	    return $row->visits;
@@ -197,10 +240,8 @@ class ContactList {
 	case self::FIELD_SELECTOR_ON:
 	    $this->anySelector = 1;
 	    $c = "";
-	    if ($fieldId == self::FIELD_SELECTOR_ON) {
+	    if ($fieldId == self::FIELD_SELECTOR_ON)
 		$c = " checked='checked'";
-		$this->unfolded = true;
-	    }
 	    return "<input type='checkbox' name='cid[]' value='$row->contactId' tabindex='1' id='psel$this->count' onclick='pselClick(event, this, $this->count)' $c/>";
 	case self::FIELD_HIGHTOPICS:
 	case self::FIELD_LOWTOPICS:
@@ -213,10 +254,9 @@ class ContactList {
 		if ($v == $want)
 		    $nt[] = $k;
 	    $rf = reviewForm();
-	    if (count($nt)) {
-		$this->unfolded = false;
+	    if (count($nt))
 		return join(", ", $rf->webTopicArray($nt, array_fill(0, count($nt), $want)));
-	    } else
+	    else
 		return "";
 	case self::FIELD_REVIEWS:
 	    if (!$row->numReviews && !$row->numReviewsSubmitted)
@@ -231,7 +271,8 @@ class ContactList {
 		return "";
 	    $x = explode(",", $row->paperIds);
 	    sort($x, SORT_NUMERIC);
-	    $extra = "&amp;list=" . ($this->limit == "auuns" ? "all:" : "s:") . join("+", $x);
+	    $all = ($this->limit == "auuns" || $this->limit == "all");
+	    $extra = "&amp;list=" . ($all ? "all:" : "s:") . join("+", $x);
 	    $m = array();
 	    foreach ($x as $v)
 		$m[] = "<a href=\"${ConfSiteBase}paper.php?paperId=$v$extra\">$v</a>";
@@ -241,11 +282,33 @@ class ContactList {
 		return "";
 	    $x = array_combine(explode(",", $row->paperIds), explode(",", $row->reviewIds));
 	    ksort($x, SORT_NUMERIC);
-	    $extra = "&amp;list=" . ($this->limit == "auuns" ? "all:" : "s:") . join("+", array_keys($x));
+	    $extra = "&amp;list=s:" . join("+", array_keys($x));
 	    $m = array();
 	    foreach ($x as $k => $v)
 		$m[] = "<a href=\"${ConfSiteBase}review.php?reviewId=$v$extra\">$k</a>";
 	    return join(", ", $m);
+	case self::FIELD_SCORE:
+	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
+	    $scores = array_fill(1, $this->scoreMax[$scoreName], 0);
+	    $sum = $n = $sumsq = 0;
+	    foreach (explode(',', $row->$scoreName) as $score)
+		if ($score) {
+		    $scores[$score]++;
+		    $sum += $score;
+		    $sumsq += $score * $score;
+		    $n++;
+		}
+	    $m = "";
+	    if ($n > 0) {
+		$m = $Conf->textValuesGraph($row->$scoreName, $this->scoreMax[$scoreName], 2);
+		/*foreach ($scores as $score => $count)
+		    $m .= ($m ? " " : "") . "<span class='sc$score'>$count</span>";
+		$avg = $sum / $n;
+		$dev = ($n > 1 ? sqrt(($sumsq - $sum*$sum/$n) / ($n - 1)) : 0);
+		$avgtext = ($n > 1 ? sprintf("%0.2f &plusmn; %0.2f", $avg, $dev) : sprintf("%0.2f", $avg));
+		$m .= "<br /><span class='sc_sum'>$avgtext</span>"; */
+	    }
+	    return $m;
 	default:
 	    return "";
 	}
@@ -257,7 +320,7 @@ class ContactList {
 	  case "admin":
 	    return array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS);
 	  case "re":
-	    return array("re", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS);
+	    return array("re", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_SCORE_OVERALL_MERIT);
 	  case "ext":
 	    return array("ext", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_PAPERS);
 	  case "req":
@@ -266,9 +329,9 @@ class ContactList {
 	  case "aurej":
 	  case "auacc":
 	  case "auuns":
-	    return array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_PAPERS);
+	    return array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_PAPERS);
 	  case "all":
-	    return array("all", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_PAPERS);
+	    return array("all", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_PAPERS);
 	  default:
 	    return null;
 	}
@@ -294,7 +357,6 @@ class ContactList {
 	// get field array
 	$fieldDef = array();
 	$ncol = 0;
-	$this->unfolded = true;
 	$queryOptions = array();
 	foreach ($baseFieldId as $fid) {
 	    if ($this->selector($fid, $queryOptions) === false)
@@ -304,11 +366,11 @@ class ContactList {
 	    if ($contactListFields[$normFid][1] == 1)
 		$ncol++;
 	}
-	$unfolded = $this->unfolded;
 
 	// prepare query text
 	$aulimit = (strlen($this->limit) >= 2 && $this->limit[0] == 'a' && $this->limit[1] == 'u');
 	$pq = "select ContactInfo.contactId,
+	ContactInfo.contactId as paperId,
 	firstName, lastName, email, affiliation,
 	voicePhoneNumber, faxPhoneNumber,
 	ContactInfo.collaborators, lastLogin, visits, note,
@@ -320,6 +382,9 @@ class ContactList {
 	    $pq .= ",
 	count(coalesce(PaperReview.reviewSubmitted,nullif(PaperReview.reviewNeedsSubmit,0))) as numReviews,
 	count(PaperReview.reviewSubmitted) as numReviewsSubmitted";
+	if (isset($queryOptions['scores']))
+	    foreach ($queryOptions['scores'] as $score)
+		$pq .= ",\n\tgroup_concat(PaperReview.$score) as $score";
 	if (isset($queryOptions['repapers']))
 	    $pq .= ",\n\tgroup_concat(PaperReview.paperId) as paperIds,
 	group_concat(PaperReview.reviewId) as reviewIds";
@@ -383,7 +448,6 @@ class ContactList {
 	foreach ($srows as $row) {
 	    $trclass = "k" . ($this->count % 2);
 	    $this->count++;
-	    $this->unfolded = $unfolded;
 
 	    $t = "  <tr class=\"pl $trclass\">\n";
 	    foreach ($fieldDef as $fieldId => $fdef)
@@ -398,9 +462,9 @@ class ContactList {
 	    foreach ($fieldDef as $fieldId => $fdef)
 		if ($fdef[1] >= 2 && ($d = $this->content($fieldId, $row))) {
 		    $t .= "  <tr class=\"pl_$fdef[0] pl_callout $trclass";
-		    if ($fdef[1] == 3) {
+		    if ($fdef[1] == 3 || $fdef[1] == 4) {
 			$extrainfo = true;
-			$t .= " extension1";
+			$t .= " extension" . ($fdef[1] - 2);
 		    }
 		    $t .= "\">\n";
 		    $t .= "<td class=\"pl_$fdef[0] pl_callout\" colspan='$ncol'>";
@@ -408,20 +472,17 @@ class ContactList {
 		    $t .= $d . "</td>\n  </tr>\n";
 		}
 
-	    if (!$this->unfolded)
-		$t = str_replace("<tr class=\"", "<tr class=\"extension3 ", $t);
-
 	    $body .= $t;
 	}
 
 	$x = "<table class=\"ppltable plt_" . htmlspecialchars($listname);
 	if ($extrainfo)
 	    $x .= " fold1c";
-	if (!$unfolded)
+	if ($this->haveAffrow)
+	    $x .= " fold2o";
+	if ($this->haveTopics)
 	    $x .= " fold3c";
-	if ($extrainfo || !$unfolded)
-	    $x .= "\" id=\"foldppl";
-	$x .= "\">\n";
+	$x .= "\" id=\"foldppl\">\n";
 
 	if ($this->showHeader) {
 	    $x .= "  <tr class=\"pl_headrow\">\n";
@@ -465,14 +526,7 @@ class ContactList {
 
 	$x .= $body;
 
-	if ($extrainfo || ($this->limit == "pc" && $this->contact->privChair)) {
-	    $x .= "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
-	    $x .= "  <tr class='pl_footrow'>\n    <td colspan='$ncol'>";
-	    if ($extrainfo)
-		$x .= "<a class='unfolder1' href='javascript:fold(\"ppl\",0,1)'>Show topic interests</a><a class='folder1' href='javascript:fold(\"ppl\",1,1)'>Hide topic interests</a>";
-	    $x .= "</td></tr>\n";
-	}
-	
+	$x .= "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
 	$x .= "</table>";
 
 	return $x;
@@ -487,11 +541,13 @@ $contactListFields = array(
 	ContactList::FIELD_NAME => array('name', 1, 1),
 	ContactList::FIELD_EMAIL => array('email', 1, 1),
 	ContactList::FIELD_AFFILIATION => array('affiliation', 1, 1),
+	ContactList::FIELD_AFFILIATION_ROW => array('affrow', 4, 0),
 	ContactList::FIELD_VISITS => array('visits', 1, 1),
 	ContactList::FIELD_LASTVISIT => array('lastvisit', 1, 1),
 	ContactList::FIELD_HIGHTOPICS => array('topics', 3, 0),
 	ContactList::FIELD_LOWTOPICS => array('topics', 3, 0),
 	ContactList::FIELD_REVIEWS => array('reviewsStatus', 1, 1),
 	ContactList::FIELD_PAPERS => array('papers', 1, 1),
-	ContactList::FIELD_REVIEW_PAPERS => array('papers', 1, 1)
+	ContactList::FIELD_REVIEW_PAPERS => array('papers', 1, 1),
+	ContactList::FIELD_SCORE => array('score', 1, 1)
 	);

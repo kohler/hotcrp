@@ -1180,13 +1180,15 @@ class Conference {
 	if ($style == 0) {
 	    $retstr = "<table><tr><td align=\"center\">";
 	    $retstr .= "<img src=\"" . htmlspecialchars($url) . "\" alt=\"$avgtext\" title=\"$avgtext\" align='bottom' />";
-	    $retstr .= "</td><tr><td align=\"center\"><font size='-2'>$avgtext</font></td></tr></table>";
-	} else {
-	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=$style\" alt=\"$avgtext\" title=\"$avgtext\" ";
-	    if ($style == 1)
-		$retstr .= "width='" . (5 * $max + 3)
-		    . "' height='" . (5 * max(3, max($merit)) + 3) . "' ";
-	    $retstr .= "/>";
+	    $retstr .= "</td><tr><td align=\"center\"><span class='sc_sum'>$avgtext</span></td></tr></table>";
+	} else if ($style == 1) {
+	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=1\" alt=\"$avgtext\" title=\"$avgtext\" width='" . (5 * $max + 3)
+		. "' height='" . (5 * max(3, max($merit)) + 3) . "' />";
+	} else if ($style == 2) {
+	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=2\" alt=\"$avgtext\" title=\"$avgtext\" /><br />";
+	    for ($key = 1; $key <= $max; $key++)
+		$retstr .= ($key > 1 ? " " : "") . "<span class='sc$key'>" . $merit[$key] . "</span>";
+	    $retstr .= "<br /><span class='sc_sum'>" . $avgtext . "</span>";
 	}
 	
 	return $retstr;

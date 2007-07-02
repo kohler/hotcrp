@@ -334,6 +334,8 @@ function _tryNewList($opt) {
     $pl = new PaperList(false);
     $fields = $pl->listFields($search->limitName);
     $_SESSION["list"]["description"] = $fields[0];
+    if ($search->q  || $search->qa || $search->qx)
+	$_SESSION["list"]["description"] .= " search";
     unset($_SESSION["matchPreg"]);
     $Conf->q("drop temporary table Matches");
 }

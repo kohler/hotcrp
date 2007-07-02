@@ -11,9 +11,11 @@ body {
 
 
 /* header */
+div#header, div.vbar, div.nvubar {
+	background: #f3ebd5;
+}
 div#header {
 	padding: 8px 12px 0px 12px;
-	background: #f3ebd5;
 }
 div#header_user {
 	font-size: small;
@@ -42,14 +44,10 @@ h1 span.crumbsep {
 
 /* Tab bar */
 div.nvubar {
-	padding: 0px 12px;
 	height: 0.75em;
-	background: #f3ebd5;
-	border-bottom: 2px solid #9999cc;
 }
-div.vbar {
+div.vbar, div.nvubar {
 	padding: 0px 12px;
-	background: #f3ebd5;
 	border-bottom: 2px solid #9999cc;
 }
 table.vbar {
@@ -241,10 +239,10 @@ input.button_default, button.button_default {
 
 /* Tab links, as in search form */
 .tablinks1 .tll1, .tablinks2 .tll2, .tablinks3 .tll3 {
-	background: #ffffee;
-	border-left: 2px solid #ffff00;
-	border-bottom: 2px solid #ffff00;
-	border-right: 2px solid #ffff00;
+	background: #fff4d5;
+	border-left: 2px solid #f3d06e;
+	border-bottom: 2px solid #f3d06e;
+	border-right: 2px solid #f3d06e;
 	font-weight: bold;
 }
 .tablinks1 .tll1 a, .tablinks2 .tll2 a, .tablinks3 .tll3 a {
@@ -272,7 +270,7 @@ input.button_default, button.button_default {
 	background-color: #ffffff;
 }
 .tlx {
-	border-bottom: 2px solid #ffff00;
+	border-bottom: 2px solid #f3d06e;
 }
 .tllx {
 	padding-left: 7px;
@@ -376,7 +374,9 @@ table.center {
 	margin-left: auto;
 	margin-right: auto;
 }
-
+#mainsearch {
+	padding-top: .75em;
+}
 
 /* gopaper form */
 div.gopaper {
@@ -824,11 +824,6 @@ div.searchresult {
 div.searchresult table.pltable {
 	width: 100%;
 }
-table.pltable th, table.ppltable th, table.setreviewform th {
-	text-align: left;
-        padding-right: 0.25em;
-	vertical-align: bottom;
-}
 table.pltable th a.unfolder1, table.pltable th a.unfolder2, table.pltable th a.unfolder4,
 table.pltable th a.folder1, table.pltable th a.folder2, table.pltable th a.folder4 {
 	font-weight: normal;
@@ -836,30 +831,35 @@ table.pltable th a.folder1, table.pltable th a.folder2, table.pltable th a.folde
 td#plact {
 	padding-top: 5px;
 }
+table.pltable th, table.ppltable th, table.setreviewform th {
+	text-align: left;
+        padding-left: 0.125em;
+	padding-right: 0.125em;
+	vertical-align: bottom;
+}
 .pl_title, .pl_reviewer, .pl_name, .pl_email, .pl_affiliation {
 	padding-right: 1em;
 }
 table.pltable th.pl_topicMatch {
 	text-align: center;
-	padding: 0em 0.5em;
+	padding-left: 0.5em;
+	padding-right: 0.5em;
 }
-table.pltable th.pl_id, .pl_reviewerTypeIcon, .pl_scoreIcon {
+table.pltable th.pl_id, 
+.pl_score, table.pltable th.pl_score, table.ppltable th.pl_score {
 	text-align: center;
-	padding: 0em 0.1em;
+	white-space: nowrap;
 }
-.pl_status, .pl_lastvisit, .pl_papers {
-	padding-right: 0.2em;
-}
-.pl_reviewsStatus {
+.pl_reviewerTypeIcon, table.pltable th.pl_reviewerTypeIcon,
+.pl_reviewsStatus, table.pltable th.pl_reviewsStatus {
 	text-align: center;
-	padding-right: 0.2em;
 }
 td.pl_id, td.pl_selector, td.pl_topicMatch, td.pl_reviewPreference,
 td.pl_desirability, td.pl_visits {
 	text-align: right;
 	padding-right: 0.4em;
 }
-td.pl_authors, td.pl_tags {
+td.pl_authors, td.pl_tags, td.pl_topics, td.pl_affrow {
 	font-size: smaller;
 }
 td.pl_title img {
@@ -869,8 +869,17 @@ td.pl_callout {
 	padding-left: 60px;
 }
 td.pl_lastvisit {
+	padding-left: 0.125em;
+	padding-right: 0.4em;
 	font-size: smaller;
 	white-space: nowrap;
+}
+td.pl_name {
+	white-space: nowrap;
+}
+table.ppltable td.pl_score {
+	vertical-align: top;
+	font-size: small;
 }
 span.pl_callouthdr {
 	font-style: italic;
@@ -943,6 +952,11 @@ hr {
 hr.smgap {
 	margin: 0.25em 0em;
 	border: 0px none;
+}
+hr.main {
+	margin: 0.75em 10%;
+	border: none;
+	border-top: 1px solid #d8deff;
 }
 table.review input#downloadForm {
 	margin-right: 3em;
@@ -1076,6 +1090,31 @@ span.contactpulldown {
 }
 span.contactpulldown select {
 	vertical-align: top;
+}
+
+/* contact list */
+span.sc1, span.sc2, span.sc3, span.sc4, span.sc5,
+span.sc6, span.sc7, span.sc8, span.sc9, span.sc10 {
+	font-weight: bold;
+	font-size: small;
+}
+span.sc1 {
+	color: #c88080;
+}
+span.sc2 {
+	color: #969C60;
+}
+span.sc3 {
+	color: #64B840;
+}
+span.sc4 {
+	color: #32D420;
+}
+span.sc5, span.sc6, span.sc7, span.sc8, span.sc9, span.sc10 {
+	color: #00F000;
+}
+span.sc_sum {
+	font-size: x-small;
 }
 
 table.advsearch {

@@ -454,13 +454,6 @@ class Mailer {
 	$this->text = "";
 	for ($i = 0; $i < count($lines); $i++) {
 	    $line = rtrim($lines[$i]);
-	    if ($line != "" && ctype_alpha($line[0]))
-		while ($i+1 < count($lines) && ($linex = rtrim($lines[$i+1])) != ""
-		       && ctype_alpha($linex[0])) {
-		    $line .= " " . $linex;
-		    $i++;
-		}
-
 	    if ($line == "")
 		$this->text .= "\n";
 	    else if (preg_match('/^%[\w()]+%$/', $line)) {
