@@ -99,14 +99,14 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     if ($myrow) {
 	echo "You have submitted ", $myrow[1], " of <a href='search.php?q=&amp;t=r'>", $myrow[2], " reviews</a>";
 	if (in_array("overAllMerit", $rf->fieldOrder) && $myrow[1])
-	    echo " with an average ", htmlspecialchars(strtolower($rf->shortName["overAllMerit"])), " score of ", sprintf("%.2f", $myrow[3]->avg);
+	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", sprintf("%.2f", $myrow[3]->avg);
 	echo ".<br />";
 	echo sprintf("The average PC member has submitted %.1f reviews", $sumpcSubmit / $npc);
 	if (in_array("overAllMerit", $rf->fieldOrder) && $npcScore)
-	    echo " with an average ", htmlspecialchars(strtolower($rf->shortName["overAllMerit"])), " score of ", sprintf("%.2f", $sumpcScore / $npcScore);
+	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", sprintf("%.2f", $sumpcScore / $npcScore);
 	echo ".";
 	if ($Me->isPC || $Me->privChair)
-	    echo "&nbsp; <small>(<a href='contacts.php?t=pc&amp;score%5B%5D=0'>More info</a>)</small>";
+	    echo "&nbsp; <small>(<a href='contacts.php?t=pc&amp;score%5B%5D=0'>Details</a>)</small>";
     }
 
     echo "</td></tr></table>\n";
@@ -221,8 +221,6 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     echo "</ul></td><td class='r'><ul class='compact'>\n";
     if ($Me->privChair)
 	echo "<li><a href='Chair/AssignPapers.php'>PC review assignments and conflicts</a></li>\n";
-    if ($Me->privChair || ($Me->isPC && $Conf->timePCViewAllReviews()))
-	echo "<li><a href='contacts.php?t=pc'>Check on PC progress</a></li>\n";
     echo "</ul></td></tr></table>\n<div class='smgap'></div>\n";
     
     unset($plist);

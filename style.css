@@ -859,7 +859,7 @@ td.pl_desirability, td.pl_visits {
 	text-align: right;
 	padding-right: 0.4em;
 }
-td.pl_authors, td.pl_tags, td.pl_topics, td.pl_affrow {
+td.pl_authors, td.pl_tags, td.pl_topics, td.pl_topicNames, td.pl_affrow {
 	font-size: smaller;
 }
 td.pl_title img {
@@ -880,6 +880,8 @@ td.pl_name {
 table.ppltable td.pl_score {
 	vertical-align: top;
 	font-size: small;
+	padding-left: 0.2em;
+	padding-right: 0.2em;
 }
 span.pl_callouthdr {
 	font-style: italic;
