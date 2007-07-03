@@ -905,7 +905,7 @@ function paperOptions() {
 
 function scoreCounts($text, $max = null) {
     $merit = ($max ? array_fill(1, $max, 0) : array());
-    $sum = $sumsq = 0;
+    $n = $sum = $sumsq = 0;
     foreach (preg_split('/[\s,]+/', $text) as $i)
 	if (($i = cvtint($i)) > 0) {
 	    while ($i > count($merit))
