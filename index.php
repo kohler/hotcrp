@@ -114,19 +114,29 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 }
 
 
+// Conference management
+if ($Me->privChair) {
+    echo "<table id='mainmgmt' class='center'><tr><td id='mainrev'>";
+    
+    // Lists
+    echo "<strong>Conference management: &nbsp;</strong> </td>";
+    echo "<td><a href='settings.php'>Settings</a>";
+    echo " &nbsp;|&nbsp; <a href='contacts.php?t=all'>Accounts</a>";
+    echo " &nbsp;|&nbsp; <a href='autoassign.php'>Review assignments</a>";
+    echo " &nbsp;|&nbsp; <a href='mail.php'>Mail users</a>";
+    echo " &nbsp;|&nbsp; <a href='Chair/ViewActionLog.php'>Action log</a>";
+
+    echo "</td></tr></table>\n";
+    echo "<hr class='main' />\n";
+}
+
+
 echo "<table class='half'><tr><td class='l'>";
 
 
 // General information
 echo "<div class='bgrp'><div class='bgrp_head'>General</div><div class='bgrp_body'>
 Welcome, ", contactHtml($Me, null, ""), ".  (If this isn't you, please <a href='${ConfSiteBase}logout.php'>sign out</a>.)  You will be automatically signed out if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.\n";
-
-// Conference settings
-if ($Me->privChair)
-    echo "<table class='half'><tr><td class='l'><ul class='compact'>
-<li><a href='settings.php'><b>Conference settings</b></a></li>
-</ul></td></tr></table>
-<div class='smgap'></div>\n";
 
 echo "<table class='half'><tr><td class='l'><ul class='compact'>
 <li><a href='account.php'>Your account settings</a></li>
@@ -143,18 +153,6 @@ if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting(
 echo "<li><a href='contacts.php?t=pc'>List program committee</a></li>\n";
 
 echo "</ul></td></tr></table>";
-
-if ($Me->privChair)
-    echo "\n<div class='smgap'></div>
-<table class='half'><tr><td class='l'><ul class='compact'>
-<li><a href='contacts.php'>List accounts</a></li>
-<li><a href='account.php?new=1'>Create new account</a></li>
-<li><a href='Chair/BecomeSomeoneElse.php'>Sign in as someone else</a></li>
-</ul></td><td class='r'><ul class='compact'>
-<li><a href='mail.php'>Send users mail</a></li>
-<li><a href='Chair/ViewActionLog.php'>View action log</a></li>
-</ul></td></tr></table>";
-
 echo "</div></div>\n";
 
 
@@ -218,9 +216,6 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	echo "<li><a href='PC/reviewprefs.php'>Mark review preferences</a></li>\n";
     if ($Me->amReviewer())
 	echo "<li><a href='offline.php'>Offline reviewing</a></li>\n";
-    echo "</ul></td><td class='r'><ul class='compact'>\n";
-    if ($Me->privChair)
-	echo "<li><a href='Chair/AssignPapers.php'>PC review assignments and conflicts</a></li>\n";
     echo "</ul></td></tr></table>\n<div class='smgap'></div>\n";
     
     unset($plist);

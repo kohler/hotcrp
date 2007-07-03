@@ -225,7 +225,7 @@ function doAssign() {
 		if (!isset($assignments[$pid]))
 		    $assignments[$pid] = array();
 		$assignments[$pid][] = $pc;
-		$assignprefs["$pid:$pc"] = $pref;
+		$assignprefs["$pid:$pc"] = round($pref);
 		$papers[$pid]--;
 		$load[$pc]++;
 		break;
@@ -324,7 +324,13 @@ else if (isset($_REQUEST["saveassign"]) && isset($_REQUEST["a"]) && isset($_REQU
     saveAssign();
 
 
-$Conf->header("Automatic Assignments", "autoassign", actionBar());
+$abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
+$abar .= actionTab("Automatic", "autoassign.php", true);
+$abar .= actionTab("Manual", "Chair/AssignPapers.php", false);
+$abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper' nowrap='nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
+
+
+$Conf->header("Review Assignments", "autoassign", $abar);
 
 
 function doRadio($name, $value, $text) {

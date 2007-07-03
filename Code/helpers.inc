@@ -306,6 +306,15 @@ function contactText($firstName, $lastName = null, $email = null) {
     return $x;
 }
 
+function contactNameText($firstName, $lastName = null, $email = null) {
+    _cleanContactText($firstName, $lastName, $email);
+    if ($firstName || $lastName)
+	$x = trim("$firstName $lastName");
+    else
+	$x = $email;
+    return $x;
+}
+
 function contactHtml($firstName, $lastName = null, $email = null) {
     $h = htmlspecialchars(contactText($firstName, $lastName, $email));
     return preg_replace('|&lt;(\S+?)&gt;$|', '&lt;<a href="mailto:$1">$1</a>&gt;', $h);

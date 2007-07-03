@@ -838,6 +838,7 @@ table.pltable th, table.ppltable th, table.setreviewform th {
 	vertical-align: bottom;
 }
 .pl_title, .pl_reviewer, .pl_name, .pl_email, .pl_affiliation {
+	padding-left: 0.125em;
 	padding-right: 1em;
 }
 table.pltable th.pl_topicMatch {

@@ -148,6 +148,8 @@ if (count($tOpt) > 1) {
 
 if ($Me->privChair && $_REQUEST["t"] == "pc")
     $Conf->infoMsg("<p><a href='${ConfSiteBase}account.php?new=1&amp;pc=1' class='button'>Add PC member</a></p><p>Click on a PC member's name to edit their information or remove them from the PC.</p>");
+else if ($Me->privChair && $_REQUEST["t"] == "all")
+    $Conf->infoMsg("<p><a href='${ConfSiteBase}account.php?new=1' class='button'>Create account</a></p><p>Click on an account name to edit account information.  Click on <img src='${ConfSiteBase}images/viewas.png' /> to view the site as someone else.</p>");
 
 
 echo $pl_text;

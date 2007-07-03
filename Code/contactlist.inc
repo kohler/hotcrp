@@ -221,7 +221,7 @@ class ContactList extends BaseList {
 	    else if ($row->pc && $this->limit != "pc")
 		$t .= " <span class='pcrole'>(PC)</span>";
 	    if ($this->contact->privChair && $row->email != $this->contact->email)
-		$t .= " <a href=\"" . selfHref(array("viewContact" => $row->email)) . "\"><img src='${ConfSiteBase}images/viewas.png' title=\"Act as " . contactHtml($row->firstName, $row->lastName) . "\" /></a>";
+		$t .= " <a href=\"${ConfSiteBase}index.php?viewContact=" . urlencode($row->email) . "\"><img src='${ConfSiteBase}images/viewas.png' title=\"Act as " . htmlspecialchars(contactNameText($row)) . "\" /></a>";
 	    return $t;
 	case self::FIELD_EMAIL:
 	    if (!$this->contact->isPC)

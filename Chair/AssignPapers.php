@@ -20,7 +20,15 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && $kind == "c") {
 	    $_REQUEST["assrev$p"] = -1;
 }
 
-$Conf->header("PC Assignments", "assignpc");
+
+$abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
+$abar .= actionTab("Automatic", "../autoassign.php", false);
+$abar .= actionTab("Manual", "AssignPapers.php", true);
+$abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper' nowrap='nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
+
+
+$Conf->header("Review Assignments", "assignpc", $abar);
+
 
 $reviewer = cvtint($_REQUEST["reviewer"]);
 if ($reviewer < 0)
@@ -76,8 +84,6 @@ echo "<p>Select a program committee member and assign that person conflicts and
 papers to review.  Primary reviewers must review the paper themselves;
 secondary reviewers may delegate the paper or review it themselves.  You can
 also assign reviews and conflicts on the paper pages.</p>
-
-<p><b><a href='${ConfSiteBase}autoassign.php'>Assign papers automatically</a></b></p>
 
 <p>The paper list shows all submitted papers and their topics and reviewers.
 The selected PC member has high interest in <span class='topic2'>bold topics</span>, and low
