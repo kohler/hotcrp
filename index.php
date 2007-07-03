@@ -156,7 +156,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     echo $sep, "<a href='offline.php'>Offline reviewing</a>";
     if ($Me->isPC && $Conf->timePCReviewPreferences())
 	echo $thesep, "<a href='PC/reviewprefs.php'>Preferences</a>";
-    if ($Me->isPC && $Conf->timeReviewPaper(true, false, true))
+    if ($Me->privChair || ($Me->isPC && $Conf->timeReviewPaper(true, false, true)))
 	echo $thesep, "<a href='search.php?q=&amp;t=s'>Review any paper</a>";
     if ($Me->isRequester)
 	echo $thesep, "<a href='PC/CheckReviewStatus.php'>Monitor external reviews</a>";
