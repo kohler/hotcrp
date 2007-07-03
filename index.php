@@ -34,10 +34,14 @@ if ($Me->privChair) {
 }
 
 
+echo "<table class='homegrp'>";
+
+
 // Submissions
 $papersub = $Conf->setting("papersub");
-if ($Me->privChair || ($Me->isPC && $papersub) || ($Me->amReviewer() && $papersub)) {
-    echo "<table id='homelist' class='homegrp'><tr><td>";
+$homelist = ($Me->privChair || ($Me->isPC && $papersub) || ($Me->amReviewer() && $papersub));
+if ($homelist) {
+    echo "<tr><td><table id='homelist' class='homegrp'><tr><td>";
 
     // Lists
     echo "<strong>List papers: &nbsp;</strong> ";
@@ -67,31 +71,29 @@ if ($Me->privChair || ($Me->isPC && $papersub) || ($Me->amReviewer() && $papersu
     echo "</td></tr><tr><td id='homesearch'>";
     echo "<form method='get' action='search.php'><input class='textlite' type='text' size='32' name='q' value='' /> &nbsp;<input class='button_small' type='submit' value='Search' /></form>\n";
     echo "<span class='sep'></span><small><a href='search.php?opt=1'>Advanced search</a></small>";
-    echo "</td></tr></table>\n";
-    echo "<hr class='home' />\n";
+    echo "</td></tr></table><hr class='home' /></td></tr>\n";
 }
 
 
 // Conference management
 if ($Me->privChair) {
-    echo "<div id='homemgmt' class='homegrp'><table><tr><td>";
+    echo "<tr><td>";
     
     // Lists
-    echo "<strong>Conference management: &nbsp;</strong> </td>";
-    echo "<td><a href='settings.php'>Settings</a>";
+    echo "<strong>Conference management: &nbsp;</strong> ";
+    echo "<a href='settings.php'>Settings</a>";
     echo $thesep, "<a href='contacts.php?t=all'>Accounts</a>";
     echo $thesep, "<a href='autoassign.php'>Review assignments</a>";
     echo $thesep, "<a href='mail.php'>Mail users</a>";
     echo $thesep, "<a href='Chair/ViewActionLog.php'>Action log</a>";
 
-    echo "</td></tr></table></div>\n";
-    echo "<hr class='home' />\n";
+    echo "<hr class='home' /></td></tr>\n";
 }
 
 
 // Review assignment
 if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
-    echo "<div id='homerev' class='homegrp'><table><tr><td>";
+    echo "<tr><td>";
     
     // Overview
     echo "<strong>Reviewing: &nbsp;</strong> ";
@@ -168,15 +170,14 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    echo "<div class='smgap extension'>", $ptext, "</div>";
     }
 
-    echo "</td></tr></table></div>\n";
-    echo "<hr class='home' />\n";
+    echo "<hr class='home' /></td></tr>\n";
 }
 
 
 // Authored papers
 if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
     || !$Me->amReviewer()) {
-    echo "<div id='homeau' class='homegrp'><table><tr><td>";
+    echo "<tr><td>";
 
     // Overview
     echo "<strong>My Papers: &nbsp;</strong> ";
@@ -219,24 +220,22 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 	    "</span>";
     }
 
-    echo "</td></tr></table></div>\n";
-    echo "<hr class='home' />\n";
+    echo "<hr class='home' /></td></tr>\n";
 }
 
 
 // Profile
-echo "<div id='homeprofile' class='homegrp'><table><tr><td>";
+echo "<tr><td>";
 echo "<strong>My Account: &nbsp;</strong> ";
 echo "<a href='account.php'>Profile</a>";
 echo $thesep, "<a href='mergeaccounts.php'>Merge accounts</a>";
 echo $thesep, "Welcome, ", contactNameHtml($Me), ".  (If this isn't you, please <a href='${ConfSiteBase}logout.php'>sign out</a>.)";
 // echo "You will be signed out automatically if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.";
-echo "</td></tr></table></div>\n";
-echo "<hr class='home' />\n";
+echo "<hr class='home' /></td></tr>\n";
 
 
 // Conference info
-echo "<div id='homeprofile' class='homegrp'><table><tr><td>";
+echo "<tr><td>";
 echo "<strong>Conference information: &nbsp;</strong> ";
 // Any deadlines set?
 $sep = "";
@@ -250,9 +249,9 @@ if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting(
 echo $sep, "<a href='contacts.php?t=pc'>Program committee members</a>";
 if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
     echo $thesep, "<a href='", $Opt['conferenceSite'], "'>Main conference site</a>";
-echo "</td></tr></table></div>\n";
-echo "<hr class='home' />\n";
+echo "<hr class='home' /></td></tr>\n";
 
 
+echo "</table>\n";
 unset($_SESSION["list"]);
 $Conf->footer();

@@ -372,25 +372,17 @@ table.center {
 	margin-left: auto;
 	margin-right: auto;
 }
-table.homegrp td.minwidth {
-	width: 70%;
-	padding: 0px;
-	margin: 0px;
-}
-div.homegrp {
-	margin: 0.8em 0em;
-	float: right;
-	min-width: 85%;
+table.homegrp {
+	margin: 0.8em auto 0em auto;
 }
 table#homelist {
-	margin: 0.8em auto;
-	float: none;
+	margin: 0em auto;
 }
 td#homesearch, body#home td#foldre {
 	padding-top: .75em;
 }
 hr.home {
-	margin: 0em 10%;
+	margin: 0.8em 0px;
 	border: none;
 	border-top: 1px solid #d8deff;
 	clear: both;
