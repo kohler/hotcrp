@@ -382,7 +382,7 @@ td#homesearch, body#home td#foldre {
 	padding-top: .75em;
 }
 hr.home {
-	margin: 0.8em 0px;
+	margin: 0.8em -24px 0.8em 0px;
 	border: none;
 	border-top: 1px solid #d8deff;
 	clear: both;
