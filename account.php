@@ -173,7 +173,10 @@ if (!$newProfile) {
 }
 
 
-$Conf->header($newProfile ? "Create Account" : "Profile", "account", actionBar());
+if ($newProfile)
+    $Conf->header("Create Account", "account", actionBar());
+else
+    $Conf->header($Me->contactId == $Acct->contactId ? "My Profile" : "Account Profile", "account", actionBar());
 
 
 if (isset($UpdateError))
