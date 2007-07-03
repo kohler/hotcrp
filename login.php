@@ -121,7 +121,6 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["action"]) && isset($_REQUEST["
 setcookie("CRPTestCookie", true);
 
 $Conf->header("Sign in", 'login');
-$Conf->expandBody();
 
 ?>
 
@@ -146,7 +145,7 @@ $Conf->expandBody();
   <input type='radio' name='action' value='forgot' tabindex='2' />&nbsp;I forgot my password, email it to me</td>
 </tr>
 
-<tr><td class='caption'></td>
+<tr class='last'><td class='caption'></td>
   <td class='entry' colspan='2'><input class='button_default' type='submit' value='Sign in' name='signin' tabindex='1' /></td>
 </tr>
 

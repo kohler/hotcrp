@@ -320,6 +320,11 @@ function contactHtml($firstName, $lastName = null, $email = null) {
     return preg_replace('|&lt;(\S+?)&gt;$|', '&lt;<a href="mailto:$1">$1</a>&gt;', $h);
 }
 
+function contactNameHtml($firstName, $lastName = null, $email = null) {
+    $h = htmlspecialchars(contactNameText($firstName, $lastName, $email));
+    return preg_replace('|&lt;(\S+?)&gt;$|', '&lt;<a href="mailto:$1">$1</a>&gt;', $h);
+}
+
 function contactEmailTo($firstName, $lastName = null, $email = null) {
     _cleanContactText($firstName, $lastName, $email);
     if ($firstName || $lastName) {

@@ -20,7 +20,6 @@ class Conference {
     var $headerPrinted;
     var $tableMessages;
     var $tableMessagesObj;
-    var $bodyexpander;
 
     // Useful colors
     var $contrastColorOne = "#eeeeee";
@@ -31,7 +30,7 @@ class Conference {
 
 	$this->saveMessages = true;
 	$this->headerPrinted = 0;
-	$this->tableMessages = $this->bodyexpander = false;
+	$this->tableMessages = false;
 	
 	$this->contactName = $Opt['contactName'];
 	$this->contactEmail = $Opt['contactEmail'];
@@ -1042,7 +1041,10 @@ class Conference {
 	$this->header_head($title);
 	$time = time();
 	// JavaScript's idea of a timezone offset is the negative of PHP's
-	echo "</head><body onload='hotcrpLoad($time, ", -date("Z", $time) / 60, ")'>\n";
+	echo "</head><body";
+	if ($id)
+	    echo " id='$id'";
+	echo "onload='hotcrpLoad($time, ", -date("Z", $time) / 60, ")'>\n";
 	echo "<div id='header'>\n";
 	echo "  <div id='header_left'><h1>";
 	if ($title && $showTitle && $title == "Home")
@@ -1067,12 +1069,11 @@ class Conference {
 	echo date("l j M Y g:i:sa T", $time), "<br /><span id='usertime'></span></div>\n";
 	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", $this->shortName, " Public Site</a></div>\n";
 	
-	$id = ($id ? " id='$id'" : "");
 	print "  <div class='clear'></div>\n</div>";
 
 	print $actionBar;
 
-	print "<div class='body'$id>\n";
+	print "<div class='body'>\n";
 	
 	if (isset($_SESSION["msgs"])) {
 	    foreach ($_SESSION["msgs"] as $m)
@@ -1084,13 +1085,6 @@ class Conference {
 	$this->headerPrinted = 2;
     }
 
-    function expandBody() {
-	if (!$this->bodyexpander) {
-	    print "<div class='bodyexpander'>";
-	    $this->bodyexpander = true;
-	}
-    }
-
     function footer() {
 	global $ConfSiteBase;
 
@@ -1099,8 +1093,6 @@ class Conference {
 	    if ($this->tableMessagesObj)
 		$this->tableMessagesObj->echoDivExit();
 	}
-	if ($this->bodyexpander)
-	    echo "</div>";
 	echo "</div>\n"; // <div class='body'>
 	echo "<div id='footer'>\n";
 	echo "  <div id='footer_crp'><a href='http://www.cs.ucla.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software</div>\n";

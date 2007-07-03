@@ -22,7 +22,6 @@ function confHeader() {
     if ($mode == "edit")
 	$title = "Edit $title";
     $Conf->header($title, "paper_" . $mode, actionBar($prow, $newPaper, $mode), false);
-    $Conf->expandBody();
 }
 
 function errorMsgExit($msg) {

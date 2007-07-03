@@ -5,8 +5,7 @@ $Me->goIfInvalid();
 $Me->goIfNotPrivChair('index.php');
 $rf = reviewForm();
 
-$Conf->header("Send Mail");
-$Conf->expandBody();
+$Conf->header("Send Mail", "mail");
 
 echo "<form method='post' action='Chair/SendMail2.php' enctype='multipart/form-data'>
 <table class='form'>

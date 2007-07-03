@@ -28,6 +28,7 @@ class Contact {
     const ROLE_CHAIR = 4;
     var $isAuthor;
     var $isReviewer;
+    var $isRequester;
     var $roles;
     var $isPC;
     var $privChair;
@@ -47,6 +48,7 @@ class Contact {
 	if (!$this->validated && $this->contactId > 0) {
 	    $result = $conf->q("select max(conflictType),
 			PaperReview.contactId as reviewer,
+			count(ExtPaperReview.requestedBy) as requester,
 			PCMember.contactId as pcMember,
 			ChairAssistant.contactId as assistant,
 			Chair.contactId as chair,
@@ -57,25 +59,28 @@ class Contact {
 		left join PCMember using (contactId)
 		left join ChairAssistant using (contactId)
 		left join Chair using (contactId)
+		left join PaperReview as ExtPaperReview on (ExtPaperReview.requestedBy=ContactInfo.contactId)
 		where ContactInfo.contactId=$this->contactId
 		group by ContactInfo.contactId");
 	    if (edb_nrows($result) == 0)
 		$this->invalidate();
 	    else {
 		$this->roles = 0;
-		$this->isAuthor = $this->isReviewer = $this->isPC = $this->privChair = $this->reviewsOutstanding = false;
+		$this->isAuthor = $this->isReviewer = $this->isRequester = $this->isPC = $this->privChair = $this->reviewsOutstanding = false;
 		while (($row = edb_row($result))) {
 		    if ($row[0] == CONFLICT_AUTHOR)
 			$this->isAuthor = true;
 		    if ($row[1] > 0)
 			$this->isReviewer = true;
 		    if ($row[2] > 0)
-			$this->roles |= self::ROLE_PC;
+			$this->isRequester = true;
 		    if ($row[3] > 0)
-			$this->roles |= self::ROLE_ASSISTANT;
+			$this->roles |= self::ROLE_PC;
 		    if ($row[4] > 0)
-			$this->roles |= self::ROLE_CHAIR;
+			$this->roles |= self::ROLE_ASSISTANT;
 		    if ($row[5] > 0)
+			$this->roles |= self::ROLE_CHAIR;
+		    if ($row[6] > 0)
 			$this->reviewsOutstanding = true;
 		}
 		$this->isPC = ($this->roles & (self::ROLE_PC | self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
@@ -822,7 +827,7 @@ class Contact {
 	    $x = "<span class='pstat pstat_with'>Withdrawn</span>";
 	    return $x . ($long > 0 ? " at " . $conf->printableTime($row->timeWithdrawn) : '');
 	} else if ($row->timeSubmitted <= 0 && $row->paperStorageId == 1) {
-	    return "<span class='pstat pstat_noup'>Not yet uploaded</span>";
+	    return "<span class='pstat pstat_noup'>In progress</span>";
 	} else if (isset($row->outcome) && $row->outcome != 0 && $this->canViewDecision($row, $conf)) {
 	    $rf = reviewForm();
 	    $x =& $rf->options['outcome'][$row->outcome];
@@ -845,7 +850,7 @@ class Contact {
 		if ($long > 0)
 		    $x .= " at " . $conf->printableTime($row->timeSubmitted);
 	    } else {
-		$x = "<span class='pstat pstat_prog'>Registered</span>";
+		$x = "<span class='pstat pstat_prog'>In progress</span>";
 		if ($long > 0)
 		    $x .= "updated at " . $conf->printableTime($row->timestamp);
 	    }

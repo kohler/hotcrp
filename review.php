@@ -21,7 +21,6 @@ function confHeader() {
     else
 	$title = "Paper Reviews";
     $Conf->header($title, "review", actionBar($prow, false, "review"), false);
-    $Conf->expandBody();
 }
 
 function errorMsgExit($msg) {

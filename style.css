@@ -114,13 +114,16 @@ a.q {
 
 /* body */
 div.body {
-	padding: 2px 8px;
+	margin: 2px 8px;
 	background-color: white;
 	position: relative;
 	z-index: 3;
 }
-div.bodyexpander {
-	margin: -2px -8px;
+body#contactauthors div.body, body#comment div.body, body#login div.body,
+body#assign div.body, body#review div.body, body#mail div.body,
+body#account div.body, body#paper_edit div.body, body#paper_view div.body,
+body#autoassign div.body {
+	margin: 0px 0px;
 }
 
 
@@ -166,13 +169,8 @@ div.info, div.warning, div.confirm, div.error {
 	background: #eeeeff url(images/info45.png) 10px 10px no-repeat;
 	padding: 0.5em 0.5em 0.5em 65px;
 	border: 1px solid #ccccee;
-	margin-top: 0.5em;
-	margin-bottom: 0.5em;
+	margin: 0.5em 8px;
 	min-height: 45px;
-}
-div.bodyexpander>div.info, div.bodyexpander>div.warning, div.bodyexpander>div.confirm, div.bodyexpander>div.error {
-	margin-left: 8px;
-	margin-right: 8px;
 }
 div.help {
 	padding: 0.5em 0.5em 0.5em 0.5em;
@@ -374,8 +372,31 @@ table.center {
 	margin-left: auto;
 	margin-right: auto;
 }
-#mainsearch {
+table.homegrp td.minwidth {
+	width: 70%;
+	padding: 0px;
+	margin: 0px;
+}
+div.homegrp {
+	margin: 0.8em 0em;
+	float: right;
+	min-width: 85%;
+}
+table#homelist {
+	margin: 0.8em auto;
+	float: none;
+}
+td#homesearch, body#home td#foldre {
 	padding-top: .75em;
+}
+hr.home {
+	margin: 0em 10%;
+	border: none;
+	border-top: 1px solid #d8deff;
+	clear: both;
+}
+span.deadline {
+	font-style: italic;
 }
 
 /* gopaper form */
@@ -561,7 +582,7 @@ tr.last td.caption {
 	border-bottom: 1px solid #9999cc;
 }
 tr.last td.entry {
-	padding: 0px;
+	padding: 0px 1em 0px 0.5em;
 }
 td.leftentry {
 	width: 15em;
@@ -701,8 +722,11 @@ tr.pt_abstract td.entry {
 tr.pt_paper input {
 	margin-top: 4px;
 }
-div#paper_reviews span.pstat, tr.pt_status span.pstat {
+tr.pt_status span.pstat {
 	margin-right: 1em;
+}
+span.pstat {
+	white-space: nowrap;
 }
 pre.entryexample {
 	padding: 0.5em;
@@ -956,11 +980,6 @@ hr.smgap {
 	margin: 0.25em 0em;
 	border: 0px none;
 }
-hr.main {
-	margin: 0.75em 10%;
-	border: none;
-	border-top: 1px solid #d8deff;
-}
 table.review input#downloadForm {
 	margin-right: 3em;
 }
@@ -979,7 +998,7 @@ div#review table.auview {
 	margin-bottom: 0.75em;
 }
 
-div#assignpc div.topicinterest {
+body#assignpc div.topicinterest {
 	margin-left: 3em;
 }
 
@@ -1084,7 +1103,7 @@ div.scoredialog {
 	z-index: 4;
 }
 
-div#offrev td#upload {
+body#offrev td#upload {
 	padding-left: 3em;
 }
 
@@ -1118,16 +1137,6 @@ span.sc5, span.sc6, span.sc7, span.sc8, span.sc9, span.sc10 {
 }
 span.sc_sum {
 	font-size: x-small;
-}
-
-table.advsearch {
-	margin: 0px auto;
-	text-align: left;
-}
-table.advsearch tr td.advsearch {
-	background: #f0f9fd;
-	margin: 1ex 0em;
-	padding: 3px 5px;
 }
 
 p.page {

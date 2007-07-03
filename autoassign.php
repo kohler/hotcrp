@@ -532,6 +532,8 @@ if (!isset($assignments) || count($assignments) == 0) {
     echo "</td></tr>\n";
 }
 
+echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n";
+
 echo "</table>\n";
 
 echo "</form>";

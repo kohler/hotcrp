@@ -173,8 +173,7 @@ if (!$newProfile) {
 }
 
 
-$Conf->header($newProfile ? "Create Account" : "Account Settings", "account", actionBar());
-$Conf->expandBody();
+$Conf->header($newProfile ? "Create Account" : "Profile", "account", actionBar());
 
 
 if (isset($UpdateError))

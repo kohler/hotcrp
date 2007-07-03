@@ -23,7 +23,8 @@ if ($Me->privChair && $Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
     $Conf->warnMsg("The systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP's preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users will likely be booted off the system earlier than you expect.");
 
 
-$Conf->header("Home", "", actionBar(null, false, ""));
+$Conf->header("Home", "home", actionBar(null, false, ""));
+$thesep = " &nbsp;|&nbsp; ";
 
 
 // if chair, check PHP setup
@@ -36,47 +37,63 @@ if ($Me->privChair) {
 // Submissions
 $papersub = $Conf->setting("papersub");
 if ($Me->privChair || ($Me->isPC && $papersub) || ($Me->amReviewer() && $papersub)) {
-    echo "<hr class='smgap' />\n";
-    echo "<table id='mainsub' class='center'><tr><td id='mainlist'>";
+    echo "<table id='homelist' class='homegrp'><tr><td>";
 
     // Lists
     echo "<strong>List papers: &nbsp;</strong> ";
     $sep = "";
     if ($Me->isReviewer) {
 	echo $sep, "<a href='search.php?q=&amp;t=r' class='nowrap'>Your review assignment</a>";
-	$sep = " &nbsp;|&nbsp; ";
+	$sep = $thesep;
     }
     if ($Me->isPC && $Conf->timePCViewAllReviews()
 	&& $Me->amDiscussionLead(0, $Conf)) {
 	echo $sep, "<a href=\"search.php?q=lead:", urlencode($Me->email), "&amp;t=s\" class='nowrap'>Your discussion lead</a>";
-	$sep = " &nbsp;|&nbsp; ";
+	$sep = $thesep;
     }
     if ($Me->isPC && $papersub) {
 	echo $sep, "<a href='search.php?q=&amp;t=s' class='nowrap'>Submitted</a>";
-	$sep = " &nbsp;|&nbsp; ";
+	$sep = $thesep;
     }
     if ($Me->canViewDecision(null, $Conf) && $papersub) {
 	echo $sep, "<a href='search.php?q=&amp;t=acc' class='nowrap'>Accepted</a>";
-	$sep = " &nbsp;|&nbsp; ";
+	$sep = $thesep;
     }
     if ($Me->privChair) {
 	echo $sep, "<a href='search.php?q=&amp;t=all' class='nowrap'>All</a>";
-	$sep = " &nbsp;|&nbsp; ";
+	$sep = $thesep;
     }
 
-    echo "</td></tr><tr><td id='mainsearch'>";
+    echo "</td></tr><tr><td id='homesearch'>";
     echo "<form method='get' action='search.php'><input class='textlite' type='text' size='32' name='q' value='' /> &nbsp;<input class='button_small' type='submit' value='Search' /></form>\n";
     echo "<span class='sep'></span><small><a href='search.php?opt=1'>Advanced search</a></small>";
     echo "</td></tr></table>\n";
-    echo "<hr class='main' />\n";
+    echo "<hr class='home' />\n";
+}
+
+
+// Conference management
+if ($Me->privChair) {
+    echo "<div id='homemgmt' class='homegrp'><table><tr><td>";
+    
+    // Lists
+    echo "<strong>Conference management: &nbsp;</strong> </td>";
+    echo "<td><a href='settings.php'>Settings</a>";
+    echo $thesep, "<a href='contacts.php?t=all'>Accounts</a>";
+    echo $thesep, "<a href='autoassign.php'>Review assignments</a>";
+    echo $thesep, "<a href='mail.php'>Mail users</a>";
+    echo $thesep, "<a href='Chair/ViewActionLog.php'>Action log</a>";
+
+    echo "</td></tr></table></div>\n";
+    echo "<hr class='home' />\n";
 }
 
 
 // Review assignment
 if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
-    echo "<table id='mainsub' class='center'><tr><td id='mainrev'>";
+    echo "<div id='homerev' class='homegrp'><table><tr><td>";
     
-    // Lists
+    // Overview
     echo "<strong>Reviewing: &nbsp;</strong> ";
     $result = $Conf->qe("select PaperReview.contactId, count(reviewSubmitted), count(reviewNeedsSubmit), group_concat(overAllMerit), PCMember.contactId as pc from PaperReview join Paper using (paperId) left join PCMember on (PaperReview.contactId=PCMember.contactId) where Paper.timeSubmitted>0 group by PaperReview.contactId", "while fetching review status");
     $rf = reviewForm();
@@ -101,182 +118,140 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	if (in_array("overAllMerit", $rf->fieldOrder) && $myrow[1])
 	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", sprintf("%.2f", $myrow[3]->avg);
 	echo ".<br />";
+    }
+    if ($myrow || $Me->privChair) {
 	echo sprintf("The average PC member has submitted %.1f reviews", $sumpcSubmit / $npc);
 	if (in_array("overAllMerit", $rf->fieldOrder) && $npcScore)
 	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", sprintf("%.2f", $sumpcScore / $npcScore);
 	echo ".";
 	if ($Me->isPC || $Me->privChair)
-	    echo "&nbsp; <small>(<a href='contacts.php?t=pc&amp;score%5B%5D=0'>Details</a>)</small>";
+	    echo "&nbsp; <small>(<a href='contacts.php?t=pc&amp;score%5B%5D=0'>Details</a>)</small><br />";
+    }
+    if ($myrow && $myrow[1] < $myrow[2]) {
+	$rtyp = ($Me->isPC ? "pcrev_" : "extrev_");
+	if (!$Conf->timeReviewPaper($Me->isPC, true, true))
+	    echo "<span class='deadline'>The <a href='deadlines.php'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span>";
+	else if (!$Conf->timeReviewPaper($Me->isPC, true, false))
+	    echo "<span class='deadline'><strong class='overdue'>Reviews are overdue.</strong>  They were requested by " . $Conf->printableTimeSetting("${rtyp}soft") . ".</span>";
+	else {
+	    $d = $Conf->printableTimeSetting("${rtyp}soft");
+	    if ($d != "N/A")
+		echo "<span class='deadline'>Please submit your reviews by $d.</span>";
+	}
+    } else if ($Me->isPC && $Conf->timeReviewPaper(true, false, true)) {
+	$d = $Conf->printableTimeSetting("${rtyp}soft");
+	if ($d != "N/A")
+	    echo "<span class='deadline'>The review deadline is $d.</span>";
     }
 
-    echo "</td></tr></table>\n";
-    echo "<hr class='main' />\n";
-}
+    if ($myrow || $Me->privChair)
+	echo "</td></tr>\n<tr><td id='foldre' class='foldc'>";
 
-
-// Conference management
-if ($Me->privChair) {
-    echo "<table id='mainmgmt' class='center'><tr><td id='mainrev'>";
+    // Actions
+    $sep = "";
+    if ($myrow) {
+	echo $sep, "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;<a href=\"javascript:fold('re', null)\" class='q'><strong>Review assignment</strong></a>";
+	$sep = $thesep;
+    }
+    echo $sep, "<a href='offline.php'>Offline reviewing</a>";
+    if ($Me->isPC && $Conf->timePCReviewPreferences())
+	echo $thesep, "<a href='PC/reviewprefs.php'>Preferences</a>";
+    if ($Me->isPC && $Conf->timeReviewPaper(true, false, true))
+	echo $thesep, "<a href='search.php?q=&amp;t=s'>Review any paper</a>";
+    if ($Me->isRequester)
+	echo $thesep, "<a href='PC/CheckReviewStatus.php'>Monitor external reviews</a>";
     
-    // Lists
-    echo "<strong>Conference management: &nbsp;</strong> </td>";
-    echo "<td><a href='settings.php'>Settings</a>";
-    echo " &nbsp;|&nbsp; <a href='contacts.php?t=all'>Accounts</a>";
-    echo " &nbsp;|&nbsp; <a href='autoassign.php'>Review assignments</a>";
-    echo " &nbsp;|&nbsp; <a href='mail.php'>Mail users</a>";
-    echo " &nbsp;|&nbsp; <a href='Chair/ViewActionLog.php'>Action log</a>";
+    if ($Me->isReviewer) {
+	$plist = new PaperList(false, "listre", new PaperSearch($Me, array("t" => "r")));
+	$ptext = $plist->text("reviewerHome", $Me);
+	if ($plist->count > 0)
+	    echo "<div class='smgap extension'>", $ptext, "</div>";
+    }
 
-    echo "</td></tr></table>\n";
-    echo "<hr class='main' />\n";
+    echo "</td></tr></table></div>\n";
+    echo "<hr class='home' />\n";
 }
-
-
-echo "<table class='half'><tr><td class='l'>";
-
-
-// General information
-echo "<div class='bgrp'><div class='bgrp_head'>General</div><div class='bgrp_body'>
-Welcome, ", contactHtml($Me, null, ""), ".  (If this isn't you, please <a href='${ConfSiteBase}logout.php'>sign out</a>.)  You will be automatically signed out if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.\n";
-
-echo "<table class='half'><tr><td class='l'><ul class='compact'>
-<li><a href='account.php'>Your account settings</a></li>
-<li><a href='mergeaccounts.php'>Merge accounts</a></li>
-</ul></td><td class='r'><ul class='compact'>\n";
-
-// Any deadlines set?
-if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting('sub_sub')
-    || ($Me->isAuthor && $Conf->setting('resp_open') > 0 && $Conf->setting('resp_done'))
-    || ($Me->isPC && $Conf->setting('rev_open') && $Conf->setting('pcrev_hard'))
-    || ($Me->amReviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard')))
-    echo "<li><a href='deadlines.php'>Deadlines</a></li>\n";
-
-echo "<li><a href='contacts.php?t=pc'>List program committee</a></li>\n";
-
-echo "</ul></td></tr></table>";
-echo "</div></div>\n";
-
-
-echo "</td><td class='r'>";
 
 
 // Authored papers
-if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair) {
-    echo "<div class='bgrp'><div class='bgrp_head'>Authored papers</div><div class='bgrp_body'>\n";
-    $sep = "";
+if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
+    || !$Me->amReviewer()) {
+    echo "<div id='homeau' class='homegrp'><table><tr><td>";
+
+    // Overview
+    echo "<strong>My Papers: &nbsp;</strong> ";
 
     $startable = $Conf->timeStartPaper();
     if ($startable || $Me->privChair) {
-	echo $sep, "<div><strong><a href='paper.php?paperId=new'>Start new paper</a></strong> <span class='deadline'>(" . $Conf->printableDeadlineSetting('sub_reg') . ")</span>";
+	echo "<strong><a href='paper.php?paperId=new'>Start new paper</a></strong> <span class='deadline'>(" . $Conf->printableDeadlineSetting('sub_reg') . ")</span>";
 	if ($Me->privChair)
-	    echo "<br/>\n<small>As an administrator, you can start papers regardless of deadlines and on other people's behalf.</small>";
-	echo "</div>\n";
-	$sep = "<div class='smgap'></div>";
+	    echo "<br />\n<small>As an administrator, you can start papers regardless of deadlines and on other people's behalf.</small>";
     }
 
+    $plist = null;
     if ($Me->isAuthor) {
 	$plist = new PaperList(false, "listau", new PaperSearch($Me, array("t" => "a")));
 	$plist->showHeader = 0;
 	$ptext = $plist->text("authorHome", $Me);
-	$deadlines = array();
-	if ($plist->count > 0) {
-	    echo $sep, $ptext;
-	    $sep = "<div class='smgap'></div>";
-	}
-	if ($plist->needFinalize > 0) {
-	    if (!$Conf->timeFinalizePaper())
-		$deadlines[] = "The <a href='deadlines.php'>deadline</a> for submitting papers in progress has passed.";
-	    else if (!$Conf->timeUpdatePaper()) {
-		$deadlines[] = "The <a href='deadlines.php'>deadline</a> for updating papers in progress has passed, but you can still submit.";
-		$time = $Conf->printableTimeSetting('sub_sub');
-		if ($time != 'N/A')
-		    $deadlines[] = "You have until $time to submit any papers in progress.";
-	    } else if (($time = $Conf->printableTimeSetting('sub_update')) != 'N/A')
-		$deadlines[] = "You have until $time to submit any papers in progress.";
-	}
-	if (!$startable && !$Conf->timeAuthorViewReviews())
-	    $deadlines[] = "The <a href='deadlines.php'>deadline</a> for starting new papers has passed.";
-	if (count($deadlines) > 0)
-	    echo $sep, join("<br/>", $deadlines);
+	if ($plist->count > 0)
+	    echo "<div class='smgap'></div>\n", $ptext;
     }
 
-    echo "</div></div>\n";
-}
-
-
-// Review assignment
-if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
-    echo "<div class='bgrp foldc' id='foldre'><div class='bgrp_head'>";
-    if ($Me->isReviewer)
-	echo "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;";
-    echo "Review assignments</div><div class='bgrp_body'>\n";
-    $sep = "";
-
-    echo "<table class='half'><tr><td class='l'><ul class='compact'>\n";
-    if ($Me->isPC && $Conf->timePCReviewPreferences())
-	echo "<li><a href='PC/reviewprefs.php'>Mark review preferences</a></li>\n";
-    if ($Me->amReviewer())
-	echo "<li><a href='offline.php'>Offline reviewing</a></li>\n";
-    echo "</ul></td></tr></table>\n<div class='smgap'></div>\n";
-    
-    unset($plist);
-    if ($Me->isReviewer) {
-	$plist = new PaperList(false, "listre", new PaperSearch($Me, array("t" => "r")));
-	$ptext = $plist->text("reviewerHome", $Me);
-    }
-    
     $deadlines = array();
-    $rtyp = ($Me->isPC ? "pcrev_" : "extrev_");
-    unset($d);
-    if ($Me->isPC && $Conf->timeReviewPaper(true, false, true))
-	$deadlines[] = "PC members may review <a href='search.php?q=&amp;t=s'>any submitted paper</a>, whether or not a review has been assigned.";
-    if ((isset($plist) && $plist->needSubmitReview == 0) || !$Me->isReviewer)
-	/* do nothing */;
-    else if (!$Conf->timeReviewPaper($Me->isPC, true, true))
-	$deadlines[] = "The <a href='deadlines.php'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.";
-    else if (!$Conf->timeReviewPaper($Me->isPC, true, false))
-	$deadlines[] = "Reviews were requested by " . $Conf->printableTimeSetting("${rtyp}soft") . ".";
-    else {
-	$d = $Conf->printableTimeSetting("${rtyp}soft");
-	if ($d != "N/A")
-	    $deadlines[] = "Please submit your reviews by $d.";
+    if ($plist && $plist->needFinalize > 0) {
+	if (!$Conf->timeFinalizePaper())
+	    $deadlines[] = "The <a href='deadlines.php'>deadline</a> for submitting papers has passed.";
+	else if (!$Conf->timeUpdatePaper()) {
+	    $deadlines[] = "The <a href='deadlines.php'>deadline</a> for updating papers has passed, but you can still submit.";
+	    $time = $Conf->printableTimeSetting('sub_sub');
+	    if ($time != 'N/A')
+		$deadlines[] = "You have until $time to submit papers.";
+	} else if (($time = $Conf->printableTimeSetting('sub_update')) != 'N/A')
+	    $deadlines[] = "You have until $time to submit papers.";
     }
-    if ($Me->isPC && $Conf->timeReviewPaper(true, false, true)) {
-	$d = (isset($d) ? "N/A" : $Conf->printableTimeSetting("pcrev_soft"));
-	if ($d != "N/A")
-	    $deadlines[] = "Please submit your reviews by $d.";
-    }
+    if (!$startable && !$Conf->timeAuthorViewReviews() && !count($deadlines))
+	$deadlines[] = "The <a href='deadlines.php'>deadline</a> for registering new papers has passed.";
     if (count($deadlines) > 0) {
-	echo $sep, join("<br />", $deadlines);
-	$sep = "<div class='smgap'></div>";
+	if ($plist && $plist->count > 0)
+	    echo "<div class='smgap'></div>";
+	echo "<span class='deadline'>",
+	    join("</span><br />\n<span class='deadline'>", $deadlines),
+	    "</span>";
     }
 
-    if (isset($plist) && $plist->count > 0) {
-	echo "<div class='smgap extension'>", $ptext, "</div>";
-	$sep = "<div class='smgap'></div>";
-    }
-
-    echo "</div></div>\n";
+    echo "</td></tr></table></div>\n";
+    echo "<hr class='home' />\n";
 }
 
 
-// PC tasks (old CRP)
-if ($Me->isPC) {
-    echo "<div class='bgrp foldc' id='foldpc'><div class='bgrp_head'><a href=\"javascript:fold('pc', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('pc', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;PC member tasks (old CRP)</div><div class='bgrp_body extension'>\n";
-
-    echo "<ul>
-<li>Reviewer assignments  (asking others to review papers)
-  <ul>
-  <li><a href='PC/CheckReviewStatus.php'>Check on reviewer progress</a> (and possibly nag reviewers)</li>
-  </ul></li>\n";
-
-    if ($Me->privChair && isset($Opt['dbDumpDir']))
-	echo "<li><a href='Chair/DumpDatabase.php'>Make a backup of the database</a></li>\n";
-
-    echo "</ul></div></div>\n";
-}    
+// Profile
+echo "<div id='homeprofile' class='homegrp'><table><tr><td>";
+echo "<strong>My Account: &nbsp;</strong> ";
+echo "<a href='account.php'>Profile</a>";
+echo $thesep, "<a href='mergeaccounts.php'>Merge accounts</a>";
+echo $thesep, "Welcome, ", contactNameHtml($Me), ".  (If this isn't you, please <a href='${ConfSiteBase}logout.php'>sign out</a>.)";
+// echo "You will be signed out automatically if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.";
+echo "</td></tr></table></div>\n";
+echo "<hr class='home' />\n";
 
 
-echo "</td></tr></table>\n";
+// Conference info
+echo "<div id='homeprofile' class='homegrp'><table><tr><td>";
+echo "<strong>Conference information: &nbsp;</strong> ";
+// Any deadlines set?
+$sep = "";
+if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting('sub_sub')
+    || ($Me->isAuthor && $Conf->setting('resp_open') > 0 && $Conf->setting('resp_done'))
+    || ($Me->isPC && $Conf->setting('rev_open') && $Conf->setting('pcrev_hard'))
+    || ($Me->amReviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard'))) {
+    echo $sep, "<a href='deadlines.php'>Deadlines</a>";
+    $sep = $thesep;
+}
+echo $sep, "<a href='contacts.php?t=pc'>Program committee members</a>";
+if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
+    echo $thesep, "<a href='", $Opt['conferenceSite'], "'>Main conference site</a>";
+echo "</td></tr></table></div>\n";
+echo "<hr class='home' />\n";
 
 
 unset($_SESSION["list"]);

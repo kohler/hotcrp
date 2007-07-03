@@ -20,7 +20,6 @@ function confHeader() {
     else
 	$title = "Paper Comments";
     $Conf->header($title, "comment", actionBar($prow, false, "comment"), false);
-    $Conf->expandBody();
 }
 
 function errorMsgExit($msg) {

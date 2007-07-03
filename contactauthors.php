@@ -14,7 +14,6 @@ function confHeader() {
     global $paperId, $prow, $Conf;
     $title = ($paperId > 0 ? "Paper #$paperId Contact Authors" : "Paper Contact Authors");
     $Conf->header($title, "contactauthors", actionBar($prow, false, "Contact Authors", "contactauthors.php?paperId=$paperId"), false);
-    $Conf->expandBody();
 }
 
 function errorMsgExit($msg) {
