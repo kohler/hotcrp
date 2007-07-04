@@ -399,9 +399,11 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && 
     $pc = new Contact();
     if (!$Me->privChair)
 	$Conf->errorMsg("Only the PC chairs can set conflicts and/or assignments.");
-    else if ($mt == "xauto")
-	$Me->go("${ConfSiteBase}autoassign.php?pap=" . join($papersel, "+"));
-    else if ($mt == "xpcpaper" || $mt == "xunpcpaper") {
+    else if ($mt == "xauto") {
+	$t = (in_array($_REQUEST["t"], array("acc", "s")) ? $_REQUEST["t"] : "all");
+	$q = join($papersel, "+");
+	$Me->go("${ConfSiteBase}autoassign.php?pap=" . join($papersel, "+") . "&t=$t&q=$q");
+    } else if ($mt == "xpcpaper" || $mt == "xunpcpaper") {
 	$Conf->qe("update Paper set pcPaper=" . ($mt == "xpcpaper" ? 1 : 0) . " where " . paperselPredicate($papersel), "while marking PC papers");
 	$Conf->log("Change PC paper status", $Me, $papersel);
     } else if (!$mpc || !$pc->lookupByEmail($mpc, $Conf))
