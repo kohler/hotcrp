@@ -503,7 +503,7 @@ supposedly reduces bias.)
   shepherding for accepted papers, you can assign shepherds either <a
   href='${ConfSiteBase}assign.php'>paper by paper</a> on the
   assignments screen or <a
-  href='${ConfSiteBase}autoassign.php?papset=acc'>automatically</a>.</p></li>
+  href='${ConfSiteBase}autoassign.php?t=acc'>automatically</a>.</p></li>
 
 </ol>
 ");

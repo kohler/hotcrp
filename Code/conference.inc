@@ -819,6 +819,8 @@ class Conference {
 	    $where[] = "timeSubmitted>0";
 	if (isset($options['accepted']))
 	    $where[] = "outcome>0";
+	if (isset($options['undecided']))
+	    $where[] = "outcome=0";
 	if (isset($options['active']))
 	    $where[] = "timeWithdrawn<=0";
 	

@@ -9,21 +9,25 @@ require_once('Code/search.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair('index.php');
+if (isset($_REQUEST["assign"])) {
+    $_REQUEST["q"] = $_REQUEST["oldq"];
+    $_REQUEST["t"] = $_REQUEST["oldt"];
+}
+if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All papers)")
+    $_REQUEST["q"] = "";
 if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
-    $_REQUEST["pap"] = split(" +", $_REQUEST["pap"]);
-if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
+    $_REQUEST["pap"] = preg_split("/ +/", $_REQUEST["pap"]);
+if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && !isset($_REQUEST["requery"])) {
     $papersel = array();
     foreach ($_REQUEST["pap"] as $p)
 	if (($p = cvtint($p)) > 0)
 	    $papersel[] = $p;
 } else {
     $papersel = array();
-    if (defval($_REQUEST["papset"]) == "acc")
-	$result = $Conf->q("select paperId from Paper where timeSubmitted>0 and outcome>0");
-    else
-	$result = $Conf->q("select paperId from Paper where timeSubmitted>0");
-    while (($row = edb_row($result)))
-	$papersel[] = $row[0];
+    $_REQUEST["t"] = defval($_REQUEST["t"], "s");
+    $_REQUEST["q"] = defval($_REQUEST["q"], "");
+    $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
+    $papersel = $search->paperList();
 }
 sort($papersel);
 
@@ -278,7 +282,7 @@ function saveAssign() {
     }
 
     // magnanimous
-    if ($atype == "rev") {
+    if ($atype == "rev" || $atype == "revadd") {
 	$result = $Conf->qe("select PCMember.contactId, paperId,
 		reviewType, reviewModified
 		from PCMember join PaperReview using (contactId)",
@@ -419,15 +423,18 @@ if (isset($assignments) && count($assignments) > 0) {
     }
 
     echo "<div class='smgap'></div>";
-    echo "<form method='post' action='autoassign.php?apply=1'>\n";
+    echo "<form method='post' action='autoassign.php'>\n";
     echo "<input type='submit' class='button' name='saveassign' value='Save assignment' />\n";
+    echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />\n";
+    foreach (array("t", "q", "a", "revaddtype", "revtype", "revct", "revaddct", "pctyp", "balance") as $t)
+	if (isset($_REQUEST[$t]))
+	    echo "<input type='hidden' name='$t' value=\"", htmlspecialchars($_REQUEST[$t]), "\" />\n";
+    foreach ($pcm as $id => $p)
+	if (isset($_REQUEST["pcs$id"]))
+	    echo "<input type='hidden' name='pcs$id' value='1' />\n";
+    echo "<input type='hidden' name='pap' value=\"", join(" ", $papersel), "\" />\n";
 
     // save the assignment
-    if ($atype == "rev" || $atype == "revadd") {
-	echo "<input type='hidden' name='a' value='rev' />\n";
-	echo "<input type='hidden' name='revtype' value='", $_REQUEST["${atype}type"], "' />\n";
-    } else
-	echo "<input type='hidden' name='a' value='$atype' />\n";
     echo "<input type='hidden' name='ass' value=\"";
     foreach ($assignments as $pid => $pcs)
 	echo $pid, ",", join(",", $pcs), " ";
@@ -435,8 +442,10 @@ if (isset($assignments) && count($assignments) > 0) {
     
     echo "</form></td></tr>\n";
 
-    echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></td></tr>\n";
-    echo "</table>\n\n";
+    echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n";
+    echo "</table>\n";
+    $Conf->footer();
+    exit;
 }
 
 echo "<form method='post' action='autoassign.php'>";
@@ -517,25 +526,42 @@ doRadio('balance', 'all', "Consider all existing assignments when balancing load
 echo "</td></tr>\n";
 
 
-
+// Create assignment
 echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></td></tr>\n";
-
 echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='button' name='assign' value='Create assignment' /></td></tr>\n";
 
-echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></td></tr>\n";
 
-if (!isset($assignments) || count($assignments) == 0) {
-    echo "<tr><td class='caption'>Paper selection</td><td class='entry'><div>Assignments will be applied to the following papers.</div>\n";
-    $search = new PaperSearch($Me, array("t" => "s", "q" => join(" ", $papersel)));
-    $plist = new PaperList(false, null, $search);
-    echo $plist->text("reviewersSel", $Me);
-    echo "</td></tr>\n";
+// Paper selection
+echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></td></tr>\n";
+echo "<tr><td class='caption'>Paper selection</td><td class='entry'>Assign to: &nbsp;";
+$_REQUEST["t"] = defval($_REQUEST["t"], "all");
+if (!isset($_REQUEST["q"]))
+    $_REQUEST["q"] = join(" ", $papersel);
+$tOpt = array("s" => "Submitted papers",
+	      "acc" => "Accepted papers",
+	      "und" => "Undecided papers",
+	      "all" => "All papers");
+if (!isset($tOpt[$_REQUEST["t"]]))
+    $_REQUEST["t"] = "all";
+$q = ($_REQUEST["q"] == "" ? "(All papers)" : $_REQUEST["q"]);
+echo "<input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All papers)', 1)\" onblur=\"tempText(this, '(All papers)', 0)\" /> &nbsp;in &nbsp;<select name='t'>";
+foreach ($tOpt as $k => $v) {
+    echo "<option value='$k'";
+    if ($_REQUEST["t"] == $k)
+	echo " selected='selected'";
+    echo ">$v</option>";
 }
+echo "</select> &nbsp; <input class='button' name='requery' type='submit' value='Search again' />\n";
+echo "<input type='hidden' name='oldt' value=\"", htmlspecialchars($_REQUEST["t"]), "\" /><input type='hidden' name='oldq' value=\"", htmlspecialchars($_REQUEST["q"]), "\" />\n";
+echo "<hr class='smgap' />\n";
+$search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
+$plist = new PaperList(false, null, $search);
+$plist->papersel = $papersel;
+echo $plist->text("reviewersSel", $Me);
+echo "</td></tr>\n";
 
 echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n";
-
 echo "</table>\n";
-
 echo "</form>";
 
 $Conf->footer();

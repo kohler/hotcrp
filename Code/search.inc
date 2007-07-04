@@ -93,6 +93,8 @@ class PaperSearch {
 	    $this->limitName = "all";
 	else if ($me->isPC && (!$ptype || $ptype == "s"))
 	    $this->limitName = "s";
+	else if ($me->isPC && ($ptype == "und" || $ptype == "undec"))
+	    $this->limitName = "und";
 	else if ($me->isPC && $ptype == "acc")
 	    $this->limitName = "acc";
 	else if ($me->isPC && $ptype == "revs")
@@ -439,10 +441,13 @@ class PaperSearch {
 	$res = $this->_combineQuery($res, $this->_searchQueryType($this->qa, "all"));
 	$res = $this->_combineQuery($res, $this->_searchQueryType($this->qx, "none"));
 	if ($this->limitName == "s" || $this->limitName == "r"
-	    || $this->limitName == "req" || $this->limitName == "revs")
+	    || $this->limitName == "req" || $this->limitName == "revs"
+	    || $this->limitName == "acc" || $this->limitName == "und")
 	    $res = $this->_combineQuery($res, array("Paper.timeSubmitted>0", ""));
-	else if ($this->limitName == "acc")
+	if ($this->limitName == "acc")
 	    $res = $this->_combineQuery($res, array("Paper.outcome>0", ""));
+	else if ($this->limitName == "und")
+	    $res = $this->_combineQuery($res, array("Paper.outcome=0", ""));
 
 	$q = "select Paper.paperId from Paper";
 	if ($this->limitName == "r")
@@ -497,9 +502,13 @@ class PaperSearch {
 	    return true;
 	if ($this->limitName == "s" || $this->limitName == "revs")
 	    $queryOptions["finalized"] = 1;
-	else if ($this->limitName == "acc")
+	else if ($this->limitName == "acc") {
 	    $queryOptions["accepted"] = 1;
-	else if ($this->limitName == "r") {
+	    $queryOptions["finalized"] = 1;
+	} else if ($this->limitName == "und") {
+	    $queryOptions["undecided"] = 1;
+	    $queryOptions["finalized"] = 1;
+	} else if ($this->limitName == "r") {
 	    $queryOptions["finalized"] = 1;
 	    $queryOptions["myReviews"] = 1;
 	} else if ($this->limitName == "rout") {

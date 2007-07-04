@@ -66,6 +66,7 @@ class PaperList extends BaseList {
     var $paperLinkArgs;
     var $showConflict;
     var $headerInfo;
+    var $papersel;
     
     function PaperList($sortable = true, $sessionVar = null, $search = null, $extraText = null) {
 	global $paperListFields;
@@ -93,6 +94,7 @@ class PaperList extends BaseList {
 	$this->extraText = $extraText;
 	$this->scoresOk = false;
 	$this->showConflict = true;
+	$this->papersel = null;
     }
 
     function selector($fieldId, &$queryOptions) {
@@ -478,8 +480,9 @@ class PaperList extends BaseList {
 	case self::FIELD_SELECTOR_CONFLICT:
 	    $this->anySelector = 1;
 	    $c = "";
-	    if ($fieldId == self::FIELD_SELECTOR_ON
-		|| ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType > 0)) {
+	    if (($fieldId == self::FIELD_SELECTOR_ON
+		 || ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType > 0))
+		&& (!$this->papersel || in_array($row->paperId, $this->papersel))) {
 		$c = " checked='checked'";
 		$this->unfolded = true;
 	    }
