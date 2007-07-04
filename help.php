@@ -56,13 +56,17 @@ function topics() {
 }
 
 
-function _searchForm($forwhat) {
+function _searchForm($forwhat, $other = null) {
     global $ConfSiteBase;
+    $text = "";
+    if ($other && preg_match_all('/(\w+)=([^&]*)/', $other, $matches, PREG_SET_ORDER))
+	foreach ($matches as $m)
+	    $text .= "<input type='hidden' name='$m[1]' value=\"" . htmlspecialchars(urldecode($m[2])) . "\" />";
     return "<form action='${ConfSiteBase}search.php' method='get'>"
 	. "<input type='text' class='textlite' name='q' value=\""
 	. htmlspecialchars($forwhat) . "\" size='20' /> &nbsp;"
 	. "<input type='submit' class='button' name='go' value='Search' />"
-	. "</form>";
+	. $text . "</form>";
 }
 
 function search() {
@@ -161,12 +165,12 @@ Using these links can speed up many tasks.  Click on the search description
     echo "</table>\n";
 }
 
-function _searchQuickrefRow($caption, $search, $explanation) {
+function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
     global $rowidx, $ConfSiteBase;
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
     echo "<tr class='k", ($rowidx % 2), "'>";
     echo "<td class='srcaption nowrap'>", $caption, "</td>";
-    echo "<td class='sentry nowrap'>", _searchForm($search), "</td>";
+    echo "<td class='sentry nowrap'>", _searchForm($search, $other), "</td>";
     echo "<td class='sentry'>", $explanation, "<span class='sep'></span></td></tr>\n";
 }
 
@@ -199,9 +203,9 @@ function searchQuickref() {
     _searchQuickrefRow("", "lead:any", "some assigned discussion lead");
     _searchQuickrefRow("", "shep:fdabek", "\"fdabek\" (in name/email) is shepherd (\"none\" and \"any\" also work)");
     _searchQuickrefRow("", "conflict:fdabek", "\"fdabek\" (in name/email) has a conflict with the paper");
-    _searchQuickrefRow("Status", "status:sub", "paper is submitted for review");
-    _searchQuickrefRow("", "status:unsub", "paper has not been submitted or withdrawn");
-    _searchQuickrefRow("", "status:with", "paper has been withdrawn");
+    _searchQuickrefRow("Status", "status:sub", "paper is submitted for review", "t=all");
+    _searchQuickrefRow("", "status:unsub", "paper has not been submitted or withdrawn", "t=all");
+    _searchQuickrefRow("", "status:with", "paper has been withdrawn", "t=all");
     _searchQuickrefRow("Decision", "dec:accept", "decision matches \"accept\"");
     _searchQuickrefRow("", "dec:yes", "one of the accept decisions");
     _searchQuickrefRow("", "dec:no", "one of the reject decisions");

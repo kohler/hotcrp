@@ -357,13 +357,12 @@ $paperTable->echoPaperRow($prow, PaperTable::STATUS_CONFLICTINFO);
 if ($canViewAuthors || $Me->privChair) {
     $paperTable->echoAuthorInformation($prow);
     $paperTable->echoContactAuthor($prow);
+    $paperTable->echoCollaborators($prow);
 }
 $paperTable->echoAbstractRow($prow);
 $paperTable->echoTopics($prow);
 $paperTable->echoOptions($prow, $Me->privChair);
 $paperTable->echoTags($prow);
-if ($canViewAuthors || $Me->privChair)
-    $paperTable->echoCollaborators($prow);
 
 
 // PC assignments
