@@ -390,6 +390,9 @@ hr.home {
 span.deadline {
 	font-style: italic;
 }
+strong.overdue {
+	color: red;
+}
 
 /* gopaper form */
 div.gopaper {
