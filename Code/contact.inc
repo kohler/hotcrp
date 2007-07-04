@@ -795,7 +795,9 @@ class Contact {
 	    || ($this->isPC && $conf->timePCViewDecision())
 	    || ($prow && defval($prow->myReviewType, 0) > 0
 		&& defval($prow->myReviewSubmitted, 0) > 0
-		&& $conf->timeReviewerViewDecision()))
+		&& $conf->timeReviewerViewDecision())
+	    || ($this->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
+	    || ($this->privChair && (!$prow || $prow->conflictType == 0)))
 	    return true;
 	return false;
     }
