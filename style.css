@@ -375,11 +375,26 @@ table.center {
 table.homegrp {
 	margin: 0.8em auto 0em auto;
 }
-table#homelist {
+td#homelist table {
 	margin: 0em auto;
 }
 td#homesearch, body#home td#foldre {
 	padding-top: .75em;
+}
+td#homelist strong.grpt {
+	color: #8b3030;
+}
+td#homemgmt strong.grpt {
+	color: #466246;
+}
+td#homerev strong.grpt {
+	color: #1b1ba4;
+}
+td#homeau strong.grpt {
+	color: #923e58;
+}
+td#homeacct strong.grpt, td#homeinfo strong.grpt {
+	color: #777777;
 }
 hr.home {
 	margin: 0.8em -24px 0.8em 0px;

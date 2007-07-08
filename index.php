@@ -41,10 +41,10 @@ echo "<table class='homegrp'>";
 $papersub = $Conf->setting("papersub");
 $homelist = ($Me->privChair || ($Me->isPC && $papersub) || ($Me->amReviewer() && $papersub));
 if ($homelist) {
-    echo "<tr><td><table id='homelist' class='homegrp'><tr><td>";
+    echo "<tr><td id='homelist'><table><tr><td>";
 
     // Lists
-    echo "<strong>List papers: &nbsp;</strong> ";
+    echo "<strong class='grpt'>List papers: &nbsp;</strong> ";
     $sep = "";
     if ($Me->isReviewer) {
 	echo $sep, "<a href='search.php?q=&amp;t=r' class='nowrap'>Your review assignment</a>";
@@ -77,10 +77,10 @@ if ($homelist) {
 
 // Conference management
 if ($Me->privChair) {
-    echo "<tr><td>";
+    echo "<tr><td id='homemgmt'>";
     
     // Lists
-    echo "<strong>Conference management: &nbsp;</strong> ";
+    echo "<strong class='grpt'>Conference management: &nbsp;</strong> ";
     echo "<a href='settings.php'>Settings</a>";
     echo $thesep, "<a href='contacts.php?t=all'>Accounts</a>";
     echo $thesep, "<a href='autoassign.php'>Review assignments</a>";
@@ -93,10 +93,10 @@ if ($Me->privChair) {
 
 // Review assignment
 if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
-    echo "<tr><td>";
+    echo "<tr><td id='homerev'>";
     
     // Overview
-    echo "<strong>Reviewing: &nbsp;</strong> ";
+    echo "<strong class='grpt'>Reviewing: &nbsp;</strong> ";
     $result = $Conf->qe("select PaperReview.contactId, count(reviewSubmitted), count(reviewNeedsSubmit), group_concat(overAllMerit), PCMember.contactId as pc from PaperReview join Paper using (paperId) left join PCMember on (PaperReview.contactId=PCMember.contactId) where Paper.timeSubmitted>0 group by PaperReview.contactId", "while fetching review status");
     $rf = reviewForm();
     $maxOverAllMerit = $rf->maxNumericScore("overAllMerit");
@@ -177,10 +177,10 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 // Authored papers
 if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
     || !$Me->amReviewer()) {
-    echo "<tr><td>";
+    echo "<tr><td id='homeau'>";
 
     // Overview
-    echo "<strong>My Papers: &nbsp;</strong> ";
+    echo "<strong class='grpt'>My Papers: &nbsp;</strong> ";
 
     $startable = $Conf->timeStartPaper();
     if ($startable || $Me->privChair) {
@@ -225,8 +225,8 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 
 
 // Profile
-echo "<tr><td>";
-echo "<strong>My Account: &nbsp;</strong> ";
+echo "<tr><td id='homeacct'>";
+echo "<strong class='grpt'>My Account: &nbsp;</strong> ";
 echo "<a href='account.php'>Profile</a>";
 echo $thesep, "<a href='mergeaccounts.php'>Merge accounts</a>";
 echo $thesep, "Welcome, ", contactNameHtml($Me), ".  (If this isn't you, please <a href='${ConfSiteBase}logout.php'>sign out</a>.)";
@@ -235,8 +235,8 @@ echo "<hr class='home' /></td></tr>\n";
 
 
 // Conference info
-echo "<tr><td>";
-echo "<strong>Conference information: &nbsp;</strong> ";
+echo "<tr><td id='homeinfo'>";
+echo "<strong class='grpt'>Conference information: &nbsp;</strong> ";
 // Any deadlines set?
 $sep = "";
 if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting('sub_sub')

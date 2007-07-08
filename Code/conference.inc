@@ -324,7 +324,7 @@ class Conference {
 	return $this->settingsAfter('pc_seeallrev');
     }
     function timePCViewDecision() {
-	return $this->settingsAfter('pc_seeallrev'); // EndOfTheMeeting
+	return $this->settingsAfter('pc_seeallrev');
     }
     function timeReviewerViewDecision() {
 	return $this->settingsAfter('rev_seedec');
