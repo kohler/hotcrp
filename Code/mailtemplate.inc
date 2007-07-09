@@ -236,7 +236,7 @@ The %CONFNAME% program committee is delighted to inform you that your paper #%NU
 
 Your paper was one of %NUMACCEPTED% accepted out of %NUMSUBMITTED% submissions.  Congratulations!
 
-Reviews and comments on your paper are appended to this email.  You may also view the paper's reviews and comments on line at the submissions site.  To sign in, either click the link below or paste it into your web browser's location field.
+Reviews and comments on your paper are appended to this email.  The submissions site also has the paper's reviews and comments, as well as more information about review scores.  To sign in, either click the link below or paste it into your web browser's location field.
 
     %LOGINURL%
 
@@ -259,7 +259,7 @@ The %CONFNAME% program committee is sorry to inform you that your paper #%NUMBER
 
 %NUMACCEPTED% papers were accepted out of %NUMSUBMITTED% submissions.
 
-Reviews and comments on your paper are appended to this email.  You may also view the paper's reviews and comments on line at the submissions site.  To sign in, either click the link below or paste it into your web browser's location field.
+Reviews and comments on your paper are appended to this email.  The submissions site also has the paper's reviews and comments, as well as more information about review scores.  To sign in, either click the link below or paste it into your web browser's location field.
 
     %LOGINURL%
 
