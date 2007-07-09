@@ -249,6 +249,17 @@ if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting(
 echo $sep, "<a href='contacts.php?t=pc'>Program committee members</a>";
 if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
     echo $thesep, "<a href='", $Opt['conferenceSite'], "'>Main conference site</a>";
+if ($Conf->timeAuthorViewDecision()) {
+    $result = $Conf->qe("select outcome, count(paperId) from Paper group by outcome", "while loading acceptance statistics");
+    $n = $nyes = 0;
+    while (($row = edb_row($result))) {
+	$n += $row[1];
+	if ($row[0] > 0)
+	    $nyes += $row[1];
+    }
+    echo "<br />", plural($nyes, "paper"), " were accepted out of ", $n, " submitted.";
+}
+    
 echo "<hr class='home' /></td></tr>\n";
 
 

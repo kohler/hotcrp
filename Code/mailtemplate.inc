@@ -17,7 +17,7 @@ An account has been created for you at the %CONFNAME% submissions site, includin
 
 To sign in directly, either click the link below or paste it into your web browser's location field.
 
-    %URL%/login.php?email=%URLENC(EMAIL)%&password=%URLENC(PASSWORD)%
+    %LOGINURL%
 
 If you already have an account under a different email address, you may merge this new account into that one.  Sign in to the site and select \"Merge accounts\".
 
@@ -37,7 +37,7 @@ Here is your account information for the %CONFNAME% submissions site.
 
 To sign in directly, either click the link below or paste it into your web browser's location field.
 
-    %URL%/login.php?email=%URLENC(EMAIL)%&password=%URLENC(PASSWORD)%
+    %LOGINURL%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -71,7 +71,7 @@ If you are willing to review this paper, you may enter your review on the confer
 
 To sign in, either click the link below or paste it into your web browser's location field.
 
-    %URL%/login.php?email=%URLENC(EMAIL)%&password=%URLENC(PASSWORD)%
+    %LOGINURL%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -132,7 +132,7 @@ Thank you,
 - %CONFSHORTNAME% Submissions\n"),
 
      "authorwithdraw" =>
-     array("Paper #%NUMBER% withdrawn %TITLEHINT%",
+     array("[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
 	   "Dear %CONTACT%,
 
 An author of %CONFNAME% paper #%NUMBER% has withdrawn the paper from consideration.  The paper will not be reviewed.
@@ -147,7 +147,7 @@ Thank you,
 - %CONFSHORTNAME% Submissions\n"),
 
      "adminwithdraw" =>
-     array("Paper #%NUMBER% withdrawn %TITLEHINT%",
+     array("[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
 	   "Dear %CONTACT%,
 
 %CONFNAME% paper #%NUMBER% has been withdrawn from consideration and will not be reviewed.
@@ -164,7 +164,7 @@ Thank you,
 - %CONFSHORTNAME% Submissions\n"),     
      
      "withdrawreviewer" =>
-     array("Paper #%NUMBER% withdrawn %TITLEHINT%",
+     array("[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
 	   "Dear %CONTACT%,
 
 %CONFSHORTNAME% paper #%NUMBER%, which you reviewed or have been assigned to review, has been withdrawn from consideration for the conference.
@@ -182,7 +182,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "deletepaper" =>
-     array("Deleted paper #%NUMBER% %TITLEHINT%",
+     array("[%CONFSHORTNAME%] Deleted paper #%NUMBER% %TITLEHINT%",
 	   "Dear %CONTACT%,
 
 Your %CONFNAME% paper #%NUMBER% has been removed from the submission database by an administrator.  This is usually done to remove duplicate papers.  %IF(REASON)%The following reason was provided for deleting the paper: %REASON%%ENDIF%
@@ -195,7 +195,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "reviewsubmit" =>
-     array("Review #%REVIEWNUMBER% submitted %TITLEHINT%",
+     array("[%CONFSHORTNAME%] Review #%REVIEWNUMBER% submitted %TITLEHINT%",
 	   "Dear %NAME%,
 
 Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been submitted.  The review is available at the following site.
@@ -210,7 +210,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "reviewupdate" =>
-     array("Review #%REVIEWNUMBER% updated %TITLEHINT%",
+     array("[%CONFSHORTNAME%] Review #%REVIEWNUMBER% updated %TITLEHINT%",
 	   "Dear %NAME%,
 
 Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated.  The review is available at the following site.
@@ -250,8 +250,8 @@ class Mailer {
     }
     
     function _pushIf($yes) {
-	if ($yes)
-	    array_push($this->ifstack, true);
+	if ($yes === true || $yes === null)
+	    array_push($this->ifstack, $yes);
 	else
 	    array_push($this->ifstack, $this->text);
     }
@@ -259,8 +259,8 @@ class Mailer {
     function _popIf() {
 	if (count($this->ifstack) == 0)
 	    return null;
-	else if (($pop = array_pop($this->ifstack)) === true)
-	    return true;
+	else if (($pop = array_pop($this->ifstack)) === true || $pop === null)
+	    return $pop;
 	else {
 	    $this->text = $pop;
 	    if ($this->textstart > strlen($this->text))
@@ -275,32 +275,36 @@ class Mailer {
 
 	if ($len > 6 && substr($what, 0, 4) == "%IF(" && substr($what, $len - 2) == ")%") {
 	    $inner = "%" . substr($what, 4, $len - 6) . "%";
-	    $this->_pushIf($this->expandvar($inner, true));
-	    return "";
+	    $this->_pushIf(($yes = $this->expandvar($inner, true)));
+	    return ($yes === null ? $what : "");
 	} else if ($what == "%ELSE%") {
-	    $this->_pushIf(!$this->_popIf());
-	    return "";
+	    $yes = $this->_popIf();
+	    $this->_pushIf($yes === null ? $yes : !$yes);
+	    return ($yes === null ? $what : "");
 	} if ($what == "%ENDIF%") {
-	    $this->_popIf();
-	    return "";
+	    $yes = $this->_popIf();
+	    return ($yes === null ? $what : "");
 	}
 	
 	if ($len > 7 && substr($what, 0, 5) == "%OPT(" && substr($what, $len - 2) == ")%") {
 	    $inner = "%" . substr($what, 5, $len - 7) . "%";
 	    if ($isbool)
 		return $this->expandvar($inner, true);
-	    else if ($this->expandvar($inner, true))
+	    else if (($yes = $this->expandvar($inner, true)))
 		return $this->expandvar($inner, false);
 	    else
-		return "";
+		return ($yes === null ? $what : "");
 	}
 	
 	if ($len > 10 && substr($what, 0, 8) == "%URLENC(" && substr($what, $len - 2) == ")%") {
 	    $inner = "%" . substr($what, 8, $len - 10) . "%";
+	    $yes = $this->expandvar($inner, true);
 	    if ($isbool)
-		return $this->expandvar($inner, true);
-	    else
+		return $yes;
+	    else if ($yes)
 		return urlencode($this->expandvar($inner, false));
+	    else
+		return ($yes === null ? $what : "");
 	}
 
 	if ($len > 12 && substr($what, 0, 10) == "%DEADLINE(" && substr($what, $len - 2) == ")%") {
@@ -325,7 +329,13 @@ class Mailer {
 	    return "$Conf->contactName <$Conf->contactEmail>";
 	if ($what == "%URL%")
 	    return $Conf->paperSite;
-	
+
+	// if no contact, this is a pre-expansion
+	if (!$this->contact)
+	    return ($isbool ? null : $what);
+
+	if ($what == "%LOGINURL%")
+	    return $Conf->paperSite . "/login.php?email=" . urlencode($this->contact->email) . "&password=" . urlencode($this->contact->password);
 	if ($what == "%EMAIL%")
 	    return $this->contact->email;
 	if ($what == "%PASSWORD%")
@@ -352,7 +362,7 @@ class Mailer {
 	// rest is only there if we have a real paper
 	if (defval($this->row->paperId) <= 0)
 	    return ($isbool ? false : $what);
-    
+
 	if ($what == "%TITLE%")
 	    return $this->row->title;
 	if ($what == "%TITLEHINT%") {
@@ -533,7 +543,7 @@ class Mailer {
 		where paperId=$row->paperId
 		group by ContactInfo.contactId", "while looking up reviewers to send email");
 
-	$rest["headers"] = "Cc: $Conf->contactName <$this->contactEmail>";
+	$rest["headers"] = "Cc: $Conf->contactName <$Conf->contactEmail>";
 	
 	$contacts = array();
 	while (($contact = edb_orow($result))) {
