@@ -168,7 +168,7 @@ echo "  </select></td>
 </tr>
 
 <tr>
-  <td class='caption'>Body</td>
+  <td class='caption textarea'>Body</td>
   <td class='entry'><textarea class='tt' rows='20' name='emailBody' cols='80'>", htmlspecialchars($_REQUEST["emailBody"]), "</textarea></td>
 </tr>
 

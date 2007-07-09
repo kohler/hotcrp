@@ -22,6 +22,7 @@
 //                   end in a dash.
 
 $Opt['dbName'] = "HotNetsV";
+$Opt['dbPassword'] = "ca84wRAS1.";
 $Opt['shortName'] = "HotNets V";
 $Opt['longName'] = "HotNets V";
 $Opt['downloadPrefix'] = "hotnets5-";
@@ -42,7 +43,7 @@ $Opt['downloadPrefix'] = "hotnets5-";
 $Opt['contactName'] = "Eddie Kohler";
 $Opt['contactEmail'] = "kohler@cs.ucla.edu";
 $Opt['sendEmail'] = true;
-$Opt['emailFrom'] = "kohler@read.cs.ucla.edu";
+$Opt['emailFrom'] = "hotnetsv-pcchairs@lists.ucla.edu";
 
 
 // SUBMISSIONS
