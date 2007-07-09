@@ -889,8 +889,8 @@ table.pltable th.pl_topicMatch {
 	padding-left: 0.5em;
 	padding-right: 0.5em;
 }
-table.pltable th.pl_id, 
-.pl_score, table.pltable th.pl_score, table.ppltable th.pl_score {
+table.pltable th.pl_id, .pl_score, table.pltable th.pl_score, 
+table.ppltable th.pl_score {
 	text-align: center;
 	white-space: nowrap;
 }
@@ -1092,26 +1092,18 @@ tr.k1 td {
 	display: none;
 }
 
-div.popupdialog {
-	border: 3px solid red;
-	padding: 0.5em;
-	background: #fff2f2;
-	position: absolute;
-	top: -4em;
-	left: 0%;
-	min-width: 15em;
-	z-index: 4;
-}
-div.popupdialog .unpopup {
-	position: absolute;
-	top: 0%;
-	right: 0%;
-	margin-top: 0px;
-}
-div.popupdialog p:first-child {
-	margin-top: 0px;
+body#offrev td#upload {
+	padding-left: 3em;
 }
 
+span.contactpulldown {
+	position: absolute;
+}
+span.contactpulldown select {
+	vertical-align: top;
+}
+
+/* score help */
 a.scorehelp {
 	font-size: small;
 	font-weight: normal;
@@ -1137,20 +1129,29 @@ div.scorehelpc span.rev_num, div.scorehelpo span.rev_num {
 	font-size: small;
 }
 
-body#offrev td#upload {
-	padding-left: 3em;
-}
-
-span.contactpulldown {
+/* popup dialogs */
+div.popupc, div.popupo {
+	border: 3px solid red;
+	padding: 0.5em;
+	background: #fff2f2;
 	position: absolute;
+	min-width: 15em;
+	max-width: 30em;
+	z-index: 5;
 }
-span.contactpulldown select {
-	vertical-align: top;
+div.popupc {
+	display: none;
+}
+div.popupc p:first-child, div.popupo p:first-child {
+	margin-top: 0px;
+}
+div.popup_actions {
+	text-align: center;
 }
 
-/* contact list */
+/* scores */
 span.sc1, span.sc2, span.sc3, span.sc4, span.sc5,
-span.sc6, span.sc7, span.sc8, span.sc9, span.sc10 {
+span.sc6, span.sc7, span.sc8, span.sc9 {
 	font-weight: bold;
 	font-size: small;
 }
@@ -1166,7 +1167,7 @@ span.sc3 {
 span.sc4 {
 	color: #32D420;
 }
-span.sc5, span.sc6, span.sc7, span.sc8, span.sc9, span.sc10 {
+span.sc5, span.sc6, span.sc7, span.sc8, span.sc9 {
 	color: #00F000;
 }
 span.sc_sum {

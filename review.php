@@ -449,13 +449,12 @@ function reviewView($prow, $rrow, $editMode) {
 	// refuse?
 	if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType < REVIEW_SECONDARY) {
 	    echo "\n<tr class='rev_ref'>\n  <td class='caption'></td>\n  <td class='entry' colspan='2'>";
-	    echo "<div id='foldref' class='foldc' style='position: relative'><a href=\"javascript:fold('ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it
-  <div class='popupdialog extension'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p>\n";
-	    echo "    <input class='textlite' type='text' name='reason' value='' size='40' />
-    <div class='xsmgap'></div>
-    <input class='button' type='submit' name='refuse' value='Refuse review' />
-    <button type='button' onclick=\"fold('ref', 1)\">Cancel</button>
-  </div></div>";
+	    echo "<a id='popupanchor_ref' href=\"javascript:void popup(null, 'ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it\n";
+	    $Conf->footerStuff .= "<div id='popup_ref' class='popupc'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p><div class='popup_actions'>
+  <input class='textlite' type='text' name='reason' value='' size='40' />
+  <div class='smgap'></div>
+  <input class='button' type='submit' name='refuse' value='Refuse review' />
+  &nbsp;<button type='button' onclick=\"popup(null, 'ref', 1)\">Cancel</button></div></div>";
 	    echo "</td>\n</tr>\n";
 	}
 
@@ -507,10 +506,12 @@ function reviewView($prow, $rrow, $editMode) {
 	    } else {
 		$buttons[] = "<input class='button' type='submit' value='Resubmit' name='submit' />";
 		if ($Me->privChair)
-		    $buttons[] = array("<input class='button' type='submit' value='Unsubmit' name='unsubmit' />", "(PC chair only)");
+		    $buttons[] = array("<input class='button' type='submit' value='Unsubmit' name='unsubmit' />", "(admin only)");
 	    }
-	    if ($rrow && $Me->privChair)
-		$buttons[] = array("<div id='folddel' class='foldc' style='position: relative'><button type='button' onclick=\"fold('del', 0)\">Delete review</button><div class='popupdialog extension'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><input class='button' type='submit' name='delete' value='Delete review' /> <button type='button' onclick=\"fold('del', 1)\">Cancel</button></div></div>", "(PC chair only)");
+	    if ($rrow && $Me->privChair) {
+		$buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
+		$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><div class='popup_actions'><input class='button' type='submit' name='delete' value='Delete review' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></div>";
+	    }
 
 	    echo "    <tr>\n";
 	    foreach ($buttons as $b) {

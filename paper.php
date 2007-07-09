@@ -681,14 +681,21 @@ if ($mode == "edit") {
 	if ($Conf->timeUpdatePaper($prow))
 	    $buttons[] = array("<input class='button' type='submit' name='update' value='Update paper' />", "");
 	else if ($Me->privChair)
-	    $buttons[] = array("<input class='button' type='submit' name='update' value='Update paper' />", "(PC chair only)");
+	    $buttons[] = array("<input class='button' type='submit' name='update' value='Update paper' />", "(admin only)");
 	if ($prow->timeSubmitted <= 0)
 	    $buttons[] = "<input class='button' type='submit' name='withdraw' value='Withdraw paper' />";
-	else
-	    $buttons[] = "<div id='foldw' class='foldc' style='position: relative'><button type='button' onclick=\"fold('w', 0)\">Withdraw paper</button><div class='popupdialog extension'><p>Are you sure you want to withdraw this paper from consideration and/or publication?  Only the PC chair can undo this step.</p><input class='button' type='submit' name='withdraw' value='Withdraw paper' /> <button type='button' onclick=\"fold('w', 1)\">Cancel</button></div></div>";
+	else {
+	    $buttons[] = "<button type='button' onclick=\"popup(this, 'w', 0)\">Withdraw paper</button>";
+	    $Conf->footerStuff .= "<div id='popup_w' class='popupc'><p>Are you sure you want to withdraw this paper from consideration and/or publication?";
+	    if (!$Me->privChair || $prow->conflictType == CONFLICT_AUTHOR)
+		$Conf->footerStuff .= "  Only administrators can undo this step.";
+	    $Conf->footerStuff .= "</p><div class='popup_actions'><input class='button' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'w', 1)\">Cancel</button></div></div>";
+	}
     }
-    if ($Me->privChair && !$newPaper)
-	$buttons[] = array("<div id='folddel' class='foldc' style='position: relative'><button type='button' onclick=\"fold('del', 0)\">Delete paper</button><div class='popupdialog extension'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><input class='button' type='submit' name='delete' value='Delete paper' /> <button type='button' onclick=\"fold('del', 1)\">Cancel</button></div></div>", "(PC chair only)");
+    if ($Me->privChair && !$newPaper) {
+	$buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete paper</button>", "(admin only)");
+	$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><div class='popup_actions'><input class='button' type='submit' name='delete' value='Delete paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></div>";
+    }
     echo "    <tr>\n";
     foreach ($buttons as $b) {
 	$x = (is_array($b) ? $b[0] : $b);

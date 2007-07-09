@@ -252,7 +252,8 @@ function makescorehelp(anchor, which, dofold) {
 	    var anchorPos = eltPos(anchor);
 	    var wg = geometry();
 	    elt.className = "scorehelpo";
-	    elt.style.left = Math.max(5, anchorPos.right - elt.offsetWidth) + "px";
+	    var x = anchorPos.right - elt.offsetWidth;
+	    elt.style.left = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) + "px";
 	    if (anchorPos.bottom + 5 + elt.offsetHeight > wg.bottom
 		&& anchorPos.top - 5 - elt.offsetHeight >= wg.top - 10)
 		elt.style.top = (anchorPos.top - 5 - elt.offsetHeight) + "px";
@@ -270,6 +271,25 @@ function addScoreHelp() {
 	    anchors[i].onmouseover = makescorehelp(anchors[i], sh, 0);
 	    anchors[i].onmouseout = makescorehelp(anchors[i], sh, 1);
 	}
+    }
+}
+
+
+// popup dialogs
+function popup(anchor, which, dofold) {
+    var elt = e("popup_" + which);
+    if (elt && dofold)
+	elt.className = "popupc";
+    else if (elt) {
+	if (!anchor)
+	    anchor = e("popupanchor_" + which);
+	var anchorPos = eltPos(anchor);
+	var wg = geometry();
+	elt.className = "popupo";
+	var x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
+	var y = (anchorPos.top + anchorPos.bottom - elt.offsetHeight) / 2;
+	elt.style.left = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) + "px";
+	elt.style.top = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) + "px";
     }
 }
 
