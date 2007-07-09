@@ -1,4 +1,4 @@
-export VERSION=2.0b9
+export VERSION=2.0
 
 mkdistdir () {
     crpd=hotcrp-$VERSION
@@ -25,6 +25,7 @@ mkdistdir <<EOF
 
 .htaccess
 LICENSE
+NEWS
 README
 account.php
 assign.php

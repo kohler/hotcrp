@@ -1,0 +1,135 @@
+LCDF Typetools NEWS
+
+Version 2.0   9.Jul.2007
+
+* New mail system.
+
+* Popup help on review scores.
+
+* A secondary reviewer, having delegated her own review, can view other
+  reviews as soon as the delegatee submits HER review.
+
+* Visual improvements, especially to the front page.
+
+* Other fixes.
+
+* Thanks to Akos Ledeczi.
+
+
+Version 2.0b9   16.Jun.2007
+
+* More Ajax.
+
+* Make images, JavaScript, and CSS cacheable.
+
+* Allow updates to a submitted paper without first unsubmitting the paper.
+
+* Optionally allow authors to update their submissions until the submission
+  deadline.
+
+* Add "system administrator" role.
+
+* Tags are optionally visible on paper lists.
+
+* Email template improvements.
+
+* Visual improvements, including the search page.
+
+* Combine "View" and "Edit" paper tabs into a single "Paper" tab.
+
+* Other fixes.
+
+* Thanks to Bernhard Ager, Frans Kaashoek, and Fernando Pereira.
+
+
+Version 2.0b8   11.Mar.2007
+
+* Fix policy leak: Do not reveal reviewer identities if reviews are always
+  anonymous!
+
+* Other fixes.
+
+* Thanks to Jeff Chase.
+
+
+Version 2.0b7   3.Mar.2007
+
+* Fix policy leak: When sending email, include only information the
+  recipient can see.
+
+* Selectable score diagrams and score-based sort orders in paper lists.
+
+* Add "PC members can see all registered papers until submission deadline"
+  setting.
+
+* Account list improvements.
+
+* Allow submitting a paper in one step.
+
+* Improve help.
+
+* Other fixes.
+
+* Thanks to Bernhard Ager, Jeff Chase, Frans Kaashoek, and Andrew Myers.
+
+
+Version 2.0b6   1.Feb.2007
+
+* Fix policy leak: PC members cannot see PC-only fields on review forms for
+  their authored papers.
+
+* Fix policy leak: External reviewers can't see reviewer identities unless
+  the policy allows it.
+
+* Other fixes.
+
+
+Version 2.0b5   27.Jan.2007
+
+* Improve tags and help.
+
+* Ajax review preferences.
+
+* Line numbers for uploaded review form error messages.
+
+* Other fixes.
+
+
+Version 2.0b4   13.Jan.2007
+
+* Add automatic assignments.
+
+* Add review form templates.
+
+* Add paper options.
+
+* Improve IE compatibility.
+
+* Fix login from email links.
+
+* Fix grace period.
+
+* Other fixes.
+
+
+Version 2.0b3   10.Dec.2006
+
+* Move to Conference Settings pages from deadline settings.
+
+* New search settings, such as "re:<4".
+
+* More help.
+
+* Remove database abstraction layer.
+
+* Other fixes.
+
+
+Version 2.0b2   1.Dec.2006
+
+* Internal updates.
+
+
+Version 2.0b1   28.Nov.2006
+
+* Initial release.
