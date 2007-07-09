@@ -250,7 +250,7 @@ echo $sep, "<a href='contacts.php?t=pc'>Program committee members</a>";
 if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
     echo $thesep, "<a href='", $Opt['conferenceSite'], "'>Main conference site</a>";
 if ($Conf->timeAuthorViewDecision()) {
-    $result = $Conf->qe("select outcome, count(paperId) from Paper group by outcome", "while loading acceptance statistics");
+    $result = $Conf->qe("select outcome, count(paperId) from Paper where timeSubmitted>0 group by outcome", "while loading acceptance statistics");
     $n = $nyes = 0;
     while (($row = edb_row($result))) {
 	$n += $row[1];

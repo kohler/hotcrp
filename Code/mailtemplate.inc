@@ -195,7 +195,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "reviewsubmit" =>
-     array("[%CONFSHORTNAME%] Review #%REVIEWNUMBER% submitted %TITLEHINT%",
+     array("[%CONFSHORTNAME%] Submitted review #%REVIEWNUMBER% %TITLEHINT%",
 	   "Dear %NAME%,
 
 Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been submitted.  The review is available at the following site.
@@ -210,7 +210,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "reviewupdate" =>
-     array("[%CONFSHORTNAME%] Review #%REVIEWNUMBER% updated %TITLEHINT%",
+     array("[%CONFSHORTNAME%] Updated review #%REVIEWNUMBER% %TITLEHINT%",
 	   "Dear %NAME%,
 
 Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated.  The review is available at the following site.
@@ -222,7 +222,92 @@ Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated.  The rev
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"));
+- %CONFSHORTNAME% Submissions\n"),
+
+     "acceptnotify" =>
+     array("[%CONFSHORTNAME%] Accepted paper #%NUMBER% %TITLEHINT%",
+	   "Dear %NAME%,
+
+The %CONFNAME% program committee is delighted to inform you that your paper #%NUMBER% has been accepted to appear in the conference.
+
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+  Paper site: %URL%/review.php?paperId=%NUMBER%
+
+Your paper was one of %NUMACCEPTED% accepted out of %NUMSUBMITTED% submissions.  Congratulations!
+
+Reviews and comments on your paper are appended to this email.  You may also view the paper's reviews and comments on line at the submissions site.  To sign in, either click the link below or paste it into your web browser's location field.
+
+    %LOGINURL%
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+- %CONFSHORTNAME% Submissions
+
+%REVIEWS%
+%COMMENTS%\n"),
+
+     "rejectnotify" =>
+     array("[%CONFSHORTNAME%] Rejected paper #%NUMBER% %TITLEHINT%",
+	   "Dear %NAME%,
+
+The %CONFNAME% program committee is sorry to inform you that your paper #%NUMBER% was rejected, and will not appear in the conference.
+
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+  Paper site: %URL%/review.php?paperId=%NUMBER%
+
+%NUMACCEPTED% papers were accepted out of %NUMSUBMITTED% submissions.
+
+Reviews and comments on your paper are appended to this email.  You may also view the paper's reviews and comments on line at the submissions site.  To sign in, either click the link below or paste it into your web browser's location field.
+
+    %LOGINURL%
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+- %CONFSHORTNAME% Submissions
+
+%REVIEWS%
+%COMMENTS%\n"),
+
+     "genericmailtool" =>
+     array("[%CONFSHORTNAME%] Paper #%NUMBER% %TITLEHINT%",
+	   "Dear %NAME%,
+
+Your message here.
+
+       Title: %TITLE%
+  Paper site: %URL%/paper.php?paperId=%NUMBER%
+
+To sign in to the submissions site, either click the link below or paste it into your web browser's location field.
+
+    %LOGINURL%
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+- %CONFSHORTNAME% Submissions\n"),
+
+     "reviewremind" =>
+     array("[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
+	   "Dear %NAME%,
+
+This is a reminder to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please \"refuse\" the review using the site or contact the person who requested the review directly.
+
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+  Paper site: %URL%/review.php?paperId=%NUMBER%
+
+To sign in to the submissions site, either click the link below or paste it into your web browser's location field.
+
+    %LOGINURL%
+
+Thank you for your help -- we appreciate that reviewing is hard work.
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+- %CONFSHORTNAME% Submissions\n")
+
+);
 
 
 class Mailer {
@@ -236,6 +321,8 @@ class Mailer {
     var $reason;
     var $rrow;
     var $reviewNumber;
+    var $statistics;
+    var $width;
 
     function Mailer($row, $contact, $otherContact = null, $rest = array()) {
 	$this->row = $row;
@@ -247,6 +334,8 @@ class Mailer {
 	$this->reason = defval($rest["reason"], "");
 	$this->rrow = defval($rest["rrow"], null);
 	$this->reviewNumber = defval($rest["reviewNumber"], "");
+	$this->statistics = null;
+	$this->width = ($row === null ? 10000000 : 75);
     }
     
     function _pushIf($yes) {
@@ -307,6 +396,12 @@ class Mailer {
 		return ($yes === null ? $what : "");
 	}
 
+	if ($what == "%REVIEWDEADLINE%") {
+	    if (defval($this->row->reviewType) <= 0 && $Conf->setting("pcrev_soft") != $Conf->setting("extrev_soft"))
+		return ($isbool ? null : $what);
+	    $what = "%DEADLINE(" . (defval($this->row->reviewType) >= REVIEW_PC ? "pcrev_soft" : "extrev_soft") . ")%";
+	    $len = strlen($what);
+	}
 	if ($len > 12 && substr($what, 0, 10) == "%DEADLINE(" && substr($what, $len - 2) == ")%") {
 	    $inner = substr($what, 10, $len - 12);
 	    if ($isbool)
@@ -329,7 +424,21 @@ class Mailer {
 	    return "$Conf->contactName <$Conf->contactEmail>";
 	if ($what == "%URL%")
 	    return $Conf->paperSite;
-
+	if (($what == "%NUMACCEPTED%" || $what == "%NUMSUBMITTED%")
+	    && $this->statistics === null) {
+	    $this->statistics = array(0, 0);
+	    $result = $Conf->q("select outcome, count(paperId) from Paper where timeSubmitted>0 group by outcome");
+	    while (($row = edb_row($result))) {
+		$this->statistics[0] += $row[1];
+		if ($row[0] > 0)
+		    $this->statistics[1] += $row[1];
+	    }
+	}
+	if ($what == "%NUMSUBMITTED%")
+	    return $this->statistics[0];
+	if ($what == "%NUMACCEPTED%")
+	    return $this->statistics[1];
+	
 	// if no contact, this is a pre-expansion
 	if (!$this->contact)
 	    return ($isbool ? null : $what);
@@ -360,7 +469,7 @@ class Mailer {
 	    return $this->reason;
 
 	// rest is only there if we have a real paper
-	if (defval($this->row->paperId) <= 0)
+	if (!$this->row || defval($this->row->paperId) <= 0)
 	    return ($isbool ? false : $what);
 
 	if ($what == "%TITLE%")
@@ -371,7 +480,7 @@ class Mailer {
 	    else
 		return "";
 	}
-	if ($what == "%NUMBER%")
+	if ($what == "%NUMBER%" || $what == "%PAPER%")
 	    return $this->row->paperId;
 	if ($what == "%REVIEWNUMBER%")
 	    return $this->reviewNumber;
@@ -471,10 +580,12 @@ class Mailer {
 		    $this->text .= $m . "\n";
 	    } else if (preg_match('/^([ \t][ \t]*.*?: )(%OPT\([\w()]+\)%)$/', $line, $m)) {
 		
-		if ($this->expandvar($m[2], true))
-		    $this->text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true)) . "\n";
+		if (($yes = $this->expandvar($m[2], true)))
+		    $this->text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true), $this->width) . "\n";
+		else if ($yes === null)
+		    $this->text .= $line . "\n";
 	    } else if (preg_match('/^([ \t][ \t]*.*?: )(%[\w()]+%)$/', $line, $m))
-		$this->text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true)) . "\n";
+		$this->text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true), $this->width) . "\n";
 	    else if (strpos($line, '%') !== false) {
 		$this->textstart = strlen($this->text);
 		while (preg_match('/^(.*?)(%[\w()]+%)(.*)$/s', $line, $m)) {
@@ -483,14 +594,14 @@ class Mailer {
 		    $line = $m[3];
 		}
 		$this->text .= $line;
-		$this->text = substr($this->text, 0, $this->textstart) . wordWrapIndent(substr($this->text, $this->textstart), "", 0) . "\n";
+		$this->text = substr($this->text, 0, $this->textstart) . wordWrapIndent(substr($this->text, $this->textstart), "", 0, $this->width) . "\n";
 	    } else
-		$this->text .= wordWrapIndent($line, "", 0) . "\n";
+		$this->text .= wordWrapIndent($line, "", 0, $this->width) . "\n";
 	}
 	return $this->text;
     }
 
-    function send($template, $row, $contact, $otherContact = null, $rest = array()) {
+    function prepareToSend($template, $row, $contact, $otherContact = null, $rest = array()) {
 	global $Conf, $mailTemplates;
 
 	if (is_string($template) && $template[0] == "@")
@@ -511,10 +622,24 @@ class Mailer {
 	$mailer = new Mailer($row, $contact, $otherContact, $rest);
 	$m = $mailer->expand($template);
 	$m[0] = rtrim($m[0]);
-	if ($Conf->allowEmailTo($emailTo->email))
-	    return mail(contactEmailTo($emailTo), $m[0], $m[1], "${headers}From: $Conf->emailFrom");
+	$m["allowEmail"] = $Conf->allowEmailTo($emailTo->email);
+	$m["to"] = contactEmailTo($emailTo);
+	$m["headers"] = $headers;
+	return $m;
+    }
+
+    function sendPrepared($preparation) {
+	global $Conf;
+	if ($preparation["allowEmail"])
+	    return mail($preparation["to"], $preparation[0], $preparation[1], $preparation["headers"] . "From: $Conf->emailFrom");
 	else
-	    return $Conf->infoMsg("<pre>" . htmlspecialchars("To: " . contactEmailTo($emailTo) . "\nSubject: $m[0]\n$headers\n$m[1]") . "</pre>");
+	    return $Conf->infoMsg("<pre>" . htmlspecialchars("To: " . $preparation["to"] . "\nSubject: $preparation[0]\n" . $preparation["headers"] . "\n$preparation[1]") . "</pre>");
+    }
+    
+    function send($template, $row, $contact, $otherContact = null, $rest = array()) {
+	$preparation = self::prepareToSend($template, $row, $contact, $otherContact, $rest);
+	if ($preparation)
+	    self::sendPrepared($preparation);
     }
 
     function sendContactAuthors($template, $row, $otherContact = null, $rest = array()) {

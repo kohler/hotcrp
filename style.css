@@ -125,6 +125,9 @@ body#account div.body, body#paper_edit div.body, body#paper_view div.body,
 body#autoassign div.body {
 	margin: 0px 0px;
 }
+body#mail td#mailref {
+	font-size: smaller;
+}
 
 
 /* general */
@@ -560,6 +563,12 @@ td.slcaption {
 }
 td.sentry {
 	padding: 3px 0.75em 3px 0.75em;
+}
+td.lcaption {
+	padding: 0px 0.75em 0px 0em;
+}
+td.llentry {
+	padding: 0px 0.75em;
 }
 td.caption {
 	text-align: right;

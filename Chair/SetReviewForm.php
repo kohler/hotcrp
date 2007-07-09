@@ -227,9 +227,9 @@ function rf_show() {
 4. Accept</pre>");
 
 
-    echo "<table class='center'><tr><td><div class='hgrp'><b>Load canned review form:</b>&nbsp;
+    echo "<table class='center'><tr><td><div class='hgrp'><b>Templates:</b>&nbsp;
 <select name='sample'>";
-    foreach (array("none" => "Current form",
+    foreach (array("none" => "(none)",
 		   "hotnetsv" => "HotNets V workshop",
 		   "sigcomm2005" => "SIGCOMM 2005",
 		   "worlds2005" => "WORLDS 2005 workshop",
@@ -240,7 +240,7 @@ function rf_show() {
 	echo ">$v</option>";
     }
     echo "</select> &nbsp;
-<input type='submit' class='button' name='loadsample' value='Go' /></div></td></tr></table>
+<input type='submit' class='button' name='loadsample' value='Load template' /></div></td></tr></table>
 
 <div class='smgap'></div>
 

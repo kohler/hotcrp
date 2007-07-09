@@ -107,8 +107,6 @@ Chair/.htaccess
 Chair/AssignPapers.php
 Chair/Code.inc
 Chair/DumpDatabase.php
-Chair/SendMail.php
-Chair/SendMail2.php
 Chair/SetReviewForm.php
 Chair/ShowCalendar.php
 Chair/ViewActionLog.php

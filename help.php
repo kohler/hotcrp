@@ -447,7 +447,7 @@ supposedly reduces bias.)
   href='${ConfSiteBase}comment.php'>comments</a>.  On the <a
   href='${ConfSiteBase}settings.php?group=dec'>decision settings page</a>,
   select \"Allow authors to see reviews\" and \"Collect responses to the
-  reviews\", then <a href='${ConfSiteBase}Chair/SendMail.php'>send mail to
+  reviews\", then <a href='${ConfSiteBase}mail.php'>send mail to
   authors</a> informing them of the response deadlines.  PC members will still
   be able to update their reviews, assuming it's before the <a
   href='${ConfSiteBase}settings.php?group=rev'>review deadline</a>; authors
@@ -522,7 +522,7 @@ supposedly reduces bias.)
 <li><p><strong><a href='${ConfSiteBase}settings.php?group=dec'>Allow authors to
   see reviews and decisions.</a></strong></p></li>
 
-<li><p><strong><a href='${ConfSiteBase}Chair/SendMail.php'>Send mail to
+<li><p><strong><a href='${ConfSiteBase}mail.php'>Send mail to
   authors</a></strong> informing them that reviews and decisions are
   available.  The mail can also contain the reviews and comments
   themselves.</p></li>
