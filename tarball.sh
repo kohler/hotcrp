@@ -44,6 +44,7 @@ offline.php
 paper.php
 reload.sh
 review.php
+scorehelp.php
 script.js
 search.php
 sessionvar.php

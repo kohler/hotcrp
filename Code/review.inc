@@ -28,6 +28,10 @@ $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
 			  "fixability", "interestToCommunity", "longevity",
 			  "likelyPresentation", "suitableForShort");
 
+global $scoreHelps;
+$scoreHelps = array();
+
+
 class ReviewForm {
 
     var $updatedWhen;
@@ -662,8 +666,8 @@ class ReviewForm {
 	    $conf->confirmMsg("<div class='parseerr'><p>" . join("</p>\n<p>", $tf['confirm']) . "</p></div>");
     }
 
-    function webDisplayRows($rrow, $viewAllFields) {
-	global $ReviewFormError;
+    function webDisplayRows($rrow, $viewAllFields, $showGuidance = false) {
+	global $ReviewFormError, $scoreHelps, $Conf, $ConfSiteBase;
 	$x = '';
 
 	$showFields = array();
@@ -700,6 +704,19 @@ class ReviewForm {
 	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))
 		$n = preg_replace("/\\s+/", "&nbsp;", $n);
 	    $x .= "$n";
+	    if ($showGuidance && $options) {
+		$x .= "<a class='scorehelp' href='${ConfSiteBase}scorehelp.php' target='new' scorehelp=\"$field\">?</a>";
+		if (count($scoreHelps[$field]) == 0)
+		    $Conf->footerStuff .= "<script>addScoreHelp();</script>";
+		if (!isset($scoreHelps[$field])) {
+		    $scoreHelps[$field] = 1;
+		    $help = "<div class='scorehelpc' id='scorehelp_$field'><strong>$n</strong> choices are:<br /><span class='rev_$field'>";
+		    foreach ($this->options[$field] as $val => $text)
+			$help .= "<span class='rev_num rev_num_$val'>$val.</span>&nbsp;" . htmlspecialchars($text) . "<br />";
+		    $help .= "</div>";
+		    $Conf->footerStuff .= $help;
+		}
+	    }
 	    if ($this->authorView[$field] < 0)
 		$x .= "<br /><span class='hint'>Chairs only</span>";
 	    else if ($this->authorView[$field] == 0)
@@ -749,7 +766,7 @@ class ReviewForm {
 	    if ($options) {
 		$x .= "<div class='rev_options'>Choices are:";
 		foreach ($this->options[$field] as $num => $val)
-		    $x .= "<br/>\n$num. " . htmlspecialchars($val);
+		    $x .= "<br />\n<span class='rev_num rev_num_$num'>$num.</span> " . htmlspecialchars($val);
 		$x .= "</div>";
 	    }
 	    

@@ -21,6 +21,8 @@ class Conference {
     var $tableMessages;
     var $tableMessagesObj;
 
+    var $footerStuff;
+
     // Useful colors
     var $contrastColorOne = "#eeeeee";
     var $contrastColorTwo = "#cccccc";
@@ -31,6 +33,7 @@ class Conference {
 	$this->saveMessages = true;
 	$this->headerPrinted = 0;
 	$this->tableMessages = false;
+	$this->footerStuff = "";
 	
 	$this->contactName = $Opt['contactName'];
 	$this->contactEmail = $Opt['contactEmail'];
@@ -1026,6 +1029,7 @@ class Conference {
 	    echo "<html>\n<head>\n";
 	    echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n";
 	    echo "<meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />\n";
+	    echo "<meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />\n";
 	    if (strstr($title, "<") !== false)
 		$title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
 	    echo "<title>", $title, " - ", $this->shortName, "</title>\n";
@@ -1099,6 +1103,7 @@ class Conference {
 	echo "<div id='footer'>\n";
 	echo "  <div id='footer_crp'><a href='http://www.cs.ucla.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software</div>\n";
 	echo "  <div class='clear'></div></div>\n";
+	echo $this->footerStuff;
 	echo "</body>\n</html>\n";
     }
 

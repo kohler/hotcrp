@@ -202,6 +202,78 @@ function shiftPassword(direction) {
 }
 
 
+// thank you David Flanagan
+var geometry;
+if (window.innerWidth) {
+    geometry = function() {
+	return { 
+	    left: window.pageXOffset, 
+	    top: window.pageYOffset,
+	    width: window.innerWidth, 
+	    height: window.innerHeight,
+	    right: window.pageXOffset + window.innerWidth,
+	    bottom: window.pageYOffset + window.innerHeight
+	};
+    }
+} else if (document.documentElement && document.documentElement.clientWidth) {
+    geometry = function() {
+	var e = document.documentElement;
+	return { 
+	    left: e.scrollLeft, 
+	    top: e.scrollTop,
+	    width: e.clientWidth, 
+	    height: e.clientHeight,
+	    right: e.scrollLeft + e.clientWidth,
+	    bottom: e.scrollTop + e.clientHeight
+	};
+    }
+}
+
+function eltPos(e) {
+    var pos = { top: 0, left: 0, right: e.offsetWidth, bottom: e.offsetHeight };
+    while (e) {
+	pos.left += e.offsetLeft;
+	pos.top += e.offsetTop;
+	pos.right += e.offsetLeft;
+	pos.bottom += e.offsetTop;
+	e = e.offsetParent;
+    }
+    return pos;
+}
+
+
+// score help
+function makescorehelp(anchor, which, dofold) {
+    return function() {
+	var elt = e("scorehelp_" + which);
+	if (elt && dofold)
+	    elt.className = "scorehelpc";
+	else if (elt) {
+	    var anchorPos = eltPos(anchor);
+	    var wg = geometry();
+	    elt.className = "scorehelpo";
+	    elt.style.left = Math.max(5, anchorPos.right - elt.offsetWidth) + "px";
+	    if (anchorPos.bottom + 5 + elt.offsetHeight > wg.bottom
+		&& anchorPos.top - 5 - elt.offsetHeight >= wg.top - 10)
+		elt.style.top = (anchorPos.top - 5 - elt.offsetHeight) + "px";
+	    else
+		elt.style.top = (anchorPos.bottom + 5) + "px";
+	}
+    };
+}
+
+function addScoreHelp() {
+    var anchors = document.getElementsByTagName("a");
+    for (var i = 0; i < anchors.length; i++) {
+	var sh = anchors[i].getAttribute("scorehelp");
+	if (sh) {
+	    anchors[i].onmouseover = makescorehelp(anchors[i], sh, 0);
+	    anchors[i].onmouseout = makescorehelp(anchors[i], sh, 1);
+	}
+    }
+}
+
+
 // Thank you David Flanagan
 var Miniajax = {};
 Miniajax._factories = [
