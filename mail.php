@@ -67,6 +67,7 @@ function checkMail($send) {
 	$preparation = Mailer::prepareToSend($template, $row, $row, null, $rest);
 	if ($preparation[0] != $last[0] || $preparation[1] != $last[1]
 	    || $preparation["to"] != $last["to"]) {
+	    $last = $preparation;
 	    $checker = "c" . $row->contactId . "p" . $row->paperId;
 	    if ($send && !defval($_REQUEST[$checker]))
 		continue;
@@ -79,7 +80,6 @@ function checkMail($send) {
 	    echo "<td class='caption'>Subject</td><td class='entry'><tt>", htmlspecialchars($preparation[0]), "</tt></td></tr>\n";
 	    echo "<td class='caption'>Body</td><td class='entry'><pre>", htmlspecialchars($preparation[1]), "</pre></td></tr>\n";
 	    echo "</table>\n";
-	    $last = $preparation;
 	}
     }
 
