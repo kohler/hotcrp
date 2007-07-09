@@ -706,7 +706,7 @@ class ReviewForm {
 	    $x .= "$n";
 	    if ($showGuidance && $options) {
 		$x .= "<a class='scorehelp' href='${ConfSiteBase}scorehelp.php' target='new' scorehelp=\"$field\">?</a>";
-		if (count($scoreHelps[$field]) == 0)
+		if (count($scoreHelps) == 0)
 		    $Conf->footerStuff .= "<script>addScoreHelp();</script>";
 		if (!isset($scoreHelps[$field])) {
 		    $scoreHelps[$field] = 1;
