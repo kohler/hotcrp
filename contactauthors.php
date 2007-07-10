@@ -111,7 +111,7 @@ if ($OK) {
     $paperTable->echoTopics($prow);
 
     // Contact authors
-    echo "<tr>\n  <td class='caption'>Contact&nbsp;authors</td>\n";
+    echo "<tr>\n  <td class='caption textarea'>Contact&nbsp;authors</td>\n";
     echo "  <td class='entry plholder'><table class='pltable'>
     <tr class='pl_headrow'><th>Name</th> <th>Email</th> <th></th></tr>\n";
     $q = "select firstName, lastName, email, contactId
