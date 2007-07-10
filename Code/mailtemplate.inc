@@ -397,8 +397,12 @@ class Mailer {
 	}
 
 	if ($what == "%REVIEWDEADLINE%") {
-	    if (defval($this->row->reviewType) <= 0 && $Conf->setting("pcrev_soft") != $Conf->setting("extrev_soft"))
-		return ($isbool ? null : $what);
+	    if (defval($this->row->reviewType) <= 0 && $Conf->setting("pcrev_soft") != $Conf->setting("extrev_soft")) {
+		if ($isbool && ($Conf->setting("pcrev_soft") > 0) == ($Conf->setting("extrev_soft") > 0))
+		    return $Conf->setting("pcrev_soft") > 0;
+		else
+		    return ($isbool ? null : $what);
+	    }
 	    $what = "%DEADLINE(" . (defval($this->row->reviewType) >= REVIEW_PC ? "pcrev_soft" : "extrev_soft") . ")%";
 	    $len = strlen($what);
 	}
