@@ -45,7 +45,7 @@ if (($start = cvtint($_REQUEST["start"], -1)) < 0)
 if (($count = cvtint($_REQUEST["count"], -1)) <= 0)
     $count = 25;
 
-$Conf->header("Conference Log");
+$Conf->header("Log", "actionlog", actionBar());
 
 navigationBar();
 

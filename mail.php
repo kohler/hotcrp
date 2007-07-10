@@ -7,7 +7,7 @@ $Me->goIfNotPrivChair('index.php');
 $rf = reviewForm();
 $nullMailer = new Mailer(null, null);
 
-$Conf->header("Send Mail", "mail");
+$Conf->header("Send Mail", "mail", actionBar());
 
 $subjectPrefix = "[$Conf->shortName] ";
 

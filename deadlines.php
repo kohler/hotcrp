@@ -14,7 +14,7 @@ $Me->goIfInvalid();
 
 
 // header and script
-$Conf->header("Deadlines");
+$Conf->header("Deadlines", "deadlines", actionBar());
 
 echo "<p>The following deadlines determine when various conference
 submission and review functions can be accessed.
