@@ -66,23 +66,25 @@ function fold(which, dofold, foldnum) {
 	    elt.className = elt.className.replace(opentxt, closetxt);
 	else
 	    elt.className = elt.className.replace(closetxt, opentxt);
-	// IE won't actually do the fold unless we yell at it
-	if (document.recalc)
-	    elt.innerHTML = elt.innerHTML + "";
 	// check for session
 	var selt = e('foldsession.' + which + foldnumid);
 	if (selt)
 	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0));
+	// IE won't actually do the fold unless we yell at it
+	if (document.recalc)
+	    try {
+		elt.innerHTML = elt.innerHTML + "";
+	    } catch (err) {
+	    }
     }
 }
 
 function tablink(which, num) {
     var selt = e(which);
     if (selt) {
+	if (window.event)
+	    window.event.returnValue = false;
 	selt.className = selt.className.replace(/links[0-9]*/, 'links' + num);
-	// IE won't actually do the fold unless we yell at it
-	if (document.recalc)
-	    selt.innerHTML = selt.innerHTML + "";
 	var felt = e(which + num + "_d");
 	if (felt)
 	    felt.focus();
@@ -206,9 +208,9 @@ function shiftPassword(direction) {
 
 
 // thank you David Flanagan
-var geometry;
+var Geometry;
 if (window.innerWidth) {
-    geometry = function() {
+    Geometry = function() {
 	return { 
 	    left: window.pageXOffset, 
 	    top: window.pageYOffset,
@@ -217,9 +219,9 @@ if (window.innerWidth) {
 	    right: window.pageXOffset + window.innerWidth,
 	    bottom: window.pageYOffset + window.innerHeight
 	};
-    }
+    };
 } else if (document.documentElement && document.documentElement.clientWidth) {
-    geometry = function() {
+    Geometry = function() {
 	var e = document.documentElement;
 	return { 
 	    left: e.scrollLeft, 
@@ -229,8 +231,9 @@ if (window.innerWidth) {
 	    right: e.scrollLeft + e.clientWidth,
 	    bottom: e.scrollTop + e.clientHeight
 	};
-    }
+    };
 }
+
 
 function eltPos(e) {
     var pos = { top: 0, left: 0, right: e.offsetWidth, bottom: e.offsetHeight };
@@ -253,7 +256,7 @@ function makescorehelp(anchor, which, dofold) {
 	    elt.className = "scorehelpc";
 	else if (elt) {
 	    var anchorPos = eltPos(anchor);
-	    var wg = geometry();
+	    var wg = Geometry();
 	    elt.className = "scorehelpo";
 	    var x = anchorPos.right - elt.offsetWidth;
 	    elt.style.left = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) + "px";
@@ -287,7 +290,7 @@ function popup(anchor, which, dofold) {
 	if (!anchor)
 	    anchor = e("popupanchor_" + which);
 	var anchorPos = eltPos(anchor);
-	var wg = geometry();
+	var wg = Geometry();
 	elt.className = "popupo";
 	var x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
 	var y = (anchorPos.top + anchorPos.bottom - elt.offsetHeight) / 2;
@@ -310,7 +313,7 @@ Miniajax.newRequest = function() {
 	    var req = Miniajax._factories[0]();
 	    if (req != null)
 		return req;
-	} catch (e) {
+	} catch (err) {
 	}
 	Miniajax._factories.shift();
     }

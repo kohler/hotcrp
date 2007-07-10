@@ -413,7 +413,8 @@ function reviewView($prow, $rrow, $editMode) {
 	else
 	    echo "paperId=$prow->paperId";
 	echo "$forceShow&amp;mode=edit&amp;post=1' method='post' enctype='multipart/form-data'>\n";
-    }
+    } else
+	echo "<div class='relative'>";
     
     echo "<table class='review'>
 <tr class='id'>
@@ -534,7 +535,7 @@ function reviewView($prow, $rrow, $editMode) {
     } else {
 	echo $rf->webDisplayRows($rrow, $Me->canViewAllReviewFields($prow, $Conf), true);
 	echo "<tr class='last'><td class='caption'></td></tr>\n";
-	echo "</table>\n";
+	echo "</table></div>\n";
     }
     
 }

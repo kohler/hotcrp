@@ -1033,7 +1033,7 @@ class Conference {
 	    if (strstr($title, "<") !== false)
 		$title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
 	    echo "<title>", $title, " - ", $this->shortName, "</title>\n";
-	    echo "<script type='text/javascript' src='${ConfSiteBase}cacheable.php?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "' defer='defer'></script>\n";
+	    echo "<script type='text/javascript' src='${ConfSiteBase}cacheable.php?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "'></script>\n";
 	    echo "<link rel='stylesheet' type='text/css' href='${ConfSiteBase}cacheable.php?file=style.css&amp;mtime=" . filemtime("$ConfSitePATH/style.css") . "' />\n";
 	    $this->headerPrinted = 1;
 	}
@@ -1050,7 +1050,7 @@ class Conference {
 	echo "</head><body";
 	if ($id)
 	    echo " id='$id'";
-	echo "onload='hotcrpLoad($time, ", -date("Z", $time) / 60, ")'>\n";
+	echo " onload='hotcrpLoad($time, ", -date("Z", $time) / 60, ")'>\n";
 	echo "<div id='header'>\n";
 	echo "  <div id='header_left'><h1>";
 	if ($title && $showTitle && $title == "Home")

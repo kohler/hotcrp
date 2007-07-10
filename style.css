@@ -281,6 +281,7 @@ input.button_default, button.button_default {
 }
 #searchform, #contactsform {
 	margin: 0px auto;
+	position: relative;
 }
 #searchform .tld3, #contactsform .tld2 {
 	font-size: smaller;
@@ -539,6 +540,9 @@ span.author, span.conflict {
 /* Captions and entries */
 table.paper, table.review, table.comment, table.assign {
 	width: 100%;
+}
+div.relative {
+	position: relative;
 }
 tr, textarea, select {
 	vertical-align: baseline;
@@ -869,6 +873,7 @@ div.searchresult {
 }
 div.searchresult table.pltable {
 	width: 100%;
+	position: relative;
 }
 table.pltable th a.unfolder1, table.pltable th a.unfolder2, table.pltable th a.unfolder4,
 table.pltable th a.folder1, table.pltable th a.folder2, table.pltable th a.folder4 {
