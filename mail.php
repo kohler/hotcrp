@@ -11,7 +11,6 @@ $Conf->header("Send Mail", "mail", actionBar());
 
 $subjectPrefix = "[$Conf->shortName] ";
 
-
 function contactQuery($type) {
     $contactInfo = "firstName, lastName, email, password, ContactInfo.contactId";
     $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind";
@@ -31,19 +30,8 @@ function contactQuery($type) {
     return "";
 }
 
-function checkMail($send) {
-    global $Conf, $subjectPrefix;
-    $q = contactQuery($_REQUEST["recipients"]);
-    if (!$q)
-	return $Conf->errorMsg("Bad recipients value");
-    $result = $Conf->qe($q, "while fetching mail recipients");
-    if (!$result)
-	return;
-    
-    $subject = defval($_REQUEST["subject"], "");
-    if (substr($subject, 0, strlen($subjectPrefix)) != $subjectPrefix)
-	$subject = $subjectPrefix . $subject;
-
+function checkMailPrologue($send) {
+    global $Conf;
     if ($send) {
 	echo "<div id='foldmail' class='foldc'><div class='ellipsis'><div class='error'>In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong></div></div><div class='extension'><div class='confirm'>Sent mail as follows.</div>
 	<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail.php' enctype='multipart/form-data'>\n";
@@ -59,11 +47,29 @@ function checkMail($send) {
 	echo "<input class='button' type='submit' name='dosend' value='Send' /> &nbsp;
 <input class='button' type='submit' name='cancel' value='Cancel' /></td></tr></table>\n";
     }
+    return true;
+}
+
+function checkMail($send) {
+    global $Conf, $subjectPrefix, $recip;
+    $q = contactQuery($_REQUEST["recipients"]);
+    if (!$q)
+	return $Conf->errorMsg("Bad recipients value");
+    $result = $Conf->qe($q, "while fetching mail recipients");
+    if (!$result)
+	return;
+    
+    $subject = defval($_REQUEST["subject"], "");
+    if (substr($subject, 0, strlen($subjectPrefix)) != $subjectPrefix)
+	$subject = $subjectPrefix . $subject;
 
     $template = array($_REQUEST["subject"], $_REQUEST["emailBody"]);
     $rest = array("headers" => "Cc: $Conf->contactName <$Conf->contactEmail>");
     $last = array(0 => "", 1 => "", "to" => "");
+    $any = false;
     while (($row = edb_orow($result))) {
+	if (!$any)
+	    $any = checkMailPrologue($send);
 	$preparation = Mailer::prepareToSend($template, $row, $row, null, $rest);
 	if ($preparation[0] != $last[0] || $preparation[1] != $last[1]
 	    || $preparation["to"] != $last["to"]) {
@@ -83,7 +89,9 @@ function checkMail($send) {
 	}
     }
 
-    if ($send)
+    if (!$any)
+	return $Conf->errorMsg("No users match \"" . htmlspecialchars($recip[$_REQUEST["recipients"]]) . "\".");
+    else if ($send)
 	echo "<script>fold('mail', null);</script>";
     else {
 	echo "<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail.php?send=1' enctype='multipart/form-data'>\n";
@@ -96,19 +104,51 @@ function checkMail($send) {
     exit;
 }
 
+// Check paper outcome counts
+$result = $Conf->q("select outcome, count(paperId) from Paper group by outcome");
+$noutcome = array();
+while (($row = edb_row($result)))
+    $noutcome[$row[0]] = $row[1];
+
+// Load template
 if (defval($_REQUEST["loadtmpl"])) {
     $t = defval($_REQUEST["template"], "genericmailtool");
-    if ($t == "rejectnotify")
-	$_REQUEST["recipients"] = "author-outcome" . min(array_keys($rf->options["outcome"]));
-    else if ($t == "acceptnotify")
-	$_REQUEST["recipients"] = "author-outcome" . max(array_keys($rf->options["outcome"]));
-    else if ($t == "reviewremind")
+    if ($t == "rejectnotify") {
+	$x = min(array_keys($rf->options["outcome"]));
+	foreach ($noutcome as $o => $n)
+	    if ($o < 0 && $n > defval($noutcome[$x]))
+		$x = $o;
+	$_REQUEST["recipients"] = "author-outcome$x";
+    } else if ($t == "acceptnotify") {
+	$x = max(array_keys($rf->options["outcome"]));
+	foreach ($noutcome as $o => $n)
+	    if ($o > 0 && $n > defval($noutcome[$x]))
+		$x = $o;
+	$_REQUEST["recipients"] = "author-outcome$x";
+    } else if ($t == "reviewremind")
 	$_REQUEST["recipients"] = "review-not-finalize";
     else
 	$_REQUEST["recipients"] = "submitted";
     $_REQUEST["subject"] = $nullMailer->expand($mailTemplates[$t][0]);
     $_REQUEST["emailBody"] = $nullMailer->expand($mailTemplates[$t][1]);
-} else if (defval($_REQUEST["check"]))
+}
+
+// Set recipients list, now that template is loaded
+$recip = array("submitted" => "Contact authors of submitted papers",
+	       "notsubmitted" => "Contact authors of unsubmitted papers",
+	       "review-finalized" => "Reviewers who submitted at least one review",
+	       "review-not-finalize" => "Reviewers with outstanding reviews",
+	       "pc" => "Program committee");
+foreach ($rf->options["outcome"] as $num => $what) {
+    $name = "author-outcome$num";
+    if ($num && (defval($noutcome[$num]) > 0 || $_REQUEST["recipients"] == $name))
+	$recip[$name] = "Contact authors of $what papers";
+}
+
+// Check or send
+if (defval($_REQUEST["loadtmpl"]))
+    /* do nothing */;
+else if (defval($_REQUEST["check"]))
     checkMail(0);
 else if (defval($_REQUEST["cancel"]))
     /* do nothing */;
@@ -145,14 +185,6 @@ echo "  </select> &nbsp;<input class='button' type='submit' name='loadtmpl' valu
 </tr>
   <td class='caption'>Mail to</td>
   <td class='entry'><select name='recipients'>";
-$recip = array("submitted" => "Contact authors of submitted papers",
-	       "notsubmitted" => "Contact authors of unsubmitted papers",
-	       "review-finalized" => "Reviewers who submitted at least one review",
-	       "review-not-finalize" => "Reviewers with outstanding reviews",
-	       "pc" => "Program committee");
-foreach ($rf->options["outcome"] as $num => $what)
-    if ($num)
-	$recip["author-outcome$num"] = "Contact authors of $what papers";
 foreach ($recip as $r => $what) {
     echo "    <option value='$r'";
     if ($r == defval($_REQUEST["recipients"]))
