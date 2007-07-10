@@ -23,6 +23,7 @@ if ($Me->isPC)
 if ($Me->privChair || ($Me->isPC && $Conf->timePCViewAllReviews())) {
     $tOpt["re"] = "All reviewers";
     $tOpt["ext"] = "External reviewers";
+    $tOpt["extsub"] = "External reviewers who completed a review";
 }
 if ($Me->isPC)
     $tOpt["req"] = "External reviewers you requested";

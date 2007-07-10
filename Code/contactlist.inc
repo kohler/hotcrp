@@ -326,9 +326,11 @@ class ContactList extends BaseList {
 	  case "admin":
 	    return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS));
 	  case "re":
-	    return $this->addScores(array("re", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS));
+	  case "resub":
+	    return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS));
 	  case "ext":
-	    return $this->addScores(array("ext", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_PAPERS));
+	  case "extsub":
+	    return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_PAPERS));
 	  case "req":
 	    return $this->addScores(array("req", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_PAPERS));
 	  case "au":
@@ -422,10 +424,10 @@ class ContactList extends BaseList {
 	    $pq .= "	left join (select contactId, group_concat(topicId) as topicIds, group_concat(interest) as topicInterest from TopicInterest group by contactId) as TopicInterests on (TopicInterests.contactId=ContactInfo.contactId)\n";
 	if (isset($queryOptions['reviews'])) {
 	    $j = "left join";
-	    if ($this->limit == "re" || $this->limit == "req" || $this->limit == "ext")
+	    if ($this->limit == "re" || $this->limit == "req" || $this->limit == "ext" || $this->limit == "resub" || $this->limit == "extsub")
 		$j = "join";
 	    $pq .= "	$j (select PaperReview.* from PaperReview join Paper on (Paper.paperId=PaperReview.paperId) where Paper.timeSubmitted>0";
-	    if ($this->limit == "req" || $this->limit == "ext")
+	    if ($this->limit == "req" || $this->limit == "ext" || $this->limit == "extsub")
 		$pq .= " and PaperReview.reviewType=" . REVIEW_EXTERNAL;
 	    if ($this->limit == "req")
 		$pq .= " and PaperReview.requestedBy=" . $this->contact->contactId;
@@ -469,6 +471,10 @@ class ContactList extends BaseList {
 	$body = '';
 	$extrainfo = false;
 	foreach ($srows as $row) {
+	    if (($this->limit == "resub" || $this->limit == "extsub")
+		&& $row->numReviewsSubmitted == 0)
+		continue;
+	    
 	    $trclass = "k" . ($this->count % 2);
 	    $this->count++;
 
