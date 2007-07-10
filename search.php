@@ -32,12 +32,12 @@ if ($Me->isAuthor)
 if ($Me->privChair || ($Me->isPC && $Conf->setting("pc_seeall") > 0))
     $tOpt["all"] = "All papers";
 if (count($tOpt) == 0) {
-    $Conf->header("Search", 'search');
+    $Conf->header("Search", 'search', actionBar());
     $Conf->errorMsg("You are not allowed to search for papers.");
     exit;
 }
 if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
-    $Conf->header("Search", 'search');
+    $Conf->header("Search", 'search', actionBar());
     $Conf->errorMsg("You aren't allowed to search that paper collection.");
     unset($_REQUEST["t"]);
 }
@@ -463,7 +463,7 @@ if (isset($_REQUEST["scoresort"])) {
     
 
 // search
-$Conf->header("Search", 'search');
+$Conf->header("Search", 'search', actionBar());
 unset($_REQUEST["urlbase"]);
 $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
