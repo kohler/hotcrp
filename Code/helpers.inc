@@ -692,7 +692,7 @@ function contactPulldown($id, $name, $conf, $contact) {
 
 function actionTab($text, $url, $default) {
     if ($default)
-	return "    <td><div class='vbtab1'><a href='$url'>$text</a><div class='vbtab1x'></div></div></td>\n";
+	return "    <td><div class='vbtab1'><div class='vbtab1x'><div class='vbtab1y'><a href='$url'>$text</a></div></div></div></td>\n";
     else
 	return "    <td><div class='vbtab'><a href='$url'>$text</a></div></td>\n";
 }
