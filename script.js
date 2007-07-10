@@ -80,6 +80,9 @@ function tablink(which, num) {
     var selt = e(which);
     if (selt) {
 	selt.className = selt.className.replace(/links[0-9]*/, 'links' + num);
+	// IE won't actually do the fold unless we yell at it
+	if (document.recalc)
+	    selt.innerHTML = selt.innerHTML + "";
 	var felt = e(which + num + "_d");
 	if (felt)
 	    felt.focus();
