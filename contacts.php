@@ -8,6 +8,12 @@ require_once('Code/contactlist.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $rf = reviewForm();
+$getaction = "";
+if (isset($_REQUEST["get"]))
+    $getaction = $_REQUEST["get"];
+else if (isset($_REQUEST["getgo"]) && isset($_REQUEST["getaction"]))
+    $getaction = $_REQUEST["getaction"];
+
 
 // list type
 $tOpt = array();
@@ -38,6 +44,38 @@ if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
 }
 if (!isset($_REQUEST["t"]))
     $_REQUEST["t"] = key($tOpt);
+
+
+// paper selection and download actions
+function paperselPredicate($papersel) {
+    if (count($papersel) == 1)
+	return "contactId=$papersel[0]";
+    else
+	return "contactId in (" . join(", ", $papersel) . ")";
+}
+
+if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
+    $_REQUEST["pap"] = split(" +", $_REQUEST["pap"]);
+if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
+    $papersel = array();
+    foreach ($_REQUEST["pap"] as $p)
+	if (($p = cvtint($p)) > 0)
+	    $papersel[] = $p;
+    if (count($papersel) == 0)
+	unset($papersel);
+}
+
+if ($getaction == "nameemail" && isset($papersel)) {
+    $result = $Conf->qe("select firstName, lastName, email from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
+    $text = "#name\temail\n";
+    while ($row = edb_row($result))
+	if ($row[0] && $row[1])
+	    $text .= "$row[1], $row[0]\t$row[2]\n";
+	else
+	    $text .= "$row[1]$row[0]\t$row[2]\n";
+    downloadText($text, $Opt['downloadPrefix'] . "accounts.txt", "accounts");
+    exit;
+}
 
 
 // set scores to view
@@ -152,7 +190,15 @@ else if ($Me->privChair && $_REQUEST["t"] == "all")
     $Conf->infoMsg("<p><a href='${ConfSiteBase}account.php?new=1' class='button'>Create account</a></p><p>Click on an account name to edit account information.  Click on <img src='${ConfSiteBase}images/viewas.png' /> to view the site as someone else.</p>");
 
 
+if ($pl->anySelector) {
+    echo "<form method='get' action='contacts.php'>";
+    foreach (array("t", "sort") as $x)
+	if (isset($_REQUEST[$x]))
+	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
+}
 echo $pl_text;
+if ($pl->anySelector)
+    echo "</form>";
 
 
 $Conf->footer();

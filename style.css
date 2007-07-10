@@ -337,6 +337,9 @@ table.ppltable td.pl_topics span.topic0, table.ppltable td.pl_topics span.topic2
 	text-decoration: none;
 	font-weight: normal;
 }
+table.ppltable {
+	margin: 0em auto;
+}
 
 
 /* Main */

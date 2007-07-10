@@ -251,24 +251,6 @@ class Conference {
 	    return "Deadline: " . $this->printableTime($this->settings[$what]);
     }
 
-    function printableTimeRange($from, $to) {
-	$start = &$this->settings[$from];
-	$end = &$this->settings[$to];
-	$now = time();
-      
-	$str = "";
-	if (isset($start) && $start > 0 && $start >= $now) {
-	    $str = "after " . $this->printableTime($start);
-	    if (isset($end) && $end > 0)
-		$str .= " and ";
-	}
-
-	if (isset($end) && $end > 0)
-	    $str .= "until " . $this->printableTime($end);
-	
-	return $str;
-    }
-
     function settingsAfter($name, $grace = null) {
 	$t = defval($this->settings[$name], null);
 	if ($t !== null && $t > 0 && $grace && isset($this->settings[$grace]))

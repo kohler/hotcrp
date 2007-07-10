@@ -242,7 +242,7 @@ class ContactList extends BaseList {
 	    $c = "";
 	    if ($fieldId == self::FIELD_SELECTOR_ON)
 		$c = " checked='checked'";
-	    return "<input type='checkbox' name='cid[]' value='$row->contactId' tabindex='1' id='psel$this->count' onclick='pselClick(event, this, $this->count)' $c/>";
+	    return "<input type='checkbox' name='pap[]' value='$row->contactId' tabindex='1' id='psel$this->count' onclick='pselClick(event, this, $this->count)' $c/>";
 	case self::FIELD_HIGHTOPICS:
 	case self::FIELD_LOWTOPICS:
 	    if (!defval($row->topicIds))
@@ -341,6 +341,23 @@ class ContactList extends BaseList {
 	  default:
 	    return null;
 	}
+    }
+
+    function footer($ncol) {
+	global $Conf, $ConfSiteBase;
+	if ($this->count == 0)
+	    return "";
+	
+	$t = "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'><img src=\"${ConfSiteBase}images/bendulft.png\" style='position: relative; top: 6px' /></td>\n";
+	$t .= "    <td id='pplact' class='linelinks1' colspan='" . ($ncol - 1) . "'><b>Select people</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
+
+	// Begin linelinks
+	$t .= "<span class='lll1'><a href='javascript:void tablink(\"pplact\",1)'>Get</a></span><span class='lld1'><b>:</b> &nbsp;";
+	$t .= "<select id='pplact1_d' name='getaction'>
+    <option value='nameemail' selected='selected'>Names and emails</option>\n";
+	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='getgo' value='Go' /></span>";
+
+	return $t . "</td></tr>\n";
     }
 
     function text($listname, $me, $url) {
@@ -533,6 +550,10 @@ class ContactList extends BaseList {
 	$x .= $body;
 
 	$x .= "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
+	reset($fieldDef);
+	if (key($fieldDef) == self::FIELD_SELECTOR)
+	    $x .= $this->footer($ncol);
+	
 	$x .= "</table>";
 
 	return $x;

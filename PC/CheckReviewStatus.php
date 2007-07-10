@@ -19,7 +19,7 @@ if (!IsSet($_REQUEST['emailBody'])) {
   $_REQUEST['emailBody'] .= "for the $Conf->longName ($Conf->shortName) conference.\n";
   $_REQUEST['emailBody'] .= "\n";
   $_REQUEST['emailBody'] .= "You can continue to modify your review(s)\n";
-  $_REQUEST['emailBody'] .= $Conf->printableTimeRange('reviewerSubmitReview');
+  $_REQUEST['emailBody'] .= "until the <a href='${ConfSiteBase}deadline.php'>deadline</a>\n";
   $_REQUEST['emailBody'] .= "or until you finalize them.\n";
   $_REQUEST['emailBody'] .= "\n";
   $_REQUEST['emailBody'] .= "If you are unable to complete the review by the deadline,\n";
