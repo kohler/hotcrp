@@ -479,6 +479,7 @@ if (defval($_REQUEST["qx"], "") != "" || defval($_REQUEST["qa"], "") != ""
     $activetab = 2;
 else
     $activetab = 1;
+$Conf->footerStuff .= "<script>tablink(\"searchform\", $activetab);</script>";
 
 if (count($tOpt) > 1) {
     $tselect = "<select name='t'>";
