@@ -277,7 +277,7 @@ input.button_default, button.button_default {
 	border-bottom: 2px solid #f3d06e;
 }
 .tllx {
-	padding-left: 7px;
+	padding: 0px 7px;
 }
 #searchform, #contactsform {
 	margin: 0px auto;
