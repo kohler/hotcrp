@@ -114,7 +114,7 @@ if (count($tOpt) > 1) {
     echo "<form method='get' action='contacts.php'>";
     if (isset($_REQUEST["sort"]))
 	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />";
-    echo "<select name='t'>";
+    echo "<select id='contactsform1_d' name='t'>";
     foreach ($tOpt as $k => $v) {
 	echo "<option value='$k'";
 	if ($_REQUEST["t"] == $k)
