@@ -279,7 +279,7 @@ input.button_default, button.button_default {
 .tllx {
 	padding: 0px 7px;
 }
-#searchform, #contactsform {
+#searchform, #contactsform, #offlineform {
 	margin: 0px auto;
 	position: relative;
 }
@@ -1183,6 +1183,21 @@ span.sc5, span.sc6, span.sc7, span.sc8, span.sc9 {
 }
 span.sc_sum {
 	font-size: x-small;
+}
+
+/* offline reviewing */
+table#offlineform h3 {
+	text-align: center;
+	font-size: medium;
+	color: #555555;
+}
+table#offlineform ul {
+	list-style-type: none;
+}
+table#offlineform ul, table#offlineform form {
+	margin: 0.5em 1.5em;
+	padding: 0px;
+	display: block;
 }
 
 p.page {
