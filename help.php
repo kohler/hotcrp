@@ -12,8 +12,7 @@ $topicTitles = array("topics" => "Help topics",
 		     "syntax" => "Search syntax",
 		     "search" => "Search",
 		     "tags" => "Tags",
-		     "chair" => "Chair's guide",
-		     "assign" => "Assigning papers");
+		     "chair" => "Chair's guide");
 
 $topic = defval($_REQUEST["t"], "topics");
 if (!isset($topicTitles[$topic]))
@@ -51,7 +50,6 @@ function topics() {
     _alternateRow("<a href='help.php?t=syntax'>Search syntax</a>", "Quick reference to search syntax.");
     _alternateRow("<a href='help.php?t=tags'>Tags</a>", "How to use tags and ordered tags to define sets of papers and discussion orders.");
     _alternateRow("<a href='help.php?t=chair'>Chair's guide</a>", "How to run a conference using HotCRP.");
-    _alternateRow("<a href='help.php?t=assign'>Assigning papers</a>", "How to assign papers for review.");
     echo "</table>";
 }
 
@@ -550,8 +548,6 @@ else if ($topic == "syntax")
     searchQuickref();
 else if ($topic == "tags")
     tags();
-else if ($topic == "assign")
-    assign();
 else if ($topic == "chair")
     chair();
 
