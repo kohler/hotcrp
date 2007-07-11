@@ -1004,7 +1004,7 @@ div.error pre {
 hr {
 	margin: 0.75em 0em;
 	border: none;
-	border-top: 1px solid #cc9900;
+	border-top: 1px solid #9999cc; /* #cc9900; */
 }
 hr.smgap {
 	margin: 0.25em 0em;

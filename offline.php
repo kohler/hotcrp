@@ -77,5 +77,5 @@ if ($Me->amReviewer()) {
 echo "</tr></table>\n";
 
 if (($text = $rf->webGuidanceRows($Me->amReviewer())))
-    echo "<hr/>\n\n<table>\n<tr class='id'>\n  <td class='caption'></td>\n  <td class='entry'><h3>Review form guidance</h3></td>\n</tr>\n", $text, "</table>\n";
+    echo "<hr />\n\n<table>\n<tr class='id'>\n  <td class='caption'></td>\n  <td class='entry'><h3>Review form guidance</h3></td>\n</tr>\n", $text, "<tr class='last'><td class='caption'></td><td class='entry'></td></tr></table>\n";
 $Conf->footer();
