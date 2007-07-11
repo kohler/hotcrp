@@ -55,24 +55,26 @@ if ($Me->amReviewer()) {
 } else
     $Conf->infoMsg("You aren't registered as a reviewer or PC member for this conference, but for your information, you may download the review form anyway.");
 
-echo "<table>
-<tr class='pt_actions'>
-  <td class='form_entry'><form method='get' action='offline.php'><input class='button' type='submit' name='downloadForm' value='Download review form' /></form></td>\n\n";
-
+echo "<table id='offlineform'><tr>
+<td><h3>Download forms</h3>
+<ul>
+  <li><a href='offline.php?downloadForm=1'>Blank form</a></li>\n";
+if ($Me->amReviewer())
+    echo "  <li><a href='${ConfSiteBase}search.php?get=revform&amp;q=&amp;t=r&amp;pap=all'>Your review assignment</a></li>\n";
+if ($Me->amReviewer() && $Me->reviewsOutstanding)
+    echo "  <li><a href='${ConfSiteBase}search.php?get=revform&amp;q=&amp;t=rout&amp;pap=all'>Your missing reviews</a></li>\n";
+echo "</ul></td>\n";
 if ($Me->amReviewer()) {
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
-    echo "  <td class='form_entry' id='upload'><table class='compact'>
-    <tr>
-      <td><form action='offline.php?post=1' method='post' enctype='multipart/form-data'>
+    echo "<td><h3>Upload filled-out form</h3>
+<form action='offline.php?post=1' method='post' enctype='multipart/form-data'>
 	<input type='hidden' name='redirect' value='offline' />
-	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='button' type='submit' value='Upload filled-out review form' name='uploadForm' $disabled/>";
+	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='button' type='submit' value='Upload' name='uploadForm' $disabled/>";
     if ($pastDeadline && $Me->privChair)
 	echo "<br /><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
-    echo "\n      </form></td>\n    </tr>\n";
-    echo "  </table></td>\n";
+    echo "</form></td>\n";
 }
-
-echo "</tr>\n</table>\n\n";
+echo "</tr></table>\n";
 
 if (($text = $rf->webGuidanceRows($Me->amReviewer())))
     echo "<hr/>\n\n<table>\n<tr class='id'>\n  <td class='caption'></td>\n  <td class='entry'><h3>Review form guidance</h3></td>\n</tr>\n", $text, "</table>\n";
