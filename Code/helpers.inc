@@ -416,7 +416,7 @@ function goPaperForm($baseUrl = "paper.php", $args = array()) {
     foreach ($args as $what => $val)
 	$x .= "<input type='hidden' name=\"" . htmlspecialchars($what) . "\" value=\"" . htmlspecialchars($val) . "\" />";
     $x .= "#<input class='textlite' type='text' size='6' name='paperId' />";
-    $x .= "&nbsp;<input class='button_default' type='submit' name='go' value='Search' /></div></form>";
+    $x .= "&nbsp;<input class='button' type='submit' name='go' value='Search' /></div></form>";
     return $x;
 }
 

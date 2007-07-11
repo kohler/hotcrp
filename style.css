@@ -337,7 +337,7 @@ table.ppltable td.pl_topics span.topic0, table.ppltable td.pl_topics span.topic2
 	text-decoration: none;
 	font-weight: normal;
 }
-table.ppltable {
+body#revpref table.pltable, table.ppltable {
 	margin: 0em auto;
 }
 
@@ -424,10 +424,10 @@ div.gopaper {
 	float: right;
 	margin-bottom: 0em;
 }
-form.gopaper input.button_default, form.gopaper input.textlite {
+form.gopaper input.textlite {
 	font-size: small;
 }
-form.gopaper input.button_default {
+form.gopaper input.button {
 	padding: 0px;
 	border-top: 1px solid #eeee66;
 	border-left: 2px solid #eeee66;

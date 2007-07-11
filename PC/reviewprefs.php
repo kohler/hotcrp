@@ -136,7 +136,7 @@ echo "</form>\n\n";
 
 echo "<form class='assignpc' method='post' action=\"reviewprefs.php?reviewer=$reviewer&amp;post=1\" enctype='multipart/form-data'>\n";
 echo $paperList->text("editReviewPreference", $Me);
-echo "<input class='button_default' type='submit' name='update' value='Save preferences' />\n";
+echo "<div class='smgap'></div><table class='center'><tr><td><input class='button' type='submit' name='update' value='Save preferences' /></td></tr></table>\n";
 echo "</form>\n";
 
 $Conf->footer();
