@@ -1,3 +1,100 @@
+2007-07-11 Wednesday 11:03  kohler
+
+	* NEWS (1.3), tarball.sh (1.49): news, tarball
+
+2007-07-11 Wednesday 10:50  kohler
+
+	* style.css (1.185), Code/helpers.inc (1.154), PC/reviewprefs.php
+	  (1.32): more style improvements
+
+2007-07-11 Wednesday 10:23  kohler
+
+	* offline.php (1.21), style.css (1.182), offline.php (1.22),
+	  style.css (1.183), style.css (1.184): improve offline form page
+
+2007-07-11 Wednesday 09:26  kohler
+
+	* style.css (1.181): another visual nit
+
+2007-07-10 Tuesday 22:19  kohler
+
+	* help.php (1.42), script.js (1.43): beauty nit, and help fixlet
+
+2007-07-10 Tuesday 21:33  kohler
+
+	* contacts.php (1.11): focus detail
+
+2007-07-10 Tuesday 13:28  kohler
+
+	* contacts.php (1.10), Code/contactlist.inc (1.16): add "External
+	  reviewers who completed a review"
+
+2007-07-10 Tuesday 13:15  kohler
+
+	* contacts.php (1.9), style.css (1.180), Code/conference.inc
+	  (1.196), Code/contactlist.inc (1.15), PC/CheckReviewStatus.php
+	  (1.18): download names and emails as text (for Frans)
+
+2007-07-10 Tuesday 09:23  kohler
+
+	* search.php (1.95): even the search page should have a quicksearch
+	  box
+
+2007-07-10 Tuesday 09:21  kohler
+
+	* mail.php (1.7): recipients list in mail sender is sensitive to
+	  outcomes with no associated papers.  Also improve mailer behavior
+	  when there is no mail to send
+
+2007-07-10 Tuesday 02:07  kohler
+
+	* NEWS (1.2), tarball.sh (1.48): to 2.1
+
+2007-07-10 Tuesday 01:56  kohler
+
+	* contactauthors.php (1.32): style nit
+
+2007-07-10 Tuesday 01:54  kohler
+
+	* review.php (1.100), script.js (1.42), style.css (1.179),
+	  Code/conference.inc (1.195): fix onload bug, duh; many IE fixes,
+	  from hell
+
+2007-07-10 Tuesday 00:18  kohler
+
+	* style.css (1.178), Code/helpers.inc (1.153): improve appearance
+	  of tabs on IE
+
+2007-07-09 Monday 19:55  kohler
+
+	* deadlines.php (1.26), mail.php (1.6), Chair/ViewActionLog.php
+	  (1.15): add some actionBar()s
+
+2007-07-09 Monday 19:49  kohler
+
+	* Code/mailtemplate.inc (1.11): improve IF(REVIEWDEADLINE)
+
+2007-07-09 Monday 19:33  kohler
+
+	* search.php (1.94): set focus on search page
+
+2007-07-09 Monday 19:13  kohler
+
+	* script.js (1.41): a little IEness?
+
+2007-07-09 Monday 14:29  kohler
+
+	* mail.php (1.5), Code/options.inc (1.20): improve appearance on
+	  Safari
+
+2007-07-09 Monday 14:11  kohler
+
+	* NEWS (1.1), tarball.sh (1.47): add NEWS
+
+2007-07-09 Monday 14:11  kohler
+
+	* Code/review.inc (1.73): avoid warnings
+
 2007-07-09 Monday 13:34  kohler
 
 	* paper.php (1.127), review.php (1.99), script.js (1.40), style.css
