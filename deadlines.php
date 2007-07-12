@@ -34,7 +34,9 @@ echo "</p>
 
 
 function printableInterval($amt) {
-    if ($amt > 3600 * 8)
+    if ($amt > 3600 * 24 * 3)
+	return "less than " . intval(($amt + 3600 * 24 - 1) / (3600 * 24)) . " days";
+    else if ($amt > 3600 * 8)
 	return "less than " . intval(($amt + 3599) / 3600) . " hours";
     else if ($amt > 3600) {
 	$v = intval(($amt + 1799) / 1800) / 2;
