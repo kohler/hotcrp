@@ -59,7 +59,7 @@ if ($homelist) {
 	echo $sep, "<a href='search.php?q=&amp;t=s' class='nowrap'>Submitted</a>";
 	$sep = $thesep;
     }
-    if ($Me->canViewDecision(null, $Conf) && $papersub) {
+    if ($Me->isPC && $Conf->timeAuthorViewDecision() && $papersub) {
 	echo $sep, "<a href='search.php?q=&amp;t=acc' class='nowrap'>Accepted</a>";
 	$sep = $thesep;
     }

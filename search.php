@@ -19,7 +19,7 @@ else if (isset($_REQUEST["getgo"]) && isset($_REQUEST["getaction"]))
 $tOpt = array();
 if ($Me->isPC)
     $tOpt["s"] = "Submitted papers";
-if ($Me->canViewDecision(null, $Conf))
+if ($Me->isPC && $Conf->timeAuthorViewDecision())
     $tOpt["acc"] = "Accepted papers";
 if ($Me->amReviewer())
     $tOpt["r"] = "Your review assignment";
@@ -385,9 +385,11 @@ if (isset($_REQUEST["setoutcome"]) && defval($_REQUEST['outcome'], "") != "" && 
     else {
 	$o = cvtint(trim($_REQUEST['outcome']));
 	$rf = reviewForm();
-	if (isset($rf->options['outcome'][$o]))
+	if (isset($rf->options['outcome'][$o])) {
 	    $Conf->qe("update Paper set outcome=$o where " . paperselPredicate($papersel), "while changing decision");
-	else
+	    if ($o > 0)
+		$Conf->qe("insert into Settings (name, value) values ('paperacc', " . time() . ") on duplicate key update name=name");
+	} else
 	    $Conf->errorMsg("Bad decision value!");
     }
 
