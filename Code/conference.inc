@@ -101,9 +101,9 @@ class Conference {
 
     function updatePaperaccSetting($foraccept) {
 	if (!isset($this->settings["paperacc"]) && $foraccept)
-	    $this->qe("insert into Settings (name, value) values ('paperacc', " . time() . ") on duplicate key update name=name");
+	    $this->q("insert into Settings (name, value) values ('paperacc', " . time() . ") on duplicate key update name=name");
 	else if (defval($this->settings["paperacc"]) <= 0 || !$foraccept)
-	    $this->qe("update Settings set value=(select max(outcome) from Paper where timeSubmitted>0 group by paperId>0) where name='paperacc'");
+	    $this->q("update Settings set value=(select max(outcome) from Paper where timeSubmitted>0 group by paperId>0) where name='paperacc'");
     }
 
     function q($query) {
