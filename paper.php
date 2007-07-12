@@ -456,6 +456,8 @@ if (isset($_REQUEST['delete'])) {
 	if (!$error) {
 	    $Conf->confirmMsg("Paper #$paperId deleted.");
 	    $Conf->updatePapersubSetting(false);
+	    if ($prow->outcome > 0)
+		$Conf->updatePaperaccSetting(false);
 	    $Conf->log("Deleted", $Me, $paperId);
 	}
 	

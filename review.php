@@ -257,8 +257,8 @@ if (isset($_REQUEST['setoutcome'])) {
 	    $result = $Conf->qe("update Paper set outcome=$o where paperId=$prow->paperId", "while changing decision");
 	    if ($result)
 		$Conf->confirmMsg("Decision for paper #$prow->paperId set to " . htmlspecialchars($rf->options['outcome'][$o]) . ".");
-	    if ($o > 0)
-		$Conf->qe("insert into Settings (name, value) values ('paperacc', " . time() . ") on duplicate key update name=name");
+	    if ($o > 0 || $prow->outcome > 0)
+		$Conf->updatePaperaccSetting($o > 0);
 	} else
 	    $Conf->errorMsg("Bad decision value!");
 	loadRows();
