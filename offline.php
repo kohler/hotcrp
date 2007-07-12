@@ -43,12 +43,19 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     $Conf->errorMsg("Select a review form to upload.");
 
 
-$Conf->header("Offline Reviewing", 'offrev', actionBar());
-
 $pastDeadline = !$Conf->timeReviewPaper($Me->isPC, true, true);
 
+if ($pastDeadline && !$Conf->settingsAfter("rev_open") && !$Me->privChair) {
+    $Conf->errorMsg("The site is not yet open for review.");
+    $Me->go("index.php");
+}
+
+$Conf->header("Offline Reviewing", 'offrev', actionBar());
+
 if ($Me->amReviewer()) {
-    if ($pastDeadline)
+    if ($pastDeadline && !$Conf->settingsAfter("rev_open"))
+	$Conf->infoMsg("The site is not yet open for review.");
+    else if ($pastDeadline)
 	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting reviews has passed.");
     else
 	$Conf->infoMsg("Use this page to download a blank review form, or to upload a review form you've already filled out.");

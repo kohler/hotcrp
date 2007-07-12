@@ -155,13 +155,22 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	echo $sep, "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;<a href=\"javascript:fold('re', null)\" class='q'><strong>Review assignment</strong></a>";
 	$sep = $thesep;
     }
-    echo $sep, "<a href='offline.php'>Offline reviewing</a>";
-    if ($Me->isPC && $Conf->timePCReviewPreferences())
-	echo $thesep, "<a href='PC/reviewprefs.php'>Preferences</a>";
-    if ($Me->privChair || ($Me->isPC && $Conf->timeReviewPaper(true, false, true)))
-	echo $thesep, "<a href='search.php?q=&amp;t=s'>Review any paper</a>";
-    if ($Me->isRequester)
-	echo $thesep, "<a href='PC/CheckReviewStatus.php'>Monitor external reviews</a>";
+    if ($Conf->settingsAfter("rev_open") || $Me->privChair) {
+	echo $sep, "<a href='offline.php'>Offline reviewing</a>";
+	$sep = $thesep;
+    }
+    if ($Me->isPC && $Conf->timePCReviewPreferences()) {
+	echo $sep, "<a href='PC/reviewprefs.php'>Preferences</a>";
+	$sep = $thesep;
+    }
+    if ($Me->privChair || ($Me->isPC && $Conf->timeReviewPaper(true, false, true))) {
+	echo $sep, "<a href='search.php?q=&amp;t=s'>Review any paper</a>";
+	$sep = $thesep;
+    }
+    if ($Me->isRequester) {
+	echo $sep, "<a href='PC/CheckReviewStatus.php'>Monitor external reviews</a>";
+	$sep = $thesep;
+    }
     
     if ($Me->isReviewer) {
 	$plist = new PaperList(false, "listre", new PaperSearch($Me, array("t" => "r")));
