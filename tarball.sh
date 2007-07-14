@@ -37,6 +37,7 @@ contacts.php
 deadlines.php
 help.php
 index.php
+log.php
 login.php
 logout.php
 mail.php
@@ -111,7 +112,6 @@ Chair/Code.inc
 Chair/DumpDatabase.php
 Chair/SetReviewForm.php
 Chair/ShowCalendar.php
-Chair/ViewActionLog.php
 Chair/index.php
 Chair/sampleforms.inc
 

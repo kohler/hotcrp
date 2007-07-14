@@ -86,7 +86,7 @@ if ($Me->privChair) {
     echo $thesep, "<a href='contacts.php?t=all'>Accounts</a>";
     echo $thesep, "<a href='autoassign.php'>Review assignments</a>";
     echo $thesep, "<a href='mail.php'>Mail users</a>";
-    echo $thesep, "<a href='Chair/ViewActionLog.php'>Action log</a>";
+    echo $thesep, "<a href='log.php'>Action log</a>";
 
     echo "<hr class='home' /></td></tr>\n";
 }

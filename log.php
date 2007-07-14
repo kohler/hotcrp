@@ -1,8 +1,8 @@
 <?php 
-require_once('../Code/header.inc');
+require_once('Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPrivChair('../');
+$Me->goIfNotPrivChair('index.php');
 
 if (defval($_REQUEST["page"], "") == "earliest")
     $page = false;
@@ -92,7 +92,7 @@ if ($_REQUEST["date"] != "now" && isset($_REQUEST["search"]))
 function searchbar() {
     global $ConfSiteBase, $Eclass, $page, $start, $count, $nrows, $maxNrows, $offset;
     
-    echo "<form method='get' action='ViewActionLog.php'>
+    echo "<form method='get' action='log.php'>
 <table id='searchform'><tr>
   <td class='lcaption", $Eclass['q'], "'>With <b>any</b> of the words</td>
   <td class='lentry", $Eclass['q'], "'><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /><span class='sep'></span></td>
@@ -117,7 +117,7 @@ function searchbar() {
 	foreach (array("q", "pap", "acct", "n", "offset") as $x)
 	    if ($_REQUEST[$x])
 		$urls[] = "$x=" . urlencode($_REQUEST[$x]);
-	$url = "ViewActionLog.php?" . join("&amp;", $urls);
+	$url = "log.php?" . join("&amp;", $urls);
 	echo "<div class='smgap'></div><table class='center'><tr><td>";
 	if ($page > 1)
 	    echo "<a href='$url&amp;page=", ($page - 1), "'><strong><img src='${ConfSiteBase}images/prev.png' alt='&lt;-' /> Previous</strong></a> ";
@@ -134,7 +134,15 @@ function searchbar() {
 	    echo "<a href='$url&amp;page=", ($page + 1), "'><strong>Next <img src='${ConfSiteBase}images/next.png' alt='-&gt;' /> </strong></a>";
 	if ($page > 1 || $nrows > $count) {
 	    echo " &nbsp;|&nbsp; ";
-	    echo "<a href='$url&amp;page=1'><strong>Latest</strong></a> &nbsp;<a href='$url&amp;page=earliest'><strong>Earliest</strong></a>";
+	    if ($page == 1)
+		echo "<strong>Latest</strong>";
+	    else
+		echo "<a href='$url&amp;page=1'><strong>Latest</strong></a>";
+	    echo " &nbsp;";
+	    if ($nrows <= $count)
+		echo "<strong>Earliest</strong>";
+	    else
+		echo "<a href='$url&amp;page=earliest'><strong>Earliest</strong></a>";
 	}
 	echo "</td></tr></table><div class='smgap'></div>\n";
     }
