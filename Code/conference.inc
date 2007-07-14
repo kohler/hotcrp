@@ -1180,32 +1180,4 @@ class Conference {
 	print $this->queryValuesGraph($query, $what, $max, 0);
     }
 
-    //
-    // Functions to implement a stateful toggle button
-    //
-    function toggleButtonUpdate($varName) {
-	$toggleName = 'toggle' . $varName;
-	if (isset($_REQUEST[$toggleName]))
-	    $_REQUEST[$varName] = $_REQUEST[$toggleName];
-	else
-	    $_REQUEST[$varName] = 0;
-    }
-
-    function toggleButton($varName, $whenSet, $whenUnset, $extra="", $getstuff="") {
-	$toggleName = 'toggle' . $varName;
-	$toggleButton = 'toggleButton' . $varName;
-
-	echo "<form method='post' action=\"", htmlspecialchars($_SERVER["PHP_SELF"]), "$getstuff\">\n";
-	if ($_REQUEST[$varName]) {
-	    print "<input type='submit' name='$toggleButton' value=\"$whenSet\" />\n";
-	    print "<input type='hidden' name='$toggleName' value='0' />\n";
-	    print $extra;
-	} else {
-	    print "<input type='submit' name='$toggleButton' value=\"$whenUnset\" />\n";
-	    print "<input type='hidden' name='$toggleName' value='1' />\n";
-	    print $extra;
-	}
-	print "</form>\n";
-    }
-
 }
