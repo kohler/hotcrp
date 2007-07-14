@@ -705,17 +705,18 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 	$paperId = ($prow == null ? -1 : $prow->paperId);
     $forceShow = ($Me->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] ? "&amp;forceShow=1" : "");
 
-    $x = "<div class='vbar'><table class='vbar'><tr>\n  <td><table><tr>\n";
-    
+    $x = "<div class='vbar'><table class='vbar'><tr>\n";
+
+    $act = "";
     if ($newPaper || $paperId > 0)
-	$x .= actionTab("Paper", "${ConfSiteBase}paper.php?paperId=$paperId", $mode == "view" || $mode == "edit");
+	$act .= actionTab("Paper", "${ConfSiteBase}paper.php?paperId=$paperId", $mode == "view" || $mode == "edit");
     
     if (!$newPaper && $prow
 	&& ($prow->reviewType > 0
 	    || $Me->canViewReview($prow, null, $Conf)
 	    || ($Me->isPC && $prow->timeSubmitted > 0
 		&& $Conf->timeReviewOpen())))
-	$x .= actionTab("Reviews", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "review");
+	$act .= actionTab("Reviews", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "review");
 
     if (!$newPaper && $prow
 	&& ($prow->reviewType > 0
@@ -726,17 +727,20 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 		&& $Conf->timeReviewOpen()))) {
 	$n = ($prow->conflictType == CONFLICT_AUTHOR ? $prow->numAuthorComments : $prow->numComments);
 	$txt = ($n ? "Comments ($n)" : "Comments");
-	$x .= actionTab($txt, "${ConfSiteBase}comment.php?paperId=$paperId", $mode == "comment");
+	$act .= actionTab($txt, "${ConfSiteBase}comment.php?paperId=$paperId", $mode == "comment");
     }
 
     if ($mode == "assign"
 	|| ($Me->privChair && $prow && $prow->timeSubmitted > 0))
-	$x .= actionTab("Assignments", "${ConfSiteBase}assign.php?paperId=$paperId", $mode == "assign");
+	$act .= actionTab("Assignments", "${ConfSiteBase}assign.php?paperId=$paperId", $mode == "assign");
     
     if ($thisUrl)
-	$x .= actionTab($mode, $thisUrl, true);
+	$act .= actionTab($mode, $thisUrl, true);
 
-    $x .= "  </tr></table></td>\n  <td class='spanner'></td>\n";
+    if ($act)
+	$x .= "<td id='vbartabs'><table><tr>$act</tr></table></td>";
+
+    $x .= "<td class='spanner'></td>\n";
     
     if ($mode == "assign" || $mode == "review" || $mode == "comment")
 	$goBase = "$mode.php";
