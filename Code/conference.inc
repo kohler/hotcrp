@@ -1168,16 +1168,4 @@ class Conference {
 	return $retstr;
     }
     
-    function queryValuesGraph($query, $what, $max, $style) {
-	$result = $this->qe($query);
-	$text = "";
-	while (($row = edb_arow($result)))
-	    $text .= $row[$what] . " ";
-	return $this->textValuesGraph($text, $max, $style);
-    }
-
-    function graphValues($query, $what, $max) {
-	print $this->queryValuesGraph($query, $what, $max, 0);
-    }
-
 }

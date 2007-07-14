@@ -1,9 +1,5 @@
 Major features
-- mail tool
-- mail tool: do not let people leave the page until it is done loading
-  (probably, don't even SHOW the page until all mails have been sent)
 - email on reviewers/chairs on comments and reviews
-- Reviews + Comments ==> Reviews ?
 - checkbox for "Is review ready for authors" rather than Save changes/Submit
 - offline reviewing: John Heidemann would like some redundancy 
 - fix downloadable review form "Submit Review" explanation
