@@ -32,7 +32,7 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $ConfSiteBase, $prow, $rrows, $rrow, $editRrow, $nExternalRequests;
+    global $Conf, $Me, $ConfSiteBase, $prow, $rrows, $rrow, $editRrow, $nExternalRequests, $editRrowLogname;
     if (isset($_REQUEST["reviewId"]))
 	$sel = array("reviewId" => $_REQUEST["reviewId"]);
     else {
@@ -58,6 +58,10 @@ function loadRows() {
     if (isset($_REQUEST['reviewId']) && !$rrow)
 	errorMsgExit("That review no longer exists.");
     $editRrow = ($rrow ? $rrow : $myRrow);
+    if ($editRrow && $editRrow->contactId == $Me->contactId)
+	$editRrowLogname = "Review $editRrow->reviewId";
+    else if ($editRrow)
+	$editRrowLogname = "Review $editRrow->reviewId by $editRrow->email";
 }
 loadRows();
 
@@ -93,6 +97,8 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 
 
 // update review action
+if (isset($_REQUEST['unsubmit']) && $Me->privChair)
+    $_REQUEST["override"] = 1;
 if (isset($_REQUEST['update']) || isset($_REQUEST['submit']) || isset($_REQUEST['unsubmit']))
     if (!$Me->canSubmitReview($prow, $editRrow, $Conf, $whyNot))
 	$Conf->errorMsg(whyNotText($whyNot, "review"));
@@ -123,7 +129,7 @@ if (isset($_REQUEST['unsubmit']) && $Me->privChair)
 	$result = $Conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=$needsSubmit where reviewId=$editRrow->reviewId", $while);
 	$Conf->qe("unlock tables", $while);
 	if ($result) {
-	    $Conf->log("Review $editRrow->reviewId by $editRrow->contactId unsubmitted", $Me, $prow->paperId);
+	    $Conf->log("$editRrowLogname unsubmitted", $Me, $prow->paperId);
 	    $Conf->confirmMsg("Unsubmitted review.");
 	}
 	loadRows();
@@ -139,7 +145,7 @@ if (isset($_REQUEST['delete']) && $Me->privChair)
 	$while = "while deleting review";
 	$result = $Conf->qe("delete from PaperReview where reviewId=$editRrow->reviewId", $while);
 	if ($result) {
-	    $Conf->log("Review $editRrow->reviewId by $editRrow->contactId deleted", $Me, $prow->paperId);
+	    $Conf->log("$editRrowLogname deleted", $Me, $prow->paperId);
 	    $Conf->confirmMsg("Deleted review.");
 
 	    // perhaps a delegatee needs to redelegate

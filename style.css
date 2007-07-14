@@ -623,6 +623,9 @@ td.error, td.error input {
 	font-weight: bold;
 	color: #ff0000;
 }
+td.lentry.error input {
+	font-weight: normal;
+}
 td.hint {
 	padding: 0em 0.5em;
 	font-size: small;
@@ -874,7 +877,7 @@ table.pt_buttons td.ptb_button {
 div.searchresult {
 	padding: 0.75em 0.75em;
 }
-div.searchresult table.pltable {
+div.searchresult table.pltable, table.altable {
 	width: 100%;
 	position: relative;
 }
@@ -885,7 +888,7 @@ table.pltable th a.folder1, table.pltable th a.folder2, table.pltable th a.folde
 td#plact {
 	padding-top: 5px;
 }
-table.pltable th, table.ppltable th, table.setreviewform th {
+table.pltable th, table.ppltable th, table.altable th, table.setreviewform th {
 	text-align: left;
         padding-left: 0.125em;
 	padding-right: 0.125em;
@@ -901,7 +904,7 @@ table.pltable th.pl_topicMatch {
 	padding-right: 0.5em;
 }
 table.pltable th.pl_id, .pl_score, table.pltable th.pl_score, 
-table.ppltable th.pl_score {
+table.ppltable th.pl_score, table.altable th.pl_id {
 	text-align: center;
 	white-space: nowrap;
 }
@@ -923,13 +926,13 @@ td.pl_title img {
 td.pl_callout {
 	padding-left: 60px;
 }
-td.pl_lastvisit {
+td.pl_lastvisit, td.al_time {
 	padding-left: 0.125em;
 	padding-right: 0.4em;
 	font-size: smaller;
 	white-space: nowrap;
 }
-td.pl_name {
+td.pl_name, td.al_name {
 	white-space: nowrap;
 }
 table.ppltable td.pl_score {
@@ -956,11 +959,15 @@ td.lcaption {
 td.lentry {
 	padding: 2px 0px;
 }
-tr.pl td {
+tr.pl td, tr.al td {
 	padding-top: 2px;
 	padding-bottom: 2px;
 }
-tr.pl_headrow td, tr.pl_headrow th, table.setreviewform th {
+tr.al td {
+	padding-left: 0.2em;
+	padding-right: 0.5em;
+}
+tr.pl_headrow td, tr.pl_headrow th, tr.al_headrow th, table.setreviewform th {
 	border-bottom: 1px solid #999999;
 	font-size: small;
 }

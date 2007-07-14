@@ -565,7 +565,8 @@ class Contact {
 	if ($prow->timeSubmitted > 0
 	    && (($this->privChair && ($forceShow || $prow->conflictType == 0))
 		|| ($this->isPC && $prow->conflictType == 0)
-		|| $prow->myReviewType > 0)
+		|| $prow->myReviewType > 0
+		|| ($this->privChair && $rrow && $rrow->contactId != $this->contactId))
 	    && ($conf->timeReviewPaper($this->isPC, $prow->myReviewType > 0, true)
 		|| $this->privChairOverride()
 		|| ($this->privChair && !$submit))
@@ -583,7 +584,9 @@ class Contact {
 	else {
 	    if ($prow->conflictType > 0)
 		$whyNot['conflict'] = 1;
-	    else if ($this->isPC && $prow->myReviewType <= 0 && !$conf->timeReviewPaper(true, false, true))
+	    else if ($this->isPC && $prow->myReviewType <= 0
+		     && !$conf->timeReviewPaper(true, false, true)
+		     && (!$rrow || $rrow->contactId == $this->contactId))
 		$whyNot['reviewNotAssigned'] = 1;
 	    else
 		$whyNot['deadline'] = ($this->isPC ? "pcrev_hard" : "extrev_hard");

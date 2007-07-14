@@ -309,9 +309,12 @@ class ReviewForm {
 	}
 	
 	// log updates
-	$conf->log("Review $reviewId " . ($rrow ? "created" : "saved"), $Me, $prow->paperId);
+	$reviewLogname = "Review $reviewId";
+	if ($rrow && $Me->contactId != $rrow->contactId)
+	    $reviewLogname .= " by $rrow->email";
+	$conf->log("$reviewLogname saved", $Me, $prow->paperId);
 	if ($submit && (!$rrow || !$rrow->reviewSubmitted))
-	    $conf->log("Review $reviewId submitted", $Me, $prow->paperId);
+	    $conf->log("$reviewLogname submitted", $Me, $prow->paperId);
 
 	// potentially email chair and authors
 	if ($submit && ($conf->timeEmailChairAboutReview() || $conf->timeEmailAuthorsAboutReview())) {

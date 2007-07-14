@@ -237,7 +237,7 @@ function requestReview($email) {
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
     $Conf->qe("unlock tables");
-    $Conf->log("Asked $Them->contactId ($Them->email) to review", $Me, $prow->paperId);
+    $Conf->log("Asked $Them->email to review", $Me, $prow->paperId);
 
     return true;
 }

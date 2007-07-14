@@ -224,9 +224,9 @@ class Conference {
 	if ($result) {
 	    $this->infoMsg("Created account for " . htmlspecialchars($email) . ".");
 	    $newguy->sendAccountInfo($this, true, false);
-	    $this->log("$Me->contactId created account", $newguy);
+	    $this->log("$Me->email created account", $newguy);
 	} else
-	    $this->log("$Me->contactId account creation failure", $newguy);
+	    $this->log("$Me->email account creation failure", $newguy);
 	
 	return $newguy->contactId;
     }

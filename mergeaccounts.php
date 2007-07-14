@@ -107,10 +107,10 @@ if (isset($_REQUEST["merge"])) {
 
 	    if ($MergeError == "") {
 		$Conf->confirmMsg("Account " . htmlspecialchars($MiniMe->email) . " successfully merged.");
-		$Conf->log("Merged account $oldid into " . $Me->contactId, $Me);
+		$Conf->log("Merged account $MiniMe->email", $Me);
 		$Me->go("index.php");
 	    } else {
-		$Conf->log("Merged account $oldid into " . $Me->contactId . " with errors", $Me);
+		$Conf->log("Merged account $MiniMe->email with errors", $Me);
 		$MergeError .= $Conf->dbErrorText(null);
 	    }
 	}
