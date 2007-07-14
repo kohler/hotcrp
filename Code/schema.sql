@@ -9,7 +9,7 @@ CREATE TABLE `ActionLog` (
   `paperId` int(11) default NULL,
   `time` timestamp(14) NOT NULL default CURRENT_TIMESTAMP,
   `ipaddr` varchar(16) default NULL,
-  `action` varchar(120) default NULL,
+  `action` text default NULL,
   PRIMARY KEY  (`logId`),
   UNIQUE KEY `logId` (`logId`),
   KEY `contactId` (`contactId`),
