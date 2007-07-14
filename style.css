@@ -1219,7 +1219,3 @@ table.lognav td#older div, table.lognav td#oldest div {
 table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 	text-align: right;
 }
-
-p.page {
-	page-break-after: always;
-}
