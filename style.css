@@ -326,7 +326,7 @@ a img {
 }
 
 span.topic0 {
-	color: grey;
+	color: gray;
 	text-decoration: line-through;
 }
 span.topic2 {
@@ -785,7 +785,7 @@ table.pcass td.name1, table.pcass td.name3, table.pcass td.name4 {
 	padding-right: 1em;
 }
 table.pcass td.name-1 {
-	color: grey;
+	color: gray;
 }
 table.pcass td.name3, table.pcass td.name4 {
 	font-weight: bold;
