@@ -513,7 +513,7 @@ for ($i = 0; $i < count($pcsel); $i++) {
 	echo "</table></td><td class='colmid'><table>";
     echo $pcsel[$i];
 }
-echo "</table></td></tr></table></tr></table>";
+echo "</table></td></tr></table></td></tr></table>";
 echo "</td></tr>\n";
 
 

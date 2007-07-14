@@ -398,7 +398,7 @@ papers that never got officially submitted.  Then:
   deadline.  Select <a href='${ConfSiteBase}settings.php?group=sub'>\"PC can
   see <i>all registered papers</i> until submission deadline\"</a>, which
   allows PC members to see abstracts for registered papers that haven't yet
-  been submitted.</li>
+  been submitted.</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}Chair/AssignPapers.php?kind=c'>Assign
   conflicts.</a></strong> You can assign conflicts <a

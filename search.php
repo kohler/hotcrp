@@ -480,7 +480,7 @@ if (defval($_REQUEST["qx"], "") != "" || defval($_REQUEST["qa"], "") != ""
     $activetab = 2;
 else
     $activetab = 1;
-$Conf->footerStuff .= "<script>tablink(\"searchform\", $activetab);</script>";
+$Conf->footerStuff .= "<script type='text/javascript'>tablink(\"searchform\", $activetab);</script>";
 
 if (count($tOpt) > 1) {
     $tselect = "<select name='t'>";
@@ -535,6 +535,7 @@ if (!isset($qtOpt[defval($_REQUEST["qt"], "")]))
 foreach ($qtOpt as $v => $text)
     echo "<option value='$v'", ($v == $_REQUEST["qt"] ? " selected='selected'" : ""), ">$text</option>";
 echo "</select></td>
+</tr>
 <tr><td><div class='xsmgap'></div></td></tr>
 <tr>
   <td class='lcaption'>With <b>any</b> of the words</td>

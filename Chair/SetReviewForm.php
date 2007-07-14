@@ -175,7 +175,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 	$_REQUEST["authorView_$fname"] = 0;
     if (rf_getField($row, 'authorView') > 0)
 	$x .= "checked='checked' ";
-    $x .= "/>&nbsp;Visible&nbsp;to&nbsp;authors<td></tr>\n";
+    $x .= "/>&nbsp;Visible&nbsp;to&nbsp;authors</td></tr>\n";
 
     // description
     $x .= "<$trclass><td class='xcaption'>Description</td>"

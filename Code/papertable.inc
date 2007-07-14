@@ -223,7 +223,7 @@ class PaperTable {
 		($prow && $prow->paperStorageId > 1 ? "foldo" : "foldc"),
 		"'><table class='extension'><tr><td class='nowrap'><input type='checkbox' name='submit' value='1'",
 		($checked ? " checked='checked'" : ""),
-		"/>&nbsp;<td>";
+		"/>&nbsp;";
 	    if ($Conf->setting('sub_freeze'))
 		echo "<strong>This is the final submission.</strong></td></tr><tr><td></td><td><small>You must submit a final version before the deadline or your paper will not be reviewed.  Once you submit a final version you will not be able to make further changes.</small>";
 	    else

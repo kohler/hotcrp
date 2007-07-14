@@ -270,14 +270,14 @@ function makescorehelp(anchor, which, dofold) {
 }
 
 function addScoreHelp() {
-    var anchors = document.getElementsByTagName("a");
-    for (var i = 0; i < anchors.length; i++) {
-	var sh = anchors[i].getAttribute("scorehelp");
-	if (sh) {
-	    anchors[i].onmouseover = makescorehelp(anchors[i], sh, 0);
-	    anchors[i].onmouseout = makescorehelp(anchors[i], sh, 1);
+    var anchors = document.getElementsByTagName("a"), href, pos;
+    for (var i = 0; i < anchors.length; i++)
+	if (anchors[i].className == 'scorehelp' && (href = anchors[i].getAttribute('href'))
+	    && (pos = href.indexOf("f=")) >= 0) {
+	    var whichscore = href.substr(pos + 2);
+	    anchors[i].onmouseover = makescorehelp(anchors[i], whichscore, 0);
+	    anchors[i].onmouseout = makescorehelp(anchors[i], whichscore, 1);
 	}
-    }
 }
 
 

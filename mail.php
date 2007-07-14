@@ -92,7 +92,7 @@ function checkMail($send) {
     if (!$any)
 	return $Conf->errorMsg("No users match \"" . htmlspecialchars($recip[$_REQUEST["recipients"]]) . "\".");
     else if ($send)
-	echo "<script>fold('mail', null);</script>";
+	echo "<script type='text/javascript'>fold('mail', null);</script>";
     else {
 	echo "<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail.php?send=1' enctype='multipart/form-data'>\n";
 	foreach (array("recipients", "subject", "emailBody") as $x)
@@ -183,6 +183,7 @@ foreach ($tmpl as $num => $what) {
 }
 echo "  </select> &nbsp;<input class='button' type='submit' name='loadtmpl' value='Load template' /><div class='smgap'></div></td>
 </tr>
+<tr>
   <td class='caption'>Mail to</td>
   <td class='entry'><select name='recipients'>";
 foreach ($recip as $r => $what) {
@@ -212,7 +213,8 @@ echo "  </select></td>
 <tr class='last'>
   <td class='caption'></td>
   <td id='mailref' class='entry'>Keywords enclosed in percent signs, such as <code>%NAME%</code> or <code>%REVIEWDEADLINE%</code>, are expanded for each mail.  Use the following syntax:
-<p><table>
+<div class='smgap'></div>
+<table>
 <tr><td class='plholder'><table>
 <tr><td class='lcaption'><code>%URL%</code></td>
     <td class='llentry'>Site URL.</td></tr>
@@ -245,7 +247,7 @@ echo "  </select></td>
 <tr><td class='lcaption'><code>%COMMENTS%</code></td>
     <td class='llentry'>Pretty-printed paper comments, if any.</td></tr>
 </table></td></tr></table>
-</td>
+</td></tr>
 
 </table>
 </form>\n";

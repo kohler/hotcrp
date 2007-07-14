@@ -68,7 +68,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	else if ($mode == "assign") {
 	    $t .= "<td>" . contactHtml($rr);
 	    if ($Me->privChair && $rr->email != $Me->email)
-		$t .= " <a href=\"" . selfHref(array("viewContact" => $rr->email)) . "\"><img src='${ConfSiteBase}images/viewas.png' title=\"Act as " . contactHtml($rr->firstName, $rr->lastName) . "\" /></a>";
+		$t .= " <a href=\"" . htmlspecialchars(selfHref(array("viewContact" => $rr->email))) . "\"><img src='${ConfSiteBase}images/viewas.png' title=\"Act as " . contactHtml($rr->firstName, $rr->lastName) . "\" alt='[Act as]' /></a>";
 	    $t .= "</td>";
 	} else
 	    $t .= "<td>" . contactHtml($rr->firstName, $rr->lastName) . ($x ? " $x" : "") . "</td>";

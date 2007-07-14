@@ -269,7 +269,7 @@ function authorTable($aus, $viewAs = null) {
 		$out .= "<span class='autblentry'>";
 	    $out .= $au;
 	    if ($viewAs !== null && is_array($aux) && count($aux) >= 2 && $viewAs->email != $aux[2] && $viewAs->privChair)
-		$out .= " <a href=\"" . selfHref(array("viewContact" => $aux[2])) . "\"><img src='${ConfSiteBase}images/viewas.png' title=\"Act as " . contactHtml($aux[0], $aux[1]) . "\" /></a>";
+		$out .= " <a href=\"" . htmlspecialchars(selfHref(array("viewContact" => $aux[2]))) . "\"><img src='${ConfSiteBase}images/viewas.png' title=\"Act as " . contactHtml($aux[0], $aux[1]) . "\" alt='[Act as]' /></a>";
 	    $out .= "</span> ";
 	}
     }
@@ -393,7 +393,7 @@ function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
     $x = "";
     if ($k > 0)
 	$x .= "<a href=\"${ConfSiteBase}$baseUrl?paperId="
-	    . $list[$k - 1] . $urlrest . "\"><img src=\"${ConfSiteBase}images/prev.png\" />#" . $list[$k - 1] . "</a>";
+	    . $list[$k - 1] . $urlrest . "\"><img src=\"${ConfSiteBase}images/prev.png\" alt='&lt;-' />#" . $list[$k - 1] . "</a>";
     if (isset($list["description"])) {
 	$x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
 	if (defval($list["url"]))
@@ -405,7 +405,7 @@ function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
 	$x .= ($k > 0 || isset($list["description"]) ? "&nbsp;&nbsp;" : "");
 	$x .= "<a href=\"${ConfSiteBase}$baseUrl?paperId="
 	    . $list[$k + 1] . $urlrest . "\">#" . $list[$k + 1]
-	    . "<img src=\"${ConfSiteBase}images/next.png\" /></a>";
+	    . "<img src=\"${ConfSiteBase}images/next.png\" alt='-&gt;' /></a>";
     }
     return $x;
 }

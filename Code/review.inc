@@ -162,7 +162,7 @@ class ReviewForm {
 		    $x .= "    <option value='$num'";
 		    if ($num == $fval)
 			$x .= " selected='selected'";
-		    $x .= "><b>$num.</b> " . htmlspecialchars($what) . "</option>\n";
+		    $x .= ">$num. " . htmlspecialchars($what) . "</option>\n";
 		}
 		$x .= "</select>";
 	    } else {
@@ -705,15 +705,15 @@ class ReviewForm {
 		$n = preg_replace("/\\s+/", "&nbsp;", $n);
 	    $x .= "$n";
 	    if ($showGuidance && $options) {
-		$x .= "<a class='scorehelp' href='${ConfSiteBase}scorehelp.php' target='new' scorehelp=\"$field\">?</a>";
+		$x .= "<a class='scorehelp' href='${ConfSiteBase}scorehelp.php?f=$field' target='new'>?</a>";
 		if (count($scoreHelps) == 0)
-		    $Conf->footerStuff .= "<script>addScoreHelp();</script>";
+		    $Conf->footerStuff .= "<script type='text/javascript'>addScoreHelp();</script>";
 		if (!isset($scoreHelps[$field])) {
 		    $scoreHelps[$field] = 1;
 		    $help = "<div class='scorehelpc' id='scorehelp_$field'><strong>$n</strong> choices are:<br /><span class='rev_$field'>";
 		    foreach ($this->options[$field] as $val => $text)
 			$help .= "<span class='rev_num rev_num_$val'>$val.</span>&nbsp;" . htmlspecialchars($text) . "<br />";
-		    $help .= "</div>";
+		    $help .= "</span></div>";
 		    $Conf->footerStuff .= $help;
 		}
 	    }
@@ -741,6 +741,8 @@ class ReviewForm {
 		$x .= "</tr>\n";
 	}
 
+	if ($display == 1)
+	    $x .= "</tr>\n";
 	return $x;
     }
     

@@ -251,7 +251,7 @@ echo "<div class='f-i'><div class='f-ix'>
 </div><div class='f-ix'>
   <div class='f-c'>Fax <span class='f-cx'>(optional)</span></div>
   <div class='f-e'><input class='textlite' type='text' name='faxPhoneNumber' size='24' value=\"", crpformvalue('faxPhoneNumber'), "\" /></div>
-</div><div class='clear'></div></div>\n</td>\n</tr>\n\n";
+</div><div class='clear'></div></div>\n</div></td>\n</tr>\n\n";
 
 
 if ($Acct->isPC || $newProfile)

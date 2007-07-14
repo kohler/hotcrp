@@ -585,7 +585,7 @@ class PaperList extends BaseList {
 	    return "";
 	
 	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
-	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'><img src=\"${ConfSiteBase}images/bendulft.png\" style='position: relative; top: 6px' /></td>\n";
+	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'><img src=\"${ConfSiteBase}images/bendulft.png\" style='position: relative; top: 6px' alt='^^' /></td>\n";
 	$t .= "    <td id='plact' class='linelinks1' colspan='" . ($ncol - 1) . "'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
 
 	// Begin linelinks
@@ -633,12 +633,12 @@ class PaperList extends BaseList {
       <option value='assign" . REVIEW_PRIMARY . "'>Assign primary review</option>
       <option value='assign" . REVIEW_SECONDARY . "'>Assign secondary review</option>
       <option value='assign0'>Unassign reviews</option>
-    </select><span class='extension'> &nbsp;for &nbsp;";
+    </select> &nbsp;for &nbsp;";
 	    $t .= "<select name='markpc' id='markpc'>\n";
 	    $pc = pcMembers();
 	    foreach ($pc as $id => $row)
 		$t .= "<option value=\"" . htmlspecialchars($row->email) . "\">" . contactHtml($row->firstName, $row->lastName) . "</option>\n";
-	    $t .= "</select></span> &nbsp;<input type='submit' class='button_small' name='setassign' value='Go' /></span>";
+	    $t .= "</select> &nbsp;<input type='submit' class='button_small' name='setassign' value='Go' />";
 	    $t .= "</span>";
 	}
 
@@ -899,7 +899,7 @@ class PaperList extends BaseList {
 	    }
 	    
 	    if ($this->sortable && $url) {
-		$sortUrl = $ConfSiteBase . $url . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
+		$sortUrl = $ConfSiteBase . htmlspecialchars($url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
 		$q = "<a class='pl_sort' href=\"" . $sortUrl;
 		foreach ($fieldDef as $fieldId => $fdef) {
 		    if ($fdef[1] != 1)
