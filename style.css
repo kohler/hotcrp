@@ -424,10 +424,10 @@ div.gopaper {
 	float: right;
 	margin-bottom: 0em;
 }
-form.gopaper input.textlite {
+form.gopaper input.textlite, table.lognav form {
 	font-size: small;
 }
-form.gopaper input.button {
+form.gopaper input.button, table.lognav input.button {
 	padding: 0px;
 	border-top: 1px solid #eeee66;
 	border-left: 2px solid #eeee66;
@@ -1205,6 +1205,19 @@ table#offlineform ul, table#offlineform form {
 	margin: 0.5em 1.5em;
 	padding: 0px;
 	display: block;
+}
+
+/* action log */
+table.lognav {
+	margin: 0.75em auto 0em auto;
+}
+table.lognav td#newest div, table.lognav td#newer div,
+table.lognav td#newnum div, table.lognav td#oldnum div,
+table.lognav td#older div, table.lognav td#oldest div {
+	min-width: 3em;
+}
+table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
+	text-align: right;
 }
 
 p.page {

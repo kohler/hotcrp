@@ -118,33 +118,37 @@ function searchbar() {
 	    if ($_REQUEST[$x])
 		$urls[] = "$x=" . urlencode($_REQUEST[$x]);
 	$url = "log.php?" . join("&amp;", $urls);
-	echo "<div class='smgap'></div><table class='center'><tr><td>";
+	echo "<table class='lognav'><tr><td id='newest'><div>";
 	if ($page > 1)
-	    echo "<a href='$url&amp;page=", ($page - 1), "'><strong><img src='${ConfSiteBase}images/prev.png' alt='&lt;-' /> Previous</strong></a> ";
+	    echo "<a href='$url&amp;page=1'><strong>Newest</strong></a> &nbsp;|&nbsp;&nbsp;";
+	echo "</div></td><td id='newer'><div>";
+	if ($page > 1)
+	    echo "<a href='$url&amp;page=", ($page - 1), "'><strong><img src='${ConfSiteBase}images/prev.png' alt='&lt;-' /> Newer</strong></a>";
+	echo "</div></td><td id='newnum'><div>";
 	if ($page - 4 > 0)
-	    echo "... ";
+	    echo "&nbsp;...";
 	for ($p = max($page - 4, 0); $p + 1 < $page; $p++)
-	    echo "<a href='$url&amp;page=", ($p + 1), "'>", ($p + 1), "</a> ";
-	echo "<strong class='thispage'>", $page, "</strong> ";
+	    echo "&nbsp;<a href='$url&amp;page=", ($p + 1), "'>", ($p + 1), "</a>";
+	echo "</div></td><td id='thisnum'><div><strong class='thispage'>&nbsp;", $page, "&nbsp;</strong></div></td><td id='oldnum'><div>";
 	for ($p = $page; $p * $count + $offset < $start + min(3*$count + 1, $nrows); $p++)
-	    echo "<a href='$url&amp;page=", ($p + 1), "'>", ($p + 1), "</a> ";
+	    echo "<a href='$url&amp;page=", ($p + 1), "'>", ($p + 1), "</a>&nbsp;";
 	if ($nrows == $maxNrows)
-	    echo "... ";
+	    echo "...&nbsp;";
+	echo "</div></td><td id='older'><div>";
 	if ($nrows > $count)
-	    echo "<a href='$url&amp;page=", ($page + 1), "'><strong>Next <img src='${ConfSiteBase}images/next.png' alt='-&gt;' /> </strong></a>";
+	    echo "<a href='$url&amp;page=", ($page + 1), "'><strong>Older <img src='${ConfSiteBase}images/next.png' alt='-&gt;' /></strong></a>";
+	echo "</div></td><td id='oldest'><div>";
+	if ($nrows > $count)
+	    echo "&nbsp;&nbsp;|&nbsp; <a href='$url&amp;page=earliest'><strong>Oldest</strong></a>";
+	/* echo "</div></td><td id='gopage'><div>";
 	if ($page > 1 || $nrows > $count) {
-	    echo " &nbsp;|&nbsp; ";
-	    if ($page == 1)
-		echo "<strong>Latest</strong>";
-	    else
-		echo "<a href='$url&amp;page=1'><strong>Latest</strong></a>";
-	    echo " &nbsp;";
-	    if ($nrows <= $count)
-		echo "<strong>Earliest</strong>";
-	    else
-		echo "<a href='$url&amp;page=earliest'><strong>Earliest</strong></a>";
-	}
-	echo "</td></tr></table><div class='smgap'></div>\n";
+	    echo "&nbsp;&nbsp;|&nbsp; Page: <form method='get' action='log.php'>";
+	    foreach (array("q", "pap", "acct", "n", "offset") as $x)
+		if ($_REQUEST[$x])
+		    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />";
+	    echo "<input class='textlite' type='text' size='3' name='page' value='' /> &nbsp;<input class='button' type='submit' name='gopage' value='Go' /></form>";
+	    } */
+	echo "</div></td></tr></table><div class='smgap'></div>\n";
     }
 }
 
