@@ -1,3 +1,99 @@
+2007-07-16 Monday 09:26  kohler
+
+	* Code/schema.sql (1.95): mark things as NOT NULL
+
+2007-07-16 Monday 09:23  kohler
+
+	* Chair/: SetReviewForm.php (1.34), SetReviewForm.php (1.35):
+	  appearance nitlet
+
+2007-07-14 Saturday 14:09  kohler
+
+	* style.css (1.189): remove unused style
+
+2007-07-14 Saturday 14:09  kohler
+
+	* log.php (1.2), style.css (1.188): cuter log navigation
+
+2007-07-14 Saturday 11:54  kohler
+
+	* index.php (1.133), log.php (1.1), tarball.sh (1.50),
+	  Chair/ViewActionLog.php (1.17): move ViewActionLog into main
+	  directory
+
+2007-07-14 Saturday 11:51  kohler
+
+	* assign.php (1.71), mergeaccounts.php (1.35), review.php (1.103),
+	  style.css (1.187), Chair/ViewActionLog.php (1.16),
+	  Code/conference.inc (1.202), Code/contact.inc (1.121),
+	  Code/review.inc (1.75): better ViewActionLog complete
+
+2007-07-13 Friday 18:49  kohler
+
+	* Code/schema.sql (1.94): action is now a text column
+
+2007-07-13 Friday 17:59  kohler
+
+	* account.php (1.56), autoassign.php (1.20), contacts.php (1.12),
+	  help.php (1.43), mail.php (1.8), paper.php (1.129), script.js
+	  (1.44), search.php (1.98), Chair/SetReviewForm.php (1.33),
+	  Code/contactlist.inc (1.17), Code/helpers.inc (1.156),
+	  Code/paperlist.inc (1.124), Code/papertable.inc (1.73),
+	  Code/review.inc (1.74), Code/reviewtable.inc (1.37): make the
+	  site validate
+
+2007-07-13 Friday 17:17  kohler
+
+	* style.css (1.186): validation?
+
+2007-07-13 Friday 17:16  kohler
+
+	* Code/helpers.inc (1.155): improve validation
+
+2007-07-13 Friday 17:07  kohler
+
+	* Code/: TODO (1.86), conference.inc (1.200), conference.inc
+	  (1.201): remove unused code
+
+2007-07-12 Thursday 12:42  kohler
+
+	* index.php (1.132): review assignment link points to search page
+
+2007-07-12 Thursday 12:24  kohler
+
+	* Code/conference.inc (1.199): nit
+
+2007-07-12 Thursday 12:17  kohler
+
+	* index.php (1.131), paper.php (1.128), review.php (1.102),
+	  search.php (1.97), Code/conference.inc (1.198): keep track of
+	  accepted papers better
+
+2007-07-12 Thursday 11:57  kohler
+
+	* index.php (1.130), review.php (1.101), search.php (1.96):
+	  Accepted papers search type is only available when authors can
+	  view decisions; but also, keep track of when papers have
+	  decisions marked as accepted
+
+2007-07-12 Thursday 11:47  kohler
+
+	* index.php (1.129), offline.php (1.23): hide Offline reviewing
+	  link when the site is not yet open for review
+
+2007-07-12 Thursday 11:46  kohler
+
+	* deadlines.php (1.27): report deadlines in days more than 3 days
+	  out
+
+2007-07-11 Wednesday 12:20  kohler
+
+	* Code/conference.inc (1.197): PC members can always view decisions
+
+2007-07-11 Wednesday 11:41  kohler
+
+	* NEWS (1.4): name NEWS correctly
+
 2007-07-11 Wednesday 11:03  kohler
 
 	* NEWS (1.3), tarball.sh (1.49): news, tarball
