@@ -5,11 +5,11 @@
 DROP TABLE IF EXISTS `ActionLog`;
 CREATE TABLE `ActionLog` (
   `logId` int(11) NOT NULL auto_increment,
-  `contactId` int(11) default NULL,
+  `contactId` int(11) NOT NULL,
   `paperId` int(11) default NULL,
   `time` timestamp(14) NOT NULL default CURRENT_TIMESTAMP,
   `ipaddr` varchar(16) default NULL,
-  `action` text default NULL,
+  `action` text NOT NULL,
   PRIMARY KEY  (`logId`),
   UNIQUE KEY `logId` (`logId`),
   KEY `contactId` (`contactId`),
