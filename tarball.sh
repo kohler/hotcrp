@@ -17,6 +17,8 @@ mkdistdir () {
 	fi
     done
 
+    cp Code/distoptions.inc $crpd/Code/options.inc
+
     tar czf $crpd.tar.gz $crpd
     rm -rf $crpd
 }
@@ -64,7 +66,6 @@ Code/createdb.sh
 Code/header.inc
 Code/helpers.inc
 Code/mailtemplate.inc
-Code/options.inc
 Code/paperlist.inc
 Code/papertable.inc
 Code/review.inc
