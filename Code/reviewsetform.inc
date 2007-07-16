@@ -178,12 +178,12 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     $x .= "/>&nbsp;Visible&nbsp;to&nbsp;authors</td><td class='hint'></td></tr>\n";
 
     // description
-    $x .= "<$trclass><td class='xcaption'>Description</td>"
+    $x .= "<$trclass><td class='xcaption textarea'>Description</td>"
 	. "<td class='entry'><textarea name='description_$row->fieldName' rows='6' cols='80' onchange='highlightUpdate()'>"
 	. htmlentities(rf_getField($row, 'description'))
 	. "</textarea></td>";
     if (isset($captions['description'])) {
-	$x .= "<td class='hint'>" . $captions['description'] . "</td>";
+	$x .= "<td class='hint textarea'>" . $captions['description'] . "</td>";
 	unset($captions['description']);
     } else
 	$x .= "<td></td>";
@@ -191,7 +191,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 
     // options
     if (isset($rf->options[$row->fieldName]) || $reviewFields[$row->fieldName]) {
-	$x .= "<$trclass><td class='xcaption'>Options</td><td class='entry'><textarea name='options_$row->fieldName' rows='6' cols='80' onchange='highlightUpdate()'>";
+	$x .= "<$trclass><td class='xcaption textarea'>Options</td><td class='entry'><textarea name='options_$row->fieldName' rows='6' cols='80' onchange='highlightUpdate()'>";
 	$y = '';
 	if (isset($rf->options[$row->fieldName])) {
 	    for ($i = 1; $i <= count($rf->options[$row->fieldName]); $i++)
@@ -200,7 +200,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 	$x .= htmlentities(rf_getField($row, 'options', $y))
 	    . "</textarea></td>";
 	if (isset($captions['options'])) {
-	    $x .= "<td class='hint'>" . $captions['options'] . "</td>";
+	    $x .= "<td class='hint textarea'>" . $captions['options'] . "</td>";
 	    unset($captions['options']);
 	} else
 	    $x .= "<td></td>";
