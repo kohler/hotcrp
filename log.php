@@ -130,7 +130,8 @@ function searchbar() {
 	for ($p = max($page - 4, 0); $p + 1 < $page; $p++)
 	    echo "&nbsp;<a href='$url&amp;page=", ($p + 1), "'>", ($p + 1), "</a>";
 	echo "</div></td><td id='thisnum'><div><strong class='thispage'>&nbsp;", $page, "&nbsp;</strong></div></td><td id='oldnum'><div>";
-	for ($p = $page; $p * $count + $offset < $start + min(3*$count + 1, $nrows); $p++)
+	$o = ($offset ? $offset - $count : 0);
+	for ($p = $page; $p * $count + $o < $start + min(3*$count + 1, $nrows); $p++)
 	    echo "<a href='$url&amp;page=", ($p + 1), "'>", ($p + 1), "</a>&nbsp;";
 	if ($nrows == $maxNrows)
 	    echo "...&nbsp;";
