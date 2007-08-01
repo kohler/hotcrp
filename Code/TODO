@@ -4,7 +4,6 @@ Major features
 - offline reviewing: John Heidemann would like some redundancy 
 - fix downloadable review form "Submit Review" explanation
 - downloading reviews from the search screen gets comments as well
-- autoassign tool: do not autoassign reviewers to papers that have outcomes
 
 Minor features
 - authors' response: emails, etc.

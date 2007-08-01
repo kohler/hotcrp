@@ -507,7 +507,7 @@ if ($Group == "sub") {
 
     echo "<div class='smgap'></div>\n";
     doCheckbox("sub_pcconf", "Collect authors' PC conflicts with checkboxes");
-    doCheckbox("sub_collab", "Collect authors' potential conflicts as text");
+    doCheckbox("sub_collab", "Collect authors' other collaborators as text");
 
     echo "<div class='smgap'></div>\n";
     doRadio("sub_freeze", array(0 => array("Authors can update submissions until the deadline", "PC members cannot download submitted papers until the submission deadline passes."), 1 => array("Authors must freeze the final version of each submission", "PC members can download papers as soon as they are submitted.")));

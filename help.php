@@ -100,10 +100,10 @@ and use \"With <b>all</b> the words\" and \"<b>Without</b> the words\".
 conference. Options include:</p>
 <ul class='compact'>
 <li><b>Submitted papers</b> &mdash; all submitted papers.</li>
-<li><b>Review assignment</b> &mdash; papers you've been assigned to review.</li>
-<li><b>Unsubmitted reviews</b> &mdash; papers you've been assigned to review, but haven't submitted a review yet.</li>
-<li><b>Authored papers</b> &mdash; papers for which you're a contact author.</li>
 <li><b>All papers</b> &mdash; all papers, including withdrawn and other non-submitted papers.</li>
+<li><b>My papers</b> &mdash; papers for which you're a contact author.</li>
+<li><b>My reviews</b> &mdash; papers you've been assigned to review.</li>
+<li><b>My unfinished reviews</b> &mdash; papers you've been assigned to review, but haven't submitted a review yet.</li>
 </ul>
 
 <p>Search won't show you information you aren't supposed to see.  For example,
@@ -111,18 +111,18 @@ authors can only search their own submissions, and if the conference used
 anonymous submission, then only the PC chairs can search by author.</p>
 
 <p>By default, search examines paper titles, abstracts, and authors.
-Use <a href='${ConfSiteBase}search.php?opt=1'>Advanced search</a>
-to search other fields, including authors/collaborators and reviewers.
-Or use <b>keywords</b> to search individual characteristics such as titles,
-authors, reviewer names, or even numbers of reviewers.  For example,
-<span class='textlite'>ti:foo</span> means \"search for 'foo' in paper
+<a href='${ConfSiteBase}search.php?opt=1'>Advanced search</a>
+can search other fields, including authors/collaborators and reviewers.
+Also, <b>keywords</b> search specific characteristics such as titles,
+authors, reviewer names, and numbers of reviewers.  For example,
+\"ti:foo\" means \"search for 'foo' in paper
 titles\".  Keywords are listed in the
 <a href='help.php?t=syntax'>search syntax reference</a>.</p>");
     _alternateRow("Search results", "
 Click on a paper number or paper title to jump to that paper's screen.
 Search matches are <span class='match'>highlighted</span> on paper screens,
 which, for example, makes it easier to tell whether a conflict is real.
-Once on a paper screen you can use <a href='#quicklinks'>quicklinks</a>
+Once on a paper screen use <a href='#quicklinks'>quicklinks</a>
 to navigate through the rest of the search matches.
 
 <p>The search results screen also lets you act on many papers at once.
@@ -320,16 +320,16 @@ Follow these steps to prepare to accept paper submissions.
 <li><p><strong><a href='${ConfSiteBase}settings.php?group=sub'>Set submission
   policies</a></strong>, including whether submission is blind, whether
   authors check off conflicted PC members (\"Collect authors' PC conflicts
-  with checkboxes\"), and whether authors must enter additional collaborators,
+  with checkboxes\"), and whether authors must enter additional non-PC collaborators,
   which can help detect conflicts with external reviewers (\"Collect authors'
-  potential conflicts as text\").</p></li>
+  other collaborators as text\").</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}settings.php?group=sub'>Set submission
   deadlines.</a></strong> Authors first <em>register</em>, then <em>submit</em>
   their papers, possibly multiple times; authors choose for each submitted
   version whether that version is ready for review.  Normally, HotCRP allows
   authors to update their papers until the deadline, but you can also require
-  that authors \"freeze\" each submission explicitly; only PC chairs and
+  that authors \"freeze\" each submission explicitly; only 
   administrators can update frozen submissions.
   The only deadline that really matters is the paper submission
   deadline, but HotCRP also supports a separate paper registration deadline,
@@ -377,7 +377,7 @@ papers that never got officially submitted.  Then:
 <ol>
 
 <li><p><strong><a href='${ConfSiteBase}settings.php?group=rfo'>Prepare the
-  review form.</a></strong> Take a look at the canned review forms to get
+  review form.</a></strong> Take a look at the templates to get
   ideas.</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}settings.php?group=rev'>Set review
@@ -420,7 +420,7 @@ papers that never got officially submitted.  Then:
   <p>The default assignments pages apply to all submitted papers.  You can
   also assign subsets of papers obtained through <a
   href='help.php?t=search'>search</a>, such as <a
-  href='${ConfSiteBase}search.php?q=cre:%3C3&amp;t=s&amp;showact=1'>papers
+  href='${ConfSiteBase}search.php?q=cre:%3C3&amp;t=s'>papers
   with fewer than three completed reviews</a>.</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}settings.php?group=rev'>Open the site
@@ -475,7 +475,7 @@ supposedly reduces bias.)
   rejection, such as \"accept as short paper\".</p></li>
 
 <li><p>The night before the meeting, <strong><a
-  href='${ConfSiteBase}search.php?q=&amp;t=s&amp;showact=1'>download all
+  href='${ConfSiteBase}search.php?q=&amp;t=s'>download all
   reviews onto a laptop</a></strong> (Get &gt; All reviews) in case the
   Internet explodes and you can't reach HotCRP from the meeting
   place.</p></li>
@@ -490,12 +490,14 @@ supposedly reduces bias.)
   href='${ConfSiteBase}comment.php'>comment</a> for the authors'
   reference.</p></li>
 
-<li><p><strong>Paper decisions</strong> can be recorded either <a
-  href='${ConfSiteBase}review.php'>paper by paper</a> or using <a
-  href='help.php?t=tags'>tags</a>.  You can also enter decisions later en
-  masse via the <a
-  href='${ConfSiteBase}search.php?q=&amp;t=s&amp;showact=1'>search
-  screen</a>.</p></li>
+<li><p><strong>Paper decisions</strong> can be recorded on the <a
+  href='${ConfSiteBase}review.php'>review screens</a> or en masse
+  via the <a
+  href='${ConfSiteBase}search.php?q=&amp;t=s'>search
+  screen</a>.  Note that PC members can see paper decisions as soon as they
+  are entered into the system, even when they have a conflict.  If you don't
+  like this, mark decisions with <a href='help.php?t=tags'>tags</a> until the
+  meeting is over; PC members can never see tags for conflicted papers.</p></li>
 
 <li><p><strong>Shepherding (optional).</strong> If your conference uses
   shepherding for accepted papers, you can assign shepherds either <a
@@ -509,9 +511,9 @@ supposedly reduces bias.)
 <ol>
 
 <li><p><strong><a
-  href='${ConfSiteBase}search.php?q=&amp;t=s&amp;showact=1'>Enter
+  href='${ConfSiteBase}search.php?q=&amp;t=s'>Enter
   decisions</a> and <a
-  href='${ConfSiteBase}search.php?q=dec:yes&amp;t=s&amp;showact=1'>shepherds</a></strong>
+  href='${ConfSiteBase}search.php?q=dec:yes&amp;t=s'>shepherds</a></strong>
   if you didn't do this at the meeting.</p></li>
 
 <li><p>Give reviewers some time to <strong>update their reviews</strong> in
@@ -530,7 +532,7 @@ supposedly reduces bias.)
   yourself, it can be convenient to collect final copies using HotCRP.
   Authors upload final copies the same way they did the submission, although
   the submitted version is archived for reference.  You can then <a
-  href='${ConfSiteBase}search.php?q=dec:yes&amp;t=s&amp;showact=1'>download
+  href='${ConfSiteBase}search.php?q=dec:yes&amp;t=s'>download
   all final copies as a <tt>.zip</tt> archive</a>.</p></li>
 
 </ol>

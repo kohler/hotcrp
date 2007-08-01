@@ -633,12 +633,12 @@ class PaperList extends BaseList {
       <option value='assign" . REVIEW_PRIMARY . "'>Assign primary review</option>
       <option value='assign" . REVIEW_SECONDARY . "'>Assign secondary review</option>
       <option value='assign0'>Unassign reviews</option>
-    </select> &nbsp;for &nbsp;";
+    </select><span class='extension'> &nbsp;for &nbsp;";
 	    $t .= "<select name='markpc' id='markpc'>\n";
 	    $pc = pcMembers();
 	    foreach ($pc as $id => $row)
 		$t .= "<option value=\"" . htmlspecialchars($row->email) . "\">" . contactHtml($row->firstName, $row->lastName) . "</option>\n";
-	    $t .= "</select> &nbsp;<input type='submit' class='button_small' name='setassign' value='Go' />";
+	    $t .= "</select></span> &nbsp;<input type='submit' class='button_small' name='setassign' value='Go' />";
 	    $t .= "</span>";
 	}
 

@@ -21,16 +21,16 @@ if ($Me->isPC)
     $tOpt["s"] = "Submitted papers";
 if ($Me->isPC && ($Conf->timeAuthorViewDecision() || $Conf->setting("paperacc") > 0))
     $tOpt["acc"] = "Accepted papers";
-if ($Me->amReviewer())
-    $tOpt["r"] = "Your review assignment";
-if ($Me->reviewsOutstanding)
-    $tOpt["rout"] = "Your missing reviews";
-if ($Me->isPC)
-    $tOpt["req"] = "Requested reviews";
-if ($Me->isAuthor)
-    $tOpt["a"] = "Authored papers";
 if ($Me->privChair || ($Me->isPC && $Conf->setting("pc_seeall") > 0))
     $tOpt["all"] = "All papers";
+if ($Me->isAuthor)
+    $tOpt["a"] = "My papers";
+if ($Me->amReviewer())
+    $tOpt["r"] = "My reviews";
+if ($Me->reviewsOutstanding)
+    $tOpt["rout"] = "My unfinished reviews";
+if ($Me->isPC)
+    $tOpt["req"] = "My review requests";
 if (count($tOpt) == 0) {
     $Conf->header("Search", 'search', actionBar());
     $Conf->errorMsg("You are not allowed to search for papers.");
