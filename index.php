@@ -34,6 +34,11 @@ if ($Me->privChair) {
 }
 
 
+// Home message
+if (($v = $Conf->settingText("homemsg")))
+    $Conf->infoMsg($v);
+
+
 echo "<table class='homegrp'>";
 
 

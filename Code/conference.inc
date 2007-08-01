@@ -15,6 +15,7 @@ class Conference {
     var $dblink;
 
     var $settings;
+    var $settingTexts;
 
     var $saveMessages;
     var $headerPrinted;
@@ -73,9 +74,12 @@ class Conference {
 
     function updateSettings() {
 	$this->settings = array();
-	$result = $this->q("select name, value from Settings");
-	while (($row = edb_row($result)))
+	$result = $this->q("select name, value, data from Settings");
+	while (($row = edb_row($result))) {
 	    $this->settings[$row[0]] = $row[1];
+	    if ($row[2] !== null)
+		$this->settingTexts[$row[0]] = $row[2];
+	}
 	foreach (array("pc_seeall", "pcrev_any", "extrev_view", "rev_notifychair") as $x)
 	    if (!isset($this->settings[$x]))
 		$this->settings[$x] = 0;
@@ -89,6 +93,10 @@ class Conference {
 
     function setting($name, $defval = false) {
 	return defval($this->settings[$name], $defval);
+    }
+    
+    function settingText($name, $defval = false) {
+	return defval($this->settingTexts[$name], $defval);
     }
     
     // update the 'papersub' setting: are there any submitted papers?

@@ -236,7 +236,7 @@ Tags are never shown to authors or conflicted PC members.
 It's easy to add and remove tags and to list all papers with a given tag,
 and <i>ordered</i> tags preserve a particular paper order.");
     _alternateRow("Using tags", "
-Here are some example usage scenarios for tags.
+Here are some example ways to use tags.
 
 <ul>
 <li>You don't plan to discuss the lowest-ranked submissions at the PC meeting.
@@ -248,7 +248,7 @@ Here are some example usage scenarios for tags.
 
 <li>Controversial papers might benefit from additional review.
  You ask PC members to add the tag \"controversy\" when the current reviewers disagree.
- A <a href='${ConfSiteBase}search.php?q=tag:controversy'>simple search</a> shows you where the PC thinks more review is needed.</li>
+ A <a href='${ConfSiteBase}search.php?q=tag:controversy'>search</a> shows you where the PC thinks more review is needed.</li>
 
 <li>At the meeting, you want to discuss the papers in a particular order.
  You'd like the PC to see the order so they can prepare to discuss papers they reviewed.

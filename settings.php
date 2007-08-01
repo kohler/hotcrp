@@ -24,6 +24,7 @@ $SettingGroups = array("sub" => array(
 			     "sub_collab" => "check",
 			     "sub_freeze" => 1,
 			     "pc_seeall" => "check",
+			     "homemsg" => "string",
 			     "next" => "opt"),
 		       "opt" => array(
 			     "topics" => "special",
@@ -158,7 +159,9 @@ function parseValue($name, $type) {
 	    return intval($v);
 	else
 	    $err = $SettingText[$name] . ": parse error.";
-    } else if (is_int($type)) {
+    } else if ($type == "string")
+	return ($v == "" ? null : array(0, $v));
+    else if (is_int($type)) {
 	if (ctype_digit($v) && $v >= 0 && $v <= $type)
 	    return intval($v);
 	else
@@ -296,7 +299,7 @@ function doSpecial($name, $set) {
 	doDecisions($set);
     else if ($name == "reviewform") {
 	if (!$set)
-	    $Values["reviewform"] = true;
+	    $Values[$name] = true;
 	else
 	    rf_update(false);
     }
@@ -313,7 +316,7 @@ function accountValue($name, $type) {
 		return;
 	    $v = 0;
 	}
-	if ($v <= 0 && !is_int($type))
+	if (!is_array($v) && $v <= 0 && !is_int($type))
 	    $Values[$name] = null;
 	else
 	    $Values[$name] = $v;
@@ -378,12 +381,14 @@ if (isset($_REQUEST["update"])) {
 		doSpecial($n, true);
 	    else {
 		$dq .= " or name='$n'";
-		if ($v !== null)
-		    $aq .= ", ('$n', '" . sqlq($v) . "')";
+		if (is_array($v))
+		    $aq .= ", ('$n', '" . sqlq($v[0]) . "', '" . sqlq($v[1]) . "')";
+		else if ($v !== null)
+		    $aq .= ", ('$n', '" . sqlq($v) . "', null)";
 	    }
 	$Conf->qe("delete from Settings where " . substr($dq, 4), $while);
 	if (strlen($aq))
-	    $Conf->qe("insert into Settings (name, value) values " . substr($aq, 2), $while);
+	    $Conf->qe("insert into Settings (name, value, data) values " . substr($aq, 2), $while);
 	
 	$Conf->qe("unlock tables", $while);
 	$Conf->log("Updated settings group '$Group'", $Me);
@@ -512,7 +517,12 @@ if ($Group == "sub") {
     if ($Conf->setting("pc_seeall") < 0)
 	$Conf->settings["pc_seeall"] = 1;
     doCheckbox('pc_seeall', "PC can see <i>all registered papers</i> until submission deadline<br /><small>Check this box if you want to collect review preferences <em>before</em> most papers are submitted. After the submission deadline, PC members can only see submitted papers.</small>", true);
-    echo "</table></div></div></td></tr></table>\n\n";
+    echo "</table></div></div>";
+
+    echo "<div class='bgrp'><div class='bgrp_head'>Messages</div><div class='bgrp_body'><strong>Home page message</strong> (HTML allowed)<br />
+<textarea class='textlite' name='homemsg' cols='60' rows='10'>", htmlspecialchars($Conf->settingText("homemsg")), "</textarea></div></div>";
+
+    echo "</td></tr></table>\n\n";
 }
 
 
