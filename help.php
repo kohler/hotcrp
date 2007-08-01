@@ -46,10 +46,10 @@ function _alternateRow($caption, $entry) {
 function topics() {
     global $ConfSiteBase;
     echo "<table>";
+    _alternateRow("<a href='help.php?t=chair'>Chair's guide</a>", "How to run a conference using HotCRP.");
     _alternateRow("<a href='help.php?t=search'>Search</a>", "About paper searching.");
     _alternateRow("<a href='help.php?t=syntax'>Search syntax</a>", "Quick reference to search syntax.");
     _alternateRow("<a href='help.php?t=tags'>Tags</a>", "How to use tags and ordered tags to define sets of papers and discussion orders.");
-    _alternateRow("<a href='help.php?t=chair'>Chair's guide</a>", "How to run a conference using HotCRP.");
     echo "</table>";
 }
 

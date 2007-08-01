@@ -67,9 +67,9 @@ echo "<table id='offlineform'><tr>
 <ul>
   <li><a href='offline.php?downloadForm=1'>Blank form</a></li>\n";
 if ($Me->amReviewer())
-    echo "  <li><a href='${ConfSiteBase}search.php?get=revform&amp;q=&amp;t=r&amp;pap=all'>Your review assignment</a></li>\n";
+    echo "  <li><a href='${ConfSiteBase}search.php?get=revform&amp;q=&amp;t=r&amp;pap=all'>My reviews</a></li>\n";
 if ($Me->amReviewer() && $Me->reviewsOutstanding)
-    echo "  <li><a href='${ConfSiteBase}search.php?get=revform&amp;q=&amp;t=rout&amp;pap=all'>Your missing reviews</a></li>\n";
+    echo "  <li><a href='${ConfSiteBase}search.php?get=revform&amp;q=&amp;t=rout&amp;pap=all'>My missing reviews</a></li>\n";
 echo "</ul></td>\n";
 if ($Me->amReviewer()) {
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");

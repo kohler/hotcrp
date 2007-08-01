@@ -158,7 +158,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     // Actions
     $sep = "";
     if ($myrow) {
-	echo $sep, "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;<a href=\"search.php?q=&amp;t=r\"><strong>Review assignment</strong></a>";
+	echo $sep, "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;<a href=\"search.php?q=&amp;t=r\"><strong>My Reviews</strong></a>";
 	$sep = $thesep;
     }
     if ($Conf->settingsAfter("rev_open") || $Me->privChair) {
