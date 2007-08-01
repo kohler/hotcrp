@@ -74,6 +74,7 @@ class Conference {
 
     function updateSettings() {
 	$this->settings = array();
+	$this->settingTexts = array();
 	$result = $this->q("select name, value, data from Settings");
 	while (($row = edb_row($result))) {
 	    $this->settings[$row[0]] = $row[1];

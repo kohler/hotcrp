@@ -160,7 +160,7 @@ function parseValue($name, $type) {
 	else
 	    $err = $SettingText[$name] . ": parse error.";
     } else if ($type == "string")
-	return ($v == "" ? null : array(0, $v));
+	return ($v == "" ? 0 : array(0, $v));
     else if (is_int($type)) {
 	if (ctype_digit($v) && $v >= 0 && $v <= $type)
 	    return intval($v);
@@ -520,7 +520,7 @@ if ($Group == "sub") {
     echo "</table></div></div>";
 
     echo "<div class='bgrp'><div class='bgrp_head'>Messages</div><div class='bgrp_body'><strong>Home page message</strong> (HTML allowed)<br />
-<textarea class='textlite' name='homemsg' cols='60' rows='10'>", htmlspecialchars($Conf->settingText("homemsg")), "</textarea></div></div>";
+<textarea class='textlite' name='homemsg' cols='60' rows='10' onchange='highlightUpdate()'>", htmlspecialchars($Conf->settingText("homemsg")), "</textarea></div></div>";
 
     echo "</td></tr></table>\n\n";
 }
