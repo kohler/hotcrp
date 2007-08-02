@@ -127,7 +127,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", sprintf("%.2f", $myrow[3]->avg);
 	echo ".<br />";
     }
-    if ($myrow || $Me->privChair) {
+    if (($myrow || $Me->privChair) && $npc) {
 	echo sprintf("The average PC member has submitted %.1f reviews", $sumpcSubmit / $npc);
 	if (in_array("overAllMerit", $rf->fieldOrder) && $npcScore)
 	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", sprintf("%.2f", $sumpcScore / $npcScore);
@@ -152,7 +152,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    echo "<span class='deadline'>The review deadline is $d.</span>";
     }
 
-    if ($myrow || $Me->privChair)
+    if (($myrow || $Me->privChair) && $npc)
 	echo "</td></tr>\n<tr><td id='foldre' class='foldc'>";
 
     // Actions
