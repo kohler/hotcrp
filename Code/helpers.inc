@@ -122,10 +122,10 @@ function fileUploaded(&$var, $conf) {
     }
 }
 
-function selfHref($extra = array()) {
-    $x = $_SERVER["PHP_SELF"];
+function selfHref($extra = array(), $self = null) {
+    $x = ($self ? $self : $_SERVER["PHP_SELF"]);
     $sep = "?";
-    foreach (array("paperId", "reviewId", "commentId", "mode", "forceShow", "validator", "list", "t", "q", "qa", "qx", "qt", "group") as $what)
+    foreach (array("paperId", "reviewId", "commentId", "mode", "forceShow", "validator", "list", "t", "q", "qa", "qx", "qt", "group", "sort") as $what)
 	if (isset($_REQUEST[$what]) && !isset($extra[$what])) {
 	    $x .= "$sep$what=" . urlencode($_REQUEST[$what]);
 	    $sep = "&";
