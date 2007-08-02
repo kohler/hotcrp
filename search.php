@@ -574,7 +574,7 @@ if ($Conf->blindSubmission() == 1 && $Me->privChair) {
     echo "<input type='checkbox' name='showanonau' value='1'";
     echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;Anonymous authors<br />\n";
 }
-if ($Me->isPC) {
+if ($Me->isPC && $Search->headerInfo["tags"]) {
     echo "<input type='checkbox' name='showtags' value='1'";
     if ($_REQUEST["t"] == "a" && !$Me->privChair)
 	echo " disabled='disabled'";

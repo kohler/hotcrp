@@ -65,6 +65,7 @@ class PaperList extends BaseList {
     var $paperLink;
     var $paperLinkArgs;
     var $showConflict;
+    var $headerInfo;
     var $papersel;
     
     function PaperList($sortable = true, $sessionVar = null, $search = null, $extraText = null) {
@@ -955,6 +956,8 @@ class PaperList extends BaseList {
 	    $_SESSION[$this->sessionVar] = $ids;
 	    unset($_SESSION["matchPreg"]);
 	}
+
+	$this->headerInfo = array("authors" => $authorinfo,  "tags" => $taginfo);
 
 	return $x;
     }
