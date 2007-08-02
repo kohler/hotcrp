@@ -861,9 +861,9 @@ class PaperList extends BaseList {
 
 	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname);
 	if ($authorinfo & 1)
-	    $x .= " fold1c";
+	    $x .= (defval($_SESSION["foldplau"], 1) ? " fold1c" : " fold1o");
 	if ($authorinfo & 2)
-	    $x .= " fold2c";
+	    $x .= (defval($_SESSION["foldplanonau"], 1) ? " fold2c" : " fold2o");
 	if (!$unfolded)
 	    $x .= " fold3c";
 	if ($taginfo)

@@ -450,6 +450,8 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && 
 // set scores to view
 if (isset($_REQUEST["redisplay"])) {
     $_SESSION["scores"] = 0;
+    $_SESSION["foldplau"] = !defval($_REQUEST["showau"], 0);
+    $_SESSION["foldplanonau"] = !defval($_REQUEST["showanonau"], 0);
 }
 if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
     $_SESSION["scores"] = 0;
@@ -475,8 +477,10 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
 
 
 // set up the search form
-if (defval($_REQUEST["qx"], "") != "" || defval($_REQUEST["qa"], "") != ""
-    || defval($_REQUEST["qt"], "n") != "n" || defval($_REQUEST["opt"], 0) > 0)
+if (isset($_REQUEST["redisplay"]))
+    $activetab = 3;
+else if (defval($_REQUEST["qx"], "") != "" || defval($_REQUEST["qa"], "") != ""
+	 || defval($_REQUEST["qt"], "n") != "n" || defval($_REQUEST["opt"], 0) > 0)
     $activetab = 2;
 else
     $activetab = 1;
@@ -563,20 +567,31 @@ foreach (array("q", "qx", "qa", "qt", "t", "sort") as $x)
 
 echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
   <td class='pad'>";
-if ($Conf->blindSubmission() <= 1 || $Me->privChair
-    || ($_REQUEST["t"] == "acc" && $Conf->timeReviewerViewAcceptedAuthors())) {
-    echo "<input type='checkbox' name='showau' value='1'",
-	" onclick='fold(\"pl\",!this.checked,",
-	($Conf->blindSubmission() == 2 ? 2 : 1),
-	")' />&nbsp;Authors<br />\n";
+$viewAccAuthors = ($_REQUEST["t"] == "acc" && $Conf->timeReviewerViewAcceptedAuthors());
+if ($Conf->blindSubmission() <= 1 || $viewAccAuthors) {
+    echo "<input type='checkbox' name='showau' value='1'";
+    if ($Conf->blindSubmission() == 1 && !($pl->headerInfo["authors"] & 1))
+	echo " disabled='disabled'";
+    if (defval($_SESSION["foldplau"], 1) == 0)
+	echo " checked='checked'";
+    echo " onclick='fold(\"pl\",!this.checked,1)";
+    if ($viewAccAuthors)
+	echo ";fold(\"pl\",!this.checked,2)";
+    echo "' />&nbsp;Authors<br />\n";
 }
-if ($Conf->blindSubmission() == 1 && $Me->privChair) {
+if ($Conf->blindSubmission() >= 1 && $Me->privChair && !$viewAccAuthors) {
     echo "<input type='checkbox' name='showanonau' value='1'";
-    echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;Anonymous authors<br />\n";
+    if (!($pl->headerInfo["authors"] & 2))
+	echo " disabled='disabled'";
+    if (defval($_SESSION["foldplanonau"], 1) == 0)
+	echo " checked='checked'";
+    echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;",
+	($Conf->blindSubmission() == 1 ? "Anonymous authors" : "Authors"),
+	"<br />\n";
 }
-if ($Me->isPC && $Search->headerInfo["tags"]) {
+if ($Me->isPC && $pl->headerInfo["tags"]) {
     echo "<input type='checkbox' name='showtags' value='1'";
-    if ($_REQUEST["t"] == "a" && !$Me->privChair)
+    if (($_REQUEST["t"] == "a" && !$Me->privChair) || !$pl->headerInfo["tags"])
 	echo " disabled='disabled'";
     if (defval($_SESSION["foldpltags"], 1) == 0)
 	echo " checked='checked'";
