@@ -565,8 +565,10 @@ echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
   <td class='pad'>";
 if ($Conf->blindSubmission() <= 1 || $Me->privChair
     || ($_REQUEST["t"] == "acc" && $Conf->timeReviewerViewAcceptedAuthors())) {
-    echo "<input type='checkbox' name='showau' value='1'";
-    echo " onclick='fold(\"pl\",!this.checked,1)' />&nbsp;Authors<br />\n";
+    echo "<input type='checkbox' name='showau' value='1'",
+	" onclick='fold(\"pl\",!this.checked,",
+	($Conf->blindSubmission() == 2 ? 2 : 1),
+	")' />&nbsp;Authors<br />\n";
 }
 if ($Conf->blindSubmission() == 1 && $Me->privChair) {
     echo "<input type='checkbox' name='showanonau' value='1'";
