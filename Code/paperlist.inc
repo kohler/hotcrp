@@ -65,7 +65,6 @@ class PaperList extends BaseList {
     var $paperLink;
     var $paperLinkArgs;
     var $showConflict;
-    var $headerInfo;
     var $papersel;
     
     function PaperList($sortable = true, $sessionVar = null, $search = null, $extraText = null) {
@@ -957,17 +956,6 @@ class PaperList extends BaseList {
 	    unset($_SESSION["matchPreg"]);
 	}
 
-	// track info for header
-	$this->headerInfo = array("author" => 0);
-	if (!$authorinfo)
-	    /* do nothing */;
-	else if ($authorinfo == 1)
-	    $this->headerInfo["author"] = 1;
-	else if ($this->contact->privChair)
-	    $this->headerInfo["author"] = $authorinfo;
-	else if ($authorinfo & 1)
-	    $this->headerInfo["author"] = 5;
-	
 	return $x;
     }
 
