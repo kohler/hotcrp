@@ -77,7 +77,7 @@ else if (isset($_REQUEST["update"])) {
     }
 } else if (isset($_REQUEST["remove"])) {
     if (!$Me->privChair)
-	$Conf->errorMsg("Only the PC chair can remove contact authors from a paper.");
+	$Conf->errorMsg("Only system administrators can remove contact authors from a paper.");
     else if (($id = cvtint($_REQUEST['remove'])) <= 0)
 	$Conf->errorMsg("Invalid contact author ID in request.");
     else {
@@ -85,7 +85,7 @@ else if (isset($_REQUEST["update"])) {
 	    $Conf->confirmMsg("Contact author removed.");
     }
 } else
-    $Conf->infoMsg("Use this screen to add more contact authors for your paper.  Any contact author can edit paper information, upload new versions, submit the paper, and view reviews." . ($Me->privChair ? "" : "  Only the PC chair can <i>remove</i> contact authors from the paper, so act carefully."));
+    $Conf->infoMsg("Use this screen to add more contact authors for your paper.  Any contact author can edit paper information, upload new versions, submit the paper, and view reviews." . ($Me->privChair ? "" : "  Only system administrators can <i>remove</i> contact authors from the paper, so act carefully."));
     
 
 
