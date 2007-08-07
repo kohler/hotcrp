@@ -295,7 +295,7 @@ class PaperTable {
 		$aus[] = $row;
 	    echo authorTable($aus, $Me);
 	}
-	if ($editMode || ($editMode === null && $this->editable))
+	if ($editMode || ($editMode === false && $this->editable))
 	    echo "<a href='${ConfSiteBase}contactauthors.php?paperId=$prow->paperId'>", ($Me->privChair ? "Edit" : "Add"), "&nbsp;contact&nbsp;authors</a>";
 	echo "</td>\n</tr>\n\n";
     }
