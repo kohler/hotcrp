@@ -223,7 +223,7 @@ input.button, button, a.button {
 	border-left: 2px solid #eeee66;
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
-	padding: 0px 6px 0px 6px;
+	padding: 0px 6px;
 	/*margin: 3px 0px;*/
 	text-decoration: none;
 	color: black;
