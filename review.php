@@ -414,14 +414,12 @@ if ($rrow && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
 function reviewView($prow, $rrow, $editMode) {
     global $Conf, $ConfSiteBase, $Me, $rf, $forceShow, $useRequest, $nExternalRequests;
     
-    if ($editMode) {
-	echo "<form action='review.php?";
-	if ($rrow)
-	    echo "reviewId=$rrow->reviewId";
-	else
-	    echo "paperId=$prow->paperId";
-	echo "$forceShow&amp;mode=edit&amp;post=1' method='post' enctype='multipart/form-data'>\n";
-    } else
+    $reviewLink = "review.php?"
+	. ($rrow ? "reviewId=$rrow->reviewId" : "paperId=$prow->paperId")
+	. $forceShow . "&amp;mode=edit&amp;post=1";
+    if ($editMode)
+	echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data'>\n";
+    else
 	echo "<div class='relative'>";
     
     echo "<table class='review'>
@@ -459,11 +457,11 @@ function reviewView($prow, $rrow, $editMode) {
 	if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType < REVIEW_SECONDARY) {
 	    echo "\n<tr class='rev_ref'>\n  <td class='caption'></td>\n  <td class='entry' colspan='2'>";
 	    echo "<a id='popupanchor_ref' href=\"javascript:void popup(null, 'ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it\n";
-	    $Conf->footerStuff .= "<div id='popup_ref' class='popupc'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p><div class='popup_actions'>
+	    $Conf->footerStuff .= "<div id='popup_ref' class='popupc'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p><div class='popup_actions'><form method='post' action=\"$reviewLink\" enctype='multipart/form-data'>
   <input class='textlite' type='text' name='reason' value='' size='40' />
   <div class='smgap'></div>
   <input class='button' type='submit' name='refuse' value='Refuse review' />
-  &nbsp;<button type='button' onclick=\"popup(null, 'ref', 1)\">Cancel</button></div></div>";
+  &nbsp;<button type='button' onclick=\"popup(null, 'ref', 1)\">Cancel</button></form></div></div>";
 	    echo "</td>\n</tr>\n";
 	}
 

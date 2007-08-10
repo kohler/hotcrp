@@ -691,12 +691,12 @@ if ($mode == "edit") {
 	    $Conf->footerStuff .= "<div id='popup_w' class='popupc'><p>Are you sure you want to withdraw this paper from consideration and/or publication?";
 	    if (!$Me->privChair || $prow->conflictType == CONFLICT_AUTHOR)
 		$Conf->footerStuff .= "  Only administrators can undo this step.";
-	    $Conf->footerStuff .= "</p><div class='popup_actions'><input class='button' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'w', 1)\">Cancel</button></div></div>";
+	    $Conf->footerStuff .= "</p><div class='popup_actions'><form method='post' action=\"paper.php?paperId=$paperId&amp;post=1&amp;mode=edit\" enctype='multipart/form-data'><input class='button' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'w', 1)\">Cancel</button></form></div></div>";
 	}
     }
     if ($Me->privChair && !$newPaper) {
 	$buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete paper</button>", "(admin only)");
-	$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><div class='popup_actions'><input class='button' type='submit' name='delete' value='Delete paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></div>";
+	$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><div class='popup_actions'><form method='post' action=\"paper.php?paperId=$paperId&amp;post=1&amp;mode=edit\" enctype='multipart/form-data'><input class='button' type='submit' name='delete' value='Delete paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></form></div></div>";
     }
     echo "    <tr>\n";
     foreach ($buttons as $b) {
