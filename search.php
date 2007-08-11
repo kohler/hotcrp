@@ -484,7 +484,7 @@ else if (defval($_REQUEST["qx"], "") != "" || defval($_REQUEST["qa"], "") != ""
     $activetab = 2;
 else
     $activetab = 1;
-$Conf->footerStuff .= "<script type='text/javascript'>tablink(\"searchform\", $activetab, 1);</script>";
+$Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"searchform\", $activetab, 1);</script>";
 
 if (count($tOpt) > 1) {
     $tselect = "<select name='t'>";
@@ -630,9 +630,9 @@ echo "</table></form></div></div></td></tr>\n";
 
 // Tab selectors
 echo "<tr><td class='tllx'><table><tr>
-  <td><div class='tll1'><a onclick='return tablink(\"searchform\", 1)' href=''>Basic search</a></div></td>
-  <td><div class='tll2'><a onclick='return tablink(\"searchform\", 2)' href=''>Advanced search</a></div></td>
-  <td><div class='tll3'><a onclick='return tablink(\"searchform\", 3)' href=''>Display options</a></div></td>
+  <td><div class='tll1'><a onclick='return crpfocus(\"searchform\", 1)' href=''>Basic search</a></div></td>
+  <td><div class='tll2'><a onclick='return crpfocus(\"searchform\", 2)' href=''>Advanced search</a></div></td>
+  <td><div class='tll3'><a onclick='return crpfocus(\"searchform\", 3)' href=''>Display options</a></div></td>
 </tr></table></td></tr>
 </table>\n\n";
 

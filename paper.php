@@ -656,7 +656,7 @@ if ($mode != "edit" && $mainPreferences && $prow->conflictType <= 0) {
     <span id='prefformresult' style='padding-left:1em'></span>
   </form></td>
 </tr>\n\n";
-    $Conf->footerStuff .= "<script type='text/javascript'>tablink(\"prefform\", \"\");</script>";
+    $Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"prefform\", null, 2);</script>";
 }
 
 

@@ -124,12 +124,12 @@ $Conf->header("Sign in", 'login');
 
 ?>
 
-<form class='login' method='post' action='login.php'>
+<form method='post' action='login.php'>
 <input type='hidden' name='cookie' value='1' />
 <table class='form'>
 <tr class='topspace'>
   <td class='caption'>Email</td>
-  <td class='entry'><input type='text' class='textlite' name='email' size='50' tabindex='1'
+  <td class='entry'><input id='login_d' type='text' class='textlite' name='email' size='50' tabindex='1'
     <?php if (isset($_REQUEST["email"])) echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" "; ?>
   /></td>
 </tr>
@@ -152,4 +152,6 @@ $Conf->header("Sign in", 'login');
 </table>
 </form>
 
-<?php $Conf->footer();
+<?php
+$Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"login\", null, 2);</script>";
+$Conf->footer();

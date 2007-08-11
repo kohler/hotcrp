@@ -590,7 +590,7 @@ class PaperList extends BaseList {
 	$t .= "    <td id='plact' class='linelinks1' colspan='" . ($ncol - 1) . "'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
 
 	// Begin linelinks
-	$t .= "<span class='lll1'><a href='javascript:void tablink(\"plact\",1)'>Get</a></span><span class='lld1'><b>:</b> &nbsp;";
+	$t .= "<span class='lll1'><a href='javascript:void crpfocus(\"plact\",1)'>Get</a></span><span class='lld1'><b>:</b> &nbsp;";
 	$t .= "<select id='plact1_d' name='getaction'>
     <option value='paper' selected='selected'>Papers</option>
     <option value='abstracts'>Abstracts</option>
@@ -613,7 +613,7 @@ class PaperList extends BaseList {
 
 	if ($this->contact->isPC) {
 	    $t .= " &nbsp;|&nbsp; ";
-	    $t .= "<span class='lll2'><a href='javascript:void tablink(\"plact\",2)'>Manage tags</a></span><span class='lld2'><b>:</b> &nbsp;";
+	    $t .= "<span class='lll2'><a href='javascript:void crpfocus(\"plact\",2)'>Manage tags</a></span><span class='lld2'><b>:</b> &nbsp;";
 	    $t .= "<select name='tagtype'>
     <option value='a' selected='selected'>Add</option><option value='d'>Remove</option><option value='s'>Define</option><option value='so'>Define ordered</option><option value='ao'>Add ordered</option>
   </select> &nbsp;tag(s) &nbsp;<input id='plact2_d' class='textlite' type='text' name='tag' value='' size='15' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></span>";
@@ -621,7 +621,7 @@ class PaperList extends BaseList {
 	
 	if ($this->contact->privChair) {
 	    $t .= " &nbsp;|&nbsp; ";
-	    $t .= "<span class='lll3'><a href='javascript:void tablink(\"plact\",3)'>Assign reviews</a></span><span id='foldass' class='lld3 foldc'><b>:</b> &nbsp;";
+	    $t .= "<span class='lll3'><a href='javascript:void crpfocus(\"plact\",3)'>Assign reviews</a></span><span id='foldass' class='lld3 foldc'><b>:</b> &nbsp;";
 	    $t .= "<select id='plact3_d' name='marktype' onchange='fold(\"ass\", (this.value[0] == \"x\"))'>
       <option value='xauto' selected='selected'>Automatic assignments</option>
       <option value='-1' disabled='disabled'></option>
@@ -645,7 +645,7 @@ class PaperList extends BaseList {
 
 	if ($this->contact->privChair) {
 	    $t .= " &nbsp;|&nbsp; ";
-	    $t .= "<span class='lll4'><a href='javascript:void tablink(\"plact\",4)'>Set decision</a></span><span class='lld4'><b> to:</b> &nbsp;";
+	    $t .= "<span class='lll4'><a href='javascript:void crpfocus(\"plact\",4)'>Set decision</a></span><span class='lld4'><b> to:</b> &nbsp;";
 	    $t .= outcomeSelector(0, "plact4_d") . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></span>\n";
 	    
 	}

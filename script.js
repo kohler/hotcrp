@@ -79,18 +79,18 @@ function fold(which, dofold, foldnum) {
     }
 }
 
-function tablink(which, num, seltype) {
-    var selt = e(which);
-    if (selt) {
-	if (window.event)
-	    window.event.returnValue = false;
-	selt.className = selt.className.replace(/links[0-9]*/, 'links' + num);
-	var felt = e(which + num + "_d");
-	if (felt && !(felt.type == "text" && felt.value && seltype == 1))
-	    felt.focus();
-	return false;
-    } else
-	return true;
+function crpfocus(id, subfocus, seltype) {
+    var selt = e(id);
+    if (selt && subfocus)
+	selt.className = selt.className.replace(/links[0-9]*/, 'links' + subfocus);
+    var felt = e(id + (subfocus ? subfocus : "") + "_d");
+    if (felt && !(felt.type == "text" && felt.value && seltype == 1))
+	felt.focus();
+    if ((selt || felt) && window.event)
+	window.event.returnValue = false;
+    if (seltype >= 1)
+	window.scrollTo(0, 0);
+    return !(selt || felt);
 }
 
 function contactPulldown(which) {
