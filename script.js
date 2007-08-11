@@ -79,14 +79,14 @@ function fold(which, dofold, foldnum) {
     }
 }
 
-function tablink(which, num) {
+function tablink(which, num, seltype) {
     var selt = e(which);
     if (selt) {
 	if (window.event)
 	    window.event.returnValue = false;
 	selt.className = selt.className.replace(/links[0-9]*/, 'links' + num);
 	var felt = e(which + num + "_d");
-	if (felt)
+	if (felt && !(felt.type == "text" && felt.value && seltype == 1))
 	    felt.focus();
 	return false;
     } else

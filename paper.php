@@ -650,12 +650,13 @@ if ($mode != "edit" && $mainPreferences && $prow->conflictType <= 0) {
     if (isset($PaperError['revpref']))
 	echo " error";
     echo "'>Review preference</td>
-  <td class='entry'><form id='revpref' name='revpref' action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1\" method='post' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"revpref\", {setrevpref:1})'>
-    <input class='textlite' type='text' size='4' name='revpref' value=\"$x\" onfocus=\"tempText(this, '0', 1)\" onblur=\"tempText(this, '0', 0)\" onchange='Miniajax.submit(\"revpref\", {setrevpref:1})' tabindex='1' />&nbsp;
+  <td class='entry'><form id='prefform' name='prefform' action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1\" method='post' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"prefform\", {setrevpref:1})'>
+    <input id='prefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$x\" onfocus=\"tempText(this, '0', 1)\" onblur=\"tempText(this, '0', 0)\" onchange='Miniajax.submit(\"prefform\", {setrevpref:1})' tabindex='1' />&nbsp;
     <input class='button_small' type='submit' value='Save preference' tabindex='1' />
-    <span id='revprefresult' style='padding-left:1em'></span>
+    <span id='prefformresult' style='padding-left:1em'></span>
   </form></td>
 </tr>\n\n";
+    $Conf->footerStuff .= "<script type='text/javascript'>tablink(\"prefform\", \"\");</script>";
 }
 
 
