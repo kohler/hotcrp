@@ -115,6 +115,7 @@ class PaperList extends BaseList {
 	case self::FIELD_REVIEWER_PREFERENCE:
 	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
 	    $queryOptions['reviewerPreference'] = 1;
+	    $Conf->footerStuff .= "<script type='text/javascript'>addRevprefAjax();</script>";
 	    break;
 	case self::FIELD_DESIRABILITY:
 	    $queryOptions['desirability'] = 1;
@@ -524,7 +525,7 @@ class PaperList extends BaseList {
 	    if ($row->conflictType > 0)
 		return "N/A";
 	    $x = (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
-	    return "<input class='textlite revpref' type='text' size='4' name='revpref$row->paperId' value=\"$x\" onchange='revprefAjax($row->paperId, this.value)' />";
+	    return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' value=\"$x\" tabindex='1' />";
 	case self::FIELD_DESIRABILITY:
 	    return (isset($row->desirability) ? htmlspecialchars($row->desirability) : "0");
 	case self::FIELD_ALL_PREFERENCES:

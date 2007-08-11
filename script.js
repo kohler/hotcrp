@@ -188,14 +188,34 @@ function pselClick(evt, elt, thisnum) {
 }
 
 
-function revprefAjax(paperId, value) {
-    var form = document.forms["revpref"];
-    if (form && form.paperId && form.revpref) {
-	form.paperId.value = paperId;
-	form.revpref.value = value;
-	Miniajax.submit("revpref");
-    }
+function maketemptext(input, text, on) {
+    return function() {
+	tempText(input, text, on);
+    };
 }
+
+function makerevprefajax(input, paperId) {
+    return function() {
+	var form = document.forms["prefform"];
+	if (form && form.paperId && form.revpref) {
+	    form.paperId.value = paperId;
+	    form.revpref.value = input.value;
+	    Miniajax.submit("prefform");
+	}
+    };
+}
+
+function addRevprefAjax() {
+    var inputs = document.getElementsByTagName("input"), href, pos;
+    for (var i = 0; i < inputs.length; i++)
+	if (inputs[i].type == 'text' && inputs[i].name.substr(0, 7) == "revpref") {
+	    var whichpaper = inputs[i].name.substr(7);
+	    inputs[i].onfocus = maketemptext(inputs[i], "0", 1);
+	    inputs[i].onblur = maketemptext(inputs[i], "0", 0);
+	    inputs[i].onchange = makerevprefajax(inputs[i], whichpaper);
+	}
+}
+
 
 function shiftPassword(direction) {
     var form = document.forms["account"];
