@@ -269,7 +269,7 @@ function authorTable($aus, $viewAs = null) {
 		$out .= "<span class='autblentry'>";
 	    $out .= $au;
 	    if ($viewAs !== null && is_array($aux) && count($aux) >= 2 && $viewAs->email != $aux[2] && $viewAs->privChair)
-		$out .= " <a href=\"" . htmlspecialchars(selfHref(array("viewContact" => $aux[2]))) . "\"><img src='${ConfSiteBase}images/viewas.png' title=\"Act as " . contactHtml($aux[0], $aux[1]) . "\" alt='[Act as]' /></a>";
+		$out .= " <a href=\"" . htmlspecialchars(selfHref(array("viewContact" => $aux[2]))) . "\"><img src='${ConfSiteBase}images/viewas.png' title=\"Act as " . (is_array($aux) ? contactNameHtml($aux) : $aux) . "\" alt='[Act as]' /></a>";
 	    $out .= "</span> ";
 	}
     }
@@ -316,13 +316,22 @@ function contactNameText($firstName, $lastName = null, $email = null) {
 }
 
 function contactHtml($firstName, $lastName = null, $email = null) {
-    $h = htmlspecialchars(contactText($firstName, $lastName, $email));
-    return preg_replace('|&lt;(\S+?)&gt;$|', '&lt;<a href="mailto:$1">$1</a>&gt;', $h);
+    _cleanContactText($firstName, $lastName, $email);
+    if ($email)
+	$email = htmlspecialchars($email);
+    if ($firstName || $lastName) {
+	$x = htmlspecialchars(trim("$firstName $lastName"));
+	if ($email)
+	    $x .= " &lt;<a href=\"mailto:$email\">$email</a>&gt;";
+    } else if ($email)
+	$x = "&lt;<a href=\"mailto:$email\">$email</a>&gt;";
+    else
+	$x = "[No name]";
+    return $x;
 }
 
 function contactNameHtml($firstName, $lastName = null, $email = null) {
-    $h = htmlspecialchars(contactNameText($firstName, $lastName, $email));
-    return preg_replace('|&lt;(\S+?)&gt;$|', '&lt;<a href="mailto:$1">$1</a>&gt;', $h);
+    return htmlspecialchars(contactNameText($firstName, $lastName, $email));
 }
 
 function contactEmailTo($firstName, $lastName = null, $email = null) {

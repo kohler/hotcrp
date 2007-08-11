@@ -211,7 +211,7 @@ class ContactList extends BaseList {
 	case self::FIELD_NAME:
 	    $t = contactHtml($row->firstName, $row->lastName);
 	    if (trim($t) == "")
-		$t = "[none]";
+		$t = "[No name]";
 	    if ($this->contact->privChair)
 		$t = "<a href='${ConfSiteBase}account.php?contact=$row->contactId'>$t</a>";
 	    if ($row->chair)
