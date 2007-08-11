@@ -83,13 +83,12 @@ are interested in the paper's topics";
 else
     $topicnote = "";
 
-$Conf->infoMsg("<p>Help us assign you papers you want by
-entering your preferences.
-Preferences are small integers.  0 means don't care; positive numbers
-mean you want to review a paper, negative numbers mean you don't.
-The greater the absolute value, the stronger your feelings.
-You can also say \"+\" or \"&minus;\" for short.
-Use \"&minus;100\" or less to represent a conflict.</p>
+$Conf->infoMsg("<p>Help us assign you interesting papers by
+entering numeric review preferences.
+The higher your preference, the more you want to review the paper.
+0 means you don't care either way; negative numbers mean you don't want to review a paper, and &minus;100 or less represents a conflict.
+You may reuse a preference setting for multiple papers.
+The system will try to assign your reviews in preference order.</p>
 
 <p>The list shows all submitted papers$topicnote.
 Click on a column heading to sort by
