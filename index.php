@@ -161,12 +161,12 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	echo $sep, "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&minus;</a>&nbsp;<a href=\"search.php?q=&amp;t=r\"><strong>My Reviews</strong></a>";
 	$sep = $thesep;
     }
-    if ($Conf->settingsAfter("rev_open") || $Me->privChair) {
-	echo $sep, "<a href='offline.php'>Offline reviewing</a>";
-	$sep = $thesep;
-    }
     if ($Me->isPC && $Conf->timePCReviewPreferences()) {
 	echo $sep, "<a href='PC/reviewprefs.php'>Preferences</a>";
+	$sep = $thesep;
+    }
+    if ($Conf->settingsAfter("rev_open") || $Me->privChair) {
+	echo $sep, "<a href='offline.php'>Offline reviewing</a>";
 	$sep = $thesep;
     }
     if ($Me->privChair || ($Me->isPC && $Conf->timeReviewPaper(true, false, true))) {
