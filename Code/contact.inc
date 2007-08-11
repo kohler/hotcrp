@@ -215,7 +215,13 @@ class Contact {
     function initialize($email, $conf) {
 	$this->email = trim($email);
 	$this->password = $this->generatePassword(10);
-	$result = $conf->q(sprintf("insert into ContactInfo (email, password) values ('%s', '%s')", sqlqtrim($this->email), sqlqtrim($this->password)));
+	$qa = "email, password";
+	$qb = "'" . sqlq($this->email) . "', '" . sqlq($this->password) . "'";
+	if ($conf->setting("allowPaperOption") >= 4) {
+	    $qa .= ", creationTime";
+	    $qb .= ", " . time();
+	}
+	$result = $conf->q("insert into ContactInfo ($qa) values ($qb)");
 	if (!$result)
 	    return $result;
 	return $this->lookupByEmail($this->email, $conf);
@@ -282,15 +288,6 @@ class Contact {
 	$this->privChair = ($this->roles & (self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
     }
     
-    function bumpVisits($conf) {
-	$this->visits += 1;
-	$time=mktime();
-	$message = date ("l dS of F Y h:i:s A", $time) . "\n";
-	$query = "UPDATE ContactInfo SET visits='$this->visits', "
-	    . " note='$message' WHERE contactId='$this->contactId'";
-	$conf->qe($query);
-    }
-
 
     // viewing permissions
 

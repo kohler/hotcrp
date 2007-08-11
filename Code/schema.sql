@@ -54,15 +54,16 @@ DROP TABLE IF EXISTS `ContactInfo`;
 CREATE TABLE `ContactInfo` (
   `contactId` int(11) NOT NULL auto_increment,
   `visits` int(11) NOT NULL default '0',
-  `firstName` varchar(60) default NULL,
-  `lastName` varchar(60) default NULL,
+  `firstName` text default NULL,
+  `lastName` text default NULL,
   `email` varchar(120) default NULL,
-  `affiliation` varchar(200) default NULL,
-  `voicePhoneNumber` varchar(24) default NULL,
-  `faxPhoneNumber` varchar(24) default NULL,
-  `password` varchar(32) default NULL,
-  `note` varchar(200) default NULL,
+  `affiliation` text default NULL,
+  `voicePhoneNumber` text default NULL,
+  `faxPhoneNumber` text default NULL,
+  `password` text default NULL,
+  `note` text default NULL,
   `collaborators` text,
+  `creationTime` int(11) NOT NULL default '0',
   `lastLogin` int(11) NOT NULL default '0',
   PRIMARY KEY  (`contactId`),
   UNIQUE KEY `contactId` (`contactId`),
@@ -427,7 +428,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 3);
+insert into Settings (name, value) values ('allowPaperOption', 4);
 # collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 
