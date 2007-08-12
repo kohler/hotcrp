@@ -96,10 +96,32 @@ show abstracts and other information.  Access a paper page by clicking
 the paper title.</p>");
 
 
+// set options to view
+if (isset($_REQUEST["redisplay"])) {
+    $_SESSION["foldplau"] = !defval($_REQUEST["showau"], 0);
+    $_SESSION["foldplanonau"] = !defval($_REQUEST["showanonau"], 0);
+    $_SESSION["foldplabstract"] = !defval($_REQUEST["showabstract"], 0);
+}
+
+
+// search
+$searchType = ($Conf->setting("pc_seeall") > 0 ? "all" : "s");
+$pl = new PaperList(true, "list", new PaperSearch($Me, array("t" => $searchType, "c" => $reviewer, "urlbase" => "PC/reviewprefs.php?reviewer=$reviewer")));
+$pl->showHeader = PaperList::HEADER_TITLES;
+$pl_text = $pl->text("editReviewPreference", $Me);
+unset($_SESSION["matchPreg"]);
+
+
+// DISPLAY OPTIONS
+echo "<table id='searchform' class='tablinks1'>
+<tr><td>"; // <div class='tlx'><div class='tld1'>";
+
+echo "<form method='get' action='reviewprefs.php' name='redisplayform'>\n<table>";
+$redisplayButton = "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td>";
+
 if ($Me->privChair) {
-    echo "<form method='get' action='reviewprefs.php' name='selectReviewer'>
-  <b>Showing preferences for:&nbsp;</b>
-  <select name='reviewer' onchange='document.selectReviewer.submit()'>\n";
+    echo "<tr><td><strong>Preferences:</strong> &nbsp;</td><td class='pad'>",
+	"<select name='reviewer' onchange='document.redisplayform.submit()'>";
 
     $query = "select ContactInfo.contactId, firstName, lastName,
 		count(preference) as preferenceCount
@@ -118,13 +140,41 @@ if ($Me->privChair) {
 	    echo " (no preferences)";
 	echo "</option>";
     }
-    echo "</select>\n</form>\n<hr />\n\n";
+    echo "</select><div class='smgap'></div></td>", $redisplayButton, "</tr>\n";
+    $redisplayButton = "";
 }
 
-$searchType = ($Conf->setting("pc_seeall") > 0 ? "all" : "s");
-$paperList = new PaperList(true, "list", new PaperSearch($Me, array("t" => $searchType, "c" => $reviewer, "urlbase" => "PC/reviewprefs.php?reviewer=$reviewer")));
-unset($_SESSION["matchPreg"]);
+echo "<tr><td><strong>Show:</strong> &nbsp;</td><td class='pad'>";
+if ($Conf->blindSubmission() <= 1) {
+    echo "<input type='checkbox' name='showau' value='1'";
+    if ($Conf->blindSubmission() == 1 && !($pl->headerInfo["authors"] & 1))
+	echo " disabled='disabled'";
+    if (defval($_SESSION["foldplau"], 1) == 0)
+	echo " checked='checked'";
+    echo " onclick='fold(\"pl\",!this.checked,1)' />&nbsp;Authors<br />\n";
+}
+if ($Conf->blindSubmission() >= 1 && $Me->privChair) {
+    echo "<input type='checkbox' name='showanonau' value='1'";
+    if (!($pl->headerInfo["authors"] & 2))
+	echo " disabled='disabled'";
+    if (defval($_SESSION["foldplanonau"], 1) == 0)
+	echo " checked='checked'";
+    echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;",
+	($Conf->blindSubmission() == 1 ? "Anonymous authors" : "Authors"),
+	"<br />\n";
+}
+if ($pl->headerInfo["abstracts"]) {
+    echo "<input type='checkbox' name='showabstract' value='1'";
+    if (defval($_SESSION["foldplabstract"], 1) == 0)
+	echo " checked='checked'";
+    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<br />\n";
+}
+echo "</td>", $redisplayButton, "</tr>\n";
+echo "</table></form>"; // </div></div>
+echo "</td></tr></table>\n";
 
+
+// ajax preferences form
 echo "<form name='prefform' method='post' action=\"${ConfSiteBase}paper.php\" enctype='multipart/form-data'>
   <input type='hidden' name='paperId' value='' />
   <input type='hidden' name='revpref' value='' />\n";
@@ -132,8 +182,10 @@ if ($Me->privChair)
     echo "  <input type='hidden' name='contactId' value='$reviewer' />\n";
 echo "</form>\n\n";
 
+
+// main form
 echo "<form class='assignpc' method='post' action=\"reviewprefs.php?reviewer=$reviewer&amp;post=1\" enctype='multipart/form-data'>\n";
-echo $paperList->text("editReviewPreference", $Me);
+echo $pl_text;
 echo "<div class='smgap'></div><table class='center'><tr><td><input class='button' type='submit' name='update' value='Save preferences' /></td></tr></table>\n";
 echo "</form>\n";
 

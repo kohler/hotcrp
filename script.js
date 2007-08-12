@@ -93,6 +93,8 @@ function crpfocus(id, subfocus, seltype) {
     return !(selt || felt);
 }
 
+
+// accounts
 function contactPulldown(which) {
     var pulldown = e(which + "_pulldown");
     if (pulldown.value != "") {
@@ -106,13 +108,26 @@ function contactPulldown(which) {
     folder.className = folder.className.replace("foldo", "foldc");
 }
 
-function tempText(elt, text, on) {
-    if (on && elt.value == text)
-	elt.value = "";
-    else if (!on && elt.value == "")
-	elt.value = text;
+function shiftPassword(direction) {
+    var form = document.forms["account"];
+    if (form && form.upassword && form.upasswordt && form.upassword.value != form.upasswordt.value)
+	if (direction)
+	    form.upasswordt.value = form.upassword.value;
+	else
+	    form.upassword.value = form.upassword2.value = form.upasswordt.value;
 }
 
+function doRole(what) {
+    var pc = e("pc");
+    var chair = e("chair");
+    if (pc == what && !pc.checked)
+	chair.checked = false;
+    if (pc != what && chair.checked)
+	pc.checked = true;
+}
+
+
+// paper selection
 function papersel(onoff) {
     var ins = document.getElementsByTagName("input");
     for (var i = 0; i < ins.length; i++)
@@ -121,7 +136,6 @@ function papersel(onoff) {
 }
 
 var paperselDocheck = true;
-
 function paperselCheck() {
     if (!paperselDocheck)
 	return true;
@@ -133,6 +147,25 @@ function paperselCheck() {
     return false;
 }
 
+var pselclick_last = null;
+function pselClick(evt, elt, thisnum) {
+    if (!evt.shiftKey || !pselclick_last)
+	/* nada */;
+    else {
+	var i = (pselclick_last <= thisnum ? pselclick_last : thisnum + 1);
+	var j = (pselclick_last <= thisnum ? thisnum - 1 : pselclick_last);
+	for (; i <= j; i++) {
+	    var sel = e("psel" + i);
+	    if (sel)
+		sel.checked = elt.checked;
+	}
+    }
+    pselclick_last = thisnum;
+    return true;
+}
+
+
+// assignment selection
 var selassign_blur = 0;
 
 function foldassign(which) {
@@ -161,32 +194,14 @@ function selassign(elt, which) {
     }
 }
 
-function doRole(what) {
-    var pc = e("pc");
-    var chair = e("chair");
-    if (pc == what && !pc.checked)
-	chair.checked = false;
-    if (pc != what && chair.checked)
-	pc.checked = true;
-}
 
-var pselclick_last = null;
-function pselClick(evt, elt, thisnum) {
-    if (!evt.shiftKey || !pselclick_last)
-	/* nada */;
-    else {
-	var i = (pselclick_last <= thisnum ? pselclick_last : thisnum + 1);
-	var j = (pselclick_last <= thisnum ? thisnum - 1 : pselclick_last);
-	for (; i <= j; i++) {
-	    var sel = e("psel" + i);
-	    if (sel)
-		sel.checked = elt.checked;
-	}
-    }
-    pselclick_last = thisnum;
-    return true;
+// temporary text and review preferences
+function tempText(elt, text, on) {
+    if (on && elt.value == text)
+	elt.value = "";
+    else if (!on && elt.value == "")
+	elt.value = text;
 }
-
 
 function maketemptext(input, text, on) {
     return function() {
@@ -214,16 +229,6 @@ function addRevprefAjax() {
 	    inputs[i].onblur = maketemptext(inputs[i], "0", 0);
 	    inputs[i].onchange = makerevprefajax(inputs[i], whichpaper);
 	}
-}
-
-
-function shiftPassword(direction) {
-    var form = document.forms["account"];
-    if (form && form.upassword && form.upasswordt && form.upassword.value != form.upasswordt.value)
-	if (direction)
-	    form.upasswordt.value = form.upassword.value;
-	else
-	    form.upassword.value = form.upassword2.value = form.upasswordt.value;
 }
 
 
@@ -339,12 +344,15 @@ Miniajax.newRequest = function() {
     }
     return null;
 };
-Miniajax.submit = function(formname, extra) {
+Miniajax.submit = function(formname, extra, callback) {
     var form = document.forms[formname], req = Miniajax.newRequest();
     if (!form || !req || form.method != "post")
 	return true;
     var resultelt = e(formname + "result");
-    if (!resultelt) resultelt = {};
+    if (!resultelt) 
+	resultelt = {};
+    if (!callback)
+	callback = function(rv) { resultelt.innerHTML = rv.response; };
     
     // set request
     var timer = setTimeout(function() {
@@ -359,7 +367,7 @@ Miniajax.submit = function(formname, extra) {
 	clearTimeout(timer);
 	if (req.status == 200) {
 	    var rv = eval(req.responseText);
-	    resultelt.innerHTML = rv.response;
+	    callback(rv);
 	    if (rv.ok)
 		highlightUpdate(form, "");
 	} else {
@@ -388,3 +396,19 @@ Miniajax.submit = function(formname, extra) {
     req.send(pairs.join("&"));
     return false;
 };
+
+
+// abstracts
+var ajaxAbstracts = false;
+function foldabstract(which, dofold, foldnum) {
+    if (dofold || !ajaxAbstracts)
+	return fold(which, dofold, foldnum);
+    Miniajax.submit("abstractloadform", null, function(rv) {
+			var elt;
+			for (var i in rv) 
+			    if (i.substr(0, 8) == "abstract" && (elt = e(i)))
+				elt.innerHTML = rv[i];
+			ajaxAbstracts = false;
+			fold(which, dofold, foldnum);
+		    });
+}

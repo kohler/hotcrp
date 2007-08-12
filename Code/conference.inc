@@ -995,23 +995,25 @@ class Conference {
 
     function ajaxExit($others = null) {
 	$t = "";
-	foreach ($_SESSION["msgs"] as $msg)
-	    if (preg_match('|\A<div class="(.*?)">(.*)</div>\Z|', $msg, $m))
-		$t .= "<span class=\"$m[1]\">$m[2]</span>\n";
-	unset($_SESSION["msgs"]);
+	if (isset($_SESSION["msgs"])) {
+	    foreach ($_SESSION["msgs"] as $msg)
+		if (preg_match('|\A<div class="(.*?)">(.*)</div>\Z|', $msg, $m))
+		    $t .= "<span class=\"$m[1]\">$m[2]</span>\n";
+	    unset($_SESSION["msgs"]);
+	}
 	header("Content-Type: text/json");
-	echo "({ response: \"", addcslashes($t, "\n\""), "\"";
+	echo "({ \"response\": \"", addcslashes($t, "\r\n\"\\"), "\"";
 	if ($others)
 	    foreach ($others as $name => $value) {
-		echo ", ", $name, ": ";
+		echo ",\n\"", $name, "\": ";
 		if ($value === null || $value === 0 || $value === false)
 		    echo "0";
 		else if ($value === true || $value === 1)
 		    echo "1";
 		else
-		    echo "\"", addcslashes($value, "\n\""), "\"";
+		    echo "\"", addcslashes($value, "\r\n\"\\"), "\"";
 	    }
-	echo "})";
+	echo " })";
 	exit;
     }
     

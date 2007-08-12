@@ -283,7 +283,7 @@ input.button_default, button.button_default {
 	margin: 0px auto;
 	position: relative;
 }
-#searchform .tld3, #contactsform .tld2 {
+#searchform .tld3, #contactsform .tld2, body#revpref #searchform {
 	font-size: smaller;
 }
 
@@ -917,7 +917,8 @@ td.pl_desirability, td.pl_visits {
 	text-align: right;
 	padding-right: 0.4em;
 }
-td.pl_authors, td.pl_tags, td.pl_topics, td.pl_topicNames, td.pl_affrow {
+td.pl_authors, td.pl_tags, td.pl_topics, td.pl_topicNames, td.pl_affrow,
+td.pl_abstract {
 	font-size: smaller;
 }
 td.pl_title img {
@@ -1105,6 +1106,7 @@ tr.k1 td {
 .fold2c .extension2, .fold2c .folder2, .fold2o .ellipsis2, .fold2o .unfolder2,
 .fold3c .extension3, .fold3c .folder3, .fold3o .ellipsis3, .fold3o .unfolder3,
 .fold4c .extension4, .fold4c .folder4, .fold4o .ellipsis4, .fold4o .unfolder4,
+.fold5c .extension5, .fold5c .folder5, .fold5o .ellipsis5, .fold5o .unfolder5,
 .fold8c .extension8, .fold8c .folder8, .fold8o .ellipsis8, .fold8o .unfolder8,
 .fold9c .extension9, .fold9c .folder9, .fold9o .ellipsis9, .fold9o .unfolder9 {
 	display: none;

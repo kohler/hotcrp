@@ -88,7 +88,19 @@ if ($getaction == "paper" && isset($papersel)) {
 
 
 // download selected abstracts
-if ($getaction == "abstracts" && isset($papersel)) {
+if ($getaction == "abstracts" && isset($papersel) && defval($_REQUEST["ajax"])) {
+    $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
+    $result = $Conf->qe($q, "while selecting papers");
+    $response = array();
+    while ($prow = edb_orow($result)) {
+	if (!$Me->canViewPaper($prow, $Conf, $whyNot))
+	    $Conf->errorMsg(whyNotText($whyNot, "view"));
+	else
+	    $response["abstract$prow->paperId"] = $prow->abstract;
+    }
+    $response["ok"] = (count($response) > 0);
+    $Conf->ajaxExit($response);
+} else if ($getaction == "abstracts" && isset($papersel)) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "topics" => 1));
     $result = $Conf->qe($q, "while selecting papers");
     $text = "";
@@ -452,6 +464,7 @@ if (isset($_REQUEST["redisplay"])) {
     $_SESSION["scores"] = 0;
     $_SESSION["foldplau"] = !defval($_REQUEST["showau"], 0);
     $_SESSION["foldplanonau"] = !defval($_REQUEST["showanonau"], 0);
+    $_SESSION["foldplabstract"] = !defval($_REQUEST["showabstract"], 0);
 }
 if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
     $_SESSION["scores"] = 0;
@@ -588,6 +601,12 @@ if ($Conf->blindSubmission() >= 1 && $Me->privChair && !$viewAccAuthors) {
     echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;",
 	($Conf->blindSubmission() == 1 ? "Anonymous authors" : "Authors"),
 	"<br />\n";
+}
+if ($pl->headerInfo["abstracts"]) {
+    echo "<input type='checkbox' name='showabstract' value='1'";
+    if (defval($_SESSION["foldplabstract"], 1) == 0)
+	echo " checked='checked'";
+    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<br />\n";
 }
 if ($Me->isPC && $pl->headerInfo["tags"]) {
     echo "<input type='checkbox' name='showtags' value='1'";

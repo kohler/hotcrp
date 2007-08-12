@@ -37,6 +37,7 @@ class PaperList extends BaseList {
     
     const FIELD_OPT_AUTHORS = 70;
     const FIELD_TAGS = 71;
+    const FIELD_OPT_ABSTRACT = 72;
     const FIELD_FOLD = 75;
 
     const HEADER_ALL = 2;
@@ -62,6 +63,7 @@ class PaperList extends BaseList {
     var $collaboratorsMatch;
     var $extraText;
     var $unfolded;
+    var $foldedAbstract;
     var $paperLink;
     var $paperLinkArgs;
     var $showConflict;
@@ -353,6 +355,8 @@ class PaperList extends BaseList {
 	    return "Authors";
 	case self::FIELD_TAGS:
 	    return "Tags";
+	case self::FIELD_OPT_ABSTRACT:
+	    return "Abstract";
 	default:
 	    return "&lt;$fieldId&gt;?";
 	}
@@ -570,6 +574,15 @@ class PaperList extends BaseList {
 		    $aus[] = trim($au);
 	    }
 	    return htmlspecialchars(join(", ", $aus));
+	case self::FIELD_OPT_ABSTRACT:
+	    if ($row->abstract == "")
+		return "";
+	    if ($this->foldedAbstract === false)
+		return "<span id='abstract$row->paperId'>" . htmlspecialchars($row->abstract) . "</span>";
+	    else {
+		$this->foldedAbstract[] = $row->paperId;
+		return "<span id='abstract$row->paperId'><em>Loading</em></span>";
+	    }
 	case self::FIELD_TAGS:
 	    if (!$this->contact->isPC
 		|| (!$this->contact->privChair && $row->conflictType > 0))
@@ -672,30 +685,30 @@ class PaperList extends BaseList {
 	  case "s":
 	  case "acc":
 	    $name = ($listname == "s" ? "Submitted" : "Accepted");
-	    return $this->addScores(array($name . " papers", 100, 1, 11, 27, 41, 21, 70, 71));
+	    return $this->addScores(array($name . " papers", 100, 1, 11, 27, 41, 21, 70, 71, 72));
 	  case "all":
-	    return array("All papers", 100, 1, 11, 20, 27, 70, 71);
+	    return array("All papers", 100, 1, 11, 20, 27, 70, 71, 72);
 	  case "reviewerHome":
 	    $this->paperLink = "review";
 	    return array("Your review assignment", 1, 11, 27, 21);
 	  case "r":
 	    $this->paperLink = "review";
-	    return $this->addScores(array("Your review assignment", 100, 1, 11, 27, 41, 21, 70, 71));
+	    return $this->addScores(array("Your review assignment", 100, 1, 11, 27, 41, 21, 70, 71, 72));
 	  case "rout":
 	    $this->paperLink = "review";
-	    return $this->addScores(array("Unsubmitted reviews", 100, 1, 11, 27, 41, 21, 70, 71));
+	    return $this->addScores(array("Unsubmitted reviews", 100, 1, 11, 27, 41, 21, 70, 71, 72));
 	  case "req":
 	    $this->paperLink = "review";
-	    return $this->addScores(array("Requested reviews", 100, 1, 11, 27, 41, 21, 70, 71));
+	    return $this->addScores(array("Requested reviews", 100, 1, 11, 27, 41, 21, 70, 71, 72));
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
 	    return array("Review assignment", 1, 11, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48);
 	  case "conflict":
 	    $this->paperLink = "assign";
-	    return array("Potential conflicts", 102, 1, 11, self::FIELD_OPT_AUTHORS, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
+	    return array("Potential conflicts", 102, 1, 11, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
 	  case "editReviewPreference":
 	    $this->paperLink = "paper";
-	    return array("Reviewer preferences", 1, 11, 36, 27, 40, 70, 37);
+	    return array("Reviewer preferences", 1, 11, 36, 27, 40, 70, 72, 37);
 	  case "reviewers":
 	    $this->paperLink = "assign";
 	    return array("Proposed assignments", 1, 11, 21, 38);
@@ -814,8 +827,11 @@ class PaperList extends BaseList {
 	$ids = array();
 	$anyData = array();
 	$body = '';
-	$authorinfo = false;
-	$taginfo = false;
+	$authorinfo = $taginfo = $abstractinfo = false;
+	if (defval($_SESSION["foldplabstract"], 1))
+	    $this->foldedAbstract = array();
+	else
+	    $this->foldedAbstract = false;
 	foreach ($srows as $row) {
 	    $ids[] = $row->paperId;
 	    $trclass = "k" . ($this->count % 2);
@@ -841,6 +857,9 @@ class PaperList extends BaseList {
 		    } else if ($fdef[1] == 4) {
 			$taginfo = true;
 			$t .= " extension4";
+		    } else if ($fdef[1] == 5) {
+			$abstractinfo = true;
+			$t .= " extension5";
 		    }
 		    $t .= "\">\n";
 		    $t .= "<td class=\"pl_$fdef[0] pl_callout\" colspan='$ncol'>";
@@ -869,7 +888,11 @@ class PaperList extends BaseList {
 	    $x .= " fold3c";
 	if ($taginfo)
 	    $x .= (defval($_SESSION["foldpltags"], 1) ? " fold4c" : " fold4o");
-	if ($authorinfo || !$unfolded || $taginfo)
+	if ($abstractinfo)
+	    $x .= ($this->foldedAbstract !== false ? " fold5c" : " fold5o");
+	if ($abstractinfo && $this->foldedAbstract !== false && count($this->foldedAbstract))
+	    $Conf->footerStuff .= "<form id='abstractloadform' method='post' action='${ConfSiteBase}search.php?get=abstracts&amp;ajax=1'><input type='hidden' name='pap' value='" . join(" ", $this->foldedAbstract) . "' /><span id='abstractloadformresult'></span></form><script type='text/javascript'>ajaxAbstracts = true;</script>";
+	if ($authorinfo || !$unfolded || $taginfo || $abstractinfo)
 	    $x .= "\" id=\"foldpl";
 	$x .= "\">\n";
 
@@ -958,7 +981,7 @@ class PaperList extends BaseList {
 	    unset($_SESSION["matchPreg"]);
 	}
 
-	$this->headerInfo = array("authors" => $authorinfo,  "tags" => $taginfo);
+	$this->headerInfo = array("authors" => $authorinfo, "tags" => $taginfo, "abstracts" => $abstractinfo);
 
 	return $x;
     }
@@ -993,5 +1016,6 @@ $paperListFields = array(
 	PaperList::FIELD_AUTHOR_MATCH => array('authorsMatch', 2, 0),
 	PaperList::FIELD_COLLABORATORS_MATCH => array('collaboratorsMatch', 2, 0),
 	PaperList::FIELD_OPT_AUTHORS => array('authors', 3, 0),
-	PaperList::FIELD_TAGS => array('tags', 4, 0)
+	PaperList::FIELD_TAGS => array('tags', 4, 0),
+	PaperList::FIELD_OPT_ABSTRACT => array('abstract', 5, 0)
 	);
