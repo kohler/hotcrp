@@ -563,11 +563,11 @@ class PaperList extends BaseList {
 	    foreach (explode("\n", $row->authorInformation) as $au) {
 		$au = preg_replace('|\s*\(.*|', '', $au);
 		if (($pos = strpos($au, ",")) !== false)
-		    $aus[] = substr($au, 0, $pos);
-		else if (preg_match('^(von\s+|van\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$^', $au, $matches))
-		    $aus[] = $matches[0];
+		    $aus[] = trim(substr($au, 0, $pos));
+		else if (preg_match('^(von\s+|van\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$^i', $au, $matches))
+		    $aus[] = trim($matches[0]);
 		else
-		    $aus[] = $au;
+		    $aus[] = trim($au);
 	    }
 	    return htmlspecialchars(join(", ", $aus));
 	case self::FIELD_TAGS:
