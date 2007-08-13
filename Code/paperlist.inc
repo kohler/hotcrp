@@ -685,21 +685,21 @@ class PaperList extends BaseList {
 	  case "s":
 	  case "acc":
 	    $name = ($listname == "s" ? "Submitted" : "Accepted");
-	    return $this->addScores(array($name . " papers", 100, 1, 11, 27, 41, 21, 70, 71, 72));
+	    return $this->addScores(array($name . " papers", 100, 1, 11, 27, 41, 21, 70, 72, 71));
 	  case "all":
-	    return array("All papers", 100, 1, 11, 20, 27, 70, 71, 72);
+	    return array("All papers", 100, 1, 11, 20, 27, 70, 72, 71);
 	  case "reviewerHome":
 	    $this->paperLink = "review";
 	    return array("Your review assignment", 1, 11, 27, 21);
 	  case "r":
 	    $this->paperLink = "review";
-	    return $this->addScores(array("Your review assignment", 100, 1, 11, 27, 41, 21, 70, 71, 72));
+	    return $this->addScores(array("Your review assignment", 100, 1, 11, 27, 41, 21, 70, 72, 71));
 	  case "rout":
 	    $this->paperLink = "review";
-	    return $this->addScores(array("Unsubmitted reviews", 100, 1, 11, 27, 41, 21, 70, 71, 72));
+	    return $this->addScores(array("Unsubmitted reviews", 100, 1, 11, 27, 41, 21, 70, 72, 71));
 	  case "req":
 	    $this->paperLink = "review";
-	    return $this->addScores(array("Requested reviews", 100, 1, 11, 27, 41, 21, 70, 71, 72));
+	    return $this->addScores(array("Requested reviews", 100, 1, 11, 27, 41, 21, 70, 72, 71));
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
 	    return array("Review assignment", 1, 11, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48);
