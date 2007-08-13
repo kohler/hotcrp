@@ -356,7 +356,8 @@ class ContactList extends BaseList {
 	// Begin linelinks
 	$t .= "<span class='lll1'><a href='javascript:void crpfocus(\"pplact\",1)'>Get</a></span><span class='lld1'><b>:</b> &nbsp;";
 	$t .= "<select id='pplact1_d' name='getaction'>
-    <option value='nameemail' selected='selected'>Names and emails</option>\n";
+    <option value='nameemail' selected='selected'>Names and emails</option>
+    <option value='address'>Addresses</option>\n";
 	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='getgo' value='Go' /></span>";
 
 	return $t . "</td></tr>\n";

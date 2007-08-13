@@ -47,6 +47,22 @@ CREATE TABLE `ChairTag` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
+-- Table structure for table `ContactAddress`
+--
+
+DROP TABLE IF EXISTS `ContactAddress`;
+CREATE TABLE `ContactAddress` (
+  `contactId` int(11) NOT NULL,
+  `addressLine1` text NOT NULL,
+  `addressLine2` text NOT NULL,
+  `city` text NOT NULL,
+  `state` text NOT NULL,
+  `zipCode` text NOT NULL,
+  `country` text NOT NULL,
+  UNIQUE KEY `contactId` (`contactId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
 -- Table structure for table `ContactInfo`
 --
 
@@ -428,7 +444,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 4);
+insert into Settings (name, value) values ('allowPaperOption', 5);
 # collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 

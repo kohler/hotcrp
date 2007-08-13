@@ -62,6 +62,7 @@ Code/baselist.inc
 Code/conference.inc
 Code/contact.inc
 Code/contactlist.inc
+Code/countries.inc
 Code/createdb.sh
 Code/header.inc
 Code/helpers.inc

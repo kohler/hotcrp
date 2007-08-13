@@ -23,6 +23,7 @@ $SettingGroups = array("sub" => array(
 			     "sub_pcconf" => "check",
 			     "sub_collab" => "check",
 			     "sub_freeze" => 1,
+			     "acct_addr" => "check",
 			     "pc_seeall" => "check",
 			     "homemsg" => "string",
 			     "next" => "opt"),
@@ -80,6 +81,7 @@ $SettingText = array(
 	"rev_blind" => "Blind review setting",
 	"sub_pcconf" => "Collect PC conflicts setting",
 	"sub_collab" => "Collect collaborators setting",
+	"acct_addr" => "Collect addresses setting",
 	"sub_freeze" => "Submitters can update until the deadline setting",
 	"rev_notifychair" => "Notify chairs about reviews setting",
 	"pc_seeall" => "PC can see all papers setting",
@@ -492,7 +494,16 @@ function doGraceRow($name, $text, $capclass = "rcaption") {
 // Submissions
 if ($Group == "sub") {
     echo "<table class='halfc'><tr><td>";
-    echo "<div class='bgrp'><div class='bgrp_head'><a href='${ConfSiteBase}contacts.php?t=pc'>Edit program committee</a></div></div>\n";
+
+    echo "<div class='bgrp'><div class='bgrp_head'>Accounts</div><div class='bgrp_body'>";
+    echo "<a href='${ConfSiteBase}contacts.php?t=pc'><strong>Edit program committee</strong></a><br />";
+    echo "<div class='smgap'></div>\n";
+    if ($Conf->setting("allowPaperOption") >= 5)
+	doCheckbox("acct_addr", "Collect users' addresses and phone numbers");
+    else
+	doCheckbox("acct_addr", "Collect users' phone numbers");
+    echo "</div></div>\n";
+    
     echo "<div class='bgrp'><div class='bgrp_head'>Submissions</div><div class='bgrp_body'>";
     doCheckbox('sub_open', '<b>Open site for submissions</b>');
 

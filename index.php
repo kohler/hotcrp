@@ -16,7 +16,7 @@ if (($_SESSION["AskedYouToUpdateContactInfo"] < 2
     || ($_SESSION["AskedYouToUpdateContactInfo"] < 3 && $Me->isPC
 	&& !($Me->collaborators || $Me->anyTopicInterest))) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 1;
-    $Me->go("account.php");
+    $Me->go("account.php?redirect=1");
 }
 
 if ($Me->privChair && $Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
@@ -225,7 +225,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 	} else if (($time = $Conf->printableTimeSetting('sub_update')) != 'N/A')
 	    $deadlines[] = "You have until $time to submit papers.";
     }
-    if (!$startable && !$Conf->timeAuthorViewReviews() && !count($deadlines))
+    if (!$startable && !count($deadlines))
 	$deadlines[] = "The <a href='deadlines.php'>deadline</a> for registering new papers has passed.";
     if (count($deadlines) > 0) {
 	if ($plist && $plist->count > 0)

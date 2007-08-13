@@ -78,6 +78,24 @@ if ($getaction == "nameemail" && isset($papersel)) {
     exit;
 }
 
+if ($getaction == "address" && isset($papersel)) {
+    $result = $Conf->qe("select firstName, lastName, email, voicePhoneNumber, faxPhoneNumber, ContactAddress.* from ContactInfo left join ContactAddress using (contactId) where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
+    $text = "#name\temail\taddress line 1\taddress line 2\tcity\tstate/province/region\tzip/postal code\tcountry\tvoice phone\tfax\n";
+    while ($row = edb_orow($result)) {
+	if ($row->firstName && $row->lastName)
+	    $text .= "$row->lastName, $row->firstName";
+	else
+	    $text .= "$row->lastName$row->firstName";
+	foreach (array("email", "addressLine1", "addressLine2", "city",
+		       "state", "zipCode", "country", "voicePhoneNumber",
+		       "faxPhoneNumber") as $k)
+	    $text .= "\t" . addcslashes($row->$k, "\\\r\n\t");
+	$text .= "\n";
+    }
+    downloadText($text, $Opt['downloadPrefix'] . "addresses.txt", "addresses");
+    exit;
+}
+
 
 // set scores to view
 if (isset($_REQUEST["redisplay"])) {

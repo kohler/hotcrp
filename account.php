@@ -4,6 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once('Code/header.inc');
+require_once('Code/countries.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $newProfile = false;
@@ -28,6 +29,8 @@ else if (isset($_REQUEST["new"])) {
     }
 } else
     $Acct = $Me;
+
+$Acct->lookupAddress($Conf);
 
 
 if (isset($_REQUEST["register"])) {
@@ -101,14 +104,13 @@ if (isset($_REQUEST['register']) && $OK) {
 	$Acct->lastName = $_REQUEST["lastName"];
 	$Acct->email = $_REQUEST["uemail"];
 	$Acct->affiliation = $_REQUEST["affiliation"];
-	if (isset($_REQUEST["voicePhoneNumber"]))
-	    $Acct->voicePhoneNumber = $_REQUEST["voicePhoneNumber"];
-	if (isset($_REQUEST["faxPhoneNumber"]))
-	    $Acct->faxPhoneNumber = $_REQUEST["faxPhoneNumber"];
 	if (!$newProfile)
 	    $Acct->password = $_REQUEST["upassword"];
-	if (isset($_REQUEST['collaborators']))
-	    $Acct->collaborators = $_REQUEST['collaborators'];
+	foreach (array("voicePhoneNumber", "faxPhoneNumber", "collaborators",
+		       "addressLine1", "addressLine2", "city", "state",
+		       "zipCode", "country") as $v)
+	    if (isset($_REQUEST[$v]))
+		$Acct->$v = $_REQUEST[$v];
 
 	if ($OK)
 	    $Acct->updateDB($Conf);
@@ -136,11 +138,11 @@ if (isset($_REQUEST['register']) && $OK) {
 		$Conf->log("Account updated" . ($Me->contactId == $Acct->contactId ? "" : " by $Me->email"), $Acct);
 		$Conf->confirmMsg("Account profile successfully updated.");
 	    }
-	    if ($Me->contactId == $Acct->contactId)
+	    if (isset($_REQUEST["redirect"]))
 		$Me->go("index.php");
 	}
     }
- }
+}
 
 
 function crpformvalue($val, $field = null) {
@@ -200,6 +202,8 @@ if ($newProfile)
     echo "<input type='hidden' name='new' value='1' />\n";
 else if ($Me->contactId != $Acct->contactId)
     echo "<input type='hidden' name='contact' value='$Acct->contactId' />\n";
+if (isset($_REQUEST["redirect"]))
+    echo "<input type='hidden' name='redirect' value=\"", htmlspecialchars($_REQUEST["redirect"]), "\" />\n";
 
 
 echo "<table id='foldpass' class='form foldc'>
@@ -245,13 +249,46 @@ echo "<div class='f-i'>
 </div>\n\n";
 
 
-echo "<div class='f-i'><div class='f-ix'>
+if ($Conf->setting("acct_addr")) {
+    echo "<div class='smgap'></div>\n";
+    if ($Conf->setting("allowPaperOption") >= 5) {
+	echo "<div class='f-i'>
+  <div class='f-c'>Address line 1</div>
+  <div class='f-e'><input class='textlite' type='text' name='addressLine1' size='52' value=\"", crpformvalue('addressLine1'), "\" /></div>
+</div>\n\n";
+	echo "<div class='f-i'>
+  <div class='f-c'>Address line 2</div>
+  <div class='f-e'><input class='textlite' type='text' name='addressLine2' size='52' value=\"", crpformvalue('addressLine2'), "\" /></div>
+</div>\n\n";
+	echo "<div class='f-i'><div class='f-ix'>
+  <div class='f-c'>City</div>
+  <div class='f-e'><input class='textlite' type='text' name='city' size='32' value=\"", crpformvalue('city'), "\" /></div>
+</div>";
+	echo "<div class='f-ix'>
+  <div class='f-c'>State/Province/Region</div>
+  <div class='f-e'><input class='textlite' type='text' name='state' size='24' value=\"", crpformvalue('state'), "\" /></div>
+</div>";
+	echo "<div class='f-ix'>
+  <div class='f-c'>ZIP/Postal Code</div>
+  <div class='f-e'><input class='textlite' type='text' name='zipCode' size='12' value=\"", crpformvalue('zipCode'), "\" /></div>
+</div><div class='clear'></div></div>\n\n";
+	echo "<div class='f-i'>
+  <div class='f-c'>Country</div>
+  <div class='f-e'>";
+	countrySelector("country", (isset($_REQUEST["country"]) ? $_REQUEST["country"] : $Acct->country));
+	echo "</div>\n</div>\n";
+    }
+    echo "<div class='f-i'><div class='f-ix'>
   <div class='f-c'>Phone <span class='f-cx'>(optional)</span></div>
   <div class='f-e'><input class='textlite' type='text' name='voicePhoneNumber' size='24' value=\"", crpformvalue('voicePhoneNumber'), "\" /></div>
 </div><div class='f-ix'>
   <div class='f-c'>Fax <span class='f-cx'>(optional)</span></div>
   <div class='f-e'><input class='textlite' type='text' name='faxPhoneNumber' size='24' value=\"", crpformvalue('faxPhoneNumber'), "\" /></div>
-</div><div class='clear'></div></div>\n</div></td>\n</tr>\n\n";
+</div><div class='clear'></div></div>\n";
+}
+
+echo "</div></td>\n</tr>\n\n";
+
 
 
 if ($Acct->isPC || $newProfile)

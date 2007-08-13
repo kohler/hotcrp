@@ -22,6 +22,14 @@ class Contact {
     var $note;
     var $anyTopicInterest;
 
+    // Address information (loaded separately)
+    var $addressLine1;
+    var $addressLine2;
+    var $city;
+    var $state;
+    var $zipCode;
+    var $country;
+    
     // Roles
     const ROLE_PC = 1;
     const ROLE_ASSISTANT = 2;
@@ -115,20 +123,23 @@ class Contact {
 	return $this->contactId > 0 && $conf->shortName == $this->shortConfName;
     }
 
+    function _addressKeys() {
+	return array("addressLine1", "addressLine2", "city", "state",
+		     "zipCode", "country");
+    }
+    
     function invalidate() {
 	$this->shortConfName = 0;
 
 	$this->contactId = 0;
 	$this->visits = 0;
-	$this->firstName = '';
-	$this->lastName = '';
-	$this->email = '';
-	$this->affiliation = '';
-	$this->voicePhoneNumber = '';
-	$this->faxPhoneNumber = '';
-	$this->password = '';
+	foreach (array("firstName", "lastName", "email", "affiliation",
+		       "voicePhoneNumber", "faxPhoneNumber", "password",
+		       "collaborators") as $k)
+	    $this->$k = '';
+	foreach (self::_addressKeys() as $k)
+	    $this->$k = null;
 	$this->note = 0;
-	$this->collaborators = '';
 	$this->anyTopicInterest = 0;
 
 	$this->roles = 0;
@@ -146,12 +157,12 @@ class Contact {
 	$this->visits = trim($this->visits);
 	$this->firstName = trim(simplifyWhitespace($this->firstName));
 	$this->lastName = trim(simplifyWhitespace($this->lastName));
-	$this->email = trim($this->email);
-	$this->affiliation = trim($this->affiliation);
-	$this->voicePhoneNumber = trim($this->voicePhoneNumber);
-	$this->faxPhoneNumber = trim($this->faxPhoneNumber);
-	$this->password = trim($this->password);
-	$this->note = trim($this->note);
+	foreach (array("email", "affiliation", "voicePhoneNumber",
+		       "faxPhoneNumber", "password", "note", "addressLine1",
+		       "addressLine2", "city", "state", "zipCode", "country")
+		 as $k)
+	    if ($this->$k)
+		$this->$k = trim($this->$k);
     }
 
     function go($url) {
@@ -202,14 +213,25 @@ class Contact {
 		email='%s', affiliation='%s', voicePhoneNumber='%s',
 		faxPhoneNumber='%s', password='%s', collaborators='%s'
 		where contactId='%s'",
-			 sqlqtrim($this->firstName), sqlqtrim($this->lastName),
-			 sqlqtrim($this->email), sqlqtrim($this->affiliation),
-			 sqlqtrim($this->voicePhoneNumber),
-			 sqlqtrim($this->faxPhoneNumber),
-			 sqlqtrim($this->password),
-			 sqlqtrim($this->collaborators),
+			 sqlq($this->firstName), sqlq($this->lastName),
+			 sqlq($this->email), sqlq($this->affiliation),
+			 sqlq($this->voicePhoneNumber),
+			 sqlq($this->faxPhoneNumber),
+			 sqlq($this->password),
+			 sqlq($this->collaborators),
 			 $this->contactId);
-	return $conf->qe($query, $where);
+	$result = $conf->qe($query, $where);
+	if (!$result || $conf->setting("allowPaperOption") < 5)
+	    return $result;
+	$result = $conf->qe("delete from ContactAddress where contactId=$this->contactId", $where);
+	if (!$result)
+	    return $result;
+	if ($this->addressLine1 || $this->addressLine2 || $this->city
+	    || $this->state || $this->zipCode || $this->country) {
+	    $query = "insert into ContactAddress (contactId, addressLine1, addressLine2, city, state, zipCode, country) values ($this->contactId, '" . sqlq($this->addressLine1) . "', '" . sqlq($this->addressLine2) . "', '" . sqlq($this->city) . "', '" . sqlq($this->state) . "', '" . sqlq($this->zipCode) . "', '" . sqlq($this->country) . "')";
+	    $result = $conf->qe($query, $where);
+	}
+	return $result;
     }
 
     function initialize($email, $conf) {
@@ -267,6 +289,17 @@ class Contact {
 	return $this->updateFromQuery("select ContactInfo.*, TopicInterest.topicId from ContactInfo
 		left join TopicInterest using (contactId)
 		where ContactInfo.contactId=$contactId limit 0,1", $conf);
+    }
+
+    function lookupAddress($conf) {
+	if ($conf->setting("allowPaperOption") >= 5) {
+	    $result = $conf->q("select * from ContactAddress where contactId=$this->contactId");
+	    foreach (self::_addressKeys() as $k)
+		$this->$k = null;
+	    if (($row = edb_orow($result)))
+		foreach (self::_addressKeys() as $k)
+		    $this->$k = $row->$k;
+	}
     }
 
     function makeMinicontact($o) {

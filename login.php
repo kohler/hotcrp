@@ -18,7 +18,7 @@ function doCreateAccount() {
 
     $result = $_SESSION["Me"]->initialize($_REQUEST["email"], $Conf);
     if (!$result)
-	return $Conf->errorMsg($result->dbErrorText($result, "while adding your account"));
+	return $Conf->errorMsg($Conf->dbErrorText(true, "while adding your account"));
 
     $_SESSION["Me"]->sendAccountInfo($Conf, true, false);
     $Conf->log("Account created", $_SESSION["Me"]);
