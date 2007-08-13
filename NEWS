@@ -1,5 +1,17 @@
 HotCRP NEWS
 
+Version 2.4   12.Aug.2007
+
+* Allow setting an info message that appears on the homepage.
+
+* Add an "Abstracts" display option to search screens, filled in by Ajax.
+
+* Fix several IE problems, "Authors" checkbox on search display, "withdraw"
+  popup dialog, and others.
+
+* Style changes.
+
+
 Version 2.3   16.Jul.2007
 
 * New action log display includes search.
