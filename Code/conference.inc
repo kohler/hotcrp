@@ -1026,7 +1026,7 @@ class Conference {
 	if (!$this->headerPrinted) {
 	    echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n";
 	    // PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n";
-	    echo "<html>\n<head>\n";
+	    echo "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n<head>\n";
 	    echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n";
 	    echo "<meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />\n";
 	    echo "<meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />\n";
