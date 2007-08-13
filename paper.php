@@ -518,7 +518,7 @@ else if ($newPaper) {
     $Conf->infoMsg("Congratulations!  This paper was accepted.  Submit a final copy for your paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or add contact authors, allowing others to view reviews and make changes.");
 } else if ($prow->conflictType == CONFLICT_AUTHOR) {
     $override2 = ($Me->privChair ? "  However, as an administrator, you can update the paper anyway by selecting \"Override deadlines\"." : "");
-    $Conf->infoMsg("This paper is under review and can no longer be changed.  You may withdraw it from the conference, however.$override2");
+    $Conf->infoMsg("This paper is under review and can no longer be changed, although you may still withdraw it from the conference.$override2");
 } else if (!$Me->privChair)
     errorMsgExit("You can't edit paper #$paperId since you aren't one of its contact authors.");
 else
