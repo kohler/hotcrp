@@ -482,7 +482,7 @@ a.button_small {
 a.small {
 	font-size: smaller;
 }
-a.foldbutton, a.foldbutton_tiny {
+a.foldbutton {
 	font-size: smaller;
 	font-weight: normal;
 	padding: 0px 0.25em;
@@ -494,13 +494,6 @@ a.foldbutton, a.foldbutton_tiny {
 	border-left: 1px solid #eeee66;
 	border-bottom: 1px solid #999966;
 	border-right: 1px solid #999966;
-}
-a.foldbutton {
-	font-size: smaller;
-}
-a.foldbutton_tiny {
-	font-size: 58%;
-	vertical-align: 3px;
 }
 td.caption a.foldbutton {
 	background: #fff0e0;
@@ -515,19 +508,6 @@ div.bgrp_head a.foldbutton {
 	border-left: 1px solid #ccccff;
 	border-bottom: 1px solid #666699;
 	border-right: 1px solid #666699;
-}
-a.rev_past {
-	font-size: smaller;
-	font-weight: bold;
-	padding: 1px 0.25em;
-	background: #ffaaaa;
-	border-top: 1px solid #ee6666;
-	border-left: 2px solid #ee6666;
-	border-bottom: 1px solid #996666;
-	border-right: 2px solid #996666;
-	text-decoration: none;
-	color: black;
-	margin: 3px 0px;
 }
 span.author, span.conflict {
 	font-weight: bold;
