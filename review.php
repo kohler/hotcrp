@@ -385,7 +385,7 @@ if ($reviewTableFolder)
 echo "<tr class='", $revTableClass, "'>\n";
 echo "  <td class='caption'>";
 if ($reviewTableFolder)
-    echo "<a class='foldbutton unfolder' href=\"javascript:fold('rt', 0)\">+</a><a class='foldbutton folder' href=\"javascript:fold('rt', 1)\">&minus;</a>&nbsp;";
+    echo "<a class='foldbutton unfolder' href=\"javascript:fold('rt', 0)\">+</a><a class='foldbutton folder' href=\"javascript:fold('rt', 1)\">&ndash;</a>&nbsp;";
 echo "Reviews</td>\n";
 echo "  <td class='entry'>", ($revTable ? $revTable : "None"), "</td>\n";
 echo "</tr>\n\n";

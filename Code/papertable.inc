@@ -147,7 +147,7 @@ class PaperTable {
 	echo "  <td class='caption'>";
 	if ($this->allFolded)
 	    echo "<a href=\"javascript:fold('paper', 0, 9)\" class='foldbutton unfolder9'>+</a>",
-		"<a href=\"javascript:fold('paper', 1, 9)\" class='foldbutton folder9'>&minus;</a> ";
+		"<a href=\"javascript:fold('paper', 1, 9)\" class='foldbutton folder9'>&ndash;</a> ";
 	echo ($canUpload ? "Status" : "Paper"), "</td>\n";
 	echo "  <td class='entry'>";
 
@@ -248,7 +248,7 @@ class PaperTable {
 	echo "  ", $this->tdCaption("authorInformation");
 	if ($this->authorsFolded)
 	    echo "<a href=\"javascript:fold('authors', 0, 8)\" class='foldbutton unfolder8'>+</a>",
-	    "<a href=\"javascript:fold('authors', 1, 8)\" class='foldbutton folder8'>&minus;</a> ";
+	    "<a href=\"javascript:fold('authors', 1, 8)\" class='foldbutton folder8'>&ndash;</a> ";
 	echo "Authors</td>\n";
 	echo "  ", $this->tdEntry("authorInformation");
 	if ($this->editable) {

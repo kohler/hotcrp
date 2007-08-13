@@ -3,8 +3,11 @@
 /* Distributed under an MIT-like license; see LICENSE */
 
 /* page background */
+body, input, button, textarea, select {
+	font-family: verdana, tahoma, sans-serif;
+}
 body {
-	font-family: sans-serif;
+	font-size: 11pt;
 	color: black;
 	margin: 0px;
 }
@@ -18,24 +21,23 @@ div#header {
 	padding: 8px 12px 0px 12px;
 }
 div#header_user {
-	font-size: small;
+	font-size: smaller;
 	padding: 0.25em 0em 0em 0em;
 	text-align: right;
 	float: right;
 }
 span#usertime {
 	padding-top: 1px;
-	font-size: x-small;
+	font-size: 69%;
 }
 div#header_left {
-	font-size: small;
 	float: left;
 	margin-right: 5%;
 	margin-bottom: 0em;
 }
 h1 {
 	display: inline;
-	font-size: x-large;
+	font-size: 144%;
 	margin: 0em;
 }
 h1 span.crumbsep {
@@ -53,7 +55,7 @@ div.vbar, div.nvubar {
 }
 table.vbar {
 	width: 100%;
-	font-size: small;
+	font-size: smaller;
 	position: relative;
 }
 table.vbar td {
@@ -166,7 +168,7 @@ div#footer {
 }
 div#footer_crp {
 	float: right;
-	font-size: x-small;
+	font-size: 69%;
 }
 
 
@@ -214,9 +216,6 @@ span.error {
 	color: #660000;
 }
 
-input, button, textarea, select {
-	font-family: sans-serif;
-}
 input.button, button, a.button {
 	background: #ffffbb;
 	border-top: 1px solid #eeee66;
@@ -230,7 +229,7 @@ input.button, button, a.button {
 	white-space: nowrap;
 }
 input.button_default, button.button_default {
-	font-size: large;
+	font-size: larger;
 	background: #ffff99;
 	border-top: 1px solid #eeee66;
 	border-left: 2px solid #eeee66;
@@ -424,10 +423,7 @@ div.gopaper {
 	float: right;
 	margin-bottom: 0em;
 }
-form.gopaper input.textlite, table.lognav form {
-	font-size: small;
-}
-form.gopaper input.button, table.lognav input.button {
+form.gopaper input.button {
 	padding: 0px;
 	border-top: 1px solid #eeee66;
 	border-left: 2px solid #eeee66;
@@ -456,7 +452,7 @@ input.button_default_alert {
 
 a.download, a.rev_start, a.rev_comp, a.rev_edit, a.rev_view,
 input.button_small, a.button_small, button.button_small {
-	font-size: small;
+	font-size: smaller;
 	padding: 1px 0.25em;
 	background: #ffffbb;
 	border-top: 1px solid #eeee66;
@@ -468,7 +464,7 @@ input.button_small, a.button_small, button.button_small {
 	white-space: nowrap;
 }
 input.button_small_alert, a.button_small_alert, button.button_small_alert {
-	font-size: small;
+	font-size: smaller;
 	font-weight: bold;
 	padding: 1px 0.25em;
 	background: #ffaaaa;
@@ -484,10 +480,10 @@ a.button_small {
 	vertical-align: 1px;
 }
 a.small {
-	font-size: small;
+	font-size: smaller;
 }
 a.foldbutton, a.foldbutton_tiny {
-	font-size: small;
+	font-size: smaller;
 	font-weight: normal;
 	padding: 0px 0.25em;
 	text-decoration: none;
@@ -500,10 +496,10 @@ a.foldbutton, a.foldbutton_tiny {
 	border-right: 1px solid #999966;
 }
 a.foldbutton {
-	font-size: small;
+	font-size: smaller;
 }
 a.foldbutton_tiny {
-	font-size: xx-small;
+	font-size: 58%;
 	vertical-align: 3px;
 }
 td.caption a.foldbutton {
@@ -521,7 +517,7 @@ div.bgrp_head a.foldbutton {
 	border-right: 1px solid #666699;
 }
 a.rev_past {
-	font-size: small;
+	font-size: smaller;
 	font-weight: bold;
 	padding: 1px 0.25em;
 	background: #ffaaaa;
@@ -600,7 +596,7 @@ tr.id td.caption {
 	color: black;
 }
 table.comment tr.id td.entry, table.review tr.id td.entry {
-	font-size: small;
+	font-size: smaller;
 }
 table.review, table.comment {
 	border-top: 1px solid #9999cc;
@@ -628,10 +624,10 @@ td.lentry.error input {
 }
 td.hint {
 	padding: 0em 0.5em;
-	font-size: small;
+	font-size: smaller;
 }
 div.hint {
-	font-size: small;
+	font-size: smaller;
 	margin-bottom: 0.5ex;
 }
 div#aumg td.hint, table.paper td.hint, table.review td.hint, table.comment td.hint, table.assign td.hint, table.setreviewform td.hint {
@@ -643,7 +639,7 @@ td h2, td h3 {
 }
 td.caption span.hint {
 	font-weight: normal;
-	font-size: small;
+	font-size: smaller;
 }
 
 
@@ -796,10 +792,10 @@ table.pcass td.name3, table.pcass td.name4 {
 table.pcass td.ass {
 	padding-right: 0.45em;
 	text-align: right;
-	font-size: small;
+	font-size: smaller;
 }
 table.pcass td.nrev {
-	font-size: x-small;
+	font-size: 69%;
 	padding-bottom: 2px;
 	padding-right: 0.65em;
 }
@@ -810,7 +806,7 @@ tr.rev_reviewers_hdr td.entry {
 table.topicinterest tr td.ti_interest, table.topicinterest tr th {
 	padding-right: 1px;
 	white-space: nowrap;
-	font-size: small;
+	font-size: smaller;
 	text-align: center;
 }
 table.topicinterest tr td.ti_topic {
@@ -820,7 +816,7 @@ table.reviewers td {
 	padding-right: 1em;
 }
 table.reviewers th {
-	font-size: small;
+	font-size: smaller;
 	padding: 0em 0.25em;
 }
 table.reviewers td.highlight {
@@ -847,7 +843,7 @@ span.pstat {
 	font-weight: bold;
 }
 tr.rs_heading td {
-	font-size: small;
+	font-size: smaller;
 	font-weight: bold;
 }
 tr.rs_rev td.rs_id, tr.rs_rev td.rs_num {
@@ -868,7 +864,7 @@ span.pstat_sub {
 table.pt_buttons td.ptb_explain {
 	padding: 0px 1em 0px 0px;
 	text-align: center;
-	font-size: small;
+	font-size: smaller;
 }
 table.pt_buttons td.ptb_button {
 	padding: 0px 1em 0px 0px;
@@ -938,7 +934,7 @@ td.pl_name, td.al_name {
 }
 table.ppltable td.pl_score {
 	vertical-align: top;
-	font-size: small;
+	font-size: smaller;
 	padding-left: 0.2em;
 	padding-right: 0.2em;
 }
@@ -970,11 +966,11 @@ tr.al td {
 }
 tr.pl_headrow td, tr.pl_headrow th, tr.al_headrow th, table.setreviewform th {
 	border-bottom: 1px solid #999999;
-	font-size: small;
+	font-size: smaller;
 }
 tr.pl_footrow td {
 	padding-top: 3px;
-	font-size: small;
+	font-size: smaller;
 }
 tr.pl_headgap td {
 	padding-top: 2px;
@@ -985,7 +981,7 @@ tr.pl_footgap td {
 }
 table.plt_reviewerHome tr.pl_headrow th {
 	border-bottom: none;
-	font-size: small;
+	font-size: smaller;
 }
 
 span.match {
@@ -1057,7 +1053,7 @@ div.plist_form {
 
 
 span.rev_num {
-	font-size: large;
+	font-size: larger;
 	font-weight: bold;
 	color: red;
 }
@@ -1125,13 +1121,13 @@ span.contactpulldown select {
 
 /* score help */
 a.scorehelp {
-	font-size: small;
+	font-size: smaller;
 	font-weight: normal;
 	position: relative;
 	bottom: 0.5em;
 }
 div.scorehelpc, div.scorehelpo {
-	font-size: small;
+	font-size: smaller;
 	font-weight: normal;
 	color: black;
 	text-align: left;
@@ -1146,7 +1142,7 @@ div.scorehelpc {
 	display: none;
 }
 div.scorehelpc span.rev_num, div.scorehelpo span.rev_num {
-	font-size: small;
+	font-size: smaller;
 }
 
 /* popup dialogs */
@@ -1173,7 +1169,7 @@ div.popup_actions {
 span.sc1, span.sc2, span.sc3, span.sc4, span.sc5,
 span.sc6, span.sc7, span.sc8, span.sc9 {
 	font-weight: bold;
-	font-size: small;
+	font-size: smaller;
 }
 span.sc1 {
 	color: #c88080;
@@ -1191,13 +1187,13 @@ span.sc5, span.sc6, span.sc7, span.sc8, span.sc9 {
 	color: #00F000;
 }
 span.sc_sum {
-	font-size: x-small;
+	font-size: 69%;
 }
 
 /* offline reviewing */
 table#offlineform h3 {
 	text-align: center;
-	font-size: medium;
+	font-size: 100%;
 	color: #555555;
 }
 table#offlineform ul {
