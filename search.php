@@ -527,11 +527,11 @@ echo "</div><div class='tld2'>";
 // Advanced Search
 echo "<form method='get' action='search.php'>
 <table><tr>
-  <td class='lcaption'>Search these papers</td>
+  <td class='lxcaption'>Search these papers</td>
   <td class='lentry'>$tselect</td>
 </tr>
 <tr>
-  <td class='lcaption'>Using these fields</td>
+  <td class='lxcaption'>Using these fields</td>
   <td class='lentry'><select name='qt'>";
 $qtOpt = array("ti" => "Title only",
 	      "ab" => "Abstract only");
@@ -555,18 +555,18 @@ echo "</select></td>
 </tr>
 <tr><td><div class='xsmgap'></div></td></tr>
 <tr>
-  <td class='lcaption'>With <b>any</b> of the words</td>
+  <td class='lxcaption'>With <b>any</b> of the words</td>
   <td class='lentry'><input id='searchform2_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /><span class='sep'></span></td>
   <td rowspan='3'><input class='button' type='submit' value='Search' /></td>
 </tr><tr>
-  <td class='lcaption'>With <b>all</b> the words</td>
+  <td class='lxcaption'>With <b>all</b> the words</td>
   <td class='lentry'><input class='textlite' type='text' size='40' name='qa' value=\"", htmlspecialchars(defval($_REQUEST["qa"], "")), "\" /></td>
 </tr><tr>
-  <td class='lcaption'><b>Without</b> the words</td>
+  <td class='lxcaption'><b>Without</b> the words</td>
   <td class='lentry'><input class='textlite' type='text' size='40' name='qx' value=\"", htmlspecialchars(defval($_REQUEST["qx"], "")), "\" /></td>
 </tr>
 <tr>
-  <td class='lcaption'></td>
+  <td class='lxcaption'></td>
   <td><span style='font-size: x-small'><a href='help.php?t=search'>Search help</a> &nbsp;|&nbsp; <a href='help.php?t=syntax'>Syntax quick reference</a></span></td>
 </tr></table></form>";
 

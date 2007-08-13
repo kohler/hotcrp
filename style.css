@@ -127,7 +127,8 @@ div.body {
 body#contactauthors div.body, body#comment div.body, body#login div.body,
 body#assign div.body, body#review div.body, body#mail div.body,
 body#account div.body, body#paper_edit div.body, body#paper_view div.body,
-body#autoassign div.body, body#scorehelp div.body, body#offrev div.body {
+body#autoassign div.body, body#scorehelp div.body, body#offrev div.body,
+body#settings div.body {
 	margin: 0px 0px;
 }
 body#mail td#mailref {
@@ -308,6 +309,29 @@ input.button_default, button.button_default {
 }
 
 
+/* Left-hand selector, as in settings */
+table.lhsel {
+	width: 100%;
+}
+table.lhsel td {
+	padding: 2px 0px;
+	position: relative;
+}
+div.lhl0 {
+	padding: 2px 0px 2px 4px;
+}
+div.lhl1 {
+	background: #ffffff;
+	padding: 2px 8px 2px 4px;
+	position: relative;
+	z-index: 4;
+	left: 8px;
+	border-top: 2px solid #9999cc;
+	border-left: 1px solid #9999cc;
+	border-bottom: 2px solid #9999cc;
+}
+
+
 /* PRESENTATION BAD FIX ME */
 div.tinygap {
 	padding: 0.175em 0em;
@@ -336,47 +360,12 @@ table.ppltable td.pl_topics span.topic0, table.ppltable td.pl_topics span.topic2
 	text-decoration: none;
 	font-weight: normal;
 }
-body#revpref table.pltable, table.ppltable {
-	margin: 0em auto;
+body#revpref table.pltable, body#accounts table.ppltable {
+	margin: 0px auto;
 }
 
 
 /* Main */
-table.half {
-	width: 100%;
-	border-collapse: separate;
-}
-table.half tr td.l {
-	width: 50%;
-	padding-right: 0.5em;
-}
-table.half tr td.r {
-	width: 50%;
-	padding-left: 0.5em;
-}
-table.halfc {
-	width: 50%;
-	margin-left: auto;
-	margin-right: auto;
-}
-div.bgrp {
-	margin: 0.5em 0em 0.75em 0em;
-	background: #eff1ff;
-}
-div.bgrp div.bgrp_head {
-	background: #d8deff;
-	padding: 2px 6px;
-	font-weight: bold;
-}
-div.bgrp div.bgrp_body {
-	padding: 4px 6px;
-	border: 2px solid #d8deff;
-}
-div.hgrp {
-	padding: 4px 6px;
-	border: 2px solid #e6cbc1;
-	background: #fff3ef;
-}
 table.center {
 	margin-left: auto;
 	margin-right: auto;
@@ -502,13 +491,6 @@ td.caption a.foldbutton {
 	border-bottom: 1px solid #999966;
 	border-right: 1px solid #999966;
 }
-div.bgrp_head a.foldbutton {
-	background: #ececff; /*#c6cdf8;*/
-	border-top: 1px solid #ccccff;
-	border-left: 1px solid #ccccff;
-	border-bottom: 1px solid #666699;
-	border-right: 1px solid #666699;
-}
 span.author, span.conflict {
 	font-weight: bold;
 	color: #ff0000;
@@ -517,7 +499,7 @@ span.author, span.conflict {
 
 
 /* Captions and entries */
-table.paper, table.review, table.comment, table.assign {
+table.paper, table.review, table.comment, table.assign, table.settings {
 	width: 100%;
 }
 div.relative {
@@ -526,7 +508,7 @@ div.relative {
 tr, textarea, select {
 	vertical-align: baseline;
 }
-tr td.textarea {
+td.textarea, td.top {
 	vertical-align: top;
 }
 td.rcaption {
@@ -534,7 +516,7 @@ td.rcaption {
 	padding: 3px 0.5em 3px 0em;
 	font-weight: bold;
 }
-td.xcaption {
+td.rxcaption {
 	text-align: right;
 	padding: 3px 0.5em 3px 0em;
 }
@@ -543,18 +525,19 @@ td.srcaption {
 	padding: 3px 0.75em 3px 0.75em;
 	font-weight: bold;
 }
-td.slcaption {
-	padding: 3px 0.75em 3px 0.75em;
-	font-weight: bold;
-}
 td.sentry {
 	padding: 3px 0.75em 3px 0.75em;
 }
 td.lcaption {
-	padding: 0px 0.75em 0px 0em;
+	padding: 3px 1em 3px 0em;
+	font-weight: bold;
 }
-td.llentry {
-	padding: 0px 0.75em;
+td.lxcaption {
+	padding: 2px 1em 2px 0em;
+}
+td.mcaption {
+	text-align: right;
+	padding-right: 1em;
 }
 td.caption {
 	text-align: right;
@@ -595,6 +578,15 @@ td.leftentry {
 td.entry, th.entry {
 	padding: 3px 1em 3px 0.5em;
 }
+table.settings td.entry {
+	padding: 5px 1em 3px 0.75em;
+}
+td.lentry {
+	padding: 2px 0px;
+}
+td.llentry {
+	padding: 0px 0.75em;
+}
 td.error, td.error input {
 	font-weight: bold;
 	color: #ff0000;
@@ -617,6 +609,11 @@ td h2, td h3 {
 	margin-top: 0px;
 	margin-bottom: 0px;
 }
+table.settings td h3 {
+	background: #eff1ff;
+	margin-bottom: 0.5em;
+	padding: 0px 4px;
+}
 td.caption span.hint {
 	font-weight: normal;
 	font-size: smaller;
@@ -624,19 +621,10 @@ td.caption span.hint {
 
 
 /* home page */
-h4:first-child {
-	margin-top: 0px;
-}
-h4 {
-	margin-bottom: 0.5em;
-}
 ul.compact {
 	margin-top: 0.5em;
 	margin-bottom: 0em;
 	padding-left: 1em;
-}
-div.bgrp_body table.half:first-child ul {
-	margin-top: 0em;
 }
 
 
@@ -925,16 +913,6 @@ span.pl_callouthdr {
 span.pcrole {
 	font-weight: bold;
 	font-size: smaller;
-}
-td.mcaption {
-	text-align: right;
-	padding-right: 1em;
-}
-td.lcaption {
-	padding-right: 1em;
-}
-td.lentry {
-	padding: 2px 0px;
 }
 tr.pl td, tr.al td {
 	padding-top: 2px;

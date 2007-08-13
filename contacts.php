@@ -204,9 +204,9 @@ if (count($tOpt) > 1) {
 
 
 if ($Me->privChair && $_REQUEST["t"] == "pc")
-    $Conf->infoMsg("<p><a href='${ConfSiteBase}account.php?new=1&amp;pc=1' class='button'>Add PC member</a></p><p>Select a PC member's name to edit their information or remove them from the PC.</p>");
+    $Conf->infoMsg("<p><a href='${ConfSiteBase}account.php?new=1&amp;pc=1' class='button'>Add PC member</a></p><p>Select a PC member's name to edit their profile or remove them from the PC.</p>");
 else if ($Me->privChair && $_REQUEST["t"] == "all")
-    $Conf->infoMsg("<p><a href='${ConfSiteBase}account.php?new=1' class='button'>Create account</a></p><p>Select an account name to edit account information.  Select <img src='${ConfSiteBase}images/viewas.png' alt='[Act as]' /> to view the site as that account would see it.</p>");
+    $Conf->infoMsg("<p><a href='${ConfSiteBase}account.php?new=1' class='button'>Create account</a></p><p>Select an account name to edit that profile.  Select <img src='${ConfSiteBase}images/viewas.png' alt='[Act as]' /> to view the site as that user would see it.</p>");
 
 
 if ($pl->anySelector) {

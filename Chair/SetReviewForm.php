@@ -149,12 +149,12 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     
     // field name
     $e = (isset($Error[$row->fieldName]) ? " error" : "");
-    $x .= "<$trclass><td class='xcaption$e' nowrap='nowrap'>Field name</td><td colspan='3' class='entry$e'><b><input type='text' size='50' class='textlite' name='shortName_$row->fieldName' value=\""
+    $x .= "<$trclass><td class='rxcaption$e' nowrap='nowrap'>Field name</td><td colspan='3' class='entry$e'><b><input type='text' size='50' class='textlite' name='shortName_$row->fieldName' value=\""
 	. htmlspecialchars(rf_getField($row, 'shortName'))
 	. "\" onchange='highlightUpdate()' /></b></td></tr>\n";
 
     // form position
-    $x .= "<$trclass><td class='xcaption' nowrap='nowrap'>Form position</td><td class='entry'>"
+    $x .= "<$trclass><td class='rxcaption' nowrap='nowrap'>Form position</td><td class='entry'>"
 	. "<select name='order_$row->fieldName' onchange='highlightUpdate()'>\n"
 	. "  <option value='-1'";
     if ($ordinalOrder < 0)
@@ -178,7 +178,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     $x .= "/>&nbsp;Visible&nbsp;to&nbsp;authors</td><td class='hint'></td></tr>\n";
 
     // description
-    $x .= "<$trclass><td class='xcaption textarea'>Description</td>"
+    $x .= "<$trclass><td class='rxcaption textarea'>Description</td>"
 	. "<td class='entry'><textarea name='description_$row->fieldName' rows='6' cols='80' onchange='highlightUpdate()'>"
 	. htmlentities(rf_getField($row, 'description'))
 	. "</textarea></td>";
@@ -191,7 +191,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 
     // options
     if (isset($rf->options[$row->fieldName]) || $reviewFields[$row->fieldName]) {
-	$x .= "<$trclass><td class='xcaption textarea'>Options</td><td class='entry'><textarea name='options_$row->fieldName' rows='6' cols='80' onchange='highlightUpdate()'>";
+	$x .= "<$trclass><td class='rxcaption textarea'>Options</td><td class='entry'><textarea name='options_$row->fieldName' rows='6' cols='80' onchange='highlightUpdate()'>";
 	$y = '';
 	if (isset($rf->options[$row->fieldName])) {
 	    for ($i = 1; $i <= count($rf->options[$row->fieldName]); $i++)
@@ -227,7 +227,7 @@ function rf_show() {
 4. Accept</pre>");
 
 
-    echo "<table class='center'><tr><td><div class='hgrp'><b>Templates:</b>&nbsp;
+    echo "<table><tr><td><div class='hgrp'><b>Templates:</b>&nbsp;
 <select name='sample'>";
     foreach (array("none" => "(none)",
 		   "hotnetsv" => "HotNets V workshop",
@@ -242,14 +242,7 @@ function rf_show() {
     echo "</select> &nbsp;
 <input type='submit' class='button' name='loadsample' value='Load template' /></div></td></tr></table>
 
-<div class='smgap'></div>
-
-<table class='center'><tr><td><input type='submit' class='button",
-    (defval($_REQUEST["sample"], "none") == "none" ? "" : "_alert"),
-	"' name='update' value='Save changes' />
-&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' /></td></tr></table>
-
-<div class='smgap'></div>
+<hr />
 
 <table class='setreviewform'>\n";
 

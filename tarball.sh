@@ -56,7 +56,6 @@ settings.php
 style.css
 
 Code/.htaccess
-Code/Calendar.inc
 Code/backupdb.sh
 Code/baselist.inc
 Code/conference.inc
@@ -113,7 +112,6 @@ Chair/AssignPapers.php
 Chair/Code.inc
 Chair/DumpDatabase.php
 Chair/SetReviewForm.php
-Chair/ShowCalendar.php
 Chair/index.php
 Chair/sampleforms.inc
 

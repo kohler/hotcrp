@@ -324,7 +324,10 @@ class ContactList extends BaseList {
 	switch ($listname) {
 	  case "pc":
 	  case "admin":
+	  case "pcadmin":
 	    return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS));
+	  case "pcadminx":
+	    return array($listname, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS);
 	  case "re":
 	  case "resub":
 	    return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS));
@@ -446,9 +449,10 @@ class ContactList extends BaseList {
 	    $pq .= "\tjoin Paper on (Paper.paperId=PaperConflict.paperId and Paper.timeSubmitted<=0)\n";
 	if ($this->limit == "all")
 	    $pq .= "\tleft join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.conflictType=" . CONFLICT_AUTHOR . ")\n";
-
 	if ($this->limit == "admin")
 	    $pq .= "\twhere Chair.contactId is not null or ChairAssistant.contactId is not null\n";
+	if ($this->limit == "pcadmin" || $this->limit == "pcadminx")
+	    $pq .= "\twhere Chair.contactId is not null or ChairAssistant.contactId is not null or PCMember.contactId is not null";
 	
 	$pq .= "	group by ContactInfo.contactId
 	order by lastName, firstName, email";

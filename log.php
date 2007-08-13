@@ -94,20 +94,20 @@ function searchbar() {
     
     echo "<form method='get' action='log.php'>
 <table id='searchform'><tr>
-  <td class='lcaption", $Eclass['q'], "'>With <b>any</b> of the words</td>
+  <td class='lxcaption", $Eclass['q'], "'>With <b>any</b> of the words</td>
   <td class='lentry", $Eclass['q'], "'><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /><span class='sep'></span></td>
   <td rowspan='3'><input class='button' type='submit' name='search' value='Search' /></td>
 </tr><tr>
-  <td class='lcaption", $Eclass['pap'], "'>Concerning paper(s)</td>
+  <td class='lxcaption", $Eclass['pap'], "'>Concerning paper(s)</td>
   <td class='lentry", $Eclass['pap'], "'><input class='textlite' type='text' size='40' name='pap' value=\"", htmlspecialchars(defval($_REQUEST["pap"], "")), "\" /></td>
 </tr><tr>
-  <td class='lcaption", $Eclass['acct'], "'>Concerning account(s)</td>
+  <td class='lxcaption", $Eclass['acct'], "'>Concerning account(s)</td>
   <td class='lentry'><input class='textlite' type='text' size='40' name='acct' value=\"", htmlspecialchars(defval($_REQUEST["acct"], "")), "\" /></td>
 </tr><tr>
-  <td class='lcaption", $Eclass['n'], "'>Show</td>
+  <td class='lxcaption", $Eclass['n'], "'>Show</td>
   <td class='lentry", $Eclass['n'], "'><input class='textlite' type='text' size='3' name='n' value=\"", htmlspecialchars($_REQUEST["n"]), "\" /> &nbsp;records at a time</td>
 </tr><tr>
-  <td class='lcaption", $Eclass['date'], "'>Starting at</td>
+  <td class='lxcaption", $Eclass['date'], "'>Starting at</td>
   <td class='lentry", $Eclass['date'], "'><input class='textlite' type='text' size='40' name='date' value=\"", htmlspecialchars($_REQUEST["date"]), "\" /></td>
 </tr></table></form>";
 
