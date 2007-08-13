@@ -28,7 +28,7 @@ div#header_user {
 }
 span#usertime {
 	padding-top: 1px;
-	font-size: 69%;
+	font-size: smaller;
 }
 div#header_left {
 	float: left;
