@@ -317,6 +317,10 @@ Follow these steps to prepare to accept paper submissions.
 
 <ol>
 
+<li><p><strong><a href='${ConfSiteBase}settings.php?group=acc'>Set up PC
+  member accounts</a></strong> and decide whether to collect authors'
+  snail-mail addresses and phone numbers.</li>
+
 <li><p><strong><a href='${ConfSiteBase}settings.php?group=sub'>Set submission
   policies</a></strong>, including whether submission is blind, whether
   authors check off conflicted PC members (\"Collect authors' PC conflicts
@@ -354,10 +358,6 @@ Follow these steps to prepare to accept paper submissions.
   explicit preferences (see below) are better than topic-based assignments,
   busy PC members might not specify their preferences; topic matching lets you
   do a reasonable job at assigning papers anyway.</p></li>
-
-<li><p><strong><a href='${ConfSiteBase}contacts.php?t=pc'>Set up PC
-  accounts.</a></strong> Definitely do this ahead of time if you selected
-  \"Collect authors' PC conflicts with checkboxes\".</p></li>
 
 <li><p>Take a look at a <a href='${ConfSiteBase}paper.php?paperId=new'>paper
   submission page</a> to make sure it looks right.</p></li>
