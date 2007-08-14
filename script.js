@@ -195,6 +195,37 @@ function selassign(elt, which) {
 }
 
 
+// author entry
+var numauthorfold = 50;
+function authorfold(n) {
+    var elt;
+    if (n <= 1)
+	n = 1;
+    for (var i = 1; i <= n; i++)
+	if ((elt = e("auedit" + i)) && elt.className == "aueditc")
+	    elt.className = "auedito";
+	else if (!elt)
+	    n = i - 1;
+    for (var i = n + 1; i < 50; i++)
+	if ((elt = e("auedit" + i)) && elt.className == "auedito")
+	    elt.className = "aueditc";
+	else if (!elt)
+	    break;
+    // set number displayed
+    elt = e("aueditcount");
+    if (elt)
+	elt.value = n;
+    numauthorfold = n;
+    // IE won't actually do the fold unless we yell at it
+    elt = e("auedittable");
+    if (document.recalc && elt)
+	try {
+	    elt.innerHTML = elt.innerHTML + "";
+	} catch (err) {
+	}
+}
+
+
 // temporary text and review preferences
 function tempText(elt, text, on) {
     if (on && elt.value == text)

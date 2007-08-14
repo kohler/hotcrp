@@ -470,7 +470,7 @@ class Conference {
        Submitted: " . $this->printableTime($timestamp) . "\n\n"
 		. wordWrapIndent(trim($prow->title), "Title: ") . "\n"
 		. wordWrapIndent(trim($prow->abstract), "Abstract: ") . "\n\n"
-		. wordWrapIndent(trim($prow->authorInformation), "Authors: ") . "\n"
+		. wordWrapIndent(cleanAuthorText($prow), "Authors: ") . "\n"
 		. wordWrapIndent(trim($prow->collaborators), "Collaborators: ") . "\n";
 
 	    // collect contact authors

@@ -69,6 +69,7 @@ function getProw($contactId) {
 				  $contactId, $whyNot))
 	|| !$Me->canViewPaper($prow, $Conf, $whyNot))
 	errorMsgExit(whyNotText($whyNot, "view"));
+    cleanAuthor($prow);
 }
 if (!$newPaper) {
     getProw($Me->contactId);
@@ -141,18 +142,41 @@ if (isset($_REQUEST["revive"]) && !$newPaper) {
 }
 
 
+// set request authorTable from individual components
+function setRequestAuthorTable() {
+    if (!isset($_REQUEST["aueditcount"]))
+	$_REQUEST["aueditcount"] = 50;
+    if ($_REQUEST["aueditcount"] < 1)
+	$_REQUEST["aueditcount"] = 1;
+    $_REQUEST["authorTable"] = array();
+    for ($i = 1; $i <= $_REQUEST["aueditcount"]; $i++) {
+	$a = simplifyWhitespace(defval($_REQUEST["auname$i"], ""));
+	$b = simplifyWhitespace(defval($_REQUEST["auemail$i"], ""));
+	$c = simplifyWhitespace(defval($_REQUEST["auaff$i"], ""));
+	if ($a != "" || $b != "" || $c != "") {
+	    $a = splitName($a);
+	    $a[2] = $b;
+	    $a[3] = $c;
+	    $_REQUEST["authorTable"][] = $a;
+	}
+    }
+    if (!count($_REQUEST["authorTable"]))
+	unset($_REQUEST["authorTable"]);
+}
+
+
 // update paper action
 $PaperError = array();
 
 function setRequestFromPaper($prow) {
-    foreach (array("title", "abstract", "authorInformation", "collaborators") as $x)
+    foreach (array("title", "abstract", "authorTable", "collaborators") as $x)
 	if (!isset($_REQUEST[$x]))
 	    $_REQUEST[$x] = $prow->$x;
 }
 
 function requestSameAsPaper($prow) {
     global $Conf;
-    foreach (array("title", "abstract", "authorInformation", "collaborators") as $x)
+    foreach (array("title", "abstract", "authorTable", "collaborators") as $x)
 	if ($_REQUEST[$x] != $prow->$x)
 	    return false;
     if (fileUploaded($_FILES['paperUpload'], $Conf))
@@ -198,9 +222,10 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$isSubmit = false;
     
     // check that all required information has been entered
-    array_ensure($_REQUEST, "", "title", "abstract", "authorInformation", "collaborators");
+    array_ensure($_REQUEST, "", "title", "abstract", "authorTable", "collaborators");
     $q = "";
-    foreach (array("title", "abstract", "authorInformation", "collaborators") as $x) {
+    
+    foreach (array("title", "abstract", "collaborators") as $x) {
 	if (trim($_REQUEST[$x]) == "") {
 	    if ($x != "collaborators"
 		|| ($Conf->setting("sub_collab") && $isSubmit))
@@ -209,6 +234,15 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	if ($x == "title")
 	    $_REQUEST[$x] = simplifyWhitespace($_REQUEST[$x]);
 	$q .= "$x='" . sqlqtrim($_REQUEST[$x]) . "', ";
+    }
+    
+    if (!isset($_REQUEST["authorTable"]))
+	$PaperError["authorInformation"] = 1;
+    else {
+	$q .= "authorInformation='";
+	foreach ($_REQUEST["authorTable"] as $x)
+	    $q .= sqlq("$x[0]\t$x[1]\t$x[2]\t$x[3]\n");
+	$q .= "', ";
     }
 
     // any missing fields?
@@ -399,6 +433,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 
 if (isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"])) {
     // get missing parts of request
+    setRequestAuthorTable();
     if (!$newPaper)
 	setRequestFromPaper($prow);
 
@@ -541,6 +576,8 @@ if ($mode == "edit") {
 	$editable = $finalEditMode = true;
 } else
     $editable = false;
+if ($editable)
+    setRequestAuthorTable();
 
 
 // prepare paper table

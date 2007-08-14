@@ -494,6 +494,7 @@ class Mailer {
 		&& defval($this->row->conflictType) < CONFLICT_AUTHOR
 		&& defval($this->contact->conflictType) < CONFLICT_AUTHOR)
 		return ($isbool ? false : "Hidden for blind review");
+	    cleanAuthor($this->row);
 	    return $this->row->authorInformation;
 	}
 

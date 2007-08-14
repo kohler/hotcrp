@@ -131,7 +131,7 @@ body#autoassign div.body, body#scorehelp div.body, body#offrev div.body,
 body#settings div.body {
 	margin: 0px 0px;
 }
-body#mail td#mailref {
+body#mail td#mailref, pre.email, tt.email {
 	font-size: smaller;
 }
 
@@ -582,7 +582,7 @@ table.settings td.entry {
 	padding: 5px 1em 3px 0.75em;
 }
 td.lentry {
-	padding: 2px 0px;
+	padding: 2px 0.5em 2px 0em;
 }
 td.llentry {
 	padding: 0px 0.75em;
@@ -852,7 +852,8 @@ table.pltable th a.folder1, table.pltable th a.folder2, table.pltable th a.folde
 td#plact {
 	padding-top: 5px;
 }
-table.pltable th, table.ppltable th, table.altable th, table.setreviewform th {
+table.pltable th, table.ppltable th, table.altable th, table.setreviewform th,
+table.auedittable th {
 	text-align: left;
         padding-left: 0.125em;
 	padding-right: 0.125em;
@@ -924,11 +925,13 @@ tr.al td {
 }
 tr.pl_headrow td, tr.pl_headrow th, tr.al_headrow th, table.setreviewform th {
 	border-bottom: 1px solid #999999;
+}
+tr.pl_headrow td, tr.pl_footrow td, tr.pl_headrow th, tr.al_headrow th, 
+table.setreviewform th, table.auedittable th {
 	font-size: smaller;
 }
 tr.pl_footrow td {
 	padding-top: 3px;
-	font-size: smaller;
 }
 tr.pl_headgap td {
 	padding-top: 2px;
@@ -1096,7 +1099,7 @@ div.scorehelpc, div.scorehelpo {
 	min-width: 15em;
 	z-index: 5;
 }
-div.scorehelpc {
+div.scorehelpc, tr.aueditc td {
 	display: none;
 }
 div.scorehelpc span.rev_num, div.scorehelpo span.rev_num {

@@ -117,7 +117,7 @@ if ($getaction == "abstracts" && isset($papersel) && defval($_REQUEST["ajax"])) 
 	    $text .= "---------------------------------------------------------------------------\n";
 	    $l = strlen($text);
 	    if ($Me->canViewAuthors($prow, $Conf, $_REQUEST["t"] != "a"))
-		$text .= wordWrapIndent($prow->authorInformation, "Authors: ", 14) . "\n";
+		$text .= wordWrapIndent(cleanAuthorText($prow), "Authors: ", 14) . "\n";
 	    if ($prow->topicIds != "") {
 		$t = "";
 		$topics = ",$prow->topicIds,";
@@ -272,11 +272,17 @@ if ($getaction == "authors" && isset($papersel)
 	$idq = "($idq) and blind=0";
     $result = $Conf->qe("select paperId, title, authorInformation from Paper where $idq", "while fetching authors");
     if ($result) {
-	$text = "#paperId\ttitle\tauthor\n";
-	while (($row = edb_row($result))) {
-	    foreach (preg_split('/[\r\n]+/', $row[2]) as $au)
-		if (($au = trim(simplifyWhitespace($au))) != "")
-		    $text .= $row[0] . "\t" . $row[1] . "\t" . $au . "\n";
+	$text = "#paperId\ttitle\tauthor name\temail\taffiliation\n";
+	while (($row = edb_orow($result))) {
+	    cleanAuthor($row);
+	    foreach ($row->authorTable as $au) {
+		$text .= $row->paperId . "\t" . $row->title . "\t";
+		if ($au[0] && $au[1])
+		    $text .= $au[0] . " " . $au[1];
+		else
+		    $text .= $au[0] . $au[1];
+		$text .= "\t" . $au[2] . "\t" . $au[3] . "\n";
+	    }
 	}
 	downloadText($text, $Opt['downloadPrefix'] . "authors.txt", "authors");
 	exit;

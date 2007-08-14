@@ -242,26 +242,53 @@ class PaperTable {
 	echo "</td>\n</tr>\n\n";
     }
 
+    function echoEditableAuthors($prow) {
+	global $Conf;
+	echo "<div class='hint'>List the paper's authors one per line, including their email addresses and affiliations.";
+	if ($Conf->blindSubmission() == 2)
+	    echo " Submission is blind, so reviewers will not be able to see author information.";
+	echo "</div>\n";
+	echo "<table id='auedittable' class='auedittable'><tr><th></th><th>Name</th><th>Email</th><th>Affiliation</th></tr>\n";
+	$blankAu = array("", "", "", "");
+	$authorTable = ($this->useRequest && isset($_REQUEST["authorTable"]) ? $_REQUEST["authorTable"] : $prow->authorTable);
+	for ($n = 1; $n <= 25; $n++) {
+	    $au = ($n <= count($authorTable) ? $authorTable[$n - 1] : $blankAu);
+	    if ($au[0] && $au[1] && !preg_match('@^\s*(von\s+|van\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$@i', $au[1]))
+		$auname = $au[1] . ", " . $au[0];
+	    else if ($au[0] && $au[1])
+		$auname = $au[0] . " " . $au[1];
+	    else
+		$auname = $au[0] . $au[1];
+	    echo "<tr id='auedit$n' class='auedito'><td class='rxcaption'>", $n, ".</td>",
+		"<td class='lentry'><input class='textlite' type='text' name='auname$n' size='35' onchange='highlightUpdate()' value=\"", htmlspecialchars($auname), "\" /></td>",
+		"<td class='lentry'><input class='textlite' type='text' name='auemail$n' size='25' onchange='highlightUpdate()' value=\"", htmlspecialchars($au[2]), "\" /></td>",
+		"<td class='lentry'><input class='textlite' type='text' name='auaff$n' size='30' onchange='highlightUpdate()' value=\"", htmlspecialchars($au[3]), "\" /></td></tr>\n";
+	}
+	echo "</table><input id='aueditcount' type='hidden' name='aueditcount' value='25' />",
+	    "<script type='text/javascript'>authorfold(", max(count($authorTable) + 1, 5), ")</script>\n";
+    }
+
     function echoAuthorInformation($prow) {
 	global $Conf;
+	cleanAuthor($prow);
 	echo "<tr class='pt_authorInformation'>\n";
 	echo "  ", $this->tdCaption("authorInformation");
 	if ($this->authorsFolded)
 	    echo "<a href=\"javascript:fold('authors', 0, 8)\" class='foldbutton unfolder8'>+</a>",
 	    "<a href=\"javascript:fold('authors', 1, 8)\" class='foldbutton folder8'>&ndash;</a> ";
-	echo "Authors</td>\n";
-	echo "  ", $this->tdEntry("authorInformation");
-	if ($this->editable) {
-	    echo "<div class='hint'>List the paper's authors one per line, including their affiliations in parentheses.  For example: &ldquo;<tt>Francine Johnson (UCLA)</tt>&rdquo;";
-	    if ($Conf->blindSubmission() == 2)
-		echo " Submission is blind, so reviewers will not be able to see author information.";
-	    echo "</div>\n";
-	}	    
-	if ($this->authorsFolded == 1)
-	    echo"<span class='ellipsis8'><i>Hidden for blind review</i></span><span class='extension8'>";
-	$this->echoEntryData("authorInformation", $prow, 5, true);
-	if ($this->authorsFolded == 1)
-	    echo "</span>";
+	echo "Authors";
+	if ($this->editable)
+	    echo "<br /><small><a href='javascript:authorfold(numauthorfold+1)'>More</a> | <a href='javascript:authorfold(numauthorfold-1)'>Fewer</a></small>";
+	echo "</td>\n  ", $this->tdEntry("authorInformation");
+	if ($this->editable)
+	    $this->echoEditableAuthors($prow);
+	else {
+	    if ($this->authorsFolded == 1)
+		echo"<span class='ellipsis8'><i>Hidden for blind review</i></span><span class='extension8'>";
+	    $this->echoEntryData("authorInformation", $prow, 5, true);
+	    if ($this->authorsFolded == 1)
+		echo "</span>";
+	}
 	echo "</td>\n</tr>\n\n";
     }
 

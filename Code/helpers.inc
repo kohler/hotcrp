@@ -933,3 +933,72 @@ function scoreCounts($text, $max = null) {
     return (object) array("v" => $merit, "max" => count($merit),
 			  "n" => $n, "avg" => $avg, "stddev" => $dev);
 }
+
+function splitName($name) {
+    if (($p1 = strrpos($name, ",")) !== false) {
+	$first = trim(substr($name, $p1 + 1));
+	if (!preg_match('@^(Esq\.?|Ph\.?D\.?|M\.?[SD]\.?|Esquire|Junior|Senior|Jr.?|Sr.?|I+)$@i', $first))
+	    return array($first, trim(substr($name, 0, $p1)));
+    }
+    if (preg_match('@(von\s+|van\s+)?[^\s,]+(\s+Jr\.?|\s+Sr\.?|\s+i+|\s+Ph\.?D\.?|\s+M\.?[SD]\.?)?(,.*)?\s*$@i', $name, $matches))
+	return array(trim(substr($name, 0, strlen($name) - strlen($matches[0]))), trim($matches[0]));
+    else
+	return array("", trim($name));
+}
+
+function cleanAuthor($row) {
+    if (isset($row->authorTable))
+	return;
+    $row->authorTable = array();
+    if (strpos($row->authorInformation, "\t") === false) {
+	foreach (explode("\n", $row->authorInformation) as $line)
+	    if ($line != "") {
+		$email = $aff = "";
+		if (($p1 = strpos($line, '<')) !== false) {
+		    $p2 = strpos($line, '>', $p1);
+		    if ($p2 === false)
+			$p2 = strlen($line);
+		    $email = substr($line, $p1 + 1, $p2 - ($p1 + 1));
+		    $line = substr($line, 0, $p1) . substr($line, $p2 + 1);
+		}
+		if (($p1 = strpos($line, '(')) !== false) {
+		    $p2 = strpos($line, ')', $p1);
+		    if ($p2 === false)
+			$p2 = strlen($line);
+		    $aff = substr($line, $p1 + 1, $p2 - ($p1 + 1));
+		    $line = substr($line, 0, $p1) . substr($line, $p2 + 1);
+		    if (!$email && strpos($aff, '@') !== false
+			&& preg_match('_^\S+@\S+\.\S+$_', $aff)) {
+			$email = $aff;
+			$aff = '';
+		    }
+		}
+		$a = splitName($line);
+		$a[2] = $email;
+		$a[3] = $aff;
+		$row->authorTable[] = $a;
+	    }
+    } else {
+	$info = "";
+	foreach (explode("\n", $row->authorInformation) as $line)
+	    if ($line != "") {
+		$row->authorTable[] = $a = explode("\t", $line);
+		if ($a[0] && $a[1])
+		    $info .= "$a[0] $a[1]";
+		else
+		    $info .= $a[0] . $a[1];
+		if ($a[3])
+		    $info .= " (" . $a[3] . ")";
+		else if ($a[2])
+		    $info .= " <" . $a[2] . ">";
+		$info .= "\n";
+	    }
+	$row->authorInformation = $info;
+    }
+}
+
+function cleanAuthorText($row) {
+    if (!isset($row->authorTable) && strpos($row->authorInformation, "\t") !== false)
+	cleanAuthor($row);
+    return $row->authorInformation;
+}
