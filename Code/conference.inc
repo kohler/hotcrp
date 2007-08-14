@@ -115,6 +115,10 @@ class Conference {
 	    $this->q("update Settings set value=(select max(outcome) from Paper where timeSubmitted>0 group by paperId>0) where name='paperacc'");
     }
 
+    function qx($query) {
+	return mysql_query($query, $this->dblink);
+    }
+
     function q($query) {
 	global $OK;
 	$result = mysql_query($query, $this->dblink);
@@ -1024,7 +1028,7 @@ class Conference {
     function header_head($title) {
 	global $ConfSiteBase, $ConfSitePATH, $Opt;
 	if (!$this->headerPrinted) {
-	    echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n";
+	    echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n";
 	    // PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n";
 	    echo "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n<head>\n";
 	    echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n";

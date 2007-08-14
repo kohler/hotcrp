@@ -335,7 +335,7 @@ $paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->privCh
 
 
 // begin form and table
-echo "<form name='ass' action='assign.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>";
+echo "<form id='ass' action='assign.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>";
 	// onsubmit='return Miniajax.submit(\"ass\", {update:1})'>";
 $paperTable->echoDivEnter();
 echo "<table class='assign'>\n\n";
@@ -405,8 +405,8 @@ if ($Me->privChair) {
 	    echo str_replace(' ', "&nbsp;", contactHtml($p));
 	    if ($p->conflictType == 0 && $p->preference)
 		echo " [", htmlspecialchars($p->preference), "]";
-	    echo "</td><td class='ass' nowrap='nowrap'>";
-	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href=\"javascript:foldassign($p->contactId)\"><img alt='Assignment' name='assimg$p->contactId' src=\"${ConfSiteBase}images/ass$cid.png\" /><img alt='&gt;' src=\"${ConfSiteBase}images/next.png\" /></a>&nbsp;";
+	    echo "</td><td class='ass nowrap'>";
+	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href=\"javascript:foldassign($p->contactId)\"><img alt='Assignment' id='assimg$p->contactId' src=\"${ConfSiteBase}images/ass$cid.png\" /><img alt='&gt;' src=\"${ConfSiteBase}images/next.png\" /></a>&nbsp;";
 	    echo "<select id='pcs", $p->contactId, "' name='pcs", $p->contactId, "' class='extension' size='4' onchange='selassign(this, $p->contactId)' onclick='selassign(null, $p->contactId)' onblur='selassign(0, $p->contactId)' style='position: absolute'>
 	<option value='0'", ($p->conflictType == 0 && $p->reviewType < REVIEW_SECONDARY ? " selected='selected'" : ""), ">None</option>
 	<option value='", REVIEW_PRIMARY, "' ", ($p->conflictType == 0 && $p->reviewType == REVIEW_PRIMARY ? " selected='selected'" : ""), ">Primary</option>
@@ -491,7 +491,7 @@ $Conf->infoMsg("External reviewers get access to their assigned papers, includin
 
 echo "<table class='reviewers'>\n";
 
-echo "    <tr><td nowrap='nowrap'><input class='textlite' type='text' name='name' value=\"";
+echo "    <tr><td class='nowrap'><input class='textlite' type='text' name='name' value=\"";
 echo (isset($_REQUEST['name']) ? htmlspecialchars($_REQUEST['name']) : "Name");
 echo "\" onfocus=\"tempText(this, 'Name', 1)\" onblur=\"tempText(this, 'Name', 0)\" />
 	<input class='textlite' type='text' name='email' value=\"";

@@ -360,7 +360,7 @@ function _tryNewList($opt) {
     if ($search->q  || $search->qa || $search->qx)
 	$_SESSION["list"]["description"] .= " search";
     unset($_SESSION["matchPreg"]);
-    $Conf->q("drop temporary table Matches");
+    $Conf->qx("drop temporary table Matches");
 }
 
 function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {

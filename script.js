@@ -109,7 +109,7 @@ function contactPulldown(which) {
 }
 
 function shiftPassword(direction) {
-    var form = document.forms["account"];
+    var form = e("accountform");
     if (form && form.upassword && form.upasswordt && form.upassword.value != form.upasswordt.value)
 	if (direction)
 	    form.upasswordt.value = form.upassword.value;
@@ -180,7 +180,7 @@ function foldassign(which) {
 function selassign(elt, which) {
     if (elt) {
 	e("ass" + which).className = "name" + elt.value;
-	var i = document.images["assimg" + which];
+	var i = e("assimg" + which);
 	i.src = i.src.replace(/ass-?\d/, "ass" + elt.value);
 	highlightUpdate();
     }
@@ -242,7 +242,7 @@ function maketemptext(input, text, on) {
 
 function makerevprefajax(input, paperId) {
     return function() {
-	var form = document.forms["prefform"];
+	var form = e("prefform");
 	if (form && form.paperId && form.revpref) {
 	    form.paperId.value = paperId;
 	    form.revpref.value = input.value;
@@ -376,7 +376,7 @@ Miniajax.newRequest = function() {
     return null;
 };
 Miniajax.submit = function(formname, extra, callback) {
-    var form = document.forms[formname], req = Miniajax.newRequest();
+    var form = e(formname), req = Miniajax.newRequest();
     if (!form || !req || form.method != "post")
 	return true;
     var resultelt = e(formname + "result");

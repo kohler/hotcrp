@@ -885,7 +885,7 @@ class PaperList extends BaseList {
 	if ($abstractinfo)
 	    $x .= ($this->foldedAbstract !== false ? " fold5c" : " fold5o");
 	if ($abstractinfo && $this->foldedAbstract !== false && count($this->foldedAbstract))
-	    $Conf->footerStuff .= "<form id='abstractloadform' method='post' action='${ConfSiteBase}search.php?get=abstracts&amp;ajax=1'><input type='hidden' name='pap' value='" . join(" ", $this->foldedAbstract) . "' /><span id='abstractloadformresult'></span></form><script type='text/javascript'>ajaxAbstracts = true;</script>";
+	    $Conf->footerStuff .= "<form id='abstractloadform' method='post' action='${ConfSiteBase}search.php?get=abstracts&amp;ajax=1'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedAbstract) . "' /></div></form><script type='text/javascript'>ajaxAbstracts = true;</script>";
 	if ($authorinfo || !$unfolded || $taginfo || $abstractinfo)
 	    $x .= "\" id=\"foldpl";
 	$x .= "\">\n";

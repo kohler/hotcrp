@@ -124,7 +124,7 @@ $Conf->header("Sign in", 'login');
 
 ?>
 
-<form method='post' action='login.php'>
+<form method='post' action='login.php'><div>
 <input type='hidden' name='cookie' value='1' />
 <table class='form'>
 <tr class='topspace'>
@@ -149,8 +149,7 @@ $Conf->header("Sign in", 'login');
   <td class='entry' colspan='2'><input class='button_default' type='submit' value='Sign in' name='signin' tabindex='1' /></td>
 </tr>
 
-</table>
-</form>
+</table></div></form>
 
 <?php
 $Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"login\", null, 2);</script>";

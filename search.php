@@ -523,10 +523,10 @@ echo "<table id='searchform' class='tablinks$activetab'>
 <tr><td><div class='tlx'><div class='tld1'>";
 
 // Basic Search
-echo "<form method='get' action='search.php'>
+echo "<form method='get' action='search.php'><div class='inform'>
   <input id='searchform1_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /> &nbsp;in &nbsp;$tselect &nbsp;
   <input class='button' name='go' type='submit' value='Search' />
-</form>";
+</div></form>";
 
 echo "</div><div class='tld2'>";
 
@@ -579,7 +579,7 @@ echo "</select></td>
 echo "</div><div class='tld3'>";
 
 // Display options
-echo "<form method='get' action='search.php'>\n";
+echo "<form method='get' action='search.php'><div>\n";
 foreach (array("q", "qx", "qa", "qt", "t", "sort") as $x)
     if (isset($_REQUEST[$x]))
 	echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
@@ -651,7 +651,7 @@ if (isset($pl->scoreMax)) {
     }
     echo "</select></td></tr>";
 }
-echo "</table></form></div></div></td></tr>\n";
+echo "</table></div></form></div></div></td></tr>\n";
 
 // Tab selectors
 echo "<tr><td class='tllx'><table><tr>

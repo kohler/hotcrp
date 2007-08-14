@@ -687,11 +687,11 @@ if ($mode != "edit" && $mainPreferences && $prow->conflictType <= 0) {
     if (isset($PaperError['revpref']))
 	echo " error";
     echo "'>Review preference</td>
-  <td class='entry'><form id='prefform' name='prefform' action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1\" method='post' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"prefform\", {setrevpref:1})'>
+  <td class='entry'><form id='prefform' action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1\" method='post' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"prefform\", {setrevpref:1})'><div class='inform'>
     <input id='prefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$x\" onfocus=\"tempText(this, '0', 1)\" onblur=\"tempText(this, '0', 0)\" onchange='Miniajax.submit(\"prefform\", {setrevpref:1})' tabindex='1' />&nbsp;
     <input class='button_small' type='submit' value='Save preference' tabindex='1' />
     <span id='prefformresult' style='padding-left:1em'></span>
-  </form></td>
+  </div></form></td>
 </tr>\n\n";
     $Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"prefform\", null, 2);</script>";
 }
@@ -729,12 +729,12 @@ if ($mode == "edit") {
 	    $Conf->footerStuff .= "<div id='popup_w' class='popupc'><p>Are you sure you want to withdraw this paper from consideration and/or publication?";
 	    if (!$Me->privChair || $prow->conflictType == CONFLICT_AUTHOR)
 		$Conf->footerStuff .= "  Only administrators can undo this step.";
-	    $Conf->footerStuff .= "</p><div class='popup_actions'><form method='post' action=\"paper.php?paperId=$paperId&amp;post=1&amp;mode=edit\" enctype='multipart/form-data'><input class='button' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'w', 1)\">Cancel</button></form></div></div>";
+	    $Conf->footerStuff .= "</p><form method='post' action=\"paper.php?paperId=$paperId&amp;post=1&amp;mode=edit\" enctype='multipart/form-data'><div class='popup_actions'><input class='button' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'w', 1)\">Cancel</button></div></form></div>";
 	}
     }
     if ($Me->privChair && !$newPaper) {
 	$buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete paper</button>", "(admin only)");
-	$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><div class='popup_actions'><form method='post' action=\"paper.php?paperId=$paperId&amp;post=1&amp;mode=edit\" enctype='multipart/form-data'><input class='button' type='submit' name='delete' value='Delete paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></form></div></div>";
+	$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"paper.php?paperId=$paperId&amp;post=1&amp;mode=edit\" enctype='multipart/form-data'><div class='popup_actions'><input class='button' type='submit' name='delete' value='Delete paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
     }
     echo "    <tr>\n";
     foreach ($buttons as $b) {

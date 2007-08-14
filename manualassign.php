@@ -24,7 +24,7 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && $kind == "c") {
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
 $abar .= actionTab("Automatic", "../autoassign.php", false);
 $abar .= actionTab("Manual", "AssignPapers.php", true);
-$abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper' nowrap='nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
+$abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 
 $Conf->header("Review Assignments", "assignpc", $abar);
@@ -94,10 +94,10 @@ and <img src='${ConfSiteBase}images/ass", REVIEW_SECONDARY, ".png' alt='Secondar
 Click on a column heading to sort by that column.</p>\n\n";
 
 
-echo "<form method='get' action='AssignPapers.php' name='selectReviewer'>\n";
+echo "<form method='get' action='AssignPapers.php' id='selectreviewerform'><div class='inform'>\n";
 if (isset($_REQUEST["sort"]))
     echo "  <input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />\n";
-echo "  <select name='reviewer' onchange='document.selectReviewer.submit()'>\n";
+echo "  <select name='reviewer' onchange='e(\"selectreviewerform\").submit()'>\n";
 
 $query = "select ContactInfo.contactId, firstName, lastName,
 		count(reviewId) as reviewCount
@@ -116,10 +116,10 @@ while (($row = edb_orow($result))) {
     echo "</option>";
 }
 
-echo "</select><span class='lgsep'></span>Show:&nbsp; <select name='kind' onchange='document.selectReviewer.submit()'>\n";
+echo "</select><span class='lgsep'></span>Show:&nbsp; <select name='kind' onchange='e(\"selectreviewerform\").submit()'>\n";
 echo "  <option value='c'", ($kind == "c" ? " selected='selected'" : ""), ">Conflicts only</option>\n";
 echo "  <option value='a'", ($kind == "a" ? " selected='selected'" : ""), ">Assignments and conflicts</option>\n";
-echo "</select></form>\n\n";
+echo "</select></div></form>\n\n";
 
 
 if ($reviewer >= 0) {
@@ -171,12 +171,12 @@ if ($reviewer >= 0) {
     echo "<form class='assignpc' method='post' action=\"AssignPapers.php?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
     if (isset($_REQUEST["sort"]))
 	echo "&amp;sort=", urlencode($_REQUEST["sort"]);
-    echo "\" enctype='multipart/form-data'>\n";
+    echo "\" enctype='multipart/form-data'><div>\n";
     echo $paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me);
     //if (isset($sau) && ($paperList->authorMatch || $paperList->collaboratorsMatch))
     //   $_SESSION["matchPreg"] = "/(" . $paperList->authorMatch . ($paperList->authorMatch && $paperList->collaboratorsMatch ? "|" : "") . $paperList->collaboratorsMatch . ")/i";
     echo "<input class='button_default' type='submit' name='update' value='Save assignments' />\n";
-    echo "</form>\n";
+    echo "</div></form>\n";
 }
 
 $Conf->footer();

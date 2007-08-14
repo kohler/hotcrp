@@ -149,12 +149,12 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     
     // field name
     $e = (isset($Error[$row->fieldName]) ? " error" : "");
-    $x .= "<$trclass><td class='rxcaption$e' nowrap='nowrap'>Field name</td><td colspan='3' class='entry$e'><b><input type='text' size='50' class='textlite' name='shortName_$row->fieldName' value=\""
+    $x .= "<$trclass><td class='rxcaption nowrap$e'>Field name</td><td colspan='3' class='entry$e'><b><input type='text' size='50' class='textlite' name='shortName_$row->fieldName' value=\""
 	. htmlspecialchars(rf_getField($row, 'shortName'))
 	. "\" onchange='highlightUpdate()' /></b></td></tr>\n";
 
     // form position
-    $x .= "<$trclass><td class='rxcaption' nowrap='nowrap'>Form position</td><td class='entry'>"
+    $x .= "<$trclass><td class='rxcaption nowrap'>Form position</td><td class='entry'>"
 	. "<select name='order_$row->fieldName' onchange='highlightUpdate()'>\n"
 	. "  <option value='-1'";
     if ($ordinalOrder < 0)

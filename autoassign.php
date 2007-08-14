@@ -331,7 +331,7 @@ else if (isset($_REQUEST["saveassign"]) && isset($_REQUEST["a"]) && isset($_REQU
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
 $abar .= actionTab("Automatic", "autoassign.php", true);
 $abar .= actionTab("Manual", "Chair/AssignPapers.php", false);
-$abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper' nowrap='nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
+$abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 
 $Conf->header("Review Assignments", "autoassign", $abar);

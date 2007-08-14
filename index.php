@@ -75,7 +75,9 @@ if ($homelist) {
     }
 
     echo "</td></tr><tr><td id='homesearch'>";
-    echo "<form method='get' action='search.php'><input class='textlite' type='text' size='32' name='q' value='' /> &nbsp;<input class='button_small' type='submit' value='Search' /></form>\n";
+    echo "<form method='get' action='search.php'><div class='inform'>",
+	"<input class='textlite' type='text' size='32' name='q' value='' /> &nbsp;<input class='button_small' type='submit' value='Search' />",
+	"</div></form>\n";
     echo "<span class='sep'></span><small><a href='search.php?opt=1'>Advanced search</a></small>";
     echo "</td></tr></table><hr class='home' /></td></tr>\n";
 }

@@ -129,7 +129,7 @@ if (count($tOpt) > 1) {
     echo "<table id='contactsform' class='tablinks1'>
 <tr><td><div class='tlx'><div class='tld1'>";
     
-    echo "<form method='get' action='contacts.php'>";
+    echo "<form method='get' action='contacts.php'><div class='inform'>";
     if (isset($_REQUEST["sort"]))
 	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />";
     echo "<select id='contactsform1_d' name='t'>";
@@ -139,12 +139,12 @@ if (count($tOpt) > 1) {
 	    echo " selected='selected'";
 	echo ">$v</option>";
 }
-    echo "</select> &nbsp;<input class='button' type='submit' value='Show' /></form>";
+    echo "</select> &nbsp;<input class='button' type='submit' value='Show' /></div></form>";
 
     echo "</div><div class='tld2'>";
 
     // Display options
-    echo "<form method='get' action='contacts.php'>\n";
+    echo "<form method='get' action='contacts.php'><div>\n";
     foreach (array("t", "sort") as $x)
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
@@ -190,7 +190,7 @@ if (count($tOpt) > 1) {
 	}
 	echo "</select></td></tr>";
     }
-    echo "</table></form>";
+    echo "</table></div></form>";
     
     echo "</div></div></td></tr>\n";
 
@@ -210,14 +210,14 @@ else if ($Me->privChair && $_REQUEST["t"] == "all")
 
 
 if ($pl->anySelector) {
-    echo "<form method='get' action='contacts.php'>";
+    echo "<form method='get' action='contacts.php'><div>";
     foreach (array("t", "sort") as $x)
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
 }
 echo $pl_text;
 if ($pl->anySelector)
-    echo "</form>";
+    echo "</div></form>";
 
 
 $Conf->footer();

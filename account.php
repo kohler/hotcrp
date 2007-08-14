@@ -197,7 +197,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Acct->isPC) {
  }
 
 
-echo "<form name='account' method='post' action='account.php'>\n";
+echo "<form id='accountform' method='post' action='account.php'><div>\n";
 if ($newProfile)
     echo "<input type='hidden' name='new' value='1' />\n";
 else if ($Me->contactId != $Acct->contactId)
@@ -359,7 +359,7 @@ echo "<tr><td class='caption'></td>
     <div class='xsmgap'></div></td>
 </tr>
 <tr class='last'><td class='caption'></td></tr>
-</table></form>\n";
+</table></div></form>\n";
 
 
 $Conf->footer();

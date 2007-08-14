@@ -95,8 +95,6 @@ if ($needMsg)
     $Conf->infoMsg("Use this screen to add more contact authors for your paper.  Any contact author can edit paper information, upload new versions, submit the paper, and view reviews." . ($Me->privChair ? "" : "  Only system administrators can <i>remove</i> contact authors from the paper, so act carefully."));
 
 
-
-
 if ($OK) {    
     $paperTable = new PaperTable(false, false, true, false);
     
@@ -148,7 +146,6 @@ if ($OK) {
     
 } else {
     $Conf->errorMsg("The paper disappeared!");
-    printPaperLinks();
 }
 
 $Conf->footer();

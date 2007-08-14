@@ -116,12 +116,12 @@ unset($_SESSION["matchPreg"]);
 echo "<table id='searchform' class='tablinks1'>
 <tr><td>"; // <div class='tlx'><div class='tld1'>";
 
-echo "<form method='get' action='reviewprefs.php' name='redisplayform'>\n<table>";
+echo "<form method='get' action='reviewprefs.php' id='redisplayform'>\n<table>";
 $redisplayButton = "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td>";
 
 if ($Me->privChair) {
     echo "<tr><td><strong>Preferences:</strong> &nbsp;</td><td class='pad'>",
-	"<select name='reviewer' onchange='document.redisplayform.submit()'>";
+	"<select name='reviewer' onchange='e(\"redisplayform\").submit()'>";
 
     $query = "select ContactInfo.contactId, firstName, lastName,
 		count(preference) as preferenceCount
@@ -175,12 +175,12 @@ echo "</td></tr></table>\n";
 
 
 // ajax preferences form
-echo "<form name='prefform' method='post' action=\"${ConfSiteBase}paper.php\" enctype='multipart/form-data'>
-  <input type='hidden' name='paperId' value='' />
-  <input type='hidden' name='revpref' value='' />\n";
+echo "<form id='prefform' method='post' action=\"${ConfSiteBase}paper.php\" enctype='multipart/form-data'><div>",
+    "<input type='hidden' name='paperId' value='' />",
+    "<input type='hidden' name='revpref' value='' />";
 if ($Me->privChair)
-    echo "  <input type='hidden' name='contactId' value='$reviewer' />\n";
-echo "</form>\n\n";
+    echo "<input type='hidden' name='contactId' value='$reviewer' />";
+echo "</div></form>\n\n";
 
 
 // main form

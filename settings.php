@@ -501,7 +501,7 @@ function doAccGroup() {
 // Messages
 function doMsgGroup() {
     global $Conf, $ConfSiteBase;
-    echo "<strong>Home page message</strong> (HTML allowed)</strong><br />
+    echo "<strong>Home page message</strong> (HTML allowed)<br />
 <textarea class='textlite' name='homemsg' cols='60' rows='10' onchange='highlightUpdate()'>", htmlspecialchars($Conf->settingText("homemsg")), "</textarea>";
 }
 
@@ -697,8 +697,7 @@ function doDecGroup() {
 
 $belowHr = true;
 
-echo "<form method='post' action='settings.php?post=1' enctype='multipart/form-data'>
-<input type='hidden' name='group' value='$Group' />\n";
+echo "<form method='post' action='settings.php?post=1' enctype='multipart/form-data'><div><input type='hidden' name='group' value='$Group' />\n";
 
 echo "<table class='settings'><tr><td class='caption'>";
 echo "<table class='lhsel'>";
@@ -739,6 +738,8 @@ echo "<input type='submit' class='button",
     "' name='update' value='Save changes' /> ";
 echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />";
 
-echo "</td></tr><tr class='last'><td class='caption'></td></table></form>\n";
+echo "</td></tr>
+<tr class='last'><td class='caption'></td></tr>
+</table></div></form>\n";
 
 $Conf->footer();
