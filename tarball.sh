@@ -76,6 +76,7 @@ Code/tags.inc
 
 Code/Mail-1.1.14
 
+images/.htaccess
 images/_.gif
 images/GenChart.php
 images/ass-1.png

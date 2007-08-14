@@ -22,8 +22,6 @@ class Conference {
     var $tableMessages;
     var $tableMessagesObj;
 
-    var $imageMtimes;
-
     var $footerStuff;
 
     // Useful colors
@@ -37,7 +35,6 @@ class Conference {
 	$this->headerPrinted = 0;
 	$this->tableMessages = false;
 	$this->footerStuff = "";
-	$this->imageMtimes = array();
 	
 	$this->contactName = $Opt['contactName'];
 	$this->contactEmail = $Opt['contactEmail'];
@@ -378,9 +375,7 @@ class Conference {
 
     function cacheableImage($name, $alt = null, $title = null, $class = null) {
 	global $ConfSiteBase, $ConfSitePATH;
-	if (!isset($this->imageMtime[$name]))
-	    $this->imageMtime[$name] = filemtime("$ConfSitePATH/images/$name");
-	$t = "<img src='${ConfSiteBase}cacheable.php?file=images/$name&amp;mtime=" . $this->imageMtime[$name] . "'";
+	$t = "<img src='${ConfSiteBase}images/$name'";
 	if ($alt)
 	    $t .= " alt=\"$alt\"";
 	if ($title)
