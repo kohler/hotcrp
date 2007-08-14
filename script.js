@@ -26,10 +26,10 @@ function hotcrpLoad(servtime, servzone) {
     }
 }
 
-function highlightUpdate(which, classmod) {
+function highlightUpdate(which, off) {
     if (typeof which == "string") {
 	var result = e(which + "result");
-	if (result && !classmod)
+	if (result && !off)
 	    result.innerHTML = "";
 	which = e(which);
     }
@@ -39,13 +39,13 @@ function highlightUpdate(which, classmod) {
 	var ins = which.getElementsByTagName("input");
 	for (var i = 0; i < ins.length; i++)
 	    if (ins[i].name == "update" || ins[i].name == "submit" || !ins[i].name)
-		highlightUpdate(ins[i], classmod);
+		highlightUpdate(ins[i], off);
     }
     if (which.className) {
 	var cc = which.className;
 	if (cc.length > 6 && cc.substring(cc.length - 6) == "_alert")
 	    cc = cc.substring(0, cc.length - 6);
-	which.className = cc + (classmod ? classmod : "_alert");
+	which.className = cc + (off ? "" : "_alert");
     }
 }
 
@@ -400,7 +400,7 @@ Miniajax.submit = function(formname, extra, callback) {
 	    var rv = eval(req.responseText);
 	    callback(rv);
 	    if (rv.ok)
-		highlightUpdate(form, "");
+		highlightUpdate(form, true);
 	} else {
 	    resultelt.innerHTML = "<span class='error'>Network error.  Please try again.</span>";
 	    form.onsubmit = "";
