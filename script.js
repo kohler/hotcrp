@@ -29,7 +29,7 @@ function hotcrpLoad(servtime, servzone) {
 function highlightUpdate(which, classmod) {
     if (typeof which == "string") {
 	var result = e(which + "result");
-	if (result && classmod == null)
+	if (result && !classmod)
 	    result.innerHTML = "";
 	which = e(which);
     }
@@ -45,7 +45,7 @@ function highlightUpdate(which, classmod) {
 	var cc = which.className;
 	if (cc.length > 6 && cc.substring(cc.length - 6) == "_alert")
 	    cc = cc.substring(0, cc.length - 6);
-	which.className = cc + (classmod == null ? "_alert" : classmod);
+	which.className = cc + (classmod ? classmod : "_alert");
     }
 }
 

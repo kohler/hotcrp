@@ -221,7 +221,9 @@ class ContactList extends BaseList {
 	    else if ($row->pc && $this->limit != "pc")
 		$t .= " <span class='pcrole'>(PC)</span>";
 	    if ($this->contact->privChair && $row->email != $this->contact->email)
-		$t .= " <a href=\"${ConfSiteBase}index.php?viewContact=" . urlencode($row->email) . "\"><img src='${ConfSiteBase}images/viewas.png' title=\"Act as " . htmlspecialchars(contactNameText($row)) . "\" alt='[Act as]' /></a>";
+		$t .= " <a href=\"${ConfSiteBase}index.php?viewContact=" . urlencode($row->email) . "\">"
+		    . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . htmlspecialchars(contactNameText($row)))
+		    . "</a>";
 	    return $t;
 	case self::FIELD_EMAIL:
 	    if (!$this->contact->isPC)
@@ -353,7 +355,7 @@ class ContactList extends BaseList {
 	if ($this->count == 0)
 	    return "";
 	
-	$t = "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'><img src=\"${ConfSiteBase}images/bendulft.png\" style='position: relative; top: 6px' alt='^^' /></td>\n";
+	$t = "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'>" . $Conf->cacheableImage("bendulft.png", "^^", null, "placthook") . "</td>\n";
 	$t .= "    <td id='pplact' class='linelinks1' colspan='" . ($ncol - 1) . "'><b>Select people</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
 
 	// Begin linelinks

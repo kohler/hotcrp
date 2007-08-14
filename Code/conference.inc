@@ -22,6 +22,8 @@ class Conference {
     var $tableMessages;
     var $tableMessagesObj;
 
+    var $imageMtimes;
+
     var $footerStuff;
 
     // Useful colors
@@ -35,6 +37,7 @@ class Conference {
 	$this->headerPrinted = 0;
 	$this->tableMessages = false;
 	$this->footerStuff = "";
+	$this->imageMtimes = array();
 	
 	$this->contactName = $Opt['contactName'];
 	$this->contactEmail = $Opt['contactEmail'];
@@ -370,6 +373,21 @@ class Conference {
 	echo "You need to <a href=\"$url\"> login </a> </p> </body>";
 	echo "</html>";
 	exit();
+    }
+
+
+    function cacheableImage($name, $alt = null, $title = null, $class = null) {
+	global $ConfSiteBase, $ConfSitePATH;
+	if (!isset($this->imageMtime[$name]))
+	    $this->imageMtime[$name] = filemtime("$ConfSitePATH/images/$name");
+	$t = "<img src='${ConfSiteBase}cacheable.php?file=images/$name&amp;mtime=" . $this->imageMtime[$name] . "'";
+	if ($alt)
+	    $t .= " alt=\"$alt\"";
+	if ($title)
+	    $t .= " title=\"$title\"";
+	if ($class)
+	    $t .= " class=\"$class\"";
+	return $t . " />";
     }
 
 
@@ -1036,9 +1054,9 @@ class Conference {
 	    echo "<meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />\n";
 	    if (strstr($title, "<") !== false)
 		$title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
-	    echo "<title>", $title, " - ", $this->shortName, "</title>\n";
 	    echo "<script type='text/javascript' src='${ConfSiteBase}cacheable.php?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "'></script>\n";
 	    echo "<link rel='stylesheet' type='text/css' href='${ConfSiteBase}cacheable.php?file=style.css&amp;mtime=" . filemtime("$ConfSitePATH/style.css") . "' />\n";
+	    echo "<title>", $title, " - ", $this->shortName, "</title>\n";
 	    $this->headerPrinted = 1;
 	}
     }

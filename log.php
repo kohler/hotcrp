@@ -90,7 +90,7 @@ if ($_REQUEST["date"] != "now" && isset($_REQUEST["search"]))
     }
 
 function searchbar() {
-    global $ConfSiteBase, $Eclass, $page, $start, $count, $nrows, $maxNrows, $offset;
+    global $Conf, $ConfSiteBase, $Eclass, $page, $start, $count, $nrows, $maxNrows, $offset;
     
     echo "<form method='get' action='log.php'>
 <table id='searchform'><tr>
@@ -123,7 +123,7 @@ function searchbar() {
 	    echo "<a href='$url&amp;page=1'><strong>Newest</strong></a> &nbsp;|&nbsp;&nbsp;";
 	echo "</div></td><td id='newer'><div>";
 	if ($page > 1)
-	    echo "<a href='$url&amp;page=", ($page - 1), "'><strong><img src='${ConfSiteBase}images/prev.png' alt='&lt;-' /> Newer</strong></a>";
+	    echo "<a href='$url&amp;page=", ($page - 1), "'><strong>", $Conf->cacheableImage("prev.png", "&lt;-"), " Newer</strong></a>";
 	echo "</div></td><td id='newnum'><div>";
 	if ($page - 4 > 0)
 	    echo "&nbsp;...";
@@ -137,7 +137,7 @@ function searchbar() {
 	    echo "...&nbsp;";
 	echo "</div></td><td id='older'><div>";
 	if ($nrows > $count)
-	    echo "<a href='$url&amp;page=", ($page + 1), "'><strong>Older <img src='${ConfSiteBase}images/next.png' alt='-&gt;' /></strong></a>";
+	    echo "<a href='$url&amp;page=", ($page + 1), "'><strong>Older ", $Conf->cacheableImage("next.png", "-&gt;"), "</strong></a>";
 	echo "</div></td><td id='oldest'><div>";
 	if ($nrows > $count)
 	    echo "&nbsp;&nbsp;|&nbsp; <a href='$url&amp;page=earliest'><strong>Oldest</strong></a>";

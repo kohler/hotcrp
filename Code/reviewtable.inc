@@ -58,7 +58,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	if ($prow->conflictType > 0 && !$effAssistant)
 	    $x = "";
 	else if ($rr->reviewType > 0)
-	    $x = "<img src='${ConfSiteBase}images/ass" . $rr->reviewType . ".png' alt='" . $reviewTypeName[$rr->reviewType] . "' />";
+	    $x = $Conf->cacheableImage("ass$rr->reviewType.png", $reviewTypeName[$rr->reviewType]);
 	else
 	    $x = "";
 
@@ -68,7 +68,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	else if ($mode == "assign") {
 	    $t .= "<td>" . contactHtml($rr);
 	    if ($Me->privChair && $rr->email != $Me->email)
-		$t .= " <a href=\"" . htmlspecialchars(selfHref(array("viewContact" => $rr->email))) . "\"><img src='${ConfSiteBase}images/viewas.png' title=\"Act as " . contactHtml($rr->firstName, $rr->lastName) . "\" alt='[Act as]' /></a>";
+		$t .= " <a href=\"" . htmlspecialchars(selfHref(array("viewContact" => $rr->email))) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . contactHtml($rr->firstName, $rr->lastName)) . "</a>";
 	    $t .= "</td>";
 	} else
 	    $t .= "<td>" . contactHtml($rr->firstName, $rr->lastName) . ($x ? " $x" : "") . "</td>";

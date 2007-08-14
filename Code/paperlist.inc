@@ -367,9 +367,9 @@ class PaperList extends BaseList {
 	if ($row->size == 0 || !$this->contact->canDownloadPaper($row, $Conf))
 	    return "";
 	else if ($row->mimetype == "application/pdf")
-	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\"><img src=\"${ConfSiteBase}images/pdf.png\" alt='[PDF]' /></a>";
+	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\">" . $Conf->cacheableImage("pdf.png", "[PDF]") . "</a>";
 	else if ($row->mimetype == "application/postscript")
-	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\"><img src=\"${ConfSiteBase}images/postscript.png\" alt='[PS]' /></a>";
+	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\">" . $Conf->cacheableImage("postscript.png", "[PS]") . "</a>";
 	else
 	    return "&nbsp;<small><a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\">[Download]</a></small>";
     }
@@ -474,7 +474,7 @@ class PaperList extends BaseList {
 		    $alt .= " (not complete)";
 		}
 	    }
-	    return "$a1<img src='${ConfSiteBase}images/ass$which.png' alt='$alt' title='$alt' />$a2";
+	    return $a1 . $Conf->cacheableImage("ass$which.png", $alt, $alt) . $a2;
 	case self::FIELD_REVIEWS_STATUS:
 	    if ($row->reviewCount != $row->startedReviewCount)
 		return "<b>$row->reviewCount</b>/$row->startedReviewCount";
@@ -518,9 +518,9 @@ class PaperList extends BaseList {
 			$n .= ($n ? ", " : "");
 			$n .= contactHtml($xrow->firstName, $xrow->lastName);
 			if ($xrow->reviewType == REVIEW_PRIMARY)
-			    $n .= "&nbsp;<img src='${ConfSiteBase}images/ass" . REVIEW_PRIMARY . ".png' alt='Primary' />";
+			    $n .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_PRIMARY . ".png", "Primary");
 			else if ($xrow->reviewType == REVIEW_SECONDARY)
-			    $n .= "&nbsp;<img src='${ConfSiteBase}images/ass" . REVIEW_SECONDARY . ".png' alt='Secondary' />";
+			    $n .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_SECONDARY . ".png", "Secondary");
 		    }
 	    return $n;
 	case self::FIELD_REVIEWER_PREFERENCE:
@@ -593,7 +593,7 @@ class PaperList extends BaseList {
 	    return "";
 	
 	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
-	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'><img src=\"${ConfSiteBase}images/bendulft.png\" style='position: relative; top: 6px' alt='^^' /></td>\n";
+	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'>" . $Conf->cacheableImage("bendulft.png", "^^", null, "placthook") . "</td>\n";
 	$t .= "    <td id='plact' class='linelinks1' colspan='" . ($ncol - 1) . "'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
 
 	// Begin linelinks

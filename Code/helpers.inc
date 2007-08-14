@@ -187,9 +187,9 @@ function paperDownload($prow, $final = false, $conf = null) {
     $mimetype = defval($prow->mimetype, "");
     $p = $conf->makeDownloadPath($prow->paperId, $mimetype, $final);
     if ($mimetype == "application/postscript")
-	$x = "<a href=\"$p\" class='q'><img src='${ConfSiteBase}images/postscript24.png' alt='[PS]' class='dlimg' />";
+	$x = "<a href=\"$p\" class='q'>" . $Conf->cacheableImage("postscript24.png", "[PS]", null, "dlimg");
     else if ($mimetype == "application/pdf")
-	$x = "<a href=\"$p\" class='q'><img src='${ConfSiteBase}images/pdf24.png' alt='[PDF]' class='dlimg' />";
+	$x = "<a href=\"$p\" class='q'>" . $Conf->cacheableImage("pdf24.png", "[PDF]", null, "dlimg");
     else
 	$x .= "<a href=\"$p\">View paper";
 
@@ -256,7 +256,7 @@ function topicTable($prow, $active = 0, $conf = null) {
 }
 
 function authorTable($aus, $viewAs = null) {
-    global $ConfSiteBase;
+    global $Conf, $ConfSiteBase;
     $out = "";
     if (!is_array($aus))
 	$aus = explode("\n", $aus);
@@ -269,7 +269,7 @@ function authorTable($aus, $viewAs = null) {
 		$out .= "<span class='autblentry'>";
 	    $out .= $au;
 	    if ($viewAs !== null && is_array($aux) && count($aux) >= 2 && $viewAs->email != $aux[2] && $viewAs->privChair)
-		$out .= " <a href=\"" . htmlspecialchars(selfHref(array("viewContact" => $aux[2]))) . "\"><img src='${ConfSiteBase}images/viewas.png' title=\"Act as " . (is_array($aux) ? contactNameHtml($aux) : $aux) . "\" alt='[Act as]' /></a>";
+		$out .= " <a href=\"" . htmlspecialchars(selfHref(array("viewContact" => $aux[2]))) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . (is_array($aux) ? contactNameHtml($aux) : $aux)) . "</a>";
 	    $out .= "</span> ";
 	}
     }
@@ -364,7 +364,7 @@ function _tryNewList($opt) {
 }
 
 function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
-    global $Me, $ConfSiteBase;
+    global $Me, $ConfSiteBase, $Conf;
 
     if (isset($_REQUEST["list"]) && substr($_REQUEST["list"], 0, 4) == "list"
 	&& strlen($_REQUEST["list"]) > 4 && isset($_SESSION[$_REQUEST["list"]])) {
@@ -402,7 +402,9 @@ function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
     $x = "";
     if ($k > 0)
 	$x .= "<a href=\"${ConfSiteBase}$baseUrl?paperId="
-	    . $list[$k - 1] . $urlrest . "\"><img src=\"${ConfSiteBase}images/prev.png\" alt='&lt;-' />#" . $list[$k - 1] . "</a>";
+	    . $list[$k - 1] . $urlrest . "\">"
+	    . $Conf->cacheableImage("prev.png", "&lt-")
+	    . "#" . $list[$k - 1] . "</a>";
     if (isset($list["description"])) {
 	$x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
 	if (defval($list["url"]))
@@ -414,7 +416,7 @@ function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
 	$x .= ($k > 0 || isset($list["description"]) ? "&nbsp;&nbsp;" : "");
 	$x .= "<a href=\"${ConfSiteBase}$baseUrl?paperId="
 	    . $list[$k + 1] . $urlrest . "\">#" . $list[$k + 1]
-	    . "<img src=\"${ConfSiteBase}images/next.png\" alt='-&gt;' /></a>";
+	    . $Conf->cacheableImage("next.png", "-&gt;") . "</a>";
     }
     return $x;
 }

@@ -663,7 +663,7 @@ span.error {
 	color: #ff0000;
 }
 
-img.dlimg {
+img.dlimg, img.placthook {
 	vertical-align: -6px;
 }
 

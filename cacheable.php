@@ -13,6 +13,8 @@ if ($file == "script.js")
     header("Content-type: text/javascript; charset: UTF-8");
 else if ($file == "style.css")
     header("Content-type: text/css; charset: UTF-8");
+else if (strlen($file) > 4 && substr($file, strlen($file) - 4) == ".png")
+    header("Content-type: image/png");
 else {
     header("Content-type: text/plain");
     header("Content-Length: 10");
