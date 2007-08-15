@@ -96,14 +96,15 @@ Configuration
 
 * Configuration notes
 
-  - HotCRP users upload papers and reviews to the HotCRP web server.  Several 
-    PHP configuration variables affect the maximum attachment size the server
-    will accept.  These variables are set in the base directory's ".htaccess"
-    to 20 megabytes; you may want to lower them.
+  - Uploaded papers and reviews are limited in size by several PHP
+    configuration variables, set by default to 20 megabytes in the base
+    directory's ".htaccess".  You may want to lower them.
 
   - HotCRP PHP scripts can take a lot of memory, particularly if they're
     doing things like generating MIME-encoded mail messages.  By default
     HotCRP sets the PHP memory limit to 128MB.
+
+  - HotCRP uses Apache's mod_expires module if it is enabled.
 
 
 Backing up the database
