@@ -22,6 +22,7 @@ class Conference {
     var $tableMessages;
     var $tableMessagesObj;
 
+    var $scriptStuff;
     var $footerStuff;
 
     // Useful colors
@@ -34,6 +35,7 @@ class Conference {
 	$this->saveMessages = true;
 	$this->headerPrinted = 0;
 	$this->tableMessages = false;
+	$this->scriptStuff = "";
 	$this->footerStuff = "";
 	
 	$this->contactName = $Opt['contactName'];
@@ -383,6 +385,13 @@ class Conference {
 	if ($class)
 	    $t .= " class=\"$class\"";
 	return $t . " />";
+    }
+
+    function echoScript($script) {
+	if ($this->scriptStuff)
+	    echo $this->scriptStuff;
+	$this->scriptStuff = "";
+	echo "<script type='text/javascript'>", $script, "</script>";
     }
 
 
@@ -1050,7 +1059,7 @@ class Conference {
 	    if (strstr($title, "<") !== false)
 		$title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
 	    echo "<link rel='stylesheet' type='text/css' href='${ConfSiteBase}cacheable.php?file=style.css&amp;mtime=" . filemtime("$ConfSitePATH/style.css") . "' />\n";
-	    echo "<script type='text/javascript' src='${ConfSiteBase}cacheable.php?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "'></script>\n";
+	    $this->scriptStuff = "<script type='text/javascript' src='${ConfSiteBase}cacheable.php?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "'></script>\n";
 	    echo "<title>", $title, " - ", $this->shortName, "</title>\n";
 	    $this->headerPrinted = 1;
 	}
@@ -1117,11 +1126,12 @@ class Conference {
 		$this->tableMessagesObj->echoDivExit();
 	}
 	echo "</div>\n"; // <div class='body'>
-	echo "<div id='footer'>\n";
-	echo "  <div id='footer_crp'><a href='http://www.cs.ucla.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software</div>\n";
-	echo "  <div class='clear'></div></div>\n";
-	echo $this->footerStuff;
-	echo "</body>\n</html>\n";
+	echo "<div id='footer'>\n",
+	    "  <div id='footer_crp'><a href='http://www.cs.ucla.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software</div>\n",
+	    "  <div class='clear'></div></div>\n",
+	    $this->scriptStuff, $this->footerStuff,
+	    "</body>\n</html>\n";
+	$this->scriptStuff = "";
     }
 
     function getFileExtension(&$mimetype) {

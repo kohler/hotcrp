@@ -92,7 +92,7 @@ function checkMail($send) {
     if (!$any)
 	return $Conf->errorMsg("No users match \"" . htmlspecialchars($recip[$_REQUEST["recipients"]]) . "\".");
     else if ($send)
-	echo "<script type='text/javascript'>fold('mail', null);</script>";
+	$Conf->echoScript("fold('mail', null);");
     else {
 	echo "<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail.php?send=1' enctype='multipart/form-data'>\n";
 	foreach (array("recipients", "subject", "emailBody") as $x)

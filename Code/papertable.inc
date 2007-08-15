@@ -264,8 +264,8 @@ class PaperTable {
 		"<td class='lentry'><input class='textlite' type='text' name='auemail$n' size='25' onchange='highlightUpdate()' value=\"", htmlspecialchars($au[2]), "\" /></td>",
 		"<td class='lentry'><input class='textlite' type='text' name='auaff$n' size='30' onchange='highlightUpdate()' value=\"", htmlspecialchars($au[3]), "\" /></td></tr>\n";
 	}
-	echo "</table><input id='aueditcount' type='hidden' name='aueditcount' value='25' />",
-	    "<script type='text/javascript'>authorfold(", max(count($authorTable) + 1, 5), ")</script>\n";
+	echo "</table><input id='aueditcount' type='hidden' name='aueditcount' value='25' />";
+	$Conf->echoScript("authorfold(" . max(count($authorTable) + 1, 5) . ")");
     }
 
     function echoAuthorInformation($prow) {

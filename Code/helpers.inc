@@ -85,7 +85,7 @@ function mkarray($value) {
 }
 
 function alert($string = "") {
-    print "<script language='javascript'>\n";
+    print "<script type='text/javascript'>\n";
     print "alert(\"" . addslashes($string).  "\");";
     print "</script>";
 }
@@ -93,7 +93,7 @@ function alert($string = "") {
 function go($url) {
     echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n";
     echo "<html><head>";
-    echo "<script language='javascript'>\n";
+    echo "<script type='text/javascript'>\n";
     echo "location=\"$url\";";
     echo "</script>";
     echo "</head><body><p>You should be automatically redirected <a href='$url'>to here</a>.</p></body>\n";
