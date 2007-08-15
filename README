@@ -104,7 +104,7 @@ Configuration
     doing things like generating MIME-encoded mail messages.  By default
     HotCRP sets the PHP memory limit to 128MB.
 
-  - HotCRP uses Apache's mod_expires module if it is enabled.
+  - HotCRP uses Apache's mod_expires module; consider enabling it.
 
 
 Backing up the database
