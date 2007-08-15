@@ -110,7 +110,6 @@ images/viewas.png
 
 Chair/.htaccess
 Chair/AssignPapers.php
-Chair/Code.inc
 Chair/DumpDatabase.php
 Chair/SetReviewForm.php
 Chair/index.php

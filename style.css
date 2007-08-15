@@ -318,17 +318,23 @@ table.lhsel td {
 	position: relative;
 }
 div.lhl0 {
-	padding: 2px 0px 2px 4px;
+	padding: 2px 0px 2px 0.9em;
 }
 div.lhl1 {
 	background: #ffffff;
-	padding: 2px 8px 2px 4px;
+	padding: 2px 0.75em 2px 0.15em;
 	position: relative;
 	z-index: 4;
-	left: 8px;
+	left: 0.75em;
 	border-top: 2px solid #9999cc;
 	border-left: 1px solid #9999cc;
 	border-bottom: 2px solid #9999cc;
+}
+div.lht {
+	background: #ffffff;
+	position: relative;
+	z-index: 5;
+	padding: 5px 1em 3px 0.75em;
 }
 
 
@@ -577,9 +583,6 @@ td.leftentry {
 }
 td.entry, th.entry {
 	padding: 3px 1em 3px 0.5em;
-}
-table.settings td.entry {
-	padding: 5px 1em 3px 0.75em;
 }
 td.lentry {
 	padding: 2px 0.5em 2px 0em;
@@ -1097,7 +1100,7 @@ div.scorehelpc, div.scorehelpo {
 	background: #f3ebd5;
 	position: absolute;
 	min-width: 15em;
-	z-index: 5;
+	z-index: 6;
 }
 div.scorehelpc, tr.aueditc td {
 	display: none;
@@ -1114,7 +1117,7 @@ div.popupc, div.popupo {
 	position: absolute;
 	min-width: 15em;
 	max-width: 30em;
-	z-index: 5;
+	z-index: 6;
 }
 div.popupc {
 	display: none;

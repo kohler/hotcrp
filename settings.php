@@ -715,7 +715,7 @@ foreach (array("acc" => "Accounts",
 	echo "<div class='lhl0'><a href='settings.php?group=$k'>$v</a></div>";
     echo "</td></tr>";
 }
-echo "</table></td><td class='entry top'>";
+echo "</table></td><td class='top'><div class='lht'>";
 
 if ($Group == "acc")
     doAccGroup();
@@ -738,7 +738,7 @@ echo "<input type='submit' class='button",
     "' name='update' value='Save changes' /> ";
 echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />";
 
-echo "</td></tr>
+echo "</div></td></tr>
 <tr class='last'><td class='caption'></td></tr>
 </table></div></form>\n";
 
