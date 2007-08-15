@@ -682,13 +682,14 @@ if (($newPaper || $canViewAuthors || $Me->privChair) && !$finalEditMode)
 // Review preference
 if ($mode != "edit" && $mainPreferences && $prow->conflictType <= 0) {
     $x = (isset($prow->reviewerPreference) ? htmlspecialchars($prow->reviewerPreference) : "0");
+    $x = ($x == "0" ? "" : $x);
     echo "<tr class='pt_preferences'>
   <td class='caption";
     if (isset($PaperError['revpref']))
 	echo " error";
     echo "'>Review preference</td>
   <td class='entry'><form id='prefform' action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1\" method='post' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"prefform\", {setrevpref:1})'><div class='inform'>
-    <input id='prefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$x\" onfocus=\"tempText(this, '0', 1)\" onblur=\"tempText(this, '0', 0)\" onchange='Miniajax.submit(\"prefform\", {setrevpref:1})' tabindex='1' />&nbsp;
+    <input id='prefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$x\" onchange='Miniajax.submit(\"prefform\", {setrevpref:1})' tabindex='1' />&nbsp;
     <input class='button_small' type='submit' value='Save preference' tabindex='1' />
     <span id='prefformresult' style='padding-left:1em'></span>
   </div></form></td>
