@@ -1049,8 +1049,8 @@ class Conference {
 	    echo "<meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />\n";
 	    if (strstr($title, "<") !== false)
 		$title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
-	    echo "<script type='text/javascript' src='${ConfSiteBase}cacheable.php?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "'></script>\n";
 	    echo "<link rel='stylesheet' type='text/css' href='${ConfSiteBase}cacheable.php?file=style.css&amp;mtime=" . filemtime("$ConfSitePATH/style.css") . "' />\n";
+	    echo "<script type='text/javascript' src='${ConfSiteBase}cacheable.php?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "'></script>\n";
 	    echo "<title>", $title, " - ", $this->shortName, "</title>\n";
 	    $this->headerPrinted = 1;
 	}
