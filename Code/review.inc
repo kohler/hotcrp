@@ -299,14 +299,10 @@ class ReviewForm {
 
 	// look up review ID
 	if ($rrow)
-	    $req['reviewId'] = $reviewId = $rrow->reviewId;
-	else {
-	    $result2 = $conf->lastInsertId($while);
-	    if (!$result2)
-		return $result2;
-	    $crow = edb_row($result2);
-	    $req['reviewId'] = $reviewId = $crow[0];
-	}
+	    $reviewId = $rrow->reviewId;
+	else if (!($reviewId = $conf->lastInsertId($while)))
+	    return $reviewId;
+	$req['reviewId'] = $reviewId;
 	
 	// log updates
 	$reviewLogname = "Review $reviewId";

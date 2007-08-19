@@ -447,11 +447,12 @@ class Conference {
 
 	$timestamp = time();
 	$result = $this->qe2("insert into PaperStorage set paperId=$paperId, timestamp=$timestamp, mimetype='" . sqlq($mimetype) . "', paper='" . sqlq(substr($contents, 0, 400000)) . "'", $while);
-	if (!PEAR::isError($result))
-	    $result = $this->lastInsertId($while);
 	if (!PEAR::isError($result)) {
-	    $row = edb_row($result);
-	    $paperStorageId = $row[0];
+	    $paperStorageId = $this->lastInsertId($while);
+	    if (!$paperStorageId)
+		$result = new PEAR_Error("last_insert_id unsuccessful!");
+	}
+	if (!PEAR::isError($result)) {
 	    for ($pos = 400000; $pos < strlen($contents) && $result; $pos += 400000)
 		$result = $this->qe2("update PaperStorage set paper=concat(paper,'" . sqlq(substr($contents, $pos, 400000)) . "') where paperStorageId=$paperStorageId", $while);
 	}

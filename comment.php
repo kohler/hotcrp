@@ -103,11 +103,8 @@ function saveComment($text) {
     // comment ID
     if ($crow)
 	$commentId = $crow->commentId;
-    else {
-	$commentId = $Conf->lastInsertId($while);
-	if (!$commentId)
-	    return;
-    }
+    else if (!($commentId = $Conf->lastInsertId($while)))
+	return;
 
     // log, end
     $action = ($text == "" ? "deleted" : "saved");
