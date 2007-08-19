@@ -272,7 +272,7 @@ function commentView($prow, $crow, $editMode) {
 	echo $sep, $Conf->printableTime($crow->timeModified);
 	$sep = " &nbsp;|&nbsp; ";
     }
-    if (!$crow || $prow->conflictType == CONFLICT_AUTHOR)
+    if (!$crow || $prow->conflictType >= CONFLICT_AUTHOR)
 	/* do nothing */;
     else if (!$crow->forAuthors && !$crow->forReviewers)
 	echo $sep, "For PC only";
@@ -389,7 +389,7 @@ function responseView($prow, $crow, $editMode) {
 	echo $sep, $Conf->printableTime($crow->timeModified);
 	$sep = " &nbsp;|&nbsp; ";
     }
-    if ($crow && ($prow->conflictType == CONFLICT_AUTHOR || $Me->privChair) && !$editMode && $Me->canRespond($prow, $crow, $Conf))
+    if ($crow && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair) && !$editMode && $Me->canRespond($prow, $crow, $Conf))
 	echo $sep, "<a href='comment.php?commentId=$crow->commentId'>Edit</a>";
     echo "</td>\n</tr>\n\n";
 
@@ -406,7 +406,7 @@ The response should be addressed to the program committee, who
 will consider it when making their decision.  Don't try to
 augment the paper's content or form&mdash;the conference deadline
 has passed.  Please keep the response short and to the point" . $limittext . ".");
-	if ($prow->conflictType != CONFLICT_AUTHOR)
+	if ($prow->conflictType < CONFLICT_AUTHOR)
 	    $Conf->infoMsg("Although you aren't a contact author for this paper, as an administrator you can edit the authors' response.");
 	
 	echo "<textarea name='comment' rows='10' cols='80'>";
@@ -449,11 +449,11 @@ if ($crow)
 else {
     $anyComment = false;
     foreach ($crows as $cr)
-	commentView($prow, $cr, $cr->forAuthors > 1 && $prow->conflictType == CONFLICT_AUTHOR);
+	commentView($prow, $cr, $cr->forAuthors > 1 && $prow->conflictType >= CONFLICT_AUTHOR);
     if ($Me->canComment($prow, null, $Conf))
 	commentView($prow, null, true);
     if (!$sawResponse && $Conf->timeAuthorRespond()
-	&& ($prow->conflictType == CONFLICT_AUTHOR || $Me->privChair))
+	&& ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair))
 	responseView($prow, null, true);
     if (!$anyComment && !$sawResponse) {
 	echo "<table class='comment'><tr class='id'><td></td></tr></table>\n";

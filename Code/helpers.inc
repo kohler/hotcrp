@@ -145,7 +145,7 @@ function reviewType($paperId, $row, $long = 0) {
 	return "<span class='rtype rtype_sec'>Secondary</span>";
     else if ($row->reviewType == REVIEW_EXTERNAL)
 	return "<span class='rtype rtype_req'>External</span>";
-    else if ($row->conflictType == CONFLICT_AUTHOR)
+    else if ($row->conflictType >= CONFLICT_AUTHOR)
 	return "<span class='author'>Author</span>";
     else if ($row->conflictType > 0)
 	return "<span class='conflict'>Conflict</span>";
@@ -736,7 +736,7 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 		&& $Me->canViewComment($prow, null, $Conf))
 	    || ($Me->isPC && $prow->timeSubmitted > 0
 		&& $Conf->timeReviewOpen()))) {
-	$n = ($prow->conflictType == CONFLICT_AUTHOR ? $prow->numAuthorComments : $prow->numComments);
+	$n = ($prow->conflictType >= CONFLICT_AUTHOR ? $prow->numAuthorComments : $prow->numComments);
 	$txt = ($n ? "Comments ($n)" : "Comments");
 	$act .= actionTab($txt, "${ConfSiteBase}comment.php?paperId=$paperId", $mode == "comment");
     }
@@ -841,7 +841,7 @@ function maybeSearchPaperId($base, $me) {
 	else if ($me->isReviewer)
 	    $q .= "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$me->contactId)";
 	else
-	    $q .= "join ContactInfo on (ContactInfo.paperId=Paper.paperId and ContactInfo.contactId=$me->contactId and ContactInfo.conflitType=" . CONFLICT_AUTHOR . ")";
+	    $q .= "join ContactInfo on (ContactInfo.paperId=Paper.paperId and ContactInfo.contactId=$me->contactId and ContactInfo.conflictType>=" . CONFLICT_AUTHOR . ")";
 	$result = $Conf->q($q);
 	if (($paperId = edb_row($result)))
 	    $_REQUEST["paperId"] = $paperId[0];

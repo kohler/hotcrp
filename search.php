@@ -317,7 +317,7 @@ if ($getaction == "contact" && $Me->privChair && isset($papersel)) {
     $idq = paperselPredicate($papersel, "Paper.");
     if (!$Me->privChair)
 	$idq = "($idq) and blind=0";
-    $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq order by Paper.paperId", "while fetching contact authors");
+    $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq order by Paper.paperId", "while fetching contact authors");
     if ($result) {
 	$text = "#paperId\ttitle\tlast, first\temail\n";
 	while (($row = edb_row($result))) {

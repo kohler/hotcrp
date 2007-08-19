@@ -301,7 +301,7 @@ class ReviewForm {
 	if ($rrow)
 	    $req['reviewId'] = $reviewId = $rrow->reviewId;
 	else {
-	    $result2 = $conf->qe("select last_insert_id()", $while);
+	    $result2 = $conf->lastInsertId($while);
 	    if (!$result2)
 		return $result2;
 	    $crow = edb_row($result2);

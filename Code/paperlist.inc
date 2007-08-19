@@ -445,7 +445,7 @@ class PaperList extends BaseList {
 		return "$a1<span class='rtype rtype_req'>External</span>$a2";
 	    else if ($row->reviewType)
 		return "$a1<span class='rtype'>Review</span>$a2";
-	    else if ($row->conflictType == CONFLICT_AUTHOR)
+	    else if ($row->conflictType >= CONFLICT_AUTHOR)
 		return "<span class='rtype rtype_con'>Author</span>";
 	    else if ($row->conflictType > 0)
 		return "<span class='rtype rtype_con'>Conflict</span>";
@@ -491,11 +491,11 @@ class PaperList extends BaseList {
 		$c = " checked='checked'";
 		$this->unfolded = true;
 	    }
-	    if ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType == CONFLICT_AUTHOR)
+	    if ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType >= CONFLICT_AUTHOR)
 		$c .= " disabled='disabled'";
 	    return "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='1' id='psel$this->count' onclick='pselClick(event, this, $this->count)' $c/>";
 	case self::FIELD_ASSIGN_REVIEW:
-	    if ($row->conflictType == CONFLICT_AUTHOR)
+	    if ($row->conflictType >= CONFLICT_AUTHOR)
 		return "<span class='author'>Author</span>";
 	    $rt = ($row->conflictType > 0 ? -1 : min(max($row->reviewType, 0), REVIEW_PRIMARY));
 	    $x = "<select name='assrev$row->paperId' tabindex='1' onchange='highlightUpdate()'>";

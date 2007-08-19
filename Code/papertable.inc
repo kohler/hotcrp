@@ -163,7 +163,7 @@ class PaperTable {
 	    echo "<span class='sep'></span> (last updated ", $Conf->printableTime($prow->timestamp), ")";
 
 	// conflicts
-	if (($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType == CONFLICT_AUTHOR)
+	if (($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType >= CONFLICT_AUTHOR)
 	    echo "<br/>\nYou are an <span class='author'>author</span> of this paper.";
 	else if ((($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType > 0)
 		 || (($flags & self::STATUS_CONFLICTINFO_PC) && $Me->isPC && $prow->conflictType > 0))
@@ -310,7 +310,7 @@ class PaperTable {
 	$result = $Conf->qe("select firstName, lastName, email, contactId
 		from ContactInfo
 		join PaperConflict using (contactId)
-		where paperId=$prow->paperId and conflictType=" . CONFLICT_AUTHOR . "
+		where paperId=$prow->paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . "
 		order by lastName, firstName, email", "while finding contact authors");
 	echo "<tr class='pt_contactAuthor'>\n";
 	echo "  ", $this->tdCaption("contactAuthor");
@@ -405,7 +405,7 @@ class PaperTable {
 	    $sep = $t = "";
 	    foreach ($opt as $o)
 		if (isset($optsel[$o->optionId])
-		    && ($o->pcView || $showAll || $prow->conflictType == CONFLICT_AUTHOR)) {
+		    && ($o->pcView || $showAll || $prow->conflictType >= CONFLICT_AUTHOR)) {
 		    $t .= $sep . htmlspecialchars($o->optionName);
 		    $sep = "<span class='sep'> </span>";
 		}

@@ -76,7 +76,7 @@ if (!$newPaper) {
     // perfect mode: default to edit for non-submitted papers
     if ($mode == "view"
 	&& (!isset($_REQUEST["mode"]) || $_REQUEST["mode"] != "view")
-	&& $prow->conflictType == CONFLICT_AUTHOR
+	&& $prow->conflictType >= CONFLICT_AUTHOR
 	&& $Conf->timeUpdatePaper($prow))
 	$mode = "edit";
 }
@@ -292,14 +292,30 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 
     // fetch paper ID
     if ($newPaper) {
-	$result = $Conf->qe("select last_insert_id()", "while updating paper information");
+	$result = $Conf->lastInsertId("while updating paper information");
 	if (edb_nrows($result) == 0)
 	    return false;
 	$row = edb_row($result);
 	$paperId = $row[0];
 
-	$result = $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($paperId, $contactId, " . CONFLICT_AUTHOR . ")", "while updating paper information");
+	$result = $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($paperId, $contactId, " . CONFLICT_CONTACTAUTHOR . ")", "while updating paper information");
 	if (!$result)
+	    return false;
+    }
+
+    // set author information
+    $aunew = $auold = '';
+    foreach ($_REQUEST["authorTable"] as $au)
+	if ($au[2] != "")
+	    $aunew .= "'" . sqlq($au[2]) . "', ";
+    if ($prow)
+	foreach ($prow->authorTable as $au)
+	    if ($au[2] != "")
+		$auold .= "'" . sqlq($au[2]) . "', ";
+    if ($auold != $aunew) {
+	if ($auold && !$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType=" . CONFLICT_AUTHOR, "while updating paper authors"))
+	    return false;
+	if ($aunew && !$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) select $paperId, contactId, " . CONFLICT_AUTHOR . " from ContactInfo where email in (" . substr($aunew, 0, strlen($aunew) - 2) . ") on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")", "while updating paper authors"))
 	    return false;
     }
 
@@ -528,7 +544,7 @@ else if ($newPaper) {
 	    errorMsgExit($msg);
 	$Conf->infoMsg($msg);
     }
-} else if ($prow->conflictType == CONFLICT_AUTHOR
+} else if ($prow->conflictType >= CONFLICT_AUTHOR
 	   && ($Conf->timeUpdatePaper($prow) || $prow->timeSubmitted <= 0)) {
     $timeUpdate = $Conf->timeUpdatePaper($prow);
     $updateDeadline = deadlineSettingIs("sub_update", $Conf);
@@ -548,10 +564,10 @@ else if ($newPaper) {
 	$Conf->infoMsg("You cannot make any changes as the <a href='deadlines.php'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override");
     else if ($prow->timeWithdrawn <= 0)
 	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override");
-} else if ($prow->conflictType == CONFLICT_AUTHOR && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper()) {
+} else if ($prow->conflictType >= CONFLICT_AUTHOR && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper()) {
     $updateDeadline = deadlineSettingIs("final_done", $Conf);
     $Conf->infoMsg("Congratulations!  This paper was accepted.  Submit a final copy for your paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or add contact authors, allowing others to view reviews and make changes.");
-} else if ($prow->conflictType == CONFLICT_AUTHOR) {
+} else if ($prow->conflictType >= CONFLICT_AUTHOR) {
     $override2 = ($Me->privChair ? "  However, as an administrator, you can update the paper anyway by selecting \"Override deadlines\"." : "");
     $Conf->infoMsg("This paper is under review and can no longer be changed, although you may still withdraw it from the conference.$override2");
 } else if (!$Me->privChair)
@@ -620,7 +636,7 @@ if (!$editable)
     $flags += PaperTable::STATUS_CONFLICTINFO | PaperTable::STATUS_REVIEWERINFO;
 if (!$newPaper) {
     $paperTable->echoPaperRow($prow, $flags);
-    if ($mode != "edit" && ($prow->conflictType == CONFLICT_AUTHOR || $Me->privChair))
+    if ($mode != "edit" && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair))
 	$paperTable->echoEditRow($prow);
 }
 
@@ -643,7 +659,7 @@ if ($newPaper || $canViewAuthors || $Me->privChair)
 if ($newPaper)
     $paperTable->echoNewContactAuthor($Me->privChair);
 else if ($canViewAuthors || $Me->privChair)
-    $paperTable->echoContactAuthor($prow, $mode == "edit" || $prow->conflictType == CONFLICT_AUTHOR);
+    $paperTable->echoContactAuthor($prow, $mode == "edit" || $prow->conflictType >= CONFLICT_AUTHOR);
 
 // Anonymity
 if ($Conf->blindSubmission() == 1 && !$finalEditMode)
@@ -728,7 +744,7 @@ if ($mode == "edit") {
 	else {
 	    $buttons[] = "<button type='button' onclick=\"popup(this, 'w', 0)\">Withdraw paper</button>";
 	    $Conf->footerStuff .= "<div id='popup_w' class='popupc'><p>Are you sure you want to withdraw this paper from consideration and/or publication?";
-	    if (!$Me->privChair || $prow->conflictType == CONFLICT_AUTHOR)
+	    if (!$Me->privChair || $prow->conflictType >= CONFLICT_AUTHOR)
 		$Conf->footerStuff .= "  Only administrators can undo this step.";
 	    $Conf->footerStuff .= "</p><form method='post' action=\"paper.php?paperId=$paperId&amp;post=1&amp;mode=edit\" enctype='multipart/form-data'><div class='popup_actions'><input class='button' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'w', 1)\">Cancel</button></div></form></div>";
 	}

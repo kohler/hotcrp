@@ -554,7 +554,7 @@ class Mailer {
 	$text = "";
 	while (($row = edb_orow($result))) {
 	    $text .= "===========================================================================\n";
-	    $n = ($row->conflictType == CONFLICT_AUTHOR ? "Author's Response" : "Comment");
+	    $n = ($row->conflictType >= CONFLICT_AUTHOR ? "Author's Response" : "Comment");
 	    if ($row->blind <= 0)
 		$n .= " by " . contactText($row);
 	    $text .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
@@ -652,7 +652,7 @@ class Mailer {
 
 	$result = $Conf->qe("select firstName, lastName, email, conflictType
 		from ContactInfo join PaperConflict using (contactId)
-		where paperId=$row->paperId and conflictType=" . CONFLICT_AUTHOR . "
+		where paperId=$row->paperId and conflictType>=" . CONFLICT_AUTHOR . "
 		group by ContactInfo.contactId", "while looking up contact authors to send email");
 
 	$contacts = array();

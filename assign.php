@@ -125,7 +125,7 @@ function pcAssignments() {
 	left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.paperId=$prow->paperId)", $while);
     while (($row = edb_orow($result))) {
 	$val = defval($_REQUEST["pcs$row->contactId"], 0);
-	if ($row->conflictType == CONFLICT_AUTHOR)
+	if ($row->conflictType >= CONFLICT_AUTHOR)
 	    continue;
 
 	// manage conflicts
@@ -395,7 +395,7 @@ if ($Me->privChair) {
 
 	// first, name and assignment
 	echo "      <tr>";
-	if ($p->conflictType == CONFLICT_AUTHOR) {
+	if ($p->conflictType >= CONFLICT_AUTHOR) {
 	    echo "<td id='ass$p->contactId' class='name-1' colspan='2'>";
 	    echo str_replace(' ', "&nbsp;", contactHtml($p));
 	    echo " <small>(Author)</small></td>";

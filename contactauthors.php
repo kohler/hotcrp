@@ -54,7 +54,7 @@ function pt_data_html($what, $row) {
 function addContactAuthor($paperId, $contactId) {
     global $Conf;
     // don't want two entries for the same contact, if we can avoid it
-    return $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($paperId, $contactId, " . CONFLICT_AUTHOR . ") on duplicate key update conflictType=" . CONFLICT_AUTHOR, "while adding contact author");
+    return $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($paperId, $contactId, " . CONFLICT_CONTACTAUTHOR . ") on duplicate key update conflictType=" . CONFLICT_CONTACTAUTHOR, "while adding contact author");
 }
 
 function removeContactAuthor($paperId, $contactId) {
@@ -122,7 +122,7 @@ if ($OK) {
     $q = "select firstName, lastName, email, contactId
 	from ContactInfo
 	join PaperConflict using (contactId)
-	where paperId=$paperId and conflictType=" . CONFLICT_AUTHOR . "
+	where paperId=$paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . "
 	order by lastName, firstName, email";
     $result = $Conf->qe($q, "while finding contact authors");
     while ($row = edb_row($result)) {

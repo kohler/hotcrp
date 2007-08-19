@@ -18,7 +18,8 @@ define("CONFLICT_NONE", 0);
 define("CONFLICT_PCMARK", 1);
 define("CONFLICT_AUTHORMARK", 2);
 define("CONFLICT_CHAIRMARK", 3);
-define("CONFLICT_AUTHOR", 10);
+define("CONFLICT_AUTHOR", 9);
+define("CONFLICT_CONTACTAUTHOR", 10);
 
 define("TAG_MAXLEN", 40);
 

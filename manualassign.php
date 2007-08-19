@@ -54,7 +54,7 @@ function saveAssignments($reviewer) {
     $lastPaperId = -1;
     $del = $ins = "";
     while (($row = edb_orow($result))) {
-	if ($row->paperId == $lastPaperId || $row->conflictType == CONFLICT_AUTHOR)
+	if ($row->paperId == $lastPaperId || $row->conflictType >= CONFLICT_AUTHOR)
 	    continue;
 	$lastPaperId = $row->paperId;
 	$type = cvtint($_REQUEST["assrev$row->paperId"], 0);

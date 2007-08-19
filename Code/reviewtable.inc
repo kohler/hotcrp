@@ -127,7 +127,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     
     // unfinished review notification
     $notes = array();
-    if ($prow->conflictType == CONFLICT_AUTHOR && !$effAssistant && $notShown
+    if ($prow->conflictType >= CONFLICT_AUTHOR && !$effAssistant && $notShown
 	&& $Me->canViewReview($prow, null, $Conf)) {
 	$qualifier = (count($subrev) + count($nonsubrev) ? " additional" : "");
 	if ($notShown == 1)

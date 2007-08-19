@@ -448,7 +448,7 @@ class Conference {
 	$timestamp = time();
 	$result = $this->qe2("insert into PaperStorage set paperId=$paperId, timestamp=$timestamp, mimetype='" . sqlq($mimetype) . "', paper='" . sqlq(substr($contents, 0, 400000)) . "'", $while);
 	if (!PEAR::isError($result))
-	    $result = $this->qe2("select last_insert_id()", $while);
+	    $result = $this->lastInsertId($while);
 	if (!PEAR::isError($result)) {
 	    $row = edb_row($result);
 	    $paperStorageId = $row[0];
@@ -767,7 +767,7 @@ class Conference {
 	    $pq .= "		join PaperComment as CommentSelector on (CommentSelector.paperId=Paper.paperId)\n";
 	
 	if (isset($options['author']))
-	    $pq .= "		join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType=" . CONFLICT_AUTHOR . " and PaperConflict.contactId=$contactId)\n";
+	    $pq .= "		join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . " and PaperConflict.contactId=$contactId)\n";
 	else
 	    $pq .= "		left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)\n";
 
@@ -901,7 +901,7 @@ class Conference {
 
     
     function paperContactAuthors($paperId) {
-	$result = $this->qe("select firstName, lastName, email, contactId from ContactInfo join PaperConflict using (contactId) where paperId=$paperId and conflictType=" . CONFLICT_AUTHOR, "while looking up paper contact authors");
+	$result = $this->qe("select firstName, lastName, email, contactId from ContactInfo join PaperConflict using (contactId) where paperId=$paperId and conflictType>=" . CONFLICT_AUTHOR, "while looking up paper contact authors");
 	$aus = array();
 	while (($row = edb_row($result)))
 	    $aus[] = $row;
