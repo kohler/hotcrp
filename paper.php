@@ -225,7 +225,6 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     array_ensure($_REQUEST, "", "title", "abstract", "authorTable", "collaborators");
     $q = "";
 
-    $Conf->infoMsg("1");
     foreach (array("title", "abstract", "collaborators") as $x) {
 	if (trim($_REQUEST[$x]) == "") {
 	    if ($x != "collaborators"
@@ -237,7 +236,6 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$q .= "$x='" . sqlqtrim($_REQUEST[$x]) . "', ";
     }
     
-    $Conf->infoMsg("2");
     if (!isset($_REQUEST["authorTable"]))
 	$PaperError["authorInformation"] = 1;
     else {
@@ -248,7 +246,6 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     }
 
     // any missing fields?
-    $Conf->infoMsg("3");
     if (count($PaperError) > 0) {
 	$fields = array();
 	$collab = false;
@@ -267,7 +264,6 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     }
 
     // defined contact ID
-    $Conf->infoMsg("5");
     if ($newPaper && (isset($_REQUEST["contact_email"]) || isset($_REQUEST["contact_name"])) && $Me->privChair)
 	if (!($contactId = $Conf->getContactId($_REQUEST["contact_email"], "contact_"))) {
 	    $Conf->errorMsg("You must supply a valid email address for the contact author.");
