@@ -192,17 +192,11 @@ class PaperTable {
     }
 
     function echoUploadRow($prow, $flags) {
-	global $Conf;
+	global $Conf, $Opt;
 	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0);
 	
 	echo "<tr class='pt_paper'>\n";
-	echo "  ", $this->tdCaption('paper'), "Upload paper<br />";
-	$maxSize = ini_get("upload_max_filesize") . "B";
-	if ($flags & self::OPTIONAL)
-	    echo " <span class='hint'>(optional; max size: $maxSize)</span>";
-	else
-	    echo " <span class='hint'>(max size: $maxSize)</span>";
-	echo "</td>\n";
+	echo "  ", $this->tdCaption('paper'), "Upload paper</td>\n";
 	echo "  ", $this->tdEntry("paper");
 
 	echo ($final ? "Final copy:&nbsp; " : ""),
@@ -211,7 +205,16 @@ class PaperTable {
 	    echo ";fold(\"isready\",0)";
 	if ($flags & self::ENABLESUBMIT)
 	    echo ";form.submit.disabled=false";
-	echo "' />";
+	echo "' /><br />";
+	if ($Opt['disablePDF'])
+	    echo "<span class='hint'>PostScript format only";
+	else if ($Opt['disablePS'])
+	    echo "<span class='hint'>PDF format only";
+	else
+	    echo "<span class='hint'>PDF or PostScript format";
+	$maxSize = ini_get("upload_max_filesize") . "B";
+	echo ", max size ", $maxSize, "</span>";
+	
 	if (!$final) {
 	    if ($this->useRequest)
 		$checked = defval($_REQUEST["submit"]);

@@ -617,9 +617,11 @@ table.settings td h3 {
 	margin-bottom: 0.5em;
 	padding: 0px 4px;
 }
+span.hint {
+	font-size: smaller;
+}
 td.caption span.hint {
 	font-weight: normal;
-	font-size: smaller;
 }
 
 
