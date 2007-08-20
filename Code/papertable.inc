@@ -247,7 +247,7 @@ class PaperTable {
 	echo "<div class='hint'>List the paper's authors one per line, including their email addresses and affiliations.";
 	if ($Conf->blindSubmission() == 2)
 	    echo " Submission is blind, so reviewers will not be able to see author information.";
-	echo "</div>\n";
+	echo "  Any author with a site account can edit the paper.</div>\n";
 	echo "<table id='auedittable' class='auedittable'><tr><th></th><th>Name</th><th>Email</th><th>Affiliation</th></tr>\n";
 	$blankAu = array("", "", "", "");
 	$authorTable = ($this->useRequest && isset($_REQUEST["authorTable"]) ? $_REQUEST["authorTable"] : $prow->authorTable);
@@ -323,7 +323,7 @@ class PaperTable {
 	    echo authorTable($aus, $Me);
 	}
 	if ($editMode || ($editMode === false && ($this->editable || $Me->privChair)))
-	    echo "<a class='button_small' href='${ConfSiteBase}contactauthors.php?paperId=$prow->paperId'>", ($Me->privChair ? "Edit" : "Add"), "&nbsp;contact&nbsp;authors</a>";
+	    echo "<a class='button_small' href='${ConfSiteBase}contactauthors.php?paperId=$prow->paperId'>Edit&nbsp;contact&nbsp;authors</a>";
 	echo "</td>\n</tr>\n\n";
     }
 

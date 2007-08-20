@@ -456,7 +456,7 @@ class Mailer {
 	if ($what == "%CONTACT%")
 	    return contactText($this->contact);
 	if ($what == "%NAME%")
-	    return contactText($this->contact, null, "");
+	    return contactNameText($this->contact);
 	if ($what == "%FIRST%")
 	    return $this->contact->firstName;
 	if ($what == "%LAST%")

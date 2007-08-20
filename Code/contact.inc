@@ -155,8 +155,8 @@ class Contact {
     function trim() {
 	$this->contactId = trim($this->contactId);
 	$this->visits = trim($this->visits);
-	$this->firstName = trim(simplifyWhitespace($this->firstName));
-	$this->lastName = trim(simplifyWhitespace($this->lastName));
+	$this->firstName = simplifyWhitespace($this->firstName);
+	$this->lastName = simplifyWhitespace($this->lastName);
 	foreach (array("email", "affiliation", "voicePhoneNumber",
 		       "faxPhoneNumber", "password", "note", "addressLine1",
 		       "addressLine2", "city", "state", "zipCode", "country")

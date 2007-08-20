@@ -54,26 +54,29 @@ if (isset($_REQUEST["merge"])) {
 	    $oldid = $MiniMe->contactId;
 	    $newid = $Me->contactId;
 	    
+	    $while = "while merging conflicts";
+	    $Conf->q("lock tables Paper write, ContactInfo write, PaperConflict write, PCMember write, ChairAssistant write, Chair write, ActionLog write, TopicInterest write, PaperComment write, PaperReview write, PaperReviewArchive write, PaperReviewPreference write, PaperReviewRefused write", $while);
+	    
 	    crpmergeone("Paper", "leadContactId", $oldid, $newid);
 	    crpmergeone("Paper", "shepherdContactId", $oldid, $newid);
 
-	    // ensure uniqueness in PaperConflict
-	    $while = "while merging conflicts";
-	    // MySQL has some odd table locking behavior here!  Despite the
-	    // fact that PaperConflict is locked, renamed versions of it do
-	    // not appear to be locked.  So forget locking.  Oh, well.
-	    $result = $Conf->qe("select PC1.paperId, PC1.conflictType, PC2.conflictType from PaperConflict PC1 left join PaperConflict PC2 on (PC1.paperId=PC2.paperId and PC1.contactId=$oldid and PC2.contactId=$newid) where PC1.contactId=$oldid", $while);
-	    $ins = "";
-	    $del = "";
-	    while (($row = edb_row($result)))
-		if ($row[1] > $row[2]) {
-		    $ins .= ", ($row[0], $newid, $row[1])";
-		    $del .= " or paperId=$row[0]";
-		}
-	    if ($ins) {
-		$Conf->qe("delete from PaperConflict where contactId=$newid and (" . substr($del, 4) . ")", $while);
-		$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($ins, 2), $while);
+	    // paper authorship
+	    $result = $Conf->qe("select paperId, authorInformation from Paper where authorInformation like '%	" . sqlq_for_like($MiniMe->email) . "	%'", $while);
+	    $qs = array();
+	    while (($row = edb_row($result))) {
+		$row[1] = str_ireplace("\t" . $MiniMe->email . "\t", "\t" . $Me->email . "\t", $row[1]);
+		$qs[] = "update Paper set authorInformation='" . sqlq($row[1]) . "' where paperId=$row[0]";
 	    }
+	    foreach ($qs as $q)
+		$Conf->qe($q, $while);
+	    
+	    // ensure uniqueness in PaperConflict
+	    $result = $Conf->qe("select paperId, conflictType from PaperConflict where contactId=$oldid", $while);
+	    $values = "";
+	    while (($row = edb_row($result)))
+		$values .= ", ($row[0], $newid, $row[1])";
+	    if ($values)
+		$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($values, 2) . " on duplicate key update conflictType=greatest(conflictType, values(conflictType))", $while);
 	    $Conf->qe("delete from PaperConflict where contactId=$oldid", $while);
 	    
 	    crpmergeonex("PCMember", "contactId", $oldid, $newid);
@@ -92,17 +95,19 @@ if (isset($_REQUEST["merge"])) {
 	    crpmergeone("PaperReviewRefused", "requestedBy", $oldid, $newid);
 
 	    // XXX ensure uniqueness in PaperConflict, PaperReview
-
-	    // Update PC settings if we need to
-	    if ($MiniMe->isPC) {
-		$t = time();
-		$Conf->qe("insert into Settings (name, value) values ('pc', $t) on duplicate key update value=$t");
-	    }
 	    
 	    // Remove the old contact record
 	    if ($MergeError == "") {
 		if (!$Conf->q("delete from ContactInfo where contactId=$oldid"))
 		    $MergeError .= $Conf->dbErrorText($result, "", 0);
+	    }
+
+	    $Conf->qe("unlock tables", $while);
+
+	    // Update PC settings if we need to
+	    if ($MiniMe->isPC) {
+		$t = time();
+		$Conf->qe("insert into Settings (name, value) values ('pc', $t) on duplicate key update value=$t");
 	    }
 
 	    if ($MergeError == "") {

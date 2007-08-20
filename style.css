@@ -731,6 +731,9 @@ pre.entryexample {
 	padding: 0.5em;
 	background: #eeeeee;
 }
+pre.email {
+	margin: 0em;
+}
 
 table.rpad1 tr td {
 	padding-right: 1em;

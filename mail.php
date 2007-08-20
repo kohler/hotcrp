@@ -59,11 +59,13 @@ function checkMail($send) {
     if (!$result)
 	return;
     
-    $subject = defval($_REQUEST["subject"], "");
+    $subject = trim(preg_replace('/[\n\r\t]+/', ' ', defval($_REQUEST["subject"], "")));
     if (substr($subject, 0, strlen($subjectPrefix)) != $subjectPrefix)
 	$subject = $subjectPrefix . $subject;
+    $emailBody = str_replace("\r\n", "\n", $_REQUEST["emailBody"]);
+    $emailBody = str_replace("\r", "\n", $emailBody);
 
-    $template = array($_REQUEST["subject"], $_REQUEST["emailBody"]);
+    $template = array($subject, $emailBody);
     $rest = array("headers" => "Cc: $Conf->contactName <$Conf->contactEmail>");
     $last = array(0 => "", 1 => "", "to" => "");
     $any = false;

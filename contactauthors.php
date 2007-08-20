@@ -85,14 +85,21 @@ if (isset($_REQUEST["add"])) {
 foreach ($_REQUEST as $k => $v)
     if (substr($k, 0, 3) == "rem" && ($id = cvtint(substr($k, 3))) > 0) {
 	$needMsg = false;
-	if (!$Me->privChair)
-	    $Conf->errorMsg("Only system administrators can remove contact authors.");
-	else if (removeContactAuthor($paperId, $id))
+	$while = "while removing contact author";
+	$Conf->qe("lock tables PaperConflict write, ActionLog write", $while);
+	$result = $Conf->qe("select count(paperId) from PaperConflict where paperId=$paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . " group by paperId", $while);
+	$row = edb_row($result);
+	if (!$Me->privChair && (!$row || $row[0] <= 1))
+	    $Conf->errorMsg("Only a system administrator can remove the last contact author.");
+	else if (removeContactAuthor($paperId, $id)) {
 	    $Conf->confirmMsg("Contact author removed.");
+	    $Conf->log("Removed as contact author by $Me->email", $id, $paperId);
+	}
+	$Conf->qe("unlock tables", $while);
     }
 
 if ($needMsg)
-    $Conf->infoMsg("Use this screen to add more contact authors for your paper.  Any contact author can edit paper information, upload new versions, submit the paper, and view reviews." . ($Me->privChair ? "" : "  Only system administrators can <i>remove</i> contact authors from the paper, so act carefully."));
+    $Conf->infoMsg("Use this screen to change your paper's contact authors.  Contact authors can edit paper information, upload new versions, submit the paper, and view reviews, whether or not they're named in the author list.  Every paper must have at least one contact author.");
 
 
 if ($OK) {    
@@ -125,16 +132,17 @@ if ($OK) {
 	where paperId=$paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . "
 	order by lastName, firstName, email";
     $result = $Conf->qe($q, "while finding contact authors");
+    $numContacts = edb_nrows($result);
     while ($row = edb_row($result)) {
 	echo "<tr><td class='pad'>", contactHtml($row[0], $row[1]), "</td> <td class='pad'>", htmlspecialchars($row[2]), "</td>";
-	if ($Me->privChair)
+	if ($Me->privChair || ($numContacts > 1 && $row[3] != $Me->contactId))
 	    echo " <td class='pad'><button class='button_small' type='submit' name='rem$row[3]' value='1'>Remove contact author</button></td>";
 	echo "</tr>\n    ";
     }
 
     echo "    <tr><td class='pad'><input class='textlite' type='text' name='name' size='20' onchange='highlightUpdate()' /></td>
 	<td class='pad'><input class='textlite' type='text' name='email' size='20' onchange='highlightUpdate()' /></td>
-	<td class='pad'><input class='button' type='submit' name='add' value='Add contact author' /></td>
+	<td class='pad'><input class='button_small' type='submit' name='add' value='Add contact author' /></td>
     </tr>
   </table></td>
 </tr>
