@@ -269,7 +269,7 @@ if ($Conf->setting("acct_addr")) {
   <div class='f-e'><input class='textlite' type='text' name='state' size='24' value=\"", crpformvalue('state'), "\" /></div>
 </div>";
 	echo "<div class='f-ix'>
-  <div class='f-c'>ZIP/Postal Code</div>
+  <div class='f-c'>ZIP/Postal code</div>
   <div class='f-e'><input class='textlite' type='text' name='zipCode' size='12' value=\"", crpformvalue('zipCode'), "\" /></div>
 </div><div class='clear'></div></div>\n\n";
 	echo "<div class='f-i'>
