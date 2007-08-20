@@ -1,5 +1,20 @@
 HotCRP NEWS
 
+Version 2.6   20.Aug.2007
+
+* New way to collect author information.  Author information is entered
+  using separate text fields for Name, Email, and Affiliation.  If a user's
+  email is listed in the Email field of a paper's author information, that
+  user becomes a contact author for the paper and can edit the paper.
+
+* XHTML 1.0 Strict conformance.
+
+* Performance improvements: better cacheability for images, gzip JavaScript
+  and CSS.
+
+* Style changes, especially on settings pages.
+
+
 Version 2.5   12.Aug.2007
 
 * Optionally collect users' addresses and phone numbers.
