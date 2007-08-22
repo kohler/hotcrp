@@ -195,8 +195,15 @@ class PaperTable {
 	global $Conf, $Opt;
 	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0);
 	
-	echo "<tr class='pt_paper'>\n";
-	echo "  ", $this->tdCaption('paper'), "Upload paper</td>\n";
+	echo "<tr class='pt_paper'>\n  ", $this->tdCaption('paper');
+	if ($Opt['disablePS'])
+	    echo "PDF file";
+	else if ($Opt['disablePDF'])
+	    echo "PostScript file";
+	else
+	    echo "PDF/PostScript file";
+	$maxSize = ini_get("upload_max_filesize") . "B";
+	echo "<br /><span class='hint'>(max size $maxSize)</span></td>\n";
 	echo "  ", $this->tdEntry("paper");
 
 	echo ($final ? "Final copy:&nbsp; " : ""),
@@ -205,15 +212,7 @@ class PaperTable {
 	    echo ";fold(\"isready\",0)";
 	if ($flags & self::ENABLESUBMIT)
 	    echo ";form.submit.disabled=false";
-	echo "' /><br />";
-	if ($Opt['disablePDF'])
-	    echo "<span class='hint'>PostScript format only";
-	else if ($Opt['disablePS'])
-	    echo "<span class='hint'>PDF format only";
-	else
-	    echo "<span class='hint'>PDF or PostScript format";
-	$maxSize = ini_get("upload_max_filesize") . "B";
-	echo ", max size ", $maxSize, "</span>";
+	echo "' />";
 	
 	if (!$final) {
 	    if ($this->useRequest)
