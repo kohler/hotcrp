@@ -677,10 +677,10 @@ function doDecGroup() {
     foreach ($decs as $k => $v)
 	if ($k) {
 	    echo "<tr>$caption<td class='lentry nowrap'>";
-	    echo "<input type='text' class='textlite' name='dec$k' value=\"", htmlspecialchars($v), "\" size='35' /> &nbsp; ", ($k > 0 ? "Accept" : "Reject"), "</td></tr>\n";
+	    echo "<input type='text' class='textlite' name='dec$k' value=\"", htmlspecialchars($v), "\" size='35' /> &nbsp; ", ($k > 0 ? "Accept class" : "Reject class"), "</td></tr>\n";
 	    $caption = "";
 	}
-    echo "<tr><td class='lcaption'>New decision type<br /></td><td class='lentry nowrap'><input type='text' class='textlite' name='decn' value=\"\" size='35' /> &nbsp; <select name='dtypn'><option value='1' selected='selected'>Accept</option><option value='-1'>Reject</option></select>";
+    echo "<tr><td class='lcaption'>New decision type<br /></td><td class='lentry nowrap'><input type='text' class='textlite' name='decn' value=\"\" size='35' /> &nbsp; <select name='dtypn'><option value='1' selected='selected'>Accept class</option><option value='-1'>Reject class</option></select>";
     echo "<br /><small>Examples: \"Accepted as short paper\", \"Early reject\"</small>";
     echo "</td></tr>\n</table>\n";
     

@@ -230,7 +230,6 @@ input.button, button, a.button {
 	white-space: nowrap;
 }
 input.button_default, button.button_default {
-	font-size: larger;
 	background: #ffff99;
 	border-top: 1px solid #eeee66;
 	border-left: 2px solid #eeee66;
