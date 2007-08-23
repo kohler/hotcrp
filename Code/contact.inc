@@ -310,7 +310,7 @@ class Contact {
 
     function lookupAddress($conf) {
 	if ($conf->setting("allowPaperOption") >= 5) {
-	    $result = $conf->q("select * from ContactAddress where contactId=$this->contactId");
+	    $result = $conf->qx("select * from ContactAddress where contactId=$this->contactId");
 	    foreach (self::_addressKeys() as $k)
 		$this->$k = null;
 	    if (($row = edb_orow($result)))
