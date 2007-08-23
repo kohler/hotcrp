@@ -535,7 +535,7 @@ else {
 	responseView($prow, null, true);
     if (!$anyComment && !$sawResponse) {
 	echo "<table class='comment'><tr class='id'><td></td></tr></table>\n";
-	$Conf->infoMsg("No comments are available for this paper.");
+	$Conf->infoMsg("No comments are available for this paper." . ($Me->privChair ? "  As administrator, you may <a href='" . htmlspecialchars(selfHref("forceShow" => 1)) . "'>override your conflict</a> to enter a comment yourself." : ""));
     }
 }
 
