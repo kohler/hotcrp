@@ -27,8 +27,11 @@ function doCreateAccount() {
     // handle setup phase
     if (defval($Conf->settings["setupPhase"], false)) {
 	$msg .= "  As the first user, you have been automatically signed in and assigned PC chair privilege.  Your password is \"<tt>" . htmlspecialchars($_SESSION["Me"]->password) . "</tt>\".  All later users will have to sign in normally.";
-	$Conf->qe("insert into Chair (contactId) values (" . $_SESSION["Me"]->contactId . ")", "while granting PC chair privilege");
-	$Conf->qe("insert into PCMember (contactId) values (" . $_SESSION["Me"]->contactId . ")", "while granting PC chair privilege");
+	$while = "while granting PC chair privilege";
+	$Conf->qe("insert into Chair (contactId) values (" . $_SESSION["Me"]->contactId . ")", $while);
+	$Conf->qe("insert into PCMember (contactId) values (" . $_SESSION["Me"]->contactId . ")", $while);
+	if ($Conf->setting("allowPaperOption") >= 6)
+	    $Conf->qe("update ContactInfo set roles=" . (Contact::ROLE_PC | Contact::ROLE_CHAIR) . " where contactId=" . $_SESSION["Me"]->contactId, $while);
 	$Conf->qe("delete from Settings where name='setupPhase'", "while leaving setup phase");
 	$Conf->log("Granted PC chair privilege to first user", $_SESSION["Me"]);
 	$Conf->confirmMsg($msg);

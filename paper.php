@@ -703,13 +703,14 @@ if ($mode != "edit" && $mainPreferences && $prow->conflictType <= 0) {
     if (isset($PaperError['revpref']))
 	echo " error";
     echo "'>Review preference</td>
-  <td class='entry'><form id='prefform' action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1\" method='post' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"prefform\", {setrevpref:1})'><div class='inform'>
-    <input id='prefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$x\" onchange='Miniajax.submit(\"prefform\", {setrevpref:1})' tabindex='1' />&nbsp;
-    <input class='button_small' type='submit' value='Save preference' tabindex='1' />
-    <span id='prefformresult' style='padding-left:1em'></span>
-  </div></form></td>
-</tr>\n\n";
-    $Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"prefform\", null, 2);</script>";
+  <td class='entry'><form id='prefform' class='fold7o' action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1\" method='post' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"prefform\")'>",
+	"<div class='inform'>",
+	"<input type='hidden' name='setrevpref' value='1' />",
+	"<input id='prefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$x\" onchange='Miniajax.submit(\"prefform\")' tabindex='1' />&nbsp;
+    <input class='button_small extension7' type='submit' value='Save preference' tabindex='1' />
+    <span id='prefformresult' style='padding-left:1em'></span>",
+	"</div></form></td>\n</tr>\n\n";
+    $Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"prefform\", null, 2);Miniajax.onload(\"prefform\");</script>";
 }
 
 

@@ -25,6 +25,7 @@ class PaperTable {
     var $foldState;
     var $highlight;
     var $matchPreg;
+    var $watchCheckbox;
     
     function PaperTable($editable, $useRequest, $allFolded, $authorsFolded,
 			$foldsession = null) {
@@ -44,6 +45,7 @@ class PaperTable {
 
 	$this->matchPreg = defval($thisMatchPreg, defval($_SESSION["matchPreg"], null));
 	$this->highlight = $this->matchPreg !== null;
+	$this->watchCheckbox = 0;
     }
 
     function echoDivEnter() {
@@ -139,7 +141,7 @@ class PaperTable {
     }
     
     function echoPaperRow($prow, $flags) {
-	global $Conf, $Me;
+	global $Conf, $Me, $ConfSiteBase;
 	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0);
 	$canUpload = $this->editable;
 
@@ -161,6 +163,30 @@ class PaperTable {
 	}
 	if (($flags & self::STATUS_DATE) && $prow->timestamp)
 	    echo "<span class='sep'></span> (last updated ", $Conf->printableTime($prow->timestamp), ")";
+
+	// watch note
+	if ($this->watchCheckbox && $Conf->setting("allowPaperOption") >= 6
+	    && $prow->timeSubmitted >= 0
+	    && (($prow->conflictType >= CONFLICT_AUTHOR || $prow->conflictType <= 0)
+		|| ($Me->privChair && isset($_REQUEST["forceShow"])))) {
+	    $result = $Conf->q("select ContactInfo.contactId, reviewType, commentId, conflictType, watch from ContactInfo left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperComment on (PaperComment.paperId=$prow->paperId and PaperComment.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId) left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId) where ContactInfo.contactId=$Me->contactId");
+	    $row = edb_row($result);
+	    echo "<span class='sep'></span> <form id='watchform' class='fold7o' action=\"", htmlspecialchars(selfHref(array("post" => 1))), "\" method='post' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"watchform\")'><div class='inform'>",
+		"<input type='hidden' name='setwatch' value='1' />",
+		"<input type='checkbox' name='watch' value='", $this->watchCheckbox, "'";
+	    if ($row[4] && ($row[4] & ($Me->defaultWatch >> 1)))
+		$watchValue = $row[4];
+	    else if ($row[1] || $row[2] || $row[3] >= CONFLICT_AUTHOR)
+		$watchValue = $Me->defaultWatch;
+	    else
+		$watchValue = 0;
+	    if ($watchValue & $this->watchCheckbox)
+		echo " checked='checked'";
+	    echo " onchange='Miniajax.submit(\"watchform\")' />&nbsp;Mail me on comment updates&nbsp; ",
+		"<input class='button_small extension7' type='submit' value='Save' /> ",
+		"<span id='watchformresult' style='padding-left:1em'></span></div></form>";
+	    $Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"watchform\");</script>";
+	}
 
 	// conflicts
 	if (($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType >= CONFLICT_AUTHOR)

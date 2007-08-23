@@ -23,6 +23,9 @@ define("CONFLICT_CONTACTAUTHOR", 10);
 
 define("TAG_MAXLEN", 40);
 
+define("WATCH_COMMENTSET", 1);
+define("WATCH_COMMENT", 2);
+
 $OK = 1;
 
 $Msg["unknown"] = "Unknown error.";

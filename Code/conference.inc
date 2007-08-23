@@ -648,6 +648,10 @@ class Conference {
     }
 
 
+    //
+    // Paper search
+    //
+
     function _paperQuery_where($optarr, $field) {
 	$ids = array();
 	foreach (mkarray($optarr) as $id)
@@ -980,6 +984,7 @@ class Conference {
     //
     // Message routines
     //
+    
     function msg($text, $type) {
 	$x = "<div class=\"$type\">$text</div>\n";
 	if ($this->saveMessages)
@@ -1020,34 +1025,10 @@ class Conference {
     }
 
 
-    function ajaxExit($others = null) {
-	$t = "";
-	if (isset($_SESSION["msgs"])) {
-	    foreach ($_SESSION["msgs"] as $msg)
-		if (preg_match('|\A<div class="(.*?)">(.*)</div>\Z|', $msg, $m))
-		    $t .= "<span class=\"$m[1]\">$m[2]</span>\n";
-	    unset($_SESSION["msgs"]);
-	}
-	header("Content-Type: text/json");
-	echo "({ \"response\": \"", addcslashes($t, "\r\n\"\\"), "\"";
-	if ($others)
-	    foreach ($others as $name => $value) {
-		echo ",\n\"", $name, "\": ";
-		if ($value === null || $value === 0 || $value === false)
-		    echo "0";
-		else if ($value === true || $value === 1)
-		    echo "1";
-		else
-		    echo "\"", addcslashes($value, "\r\n\"\\"), "\"";
-	    }
-	echo " })";
-	exit;
-    }
-    
-
     //
     // Conference header, footer
     //
+    
     function header_head($title) {
 	global $ConfSiteBase, $ConfSitePATH, $Opt;
 	if (!$this->headerPrinted) {
@@ -1135,30 +1116,34 @@ class Conference {
 	$this->scriptStuff = "";
     }
 
-    function getFileExtension(&$mimetype) {
-	if (!isset($mimetype) || $mimetype == null || $mimetype == "")
-	    return "";
-	else if ($mimetype == "application/postscript")
-	    return ".ps";
-	else if ($mimetype == "application/pdf")
-	    return ".pdf";
-	else if ($mimetype == "text/plain")
-	    return ".txt";
-	else
-	    return "";
+    function ajaxExit($others = null) {
+	$t = "";
+	if (isset($_SESSION["msgs"])) {
+	    foreach ($_SESSION["msgs"] as $msg)
+		if (preg_match('|\A<div class="(.*?)">(.*)</div>\Z|', $msg, $m))
+		    $t .= "<span class=\"$m[1]\">$m[2]</span>\n";
+	    unset($_SESSION["msgs"]);
+	}
+	header("Content-Type: text/json");
+	echo "({ \"response\": \"", addcslashes($t, "\r\n\"\\"), "\"";
+	if ($others)
+	    foreach ($others as $name => $value) {
+		echo ",\n\"", $name, "\": ";
+		if ($value === null || $value === 0 || $value === false)
+		    echo "0";
+		else if ($value === true || $value === 1)
+		    echo "1";
+		else
+		    echo "\"", addcslashes($value, "\r\n\"\\"), "\"";
+	    }
+	echo " })";
+	exit;
     }
 
-    function makeDownloadPath($paperId, &$mimetype, $final = false) {
-	global $ConfSiteBase;
-	return $ConfSiteBase . "Download/GetPaper/" . $this->downloadPaperName($paperId, $mimetype, $final);
-    }
 
-  
-    function allowEmailTo($email) {
-	global $Opt;
-	return $Opt['sendEmail'] && strstr($email, "@")
-	    && !preg_match('/@_\.com$/', $email);
-    }
+    //
+    // Action recording
+    //
   
     function log($text, $who, $paperId = null) {
 	if (is_array($paperId)) {
@@ -1176,6 +1161,34 @@ class Conference {
 	$this->q("insert into ActionLog (ipaddr, contactId, paperId, action) values ('" . sqlq($_SERVER['REMOTE_ADDR']) . "', " . (is_numeric($who) ? $who : $who->contactId) . ", $paperId, '" . sqlq($text) . "')");
     }
 
+
+    //
+    // Miscellaneous
+    //
+
+    function getFileExtension(&$mimetype) {
+	if (!isset($mimetype) || $mimetype == null || $mimetype == "")
+	    return "";
+	else if ($mimetype == "application/postscript")
+	    return ".ps";
+	else if ($mimetype == "application/pdf")
+	    return ".pdf";
+	else if ($mimetype == "text/plain")
+	    return ".txt";
+	else
+	    return "";
+    }
+
+    function makeDownloadPath($paperId, &$mimetype, $final = false) {
+	global $ConfSiteBase;
+	return $ConfSiteBase . "Download/GetPaper/" . $this->downloadPaperName($paperId, $mimetype, $final);
+    }
+  
+    function allowEmailTo($email) {
+	global $Opt;
+	return $Opt['sendEmail'] && strstr($email, "@")
+	    && !preg_match('/@_\.com$/', $email);
+    }
     
     function textValuesGraph($v, $max, $style) {
 	global $ConfSiteBase;

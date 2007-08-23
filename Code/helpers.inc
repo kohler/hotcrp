@@ -665,7 +665,7 @@ function whyNotText($whyNot, $action) {
 	$text .= "You didn't write this review, so you can't change it.  ";
     // finish it off
     if (isset($whyNot['chairMode']))
-	$text .= "<a href=\"" . selfHref(array("forceShow" => 1)) . "\">" . ucfirst($action) . " the paper anyway</a>  ";
+	$text .= "<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">" . ucfirst($action) . " the paper anyway</a>  ";
     if (isset($whyNot['forceShow']))
 	$text .= "<a href=\"". htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Show " . ($action == "comment" ? "comments" : "reviews") . " anyway</a>  ";
     if ($text && $action == "view")

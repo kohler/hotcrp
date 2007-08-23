@@ -81,8 +81,11 @@ CREATE TABLE `ContactInfo` (
   `collaborators` text,
   `creationTime` int(11) NOT NULL default '0',
   `lastLogin` int(11) NOT NULL default '0',
+  `defaultWatch` tinyint(11) NOT NULL default '2',
+  `roles` tinyint(11) NOT NULL default '0',
   PRIMARY KEY  (`contactId`),
   UNIQUE KEY `contactId` (`contactId`),
+  UNIQUE KEY `contactIdRoles` (`contactId`,`roles`),
   UNIQUE KEY `email` (`email`),
   KEY `fullName` (`lastName`,`firstName`,`email`),
   FULLTEXT KEY `name` (`lastName`,`firstName`,`email`),
@@ -171,7 +174,8 @@ CREATE TABLE `PaperComment` (
   PRIMARY KEY  (`commentId`),
   UNIQUE KEY `commentId` (`commentId`),
   KEY `contactId` (`contactId`),
-  KEY `paperId` (`paperId`)
+  KEY `paperId` (`paperId`),
+  KEY `contactPaper` (`contactId`,`paperId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
@@ -360,6 +364,19 @@ CREATE TABLE `PaperTopic` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
+-- Table structure for table `PaperWatch`
+--
+
+DROP TABLE IF EXISTS `PaperWatch`;
+CREATE TABLE `PaperWatch` (
+  `paperId` int(11) NOT NULL,
+  `contactId` int(11) NOT NULL,
+  `watch` tinyint(1) NOT NULL default '0',
+  UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
+  UNIQUE KEY `contactPaperWatch` (`contactId`,`paperId`,`watch`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
 -- Table structure for table `ReviewFormField`
 --
 
@@ -444,7 +461,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 5);
+insert into Settings (name, value) values ('allowPaperOption', 6);
 # collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 

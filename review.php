@@ -255,7 +255,7 @@ if (isset($_REQUEST['refuse'])) {
 // set outcome action
 if (isset($_REQUEST['setoutcome'])) {
     if (!$Me->canSetOutcome($prow))
-	$Conf->errorMsg("You cannot set the decision for paper #$prow->paperId." . ($Me->privChair ? "  (<a href='" . selfHref(array("forceShow" => 1)) . "'>Override conflict</a>)" : ""));
+	$Conf->errorMsg("You cannot set the decision for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Override conflict</a>)" : ""));
     else {
 	$o = cvtint(trim($_REQUEST['outcome']));
 	$rf = reviewForm();
@@ -279,7 +279,7 @@ if (isset($_REQUEST["settags"])) {
 	setTags($prow->paperId, defval($_REQUEST["tags"], ""), 'p', $Me->privChair);
 	loadRows();
     } else
-	$Conf->errorMsg("You cannot set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href='" . selfHref(array("forceShow" => 1)) . "'>Override conflict</a>)" : ""));
+	$Conf->errorMsg("You cannot set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Override conflict</a>)" : ""));
 }
 
 

@@ -53,27 +53,27 @@ function fold(which, dofold, foldnum) {
     if (which instanceof Array) {
 	for (var i = 0; i < which.length; i++)
 	    fold(which[i], dofold, foldnum);
-    } else {
+    } else if (typeof which == "string") {
 	var elt = e('fold' + which);
-	var foldnumid = (foldnum ? foldnum : "");
-	var opentxt = "fold" + foldnumid + "o";
-	var closetxt = "fold" + foldnumid + "c";
-	if (elt && dofold == null && elt.className.indexOf(opentxt) >= 0)
-	    dofold = true;
-	if (!elt)
-	    /* nada */;
-	else if (dofold)
-	    elt.className = elt.className.replace(opentxt, closetxt);
-	else
-	    elt.className = elt.className.replace(closetxt, opentxt);
+	fold(elt, dofold, foldnum);
 	// check for session
 	var selt = e('foldsession.' + which + foldnumid);
 	if (selt)
 	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0));
+    } else if (which) {
+	var foldnumid = (foldnum ? foldnum : "");
+	var opentxt = "fold" + foldnumid + "o";
+	var closetxt = "fold" + foldnumid + "c";
+	if (dofold == null && which.className.indexOf(opentxt) >= 0)
+	    dofold = true;
+	if (dofold)
+	    which.className = which.className.replace(opentxt, closetxt);
+	else
+	    which.className = which.className.replace(closetxt, opentxt);
 	// IE won't actually do the fold unless we yell at it
 	if (document.recalc)
 	    try {
-		elt.innerHTML = elt.innerHTML + "";
+		which.innerHTML = which.innerHTML + "";
 	    } catch (err) {
 	    }
     }
@@ -375,10 +375,15 @@ Miniajax.newRequest = function() {
     }
     return null;
 };
-Miniajax.submit = function(formname, extra, callback) {
+Miniajax.onload = function(formname) {
+    fold(e(formname), 1, 7);
+}
+Miniajax.submit = function(formname, callback) {
     var form = e(formname), req = Miniajax.newRequest();
-    if (!form || !req || form.method != "post")
+    if (!form || !req || form.method != "post") {
+	fold(form, 0, 7);
 	return true;
+    }
     var resultelt = e(formname + "result");
     if (!resultelt) 
 	resultelt = {};
@@ -390,6 +395,7 @@ Miniajax.submit = function(formname, extra, callback) {
 			       req.abort();
 			       resultelt.innerHTML = "<span class='error'>Network timeout.  Please try again.</span>";
 			       form.onsubmit = "";
+			       fold(form, 0, 7);
 			   }, 4000);
     
     req.onreadystatechange = function() {
@@ -404,6 +410,7 @@ Miniajax.submit = function(formname, extra, callback) {
 	} else {
 	    resultelt.innerHTML = "<span class='error'>Network error.  Please try again.</span>";
 	    form.onsubmit = "";
+	    fold(form, 0, 7);
 	}
     }
     
@@ -411,14 +418,11 @@ Miniajax.submit = function(formname, extra, callback) {
     var pairs = [], regexp = /%20/g;
     for (var i = 0; i < form.elements.length; i++) {
 	var elt = form.elements[i];
-	if (elt.name && elt.value && elt.type != "submit" && elt.type != "cancel")
+	if (elt.name && elt.value && elt.type != "submit"
+	    && elt.type != "cancel" && (elt.type != "checkbox" || elt.checked))
 	    pairs.push(encodeURIComponent(elt.name).replace(regexp, "+") + "="
 		       + encodeURIComponent(elt.value).replace(regexp, "+"));
     }
-    if (extra)
-	for (var i in extra)
-	    pairs.push(encodeURIComponent(i).replace(regexp, "+") + "="
-		       + encodeURIComponent(extra[i]).replace(regexp, "+"));
     pairs.push("ajax=1");
 
     // send
@@ -434,7 +438,7 @@ var ajaxAbstracts = false;
 function foldabstract(which, dofold, foldnum) {
     if (dofold || !ajaxAbstracts)
 	return fold(which, dofold, foldnum);
-    Miniajax.submit("abstractloadform", null, function(rv) {
+    Miniajax.submit("abstractloadform", function(rv) {
 			var elt;
 			for (var i in rv) 
 			    if (i.substr(0, 8) == "abstract" && (elt = e(i)))

@@ -78,19 +78,16 @@ if (isset($_REQUEST['register']) && $OK) {
 	    $while = "while initializing roles";
 	    $changed = false;
 	    foreach (array("pc" => "PCMember", "ass" => "ChairAssistant", "chair" => "Chair") as $k => $table) {
-		if ($k == "pc")
-		    $now = ($Acct->roles & Contact::ROLE_PC) != 0;
-		else if ($k == "ass")
-		    $now = ($Acct->roles & Contact::ROLE_ASSISTANT) != 0;
-		else
-		    $now = ($Acct->roles & Contact::ROLE_CHAIR) != 0;
-		if ($now && !isset($_REQUEST[$k])) {
+		$role = ($k == "pc" ? Contact::ROLE_PC : ($k == "ass" ? Contact::ROLE_ASSISTANT : Contact::ROLE_CHAIR));
+		if (($Acct->roles & $role) != 0 && !isset($_REQUEST[$k])) {
 		    $Conf->qe("delete from $table where contactId=$Acct->contactId", $while);
 		    $Conf->log("Removed as $table by $Me->email", $Acct);
+		    $Acct->roles &= ~$role;
 		    $changed = true;
-		} else if (!$now && isset($_REQUEST[$k])) {
+		} else if (($Acct->roles & $role) == 0 && isset($_REQUEST[$k])) {
 		    $Conf->qe("insert into $table (contactId) values ($Acct->contactId)", $while);
 		    $Conf->log("Added as $table by $Me->email", $Acct);
+		    $Acct->roles |= $role;
 		    $changed = true;
 		}
 	    }
@@ -111,6 +108,9 @@ if (isset($_REQUEST['register']) && $OK) {
 		       "zipCode", "country") as $v)
 	    if (isset($_REQUEST[$v]))
 		$Acct->$v = $_REQUEST[$v];
+	$Acct->defaultWatch = 0;
+	if (isset($_REQUEST["watchcomment"]))
+	    $Acct->defaultWatch |= WATCH_COMMENT;
 
 	if ($OK)
 	    $Acct->updateDB($Conf);
@@ -289,6 +289,15 @@ if ($Conf->setting("acct_addr")) {
 
 echo "</div></td>\n</tr>\n\n";
 
+if ($Conf->setting("allowPaperOption") >= 6) {
+    echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></td></tr>\n\n",
+	"<tr><td class='caption'>Email notification</td><td class='entry'>",
+	"<input type='checkbox' name='watchcomment' value='", WATCH_COMMENT, "'";
+    if ($Acct->defaultWatch & WATCH_COMMENT)
+	echo " checked='checked'";
+    echo " />&nbsp;Mail me when comments are added to papers I wrote or reviewed";
+    echo "</td></tr>\n\n";
+}
 
 
 if ($Acct->isPC || $newProfile)

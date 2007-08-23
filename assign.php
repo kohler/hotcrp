@@ -336,7 +336,6 @@ $paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->privCh
 
 // begin form and table
 echo "<form id='ass' action='assign.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>";
-	// onsubmit='return Miniajax.submit(\"ass\", {update:1})'>";
 $paperTable->echoDivEnter();
 echo "<table class='assign'>\n\n";
 

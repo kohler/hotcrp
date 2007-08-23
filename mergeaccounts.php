@@ -82,6 +82,13 @@ if (isset($_REQUEST["merge"])) {
 	    crpmergeonex("PCMember", "contactId", $oldid, $newid);
 	    crpmergeonex("ChairAssistant", "contactId", $oldid, $newid);
 	    crpmergeonex("Chair", "contactId", $oldid, $newid);
+	    if ($Conf->setting("allowPaperOption") >= 6) {
+		if (($MiniMe->roles | $Me->roles) != $Me->roles) {
+		    $Me->roles |= $MiniMe->roles;
+		    $Conf->qe("update ContactInfo set roles=$Me->roles where contactId=$Me->contactId", $while);
+		}
+	    }
+	    
 	    crpmergeone("ActionLog", "contactId", $oldid, $newid);
 	    crpmergeone("TopicInterest", "contactId", $oldid, $newid);
 	    crpmergeone("PaperComment", "contactId", $oldid, $newid);
@@ -94,7 +101,7 @@ if (isset($_REQUEST["merge"])) {
 	    crpmergeone("PaperReviewRefused", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReviewRefused", "requestedBy", $oldid, $newid);
 
-	    // XXX ensure uniqueness in PaperConflict, PaperReview
+	    // XXX ensure uniqueness in PaperReview
 	    
 	    // Remove the old contact record
 	    if ($MergeError == "") {

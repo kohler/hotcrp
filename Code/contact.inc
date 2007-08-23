@@ -21,6 +21,7 @@ class Contact {
     var $password;
     var $note;
     var $anyTopicInterest;
+    var $defaultWatch;
 
     // Address information (loaded separately)
     var $addressLine1;
@@ -54,22 +55,27 @@ class Contact {
 	if ($conf == null)
 	    $conf = $Conf;
 	if (!$this->validated && $this->contactId > 0) {
-	    $result = $conf->q("select max(conflictType),
-			PaperReview.contactId as reviewer,
-			count(ExtPaperReview.requestedBy) as requester,
-			PCMember.contactId as pcMember,
-			ChairAssistant.contactId as assistant,
-			Chair.contactId as chair,
-			max(PaperReview.reviewNeedsSubmit) as reviewNeedsSubmit
-		from ContactInfo
-		left join PaperReview using (contactId)
+	    $qa = "select max(conflictType),
+		PaperReview.contactId as reviewer,
+		max(PaperReview.reviewNeedsSubmit) as reviewNeedsSubmit,
+		count(ExtPaperReview.requestedBy) as requester";
+	    $qb = "left join PaperReview using (contactId)
 		left join PaperConflict using (contactId)
+		left join PaperReview as ExtPaperReview on (ExtPaperReview.requestedBy=ContactInfo.contactId)";
+	    if ($conf->setting("allowPaperOption") >= 6)
+		$qa .= ",
+		ContactInfo.roles, 0, 0, 0";
+	    else {
+		$qa .= ",
+		0, PCMember.contactId as isPC,
+		ChairAssistant.contactId as isAssistant,
+		Chair.contactId as isChair";
+		$qb .= "
 		left join PCMember using (contactId)
 		left join ChairAssistant using (contactId)
-		left join Chair using (contactId)
-		left join PaperReview as ExtPaperReview on (ExtPaperReview.requestedBy=ContactInfo.contactId)
-		where ContactInfo.contactId=$this->contactId
-		group by ContactInfo.contactId");
+		left join Chair using (contactId)";
+	    }
+	    $result = $conf->q("$qa from ContactInfo $qb where ContactInfo.contactId=$this->contactId group by ContactInfo.contactId");
 	    if (edb_nrows($result) == 0)
 		$this->invalidate();
 	    else {
@@ -81,15 +87,15 @@ class Contact {
 		    if ($row[1] > 0)
 			$this->isReviewer = true;
 		    if ($row[2] > 0)
-			$this->isRequester = true;
-		    if ($row[3] > 0)
-			$this->roles |= self::ROLE_PC;
-		    if ($row[4] > 0)
-			$this->roles |= self::ROLE_ASSISTANT;
-		    if ($row[5] > 0)
-			$this->roles |= self::ROLE_CHAIR;
-		    if ($row[6] > 0)
 			$this->reviewsOutstanding = true;
+		    if ($row[3] > 0)
+			$this->isRequester = true;
+		    if (($row[4] & self::ROLE_PC) || $row[5] > 0)
+			$this->roles |= self::ROLE_PC;
+		    if (($row[4] & self::ROLE_ASSISTANT) || $row[6] > 0)
+			$this->roles |= self::ROLE_ASSISTANT;
+		    if (($row[4] & self::ROLE_CHAIR) || $row[7] > 0)
+			$this->roles |= self::ROLE_CHAIR;
 		}
 		$this->isPC = ($this->roles & (self::ROLE_PC | self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
 		$this->privChair = ($this->roles & (self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
@@ -141,6 +147,7 @@ class Contact {
 	    $this->$k = null;
 	$this->note = 0;
 	$this->anyTopicInterest = 0;
+	$this->defaultWatch = 0;
 
 	$this->roles = 0;
 	$this->isAuthor = $this->isReviewer = $this->isPC = $this->privChair = false;
@@ -209,9 +216,12 @@ class Contact {
 
     function updateDB($conf, $where = "") {
 	$this->trim();
+	$qa = "";
+	if ($conf->setting("allowPaperOption") >= 6)
+	    $qa = ", roles='$this->roles', defaultWatch='$this->defaultWatch'";
 	$query = sprintf("update ContactInfo set firstName='%s', lastName='%s',
 		email='%s', affiliation='%s', voicePhoneNumber='%s',
-		faxPhoneNumber='%s', password='%s', collaborators='%s'
+		faxPhoneNumber='%s', password='%s', collaborators='%s'$qa
 		where contactId='%s'",
 			 sqlq($this->firstName), sqlq($this->lastName),
 			 sqlq($this->email), sqlq($this->affiliation),
@@ -272,6 +282,7 @@ class Contact {
 	    $this->note = $fromdb->note;
 	    $this->collaborators = $fromdb->collaborators;
 	    $this->anyTopicInterest = isset($fromdb->topicId);
+	    $this->defaultWatch = defval($fromdb->defaultWatch, 0);
 
 	    $this->shortConfName = $conf->shortName;
 
@@ -309,22 +320,26 @@ class Contact {
     }
 
     function makeMinicontact($o) {
-	$this->invalidate();
-	$this->contactId = $o->contactId;
-	$this->firstName = defval($o->firstName, '');
-	$this->lastName = defval($o->lastName, '');
-	$this->email = defval($o->email, '');
-	$this->isAuthor = defval($o->isAuthor, false) != 0;
-	$this->isReviewer = defval($o->isReviewer, false) != 0;
-	$this->roles = 0;
+	// If you change this function, search for its callers to ensure
+	// they provide all necessary information.
+	$c = new Contact;
+	$c->invalidate();
+	$c->contactId = $o->contactId;
+	$c->firstName = defval($o->firstName, '');
+	$c->lastName = defval($o->lastName, '');
+	$c->email = defval($o->email, '');
+	$c->isAuthor = defval($o->isAuthor, false) != 0;
+	$c->isReviewer = defval($o->isReviewer, false) != 0;
+	$c->roles = defval($o->roles, 0);
 	if (defval($o->isPC, false))
-	    $this->roles |= self::ROLE_PC;
+	    $c->roles |= self::ROLE_PC;
 	if (defval($o->isAssistant, false))
-	    $this->roles |= self::ROLE_ASSISTANT;
+	    $c->roles |= self::ROLE_ASSISTANT;
 	if (defval($o->isChair, false))
-	    $this->roles |= self::ROLE_CHAIR;
-	$this->isPC = ($this->roles & (self::ROLE_PC | self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
-	$this->privChair = ($this->roles & (self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
+	    $c->roles |= self::ROLE_CHAIR;
+	$c->isPC = ($c->roles & (self::ROLE_PC | self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
+	$c->privChair = ($c->roles & (self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
+	return $c;
     }
     
 
@@ -697,11 +712,14 @@ class Contact {
 	     && (!$crow || $crow->forAuthors))
 	    || ($this->privChair && ($forceShow || $prow->conflictType == 0))
 	    || ($this->isPC && $prow->conflictType == 0
-		&& ($conf->timePCViewAllReviews()
-		    || !$crow || $crow->forPC))
-	    || ($prow->myReviewType > 0 && $prow->conflictType == 0
+		&& (!$crow || $conf->timePCViewAllReviews()))
+	    || ($prow->myReviewType > 0
+		&& $prow->conflictType == 0
 		&& defval($prow->myReviewSubmitted) > 0
-		&& (!$crow || $crow->forReviewers)))
+		&& (!$crow || $crow->forReviewers))
+	    || ($prow->myReviewType == REVIEW_SECONDARY
+		&& $prow->conflictType == 0
+		&& $prow->myReviewNeedsSubmit === null))
 	    return true;
 	// collect failure reasons
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->isPC && $prow->myReviewType <= 0)

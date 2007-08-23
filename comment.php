@@ -31,7 +31,7 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $ConfSiteBase, $prow, $crows, $crow;
+    global $Conf, $Me, $ConfSiteBase, $prow, $crows, $crow, $savedCommentId, $savedCrow;
     if (isset($_REQUEST["commentId"]))
 	$sel = array("commentId" => $_REQUEST["commentId"]);
     else {
@@ -54,6 +54,8 @@ function loadRows() {
 	$crows[] = $row;
 	if (isset($_REQUEST['commentId']) && $row->commentId == $_REQUEST['commentId'])
 	    $crow = $row;
+	if (isset($savedCommentId) && $row->commentId == $savedCommentId)
+	    $savedCrow = $row;
     }
     if (isset($_REQUEST['commentId']) && !$crow)
 	errorMsgExit("That comment does not exist.");
@@ -66,9 +68,85 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
     $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  The file was ignored.");
 
 
+// set watch preference action
+if (isset($_REQUEST['setwatch']) && $prow) {
+    $ajax = defval($_REQUEST["ajax"], 0);
+    if (!$Me->privChair
+	|| ($contactId = cvtint($_REQUEST["contactId"])) <= 0)
+	$contactId = $Me->contactId;
+    if (defval($_REQUEST['watch']))
+	$q = "insert into PaperWatch (paperId, contactId, watch) values ($prow->paperId, $contactId, " . (WATCH_COMMENTSET | WATCH_COMMENT) . ") on duplicate key update watch = watch | " . (WATCH_COMMENTSET | WATCH_COMMENT);
+    else
+	$q = "insert into PaperWatch (paperId, contactId, watch) values ($prow->paperId, $contactId, " . WATCH_COMMENTSET . ") on duplicate key update watch = (watch | " . WATCH_COMMENTSET . ") & " . (~WATCH_COMMENT & 127);
+    $Conf->qe($q, "while saving watch preference");
+    if ($OK)
+	$Conf->confirmMsg("Mail preference saved.");
+    if ($ajax)
+	$Conf->ajaxExit(array("ok" => $OK));
+}
+
+
+// send watch messages
+function setReviewInfo($dst, $src) {
+    $dst->myReviewType = $src->myReviewType;
+    $dst->myReviewSubmitted = $src->myReviewSubmitted;
+    $dst->myReviewNeedsSubmit = $src->myReviewNeedsSubmit;
+    $dst->conflictType = $src->conflictType;
+}
+
+function watch() {
+    global $Conf, $Me, $prow, $savedCrow;
+    
+    if ($Conf->setting("allowPaperOption") < 6 || !$savedCrow)
+	return;
+
+    $result = $Conf->qe("select ContactInfo.contactId,
+		firstName, lastName, email, password, roles, defaultWatch,
+		reviewType as myReviewType,
+		reviewSubmitted as myReviewSubmitted,
+		reviewNeedsSubmit as myReviewNeedsSubmit,
+		commentId, conflictType, watch
+		from ContactInfo
+		left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId)
+		left join PaperComment on (PaperComment.paperId=$prow->paperId and PaperComment.contactId=ContactInfo.contactId)
+		left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId)
+		left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId)
+		where conflictType>=" . CONFLICT_AUTHOR . " or reviewType is not null or watch is not null or commentId is not null");
+    
+    $sendNamed = array();
+    $sendAnon = array();
+    $saveProw = (object) null;
+    $lastContactId = 0;
+    setReviewInfo($saveProw, $prow);
+
+    while (($row = edb_orow($result))) {
+	if ($row->contactId == $lastContactId)
+	    continue;
+	$lastContactId = $row->contactId;
+	if ($row->watch & WATCH_COMMENTSET) {
+	    if (!($row->watch & WATCH_COMMENT))
+		continue;
+	} else {
+	    if (!($row->defaultWatch & WATCH_COMMENT))
+		continue;
+	}
+
+	$minic = Contact::makeMinicontact($row);
+	setReviewInfo($prow, $row);
+	if ($minic->canViewComment($prow, $savedCrow, $Conf)
+	    && $minic->contactId != $Me->contactId) {
+	    require_once("Code/mailtemplate.inc");
+	    Mailer::send("@commentnotify", $prow, $minic, null, array("commentId" => $savedCrow->commentId));
+	}
+    }
+
+    setReviewInfo($prow, $saveProw);
+}
+
+
 // update comment action
 function saveComment($text) {
-    global $Me, $Conf, $prow, $crow;
+    global $Me, $Conf, $prow, $crow, $savedCommentId;
 
     // options
     $forReviewers = (defval($_REQUEST["forReviewers"]) ? 1 : 0);
@@ -102,14 +180,14 @@ function saveComment($text) {
 
     // comment ID
     if ($crow)
-	$commentId = $crow->commentId;
-    else if (!($commentId = $Conf->lastInsertId($while)))
+	$savedCommentId = $crow->commentId;
+    else if (!($savedCommentId = $Conf->lastInsertId($while)))
 	return;
 
     // log, end
     $action = ($text == "" ? "deleted" : "saved");
     $Conf->confirmMsg("Comment $action");
-    $Conf->log("Comment $commentId $action", $Me, $prow->paperId);
+    $Conf->log("Comment $savedCommentId $action", $Me, $prow->paperId);
 
     // adjust comment counts
     if ($change) {
@@ -145,6 +223,7 @@ if (isset($_REQUEST['submit']) && defval($_REQUEST['response'])) {
 	saveResponse($text);
 	$Conf->qe("unlock tables");
 	loadRows();
+	watch();
     }
 } else if (isset($_REQUEST['submit'])) {
     if (!$Me->canSubmitComment($prow, $crow, $Conf, $whyNot))
@@ -155,6 +234,7 @@ if (isset($_REQUEST['submit']) && defval($_REQUEST['response'])) {
     } else {
 	saveComment($text);
 	loadRows();
+	watch();
     }
 } else if (isset($_REQUEST['delete']) && $crow) {
     if (!$Me->canSubmitComment($prow, $crow, $Conf, $whyNot))
@@ -180,6 +260,7 @@ confHeader();
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, $forceShow);
 $paperTable = new PaperTable(false, false, true, ($Me->privChair && $prow->blind ? 1 : 2));
+$paperTable->watchCheckbox = WATCH_COMMENT;
 
 
 // begin table

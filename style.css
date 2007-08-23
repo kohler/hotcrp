@@ -1071,6 +1071,7 @@ tr.k1 td {
 .fold3c .extension3, .fold3c .folder3, .fold3o .ellipsis3, .fold3o .unfolder3,
 .fold4c .extension4, .fold4c .folder4, .fold4o .ellipsis4, .fold4o .unfolder4,
 .fold5c .extension5, .fold5c .folder5, .fold5o .ellipsis5, .fold5o .unfolder5,
+.fold7c .extension7, .fold7c .folder7, .fold7o .ellipsis7, .fold7o .unfolder7,
 .fold8c .extension8, .fold8c .folder8, .fold8o .ellipsis8, .fold8o .unfolder8,
 .fold9c .extension9, .fold9c .folder9, .fold9o .ellipsis9, .fold9o .unfolder9 {
 	display: none;

@@ -133,7 +133,7 @@ Thank you,
 
      "authorwithdraw" =>
      array("[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
-	   "Dear %CONTACT%,
+	   "Dear %NAME%,
 
 An author of %CONFNAME% paper #%NUMBER% has withdrawn the paper from consideration.  The paper will not be reviewed.
 
@@ -148,7 +148,7 @@ Thank you,
 
      "adminwithdraw" =>
      array("[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
-	   "Dear %CONTACT%,
+	   "Dear %NAME%,
 
 %CONFNAME% paper #%NUMBER% has been withdrawn from consideration and will not be reviewed.
 
@@ -165,7 +165,7 @@ Thank you,
      
      "withdrawreviewer" =>
      array("[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
-	   "Dear %CONTACT%,
+	   "Dear %NAME%,
 
 %CONFSHORTNAME% paper #%NUMBER%, which you reviewed or have been assigned to review, has been withdrawn from consideration for the conference.
 
@@ -183,7 +183,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "deletepaper" =>
      array("[%CONFSHORTNAME%] Deleted paper #%NUMBER% %TITLEHINT%",
-	   "Dear %CONTACT%,
+	   "Dear %NAME%,
 
 Your %CONFNAME% paper #%NUMBER% has been removed from the submission database by an administrator.  This is usually done to remove duplicate papers.  %IF(REASON)%The following reason was provided for deleting the paper: %REASON%%ENDIF%
 
@@ -270,6 +270,18 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 %REVIEWS%
 %COMMENTS%\n"),
 
+     "commentnotify" =>
+     array("[%CONFSHORTNAME%] Comment for #%NUMBER% %TITLEHINT%",
+	   "A comment for %CONFNAME% paper #%NUMBER% has been submitted or updated.  The comment is available at the following site.
+
+  Paper site: %URL%/comment.php?paperId=%NUMBER%
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+- %CONFSHORTNAME% Submissions
+
+%COMMENTS%\n"),
+     
      "genericmailtool" =>
      array("[%CONFSHORTNAME%] Paper #%NUMBER% %TITLEHINT%",
 	   "Dear %NAME%,
@@ -321,6 +333,7 @@ class Mailer {
     var $reason;
     var $rrow;
     var $reviewNumber;
+    var $commentId;
     var $statistics;
     var $width;
 
@@ -334,6 +347,7 @@ class Mailer {
 	$this->reason = defval($rest["reason"], "");
 	$this->rrow = defval($rest["rrow"], null);
 	$this->reviewNumber = defval($rest["reviewNumber"], "");
+	$this->commentId = defval($rest["commentId"], null);
 	$this->statistics = null;
 	$this->width = ($row === null ? 10000000 : 75);
     }
@@ -465,7 +479,7 @@ class Mailer {
 	if ($what == "%OTHERCONTACT%" && $this->otherContact)
 	    return contactText($this->otherContact);
 	if ($what == "%OTHERNAME%" && $this->otherContact)
-	    return contactText($this->otherContact, null, "");
+	    return contactNameText($this->otherContact);
 	if ($what == "%OTHEREMAIL%" && $this->otherContact)
 	    return $this->otherContact->email;
 
@@ -509,17 +523,16 @@ class Mailer {
 	}
 	
 	if ($what == "%REVIEWS%") {
-	    $contact = new Contact;
-	    $contact->makeMinicontact($this->row);
-	    return $this->getReviews($this->row->paperId, $contact, false);
+	    $contact = Contact::makeMinicontact($this->row);
+	    return $this->getReviews($contact, false);
 	}
 	if ($what == "%COMMENTS%")
-	    return $this->getComments($this->row->paperId);
+	    return $this->getComments();
 
 	return ($isbool ? false : $what);
     }
 
-    function getReviews($paperId, $contact, $finalized) {
+    function getReviews($contact, $finalized) {
 	global $Conf, $Me, $rf;
 
 	$result = $Conf->qe("select Paper.title, PaperReview.*,
@@ -530,7 +543,7 @@ class Mailer {
 		join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)
 		left join PaperConflict on (PaperConflict.contactId=$contact->contactId and PaperConflict.paperId=PaperReview.paperId)
 		left join PaperReview as ContactReview on (ContactReview.contactId=$contact->contactId and ContactReview.paperId=PaperReview.paperId)
-		where PaperReview.paperId=$paperId order by reviewOrdinal", "while retrieving reviews");
+		where PaperReview.paperId=" . $this->row->paperId . " order by reviewOrdinal", "while retrieving reviews");
 	if (edb_nrows($result)) {
 	    $text = "";
 	    while (($row = edb_orow($result)))
@@ -541,27 +554,35 @@ class Mailer {
 	    return "";
     }
 
-    function getComments($paperId) {
+    function getComments() {
 	global $Conf;
-	
-	$result = $Conf->qe("select PaperComment.*,
+
+	$q = "select PaperComment.*,
  		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
 		PaperConflict.conflictType
 		from PaperComment
  		join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
-		left join PaperConflict on (PaperConflict.paperId=PaperComment.paperId and PaperConflict.contactId=PaperComment.contactId)
-		where PaperComment.paperId=$paperId and forAuthors>0 order by commentId", "while retrieving comments");
+		left join PaperConflict on (PaperConflict.paperId=PaperComment.paperId and PaperConflict.contactId=PaperComment.contactId)";
+	if (is_array($this->commentId))
+	    $q .= "\n\t\twhere PaperComment.commentId in (" . join(", ", $this->commentId) . ")";
+	else if ($this->commentId)
+	    $q .= "\n\t\twhere PaperComment.commentId=$this->commentId";
+	else
+	    $q .= "\n\t\twhere PaperComment.paperId=" . $this->row->paperId;
+	$result = $Conf->qe($q . "\n\t\torder by commentId", "while retrieving comments");
 	$text = "";
-	while (($row = edb_orow($result))) {
+	while (($crow = edb_orow($result))) {
+	    if (!$this->contact->canViewComment($this->row, $crow, $Conf))
+		continue;
 	    $text .= "===========================================================================\n";
-	    $n = ($row->conflictType >= CONFLICT_AUTHOR ? "Author's Response" : "Comment");
-	    if ($row->blind <= 0)
-		$n .= " by " . contactText($row);
+	    $n = ($crow->conflictType >= CONFLICT_AUTHOR ? "Author's Response" : "Comment");
+	    if ($this->contact->canViewCommentIdentity($this->row, $crow, $Conf))
+		$n .= " by " . contactText($crow);
 	    $text .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
-	    $n = "Updated " . $Conf->printableTime($row->timeModified);
-	    $text .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
+	    // $n = "Updated " . $Conf->printableTime($crow->timeModified);
+	    // $text .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
 	    $text .= "---------------------------------------------------------------------------\n";
-	    $text .= $row->comment . "\n\n";
+	    $text .= $crow->comment . "\n\n";
 	}
 	return $text;
     }
