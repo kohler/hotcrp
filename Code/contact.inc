@@ -71,9 +71,9 @@ class Contact {
 		ChairAssistant.contactId as isAssistant,
 		Chair.contactId as isChair";
 		$qb .= "
-		left join PCMember using (contactId)
-		left join ChairAssistant using (contactId)
-		left join Chair using (contactId)";
+		left join PCMember on (PCMember.contactId=ContactInfo.contactId)
+		left join ChairAssistant on (ChairAssistant.contactId=ContactInfo.contactId)
+		left join Chair on (Chair.contactId=ContactInfo.contactId)";
 	    }
 	    $result = $conf->q("$qa from ContactInfo $qb where ContactInfo.contactId=$this->contactId group by ContactInfo.contactId");
 	    if (edb_nrows($result) == 0)
