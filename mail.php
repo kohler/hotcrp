@@ -27,6 +27,8 @@ function contactQuery($type) {
 	return "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) where PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit>0 order by Paper.paperId, email";
     if ($type == "pc")
 	return "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo join PCMember using (contactId)";
+    if ($type == "extrev")
+	return "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) where PaperReview.reviewType=" . REVIEW_EXTERNAL . " order by Paper.paperId, email";
     return "";
 }
 
@@ -140,7 +142,8 @@ $recip = array("submitted" => "Contact authors of submitted papers",
 	       "notsubmitted" => "Contact authors of unsubmitted papers",
 	       "review-finalized" => "Reviewers who submitted at least one review",
 	       "review-not-finalize" => "Reviewers with outstanding reviews",
-	       "pc" => "Program committee");
+	       "pc" => "Program committee",
+	       "extrev" => "External reviewers");
 foreach ($rf->options["outcome"] as $num => $what) {
     $name = "author-outcome$num";
     if ($num && (defval($noutcome[$num]) > 0 || $_REQUEST["recipients"] == $name))
