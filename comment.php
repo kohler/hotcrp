@@ -392,7 +392,7 @@ function commentView($prow, $crow, $editMode) {
 	    echo " checked='checked'";
 	echo " />&nbsp;Reviewers &nbsp;
     <input type='checkbox' name='forAuthors' value='1'";
-	if ($useRequest ? defval($_REQUEST['forAuthors']) : (!$crow || $crow->forAuthors))
+	if ($useRequest ? defval($_REQUEST['forAuthors']) : ($crow && $crow->forAuthors))
 	    echo " checked='checked'";
 	echo " />&nbsp;Authors\n";
 
