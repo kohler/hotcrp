@@ -233,9 +233,7 @@ class Contact {
 	$result = $conf->qe($query, $where);
 	if (!$result || $conf->setting("allowPaperOption") < 5)
 	    return $result;
-	$result = $conf->qe("delete from ContactAddress where contactId=$this->contactId", $where);
-	if (!$result)
-	    return $result;
+	$conf->qx("delete from ContactAddress where contactId=$this->contactId");
 	if ($this->addressLine1 || $this->addressLine2 || $this->city
 	    || $this->state || $this->zipCode || $this->country) {
 	    $query = "insert into ContactAddress (contactId, addressLine1, addressLine2, city, state, zipCode, country) values ($this->contactId, '" . sqlq($this->addressLine1) . "', '" . sqlq($this->addressLine2) . "', '" . sqlq($this->city) . "', '" . sqlq($this->state) . "', '" . sqlq($this->zipCode) . "', '" . sqlq($this->country) . "')";
