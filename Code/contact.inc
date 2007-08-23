@@ -709,15 +709,8 @@ class Contact {
 	     && $conf->timeAuthorViewReviews()
 	     && (!$crow || $crow->forAuthors))
 	    || ($this->privChair && ($forceShow || $prow->conflictType == 0))
-	    || ($this->isPC && $prow->conflictType == 0
-		&& (!$crow || $conf->timePCViewAllReviews()))
-	    || ($prow->myReviewType > 0
-		&& $prow->conflictType == 0
-		&& defval($prow->myReviewSubmitted) > 0
-		&& (!$crow || $crow->forReviewers))
-	    || ($prow->myReviewType == REVIEW_SECONDARY
-		&& $prow->conflictType == 0
-		&& $prow->myReviewNeedsSubmit === null))
+	    || ($this->isPC && $prow->conflictType == 0)
+	    || ($prow->myReviewType > 0 && $prow->conflictType == 0))
 	    return true;
 	// collect failure reasons
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->isPC && $prow->myReviewType <= 0)
@@ -831,8 +824,7 @@ class Contact {
 	if (($this->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
 	    || ($crow && $crow->contactId == $this->contactId)
 	    || ($this->isPC && $prow->conflictType == 0)
-	    || ($prow->myReviewType > 0
-		&& defval($prow->myReviewSubmitted) > 0
+	    || ($prow->myReviewType > 0 && $prow->conflictType == 0
 		&& $conf->settings["extrev_view"] >= 2))
 	    return true;
 	$blind = $conf->blindReview();
