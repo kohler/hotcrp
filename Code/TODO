@@ -4,14 +4,11 @@ Major features
 Minor features
 - authors' response: emails, etc.
 - uploading request forms for others?
-- pretty printing reviews
 - allow authors to download paper info, such as all submitted reviews
 - reviewers/authors can search submitted papers, seeing only those papers they
   are allowed to see (e.g. both reviewers + authors)?
 - Search: Assignments & conflicts: [External reviewer]
 - START-style enter-paper-all-at-once (no email verification)?
-- START-style enter multiple contact authors with explicit First Name,
-  Last Name, Affiliation, Email fields?
 - search for scores
 - layout checker from ager@
 - when email off: do not show authors to PC members, do not show reviewers
@@ -22,16 +19,11 @@ Minor features
 
 Tiny features
 - fold review form
-- simplifyWhitespace on author information
 - nag late reviewers
 - add more extra textual fields
-- secondary reviews: can view reviews before completing your own
-- send mail to authors when a new comment is received
 - send mail to authors when a review was submitted during response period
 
 Internals
-- negative conflictTypes in PaperConflict represent review assignments?
-- ?? add to ContactInfo a preconcatenated field "firstName lastName email"
 - double-check contact policies (UGH)
 
      $Conf->infoMsg( '<P>Please see <a href="../Reviewer/ratings.html" ' .
