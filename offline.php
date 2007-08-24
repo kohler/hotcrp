@@ -64,16 +64,16 @@ if ($Me->amReviewer()) {
 
 echo "<table id='offlineform'><tr>
 <td><h3>Download forms</h3>
-<ul>
-  <li><a href='offline.php?downloadForm=1'>Blank form</a></li>\n";
+<ul>\n";
 if ($Me->amReviewer())
-    echo "  <li><a href='${ConfSiteBase}search.php?get=revform&amp;q=&amp;t=r&amp;pap=all'>My reviews</a></li>\n";
+    echo "  <li><a href='${ConfSiteBase}search.php?get=revform&amp;q=&amp;t=r&amp;pap=all'>For my reviews</a></li>\n";
 if ($Me->amReviewer() && $Me->reviewsOutstanding)
-    echo "  <li><a href='${ConfSiteBase}search.php?get=revform&amp;q=&amp;t=rout&amp;pap=all'>My missing reviews</a></li>\n";
-echo "</ul></td>\n";
+    echo "  <li><a href='${ConfSiteBase}search.php?get=revform&amp;q=&amp;t=rout&amp;pap=all'>For my incomplete reviews</a></li>\n";
+echo "  <li><a href='offline.php?downloadForm=1'>Blank form</a></li>
+</ul></td>\n";
 if ($Me->amReviewer()) {
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
-    echo "<td><h3>Upload filled-out form</h3>
+    echo "<td><h3>Upload filled-out forms</h3>
 <form action='offline.php?post=1' method='post' enctype='multipart/form-data'><div class='inform'>
 	<input type='hidden' name='redirect' value='offline' />
 	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='button' type='submit' value='Upload' name='uploadForm' $disabled/>";

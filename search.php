@@ -28,7 +28,7 @@ if ($Me->isAuthor)
 if ($Me->amReviewer())
     $tOpt["r"] = "My reviews";
 if ($Me->reviewsOutstanding)
-    $tOpt["rout"] = "My unfinished reviews";
+    $tOpt["rout"] = "My incomplete reviews";
 if ($Me->isPC)
     $tOpt["req"] = "My review requests";
 if (count($tOpt) == 0) {
