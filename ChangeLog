@@ -1,3 +1,157 @@
+2007-08-23 Thursday 17:33  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/TODO (1.91): document done todos
+
+2007-08-23 Thursday 17:26  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* offline.php (1.26), review.php (1.108), search.php (1.111),
+	  Code/TODO (1.90), Code/review.inc (1.78): Offline reviewing
+	  improvements and review UI improvements.  Now reviews are "Ready"
+	  or "Not Ready" (a checkbox), instead of "Submit" or "Save
+	  Changes".  Should be easier to follow.  Offline reviewing UI
+	  better for readiness/anonymity setting.  Also fix some bugs on
+	  downloading text versions of the reviews.
+
+2007-08-23 Thursday 17:19  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.141): index bug fix
+
+2007-08-23 Thursday 17:19  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.49): help nit
+
+2007-08-23 Thursday 15:48  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/TODO (1.89): I don't think this redundancy would be useful
+	  in practice; will wait for another bug report to implement it.
+
+2007-08-23 Thursday 15:40  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/contact.inc (1.130): PC members and reviewers can view
+	  comments before finishing their on reviews
+
+2007-08-23 Thursday 15:40  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* comment.php (1.43): default to NOT allowing authors to view a
+	  comment
+
+2007-08-23 Thursday 15:34  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* mail.php (1.14): support "external reviewers" mail type
+
+2007-08-23 Thursday 15:31  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/schema.sql (1.99): prefer tinyint(1)
+
+2007-08-23 Thursday 14:32  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/TODO (1.88): mark the email TODO as done (although reviews
+	  dont generate emails yet).
+
+	  Note that old installations can safely update without changing
+	  the schema.  However if they DO change the schema, dont forget
+	  this from the USENIX- requested address update:
+
+	  CREATE TABLE `ContactAddress` (   `contactId` int(11) NOT NULL,
+	  `addressLine1` text NOT NULL,   `addressLine2` text NOT NULL,
+	  `city` text NOT NULL,   `state` text NOT NULL,   `zipCode` text
+	  NOT NULL,   `country` text NOT NULL,	 UNIQUE KEY `contactId`
+	  (`contactId`) ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+2007-08-23 Thursday 14:28  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/contact.inc (1.129): more behaving nicely when
+	  ContactAddress table does not exist
+
+2007-08-23 Thursday 14:26  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/contact.inc (1.128): dont go nuts if ContactAddress table
+	  does not exist
+
+2007-08-23 Thursday 13:50  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* comment.php (1.42): oops
+
+2007-08-23 Thursday 13:50  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* comment.php (1.41): allow admins to add comments to their own
+	  papers by overriding their conflict
+
+2007-08-23 Thursday 13:46  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/contact.inc (1.127): correct SQL error for old installations
+
+2007-08-23 Thursday 13:42  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.60), assign.php (1.74), comment.php (1.40),
+	  login.php (1.36), mergeaccounts.php (1.37), paper.php (1.142),
+	  review.php (1.107), script.js (1.53), style.css (1.202),
+	  Code/conference.inc (1.215), Code/contact.inc (1.126),
+	  Code/header.inc (1.47), Code/helpers.inc (1.164),
+	  Code/mailtemplate.inc (1.15), Code/papertable.inc (1.86),
+	  Code/schema.sql (1.98): Add automatic email notifications on
+	  comment updates!
+
+	  Users can define on their profile page whether or not they want
+	  email notifications.	They can also request email notifications
+	  paper by paper.  An email notification is only sent when a user
+	  can actually view the relevant comment.
+
+	  (TODO: Send emails with Cc: or Bcc: blocks, instead of separate
+	  emails?)
+
+	  This required several schema changes.  The following SQL code
+	  will update an existing schema appropriately.
+
+	  alter table ContactInfo add `defaultWatch` tinyint(11) NOT NULL
+	  default '2'; alter table ContactInfo add `roles` tinyint(11) NOT
+	  NULL default '0'; update ContactInfo, PCMember set roles=roles+1
+	  where ContactInfo.contactId=PCMember.contactId; update
+	  ContactInfo, ChairAssistant set roles=roles+2 where
+	  ContactInfo.contactId=ChairAssistant.contactId; update
+	  ContactInfo, Chair set roles=roles+4 where
+	  ContactInfo.contactId=Chair.contactId; alter table ContactInfo
+	  add unique key `contactIdRoles` (`contactId`,`roles`); alter
+	  table PaperComment add key `contactPaper`
+	  (`contactId`,`paperId`); create table `PaperWatch` (	 `paperId`
+	  int(11) NOT NULL,   `contactId` int(11) NOT NULL,   `watch`
+	  tinyint(1) NOT NULL default '0',   UNIQUE KEY `contactPaper`
+	  (`contactId`,`paperId`),   UNIQUE KEY `contactPaperWatch`
+	  (`contactId`,`paperId`,`watch`) ) ENGINE=MyISAM DEFAULT
+	  CHARSET=utf8; update Settings set value=6 where
+	  name='allowPaperOption';
+
+	  canViewComment() updated so secondary reviewers can see comments
+	  before submitting their own reviews, once they have delegated.
+
+	  Miniajax forms, such as review preferences, don't even have a
+	  Submit button unless the Ajax submit fails.
+
+	  Some htmlspecialchars() fixes for selfHref().
+
+2007-08-21 Tuesday 18:38  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.45), style.css (1.201): minor improvements
+
+2007-08-21 Tuesday 18:07  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/papertable.inc (1.85): a better name for the Upload paper
+	  field
+
+2007-08-20 Monday 15:34  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* style.css (1.200), Code/papertable.inc (1.84): better hint for
+	  Upload paper row on paper edit screen lists formats and size
+	  limitation
+
+2007-08-20 Monday 14:05  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.59): mininit
+
+2007-08-20 Monday 14:05  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.8), tarball.sh (1.59): to 2.6
+
 2007-08-20 Monday 13:51  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* contactauthors.php (1.37), mail.php (1.13), mergeaccounts.php
