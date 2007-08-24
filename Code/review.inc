@@ -190,7 +190,7 @@ class ReviewForm {
     function checkRequestFields($req, $rrow, &$tf = null, $conf = null) {
 	global $ReviewFormError, $Conf;
 	$conf = ($conf ? $conf : $Conf);
-	$submit = isset($req["submit"]);
+	$submit = defval($req["ready"], false);
 	foreach ($this->fieldOrder as $field) {
 	    if (!isset($req[$field]) && !$submit)
 		continue;
@@ -243,7 +243,7 @@ class ReviewForm {
 	global $Conf, $ConfSiteBase;
 	$conf = ($conf ? $conf : $Conf);
 	$Me = $_SESSION['Me'];
-	$submit = isset($req["submit"]);
+	$submit = defval($req["ready"], false);
 	$while = "while storing review";
 
 	if (!$Me->timeReview($prow, $conf)
@@ -361,27 +361,27 @@ class ReviewForm {
     }
 
 
-    function textFormHeader($conf, $multiple = false, $editable = true) {
+    function textFormHeader($conf, $type, $editable = true) {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
 	
 	$x = "==+== $conf->shortName Paper Review";
 	if ($editable) {
-	    $x .= " Form" . ($multiple ? "s" : "") . "
+	    $x .= " Form" . ($type === true ? "s" : "") . "
 ==-== Fill out lettered sections A through " . chr(65 + count($this->fieldOrder) - 1) . ".\n";
-	    if (!$multiple)
+	    if ($type === "blank")
 		$x .= "==-== To review multiple papers, duplicate the form body from \"Begin Review\"
 ==-== through \"End Review\".  Make sure to change the paper number.\n";
-	    $x .= "==-== DO NOT CHANGE \"==+==\" LINES EXCEPT AS NOTED!
+	    $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\"!
 ==-== When you are done, upload the review form at this address:
 ==-== $conf->paperSite/offline.php
 ==-== That site also has further guidance on the review form.\n\n";
 	} else
-	    $x .= ($multiple ? "s\n\n" : "\n\n");
+	    $x .= ($type === true ? "s\n\n" : "\n\n");
 	return $x;
     }
     
-    function textForm($prow, $rrow, $contact, $conf, $req = null, $neverMyReview = false) {
+    function textForm($prow, $rrow, $contact, $conf, $req = null, $alwaysMyReview = false) {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
 
@@ -390,8 +390,8 @@ class ReviewForm {
 	    $rrow_contactId = $rrow->reviewContactId;
 	else if (isset($rrow) && isset($rrow->contactId))
 	    $rrow_contactId = $rrow->contactId;
-	$myReview = !$neverMyReview
-	    && (!$rrow || $rrow_contactId == 0 || $rrow_contactId == $contact->contactId);
+	$myReview = $alwaysMyReview
+	    || (!$rrow || $rrow_contactId == 0 || $rrow_contactId == $contact->contactId);
 	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
 
 	$x = "==+== =====================================================================\n";
@@ -425,16 +425,19 @@ class ReviewForm {
 	    if ($prow)
 		$x .= wordWrapIndent($prow->title, "==-== Title: ", "==-==        ") . "\n";
 	    $x .= "
-==-== The PC and authors can't see your review until you officially submit it.
-==-== \"Submit Review\" means submit, else save changes without submitting:
-==+== Submit Review\n";
+==+== Review Readiness
+==-== Enter \"Ready\" here if the review is ready for others to see:
+
+Ready\n";
 	    if ($conf->blindReview() == 1) {
 		$blind = "Anonymous";
 		if ($rrow && !$rrow->reviewBlind)
 		    $blind = "Open";
-		$x .= "\n==-== " . $conf->shortName . " allows either anonymous or open review.
-==-== \"Anonymous\" will hide your name from authors, \"Open\" will not:
-==+== $blind Review\n";
+		$x .= "\n==+== Review Anonymity
+==-== " . $conf->shortName . " allows either anonymous or open review.
+==-== Enter \"Open\" here if you want to expose your name to authors:
+
+$blind\n";
 	    }
 	}
 
@@ -464,12 +467,11 @@ class ReviewForm {
 		$x .= " (PC only)";
 	    $x .= "\n";
 	    if (isset($this->options[$field]) && $myReview) {
+		$x .= "==-== Enter a number from 1 to " . count($this->options[$field]) . ".\n";
 		foreach ($this->options[$field] as $num => $value) {
 		    $y = ($num == 1 ? "==-== Choices: 1. " : "==-==          $num. ");
 		    $x .= wordWrapIndent($value, $y, str_pad("==-==", strlen($y))) . "\n";
 		}
-		if ($numericMessage++ == 0)
-		    $x .= "==-== Enter the number of your choice here:\n";
 	    }
 	    $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
 	}
@@ -604,10 +606,17 @@ class ReviewForm {
 			$req['blind'] = 1;
 			$tf['firstLineno'] = $lineno;
 		    }
-		} else if (preg_match('/^==\+== Submit Review\s*$/i', $line)) {
-		    $req['submit'] = true;
+		} else if (preg_match('/^==\+== Submit Review\s*$/i', $line)
+			   || preg_match('/^==\+== Review Ready\s*$/i', $line)) {
+		    $req['ready'] = true;
 		} else if (preg_match('/^==\+== Open Review\s*$/i', $line)) {
 		    $req['blind'] = 0;
+		} else if (preg_match('/^==\+== Review Readiness\s*/i', $line)) {
+		    $field = "readiness";
+		    $mode = 1;
+		} else if (preg_match('/^==\+== Review Anonymity\s*/i', $line)) {
+		    $field = "anonymity";
+		    $mode = 1;
 		} else if (preg_match('/^==\+== [A-Z]\.\s*(.*?)\s*$/', $line, $match)) {
 		    $fname = str_replace(" (PC only)", "", $match[1]);
 		    $fn =& $this->fieldName[strtolower($fname)];
@@ -646,6 +655,11 @@ class ReviewForm {
 	$tf['text'] = $text;
 	$tf['lineno'] = $lineno - 1;
 
+	if (isset($req["readiness"]))
+	    $req["ready"] = strcasecmp(trim($req["readiness"]), "Ready") == 0;
+	if (isset($req["anonymity"]))
+	    $req["blind"] = strcasecmp(trim($req["anonymity"]), "Open") != 0;
+	
 	if ($nfields == 0 && $text) // try again
 	    return $this->parseTextForm($tf, $conf);
 	else if ($nfields == 0)

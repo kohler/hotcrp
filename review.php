@@ -96,24 +96,12 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     $Conf->errorMsg("Select a review form to upload.");
 
 
-// update review action
-if (isset($_REQUEST['unsubmit']) && $Me->privChair)
-    $_REQUEST["override"] = 1;
-if (isset($_REQUEST['update']) || isset($_REQUEST['submit']) || isset($_REQUEST['unsubmit']))
-    if (!$Me->canSubmitReview($prow, $editRrow, $Conf, $whyNot))
-	$Conf->errorMsg(whyNotText($whyNot, "review"));
-    else if ($rf->checkRequestFields($_REQUEST, $editRrow)) {
-	if ($rf->saveRequest($_REQUEST, $editRrow, $prow, $Me->contactId))
-	    $Conf->confirmMsg(isset($_REQUEST['submit']) ? "Review submitted." : "Review saved.");
-	loadRows();
-    } else
-	$useRequest = true;
-
-
-// unsubmit review action
-if (isset($_REQUEST['unsubmit']) && $Me->privChair)
-    if (!$editRrow || !$editRrow->reviewSubmitted)
-	$Conf->errorMsg("This review has not been submitted.");
+// check review submit requirements
+if (isset($_REQUEST['update']) && $editRrow && $editRrow->reviewSubmitted)
+    if (isset($_REQUEST["ready"]))
+	/* do nothing */;
+    else if (!$Me->privChair)
+	$_REQUEST["ready"] = 1;
     else {
 	$while = "while unsubmitting review";
 	$Conf->qe("lock tables PaperReview write", $while);
@@ -134,6 +122,18 @@ if (isset($_REQUEST['unsubmit']) && $Me->privChair)
 	}
 	loadRows();
     }
+
+
+// update review action
+if (isset($_REQUEST['update']))
+    if (!$Me->canSubmitReview($prow, $editRrow, $Conf, $whyNot))
+	$Conf->errorMsg(whyNotText($whyNot, "review"));
+    else if ($rf->checkRequestFields($_REQUEST, $editRrow)) {
+	if ($rf->saveRequest($_REQUEST, $editRrow, $prow, $Me->contactId))
+	    $Conf->confirmMsg(isset($_REQUEST['ready']) ? "Review submitted." : "Review saved.");
+	loadRows();
+    } else
+	$useRequest = true;
 
 
 // delete review action
@@ -170,23 +170,40 @@ if (isset($_REQUEST['delete']) && $Me->privChair)
 
 
 // download review form action
-function downloadForm($inline) {
-    global $rf, $Conf, $Me, $prow, $editRrow, $rrows, $myRrow, $Opt;
-    if (!$Me->canViewReview($prow, $editRrow, $Conf, $whyNot))
-	return $Conf->errorMsg(whyNotText($whyNot, "review"));
-    if ($editRrow || count($rrows) == 0)
-	$rrows = array($editRrow);
-    $text = $rf->textFormHeader($Conf, count($rrows) > 1, $Me->canViewAllReviewFields($prow, $Conf));
+function downloadView($prow, $rr, $editable) {
+    global $rf, $Me, $Conf;
+    if ($editable && $prow->reviewType > 0 && $rr->contactId == $Me->contactId)
+	return $rf->textForm($prow, $rr, $Me, $Conf, $_REQUEST, true) . "\n";
+    else if ($editable)
+	return $rf->textForm($prow, $rr, $Me, $Conf, null, true) . "\n";
+    else
+	return $rf->prettyTextForm($prow, $rr, $Me, $Conf, false) . "\n";
+}
+
+function downloadForm($editable) {
+    global $rf, $Conf, $Me, $prow, $rrow, $rrows, $myRrow, $Opt;
+    if ($rrow || count($rrows) == 0)
+	$rrows = array($rrow);
+    $text = "";
     foreach ($rrows as $rr)
-	$text .= $rf->textForm($prow, $rr, $Me, $Conf,
-			($prow->reviewType > 0 && $rr->contactId == $Me->contactId ? $_REQUEST : null)) . "\n";
-    downloadText($text, $Opt['downloadPrefix'] . "review-" . $prow->paperId . ".txt", "review form", $inline);
+	if ($rr->reviewSubmitted
+	    && $Me->canViewReview($prow, $rr, $Conf, $whyNot))
+	    $text .= downloadView($prow, $rr, $editable);
+    foreach ($rrows as $rr)
+	if (!$rr->reviewSubmitted && $rr->reviewModified > 0
+	    && $Me->canViewReview($prow, $rr, $Conf))
+	    $text .= downloadView($prow, $rr, $editable);
+    if (!$text)
+	return $Conf->errorMsg(whyNotText($whyNot, "review"));
+    if ($editable)
+	$text = $rf->textFormHeader($Conf, count($rrows) > 1, $Me->canViewAllReviewFields($prow, $Conf)) . $text;
+    downloadText($text, $Opt['downloadPrefix'] . "review-" . $prow->paperId . ".txt", "review form", !$editable);
     exit;
 }
 if (isset($_REQUEST['downloadForm']))
-    downloadForm(false);
-if (isset($_REQUEST['text']))
     downloadForm(true);
+else if (isset($_REQUEST['text']))
+    downloadForm(false);
 
 
 // refuse review action
@@ -505,16 +522,19 @@ function reviewView($prow, $rrow, $editMode) {
 	if ($Me->timeReview($prow, $Conf) || $Me->privChair) {
 	    echo "<tr class='rev_actions'>
   <td class='caption'></td>
-  <td class='entry'><div class='smgap'></div><table class='pt_buttons'>\n";
+  <td class='entry'><div class='smgap'></div>",
+		"<table><tr><td><input type='checkbox' name='ready' value='1'";
+	    if ($rrow && $rrow->reviewSubmitted)
+		echo " checked='checked'";
+	    if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
+		echo " disabled='disabled'";
+	    echo " />&nbsp;</td><td>The review is ready for others to see.";
+	    if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
+		echo "<div class='hint'>Only administrators can remove the review from the system at this point.</div>";
+	    echo "</td></tr></table>",
+		"<div class='smgap'></div><table class='pt_buttons'>\n";
 	    $buttons = array();
-	    if (!$rrow || !$rrow->reviewSubmitted) {
-		$buttons[] = array("<input class='button' type='submit' value='Save changes' name='update' />", "(does not submit review)");
-		$buttons[] = array("<input class='button' type='submit' value='Submit' name='submit' />", "(cannot undo)");
-	    } else {
-		$buttons[] = "<input class='button' type='submit' value='Resubmit' name='submit' />";
-		if ($Me->privChair)
-		    $buttons[] = array("<input class='button' type='submit' value='Unsubmit' name='unsubmit' />", "(admin only)");
-	    }
+	    $buttons[] = "<input class='button' type='submit' value='Save changes' name='update' />";
 	    if ($rrow && $Me->privChair) {
 		$buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
 		$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data'><div class='popup_actions'><input class='button' type='submit' name='delete' value='Delete review' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";

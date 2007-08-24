@@ -161,7 +161,7 @@ if ($getaction == "final" && isset($papersel)) {
 // (or blank form if no papers selected)
 if ($getaction == "revform" && !isset($papersel)) {
     $rf = reviewForm();
-    $text = $rf->textFormHeader($Conf, false)
+    $text = $rf->textFormHeader($Conf, "blank")
 	. $rf->textForm(null, null, $Me, $Conf, null) . "\n";
     downloadText($text, $Opt['downloadPrefix'] . "review.txt", "review form");
     exit;
