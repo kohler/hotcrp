@@ -48,6 +48,7 @@ Configuration
 * Site configuration
 
   - Edit "Code/options.inc", which is annotated to guide you.
+    ("Code/createdb.sh" creates this file based on "Code/distoptions.inc".)
 
   - Redirect Apache so your server URL will point at the HotCRP directory.
     (If you get an Error 500, see "Configuration notes".)  This will
@@ -111,6 +112,15 @@ Backing up the database
 -----------------------
 Run 'Code/backupdb.sh' at the shell prompt to back up the database.  This will
 write the database's current structure and comments to the standard output.
+
+
+Updating the code
+----------------- 
+HotCRP is designed so that you can update the code without updating the
+database schema.  Simply copy the new version over your old code (but
+preserve your old Code/options.inc).  This gives you access to bug fixes,
+but not new features.  If you want a new feature, see
+"Code/updateschema.sql".
 
 
 License

@@ -12,19 +12,19 @@
 //
 //   dbName          Database name.  Use the name you supplied to
 //                   "Code/createdb.sh".  NO SPACES ALLOWED.
-//   dbUser	     Database user name.  Defaults to $Opt['dbUser'].
+//   dbUser	     Database user name.  Defaults to $Opt['dbName'].
 //   dbPassword      Password for database user.  Defaults to $Opt['dbName'].
 //   shortName       Short name of the conference.  Examples: "SIGCOMM 2007",
 //                   "HotNets V".
 //   longName        Longer name of the conference.  Example: "ACM SIGCOMM
 //                   2007 Conference".
 //   downloadPrefix  Prefix for downloaded files, such as papers.  Should
-//                   end in a dash.
+//                   end in a dash.  Example: "hotnets5-".
 
-$Opt['dbName'] = "HotNetsV";
-$Opt['shortName'] = "HotNets V";
-$Opt['longName'] = "HotNets V";
-$Opt['downloadPrefix'] = "hotnets5-";
+$Opt["dbName"] = "YourConfI";
+$Opt["shortName"] = "YourConf I";
+$Opt["longName"] = "Your Conference I";
+$Opt["downloadPrefix"] = "yourconf1-";
 
 
 // EMAIL
@@ -39,10 +39,10 @@ $Opt['downloadPrefix'] = "hotnets5-";
 //                   at the conference server, so things like SPF don't mistake
 //                   the mail for spam.
 
-$Opt['contactName'] = "Eddie Kohler";
-$Opt['contactEmail'] = "kohler@cs.ucla.edu";
-$Opt['sendEmail'] = true;
-$Opt['emailFrom'] = "hotnetsv-pcchairs@lists.ucla.edu";
+$Opt["contactName"] = "Your Name";
+$Opt["contactEmail"] = "your@name.edu";
+$Opt["sendEmail"] = true;
+$Opt["emailFrom"] = "from@your.site.here.com";
 
 
 // SUBMISSIONS
@@ -51,7 +51,7 @@ $Opt['emailFrom'] = "hotnetsv-pcchairs@lists.ucla.edu";
 //                   All submissions are MIME-encoded and sent to this address
 //                   as a backup.  Note that this will increase server load.
 
-$Opt['emailSubmissions'] = 0;
+$Opt["emailSubmissions"] = 0;
 
 
 // URLS
@@ -59,8 +59,8 @@ $Opt['emailSubmissions'] = 0;
 //   conferenceSite  Conference site URL (e.g., CFP, registration).
 //   paperSite       URL for this HotCRP installation.  Used in emails.
 
-$Opt['conferenceSite'] = "http://www.acm.org/sigs/sigcomm/HotNets-V/";
-$Opt['paperSite'] = "http://www.read.cs.ucla.edu/hotnets5";
+$Opt["conferenceSite"] = "http://your.site.here.com/";
+$Opt["paperSite"] = "http://your.site.here.com/";
 
 
 // OPTIONAL SETTINGS (the defaults are reasonable)

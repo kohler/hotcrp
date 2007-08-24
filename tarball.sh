@@ -1,4 +1,4 @@
-export VERSION=2.6
+export VERSION=2.7
 
 mkdistdir () {
     crpd=hotcrp-$VERSION
@@ -16,8 +16,6 @@ mkdistdir () {
 	    fi
 	fi
     done
-
-    cp Code/distoptions.inc $crpd/Code/options.inc
 
     tar czf $crpd.tar.gz $crpd
     rm -rf $crpd
@@ -63,6 +61,7 @@ Code/contact.inc
 Code/contactlist.inc
 Code/countries.inc
 Code/createdb.sh
+Code/distoptions.inc
 Code/header.inc
 Code/helpers.inc
 Code/mailtemplate.inc
@@ -73,6 +72,7 @@ Code/reviewtable.inc
 Code/schema.sql
 Code/search.inc
 Code/tags.inc
+Code/updateschema.sql
 
 Code/Mail-1.1.14
 

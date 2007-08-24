@@ -1,5 +1,30 @@
 HotCRP NEWS
 
+Version 2.7   23.Aug.2007
+
+* Email notification for comments.  Authors, reviewers, and PC members can
+  request email notification when comments are added to a paper they are
+  interested in.  The system tracks a global preference and per-paper
+  preferences, so one can say "no notifications in general, but notify me
+  about paper 4".  Notification is on by default.  Requires schema changes;
+  see the file 'Code/updateschema.sql'.
+
+* PC members and reviewers can view a paper's comments before they finish
+  their own reviews for that paper.
+
+* Reviews have a "The review is ready for others to see." checkbox, instead
+  of "Submit" vs. "Save changes" pushbuttons.  The checkbox is a better UI.
+
+* Offline reviewing improvements and text review download fixes.
+
+* Support "External reviewers" mail class (Jim Larus).
+
+* Add 'Code/updateschema.sql'.
+
+* Fix database-creation bugs introduced in Version 2.4 (!), plus some old
+  bugs.
+
+
 Version 2.6   20.Aug.2007
 
 * New way to collect author information.  Author information is entered
