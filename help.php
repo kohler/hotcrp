@@ -455,7 +455,7 @@ supposedly reduces bias.)
   reviews\"</a> so PC members can update their reviews in peace.</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}settings.php?group=rev'>Allow the PC to
-  see all submitted reviews.</a></strong></p></li>
+  see all submitted reviews</a></strong> if you haven't already.</p></li>
 
 <li><p><strong><a
   href='${ConfSiteBase}search.php?q=&amp;t=s&amp;sort=50'>Examine paper
