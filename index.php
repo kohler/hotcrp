@@ -149,7 +149,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 		echo "<span class='deadline'>Please submit your reviews by $d.</span>";
 	}
     } else if ($Me->isPC && $Conf->timeReviewPaper(true, false, true)) {
-	$d = $Conf->printableTimeSetting("${rtyp}soft");
+	$d = $Conf->printableTimeSetting("pcrev_soft");
 	if ($d != "N/A")
 	    echo "<span class='deadline'>The review deadline is $d.</span>";
     }
