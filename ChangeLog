@@ -1,3 +1,16 @@
+2007-08-24 Friday 13:07  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.50), offline.php (1.27), search.php (1.112):
+	  "Incomplete" is a better word
+
+2007-08-23 Thursday 18:42  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.9), README (1.24), tarball.sh (1.60), Code/createdb.sh
+	  (1.16), Code/distoptions.inc (1.3), Code/schema.sql (1.100),
+	  Code/updateschema.sql (1.1): fix schema to actually work (cant
+	  index text columns).	Database creation updates.  Nicer
+	  options.inc story.  Add updateschema.sql.
+
 2007-08-23 Thursday 17:33  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Code/TODO (1.91): document done todos
