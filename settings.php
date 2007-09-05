@@ -448,7 +448,7 @@ function doRadio($name, $varr) {
 	    echo " checked='checked'";
 	echo " onchange='highlightUpdate()' />&nbsp;</td><td>";
 	if (is_array($text))
-	    echo decorateSettingText($name, $text[0]), "</td></tr><tr><td></td><td><small>", $text[1], "</small>";
+	    echo decorateSettingText($name, $text[0]), "<br /><small>", $text[1], "</small>";
 	else
 	    echo decorateSettingText($name, $text);
 	echo "</td></tr>\n";
