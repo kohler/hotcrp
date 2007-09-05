@@ -124,18 +124,22 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	}
     }
     if ($myrow) {
-	echo "You have submitted ", $myrow[1], " of <a href='search.php?q=&amp;t=r'>", $myrow[2], " reviews</a>";
+	if ($myrow[2] == 1 && $myrow[1] <= 1)
+	   echo "You ", ($myrow[1] == 1 ? "have" : "have not"), " submitted your <a href='search.php?q=&amp;t=r'>1 review</a>";
+	else
+	   echo "You have submitted ", $myrow[1], " of <a href='search.php?q=&amp;t=r'>", $myrow[2], " ", ($myrow[2] == 1 ? "review" : "reviews"), "</a>";
 	if (in_array("overAllMerit", $rf->fieldOrder) && $myrow[1])
 	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", sprintf("%.2f", $myrow[3]->avg);
 	echo ".<br />";
     }
-    if (($myrow || $Me->privChair) && $npc) {
+    if (($Me->isPC || $Me->privChair) && $npc) {
 	echo sprintf("The average PC member has submitted %.1f reviews", $sumpcSubmit / $npc);
 	if (in_array("overAllMerit", $rf->fieldOrder) && $npcScore)
 	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", sprintf("%.2f", $sumpcScore / $npcScore);
 	echo ".";
 	if ($Me->isPC || $Me->privChair)
-	    echo "&nbsp; <small>(<a href='contacts.php?t=pc&amp;score%5B%5D=0'>Details</a>)</small><br />";
+	    echo "&nbsp; <small>(<a href='contacts.php?t=pc&amp;score%5B%5D=0'>Details</a>)</small>";
+	echo "<br />";
     }
     if ($myrow && $myrow[1] < $myrow[2]) {
 	$rtyp = ($Me->isPC ? "pcrev_" : "extrev_");
@@ -145,8 +149,10 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    echo "<span class='deadline'><strong class='overdue'>Reviews are overdue.</strong>  They were requested by " . $Conf->printableTimeSetting("${rtyp}soft") . ".</span>";
 	else {
 	    $d = $Conf->printableTimeSetting("${rtyp}soft");
+	    if ($d == "N/A")
+		$d = $Conf->printableTimeSetting("${rtyp}hard");
 	    if ($d != "N/A")
-		echo "<span class='deadline'>Please submit your reviews by $d.</span>";
+		echo "<span class='deadline'>Please submit your ", ($myrow[2] == 1 ? "review" : "reviews"), " by $d.</span>";
 	}
     } else if ($Me->isPC && $Conf->timeReviewPaper(true, false, true)) {
 	$d = $Conf->printableTimeSetting("pcrev_soft");
