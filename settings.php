@@ -340,10 +340,12 @@ if (isset($_REQUEST["update"])) {
     // check date relationships
     foreach (array("sub_reg" => "sub_sub", "pcrev_soft" => "pcrev_hard",
 		   "extrev_soft" => "extrev_hard") as $first => $second)
-	if (isset($Values[$first]) && isset($Values[$second])) {
-	    if ($Values[$second] !== null && $Values[$first] === null)
+	if (!isset($Values[$first]) && isset($Values[$second]))
+	    $Values[$first] = $Values[$second];
+	else if (isset($Values[$first]) && isset($Values[$second])) {
+	    if ($Values[$second] && !$Values[$first])
 		$Values[$first] = $Values[$second];
-	    else if ($Values[$second] !== null && $Values[$first] > $Values[$second]) {
+	    else if ($Values[$second] && $Values[$first] > $Values[$second]) {
 		$Error[] = $SettingText[$first] . " must come before " . $SettingText[$second] . ".";
 		$SettingError[$first] = true;
 		$SettingError[$second] = true;
@@ -454,10 +456,11 @@ function doRadio($name, $varr) {
     echo "</table>\n";
 }
 
-function doDateRow($name, $text, $capclass = "lcaption") {
+function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
     global $Conf, $Error, $DateExplanation;
     $x = setting($name);
-    if ($x === null || (count($Error) == 0 && $x <= 0))
+    if ($x === null || (count($Error) == 0 && $x <= 0)
+	|| (count($Error) == 0 && $othername && setting($othername) == $x))
 	$v = "N/A";
     else if (count($Error) == 0)
 	$v = $Conf->parseableTime($x);
@@ -515,7 +518,7 @@ function doSubGroup() {
     doRadio("sub_blind", array(2 => "Blind submission", 1 => "Optionally blind submission", 0 => "Non-blind submission"));
 
     echo "<div class='smgap'></div>\n<table>\n";
-    doDateRow("sub_reg", "Paper registration deadline");
+    doDateRow("sub_reg", "Paper registration deadline", "sub_sub");
     doDateRow("sub_sub", "Paper submission deadline");
     doGraceRow("sub_grace", 'Grace period');
     echo "</table>\n";
@@ -614,7 +617,7 @@ function doRevGroup() {
     doCheckbox('pcrev_any', 'PC members can review <i>any</i> submitted paper');
 
     echo "<div class='smgap'></div>\n<table>\n";
-    doDateRow("pcrev_soft", "Soft deadline");
+    doDateRow("pcrev_soft", "Soft deadline", "pcrev_hard");
     doDateRow("pcrev_hard", "Hard deadline");
     echo "</table>\n";
 
@@ -634,7 +637,7 @@ function doRevGroup() {
     }
     
     echo "<table>\n";
-    doDateRow("extrev_soft", "Soft deadline");
+    doDateRow("extrev_soft", "Soft deadline", "extrev_hard");
     doDateRow("extrev_hard", "Hard deadline");
     echo "</table>\n";
 
@@ -657,7 +660,7 @@ function doDecGroup() {
     echo "<div class='smgap'></div>\n<table>";
     doCheckbox('resp_open', "<b>Collect authors' responses to the reviews:</b>", true);
     echo "<tr><td></td><td><table>";
-    doDateRow('resp_done', 'Deadline', "lxcaption");
+    doDateRow('resp_done', 'Deadline', null, "lxcaption");
     doGraceRow('resp_grace', 'Grace period', "lxcaption");
     echo "</table></td></tr></table>";
 
@@ -690,7 +693,7 @@ function doDecGroup() {
     echo "<table>";
     doCheckbox('final_open', '<b>Collect final copies of accepted papers:</b>', true);
     echo "<tr><td></td><td><table>";
-    doDateRow("final_done", "Deadline", "lxcaption");
+    doDateRow("final_done", "Deadline", null, "lxcaption");
     doGraceRow("final_grace", "Grace period", "lxcaption");
     echo "</table></td></tr></table>\n\n";
 }
