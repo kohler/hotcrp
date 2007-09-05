@@ -110,7 +110,8 @@ if ($Me->amReviewer() && $rev_open && $extrev_soft && $extrev_soft > $now) {
     echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('extrev_soft'), "</td>";
     echo "<td class='nowrap entry'>", printableInterval($extrev_soft - $now), "</td>";
     echo "<td>Reviews are requested by this deadline.</td></tr>\n";
-} else if ($Me->isPC && $rev_open && $extrev_hard) {
+} else if (($Me->amReviewer() && $rev_open && $extrev_hard)
+           || ($Me->isPC && $rev_open && $extrev_hard)) {
     echo "<tr><td class='rcaption nowrap'>External review hard deadline</td>";
     echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('extrev_hard'), "</td>";
     echo "<td class='nowrap entry'>", printableInterval($extrev_hard - $now), "</td>";
