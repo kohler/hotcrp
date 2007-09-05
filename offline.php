@@ -64,13 +64,16 @@ if ($Me->amReviewer()) {
 
 echo "<table id='offlineform'><tr>
 <td><h3>Download forms</h3>
-<ul>\n";
-if ($Me->amReviewer())
-    echo "  <li><a href='${ConfSiteBase}search.php?get=revform&amp;q=&amp;t=r&amp;pap=all'>For my reviews</a></li>\n";
-if ($Me->amReviewer() && $Me->reviewsOutstanding)
-    echo "  <li><a href='${ConfSiteBase}search.php?get=revform&amp;q=&amp;t=rout&amp;pap=all'>For my incomplete reviews</a></li>\n";
-echo "  <li><a href='offline.php?downloadForm=1'>Blank form</a></li>
-</ul></td>\n";
+<table>";
+$formcaption = "Get forms for: &nbsp;";
+if ($Me->amReviewer()) {
+    echo "<tr><td>Get forms for: &nbsp;</td><td><a href='${ConfSiteBase}search.php?get=revform&amp;q=&amp;t=r&amp;pap=all'>My reviews</a></td></tr>\n";
+    if ($Me->reviewsOutstanding)
+	echo "<tr><td></td><td><a href='${ConfSiteBase}search.php?get=revform&amp;q=&amp;t=rout&amp;pap=all'>My incomplete reviews</a></td></tr>\n";
+    echo "<tr><td></td><td><a href='offline.php?downloadForm=1'>Blank form</a></td></tr>\n";
+} else
+    echo "<tr><td><a href='offline.php?downloadForm=1'>Get blank form</a></td></tr>\n";
+echo "</table></td>\n";
 if ($Me->amReviewer()) {
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
     echo "<td><h3>Upload filled-out forms</h3>

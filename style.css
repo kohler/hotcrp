@@ -1168,7 +1168,7 @@ table#offlineform h3 {
 table#offlineform ul {
 	list-style-type: none;
 }
-table#offlineform ul, table#offlineform form {
+table#offlineform table, table#offlineform form {
 	margin: 0.5em 1.5em;
 	padding: 0px;
 	display: block;
