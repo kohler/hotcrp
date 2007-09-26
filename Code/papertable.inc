@@ -446,11 +446,11 @@ class PaperTable {
 	}
     }
     
-    function echoPCConflicts($prow) {
+    function echoPCConflicts($prow, $admins) {
 	global $Conf;
 	if ($this->editable && !$Conf->setting("sub_pcconf"))
 	    return;
-	$pcm = pcMembers();
+	$pcm = ($admins ? pcMembersAndAdmins() : pcMembers());
 	if (!count($pcm))
 	    return;
 	if ($prow) {

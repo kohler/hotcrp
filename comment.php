@@ -289,7 +289,7 @@ $paperTable->echoOptions($prow, $Me->privChair);
 if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow)))
     $paperTable->echoTags($prow);
 if ($Me->privChair)
-    $paperTable->echoPCConflicts($prow);
+    $paperTable->echoPCConflicts($prow, true);
 if ($crow)
     echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><a href='comment.php?paperId=$prow->paperId'>All comments</a></td>\n</tr>\n\n";
 

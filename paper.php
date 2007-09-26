@@ -689,7 +689,7 @@ if ($Me->isPC && $prow && $prow->conflictType <= 0 && !$editable)
 
 // Potential conflicts
 if ($paperTable->editable || $Me->privChair)
-    $paperTable->echoPCConflicts($prow);
+    $paperTable->echoPCConflicts($prow, !$paperTable->editable);
 if (($newPaper || $canViewAuthors || $Me->privChair) && !$finalEditMode)
     $paperTable->echoCollaborators($prow);
 

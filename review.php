@@ -341,7 +341,7 @@ $paperTable->echoOptions($prow, $Me->privChair);
 if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow)))
     $paperTable->echoTags($prow, "${ConfSiteBase}review.php?paperId=$prow->paperId$forceShow");
 if ($Me->privChair)
-    $paperTable->echoPCConflicts($prow);
+    $paperTable->echoPCConflicts($prow, true);
 if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow)))
     $paperTable->echoLead($prow);
 if ($viewAny)

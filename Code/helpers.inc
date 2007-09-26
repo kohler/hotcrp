@@ -887,12 +887,26 @@ function pcMembers() {
 	|| $Conf->setting('pc') <= 0
 	|| $_SESSION["pcmembers"][0] <= $Conf->setting('pc')) {
 	$pc = array();
-	$result = $Conf->q("select firstName, lastName, email, PCMember.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair from ContactInfo join PCMember using (contactId) left join ChairAssistant on (PCMember.contactId=ChairAssistant.contactId) left join Chair on (PCMember.contactId=Chair.contactId) order by lastName, firstName");
+	$result = $Conf->q("select firstName, lastName, email, ContactInfo.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair from ContactInfo join PCMember using (contactId) left join ChairAssistant on (PCMember.contactId=ChairAssistant.contactId) left join Chair on (PCMember.contactId=Chair.contactId) order by lastName, firstName");
 	while (($row = edb_orow($result)))
 	    $pc[$row->contactId] = $row;
 	$_SESSION["pcmembers"] = array($Conf->setting('pc'), $pc);
     }
     return $_SESSION["pcmembers"][1];
+}
+
+function pcMembersAndAdmins() {
+    global $Conf;
+    if (!isset($_SESSION["pcmembersa"]) || !is_array($_SESSION["pcmembersa"])
+	|| $Conf->setting('pc') <= 0
+	|| $_SESSION["pcmembersa"][0] <= $Conf->setting('pc')) {
+	$pc = array();
+	$result = $Conf->q("select firstName, lastName, email, ContactInfo.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair from ContactInfo left join PCMember using (contactId) left join ChairAssistant on (ContactInfo.contactId=ChairAssistant.contactId) left join Chair on (ContactInfo.contactId=Chair.contactId) where PCMember.contactId is not null or ChairAssistant.contactId is not null order by lastName, firstName");
+	while (($row = edb_orow($result)))
+	    $pc[$row->contactId] = $row;
+	$_SESSION["pcmembersa"] = array($Conf->setting('pc'), $pc);
+    }
+    return $_SESSION["pcmembersa"][1];
 }
 
 function pcByEmail($email) {
