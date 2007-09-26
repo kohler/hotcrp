@@ -349,7 +349,7 @@ class Mailer {
 	$this->reviewNumber = defval($rest["reviewNumber"], "");
 	$this->commentId = defval($rest["commentId"], null);
 	$this->statistics = null;
-	$this->width = ($row === null ? 10000000 : 75);
+	$this->width = 75;
     }
     
     function _pushIf($yes) {

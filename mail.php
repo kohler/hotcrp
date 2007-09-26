@@ -6,6 +6,7 @@ $Me->goIfInvalid();
 $Me->goIfNotPrivChair('index.php');
 $rf = reviewForm();
 $nullMailer = new Mailer(null, null);
+$nullMailer->width = 10000000;
 
 $Conf->header("Send Mail", "mail", actionBar());
 
