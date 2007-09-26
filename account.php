@@ -325,7 +325,7 @@ if ($Acct->isPC || $newProfile) {
     echo "<tr>
   <td class='caption'>Collaborators and other affiliations</td>
   <td class='entry'><div class='hint'>List any
-    advisor/student relationships, and your recent (~2 years) coauthors,
+    advisor/student relationships, and recent (~2 years) coauthors,
     collaborators, and affiliations, one per line.
     We use this information to avoid conflicts of interest when assigning
     reviews.  For example: &ldquo;<tt>Ping Yen Zhang (INRIA)</tt>&rdquo;</div>
