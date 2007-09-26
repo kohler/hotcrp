@@ -183,7 +183,8 @@ else
 
 if (isset($UpdateError))
     $Conf->errorMsg($UpdateError);
-else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1 && $Acct->isPC) {
+else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1
+ 	 && ($Acct->roles & Contact::ROLE_PC)) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 3;
     $msg = ($Acct->lastName ? "" : "Please take a moment to update your contact information.  ");
     $msg .= "We need a list of your recent collaborators to detect paper conflicts.  If you have no collaborators, enter \"None\".";
