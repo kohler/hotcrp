@@ -142,7 +142,7 @@ class PaperTable {
     
     function echoPaperRow($prow, $flags) {
 	global $Conf, $Me, $ConfSiteBase;
-	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0);
+	$final = ($prow->outcome > 0 && $Conf->setting("final_open") > 0);
 	$canUpload = $this->editable;
 
 	echo "<tr class='pt_status'>\n";
@@ -155,14 +155,20 @@ class PaperTable {
 
 	// status
 	echo $Me->paperStatus($prow->paperId, $prow, 0);
-	if ($Me->canDownloadPaper($prow, $Conf)) {
-	    if ($final && $prow->finalPaperStorageId > 0)
-		echo " Final copy: ", paperDownload($prow, true), " &nbsp;|&nbsp; Submission: ", paperDownload($prow);
-	    else if ($prow && $prow->size > 0)
-		echo ($canUpload && $final ? " Submission: " : " "), paperDownload($prow);	
-	}
+	$timestamp = "";
 	if (($flags & self::STATUS_DATE) && $prow->timestamp)
-	    echo "<span class='sep'></span> (last updated ", $Conf->printableTime($prow->timestamp), ")";
+	    $timestamp = "<span class='sep'></span> (last updated " . $Conf->printableTime($prow->timestamp) . ")";
+	if ($Me->canDownloadPaper($prow, $Conf)) {
+	    if ($final && $prow->finalPaperStorageId > 0) {
+		$submissionMimetype = null;
+		echo " Final copy: ", paperDownload($prow, true), $timestamp,
+		    " &nbsp;|&nbsp; <a class='black' href=\"",
+		    $Conf->makeDownloadPath($prow->paperId, $submissionMimetype, false),
+		    "\">Submission</a>";
+	    } else if ($prow->size > 0)
+		echo ($canUpload && $final ? " Submission: " : " "), paperDownload($prow), $timestamp;
+	} else
+	    echo $timestamp;
 
 	// watch note
 	if ($this->watchCheckbox && $Conf->setting("allowPaperOption") >= 6

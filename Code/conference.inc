@@ -1181,7 +1181,12 @@ class Conference {
 
     function makeDownloadPath($paperId, &$mimetype, $final = false) {
 	global $ConfSiteBase;
-	return $ConfSiteBase . "Download/GetPaper/" . $this->downloadPaperName($paperId, $mimetype, $final);
+	if (isset($mimetype) && $mimetype)
+	    return $ConfSiteBase . "Download/GetPaper/" . $this->downloadPaperName($paperId, $mimetype, $final);
+	else {
+	    $x = $ConfSiteBase . "Download/GetPaper?paperId=" . $paperId;
+	    return ($final ? $x . "&amp;final=1" : $x);
+	}
     }
   
     function allowEmailTo($email) {

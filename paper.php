@@ -627,8 +627,6 @@ if ($editable)
 
 // Current status
 $flags = PaperTable::STATUS_DATE;
-if ($finalEditMode)
-    $flags += PaperTable::FINALCOPY;
 if ($editable && $newPaper)
     $flags += PaperTable::OPTIONAL;
 if (!$editable)

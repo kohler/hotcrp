@@ -1043,7 +1043,7 @@ td.setrev_shortName input {
 	font-weight: bold;
 }
 
-a.pl_sort {
+a.pl_sort, a.black {
 	color: black;
 }
 a.pl_sort_def {
