@@ -239,6 +239,8 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
     if (count($deadlines) > 0) {
 	if ($plist && $plist->count > 0)
 	    echo "<div class='smgap'></div>";
+	else if ($startable || $Me->privChair)
+	    echo "<br />";
 	echo "<span class='deadline'>",
 	    join("</span><br />\n<span class='deadline'>", $deadlines),
 	    "</span>";
