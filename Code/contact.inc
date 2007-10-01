@@ -577,8 +577,11 @@ class Contact {
 	    $whyNot['conflict'] = 1;
 	else if ($prow->myReviewType > 0 && !$this->isPC && $prow->myReviewSubmitted > 0)
 	    $whyNot['externalReviewer'] = 1;
-	else
+	else {
 	    $whyNot['reviewNotComplete'] = 1;
+	    if (!$conf->timeReviewPaper($this->isPC, true, true))
+		$whyNot['deadline'] = ($this->isPC ? "pcrev_hard" : "extrev_hard");
+	}
 	if ($this->privChair)
 	    $whyNot['forceShow'] = 1;
 	return false;
@@ -667,6 +670,7 @@ class Contact {
 		|| ($this->isPC && $prow->conflictType == 0)
 		|| $prow->myReviewType > 0)
 	    && ($conf->timeReviewPaper($this->isPC, true, true)
+		|| $conf->setting('cmt_always') > 0
 		|| $this->privChairOverride()
 		|| ($this->privChair && !$submit))
 	    && (!$crow

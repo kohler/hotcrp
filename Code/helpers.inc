@@ -611,6 +611,12 @@ function whyNotText($whyNot, $action) {
 	$text .= ucfirst($thisPaper) . " has already been submitted and can no longer be updated.  ";
     if (isset($whyNot['notUploaded']))
 	$text .= ucfirst($thisPaper) . " can't be submitted because you haven't yet uploaded the paper itself.  Upload the paper and try again.  ";
+    if (isset($whyNot['reviewNotComplete']))
+	$text .= "Your own review for $thisPaper is not complete, so you can't view other people's reviews.  ";
+    if (isset($whyNot['reviewsOutstanding']))
+	$text .= "You must complete <a href=\"${ConfSiteBase}search.php?q=&amp;t=r\">your own reviews for other papers</a> before you can view the reviews for papers you authored.  If you can't complete your reviews, please let the conference organizers know via the relevant \"Refuse review\" links.  ";
+    if (isset($whyNot['reviewNotAssigned']))
+	$text .= "You are not assigned to review $thisPaper.  ";
     if (isset($whyNot['deadline'])) {
 	$dname = $whyNot['deadline'];
 	if ($dname[0] == "s")
@@ -653,14 +659,8 @@ function whyNotText($whyNot, $action) {
 	$text .= "You aren't a contact author for $thisPaper.  ";
     if (isset($whyNot['conflict']))
 	$text .= "You have a conflict with $thisPaper.  ";
-    if (isset($whyNot['reviewNotComplete']))
-	$text .= "Your own review for $thisPaper is not complete, so you can't view other people's reviews.  ";
-    if (isset($whyNot['reviewsOutstanding']))
-	$text .= "You must complete <a href=\"${ConfSiteBase}search.php?q=&amp;t=r\">your own reviews for other papers</a> before you can view the reviews for papers you authored.  If you can't complete your reviews, please let the conference organizers know via the relevant \"Refuse review\" links.  ";
     if (isset($whyNot['externalReviewer']))
 	$text .= "External reviewers may not view other reviews for the papers they review.  ";
-    if (isset($whyNot['reviewNotAssigned']))
-	$text .= "You are not assigned to review $thisPaper.  ";
     if (isset($whyNot['differentReviewer']))
 	$text .= "You didn't write this review, so you can't change it.  ";
     // finish it off

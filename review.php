@@ -304,48 +304,9 @@ if (isset($_REQUEST["settags"])) {
 confHeader();
 
 
-// paper table
-$canViewAuthors = $Me->canViewAuthors($prow, $Conf, $forceShow);
-$authorsFolded = (!$canViewAuthors && $Me->privChair && $prow->blind ? 1 : 2);
-$paperTable = new PaperTable(false, false, true, $authorsFolded);
-
-
-// begin table
-$paperTable->echoDivEnter();
-echo "<table class='paper'>\n\n";
-$Conf->tableMsg(2, $paperTable);
-
-
-// title
-echo "<tr class='id'>\n  <td class='caption'><h2>#$prow->paperId</h2></td>\n";
-echo "  <td class='entry' colspan='2'><h2>";
-$paperTable->echoTitle($prow);
-echo "</h2></td>\n</tr>\n\n";
-
-
 // can we view/edit reviews?
 $viewAny = $Me->canViewReview($prow, null, $Conf, $whyNotView);
 $editAny = $Me->canReview($prow, null, $Conf, $whyNotEdit);
-
-
-// paper data
-$paperTable->echoPaperRow($prow, PaperTable::STATUS_CONFLICTINFO_PC);
-if ($canViewAuthors || $Me->privChair) {
-    $paperTable->echoAuthorInformation($prow);
-    $paperTable->echoContactAuthor($prow);
-    $paperTable->echoCollaborators($prow);
-}
-$paperTable->echoAbstractRow($prow);
-$paperTable->echoTopics($prow);
-$paperTable->echoOptions($prow, $Me->privChair);
-if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow)))
-    $paperTable->echoTags($prow, "${ConfSiteBase}review.php?paperId=$prow->paperId$forceShow");
-if ($Me->privChair)
-    $paperTable->echoPCConflicts($prow, true);
-if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow)))
-    $paperTable->echoLead($prow);
-if ($viewAny)
-    $paperTable->echoShepherd($prow);
 
 
 // can we see any reviews?
@@ -363,7 +324,7 @@ else if (defval($_REQUEST["mode"]) == "view")
 else if ($rrow && ($Me->canReview($prow, $rrow, $Conf)
 		   || ($Me->privChair && ($prow->conflictType == 0 || $forceShow))))
     $mode = "edit";
- else if (!$rrow && $editAny && !$viewAny)
+else if (!$rrow && $editAny && !$viewAny)
     $mode = "edit";
 else
     $mode = "view";
@@ -381,17 +342,55 @@ if ($mode == "view" && $prow->conflictType == 0
     $rrow = $myRrow;
 }
 if ($mode == "edit" && !$Me->canReview($prow, $rrow, $Conf, $whyNot)) {
-    $Conf->errorMsg("!");
     $Conf->errorMsg(whyNotText($whyNot, "review"));
     $mode = "view";
 }
 if ($mode == "edit" && !$rrow)
     $rrow = $editRrow;
+// print deadline message
+if ($rrow && ($rrow->contactId == $Me->contactId
+	      || ($Me->privChair && $mode == "edit"))
+    && !$Conf->timeReviewPaper($Me->isPC, true, true)) {
+    $override = ($Me->privChair ? "  As an administrator, you can override this deadline using the \"Override deadlines\" checkbox." : "");
+    $Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for changing reviews has passed, so the review can no longer be changed.$override");
+}
 
 
 // messages for review viewers
 if ($mode == "edit" && $prow->reviewType <= 0 && !$rrow)
     $Conf->infoMsg("You haven't been assigned to review this paper, but you can review it anyway.");
+
+
+// paper table
+$canViewAuthors = $Me->canViewAuthors($prow, $Conf, $forceShow);
+$authorsFolded = (!$canViewAuthors && $Me->privChair && $prow->blind ? 1 : 2);
+$paperTable = new PaperTable(false, false, true, $authorsFolded);
+$paperTable->echoDivEnter();
+echo "<table class='paper'>\n\n";
+$Conf->tableMsg(2, $paperTable);
+
+echo "<tr class='id'>\n  <td class='caption'><h2>#$prow->paperId</h2></td>\n";
+echo "  <td class='entry' colspan='2'><h2>";
+$paperTable->echoTitle($prow);
+echo "</h2></td>\n</tr>\n\n";
+
+$paperTable->echoPaperRow($prow, PaperTable::STATUS_CONFLICTINFO_PC);
+if ($canViewAuthors || $Me->privChair) {
+    $paperTable->echoAuthorInformation($prow);
+    $paperTable->echoContactAuthor($prow);
+    $paperTable->echoCollaborators($prow);
+}
+$paperTable->echoAbstractRow($prow);
+$paperTable->echoTopics($prow);
+$paperTable->echoOptions($prow, $Me->privChair);
+if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow)))
+    $paperTable->echoTags($prow, "${ConfSiteBase}review.php?paperId=$prow->paperId$forceShow");
+if ($Me->privChair)
+    $paperTable->echoPCConflicts($prow, true);
+if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow)))
+    $paperTable->echoLead($prow);
+if ($viewAny)
+    $paperTable->echoShepherd($prow);
 
 
 // reviewer information

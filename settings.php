@@ -37,6 +37,7 @@ $SettingGroups = array("acc" => array(
 			     "next" => "rev"),
 		       "rev" => array(
 			     "rev_open" => "cdate",
+			     "cmt_always" => "check",
 			     "rev_blind" => 2,
 			     "rev_notifychair" => "check",
 			     "pcrev_any" => "check",
@@ -78,6 +79,7 @@ $SettingText = array(
 	"sub_reg" => "Paper registration deadline",
 	"sub_sub" => "Paper submission deadline",
 	"rev_open" => "Reviews open setting",
+	"cmt_always" => "Comments open setting",
 	"pcrev_soft" => "PC soft review deadline",
 	"pcrev_hard" => "PC hard review deadline",
 	"extrev_soft" => "External reviewer soft review deadline",
@@ -590,6 +592,7 @@ function doRevGroup() {
     global $Conf, $Error;
 
     doCheckbox('rev_open', '<b>Open site for reviewing</b>');
+    doCheckbox('cmt_always', 'Allow comments even if reviewing is closed');
 
     echo "<div class='smgap'></div>\n";
     doRadio("rev_blind", array(2 => "Blind review", 1 => "Optionally blind review", 0 => "Non-blind review"));
