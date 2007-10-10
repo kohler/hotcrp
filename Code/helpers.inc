@@ -403,7 +403,7 @@ function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
     if ($k > 0)
 	$x .= "<a href=\"${ConfSiteBase}$baseUrl?paperId="
 	    . $list[$k - 1] . $urlrest . "\">"
-	    . $Conf->cacheableImage("prev.png", "&lt-")
+	    . $Conf->cacheableImage("prev.png", "&lt;-")
 	    . "#" . $list[$k - 1] . "</a>";
     if (isset($list["description"])) {
 	$x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
