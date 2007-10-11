@@ -682,8 +682,10 @@ class Mailer {
 	    $contacts[] = contactHtml($contact);
 	}
 
-	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts) && $Me->privChair)
-	    $Conf->infoMsg("Sent email to paper #$row->paperId's " . pluralx($contacts, "contact author") . ", " . commajoin($contacts) . ".");
+	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts) && $Me->privChair) {
+	    $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
+	    $Conf->infoMsg("Sent email to paper #$row->paperId's " . pluralx($contacts, "contact author") . ", " . commajoin($contacts) . $endmsg);
+	}
     }
 
     function sendReviewers($template, $row, $otherContact = null, $rest = array()) {
@@ -702,8 +704,10 @@ class Mailer {
 	    $contacts[] = contactHtml($contact);
 	}
 
-	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts) && $Me->privChair)
-	    $Conf->infoMsg("Sent email to paper #$row->paperId's " . pluralx($contacts, "reviewer") . ", " . commajoin($contacts) . ".");
+	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts) && $Me->privChair) {
+	    $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
+	    $Conf->infoMsg("Sent email to paper #$row->paperId's " . pluralx($contacts, "reviewer") . ", " . commajoin($contacts) . $endmsg);
+	}
     }
     
 }

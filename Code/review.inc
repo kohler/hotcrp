@@ -348,8 +348,13 @@ class ReviewForm {
 	    if ($conf->timeEmailChairAboutReview())
 		Mailer::send($tmpl, $prow, (object) array("email" => $Conf->contactEmail, "fullName" => $Conf->contactName, "privChair" => 1), $submitter, $rest);
 
-	    if ($conf->timeEmailAuthorsAboutReview())
+	    if ($conf->timeEmailAuthorsAboutReview()) {
+		$rest["infoMsg"] = "saying a review was updated during the response period.";
+		if ($Conf->blindReview() > 1
+		    || ($Conf->blindReview() == 1 && $fake_rrow->reviewBlind))
+		    $rest["infoMsg"] .= "  Your anonymity was preserved."
 		Mailer::sendContactAuthors($tmpl, $prow, $submitter, $rest);
+	    }
 	}
 
 	// if external, forgive the requestor from finishing their review
