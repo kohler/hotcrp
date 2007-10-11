@@ -357,11 +357,15 @@ if (isset($_REQUEST["update"])) {
 	$Values["sub_update"] = $Values["sub_sub"];
     // need to set 'resp_open' to a timestamp,
     // so we can join on later review changes
-    if (isset($Values["resp_open"]) && defval($Conf->settings["resp_open"]) <= 0)
+    if (array_key_exists("resp_open", $Values)
+	&& defval($Conf->settings["resp_open"]) <= 0)
 	$Values["resp_open"] = time();
 
     // warn on other relationships
-    if (defval($Values["resp_open"], 0) > 0 && defval($Values["au_seerev"], 0) <= 0)
+    if (array_key_exists("resp_open", $Values)
+	&& $Values["resp_open"] > 0
+	&& (!array_key_exists("au_seerev", $Values)
+	    || $Values["au_seerev"] <= 0))
 	$Conf->warnMsg("You have allowed authors to respond to the reviews, but authors can't see the reviews.  This seems odd.");
 
     // report errors
