@@ -634,14 +634,14 @@ class PaperList extends BaseList {
       <option value='-1' disabled='disabled'></option>
       <option value='conflict'>Mark conflict</option>
       <option value='unconflict'>Remove conflict</option>
-      <option value='-2' disabled='disabled'></option>
-      <option value='xpcpaper'>Mark as PC-authored</option>
-      <option value='xunpcpaper'>Mark as not PC-authored</option>
       <option value='-3' disabled='disabled'></option>
       <option value='assign" . REVIEW_PRIMARY . "'>Assign primary review</option>
       <option value='assign" . REVIEW_SECONDARY . "'>Assign secondary review</option>
       <option value='assign0'>Unassign reviews</option>
     </select><span class='extension'> &nbsp;for &nbsp;";
+	    // <option value='-2' disabled='disabled'></option>
+	    // <option value='xpcpaper'>Mark as PC-authored</option>
+	    // <option value='xunpcpaper'>Mark as not PC-authored</option>
 	    $t .= "<select name='markpc' id='markpc'>\n";
 	    $pc = pcMembers();
 	    foreach ($pc as $id => $row)

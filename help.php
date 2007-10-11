@@ -49,7 +49,7 @@ function topics() {
     _alternateRow("<a href='help.php?t=chair'>Chair's guide</a>", "How to run a conference using HotCRP.");
     _alternateRow("<a href='help.php?t=search'>Search</a>", "About paper searching.");
     _alternateRow("<a href='help.php?t=syntax'>Search syntax</a>", "Quick reference to search syntax.");
-    _alternateRow("<a href='help.php?t=tags'>Tags</a>", "How to use tags and ordered tags to define sets of papers and discussion orders.");
+    _alternateRow("<a href='help.php?t=tags'>Tags</a>", "How to use tags to define paper sets and discussion orders.");
     echo "</table>";
 }
 
@@ -74,7 +74,7 @@ function search() {
 All HotCRP paper lists are obtained through search, search syntax is flexible,
 and it's possible to download all matching papers and/or reviews at once.
 
-<p>Some useful, and perhaps nonobvious, hints for PC members and chairs:</p>
+<p>Some useful hints for PC members and chairs:</p>
 
 <ul class='compact'>
 <li>" . _searchForm("") . "&nbsp; finds all papers.  (Leave the search field blank.)</li>
@@ -202,8 +202,8 @@ function searchQuickref() {
     _searchQuickrefRow("", "shep:fdabek", "\"fdabek\" (in name/email) is shepherd (\"none\" and \"any\" also work)");
     _searchQuickrefRow("", "conflict:fdabek", "\"fdabek\" (in name/email) has a conflict with the paper");
     _searchQuickrefRow("Status", "status:sub", "paper is submitted for review", "t=all");
-    _searchQuickrefRow("", "status:unsub", "paper has not been submitted or withdrawn", "t=all");
-    _searchQuickrefRow("", "status:with", "paper has been withdrawn", "t=all");
+    _searchQuickrefRow("", "status:unsub", "paper is neither submitted nor withdrawn", "t=all");
+    _searchQuickrefRow("", "status:withdrawn", "paper has been withdrawn", "t=all");
     _searchQuickrefRow("Decision", "dec:accept", "decision matches \"accept\"");
     _searchQuickrefRow("", "dec:yes", "one of the accept decisions");
     _searchQuickrefRow("", "dec:no", "one of the reject decisions");
@@ -239,23 +239,30 @@ and <i>ordered</i> tags preserve a particular paper order.");
 Here are some example ways to use tags.
 
 <ul>
-<li>You don't plan to discuss the lowest-ranked submissions at the PC meeting.
- Mark those submissions with tag \"nodiscuss\", then ask the PC to
+<li><strong>Avoid discussing low-ranked submissions at the PC meeting.</strong>
+ Mark low-ranked submissions with tag \"nodiscuss\", then ask the PC to
  <a href='${ConfSiteBase}search.php?q=tag:nodiscuss'>search for \"tag:nodiscuss\"</a>.
- (You might make the \"nodiscuss\" tag chair-only so an evil PC member couldn't add it to a high-ranked paper, but I tend to err on the side of trust.)
  PC members can easily check the list for controversial papers they'd like to discuss despite their ranking.
- They can email the chairs about such papers, or, even easier, add a \"discussanyway\" tag.</li>
+ They can email the chairs about such papers, or, even easier, add a \"discussanyway\" tag.
+ (You might make the \"nodiscuss\" tag chair-only so an evil PC member couldn't add it to a high-ranked paper, but it's usually better to trust the PC.)</li>
 
-<li>Controversial papers might benefit from additional review.
- You ask PC members to add the tag \"controversy\" when the current reviewers disagree.
+<li><strong>Mark controversial papers that would benefit from additional review.</strong>
+ Tell PC members to add the tag \"controversy\" when the current reviewers disagree.
  A <a href='${ConfSiteBase}search.php?q=tag:controversy'>search</a> shows you where the PC thinks more review is needed.</li>
 
-<li>At the meeting, you want to discuss the papers in a particular order.
- You'd like the PC to see the order so they can prepare to discuss papers they reviewed.
- You define an ordered tag such as \"discuss\" (see below for how), then ask the PC to <a href='${ConfSiteBase}search.php?q=order:discuss'>search for \"order:discuss\"</a>.
+<li><strong>Mark PC-authored papers for extra scrutiny.</strong>
+ First, <a href='${ConfSiteBase}search.php?t=s&amp;qt=au'>search for PC members' last names in author fields</a>.
+ Check for accidental matches and select the papers with PC members as authors, then use the action area below the search list to add the tag \"pcpaper\".
+ A <a href='${ConfSiteBase}search.php?t=s&amp;qx=tag:pcpaper'>search</a> shows papers without PC authors.
+ (Since PC members can see whether a paper is tagged \"pcpaper\", you may want to delay defining the tag until just before the meeting.)</li>
+
+<li><strong>Define a discussion order for the PC meeting.</strong>
+ Publishing the order lets PC members prepare to discuss upcoming papers.
+ Define an ordered tag such as \"discuss\" (see below for how), then ask the PC to <a href='${ConfSiteBase}search.php?q=order:discuss'>search for \"order:discuss\"</a>.
  The PC can now see the order and use quick links to go from paper to paper.</li>
 
-<li>During the PC meeting, chairs might add \"accept\" and \"reject\" tags as decisions are tentatively made, leaving the explicit decision setting for the end of the meeting.
+<li><strong>Mark tentative decisions during the PC meeting.</strong>
+ Chairs add \"accept\" and \"reject\" tags as decisions are made, leaving the explicit decision setting for the end of the meeting.
  Among the reasons for this: PC members can see decisions as soon as they are entered into the system, even for conflicted papers, but they can never see tags for conflicted papers.</li>
 </ul>
 ");

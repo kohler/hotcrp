@@ -553,7 +553,7 @@ insert into ReviewFormOptions set fieldName='outcome', level=-1, description='Re
 insert into ReviewFormOptions set fieldName='outcome', level=1, description='Accepted as short paper';
 insert into ReviewFormOptions set fieldName='outcome', level=2, description='Accepted';
 
-insert into ChairTag (tag) values ('accept'), ('reject');
+insert into ChairTag (tag) values ('accept'), ('reject'), ('pcpaper');
 
 delete from Settings where name='revform_update';
 insert into Settings set name='revform_update', value=unix_timestamp(current_timestamp);
