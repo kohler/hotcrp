@@ -1,3 +1,128 @@
+2007-10-11 Thursday 11:26  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* comment.php (1.45), Code/TODO (1.92), Code/contact.inc (1.132),
+	  Code/helpers.inc (1.169): Comment and response fixes.  (1)
+	  Correctly hide response identities on anonymous conferences (BUG
+	  FIX).  (2) Allow chairs to see hidden comment identities by
+	  clicking.  (3) Responders decide whether a comment is ready for
+	  reviewers to view.  (We observed responders building their
+	  responses gradually.) (4) Avoid dropping comment text due to
+	  correctable errors; use the requests values in form elements
+	  instead.
+
+2007-10-11 Thursday 11:23  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* review.php (1.111), Code/conference.inc (1.217),
+	  Code/papertable.inc (1.89): Some fixes to messages and error-exit
+	  in tables.
+
+2007-10-11 Thursday 10:56  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.51), Code/paperlist.inc (1.138), Code/schema.sql
+	  (1.101): Add a help description about marking PC papers with
+	  tags.  Remove the option for marking PC papers otherwise; tags
+	  seem like the simpler way to go.  Add "pcpaper" as a default
+	  chair-only tag.  Also some help updates.
+
+2007-10-11 Thursday 10:51  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.49): defval() adds a key to the array, which
+	  makes it inappropriate to use in settings.php, which often cares
+	  whether or not there is a key in the array.  Fix that: now
+	  changing settings in group X does not affect resp_open.
+
+2007-10-11 Thursday 10:50  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.145): s/Your/My/ for consistency
+
+2007-10-11 Thursday 01:27  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* paper.php (1.145), Code/mailtemplate.inc (1.18), Code/review.inc
+	  (1.80): improve message when mailing contact authors (note that
+	  this is a chair only message right now!)
+
+2007-10-11 Thursday 01:18  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/: mailtemplate.inc (1.17), review.inc (1.79): improve
+	  message on review updates
+
+2007-10-10 Wednesday 21:05  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/helpers.inc (1.168): improve typesetting of things that look
+	  like diagrams
+
+2007-10-10 Wednesday 10:16  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/helpers.inc (1.167): correct & entity error
+
+2007-10-01 Monday 10:07  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* review.php (1.110), settings.php (1.48), Code/contact.inc
+	  (1.131), Code/helpers.inc (1.166): Add "cmt_always" setting,
+	  which allows posting comments even if reviewing is closed.  Add
+	  deadline messages if reviewing is closed.  Slight rearrangement
+	  of review page.
+
+2007-09-27 Thursday 14:25  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* paper.php (1.144), style.css (1.204), Code/conference.inc
+	  (1.216), Code/papertable.inc (1.88): Better handling of final
+	  copy collection: always display a final copy if one is available;
+	  dont assume submission has same mimetype as final copy
+
+2007-09-27 Thursday 13:55  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.144): add necessary separator if past registration
+	  deadline & no papers registered
+
+2007-09-26 Wednesday 12:29  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* comment.php (1.44), paper.php (1.143), review.php (1.109),
+	  Code/helpers.inc (1.165), Code/papertable.inc (1.87): Report
+	  system administrator conflicts for sysadmins not in the PC, if
+	  any such conflicts exist.
+
+2007-09-26 Wednesday 12:28  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.62), index.php (1.143): Don't ask system
+	  administrators (non-PC) for their conflict info.
+
+2007-09-26 Wednesday 12:11  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.61): wording nit
+
+2007-09-26 Wednesday 12:11  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* mail.php (1.15), Code/mailtemplate.inc (1.16): mails creating
+	  accounts are also word wrapped
+
+2007-09-05 Wednesday 01:07  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* offline.php (1.28), style.css (1.203): more minor improvements
+	  for offline reviewing page
+
+2007-09-05 Wednesday 00:31  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.47): minor appearance fix
+
+2007-09-05 Wednesday 00:26  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.46): in settings, for paired dates, correctly set
+	  the earlier date to the later one when the earlier is not set,
+	  but the later is.  However to simplify the UI, make the earlier
+	  one appear as N/A.
+
+2007-09-05 Wednesday 00:10  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.142): Homepage improvements for external reviewers.
+	  Don't show them PC review statistics; show them hard deadlines if
+	  thats the only kind set; plural corrections.
+
+2007-09-05 Wednesday 00:02  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* deadlines.php (1.29): show external review hard deadline if soft
+	  deadline is not specified
+
 2007-08-24 Friday 13:07  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* help.php (1.50), offline.php (1.27), search.php (1.112):
