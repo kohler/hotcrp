@@ -96,7 +96,7 @@ function setReviewInfo($dst, $src) {
 
 function watch() {
     global $Conf, $Me, $prow, $savedCrow;
-    
+
     if ($Conf->setting("allowPaperOption") < 6 || !$savedCrow)
 	return;
 
@@ -156,7 +156,6 @@ function saveComment($text) {
 	|| ($Conf->blindReview() == 1 && defval($_REQUEST["blind"])))
 	$blind = 1;
     if (isset($_REQUEST["response"])) {
-	$forReviewers = 1;
 	$forAuthors = 2;
 	$blind = $prow->blind;
     }
@@ -213,9 +212,10 @@ function saveResponse($text) {
 }
 
 if (isset($_REQUEST['submit']) && defval($_REQUEST['response'])) {
-    if (!$Me->canRespond($prow, $crow, $Conf, $whyNot, true))
+    if (!$Me->canRespond($prow, $crow, $Conf, $whyNot, true)) {
 	$Conf->errorMsg(whyNotText($whyNot, "respond"));
-    else if (!($text = defval($_REQUEST['comment'])) && !$crow) {
+	$useRequest = true;
+    } else if (!($text = defval($_REQUEST['comment'])) && !$crow) {
 	$Conf->errorMsg("Enter a comment.");
 	$useRequest = true;
     } else {
@@ -226,9 +226,10 @@ if (isset($_REQUEST['submit']) && defval($_REQUEST['response'])) {
 	watch();
     }
 } else if (isset($_REQUEST['submit'])) {
-    if (!$Me->canSubmitComment($prow, $crow, $Conf, $whyNot))
+    if (!$Me->canSubmitComment($prow, $crow, $Conf, $whyNot)) {
 	$Conf->errorMsg(whyNotText($whyNot, "comment"));
-    else if (!($text = defval($_REQUEST['comment'])) && !$crow) {
+	$useRequest = true;
+    } else if (!($text = defval($_REQUEST['comment'])) && !$crow) {
 	$Conf->errorMsg("Enter a comment.");
 	$useRequest = true;
     } else {
@@ -237,9 +238,10 @@ if (isset($_REQUEST['submit']) && defval($_REQUEST['response'])) {
 	watch();
     }
 } else if (isset($_REQUEST['delete']) && $crow) {
-    if (!$Me->canSubmitComment($prow, $crow, $Conf, $whyNot))
+    if (!$Me->canSubmitComment($prow, $crow, $Conf, $whyNot)) {
 	$Conf->errorMsg(whyNotText($whyNot, "comment"));
-    else {
+	$useRequest = true;
+    } else {
 	saveComment("");
 	loadRows();
     }
@@ -294,15 +296,14 @@ if ($crow)
     echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><a href='comment.php?paperId=$prow->paperId'>All comments</a></td>\n</tr>\n\n";
 
 
-// extra space
-echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>\n";
-
 // exit on certain errors
 if (!$Me->canViewComment($prow, $crow, $Conf, $whyNot))
     errorMsgExit(whyNotText($whyNot, "comment"));
 if ($Me->privChair && $prow->conflictType > 0 && !$Me->canViewComment($prow, $crow, $Conf, $fakeWhyNot, true))
     $Conf->infoMsg("You have explicitly overridden your conflict and are able to view and edit comments for this paper.");
 
+// close table 
+echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>\n";
 echo "</table>";
 $paperTable->echoDivExit();
 $Conf->tableMsg(0);
@@ -312,6 +313,26 @@ $Conf->tableMsg(0);
 // review information
 // XXX reviewer ID
 // XXX "<td class='entry'>", contactHtml($rrow), "</td>"
+
+function commentIdentityTime($prow, $crow, &$sep) {
+    global $Conf, $Me;
+    if ($crow && $Me->canViewCommentIdentity($prow, $crow, $Conf)) {
+	echo ($crow->blind ? "[" : ""), "by ", contactHtml($crow);
+	$sep = ($crow->blind ? "]" : "") . " &nbsp;|&nbsp; ";
+    } else if ($crow && $Me->privChair) {
+	echo "<span id='foldcid$crow->commentId' class='fold4c'>",
+	    "<a href=\"javascript:fold('cid$crow->commentId', 0, 4)\" class='foldbutton unfolder4'>+</a>",
+	    "<a href=\"javascript:fold('cid$crow->commentId', 1, 4)\" class='foldbutton folder4'>&ndash;</a> ",
+	    "<span class='ellipsis4'><i>Hidden for blind review</i></span>",
+	    "<span class='extension4'>", contactHtml($crow), "</span>",
+	    "</span>";
+	$sep = " &nbsp;|&nbsp; ";
+    }
+    if ($crow && $crow->timeModified > 0) {
+	echo $sep, $Conf->printableTime($crow->timeModified);
+	$sep = " &nbsp;|&nbsp; ";
+    }
+}
 
 function commentView($prow, $crow, $editMode) {
     global $Conf, $Me, $rf, $forceShow, $useRequest, $anyComment;
@@ -342,14 +363,7 @@ function commentView($prow, $crow, $editMode) {
     echo ">", ($crow ? "Comment" : "Add Comment"), "</h3></td>
   <td class='entry'>";
     $sep = "";
-    if ($crow && $Me->canViewCommentIdentity($prow, $crow, $Conf)) {
-	echo ($crow->blind ? "[" : ""), "by ", contactHtml($crow);
-	$sep = ($crow->blind ? "]" : "") . " &nbsp;|&nbsp; ";
-    }
-    if ($crow && $crow->timeModified > 0) {
-	echo $sep, $Conf->printableTime($crow->timeModified);
-	$sep = " &nbsp;|&nbsp; ";
-    }
+    commentIdentityTime($prow, $crow, $sep);
     if (!$crow || $prow->conflictType >= CONFLICT_AUTHOR)
 	/* do nothing */;
     else if (!$crow->forAuthors && !$crow->forReviewers)
@@ -380,7 +394,9 @@ function commentView($prow, $crow, $editMode) {
 	echo "<tr>
   <td class='caption'></td>
   <td class='entry'><textarea name='comment' rows='10' cols='80'>";
-	if ($crow)
+	if ($useRequest)
+	    echo htmlspecialchars(defval($_REQUEST['comment']));
+	else if ($crow)
 	    echo htmlspecialchars($crow->comment);
 	echo "</textarea></td>
 </tr>
@@ -416,9 +432,12 @@ function commentView($prow, $crow, $editMode) {
 	    echo "      <td class='ptb_button'><input class='button' type='submit' value='Save' name='submit' /></td>\n";
 	    if ($crow)
 		echo "      <td class='ptb_button'><input class='button' type='submit' value='Delete comment' name='delete' /></td>\n";
+	    echo "    </tr>\n  </table></td>\n</tr>";
 	    if (!$Me->timeReview($prow, $Conf))
-		echo "    </tr>\n    <tr>\n      <td colspan='2'><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td>\n";
-	    echo "    </tr>\n  </table></td>\n</tr>\n\n";
+		echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>",
+		    "<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines",
+		    "</td>\n</tr>";
+	    echo "\n\n";
 	}
 
 	echo "<tr class='last'><td class='caption'></td></tr>\n";
@@ -439,8 +458,6 @@ function commentView($prow, $crow, $editMode) {
 function responseView($prow, $crow, $editMode) {
     global $Conf, $Me, $rf, $forceShow, $useRequest, $sawResponse;
 
-    if (!$Me->canViewComment($prow, $crow, $Conf))
-	return;
     if ($editMode && !$Me->canRespond($prow, $crow, $Conf))
 	$editMode = false;
     $sawResponse = true;
@@ -463,10 +480,7 @@ function responseView($prow, $crow, $editMode) {
     echo ">", ($crow ? "Response" : "Add Response"), "</h3></td>
   <td class='entry'>";
     $sep = "";
-    if ($crow && $crow->timeModified > 0) {
-	echo $sep, $Conf->printableTime($crow->timeModified);
-	$sep = " &nbsp;|&nbsp; ";
-    }
+    commentIdentityTime($prow, $crow, $sep);
     if ($crow && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair) && !$editMode && $Me->canRespond($prow, $crow, $Conf))
 	echo $sep, "<a href='comment.php?commentId=$crow->commentId'>Edit</a>";
     echo "</td>\n</tr>\n\n";
@@ -495,30 +509,42 @@ has passed.  Please keep the response short and to the point" . $limittext . "."
 
 	// review actions
 	if (1) {
-	    echo "<tr class='rev_actions'>
+	    echo "<tr>
+  <td class='caption'></td>
+  <td class='entry'><input type='checkbox' name='forReviewers' value='1' ";
+	    if (!$crow || $crow->forReviewers > 0)
+		echo "checked='checked' ";
+	    echo "/>&nbsp;The response is ready for reviewers to view.</td>
+</tr><tr class='rev_actions'>
   <td class='caption'></td>
   <td class='entry'><table class='pt_buttons'>
     <tr>\n";
 	    echo "      <td class='ptb_button'><input class='button' type='submit' value='Save' name='submit' /></td>\n";
 	    if ($crow)
 		echo "      <td class='ptb_button'><input class='button' type='submit' value='Delete response' name='delete' /></td>\n";
+	    echo "    </tr>\n  </table></td>\n</tr>";
 	    if (!$Conf->timeAuthorRespond())
-		echo "    </tr>\n    <tr>\n      <td colspan='2'><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines</td>\n";
-	    echo "    </tr>\n  </table></td>\n</tr>\n\n";
+		echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>",
+		    "<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines",
+		    "</td>\n</tr>";
+	    echo "\n\n";
 	}
 
 	echo "<tr class='last'><td class='caption'></td></tr>\n";
 	echo "</table>\n</form>\n\n";
 	
     } else {
-	echo "<tr>
-  <td class='caption'></td>
-  <td class='entry'>", htmlWrapText(htmlspecialchars($crow->comment)), "</td>
-</tr>
+	echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>";
+	if ($Me->privChair && $crow->forReviewers < 1)
+	    echo "<i>The <a href='comment.php?commentId=$crow->commentId'>authors' response</a> is not yet ready for reviewers to view.</i>";
+	else if (!$Me->canViewComment($prow, $crow, $Conf))
+	    echo "<i>The authors' response is not yet ready for reviewers to view.</i>";
+	else
+	    echo htmlWrapText(htmlspecialchars($crow->comment));
+	echo "</td>\n</tr>
 <tr class='last'><td class='caption'></td></tr>
 </table>\n";
     }
-    
 }
 
 

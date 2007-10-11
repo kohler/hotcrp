@@ -713,8 +713,10 @@ class Contact {
 	     && $conf->timeAuthorViewReviews()
 	     && (!$crow || $crow->forAuthors))
 	    || ($this->privChair && ($forceShow || $prow->conflictType == 0))
-	    || ($this->isPC && $prow->conflictType == 0)
-	    || ($prow->myReviewType > 0 && $prow->conflictType == 0))
+	    || (($this->isPC || $prow->myReviewType > 0)
+		&& $prow->conflictType == 0
+		&& (!$crow || $crow->forAuthors < 2
+		    || $crow->forReviewers > 0)))
 	    return true;
 	// collect failure reasons
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->isPC && $prow->myReviewType <= 0)
@@ -725,6 +727,8 @@ class Contact {
 	    $whyNot['conflict'] = 1;
 	else if ($prow->myReviewType > 0 && !$this->isPC && defval($prow->myReviewSubmitted) > 0)
 	    $whyNot['externalReviewer'] = 1;
+	else if ($crow && $crow->forAuthors > 1 && $crow->forReviewers < 1)
+	    $whyNot['responseNotReady'] = 1;
 	else
 	    $whyNot['reviewNotComplete'] = 1;
 	if ($this->privChair)
@@ -825,6 +829,8 @@ class Contact {
     }
     
     function canViewCommentIdentity($prow, $crow, $conf) {
+	if ($crow && $crow->forAuthors > 1)
+	    return $this->canViewAuthors($prow, $conf, false);
 	if (($this->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
 	    || ($crow && $crow->contactId == $this->contactId)
 	    || ($this->isPC && $prow->conflictType == 0)
