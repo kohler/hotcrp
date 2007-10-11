@@ -118,9 +118,9 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	if ($Me->privChair && defval($_REQUEST["doemail"]) <= 0)
 	    /* do nothing */;
 	else if ($prow->conflictType >= CONFLICT_AUTHOR)
-	    Mailer::sendContactAuthors("@authorwithdraw", $prow);
+	    Mailer::sendContactAuthors("@authorwithdraw", $prow, null, array("infoNames" => 1));
 	else
-	    Mailer::sendContactAuthors("@adminwithdraw", $prow, null, array("reason" => defval($_REQUEST["emailNote"], "")));
+	    Mailer::sendContactAuthors("@adminwithdraw", $prow, null, array("reason" => defval($_REQUEST["emailNote"], ""), "infoNames" => 1));
 	    
 	// email reviewers
 	if ($prow->startedReviewCount > 0)
@@ -439,7 +439,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // send email to all contact authors
     if (!$Me->privChair || defval($_REQUEST["doemail"]) > 0) {
 	require_once("Code/mailtemplate.inc");
-	Mailer::sendContactAuthors(array("$subject %TITLEHINT%", $m), $prow, null, array("reason" => defval($_REQUEST["emailNote"], "")));
+	Mailer::sendContactAuthors(array("$subject %TITLEHINT%", $m), $prow, null, array("reason" => defval($_REQUEST["emailNote"], ""), "infoNames" => 1));
     }
     
     $Conf->log($what, $Me, $paperId);
@@ -491,7 +491,7 @@ if (isset($_REQUEST['delete'])) {
 	// mail first, before contact info goes away
 	if (!$Me->privChair || defval($_REQUEST["doemail"]) > 0) {
 	    require_once("Code/mailtemplate.inc");
-	    Mailer::sendContactAuthors("@deletepaper", $prow, null, array("reason" => defval($_REQUEST["emailNote"], "")));
+	    Mailer::sendContactAuthors("@deletepaper", $prow, null, array("reason" => defval($_REQUEST["emailNote"], ""), "infoNames" => 1));
 	}
 	// XXX email self?
 
