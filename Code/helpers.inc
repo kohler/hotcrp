@@ -492,33 +492,45 @@ function tabLength($text, $all) {
 }
 
 function htmlWrapText($text) {
-    while (strpos($text, "\t"))
-	$text = preg_replace("/^(.*?)\t/me", "'\$1' . substr('        ', 0, 8 - (strlen('\$1') % 8))", $text);
-    $text = preg_replace("/^( +)/me", "str_repeat('&nbsp;', strlen('\$1'))", $text);
-    $text = preg_replace("/\r\n?/", "\n", $text);
-    return str_replace("\n", "<br />\n", $text);
     $lines = explode("\n", $text);
+    $text = "";
+    for ($i = 0; $i < count($lines); $i++) {
+	$l = $lines[$i];
+	while (($pos = strpos($l, "\t")) !== false)
+	    $l = substr($l, 0, $pos) . substr('        ', 0, 8 - ($pos % 8)) . substr($l, $pos + 1);
+	if (preg_match('/\A  +.*  +/', $l))
+	    $l = str_replace(" ", "&nbsp;", $l);
+	else if (strlen($l) && $l[0] == " ") {
+	    for ($x = 0; $x < strlen($l) && $l[$x] == " "; $x++)
+		/* nada */;
+	    $l = str_repeat('&nbsp;', $x) . substr($l, $x);
+	}
+	$lines[$i] = $l . "<br />\n";
+    }
+    return join("", $lines);
+    
+    // $lines = explode("\n", $text);
     // Rules: Indented line that starts with "-", "*", or "#[.]" starts
     //   indented text.
     //      Other indented text is preformatted.
-
+    //
     // States: -1 initial, 0 normal text, 1 preformatted text, 2 indented text
-    $state = -1;
-    $savedPar = "";
-    $savedParLines = 0;
-    $indent = 0;
-    $out = "";
-    for ($i = 0; $i < count($lines); $i++) {
-	$line = $lines[$i];
-	if (preg_match("/^\\s*\$/", $line)) {
-	    $savedPar .= $line . "\n";
-	    $savedParLines++;
-	} else if ($state == 1 && ctype_isspace($line[0]))
-	    $out .= $line . "\n";
-	else if (preg_match("/^(\\s+)(-+|\\*+|\\d+\\.?)\\s/", $line, $matches)) {
-	    $x = tabLength($line, false);
-	} 
-    }
+    // $state = -1;
+    // $savedPar = "";
+    // $savedParLines = 0;
+    // $indent = 0;
+    // $out = "";
+    // for ($i = 0; $i < count($lines); $i++) {
+    //    $line = $lines[$i];
+    //    if (preg_match("/^\\s*\$/", $line)) {
+    //		$savedPar .= $line . "\n";
+    //		$savedParLines++;
+    //    } else if ($state == 1 && ctype_isspace($line[0]))
+    //		$out .= $line . "\n";
+    //    else if (preg_match("/^(\\s+)(-+|\\*+|\\d+\\.?)\\s/", $line, $matches)) {
+    //		$x = tabLength($line, false);
+    //    } 
+    // }
 }
 
 function htmlFold($text, $maxWords) {
