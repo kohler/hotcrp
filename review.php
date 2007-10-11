@@ -549,10 +549,12 @@ function reviewView($prow, $rrow, $editMode) {
 		$x = (is_array($b) ? $b[1] : "");
 		echo "      <td class='ptb_explain'>", $x, "</td>\n";
 	    }
-	    echo "    </tr>\n";
+	    echo "    </tr>\n  </table></td>\n</tr>";
 	    if ($Me->privChair)
-		echo "      <tr><td colspan='" . count($buttons) . "'><input type='checkbox' name='override' value='1' />&nbsp;Override deadlines</td></tr>\n";
-	    echo "  </table></td>\n</tr>\n\n";
+		echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>",
+		    "<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines",
+		    "</td>\n</tr>";
+	    echo "\n\n";
 	}
 
 	echo "<tr class='last'><td class='caption'></td></tr>\n";

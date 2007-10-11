@@ -1103,6 +1103,7 @@ class Conference {
 	global $ConfSiteBase;
 
 	if ($this->tableMessages) {
+	    echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>\n";
 	    echo "</table>\n\n";
 	    if ($this->tableMessagesObj)
 		$this->tableMessagesObj->echoDivExit();
