@@ -53,12 +53,12 @@ if ($homelist) {
     echo "<strong class='grpt'>List papers: &nbsp;</strong> ";
     $sep = "";
     if ($Me->isReviewer) {
-	echo $sep, "<a href='search.php?q=&amp;t=r' class='nowrap'>Your review assignment</a>";
+	echo $sep, "<a href='search.php?q=&amp;t=r' class='nowrap'>My reviews</a>";
 	$sep = $thesep;
     }
     if ($Me->isPC && $Conf->timePCViewAllReviews()
 	&& $Me->amDiscussionLead(0, $Conf)) {
-	echo $sep, "<a href=\"search.php?q=lead:", urlencode($Me->email), "&amp;t=s\" class='nowrap'>Your discussion lead</a>";
+	echo $sep, "<a href=\"search.php?q=lead:", urlencode($Me->email), "&amp;t=s\" class='nowrap'>My discussion leads</a>";
 	$sep = $thesep;
     }
     if ($Me->isPC && $papersub) {
