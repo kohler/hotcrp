@@ -1,5 +1,26 @@
 HotCRP NEWS
 
+Version 2.8   11.Oct.2007
+
+* Bug fix: Do not reveal authors' identities via responses.
+
+* Bug fix: Avoid losing the "open for responses" setting when updating other
+  setting groups.
+
+* Authors' responses are hidden from the PC until they are ready.
+
+* Improve review pretty printing for tabular-like text.
+
+* Add a setting allowing comments even if reviewing is closed.
+
+* Final copy display improvements.
+
+* Correlate soft and hard deadlines: if a hard deadline is set, but not a
+  soft deadline, show the hard deadline to relevant users.
+
+* Other behavior improvements.
+
+
 Version 2.7   23.Aug.2007
 
 * Email notification for comments.  Authors, reviewers, and PC members can
