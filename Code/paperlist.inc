@@ -401,9 +401,9 @@ class PaperList extends BaseList {
 		else
 		    $pl = "paper";
 	    }
-	    return "<a href='${ConfSiteBase}$pl.php?paperId=$row->paperId" . $this->paperLinkArgs . "' tabindex='2'>#$row->paperId</a>";
+	    return "<a href='${ConfSiteBase}$pl.php?paperId=$row->paperId" . $this->paperLinkArgs . "' tabindex='4'>#$row->paperId</a>";
 	case self::FIELD_REVIEWID:
-	    return "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "' tabindex='2'>#$row->paperId" . unparseReviewOrdinal($row->reviewOrdinal) . "</a>";
+	    return "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "' tabindex='4'>#$row->paperId" . unparseReviewOrdinal($row->reviewOrdinal) . "</a>";
 	case self::FIELD_TITLE:
 	    if (!($pl = $this->paperLink)) {
 		if ($row->reviewCount && $this->contact->canViewReview($row, null, $Conf))
@@ -411,9 +411,9 @@ class PaperList extends BaseList {
 		else
 		    $pl = "paper";
 	    }
-	    return "<a href='${ConfSiteBase}$pl.php?paperId=$row->paperId" . $this->paperLinkArgs . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
+	    return "<a href='${ConfSiteBase}$pl.php?paperId=$row->paperId" . $this->paperLinkArgs . "' tabindex='5'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_REVIEWTITLE:
-	    return "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "' tabindex='3'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
+	    return "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "' tabindex='5'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
@@ -493,12 +493,12 @@ class PaperList extends BaseList {
 	    }
 	    if ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType >= CONFLICT_AUTHOR)
 		$c .= " disabled='disabled'";
-	    return "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='1' id='psel$this->count' onclick='pselClick(event, this, $this->count)' $c/>";
+	    return "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='3' id='psel$this->count' onclick='pselClick(event, this, $this->count)' $c/>";
 	case self::FIELD_ASSIGN_REVIEW:
 	    if ($row->conflictType >= CONFLICT_AUTHOR)
 		return "<span class='author'>Author</span>";
 	    $rt = ($row->conflictType > 0 ? -1 : min(max($row->reviewType, 0), REVIEW_PRIMARY));
-	    $x = "<select name='assrev$row->paperId' tabindex='1' onchange='highlightUpdate()'>";
+	    $x = "<select name='assrev$row->paperId' tabindex='3' onchange='highlightUpdate()'>";
 	    $x .= "<option value='0'" . ($rt == 0 ? " selected='selected'" : "") . ">None</option>";
 	    $x .= "<option value='" . REVIEW_PRIMARY . "'" . ($rt == REVIEW_PRIMARY ? " selected='selected'" : "") . ">Primary</option>";
 	    $x .= "<option value='" . REVIEW_SECONDARY . "'" . ($rt == REVIEW_SECONDARY ? " selected='selected'" : "") . ">Secondary</option>";
@@ -529,7 +529,7 @@ class PaperList extends BaseList {
 	    if ($row->conflictType > 0)
 		return "N/A";
 	    $x = (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
-	    return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' value=\"$x\" tabindex='1' />";
+	    return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' value=\"$x\" tabindex='3' />";
 	case self::FIELD_DESIRABILITY:
 	    return (isset($row->desirability) ? htmlspecialchars($row->desirability) : "0");
 	case self::FIELD_ALL_PREFERENCES:
@@ -670,48 +670,81 @@ class PaperList extends BaseList {
 	}
 	return $a;
     }
+
+    function listDescription($listname) {
+	switch ($listname) {
+	  case "a":
+	  case "authorHome":
+	    return "My papers";
+	  case "s":
+	    return "Submitted papers";
+	  case "acc":
+	    return "Accepted papers";
+	  case "all":
+	    return "All papers";
+	  case "reviewerHome":
+	  case "r":
+	    return "My reviews";
+	  case "rout":
+	    return "My incomplete reviews";
+	  case "req":
+	    return "My review requests";
+	  case "reviewAssignment":
+	    return "Review assignments";
+	  case "conflict":
+	    return "Potential conflicts";
+	  case "editReviewPreference":
+	    return "Reviewer preferences";
+	  case "reviewers":
+	  case "reviewersSel":
+	    return "Proposed assignments";
+	  case "revs":
+	    return "Reviews";
+	  default:
+	    return null;
+	}
+    }
     
     function listFields($listname) {
 	switch ($listname) {
 	  case "a":
 	  case "authorHome":
-	    return array("Authored papers", 1, 11, 20);
+	    return array(1, 11, 20);
 	  case "s":
 	  case "acc":
-	    $name = ($listname == "s" ? "Submitted" : "Accepted");
-	    return $this->addScores(array($name . " papers", 100, 1, 11, 27, 41, 21, 70, 72, 71));
+	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71));
 	  case "all":
-	    return array("All papers", 100, 1, 11, 20, 27, 70, 72, 71);
+	    return array(100, 1, 11, 20, 27, 70, 72, 71);
 	  case "reviewerHome":
 	    $this->paperLink = "review";
-	    return array("Your review assignment", 1, 11, 27, 21);
+	    return array(1, 11, 27, 21);
 	  case "r":
 	    $this->paperLink = "review";
-	    return $this->addScores(array("Your review assignment", 100, 1, 11, 27, 41, 21, 70, 72, 71));
+	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71));
 	  case "rout":
 	    $this->paperLink = "review";
-	    return $this->addScores(array("Unsubmitted reviews", 100, 1, 11, 27, 41, 21, 70, 72, 71));
+	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71));
 	  case "req":
 	    $this->paperLink = "review";
-	    return $this->addScores(array("Requested reviews", 100, 1, 11, 27, 41, 21, 70, 72, 71));
+	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71));
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
-	    return array("Review assignment", 1, 11, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48);
+	    return array(1, 11, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48);
 	  case "conflict":
 	    $this->paperLink = "assign";
-	    return array("Potential conflicts", 102, 1, 11, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
+	    return array(102, 1, 11, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
 	  case "editReviewPreference":
 	    $this->paperLink = "paper";
-	    return array("Reviewer preferences", 1, 11, 36, 27, 40, 70, 72, 37);
+	    return array(1, 11, 36, 27, 40, 70, 72, 37);
 	  case "reviewers":
 	    $this->paperLink = "assign";
-	    return array("Proposed assignments", 1, 11, 21, 38);
+	    return array(1, 11, 21, 38);
 	  case "reviewersSel":
 	    $this->paperLink = "assign";
-	    return array("Proposed assignments", 101, 1, 11, 21, 38);
+	    return array(101, 1, 11, 21, 38);
 	  case "revs":
 	    $this->paperLink = "review";
-	    return array("Reviews", 2, 12, 25, 27);
+	    return array(2, 12, 25, 27);
 	  default:
 	    return null;
 	}
@@ -735,7 +768,6 @@ class PaperList extends BaseList {
 	    $Conf->errorMsg("There is no paper list query named '" . htmlspecialchars($listname) . "'.");
 	    return null;
 	}
-	$description = array_shift($baseFieldId);
 
 	// check paper link destination
 	if (isset($_REQUEST["linkto"]) && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
@@ -967,10 +999,11 @@ class PaperList extends BaseList {
 	if ($this->sessionVar) {
 	    if (isset($_REQUEST["sort"]))
 		$url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
+	    $description = PaperList::listDescription($listname);
 	    if ($this->search->q || $this->search->qa || $this->search->qx)
 		$description .= " search";
 	    $ids["url"] = $url;
-	    $ids["description"] = $description;
+	    $ids["description"] = $this->search->description($listname);
 	    $_SESSION[$this->sessionVar] = $ids;
 	    unset($_SESSION["matchPreg"]);
 	}

@@ -17,6 +17,7 @@ $searchTags = array('ti:' => 'ti', 'title:' => 'ti',
 		    'sec:' => 'sec', 'secondary:' => 'sec',
 		    'csec:' => 'ssec', 'csecondary:' => 'ssec',
 		    'tag:' => 'tag',
+		    'notag:' => 'notag',
 		    'ord:' => 'order', 'order:' => 'order',
 		    'decision:' => 'decision', 'dec:' => 'decision',
 		    'topic:' => 'topic',
@@ -194,10 +195,10 @@ class PaperSearch {
 	$q = "";
 
 	// quick emptiness check
-	if (!$str)
+	if ($str == "")
 	    return array("", "");
 
-	// paper IDs?
+	// quick paper IDs check
 	if (($type == "any" && preg_match('/^\s*\d[\d\s]*$/s', $str))
 	    || ($type == "all" && preg_match('/^\s*\d+\s*$/s', $str))) {
 	    foreach (preg_split('/\s+/', $str) as $word)
@@ -287,6 +288,22 @@ class PaperSearch {
 		    $qp .= " or (alltags is not null and alltags like '%#$lword#%'$confpart)";
 		    $this->any |= self::ANY_ALLTAGS;
 		}
+	    }
+	    if (($special ? $special == "notag" : isset($this->fields['notag']))
+		&& $this->amPC) {
+		require_once("tags.inc");
+		$confpart = "";
+		if (!$this->privChair) {
+		    $confpart = " or conflictType is not null";
+		    $this->any |= self::ANY_CONFLICT;
+		}
+		if (($e = checkTagError($word)))
+		    $this->warn(htmlspecialchars($e));
+		$this->any |= self::ANY_ALLTAGS;
+		if ($word == "none")
+		    $qp .= " or (alltags is not null$confpart)";
+		else
+		    $qp .= " or (alltags is null or alltags not like '%#$lword#%'$confpart)";
 	    }
 	    if ($special ? $special == "status" : isset($this->fields['status'])) {
 		if (strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
@@ -573,6 +590,33 @@ class PaperSearch {
 	if ($this->qx != "")
 	    $url .= "&qx=" . urlencode($this->qx);
 	return $url;
+    }
+
+    function _tagDescription() {
+	if (($this->q == "" ? 0 : 1) + ($this->qa == "" ? 0 : 1)
+	    + ($this->qx == "" ? 0 : 1) != 1)
+	    return false;
+	$d = ($this->q == "" ? ($this->qa == "" ? $this->qx : $this->qa) : $this->q);
+	if (preg_match('/\A\s*tag:([a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*)\s*\Z/', $d, $m))
+	    return ($this->qx ? "notag:$m[1]" : "tag:$m[1]");
+	else if (preg_match('/\A\s*notag:([a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*)\s*\Z/', $d, $m))
+	    return ($this->qx ? "tag:$m[1]" : "notag:$m[1]");
+	else
+	    return false;
+    }
+    
+    function description($listname) {
+	require_once("paperlist.inc");
+	$desc = PaperList::listDescription($listname);
+	if ($this->q == "" && $this->qa == "" && $this->qx == "")
+	    return $desc;
+	if (($td = $this->_tagDescription())) {
+	    if ($desc == "Submitted papers")
+		return "<i>$td</i>";
+	    else
+		return "$desc <i>$td</i>";
+	} else
+	    return "$desc search";
     }
 
 }

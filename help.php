@@ -189,6 +189,7 @@ function searchQuickref() {
     _searchQuickrefRow("Topics", "topic:link", "selected topics match \"link\"");
     _searchQuickrefRow("Options", "option:shadow", "selected submission options match \"shadow\"");
     _searchQuickrefRow("<a href='help.php?t=tags'>Tags</a>", "tag:discuss", "tagged \"discuss\"");
+    _searchQuickrefRow("", "notag:discuss", "not tagged \"discuss\"");
     _searchQuickrefRow("", "order:discuss", "tagged \"discuss\", sort by tag order");
     _searchQuickrefRow("Reviews", "re:fdabek", "\"fdabek\" in reviewer name/email");
     _searchQuickrefRow("", "cre:fdabek", "\"fdabek\" (in reviewer name/email) has completed a review");

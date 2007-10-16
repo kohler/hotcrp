@@ -354,11 +354,7 @@ function _tryNewList($opt) {
     $search = new PaperSearch($Me, $opt);
     $_SESSION["list"] = $search->paperList();
     $_SESSION["list"]["url"] = $search->url();
-    $pl = new PaperList(false);
-    $fields = $pl->listFields($search->limitName);
-    $_SESSION["list"]["description"] = $fields[0];
-    if ($search->q  || $search->qa || $search->qx)
-	$_SESSION["list"]["description"] .= " search";
+    $_SESSION["list"]["description"] = $search->description($search->limitName);
     unset($_SESSION["matchPreg"]);
     $Conf->qx("drop temporary table Matches");
 }
@@ -408,9 +404,9 @@ function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
     if (isset($list["description"])) {
 	$x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
 	if (defval($list["url"]))
-	    $x .= "<a href=\"${ConfSiteBase}" . htmlspecialchars($list["url"]) . "\">" . htmlspecialchars($list["description"]) . "</a>";
+	    $x .= "<a href=\"${ConfSiteBase}" . htmlspecialchars($list["url"]) . "\">" . $list["description"] . "</a>";
 	else
-	    $x .= htmlspecialchars($listinfo["description"]);
+	    $x .= $listinfo["description"];
     }
     if (isset($list[$k + 1])) {
 	$x .= ($k > 0 || isset($list["description"]) ? "&nbsp;&nbsp;" : "");

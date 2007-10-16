@@ -506,7 +506,7 @@ else
 $Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"searchform\", $activetab, 1);</script>";
 
 if (count($tOpt) > 1) {
-    $tselect = "<select name='t'>";
+    $tselect = "<select name='t' tabindex='1'>";
     foreach ($tOpt as $k => $v) {
 	$tselect .= "<option value='$k'";
 	if ($_REQUEST["t"] == $k)
@@ -524,7 +524,7 @@ echo "<table id='searchform' class='tablinks$activetab'>
 
 // Basic Search
 echo "<form method='get' action='search.php'><div class='inform'>
-  <input id='searchform1_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /> &nbsp;in &nbsp;$tselect &nbsp;
+  <input id='searchform1_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" tabindex='1' /> &nbsp;in &nbsp;$tselect &nbsp;
   <input class='button' name='go' type='submit' value='Search' />
 </div></form>";
 
@@ -538,7 +538,7 @@ echo "<form method='get' action='search.php'>
 </tr>
 <tr>
   <td class='lxcaption'>Using these fields</td>
-  <td class='lentry'><select name='qt'>";
+  <td class='lentry'><select name='qt' tabindex='1'>";
 $qtOpt = array("ti" => "Title only",
 	      "ab" => "Abstract only");
 if ($Me->privChair || $Conf->blindSubmission() == 0) {
@@ -562,14 +562,14 @@ echo "</select></td>
 <tr><td><div class='xsmgap'></div></td></tr>
 <tr>
   <td class='lxcaption'>With <b>any</b> of the words</td>
-  <td class='lentry'><input id='searchform2_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /><span class='sep'></span></td>
-  <td rowspan='3'><input class='button' type='submit' value='Search' /></td>
+  <td class='lentry'><input id='searchform2_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" tabindex='1' /><span class='sep'></span></td>
+  <td rowspan='3'><input class='button' type='submit' value='Search' tabindex='2' /></td>
 </tr><tr>
   <td class='lxcaption'>With <b>all</b> the words</td>
-  <td class='lentry'><input class='textlite' type='text' size='40' name='qa' value=\"", htmlspecialchars(defval($_REQUEST["qa"], "")), "\" /></td>
+  <td class='lentry'><input class='textlite' type='text' size='40' name='qa' value=\"", htmlspecialchars(defval($_REQUEST["qa"], "")), "\" tabindex='1' /></td>
 </tr><tr>
   <td class='lxcaption'><b>Without</b> the words</td>
-  <td class='lentry'><input class='textlite' type='text' size='40' name='qx' value=\"", htmlspecialchars(defval($_REQUEST["qx"], "")), "\" /></td>
+  <td class='lentry'><input class='textlite' type='text' size='40' name='qx' value=\"", htmlspecialchars(defval($_REQUEST["qx"], "")), "\" tabindex='1' /></td>
 </tr>
 <tr>
   <td class='lxcaption'></td>
