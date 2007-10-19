@@ -612,9 +612,9 @@ class PaperSearch {
 	    return $desc;
 	if (($td = $this->_tagDescription())) {
 	    if ($desc == "Submitted papers")
-		return "<i>$td</i>";
+		return $td;
 	    else
-		return "$desc <i>$td</i>";
+		return "$desc $td";
 	} else
 	    return "$desc search";
     }

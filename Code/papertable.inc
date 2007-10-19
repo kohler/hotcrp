@@ -526,17 +526,25 @@ class PaperTable {
 	global $Conf, $ConfSiteBase;
 	$t = defval($prow->paperTags, "");
 	if ($site || $t) {
+	    // Note that tags MUST NOT contain HTML special characters.
 	    $t = str_replace('#0', '', $t);
+	    if ($t == "")
+		$tx = "";
+	    else
+		$tx = preg_replace('/([a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*)/',
+				   "<a class='q' href='${ConfSiteBase}search.php?q=tag:\$1'>\$1</a>",
+				   $t);
+	    
 	    echo "<tr class='pt_tags'>\n  <td class='caption'>Tags</td>\n  <td class='entry'>";
 	    if ($site) {
 		echo "<form method='post' action=\"$site\" enctype='multipart/form-data'><div id='foldtags' class='foldc inform'>";
-		echo "<span class='ellipsis'>", ($t == "" ? "none" : htmlspecialchars($t)), "&nbsp;</span>";
+		echo "<span class='ellipsis'>", ($t == "" ? "none" : $tx), "&nbsp;</span>";
 		echo "<a href='javascript:fold(\"tags\", 0)'>", $Conf->cacheableImage("next.png", "[Edit]", null, "unfolder"), "</a>";
-		echo "<span class='extension'><input class='textlite' type='text' size='40' name='tags' value=\"", htmlspecialchars($t), "\" /> &nbsp;<input class='button_small' type='submit' name='settags' value='Set tags' /> &nbsp; ";
+		echo "<span class='extension'><input class='textlite' type='text' size='40' name='tags' value=\"", $t, "\" /> &nbsp;<input class='button_small' type='submit' name='settags' value='Set tags' /> &nbsp; ";
 		echo "<a href='javascript:fold(\"tags\", 1)'>", $Conf->cacheableImage("prev.png", "[Hide]", null, "folder"), "</a></span>";
 		echo "</div></form>";
 	    } else
-		echo htmlspecialchars($t);
+		echo $tx;
 	    echo "</td>\n</tr>\n\n";
 	}
     }
