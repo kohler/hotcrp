@@ -1064,7 +1064,7 @@ class Conference {
 	if ($title && $showTitle && $title == "Home")
 	    echo htmlspecialchars($this->shortName);
 	else
-	    echo "<a href='${ConfSiteBase}index.php'>", htmlspecialchars($this->shortName), "</a><span class='crumbsep'> &nbsp;&gt;&nbsp; </span>", $title;
+	    echo "<a href='${ConfSiteBase}index.php'>", htmlspecialchars($this->shortName), "</a><span class='crumbsep'> &nbsp;|&nbsp; </span>", $title;
 	echo "</h1></div><div id='header_user'>";
 	if ($_SESSION["Me"]->valid()) {
 	    echo "<strong>",
