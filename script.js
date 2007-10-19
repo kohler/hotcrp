@@ -433,17 +433,34 @@ Miniajax.submit = function(formname, callback) {
 };
 
 
-// abstracts
+// abstracts and tags
 var ajaxAbstracts = false;
 function foldabstract(which, dofold, foldnum) {
     if (dofold || !ajaxAbstracts)
 	return fold(which, dofold, foldnum);
     Miniajax.submit("abstractloadform", function(rv) {
-			var elt;
-			for (var i in rv) 
-			    if (i.substr(0, 8) == "abstract" && (elt = e(i)))
-				elt.innerHTML = rv[i];
-			ajaxAbstracts = false;
-			fold(which, dofold, foldnum);
-		    });
+	    var elt;
+	    for (var i in rv) 
+		if (i.substr(0, 8) == "abstract" && (elt = e(i)))
+		    elt.innerHTML = rv[i];
+	    ajaxAbstracts = false;
+	    fold(which, dofold, foldnum);
+	});
+}
+
+var ajaxTags = false;
+function foldtags(which, dofold, foldnum) {
+    if (dofold || !ajaxTags)
+	return fold(which, dofold, foldnum);
+    Miniajax.submit("tagloadform", function(rv) {
+	    var elt, eltx;
+	    for (var i in rv) 
+		if (i.substr(0, 4) == "tags" && (elt = e(i)))
+		    if (rv[i] == "" && (eltx = e("pl_" + i)))
+			eltx.innerHTML = "";
+		    else
+			elt.innerHTML = rv[i];
+	    ajaxTags = false;
+	    fold(which, dofold, foldnum);
+	});
 }

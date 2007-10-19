@@ -139,6 +139,29 @@ if ($getaction == "abstracts" && isset($papersel) && defval($_REQUEST["ajax"])) 
 }
 
 
+// download selected abstracts
+if ($getaction == "tags" && isset($papersel) && defval($_REQUEST["ajax"])) {
+    $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tags" => 1));
+    $result = $Conf->qe($q, "while selecting papers");
+    $response = array();
+    $csb = defval($_REQUEST["sitebase"], "");
+    while ($prow = edb_orow($result)) {
+	if (!$Me->isPC
+	    || (!$Me->privChair && $prow->conflictType > 0))
+	    $t = "";
+	else {
+	    $t = str_replace("#0", "", $prow->paperTags);
+	    $t = preg_replace('/([a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*)/',
+			      "<a class='q' href='${csb}search.php?q=tag:\$1'>\$1</a>",
+			      $t);
+	}
+	$response["tags$prow->paperId"] = $t;
+    }
+    $response["ok"] = (count($response) > 0);
+    $Conf->ajaxExit($response);
+}
+
+
 // download selected final copies
 if ($getaction == "final" && isset($papersel)) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
@@ -471,6 +494,7 @@ if (isset($_REQUEST["redisplay"])) {
     $_SESSION["foldplau"] = !defval($_REQUEST["showau"], 0);
     $_SESSION["foldplanonau"] = !defval($_REQUEST["showanonau"], 0);
     $_SESSION["foldplabstract"] = !defval($_REQUEST["showabstract"], 0);
+    $_SESSION["foldpltags"] = !defval($_REQUEST["showtags"], 0);
 }
 if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
     $_SESSION["scores"] = 0;
@@ -540,7 +564,7 @@ echo "<form method='get' action='search.php'>
   <td class='lxcaption'>Using these fields</td>
   <td class='lentry'><select name='qt' tabindex='1'>";
 $qtOpt = array("ti" => "Title only",
-	      "ab" => "Abstract only");
+	       "ab" => "Abstract only");
 if ($Me->privChair || $Conf->blindSubmission() == 0) {
     $qtOpt["au"] = "Authors only";
     $qtOpt["n"] = "Title, abstract, authors";
@@ -620,7 +644,7 @@ if ($Me->isPC && $pl->headerInfo["tags"]) {
 	echo " disabled='disabled'";
     if (defval($_SESSION["foldpltags"], 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='fold(\"pl\",!this.checked,4)' />&nbsp;Tags<br />\n";
+    echo " onclick='foldtags(\"pl\",!this.checked,4)' />&nbsp;Tags<br />\n";
 }
 echo "</td>";
 if (isset($pl->scoreMax)) {

@@ -64,6 +64,7 @@ class PaperList extends BaseList {
     var $extraText;
     var $unfolded;
     var $foldedAbstract;
+    var $foldedTags;
     var $paperLink;
     var $paperLinkArgs;
     var $showConflict;
@@ -159,7 +160,8 @@ class PaperList extends BaseList {
 	case self::FIELD_TAGS:
 	    if (!$this->contact->isPC)
 		return false;
-	    $queryOptions['tags'] = 1;
+	    if ($this->foldedTags === false)
+		$queryOptions['tags'] = 1;
 	    break;
 	}
 	return true;
@@ -582,7 +584,19 @@ class PaperList extends BaseList {
 	    if (!$this->contact->isPC
 		|| (!$this->contact->privChair && $row->conflictType > 0))
 		return "";
-	    return htmlspecialchars(str_replace("#0", "", $row->paperTags));
+	    if ($this->foldedTags === false) {
+		$t = str_replace("#0", "", $row->paperTags);
+		$t = preg_replace('/([a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*)/',
+				  "<a class='q' href='${ConfSiteBase}search.php?q=tag:\$1'>\$1</a>",
+				  $t);
+		if ($t == "")
+		    return "";
+		else
+		    return "<span id='tags$row->paperId'>" . $t . "</span>";
+	    } else {
+		$this->foldedTags[] = $row->paperId;
+		return "<span id='tags$row->paperId'><em>Loading</em></span>";
+	    }
 	default:
 	    return "";
 	}
@@ -764,6 +778,16 @@ class PaperList extends BaseList {
 	// check role type
 	$this->scoresOk = $me->privChair || ($me->isPC && $Conf->timePCViewAllReviews());
 
+	// check what is folded
+	if (defval($_SESSION["foldplabstract"], 1))
+	    $this->foldedAbstract = array();
+	else
+	    $this->foldedAbstract = false;
+	if (defval($_SESSION["foldpltags"], 1))
+	    $this->foldedTags = array();
+	else
+	    $this->foldedTags = false;
+
 	// get paper list
 	if (!($baseFieldId = $this->listFields($listname))) {
 	    $Conf->errorMsg("There is no paper list query named '" . htmlspecialchars($listname) . "'.");
@@ -855,10 +879,6 @@ class PaperList extends BaseList {
 	$anyData = array();
 	$body = '';
 	$authorinfo = $taginfo = $abstractinfo = false;
-	if (defval($_SESSION["foldplabstract"], 1))
-	    $this->foldedAbstract = array();
-	else
-	    $this->foldedAbstract = false;
 	foreach ($srows as $row) {
 	    $ids[] = $row->paperId;
 	    $trclass = "k" . ($this->count % 2);
@@ -888,6 +908,8 @@ class PaperList extends BaseList {
 			$abstractinfo = true;
 			$t .= " extension5";
 		    }
+		    if ($fdef[1] == 4 || $fdef[1] == 5)
+			$t .= "\" id=\"pl_$fdef[0]$row->paperId";
 		    $t .= "\">\n";
 		    $t .= "<td class=\"pl_$fdef[0] pl_callout\" colspan='$ncol'>";
 		    $t .= "<span class='pl_callouthdr'>" . $this->header($fieldId, -1, $row, $reviewList) . ":</span>";
@@ -914,7 +936,9 @@ class PaperList extends BaseList {
 	if (!$unfolded)
 	    $x .= " fold3c";
 	if ($taginfo)
-	    $x .= (defval($_SESSION["foldpltags"], 1) ? " fold4c" : " fold4o");
+	    $x .= ($this->foldedTags !== false ? " fold4c" : " fold4o");
+	if ($taginfo && $this->foldedTags !== false && count($this->foldedTags))
+	    $Conf->footerStuff .= "<form id='tagloadform' method='post' action='${ConfSiteBase}search.php?get=tags&amp;ajax=1'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedTags) . "' /><input type='hidden' name='sitebase' value=\"" . htmlspecialchars($ConfSiteBase) . "\" /></div></form><script type='text/javascript'>ajaxTags = true;</script>";
 	if ($abstractinfo)
 	    $x .= ($this->foldedAbstract !== false ? " fold5c" : " fold5o");
 	if ($abstractinfo && $this->foldedAbstract !== false && count($this->foldedAbstract))
@@ -945,7 +969,7 @@ class PaperList extends BaseList {
 	    }
 	    if ($taginfo && $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
-		$titleextra .= "<a class='unfolder4' href='javascript:fold(\"pl\",0,4)'>Show tags</a><a class='folder4' href='javascript:fold(\"pl\",1,4)'>Hide tags</a>";
+		$titleextra .= "<a class='unfolder4' href='javascript:foldtags(\"pl\",0,4)'>Show tags</a><a class='folder4' href='javascript:foldtags(\"pl\",1,4)'>Hide tags</a>";
 		$titleextra .= "<img id='foldsession.pl4' alt='' src='${ConfSiteBase}sessionvar.php?var=foldpltags&amp;val=" . defval($_SESSION["foldpltags"], 1) . "&amp;cache=1' width='1' height='1' />";
 	    }
 	    
