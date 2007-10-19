@@ -54,7 +54,7 @@ class PaperList extends BaseList {
     var $needFinalize;
     var $needSubmitReview;
     var $anySelector;
-    var $sessionVar;
+    var $listNumber;
     var $contact;
     var $scoresOk;
     var $scoreMax;
@@ -70,7 +70,7 @@ class PaperList extends BaseList {
     var $headerInfo;
     var $papersel;
     
-    function PaperList($sortable = true, $sessionVar = null, $search = null, $extraText = null) {
+    function PaperList($sortable = true, $list = false, $search = null, $extraText = null) {
 	global $paperListFields;
 	$this->showHeader = self::HEADER_ALL;
 
@@ -85,12 +85,13 @@ class PaperList extends BaseList {
 	    $this->sortField = null;
 	$this->sortable = $sortable;
 
-	$this->sessionVar = $sessionVar;
-
 	$this->paperLink = "";
 	$this->paperLinkArgs = "";
-	if ($this->sessionVar && $this->sessionVar != "list")
-	    $this->paperLinkArgs = "&amp;list=" . $this->sessionVar;
+	if ($list) {
+	    $this->listNumber = oldestListNumber($search ? $search->listId(defval($_REQUEST["sort"], "")) : "");
+	    $this->paperLinkArgs .= "&amp;ls=" . $this->listNumber;
+	} else
+	    $this->listNumber = 0;
 
 	$this->search = $search;
 	$this->extraText = $extraText;
@@ -996,16 +997,16 @@ class PaperList extends BaseList {
 	$x .= "</table>";
 
 	// session variable to remember the list
-	if ($this->sessionVar) {
+	if ($this->listNumber) {
 	    if (isset($_REQUEST["sort"]))
 		$url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
-	    $description = PaperList::listDescription($listname);
-	    if ($this->search->q || $this->search->qa || $this->search->qx)
-		$description .= " search";
 	    $ids["url"] = $url;
 	    $ids["description"] = $this->search->description($listname);
-	    $_SESSION[$this->sessionVar] = $ids;
-	    unset($_SESSION["matchPreg"]);
+	    $ids["timestamp"] = time();
+	    if ($this->search->q || $this->search->qa || $this->search->qx)
+		$ids["matchPreg"] = "/(" . $this->search->matchPreg . ")/i";
+	    $ids["listid"] = $this->search->listId(isset($_REQUEST["sort"]) ? $_REQUEST["sort"] : "");
+	    $_SESSION["l"][$this->listNumber] = $ids;
 	}
 
 	$this->headerInfo = array("authors" => $authorinfo, "tags" => $taginfo, "abstracts" => $abstractinfo);

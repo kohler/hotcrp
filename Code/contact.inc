@@ -110,7 +110,7 @@ class Contact {
 		    if ($viewContact > 0) {
 			$this->contactId = $viewContact;
 			unset($_REQUEST['viewContact']);
-			unset($_SESSION["list"]);
+			unset($_SESSION["l"]);
 			return $this->valid($conf, true);
 		    }
 		    if ($chairMode >= 0 && !$this->privChair) {

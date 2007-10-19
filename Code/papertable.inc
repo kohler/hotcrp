@@ -29,7 +29,7 @@ class PaperTable {
     
     function PaperTable($editable, $useRequest, $allFolded, $authorsFolded,
 			$foldsession = null) {
-	global $thisMatchPreg;
+	global $thisMatchPreg, $CurrentList;
 	
 	$this->editable = $editable;
 	$this->useRequest = $useRequest;
@@ -43,7 +43,14 @@ class PaperTable {
 	$this->allFolded = $allFolded;
 	$this->authorsFolded = $authorsFolded;
 
-	$this->matchPreg = defval($thisMatchPreg, defval($_SESSION["matchPreg"], null));
+	if (isset($thisMatchPreg))
+	    $this->matchPreg = $thisMatchPreg;
+	else if (isset($_SESSION["l"]) && isset($CurrentList)
+		 && $CurrentList > 0
+		 && isset($_SESSION["l"][$CurrentList]["matchPreg"]))
+	    $this->matchPreg = $_SESSION["l"][$CurrentList]["matchPreg"];
+	else
+	    $this->matchPreg = null;
 	$this->highlight = $this->matchPreg !== null;
 	$this->watchCheckbox = 0;
     }

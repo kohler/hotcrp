@@ -619,4 +619,20 @@ class PaperSearch {
 	    return "$desc search";
     }
 
+    function listId($sort = "") {
+	if ($this->q == "" && $this->qa == "" && $this->qx == "")
+	    return $this->limitName . ":" . $sort;
+	else
+	    return "";
+    }
+    
+    function sessionList($listname) {
+	$l = $this->paperList();
+	$l["url"] = $this->url();
+	$l["description"] = $this->description($limitname);
+	$l["timestamp"] = time();
+	$l["listid"] = $this->listId();
+	return $l;
+    }
+
 }

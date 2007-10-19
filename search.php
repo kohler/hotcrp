@@ -489,7 +489,7 @@ $Conf->header("Search", 'search', actionBar());
 unset($_REQUEST["urlbase"]);
 $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
-    $pl = new PaperList(true, "list", $Search);
+    $pl = new PaperList(true, true, $Search);
     $pl->showHeader = PaperList::HEADER_TITLES;
     $pl_text = $pl->text($Search->limitName, $Me);
 }
@@ -663,9 +663,6 @@ echo "<tr><td class='tllx'><table><tr>
 
 
 if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
-    if ($Search->matchPreg)
-	$_SESSION["matchPreg"] = "/(" . $Search->matchPreg . ")/i";
-
     if ($Search->warnings) {
 	echo "<div class='maintabsep'></div>\n";
 	$Conf->warnMsg(join("<br />\n", $Search->warnings));

@@ -106,10 +106,9 @@ if (isset($_REQUEST["redisplay"])) {
 
 // search
 $searchType = ($Conf->setting("pc_seeall") > 0 ? "all" : "s");
-$pl = new PaperList(true, "list", new PaperSearch($Me, array("t" => $searchType, "c" => $reviewer, "urlbase" => "PC/reviewprefs.php?reviewer=$reviewer")));
+$pl = new PaperList(true, true, new PaperSearch($Me, array("t" => $searchType, "c" => $reviewer, "urlbase" => "PC/reviewprefs.php?reviewer=$reviewer")));
 $pl->showHeader = PaperList::HEADER_TITLES;
 $pl_text = $pl->text("editReviewPreference", $Me);
-unset($_SESSION["matchPreg"]);
 
 
 // DISPLAY OPTIONS

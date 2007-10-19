@@ -386,7 +386,7 @@ if (isset($assignments) && count($assignments) > 0) {
     }
 
     $search = new PaperSearch($Me, array("t" => "s", "q" => join(" ", array_keys($assignments))));
-    $plist = new PaperList(false, null, $search, $atext);
+    $plist = new PaperList(false, false, $search, $atext);
     echo $plist->text("reviewers", $Me);
 
     $atype = $_REQUEST["a"];
@@ -555,7 +555,7 @@ echo "</select> &nbsp; <input class='button' name='requery' type='submit' value=
 echo "<input type='hidden' name='oldt' value=\"", htmlspecialchars($_REQUEST["t"]), "\" /><input type='hidden' name='oldq' value=\"", htmlspecialchars($_REQUEST["q"]), "\" />\n";
 echo "<hr class='smgap' />\n";
 $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
-$plist = new PaperList(false, null, $search);
+$plist = new PaperList(false, false, $search);
 $plist->papersel = $papersel;
 echo $plist->text("reviewersSel", $Me);
 echo "</td></tr>\n";

@@ -347,54 +347,74 @@ function contactEmailTo($firstName, $lastName = null, $email = null) {
     return $x;
 }
 
-function _tryNewList($opt) {
+function oldestListNumber($listid = "") {
+    if (!isset($_SESSION["l"]))
+	$_SESSION["l"] = array();
+    if (count($_SESSION["l"]) == 0)
+	return 1;
+    $l = $_SESSION["l"][1];
+    $oldest = 0;
+    for ($i = 1; $i <= 8; $i++)
+	if (!isset($_SESSION["l"][$i]))
+	    return $i;
+	else if ($listid && $_SESSION["l"][$i]["listid"] == $listid)
+	    return $i;
+	else if (!$oldest
+		 || (defval($_SESSION["l"][$i]['timestamp'])
+		     < defval($_SESSION["l"][$oldest]['timestamp'])))
+	    $oldest = $i;
+    return $oldest;
+}
+
+function _tryNewList($opt, $which) {
     global $Conf, $Me;
     require_once("search.inc");
     require_once("paperlist.inc");
     $search = new PaperSearch($Me, $opt);
-    $_SESSION["list"] = $search->paperList();
-    $_SESSION["list"]["url"] = $search->url();
-    $_SESSION["list"]["description"] = $search->description($search->limitName);
-    unset($_SESSION["matchPreg"]);
+    $_SESSION["l"][$which] = $search->sessionList($search->limitName);
     $Conf->qx("drop temporary table Matches");
 }
 
 function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
-    global $Me, $ConfSiteBase, $Conf;
+    global $Me, $ConfSiteBase, $Conf, $CurrentList;
+    $replaceList = oldestListNumber();
 
-    if (isset($_REQUEST["list"]) && substr($_REQUEST["list"], 0, 4) == "list"
-	&& strlen($_REQUEST["list"]) > 4 && isset($_SESSION[$_REQUEST["list"]])) {
-	$_SESSION["list"] = $_SESSION[$_REQUEST["list"]];
-	unset($_SESSION[$_REQUEST["list"]]);
-	unset($_SESSION["matchPreg"]);
-    } else if (isset($_REQUEST["list"])) {
+    if (isset($_REQUEST["ls"])
+	&& ($CurrentList = cvtint($_REQUEST["ls"])) > 0
+	&& isset($_SESSION["l"][$CurrentList]))
+	$_SESSION["l"][$CurrentList]["timestamp"] = time();
+    else if (isset($_REQUEST["list"])) {
 	$l = $_REQUEST["list"];
 	if (preg_match('/\A[a-z]+\Z/', $l))
-	    _tryNewList(array("t" => $l));
+	    _tryNewList(array("t" => $l), $replaceList);
 	else if (preg_match('/\A(all|s):(.*)\Z/s', $l, $m))
-	    _tryNewList(array("t" => $m[1], "q" => $m[2]));
+	    _tryNewList(array("t" => $m[1], "q" => $m[2]), $replaceList);
 	else
-	    _tryNewList(array("q" => $l));
-    }
+	    _tryNewList(array("q" => $l), $replaceList);
+	$CurrentList = $replaceList;
+    } else
+	$CurrentList = 0;
 
-    if (!isset($_SESSION["list"]) || !is_array($_SESSION["list"]))
-	$_SESSION["list"] = array();
+    $k = false;
+    if ($CurrentList != 0)
+	$k = array_search($paperId, $_SESSION["l"][$CurrentList]);
 
-    $k = array_search($paperId, $_SESSION["list"]);
-    if ($paperId > 0 && $k === false && !isset($_REQUEST["list"])) {
-	_tryNewList(array());
-	$k = array_search($paperId, $_SESSION["list"]);
+    if ($paperId > 0 && $k === false && !isset($_REQUEST["ls"])
+	&& !isset($_REQUEST["list"])) {
+	_tryNewList(array(), $replaceList);
+	$k = array_search($paperId, $_SESSION["l"][$replaceList]);
 	if ($k === false && $Me->privChair) {
-	    _tryNewList(array("t" => "all"));
-	    $k = array_search($paperId, $_SESSION["list"]);
+	    _tryNewList(array("t" => "all"), $replaceList);
+	    $k = array_search($paperId, $_SESSION["l"][$replaceList]);
 	}
+	$CurrentList = $replaceList;
     }
 
-    $urlrest = "";
+    $urlrest = "&amp;ls=" . $CurrentList;
     foreach ($args as $what => $val)
 	$urlrest .= "&amp;" . htmlspecialchars($what) . "=" . htmlspecialchars($val);
 
-    $list = $_SESSION["list"];
+    $list = $_SESSION["l"][$CurrentList];
     $x = "";
     if ($k > 0)
 	$x .= "<a href=\"${ConfSiteBase}$baseUrl?paperId="
@@ -418,10 +438,12 @@ function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
 }
 
 function goPaperForm($baseUrl = "paper.php", $args = array()) {
-    global $ConfSiteBase;
+    global $ConfSiteBase, $CurrentList;
     $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get'><div class='inform'>";
     foreach ($args as $what => $val)
 	$x .= "<input type='hidden' name=\"" . htmlspecialchars($what) . "\" value=\"" . htmlspecialchars($val) . "\" />";
+    if (isset($CurrentList) && $CurrentList > 0)
+	$x .= "<input type='hidden' name='ls' value='$CurrentList' />";
     $x .= "#<input class='textlite' type='text' size='6' name='paperId' />";
     $x .= "&nbsp;<input class='button' type='submit' name='go' value='Search' /></div></form>";
     return $x;
