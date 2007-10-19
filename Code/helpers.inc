@@ -861,7 +861,7 @@ function maybeSearchPaperId($base, $me) {
     // if a complex request, or a form upload, don't search
     foreach ($_REQUEST as $k => $v)
 	if ($k != "paperId" && $k != "mode" && $k != "forceShow" && $k != "go"
-	    && $k != "viewContact" && $k != "chairMode"
+	    && $k != "viewContact" && $k != "chairMode" && $k != "ls"
 	    && !isset($_COOKIE[$k]))
 	    return false;
 
