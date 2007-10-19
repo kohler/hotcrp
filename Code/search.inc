@@ -629,7 +629,7 @@ class PaperSearch {
     function sessionList($listname) {
 	$l = $this->paperList();
 	$l["url"] = $this->url();
-	$l["description"] = $this->description($limitname);
+	$l["description"] = $this->description($listname);
 	$l["timestamp"] = time();
 	$l["listid"] = $this->listId();
 	return $l;
