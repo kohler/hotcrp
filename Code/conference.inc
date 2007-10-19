@@ -377,9 +377,7 @@ class Conference {
 
     function cacheableImage($name, $alt = null, $title = null, $class = null) {
 	global $ConfSiteBase, $ConfSitePATH;
-	$t = "<img src='${ConfSiteBase}images/$name'";
-	if ($alt)
-	    $t .= " alt=\"$alt\"";
+	$t = "<img src='${ConfSiteBase}images/$name' alt=\"$alt\"";
 	if ($title)
 	    $t .= " title=\"$title\"";
 	if ($class)
