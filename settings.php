@@ -602,7 +602,8 @@ function doRevGroup() {
     doCheckbox('cmt_always', 'Allow comments even if reviewing is closed');
 
     echo "<div class='smgap'></div>\n";
-    doRadio("rev_blind", array(2 => "Blind review", 1 => "Optionally blind review", 0 => "Non-blind review"));
+    echo "Can paper authors see who wrote the reviews?<br />\n";
+    doRadio("rev_blind", array(2 => "No (anonymous review)", 1 => "Maybe (reviewers decide whether to remain anonymous)", 0 => "Yes (open review)"));
 
     echo "<div class='smgap'></div>\n";
     doCheckbox('rev_notifychair', 'PC chairs are notified of new reviews by email');
