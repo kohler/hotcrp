@@ -1,3 +1,100 @@
+2007-10-20 Saturday 16:17  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* comment.php (1.48), index.php (1.147), review.php (1.114),
+	  style.css (1.206), Code/conference.inc (1.220),
+	  Code/reviewtable.inc (1.41): add Edit buttons to reviews you can
+	  edit (because Gilles didnt know you could edit); improve
+	  separators
+
+2007-10-20 Saturday 15:54  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.53): attempt to further clarify blind
+	  submission/anonymous review selectors (it would be bad for people
+	  to make mistakes here)
+
+2007-10-20 Saturday 15:34  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.52): clarify review-blind setting
+
+2007-10-20 Saturday 15:30  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* comment.php (1.47), review.php (1.113), search.php (1.117),
+	  Code/contact.inc (1.135), Code/helpers.inc (1.174),
+	  Code/mailtemplate.inc (1.19), Code/paperlist.inc (1.143),
+	  Code/review.inc (1.81), Code/search.inc (1.64): Setting the
+	  "blind submission" setting off shows authors, although the
+	  database still marks the papers as "blind".  Same for reviewers.
+
+2007-10-20 Saturday 09:49  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.54), settings.php (1.51): Allow is passive
+
+2007-10-19 Friday 23:28  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.75), comment.php (1.46), help.php (1.53), paper.php
+	  (1.146), review.php (1.112), search.php (1.116), settings.php
+	  (1.50), Code/contact.inc (1.134), Code/helpers.inc (1.173),
+	  Code/paperlist.inc (1.142), Code/papertable.inc (1.92),
+	  Code/reviewtable.inc (1.40), Code/search.inc (1.63): Introduce a
+	  setting that allows PC members to see all tags.  Also a bug fix
+	  with the "response open" setting.
+
+2007-10-19 Friday 15:50  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/helpers.inc (1.172): the gopaper form has a new argument;
+	  account for that
+
+2007-10-19 Friday 15:45  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/search.inc (1.62): minor bug fix
+
+2007-10-19 Friday 15:27  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/conference.inc (1.219): alt is required
+
+2007-10-19 Friday 15:15  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* logout.php (1.9), script.js (1.54), search.php (1.115),
+	  Code/paperlist.inc (1.141): tags view in paper lists show up with
+	  Ajax.  Also, the tags themselves are links to the corresponding
+	  tag searches.  (Probably should make a function for that
+	  transformation.)
+
+2007-10-19 Friday 13:46  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* style.css (1.205): No, THIS is the MOST IMPORTANT CHANGE EVER
+
+2007-10-19 Friday 13:44  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/conference.inc (1.218): MOST IMPORTANT CHANGE EVER
+
+2007-10-19 Friday 12:47  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* autoassign.php (1.22), index.php (1.146), logout.php (1.8),
+	  search.php (1.114), Chair/AssignPapers.php (1.46),
+	  Code/contact.inc (1.133), Code/helpers.inc (1.171),
+	  Code/paperlist.inc (1.140), Code/papertable.inc (1.91),
+	  Code/search.inc (1.61), PC/reviewprefs.php (1.38): allow up to 8
+	  outstanding paper lists, so that a user with multiple
+	  tabs/windows can page through their lists independently
+
+2007-10-18 Thursday 23:25  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/: papertable.inc (1.90), search.inc (1.60), tags.inc (1.9):
+	  click on a tag name to perform that tag search
+
+2007-10-16 Tuesday 08:33  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.52), search.php (1.113), Code/helpers.inc (1.170),
+	  Code/paperlist.inc (1.139), Code/search.inc (1.59): Add "notag:"
+	  search keyword.  Display which tag search this is in the
+	  quicklinks (for simple tag searches).  Better way to figure out
+	  the name of a list.
+
+2007-10-11 Thursday 11:52  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.10), tarball.sh (1.61): 2.8 release
+
 2007-10-11 Thursday 11:26  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* comment.php (1.45), Code/TODO (1.92), Code/contact.inc (1.132),
