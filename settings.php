@@ -524,7 +524,8 @@ function doSubGroup() {
     doCheckbox('sub_open', '<b>Open site for submissions</b>');
 
     echo "<div class='smgap'></div>\n";
-    doRadio("sub_blind", array(2 => "Blind submission", 1 => "Optionally blind submission", 0 => "Non-blind submission"));
+    echo "<strong>Blind submission:</strong> Can reviewers see who wrote the papers?<br />\n";
+    doRadio("sub_blind", array(2 => "No", 0 => "Yes", 1 => "Maybe (authors decide whether to be anonymous)"));
 
     echo "<div class='smgap'></div>\n<table>\n";
     doDateRow("sub_reg", "Paper registration deadline", "sub_sub");
@@ -602,8 +603,8 @@ function doRevGroup() {
     doCheckbox('cmt_always', 'Allow comments even if reviewing is closed');
 
     echo "<div class='smgap'></div>\n";
-    echo "Can paper authors see who wrote the reviews?<br />\n";
-    doRadio("rev_blind", array(2 => "No (anonymous review)", 1 => "Maybe (reviewers decide whether to remain anonymous)", 0 => "Yes (open review)"));
+    echo "<strong>Anonymous review:</strong> Can authors see who wrote the reviews?<br />\n";
+    doRadio("rev_blind", array(2 => "No", 0 => "Yes", 1 => "Maybe (reviewers decide whether to be anonymous)"));
 
     echo "<div class='smgap'></div>\n";
     doCheckbox('rev_notifychair', 'PC chairs are notified of new reviews by email');
