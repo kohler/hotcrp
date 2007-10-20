@@ -1,5 +1,18 @@
 HotCRP NEWS
 
+Version 2.9   20.Oct.2007
+
+* Add a setting allowing PC members to see tags even for conflicted papers.
+
+* Tag names generally link to the corresponding search.
+
+* Multiple independent paper lists will improve quicklink navigation.
+
+* Add "notag:" searches.
+
+* Setting description improvements.
+
+
 Version 2.8   11.Oct.2007
 
 * Bug fix: Do not reveal authors' identities via responses.
