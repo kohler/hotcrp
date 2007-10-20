@@ -581,8 +581,7 @@ class PaperList extends BaseList {
 		return "<span id='abstract$row->paperId'><em>Loading</em></span>";
 	    }
 	case self::FIELD_TAGS:
-	    if (!$this->contact->isPC
-		|| (!$this->contact->privChair && $row->conflictType > 0))
+	    if (!$this->contact->canViewTags($row, $Conf))
 		return "";
 	    if ($this->foldedTags === false) {
 		$t = str_replace("#0", "", $row->paperTags);

@@ -369,7 +369,6 @@ function oldestListNumber($listid = "") {
 function _tryNewList($opt, $which) {
     global $Conf, $Me;
     require_once("search.inc");
-    require_once("paperlist.inc");
     $search = new PaperSearch($Me, $opt);
     $_SESSION["l"][$which] = $search->sessionList($search->limitName);
     $Conf->qx("drop temporary table Matches");

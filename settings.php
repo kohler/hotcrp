@@ -46,6 +46,7 @@ $SettingGroups = array("acc" => array(
 			     "pc_seeallrev" => "check",
 			     "extrev_chairreq" => "check",
 			     "tags" => "special",
+			     "tag_seeall" => "check",
 			     "extrev_soft" => "date",
 			     "extrev_hard" => "date",
 			     "extrev_view" => 2,
@@ -98,6 +99,7 @@ $SettingText = array(
 	"pc_seeallrev" => "PC can see all reviews setting",
 	"extrev_view" => "External reviewers can view reviewer identities setting",
 	"tag_chair" => "Chair tags",
+	"tag_seeall" => "Allow PC to see tags for conflicted papers",
 	"au_seerev" => "Allow authors to see reviews setting",
 	"au_seedec" => "Allow authors to see decisions setting",
 	"rev_seedec" => "Allow reviewers to see decisions setting",
@@ -358,6 +360,7 @@ if (isset($_REQUEST["update"])) {
     // need to set 'resp_open' to a timestamp,
     // so we can join on later review changes
     if (array_key_exists("resp_open", $Values)
+	&& $Values["resp_open"] > 0
 	&& defval($Conf->settings["resp_open"]) <= 0)
 	$Values["resp_open"] = time();
 
@@ -370,7 +373,7 @@ if (isset($_REQUEST["update"])) {
 
     // report errors
     if (count($Error) > 0)
-	$Conf->errorMsg(join("<br/>\n", $Error));
+	$Conf->errorMsg(join("<br />\n", $Error));
     else if (count($Values) > 0) {
 	$while = "updating settings";
 	$tables = "Settings write, ChairTag write, TopicArea write, PaperTopic write";
@@ -604,17 +607,6 @@ function doRevGroup() {
     echo "<div class='smgap'></div>\n";
     doCheckbox('rev_notifychair', 'PC chairs are notified of new reviews by email');
 
-    echo "<div class='smgap'></div>\n";
-    echo "<table><tr><td class='lcaption'>", decorateSettingText("tag_chair", "Chair-only tags"), "</td>";
-    if (count($Error) > 0)
-	$v = defval($_REQUEST["tag_chair"], "");
-    else {
-	$t = array_keys(chairTags());
-	sort($t);
-	$v = join(" ", $t);
-    }
-    echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='50' onchange='highlightUpdate()' /><br /><small>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</small></td></tr></table>";
-
     echo "<hr />";
 
 
@@ -651,6 +643,23 @@ function doRevGroup() {
     echo "<div class='smgap'></div>";
     echo "Can external reviewers view the other reviews for their assigned papers, once they've submitted their own?<br />\n";
     doRadio("extrev_view", array(0 => "No", 2 => "Yes", 1 => "Yes, but they can't see who wrote blind reviews"));
+
+    echo "<hr />";
+
+    // Tags
+    echo "<h3>Tags</h3>\n";
+
+    doCheckbox('tag_seeall', "Allow PC to see tags for conflicted papers");
+    echo "<div class='smgap'></div>";
+    echo "<table><tr><td class='lcaption'>", decorateSettingText("tag_chair", "Chair-only tags"), "</td>";
+    if (count($Error) > 0)
+	$v = defval($_REQUEST["tag_chair"], "");
+    else {
+	$t = array_keys(chairTags());
+	sort($t);
+	$v = join(" ", $t);
+    }
+    echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='50' onchange='highlightUpdate()' /><br /><small>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</small></td></tr></table>";
 }
 
 // Review form

@@ -530,7 +530,7 @@ class PaperTable {
     }
 
     function echoTags($prow, $site = null) {
-	global $Conf, $ConfSiteBase;
+	global $Conf, $ConfSiteBase, $Me;
 	$t = defval($prow->paperTags, "");
 	if ($site || $t) {
 	    // Note that tags MUST NOT contain HTML special characters.
@@ -543,7 +543,7 @@ class PaperTable {
 				   $t);
 	    
 	    echo "<tr class='pt_tags'>\n  <td class='caption'>Tags</td>\n  <td class='entry'>";
-	    if ($site) {
+	    if ($site && $Me->canSetTags($prow, $Conf)) {
 		echo "<form method='post' action=\"$site\" enctype='multipart/form-data'><div id='foldtags' class='foldc inform'>";
 		echo "<span class='ellipsis'>", ($t == "" ? "none" : $tx), "&nbsp;</span>";
 		echo "<a href='javascript:fold(\"tags\", 0)'>", $Conf->cacheableImage("next.png", "[Edit]", null, "unfolder"), "</a>";

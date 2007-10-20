@@ -289,9 +289,9 @@ if (isset($_REQUEST['setoutcome'])) {
 }
 
 
-// set tags action
+// set tags action (see also comment.php)
 if (isset($_REQUEST["settags"])) {
-    if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow))) {
+    if ($Me->canSetTags($prow, $Conf, $forceShow)) {
 	require_once("Code/tags.inc");
 	setTags($prow->paperId, defval($_REQUEST["tags"], ""), 'p', $Me->privChair);
 	loadRows();
@@ -383,7 +383,7 @@ if ($canViewAuthors || $Me->privChair) {
 $paperTable->echoAbstractRow($prow);
 $paperTable->echoTopics($prow);
 $paperTable->echoOptions($prow, $Me->privChair);
-if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow)))
+if ($Me->canViewTags($prow, $Conf, $forceShow))
     $paperTable->echoTags($prow, "${ConfSiteBase}review.php?paperId=$prow->paperId$forceShow");
 if ($Me->privChair)
     $paperTable->echoPCConflicts($prow, true);

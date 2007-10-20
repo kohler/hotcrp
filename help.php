@@ -214,7 +214,7 @@ function searchQuickref() {
 
 
 function tags() {
-    global $ConfSiteBase;
+    global $Conf, $ConfSiteBase, $Me;
 
     // get current chair-only tags
     require_once('Code/tags.inc');
@@ -236,6 +236,9 @@ tags are allowed; you can invent new ones on the fly.
 Tags are never shown to authors or conflicted PC members.
 It's easy to add and remove tags and to list all papers with a given tag,
 and <i>ordered</i> tags preserve a particular paper order.");
+
+    $setting = ($Me->privChair ? " (<a href='${ConfSiteBase}settings.php?group=rev'>change this setting</a>)" : "");
+    $msg = ($Conf->setting("tag_seeall") > 0 ? "" : "  However, each PC member's list will be missing any conflicts, since PC members can't see tags for conflicted papers$setting.");
     _alternateRow("Using tags", "
 Here are some example ways to use tags.
 
@@ -260,13 +263,14 @@ Here are some example ways to use tags.
 <li><strong>Define a discussion order for the PC meeting.</strong>
  Publishing the order lets PC members prepare to discuss upcoming papers.
  Define an ordered tag such as \"discuss\" (see below for how), then ask the PC to <a href='${ConfSiteBase}search.php?q=order:discuss'>search for \"order:discuss\"</a>.
- The PC can now see the order and use quick links to go from paper to paper.</li>
+ The PC can now see the order and use quick links to go from paper to paper.$msg</li>
 
 <li><strong>Mark tentative decisions during the PC meeting.</strong>
  Chairs add \"accept\" and \"reject\" tags as decisions are made, leaving the explicit decision setting for the end of the meeting.
- Among the reasons for this: PC members can see decisions as soon as they are entered into the system, even for conflicted papers, but they can never see tags for conflicted papers.</li>
+ Among the reasons for this: PC members can see decisions as soon as they are entered into the system, even for conflicted papers, but they can't see tags for conflicted papers unless you explicitly allow it.</li>
 </ul>
 ");
+    $msg = ($Conf->setting("tag_seeall") > 0 ? "Currently PC members can see tags for any paper, including conflicts" : "They are hidden from conflicted PC members&mdash;for instance, if a PC member searches for a tag, the results will never include conflicts");
     _alternateRow("Finding tags", "
 A list of each paper's tags is shown on its <a href='${ConfSiteBase}review.php'>review page</a>, and the other paper pages.
 
@@ -274,9 +278,8 @@ A list of each paper's tags is shown on its <a href='${ConfSiteBase}review.php'>
 
 To find all papers with tag \"discuss\":&nbsp; " . _searchForm("tag:discuss") . "
 
-<p>Only PC members can view a paper's tags.
-If a PC member has a conflict with a paper, they can't see its tags either
-directly or through searches.</p>");
+<p>Tags are only shown to PC members.
+$msg$setting.</p>");
     _alternateRow("Changing tags", "
 To change a single paper's tags, go to the Tags entry on its <a href='${ConfSiteBase}review.php'>review page</a>,
 click the <img src='${ConfSiteBase}images/next.png' alt='right arrow' />,
@@ -295,9 +298,7 @@ their checkboxes, and add tags using the action area.</p>
 from all non-selected papers.</p>
 
 Although any PC member can view or search
-any tag, only PC chairs can change certain tags$ctxt.
-Change the set of chair-only tags on the
-<a href='${ConfSiteBase}settings.php?group=rev'>conference settings page</a>.");
+any tag, only PC chairs can change certain tags$ctxt$setting.");
     _alternateRow("Ordered tags<br />and discussion orders", "
 An ordered tag names an <i>ordered</i> set of papers.  Searching for the
 tag with \"<a href='${ConfSiteBase}search.php?q=order:tagname'>order:tagname</a>\" will return the papers in the order

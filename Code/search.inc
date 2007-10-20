@@ -269,7 +269,7 @@ class PaperSearch {
 		if ($special ? $special == "order" : isset($this->fields['order']))
 		    $this->orderTag = ($this->orderTag === false ? $word : null);
 		$confpart = "";
-		if (!$this->privChair) {
+		if (!$this->privChair && $Conf->setting("tag_seeall") <= 0) {
 		    $confpart = " and conflictType is null";
 		    $this->any |= self::ANY_CONFLICT;
 		}
@@ -293,7 +293,7 @@ class PaperSearch {
 		&& $this->amPC) {
 		require_once("tags.inc");
 		$confpart = "";
-		if (!$this->privChair) {
+		if (!$this->privChair && $Conf->setting("tag_seeall") <= 0) {
 		    $confpart = " or conflictType is not null";
 		    $this->any |= self::ANY_CONFLICT;
 		}

@@ -140,7 +140,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 
     // forceShow
     if ($Me->privChair && !$effAssistant)
-	$notes[] = "<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\"><b>Override your conflict</b> to show reviewer identities and allow editing</a>";
+	$notes[] = "<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\"><strong>Override your conflict</strong> to show reviewer identities and allow editing</a>";
 
     // see all reviews
     $t = "";

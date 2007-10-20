@@ -146,8 +146,7 @@ if ($getaction == "tags" && isset($papersel) && defval($_REQUEST["ajax"])) {
     $response = array();
     $csb = defval($_REQUEST["sitebase"], "");
     while ($prow = edb_orow($result)) {
-	if (!$Me->isPC
-	    || (!$Me->privChair && $prow->conflictType > 0))
+	if (!$Me->canViewTags($prow, $Conf))
 	    $t = "";
 	else {
 	    $t = str_replace("#0", "", $prow->paperTags);

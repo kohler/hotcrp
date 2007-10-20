@@ -344,10 +344,10 @@ echo "<table class='assign'>\n\n";
 echo "<tr class='id'>\n  <td class='caption'><h2>#", $prow->paperId, "</h2></td>\n";
 echo "  <td class='entry' colspan='2'><h2>";
 $paperTable->echoTitle($prow);
-echo "</h2>";
 // session folders
 echo "<img id='foldsession.paper9' alt='' src='", $ConfSiteBase, "sessionvar.php?var=foldassignp&amp;val=", defval($_SESSION["foldassignp"], 1), "&amp;cache=1' width='1' height='1' />";
 echo "<img id='foldsession.authors8' alt='' src='", $ConfSiteBase, "sessionvar.php?var=foldassigna&amp;val=", defval($_SESSION["foldassigna"], 1), "&amp;cache=1' width='1' height='1' />";
+echo "</h2>";
 echo "</td>\n</tr>\n\n";
 
 

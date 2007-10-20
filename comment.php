@@ -38,7 +38,7 @@ function loadRows() {
 	maybeSearchPaperId("comment.php", $Me);
 	$sel = array("paperId" => $_REQUEST["paperId"]);
     }
-    $sel['topics'] = $sel['options'] = 1;
+    $sel['topics'] = $sel['options'] = $sel['tags'] = 1;
     if (!(($prow = $Conf->paperRow($sel, $Me->contactId, $whyNot))
 	  && $Me->canViewPaper($prow, $Conf, $whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
@@ -255,6 +255,17 @@ else
     $forceShow = "";
 
 
+// set tags action (see also review.php)
+if (isset($_REQUEST["settags"])) {
+    if ($Me->canSetTags($prow, $Conf, $forceShow)) {
+	require_once("Code/tags.inc");
+	setTags($prow->paperId, defval($_REQUEST["tags"], ""), 'p', $Me->privChair);
+	loadRows();
+    } else
+	$Conf->errorMsg("You cannot set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Override conflict</a>)" : ""));
+}
+
+
 // page header
 confHeader();
 
@@ -288,12 +299,14 @@ if ($canViewAuthors || $Me->privChair) {
 $paperTable->echoAbstractRow($prow);
 $paperTable->echoTopics($prow);
 $paperTable->echoOptions($prow, $Me->privChair);
-if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow)))
-    $paperTable->echoTags($prow);
+if ($Me->canViewTags($prow, $Conf, $forceShow))
+    $paperTable->echoTags($prow, "${ConfSiteBase}comment.php?paperId=$prow->paperId$forceShow");
 if ($Me->privChair)
     $paperTable->echoPCConflicts($prow, true);
 if ($crow)
     echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><a href='comment.php?paperId=$prow->paperId'>All comments</a></td>\n</tr>\n\n";
+if ($Me->privChair && $prow->conflictType > 0 && !$forceShow)
+    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><a href=\"", htmlspecialchars(selfHref(array("forceShow" => 1))), "\"><strong>Override your conflict</strong> to see all comments and allow editing</a></td>\n</tr>\n\n";
 
 
 // exit on certain errors

@@ -681,7 +681,7 @@ $paperTable->echoOptions($prow, $Me->privChair);
 
 
 // Tags
-if ($Me->isPC && $prow && $prow->conflictType <= 0 && !$editable)
+if ($prow && $Me->canViewTags($prow, $Conf) && !$editable)
     $paperTable->echoTags($prow);
 
 

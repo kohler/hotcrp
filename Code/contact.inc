@@ -867,6 +867,19 @@ class Contact {
 	return false;
     }
 
+    function canViewTags($prow, $Conf, $forceShow = true) {
+	return ($this->isPC
+		&& (!$prow || $prow->conflictType <= 0
+		    || ($this->privChair && $forceShow)
+		    || $Conf->setting("tag_seeall") > 0));
+    }
+
+    function canSetTags($prow, $Conf, $forceShow = true) {
+	return ($this->isPC
+		&& (!$prow || $prow->conflictType <= 0
+		    || ($this->privChair && $forceShow)));
+    }
+
     function canSetOutcome($prow) {
 	if (!$this->privChair)
 	    return false;
