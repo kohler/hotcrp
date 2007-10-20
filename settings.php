@@ -99,10 +99,10 @@ $SettingText = array(
 	"pc_seeallrev" => "PC can see all reviews setting",
 	"extrev_view" => "External reviewers can view reviewer identities setting",
 	"tag_chair" => "Chair tags",
-	"tag_seeall" => "Allow PC to see tags for conflicted papers",
-	"au_seerev" => "Allow authors to see reviews setting",
-	"au_seedec" => "Allow authors to see decisions setting",
-	"rev_seedec" => "Allow reviewers to see decisions setting",
+	"tag_seeall" => "PC can see tags for conflicted papers",
+	"au_seerev" => "Authors can see reviews setting",
+	"au_seedec" => "Authors can see decisions setting",
+	"rev_seedec" => "Reviewers can see decisions setting",
 	"final_open" => "Collect final copies setting",
 	"final_done" => "Final copy upload deadline"
 	);
@@ -621,7 +621,7 @@ function doRevGroup() {
     echo "</table>\n";
 
     echo "<div class='smgap'></div>\n<table>\n";
-    doCheckbox('pc_seeallrev', "<b>Allow PC to see all reviews</b> except for conflicts<br /><small>When unchecked, a PC member can see reviews for a paper only after submitting their own review for that paper.</small>", true);
+    doCheckbox('pc_seeallrev', "<b>PC can see all reviews</b> except for conflicts<br /><small>When unchecked, a PC member can see reviews for a paper only after submitting their own review for that paper.</small>", true);
     echo "</table>\n";
 
     echo "<hr />";
@@ -649,7 +649,7 @@ function doRevGroup() {
     // Tags
     echo "<h3>Tags</h3>\n";
 
-    doCheckbox('tag_seeall', "Allow PC to see tags for conflicted papers");
+    doCheckbox('tag_seeall', "PC can see tags for conflicted papers");
     echo "<div class='smgap'></div>";
     echo "<table><tr><td class='lcaption'>", decorateSettingText("tag_chair", "Chair-only tags"), "</td>";
     if (count($Error) > 0)
@@ -671,7 +671,7 @@ function doRfoGroup() {
 // Responses and decisions
 function doDecGroup() {
     global $Conf, $rf;
-    doCheckbox('au_seerev', '<b>Allow authors to see reviews</b>');
+    doCheckbox('au_seerev', '<b>Authors can see reviews</b>');
 
     echo "<div class='smgap'></div>\n<table>";
     doCheckbox('resp_open', "<b>Collect authors' responses to the reviews:</b>", true);
@@ -681,8 +681,8 @@ function doDecGroup() {
     echo "</table></td></tr></table>";
 
     echo "<div class='smgap'></div>\n";
-    doCheckbox('au_seedec', '<b>Allow authors to see decisions</b> (accept/reject)');
-    doCheckbox('rev_seedec', 'Allow reviewers to see decisions and accepted authors');
+    doCheckbox('au_seedec', '<b>Authors can see decisions</b> (accept/reject)');
+    doCheckbox('rev_seedec', 'Reviewers can see decisions and accepted authors');
 
     echo "<div class='smgap'></div>\n";
     echo "<table>\n";

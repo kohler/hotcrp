@@ -453,17 +453,17 @@ supposedly reduces bias.)
   into the system as <a
   href='${ConfSiteBase}comment.php'>comments</a>.  On the <a
   href='${ConfSiteBase}settings.php?group=dec'>decision settings page</a>,
-  select \"Allow authors to see reviews\" and \"Collect responses to the
+  select \"Authors can see reviews\" and \"Collect responses to the
   reviews\", then <a href='${ConfSiteBase}mail.php'>send mail to
   authors</a> informing them of the response deadlines.  PC members will still
   be able to update their reviews, assuming it's before the <a
   href='${ConfSiteBase}settings.php?group=rev'>review deadline</a>; authors
   are informed via email of any review changes.  At the end of the response
   period it's generally good to <a
-  href='${ConfSiteBase}settings.php?group=dec'>turn off \"Allow authors to see
+  href='${ConfSiteBase}settings.php?group=dec'>turn off \"Authors can see
   reviews\"</a> so PC members can update their reviews in peace.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}settings.php?group=rev'>Allow the PC to
+<li><p>Set <strong><a href='${ConfSiteBase}settings.php?group=rev'>PC can
   see all submitted reviews</a></strong> if you haven't already.</p></li>
 
 <li><p><strong><a
@@ -528,7 +528,7 @@ supposedly reduces bias.)
 <li><p>Give reviewers some time to <strong>update their reviews</strong> in
   response to PC discussion (optional).</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}settings.php?group=dec'>Allow authors to
+<li><p>Set <strong><a href='${ConfSiteBase}settings.php?group=dec'>Authors can
   see reviews and decisions.</a></strong></p></li>
 
 <li><p><strong><a href='${ConfSiteBase}mail.php'>Send mail to
