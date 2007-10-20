@@ -330,9 +330,10 @@ $Conf->tableMsg(0);
 
 function commentIdentityTime($prow, $crow, &$sep) {
     global $Conf, $Me;
+    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
     if ($crow && $Me->canViewCommentIdentity($prow, $crow, $Conf)) {
 	echo ($crow->blind ? "[" : ""), "by ", contactHtml($crow);
-	$sep = ($crow->blind ? "]" : "") . " &nbsp;|&nbsp; ";
+	$sep = ($crow->blind ? "]" : "") . $xsep;
     } else if ($crow && $Me->privChair) {
 	echo "<span id='foldcid$crow->commentId' class='fold4c'>",
 	    "<a href=\"javascript:fold('cid$crow->commentId', 0, 4)\" class='foldbutton unfolder4'>+</a>",
@@ -340,11 +341,11 @@ function commentIdentityTime($prow, $crow, &$sep) {
 	    "<span class='ellipsis4'><i>Hidden for blind review</i></span>",
 	    "<span class='extension4'>", contactHtml($crow), "</span>",
 	    "</span>";
-	$sep = " &nbsp;|&nbsp; ";
+	$sep = $xsep;
     }
     if ($crow && $crow->timeModified > 0) {
 	echo $sep, $Conf->printableTime($crow->timeModified);
-	$sep = " &nbsp;|&nbsp; ";
+	$sep = $xsep;
     }
 }
 
@@ -391,8 +392,9 @@ function commentView($prow, $crow, $editMode) {
 	else if ($crow->forAuthors)
 	    echo " + authors";
     }
+    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
     if ($crow && ($crow->contactId == $Me->contactId || $Me->privChair) && !$editMode)
-	echo " &nbsp;|&nbsp; <a href='comment.php?commentId=$crow->commentId'>Edit</a>";
+	echo $xsep, "<a class='button' href='comment.php?commentId=$crow->commentId'>Edit</a>";
     echo "</td>\n</tr>\n\n";
 
     if ($editMode && $crow && $crow->contactId != $Me->contactId) {
@@ -497,7 +499,7 @@ function responseView($prow, $crow, $editMode) {
     commentIdentityTime($prow, $crow, $sep);
     if ($crow && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair)
 	&& !$editMode && $Me->canRespond($prow, $crow, $Conf))
-	echo $sep, "<a href='comment.php?commentId=$crow->commentId'>Edit</a>";
+	echo $sep, "<a class='button' href='comment.php?commentId=$crow->commentId'>Edit</a>";
     echo "</td>\n</tr>\n\n";
 
     if ($editMode) {

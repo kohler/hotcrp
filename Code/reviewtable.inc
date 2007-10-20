@@ -16,6 +16,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     $anyScores = false;
     $nNumeric = $rf->numNumericScores($prow, $Me, $Conf);
     $reviewTableFolder = false;
+    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
     
     // actual rows
     foreach ($rrows as $rr) {
@@ -157,7 +158,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	    $x = "Assign or request reviewers";
 	else
 	    $x = "Request an external review" . ($nRetractable ? " or retract outstanding review requests" : "");
-	$t .= ($t == "" ? "" : " &nbsp;|&nbsp; ") . "<a href=\"${ConfSiteBase}assign.php?paperId=$prow->paperId" . ($forceShow ? "&amp;forceShow=1" : "") . "\">$x</a>";
+	$t .= ($t == "" ? "" : $xsep) . "<a href=\"${ConfSiteBase}assign.php?paperId=$prow->paperId" . ($forceShow ? "&amp;forceShow=1" : "") . "\">$x</a>";
     }
     if ($t)
 	$notes[] = $t;

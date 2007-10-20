@@ -454,16 +454,21 @@ function reviewView($prow, $rrow, $editMode) {
     echo "</h3></td>
   <td class='entry' colspan='", ($editMode ? 2 : 3), "'>";
     $sep = "";
+    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
     if ($rrow && $Me->canViewReviewerIdentity($prow, $rrow, $Conf)) {
 	echo ($rrow->reviewBlind ? "[" : ""), "by ", contactHtml($rrow);
-	$sep = ($rrow->reviewBlind ? "]" : "") . " &nbsp;|&nbsp; ";
+	$sep = ($rrow->reviewBlind ? "]" : "") . $xsep;
     }
     if ($rrow && $rrow->reviewModified > 0) {
 	echo $sep, "Modified ", $Conf->printableTime($rrow->reviewModified);
-	$sep = " &nbsp;|&nbsp; ";
+	$sep = $xsep;
     }
-    if ($rrow)
+    if ($rrow) {
 	echo $sep, "<a href='review.php?paperId=$prow->paperId&amp;reviewId=$rrow->reviewId&amp;text=1$forceShow'>Text version</a>";
+	$sep = $xsep;
+    }
+    if ($rrow && !$editMode && $Me->canReview($prow, $rrow, $Conf))
+	echo $sep, "<a class='button' href='review.php?reviewId=$rrow->reviewId'>Edit</a>";
     echo "</td>
 </tr>\n";
     

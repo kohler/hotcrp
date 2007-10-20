@@ -1065,18 +1065,19 @@ class Conference {
 	    echo "<a href='${ConfSiteBase}index.php'>", htmlspecialchars($this->shortName), "</a><span class='crumbsep'> &nbsp;|&nbsp; </span>", $title;
 	echo "</h1></div><div id='header_user'>";
 	if ($_SESSION["Me"]->valid()) {
+	    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 	    echo "<strong>",
 		htmlspecialchars($_SESSION["Me"]->email),
-		"</strong> &nbsp;|&nbsp; ";
+		"</strong>", $xsep;
 	    if (!$_SESSION["Me"]->privChair && $_SESSION["Me"]->chairContactId > 0)
-		echo "<a href=\"", htmlspecialchars(selfHref(array("chairMode" => 0))), "\">Return&nbsp;to&nbsp;chair&nbsp;view</a> &nbsp;|&nbsp; ";
+		echo "<a href=\"", htmlspecialchars(selfHref(array("chairMode" => 0))), "\">Return&nbsp;to&nbsp;chair&nbsp;view</a>", $xsep;
 	    echo "<a href='", $ConfSiteBase, "help.php";
 	    if ($id == "search")
 		echo "?t=", $id;
 	    else if ($id == "settings")
 		echo "?t=chair";
-	    echo "'>Help</a> &nbsp;|&nbsp; ";
-	    echo "<a href='", $ConfSiteBase, "logout.php'>Sign&nbsp;out</a> &nbsp;|&nbsp; ";
+	    echo "'>Help</a>", $xsep;
+	    echo "<a href='", $ConfSiteBase, "logout.php'>Sign&nbsp;out</a>", $xsep;
 	}
 	echo date("l j M Y g:i:sa T", $time), "<br /><span id='usertime'></span></div>\n";
 	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", $this->shortName, " Public Site</a></div>\n";

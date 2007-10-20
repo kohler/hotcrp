@@ -25,7 +25,7 @@ if ($Me->privChair && $Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
 
 
 $Conf->header("Home", "home", actionBar(null, false, ""));
-$thesep = " &nbsp;|&nbsp; ";
+$xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 
 
 // if chair, check PHP setup
@@ -54,25 +54,25 @@ if ($homelist) {
     $sep = "";
     if ($Me->isReviewer) {
 	echo $sep, "<a href='search.php?q=&amp;t=r' class='nowrap'>My reviews</a>";
-	$sep = $thesep;
+	$sep = $xsep;
     }
     if ($Me->isPC && $Conf->timePCViewAllReviews()
 	&& $Me->amDiscussionLead(0, $Conf)) {
 	echo $sep, "<a href=\"search.php?q=lead:", urlencode($Me->email), "&amp;t=s\" class='nowrap'>My discussion leads</a>";
-	$sep = $thesep;
+	$sep = $xsep;
     }
     if ($Me->isPC && $papersub) {
 	echo $sep, "<a href='search.php?q=&amp;t=s' class='nowrap'>Submitted</a>";
-	$sep = $thesep;
+	$sep = $xsep;
     }
     if (($Me->isPC && $Conf->timeAuthorViewDecision() && $papersub)
 	|| ($Me->privChair && $Conf->setting("paperacc") > 0)) {
 	echo $sep, "<a href='search.php?q=&amp;t=acc' class='nowrap'>Accepted</a>";
-	$sep = $thesep;
+	$sep = $xsep;
     }
     if ($Me->privChair) {
 	echo $sep, "<a href='search.php?q=&amp;t=all' class='nowrap'>All</a>";
-	$sep = $thesep;
+	$sep = $xsep;
     }
 
     echo "</td></tr><tr><td id='homesearch'>";
@@ -91,10 +91,10 @@ if ($Me->privChair) {
     // Lists
     echo "<strong class='grpt'>Conference management: &nbsp;</strong> ";
     echo "<a href='settings.php'>Settings</a>";
-    echo $thesep, "<a href='contacts.php?t=all'>Accounts</a>";
-    echo $thesep, "<a href='autoassign.php'>Review assignments</a>";
-    echo $thesep, "<a href='mail.php'>Mail users</a>";
-    echo $thesep, "<a href='log.php'>Action log</a>";
+    echo $xsep, "<a href='contacts.php?t=all'>Accounts</a>";
+    echo $xsep, "<a href='autoassign.php'>Review assignments</a>";
+    echo $xsep, "<a href='mail.php'>Mail users</a>";
+    echo $xsep, "<a href='log.php'>Action log</a>";
 
     echo "<hr class='home' /></td></tr>\n";
 }
@@ -168,23 +168,23 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     $sep = "";
     if ($myrow) {
 	echo $sep, "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&ndash;</a>&nbsp;<a href=\"search.php?q=&amp;t=r\"><strong>My Reviews</strong></a>";
-	$sep = $thesep;
+	$sep = $xsep;
     }
     if ($Me->isPC && $Conf->timePCReviewPreferences()) {
 	echo $sep, "<a href='PC/reviewprefs.php'>Preferences</a>";
-	$sep = $thesep;
+	$sep = $xsep;
     }
     if ($Conf->settingsAfter("rev_open") || $Me->privChair) {
 	echo $sep, "<a href='offline.php'>Offline reviewing</a>";
-	$sep = $thesep;
+	$sep = $xsep;
     }
     if ($Me->privChair || ($Me->isPC && $Conf->timeReviewPaper(true, false, true))) {
 	echo $sep, "<a href='search.php?q=&amp;t=s'>Review any paper</a>";
-	$sep = $thesep;
+	$sep = $xsep;
     }
     if ($Me->isRequester) {
 	echo $sep, "<a href='PC/CheckReviewStatus.php'>Monitor external reviews</a>";
-	$sep = $thesep;
+	$sep = $xsep;
     }
     
     if ($Me->isReviewer) {
@@ -254,8 +254,8 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 echo "<tr><td id='homeacct'>";
 echo "<strong class='grpt'>My Account: &nbsp;</strong> ";
 echo "<a href='account.php'>Profile</a>";
-echo $thesep, "<a href='mergeaccounts.php'>Merge accounts</a>";
-echo $thesep, "Welcome, ", contactNameHtml($Me), ".  (If this isn't you, please <a href='${ConfSiteBase}logout.php'>sign out</a>.)";
+echo $xsep, "<a href='mergeaccounts.php'>Merge accounts</a>";
+echo $xsep, "Welcome, ", contactNameHtml($Me), ".  (If this isn't you, please <a href='${ConfSiteBase}logout.php'>sign out</a>.)";
 // echo "You will be signed out automatically if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.";
 echo "<hr class='home' /></td></tr>\n";
 
@@ -270,11 +270,11 @@ if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting(
     || ($Me->isPC && $Conf->setting('rev_open') && $Conf->setting('pcrev_hard'))
     || ($Me->amReviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard'))) {
     echo $sep, "<a href='deadlines.php'>Deadlines</a>";
-    $sep = $thesep;
+    $sep = $xsep;
 }
 echo $sep, "<a href='contacts.php?t=pc'>Program committee members</a>";
 if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
-    echo $thesep, "<a href='", $Opt['conferenceSite'], "'>Main conference site</a>";
+    echo $xsep, "<a href='", $Opt['conferenceSite'], "'>Main conference site</a>";
 if ($Conf->timeAuthorViewDecision()) {
     $result = $Conf->qe("select outcome, count(paperId) from Paper where timeSubmitted>0 group by outcome", "while loading acceptance statistics");
     $n = $nyes = 0;
