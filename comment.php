@@ -157,7 +157,7 @@ function saveComment($text) {
 	$blind = 1;
     if (isset($_REQUEST["response"])) {
 	$forAuthors = 2;
-	$blind = $prow->blind;
+	$blind = $prow->blind;	// use $prow->blind setting on purpose
     }
 
     // query
@@ -272,7 +272,8 @@ confHeader();
 
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, $forceShow);
-$paperTable = new PaperTable(false, false, true, ($Me->privChair && $prow->blind ? 1 : 2));
+$paperTable = new PaperTable(false, false, true,
+			     ($Me->privChair && paperBlind($prow) ? 1 : 2));
 $paperTable->watchCheckbox = WATCH_COMMENT;
 
 
@@ -494,7 +495,8 @@ function responseView($prow, $crow, $editMode) {
   <td class='entry'>";
     $sep = "";
     commentIdentityTime($prow, $crow, $sep);
-    if ($crow && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair) && !$editMode && $Me->canRespond($prow, $crow, $Conf))
+    if ($crow && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair)
+	&& !$editMode && $Me->canRespond($prow, $crow, $Conf))
 	echo $sep, "<a href='comment.php?commentId=$crow->commentId'>Edit</a>";
     echo "</td>\n</tr>\n\n";
 

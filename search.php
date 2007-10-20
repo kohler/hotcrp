@@ -290,7 +290,7 @@ if (isset($_REQUEST["tagact"]) && $Me->isPC && isset($papersel) && isset($_REQUE
 if ($getaction == "authors" && isset($papersel)
     && ($Me->privChair || ($Me->isPC && $Conf->blindSubmission() < 2))) {
     $idq = paperselPredicate($papersel);
-    if (!$Me->privChair)
+    if (!$Me->privChair && $Conf->blindSubmission() == 1)
 	$idq = "($idq) and blind=0";
     $result = $Conf->qe("select paperId, title, authorInformation from Paper where $idq", "while fetching authors");
     if ($result) {
@@ -336,9 +336,8 @@ if ($getaction == "pcconflicts" && isset($papersel) && $Me->privChair) {
 
 // download text contact author information, with email, for selected papers
 if ($getaction == "contact" && $Me->privChair && isset($papersel)) {
+    // Note that this is chair only
     $idq = paperselPredicate($papersel, "Paper.");
-    if (!$Me->privChair)
-	$idq = "($idq) and blind=0";
     $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq order by Paper.paperId", "while fetching contact authors");
     if ($result) {
 	$text = "#paperId\ttitle\tlast, first\temail\n";

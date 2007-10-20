@@ -350,8 +350,7 @@ class ReviewForm {
 
 	    if ($conf->timeEmailAuthorsAboutReview()) {
 		$rest["infoMsg"] = "since a review was updated during the response period.";
-		if ($Conf->blindReview() > 1
-		    || ($Conf->blindReview() == 1 && $fake_rrow->reviewBlind))
+		if (reviewBlind($fake_rrow))
 		    $rest["infoMsg"] .= "  Reviewer anonymity was preserved.";
 		Mailer::sendContactAuthors($tmpl, $prow, $submitter, $rest);
 	    }

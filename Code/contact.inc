@@ -509,15 +509,16 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
 	// policy
+	$pblind = paperBlind($prow);
 	if (($prow->conflictType >= CONFLICT_AUTHOR
-	     && (!$this->isPC || !$blindWins || !$prow->blind))
+	     && (!$this->isPC || !$blindWins || !$pblind))
 	    || ($prow->timeSubmitted > 0
 		&& ($this->isPC || $prow->myReviewType > 0)
-		&& !$prow->blind)
+		&& !$pblind)
 	    || ($prow->outcome > 0
 		&& ($this->isPC || $prow->myReviewType > 0)
 		&& $conf->timeReviewerViewAcceptedAuthors())
-	    || ($this->isPC && !$prow->blind && $prow->timeWithdrawn <= 0
+	    || ($this->isPC && !$pblind && $prow->timeWithdrawn <= 0
 		&& $conf->setting("pc_seeall") > 0))
 	    return true;
 	// collect failure reasons
@@ -819,11 +820,8 @@ class Contact {
 	    || ($this->isPC && $prow && $prow->conflictType == 0)
 	    || ($prow && $prow->myReviewType > 0
 		&& defval($prow->myReviewSubmitted) > 0
-		&& $conf->settings["extrev_view"] >= 2))
-	    return true;
-	$blind = $conf->blindReview();
-	if ($blind <= 0
-	    || ($blind == 1 && $rrow && $rrow->reviewBlind == 0))
+		&& $conf->settings["extrev_view"] >= 2)
+	    || !reviewBlind($rrow))
 	    return true;
 	return false;
     }
@@ -835,11 +833,8 @@ class Contact {
 	    || ($crow && $crow->contactId == $this->contactId)
 	    || ($this->isPC && $prow->conflictType == 0)
 	    || ($prow->myReviewType > 0 && $prow->conflictType == 0
-		&& $conf->settings["extrev_view"] >= 2))
-	    return true;
-	$blind = $conf->blindReview();
-	if ($blind <= 0
-	    || ($blind == 1 && $crow && $crow->blind == 0))
+		&& $conf->settings["extrev_view"] >= 2)
+	    || !commentBlind($crow))
 	    return true;
 	return false;
     }

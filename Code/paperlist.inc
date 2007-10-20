@@ -564,7 +564,7 @@ class PaperList extends BaseList {
 	    preg_match_all("/(" . $this->collaboratorsMatch . ")/i", $row->collaborators, $matches);
 	    return $this->_joinMatches($matches);
 	case self::FIELD_OPT_AUTHORS:
-	    if (!$this->contact->privChair && $row->blind)
+	    if (!$this->contact->privChair && paperBlind($row))
 		return "";
 	    $aus = array();
 	    cleanAuthor($row);
@@ -898,8 +898,8 @@ class PaperList extends BaseList {
 		if ($fdef[1] >= 2 && ($d = $this->content($fieldId, $row, $reviewList))) {
 		    $t .= "  <tr class=\"pl_$fdef[0] pl_callout $trclass";
 		    if ($fdef[1] == 3) {
-			$authorinfo |= ($row->blind ? 2 : 1);
-			$t .= " extension" . ($row->blind ? 2 : 1);
+			$authorinfo |= (paperBlind($row) ? 2 : 1);
+			$t .= " extension" . (paperBlind($row) ? 2 : 1);
 		    } else if ($fdef[1] == 4) {
 			$taginfo = true;
 			$t .= " extension4";

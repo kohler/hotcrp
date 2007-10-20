@@ -494,6 +494,24 @@ function setRet(&$var, $val, $ret = false) {
     return $ret;
 }
 
+function paperBlind($prow) {
+    global $Conf;
+    $bs = $Conf->blindSubmission();
+    return $bs == 2 || ($bs == 1 && (!$prow || $prow->blind));
+}
+
+function reviewBlind($rrow) {
+    global $Conf;
+    $br = $Conf->blindReview();
+    return $br == 2 || ($br == 1 && (!$rrow || $rrow->reviewBlind));
+}
+
+function commentBlind($crow) {
+    global $Conf;
+    $br = $conf->blindReview();
+    return $br == 2 || ($br == 1 && (!$crow || $crow->blind));
+}
+
 function tabLength($text, $all) {
     $len = 0;
     for ($i = 0; $i < strlen($text); $i++)

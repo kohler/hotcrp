@@ -503,8 +503,7 @@ class Mailer {
 	if ($what == "%REVIEWNUMBER%")
 	    return $this->reviewNumber;
 	if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
-	    if (($Conf->blindSubmission() > 1
-		 || ($Conf->blindSubmission() == 1 && $this->row->blind))
+	    if (paperBlind($this->row)
 		&& defval($this->row->conflictType) < CONFLICT_AUTHOR
 		&& defval($this->contact->conflictType) < CONFLICT_AUTHOR)
 		return ($isbool ? false : "Hidden for blind review");
@@ -513,8 +512,7 @@ class Mailer {
 	}
 
 	if ($what == "%REVIEWAUTHOR%" && $this->otherContact) {
-	    if (($Conf->blindReview() > 1
-		 || ($Conf->blindReview() == 1 && (!$this->rrow || $this->rrow->reviewBlind)))
+	    if (reviewBlind($this->rrow)
 		&& defval($this->contact->privChair) <= 0
 		&& (!isset($this->contact->canViewReviewerIdentity)
 		    || !$this->contact->canViewReviewerIdentity($this->row, $this->rrow, $Conf, true)))

@@ -209,7 +209,9 @@ class PaperSearch {
 
 	// construct query portion
 	$re = "";
-	$auextra = ($this->privChair ? "" : "blind=0 and ");
+	$auextra = "";
+	if (!$this->privChair && $Conf->blindSubmission() >= 1)
+	    $auextra = "blind=0 and ";
 	$qjoin = ($type == "all" ? " and " : " or ");
 	$qpapers = "";
 	while (($str = ltrim($str)) != "") {

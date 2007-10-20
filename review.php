@@ -363,7 +363,7 @@ if ($mode == "edit" && $prow->reviewType <= 0 && !$rrow)
 
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, $forceShow);
-$authorsFolded = (!$canViewAuthors && $Me->privChair && $prow->blind ? 1 : 2);
+$authorsFolded = (!$canViewAuthors && $Me->privChair && paperBlind($prow) ? 1 : 2);
 $paperTable = new PaperTable(false, false, true, $authorsFolded);
 $paperTable->echoDivEnter();
 echo "<table class='paper'>\n\n";
