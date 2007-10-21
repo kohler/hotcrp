@@ -377,13 +377,20 @@ Follow these steps to prepare to accept paper submissions.
 
 </ol>");
     _alternateRow("Assignments", "
-After the submission deadline has passed, you may want to look through <a
-href='${ConfSiteBase}search.php?q=&amp;t=all'>all papers</a> for anomalies.
-You can withdraw and delete papers and update their details on the edit
-screens (select \"Edit paper\").  You might want to contact the authors of any
-papers that never got officially submitted.  Then:
+After the submission deadline has passed:
 
 <ol>
+
+<li><p>Consider looking through <a
+  href='${ConfSiteBase}search.php?q=&amp;t=all'>all papers</a> for
+  anomalies.  Withdraw and/or delete duplicates or update details on the <a
+  href='${ConfSiteBase}paper.php'>paper pages</a> (via \"Edit paper\").
+  Also consider contacting the authors of <a
+  href='${ConfSiteBase}search.php?q=status:unsub&amp;t=all'>papers that
+  were never officially submitted</a>, especially if a PDF document was
+  uploaded (you can tell from the icon in the search list).  Sometimes a
+  user will uncheck \"The paper is ready for review\" and forget to check
+  it.</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}settings.php?group=rfo'>Prepare the
   review form.</a></strong> Take a look at the templates to get
@@ -438,11 +445,12 @@ papers that never got officially submitted.  Then:
 </ol>
 ");
     _alternateRow("Before the meeting", "
-Before the meeting, you will generally open up the site to the whole PC,
-allowing members to view reviews and scores for non-conflicted papers.  (In
-most conferences, PC members are initially prevented from seeing a paper's
-reviews until they have completed their own review for that paper.  This
-supposedly reduces bias.)
+Before the meeting, you will generally <a
+href='${ConfSiteBase}settings.php?group=rev'>set \"PC can see all
+reviews\"</a>, allowing members to view reviews and scores for
+non-conflicted papers.  (In many conferences, PC members are initially
+prevented from seeing a paper's reviews until they have completed their own
+review for that paper; this supposedly reduces bias.)
 
 <ol>
 
@@ -464,7 +472,7 @@ supposedly reduces bias.)
   reviews\"</a> so PC members can update their reviews in peace.</p></li>
 
 <li><p>Set <strong><a href='${ConfSiteBase}settings.php?group=rev'>PC can
-  see all submitted reviews</a></strong> if you haven't already.</p></li>
+  see all reviews</a></strong> if you haven't already.</p></li>
 
 <li><p><strong><a
   href='${ConfSiteBase}search.php?q=&amp;t=s&amp;sort=50'>Examine paper
@@ -506,7 +514,7 @@ supposedly reduces bias.)
   screen</a>.  Note that PC members can see paper decisions as soon as they
   are entered into the system, even when they have a conflict.  If you don't
   like this, mark decisions with <a href='help.php?t=tags'>tags</a> until the
-  meeting is over; PC members can never see tags for conflicted papers.</p></li>
+  meeting is over.</p></li>
 
 <li><p><strong>Shepherding (optional).</strong> If your conference uses
   shepherding for accepted papers, you can assign shepherds either <a
