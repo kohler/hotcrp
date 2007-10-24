@@ -508,7 +508,7 @@ function reviewBlind($rrow) {
 
 function commentBlind($crow) {
     global $Conf;
-    $br = $conf->blindReview();
+    $br = $Conf->blindReview();
     return $br == 2 || ($br == 1 && (!$crow || $crow->blind));
 }
 
