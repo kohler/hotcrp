@@ -723,7 +723,7 @@ class Mailer {
 	$xpref = "";
 	$lenregex = "|(.{0," . ($len - 2) . "}[^=][^=])|";
 	while (strlen($text) > $len) {
-	    $m = preg_match($lenregex, $text);
+	    preg_match($lenregex, $text, $m);
 	    $xpref .= "=?utf-8?q?" . $m[1] . "?=\r\n ";
 	    $text = substr($text, strlen($m[1]));
 	}
