@@ -638,8 +638,9 @@ class Mailer {
 	if (!$emailTo || !$emailTo->email)
 	    return $Conf->errorMsg("no email in Mailer::send");
 	$headers = defval($rest["headers"], "");
-	if ($headers && $headers[strlen($headers) - 1] != '\n')
-	    $headers .= "\n";
+	if ($headers && substr($headers, strlen($headers) - 2) != "\r\n")
+	    $headers .= "\r\n";
+	$headers .= "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n";
 	
 	$mailer = new Mailer($row, $contact, $otherContact, $rest);
 	$m = $mailer->expand($template);

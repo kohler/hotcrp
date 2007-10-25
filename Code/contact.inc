@@ -954,11 +954,8 @@ class Contact {
 	else
 	    $m = $mailer->expand($mailTemplates["accountinfo"]);
 	
-	if ($conf->allowEmailTo($this->email)) {
-	    $results = mail(contactEmailTo($this), rtrim($m[0]), $m[1], "From: $conf->emailFrom");
-	    return true;
-	} else if (!$sensitive) {
-	    $conf->infoMsg("<pre>" . htmlspecialchars("To: " . contactEmailTo($this) . "\nSubject: " . rtrim($m[0]) . "\n\n$m[1]") . "</pre>");
+	if ($preparation["allowEmail"] || !$sensitive) {
+	    $mailer->sendPrepared($m);
 	    return true;
 	} else {
 	    $conf->errorMsg("Mail cannot be sent to your email address &lt;" . htmlspecialchars($this->email) . "&gt; at this time.");
