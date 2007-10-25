@@ -644,7 +644,7 @@ class Mailer {
 	
 	$mailer = new Mailer($row, $contact, $otherContact, $rest);
 	$m = $mailer->expand($template);
-	$m[0] = Mailer::mimeHeaderQuote(rtrim($m[0]), 70);
+	$m[0] = Mailer::mimeHeaderQuote(rtrim($m[0]), 73 - 21);
 	$m["allowEmail"] = $Conf->allowEmailTo($emailTo->email);
 	$m["to"] = contactEmailTo($emailTo);
 	$m["headers"] = $headers;
