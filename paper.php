@@ -380,7 +380,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	if (!$result)
 	    return false;
 	$Conf->updatePapersubSetting(true);
-    } else {
+    } else if (!$isSubmitFinal) {
 	$result = $Conf->qe("update Paper set timeSubmitted=0 where paperId=$paperId", "while unsubmitting paper");
 	if (!$result)
 	    return false;

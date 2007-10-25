@@ -643,7 +643,7 @@ class Mailer {
 	
 	$mailer = new Mailer($row, $contact, $otherContact, $rest);
 	$m = $mailer->expand($template);
-	$m[0] = rtrim($m[0]);
+	$m[0] = Mailer::mimeHeaderQuote(rtrim($m[0]), 70);
 	$m["allowEmail"] = $Conf->allowEmailTo($emailTo->email);
 	$m["to"] = contactEmailTo($emailTo);
 	$m["headers"] = $headers;
@@ -710,6 +710,37 @@ class Mailer {
 	    $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
 	    $Conf->infoMsg("Sent email to paper #$row->paperId's " . pluralx($contacts, "reviewer") . ", " . commajoin($contacts) . $endmsg);
 	}
+    }
+
+    function mimeHeaderQuote($text, $len) {
+	// replace all special characters used by the encoder
+	$text = str_replace(array('=',   '_',   '?',   ' '),
+			    array('=3D', '=5F', '=3F', '_'), $text);
+	// replace all extended characters (\x80-xFF)
+	$text = preg_replace('#([\x80-\xFF])#e',
+			     '"=" . strtoupper(dechex(ord("\1")))', $text);
+	$xpref = "";
+	$lenregex = "|(.{0," . ($len - 2) . "}[^=][^=])|";
+	while (strlen($text) > $len) {
+	    $m = preg_match($lenregex, $text);
+	    $xpref .= "=?utf-8?q?" . $m[1] . "?=\r\n ";
+	    $text = substr($text, strlen($m[1]));
+	}
+	return $xpref . "=?utf-8?q?" . $text . "?=";
+    }
+
+    function mimeHeaderUnquote($text) {
+	if (strlen($text) > 2 && $text[0] == '=' && $text[1] == '?') {
+	    $out = '';
+	    while (preg_match('/\A=\?utf-8\?q\?(.*?)\?=(\r\n )?/', $text, $m)) {
+		$f = str_replace('_', ' ', $m[1]);
+		$out .= preg_replace('/=([0-9A-F][0-9A-F])/e',
+				     'chr(hexdec("\1"))', $f);
+		$text = substr($text, strlen($m[0]));
+	    }
+	    return $out . $text;
+	} else
+	    return $text;
     }
     
 }

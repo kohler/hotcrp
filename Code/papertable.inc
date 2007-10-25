@@ -235,9 +235,9 @@ class PaperTable {
 	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0);
 	
 	echo "<tr class='pt_paper'>\n  ", $this->tdCaption('paper');
-	if ($Opt['disablePS'])
+	if (defval($Opt['disablePS']) > 0)
 	    echo "PDF file";
-	else if ($Opt['disablePDF'])
+	else if (defval($Opt['disablePDF']) > 0)
 	    echo "PostScript file";
 	else
 	    echo "PDF/PostScript file";
@@ -270,7 +270,8 @@ class PaperTable {
 	    else
 		echo "The paper is ready for review.";
 	    echo "</td></tr></table></div>\n";
-	}
+	} else
+	    echo "<input type='hidden' name='submit' value='1' />";
 
 	echo "</td>\n</tr>\n\n";
     }

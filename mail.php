@@ -88,8 +88,8 @@ function checkMail($send) {
 	    echo "<table><tr><td class='caption'>To</td><td class='entry'>";
 	    if (!$send)
 		echo "<input type='checkbox' name='$checker' value='1' checked='checked' /> &nbsp;";
-	    echo htmlspecialchars($preparation["to"]), "</td></tr>\n";
-	    echo "<td class='caption'>Subject</td><td class='entry'><tt class='email'>", htmlspecialchars($preparation[0]), "</tt></td></tr>\n";
+	    echo htmlspecialchars(Mailer::mimeHeaderUnquote($preparation["to"])), "</td></tr>\n";
+	    echo "<td class='caption'>Subject</td><td class='entry'><tt class='email'>", htmlspecialchars(Mailer::mimeHeaderUnquote($preparation[0])), "</tt></td></tr>\n";
 	    echo "<td class='caption'>Body</td><td class='entry'><pre class='email'>", htmlspecialchars($preparation[1]), "</pre></td></tr>\n";
 	    echo "</table>\n";
 	}
