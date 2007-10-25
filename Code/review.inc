@@ -286,10 +286,13 @@ class ReviewForm {
 	$q .= "reviewBlind=$reviewBlind, ";
 
 	// actually affect database
-	if ($rrow)
+	if ($rrow) {
 	    $result = $conf->qe("update PaperReview set $q reviewModified=" . time() . " where reviewId=$rrow->reviewId", $while);
-	else
+	    $reviewId = $rrow->reviewId;
+	} else {
 	    $result = $conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contactId, requestedOn=current_timestamp, $q reviewModified=" . time(), $while);
+	    $reviewId = $conf->lastInsertId($while);
+	}
 
 	// unlock tables even if problem
 	if ($locked)
@@ -298,9 +301,7 @@ class ReviewForm {
 	    return $result;
 
 	// look up review ID
-	if ($rrow)
-	    $reviewId = $rrow->reviewId;
-	else if (!($reviewId = $conf->lastInsertId($while)))
+	if (!$reviewId)
 	    return $reviewId;
 	$req['reviewId'] = $reviewId;
 	
@@ -345,8 +346,10 @@ class ReviewForm {
 	    }
 	    $rest = array("rrow" => $fake_rrow, "reviewNumber" => $prow->paperId . $reviewnum);
 
-	    if ($conf->timeEmailChairAboutReview())
-		Mailer::send($tmpl, $prow, (object) array("email" => $Conf->contactEmail, "fullName" => $Conf->contactName, "privChair" => 1), $submitter, $rest);
+	    if ($conf->timeEmailChairAboutReview()) {
+		$chairContact = (object) array("email" => $Conf->contactEmail, "fullName" => $Conf->contactName, "privChair" => 1);
+		Mailer::send($tmpl, $prow, $chairContact, $submitter, $rest);
+	    }
 
 	    if ($conf->timeEmailAuthorsAboutReview()) {
 		$rest["infoMsg"] = "since a review was updated during the response period.";
@@ -506,7 +509,7 @@ $blind\n";
 	$n = "Paper #" . $prow->paperId . ": ";
 	$l = max(14, (int) ((75.5 - strlen($prow->title) - strlen($n)) / 2) + strlen($n));
 	$x .= wordWrapIndent($prow->title, $n, $l) . "\n";
-	if ($rrow && $contact->canViewReviewerIdentity($prow, $rrow, $conf)) {
+	if ($rrow && $contact->canViewReviewerIdentity($prow, $rrow, $conf, true)) {
 	    if (isset($rrow->reviewFirstName))
 		$n = contactText($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
 	    else if (isset($rrow->lastName))

@@ -16,20 +16,20 @@ function contactQuery($type) {
     $contactInfo = "firstName, lastName, email, password, ContactInfo.contactId";
     $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind";
     if ($type == "notsubmitted")
-	return "select $contactInfo, PaperConflict.conflictType, $paperInfo from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId) where Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0 and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . " order by Paper.paperId, email";
+	return "select $contactInfo, PaperConflict.conflictType, $paperInfo, 0 as myReviewType from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId) where Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0 and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . " order by Paper.paperId, email";
     if ($type == "submitted")
-	return "select $contactInfo, PaperConflict.conflictType, $paperInfo from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId) where Paper.timeSubmitted>0 and Paper.timeWithdrawn<=0 and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . " order by Paper.paperId, email";
+	return "select $contactInfo, PaperConflict.conflictType, $paperInfo, 0 as myReviewType from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId) where Paper.timeSubmitted>0 and Paper.timeWithdrawn<=0 and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . " order by Paper.paperId, email";
     if (substr($type, 0, 14) == "author-outcome"
 	&& ($out = cvtint(substr($type, 14), null)) !== null)
-	return "select $contactInfo, PaperConflict.conflictType, $paperInfo from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId) where Paper.timeSubmitted>0 and Paper.outcome=$out and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . " order by Paper.paperId, email";
+	return "select $contactInfo, PaperConflict.conflictType, $paperInfo, 0 as myReviewType from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId) where Paper.timeSubmitted>0 and Paper.outcome=$out and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . " order by Paper.paperId, email";
     if ($type == "review-finalized")
-	return "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) where PaperReview.reviewSubmitted>0 order by Paper.paperId, email";
+	return "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) where PaperReview.reviewSubmitted>0 order by Paper.paperId, email";
     if ($type == "review-not-finalize")
-	return "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) where PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit>0 order by Paper.paperId, email";
+	return "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) where PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit>0 order by Paper.paperId, email";
     if ($type == "pc")
 	return "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo join PCMember using (contactId)";
     if ($type == "extrev")
-	return "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) where PaperReview.reviewType=" . REVIEW_EXTERNAL . " order by Paper.paperId, email";
+	return "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) where PaperReview.reviewType=" . REVIEW_EXTERNAL . " order by Paper.paperId, email";
     return "";
 }
 

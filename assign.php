@@ -75,7 +75,7 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
 
     // check for outstanding review request
     $result = $Conf->qe("select reviewType, reviewModified, reviewSubmitted, requestedBy, paperId,
-		firstName, lastName, email
+		firstName, lastName, email, password
 		from PaperReview
 		join ContactInfo using (contactId)
 		where reviewId=$reviewId", $while);
@@ -174,7 +174,7 @@ function requestReviewChecks($themHtml, $reqId) {
     $while = "while requesting review";
 
     // check for outstanding review request
-    $result = $Conf->qe("select reviewId, firstName, lastName, email from PaperReview join ContactInfo on (ContactInfo.contactId=PaperReview.requestedBy) where paperId=$prow->paperId and PaperReview.contactId=$reqId", $while);
+    $result = $Conf->qe("select reviewId, firstName, lastName, email, password from PaperReview join ContactInfo on (ContactInfo.contactId=PaperReview.requestedBy) where paperId=$prow->paperId and PaperReview.contactId=$reqId", $while);
     if (!$result)
 	return false;
     else if (($row = edb_orow($result)))

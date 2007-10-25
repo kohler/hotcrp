@@ -827,10 +827,11 @@ class Contact {
 	return false;
     }
     
-    function canViewCommentIdentity($prow, $crow, $conf) {
+    function canViewCommentIdentity($prow, $crow, $conf, $ignoreForceShow = false) {
 	if ($crow && $crow->forAuthors > 1)
 	    return $this->canViewAuthors($prow, $conf, false);
-	if (($this->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
+	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && !$ignoreForceShow;
+	if (($this->privChair && $forceShow)
 	    || ($crow && $crow->contactId == $this->contactId)
 	    || ($this->isPC && $prow->conflictType == 0)
 	    || ($prow->myReviewType > 0 && $prow->conflictType == 0

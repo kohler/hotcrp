@@ -130,12 +130,11 @@ class Conference {
     }
 
     function dbErrorText($getdb = true, $while = "", $suggestRetry = true) {
-	if ($getdb) {
-	    $text = "<p>Database error";
-	    if ($while)
-		$text .= " $while";
+	$text = "<p>Database error";
+	if ($while)
+	    $text .= " $while";
+	if ($getdb)
 	    $text .= ": " . htmlspecialchars(mysql_error($this->dblink)) . "</p>";
-	}
 	if ($suggestRetry)
 	    $text .= "\n<p>Please try again or contact the site administrator at $this->emailFrom.</p>";
 	return $text;

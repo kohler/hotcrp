@@ -520,12 +520,10 @@ class Mailer {
 	    return contactText($this->otherContact);
 	}
 	
-	if ($what == "%REVIEWS%") {
-	    $contact = Contact::makeMinicontact($this->row);
-	    return $this->getReviews($contact, false);
-	}
+	if ($what == "%REVIEWS%")
+	    return $this->getReviews($this->contact, false);
 	if ($what == "%COMMENTS%")
-	    return $this->getComments();
+	    return $this->getComments($this->contact);
 
 	return ($isbool ? false : $what);
     }
@@ -552,7 +550,7 @@ class Mailer {
 	    return "";
     }
 
-    function getComments() {
+    function getComments($contact) {
 	global $Conf;
 
 	$q = "select PaperComment.*,
@@ -570,11 +568,11 @@ class Mailer {
 	$result = $Conf->qe($q . "\n\t\torder by commentId", "while retrieving comments");
 	$text = "";
 	while (($crow = edb_orow($result))) {
-	    if (!$this->contact->canViewComment($this->row, $crow, $Conf))
+	    if (!$contact->canViewComment($this->row, $crow, $Conf, $whyNot, true))
 		continue;
 	    $text .= "===========================================================================\n";
 	    $n = ($crow->conflictType >= CONFLICT_AUTHOR ? "Author's Response" : "Comment");
-	    if ($this->contact->canViewCommentIdentity($this->row, $crow, $Conf))
+	    if ($contact->canViewCommentIdentity($this->row, $crow, $Conf, true))
 		$n .= " by " . contactText($crow);
 	    $text .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
 	    // $n = "Updated " . $Conf->printableTime($crow->timeModified);
@@ -670,7 +668,7 @@ class Mailer {
 	global $Conf, $Me, $mailTemplates;
 
 	$result = $Conf->qe("select ContactInfo.contactId,
-		firstName, lastName, email, conflictType
+		firstName, lastName, email, password, conflictType, 0 as myReviewType
 		from ContactInfo join PaperConflict using (contactId)
 		where paperId=$row->paperId and conflictType>=" . CONFLICT_AUTHOR . "
 		group by ContactInfo.contactId", "while looking up contact authors to send email");
@@ -695,7 +693,7 @@ class Mailer {
 	global $Conf, $Me, $mailTemplates;
 
 	$result = $Conf->qe("select ContactInfo.contactId,
-		firstName, lastName, email
+		firstName, lastName, email, password, reviewType as myReviewType
 		from ContactInfo join PaperReview using (contactId)
 		where paperId=$row->paperId
 		group by ContactInfo.contactId", "while looking up reviewers to send email");
