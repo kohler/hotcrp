@@ -75,7 +75,8 @@ function checkMail($send) {
     while (($row = edb_orow($result))) {
 	if (!$any)
 	    $any = checkMailPrologue($send);
-	$preparation = Mailer::prepareToSend($template, $row, $row, null, $rest);
+	$contact = Contact::makeMinicontact($row);
+	$preparation = Mailer::prepareToSend($template, $row, $contact, null, $rest);
 	if ($preparation[0] != $last[0] || $preparation[1] != $last[1]
 	    || $preparation["to"] != $last["to"]) {
 	    $last = $preparation;

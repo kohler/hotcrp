@@ -669,14 +669,15 @@ class Mailer {
     function sendContactAuthors($template, $row, $otherContact = null, $rest = array()) {
 	global $Conf, $Me, $mailTemplates;
 
-	$result = $Conf->qe("select firstName, lastName, email, conflictType
+	$result = $Conf->qe("select ContactInfo.contactId,
+		firstName, lastName, email, conflictType
 		from ContactInfo join PaperConflict using (contactId)
 		where paperId=$row->paperId and conflictType>=" . CONFLICT_AUTHOR . "
 		group by ContactInfo.contactId", "while looking up contact authors to send email");
 
 	$contacts = array();
 	while (($contact = edb_orow($result))) {
-	    Mailer::send($template, $row, $contact, $otherContact, $rest);
+	    Mailer::send($template, $row, Contact::makeMinicontact($contact), $otherContact, $rest);
 	    $contacts[] = contactHtml($contact);
 	}
 
@@ -693,7 +694,8 @@ class Mailer {
     function sendReviewers($template, $row, $otherContact = null, $rest = array()) {
 	global $Conf, $Me, $mailTemplates;
 
-	$result = $Conf->qe("select firstName, lastName, email
+	$result = $Conf->qe("select ContactInfo.contactId,
+		firstName, lastName, email
 		from ContactInfo join PaperReview using (contactId)
 		where paperId=$row->paperId
 		group by ContactInfo.contactId", "while looking up reviewers to send email");
@@ -702,7 +704,7 @@ class Mailer {
 	
 	$contacts = array();
 	while (($contact = edb_orow($result))) {
-	    Mailer::send($template, $row, $contact, $otherContact, $rest);
+	    Mailer::send($template, $row, Contact::makeMinicontact($contact), $otherContact, $rest);
 	    $contacts[] = contactHtml($contact);
 	}
 

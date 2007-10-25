@@ -326,6 +326,7 @@ class Contact {
 	$c->firstName = defval($o->firstName, '');
 	$c->lastName = defval($o->lastName, '');
 	$c->email = defval($o->email, '');
+	$c->password = defval($o->password, '');
 	$c->isAuthor = defval($o->isAuthor, false) != 0;
 	$c->isReviewer = defval($o->isReviewer, false) != 0;
 	$c->roles = defval($o->roles, 0);
