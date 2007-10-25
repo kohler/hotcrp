@@ -198,7 +198,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
      array("[%CONFSHORTNAME%] Submitted review #%REVIEWNUMBER% %TITLEHINT%",
 	   "Dear %NAME%,
 
-Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been submitted.  The review is available at the following site.
+Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been submitted.  The review is available at the paper site.
 
   Paper site: %URL%/review.php?paperId=%NUMBER%
        Title: %TITLE%
@@ -213,7 +213,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
      array("[%CONFSHORTNAME%] Updated review #%REVIEWNUMBER% %TITLEHINT%",
 	   "Dear %NAME%,
 
-Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated.  The review is available at the following site.
+Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated.  The review is available at the paper site.
 
   Paper site: %URL%/review.php?paperId=%NUMBER%
        Title: %TITLE%
@@ -272,7 +272,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "commentnotify" =>
      array("[%CONFSHORTNAME%] Comment for #%NUMBER% %TITLEHINT%",
-	   "A comment for %CONFNAME% paper #%NUMBER% has been submitted or updated.  The comment is available at the following site.
+	   "A comment for %CONFNAME% paper #%NUMBER% has been submitted or updated.  The comment is copied below, and is available at the paper site.
 
   Paper site: %URL%/comment.php?paperId=%NUMBER%
 
