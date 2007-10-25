@@ -44,10 +44,10 @@ function checkMailPrologue($send) {
 </div></div>";
     } else {
 	$Conf->infoMsg("Examine the mails to check that you've gotten the result you want, then select 'Send' to send the checked mails.");
-	echo "<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail.php?send=1' enctype='multipart/form-data'>\n";
+	echo "<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail.php?postcheck=1' enctype='multipart/form-data'>\n";
 	foreach (array("recipients", "subject", "emailBody") as $x)
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
-	echo "<input class='button' type='submit' name='dosend' value='Send' /> &nbsp;
+	echo "<input class='button' type='submit' name='send' value='Send' /> &nbsp;
 <input class='button' type='submit' name='cancel' value='Cancel' /></td></tr></table>\n";
     }
     return true;
@@ -100,10 +100,10 @@ function checkMail($send) {
     else if ($send)
 	$Conf->echoScript("fold('mail', null);");
     else {
-	echo "<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail.php?send=1' enctype='multipart/form-data'>\n";
+	echo "<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail.php?postcheck=1' enctype='multipart/form-data'>\n";
 	foreach (array("recipients", "subject", "emailBody") as $x)
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
-	echo "<input class='button' type='submit' name='dosend' value='Send' /> &nbsp;
+	echo "<input class='button' type='submit' name='send' value='Send' /> &nbsp;
 <input class='button' type='submit' name='cancel' value='Cancel' /></td></tr></table>\n";
     }
     $Conf->footer();
@@ -214,7 +214,7 @@ echo "  </select></td>
 
 <tr>
   <td class='caption'></td>
-  <td class='entry'><input type='submit' name='send' value='Prepare mail' class='button' /><div class='smgap'></div></td>
+  <td class='entry'><input type='submit' name='prepare' value='Prepare mail' class='button' /><div class='smgap'></div></td>
 </tr>
 
 <tr class='last'>
