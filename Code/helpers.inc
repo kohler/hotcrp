@@ -340,7 +340,7 @@ function contactEmailTo($firstName, $lastName = null, $email = null) {
 	$x = trim("$firstName $lastName");
 	if (preg_match("/[\x80-\xFF]/", $x)) {
 	    require_once("mailtemplate.inc");
-	    $x = Mailer::mimeHeaderQuote($x, 73 - 21);
+	    $x = Mailer::mimeHeaderQuote($x, 73 - 16 - 3 - strlen($email));
 	} else if (preg_match("/[^-A-Za-z0-9 !#\$%&'*+\\/=?^_`{|}~]/", $x))
 	    $x = "\"" . addslashes($x) . "\"";
 	if ($email)
