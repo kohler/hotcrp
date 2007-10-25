@@ -524,7 +524,7 @@ function doSubGroup() {
     doCheckbox('sub_open', '<b>Open site for submissions</b>');
 
     echo "<div class='smgap'></div>\n";
-    echo "<strong>Blind submission:</strong> Can reviewers see who wrote the papers?<br />\n";
+    echo "<strong>Blind submission:</strong> Are author names visible to reviewers?<br />\n";
     doRadio("sub_blind", array(2 => "No", 0 => "Yes", 1 => "Maybe (authors decide whether to be anonymous)"));
 
     echo "<div class='smgap'></div>\n<table>\n";
@@ -603,7 +603,7 @@ function doRevGroup() {
     doCheckbox('cmt_always', 'Allow comments even if reviewing is closed');
 
     echo "<div class='smgap'></div>\n";
-    echo "<strong>Anonymous review:</strong> Can authors see who wrote the reviews?<br />\n";
+    echo "<strong>Anonymous review:</strong> Are reviewer names visible to authors?<br />\n";
     doRadio("rev_blind", array(2 => "No", 0 => "Yes", 1 => "Maybe (reviewers decide whether to be anonymous)"));
 
     echo "<div class='smgap'></div>\n";
