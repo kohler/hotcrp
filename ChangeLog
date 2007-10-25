@@ -1,3 +1,56 @@
+2007-10-24 Wednesday 19:38  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* login.php (1.37), Code/contact.inc (1.139): fix fix fix
+
+2007-10-24 Wednesday 19:29  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/mailtemplate.inc (1.24): "following" considered harmful
+
+2007-10-24 Wednesday 19:15  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/: contact.inc (1.138), mailtemplate.inc (1.23): mime bodies
+
+2007-10-24 Wednesday 19:03  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* mail.php (1.19), paper.php (1.147), Code/helpers.inc (1.176),
+	  Code/mailtemplate.inc (1.22), Code/papertable.inc (1.93): allow
+	  updating a paper during final copy submission time; avoid
+	  warnings about Opt[disablePS/PDF]; quote headers that contain
+	  nonASCII characters.
+
+2007-10-24 Wednesday 18:07  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* mail.php (1.18): redesign urls to freak self out less
+
+2007-10-24 Wednesday 18:00  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.54): a little setting text improvement
+
+2007-10-24 Wednesday 17:57  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.76), mail.php (1.17), Code/conference.inc (1.221),
+	  Code/contact.inc (1.137), Code/mailtemplate.inc (1.21),
+	  Code/review.inc (1.82): More mailer fixes (tested now).  Also fix
+	  a bug with entering an unrequested review and submitting it in
+	  one step.
+
+2007-10-24 Wednesday 17:21  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* mail.php (1.16), Code/contact.inc (1.136), Code/mailtemplate.inc
+	  (1.20): more bug fixes for comments
+
+2007-10-24 Wednesday 16:52  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/helpers.inc (1.175): fix bug
+
+2007-10-21 Sunday 14:23  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.55): update help
+
+2007-10-20 Saturday 16:23  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.11), tarball.sh (1.62): to 2.9
+
 2007-10-20 Saturday 16:17  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* comment.php (1.48), index.php (1.147), review.php (1.114),
