@@ -949,13 +949,10 @@ class Contact {
 	require_once("mailtemplate.inc");
 	global $mailTemplates;
 	$mailer = new Mailer(null, $this);
-	if ($create)
-	    $m = $mailer->expand($mailTemplates["createaccount"]);
-	else
-	    $m = $mailer->expand($mailTemplates["accountinfo"]);
+	$preparation = $mailer->prepareToSend($create ? "@createaccount" : "@accountinfo", null, $this); 
 	
 	if ($preparation["allowEmail"] || !$sensitive) {
-	    $mailer->sendPrepared($m);
+	    $mailer->sendPrepared($preparation);
 	    return true;
 	} else {
 	    $conf->errorMsg("Mail cannot be sent to your email address &lt;" . htmlspecialchars($this->email) . "&gt; at this time.");

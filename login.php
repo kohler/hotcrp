@@ -11,7 +11,7 @@ unset($_SESSION["AskedYouToUpdateContactInfo"]);
 
 // Create an account
 function doCreateAccount() {
-    global $Conf;
+    global $Conf, $Opt;
 
     if ($_SESSION["Me"]->valid())
 	return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ".  To retrieve your password, select \"I forgot my password, email it to me\".");
@@ -40,8 +40,13 @@ function doCreateAccount() {
 
     if ($Conf->allowEmailTo($_SESSION["Me"]->email))
 	$msg .= "  A password has been emailed to this address.  When you receive that email, return here to complete the registration process.";
-    else
-	$msg .= "  The email address you provided seems invalid (it doesn't contain an @).  Although an account was created for you, you need the site administrator's help to retrieve your password.";
+    else {
+	if ($Opt['sendEmail'])
+	    $msg .= "  The email address you provided seems invalid (it doesn't contain an @).";
+	else
+	    $msg .= "  The conference system is not set up to mail passwords at this time.";
+	$msg .= "  Although an account was created for you, you need the site administrator's help to retrieve your password.  The site administrator is " . htmlspecialchars("$Conf->contactName <$Conf->contactEmail>") . ".";
+    }
     if (isset($_REQUEST["password"]) && $_REQUEST["password"] != "")
 	$msg .= "  Note that the password you supplied on the login screen was ignored.";
     $Conf->confirmMsg($msg);
