@@ -1,5 +1,15 @@
 HotCRP NEWS
 
+Version 2.10   24.Oct.2007
+
+* Add some support for MIME extensions; message bodies are marked UTF-8,
+  and message headers containing UTF-8 characters are quoted according to
+  RFC2047.
+
+* Fix a couple bugs in 2.9 having to do with sending email, entering
+  unrequested reviews, and other things.
+
+
 Version 2.9   20.Oct.2007
 
 * Add a setting allowing PC members to see tags even for conflicted papers.
