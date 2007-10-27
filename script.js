@@ -464,3 +464,12 @@ function foldtags(which, dofold, foldnum) {
 	    fold(which, dofold, foldnum);
 	});
 }
+
+
+// mail
+function setmailpsel(sel) {
+    if (sel.value == "pc") {
+	e("plimit").checked = false;
+	fold("psel", 1, 8);
+    }
+}

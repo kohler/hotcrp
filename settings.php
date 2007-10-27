@@ -17,7 +17,8 @@ $SettingGroups = array("acc" => array(
 			     "acct_addr" => "check",
 			     "next" => "msg"),
 		       "msg" => array(
-			     "homemsg" => "string",
+			     "homemsg" => "htmlstring",
+			     "conflictdefmsg" => "htmlstring",
 			     "next" => "sub"),
 		       "sub" => array(
 			     "sub_open" => "cdate",
@@ -104,7 +105,9 @@ $SettingText = array(
 	"au_seedec" => "Authors can see decisions setting",
 	"rev_seedec" => "Reviewers can see decisions setting",
 	"final_open" => "Collect final copies setting",
-	"final_done" => "Final copy upload deadline"
+	"final_done" => "Final copy upload deadline",
+	"homemsg" => "Home page message",
+	"conflictdefmsg" => "Definition of conflict of interest"
 	);
 
 function parseGrace($v) {
@@ -173,7 +176,12 @@ function parseValue($name, $type) {
 	    $err = $SettingText[$name] . ": parse error.";
     } else if ($type == "string")
 	return ($v == "" ? 0 : array(0, $v));
-    else if (is_int($type)) {
+    else if ($type == "htmlstring") {
+	if ($v && preg_match("/(<!DOCTYPE|<\s*head\s*>|<\s*body\s*>)/i", $v, $m))
+	    $err = $SettingText[$name] . ": Your HTML code appears to contain a <code>" . htmlspecialchars($m[1]) . "</code> definition.  Please remove it; this setting only accepts HTML content tags, such as <tt>&lt;p&gt;</tt>, <tt>&lt;strong&gt;</tt>, and <tt>&lt;h1&gt;</tt>.";
+	else
+	    return ($v == "" ? 0 : array(0, $v));
+    } else if (is_int($type)) {
 	if (ctype_digit($v) && $v >= 0 && $v <= $type)
 	    return intval($v);
 	else
@@ -371,6 +379,11 @@ if (isset($_REQUEST["update"])) {
 	    || $Values["au_seerev"] <= 0))
 	$Conf->warnMsg("You have allowed authors to respond to the reviews, but authors can't see the reviews.  This seems odd.");
 
+    // unset text messages that equal the default
+    if (array_key_exists("conflictdefmsg", $Values)
+	&& trim($Values["conflictdefmsg"]) == $Conf->conflictDefinitionText(true))
+	$Values["conflictdefmsg"] = null;
+
     // report errors
     if (count($Error) > 0)
 	$Conf->errorMsg(join("<br />\n", $Error));
@@ -422,7 +435,7 @@ if (isset($_REQUEST["update"])) {
 $Conf->header("Conference Settings", "settings", actionBar());
 
 
-function decorateSettingText($name, $text) {
+function decorateSettingName($name, $text) {
     global $SettingError;
     if (isset($SettingError[$name]))
 	return "<span class='error'>$text</span>";
@@ -430,12 +443,20 @@ function decorateSettingText($name, $text) {
 	return $text;
 }
 
-function setting($name) {
+function setting($name, $defval = null) {
     global $Error, $Conf;
     if (count($Error) > 0)
-	return defval($_REQUEST[$name], null);
+	return defval($_REQUEST[$name], $defval);
     else
-	return defval($Conf->settings[$name], null);
+	return defval($Conf->settings[$name], $defval);
+}
+
+function settingText($name, $defval = null) {
+    global $Error, $Conf;
+    if (count($Error) > 0)
+	return defval($_REQUEST[$name], $defval);
+    else
+	return defval($Conf->settingTexts[$name], $defval);
 }
 
 function doCheckbox($name, $text, $tr = false) {
@@ -443,7 +464,7 @@ function doCheckbox($name, $text, $tr = false) {
     echo ($tr ? "<tr><td class='nowrap'>" : ""), "<input type='checkbox' name='$name' value='1'";
     if ($x !== null && $x > 0)
 	echo " checked='checked'";
-    echo " onchange='highlightUpdate()' />&nbsp;", ($tr ? "</td><td>" : ""), decorateSettingText($name, $text), ($tr ? "</td></tr>\n" : "<br />\n");
+    echo " onchange='highlightUpdate()' />&nbsp;", ($tr ? "</td><td>" : ""), decorateSettingName($name, $text), ($tr ? "</td></tr>\n" : "<br />\n");
 }
 
 function doRadio($name, $varr) {
@@ -457,9 +478,9 @@ function doRadio($name, $varr) {
 	    echo " checked='checked'";
 	echo " onchange='highlightUpdate()' />&nbsp;</td><td>";
 	if (is_array($text))
-	    echo decorateSettingText($name, $text[0]), "<br /><small>", $text[1], "</small>";
+	    echo decorateSettingName($name, $text[0]), "<br /><small>", $text[1], "</small>";
 	else
-	    echo decorateSettingText($name, $text);
+	    echo decorateSettingName($name, $text);
 	echo "</td></tr>\n";
     }
     echo "</table>\n";
@@ -475,7 +496,7 @@ function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
 	$v = $Conf->parseableTime($x);
     else
 	$v = $x;
-    echo "<tr><td class='$capclass'>", decorateSettingText($name, $text), "</td><td class='lentry'><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='30' onchange='highlightUpdate()' />";
+    echo "<tr><td class='$capclass'>", decorateSettingName($name, $text), "</td><td class='lentry'><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='30' onchange='highlightUpdate()' />";
     if (!isset($DateExplanation)) {
 	echo "<br /><small>Examples: \"now\", \"10 Dec 2006 11:59:59pm PST\" <a href='http://www.gnu.org/software/tar/manual/html_node/tar_109.html'>(more)</a></small>";
 	$DateExplanation = true;
@@ -484,7 +505,7 @@ function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
 }
 
 function doGraceRow($name, $text, $capclass = "lcaption") {
-    echo "<tr><td class='$capclass'>", decorateSettingText($name, "Grace period"), "</td><td class='lentry'><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars(unparseGrace(setting($name))), "\" size='15' onchange='highlightUpdate()' />";
+    echo "<tr><td class='$capclass'>", decorateSettingName($name, "Grace period"), "</td><td class='lentry'><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars(unparseGrace(setting($name))), "\" size='15' onchange='highlightUpdate()' />";
     if ($capclass == "lcaption")
 	echo "<br /><small>Example: \"15 min\"</small>";
     echo "</td></tr>\n";
@@ -513,8 +534,12 @@ function doAccGroup() {
 // Messages
 function doMsgGroup() {
     global $Conf, $ConfSiteBase;
-    echo "<strong>Home page message</strong> (HTML allowed)<br />
-<textarea class='textlite' name='homemsg' cols='60' rows='10' onchange='highlightUpdate()'>", htmlspecialchars($Conf->settingText("homemsg")), "</textarea>";
+    echo "<strong>", decorateSettingName("homemsg", "Home page message"), "</strong> (HTML allowed)<br />
+<textarea class='textlite' name='homemsg' cols='60' rows='10' onchange='highlightUpdate()'>", htmlspecialchars(settingText("homemsg", "")), "</textarea>";
+    echo "<div class='smgap'></div>\n";
+
+    echo "<strong>", decorateSettingName("conflictdefmsg", "Definition of conflict of interest"), "</strong> (HTML allowed)<br />
+<textarea class='textlite' name='conflictdefmsg' cols='60' rows='2' onchange='highlightUpdate()'>", htmlspecialchars(settingText("conflictdefmsg", $Conf->conflictDefinitionText(true))), "</textarea>";
 }
 
 // Submissions
@@ -653,7 +678,7 @@ function doRevGroup() {
 
     doCheckbox('tag_seeall', "PC can see tags for conflicted papers");
     echo "<div class='smgap'></div>";
-    echo "<table><tr><td class='lcaption'>", decorateSettingText("tag_chair", "Chair-only tags"), "</td>";
+    echo "<table><tr><td class='lcaption'>", decorateSettingName("tag_chair", "Chair-only tags"), "</td>";
     if (count($Error) > 0)
 	$v = defval($_REQUEST["tag_chair"], "");
     else {

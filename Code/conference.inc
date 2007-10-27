@@ -665,6 +665,7 @@ class Conference {
 	//   "reviewId" => $rid Only paper reviewed by $rid
 	//   "commentId" => $c  Only paper where comment is $c
 	//   "finalized"	Only submitted papers
+	//   "unsub"		Only unsubmitted papers
 	//   "accepted"		Only accepted papers
 	//   "active"		Only nonwithdrawn papers
 	//   "author"		Only papers authored by $contactId
@@ -846,6 +847,8 @@ class Conference {
 	    $where[] = $this->_paperQuery_where($options['commentId'], "CommentSelector.commentId");
 	if (isset($options['finalized']))
 	    $where[] = "timeSubmitted>0";
+	else if (isset($options['unsub']))
+	    $where[] = "timeSubmitted<=0";
 	if (isset($options['accepted']))
 	    $where[] = "outcome>0";
 	if (isset($options['undecided']))
@@ -1021,7 +1024,15 @@ class Conference {
 	$this->tableMessagesObj = $obj;
     }
 
+    function conflictDefinitionText($usedefault = false) {
+	if (!$usedefault && isset($this->settingTexts["conflictdefmsg"])
+	    && ($x = $this->settingTexts["conflictdefmsg"]) != "")
+	    return $x;
+	else
+	    return "This includes past advisors and students, people with the same affiliation, and any recent (~2 years) coauthors and collaborators.";
+    }
 
+    
     //
     // Conference header, footer
     //

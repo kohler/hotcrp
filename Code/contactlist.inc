@@ -359,7 +359,7 @@ class ContactList extends BaseList {
 	$t .= "    <td id='pplact' class='linelinks1' colspan='" . ($ncol - 1) . "'><b>Select people</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
 
 	// Begin linelinks
-	$t .= "<span class='lll1'><a href='javascript:void crpfocus(\"pplact\",1)'>Get</a></span><span class='lld1'><b>:</b> &nbsp;";
+	$t .= "<span class='lll1'><a href='javascript:void crpfocus(\"pplact\",1)'>Download</a></span><span class='lld1'><b>:</b> &nbsp;";
 	$t .= "<select id='pplact1_d' name='getaction'>
     <option value='nameemail' selected='selected'>Names and emails</option>
     <option value='address'>Addresses</option>\n";

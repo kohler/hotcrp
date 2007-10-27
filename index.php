@@ -84,22 +84,6 @@ if ($homelist) {
 }
 
 
-// Conference management
-if ($Me->privChair) {
-    echo "<tr><td id='homemgmt'>";
-    
-    // Lists
-    echo "<strong class='grpt'>Conference management: &nbsp;</strong> ";
-    echo "<a href='settings.php'>Settings</a>";
-    echo $xsep, "<a href='contacts.php?t=all'>Accounts</a>";
-    echo $xsep, "<a href='autoassign.php'>Review assignments</a>";
-    echo $xsep, "<a href='mail.php'>Mail users</a>";
-    echo $xsep, "<a href='log.php'>Action log</a>";
-
-    echo "<hr class='home' /></td></tr>\n";
-}
-
-
 // Review assignment
 if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     echo "<tr><td id='homerev'>";
@@ -234,8 +218,12 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 	} else if (($time = $Conf->printableTimeSetting('sub_update')) != 'N/A')
 	    $deadlines[] = "You have until $time to submit papers.";
     }
-    if (!$startable && !count($deadlines))
-	$deadlines[] = "The <a href='deadlines.php'>deadline</a> for registering new papers has passed.";
+    if (!$startable && !count($deadlines)) {
+	if ($Conf->settingsAfter('sub_open'))
+	    $deadlines[] = "The <a href='deadlines.php'>deadline</a> for registering new papers has passed.";
+	else
+	    $deadlines[] = "The site has not yet opened for submission, please try again later.";
+    }
     if (count($deadlines) > 0) {
 	if ($plist && $plist->count > 0)
 	    echo "<div class='smgap'></div>";
@@ -252,8 +240,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 
 // Profile
 echo "<tr><td id='homeacct'>";
-echo "<strong class='grpt'>My Account: &nbsp;</strong> ";
-echo "<a href='account.php'>Profile</a>";
+echo "<a href='account.php'><strong class='grpt'>My Profile</strong></a>";
 echo $xsep, "<a href='mergeaccounts.php'>Merge accounts</a>";
 echo $xsep, "Welcome, ", contactNameHtml($Me), ".  (If this isn't you, please <a href='${ConfSiteBase}logout.php'>sign out</a>.)";
 // echo "You will be signed out automatically if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.";
@@ -287,6 +274,22 @@ if ($Conf->timeAuthorViewDecision()) {
 }
     
 echo "<hr class='home' /></td></tr>\n";
+
+
+// Conference management
+if ($Me->privChair) {
+    echo "<tr><td id='homemgmt'>";
+    
+    // Lists
+    echo "<strong class='grpt'>Conference management: &nbsp;</strong> ";
+    echo "<a href='settings.php'>Settings</a>";
+    echo $xsep, "<a href='contacts.php?t=all'>Accounts</a>";
+    echo $xsep, "<a href='autoassign.php'>Review assignments</a>";
+    echo $xsep, "<a href='mail.php'>Mail users</a>";
+    echo $xsep, "<a href='log.php'>Action log</a>";
+
+    echo "<hr class='home' /></td></tr>\n";
+}
 
 
 echo "</table>\n";

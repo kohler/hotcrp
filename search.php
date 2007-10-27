@@ -438,7 +438,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && 
     $mpc = defval($_REQUEST["markpc"], "");
     $pc = new Contact();
     if (!$Me->privChair)
-	$Conf->errorMsg("Only the PC chairs can set conflicts and/or assignments.");
+	$Conf->errorMsg("Only PC chairs can set assignments and conflicts.");
     else if ($mt == "xauto") {
 	$t = (in_array($_REQUEST["t"], array("acc", "s")) ? $_REQUEST["t"] : "all");
 	$q = join($papersel, "+");
@@ -482,6 +482,17 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && 
 	if ($nworked)
 	    $Conf->confirmMsg(($asstype == 0 ? "Unassigned reviews." : "Assigned reviews."));
 	$Conf->qe("unlock tables");
+    }
+}
+
+
+// mark conflicts/PC-authored papers
+if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
+    if (!$Me->privChair)
+	$Conf->errorMsg("Only the PC chairs can send mail.");
+    else {
+	$r = (in_array($_REQUEST["recipients"], array("au", "rev")) ? $_REQUEST["recipients"] : "all");
+	$Me->go("${ConfSiteBase}mail.php?pap=" . join($papersel, "+") . "&recipients=$r");
     }
 }
 

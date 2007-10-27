@@ -91,6 +91,7 @@ images/ass4.png
 images/ass4n.png
 images/bendulft.png
 images/exassignone.png
+images/exsearchaction.png
 images/extagsnone.png
 images/extagssearch.png
 images/extagsset.png

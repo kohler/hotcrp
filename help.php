@@ -119,40 +119,42 @@ authors, reviewer names, and numbers of reviewers.  For example,
 titles\".  Keywords are listed in the
 <a href='help.php?t=syntax'>search syntax reference</a>.</p>");
     _alternateRow("Search results", "
-Click on a paper number or paper title to jump to that paper's screen.
+Click on a paper number or title to jump to that paper.
 Search matches are <span class='match'>highlighted</span> on paper screens,
 which, for example, makes it easier to tell whether a conflict is real.
 Once on a paper screen use <a href='#quicklinks'>quicklinks</a>
 to navigate through the rest of the search matches.
 
-<p>The search results screen also lets you act on many papers at once.
-Select the checkboxes for the interesting papers, then choose an action
-underneath the paper list.  You can:</p>
+<p>Underneath the paper list is the action area:</p>
+
+<img src='${ConfSiteBase}images/exsearchaction.png' alt='[Search action area example]' /><br />
+
+<p>Use the checkboxes to select some papers, then choose an action.
+You can:</p>
 
 <ul class='compact'>
 <li>Download a <tt>.zip</tt> file with the selected papers.</li>
 <li>Download all reviews for the selected papers.</li>
 <li>Download tab-separated text files with authors, PC
- conflicts, review scores, and so forth (some options only
- available to chairs).</li>
+ conflicts, review scores, and so forth (some options chairs only).</li>
 <li>Add, remove, and define <a href='${ConfSiteBase}help.php?t=tags'>tags</a>.</li>
-<li>Mark conflicts, assign reviewers, or assign reviewers automatically (chairs only).</li>
+<li>Assign reviewers and mark conflicts (chairs only).</li>
 <li>Set decisions (chairs only).</li>
+<li>Send mail to paper authors or reviewers (chairs only).</li>
 </ul>
 
-<p>Interact with the action area to see what you can do.
-Select papers by clicking their checkboxes, by <i>shift</i>-clicking on
-either end of a <i>range</i> of checkboxes, or by clicking the \"Select all\"
-link underneath the list.
-For instance, the easiest way to tag a set of papers is to enter their numbers
-in the search box, search, \"Select all\", and add the tag.</p>
+<p>Select papers one by one, in groups by <i>shift</i>-clicking on either end
+of a <i>range</i> of checkboxes, or using the \"select all\" link.
+For instance, the easiest way to tag a set of papers is
+to enter their numbers in the search box, search, \"select all\", and add the
+tag.</p>
 ");
     _alternateRow("<a name='quicklinks'>Quicksearch<br />and quicklinks</a>", "
 Most screens have a quicksearch box in the upper right corner:<br />
 <img src='${ConfSiteBase}images/quicksearchex.png' alt='[Quick search example]' /><br />
-This box supports the full search syntax, but entering
-a single paper number, or any search terms that match exactly
-one paper, will take you directly to that paper's screen.
+This box supports the full search syntax.  Also, entering
+a paper number, or search terms that match exactly
+one paper, will take you directly to that paper.
 
 <p>All paper screens have quicklinks in the upper right corner that navigate
 through the most recent search results:<br />
@@ -493,7 +495,7 @@ review for that paper; this supposedly reduces bias.)
 
 <li><p>The night before the meeting, <strong><a
   href='${ConfSiteBase}search.php?q=&amp;t=s'>download all
-  reviews onto a laptop</a></strong> (Get &gt; All reviews) in case the
+  reviews onto a laptop</a></strong> (Download &gt; All reviews) in case the
   Internet explodes and you can't reach HotCRP from the meeting
   place.</p></li>
 

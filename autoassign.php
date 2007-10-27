@@ -9,11 +9,9 @@ require_once('Code/search.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair('index.php');
-if (isset($_REQUEST["assign"])) {
-    $_REQUEST["q"] = $_REQUEST["oldq"];
-    $_REQUEST["t"] = $_REQUEST["oldt"];
-}
-if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All papers)")
+
+// paper selection
+if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
     $_REQUEST["q"] = "";
 if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
     $_REQUEST["pap"] = preg_split("/ +/", $_REQUEST["pap"]);
@@ -392,7 +390,7 @@ if (isset($assignments) && count($assignments) > 0) {
     $atype = $_REQUEST["a"];
     if ($atype != "prefconflict") {
 	echo "<div class='smgap'></div>";
-	echo "<b>Summary</b><br />\n";
+	echo "<strong>Assignment Summary</strong><br />\n";
 	echo "<table class='pcass'><tr><td><table>";
 	$pcsel = array();
 	foreach ($pcm as $id => $p) {
@@ -526,39 +524,40 @@ doRadio('balance', 'all', "Consider all existing assignments when balancing load
 echo "</td></tr>\n";
 
 
-// Create assignment
-echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></td></tr>\n";
-echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='button' name='assign' value='Create assignment' /></td></tr>\n";
-
-
 // Paper selection
 echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></td></tr>\n";
-echo "<tr><td class='caption'>Paper selection</td><td class='entry'>Assign to: &nbsp;";
-$_REQUEST["t"] = defval($_REQUEST["t"], "all");
+echo "<tr><td class='caption'>Paper selection</td><td class='entry'>";
 if (!isset($_REQUEST["q"]))
     $_REQUEST["q"] = join(" ", $papersel);
 $tOpt = array("s" => "Submitted papers",
 	      "acc" => "Accepted papers",
 	      "und" => "Undecided papers",
 	      "all" => "All papers");
-if (!isset($tOpt[$_REQUEST["t"]]))
+if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
     $_REQUEST["t"] = "all";
-$q = ($_REQUEST["q"] == "" ? "(All papers)" : $_REQUEST["q"]);
-echo "<input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All papers)', 1)\" onblur=\"tempText(this, '(All papers)', 0)\" /> &nbsp;in &nbsp;<select name='t'>";
+$q = ($_REQUEST["q"] == "" ? "(All)" : $_REQUEST["q"]);
+echo "<input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" onchange='highlightUpdate(\"requery\")' /> &nbsp;in &nbsp;<select name='t' onchange='highlightUpdate(\"requery\")' >";
 foreach ($tOpt as $k => $v) {
     echo "<option value='$k'";
     if ($_REQUEST["t"] == $k)
 	echo " selected='selected'";
     echo ">$v</option>";
 }
-echo "</select> &nbsp; <input class='button' name='requery' type='submit' value='Search again' />\n";
-echo "<input type='hidden' name='oldt' value=\"", htmlspecialchars($_REQUEST["t"]), "\" /><input type='hidden' name='oldq' value=\"", htmlspecialchars($_REQUEST["q"]), "\" />\n";
-echo "<hr class='smgap' />\n";
-$search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
-$plist = new PaperList(false, false, $search);
-$plist->papersel = $papersel;
-echo $plist->text("reviewersSel", $Me);
+echo "</select> &nbsp; <input id='requery' class='button' name='requery' type='submit' value='Search' />\n";
+if (isset($_REQUEST["requery"])) {
+    echo "<hr class='smgap' />\n";
+    $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
+    $plist = new PaperList(false, false, $search);
+    $plist->papersel = $papersel;
+    echo $plist->text("reviewersSel", $Me);
+}
 echo "</td></tr>\n";
+
+
+// Create assignment
+echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></td></tr>\n";
+echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='button' name='assign' value='Create assignment' /></td></tr>\n";
+
 
 echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n";
 echo "</table>\n";

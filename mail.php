@@ -1,5 +1,6 @@
 <?php 
 require_once('Code/header.inc');
+require_once('Code/search.inc');
 require_once('Code/mailtemplate.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
@@ -8,29 +9,85 @@ $rf = reviewForm();
 $nullMailer = new Mailer(null, null);
 $nullMailer->width = 10000000;
 
+// paper selection
+if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
+    $_REQUEST["q"] = "";
+if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
+    $_REQUEST["pap"] = preg_split("/ +/", $_REQUEST["pap"]);
+if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
+    $papersel = array();
+    foreach ($_REQUEST["pap"] as $p)
+	if (($p = cvtint($p)) > 0)
+	    $papersel[] = $p;
+    sort($papersel);
+    $_REQUEST["q"] = join(" ", $papersel);
+    $_REQUEST["plimit"] = 1;
+} else if (isset($_REQUEST["plimit"])) {
+    $papersel = array();
+    $_REQUEST["t"] = defval($_REQUEST["t"], "s");
+    $_REQUEST["q"] = defval($_REQUEST["q"], "");
+    $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
+    $papersel = $search->paperList();
+    sort($papersel);
+}
+if (isset($papersel) && count($papersel) == 0) {
+    $Conf->errorMsg("No papers match that search.");
+    unset($papersel);
+    unset($_REQUEST["check"]);
+    unset($_REQUEST["send"]);
+}
+
 $Conf->header("Send Mail", "mail", actionBar());
 
 $subjectPrefix = "[$Conf->shortName] ";
 
 function contactQuery($type) {
+    global $rf, $papersel;
     $contactInfo = "firstName, lastName, email, password, ContactInfo.contactId";
     $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind";
-    if ($type == "notsubmitted")
-	return "select $contactInfo, PaperConflict.conflictType, $paperInfo, 0 as myReviewType from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId) where Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0 and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . " order by Paper.paperId, email";
-    if ($type == "submitted")
-	return "select $contactInfo, PaperConflict.conflictType, $paperInfo, 0 as myReviewType from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId) where Paper.timeSubmitted>0 and Paper.timeWithdrawn<=0 and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . " order by Paper.paperId, email";
-    if (substr($type, 0, 14) == "author-outcome"
-	&& ($out = cvtint(substr($type, 14), null)) !== null)
-	return "select $contactInfo, PaperConflict.conflictType, $paperInfo, 0 as myReviewType from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId) where Paper.timeSubmitted>0 and Paper.outcome=$out and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . " order by Paper.paperId, email";
-    if ($type == "review-finalized")
-	return "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) where PaperReview.reviewSubmitted>0 order by Paper.paperId, email";
-    if ($type == "review-not-finalize")
-	return "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) where PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit>0 order by Paper.paperId, email";
-    if ($type == "pc")
-	return "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo join PCMember using (contactId)";
-    if ($type == "extrev")
-	return "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) where PaperReview.reviewType=" . REVIEW_EXTERNAL . " order by Paper.paperId, email";
-    return "";
+
+    // paper limit
+    $where = array();
+    if (isset($papersel))
+	$where[] = "Paper.paperId in (" . join(", ", $papersel) . ")";
+    else if ($type == "s")
+	$where[] = "Paper.timeSubmitted>0";
+    else if ($type == "unsub")
+	$where[] = "Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0";
+    else if (substr($type, 0, 4) == "dec:") {
+	foreach ($rf->options['outcome'] as $num => $what)
+	    if (strcasecmp($what, substr($type, 4)) == 0) {
+		$where[] = "Paper.timeSubmitted>0 and Paper.outcome=$num";
+		break;
+	    }
+	if (!count($where))
+	    return "";
+    }
+
+    // reviewer limit
+    if ($type == "crev")
+	$where[] = "PaperReview.reviewSubmitted>0";
+    else if ($type == "uncrev")
+	$where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit>0";
+    else if ($type == "extrev")
+	$where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
+
+    // build query
+    if ($type == "pc") {
+	$q = "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo join PCMember using (contactId)";
+	$orderby = "email";
+    } else if ($type == "rev" || $type == "crev" || $type == "uncrev" || $type == "extrev") {
+	$q = "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId)";
+	$orderby = "email, Paper.paperId";
+    } else {
+	$q = "select $contactInfo, PaperConflict.conflictType, $paperInfo, 0 as myReviewType from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId)";
+	$where[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
+	$orderby = "email, Paper.paperId";
+    }
+
+    if (count($where))
+	$q .= " where " . join(" and ", $where);
+    return $q . " order by " . $orderby;
 }
 
 function checkMailPrologue($send) {
@@ -72,6 +129,7 @@ function checkMail($send) {
     $rest = array("headers" => "Cc: $Conf->contactName <$Conf->contactEmail>");
     $last = array(0 => "", 1 => "", "to" => "");
     $any = false;
+    $closer = "";
     while (($row = edb_orow($result))) {
 	if (!$any)
 	    $any = checkMailPrologue($send);
@@ -85,26 +143,29 @@ function checkMail($send) {
 		continue;
 	    if ($send)
 		Mailer::sendPrepared($preparation);
+	    echo $closer;
 	    echo "<table><tr><td class='caption'>To</td><td class='entry'>";
 	    if (!$send)
 		echo "<input type='checkbox' name='$checker' value='1' checked='checked' /> &nbsp;";
 	    echo htmlspecialchars(Mailer::mimeHeaderUnquote($preparation["to"])), "</td></tr>\n";
 	    echo "<td class='caption'>Subject</td><td class='entry'><tt class='email'>", htmlspecialchars(Mailer::mimeHeaderUnquote($preparation[0])), "</tt></td></tr>\n";
 	    echo "<td class='caption'>Body</td><td class='entry'><pre class='email'>", htmlspecialchars($preparation[1]), "</pre></td></tr>\n";
-	    echo "</table>\n";
+	    $closer = "</table>\n";
 	}
     }
 
     if (!$any)
-	return $Conf->errorMsg("No users match \"" . htmlspecialchars($recip[$_REQUEST["recipients"]]) . "\".");
-    else if ($send)
+	return $Conf->errorMsg("No users match \"" . htmlspecialchars($recip[$_REQUEST["recipients"]]) . "\" for that search.");
+    else if ($send) {
+	echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n", $closer;
 	$Conf->echoScript("fold('mail', null);");
-    else {
-	echo "<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail.php?postcheck=1' enctype='multipart/form-data'>\n";
-	foreach (array("recipients", "subject", "emailBody") as $x)
-	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
+    } else {
+	echo "<tr class='last'><td class='caption'></td><td class='entry'><form method='post' action='mail.php?postcheck=1' enctype='multipart/form-data'>\n";
+	foreach (array("recipients", "subject", "emailBody", "q", "t", "plimit") as $x)
+	    if (isset($_REQUEST[$x]))
+		echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
 	echo "<input class='button' type='submit' name='send' value='Send' /> &nbsp;
-<input class='button' type='submit' name='cancel' value='Cancel' /></td></tr></table>\n";
+<input class='button' type='submit' name='cancel' value='Cancel' /></td></tr>\n", $closer;
     }
     $Conf->footer();
     exit;
@@ -124,33 +185,35 @@ if (defval($_REQUEST["loadtmpl"])) {
 	foreach ($noutcome as $o => $n)
 	    if ($o < 0 && $n > defval($noutcome[$x]))
 		$x = $o;
-	$_REQUEST["recipients"] = "author-outcome$x";
+	$_REQUEST["recipients"] = "dec:" . $rf->options["outcome"][$x];
     } else if ($t == "acceptnotify") {
 	$x = max(array_keys($rf->options["outcome"]));
 	foreach ($noutcome as $o => $n)
 	    if ($o > 0 && $n > defval($noutcome[$x]))
 		$x = $o;
-	$_REQUEST["recipients"] = "author-outcome$x";
+	$_REQUEST["recipients"] = "dec:" . $rf->options["outcome"][$x];
     } else if ($t == "reviewremind")
-	$_REQUEST["recipients"] = "review-not-finalize";
+	$_REQUEST["recipients"] = "uncrev";
     else
-	$_REQUEST["recipients"] = "submitted";
+	$_REQUEST["recipients"] = "s";
     $_REQUEST["subject"] = $nullMailer->expand($mailTemplates[$t][0]);
     $_REQUEST["emailBody"] = $nullMailer->expand($mailTemplates[$t][1]);
 }
 
 // Set recipients list, now that template is loaded
-$recip = array("submitted" => "Contact authors of submitted papers",
-	       "notsubmitted" => "Contact authors of unsubmitted papers",
-	       "review-finalized" => "Reviewers who submitted at least one review",
-	       "review-not-finalize" => "Reviewers with outstanding reviews",
-	       "pc" => "Program committee",
-	       "extrev" => "External reviewers");
+$recip = array("au" => "Contact authors",
+	       "s" => "Contact authors of submitted papers",
+	       "unsub" => "Contact authors of unsubmitted papers");
 foreach ($rf->options["outcome"] as $num => $what) {
-    $name = "author-outcome$num";
+    $name = "dec:$what";
     if ($num && (defval($noutcome[$num]) > 0 || $_REQUEST["recipients"] == $name))
 	$recip[$name] = "Contact authors of $what papers";
 }
+$recip["rev"] = "Reviewers";
+$recip["crev"] = "Reviewers with complete reviews";
+$recip["uncrev"] = "Reviewers with incomplete reviews";
+$recip["extrev"] = "External reviewers";
+$recip["pc"] = "Program committee";
 
 // Check or send
 if (defval($_REQUEST["loadtmpl"]))
@@ -172,10 +235,10 @@ if (substr($_REQUEST["subject"], 0, strlen($subjectPrefix)) == $subjectPrefix)
 
 
 echo "<form method='post' action='mail.php?check=1' enctype='multipart/form-data'>
-<table class='form'>
+<table>
 <tr class='topspace'>
   <td class='caption'>Templates</td>
-  <td class='entry'><select name='template'>";
+  <td class='entry'><select name='template' onchange='highlightUpdate(\"loadtmpl\")' >";
 $tmpl = array("genericmailtool" => "Generic",
 	      "acceptnotify" => "Accept notification",
 	      "rejectnotify" => "Reject notification",
@@ -188,18 +251,42 @@ foreach ($tmpl as $num => $what) {
 	echo " selected='selected'";
     echo ">$what</option>\n";
 }
-echo "  </select> &nbsp;<input class='button' type='submit' name='loadtmpl' value='Load template' /><div class='smgap'></div></td>
+echo "  </select> &nbsp;<input id='loadtmpl' class='button' type='submit' name='loadtmpl' value='Load template' /><div class='smgap'></div></td>
 </tr>
 <tr>
   <td class='caption'>Mail to</td>
-  <td class='entry'><select name='recipients'>";
+  <td class='entry'><select name='recipients' onchange='setmailpsel(this)'>";
 foreach ($recip as $r => $what) {
     echo "    <option value='$r'";
-    if ($r == defval($_REQUEST["recipients"]))
+    if ($r == defval($_REQUEST["recipients"], "s"))
 	echo " selected='selected'";
     echo ">", htmlspecialchars($what), "</option>\n";
 }
-echo "  </select></td>
+echo "  </select><br /><div class='xsmgap'></div>";
+
+// paper selection
+echo "<table id='foldpsel' class='fold8c'><tr><td><input id='plimit' type='checkbox' name='plimit' value='1' onclick='fold(\"psel\", !this.checked, 8)'";
+if (isset($_REQUEST["plimit"]))
+    echo " checked='checked'";
+$Conf->footerStuff .= "<script type='text/javascript'>fold(\"psel\",!e(\"plimit\").checked,8);</script>";
+echo " />&nbsp;</td><td>Choose specific papers<span class='extension8'>:</span><br />
+<div class='extension8'>";
+$tOpt = array("s" => "Submitted papers",
+	      "unsub" => "Unsubmitted papers",
+	      "all" => "All papers");
+if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
+    $_REQUEST["t"] = "all";
+$q = defval($_REQUEST["q"], "(All)");
+echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" /> &nbsp;in &nbsp;<select id='t' name='t'>";
+foreach ($tOpt as $k => $v) {
+    echo "<option value='$k'";
+    if ($_REQUEST["t"] == $k)
+	echo " selected='selected'";
+    echo ">$v</option>";
+}
+echo "</select>\n";
+echo "</div></td></tr></table>
+<div class='smgap'></div></td>
 </tr>
 
 <tr>

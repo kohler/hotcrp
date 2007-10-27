@@ -292,7 +292,10 @@ class PaperTable {
 	echo "  Any author with an account on this site can edit the paper.</div>\n";
 	echo "<table id='auedittable' class='auedittable'><tr><th></th><th>Name</th><th>Email</th><th>Affiliation</th></tr>\n";
 	$blankAu = array("", "", "", "");
-	$authorTable = ($this->useRequest && isset($_REQUEST["authorTable"]) ? $_REQUEST["authorTable"] : $prow->authorTable);
+	if ($this->useRequest && isset($_REQUEST["authorTable"]))
+	    $authorTable = $_REQUEST["authorTable"];
+	else
+	    $authorTable = ($prow ? $prow->authorTable : array());
 	for ($n = 1; $n <= 25; $n++) {
 	    $au = ($n <= count($authorTable) ? $authorTable[$n - 1] : $blankAu);
 	    if ($au[0] && $au[1] && !preg_match('@^\s*(von\s+|van\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$@i', $au[1]))
@@ -312,7 +315,8 @@ class PaperTable {
 
     function echoAuthorInformation($prow) {
 	global $Conf;
-	cleanAuthor($prow);
+	if ($prow)
+	    cleanAuthor($prow);
 	echo "<tr class='pt_authorInformation'>\n";
 	echo "  ", $this->tdCaption("authorInformation");
 	if ($this->authorsFolded)
@@ -404,11 +408,10 @@ class PaperTable {
 	at the authors' own institutions.";
 	    else
 		echo "List people and institutions with which the authors have
-	conflicts of interest.  This usually includes any advisor/student
-	relationships and recent (~2 years) coauthors and collaborators.
+	conflicts of interest.  ", $Conf->conflictDefinitionText(), "
 	Be sure to include conflicted <a href='${ConfSiteBase}contacts.php?t=pc'>PC members</a>.
 	We use this information when assigning PC and external reviews.";
-	    echo "  List one conflict per line, with any affiliation in parentheses.  For example: &ldquo;<tt>Jelena Markovic (EPFL)</tt>&rdquo;</div>\n";
+	    echo "  List one conflict per line.  For example: &ldquo;<tt>Jelena Markovic (EPFL)</tt>&rdquo; or, for a whole institution, &ldquo;<tt>EPFL</tt>&rdquo;.</div>\n";
 	}
 	$this->echoEntryData("collaborators", $prow, 6, true);
 	echo "</td>\n</tr>\n\n";
@@ -484,7 +487,7 @@ class PaperTable {
 		$pcconfs[] = $c . " onchange='highlightUpdate()' /> " . contactHtml($p->firstName, $p->lastName);
 	    }
 	    echo "<tr class='pt_conflict_ass'><td class='caption'>PC conflicts</td>\n  <td class='entry'>";
-	    echo "<div class='hint'>Select the PC members who have conflicts of interest with this paper.  This includes the authors' past advisors and/or students, people with the same affiliation as one of the authors, and any recent (~2 years) coauthors and collaborators.</div>\n";
+	    echo "<div class='hint'>Select the PC members who have conflicts of interest with this paper.  ", $Conf->conflictDefinitionText(), "</div>\n";
 	    echo "<table class='rpad'><tr><td>";
 	    $n = intval((count($pcconfs) + 2) / 3);
 	    for ($i = 0; $i < count($pcconfs); $i++) {
