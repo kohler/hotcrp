@@ -1,5 +1,16 @@
 HotCRP NEWS
 
+Version 2.11   27.Oct.2007
+
+* Mail tool allows sending mail to contact authors or reviewers for
+  selected papers.
+
+* UI fixes for conflict of interest wording and home page (thanks, Matthew
+  Frank), autoassignment page, search help, search page.
+
+* Some fixes to MIME support, PHP uninitialized variable warnings.
+
+
 Version 2.10   24.Oct.2007
 
 * Add some support for MIME extensions; message bodies are marked UTF-8,
