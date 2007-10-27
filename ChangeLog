@@ -1,3 +1,44 @@
+2007-10-27 Saturday 16:14  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.63), autoassign.php (1.23), help.php (1.56),
+	  index.php (1.148), mail.php (1.20), script.js (1.55), search.php
+	  (1.118), settings.php (1.55), style.css (1.207), tarball.sh
+	  (1.64), Code/conference.inc (1.222), Code/contactlist.inc (1.24),
+	  Code/mailtemplate.inc (1.27), Code/paperlist.inc (1.144),
+	  Code/papertable.inc (1.94), Code/search.inc (1.65),
+	  images/exsearchaction.png (1.1): Mail tool: * Allow sending mail
+	  to a limited subset of papers.  * Link mail tool from search
+	  screen.
+
+	  UI: * Better integration of "paper selection" into
+	  autoassignments page.  * Tighten action area wording and add an
+	  picture of it to help.  * Home page: "My Profile"; move
+	  conference settings to bottom.  * Don't accept message settings
+	  that are whole HTML pages (Jim Larus).  * Avoid warnings on new
+	  paper screens.
+
+	  Thanks to Matthew Frank for: * Add a "conflict of interest
+	  definition" setting, so users can change   the definition.  *
+	  Improve home page message if conference is not open for
+	  submission.
+
+2007-10-24 Wednesday 20:49  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/helpers.inc (1.178): more mime length fixes
+
+2007-10-24 Wednesday 20:48  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/mailtemplate.inc (1.26): fix preg_match
+
+2007-10-24 Wednesday 20:36  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/: helpers.inc (1.177), mailtemplate.inc (1.25): smaller line
+	  lengths for mime
+
+2007-10-24 Wednesday 19:56  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.12), tarball.sh (1.63): release 2.10
+
 2007-10-24 Wednesday 19:38  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* login.php (1.37), Code/contact.inc (1.139): fix fix fix
