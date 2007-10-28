@@ -75,7 +75,7 @@ if ($getaction == "paper" && isset($papersel)) {
     $result = $Conf->qe($q, "while selecting papers");
     $downloads = array();
     while ($row = edb_orow($result)) {
-	if (!$Me->canViewPaper($row, $Conf, $whyNot))
+	if (!$Me->canViewPaper($row, $Conf, $whyNot, true))
 	    $Conf->errorMsg(whyNotText($whyNot, "view"));
 	else
 	    $downloads[] = $row->paperId;
