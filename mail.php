@@ -275,7 +275,7 @@ $tOpt = array("s" => "Submitted papers",
 	      "unsub" => "Unsubmitted papers",
 	      "all" => "All papers");
 if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
-    $_REQUEST["t"] = "all";
+    $_REQUEST["t"] = "s";
 $q = defval($_REQUEST["q"], "(All)");
 echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" /> &nbsp;in &nbsp;<select id='t' name='t'>";
 foreach ($tOpt as $k => $v) {
