@@ -8,7 +8,8 @@ Version 2.11   27.Oct.2007
 * UI fixes for conflict of interest wording and home page (thanks, Matthew
   Frank), autoassignment page, search help, search page.
 
-* Some fixes to MIME support, PHP uninitialized variable warnings.
+* Some fixes to MIME support, PHP uninitialized variable warnings, and
+  paper downloads when submissions are closed (bug report from V. Arun).
 
 
 Version 2.10   24.Oct.2007
