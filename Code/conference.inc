@@ -342,7 +342,9 @@ class Conference {
 	if ($prow->timeWithdrawn > 0)
 	    return false;
 	else if ($prow->timeSubmitted > 0)
-	    return $this->settingsAfter('sub_sub', 'sub_grace') || !$download || $this->setting('sub_freeze') > 0;
+	    return !$download || $this->setting('sub_freeze') > 0
+		|| $this->settingsAfter('sub_sub', 'sub_grace')
+		|| $this->setting('sub_open') <= 0;
 	else
 	    return !$download && $this->setting('pc_seeall') > 0;
     }
