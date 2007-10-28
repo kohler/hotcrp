@@ -632,8 +632,9 @@ class PaperList extends BaseList {
 	    $t .= "    <option value='scores'>All scores (text)</option>\n";
 	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='getgo' value='Go' /></span>";
 
+	$barsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 	if ($this->contact->isPC) {
-	    $t .= " &nbsp;|&nbsp; ";
+	    $t .= $barsep;
 	    $t .= "<span class='lll2'><a href='javascript:void crpfocus(\"plact\",2)'>Tag</a></span><span class='lld2'><b>:</b> &nbsp;";
 	    $t .= "<select name='tagtype'>
     <option value='a' selected='selected'>Add</option><option value='d'>Remove</option><option value='s'>Define</option><option value='so'>Define ordered</option><option value='ao'>Add ordered</option>
@@ -641,7 +642,7 @@ class PaperList extends BaseList {
 	}
 	
 	if ($this->contact->privChair) {
-	    $t .= " &nbsp;|&nbsp; ";
+	    $t .= $barsep;
 	    $t .= "<span class='lll3'><a href='javascript:void crpfocus(\"plact\",3)'>Assign</a></span><span id='foldass' class='lld3 foldc'><b>:</b> &nbsp;";
 	    $t .= "<select id='plact3_d' name='marktype' onchange='fold(\"ass\", (this.value[0] == \"x\"))'>
       <option value='xauto' selected='selected'>Automatic assignments</option>
@@ -665,11 +666,11 @@ class PaperList extends BaseList {
 	}
 
 	if ($this->contact->privChair) {
-	    $t .= " &nbsp;|&nbsp; ";
+	    $t .= $barsep;
 	    $t .= "<span class='lll4'><a href='javascript:void crpfocus(\"plact\",4)'>Decide</a></span><span class='lld4'><b>:</b> Set to &nbsp;";
 	    $t .= outcomeSelector(0, "plact4_d") . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></span>";
 
-	    $t .= " &nbsp;|&nbsp; ";
+	    $t .= $barsep;
 	    $t .= "<span class='lll5'><a href='javascript:void crpfocus(\"plact\",5)'>Mail</a></span><span class='lld5'><b>:</b> &nbsp;";
 	    $t .= "<select id='plact5_d' name='recipients'><option value='au'>Contact authors</option><option value='rev'>Reviewers</option></select> &nbsp;<input type='submit' class='button_small' name='sendmail' value='Go' /></span>";
 	}
