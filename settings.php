@@ -378,6 +378,11 @@ if (isset($_REQUEST["update"])) {
 	&& (!array_key_exists("au_seerev", $Values)
 	    || $Values["au_seerev"] <= 0))
 	$Conf->warnMsg("You have allowed authors to respond to the reviews, but authors can't see the reviews.  This seems odd.");
+    if (array_key_exists("sub_freeze", $Values)
+	&& $Values["sub_freeze"] == 0
+	&& defval($Values["sub_open"], 0) > 0
+	&& defval($Values["sub_sub"], 0) <= 0)
+	$Conf->warnMsg("You have not set a paper submission deadline, but authors can update their submissions until the deadline.  This seems odd.  You probably should (1) specify a paper submission deadline; (2) select &ldquo;Authors must freeze the final version of each submission&rdquo;; or (3) manually turn off &ldquo;Open site for submissions&rdquo; when submissions complete.");
 
     // unset text messages that equal the default
     if (array_key_exists("conflictdefmsg", $Values)
