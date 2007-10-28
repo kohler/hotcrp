@@ -525,7 +525,8 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
     $pl = new PaperList(true, true, $Search);
     $pl->showHeader = PaperList::HEADER_TITLES;
     $pl_text = $pl->text($Search->limitName, $Me);
-}
+} else
+    $pl = null;
 
 
 // set up the search form
@@ -622,7 +623,7 @@ echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
 $viewAccAuthors = ($_REQUEST["t"] == "acc" && $Conf->timeReviewerViewAcceptedAuthors());
 if ($Conf->blindSubmission() <= 1 || $viewAccAuthors) {
     echo "<input type='checkbox' name='showau' value='1'";
-    if ($Conf->blindSubmission() == 1 && !($pl->headerInfo["authors"] & 1))
+    if ($Conf->blindSubmission() == 1 && (!$pl || !($pl->headerInfo["authors"] & 1)))
 	echo " disabled='disabled'";
     if (defval($_SESSION["foldplau"], 1) == 0)
 	echo " checked='checked'";
@@ -633,7 +634,7 @@ if ($Conf->blindSubmission() <= 1 || $viewAccAuthors) {
 }
 if ($Conf->blindSubmission() >= 1 && $Me->privChair && !$viewAccAuthors) {
     echo "<input type='checkbox' name='showanonau' value='1'";
-    if (!($pl->headerInfo["authors"] & 2))
+    if (!$pl || !($pl->headerInfo["authors"] & 2))
 	echo " disabled='disabled'";
     if (defval($_SESSION["foldplanonau"], 1) == 0)
 	echo " checked='checked'";
@@ -641,13 +642,13 @@ if ($Conf->blindSubmission() >= 1 && $Me->privChair && !$viewAccAuthors) {
 	($Conf->blindSubmission() == 1 ? "Anonymous authors" : "Authors"),
 	"<br />\n";
 }
-if ($pl->headerInfo["abstracts"]) {
+if ($pl && $pl->headerInfo["abstracts"]) {
     echo "<input type='checkbox' name='showabstract' value='1'";
     if (defval($_SESSION["foldplabstract"], 1) == 0)
 	echo " checked='checked'";
     echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<br />\n";
 }
-if ($Me->isPC && $pl->headerInfo["tags"]) {
+if ($Me->isPC && $pl && $pl->headerInfo["tags"]) {
     echo "<input type='checkbox' name='showtags' value='1'";
     if (($_REQUEST["t"] == "a" && !$Me->privChair) || !$pl->headerInfo["tags"])
 	echo " disabled='disabled'";
@@ -656,7 +657,7 @@ if ($Me->isPC && $pl->headerInfo["tags"]) {
     echo " onclick='foldtags(\"pl\",!this.checked,4)' />&nbsp;Tags<br />\n";
 }
 echo "</td>";
-if (isset($pl->scoreMax)) {
+if ($pl && isset($pl->scoreMax)) {
     echo "<td class='pad'>";
     $rf = reviewForm();
     $theScores = defval($_SESSION["scores"], 1);
@@ -674,7 +675,7 @@ if (isset($pl->scoreMax)) {
     echo "</td>";
 }
 echo "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
-if (isset($pl->scoreMax)) {
+if ($pl && isset($pl->scoreMax)) {
     echo "<tr><td colspan='3'><div class='smgap'></div><b>Sort scores by:</b> &nbsp;<select name='scoresort'>";
     foreach (array("Minshall score", "Average", "Variance", "Max &minus; min") as $k => $v) {
 	echo "<option value='$k'";
@@ -695,7 +696,7 @@ echo "<tr><td class='tllx'><table><tr>
 </table>\n\n";
 
 
-if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
+if ($pl) {
     if ($Search->warnings) {
 	echo "<div class='maintabsep'></div>\n";
 	$Conf->warnMsg(join("<br />\n", $Search->warnings));
