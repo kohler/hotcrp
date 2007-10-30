@@ -601,9 +601,10 @@ echo "<div class='f-i'><div class='f-ix'>
 </div><div class='f-ix'>
   <div class='f-c'>&nbsp;</div>
   <div class='f-e'><input class='button' type='submit' name='add' value='Request review' tabindex='2' /></div>
-</div><div class='clear'></div></div>
+</div><div class='clear'></div></div>\n\n";
 
-<div class='f-i'>
+if ($Conf->setting("allowPaperOption") >= 7)
+    echo "<div class='f-i'>
   <div class='f-c'>Note to reviewer <span class='f-cx'>(optional)</span></div>
   <div class='f-e'><input class='textlite' type='text' name='reason' value=\"", htmlspecialchars(defval($_REQUEST["reason"], "")), "\" size='64' tabindex='1' /></div>
 <div class='clear'></div></div>\n\n";
