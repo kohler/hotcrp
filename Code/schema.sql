@@ -415,6 +415,7 @@ CREATE TABLE `ReviewRequest` (
   `paperId` int(11) NOT NULL,
   `name` varchar(120) default NULL,
   `email` varchar(120) default NULL,
+  `reason` text,
   `requestedBy` int(11) NOT NULL,
   KEY `paperId` (`paperId`),
   UNIQUE KEY `paperEmail` (`paperId`,`email`),
@@ -461,7 +462,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 6);
+insert into Settings (name, value) values ('allowPaperOption', 7);
 # collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 

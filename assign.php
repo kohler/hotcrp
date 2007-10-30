@@ -187,10 +187,10 @@ function requestReviewChecks($themHtml, $reqId) {
 	if ($row[1] == "<conflict>")
 	    return $Conf->errorMsg("$themHtml has a conflict registered with paper #$prow->paperId and cannot be asked to review it.");
 	else if ($Me->privChairOverride()) {
-	    $Conf->infoMsg("Overriding previous refusal to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was \"" . htmlspecialchars($row[1]) . "\".)" : ""));
+	    $Conf->infoMsg("Overriding previous refusal to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was &ldquo;" . htmlspecialchars($row[1]) . "&rdquo;.)" : ""));
 	    $Conf->qe("delete from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
 	} else
-	    return $Conf->errorMsg("$themHtml refused a previous request to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was \"" . htmlspecialchars($row[1]) . "\".)" : "") . ($Me->privChair ? "  As an administrator, you can override this refusal with the \"Override...\" checkbox." : ""));
+	    return $Conf->errorMsg("$themHtml refused a previous request to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was &ldquo;" . htmlspecialchars($row[1]) . "&rdquo;.)" : "") . ($Me->privChair ? "  As an administrator, you can override this refusal with the \"Override...\" checkbox." : ""));
     }
 
     return true;
@@ -203,6 +203,7 @@ function requestReview($email) {
 	return false;
     $Them = new Contact();
     $Them->lookupById($reqId, $Conf);
+    $reason = trim(defval($_REQUEST["reason"], ""));
     
     $while = "while requesting review";
     $otherTables = ($Conf->setting("extrev_chairreq") ? ", ReviewRequest write" : "");
@@ -232,7 +233,7 @@ function requestReview($email) {
 
     // send confirmation email
     require_once("Code/mailtemplate.inc");
-    Mailer::send("@requestreview", $prow, $Them, $Requester, array("headers" => "Cc: " . contactEmailTo($Requester)));
+    Mailer::send("@requestreview", $prow, $Them, $Requester, array("headers" => "Cc: " . contactEmailTo($Requester), "reason" => $reason));
 
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
@@ -242,11 +243,12 @@ function requestReview($email) {
     return true;
 }
 
-function proposeReview($name, $email) {
+function proposeReview($email) {
     global $Conf, $Me, $Opt, $prow;
 
     $email = trim($email);
-    $name = trim($name);
+    $name = trim(defval($_REQUEST["name"], ""));
+    $reason = trim(defval($_REQUEST["reason"], ""));
     $reqId = $Conf->getContactId($email, false);
     
     $while = "while recording review request";
@@ -258,11 +260,17 @@ function proposeReview($name, $email) {
 	return $result;
 
     // check for outstanding review request
-    $result = $Conf->qe("insert into ReviewRequest (paperId, name, email, requestedBy) values ($prow->paperId, '" . sqlq($name) . "', '" . sqlq($email) . "', $Me->contactId) on duplicate key update paperId=paperId", $while);
+    $qa = "paperId, name, email, requestedBy";
+    $qb = "$prow->paperId, '" . sqlq($name) . "', '" . sqlq($email) . "', $Me->contactId";
+    if ($Conf->setting("allowPaperOption") >= 7) {
+	$qa .= ", reason";
+	$qb .= ", '" . sqlq(trim($_REQUEST["reason"])) . "'";
+    }
+    $result = $Conf->qe("insert into ReviewRequest ($qa) values ($qb) on duplicate key update paperId=paperId", $while);
     
     // send confirmation email
     require_once("Code/mailtemplate.inc");
-    Mailer::send("@proposereview", $prow, (object) array("fullName" => $name, "email" => $email), $Me, array("emailTo" => $Opt['contactEmail'], "headers" => "Cc: " . contactEmailTo($Me)));
+    Mailer::send("@proposereview", $prow, (object) array("fullName" => $name, "email" => $email), $Me, array("emailTo" => $Opt['contactEmail'], "headers" => "Cc: " . contactEmailTo($Me), "reason" => $reason));
 
     // confirmation message
     $Conf->confirmMsg("Proposed that " . htmlspecialchars("$name <$email>") . " review paper #$prow->paperId.  The chair must approve this proposal for it to take effect.");
@@ -271,20 +279,81 @@ function proposeReview($name, $email) {
     return true;
 }
 
+function unassignedAnonymousContact() {
+    global $rrows;
+    $n = "";
+    while (1) {
+	$name = "anonymous$n";
+	$good = true;
+	foreach ($rrows as $rr)
+	    if ($rr->email == $name) {
+		$good = false;
+		break;
+	    }
+	if ($good)
+	    return $name;
+	$n = ($n == "" ? 2 : $n + 1);
+    }
+}
+		
+function createAnonymousReview() {
+    global $Conf, $Me, $Opt, $prow, $rrows;
+
+    $while = "while creating anonymous review";
+    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo write, PaperConflict read", $while);
+
+    // find an unassigned anonymous review contact
+    $contactemail = unassignedAnonymousContact();
+    $result = $Conf->qe("select contactId from ContactInfo where email='" . sqlq($contactemail) . "'", $while);
+    if (edb_nrows($result) == 1) {
+	$row = edb_row($result);
+	$reqId = $row[0];
+    } else {
+	$qa = "firstName, lastName, email, affiliation, password";
+	$qb = "'Jane Q.', 'Public', '" . sqlq($contactemail) . "', 'Unaffiliated', ''";
+	if ($Conf->setting("allowPaperOption") >= 4) {
+	    $qa .= ", creationTime";
+	    $qb .= ", " . time();
+	}
+	$result = $Conf->qe("insert into ContactInfo ($qa) values ($qb)", $while);
+	if (!$result)
+	    return $result;
+	$reqId = $Conf->lastInsertId($while);
+    }
+    
+    // store the review request
+    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($prow->paperId, $reqId, " . REVIEW_PC . ", $Me->contactId, current_timestamp)", $while);
+
+    // confirmation message
+    $Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId.");
+    $Conf->qe("unlock tables");
+    $Conf->log("Created $contactemail review", $Me, $prow->paperId);
+
+    return true;
+}
+
 if (isset($_REQUEST['add'])) {
     if (!$Me->canRequestReview($prow, $Conf, true, $whyNot))
 	$Conf->errorMsg(whyNotText($whyNot, "request reviews for"));
-    else if (($email = vtrim($_REQUEST['email'])) == ""
-	     || $email == "Email")
+    else if (!isset($_REQUEST["email"]) || !isset($_REQUEST["name"]))
+	$Conf->errorMsg("An email address is required to request a review.");
+    else if (trim($_REQUEST["email"]) == "" && trim($_REQUEST["name"]) == ""
+	     && $Me->privChair) {
+	if (!createAnonymousReview())
+	    $Conf->qe("unlock tables");
+	unset($_REQUEST["reason"]);
+	getProw();
+    } else if (trim($_REQUEST["email"]) == "")
 	$Conf->errorMsg("An email address is required to request a review.");
     else {
 	if ($Conf->setting("extrev_chairreq") && !$Me->privChair)
-	    $ok = proposeReview($_REQUEST["name"], $email);
+	    $ok = proposeReview($_REQUEST["email"]);
 	else
-	    $ok = requestReview($email);
+	    $ok = requestReview($_REQUEST["email"]);
 	if ($ok) {
-	    unset($_REQUEST['email']);
-	    unset($_REQUEST['name']);
+	    unset($_REQUEST["email"]);
+	    unset($_REQUEST["name"]);
+	    unset($_REQUEST["reason"]);
 	} else
 	    $Conf->qe("unlock tables");
 	getProw();
@@ -312,6 +381,7 @@ if (isset($_REQUEST['deny']) && $Me->privChair
 	$Conf->errorMsg("No one has proposed that " . htmlspecialchars($email) . " review this paper.");
     $Conf->qe("unlock tables");
     unset($_REQUEST['email']);
+    unset($_REQUEST['name']);
 }
 
 
@@ -469,7 +539,7 @@ if (($prow->outcome > 0 && $Me->privChair)
 
 // "Save assignments" button
 if ($Me->privChair)
-    echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='button_small' name='update' value='Save assignments' />
+    echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='button' name='update' value='Save assignments' />
     <span id='assresult' style='padding-left:1em'></span>
 </td></tr>\n";
 
@@ -479,34 +549,14 @@ $revTable = reviewTable($prow, $rrows, null, "assign");
 $revTableClass = (preg_match("/<th/", $revTable) ? "rev_reviewers_hdr" : "rev_reviewers");
 echo "<tr class='", $revTableClass, "'>\n";
 echo "  <td class='caption'>Reviews</td>\n";
-echo "  <td class='entry'>", ($revTable ? $revTable : "None");
-
-// add reviewers
-$Conf->infoMsg("External reviewers get access to their assigned papers, including "
-	       . ($Conf->setting("extrev_view") >= 2 ? "the other reviewers' identities and " : "")
-	       . "any eventual decision.  Before requesting an external review,
- you should generally check personally whether they are interested.");
-
-
-echo "<table class='reviewers'>\n";
-
-echo "    <tr><td class='nowrap'><input class='textlite' type='text' name='name' value=\"";
-echo (isset($_REQUEST['name']) ? htmlspecialchars($_REQUEST['name']) : "Name");
-echo "\" onfocus=\"tempText(this, 'Name', 1)\" onblur=\"tempText(this, 'Name', 0)\" />
-	<input class='textlite' type='text' name='email' value=\"";
-echo (isset($_REQUEST['email']) ? htmlspecialchars($_REQUEST['email']) : "Email");
-echo "\" onfocus=\"tempText(this, 'Email', 1)\" onblur=\"tempText(this, 'Email', 0)\" />
-      </td><td><input class='button_small' type='submit' name='add' value='Request an external review' />";
-if ($Me->privChair)
-    echo "<br />\n	<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines and any previous refusal";
-echo "\n    </td></tr>\n";
-
-echo "    </table></td>\n</tr>\n\n";
+echo "  <td class='entry'>", ($revTable ? $revTable : "None"), "</td>
+</tr>\n\n";
 
 
 // outstanding requests
 if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
-    $result = $Conf->qe("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=$prow->paperId", "while finding outstanding requests");
+    $qa = ($Conf->setting("allowPaperOption") >= 7 ? ", reason" : "");
+    $result = $Conf->qe("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy$qa from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=$prow->paperId", "while finding outstanding requests");
     if (edb_nrows($result) > 0) {
 	echo "<tr class='rev_reviewers'>\n  <td class='caption'>Proposed reviewers</td>\n  <td class='entry'><table class='reviewers'>\n";
 	while (($row = edb_orow($result))) {
@@ -514,8 +564,10 @@ if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
 		"<a href=\"mailto:", urlencode($row->email), "\">",
 		htmlspecialchars($row->email), "</a>&gt;</td>",
 		"<td><a class='button_small' href=\"assign.php?paperId=$prow->paperId&amp;name=",
-		urlencode($row->name), "&amp;email=", urlencode($row->email),
-		"&amp;add=1$forceShow\">Approve</a>&nbsp; ",
+		urlencode($row->name), "&amp;email=", urlencode($row->email);
+	    if (defval($row->reason, ""))
+		echo "&amp;reason=", htmlspecialchars($row->reason);
+	    echo "&amp;add=1$forceShow\">Approve</a>&nbsp; ",
 		"<a class='button_small' href=\"assign.php?paperId=$prow->paperId&amp;name=",
 		urlencode($row->name), "&amp;email=", urlencode($row->email),
 		"&amp;deny=1$forceShow\">Deny</a></td></tr>\n",
@@ -524,6 +576,44 @@ if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
 	echo "</table>\n  </td>\n</tr>\n\n";
     }
 }
+
+
+// add external reviewers
+echo "<tr>
+  <td class='caption'>External reviews</td>
+  <td class='entry'>";
+
+echo "<div class='hint'>Use this form to request an external review.
+External reviewers get access to their assigned papers, including ";
+if ($Conf->setting("extrev_view") >= 2)
+    echo "the other reviewers' identities and ";
+echo "any eventual decision.  Before requesting an external review,
+ you should generally check personally whether they are interested.";
+if ($Me->privChair)
+    echo "\n<p>To create a review with no associated reviewer, leave Name and Email blank.</p>";
+echo "</div>\n";
+echo "<div class='f-i'><div class='f-ix'>
+  <div class='f-c'>Name</div>
+  <div class='f-e'><input class='textlite' type='text' name='name' value=\"", htmlspecialchars(defval($_REQUEST["name"], "")), "\" size='32' tabindex='1' /></div>
+</div><div class='f-ix'>
+  <div class='f-c'>Email</div>
+  <div class='f-e'><input class='textlite' type='text' name='email' value=\"", htmlspecialchars(defval($_REQUEST["email"], "")), "\" size='28' tabindex='1' /></div>
+</div><div class='f-ix'>
+  <div class='f-c'>&nbsp;</div>
+  <div class='f-e'><input class='button' type='submit' name='add' value='Request review' tabindex='2' /></div>
+</div><div class='clear'></div></div>
+
+<div class='f-i'>
+  <div class='f-c'>Note to reviewer <span class='f-cx'>(optional)</span></div>
+  <div class='f-e'><input class='textlite' type='text' name='reason' value=\"", htmlspecialchars(defval($_REQUEST["reason"], "")), "\" size='64' tabindex='1' /></div>
+<div class='clear'></div></div>\n\n";
+
+if ($Me->privChair)
+    echo "<div class='f-i'>
+  <input type='checkbox' name='override' value='1' />&nbsp;Override deadlines and any previous refusal
+</div>\n";
+
+echo "    </td>\n</tr>\n\n";
 
 
 // close this table

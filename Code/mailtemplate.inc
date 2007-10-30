@@ -57,7 +57,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
      array("[%CONFSHORTNAME%] Review request for paper #%NUMBER%",
 	   "Dear %NAME%,
 
-%OTHERCONTACT% has asked you to review %CONFNAME% paper #%NUMBER%.
+%OTHERCONTACT% has asked you to review %CONFNAME% paper #%NUMBER%.%IF(REASON)%  They supplied this note: %REASON%%ENDIF%
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -96,7 +96,9 @@ Thank you,
      array("[%CONFSHORTNAME%] Proposed reviewer for paper #%NUMBER%",
 	   "Greetings,
 
-%OTHERCONTACT% would like %CONTACT% to review %CONFNAME% paper #%NUMBER%.  Visit the assignment page to approve or deny the request.
+%OTHERCONTACT% would like %CONTACT% to review %CONFNAME% paper #%NUMBER%.%IF(REASON)%  They supplied this note: %REASON%%ENDIF%
+
+Visit the assignment page to approve or deny the request.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -353,6 +355,8 @@ class Mailer {
     }
     
     function _pushIf($yes) {
+	if ($yes !== false && $yes !== true && $yes !== null)
+	    $yes = (bool) $yes;
 	if ($yes === true || $yes === null)
 	    array_push($this->ifstack, $yes);
 	else
