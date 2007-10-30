@@ -415,10 +415,10 @@ class ReviewForm {
 	if ($contact->canViewReviewerIdentity($prow, $rrow, $conf)) {
 	    if ($rrow && isset($rrow->reviewFirstName))
 		$x .= "==+== Reviewer: " . contactText($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail) . "\n";
-	    else if ($myReview)
-		$x .= "==+== Reviewer: " . contactText($contact) . "\n";
 	    else if ($rrow && isset($rrow->lastName))
 		$x .= "==+== Reviewer: " . contactText($rrow) . "\n";
+	    else if ($myReview)
+		$x .= "==+== Reviewer: " . contactText($contact) . "\n";
 	}
 	if ($rrow && $rrow->reviewModified)
 	    $x .= "==-== Updated " . $conf->printableTime($rrow->reviewModified) . "\n";
