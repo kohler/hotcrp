@@ -890,7 +890,7 @@ class Contact {
 	global $ConfSiteBase, $Conf;
 	$conf = ($conf ? $conf : $Conf);
 	if (!$this->privChair && $row->conflictType < CONFLICT_AUTHOR)
-	    $long = 0;
+	    $long = min($long, 0);
 
 	if ($row->timeWithdrawn > 0) {
 	    $x = "<span class='pstat pstat_with'>Withdrawn</span>";
