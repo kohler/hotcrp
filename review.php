@@ -78,13 +78,16 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 
     if (!($req = $rf->parseTextForm($tf, $Conf)))
 	/* error already reported */;
-    else if ($req['paperId'] != $prow->paperId)
+    else if (isset($req['paperId']) && $req['paperId'] != $prow->paperId)
 	$rf->tfError($tf, "This review form is for paper #" . $req['paperId'] . ", not paper #$prow->paperId; did you mean to upload it here?  I have ignored the form.<br /><a class='button_small' href='${ConfSiteBase}review.php?paperId=" . $req['paperId'] . "'>Review paper #" . $req['paperId'] . "</a> <a class='button_small' href='${ConfSiteBase}offline.php'>General review upload site</a>");
     else if (!$Me->canSubmitReview($prow, $editRrow, $Conf, $whyNot))
 	$rf->tfError($tf, whyNotText($whyNot, "review"));
-    else if ($rf->checkRequestFields($req, $editRrow, $tf)) {
-	if ($rf->saveRequest($req, $editRrow, $prow, $Me->contactId))
-	    $tf['confirm'][] = "Uploaded review for paper #$prow->paperId.";
+    else {
+	$req['paperId'] = $prow->paperId;
+	if ($rf->checkRequestFields($req, $editRrow, $tf)) {
+	    if ($rf->saveRequest($req, $editRrow, $prow, $Me->contactId))
+		$tf['confirm'][] = "Uploaded review for paper #$prow->paperId.";
+	}
     }
 
     if (count($tf['err']) == 0 && $rf->parseTextForm($tf, $Conf))
