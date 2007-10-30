@@ -401,7 +401,7 @@ td#homerev strong.grpt {
 td#homeau strong.grpt {
 	color: #923e58;
 }
-td#homeacct strong.grpt, td#homeinfo strong.grpt {
+td#homeinfo strong.grpt {
 	color: #777777;
 }
 hr.home {
