@@ -373,7 +373,7 @@ if ($getaction == "scores" && $Me->privChair && isset($papersel)) {
     if ($Me->privChair)
 	$_REQUEST["forceShow"] = 1;
     $text = "";
-    while ($row = edb_orow($result)) {
+    while (($row = edb_orow($result))) {
 	if (!$Me->canViewReview($row, null, $Conf, $whyNot))
 	    $errors[] = whyNotText($whyNot, "view review") . "<br />";
 	else if ($row->reviewSubmitted) {
