@@ -441,6 +441,8 @@ function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
 
 function goPaperForm($baseUrl = "paper.php", $args = array()) {
     global $ConfSiteBase, $CurrentList;
+    if (!$_SESSION["Me"]->valid())
+	return "";
     $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get'><div class='inform'>";
     foreach ($args as $what => $val)
 	$x .= "<input type='hidden' name=\"" . htmlspecialchars($what) . "\" value=\"" . htmlspecialchars($val) . "\" />";

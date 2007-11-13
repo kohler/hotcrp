@@ -38,8 +38,6 @@ deadlines.php
 help.php
 index.php
 log.php
-login.php
-logout.php
 mail.php
 mergeaccounts.php
 offline.php

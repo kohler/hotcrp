@@ -195,7 +195,7 @@ class Contact {
 		if (isset($_REQUEST[$k]))
 		    $x[$k] = $_REQUEST[$k];
 	    $_SESSION["afterLogin"] = selfHref($x);
-	    $this->goAlert("${ConfSiteBase}login.php", "You have invalid credentials and need to log in.");
+	    $this->goAlert("${ConfSiteBase}index.php", "You have invalid credentials and need to sign in.");
 	}
     }
 

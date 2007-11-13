@@ -1010,13 +1010,13 @@ class Conference {
     }
 
     function errorMsg($text) {
-	$this->msg($text, 'error');
+	$this->msg($text, 'merror');
 	return false;
     }
 
     function errorMsgExit($text) {
 	if ($text)
-	    $this->msg($text, 'error');
+	    $this->msg($text, 'merror');
 	$this->footer();
 	exit;
     }
@@ -1089,7 +1089,7 @@ class Conference {
 	    else if ($id == "settings")
 		echo "?t=chair";
 	    echo "'>Help</a>", $xsep;
-	    echo "<a href='", $ConfSiteBase, "logout.php'>Sign&nbsp;out</a>", $xsep;
+	    echo "<a href='", $ConfSiteBase, "index.php?signout=1'>Sign&nbsp;out</a>", $xsep;
 	}
 	echo date("l j M Y g:i:sa T", $time), "<br /><span id='usertime'></span></div>\n";
 	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", $this->shortName, " Public Site</a></div>\n";

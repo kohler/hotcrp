@@ -178,7 +178,7 @@ div#footer_crp {
 
 
 /* infoboxes */
-div.info, div.warning, div.confirm, div.error {
+div.info, div.warning, div.confirm, div.merror {
 	background: #eeeeff url(images/info45.png) 10px 10px no-repeat;
 	padding: 0.5em 0.5em 0.5em 65px;
 	border: 1px solid #ccccee;
@@ -193,7 +193,7 @@ div.help {
 	max-width: 100em;
 	background: #f8f8f8;
 }
-div.error {
+div.merror {
 	background: #ffeeee url(images/stophand45.png) 10px 10px no-repeat;
 	border: 1px solid #eecccc;
 }
@@ -205,10 +205,10 @@ div.warning {
 	background: #ffffdd url(images/info45.png) 10px 10px no-repeat;
 	border: 1px solid #ddddcc;
 }
-div.error p:first-child, div.info p:first-child, div.warning p:first-child, div.confirm p:first-child, div.help p:first-child {
+div.merror p:first-child, div.info p:first-child, div.warning p:first-child, div.confirm p:first-child, div.help p:first-child {
 	margin-top: 0em;
 }
-div.error p, div.info p, div.warning p, div.confirm p, div.help p {
+div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 	margin-top: 0.75em;
 	margin-bottom: 0em;
 }
@@ -594,13 +594,6 @@ td.lentry {
 td.llentry {
 	padding: 0px 0.75em;
 }
-td.error, td.error input {
-	font-weight: bold;
-	color: #ff0000;
-}
-td.lentry.error input {
-	font-weight: normal;
-}
 td.hint {
 	padding: 0em 0.5em;
 	font-size: smaller;
@@ -641,6 +634,10 @@ ul.compact {
 div.f-i:first-child {
 	margin-top: 0px;
 }
+div.f-ii {
+	width: auto;
+	clear: both;
+}
 div.f-i {
 	margin: 1ex 0px;
 	width: auto;
@@ -667,6 +664,13 @@ span.f-cx {
 
 td.pad {
 	padding-right: 1em;
+}
+td.error, td.error input, div.error, div.error input {
+	font-weight: bold;
+	color: #ff0000;
+}
+td.lentry.error input, div.error input {
+	font-weight: normal;
 }
 span.error {
 	color: #ff0000;

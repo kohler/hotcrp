@@ -466,7 +466,7 @@ class Mailer {
 	    return ($isbool ? null : $what);
 
 	if ($what == "%LOGINURL%")
-	    return $Conf->paperSite . "/login.php?email=" . urlencode($this->contact->email) . "&password=" . urlencode($this->contact->password);
+	    return $Conf->paperSite . "/?email=" . urlencode($this->contact->email) . "&password=" . urlencode($this->contact->password);
 	if ($what == "%EMAIL%")
 	    return $this->contact->email;
 	if ($what == "%PASSWORD%")

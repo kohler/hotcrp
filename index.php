@@ -7,15 +7,162 @@ require_once('Code/header.inc');
 require_once('Code/paperlist.inc');
 require_once('Code/search.inc');
 
-if (!isset($_SESSION["Me"]) || !$_SESSION["Me"]->valid())
-    go("login.php");
 $Me = $_SESSION["Me"];
+$email_class = '';
+$password_class = '';
 
-if (($_SESSION["AskedYouToUpdateContactInfo"] < 2
-     && !($Me->lastName && $Me->affiliation))
-    || ($_SESSION["AskedYouToUpdateContactInfo"] < 3 
-	&& ($Me->roles & Contact::ROLE_PC)
-	&& !($Me->collaborators || $Me->anyTopicInterest))) {
+// signin links
+if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])) {
+    $_REQUEST["action"] = defval($_REQUEST["action"], "login");
+    $_REQUEST["signin"] = defval($_REQUEST["signin"], "go");
+}
+
+if (isset($_REQUEST["signin"]) || isset($_REQUEST["signout"])) {
+    if ($Me->valid() && isset($_REQUEST["signout"]))
+	$Conf->confirmMsg("You have been signed out.  Thanks for using the system.");
+    $Me->invalidate();
+    unset($_SESSION["AskedYouToUpdateContactInfo"]);
+    unset($_SESSION["l"]);
+    unset($_SESSION["foldplau"]);
+    unset($_SESSION["foldplanonau"]);
+    unset($_SESSION["foldplabstract"]);
+    unset($_SESSION["foldpltags"]);
+}
+
+function doCreateAccount() {
+    global $Conf, $Opt, $Me, $email_class;
+
+    if ($Me->valid()) {
+	$email_class = " error";
+	return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ".  To retrieve your password, select \"I forgot my password, email it to me\".");
+    }
+
+    $result = $Me->initialize($_REQUEST["email"], $Conf);
+    if (!$result)
+	return $Conf->errorMsg($Conf->dbErrorText(true, "while adding your account"));
+
+    $Me->sendAccountInfo($Conf, true, false);
+    $Conf->log("Account created", $Me);
+    $msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".  ";
+
+    // handle setup phase
+    if (defval($Conf->settings["setupPhase"], false)) {
+	$msg .= "  As the first user, you have been automatically signed in and assigned PC chair privilege.  Your password is \"<tt>" . htmlspecialchars($Me->password) . "</tt>\".  All later users will have to sign in normally.";
+	$while = "while granting PC chair privilege";
+	$Conf->qe("insert into Chair (contactId) values (" . $Me->contactId . ")", $while);
+	$Conf->qe("insert into PCMember (contactId) values (" . $Me->contactId . ")", $while);
+	if ($Conf->setting("allowPaperOption") >= 6)
+	    $Conf->qe("update ContactInfo set roles=" . (Contact::ROLE_PC | Contact::ROLE_CHAIR) . " where contactId=" . $Me->contactId, $while);
+	$Conf->qe("delete from Settings where name='setupPhase'", "while leaving setup phase");
+	$Conf->log("Granted PC chair privilege to first user", $Me);
+	$Conf->confirmMsg($msg);
+	return true;
+    }
+
+    if ($Conf->allowEmailTo($Me->email))
+	$msg .= "  A password has been emailed to this address.  When you receive that email, return here to complete the registration process.";
+    else {
+	if ($Opt['sendEmail'])
+	    $msg .= "  The email address you provided seems invalid (it doesn't contain an @).";
+	else
+	    $msg .= "  The conference system is not set up to mail passwords at this time.";
+	$msg .= "  Although an account was created for you, you need the site administrator's help to retrieve your password.  The site administrator is " . htmlspecialchars("$Conf->contactName <$Conf->contactEmail>") . ".";
+    }
+    if (isset($_REQUEST["password"]) && $_REQUEST["password"] != "")
+	$msg .= "  Note that the password you supplied on the login screen was ignored.";
+    $Conf->confirmMsg($msg);
+    return null;
+}
+
+function doLogin() {
+    global $Conf, $Me, $email_class, $password_class;
+    
+    // In all cases, we need to look up the account information
+    // to determine if the user is registered
+    if (!isset($_REQUEST["email"]) || $_REQUEST["email"] == "") {
+	$email_class = " error";
+	return $Conf->errorMsg("Enter your email address.");
+    }
+
+    // Check for the cookie
+    if (!isset($_COOKIE["CRPTestCookie"]) && !isset($_REQUEST["cookie"])) {
+	// set a cookie to test that their browser supports cookies
+	setcookie("CRPTestCookie", true);
+	$url = "cookie=1";
+	foreach (array("email", "password", "action", "go", "afterLogin", "signin") as $a)
+	    if (isset($_REQUEST[$a]))
+		$url .= "&$a=" . urlencode($_REQUEST[$a]);
+	$Conf->go("index.php?" . $url);
+    } else if (!isset($_COOKIE["CRPTestCookie"]))
+	return $Conf->errorMsg("You appear to have disabled cookies in your browser, but this site needs to set cookies to function.  Google has <a href='http://www.google.com/cookies.html'>an informative article on how to enable them</a>.");
+
+    $Me->lookupByEmail($_REQUEST["email"], $Conf);
+    if ($_REQUEST["action"] == "new") {
+	if (!($reg = doCreateAccount()))
+	    return $reg;
+	$_REQUEST["password"] = $Me->password;
+    }
+
+    if (!$Me->valid()) {
+	$email_class = " error";
+	return $Conf->errorMsg("No account for " . htmlspecialchars($_REQUEST["email"]) . " exists.  Did you enter the correct email address?");
+    }
+
+    if ($_REQUEST["action"] == "forgot") {
+	$worked = $Me->sendAccountInfo($Conf, false, true);
+	$Conf->log("Sent password", $Me);
+	if ($worked)
+	    $Conf->confirmMsg("Your password has been emailed to " . $_REQUEST["email"] . ".  When you receive that email, return here to sign in.");
+	return null;
+    }
+
+    if (!isset($_REQUEST["password"]) || $_REQUEST["password"] == "") {
+	$password_class = " error";
+	return $Conf->errorMsg("You tried to sign in without providing a password.  Please enter your password and try again.  If you've forgotten your password, enter your email address and use the \"I forgot my password, email it to me\" option.");
+    }
+
+    if ($Me->password != $_REQUEST["password"]) {
+	$password_class = " error";
+	return $Conf->errorMsg("That password doesn't match.  If you've forgotten your password, enter your email address and use the \"I forgot my password, email it to me\" option.");
+    }
+
+    $Conf->qe("update ContactInfo set visits=visits+1, lastLogin=" . time() . " where contactId=" . $Me->contactId, "while recording login statistics");
+    
+    if (isset($_REQUEST["go"]))
+	$where = $_REQUEST["go"];
+    else if (isset($_SESSION["afterLogin"]))
+	$where = $_SESSION["afterLogin"];
+    else
+	$where = "index.php";
+
+    setcookie("CRPTestCookie", false);
+    unset($_SESSION["afterLogin"]);
+    //if ($where == "index.php")
+    //    return true;
+    $Me->go($where);
+    exit;
+}
+
+if (isset($_REQUEST["email"]) && isset($_REQUEST["action"]) && isset($_REQUEST["signin"])) {
+    if (doLogin() !== true) {
+	// if we get here, login failed
+	$Me->invalidate();
+    }
+} else
+    unset($_SESSION["afterLogin"]);
+
+// set a cookie to test that their browser supports cookies
+if (!$Me->valid())
+    setcookie("CRPTestCookie", true);
+
+// perhaps redirect through account
+if ($Me->valid() && !isset($_SESSION["AskedYouToUpdateContactInfo"]))
+    $_SESSION["AskedYouToUpdateContactInfo"] = 0;
+if ($Me->valid() && (($_SESSION["AskedYouToUpdateContactInfo"] < 2
+		      && !($Me->lastName && $Me->affiliation))
+		     || ($_SESSION["AskedYouToUpdateContactInfo"] < 3 
+			 && ($Me->roles & Contact::ROLE_PC)
+			 && !($Me->collaborators || $Me->anyTopicInterest)))) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 1;
     $Me->go("account.php?redirect=1");
 }
@@ -41,6 +188,35 @@ if (($v = $Conf->settingText("homemsg")))
 
 
 echo "<table class='homegrp'>";
+
+
+// Sign in
+if (!$Me->valid()) {
+    echo "<tr><td id='homeacct'>
+<form method='post' action='index.php'><div class='f-contain'>
+<input type='hidden' name='cookie' value='1' />
+<div class='f-ii'>
+  <div class='f-c", $email_class, "'>Email</div>
+  <div class='f-e", $email_class, "'><input id='login_d' type='text' class='textlite' name='email' size='42' tabindex='1' ";
+    if (isset($_REQUEST["email"]))
+	echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" ";
+    echo " /></div>
+</div>
+<div class='f-i'>
+  <div class='f-c", $password_class, "'>Password</div>
+  <div class='f-e'><input type='password' class='textlite' name='password' size='42' tabindex='1' value='' /></div>
+</div>
+<div class='f-i'>
+  <input type='radio' name='action' value='login' checked='checked' tabindex='2' />&nbsp;<b>Sign me in</b><br />
+  <input type='radio' name='action' value='forgot' tabindex='2' />&nbsp;I forgot my password, email it to me<br />
+  <input type='radio' name='action' value='new' tabindex='2' />&nbsp;I'm a new user and want to create an account using this email address
+</div>
+<div class='f-i'>
+  <input class='button' type='submit' value='Sign in' name='signin' tabindex='1' />
+</div>
+</div></form>
+<hr class='home' /></td></tr>\n";
+}
 
 
 // Submissions
@@ -188,11 +364,16 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
     echo "<tr><td id='homeau'>";
 
     // Overview
-    echo "<strong class='grpt'>My Papers: &nbsp;</strong> ";
+    if ($Me->isAuthor)
+	echo "<strong class='grpt'>My Papers: &nbsp;</strong> ";
+    else
+	echo "<strong class='grpt'>Submissions: &nbsp;</strong> ";
 
     $startable = $Conf->timeStartPaper();
-    if ($startable || $Me->privChair) {
-	echo "<strong><a href='paper.php?paperId=new'>Start new paper</a></strong> <span class='deadline'>(" . $Conf->printableDeadlineSetting('sub_reg') . ")</span>";
+    if ($startable && !$Me->valid())
+	echo "<span class='deadline'>", $Conf->printableDeadlineSetting('sub_reg'), "</span><br />\n<small>You must sign in to register papers.</small>";
+    else if ($startable || $Me->privChair) {
+	echo "<strong><a href='paper.php?paperId=new'>Start new paper</a></strong> <span class='deadline'>(", $Conf->printableDeadlineSetting('sub_reg'), ")</span>";
 	if ($Me->privChair)
 	    echo "<br />\n<small>As an administrator, you can start papers regardless of deadlines and on other people's behalf.</small>";
     }
@@ -239,12 +420,19 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 
 
 // Profile
-echo "<tr><td id='homeacct'>";
-echo "<a href='account.php'><strong class='grpt'>My Profile</strong></a>";
-echo $xsep, "<a href='mergeaccounts.php'>Merge accounts</a>";
-echo $xsep, "Welcome, ", contactNameHtml($Me), ".  (If this isn't you, please <a href='${ConfSiteBase}logout.php'>sign out</a>.)";
-// echo "You will be signed out automatically if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.";
-echo "<hr class='home' /></td></tr>\n";
+if ($Me->valid()) {
+    echo "<tr><td id='homeacct'>";
+    echo "<a href='account.php'><strong class='grpt'>My Profile</strong></a>",
+	$xsep, "<a href='mergeaccounts.php'>Merge accounts</a>";
+    if (($nh = contactNameHtml($Me)))
+	echo $xsep, "Welcome, ", $nh, ".";
+    else
+	echo $xsep, "Welcome.";
+    echo $xsep, "<a href='index.php?signout=1'>Sign out</a>";
+    // echo "(If this isn't you, please <a href='${ConfSiteBase}index.php?signout=1'>sign out</a>.)";
+    // echo "You will be signed out automatically if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.";
+    echo "<hr class='home' /></td></tr>\n";
+}
 
 
 // Conference info

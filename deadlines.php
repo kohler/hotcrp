@@ -5,7 +5,6 @@
 
 require_once('Code/header.inc');
 $Me = $_SESSION["Me"];
-$Me->goIfInvalid();
 
 
 // *** NB If you change this script, also change the logic in index.php ***

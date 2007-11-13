@@ -6,7 +6,6 @@
 require_once('Code/header.inc');
 require_once('Code/contactlist.inc');
 $Me = $_SESSION["Me"];
-$Me->goIfInvalid();
 $rf = reviewForm();
 $getaction = "";
 if (isset($_REQUEST["get"]))
