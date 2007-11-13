@@ -555,7 +555,7 @@ function doSubGroup() {
 
     echo "<div class='smgap'></div>\n";
     echo "<strong>Blind submission:</strong> Are author names visible to reviewers?<br />\n";
-    doRadio("sub_blind", array(2 => "No", 0 => "Yes", 1 => "Maybe (authors decide whether to be anonymous)"));
+    doRadio("sub_blind", array(2 => "No", 0 => "Yes", 1 => "Maybe (authors decide whether to expose their names)"));
 
     echo "<div class='smgap'></div>\n<table>\n";
     doDateRow("sub_reg", "Paper registration deadline", "sub_sub");
@@ -634,7 +634,7 @@ function doRevGroup() {
 
     echo "<div class='smgap'></div>\n";
     echo "<strong>Anonymous review:</strong> Are reviewer names visible to authors?<br />\n";
-    doRadio("rev_blind", array(2 => "No", 0 => "Yes", 1 => "Maybe (reviewers decide whether to be anonymous)"));
+    doRadio("rev_blind", array(2 => "No", 0 => "Yes", 1 => "Maybe (reviewers decide whether to expose their names)"));
 
     echo "<div class='smgap'></div>\n";
     doCheckbox('rev_notifychair', 'PC chairs are notified of new reviews by email');
