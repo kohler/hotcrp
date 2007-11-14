@@ -148,9 +148,9 @@ if (isset($_REQUEST['register']) && $OK) {
 function crpformvalue($val, $field = null) {
     global $Acct;
     if (isset($_REQUEST[$val]))
-	echo htmlspecialchars($_REQUEST[$val]);
+	return htmlspecialchars($_REQUEST[$val]);
     else
-	echo htmlspecialchars($field ? $Acct->$field : $Acct->$val);
+	return htmlspecialchars($field ? $Acct->$field : $Acct->$val);
 }
 
 function fcclass($what) {
