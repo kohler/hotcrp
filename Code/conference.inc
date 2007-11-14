@@ -415,8 +415,8 @@ class Conference {
 
 	    // Check if paper is postscript or PDF, only kinds allowed.
 	    // We ignore the mimetype since MacOS browsers get this wrong
-	    $allowPDF = !isset($Opt['disablePDF']);
-	    $allowPS = !isset($Opt['disablePS']);
+	    $allowPDF = defval($Opt['disablePDF']) <= 0;
+	    $allowPS = defval($Opt['disablePS']) <= 0;
 	    if ($allowPDF && strncasecmp("%PDF-", $contents, 5) == 0)
 		$mimetype = "application/pdf";
 	    else if ($allowPS && strncasecmp("%!PS-", $contents, 5) == 0)

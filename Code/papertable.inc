@@ -246,7 +246,10 @@ class PaperTable {
 	echo "  ", $this->tdEntry("paper");
 
 	echo ($final ? "Final copy:&nbsp; " : ""),
-	    "<input class='textlite' type='file' name='paperUpload' accept='application/pdf application/postscript' size='30' onchange='highlightUpdate()";
+	    "<input class='textlite' type='file' name='paperUpload' accept='",
+	    (defval($Opt['disablePDF']) > 0 ? "" : "application/pdf "),
+	    (defval($Opt['disablePS']) > 0 ? "" : "application/postscript "),
+	    "' size='30' onchange='highlightUpdate()";
 	if (!$final)
 	    echo ";fold(\"isready\",0)";
 	if ($flags & self::ENABLESUBMIT)
