@@ -41,8 +41,7 @@ else
 
 // special handling for Download URLs
 {
-    $toplev = array('All' => 1, 'Assistant' => 1, 'Author' => 1,
-		    'Chair' => 1, 'Code' => 1, 'Download' => 1,
+    $toplev = array('Chair' => 1, 'Code' => 1, 'Download' => 1,
 		    'PC' => 1, 'Reviewer' => 1);
     $url = $_SERVER['PHP_SELF'];
     $ndotdot = 0;
