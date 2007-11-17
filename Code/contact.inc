@@ -280,7 +280,7 @@ class Contact {
 	    $this->note = $fromdb->note;
 	    $this->collaborators = $fromdb->collaborators;
 	    $this->anyTopicInterest = isset($fromdb->topicId);
-	    $this->defaultWatch = defval($fromdb->defaultWatch, 0);
+	    $this->defaultWatch = defval($fromdb, "defaultWatch", 0);
 
 	    $this->shortConfName = $conf->shortName;
 
@@ -323,18 +323,18 @@ class Contact {
 	$c = new Contact;
 	$c->invalidate();
 	$c->contactId = $o->contactId;
-	$c->firstName = defval($o->firstName, '');
-	$c->lastName = defval($o->lastName, '');
-	$c->email = defval($o->email, '');
-	$c->password = defval($o->password, '');
-	$c->isAuthor = defval($o->isAuthor, false) != 0;
-	$c->isReviewer = defval($o->isReviewer, false) != 0;
-	$c->roles = defval($o->roles, 0);
-	if (defval($o->isPC, false))
+	$c->firstName = defval($o, "firstName", '');
+	$c->lastName = defval($o, "lastName", '');
+	$c->email = defval($o, "email", '');
+	$c->password = defval($o, "password", '');
+	$c->isAuthor = defval($o, "isAuthor", false) != 0;
+	$c->isReviewer = defval($o, "isReviewer", false) != 0;
+	$c->roles = defval($o, "roles", 0);
+	if (defval($o, "isPC", false))
 	    $c->roles |= self::ROLE_PC;
-	if (defval($o->isAssistant, false))
+	if (defval($o, "isAssistant", false))
 	    $c->roles |= self::ROLE_ASSISTANT;
-	if (defval($o->isChair, false))
+	if (defval($o, "isChair", false))
 	    $c->roles |= self::ROLE_CHAIR;
 	$c->isPC = ($c->roles & (self::ROLE_PC | self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
 	$c->privChair = ($c->roles & (self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
@@ -550,12 +550,12 @@ class Contact {
 		|| ($this->isPC
 		    && $prow->conflictType == 0 && $rrowSubmitted
 		    && ($conf->timePCViewAllReviews()
-			|| defval($prow->myReviewSubmitted) > 0))
-		|| (defval($prow->myReviewType) > 0
+			|| defval($prow, "myReviewSubmitted") > 0))
+		|| (defval($prow, "myReviewType") > 0
 		    && $prow->conflictType == 0 && $rrowSubmitted
-		    && defval($prow->myReviewSubmitted) > 0
+		    && defval($prow, "myReviewSubmitted") > 0
 		    && ($this->isPC || $conf->settings["extrev_view"] >= 1))
-		|| (defval($prow->myReviewType) == REVIEW_SECONDARY
+		|| (defval($prow, "myReviewType") == REVIEW_SECONDARY
 		    && $prow->conflictType == 0 && $rrowSubmitted
 		    && $prow->myReviewNeedsSubmit === null)
 		|| ($rrow && $rrow->paperId == $prow->paperId
@@ -727,7 +727,7 @@ class Contact {
 	    $whyNot['deadline'] = 'au_seerev';
 	else if ($prow->conflictType > 0)
 	    $whyNot['conflict'] = 1;
-	else if ($prow->myReviewType > 0 && !$this->isPC && defval($prow->myReviewSubmitted) > 0)
+	else if ($prow->myReviewType > 0 && !$this->isPC && defval($prow, "myReviewSubmitted") > 0)
 	    $whyNot['externalReviewer'] = 1;
 	else if ($crow && $crow->forAuthors > 1 && $crow->forReviewers < 1)
 	    $whyNot['responseNotReady'] = 1;
@@ -820,7 +820,7 @@ class Contact {
 	    || ($rrow && $rrow_contactId == $this->contactId)
 	    || ($this->isPC && $prow && $prow->conflictType == 0)
 	    || ($prow && $prow->myReviewType > 0
-		&& defval($prow->myReviewSubmitted) > 0
+		&& defval($prow, "myReviewSubmitted") > 0
 		&& $conf->settings["extrev_view"] >= 2)
 	    || !reviewBlind($rrow))
 	    return true;
@@ -847,8 +847,8 @@ class Contact {
 	    //     && (!$prow || $prow->conflictType == 0)
 	    //     && $conf->timePCViewDecision())
 	    || ($this->isPC && $conf->timePCViewDecision())
-	    || ($prow && defval($prow->myReviewType, 0) > 0
-		&& defval($prow->myReviewSubmitted, 0) > 0
+	    || ($prow && defval($prow, "myReviewType", 0) > 0
+		&& defval($prow, "myReviewSubmitted", 0) > 0
 		&& $conf->timeReviewerViewDecision())
 	    || ($this->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
 	    || ($this->privChair && (!$prow || $prow->conflictType == 0)))

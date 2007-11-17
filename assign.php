@@ -124,7 +124,7 @@ function pcAssignments() {
 	left join PaperConflict on (PaperConflict.contactId=PCMember.contactId and PaperConflict.paperId=$prow->paperId)
 	left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.paperId=$prow->paperId)", $while);
     while (($row = edb_orow($result))) {
-	$val = defval($_REQUEST["pcs$row->contactId"], 0);
+	$val = defval($_REQUEST, "pcs$row->contactId", 0);
 	if ($row->conflictType >= CONFLICT_AUTHOR)
 	    continue;
 
@@ -158,7 +158,7 @@ if (isset($_REQUEST['update']) && $Me->privChair) {
 	_setLeadOrShepherd("lead");
     if (isset($_REQUEST["shepherd"]))
 	_setLeadOrShepherd("shepherd");
-    if (defval($_REQUEST["ajax"])) {
+    if (defval($_REQUEST, "ajax")) {
 	if ($OK)
 	    $Conf->confirmMsg("Assignments saved.");
 	$Conf->ajaxExit(array("ok" => $OK));
@@ -203,7 +203,7 @@ function requestReview($email) {
 	return false;
     $Them = new Contact();
     $Them->lookupById($reqId, $Conf);
-    $reason = trim(defval($_REQUEST["reason"], ""));
+    $reason = trim(defval($_REQUEST, "reason", ""));
     
     $while = "while requesting review";
     $otherTables = ($Conf->setting("extrev_chairreq") ? ", ReviewRequest write" : "");
@@ -247,8 +247,8 @@ function proposeReview($email) {
     global $Conf, $Me, $Opt, $prow;
 
     $email = trim($email);
-    $name = trim(defval($_REQUEST["name"], ""));
-    $reason = trim(defval($_REQUEST["reason"], ""));
+    $name = trim(defval($_REQUEST, "name", ""));
+    $reason = trim(defval($_REQUEST, "reason", ""));
     $reqId = $Conf->getContactId($email, false);
     
     $while = "while recording review request";
@@ -415,8 +415,8 @@ echo "<tr class='id'>\n  <td class='caption'><h2>#", $prow->paperId, "</h2></td>
 echo "  <td class='entry' colspan='2'><h2>";
 $paperTable->echoTitle($prow);
 // session folders
-echo "<img id='foldsession.paper9' alt='' src='", $ConfSiteBase, "sessionvar.php?var=foldassignp&amp;val=", defval($_SESSION["foldassignp"], 1), "&amp;cache=1' width='1' height='1' />";
-echo "<img id='foldsession.authors8' alt='' src='", $ConfSiteBase, "sessionvar.php?var=foldassigna&amp;val=", defval($_SESSION["foldassigna"], 1), "&amp;cache=1' width='1' height='1' />";
+echo "<img id='foldsession.paper9' alt='' src='", $ConfSiteBase, "sessionvar.php?var=foldassignp&amp;val=", defval($_SESSION, "foldassignp", 1), "&amp;cache=1' width='1' height='1' />";
+echo "<img id='foldsession.authors8' alt='' src='", $ConfSiteBase, "sessionvar.php?var=foldassigna&amp;val=", defval($_SESSION, "foldassigna", 1), "&amp;cache=1' width='1' height='1' />";
 echo "</h2>";
 echo "</td>\n</tr>\n\n";
 
@@ -565,7 +565,7 @@ if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
 		htmlspecialchars($row->email), "</a>&gt;</td>",
 		"<td><a class='button_small' href=\"assign.php?paperId=$prow->paperId&amp;name=",
 		urlencode($row->name), "&amp;email=", urlencode($row->email);
-	    if (defval($row->reason, ""))
+	    if (defval($row, "reason", ""))
 		echo "&amp;reason=", htmlspecialchars($row->reason);
 	    echo "&amp;add=1$forceShow\">Approve</a>&nbsp; ",
 		"<a class='button_small' href=\"assign.php?paperId=$prow->paperId&amp;name=",
@@ -594,10 +594,10 @@ if ($Me->privChair)
 echo "</div>\n";
 echo "<div class='f-i'><div class='f-ix'>
   <div class='f-c'>Name</div>
-  <div class='f-e'><input class='textlite' type='text' name='name' value=\"", htmlspecialchars(defval($_REQUEST["name"], "")), "\" size='32' tabindex='1' /></div>
+  <div class='f-e'><input class='textlite' type='text' name='name' value=\"", htmlspecialchars(defval($_REQUEST, "name", "")), "\" size='32' tabindex='1' /></div>
 </div><div class='f-ix'>
   <div class='f-c'>Email</div>
-  <div class='f-e'><input class='textlite' type='text' name='email' value=\"", htmlspecialchars(defval($_REQUEST["email"], "")), "\" size='28' tabindex='1' /></div>
+  <div class='f-e'><input class='textlite' type='text' name='email' value=\"", htmlspecialchars(defval($_REQUEST, "email", "")), "\" size='28' tabindex='1' /></div>
 </div><div class='f-ix'>
   <div class='f-c'>&nbsp;</div>
   <div class='f-e'><input class='button' type='submit' name='add' value='Request review' tabindex='2' /></div>
@@ -606,7 +606,7 @@ echo "<div class='f-i'><div class='f-ix'>
 if ($Conf->setting("allowPaperOption") >= 7)
     echo "<div class='f-i'>
   <div class='f-c'>Note to reviewer <span class='f-cx'>(optional)</span></div>
-  <div class='f-e'><input class='textlite' type='text' name='reason' value=\"", htmlspecialchars(defval($_REQUEST["reason"], "")), "\" size='64' tabindex='1' /></div>
+  <div class='f-e'><input class='textlite' type='text' name='reason' value=\"", htmlspecialchars(defval($_REQUEST, "reason", "")), "\" size='64' tabindex='1' /></div>
 <div class='clear'></div></div>\n\n";
 
 if ($Me->privChair)

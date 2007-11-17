@@ -84,7 +84,7 @@ if (!$newPaper) {
 
 // set review preference action
 if (isset($_REQUEST['revpref']) && $prow) {
-    $ajax = defval($_REQUEST["ajax"], 0);
+    $ajax = defval($_REQUEST, "ajax", 0);
     if (!$Me->privChair
 	|| ($contactId = cvtint($_REQUEST["contactId"])) <= 0)
 	$contactId = $Me->contactId;
@@ -102,7 +102,7 @@ if (isset($_REQUEST['revpref']) && $prow) {
 	$PaperError['revpref'] = true;
     }
     if ($ajax)
-	$Conf->ajaxExit(array("ok" => $OK && !defval($PaperError['revpref'])));
+	$Conf->ajaxExit(array("ok" => $OK && !defval($PaperError, 'revpref')));
 }
 
 
@@ -115,16 +115,16 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 
 	// email contact authors themselves
 	require_once("Code/mailtemplate.inc");
-	if ($Me->privChair && defval($_REQUEST["doemail"]) <= 0)
+	if ($Me->privChair && defval($_REQUEST, "doemail") <= 0)
 	    /* do nothing */;
 	else if ($prow->conflictType >= CONFLICT_AUTHOR)
 	    Mailer::sendContactAuthors("@authorwithdraw", $prow, null, array("infoNames" => 1));
 	else
-	    Mailer::sendContactAuthors("@adminwithdraw", $prow, null, array("reason" => defval($_REQUEST["emailNote"], ""), "infoNames" => 1));
+	    Mailer::sendContactAuthors("@adminwithdraw", $prow, null, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
 	    
 	// email reviewers
 	if ($prow->startedReviewCount > 0)
-	    Mailer::sendReviewers("@withdrawreviewer", $prow, null, array("reason" => defval($_REQUEST["emailNote"], "")));
+	    Mailer::sendReviewers("@withdrawreviewer", $prow, null, array("reason" => defval($_REQUEST, "emailNote", "")));
 	
 	$Conf->log("Withdrew", $Me, $paperId);
     } else
@@ -150,9 +150,9 @@ function setRequestAuthorTable() {
 	$_REQUEST["aueditcount"] = 1;
     $_REQUEST["authorTable"] = array();
     for ($i = 1; $i <= $_REQUEST["aueditcount"]; $i++) {
-	$a = simplifyWhitespace(defval($_REQUEST["auname$i"], ""));
-	$b = simplifyWhitespace(defval($_REQUEST["auemail$i"], ""));
-	$c = simplifyWhitespace(defval($_REQUEST["auaff$i"], ""));
+	$a = simplifyWhitespace(defval($_REQUEST, "auname$i", ""));
+	$b = simplifyWhitespace(defval($_REQUEST, "auemail$i", ""));
+	$c = simplifyWhitespace(defval($_REQUEST, "auaff$i", ""));
 	if ($a != "" || $b != "" || $c != "") {
 	    $a = splitName($a);
 	    $a[2] = $b;
@@ -201,7 +201,7 @@ function requestSameAsPaper($prow) {
 function uploadPaper($isSubmitFinal) {
     global $prow, $Conf, $Me;
     $result = $Conf->storePaper('paperUpload', $prow, $isSubmitFinal,
-				$Me->privChair && defval($_REQUEST["override"]));
+				$Me->privChair && defval($_REQUEST, "override"));
     if ($result == 0 || PEAR::isError($result)) {
 	$Conf->errorMsg("There was an error while trying to update your paper.  Please try again.");
 	return false;
@@ -275,7 +275,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     if ($isSubmitFinal)
 	/* do nothing */;
     else if ($Conf->blindSubmission() > 1
-	     || ($Conf->blindSubmission() == 1 && defval($_REQUEST['blind'])))
+	     || ($Conf->blindSubmission() == 1 && defval($_REQUEST, 'blind')))
 	$q .= "blind=1, ";
     else
 	$q .= "blind=0, ";
@@ -337,7 +337,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    return false;
 	$q = "";
 	foreach (paperOptions() as $opt)
-	    if (defval($_REQUEST["opt$opt->optionId"]) > 0)
+	    if (defval($_REQUEST, "opt$opt->optionId") > 0)
 		$q .= "($paperId, $opt->optionId, 1), ";
 	if ($q && !$Conf->qe("insert into PaperOption (paperId, optionId, value) values " . substr($q, 0, strlen($q) - 2), "while updating paper options"))
 	    return false;
@@ -437,9 +437,9 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 - %CONFSHORTNAME% Submissions\n";
 
     // send email to all contact authors
-    if (!$Me->privChair || defval($_REQUEST["doemail"]) > 0) {
+    if (!$Me->privChair || defval($_REQUEST, "doemail") > 0) {
 	require_once("Code/mailtemplate.inc");
-	Mailer::sendContactAuthors(array("$subject %TITLEHINT%", $m), $prow, null, array("reason" => defval($_REQUEST["emailNote"], ""), "infoNames" => 1));
+	Mailer::sendContactAuthors(array("$subject %TITLEHINT%", $m), $prow, null, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
     }
     
     $Conf->log($what, $Me, $paperId);
@@ -489,9 +489,9 @@ if (isset($_REQUEST['delete'])) {
 	$Conf->errorMsg("Only the program chairs can permanently delete papers.  Authors can withdraw papers, which is effectively the same.");
     else {
 	// mail first, before contact info goes away
-	if (!$Me->privChair || defval($_REQUEST["doemail"]) > 0) {
+	if (!$Me->privChair || defval($_REQUEST, "doemail") > 0) {
 	    require_once("Code/mailtemplate.inc");
-	    Mailer::sendContactAuthors("@deletepaper", $prow, null, array("reason" => defval($_REQUEST["emailNote"], ""), "infoNames" => 1));
+	    Mailer::sendContactAuthors("@deletepaper", $prow, null, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
 	}
 	// XXX email self?
 

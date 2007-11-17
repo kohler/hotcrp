@@ -10,7 +10,7 @@ $rf = reviewForm();
 
 
 // general error messages
-if (defval($_REQUEST["post"]) && !count($_POST))
+if (defval($_REQUEST, "post") && !count($_POST))
     $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  The file was ignored.");
 
 

@@ -67,7 +67,7 @@ $SettingGroups = array("acc" => array(
 			     "final_done" => "date",
 			     "final_grace" => "grace"));
 
-$Group = defval($_REQUEST["group"]);
+$Group = defval($_REQUEST, "group");
 if (!isset($SettingGroups[$Group]))
     $Group = "sub";
 if ($Group == "rfo")
@@ -250,21 +250,21 @@ function doOptions($set) {
     foreach (paperOptions() as $id => $o)
 	if (isset($_REQUEST["optn$id"])
 	    && ($_REQUEST["optn$id"] != $o->optionName
-		|| defval($_REQUEST["optd$id"]) != $o->description
-		|| defval($_REQUEST["optp$id"], 0) != $o->pcView)) {
+		|| defval($_REQUEST, "optd$id") != $o->description
+		|| defval($_REQUEST, "optp$id", 0) != $o->pcView)) {
 	    if ($_REQUEST["optn$id"] == "") {
 		$Conf->qe("delete from OptionType where optionId=$id", $while);
 		$Conf->qe("delete from PaperOption where optionId=$id", $while);
 	    } else {
-		$Conf->qe("update OptionType set optionName='" . sqlq($_REQUEST["optn$id"]) . "', description='" . sqlq(defval($_REQUEST["optd$id"])) . "', pcView=" . (defval($_REQUEST["optp$id"]) ? 1 : 0) . " where optionId=$id", $while);
+		$Conf->qe("update OptionType set optionName='" . sqlq($_REQUEST["optn$id"]) . "', description='" . sqlq(defval($_REQUEST, "optd$id")) . "', pcView=" . (defval($_REQUEST, "optp$id") ? 1 : 0) . " where optionId=$id", $while);
 		$anyo = true;
 	    }
 	    $ochange = true;
 	} else
 	    $anyo = true;
     
-    if (defval($_REQUEST["optnn"]) && $_REQUEST["optnn"] != "New option") {
-	$Conf->qe("insert into OptionType (optionName, description, pcView) values ('" . sqlq($_REQUEST["optnn"]) . "', '" . sqlq(defval($_REQUEST["optdn"], "")) . "', " . (defval($_REQUEST["optpn"]) ? 1 : 0) . ")", $while);
+    if (defval($_REQUEST, "optnn") && $_REQUEST["optnn"] != "New option") {
+	$Conf->qe("insert into OptionType (optionName, description, pcView) values ('" . sqlq($_REQUEST["optnn"]) . "', '" . sqlq(defval($_REQUEST, "optdn", "")) . "', " . (defval($_REQUEST, "optpn") ? 1 : 0) . ")", $while);
 	$ochange = $anyo = true;
     }
 
@@ -297,8 +297,8 @@ function doDecisions($set) {
 		$Conf->qe("update ReviewFormOptions set description='" . sqlq($v) . "' where fieldName='outcome' and level=$k", $while);
 	}
 
-    if (defval($_REQUEST["decn"], "") != "") {
-	$delta = (defval($_REQUEST["dtypn"], 1) > 0 ? 1 : -1);
+    if (defval($_REQUEST, "decn", "") != "") {
+	$delta = (defval($_REQUEST, "dtypn", 1) > 0 ? 1 : -1);
 	for ($k = $delta; true; $k += $delta)
 	    if (!isset($dec[$k]))
 		break;
@@ -369,7 +369,7 @@ if (isset($_REQUEST["update"])) {
     // so we can join on later review changes
     if (array_key_exists("resp_open", $Values)
 	&& $Values["resp_open"] > 0
-	&& defval($Conf->settings["resp_open"]) <= 0)
+	&& defval($Conf->settings, "resp_open") <= 0)
 	$Values["resp_open"] = time();
 
     // warn on other relationships
@@ -380,8 +380,8 @@ if (isset($_REQUEST["update"])) {
 	$Conf->warnMsg("You have allowed authors to respond to the reviews, but authors can't see the reviews.  This seems odd.");
     if (array_key_exists("sub_freeze", $Values)
 	&& $Values["sub_freeze"] == 0
-	&& defval($Values["sub_open"], 0) > 0
-	&& defval($Values["sub_sub"], 0) <= 0)
+	&& defval($Values, "sub_open", 0) > 0
+	&& defval($Values, "sub_sub", 0) <= 0)
 	$Conf->warnMsg("You have not set a paper submission deadline, but authors can update their submissions until the deadline.  This seems odd.  You probably should (1) specify a paper submission deadline; (2) select &ldquo;Authors must freeze the final version of each submission&rdquo;; or (3) manually turn off &ldquo;Open site for submissions&rdquo; when submissions complete.");
 
     // unset text messages that equal the default
@@ -414,7 +414,7 @@ if (isset($_REQUEST["update"])) {
 	// apply settings
 	$dq = $aq = "";
 	foreach ($Values as $n => $v)
-	    if (defval($settings[$n]) == "special")
+	    if (defval($settings, $n) == "special")
 		doSpecial($n, true);
 	    else {
 		$dq .= " or name='$n'";
@@ -451,17 +451,17 @@ function decorateSettingName($name, $text) {
 function setting($name, $defval = null) {
     global $Error, $Conf;
     if (count($Error) > 0)
-	return defval($_REQUEST[$name], $defval);
+	return defval($_REQUEST, $name, $defval);
     else
-	return defval($Conf->settings[$name], $defval);
+	return defval($Conf->settings, $name, $defval);
 }
 
 function settingText($name, $defval = null) {
     global $Error, $Conf;
     if (count($Error) > 0)
-	return defval($_REQUEST[$name], $defval);
+	return defval($_REQUEST, $name, $defval);
     else
-	return defval($Conf->settingTexts[$name], $defval);
+	return defval($Conf->settingTexts, $name, $defval);
 }
 
 function doCheckbox($name, $text, $tr = false) {
@@ -555,7 +555,7 @@ function doSubGroup() {
 
     echo "<div class='smgap'></div>\n";
     echo "<strong>Blind submission:</strong> Are author names visible to reviewers?<br />\n";
-    doRadio("sub_blind", array(2 => "No", 0 => "Yes", 1 => "Maybe (authors decide whether to expose their names)"));
+    doRadio("sub_blind", array(0 => "Yes", 2 => "No&mdash;submissions are anonymous", 1 => "Maybe (authors decide whether to expose their names)"));
 
     echo "<div class='smgap'></div>\n<table>\n";
     doDateRow("sub_reg", "Paper registration deadline", "sub_sub");
@@ -634,7 +634,7 @@ function doRevGroup() {
 
     echo "<div class='smgap'></div>\n";
     echo "<strong>Anonymous review:</strong> Are reviewer names visible to authors?<br />\n";
-    doRadio("rev_blind", array(2 => "No", 0 => "Yes", 1 => "Maybe (reviewers decide whether to expose their names)"));
+    doRadio("rev_blind", array(0 => "Yes", 2 => "No&mdash;reviewers are anonymous", 1 => "Maybe (reviewers decide whether to expose their names)"));
 
     echo "<div class='smgap'></div>\n";
     doCheckbox('rev_notifychair', 'PC chairs are notified of new reviews by email');
@@ -685,7 +685,7 @@ function doRevGroup() {
     echo "<div class='smgap'></div>";
     echo "<table><tr><td class='lcaption'>", decorateSettingName("tag_chair", "Chair-only tags"), "</td>";
     if (count($Error) > 0)
-	$v = defval($_REQUEST["tag_chair"], "");
+	$v = defval($_REQUEST, "tag_chair", "");
     else {
 	$t = array_keys(chairTags());
 	sort($t);
@@ -785,7 +785,7 @@ else
 
 echo ($belowHr ? "<hr />\n" : "<div class='smgap'></div>\n");
 echo "<input type='submit' class='button",
-    (defval($_REQUEST["sample"], "none") == "none" ? "" : "_alert"),
+    (defval($_REQUEST, "sample", "none") == "none" ? "" : "_alert"),
     "' name='update' value='Save changes' /> ";
 echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />";
 

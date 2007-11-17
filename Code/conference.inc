@@ -95,25 +95,25 @@ class Conference {
     }
 
     function setting($name, $defval = false) {
-	return defval($this->settings[$name], $defval);
+	return defval($this->settings, $name, $defval);
     }
     
     function settingText($name, $defval = false) {
-	return defval($this->settingTexts[$name], $defval);
+	return defval($this->settingTexts, $name, $defval);
     }
     
     // update the 'papersub' setting: are there any submitted papers?
     function updatePapersubSetting($forsubmit) {
 	if (!isset($this->settings["papersub"]) && $forsubmit)
 	    $this->q("insert into Settings (name, value) values ('papersub', " . time() . ") on duplicate key update name=name");
-	else if (defval($this->settings["papersub"]) <= 0 || !$forsubmit)
+	else if (defval($this->settings, "papersub") <= 0 || !$forsubmit)
 	    $this->q("update Settings set value=(select max(timeSubmitted) from Paper where timeSubmitted>0 group by paperId>0) where name='papersub'");
     }
 
     function updatePaperaccSetting($foraccept) {
 	if (!isset($this->settings["paperacc"]) && $foraccept)
 	    $this->q("insert into Settings (name, value) values ('paperacc', " . time() . ") on duplicate key update name=name");
-	else if (defval($this->settings["paperacc"]) <= 0 || !$foraccept)
+	else if (defval($this->settings, "paperacc") <= 0 || !$foraccept)
 	    $this->q("update Settings set value=(select max(outcome) from Paper where timeSubmitted>0 group by paperId>0) where name='paperacc'");
     }
 
@@ -273,17 +273,17 @@ class Conference {
     }
 
     function settingsAfter($name, $grace = null) {
-	$t = defval($this->settings[$name], null);
+	$t = defval($this->settings, $name, null);
 	if ($t !== null && $t > 0 && $grace && isset($this->settings[$grace]))
 	    $t += $this->settings[$grace];
 	return ($t !== null && $t > 0 && $t <= time());
     }
     function settingsBetween($name1, $name2, $grace = null) {
 	$now = time();
-	$t = defval($this->settings[$name1], null);
+	$t = defval($this->settings, $name1, null);
 	if ($t === null || ($t <= 0 && $t > $now))
 	    return false;
-	$t = defval($this->settings[$name2], null);
+	$t = defval($this->settings, $name2, null);
 	if ($t !== null && $t > 0 && $grace && isset($this->settings[$grace]))
 	    $t += $this->settings[$grace];
 	return ($t === null || $t <= 0 || $t >= $now);
@@ -313,7 +313,7 @@ class Conference {
 	return $this->settingsAfter('au_seedec');
     }
     function timeReviewOpen() {
-	$st = defval($this->settings['rev_open'], 0);
+	$st = defval($this->settings, 'rev_open', 0);
 	return $st > 0 && time() >= $st;
     }
     function timeReviewPaper($isPC = false, $requested = true, $hard = true) {
@@ -415,8 +415,8 @@ class Conference {
 
 	    // Check if paper is postscript or PDF, only kinds allowed.
 	    // We ignore the mimetype since MacOS browsers get this wrong
-	    $allowPDF = defval($Opt['disablePDF']) <= 0;
-	    $allowPS = defval($Opt['disablePS']) <= 0;
+	    $allowPDF = defval($Opt, 'disablePDF') <= 0;
+	    $allowPS = defval($Opt, 'disablePS') <= 0;
 	    if ($allowPDF && strncasecmp("%PDF-", $contents, 5) == 0)
 		$mimetype = "application/pdf";
 	    else if ($allowPS && strncasecmp("%!PS-", $contents, 5) == 0)
@@ -483,7 +483,7 @@ class Conference {
 	    return $result;
 
 	// potentially email the paper to Greg Minshall
-	if (defval($Opt['emailSubmissions'], false)) {
+	if (defval($Opt, 'emailSubmissions', false)) {
 	    if (is_numeric($prow))
 		$prow = $this->paperRow($paperId);
 	    
@@ -735,7 +735,7 @@ class Conference {
 	    $pq .= ",
 		PaperTopics.topicIds,
 		PaperTopics.topicInterest";
-	if (isset($options['options']) && defval($this->settings["paperOption"]))
+	if (isset($options['options']) && defval($this->settings, "paperOption"))
 	    $pq .= ",
 		PaperOptions.optionIds";
 	else if (isset($options['options']))
@@ -752,13 +752,13 @@ class Conference {
 	if (isset($options['topicInterestScore']))
 	    $pq .= ",
 		coalesce(PaperTopics.topicInterestScore, 0) as topicInterestScore";
-	if (defval($options['reviewerPreference']))
+	if (defval($options, 'reviewerPreference'))
 	    $pq .= ",
 		coalesce(PaperReviewPreference.preference, 0) as reviewerPreference";
-	if (defval($options['allReviewerPreference']))
+	if (defval($options, 'allReviewerPreference'))
 	    $pq .= ",
 		APRP.allReviewerPreference";
-	if (defval($options['desirability']))
+	if (defval($options, 'desirability'))
 	    $pq .= ",
 		coalesce(APRP.desirability, 0) as desirability";
 
@@ -809,7 +809,7 @@ class Conference {
 	    $pq .= " from PaperTopic left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$reviewContactId) group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)\n";
 	}
 
-	if (isset($options['options']) && defval($this->settings["paperOption"])) {
+	if (isset($options['options']) && defval($this->settings, "paperOption")) {
 	    $pq .= "		left join (select paperId, group_concat(PaperOption.optionId) as optionIds from PaperOption group by paperId) as PaperOptions on (PaperOptions.paperId=Paper.paperId)\n";
 	}
 
@@ -823,17 +823,17 @@ class Conference {
 	    $pq .= " from PaperReview where reviewSubmitted>0 group by paperId) as PaperScores on (PaperScores.paperId=Paper.paperId)\n";
 	}
 	
-	if (defval($options['reviewerPreference']))
+	if (defval($options, 'reviewerPreference'))
 	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$reviewContactId)\n";
-	if (defval($options['allReviewerPreference'])
-	    || defval($options['desirability'])) {
+	if (defval($options, 'allReviewerPreference')
+	    || defval($options, 'desirability')) {
 	    $subq = "select paperId";
-	    if (defval($options['allReviewerPreference']))
+	    if (defval($options, 'allReviewerPreference'))
 		$subq .= ", group_concat(concat(lastName,':::',firstName,':::',preference) order by preference desc, lastName, firstName separator ';;;') as allReviewerPreference";
-	    if (defval($options['desirability']))
+	    if (defval($options, 'desirability'))
 		$subq .= ", sum(greatest(least(preference,1),-1)) as desirability";
 	    $subq .= " from PaperReviewPreference";
-	    if (defval($options['allReviewerPreference']))
+	    if (defval($options, 'allReviewerPreference'))
 		$subq .= " join ContactInfo using (contactId)";
 	    $subq .= " group by paperId";
 	    $pq .= "		left join ($subq) as APRP on (APRP.paperId=Paper.paperId)\n";

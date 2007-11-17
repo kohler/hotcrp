@@ -86,7 +86,7 @@ class PaperSearch {
 	    $this->contactId = cvtint($opt["c"]);
 
 	// paper selection
-	$ptype = defval($opt["t"], 0);
+	$ptype = defval($opt, "t", 0);
 	if ($this->privChair && !$ptype && $Conf->timeUpdatePaper())
 	    $this->limitName = "all";
 	else if ($me->isPC && (!$ptype || $ptype == "all")
@@ -117,7 +117,7 @@ class PaperSearch {
 
 	// query type
 	$this->fields = array();
-	$qtype = defval($opt["qt"], "n");
+	$qtype = defval($opt, "qt", "n");
 	if ($qtype == "n" || $qtype == "ti")
 	    $this->fields["ti"] = 1;
 	if ($qtype == "n" || $qtype == "ab")
@@ -130,9 +130,9 @@ class PaperSearch {
 	    $this->fields["re"] = 1;
 
 	// the query itself
-	$this->q = trim(defval($opt["q"], ""));
-	$this->qa = trim(defval($opt["qa"], ""));
-	$this->qx = trim(defval($opt["qx"], ""));
+	$this->q = trim(defval($opt, "q", ""));
+	$this->qa = trim(defval($opt, "qa", ""));
+	$this->qx = trim(defval($opt, "qx", ""));
 
 	// URL base
 	if (isset($opt["urlbase"]))

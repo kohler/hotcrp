@@ -22,8 +22,8 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && !isset($_REQUEST["r
 	    $papersel[] = $p;
 } else {
     $papersel = array();
-    $_REQUEST["t"] = defval($_REQUEST["t"], "s");
-    $_REQUEST["q"] = defval($_REQUEST["q"], "");
+    $_REQUEST["t"] = defval($_REQUEST, "t", "s");
+    $_REQUEST["q"] = defval($_REQUEST, "q", "");
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
     $papersel = $search->paperList();
 }
@@ -65,9 +65,9 @@ function checkRequest(&$atype, &$reviewtype, $save) {
     }
 
     if ($atype == "rev")
-	$reviewtype = defval($_REQUEST["revtype"], "");
+	$reviewtype = defval($_REQUEST, "revtype", "");
     else if ($atype == "revadd")
-	$reviewtype = defval($_REQUEST["revaddtype"], "");
+	$reviewtype = defval($_REQUEST, "revaddtype", "");
     if (($atype == "rev" || $atype == "revadd")
 	&& ($reviewtype != REVIEW_PRIMARY && $reviewtype != REVIEW_SECONDARY)) {
 	$Error["ass"] = true;
@@ -132,7 +132,7 @@ function doAssign() {
     
     // prepare to balance load
     $load = array_fill_keys(array_keys($pcm), 0);
-    if (defval($_REQUEST["balance"], "new") != "new") {
+    if (defval($_REQUEST, "balance", "new") != "new") {
 	if ($atype == "rev" || $atype == "revadd")
 	    $result = $Conf->qe("select PCMember.contactId, count(reviewId)
 		from PCMember left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.reviewType=$reviewtype)
@@ -378,7 +378,7 @@ if (isset($assignments) && count($assignments) > 0) {
 		$t = $t . ($t ? ", " : "") . contactHtml($pc->firstName, $pc->lastName);
 		if ($assignprefs["$pid:$pc->contactId"] != 0)
 		    $t .= " [" . $assignprefs["$pid:$pc->contactId"] . "]";
-		$pc_nass[$pc->contactId] = defval($pc_nass[$pc->contactId], 0) + 1;
+		$pc_nass[$pc->contactId] = defval($pc_nass, $pc->contactId, 0) + 1;
 	    }
 	$atext[$pid] = "<span class='pl_callouthdr'>Proposed assignment:</span> $t";
     }
@@ -394,7 +394,7 @@ if (isset($assignments) && count($assignments) > 0) {
 	echo "<table class='pcass'><tr><td><table>";
 	$pcsel = array();
 	foreach ($pcm as $id => $p) {
-	    $nnew = defval($pc_nass[$id], 0);
+	    $nnew = defval($pc_nass, $id, 0);
 	    if ($atype == "rev" || $atype == "revadd") {
 		$nreviews[$id] += $nnew;
 		if ($_REQUEST["${atype}type"] == REVIEW_PRIMARY)
@@ -452,14 +452,14 @@ echo "<table>";
 
 echo "<tr>", tdClass(false, "ass"), "Action</td>", tdClass(true, "rev");
 doRadio('a', 'rev', 'Ensure each paper has <i>at least</i>');
-echo "&nbsp; <input type='text' class='textlite' name='revct' value=\"", htmlspecialchars(defval($_REQUEST["revct"], 1)), "\" size='3' />&nbsp; ",
+echo "&nbsp; <input type='text' class='textlite' name='revct' value=\"", htmlspecialchars(defval($_REQUEST, "revct", 1)), "\" size='3' />&nbsp; ",
     "<select name='revtype'>";
 doOptions('revtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
 echo "</select>&nbsp; review(s)</td></tr>\n";
 
 echo "<tr><td class='caption'></td>", tdClass(true, "revadd");
 doRadio('a', 'revadd', 'Assign');
-echo "&nbsp; <input type='text' class='textlite' name='revaddct' value=\"", htmlspecialchars(defval($_REQUEST["revaddct"], 1)), "\" size='3' />&nbsp; ",
+echo "&nbsp; <input type='text' class='textlite' name='revaddct' value=\"", htmlspecialchars(defval($_REQUEST, "revaddct", 1)), "\" size='3' />&nbsp; ",
     "<i>additional</i>&nbsp; ",
     "<select name='revaddtype'>";
 doOptions('revaddtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));

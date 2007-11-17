@@ -24,8 +24,8 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
     $_REQUEST["plimit"] = 1;
 } else if (isset($_REQUEST["plimit"])) {
     $papersel = array();
-    $_REQUEST["t"] = defval($_REQUEST["t"], "s");
-    $_REQUEST["q"] = defval($_REQUEST["q"], "");
+    $_REQUEST["t"] = defval($_REQUEST, "t", "s");
+    $_REQUEST["q"] = defval($_REQUEST, "q", "");
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
     $papersel = $search->paperList();
     sort($papersel);
@@ -119,7 +119,7 @@ function checkMail($send) {
     if (!$result)
 	return;
     
-    $subject = trim(preg_replace('/[\n\r\t]+/', ' ', defval($_REQUEST["subject"], "")));
+    $subject = trim(preg_replace('/[\n\r\t]+/', ' ', defval($_REQUEST, "subject", "")));
     if (substr($subject, 0, strlen($subjectPrefix)) != $subjectPrefix)
 	$subject = $subjectPrefix . $subject;
     $emailBody = str_replace("\r\n", "\n", $_REQUEST["emailBody"]);
@@ -139,7 +139,7 @@ function checkMail($send) {
 	    || $preparation["to"] != $last["to"]) {
 	    $last = $preparation;
 	    $checker = "c" . $row->contactId . "p" . $row->paperId;
-	    if ($send && !defval($_REQUEST[$checker]))
+	    if ($send && !defval($_REQUEST, $checker))
 		continue;
 	    if ($send)
 		Mailer::sendPrepared($preparation);
@@ -178,18 +178,18 @@ while (($row = edb_row($result)))
     $noutcome[$row[0]] = $row[1];
 
 // Load template
-if (defval($_REQUEST["loadtmpl"])) {
-    $t = defval($_REQUEST["template"], "genericmailtool");
+if (defval($_REQUEST, "loadtmpl")) {
+    $t = defval($_REQUEST, "template", "genericmailtool");
     if ($t == "rejectnotify") {
 	$x = min(array_keys($rf->options["outcome"]));
 	foreach ($noutcome as $o => $n)
-	    if ($o < 0 && $n > defval($noutcome[$x]))
+	    if ($o < 0 && $n > defval($noutcome, $x))
 		$x = $o;
 	$_REQUEST["recipients"] = "dec:" . $rf->options["outcome"][$x];
     } else if ($t == "acceptnotify") {
 	$x = max(array_keys($rf->options["outcome"]));
 	foreach ($noutcome as $o => $n)
-	    if ($o > 0 && $n > defval($noutcome[$x]))
+	    if ($o > 0 && $n > defval($noutcome, $x))
 		$x = $o;
 	$_REQUEST["recipients"] = "dec:" . $rf->options["outcome"][$x];
     } else if ($t == "reviewremind")
@@ -206,7 +206,7 @@ $recip = array("au" => "Contact authors",
 	       "unsub" => "Contact authors of unsubmitted papers");
 foreach ($rf->options["outcome"] as $num => $what) {
     $name = "dec:$what";
-    if ($num && (defval($noutcome[$num]) > 0 || $_REQUEST["recipients"] == $name))
+    if ($num && (defval($noutcome, $num) > 0 || $_REQUEST["recipients"] == $name))
 	$recip[$name] = "Contact authors of $what papers";
 }
 $recip["rev"] = "Reviewers";
@@ -216,13 +216,13 @@ $recip["extrev"] = "External reviewers";
 $recip["pc"] = "Program committee";
 
 // Check or send
-if (defval($_REQUEST["loadtmpl"]))
+if (defval($_REQUEST, "loadtmpl"))
     /* do nothing */;
-else if (defval($_REQUEST["check"]))
+else if (defval($_REQUEST, "check"))
     checkMail(0);
-else if (defval($_REQUEST["cancel"]))
+else if (defval($_REQUEST, "cancel"))
     /* do nothing */;
-else if (defval($_REQUEST["send"]))
+else if (defval($_REQUEST, "send"))
     checkMail(1);
 
 
@@ -258,7 +258,7 @@ echo "  </select> &nbsp;<input id='loadtmpl' class='button' type='submit' name='
   <td class='entry'><select name='recipients' onchange='setmailpsel(this)'>";
 foreach ($recip as $r => $what) {
     echo "    <option value='$r'";
-    if ($r == defval($_REQUEST["recipients"], "s"))
+    if ($r == defval($_REQUEST, "recipients", "s"))
 	echo " selected='selected'";
     echo ">", htmlspecialchars($what), "</option>\n";
 }
@@ -276,7 +276,7 @@ $tOpt = array("s" => "Submitted papers",
 	      "all" => "All papers");
 if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
     $_REQUEST["t"] = "s";
-$q = defval($_REQUEST["q"], "(All)");
+$q = defval($_REQUEST, "q", "(All)");
 echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" /> &nbsp;in &nbsp;<select id='t' name='t'>";
 foreach ($tOpt as $k => $v) {
     echo "<option value='$k'";

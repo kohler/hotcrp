@@ -40,7 +40,7 @@ class ContactList extends BaseList {
 	global $contactListFields;
 	$this->showHeader = true;
 
-	$s = ($sortable ? defval($_REQUEST["sort"], "") : "");
+	$s = ($sortable ? defval($_REQUEST, "sort", "") : "");
 	$x = (strlen($s) ? $s[strlen($s)-1] : "");
 	$this->reverseSort = ($x == "R");
 	if ($x == "R" || $x == "N")
@@ -157,7 +157,7 @@ class ContactList extends BaseList {
 	    $scoreMax = $this->scoreMax[$scoreName];
 	    $this->sortInfo = array();
 	    $this->sortAverage = array();
-	    $scoresort = defval($_SESSION["pplscoresort"], 1);
+	    $scoresort = defval($_SESSION, "pplscoresort", 1);
 	    if ($scoresort == 0)
 		$scoresort = 1;
 	    foreach ($rows as $row)
@@ -247,7 +247,7 @@ class ContactList extends BaseList {
 	    return "<input type='checkbox' name='pap[]' value='$row->contactId' tabindex='1' id='psel$this->count' onclick='pselClick(event, this, $this->count)' $c/>";
 	case self::FIELD_HIGHTOPICS:
 	case self::FIELD_LOWTOPICS:
-	    if (!defval($row->topicIds))
+	    if (!defval($row, "topicIds"))
 		return "";
 	    $want = ($fieldId == self::FIELD_HIGHTOPICS ? 2 : 0);
 	    $topics = array_combine(explode(",", $row->topicIds), explode(",", $row->topicInterest));
@@ -313,7 +313,7 @@ class ContactList extends BaseList {
 
     function addScores($a) {
 	if ($this->contact->isPC) {
-	    $scores = defval($_SESSION["pplscores"], 1);
+	    $scores = defval($_SESSION, "pplscores", 1);
 	    for ($i = 0; $i < self::FIELD_NUMSCORES; $i++)
 		if ($scores & (1 << $i))
 		    array_push($a, self::FIELD_SCORE + $i);
@@ -511,11 +511,11 @@ class ContactList extends BaseList {
 
 	$x = "<table class=\"ppltable plt_" . htmlspecialchars($listname);
 	if ($this->haveAffrow !== null) {
-	    $this->haveAffrow = (defval($_SESSION["foldpplaff"], 0) == 0);
+	    $this->haveAffrow = (defval($_SESSION, "foldpplaff", 0) == 0);
 	    $x .= ($this->haveAffrow ? " fold2o" : " fold2c");
 	}
 	if ($this->haveTopics !== null) {
-	    $this->haveTopics = (defval($_SESSION["foldppltopics"], 1) == 0);
+	    $this->haveTopics = (defval($_SESSION, "foldppltopics", 1) == 0);
 	    $x .= ($this->haveTopics ? " fold1o" : " fold1c");
 	}
 	$x .= "\" id=\"foldppl\">\n";

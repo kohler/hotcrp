@@ -14,7 +14,7 @@ $topicTitles = array("topics" => "Help topics",
 		     "tags" => "Tags",
 		     "chair" => "Chair's guide");
 
-$topic = defval($_REQUEST["t"], "topics");
+$topic = defval($_REQUEST, "t", "topics");
 if (!isset($topicTitles[$topic]))
     $topic = "topics";
 

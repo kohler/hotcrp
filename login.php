@@ -25,7 +25,7 @@ function doCreateAccount() {
     $msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".  ";
 
     // handle setup phase
-    if (defval($Conf->settings["setupPhase"], false)) {
+    if (defval($Conf->settings, "setupPhase", false)) {
 	$msg .= "  As the first user, you have been automatically signed in and assigned PC chair privilege.  Your password is \"<tt>" . htmlspecialchars($_SESSION["Me"]->password) . "</tt>\".  All later users will have to sign in normally.";
 	$while = "while granting PC chair privilege";
 	$Conf->qe("insert into Chair (contactId) values (" . $_SESSION["Me"]->contactId . ")", $while);
@@ -115,8 +115,8 @@ function doLogin() {
 
 // Email links don't mention action or signin
 if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])) {
-    $_REQUEST["action"] = defval($_REQUEST["action"], "login");
-    $_REQUEST["signin"] = defval($_REQUEST["signin"], "go");
+    $_REQUEST["action"] = defval($_REQUEST, "action", "login");
+    $_REQUEST["signin"] = defval($_REQUEST, "signin", "go");
 }
 
 if (isset($_REQUEST["email"]) && isset($_REQUEST["action"]) && isset($_REQUEST["signin"])) {

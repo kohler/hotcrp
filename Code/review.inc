@@ -182,7 +182,7 @@ class ReviewForm {
 	    $e .= $tf['firstLineno'];
 	else
 	    $e .= $tf['fieldLineno'][$field];
-	if (defval($tf['paperId']))
+	if (defval($tf, 'paperId'))
 	    $e .= " (paper #" . $tf['paperId'] . ")";
 	$tf['err'][] = "<span class='lineno'>" . $e . ":</span> " . $text;
     }
@@ -190,11 +190,11 @@ class ReviewForm {
     function checkRequestFields($req, $rrow, &$tf = null, $conf = null) {
 	global $ReviewFormError, $Conf;
 	$conf = ($conf ? $conf : $Conf);
-	$submit = defval($req["ready"], false);
+	$submit = defval($req, "ready", false);
 	foreach ($this->fieldOrder as $field) {
 	    if (!isset($req[$field]) && !$submit)
 		continue;
-	    $fval = defval($req[$field], ($rrow ? $rrow->$field : ""));
+	    $fval = defval($req, $field, ($rrow ? $rrow->$field : ""));
 	    if (!isset($req[$field]))
 		$missing[] = $this->shortName[$field];
 	    if (isset($this->options[$field])) {
@@ -243,7 +243,7 @@ class ReviewForm {
 	global $Conf, $ConfSiteBase;
 	$conf = ($conf ? $conf : $Conf);
 	$Me = $_SESSION['Me'];
-	$submit = defval($req["ready"], false);
+	$submit = defval($req, "ready", false);
 	$while = "while storing review";
 
 	if (!$Me->timeReview($prow, $conf)
@@ -282,7 +282,7 @@ class ReviewForm {
 	}
 
 	// blind?
-	$reviewBlind = ($conf->blindReview() > 1 || ($conf->blindReview() == 1 && defval($req['blind'])) ? 1 : 0);
+	$reviewBlind = ($conf->blindReview() > 1 || ($conf->blindReview() == 1 && defval($req, 'blind')) ? 1 : 0);
 	$q .= "reviewBlind=$reviewBlind, ";
 
 	// actually affect database
@@ -536,7 +536,7 @@ $blind\n";
 		continue;
 
 	    if (isset($this->options[$field])) {
-		$y = defval($this->options[$field][$fval], "");
+		$y = defval($this->options[$field], $fval, "");
 		$sn = $this->shortName[$field] . ":";
 		/* "(1-" . count($this->options[$field]) . "):"; */
 		if (!$lastNumeric)
@@ -649,7 +649,7 @@ $blind\n";
 		    $field = null;
 		}
 		if ($field != null)
-		    $req[$field] = defval($req[$field], "") . $line;
+		    $req[$field] = defval($req, $field, "") . $line;
 		$mode = 2;
 	    }
 

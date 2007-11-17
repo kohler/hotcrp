@@ -4,7 +4,7 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair('index.php');
 
-if (defval($_REQUEST["page"], "") == "earliest")
+if (defval($_REQUEST, "page", "") == "earliest")
     $page = false;
 else if (($page = cvtint($_REQUEST["page"], -1)) <= 0)
     $page = 1;
@@ -23,11 +23,11 @@ $Conf->header("Log", "actionlog", actionBar());
 $wheres = array();
 $Eclass["q"] = $Eclass["pap"] = $Eclass["acct"] = $Eclass["n"] = $Eclass["date"] = "";
 
-$_REQUEST["q"] = trim(defval($_REQUEST["q"], ""));
-$_REQUEST["pap"] = trim(defval($_REQUEST["pap"], ""));
-$_REQUEST["acct"] = trim(defval($_REQUEST["acct"], ""));
-$_REQUEST["n"] = trim(defval($_REQUEST["n"], "25"));
-$_REQUEST["date"] = trim(defval($_REQUEST["date"], "now"));
+$_REQUEST["q"] = trim(defval($_REQUEST, "q", ""));
+$_REQUEST["pap"] = trim(defval($_REQUEST, "pap", ""));
+$_REQUEST["acct"] = trim(defval($_REQUEST, "acct", ""));
+$_REQUEST["n"] = trim(defval($_REQUEST, "n", "25"));
+$_REQUEST["date"] = trim(defval($_REQUEST, "date", "now"));
 
 if ($_REQUEST["pap"] && !preg_match('/\A[\d\s]+\Z/', $_REQUEST["pap"])) {
     $Conf->errorMsg("The \"Concerning paper(s)\" field requires space-separated paper numbers.");
@@ -95,14 +95,14 @@ function searchbar() {
     echo "<form method='get' action='log.php'>
 <table id='searchform'><tr>
   <td class='lxcaption", $Eclass['q'], "'>With <b>any</b> of the words</td>
-  <td class='lentry", $Eclass['q'], "'><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" /><span class='sep'></span></td>
+  <td class='lentry", $Eclass['q'], "'><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>
   <td rowspan='3'><input class='button' type='submit' name='search' value='Search' /></td>
 </tr><tr>
   <td class='lxcaption", $Eclass['pap'], "'>Concerning paper(s)</td>
-  <td class='lentry", $Eclass['pap'], "'><input class='textlite' type='text' size='40' name='pap' value=\"", htmlspecialchars(defval($_REQUEST["pap"], "")), "\" /></td>
+  <td class='lentry", $Eclass['pap'], "'><input class='textlite' type='text' size='40' name='pap' value=\"", htmlspecialchars(defval($_REQUEST, "pap", "")), "\" /></td>
 </tr><tr>
   <td class='lxcaption", $Eclass['acct'], "'>Concerning account(s)</td>
-  <td class='lentry'><input class='textlite' type='text' size='40' name='acct' value=\"", htmlspecialchars(defval($_REQUEST["acct"], "")), "\" /></td>
+  <td class='lentry'><input class='textlite' type='text' size='40' name='acct' value=\"", htmlspecialchars(defval($_REQUEST, "acct", "")), "\" /></td>
 </tr><tr>
   <td class='lxcaption", $Eclass['n'], "'>Show</td>
   <td class='lentry", $Eclass['n'], "'><input class='textlite' type='text' size='3' name='n' value=\"", htmlspecialchars($_REQUEST["n"]), "\" /> &nbsp;records at a time</td>

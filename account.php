@@ -47,10 +47,10 @@ if (isset($_REQUEST["register"])) {
 
 if (isset($_REQUEST['register']) && $OK) {
     $_REQUEST["uemail"] = trim($_REQUEST["uemail"]);
-    if (!$newProfile && defval($_REQUEST["upassword"], "") == "") {
+    if (!$newProfile && defval($_REQUEST, "upassword", "") == "") {
 	$UpdateError = "Blank passwords are not allowed.";
 	$Error['password'] = true;
-    } else if (!$newProfile && $_REQUEST["upassword"] != defval($_REQUEST["upassword2"], "")) {
+    } else if (!$newProfile && $_REQUEST["upassword"] != defval($_REQUEST, "upassword2", "")) {
 	$UpdateError = "The two passwords you entered did not match.";
 	$Error['password'] = true;
     } else if (!$newProfile && trim($_REQUEST["upassword"]) != $_REQUEST["upassword"]) {
@@ -311,7 +311,7 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
   <td class='entry'>\n";
     foreach (array("pc" => "PC&nbsp;member", "chair" => "PC&nbsp;chair", "ass" => "System&nbsp;administrator") as $key => $value) {
 	echo "    <input type='checkbox' name='$key' id='$key' value='1' ";
-	if (defval($_REQUEST["$key"]))
+	if (defval($_REQUEST, $key))
 	    echo "checked='checked' ";
 	if ($Acct->contactId == $Me->contactId)
 	    echo "disabled='disabled' ";

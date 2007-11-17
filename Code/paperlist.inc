@@ -75,7 +75,7 @@ class PaperList extends BaseList {
 	global $paperListFields;
 	$this->showHeader = self::HEADER_ALL;
 
-	$s = ($sortable ? defval($_REQUEST["sort"], "") : "");
+	$s = ($sortable ? defval($_REQUEST, "sort", "") : "");
 	$x = (strlen($s) ? $s[strlen($s)-1] : "");
 	$this->reverseSort = ($x == "R");
 	if ($x == "R" || $x == "N")
@@ -89,7 +89,7 @@ class PaperList extends BaseList {
 	$this->paperLink = "";
 	$this->paperLinkArgs = "";
 	if ($list) {
-	    $this->listNumber = oldestListNumber($search ? $search->listId(defval($_REQUEST["sort"], "")) : "");
+	    $this->listNumber = oldestListNumber($search ? $search->listId(defval($_REQUEST, "sort", "")) : "");
 	    $this->paperLinkArgs .= "&amp;ls=" . $this->listNumber;
 	} else
 	    $this->listNumber = 0;
@@ -267,7 +267,7 @@ class PaperList extends BaseList {
 	    $scoreName .= "Scores";
 	    $this->sortInfo = array();
 	    $this->sortAverage = array();
-	    $scoresort = defval($_SESSION["scoresort"], 0);
+	    $scoresort = defval($_SESSION, "scoresort", 0);
 	    foreach ($rows as $row)
 		if (!$this->contact->privChair && !$this->contact->canViewReview($row, null, $Conf))
 		    $this->sortInfo[$row->paperId] = self::LOTSAZEROS;
@@ -512,7 +512,7 @@ class PaperList extends BaseList {
 	    return htmlspecialchars($row->topicInterestScore + 0);
 	case self::FIELD_TOPIC_NAMES:
 	    $rf = reviewForm();
-	    return join(", ", $rf->webTopicArray($row->topicIds, defval($row->topicInterest)));
+	    return join(", ", $rf->webTopicArray($row->topicIds, isset($row->topicInterest) ? $row->topicInterest : null));
 	case self::FIELD_ALL_REVIEWER_NAMES:
 	    $n = "";
 	    if (isset($reviewList[$row->paperId]))
@@ -680,7 +680,7 @@ class PaperList extends BaseList {
 
     function addScores($a) {
 	if ($this->scoresOk) {
-	    $scores = defval($_SESSION["scores"], 1);
+	    $scores = defval($_SESSION, "scores", 1);
 	    for ($i = 0; $i < self::FIELD_NUMSCORES; $i++)
 		if ($scores & (1 << $i))
 		    array_push($a, self::FIELD_SCORE + $i);
@@ -782,11 +782,11 @@ class PaperList extends BaseList {
 	$this->scoresOk = $me->privChair || ($me->isPC && $Conf->timePCViewAllReviews());
 
 	// check what is folded
-	if (defval($_SESSION["foldplabstract"], 1))
+	if (defval($_SESSION, "foldplabstract", 1))
 	    $this->foldedAbstract = array();
 	else
 	    $this->foldedAbstract = false;
-	if (defval($_SESSION["foldpltags"], 1))
+	if (defval($_SESSION, "foldpltags", 1))
 	    $this->foldedTags = array();
 	else
 	    $this->foldedTags = false;
@@ -933,9 +933,9 @@ class PaperList extends BaseList {
 
 	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname);
 	if ($authorinfo & 1)
-	    $x .= (defval($_SESSION["foldplau"], 1) ? " fold1c" : " fold1o");
+	    $x .= (defval($_SESSION, "foldplau", 1) ? " fold1c" : " fold1o");
 	if ($authorinfo & 2)
-	    $x .= (defval($_SESSION["foldplanonau"], 1) ? " fold2c" : " fold2o");
+	    $x .= (defval($_SESSION, "foldplanonau", 1) ? " fold2c" : " fold2o");
 	if (!$unfolded)
 	    $x .= " fold3c";
 	if ($taginfo)
@@ -950,7 +950,7 @@ class PaperList extends BaseList {
 	    $x .= "\" id=\"foldpl";
 	$x .= "\">\n";
 
-	$t .= "<img id='foldplactsession' alt='' src='${ConfSiteBase}sessionvar.php?var=foldplact&amp;val=" . defval($_SESSION["foldplact"], 1) . "&amp;cache=1' width='1' height='1' />";
+	$t .= "<img id='foldplactsession' alt='' src='${ConfSiteBase}sessionvar.php?var=foldplact&amp;val=" . defval($_SESSION, "foldplact", 1) . "&amp;cache=1' width='1' height='1' />";
 
 	if ($this->showHeader) {
 	    $x .= "  <tr class=\"pl_headrow\">\n";
@@ -973,7 +973,7 @@ class PaperList extends BaseList {
 	    if ($taginfo && $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
 		$titleextra .= "<a class='unfolder4' href='javascript:foldtags(\"pl\",0,4)'>Show tags</a><a class='folder4' href='javascript:foldtags(\"pl\",1,4)'>Hide tags</a>";
-		$titleextra .= "<img id='foldsession.pl4' alt='' src='${ConfSiteBase}sessionvar.php?var=foldpltags&amp;val=" . defval($_SESSION["foldpltags"], 1) . "&amp;cache=1' width='1' height='1' />";
+		$titleextra .= "<img id='foldsession.pl4' alt='' src='${ConfSiteBase}sessionvar.php?var=foldpltags&amp;val=" . defval($_SESSION, "foldpltags", 1) . "&amp;cache=1' width='1' height='1' />";
 	    }
 	    
 	    if ($this->sortable && $url) {

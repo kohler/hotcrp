@@ -88,7 +88,7 @@ if ($getaction == "paper" && isset($papersel)) {
 
 
 // download selected abstracts
-if ($getaction == "abstracts" && isset($papersel) && defval($_REQUEST["ajax"])) {
+if ($getaction == "abstracts" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
     $result = $Conf->qe($q, "while selecting papers");
     $response = array();
@@ -140,11 +140,11 @@ if ($getaction == "abstracts" && isset($papersel) && defval($_REQUEST["ajax"])) 
 
 
 // download selected abstracts
-if ($getaction == "tags" && isset($papersel) && defval($_REQUEST["ajax"])) {
+if ($getaction == "tags" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tags" => 1));
     $result = $Conf->qe($q, "while selecting papers");
     $response = array();
-    $csb = defval($_REQUEST["sitebase"], "");
+    $csb = defval($_REQUEST, "sitebase", "");
     while ($prow = edb_orow($result)) {
 	if (!$Me->canViewTags($prow, $Conf))
 	    $t = "";
@@ -418,7 +418,7 @@ if ($getaction == "topics" && $Me->privChair && isset($papersel)) {
 
 
 // set outcome for selected papers
-if (isset($_REQUEST["setoutcome"]) && defval($_REQUEST['outcome'], "") != "" && isset($papersel))
+if (isset($_REQUEST["setoutcome"]) && defval($_REQUEST, 'outcome', "") != "" && isset($papersel))
     if (!$Me->canSetOutcome(null))
 	$Conf->errorMsg("You cannot set paper decisions.");
     else {
@@ -433,9 +433,9 @@ if (isset($_REQUEST["setoutcome"]) && defval($_REQUEST['outcome'], "") != "" && 
 
 
 // mark conflicts/PC-authored papers
-if (isset($_REQUEST["setassign"]) && defval($_REQUEST["marktype"], "") != "" && isset($papersel)) {
+if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != "" && isset($papersel)) {
     $mt = $_REQUEST["marktype"];
-    $mpc = defval($_REQUEST["markpc"], "");
+    $mpc = defval($_REQUEST, "markpc", "");
     $pc = new Contact();
     if (!$Me->privChair)
 	$Conf->errorMsg("Only PC chairs can set assignments and conflicts.");
@@ -500,10 +500,10 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 // set scores to view
 if (isset($_REQUEST["redisplay"])) {
     $_SESSION["scores"] = 0;
-    $_SESSION["foldplau"] = !defval($_REQUEST["showau"], 0);
-    $_SESSION["foldplanonau"] = !defval($_REQUEST["showanonau"], 0);
-    $_SESSION["foldplabstract"] = !defval($_REQUEST["showabstract"], 0);
-    $_SESSION["foldpltags"] = !defval($_REQUEST["showtags"], 0);
+    $_SESSION["foldplau"] = !defval($_REQUEST, "showau", 0);
+    $_SESSION["foldplanonau"] = !defval($_REQUEST, "showanonau", 0);
+    $_SESSION["foldplabstract"] = !defval($_REQUEST, "showabstract", 0);
+    $_SESSION["foldpltags"] = !defval($_REQUEST, "showtags", 0);
 }
 if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
     $_SESSION["scores"] = 0;
@@ -532,8 +532,8 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
 // set up the search form
 if (isset($_REQUEST["redisplay"]))
     $activetab = 3;
-else if (defval($_REQUEST["qx"], "") != "" || defval($_REQUEST["qa"], "") != ""
-	 || defval($_REQUEST["qt"], "n") != "n" || defval($_REQUEST["opt"], 0) > 0)
+else if (defval($_REQUEST, "qx", "") != "" || defval($_REQUEST, "qa", "") != ""
+	 || defval($_REQUEST, "qt", "n") != "n" || defval($_REQUEST, "opt", 0) > 0)
     $activetab = 2;
 else
     $activetab = 1;
@@ -558,7 +558,7 @@ echo "<table id='searchform' class='tablinks$activetab'>
 
 // Basic Search
 echo "<form method='get' action='search.php'><div class='inform'>
-  <input id='searchform1_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" tabindex='1' /> &nbsp;in &nbsp;$tselect &nbsp;
+  <input id='searchform1_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /> &nbsp;in &nbsp;$tselect &nbsp;
   <input class='button' name='go' type='submit' value='Search' />
 </div></form>";
 
@@ -587,7 +587,7 @@ if ($Me->privChair)
     $qtOpt["ac"] = "Authors, collaborators";
 if ($Me->canViewAllReviewerIdentities($Conf))
     $qtOpt["re"] = "Reviewers";
-if (!isset($qtOpt[defval($_REQUEST["qt"], "")]))
+if (!isset($qtOpt[defval($_REQUEST, "qt", "")]))
     $_REQUEST["qt"] = "n";
 foreach ($qtOpt as $v => $text)
     echo "<option value='$v'", ($v == $_REQUEST["qt"] ? " selected='selected'" : ""), ">$text</option>";
@@ -596,14 +596,14 @@ echo "</select></td>
 <tr><td><div class='xsmgap'></div></td></tr>
 <tr>
   <td class='lxcaption'>With <b>any</b> of the words</td>
-  <td class='lentry'><input id='searchform2_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST["q"], "")), "\" tabindex='1' /><span class='sep'></span></td>
+  <td class='lentry'><input id='searchform2_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /><span class='sep'></span></td>
   <td rowspan='3'><input class='button' type='submit' value='Search' tabindex='2' /></td>
 </tr><tr>
   <td class='lxcaption'>With <b>all</b> the words</td>
-  <td class='lentry'><input class='textlite' type='text' size='40' name='qa' value=\"", htmlspecialchars(defval($_REQUEST["qa"], "")), "\" tabindex='1' /></td>
+  <td class='lentry'><input class='textlite' type='text' size='40' name='qa' value=\"", htmlspecialchars(defval($_REQUEST, "qa", "")), "\" tabindex='1' /></td>
 </tr><tr>
   <td class='lxcaption'><b>Without</b> the words</td>
-  <td class='lentry'><input class='textlite' type='text' size='40' name='qx' value=\"", htmlspecialchars(defval($_REQUEST["qx"], "")), "\" tabindex='1' /></td>
+  <td class='lentry'><input class='textlite' type='text' size='40' name='qx' value=\"", htmlspecialchars(defval($_REQUEST, "qx", "")), "\" tabindex='1' /></td>
 </tr>
 <tr>
   <td class='lxcaption'></td>
@@ -625,7 +625,7 @@ if ($Conf->blindSubmission() <= 1 || $viewAccAuthors) {
     echo "<input type='checkbox' name='showau' value='1'";
     if ($Conf->blindSubmission() == 1 && (!$pl || !($pl->headerInfo["authors"] & 1)))
 	echo " disabled='disabled'";
-    if (defval($_SESSION["foldplau"], 1) == 0)
+    if (defval($_SESSION, "foldplau", 1) == 0)
 	echo " checked='checked'";
     echo " onclick='fold(\"pl\",!this.checked,1)";
     if ($viewAccAuthors)
@@ -636,7 +636,7 @@ if ($Conf->blindSubmission() >= 1 && $Me->privChair && !$viewAccAuthors) {
     echo "<input type='checkbox' name='showanonau' value='1'";
     if (!$pl || !($pl->headerInfo["authors"] & 2))
 	echo " disabled='disabled'";
-    if (defval($_SESSION["foldplanonau"], 1) == 0)
+    if (defval($_SESSION, "foldplanonau", 1) == 0)
 	echo " checked='checked'";
     echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;",
 	($Conf->blindSubmission() == 1 ? "Anonymous authors" : "Authors"),
@@ -644,7 +644,7 @@ if ($Conf->blindSubmission() >= 1 && $Me->privChair && !$viewAccAuthors) {
 }
 if ($pl && $pl->headerInfo["abstracts"]) {
     echo "<input type='checkbox' name='showabstract' value='1'";
-    if (defval($_SESSION["foldplabstract"], 1) == 0)
+    if (defval($_SESSION, "foldplabstract", 1) == 0)
 	echo " checked='checked'";
     echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<br />\n";
 }
@@ -652,7 +652,7 @@ if ($Me->isPC && $pl && $pl->headerInfo["tags"]) {
     echo "<input type='checkbox' name='showtags' value='1'";
     if (($_REQUEST["t"] == "a" && !$Me->privChair) || !$pl->headerInfo["tags"])
 	echo " disabled='disabled'";
-    if (defval($_SESSION["foldpltags"], 1) == 0)
+    if (defval($_SESSION, "foldpltags", 1) == 0)
 	echo " checked='checked'";
     echo " onclick='foldtags(\"pl\",!this.checked,4)' />&nbsp;Tags<br />\n";
 }
@@ -660,7 +660,7 @@ echo "</td>";
 if ($pl && isset($pl->scoreMax)) {
     echo "<td class='pad'>";
     $rf = reviewForm();
-    $theScores = defval($_SESSION["scores"], 1);
+    $theScores = defval($_SESSION, "scores", 1);
     $seeAllScores = ($Me->amReviewer() && $_REQUEST["t"] != "a");
     for ($i = 0; $i < PaperList::FIELD_NUMSCORES; $i++) {
 	$score = $reviewScoreNames[$i];
@@ -679,7 +679,7 @@ if ($pl && isset($pl->scoreMax)) {
     echo "<tr><td colspan='3'><div class='smgap'></div><b>Sort scores by:</b> &nbsp;<select name='scoresort'>";
     foreach (array("Minshall score", "Average", "Variance", "Max &minus; min") as $k => $v) {
 	echo "<option value='$k'";
-	if (defval($_SESSION["scoresort"], 0) == $k)
+	if (defval($_SESSION, "scoresort", 0) == $k)
 	    echo " selected='selected'";
 	echo ">$v</option>";
     }

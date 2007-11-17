@@ -14,7 +14,7 @@ $Me->goIfInvalid();
 
 // Determine the intended paper
 
-$final = (defval($_REQUEST['final'], 0) != 0);
+$final = (defval($_REQUEST, 'final', 0) != 0);
 
 if (isset($_REQUEST['paperId']))
     $paperId = cvtint($_REQUEST["paperId"]);

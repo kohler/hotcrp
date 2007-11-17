@@ -9,7 +9,7 @@ require_once('../Code/search.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair('../index.php');
-$kind = defval($_REQUEST["kind"], "a");
+$kind = defval($_REQUEST, "kind", "a");
 if ($kind != "a" && $kind != "c")
     $kind = "a";
 if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))

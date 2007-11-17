@@ -98,8 +98,8 @@ if ($getaction == "address" && isset($papersel)) {
 
 // set scores to view
 if (isset($_REQUEST["redisplay"])) {
-    $_SESSION["foldpplaff"] = !defval($_REQUEST["showaff"], 0);
-    $_SESSION["foldppltopics"] = !defval($_REQUEST["showtop"], 0);
+    $_SESSION["foldpplaff"] = !defval($_REQUEST, "showaff", 0);
+    $_SESSION["foldppltopics"] = !defval($_REQUEST, "showtop", 0);
     $_SESSION["pplscores"] = 0;
 }
 if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
@@ -166,7 +166,7 @@ if (count($tOpt) > 1) {
     if (isset($pl->scoreMax)) {
 	echo "<td class='pad'>";
 	$rf = reviewForm();
-	$theScores = defval($_SESSION["pplscores"], 1);
+	$theScores = defval($_SESSION, "pplscores", 1);
 	for ($i = 0; $i < ContactList::FIELD_NUMSCORES; $i++) {
 	    $score = $reviewScoreNames[$i];
 	    if (in_array($score, $rf->fieldOrder)) {
@@ -183,7 +183,7 @@ if (count($tOpt) > 1) {
 	echo "<tr><td colspan='3'><div class='smgap'></div><b>Sort scores by:</b> &nbsp;<select name='scoresort'>";
 	foreach (array("Average", "Variance", "Max &minus; min") as $k => $v) {
 	    echo "<option value='", $k + 1, "'";
-	    if (defval($_SESSION["pplscoresort"], 1) == $k + 1)
+	    if (defval($_SESSION, "pplscoresort", 1) == $k + 1)
 		echo " selected='selected'";
 	    echo ">$v</option>";
 	}

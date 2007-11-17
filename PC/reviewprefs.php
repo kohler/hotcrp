@@ -98,9 +98,9 @@ the paper title.</p>");
 
 // set options to view
 if (isset($_REQUEST["redisplay"])) {
-    $_SESSION["foldplau"] = !defval($_REQUEST["showau"], 0);
-    $_SESSION["foldplanonau"] = !defval($_REQUEST["showanonau"], 0);
-    $_SESSION["foldplabstract"] = !defval($_REQUEST["showabstract"], 0);
+    $_SESSION["foldplau"] = !defval($_REQUEST, "showau", 0);
+    $_SESSION["foldplanonau"] = !defval($_REQUEST, "showanonau", 0);
+    $_SESSION["foldplabstract"] = !defval($_REQUEST, "showabstract", 0);
 }
 
 
@@ -148,7 +148,7 @@ if ($Conf->blindSubmission() <= 1) {
     echo "<input type='checkbox' name='showau' value='1'";
     if ($Conf->blindSubmission() == 1 && !($pl->headerInfo["authors"] & 1))
 	echo " disabled='disabled'";
-    if (defval($_SESSION["foldplau"], 1) == 0)
+    if (defval($_SESSION, "foldplau", 1) == 0)
 	echo " checked='checked'";
     echo " onclick='fold(\"pl\",!this.checked,1)' />&nbsp;Authors<br />\n";
 }
@@ -156,7 +156,7 @@ if ($Conf->blindSubmission() >= 1 && $Me->privChair) {
     echo "<input type='checkbox' name='showanonau' value='1'";
     if (!($pl->headerInfo["authors"] & 2))
 	echo " disabled='disabled'";
-    if (defval($_SESSION["foldplanonau"], 1) == 0)
+    if (defval($_SESSION, "foldplanonau", 1) == 0)
 	echo " checked='checked'";
     echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;",
 	($Conf->blindSubmission() == 1 ? "Anonymous authors" : "Authors"),
@@ -164,7 +164,7 @@ if ($Conf->blindSubmission() >= 1 && $Me->privChair) {
 }
 if ($pl->headerInfo["abstracts"]) {
     echo "<input type='checkbox' name='showabstract' value='1'";
-    if (defval($_SESSION["foldplabstract"], 1) == 0)
+    if (defval($_SESSION, "foldplabstract", 1) == 0)
 	echo " checked='checked'";
     echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<br />\n";
 }

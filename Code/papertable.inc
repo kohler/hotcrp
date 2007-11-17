@@ -35,9 +35,9 @@ class PaperTable {
 	$this->useRequest = $useRequest;
 
 	$this->foldState = 3;
-	if ($foldsession && !defval($_SESSION["fold${foldsession}a"], 1))
+	if ($foldsession && !defval($_SESSION, "fold${foldsession}a", 1))
 	    $this->foldState &= ~1;
-	if ($foldsession && !defval($_SESSION["fold${foldsession}p"], 1))
+	if ($foldsession && !defval($_SESSION, "fold${foldsession}p", 1))
 	    $this->foldState &= ~2;
 	
 	$this->allFolded = $allFolded;
@@ -235,9 +235,9 @@ class PaperTable {
 	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0);
 	
 	echo "<tr class='pt_paper'>\n  ", $this->tdCaption('paper');
-	if (defval($Opt['disablePS']) > 0)
+	if (defval($Opt, 'disablePS') > 0)
 	    echo "PDF file";
-	else if (defval($Opt['disablePDF']) > 0)
+	else if (defval($Opt, 'disablePDF') > 0)
 	    echo "PostScript file";
 	else
 	    echo "PDF/PostScript file";
@@ -247,8 +247,8 @@ class PaperTable {
 
 	echo ($final ? "Final copy:&nbsp; " : ""),
 	    "<input class='textlite' type='file' name='paperUpload' accept='",
-	    (defval($Opt['disablePDF']) > 0 ? "" : "application/pdf "),
-	    (defval($Opt['disablePS']) > 0 ? "" : "application/postscript "),
+	    (defval($Opt, 'disablePDF') > 0 ? "" : "application/pdf "),
+	    (defval($Opt, 'disablePS') > 0 ? "" : "application/postscript "),
 	    "' size='30' onchange='highlightUpdate()";
 	if (!$final)
 	    echo ";fold(\"isready\",0)";
@@ -258,7 +258,7 @@ class PaperTable {
 	
 	if (!$final) {
 	    if ($this->useRequest)
-		$checked = defval($_REQUEST["submit"]);
+		$checked = defval($_REQUEST, "submit");
 	    else if ($Conf->setting('sub_freeze'))
 		$checked = $prow && $prow->timeSubmitted > 0;
 	    else
@@ -438,10 +438,11 @@ class PaperTable {
 
     function echoOptions($prow, $showAll) {
 	global $Conf;
-	if ((!$this->editable && defval($prow->optionIds, "") == "")
+	$prow_optionIds = isset($prow->optionIds) ? $prow->optionIds : "";
+	if ((!$this->editable && $prow_optionIds == "")
 	    || !($opt = paperOptions()))
 	    return;
-	$optsel = array_flip(explode(",", defval($prow->optionIds, "")));
+	$optsel = array_flip(explode(",", $prow_optionIds));
 	if ($this->editable) {
 	    foreach ($opt as $o) {
 		echo "<tr class='pt_option'>\n";
@@ -482,7 +483,7 @@ class PaperTable {
 	if ($this->editable) {
 	    foreach ($pcm as $id => $p) {
 		$c = "<input type='checkbox' name='pcc$id' value='1'";
-		if (defval($conflict[$id]) > 0) {
+		if (defval($conflict, $id) > 0) {
 		    $c .= " checked='checked'";
 		    if ($conflict[$id] != CONFLICT_AUTHORMARK)
 			$c .= " disabled='disabled'";
@@ -502,7 +503,7 @@ class PaperTable {
 	    
 	} else {
 	    foreach ($pcm as $id => $p)
-		if (defval($conflict[$id]))
+		if (defval($conflict, $id))
 		    $pcconfs[] = contactHtml($p->firstName, $p->lastName);
 	    if ($prow->pcPaper)
 		$pcconfs[] = "<b>PC paper</b>";
@@ -516,7 +517,7 @@ class PaperTable {
 	if ($prow->leadContactId) {
 	    $pc = pcMembers();
 	    echo "<tr class='pt_conflict'><td class='caption'>Discussion lead</td><td class='entry'>";
-	    if (($row = defval($pc[$prow->leadContactId], null)))
+	    if (($row = defval($pc, $prow->leadContactId, null)))
 		echo contactHtml($row->firstName, $row->lastName);
 	    else
 		echo "(Unknown contact ID!)";
@@ -528,7 +529,7 @@ class PaperTable {
 	if ($prow->shepherdContactId) {
 	    $pc = pcMembers();
 	    echo "<tr class='pt_conflict'><td class='caption'>Shepherd</td><td class='entry'>";
-	    if (($row = defval($pc[$prow->shepherdContactId], null)))
+	    if (($row = defval($pc, $prow->shepherdContactId, null)))
 		echo contactHtml($row->firstName, $row->lastName);
 	    else
 		echo "(Unknown contact ID!)";
@@ -538,7 +539,7 @@ class PaperTable {
 
     function echoTags($prow, $site = null) {
 	global $Conf, $ConfSiteBase, $Me;
-	$t = defval($prow->paperTags, "");
+	$t = isset($prow->paperTags) ? $prow->paperTags : "";
 	if ($site || $t) {
 	    // Note that tags MUST NOT contain HTML special characters.
 	    $t = str_replace('#0', '', $t);

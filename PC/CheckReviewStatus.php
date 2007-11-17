@@ -204,7 +204,7 @@ if ($result) {
 
 	if ($review_row[2] <= 0) {
 	  print "<INPUT type=checkbox NAME=nagList[] VALUE='$requestId'";
-	  if (defval($nagMe[$requestId])) {
+	  if (defval($nagMe, $requestId)) {
 	    print " CHECKED";
 	  }
 	  print ">";

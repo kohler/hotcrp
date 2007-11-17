@@ -94,10 +94,10 @@ $Conf = new Conference();
 $Opt["globalSessionLifetime"] = ini_get('session.gc_maxlifetime');
 if (!isset($Opt["sessionLifetime"]))
     $Opt["sessionLifetime"] = 86400;
-ini_set('session.gc_maxlifetime', defval($Opt["sessionLifetime"], 86400));
+ini_set('session.gc_maxlifetime', defval($Opt, "sessionLifetime", 86400));
 
 // Allow lots of memory.
-ini_set('memory_limit', defval($Opt["memoryLimit"], "128M"));
+ini_set('memory_limit', defval($Opt, "memoryLimit", "128M"));
 
 
 session_name($Opt['sessionName']);

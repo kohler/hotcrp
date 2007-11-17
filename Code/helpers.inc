@@ -3,8 +3,11 @@
 // HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-function defval(&$var, $defval = null) {
-    return (isset($var) ? $var : $defval);
+function defval($var, $idx, $defval = null) {
+    if (is_array($var))
+	return (isset($var[$idx]) ? $var[$idx] : $defval);
+    else
+	return (isset($var->$idx) ? $var->$idx : $defval);
 }
 
 function vtrim(&$var) {
@@ -184,7 +187,7 @@ function paperDownload($prow, $final = false, $conf = null) {
     if ($prow->timeSubmitted <= 0 && !$Me->canDownloadPaper($prow, $conf))
 	return "";
     
-    $mimetype = defval($prow->mimetype, "");
+    $mimetype = defval($prow, "mimetype", "");
     $p = $conf->makeDownloadPath($prow->paperId, $mimetype, $final);
     if ($mimetype == "application/postscript")
 	$x = "<a href=\"$p\" class='q'>" . $Conf->cacheableImage("postscript24.png", "[PS]", null, "dlimg");
@@ -211,7 +214,7 @@ function topicTable($prow, $active = 0, $conf = null) {
 
     // read from paper row if appropriate
     if ($paperId > 0 && $active < 0 && isset($prow->topicIds)) {
-	$top = $rf->webTopicArray($prow->topicIds, defval($prow->topicInterest));
+	$top = $rf->webTopicArray($prow->topicIds, defval($prow, "topicInterest"));
 	$out = "<table class='rpad'><tr>\n	<td>";
 	$colheight = (int) ((count($top) + 1) / 2);
 	for ($i = 0; $i < count($top); $i++) {
@@ -286,10 +289,10 @@ function _cleanContactText(&$f, &$l, &$e) {
 	if ($e === null && isset($f->email))
 	    $e = $f->email;
 	if (isset($f->lastName) || isset($f->firstName)) {
-	    $l = defval($f->lastName, "");
-	    $f = defval($f->firstName, "");
+	    $l = defval($f, "lastName", "");
+	    $f = defval($f, "firstName", "");
 	} else {
-	    $l = defval($f->fullName, "");
+	    $l = defval($f, "fullName", "");
 	    $f = "";
 	}
     }
@@ -363,8 +366,8 @@ function oldestListNumber($listid = "") {
 	else if ($listid && $_SESSION["l"][$i]["listid"] == $listid)
 	    return $i;
 	else if (!$oldest
-		 || (defval($_SESSION["l"][$i]['timestamp'])
-		     < defval($_SESSION["l"][$oldest]['timestamp'])))
+		 || (defval($_SESSION["l"][$i], 'timestamp')
+		     < defval($_SESSION["l"][$oldest], 'timestamp')))
 	    $oldest = $i;
     return $oldest;
 }
@@ -425,7 +428,7 @@ function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
 	    . "#" . $list[$k - 1] . "</a>";
     if (isset($list["description"])) {
 	$x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
-	if (defval($list["url"]))
+	if (defval($list, "url"))
 	    $x .= "<a href=\"${ConfSiteBase}" . htmlspecialchars($list["url"]) . "\">" . $list["description"] . "</a>";
 	else
 	    $x .= $listinfo["description"];

@@ -10,7 +10,7 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $rf = reviewForm();
 $useRequest = isset($_REQUEST["afterLogin"]);
-$forceShow = (defval($_REQUEST["forceShow"]) && $Me->privChair ? "&amp;forceShow=1" : "");
+$forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair ? "&amp;forceShow=1" : "");
 
 
 // header
@@ -231,7 +231,7 @@ function refuseReview() {
     $result = $Conf->qe("delete from PaperReview where reviewId=$rrow->reviewId", $while);
     if (!$result)
 	return;
-    $reason = defval($_REQUEST['reason'], "");
+    $reason = defval($_REQUEST, 'reason', "");
     $result = $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($rrow->paperId, $rrow->contactId, $rrow->requestedBy, '" . sqlqtrim($reason) . "')", $while);
     if (!$result)
 	return;
@@ -296,7 +296,7 @@ if (isset($_REQUEST['setoutcome'])) {
 if (isset($_REQUEST["settags"])) {
     if ($Me->canSetTags($prow, $Conf, $forceShow)) {
 	require_once("Code/tags.inc");
-	setTags($prow->paperId, defval($_REQUEST["tags"], ""), 'p', $Me->privChair);
+	setTags($prow->paperId, defval($_REQUEST, "tags", ""), 'p', $Me->privChair);
 	loadRows();
     } else
 	$Conf->errorMsg("You cannot set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Override conflict</a>)" : ""));
@@ -320,9 +320,9 @@ if ($Me->privChair && $prow->conflictType > 0 && !$Me->canViewReview($prow, null
 
 
 // mode
-if (defval($_REQUEST["mode"]) == "edit")
+if (defval($_REQUEST, "mode") == "edit")
     $mode = "edit";
-else if (defval($_REQUEST["mode"]) == "view")
+else if (defval($_REQUEST, "mode") == "view")
     $mode = "view";
 else if ($rrow && ($Me->canReview($prow, $rrow, $Conf)
 		   || ($Me->privChair && ($prow->conflictType == 0 || $forceShow))))
@@ -517,7 +517,7 @@ function reviewView($prow, $rrow, $editMode) {
   <td class='caption'>Anonymity</td>
   <td class='entry'><div class='hint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won't know who wrote the review).</div>
     <input type='checkbox' name='blind' value='1'";
-	    if ($useRequest ? defval($_REQUEST['blind']) : (!$rrow || $rrow->reviewBlind))
+	    if ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))
 		echo " checked='checked'";
 	    echo " />&nbsp;Anonymous review</td>\n</tr>\n";
 	}

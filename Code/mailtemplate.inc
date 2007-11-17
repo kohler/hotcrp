@@ -346,10 +346,10 @@ class Mailer {
 	$this->ifstack = array();
 	$this->text = "";
 	$this->textstart = 0;
-	$this->reason = defval($rest["reason"], "");
-	$this->rrow = defval($rest["rrow"], null);
-	$this->reviewNumber = defval($rest["reviewNumber"], "");
-	$this->commentId = defval($rest["commentId"], null);
+	$this->reason = defval($rest, "reason", "");
+	$this->rrow = defval($rest, "rrow", null);
+	$this->reviewNumber = defval($rest, "reviewNumber", "");
+	$this->commentId = defval($rest, "commentId", null);
 	$this->statistics = null;
 	$this->width = 75;
     }
@@ -415,13 +415,14 @@ class Mailer {
 	}
 
 	if ($what == "%REVIEWDEADLINE%") {
-	    if (defval($this->row->reviewType) <= 0 && $Conf->setting("pcrev_soft") != $Conf->setting("extrev_soft")) {
+	    $row_reviewType = isset($this->row->reviewType) ? $this->row->reviewType : null;
+	    if ($row_reviewType <= 0 && $Conf->setting("pcrev_soft") != $Conf->setting("extrev_soft")) {
 		if ($isbool && ($Conf->setting("pcrev_soft") > 0) == ($Conf->setting("extrev_soft") > 0))
 		    return $Conf->setting("pcrev_soft") > 0;
 		else
 		    return ($isbool ? null : $what);
 	    }
-	    $what = "%DEADLINE(" . (defval($this->row->reviewType) >= REVIEW_PC ? "pcrev_soft" : "extrev_soft") . ")%";
+	    $what = "%DEADLINE(" . ($row_reviewType >= REVIEW_PC ? "pcrev_soft" : "extrev_soft") . ")%";
 	    $len = strlen($what);
 	}
 	if ($len > 12 && substr($what, 0, 10) == "%DEADLINE(" && substr($what, $len - 2) == ")%") {
@@ -491,7 +492,7 @@ class Mailer {
 	    return $this->reason;
 
 	// rest is only there if we have a real paper
-	if (!$this->row || defval($this->row->paperId) <= 0)
+	if (!$this->row || defval($this->row, "paperId") <= 0)
 	    return ($isbool ? false : $what);
 
 	if ($what == "%TITLE%")
@@ -508,8 +509,8 @@ class Mailer {
 	    return $this->reviewNumber;
 	if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
 	    if (paperBlind($this->row)
-		&& defval($this->row->conflictType) < CONFLICT_AUTHOR
-		&& defval($this->contact->conflictType) < CONFLICT_AUTHOR)
+		&& defval($this->row, "conflictType") < CONFLICT_AUTHOR
+		&& defval($this->contact, "conflictType") < CONFLICT_AUTHOR)
 		return ($isbool ? false : "Hidden for blind review");
 	    cleanAuthor($this->row);
 	    return $this->row->authorInformation;
@@ -517,7 +518,7 @@ class Mailer {
 
 	if ($what == "%REVIEWAUTHOR%" && $this->otherContact) {
 	    if (reviewBlind($this->rrow)
-		&& defval($this->contact->privChair) <= 0
+		&& defval($this->contact, "privChair") <= 0
 		&& (!isset($this->contact->canViewReviewerIdentity)
 		    || !$this->contact->canViewReviewerIdentity($this->row, $this->rrow, $Conf, true)))
 		return ($isbool ? false : "Hidden for blind review");
@@ -641,7 +642,7 @@ class Mailer {
 	    $emailTo = $rest["emailTo"];
 	if (!$emailTo || !$emailTo->email)
 	    return $Conf->errorMsg("no email in Mailer::send");
-	$headers = defval($rest["headers"], "");
+	$headers = defval($rest, "headers", "");
 	if ($headers && substr($headers, strlen($headers) - 2) != "\r\n")
 	    $headers .= "\r\n";
 	$headers .= "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n";

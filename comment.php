@@ -70,11 +70,11 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
 
 // set watch preference action
 if (isset($_REQUEST['setwatch']) && $prow) {
-    $ajax = defval($_REQUEST["ajax"], 0);
+    $ajax = defval($_REQUEST, "ajax", 0);
     if (!$Me->privChair
 	|| ($contactId = cvtint($_REQUEST["contactId"])) <= 0)
 	$contactId = $Me->contactId;
-    if (defval($_REQUEST['watch']))
+    if (defval($_REQUEST, 'watch'))
 	$q = "insert into PaperWatch (paperId, contactId, watch) values ($prow->paperId, $contactId, " . (WATCH_COMMENTSET | WATCH_COMMENT) . ") on duplicate key update watch = watch | " . (WATCH_COMMENTSET | WATCH_COMMENT);
     else
 	$q = "insert into PaperWatch (paperId, contactId, watch) values ($prow->paperId, $contactId, " . WATCH_COMMENTSET . ") on duplicate key update watch = (watch | " . WATCH_COMMENTSET . ") & " . (~WATCH_COMMENT & 127);
@@ -149,11 +149,11 @@ function saveComment($text) {
     global $Me, $Conf, $prow, $crow, $savedCommentId;
 
     // options
-    $forReviewers = (defval($_REQUEST["forReviewers"]) ? 1 : 0);
-    $forAuthors = (defval($_REQUEST["forAuthors"]) ? 1 : 0);
+    $forReviewers = (defval($_REQUEST, "forReviewers") ? 1 : 0);
+    $forAuthors = (defval($_REQUEST, "forAuthors") ? 1 : 0);
     $blind = 0;
     if ($Conf->blindReview() > 1
-	|| ($Conf->blindReview() == 1 && defval($_REQUEST["blind"])))
+	|| ($Conf->blindReview() == 1 && defval($_REQUEST, "blind")))
 	$blind = 1;
     if (isset($_REQUEST["response"])) {
 	$forAuthors = 2;
@@ -211,11 +211,11 @@ function saveResponse($text) {
     saveComment($text);
 }
 
-if (isset($_REQUEST['submit']) && defval($_REQUEST['response'])) {
+if (isset($_REQUEST['submit']) && defval($_REQUEST, 'response')) {
     if (!$Me->canRespond($prow, $crow, $Conf, $whyNot, true)) {
 	$Conf->errorMsg(whyNotText($whyNot, "respond"));
 	$useRequest = true;
-    } else if (!($text = defval($_REQUEST['comment'])) && !$crow) {
+    } else if (!($text = defval($_REQUEST, 'comment')) && !$crow) {
 	$Conf->errorMsg("Enter a comment.");
 	$useRequest = true;
     } else {
@@ -229,7 +229,7 @@ if (isset($_REQUEST['submit']) && defval($_REQUEST['response'])) {
     if (!$Me->canSubmitComment($prow, $crow, $Conf, $whyNot)) {
 	$Conf->errorMsg(whyNotText($whyNot, "comment"));
 	$useRequest = true;
-    } else if (!($text = defval($_REQUEST['comment'])) && !$crow) {
+    } else if (!($text = defval($_REQUEST, 'comment')) && !$crow) {
 	$Conf->errorMsg("Enter a comment.");
 	$useRequest = true;
     } else {
@@ -249,7 +249,7 @@ if (isset($_REQUEST['submit']) && defval($_REQUEST['response'])) {
 
 
 // forceShow
-if (defval($_REQUEST['forceShow']) && $Me->privChair)
+if (defval($_REQUEST, 'forceShow') && $Me->privChair)
     $forceShow = "&amp;forceShow=1";
 else
     $forceShow = "";
@@ -259,7 +259,7 @@ else
 if (isset($_REQUEST["settags"])) {
     if ($Me->canSetTags($prow, $Conf, $forceShow)) {
 	require_once("Code/tags.inc");
-	setTags($prow->paperId, defval($_REQUEST["tags"], ""), 'p', $Me->privChair);
+	setTags($prow->paperId, defval($_REQUEST, "tags", ""), 'p', $Me->privChair);
 	loadRows();
     } else
 	$Conf->errorMsg("You cannot set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Override conflict</a>)" : ""));
@@ -411,7 +411,7 @@ function commentView($prow, $crow, $editMode) {
   <td class='caption'></td>
   <td class='entry'><textarea name='comment' rows='10' cols='80'>";
 	if ($useRequest)
-	    echo htmlspecialchars(defval($_REQUEST['comment']));
+	    echo htmlspecialchars(defval($_REQUEST, 'comment'));
 	else if ($crow)
 	    echo htmlspecialchars($crow->comment);
 	echo "</textarea></td>
@@ -420,18 +420,18 @@ function commentView($prow, $crow, $editMode) {
 <tr>
   <td class='caption'>Visibility</td>
   <td class='entry'>For PC and: <input type='checkbox' name='forReviewers' value='1'";
-	if ($useRequest ? defval($_REQUEST['forReviewers']) : (!$crow || $crow->forReviewers))
+	if ($useRequest ? defval($_REQUEST, 'forReviewers') : (!$crow || $crow->forReviewers))
 	    echo " checked='checked'";
 	echo " />&nbsp;Reviewers &nbsp;
     <input type='checkbox' name='forAuthors' value='1'";
-	if ($useRequest ? defval($_REQUEST['forAuthors']) : ($crow && $crow->forAuthors))
+	if ($useRequest ? defval($_REQUEST, 'forAuthors') : ($crow && $crow->forAuthors))
 	    echo " checked='checked'";
 	echo " />&nbsp;Authors\n";
 
 	// blind?
 	if ($Conf->blindReview() == 1) {
 	    echo "<span class='lgsep'></span><input type='checkbox' name='blind' value='1'";
-	    if ($useRequest ? defval($_REQUEST['blind']) : (!$crow || $crow->blind))
+	    if ($useRequest ? defval($_REQUEST, 'blind') : (!$crow || $crow->blind))
 		echo " checked='checked'";
 	    echo " />&nbsp;Anonymous to authors\n";
 	}

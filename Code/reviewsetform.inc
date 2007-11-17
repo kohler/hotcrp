@@ -235,7 +235,7 @@ function rf_show() {
 		   "worlds2005" => "WORLDS 2005 workshop",
 		   "cgo2004" => "CGO 2004 conference") as $k => $v) {
 	echo "<option value='$k'";
-	if ($k == defval($_REQUEST['sample'], 'none'))
+	if ($k == defval($_REQUEST, 'sample', 'none'))
 	    echo " selected='selected'";
 	echo ">$v</option>";
     }
@@ -248,17 +248,17 @@ function rf_show() {
 
     $out = array();
     while ($row = edb_orow($result)) {
-	$order = defval($_REQUEST["order_$row->fieldName"], $row->sortOrder);
+	$order = defval($_REQUEST, "order_$row->fieldName", $row->sortOrder);
 	if ($order < 0)
 	    $order = 100;
-	$sn = defval($_REQUEST["shortName_$row->fieldName"], $row->shortName);
+	$sn = defval($_REQUEST, "shortName_$row->fieldName", $row->shortName);
 	$out[sprintf("%03d.%s", $order, strtolower($sn))] = $row;
     }
 
     ksort($out);
     $ordinalOrder = 0;
     foreach ($out as $row) {
-	$order = defval($_REQUEST["order_$row->fieldName"], $row->sortOrder);
+	$order = defval($_REQUEST, "order_$row->fieldName", $row->sortOrder);
 	if ($order >= 0)
 	    $order = $ordinalOrder++;
 	echo rf_formFieldText($row, $order, count($out));
