@@ -34,7 +34,7 @@ function doCreateAccount() {
 
     if ($Me->valid()) {
 	$email_class = " error";
-	return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ".  To retrieve your password, select \"I forgot my password, email it to me\".");
+	return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ".  To retrieve your password, select &ldquo;I forgot my password, email it to me.&rdquo;");
     }
 
     $result = $Me->initialize($_REQUEST["email"], $Conf);

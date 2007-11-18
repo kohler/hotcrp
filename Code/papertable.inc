@@ -472,6 +472,7 @@ class PaperTable {
 	if ($this->editable && !$Conf->setting("sub_pcconf"))
 	    return;
 	$pcm = ($admins ? pcMembersAndAdmins() : pcMembers());
+	$conflict = array();
 	if (!count($pcm))
 	    return;
 	if ($prow) {
