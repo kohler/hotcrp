@@ -257,9 +257,22 @@ class Contact {
 	$contactId = $conf->lastInsertId("while creating contact");
 	if (!$contactId)
 	    return false;
+	
 	// update paper authorship based on authorInformation fields
 	// (ignore errors)
-	$conf->q("insert into PaperConflict (paperId, contactId, conflictType) select paperId, $contactId, " . CONFLICT_AUTHOR . " from Paper where authorInformation like '%	" . sqlq_for_like($this->email) . "	%' on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")");
+	$addAuthor = array();
+	$result = $conf->q("select paperId, authorInformation from Paper where authorInformation like '%	" . sqlq_for_like($this->email) . "	%'");
+	while (($row = edb_orow($result))) {
+	    cleanAuthor($row);
+	    foreach ($row->authorTable as $au)
+		if (strcasecmp($au[2], $this->email) == 0) {
+		    $addAuthor[] = "($row->paperId, $contactId, " . CONFLICT_AUTHOR . ")";
+		    break;
+		}
+	}
+	if (count($addAuthor))
+	    $conf->q("insert into PaperConflict (paperId, contactId, conflictType) values " . join(", ", $addAuthor) . " on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")");
+	
 	return $this->lookupByEmail($this->email, $conf);
     }
 
