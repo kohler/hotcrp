@@ -1,3 +1,142 @@
+2007-11-18 Sunday 15:51  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.151), Code/papertable.inc (1.97): minor nits and
+	  fewer warnings
+
+2007-11-17 Saturday 19:55  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/contact.inc (1.143): Be careful not to grant access to
+	  someone who, for some reason, uses an email address for their
+	  last name.
+
+2007-11-17 Saturday 13:56  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.65), assign.php (1.79), autoassign.php (1.24),
+	  comment.php (1.49), contacts.php (1.19), help.php (1.57),
+	  index.php (1.150), log.php (1.6), login.php (1.39), mail.php
+	  (1.22), mergeaccounts.php (1.38), offline.php (1.29), paper.php
+	  (1.148), review.php (1.117), search.php (1.122), settings.php
+	  (1.58), Chair/AssignPapers.php (1.47), Chair/SetReviewForm.php
+	  (1.38), Code/conference.inc (1.227), Code/contact.inc (1.142),
+	  Code/contactlist.inc (1.25), Code/header.inc (1.49),
+	  Code/helpers.inc (1.180), Code/mailtemplate.inc (1.30),
+	  Code/paperlist.inc (1.146), Code/papertable.inc (1.96),
+	  Code/review.inc (1.84), Code/search.inc (1.66), Download/GetPaper
+	  (1.18), Download/GetPaper.php (1.18), PC/CheckReviewStatus.php
+	  (1.19), PC/reviewprefs.php (1.39): The old defval() definition
+	  was dangerous, since it added new elements to an array.  Shift to
+	  a definition that does not.  No change in functionality
+	  hopefully.
+
+2007-11-14 Wednesday 10:22  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/header.inc (1.48): minor cleanup
+
+2007-11-14 Wednesday 10:19  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/: conference.inc (1.226), papertable.inc (1.95): treat
+	  disable{PDF,PS} consistently
+
+2007-11-13 Tuesday 18:28  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.64): Whoops!  Fix logic bug with no visible effect
+
+2007-11-12 Monday 22:36  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* contacts.php (1.18), deadlines.php (1.30), index.php (1.149),
+	  login.php (1.38), style.css (1.209), tarball.sh (1.66),
+	  Code/conference.inc (1.225), Code/contact.inc (1.141),
+	  Code/helpers.inc (1.179), Code/mailtemplate.inc (1.29): Cleaner
+	  sign-in procedure uses the index.php page only.  Also, people who
+	  havent yet logged in can see some conference information,
+	  including deadlines and program committee members.
+
+2007-11-12 Monday 22:34  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.57): cleaner wording
+
+2007-11-09 Friday 10:05  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* search.php (1.121): tiny change appears to silence a warning
+
+2007-10-31 Wednesday 16:59  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/createdb.sh (1.18): test nit: doublequote more variables
+
+2007-10-31 Wednesday 13:02  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/createdb.sh (1.17): improve createdb.sh sed usage to avoid
+	  problems on NetBSD, others
+
+2007-10-29 Monday 20:12  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* review.php (1.116): deal better with paper forms that miss paper
+	  IDs
+
+2007-10-29 Monday 20:09  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* review.php (1.115), Code/review.inc (1.83): print the correct
+	  reviewer in downloaded text forms
+
+2007-10-29 Monday 19:53  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.78): don't show the Note to reviewer box if the
+	  conference doesnt support it
+
+2007-10-29 Monday 19:52  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.77), Code/conference.inc (1.224),
+	  Code/mailtemplate.inc (1.28), Code/schema.sql (1.102),
+	  images/ass2.png (1.3), images/ass2n.png (1.2): At Stefan's
+	  request, add a button that creates a new, completely anonymous
+	  review.  Also add an optional note to the reviewer.  Also some
+	  visual cleanups on the assignments page.
+
+2007-10-29 Monday 18:15  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/contact.inc (1.140): make short status for PC members
+	  correctly nonverbose
+
+2007-10-29 Monday 18:07  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* style.css (1.208): My Profile link color change
+
+2007-10-27 Saturday 23:52  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* mail.php (1.21): minor, minor UI nit
+
+2007-10-27 Saturday 19:12  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* search.php (1.120): avoid more undefined variable warnings
+
+2007-10-27 Saturday 18:41  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/paperlist.inc (1.145): bar separator style
+
+2007-10-27 Saturday 17:11  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.14): include a bit more in 2.11
+
+2007-10-27 Saturday 17:09  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/conference.inc (1.223): allow PC to download submitted
+	  papers if submissions arent open, regardless of the state of the
+	  submission deadline (Arun Venkataramani/NSDI)
+
+2007-10-27 Saturday 17:09  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.56): complain on odd setting combination (Arun
+	  Venkataramani/NSDI)
+
+2007-10-27 Saturday 17:08  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* search.php (1.119): downloading a paper checks whether user can
+	  download a paper
+
+2007-10-27 Saturday 16:25  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.13), tarball.sh (1.65): to 2.11
+
 2007-10-27 Saturday 16:14  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* account.php (1.63), autoassign.php (1.23), help.php (1.56),
