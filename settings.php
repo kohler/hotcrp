@@ -246,6 +246,7 @@ function doOptions($set) {
 	    $Values["options"] = true;
 	return;
     }
+    $while = "while updating options";
     
     $ochange = false;
     $anyo = false;
