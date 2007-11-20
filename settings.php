@@ -221,11 +221,13 @@ function doTopics($set) {
 	$Values["topics"] = true;
 	return;
     }
-
+    $while = "while updating topics";
+    
+    $numnew = defval($_REQUEST, "newtopcount", 50);
     foreach ($_REQUEST as $k => $v) {
 	if (!($k[0] == "t" && $k[1] == "o" && $k[2] == "p"))
 	    continue;
-	if ($k[3] == "n" && $v != "")
+	if ($k[3] == "n" && $v != "" && cvtint(substr($k, 4), 100) <= $numnew)
 	    $Conf->qe("insert into TopicArea (topicName) values ('" . sqlq($v) . "')", $while);
 	else if (($k = cvtint(substr($k, 3), -1)) >= 0) {
 	    if ($v == "") {
@@ -609,20 +611,20 @@ function doOptGroup() {
 
     // Topics
     echo "<hr /><h3>Topics</h3>\n";
-    echo "Enter topics one per line.  Authors use checkboxes to identify the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its text.  Add topics in batches of up to 3 at a time.\n";
-    echo "<div class='smgap'></div><table>";
+    echo "Enter topics one per line.  Authors use checkboxes to identify the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its text.\n";
+    echo "<div class='smgap'></div><table id='newtoptable'>";
     $td1 = "<td class='lcaption'>Current</td>";
     foreach ($rf->topicOrder as $tid => $crap) {
-	echo "<tr>$td1<td><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($rf->topicName[$tid]), "\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
-	$td1 = "<td class='lcaption'><br /></td>";
+	echo "<tr>$td1<td class='lentry'><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($rf->topicName[$tid]), "\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
+	$td1 = "<td></td>";
     }
-    $td1 = "<td class='lcaption'>New</td>";
-    for ($i = 1; $i <= 3; $i++) {
-	echo "<tr>$td1<td><input type='text' class='textlite' name='topn$i' value=\"\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
-	$td1 = "<td class='lcaption'><br /></td>";
+    $td1 = "<td class='lcaption' rowspan='40'>New<br /><small><a href='javascript:authorfold(\"newtop\",1,1)'>More</a> | <a href='javascript:authorfold(\"newtop\",1,-1)'>Fewer</a></small></td>";
+    for ($i = 1; $i <= 40; $i++) {
+	echo "<tr id='newtop$i' class='auedito'>$td1<td class='lentry'><input type='text' class='textlite' name='topn$i' value=\"\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
+	$td1 = "";
     }
-
-    echo "</table>\n";
+    echo "</table><input id='newtopcount' type='hidden' name='newtopcount' value='40' />";
+    $Conf->echoScript("authorfold(\"newtop\",0,3)");
 }
 
 // Reviews

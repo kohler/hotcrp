@@ -313,7 +313,7 @@ class PaperTable {
 		"<td class='lentry'><input class='textlite' type='text' name='auaff$n' size='30' onchange='highlightUpdate()' value=\"", htmlspecialchars($au[3]), "\" /></td></tr>\n";
 	}
 	echo "</table><input id='aueditcount' type='hidden' name='aueditcount' value='25' />";
-	$Conf->echoScript("authorfold(" . max(count($authorTable) + 1, 5) . ")");
+	$Conf->echoScript("authorfold(\"auedit\",0," . max(count($authorTable) + 1, 5) . ")");
     }
 
     function echoAuthorInformation($prow) {
@@ -327,7 +327,7 @@ class PaperTable {
 	    "<a href=\"javascript:fold('authors', 1, 8)\" class='foldbutton folder8'>&ndash;</a> ";
 	echo "Authors";
 	if ($this->editable)
-	    echo "<br /><small><a href='javascript:authorfold(numauthorfold+1)'>More</a> | <a href='javascript:authorfold(numauthorfold-1)'>Fewer</a></small>";
+	    echo "<br /><small><a href='javascript:authorfold(\"auedit\",1,1)'>More</a> | <a href='javascript:authorfold(\"auedit\",1,-1)'>Fewer</a></small>";
 	echo "</td>\n  ", $this->tdEntry("authorInformation");
 	if ($this->editable)
 	    $this->echoEditableAuthors($prow);

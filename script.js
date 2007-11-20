@@ -196,28 +196,30 @@ function selassign(elt, which) {
 
 
 // author entry
-var numauthorfold = 50;
-function authorfold(n) {
+var numauthorfold = [];
+function authorfold(prefix, relative, n) {
     var elt;
+    if (relative)
+	n += numauthorfold[prefix];
     if (n <= 1)
 	n = 1;
     for (var i = 1; i <= n; i++)
-	if ((elt = e("auedit" + i)) && elt.className == "aueditc")
+	if ((elt = e(prefix + i)) && elt.className == "aueditc")
 	    elt.className = "auedito";
 	else if (!elt)
 	    n = i - 1;
-    for (var i = n + 1; i < 50; i++)
-	if ((elt = e("auedit" + i)) && elt.className == "auedito")
+    for (var i = n + 1; i <= 50; i++)
+	if ((elt = e(prefix + i)) && elt.className == "auedito")
 	    elt.className = "aueditc";
 	else if (!elt)
 	    break;
     // set number displayed
-    elt = e("aueditcount");
+    elt = e(prefix + "count");
     if (elt)
 	elt.value = n;
-    numauthorfold = n;
+    numauthorfold[prefix] = n;
     // IE won't actually do the fold unless we yell at it
-    elt = e("auedittable");
+    elt = e(prefix + "table");
     if (document.recalc && elt)
 	try {
 	    elt.innerHTML = elt.innerHTML + "";
