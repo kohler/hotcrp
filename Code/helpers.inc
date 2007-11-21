@@ -906,7 +906,7 @@ function maybeSearchPaperId($base, $me) {
     }
 
     // if you can't search, or it looks like a number, don't search
-    if (!$me->isPC || preg_match('/^\s*\d+\s*$/s', $_REQUEST["paperId"]))
+    if (!$me->isPC || preg_match('/^\s*[1-9]\d*\s*$/s', $_REQUEST["paperId"]))
 	return false;
 
     // actually try to search
