@@ -269,7 +269,7 @@ class PaperTable {
 		($checked ? " checked='checked'" : ""),
 		"/>&nbsp;";
 	    if ($Conf->setting('sub_freeze'))
-		echo "<strong>This is the final submission.</strong></td></tr><tr><td></td><td><small>You must submit a final version before the deadline or your paper will not be reviewed.  Once you submit a final version you will not be able to make further changes.</small>";
+		echo "</td><td><strong>This is the final submission.</strong></td></tr><tr><td></td><td><small>You must submit a final version before the deadline or your paper will not be reviewed.  Once you submit a final version you will not be able to make further changes.</small>";
 	    else
 		echo "The paper is ready for review.";
 	    echo "</td></tr></table></div>\n";

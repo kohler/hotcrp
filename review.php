@@ -506,7 +506,7 @@ function reviewView($prow, $rrow, $editMode) {
 	if ($rrow && $rrow->contactId != $Me->contactId)
 	    $Conf->infoMsg("You didn't write this review, but as an administrator you can still make changes.");
 	echo "<input class='button_small' type='submit' value='Download", ($editMode ? " form" : ""), "' name='downloadForm' id='downloadForm' />";
-	echo "<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp; <input class='button_small' type='submit' value='Upload form' name='uploadForm' />";
+	echo "Upload form:&nbsp; <input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp; <input class='button_small' type='submit' value='Go' name='uploadForm' />";
 	echo "</td>\n</tr>\n";
     }
     

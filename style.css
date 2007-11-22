@@ -3,10 +3,8 @@
 /* Distributed under an MIT-like license; see LICENSE */
 
 /* page background */
-body, input, button, textarea, select {
-	font-family: verdana, tahoma, sans-serif;
-}
 body {
+	font-family: verdana, tahoma, sans-serif;
 	font-size: 11pt;
 	color: black;
 	margin: 0px;
@@ -124,7 +122,7 @@ a.q {
 /* body */
 div.body {
 	margin: 2px 8px;
-	background-color: white;
+	background-color: #ffffff;
 	position: relative;
 	z-index: 3;
 }
@@ -227,8 +225,6 @@ input.button, button, a.button {
 	border-left: 2px solid #eeee66;
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
-	padding: 0px 6px;
-	/*margin: 3px 0px;*/
 	text-decoration: none;
 	color: black;
 	white-space: nowrap;
@@ -239,7 +235,6 @@ input.button_default, button.button_default {
 	border-left: 2px solid #eeee66;
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
-	margin: 3px 0px;
 	white-space: nowrap;
 }
 
@@ -423,12 +418,10 @@ div.gopaper {
 	margin-bottom: 0em;
 }
 form.gopaper input.button {
-	padding: 0px;
 	border-top: 1px solid #eeee66;
 	border-left: 2px solid #eeee66;
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
-	margin: 0px 0px;
 }
 
 
@@ -452,7 +445,6 @@ input.button_default_alert {
 a.download, a.rev_start, a.rev_comp, a.rev_edit, a.rev_view,
 input.button_small, a.button_small, button.button_small {
 	font-size: smaller;
-	padding: 1px 0.25em;
 	background: #ffffbb;
 	border-top: 1px solid #eeee66;
 	border-left: 2px solid #eeee66;
@@ -462,10 +454,13 @@ input.button_small, a.button_small, button.button_small {
 	color: black;
 	white-space: nowrap;
 }
+a.button, a.button_small, a.download, a.button_small_alert,
+a.rev_start, a.rev_comp, a.rev_edit, a.rev_view {
+	padding: 1px 0.25em;
+}
 input.button_small_alert, a.button_small_alert, button.button_small_alert {
 	font-size: smaller;
 	font-weight: bold;
-	padding: 1px 0.25em;
 	background: #ffaaaa;
 	border-top: 1px solid #ee6666;
 	border-left: 2px solid #ee6666;
@@ -565,7 +560,7 @@ tr.topspace td.caption {
 tr.id td.caption {
 	border-bottom: 1px solid #9999cc;
 	border-right: none;
-	background: white;
+	background: #ffffff;
 	color: black;
 }
 table.comment tr.id td.entry, table.review tr.id td.entry {
@@ -686,9 +681,12 @@ span.textlite {
 	background: #fcfcfc;
 }
 input.textlite, input.textlite-tt, textarea {
-	border: solid 1px #aaaadd;
-	padding: 0px 0px 0px 4px;
+	/*border: solid 1px #aaaadd;
+	padding: 0px 0px 0px 4px;*/
 	background: #fcfcfc;
+}
+textarea {
+	font-family: verdana, tahoma, sans-serif;
 }
 input.textlite-tt, textarea.tt {
 	font-family: monospace;

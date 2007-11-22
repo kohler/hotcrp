@@ -452,7 +452,7 @@ function goPaperForm($baseUrl = "paper.php", $args = array()) {
     if (isset($CurrentList) && $CurrentList > 0)
 	$x .= "<input type='hidden' name='ls' value='$CurrentList' />";
     $x .= "#<input class='textlite' type='text' size='6' name='paperId' />";
-    $x .= "&nbsp;<input class='button' type='submit' name='go' value='Search' /></div></form>";
+    $x .= "&nbsp; <input class='button' type='submit' name='go' value='Search' /></div></form>";
     return $x;
 }
 
