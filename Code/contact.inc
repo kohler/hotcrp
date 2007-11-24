@@ -20,7 +20,6 @@ class Contact {
     var $faxPhoneNumber;
     var $password;
     var $note;
-    var $anyTopicInterest;
     var $defaultWatch;
 
     // Address information (loaded separately)
@@ -146,7 +145,6 @@ class Contact {
 	foreach (self::_addressKeys() as $k)
 	    $this->$k = null;
 	$this->note = 0;
-	$this->anyTopicInterest = 0;
 	$this->defaultWatch = 0;
 
 	$this->roles = 0;
@@ -292,7 +290,6 @@ class Contact {
 	    $this->password = $fromdb->password;
 	    $this->note = $fromdb->note;
 	    $this->collaborators = $fromdb->collaborators;
-	    $this->anyTopicInterest = isset($fromdb->topicId);
 	    $this->defaultWatch = defval($fromdb, "defaultWatch", 0);
 
 	    $this->shortConfName = $conf->shortName;
@@ -307,16 +304,13 @@ class Contact {
     }
 
     function lookupByEmail($email, $conf) {
-	return $this->updateFromQuery(sprintf(
-		"select ContactInfo.*, TopicInterest.topicId from ContactInfo
-		left join TopicInterest using (contactId)
-		where email='%s' limit 0,1", sqlqtrim($email)), $conf);
+	return $this->updateFromQuery("select ContactInfo.* from ContactInfo
+		where email='" . sqlqtrim($email) . "'", $conf);
     }
 
     function lookupById($contactId, $conf) {
-	return $this->updateFromQuery("select ContactInfo.*, TopicInterest.topicId from ContactInfo
-		left join TopicInterest using (contactId)
-		where ContactInfo.contactId=$contactId limit 0,1", $conf);
+	return $this->updateFromQuery("select ContactInfo.* from ContactInfo
+		where ContactInfo.contactId=$contactId", $conf);
     }
 
     function lookupAddress($conf) {
@@ -333,7 +327,7 @@ class Contact {
     function makeMinicontact($o) {
 	// If you change this function, search for its callers to ensure
 	// they provide all necessary information.
-	$c = new Contact;
+	$c = new Contact();
 	$c->invalidate();
 	$c->contactId = $o->contactId;
 	$c->firstName = defval($o, "firstName", '');

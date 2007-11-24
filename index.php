@@ -162,7 +162,7 @@ if ($Me->valid() && (($_SESSION["AskedYouToUpdateContactInfo"] < 2
 		      && !($Me->lastName && $Me->affiliation))
 		     || ($_SESSION["AskedYouToUpdateContactInfo"] < 3 
 			 && ($Me->roles & Contact::ROLE_PC)
-			 && !($Me->collaborators || $Me->anyTopicInterest)))) {
+			 && !$Me->collaborators))) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 1;
     $Me->go("account.php?redirect=1");
 }

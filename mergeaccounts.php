@@ -9,13 +9,13 @@ $Me->goIfInvalid();
 $MergeError = "";
 
 function crpmergeone($table, $field, $oldid, $newid) {
-    global $Conf;
+    global $Conf, $MergeError;
     if (!$Conf->q("update $table set $field=$newid where $field=$oldid"))
 	$MergeError .= $Conf->dbErrorText(true, "", 0);
 }
 
 function crpmergeonex($table, $field, $oldid, $newid) {
-    global $Conf;
+    global $Conf, $MergeError;
     if (!$Conf->q("update $table set $field=$newid where $field=$oldid")
 	&& !$Conf->q("delete from $table where $field=$oldid"))
 	$MergeError .= $Conf->dbErrorText(true, "", 0);
@@ -92,7 +92,6 @@ if (isset($_REQUEST["merge"])) {
 	    crpmergeone("ActionLog", "contactId", $oldid, $newid);
 	    crpmergeone("TopicInterest", "contactId", $oldid, $newid);
 	    crpmergeone("PaperComment", "contactId", $oldid, $newid);
-	    crpmergeone("PaperGrade", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReview", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReview", "requestedBy", $oldid, $newid);
 	    crpmergeone("PaperReviewArchive", "contactId", $oldid, $newid);
