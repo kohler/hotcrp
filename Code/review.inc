@@ -146,9 +146,9 @@ class ReviewForm {
 		$x .= " textarea";
 	    $x .= "'>" . htmlspecialchars($this->shortName[$field]);
 	    if ($this->authorView[$field] < 0)
-		$x .= "<br /><span class='hint'>Chairs only</span>";
+		$x .= "<br /><span class='hint'>(chairs only)</span>";
 	    else if ($this->authorView[$field] == 0)
-		$x .= "<br /><span class='hint'>PC only</span>";
+		$x .= "<br /><span class='hint'>(hidden from authors)</span>";
 	    $x .= "</td>\n";
 	    
 	    $x .= "  <td class='entry'>";
@@ -469,10 +469,12 @@ $blind\n";
 
 	    $x .= "\n==+== " . chr(64 + $i) . ". " . $this->shortName[$field];
 	    if ($this->authorView[$field] < 0)
-		$x .= " (Chairs only)";
+		$x .= " (chairs only)";
 	    else if ($this->authorView[$field] == 0)
-		$x .= " (PC only)";
+		$x .= " (hidden from authors)";
 	    $x .= "\n";
+	    if (defval($this->description, $field))
+		$x .= wordWrapIndent($this->description[$field], "==-==    ", "==-==    ") . "\n";
 	    if (isset($this->options[$field]) && $myReview) {
 		$x .= "==-== Enter a number from 1 to " . count($this->options[$field]) . ".\n";
 		foreach ($this->options[$field] as $num => $value) {
@@ -625,7 +627,8 @@ $blind\n";
 		    $field = "anonymity";
 		    $mode = 1;
 		} else if (preg_match('/^==\+== [A-Z]\.\s*(.*?)\s*$/', $line, $match)) {
-		    $fname = str_replace(" (PC only)", "", $match[1]);
+		    $fname = str_replace(" (hidden from authors)", "", $match[1]);
+		    $fname = str_replace(" (PC only)", "", $fname);
 		    $fn =& $this->fieldName[strtolower($fname)];
 		    if (isset($fn)) {
 			$field = $fn;
@@ -738,9 +741,9 @@ $blind\n";
 		}
 	    }
 	    if ($this->authorView[$field] < 0)
-		$x .= "<br /><span class='hint'>Chairs only</span>";
+		$x .= "<br /><span class='hint'>(chairs only)</span>";
 	    else if ($this->authorView[$field] == 0)
-		$x .= "<br /><span class='hint'>PC only</span>";
+		$x .= "<br /><span class='hint'>(hidden from authors)</span>";
 	    $x .= "</td>\n";
 	    
 	    $x .= "  <td class='entry rev_$field";
