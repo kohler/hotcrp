@@ -393,27 +393,27 @@ class PaperList extends BaseList {
 	} else
 	    return "";
     }
+
+    function _paperLink($row) {
+	global $Conf;
+	if (($pl = $this->paperLink))
+	    return $pl;
+	if (($row->reviewCount && $this->contact->canViewReview($row, null, $Conf))
+	    || ($this->contact->isPC && $this->contact->canReview($row, null, $Conf)))
+	    return "review";
+	return "paper";
+    }
     
     function content($fieldId, $row, $reviewList) {
 	global $ConfSiteBase, $Conf, $reviewTypeName, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
-	    if (!($pl = $this->paperLink)) {
-		if ($row->reviewCount && $this->contact->canViewReview($row, null, $Conf))
-		    $pl = "review";
-		else
-		    $pl = "paper";
-	    }
+	    $pl = $this->_paperLink($row);
 	    return "<a href='${ConfSiteBase}$pl.php?paperId=$row->paperId" . $this->paperLinkArgs . "' tabindex='4'>#$row->paperId</a>";
 	case self::FIELD_REVIEWID:
 	    return "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "' tabindex='4'>#$row->paperId" . unparseReviewOrdinal($row->reviewOrdinal) . "</a>";
 	case self::FIELD_TITLE:
-	    if (!($pl = $this->paperLink)) {
-		if ($row->reviewCount && $this->contact->canViewReview($row, null, $Conf))
-		    $pl = "review";
-		else
-		    $pl = "paper";
-	    }
+	    $pl = $this->_paperLink($row);
 	    return "<a href='${ConfSiteBase}$pl.php?paperId=$row->paperId" . $this->paperLinkArgs . "' tabindex='5'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_REVIEWTITLE:
 	    return "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "' tabindex='5'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);

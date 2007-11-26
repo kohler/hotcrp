@@ -648,12 +648,13 @@ function doRevGroup() {
     // PC reviews
     echo "<h3>PC reviews</h3>\n";
 
-    doCheckbox('pcrev_any', 'PC members can review <i>any</i> submitted paper');
-
-    echo "<div class='smgap'></div>\n<table>\n";
+    echo "<table>\n";
     doDateRow("pcrev_soft", "Soft deadline", "pcrev_hard");
     doDateRow("pcrev_hard", "Hard deadline");
     echo "</table>\n";
+
+    echo "<div class='smgap'></div>\n";
+    doCheckbox('pcrev_any', 'PC members can review <i>any</i> submitted paper');
 
     echo "<div class='smgap'></div>\n<table>\n";
     doCheckbox('pc_seeallrev', "<b>PC can see all reviews</b> except for conflicts<br /><small>When unchecked, a PC member can see reviews for a paper only after submitting their own review for that paper.</small>", true);

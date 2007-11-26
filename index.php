@@ -286,7 +286,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     }
     if ($myrow) {
 	if ($myrow[2] == 1 && $myrow[1] <= 1)
-	   echo "You ", ($myrow[1] == 1 ? "have" : "have not"), " submitted your <a href='search.php?q=&amp;t=r'>1 review</a>";
+	   echo "You ", ($myrow[1] == 1 ? "have" : "have not"), " submitted your <a href='search.php?q=&amp;t=r'>review</a>";
 	else
 	   echo "You have submitted ", $myrow[1], " of <a href='search.php?q=&amp;t=r'>", $myrow[2], " ", ($myrow[2] == 1 ? "review" : "reviews"), "</a>";
 	if (in_array("overAllMerit", $rf->fieldOrder) && $myrow[1])
