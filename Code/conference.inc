@@ -717,7 +717,8 @@ class Conference {
 		MyPaperReview.reviewType as myReviewType,
 		MyPaperReview.reviewSubmitted as myReviewSubmitted,
 		MyPaperReview.reviewNeedsSubmit as myReviewNeedsSubmit";
-	}
+	} else
+	    $pq .= ",\nnull as myReviewType";
 	if (isset($options['reviewerName']))
 	    $pq .= ",
 		ReviewerContactInfo.firstName as reviewFirstName,
