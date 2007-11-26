@@ -255,7 +255,7 @@ class ReviewForm {
 	    if (isset($req[$field])) {
 		$fval = $req[$field];
 		if (!isset($this->options[$field])) {
-		    $fval = preg_replace("/\\A\\s*(.*?)\\s*\\Z/", '$1', $fval);
+		    $fval = rtrim($fval);
 		    if ($fval != "")
 			$fval .= "\n";
 		    $req[$field] = $fval;
