@@ -233,7 +233,7 @@ function requestReview($email) {
 
     // send confirmation email
     require_once("Code/mailtemplate.inc");
-    Mailer::send("@requestreview", $prow, $Them, $Requester, array("headers" => "Cc: " . contactEmailTo($Requester), "reason" => $reason));
+    Mailer::send("@requestreview", $prow, $Them, $Requester, array("reason" => $reason));
 
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
