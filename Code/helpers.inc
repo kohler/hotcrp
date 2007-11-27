@@ -1013,9 +1013,15 @@ function splitName($name) {
 	if (!preg_match('@^(Esq\.?|Ph\.?D\.?|M\.?[SD]\.?|Esquire|Junior|Senior|Jr.?|Sr.?|I+)$@i', $first))
 	    return array($first, trim(substr($name, 0, $p1)));
     }
-    if (preg_match('@(\bvon\s+|\bvan\s+)?[^\s,]+(\s+Jr\.?|\s+Sr\.?|\s+i+|\s+Ph\.?D\.?|\s+M\.?[SD]\.?)?(,.*)?\s*$@i', $name, $matches))
-	return array(trim(substr($name, 0, strlen($name) - strlen($matches[0]))), trim($matches[0]));
-    else
+    if (preg_match('@[^\s,]+(\s+Jr\.?|\s+Sr\.?|\s+i+|\s+Ph\.?D\.?|\s+M\.?[SD]\.?)?(,.*)?\s*$@i', $name, $m)) {
+	$first = trim(substr($name, 0, strlen($name) - strlen($m[0])));
+	$last = trim($m[0]);
+	if (preg_match('@^(\S.*?)\s+(v[oa]n)$@i', $first, $m)) {
+	    $first = $m[1];
+	    $last = $m[2] . " " . $last;
+	}
+	return array($first, $last);
+    } else
 	return array("", trim($name));
 }
 
