@@ -802,11 +802,11 @@ class PaperList extends BaseList {
 	    $this->paperLink = $_REQUEST["linkto"];
 	
 	// initialize query
-	$queryOptions = array();
+	$queryOptions = array("joins" => array());
 	if ($this->search->complexSearch($queryOptions)) {
 	    if (!$this->search->search())
 		return NULL;
-	    $queryOptions["joins"] = array("Matches on (Paper.paperId=Matches.paperId)");
+	    $queryOptions["joins"][] = "join Matches on (Paper.paperId=Matches.paperId)";
 	}
 
 	// paper list query?
@@ -816,9 +816,7 @@ class PaperList extends BaseList {
 	    if ($pidarray !== null)
 		$this->sortField = self::FIELD_PIDARRAY;
 	    if ($this->search->orderTag) {
-		if (!isset($queryOptions['joins']))
-		    $queryOptions['joins'] = array();
-		$queryOptions['joins'][] = "PaperTag on (Paper.paperId=PaperTag.paperId and PaperTag.tag='" . sqlq($this->search->orderTag) . "')";
+		$queryOptions['joins'][] = "left join PaperTag on (Paper.paperId=PaperTag.paperId and PaperTag.tag='" . sqlq($this->search->orderTag) . "')";
 		$queryOptions['order'] = "order by PaperTag.tagIndex, Paper.paperId";
 	    }
 	} else if (!in_array($this->sortField, $baseFieldId))

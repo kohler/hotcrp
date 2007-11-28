@@ -779,7 +779,7 @@ class Conference {
 
 	if (isset($options['joins']))
 	    foreach ($options['joins'] as $jt)
-		$pq .= "		join $jt\n";
+		$pq .= "		$jt\n";
 	
 	$pq .= "		left join PaperReview as AllReviews on (AllReviews.paperId=Paper.paperId)\n";
 

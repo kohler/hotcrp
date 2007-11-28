@@ -128,6 +128,8 @@ class PaperSearch {
 	    $this->fields["co"] = 1;
 	if ($this->allowReviewer && $qtype == "re")
 	    $this->fields["re"] = 1;
+	if ($this->amPC && $qtype == "tag")
+	    $this->fields["tag"] = $this->fields["order"] = 1;
 
 	// the query itself
 	$this->q = trim(defval($opt, "q", ""));
@@ -270,7 +272,8 @@ class PaperSearch {
 		 || ($special ? $special == "order" : isset($this->fields['order'])))
 		&& $this->amPC) {
 		require_once("tags.inc");
-		if ($special ? $special == "order" : isset($this->fields['order']))
+		if (($special ? $special == "order" : isset($this->fields['order']))
+		    && $type != "none")
 		    $this->orderTag = ($this->orderTag === false ? $word : null);
 		$confpart = "";
 		if (!$this->privChair && $Conf->setting("tag_seeall") <= 0) {

@@ -573,20 +573,22 @@ echo "<form method='get' action='search.php'>
 <tr>
   <td class='lxcaption'>Using these fields</td>
   <td class='lentry'><select name='qt' tabindex='1'>";
-$qtOpt = array("ti" => "Title only",
-	       "ab" => "Abstract only");
+$qtOpt = array("ti" => "Title",
+	       "ab" => "Abstract");
 if ($Me->privChair || $Conf->blindSubmission() == 0) {
-    $qtOpt["au"] = "Authors only";
-    $qtOpt["n"] = "Title, abstract, authors";
+    $qtOpt["au"] = "Authors";
+    $qtOpt["n"] = "Title, abstract, and authors";
 } else if ($Conf->blindSubmission() == 1) {
-    $qtOpt["au"] = "Non-blind authors only";
-    $qtOpt["n"] = "Title, abstract, non-blind authors";
+    $qtOpt["au"] = "Non-blind authors";
+    $qtOpt["n"] = "Title, abstract, and non-blind authors";
 } else
-    $qtOpt["n"] = "Title, abstract";
+    $qtOpt["n"] = "Title and abstract";
 if ($Me->privChair)
-    $qtOpt["ac"] = "Authors, collaborators";
+    $qtOpt["ac"] = "Authors and collaborators";
 if ($Me->canViewAllReviewerIdentities($Conf))
     $qtOpt["re"] = "Reviewers";
+if ($Me->isPC)
+    $qtOpt["tag"] = "Tags";
 if (!isset($qtOpt[defval($_REQUEST, "qt", "")]))
     $_REQUEST["qt"] = "n";
 foreach ($qtOpt as $v => $text)
