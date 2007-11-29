@@ -38,7 +38,10 @@ class BaseList {
     }
 
     function _setSortRow($row, $scoreName, $scoreMax, $scoresort) {
-	if ($scoresort == 0) {
+	if ($scoresort == 4 && strlen($scoreName) > 6
+	    && ($v = defval($row, substr($scoreName, 0, -6))) > 0)
+	    $this->sortInfo[$row->paperId] = ":" . $v;
+	else if ($scoresort == 0 || $scoresort == 4) {
 	    $x = array();
 	    foreach (preg_split('/[\s,]+/', $row->$scoreName) as $i)
 		if (($i = cvtint($i)) > 0)

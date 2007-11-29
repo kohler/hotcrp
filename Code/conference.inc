@@ -698,6 +698,7 @@ class Conference {
 	$pq = "select Paper.*, PaperConflict.conflictType,
 		count(AllReviews.reviewSubmitted) as reviewCount,
 		count(AllReviews.reviewNeedsSubmit) as startedReviewCount";
+	$myPaperReview = null;
 	if (!isset($options['author'])) {
 	    $pq .= ",
 		PaperReview.reviewType,
@@ -707,16 +708,19 @@ class Conference {
 		PaperReview.reviewOrdinal,
 		PaperReview.reviewBlind,
 		PaperReview.contactId as reviewContactId";
-	    if (!$allReviewerQuery)
+	    if (!$allReviewerQuery) {
+		$myPaperReview = "PaperReview";
 		$pq .= ",
 		PaperReview.reviewType as myReviewType,
 		PaperReview.reviewSubmitted as myReviewSubmitted,
 		PaperReview.reviewNeedsSubmit as myReviewNeedsSubmit";
-	    else
+	    } else {
+		$myPaperReview = "MyPaperReview";
 		$pq .= ",
 		MyPaperReview.reviewType as myReviewType,
 		MyPaperReview.reviewSubmitted as myReviewSubmitted,
 		MyPaperReview.reviewNeedsSubmit as myReviewNeedsSubmit";
+	    }
 	} else
 	    $pq .= ",\nnull as myReviewType";
 	if (isset($options['reviewerName']))
@@ -746,9 +750,11 @@ class Conference {
 	    $pq .= ",
 		PaperTags.paperTags";
 	if (isset($options['scores'])) {
-	    foreach ($options['scores'] as $field)
-		$pq .= ",
-		PaperScores.${field}Scores";
+	    foreach ($options['scores'] as $field) {
+		$pq .= ",\n		PaperScores.${field}Scores";
+		if ($myPaperReview)
+		    $pq .= ",\n		$myPaperReview.$field";
+	    }
 	}
 	if (isset($options['topicInterestScore']))
 	    $pq .= ",
@@ -1208,7 +1214,7 @@ class Conference {
 	    && !preg_match('/@_\.com$/', $email);
     }
     
-    function textValuesGraph($v, $max, $style) {
+    function textValuesGraph($v, $max, $style, $myscore = 0) {
 	global $ConfSiteBase;
 	
 	if (is_string($v))
@@ -1220,6 +1226,8 @@ class Conference {
 	for ($key = 1; $key <= $v->max; $key++)
 	    $url .= ($url == "" ? "" : ",") . $v->v[$key];
 	$url = "${ConfSiteBase}images/GenChart.php?v=$url";
+	if ($myscore && $v->v[$myscore] > 0)
+	    $url .= "&h=$myscore";
 
 	if ($style == 0) {
 	    $retstr = "<table><tr><td align=\"center\">";

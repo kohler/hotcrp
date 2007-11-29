@@ -512,7 +512,7 @@ if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
 }
 if (isset($_REQUEST["scoresort"])) {
     $_SESSION["scoresort"] = cvtint($_REQUEST["scoresort"]);
-    if ($_SESSION["scoresort"] < 0 || $_SESSION["scoresort"] > 3)
+    if ($_SESSION["scoresort"] < 0 || $_SESSION["scoresort"] > 4)
 	$_SESSION["scoresort"] = 0;
 }
     
@@ -679,7 +679,7 @@ if ($pl && isset($pl->scoreMax)) {
 echo "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
 if ($pl && isset($pl->scoreMax)) {
     echo "<tr><td colspan='3'><div class='smgap'></div><b>Sort scores by:</b> &nbsp;<select name='scoresort'>";
-    foreach (array("Minshall score", "Average", "Variance", "Max &minus; min") as $k => $v) {
+    foreach (array("Minshall score", "Average", "Variance", "Max &minus; min", "My score") as $k => $v) {
 	echo "<option value='$k'";
 	if (defval($_SESSION, "scoresort", 0) == $k)
 	    echo " selected='selected'";

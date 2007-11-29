@@ -26,6 +26,12 @@ foreach (explode(",", $_REQUEST["v"]) as $value) {
     $maxY = max($value, $maxY);
     $sum += $value;
 }
+if (isset($_REQUEST["h"]) && is_numeric($_REQUEST["h"]))
+    $valLight = intval($_REQUEST["h"]);
+else
+    $valLight = $valMin - 1;
+if ($valLight < $valMin || $valLight >= $valMax)
+    $valLight = $valMin - 1;
 
 // set shape constants
 if ($s == 0) {
@@ -64,29 +70,36 @@ if ($s == 0) {
     imagefilledrectangle($pic, $picWidth, $picHeight - $blockHeight - $blockPad, $picWidth + 1, $picHeight + 1, $cgrey);
 }
 
-$cbad = array(200, 128, 128);
-$cgood = array(0, 240, 0);
+$cv_black = array(0, 0, 0);
+$cv_bad = array(200, 128, 128);
+$cv_good = array(0, 232, 0);
+function quality_color($c1, $c2, $f) {
+    return array($c2[0] * $f + $c1[0] * (1 - $f),
+		 $c2[1] * $f + $c1[1] * (1 - $f),
+		 $c2[2] * $f + $c1[2] * (1 - $f));
+}
 
 $pos = 0;
 
 for ($value = $valMin; $value < $valMax; $value++) {
     $height = $values[$value];
     $frac = ($value - $valMin) / ($valMax - $valMin);
-    $cFill = imagecolorallocate($pic,
-				$cgood[0] * $frac + $cbad[0] * (1 - $frac),
-				$cgood[1] * $frac + $cbad[1] * (1 - $frac),
-				$cgood[2] * $frac + $cbad[2] * (1 - $frac));
+    $cv_cur = quality_color($cv_bad, $cv_good, $frac);
+    $cFill = imagecolorallocate($pic, $cv_cur[0], $cv_cur[1], $cv_cur[2]);
 
     if ($s == 0 || $s == 1) {
-	
 	$curX = $blockWidth * ($value - $valMin)
 	    + $blockPad * ($value - $valMin + 1) + $textWidth;
-	$curY = $picHeight - $blockSkip;
+	$curY = $picHeight - ($blockHeight + $blockSkip) * $height + $blockHeight;
 
 	for ($h = 1; $h <= $height; $h++) {
+	    if ($h == $height && $value == $valLight) {
+		$cv_cur = quality_color($cv_black, $cv_cur, 0.5);
+		$cFill = imagecolorallocate($pic, $cv_cur[0], $cv_cur[1], $cv_cur[2]);
+	    }
 	    imagefilledrectangle($pic, $curX, $curY - $blockHeight,
 				 $curX + $blockWidth, $curY, $cFill);
-	    $curY -= ($blockHeight + $blockSkip);
+	    $curY += ($blockHeight + $blockSkip);
 	}
     } else {
 	if ($height > 0)

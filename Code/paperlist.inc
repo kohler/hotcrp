@@ -273,7 +273,7 @@ class PaperList extends BaseList {
 		    $this->sortInfo[$row->paperId] = self::LOTSAZEROS;
 		else
 		    $this->_setSortRow($row, $scoreName, $scoreMax, $scoresort);
-	    usort($rows, array($this, ($scoresort ? "_sortScoreNum" : "_sortScore")));
+	    usort($rows, array($this, ($scoresort == 0 || $scoresort == 4 ? "_sortScore" : "_sortScoreNum")));
 	    break;
 	}
 	return $rows;
@@ -550,7 +550,7 @@ class PaperList extends BaseList {
 		$scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
 		$itemName = "${scoreName}Scores";
 		if ($row->$itemName)
-		    return $Conf->textValuesGraph($row->$itemName, $this->scoreMax[$scoreName], 1);
+		    return $Conf->textValuesGraph($row->$itemName, $this->scoreMax[$scoreName], 1, defval($row, $scoreName));
 	    }
 	    return "";
 	case self::FIELD_AUTHOR_MATCH:
