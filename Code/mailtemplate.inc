@@ -642,27 +642,30 @@ class Mailer {
 	    $emailTo = $rest["emailTo"];
 	if (!$emailTo || !$emailTo->email)
 	    return $Conf->errorMsg("no email in Mailer::send");
-	$headers = defval($rest, "headers", "");
-	if ($headers && substr($headers, strlen($headers) - 2) != "\r\n")
+	$headers = "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n" . defval($rest, "headers", "");
+	if (substr($headers, strlen($headers) - 2) != "\r\n")
 	    $headers .= "\r\n";
-	$headers .= "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n";
+	$headers .= "To: " . contactEmailTo($emailTo) . "\r\n";
 	
 	$mailer = new Mailer($row, $contact, $otherContact, $rest);
 	$m = $mailer->expand($template);
 	$m[0] = rtrim($m[0]);
 	if (preg_match("/[\x80-\xFF]/", $m[0]))
-	    $m[0] = Mailer::mimeHeaderQuote($m[0], 73 - 21);
+	    $m[0] = Mailer::mimeHeaderQuote($m[0], 73 - 21, false);
 	$m["allowEmail"] = $Conf->allowEmailTo($emailTo->email);
-	$m["to"] = contactEmailTo($emailTo);
+	$m["to"] = $emailTo->email;
 	$m["headers"] = $headers;
 	return $m;
     }
 
     function sendPrepared($preparation) {
 	global $Conf;
-	if ($preparation["allowEmail"])
-	    return mail($preparation["to"], $preparation[0], $preparation[1], $preparation["headers"] . "From: $Conf->emailFrom");
-	else
+	if ($preparation["allowEmail"]) {
+	    if (strpos($preparation["headers"], "\r\nTo: ") !== false)
+		return mail("", $preparation[0], $preparation[1], $preparation["headers"] . "From: $Conf->emailFrom");
+	    else
+		return mail($preparation["to"], $preparation[0], $preparation[1], $preparation["headers"] . "From: $Conf->emailFrom");
+	} else
 	    return $Conf->infoMsg("<pre>" . htmlspecialchars("To: " . $preparation["to"] . "\nSubject: $preparation[0]\n" . $preparation["headers"] . "\n$preparation[1]") . "</pre>");
     }
     
@@ -720,27 +723,48 @@ class Mailer {
 	}
     }
 
-    function mimeHeaderQuote($text, $len) {
+    function mimeHeaderQuote($text, $len, $stringent) {
 	// replace all special characters used by the encoder
 	$text = str_replace(array('=',   '_',   '?',   ' '),
 			    array('=3D', '=5F', '=3F', '_'), $text);
-	// replace all extended characters (\x80-xFF)
-	$text = preg_replace('#([\x80-\xFF])#e',
-			     '"=" . strtoupper(dechex(ord("\1")))', $text);
-	$xpref = "";
-	$lenregex = "|(.{0," . ($len - 2) . "}[^=][^=])|";
-	while (strlen($text) > $len) {
-	    preg_match($lenregex, $text, $m);
-	    $xpref .= "=?utf-8?q?" . $m[1] . "?=\r\n ";
-	    $text = substr($text, strlen($m[1]));
+	// replace nonsafe characters
+	if ($stringent)
+	    $matcher = '#[^-0-9a-zA-Z!*+/=_]#';
+	else
+	    $matcher = '#[\x80-\xFF]#';
+	preg_match_all($matcher, $text, $m, PREG_OFFSET_CAPTURE);
+	$ntext = "";
+	$last = 0;
+	foreach ($m[0] as $mx) {
+	    $ntext .= substr($text, $last, $mx[1] - $last)
+		. "=" . strtoupper(dechex(ord($mx[0])));
+	    $last = $mx[1] + 1;
 	}
-	return $xpref . "=?utf-8?q?" . $text . "?=";
+	$ntext .= substr($text, $last);
+	// create encoded-words
+	$xpref = "";
+	while (strlen($ntext) > $len) {
+	    $z = $len;
+	    if ($ntext[$z - 1] == '=')
+		$z += 2;
+	    else if ($ntext[$z - 2] == '=')
+		$z += 1;
+	    // skip intact UTF-8 characters
+	    while ($z < strlen($ntext)
+		   && $ntext[$z] == '='
+		   && ($chr = hexdec(substr($ntext, $z + 1, 2))) >= 128
+		   && $chr < 192)
+		$z += 3;
+	    $xpref .= "=?utf-8?q?" . substr($ntext, 0, $z) . "?=\r\n ";
+	    $ntext = substr($ntext, $z);
+	}
+	return $xpref . "=?utf-8?q?" . $ntext . "?=";
     }
 
     function mimeHeaderUnquote($text) {
 	if (strlen($text) > 2 && $text[0] == '=' && $text[1] == '?') {
 	    $out = '';
-	    while (preg_match('/\A=\?utf-8\?q\?(.*?)\?=(\r\n )?/', $text, $m)) {
+	    while (preg_match('/\A=\?utf-8\?q\?(.*?)\?=(\r?\n )?/', $text, $m)) {
 		$f = str_replace('_', ' ', $m[1]);
 		$out .= preg_replace('/=([0-9A-F][0-9A-F])/e',
 				     'chr(hexdec("\1"))', $f);
