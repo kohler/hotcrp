@@ -20,7 +20,7 @@ function doCreateAccount() {
     if (!$result)
 	return $Conf->errorMsg($Conf->dbErrorText(true, "while adding your account"));
 
-    $_SESSION["Me"]->sendAccountInfo($Conf, true, false);
+    $_SESSION["Me"]->sendAccountInfo($Conf, true, true);
     $Conf->log("Account created", $_SESSION["Me"]);
     $msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".  ";
 
@@ -42,7 +42,7 @@ function doCreateAccount() {
 	$msg .= "  A password has been emailed to this address.  When you receive that email, return here to complete the registration process.";
     else {
 	if ($Opt['sendEmail'])
-	    $msg .= "  The email address you provided seems invalid (it doesn't contain an @).";
+	    $msg .= "  The email address you provided seems invalid.";
 	else
 	    $msg .= "  The conference system is not set up to mail passwords at this time.";
 	$msg .= "  Although an account was created for you, you need the site administrator's help to retrieve your password.  The site administrator is " . htmlspecialchars("$Conf->contactName <$Conf->contactEmail>") . ".";
