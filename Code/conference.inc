@@ -304,6 +304,8 @@ class Conference {
 	return $this->settingsBetween('final_open', 'final_done', 'final_grace');
     }
     function timeAuthorViewReviews() {
+	// also used to determine when authors and conflicts can see
+	// review counts
 	return $this->settingsAfter('au_seerev');
     }
     function timeAuthorRespond() {

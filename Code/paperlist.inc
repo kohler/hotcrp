@@ -479,7 +479,10 @@ class PaperList extends BaseList {
 	    }
 	    return $a1 . $Conf->cacheableImage("ass$which.png", $alt, $alt) . $a2;
 	case self::FIELD_REVIEWS_STATUS:
-	    if ($row->reviewCount != $row->startedReviewCount)
+	    if ($row->conflictType > 0 && !$this->contact->privChair
+		&& !$Conf->timeAuthorViewReviews())
+		return "";
+	    else if ($row->reviewCount != $row->startedReviewCount)
 		return "<b>$row->reviewCount</b>/$row->startedReviewCount";
 	    else
 		return "<b>$row->reviewCount</b>";

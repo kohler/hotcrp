@@ -585,10 +585,10 @@ if ($Me->privChair || $Conf->blindSubmission() == 0) {
     $qtOpt["n"] = "Title and abstract";
 if ($Me->privChair)
     $qtOpt["ac"] = "Authors and collaborators";
-if ($Me->canViewAllReviewerIdentities($Conf))
+if ($Me->isPC) {
     $qtOpt["re"] = "Reviewers";
-if ($Me->isPC)
     $qtOpt["tag"] = "Tags";
+}
 if (!isset($qtOpt[defval($_REQUEST, "qt", "")]))
     $_REQUEST["qt"] = "n";
 foreach ($qtOpt as $v => $text)

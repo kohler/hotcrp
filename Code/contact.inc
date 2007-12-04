@@ -808,14 +808,6 @@ class Contact {
 	return $conf->timeReviewPaper($this->isPC, $prow->myReviewType || $prow->reviewId, true);
     }
 
-    function canViewNumReviews($conf) {
-	return $this->isPC;
-    }
-
-    function canViewAllReviewerIdentities($conf) {
-	return $this->isPC;
-    }
-    
     function canViewReviewerIdentity($prow, $rrow, $conf, $ignoreForceShow = false) {
 	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && !$ignoreForceShow;
 	$rrow_contactId = 0;

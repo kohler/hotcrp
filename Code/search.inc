@@ -49,13 +49,11 @@ class PaperSearch {
     const ANY_CONFLICT = 131072;
     const ANY_OPTIONS = 262144;
     const ANY_CONFLICTINFO = 524288;
-    
+
     var $contactId;
     var $privChair;
     var $amPC;
     var $limitName;
-    var $allowReviewer;
-    var $allowNumReview;
     var $allowAuthor;
     var $fields;
     var $any;
@@ -74,8 +72,6 @@ class PaperSearch {
 
 	$this->privChair = $me->privChair;
 	$this->amPC = $me->isPC;
-	$this->allowReviewer = $me->canViewAllReviewerIdentities($Conf);
-	$this->allowNumReview = $me->canViewNumReviews($Conf);
 	$this->allowAuthor = ($this->amPC && ($Conf->blindSubmission() <= 1 || $me->privChair));
 	$this->orderTag = false;
 	$this->reviewerName = false;
@@ -126,7 +122,7 @@ class PaperSearch {
 	    $this->fields["au"] = 1;
 	if ($this->privChair && $qtype == "ac")
 	    $this->fields["co"] = 1;
-	if ($this->allowReviewer && $qtype == "re")
+	if ($this->amPC && $qtype == "re")
 	    $this->fields["re"] = 1;
 	if ($this->amPC && $qtype == "tag")
 	    $this->fields["tag"] = $this->fields["order"] = 1;
@@ -165,19 +161,25 @@ class PaperSearch {
     }
     
     function _searchReviewer($word, $type, $submitted, $what = null) {
+	global $Conf;
 	$this->_searchReviewSuffixFactor($submitted, $what, $sub, $anyfac);
-	if (preg_match('/^([<>]?=?\s*)?(\d+)$/s', $word, $m) && $this->allowNumReview) {
+	if (preg_match('/^([<>]?=?\s*)?(\d+)$/s', $word, $m)) {
 	    if ($m[2] == 0 && $m[1] == "<")
 		return " or false";
 	    if ($m[2] == 0 && $m[1] == ">=")
 		return " or true";
 	    $this->any |= self::ANY_NUM_REVIEW * $anyfac;
-	    $q = ($m[1][0] == "<" ? " or (numReviews$sub is null)" : "");
+	    $and = "";
+	    if (!$this->privChair && !$Conf->timeAuthorViewReviews()) {
+		$this->any |= self::ANY_CONFLICT;
+		$and = " and conflictType is null";
+	    }
+	    $q = ($m[1][0] == "<" ? " or (numReviews$sub is null$and)" : "");
 	    if ($m[2] == 0 && (!$m[1] || $m[1] == "=" || $m[1] == "<="))
 		return $q;
 	    else
-		return $q . " or (numReviews$sub" . ($m[1] ? $m[1] : "=") . $m[2] . ")";
-	} else if (!$this->allowReviewer)
+		return $q . " or (numReviews$sub" . ($m[1] ? $m[1] : "=") . $m[2] . "$and)";
+	} else if (!$this->amPC)
 	    return "";
 	else {
 	    $this->any |= self::ANY_REVIEWER * $anyfac;
