@@ -10,16 +10,21 @@ $Me->goIfInvalid();
 $rf = reviewForm();
 $useRequest = false;
 $sawResponse = false;
+$forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair ? "&amp;forceShow=1" : "");
+$linkExtra = $forceShow;
 
 
 // header
 function confHeader() {
-    global $prow, $mode, $Conf;
+    global $prow, $mode, $Conf, $linkExtra, $CurrentList;
     if ($prow)
 	$title = "Paper #$prow->paperId Comments";
     else
 	$title = "Paper Comments";
     $Conf->header($title, "comment", actionBar($prow, false, "comment"), false);
+    if (isset($CurrentList) && $CurrentList > 0
+	&& strpos($linkExtra, "ls=") === false)
+	$linkExtra .= "&amp;ls=" . $CurrentList;
 }
 
 function errorMsgExit($msg) {
@@ -199,13 +204,13 @@ function saveComment($text) {
 }
 
 function saveResponse($text) {
-    global $Me, $Conf, $prow, $crow;
+    global $Me, $Conf, $prow, $crow, $linkExtra;
 
     // make sure there is exactly one response
     if (!$crow) {
 	$result = $Conf->qe("select commentId from PaperComment where paperId=$prow->paperId and forAuthors>1");
 	if (($row = edb_row($result)))
-	    return $Conf->errorMsg("A paper response has already been entered.  <a href=\"comment.php?commentId=$row[0]\">Edit that response</a>");
+	    return $Conf->errorMsg("A paper response has already been entered.  <a href=\"comment.php?commentId=$row[0]$linkExtra\">Edit that response</a>");
     }
 
     saveComment($text);
@@ -246,13 +251,6 @@ if (isset($_REQUEST['submit']) && defval($_REQUEST, 'response')) {
 	loadRows();
     }
 }
-
-
-// forceShow
-if (defval($_REQUEST, 'forceShow') && $Me->privChair)
-    $forceShow = "&amp;forceShow=1";
-else
-    $forceShow = "";
 
 
 // set tags action (see also review.php)
@@ -301,11 +299,11 @@ $paperTable->echoAbstractRow($prow);
 $paperTable->echoTopics($prow);
 $paperTable->echoOptions($prow, $Me->privChair);
 if ($Me->canViewTags($prow, $Conf, $forceShow))
-    $paperTable->echoTags($prow, "${ConfSiteBase}comment.php?paperId=$prow->paperId$forceShow");
+    $paperTable->echoTags($prow, "${ConfSiteBase}comment.php?paperId=$prow->paperId$linkExtra");
 if ($Me->privChair)
     $paperTable->echoPCConflicts($prow, true);
 if ($crow)
-    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><a href='comment.php?paperId=$prow->paperId'>All comments</a></td>\n</tr>\n\n";
+    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><a href='comment.php?paperId=$prow->paperId$linkExtra'>All comments</a></td>\n</tr>\n\n";
 if ($Me->privChair && $prow->conflictType > 0 && !$forceShow)
     echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><a href=\"", htmlspecialchars(selfHref(array("forceShow" => 1))), "\"><strong>Override your conflict</strong> to see all comments and allow editing</a></td>\n</tr>\n\n";
 
@@ -350,7 +348,7 @@ function commentIdentityTime($prow, $crow, &$sep) {
 }
 
 function commentView($prow, $crow, $editMode) {
-    global $Conf, $Me, $rf, $forceShow, $useRequest, $anyComment;
+    global $Conf, $Me, $rf, $forceShow, $linkExtra, $useRequest, $anyComment;
 
     if ($crow && $crow->forAuthors > 1)
 	return responseView($prow, $crow, $editMode);
@@ -367,7 +365,7 @@ function commentView($prow, $crow, $editMode) {
 	    echo "commentId=$crow->commentId";
 	else
 	    echo "paperId=$prow->paperId";
-	echo "$forceShow&amp;post=1' method='post' enctype='multipart/form-data'>\n";
+	echo "$linkExtra&amp;post=1' method='post' enctype='multipart/form-data'>\n";
     }
 
     echo "<table class='comment'>
@@ -394,7 +392,7 @@ function commentView($prow, $crow, $editMode) {
     }
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
     if ($crow && ($crow->contactId == $Me->contactId || $Me->privChair) && !$editMode)
-	echo $xsep, "<a class='button' href='comment.php?commentId=$crow->commentId'>Edit</a>";
+	echo $xsep, "<a class='button' href='comment.php?commentId=$crow->commentId$linkExtra'>Edit</a>";
     echo "</td>\n</tr>\n\n";
 
     if ($editMode && $crow && $crow->contactId != $Me->contactId) {
@@ -472,7 +470,7 @@ function commentView($prow, $crow, $editMode) {
 
 
 function responseView($prow, $crow, $editMode) {
-    global $Conf, $Me, $rf, $forceShow, $useRequest, $sawResponse;
+    global $Conf, $Me, $rf, $forceShow, $linkExtra, $useRequest, $sawResponse;
 
     if ($editMode && !$Me->canRespond($prow, $crow, $Conf))
 	$editMode = false;
@@ -485,7 +483,7 @@ function responseView($prow, $crow, $editMode) {
 	    echo "commentId=$crow->commentId";
 	else
 	    echo "paperId=$prow->paperId";
-	echo "$forceShow&amp;response=1&amp;post=1' method='post' enctype='multipart/form-data'>\n";
+	echo "$linkExtra&amp;response=1&amp;post=1' method='post' enctype='multipart/form-data'>\n";
     }
 
     echo "<table class='comment'>
@@ -499,7 +497,7 @@ function responseView($prow, $crow, $editMode) {
     commentIdentityTime($prow, $crow, $sep);
     if ($crow && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair)
 	&& !$editMode && $Me->canRespond($prow, $crow, $Conf))
-	echo $sep, "<a class='button' href='comment.php?commentId=$crow->commentId'>Edit</a>";
+	echo $sep, "<a class='button' href='comment.php?commentId=$crow->commentId$linkExtra'>Edit</a>";
     echo "</td>\n</tr>\n\n";
 
     if ($editMode) {
@@ -553,7 +551,7 @@ has passed.  Please keep the response short and to the point" . $limittext . "."
     } else {
 	echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>";
 	if ($Me->privChair && $crow->forReviewers < 1)
-	    echo "<i>The <a href='comment.php?commentId=$crow->commentId'>authors' response</a> is not yet ready for reviewers to view.</i>";
+	    echo "<i>The <a href='comment.php?commentId=$crow->commentId$linkExtra'>authors' response</a> is not yet ready for reviewers to view.</i>";
 	else if (!$Me->canViewComment($prow, $crow, $Conf))
 	    echo "<i>The authors' response is not yet ready for reviewers to view.</i>";
 	else

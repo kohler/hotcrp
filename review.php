@@ -11,16 +11,20 @@ $Me->goIfInvalid();
 $rf = reviewForm();
 $useRequest = isset($_REQUEST["afterLogin"]);
 $forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair ? "&amp;forceShow=1" : "");
+$linkExtra = $forceShow;
 
 
 // header
 function confHeader() {
-    global $prow, $mode, $Conf;
+    global $prow, $mode, $Conf, $linkExtra, $CurrentList;
     if ($prow)
 	$title = "Paper #$prow->paperId Reviews";
     else
 	$title = "Paper Reviews";
     $Conf->header($title, "review", actionBar($prow, false, "review"), false);
+    if (isset($CurrentList) && $CurrentList > 0
+	&& strpos($linkExtra, "ls=") === false)
+	$linkExtra .= "&amp;ls=" . $CurrentList;
 }
 
 function errorMsgExit($msg) {
@@ -387,7 +391,7 @@ $paperTable->echoAbstractRow($prow);
 $paperTable->echoTopics($prow);
 $paperTable->echoOptions($prow, $Me->privChair);
 if ($Me->canViewTags($prow, $Conf, $forceShow))
-    $paperTable->echoTags($prow, "${ConfSiteBase}review.php?paperId=$prow->paperId$forceShow");
+    $paperTable->echoTags($prow, "${ConfSiteBase}review.php?paperId=$prow->paperId$linkExtra");
 if ($Me->privChair)
     $paperTable->echoPCConflicts($prow, true);
 if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow)))
@@ -431,11 +435,12 @@ if ($rrow && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
 // XXX "<td class='entry'>", contactHtml($rrow), "</td>"
 
 function reviewView($prow, $rrow, $editMode) {
-    global $Conf, $ConfSiteBase, $Me, $rf, $forceShow, $useRequest, $nExternalRequests;
+    global $Conf, $ConfSiteBase, $Me, $rf, $forceShow, $linkExtra, $useRequest,
+	$nExternalRequests;
     
     $reviewLink = "review.php?"
 	. ($rrow ? "reviewId=$rrow->reviewId" : "paperId=$prow->paperId")
-	. $forceShow . "&amp;mode=edit&amp;post=1";
+	. $linkExtra . "&amp;mode=edit&amp;post=1";
     if ($editMode)
 	echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data'>\n";
     else
@@ -448,7 +453,7 @@ function reviewView($prow, $rrow, $editMode) {
 	echo " id='review$rrow->reviewId'";
     echo ">";
     if ($rrow) {
-	echo "<a href='review.php?reviewId=$rrow->reviewId$forceShow' class='q'>Review";
+	echo "<a href='review.php?reviewId=$rrow->reviewId$linkExtra' class='q'>Review";
 	if ($rrow->reviewSubmitted)
 	    echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
 	echo "</a>";
@@ -467,7 +472,7 @@ function reviewView($prow, $rrow, $editMode) {
 	$sep = $xsep;
     }
     if ($rrow) {
-	echo $sep, "<a href='review.php?paperId=$prow->paperId&amp;reviewId=$rrow->reviewId&amp;text=1$forceShow'>Text version</a>";
+	echo $sep, "<a href='review.php?paperId=$prow->paperId&amp;reviewId=$rrow->reviewId&amp;text=1$linkExtra'>Text version</a>";
 	$sep = $xsep;
     }
     if ($rrow && !$editMode && $Me->canReview($prow, $rrow, $Conf))
@@ -493,7 +498,7 @@ function reviewView($prow, $rrow, $editMode) {
 	if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType == REVIEW_SECONDARY) {
 	    echo "\n<tr class='rev_del'>\n  <td class='caption'></td>\n  <td class='entry' colspan='2'>";
 	    if ($nExternalRequests == 0)
-		echo "As a secondary reviewer, you can <a href=\"assign.php?paperId=$rrow->paperId$forceShow\">delegate this review to an external reviewer</a>, but if your external reviewer refuses to review the paper, you should complete the review yourself.";
+		echo "As a secondary reviewer, you can <a href=\"assign.php?paperId=$rrow->paperId$linkExtra\">delegate this review to an external reviewer</a>, but if your external reviewer refuses to review the paper, you should complete the review yourself.";
 	    else
 		echo "This secondary review has been delegated, but you can still complete it if you'd like.";
 	    echo "</td>\n</tr>\n";

@@ -15,9 +15,12 @@ $PC = pcMembers();
 
 // header
 function confHeader() {
-    global $prow, $Conf, $ConfSiteBase;
+    global $prow, $Conf, $ConfSiteBase, $linkExtra, $CurrentList;
     $title = ($prow ? "Paper #$prow->paperId Review Assignments" : "Paper Review Assignments");
     $Conf->header($title, "assign", actionBar($prow, false, "assign"), false);
+    if (isset($CurrentList) && $CurrentList > 0
+	&& strpos($linkExtra, "ls=") === false)
+	$linkExtra .= "&amp;ls=" . $CurrentList;
 }
 
 function errorMsgExit($msg) {
@@ -54,6 +57,7 @@ if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->privChair)
     $forceShow = "&amp;forceShow=1";
 else
     $forceShow = "";
+$linkExtra = $forceShow;
 maybeSearchPaperId("assign.php", $Me);
 getProw();
 
@@ -405,7 +409,7 @@ $paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->privCh
 
 
 // begin form and table
-echo "<form id='ass' action='assign.php?paperId=$prow->paperId&amp;post=1' method='post' enctype='multipart/form-data'>";
+echo "<form id='ass' action='assign.php?paperId=$prow->paperId&amp;post=1$linkExtra' method='post' enctype='multipart/form-data'>";
 $paperTable->echoDivEnter();
 echo "<table class='assign'>\n\n";
 

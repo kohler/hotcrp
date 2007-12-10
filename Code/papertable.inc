@@ -221,11 +221,14 @@ class PaperTable {
     }
 
     function echoEditRow($prow) {
-	global $Conf, $Me, $ConfSiteBase;
+	global $Conf, $Me, $ConfSiteBase, $CurrentList;
 	if (!$this->editable) {
 	    echo "<tr class='pt_mode'>\n";
 	    echo "  <td class='caption'></td>\n";
-	    echo "  <td class='entry'><a href=\"${ConfSiteBase}paper.php?paperId=$prow->paperId&amp;mode=edit\" class='button'>Edit paper</a></td>\n";
+	    echo "  <td class='entry'><a href=\"${ConfSiteBase}paper.php?paperId=$prow->paperId&amp;mode=edit";
+	    if (isset($CurrentList) && $CurrentList > 0)
+		echo "&amp;ls=", $CurrentList;
+	    echo "\" class='button'>Edit paper</a></td>\n";
 	    echo "</tr>\n";
 	}
     }

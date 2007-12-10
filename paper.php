@@ -8,13 +8,14 @@ require_once('Code/papertable.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $useRequest = false;
+$linkExtra = "";
 if (isset($_REQUEST["emailNote"]) && $_REQUEST["emailNote"] == "Optional explanation")
     unset($_REQUEST["emailNote"]);
 
 
 // header
 function confHeader() {
-    global $paperId, $newPaper, $prow, $mode, $Conf;
+    global $paperId, $newPaper, $prow, $mode, $Conf, $linkExtra, $CurrentList;
     if ($paperId > 0)
 	$title = "Paper #$paperId";
     else
@@ -22,6 +23,9 @@ function confHeader() {
     if ($mode == "edit")
 	$title = "Edit $title";
     $Conf->header($title, "paper_" . $mode, actionBar($prow, $newPaper, $mode), false);
+    if (isset($CurrentList) && $CurrentList > 0
+	&& strpos($linkExtra, "ls=") === false)
+	$linkExtra .= "&amp;ls=" . $CurrentList;
 }
 
 function errorMsgExit($msg) {
@@ -584,7 +588,7 @@ $finalEditMode = false;
 if ($mode == "edit") {
     echo "<form method='post' action=\"paper.php?paperId=",
 	($newPaper ? "new" : $paperId),
-	"&amp;post=1&amp;mode=edit\" enctype='multipart/form-data'>";
+	"&amp;post=1&amp;mode=edit$linkExtra\" enctype='multipart/form-data'>";
     $editable = $newPaper || ($prow->timeWithdrawn <= 0
 			      && ($Conf->timeUpdatePaper($prow) || $Me->privChair));
     if ($prow && $prow->outcome > 0 && ($Conf->timeSubmitFinalPaper() || $Me->privChair))
@@ -701,7 +705,7 @@ if ($mode != "edit" && $mainPreferences && $prow->conflictType <= 0) {
     if (isset($PaperError['revpref']))
 	echo " error";
     echo "'>Review preference</td>
-  <td class='entry'><form id='prefform' class='fold7o' action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1\" method='post' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"prefform\")'>",
+  <td class='entry'><form id='prefform' class='fold7o' action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1$linkExtra\" method='post' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"prefform\")'>",
 	"<div class='inform'>",
 	"<input type='hidden' name='setrevpref' value='1' />",
 	"<input id='prefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$x\" onchange='Miniajax.submit(\"prefform\")' tabindex='1' />&nbsp;
@@ -744,12 +748,12 @@ if ($mode == "edit") {
 	    $Conf->footerStuff .= "<div id='popup_w' class='popupc'><p>Are you sure you want to withdraw this paper from consideration and/or publication?";
 	    if (!$Me->privChair || $prow->conflictType >= CONFLICT_AUTHOR)
 		$Conf->footerStuff .= "  Only administrators can undo this step.";
-	    $Conf->footerStuff .= "</p><form method='post' action=\"paper.php?paperId=$paperId&amp;post=1&amp;mode=edit\" enctype='multipart/form-data'><div class='popup_actions'><input class='button' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'w', 1)\">Cancel</button></div></form></div>";
+	    $Conf->footerStuff .= "</p><form method='post' action=\"paper.php?paperId=$paperId&amp;post=1&amp;mode=edit$linkExtra\" enctype='multipart/form-data'><div class='popup_actions'><input class='button' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'w', 1)\">Cancel</button></div></form></div>";
 	}
     }
     if ($Me->privChair && !$newPaper) {
 	$buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete paper</button>", "(admin only)");
-	$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"paper.php?paperId=$paperId&amp;post=1&amp;mode=edit\" enctype='multipart/form-data'><div class='popup_actions'><input class='button' type='submit' name='delete' value='Delete paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
+	$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"paper.php?paperId=$paperId&amp;post=1&amp;mode=edit$linkExtra\" enctype='multipart/form-data'><div class='popup_actions'><input class='button' type='submit' name='delete' value='Delete paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
     }
     echo "    <tr>\n";
     foreach ($buttons as $b) {

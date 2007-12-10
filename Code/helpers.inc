@@ -126,6 +126,7 @@ function fileUploaded(&$var, $conf) {
 }
 
 function selfHref($extra = array(), $self = null) {
+    global $CurrentList;
     $x = ($self ? $self : $_SERVER["PHP_SELF"]);
     $sep = "?";
     foreach (array("paperId", "reviewId", "commentId", "mode", "forceShow", "validator", "list", "t", "q", "qa", "qx", "qt", "group", "sort") as $what)
@@ -137,6 +138,8 @@ function selfHref($extra = array(), $self = null) {
 	$x .= "$sep$key=" . urlencode($value);
 	$sep = "&";
     }
+    if (isset($CurrentList) && $CurrentList > 0)
+	$x .= $sep . "ls=" . $CurrentList;
     return $x;
 }
 
@@ -404,8 +407,7 @@ function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
     if ($CurrentList != 0)
 	$k = array_search($paperId, $_SESSION["l"][$CurrentList]);
 
-    if ($paperId > 0 && $k === false && !isset($_REQUEST["ls"])
-	&& !isset($_REQUEST["list"])) {
+    if ($paperId > 0 && $k === false && !isset($_REQUEST["list"])) {
 	_tryNewList(array(), $replaceList);
 	$k = array_search($paperId, $_SESSION["l"][$replaceList]);
 	if ($k === false && $Me->privChair) {
@@ -447,12 +449,12 @@ function goPaperForm($baseUrl = "paper.php", $args = array()) {
     if (!$_SESSION["Me"]->valid())
 	return "";
     $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get'><div class='inform'>";
+    $x .= "#<input class='textlite' type='text' size='6' name='paperId' />";
     foreach ($args as $what => $val)
 	$x .= "<input type='hidden' name=\"" . htmlspecialchars($what) . "\" value=\"" . htmlspecialchars($val) . "\" />";
     if (isset($CurrentList) && $CurrentList > 0)
 	$x .= "<input type='hidden' name='ls' value='$CurrentList' />";
-    $x .= "#<input class='textlite' type='text' size='6' name='paperId' />";
-    $x .= "&nbsp; <input class='button' type='submit' name='go' value='Search' /></div></form>";
+    $x .= "&nbsp; <input class='button' type='submit' value='Search' /></div></form>";
     return $x;
 }
 
@@ -766,25 +768,40 @@ function actionTab($text, $url, $default) {
 }
 
 function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
-    global $Me, $Conf, $ConfSiteBase;
+    global $Me, $Conf, $ConfSiteBase, $CurrentList;
     if ($newPaper)
 	$paperId = "new";
     else
 	$paperId = ($prow == null ? -1 : $prow->paperId);
     $forceShow = ($Me->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] ? "&amp;forceShow=1" : "");
 
+    // collect list links now, so we find the current list
+    if ($mode == "assign" || $mode == "review" || $mode == "comment")
+	$goBase = "$mode.php";
+    else
+	$goBase = "paper.php";
+    $xmode = (isset($_REQUEST["mode"]) && $goBase == "paper.php" ? array("mode" => $_REQUEST["mode"]) : array());
+    
+    $listarg = $listlinks_txt = "";
+    if ($prow) {
+	$listlinks_txt = listLinks($prow->paperId, $goBase, $xmode);
+	if (isset($CurrentList) && $CurrentList > 0)
+	    $listarg = "&amp;ls=$CurrentList";
+    }
+
+    // create action bar
     $x = "<div class='vbar'><table class='vbar'><tr>\n";
 
     $act = "";
     if ($newPaper || $paperId > 0)
-	$act .= actionTab("Paper", "${ConfSiteBase}paper.php?paperId=$paperId", $mode == "view" || $mode == "edit");
+	$act .= actionTab("Paper", "${ConfSiteBase}paper.php?paperId=$paperId$listarg", $mode == "view" || $mode == "edit");
     
     if (!$newPaper && $prow
 	&& ($prow->reviewType > 0
 	    || $Me->canViewReview($prow, null, $Conf)
 	    || ($Me->isPC && $prow->timeSubmitted > 0
 		&& $Conf->timeReviewOpen())))
-	$act .= actionTab("Reviews", "${ConfSiteBase}review.php?paperId=$paperId", $mode == "review");
+	$act .= actionTab("Reviews", "${ConfSiteBase}review.php?paperId=$paperId$listarg", $mode == "review");
 
     if (!$newPaper && $prow
 	&& ($prow->reviewType > 0
@@ -795,12 +812,12 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 		&& $Conf->timeReviewOpen()))) {
 	$n = ($prow->conflictType >= CONFLICT_AUTHOR ? $prow->numAuthorComments : $prow->numComments);
 	$txt = ($n ? "Comments ($n)" : "Comments");
-	$act .= actionTab($txt, "${ConfSiteBase}comment.php?paperId=$paperId", $mode == "comment");
+	$act .= actionTab($txt, "${ConfSiteBase}comment.php?paperId=$paperId$listarg", $mode == "comment");
     }
 
     if ($mode == "assign"
 	|| ($Me->privChair && $prow && $prow->timeSubmitted > 0))
-	$act .= actionTab("Assignments", "${ConfSiteBase}assign.php?paperId=$paperId", $mode == "assign");
+	$act .= actionTab("Assignments", "${ConfSiteBase}assign.php?paperId=$paperId$listarg", $mode == "assign");
     
     if ($thisUrl)
 	$act .= actionTab($mode, $thisUrl, true);
@@ -810,14 +827,11 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 
     $x .= "<td class='spanner'></td>\n";
     
-    if ($mode == "assign" || $mode == "review" || $mode == "comment")
-	$goBase = "$mode.php";
-    else
-	$goBase = "paper.php";
-    $xmode = (isset($_REQUEST["mode"]) && $goBase == "paper.php" ? array("mode" => $_REQUEST["mode"]) : array());
-    if ($prow && ($zz = listLinks($prow->paperId, $goBase, $xmode)))
-	$x .= "  <td class='listlinks nowrap'>" . $zz . "</td>\n";
+    if ($listlinks_txt)
+	$x .= "  <td class='listlinks nowrap'>" . $listlinks_txt . "</td>\n";
+    
     $x .= "  <td class='gopaper nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n";
+    
     return $x . "</tr></table></div>";
 }
 
