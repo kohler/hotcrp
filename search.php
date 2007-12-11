@@ -559,7 +559,7 @@ echo "<table id='searchform' class='tablinks$activetab'>
 // Basic Search
 echo "<form method='get' action='search.php'><div class='inform'>
   <input id='searchform1_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /> &nbsp;in &nbsp;$tselect &nbsp;
-  <input class='button' name='go' type='submit' value='Search' />
+  <input class='button' type='submit' value='Search' />
 </div></form>";
 
 echo "</div><div class='tld2'>";
