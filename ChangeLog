@@ -1,3 +1,129 @@
+2007-12-10 Monday 23:42  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* search.php (1.126): no need for a name on the submit button
+
+2007-12-10 Monday 00:31  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.81), comment.php (1.50), paper.php (1.149),
+	  review.php (1.119), Code/helpers.inc (1.186), Code/papertable.inc
+	  (1.100), Code/reviewtable.inc (1.42): Some list choice fixes.  *
+	  Requested ls= number may be overridden (for search box).  * Tabs
+	  preserve ls= number.	* Links within assignments, reviews,
+	  comments, and paper pages preserve ls= number.  * Minor
+	  improvement to reviews display.
+
+2007-12-04 Tuesday 09:35  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* search.php (1.125), Code/conference.inc (1.231), Code/contact.inc
+	  (1.145), Code/paperlist.inc (1.150), Code/search.inc (1.68):
+	  Conflicted PC members cannot see or search review counts (Ken
+	  Birman)
+
+2007-12-01 Saturday 19:36  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.154), login.php (1.40): Account creation is also
+	  sensitive; don't expose email at that time
+
+2007-12-01 Saturday 14:28  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/: helpers.inc (1.185), mailtemplate.inc (1.31): fix MIME
+	  quoting, particularly for To: addresses: do not split
+	  encoded-words at UTF-8 character boundaries; use the extra
+	  headers string instead of the real To: field, because the real
+	  To: field doesn't like \r\n on read.cs.ucla.edu (and probably
+	  elsewhere).  This is a pretty annoying corner of different
+	  irritating specs.
+
+2007-11-28 Wednesday 23:47  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* search.php (1.124), Code/baselist.inc (1.2), Code/conference.inc
+	  (1.230), Code/paperlist.inc (1.149), images/GenChart.php (1.15):
+	  fun new feature: in search list score graphs, your score is
+	  highlighted in a darker color; and you can search by your score
+
+2007-11-28 Wednesday 09:06  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* search.php (1.123), Code/conference.inc (1.229),
+	  Code/paperlist.inc (1.148), Code/search.inc (1.67): Add an
+	  "Advanced Search" option to search tags specifically.
+
+	  Also fix some bugs, probably rarely triggered, with ordered tags.
+	   Searching "WITHOUT the words" order:foo will not attempt to
+	  order by foo.  Also, searching "order:foo word" will include
+	  results matching both tag:foo and word, rather than dropping word
+	  results inappropriately.
+
+2007-11-26 Monday 20:00  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.80): Do not expose external reviewers' passwords
+	  through email cc: to review requesters.  I think requesters don't
+	  need any email confirmation, actually.
+
+2007-11-26 Monday 18:36  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/helpers.inc (1.184): a little tweak to the van/von fix, so
+	  that someone named "Van Presley" is recognized as first name Van,
+	  last name Presley
+
+2007-11-26 Monday 17:10  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* images/: ass2.png (1.4), ass2n.png (1.3): color PC review icons
+	  differently from external review icons
+
+2007-11-26 Monday 13:06  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/helpers.inc (1.183): fix awesome von/van bug reported by
+	  Mike Colagrasso (hopefully)
+
+2007-11-26 Monday 13:04  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.153), settings.php (1.61), Code/paperlist.inc
+	  (1.147): paper lists for PC members link to the review page by
+	  default when reviews are open, if PC members can review any
+	  paper.  Also rearrange the settings page a touch
+
+2007-11-26 Monday 13:03  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/conference.inc (1.228): avoid PHP warnings on author paper
+	  lists
+
+2007-11-26 Monday 13:03  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/review.inc (1.86): clarify what "PC only" means, namely,
+	  "hidden from authors"
+
+2007-11-26 Monday 01:26  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/review.inc (1.85): don't add spurious newlines every time
+	  someone edits a review
+
+2007-11-23 Friday 17:21  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.152), mergeaccounts.php (1.39), Code/contact.inc
+	  (1.144): nits found while developing faculty applications version
+	  of site
+
+2007-11-21 Wednesday 17:34  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* review.php (1.118), style.css (1.210), Code/helpers.inc (1.182),
+	  Code/papertable.inc (1.99): nits, mostly stylistic, inspired by
+	  Safari 3 rendering issues
+
+2007-11-21 Wednesday 13:34  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/helpers.inc (1.181): Don't search for papers with id #0,
+	  since that causes a headache.  (David Black-Schaffer)
+
+2007-11-20 Tuesday 13:59  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.60): avoid unset variable warning
+
+2007-11-20 Tuesday 11:29  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* script.js (1.56), settings.php (1.59), Code/papertable.inc
+	  (1.98): Allow adding topics in units of more than three at a
+	  time.
+
 2007-11-18 Sunday 15:51  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* index.php (1.151), Code/papertable.inc (1.97): minor nits and
