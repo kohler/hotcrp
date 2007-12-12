@@ -143,6 +143,13 @@ function selfHref($extra = array(), $self = null) {
     return $x;
 }
 
+function validateEmail($email) {
+    // validate email address
+    // Allow @_.com email addresses.  Simpler than RFC822 validation.
+    return preg_match('/^([*+!.&#$|\'\\%\/0-9a-z^_`{}=?~:-]+)@(([0-9a-z-]+\.)+[0-9a-z]+)$/i', $email)
+	|| preg_match('/^([*+!.&#$|\'\\%\/0-9a-z^_`{}=?~:-]+)@(_\.[0-9a-z]+)$/i', $email);
+}
+
 
 function reviewType($paperId, $row, $long = 0) {
     if ($row->reviewType == REVIEW_PRIMARY)

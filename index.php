@@ -35,6 +35,9 @@ function doCreateAccount() {
     if ($Me->valid()) {
 	$email_class = " error";
 	return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ".  To retrieve your password, select &ldquo;I forgot my password, email it to me.&rdquo;");
+    } else if (!validateEmail($_REQUEST["email"])) {
+	$email_class = " error";
+	return $Conf->errorMsg("&ldquo;" . htmlspecialchars($_REQUEST["email"]) . "&rdquo; is not a valid email address.");
     }
 
     $result = $Me->initialize($_REQUEST["email"], $Conf);
@@ -79,7 +82,8 @@ function doLogin() {
     
     // In all cases, we need to look up the account information
     // to determine if the user is registered
-    if (!isset($_REQUEST["email"]) || $_REQUEST["email"] == "") {
+    if (!isset($_REQUEST["email"])
+        || ($_REQUEST["email"] = trim($_REQUEST["email"])) == "") {
 	$email_class = " error";
 	return $Conf->errorMsg("Enter your email address.");
     }
