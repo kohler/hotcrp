@@ -63,7 +63,7 @@ function doCreateAccount() {
     }
 
     if ($Conf->allowEmailTo($Me->email))
-	$msg .= "  A password has been emailed to this address.  When you receive that email, return here to complete the registration process.";
+	$msg .= "  A password has been emailed to you.  Return here when you receive it to complete the registration process.  If you don't receive the email, check your spam folders and verify that you entered the correct address.";
     else {
 	if ($Opt['sendEmail'])
 	    $msg .= "  The email address you provided seems invalid.";
