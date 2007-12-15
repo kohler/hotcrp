@@ -50,6 +50,7 @@ function highlightUpdate(which, off) {
 }
 
 function fold(which, dofold, foldnum) {
+    var foldnumid = (foldnum ? foldnum : "");
     if (which instanceof Array) {
 	for (var i = 0; i < which.length; i++)
 	    fold(which[i], dofold, foldnum);
@@ -61,7 +62,6 @@ function fold(which, dofold, foldnum) {
 	if (selt)
 	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0));
     } else if (which) {
-	var foldnumid = (foldnum ? foldnum : "");
 	var opentxt = "fold" + foldnumid + "o";
 	var closetxt = "fold" + foldnumid + "c";
 	if (dofold == null && which.className.indexOf(opentxt) >= 0)
