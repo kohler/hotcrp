@@ -735,7 +735,7 @@ if ($mode == "edit") {
     else if ($prow->timeWithdrawn > 0)
 	$buttons[] = "The paper has been withdrawn, and the <a href='deadlines.php'>deadline</a> for reviving it has passed.";
     else {
-	if ($prow->outcome > 0 && ($Conf->timeSubmitFinalPaper() || $Me->privChair))
+	if ($prow->outcome > 0 && $Conf->collectFinalPapers() && ($Conf->timeSubmitFinalPaper() || $Me->privChair))
 	    $buttons[] = array("<input class='hbutton' type='submit' name='submitfinal' value='Submit final copy' />", "");
 	if ($Conf->timeUpdatePaper($prow))
 	    $buttons[] = array("<input class='hbutton' type='submit' name='update' value='Update paper' />", "");

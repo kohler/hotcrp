@@ -149,7 +149,7 @@ class PaperTable {
     
     function echoPaperRow($prow, $flags) {
 	global $Conf, $Me, $ConfSiteBase;
-	$final = ($prow->outcome > 0 && $Conf->setting("final_open") > 0);
+	$final = ($prow->outcome > 0 && $Conf->collectFinalPapers());
 	$canUpload = $this->editable;
 
 	echo "<tr class='pt_status'>\n";
@@ -235,7 +235,7 @@ class PaperTable {
 
     function echoUploadRow($prow, $flags) {
 	global $Conf, $Opt;
-	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0);
+	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0 && $Conf->collectFinalPapers());
 	
 	echo "<tr class='pt_paper'>\n  ", $this->tdCaption('paper');
 	if (defval($Opt, 'disablePS') > 0)

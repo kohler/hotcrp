@@ -300,6 +300,9 @@ class Conference {
 	return $this->settingsBetween('sub_open', 'sub_sub', 'sub_grace')
 	    && (!$prow || $prow->timeSubmitted <= 0 || $this->setting('sub_freeze') <= 0);
     }
+    function collectFinalPapers() {
+	return $this->setting('final_open') > 0;
+    }
     function timeSubmitFinalPaper() {
 	return $this->settingsBetween('final_open', 'final_done', 'final_grace');
     }
