@@ -35,6 +35,7 @@ comment.php
 contactauthors.php
 contacts.php
 deadlines.php
+doc
 help.php
 index.php
 log.php
@@ -113,10 +114,6 @@ Chair/DumpDatabase.php
 Chair/SetReviewForm.php
 Chair/index.php
 Chair/sampleforms.inc
-
-Download/.htaccess
-Download/GetPaper
-Download/GetPaper.php
 
 PC/.htaccess
 PC/CheckReviewStatus.php

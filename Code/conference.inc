@@ -1203,9 +1203,9 @@ class Conference {
     function makeDownloadPath($paperId, &$mimetype, $final = false) {
 	global $ConfSiteBase;
 	if (isset($mimetype) && $mimetype)
-	    return $ConfSiteBase . "Download/GetPaper/" . $this->downloadPaperName($paperId, $mimetype, $final);
+	    return $ConfSiteBase . "doc/" . $this->downloadPaperName($paperId, $mimetype, $final);
 	else {
-	    $x = $ConfSiteBase . "Download/GetPaper?paperId=" . $paperId;
+	    $x = $ConfSiteBase . "doc?paperId=" . $paperId;
 	    return ($final ? $x . "&amp;final=1" : $x);
 	}
     }

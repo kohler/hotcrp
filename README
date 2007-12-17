@@ -65,7 +65,8 @@ Configuration
 	</Directory>
 	Alias /testconf /home/kohler/hotnets-crp
 
-    Note that the first argument to Alias should NOT end in a slash.
+    Note that the first argument to Alias should NOT end in a slash.  The
+    "AllowOverride all" directive is required.
 
   - Update the systemwide setting for PHP's 'session.gc_maxlifetime'
     configuration variable.  This provides an upper bound on HotCRP session

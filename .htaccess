@@ -15,3 +15,8 @@ AddDefaultCharset UTF-8
 Order allow,deny
 Deny from all
 </FilesMatch>
+
+# The 'doc' URL is PHP.
+<Files doc>
+ForceType application/x-httpd-php
+</Files>

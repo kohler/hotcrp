@@ -1,14 +1,13 @@
-<?php 
-// Download/GetPaper -- HotCRP paper download page
+<?php // -*- mode: php -*-
+// doc -- HotCRP paper download page
 // HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-// GetPaper -- this is a PHP script where execution is specified in a .htaccess
-// file. This is done so the paper that is being requested is specified as a
-// suffix to the GetPaper request. It's necessary to have automatic file naming
-// work for specific browsers (I think Mozilla/netscape).
+// A PHP script where execution is specified in .htaccess, so the requested
+// paper is specified as a suffix to the request.  It may help automatic file
+// naming work for some browsers.
 
-require_once('../Code/header.inc');
+require_once('Code/header.inc');
 $Me = $_SESSION['Me'];
 $Me->goIfInvalid();
 
@@ -19,7 +18,7 @@ $final = (defval($_REQUEST, 'final', 0) != 0);
 if (isset($_REQUEST['paperId']))
     $paperId = cvtint($_REQUEST["paperId"]);
 else {
-    $paper = preg_replace("|.*/GetPaper/*|", "", $_SERVER["PHP_SELF"]);
+    $paper = preg_replace("|.*/doc/*|", "", $_SERVER["PHP_SELF"]);
     if (preg_match("/^(" . $Opt['downloadPrefix'] . ")?(paper-?)?(\d+).*$/", $paper, $match)
 	&& $match[3] > 0)
 	$paperId = $match[3];
@@ -46,7 +45,7 @@ if (!isset($Error)) {
 }
 
 // If we get here, there is an error.
-$Conf->header("Download Paper #$paperId");
+$Conf->header("Download Paper" . (isset($paperId) ? " #$paperId" : ""));
 if (isset($Error))
     $Conf->errorMsg($Error);
 $Conf->footer();
