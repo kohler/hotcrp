@@ -199,7 +199,7 @@ function selassign(elt, which) {
 var numauthorfold = [];
 function authorfold(prefix, relative, n) {
     var elt;
-    if (relative)
+    if (relative > 0)
 	n += numauthorfold[prefix];
     if (n <= 1)
 	n = 1;
@@ -214,10 +214,11 @@ function authorfold(prefix, relative, n) {
 	else if (!elt)
 	    break;
     // set number displayed
-    elt = e(prefix + "count");
-    if (elt)
-	elt.value = n;
-    numauthorfold[prefix] = n;
+    if (relative >= 0) {
+	if ((elt = e(prefix + "count")))
+	    elt.value = n;
+	numauthorfold[prefix] = n;
+    }
     // IE won't actually do the fold unless we yell at it
     elt = e(prefix + "table");
     if (document.recalc && elt)

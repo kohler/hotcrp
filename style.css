@@ -558,6 +558,10 @@ td.entry, th.entry {
 td.lentry {
 	padding: 2px 0.5em 2px 0em;
 }
+td.rentry {
+	padding: 2px 0em;
+	text-align: right;
+}
 td.llentry {
 	padding: 0px 0.75em;
 }

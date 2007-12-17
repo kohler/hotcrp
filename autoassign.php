@@ -29,6 +29,19 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && !isset($_REQUEST["r
 }
 sort($papersel);
 
+// bad pairs
+$badpairs = array();
+if (isset($_REQUEST["badpairs"]))
+    for ($i = 1; $i <= defval($_REQUEST, "bpcount", 20); $i++)
+	if (defval($_REQUEST, "bpa$i") && defval($_REQUEST, "bpb$i")) {
+	    if (!isset($badpairs[$_REQUEST["bpa$i"]]))
+		$badpairs[$_REQUEST["bpa$i"]] = array();
+	    if (!isset($badpairs[$_REQUEST["bpb$i"]]))
+		$badpairs[$_REQUEST["bpb$i"]] = array();
+	    $badpairs[$_REQUEST["bpa$i"]][$_REQUEST["bpb$i"]] = 1;
+	    $badpairs[$_REQUEST["bpb$i"]][$_REQUEST["bpa$i"]] = 1;
+	}
+
 $Error = array();
 
 
@@ -87,8 +100,16 @@ function checkRequest(&$atype, &$reviewtype, $save) {
     return true;
 }
 
+function noBadPair($pc, $pid) {
+    global $badpairs;
+    foreach ($badpairs[$pc] as $opc => $val)
+	if (defval($prefs[$opc], $pid, 0) < -1000000)
+	    return false;
+    return true;
+}
+
 function doAssign() {
-    global $Conf, $ConfSiteBase, $papersel, $assignments, $assignprefs;
+    global $Conf, $ConfSiteBase, $papersel, $assignments, $assignprefs, $badpairs;
 
     // check request
     if (!checkRequest($atype, $reviewtype, false))
@@ -222,7 +243,8 @@ function doAssign() {
 	while (($pid = key($prefs[$pc])) !== null) {
 	    $pref = current($prefs[$pc]);
 	    next($prefs[$pc]);
-	    if ($pref >= -1000000 && isset($papers[$pid]) && $papers[$pid] > 0) {
+	    if ($pref >= -1000000 && isset($papers[$pid]) && $papers[$pid] > 0
+		&& (!isset($badpairs[$pc]) || noBadPair($pc, $pid))) {
 		// make assignment
 		if (!isset($assignments[$pid]))
 		    $assignments[$pid] = array();
@@ -336,7 +358,7 @@ $Conf->header("Review Assignments", "autoassign", $abar);
 
 
 function doRadio($name, $value, $text) {
-    echo "<input type='radio' name='$name' value='$value' ";
+    echo "<input type='radio' name='$name' value='$value' id='${name}_$value' ";
     if (!isset($_REQUEST[$name]) || $_REQUEST[$name] == $value) {
 	echo "checked='checked' ";
 	$_REQUEST[$name] = $value;
@@ -424,12 +446,18 @@ if (isset($assignments) && count($assignments) > 0) {
     echo "<form method='post' action='autoassign.php'>\n";
     echo "<input type='submit' class='button' name='saveassign' value='Save assignment' />\n";
     echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />\n";
-    foreach (array("t", "q", "a", "revaddtype", "revtype", "revct", "revaddct", "pctyp", "balance") as $t)
+    foreach (array("t", "q", "a", "revaddtype", "revtype", "revct", "revaddct", "pctyp", "balance", "badpairs", "bpcount") as $t)
 	if (isset($_REQUEST[$t]))
 	    echo "<input type='hidden' name='$t' value=\"", htmlspecialchars($_REQUEST[$t]), "\" />\n";
     foreach ($pcm as $id => $p)
 	if (isset($_REQUEST["pcs$id"]))
 	    echo "<input type='hidden' name='pcs$id' value='1' />\n";
+    for ($i = 1; $i <= 20; $i++) {
+	if (defval($_REQUEST, "bpa$i"))
+	    echo "<input type='hidden' name='bpa$i' value=\"", htmlspecialchars($_REQUEST["bpa$i"]), "\" />\n";
+	if (defval($_REQUEST, "bpb$i"))
+	    echo "<input type='hidden' name='bpb$i' value=\"", htmlspecialchars($_REQUEST["bpb$i"]), "\" />\n";
+    }
     echo "<input type='hidden' name='pap' value=\"", join(" ", $papersel), "\" />\n";
 
     // save the assignment
@@ -498,7 +526,7 @@ foreach ($pcm as $id => $p) {
     $c = "<tr><td><input type='checkbox' name='pcs$id' value='1'";
     if (isset($_REQUEST["pcs$id"]))
 	$c .= " checked='checked'";
-    $c .= " />&nbsp;</td><td class='name'>" . contactHtml($p->firstName, $p->lastName) . "</td></tr><tr><td></td><td class='nrev'>"
+    $c .= " onclick='e(\"pctyp_sel\").checked=true' />&nbsp;</td><td class='name'>" . contactHtml($p->firstName, $p->lastName) . "</td></tr><tr><td></td><td class='nrev'>"
 	. plural($nreviews[$id], "review");
     if ($nprimary[$id] && $nprimary[$id] < $nreviews[$id])
 	$c .= ", " . $nprimary[$id] . " primary";
@@ -513,6 +541,51 @@ for ($i = 0; $i < count($pcsel); $i++) {
 }
 echo "</table></td></tr></table></td></tr></table>";
 echo "</td></tr>\n";
+
+
+// Bad pairs
+$numBadPairs = 1;
+
+function bpSelector($i, $which) {
+    global $numBadPairs;
+    $pcm = pcMembers();
+    $x = "";
+    $selected = false;
+    foreach ($pcm as $pc) {
+	$x .= "<option value='$pc->contactId'";
+	if (isset($_REQUEST["badpairs"])
+	    && defval($_REQUEST, "bp$which$i") == $pc->contactId) {
+	    $x .= " selected='selected'";
+	    $selected = true;
+	    $numBadPairs = max($i, $numBadPairs);
+	}
+	$x .= ">" . contactText($pc) . "</option>";
+    }
+    $y = ($i == 1 ? " onchange='if (!((x=e(\"badpairs\")).checked)) x.click()'" : "");
+    return "<select name='bp$which$i'$y><option value='0'"
+	. ($selected ? "" : " selected='selected'")
+	. ">(PC member)</option>$x</select>";
+}
+    
+echo "<tr><td class='caption'></td><td class='entry'><div id='foldbadpair' class='",
+    (isset($_REQUEST["badpairs"]) ? "foldo" : "foldc"),
+    "'><table id='bptable'>\n";
+for ($i = 1; $i <= 20; $i++) {
+    echo "    <tr id='bp$i' class='auedito'><td class='rentry'>";
+    if ($i == 1)
+	echo "<input type='checkbox' name='badpairs' id='badpairs' value='1'",
+	    (isset($_REQUEST["badpairs"]) ? " checked='checked'" : ""),
+	    " onclick='fold(\"badpair\", !this.checked);authorfold(\"bp\", this.checked?1:-1, 0)' />&nbsp;Don't assign &nbsp;";
+    else
+	echo "or &nbsp;";
+    echo "</td><td class='lentry'>", bpSelector($i, "a"),
+	" &nbsp;and&nbsp; ", bpSelector($i, "b");
+    if ($i == 1)
+	echo " &nbsp;to the same paper<span class='extension'> &nbsp;(<a href='javascript:authorfold(\"bp\",1,1)'>More</a> | <a href='javascript:authorfold(\"bp\",1,-1)'>Fewer</a>)</span>";
+    echo "</td></tr>\n";
+}
+echo "</table></div><input id='bpcount' type='hidden' name='bpcount' value='20' /></td></tr>\n";
+$Conf->echoScript("authorfold(\"bp\",0,$numBadPairs)");
 
 
 // Load balancing
