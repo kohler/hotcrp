@@ -536,7 +536,7 @@ function reviewView($prow, $rrow, $editMode) {
   <td class='caption'></td>
   <td class='entry'><div class='smgap'></div>",
 		"<table><tr><td><input type='checkbox' name='ready' value='1'";
-	    if ($rrow && $rrow->reviewSubmitted)
+	    if ($rrow && ($useRequest ? defval($_REQUEST, "ready") : $rrow->reviewSubmitted))
 		echo " checked='checked'";
 	    if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
 		echo " disabled='disabled'";
