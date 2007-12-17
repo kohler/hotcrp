@@ -284,6 +284,8 @@ class ReviewForm {
 	// blind?
 	$reviewBlind = ($conf->blindReview() > 1 || ($conf->blindReview() == 1 && defval($req, 'blind')) ? 1 : 0);
 	$q .= "reviewBlind=$reviewBlind, ";
+	if ($rrow->reviewType == REVIEW_EXTERNAL && $Me->contactId == $contactId && $Me->isPC)
+	    $q .= "reviewType=" . REVIEW_PC . ", ";
 
 	// actually affect database
 	if ($rrow) {
