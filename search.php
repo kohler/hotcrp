@@ -141,19 +141,16 @@ if ($getaction == "abstracts" && isset($papersel) && defval($_REQUEST, "ajax")) 
 
 // download selected abstracts
 if ($getaction == "tags" && isset($papersel) && defval($_REQUEST, "ajax")) {
+    require_once('Code/tags.inc');
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tags" => 1));
     $result = $Conf->qe($q, "while selecting papers");
     $response = array();
-    $csb = defval($_REQUEST, "sitebase", "");
+    $csb = htmlspecialchars(defval($_REQUEST, "sitebase", ""));
     while ($prow = edb_orow($result)) {
 	if (!$Me->canViewTags($prow, $Conf))
 	    $t = "";
-	else {
-	    $t = str_replace("#0", "", $prow->paperTags);
-	    $t = preg_replace('/([a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*)/',
-			      "<a class='q' href='${csb}search.php?q=tag:\$1'>\$1</a>",
-			      $t);
-	}
+	else
+	    $t = tagsToText($prow->paperTags, $csb, $Me->contactId);
 	$response["tags$prow->paperId"] = $t;
     }
     $response["ok"] = (count($response) > 0);

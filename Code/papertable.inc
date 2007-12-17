@@ -546,21 +546,16 @@ class PaperTable {
 	$t = isset($prow->paperTags) ? $prow->paperTags : "";
 	if ($site || $t) {
 	    // Note that tags MUST NOT contain HTML special characters.
-	    $t = str_replace('#0', '', $t);
-	    if ($t == "")
-		$tx = "";
-	    else
-		$tx = preg_replace('/([a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*)/',
-				   "<a class='q' href='${ConfSiteBase}search.php?q=tag:\$1'>\$1</a>",
-				   $t);
-	    
+	    require_once("tags.inc");
+	    $tx = tagsToText($t, true, $Me->contactId);
+	    $t = tagsToText($t, false, $Me->contactId);
 	    echo "<tr class='pt_tags'>\n  <td class='caption'>Tags</td>\n  <td class='entry'>";
 	    if ($site && $Me->canSetTags($prow, $Conf)) {
 		echo "<form method='post' action=\"$site\" enctype='multipart/form-data'><div id='foldtags' class='foldc inform'>";
 		echo "<span class='ellipsis'>", ($t == "" ? "none" : $tx), "&nbsp;</span>";
 		echo "<a href='javascript:fold(\"tags\", 0)'>", $Conf->cacheableImage("next.png", "[Edit]", null, "unfolder"), "</a>";
-		echo "<span class='extension'><input class='textlite' type='text' size='40' name='tags' value=\"", $t, "\" /> &nbsp;<input class='button_small' type='submit' name='settags' value='Set tags' /> &nbsp; ";
-		echo "<a href='javascript:fold(\"tags\", 1)'>", $Conf->cacheableImage("prev.png", "[Hide]", null, "folder"), "</a></span>";
+		echo "<span class='extension'><input class='textlite' type='text' size='40' name='tags' value=\"", $t, "\" /> &nbsp;<input class='button_small' type='submit' name='settags' value='Save' /> &nbsp; ";
+		echo "<a href='javascript:fold(\"tags\", 1)'>", $Conf->cacheableImage("prev.png", "[Hide]", null, "folder"), "</a><br /><span class='hint'><a href='${ConfSiteBase}help.php?t=tags'>Help</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span></span>";
 		echo "</div></form>";
 	    } else
 		echo $tx;

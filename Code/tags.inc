@@ -8,7 +8,7 @@ function checkTagError($tag) {
 	return "Empty tag.";
     else if (strlen($tag) > TAG_MAXLEN)
 	return "Tag '$tag' too long; maximum " . TAG_MAXLEN . " characters.";
-    else if (!preg_match('/\A[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*#?\d*\Z/', $tag))
+    else if (!preg_match('/\A~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*#?\d*\Z/', $tag))
 	// Note that tags MUST NOT contain HTML special characters.
 	return "Tag '$tag' contains odd characters.";
     else if ($tag == "none")
@@ -18,11 +18,16 @@ function checkTagError($tag) {
 }
 
 function checkTag($tag, $reporterr = true) {
-    global $Conf;
+    global $Conf, $Me;
     $e = checkTagError($tag);
     if ($e && $reporterr)
 	$Conf->errorMsg(htmlspecialchars($e));
-    return $e == "";
+    if ($e != "")
+	return false;
+    else if ($tag[0] == "~")
+	return $Me->contactId . $tag;
+    else
+	return $tag;
 }
 
 function tagBase($tag) {
@@ -52,7 +57,8 @@ function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
     foreach (preg_split('/\s+/', $tagtext) as $tag) {
 	if ($mode == "so" || $mode == "ao")
 	    $tag .= "#";
-	if ($tag != "" && ($ok = ($ok && checkTag($tag, $reporterr))))
+	if ($tag != "" && ($tag = checkTag($tag, $reporterr))
+	    && ($ok = ($ok && $tag)))
 	    $tags[] = $tag;
     }
     if (!$ok)
@@ -97,8 +103,11 @@ function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
 		foreach ($tags as $tag)
 		    $q .= "tag='" . sqlq(tagBase($tag)) . "' or ";
 		$q = substr($q, 0, strlen($q) - 4) . ")";
-	    } else if (!$chair)
-		$q .= " and tag not in (select tag from ChairTag)";
+	    } else {
+		if (!$chair)
+		    $q .= " and tag not in (select tag from ChairTag)";
+		$q .= " and (tag like '$Me->contactId~%' or tag not like '%~%')";
+	    }
 	    $Conf->qe($q, $while);
     }
 
@@ -135,4 +144,24 @@ function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
     
     $Conf->qe("unlock tables", $while);
     return true;
+}
+
+function tagsToText($t, $makeUrls, $contact = null) {
+    global $Me, $ConfSiteBase;
+    if ($contact === null)
+	$contact = $Me;
+    if (is_object($contact))
+	$contact = $contact->contactId;
+    $t = str_replace("#0", "", $t);
+    if (strpos($t, "~") !== false) {
+	$t = str_replace($contact . "~", "~", $t);
+	$t = trim(preg_replace('/\b\d+~\S+\s*/', '', $t));
+    }
+    if ($makeUrls === false)
+	return $t;
+    if (!is_string($makeUrls))
+	$makeUrls = $ConfSiteBase;
+    return preg_replace('/(~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*)/',
+			"<a class='q' href=\"${makeUrls}search.php?q=tag:\$1\">\$1</a>",
+			$t);
 }

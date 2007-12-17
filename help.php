@@ -225,66 +225,71 @@ function tags() {
 	sort($ct);
 	$ctxt = " (currently ";
 	foreach ($ct as $c)
-	    $ctxt .= "\"$c\", ";
+	    $ctxt .= "&ldquo;$c&rdquo;, ";
 	$ctxt = substr($ctxt, 0, strlen($ctxt) - 2) . ")";
     } else
 	$ctxt = "";
 
+    $msg = ($Conf->setting("tag_seeall") > 0 ? "" : " or conflicted PC members");
     echo "<table>";
     _alternateRow("Basics", "
-Tags are names that PC members and chairs can attach to papers.
-Any paper can have any number of tags, and there's no need to predefine which
-tags are allowed; you can invent new ones on the fly.
-Tags are never shown to authors or conflicted PC members.
+PC members and administrators can attach tag names to papers.
+Papers can have many tags, and you can invent new tags on the fly.
+Tags are never shown to authors$msg.
 It's easy to add and remove tags and to list all papers with a given tag,
-and <i>ordered</i> tags preserve a particular paper order.");
+and <i>ordered</i> tags preserve a particular paper order.
 
-    $setting = ($Me->privChair ? " (<a href='${ConfSiteBase}settings.php?group=rev'>change this setting</a>)" : "");
-    $msg = ($Conf->setting("tag_seeall") > 0 ? "" : "  However, each PC member's list will be missing any conflicts, since PC members can't see tags for conflicted papers$setting.");
+<p>By default, tags are visible to the entire PC, but <em>twiddle tags</em>,
+with names like &ldquo;~tag&rdquo;, are visible only to their creators.</p>");
+
+    $setting = ($Me->privChair ? "  (<a href='${ConfSiteBase}settings.php?group=rev'>Change this setting</a>)" : "");
+    $msg = ($Conf->setting("tag_seeall") > 0 ? "" : "  However, since PC members currently can't see tags for conflicted papers, each PC member might see a different list.$setting");
     _alternateRow("Using tags", "
 Here are some example ways to use tags.
 
 <ul>
 <li><strong>Avoid discussing low-ranked submissions at the PC meeting.</strong>
- Mark low-ranked submissions with tag \"nodiscuss\", then ask the PC to
- <a href='${ConfSiteBase}search.php?q=tag:nodiscuss'>search for \"tag:nodiscuss\"</a>.
+ Mark low-ranked submissions with tag &ldquo;nodiscuss&rdquo;, then ask the PC to
+ <a href='${ConfSiteBase}search.php?q=tag:nodiscuss'>search for &ldquo;tag:nodiscuss&rdquo;</a>.
  PC members can easily check the list for controversial papers they'd like to discuss despite their ranking.
- They can email the chairs about such papers, or, even easier, add a \"discussanyway\" tag.
- (You might make the \"nodiscuss\" tag chair-only so an evil PC member couldn't add it to a high-ranked paper, but it's usually better to trust the PC.)</li>
+ They can email the chairs about such papers, or, even easier, add a &ldquo;discussanyway&rdquo; tag.
+ (You might make the &ldquo;nodiscuss&rdquo; tag chair-only so an evil PC member couldn't add it to a high-ranked paper, but it's usually better to trust the PC.)</li>
 
 <li><strong>Mark controversial papers that would benefit from additional review.</strong>
- Tell PC members to add the tag \"controversy\" when the current reviewers disagree.
+ Tell PC members to add the tag &ldquo;controversy&rdquo; when the current reviewers disagree.
  A <a href='${ConfSiteBase}search.php?q=tag:controversy'>search</a> shows you where the PC thinks more review is needed.</li>
 
 <li><strong>Mark PC-authored papers for extra scrutiny.</strong>
  First, <a href='${ConfSiteBase}search.php?t=s&amp;qt=au'>search for PC members' last names in author fields</a>.
- Check for accidental matches and select the papers with PC members as authors, then use the action area below the search list to add the tag \"pcpaper\".
+ Check for accidental matches and select the papers with PC members as authors, then use the action area below the search list to add the tag &ldquo;pcpaper&rdquo;.
  A <a href='${ConfSiteBase}search.php?t=s&amp;qx=tag:pcpaper'>search</a> shows papers without PC authors.
- (Since PC members can see whether a paper is tagged \"pcpaper\", you may want to delay defining the tag until just before the meeting.)</li>
+ (Since PC members can see whether a paper is tagged &ldquo;pcpaper&rdquo;, you may want to delay defining the tag until just before the meeting.)</li>
 
 <li><strong>Define a discussion order for the PC meeting.</strong>
  Publishing the order lets PC members prepare to discuss upcoming papers.
- Define an ordered tag such as \"discuss\" (see below for how), then ask the PC to <a href='${ConfSiteBase}search.php?q=order:discuss'>search for \"order:discuss\"</a>.
+ Define an ordered tag such as &ldquo;discuss&rdquo; (see below for how), then ask the PC to <a href='${ConfSiteBase}search.php?q=order:discuss'>search for &ldquo;order:discuss&rdquo;</a>.
  The PC can now see the order and use quick links to go from paper to paper.$msg</li>
 
 <li><strong>Mark tentative decisions during the PC meeting.</strong>
- Chairs add \"accept\" and \"reject\" tags as decisions are made, leaving the explicit decision setting for the end of the meeting.
+ Chairs add &ldquo;accept&rdquo; and &ldquo;reject&rdquo; tags as decisions are made, leaving the explicit decision setting for the end of the meeting.
  Among the reasons for this: PC members can see decisions as soon as they are entered into the system, even for conflicted papers, but they can't see tags for conflicted papers unless you explicitly allow it.</li>
 </ul>
 ");
-    $msg = ($Conf->setting("tag_seeall") > 0 ? "Currently PC members can see tags for any paper, including conflicts" : "They are hidden from conflicted PC members&mdash;for instance, if a PC member searches for a tag, the results will never include conflicts");
+    $msg = ($Conf->setting("tag_seeall") > 0 ? "Currently PC members can see tags for any paper, including conflicts" : "They are currently hidden from conflicted PC members&mdash;for instance, if a PC member searches for a tag, the results will never include conflicts");
     _alternateRow("Finding tags", "
-A list of each paper's tags is shown on its <a href='${ConfSiteBase}review.php'>review page</a>, and the other paper pages.
+A paper's tags are shown on its <a href='${ConfSiteBase}review.php'>review page</a> and the other paper pages.
 
 <p><img src='${ConfSiteBase}images/extagsnone.png' alt='[Tag list on review screen]' /></p>
 
-To find all papers with tag \"discuss\":&nbsp; " . _searchForm("tag:discuss") . "
+To find all papers with tag &ldquo;discuss&rdquo;:&nbsp; " . _searchForm("tag:discuss") . "
 
-<p>Tags are only shown to PC members.
-$msg$setting.</p>");
+<p>Tags are only shown to PC members and administrators.
+$msg.$setting
+Additionally, twiddle tags, which have names like &ldquo;~tag&rdquo;, are
+visible only to their creators; each PC member has an independent set.</p>");
     _alternateRow("Changing tags", "
 To change a single paper's tags, go to the Tags entry on its <a href='${ConfSiteBase}review.php'>review page</a>,
-click the <img src='${ConfSiteBase}images/next.png' alt='right arrow' />,
+click <img src='${ConfSiteBase}images/next.png' alt='right arrow' />,
 then enter one or more alphanumeric tags separated by spaces.
 
 <p><img src='${ConfSiteBase}images/extagsset.png' alt='[Tags entry on review screen]' /></p>
@@ -300,13 +305,13 @@ their checkboxes, and add tags using the action area.</p>
 from all non-selected papers.</p>
 
 Although any PC member can view or search
-any tag, only PC chairs can change certain tags$ctxt$setting.");
+any tag, only PC chairs can change certain tags$ctxt.  $setting");
     _alternateRow("Ordered tags<br />and discussion orders", "
 An ordered tag names an <i>ordered</i> set of papers.  Searching for the
-tag with \"<a href='${ConfSiteBase}search.php?q=order:tagname'>order:tagname</a>\" will return the papers in the order
+tag with &ldquo;<a href='${ConfSiteBase}search.php?q=order:tagname'>order:tagname</a>&rdquo; will return the papers in the order
 you defined.  This is useful for PC meeting discussion orders, for example.
-In tag listings, the first paper in the \"discuss\" ordered tag will appear as
-\"discuss#1\", the second as \"discuss#2\", and so forth; you can change
+In tag listings, the first paper in the &ldquo;discuss&rdquo; ordered tag will appear as
+&ldquo;discuss#1&rdquo;, the second as &ldquo;discuss#2&rdquo;, and so forth; you can change
 the order by editing the tag numbers.
 
 <p>It's easiest to define ordered tags using the
@@ -314,7 +319,7 @@ the order by editing the tag numbers.
 papers you want, sort them into the right order, select them, and
 choose <b>Define ordered</b> in the tag action area.  If no sort
 gives what you want, search for the desired paper numbers in order.
-For instance, you might search for \"<a href='${ConfSiteBase}search.php?q=4+1+12+9'>4 1 12 19</a>\", then <b>Select all</b> and <b>Define ordered</b>.</p>");
+For instance, you might search for &ldquo;<a href='${ConfSiteBase}search.php?q=4+1+12+9'>4 1 12 19</a>&rdquo;, then <b>Select all</b> and <b>Define ordered</b>.</p>");
     echo "</table>\n";
 }
 

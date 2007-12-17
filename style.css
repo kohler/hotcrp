@@ -597,6 +597,15 @@ div.hint {
 	font-size: smaller;
 	margin-bottom: 0.5ex;
 }
+span.hint {
+	font-size: smaller;
+}
+tr.pt_tags span.hint {
+	color: #555555;
+}
+td.caption span.hint {
+	font-weight: normal;
+}
 div#aumg td.hint, table.paper td.hint, table.review td.hint, table.comment td.hint, table.assign td.hint, table.setreviewform td.hint {
 	width: 25%;
 }
@@ -608,12 +617,6 @@ table.settings td h3 {
 	background: #eff1ff;
 	margin-bottom: 0.5em;
 	padding: 0px 4px;
-}
-span.hint {
-	font-size: smaller;
-}
-td.caption span.hint {
-	font-weight: normal;
 }
 
 

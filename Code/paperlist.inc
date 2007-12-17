@@ -160,8 +160,10 @@ class PaperList extends BaseList {
 	case self::FIELD_TAGS:
 	    if (!$this->contact->isPC)
 		return false;
-	    if ($this->foldedTags === false)
+	    if ($this->foldedTags === false) {
+		require_once("tags.inc");
 		$queryOptions['tags'] = 1;
+	    }
 	    break;
 	}
 	return true;
@@ -586,15 +588,11 @@ class PaperList extends BaseList {
 	case self::FIELD_TAGS:
 	    if (!$this->contact->canViewTags($row, $Conf))
 		return "";
-	    if ($this->foldedTags === false) {
-		$t = str_replace("#0", "", $row->paperTags);
-		$t = preg_replace('/([a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*)/',
-				  "<a class='q' href='${ConfSiteBase}search.php?q=tag:\$1'>\$1</a>",
-				  $t);
-		if ($t == "")
-		    return "";
-		else
-		    return "<span id='tags$row->paperId'>" . $t . "</span>";
+	    if ($this->foldedTags === false && $row->paperTags == "")
+		return "";
+	    else if ($this->foldedTags === false) {
+		$t = tagsToText($row->paperTags, true, $this->contact);
+		return "<span id='tags$row->paperId'>" . $t . "</span>";
 	    } else {
 		$this->foldedTags[] = $row->paperId;
 		return "<span id='tags$row->paperId'><em>Loading</em></span>";

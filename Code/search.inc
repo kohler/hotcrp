@@ -274,9 +274,6 @@ class PaperSearch {
 		 || ($special ? $special == "order" : isset($this->fields['order'])))
 		&& $this->amPC) {
 		require_once("tags.inc");
-		if (($special ? $special == "order" : isset($this->fields['order']))
-		    && $type != "none")
-		    $this->orderTag = ($this->orderTag === false ? $word : null);
 		$confpart = "";
 		if (!$this->privChair && $Conf->setting("tag_seeall") <= 0) {
 		    $confpart = " and conflictType is null";
@@ -284,6 +281,13 @@ class PaperSearch {
 		}
 		if (($e = checkTagError($word)))
 		    $this->warn(htmlspecialchars($e));
+		if ($word && $word[0] == "~") {
+		    $word = $this->contactId . $word;
+		    $lword = $this->contactId . $lword;
+		}
+		if (($special ? $special == "order" : isset($this->fields['order']))
+		    && $type != "none")
+		    $this->orderTag = ($this->orderTag === false ? $word : null);
 		if ($word == "none") {
 		    $qp .= " or (alltags is null$confpart)";
 		    $this->any |= self::ANY_ALLTAGS;
@@ -308,6 +312,8 @@ class PaperSearch {
 		}
 		if (($e = checkTagError($word)))
 		    $this->warn(htmlspecialchars($e));
+		if ($lword && $lword[0] == "~")
+		    $lword = $this->contactId . $lword;
 		$this->any |= self::ANY_ALLTAGS;
 		if ($word == "none")
 		    $qp .= " or (alltags is not null$confpart)";
