@@ -1029,7 +1029,7 @@ class PaperList extends BaseList {
 	    $ids["url"] = $url;
 	    $ids["description"] = $this->search->description($listname);
 	    $ids["timestamp"] = time();
-	    if ($this->search->q || $this->search->qa || $this->search->qx)
+	    if ($this->search->matchPreg)
 		$ids["matchPreg"] = "/(" . $this->search->matchPreg . ")/i";
 	    $ids["listid"] = $this->search->listId(isset($_REQUEST["sort"]) ? $_REQUEST["sort"] : "");
 	    $_SESSION["l"][$this->listNumber] = $ids;

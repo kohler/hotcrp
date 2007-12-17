@@ -740,7 +740,7 @@ if ($mode == "edit") {
 	if ($Conf->timeUpdatePaper($prow))
 	    $buttons[] = array("<input class='hbutton' type='submit' name='update' value='Update paper' />", "");
 	else if ($Me->privChair) {
-	    $class = ($prow->outcome > 0 ? "button" : "hbutton");
+	    $class = ($prow->outcome > 0 && $Conf->collectFinalPapers() ? "button" : "hbutton");
 	    $buttons[] = array("<input class='$class' type='submit' name='update' value='Update paper' />", "(admin only)");
 	}
 	if ($prow->timeSubmitted <= 0)

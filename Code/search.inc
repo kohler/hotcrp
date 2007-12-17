@@ -247,17 +247,24 @@ class PaperSearch {
 	    if ($word[0] == '"')
 		$word = str_replace('"', '', $word);
 
-	    $re .= ($re == "" ? "" : "|") . preg_quote($word);
 	    $lword = sqlq_for_like($word);
 	    $qp = "";
-	    if ($special ? $special == "ti" : isset($this->fields['ti']))
+	    if ($special ? $special == "ti" : isset($this->fields['ti'])) {
 		$qp .= " or (title like '%$lword%')";
-	    if ($special ? $special == "ab" : isset($this->fields['ab']))
+		$mword = $word;
+	    }
+	    if ($special ? $special == "ab" : isset($this->fields['ab'])) {
 		$qp .= " or (abstract like '%$lword%')";
-	    if (($special ? $special == "au" : isset($this->fields['au'])) && $this->allowAuthor)
+		$mword = $word;
+	    }
+	    if (($special ? $special == "au" : isset($this->fields['au'])) && $this->allowAuthor) {
 		$qp .= " or (${auextra}authorInformation like '%$lword%')";
-	    if (($special ? $special == "co" : isset($this->fields['co'])) && $this->privChair)
+		$mword = $word;
+	    }
+	    if (($special ? $special == "co" : isset($this->fields['co'])) && $this->privChair) {
 		$qp .= " or (${auextra}Paper.collaborators like '%$lword%')";
+		$mword = $word;
+	    }
 	    if ($special ? $special == "re" : isset($this->fields['re']))
 		$qp .= $this->_searchReviewer($lword, $type, false);
 	    if ($special ? $special == "sre" : isset($this->fields['sre']))
@@ -421,6 +428,8 @@ class PaperSearch {
 	    
 	    if ($qp)
 		$q .= $qjoin . "(" . substr($qp, 4) . ")";
+	    if ($mword)
+		$re .= ($re == "" ? "" : "|") . preg_quote($mword);
 	}
 
 	// construct table
