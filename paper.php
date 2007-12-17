@@ -709,7 +709,7 @@ if ($mode != "edit" && $mainPreferences && $prow->conflictType <= 0) {
 	"<div class='inform'>",
 	"<input type='hidden' name='setrevpref' value='1' />",
 	"<input id='prefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$x\" onchange='Miniajax.submit(\"prefform\")' tabindex='1' />&nbsp;
-    <input class='button_small extension7' type='submit' value='Save preference' tabindex='1' />
+    <input class='hbutton extension7' type='submit' value='Save preference' tabindex='1' />
     <span id='prefformresult' style='padding-left:1em'></span>",
 	"</div></form></td>\n</tr>\n\n";
     $Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"prefform\", null, 2);Miniajax.onload(\"prefform\");</script>";
@@ -729,18 +729,20 @@ if ($mode == "edit") {
   <td class='entry' colspan='2'><table class='pt_buttons'>\n";
     $buttons = array();
     if ($newPaper)
-	$buttons[] = "<input class='button' type='submit' name='update' value='Register paper' />";
+	$buttons[] = "<input class='hbutton' type='submit' name='update' value='Register paper' />";
     else if ($prow->timeWithdrawn > 0 && ($Conf->timeFinalizePaper($prow) || $Me->privChair))
 	$buttons[] = "<input class='button' type='submit' name='revive' value='Revive paper' />";
     else if ($prow->timeWithdrawn > 0)
 	$buttons[] = "The paper has been withdrawn, and the <a href='deadlines.php'>deadline</a> for reviving it has passed.";
     else {
 	if ($prow->outcome > 0 && ($Conf->timeSubmitFinalPaper() || $Me->privChair))
-	    $buttons[] = array("<input class='button' type='submit' name='submitfinal' value='Submit final copy' />", "");
+	    $buttons[] = array("<input class='hbutton' type='submit' name='submitfinal' value='Submit final copy' />", "");
 	if ($Conf->timeUpdatePaper($prow))
-	    $buttons[] = array("<input class='button' type='submit' name='update' value='Update paper' />", "");
-	else if ($Me->privChair)
-	    $buttons[] = array("<input class='button' type='submit' name='update' value='Update paper' />", "(admin only)");
+	    $buttons[] = array("<input class='hbutton' type='submit' name='update' value='Update paper' />", "");
+	else if ($Me->privChair) {
+	    $class = ($prow->outcome > 0 ? "button" : "hbutton");
+	    $buttons[] = array("<input class='$class' type='submit' name='update' value='Update paper' />", "(admin only)");
+	}
 	if ($prow->timeSubmitted <= 0)
 	    $buttons[] = "<input class='button' type='submit' name='withdraw' value='Withdraw paper' />";
 	else {

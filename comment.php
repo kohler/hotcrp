@@ -443,7 +443,7 @@ function commentView($prow, $crow, $editMode) {
   <td class='caption'></td>
   <td class='entry'><table class='pt_buttons'>
     <tr>\n";
-	    echo "      <td class='ptb_button'><input class='button' type='submit' value='Save' name='submit' /></td>\n";
+	    echo "      <td class='ptb_button'><input class='hbutton' type='submit' value='Save' name='submit' /></td>\n";
 	    if ($crow)
 		echo "      <td class='ptb_button'><input class='button' type='submit' value='Delete comment' name='delete' /></td>\n";
 	    echo "    </tr>\n  </table></td>\n</tr>";
@@ -534,7 +534,7 @@ has passed.  Please keep the response short and to the point" . $limittext . "."
   <td class='caption'></td>
   <td class='entry'><table class='pt_buttons'>
     <tr>\n";
-	    echo "      <td class='ptb_button'><input class='button' type='submit' value='Save' name='submit' /></td>\n";
+	    echo "      <td class='ptb_button'><input class='hbutton' type='submit' value='Save' name='submit' /></td>\n";
 	    if ($crow)
 		echo "      <td class='ptb_button'><input class='button' type='submit' value='Delete response' name='delete' /></td>\n";
 	    echo "    </tr>\n  </table></td>\n</tr>";

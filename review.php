@@ -546,7 +546,7 @@ function reviewView($prow, $rrow, $editMode) {
 	    echo "</td></tr></table>",
 		"<div class='smgap'></div><table class='pt_buttons'>\n";
 	    $buttons = array();
-	    $buttons[] = "<input class='button' type='submit' value='Save changes' name='update' />";
+	    $buttons[] = "<input class='hbutton' type='submit' value='Save changes' name='update' />";
 	    if ($rrow && $Me->privChair) {
 		$buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
 		$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data'><div class='popup_actions'><input class='button' type='submit' name='delete' value='Delete review' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";

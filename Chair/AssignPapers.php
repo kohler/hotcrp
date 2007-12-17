@@ -175,7 +175,8 @@ if ($reviewer >= 0) {
     echo $paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me);
     //if (isset($sau) && ($paperList->authorMatch || $paperList->collaboratorsMatch))
     //   $_SESSION["matchPreg"] = "/(" . $paperList->authorMatch . ($paperList->authorMatch && $paperList->collaboratorsMatch ? "|" : "") . $paperList->collaboratorsMatch . ")/i";
-    echo "<input class='button_default' type='submit' name='update' value='Save assignments' />\n";
+    echo "<div class='smgap'></div>\n";
+    echo "<input class='hbutton' type='submit' name='update' value='Save assignments' />\n";
     echo "</div></form>\n";
 }
 

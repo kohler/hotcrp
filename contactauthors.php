@@ -136,13 +136,13 @@ if ($OK) {
     while ($row = edb_row($result)) {
 	echo "<tr><td class='pad'>", contactHtml($row[0], $row[1]), "</td> <td class='pad'>", htmlspecialchars($row[2]), "</td>";
 	if ($Me->privChair || ($numContacts > 1 && $row[3] != $Me->contactId))
-	    echo " <td class='pad'><button class='button_small' type='submit' name='rem$row[3]' value='1'>Remove contact author</button></td>";
+	    echo " <td class='pad'><button class='button' type='submit' name='rem$row[3]' value='1'>Remove contact author</button></td>";
 	echo "</tr>\n    ";
     }
 
-    echo "    <tr><td class='pad'><input class='textlite' type='text' name='name' size='20' onchange='highlightUpdate()' /></td>
-	<td class='pad'><input class='textlite' type='text' name='email' size='20' onchange='highlightUpdate()' /></td>
-	<td class='pad'><input class='button_small' type='submit' name='add' value='Add contact author' /></td>
+    echo "    <tr><td class='pad'><input class='textlite' type='text' name='name' size='20' /></td>
+	<td class='pad'><input class='textlite' type='text' name='email' size='20' /></td>
+	<td class='pad'><input class='hbutton' type='submit' name='add' value='Add contact author' /></td>
     </tr>
   </table></td>
 </tr>

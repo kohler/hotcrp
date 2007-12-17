@@ -117,6 +117,9 @@ a.q {
 	text-decoration: none;
 	color: #000000;
 }
+a.small {
+	font-size: smaller;
+}
 
 
 /* body */
@@ -217,25 +220,6 @@ span.confirm {
 span.error {
 	font-style: italic;
 	color: #660000;
-}
-
-input.button, button, a.button {
-	background: #ffffbb;
-	border-top: 1px solid #eeee66;
-	border-left: 2px solid #eeee66;
-	border-bottom: 1px solid #999966;
-	border-right: 2px solid #999966;
-	text-decoration: none;
-	color: black;
-	white-space: nowrap;
-}
-input.button_default, button.button_default {
-	background: #ffff99;
-	border-top: 1px solid #eeee66;
-	border-left: 2px solid #eeee66;
-	border-bottom: 1px solid #999966;
-	border-right: 2px solid #999966;
-	white-space: nowrap;
 }
 
 
@@ -417,15 +401,20 @@ div.gopaper {
 	float: right;
 	margin-bottom: 0em;
 }
-form.gopaper input.button {
+
+
+/* buttons */
+input.button, button, a.button, input.hbutton {
+	background: #ffffbb;
 	border-top: 1px solid #eeee66;
 	border-left: 2px solid #eeee66;
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
+	text-decoration: none;
+	color: black;
+	white-space: nowrap;
 }
-
-
-input.button_alert {
+input.button_alert, input.hbutton_alert {
 	font-weight: bold;
 	background: #ffaaaa;
 	border-top: 2px solid #ee6666;
@@ -433,15 +422,6 @@ input.button_alert {
 	border-bottom: 2px solid #996666;
 	border-right: 3px solid #996666;
 }
-input.button_default_alert {
-	font-weight: bold;
-	background: #ffaaaa;
-	border-top: 2px solid #ee6666;
-	border-left: 3px solid #ee6666;
-	border-bottom: 2px solid #996666;
-	border-right: 3px solid #996666;
-}
-
 a.download, a.rev_start, a.rev_comp, a.rev_edit, a.rev_view,
 input.button_small, a.button_small, button.button_small {
 	font-size: smaller;
@@ -473,9 +453,6 @@ input.button_small_alert, a.button_small_alert, button.button_small_alert {
 a.button_small {
 	vertical-align: 1px;
 }
-a.small {
-	font-size: smaller;
-}
 a.foldbutton {
 	font-size: smaller;
 	font-weight: normal;
@@ -496,11 +473,6 @@ td.caption a.foldbutton {
 	border-bottom: 1px solid #999966;
 	border-right: 1px solid #999966;
 }
-span.author, span.conflict {
-	font-weight: bold;
-	color: #ff0000;
-}
-
 
 
 /* Captions and entries */
@@ -736,6 +708,10 @@ tr.pt_paper input {
 }
 tr.pt_status span.pstat {
 	margin-right: 1em;
+}
+span.author, span.conflict {
+	font-weight: bold;
+	color: #ff0000;
 }
 span.pstat {
 	white-space: nowrap;

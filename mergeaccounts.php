@@ -166,10 +166,10 @@ else
 <tr>
   <td class='caption'></td>
   <td class='entry'><input type='radio' name='prefer' value='0' checked='checked' />&nbsp;Keep my current account (<?php echo htmlspecialchars($Me->email) ?>)<br />
-    <input type='radio' name='prefer' value='1' />&nbsp;Keep the account named above, delete my current account</td>
+    <input type='radio' name='prefer' value='1' />&nbsp;Keep the account named above and delete my current account</td>
 </tr>
 
-<tr><td class='caption'></td><td class='entry'><input class='button_default' type='submit' value='Merge Account' name='merge' /></td></tr>
+<tr><td class='caption'></td><td class='entry'><input class='button' type='submit' value='Merge Account' name='merge' /></td></tr>
 <tr class='last'><td class='caption'></td></tr>
 </table>
 </form>

@@ -543,7 +543,7 @@ if (($prow->outcome > 0 && $Me->privChair)
 
 // "Save assignments" button
 if ($Me->privChair)
-    echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='button' name='update' value='Save assignments' />
+    echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='hbutton' name='update' value='Save assignments' />
     <span id='assresult' style='padding-left:1em'></span>
 </td></tr>\n";
 

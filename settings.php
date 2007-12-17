@@ -788,7 +788,7 @@ else
     doDecGroup();
 
 echo ($belowHr ? "<hr />\n" : "<div class='smgap'></div>\n");
-echo "<input type='submit' class='button",
+echo "<input type='submit' class='hbutton",
     (defval($_REQUEST, "sample", "none") == "none" ? "" : "_alert"),
     "' name='update' value='Save changes' /> ";
 echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />";

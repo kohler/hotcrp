@@ -279,7 +279,7 @@ if (!isset($Me)) {
     echo "<form action='SetReviewForm.php' method='post'>
 <div class='smgap'></div>\n";
     rf_show();
-    echo "<table class='center'><tr><td><input type='submit' class='button' name='update' value='Save changes' />
+    echo "<table class='center'><tr><td><input type='submit' class='hbutton' name='update' value='Save changes' />
     <input type='submit' class='button' name='cancel' value='Cancel' /></td></tr></table>
 
 </form>\n";
