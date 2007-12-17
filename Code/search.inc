@@ -616,13 +616,20 @@ class PaperSearch {
 	if (($this->q == "" ? 0 : 1) + ($this->qa == "" ? 0 : 1)
 	    + ($this->qx == "" ? 0 : 1) != 1)
 	    return false;
-	$d = ($this->q == "" ? ($this->qa == "" ? $this->qx : $this->qa) : $this->q);
-	if (preg_match('/\A\s*tag:([a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*)\s*\Z/', $d, $m))
-	    return ($this->qx ? "notag:$m[1]" : "tag:$m[1]");
-	else if (preg_match('/\A\s*notag:([a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*)\s*\Z/', $d, $m))
-	    return ($this->qx ? "tag:$m[1]" : "notag:$m[1]");
+	$d = trim($this->q == "" ? ($this->qa == "" ? $this->qx : $this->qa) : $this->q);
+	if (substr($d, 0, 4) == "tag:")
+	    $t = substr($d, 4);
+	else if (substr($d, 0, 6) == "notag:" || substr($d, 0, 6) == "order:")
+	    $t = substr($d, 6);
 	else
 	    return false;
+	require_once("tags.inc");
+	if (!checkTag($t, false))
+	    return false;
+	if ($d[0] == "o" && !$this->qx)
+	    return $d;
+	else
+	    return (($d[0] == "n") == ($this->qx == "") ? "notag:" : "tag:") . $t;
     }
     
     function description($listname) {
