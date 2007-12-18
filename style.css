@@ -72,7 +72,7 @@ table.vbar div.vbtab, table.vbar div.vbtab1y {
 	padding: 0px 1em 1px 1em;
 }
 table.vbar div.vbtab {
-	background: #fcf6e3; //#e6dcc1;
+	background: #fcf6e3; /*#e6dcc1;*/
 	border-top: 2px solid #ccc1a3;
 	border-left: 1px solid #ccc1a3;
 	border-right: 1px solid #ccc1a3;
