@@ -199,11 +199,13 @@ function searchQuickref() {
     _searchQuickrefRow("", "cre:<3", "less than three completed reviews");
     _searchQuickrefRow("", "pri:>=1", "at least one primary reviewer (\"cpri:\" and reviewer name/email also work)");
     _searchQuickrefRow("", "sec:pai", "\"pai\" (reviewer name/email) is secondary reviewer (\"csec:\" and review counts also work)");
-    _searchQuickrefRow("", "lead:fdabek", "\"fdabek\" (in name/email) is discussion lead");
+    _searchQuickrefRow("Comments", "cmt:>0", "at least one comment visible to PC (including authors' response)");
+    _searchQuickrefRow("", "aucmt:>0", "at least one comment visible to authors (including authors' response)");
+    _searchQuickrefRow("Leads", "lead:fdabek", "\"fdabek\" (in name/email) is discussion lead");
     _searchQuickrefRow("", "lead:none", "no assigned discussion lead");
     _searchQuickrefRow("", "lead:any", "some assigned discussion lead");
-    _searchQuickrefRow("", "shep:fdabek", "\"fdabek\" (in name/email) is shepherd (\"none\" and \"any\" also work)");
-    _searchQuickrefRow("", "conflict:fdabek", "\"fdabek\" (in name/email) has a conflict with the paper");
+    _searchQuickrefRow("Shepherds", "shep:fdabek", "\"fdabek\" (in name/email) is shepherd (\"none\" and \"any\" also work)");
+    _searchQuickrefRow("Conflicts", "conflict:fdabek", "\"fdabek\" (in name/email) has a conflict with the paper");
     _searchQuickrefRow("Status", "status:sub", "paper is submitted for review", "t=all");
     _searchQuickrefRow("", "status:unsub", "paper is neither submitted nor withdrawn", "t=all");
     _searchQuickrefRow("", "status:withdrawn", "paper has been withdrawn", "t=all");

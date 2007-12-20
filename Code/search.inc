@@ -16,6 +16,8 @@ $searchTags = array('ti:' => 'ti', 'title:' => 'ti',
 		    'cpri:' => 'spri', 'cprimary:' => 'spri',
 		    'sec:' => 'sec', 'secondary:' => 'sec',
 		    'csec:' => 'ssec', 'csecondary:' => 'ssec',
+		    'cmt:' => 'cmt', 'comment:' => 'cmt',
+		    'aucmt:' => 'aucmt', 'aucomment:' => 'aucmt',
 		    'tag:' => 'tag',
 		    'notag:' => 'notag',
 		    'ord:' => 'order', 'order:' => 'order',
@@ -164,6 +166,7 @@ class PaperSearch {
 	global $Conf;
 	$this->_searchReviewSuffixFactor($submitted, $what, $sub, $anyfac);
 	if (preg_match('/^([<>]?=?\s*)?(\d+)$/s', $word, $m)) {
+	    $m[1] = ($m[1] ? $m[1] : "=");
 	    if ($m[2] == 0 && $m[1] == "<")
 		return " or false";
 	    if ($m[2] == 0 && $m[1] == ">=")
@@ -174,11 +177,12 @@ class PaperSearch {
 		$this->any |= self::ANY_CONFLICT;
 		$and = " and conflictType is null";
 	    }
-	    $q = ($m[1][0] == "<" ? " or (numReviews$sub is null$and)" : "");
-	    if ($m[2] == 0 && (!$m[1] || $m[1] == "=" || $m[1] == "<="))
-		return $q;
-	    else
-		return $q . " or (numReviews$sub" . ($m[1] ? $m[1] : "=") . $m[2] . "$and)";
+	    $q = "";
+	    if ($m[1][0] == "<" || ($m[2] == 0 && $m[1] == "="))
+		$q .= " or (numReviews$sub is null$and)";
+	    if ($m[2] != 0 || $m[1][1] == ">")
+		$q .= " or (numReviews$sub" . $m[1] . $m[2] . "$and)";
+	    return $q;
 	} else if (!$this->amPC)
 	    return "";
 	else {
@@ -194,6 +198,32 @@ class PaperSearch {
 	    } else
 		return " or (reviewerInfo$sub is not null and reviewerInfo$sub like '%$word%'$and)";
 	}
+    }
+
+    function _searchComment($word, $type, $field) {
+	global $Conf;
+	if ($word == "")
+	    $word = ">0";
+	if (preg_match('/^([<>]?=?\s*)?(\d+)$/s', $word, $m)) {
+	    $m[1] = ($m[1] ? $m[1] : "=");
+	    if ($m[2] == 0 && $m[1] == "<")
+		return " or false";
+	    if ($m[2] == 0 && $m[1] == ">=")
+		return " or true";
+	    if ($field == "aucmt" || !$this->privChair)
+		$value = "numAuthorComments";
+	    else if ($this->privChair)
+		$value = "numComments";
+	    else {
+		$this->any |= self::ANY_CONFLICT;
+		if ($Conf->timeAuthorViewReviews())
+		    $value = "if(conflictType,numAuthorComments,numComments)";
+		else
+		    $value = "if(conflictType,0,numComments)";
+	    }
+	    return " or ($value" . $m[1] . $m[2] . ")";
+	} else
+	    return "";
     }
 
     function _searchQueryType($str, $type = "any") {
@@ -277,6 +307,10 @@ class PaperSearch {
 		$qp .= $this->_searchReviewer($lword, $type, false, REVIEW_SECONDARY);
 	    if ($special ? $special == "ssec" : isset($this->fields['ssec']))
 		$qp .= $this->_searchReviewer($lword, $type, true, REVIEW_SECONDARY);
+	    if ($special ? $special == "cmt" : isset($this->fields['cmt']))
+		$qp .= $this->_searchComment($lword, $type, "cmt");
+	    if ($special ? $special == "aucmt" : isset($this->fields['aucmt']))
+		$qp .= $this->_searchComment($lword, $type, "aucmt");
 	    if ((($special ? $special == "tag" : isset($this->fields['tag']))
 		 || ($special ? $special == "order" : isset($this->fields['order'])))
 		&& $this->amPC) {
