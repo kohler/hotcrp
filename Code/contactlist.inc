@@ -432,11 +432,16 @@ class ContactList extends BaseList {
 	    $j = "left join";
 	    if ($this->limit == "re" || $this->limit == "req" || $this->limit == "ext" || $this->limit == "resub" || $this->limit == "extsub")
 		$j = "join";
-	    $pq .= "	$j (select PaperReview.* from PaperReview join Paper on (Paper.paperId=PaperReview.paperId) where Paper.timeSubmitted>0";
+	    $pq .= "	$j (select PaperReview.* from PaperReview join Paper on (Paper.paperId=PaperReview.paperId)";
+	    if (!$this->contact->privChair)
+		$pq .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->contact->contactId . ")";
+	    $pq .= " where Paper.timeSubmitted>0";
 	    if ($this->limit == "req" || $this->limit == "ext" || $this->limit == "extsub")
 		$pq .= " and PaperReview.reviewType=" . REVIEW_EXTERNAL;
 	    if ($this->limit == "req")
 		$pq .= " and PaperReview.requestedBy=" . $this->contact->contactId;
+	    if (!$this->contact->privChair)
+		$pq .= " and (conflictType is null or conflictType=0 or PaperReview.contactId=" . $this->contact->contactId . ")";
 	    $pq .= ") as PaperReview on (PaperReview.contactId=ContactInfo.contactId)\n";
 	}
 	if ($aulimit)
