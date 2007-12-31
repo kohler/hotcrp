@@ -1,5 +1,5 @@
-Major features
 - downloading reviews from the search screen gets comments as well
+- entry to identify presenting author
 
 Minor features
 - uploading request forms for others?
@@ -14,7 +14,6 @@ Minor features
   to authors
 - send mail from contacts.php
 - scrub author information from PDFs
-- UTF-8 mail(): what is required?
 
 Tiny features
 - fold review form
