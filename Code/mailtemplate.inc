@@ -516,6 +516,21 @@ class Mailer {
 	    return $this->row->authorInformation;
 	}
 
+	if ($what == "%SHEPHERD%" || $what == "%SHEPHERDNAME%"
+	    || $what == "%SHEPHERDEMAIL%") {
+	    $pc = pcMembers();
+	    if (defval($this->row, "shepherdContactId") <= 0
+		|| !defval($pc, $this->row->shepherdContactId, null))
+		return ($isbool ? false : "(no shepherd assigned)");
+	    $shep = $pc[$this->row->shepherdContactId];
+	    if ($what == "%SHEPHERD%")
+		return contactText($shep);
+	    else if ($what == "%SHEPHERDNAME%")
+		return contactNameText($shep);
+	    else
+		return $shep->email;
+	}
+
 	if ($what == "%REVIEWAUTHOR%" && $this->otherContact) {
 	    if (reviewBlind($this->rrow)
 		&& defval($this->contact, "privChair") <= 0

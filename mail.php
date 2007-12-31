@@ -44,7 +44,7 @@ $subjectPrefix = "[$Conf->shortName] ";
 function contactQuery($type) {
     global $rf, $papersel;
     $contactInfo = "firstName, lastName, email, password, ContactInfo.contactId";
-    $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind";
+    $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind, Paper.shepherdContactId";
 
     // paper limit
     $where = array();
@@ -340,6 +340,15 @@ echo "</div></td></tr></table>
     <td class='llentry'>Pretty-printed paper reviews.</td></tr>
 <tr><td class='lxcaption'><code>%COMMENTS%</code></td>
     <td class='llentry'>Pretty-printed paper comments, if any.</td></tr>
+<tr><td><div class='smgap'></div></td></tr>
+<tr><td class='lxcaption'><code>%IF(SHEPHERD)%...%ENDIF%</code></td>
+    <td class='llentry'>Include text only if a shepherd is assigned.</td></tr>
+<tr><td class='lxcaption'><code>%SHEPHERD%</code></td>
+    <td class='llentry'>Shepherd name and email, if any.</td></tr>
+<tr><td class='lxcaption'><code>%SHEPHERDNAME%</code></td>
+    <td class='llentry'>Shepherd name, if any.</td></tr>
+<tr><td class='lxcaption'><code>%SHEPHERDEMAIL%</code></td>
+    <td class='llentry'>Shepherd email, if any.</td></tr>
 </table></td></tr></table>
 </td></tr>
 
