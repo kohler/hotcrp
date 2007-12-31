@@ -1,5 +1,32 @@
 HotCRP NEWS
 
+Version 2.12   30.Dec.2007
+
+* Introduce "twiddle tags", such as "~tag", which are visible only to the
+  PC members that created them.  Based on a request from Matthew Frank.
+
+* Add an optional note to the reviewer that PC members can supply with
+  review requests.
+
+* Support completely anonymous reviewers.
+
+* Automatic paper assignment can avoid assigning two PC members to the same
+  paper.  Based on a request from Matthew Frank.
+
+* Add %SHEPHERD%, etc. to the mail tool (Jon Crowcroft).
+
+* UI improvements.  Especially including a one-page signin process that
+  allows people who haven't yet logged in to see public conference
+  information such as deadlines and PC members.
+
+* Mail improvements to MIME encoding.
+
+* Bug fixes.
+
+* Thanks to Matthew Frank, Mike Colagrasso, David Black-Schaffer, Ken
+  Birman, and Jon Crowcroft.
+
+
 Version 2.11   27.Oct.2007
 
 * Mail tool allows sending mail to contact authors or reviewers for
