@@ -1,3 +1,55 @@
+2007-12-30 Sunday 21:33  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* mail.php (1.23), Code/mailtemplate.inc (1.32): Add %SHEPHERD%,
+	  %SHEPHERDNAME%, and %SHEPHERDEMAIL% to mail tool (Jon Crowcroft)
+
+2007-12-20 Thursday 12:21  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.59), Code/search.inc (1.72): add searches for number
+	  of comments and number of author-visible comments (Jon Crowcroft)
+
+2007-12-20 Thursday 10:46  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/contactlist.inc (1.26): hide reviews of conflicted papers
+	  from the review counts that the PC can see (Ken Birman report)
+
+2007-12-17 Monday 20:15  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* style.css (1.216): correct comment
+
+2007-12-17 Monday 17:07  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* style.css (1.215): improve tab appearance (several people keep
+	  not noticing it!)
+
+2007-12-17 Monday 15:30  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* autoassign.php (1.25), script.js (1.59), style.css (1.214): Add
+	  "Don't assign (PC) and (PC) to the same paper" option to
+	  autoassignment (based on request from Matthew Frank).
+
+2007-12-17 Monday 11:46  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* paper.php (1.152), Code/paperlist.inc (1.152),
+	  Code/papertable.inc (1.103), Code/search.inc (1.71): be careful
+	  about what you highlight (do not highlight tags)
+
+2007-12-17 Monday 11:21  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* paper.php (1.151), Code/conference.inc (1.233),
+	  Code/papertable.inc (1.102): some fixes around final paper
+	  collection: show the button only when it makes sense
+
+2007-12-17 Monday 10:28  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.82), comment.php (1.51), contactauthors.php (1.38),
+	  mergeaccounts.php (1.40), paper.php (1.150), review.php (1.121),
+	  script.js (1.58), settings.php (1.62), style.css (1.213),
+	  Chair/AssignPapers.php (1.48), Chair/SetReviewForm.php (1.39),
+	  PC/reviewprefs.php (1.40): better highlightUpdate()
+	  implementation: explicitly mark using classes which buttons
+	  should be highlighted, rather than implicitly on form name
+
 2007-12-17 Monday 09:47  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* .htaccess (1.8), README (1.25), doc (1.19), tarball.sh (1.67),
