@@ -8,7 +8,7 @@ require_once('Code/paperlist.inc');
 require_once('Code/search.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPrivChair('index.php');
+$Me->goIfNotPrivChair("index$ConfSiteSuffix");
 
 // paper selection
 if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
@@ -109,7 +109,7 @@ function noBadPair($pc, $pid) {
 }
 
 function doAssign() {
-    global $Conf, $ConfSiteBase, $papersel, $assignments, $assignprefs, $badpairs;
+    global $Conf, $ConfSiteBase, $ConfSiteSuffix, $papersel, $assignments, $assignprefs, $badpairs;
 
     // check request
     if (!checkRequest($atype, $reviewtype, false))
@@ -270,8 +270,8 @@ function doAssign() {
     if ($badpids) {
 	$b = array();
 	foreach ($badpids as $pid)
-	    $b[] = "<a href='${ConfSiteBase}paper.php?paperId=$pid'>$pid</a>";
-	$Conf->warnMsg("I wasn't able to complete the assignment, probably because of some conflicts in the PC members you selected.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . " (<a href='${ConfSiteBase}search.php?q=" . join("+", $badpids) . "'>list them all</a>).");
+	    $b[] = "<a href='${ConfSiteBase}paper$ConfSiteSuffix?p=$pid'>$pid</a>";
+	$Conf->warnMsg("I wasn't able to complete the assignment, probably because of some conflicts in the PC members you selected.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . " (<a href='${ConfSiteBase}search$ConfSiteSuffix?q=" . join("+", $badpids) . "'>list them all</a>).");
     }
     if (count($assignments) == 0) {
 	$Conf->warnMsg("Nothing to assign.");
@@ -280,7 +280,7 @@ function doAssign() {
 }
 
 function saveAssign() {
-    global $Conf, $Me, $ConfSiteBase;
+    global $Conf, $Me;
 
     // check request
     if (!checkRequest($atype, $reviewtype, true))
@@ -349,8 +349,8 @@ else if (isset($_REQUEST["saveassign"]) && isset($_REQUEST["a"]) && isset($_REQU
 
 
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
-$abar .= actionTab("Automatic", "autoassign.php", true);
-$abar .= actionTab("Manual", "Chair/AssignPapers.php", false);
+$abar .= actionTab("Automatic", "autoassign$ConfSiteSuffix", true);
+$abar .= actionTab("Manual", "Chair/AssignPapers$ConfSiteSuffix", false);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 
@@ -443,7 +443,7 @@ if (isset($assignments) && count($assignments) > 0) {
     }
 
     echo "<div class='smgap'></div>";
-    echo "<form method='post' action='autoassign.php'>\n";
+    echo "<form method='post' action='autoassign$ConfSiteSuffix'>\n";
     echo "<input type='submit' class='button' name='saveassign' value='Save assignment' />\n";
     echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />\n";
     foreach (array("t", "q", "a", "revaddtype", "revtype", "revct", "revaddct", "pctyp", "balance", "badpairs", "bpcount") as $t)
@@ -474,7 +474,7 @@ if (isset($assignments) && count($assignments) > 0) {
     exit;
 }
 
-echo "<form method='post' action='autoassign.php'>";
+echo "<form method='post' action='autoassign$ConfSiteSuffix'>";
 
 echo "<table>";
 

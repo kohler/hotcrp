@@ -2,7 +2,7 @@
 require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPC("../index.php");
+$Me->goIfNotPC("../");
 
 
 $Conf->header("Check reviews of your assigned reviewers and send reminders");
@@ -19,7 +19,7 @@ if (!IsSet($_REQUEST['emailBody'])) {
   $_REQUEST['emailBody'] .= "for the $Conf->longName ($Conf->shortName) conference.\n";
   $_REQUEST['emailBody'] .= "\n";
   $_REQUEST['emailBody'] .= "You can continue to modify your review(s)\n";
-  $_REQUEST['emailBody'] .= "until the <a href='${ConfSiteBase}deadline.php'>deadline</a>\n";
+  $_REQUEST['emailBody'] .= "until the <a href='${ConfSiteBase}deadline$ConfSiteSuffix'>deadline</a>\n";
   $_REQUEST['emailBody'] .= "or until you finalize them.\n";
   $_REQUEST['emailBody'] .= "\n";
   $_REQUEST['emailBody'] .= "If you are unable to complete the review by the deadline,\n";
@@ -214,18 +214,18 @@ if ($result) {
 
 	print "</td>";
 
-	print "<td><a href='${ConfSiteBase}review.php?paperId=$paperId'>$paperId</a></td> <td> $contactEmail </td>";
+	print "<td><a href='${ConfSiteBase}review$ConfSiteSuffix?p=$paperId'>$paperId</a></td> <td> $contactEmail </td>";
 
 	if ($review_row[2] > 0) {
 	  $status = "<b> Done </b>";
 	  print "<td> $status </td>";
-	  print "<td> <b> <a href=\"${ConfSiteBase}review.php?reviewId=$requestId\" target=_blank> See review </a> </b>";
+	  print "<td> <b> <a href=\"${ConfSiteBase}review$ConfSiteSuffix?reviewId=$requestId\" target=_blank> See review </a> </b>";
 	  print "</td>";
 	  print "<td> $title </td> </tr>\n";
 	} else if ($review_row[1] > 0) {
 	  $status = "Not finalized";
 	  print "<td> $status </td> \n";
-	  print "<td> <b> <a href=\"${ConfSiteBase}review.php?reviewId=$requestId\" target=_blank> See partial review </a> </b>";
+	  print "<td> <b> <a href=\"${ConfSiteBase}review$ConfSiteSuffix?reviewId=$requestId\" target=_blank> See partial review </a> </b>";
 	  print "</td>";
 	  print "<td> $title </td>";
 	} else {

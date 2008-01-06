@@ -147,7 +147,7 @@ function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
 }
 
 function tagsToText($t, $makeUrls, $contact = null) {
-    global $Me, $ConfSiteBase;
+    global $Me, $ConfSiteBase, $ConfSiteSuffix;
     if ($contact === null)
 	$contact = $Me;
     if (is_object($contact))
@@ -162,6 +162,6 @@ function tagsToText($t, $makeUrls, $contact = null) {
     if (!is_string($makeUrls))
 	$makeUrls = $ConfSiteBase;
     return preg_replace('/(~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*)/',
-			"<a class='q' href=\"${makeUrls}search.php?q=tag:\$1\">\$1</a>",
+			"<a class='q' href=\"${makeUrls}search$ConfSiteSuffix?q=tag:\$1\">\$1</a>",
 			$t);
 }

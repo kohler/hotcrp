@@ -8,7 +8,7 @@ require_once('Code/header.inc');
 if (isset($_REQUEST["var"])) {
     $v = $_REQUEST["var"];
     if ($v == "foldassigna" || $v == "foldassignp"
-	|| $v == "foldpapera" || $v == "foldpaperp"
+	|| $v == "foldpapera" || $v == "foldpaperp" || $v == "foldreviewp"
 	|| $v == "foldplact" || $v == "foldpltags") {
 	if (isset($_REQUEST["val"]))
 	    $_SESSION[$v] = intval($_REQUEST["val"]);

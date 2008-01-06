@@ -36,11 +36,11 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $ConfSiteBase, $prow, $rrows, $rrow, $editRrow, $nExternalRequests, $editRrowLogname;
+    global $Conf, $Me, $ConfSiteBase, $ConfSiteSuffix, $prow, $rrows, $rrow, $editRrow, $nExternalRequests, $editRrowLogname;
     if (isset($_REQUEST["reviewId"]))
 	$sel = array("reviewId" => $_REQUEST["reviewId"]);
     else {
-	maybeSearchPaperId("review.php", $Me);
+	maybeSearchPaperId($Me);
 	$sel = array("paperId" => $_REQUEST["paperId"]);
     }
     $sel["tags"] = $sel["topics"] = $sel["options"] = 1;
@@ -83,7 +83,7 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     if (!($req = $rf->parseTextForm($tf, $Conf)))
 	/* error already reported */;
     else if (isset($req['paperId']) && $req['paperId'] != $prow->paperId)
-	$rf->tfError($tf, "This review form is for paper #" . $req['paperId'] . ", not paper #$prow->paperId; did you mean to upload it here?  I have ignored the form.<br /><a class='button_small' href='${ConfSiteBase}review.php?paperId=" . $req['paperId'] . "'>Review paper #" . $req['paperId'] . "</a> <a class='button_small' href='${ConfSiteBase}offline.php'>General review upload site</a>");
+	$rf->tfError($tf, "This review form is for paper #" . $req['paperId'] . ", not paper #$prow->paperId; did you mean to upload it here?  I have ignored the form.<br /><a class='button_small' href='${ConfSiteBase}review$ConfSiteSuffix?p=" . $req['paperId'] . "'>Review paper #" . $req['paperId'] . "</a> <a class='button_small' href='${ConfSiteBase}offline$ConfSiteSuffix'>General review upload site</a>");
     else if (!$Me->canSubmitReview($prow, $editRrow, $Conf, $whyNot))
 	$rf->tfError($tf, whyNotText($whyNot, "review"));
     else {
@@ -95,7 +95,7 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     }
 
     if (count($tf['err']) == 0 && $rf->parseTextForm($tf, $Conf))
-	$rf->tfError($tf, "Only the first review form in the file was parsed.  <a href='${ConfSiteBase}offline.php'>Upload multiple-review files here.</a>");
+	$rf->tfError($tf, "Only the first review form in the file was parsed.  <a href='${ConfSiteBase}offline$ConfSiteSuffix'>Upload multiple-review files here.</a>");
 
     $rf->textFormMessages($tf, $Conf);
     loadRows();
@@ -224,7 +224,7 @@ function archiveReview($rrow) {
 }
 
 function refuseReview() {
-    global $ConfSiteBase, $Conf, $Opt, $Me, $prow, $rrow;
+    global $Conf, $Opt, $Me, $prow, $rrow;
     
     $while = "while refusing review";
     $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperReviewArchive write", $while);
@@ -359,7 +359,7 @@ if ($rrow && ($rrow->contactId == $Me->contactId
 	      || ($Me->privChair && $mode == "edit"))
     && !$Conf->timeReviewPaper($Me->isPC, true, true)) {
     $override = ($Me->privChair ? "  As an administrator, you can override this deadline using the \"Override deadlines\" checkbox." : "");
-    $Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for changing reviews has passed, so the review can no longer be changed.$override");
+    $Conf->infoMsg("The <a href='deadlines$ConfSiteSuffix'>deadline</a> for changing reviews has passed, so the review can no longer be changed.$override");
 }
 
 
@@ -371,7 +371,7 @@ if ($mode == "edit" && $prow->reviewType <= 0 && !$rrow)
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, $forceShow);
 $authorsFolded = (!$canViewAuthors && $Me->privChair && paperBlind($prow) ? 1 : 2);
-$paperTable = new PaperTable(false, false, true, $authorsFolded);
+$paperTable = new PaperTable(false, false, true, $authorsFolded, "review");
 $paperTable->echoDivEnter();
 echo "<table class='paper'>\n\n";
 $Conf->tableMsg(2, $paperTable);
@@ -379,6 +379,7 @@ $Conf->tableMsg(2, $paperTable);
 echo "<tr class='id'>\n  <td class='caption'><h2>#$prow->paperId</h2></td>\n";
 echo "  <td class='entry' colspan='2'><h2>";
 $paperTable->echoTitle($prow);
+echo "<img id='foldsession.paper9' alt='' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldreviewp&amp;val=", defval($_SESSION, "foldreviewp", 1), "&amp;cache=1' width='1' height='1' />";
 echo "</h2></td>\n</tr>\n\n";
 
 $paperTable->echoPaperRow($prow, PaperTable::STATUS_CONFLICTINFO_PC);
@@ -391,7 +392,7 @@ $paperTable->echoAbstractRow($prow);
 $paperTable->echoTopics($prow);
 $paperTable->echoOptions($prow, $Me->privChair);
 if ($Me->canViewTags($prow, $Conf, $forceShow))
-    $paperTable->echoTags($prow, "${ConfSiteBase}review.php?paperId=$prow->paperId$linkExtra");
+    $paperTable->echoTags($prow, "${ConfSiteBase}review$ConfSiteSuffix?p=$prow->paperId$linkExtra");
 if ($Me->privChair)
     $paperTable->echoPCConflicts($prow, true);
 if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow)))
@@ -435,11 +436,11 @@ if ($rrow && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
 // XXX "<td class='entry'>", contactHtml($rrow), "</td>"
 
 function reviewView($prow, $rrow, $editMode) {
-    global $Conf, $ConfSiteBase, $Me, $rf, $forceShow, $linkExtra, $useRequest,
-	$nExternalRequests;
+    global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Me, $rf, $forceShow,
+	$linkExtra, $useRequest, $nExternalRequests;
     
-    $reviewLink = "review.php?"
-	. ($rrow ? "reviewId=$rrow->reviewId" : "paperId=$prow->paperId")
+    $reviewLink = "review$ConfSiteSuffix?"
+	. ($rrow ? "reviewId=$rrow->reviewId" : "p=$prow->paperId")
 	. $linkExtra . "&amp;mode=edit&amp;post=1";
     if ($editMode)
 	echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data'>\n";
@@ -453,7 +454,7 @@ function reviewView($prow, $rrow, $editMode) {
 	echo " id='review$rrow->reviewId'";
     echo ">";
     if ($rrow) {
-	echo "<a href='review.php?reviewId=$rrow->reviewId$linkExtra' class='q'>Review";
+	echo "<a href='review$ConfSiteSuffix?reviewId=$rrow->reviewId$linkExtra' class='q'>Review";
 	if ($rrow->reviewSubmitted)
 	    echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
 	echo "</a>";
@@ -472,11 +473,11 @@ function reviewView($prow, $rrow, $editMode) {
 	$sep = $xsep;
     }
     if ($rrow) {
-	echo $sep, "<a href='review.php?paperId=$prow->paperId&amp;reviewId=$rrow->reviewId&amp;text=1$linkExtra'>Text version</a>";
+	echo $sep, "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;reviewId=$rrow->reviewId&amp;text=1$linkExtra'>Text version</a>";
 	$sep = $xsep;
     }
     if ($rrow && !$editMode && $Me->canReview($prow, $rrow, $Conf))
-	echo $sep, "<a class='button' href='review.php?reviewId=$rrow->reviewId'>Edit</a>";
+	echo $sep, "<a class='button' href='review$ConfSiteSuffix?reviewId=$rrow->reviewId'>Edit</a>";
     echo "</td>
 </tr>\n";
     
@@ -498,7 +499,7 @@ function reviewView($prow, $rrow, $editMode) {
 	if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType == REVIEW_SECONDARY) {
 	    echo "\n<tr class='rev_del'>\n  <td class='caption'></td>\n  <td class='entry' colspan='2'>";
 	    if ($nExternalRequests == 0)
-		echo "As a secondary reviewer, you can <a href=\"assign.php?paperId=$rrow->paperId$linkExtra\">delegate this review to an external reviewer</a>, but if your external reviewer refuses to review the paper, you should complete the review yourself.";
+		echo "As a secondary reviewer, you can <a href=\"assign$ConfSiteSuffix?p=$rrow->paperId$linkExtra\">delegate this review to an external reviewer</a>, but if your external reviewer refuses to review the paper, you should complete the review yourself.";
 	    else
 		echo "This secondary review has been delegated, but you can still complete it if you'd like.";
 	    echo "</td>\n</tr>\n";

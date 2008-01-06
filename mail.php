@@ -4,7 +4,7 @@ require_once('Code/search.inc');
 require_once('Code/mailtemplate.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPrivChair('index.php');
+$Me->goIfNotPrivChair("index$ConfSiteSuffix");
 $rf = reviewForm();
 $nullMailer = new Mailer(null, null);
 $nullMailer->width = 10000000;
@@ -91,17 +91,17 @@ function contactQuery($type) {
 }
 
 function checkMailPrologue($send) {
-    global $Conf;
+    global $Conf, $ConfSiteSuffix;
     if ($send) {
 	echo "<div id='foldmail' class='foldc'><div class='ellipsis'><div class='error'>In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong></div></div><div class='extension'><div class='confirm'>Sent mail as follows.</div>
-	<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail.php' enctype='multipart/form-data'>\n";
+	<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail$ConfSiteSuffix' enctype='multipart/form-data'>\n";
 	foreach (array("recipients", "subject", "emailBody") as $x)
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
 	echo "<input class='button' type='submit' name='go' value='Prepare more mail' /></td></tr></table>
 </div></div>";
     } else {
 	$Conf->infoMsg("Examine the mails to check that you've gotten the result you want, then select 'Send' to send the checked mails.");
-	echo "<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail.php?postcheck=1' enctype='multipart/form-data'>\n";
+	echo "<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail$ConfSiteSuffix?postcheck=1' enctype='multipart/form-data'>\n";
 	foreach (array("recipients", "subject", "emailBody") as $x)
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
 	echo "<input class='button' type='submit' name='send' value='Send' /> &nbsp;
@@ -111,7 +111,7 @@ function checkMailPrologue($send) {
 }
 
 function checkMail($send) {
-    global $Conf, $subjectPrefix, $recip;
+    global $Conf, $ConfSiteSuffix, $subjectPrefix, $recip;
     $q = contactQuery($_REQUEST["recipients"]);
     if (!$q)
 	return $Conf->errorMsg("Bad recipients value");
@@ -160,7 +160,7 @@ function checkMail($send) {
 	echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n", $closer;
 	$Conf->echoScript("fold('mail', null);");
     } else {
-	echo "<tr class='last'><td class='caption'></td><td class='entry'><form method='post' action='mail.php?postcheck=1' enctype='multipart/form-data'>\n";
+	echo "<tr class='last'><td class='caption'></td><td class='entry'><form method='post' action='mail$ConfSiteSuffix?postcheck=1' enctype='multipart/form-data'>\n";
 	foreach (array("recipients", "subject", "emailBody", "q", "t", "plimit") as $x)
 	    if (isset($_REQUEST[$x]))
 		echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
@@ -234,7 +234,7 @@ if (substr($_REQUEST["subject"], 0, strlen($subjectPrefix)) == $subjectPrefix)
     $_REQUEST["subject"] = substr($_REQUEST["subject"], strlen($subjectPrefix));
 
 
-echo "<form method='post' action='mail.php?check=1' enctype='multipart/form-data'>
+echo "<form method='post' action='mail$ConfSiteSuffix?check=1' enctype='multipart/form-data'>
 <table>
 <tr class='topspace'>
   <td class='caption'>Templates</td>

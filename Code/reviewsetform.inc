@@ -276,7 +276,7 @@ if (!isset($Me)) {
     $Conf->header("Edit Review Form");
     $rf = reviewForm();
     rf_update(true);
-    echo "<form action='SetReviewForm.php' method='post'>
+    echo "<form action='SetReviewForm$ConfSiteSuffix' method='post'>
 <div class='smgap'></div>\n";
     rf_show();
     echo "<table class='center'><tr><td><input type='submit' class='hbutton' name='update' value='Save changes' />

@@ -13,7 +13,7 @@ $Me->goIfInvalid();
 function confHeader() {
     global $paperId, $prow, $Conf;
     $title = ($paperId > 0 ? "Paper #$paperId Contact Authors" : "Paper Contact Authors");
-    $Conf->header($title, "contactauthors", actionBar($prow, false, "Contact Authors", "contactauthors.php?paperId=$paperId"), false);
+    $Conf->header($title, "contactauthors", actionBar($prow, false, "Contact Authors", "contactauthors$ConfSiteSuffix?p=$paperId"), false);
 }
 
 function errorMsgExit($msg) {
@@ -24,7 +24,7 @@ function errorMsgExit($msg) {
 
 
 // collect paper ID
-maybeSearchPaperId("contactauthors.php", $Me);
+maybeSearchPaperId($Me);
 $paperId = cvtint($_REQUEST["paperId"]);
 
 // grab paper row
@@ -105,7 +105,7 @@ if ($needMsg)
 if ($OK) {    
     $paperTable = new PaperTable(false, false, true, false);
     
-    echo "<form method='post' action=\"contactauthors.php?paperId=$paperId&amp;post=1\" enctype='multipart/form-data'>";
+    echo "<form method='post' action=\"contactauthors$ConfSiteSuffix?p=$paperId&amp;post=1\" enctype='multipart/form-data'>";
     $paperTable->echoDivEnter();
     echo "<table class='paper'>\n";
 

@@ -19,19 +19,19 @@ if (!isset($topicTitles[$topic]))
     $topic = "topics";
 
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
-$abar .= actionTab("Help topics", "help.php?t=topics", $topic == "topics");
+$abar .= actionTab("Help topics", "help$ConfSiteSuffix?t=topics", $topic == "topics");
 if ($topic == "search" || $topic == "syntax")
-    $abar .= actionTab("Search help", "help.php?t=search", $topic == "search");
+    $abar .= actionTab("Search help", "help$ConfSiteSuffix?t=search", $topic == "search");
 if ($topic == "search" || $topic == "syntax")
-    $abar .= actionTab("Search syntax", "help.php?t=syntax", $topic == "syntax");
+    $abar .= actionTab("Search syntax", "help$ConfSiteSuffix?t=syntax", $topic == "syntax");
 if ($topic != "topics" && $topic != "search" && $topic != "syntax")
-    $abar .= actionTab($topicTitles[$topic], "help.php?t=$topic", true);
+    $abar .= actionTab($topicTitles[$topic], "help$ConfSiteSuffix?t=$topic", true);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper' nowrap='nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 if ($topic == "topics")
     $Conf->header("Help", null, $abar);
 else
-    $Conf->header("<a href='help.php'>Help</a>", null, $abar);
+    $Conf->header("<a href='help$ConfSiteSuffix'>Help</a>", null, $abar);
 
 
 function _alternateRow($caption, $entry) {
@@ -44,23 +44,23 @@ function _alternateRow($caption, $entry) {
 
 
 function topics() {
-    global $ConfSiteBase;
+    global $ConfSiteBase, $ConfSiteSuffix;
     echo "<table>";
-    _alternateRow("<a href='help.php?t=chair'>Chair's guide</a>", "How to run a conference using HotCRP.");
-    _alternateRow("<a href='help.php?t=search'>Search</a>", "About paper searching.");
-    _alternateRow("<a href='help.php?t=syntax'>Search syntax</a>", "Quick reference to search syntax.");
-    _alternateRow("<a href='help.php?t=tags'>Tags</a>", "How to use tags to define paper sets and discussion orders.");
+    _alternateRow("<a href='help$ConfSiteSuffix?t=chair'>Chair's guide</a>", "How to run a conference using HotCRP.");
+    _alternateRow("<a href='help$ConfSiteSuffix?t=search'>Search</a>", "About paper searching.");
+    _alternateRow("<a href='help$ConfSiteSuffix?t=syntax'>Search syntax</a>", "Quick reference to search syntax.");
+    _alternateRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "How to use tags to define paper sets and discussion orders.");
     echo "</table>";
 }
 
 
 function _searchForm($forwhat, $other = null) {
-    global $ConfSiteBase;
+    global $ConfSiteBase, $ConfSiteSuffix;
     $text = "";
     if ($other && preg_match_all('/(\w+)=([^&]*)/', $other, $matches, PREG_SET_ORDER))
 	foreach ($matches as $m)
 	    $text .= "<input type='hidden' name='$m[1]' value=\"" . htmlspecialchars(urldecode($m[2])) . "\" />";
-    return "<form method='get' action='${ConfSiteBase}search.php'>"
+    return "<form method='get' action='${ConfSiteBase}search$ConfSiteSuffix'>"
 	. "<input type='text' class='textlite' name='q' value=\""
 	. htmlspecialchars($forwhat) . "\" size='20' /> &nbsp;"
 	. "<input type='submit' class='button' name='go' value='Search' />"
@@ -68,7 +68,7 @@ function _searchForm($forwhat, $other = null) {
 }
 
 function search() {
-    global $ConfSiteBase;
+    global $ConfSiteBase, $ConfSiteSuffix;
     echo "<table>";
     _alternateRow("Basics", "
 All HotCRP paper lists are obtained through search, search syntax is flexible,
@@ -81,7 +81,7 @@ and it's possible to download all matching papers and/or reviews at once.
 <li>" . _searchForm("12") . "&nbsp; finds paper #12.  When entered from a
  <a href='#quicklinks'>quicksearch</a> box, this search will <i>jump</i> to
  paper #12 directly.</li>
-<li>Investigate <a href='${ConfSiteBase}help.php?t=syntax'>search syntax</a>.</li>
+<li>Investigate <a href='${ConfSiteBase}help$ConfSiteSuffix?t=syntax'>search syntax</a>.</li>
 <li>Use <a href='#quicklinks'>quicklinks</a> on paper pages to navigate
  through search results.</li>
 <li>On search results pages, <i>shift-click</i> the checkboxes to
@@ -93,7 +93,7 @@ The default search box returns papers that match
 <i>any</i> of the space-separated terms you enter.
 To search for papers that match <i>all</i>
 the terms, or that <i>don't</i> match some terms, select
-<a href='${ConfSiteBase}search.php?opt=1'>Advanced search</a>
+<a href='${ConfSiteBase}search$ConfSiteSuffix?opt=1'>Advanced search</a>
 and use \"With <b>all</b> the words\" and \"<b>Without</b> the words\".
 
 <p>You can search in several paper classes, depending on your role in the
@@ -111,13 +111,13 @@ authors can only search their own submissions, and if the conference used
 anonymous submission, then only the PC chairs can search by author.</p>
 
 <p>By default, search examines paper titles, abstracts, and authors.
-<a href='${ConfSiteBase}search.php?opt=1'>Advanced search</a>
+<a href='${ConfSiteBase}search$ConfSiteSuffix?opt=1'>Advanced search</a>
 can search other fields, including authors/collaborators and reviewers.
 Also, <b>keywords</b> search specific characteristics such as titles,
 authors, reviewer names, and numbers of reviewers.  For example,
 \"ti:foo\" means \"search for 'foo' in paper
 titles\".  Keywords are listed in the
-<a href='help.php?t=syntax'>search syntax reference</a>.</p>");
+<a href='help$ConfSiteSuffix?t=syntax'>search syntax reference</a>.</p>");
     _alternateRow("Search results", "
 Click on a paper number or title to jump to that paper.
 Search matches are <span class='match'>highlighted</span> on paper screens,
@@ -137,7 +137,7 @@ You can:</p>
 <li>Download all reviews for the selected papers.</li>
 <li>Download tab-separated text files with authors, PC
  conflicts, review scores, and so forth (some options chairs only).</li>
-<li>Add, remove, and define <a href='${ConfSiteBase}help.php?t=tags'>tags</a>.</li>
+<li>Add, remove, and define <a href='${ConfSiteBase}help$ConfSiteSuffix?t=tags'>tags</a>.</li>
 <li>Assign reviewers and mark conflicts (chairs only).</li>
 <li>Set decisions (chairs only).</li>
 <li>Send mail to paper authors or reviewers (chairs only).</li>
@@ -166,7 +166,7 @@ Using these links can speed up many tasks.  Click on the search description
 }
 
 function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
-    global $rowidx, $ConfSiteBase;
+    global $rowidx;
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
     echo "<tr class='k", ($rowidx % 2), "'>";
     echo "<td class='srcaption nowrap'>", $caption, "</td>";
@@ -175,7 +175,7 @@ function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
 }
 
 function searchQuickref() {
-    global $rowidx;
+    global $rowidx, $ConfSiteSuffix;
     echo "<table>\n";
     _searchQuickrefRow("Basics", "", "all papers in the search category");
     _searchQuickrefRow("", "story", "\"story\" in title, abstract, possibly authors");
@@ -190,7 +190,7 @@ function searchQuickref() {
     _searchQuickrefRow("Collaborators", "co:liskov", "collaborators contains \"liskov\"");
     _searchQuickrefRow("Topics", "topic:link", "selected topics match \"link\"");
     _searchQuickrefRow("Options", "option:shadow", "selected submission options match \"shadow\"");
-    _searchQuickrefRow("<a href='help.php?t=tags'>Tags</a>", "tag:discuss", "tagged \"discuss\"");
+    _searchQuickrefRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "tag:discuss", "tagged \"discuss\"");
     _searchQuickrefRow("", "notag:discuss", "not tagged \"discuss\"");
     _searchQuickrefRow("", "order:discuss", "tagged \"discuss\", sort by tag order");
     _searchQuickrefRow("Reviews", "re:fdabek", "\"fdabek\" in reviewer name/email");
@@ -218,7 +218,7 @@ function searchQuickref() {
 
 
 function tags() {
-    global $Conf, $ConfSiteBase, $Me;
+    global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Me;
 
     // get current chair-only tags
     require_once('Code/tags.inc');
@@ -244,7 +244,7 @@ and <i>ordered</i> tags preserve a particular paper order.
 <p>By default, tags are visible to the entire PC, but <em>twiddle tags</em>,
 with names like &ldquo;~tag&rdquo;, are visible only to their creators.</p>");
 
-    $setting = ($Me->privChair ? "  (<a href='${ConfSiteBase}settings.php?group=rev'>Change this setting</a>)" : "");
+    $setting = ($Me->privChair ? "  (<a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>Change this setting</a>)" : "");
     $msg = ($Conf->setting("tag_seeall") > 0 ? "" : "  However, since PC members currently can't see tags for conflicted papers, each PC member might see a different list.$setting");
     _alternateRow("Using tags", "
 Here are some example ways to use tags.
@@ -252,24 +252,24 @@ Here are some example ways to use tags.
 <ul>
 <li><strong>Avoid discussing low-ranked submissions at the PC meeting.</strong>
  Mark low-ranked submissions with tag &ldquo;nodiscuss&rdquo;, then ask the PC to
- <a href='${ConfSiteBase}search.php?q=tag:nodiscuss'>search for &ldquo;tag:nodiscuss&rdquo;</a>.
+ <a href='${ConfSiteBase}search$ConfSiteSuffix?q=tag:nodiscuss'>search for &ldquo;tag:nodiscuss&rdquo;</a>.
  PC members can easily check the list for controversial papers they'd like to discuss despite their ranking.
  They can email the chairs about such papers, or, even easier, add a &ldquo;discussanyway&rdquo; tag.
  (You might make the &ldquo;nodiscuss&rdquo; tag chair-only so an evil PC member couldn't add it to a high-ranked paper, but it's usually better to trust the PC.)</li>
 
 <li><strong>Mark controversial papers that would benefit from additional review.</strong>
  Tell PC members to add the tag &ldquo;controversy&rdquo; when the current reviewers disagree.
- A <a href='${ConfSiteBase}search.php?q=tag:controversy'>search</a> shows you where the PC thinks more review is needed.</li>
+ A <a href='${ConfSiteBase}search$ConfSiteSuffix?q=tag:controversy'>search</a> shows you where the PC thinks more review is needed.</li>
 
 <li><strong>Mark PC-authored papers for extra scrutiny.</strong>
- First, <a href='${ConfSiteBase}search.php?t=s&amp;qt=au'>search for PC members' last names in author fields</a>.
+ First, <a href='${ConfSiteBase}search$ConfSiteSuffix?t=s&amp;qt=au'>search for PC members' last names in author fields</a>.
  Check for accidental matches and select the papers with PC members as authors, then use the action area below the search list to add the tag &ldquo;pcpaper&rdquo;.
- A <a href='${ConfSiteBase}search.php?t=s&amp;qx=tag:pcpaper'>search</a> shows papers without PC authors.
+ A <a href='${ConfSiteBase}search$ConfSiteSuffix?t=s&amp;qx=tag:pcpaper'>search</a> shows papers without PC authors.
  (Since PC members can see whether a paper is tagged &ldquo;pcpaper&rdquo;, you may want to delay defining the tag until just before the meeting.)</li>
 
 <li><strong>Define a discussion order for the PC meeting.</strong>
  Publishing the order lets PC members prepare to discuss upcoming papers.
- Define an ordered tag such as &ldquo;discuss&rdquo; (see below for how), then ask the PC to <a href='${ConfSiteBase}search.php?q=order:discuss'>search for &ldquo;order:discuss&rdquo;</a>.
+ Define an ordered tag such as &ldquo;discuss&rdquo; (see below for how), then ask the PC to <a href='${ConfSiteBase}search$ConfSiteSuffix?q=order:discuss'>search for &ldquo;order:discuss&rdquo;</a>.
  The PC can now see the order and use quick links to go from paper to paper.$msg</li>
 
 <li><strong>Mark tentative decisions during the PC meeting.</strong>
@@ -279,7 +279,7 @@ Here are some example ways to use tags.
 ");
     $msg = ($Conf->setting("tag_seeall") > 0 ? "Currently PC members can see tags for any paper, including conflicts" : "They are currently hidden from conflicted PC members&mdash;for instance, if a PC member searches for a tag, the results will never include conflicts");
     _alternateRow("Finding tags", "
-A paper's tags are shown on its <a href='${ConfSiteBase}review.php'>review page</a> and the other paper pages.
+A paper's tags are shown on its <a href='${ConfSiteBase}review$ConfSiteSuffix'>review page</a> and the other paper pages.
 
 <p><img src='${ConfSiteBase}images/extagsnone.png' alt='[Tag list on review screen]' /></p>
 
@@ -290,14 +290,14 @@ $msg.$setting
 Additionally, twiddle tags, which have names like &ldquo;~tag&rdquo;, are
 visible only to their creators; each PC member has an independent set.</p>");
     _alternateRow("Changing tags", "
-To change a single paper's tags, go to the Tags entry on its <a href='${ConfSiteBase}review.php'>review page</a>,
+To change a single paper's tags, go to the Tags entry on its <a href='${ConfSiteBase}review$ConfSiteSuffix'>review page</a>,
 click <img src='${ConfSiteBase}images/next.png' alt='right arrow' />,
 then enter one or more alphanumeric tags separated by spaces.
 
 <p><img src='${ConfSiteBase}images/extagsset.png' alt='[Tags entry on review screen]' /></p>
 
 <p>To tag multiple papers at once, find the papers in a
-<a href='${ConfSiteBase}search.php'>search</a>, select
+<a href='${ConfSiteBase}search$ConfSiteSuffix'>search</a>, select
 their checkboxes, and add tags using the action area.</p>
 
 <p><img src='${ConfSiteBase}images/extagssearch.png' alt='[Setting tags on the search page]' /></p>
@@ -310,43 +310,43 @@ Although any PC member can view or search
 any tag, only PC chairs can change certain tags$ctxt.  $setting");
     _alternateRow("Ordered tags<br />and discussion orders", "
 An ordered tag names an <i>ordered</i> set of papers.  Searching for the
-tag with &ldquo;<a href='${ConfSiteBase}search.php?q=order:tagname'>order:tagname</a>&rdquo; will return the papers in the order
+tag with &ldquo;<a href='${ConfSiteBase}search$ConfSiteSuffix?q=order:tagname'>order:tagname</a>&rdquo; will return the papers in the order
 you defined.  This is useful for PC meeting discussion orders, for example.
 In tag listings, the first paper in the &ldquo;discuss&rdquo; ordered tag will appear as
 &ldquo;discuss#1&rdquo;, the second as &ldquo;discuss#2&rdquo;, and so forth; you can change
 the order by editing the tag numbers.
 
 <p>It's easiest to define ordered tags using the
-<a href='${ConfSiteBase}search.php'>search screen</a>.  Search for the
+<a href='${ConfSiteBase}search$ConfSiteSuffix'>search screen</a>.  Search for the
 papers you want, sort them into the right order, select them, and
 choose <b>Define ordered</b> in the tag action area.  If no sort
 gives what you want, search for the desired paper numbers in order.
-For instance, you might search for &ldquo;<a href='${ConfSiteBase}search.php?q=4+1+12+9'>4 1 12 19</a>&rdquo;, then <b>Select all</b> and <b>Define ordered</b>.</p>");
+For instance, you might search for &ldquo;<a href='${ConfSiteBase}search$ConfSiteSuffix?q=4+1+12+9'>4 1 12 19</a>&rdquo;, then <b>Select all</b> and <b>Define ordered</b>.</p>");
     echo "</table>\n";
 }
 
 
 
 function chair() {
-    global $ConfSiteBase;
+    global $ConfSiteBase, $ConfSiteSuffix;
     echo "<table>";
     _alternateRow("Submission time", "
 Follow these steps to prepare to accept paper submissions.
 
 <ol>
 
-<li><p><strong><a href='${ConfSiteBase}settings.php?group=acc'>Set up PC
+<li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=acc'>Set up PC
   member accounts</a></strong> and decide whether to collect authors'
   snail-mail addresses and phone numbers.</li>
 
-<li><p><strong><a href='${ConfSiteBase}settings.php?group=sub'>Set submission
+<li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=sub'>Set submission
   policies</a></strong>, including whether submission is blind, whether
   authors check off conflicted PC members (\"Collect authors' PC conflicts
   with checkboxes\"), and whether authors must enter additional non-PC collaborators,
   which can help detect conflicts with external reviewers (\"Collect authors'
   other collaborators as text\").</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}settings.php?group=sub'>Set submission
+<li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=sub'>Set submission
   deadlines.</a></strong> Authors first <em>register</em>, then <em>submit</em>
   their papers, possibly multiple times; authors choose for each submitted
   version whether that version is ready for review.  Normally, HotCRP allows
@@ -360,15 +360,15 @@ Follow these steps to prepare to accept paper submissions.
   authors some slack. HotCRP will allow post-deadline submissions and updates
   for the specified grace period.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}settings.php?group=opt'>Define
+<li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=opt'>Define
   submission options (optional).</a></strong> If desired, the paper submission
   form can list additional checkboxes, such as \"Consider this
   paper for the Best Student Paper award\" or \"Provide this paper to the
   European shadow PC\", that submitters can select.  You can
-  <a href='${ConfSiteBase}search.php'>search</a> for papers with or without
+  <a href='${ConfSiteBase}search$ConfSiteSuffix'>search</a> for papers with or without
   each option.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}settings.php?group=opt'>Define paper
+<li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=opt'>Define paper
   topics (optional).</a></strong> Authors can select topics, such as
   \"Applications\" or \"Network databases\", that characterize their
   paper's subject areas.  PC members express topics for which they have high,
@@ -377,10 +377,10 @@ Follow these steps to prepare to accept paper submissions.
   busy PC members might not specify their preferences; topic matching lets you
   do a reasonable job at assigning papers anyway.</p></li>
 
-<li><p>Take a look at a <a href='${ConfSiteBase}paper.php?paperId=new'>paper
+<li><p>Take a look at a <a href='${ConfSiteBase}paper$ConfSiteSuffix?p=new'>paper
   submission page</a> to make sure it looks right.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}settings.php?group=sub'>Open the site
+<li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=sub'>Open the site
   for submissions.</a></strong> Submissions will be accepted only until the
   listed deadline.</p></li>
 
@@ -391,52 +391,52 @@ After the submission deadline has passed:
 <ol>
 
 <li><p>Consider looking through <a
-  href='${ConfSiteBase}search.php?q=&amp;t=all'>all papers</a> for
+  href='${ConfSiteBase}search$ConfSiteSuffix?q=&amp;t=all'>all papers</a> for
   anomalies.  Withdraw and/or delete duplicates or update details on the <a
-  href='${ConfSiteBase}paper.php'>paper pages</a> (via \"Edit paper\").
+  href='${ConfSiteBase}paper$ConfSiteSuffix'>paper pages</a> (via \"Edit paper\").
   Also consider contacting the authors of <a
-  href='${ConfSiteBase}search.php?q=status:unsub&amp;t=all'>papers that
+  href='${ConfSiteBase}search$ConfSiteSuffix?q=status:unsub&amp;t=all'>papers that
   were never officially submitted</a>, especially if a PDF document was
   uploaded (you can tell from the icon in the search list).  Sometimes a
   user will uncheck \"The paper is ready for review\" and forget to check
   it.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}settings.php?group=rfo'>Prepare the
+<li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rfo'>Prepare the
   review form.</a></strong> Take a look at the templates to get
   ideas.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}settings.php?group=rev'>Set review
+<li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>Set review
   policies and deadlines</a></strong>, including reviewing deadlines, whether
   review is blind, and whether PC members may review non-assigned papers
   (usually \"yes\" is the right answer).</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}PC/reviewprefs.php'>Collect review
+<li><p><strong><a href='${ConfSiteBase}reviewprefs$ConfSiteSuffix'>Collect review
   preferences from the PC.</a></strong> PC members can rank-order papers they
   want or don't want to review.  They can either set their preferences <a
-  href='${ConfSiteBase}PC/reviewprefs.php'>all at once</a>, or (often more
+  href='${ConfSiteBase}reviewprefs$ConfSiteSuffix'>all at once</a>, or (often more
   convenient) page through the <a
-  href='${ConfSiteBase}search.php?q=&amp;t=s'>list of submitted papers</a>
+  href='${ConfSiteBase}search$ConfSiteSuffix?q=&amp;t=s'>list of submitted papers</a>
   setting their preferences on the <a
-  href='${ConfSiteBase}paper.php'>paper pages</a>.</p>
+  href='${ConfSiteBase}paper$ConfSiteSuffix'>paper pages</a>.</p>
 
   <p>If you'd like, you can collect review preferences before the submission
-  deadline.  Select <a href='${ConfSiteBase}settings.php?group=sub'>\"PC can
+  deadline.  Select <a href='${ConfSiteBase}settings$ConfSiteSuffix?group=sub'>\"PC can
   see <i>all registered papers</i> until submission deadline\"</a>, which
   allows PC members to see abstracts for registered papers that haven't yet
   been submitted.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}Chair/AssignPapers.php?kind=c'>Assign
+<li><p><strong><a href='${ConfSiteBase}Chair/AssignPapers$ConfSiteSuffix?kind=c'>Assign
   conflicts.</a></strong> You can assign conflicts <a
-  href='${ConfSiteBase}Chair/AssignPapers.php?kind=c'>by PC member</a> or, if
+  href='${ConfSiteBase}Chair/AssignPapers$ConfSiteSuffix?kind=c'>by PC member</a> or, if
   PC members have entered preferences, <a
-  href='${ConfSiteBase}autoassign.php'>automatically</a> by searching for
+  href='${ConfSiteBase}autoassign$ConfSiteSuffix'>automatically</a> by searching for
   preferences of &minus;100 or less.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}Chair/AssignPapers.php'>Make review
+<li><p><strong><a href='${ConfSiteBase}Chair/AssignPapers$ConfSiteSuffix'>Make review
   assignments.</a></strong> You can make assignments <a
-  href='${ConfSiteBase}assign.php'>by paging through papers</a>, <a
-  href='${ConfSiteBase}Chair/AssignPapers.php'>by PC member</a>, or, even
-  easier, <a href='${ConfSiteBase}autoassign.php'>automatically</a>.  PC
+  href='${ConfSiteBase}assign$ConfSiteSuffix'>by paging through papers</a>, <a
+  href='${ConfSiteBase}Chair/AssignPapers$ConfSiteSuffix'>by PC member</a>, or, even
+  easier, <a href='${ConfSiteBase}autoassign$ConfSiteSuffix'>automatically</a>.  PC
   review assignments can be \"primary\" or \"secondary\"; the difference is
   that primary reviewers are expected to complete their review, but a
   secondary reviewer can choose to delegate their review to someone else (once
@@ -444,18 +444,18 @@ After the submission deadline has passed:
 
   <p>The default assignments pages apply to all submitted papers.  You can
   also assign subsets of papers obtained through <a
-  href='help.php?t=search'>search</a>, such as <a
-  href='${ConfSiteBase}search.php?q=cre:%3C3&amp;t=s'>papers
+  href='help$ConfSiteSuffix?t=search'>search</a>, such as <a
+  href='${ConfSiteBase}search$ConfSiteSuffix?q=cre:%3C3&amp;t=s'>papers
   with fewer than three completed reviews</a>.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}settings.php?group=rev'>Open the site
+<li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>Open the site
   for reviewing.</a></strong></p></li>
 
 </ol>
 ");
     _alternateRow("Before the meeting", "
 Before the meeting, you will generally <a
-href='${ConfSiteBase}settings.php?group=rev'>set \"PC can see all
+href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>set \"PC can see all
 reviews\"</a>, allowing members to view reviews and scores for
 non-conflicted papers.  (In many conferences, PC members are initially
 prevented from seeing a paper's reviews until they have completed their own
@@ -463,45 +463,45 @@ review for that paper; this supposedly reduces bias.)
 
 <ol>
 
-<li><p><strong><a href='${ConfSiteBase}settings.php?group=dec'>Collect
+<li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=dec'>Collect
   authors' responses to the reviews (optional).</a></strong> Some conferences
   allow authors to respond to the reviews before decisions are made, giving
   them a chance to correct misconceptions and such.  Responses are entered
   into the system as <a
-  href='${ConfSiteBase}comment.php'>comments</a>.  On the <a
-  href='${ConfSiteBase}settings.php?group=dec'>decision settings page</a>,
+  href='${ConfSiteBase}comment$ConfSiteSuffix'>comments</a>.  On the <a
+  href='${ConfSiteBase}settings$ConfSiteSuffix?group=dec'>decision settings page</a>,
   select \"Authors can see reviews\" and \"Collect responses to the
-  reviews\", then <a href='${ConfSiteBase}mail.php'>send mail to
+  reviews\", then <a href='${ConfSiteBase}mail$ConfSiteSuffix'>send mail to
   authors</a> informing them of the response deadlines.  PC members will still
   be able to update their reviews, assuming it's before the <a
-  href='${ConfSiteBase}settings.php?group=rev'>review deadline</a>; authors
+  href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>review deadline</a>; authors
   are informed via email of any review changes.  At the end of the response
   period it's generally good to <a
-  href='${ConfSiteBase}settings.php?group=dec'>turn off \"Authors can see
+  href='${ConfSiteBase}settings$ConfSiteSuffix?group=dec'>turn off \"Authors can see
   reviews\"</a> so PC members can update their reviews in peace.</p></li>
 
-<li><p>Set <strong><a href='${ConfSiteBase}settings.php?group=rev'>PC can
+<li><p>Set <strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>PC can
   see all reviews</a></strong> if you haven't already.</p></li>
 
 <li><p><strong><a
-  href='${ConfSiteBase}search.php?q=&amp;t=s&amp;sort=50'>Examine paper
+  href='${ConfSiteBase}search$ConfSiteSuffix?q=&amp;t=s&amp;sort=50'>Examine paper
   scores</a></strong>, either one at a time or en masse, and decide which
-  papers will be discussed.  The <a href='help.php?t=tags'>tags</a> system
+  papers will be discussed.  The <a href='help$ConfSiteSuffix?t=tags'>tags</a> system
   lets you prepare discussion sets and even discussion orders.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}autoassign.php'>Assign discussion leads
+<li><p><strong><a href='${ConfSiteBase}autoassign$ConfSiteSuffix'>Assign discussion leads
   (optional).</a></strong> Discussion leads are expected to be able to
   summarize the paper and the reviews.  You can assign leads either <a
-  href='${ConfSiteBase}assign.php'>paper by paper</a> or <a
-  href='${ConfSiteBase}autoassign.php'>automatically</a>.</p></li>
+  href='${ConfSiteBase}assign$ConfSiteSuffix'>paper by paper</a> or <a
+  href='${ConfSiteBase}autoassign$ConfSiteSuffix'>automatically</a>.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}settings.php?group=dec'>Define decision
+<li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=dec'>Define decision
   types (optional).</a></strong> By default, HotCRP has two decision types,
   \"accept\" and \"reject\", but you can add other types of acceptance and
   rejection, such as \"accept as short paper\".</p></li>
 
 <li><p>The night before the meeting, <strong><a
-  href='${ConfSiteBase}search.php?q=&amp;t=s'>download all
+  href='${ConfSiteBase}search$ConfSiteSuffix?q=&amp;t=s'>download all
   reviews onto a laptop</a></strong> (Download &gt; All reviews) in case the
   Internet explodes and you can't reach HotCRP from the meeting
   place.</p></li>
@@ -513,23 +513,23 @@ review for that paper; this supposedly reduces bias.)
 
 <li><p>It's often useful to have a PC member or scribe capture the discussion
   about a paper and enter it as a <a
-  href='${ConfSiteBase}comment.php'>comment</a> for the authors'
+  href='${ConfSiteBase}comment$ConfSiteSuffix'>comment</a> for the authors'
   reference.</p></li>
 
 <li><p><strong>Paper decisions</strong> can be recorded on the <a
-  href='${ConfSiteBase}review.php'>review screens</a> or en masse
+  href='${ConfSiteBase}review$ConfSiteSuffix'>review screens</a> or en masse
   via the <a
-  href='${ConfSiteBase}search.php?q=&amp;t=s'>search
+  href='${ConfSiteBase}search$ConfSiteSuffix?q=&amp;t=s'>search
   screen</a>.  Note that PC members can see paper decisions as soon as they
   are entered into the system, even when they have a conflict.  If you don't
-  like this, mark decisions with <a href='help.php?t=tags'>tags</a> until the
+  like this, mark decisions with <a href='help$ConfSiteSuffix?t=tags'>tags</a> until the
   meeting is over.</p></li>
 
 <li><p><strong>Shepherding (optional).</strong> If your conference uses
   shepherding for accepted papers, you can assign shepherds either <a
-  href='${ConfSiteBase}assign.php'>paper by paper</a> on the
+  href='${ConfSiteBase}assign$ConfSiteSuffix'>paper by paper</a> on the
   assignments screen or <a
-  href='${ConfSiteBase}autoassign.php?t=acc'>automatically</a>.</p></li>
+  href='${ConfSiteBase}autoassign$ConfSiteSuffix?t=acc'>automatically</a>.</p></li>
 
 </ol>
 ");
@@ -537,28 +537,28 @@ review for that paper; this supposedly reduces bias.)
 <ol>
 
 <li><p><strong><a
-  href='${ConfSiteBase}search.php?q=&amp;t=s'>Enter
+  href='${ConfSiteBase}search$ConfSiteSuffix?q=&amp;t=s'>Enter
   decisions</a> and <a
-  href='${ConfSiteBase}search.php?q=dec:yes&amp;t=s'>shepherds</a></strong>
+  href='${ConfSiteBase}search$ConfSiteSuffix?q=dec:yes&amp;t=s'>shepherds</a></strong>
   if you didn't do this at the meeting.</p></li>
 
 <li><p>Give reviewers some time to <strong>update their reviews</strong> in
   response to PC discussion (optional).</p></li>
 
-<li><p>Set <strong><a href='${ConfSiteBase}settings.php?group=dec'>Authors can
+<li><p>Set <strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=dec'>Authors can
   see reviews and decisions.</a></strong></p></li>
 
-<li><p><strong><a href='${ConfSiteBase}mail.php'>Send mail to
+<li><p><strong><a href='${ConfSiteBase}mail$ConfSiteSuffix'>Send mail to
   authors</a></strong> informing them that reviews and decisions are
   available.  The mail can also contain the reviews and comments
   themselves.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}settings.php?group=dec'>Collect final
+<li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=dec'>Collect final
   papers (optional).</a></strong> If you're putting together the program
   yourself, it can be convenient to collect final copies using HotCRP.
   Authors upload final copies the same way they did the submission, although
   the submitted version is archived for reference.  You can then <a
-  href='${ConfSiteBase}search.php?q=dec:yes&amp;t=s'>download
+  href='${ConfSiteBase}search$ConfSiteSuffix?q=dec:yes&amp;t=s'>download
   all final copies as a <tt>.zip</tt> archive</a>.</p></li>
 
 </ol>

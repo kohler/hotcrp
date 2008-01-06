@@ -404,7 +404,7 @@ class Conference {
     //
 
     function storePaper($uploadId, $prow, $final, $override) {
-	global $Opt;
+	global $Opt, $ConfSiteSuffix;
 
 	$paperId = (is_numeric($prow) ? $prow : $prow->paperId);
 	$while = "while storing paper in database";
@@ -497,7 +497,7 @@ class Conference {
 
 	    // prepare data
 	    $subject = "[$this->shortName] Paper #$paperId upload";
-	    $message = "           Paper: $this->paperSite/paper.php?paperId=$paperId
+	    $message = "           Paper: $this->paperSite/paper$ConfSiteSuffix?p=$paperId
        Submitted: " . $this->printableTime($timestamp) . "\n\n"
 		. wordWrapIndent(trim($prow->title), "Title: ") . "\n"
 		. wordWrapIndent(trim($prow->abstract), "Abstract: ") . "\n\n"
@@ -1052,7 +1052,7 @@ class Conference {
     //
     
     function header_head($title) {
-	global $ConfSiteBase, $ConfSitePATH, $Opt;
+	global $ConfSiteBase, $ConfSiteSuffix, $ConfSitePATH, $Opt;
 	if (!$this->headerPrinted) {
 	    echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n";
 	    // PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n";
@@ -1062,15 +1062,15 @@ class Conference {
 	    echo "<meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />\n";
 	    if (strstr($title, "<") !== false)
 		$title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
-	    echo "<link rel='stylesheet' type='text/css' href='${ConfSiteBase}cacheable.php?file=style.css&amp;mtime=" . filemtime("$ConfSitePATH/style.css") . "' />\n";
-	    $this->scriptStuff = "<script type='text/javascript' src='${ConfSiteBase}cacheable.php?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "'></script>\n";
+	    echo "<link rel='stylesheet' type='text/css' href='${ConfSiteBase}cacheable$ConfSiteSuffix?file=style.css&amp;mtime=" . filemtime("$ConfSitePATH/style.css") . "' />\n";
+	    $this->scriptStuff = "<script type='text/javascript' src='${ConfSiteBase}cacheable$ConfSiteSuffix?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "'></script>\n";
 	    echo "<title>", $title, " - ", $this->shortName, "</title>\n";
 	    $this->headerPrinted = 1;
 	}
     }
 
     function header($title, $id = "", $actionBar = "<div class='nvubar'></div>", $showTitle = true) {
-	global $ConfSiteBase, $Opt;
+	global $ConfSiteBase, $ConfSiteSuffix, $Opt;
 	if ($this->headerPrinted >= 2)
 	    return;
 	
@@ -1086,7 +1086,7 @@ class Conference {
 	if ($title && $showTitle && $title == "Home")
 	    echo htmlspecialchars($this->shortName);
 	else
-	    echo "<a href='${ConfSiteBase}index.php'>", htmlspecialchars($this->shortName), "</a><span class='crumbsep'> &nbsp;|&nbsp; </span>", $title;
+	    echo "<a href='${ConfSiteBase}index$ConfSiteSuffix'>", htmlspecialchars($this->shortName), "</a><span class='crumbsep'> &nbsp;|&nbsp; </span>", $title;
 	echo "</h1></div><div id='header_user'>";
 	if ($_SESSION["Me"]->valid()) {
 	    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
@@ -1095,13 +1095,13 @@ class Conference {
 		"</strong>", $xsep;
 	    if (!$_SESSION["Me"]->privChair && $_SESSION["Me"]->chairContactId > 0)
 		echo "<a href=\"", htmlspecialchars(selfHref(array("chairMode" => 0))), "\">Admin&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Return to administrator view]' /></a>", $xsep;
-	    echo "<a href='", $ConfSiteBase, "help.php";
+	    echo "<a href='${ConfSiteBase}help$ConfSiteSuffix";
 	    if ($id == "search")
 		echo "?t=", $id;
 	    else if ($id == "settings")
 		echo "?t=chair";
 	    echo "'>Help</a>", $xsep;
-	    echo "<a href='", $ConfSiteBase, "index.php?signout=1'>Sign&nbsp;out</a>", $xsep;
+	    echo "<a href='${ConfSiteBase}index$ConfSiteSuffix?signout=1'>Sign&nbsp;out</a>", $xsep;
 	}
 	echo date("l j M Y g:i:sa T", $time), "<br /><span id='usertime'></span></div>\n";
 	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", $this->shortName, " Public Site</a></div>\n";
@@ -1123,8 +1123,6 @@ class Conference {
     }
 
     function footer() {
-	global $ConfSiteBase;
-
 	if ($this->tableMessages) {
 	    echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>\n";
 	    echo "</table>\n\n";
@@ -1204,11 +1202,11 @@ class Conference {
     }
 
     function makeDownloadPath($paperId, &$mimetype, $final = false) {
-	global $ConfSiteBase;
+	global $ConfSiteBase, $ConfSiteSuffix;
 	if (isset($mimetype) && $mimetype)
-	    return $ConfSiteBase . "doc/" . $this->downloadPaperName($paperId, $mimetype, $final);
+	    return $ConfSiteBase . "doc$ConfSiteSuffix/" . $this->downloadPaperName($paperId, $mimetype, $final);
 	else {
-	    $x = $ConfSiteBase . "doc?paperId=" . $paperId;
+	    $x = $ConfSiteBase . "doc$ConfSiteSuffix?p=" . $paperId;
 	    return ($final ? $x . "&amp;final=1" : $x);
 	}
     }
@@ -1220,7 +1218,7 @@ class Conference {
     }
     
     function textValuesGraph($v, $max, $style, $myscore = 0) {
-	global $ConfSiteBase;
+	global $ConfSiteBase, $ConfSiteSuffix;
 	
 	if (is_string($v))
 	    $v = scoreCounts($v, $max);
@@ -1230,7 +1228,7 @@ class Conference {
 	$url = "";
 	for ($key = 1; $key <= $v->max; $key++)
 	    $url .= ($url == "" ? "" : ",") . $v->v[$key];
-	$url = "${ConfSiteBase}images/GenChart.php?v=$url";
+	$url = "${ConfSiteBase}images/GenChart$ConfSiteSuffix?v=$url";
 	if ($myscore && $v->v[$myscore] > 0)
 	    $url .= "&h=$myscore";
 

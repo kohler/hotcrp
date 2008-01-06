@@ -240,7 +240,7 @@ class ReviewForm {
     }
 
     function saveRequest($req, $rrow, $prow, $contactId, $conf = null) {
-	global $Conf, $ConfSiteBase;
+	global $Conf, $ConfSiteBase, $ConfSiteSuffix;
 	$conf = ($conf ? $conf : $Conf);
 	$Me = $_SESSION['Me'];
 	$submit = defval($req, "ready", false);
@@ -248,7 +248,7 @@ class ReviewForm {
 
 	if (!$Me->timeReview($prow, $conf)
 	    && (!isset($req['override']) || !$Me->privChair))
-	    return $conf->errorMsg("The <a href='${ConfSiteBase}deadlines.php'>deadline</a> for entering this review has passed." . ($Me->privChair ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
+	    return $conf->errorMsg("The <a href='${ConfSiteBase}deadlines$ConfSiteSuffix'>deadline</a> for entering this review has passed." . ($Me->privChair ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
 	
 	$q = "";
 	foreach ($this->fieldOrder as $field)
@@ -371,7 +371,7 @@ class ReviewForm {
 
 
     function textFormHeader($conf, $type, $editable = true) {
-	global $Conf;
+	global $Conf, $ConfSiteSuffix;
 	$conf = ($conf ? $conf : $Conf);
 	
 	$x = "==+== $conf->shortName Paper Review";
@@ -383,7 +383,7 @@ class ReviewForm {
 ==-== through \"End Review\".  Make sure to change the paper number.\n";
 	    $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\"!
 ==-== When you are done, upload the review form at this address:
-==-== $conf->paperSite/offline.php
+==-== $conf->paperSite/offline$ConfSiteSuffix
 ==-== That site also has further guidance on the review form.\n\n";
 	} else
 	    $x .= ($type === true ? "s\n\n" : "\n\n");
@@ -692,7 +692,7 @@ $blind\n";
     }
 
     function webDisplayRows($rrow, $viewAllFields, $showGuidance = false) {
-	global $ReviewFormError, $scoreHelps, $Conf, $ConfSiteBase;
+	global $ReviewFormError, $scoreHelps, $Conf, $ConfSiteBase, $ConfSiteSuffix;
 	$x = '';
 
 	$showFields = array();
@@ -730,7 +730,7 @@ $blind\n";
 		$n = preg_replace("/\\s+/", "&nbsp;", $n);
 	    $x .= "$n";
 	    if ($showGuidance && $options) {
-		$x .= "<a class='scorehelp' href='${ConfSiteBase}scorehelp.php?f=$field' target='new'>?</a>";
+		$x .= "<a class='scorehelp' href='${ConfSiteBase}scorehelp$ConfSiteSuffix?f=$field' target='new'>?</a>";
 		if (count($scoreHelps) == 0)
 		    $Conf->footerStuff .= "<script type='text/javascript'>addScoreHelp();</script>";
 		if (!isset($scoreHelps[$field])) {

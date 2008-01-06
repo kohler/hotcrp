@@ -8,7 +8,7 @@ require_once('../Code/paperlist.inc');
 require_once('../Code/search.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPrivChair('../index.php');
+$Me->goIfNotPrivChair('../');
 $kind = defval($_REQUEST, "kind", "a");
 if ($kind != "a" && $kind != "c")
     $kind = "a";
@@ -22,8 +22,8 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && $kind == "c") {
 
 
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
-$abar .= actionTab("Automatic", "../autoassign.php", false);
-$abar .= actionTab("Manual", "AssignPapers.php", true);
+$abar .= actionTab("Automatic", "../autoassign$ConfSiteSuffix", false);
+$abar .= actionTab("Manual", "AssignPapers$ConfSiteSuffix", true);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 
@@ -94,7 +94,7 @@ and <img src='${ConfSiteBase}images/ass", REVIEW_SECONDARY, ".png' alt='Secondar
 Click on a column heading to sort by that column.</p>\n\n";
 
 
-echo "<form method='get' action='AssignPapers.php' id='selectreviewerform'><div class='inform'>\n";
+echo "<form method='get' action='AssignPapers$ConfSiteSuffix' id='selectreviewerform'><div class='inform'>\n";
 if (isset($_REQUEST["sort"]))
     echo "  <input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />\n";
 echo "  <select name='reviewer' onchange='e(\"selectreviewerform\").submit()'>\n";
@@ -160,15 +160,15 @@ if ($reviewer >= 0) {
 		$useless[$s] = 1;
 	    }
 	
-	echo "<div class='topicinterest'><a href=\"${ConfSiteBase}search.php?q=", urlencode($sco), "+", urlencode($sau), "&amp;qt=ac&amp;linkto=assign\"><b>Search for conflicts</b></a> (authors match one of \"", htmlspecialchars(substr($showau, 0, strlen($showau) - 1)), "\" or collaborators match one of \"", htmlspecialchars(substr($showco, 0, strlen($showco) - 1)), "\")</div>\n";
+	echo "<div class='topicinterest'><a href=\"${ConfSiteBase}search$ConfSiteSuffix?q=", urlencode($sco), "+", urlencode($sau), "&amp;qt=ac&amp;linkto=assign\"><b>Search for conflicts</b></a> (authors match one of \"", htmlspecialchars(substr($showau, 0, strlen($showau) - 1)), "\" or collaborators match one of \"", htmlspecialchars(substr($showco, 0, strlen($showco) - 1)), "\")</div>\n";
     }
 
-    $paperList = new PaperList(true, true, new PaperSearch($Me, array("t" => "s", "c" => $reviewer, "urlbase" => "Chair/AssignPapers.php?reviewer=$reviewer")));
+    $paperList = new PaperList(true, true, new PaperSearch($Me, array("t" => "s", "c" => $reviewer, "urlbase" => "Chair/AssignPapers$ConfSiteSuffix?reviewer=$reviewer")));
     if (isset($sau)) {
 	$paperList->authorMatch = strtr(substr($showau, 0, strlen($showau) - 1), " ", "|");
 	$paperList->collaboratorsMatch = strtr(substr($showco, 0, strlen($showco) - 1), " ", "|");
     }
-    echo "<form class='assignpc' method='post' action=\"AssignPapers.php?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
+    echo "<form class='assignpc' method='post' action=\"AssignPapers$ConfSiteSuffix?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
     if (isset($_REQUEST["sort"]))
 	echo "&amp;sort=", urlencode($_REQUEST["sort"]);
     echo "\" enctype='multipart/form-data'><div>\n";

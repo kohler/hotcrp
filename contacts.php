@@ -119,7 +119,7 @@ $Conf->header($title, "accounts", actionBar());
 
 
 $pl = new ContactList(true);
-$pl_text = $pl->text($_REQUEST["t"], $Me, "${ConfSiteBase}contacts.php?t=" . $_REQUEST["t"]);
+$pl_text = $pl->text($_REQUEST["t"], $Me, "${ConfSiteBase}contacts$ConfSiteSuffix?t=" . $_REQUEST["t"]);
 
 
 // form
@@ -128,7 +128,7 @@ if (count($tOpt) > 1) {
     echo "<table id='contactsform' class='tablinks1'>
 <tr><td><div class='tlx'><div class='tld1'>";
     
-    echo "<form method='get' action='contacts.php'><div class='inform'>";
+    echo "<form method='get' action='contacts$ConfSiteSuffix'><div class='inform'>";
     if (isset($_REQUEST["sort"]))
 	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />";
     echo "<select id='contactsform1_d' name='t'>";
@@ -143,7 +143,7 @@ if (count($tOpt) > 1) {
     echo "</div><div class='tld2'>";
 
     // Display options
-    echo "<form method='get' action='contacts.php'><div>\n";
+    echo "<form method='get' action='contacts$ConfSiteSuffix'><div>\n";
     foreach (array("t", "sort") as $x)
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
@@ -203,13 +203,13 @@ if (count($tOpt) > 1) {
 
 
 if ($Me->privChair && $_REQUEST["t"] == "pc")
-    $Conf->infoMsg("<p><a href='${ConfSiteBase}account.php?new=1&amp;pc=1' class='button'>Add PC member</a></p><p>Select a PC member's name to edit their profile or remove them from the PC.</p>");
+    $Conf->infoMsg("<p><a href='${ConfSiteBase}account$ConfSiteSuffix?new=1&amp;pc=1' class='button'>Add PC member</a></p><p>Select a PC member's name to edit their profile or remove them from the PC.</p>");
 else if ($Me->privChair && $_REQUEST["t"] == "all")
-    $Conf->infoMsg("<p><a href='${ConfSiteBase}account.php?new=1' class='button'>Create account</a></p><p>Select an account name to edit that profile.  Select <img src='${ConfSiteBase}images/viewas.png' alt='[Act as]' /> to view the site as that user would see it.</p>");
+    $Conf->infoMsg("<p><a href='${ConfSiteBase}account$ConfSiteSuffix?new=1' class='button'>Create account</a></p><p>Select an account name to edit that profile.  Select <img src='${ConfSiteBase}images/viewas.png' alt='[Act as]' /> to view the site as that user would see it.</p>");
 
 
 if ($pl->anySelector) {
-    echo "<form method='get' action='contacts.php'><div>";
+    echo "<form method='get' action='contacts$ConfSiteSuffix'><div>";
     foreach (array("t", "sort") as $x)
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";

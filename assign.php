@@ -15,7 +15,7 @@ $PC = pcMembers();
 
 // header
 function confHeader() {
-    global $prow, $Conf, $ConfSiteBase, $linkExtra, $CurrentList;
+    global $prow, $Conf, $linkExtra, $CurrentList;
     $title = ($prow ? "Paper #$prow->paperId Review Assignments" : "Paper Review Assignments");
     $Conf->header($title, "assign", actionBar($prow, false, "assign"), false);
     if (isset($CurrentList) && $CurrentList > 0
@@ -58,7 +58,7 @@ if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->privChair)
 else
     $forceShow = "";
 $linkExtra = $forceShow;
-maybeSearchPaperId("assign.php", $Me);
+maybeSearchPaperId($Me);
 getProw();
 
 
@@ -409,7 +409,7 @@ $paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->privCh
 
 
 // begin form and table
-echo "<form id='ass' action='assign.php?paperId=$prow->paperId&amp;post=1$linkExtra' method='post' enctype='multipart/form-data'>";
+echo "<form id='ass' action='assign$ConfSiteSuffix?p=$prow->paperId&amp;post=1$linkExtra' method='post' enctype='multipart/form-data'>";
 $paperTable->echoDivEnter();
 echo "<table class='assign'>\n\n";
 
@@ -419,8 +419,8 @@ echo "<tr class='id'>\n  <td class='caption'><h2>#", $prow->paperId, "</h2></td>
 echo "  <td class='entry' colspan='2'><h2>";
 $paperTable->echoTitle($prow);
 // session folders
-echo "<img id='foldsession.paper9' alt='' src='", $ConfSiteBase, "sessionvar.php?var=foldassignp&amp;val=", defval($_SESSION, "foldassignp", 1), "&amp;cache=1' width='1' height='1' />";
-echo "<img id='foldsession.authors8' alt='' src='", $ConfSiteBase, "sessionvar.php?var=foldassigna&amp;val=", defval($_SESSION, "foldassigna", 1), "&amp;cache=1' width='1' height='1' />";
+echo "<img id='foldsession.paper9' alt='' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldassignp&amp;val=", defval($_SESSION, "foldassignp", 1), "&amp;cache=1' width='1' height='1' />";
+echo "<img id='foldsession.authors8' alt='' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldassigna&amp;val=", defval($_SESSION, "foldassigna", 1), "&amp;cache=1' width='1' height='1' />";
 echo "</h2>";
 echo "</td>\n</tr>\n\n";
 
@@ -567,12 +567,12 @@ if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
 	    echo "<tr><td>", htmlspecialchars($row->name), "</td><td>&lt;",
 		"<a href=\"mailto:", urlencode($row->email), "\">",
 		htmlspecialchars($row->email), "</a>&gt;</td>",
-		"<td><a class='button_small' href=\"assign.php?paperId=$prow->paperId&amp;name=",
+		"<td><a class='button_small' href=\"assign$ConfSiteSuffix?p=$prow->paperId&amp;name=",
 		urlencode($row->name), "&amp;email=", urlencode($row->email);
 	    if (defval($row, "reason", ""))
 		echo "&amp;reason=", htmlspecialchars($row->reason);
 	    echo "&amp;add=1$forceShow\">Approve</a>&nbsp; ",
-		"<a class='button_small' href=\"assign.php?paperId=$prow->paperId&amp;name=",
+		"<a class='button_small' href=\"assign$ConfSiteSuffix?p=$prow->paperId&amp;name=",
 		urlencode($row->name), "&amp;email=", urlencode($row->email),
 		"&amp;deny=1$forceShow\">Deny</a></td></tr>\n",
 		"<tr><td colspan='3'><small>Requester: ", contactHtml($row->reqFirstName, $row->reqLastName), "</small></td></tr>\n";

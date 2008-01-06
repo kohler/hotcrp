@@ -439,7 +439,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != "" && 
     else if ($mt == "xauto") {
 	$t = (in_array($_REQUEST["t"], array("acc", "s")) ? $_REQUEST["t"] : "all");
 	$q = join($papersel, "+");
-	$Me->go("${ConfSiteBase}autoassign.php?pap=" . join($papersel, "+") . "&t=$t&q=$q");
+	$Me->go("${ConfSiteBase}autoassign$ConfSiteSuffix?pap=" . join($papersel, "+") . "&t=$t&q=$q");
     } else if ($mt == "xpcpaper" || $mt == "xunpcpaper") {
 	$Conf->qe("update Paper set pcPaper=" . ($mt == "xpcpaper" ? 1 : 0) . " where " . paperselPredicate($papersel), "while marking PC papers");
 	$Conf->log("Change PC paper status", $Me, $papersel);
@@ -489,7 +489,7 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 	$Conf->errorMsg("Only the PC chairs can send mail.");
     else {
 	$r = (in_array($_REQUEST["recipients"], array("au", "rev")) ? $_REQUEST["recipients"] : "all");
-	$Me->go("${ConfSiteBase}mail.php?pap=" . join($papersel, "+") . "&recipients=$r");
+	$Me->go("${ConfSiteBase}mail$ConfSiteSuffix?pap=" . join($papersel, "+") . "&recipients=$r");
     }
 }
 
@@ -554,7 +554,7 @@ echo "<table id='searchform' class='tablinks$activetab'>
 <tr><td><div class='tlx'><div class='tld1'>";
 
 // Basic Search
-echo "<form method='get' action='search.php'><div class='inform'>
+echo "<form method='get' action='search$ConfSiteSuffix'><div class='inform'>
   <input id='searchform1_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /> &nbsp;in &nbsp;$tselect &nbsp;
   <input class='button' type='submit' value='Search' />
 </div></form>";
@@ -562,7 +562,7 @@ echo "<form method='get' action='search.php'><div class='inform'>
 echo "</div><div class='tld2'>";
 
 // Advanced Search
-echo "<form method='get' action='search.php'>
+echo "<form method='get' action='search$ConfSiteSuffix'>
 <table><tr>
   <td class='lxcaption'>Search these papers</td>
   <td class='lentry'>$tselect</td>
@@ -606,13 +606,13 @@ echo "</select></td>
 </tr>
 <tr>
   <td class='lxcaption'></td>
-  <td><span style='font-size: x-small'><a href='help.php?t=search'>Search help</a> &nbsp;|&nbsp; <a href='help.php?t=syntax'>Syntax quick reference</a></span></td>
+  <td><span style='font-size: x-small'><a href='help$ConfSiteSuffix?t=search'>Search help</a> &nbsp;|&nbsp; <a href='help$ConfSiteSuffix?t=syntax'>Syntax quick reference</a></span></td>
 </tr></table></form>";
 
 echo "</div><div class='tld3'>";
 
 // Display options
-echo "<form method='get' action='search.php'><div>\n";
+echo "<form method='get' action='search$ConfSiteSuffix'><div>\n";
 foreach (array("q", "qx", "qa", "qt", "t", "sort") as $x)
     if (isset($_REQUEST[$x]))
 	echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
@@ -704,7 +704,7 @@ if ($pl) {
     echo "<div class='maintabsep'></div>\n\n<div class='searchresult'>";
 
     if ($pl->anySelector)
-	echo "<form method='post' action=\"", htmlspecialchars(selfHref(array("selector" => 1), "search.php")), "\" id='sel' onsubmit='return paperselCheck();'>\n";
+	echo "<form method='post' action=\"", htmlspecialchars(selfHref(array("selector" => 1), "search$ConfSiteSuffix")), "\" id='sel' onsubmit='return paperselCheck();'>\n";
     
     echo $pl_text;
     

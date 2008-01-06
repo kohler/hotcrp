@@ -5,8 +5,8 @@
 
 // reviewer information
 function reviewTable($prow, $rrows, $rrow, $mode) {
-    global $Conf, $ConfSiteBase, $Me, $rf, $forceShow, $linkExtra,
-	$reviewTableFolder, $reviewTypeName;
+    global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Me, $rf, $forceShow,
+	$linkExtra, $reviewTableFolder, $reviewTypeName;
     
     $subrev = array();
     $nonsubrev = array();
@@ -49,11 +49,11 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	else
 	    $id .= "&nbsp;(not&nbsp;started)";
 	if ($rrow && $rrow->reviewId == $rr->reviewId)
-	    $t .= "<td><a href='${ConfSiteBase}review.php?reviewId=$rr->reviewId$linkExtra' class='q'><b>$id</b></a></td>";
+	    $t .= "<td><a href='${ConfSiteBase}review$ConfSiteSuffix?reviewId=$rr->reviewId$linkExtra' class='q'><b>$id</b></a></td>";
 	else if (!$canView)
 	    $t .= "<td>$id</td>";
 	else
-	    $t .= "<td><a href='${ConfSiteBase}review.php?reviewId=$rr->reviewId$linkExtra'>$id</a></td>";
+	    $t .= "<td><a href='${ConfSiteBase}review$ConfSiteSuffix?reviewId=$rr->reviewId$linkExtra'>$id</a></td>";
 
 	// primary/secondary glyph
 	if ($prow->conflictType > 0 && !$effAssistant)
@@ -91,7 +91,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	    && $rr->reviewType == REVIEW_EXTERNAL
 	    && ($rr->requestedBy == $Me->contactId || $effAssistant)) {
 	    if ($mode == "assign") {
-		$t .= "<td><a href=\"${ConfSiteBase}assign.php?paperId=$prow->paperId&amp;retract=$rr->reviewId$linkExtra\">Retract review request</a></td>";
+		$t .= "<td><a href=\"${ConfSiteBase}assign$ConfSiteSuffix?p=$prow->paperId&amp;retract=$rr->reviewId$linkExtra\">Retract review request</a></td>";
 	    } else
 		$nRetractable++;
 	} else if ($mode == "assign")
@@ -115,7 +115,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     if ($mode == "edit" && !$rrow)
 	$nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Enter&nbsp;review</b></td><td>" . contactHtml($Me->firstName, $Me->lastName) . "</td><td class='empty'></td></tr>\n";
     else if (!$foundMyReview && $Me->canReview($prow, null, $Conf)) {
-	$x = "    <tr>$hilite<td colspan='2'><a href='review.php?paperId=$prow->paperId&amp;mode=edit$linkExtra'>Enter&nbsp;your&nbsp;own&nbsp;review</a></td></tr>\n";
+	$x = "    <tr>$hilite<td colspan='2'><a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=edit$linkExtra'>Enter&nbsp;your&nbsp;own&nbsp;review</a></td></tr>\n";
 	$nonsubrev[] = $x;
     }
 
@@ -149,16 +149,16 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	/* no reviews to view */;
     else if (($mode != "edit" && $rrow && $Me->canViewReview($prow, null, $Conf))
 	     || ($mode == "edit" && $Me->canViewReview($prow, null, $Conf)))
-	$t .= "<a href='review.php?paperId=$prow->paperId&amp;mode=view$linkExtra'>All reviews</a>";
+	$t .= "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=view$linkExtra'>All reviews</a>";
     else if ($mode == "view" && !$rrow && $Me->canViewReview($prow, null, $Conf))
-	$t .= "<a href='review.php?paperId=$prow->paperId&amp;mode=view&amp;text=1$linkExtra'>Text version of the reviews</a>";
+	$t .= "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=view&amp;text=1$linkExtra'>Text version of the reviews</a>";
     // review assignments
     if ($mode != "assign" && ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
 	if ($Me->privChair)
 	    $x = "Assign or request reviewers";
 	else
 	    $x = "Request an external review" . ($nRetractable ? " or retract outstanding review requests" : "");
-	$t .= ($t == "" ? "" : $xsep) . "<a href=\"${ConfSiteBase}assign.php?paperId=$prow->paperId$linkExtra\">$x</a>";
+	$t .= ($t == "" ? "" : $xsep) . "<a href=\"${ConfSiteBase}assign$ConfSiteSuffix?p=$prow->paperId$linkExtra\">$x</a>";
     }
     if ($t)
 	$nonsubrev[] = "    <tr>$hilite<td colspan='" . (2 + $nNumeric) . "'><div class='revnotes'>$t</div></td></tr>\n";

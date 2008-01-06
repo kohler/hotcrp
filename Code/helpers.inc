@@ -129,7 +129,9 @@ function selfHref($extra = array(), $self = null) {
     global $CurrentList;
     $x = ($self ? $self : $_SERVER["PHP_SELF"]);
     $sep = "?";
-    foreach (array("paperId", "reviewId", "commentId", "mode", "forceShow", "validator", "list", "t", "q", "qa", "qx", "qt", "group", "sort") as $what)
+    if (isset($_REQUEST["paperId"]) && !isset($_REQUEST["p"]))
+	$_REQUEST["p"] = $_REQUEST["paperId"];
+    foreach (array("p", "reviewId", "commentId", "mode", "forceShow", "validator", "list", "t", "q", "qa", "qx", "qt", "group", "sort") as $what)
 	if (isset($_REQUEST[$what]) && !isset($extra[$what])) {
 	    $x .= "$sep$what=" . urlencode($_REQUEST[$what]);
 	    $sep = "&";
@@ -188,7 +190,7 @@ function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
 }
 
 function paperDownload($prow, $final = false, $conf = null) {
-    global $Conf, $ConfSiteBase, $Me;
+    global $Conf, $Me;
     $conf = ($conf == null ? $Conf : $conf);
     if ($final && !$prow->finalPaperStorageId)
 	$final = false;
@@ -269,7 +271,7 @@ function topicTable($prow, $active = 0, $conf = null) {
 }
 
 function authorTable($aus, $viewAs = null) {
-    global $Conf, $ConfSiteBase;
+    global $Conf;
     $out = "";
     if (!is_array($aus))
 	$aus = explode("\n", $aus);
@@ -390,9 +392,11 @@ function _tryNewList($opt, $which) {
     $Conf->qx("drop temporary table Matches");
 }
 
-function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
-    global $Me, $ConfSiteBase, $Conf, $CurrentList;
+function listLinks($paperId, $baseUrl = null, $args = array()) {
+    global $Me, $ConfSiteBase, $ConfSiteSuffix, $Conf, $CurrentList;
     $replaceList = oldestListNumber();
+    if ($baseUrl === null)
+	$baseUrl = "paper$ConfSiteSuffix";
 
     if (isset($_REQUEST["ls"])
 	&& ($CurrentList = cvtint($_REQUEST["ls"])) > 0
@@ -431,7 +435,7 @@ function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
     $list = $_SESSION["l"][$CurrentList];
     $x = "";
     if ($k > 0)
-	$x .= "<a href=\"${ConfSiteBase}$baseUrl?paperId="
+	$x .= "<a href=\"${ConfSiteBase}$baseUrl?p="
 	    . $list[$k - 1] . $urlrest . "\">"
 	    . $Conf->cacheableImage("prev.png", "&lt;-")
 	    . "#" . $list[$k - 1] . "</a>";
@@ -444,19 +448,21 @@ function listLinks($paperId, $baseUrl = "paper.php", $args = array()) {
     }
     if (isset($list[$k + 1])) {
 	$x .= ($k > 0 || isset($list["description"]) ? "&nbsp;&nbsp;" : "");
-	$x .= "<a href=\"${ConfSiteBase}$baseUrl?paperId="
+	$x .= "<a href=\"${ConfSiteBase}$baseUrl?p="
 	    . $list[$k + 1] . $urlrest . "\">#" . $list[$k + 1]
 	    . $Conf->cacheableImage("next.png", "-&gt;") . "</a>";
     }
     return $x;
 }
 
-function goPaperForm($baseUrl = "paper.php", $args = array()) {
-    global $ConfSiteBase, $CurrentList;
+function goPaperForm($baseUrl = null, $args = array()) {
+    global $ConfSiteBase, $ConfSiteSuffix, $CurrentList;
     if (!$_SESSION["Me"]->valid())
 	return "";
+    if ($baseUrl === null)
+	$baseUrl = "paper$ConfSiteSuffix";
     $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get'><div class='inform'>";
-    $x .= "#<input class='textlite' type='text' size='6' name='paperId' />";
+    $x .= "#<input class='textlite' type='text' size='6' name='p' />";
     foreach ($args as $what => $val)
 	$x .= "<input type='hidden' name=\"" . htmlspecialchars($what) . "\" value=\"" . htmlspecialchars($val) . "\" />";
     if (isset($CurrentList) && $CurrentList > 0)
@@ -641,7 +647,7 @@ function ini_get_bytes($varname) {
 }
 
 function whyNotText($whyNot, $action) {
-    global $ConfSiteBase, $Conf;
+    global $ConfSiteBase, $Conf, $ConfSiteSuffix;
     if (!is_array($whyNot))
 	$whyNot = array($whyNot => 1);
     $paperId = (isset($whyNot['paperId']) ? $whyNot['paperId'] : -1);
@@ -680,7 +686,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['responseNotReady']))
 	$text .= "The authors' response for $thisPaper is not yet ready for reviewers to view.  ";
     if (isset($whyNot['reviewsOutstanding']))
-	$text .= "You must complete <a href=\"${ConfSiteBase}search.php?q=&amp;t=r\">your own reviews for other papers</a> before you can view the reviews for papers you authored.  If you can't complete your reviews, please let the conference organizers know via the relevant \"Refuse review\" links.  ";
+	$text .= "You must complete <a href=\"${ConfSiteBase}search$ConfSiteSuffix?q=&amp;t=r\">your own reviews for other papers</a> before you can view the reviews for papers you authored.  If you can't complete your reviews, please let the conference organizers know via the relevant \"Refuse review\" links.  ";
     if (isset($whyNot['reviewNotAssigned']))
 	$text .= "You are not assigned to review $thisPaper.  ";
     if (isset($whyNot['deadline'])) {
@@ -715,7 +721,7 @@ function whyNotText($whyNot, $action) {
 	    $text .= "Authors can't view paper reviews at the moment.  ";
 	else
 	    $text .= "You can't $action $thisPaper at the moment.  ";
-	$text .= "(<a href='${ConfSiteBase}deadlines.php'>View deadlines</a>)  ";
+	$text .= "(<a href='${ConfSiteBase}deadlines$ConfSiteSuffix'>View deadlines</a>)  ";
 	if (isset($whyNot['override']) && $whyNot['override'])
 	    $text .= "Select the \"Override deadlines\" checkbox to override this deadline as an administrator.  ";
     }
@@ -735,7 +741,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['forceShow']))
 	$text .= "<a href=\"". htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Show " . ($action == "comment" ? "comments" : "reviews") . " anyway</a>  ";
     if ($text && $action == "view")
-	$text .= "Enter a paper number above, or <a href='${ConfSiteBase}search.php?q='>list the papers you can view</a>.  ";
+	$text .= "Enter a paper number above, or <a href='${ConfSiteBase}search$ConfSiteSuffix?q='>list the papers you can view</a>.  ";
     return ($text ? substr($text, 0, -2) : $text);
 }
 
@@ -775,7 +781,7 @@ function actionTab($text, $url, $default) {
 }
 
 function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
-    global $Me, $Conf, $ConfSiteBase, $CurrentList;
+    global $Me, $Conf, $ConfSiteBase, $ConfSiteSuffix, $CurrentList;
     if ($newPaper)
 	$paperId = "new";
     else
@@ -784,10 +790,10 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 
     // collect list links now, so we find the current list
     if ($mode == "assign" || $mode == "review" || $mode == "comment")
-	$goBase = "$mode.php";
+	$goBase = "$mode$ConfSiteSuffix";
     else
-	$goBase = "paper.php";
-    $xmode = (isset($_REQUEST["mode"]) && $goBase == "paper.php" ? array("mode" => $_REQUEST["mode"]) : array());
+	$goBase = "paper$ConfSiteSuffix";
+    $xmode = (isset($_REQUEST["mode"]) && $goBase == "paper$ConfSiteSuffix" ? array("mode" => $_REQUEST["mode"]) : array());
     
     $listarg = $listlinks_txt = "";
     if ($prow) {
@@ -801,14 +807,14 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 
     $act = "";
     if ($newPaper || $paperId > 0)
-	$act .= actionTab("Paper", "${ConfSiteBase}paper.php?paperId=$paperId$listarg", $mode == "view" || $mode == "edit");
+	$act .= actionTab("Paper", "${ConfSiteBase}paper$ConfSiteSuffix?p=$paperId$listarg", $mode == "view" || $mode == "edit");
     
     if (!$newPaper && $prow
 	&& ($prow->reviewType > 0
 	    || $Me->canViewReview($prow, null, $Conf)
 	    || ($Me->isPC && $prow->timeSubmitted > 0
 		&& $Conf->timeReviewOpen())))
-	$act .= actionTab("Reviews", "${ConfSiteBase}review.php?paperId=$paperId$listarg", $mode == "review");
+	$act .= actionTab("Reviews", "${ConfSiteBase}review$ConfSiteSuffix?p=$paperId$listarg", $mode == "review");
 
     if (!$newPaper && $prow
 	&& ($prow->reviewType > 0
@@ -819,12 +825,12 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 		&& $Conf->timeReviewOpen()))) {
 	$n = ($prow->conflictType >= CONFLICT_AUTHOR ? $prow->numAuthorComments : $prow->numComments);
 	$txt = ($n ? "Comments ($n)" : "Comments");
-	$act .= actionTab($txt, "${ConfSiteBase}comment.php?paperId=$paperId$listarg", $mode == "comment");
+	$act .= actionTab($txt, "${ConfSiteBase}comment$ConfSiteSuffix?p=$paperId$listarg", $mode == "comment");
     }
 
     if ($mode == "assign"
 	|| ($Me->privChair && $prow && $prow->timeSubmitted > 0))
-	$act .= actionTab("Assignments", "${ConfSiteBase}assign.php?paperId=$paperId$listarg", $mode == "assign");
+	$act .= actionTab("Assignments", "${ConfSiteBase}assign$ConfSiteSuffix?p=$paperId$listarg", $mode == "assign");
     
     if ($thisUrl)
 	$act .= actionTab($mode, $thisUrl, true);
@@ -901,14 +907,18 @@ function cvtpref($n) {
 	return -1000001;
 }
 
-function maybeSearchPaperId($base, $me) {
-    global $Conf, $ConfSiteBase;
+function maybeSearchPaperId($me) {
+    global $Conf, $ConfSiteBase, $ConfSiteSuffix;
 
+    // set $_REQUEST["paperId"] from $_REQUEST["p"] for backwards compatibility
+    if (!isset($_REQUEST["paperId"]) && isset($_REQUEST["p"]))
+	$_REQUEST["paperId"] = $_REQUEST["p"];
+    
     // if a complex request, or a form upload, don't search
     foreach ($_REQUEST as $k => $v)
 	if ($k != "paperId" && $k != "mode" && $k != "forceShow" && $k != "go"
 	    && $k != "viewContact" && $k != "chairMode" && $k != "ls"
-	    && !isset($_COOKIE[$k]))
+	    && $k != "p" && $k != "t" && !isset($_COOKIE[$k]))
 	    return false;
 
     // if no paper ID set, find one
@@ -932,7 +942,7 @@ function maybeSearchPaperId($base, $me) {
 
     // actually try to search
     require_once("search.inc");
-    $s = new PaperSearch($me, array("q" => $_REQUEST["paperId"]));
+    $s = new PaperSearch($me, array("q" => $_REQUEST["paperId"], "t" => defval($_REQUEST, "t", 0)));
     $pl = $s->paperList();
     if (count($pl) == 1) {
 	global $thisMatchPreg;
@@ -940,7 +950,8 @@ function maybeSearchPaperId($base, $me) {
 	$_REQUEST["paperId"] = $pl[0];
 	return true;
     } else {
-	$Conf->go("${ConfSiteBase}search.php?q=" . urlencode($_REQUEST["paperId"]));
+	$t = (defval($_REQUEST, "t", 0) ? "&t=" . urlencode($_REQUEST["t"]) : "");
+	$Conf->go("${ConfSiteBase}search$ConfSiteSuffix?q=" . urlencode($_REQUEST["paperId"]) . $t);
 	exit;
     }
 }

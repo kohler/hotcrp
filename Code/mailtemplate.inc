@@ -61,7 +61,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/review.php?paperId=%NUMBER%
+  Paper site: %URL%/review%PHP%?p=%NUMBER%
 
 If you are willing to review this paper, you may enter your review on the conference site, or complete a review form offline and upload it.  %IF(DEADLINE(extrev_soft))%Please enter your review by %DEADLINE(extrev_soft)%.  %ENDIF%If you cannot complete the review, please refuse the review on the paper site or contact %OTHERNAME% directly.  For reference, your account information is as follows.
 
@@ -102,7 +102,7 @@ Visit the assignment page to approve or deny the request.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/assign.php?paperId=%NUMBER%
+  Paper site: %URL%/assign%PHP%?p=%NUMBER%
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -114,7 +114,7 @@ Your proposal that %OTHERCONTACT% review %CONFNAME% paper #%NUMBER% has been den
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper.php?paperId=%NUMBER%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -129,7 +129,7 @@ Thank you,
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper.php?paperId=%NUMBER%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -141,7 +141,7 @@ An author of %CONFNAME% paper #%NUMBER% has withdrawn the paper from considerati
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper.php?paperId=%NUMBER%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -156,7 +156,7 @@ Thank you,
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper.php?paperId=%NUMBER%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
 %IF(REASON)%The paper was withdrawn by an administrator, who provided the following reason: %REASON%%ELSE%The paper was withdrawn by an administrator.%ENDIF%
 
@@ -175,7 +175,7 @@ Authors can voluntarily withdraw a submission at any time, as can the chair.  %R
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper.php?paperId=%NUMBER%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
 You are not expected to complete your review; in fact the system will not allow it unless the paper is revived.
 
@@ -202,7 +202,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been submitted.  The review is available at the paper site.
 
-  Paper site: %URL%/review.php?paperId=%NUMBER%
+  Paper site: %URL%/review%PHP%?p=%NUMBER%
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
    Review by: %OPT(REVIEWAUTHOR)%
@@ -217,7 +217,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated.  The review is available at the paper site.
 
-  Paper site: %URL%/review.php?paperId=%NUMBER%
+  Paper site: %URL%/review%PHP%?p=%NUMBER%
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
    Review by: %OPT(REVIEWAUTHOR)%
@@ -234,7 +234,7 @@ The %CONFNAME% program committee is delighted to inform you that your paper #%NU
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/review.php?paperId=%NUMBER%
+  Paper site: %URL%/review%PHP%?p=%NUMBER%
 
 Your paper was one of %NUMACCEPTED% accepted out of %NUMSUBMITTED% submissions.  Congratulations!
 
@@ -257,7 +257,7 @@ The %CONFNAME% program committee is sorry to inform you that your paper #%NUMBER
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/review.php?paperId=%NUMBER%
+  Paper site: %URL%/review%PHP%?p=%NUMBER%
 
 %NUMACCEPTED% papers were accepted out of %NUMSUBMITTED% submissions.
 
@@ -276,7 +276,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
      array("[%CONFSHORTNAME%] Comment for #%NUMBER% %TITLEHINT%",
 	   "A comment for %CONFNAME% paper #%NUMBER% has been submitted or updated.  The comment is copied below, and is available at the paper site.
 
-  Paper site: %URL%/comment.php?paperId=%NUMBER%
+  Paper site: %URL%/comment%PHP%?p=%NUMBER%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -291,7 +291,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 Your message here.
 
        Title: %TITLE%
-  Paper site: %URL%/paper.php?paperId=%NUMBER%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
 To sign in to the submissions site, either click the link below or paste it into your web browser's location field.
 
@@ -309,7 +309,7 @@ This is a reminder to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REV
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/review.php?paperId=%NUMBER%
+  Paper site: %URL%/review%PHP%?p=%NUMBER%
 
 To sign in to the submissions site, either click the link below or paste it into your web browser's location field.
 
@@ -377,7 +377,7 @@ class Mailer {
     }
     
     function expandvar($what, $isbool = false) {
-	global $Conf;
+	global $Conf, $ConfSiteSuffix;
 	$len = strlen($what);
 
 	if ($len > 6 && substr($what, 0, 4) == "%IF(" && substr($what, $len - 2) == ")%") {
@@ -447,6 +447,8 @@ class Mailer {
 	    return "$Conf->contactName <$Conf->contactEmail>";
 	if ($what == "%URL%")
 	    return $Conf->paperSite;
+	if ($what == "%PHP%")
+	    return $ConfSiteSuffix;
 	if (($what == "%NUMACCEPTED%" || $what == "%NUMSUBMITTED%")
 	    && $this->statistics === null) {
 	    $this->statistics = array(0, 0);

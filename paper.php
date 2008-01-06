@@ -9,6 +9,7 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $useRequest = false;
 $linkExtra = "";
+$PaperError = array();
 if (isset($_REQUEST["emailNote"]) && $_REQUEST["emailNote"] == "Optional explanation")
     unset($_REQUEST["emailNote"]);
 
@@ -38,10 +39,12 @@ function errorMsgExit($msg) {
 // collect paper ID: either a number or "new"
 $newPaper = false;
 $paperId = -1;
+if (!isset($_REQUEST["paperId"]) && isset($_REQUEST["p"]))
+    $_REQUEST["paperId"] = $_REQUEST["p"];
 if (isset($_REQUEST["paperId"]) && trim($_REQUEST["paperId"]) == "new")
     $newPaper = true;
 else {
-    maybeSearchPaperId("paper.php", $Me);
+    maybeSearchPaperId($Me);
     $paperId = cvtint($_REQUEST["paperId"]);
 }
 
@@ -170,8 +173,6 @@ function setRequestAuthorTable() {
 
 
 // update paper action
-$PaperError = array();
-
 function setRequestFromPaper($prow) {
     foreach (array("title", "abstract", "authorTable", "collaborators") as $x)
 	if (!isset($_REQUEST[$x]))
@@ -214,7 +215,7 @@ function uploadPaper($isSubmitFinal) {
 }
 
 function updatePaper($Me, $isSubmit, $isSubmitFinal) {
-    global $paperId, $newPaper, $PaperError, $Conf, $prow;
+    global $ConfSiteSuffix, $paperId, $newPaper, $PaperError, $Conf, $prow;
     $contactId = $Me->contactId;
     if ($isSubmitFinal)
 	$isSubmit = false;
@@ -411,7 +412,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper.php?paperId=%NUMBER%\n\n";
+  Paper site: %URL%/paper$ConfSiteSuffix?p=%NUMBER%\n\n";
     if ($isSubmitFinal) {
 	$deadline = $Conf->printableTimeSetting("final_done");
 	$m .= ($deadline != "N/A" ? "You have until $deadline to make further changes.\n\n" : "");
@@ -477,7 +478,7 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"])) {
 	$Conf->errorMsg(whyNotText($whyNot, $action));
     } else if (updatePaper($Me, isset($_REQUEST["submit"]), isset($_REQUEST["submitfinal"]))) {
 	if ($newPaper)
-	    $Conf->go("paper.php?paperId=$paperId&mode=edit");
+	    $Conf->go("paper$ConfSiteSuffix?p=$paperId&mode=edit");
     }
 
     // use request?
@@ -542,7 +543,7 @@ else if ($newPaper) {
 	if ($Conf->setting("sub_open") <= 0)
 	    $msg = "You can't register new papers because the conference site has not been opened for submissions.$override";
 	else
-	    $msg = "You can't register new papers since the <a href='deadlines.php'>deadline</a> has passed.$startDeadline$override";
+	    $msg = "You can't register new papers since the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed.$startDeadline$override";
 	if (!$Me->privChair)
 	    errorMsgExit($msg);
 	$Conf->infoMsg($msg);
@@ -564,9 +565,9 @@ else if ($newPaper) {
 	} else
 	    $Conf->infoMsg("Your paper is ready for review and will be considered for the conference.  However, you still have time to make changes before submissions are frozen.$updateDeadline");
     } else if ($prow->timeWithdrawn <= 0 && $timeSubmit)
-	$Conf->infoMsg("You cannot make any changes as the <a href='deadlines.php'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override");
+	$Conf->infoMsg("You cannot make any changes as the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override");
     else if ($prow->timeWithdrawn <= 0)
-	$Conf->infoMsg("The <a href='deadlines.php'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override");
+	$Conf->infoMsg("The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override");
 } else if ($prow->conflictType >= CONFLICT_AUTHOR && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper()) {
     $updateDeadline = deadlineSettingIs("final_done", $Conf);
     $Conf->infoMsg("Congratulations!  This paper was accepted.  Submit a final copy for your paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or edit contact authors, allowing others to view reviews and make changes.");
@@ -586,7 +587,7 @@ confHeader();
 // begin table
 $finalEditMode = false;
 if ($mode == "edit") {
-    echo "<form method='post' action=\"paper.php?paperId=",
+    echo "<form method='post' action=\"paper$ConfSiteSuffix?p=",
 	($newPaper ? "new" : $paperId),
 	"&amp;post=1&amp;mode=edit$linkExtra\" enctype='multipart/form-data'>";
     $editable = $newPaper || ($prow->timeWithdrawn <= 0
@@ -705,7 +706,7 @@ if ($mode != "edit" && $mainPreferences && $prow->conflictType <= 0) {
     if (isset($PaperError['revpref']))
 	echo " error";
     echo "'>Review preference</td>
-  <td class='entry'><form id='prefform' class='fold7o' action=\"", $ConfSiteBase, "paper.php?paperId=", $prow->paperId, "&amp;post=1$linkExtra\" method='post' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"prefform\")'>",
+  <td class='entry'><form id='prefform' class='fold7o' action=\"${ConfSiteBase}paper$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra\" method='post' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"prefform\")'>",
 	"<div class='inform'>",
 	"<input type='hidden' name='setrevpref' value='1' />",
 	"<input id='prefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$x\" onchange='Miniajax.submit(\"prefform\")' tabindex='1' />&nbsp;
@@ -733,7 +734,7 @@ if ($mode == "edit") {
     else if ($prow->timeWithdrawn > 0 && ($Conf->timeFinalizePaper($prow) || $Me->privChair))
 	$buttons[] = "<input class='button' type='submit' name='revive' value='Revive paper' />";
     else if ($prow->timeWithdrawn > 0)
-	$buttons[] = "The paper has been withdrawn, and the <a href='deadlines.php'>deadline</a> for reviving it has passed.";
+	$buttons[] = "The paper has been withdrawn, and the <a href='deadlines$ConfSiteSuffix'>deadline</a> for reviving it has passed.";
     else {
 	if ($prow->outcome > 0 && $Conf->collectFinalPapers() && ($Conf->timeSubmitFinalPaper() || $Me->privChair))
 	    $buttons[] = array("<input class='hbutton' type='submit' name='submitfinal' value='Submit final copy' />", "");
@@ -750,12 +751,12 @@ if ($mode == "edit") {
 	    $Conf->footerStuff .= "<div id='popup_w' class='popupc'><p>Are you sure you want to withdraw this paper from consideration and/or publication?";
 	    if (!$Me->privChair || $prow->conflictType >= CONFLICT_AUTHOR)
 		$Conf->footerStuff .= "  Only administrators can undo this step.";
-	    $Conf->footerStuff .= "</p><form method='post' action=\"paper.php?paperId=$paperId&amp;post=1&amp;mode=edit$linkExtra\" enctype='multipart/form-data'><div class='popup_actions'><input class='button' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'w', 1)\">Cancel</button></div></form></div>";
+	    $Conf->footerStuff .= "</p><form method='post' action=\"paper$ConfSiteSuffix?p=$paperId&amp;post=1&amp;mode=edit$linkExtra\" enctype='multipart/form-data'><div class='popup_actions'><input class='button' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'w', 1)\">Cancel</button></div></form></div>";
 	}
     }
     if ($Me->privChair && !$newPaper) {
 	$buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete paper</button>", "(admin only)");
-	$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"paper.php?paperId=$paperId&amp;post=1&amp;mode=edit$linkExtra\" enctype='multipart/form-data'><div class='popup_actions'><input class='button' type='submit' name='delete' value='Delete paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
+	$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"paper$ConfSiteSuffix?p=$paperId&amp;post=1&amp;mode=edit$linkExtra\" enctype='multipart/form-data'><div class='popup_actions'><input class='button' type='submit' name='delete' value='Delete paper' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
     }
     echo "    <tr>\n";
     foreach ($buttons as $b) {

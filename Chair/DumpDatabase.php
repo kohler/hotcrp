@@ -2,7 +2,7 @@
 require_once('../Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotChair('../index.php');
+$Me->goIfNotChair('../');
 
 
 $Conf->header("Prepare a backup of the $Conf->ShortName Database");

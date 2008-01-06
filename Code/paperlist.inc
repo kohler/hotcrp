@@ -368,7 +368,7 @@ class PaperList extends BaseList {
     }
 
     function _contentDownload($row) {
-	global $ConfSiteBase, $Conf;
+	global $Conf;
 	if ($row->size == 0 || !$this->contact->canDownloadPaper($row, $Conf))
 	    return "";
 	else if ($row->mimetype == "application/pdf")
@@ -407,18 +407,18 @@ class PaperList extends BaseList {
     }
     
     function content($fieldId, $row, $reviewList) {
-	global $ConfSiteBase, $Conf, $reviewTypeName, $reviewScoreNames;
+	global $ConfSiteBase, $ConfSiteSuffix, $Conf, $reviewTypeName, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
 	    $pl = $this->_paperLink($row);
-	    return "<a href='${ConfSiteBase}$pl.php?paperId=$row->paperId" . $this->paperLinkArgs . "' tabindex='4'>#$row->paperId</a>";
+	    return "<a href='${ConfSiteBase}$pl$ConfSiteSuffix?p=$row->paperId" . $this->paperLinkArgs . "' tabindex='4'>#$row->paperId</a>";
 	case self::FIELD_REVIEWID:
-	    return "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "' tabindex='4'>#$row->paperId" . unparseReviewOrdinal($row->reviewOrdinal) . "</a>";
+	    return "<a href='${ConfSiteBase}review$ConfSiteSuffix?reviewId=$row->reviewId" . $this->paperLinkArgs . "' tabindex='4'>#$row->paperId" . unparseReviewOrdinal($row->reviewOrdinal) . "</a>";
 	case self::FIELD_TITLE:
 	    $pl = $this->_paperLink($row);
-	    return "<a href='${ConfSiteBase}$pl.php?paperId=$row->paperId" . $this->paperLinkArgs . "' tabindex='5'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
+	    return "<a href='${ConfSiteBase}$pl$ConfSiteSuffix?p=$row->paperId" . $this->paperLinkArgs . "' tabindex='5'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_REVIEWTITLE:
-	    return "<a href='${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "' tabindex='5'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
+	    return "<a href='${ConfSiteBase}review$ConfSiteSuffix?reviewId=$row->reviewId" . $this->paperLinkArgs . "' tabindex='5'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
@@ -430,7 +430,7 @@ class PaperList extends BaseList {
 	    if ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted))
 		$this->needSubmitReview++;
 	    if ($row->reviewId) {
-		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "\">";
+		$a1 = "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?reviewId=$row->reviewId" . $this->paperLinkArgs . "\">";
 		$a2 = "</a>&nbsp;";
 		if ($row->reviewSubmitted)
 		    $a2 .= "<span class='rstat'>(Complete)</span>";
@@ -462,7 +462,7 @@ class PaperList extends BaseList {
 		$this->needSubmitReview++;
 	    $a1 = $a2 = "";
 	    if ($row->reviewId) {
-		$a1 = "<a href=\"${ConfSiteBase}review.php?reviewId=$row->reviewId" . $this->paperLinkArgs . "\">";
+		$a1 = "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?reviewId=$row->reviewId" . $this->paperLinkArgs . "\">";
 		$a2 = "</a>";
 	    }
 	    if ($row->conflictType > 0 && $this->showConflict) {
@@ -603,7 +603,7 @@ class PaperList extends BaseList {
     }
 
     function footer($ncol) {
-	global $Conf, $ConfSiteBase;
+	global $Conf;
 	if ($this->count == 0)
 	    return "";
 	
@@ -770,7 +770,7 @@ class PaperList extends BaseList {
     }
 
     function text($listname, $me) {
-	global $Conf, $ConfSiteBase, $paperListFields;
+	global $Conf, $ConfSiteBase, $ConfSiteSuffix, $paperListFields;
 
 	$this->contact = $me;
 	$this->count = 0;
@@ -940,16 +940,16 @@ class PaperList extends BaseList {
 	if ($taginfo)
 	    $x .= ($this->foldedTags !== false ? " fold4c" : " fold4o");
 	if ($taginfo && $this->foldedTags !== false && count($this->foldedTags))
-	    $Conf->footerStuff .= "<form id='tagloadform' method='post' action='${ConfSiteBase}search.php?get=tags&amp;ajax=1'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedTags) . "' /><input type='hidden' name='sitebase' value=\"" . htmlspecialchars($ConfSiteBase) . "\" /></div></form><script type='text/javascript'>ajaxTags = true;</script>";
+	    $Conf->footerStuff .= "<form id='tagloadform' method='post' action='${ConfSiteBase}search$ConfSiteSuffix?get=tags&amp;ajax=1'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedTags) . "' /><input type='hidden' name='sitebase' value=\"" . htmlspecialchars($ConfSiteBase) . "\" /></div></form><script type='text/javascript'>ajaxTags = true;</script>";
 	if ($abstractinfo)
 	    $x .= ($this->foldedAbstract !== false ? " fold5c" : " fold5o");
 	if ($abstractinfo && $this->foldedAbstract !== false && count($this->foldedAbstract))
-	    $Conf->footerStuff .= "<form id='abstractloadform' method='post' action='${ConfSiteBase}search.php?get=abstracts&amp;ajax=1'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedAbstract) . "' /></div></form><script type='text/javascript'>ajaxAbstracts = true;</script>";
+	    $Conf->footerStuff .= "<form id='abstractloadform' method='post' action='${ConfSiteBase}search$ConfSiteSuffix?get=abstracts&amp;ajax=1'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedAbstract) . "' /></div></form><script type='text/javascript'>ajaxAbstracts = true;</script>";
 	if ($authorinfo || !$unfolded || $taginfo || $abstractinfo)
 	    $x .= "\" id=\"foldpl";
 	$x .= "\">\n";
 
-	$t .= "<img id='foldplactsession' alt='' src='${ConfSiteBase}sessionvar.php?var=foldplact&amp;val=" . defval($_SESSION, "foldplact", 1) . "&amp;cache=1' width='1' height='1' />";
+	$t .= "<img id='foldplactsession' alt='' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldplact&amp;val=" . defval($_SESSION, "foldplact", 1) . "&amp;cache=1' width='1' height='1' />";
 
 	if ($this->showHeader) {
 	    $x .= "  <tr class=\"pl_headrow\">\n";
@@ -972,7 +972,7 @@ class PaperList extends BaseList {
 	    if ($taginfo && $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
 		$titleextra .= "<a class='unfolder4' href='javascript:foldtags(\"pl\",0,4)'>Show tags</a><a class='folder4' href='javascript:foldtags(\"pl\",1,4)'>Hide tags</a>";
-		$titleextra .= "<img id='foldsession.pl4' alt='' src='${ConfSiteBase}sessionvar.php?var=foldpltags&amp;val=" . defval($_SESSION, "foldpltags", 1) . "&amp;cache=1' width='1' height='1' />";
+		$titleextra .= "<img id='foldsession.pl4' alt='' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldpltags&amp;val=" . defval($_SESSION, "foldpltags", 1) . "&amp;cache=1' width='1' height='1' />";
 	    }
 	    
 	    if ($this->sortable && $url) {
@@ -1024,14 +1024,10 @@ class PaperList extends BaseList {
 
 	// session variable to remember the list
 	if ($this->listNumber) {
+	    $ids = $this->search->decorateSessionList($ids, $listname, defval($_REQUEST, "sort", ""));
 	    if (isset($_REQUEST["sort"]))
 		$url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
 	    $ids["url"] = $url;
-	    $ids["description"] = $this->search->description($listname);
-	    $ids["timestamp"] = time();
-	    if ($this->search->matchPreg)
-		$ids["matchPreg"] = "/(" . $this->search->matchPreg . ")/i";
-	    $ids["listid"] = $this->search->listId(isset($_REQUEST["sort"]) ? $_REQUEST["sort"] : "");
 	    $_SESSION["l"][$this->listNumber] = $ids;
 	}
 

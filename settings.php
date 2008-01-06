@@ -7,7 +7,7 @@ require_once('Code/header.inc');
 require_once('Code/tags.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPrivChair('index.php');
+$Me->goIfNotPrivChair("index$ConfSiteSuffix");
 $SettingError = array();
 $Error = array();
 $Values = array();
@@ -522,7 +522,7 @@ function doGraceRow($name, $text, $capclass = "lcaption") {
 
 // Accounts
 function doAccGroup() {
-    global $Conf, $ConfSiteBase, $Me, $belowHr;
+    global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Me, $belowHr;
 
     if ($Conf->setting("allowPaperOption") >= 5)
 	doCheckbox("acct_addr", "Collect users' addresses and phone numbers");
@@ -531,10 +531,10 @@ function doAccGroup() {
 
     echo "<hr /><h3>Program committee &amp; system administrators</h3>";
 
-    echo "<p><a href='${ConfSiteBase}account.php?new=1' class='button'>Create account</a> &nbsp;|&nbsp; ",
+    echo "<p><a href='${ConfSiteBase}account$ConfSiteSuffix?new=1' class='button'>Create account</a> &nbsp;|&nbsp; ",
 	"Select a user's name to edit a profile or change PC/administrator status.</p>\n";
     $pl = new ContactList(false);
-    echo $pl->text("pcadminx", $Me, "${ConfSiteBase}contacts.php?t=pcadmin");
+    echo $pl->text("pcadminx", $Me, "${ConfSiteBase}contacts$ConfSiteSuffix?t=pcadmin");
 
     $belowHr = false;
 }
@@ -752,7 +752,7 @@ function doDecGroup() {
 
 $belowHr = true;
 
-echo "<form method='post' action='settings.php?post=1' enctype='multipart/form-data'><div><input type='hidden' name='group' value='$Group' />\n";
+echo "<form method='post' action='settings$ConfSiteSuffix?post=1' enctype='multipart/form-data'><div><input type='hidden' name='group' value='$Group' />\n";
 
 echo "<table class='settings'><tr><td class='caption'>";
 echo "<table class='lhsel'>";
@@ -765,9 +765,9 @@ foreach (array("acc" => "Accounts",
 	       "dec" => "Decisions") as $k => $v) {
     echo "<tr><td>";
     if ($Group == $k)
-	echo "<div class='lhl1'><a class='q' href='settings.php?group=$k'>$v</a></div>";
+	echo "<div class='lhl1'><a class='q' href='settings$ConfSiteSuffix?group=$k'>$v</a></div>";
     else
-	echo "<div class='lhl0'><a href='settings.php?group=$k'>$v</a></div>";
+	echo "<div class='lhl0'><a href='settings$ConfSiteSuffix?group=$k'>$v</a></div>";
     echo "</td></tr>";
 }
 echo "</table></td><td class='top'><div class='lht'>";

@@ -2,7 +2,7 @@
 require_once('Code/header.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPrivChair('index.php');
+$Me->goIfNotPrivChair("index$ConfSiteSuffix");
 
 if (defval($_REQUEST, "page", "") == "earliest")
     $page = false;
@@ -90,9 +90,9 @@ if ($_REQUEST["date"] != "now" && isset($_REQUEST["search"]))
     }
 
 function searchbar() {
-    global $Conf, $ConfSiteBase, $Eclass, $page, $start, $count, $nrows, $maxNrows, $offset;
+    global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Eclass, $page, $start, $count, $nrows, $maxNrows, $offset;
     
-    echo "<form method='get' action='log.php'>
+    echo "<form method='get' action='log$ConfSiteSuffix'>
 <table id='searchform'><tr>
   <td class='lxcaption", $Eclass['q'], "'>With <b>any</b> of the words</td>
   <td class='lentry", $Eclass['q'], "'><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>
@@ -117,7 +117,7 @@ function searchbar() {
 	foreach (array("q", "pap", "acct", "n", "offset") as $x)
 	    if ($_REQUEST[$x])
 		$urls[] = "$x=" . urlencode($_REQUEST[$x]);
-	$url = "log.php?" . join("&amp;", $urls);
+	$url = "log$ConfSiteSuffix?" . join("&amp;", $urls);
 	echo "<table class='lognav'><tr><td id='newest'><div>";
 	if ($page > 1)
 	    echo "<a href='$url&amp;page=1'><strong>Newest</strong></a> &nbsp;|&nbsp;&nbsp;";
@@ -143,7 +143,7 @@ function searchbar() {
 	    echo "&nbsp;&nbsp;|&nbsp; <a href='$url&amp;page=earliest'><strong>Oldest</strong></a>";
 	/* echo "</div></td><td id='gopage'><div>";
 	if ($page > 1 || $nrows > $count) {
-	    echo "&nbsp;&nbsp;|&nbsp; Page: <form method='get' action='log.php'>";
+	    echo "&nbsp;&nbsp;|&nbsp; Page: <form method='get' action='log$ConfSiteSuffix'>";
 	    foreach (array("q", "pap", "acct", "n", "offset") as $x)
 		if ($_REQUEST[$x])
 		    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />";
@@ -218,27 +218,27 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
     
     $act = $row->action;
     if (preg_match('/^Review (\d+)/', $act, $m)) {
-	echo "<a href=\"${ConfSiteBase}review.php?reviewId=$m[1]\">Review ",
+	echo "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?reviewId=$m[1]\">Review ",
 	    $m[1], "</a>";
 	$act = substr($act, strlen($m[0]));
     }
     if (preg_match('/^Comment (\d+)/', $act, $m)) {
-	echo "<a href=\"${ConfSiteBase}comment.php?commentId=$m[1]\">Comment ",
+	echo "<a href=\"${ConfSiteBase}comment$ConfSiteSuffix?commentId=$m[1]\">Comment ",
 	    $m[1], "</a>";
 	$act = substr($act, strlen($m[0]));
     }
     if (preg_match('/ \(papers ([\d, ]+)\)?$/', $act, $m)) {
 	echo htmlspecialchars(substr($act, 0, strlen($act) - strlen($m[0]))),
-	    " (<a href=\"${ConfSiteBase}search.php?t=all&amp;q=",
+	    " (<a href=\"${ConfSiteBase}search$ConfSiteSuffix?t=all&amp;q=",
 	    preg_replace('/[\s,]+/', "+", $m[1]),
 	    "\">papers</a> ",
-	    preg_replace('/(\d+)/', "<a href=\"${ConfSiteBase}paper.php?paperId=\$1\">\$1</a>", $m[1]),
+	    preg_replace('/(\d+)/', "<a href=\"${ConfSiteBase}paper$ConfSiteSuffix?p=\$1\">\$1</a>", $m[1]),
 	    ")";
     } else 
 	echo htmlspecialchars($act);
 
     if ($row->paperId)
-	echo " (paper <a href=\"${ConfSiteBase}paper.php?paperId=", urlencode($row->paperId), "\">", htmlspecialchars($row->paperId), "</a>)";
+	echo " (paper <a href=\"${ConfSiteBase}paper$ConfSiteSuffix?p=", urlencode($row->paperId), "\">", htmlspecialchars($row->paperId), "</a>)";
     echo "</td>";
     echo "</tr>\n";
 }

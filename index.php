@@ -78,7 +78,7 @@ function doCreateAccount() {
 }
 
 function doLogin() {
-    global $Conf, $Me, $email_class, $password_class;
+    global $Conf, $ConfSiteSuffix, $Me, $email_class, $password_class;
     
     // In all cases, we need to look up the account information
     // to determine if the user is registered
@@ -96,7 +96,7 @@ function doLogin() {
 	foreach (array("email", "password", "action", "go", "afterLogin", "signin") as $a)
 	    if (isset($_REQUEST[$a]))
 		$url .= "&$a=" . urlencode($_REQUEST[$a]);
-	$Conf->go("index.php?" . $url);
+	$Conf->go("?" . $url);
     } else if (!isset($_COOKIE["CRPTestCookie"]))
 	return $Conf->errorMsg("You appear to have disabled cookies in your browser, but this site needs to set cookies to function.  Google has <a href='http://www.google.com/cookies.html'>an informative article on how to enable them</a>.");
 
@@ -137,11 +137,11 @@ function doLogin() {
     else if (isset($_SESSION["afterLogin"]))
 	$where = $_SESSION["afterLogin"];
     else
-	$where = "index.php";
+	$where = "index$ConfSiteSuffix";
 
     setcookie("CRPTestCookie", false);
     unset($_SESSION["afterLogin"]);
-    //if ($where == "index.php")
+    //if ($where == "index$ConfSiteSuffix")
     //    return true;
     $Me->go($where);
     exit;
@@ -168,7 +168,7 @@ if ($Me->valid() && (($_SESSION["AskedYouToUpdateContactInfo"] < 2
 			 && ($Me->roles & Contact::ROLE_PC)
 			 && !$Me->collaborators))) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 1;
-    $Me->go("account.php?redirect=1");
+    $Me->go("account$ConfSiteSuffix?redirect=1");
 }
 
 if ($Me->privChair && $Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
@@ -197,7 +197,7 @@ echo "<table class='homegrp'>";
 // Sign in
 if (!$Me->valid()) {
     echo "<tr><td id='homeacct'>
-<form method='post' action='index.php'><div class='f-contain'>
+<form method='post' action='index$ConfSiteSuffix'><div class='f-contain'>
 <input type='hidden' name='cookie' value='1' />
 <div class='f-ii'>
   <div class='f-c", $email_class, "'>Email</div>
@@ -233,33 +233,33 @@ if ($homelist) {
     echo "<strong class='grpt'>List papers: &nbsp;</strong> ";
     $sep = "";
     if ($Me->isReviewer) {
-	echo $sep, "<a href='search.php?q=&amp;t=r' class='nowrap'>My reviews</a>";
+	echo $sep, "<a href='search$ConfSiteSuffix?q=&amp;t=r' class='nowrap'>My reviews</a>";
 	$sep = $xsep;
     }
     if ($Me->isPC && $Conf->timePCViewAllReviews()
 	&& $Me->amDiscussionLead(0, $Conf)) {
-	echo $sep, "<a href=\"search.php?q=lead:", urlencode($Me->email), "&amp;t=s\" class='nowrap'>My discussion leads</a>";
+	echo $sep, "<a href=\"search$ConfSiteSuffix?q=lead:", urlencode($Me->email), "&amp;t=s\" class='nowrap'>My discussion leads</a>";
 	$sep = $xsep;
     }
     if ($Me->isPC && $papersub) {
-	echo $sep, "<a href='search.php?q=&amp;t=s' class='nowrap'>Submitted</a>";
+	echo $sep, "<a href='search$ConfSiteSuffix?q=&amp;t=s' class='nowrap'>Submitted</a>";
 	$sep = $xsep;
     }
     if (($Me->isPC && $Conf->timeAuthorViewDecision() && $papersub)
 	|| ($Me->privChair && $Conf->setting("paperacc") > 0)) {
-	echo $sep, "<a href='search.php?q=&amp;t=acc' class='nowrap'>Accepted</a>";
+	echo $sep, "<a href='search$ConfSiteSuffix?q=&amp;t=acc' class='nowrap'>Accepted</a>";
 	$sep = $xsep;
     }
     if ($Me->privChair) {
-	echo $sep, "<a href='search.php?q=&amp;t=all' class='nowrap'>All</a>";
+	echo $sep, "<a href='search$ConfSiteSuffix?q=&amp;t=all' class='nowrap'>All</a>";
 	$sep = $xsep;
     }
 
     echo "</td></tr><tr><td id='homesearch'>";
-    echo "<form method='get' action='search.php'><div class='inform'>",
+    echo "<form method='get' action='search$ConfSiteSuffix'><div class='inform'>",
 	"<input class='textlite' type='text' size='32' name='q' value='' /> &nbsp;<input class='button_small' type='submit' value='Search' />",
 	"</div></form>\n";
-    echo "<span class='sep'></span><small><a href='search.php?opt=1'>Advanced search</a></small>";
+    echo "<span class='sep'></span><small><a href='search$ConfSiteSuffix?opt=1'>Advanced search</a></small>";
     echo "</td></tr></table><hr class='home' /></td></tr>\n";
 }
 
@@ -290,9 +290,9 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     }
     if ($myrow) {
 	if ($myrow[2] == 1 && $myrow[1] <= 1)
-	   echo "You ", ($myrow[1] == 1 ? "have" : "have not"), " submitted your <a href='search.php?q=&amp;t=r'>review</a>";
+	   echo "You ", ($myrow[1] == 1 ? "have" : "have not"), " submitted your <a href='search$ConfSiteSuffix?q=&amp;t=r'>review</a>";
 	else
-	   echo "You have submitted ", $myrow[1], " of <a href='search.php?q=&amp;t=r'>", $myrow[2], " ", ($myrow[2] == 1 ? "review" : "reviews"), "</a>";
+	   echo "You have submitted ", $myrow[1], " of <a href='search$ConfSiteSuffix?q=&amp;t=r'>", $myrow[2], " ", ($myrow[2] == 1 ? "review" : "reviews"), "</a>";
 	if (in_array("overAllMerit", $rf->fieldOrder) && $myrow[1])
 	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", sprintf("%.2f", $myrow[3]->avg);
 	echo ".<br />";
@@ -303,13 +303,13 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", sprintf("%.2f", $sumpcScore / $npcScore);
 	echo ".";
 	if ($Me->isPC || $Me->privChair)
-	    echo "&nbsp; <small>(<a href='contacts.php?t=pc&amp;score%5B%5D=0'>Details</a>)</small>";
+	    echo "&nbsp; <small>(<a href='contacts$ConfSiteSuffix?t=pc&amp;score%5B%5D=0'>Details</a>)</small>";
 	echo "<br />";
     }
     if ($myrow && $myrow[1] < $myrow[2]) {
 	$rtyp = ($Me->isPC ? "pcrev_" : "extrev_");
 	if (!$Conf->timeReviewPaper($Me->isPC, true, true))
-	    echo "<span class='deadline'>The <a href='deadlines.php'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span>";
+	    echo "<span class='deadline'>The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span>";
 	else if (!$Conf->timeReviewPaper($Me->isPC, true, false))
 	    echo "<span class='deadline'><strong class='overdue'>Reviews are overdue.</strong>  They were requested by " . $Conf->printableTimeSetting("${rtyp}soft") . ".</span>";
 	else {
@@ -331,23 +331,23 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     // Actions
     $sep = "";
     if ($myrow) {
-	echo $sep, "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&ndash;</a>&nbsp;<a href=\"search.php?q=&amp;t=r\"><strong>My Reviews</strong></a>";
+	echo $sep, "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&ndash;</a>&nbsp;<a href=\"search$ConfSiteSuffix?q=&amp;t=r\"><strong>My Reviews</strong></a>";
 	$sep = $xsep;
     }
     if ($Me->isPC && $Conf->timePCReviewPreferences()) {
-	echo $sep, "<a href='PC/reviewprefs.php'>Preferences</a>";
+	echo $sep, "<a href='reviewprefs$ConfSiteSuffix'>Preferences</a>";
 	$sep = $xsep;
     }
     if ($Conf->settingsAfter("rev_open") || $Me->privChair) {
-	echo $sep, "<a href='offline.php'>Offline reviewing</a>";
+	echo $sep, "<a href='offline$ConfSiteSuffix'>Offline reviewing</a>";
 	$sep = $xsep;
     }
     if ($Me->privChair || ($Me->isPC && $Conf->timeReviewPaper(true, false, true))) {
-	echo $sep, "<a href='search.php?q=&amp;t=s'>Review any paper</a>";
+	echo $sep, "<a href='search$ConfSiteSuffix?q=&amp;t=s'>Review any paper</a>";
 	$sep = $xsep;
     }
     if ($Me->isRequester) {
-	echo $sep, "<a href='PC/CheckReviewStatus.php'>Monitor external reviews</a>";
+	echo $sep, "<a href='PC/CheckReviewStatus$ConfSiteSuffix'>Monitor external reviews</a>";
 	$sep = $xsep;
     }
     
@@ -377,7 +377,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
     if ($startable && !$Me->valid())
 	echo "<span class='deadline'>", $Conf->printableDeadlineSetting('sub_reg'), "</span><br />\n<small>You must sign in to register papers.</small>";
     else if ($startable || $Me->privChair) {
-	echo "<strong><a href='paper.php?paperId=new'>Start new paper</a></strong> <span class='deadline'>(", $Conf->printableDeadlineSetting('sub_reg'), ")</span>";
+	echo "<strong><a href='paper$ConfSiteSuffix?p=new'>Start new paper</a></strong> <span class='deadline'>(", $Conf->printableDeadlineSetting('sub_reg'), ")</span>";
 	if ($Me->privChair)
 	    echo "<br />\n<small>As an administrator, you can start papers regardless of deadlines and on other people's behalf.</small>";
     }
@@ -394,9 +394,9 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
     $deadlines = array();
     if ($plist && $plist->needFinalize > 0) {
 	if (!$Conf->timeFinalizePaper())
-	    $deadlines[] = "The <a href='deadlines.php'>deadline</a> for submitting papers has passed.";
+	    $deadlines[] = "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting papers has passed.";
 	else if (!$Conf->timeUpdatePaper()) {
-	    $deadlines[] = "The <a href='deadlines.php'>deadline</a> for updating papers has passed, but you can still submit.";
+	    $deadlines[] = "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for updating papers has passed, but you can still submit.";
 	    $time = $Conf->printableTimeSetting('sub_sub');
 	    if ($time != 'N/A')
 		$deadlines[] = "You have until $time to submit papers.";
@@ -405,7 +405,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
     }
     if (!$startable && !count($deadlines)) {
 	if ($Conf->settingsAfter('sub_open'))
-	    $deadlines[] = "The <a href='deadlines.php'>deadline</a> for registering new papers has passed.";
+	    $deadlines[] = "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for registering new papers has passed.";
 	else
 	    $deadlines[] = "The site has not yet opened for submission, please try again later.";
     }
@@ -426,14 +426,14 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 // Profile
 if ($Me->valid()) {
     echo "<tr><td id='homeacct'>";
-    echo "<a href='account.php'><strong class='grpt'>My Profile</strong></a>",
-	$xsep, "<a href='mergeaccounts.php'>Merge accounts</a>";
+    echo "<a href='account$ConfSiteSuffix'><strong class='grpt'>My Profile</strong></a>",
+	$xsep, "<a href='mergeaccounts$ConfSiteSuffix'>Merge accounts</a>";
     if (($nh = contactNameHtml($Me)))
 	echo $xsep, "Welcome, ", $nh, ".";
     else
 	echo $xsep, "Welcome.";
-    echo $xsep, "<a href='index.php?signout=1'>Sign out</a>";
-    // echo "(If this isn't you, please <a href='${ConfSiteBase}index.php?signout=1'>sign out</a>.)";
+    echo $xsep, "<a href='index$ConfSiteSuffix?signout=1'>Sign out</a>";
+    // echo "(If this isn't you, please <a href='${ConfSiteBase}index$ConfSiteSuffix?signout=1'>sign out</a>.)";
     // echo "You will be signed out automatically if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.";
     echo "<hr class='home' /></td></tr>\n";
 }
@@ -448,10 +448,10 @@ if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting(
     || ($Me->isAuthor && $Conf->setting('resp_open') > 0 && $Conf->setting('resp_done'))
     || ($Me->isPC && $Conf->setting('rev_open') && $Conf->setting('pcrev_hard'))
     || ($Me->amReviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard'))) {
-    echo $sep, "<a href='deadlines.php'>Deadlines</a>";
+    echo $sep, "<a href='deadlines$ConfSiteSuffix'>Deadlines</a>";
     $sep = $xsep;
 }
-echo $sep, "<a href='contacts.php?t=pc'>Program committee members</a>";
+echo $sep, "<a href='contacts$ConfSiteSuffix?t=pc'>Program committee members</a>";
 if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
     echo $xsep, "<a href='", $Opt['conferenceSite'], "'>Main conference site</a>";
 if ($Conf->timeAuthorViewDecision()) {
@@ -474,11 +474,11 @@ if ($Me->privChair) {
     
     // Lists
     echo "<strong class='grpt'>Conference management: &nbsp;</strong> ";
-    echo "<a href='settings.php'>Settings</a>";
-    echo $xsep, "<a href='contacts.php?t=all'>Accounts</a>";
-    echo $xsep, "<a href='autoassign.php'>Review assignments</a>";
-    echo $xsep, "<a href='mail.php'>Mail users</a>";
-    echo $xsep, "<a href='log.php'>Action log</a>";
+    echo "<a href='settings$ConfSiteSuffix'>Settings</a>";
+    echo $xsep, "<a href='contacts$ConfSiteSuffix?t=all'>Accounts</a>";
+    echo $xsep, "<a href='autoassign$ConfSiteSuffix'>Review assignments</a>";
+    echo $xsep, "<a href='mail$ConfSiteSuffix'>Mail users</a>";
+    echo $xsep, "<a href='log$ConfSiteSuffix'>Action log</a>";
 
     echo "<hr class='home' /></td></tr>\n";
 }

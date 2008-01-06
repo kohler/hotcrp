@@ -1,14 +1,14 @@
 <?php
-// PC/reviewprefs.php -- HotCRP review preference global settings page
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// reviewprefs.php -- HotCRP review preference global settings page
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once('../Code/header.inc');
-require_once('../Code/paperlist.inc');
-require_once('../Code/search.inc');
+require_once('Code/header.inc');
+require_once('Code/paperlist.inc');
+require_once('Code/search.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPC('../index.php');
+$Me->goIfNotPC("index$ConfSiteSuffix");
 $reviewer = cvtint($_REQUEST["reviewer"]);
 if ($reviewer <= 0 || !$Me->privChair)
     $reviewer = $Me->contactId;
@@ -106,7 +106,7 @@ if (isset($_REQUEST["redisplay"])) {
 
 // search
 $searchType = ($Conf->setting("pc_seeall") > 0 ? "all" : "s");
-$pl = new PaperList(true, true, new PaperSearch($Me, array("t" => $searchType, "c" => $reviewer, "urlbase" => "PC/reviewprefs.php?reviewer=$reviewer")));
+$pl = new PaperList(true, true, new PaperSearch($Me, array("t" => $searchType, "c" => $reviewer, "urlbase" => "reviewprefs$ConfSiteSuffix?reviewer=$reviewer")));
 $pl->showHeader = PaperList::HEADER_TITLES;
 $pl_text = $pl->text("editReviewPreference", $Me);
 
@@ -115,7 +115,7 @@ $pl_text = $pl->text("editReviewPreference", $Me);
 echo "<table id='searchform' class='tablinks1'>
 <tr><td>"; // <div class='tlx'><div class='tld1'>";
 
-echo "<form method='get' action='reviewprefs.php' id='redisplayform'>\n<table>";
+echo "<form method='get' action='reviewprefs$ConfSiteSuffix' id='redisplayform'>\n<table>";
 $redisplayButton = "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td>";
 
 if ($Me->privChair) {
@@ -174,7 +174,7 @@ echo "</td></tr></table>\n";
 
 
 // ajax preferences form
-echo "<form id='prefform' method='post' action=\"${ConfSiteBase}paper.php\" enctype='multipart/form-data'><div>",
+echo "<form id='prefform' method='post' action=\"${ConfSiteBase}paper$ConfSiteSuffix\" enctype='multipart/form-data'><div>",
     "<input type='hidden' name='paperId' value='' />",
     "<input type='hidden' name='revpref' value='' />";
 if ($Me->privChair)
@@ -183,7 +183,7 @@ echo "</div></form>\n\n";
 
 
 // main form
-echo "<form class='assignpc' method='post' action=\"reviewprefs.php?reviewer=$reviewer&amp;post=1\" enctype='multipart/form-data'>\n";
+echo "<form class='assignpc' method='post' action=\"reviewprefs$ConfSiteSuffix?reviewer=$reviewer&amp;post=1\" enctype='multipart/form-data'>\n";
 echo $pl_text;
 echo "<div class='smgap'></div><table class='center'><tr><td><input class='hbutton' type='submit' name='update' value='Save preferences' /></td></tr></table>\n";
 echo "</form>\n";

@@ -185,7 +185,7 @@ class Contact {
     }
 
     function goIfInvalid() {
-	global $ConfSiteBase, $reviewFields;
+	global $ConfSiteBase, $ConfSiteSuffix, $reviewFields;
 	if (!$this->valid()) {
 	    require_once("review.inc");
 	    $x = array("afterLogin" => 1, "blind" => 1);
@@ -193,7 +193,7 @@ class Contact {
 		if (isset($_REQUEST[$k]))
 		    $x[$k] = $_REQUEST[$k];
 	    $_SESSION["afterLogin"] = selfHref($x);
-	    $this->goAlert("${ConfSiteBase}index.php", "You have invalid credentials and need to sign in.");
+	    $this->goAlert("${ConfSiteBase}index$ConfSiteSuffix", "You have invalid credentials and need to sign in.");
 	}
     }
 
@@ -597,7 +597,6 @@ class Contact {
     }
 
     function canRequestReview($prow, $conf, $time, &$whyNot = null) {
-	global $ConfSiteBase;
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
@@ -617,7 +616,6 @@ class Contact {
     }
 
     function canReview($prow, $rrow, $conf, &$whyNot = null, $submit = false) {
-	global $ConfSiteBase;
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
@@ -665,7 +663,6 @@ class Contact {
 
 
     function canComment($prow, $crow, $conf, &$whyNot = null, $submit = false) {
-	global $ConfSiteBase;
 	// check whether this is a response
 	if ($crow && $crow->forAuthors > 1)
 	    return $this->canRespond($prow, $crow, $conf, $whyNot, $submit);
@@ -746,7 +743,6 @@ class Contact {
     }
 
     function canRespond($prow, $crow, $conf, &$whyNot = null, $submit = false) {
-	global $ConfSiteBase;
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
@@ -886,7 +882,7 @@ class Contact {
     }
     
     function paperStatus($paperId, $row, $long = 0, $conf = null) {
-	global $ConfSiteBase, $Conf;
+	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
 	if (!$this->privChair && $row->conflictType < CONFLICT_AUTHOR)
 	    $long = min($long, 0);

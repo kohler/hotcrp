@@ -4,12 +4,5 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once('Code/header.inc');
-$_SESSION["Me"]->invalidate();
-unset($_SESSION["AskedYouToUpdateContactInfo"]);
-unset($_SESSION["l"]);
-unset($_SESSION["foldplau"]);
-unset($_SESSION["foldplanonau"]);
-unset($_SESSION["foldplabstract"]);
-unset($_SESSION["foldpltags"]);
-$Conf->confirmMsg("You have been signed out, but you can sign in again if you'd like.");
-go("login.php");
+$_REQUEST["signout"] = 1;
+include("index.php");

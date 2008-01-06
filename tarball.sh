@@ -35,7 +35,7 @@ comment.php
 contactauthors.php
 contacts.php
 deadlines.php
-doc
+doc.php
 help.php
 index.php
 log.php
@@ -45,6 +45,7 @@ offline.php
 paper.php
 reload.sh
 review.php
+reviewprefs.php
 scorehelp.php
 script.js
 search.php
@@ -118,6 +119,5 @@ Chair/sampleforms.inc
 PC/.htaccess
 PC/CheckReviewStatus.php
 PC/index.php
-PC/reviewprefs.php
 
 EOF

@@ -36,11 +36,11 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $ConfSiteBase, $prow, $crows, $crow, $savedCommentId, $savedCrow;
+    global $Conf, $Me, $prow, $crows, $crow, $savedCommentId, $savedCrow;
     if (isset($_REQUEST["commentId"]))
 	$sel = array("commentId" => $_REQUEST["commentId"]);
     else {
-	maybeSearchPaperId("comment.php", $Me);
+	maybeSearchPaperId($Me);
 	$sel = array("paperId" => $_REQUEST["paperId"]);
     }
     $sel['topics'] = $sel['options'] = $sel['tags'] = 1;
@@ -204,13 +204,13 @@ function saveComment($text) {
 }
 
 function saveResponse($text) {
-    global $Me, $Conf, $prow, $crow, $linkExtra;
+    global $Me, $Conf, $prow, $crow, $linkExtra, $ConfSiteSuffix;
 
     // make sure there is exactly one response
     if (!$crow) {
 	$result = $Conf->qe("select commentId from PaperComment where paperId=$prow->paperId and forAuthors>1");
 	if (($row = edb_row($result)))
-	    return $Conf->errorMsg("A paper response has already been entered.  <a href=\"comment.php?commentId=$row[0]$linkExtra\">Edit that response</a>");
+	    return $Conf->errorMsg("A paper response has already been entered.  <a href=\"comment$ConfSiteSuffix?commentId=$row[0]$linkExtra\">Edit that response</a>");
     }
 
     saveComment($text);
@@ -270,8 +270,8 @@ confHeader();
 
 // paper table
 $canViewAuthors = $Me->canViewAuthors($prow, $Conf, $forceShow);
-$paperTable = new PaperTable(false, false, true,
-			     ($Me->privChair && paperBlind($prow) ? 1 : 2));
+$authorsFolded = (!$canViewAuthors && $Me->privChair && paperBlind($prow) ? 1 : 2);
+$paperTable = new PaperTable(false, false, true, $authorsFolded, "review");
 $paperTable->watchCheckbox = WATCH_COMMENT;
 
 
@@ -285,6 +285,7 @@ $Conf->tableMsg(2, $paperTable);
 echo "<tr class='id'>\n  <td class='caption'><h2>#$prow->paperId</h2></td>\n";
 echo "  <td class='entry' colspan='2'><h2>";
 $paperTable->echoTitle($prow);
+echo "<img id='foldsession.paper9' alt='' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldreviewp&amp;val=", defval($_SESSION, "foldreviewp", 1), "&amp;cache=1' width='1' height='1' />";
 echo "</h2></td>\n</tr>\n\n";
 
 
@@ -299,11 +300,11 @@ $paperTable->echoAbstractRow($prow);
 $paperTable->echoTopics($prow);
 $paperTable->echoOptions($prow, $Me->privChair);
 if ($Me->canViewTags($prow, $Conf, $forceShow))
-    $paperTable->echoTags($prow, "${ConfSiteBase}comment.php?paperId=$prow->paperId$linkExtra");
+    $paperTable->echoTags($prow, "${ConfSiteBase}comment$ConfSiteSuffix?p=$prow->paperId$linkExtra");
 if ($Me->privChair)
     $paperTable->echoPCConflicts($prow, true);
 if ($crow)
-    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><a href='comment.php?paperId=$prow->paperId$linkExtra'>All comments</a></td>\n</tr>\n\n";
+    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><a href='comment$ConfSiteSuffix?p=$prow->paperId$linkExtra'>All comments</a></td>\n</tr>\n\n";
 if ($Me->privChair && $prow->conflictType > 0 && !$forceShow)
     echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><a href=\"", htmlspecialchars(selfHref(array("forceShow" => 1))), "\"><strong>Override your conflict</strong> to see all comments and allow editing</a></td>\n</tr>\n\n";
 
@@ -348,7 +349,7 @@ function commentIdentityTime($prow, $crow, &$sep) {
 }
 
 function commentView($prow, $crow, $editMode) {
-    global $Conf, $Me, $rf, $forceShow, $linkExtra, $useRequest, $anyComment;
+    global $Conf, $ConfSiteSuffix, $Me, $rf, $forceShow, $linkExtra, $useRequest, $anyComment;
 
     if ($crow && $crow->forAuthors > 1)
 	return responseView($prow, $crow, $editMode);
@@ -360,11 +361,11 @@ function commentView($prow, $crow, $editMode) {
     $anyComment = true;
     
     if ($editMode) {
-	echo "<form action='comment.php?";
+	echo "<form action='comment$ConfSiteSuffix?";
 	if ($crow)
 	    echo "commentId=$crow->commentId";
 	else
-	    echo "paperId=$prow->paperId";
+	    echo "p=$prow->paperId";
 	echo "$linkExtra&amp;post=1' method='post' enctype='multipart/form-data'>\n";
     }
 
@@ -392,7 +393,7 @@ function commentView($prow, $crow, $editMode) {
     }
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
     if ($crow && ($crow->contactId == $Me->contactId || $Me->privChair) && !$editMode)
-	echo $xsep, "<a class='button' href='comment.php?commentId=$crow->commentId$linkExtra'>Edit</a>";
+	echo $xsep, "<a class='button' href='comment$ConfSiteSuffix?commentId=$crow->commentId$linkExtra'>Edit</a>";
     echo "</td>\n</tr>\n\n";
 
     if ($editMode && $crow && $crow->contactId != $Me->contactId) {
@@ -470,7 +471,7 @@ function commentView($prow, $crow, $editMode) {
 
 
 function responseView($prow, $crow, $editMode) {
-    global $Conf, $Me, $rf, $forceShow, $linkExtra, $useRequest, $sawResponse;
+    global $Conf, $ConfSiteSuffix, $Me, $rf, $forceShow, $linkExtra, $useRequest, $sawResponse;
 
     if ($editMode && !$Me->canRespond($prow, $crow, $Conf))
 	$editMode = false;
@@ -478,11 +479,11 @@ function responseView($prow, $crow, $editMode) {
     $wordlimit = $Conf->setting("resp_words", 0);
     
     if ($editMode) {
-	echo "<form action='comment.php?";
+	echo "<form action='comment$ConfSiteSuffix?";
 	if ($crow)
 	    echo "commentId=$crow->commentId";
 	else
-	    echo "paperId=$prow->paperId";
+	    echo "p=$prow->paperId";
 	echo "$linkExtra&amp;response=1&amp;post=1' method='post' enctype='multipart/form-data'>\n";
     }
 
@@ -497,7 +498,7 @@ function responseView($prow, $crow, $editMode) {
     commentIdentityTime($prow, $crow, $sep);
     if ($crow && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair)
 	&& !$editMode && $Me->canRespond($prow, $crow, $Conf))
-	echo $sep, "<a class='button' href='comment.php?commentId=$crow->commentId$linkExtra'>Edit</a>";
+	echo $sep, "<a class='button' href='comment$ConfSiteSuffix?commentId=$crow->commentId$linkExtra'>Edit</a>";
     echo "</td>\n</tr>\n\n";
 
     if ($editMode) {
@@ -551,7 +552,7 @@ has passed.  Please keep the response short and to the point" . $limittext . "."
     } else {
 	echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>";
 	if ($Me->privChair && $crow->forReviewers < 1)
-	    echo "<i>The <a href='comment.php?commentId=$crow->commentId$linkExtra'>authors' response</a> is not yet ready for reviewers to view.</i>";
+	    echo "<i>The <a href='comment$ConfSiteSuffix?commentId=$crow->commentId$linkExtra'>authors' response</a> is not yet ready for reviewers to view.</i>";
 	else if (!$Me->canViewComment($prow, $crow, $Conf))
 	    echo "<i>The authors' response is not yet ready for reviewers to view.</i>";
 	else

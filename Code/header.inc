@@ -30,7 +30,7 @@ $OK = 1;
 
 $Msg["unknown"] = "Unknown error.";
 
-// Automatically determine path to conference site
+// Determine path to conference site on file system
 $here = substr(__FILE__, 0, strrpos(__FILE__,'/'));
 if (file_exists($here . "/Code/header.inc"))
     $ConfSitePATH = $here;
@@ -39,10 +39,10 @@ else if (file_exists($here . "/../Code/header.inc"))
 else
     $ConfSitePATH = "/var/www/html";
 
-// special handling for Download URLs
+// Determine relative path to conference home in URLs
 {
-    $toplev = array('Chair' => 1, 'Code' => 1, 'Download' => 1,
-		    'PC' => 1, 'Reviewer' => 1);
+    $toplev = array('Chair' => 1, 'Code' => 1, 'Download' => 1, 'doc' => 1,
+		    'doc.php' => 1, 'PC' => 1, 'Reviewer' => 1);
     $url = $_SERVER['PHP_SELF'];
     $ndotdot = 0;
     while (($rpos = strrpos($url, "/")) !== false) {
@@ -56,6 +56,13 @@ else
     }
     if (!isset($ConfSiteBase))
 	$ConfSiteBase = "";
+}
+
+// Determine whether to include the .php suffix
+$ConfSiteSuffix = ".php";
+if (function_exists("apache_get_modules")) {
+    if (array_search("mod_rewrite", apache_get_modules()) !== false)
+	$ConfSiteSuffix = "";
 }
 
 

@@ -60,7 +60,7 @@ if (isset($_REQUEST['register']) && $OK) {
 	     && $Conf->getContactId($_REQUEST["uemail"])) {
 	$UpdateError = "An account is already registered with email address \"" . htmlspecialchars($_REQUEST["uemail"]) . "\".";
 	if (!$newProfile)
-	    $UpdateError .= "You may want to <a href='mergeaccounts.php'>merge these accounts</a>.";
+	    $UpdateError .= "You may want to <a href='mergeaccounts$ConfSiteSuffix'>merge these accounts</a>.";
 	$Error['email'] = true;
     } else {
 	if ($newProfile) {
@@ -139,7 +139,7 @@ if (isset($_REQUEST['register']) && $OK) {
 		$Conf->confirmMsg("Account profile successfully updated.");
 	    }
 	    if (isset($_REQUEST["redirect"]))
-		$Me->go("index.php");
+		$Me->go("index$ConfSiteSuffix");
 	}
     }
 }
@@ -198,7 +198,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1
  }
 
 
-echo "<form id='accountform' method='post' action='account.php'><div>\n";
+echo "<form id='accountform' method='post' action='account$ConfSiteSuffix'><div>\n";
 if ($newProfile)
     echo "<input type='hidden' name='new' value='1' />\n";
 else if ($Me->contactId != $Acct->contactId)

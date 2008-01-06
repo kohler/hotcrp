@@ -70,7 +70,7 @@ class PaperSearch {
     var $qx;
     
     function PaperSearch($me, $opt) {
-	global $Conf;
+	global $Conf, $ConfSiteSuffix;
 
 	$this->privChair = $me->privChair;
 	$this->amPC = $me->isPC;
@@ -138,7 +138,7 @@ class PaperSearch {
 	if (isset($opt["urlbase"]))
 	    $this->urlbase = $opt["urlbase"];
 	else {
-	    $this->urlbase = "search.php?t=" . urlencode($this->limitName);
+	    $this->urlbase = "search$ConfSiteSuffix?t=" . urlencode($this->limitName);
 	    if ($qtype != "n")
 		$this->urlbase .= "&qt=" . urlencode($qtype);
 	}
@@ -278,7 +278,7 @@ class PaperSearch {
 		$word = str_replace('"', '', $word);
 
 	    $lword = sqlq_for_like($word);
-	    $qp = "";
+	    $mword = $qp = "";
 	    if ($special ? $special == "ti" : isset($this->fields['ti'])) {
 		$qp .= " or (title like '%$lword%')";
 		$mword = $word;
@@ -622,7 +622,7 @@ class PaperSearch {
     }
 
     function search() {
-	global $Conf, $ConfSiteBase;
+	global $Conf;
 	$x = $this->_searchQuery();
 	$this->matchPreg = $x[1];
 	//$Conf->infoMsg(htmlspecialchars($x[0]));
@@ -646,7 +646,7 @@ class PaperSearch {
 
     function url() {
 	$url = $this->urlbase;
-	if (substr($this->urlbase, 0, 10) == "search.php" || $this->q != "")
+	if (substr($this->urlbase, 0, 6) == "search" || $this->q != "")
 	    $url .= "&q=" . urlencode($this->q);
 	if ($this->qa != "")
 	    $url .= "&qa=" . urlencode($this->qa);
@@ -695,14 +695,20 @@ class PaperSearch {
 	else
 	    return "";
     }
-    
-    function sessionList($listname) {
-	$l = $this->paperList();
+
+    function decorateSessionList($l, $listname, $sort = "") {
 	$l["url"] = $this->url();
+	$l["t"] = $this->limitName;
 	$l["description"] = $this->description($listname);
 	$l["timestamp"] = time();
-	$l["listid"] = $this->listId();
+	$l["listid"] = $this->listId($sort);
+	if ($this->matchPreg)
+	    $l["matchPreg"] = "/(" . $this->matchPreg . ")/i";
 	return $l;
+    }
+    
+    function sessionList($listname) {
+	return $this->decorateSessionList($this->paperList(), $listname);
     }
 
 }

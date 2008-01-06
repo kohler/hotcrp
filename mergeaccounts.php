@@ -36,7 +36,7 @@ if (isset($_REQUEST["merge"])) {
 	    $MergeError = "That password is incorrect.";
 	else if ($MiniMe->contactId == $Me->contactId) {
 	    $Conf->confirmMsg("Accounts successfully merged.");
-	    $Me->go("index.php");
+	    $Me->go("index$ConfSiteSuffix");
 	} else {
 	    // Do they prefer the account they named?
 	    if (defval($_REQUEST, 'prefer')) {
@@ -119,7 +119,7 @@ if (isset($_REQUEST["merge"])) {
 	    if ($MergeError == "") {
 		$Conf->confirmMsg("Account " . htmlspecialchars($MiniMe->email) . " successfully merged.");
 		$Conf->log("Merged account $MiniMe->email", $Me);
-		$Me->go("index.php");
+		$Me->go("index$ConfSiteSuffix");
 	    } else {
 		$Conf->log("Merged account $MiniMe->email with errors", $Me);
 		$MergeError .= $Conf->dbErrorText(null);
@@ -146,9 +146,10 @@ else
 . "of the secondary account. This will merge all the information from "
 . "that account into this one. "
 );
+
+echo "<form method='post' action=\"mergeaccounts$ConfSiteSuffix\">\n";
 ?>
 
-<form class='mergeAccounts' method='post' action='mergeaccounts.php'>
 <table class='form'>
 
 <tr>

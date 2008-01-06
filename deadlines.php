@@ -23,7 +23,7 @@ for this conference, which is shown at the top
 of each page.";
 
 if ($Me->privChair)
-    echo " As PC chair, you can also <a href='settings.php'>change the deadlines</a>.";
+    echo " As PC chair, you can also <a href='settings$ConfSiteSuffix'>change the deadlines</a>.";
 
 echo "</p>
 

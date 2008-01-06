@@ -147,7 +147,7 @@ class PaperTable {
     }
     
     function echoPaperRow($prow, $flags) {
-	global $Conf, $Me, $ConfSiteBase;
+	global $Conf, $Me;
 	$final = ($prow->outcome > 0 && $Conf->collectFinalPapers());
 	$canUpload = $this->editable;
 
@@ -220,11 +220,11 @@ class PaperTable {
     }
 
     function echoEditRow($prow) {
-	global $Conf, $Me, $ConfSiteBase, $CurrentList;
+	global $Conf, $Me, $ConfSiteBase, $ConfSiteSuffix, $CurrentList;
 	if (!$this->editable) {
 	    echo "<tr class='pt_mode'>\n";
 	    echo "  <td class='caption'></td>\n";
-	    echo "  <td class='entry'><a href=\"${ConfSiteBase}paper.php?paperId=$prow->paperId&amp;mode=edit";
+	    echo "  <td class='entry'><a href=\"${ConfSiteBase}paper$ConfSiteSuffix?p=$prow->paperId&amp;mode=edit";
 	    if (isset($CurrentList) && $CurrentList > 0)
 		echo "&amp;ls=", $CurrentList;
 	    echo "\" class='button'>Edit paper</a></td>\n";
@@ -357,7 +357,7 @@ class PaperTable {
     }
 
     function echoContactAuthor($prow, $editMode = null) {
-	global $Conf, $ConfSiteBase, $Me;
+	global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Me;
 	$result = $Conf->qe("select firstName, lastName, email, contactId
 		from ContactInfo
 		join PaperConflict using (contactId)
@@ -374,7 +374,7 @@ class PaperTable {
 	    echo authorTable($aus, $Me);
 	}
 	if ($editMode || ($editMode === false && ($this->editable || $Me->privChair)))
-	    echo "<a class='button_small' href='${ConfSiteBase}contactauthors.php?paperId=$prow->paperId'>Edit&nbsp;contact&nbsp;authors</a>";
+	    echo "<a class='button_small' href='${ConfSiteBase}contactauthors$ConfSiteSuffix?p=$prow->paperId'>Edit&nbsp;contact&nbsp;authors</a>";
 	echo "</td>\n</tr>\n\n";
     }
 
@@ -396,7 +396,7 @@ class PaperTable {
     }
 
     function echoCollaborators($prow) {
-	global $Conf, $ConfSiteBase;
+	global $Conf, $ConfSiteBase, $ConfSiteSuffix;
 	if (!$Conf->setting("sub_collab"))
 	    return;
 	$sub_pcconf = $Conf->setting("sub_pcconf");
@@ -414,7 +414,7 @@ class PaperTable {
 	    else
 		echo "List people and institutions with which the authors have
 	conflicts of interest.  ", $Conf->conflictDefinitionText(), "
-	Be sure to include conflicted <a href='${ConfSiteBase}contacts.php?t=pc'>PC members</a>.
+	Be sure to include conflicted <a href='${ConfSiteBase}contacts$ConfSiteSuffix?t=pc'>PC members</a>.
 	We use this information when assigning PC and external reviews.";
 	    echo "  List one conflict per line.  For example: &ldquo;<tt>Jelena Markovic (EPFL)</tt>&rdquo; or, for a whole institution, &ldquo;<tt>EPFL</tt>&rdquo;.</div>\n";
 	}
@@ -541,7 +541,7 @@ class PaperTable {
     }
 
     function echoTags($prow, $site = null) {
-	global $Conf, $ConfSiteBase, $Me;
+	global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Me;
 	$t = isset($prow->paperTags) ? $prow->paperTags : "";
 	if ($site || $t) {
 	    // Note that tags MUST NOT contain HTML special characters.
@@ -554,7 +554,7 @@ class PaperTable {
 		echo "<span class='ellipsis'>", ($t == "" ? "none" : $tx), "&nbsp;</span>";
 		echo "<a href='javascript:fold(\"tags\", 0)'>", $Conf->cacheableImage("next.png", "[Edit]", null, "unfolder"), "</a>";
 		echo "<span class='extension'><input class='textlite' type='text' size='40' name='tags' value=\"", $t, "\" /> &nbsp;<input class='button_small' type='submit' name='settags' value='Save' /> &nbsp; ";
-		echo "<a href='javascript:fold(\"tags\", 1)'>", $Conf->cacheableImage("prev.png", "[Hide]", null, "folder"), "</a><br /><span class='hint'><a href='${ConfSiteBase}help.php?t=tags'>Help</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span></span>";
+		echo "<a href='javascript:fold(\"tags\", 1)'>", $Conf->cacheableImage("prev.png", "[Hide]", null, "folder"), "</a><br /><span class='hint'><a href='${ConfSiteBase}help$ConfSiteSuffix?t=tags'>Help</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span></span>";
 		echo "</div></form>";
 	    } else
 		echo $tx;
@@ -563,9 +563,10 @@ class PaperTable {
     }
 
     function echoOutcomeSelector($prow) {
+	global $ConfSiteBase, $ConfSiteSuffix;
 	echo "<tr class='pt_outcome'>
   <td class='caption'>Decision</td>
-  <td class='entry'><form method='get' action='review.php'><div class='inform'><input type='hidden' name='paperId' value='$prow->paperId' />";
+  <td class='entry'><form method='get' action='${ConfSiteBase}review$ConfSiteSuffix'><div class='inform'><input type='hidden' name='p' value='$prow->paperId' />";
 	if (isset($_REQUEST['forceShow']))
 	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
 	echo outcomeSelector($prow->outcome);
