@@ -18,6 +18,7 @@ Deny from all
 
 # Add .php to suffixless URLs.
 <IfModule mod_rewrite.c>
+RewriteEngine on
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^(.*/doc)(/.*)$ $1.php$2 [L]
 RewriteRule ^(.*)$ $1.php
