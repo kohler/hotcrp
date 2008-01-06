@@ -246,7 +246,7 @@ class CheckFormat {
 
 	// results
 	if (count($pie) > 0) {
-	    $this->msg("warn", "This paper appears to fail the basic submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $pie) . "</li></ul>\nOnly submissions that meet the requirements will be considered.  However, since the automated format checker can be mistaken, checker errors do not prevent paper submission.  If your paper already meets the format requirements, simply submit it as is.");
+	    $this->msg("warn", "This paper appears to fail the basic submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $pie) . "</li></ul>\nOnly submissions that meet the requirements will be considered.  However, since the automated format checker can make mistakes, checker errors do not prevent paper submission.  If your paper already meets the format requirements, simply submit it as is.");
 	    return 1;
 	} else {
 	    $this->msg("confirm", "Congratulations, this paper appears to meet the basic submission format requirements.  However, there may be requirements that the automated checker doesn't check.  You should verify yourself that your paper meets all stated requirements.");
