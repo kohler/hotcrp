@@ -11,7 +11,7 @@ $Me->goIfInvalid();
 
 // header
 function confHeader() {
-    global $paperId, $prow, $Conf;
+    global $paperId, $ConfSiteSuffix, $prow, $Conf;
     $title = ($paperId > 0 ? "Paper #$paperId Contact Authors" : "Paper Contact Authors");
     $Conf->header($title, "contactauthors", actionBar($prow, false, "Contact Authors", "contactauthors$ConfSiteSuffix?p=$paperId"), false);
 }
