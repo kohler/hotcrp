@@ -467,12 +467,12 @@ function settingText($name, $defval = null) {
 	return defval($Conf->settingTexts, $name, $defval);
 }
 
-function doCheckbox($name, $text, $tr = false) {
+function doCheckbox($name, $text, $tr = false, $js = "highlightUpdate()") {
     $x = setting($name);
     echo ($tr ? "<tr><td class='nowrap'>" : ""), "<input type='checkbox' name='$name' value='1'";
     if ($x !== null && $x > 0)
 	echo " checked='checked'";
-    echo " onchange='highlightUpdate()' />&nbsp;", ($tr ? "</td><td>" : ""), decorateSettingName($name, $text), ($tr ? "</td></tr>\n" : "<br />\n");
+    echo " onchange='$js' />&nbsp;", ($tr ? "</td><td>" : ""), decorateSettingName($name, $text), ($tr ? "</td></tr>\n" : "<br />\n");
 }
 
 function doRadio($name, $varr) {
@@ -492,6 +492,21 @@ function doRadio($name, $varr) {
 	echo "</td></tr>\n";
     }
     echo "</table>\n";
+}
+
+function doSelect($name, $nametext, $varr, $tr = false) {
+    $x = setting($name);
+    if ($x === null || !isset($varr[$x]))
+	$x = 0;
+    echo ($tr ? "<tr><td class='nowrap lcaption'>" : ""), decorateSettingName($name, $nametext), ($tr ? "</td><td class='lentry'>" : ": &nbsp;");
+    echo "<select name='$name' onchange='highlightUpdate()'>";
+    foreach ($varr as $k => $text) {
+	echo "<option value='$k'";
+	if ($k == $x)
+	    echo " selected='selected'";
+	echo ">", $text, "</option>";
+    }
+    echo "</select>", ($tr ? "</td></tr>\n" : "<br />\n");
 }
 
 function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
@@ -570,7 +585,15 @@ function doSubGroup() {
     doCheckbox("sub_pcconf", "Collect authors' PC conflicts with checkboxes");
     doCheckbox("sub_collab", "Collect authors' other collaborators as text");
 
-    echo "<div class='smgap'></div>\n";
+    if (is_executable("Code/banal") && false) {
+	echo "<div class='smgap'></div><table id='foldbanal' class='foldc'>";
+	doCheckbox("sub_banal", "<strong>Analyze formatting</strong>", true, "highlightUpdate();fold(\"banal\",!this.checked)");
+	echo "<tr class='extension'><td></td><td><table>";
+	doSelect("sub_banal_paper", "Paper size", array(0 => "(Choose)", "letter" => "Letter (8.5in x 11in)", "a4" => "A4 (210mm x 297mm)"), true);
+	echo "</table></td></tr></table>";
+    }
+    
+    echo "<hr />\n";
     doRadio("sub_freeze", array(0 => array("Authors can update submissions until the deadline", "PC members cannot download submitted papers until the submission deadline passes."), 1 => array("Authors must freeze the final version of each submission", "PC members can download papers as soon as they are submitted.")));
     
     echo "<div class='smgap'></div><table>\n";

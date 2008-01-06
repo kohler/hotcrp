@@ -481,8 +481,12 @@ function textArrayJoin($arr) {
 }
 
 function tempdir($dir, $prefix, $mode = 0700) {
-    if (!isset($dir) || !is_dir($dir))
-	$dir = "/tmp";
+    if (!isset($dir) || !is_dir($dir)) {
+	if (function_exists("sys_get_temp_dir"))
+	    $dir = sys_get_temp_dir();
+	else
+	    $dir = "/tmp";
+    }
     if (substr($dir, -1) != '/')
 	$dir .= '/';
     for ($i = 0; $i < 100; $i++) {
@@ -905,6 +909,59 @@ function cvtpref($n) {
 	return cvtpref(str_replace("\xE2\x88\x92", '-', $n));
     else
 	return -1000001;
+}
+
+function cvtdimen($n, $ndimen = -1) {
+    $n = strtolower($n);
+    $a = array();
+    while (preg_match('/^\s*(\d+\.?\d*|\d*\.\d+)\s*(in?|cm|mm|pt)\s*(.*)$/', $n, $m)) {
+	if ($m[2] == "i" || $m[2] == "in")
+	    $a[] = $m[1] * 72;
+	else if ($m[2] == "c" || $m[2] == "cm")
+	    $a[] = $m[1] * 72 * 0.393700787;
+	else if ($m[2] == "mm")
+	    $a[] = $m[1] * 72 * 0.0393700787;
+	else if ($m[2] == "pt")
+	    $a[] = $m[1];
+	else
+	    return false;
+	if ($m[3] == "") {
+	    if ($ndimen > 0 && count($a) != $ndimen)
+		return false;
+	    return (count($a) == 1 ? $a[0] : $a);
+	} else if ($m[3][0] == "x")
+	    $n = substr($m[3], 1);
+	else if ($m[3][0] == 0xC3 && $m[3][1] == 0x97) // MULTIPLICATION SIGN
+	    $n = substr($m[3], 2);
+	else
+	    return false;
+    }
+    return false;
+}
+
+function unparsedimen($n, $to = null) {
+    if (is_array($n)) {
+	$t = "";
+	foreach ($n as $v)
+	    $t .= ($t == "" ? "" : "&nbsp;x&nbsp;") . unparsedimen($v, $to);
+	return $t;
+    }
+    if (!$to && $n < 18)
+	$to = "pt";
+    else if (!$to && abs($n - 18 * (int) (($n + 9) / 18)) <= 0.5)
+	$to = "in";
+    else if (!$to)
+	$to = "mm";
+    if ($to == "pt")
+	return $n . $to;
+    else if ($to == "in" || $to == "i")
+	return sprintf("%g", (int) (100 * $n / 72 + 0.5) / 100) . $to;
+    else if ($to == "cm")
+	return sprintf("%g", (int) (100 * $n / 72 / 0.393700787 + 0.5) / 100) . $to;
+    else if ($to == "mm")
+	return (int) ($n / 72 / 0.0393700787 + 0.5) . $to;
+    else
+	return "??" . $to;
 }
 
 function maybeSearchPaperId($me) {

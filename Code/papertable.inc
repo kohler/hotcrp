@@ -233,7 +233,7 @@ class PaperTable {
     }
 
     function echoUploadRow($prow, $flags) {
-	global $Conf, $Opt;
+	global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Opt;
 	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0 && $Conf->collectFinalPapers());
 	
 	echo "<tr class='pt_paper'>\n  ", $this->tdCaption('paper');
@@ -277,6 +277,16 @@ class PaperTable {
 	    echo "</td></tr></table></div>\n";
 	} else
 	    echo "<input type='hidden' name='submit' value='1' />";
+
+	if (($final ? $prow->finalPaperStorageId : $prow->paperStorageId) > 0
+	    && defval($prow, "mimetype", "application/pdf") == "application/pdf"
+	    && $Conf->setting("sub_banal")) {
+	    echo "<div id='foldcheckformat' class='foldc'><span class='ellipsis'><input class='button' type='submit' name='checkformat' value='Check format requirements' onclick='fold(\"checkformat\",0);return Miniajax.submit(\"checkformatform\")' /></span><div id='checkformatformresult' class='extension'><div class='xinfo'>Checking format, please wait...</div></div></div>";
+	    $Conf->footerStuff .= "<form id='checkformatform' method='post' action='${ConfSiteBase}paper$ConfSiteSuffix?p=$prow->paperId";
+	    if ($final)
+		$Conf->footerStuff .= "&amp;final=1";
+	    $Conf->footerStuff .= "'><input type='hidden' name='checkformat' value='1' /></form>";
+	}
 
 	echo "</td>\n</tr>\n\n";
     }

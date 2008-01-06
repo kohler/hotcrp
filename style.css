@@ -194,10 +194,6 @@ div.help {
 	max-width: 100em;
 	background: #f8f8f8;
 }
-div.merror {
-	background: #ffeeee url(images/stophand45.png) 10px 10px no-repeat;
-	border: 1px solid #eecccc;
-}
 div.confirm {
 	background: #eeffee url(images/info45.png) 10px 10px no-repeat;
 	border: 1px solid #cceecc;
@@ -206,12 +202,36 @@ div.warning {
 	background: #ffffdd url(images/info45.png) 10px 10px no-repeat;
 	border: 1px solid #ddddcc;
 }
+div.merror {
+	background: #ffeeee url(images/stophand45.png) 10px 10px no-repeat;
+	border: 1px solid #eecccc;
+}
 div.merror p:first-child, div.info p:first-child, div.warning p:first-child, div.confirm p:first-child, div.help p:first-child {
 	margin-top: 0em;
 }
 div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 	margin-top: 0.75em;
 	margin-bottom: 0em;
+}
+div.xinfo, div.xconfirm, div.xwarning, div.xmerror {
+	padding: 0.5em 0.5em 0.5em 0.5em;
+	margin: 4px 0em;
+}
+div.xinfo {
+	background: #eeeeff;
+	border: 1px solid #ccccee;
+}
+div.xconfirm {
+	background: #eeffee;
+	border: 1px solid #cceecc;
+}
+div.xwarning {
+	background: #ffffdd;
+	border: 1px solid #ddddcc;
+}
+div.xmerror {
+	background: #ffeeee;
+	border: 1px solid #eecccc;
 }
 span.confirm {
 	font-style: italic;

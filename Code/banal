@@ -1,0 +1,1070 @@
+#!/usr/bin/perl -s
+#
+# Copyright (C) 2007 Geoffrey M. Voelker
+#
+# banal -- analyze pdf formatting 
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Geoffrey M. Voelker (voelker@cs.ucsd.edu)
+#
+
+# todo:
+# -- computer modern roman fonts
+# -- embedded java script, remoteapproach.com
+
+use Data::Dumper;
+
+# mapping from pdftohtml units to inches
+$p2h_per_inch = 144;
+
+# scale factor from pdftohtml units to points
+$p2h_to_points = 72 / $p2h_per_inch;
+
+# minimum amount of text on page for it to be interesting
+$banal_min_density = 8000;
+
+# fudge factor when judging text regions (in inches).
+$banal_text_fudge = 0.02;
+
+# pdftohtml executable
+if (exists $ENV{"PDFTOHTML"}) {
+    $pdftohtml = $ENV{"PDFTOHTML"};
+} elsif (exists $ENV{"PHP_PDFTOHTML"}) {
+    $pdftohtml = $ENV{"PHP_PDFTOHTML"};
+} else {
+    $pdftohtml = "pdftohtml";
+}
+
+sub usage {
+    print <<EOF
+usage: banal [-report | -stats | -judge [specs]] files
+
+banal has three modes of operation:
+
+-report  print full formatting info for all pages.  this mode is
+	 the default if no mode is specified:
+
+         % banal paper.pdf
+
+-stats   print formatting info condensed into one line with fields
+         separated by tabs; useful for computing summary stats across
+         many papers.
+
+         fields are 'file', 'paper', 'text region', 'margins', 'font', 
+         'leading', 'columns', 'pages'.  for example:
+
+         % banal -stats *.pdf | cut -f 5 
+
+         extracts font sizes from a set of pdf files.
+
+-judge   compare document formatting against a set of formatting
+         specifications:
+
+         -paper=type     paper type ('letter' and 'A4' currently supported)
+         -pages=num      max number of pages
+         -font=num       min font size
+	 -leading=num    min leading
+         -cols=num       max columns
+         -width=inches   max text region width
+         -height=inches  max text region height
+         -fudge=inches   text region fudge factor (helps with latex
+			 overflow; default is $banal_text_fudge inches)
+
+         specifications can consist of any and all elements in any
+         combination.  for example:
+         
+         % banal -judge -paper=letter -pages=14 -font=10 -leading=12 -width=6.5 -height=9 *.pdf
+
+         will check whether a set of pdf files conforms to formatting specs
+         that require 8.5" x 11" paper, max 14 pages, min 10 point font,
+	 min 12 point leading, and a max text region of 6.5" x 9".
+
+EOF
+}
+
+
+# sketch of perl data structures used
+$page = "
+$num
+$pagedata
+$pagespec
+";
+
+$pagedata = "
+
+
+";
+
+$pagespec = "
+$paperbb
+$regionbb
+$bodyfont
+$ncols
+";
+
+
+$bbox = "
+$top
+$left
+$width
+$height
+";
+
+$segdata = "
+%widths
+%lefts
+%rights
+%tops
+%bots
+%leads
+";
+
+
+# return min key in hash
+sub minkey ($) {
+    my ($href) = @_;
+    return (sort { $a <=> $b } keys %$href)[0];
+}
+
+# return max key in hash
+sub maxkey ($) {
+    my ($href) = @_;
+    return (sort { $a <=> $b } keys %$href)[$#_ - 1];
+}
+
+# return key of mode of values in hash
+sub modevalkey ($) {
+    my ($href) = @_;
+    my ($mode) = (keys %$href)[0];
+    map { $mode = $_ if ($href->{$_} > $href->{$mode}) } keys %$href;
+    return $mode;
+}
+
+# return max val in hash
+sub maxval ($) {
+    my ($href) = @_;
+    my ($max) = (keys %$href)[0];
+    map { $max = $_ if ($href->{$_} > $href->{$max}) } keys %$href;
+    return $href->{$max};
+}
+
+# return 'a' == 'b'
+sub bb_equal ($$) {
+    my ($a, $b) = @_;
+    return (($a->{top} == $b->{top}) &&
+	    ($a->{left} == $b->{left}) &&
+	    ($a->{height} == $b->{height}) &&
+	    ($a->{width} == $b->{width}));
+}
+
+# merge 'a' into 'b'
+sub bb_merge ($$) {
+    my ($a, $b) = @_;
+
+    $b->{top} = $a->{top} if ($a->{top} < $b->{top});
+    $b->{left} = $a->{left} if ($a->{left} < $b->{left});
+    $b->{height} = $a->{height} if ($a->{height} > $b->{height});
+    $b->{width} = $a->{width} if ($a->{width} > $b->{width});
+}
+
+sub calc_page_body_font ($) {
+    my ($page) = @_;
+    my ($mode) = modevalkey ($page->{pagedata}->{segdata}->{byfont});
+    $page->{pagedata}->{bodyfont} = $page->{doc}->{fonts}->{$mode};
+    $page->{pagespec}->{bodyfont} = p2h_font_to_font_size ($page->{pagedata}->{bodyfont});
+    if ($page->{pagespec}->{bodyfont} == 0) {
+	print "Error: Zero font on page $page->{num}, font id $mode\n";
+    }
+}
+
+sub calc_page_leading ($) {
+    my ($page) = @_;
+#    my ($mode) = modevalkey ($page->{pagedata}->{segdata}->{leads});
+    my ($mode, $segs);
+
+    $segs = $page->{pagedata}->{segdata_byfont}->{$page->{pagedata}->{bodyfont}->{id}};
+    $mode = modevalkey ($segs->{leads});
+
+    $count = $segs->{leads}->{$mode} +
+	$segs->{leads}->{$mode - 1} +
+	$segs->{leads}->{$mode + 1};
+    if ($count <= 0) {
+	$page->{pagespec}->{lead} = 0;
+	return;
+    }
+
+    $wsum = $mode * ($segs->{leads}->{$mode} / $count);
+    $wsum += ($mode - 1) * ($segs->{leads}->{$mode - 1} / $count);
+    $wsum += ($mode + 1) * ($segs->{leads}->{$mode + 1} / $count);
+    $lead = $wsum * $p2h_to_points;
+    $lead *= 10;
+    $lead = int ($lead + 0.5);
+    $lead /= 10;
+
+#    print "$mode $count $wsum $lead\n";
+
+    $page->{pagespec}->{lead} = $lead;
+
+#    print Dumper ($segs->{leads});
+}
+
+sub calc_page_columns ($) {
+    my ($page) = @_;
+    my ($pagew);
+    my ($segs, $maxw, $colw, $ncols);
+
+    # use estimated width of text region as base
+    $pagew = $page->{pagespec}->{textbb}->{width};
+
+    # use the maximum width segment in the body font to estimate
+    # column width
+    $segs = $page->{pagedata}->{segdata_byfont}->{$page->{pagedata}->{bodyfont}->{id}};
+#    $maxw = maxkey ($segs->{widths});
+    $modew = modevalkey ($segs->{widths});
+    $colw = $modew / $p2h_per_inch;
+
+    if ($colw >= ($pagew / 2.0)) {
+	$ncols = 1;
+    } elsif (($colw < ($pagew / 2.0)) && ($colw >= ($pagew / 3.0))) {
+	$ncols = 2;
+    } elsif (($colw < ($pagew / 3.0)) && ($colw >= ($pagew / 4.0))) {
+	$ncols = 3;
+    } elsif (($colw < ($pagew / 4.0)) && ($colw >= ($pagew / 5.0))) {
+	$ncols = 4;
+    } elsif (($colw < ($pagew / 5.0)) && ($colw >= ($pagew / 6.0))) {
+	$ncols = 5;
+    } elsif (($colw < ($pagew / 6.0)) && ($colw >= ($pagew / 7.0))) {
+	$ncols = 6;
+    } elsif (($colw < ($pagew / 7.0)) && ($colw >= ($pagew / 8.0))) {
+	$ncols = 7;
+    } elsif ($page->{pagespec}->{density} < $banal_min_density) {
+	$ncols = 1;
+    } else {
+	my ($num) = $page->{num};
+	printf "Error (page $num): Unknown number of columns: width of typical text segment $colw, page $pagew.\n";
+	$ncols = 1;
+    }
+
+    $page->{pagedata}->{ncols} = $ncols;
+    $page->{pagespec}->{ncols} = $ncols;
+}
+
+sub calc_page_text_region ($$) {
+    my ($page, $segdata) = @_;
+    my ($minw, $maxw, $minh, $maxh);
+    my ($segs_minw, $segs_maxw);
+
+    $segs_minw = $segdata->{lefts};
+    $segs_maxw = $segdata->{rights};
+
+    # find the minimum left position among segments (must be
+    # multiple segments with that position to skip outliers)
+    $minw = 8 * $p2h_per_inch;
+
+    foreach $s (keys %$segs_minw) {
+	$minw = $s if (($s < $minw) && ($segs_minw->{$s} > 3));
+    }
+
+    # all consistency bets are off with low density pages 
+    $minw = minkey ($segs_minw) if ($minw > 4 * $p2h_per_inch);
+
+    # find the maximum right position among segments (must be
+    # multiple segments with that position to skip outliers)
+    $maxw = 0;
+    foreach $s (keys %$segs_maxw) {
+	$maxw = $s if (($s > $maxw) && ($segs_maxw->{$s} >= 2));
+    }
+
+#    print "tmpw $tmpw maxw $maxw\n";
+#    if ($maxw < 600) {
+#	print Dumper ($segs_maxw);
+#    }
+
+    # unjustified text may not have multiple segments with the same
+    # max right position...fall back to just using the max right position
+    $maxw = maxkey ($segs_maxw) if ($maxw < $minw);
+    $maxw = $minw + minkey ($segdata->{widths}) if (!defined $maxw);
+    $maxw = $minw if ($maxw < $minw);
+
+    $minh = minkey ($segdata->{tops});
+    $maxh = maxkey ($segdata->{bots});
+
+    $page->{pagedata}->{textbb} = {
+	top => $minh,
+	left => $minw,
+	width => ($maxw - $minw),
+	height => ($maxh - $minh),
+    };
+
+#    print "$minw $maxw\n";
+#    print Dumper ($page->{pagedata}->{textbb});
+
+    $page->{pagespec}->{textbb} = {
+	top => $minh / $p2h_per_inch,
+	left => $minw / $p2h_per_inch,
+	width => ($maxw - $minw) / $p2h_per_inch,
+	height => ($maxh - $minh) / $p2h_per_inch,
+    };
+
+    return 1;
+}
+
+sub calc_page_density ($) {
+    my ($page) = @_;
+    my ($bfont, $density);
+
+    $bfont = $page->{pagedata}->{bodyfont}->{id};
+    $density = maxval ($page->{pagedata}->{segdata_byfont}->{$bfont}->{byfont});
+    $page->{pagespec}->{density} = $density;
+}
+
+sub calc_doc_body_font ($) {
+    my ($doc) = @_;
+    my ($fonts) = {};
+
+    for $i (1..$doc->{npages}) {
+	$page = $doc->{pages}->{$i};
+	$fonts->{$page->{pagespec}->{bodyfont}}++;
+    }
+
+    $doc->{pagespec}->{bodyfont} = modevalkey ($fonts);
+}
+
+sub calc_doc_leading ($) {
+    my ($doc) = @_;
+    my ($leads) = {};
+
+    for $i (1..$doc->{npages}) {
+	$page = $doc->{pages}->{$i};
+	$leads->{$page->{pagespec}->{lead}}++;
+    }
+
+    $doc->{pagespec}->{lead} = modevalkey ($leads);
+}
+
+sub calc_doc_text_region ($) {
+    my ($doc) = @_;
+    my ($page, $maxw, $maxh, $minl, $mint, $rmarg, $bmarg);
+
+    $page = $doc->{pages}->{1};
+    $maxw = $page->{pagespec}->{textbb}->{width};
+    $maxh = $page->{pagespec}->{textbb}->{height};
+    $minl = $page->{pagespec}->{textbb}->{left};
+    $mint = $page->{pagespec}->{textbb}->{top};
+
+    for $i (2..$doc->{npages}) {
+	next if ($page->{density} < $banal_min_density);
+
+	$page = $doc->{pages}->{$i};
+	$maxw = $page->{pagespec}->{textbb}->{width} if
+	    ($page->{pagespec}->{textbb}->{width} > $maxw);
+	$maxh = $page->{pagespec}->{textbb}->{height} if
+	    ($page->{pagespec}->{textbb}->{height} > $maxh);
+	$minl = $page->{pagespec}->{textbb}->{left} if
+	    ($page->{pagespec}->{textbb}->{left} < $minl);
+	$mint = $page->{pagespec}->{textbb}->{top} if
+	    ($page->{pagespec}->{textbb}->{top} < $mint);
+
+    }
+    $doc->{textbb}->{width} = $maxw;
+    $doc->{textbb}->{height} = $maxh;
+    $doc->{textbb}->{left} = $minl;
+    $doc->{textbb}->{top} = $mint;
+
+    $rmarg = $doc->{pagespec}->{paperbb}->{width} - ($doc->{textbb}->{width} + $doc->{textbb}->{left});
+    $bmarg = $doc->{pagespec}->{paperbb}->{height} - ($doc->{textbb}->{height} + $doc->{textbb}->{top});
+    if ($rmarg < 0) {
+	print "r MARGIN\n";
+    }
+    if ($bmarg < 0) {
+	print "b MARGIN\n";
+    }
+    $doc->{textbb}->{rmarg} = $rmarg;
+    $doc->{textbb}->{bmarg} = $bmarg;
+}
+
+sub calc_doc_page_types ($) {
+    my ($doc) = @_;
+    my ($page, $font, $type);
+    
+    $font = $doc->{pagespec}->{bodyfont};
+
+    for $i (1..$doc->{npages}) {
+	$page = $doc->{pages}->{$i};
+	$type = 'body';
+
+	if ($i == 1 && $page->{pagespec}->{density} < 3000) {
+	    $type = 'cover';
+	} elsif ($page->{pagespec}->{bodyfont} < $font) {
+	    if (($doc->{npages} - $i) < ($doc->{npages} / 3)) {
+		$type = 'bib';
+	    }
+	} elsif ($page->{pagespec}->{density} < $banal_min_density) {
+	    if ($i == $doc->{npages}) {
+		$type = 'bib';
+	    } else {
+		$type = 'figure';
+	    }
+	}
+
+	$page->{pagespec}->{type} = $type;
+    }
+}
+
+sub calc_doc_columns ($) {
+    my ($doc) = @_;
+    my ($page);
+    my ($cols) = {};
+
+    for $i (1..$doc->{npages}) {
+	$page = $doc->{pages}->{$i};
+	$cols->{$page->{pagespec}->{ncols}}++;
+    }
+
+    # number of columns on greatest number of pages
+    $doc->{ncols} = modevalkey ($cols);
+}
+
+sub p2h_font_to_font_size ($) {
+    my ($font) = @_;
+    my ($pt) = int(($font->{size} + 2) / 2 + 0.5);
+
+    if ($font->{family} eq 'Times'
+	|| $font->{family} eq 'Helvetica'
+	|| $font->{family} eq 'Courier'
+	|| $font->{family} eq 'Symbol') {
+    } else {
+	print "Error: Unknown font family:\n";
+#	print Dumper ($font);
+    }
+
+    return $pt;
+}
+
+sub p2h_font_bug ($) {
+    my ($doc) = @_;
+
+    return 1 if ($doc->{pagespec}->{bodyfont} <= 0);
+    return 0;
+}
+
+sub p2h_serious_font_bug ($) {
+    my ($doc) = @_;
+
+    return 0 if (!p2h_font_bug ($doc));
+    return 1 if ($doc->{textbb}->{width} == 0 ||
+		 $doc->{textbb}->{height} == 0);
+    return 0;
+}
+
+sub report_verbose ($) {
+    my ($doc) = @_;
+    my ($page) = $doc->{pages}->{1};
+
+    print $file, "\n";
+    if (p2h_font_bug ($doc)) {
+	print STDERR $file, "\n";
+	print STDERR "Error: pdftohtml encountered font problems...some info likely bogus.\n";
+    }
+    printf ("Paper size: %.2fin x %.2fin\n", $doc->{pagespec}->{paperbb}->{width}, $doc->{pagespec}->{paperbb}->{height});
+    printf ("Text region: %.2fin x %.2fin\n", $doc->{textbb}->{width},
+	    $doc->{textbb}->{height});
+    printf ("Margins: %.2fin x %.2fin x %.2fin x %.2fin (l/r/t/b)\n",
+	    $doc->{textbb}->{left},
+	    $doc->{textbb}->{rmarg},
+	    $doc->{textbb}->{top},
+	    $doc->{textbb}->{bmarg});
+    print "Body font size: ", $doc->{pagespec}->{bodyfont}, "pt";
+    if (p2h_font_bug ($doc)) {
+	print " (bogus)";
+    }
+    print "\n";
+    printf ("Leading: %.1fpt\n", $doc->{pagespec}->{lead});
+    print "Columns: ", $page->{pagespec}->{ncols}, "\n";
+    print "Pages: ", $doc->{npages}, "\n";
+
+    print "\n";
+    for $i (1..$doc->{npages}) {
+	$page = $doc->{pages}->{$i};
+
+	print "Page $page->{num}:\n";
+	printf ("  text region: %.2fin x %.2fin\n", $page->{pagespec}->{textbb}->{width}, $page->{pagespec}->{textbb}->{height});
+
+	$left_i = $page->{pagespec}->{textbb}->{left};
+	$right_i = $page->{pagespec}->{paperbb}->{width} - 
+	    ($left_i + $page->{pagespec}->{textbb}->{width});
+	$top_i = $page->{pagespec}->{textbb}->{top};
+	$bot_i = $page->{pagespec}->{paperbb}->{height} -
+	    ($top_i + $page->{pagespec}->{textbb}->{height});
+	printf ("  margins: %.2fin x %.2fin x %.2fin x %.2fin (l/r/t/b)\n", 
+		$left_i, $right_i, $top_i, $bot_i);
+
+	printf ("  body font: %dpt (id %d)\n", $page->{pagespec}->{bodyfont},
+		$page->{pagedata}->{bodyfont}->{id});
+	printf ("  leading: %.1fpt\n", $page->{pagespec}->{lead});
+	printf ("  columns: %d\n", $page->{pagespec}->{ncols});
+	print   "  type: ", $page->{pagespec}->{type}, "\n";
+
+	$density = $page->{pagespec}->{density};
+	printf ("  density: %d\n", $density);
+    }
+}
+
+sub report_stats ($) {
+    my ($doc) = @_;
+    my ($page) = $doc->{pages}->{1};
+
+    if (p2h_serious_font_bug ($doc)) {
+	print STDERR "$file\n";
+	print STDERR "Error: pdftohtml encountered font problems...skipping.\n";
+	return;
+    }
+
+    if (p2h_font_bug ($doc)) {
+	print STDERR "$file\n";
+	print STDERR "Warning: pdftohtml encountered font problems...some info likely bogus.\n";
+    }
+
+    printf ("$file\t%.2fx%.2f\t%.2fx%.2f\t%.2fx%.2fx%.2fx%.2f\t%d\t%.1f\t%d\t%d\n",
+	    # page width x height
+	    $doc->{pagespec}->{paperbb}->{width}, 
+	    $doc->{pagespec}->{paperbb}->{height},
+	    # text region width x height
+	    $doc->{textbb}->{width},
+	    $doc->{textbb}->{height},
+	    # margins left x right x top x bottom
+	    $doc->{textbb}->{left},
+	    $doc->{textbb}->{rmarg},
+	    $doc->{textbb}->{top},
+	    $doc->{textbb}->{bmarg},
+	    # body font
+	    $doc->{pagespec}->{bodyfont},
+	    # leading
+	    $doc->{pagespec}->{lead},
+	    # columns
+	    $doc->{pagespec}->{ncols},
+	    # pages
+	    $doc->{npages});
+}
+
+sub judge_paper_size ($$) {
+    my ($doc, $spec) = @_;
+    my ($msg) = '';
+    my ($w, $h);
+
+    $w = $doc->{pagespec}->{paperbb}->{width};
+    $h = $doc->{pagespec}->{paperbb}->{height};
+    if ($spec->{paper} eq 'letter') {
+	$paperw = 8.5;
+	$paperh = 11;
+    } elsif ($spec->{paper} eq 'A4') {
+	$paperw = 8.26;
+	$paperh = 11.69;
+    }
+
+    unless (((($paperw - $banal_text_fudge) < $w) &&
+	     (($paperw + $banal_text_fudge) > $w)) &&
+	    ((($paperh - $banal_text_fudge) < $h) &&
+	     (($paperh + $banal_text_fudge) > $h))) {
+	$msg = sprintf ("Paper size: %.2f x %.2f is not $spec->{paper} size\n",
+			$w, $h);
+    }
+
+    return $msg;
+}
+
+sub judge_page_count ($$) {
+    my ($doc, $spec) = @_;
+    my ($msg) = '';
+
+    if ($doc->{npages} > $spec->{pages}) {
+	$msg = sprintf ("Pages: too many pages %d (max %d)\n",
+			$doc->{npages}, $spec->{pages});
+    } elsif ($spec->{min_pages} &&
+	     ($doc->{npages} < $spec->{min_pages})) {
+	$msg = sprintf ("Pages: too few pages %d (min %d)\n",
+			$doc->{npages}, $spec->{min_pages});
+    }
+
+    return $msg;
+}
+
+sub judge_body_font ($$) {
+    my ($doc, $spec) = @_;
+    my ($msg) = '';
+    my ($i, $font);
+
+    if (p2h_font_bug ($doc)) {
+	$msg .= "Font: Cannot judge, no font info derived from pdf\n";
+	return $msg;
+    }
+
+    if ($doc->{pagespec}->{bodyfont} < $spec->{font}) {
+	$msg .= sprintf ("Font: body font too small %dpt (min %dpt)\n",
+			 $doc->{pagespec}->{bodyfont}, $spec->{font});
+    }
+    return $msg if (1);
+
+    # largest occuring bod
+    # skip font on last page...typically smaller bibliography font
+    for $i (1..($doc->{npages} - 1)) {
+	$page = $doc->{pages}->{$i};
+
+	# ignore pages with sparse text.
+	# crude, but tough to use as a loophole.
+	next if ($page->{pagespec}->{density} < $banal_min_density);
+
+	$fonts->{$page->{pagespec}->{bodyfont}}++;
+    }
+
+    $bodyfont = modevalkey ($fonts);
+#    next unless ($spec->{font} >= $bodyfont);
+
+    return $msg;
+}
+
+sub judge_leading ($$) {
+    my ($doc, $spec) = @_;
+    my ($msg) = '';
+    my ($lead);
+
+    $lead = $doc->{pagespec}->{lead};
+    if (($spec->{lead} - 0.1) > $lead) {
+	$msg .= sprintf ("Leading: too small %.1fpt (min %.1fpt)\n",
+			 $lead, $spec->{lead});
+    }
+}
+
+sub judge_columns ($$) {
+    my ($doc, $spec) = @_;
+    my ($msg) = '';
+    my ($i, $page);
+
+    # should add a 'strict' option
+    if ($doc->{ncols} > $spec->{cols}) {
+	$msg = sprintf ("Columns: found %d columns, expecting %d\n",
+			$doc->{ncols}, $spec->{cols});
+    }
+
+    return $msg if (1);
+
+    # skip last page
+    for $i (1..($doc->{npages} - 1)) {
+	$page = $doc->{pages}->{$i};
+
+	next if ($page->{pagespec}->{density} < $banal_min_density);
+
+	next unless ($spec->{cols} != $page->{pagespec}->{ncols});
+
+	$msg = sprintf ("Columns: found %d columns, expecting %d\n",
+			$page->{pagespec}->{ncols}, $spec->{cols});
+	last;
+    }
+
+    return $msg;
+}
+
+sub judge_text_region ($$) {
+    my ($doc, $spec) = @_;
+    my ($msg) = '';
+    my ($i, $page);
+    my ($width, $height);
+
+    for $i (1..$doc->{npages}) {
+	$page = $doc->{pages}->{$i};
+
+	next if ($page->{pagespec}->{density} < $banal_min_density);
+
+	$width = $page->{pagespec}->{textbb}->{width};
+	next unless ($spec->{width} &&
+		     ($width > ($spec->{width} + $spec->{fudge})));
+
+	$msg .= sprintf ("Width: text too wide %.2fin (max %.2fin)\n",
+			 $width, $spec->{width});
+	last;
+    }
+
+    for $i (1..$doc->{npages}) {
+	$page = $doc->{pages}->{$i};
+
+	next if ($page->{pagespec}->{density} < $banal_min_density);
+
+	$height = $page->{pagespec}->{textbb}->{height};
+	next unless ($spec->{height} && 
+		     ($height > ($spec->{height} + $spec->{fudge})));
+
+	$msg .= sprintf ("Height: text too high %.2fin (max %.2fin)\n",
+			 $height, $spec->{height});
+	last;
+    }
+
+    return $msg;
+}
+
+sub pass_judgement ($$) {
+    my ($doc, $spec) = @_;
+    my ($page);
+    my ($msg) = '';
+    my ($err);
+
+    if (p2h_serious_font_bug ($doc)) {
+	print STDERR $file, ":\n";
+	print STDERR "Error: pdftohtml encountered font problems...skipping.\n";
+	return;
+    }
+
+    $msg .= judge_paper_size ($doc, $spec) if ($spec->{paper});
+    $msg .= judge_page_count ($doc, $spec) if ($spec->{pages});
+    $msg .= judge_body_font ($doc, $spec) if ($spec->{font});
+    $msg .= judge_leading ($doc, $spec) if ($spec->{lead});
+    $msg .= judge_columns ($doc, $spec) if ($spec->{cols});
+    $msg .= judge_text_region ($doc, $spec) if ($spec->{width} || $spec->{height});
+
+    if ($msg) {
+	$msg =~ s/^(.)/  $1/mg;  # indent
+	print $file, ":\n";
+	print $msg;
+    }
+}
+
+sub parse_p2h_fonts ($) {
+    my ($page) = @_;
+    my (%fonts, $font, $fontid);
+
+    while (<FILE>) {
+	return 0 if (/<\/page>/);
+	unless (/<fontspec id=\"(\d+)\" size=\"([-]*\d+)\" family=\"([A-Za-z0-9]+)\" color=\"(\#[a-fA-F0-9]+)\"\/>/) {
+#	    print "EOF: $_";
+	    last;
+	}
+	$font = { id => $1, size => $2, family => $3, color => $4 };
+	$fontid = "$3//$2//$4";
+	if (exists $fonts{$fontid}) {
+	    $font->{id} = $fonts{$fontid};
+	} else {
+	    $fonts{$fontid} = $1;
+	}
+	$page->{doc}->{fonts}{$1} = $font;
+    }
+    return 1;
+}
+
+sub update_segdata ($$$) {
+    my ($page, $segdata, $seg) = @_;
+    my ($top, $left, $width, $height, $font, $lead) = @$seg;
+    my ($bottom) = $top + $height;
+    my ($right) = $left + $width;
+    my ($pagew) = $page->{pagedata}->{pagebb}->{width};
+
+    $segdata->{widths}{$width}++ if ($width > $p2h_per_inch);
+    $segdata->{lefts}{$left}++ if ($left < ($pagew / 3));
+    $segdata->{rights}{$right}++ if ($right > ($pagew / 3));
+    $segdata->{tops}{$top}++ if ($width > $p2h_per_inch);
+    $segdata->{bots}{$bottom}++ if ($width > $p2h_per_inch);
+    $segdata->{leads}{$lead}++ if ($lead > 0 && $width > $p2h_per_inch);
+
+    # count number of segments in a given font size, weighted by the
+    # width of the segment.  the font with the greatest weight
+    # will be the body font.
+
+    $segdata->{byfont}{$font} += $width;
+}
+
+sub check_p2h_error ($) {
+    # check for pdftohtml error strings
+    # (we're ignoring pdftohtml stderr for now)
+    return 0;
+}
+
+sub parse_p2h_text ($) {
+    my ($page) = @_;
+    my ($top, $bottom, $left, $right, $width, $height, $font);
+    my ($lead, $prevheight);
+
+    $segs_all = {};
+    $segs_byfont = {};
+
+    $prevheight = 0;
+
+    while (<FILE>) {
+	next if (check_p2h_error ($_));
+
+	unless (/<text top=\"(-?\d+)\" left=\"(-?\d+)\" width=\"(-?\d+)\" height=\"(-?\d+)\" font=\"(-?\d+)\"/) {
+	    next if (/<\/text>/);  # embedded newline put </text> on next line
+#	    print "EOT: $_\n";
+	    last;
+	}
+	$height = $1;
+	if ($prevheight < $height) {
+	    $lead = $height - $prevheight;
+	} else {
+	    $lead = -1;
+	}
+	$prevheight = $height;
+
+	@seginfo = ($1, $2, $3, $4, $5, $lead);
+	if (($font = $page->{doc}->{fonts}{$5})) {
+	    $seginfo[4] = $font->{id};
+	}
+
+	# sanity check the data somewhat...text from embedded figures
+	# can produce surprising values
+	next if ($1 < 0 || $2 < 0 ||
+		 ($1 > $page->{pagedata}->{pagebb}->{height}) ||
+		 ($2 > $page->{pagedata}->{pagebb}->{width}));
+
+	$nsegs++;
+
+	$segs_byfont->{$seginfo[4]} = {}
+	   unless (defined $segs_byfont->{$seginfo[4]});
+	$byfont = $segs_byfont->{$seginfo[4]};
+	update_segdata ($page, $byfont, \@seginfo);
+	$segs_byfont{$seginfo[4]} = $byfont;
+	update_segdata ($page, $segs_all, \@seginfo);
+    }
+
+    $page->{pagedata}->{nsegs} = $nsegs;
+    $page->{pagedata}->{segdata} = $segs_all;
+    $page->{pagedata}->{segdata_byfont} = $segs_byfont;
+
+    calc_page_body_font ($page);
+    calc_page_leading ($page);
+    calc_page_density ($page);
+    calc_page_text_region ($page, $segs_all);
+    calc_page_columns ($page);
+}
+
+sub parse_p2h_page ($) {
+    my ($doc) = @_;
+
+    # assume we've just read the header
+    $line = <FILE>;
+    unless ($line =~ /<page number=\"(\d+)\" position=\"([A-Za-z0-9]+\") top=\"(\d+)\" left=\"(\d+)\" height=\"(\d+)\" width=\"(\d+)\"/) {
+	return '' if ($line =~ /<\/pdf2xml/);
+	print "Error: \"<page ...\" node expected.\n";
+	print "-> '$line'";
+	return '';
+    }
+
+    # initialize page data structures
+    $pagebb = {
+	top => $3,
+	left => $4,
+	height => $5,
+	width => $6,
+    };
+
+    $paperbb = {
+	top => $3 / $p2h_per_inch,
+	left => $4 / $p2h_per_inch,
+	height => $5 / $p2h_per_inch,
+	width => $6 / $p2h_per_inch,
+    };
+
+    $page = {
+	doc => $doc,
+	num => $1,
+	pagedata => {
+	    pagebb => $pagebb,
+	},
+	pagespec => {
+	    paperbb => $paperbb,
+	},
+    };
+
+    if (!parse_p2h_fonts ($page)) {
+	# do not bother parsing text if at end of page
+	return $page;
+    }
+    parse_p2h_text ($page);
+
+    return $page;
+}
+
+sub parse_p2h_header ($) {
+    my ($doc) = @_;
+
+    while (<FILE>) {
+	return 1 if (/<pdf2xml>/);
+    }
+    return 0;
+}
+
+sub merge_page ($$) {
+    my ($doc, $page) = @_;
+
+    $doc->{npages}++;
+    $doc->{pages}->{$page->{num}} = $page;
+
+    # initialize doc spec with first page spec
+    if ($page->{num} == 1) {
+	$doc->{pagespec}->{paperbb} = $page->{pagespec}->{paperbb};
+	$doc->{pagespec}->{textbb} = $page->{pagespec}->{textbb};
+	$doc->{pagespec}->{bodyfont} = $page->{pagespec}->{bodyfont};
+	$doc->{pagespec}->{ncols} = $page->{pagespec}->{ncols};
+	return;
+    }
+}
+
+sub banal_get_spec () {
+    my ($s) = {};
+
+    return $s unless (defined $judge);
+
+    if (defined $testspec) {
+	$s->{paper} = 'letter';
+	$s->{pages} = 14;
+	$s->{font} = 10;
+	$s->{lead} = 12.0;
+	$s->{cols} = 2;
+	$s->{width} = 6.5;
+	$s->{height} = 9;
+	$s->{fudge} = $banal_text_fudge;
+    }
+
+    if (defined $paper) {
+	if ($paper ne 'letter' && $paper ne 'A4') {
+	    die ("Error: Unknown paper type '$paper'.\n");
+	}
+	$s->{paper} = $paper;
+    }
+    $s->{pages} = $pages if (defined $pages);
+    $s->{font} = $font if (defined $font);
+    $s->{lead} = $leading if (defined $leading);
+    $s->{cols} = $cols if (defined $cols);
+    if (defined $width) {
+	$s->{width} = $width;
+	$s->{fudge} = $banal_text_fudge;
+    }
+    if (defined $height) {
+	$s->{height} = $height;
+	$s->{fudge} = $banal_text_fudge;
+    }
+    if (defined $fudge) {
+	$s->{fudge} = $fudge;
+    }
+    return $s;
+}
+
+sub banal_report_spec ($) {
+    my ($spec) = @_;
+
+    print "Judging: ";
+    print "$spec->{paper}, " if ($spec->{paper});
+    print "$spec->{width}in x $spec->{height}in (~$spec->{fudge}), " if ($spec->{width} || $spec->{height});
+    print "$spec->{font}pt font, " if ($spec->{font});
+    print "$spec->{lead}pt leading, " if ($spec->{lead});
+    print "$spec->{cols} cols, " if ($spec->{cols});
+    print "$spec->{pages} pages" if ($spec->{pages});
+    print "\n";
+    print "-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   \n";
+}
+
+sub banal_file ($$) {
+    my ($file, $spec) = @_;
+
+    # initialize doc data structure
+    $doc = {
+	width => 0,
+	height => 0,
+	npages => 0,
+	ncols => 0,
+	fonts => {},
+	pages => {},
+	textbb => {},
+    };
+
+    if (!parse_p2h_header ($doc)) {
+	print STDERR "$file\n";
+	print STDERR "Error: No pdftohtml output...corrupted pdf file?\n";
+	return;
+    }
+
+    while ($page = parse_p2h_page ($doc)) {
+	merge_page ($doc, $page);
+    }
+
+    calc_doc_body_font ($doc);
+    calc_doc_leading ($doc);
+    calc_doc_text_region ($doc);
+    calc_doc_page_types ($doc);
+    calc_doc_columns ($doc);
+
+    if (defined $judge) {
+	pass_judgement ($doc, $spec);
+    } elsif (defined $stats) {
+	report_stats ($doc);
+    } else {
+	report_verbose ($doc)
+    }
+}
+
+sub banal_check_p2h () {
+    unless (open (FILE, "$pdftohtml 2>&1 |")) {
+	die "Error: Failed to find pdftohtml in path.\n";
+    }
+    close (FILE);
+}
+
+sub banal_open_input ($) {
+    my ($fname) = @_;
+    my ($base, $ext);
+
+    if ($fname =~ /(.+)\.(.+)/) {
+	($base, $ext) = ($1, $2);
+    } else {
+	print STDERR "Error: Unable to determine file type for $fname.\n";
+	return 0;
+    }
+
+    # 2>&1
+    if ($ext =~ /[pP][dD][fF]/) {
+	unless (open (FILE, "$pdftohtml -stdout -enc UTF-8 -xml -zoom 2 $fname 2>/dev/null |")) {
+	    print STDERR "Error: Failed to open $fname.\n";
+	    return 0;
+	}
+    } elsif ($ext =~ /[xX][mM][lL]/) {
+	unless (open (FILE, "$fname")) {
+	    print STDERR "Error: Failed to open $fname.\n";
+	    return 0;
+	}
+    } else {
+	print STDERR "Error: Failed to open file $fname.\n";
+	return 0;
+    }
+    binmode(FILE, ":utf8");
+    return 1;
+}
+
+sub main () {
+    my ($spec);
+
+    usage if ($#ARGV < 0);
+
+    banal_check_p2h ();
+
+    $spec = banal_get_spec ();
+    banal_report_spec ($spec) if (defined $judge);
+
+    foreach $file (@ARGV) {
+	# open input file into FILE
+	next unless (banal_open_input ($file));
+	banal_file ($file, $spec);
+	close (FILE);
+    }
+    return 0;
+}
+
+exit (main ());

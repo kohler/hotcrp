@@ -646,7 +646,7 @@ class Conference {
 	    $this->errorMsg($result->getMessage());
 	else
 	    $this->log("Downloaded papers", $_SESSION["Me"], $paperIds);
-	if (isset($tmpdir))
+	if (isset($tmpdir) && $tmpdir)
 	    exec("/bin/rm -rf $tmpdir");
 	return $result;
     }
@@ -1138,12 +1138,16 @@ class Conference {
 	$this->scriptStuff = "";
     }
 
-    function ajaxExit($others = null) {
+    function ajaxExit($others = null, $div = false) {
 	$t = "";
 	if (isset($_SESSION["msgs"])) {
 	    foreach ($_SESSION["msgs"] as $msg)
-		if (preg_match('|\A<div class="(.*?)">(.*)</div>\Z|', $msg, $m))
-		    $t .= "<span class=\"$m[1]\">$m[2]</span>\n";
+		if (preg_match('|\A<div class="(.*?)">([\s\S]*)</div>\s*\Z|', $msg, $m)) {
+		    if ($div)
+			$t .= "<div class=\"x$m[1]\">$m[2]</div>\n";
+		    else
+			$t .= "<span class=\"$m[1]\">$m[2]</span>\n";
+		}
 	    unset($_SESSION["msgs"]);
 	}
 	header("Content-Type: text/json");
