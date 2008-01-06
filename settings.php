@@ -407,6 +407,9 @@ function doBanal($set) {
 	    $bs[5] = $s;
     }
 
+    while (count($bs) > 0 && $bs[count($bs) - 1] == "")
+	array_pop($bs);
+
     // actually create setting
     if (count($Error) == $old_error_count) {
 	$Values["sub_banal"] = array(1, join(";", $bs));
@@ -714,7 +717,7 @@ function doSubGroup() {
 	echo "<tr class='extension'><td></td><td class='top'><table>";
 	$bsetting = explode(";", $Conf->settingText("sub_banal", ""));
 	for ($i = 0; $i < 6; $i++)
-	    $bsetting = ($bsetting == "" ? "N/A" : $bsetting);
+	    $bsetting[$i] = ($bsetting[$i] == "" ? "N/A" : $bsetting[$i]);
 	doTextRow("sub_banal_papersize", array("Paper size", "Examples: &ldquo;letter&rdquo;, &ldquo;A4&rdquo;, &ldquo;8.5in&nbsp;x&nbsp;14in&rdquo;"), setting("sub_banal_papersize", $bsetting[0]), 18, "lxcaption");
 	doTextRow("sub_banal_pagelimit", "Page limit", setting("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption");
 	doTextRow("sub_banal_textblock", array("Text block", "Examples: &ldquo;6.5in&nbsp;x&nbsp;9in&rdquo;, &ldquo;1in&nbsp;margins&rdquo;"), setting("sub_banal_textblock", $bsetting[3]), 18, "lxcaption");
