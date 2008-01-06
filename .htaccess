@@ -16,15 +16,18 @@ Order allow,deny
 Deny from all
 </FilesMatch>
 
-# Add .php to suffixless URLs.
-<IfModule mod_rewrite.c>
-RewriteEngine on
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^(.*/doc)(/.*)$ $1.php$2 [L]
-RewriteRule ^(.*)$ $1.php
-</IfModule>
-
 # The 'doc' URL is PHP.
 <Files doc>
 ForceType application/x-httpd-php
 </Files>
+
+# Add .php to suffixless URLs.
+<IfModule mod_rewrite.c>
+RewriteEngine on
+RewriteBase /
+RewriteCond %{REQUEST_URI} ^(.*doc)(/[^/]*)$
+RewriteRule ^doc/.*$ %1.php%2 [L]
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteCond %{REQUEST_URI} ^(.*)$
+RewriteRule ^.*$ %1.php [L]
+</IfModule>
