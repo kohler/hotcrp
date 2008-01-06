@@ -281,11 +281,11 @@ class PaperTable {
 	if (($final ? $prow->finalPaperStorageId : $prow->paperStorageId) > 0
 	    && defval($prow, "mimetype", "application/pdf") == "application/pdf"
 	    && $Conf->setting("sub_banal")) {
-	    echo "<div id='foldcheckformat' class='foldc'><span class='ellipsis'><input class='button' type='submit' name='checkformat' value='Check format requirements' onclick='fold(\"checkformat\",0);return Miniajax.submit(\"checkformatform\")' /></span><div id='checkformatformresult' class='extension'><div class='xinfo'>Checking format, please wait...</div></div></div>";
-	    $Conf->footerStuff .= "<form id='checkformatform' method='post' action='${ConfSiteBase}paper$ConfSiteSuffix?p=$prow->paperId";
+	    echo "<div id='foldcheckformat' class='foldc'><input class='button' type='submit' name='checkformat' value='Check format requirements' onclick='return docheckformat()' /><div id='checkformatformresult' class='extension'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
+	    $Conf->footerStuff .= "<form id='checkformatform' class='fold7o' method='post' action='${ConfSiteBase}paper$ConfSiteSuffix?p=$prow->paperId";
 	    if ($final)
 		$Conf->footerStuff .= "&amp;final=1";
-	    $Conf->footerStuff .= "'><input type='hidden' name='checkformat' value='1' /></form>";
+	    $Conf->footerStuff .= "' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"checkformatform\")'><input type='hidden' name='checkformat' value='1' /></form>";
 	}
 
 	echo "</td>\n</tr>\n\n";

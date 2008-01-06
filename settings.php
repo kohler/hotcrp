@@ -28,6 +28,7 @@ $SettingGroups = array("acc" => array(
 			     "sub_grace" => "grace",
 			     "sub_pcconf" => "check",
 			     "sub_collab" => "check",
+			     "banal" => "special",
 			     "sub_freeze" => 1,
 			     "pc_seeall" => "check",
 			     "homemsg" => "string",
@@ -310,6 +311,119 @@ function doDecisions($set) {
     }
 }
 
+function doBanal($set) {
+    global $Conf, $Values, $SettingError, $Error, $ConfSitePATH;
+    if ($set)
+	return true;
+    if (!isset($_REQUEST["sub_banal"])) {
+	if (($t = $Conf->settingText("sub_banal", "")) != "")
+	    $Values["sub_banal"] = array(0, $t);
+	else
+	    $Values["sub_banal"] = null;
+	return true;
+    }
+
+    // check banal subsettings
+    require_once("Code/checkformat.inc");
+    $old_error_count = count($Error);
+    $bs = array_fill(0, 6, "");
+    if (($s = trim(defval($_REQUEST, "sub_banal_papersize", ""))) != ""
+	&& strcasecmp($s, "N/A") != 0) {
+	if (!cvtdimen($s, 2)) {
+	    $SettingError["sub_banal_papersize"] = true;
+	    $Error[] = "Invalid paper size.";
+	} else
+	    $bs[0] = $s;
+    }
+
+    if (($s = trim(defval($_REQUEST, "sub_banal_pagelimit", ""))) != ""
+	&& strcasecmp($s, "N/A") != 0) {
+	if (($s = cvtint($s, -1)) <= 0) {
+	    $SettingError["sub_banal_pagelimit"] = true;
+	    $Error[] = "Page limit must be a whole number bigger than 0.";
+	} else
+	    $bs[1] = $s;
+    }
+
+    if (($s = trim(defval($_REQUEST, "sub_banal_textblock", ""))) != ""
+	&& strcasecmp($s, "N/A") != 0) {
+	// change margin specifications into text block measurements
+	if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
+	    $s = $m[1];
+	    if (!($ps = cvtdimen($bs[0]))) {
+		$SettingError["sub_banal_pagesize"] = true;
+		$SettingError["sub_banal_textblock"] = true;
+		$Error[] = "You must specify a page size as well as margins.";
+	    } else if (strpos($s, "x") !== false) {
+		if (!($m = cvtdimen($s)) || !is_array($m) || count($m) > 4) {
+		    $SettingError["sub_banal_textblock"] = true;
+		    $Error[] = "Invalid margin definition.";
+		    $s = "";
+		} else if (count($m) == 2)
+		    $s = array($ps[0] - 2 * $m[0], $ps[1] - 2 * $m[1]);
+		else if (count($m) == 3)
+		    $s = array($ps[0] - 2 * $m[0], $ps[1] - $m[1] - $m[2]);
+		else
+		    $s = array($ps[0] - $m[0] - $m[2], $ps[1] - $m[1] - $m[3]);
+	    } else {
+		$s = preg_replace('/\s+/', 'x', $s);
+		if (!($m = cvtdimen($s)) || (is_array($m) && count($m) > 4)) {
+		    $SettingError["sub_banal_textblock"] = true;
+		    $Error[] = "Invalid margin definition.";
+		} else if (!is_array($m))
+		    $s = array($ps[0] - 2 * $m, $ps[1] - 2 * $m);
+		else if (count($m) == 2)
+		    $s = array($ps[0] - 2 * $m[1], $ps[1] - 2 * $m[0]);
+		else if (count($m) == 3)
+		    $s = array($ps[0] - 2 * $m[1], $ps[1] - $m[0] - $m[2]);
+		else
+		    $s = array($ps[0] - $m[1] - $m[3], $ps[1] - $m[0] - $m[2]);
+	    }
+	    $s = (is_array($s) ? unparsedimen($s) : "");
+	}
+	// check text block measurements
+	if ($s && !cvtdimen($s, 2)) {
+	    $SettingError["sub_banal_textblock"] = true;
+	    $Error[] = "Invalid text block definition.";
+	} else if ($s)
+	    $bs[3] = $s;
+    }
+
+    if (($s = trim(defval($_REQUEST, "sub_banal_bodyfontsize", ""))) != ""
+	&& strcasecmp($s, "N/A") != 0) {
+	if (!is_numeric($s) || $s <= 0) {
+	    $SettingError["sub_banal_bodyfontsize"] = true;
+	    $Error[] = "Minimum body font size must be a number bigger than 0.";
+	} else
+	    $bs[4] = $s;
+    }
+
+    if (($s = trim(defval($_REQUEST, "sub_banal_bodyleading", ""))) != ""
+	&& strcasecmp($s, "N/A") != 0) {
+	if (!is_numeric($s) || $s <= 0) {
+	    $SettingError["sub_banal_bodyleading"] = true;
+	    $Error[] = "Minimum body leading must be a number bigger than 0.";
+	} else
+	    $bs[5] = $s;
+    }
+
+    // actually create setting
+    if (count($Error) == $old_error_count) {
+	$Values["sub_banal"] = array(1, join(";", $bs));
+
+	$cf = new CheckFormat();
+	$s1 = $cf->analyzeFile("$ConfSitePATH/Code/sample.pdf", "letter;2;;6.5inx9in;12;14");
+	$e1 = $cf->errors;
+	$s2 = $cf->analyzeFile("$ConfSitePATH/Code/sample.pdf", "a4;1;;3inx3in;13;15");
+	$e2 = $cf->errors;
+	$want_e2 = CheckFormat::ERR_PAPERSIZE | CheckFormat::ERR_PAGELIMIT
+	    | CheckFormat::ERR_TEXTBLOCK | CheckFormat::ERR_BODYFONTSIZE
+	    | CheckFormat::ERR_BODYLEADING;
+	if ($s1 != 2 || $e1 != 0 || $s2 != 1 || ($e2 & $want_e2) != $want_e2)
+	    $Conf->warnMsg("Running the automated paper checker on a sample PDF file produced unexpected results.  Check that your <code>pdftohtml</code> package is up to date.  You may want to disable the automated checker for now. (Internal error information: $s1 $e1 $s2 $e2)");
+    }
+}
+
 function doSpecial($name, $set) {
     global $Values;
     if ($name == "tags")
@@ -325,7 +439,8 @@ function doSpecial($name, $set) {
 	    $Values[$name] = true;
 	else
 	    rf_update(false);
-    }
+    } else if ($name == "banal")
+	doBanal($set);
 }
 
 function accountValue($name, $type) {
@@ -509,6 +624,16 @@ function doSelect($name, $nametext, $varr, $tr = false) {
     echo "</select>", ($tr ? "</td></tr>\n" : "<br />\n");
 }
 
+function doTextRow($name, $text, $v, $size = 30, $capclass = "lcaption") {
+    $settingname = (is_array($text) ? $text[0] : $text);
+    echo "<tr><td class='$capclass'>", decorateSettingName($name, $settingname), "</td><td class='lentry'><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='$size' onchange='highlightUpdate()' />";
+    if (is_array($text) && isset($text[2]))
+	echo $text[2];
+    if (is_array($text) && $text[1])
+	echo "<br /><small>", $text[1], "</small>";
+    echo "</td></tr>\n";
+}
+
 function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
     global $Conf, $Error, $DateExplanation;
     $x = setting($name);
@@ -519,19 +644,17 @@ function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
 	$v = $Conf->parseableTime($x);
     else
 	$v = $x;
-    echo "<tr><td class='$capclass'>", decorateSettingName($name, $text), "</td><td class='lentry'><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='30' onchange='highlightUpdate()' />";
     if (!isset($DateExplanation)) {
-	echo "<br /><small>Examples: \"now\", \"10 Dec 2006 11:59:59pm PST\" <a href='http://www.gnu.org/software/tar/manual/html_node/tar_109.html'>(more)</a></small>";
+	$text = array($text, "Examples: \"now\", \"10 Dec 2006 11:59:59pm PST\" <a href='http://www.gnu.org/software/tar/manual/html_node/tar_109.html'>(more)</a>");
 	$DateExplanation = true;
     }
-    echo "</td></tr>\n";
+    doTextRow($name, $text, $v, 30, $capclass);
 }
 
 function doGraceRow($name, $text, $capclass = "lcaption") {
-    echo "<tr><td class='$capclass'>", decorateSettingName($name, "Grace period"), "</td><td class='lentry'><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars(unparseGrace(setting($name))), "\" size='15' onchange='highlightUpdate()' />";
     if ($capclass == "lcaption")
-	echo "<br /><small>Example: \"15 min\"</small>";
-    echo "</td></tr>\n";
+	$text = array($text, "Example: \"15 min\"");
+    doTextRow($name, $text, unparseGrace(setting($name)), 15, $capclass);
 }
 
 
@@ -585,11 +708,19 @@ function doSubGroup() {
     doCheckbox("sub_pcconf", "Collect authors' PC conflicts with checkboxes");
     doCheckbox("sub_collab", "Collect authors' other collaborators as text");
 
-    if (is_executable("Code/banal") && false) {
-	echo "<div class='smgap'></div><table id='foldbanal' class='foldc'>";
-	doCheckbox("sub_banal", "<strong>Analyze formatting</strong>", true, "highlightUpdate();fold(\"banal\",!this.checked)");
-	echo "<tr class='extension'><td></td><td><table>";
-	doSelect("sub_banal_paper", "Paper size", array(0 => "(Choose)", "letter" => "Letter (8.5in x 11in)", "a4" => "A4 (210mm x 297mm)"), true);
+    if (is_executable("Code/banal")) {
+	echo "<div class='smgap'></div><table id='foldbanal' class='", ($Conf->setting("sub_banal") ? "foldo" : "foldc"), "'>";
+	doCheckbox("sub_banal", "<strong>Analyze formatting<span class='extension'>:</span></strong>", true, "highlightUpdate();fold(\"banal\",!this.checked)");
+	echo "<tr class='extension'><td></td><td class='top'><table>";
+	$bsetting = explode(";", $Conf->settingText("sub_banal", ""));
+	for ($i = 0; $i < 6; $i++)
+	    $bsetting = ($bsetting == "" ? "N/A" : $bsetting);
+	doTextRow("sub_banal_papersize", array("Paper size", "Examples: &ldquo;letter&rdquo;, &ldquo;A4&rdquo;, &ldquo;8.5in&nbsp;x&nbsp;14in&rdquo;"), setting("sub_banal_papersize", $bsetting[0]), 18, "lxcaption");
+	doTextRow("sub_banal_pagelimit", "Page limit", setting("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption");
+	doTextRow("sub_banal_textblock", array("Text block", "Examples: &ldquo;6.5in&nbsp;x&nbsp;9in&rdquo;, &ldquo;1in&nbsp;margins&rdquo;"), setting("sub_banal_textblock", $bsetting[3]), 18, "lxcaption");
+	echo "</table></td><td><span class='sep'></span></td><td class='top'><table>";
+	doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp; pt"), setting("sub_banal_bodyfontsize", $bsetting[4]), 4, "lxcaption");
+	doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp; pt"), setting("sub_banal_bodyleading", $bsetting[5]), 4, "lxcaption");
 	echo "</table></td></tr></table>";
     }
     

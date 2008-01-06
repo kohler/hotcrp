@@ -381,7 +381,7 @@ Miniajax.newRequest = function() {
 Miniajax.onload = function(formname) {
     fold(e(formname), 1, 7);
 }
-Miniajax.submit = function(formname, callback) {
+Miniajax.submit = function(formname, callback, timeout) {
     var form = e(formname), req = Miniajax.newRequest();
     if (!form || !req || form.method != "post") {
 	fold(form, 0, 7);
@@ -392,6 +392,8 @@ Miniajax.submit = function(formname, callback) {
 	resultelt = {};
     if (!callback)
 	callback = function(rv) { resultelt.innerHTML = rv.response; };
+    if (!timeout)
+	timeout = 4000;
     
     // set request
     var timer = setTimeout(function() {
@@ -399,7 +401,7 @@ Miniajax.submit = function(formname, callback) {
 			       resultelt.innerHTML = "<span class='error'>Network timeout.  Please try again.</span>";
 			       form.onsubmit = "";
 			       fold(form, 0, 7);
-			   }, 4000);
+			   }, timeout);
     
     req.onreadystatechange = function() {
 	if (req.readyState != 4)
@@ -466,6 +468,14 @@ function foldtags(which, dofold, foldnum) {
 	    ajaxTags = false;
 	    fold(which, dofold, foldnum);
 	});
+}
+
+function docheckformat() {
+    var form = e("checkformatform");
+    if (!form.onsubmit)
+	return true;
+    fold('checkformat', 0); 
+    return Miniajax.submit('checkformatform', null, 10000);
 }
 
 

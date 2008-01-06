@@ -56,6 +56,7 @@ style.css
 Code/.htaccess
 Code/backupdb.sh
 Code/baselist.inc
+Code/checkformat.inc
 Code/conference.inc
 Code/contact.inc
 Code/contactlist.inc
@@ -69,6 +70,7 @@ Code/paperlist.inc
 Code/papertable.inc
 Code/review.inc
 Code/reviewtable.inc
+Code/sample.pdf
 Code/schema.sql
 Code/search.inc
 Code/tags.inc
