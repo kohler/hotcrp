@@ -3,6 +3,7 @@ HotCRP: Conference Review Package 2
 
 New version by Eddie Kohler, UCLA
 CRP originally by Dirk Grunwald, University of Colorado
+banal by Geoff Voelker, UCSD
 
 Prerequisites
 -------------
@@ -24,6 +25,9 @@ PHP's MySQL, PEAR, and mail support.  On Fedora, the "php-mysql",
 "php5-common", "php5-gd", "php5-mysql", and "libapache[2]-mod-php5".  On
 Ubuntu, you may additionally need to install the "postfix" package for SMTP
 support.
+
+Additional packages required for paper format checking:
+* pdftohtml (0.39)		http://pdftohtml.sourceforge.net/
 
 Configuration
 -------------
