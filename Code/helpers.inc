@@ -955,9 +955,9 @@ function unparsedimen($n, $to = null) {
     if ($to == "pt")
 	return $n . $to;
     else if ($to == "in" || $to == "i")
-	return sprintf("%g", (int) (100 * $n / 72 + 0.5) / 100) . $to;
+	return ((int) (100 * $n / 72 + 0.5) / 100) . $to;
     else if ($to == "cm")
-	return sprintf("%g", (int) (100 * $n / 72 / 0.393700787 + 0.5) / 100) . $to;
+	return ((int) (100 * $n / 72 / 0.393700787 + 0.5) / 100) . $to;
     else if ($to == "mm")
 	return (int) ($n / 72 / 0.0393700787 + 0.5) . $to;
     else

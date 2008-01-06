@@ -175,12 +175,12 @@ function checkFormat(&$tmpdir, $final) {
 	if (abs($p[0] - $papersize[0]) >= 9
 	    || abs($p[1] - $papersize[1]) >= 9) {
 	    if (abs($p[0] - 612) <= 5 && abs($p[1] - 792) <= 5)
-		$px = "Paper size mismatch; expected letter paper (8.5in x 11in)";
+		$px = "Paper size mismatch: expected letter paper (8.5in x 11in)";
 	    else if (abs($p[0] - 595.27) <= 5 && abs($p[1] - 841.89) <= 5)
-		$px = "Paper size mismatch; expected A4 paper (210mm x 297mm)";
+		$px = "Paper size mismatch: expected A4 paper (210mm x 297mm)";
 	    else
-		$px = "Paper size mismatch; expected " . unparsedimen($p);
-	    $pie[] = $px . ", have " . unparsedimen($papersize);
+		$px = "Paper size mismatch: expected " . unparsedimen($p);
+	    $pie[] = $px . ", found " . unparsedimen($papersize);
 	}
     }
 
@@ -188,7 +188,7 @@ function checkFormat(&$tmpdir, $final) {
     if (count($banal_desired) > 1 && $banal_desired[1]
 	&& ($p = cvtint($banal_desired[1])) > 0) {
 	if (count($pi) > $p)
-	    $pie[] = "Too many pages: at most " . plural($p, "page") . " allowed, have " . count($pi);
+	    $pie[] = "Too many pages: at most " . plural($p, "page") . " allowed, found " . count($pi);
     }
 
     // number of columns
@@ -200,7 +200,7 @@ function checkFormat(&$tmpdir, $final) {
 		&& defval($pg, "type") == "body")
 		$px[] = $pg["pageno"];
 	if (count($px) > 0)
-	    $pie[] = "Wrong number of columns on " . pluralx($px, "body page") . " " . commajoin($px) . ": expected $p";
+	    $pie[] = "Wrong number of columns: expected " . plural($p, "column") . ", different on " . pluralx($px, "page") . " " . commajoin($px);
     }
 
     // text block
@@ -208,19 +208,21 @@ function checkFormat(&$tmpdir, $final) {
 	&& ($p = cvtdimen($banal_desired[3], 2))) {
 	$px = array();
 	$maxpct = 0;
+	$minpct = 1000;
 	foreach ($pi as $pg)
 	    if (($pp = defval($pg, "block"))
 		&& ($pp[0] - $p[0] >= 9 || $pp[1] - $p[1] >= 9)) {
 		$px[] = $pg["pageno"];
-		$maxpct = max($maxpct, max($pp[0], $p[0]) / ($p[0] + 0.0),
-			      max($pp[1], $p[1]) / ($p[1] + 0.0));
+		$pct = (int) (100 * max(max($pp[0], $p[0]) / $p[0], max($pp[1], $p[1]) / $p[1]) + .5) - 100;
+		$maxpct = max($maxpct, $pct);
+		$minpct = min($minpct, $pct);
 	    }
 	if (count($px) > 0)
 	    $pie[] = "Text block too big (margins too small): expected "
 		. unparsedimen($p) . " text block, too big on "
-		. pluralx($px, "page") . " " . commajoin($px) . " by up to "
-		. sprintf("%.2g%%", 100.0*$maxpct)
-		. " in at least one dimension";
+		. pluralx($px, "page") . " " . commajoin($px) . " by "
+		. ($minpct == $maxpct ? "" : "$minpct&ndash;")
+		. $maxpct . "% in at least one dimension";
     }
 
     // font size
@@ -238,9 +240,8 @@ function checkFormat(&$tmpdir, $final) {
 		$minval = min($minval, $pp);
 	    }
 	}
-	if ($bodypages == 0
-	    || (($pn = cvtint($banal_desired[1])) > 0 && $bodypages <= 0.5 * $pn))
-	    $pie[] = "Warning: Only " . plural($bodypages, "page") . " were analyzed as containing body text; results may be off";
+	if ($bodypages == 0 || $bodypages <= 0.5 * count($pi))
+	    $pie[] = "Warning: Only " . plural($bodypages, "page") . " seemed to contain body text; results may be off";
 	if (count($px) > 0)
 	    $pie[] = "Body font size too small: expected ${p}pt, saw values as small as ${minval}pt on " . pluralx($px, "page") . " " . commajoin($px);
     }
@@ -262,7 +263,7 @@ function checkFormat(&$tmpdir, $final) {
 
     // results
     if (count($pie) > 0) {
-	$Conf->warnMsg("This paper does not appear to meet the submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $pie) . "</li></ul>\nOnly submissions that meet the requirements will be considered.  However, since the format checker can be mistaken, format checker errors do not prevent paper submission.  If your paper already meets the format requirements, simply submit it as is.");
+	$Conf->warnMsg("This paper does not appear to meet the submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $pie) . "</li></ul>\nOnly submissions that meet the requirements will be considered.  However, since the automated format checker can be mistaken, checker errors do not prevent paper submission.  If your paper already meets the format requirements, simply submit it as is.");
 	return 1;
     } else {
 	$Conf->confirmMsg("Congratulations, this paper appears to meet the submission requirements.");
