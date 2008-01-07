@@ -827,7 +827,15 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 		&& $Me->canViewComment($prow, null, $Conf))
 	    || ($Me->isPC && $prow->timeSubmitted > 0
 		&& $Conf->timeReviewOpen()))) {
-	$n = ($prow->conflictType >= CONFLICT_AUTHOR ? $prow->numAuthorComments : $prow->numComments);
+	if ($prow->conflictType >= CONFLICT_AUTHOR)
+	    $n = $prow->numAuthorComments;
+	else if ($Me->isPC)
+	    $n = $prow->numComments;
+	else {
+	    $result = $Conf->q("select count(commentId) from PaperComment where paperId=$prow->paperId and (forReviewers>0 or contactId=$Me->contactId)");
+	    $row = edb_row($result);
+	    $n = ($row ? $row[0] : 0);
+	}
 	$txt = ($n ? "Comments ($n)" : "Comments");
 	$act .= actionTab($txt, "${ConfSiteBase}comment$ConfSiteSuffix?p=$paperId$listarg", $mode == "comment");
     }

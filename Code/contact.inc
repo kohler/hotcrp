@@ -718,11 +718,12 @@ class Contact {
 	if (($prow->conflictType >= CONFLICT_AUTHOR
 	     && $conf->timeAuthorViewReviews()
 	     && (!$crow || $crow->forAuthors))
+	    || ($crow && $crow->contactId == $this->contactId)
 	    || ($this->privChair && ($forceShow || $prow->conflictType == 0))
-	    || (($this->isPC || $prow->myReviewType > 0)
-		&& $prow->conflictType == 0
-		&& (!$crow || $crow->forAuthors < 2
-		    || $crow->forReviewers > 0)))
+	    || ($this->isPC && $prow->conflictType == 0
+		&& (!$crow || $crow->forAuthors < 2 || $crow->forReviewers > 0))
+	    || ($prow->myReviewType > 0 && $prow->conflictType == 0
+		&& (!$crow || $crow->forReviewers > 0)))
 	    return true;
 	// collect failure reasons
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->isPC && $prow->myReviewType <= 0)

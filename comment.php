@@ -331,8 +331,9 @@ function commentIdentityTime($prow, $crow, &$sep) {
     global $Conf, $Me;
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
     if ($crow && $Me->canViewCommentIdentity($prow, $crow, $Conf)) {
-	echo ($crow->blind ? "[" : ""), "by ", contactHtml($crow);
-	$sep = ($crow->blind ? "]" : "") . $xsep;
+	$blind = ($crow->blind && $crow->forAuthors > 0);
+	echo ($blind ? "[" : ""), "by ", contactHtml($crow);
+	$sep = ($blind ? "]" : "") . $xsep;
     } else if ($crow && $Me->privChair) {
 	echo "<span id='foldcid$crow->commentId' class='fold4c'>",
 	    "<a href=\"javascript:fold('cid$crow->commentId', 0, 4)\" class='foldbutton unfolder4'>+</a>",
