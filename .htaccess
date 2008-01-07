@@ -16,11 +16,6 @@ Order allow,deny
 Deny from all
 </FilesMatch>
 
-# The 'doc' URL is PHP.
-<Files doc>
-ForceType application/x-httpd-php
-</Files>
-
 # Add .php to suffixless URLs.
 <IfModule mod_rewrite.c>
 RewriteEngine on
