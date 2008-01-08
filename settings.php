@@ -713,7 +713,7 @@ function doSubGroup() {
 
     if (is_executable("Code/banal")) {
 	echo "<div class='smgap'></div><table id='foldbanal' class='", ($Conf->setting("sub_banal") ? "foldo" : "foldc"), "'>";
-	doCheckbox("sub_banal", "<strong>Analyze formatting<span class='extension'>:</span></strong>", true, "highlightUpdate();fold(\"banal\",!this.checked)");
+	doCheckbox("sub_banal", "<strong>Automated format checker<span class='extension'>:</span></strong>", true, "highlightUpdate();fold(\"banal\",!this.checked)");
 	echo "<tr class='extension'><td></td><td class='top'><table>";
 	$bsetting = explode(";", $Conf->settingText("sub_banal", ""));
 	for ($i = 0; $i < 6; $i++)
