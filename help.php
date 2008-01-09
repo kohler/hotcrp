@@ -5,7 +5,7 @@
 
 require_once('Code/header.inc');
 $Me = $_SESSION["Me"];
-$Me->goIfInvalid();
+$Me->valid();
 
 
 $topicTitles = array("topics" => "Help topics",
@@ -220,32 +220,47 @@ function searchQuickref() {
 function tags() {
     global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Me;
 
-    // get current chair-only tags
-    require_once('Code/tags.inc');
-    $ct = array_keys(chairTags());
-    if (count($ct)) {
-	sort($ct);
-	$ctxt = " (currently ";
-	foreach ($ct as $c)
-	    $ctxt .= "&ldquo;$c&rdquo;, ";
-	$ctxt = substr($ctxt, 0, strlen($ctxt) - 2) . ")";
-    } else
-	$ctxt = "";
+    // get current tag settings
+    $chairtags = "";
+    $conflictmsg1 = "";
+    $conflictmsg2 = "";
+    $conflictmsg3 = "";
+    $setting = "";
 
-    $msg = ($Conf->setting("tag_seeall") > 0 ? "" : " or conflicted PC members");
+    if ($Me->isPC) {
+	require_once('Code/tags.inc');
+	$ct = array_keys(chairTags());
+	if (count($ct)) {
+	    sort($ct);
+	    $chairtags = " (currently ";
+	    foreach ($ct as $c)
+		$chairtags .= "&ldquo;$c&rdquo;, ";
+	    $chairtags = substr($chairtags, 0, strlen($chairtags) - 2) . ")";
+	}
+
+	if ($Me->privChair)
+	    $setting = "  (<a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>Change this setting</a>)";
+
+	if ($Conf->setting("tag_seeall") > 0) {
+	    $conflictmsg3 = "Currently PC members can see tags for any paper, including conflicts.";
+	} else {
+	    $conflictmsg1 = " or conflicted PC members";
+	    $conflictmsg2 = "  However, since PC members currently can't see tags for conflicted papers, each PC member might see a different list." . $setting;
+	    $conflictmsg3 = "They are currently hidden from conflicted PC members&mdash;for instance, if a PC member searches for a tag, the results will never include conflicts.";
+	}
+    }
+
     echo "<table>";
     _alternateRow("Basics", "
 PC members and administrators can attach tag names to papers.
 Papers can have many tags, and you can invent new tags on the fly.
-Tags are never shown to authors$msg.
+Tags are never shown to authors$conflictmsg1.
 It's easy to add and remove tags and to list all papers with a given tag,
 and <i>ordered</i> tags preserve a particular paper order.
 
 <p>By default, tags are visible to the entire PC, but <em>twiddle tags</em>,
 with names like &ldquo;~tag&rdquo;, are visible only to their creators.</p>");
 
-    $setting = ($Me->privChair ? "  (<a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>Change this setting</a>)" : "");
-    $msg = ($Conf->setting("tag_seeall") > 0 ? "" : "  However, since PC members currently can't see tags for conflicted papers, each PC member might see a different list.$setting");
     _alternateRow("Using tags", "
 Here are some example ways to use tags.
 
@@ -270,14 +285,13 @@ Here are some example ways to use tags.
 <li><strong>Define a discussion order for the PC meeting.</strong>
  Publishing the order lets PC members prepare to discuss upcoming papers.
  Define an ordered tag such as &ldquo;discuss&rdquo; (see below for how), then ask the PC to <a href='${ConfSiteBase}search$ConfSiteSuffix?q=order:discuss'>search for &ldquo;order:discuss&rdquo;</a>.
- The PC can now see the order and use quick links to go from paper to paper.$msg</li>
+ The PC can now see the order and use quick links to go from paper to paper.$conflictmsg2</li>
 
 <li><strong>Mark tentative decisions during the PC meeting.</strong>
  Chairs add &ldquo;accept&rdquo; and &ldquo;reject&rdquo; tags as decisions are made, leaving the explicit decision setting for the end of the meeting.
  Among the reasons for this: PC members can see decisions as soon as they are entered into the system, even for conflicted papers, but they can't see tags for conflicted papers unless you explicitly allow it.</li>
 </ul>
 ");
-    $msg = ($Conf->setting("tag_seeall") > 0 ? "Currently PC members can see tags for any paper, including conflicts" : "They are currently hidden from conflicted PC members&mdash;for instance, if a PC member searches for a tag, the results will never include conflicts");
     _alternateRow("Finding tags", "
 A paper's tags are shown on its <a href='${ConfSiteBase}review$ConfSiteSuffix'>review page</a> and the other paper pages.
 
@@ -286,7 +300,7 @@ A paper's tags are shown on its <a href='${ConfSiteBase}review$ConfSiteSuffix'>r
 To find all papers with tag &ldquo;discuss&rdquo;:&nbsp; " . _searchForm("tag:discuss") . "
 
 <p>Tags are only shown to PC members and administrators.
-$msg.$setting
+$conflictmsg3$setting
 Additionally, twiddle tags, which have names like &ldquo;~tag&rdquo;, are
 visible only to their creators; each PC member has an independent set.</p>");
     _alternateRow("Changing tags", "
@@ -307,7 +321,7 @@ their checkboxes, and add tags using the action area.</p>
 from all non-selected papers.</p>
 
 Although any PC member can view or search
-any tag, only PC chairs can change certain tags$ctxt.  $setting");
+any tag, only PC chairs can change certain tags$chairtags.  $setting");
     _alternateRow("Ordered tags<br />and discussion orders", "
 An ordered tag names an <i>ordered</i> set of papers.  Searching for the
 tag with &ldquo;<a href='${ConfSiteBase}search$ConfSiteSuffix?q=order:tagname'>order:tagname</a>&rdquo; will return the papers in the order
@@ -376,6 +390,14 @@ Follow these steps to prepare to accept paper submissions.
   explicit preferences (see below) are better than topic-based assignments,
   busy PC members might not specify their preferences; topic matching lets you
   do a reasonable job at assigning papers anyway.</p></li>
+
+<li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=sub'>Set
+  up the automated format checker (optional).</a></strong> This adds a
+  &ldquo;Check format requirements&rdquo; button to the Edit Paper screen.
+  Clicking the button checks the paper for formatting errors, such as going
+  over the page limit.  Papers with formatting errors may still be submitted,
+  since the checker itself can make mistakes, but cheating authors now have no
+  excuse.</p></li>
 
 <li><p>Take a look at a <a href='${ConfSiteBase}paper$ConfSiteSuffix?p=new'>paper
   submission page</a> to make sure it looks right.</p></li>

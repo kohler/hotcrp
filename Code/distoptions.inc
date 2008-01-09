@@ -84,3 +84,5 @@ $Opt["paperSite"] = "http://your.site.here.com/";
 //                   Example: "mysql://HotNetsV:HotNetsV@127.0.0.1/HotNetsV".
 //   dbDumpDir       Directory where user-requested database dumps are stored.
 //   pdftohtml       Pathname to pdftohtml executable.
+
+$Opt["disablePS"] = true;
