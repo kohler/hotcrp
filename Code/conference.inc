@@ -628,15 +628,15 @@ class Conference {
 	$out = system("zip -jq $tmpdir/x.zip " . join(" ", $downloadPaths) . " 2>&1", $status);
 	if ($status != 0)
 	    return new PEAR_Error("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
-	if (($contents = file_get_contents("$tmpdir/x.zip")) === false)
+	if (!file_exists("$tmpdir/x.zip"))
 	    return new PEAR_Error("<code>zip</code> output unreadable or empty.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
 
 	// output
 	header("Content-Description: PHP Generated Data");
 	header("Content-Disposition: attachment; filename=" . $Opt['downloadPrefix'] . "papers.zip");
 	header("Content-Type: application/zip");
-	header("Content-Length: " . strlen($contents));
-	print $contents;
+	header("Content-Length: " . filesize("$tmpdir/x.zip"));
+	readfile("$tmpdir/x.zip");
 	return 1;
     }
 
