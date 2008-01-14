@@ -408,7 +408,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 	if ($Conf->settingsAfter('sub_open'))
 	    $deadlines[] = "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for registering new papers has passed.";
 	else
-	    $deadlines[] = "The site has not yet opened for submission, please try again later.";
+	    $deadlines[] = "The site is not open for submissions at the moment.";
     }
     if (count($deadlines) > 0) {
 	if ($plist && $plist->count > 0)
