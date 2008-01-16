@@ -22,6 +22,11 @@ $reviewFields = array('paperSummary' => 0,
 		      'likelyPresentation' => 1,
 		      'suitableForShort' => 1);
 
+if ($Conf->setting("allowPaperOption") >= 8) {
+    $reviewFields["textField7"] = 0;
+    $reviewFields["textField8"] = 0;
+}
+
 global $reviewScoreNames;
 $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
 			  "grammar", "reviewerQualification", "potential",

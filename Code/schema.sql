@@ -238,6 +238,8 @@ CREATE TABLE `PaperReview` (
   `strengthOfPaper` text NOT NULL default '',
   `potential` tinyint(4) NOT NULL default '0',
   `fixability` tinyint(4) NOT NULL default '0',
+  `textField7` text NOT NULL default '',
+  `textField8` text NOT NULL default '',
   PRIMARY KEY  (`reviewId`),
   UNIQUE KEY `reviewId` (`reviewId`),
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
@@ -462,7 +464,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 7);
+insert into Settings (name, value) values ('allowPaperOption', 8);
 # collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 
@@ -498,11 +500,15 @@ insert into ReviewFormField set fieldName='weaknessOfPaper',
 insert into ReviewFormField set fieldName='strengthOfPaper',
 	shortName='Paper strengths', rows=5;
 insert into ReviewFormField set fieldName='likelyPresentation',
-	shortName='Numeric field 1';
+	shortName='Additional score field';
 insert into ReviewFormField set fieldName='potential',
-	shortName='Numeric field 2';
+	shortName='Additional score field';
 insert into ReviewFormField set fieldName='fixability',
-	shortName='Numeric field 3';
+	shortName='Additional score field';
+insert into ReviewFormField set fieldName='textField7',
+	shortName='Additional text field';
+insert into ReviewFormField set fieldName='textField8',
+	shortName='Additional text field';
 
 insert into ReviewFormOptions set fieldName='overAllMerit', level=1, description='Reject';
 insert into ReviewFormOptions set fieldName='overAllMerit', level=2, description='Weak reject';

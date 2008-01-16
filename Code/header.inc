@@ -70,7 +70,6 @@ if (function_exists("apache_get_modules")) {
 require_once("$ConfSitePATH/Code/helpers.inc");
 require_once("$ConfSitePATH/Code/conference.inc");
 require_once("$ConfSitePATH/Code/contact.inc");
-require_once("$ConfSitePATH/Code/review.inc");
 
 // If you have the PEAR::Mail libraries installed globally,
 // there's no need to change the include path.
@@ -92,6 +91,8 @@ if (!isset($Opt['dsn']))
 // Create the conference
 $Conf = new Conference();
 
+// Now load review code (which requires that $Conf exist)
+require_once("$ConfSitePATH/Code/review.inc");
 
 // How long before a session is automatically logged out?
 //

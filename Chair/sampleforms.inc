@@ -76,6 +76,8 @@ function sigcomm2005Form() {
     unsetField("likelyPresentation", "Value of presentation");
     unsetField("potential", "Potential");
     unsetField("fixability", "Fixability");
+    unsetField("textField7", "Additional text field");
+    unsetField("textField8", "Additional text field");
     loadedForm("the SIGCOMM 2005 conference");
 }
 
@@ -127,6 +129,8 @@ function worlds2005Form() {
     unsetField("fixability", "Fixability");
     unsetField("strengthOfPaper", "Paper strengths");
     unsetField("weaknessOfPaper", "Paper weaknesses");
+    unsetField("textField7", "Additional text field");
+    unsetField("textField8", "Additional text field");
     loadedForm("the WORLDS 2005 workshop");
 }
 
@@ -183,6 +187,8 @@ function cgo36Form() {
     unsetField("likelyPresentation", "Value of presentation");
     unsetField("potential", "Potential");
     unsetField("fixability", "Fixability");
+    unsetField("textField7", "Additional text field");
+    unsetField("textField8", "Additional text field");
     loadedForm("the CGO 2004 conference");
 }
 
@@ -220,6 +226,8 @@ function hotnetsVForm() {
     unsetField("likelyPresentation", "Value of presentation");
     unsetField("potential", "Potential");
     unsetField("fixability", "Fixability");
+    unsetField("textField7", "Additional text field");
+    unsetField("textField8", "Additional text field");
     loadedForm("the HotNets V workshop");
 }
 
@@ -241,4 +249,6 @@ function noForm() {
     unsetWholeField("fixability");
     unsetWholeField("strengthOfPaper");
     unsetWholeField("weaknessOfPaper");
+    unsetWholeField("textField7");
+    unsetWholeField("textField8");
 }

@@ -57,3 +57,22 @@ create table `PaperWatch` (
   UNIQUE KEY `contactPaperWatch` (`contactId`,`paperId`,`watch`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 update Settings set value=6 where name='allowPaperOption';
+
+
+-- UPDATE FROM VERSIONS 2.7-2.11 TO VERSION 2.12
+-- Apply if `allowPaperOption <= 6`.
+
+alter table ReviewRequest add `reason` text;
+update Settings set value=7 where name='allowPaperOption';
+
+
+-- UPDATE FROM VERSION 2.12 TO VERSION 2.13
+-- Apply if `allowPaperOption <= 7`.
+
+alter table PaperReview add `textField7` text NOT NULL default '';
+alter table PaperReview add `textField8` text NOT NULL default '';
+insert into ReviewFormField set fieldName='textField7',
+	shortName='Additional text field';
+insert into ReviewFormField set fieldName='textField8',
+	shortName='Additional text field';
+update Settings set value=8 where name='allowPaperOption';

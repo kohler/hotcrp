@@ -252,7 +252,9 @@ function rf_show() {
 	if ($order < 0)
 	    $order = 100;
 	$sn = defval($_REQUEST, "shortName_$row->fieldName", $row->shortName);
-	$out[sprintf("%03d.%s", $order, strtolower($sn))] = $row;
+	if ($order == 100 && preg_match('/^additional.*(field|score)$/i', $sn))
+	    $order = 200;
+	$out[sprintf("%03d.%s.%s", $order, strtolower($sn), $row->fieldName)] = $row;
     }
 
     ksort($out);
