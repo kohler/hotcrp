@@ -17,7 +17,7 @@ An account has been created for you at the %CONFNAME% submissions site, includin
 
 To sign in directly, either click the link below or paste it into your web browser's location field.
 
-    %LOGINURL%
+%LOGINURL%
 
 If you already have an account under a different email address, you may merge this new account into that one.  Sign in to the site and select \"Merge accounts\".
 
@@ -37,7 +37,7 @@ Here is your account information for the %CONFNAME% submissions site.
 
 To sign in directly, either click the link below or paste it into your web browser's location field.
 
-    %LOGINURL%
+%LOGINURL%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -71,7 +71,7 @@ If you are willing to review this paper, you may enter your review on the confer
 
 To sign in, either click the link below or paste it into your web browser's location field.
 
-    %LOGINURL%
+%LOGINURL%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -240,7 +240,7 @@ Your paper was one of %NUMACCEPTED% accepted out of %NUMSUBMITTED% submissions. 
 
 Reviews and comments on your paper are appended to this email.  The submissions site also has the paper's reviews and comments, as well as more information about review scores.  To sign in, either click the link below or paste it into your web browser's location field.
 
-    %LOGINURL%
+%LOGINURL%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -263,7 +263,7 @@ The %CONFNAME% program committee is sorry to inform you that your paper #%NUMBER
 
 Reviews and comments on your paper are appended to this email.  The submissions site also has the paper's reviews and comments, as well as more information about review scores.  To sign in, either click the link below or paste it into your web browser's location field.
 
-    %LOGINURL%
+%LOGINURL%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -295,7 +295,7 @@ Your message here.
 
 To sign in to the submissions site, either click the link below or paste it into your web browser's location field.
 
-    %LOGINURL%
+%LOGINURL%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -313,7 +313,7 @@ This is a reminder to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REV
 
 To sign in to the submissions site, either click the link below or paste it into your web browser's location field.
 
-    %LOGINURL%
+%LOGINURL%
 
 Thank you for your help -- we appreciate that reviewing is hard work.
 
