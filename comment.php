@@ -1,6 +1,6 @@
 <?php 
 // comment.php -- HotCRP paper comment display/edit page
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once('Code/header.inc');
@@ -420,7 +420,9 @@ function commentView($prow, $crow, $editMode) {
 <tr>
   <td class='caption'>Visibility</td>
   <td class='entry'>For PC and: <input type='checkbox' name='forReviewers' value='1'";
-	if ($useRequest ? defval($_REQUEST, 'forReviewers') : (!$crow || $crow->forReviewers))
+	if (($useRequest && defval($_REQUEST, 'forReviewers'))
+	    || (!$useRequest && $crow && $crow->forReviewers)
+	    || (!$useRequest && !$crow && $Conf->setting("extrev_view") > 0))
 	    echo " checked='checked'";
 	echo " />&nbsp;Reviewers &nbsp;
     <input type='checkbox' name='forAuthors' value='1'";
