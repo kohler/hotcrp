@@ -3,8 +3,11 @@
 // HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-if (function_exists('ob_gzhandler'))
+$gzhandler = false;
+if (function_exists('ob_gzhandler')) {
+    $gzhandler = true;
     ob_start('ob_gzhandler');
+}
 
 header("Cache-Control: public, max-age=315576000");
 header("Expires: " . gmdate("D, d M Y H:i:s", time() + 315576000) . " GMT");
@@ -39,3 +42,6 @@ else {
     header("Content-Length: " . filesize($file));
     readfile($file);
 }
+
+if ($gzhandler)
+    ob_end_flush();
