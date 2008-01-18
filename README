@@ -35,7 +35,8 @@ Configuration
 
   - Decide on a name for your database (no spaces allowed).
 
-  - Run "sudo Code/createdb.sh" to create the database.
+  - Run "sudo Code/createdb.sh" to create the database.  Any options
+    supplied will be passed along to MySQL; usually none are necessary.
 
   - Edit 'my.cnf' (typical location: '/etc/my.cnf') to ensure that MySQL
     can handle large objects.  It should contain something like this:
