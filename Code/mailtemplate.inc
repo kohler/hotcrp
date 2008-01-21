@@ -57,7 +57,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
      array("[%CONFSHORTNAME%] Review request for paper #%NUMBER%",
 	   "Dear %NAME%,
 
-%OTHERCONTACT% has asked you to review %CONFNAME% paper #%NUMBER%.%IF(REASON)%  They supplied this note: %REASON%%ENDIF%
+On behalf of the %CONFNAME% program committee, %OTHERCONTACT% would like to solicit your help with the review of %CONFNAME% paper #%NUMBER%.%IF(REASON)%  They supplied this note: %REASON%%ENDIF%
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
