@@ -1,11 +1,11 @@
 <?php 
 // search.php -- HotCRP paper search page
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once('Code/header.inc');
-require_once('Code/paperlist.inc');
-require_once('Code/search.inc');
+require_once("Code/header.inc");
+require_once("Code/paperlist.inc");
+require_once("Code/search.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $getaction = "";
@@ -141,7 +141,7 @@ if ($getaction == "abstracts" && isset($papersel) && defval($_REQUEST, "ajax")) 
 
 // download selected abstracts
 if ($getaction == "tags" && isset($papersel) && defval($_REQUEST, "ajax")) {
-    require_once('Code/tags.inc');
+    require_once("Code/tags.inc");
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tags" => 1));
     $result = $Conf->qe($q, "while selecting papers");
     $response = array();

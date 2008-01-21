@@ -1,9 +1,9 @@
 <?php 
 // help.php -- HotCRP help page
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once('Code/header.inc');
+require_once("Code/header.inc");
 $Me = $_SESSION["Me"];
 $Me->valid();
 
@@ -228,7 +228,7 @@ function tags() {
     $setting = "";
 
     if ($Me->isPC) {
-	require_once('Code/tags.inc');
+	require_once("Code/tags.inc");
 	$ct = array_keys(chairTags());
 	if (count($ct)) {
 	    sort($ct);

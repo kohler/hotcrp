@@ -3,8 +3,8 @@
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once('Code/header.inc');
-require_once('Code/papertable.inc');
+require_once("Code/header.inc");
+require_once("Code/papertable.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $useRequest = false;

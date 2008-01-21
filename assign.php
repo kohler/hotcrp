@@ -1,11 +1,11 @@
 <?php 
 // assign.php -- HotCRP per-paper assignment/conflict management page
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once('Code/header.inc');
-require_once('Code/papertable.inc');
-require_once('Code/reviewtable.inc');
+require_once("Code/header.inc");
+require_once("Code/papertable.inc");
+require_once("Code/reviewtable.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $_REQUEST["forceShow"] = 1;

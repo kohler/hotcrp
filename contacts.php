@@ -1,10 +1,10 @@
 <?php
 // contacts.php -- HotCRP people listing/editing page
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once('Code/header.inc');
-require_once('Code/contactlist.inc');
+require_once("Code/header.inc");
+require_once("Code/contactlist.inc");
 $Me = $_SESSION["Me"];
 $rf = reviewForm();
 $getaction = "";
