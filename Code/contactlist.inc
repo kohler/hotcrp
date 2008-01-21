@@ -1,6 +1,6 @@
 <?php
 // contactlist.inc -- HotCRP helper class for producing lists of contacts
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("baselist.inc");
@@ -287,7 +287,7 @@ class ContactList extends BaseList {
 	    $extra = "&amp;list=s:" . join("+", array_keys($x));
 	    $m = array();
 	    foreach ($x as $k => $v)
-		$m[] = "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?reviewId=$v$extra\">$k</a>";
+		$m[] = "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?r=$v$extra\">$k</a>";
 	    return join(", ", $m);
 	case self::FIELD_SCORE:
 	    if (!$row->pc && !$this->contact->privChair

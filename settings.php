@@ -648,15 +648,18 @@ function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
     else
 	$v = $x;
     if (!isset($DateExplanation)) {
-	$text = array($text, "Examples: \"now\", \"10 Dec 2006 11:59:59pm PST\" <a href='http://www.gnu.org/software/tar/manual/html_node/tar_109.html'>(more)</a>");
+	$text = array($text, "Examples: &ldquo;now&rdquo;, &ldquo;10 Dec 2006 11:59:59pm PST&rdquo; <a href='http://www.gnu.org/software/tar/manual/html_node/tar_109.html'>(more)</a>");
 	$DateExplanation = true;
     }
     doTextRow($name, $text, $v, 30, $capclass);
 }
 
 function doGraceRow($name, $text, $capclass = "lcaption") {
-    if ($capclass == "lcaption")
-	$text = array($text, "Example: \"15 min\"");
+    global $GraceExplanation;
+    if (!isset($GraceExplanation)) {
+	$text = array($text, "Example: &ldquo;15 min&rdquo;");
+	$GraceExplanation = true;
+    }
     doTextRow($name, $text, unparseGrace(setting($name)), 15, $capclass);
 }
 
@@ -893,7 +896,7 @@ function doDecGroup() {
 	    $caption = "";
 	}
     echo "<tr><td class='lcaption'>New decision type<br /></td><td class='lentry nowrap'><input type='text' class='textlite' name='decn' value=\"\" size='35' /> &nbsp; <select name='dtypn'><option value='1' selected='selected'>Accept class</option><option value='-1'>Reject class</option></select>";
-    echo "<br /><small>Examples: \"Accepted as short paper\", \"Early reject\"</small>";
+    echo "<br /><small>Examples: &ldquo;Accepted as short paper&rdquo;, &ldquo;Early reject&rdquo;</small>";
     echo "</td></tr>\n</table>\n";
     
     // Final copies

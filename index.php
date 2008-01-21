@@ -3,9 +3,9 @@
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once('Code/header.inc');
-require_once('Code/paperlist.inc');
-require_once('Code/search.inc');
+require_once("Code/header.inc");
+require_once("Code/paperlist.inc");
+require_once("Code/search.inc");
 
 $Me = $_SESSION["Me"];
 $email_class = '';
@@ -348,7 +348,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	$sep = $xsep;
     }
     if ($Me->isRequester) {
-	echo $sep, "<a href='PC/CheckReviewStatus$ConfSiteSuffix'>Monitor external reviews</a>";
+	echo $sep, "<a href='mail$ConfSiteSuffix?monreq=1'>Monitor external reviews</a>";
 	$sep = $xsep;
     }
     

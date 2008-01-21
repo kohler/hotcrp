@@ -1,5 +1,9 @@
 <?php 
-require_once('Code/header.inc');
+// log.php -- HotCRP action log
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
+// Distributed under an MIT-like license; see LICENSE
+
+require_once("Code/header.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair("index$ConfSiteSuffix");
@@ -218,12 +222,12 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
     
     $act = $row->action;
     if (preg_match('/^Review (\d+)/', $act, $m)) {
-	echo "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?reviewId=$m[1]\">Review ",
+	echo "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?r=$m[1]\">Review ",
 	    $m[1], "</a>";
 	$act = substr($act, strlen($m[0]));
     }
     if (preg_match('/^Comment (\d+)/', $act, $m)) {
-	echo "<a href=\"${ConfSiteBase}comment$ConfSiteSuffix?commentId=$m[1]\">Comment ",
+	echo "<a href=\"${ConfSiteBase}comment$ConfSiteSuffix?c=$m[1]\">Comment ",
 	    $m[1], "</a>";
 	$act = substr($act, strlen($m[0]));
     }

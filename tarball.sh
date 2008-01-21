@@ -118,8 +118,4 @@ Chair/SetReviewForm.php
 Chair/index.php
 Chair/sampleforms.inc
 
-PC/.htaccess
-PC/CheckReviewStatus.php
-PC/index.php
-
 EOF

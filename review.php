@@ -1,11 +1,11 @@
 <?php 
 // review.php -- HotCRP paper review display/edit page
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once('Code/header.inc');
-require_once('Code/papertable.inc');
-require_once('Code/reviewtable.inc');
+require_once("Code/header.inc");
+require_once("Code/papertable.inc");
+require_once("Code/reviewtable.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $rf = reviewForm();
@@ -36,7 +36,9 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $ConfSiteBase, $ConfSiteSuffix, $prow, $rrows, $rrow, $editRrow, $nExternalRequests, $editRrowLogname;
+    global $Conf, $Me, $ConfSiteBase, $ConfSiteSuffix, $prow, $rrows, $rrow, $myRrow, $editRrow, $nExternalRequests, $editRrowLogname;
+    if (!isset($_REQUEST["reviewId"]) && isset($_REQUEST["r"]))
+	$_REQUEST["reviewId"] = $_REQUEST["r"];
     if (isset($_REQUEST["reviewId"]))
 	$sel = array("reviewId" => $_REQUEST["reviewId"]);
     else {
@@ -52,8 +54,11 @@ function loadRows() {
     $rrow = $myRrow = null;
     $nExternalRequests = 0;
     foreach ($rrows as $rr) {
-	if (isset($_REQUEST['reviewId']) && $rr->reviewId == $_REQUEST['reviewId'])
-	    $rrow = $rr;
+	if (isset($_REQUEST['reviewId'])) {
+	    if ($rr->reviewId == $_REQUEST['reviewId']
+		|| ($rr->reviewOrdinal && $rr->paperId . unparseReviewOrdinal($rr->reviewOrdinal) == $_REQUEST["reviewId"]))
+		$rrow = $rr;
+	}
 	if ($rr->contactId == $Me->contactId)
 	    $myRrow = $rr;
 	if ($rr->reviewType == REVIEW_EXTERNAL && $rr->requestedBy == $Me->contactId)
@@ -170,6 +175,7 @@ if (isset($_REQUEST['delete']) && $Me->privChair)
 	    }
 	    
 	    unset($_REQUEST["reviewId"]);
+	    unset($_REQUEST["r"]);
 	    $_REQUEST["paperId"] = $editRrow->paperId;
 	}
 	loadRows();
@@ -339,10 +345,9 @@ else
 if ($mode == "view" && $prow->conflictType == 0
     && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot)
     && $Me->canReview($prow, $myRrow, $Conf)) {
-    $Conf->errorMsg("?");
-    if (isset($whyNot['reviewNotComplete']) || isset($whyNot['externalReviewer'])) {
-	if (isset($_REQUEST["mode"]) || isset($whyNot['forceShow']))
-	    $Conf->infoMsg(whyNotText($whyNot, "review"));
+    if (isset($whyNot['reviewNotComplete']) || isset($whyNot["reviewNotSubmitted"]) || isset($whyNot['externalReviewer'])) {
+	if (isset($_REQUEST["mode"]) || isset($whyNot["forceShow"]) || isset($_REQUEST["reviewId"]))
+	    $Conf->infoMsg(whyNotText($whyNot, "review") . "  Showing all available reviews instead.");
     } else
 	errorMsgExit(whyNotText($whyNot, "review"));
     $mode = "edit";
@@ -440,7 +445,7 @@ function reviewView($prow, $rrow, $editMode) {
 	$linkExtra, $useRequest, $nExternalRequests;
     
     $reviewLink = "review$ConfSiteSuffix?"
-	. ($rrow ? "reviewId=$rrow->reviewId" : "p=$prow->paperId")
+	. ($rrow ? "r=$rrow->reviewId" : "p=$prow->paperId")
 	. $linkExtra . "&amp;mode=edit&amp;post=1";
     if ($editMode)
 	echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data'>\n";
@@ -454,7 +459,7 @@ function reviewView($prow, $rrow, $editMode) {
 	echo " id='review$rrow->reviewId'";
     echo ">";
     if ($rrow) {
-	echo "<a href='review$ConfSiteSuffix?reviewId=$rrow->reviewId$linkExtra' class='q'>Review";
+	echo "<a href='review$ConfSiteSuffix?r=$rrow->reviewId$linkExtra' class='q'>Review";
 	if ($rrow->reviewSubmitted)
 	    echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
 	echo "</a>";
@@ -473,11 +478,11 @@ function reviewView($prow, $rrow, $editMode) {
 	$sep = $xsep;
     }
     if ($rrow) {
-	echo $sep, "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;reviewId=$rrow->reviewId&amp;text=1$linkExtra'>Text version</a>";
+	echo $sep, "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;r=$rrow->reviewId&amp;text=1$linkExtra'>Text version</a>";
 	$sep = $xsep;
     }
     if ($rrow && !$editMode && $Me->canReview($prow, $rrow, $Conf))
-	echo $sep, "<a class='button' href='review$ConfSiteSuffix?reviewId=$rrow->reviewId'>Edit</a>";
+	echo $sep, "<a class='button' href='review$ConfSiteSuffix?r=$rrow->reviewId'>Edit</a>";
     echo "</td>
 </tr>\n";
     

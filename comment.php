@@ -3,8 +3,8 @@
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once('Code/header.inc');
-require_once('Code/papertable.inc');
+require_once("Code/header.inc");
+require_once("Code/papertable.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $rf = reviewForm();
@@ -37,6 +37,8 @@ function errorMsgExit($msg) {
 // collect paper ID
 function loadRows() {
     global $Conf, $Me, $prow, $crows, $crow, $savedCommentId, $savedCrow;
+    if (!isset($_REQUEST["commentId"]) && isset($_REQUEST["c"]))
+	$_REQUEST["commentId"] = $_REQUEST["c"];
     if (isset($_REQUEST["commentId"]))
 	$sel = array("commentId" => $_REQUEST["commentId"]);
     else {
@@ -199,8 +201,9 @@ function saveComment($text) {
 	$Conf->qe("update Paper set numComments=(select count(commentId) from PaperComment where paperId=$prow->paperId), numAuthorComments=(select count(commentId) from PaperComment where paperId=$prow->paperId and forAuthors>0) where paperId=$prow->paperId", $while);
     }
     
-    $_REQUEST["paperId"] = $prow->paperId;
     unset($_REQUEST["commentId"]);
+    unset($_REQUEST["c"]);
+    $_REQUEST["paperId"] = $prow->paperId;
 }
 
 function saveResponse($text) {
@@ -210,7 +213,7 @@ function saveResponse($text) {
     if (!$crow) {
 	$result = $Conf->qe("select commentId from PaperComment where paperId=$prow->paperId and forAuthors>1");
 	if (($row = edb_row($result)))
-	    return $Conf->errorMsg("A paper response has already been entered.  <a href=\"comment$ConfSiteSuffix?commentId=$row[0]$linkExtra\">Edit that response</a>");
+	    return $Conf->errorMsg("A paper response has already been entered.  <a href=\"comment$ConfSiteSuffix?c=$row[0]$linkExtra\">Edit that response</a>");
     }
 
     saveComment($text);
@@ -364,7 +367,7 @@ function commentView($prow, $crow, $editMode) {
     if ($editMode) {
 	echo "<form action='comment$ConfSiteSuffix?";
 	if ($crow)
-	    echo "commentId=$crow->commentId";
+	    echo "c=$crow->commentId";
 	else
 	    echo "p=$prow->paperId";
 	echo "$linkExtra&amp;post=1' method='post' enctype='multipart/form-data'>\n";
@@ -394,7 +397,7 @@ function commentView($prow, $crow, $editMode) {
     }
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
     if ($crow && ($crow->contactId == $Me->contactId || $Me->privChair) && !$editMode)
-	echo $xsep, "<a class='button' href='comment$ConfSiteSuffix?commentId=$crow->commentId$linkExtra'>Edit</a>";
+	echo $xsep, "<a class='button' href='comment$ConfSiteSuffix?c=$crow->commentId$linkExtra'>Edit</a>";
     echo "</td>\n</tr>\n\n";
 
     if ($editMode && $crow && $crow->contactId != $Me->contactId) {
@@ -484,7 +487,7 @@ function responseView($prow, $crow, $editMode) {
     if ($editMode) {
 	echo "<form action='comment$ConfSiteSuffix?";
 	if ($crow)
-	    echo "commentId=$crow->commentId";
+	    echo "c=$crow->commentId";
 	else
 	    echo "p=$prow->paperId";
 	echo "$linkExtra&amp;response=1&amp;post=1' method='post' enctype='multipart/form-data'>\n";
@@ -501,7 +504,7 @@ function responseView($prow, $crow, $editMode) {
     commentIdentityTime($prow, $crow, $sep);
     if ($crow && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair)
 	&& !$editMode && $Me->canRespond($prow, $crow, $Conf))
-	echo $sep, "<a class='button' href='comment$ConfSiteSuffix?commentId=$crow->commentId$linkExtra'>Edit</a>";
+	echo $sep, "<a class='button' href='comment$ConfSiteSuffix?c=$crow->commentId$linkExtra'>Edit</a>";
     echo "</td>\n</tr>\n\n";
 
     if ($editMode) {
@@ -555,7 +558,7 @@ has passed.  Please keep the response short and to the point" . $limittext . "."
     } else {
 	echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>";
 	if ($Me->privChair && $crow->forReviewers < 1)
-	    echo "<i>The <a href='comment$ConfSiteSuffix?commentId=$crow->commentId$linkExtra'>authors' response</a> is not yet ready for reviewers to view.</i>";
+	    echo "<i>The <a href='comment$ConfSiteSuffix?c=$crow->commentId$linkExtra'>authors' response</a> is not yet ready for reviewers to view.</i>";
 	else if (!$Me->canViewComment($prow, $crow, $Conf))
 	    echo "<i>The authors' response is not yet ready for reviewers to view.</i>";
 	else

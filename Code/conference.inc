@@ -1,6 +1,6 @@
 <?php 
 // conference.inc -- HotCRP central helper class (singleton)
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 class Conference {
@@ -24,10 +24,6 @@ class Conference {
 
     var $scriptStuff;
     var $footerStuff;
-
-    // Useful colors
-    var $contrastColorOne = "#eeeeee";
-    var $contrastColorTwo = "#cccccc";
 
     function Conference() {
 	global $Opt;
@@ -555,10 +551,9 @@ class Conference {
 	$mimetype = $row[0];
 	$content = $row[1];
 	$compression = $row[3];
-	$length = strlen($content);
 	if ($row[2] <= 1)
 	    return new PEAR_Error("Paper #$paperId has not been uploaded yet.");
-	else if ($length == 0)
+	else if (strlen($content) == 0)
 	    return new PEAR_Error("Paper #$paperId appears to be empty.");
 
 	// Print paper
@@ -566,11 +561,10 @@ class Conference {
 	header("Content-Description: PHP Generated Data");
 	$name = $this->downloadPaperName($paperId, $mimetype, $final);
 	header("Content-Disposition: " . ($saveit ? "attachment" : "inline") . "; filename=$name");
-	header("Content-Length: $length"); 
 	if ($compression == 1)
-	    print gzinflate($content);
-	else
-	    print $content;
+	    $content = gzinflate($content);
+	header("Content-Length: " . strlen($content)); 
+	print $content;
 	return 1;
     }
 
@@ -732,7 +726,8 @@ class Conference {
 	    $pq .= ",
 		ReviewerContactInfo.firstName as reviewFirstName,
 		ReviewerContactInfo.lastName as reviewLastName,
-		ReviewerContactInfo.email as reviewEmail";
+		ReviewerContactInfo.email as reviewEmail,
+		ReviewerContactInfo.lastLogin as reviewLastLogin";
 	if ($reviewerQuery || $scoresQuery) {
 	    require_once('review.inc');
 	    $rf = reviewForm();
@@ -855,8 +850,15 @@ class Conference {
 	// conditions
 	if (isset($options['paperId']))
 	    $where[] = $this->_paperQuery_where($options['paperId'], "Paper.paperId");
-	if (isset($options['reviewId']))
-	    $where[] = $this->_paperQuery_where($options['reviewId'], "ReviewSelector.reviewId");
+	if (isset($options["reviewId"])) {
+	    if (is_numeric($options["reviewId"]))
+		$where[] = $this->_paperQuery_where($options["reviewId"], "ReviewSelector.reviewId");
+	    else if (preg_match('/^(\d+)([A-Z][A-Z]?)$/i', $options["reviewId"], $m)) {
+		$where[] = $this->_paperQuery_where($m[1], "Paper.paperId");
+		$where[] = $this->_paperQuery_where(parseReviewOrdinal($m[2]), "ReviewSelector.reviewOrdinal");
+	    } else
+		$where[] = $this->_paperQuery_where(-1, "Paper.paperId");
+	}
 	if (isset($options['commentId']))
 	    $where[] = $this->_paperQuery_where($options['commentId'], "CommentSelector.commentId");
 	if (isset($options['finalized']))
@@ -901,7 +903,8 @@ class Conference {
 	
 	if (isset($sel['paperId']) && cvtint($sel['paperId']) < 0)
 	    $whyNot['invalidId'] = 'paper';
-	else if (isset($sel['reviewId']) && cvtint($sel['reviewId']) < 0)
+	else if (isset($sel['reviewId']) && cvtint($sel['reviewId']) < 0
+		 && !preg_match('/^\d+[A-Z][A-Z]?$/i', $sel['reviewId']))
 	    $whyNot['invalidId'] = 'review';
 	else {
 	    $q = $this->paperQuery($contactId, $sel);

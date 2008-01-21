@@ -1,6 +1,6 @@
 <?php
 // search.inc -- HotCRP helper class for searching for papers
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 global $searchTags;
@@ -94,10 +94,9 @@ class PaperSearch {
 	    $this->limitName = "s";
 	else if ($me->isPC && ($ptype == "und" || $ptype == "undec"))
 	    $this->limitName = "und";
-	else if ($me->isPC && $ptype == "acc")
-	    $this->limitName = "acc";
-	else if ($me->isPC && $ptype == "revs")
-	    $this->limitName = "revs";
+	else if ($me->isPC && ($ptype == "acc" || $ptype == "revs"
+			       || $ptype == "reqrevs"))
+	    $this->limitName = $ptype;
 	else if ($this->privChair && $ptype == "all")
 	    $this->limitName = "all";
 	else if ($this->privChair && $ptype == "unsub")
@@ -596,7 +595,7 @@ class PaperSearch {
 	    $queryOptions["myOutstandingReviews"] = 1;
 	} else if ($this->limitName == "a")
 	    $queryOptions["author"] = 1;
-	else if ($this->limitName == "req")
+	else if ($this->limitName == "req" || $this->limitName == "reqrevs")
 	    $queryOptions["myReviewRequests"] = 1;
 	else if ($this->limitName == "all" && !$this->privChair)
 	    $queryOptions["active"] = 1;

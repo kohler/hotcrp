@@ -1,6 +1,6 @@
 <?php
 // paperlist.inc -- HotCRP helper class for producing paper lists
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("baselist.inc");
@@ -12,17 +12,17 @@ class PaperList extends BaseList {
     const FIELD_SELECTOR_CONFLICT = 102;
     
     const FIELD_ID = 1;
-    const FIELD_REVIEWID = 2;
     const FIELD_PIDARRAY = 9;
     
     const FIELD_TITLE = 11;
-    const FIELD_REVIEWTITLE = 12;
     
     const FIELD_STATUS = 20;
     const FIELD_STATUS_SHORT = 21;
     const FIELD_REVIEWER = 25;
     const FIELD_REVIEWER_TYPE = 26;
     const FIELD_REVIEWER_TYPE_ICON = 27;
+    const FIELD_REVIEWER_STATUS = 28;
+    const FIELD_REVIEWER_MONITOR = 29;
     const FIELD_ASSIGN_REVIEW = 35;
     const FIELD_TOPIC_INTEREST = 36;
     const FIELD_TOPIC_NAMES = 37;
@@ -141,6 +141,7 @@ class PaperList extends BaseList {
 	    $this->unfolded = false;
 	    break;
 	case self::FIELD_REVIEWER:
+	case self::FIELD_REVIEWER_MONITOR:
 	    $queryOptions['allReviewScores'] = 1;
 	    $queryOptions['reviewerName'] = 1;
 	    break;
@@ -227,7 +228,6 @@ class PaperList extends BaseList {
 	global $Conf, $reviewScoreNames;
 	switch (self::_normalizeField($this->sortField)) {
 	case self::FIELD_ID:
-	case self::FIELD_REVIEWID:
 	    ksort($rows);
 	    break;
 	case self::FIELD_PIDARRAY:
@@ -235,7 +235,6 @@ class PaperList extends BaseList {
 	    usort($rows, array($this, "_sortPidarray"));
 	    break;
 	case self::FIELD_TITLE:
-	case self::FIELD_REVIEWTITLE:
 	    usort($rows, array("PaperList", "_sortTitle"));
 	    break;
 	case self::FIELD_STATUS:
@@ -243,6 +242,7 @@ class PaperList extends BaseList {
 	    usort($rows, array("PaperList", "_sortStatus"));
 	    break;
 	case self::FIELD_REVIEWER:
+	case self::FIELD_REVIEWER_MONITOR:
 	    usort($rows, array("PaperList", "_sortReviewer"));
 	    break;
 	case self::FIELD_REVIEWER_TYPE:
@@ -309,19 +309,20 @@ class PaperList extends BaseList {
 	global $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
-	case self::FIELD_REVIEWID:
 	    return "ID";
 	case self::FIELD_TITLE:
-	case self::FIELD_REVIEWTITLE:
 	    return "Title";
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    return "Status";
 	case self::FIELD_REVIEWER:
+	case self::FIELD_REVIEWER_MONITOR:
 	    return "Reviewer";
 	case self::FIELD_REVIEWER_TYPE:
 	case self::FIELD_REVIEWER_TYPE_ICON:
 	    return "<acronym title='Reviewer type'>Type</acronym>";
+	case self::FIELD_REVIEWER_STATUS:
+	    return "Review status";
 	case self::FIELD_REVIEWS_STATUS:
 	    return "<acronym title='\"1/2\" means 1 complete review out of 2 assigned reviews'>#&nbsp;Reviews</acronym>";
 	case self::FIELD_SELECTOR:
@@ -411,14 +412,18 @@ class PaperList extends BaseList {
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
 	    $pl = $this->_paperLink($row);
-	    return "<a href='${ConfSiteBase}$pl$ConfSiteSuffix?p=$row->paperId" . $this->paperLinkArgs . "' tabindex='4'>#$row->paperId</a>";
-	case self::FIELD_REVIEWID:
-	    return "<a href='${ConfSiteBase}review$ConfSiteSuffix?reviewId=$row->reviewId" . $this->paperLinkArgs . "' tabindex='4'>#$row->paperId" . unparseReviewOrdinal($row->reviewOrdinal) . "</a>";
+	    if ($pl == "review" && isset($row->reviewId) && isset($row->reviewFirstName))
+		$l = "r=" . unparseReviewOrdinal($row);
+	    else
+		$l = "p=" . $row->paperId;
+	    return "<a href='${ConfSiteBase}$pl$ConfSiteSuffix?$l" . $this->paperLinkArgs . "' tabindex='4'>#$row->paperId</a>";
 	case self::FIELD_TITLE:
 	    $pl = $this->_paperLink($row);
-	    return "<a href='${ConfSiteBase}$pl$ConfSiteSuffix?p=$row->paperId" . $this->paperLinkArgs . "' tabindex='5'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
-	case self::FIELD_REVIEWTITLE:
-	    return "<a href='${ConfSiteBase}review$ConfSiteSuffix?reviewId=$row->reviewId" . $this->paperLinkArgs . "' tabindex='5'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
+	    if ($pl == "review" && isset($row->reviewId) && isset($row->reviewFirstName))
+		$l = "r=" . unparseReviewOrdinal($row);
+	    else
+		$l = "p=" . $row->paperId;
+	    return "<a href='${ConfSiteBase}$pl$ConfSiteSuffix?$l" . $this->paperLinkArgs . "' tabindex='5'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
@@ -426,11 +431,14 @@ class PaperList extends BaseList {
 	    return $this->contact->paperStatus($row->paperId, $row, $fieldId == self::FIELD_STATUS ? 0 : -1);
 	case self::FIELD_REVIEWER:
 	    return contactHtml($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail);
+	case self::FIELD_REVIEWER_MONITOR:
+	    $t = contactHtml($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail) . "<br /><small>Last login: ";
+	    return $t . ($row->reviewLastLogin ? $Conf->printableTimeShort($row->reviewLastLogin) : "Never") . "</small>";
 	case self::FIELD_REVIEWER_TYPE:
 	    if ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted))
 		$this->needSubmitReview++;
 	    if ($row->reviewId) {
-		$a1 = "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?reviewId=$row->reviewId" . $this->paperLinkArgs . "\">";
+		$a1 = "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs . "\">";
 		$a2 = "</a>&nbsp;";
 		if ($row->reviewSubmitted)
 		    $a2 .= "<span class='rstat'>(Complete)</span>";
@@ -456,13 +464,28 @@ class PaperList extends BaseList {
 		return "<span class='rtype rtype_con'>Conflict</span>";
 	    else
 		return "";
+	case self::FIELD_REVIEWER_STATUS:
+	    if ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted))
+		$this->needSubmitReview++;
+	    if (!$row->reviewId)
+		return "";
+	    else {
+		if ($row->reviewSubmitted)
+		    return "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs . "\">Complete</a>";
+		else if ($row->reviewType == REVIEW_SECONDARY && $row->reviewNeedsSubmit == 0)
+		    return "Delegated";
+		else if ($row->reviewModified == 0)
+		    return "<strong class='overdue'>Not&nbsp;started</strong>";
+		else
+		    return "<strong class='overdue'>In&nbsp;progress</strong>";
+	    }
 	case self::FIELD_REVIEWER_TYPE_ICON:
 	    $needSubmit = ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted));
 	    if ($needSubmit)
 		$this->needSubmitReview++;
 	    $a1 = $a2 = "";
 	    if ($row->reviewId) {
-		$a1 = "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?reviewId=$row->reviewId" . $this->paperLinkArgs . "\">";
+		$a1 = "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs . "\">";
 		$a2 = "</a>";
 	    }
 	    if ($row->conflictType > 0 && $this->showConflict) {
@@ -707,6 +730,7 @@ class PaperList extends BaseList {
 	  case "rout":
 	    return "My incomplete reviews";
 	  case "req":
+	  case "reqrevs":
 	    return "My review requests";
 	  case "reviewAssignment":
 	    return "Review assignments";
@@ -763,7 +787,10 @@ class PaperList extends BaseList {
 	    return array(101, 1, 11, 21, 38);
 	  case "revs":
 	    $this->paperLink = "review";
-	    return array(2, 12, 25, 27);
+	    return array(1, 11, 25, 27);
+	  case "reqrevs":
+	    $this->paperLink = "review";
+	    return array(1, 11, self::FIELD_REVIEWER_MONITOR, self::FIELD_REVIEWER_STATUS, 41, 21, 70, 72, 71);
 	  default:
 	    return null;
 	}
@@ -1040,18 +1067,18 @@ class PaperList extends BaseList {
 
 
 global $paperListFields;
-$paperListFields = array(
+$paperListFields = array( // array(CSS_FIELD_NAME, COLUMN_TYPE, SORTABLE)
 	PaperList::FIELD_SELECTOR => array('selector', 1, 0),
 	PaperList::FIELD_SELECTOR_ON => array('selector', 1, 0),
 	PaperList::FIELD_SELECTOR_CONFLICT => array('selector', 1, 0),
 	PaperList::FIELD_ID => array('id', 1, 1),
-	PaperList::FIELD_REVIEWID => array('id', 1, 1),
 	PaperList::FIELD_TITLE => array('title', 1, 1),
-	PaperList::FIELD_REVIEWTITLE => array('title', 1, 1),
 	PaperList::FIELD_STATUS => array('status', 1, 1),
 	PaperList::FIELD_REVIEWER => array('reviewer', 1, 1),
 	PaperList::FIELD_REVIEWER_TYPE => array('reviewer', 1, 1),
 	PaperList::FIELD_REVIEWER_TYPE_ICON => array('reviewerTypeIcon', 1, 1),
+	PaperList::FIELD_REVIEWER_STATUS => array('reviewer', 1, 0),
+	PaperList::FIELD_REVIEWER_MONITOR => array('reviewer', 1, 1),
 	PaperList::FIELD_STATUS_SHORT => array('status', 1, 1),
 	PaperList::FIELD_ASSIGN_REVIEW => array('reviewAssignment', 1, 1),
 	PaperList::FIELD_TOPIC_INTEREST => array('topicMatch', 1, 1),

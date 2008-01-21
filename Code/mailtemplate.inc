@@ -1,6 +1,6 @@
 <?php
 // mailtemplate.inc -- HotCRP mail templates
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 global $mailTemplates;
@@ -319,6 +319,26 @@ Thank you for your help -- we appreciate that reviewing is hard work.
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
+- %CONFSHORTNAME% Submissions\n"),
+
+     "myreviewremind" =>
+     array("[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
+	   "Dear %NAME%,
+
+This is a reminder from %OTHERCONTACT% to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please \"refuse\" the review using the site or contact %OTHERNAME% directly.
+
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+  Paper site: %URL%/review%PHP%?p=%NUMBER%
+
+To sign in to the submissions site, either click the link below or paste it into your web browser's location field.
+
+%LOGINURL%
+
+Thank you for your help -- we appreciate that reviewing is hard work.
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
 - %CONFSHORTNAME% Submissions\n")
 
 );
@@ -332,6 +352,7 @@ class Mailer {
     var $ifstack;
     var $text;
     var $textstart;
+    var $hideSensitive;
     var $reason;
     var $rrow;
     var $reviewNumber;
@@ -346,6 +367,7 @@ class Mailer {
 	$this->ifstack = array();
 	$this->text = "";
 	$this->textstart = 0;
+	$this->hideSensitive = defval($rest, "hideSensitive", false);
 	$this->reason = defval($rest, "reason", "");
 	$this->rrow = defval($rest, "rrow", null);
 	$this->reviewNumber = defval($rest, "reviewNumber", "");
@@ -372,6 +394,9 @@ class Mailer {
 	    $this->text = $pop;
 	    if ($this->textstart > strlen($this->text))
 		$this->textstart = strlen($this->text);
+	    while (($c = count($this->privateParts)) > 0
+		   && $this->privateParts[$c - 1][0] >= strlen($this->text))
+		array_pop($this->privateParts);
 	    return false;
 	}
     }
@@ -464,16 +489,23 @@ class Mailer {
 	if ($what == "%NUMACCEPTED%")
 	    return $this->statistics[1];
 	
+	if ($what == "%OTHERCONTACT%" && $this->otherContact)
+	    return contactText($this->otherContact);
+	if ($what == "%OTHERNAME%" && $this->otherContact)
+	    return contactNameText($this->otherContact);
+	if ($what == "%OTHEREMAIL%" && $this->otherContact)
+	    return $this->otherContact->email;
+
 	// if no contact, this is a pre-expansion
 	if (!$this->contact)
 	    return ($isbool ? null : $what);
 
 	if ($what == "%LOGINURL%")
-	    return $Conf->paperSite . "/?email=" . urlencode($this->contact->email) . "&password=" . urlencode($this->contact->password);
+	    return $Conf->paperSite . "/?email=" . urlencode($this->contact->email) . "&password=" . urlencode($this->hideSensitive ? "HIDDEN" : $this->contact->password);
 	if ($what == "%EMAIL%")
 	    return $this->contact->email;
 	if ($what == "%PASSWORD%")
-	    return $this->contact->password;
+	    return ($this->hideSensitive ? "HIDDEN" : $this->contact->password);
 	if ($what == "%CONTACT%")
 	    return contactText($this->contact);
 	if ($what == "%NAME%")
@@ -482,13 +514,6 @@ class Mailer {
 	    return $this->contact->firstName;
 	if ($what == "%LAST%")
 	    return $this->contact->lastName;
-
-	if ($what == "%OTHERCONTACT%" && $this->otherContact)
-	    return contactText($this->otherContact);
-	if ($what == "%OTHERNAME%" && $this->otherContact)
-	    return contactNameText($this->otherContact);
-	if ($what == "%OTHEREMAIL%" && $this->otherContact)
-	    return $this->otherContact->email;
 
 	if ($what == "%REASON%")
 	    return $this->reason;

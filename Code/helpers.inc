@@ -126,12 +126,18 @@ function fileUploaded(&$var, $conf) {
 }
 
 function selfHref($extra = array(), $self = null) {
-    global $CurrentList;
+    global $CurrentList, $ConfSiteSuffix;
     $x = ($self ? $self : $_SERVER["PHP_SELF"]);
+    if ($ConfSiteSuffix == "" && strlen($x) > 4 && substr($x, strlen($x) - 4, 4) == ".php")
+	$x = substr($x, 0, strlen($x) - 4);
     $sep = "?";
     if (isset($_REQUEST["paperId"]) && !isset($_REQUEST["p"]))
 	$_REQUEST["p"] = $_REQUEST["paperId"];
-    foreach (array("p", "reviewId", "commentId", "mode", "forceShow", "validator", "list", "t", "q", "qa", "qx", "qt", "group", "sort") as $what)
+    if (isset($_REQUEST["reviewId"]) && !isset($_REQUEST["r"]))
+	$_REQUEST["r"] = $_REQUEST["reviewId"];
+    if (isset($_REQUEST["commentId"]) && !isset($_REQUEST["c"]))
+	$_REQUEST["c"] = $_REQUEST["commentId"];
+    foreach (array("p", "r", "c", "mode", "forceShow", "validator", "list", "t", "q", "qa", "qx", "qt", "group", "sort", "monreq") as $what)
 	if (isset($_REQUEST[$what]) && !isset($extra[$what])) {
 	    $x .= "$sep$what=" . urlencode($_REQUEST[$what]);
 	    $sep = "&";
@@ -685,6 +691,8 @@ function whyNotText($whyNot, $action) {
 	$text .= ucfirst($thisPaper) . " has already been submitted and can no longer be updated.  ";
     if (isset($whyNot['notUploaded']))
 	$text .= ucfirst($thisPaper) . " can't be submitted because you haven't yet uploaded the paper itself.  Upload the paper and try again.  ";
+    if (isset($whyNot['reviewNotSubmitted']))
+	$text .= "This review is not yet ready for others to see.  "; 
     if (isset($whyNot['reviewNotComplete']))
 	$text .= "Your own review for $thisPaper is not complete, so you can't view other people's reviews.  ";
     if (isset($whyNot['responseNotReady']))
@@ -861,6 +869,7 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 }
 
 function parseReviewOrdinal($n) {
+    $n = strtoupper($n);
     if (preg_match('/^[A-Z]$/', $n))
 	return ord($n) - 64;
     else if (preg_match('/^([A-Z])([A-Z])$/', $n, $m))
@@ -872,7 +881,12 @@ function parseReviewOrdinal($n) {
 function unparseReviewOrdinal($ord) {
     if ($ord === null)
 	return "x";
-    else if ($ord <= 26)
+    else if (is_object($ord)) {
+	if ($ord->reviewOrdinal)
+	    return $ord->paperId . unparseReviewOrdinal($ord->reviewOrdinal);
+	else
+	    return $ord->reviewId;
+    } else if ($ord <= 26)
 	return chr($ord + 64);
     else
 	return chr(intval(($ord - 1) / 26) + 65) . chr(($ord % 26) + 64);

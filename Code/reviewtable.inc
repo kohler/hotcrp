@@ -1,6 +1,6 @@
 <?php
 // reviewtable.inc -- HotCRP helper class for table of all reviews
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 // reviewer information
@@ -48,12 +48,13 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	    $id .= "&nbsp;(in&nbsp;progress)";
 	else
 	    $id .= "&nbsp;(not&nbsp;started)";
+	$rlink = unparseReviewOrdinal($rr);
 	if ($rrow && $rrow->reviewId == $rr->reviewId)
-	    $t .= "<td><a href='${ConfSiteBase}review$ConfSiteSuffix?reviewId=$rr->reviewId$linkExtra' class='q'><b>$id</b></a></td>";
+	    $t .= "<td><a href='${ConfSiteBase}review$ConfSiteSuffix?r=$rlink' class='q'><b>$id</b></a></td>";
 	else if (!$canView)
 	    $t .= "<td>$id</td>";
 	else
-	    $t .= "<td><a href='${ConfSiteBase}review$ConfSiteSuffix?reviewId=$rr->reviewId$linkExtra'>$id</a></td>";
+	    $t .= "<td><a href='${ConfSiteBase}review$ConfSiteSuffix?r=$rlink'>$id</a></td>";
 
 	// primary/secondary glyph
 	if ($prow->conflictType > 0 && !$effAssistant)
