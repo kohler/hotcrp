@@ -809,7 +809,7 @@ $blind\n";
     }
 
     function webFieldAbbrev($field) {
-	return "<acronym title=\"" . htmlspecialchars($this->shortName[$field]) . "\">" . htmlspecialchars($this->abbrevName[$field]) . "</acronym>";
+	return "<span class='hastitle' title=\"" . htmlspecialchars($this->shortName[$field]) . "\">" . htmlspecialchars($this->abbrevName[$field]) . "</span>";
     }
     
     function webNumericScoresHeader($prow, $contact, $conf) {

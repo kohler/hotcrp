@@ -320,11 +320,11 @@ class PaperList extends BaseList {
 	    return "Reviewer";
 	case self::FIELD_REVIEWER_TYPE:
 	case self::FIELD_REVIEWER_TYPE_ICON:
-	    return "<acronym title='Reviewer type'>Type</acronym>";
+	    return "<span class='hastitle' title='Reviewer type'>Type</span>";
 	case self::FIELD_REVIEWER_STATUS:
 	    return "Review status";
 	case self::FIELD_REVIEWS_STATUS:
-	    return "<acronym title='\"1/2\" means 1 complete review out of 2 assigned reviews'>#&nbsp;Reviews</acronym>";
+	    return "<span class='hastitle' title='\"1/2\" means 1 complete review out of 2 assigned reviews'>#&nbsp;Reviews</span>";
 	case self::FIELD_SELECTOR:
 	case self::FIELD_SELECTOR_ON:
 	    return ($ordinal ? "&nbsp;" : "");

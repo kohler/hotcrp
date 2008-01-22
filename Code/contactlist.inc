@@ -189,7 +189,7 @@ class ContactList extends BaseList {
 	case self::FIELD_LOWTOPICS:
 	    return "Low-interest topics";
 	case self::FIELD_REVIEWS:
-	    return "<acronym title='\"1/2\" means 1 complete review out of 2 assigned reviews'>Reviews</acronym>";
+	    return "<span class='hastitle' title='\"1/2\" means 1 complete review out of 2 assigned reviews'>Reviews</span>";
 	case self::FIELD_SELECTOR:
 	    return "";
 	case self::FIELD_PAPERS:

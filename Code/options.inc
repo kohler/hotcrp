@@ -22,7 +22,7 @@
 //                   end in a dash.
 
 $Opt['dbName'] = "HotNetsV";
-$Opt['dbPassword'] = "ca84wRAS1.";
+$Opt['dbPassword'] = "AMzi81.aSnzx81";
 $Opt['shortName'] = "HotNets V";
 $Opt['longName'] = "HotNets V";
 $Opt['downloadPrefix'] = "hotnets5-";
