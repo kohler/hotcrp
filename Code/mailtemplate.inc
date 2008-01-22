@@ -639,6 +639,8 @@ class Mailer {
 	}
 	
 	$lines = explode("\n", $text);
+	if (strlen($text) && $text[strlen($text) - 1] == "\n")
+	    array_pop($lines);
 	$this->text = "";
 	for ($i = 0; $i < count($lines); $i++) {
 	    $line = rtrim($lines[$i]);
@@ -670,11 +672,35 @@ class Mailer {
 	return $this->text;
     }
 
+    function expandTemplate($templateName, $expand = false, $default = false) {
+	global $Conf, $mailTemplates;
+	$m = $mailTemplates[$templateName];
+	if (!$default && ($t = $Conf->settingText("mailsubj_" . $templateName)) !== false)
+	    $m[0] = $t;
+	if (!$default && ($t = $Conf->settingText("mailbody_" . $templateName)) !== false)
+	    $m[1] = $t;
+	if ($expand) {
+	    $m[0] = $this->expand($m[0]);
+	    $m[1] = $this->expand($m[1]);
+	}
+	return $m;
+    }
+
+    function cleanBody($body) {
+	if (strpos($body, "\r") !== false) {
+	    $body = str_replace("\r\n", "\n", $body);
+	    $body = str_replace("\r", "\n", $body);
+	}
+	if (strlen($body) && $body[strlen($body) - 1] != "\n")
+	    $body .= "\n";
+	return $body;
+    }
+
     function prepareToSend($template, $row, $contact, $otherContact = null, $rest = array()) {
 	global $Conf, $mailTemplates;
 
 	if (is_string($template) && $template[0] == "@")
-	    $template = $mailTemplates[substr($template, 1)];
+	    $template = self::expandTemplate(substr($template, 1));
 
 	if (!isset($rest["emailTo"]) || !$rest["emailTo"])
 	    $emailTo = $contact;

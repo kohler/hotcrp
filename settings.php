@@ -31,7 +31,6 @@ $SettingGroups = array("acc" => array(
 			     "banal" => "special",
 			     "sub_freeze" => 1,
 			     "pc_seeall" => "check",
-			     "homemsg" => "string",
 			     "next" => "opt"),
 		       "opt" => array(
 			     "topics" => "special",
@@ -52,6 +51,7 @@ $SettingGroups = array("acc" => array(
 			     "extrev_soft" => "date",
 			     "extrev_hard" => "date",
 			     "extrev_view" => 2,
+			     "mailbody_requestreview" => "string",
 			     "next" => "rfo"),
 		       "rfo" => array(
 			     "reviewform" => "special",
@@ -108,7 +108,8 @@ $SettingText = array(
 	"final_open" => "Collect final copies setting",
 	"final_done" => "Final copy upload deadline",
 	"homemsg" => "Home page message",
-	"conflictdefmsg" => "Definition of conflict of interest"
+	"conflictdefmsg" => "Definition of conflict of interest",
+	"mailbody_requestreview" => "Mail template for external review requests"
 	);
 
 function parseGrace($v) {
@@ -152,6 +153,16 @@ function unparseGrace(&$v) {
     return sprintf("%d:%02d", intval($v / 60), $v % 60);
 }
 
+function expandMailTemplate($name, $default) {
+    global $nullMailer;
+    if (!isset($nullMailer)) {
+	require_once("Code/mailtemplate.inc");
+	$nullMailer = new Mailer(null, null);
+	$nullMailer->width = 10000000;
+    }
+    return $nullMailer->expandTemplate($name, true, $default);
+}
+
 function parseValue($name, $type) {
     global $SettingText, $Error, $SettingError;
 
@@ -175,9 +186,16 @@ function parseValue($name, $type) {
 	    return intval($v);
 	else
 	    $err = $SettingText[$name] . ": parse error.";
-    } else if ($type == "string")
+    } else if ($type == "string") {
+	// Avoid storing the default message in the database
+	if (substr($name, 0, 9) == "mailbody_") {
+	    $t = expandMailTemplate(substr($name, 9), true);
+	    $v = Mailer::cleanBody($v);
+	    if ($t[1] == $v)
+		return 0;
+	}
 	return ($v == "" ? 0 : array(0, $v));
-    else if ($type == "htmlstring") {
+    } else if ($type == "htmlstring") {
 	if ($v && preg_match("/(<!DOCTYPE|<\s*head\s*>|<\s*body\s*>)/i", $v, $m))
 	    $err = $SettingText[$name] . ": Your HTML code appears to contain a <code>" . htmlspecialchars($m[1]) . "</code> definition.  Please remove it; this setting only accepts HTML content tags, such as <tt>&lt;p&gt;</tt>, <tt>&lt;strong&gt;</tt>, and <tt>&lt;h1&gt;</tt>.";
 	else
@@ -685,7 +703,7 @@ function doAccGroup() {
 
 // Messages
 function doMsgGroup() {
-    global $Conf, $ConfSiteBase;
+    global $Conf, $ConfSiteBase, $ConfSiteSuffix;
     echo "<strong>", decorateSettingName("homemsg", "Home page message"), "</strong> (HTML allowed)<br />
 <textarea class='textlite' name='homemsg' cols='60' rows='10' onchange='highlightUpdate()'>", htmlspecialchars(settingText("homemsg", "")), "</textarea>";
     echo "<div class='smgap'></div>\n";
@@ -790,7 +808,7 @@ function doOptGroup() {
 
 // Reviews
 function doRevGroup() {
-    global $Conf, $Error;
+    global $Conf, $Error, $ConfSiteBase, $ConfSiteSuffix;
 
     doCheckbox('rev_open', '<b>Open site for reviewing</b>');
     doCheckbox('cmt_always', 'Allow comments even if reviewing is closed');
@@ -839,6 +857,12 @@ function doRevGroup() {
     echo "<div class='smgap'></div>";
     echo "Can external reviewers view the other reviews for their assigned papers, once they've submitted their own?<br />\n";
     doRadio("extrev_view", array(0 => "No", 2 => "Yes", 1 => "Yes, but they can't see who wrote blind reviews"));
+
+    echo "<div class='smgap'></div>\n";
+    $t = expandMailTemplate("requestreview", false);
+    echo "<div id='foldmailbody_requestreview' class='foldc'><button type='button' onclick='void fold(\"mailbody_requestreview\", 0)' class='unfolder'>Edit mail template for external review requests</button>
+<span class='extension'><strong>Mail template for external review requests</strong> (<a href='${ConfSiteBase}mail$ConfSiteSuffix'>keywords</a> allowed)<br /></span>
+<textarea class='tt extension' name='mailbody_requestreview' cols='80' rows='20' onchange='highlightUpdate()'>", htmlspecialchars($t[1]), "</textarea></div>\n";
 
     echo "<hr />";
 
