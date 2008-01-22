@@ -1,3 +1,204 @@
+2008-01-22 Tuesday 10:56  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* style.css (1.218), Code/contactlist.inc (1.29), Code/options.inc
+	  (1.21), Code/paperlist.inc (1.155), Code/review.inc (1.90):
+	  prefer <span class="hastitle"> to <acronym>, which is apparently
+	  deprecated
+
+2008-01-21 Monday 16:35  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/schema.sql (1.104): add reviewOrdinal to
+	  PaperReview::paperId key
+
+2008-01-21 Monday 12:32  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/mailtemplate.inc (1.36): Slightly more verbose default
+	  review request (Matt Frank)
+
+2008-01-21 Monday 12:18  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* comment.php (1.55), index.php (1.160), log.php (1.8), mail.php
+	  (1.25), review.php (1.123), settings.php (1.69), tarball.sh
+	  (1.71), Code/conference.inc (1.237), Code/contact.inc (1.148),
+	  Code/contactlist.inc (1.28), Code/helpers.inc (1.193),
+	  Code/mailtemplate.inc (1.35), Code/paperlist.inc (1.154),
+	  Code/reviewtable.inc (1.44), Code/search.inc (1.74): Adapt the
+	  mail tool to take over the function of reminding external
+	  reviewers to finish their reviews.
+
+	  Add "My review requests" mail selector.  Allow PC members limited
+	  access to the mail tool.  Hide sensitive information in mails
+	  from the mails shown to PC members.
+
+	  Simultaneously, some other useful updates.  Use "r=" and "c=" in
+	  review.php and comment.php links for reviewId and commentId,
+	  respectively.  Allow "r=9A" links, to link to a completed review.
+	   Fix bug where viewing someone else's incomplete review told you
+	  your own review was incomplete.  Fix bug where compressed data
+	  would be reported with the wrong Content-Length, causing many
+	  browsers to block or complain.  (This bug would not affect anyone
+	  because HotCRP doesnt yet store compressed data in the database.)
+	  Fix bug where $myRrow wasnt set in review.php.  (Probably little
+	  effect.)
+
+2008-01-21 Monday 11:54  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.68), assign.php (1.84), autoassign.php (1.27),
+	  contactauthors.php (1.41), contacts.php (1.21), deadlines.php
+	  (1.32), doc.php (1.2), help.php (1.62), login.php (1.42),
+	  logout.php (1.11), offline.php (1.31), paper.php (1.157),
+	  reviewprefs.php (1.2), scorehelp.php (1.2), search.php (1.129),
+	  sessionvar.php (1.12), settings.php (1.68): update copyright
+	  dates, nits
+
+2008-01-21 Monday 00:17  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* cacheable.php (1.10): Fix cacheable.php slowness: do not report a
+	  bogus Content-Length; Content-Length is the TRANSFER length, so
+	  compressing the file reduces that length.  Problem reported by
+	  Elliott Karpilovsky.
+
+2008-01-18 Friday 12:58  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* README (1.27), Code/createdb.sh (1.19): add more options and
+	  decision points to Code/createdb.sh (Elliott Karpilovsky)
+
+2008-01-18 Friday 12:49  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* cacheable.php (1.9): Attempt to speed up ob_gzhandler() by adding
+	  ob_end_flush().  On a couple machines, it seems that
+	  ob_gzhandler() slows things down a lot.
+
+2008-01-17 Thursday 13:06  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* comment.php (1.54): The default setting for whether a comment is
+	  visible to reviewers depends on whether reviews are visible to
+	  external reviewers (Matthew Frank suggestion)
+
+2008-01-17 Thursday 13:05  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/mailtemplate.inc (1.34): Don't indent the login URL; that
+	  just makes mail clients wrap the whole thing to the next line
+
+2008-01-16 Wednesday 09:43  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Chair/SetReviewForm.php (1.41), Chair/sampleforms.inc (1.4),
+	  Code/header.inc (1.51), Code/review.inc (1.89), Code/schema.sql
+	  (1.103), Code/updateschema.sql (1.2): add two more text fields to
+	  review forms (Matthew Frank request)
+
+2008-01-14 Monday 09:29  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.67), index.php (1.159): improve some messages: on
+	  comment notification, do not imply you get notification of ALL
+	  comments (just the ones that are available); on homepage
+	  submissions not open, don't hint you should come back later,
+	  since sometimes submissions are just plain closed
+
+2008-01-10 Thursday 16:35  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/conference.inc (1.236): patch from Joseph Tucek: reduce
+	  memory usage using readfile()
+
+2008-01-08 Tuesday 21:04  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.61), Code/distoptions.inc (1.5): allow non-logged in
+	  users to see help; add help paragraph about paper checker
+
+2008-01-07 Monday 16:34  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.67): better name for automated format checker
+
+2008-01-07 Monday 09:33  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* doc (1.21), .htaccess (1.12): depend on mod_rewrite to remove
+	  .php extension
+
+2008-01-06 Sunday 23:08  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* comment.php (1.53), Code/contact.inc (1.147), Code/helpers.inc
+	  (1.192): correctly hide non-reviewer-exposed comments from
+	  reviewers (bug fix)
+
+2008-01-06 Sunday 14:43  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/checkformat.inc (1.2): nitlet
+
+2008-01-06 Sunday 14:35  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.66): correctly show N/A
+
+2008-01-06 Sunday 14:29  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* LICENSE (1.2), README (1.26): update license and news for banal
+	  and pdftohtml requirement
+
+2008-01-06 Sunday 14:26  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.158), paper.php (1.156), script.js (1.60),
+	  settings.php (1.65), tarball.sh (1.70), Code/checkformat.inc
+	  (1.1), Code/helpers.inc (1.191), Code/papertable.inc (1.106),
+	  Code/sample.pdf (1.1): Banal becomes available to all.  - Banal
+	  settings work.  - If banal is turned on, verify that it works.  -
+	  Some wording improvements.
+
+2008-01-06 Sunday 03:05  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* paper.php (1.155), Code/helpers.inc (1.190): better error
+	  messages for the paper checker
+
+2008-01-06 Sunday 02:48  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* .htaccess (1.11): .htaccess improvements for RewriteBase (ugh)
+
+2008-01-06 Sunday 01:33  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* .htaccess (1.10): turn on rewrite engine!
+
+2008-01-06 Sunday 01:29  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* paper.php (1.154), settings.php (1.64), style.css (1.217),
+	  Code/banal (1.1), Code/conference.inc (1.235),
+	  Code/distoptions.inc (1.4), Code/helpers.inc (1.189),
+	  Code/options.inc (1.15.2.6), Code/papertable.inc (1.105): add
+	  support for paper format checking with banal
+
+2008-01-05 Saturday 19:23  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* contactauthors.php (1.40): nit
+
+2008-01-05 Saturday 19:01  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* .htaccess (1.9), account.php (1.66), assign.php (1.83),
+	  autoassign.php (1.26), comment.php (1.52), contactauthors.php
+	  (1.39), contacts.php (1.20), deadlines.php (1.31), doc (1.20),
+	  doc.php (1.1), help.php (1.60), index.php (1.157), log.php (1.7),
+	  login.php (1.41), logout.php (1.10), mail.php (1.24),
+	  mergeaccounts.php (1.41), offline.php (1.30), paper.php (1.153),
+	  review.php (1.122), reviewprefs.php (1.1), search.php (1.128),
+	  sessionvar.php (1.11), settings.php (1.63), tarball.sh (1.69),
+	  Chair/AssignPapers.php (1.49), Chair/DumpDatabase.php (1.9),
+	  Chair/SetReviewForm.php (1.40), Code/conference.inc (1.234),
+	  Code/contact.inc (1.146), Code/contactlist.inc (1.27),
+	  Code/header.inc (1.50), Code/helpers.inc (1.188),
+	  Code/mailtemplate.inc (1.33), Code/paperlist.inc (1.153),
+	  Code/papertable.inc (1.104), Code/review.inc (1.88),
+	  Code/reviewtable.inc (1.43), Code/search.inc (1.73),
+	  Code/tags.inc (1.12): minor usability improvements,
+	  long-considered.  Add .php suffix to URLs using mod_rewrite.
+	  User-visible URLs do not have .php in most cases.  Remove
+	  paperId= from URLs in favor of shorter p=.  Some
+	  uninitialized-variable fixes.  The "open" state of papers on the
+	  review pages sticks.
+
+2007-12-31 Monday 09:40  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/: TODO (1.93), tags.inc (1.11): todo nits
+
+2007-12-30 Sunday 21:42  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.15), tarball.sh (1.68): release 2.12
+
 2007-12-30 Sunday 21:33  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* mail.php (1.23), Code/mailtemplate.inc (1.32): Add %SHEPHERD%,
@@ -45,10 +246,10 @@
 	* assign.php (1.82), comment.php (1.51), contactauthors.php (1.38),
 	  mergeaccounts.php (1.40), paper.php (1.150), review.php (1.121),
 	  script.js (1.58), settings.php (1.62), style.css (1.213),
-	  Chair/AssignPapers.php (1.48), Chair/SetReviewForm.php (1.39),
-	  PC/reviewprefs.php (1.40): better highlightUpdate()
-	  implementation: explicitly mark using classes which buttons
-	  should be highlighted, rather than implicitly on form name
+	  Chair/AssignPapers.php (1.48), Chair/SetReviewForm.php (1.39):
+	  better highlightUpdate() implementation: explicitly mark using
+	  classes which buttons should be highlighted, rather than
+	  implicitly on form name
 
 2007-12-17 Monday 09:47  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -250,8 +451,7 @@
 	  Code/contactlist.inc (1.25), Code/header.inc (1.49),
 	  Code/helpers.inc (1.180), Code/mailtemplate.inc (1.30),
 	  Code/paperlist.inc (1.146), Code/papertable.inc (1.96),
-	  Code/review.inc (1.84), Code/search.inc (1.66), doc (1.18),
-	  PC/CheckReviewStatus.php (1.19), PC/reviewprefs.php (1.39): The
+	  Code/review.inc (1.84), Code/search.inc (1.66), doc (1.18): The
 	  old defval() definition was dangerous, since it added new
 	  elements to an array.  Shift to a definition that does not.  No
 	  change in functionality hopefully.
@@ -535,9 +735,9 @@
 	  search.php (1.114), Chair/AssignPapers.php (1.46),
 	  Code/contact.inc (1.133), Code/helpers.inc (1.171),
 	  Code/paperlist.inc (1.140), Code/papertable.inc (1.91),
-	  Code/search.inc (1.61), PC/reviewprefs.php (1.38): allow up to 8
-	  outstanding paper lists, so that a user with multiple
-	  tabs/windows can page through their lists independently
+	  Code/search.inc (1.61): allow up to 8 outstanding paper lists, so
+	  that a user with multiple tabs/windows can page through their
+	  lists independently
 
 2007-10-18 Thursday 23:25  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -961,8 +1161,7 @@
 	  settings.php (1.43), Chair/AssignPapers.php (1.44),
 	  Chair/SetReviewForm.php (1.37), Code/conference.inc (1.208),
 	  Code/helpers.inc (1.160), Code/paperlist.inc (1.135),
-	  Code/papertable.inc (1.78), PC/reviewprefs.php (1.37): XHTML 1.0
-	  Strict conformance
+	  Code/papertable.inc (1.78): XHTML 1.0 Strict conformance
 
 2007-08-14 Tuesday 00:13  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -1032,11 +1231,10 @@
 2007-08-12 Sunday 15:11  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* script.js (1.48), search.php (1.106), style.css (1.191),
-	  Code/conference.inc (1.205), Code/paperlist.inc (1.132),
-	  PC/reviewprefs.php (1.36): add "display abstracts" option to
-	  search lists.  Use Ajax to load the abstracts dynamically.  Use
-	  checkboxes on the review preferences page to select display
-	  options.
+	  Code/conference.inc (1.205), Code/paperlist.inc (1.132): add
+	  "display abstracts" option to search lists.  Use Ajax to load the
+	  abstracts dynamically.  Use checkboxes on the review preferences
+	  page to select display options.
 
 2007-08-12 Sunday 13:07  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -1066,20 +1264,10 @@
 
 	* index.php (1.137): better ordering
 
-2007-08-10 Friday 18:18  Eddie Kohler <kohler@cs.ucla.edu>
-
-	* PC/reviewprefs.php (1.35): improve preference help, to confuse
-	  Emmett less
-
-2007-08-10 Friday 18:07  Eddie Kohler <kohler@cs.ucla.edu>
-
-	* PC/reviewprefs.php (1.34): improve preference help, to confuse
-	  Emmett less
-
 2007-08-10 Friday 17:38  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* script.js (1.46), Code/paperlist.inc (1.129), PC/reviewprefs.php
-	  (1.33): even better reviewer preferences
+	* script.js (1.46), Code/paperlist.inc (1.129): even better
+	  reviewer preferences
 
 2007-08-10 Friday 17:10  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -1296,8 +1484,8 @@
 
 2007-07-11 Wednesday 10:50  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* style.css (1.185), Code/helpers.inc (1.154), PC/reviewprefs.php
-	  (1.32): more style improvements
+	* style.css (1.185), Code/helpers.inc (1.154): more style
+	  improvements
 
 2007-07-11 Wednesday 10:23  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -1324,8 +1512,8 @@
 2007-07-10 Tuesday 13:15  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* contacts.php (1.9), style.css (1.180), Code/conference.inc
-	  (1.196), Code/contactlist.inc (1.15), PC/CheckReviewStatus.php
-	  (1.18): download names and emails as text (for Frans)
+	  (1.196), Code/contactlist.inc (1.15): download names and emails
+	  as text (for Frans)
 
 2007-07-10 Tuesday 09:23  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -1728,9 +1916,9 @@
 
 2007-05-15 Tuesday 17:37  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* .htaccess (1.7), Chair/.htaccess (1.2), PC/.htaccess (1.2),
-	  Reviewer/.htaccess (1.2): Jens's machine appears unhappy with
-	  UTF-8 input unless we add this directive.  Don't know why
+	* .htaccess (1.7), Chair/.htaccess (1.2), Reviewer/.htaccess (1.2):
+	  Jens's machine appears unhappy with UTF-8 input unless we add
+	  this directive.  Don't know why
 
 2007-05-15 Tuesday 07:03  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -1854,14 +2042,13 @@
 	  (1.111), Code/contactlist.inc (1.8), Code/helpers.inc (1.139),
 	  Code/paperlist.inc (1.112), Code/papertable.inc (1.70),
 	  Code/review.inc (1.64), Code/reviewtable.inc (1.33),
-	  Code/search.inc (1.50), PC/reviewprefs.php (1.31): Another idea
-	  from Bernhard Ager: Change the "chairs assistant" role into a
-	  "system administrator".  The sysadmin has all chair privileges,
-	  but is not necessarily listed as a member of the PC; non-PC
-	  members cant necessarily find out who the assistants are.  Also,
-	  for clarity, rename "amAssistant()" to "privChair".  And fix a
-	  small bug in paper upload (dont set isSubmit if cannot submit
-	  yet).
+	  Code/search.inc (1.50): Another idea from Bernhard Ager: Change
+	  the "chairs assistant" role into a "system administrator".  The
+	  sysadmin has all chair privileges, but is not necessarily listed
+	  as a member of the PC; non-PC members cant necessarily find out
+	  who the assistants are.  Also, for clarity, rename
+	  "amAssistant()" to "privChair".  And fix a small bug in paper
+	  upload (dont set isSubmit if cannot submit yet).
 
 2007-03-29 Thursday 15:27  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -2059,11 +2246,10 @@
 
 2007-03-13 Tuesday 15:18  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* paper.php (1.111), script.js (1.33), Code/paperlist.inc (1.110),
-	  PC/reviewprefs.php (1.30): add Ajax on the review preferences
-	  page, so preferences are saved incrementally as they are changed
-	  (for Andrew Myers). Potential TODO: there is no feedback that the
-	  preferences are being saved
+	* paper.php (1.111), script.js (1.33), Code/paperlist.inc (1.110):
+	  add Ajax on the review preferences page, so preferences are saved
+	  incrementally as they are changed (for Andrew Myers). Potential
+	  TODO: there is no feedback that the preferences are being saved
 
 2007-03-12 Monday 22:31  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -2177,8 +2363,7 @@
 	  (1.108), style.css (1.153), tarball.sh (1.32),
 	  Chair/GradeAllPapers.php (1.15), Code/TODO (1.65),
 	  Code/conference.inc (1.175), Code/header.inc (1.42),
-	  Code/paperlist.inc (1.108), Code/schema.sql (1.91),
-	  PC/GradePapers.php (1.15), PC/gradeNames.inc (1.2): remove paper
+	  Code/paperlist.inc (1.108), Code/schema.sql (1.91): remove paper
 	  grading as essentially an annoyance
 
 2007-02-22 Thursday 09:35  Eddie Kohler <kohler@cs.ucla.edu>
@@ -2240,9 +2425,9 @@
 	  Chair/CheckOnSinglePCProgress.php (1.13), Chair/ListPC.php
 	  (1.17), Chair/ListReviewers.php (1.10), Code/TODO (1.63),
 	  Code/conference.inc (1.171), Code/contactlist.inc (1.1),
-	  Code/paperlist.inc (1.106), PC/CheckOnPCProgress.php (1.11): a
-	  new form of PC listing uses a general contact lister class; looks
-	  better, can sort, etc.  Also use for listing reviewers
+	  Code/paperlist.inc (1.106): a new form of PC listing uses a
+	  general contact lister class; looks better, can sort, etc.  Also
+	  use for listing reviewers
 
 2007-02-19 Monday 22:16  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -2313,9 +2498,9 @@
 
 2007-02-13 Tuesday 22:42  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* index.php (1.100), tarball.sh (1.26), PC/SpotMyProblems.php
-	  (1.14): remove SpotMyProblems; this information is easily
-	  available in things like the "number of reviews" search column
+	* index.php (1.100), tarball.sh (1.26): remove SpotMyProblems; this
+	  information is easily available in things like the "number of
+	  reviews" search column
 
 2007-02-13 Tuesday 22:38  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -2418,8 +2603,8 @@
 	  Code/options.inc (1.18), doc (1.17), Code/paperlist.inc (1.96),
 	  Code/papertable.inc (1.58), Code/review.inc (1.59),
 	  Code/reviewtable.inc (1.31), Code/search.inc (1.44),
-	  Code/tags.inc (1.6), PC/reviewprefs.php (1.29): file-level
-	  comments, include license, claim copyright where appropriate
+	  Code/tags.inc (1.6): file-level comments, include license, claim
+	  copyright where appropriate
 
 2007-02-08 Thursday 22:19  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -2427,8 +2612,8 @@
 
 2007-02-08 Thursday 20:47  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* Code/TODO (1.59), PC/reviewprefs.php (1.28): little nit for
-	  pc_seeall setting; document TODOs
+	* Code/TODO (1.59): little nit for pc_seeall setting; document
+	  TODOs
 
 2007-02-08 Thursday 20:42  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -2511,12 +2696,12 @@
 	* autoassign.php (1.11), index.php (1.95), logout.php (1.5),
 	  search.php (1.72), Chair/AssignPapers.php (1.38), Code/TODO
 	  (1.55), Code/helpers.inc (1.123), Code/paperlist.inc (1.93),
-	  Code/papertable.inc (1.57), Code/search.inc (1.40),
-	  PC/reviewprefs.php (1.27): quicklinks list setting cleanup: move
-	  list descriptions into PaperList general code from specific code
-	  elsewhere; simplify session variables arrangement; allow links to
-	  create a new quicklinks list; create a new quicklinks list on the
-	  fly if you jump to a paper not on the list
+	  Code/papertable.inc (1.57), Code/search.inc (1.40): quicklinks
+	  list setting cleanup: move list descriptions into PaperList
+	  general code from specific code elsewhere; simplify session
+	  variables arrangement; allow links to create a new quicklinks
+	  list; create a new quicklinks list on the fly if you jump to a
+	  paper not on the list
 
 2007-02-07 Wednesday 12:49  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -2650,10 +2835,7 @@
 	  Chair/ListReviewers.php (1.9), Chair/ListReviews.php (1.10),
 	  Chair/SendMail2.php (1.22), Chair/ShowCalendar.php (1.7),
 	  Chair/SpotProblems.php (1.15), Chair/ViewButtons.php (1.6),
-	  Code/TODO (1.41), PC/CheckOnPCProgress.php (1.10),
-	  PC/CheckReviewStatus.php (1.17), PC/GradePapers.php (1.14),
-	  PC/SpotMyProblems.php (1.13): clean up use of $Conf->header and
-	  $Conf->footer
+	  Code/TODO (1.41): clean up use of $Conf->header and $Conf->footer
 
 2007-01-31 Wednesday 14:01  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -2705,9 +2887,8 @@
 	* comment.php (1.25), index.php (1.94), tarball.sh (1.23),
 	  Chair/AveragePaperScore.php (1.15), Chair/GradeAllPapers.php
 	  (1.13), Code/TODO (1.38), Code/contact.inc (1.93),
-	  Code/helpers.inc (1.120), Code/schema.sql (1.89),
-	  PC/SeeAllGrades.php (1.16): collect authors responses via the
-	  Comments tab; remove unused pages
+	  Code/helpers.inc (1.120), Code/schema.sql (1.89): collect authors
+	  responses via the Comments tab; remove unused pages
 
 2007-01-29 Monday 16:01  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -2960,8 +3141,8 @@
 2007-01-16 Tuesday 23:33  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* paper.php (1.94), Code/helpers.inc (1.115), Code/paperlist.inc
-	  (1.81), PC/reviewprefs.php (1.26): do not mention topics if there
-	  are none.  Also, support real minus signs
+	  (1.81): do not mention topics if there are none.  Also, support
+	  real minus signs
 
 2007-01-16 Tuesday 23:13  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -2980,7 +3161,7 @@
 
 2007-01-16 Tuesday 16:28  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* Code/TODO (1.14), PC/reviewprefs.php (1.25): nit
+	* Code/TODO (1.14): nit
 
 2007-01-16 Tuesday 15:23  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -3149,8 +3330,8 @@
 2007-01-09 Tuesday 13:50  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* assign.php (1.55), Code/conference.inc (1.143), Code/contact.inc
-	  (1.87), Code/options.inc (1.15.2.2), PC/CheckReviewStatus.php
-	  (1.16): remove trailing slashes from paperSite
+	  (1.87), Code/options.inc (1.15.2.2): remove trailing slashes from
+	  paperSite
 
 2007-01-09 Tuesday 09:41  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -3179,8 +3360,7 @@
 	  (1.141), Code/contact.inc (1.86), Code/header.inc (1.37),
 	  Code/helpers.inc (1.114), Code/paperlist.inc (1.77),
 	  Code/papertable.inc (1.51), Code/reviewtable.inc (1.23),
-	  Code/search.inc (1.31), PC/SpotMyProblems.php (1.12),
-	  images/exassignone.png (1.1):
+	  Code/search.inc (1.31), images/exassignone.png (1.1):
 	  s/REVIEW_REQUESTED/REVIEW_EXTERNAL/; add initial assignment
 	  process help; simplify assignment page (lead and shepherd saved
 	  by same button as PC assignmnets)
@@ -3459,10 +3639,7 @@
 	  Code/header.inc (1.33), Code/helpers.inc (1.106),
 	  Code/paperlist.inc (1.70), Code/papertable.inc (1.44),
 	  Code/review.inc (1.52), Code/search.inc (1.30), Code/tags.inc
-	  (1.3), PC/CheckOnPCProgress.php (1.9), PC/CheckReviewStatus.php
-	  (1.15), PC/GradePapers.php (1.13), PC/SeeAllGrades.php (1.15),
-	  PC/SpotMyProblems.php (1.11), PC/reviewprefs.php (1.24): remove
-	  MDB2 abstraction layer
+	  (1.3): remove MDB2 abstraction layer
 
 2006-12-09 Saturday 13:26  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -3474,8 +3651,7 @@
 	* assign.php (1.47), mergeaccounts.php (1.27), review.php (1.63),
 	  style.css (1.121), tarball.sh (1.9), Code/TODO (1.8),
 	  Code/helpers.inc (1.104), Code/papertable.inc (1.43),
-	  Code/schema.sql (1.79), Code/search.inc (1.29),
-	  PC/SeeAllGrades.php (1.14): lead, shepherd
+	  Code/schema.sql (1.79), Code/search.inc (1.29): lead, shepherd
 
 2006-12-09 Saturday 09:17  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -3622,9 +3798,8 @@
 	  (1.129), Code/contact.inc (1.77), Code/helpers.inc (1.100),
 	  Code/paperlist.inc (1.65), Code/papertable.inc (1.40),
 	  Code/review.inc (1.50), Code/schema.sql (1.75), Code/search.inc
-	  (1.21), Code/tags.inc (1.2), PC/CheckOnPCProgress.php (1.8),
-	  PC/GradePapers.php (1.12), PC/SeeAllGrades.php (1.13): move to
-	  settings from start/end times
+	  (1.21), Code/tags.inc (1.2): move to settings from start/end
+	  times
 
 2006-12-01 Friday 16:57  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -3692,10 +3867,6 @@
 
 	* search.php (1.43), images/quicksearchex.png (1.1): quicksearch
 
-2006-11-26 Sunday 22:43  Eddie Kohler <kohler@cs.ucla.edu>
-
-	* PC/reviewprefs.php (1.23): reviewpref docnit
-
 2006-11-26 Sunday 22:11  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Code/paperlist.inc (1.62): another bug fix
@@ -3713,9 +3884,8 @@
 	* README (1.2), assign.php (1.41), comment.php (1.13), paper.php
 	  (1.72), review.php (1.57), Chair/FindPCConflicts.php (1.11),
 	  Chair/ViewActionLog.php (1.9), Code/conference.inc (1.125),
-	  Code/contact.inc (1.73), Code/review.inc (1.49),
-	  PC/CheckReviewStatus.php (1.14): log paper ID in a separate
-	  column
+	  Code/contact.inc (1.73), Code/review.inc (1.49): log paper ID in
+	  a separate column
 
 2006-11-26 Sunday 20:20  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -3760,8 +3930,7 @@
 
 	* deadlines.php (1.16), index.php (1.70), Code/TODO (1.6),
 	  Code/conference.inc (1.122), Code/contact.inc (1.71),
-	  Code/search.inc (1.17), PC/SeeAcceptedPapers.php (1.9),
-	  PC/SeeAllGrades.php (1.12): accepted paper search
+	  Code/search.inc (1.17): accepted paper search
 
 2006-11-24 Friday 19:30  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -3777,8 +3946,8 @@
 2006-11-24 Friday 18:35  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* style.css (1.107), Chair/AssignPapers.php (1.31),
-	  Code/paperlist.inc (1.58), Code/schema.sql (1.71),
-	  PC/reviewprefs.php (1.22): search for conflicts
+	  Code/paperlist.inc (1.58), Code/schema.sql (1.71): search for
+	  conflicts
 
 2006-11-24 Friday 17:19  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -3789,9 +3958,8 @@
 	  (1.10), Chair/ListPapersAssignedToPC.php (1.13), Chair/index.php
 	  (1.7), Code/Helpers.inc (1.96), Code/contact.inc (1.70),
 	  Code/header.inc (1.26), Code/helpers.inc (1.96),
-	  Code/paperlist.inc (1.57), Code/papertable.inc (1.36),
-	  PC/index.php (1.6), PC/reviewprefs.php (1.21): tasks integrated
-	  into new view
+	  Code/paperlist.inc (1.57), Code/papertable.inc (1.36): tasks
+	  integrated into new view
 
 2006-11-24 Friday 15:19  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -3834,10 +4002,6 @@
 	* Code/: Helpers.inc (1.93), TODO (1.5), contact.inc (1.67),
 	  helpers.inc (1.93): comments forceShow
 
-2006-11-19 Sunday 23:33  Eddie Kohler <kohler@cs.ucla.edu>
-
-	* PC/reviewprefs.php (1.20): reviewprefs fix
-
 2006-11-19 Sunday 16:33  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Code/search.inc (1.15): a little information leak nit
@@ -3847,8 +4011,8 @@
 	* index.php (1.66), search.php (1.32), Chair/AssignPapers.php
 	  (1.29), Code/Helpers.inc (1.92), Code/helpers.inc (1.92),
 	  Code/paperlist.inc (1.53), Code/schema.sql (1.68),
-	  Code/search.inc (1.14), PC/reviewprefs.php (1.19): improvements
-	  in PaperSearch<=>PaperList integration
+	  Code/search.inc (1.14): improvements in PaperSearch<=>PaperList
+	  integration
 
 2006-11-19 Sunday 14:59  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -3857,8 +4021,7 @@
 
 2006-11-19 Sunday 14:50  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* index.php (1.65), Chair/AssignPapers.php (1.28),
-	  PC/reviewprefs.php (1.18): nit
+	* index.php (1.65), Chair/AssignPapers.php (1.28): nit
 
 2006-11-19 Sunday 14:48  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -3867,8 +4030,7 @@
 	  Chair/AssignPapers.php (1.27), Code/Helpers.inc (1.91),
 	  Code/conference.inc (1.117), Code/helpers.inc (1.91),
 	  Code/paperlist.inc (1.52), Code/schema.sql (1.67),
-	  Code/search.inc (1.13), PC/reviewprefs.php (1.17): remove
-	  list.php in favor of search.php
+	  Code/search.inc (1.13): remove list.php in favor of search.php
 
 2006-11-18 Saturday 22:24  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -3895,17 +4057,12 @@
 	  Code/DumpAllReviews.php-not-via-apache (1.7),
 	  Code/SuckInOSDIPaper.php-not-via-apache (1.5),
 	  Code/conference.inc (1.116), Code/paperlist.inc (1.51),
-	  Code/search.inc (1.12), PC/CheckOnPCProgress.php (1.7),
-	  PC/CheckReviewStatus.php (1.13), PC/GradePapers.php (1.11),
-	  PC/SeeAcceptedPapers.php (1.8), PC/SeeAllGrades.php (1.11),
-	  PC/SpotMyProblems.php (1.10), PC/index.php (1.5),
-	  PC/reviewprefs.php (1.16): always $Conf->connect(), add contact
+	  Code/search.inc (1.12): always $Conf->connect(), add contact
 	  author download
 
 2006-11-18 Saturday 18:01  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* Chair/SpotProblems.php (1.10), PC/SpotMyProblems.php (1.9):
-	  SpotProblems fixed some
+	* Chair/SpotProblems.php (1.10): SpotProblems fixed some
 
 2006-11-18 Saturday 17:26  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -3917,10 +4074,8 @@
 	  (1.90), Code/confConfigReview.inc (1.5),
 	  Code/confConfigReview.inc.dist (1.4), Code/conference.inc
 	  (1.115), Code/helpers.inc (1.90), Code/header.inc (1.24),
-	  Code/schema.sql (1.66), Code/search.inc (1.11),
-	  PC/CheckReviewStatus.php (1.12), PC/GradePapers.php (1.10),
-	  PC/SpotMyProblems.php (1.8): gradual cleanup: getting rid of
-	  ReviewRequest, dead code
+	  Code/schema.sql (1.66), Code/search.inc (1.11): gradual cleanup:
+	  getting rid of ReviewRequest, dead code
 
 2006-11-17 Friday 11:06  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -3948,11 +4103,8 @@
 	  (1.3), Code/conference.inc (1.114), Code/contact.inc (1.66),
 	  Code/header.inc (1.23), Code/helpers.inc (1.89), Code/options.inc
 	  (1.9), Code/paperlist.inc (1.50), Code/papertable.inc (1.33),
-	  Code/review.inc (1.46), Code/search.inc (1.10),
-	  PC/CheckOnPCProgress.php (1.6), PC/CheckReviewStatus.php (1.11),
-	  PC/GradePapers.php (1.9), PC/SeeAcceptedPapers.php (1.7),
-	  PC/SeeAllGrades.php (1.10), PC/SpotMyProblems.php (1.7),
-	  PC/reviewprefs.php (1.15): use MDB2 instead of DB
+	  Code/review.inc (1.46), Code/search.inc (1.10): use MDB2 instead
+	  of DB
 
 2006-11-17 Friday 08:14  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -3998,8 +4150,7 @@
 2006-11-01 Wednesday 23:49  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* index.php (1.62), list.php (1.30), search.php (1.23),
-	  Chair/AssignPapers.php (1.24), Code/ClassPaperList.inc (1.48),
-	  PC/reviewprefs.php (1.14): x
+	  Chair/AssignPapers.php (1.24), Code/ClassPaperList.inc (1.48): x
 
 2006-11-01 Wednesday 23:47  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -4026,11 +4177,7 @@
 	  Chair/index.php (1.5), Code/DumpAllReviews.php-not-via-apache
 	  (1.4), Code/DumpSingleReview.php-not-via-apache (1.10),
 	  Code/SuckInOSDIPaper.php-not-via-apache (1.3),
-	  Code/confHeader.inc (1.22), Code/header.inc (1.22),
-	  PC/CheckOnPCProgress.php (1.5), PC/CheckReviewStatus.php (1.10),
-	  PC/GradePapers.php (1.8), PC/SeeAcceptedPapers.php (1.6),
-	  PC/SeeAllGrades.php (1.9), PC/SpotMyProblems.php (1.6),
-	  PC/index.php (1.4), PC/reviewprefs.php (1.13): header
+	  Code/confHeader.inc (1.22), Code/header.inc (1.22): header
 
 2006-11-01 Wednesday 23:44  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -4347,10 +4494,7 @@
 	  Chair/SendMail2.php (1.8), Chair/SetPCPaper.php (1.4),
 	  Chair/SetTopics.php (1.15), Chair/ShowCalendar.php (1.3),
 	  Chair/SpotProblems.php (1.7), Chair/ViewActionLog.php (1.5),
-	  Chair/ViewButtons.php (1.3), Chair/index.php (1.4),
-	  PC/CheckOnPCProgress.php (1.4), PC/CheckReviewStatus.php (1.9),
-	  PC/SeeAcceptedPapers.php (1.5), PC/SeeAllGrades.php (1.8),
-	  PC/SpotMyProblems.php (1.5), PC/index.php (1.3): better
+	  Chair/ViewButtons.php (1.3), Chair/index.php (1.4): better
 	  goIfInvalid() plan
 
 2006-09-14 Thursday 20:26  Eddie Kohler <kohler@cs.ucla.edu>
@@ -4411,7 +4555,7 @@
 
 2006-08-31 Thursday 09:02  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* style.css (1.93), PC/CheckReviewStatus.php (1.8): some nits
+	* style.css (1.93): some nits
 
 2006-08-31 Thursday 00:46  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -4448,7 +4592,6 @@
 	  (1.58), Code/ClassReview.inc (1.35), Code/Helpers.inc (1.71),
 	  Code/conference.inc (1.91), Code/contact.inc (1.58),
 	  Code/helpers.inc (1.71), Code/review.inc (1.35),
-	  PC/GradePapers.php (1.7), PC/SeeAllGrades.php (1.7),
 	  images/GenChart.php (1.2): change interface to GenChart, some
 	  small fixes, authors cant see reviews for their authored papers
 	  until they have finished their own reviews
@@ -4472,13 +4615,7 @@
 
 	* search.php (1.7), Chair/AveragePaperScore.php (1.5),
 	  Chair/CheckOnSinglePCProgress.php (1.5), Chair/GradeAllPapers.php
-	  (1.6), Chair/SpotProblems.php (1.5), PC/GradePapers.php (1.6),
-	  PC/PCAllAnonReviewsForPaper.php (1.14), PC/SeeAcceptedPapers.php
-	  (1.4), PC/SeeAllGrades.php (1.6): more redundancy removal
-
-2006-08-30 Wednesday 20:37  Eddie Kohler <kohler@cs.ucla.edu>
-
-	* PC/GradePapers.php (1.5): grade papers
+	  (1.6), Chair/SpotProblems.php (1.5): more redundancy removal
 
 2006-08-30 Wednesday 20:05  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -4501,19 +4638,18 @@
 	* comment.php (1.6), review.php (1.37), Code/ClassConference.inc
 	  (1.89), Code/ClassContact.inc (1.56), Code/Helpers.inc (1.70),
 	  Code/conference.inc (1.89), Code/contact.inc (1.56),
-	  Code/helpers.inc (1.70), PC/PCNotes.php (1.6): little review nits
+	  Code/helpers.inc (1.70): little review nits
 
 2006-08-30 Wednesday 15:51  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* Tasks-Author.inc (1.6), Tasks-PC.inc (1.10),
-	  PC/CheckAssignedPapers.php (1.6): more redundancy elimination
+	* Tasks-Author.inc (1.6), Tasks-PC.inc (1.10): more redundancy
+	  elimination
 
 2006-08-30 Wednesday 15:45  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* PC/PCSubmitReview.php (1.3), Reviewer/CommonSubmitReview.php
-	  (1.10), Reviewer/ReviewerSubmitReview.php (1.3),
-	  Tasks-Reviewer.inc (1.5), index.php (1.59),
-	  Reviewer/RequestedReviews.php (1.4),
+	* Reviewer/CommonSubmitReview.php (1.10),
+	  Reviewer/ReviewerSubmitReview.php (1.3), Tasks-Reviewer.inc
+	  (1.5), index.php (1.59), Reviewer/RequestedReviews.php (1.4),
 	  Reviewer/RequestedReviewsFromIndex.inc (1.6): remove redundant
 	  files
 
@@ -4534,9 +4670,8 @@
 	  Code/DumpSingleReview.php-not-via-apache (1.7), Code/Helpers.inc
 	  (1.69), Code/conference.inc (1.88), Code/conference.sql (1.53),
 	  Code/contact.inc (1.55), Code/helpers.inc (1.69), Code/review.inc
-	  (1.33), Code/reviewtable.inc (1.12), Code/schema.sql (1.53),
-	  PC/PCAllAnonReviewsForPaper.php (1.13), PC/PCNotes.php (1.5),
-	  PC/SeeAllGrades.php (1.5): comments
+	  (1.33), Code/reviewtable.inc (1.12), Code/schema.sql (1.53):
+	  comments
 
 2006-08-26 Saturday 11:06  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -4593,8 +4728,7 @@
 2006-08-22 Tuesday 23:19  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Tasks-Assistant.inc (1.5), Tasks-Chair.inc (1.12), Tasks-PC.inc
-	  (1.9), PC/ListReviews.php (1.5), PC/ValidPapers.inc (1.2): remove
-	  nonuseful pages
+	  (1.9): remove nonuseful pages
 
 2006-08-22 Tuesday 23:10  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -4623,8 +4757,8 @@
 	  Chair/SetReviewForm.php (1.11), Chair/SetTopics.php (1.14),
 	  Code/ClassConference.inc (1.85), Code/ClassContact.inc (1.52),
 	  Code/ClassPaperList.inc (1.38), Code/conference.inc (1.85),
-	  Code/contact.inc (1.52), Code/paperlist.inc (1.38),
-	  PC/reviewprefs.php (1.12): redo insert for some reason
+	  Code/contact.inc (1.52), Code/paperlist.inc (1.38): redo insert
+	  for some reason
 
 2006-08-21 Monday 16:59  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -4684,8 +4818,7 @@
 	  Chair/AssignPapers.php (1.17), Code/ClassPaperList.inc (1.31),
 	  Code/Helpers.inc (1.65), Code/conference.sql (1.45),
 	  Code/helpers.inc (1.65), Code/paperlist.inc (1.31),
-	  Code/schema.sql (1.45), PC/reviewprefs.php (1.11): some paper
-	  list stuff
+	  Code/schema.sql (1.45): some paper list stuff
 
 2006-08-19 Saturday 12:31  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -4807,7 +4940,7 @@
 	* style.css (1.78), Code/ClassConference.inc (1.76),
 	  Code/ClassPaperList.inc (1.27), Code/conference.inc (1.76),
 	  Code/conference.sql (1.40), Code/paperlist.inc (1.27),
-	  Code/schema.sql (1.40), PC/reviewprefs.php (1.10): desirability
+	  Code/schema.sql (1.40): desirability
 
 2006-08-17 Thursday 22:09  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -4844,8 +4977,8 @@
 	  Code/CreateDatabase.sh (1.4), Code/confHeader.inc (1.19),
 	  Code/conference.inc (1.75), Code/conference.sql (1.39),
 	  Code/createdb.sh (1.4), Code/header.inc (1.19),
-	  Code/paperlist.inc (1.26), Code/schema.sql (1.39),
-	  PC/reviewprefs.php (1.9): farts on my face in fartfacetown
+	  Code/paperlist.inc (1.26), Code/schema.sql (1.39): farts on my
+	  face in fartfacetown
 
 2006-08-17 Thursday 15:01  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -4858,8 +4991,8 @@
 
 2006-08-17 Thursday 14:23  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* style.css (1.74), Chair/AssignPapers.php (1.15),
-	  PC/reviewprefs.php (1.8): review preferences for all PC members
+	* style.css (1.74), Chair/AssignPapers.php (1.15): review
+	  preferences for all PC members
 
 2006-08-17 Thursday 14:03  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -4917,10 +5050,8 @@
 	* Tasks-Chair.inc (1.10), Tasks-PC.inc (1.8), index.php (1.49),
 	  style.css (1.73), Chair/ListPC.php (1.10),
 	  Code/ClassPaperList.inc (1.24), Code/conference.sql (1.38),
-	  Code/paperlist.inc (1.24), Code/schema.sql (1.38),
-	  PC/PCAllAnonReviewsForPaper.php (1.12), PC/ShowAbstract.php
-	  (1.5), PC/SpotMyProblems.php (1.4): remove a few obsolete pages,
-	  some other updates
+	  Code/paperlist.inc (1.24), Code/schema.sql (1.38): remove a few
+	  obsolete pages, some other updates
 
 2006-08-15 Tuesday 00:45  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -4943,9 +5074,7 @@
 	  Code/contact.inc (1.48), Code/helpers.inc (1.62),
 	  Code/paperlist.inc (1.23), Code/papertable.inc (1.11),
 	  Code/review.inc (1.26), Code/schema.sql (1.36),
-	  PC/ListReviews.php (1.4), PC/SeeAcceptedPapers.php (1.3),
-	  PC/ShowAbstract.php (1.4), Reviewer/RequestedReviewsFromIndex.inc
-	  (1.5): some indexing, etc.
+	  Reviewer/RequestedReviewsFromIndex.inc (1.5): some indexing, etc.
 
 2006-08-14 Monday 00:58  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -4961,7 +5090,7 @@
 
 2006-08-12 Saturday 11:31  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* style.css (1.71), PC/reviewprefs.php (1.7): prefnits
+	* style.css (1.71): prefnits
 
 2006-08-12 Saturday 11:26  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -4990,10 +5119,6 @@
 
 2006-08-12 Saturday 10:55  Eddie Kohler <kohler@cs.ucla.edu>
 
-	* PC/reviewprefs.php (1.6): reviewprefs is an official list
-
-2006-08-12 Saturday 10:55  Eddie Kohler <kohler@cs.ucla.edu>
-
 	* index.php (1.48): check PHP setup
 
 2006-08-12 Saturday 02:30  Eddie Kohler <kohler@cs.ucla.edu>
@@ -5009,8 +5134,8 @@
 	* list.php (1.14), paper.php (1.43), Code/ClassConference.inc
 	  (1.68), Code/ClassPaperList.inc (1.22), Code/Helpers.inc (1.59),
 	  Code/conference.inc (1.68), Code/helpers.inc (1.59),
-	  Code/paperlist.inc (1.22), Code/papertable.inc (1.10),
-	  PC/reviewprefs.php (1.5): review preferences
+	  Code/paperlist.inc (1.22), Code/papertable.inc (1.10): review
+	  preferences
 
 2006-08-12 Saturday 01:25  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -5027,8 +5152,7 @@
 	  Code/ClassConference.inc (1.67), Code/ClassPaperList.inc (1.21),
 	  Code/Helpers.inc (1.57), Code/conference.inc (1.67),
 	  Code/conference.sql (1.34), Code/helpers.inc (1.57),
-	  Code/paperlist.inc (1.21), Code/schema.sql (1.34),
-	  PC/reviewprefs.php (1.4): updates
+	  Code/paperlist.inc (1.21), Code/schema.sql (1.34): updates
 
 2006-08-11 Friday 23:15  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -5064,11 +5188,10 @@
 2006-08-11 Friday 13:51  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* review.php (1.23), style.css (1.66), Code/ClassConference.inc
-	  (1.65), Code/conference.inc (1.65), PC/CheckAssignedPapers.php
-	  (1.5), Reviewer/CommonSubmitReview.php (1.9),
-	  Reviewer/SeeDecision.php (1.7), Reviewer/SeeDecisions.php (1.6):
-	  minor updates, and update Reviewer/SeeDecision (only to get rid
-	  of it next)
+	  (1.65), Code/conference.inc (1.65),
+	  Reviewer/CommonSubmitReview.php (1.9), Reviewer/SeeDecision.php
+	  (1.7), Reviewer/SeeDecisions.php (1.6): minor updates, and update
+	  Reviewer/SeeDecision (only to get rid of it next)
 
 2006-08-11 Friday 13:15  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -5123,9 +5246,7 @@
 2006-08-10 Thursday 00:18  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Tasks-PC.inc (1.7), assign.php (1.7), reqreview.php (1.7),
-	  Code/reviewtable.inc (1.4), PC/AskForPrimaryReview.php (1.3),
-	  PC/AskForReviewCommon.inc (1.6), PC/AskForSecondaryReview.php
-	  (1.3), PC/RemoveAskReview.php (1.5): remove redundant pages
+	  Code/reviewtable.inc (1.4): remove redundant pages
 
 2006-08-09 Wednesday 23:59  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -5195,7 +5316,6 @@
 	  Code/Helpers.inc (1.47), Code/conference.inc (1.55),
 	  Code/contact.inc (1.39), Code/helpers.inc (1.47),
 	  Code/papertable.inc (1.4), Code/review.inc (1.22),
-	  PC/PCAllAnonReviewsForPaper.php (1.11),
 	  Reviewer/CommonPrintReview.php (1.5),
 	  Reviewer/CommonSubmitReview.php (1.7): reviews some more
 
@@ -5225,8 +5345,7 @@
 	  Code/conference.inc (1.53), Code/conference.sql (1.30),
 	  Code/contact.inc (1.37), Code/helpers.inc (1.45),
 	  Code/papertable.inc (1.2), Code/review.inc (1.20),
-	  Code/schema.sql (1.30), PC/PCAllAnonReviewsForPaper.php (1.10):
-	  big edit
+	  Code/schema.sql (1.30): big edit
 
 2006-08-06 Sunday 23:54  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -5236,13 +5355,8 @@
 	  Code/ClassConference.inc (1.52), Code/ClassContact.inc (1.36),
 	  Code/Helpers.inc (1.43), Code/conference.inc (1.52),
 	  Code/conference.sql (1.29), Code/contact.inc (1.36),
-	  Code/helpers.inc (1.43), Code/schema.sql (1.29),
-	  PC/AskForPrimaryReview.php (1.2), PC/AskForReviewCommon.inc
-	  (1.5), PC/AskForSecondaryReview.php (1.2),
-	  PC/CheckReviewStatus.php (1.7), PC/PCReviewsForPaper.php (1.4),
-	  PC/RemoveAskReview.php (1.4), PC/reviewprefs.php (1.3),
-	  Code/Helpers.inc (1.44), Code/helpers.inc (1.44): towards review
-	  requests
+	  Code/helpers.inc (1.43), Code/schema.sql (1.29), Code/Helpers.inc
+	  (1.44), Code/helpers.inc (1.44): towards review requests
 
 2006-08-05 Saturday 13:15  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -5284,16 +5398,14 @@
 	  Code/conference.inc (1.51), Code/conference.sql (1.27),
 	  Code/contact.inc (1.35), Code/header.inc (1.17), Code/helpers.inc
 	  (1.40), Code/paperlist.inc (1.16), Code/papertable.inc (1.1),
-	  Code/review.inc (1.18), Code/schema.sql (1.27),
-	  PC/reviewprefs.php (1.2): reviews
+	  Code/review.inc (1.18), Code/schema.sql (1.27): reviews
 
 2006-08-04 Friday 13:41  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Tasks-Chair.inc (1.9), paper.php (1.30), Chair/DeletePaper.php
 	  (1.3), Chair/DeletePaper2.php (1.4), Chair/DeletePaper3.php
 	  (1.3), Code/ClassConference.inc (1.50), Code/conference.inc
-	  (1.50), PC/PCAllAnonReviewsForPaper.php (1.9): remove old
-	  deletion methods
+	  (1.50): remove old deletion methods
 
 2006-08-04 Friday 13:31  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -5312,8 +5424,8 @@
 	* style.css (1.51), Chair/AssignPapers.php (1.10),
 	  Code/ClassConference.inc (1.48), Code/ClassPaperList.inc (1.15),
 	  Code/conference.inc (1.48), Code/conference.sql (1.26),
-	  Code/paperlist.inc (1.15), Code/schema.sql (1.26),
-	  PC/reviewprefs.php (1.1): reviewer preferences
+	  Code/paperlist.inc (1.15), Code/schema.sql (1.26): reviewer
+	  preferences
 
 2006-08-03 Thursday 00:52  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -5342,8 +5454,7 @@
 	  (1.16), Code/DumpSingleReview.php-not-via-apache (1.5),
 	  Code/conference.inc (1.46), Code/conference.sql (1.24),
 	  Code/contact.inc (1.32), Code/review.inc (1.16), Code/schema.sql
-	  (1.24), PC/PCAllAnonReviewsForPaper.php (1.8), PC/PCNotes.php
-	  (1.4): PrimaryReviewer fixes
+	  (1.24): PrimaryReviewer fixes
 
 2006-08-01 Tuesday 18:56  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -5457,8 +5568,7 @@
 	  paper.php (1.10), Chair/ModifyPaper.php (1.5),
 	  Chair/SubmitPaper.php (1.4), Chair/SubmitPaper2.php (1.8),
 	  Code/ClassPaperList.inc (1.13), Code/Helpers.inc (1.30),
-	  Code/helpers.inc (1.30), Code/paperlist.inc (1.13),
-	  PC/PCAllAnonReviewsForPaper.php (1.7): updates
+	  Code/helpers.inc (1.30), Code/paperlist.inc (1.13): updates
 
 2006-07-27 Thursday 15:34  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -5519,10 +5629,7 @@
 	  Code/DumpSingleReview.php-not-via-apache (1.4), Code/Helpers.inc
 	  (1.27), Code/confHeader.inc (1.15), Code/conference.inc (1.41),
 	  Code/contact.inc (1.28), Code/header.inc (1.15), Code/helpers.inc
-	  (1.27), Code/options.inc (1.2), PC/AskForReviewCommon.inc (1.4),
-	  PC/CheckOnPCProgress.php (1.3), PC/CheckReviewStatus.php (1.6),
-	  PC/GradePapers.php (1.4), PC/PCAllAnonReviewsForPaper.php (1.6),
-	  PC/PCReviewsForPaper.php (1.3), PC/SeeAllGrades.php (1.4),
+	  (1.27), Code/options.inc (1.2),
 	  Reviewer/RequestedReviewsFromIndex.inc (1.4): mail submissions
 
 2006-07-24 Monday 14:48  Eddie Kohler <kohler@cs.ucla.edu>
@@ -5561,9 +5668,8 @@
 	  Code/confHeader.inc (1.13), Code/conference.inc (1.38),
 	  Code/conference.sql (1.23), Code/contact.inc (1.24),
 	  Code/header.inc (1.13), Code/helpers.inc (1.23), Code/options.inc
-	  (1.1), Code/review.inc (1.12), Code/schema.sql (1.23),
-	  PC/AskForReviewCommon.inc (1.3): options exist; add
-	  PaperContacts.php screen
+	  (1.1), Code/review.inc (1.12), Code/schema.sql (1.23): options
+	  exist; add PaperContacts.php screen
 
 2006-07-13 Thursday 14:13  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -5656,8 +5762,8 @@
 	* mergeaccounts.php (1.12), Chair/ListPC.php (1.8),
 	  Chair/SendMail2.php (1.5), Code/ClassConference.inc (1.29),
 	  Code/ClassContact.inc (1.20), Code/conference.inc (1.29),
-	  Code/contact.inc (1.20), PC/CheckReviewStatus.php (1.5),
-	  Reviewer/CommonSubmitReview.php (1.6): emailing
+	  Code/contact.inc (1.20), Reviewer/CommonSubmitReview.php (1.6):
+	  emailing
 
 2006-07-09 Sunday 15:23  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -5687,8 +5793,7 @@
 	  Code/conference.sql (1.21), Code/contact.inc (1.18),
 	  Code/header.inc (1.10), Code/helpers.inc (1.17),
 	  Code/paperlist.inc (1.9), Code/schema.sql (1.21),
-	  PC/PCAllAnonReviewsForPaper.php (1.5), Reviewer/SeeDecision.php
-	  (1.6): set outcomes
+	  Reviewer/SeeDecision.php (1.6): set outcomes
 
 2006-07-08 Saturday 12:44  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -5709,13 +5814,8 @@
 	  (1.16), Code/conference.inc (1.27), Code/conference.sql (1.20),
 	  Code/contact.inc (1.17), Code/helpers.inc (1.16),
 	  Code/paperlist.inc (1.8), Code/review.inc (1.8), Code/schema.sql
-	  (1.20), PC/CheckAssignedPapers.php (1.4),
-	  PC/CheckReviewStatus.php (1.4), PC/GradePapers.php (1.3),
-	  PC/ListReviews.php (1.3), PC/PCAllAnonReviewsForPaper.php (1.4),
-	  PC/PCListPapers.php (1.4), PC/PCNotes.php (1.3),
-	  PC/RemoveAskReview.php (1.3), PC/SeeAllGrades.php (1.3),
-	  PC/SpotMyProblems.php (1.3), Reviewer/SeeDecision.php (1.5),
-	  Reviewer/SeeDecisions.php (1.5): so many nightmares
+	  (1.20), Reviewer/SeeDecision.php (1.5), Reviewer/SeeDecisions.php
+	  (1.5): so many nightmares
 
 2006-07-07 Friday 23:56  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -5759,8 +5859,7 @@
 	  Code/review.inc (1.7), style.css (1.20), Code/Helpers.inc (1.14),
 	  Code/confHeader.inc (1.8), Code/conference.sql (1.16),
 	  Code/header.inc (1.8), Code/helpers.inc (1.14), Code/schema.sql
-	  (1.16), PC/ReviewAnyPaper.php (1.3), PC/ReviewPapers.php (1.3):
-	  yet more updates
+	  (1.16): yet more updates
 
 2006-07-07 Friday 14:37  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -5771,8 +5870,7 @@
 	  Code/conference.inc (1.22), Code/conference.sql (1.15),
 	  Code/contact.inc (1.13), Code/helpers.inc (1.13),
 	  Code/paperlist.inc (1.5), Code/review.inc (1.6), Code/schema.sql
-	  (1.15), PC/PCAllAnonReviewsForPaper.php (1.3),
-	  Reviewer/CommonPrintReview.php (1.4),
+	  (1.15), Reviewer/CommonPrintReview.php (1.4),
 	  Reviewer/CommonSubmitReview.php (1.5): more reviewing: download a
 	  set of papers as a zip file
 
@@ -5805,8 +5903,7 @@
 	  Code/conference.inc (1.21), Code/conference.sql (1.13),
 	  Code/contact.inc (1.12), Code/header.inc (1.7), Code/helpers.inc
 	  (1.12), Code/paperlist.inc (1.4), Code/review.inc (1.3),
-	  Code/schema.sql (1.13), PC/CheckAssignedPapers.php (1.3),
-	  PC/CheckReviewStatus.php (1.3), Reviewer/SeeDecision.php (1.4),
+	  Code/schema.sql (1.13), Reviewer/SeeDecision.php (1.4),
 	  Reviewer/SeeDecisions.php (1.4): moving towards reviewing
 
 2006-07-06 Thursday 00:48  Eddie Kohler <kohler@cs.ucla.edu>
@@ -5840,7 +5937,7 @@
 	  Code/Helpers.inc (1.10), Code/confConfig.inc (1.6),
 	  Code/conference.inc (1.19), Code/conference.sql (1.11),
 	  Code/helpers.inc (1.10), Code/paperlist.inc (1.2),
-	  Code/schema.sql (1.11), PC/PCListPapers.php (1.3): yet more
+	  Code/schema.sql (1.11): yet more
 
 2006-07-05 Wednesday 21:17  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -5948,7 +6045,7 @@
 	  Code/ClassReview.inc (1.2), Code/Helpers.inc (1.4),
 	  Code/conference.inc (1.13), Code/conference.sql (1.7),
 	  Code/helpers.inc (1.4), Code/review.inc (1.2), Code/schema.sql
-	  (1.7), PC/ShowAbstract.php (1.3): yet more
+	  (1.7): yet more
 
 2006-07-03 Monday 14:45  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -6040,9 +6137,8 @@
 	  Code/confConfig.inc (1.3), Code/confHeader.inc (1.3),
 	  Code/conference.inc (1.4), Code/conference.sql (1.2),
 	  Code/contact.inc (1.3), Code/header.inc (1.3), Code/schema.sql
-	  (1.2), PC/.htaccess (1.1), Reviewer/.htaccess (1.1),
-	  images/info45.png (1.1), images/stophand45.png (1.1): more
-	  progress
+	  (1.2), Reviewer/.htaccess (1.1), images/info45.png (1.1),
+	  images/stophand45.png (1.1): more progress
 
 2006-06-29 Thursday 17:59  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -6088,17 +6184,7 @@
 	  Chair/index.php (1.2), Code/ClassConference.inc (1.2),
 	  Code/ClassContact.inc (1.2), Code/confHeader.inc (1.2),
 	  Code/conference.inc (1.2), Code/contact.inc (1.2),
-	  Code/header.inc (1.2), PC/AskForReviewCommon.inc (1.2),
-	  PC/CheckAssignedPapers.php (1.2), PC/CheckOnPCProgress.php (1.2),
-	  PC/CheckReviewStatus.php (1.2), PC/GradePapers.php (1.2),
-	  PC/ListReviews.php (1.2), PC/PCAllAnonReviewsForPaper.php (1.2),
-	  PC/PCListPapers.php (1.2), PC/PCNotes.php (1.2),
-	  PC/PCReviewsForPaper.php (1.2), PC/PCSubmitReview.php (1.2),
-	  PC/RemoveAskReview.php (1.2), PC/ReviewAnyPaper.php (1.2),
-	  PC/ReviewPapers.php (1.2), PC/SeeAcceptedPapers.php (1.2),
-	  PC/SeeAllGrades.php (1.2), PC/ShowAbstract.php (1.2),
-	  PC/SpotMyProblems.php (1.2), PC/index.php (1.2),
-	  Reviewer/CommonPrintReview.php (1.2),
+	  Code/header.inc (1.2), Reviewer/CommonPrintReview.php (1.2),
 	  Reviewer/CommonSubmitReview.php (1.2),
 	  Reviewer/RequestedReviews.php (1.2),
 	  Reviewer/RequestedReviewsFromIndex.inc (1.2),
@@ -6160,28 +6246,15 @@
 	  (1.1.1.1), Code/conference.sql (1.1.1.1), Code/contact.inc
 	  (1.1.1.1), Code/createdb.sh (1.1.1.1), Code/header.inc (1.1.1.1),
 	  Code/review.inc (1.1.1.1), Code/schema.sql (1.1.1.1),
-	  PC/AskForReviewCommon.inc (1.1.1.1), PC/AskForSecondaryReview.php
-	  (1.1.1.1), PC/CheckAssignedPapers.php (1.1.1.1),
-	  PC/GradePapers.php (1.1.1.1), PC/ListReviews.php (1.1.1.1),
-	  PC/PCAllAnonReviewsForPaper.php (1.1.1.1), PC/PCListPapers.php
-	  (1.1.1.1), PC/PCNotes.php (1.1.1.1), PC/PCReviewsForPaper.php
-	  (1.1.1.1), PC/PCSubmitReview.php (1.1.1.1),
-	  PC/RemoveAskReview.php (1.1.1.1), PC/ReviewAnyPaper.php
-	  (1.1.1.1), PC/ReviewPapers.php (1.1.1.1),
-	  PC/SeeAcceptedPapers.php (1.1.1.1), PC/SeeAllGrades.php
-	  (1.1.1.1), PC/ShowAbstract.php (1.1.1.1), PC/SpotMyProblems.php
-	  (1.1.1.1), PC/ValidPapers.inc (1.1.1.1), PC/gradeNames.inc
-	  (1.1.1.1), PC/index.php (1.1.1.1), Reviewer/CommonPrintReview.php
-	  (1.1.1.1), Reviewer/CommonSubmitReview.php (1.1.1.1),
+	  Reviewer/CommonPrintReview.php (1.1.1.1),
+	  Reviewer/CommonSubmitReview.php (1.1.1.1),
 	  Reviewer/RequestedReviews.php (1.1.1.1),
 	  Reviewer/RequestedReviewsFromIndex.inc (1.1.1.1),
 	  Reviewer/ReviewerSubmitReview.php (1.1.1.1),
 	  Reviewer/SeeDecision.php (1.1.1.1), Reviewer/SeeDecisions.php
 	  (1.1.1.1), Reviewer/ratings.html (1.1.1.1), Reviewer/ratings.php
 	  (1.1.1.1), images/CheckMark.gif (1.1.1.1), images/GenChart.php
-	  (1.1.1.1), images/GeneralChart.php (1.1.1.1),
-	  PC/AskForPrimaryReview.php (1.1.1.1), PC/CheckOnPCProgress.php
-	  (1.1.1.1), PC/CheckReviewStatus.php (1.1.1.1): CRP import
+	  (1.1.1.1), images/GeneralChart.php (1.1.1.1): CRP import
 
 2006-06-29 Thursday 16:34  Eddie Kohler <kohler@cs.ucla.edu>
 
@@ -6230,24 +6303,13 @@
 	  Code/confJavaScript.inc (1.1), Code/conference.inc (1.1),
 	  Code/conference.sql (1.1), Code/contact.inc (1.1),
 	  Code/createdb.sh (1.1), Code/header.inc (1.1), Code/review.inc
-	  (1.1), Code/schema.sql (1.1), PC/AskForReviewCommon.inc (1.1),
-	  PC/AskForSecondaryReview.php (1.1), PC/CheckAssignedPapers.php
-	  (1.1), PC/GradePapers.php (1.1), PC/ListReviews.php (1.1),
-	  PC/PCAllAnonReviewsForPaper.php (1.1), PC/PCListPapers.php (1.1),
-	  PC/PCNotes.php (1.1), PC/PCReviewsForPaper.php (1.1),
-	  PC/PCSubmitReview.php (1.1), PC/RemoveAskReview.php (1.1),
-	  PC/ReviewAnyPaper.php (1.1), PC/ReviewPapers.php (1.1),
-	  PC/SeeAcceptedPapers.php (1.1), PC/SeeAllGrades.php (1.1),
-	  PC/ShowAbstract.php (1.1), PC/SpotMyProblems.php (1.1),
-	  PC/ValidPapers.inc (1.1), PC/gradeNames.inc (1.1), PC/index.php
-	  (1.1), Reviewer/CommonPrintReview.php (1.1),
-	  Reviewer/CommonSubmitReview.php (1.1),
+	  (1.1), Code/schema.sql (1.1), Reviewer/CommonPrintReview.php
+	  (1.1), Reviewer/CommonSubmitReview.php (1.1),
 	  Reviewer/RequestedReviews.php (1.1),
 	  Reviewer/RequestedReviewsFromIndex.inc (1.1),
 	  Reviewer/ReviewerSubmitReview.php (1.1), Reviewer/SeeDecision.php
 	  (1.1), Reviewer/SeeDecisions.php (1.1), Reviewer/ratings.html
 	  (1.1), Reviewer/ratings.php (1.1), images/CheckMark.gif (1.1),
-	  images/GenChart.php (1.1), images/GeneralChart.php (1.1),
-	  PC/AskForPrimaryReview.php (1.1), PC/CheckOnPCProgress.php (1.1),
-	  PC/CheckReviewStatus.php (1.1): Initial revision
+	  images/GenChart.php (1.1), images/GeneralChart.php (1.1): Initial
+	  revision
 
