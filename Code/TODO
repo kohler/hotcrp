@@ -1,5 +1,9 @@
 - downloading reviews from the search screen gets comments as well
 - entry to identify presenting author
+- Matthew Frank: track conflicts by person rather than paper
+- Matthew Frank: five values for reviewer topic interest
+- Matthew Frank: local hill climbing for auto assignment
+- Matthew Frank: bulk external reviewer assignment
 
 Minor features
 - uploading request forms for others?

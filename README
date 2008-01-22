@@ -29,14 +29,17 @@ support.
 Additional packages required for paper format checking:
 * pdftohtml (0.39)		http://pdftohtml.sourceforge.net/
 
+
 Configuration
 -------------
 * Database configuration
 
   - Decide on a name for your database (no spaces allowed).
 
-  - Run "sudo Code/createdb.sh" to create the database.  Any options
-    supplied will be passed along to MySQL; usually none are necessary.
+  - If you checked HotCRP out from CVS, remove the "Code/options.inc" file.
+
+  - Run "sudo Code/createdb.sh" to create the database.  You may also run
+    "sudo Code/createdb.sh [OPTIONS]" to pass options to MySQL.
 
   - Edit 'my.cnf' (typical location: '/etc/my.cnf') to ensure that MySQL
     can handle large objects.  It should contain something like this:
@@ -45,9 +48,9 @@ Configuration
 	max_allowed_packet=32M
 
     If you are accepting very large papers, make max_allowed_packet even
-    larger.  Some deployments, such as Macintoshes, may not have a 'my.cnf'
-    by default; just create one.  If you need to edit my.cnf, you must
-    restart the mysqld server; on Linux boxes "sudo /etc/init.d/mysqld
+    larger.  Some MySQL setups, such as on Mac OS X, may not have a
+    'my.cnf' by default; just create one.  If you need to edit my.cnf, you
+    must restart the mysqld server; on Linux boxes "sudo /etc/init.d/mysqld
     restart" often suffices.
 
 * Site configuration
@@ -116,8 +119,9 @@ Configuration
 
 Backing up the database
 -----------------------
-Run 'Code/backupdb.sh' at the shell prompt to back up the database.  This will
-write the database's current structure and comments to the standard output.
+Run "Code/backupdb.sh" at the shell prompt to back up the database.  This
+will write the database's current structure and comments to the standard
+output.
 
 
 Updating the code
