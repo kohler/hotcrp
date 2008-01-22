@@ -243,7 +243,7 @@ CREATE TABLE `PaperReview` (
   PRIMARY KEY  (`reviewId`),
   UNIQUE KEY `reviewId` (`reviewId`),
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
-  KEY `paperId` (`paperId`),
+  KEY `paperId` (`paperId`,`reviewOrdinal`),
   KEY `reviewSubmitted` (`reviewSubmitted`),
   KEY `reviewNeedsSubmit` (`reviewNeedsSubmit`),
   KEY `reviewType` (`reviewType`),
