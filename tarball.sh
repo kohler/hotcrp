@@ -55,6 +55,7 @@ style.css
 
 Code/.htaccess
 Code/backupdb.sh
+Code/banal
 Code/baselist.inc
 Code/checkformat.inc
 Code/conference.inc
