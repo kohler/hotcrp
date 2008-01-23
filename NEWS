@@ -1,14 +1,17 @@
 HotCRP NEWS
 
-Version 2.13
+Version 2.13   22.Jan.2008
 
 * Add support for paper format checking with Geoff Voelker's banal script.
-  Thanks to Geoff for the script and debugging support, and to Bernhard
-  Ager for providing an initial implementation.
+  Thanks to Geoff for the script and debugging support, and to Harald
+  Schiöberg for providing an initial implementation.
 
 * Fix "Monitor external reviews" (requested by Matthew Frank).
 
 * Add two more textual review fields (requested by Matthew Frank).
+
+* Set the message used to invite external reviewers via the UI (requested
+  by Matthew Frank).
 
 * Hide comments from reviewers that should not be seen by reviewers.
 
@@ -19,7 +22,7 @@ Version 2.13
   loads by reporting the correct Content-Length for gzipped content
   (problem reported by Elliott Karpilovsky).
 
-* Thanks also to Matthew Frank and Joseph Tucek.
+* Thanks also to Matthew Frank, Joseph Tucek, and Bernhard Ager.
 
 
 Version 2.12   30.Dec.2007
