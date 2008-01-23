@@ -194,7 +194,7 @@ class PaperTable {
 		$watchValue = 0;
 	    if ($watchValue & $this->watchCheckbox)
 		echo " checked='checked'";
-	    echo " onchange='Miniajax.submit(\"watchform\")' />&nbsp;Mail me on comment updates&nbsp; ",
+	    echo " onchange='Miniajax.submit(\"watchform\")' />&nbsp;Mail me when updated comments are available&nbsp; ",
 		"<input class='button_small extension7' type='submit' value='Save' /> ",
 		"<span id='watchformresult' style='padding-left:1em'></span></div></form>";
 	    $Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"watchform\");</script>";

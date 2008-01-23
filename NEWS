@@ -1,5 +1,27 @@
 HotCRP NEWS
 
+Version 2.13
+
+* Add support for paper format checking with Geoff Voelker's banal script.
+  Thanks to Geoff for the script and debugging support, and to Bernhard
+  Ager for providing an initial implementation.
+
+* Fix "Monitor external reviews" (requested by Matthew Frank).
+
+* Add two more textual review fields (requested by Matthew Frank).
+
+* Hide comments from reviewers that should not be seen by reviewers.
+
+* URL improvements.  Remove .php suffix with mod_rewrite; replace
+  "paperId=" with "p=", "reviewId=" with "r=", "commentId=" with "c=".
+
+* Bug fixes and memory reduction fixes.  Especially speed up first-time
+  loads by reporting the correct Content-Length for gzipped content
+  (problem reported by Elliott Karpilovsky).
+
+* Thanks also to Matthew Frank and Joseph Tucek.
+
+
 Version 2.12   30.Dec.2007
 
 * Introduce "twiddle tags", such as "~tag", which are visible only to the
