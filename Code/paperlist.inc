@@ -216,6 +216,7 @@ class PaperList extends BaseList {
     
     function _sortReviewerPreference($a, $b) {
 	$x = $b->reviewerPreference - $a->reviewerPreference;
+	$x = $x ? $x : defval($b, "topicInterestScore", 0) - defval($a, "topicInterestScore", 0);
 	return $x ? $x : $a->paperId - $b->paperId;
     }
     
