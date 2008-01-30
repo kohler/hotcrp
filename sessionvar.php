@@ -9,7 +9,7 @@ if (isset($_REQUEST["var"])) {
     $v = $_REQUEST["var"];
     if ($v == "foldassigna" || $v == "foldassignp"
 	|| $v == "foldpapera" || $v == "foldpaperp" || $v == "foldreviewp"
-	|| $v == "foldplact" || $v == "foldpltags") {
+	|| $v == "foldplact" || $v == "foldpltags" || $v == "foldplabstract") {
 	if (isset($_REQUEST["val"]))
 	    $_SESSION[$v] = intval($_REQUEST["val"]);
 	else
