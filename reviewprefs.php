@@ -87,7 +87,8 @@ $Conf->infoMsg("<p>Review preferences are integers.
 The higher your preference, the more you want to review a paper.
 0 means you don't care either way; use negative numbers for papers you don't want to review, and &minus;100 or less for conflicts.
 Multiple papers can have the same preference.
-The system will try to assign your reviews in preference order.</p>
+The system will try to assign your reviews in preference order, using
+topic scores to break ties.</p>
 
 <p>The list shows all submitted papers$topicnote.
 Click on a column heading to sort by
