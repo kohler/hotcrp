@@ -87,9 +87,9 @@ class PaperSearch {
 	$ptype = defval($opt, "t", 0);
 	if ($this->privChair && !$ptype && $Conf->timeUpdatePaper())
 	    $this->limitName = "all";
-	else if ($me->isPC && (!$ptype || $ptype == "all")
-		 && $Conf->setting("pc_seeall") > 0)
-	    $this->limitName = "all";
+	else if (($me->privChair && $ptype == "act")
+		 || ($me->isPC && (!$ptype || $ptype == "act" || $ptype == "all") && $Conf->setting("pc_seeall") > 0))
+	    $this->limitName = "act";
 	else if ($me->isPC && (!$ptype || $ptype == "s"))
 	    $this->limitName = "s";
 	else if ($me->isPC && ($ptype == "und" || $ptype == "undec"))
@@ -518,7 +518,9 @@ class PaperSearch {
 	    || $this->limitName == "req" || $this->limitName == "revs"
 	    || $this->limitName == "acc" || $this->limitName == "und")
 	    $res = $this->_combineQuery($res, array("Paper.timeSubmitted>0", ""));
-	if ($this->limitName == "unsub")
+	else if ($this->limitName == "act")
+	    $res = $this->_combineQuery($res, array("Paper.timeWithdrawn<=0", ""));
+	else if ($this->limitName == "unsub")
 	    $res = $this->_combineQuery($res, array("(Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0)", ""));
 	if ($this->limitName == "acc")
 	    $res = $this->_combineQuery($res, array("Paper.outcome>0", ""));
@@ -597,7 +599,7 @@ class PaperSearch {
 	    $queryOptions["author"] = 1;
 	else if ($this->limitName == "req" || $this->limitName == "reqrevs")
 	    $queryOptions["myReviewRequests"] = 1;
-	else if ($this->limitName == "all" && !$this->privChair)
+	else if ($this->limitName == "act")
 	    $queryOptions["active"] = 1;
 	return false;
     }

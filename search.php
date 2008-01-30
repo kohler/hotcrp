@@ -17,20 +17,24 @@ else if (isset($_REQUEST["getgo"]) && isset($_REQUEST["getaction"]))
 
 // paper group
 $tOpt = array();
+if ($Me->isPC && $Conf->setting("pc_seeall") > 0)
+    $tOpt["act"] = "Active papers";
 if ($Me->isPC)
     $tOpt["s"] = "Submitted papers";
 if ($Me->isPC && ($Conf->timeAuthorViewDecision() || $Conf->setting("paperacc") > 0))
     $tOpt["acc"] = "Accepted papers";
-if ($Me->privChair || ($Me->isPC && $Conf->setting("pc_seeall") > 0))
+if ($Me->privChair)
     $tOpt["all"] = "All papers";
+if ($Me->privChair && $Conf->setting("pc_seeall") <= 0 && defval($_REQUEST, "t") == "act")
+    $tOpt["act"] = "Active papers";
 if ($Me->isAuthor)
-    $tOpt["a"] = "My papers";
+    $tOpt["a"] = "Your papers";
 if ($Me->amReviewer())
-    $tOpt["r"] = "My reviews";
+    $tOpt["r"] = "Your reviews";
 if ($Me->reviewsOutstanding)
-    $tOpt["rout"] = "My incomplete reviews";
+    $tOpt["rout"] = "Your incomplete reviews";
 if ($Me->isPC)
-    $tOpt["req"] = "My review requests";
+    $tOpt["req"] = "Your review requests";
 if (count($tOpt) == 0) {
     $Conf->header("Search", 'search', actionBar());
     $Conf->errorMsg("You are not allowed to search for papers.");
@@ -676,7 +680,7 @@ if ($pl && isset($pl->scoreMax)) {
 echo "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
 if ($pl && isset($pl->scoreMax)) {
     echo "<tr><td colspan='3'><div class='smgap'></div><b>Sort scores by:</b> &nbsp;<select name='scoresort'>";
-    foreach (array("Minshall score", "Average", "Variance", "Max &minus; min", "My score") as $k => $v) {
+    foreach (array("Minshall score", "Average", "Variance", "Max &minus; min", "Your score") as $k => $v) {
 	echo "<option value='$k'";
 	if (defval($_SESSION, "scoresort", 0) == $k)
 	    echo " selected='selected'";

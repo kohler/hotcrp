@@ -725,6 +725,8 @@ class PaperList extends BaseList {
 	    return "Accepted papers";
 	  case "all":
 	    return "All papers";
+	  case "act":
+	    return "Active papers";
 	  case "reviewerHome":
 	  case "r":
 	    return "My reviews";
@@ -758,6 +760,7 @@ class PaperList extends BaseList {
 	  case "acc":
 	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71));
 	  case "all":
+	  case "act":
 	    return array(100, 1, 11, 20, 27, 70, 72, 71);
 	  case "reviewerHome":
 	    $this->paperLink = "review";

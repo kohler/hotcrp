@@ -20,7 +20,7 @@ if ($Me->privChair) {
     $tOpt["unsub"] = "Unsubmitted papers";
     $tOpt["all"] = "All papers";
 }
-$tOpt["req"] = "My review requests";
+$tOpt["req"] = "Your review requests";
 if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
     $_REQUEST["t"] = key($tOpt);
 
@@ -252,8 +252,8 @@ if ($Me->privChair) {
     $recip["uncrev"] = "Reviewers with incomplete reviews";
     $recip["extrev"] = "External reviewers";
 }
-$recip["myextrev"] = "My requested reviewers";
-$recip["myuncextrev"] = "My requested reviewers with incomplete reviews";
+$recip["myextrev"] = "Your requested reviewers";
+$recip["myuncextrev"] = "Your requested reviewers with incomplete reviews";
 $recip["pc"] = "Program committee";
 if (!isset($recip[$_REQUEST["recipients"]]))
     $_REQUEST["recipients"] = key($recip);

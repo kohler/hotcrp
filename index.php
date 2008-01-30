@@ -234,12 +234,16 @@ if ($homelist) {
     echo "<strong class='grpt'>List papers: &nbsp;</strong> ";
     $sep = "";
     if ($Me->isReviewer) {
-	echo $sep, "<a href='search$ConfSiteSuffix?q=&amp;t=r' class='nowrap'>My reviews</a>";
+	echo $sep, "<a href='search$ConfSiteSuffix?q=&amp;t=r' class='nowrap'>Your reviews</a>";
 	$sep = $xsep;
     }
     if ($Me->isPC && $Conf->timePCViewAllReviews()
 	&& $Me->amDiscussionLead(0, $Conf)) {
-	echo $sep, "<a href=\"search$ConfSiteSuffix?q=lead:", urlencode($Me->email), "&amp;t=s\" class='nowrap'>My discussion leads</a>";
+	echo $sep, "<a href=\"search$ConfSiteSuffix?q=lead:", urlencode($Me->email), "&amp;t=s\" class='nowrap'>Your discussion leads</a>";
+	$sep = $xsep;
+    }
+    if ($Me->isPC && $Conf->setting("pc_seeall") > 0) {
+	echo $sep, "<a href='search$ConfSiteSuffix?q=&amp;t=act' class='nowrap'>Active</a>";
 	$sep = $xsep;
     }
     if ($Me->isPC && $papersub) {
@@ -332,7 +336,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     // Actions
     $sep = "";
     if ($myrow) {
-	echo $sep, "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&ndash;</a>&nbsp;<a href=\"search$ConfSiteSuffix?q=&amp;t=r\"><strong>My Reviews</strong></a>";
+	echo $sep, "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&ndash;</a>&nbsp;<a href=\"search$ConfSiteSuffix?q=&amp;t=r\"><strong>Your Reviews</strong></a>";
 	$sep = $xsep;
     }
     if ($Me->isPC && $Conf->timePCReviewPreferences()) {
@@ -370,7 +374,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 
     // Overview
     if ($Me->isAuthor)
-	echo "<strong class='grpt'>My Papers: &nbsp;</strong> ";
+	echo "<strong class='grpt'>Your Papers: &nbsp;</strong> ";
     else
 	echo "<strong class='grpt'>Submissions: &nbsp;</strong> ";
 
@@ -424,22 +428,6 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 }
 
 
-// Profile
-if ($Me->valid()) {
-    echo "<tr><td id='homeacct'>";
-    echo "<a href='account$ConfSiteSuffix'><strong class='grpt'>My Profile</strong></a>",
-	$xsep, "<a href='mergeaccounts$ConfSiteSuffix'>Merge accounts</a>";
-    if (($nh = contactNameHtml($Me)))
-	echo $xsep, "Welcome, ", $nh, ".";
-    else
-	echo $xsep, "Welcome.";
-    echo $xsep, "<a href='index$ConfSiteSuffix?signout=1'>Sign out</a>";
-    // echo "(If this isn't you, please <a href='${ConfSiteBase}index$ConfSiteSuffix?signout=1'>sign out</a>.)";
-    // echo "You will be signed out automatically if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.";
-    echo "<hr class='home' /></td></tr>\n";
-}
-
-
 // Conference info
 echo "<tr><td id='homeinfo'>";
 echo "<strong class='grpt'>Conference information: &nbsp;</strong> ";
@@ -481,6 +469,22 @@ if ($Me->privChair) {
     echo $xsep, "<a href='mail$ConfSiteSuffix'>Mail users</a>";
     echo $xsep, "<a href='log$ConfSiteSuffix'>Action log</a>";
 
+    echo "<hr class='home' /></td></tr>\n";
+}
+
+
+// Profile
+if ($Me->valid()) {
+    echo "<tr><td id='homeacct'>";
+    if (($nh = contactNameHtml($Me)))
+	echo "Welcome, ", $nh, ".", $xsep;
+    else
+	echo "Welcome.", $xsep;
+    echo "<a href='account$ConfSiteSuffix'><strong class='grpt'>Your Profile</strong></a>",
+	$xsep, "<a href='mergeaccounts$ConfSiteSuffix'>Merge accounts</a>";
+    echo $xsep, "<a href='index$ConfSiteSuffix?signout=1'>Sign out</a>";
+    // echo "(If this isn't you, please <a href='${ConfSiteBase}index$ConfSiteSuffix?signout=1'>sign out</a>.)";
+    // echo "You will be signed out automatically if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.";
     echo "<hr class='home' /></td></tr>\n";
 }
 
