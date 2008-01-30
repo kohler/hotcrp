@@ -998,7 +998,7 @@ class PaperList extends BaseList {
 	    }
 	    if ($taginfo && $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
-		$titleextra .= "<a class='unfolder4' href='javascript:foldtags(\"pl\",0,4)'>Show tags</a><a class='folder4' href='javascript:foldtags(\"pl\",1,4)'>Hide tags</a>";
+		$titleextra .= "<a class='unfolder4' href='javascript:foldtags(\"pl\",0,4)'>Show tags</a><a class='folder4' href='javascript:foldtags(\"pl\",1,4)'>Hide tags</a><span id='tagloadformresult'></span>";
 		$titleextra .= "<img id='foldsession.pl4' alt='' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldpltags&amp;val=" . defval($_SESSION, "foldpltags", 1) . "&amp;cache=1' width='1' height='1' />";
 	    }
 	    

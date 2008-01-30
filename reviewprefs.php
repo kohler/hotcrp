@@ -166,7 +166,7 @@ if ($pl->headerInfo["abstracts"]) {
     echo "<input type='checkbox' name='showabstract' value='1'";
     if (defval($_SESSION, "foldplabstract", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<br />\n";
+    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<br /><div id='abstractloadformresult'></div>\n";
 }
 echo "</td>", $redisplayButton, "</tr>\n";
 echo "</table></form>"; // </div></div>
