@@ -95,7 +95,7 @@ if (isset($_REQUEST['revpref']) && $prow) {
     if (!$Me->privChair
 	|| ($contactId = cvtint($_REQUEST["contactId"])) <= 0)
 	$contactId = $Me->contactId;
-    if (($v = cvtpref($_REQUEST['revpref'])) >= -1000000 && $v <= 1000000) {
+    if (($v = cvtpref($_REQUEST['revpref'])) >= -1000000) {
 	$while = "while saving review preference";
 	$Conf->qe("lock tables PaperReviewPreference write", $while);
 	$Conf->qe("delete from PaperReviewPreference where contactId=$contactId and paperId=$prow->paperId", $while);

@@ -144,7 +144,7 @@ function checkMail($send) {
     $subject = trim(preg_replace('/[\n\r\t]+/', ' ', defval($_REQUEST, "subject", "")));
     if (substr($subject, 0, strlen($subjectPrefix)) != $subjectPrefix)
 	$subject = $subjectPrefix . $subject;
-    $emailBody = Mailer::cleanBody($_REQUEST["emailBody"]);
+    $emailBody = cleannl($_REQUEST["emailBody"]);
 
     $template = array($subject, $emailBody);
     $rest = array("headers" => "Cc: $Conf->contactName <$Conf->contactEmail>");

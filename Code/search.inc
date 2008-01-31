@@ -713,7 +713,7 @@ class PaperSearch {
     }
 
     function parsePapersel() {
-	global $Me, $papersel;
+	global $Me, $papersel, $paperselmap;
 	if (isset($_REQUEST["pap"]) && $_REQUEST["pap"] == "all") {
 	    $s = new PaperSearch($Me, $_REQUEST);
 	    $_REQUEST["pap"] = $s->paperList();
@@ -722,11 +722,16 @@ class PaperSearch {
 	    $_REQUEST["pap"] = preg_split('/\s+/', $_REQUEST["pap"]);
 	if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
 	    $papersel = array();
+	    $paperselmap = array();
 	    foreach ($_REQUEST["pap"] as $p)
-		if (($p = cvtint($p)) > 0)
+		if (($p = cvtint($p)) > 0 && !isset($paperselmap[$p])) {
+		    $paperselmap[$p] = count($papersel);
 		    $papersel[] = $p;
-	    if (count($papersel) == 0)
+		}
+	    if (count($papersel) == 0) {
 		unset($papersel);
+		unset($paperselmap);
+	    }
 	}
     }
     

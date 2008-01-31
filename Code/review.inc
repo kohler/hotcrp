@@ -574,9 +574,7 @@ $blind\n";
     function beginTextForm($filename, $printFilename) {
 	if (($contents = file_get_contents($filename)) === false)
 	    return null;
-	$contents = preg_replace("/\\r\\n/", "\n", $contents);
-	$contents = strtr($contents, "\r", "\n");
-	return array('text' => $contents, 'filename' => $printFilename,
+	return array('text' => cleannl($contents), 'filename' => $printFilename,
 		     'lineno' => 0, 'err' => array(), 'confirm' => array());
     }
     

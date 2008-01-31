@@ -164,6 +164,12 @@ function pselClick(evt, elt, thisnum) {
     return true;
 }
 
+function defact(what) {
+    var elt = e("defaultact");
+    if (elt)
+	elt.value = what;
+}
+
 
 // assignment selection
 var selassign_blur = 0;
@@ -237,9 +243,11 @@ function tempText(elt, text, on) {
 	elt.value = text;
 }
 
-function maketemptext(input, text, on) {
+function maketemptext(input, text, on, do_defact) {
     return function() {
 	tempText(input, text, on);
+	if (do_defact)
+	    defact("");
     };
 }
 
@@ -259,7 +267,7 @@ function addRevprefAjax() {
     for (var i = 0; i < inputs.length; i++)
 	if (inputs[i].type == 'text' && inputs[i].name.substr(0, 7) == "revpref") {
 	    var whichpaper = inputs[i].name.substr(7);
-	    inputs[i].onfocus = maketemptext(inputs[i], "0", 1);
+	    inputs[i].onfocus = maketemptext(inputs[i], "0", 1, true);
 	    inputs[i].onblur = maketemptext(inputs[i], "0", 0);
 	    inputs[i].onchange = makerevprefajax(inputs[i], whichpaper);
 	}

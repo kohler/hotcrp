@@ -94,14 +94,13 @@ if ($getaction == "abstracts" && isset($papersel) && defval($_REQUEST, "ajax")) 
 } else if ($getaction == "abstracts" && isset($papersel)) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "topics" => 1));
     $result = $Conf->qe($q, "while selecting papers");
-    $text = "";
+    $texts = array();
     $rf = reviewForm();
     while ($prow = edb_orow($result)) {
 	if (!$Me->canViewPaper($prow, $Conf, $whyNot))
 	    $Conf->errorMsg(whyNotText($whyNot, "view"));
 	else {
-	    $rfSuffix = ($text == "" ? "-$prow->paperId" : "s");
-	    $text .= "===========================================================================\n";
+	    $text = "===========================================================================\n";
 	    $n = "Paper #" . $prow->paperId . ": ";
 	    $l = max(14, (int) ((75.5 - strlen($prow->title) - strlen($n)) / 2) + strlen($n));
 	    $text .= wordWrapIndent($prow->title, $n, $l) . "\n";
@@ -110,27 +109,30 @@ if ($getaction == "abstracts" && isset($papersel) && defval($_REQUEST, "ajax")) 
 	    if ($Me->canViewAuthors($prow, $Conf, $_REQUEST["t"] != "a"))
 		$text .= wordWrapIndent(cleanAuthorText($prow), "Authors: ", 14) . "\n";
 	    if ($prow->topicIds != "") {
-		$t = "";
+		$tt = "";
 		$topics = ",$prow->topicIds,";
 		foreach ($rf->topicName as $tid => $tname)
 		    if (strpos($topics, ",$tid,") !== false)
-			$t .= ", " . $tname;
-		$text .= wordWrapIndent(substr($t, 2), "Topics: ", 14) . "\n";
+			$tt .= ", " . $tname;
+		$text .= wordWrapIndent(substr($tt, 2), "Topics: ", 14) . "\n";
 	    }
 	    if ($l != strlen($text))
 		$text .= "---------------------------------------------------------------------------\n";
 	    $text .= rtrim($prow->abstract) . "\n\n";
+	    defappend($texts[$paperselmap[$prow->paperId]], $text);
+	    $rfSuffix = (count($texts) == 1 ? "-$prow->paperId" : "s");
 	}
     }
 
-    if ($text) {
-	downloadText($text, $Opt['downloadPrefix'] . "abstract$rfSuffix.txt", "abstracts");
+    if (count($texts)) {
+	ksort($texts);
+	downloadText(join("", $texts), $Opt['downloadPrefix'] . "abstract$rfSuffix.txt", "abstracts");
 	exit;
     }
 }
 
 
-// download selected abstracts
+// download selected tags
 if ($getaction == "tags" && isset($papersel) && defval($_REQUEST, "ajax")) {
     require_once("Code/tags.inc");
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tags" => 1));
@@ -179,21 +181,22 @@ if ($getaction == "revform" && !isset($papersel)) {
     $rf = reviewForm();
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "myReviewsOpt" => 1)), "while selecting papers");
 
-    $text = '';
+    $texts = array();
     $errors = array();
     while ($row = edb_orow($result)) {
 	if (!$Me->canReview($row, null, $Conf, $whyNot))
 	    $errors[whyNotText($whyNot, "review")] = true;
 	else {
-	    $rfSuffix = ($text == "" ? "-$row->paperId" : "s");
-	    $text .= $rf->textForm($row, $row, $Me, $Conf, null) . "\n";
+	    defappend($texts[$paperselmap[$row->paperId]], $rf->textForm($row, $row, $Me, $Conf, null) . "\n");
+	    $rfSuffix = (count($texts) == 1 ? "-$row->paperId" : "s");
 	}
     }
 
-    if ($text == "")
+    if (count($texts) == 0)
 	$Conf->errorMsg(join("<br/>\n", array_keys($errors)) . "<br/>\nNo papers selected.");
     else {
-	$text = $rf->textFormHeader($Conf, $rfSuffix == "s") . $text;
+	ksort($texts);
+	$text = $rf->textFormHeader($Conf, $rfSuffix == "s") . join("", $texts);
 	if (count($errors)) {
 	    $e = "==-== Some review forms are missing:\n";
 	    foreach ($errors as $ee => $junk)
@@ -211,7 +214,7 @@ if ($getaction == "rev" && isset($papersel)) {
     $rf = reviewForm();
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "allReviews" => 1, "reviewerName" => 1)), "while selecting papers");
 
-    $text = '';
+    $texts = array();
     $errors = array();
     if ($Me->privChair)
 	$_REQUEST["forceShow"] = 1;
@@ -219,14 +222,16 @@ if ($getaction == "rev" && isset($papersel)) {
 	if (!$Me->canViewReview($row, null, $Conf, $whyNot))
 	    $errors[whyNotText($whyNot, "view review")] = true;
 	else if ($row->reviewSubmitted) {
-	    $rfSuffix = ($text == "" ? "-$row->paperId" : "s");
-	    $text .= $rf->prettyTextForm($row, $row, $Me, $Conf, false) . "\n";
+	    defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextForm($row, $row, $Me, $Conf, false) . "\n");
+	    $rfSuffix = (count($texts) == 1 ? "-$row->paperId" : "s");
 	}
     }
 
-    if ($text == "")
+    if (count($texts) == 0)
 	$Conf->errorMsg(join("<br/>\n", array_keys($errors)) . "<br/>\nNo papers selected.");
     else {
+	ksort($texts);
+	$text = join("", $texts);
 	if (count($errors)) {
 	    $e = "Some reviews are missing:\n";
 	    foreach ($errors as $ee => $junk)
@@ -282,18 +287,21 @@ if ($getaction == "authors" && isset($papersel)
 	$idq = "($idq) and blind=0";
     $result = $Conf->qe("select paperId, title, authorInformation from Paper where $idq", "while fetching authors");
     if ($result) {
-	$text = "#paperId\ttitle\tauthor name\temail\taffiliation\n";
+	$texts = array();
 	while (($row = edb_orow($result))) {
 	    cleanAuthor($row);
 	    foreach ($row->authorTable as $au) {
-		$text .= $row->paperId . "\t" . $row->title . "\t";
+		$t = $row->paperId . "\t" . $row->title . "\t";
 		if ($au[0] && $au[1])
-		    $text .= $au[0] . " " . $au[1];
+		    $t .= $au[0] . " " . $au[1];
 		else
-		    $text .= $au[0] . $au[1];
-		$text .= "\t" . $au[2] . "\t" . $au[3] . "\n";
+		    $t .= $au[0] . $au[1];
+		$t .= "\t" . $au[2] . "\t" . $au[3] . "\n";
+		defappend($texts[$paperselmap[$row->paperId]], $t);
 	    }
 	}
+	ksort($texts);
+	$text = "#paper\ttitle\tauthor name\temail\taffiliation\n" . join("", $texts);
 	downloadText($text, $Opt['downloadPrefix'] . "authors.txt", "authors");
 	exit;
     }
@@ -312,10 +320,12 @@ if ($getaction == "pcconflicts" && isset($papersel) && $Me->privChair) {
 		where $idq
 		group by Paper.paperId", "while fetching PC conflicts");
     if ($result) {
-	$text = "#paperId\ttitle\tPC conflicts\n";
+	$texts = array();
 	while (($row = edb_row($result)))
 	    if ($row[2])
-		$text .= $row[0] . "\t" . $row[1] . "\t" . $row[2] . "\n";
+		defappend($texts[$paperselmap[$row[0]]], $row[0] . "\t" . $row[1] . "\t" . $row[2] . "\n");
+	ksort($texts);
+	$text = "#paper\ttitle\tPC conflicts\n" . join("", $texts);
 	downloadText($text, $Opt['downloadPrefix'] . "pcconflicts.txt", "PC conflicts");
 	exit;
     }
@@ -328,10 +338,12 @@ if ($getaction == "contact" && $Me->privChair && isset($papersel)) {
     $idq = paperselPredicate($papersel, "Paper.");
     $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq order by Paper.paperId", "while fetching contact authors");
     if ($result) {
-	$text = "#paperId\ttitle\tlast, first\temail\n";
+	$texts = array();
 	while (($row = edb_row($result))) {
-	    $text .= $row[0] . "\t" . $row[1] . "\t" . $row[3] . ", " . $row[2] . "\t" . $row[4] . "\n";
+	    defappend($texts[$paperselmap[$row[0]]], $row[0] . "\t" . $row[1] . "\t" . $row[3] . ", " . $row[2] . "\t" . $row[4] . "\n");
 	}
+	ksort($texts);
+	$text = "#paper\ttitle\tlast, first\temail\n" . join("", $texts);
 	downloadText($text, $Opt['downloadPrefix'] . "contacts.txt", "contacts");
 	exit;
     }
@@ -349,7 +361,7 @@ if ($getaction == "scores" && $Me->privChair && isset($papersel)) {
 	if (isset($rf->options[$field]))
 	    $scores[] = $field;
     
-    $header = '#paperId';
+    $header = '#paper';
     if ($Conf->blindSubmission() == 1)
 	$header .= "\tblind";
     $header .= "\tdecision";
@@ -360,12 +372,12 @@ if ($getaction == "scores" && $Me->privChair && isset($papersel)) {
     $errors = array();
     if ($Me->privChair)
 	$_REQUEST["forceShow"] = 1;
-    $text = "";
+    $texts = array();
     while (($row = edb_orow($result))) {
 	if (!$Me->canViewReview($row, null, $Conf, $whyNot))
 	    $errors[] = whyNotText($whyNot, "view review") . "<br />";
 	else if ($row->reviewSubmitted) {
-	    $text .= $row->paperId;
+	    $text = $row->paperId;
 	    if ($Conf->blindSubmission() == 1)
 		$text .= "\t" . $row->blind;
 	    $text .= "\t" . $row->outcome;
@@ -373,17 +385,67 @@ if ($getaction == "scores" && $Me->privChair && isset($papersel)) {
 		$text .= "\t" . $row->$score;
 	    if ($Me->canViewReviewerIdentity($row, $row, $Conf))
 		$text .= "\t" . $row->reviewEmail . "\t" . trim($row->reviewFirstName . " " . $row->reviewLastName);
-	    $text .= "\n";
+	    defappend($texts[$paperselmap[$row->paperId]], $text . "\n");
 	}
     }
 
-    if ($text == "")
+    if (count($texts) == 0)
 	$Conf->errorMsg(join("", $errors) . "No papers selected.");
     else {
-	downloadText($header . $text, $Opt['downloadPrefix'] . "scores.txt", "scores");
+	ksort($texts);
+	downloadText($header . join("", $texts), $Opt['downloadPrefix'] . "scores.txt", "scores");
 	exit;
     }
 }
+
+
+// download preferences for selected papers
+function downloadRevpref($extended) {
+    global $Conf, $Me, $Opt, $papersel, $paperselmap;
+    // maybe download preferences for someone else
+    $Rev = $Me;
+    if (($rev = cvtint($_REQUEST["reviewer"])) > 0 && $Me->privChair) {
+	$Rev = new Contact();
+	if (!$Rev->lookupById($rev, $Conf) || !$Rev->valid())
+	    return $Conf->errorMsg("No such reviewer");
+    }
+    $q = $Conf->paperQuery($Rev, array("paperId" => $papersel, "topics" => 1, "reviewerPreference" => 1));
+    $result = $Conf->qe($q, "while selecting papers");
+    $texts = array();
+    $rf = reviewForm();
+    while ($prow = edb_orow($result)) {
+	$t = $prow->paperId . "\t";
+	if ($prow->conflictType > 0)
+	    $t .= "conflict";
+	else
+	    $t .= $prow->reviewerPreference;
+	$t .= "\t" . $prow->title . "\n";
+	if ($extended) {
+	    if ($Rev->canViewAuthors($prow, $Conf, true))
+		$t .= wordWrapIndent(cleanAuthorText($prow), "#  Authors: ", "#           ") . "\n";
+	    $t .= wordWrapIndent(rtrim($prow->abstract), "# Abstract: ", "#           ") . "\n";
+	    if ($prow->topicIds != "") {
+		$tt = "";
+		$topics = ",$prow->topicIds,";
+		foreach ($rf->topicName as $tid => $tname)
+		    if (strpos($topics, ",$tid,") !== false)
+			$tt .= ", " . $tname;
+		$t .= wordWrapIndent(substr($tt, 2), "#   Topics: ", "#           ") . "\n";
+	    }
+	    $t .= "\n";
+	}
+	defappend($texts[$paperselmap[$prow->paperId]], $t);
+    }
+
+    if (count($texts)) {
+	ksort($texts);
+	$header = "#paper\tpreference\ttitle\n";
+	downloadText($header . join("", $texts), $Opt['downloadPrefix'] . "revprefs.txt", "review preferences");
+	exit;
+    }
+}
+if (($getaction == "revpref" || $getaction == "revprefx") && $Me->isPC && isset($papersel))
+    downloadRevpref($getaction == "revprefx");
 
 
 // download topics for selected papers
@@ -391,14 +453,15 @@ if ($getaction == "topics" && $Me->privChair && isset($papersel)) {
     $result = $Conf->qe("select paperId, title, topicName from Paper join PaperTopic using (paperId) join TopicArea using (topicId) where " . paperselPredicate($papersel) . " order by paperId", "while fetching topics");
 
     // compose scores
-    $text = "";
+    $texts = array();
     while ($row = edb_orow($result))
-	$text .= $row->paperId . "\t" . $row->title . "\t" . $row->topicName . "\n";
+	defappend($texts[$paperselmap[$row->paperId]], $row->paperId . "\t" . $row->title . "\t" . $row->topicName . "\n");
 
-    if ($text == "")
+    if (count($texts) == "")
 	$Conf->errorMsg(join("", $errors) . "No papers selected.");
     else {
-	$text = "#paperId\ttitle\ttopic\n" . $text;
+	ksort($texts);
+	$text = "#paper\ttitle\ttopic\n" . join("", $texts);
 	downloadText($text, $Opt['downloadPrefix'] . "topics.txt", "topics");
 	exit;
     }

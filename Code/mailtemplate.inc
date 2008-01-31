@@ -686,16 +686,6 @@ class Mailer {
 	return $m;
     }
 
-    function cleanBody($body) {
-	if (strpos($body, "\r") !== false) {
-	    $body = str_replace("\r\n", "\n", $body);
-	    $body = str_replace("\r", "\n", $body);
-	}
-	if (strlen($body) && $body[strlen($body) - 1] != "\n")
-	    $body .= "\n";
-	return $body;
-    }
-
     function prepareToSend($template, $row, $contact, $otherContact = null, $rest = array()) {
 	global $Conf, $mailTemplates;
 

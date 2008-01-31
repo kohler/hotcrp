@@ -14,6 +14,19 @@ if ($reviewer <= 0 || !$Me->privChair)
     $reviewer = $Me->contactId;
 $_REQUEST["t"] = ($Conf->setting("pc_seeall") > 0 ? "act" : "s");
 
+// choose a sensible default action (if someone presses enter on a form element)
+if (isset($_REQUEST["default"]) && defval($_REQUEST, "defaultact"))
+    $_REQUEST[$_REQUEST["defaultact"]] = true;
+else if (isset($_REQUEST["default"]))
+    $_REQUEST["update"] = true;
+
+if (isset($_REQUEST["getgo"]) && isset($_REQUEST["getaction"]))
+    $_REQUEST["get"] = $_REQUEST["getaction"];
+if ((defval($_REQUEST, "get") == "revpref" || defval($_REQUEST, "get") == "revprefx") && !isset($_REQUEST["pap"]))
+    $_REQUEST["pap"] = "all";
+
+
+// Update preferences
 function savePreferences($reviewer) {
     global $Conf, $Me, $reviewTypeName, $OK;
 
@@ -23,7 +36,7 @@ function savePreferences($reviewer) {
     foreach ($_REQUEST as $k => $v)
 	if ($k[0] == "r" && substr($k, 0, 7) == "revpref"
 	    && ($p = cvtint(substr($k, 7))) > 0) {
-	    if (($v = cvtpref($v)) >= -1000000 && $v <= 1000000) {
+	    if (($v = cvtpref($v)) >= -1000000) {
 		if ($v != 0)
 		    $setting[$p] = $v;
 		$pmax = max($pmax, $p);
@@ -75,20 +88,72 @@ if (isset($_REQUEST["update"]))
     savePreferences($reviewer);
 
 
-if (isset($_REQUEST["setpaprevpref"]) || (isset($_REQUEST["getgo"]) && isset($_REQUEST["getaction"]))) {
+// Select papers
+if (isset($_REQUEST["setpaprevpref"]) || isset($_REQUEST["get"])) {
     PaperSearch::parsePapersel();
     if (!isset($papersel))
 	$Conf->errorMsg("No papers selected.");
-    else if (isset($_REQUEST["setpaprevpref"])) {
-	if (($v = cvtpref($_REQUEST["paprevpref"])) < -1000000 || $v > 1000000)
-	    $Conf->errorMsg("Preferences must be small positive or negative integers.");
+}
+
+
+// Set multiple paper preferences
+if (isset($_REQUEST["setpaprevpref"]) && isset($papersel)) {
+    if (($v = cvtpref($_REQUEST["paprevpref"])) < -1000000)
+	$Conf->errorMsg("Preferences must be small positive or negative integers.");
+    else {
+	foreach ($papersel as $p)
+	    $_REQUEST["revpref$p"] = $v;
+	savePreferences($reviewer);
+    }
+}
+
+
+// Parse paper preferences
+function parseUploadedPreferences($filename, $printFilename, $reviewer) {
+    global $Conf;
+    if (($text = file_get_contents($filename)) === false)
+	return $Conf->errorMsg("Cannot read uploaded file.");
+    $printFilename = htmlspecialchars($printFilename);
+    $text = cleannl($text);
+    $lineno = 0;
+    $successes = 0;
+    $errors = array();
+    foreach (split("\n", $text) as $line) {
+	$line = trim($line);
+	$lineno++;
+	
+	if ($line == "" || $line[0] == "#" || substr($line, 0, 6) == "==-== ")
+	    /* do nothing */;
+	else if (preg_match('/^(\d+)\s*[\t,]\s*([^\s,]+)\s*([\t,]|$)/', $line, $m)) {
+	    if (($pref = cvtpref($m[2])) >= -1000000) {
+		$_REQUEST["revpref$m[1]"] = $m[2];
+		$successes++;
+	    } else if (($m[2] = strtolower($m[2])) != "x"
+		       && $m[2] != "conflict")
+		$errors[] = "<span class='lineno'>$printFilename:$lineno:</span> bad review preference, should be integer";
+	} else if (count($errors) < 20)
+	    $errors[] = "<span class='lineno'>$printFilename:$lineno:</span> syntax error, expected <code>paperID,preference</code>";
 	else {
-	    foreach ($papersel as $p)
-		$_REQUEST["revpref$p"] = $v;
-	    savePreferences($reviewer);
+	    $errors[] = "<span class='lineno'>$printFilename:$lineno:</span> too many syntax errors, giving up";
+	    break;
 	}
-    } else
-	include("search.php");
+    }
+
+    if (count($errors) > 0)
+	$Conf->errorMsg("There were some errors while parsing the uploaded preferences file. <div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p></div>");
+    if ($successes > 0)
+	savePreferences($reviewer);
+}
+if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadedFile"], $Conf))
+    parseUploadedPreferences($_FILES["uploadedFile"]["tmp_name"], $_FILES["uploadedFile"]["name"], $reviewer);
+else if (isset($_REQUEST["upload"]))
+    $Conf->errorMsg("Select a preferences file to upload.");
+
+
+// Search actions
+if (isset($_REQUEST["get"]) && isset($papersel)) {
+    include("search.php");
+    exit;
 }
 
 
@@ -114,7 +179,8 @@ topic scores to break ties.</p>
 
 <p>The list shows all submitted papers$topicnote.  Click on a column heading
 to sort by that column.  Enter preferences in the text boxes or by following
-the paper links.</p>");
+the paper links, or use preference files (below the paper list) to work
+offline.</p>");
 
 
 // set options to view
@@ -210,7 +276,9 @@ echo "</div></form>\n\n";
 // main form
 echo "<form class='assignpc' method='post' action=\"reviewprefs$ConfSiteSuffix?reviewer=$reviewer",
     (defval($_REQUEST, "q") ? "&amp;q=" . htmlspecialchars($_REQUEST["q"]) : ""),
-    "&amp;post=1\" enctype='multipart/form-data'>\n";
+    "&amp;post=1\" enctype='multipart/form-data'>",
+    "<input id='defaultact' type='hidden' name='defaultact' value='' />",
+    "<input class='hidden' type='submit' name='default' value='1' />";
 echo $pl_text;
 echo "<div class='smgap'></div>";
 // echo "<table class='center'><tr><td><input class='hbutton' type='submit' name='update' value='Save preferences' /></td></tr></table>\n";

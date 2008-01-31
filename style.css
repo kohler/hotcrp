@@ -977,7 +977,7 @@ span.match {
 	font-weight: bold;
 }
 
-div.error div.parseerr p, div.confirm div.parseerr p {
+div.merror div.parseerr p, div.confirm div.parseerr p {
 	margin: 0px;
 	padding: 0px 0px 0px 3em;
 	text-indent: -3em;
@@ -987,7 +987,7 @@ div.parseerr span.lineno {
 	font-size: smaller;
 }
 
-div.error pre {
+div.merror pre {
 	padding: 0.5em;
 	background: #fff2f2;
 	border: 1px dashed #eecccc;
@@ -1093,7 +1093,8 @@ tr.k1 td {
 .fold5c .extension5, .fold5c .folder5, .fold5o .ellipsis5, .fold5o .unfolder5,
 .fold7c .extension7, .fold7c .folder7, .fold7o .ellipsis7, .fold7o .unfolder7,
 .fold8c .extension8, .fold8c .folder8, .fold8o .ellipsis8, .fold8o .unfolder8,
-.fold9c .extension9, .fold9c .folder9, .fold9o .ellipsis9, .fold9o .unfolder9 {
+.fold9c .extension9, .fold9c .folder9, .fold9o .ellipsis9, .fold9o .unfolder9,
+.hidden {
 	display: none;
 }
 

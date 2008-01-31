@@ -639,20 +639,18 @@ class PaperList extends BaseList {
 		
 	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
 	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'>" . $Conf->cacheableImage("bendulft.png", "^^", null, "placthook") . "</td>\n";
-	$t .= "    <td colspan='" . ($ncol - 1) . "'><div id='plact' class='linelinks1'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
+	$t .= "    <td colspan='" . ($ncol - 1) . "'>"
+	    . "<div id='plact' class='linelinks1'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
 
-	// Begin linelinks
-	if ($revpref) {
-	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Set preferences</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
-	    $t .= "<input id='plact${nlll}_d' class='textlite' type='text' name='paprevpref' value='' size='4' tabindex='6' /> &nbsp;<input type='submit' class='button_small' name='setpaprevpref' value='Go' tabindex='6' /></span>";
-	    $t .= $barsep;
-	    $nlll++;
-	}
-	
+	// Linelinks
+
+	// Download
 	$t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Download</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
 	$t .= "<select id='plact${nlll}_d' name='getaction' tabindex='6'>\n";
 	if ($revpref)
-	    $t .= "	<option value='abstracts' selected='selected'>Abstracts</option>\n";
+	    $t .= "	<option value='revpref' selected='selected'>Preference file</option>
+    <option value='revprefx'>Preference file with abstracts</option>
+    <option value='abstracts'>Abstracts</option>\n";
 	else {
 	    $t .= "    <option value='paper' selected='selected'>Papers</option>
     <option value='abstracts'>Abstracts</option>
@@ -663,27 +661,45 @@ class PaperList extends BaseList {
 		$t .= "    <option value='rev'>All reviews</option>\n";
 	}
 	if ($this->contact->privChair || ($this->contact->isReviewer && $Conf->blindSubmission() < 2))
-	    $t .= "    <option value='authors'>Authors (text)</option>\n";
+	    $t .= "    <option value='authors'>Authors</option>\n";
 	if ($this->contact->privChair) {
-	    $t .= "    <option value='contact'>Contact emails (text)</option>\n";
-	    $t .= "    <option value='pcconflicts'>PC conflicts (text)</option>\n";
+	    $t .= "    <option value='contact'>Contact emails</option>\n";
+	    $t .= "    <option value='pcconflicts'>PC conflicts</option>\n";
 	}
 	if ($this->contact->isPC)
-	    $t .= "    <option value='topics'>Topics (text)</option>\n";
+	    $t .= "    <option value='topics'>Topics</option>\n";
 	if (!$revpref && ($this->contact->privChair || ($this->contact->isPC && $Conf->timePCViewAllReviews())))
-	    $t .= "    <option value='scores'>All scores (text)</option>\n";
+	    $t .= "    <option value='scores'>All scores</option>\n";
 	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='getgo' value='Go' tabindex='6' /></span>";
 	$nlll++;
 
+	// Upload preferences (review preferences only)
+	if ($revpref) {
+	    $t .= $barsep;
+	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Upload</a></span><span class='lld$nlll'><b> preference file:</b> &nbsp;";
+	    $t .= "<input id='plact${nlll}_d' type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='defact(\"upload\")' />&nbsp; <input type='submit' class='button_small' name='upload' value='Go' tabindex='6' /></span>";
+	    $nlll++;
+	}
+
+	// Set preferences (review preferences only)
+	if ($revpref) {
+	    $t .= $barsep;
+	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Set preferences</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
+	    $t .= "<input id='plact${nlll}_d' class='textlite' type='text' name='paprevpref' value='' size='4' tabindex='6' onfocus='defact(\"setpaprevpref\")' /> &nbsp;<input type='submit' class='button_small' name='setpaprevpref' value='Go' tabindex='6' /></span>";
+	    $nlll++;
+	}
+	
+	// Tags (search+PC only)
 	if ($this->contact->isPC && !$revpref) {
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Tag</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
 	    $t .= "<select name='tagtype'>
     <option value='a' selected='selected'>Add</option><option value='d'>Remove</option><option value='s'>Define</option><option value='so'>Define ordered</option><option value='ao'>Add ordered</option>
-  </select> &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></span>";
+  </select> &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></span>";
 	    $nlll++;
 	}
 
+	// Assignments (search+admin only)
 	if ($this->contact->privChair && !$revpref) {
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Assign</a></span><span id='foldass' class='lld$nlll foldc'><b>:</b> &nbsp;";
@@ -709,6 +725,7 @@ class PaperList extends BaseList {
 	    $nlll++;
 	}
 
+	// Decide, Mail (search+admin only)
 	if ($this->contact->privChair && !$revpref) {
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Decide</a></span><span class='lld$nlll'><b>:</b> Set to &nbsp;";

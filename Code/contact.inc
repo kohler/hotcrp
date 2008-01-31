@@ -117,9 +117,9 @@ class Contact {
 			return $this->valid($conf, true);
 		    }
 		}
-		$this->validated = true;
 		if ($update)
 		    $this->lookupById($this->contactId, $conf);
+		$this->validated = true;
 	    }
 	} else if (isset($Opt['validatorContact']) && $Opt['validatorContact'] && !$this->contactId && isset($_REQUEST['validator'])) {
 	    $this->lookupByEmail($Opt['validatorContact'], $conf);

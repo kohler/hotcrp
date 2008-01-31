@@ -14,6 +14,12 @@ function vtrim(&$var) {
     return (isset($var) ? trim($var) : "");
 }
 
+function defappend(&$var, $str) {
+    if (!isset($var))
+	$var = "";
+    $var .= $str;
+}
+
 
 // database helpers
 
@@ -57,9 +63,14 @@ function sqlqtrim($value) {
     return mysql_real_escape_string(trim($value));
 }
 
-function sqlq_cleannl($value) {
-    $value = str_replace("\r\n", "\n", $value);
-    return mysql_real_escape_string(strtr($value, "\r", "\n"));
+function cleannl($text) {
+    if (strpos($text, "\r") !== false) {
+	$text = str_replace("\r\n", "\n", $text);
+	$text = strtr($text, "\r", "\n");
+    }
+    if (strlen($text) && $text[strlen($text) - 1] != "\n")
+	$text .= "\n";
+    return $text;
 }
 
 
@@ -924,7 +935,7 @@ function cvtpref($n) {
 	return strlen($n);
     else if ($n == "")
 	return 0;
-    else if (is_numeric($n))
+    else if (is_numeric($n) && $n <= 1000000)
 	return round($n);
     else if (strpos($n, "\xE2") !== false)
 	// Translate UTF-8 for minus sign into a real minus sign ;)

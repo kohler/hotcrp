@@ -190,7 +190,7 @@ function parseValue($name, $type) {
 	// Avoid storing the default message in the database
 	if (substr($name, 0, 9) == "mailbody_") {
 	    $t = expandMailTemplate(substr($name, 9), true);
-	    $v = Mailer::cleanBody($v);
+	    $v = cleannl($v);
 	    if ($t[1] == $v)
 		return 0;
 	}
