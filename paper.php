@@ -168,7 +168,10 @@ function setRequestAuthorTable() {
     if ($_REQUEST["aueditcount"] < 1)
 	$_REQUEST["aueditcount"] = 1;
     $_REQUEST["authorTable"] = array();
+    $anyAuthors = false;
     for ($i = 1; $i <= $_REQUEST["aueditcount"]; $i++) {
+	if (isset($_REQUEST["auname$i"]) || isset($_REQUEST["auemail$i"]) || isset($_REQUEST["auaff$i"]))
+	    $anyAuthors = true;
 	$a = simplifyWhitespace(defval($_REQUEST, "auname$i", ""));
 	$b = simplifyWhitespace(defval($_REQUEST, "auemail$i", ""));
 	$c = simplifyWhitespace(defval($_REQUEST, "auaff$i", ""));
@@ -179,7 +182,7 @@ function setRequestAuthorTable() {
 	    $_REQUEST["authorTable"][] = $a;
 	}
     }
-    if (!count($_REQUEST["authorTable"]))
+    if (!count($_REQUEST["authorTable"]) && !$anyAuthors)
 	unset($_REQUEST["authorTable"]);
 }
 
@@ -253,7 +256,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$q .= "$x='" . sqlqtrim($_REQUEST[$x]) . "', ";
     }
     
-    if (!isset($_REQUEST["authorTable"]))
+    if (!is_array($_REQUEST["authorTable"]) || count($_REQUEST["authorTable"]) == 0)
 	$PaperError["authorInformation"] = 1;
     else {
 	$q .= "authorInformation='";
@@ -276,7 +279,21 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    $collab = ($Conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
 	    $fields[] = $collab;
 	}
-	$Conf->errorMsg("Before " . ($isSubmit ? "submitting" : "registering") . " your paper, you must enter values for the " . commajoin($fields) . " " . pluralx($fields, "field") . "." . ($collab ? "  If none of the authors have potential conflicts, just enter \"None\" in the $collab field." : "") . "  Fix the highlighted fields and try again." . (fileUploaded($_FILES['paperUpload'], $Conf) ? "  <strong>Please note that the paper you tried to upload was ignored.</strong>" : ""));
+	$emsg = "Before " . ($isSubmit ? "submitting" : "registering") . " your paper, you must enter ";
+	if (count($fields) == 1)
+	    $emsg .= "a value for the " . commajoin($fields) . " field.";
+	else
+	    $emsg .= "values for the " . commajoin($fields) . " fields.";
+	if ($collab)
+	    $emsg .= "  If none of the authors have potential conflicts, just enter &ldquo;None&rdquo; in the $collab field.";
+	$emsg .= "  Fix the highlighted " . pluralx($fields, "field") . " and try again.";
+	if (fileUploaded($_FILES["paperUpload"], $Conf) && $newPaper)
+	    $emsg .= "  <strong>Please note that the paper you tried to upload was ignored.</strong>";
+	$Conf->errorMsg($emsg);
+	// It is kinder to the user to attempt to upload their paper even on
+	// error.
+	if (fileUploaded($_FILES['paperUpload'], $Conf) && !$newPaper)
+	    uploadPaper($isSubmitFinal);
 	return false;
     }
 
@@ -341,7 +358,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    return false;
 	$q = "";
 	foreach ($_REQUEST as $key => $value)
-	    if ($key[0] == 't' && $key[1] == 'o' && $key[2] == 'p'
+	    if (strlen($key) > 3
+		&& $key[0] == 't' && $key[1] == 'o' && $key[2] == 'p'
 		&& ($id = cvtint(substr($key, 3))) > 0 && $value > 0)
 		$q .= "($paperId, $id), ";
 	if ($q && !$Conf->qe("insert into PaperTopic (paperId, topicId) values " . substr($q, 0, strlen($q) - 2), "while updating paper topics"))
@@ -366,7 +384,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    return false;
 	$q = "";
 	foreach ($_REQUEST as $key => $value)
-	    if ($key[0] == 'p' && $key[1] == 'c' && $key[2] == 'c'
+	    if (strlen($key) > 3
+		&& $key[0] == 'p' && $key[1] == 'c' && $key[2] == 'c'
 		&& ($id = cvtint(substr($key, 3))) > 0 && $value > 0)
 		$q .= ",$id";
 	if ($q && !$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType)
@@ -570,7 +589,9 @@ else if ($newPaper) {
 	$Conf->infoMsg("Your paper has been withdrawn, but you can still revive it.$updateDeadline");
     else if ($timeUpdate) {
 	if ($prow->timeSubmitted <= 0) {
-	    if ($Conf->setting('sub_freeze'))
+	    if ($prow->paperStorageId <= 1)
+		$Conf->infoMsg("You must haven't uploaded a paper yet.$updateDeadline");
+	    else if ($Conf->setting('sub_freeze'))
 		$Conf->infoMsg("You must submit a final version of your paper before it can be reviewed.$updateDeadline");
 	    else
 		$Conf->infoMsg("The current version of the paper is marked as not ready for review.  If you don't submit a reviewable version of the paper, it will not be considered.$updateDeadline"); 

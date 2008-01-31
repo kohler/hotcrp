@@ -278,7 +278,8 @@ class PaperTable {
 	} else
 	    echo "<input type='hidden' name='submit' value='1' />";
 
-	if (($final ? $prow->finalPaperStorageId : $prow->paperStorageId) > 0
+	if ($prow
+	    && ($final ? $prow->finalPaperStorageId : $prow->paperStorageId) > 0
 	    && defval($prow, "mimetype", "application/pdf") == "application/pdf"
 	    && $Conf->setting("sub_banal")) {
 	    echo "<div id='foldcheckformat' class='foldc'><input class='button' type='submit' name='checkformat' value='Check format requirements' onclick='return docheckformat()' /><div id='checkformatformresult' class='extension'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
@@ -487,10 +488,16 @@ class PaperTable {
 	$conflict = array();
 	if (!count($pcm))
 	    return;
+	if ($this->useRequest) {
+	    foreach ($pcm as $id => $row)
+		if (isset($_REQUEST["pcc$id"]))
+		    $conflict[$id] = CONFLICT_AUTHORMARK;
+	}
 	if ($prow) {
 	    $result = $Conf->qe("select contactId, conflictType from PaperConflict where paperId=$prow->paperId", "while finding conflicted PC members");
 	    while (($row = edb_row($result)))
-		$conflict[$row[0]] = $row[1];
+		if ($row[1] != CONFLICT_AUTHORMARK || !$this->useRequest)
+		    $conflict[$row[0]] = $row[1];
 	}
 
 	if ($this->editable) {

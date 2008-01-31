@@ -244,7 +244,7 @@ function doTopics($set) {
     
     $numnew = defval($_REQUEST, "newtopcount", 50);
     foreach ($_REQUEST as $k => $v) {
-	if (!($k[0] == "t" && $k[1] == "o" && $k[2] == "p"))
+	if (!(strlen($k) > 3 && $k[0] == "t" && $k[1] == "o" && $k[2] == "p"))
 	    continue;
 	if ($k[3] == "n" && $v != "" && cvtint(substr($k, 4), 100) <= $numnew)
 	    $Conf->qe("insert into TopicArea (topicName) values ('" . sqlq($v) . "')", $while);
@@ -310,7 +310,7 @@ function doDecisions($set) {
     $dec = $rf->options["outcome"];
     $update = false;
     foreach ($_REQUEST as $k => $v)
-	if ($k[0] == "d" && $k[1] == "e" && $k[2] == "c"
+	if (strlen($k) > 3 && $k[0] == "d" && $k[1] == "e" && $k[2] == "c"
 	    && ($k = cvtint(substr($k, 3), 0)) != 0) {
 	    if ($v == "") {
 		$Conf->qe("delete from ReviewFormOptions where fieldName='outcome' and level=$k", $while);

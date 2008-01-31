@@ -121,7 +121,7 @@ if (isset($_REQUEST['register']) && $OK) {
 	    $Conf->qe("delete from TopicInterest where contactId=$Acct->contactId", "while updating topic interests");
 
 	    foreach ($_REQUEST as $key => $value)
-		if ($OK && $key[0] == 't' && $key[1] == 'i'
+		if ($OK && strlen($key) > 2 && $key[0] == 't' && $key[1] == 'i'
 		    && ($id = (int) substr($key, 2)) > 0
 		    && is_numeric($value)
 		    && ($value = (int) $value) >= 0 && $value < 3)

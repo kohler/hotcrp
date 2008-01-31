@@ -540,7 +540,7 @@ class Mailer {
 		&& defval($this->contact, "conflictType") < CONFLICT_AUTHOR)
 		return ($isbool ? false : "Hidden for blind review");
 	    cleanAuthor($this->row);
-	    return $this->row->authorInformation;
+	    return rtrim($this->row->authorInformation);
 	}
 
 	if ($what == "%SHEPHERD%" || $what == "%SHEPHERDNAME%"
