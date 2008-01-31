@@ -288,7 +288,7 @@ span.hastitle {
 	margin: 0px auto;
 	position: relative;
 }
-#searchform .tld3, #contactsform .tld2, body#revpref #searchform {
+#searchform .tld3, #contactsform .tld2 {
 	font-size: smaller;
 }
 
@@ -871,8 +871,13 @@ table.pltable th a.unfolder1, table.pltable th a.unfolder2, table.pltable th a.u
 table.pltable th a.folder1, table.pltable th a.folder2, table.pltable th a.folder4 {
 	font-weight: normal;
 }
-td#plact {
-	padding-top: 5px;
+div#plact {
+	padding-top: 2px;
+	float: left;
+}
+div#plactr {
+	padding-top: 2px;
+	float: right;
 }
 table.pltable th, table.ppltable th, table.altable th, table.setreviewform th,
 table.auedittable th {

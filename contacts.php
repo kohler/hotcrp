@@ -55,7 +55,7 @@ function paperselPredicate($papersel) {
 }
 
 if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
-    $_REQUEST["pap"] = split(" +", $_REQUEST["pap"]);
+    $_REQUEST["pap"] = preg_split('/\s+/', $_REQUEST["pap"]);
 if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
     $papersel = array();
     foreach ($_REQUEST["pap"] as $p)

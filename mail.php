@@ -28,7 +28,7 @@ if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
 if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
     $_REQUEST["q"] = "";
 if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
-    $_REQUEST["pap"] = preg_split("/ +/", $_REQUEST["pap"]);
+    $_REQUEST["pap"] = preg_split('/\s+/', $_REQUEST["pap"]);
 if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
     $papersel = array();
     foreach ($_REQUEST["pap"] as $p)
@@ -38,7 +38,6 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
     $_REQUEST["q"] = join(" ", $papersel);
     $_REQUEST["plimit"] = 1;
 } else if (isset($_REQUEST["plimit"])) {
-    $papersel = array();
     $_REQUEST["q"] = defval($_REQUEST, "q", "");
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
     $papersel = $search->paperList();

@@ -712,4 +712,22 @@ class PaperSearch {
 	return $this->decorateSessionList($this->paperList(), $listname);
     }
 
+    function parsePapersel() {
+	global $Me, $papersel;
+	if (isset($_REQUEST["pap"]) && $_REQUEST["pap"] == "all") {
+	    $s = new PaperSearch($Me, $_REQUEST);
+	    $_REQUEST["pap"] = $s->paperList();
+	}
+	if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
+	    $_REQUEST["pap"] = preg_split('/\s+/', $_REQUEST["pap"]);
+	if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
+	    $papersel = array();
+	    foreach ($_REQUEST["pap"] as $p)
+		if (($p = cvtint($p)) > 0)
+		    $papersel[] = $p;
+	    if (count($papersel) == 0)
+		unset($papersel);
+	}
+    }
+    
 }

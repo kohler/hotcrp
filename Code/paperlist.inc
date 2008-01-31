@@ -69,6 +69,7 @@ class PaperList extends BaseList {
     var $paperLinkArgs;
     var $showConflict;
     var $headerInfo;
+    var $extraFooter;
     var $papersel;
     
     function PaperList($sortable = true, $list = false, $search = null, $extraText = null) {
@@ -99,6 +100,7 @@ class PaperList extends BaseList {
 	$this->scoresOk = false;
 	$this->showConflict = true;
 	$this->papersel = null;
+	$this->extraFooter = "";
     }
 
     function selector($fieldId, &$queryOptions) {
@@ -561,7 +563,7 @@ class PaperList extends BaseList {
 	    if ($row->conflictType > 0)
 		return "N/A";
 	    $x = (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
-	    return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' value=\"$x\" tabindex='3' />";
+	    return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' value=\"$x\" tabindex='2' />";
 	case self::FIELD_DESIRABILITY:
 	    return (isset($row->desirability) ? htmlspecialchars($row->desirability) : "0");
 	case self::FIELD_ALL_PREFERENCES:
@@ -626,25 +628,40 @@ class PaperList extends BaseList {
 	}
     }
 
-    function footer($ncol) {
+    function footer($ncol, $listname) {
 	global $Conf;
 	if ($this->count == 0)
 	    return "";
-	
+
+	$barsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
+	$nlll = 1;
+	$revpref = ($listname == "editReviewPreference");
+		
 	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
 	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'>" . $Conf->cacheableImage("bendulft.png", "^^", null, "placthook") . "</td>\n";
-	$t .= "    <td id='plact' class='linelinks1' colspan='" . ($ncol - 1) . "'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
+	$t .= "    <td colspan='" . ($ncol - 1) . "'><div id='plact' class='linelinks1'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
 
 	// Begin linelinks
-	$t .= "<span class='lll1'><a href='javascript:void crpfocus(\"plact\",1)'>Download</a></span><span class='lld1'><b>:</b> &nbsp;";
-	$t .= "<select id='plact1_d' name='getaction'>
-    <option value='paper' selected='selected'>Papers</option>
+	if ($revpref) {
+	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Set preferences</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
+	    $t .= "<input id='plact${nlll}_d' class='textlite' type='text' name='paprevpref' value='' size='4' tabindex='6' /> &nbsp;<input type='submit' class='button_small' name='setpaprevpref' value='Go' tabindex='6' /></span>";
+	    $t .= $barsep;
+	    $nlll++;
+	}
+	
+	$t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Download</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
+	$t .= "<select id='plact${nlll}_d' name='getaction' tabindex='6'>\n";
+	if ($revpref)
+	    $t .= "	<option value='abstracts' selected='selected'>Abstracts</option>\n";
+	else {
+	    $t .= "    <option value='paper' selected='selected'>Papers</option>
     <option value='abstracts'>Abstracts</option>
     <option value='revform'>Review forms</option>\n";
-	if ($this->contact->isPC && $Conf->timeSubmitFinalPaper())
-	    $t .= "    <option value='final'>Final papers</option>\n";
-	if ($this->contact->isPC || $this->contact->isReviewer)
-	    $t .= "    <option value='rev'>All reviews</option>\n";
+	    if ($this->contact->isPC && $Conf->timeSubmitFinalPaper())
+		$t .= "    <option value='final'>Final papers</option>\n";
+	    if ($this->contact->isPC || $this->contact->isReviewer)
+		$t .= "    <option value='rev'>All reviews</option>\n";
+	}
 	if ($this->contact->privChair || ($this->contact->isReviewer && $Conf->blindSubmission() < 2))
 	    $t .= "    <option value='authors'>Authors (text)</option>\n";
 	if ($this->contact->privChair) {
@@ -653,23 +670,24 @@ class PaperList extends BaseList {
 	}
 	if ($this->contact->isPC)
 	    $t .= "    <option value='topics'>Topics (text)</option>\n";
-	if ($this->contact->privChair || ($this->contact->isPC && $Conf->timePCViewAllReviews()))
+	if (!$revpref && ($this->contact->privChair || ($this->contact->isPC && $Conf->timePCViewAllReviews())))
 	    $t .= "    <option value='scores'>All scores (text)</option>\n";
-	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='getgo' value='Go' /></span>";
+	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='getgo' value='Go' tabindex='6' /></span>";
+	$nlll++;
 
-	$barsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
-	if ($this->contact->isPC) {
+	if ($this->contact->isPC && !$revpref) {
 	    $t .= $barsep;
-	    $t .= "<span class='lll2'><a href='javascript:void crpfocus(\"plact\",2)'>Tag</a></span><span class='lld2'><b>:</b> &nbsp;";
+	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Tag</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
 	    $t .= "<select name='tagtype'>
     <option value='a' selected='selected'>Add</option><option value='d'>Remove</option><option value='s'>Define</option><option value='so'>Define ordered</option><option value='ao'>Add ordered</option>
-  </select> &nbsp;tag(s) &nbsp;<input id='plact2_d' class='textlite' type='text' name='tag' value='' size='15' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></span>";
+  </select> &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></span>";
+	    $nlll++;
 	}
-	
-	if ($this->contact->privChair) {
+
+	if ($this->contact->privChair && !$revpref) {
 	    $t .= $barsep;
-	    $t .= "<span class='lll3'><a href='javascript:void crpfocus(\"plact\",3)'>Assign</a></span><span id='foldass' class='lld3 foldc'><b>:</b> &nbsp;";
-	    $t .= "<select id='plact3_d' name='marktype' onchange='fold(\"ass\", (this.value[0] == \"x\"))'>
+	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Assign</a></span><span id='foldass' class='lld$nlll foldc'><b>:</b> &nbsp;";
+	    $t .= "<select id='plact${nlll}_d' name='marktype' onchange='fold(\"ass\", (this.value[0] == \"x\"))'>
       <option value='xauto' selected='selected'>Automatic assignments</option>
       <option value='-1' disabled='disabled'></option>
       <option value='conflict'>Mark conflict</option>
@@ -688,19 +706,22 @@ class PaperList extends BaseList {
 		$t .= "<option value=\"" . htmlspecialchars($row->email) . "\">" . contactHtml($row->firstName, $row->lastName) . "</option>\n";
 	    $t .= "</select></span> &nbsp;<input type='submit' class='button_small' name='setassign' value='Go' />";
 	    $t .= "</span>";
+	    $nlll++;
 	}
 
-	if ($this->contact->privChair) {
+	if ($this->contact->privChair && !$revpref) {
 	    $t .= $barsep;
-	    $t .= "<span class='lll4'><a href='javascript:void crpfocus(\"plact\",4)'>Decide</a></span><span class='lld4'><b>:</b> Set to &nbsp;";
-	    $t .= outcomeSelector(0, "plact4_d") . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></span>";
+	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Decide</a></span><span class='lld$nlll'><b>:</b> Set to &nbsp;";
+	    $t .= outcomeSelector(0, "plact${nlll}_d") . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></span>";
+	    $nlll++;
 
 	    $t .= $barsep;
-	    $t .= "<span class='lll5'><a href='javascript:void crpfocus(\"plact\",5)'>Mail</a></span><span class='lld5'><b>:</b> &nbsp;";
-	    $t .= "<select id='plact5_d' name='recipients'><option value='au'>Contact authors</option><option value='rev'>Reviewers</option></select> &nbsp;<input type='submit' class='button_small' name='sendmail' value='Go' /></span>";
+	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Mail</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
+	    $t .= "<select id='plact${nlll}_d' name='recipients'><option value='au'>Contact authors</option><option value='rev'>Reviewers</option></select> &nbsp;<input type='submit' class='button_small' name='sendmail' value='Go' /></span>";
+	    $nlll++;
 	}
 
-	return $t . "</td></tr>\n";
+	return $t . "</div>" . $this->extraFooter . "</td></tr>\n";
     }
 
     function addScores($a) {
@@ -782,7 +803,7 @@ class PaperList extends BaseList {
 	    return array(102, 1, 11, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
 	  case "editReviewPreference":
 	    $this->paperLink = "paper";
-	    return array(1, 11, 36, 27, 40, 70, 72, 37);
+	    return array(100, 1, 11, 36, 27, 40, 70, 72, 37);
 	  case "reviewers":
 	    $this->paperLink = "assign";
 	    return array(1, 11, 21, 38);
@@ -1050,7 +1071,7 @@ class PaperList extends BaseList {
 	$x .= $body;
 	reset($fieldDef);
 	if (key($fieldDef) == self::FIELD_SELECTOR)
-	    $x .= $this->footer($ncol);
+	    $x .= $this->footer($ncol, $listname);
 	$x .= "</table>";
 
 	// session variable to remember the list

@@ -57,20 +57,7 @@ function paperselPredicate($papersel, $prefix = "") {
 	return "${prefix}paperId in (" . join(", ", $papersel) . ")";
 }
 
-if (isset($_REQUEST["pap"]) && $_REQUEST["pap"] == "all") {
-    $Search = new PaperSearch($Me, $_REQUEST);
-    $_REQUEST["pap"] = $Search->paperList();
-}
-if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
-    $_REQUEST["pap"] = split(" +", $_REQUEST["pap"]);
-if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
-    $papersel = array();
-    foreach ($_REQUEST["pap"] as $p)
-	if (($p = cvtint($p)) > 0)
-	    $papersel[] = $p;
-    if (count($papersel) == 0)
-	unset($papersel);
-}
+PaperSearch::parsePapersel();
 
 
 // download selected papers

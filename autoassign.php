@@ -14,7 +14,7 @@ $Me->goIfNotPrivChair("index$ConfSiteSuffix");
 if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
     $_REQUEST["q"] = "";
 if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
-    $_REQUEST["pap"] = preg_split("/ +/", $_REQUEST["pap"]);
+    $_REQUEST["pap"] = preg_split('/\s+/', $_REQUEST["pap"]);
 if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && !isset($_REQUEST["requery"])) {
     $papersel = array();
     foreach ($_REQUEST["pap"] as $p)

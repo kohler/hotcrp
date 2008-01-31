@@ -12,11 +12,10 @@ $Me->goIfNotPC("index$ConfSiteSuffix");
 $reviewer = cvtint($_REQUEST["reviewer"]);
 if ($reviewer <= 0 || !$Me->privChair)
     $reviewer = $Me->contactId;
-
-$Conf->header("Review Preferences", "revpref", actionBar());
+$_REQUEST["t"] = ($Conf->setting("pc_seeall") > 0 ? "act" : "s");
 
 function savePreferences($reviewer) {
-    global $Conf, $Me, $reviewTypeName;
+    global $Conf, $Me, $reviewTypeName, $OK;
 
     $setting = array();
     $error = false;
@@ -33,7 +32,7 @@ function savePreferences($reviewer) {
 	}
 
     if ($error)
-	$Conf->errorMsg("Bad preference setting.");
+	$Conf->errorMsg("Preferences must be small positive or negative integers.");
     if ($pmax == 0 && !$error)
 	$Conf->errorMsg("No reviewer preferences to update.");
     if ($pmax == 0)
@@ -69,16 +68,39 @@ function savePreferences($reviewer) {
 	$Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values " . substr($q, 0, strlen($q) - 2), $while);
 
     $Conf->qe("unlock tables", $while);
+    if ($OK)
+	$Conf->confirmMsg("Preferences saved.");
 }
 if (isset($_REQUEST["update"]))
     savePreferences($reviewer);
 
 
+if (isset($_REQUEST["setpaprevpref"]) || (isset($_REQUEST["getgo"]) && isset($_REQUEST["getaction"]))) {
+    PaperSearch::parsePapersel();
+    if (!isset($papersel))
+	$Conf->errorMsg("No papers selected.");
+    else if (isset($_REQUEST["setpaprevpref"])) {
+	if (($v = cvtpref($_REQUEST["paprevpref"])) < -1000000 || $v > 1000000)
+	    $Conf->errorMsg("Preferences must be small positive or negative integers.");
+	else {
+	    foreach ($papersel as $p)
+		$_REQUEST["revpref$p"] = $v;
+	    savePreferences($reviewer);
+	}
+    } else
+	include("search.php");
+}
+
+
+// Header and body
+$Conf->header("Review Preferences", "revpref", actionBar());
+
+
 $rf = reviewForm();
 if (count($rf->topicName))
     $topicnote = " and their topics.  You have high
-interest in <span class='topic2'>bold topics</span>, and low interest in <span
-class='topic0'>grey topics</span>.  \"Topic score\" is higher the more you
+interest in <span class='topic2'>bold topics</span> and low interest in <span
+class='topic0'>grey topics</span>.  &ldquo;Topic score&rdquo; is higher the more you
 are interested in the paper's topics";
 else
     $topicnote = "";
@@ -90,11 +112,9 @@ Multiple papers can have the same preference.
 The system will try to assign your reviews in preference order, using
 topic scores to break ties.</p>
 
-<p>The list shows all submitted papers$topicnote.
-Click on a column heading to sort by
-that column.  You may also enter preferences on the paper pages, which 
-show abstracts and other information.  Access a paper page by clicking
-the paper title.</p>");
+<p>The list shows all submitted papers$topicnote.  Click on a column heading
+to sort by that column.  Enter preferences in the text boxes or by following
+the paper links.</p>");
 
 
 // set options to view
@@ -106,9 +126,12 @@ if (isset($_REQUEST["redisplay"])) {
 
 
 // search
-$searchType = ($Conf->setting("pc_seeall") > 0 ? "all" : "s");
-$pl = new PaperList(true, true, new PaperSearch($Me, array("t" => $searchType, "c" => $reviewer, "urlbase" => "reviewprefs$ConfSiteSuffix?reviewer=$reviewer")));
+$search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "c" => $reviewer,
+				     "urlbase" => "reviewprefs$ConfSiteSuffix?reviewer=$reviewer",
+				     "q" => defval($_REQUEST, "q", "")));
+$pl = new PaperList(true, true, $search);
 $pl->showHeader = PaperList::HEADER_TITLES;
+$pl->extraFooter = "<div id='plactr'><input class='hbutton' type='submit' name='update' value='Save changes' /></div>";
 $pl_text = $pl->text("editReviewPreference", $Me);
 
 
@@ -117,10 +140,9 @@ echo "<table id='searchform' class='tablinks1'>
 <tr><td>"; // <div class='tlx'><div class='tld1'>";
 
 echo "<form method='get' action='reviewprefs$ConfSiteSuffix' id='redisplayform'>\n<table>";
-$redisplayButton = "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td>";
 
 if ($Me->privChair) {
-    echo "<tr><td><strong>Preferences:</strong> &nbsp;</td><td class='pad'>",
+    echo "<tr><td class='lxcaption'><strong>Preferences:</strong> &nbsp;</td><td class='lentry'>",
 	"<select name='reviewer' onchange='e(\"redisplayform\").submit()'>";
 
     $query = "select ContactInfo.contactId, firstName, lastName,
@@ -140,18 +162,21 @@ if ($Me->privChair) {
 	    echo " (no preferences)";
 	echo "</option>";
     }
-    echo "</select><div class='smgap'></div></td>", $redisplayButton, "</tr>\n";
-    $redisplayButton = "";
+    echo "</select><div class='smgap'></div></td></tr>\n";
 }
 
-echo "<tr><td><strong>Show:</strong> &nbsp;</td><td class='pad'>";
+echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'><input class='textlite' type='text' size='32' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>",
+    "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td>",
+    "</tr>\n";
+
+echo "<tr><td class='lxcaption'><strong>Show:</strong> &nbsp;</td><td class='lentry'>";
 if ($Conf->blindSubmission() <= 1) {
     echo "<input type='checkbox' name='showau' value='1'";
     if ($Conf->blindSubmission() == 1 && !($pl->headerInfo["authors"] & 1))
 	echo " disabled='disabled'";
     if (defval($_SESSION, "foldplau", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='fold(\"pl\",!this.checked,1)' />&nbsp;Authors<br />\n";
+    echo " onclick='fold(\"pl\",!this.checked,1)' />&nbsp;Authors<span class='sep'></span>\n";
 }
 if ($Conf->blindSubmission() >= 1 && $Me->privChair) {
     echo "<input type='checkbox' name='showanonau' value='1'";
@@ -161,7 +186,7 @@ if ($Conf->blindSubmission() >= 1 && $Me->privChair) {
 	echo " checked='checked'";
     echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;",
 	($Conf->blindSubmission() == 1 ? "Anonymous authors" : "Authors"),
-	"<br />\n";
+	"<span class='sep'></span>\n";
 }
 if ($pl->headerInfo["abstracts"]) {
     echo "<input type='checkbox' name='showabstract' value='1'";
@@ -169,8 +194,7 @@ if ($pl->headerInfo["abstracts"]) {
 	echo " checked='checked'";
     echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<img id='foldsession.pl5' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldplabstract&amp;val=", defval($_SESSION, "foldplabstract", 1), "&amp;cache=1' width='1' height='1' /><br /><div id='abstractloadformresult'></div>\n";
 }
-echo "</td>", $redisplayButton, "</tr>\n";
-echo "</table></form>"; // </div></div>
+echo "</td></tr>\n</table></form>"; // </div></div>
 echo "</td></tr></table>\n";
 
 
@@ -184,9 +208,12 @@ echo "</div></form>\n\n";
 
 
 // main form
-echo "<form class='assignpc' method='post' action=\"reviewprefs$ConfSiteSuffix?reviewer=$reviewer&amp;post=1\" enctype='multipart/form-data'>\n";
+echo "<form class='assignpc' method='post' action=\"reviewprefs$ConfSiteSuffix?reviewer=$reviewer",
+    (defval($_REQUEST, "q") ? "&amp;q=" . htmlspecialchars($_REQUEST["q"]) : ""),
+    "&amp;post=1\" enctype='multipart/form-data'>\n";
 echo $pl_text;
-echo "<div class='smgap'></div><table class='center'><tr><td><input class='hbutton' type='submit' name='update' value='Save preferences' /></td></tr></table>\n";
+echo "<div class='smgap'></div>";
+// echo "<table class='center'><tr><td><input class='hbutton' type='submit' name='update' value='Save preferences' /></td></tr></table>\n";
 echo "</form>\n";
 
 $Conf->footer();
