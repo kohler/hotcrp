@@ -473,11 +473,15 @@ function listLinks($paperId, $baseUrl = null, $args = array()) {
 }
 
 function goPaperForm($baseUrl = null, $args = array()) {
-    global $ConfSiteBase, $ConfSiteSuffix, $CurrentList;
+    global $Conf, $ConfSiteBase, $ConfSiteSuffix, $CurrentList;
     if (!$_SESSION["Me"]->valid())
 	return "";
-    if ($baseUrl === null)
-	$baseUrl = "paper$ConfSiteSuffix";
+    if ($baseUrl === null) {
+	if ($_SESSION["Me"]->isPC && $Conf->setting("rev_open"))
+	    $baseUrl = "review$ConfSiteSuffix";
+	else
+	    $baseUrl = "paper$ConfSiteSuffix";
+    }
     $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get'><div class='inform'>";
     $x .= "#<input class='textlite' type='text' size='6' name='p' />";
     foreach ($args as $what => $val)
@@ -814,6 +818,8 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
     // collect list links now, so we find the current list
     if ($mode == "assign" || $mode == "review" || $mode == "comment")
 	$goBase = "$mode$ConfSiteSuffix";
+    else if ($mode == "" && $Me->isPC && $Conf->setting("rev_open"))
+	$goBase = "review$ConfSiteSuffix";
     else
 	$goBase = "paper$ConfSiteSuffix";
     $xmode = (isset($_REQUEST["mode"]) && $goBase == "paper$ConfSiteSuffix" ? array("mode" => $_REQUEST["mode"]) : array());

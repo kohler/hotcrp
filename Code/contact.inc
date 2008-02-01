@@ -548,12 +548,13 @@ class Contact {
 	// policy
 	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && !$ignoreForceShow;
 	$rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
+	if ($this->privChair && $forceShow)
+	    return true;
 	if ($prow->timeSubmitted > 0
 	    && (($prow->conflictType >= CONFLICT_AUTHOR
 		 && $conf->timeAuthorViewReviews() && $rrowSubmitted
 		 && (!$this->reviewsOutstanding || !$this->isReviewer))
-		|| ($this->privChair
-		    && ($prow->conflictType == 0 || $forceShow))
+		|| ($this->privChair && $prow->conflictType == 0)
 		|| ($this->isPC
 		    && $prow->conflictType == 0 && $rrowSubmitted
 		    && ($conf->timePCViewAllReviews()
@@ -816,7 +817,9 @@ class Contact {
 	    $rrow_contactId = $rrow->contactId;
 	if (($this->privChair && $forceShow)
 	    || ($rrow && $rrow_contactId == $this->contactId)
-	    || ($this->isPC && $prow && $prow->conflictType == 0)
+	    || ($this->privChair && $prow && $prow->conflictType == 0)
+	    || ($this->isPC && $prow && $prow->conflictType == 0
+		&& $conf->setting("pc_seeallrev") != 2)
 	    || ($prow && $prow->myReviewType > 0
 		&& defval($prow, "myReviewSubmitted") > 0
 		&& $conf->settings["extrev_view"] >= 2)

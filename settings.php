@@ -44,7 +44,7 @@ $SettingGroups = array("acc" => array(
 			     "pcrev_any" => "check",
 			     "pcrev_soft" => "date",
 			     "pcrev_hard" => "date",
-			     "pc_seeallrev" => "check",
+			     "pc_seeallrev" => 2,
 			     "extrev_chairreq" => "check",
 			     "tags" => "special",
 			     "tag_seeall" => "check",
@@ -832,11 +832,11 @@ function doRevGroup() {
     echo "</table>\n";
 
     echo "<div class='smgap'></div>\n";
-    doCheckbox('pcrev_any', 'PC members can review <i>any</i> submitted paper');
+    doCheckbox('pcrev_any', 'PC members can review <strong>any</strong> submitted paper');
 
-    echo "<div class='smgap'></div>\n<table>\n";
-    doCheckbox('pc_seeallrev', "<b>PC can see all reviews</b> except for conflicts<br /><small>When unchecked, a PC member can see reviews for a paper only after submitting their own review for that paper.</small>", true);
-    echo "</table>\n";
+    echo "<div class='smgap'></div>\n";
+    echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
+    doRadio("pc_seeallrev", array(0 => "No&mdash;a PC member can see a paper's reviews only after submitting their own review for that paper", 1 => "Yes", 2 => "Yes, but they can't see who wrote blind reviews"));
 
     echo "<hr />";
 

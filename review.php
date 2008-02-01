@@ -313,20 +313,25 @@ if (isset($_REQUEST["settags"])) {
 }
 
 
-// page header
-confHeader();
-
-
 // can we view/edit reviews?
 $viewAny = $Me->canViewReview($prow, null, $Conf, $whyNotView);
 $editAny = $Me->canReview($prow, null, $Conf, $whyNotEdit);
 
 
 // can we see any reviews?
-if (!$viewAny && !$editAny)
-    errorMsgExit("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
-if ($Me->privChair && $prow->conflictType > 0 && !$Me->canViewReview($prow, null, $Conf, $fakeWhyNotView, true))
-    $Conf->infoMsg("You have explicitly overridden your conflict and are able to view and edit reviews for this paper.");
+if (!$viewAny && !$editAny) {
+    if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
+	$Conf->errorMsg("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
+	$Conf->go("paper$ConfSiteSuffix?p=$prow->paperId$linkExtra");
+    } else
+	errorMsgExit("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
+}
+if ($forceShow && !$Me->canViewReview($prow, null, $Conf, $fakeWhyNotView, true))
+    $Conf->infoMsg("You have used administrator privileges to view and edit reviews for this paper.");
+
+
+// page header
+confHeader();
 
 
 // mode
