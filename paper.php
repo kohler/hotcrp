@@ -119,6 +119,16 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
     require_once("Code/checkformat.inc");
     $cf = new CheckFormat();
     $status = $cf->analyzePaper($prow->paperId, false, $Conf->settingText("sub_banal", ""));
+    
+    // chairs get a hint message about multiple checking
+    if ($Me->privChair) {
+	if (!isset($_SESSION["info"]))
+	    $_SESSION["info"] = array();
+	$_SESSION["info"]["nbanal"] = defval($_SESSION["info"], "nbanal", 0) + 1;
+	if ($_SESSION["info"]["nbanal"] >= 3 && $_SESSION["info"]["nbanal"] <= 6)
+	    $cf->msg("info", "To run the format checker for many papers, use Download &gt; Format check on the <a href='${ConfSiteBase}search$ConfSiteSuffix?q='>search page</a>.");
+    }
+    
     $cf->reportMessages();
     if ($ajax)
 	$Conf->ajaxExit(array("status" => $status), true);

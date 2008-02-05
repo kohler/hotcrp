@@ -27,6 +27,7 @@ if (isset($_REQUEST["signin"]) || isset($_REQUEST["signout"])) {
     unset($_SESSION["foldplanonau"]);
     unset($_SESSION["foldplabstract"]);
     unset($_SESSION["foldpltags"]);
+    unset($_SESSION["info"]);
 }
 
 function doCreateAccount() {

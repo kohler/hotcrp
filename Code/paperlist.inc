@@ -665,6 +665,7 @@ class PaperList extends BaseList {
 	if ($this->contact->privChair) {
 	    $t .= "    <option value='contact'>Contact emails</option>\n";
 	    $t .= "    <option value='pcconflicts'>PC conflicts</option>\n";
+	    $t .= "    <option value='checkformat'>Format check</option>\n";
 	}
 	if ($this->contact->isPC)
 	    $t .= "    <option value='topics'>Topics</option>\n";

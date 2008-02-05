@@ -468,6 +468,48 @@ if ($getaction == "topics" && $Me->privChair && isset($papersel)) {
 }
 
 
+// download format checker reports for selected papers
+if ($getaction == "checkformat" && $Me->privChair && isset($papersel)) {
+    $result = $Conf->qe("select paperId, title, mimetype from Paper where " . paperselPredicate($papersel) . " order by paperId", "while fetching topics");
+    require_once("Code/checkformat.inc");
+    global $checkFormatErrors;
+    $format = $Conf->settingText("sub_banal", "");
+
+    // generate output gradually since this takes so long
+    $text = "#paper\tformat\tpages\ttitle\n";
+    downloadText($text, $Opt['downloadPrefix'] . "formatcheck.txt", "format checker", false, false);
+    
+    // compose report
+    $texts = array();
+    while ($row = edb_row($result))
+	$texts[$paperselmap[$row[0]]] = $row;
+    foreach ($texts as $row) {
+	if ($row[2] == "application/pdf") {
+	    $cf = new CheckFormat();
+	    if ($cf->analyzePaper($row[0], false, $format)) {
+		$fchk = array();
+		foreach ($checkFormatErrors as $en => $etxt)
+		    if ($cf->errors & $en)
+			$fchk[] = $etxt;
+		$fchk = (count($fchk) ? join(",", $fchk) : "good");
+		$pp = $cf->pages;
+	    } else {
+		$fchk = "error";
+		$pp = "?";
+	    }
+	} else {
+	    $fchk = "notpdf";
+	    $pp = "?";
+	}
+	echo $row[0], "\t", $fchk, "\t", $pp, "\t", $row[1], "\n";
+	ob_flush();
+	flush();
+    }
+
+    exit;
+}
+
+
 // set outcome for selected papers
 if (isset($_REQUEST["setoutcome"]) && defval($_REQUEST, 'outcome', "") != "" && isset($papersel))
     if (!$Me->canSetOutcome(null))

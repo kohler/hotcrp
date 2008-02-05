@@ -924,12 +924,13 @@ function titleWords($title) {
     }
 }
 
-function downloadText($text, $filename, $description, $inline = false) {
+function downloadText($text, $filename, $description, $inline = false, $length = true) {
     global $Conf;
     header("Content-Description: $Conf->shortName $description, PHP generated data");
     header("Content-Disposition: " . ($inline ? "inline" : "attachment") . "; filename=$filename");
     header("Content-Type: text/plain");
-    header("Content-Length: " . strlen($text));
+    if ($length)
+	header("Content-Length: " . strlen($text));
     print $text;
 }
 

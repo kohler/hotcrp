@@ -91,10 +91,12 @@ class CheckFormat {
     
     var $msgs;
     var $errors;
+    var $pages;
 
     function CheckFormat() {
 	$this->msgs = array();
 	$this->errors = 0;
+	$this->pages = 0;
     }
 
     function msg($type, $what) {
@@ -165,6 +167,7 @@ class CheckFormat {
 		$this->errors |= self::ERR_PAGELIMIT;
 	    }
 	}
+	$this->pages = count($pi);
 
 	// number of columns
 	if (count($banal_desired) > 2 && $banal_desired[2]
@@ -305,6 +308,16 @@ class CheckFormat {
 		$Conf->warnMsg($m[1]);
 	    else if ($m[0] == "confirm")
 		$Conf->confirmMsg($m[1]);
+	    else if ($m[0] == "info")
+		$Conf->infoMsg($m[1]);
     }
 
 }
+
+global $checkFormatErrors;
+$checkFormatErrors = array(CheckFormat::ERR_PAPERSIZE => "papersize",
+			   CheckFormat::ERR_PAGELIMIT => "pagelimit",
+			   CheckFormat::ERR_COLUMNS => "columns",
+			   CheckFormat::ERR_TEXTBLOCK => "textblock",
+			   CheckFormat::ERR_BODYFONTSIZE => "bodyfontsize",
+			   CheckFormat::ERR_BODYLEADING => "bodyleading");
