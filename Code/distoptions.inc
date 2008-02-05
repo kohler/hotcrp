@@ -83,7 +83,9 @@ $Opt["paperSite"] = "http://your.site.here.com/";
 //                   that DBUSER, DBPASSWORD, and DBNAME are all the same.
 //                   Example: "mysql://HotNetsV:HotNetsV@127.0.0.1/HotNetsV".
 //   dbDumpDir       Directory where user-requested database dumps are stored.
-//   pdftohtml       Pathname to pdftohtml executable.
-//   banalLimit      Limit on number of parallel banal executions (default 8).
+//   pdftohtml       Pathname to pdftohtml executable (used only by the "banal"
+//                   paper format checker).
+//   banalLimit      Limit on number of parallel paper format checker
+//                   executions.  Defaults to 8.
 
 $Opt["disablePS"] = true;
