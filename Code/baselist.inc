@@ -63,9 +63,12 @@ class BaseList {
 		$this->sortInfo[$row->paperId] = 0;
 	    else if ($scoresort == 1)
 		$this->sortInfo[$row->paperId] = $x / $n;
-	    else if ($scoresort == 2)
-		$this->sortInfo[$row->paperId] = ($x2 / ($n - 1)) - ($x * $x / (($n - 1) * $n));
-	    else
+	    else if ($scoresort == 2) {
+		if ($n == 1)
+		    $this->sortInfo[$row->paperId] = 0;
+		else
+		    $this->sortInfo[$row->paperId] = ($x2 / ($n - 1)) - ($x * $x / (($n - 1) * $n));
+	    } else
 		$this->sortInfo[$row->paperId] = $max - $min;
 	    $this->sortAverage[$row->paperId] = ($n ? $x / $n : 0);
 	}
