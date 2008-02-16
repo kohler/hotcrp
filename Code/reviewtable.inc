@@ -113,11 +113,12 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     $hilite = ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "");
     
     // edit your own review
+    $extrarev = array();
     if ($mode == "edit" && !$rrow)
-	$nonsubrev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Enter&nbsp;review</b></td><td>" . contactHtml($Me->firstName, $Me->lastName) . "</td><td class='empty'></td></tr>\n";
+	$extrarev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Enter&nbsp;review</b></td><td>" . contactHtml($Me->firstName, $Me->lastName) . "</td><td class='empty'></td></tr>\n";
     else if (!$foundMyReview && $Me->canReview($prow, null, $Conf)) {
 	$x = "    <tr>$hilite<td colspan='2'><a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=edit$linkExtra'>Enter&nbsp;your&nbsp;own&nbsp;review</a></td></tr>\n";
-	$nonsubrev[] = $x;
+	$extrarev[] = $x;
     }
 
     // headers
@@ -162,20 +163,20 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	$t .= ($t == "" ? "" : $xsep) . "<a href=\"${ConfSiteBase}assign$ConfSiteSuffix?p=$prow->paperId$linkExtra\">$x</a>";
     }
     if ($t)
-	$nonsubrev[] = "    <tr>$hilite<td colspan='" . (2 + $nNumeric) . "'><div class='revnotes'>$t</div></td></tr>\n";
+	$extrarev[] = "    <tr>$hilite<td colspan='" . (2 + $nNumeric) . "'><div class='revnotes'>$t</div></td></tr>\n";
 
     // collect notes
     if (count($notes)) {
-	$class = (count($nonsubrev) || count($subrev) ? "revnotes" : "");
+	$class = (count($nonsubrev) + count($subrev) + count($extrarev) ? "revnotes" : "");
 	$notetxt = "<div class='$class'>" . join("<br />\n", $notes) . "</div>\n";
     } else
 	$notetxt = "";
 
     // completion
-    if (count($nonsubrev) || count($subrev))
+    if (count($nonsubrev) + count($subrev) + count($extrarev))
 	return "<table class='reviewers'>\n"
 	    . $numericHeaders . join("", $subrev) . join("", $nonsubrev)
-	    . "  </table>\n" . $notetxt;
+	    . join("", $extrarev) . "  </table>\n" . $notetxt;
     else
 	return $notetxt;
 }
