@@ -32,11 +32,10 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	    continue;
 	}
 
-	$t = "    <tr>";
-
-	// dingbat
-	if ($rrow || $mode == "edit")
-	    $t .= "<td class='highlight'>" . ($highlight ? "<b>&#187;</b>" : "") . "</td>";
+	if (($rrow || $mode == "edit") && $highlight)
+	    $t = "    <tr class='hilite'>";
+	else
+	    $t = "    <tr>";
 
 	// review ID
 	$id = "Review";
@@ -110,23 +109,19 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     }
 
     // bottom links
-    $hilite = ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "");
-    
     // edit your own review
     $extrarev = array();
     if ($mode == "edit" && !$rrow)
-	$extrarev[] = "    <tr><td class='highlight'>&#187;</td><td><b>Enter&nbsp;review</b></td><td>" . contactHtml($Me->firstName, $Me->lastName) . "</td><td class='empty'></td></tr>\n";
+	$extrarev[] = "    <tr><td><b>Enter&nbsp;review</b></td><td>" . contactHtml($Me->firstName, $Me->lastName) . "</td><td class='empty'></td></tr>\n";
     else if (!$foundMyReview && $Me->canReview($prow, null, $Conf)) {
-	$x = "    <tr>$hilite<td colspan='2'><a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=edit$linkExtra'>Enter&nbsp;your&nbsp;own&nbsp;review</a></td></tr>\n";
+	$x = "    <tr><td colspan='2'><a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=edit$linkExtra'>Enter&nbsp;your&nbsp;own&nbsp;review</a></td></tr>\n";
 	$extrarev[] = $x;
     }
 
     // headers
     $numericHeaders = "";
-    if ($anyScores) {
-	$t = ($mode == "edit" || $rrow ? "<td class='highlight'></td>" : "");
-	$numericHeaders = "    <tr>$t<td class='empty' colspan='2'></td>" . $rf->webNumericScoresHeader($prow, $Me, $Conf) . "</tr>\n";
-    }
+    if ($anyScores)
+	$numericHeaders = "    <tr><td class='empty' colspan='2'></td>" . $rf->webNumericScoresHeader($prow, $Me, $Conf) . "</tr>\n";
     
     // unfinished review notification
     $notes = array();
@@ -165,7 +160,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	$t .= ($t == "" ? "" : $xsep) . "<a href=\"${ConfSiteBase}assign$ConfSiteSuffix?p=$prow->paperId$linkExtra\">$x</a>";
     }
     if ($t)
-	$extrarev[] = "    <tr>$hilite<td colspan='" . (2 + $nNumeric) . "'><div class='revnotes'>$t</div></td></tr>\n";
+	$extrarev[] = "    <tr><td colspan='" . (2 + $nNumeric) . "'><div class='revnotes'>$t</div></td></tr>\n";
 
     // collect notes
     if (count($notes)) {

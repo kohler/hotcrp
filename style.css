@@ -799,6 +799,9 @@ table.topicinterest tr td.ti_topic {
 table.reviewers td {
 	padding-right: 1em;
 }
+table.reviewers tr.hilite {
+	background: #f0f0ff;
+}
 table.reviewers th {
 	font-size: smaller;
 	padding: 0em 0.25em;
