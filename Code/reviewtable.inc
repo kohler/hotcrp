@@ -152,8 +152,10 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     else if (($mode != "edit" && $rrow && $Me->canViewReview($prow, null, $Conf))
 	     || ($mode == "edit" && $Me->canViewReview($prow, null, $Conf)))
 	$t .= "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=view$linkExtra'>All reviews</a>";
-    else if ($mode == "view" && !$rrow && $Me->canViewReview($prow, null, $Conf))
-	$t .= "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=view&amp;text=1$linkExtra'>Text version of the reviews</a>";
+    else if ($mode == "view" && !$rrow && $Me->canViewReview($prow, null, $Conf)) {
+	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=view&amp;text=1$linkExtra'>";
+	$t .= $a . $Conf->cacheableImage("txt24.png", "[Text]", null, "dlimg") . "</a>&nbsp;" . $a . "Text version</a>";
+    }
     // review assignments
     if ($mode != "assign" && ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
 	if ($Me->privChair)

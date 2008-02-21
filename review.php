@@ -483,7 +483,9 @@ function reviewView($prow, $rrow, $editMode) {
 	$sep = $xsep;
     }
     if ($rrow) {
-	echo $sep, "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;r=$rrow->reviewId&amp;text=1$linkExtra'>Text version</a>";
+	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;r=$rrow->reviewId&amp;text=1$linkExtra'>";
+	echo $sep, $a, $Conf->cacheableImage("txt.png", "[Text]", null, "b"),
+	    "</a>&nbsp;", $a, "Text version</a>";
 	$sep = $xsep;
     }
     if ($rrow && !$editMode && $Me->canReview($prow, $rrow, $Conf))

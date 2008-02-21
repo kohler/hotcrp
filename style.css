@@ -907,7 +907,7 @@ td.pl_authors, td.pl_tags, td.pl_topics, td.pl_topicNames, td.pl_affrow,
 td.pl_abstract {
 	font-size: smaller;
 }
-td.pl_title img {
+td.pl_title img, img.b {
 	vertical-align: text-bottom;
 }
 td.pl_callout {

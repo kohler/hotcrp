@@ -110,6 +110,8 @@ images/quicksearchex.png
 images/sortdown.png
 images/sortup.png
 images/stophand45.png
+images/txt.png
+images/txt24.png
 images/viewas.png
 
 Chair/.htaccess
