@@ -685,8 +685,6 @@ span.textlite {
 	background: #fcfcfc;
 }
 input.textlite, input.textlite-tt, textarea {
-	/*border: solid 1px #aaaadd;
-	padding: 0px 0px 0px 4px;*/
 	background: #fcfcfc;
 }
 textarea {
@@ -695,10 +693,6 @@ textarea {
 input.textlite-tt, textarea.tt {
 	font-family: monospace;
 	white-space: nowrap;
-}
-
-select {
-	border: solid 1px #aaaadd;
 }
 
 div.prevpaperlink, table.floatleft {
