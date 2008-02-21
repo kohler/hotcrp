@@ -40,13 +40,13 @@ class Conference {
 	// remove final slash from $Opt['paperSite']
 	$this->paperSite = preg_replace('|/+\Z|', '', $Opt['paperSite']);
 	if (!$this->paperSite)
-	    die("Package misconfigured: \$Opt['paperSite'] is not set");
+	    die("Package misconfigured: \$Opt[\"paperSite\"] is not set.  Perhaps the web server cannot read <tt>Code/options.inc</tt>?");
 	$this->shortName = $Opt['shortName'];
 	$this->longName = $Opt['longName'];
 
 	// unpack dsn and connect to database
 	if (!isset($Opt['dsn']))
-	    die("Package misconfigured: \$Opt['dsn'] is not set");
+	    die("Package misconfigured: \$Opt[\"dsn\"] is not set.  Perhaps the web server cannot read <tt>Code/options.inc</tt>?");
 	else if (preg_match('|^mysql://([^:@/]*)/(.*)|', $Opt['dsn'], $m)) {
 	    $this->dblink = mysql_connect(urldecode($m[1]));
 	    $dbname = urldecode($m[2]);
