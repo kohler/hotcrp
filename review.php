@@ -464,7 +464,9 @@ function reviewView($prow, $rrow, $editMode) {
 	echo " id='review$rrow->reviewId'";
     echo ">";
     if ($rrow) {
-	echo "<a href='review$ConfSiteSuffix?r=$rrow->reviewId$linkExtra' class='q'>Review";
+	echo "<a href='review$ConfSiteSuffix?r=",
+	    ($rrow->reviewSubmitted ? $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal) : $rrow->reviewId),
+	    "$linkExtra' class='q'>Review";
 	if ($rrow->reviewSubmitted)
 	    echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
 	echo "</a>";

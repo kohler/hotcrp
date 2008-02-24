@@ -1,14 +1,14 @@
 <?php
-// Chair/AssignPapers.php -- HotCRP chair's paper assignment page
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// manualassign.php -- HotCRP chair's paper assignment page
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once('../Code/header.inc');
-require_once('../Code/paperlist.inc');
-require_once('../Code/search.inc');
+require_once('Code/header.inc');
+require_once('Code/paperlist.inc');
+require_once('Code/search.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPrivChair('../');
+$Me->goIfNotPrivChair("index$ConfSiteSuffix");
 $kind = defval($_REQUEST, "kind", "a");
 if ($kind != "a" && $kind != "c")
     $kind = "a";
@@ -22,8 +22,8 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && $kind == "c") {
 
 
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
-$abar .= actionTab("Automatic", "../autoassign$ConfSiteSuffix", false);
-$abar .= actionTab("Manual", "AssignPapers$ConfSiteSuffix", true);
+$abar .= actionTab("Automatic", "autoassign$ConfSiteSuffix", false);
+$abar .= actionTab("Manual", "manualassign$ConfSiteSuffix", true);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 
@@ -163,7 +163,7 @@ if ($reviewer >= 0) {
 	echo "<div class='topicinterest'><a href=\"${ConfSiteBase}search$ConfSiteSuffix?q=", urlencode($sco), "+", urlencode($sau), "&amp;qt=ac&amp;linkto=assign\"><b>Search for conflicts</b></a> (authors match one of \"", htmlspecialchars(substr($showau, 0, strlen($showau) - 1)), "\" or collaborators match one of \"", htmlspecialchars(substr($showco, 0, strlen($showco) - 1)), "\")</div>\n";
     }
 
-    $paperList = new PaperList(true, true, new PaperSearch($Me, array("t" => "s", "c" => $reviewer, "urlbase" => "Chair/AssignPapers$ConfSiteSuffix?reviewer=$reviewer")));
+    $paperList = new PaperList(true, true, new PaperSearch($Me, array("t" => "s", "c" => $reviewer, "urlbase" => "manualassign$ConfSiteSuffix?reviewer=$reviewer")));
     if (isset($sau)) {
 	$paperList->authorMatch = strtr(substr($showau, 0, strlen($showau) - 1), " ", "|");
 	$paperList->collaboratorsMatch = strtr(substr($showco, 0, strlen($showco) - 1), " ", "|");
@@ -181,4 +181,3 @@ if ($reviewer >= 0) {
 }
 
 $Conf->footer();
-

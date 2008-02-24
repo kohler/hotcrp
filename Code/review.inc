@@ -36,7 +36,6 @@ $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
 global $scoreHelps;
 $scoreHelps = array();
 
-
 class ReviewForm {
 
     var $updatedWhen;
@@ -74,8 +73,30 @@ class ReviewForm {
 	    $x .= substr($w, 0, 3);
 	return $x;
     }
+
+    function parseOption($optname, $text, $strict) {
+	global $reviewFields;
+	if (!$strict && strlen($text) > 1
+	    && preg_match('/\A\s*([0-9]+|[A-Z])(\W|\Z)/', $text, $m))
+	    $text = $m[1];
+	if (!$strict && ($xval = cvtint($text)) > 0)
+	    $text = $xval;
+	if (!$text || !isset($this->options[$optname][$text]))
+	    return null;
+	$opt1 = $reviewFields[$optname];
+	return ($opt1 <= 1 ? $text : ord($text) - $opt1);
+    }
+
+    function unparseOption($optname, $value) {
+	global $reviewFields;
+	$opt1 = $reviewFields[$optname];
+	if (!$value)
+	    return "";
+	return ($opt1 <= 1 ? $value : chr($opt1 + $value));
+    }
     
     function updateFromDB($conf) {
+	global $reviewFields;
 	$this->fieldOrder = array();
 	$this->shortName = array();
 	$this->fieldName = array();
@@ -93,21 +114,26 @@ class ReviewForm {
 	if (!$result)
 	    return;
 	while (($row = edb_orow($result))) {
+	    $n = $row->fieldName;
 	    if ($row->sortOrder >= 0)
 		$this->fieldOrder[] = $row->fieldName;
-	    $this->shortName[$row->fieldName] = $row->shortName;
-	    $this->fieldName[strtolower($row->shortName)] = $row->fieldName;
-	    $this->abbrevName[$row->fieldName] = $this->abbreviateField($row->shortName);
-	    $this->description[$row->fieldName] = $row->description;
-	    $this->fieldRows[$row->fieldName] = ($row->rows >= 3 ? $row->rows : 3);
-	    $this->authorView[$row->fieldName] = $row->authorView;
+	    $this->shortName[$n] = $row->shortName;
+	    $this->fieldName[strtolower($n)] = $row->fieldName;
+	    $this->abbrevName[$n] = $this->abbreviateField($row->shortName);
+	    $this->description[$n] = $row->description;
+	    $this->fieldRows[$n] = ($row->rows >= 3 ? $row->rows : 3);
+	    $this->authorView[$n] = $row->authorView;
+	    if ($reviewFields[$n] && isset($row->levelChar))
+		$reviewFields[$n] = max($row->levelChar, 1);
 	}
 	
 	$result = $conf->qe("select fieldName, level, description from ReviewFormOptions order by fieldName, level", $while);
 	if (!$result)
 	    return;
-	while (($row = edb_row($result)))
-	    $this->options[$row[0]][$row[1]] = $row[2];
+	while (($row = edb_row($result))) {
+	    $otext = $this->unparseOption($row[0], $row[1]);
+	    $this->options[$row[0]][$otext] = $row[2];
+	}
 
 	$result = $conf->qe("select topicId, topicName from TopicArea order by topicName", $while);
 	if (!$result)
@@ -137,10 +163,15 @@ class ReviewForm {
 	$x = '';
 	foreach ($this->fieldOrder as $field) {
 	    $fval = "";
+	    $options = isset($this->options[$field]);
 	    if ($useRequest && isset($_REQUEST[$field]))
 		$fval = $_REQUEST[$field];
-	    else if ($rrow != null)
-		$fval = $rrow->$field;
+	    else if ($rrow) {
+		if ($options)
+		    $fval = $this->unparseOption($field, $rrow->$field);
+		else
+		    $fval = $rrow->$field;
+	    }
 	    
 	    $x .= "<tr class='rev_$field'>\n";
 	    
@@ -159,9 +190,9 @@ class ReviewForm {
 	    $x .= "  <td class='entry'>";
 	    if ($this->description[$field])
 		$x .= "<div class='hint'>" . $this->description[$field] . "</div>\n";
-	    if (isset($this->options[$field])) {
+	    if ($options) {
 		$x .= "<select name='$field' onchange='highlightUpdate()'>\n";
-		if ($fval == "" || $fval <= 0 || $fval > count($this->options[$field]))
+		if (!$this->parseOption($field, $fval, true))
 		    $x .= "    <option value='0' selected='selected'>(Unknown)</option>\n";
 		foreach ($this->options[$field] as $num => $what) {
 		    $x .= "    <option value='$num'";
@@ -204,18 +235,12 @@ class ReviewForm {
 		$missing[] = $this->shortName[$field];
 	    if (isset($this->options[$field])) {
 		$fval = trim($fval);
-		$max = count($this->options[$field]);
 		if ($fval == "" || $fval == "0") {
 		    if ($submit) {
 			$provide[] = $this->shortName[$field];
 			$ReviewFormError[$field] = 1;
 		    }
-		} else if (($xval = cvtint($fval)) > 0 && $xval <= $max)
-		    $fval = $xval;
-		else if (preg_match("/^([0-9]+)\\./", $fval, $matches)
-			 && $matches[1] > 0 && $matches[1] <= $max)
-		    $fval = $matches[1];
-		else {
+		} else if (!$this->parseOption($field, $fval, false)) {
 		    $outofrange[] = $field;
 		    $ReviewFormError[$field] = 1;
 		}
@@ -259,7 +284,10 @@ class ReviewForm {
 	foreach ($this->fieldOrder as $field)
 	    if (isset($req[$field])) {
 		$fval = $req[$field];
-		if (!isset($this->options[$field])) {
+		if (isset($this->options[$field])) {
+		    if (!($fval = $this->parseOption($field, $fval, false)))
+			continue;
+		} else {
 		    $fval = rtrim($fval);
 		    if ($fval != "")
 			$fval .= "\n";
@@ -396,7 +424,7 @@ class ReviewForm {
     }
     
     function textForm($prow, $rrow, $contact, $conf, $req = null, $alwaysMyReview = false) {
-	global $Conf;
+	global $Conf, $reviewFields;
 	$conf = ($conf ? $conf : $Conf);
 
 	$rrow_contactId = 0;
@@ -463,13 +491,16 @@ $blind\n";
 		continue;
 
 	    $fval = "";
+	    $options = isset($this->options[$field]);
 	    if ($req && isset($req[$field]))
 		$fval = rtrim($req[$field]);
-	    else if ($rrow != null && isset($rrow->$field))
-		$fval = rtrim(str_replace("\r\n", "\n", $rrow->$field));
-	    if (isset($this->options[$field]) && $fval == "0")
-		$fval = "";
-	    else if (isset($this->options[$field]) && isset($this->options[$field][$fval]))
+	    else if ($rrow != null && isset($rrow->$field)) {
+		if ($options)
+		    $fval = $this->unparseOption($field, $rrow->$field);
+		else
+		    $fval = rtrim(str_replace("\r\n", "\n", $rrow->$field));
+	    }
+	    if ($options && isset($this->options[$field][$fval]))
 		$fval = "$fval. " . $this->options[$field][$fval];
 	    if (!$myReview && $fval == "")
 		continue;
@@ -482,11 +513,16 @@ $blind\n";
 	    $x .= "\n";
 	    if (defval($this->description, $field))
 		$x .= wordWrapIndent($this->description[$field], "==-==    ", "==-==    ") . "\n";
-	    if (isset($this->options[$field]) && $myReview) {
-		$x .= "==-== Enter a number from 1 to " . count($this->options[$field]) . ".\n";
+	    if ($options && $myReview) {
+		if ($reviewFields[$field] <= 1)
+		    $x .= "==-== Enter a number from 1 to " . count($this->options[$field]) . ".\n";
+		else
+		    $x .= "==-== Enter a letter from " . chr($reviewFields[$field] + 1) . " to " . chr($reviewFields[$field] + count($this->options[$field])) . ".\n";
+		$first = true;
 		foreach ($this->options[$field] as $num => $value) {
-		    $y = ($num == 1 ? "==-== Choices: 1. " : "==-==          $num. ");
+		    $y = ($first ? "==-== Choices: " : "==-==          ") . "$num. ";
 		    $x .= wordWrapIndent($value, $y, str_pad("==-==", strlen($y))) . "\n";
+		    $first = false;
 		}
 	    }
 	    $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
@@ -535,16 +571,19 @@ $blind\n";
 	    $i++;
 	    if (!$viewAllFields && $this->authorView[$field] <= 0)
 		continue;
+	    $options = isset($this->options[$field]);
 
 	    $fval = "";
-	    if ($rrow != null && isset($rrow->$field))
-		$fval = rtrim(str_replace("\r\n", "\n", $rrow->$field));
-	    if (isset($this->options[$field]) && $fval == "0")
-		$fval = "";
+	    if ($rrow != null && isset($rrow->$field)) {
+		if ($options)
+		    $fval = $this->unparseOption($field, $rrow->$field);
+		else
+		    $fval = rtrim(str_replace("\r\n", "\n", $rrow->$field));
+	    }
 	    if ($fval == "")
 		continue;
 
-	    if (isset($this->options[$field])) {
+	    if ($options) {
 		$y = defval($this->options[$field], $fval, "");
 		$sn = $this->shortName[$field] . ":";
 		/* "(1-" . count($this->options[$field]) . "):"; */
@@ -721,8 +760,10 @@ $blind\n";
 	}
 	
 	foreach ($showFields as $field => $display) {
-	    $fval = ($rrow ? $rrow->$field : "");
 	    $options = isset($this->options[$field]);
+	    $fval = ($rrow ? $rrow->$field : "");
+	    if ($options && $fval)
+		$fval = $this->unparseOption($field, $fval);
 
 	    if ($display <= 1)
 		$x .= "\n<tr class='rev_$field'>\n";
@@ -757,7 +798,7 @@ $blind\n";
 	    else
 		$x .= "' colspan='3'>";
 	    if ($options) {
-		if ($fval == "" || $fval <= 0 || $fval > count($this->options[$field]))
+		if (!$fval || !isset($this->options[$field][$fval]))
 		    $x .= "<span class='rev_${field}_0 rev_unknown'>Unknown</span>";
 		else
 		    $x .= "<span class='rev_${field}_$fval'><span class='rev_num rev_num_$fval'>$fval.</span> " . htmlspecialchars($this->options[$field][$fval]) . "</span>";
@@ -828,7 +869,7 @@ $blind\n";
 	    if (($this->authorView[$field] > 0 || $viewAllFields)
 		&& isset($this->options[$field])) {
 		if ($view && $rrow->$field) {
-		    $x .= "<td class='revscore rs_$field'>" . $rrow->$field . "</td>";
+		    $x .= "<td class='revscore rs_$field'>" . $this->unparseOption($field, $rrow->$field) . "</td>";
 		    $anyScores = true;
 		} else
 		    $x .= "<td class='revscore rs_$field'></td>";
@@ -859,7 +900,8 @@ $blind\n";
 	    foreach ($this->fieldOrder as $field) {
 		if (($this->authorView[$field] > 0 || $viewAllFields)
 		    && isset($this->options[$field]))
-		    $x .= "<td class='rs_$field'>" . $rrow->$field . "</td>";
+		    $x .= "<td class='rs_$field'>"
+			. $this->unparseOption($field, $rrow->$field) . "</td>";
 	    }
 	    $x .= "</tr>\n";
 	}
@@ -909,6 +951,6 @@ function reviewForm($conf = null) {
     if (!isset($_SESSION["reviewForm"]))
 	$_SESSION["reviewForm"] = new ReviewForm($conf);
     else
-	$_SESSION["reviewForm"]->validate($conf);
+	$_SESSION["reviewForm"]->validate($conf, true);
     return $_SESSION["reviewForm"];
 }

@@ -447,17 +447,17 @@ After the submission deadline has passed:
   allows PC members to see abstracts for registered papers that haven't yet
   been submitted.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}Chair/AssignPapers$ConfSiteSuffix?kind=c'>Assign
+<li><p><strong><a href='${ConfSiteBase}manualassign$ConfSiteSuffix?kind=c'>Assign
   conflicts.</a></strong> You can assign conflicts <a
-  href='${ConfSiteBase}Chair/AssignPapers$ConfSiteSuffix?kind=c'>by PC member</a> or, if
+  href='${ConfSiteBase}manualassign$ConfSiteSuffix?kind=c'>by PC member</a> or, if
   PC members have entered preferences, <a
   href='${ConfSiteBase}autoassign$ConfSiteSuffix'>automatically</a> by searching for
   preferences of &minus;100 or less.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}Chair/AssignPapers$ConfSiteSuffix'>Make review
+<li><p><strong><a href='${ConfSiteBase}manualassign$ConfSiteSuffix'>Make review
   assignments.</a></strong> You can make assignments <a
   href='${ConfSiteBase}assign$ConfSiteSuffix'>by paging through papers</a>, <a
-  href='${ConfSiteBase}Chair/AssignPapers$ConfSiteSuffix'>by PC member</a>, or, even
+  href='${ConfSiteBase}manualassign$ConfSiteSuffix'>by PC member</a>, or, even
   easier, <a href='${ConfSiteBase}autoassign$ConfSiteSuffix'>automatically</a>.  PC
   review assignments can be \"primary\" or \"secondary\"; the difference is
   that primary reviewers are expected to complete their review, but a

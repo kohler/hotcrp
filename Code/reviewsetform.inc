@@ -1,14 +1,18 @@
 <?php 
-// Chair/SetReviewForm.php -- HotCRP review form definition page
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// Code/reviewsetform.php -- HotCRP review form definition page
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 function rf_checkOptions(&$var, &$options, &$order) {
+    global $Conf;
     if (!isset($var))
 	return false;
-    $var = str_replace("\r\n", "\n", $var);
-    $var = str_replace("\r", "\n", $var);
-    $expect = 1;
+    $var = cleannl($var);
+    if ($var && ord($var[0]) >= 65 && ord($var[0]) <= 90
+	&& $Conf->setting("allowPaperOption") >= 9)
+	$expect = $var[0];
+    else
+	$expect = 1;
     $text = '';
     $options = array();
     foreach (explode("\n", $var) as $line) {
@@ -17,20 +21,22 @@ function rf_checkOptions(&$var, &$options, &$order) {
 	    if (preg_match("/^$expect\\.\\s*(\\S.*)/", $line, $matches)
 		|| preg_match("/^$expect\\s+(\\S.*)/", $line, $matches)) {
 		$text .= "$expect. $matches[1]\n";
-		$options[$expect++] = $matches[1];
+		$options[$expect] = $matches[1];
+		$expect = (ord($expect) >= 65 ? chr(ord($expect) + 1) : $expect + 1);
 	    } else
 		return false;
 	}
     }
     $var = $text;
-    return ($expect >= 2 || (isset($order) && cvtint($order) < 0));
+    return (count($options) >= 2 || (isset($order) && cvtint($order) < 0));
 }
 
 function rf_update($lock) {
     global $Conf, $reviewFields, $rf, $Error;
+    $letterOptions = $Conf->setting("allowPaperOption") >= 9;
     
     if (isset($_REQUEST['loadsample']) && isset($_REQUEST['sample'])) {
-	require_once('sampleforms.inc');
+	require_once('reviewtemplate.inc');
 	if ($_REQUEST['sample'] == 'sigcomm2005')
 	    sigcomm2005Form();
 	else if ($_REQUEST['sample'] == 'worlds2005')
@@ -39,6 +45,8 @@ function rf_update($lock) {
 	    cgo36Form();
 	else if ($_REQUEST['sample'] == 'hotnetsv')
 	    hotnetsVForm();
+	else if ($_REQUEST['sample'] == 'pldi2008')
+	    pldi2008Form();
 	else if ($_REQUEST['sample'] == 'none')
 	    noForm();
 	else {
@@ -46,7 +54,7 @@ function rf_update($lock) {
 	    $_REQUEST['sample'] = 'none';
 	}
     } else if (isset($_REQUEST['cancel'])) {
-	require_once('sampleforms.inc');
+	require_once('reviewtemplate.inc');
 	noForm();
 	$_REQUEST['sample'] = 'none';
     } else
@@ -83,19 +91,27 @@ function rf_update($lock) {
 	    if (rf_checkOptions($_REQUEST["options_$field"], $options, $_REQUEST["order_$field"])) {
 		$Conf->qe("delete from ReviewFormOptions where fieldName='" . sqlq($field) . "'", $while);
 		$optext = "";
-		for ($i = 1; $i <= count($options); $i++)
-		    $optext .= "('" . sqlq($field) . "', $i, '" . sqlq($options[$i]) . "'), ";
+		$i = 1;
+		foreach ($options as $val) {
+		    $optext .= "('" . sqlq($field) . "', $i, '" . sqlq($val) . "'), ";
+		    $i++;
+		}
 		if ($optext)
 		    $Conf->qe("insert into ReviewFormOptions (fieldName, level, description) values " . substr($optext, 0, strlen($optext) - 2), $while);
 		
 		$result = $Conf->qe("update PaperReview set $field=0 where $field>" . count($options), $while);
 		if (edb_nrows_affected($result, $Conf) > 0)
 		    $scoreModified[] = htmlspecialchars($_REQUEST["shortName_$field"]);
+		reset($options);
+		if ($letterOptions && key($options) && ord(key($options)) >= 65)
+		    $req .= "levelChar=" . (ord(key($options)) - 1) . ", ";
+		else if ($letterOptions)
+		    $req .= "levelChar=" . ($reviewFields[$field] ? "1" : "0") . ", ";
 		
 		unset($_REQUEST["options_$field"]);
 		$updates = 1;
 	    } else {
-		$Error[$field] = 1;
+		$Error["options_$field"] = 1;
 		$optionError = 1;
 		continue;
 	    }
@@ -112,7 +128,7 @@ function rf_update($lock) {
     if (isset($shortNameError))
 	$Conf->errorMsg("Each review field should have a name.  Please edit the highlighted fields and save again.");
     if (isset($optionError))
-	$Conf->errorMsg("Review fields with options must have at least two choices, numbered sequentially from 1.  Enter them like this:  <pre>1. Low quality
+	$Conf->errorMsg("Review fields with options must have at least two choices, numbered sequentially from 1" . ($letterOptions ? " or with consecutive uppercase letters" : "") . ".  Enter them like this:  <pre>1. Low quality
 2. Medium quality
 3. High quality</pre>  Please edit the highlighted fields and save again.");
 
@@ -128,7 +144,8 @@ function rf_update($lock) {
 	$Conf->qe("insert into Settings (name, value) values ('revform_update', $t) on duplicate key update value=$t");
 	$Conf->confirmMsg("Review form updated.");
 	$rf->validate($Conf, true);
-    }
+    } else if (isset($updates))
+	$Conf->settings["revform_update"] = time();
 }
 
 function rf_getField($row, $name, $ordinalOrder = null) {
@@ -191,11 +208,12 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 
     // options
     if (isset($rf->options[$row->fieldName]) || $reviewFields[$row->fieldName]) {
-	$x .= "<$trclass><td class='rxcaption textarea'>Options</td><td class='entry'><textarea name='options_$row->fieldName' rows='6' cols='80' onchange='highlightUpdate()'>";
+	$error = (isset($Error["options_$row->fieldName"]) ? " error" : "");
+	$x .= "<$trclass><td class='rxcaption textarea$error'>Options</td><td class='entry$error'><textarea name='options_$row->fieldName' rows='6' cols='80' onchange='highlightUpdate()'>";
 	$y = '';
 	if (isset($rf->options[$row->fieldName])) {
-	    for ($i = 1; $i <= count($rf->options[$row->fieldName]); $i++)
-		$y .= "$i. " . $rf->options[$row->fieldName][$i] . "\n";
+	    foreach ($rf->options[$row->fieldName] as $num => $val)
+		$y .= "$num. $val\n";
 	}
 	$x .= htmlentities(rf_getField($row, 'options', $y))
 	    . "</textarea></td>";
@@ -212,6 +230,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 
 function rf_show() {
     global $Conf, $captions;
+    $letterOptions = $Conf->setting("allowPaperOption") >= 9;
     $result = $Conf->qe("select * from ReviewFormField", "while loading review form");
     if (!$result)
 	return;
@@ -219,8 +238,9 @@ function rf_show() {
     $captions = array
 	("description" => "Enter an HTML description for the review field here,
 	including any guidance you'd like to provide to reviewers and authors.",
-	 "options" => "Enter the allowed options for this field, one per line,
-	numbered starting from 1.  For example:
+	 "options" => "Enter the allowed options one per line,\n"
+	 . ($letterOptions ? "either numbered starting from 1 or using consecutive capital letters" : "numbered starting from 1")
+	 . ". For example:
 	<pre class='entryexample'>1. Reject
 2. Weak reject
 3. Weak accept
@@ -231,6 +251,7 @@ function rf_show() {
 <select name='sample'>";
     foreach (array("none" => "(none)",
 		   "hotnetsv" => "HotNets V workshop",
+		   "pldi2008" => "PLDI 2008",
 		   "sigcomm2005" => "SIGCOMM 2005",
 		   "worlds2005" => "WORLDS 2005 workshop",
 		   "cgo2004" => "CGO 2004 conference") as $k => $v) {
@@ -267,23 +288,4 @@ function rf_show() {
     }
 
     echo "</table>\n";
-}
-
-
-if (!isset($Me)) {
-    require_once('../Code/header.inc');
-    $Me = $_SESSION["Me"];
-    $Me->goIfInvalid();
-    $Me->goIfNotPrivChair('../');
-    $Conf->header("Edit Review Form");
-    $rf = reviewForm();
-    rf_update(true);
-    echo "<form action='SetReviewForm$ConfSiteSuffix' method='post'>
-<div class='smgap'></div>\n";
-    rf_show();
-    echo "<table class='center'><tr><td><input type='submit' class='hbutton' name='update' value='Save changes' />
-    <input type='submit' class='button' name='cancel' value='Cancel' /></td></tr></table>
-
-</form>\n";
-    $Conf->footer();
 }

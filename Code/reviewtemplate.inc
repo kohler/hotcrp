@@ -1,5 +1,5 @@
 <?php 
-// Chair/sampleforms.inc -- HotCRP sample review forms
+// Code/reviewtemplate.inc -- HotCRP template review forms
 // Placed in the public domain
 
 function setField($field, $shortname, $authorview, $description, $order, $options = null) {
@@ -12,11 +12,10 @@ function setField($field, $shortname, $authorview, $description, $order, $option
     $_REQUEST["order_$field"] = $order;
     if ($options !== null) {
 	$ot = "";
-	$on = 1;
-	foreach ($options as $o) {
-	    $ot .= $on . ". " . $o . "\n";
-	    $on++;
-	}
+	reset($options);
+	$on = key($options);
+	foreach ($options as $ox => $o)
+	    $ot .= ($on ? $ox : $ox + 1) . ". " . $o . "\n";
 	$_REQUEST["options_$field"] = $ot;
     }
 }
@@ -229,6 +228,46 @@ function hotnetsVForm() {
     unsetField("textField7", "Additional text field");
     unsetField("textField8", "Additional text field");
     loadedForm("the HotNets V workshop");
+}
+
+function pldi2008Form() {
+    setField("paperSummary", "Summary", true,
+	     "Please give a brief, 2-3 sentence summary of the main ideas of the paper.", 1);
+    setField("strengthOfPaper", "Strength", true,
+	     "What is the strength of the paper? (1-3 sentences)", 2);
+    setField("weaknessOfPaper", "Weakness", true,
+	     "What is the weakness of the paper? (1-3 sentences)", 3);
+    setField("overAllMerit", "Evaluation", true,
+	     "", 4,
+	     array("A" => "Excellent paper. I'd really want to see this paper in PLDI (will Champion it if I am in the PC).",
+		   "B" => "Good paper, I don't mind having it in PLDI.",
+		   "C" => "Weak paper, though it will not be an embarrassment to have it in PLDI.",
+		   "D" => "Serious problems.  This paper should not be in PLDI (will fight to reject it if I am in the PC)."));
+    setField("reviewerQualification", "Confidence", true,
+	     "", 5,
+	     array("X" => "I am an expert in the subject area of this paper.",
+		   "Y" => "I am knowledgeable in the area, though not an expert.",
+		   "Z" => "I am not an expert. My evaluation is that of an informed outsider."));
+    setField("likelyPresentation", "Can we anonymously publish this review?", false,
+	     "This year, we plan to create a discussion board for PLDI papers. If this paper is accepted, we would like to seed the discussion of this paper with the summary, strength and weakness sections of your review. These comments will be published anonymously (eg: \"PLDI Reviewer 1 Said:\").", 6,
+	     array("Yes", "No"));
+    setField("commentsToAuthor", "Detailed Comments", true,
+	     "Please supply detailed comments to back up your rankings. These comments will be forwarded to the authors of the paper.", 7);
+    setField("commentsToAddress", "Questions for Authors", true,
+	     "Please use this area to pose specific questions the authors should resolve.", 8);
+    setField("commentsToPC", "Confidential Comments for Committee", false,
+	     "You may wish to withhold some comments from the authors, and include them solely for the committee's internal use.", 9);
+    unsetField("novelty", "Novelty");
+    unsetField("technicalMerit", "Technical merit");
+    unsetField("interestToCommunity", "Discussability");
+    unsetField("suitableForShort", "Should the authors be invited?");
+    unsetField("grammar", "Writing quality");
+    unsetField("longevity", "Long-term importance");
+    unsetField("potential", "Potential");
+    unsetField("fixability", "Fixability");
+    unsetField("textField7", "Additional text field");
+    unsetField("textField8", "Additional text field");
+    loadedForm("the PLDI 2008 conference");
 }
 
 function noForm() {

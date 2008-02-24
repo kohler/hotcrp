@@ -390,6 +390,7 @@ CREATE TABLE `ReviewFormField` (
   `sortOrder` tinyint(1) NOT NULL default '-1',
   `rows` tinyint(1) NOT NULL default '0',
   `authorView` tinyint(1) NOT NULL default '1',
+  `levelChar` tinyint(1) NOT NULL default '0',
   PRIMARY KEY  (`fieldName`),
   UNIQUE KEY `fieldName` (`fieldName`),
   KEY `shortName` (`shortName`)
@@ -464,7 +465,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 8);
+insert into Settings (name, value) values ('allowPaperOption', 9);
 # collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 

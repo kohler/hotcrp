@@ -76,3 +76,10 @@ insert into ReviewFormField set fieldName='textField7',
 insert into ReviewFormField set fieldName='textField8',
 	shortName='Additional text field';
 update Settings set value=8 where name='allowPaperOption';
+
+
+-- UPDATE FROM VERSION 2.13
+-- Apply if `allowPaperOption <= 8`.
+
+alter table ReviewFormField add `levelChar` tinyint(1) NOT NULL default '0';
+update Settings set value=9 where name='allowPaperOption';

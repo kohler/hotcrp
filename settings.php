@@ -72,7 +72,7 @@ $Group = defval($_REQUEST, "group");
 if (!isset($SettingGroups[$Group]))
     $Group = "sub";
 if ($Group == "rfo")
-    require_once("Chair/SetReviewForm.php");
+    require_once("Code/reviewsetform.inc");
 if ($Group == "acc")
     require_once("Code/contactlist.inc");
 
@@ -458,8 +458,10 @@ function doSpecial($name, $set) {
     else if ($name == "reviewform") {
 	if (!$set)
 	    $Values[$name] = true;
-	else
+	else {
 	    rf_update(false);
+	    $Values["revform_update"] = time();
+	}
     } else if ($name == "banal")
 	doBanal($set);
 }
@@ -884,7 +886,7 @@ function doRevGroup() {
 
 // Review form
 function doRfoGroup() {
-    require_once("Chair/SetReviewForm.php");
+    require_once("Code/reviewsetform.inc");
     rf_show();
 }
 

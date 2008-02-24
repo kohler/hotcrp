@@ -669,7 +669,7 @@ td.error, td.error input, div.error, div.error input {
 td.lentry.error input, div.error input {
 	font-weight: normal;
 }
-span.error {
+span.error, td.error textarea, div.error textarea {
 	color: #ff0000;
 }
 
@@ -907,7 +907,8 @@ td.pl_desirability, td.pl_visits {
 	padding-right: 0.4em;
 }
 td.pl_authors, td.pl_tags, td.pl_topics, td.pl_topicNames, td.pl_affrow,
-td.pl_abstract {
+td.pl_abstract, td.pl_reviewerNames, td.pl_allPreferences, td.pl_authorsMatch,
+td.pl_collaboratorsMatch {
 	font-size: smaller;
 }
 td.pl_title img, img.b {

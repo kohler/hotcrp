@@ -40,6 +40,7 @@ help.php
 index.php
 log.php
 mail.php
+manualassign.php
 mergeaccounts.php
 offline.php
 paper.php
@@ -70,7 +71,9 @@ Code/mailtemplate.inc
 Code/paperlist.inc
 Code/papertable.inc
 Code/review.inc
+Code/reviewsetform.inc
 Code/reviewtable.inc
+Code/reviewtemplate.inc
 Code/sample.pdf
 Code/schema.sql
 Code/search.inc
@@ -115,10 +118,7 @@ images/txt24.png
 images/viewas.png
 
 Chair/.htaccess
-Chair/AssignPapers.php
 Chair/DumpDatabase.php
-Chair/SetReviewForm.php
 Chair/index.php
-Chair/sampleforms.inc
 
 EOF
