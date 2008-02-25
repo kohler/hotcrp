@@ -226,6 +226,9 @@ function archiveReview($rrow) {
 		requestedOn, acceptedOn, reviewModified, reviewSubmitted,
 		reviewNeedsSubmit, "
 	. join(", ", array_keys($reviewFields));
+    // compensate for 2.12 schema error
+    if ($Conf->setting("allowPaperOption") == 8)
+	$fields = str_replace(", textField7, textField8", "", $fields);
     $Conf->qe("insert into PaperReviewArchive ($fields) select $fields from PaperReview where reviewId=$rrow->reviewId", "while archiving review");
 }
 

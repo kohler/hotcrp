@@ -82,4 +82,6 @@ update Settings set value=8 where name='allowPaperOption';
 -- Apply if `allowPaperOption <= 8`.
 
 alter table ReviewFormField add `levelChar` tinyint(1) NOT NULL default '0';
+alter table PaperReviewArchive add `textField7` text NOT NULL default '';
+alter table PaperReviewArchive add `textField8` text NOT NULL default '';
 update Settings set value=9 where name='allowPaperOption';

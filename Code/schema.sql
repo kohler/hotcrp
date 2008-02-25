@@ -286,6 +286,8 @@ CREATE TABLE `PaperReviewArchive` (
   `strengthOfPaper` text NOT NULL default '',
   `potential` tinyint(4) NOT NULL default '0',
   `fixability` tinyint(4) NOT NULL default '0',
+  `textField7` text NOT NULL default '',
+  `textField8` text NOT NULL default '',
   PRIMARY KEY  (`reviewArchiveId`),
   UNIQUE KEY `reviewArchiveId` (`reviewArchiveId`),
   KEY `reviewId` (`reviewId`),
