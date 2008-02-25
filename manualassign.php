@@ -24,6 +24,7 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && $kind == "c") {
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
 $abar .= actionTab("Automatic", "autoassign$ConfSiteSuffix", false);
 $abar .= actionTab("Manual", "manualassign$ConfSiteSuffix", true);
+$abar .= actionTab("Bulk", "bulkassign$ConfSiteSuffix", false);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 

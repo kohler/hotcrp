@@ -394,9 +394,6 @@ class Mailer {
 	    $this->text = $pop;
 	    if ($this->textstart > strlen($this->text))
 		$this->textstart = strlen($this->text);
-	    while (($c = count($this->privateParts)) > 0
-		   && $this->privateParts[$c - 1][0] >= strlen($this->text))
-		array_pop($this->privateParts);
 	    return false;
 	}
     }

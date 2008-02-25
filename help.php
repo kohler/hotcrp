@@ -456,11 +456,13 @@ After the submission deadline has passed:
   href='${ConfSiteBase}autoassign$ConfSiteSuffix'>automatically</a> by searching for
   preferences of &minus;100 or less.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}manualassign$ConfSiteSuffix'>Make review
-  assignments.</a></strong> You can make assignments <a
+<li><p><strong><a href='${ConfSiteBase}manualassign$ConfSiteSuffix'>Make
+  review assignments.</a></strong> You can make assignments <a
   href='${ConfSiteBase}assign$ConfSiteSuffix'>by paging through papers</a>, <a
-  href='${ConfSiteBase}manualassign$ConfSiteSuffix'>by PC member</a>, or, even
-  easier, <a href='${ConfSiteBase}autoassign$ConfSiteSuffix'>automatically</a>.  PC
+  href='${ConfSiteBase}manualassign$ConfSiteSuffix'>by PC member</a>, <a
+  href='${ConfSiteBase}bulkassign$ConfSiteSuffix'>by uploading an assignments
+  file</a>, or, even easier, <a
+  href='${ConfSiteBase}autoassign$ConfSiteSuffix'>automatically</a>.  PC
   review assignments can be \"primary\" or \"secondary\"; the difference is
   that primary reviewers are expected to complete their review, but a
   secondary reviewer can choose to delegate their review to someone else.</p>

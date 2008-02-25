@@ -30,6 +30,7 @@ README
 account.php
 assign.php
 autoassign.php
+bulkassign.php
 cacheable.php
 comment.php
 contactauthors.php

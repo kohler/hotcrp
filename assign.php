@@ -241,7 +241,7 @@ function requestReview($email) {
 
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
-    $Conf->qe("unlock tables");
+    $Conf->qx("unlock tables");
     $Conf->log("Asked $Them->email to review", $Me, $prow->paperId);
 
     return true;
@@ -278,7 +278,7 @@ function proposeReview($email) {
 
     // confirmation message
     $Conf->confirmMsg("Proposed that " . htmlspecialchars("$name <$email>") . " review paper #$prow->paperId.  The chair must approve this proposal for it to take effect.");
-    $Conf->qe("unlock tables");
+    $Conf->qx("unlock tables");
     $Conf->log("Logged proposal for $email to review", $Me, $prow->paperId);
     return true;
 }
@@ -330,7 +330,7 @@ function createAnonymousReview() {
 
     // confirmation message
     $Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId.");
-    $Conf->qe("unlock tables");
+    $Conf->qx("unlock tables");
     $Conf->log("Created $contactemail review", $Me, $prow->paperId);
 
     return true;
@@ -344,7 +344,7 @@ if (isset($_REQUEST['add'])) {
     else if (trim($_REQUEST["email"]) == "" && trim($_REQUEST["name"]) == ""
 	     && $Me->privChair) {
 	if (!createAnonymousReview())
-	    $Conf->qe("unlock tables");
+	    $Conf->qx("unlock tables");
 	unset($_REQUEST["reason"]);
 	getProw();
     } else if (trim($_REQUEST["email"]) == "")
@@ -359,7 +359,7 @@ if (isset($_REQUEST['add'])) {
 	    unset($_REQUEST["name"]);
 	    unset($_REQUEST["reason"]);
 	} else
-	    $Conf->qe("unlock tables");
+	    $Conf->qx("unlock tables");
 	getProw();
     }
 }
@@ -383,7 +383,7 @@ if (isset($_REQUEST['deny']) && $Me->privChair
 	$Conf->confirmMsg("Proposed reviewer denied.");
     } else
 	$Conf->errorMsg("No one has proposed that " . htmlspecialchars($email) . " review this paper.");
-    $Conf->qe("unlock tables");
+    $Conf->qx("unlock tables");
     unset($_REQUEST['email']);
     unset($_REQUEST['name']);
 }
