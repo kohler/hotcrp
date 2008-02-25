@@ -33,17 +33,17 @@ if (isset($_REQUEST["signin"]) || isset($_REQUEST["signout"])) {
 function doCreateAccount() {
     global $Conf, $Opt, $Me, $email_class;
 
-    if ($Me->valid()) {
+    if ($Me->valid() && $Me->visits > 0) {
 	$email_class = " error";
 	return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ".  To retrieve your password, select &ldquo;I forgot my password, email it to me.&rdquo;");
     } else if (!validateEmail($_REQUEST["email"])) {
 	$email_class = " error";
 	return $Conf->errorMsg("&ldquo;" . htmlspecialchars($_REQUEST["email"]) . "&rdquo; is not a valid email address.");
+    } else if (!$Me->valid()) {
+	$result = $Me->initialize($_REQUEST["email"], $Conf);
+	if (!$result)
+	    return $Conf->errorMsg($Conf->dbErrorText(true, "while adding your account"));
     }
-
-    $result = $Me->initialize($_REQUEST["email"], $Conf);
-    if (!$result)
-	return $Conf->errorMsg($Conf->dbErrorText(true, "while adding your account"));
 
     $Me->sendAccountInfo($Conf, true, true);
     $Conf->log("Account created", $Me);
