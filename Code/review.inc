@@ -87,10 +87,10 @@ class ReviewForm {
 	return ($opt1 <= 1 ? $text : ord($text) - $opt1);
     }
 
-    function unparseOption($optname, $value) {
+    function unparseOption($optname, $value, $preserveEmpty = false) {
 	global $reviewFields;
-	$opt1 = $reviewFields[$optname];
-	if (!$value)
+	$opt1 = defval($reviewFields, $optname);
+	if (!$value && !$preserveEmpty)
 	    return "";
 	return ($opt1 <= 1 ? $value : chr($opt1 + $value));
     }
@@ -131,7 +131,7 @@ class ReviewForm {
 	if (!$result)
 	    return;
 	while (($row = edb_row($result))) {
-	    $otext = $this->unparseOption($row[0], $row[1]);
+	    $otext = $this->unparseOption($row[0], $row[1], true);
 	    $this->options[$row[0]][$otext] = $row[2];
 	}
 
@@ -727,7 +727,7 @@ $blind\n";
 	$conf = ($conf ? $conf : $Conf);
 
 	if (count($tf['err']) > 0)
-	    $conf->errorMsg("There were some errors while parsing the uploaded reviews file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf['err']) . "</p></div>");
+	    $conf->errorMsg("There were errors while parsing the uploaded reviews file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf['err']) . "</p></div>");
 
 	if (count($tf['confirm']) > 0)
 	    $conf->confirmMsg("<div class='parseerr'><p>" . join("</p>\n<p>", $tf['confirm']) . "</p></div>");
@@ -951,6 +951,6 @@ function reviewForm($conf = null) {
     if (!isset($_SESSION["reviewForm"]))
 	$_SESSION["reviewForm"] = new ReviewForm($conf);
     else
-	$_SESSION["reviewForm"]->validate($conf, true);
+	$_SESSION["reviewForm"]->validate($conf);
     return $_SESSION["reviewForm"];
 }
