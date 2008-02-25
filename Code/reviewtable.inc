@@ -112,7 +112,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     // edit your own review
     $extrarev = array();
     if ($mode == "edit" && !$rrow)
-	$extrarev[] = "    <tr><td><b>Enter&nbsp;review</b></td><td>" . contactHtml($Me->firstName, $Me->lastName) . "</td><td class='empty'></td></tr>\n";
+	$extrarev[] = "    <tr class='hilite'><td><b>Enter&nbsp;review</b></td><td>" . contactHtml($Me->firstName, $Me->lastName) . "</td><td class='empty'></td></tr>\n";
     else if (!$foundMyReview && $Me->canReview($prow, null, $Conf)) {
 	$x = "    <tr><td colspan='2'><a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=edit$linkExtra'>Enter&nbsp;your&nbsp;own&nbsp;review</a></td></tr>\n";
 	$extrarev[] = $x;

@@ -203,7 +203,7 @@ function requestReviewChecks($themHtml, $reqId) {
 function requestReview($email) {
     global $Conf, $Me, $Opt, $prow;
     
-    if (($reqId = $Conf->getContactId($email, true)) <= 0)
+    if (($reqId = $Conf->getContactId($email, true, false)) <= 0)
 	return false;
     $Them = new Contact();
     $Them->lookupById($reqId, $Conf);

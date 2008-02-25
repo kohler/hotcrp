@@ -168,11 +168,9 @@ class Conference {
     }
 
 
-    //
-    // Check to see if an email address has been registered
-    // in the database
-    //
-    function getContactId($email, $registerFromRequest = false) {
+    // fetch a contact ID from the database
+    function getContactId($email, $registerFromRequest = false,
+			  $sendInfo = true) {
 	global $Me;
 	// XXX should lock table
 	
@@ -180,7 +178,7 @@ class Conference {
 	if (!$email)
 	    return false;
 	
-	$result = $this->q(sprintf("select contactId from ContactInfo where email='%s'", sqlq($email)));
+	$result = $this->q("select contactId from ContactInfo where email='" . sqlq($email) . "'");
 	if (edb_nrows($result) > 0) {
 	    $row = edb_row($result);
 	    return $row[0];
@@ -190,10 +188,7 @@ class Conference {
 	    return false;
 
 	// validate email address
-	require_once("Mail/RFC822.php");
-	$rfc822 = new Mail_RFC822($email);
-	$emailForValidate = $email;
-	if (!$rfc822->validateMailbox($emailForValidate))
+	if (!validateEmail($email))
 	    return false;
 	
 	$p = (is_string($registerFromRequest) ? $registerFromRequest : "");
@@ -210,14 +205,11 @@ class Conference {
 		    $newguy->lastName = $_REQUEST["${p}lastName"];
 	    } else if (!isset($_REQUEST["${p}name"]))
 		/* nada */;
-	    else if (preg_match('/^(.*),\s*(\S.*)$/', $_REQUEST["${p}name"], $matches)) {
-		$newguy->firstName = $matches[2];
+	    else {
+		$matches = splitName($_REQUEST["${p}name"]);
+		$newguy->firstName = $matches[0];
 		$newguy->lastName = $matches[1];
-	    } else if (preg_match('/^(.*)\s+(\S*)$/', $_REQUEST["${p}name"], $matches)) {
-		$newguy->firstName = $matches[1];
-		$newguy->lastName = $matches[2];
-	    } else
-		$newguy->lastName = $_REQUEST["${p}name"];
+	    }
 
 	    // other information is easier
 	    if (isset($_REQUEST["${p}affiliation"]))
@@ -232,8 +224,10 @@ class Conference {
 	}
 	
 	if ($result) {
-	    $this->infoMsg("Created account for " . htmlspecialchars($email) . ".");
-	    $newguy->sendAccountInfo($this, true, false);
+	    if ($Me->privChair)
+		$this->infoMsg("Created account for " . htmlspecialchars($email) . ".");
+	    if ($sendInfo)
+		$newguy->sendAccountInfo($this, true, false);
 	    $this->log("$Me->email created account", $newguy);
 	} else
 	    $this->log("$Me->email account creation failure", $newguy);

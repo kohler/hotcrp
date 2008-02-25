@@ -63,7 +63,7 @@ On behalf of the %CONFNAME% program committee, %OTHERCONTACT% would like to soli
      Authors: %OPT(AUTHORS)%
   Paper site: %URL%/review%PHP%?p=%NUMBER%
 
-If you are willing to review this paper, you may enter your review on the conference site, or complete a review form offline and upload it.  %IF(DEADLINE(extrev_soft))%Please enter your review by %DEADLINE(extrev_soft)%.  %ENDIF%If you cannot complete the review, please refuse the review on the paper site or contact %OTHERNAME% directly.  For reference, your account information is as follows.
+If you are willing to review this paper, you may enter your review on the conference site, or complete a review form offline and upload it.  %IF(DEADLINE(extrev_soft))%Please enter your review by %DEADLINE(extrev_soft)%.  %ENDIF%If you cannot complete the review, please use the conference site to explicitly refuse the review, or contact %OTHERNAME% directly.  For reference, your account information is as follows.
 
         Site: %URL%/
        Email: %EMAIL%

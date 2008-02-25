@@ -362,29 +362,31 @@ Follow these steps to prepare to accept paper submissions.
 
 <li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=sub'>Set submission
   deadlines.</a></strong> Authors first <em>register</em>, then <em>submit</em>
-  their papers, possibly multiple times; authors choose for each submitted
+  their papers, possibly multiple times; they choose for each submitted
   version whether that version is ready for review.  Normally, HotCRP allows
   authors to update their papers until the deadline, but you can also require
   that authors \"freeze\" each submission explicitly; only 
   administrators can update frozen submissions.
   The only deadline that really matters is the paper submission
   deadline, but HotCRP also supports a separate paper registration deadline,
-  which will force authors to register a few days before they submit.  The
-  optional <em>grace period</em>, which applies to both deadlines, can give
-  authors some slack. HotCRP will allow post-deadline submissions and updates
-  for the specified grace period.</p></li>
+  which will force authors to register a few days before they submit.  An
+  optional <em>grace period</em> applies to both deadlines:
+  HotCRP reports the deadlines, but allows submissions and updates post-deadline
+  for the specified grace period.  This provides some
+  protection against last-minute server overload and gives authors
+  some slack.</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=opt'>Define
-  submission options (optional).</a></strong> If desired, the paper submission
-  form can list additional checkboxes, such as \"Consider this
+  submission options (optional).</a></strong>  You can add
+  additional checkboxes to the submission form, such as \"Consider this
   paper for the Best Student Paper award\" or \"Provide this paper to the
-  European shadow PC\", that submitters can select.  You can
+  European shadow PC.\"  You can
   <a href='${ConfSiteBase}search$ConfSiteSuffix'>search</a> for papers with or without
   each option.</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=opt'>Define paper
   topics (optional).</a></strong> Authors can select topics, such as
-  \"Applications\" or \"Network databases\", that characterize their
+  \"Applications\" or \"Network databases,\" that characterize their
   paper's subject areas.  PC members express topics for which they have high,
   medium, and low interest, improving automatic paper assignment.  Although
   explicit preferences (see below) are better than topic-based assignments,
@@ -461,8 +463,7 @@ After the submission deadline has passed:
   easier, <a href='${ConfSiteBase}autoassign$ConfSiteSuffix'>automatically</a>.  PC
   review assignments can be \"primary\" or \"secondary\"; the difference is
   that primary reviewers are expected to complete their review, but a
-  secondary reviewer can choose to delegate their review to someone else (once
-  they've invited an external reviewer).</p>
+  secondary reviewer can choose to delegate their review to someone else.</p>
 
   <p>The default assignments pages apply to all submitted papers.  You can
   also assign subsets of papers obtained through <a
@@ -493,7 +494,7 @@ review for that paper; this supposedly reduces bias.)
   href='${ConfSiteBase}comment$ConfSiteSuffix'>comments</a>.  On the <a
   href='${ConfSiteBase}settings$ConfSiteSuffix?group=dec'>decision settings page</a>,
   select \"Authors can see reviews\" and \"Collect responses to the
-  reviews\", then <a href='${ConfSiteBase}mail$ConfSiteSuffix'>send mail to
+  reviews,\" then <a href='${ConfSiteBase}mail$ConfSiteSuffix'>send mail to
   authors</a> informing them of the response deadlines.  PC members will still
   be able to update their reviews, assuming it's before the <a
   href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>review deadline</a>; authors
