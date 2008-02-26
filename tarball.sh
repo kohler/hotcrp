@@ -118,8 +118,4 @@ images/txt.png
 images/txt24.png
 images/viewas.png
 
-Chair/.htaccess
-Chair/DumpDatabase.php
-Chair/index.php
-
 EOF
