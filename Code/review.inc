@@ -3,30 +3,6 @@
 // HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-global $reviewFields;
-$reviewFields = array('paperSummary' => 0,
-		      'commentsToAuthor' => 0,
-		      'commentsToPC' => 0,
-		      'commentsToAddress' => 0,
-		      'weaknessOfPaper' => 0,
-		      'strengthOfPaper' => 0,
-		      'potential' => 1,
-		      'fixability' => 1,
-		      'overAllMerit' => 1,
-		      'reviewerQualification' => 1,
-		      'novelty' => 1,
-		      'technicalMerit' => 1,
-		      'interestToCommunity' => 1,
-		      'longevity' => 1,
-		      'grammar' => 1,
-		      'likelyPresentation' => 1,
-		      'suitableForShort' => 1);
-
-if ($Conf->setting("allowPaperOption") >= 8) {
-    $reviewFields["textField7"] = 0;
-    $reviewFields["textField8"] = 0;
-}
-
 global $reviewScoreNames;
 $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
 			  "grammar", "reviewerQualification", "potential",
@@ -40,6 +16,7 @@ class ReviewForm {
 
     var $updatedWhen;
 
+    var $reviewFields;
     var $fieldOrder;
     var $shortName;
     var $fieldName;
@@ -53,6 +30,30 @@ class ReviewForm {
 
     function ReviewForm($conf) {
 	$this->updatedWhen = 0;
+
+	$this->reviewFields = array('paperSummary' => 0,
+				    'commentsToAuthor' => 0,
+				    'commentsToPC' => 0,
+				    'commentsToAddress' => 0,
+				    'weaknessOfPaper' => 0,
+				    'strengthOfPaper' => 0,
+				    'potential' => 1,
+				    'fixability' => 1,
+				    'overAllMerit' => 1,
+				    'reviewerQualification' => 1,
+				    'novelty' => 1,
+				    'technicalMerit' => 1,
+				    'interestToCommunity' => 1,
+				    'longevity' => 1,
+				    'grammar' => 1,
+				    'likelyPresentation' => 1,
+				    'suitableForShort' => 1);
+	
+	if ($conf->setting("allowPaperOption") >= 8) {
+	    $this->reviewFields["textField7"] = 0;
+	    $this->reviewFields["textField8"] = 0;
+	}
+
 	$this->updateFromDB($conf);
     }
 
@@ -75,7 +76,6 @@ class ReviewForm {
     }
 
     function parseOption($optname, $text, $strict) {
-	global $reviewFields;
 	if (!$strict && strlen($text) > 1
 	    && preg_match('/\A\s*([0-9]+|[A-Z])(\W|\Z)/', $text, $m))
 	    $text = $m[1];
@@ -83,20 +83,18 @@ class ReviewForm {
 	    $text = $xval;
 	if (!$text || !isset($this->options[$optname][$text]))
 	    return null;
-	$opt1 = $reviewFields[$optname];
-	return ($opt1 <= 1 ? $text : ord($text) - $opt1);
+	$opt1 = $this->reviewFields[$optname];
+	return ($opt1 <= 1 ? $text : $opt1 - ord($text));
     }
 
     function unparseOption($optname, $value, $preserveEmpty = false) {
-	global $reviewFields;
-	$opt1 = defval($reviewFields, $optname);
+	$opt1 = defval($this->reviewFields, $optname);
 	if (!$value && !$preserveEmpty)
 	    return "";
-	return ($opt1 <= 1 ? $value : chr($opt1 + $value));
+	return ($opt1 <= 1 ? $value : chr($opt1 - $value));
     }
     
     function updateFromDB($conf) {
-	global $reviewFields;
 	$this->fieldOrder = array();
 	$this->shortName = array();
 	$this->fieldName = array();
@@ -123,8 +121,8 @@ class ReviewForm {
 	    $this->description[$n] = $row->description;
 	    $this->fieldRows[$n] = ($row->rows >= 3 ? $row->rows : 3);
 	    $this->authorView[$n] = $row->authorView;
-	    if ($reviewFields[$n] && isset($row->levelChar))
-		$reviewFields[$n] = max($row->levelChar, 1);
+	    if ($this->reviewFields[$n] && isset($row->levelChar))
+		$this->reviewFields[$n] = max($row->levelChar, 1);
 	}
 	
 	$result = $conf->qe("select fieldName, level, description from ReviewFormOptions order by fieldName, level", $while);
@@ -134,6 +132,9 @@ class ReviewForm {
 	    $otext = $this->unparseOption($row[0], $row[1], true);
 	    $this->options[$row[0]][$otext] = $row[2];
 	}
+	foreach ($this->reviewFields as $n => $levelChar)
+	    if ($levelChar > 1)
+		$this->options[$n] = array_reverse($this->options[$n], true);
 
 	$result = $conf->qe("select topicId, topicName from TopicArea order by topicName", $while);
 	if (!$result)
@@ -424,7 +425,7 @@ class ReviewForm {
     }
     
     function textForm($prow, $rrow, $contact, $conf, $req = null, $alwaysMyReview = false) {
-	global $Conf, $reviewFields;
+	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
 
 	$rrow_contactId = 0;
@@ -514,10 +515,10 @@ $blind\n";
 	    if (defval($this->description, $field))
 		$x .= wordWrapIndent($this->description[$field], "==-==    ", "==-==    ") . "\n";
 	    if ($options && $myReview) {
-		if ($reviewFields[$field] <= 1)
+		if ($this->reviewFields[$field] <= 1)
 		    $x .= "==-== Enter a number from 1 to " . count($this->options[$field]) . ".\n";
 		else
-		    $x .= "==-== Enter a letter from " . chr($reviewFields[$field] + 1) . " to " . chr($reviewFields[$field] + count($this->options[$field])) . ".\n";
+		    $x .= "==-== Enter a letter from " . chr($this->reviewFields[$field] - count($this->options[$field])) . " to " . chr($this->reviewFields[$field] - 1) . ".\n";
 		$first = true;
 		foreach ($this->options[$field] as $num => $value) {
 		    $y = ($first ? "==-== Choices: " : "==-==          ") . "$num. ";
@@ -948,7 +949,8 @@ $blind\n";
 function reviewForm($conf = null) {
     global $Conf;
     $conf = ($conf ? $conf : $Conf);
-    if (!isset($_SESSION["reviewForm"]))
+    if (!isset($_SESSION["reviewForm"])
+	|| !isset($_SESSION["reviewForm"]->reviewFields))
 	$_SESSION["reviewForm"] = new ReviewForm($conf);
     else
 	$_SESSION["reviewForm"]->validate($conf);

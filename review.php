@@ -221,11 +221,12 @@ else if (isset($_REQUEST['text']))
 
 // refuse review action
 function archiveReview($rrow) {
-    global $reviewFields, $Conf;
+    global $Conf;
+    $rf = reviewForm();
     $fields = "reviewId, paperId, contactId, reviewType, requestedBy,
 		requestedOn, acceptedOn, reviewModified, reviewSubmitted,
 		reviewNeedsSubmit, "
-	. join(", ", array_keys($reviewFields));
+	. join(", ", array_keys($rf->reviewFields));
     // compensate for 2.12 schema error
     if ($Conf->setting("allowPaperOption") == 8)
 	$fields = str_replace(", textField7, textField8", "", $fields);

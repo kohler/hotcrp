@@ -71,6 +71,7 @@ class PaperList extends BaseList {
     var $headerInfo;
     var $extraFooter;
     var $papersel;
+    var $rf;
     
     function PaperList($sortable = true, $list = false, $search = null, $extraText = null) {
 	global $paperListFields;
@@ -101,14 +102,14 @@ class PaperList extends BaseList {
 	$this->showConflict = true;
 	$this->papersel = null;
 	$this->extraFooter = "";
+	$this->rf = reviewForm();
     }
 
     function selector($fieldId, &$queryOptions) {
 	global $Conf, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_TOPIC_INTEREST:
-	    $rf = reviewForm();
-	    if (!count($rf->topicName))
+	    if (!count($this->rf->topicName))
 		return false;
 	    $queryOptions['topicInterestScore'] = 1;
 	    break;
@@ -134,10 +135,9 @@ class PaperList extends BaseList {
 		return false;
 	    if (!isset($queryOptions['scores']))
 		$queryOptions['scores'] = array();
-	    $rf = reviewForm();
 	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
 	    $queryOptions['scores'][] = $scoreName;
-	    $this->scoreMax[$scoreName] = $rf->maxNumericScore($scoreName);
+	    $this->scoreMax[$scoreName] = $this->rf->maxNumericScore($scoreName);
 	    break;
 	case self::FIELD_FOLD:
 	    $this->unfolded = false;
@@ -352,9 +352,8 @@ class PaperList extends BaseList {
 	case self::FIELD_ALL_PREFERENCES:
 	    return "Preferences";
 	case self::FIELD_SCORE: {
-	    $rf = reviewForm();
 	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
-	    return $rf->webFieldAbbrev($scoreName);
+	    return $this->rf->webFieldAbbrev($scoreName);
 	}
 	case self::FIELD_AUTHOR_MATCH:
 	    return "<span class='match'>Potential conflict in authors</span>";
@@ -542,8 +541,7 @@ class PaperList extends BaseList {
 	case self::FIELD_TOPIC_INTEREST:
 	    return htmlspecialchars($row->topicInterestScore + 0);
 	case self::FIELD_TOPIC_NAMES:
-	    $rf = reviewForm();
-	    return join(", ", $rf->webTopicArray($row->topicIds, isset($row->topicInterest) ? $row->topicInterest : null));
+	    return join(", ", $this->rf->webTopicArray($row->topicIds, isset($row->topicInterest) ? $row->topicInterest : null));
 	case self::FIELD_ALL_REVIEWER_NAMES:
 	    $n = "";
 	    if (isset($reviewList[$row->paperId]))
@@ -581,7 +579,7 @@ class PaperList extends BaseList {
 		$scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
 		$itemName = "${scoreName}Scores";
 		if ($row->$itemName)
-		    return $Conf->textValuesGraph($row->$itemName, $this->scoreMax[$scoreName], 1, defval($row, $scoreName));
+		    return $Conf->textValuesGraph($row->$itemName, $this->scoreMax[$scoreName], 1, defval($row, $scoreName), $this->rf->reviewFields[$scoreName]);
 	    }
 	    return "";
 	case self::FIELD_AUTHOR_MATCH:

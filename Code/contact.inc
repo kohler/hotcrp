@@ -185,11 +185,12 @@ class Contact {
     }
 
     function goIfInvalid() {
-	global $ConfSiteBase, $ConfSiteSuffix, $reviewFields;
+	global $ConfSiteBase, $ConfSiteSuffix;
 	if (!$this->valid()) {
 	    require_once("review.inc");
 	    $x = array("afterLogin" => 1, "blind" => 1);
-	    foreach ($reviewFields as $k => $v)
+	    $rf = reviewForm();
+	    foreach ($rf->reviewFields as $k => $v)
 		if (isset($_REQUEST[$k]))
 		    $x[$k] = $_REQUEST[$k];
 	    $_SESSION["afterLogin"] = selfHref($x);

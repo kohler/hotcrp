@@ -35,6 +35,7 @@ class ContactList extends BaseList {
     var $limit;
     var $haveAffrow;
     var $haveTopics;
+    var $rf;
     
     function ContactList($sortable = true) {
 	global $contactListFields;
@@ -51,6 +52,7 @@ class ContactList extends BaseList {
 	    $this->sortField = null;
 	$this->sortable = $sortable;
 	$this->haveAffrow = $this->haveTopics = null;
+	$this->rf = reviewForm();
     }
 
     function _normalizeField($fieldId) {
@@ -83,11 +85,10 @@ class ContactList extends BaseList {
 	    // XXX scoresOk
 	    if (!isset($queryOptions['scores']))
 		$queryOptions['scores'] = array();
-	    $rf = reviewForm();
 	    $queryOptions['reviews'] = true;
 	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
 	    $queryOptions['scores'][] = $scoreName;
-	    $this->scoreMax[$scoreName] = $rf->maxNumericScore($scoreName);
+	    $this->scoreMax[$scoreName] = $this->rf->maxNumericScore($scoreName);
 	}
 	return true;
     }
@@ -196,9 +197,8 @@ class ContactList extends BaseList {
 	case self::FIELD_REVIEW_PAPERS:
 	    return "Papers";
 	case self::FIELD_SCORE: {
-	    $rf = reviewForm();
 	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
-	    return $rf->webFieldAbbrev($scoreName);
+	    return $this->rf->webFieldAbbrev($scoreName);
 	}
 	default:
 	    return "&lt;$fieldId&gt;?";
@@ -255,9 +255,8 @@ class ContactList extends BaseList {
 	    foreach ($topics as $k => $v)
 		if ($v == $want)
 		    $nt[] = $k;
-	    $rf = reviewForm();
 	    if (count($nt))
-		return join(", ", $rf->webTopicArray($nt, array_fill(0, count($nt), $want)));
+		return join(", ", $this->rf->webTopicArray($nt, array_fill(0, count($nt), $want)));
 	    else
 		return "";
 	case self::FIELD_REVIEWS:
@@ -297,7 +296,7 @@ class ContactList extends BaseList {
 	    $v = scoreCounts($row->$scoreName, $this->scoreMax[$scoreName]);
 	    $m = "";
 	    if ($v->n > 0) {
-		$m = $Conf->textValuesGraph($v, 0, 2);
+		$m = $Conf->textValuesGraph($v, 0, 2, 0, $this->rf->reviewFields[$scoreName]);
 		/*foreach ($scores as $score => $count)
 		    $m .= ($m ? " " : "") . "<span class='sc$score'>$count</span>";
 		$avg = $sum / $n;

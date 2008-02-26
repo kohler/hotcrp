@@ -725,9 +725,8 @@ class Conference {
 	if ($reviewerQuery || $scoresQuery) {
 	    require_once('review.inc');
 	    $rf = reviewForm();
-	    global $reviewFields;
 	    foreach ($rf->fieldOrder as $k)
-		if (!$scoresQuery || $reviewFields[$k])
+		if (!$scoresQuery || $rf->reviewFields[$k])
 		    $pq .= ",\t\tPaperReview.$k as $k";
 	}
 	if (isset($options['topics']))
@@ -1218,13 +1217,24 @@ class Conference {
 	    && !preg_match('/@_\.com$/', $email);
     }
     
-    function textValuesGraph($v, $max, $style, $myscore = 0) {
+    function textValuesGraph($v, $max, $style, $myscore = 0, $levelChar = 0) {
 	global $ConfSiteBase, $ConfSiteSuffix;
 	
 	if (is_string($v))
 	    $v = scoreCounts($v, $max);
 
-	$avgtext = ($v->n > 1 ? sprintf("%0.2f &plusmn; %0.2f", $v->avg, $v->stddev) : sprintf("%0.2f", $v->avg));
+	if ($levelChar > 1) {
+	    $iavg = (int) $v->avg;
+	    if ($v->avg < $iavg + 0.25)
+		$avgtext = chr($levelChar - $iavg);
+	    else if ($v->avg < $iavg + 0.75)
+		$avgtext = chr($levelChar - $iavg - 1) . chr($levelChar - $iavg);
+	    else
+		$avgtext = chr($levelChar - $iavg - 1);
+	} else
+	    $avgtext = sprintf("%0.2f", $v->avg);
+	if ($v->n > 1)
+	    $avgtext .= sprintf(" &plusmn; %0.2f", $v->stddev);
 
 	$url = "";
 	for ($key = 1; $key <= $v->max; $key++)
@@ -1232,6 +1242,8 @@ class Conference {
 	$url = "${ConfSiteBase}images/GenChart$ConfSiteSuffix?v=$url";
 	if ($myscore && $v->v[$myscore] > 0)
 	    $url .= "&h=$myscore";
+	if ($levelChar > 1)
+	    $url .= "&c=" . chr($levelChar - 1);
 
 	if ($style == 0) {
 	    $retstr = "<table><tr><td align=\"center\">";
@@ -1242,8 +1254,12 @@ class Conference {
 		. "' height='" . (5 * max(3, max($v->v)) + 3) . "' />";
 	} else if ($style == 2) {
 	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=2\" alt=\"$avgtext\" title=\"$avgtext\" /><br />";
-	    for ($key = 1; $key <= $v->max; $key++)
-		$retstr .= ($key > 1 ? " " : "") . "<span class='sc$key'>" . $v->v[$key] . "</span>";
+	    if ($levelChar > 1)
+		for ($key = $v->max; $key >= 1; $key--)
+		    $retstr .= ($key < $v->max ? " " : "") . "<span class='sc$key'>" . $v->v[$key] . "</span>";
+	    else
+		for ($key = 1; $key <= $v->max; $key++)
+		    $retstr .= ($key > 1 ? " " : "") . "<span class='sc$key'>" . $v->v[$key] . "</span>";
 	    $retstr .= "<br /><span class='sc_sum'>" . $avgtext . "</span>";
 	}
 	

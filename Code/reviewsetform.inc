@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-function rf_checkOptions(&$var, &$options, &$order) {
+function rf_checkOptions(&$var, &$options, &$order, &$levelChar) {
     global $Conf;
     if (!isset($var))
 	return false;
@@ -28,11 +28,14 @@ function rf_checkOptions(&$var, &$options, &$order) {
 	}
     }
     $var = $text;
+    if (ord($expect) >= 65)
+	$options = array_reverse($options, true);
+    $levelChar = (ord($expect) >= 65 ? ord($expect) : 1);
     return (count($options) >= 2 || (isset($order) && cvtint($order) < 0));
 }
 
 function rf_update($lock) {
-    global $Conf, $reviewFields, $rf, $Error;
+    global $Conf, $rf, $Error;
     $letterOptions = $Conf->setting("allowPaperOption") >= 9;
     
     if (isset($_REQUEST['loadsample']) && isset($_REQUEST['sample'])) {
@@ -68,7 +71,7 @@ function rf_update($lock) {
     if ($lock)
 	$Conf->qe("lock tables ReviewFormField write, PaperReview write, ReviewFormOptions write");
     
-    foreach (array_keys($reviewFields) as $field) {
+    foreach (array_keys($rf->reviewFields) as $field) {
 	$req = '';
 	if (isset($_REQUEST["shortName_$field"])) {
 	    $sn = trim($_REQUEST["shortName_$field"]);
@@ -87,8 +90,8 @@ function rf_update($lock) {
 	    $req .= "description='" . sqlq(trim($_REQUEST["description_$field"])) . "', ";
 	if (isset($_REQUEST["order_$field"]))
 	    $req .= "sortOrder='" . cvtint($_REQUEST["order_$field"]) . "', ";
-	if ($reviewFields[$field]) {
-	    if (rf_checkOptions($_REQUEST["options_$field"], $options, $_REQUEST["order_$field"])) {
+	if ($rf->reviewFields[$field]) {
+	    if (rf_checkOptions($_REQUEST["options_$field"], $options, $_REQUEST["order_$field"], $levelChar)) {
 		$Conf->qe("delete from ReviewFormOptions where fieldName='" . sqlq($field) . "'", $while);
 		$optext = "";
 		$i = 1;
@@ -102,11 +105,8 @@ function rf_update($lock) {
 		$result = $Conf->qe("update PaperReview set $field=0 where $field>" . count($options), $while);
 		if (edb_nrows_affected($result, $Conf) > 0)
 		    $scoreModified[] = htmlspecialchars($_REQUEST["shortName_$field"]);
-		reset($options);
-		if ($letterOptions && key($options) && ord(key($options)) >= 65)
-		    $req .= "levelChar=" . (ord(key($options)) - 1) . ", ";
-		else if ($letterOptions)
-		    $req .= "levelChar=" . ($reviewFields[$field] ? "1" : "0") . ", ";
+		if ($letterOptions)
+		    $req .= "levelChar=" . ($rf->reviewFields[$field] ? $levelChar : 0) . ", ";
 		
 		unset($_REQUEST["options_$field"]);
 		$updates = 1;
@@ -158,7 +158,7 @@ function rf_getField($row, $name, $ordinalOrder = null) {
 }
 
 function rf_formFieldText($row, $ordinalOrder, $numRows) {
-    global $rf, $reviewFields, $Error, $rowidx, $captions;
+    global $rf, $Error, $rowidx, $captions;
 
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
     $trclass = "tr class='k" . ($rowidx % 2) . "'";
@@ -207,7 +207,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     $x .= "</tr>\n";
 
     // options
-    if (isset($rf->options[$row->fieldName]) || $reviewFields[$row->fieldName]) {
+    if (isset($rf->options[$row->fieldName]) || $rf->reviewFields[$row->fieldName]) {
 	$error = (isset($Error["options_$row->fieldName"]) ? " error" : "");
 	$x .= "<$trclass><td class='rxcaption textarea$error'>Options</td><td class='entry$error'><textarea name='options_$row->fieldName' rows='6' cols='80' onchange='highlightUpdate()'>";
 	$y = '';
@@ -244,7 +244,8 @@ function rf_show() {
 	<pre class='entryexample'>1. Reject
 2. Weak reject
 3. Weak accept
-4. Accept</pre>");
+4. Accept</pre>"
+	 . ($letterOptions ? "Higher numbers and lower letters are &ldquo;better.&rdquo;" : " Higher numbers are &ldquo;better.&rdquo;"));
 
 
     echo "<table><tr><td><div class='hgrp'><b>Templates:</b>&nbsp;

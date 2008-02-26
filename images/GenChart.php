@@ -32,6 +32,9 @@ else
     $valLight = $valMin - 1;
 if ($valLight < $valMin || $valLight >= $valMax)
     $valLight = $valMin - 1;
+$levelChar = (isset($_REQUEST["c"]) && ord($_REQUEST["c"]) >= 65
+	      ? ord($_REQUEST["c"]) : 0);
+
 
 // set shape constants
 if ($s == 0) {
@@ -49,7 +52,6 @@ if ($s == 0 || $s == 1) {
 	+ 2 * $textWidth;
     $picHeight = $blockHeight * $maxY + $blockSkip * ($maxY + 1);
     $pic = @imagecreate($picWidth + 1, $picHeight + 1);
-
 } else if ($s == 2) {
     $picWidth = 64;
     $picHeight = 8;
@@ -82,8 +84,9 @@ function quality_color($c1, $c2, $f) {
 $pos = 0;
 
 for ($value = $valMin; $value < $valMax; $value++) {
-    $height = $values[$value];
-    $frac = ($value - $valMin) / ($valMax - $valMin);
+    $vpos = ($levelChar ? $valMax - ($value - $valMin + 1) : $value);
+    $height = $values[$vpos];
+    $frac = ($vpos - $valMin) / ($valMax - $valMin);
     $cv_cur = quality_color($cv_bad, $cv_good, $frac);
     $cFill = imagecolorallocate($pic, $cv_cur[0], $cv_cur[1], $cv_cur[2]);
 
@@ -93,7 +96,7 @@ for ($value = $valMin; $value < $valMax; $value++) {
 	$curY = $picHeight - ($blockHeight + $blockSkip) * $height + $blockHeight;
 
 	for ($h = 1; $h <= $height; $h++) {
-	    if ($h == $height && $value == $valLight) {
+	    if ($h == $height && $vpos == $valLight) {
 		$cv_cur = quality_color($cv_black, $cv_cur, 0.5);
 		$cFill = imagecolorallocate($pic, $cv_cur[0], $cv_cur[1], $cv_cur[2]);
 	    }
@@ -114,10 +117,20 @@ if ($s == 0) {
     imagestringup($pic, 2, 0, 30, "Bad", $cBlack);
     imagestringup($pic, 2, $picWidth-$textWidth, 30, "Good", $cBlack);
  } else if ($s == 1) {
-    if ($values[$valMin] == 0)
-	imagestring($pic, 1, $textWidth + $blockPad, $picHeight - $blockHeight - $blockSkip - 3, "L", $cgrey);
-    if ($values[$valMax - 1] == 0)
-	imagestring($pic, 1, $picWidth - $blockWidth - $textWidth - $blockPad, $picHeight - $blockHeight - $blockSkip - 3, "H", $cgrey);
+    $lx = $textWidth + $blockPad;
+    $rx = $picWidth - $blockWidth - $textWidth - $blockPad;
+    $y = $picHeight - $blockHeight - $blockSkip - 3;
+    if (isset($_REQUEST["c"]) && ord($_REQUEST["c"]) >= 65) {
+	if ($values[$valMin] == 0)
+	    imagestring($pic, 1, $rx, $y, $_REQUEST["c"], $cgrey);
+	if ($values[$valMax - 1] == 0)
+	    imagestring($pic, 1, $lx, $y, chr(ord($_REQUEST["c"]) - $valMax + 2), $cgrey);
+    } else {
+	if ($values[$valMin] == 0)
+	    imagestring($pic, 1, $lx, $y, $valMin, $cgrey);
+	if ($values[$valMax - 1] == 0)
+	    imagestring($pic, 1, $rx, $y, $valMax - 1, $cgrey);
+    }
 }
 
 header("Cache-Control: public, max-age=31557600");
