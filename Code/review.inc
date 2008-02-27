@@ -116,7 +116,7 @@ class ReviewForm {
 	    if ($row->sortOrder >= 0)
 		$this->fieldOrder[] = $row->fieldName;
 	    $this->shortName[$n] = $row->shortName;
-	    $this->fieldName[strtolower($n)] = $row->fieldName;
+	    $this->fieldName[strtolower($row->shortName)] = $n;
 	    $this->abbrevName[$n] = $this->abbreviateField($row->shortName);
 	    $this->description[$n] = $row->description;
 	    $this->fieldRows[$n] = ($row->rows >= 3 ? $row->rows : 3);
@@ -681,7 +681,7 @@ $blind\n";
 			$nfields++;
 		    } else {
 			$this->garbageMessage($tf, $lineno, $garbage);
-			self::tfError($tf, "Review field \"" . htmlentities($fname) . "\" is not used for $conf->shortName reviews.  Ignoring this section.", $lineno);
+			self::tfError($tf, "Review field &ldquo;" . htmlentities($fname) . "&rdquo; is not used for $conf->shortName reviews.  Ignoring this section.", $lineno);
 			$field = null;
 		    }
 		    $mode = 1;
@@ -953,6 +953,6 @@ function reviewForm($conf = null) {
 	|| !isset($_SESSION["reviewForm"]->reviewFields))
 	$_SESSION["reviewForm"] = new ReviewForm($conf);
     else
-	$_SESSION["reviewForm"]->validate($conf);
+	$_SESSION["reviewForm"]->validate($conf ,true);
     return $_SESSION["reviewForm"];
 }
