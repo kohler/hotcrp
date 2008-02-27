@@ -953,6 +953,6 @@ function reviewForm($conf = null) {
 	|| !isset($_SESSION["reviewForm"]->reviewFields))
 	$_SESSION["reviewForm"] = new ReviewForm($conf);
     else
-	$_SESSION["reviewForm"]->validate($conf ,true);
+	$_SESSION["reviewForm"]->validate($conf);
     return $_SESSION["reviewForm"];
 }

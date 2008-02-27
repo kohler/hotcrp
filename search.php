@@ -31,7 +31,8 @@ if ($Me->isAuthor)
     $tOpt["a"] = "Your papers";
 if ($Me->amReviewer())
     $tOpt["r"] = "Your reviews";
-if ($Me->reviewsOutstanding)
+if ($Me->reviewsOutstanding
+    || ($Me->amReviewer() && defval($_REQUEST, "t") == "rout"))
     $tOpt["rout"] = "Your incomplete reviews";
 if ($Me->isPC)
     $tOpt["req"] = "Your review requests";
@@ -41,7 +42,6 @@ if (count($tOpt) == 0) {
     exit;
 }
 if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
-    $Conf->header("Search", 'search', actionBar());
     $Conf->errorMsg("You aren't allowed to search that paper collection.");
     unset($_REQUEST["t"]);
 }
@@ -192,9 +192,11 @@ if ($getaction == "revform" && !isset($papersel)) {
 	}
     }
 
-    if (count($texts) == 0)
-	$Conf->errorMsg(join("<br/>\n", array_keys($errors)) . "<br/>\nNo papers selected.");
-    else {
+    if (count($texts) == 0) {
+	if (count($errors) > 0)
+	    $errors[""] = "";
+	$Conf->errorMsg(join("<br/>\n", array_keys($errors)) . "No papers selected.");
+    } else {
 	ksort($texts);
 	$text = $rf->textFormHeader($Conf, $rfSuffix == "s") . join("", $texts);
 	if (count($errors)) {

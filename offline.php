@@ -39,6 +39,10 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 	    $rf->tfError($tf, whyNotText($whyNot, "review"));
     }
     $rf->textFormMessages($tf, $Conf);
+    // Uploading forms may have completed the reviewer's task; check that
+    // by revalidating their contact.
+    $Me->validated = false;
+    $Me->valid();
 } else if (isset($_REQUEST['uploadForm']))
     $Conf->errorMsg("Select a review form to upload.");
 
