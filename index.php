@@ -300,13 +300,13 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	else
 	   echo "You have submitted ", $myrow[1], " of <a href='search$ConfSiteSuffix?q=&amp;t=r'>", $myrow[2], " ", ($myrow[2] == 1 ? "review" : "reviews"), "</a>";
 	if (in_array("overAllMerit", $rf->fieldOrder) && $myrow[1])
-	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", sprintf("%.2f", $myrow[3]->avg);
+	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", unparseScoreAverage($myrow[3]->avg, $rf->reviewFields["overAllMerit"]);
 	echo ".<br />";
     }
     if (($Me->isPC || $Me->privChair) && $npc) {
 	echo sprintf("The average PC member has submitted %.1f reviews", $sumpcSubmit / $npc);
 	if (in_array("overAllMerit", $rf->fieldOrder) && $npcScore)
-	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", sprintf("%.2f", $sumpcScore / $npcScore);
+	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", unparseScoreAverage($sumpcScore / $npcScore, $rf->reviewFields["overAllMerit"]);
 	echo ".";
 	if ($Me->isPC || $Me->privChair)
 	    echo "&nbsp; <small>(<a href='contacts$ConfSiteSuffix?t=pc&amp;score%5B%5D=0'>Details</a>)</small>";

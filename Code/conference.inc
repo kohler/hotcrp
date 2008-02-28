@@ -1223,16 +1223,7 @@ class Conference {
 	if (is_string($v))
 	    $v = scoreCounts($v, $max);
 
-	if ($levelChar > 1) {
-	    $iavg = (int) $v->avg;
-	    if ($v->avg < $iavg + 0.25)
-		$avgtext = chr($levelChar - $iavg);
-	    else if ($v->avg < $iavg + 0.75)
-		$avgtext = chr($levelChar - $iavg - 1) . chr($levelChar - $iavg);
-	    else
-		$avgtext = chr($levelChar - $iavg - 1);
-	} else
-	    $avgtext = sprintf("%0.2f", $v->avg);
+	$avgtext = unparseScoreAverage($v->avg, $levelChar);
 	if ($v->n > 1)
 	    $avgtext .= sprintf(" &plusmn; %0.2f", $v->stddev);
 
