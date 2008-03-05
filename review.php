@@ -78,6 +78,12 @@ loadRows();
 // general error messages
 if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
     $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  The file was ignored.");
+else if (isset($_REQUEST["post"]) && isset($_REQUEST["default"])) {
+    if (fileUploaded($_FILES["uploadedFile"], $Conf))
+	$_REQUEST["uploadForm"] = 1;
+    else
+	$_REQUEST["update"] = 1;
+}
 
 
 // upload review form action
@@ -456,11 +462,10 @@ function reviewView($prow, $rrow, $editMode) {
     $reviewLink = "review$ConfSiteSuffix?"
 	. ($rrow ? "r=$rrow->reviewId" : "p=$prow->paperId")
 	. $linkExtra . "&amp;mode=edit&amp;post=1";
-    if ($editMode) {
-	$Conf->footerStuff .= "<script type='text/javascript'>var submitOk = false;</script>";
-	echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data' onsubmit='return submitOk;'>",
+    if ($editMode)
+	echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data'>",
 	    "<input class='hidden' type='submit' name='default' value='' />";
-    } else
+    else
 	echo "<div class='relative'>";
     
     echo "<table class='review'>
@@ -531,8 +536,10 @@ function reviewView($prow, $rrow, $editMode) {
   <td class='entry' colspan='2'>";
 	if ($rrow && $rrow->contactId != $Me->contactId)
 	    $Conf->infoMsg("You didn't write this review, but as an administrator you can still make changes.");
-	echo "<input class='button_small' type='submit' value='Download", ($editMode ? " form" : ""), "' name='downloadForm' id='downloadForm' onclick='submitOk=true' />";
-	echo "Upload form:&nbsp; <input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp; <input class='button_small' type='submit' value='Go' name='uploadForm' onclick='submitOk=true' />";
+	echo "<input class='button_small' type='submit' value='Download", ($editMode ? " form" : ""), "' name='downloadForm' id='downloadForm' />";
+	echo "Upload form:&nbsp; ",
+	    "<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp; ",
+	    "<input class='button_small' type='submit' value='Go' name='uploadForm' />";
 	echo "</td>\n</tr>\n";
     }
     
@@ -567,7 +574,7 @@ function reviewView($prow, $rrow, $editMode) {
 	    echo "</td></tr></table>",
 		"<div class='smgap'></div><table class='pt_buttons'>\n";
 	    $buttons = array();
-	    $buttons[] = "<input class='hbutton' type='submit' value='Save changes' name='update' onclick='submitOk=true' />";
+	    $buttons[] = "<input class='hbutton' type='submit' value='Save changes' name='update' />";
 	    if ($rrow && $Me->privChair) {
 		$buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
 		$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data'><div class='popup_actions'><input class='button' type='submit' name='delete' value='Delete review' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";

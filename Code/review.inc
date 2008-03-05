@@ -704,7 +704,7 @@ $blind\n";
 	    $text = substr($text, strlen($line));
 	}
 
-	if ($nfields == 0 && $anyDirectives)
+	if ($nfields == 0 && $tf['firstLineno'] == 1)
 	    self::tfError($tf, "That didn't appear to be a review form; I was not able to extract any information from it.  Please check its formatting and try again.", $lineno);
 
 	$tf['text'] = $text;
