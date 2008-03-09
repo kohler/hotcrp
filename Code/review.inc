@@ -159,10 +159,13 @@ class ReviewForm {
 	    $this->updateFromDB($conf);
     }
 
-    function webFormRows($rrow, $useRequest = false) {
-	global $ReviewFormError;
+    function webFormRows($contact, $prow, $rrow, $useRequest = false) {
+	global $ReviewFormError, $Conf;
 	$x = '';
+	$revViewScore = $contact->viewReviewFieldsScore($prow, $rrow, $Conf);
 	foreach ($this->fieldOrder as $field) {
+	    if ($this->authorView[$field] <= $revViewScore)
+		continue;
 	    $fval = "";
 	    $options = isset($this->options[$field]);
 	    if ($useRequest && isset($_REQUEST[$field]))
@@ -182,7 +185,9 @@ class ReviewForm {
 	    if (!$this->description[$field])
 		$x .= " textarea";
 	    $x .= "'>" . htmlspecialchars($this->shortName[$field]);
-	    if ($this->authorView[$field] < 0)
+	    if ($this->authorView[$field] < -1)
+		$x .= "<br /><span class='hint'>(secret)</span>";
+	    else if ($this->authorView[$field] < 0)
 		$x .= "<br /><span class='hint'>(chairs only)</span>";
 	    else if ($this->authorView[$field] == 0)
 		$x .= "<br /><span class='hint'>(hidden from authors)</span>";
@@ -232,12 +237,12 @@ class ReviewForm {
 	    if (!isset($req[$field]) && !$submit)
 		continue;
 	    $fval = defval($req, $field, ($rrow ? $rrow->$field : ""));
-	    if (!isset($req[$field]))
+	    if (!isset($req[$field]) && $this->authorView[$field] >= 0)
 		$missing[] = $this->shortName[$field];
 	    if (isset($this->options[$field])) {
 		$fval = trim($fval);
 		if ($fval == "" || $fval == "0") {
-		    if ($submit) {
+		    if ($submit && $this->authorView[$field] >= 0) {
 			$provide[] = $this->shortName[$field];
 			$ReviewFormError[$field] = 1;
 		    }
@@ -435,10 +440,10 @@ class ReviewForm {
 	    $rrow_contactId = $rrow->contactId;
 	$myReview = $alwaysMyReview
 	    || (!$rrow || $rrow_contactId == 0 || $rrow_contactId == $contact->contactId);
-	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
+	$revViewScore = $contact->viewReviewFieldsScore($prow, $rrow, $conf);
 
 	$x = "==+== =====================================================================\n";
-	//$x .= "$prow->paperId:$myReview:$viewAllFields:$rrow->contactId:$rrow->reviewContactId;;$prow->conflictType;;$prow->reviewType\n";
+	//$x .= "$prow->paperId:$myReview:$revViewScore:$rrow->contactId:$rrow->reviewContactId;;$prow->conflictType;;$prow->reviewType\n";
 
 	$x .= "==+== Begin Review";
 	if ($req && isset($req['reviewOrdinal']))
@@ -488,7 +493,7 @@ $blind\n";
 	$numericMessage = 0;
 	foreach ($this->fieldOrder as $field) {
 	    $i++;
-	    if (!$viewAllFields && $this->authorView[$field] <= 0)
+	    if ($this->authorView[$field] <= $revViewScore)
 		continue;
 
 	    $fval = "";
@@ -507,7 +512,9 @@ $blind\n";
 		continue;
 
 	    $x .= "\n==+== " . chr(64 + $i) . ". " . $this->shortName[$field];
-	    if ($this->authorView[$field] < 0)
+	    if ($this->authorView[$field] < -1)
+		$x .= " (secret)";
+	    else if ($this->authorView[$field] < 0)
 		$x .= " (chairs only)";
 	    else if ($this->authorView[$field] == 0)
 		$x .= " (hidden from authors)";
@@ -540,7 +547,10 @@ $blind\n";
 	    $rrow_contactId = $rrow->reviewContactId;
 	else if (isset($rrow) && isset($rrow->contactId))
 	    $rrow_contactId = $rrow->contactId;
-	$viewAllFields = !$alwaysAuthorView && $contact->canViewAllReviewFields($prow, $conf);
+	if ($alwaysAuthorView)
+	    $revViewScore = 0;
+	else
+	    $revViewScore = $contact->viewReviewFieldsScore($prow, $rrow, $conf);
 
 	$x = "===========================================================================\n";
 	$n = "$conf->shortName Review";
@@ -570,7 +580,7 @@ $blind\n";
 	$lastNumeric = true;
 	foreach ($this->fieldOrder as $field) {
 	    $i++;
-	    if (!$viewAllFields && $this->authorView[$field] <= 0)
+	    if ($this->authorView[$field] <= $revViewScore)
 		continue;
 	    $options = isset($this->options[$field]);
 
@@ -734,7 +744,7 @@ $blind\n";
 	    $conf->confirmMsg("<div class='parseerr'><p>" . join("</p>\n<p>", $tf['confirm']) . "</p></div>");
     }
 
-    function webDisplayRows($rrow, $viewAllFields, $showGuidance = false) {
+    function webDisplayRows($rrow, $revViewScore, $showGuidance = false) {
 	global $ReviewFormError, $scoreHelps, $Conf, $ConfSiteBase, $ConfSiteSuffix;
 	$x = '';
 
@@ -744,7 +754,7 @@ $blind\n";
 	    $fval = ($rrow ? $rrow->$field : "");
 	    $options = isset($this->options[$field]);
 	    if ((!$options && $fval == "")
-		|| ($this->authorView[$field] <= 0 && !$viewAllFields))
+		|| $this->authorView[$field] <= $revViewScore)
 		continue;
 	    if ($lastFieldOptions && !$options)
 		$showFields[$lastFieldOptions] = 0;
@@ -787,7 +797,9 @@ $blind\n";
 		    $Conf->footerStuff .= $help;
 		}
 	    }
-	    if ($this->authorView[$field] < 0)
+	    if ($this->authorView[$field] < -1)
+		$x .= "<br /><span class='hint'>(secret)</span>";
+	    else if ($this->authorView[$field] < 0)
 		$x .= "<br /><span class='hint'>(chairs only)</span>";
 	    else if ($this->authorView[$field] == 0)
 		$x .= "<br /><span class='hint'>(hidden from authors)</span>";
@@ -816,13 +828,13 @@ $blind\n";
 	return $x;
     }
     
-    function webGuidanceRows($viewAllFields) {
+    function webGuidanceRows($revViewScore) {
 	global $ReviewFormError;
 	$x = '';
 	$needRow = 1;
 	
 	foreach ($this->fieldOrder as $field) {
-	    if ($this->authorView[$field] <= 0 && !$viewAllFields)
+	    if ($this->authorView[$field] <= $revViewScore)
 		continue;
 	    $options = isset($this->options[$field]);
 	    if (!$this->description[$field] && !$options)
@@ -853,10 +865,10 @@ $blind\n";
     }
     
     function webNumericScoresHeader($prow, $contact, $conf) {
-	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
+	$revViewScore = $contact->viewReviewFieldsScore($prow, null, $conf);
 	$x = "";
 	foreach ($this->fieldOrder as $field)
-	    if (($this->authorView[$field] > 0 || $viewAllFields)
+	    if ($this->authorView[$field] > $revViewScore
 		&& isset($this->options[$field]))
 		$x .= "<th>" . $this->webFieldAbbrev($field) . "</th>";
 	return $x;
@@ -864,12 +876,14 @@ $blind\n";
 
     function webNumericScoresRow($rrow, $prow, $contact, $conf, &$anyScores) {
 	$view = $contact->canViewReview($prow, $rrow, $conf);
-	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
+	$revNullViewScore = $contact->viewReviewFieldsScore($prow, null, $conf);
+	$revViewScore = $contact->viewReviewFieldsScore($prow, $rrow, $conf);
 	$x = "";
 	foreach ($this->fieldOrder as $field)
-	    if (($this->authorView[$field] > 0 || $viewAllFields)
+	    if ($this->authorView[$field] > $revNullViewScore
 		&& isset($this->options[$field])) {
-		if ($view && $rrow->$field) {
+		if ($view && $rrow->$field
+		    && $this->authorView[$field] > $revViewScore) {
 		    $x .= "<td class='revscore rs_$field'>" . $this->unparseOption($field, $rrow->$field) . "</td>";
 		    $anyScores = true;
 		} else
@@ -879,15 +893,10 @@ $blind\n";
     }
     
     function webNumericScoresTable($rrows, $prow, $contact, $conf, $links) {
-	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
-	$x = "<table class='reviewscores'>\n<tr class='rs_heading'><td></td><td></td>";
-	foreach ($this->fieldOrder as $field) {
-	    if (($this->authorView[$field] > 0 || $viewAllFields)
-		&& isset($this->options[$field]))
-		$x .= "<td>" . htmlspecialchars($this->shortName[$field]) . "</td>";
-	}
-	$x .= "</tr>\n";
+	$revNullViewScore = $contact->viewReviewFieldsScore($prow, null, $conf);
 	$reviewnum = 65;
+	$x = "";
+	$needHeader = array();
 	foreach ($rrows as $rrow) {
 	    $x .= "<tr class='rs_rev'>";
 	    $rtxt = chr($reviewnum++);
@@ -898,15 +907,31 @@ $blind\n";
 		$x .= "<td class='rs_id'>" . contactHtml($rrow) . "</td>";
 	    else
 		$x .= "<td></td>";
-	    foreach ($this->fieldOrder as $field) {
-		if (($this->authorView[$field] > 0 || $viewAllFields)
-		    && isset($this->options[$field]))
-		    $x .= "<td class='rs_$field'>"
-			. $this->unparseOption($field, $rrow->$field) . "</td>";
-	    }
+	    $revViewScore = $contact->viewReviewFieldsScore($prow, $rrow, $conf);
+	    foreach ($this->fieldOrder as $field)
+		if ($this->authorView[$field] > $revNullViewScore
+		    && isset($this->options[$field])) {
+		    if ($this->authorView[$field] > $revViewScore) {
+			$x .= "<td class='rs_$field'>"
+			    . $this->unparseOption($field, $rrow->$field)
+			    . "</td>";
+			$needHeader[$field] = true;
+		    } else
+			$x .= "<td></td>";
+		}
 	    $x .= "</tr>\n";
 	}
-	return $x . "</table>";
+	$xh = "<table class='reviewscores'>\n<tr class='rs_heading'><td></td><td></td>";
+	foreach ($this->fieldOrder as $field)
+	    if ($this->authorView[$field] > $revNullViewScore
+		&& isset($this->options[$field])) {
+		if (isset($needHeader[$field]))
+		    $xh .= "<td>" . htmlspecialchars($this->shortName[$field])
+			. "</td>";
+		else
+		    $xh .= "<td></td>";
+	    }
+	return $xh . "</tr>\n" . $x . "</table>";
     }
 
     function webTopicArray($topicIds, $interests = null) {
@@ -927,10 +952,10 @@ $blind\n";
     }
 
     function numNumericScores($prow, $contact, $conf) {
-	$viewAllFields = $contact->canViewAllReviewFields($prow, $conf);
+	$revNullViewScore = $contact->viewReviewFieldsScore($prow, null, $conf);
 	$n = 0;
 	foreach ($this->fieldOrder as $field)
-	    if (($this->authorView[$field] > 0 || $viewAllFields)
+	    if ($this->authorView[$field] > $revNullViewScore
 		&& isset($this->options[$field]))
 		$n++;
 	return $n;

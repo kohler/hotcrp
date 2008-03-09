@@ -167,15 +167,16 @@ if (count($tOpt) > 1) {
 	echo "<td class='pad'>";
 	$rf = reviewForm();
 	$theScores = defval($_SESSION, "pplscores", 1);
-	for ($i = 0; $i < ContactList::FIELD_NUMSCORES; $i++) {
-	    $score = $reviewScoreNames[$i];
-	    if (in_array($score, $rf->fieldOrder)) {
+	$revViewScore = $Me->viewReviewFieldsScore(null, true, $Conf);
+	foreach ($rf->fieldOrder as $field)
+	    if ($rf->authorView[$field] > $revViewScore
+		&& isset($rf->options[$field])) {
+		$i = array_search($field, $reviewScoreNames);
 		echo "<input type='checkbox' name='score[]' value='$i' ";
 		if ($theScores & (1 << $i))
 		    echo "checked='checked' ";
-		echo "/>&nbsp;" . htmlspecialchars($rf->shortName[$score]) . "<br />";
+		echo "/>&nbsp;" . htmlspecialchars($rf->shortName[$field]) . "<br />";
 	    }
-	}
 	echo "</td>";
     }
     echo "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";

@@ -11,6 +11,6 @@ $rf = reviewForm();
 
 $Conf->header("Score Help", 'scorehelp', actionBar());
 
-if (($text = $rf->webGuidanceRows($Me->amReviewer())))
+if (($text = $rf->webGuidanceRows($Me->viewReviewFieldsScore(null, null, $Conf))))
     echo "<table>\n", $text, "<tr class='last'><td class='caption'></td><td class='entry'></td></tr></table>\n";
 $Conf->footer();

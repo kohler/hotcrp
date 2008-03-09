@@ -758,17 +758,19 @@ if ($pl && isset($pl->scoreMax)) {
     echo "<td class='pad'>";
     $rf = reviewForm();
     $theScores = defval($_SESSION, "scores", 1);
-    $seeAllScores = ($Me->amReviewer() && $_REQUEST["t"] != "a");
-    for ($i = 0; $i < PaperList::FIELD_NUMSCORES; $i++) {
-	$score = $reviewScoreNames[$i];
-	if (in_array($score, $rf->fieldOrder)
-	    && ($seeAllScores || $rf->authorView[$score] > 0)) {
+    if ($Me->amReviewer() && $_REQUEST["t"] != "a")
+	$revViewScore = $Me->viewReviewFieldsScore(null, true, $Conf);
+    else
+	$revViewScore = 0;
+    foreach ($rf->fieldOrder as $field)
+	if ($rf->authorView[$field] > $revViewScore
+	    && isset($rf->options[$field])) {
+	    $i = array_search($field, $reviewScoreNames);
 	    echo "<input type='checkbox' name='score[]' value='$i' ";
 	    if ($theScores & (1 << $i))
 		echo "checked='checked' ";
-	    echo "/>&nbsp;" . htmlspecialchars($rf->shortName[$score]) . "<br />";
+	    echo "/>&nbsp;" . htmlspecialchars($rf->shortName[$field]) . "<br />";
 	}
-    }
     echo "</td>";
 }
 echo "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";

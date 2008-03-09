@@ -144,9 +144,10 @@ if (isset($_REQUEST['update']) && $editRrow && $editRrow->reviewSubmitted)
 
 // update review action
 if (isset($_REQUEST['update']))
-    if (!$Me->canSubmitReview($prow, $editRrow, $Conf, $whyNot))
+    if (!$Me->canSubmitReview($prow, $editRrow, $Conf, $whyNot)) {
 	$Conf->errorMsg(whyNotText($whyNot, "review"));
-    else if ($rf->checkRequestFields($_REQUEST, $editRrow)) {
+	$useRequest = true;
+    } else if ($rf->checkRequestFields($_REQUEST, $editRrow)) {
 	if ($rf->saveRequest($_REQUEST, $editRrow, $prow, $Me->contactId))
 	    $Conf->confirmMsg(isset($_REQUEST['ready']) ? "Review submitted." : "Review saved.");
 	loadRows();
@@ -215,7 +216,7 @@ function downloadForm($editable) {
     if (!$text)
 	return $Conf->errorMsg(whyNotText($whyNot, "review"));
     if ($editable)
-	$text = $rf->textFormHeader($Conf, count($rrows) > 1, $Me->canViewAllReviewFields($prow, $Conf)) . $text;
+	$text = $rf->textFormHeader($Conf, count($rrows) > 1, $Me->viewReviewFieldsScore($prow, null, $Conf)) . $text;
     downloadText($text, $Opt['downloadPrefix'] . "review-" . $prow->paperId . ".txt", "review form", !$editable);
     exit;
 }
@@ -556,7 +557,7 @@ function reviewView($prow, $rrow, $editMode) {
 	}
 	
 	// form body
-	echo $rf->webFormRows($rrow, $useRequest);
+	echo $rf->webFormRows($Me, $prow, $rrow, $useRequest);
 
 	// review actions
 	if ($Me->timeReview($prow, $Conf) || $Me->privChair) {
@@ -601,7 +602,7 @@ function reviewView($prow, $rrow, $editMode) {
 	echo "<tr class='last'><td class='caption'></td></tr>\n";
 	echo "</table>\n</form>\n\n";
     } else {
-	echo $rf->webDisplayRows($rrow, $Me->canViewAllReviewFields($prow, $Conf), true);
+	echo $rf->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow, $Conf), true);
 	echo "<tr class='last'><td class='caption'></td></tr>\n";
 	echo "</table></div>\n";
     }

@@ -133,11 +133,14 @@ class PaperList extends BaseList {
 	case self::FIELD_SCORE:
 	    if (!$this->scoresOk)
 		return false;
+	    $score = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
+	    $revViewScore = $this->contact->viewReviewFieldsScore(null, true, $Conf);
+	    if ($this->rf->authorView[$score] <= $revViewScore)
+		return false;
 	    if (!isset($queryOptions['scores']))
 		$queryOptions['scores'] = array();
-	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
-	    $queryOptions['scores'][] = $scoreName;
-	    $this->scoreMax[$scoreName] = $this->rf->maxNumericScore($scoreName);
+	    $queryOptions['scores'][] = $score;
+	    $this->scoreMax[$score] = $this->rf->maxNumericScore($score);
 	    break;
 	case self::FIELD_FOLD:
 	    $this->unfolded = false;

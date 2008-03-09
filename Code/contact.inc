@@ -857,15 +857,37 @@ class Contact {
 	    return true;
 	return false;
     }
-    
-    function canViewAllReviewFields($prow, $conf) {
-	if (($this->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
-	    || !$prow
-	    || ($prow->conflictType == 0 && ($this->isPC || $prow->myReviewType > 0)))
-	    return true;
-	return false;
-    }
 
+    function viewReviewFieldsScore($prow, $rrow, $conf) {
+	// Returns the minimum visible authorView score for a visible review
+	// field.  Values for authorView are:
+	//   -2   admin can view
+	//   -1   admin and PC/review author can view
+	//    0   admin and PC/any reviewer can view
+	//    1   admin and PC/any reviewer and author can view
+	if ($this->privChair
+	    && (!$prow
+		|| $prow->conflictType == 0
+		|| (isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])))
+	    return -3;
+	if ($prow && $prow->conflictType > 0)
+	    return 0;
+	if ($this->privChair)
+	    return -3;
+	else if (!$this->isPC && (!$prow || $prow->myReviewType <= 0))
+	    return 10000;
+	else if (!$prow && $rrow)
+	    return -1;
+	else if (!$rrow)
+	    return -2;
+	else if (isset($rrow->reviewContactId))
+	    return ($rrow->reviewContactId == $this->contactId ? -2 : -1);
+	else if (isset($rrow->contactId))
+	    return ($rrow->contactId == $this->contactId ? -2 : -1);
+	else
+	    return -1;
+    }
+    
     function canViewTags($prow, $Conf, $forceShow = true) {
 	return ($this->isPC
 		&& (!$prow || $prow->conflictType <= 0

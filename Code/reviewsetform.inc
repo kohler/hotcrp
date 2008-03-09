@@ -82,10 +82,7 @@ function rf_update($lock) {
 	    }
 	    $req .= "shortName='" . sqlq($sn) . "', ";
 	}
-	if (isset($_REQUEST["authorView_$field"]))
-	    $req .= "authorView=1, ";
-	else
-	    $req .= "authorView=0, ";
+	$req .= "authorView=" . max(min(cvtint($_REQUEST["authorView_$field"], 0), 1), -2) . ", ";
 	if (isset($_REQUEST["description_$field"]))
 	    $req .= "description='" . sqlq(trim($_REQUEST["description_$field"])) . "', ";
 	if (isset($_REQUEST["order_$field"]))
@@ -158,7 +155,7 @@ function rf_getField($row, $name, $ordinalOrder = null) {
 }
 
 function rf_formFieldText($row, $ordinalOrder, $numRows) {
-    global $rf, $Error, $rowidx, $captions;
+    global $rf, $Error, $rowidx, $captions, $Conf, $ConfSiteBase, $scoreHelps;
 
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
     $trclass = "tr class='k" . ($rowidx % 2) . "'";
@@ -186,13 +183,28 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     $x .= "\n</select> <span class='sep'></span>";
 
     // author view
-    $x .= "<input type='checkbox' name='authorView_$row->fieldName' value='1' ";
-    $fname = $row->fieldName;
+    $x .= "Visibility<a class='scorehelp' href='${ConfSiteBase}scorehelp$ConfSiteSuffix?f=vis' target='new'>?</a>";
+    if (count($scoreHelps) == 0)
+	$Conf->footerStuff .= "<script type='text/javascript'>addScoreHelp();</script>";
+    if (!isset($scoreHelps["vis"])) {
+	$scoreHelps["vis"] = 1;
+	$Conf->footerStuff .= "<div class='scorehelpc' id='scorehelp_vis'><strong>Visibility</strong> choices are:
+<dl><dt><strong>Authors &amp; reviewers</strong></dt><dd>Visible to authors, reviewers, and the PC</dd>
+  <dt><strong>Reviewers only</strong></dt><dd>Visible to reviewers and the PC, but not authors</dd>
+  <dt><strong>Private</strong></dt><dd>Set by review authors, but visible only to administrators</dd>
+  <dt><strong>Secret</strong></dt><dd>Only set by and visible to administrators</dd></dl>";
+    }
+    $x .= " &nbsp;<select name='authorView_$row->fieldName'>";
     if (isset($_REQUEST["shortName_$fname"]) && !isset($_REQUEST["authorView_$fname"]))
 	$_REQUEST["authorView_$fname"] = 0;
-    if (rf_getField($row, 'authorView') > 0)
-	$x .= "checked='checked' ";
-    $x .= "/>&nbsp;Visible&nbsp;to&nbsp;authors</td><td class='hint'></td></tr>\n";
+    $view = max(min(cvtint(rf_getField($row, "authorView"), -10000), 1), -2);
+    foreach (array("1" => "Authors &amp; reviewers",
+		   "0" => "Reviewers only",
+		   "-1" => "Private",
+		   "-2" => "Secret") as $v => $t)
+	$x .= "<option value='$v'" . ($view == $v ? " selected='selected'" : "")
+		. ">$t</option>";
+    $x .= "</td><td class='hint'></td></tr>\n";
 
     // description
     $x .= "<$trclass><td class='rxcaption textarea'>Description</td>"

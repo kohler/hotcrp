@@ -750,7 +750,7 @@ function whyNotText($whyNot, $action) {
 	    $text .= "You can't $action $thisPaper at the moment.  ";
 	$text .= "(<a href='${ConfSiteBase}deadlines$ConfSiteSuffix'>View deadlines</a>)  ";
 	if (isset($whyNot['override']) && $whyNot['override'])
-	    $text .= "Select the \"Override deadlines\" checkbox to override this deadline as an administrator.  ";
+	    $text .= "Select the &ldquo;Override deadlines&rdquo; checkbox to override this deadline as an administrator.  ";
     }
     if (isset($whyNot['blindSubmission']))
 	$text .= "Submission to this conference is blind.  ";

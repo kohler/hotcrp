@@ -63,7 +63,7 @@ class ContactList extends BaseList {
     }
     
     function selector($fieldId, &$queryOptions) {
-	global $reviewScoreNames;
+	global $Conf, $reviewScoreNames;
 	if (!$this->contact->isPC
 	    && $fieldId != self::FIELD_NAME
 	    && $fieldId != self::FIELD_AFFILIATION
@@ -83,12 +83,15 @@ class ContactList extends BaseList {
 	    $this->haveAffrow = true;
 	if (self::_normalizeField($fieldId) == self::FIELD_SCORE) {
 	    // XXX scoresOk
+	    $score = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
+	    $revViewScore = $this->contact->viewReviewFieldsScore(null, true, $Conf);
+	    if ($this->rf->authorView[$score] <= $revViewScore)
+		return false;
 	    if (!isset($queryOptions['scores']))
 		$queryOptions['scores'] = array();
 	    $queryOptions['reviews'] = true;
-	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
-	    $queryOptions['scores'][] = $scoreName;
-	    $this->scoreMax[$scoreName] = $this->rf->maxNumericScore($scoreName);
+	    $queryOptions['scores'][] = $score;
+	    $this->scoreMax[$score] = $this->rf->maxNumericScore($score);
 	}
 	return true;
     }
