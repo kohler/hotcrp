@@ -102,8 +102,12 @@ class Conference {
     function updatePapersubSetting($forsubmit) {
 	if (!isset($this->settings["papersub"]) && $forsubmit)
 	    $this->q("insert into Settings (name, value) values ('papersub', " . time() . ") on duplicate key update name=name");
-	else if (defval($this->settings, "papersub") <= 0 || !$forsubmit)
-	    $this->q("update Settings set value=(select max(timeSubmitted) from Paper where timeSubmitted>0 group by paperId>0) where name='papersub'");
+	else if (defval($this->settings, "papersub") <= 0 || !$forsubmit) {
+	    if (defval($this->settings, "pc_seeall") <= 0)
+		$this->q("update Settings set value=(select ifnull(max(timeSubmitted),0) from Paper where timeSubmitted>0) where name='papersub'");
+	    else
+		$this->q("update Settings set value=(select ifnull(max(timeSubmitted)+3,0) from Paper where timeWithdrawn<=0) where name='papersub'");
+	}
     }
 
     function updatePaperaccSetting($foraccept) {

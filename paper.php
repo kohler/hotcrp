@@ -425,12 +425,13 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 			    ($isSubmitFinal ? "while submitting final copy for paper" : "while submitting paper"));
 	if (!$result)
 	    return false;
-	$Conf->updatePapersubSetting(true);
     } else if (!$isSubmitFinal) {
 	$result = $Conf->qe("update Paper set timeSubmitted=0 where paperId=$paperId", "while unsubmitting paper");
 	if (!$result)
 	    return false;
     }
+    if ($isSubmit || $Conf->setting("pc_seeall"))
+	$Conf->updatePapersubSetting(true);
     
     // confirmation message
     getProw($contactId);
