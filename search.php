@@ -353,14 +353,16 @@ if ($getaction == "contact" && $Me->privChair && isset($papersel)) {
 
 
 // download scores and, maybe, anonymity for selected papers
-if ($getaction == "scores" && $Me->privChair && isset($papersel)) {
+if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
     $rf = reviewForm();
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "allReviewScores" => 1, "reviewerName" => 1)), "while selecting papers");
 
     // compose scores
     $scores = array();
+    $revViewScore = $Me->viewReviewFieldsScore(null, true, $Conf);
     foreach ($rf->fieldOrder as $field)
-	if (isset($rf->options[$field]))
+	if ($rf->authorView[$field] > $revViewScore
+	    && isset($rf->options[$field]))
 	    $scores[] = $field;
     
     $header = '#paper';
@@ -384,7 +386,7 @@ if ($getaction == "scores" && $Me->privChair && isset($papersel)) {
 		$text .= "\t" . $row->blind;
 	    $text .= "\t" . $row->outcome;
 	    foreach ($scores as $score)
-		$text .= "\t" . $row->$score;
+		$text .= "\t" . $rf->unparseOption($score, $row->$score);
 	    if ($Me->canViewReviewerIdentity($row, $row, $Conf))
 		$text .= "\t" . $row->reviewEmail . "\t" . trim($row->reviewFirstName . " " . $row->reviewLastName);
 	    defappend($texts[$paperselmap[$row->paperId]], $text . "\n");
