@@ -100,14 +100,12 @@ class Conference {
     
     // update the 'papersub' setting: are there any submitted papers?
     function updatePapersubSetting($forsubmit) {
-	if (!isset($this->settings["papersub"]) && $forsubmit)
-	    $this->q("insert into Settings (name, value) values ('papersub', " . time() . ") on duplicate key update name=name");
-	else if (defval($this->settings, "papersub") <= 0 || !$forsubmit) {
-	    if (defval($this->settings, "pc_seeall") <= 0)
-		$this->q("update Settings set value=(select ifnull(max(timeSubmitted),0) from Paper where timeSubmitted>0) where name='papersub'");
-	    else
-		$this->q("update Settings set value=(select ifnull(max(timeSubmitted)+3,0) from Paper where timeWithdrawn<=0) where name='papersub'");
-	}
+	$papersub = defval($this->settings, "papersub");
+	if ($papersub === null && $forsubmit)
+	    $this->q("insert into Settings (name, value) values ('papersub', 1) on duplicate key update name=name");
+	else if ($papersub <= 0 || !$forsubmit)
+	    // see also settings.php
+	    $this->q("update Settings set value=(select ifnull(min(paperId),0) from Paper where " . (defval($this->settings, "pc_seeall") <= 0 ? "timeSubmitted>0" : "timeWithdrawn<=0") . ") where name='papersub'");
     }
 
     function updatePaperaccSetting($foraccept) {
@@ -323,7 +321,7 @@ class Conference {
 	return $this->settingsBetween('rev_open', $d, 'rev_grace') > 0;
     }
     function timePCReviewPreferences() {
-	return $this->settingsAfter('papersub');
+	return defval($this->settings, "papersub") > 0;
     }
     function timePCViewAllReviews() {
 	return $this->settingsAfter('pc_seeallrev');

@@ -513,6 +513,14 @@ if (isset($_REQUEST["update"])) {
 	&& defval($Conf->settings, "resp_open") <= 0)
 	$Values["resp_open"] = time();
 
+    // update 'papersub'
+    if (isset($settings["pc_seeall"])) {
+	// see also conference.inc
+	$result = $Conf->q("select ifnull(min(paperId),0) from Paper where " . (defval($Values, "pc_seeall", 0) <= 0 ? "timeSubmitted>0" : "timeWithdrawn<=0"));
+	if (($row = edb_row($result)) && $row[0] != $Conf->setting("papersub"))
+	    $Values["papersub"] = $row[0];
+    }
+    
     // warn on other relationships
     if (array_key_exists("resp_open", $Values)
 	&& $Values["resp_open"] > 0
