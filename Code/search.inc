@@ -330,29 +330,18 @@ class PaperSearch {
 		if (($special ? $special == "order" : isset($this->fields['order']))
 		    && $type != "none")
 		    $this->orderTag = ($this->orderTag === false ? $word : null);
-		if (!($tt = $special))
-		    $tt = (isset($this->fields['notag']) ? "notag" : "tag");
-		if ($word == "none" || $word == "any")
-		    $tp = "univ";
-		else
-		    $tp = ($tt == "notag" ? "no$type" : $type);
+		$tt = ($special == "notag" || isset($this->fields['notag']) ? "not" : "");
+		$tp = ($word == "none" || $word == "any" ? "univ" : "$tt$type");
 		if (!isset($this->tagmatch[$tp]))
 		    $this->tagmatch[$tp] = array();
 		if ($tp == "univ") {
 		    $this->tagmatch[$tp][0] = "true";
-		    if (($word == "none") == ($tt != "notag"))
-			$qp .= " or (${tp}tagcount is null$confpart)";
-		    else
-			$qp .= " or (${tp}tagcount is not null$confpart)";
+		    $tx = ($word == "none" ? "" : "not ");
+		    $qp .= " or $tx$tt(${tp}tagcount is null$confpart)";
 		} else {
 		    $this->tagmatch[$tp][] = "tag='" . sqlq($word) . "'";
 		    $n = count($this->tagmatch[$tp]);
-		    if ($tt != "notag")
-			$qp .= " or (${tp}tagcount>=$n$confpart)";
-		    else if ($n == 1)
-			$qp .= " or (${tp}tagcount is null$confpart)";
-		    else
-			$qp .= " or (${tp}tagcount<$n$confpart)";
+		    $qp .= " or $tt(${tp}tagcount>=$n$confpart)";
 		}
 	    }
 	    if ($special ? $special == "status" : isset($this->fields['status'])) {
@@ -626,7 +615,7 @@ class PaperSearch {
 	global $Conf;
 	$x = $this->_searchQuery();
 	$this->matchPreg = $x[1];
-	//$Conf->infoMsg(htmlspecialchars($x[0]));
+	$Conf->infoMsg(htmlspecialchars($x[0]));
 	return $Conf->qe($x[0], "while searching papers");
     }
 
