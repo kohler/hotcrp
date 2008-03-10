@@ -343,7 +343,12 @@ class PaperSearch {
 		} else {
 		    $this->tagmatch[$tp][] = "tag='" . sqlq($word) . "'";
 		    $n = count($this->tagmatch[$tp]);
-		    $qp .= " or $tt(${tp}tagcount>=$n$confpart)";
+		    if ($tt != "not")
+			$qp .= " or (${tp}tagcount>=$n$confpart)";
+		    else if ($n == 1)
+			$qp .= " or (${tp}tagcount is null$confpart)";
+		    else
+			$qp .= " or (${tp}tagcount<$n$confpart)";
 		}
 	    }
 	    if ($special ? $special == "status" : isset($this->fields['status'])) {
@@ -617,7 +622,7 @@ class PaperSearch {
 	global $Conf;
 	$x = $this->_searchQuery();
 	$this->matchPreg = $x[1];
-	//$Conf->infoMsg(htmlspecialchars($x[0]));
+	$Conf->infoMsg(htmlspecialchars($x[0]));
 	return $Conf->qe($x[0], "while searching papers");
     }
 
