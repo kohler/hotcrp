@@ -615,7 +615,7 @@ class PaperSearch {
 	global $Conf;
 	$x = $this->_searchQuery();
 	$this->matchPreg = $x[1];
-	$Conf->infoMsg(htmlspecialchars($x[0]));
+	//$Conf->infoMsg(htmlspecialchars($x[0]));
 	return $Conf->qe($x[0], "while searching papers");
     }
 
