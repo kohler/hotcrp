@@ -43,8 +43,6 @@ class PaperSearch {
     const ANY_SUB_SECONDARY = 512;
     const ANY_NUM_SECONDARY = 1024;
     const ANY_SUB_NUM_SECONDARY = 2048;
-    const ANY_TAG = 4096;
-    const ANY_ALLTAGS = 8192;
     const ANY_TOPICS = 16384;
     const ANY_LEAD = 32768;
     const ANY_SHEPHERD = 65536;
@@ -64,6 +62,8 @@ class PaperSearch {
     var $matchPreg;
     var $urlbase;
     var $warnings;
+    
+    var $tagmatch;
     
     var $q;
     var $qa;
@@ -133,6 +133,9 @@ class PaperSearch {
 	$this->qa = trim(defval($opt, "qa", ""));
 	$this->qx = trim(defval($opt, "qx", ""));
 
+	// tags
+	$this->tagmatch = array();
+	
 	// URL base
 	if (isset($opt["urlbase"]))
 	    $this->urlbase = $opt["urlbase"];
@@ -311,7 +314,8 @@ class PaperSearch {
 	    if ($special ? $special == "aucmt" : isset($this->fields['aucmt']))
 		$qp .= $this->_searchComment($lword, $type, "aucmt");
 	    if ((($special ? $special == "tag" : isset($this->fields['tag']))
-		 || ($special ? $special == "order" : isset($this->fields['order'])))
+		 || ($special ? $special == "order" : isset($this->fields['order']))
+		 || ($special ? $special == "notag" : isset($this->fields['notag'])))
 		&& $this->amPC) {
 		require_once("tags.inc");
 		$confpart = "";
@@ -319,46 +323,37 @@ class PaperSearch {
 		    $confpart = " and conflictType is null";
 		    $this->any |= self::ANY_CONFLICT;
 		}
-		if (($e = checkTagError($word)))
+		if (($e = checkTagError($word, true)))
 		    $this->warn(htmlspecialchars($e));
-		if ($word && $word[0] == "~") {
+		if ($word && $word[0] == "~")
 		    $word = $this->contactId . $word;
-		    $lword = $this->contactId . $lword;
-		}
 		if (($special ? $special == "order" : isset($this->fields['order']))
 		    && $type != "none")
 		    $this->orderTag = ($this->orderTag === false ? $word : null);
-		if ($word == "none") {
-		    $qp .= " or (alltags is null$confpart)";
-		    $this->any |= self::ANY_ALLTAGS;
-		} else if ($type == "any") {
-		    $qp .= " or (tag='" . sqlq($word) . "'$confpart)";
-		    $this->any |= self::ANY_TAG;
-		} else if ($type == "all") {
-		    $qp .= " or (alltags like '%#$lword#%'$confpart)";
-		    $this->any |= self::ANY_ALLTAGS;
-		} else {
-		    $qp .= " or (alltags is not null and alltags like '%#$lword#%'$confpart)";
-		    $this->any |= self::ANY_ALLTAGS;
-		}
-	    }
-	    if (($special ? $special == "notag" : isset($this->fields['notag']))
-		&& $this->amPC) {
-		require_once("tags.inc");
-		$confpart = "";
-		if (!$this->privChair && $Conf->setting("tag_seeall") <= 0) {
-		    $confpart = " or conflictType is not null";
-		    $this->any |= self::ANY_CONFLICT;
-		}
-		if (($e = checkTagError($word)))
-		    $this->warn(htmlspecialchars($e));
-		if ($lword && $lword[0] == "~")
-		    $lword = $this->contactId . $lword;
-		$this->any |= self::ANY_ALLTAGS;
-		if ($word == "none")
-		    $qp .= " or (alltags is not null$confpart)";
+		if (!($tt = $special))
+		    $tt = (isset($this->fields['notag']) ? "notag" : "tag");
+		if ($word == "none" || $word == "any")
+		    $tp = "univ";
 		else
-		    $qp .= " or (alltags is null or alltags not like '%#$lword#%'$confpart)";
+		    $tp = ($tt == "notag" ? "no$type" : $type);
+		if (!isset($this->tagmatch[$tp]))
+		    $this->tagmatch[$tp] = array();
+		if ($tp == "univ") {
+		    $this->tagmatch[$tp][0] = "true";
+		    if (($word == "none") == ($tt != "notag"))
+			$qp .= " or (${tp}tagcount is null$confpart)";
+		    else
+			$qp .= " or (${tp}tagcount is not null$confpart)";
+		} else {
+		    $this->tagmatch[$tp][] = "tag='" . sqlq($word) . "'";
+		    $n = count($this->tagmatch[$tp]);
+		    if ($tt != "notag")
+			$qp .= " or (${tp}tagcount>=$n$confpart)";
+		    else if ($n == 1)
+			$qp .= " or (${tp}tagcount is null$confpart)";
+		    else
+			$qp .= " or (${tp}tagcount<$n$confpart)";
+		}
 	    }
 	    if ($special ? $special == "status" : isset($this->fields['status'])) {
 		if (strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
@@ -430,26 +425,29 @@ class PaperSearch {
 		    $this->warn("'" . htmlspecialchars($x) . "' does not match any defined submission option.");
 	    }
 	    if (($special ? $special == "lead" : isset($this->fields['lead'])) && $this->amPC) {
-		$this->any |= self::ANY_LEAD;
 		if ($word == "none")
-		    $qp .= " or (leadInfo is null)";
+		    $qp .= " or (leadContactId=0)";
 		else if ($word == "any")
-		    $qp .= " or (leadInfo is not null)";
-		else if ($type != "none")
-		    $qp .= " or (leadInfo like '%$lword%')";
-		else
-		    $qp .= " or (leadInfo is not null and leadInfo like '%$lword%')";
+		    $qp .= " or (leadContactId!=0)";
+		else {
+		    $this->any |= self::ANY_LEAD;
+		    if ($type != "none")
+			$qp .= " or (leadInfo like '%$lword%')";
+		    else
+			$qp .= " or (leadInfo is not null and leadInfo like '%$lword%')";
+		}
 	    }
 	    if ($special ? $special == "shepherd" : isset($this->fields['shepherd'])) {
-		$this->any |= self::ANY_SHEPHERD;
 		if ($word == "none")
-		    $qp .= " or (shepherdInfo is null)";
+		    $qp .= " or (shepherdContactId=0)";
 		else if ($word == "any")
-		    $qp .= " or (shepherdInfo is not null)";
-		else if ($type != "none")
-		    $qp .= " or (shepherdInfo like '%$lword%')";
-		else
-		    $qp .= " or (shepherdInfo is not null and shepherdInfo like '%$lword%')";
+		    $qp .= " or (shepherdContactId!=0)";
+		else {
+		    if ($type != "none")
+			$qp .= " or (shepherdInfo like '%$lword%')";
+		    else
+			$qp .= " or (shepherdInfo is not null and shepherdInfo like '%$lword%')";
+		}
 	    }
 	    if ($special ? $special == "conflict" : isset($this->fields['conflict'])) {
 		$this->any |= self::ANY_CONFLICTINFO;
@@ -477,6 +475,8 @@ class PaperSearch {
     }
     
     function _combineQuery($res, $qr) {
+	if (!is_array($qr))
+	    $qr = array($qr, "");
 	if ($qr[0] == "" || $qr[0] == "true")
 	    return $res;
 	else if ($res[0] == "" || $res[0] == "true")
@@ -517,15 +517,15 @@ class PaperSearch {
 	if ($this->limitName == "s" || $this->limitName == "r"
 	    || $this->limitName == "req" || $this->limitName == "revs"
 	    || $this->limitName == "acc" || $this->limitName == "und")
-	    $res = $this->_combineQuery($res, array("Paper.timeSubmitted>0", ""));
+	    $res = $this->_combineQuery($res, "Paper.timeSubmitted>0");
 	else if ($this->limitName == "act")
-	    $res = $this->_combineQuery($res, array("Paper.timeWithdrawn<=0", ""));
+	    $res = $this->_combineQuery($res, "Paper.timeWithdrawn<=0");
 	else if ($this->limitName == "unsub")
-	    $res = $this->_combineQuery($res, array("(Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0)", ""));
+	    $res = $this->_combineQuery($res, "(Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0)");
 	if ($this->limitName == "acc")
-	    $res = $this->_combineQuery($res, array("Paper.outcome>0", ""));
+	    $res = $this->_combineQuery($res, "Paper.outcome>0");
 	else if ($this->limitName == "und")
-	    $res = $this->_combineQuery($res, array("Paper.outcome=0", ""));
+	    $res = $this->_combineQuery($res, "Paper.outcome=0");
 
 	$q = "select Paper.paperId from Paper";
 	if ($this->limitName == "r")
@@ -537,6 +537,10 @@ class PaperSearch {
 	else if ($this->limitName == "req")
 	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.requestedBy=" . $this->contactId . " and Limiter.reviewType=" . REVIEW_EXTERNAL . ")";
 
+	// handle tags
+	foreach ($this->tagmatch as $t => $tarr)
+	    $q .= " left join (select paperId, count(tag) as ${t}tagcount from PaperTag where " . join(" or ", $tarr) . " group by paperId) as PaperTag_$t on (PaperTag_$t.paperId=Paper.paperId)";
+	
 	if (($this->any & self::ANY_CONFLICT) && $this->limitName != "a")
 	    $q .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->contactId . ")";
 
@@ -560,10 +564,6 @@ class PaperSearch {
 	if ($this->any & self::ANY_CONFLICTINFO)
 	    $q .= " left join (select Paper.paperId, group_concat(firstName, ' ', lastName, ' ', email separator ' ') as conflictInfo from Paper left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.conflictType>0) join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId) group by Paper.paperId) as ConflictInfo on (ConflictInfo.paperId=Paper.paperId)";
 	
-	if ($this->any & self::ANY_TAG)
-	    $q .= " left join PaperTag on (PaperTag.paperId=Paper.paperId)";
-	if ($this->any & self::ANY_ALLTAGS)
-	    $q .= " left join (select paperId, group_concat('#', tag, '#') as alltags from PaperTag group by paperId) as AllPaperTags on (AllPaperTags.paperId=Paper.paperId)";
 	if ($this->any & self::ANY_TOPICS)
 	    $q .= " left join (select paperId, group_concat('#', topicId, '#') as topicIds from PaperTopic group by paperId) as AllPaperTopics on (AllPaperTopics.paperId=Paper.paperId)";
 	if ($this->any & self::ANY_OPTIONS)

@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-function checkTagError($tag) {
+function checkTagError($tag, $forsearch = false) {
     if ($tag == "")
 	return "Empty tag.";
     else if (strlen($tag) > TAG_MAXLEN)
@@ -11,7 +11,7 @@ function checkTagError($tag) {
     else if (!preg_match('/\A~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*#?\d*\Z/', $tag))
 	// Note that tags MUST NOT contain HTML special characters.
 	return "Tag \"$tag\" contains odd characters.";
-    else if ($tag == "none")
+    else if (($tag == "none" || $tag == "any") && !$forsearch)
 	return "Tag \"$tag\" is reserved.";
     else
 	return "";
