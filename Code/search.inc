@@ -330,7 +330,9 @@ class PaperSearch {
 		if (($special ? $special == "order" : isset($this->fields['order']))
 		    && $type != "none")
 		    $this->orderTag = ($this->orderTag === false ? $word : null);
-		$tt = ($special == "notag" || isset($this->fields['notag']) ? "not" : "");
+		$tt = "";
+		if ($special ? $special == "notag" : isset($this->fields['notag']))
+		    $tt = "not";
 		$tp = ($word == "none" || $word == "any" ? "univ" : "$tt$type");
 		if (!isset($this->tagmatch[$tp]))
 		    $this->tagmatch[$tp] = array();
