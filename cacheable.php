@@ -7,10 +7,15 @@ header("Cache-Control: public, max-age=315576000");
 header("Expires: " . gmdate("D, d M Y H:i:s", time() + 315576000) . " GMT");
 header("Pragma: "); // don't know where the pragma is coming from; oh well
 
-$file = isset($_REQUEST["file"]) ? $_REQUEST["file"] : "";
 $zlib_output_compression = false;
 if (function_exists("zlib_get_coding_type"))
     $zlib_output_compression = zlib_get_coding_type();
+if ($zlib_output_compression) {
+    header("Content-Encoding: $zlib_output_compression");
+    header("Vary: Accept-Encoding", false);
+}
+
+$file = isset($_REQUEST["file"]) ? $_REQUEST["file"] : "";
 
 if ($file == "script.js")
     header("Content-type: text/javascript; charset: UTF-8");

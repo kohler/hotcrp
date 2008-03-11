@@ -107,11 +107,15 @@ ini_set('session.gc_maxlifetime', defval($Opt, "sessionLifetime", 86400));
 // Allow lots of memory.
 ini_set('memory_limit', defval($Opt, "memoryLimit", "128M"));
 
-// Check Zlib output compression.
+// Check and fix Zlib output compression.
 global $zlib_output_compression;
 $zlib_output_compression = false;
 if (function_exists("zlib_get_coding_type"))
     $zlib_output_compression = zlib_get_coding_type();
+if ($zlib_output_compression) {
+    header("Content-Encoding: $zlib_output_compression");
+    header("Vary: Accept-Encoding", false);
+}
 
 session_name($Opt['sessionName']);
 session_start();
