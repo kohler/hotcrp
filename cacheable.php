@@ -8,6 +8,9 @@ header("Expires: " . gmdate("D, d M Y H:i:s", time() + 315576000) . " GMT");
 header("Pragma: "); // don't know where the pragma is coming from; oh well
 
 $file = isset($_REQUEST["file"]) ? $_REQUEST["file"] : "";
+$zlib_output_compression = false;
+if (function_exists("zlib_get_coding_type"))
+    $zlib_output_compression = zlib_get_coding_type();
 
 if ($file == "script.js")
     header("Content-type: text/javascript; charset: UTF-8");
@@ -15,7 +18,8 @@ else if ($file == "style.css")
     header("Content-type: text/css; charset: UTF-8");
 else {
     header("Content-type: text/plain");
-    header("Content-Length: 10");
+    if (!$zlib_output_compression)
+	header("Content-Length: 10");
     echo "Go away.\r\n";
     exit;
 }
@@ -32,11 +36,12 @@ if (($if_modified_since || $if_none_match)
     && (!$if_modified_since || $if_modified_since == $last_modified)
     && (!$if_none_match || $if_none_match == $etag))
     header("HTTP/1.0 304 Not Modified");
-else if (function_exists('ob_gzhandler')) {
+else if (function_exists("ob_gzhandler") && !$zlib_output_compression) {
     ob_start('ob_gzhandler');
     readfile($file);
     ob_end_flush();
 } else {
-    header("Content-Length: " . filesize($file));
+    if (!$zlib_output_compression)
+	header("Content-Length: " . filesize($file));
     readfile($file);
 }

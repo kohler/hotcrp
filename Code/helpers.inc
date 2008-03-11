@@ -925,11 +925,11 @@ function titleWords($title) {
 }
 
 function downloadText($text, $filename, $description, $inline = false, $length = true) {
-    global $Conf;
+    global $Conf, $zlib_output_compression;
     header("Content-Description: $Conf->shortName $description, PHP generated data");
     header("Content-Disposition: " . ($inline ? "inline" : "attachment") . "; filename=$filename");
     header("Content-Type: text/plain");
-    if ($length)
+    if ($length && !$zlib_output_compression)
 	header("Content-Length: " . strlen($text));
     print $text;
 }

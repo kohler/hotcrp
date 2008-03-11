@@ -530,6 +530,8 @@ class Conference {
     }
     
     function __downloadPaper($paperId, $saveit, $final) {
+	global $zlib_output_compression;
+	
 	// Database query
 	$storefield = ($final ? "finalPaperStorageId" : "paperStorageId");
 	$result = $this->q("select PaperStorage.mimetype, paper, PaperStorage.paperStorageId, compression
@@ -559,7 +561,8 @@ class Conference {
 	header("Content-Disposition: " . ($saveit ? "attachment" : "inline") . "; filename=$name");
 	if ($compression == 1)
 	    $content = gzinflate($content);
-	header("Content-Length: " . strlen($content)); 
+	if (!$zlib_output_compression)
+	    header("Content-Length: " . strlen($content)); 
 	print $content;
 	return 1;
     }
@@ -574,7 +577,7 @@ class Conference {
     }
 
     function __downloadPapers($paperIds, &$tmpdir, $final) {
-	global $Opt;
+	global $Opt, $zlib_output_compression;
 	
 	// special cases
 	if (count($paperIds) == 0)
@@ -625,7 +628,8 @@ class Conference {
 	header("Content-Description: PHP Generated Data");
 	header("Content-Disposition: attachment; filename=" . $Opt['downloadPrefix'] . "papers.zip");
 	header("Content-Type: application/zip");
-	header("Content-Length: " . filesize("$tmpdir/x.zip"));
+	if (!$zlib_output_compression)
+	    header("Content-Length: " . filesize("$tmpdir/x.zip"));
 	readfile("$tmpdir/x.zip");
 	return 1;
     }

@@ -155,7 +155,7 @@ function rf_getField($row, $name, $ordinalOrder = null) {
 }
 
 function rf_formFieldText($row, $ordinalOrder, $numRows) {
-    global $rf, $Error, $rowidx, $captions, $Conf, $ConfSiteBase, $scoreHelps;
+    global $rf, $Error, $rowidx, $captions, $Conf, $ConfSiteBase, $ConfSiteSuffix, $scoreHelps;
 
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
     $trclass = "tr class='k" . ($rowidx % 2) . "'";
@@ -195,8 +195,8 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
   <dt><strong>Secret</strong></dt><dd>Only set by and visible to administrators</dd></dl>";
     }
     $x .= " &nbsp;<select name='authorView_$row->fieldName'>";
-    if (isset($_REQUEST["shortName_$fname"]) && !isset($_REQUEST["authorView_$fname"]))
-	$_REQUEST["authorView_$fname"] = 0;
+    if (isset($_REQUEST["shortName_$row->fieldName"]) && !isset($_REQUEST["authorView_$row->fieldName"]))
+	$_REQUEST["authorView_$row->fieldName"] = 0;
     $view = max(min(cvtint(rf_getField($row, "authorView"), -10000), 1), -2);
     foreach (array("1" => "Authors &amp; reviewers",
 		   "0" => "Reviewers only",
