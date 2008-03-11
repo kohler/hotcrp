@@ -41,7 +41,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	$id = "Review";
 	if ($rr->reviewSubmitted)
 	    $id .= "&nbsp;#" . $prow->paperId . unparseReviewOrdinal($rr->reviewOrdinal);
-	else if ($rr->reviewType == REVIEW_SECONDARY && $rr->reviewNeedsSubmit == 0)
+	else if ($rr->reviewType == REVIEW_SECONDARY && $rr->reviewNeedsSubmit <= 0)
 	    $id .= "&nbsp;(delegated)";
 	else if ($rr->reviewModified > 0)
 	    $id .= "&nbsp;(in&nbsp;progress)";

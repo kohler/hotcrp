@@ -4,34 +4,35 @@
 // Distributed under an MIT-like license; see LICENSE
 
 global $searchTags;
-$searchTags = array('ti:' => 'ti', 'title:' => 'ti',
-		    'ab:' => 'ab', 'abstract:' => 'ab',
-		    'au:' => 'au', 'author:' => 'au',
-		    'co:' => 'co', 'collab:' => 'co', 'collaborators:' => 'co',
-		    're:' => 're', 'rev:' => 're', 'review:' => 're',
-		    'sre:' => 'sre', 'srev:' => 'sre', 'sreview:' => 'sre',
-		    'cre:' => 'sre', 'crev:' => 'sre', 'creview:' => 'sre',
-		    'subre:' => 'sre', 'subrev:' => 'sre', 'subreview:' => 'sre',
-		    'pri:' => 'pri', 'primary:' => 'pri',
-		    'cpri:' => 'spri', 'cprimary:' => 'spri',
-		    'sec:' => 'sec', 'secondary:' => 'sec',
-		    'csec:' => 'ssec', 'csecondary:' => 'ssec',
-		    'cmt:' => 'cmt', 'comment:' => 'cmt',
-		    'aucmt:' => 'aucmt', 'aucomment:' => 'aucmt',
-		    'tag:' => 'tag',
-		    'notag:' => 'notag',
-		    'ord:' => 'order', 'order:' => 'order',
-		    'decision:' => 'decision', 'dec:' => 'decision',
-		    'topic:' => 'topic',
-		    'option:' => 'option', 'opt:' => 'option',
-		    'lead:' => 'lead',
-		    'shepherd:' => 'shepherd', 'shep:' => 'shepherd',
-		    'conflict:' => 'conflict', 'conf:' => 'conflict',
-		    'status:' => 'status');
+$searchTags = array('ti' => 'ti', 'title' => 'ti',
+		    'ab' => 'ab', 'abstract' => 'ab',
+		    'au' => 'au', 'author' => 'au',
+		    'co' => 'co', 'collab' => 'co', 'collaborators' => 'co',
+		    're' => 're', 'rev' => 're', 'review' => 're',
+		    'sre' => 'sre', 'srev' => 'sre', 'sreview' => 'sre',
+		    'cre' => 'sre', 'crev' => 'sre', 'creview' => 'sre',
+		    'subre' => 'sre', 'subrev' => 'sre', 'subreview' => 'sre',
+		    'pri' => 'pri', 'primary' => 'pri',
+		    'cpri' => 'spri', 'cprimary' => 'spri',
+		    'sec' => 'sec', 'secondary' => 'sec',
+		    'csec' => 'ssec', 'csecondary' => 'ssec',
+		    'cmt' => 'cmt', 'comment' => 'cmt',
+		    'aucmt' => 'aucmt', 'aucomment' => 'aucmt',
+		    'tag' => 'tag',
+		    'notag' => 'notag',
+		    'ord' => 'order', 'order' => 'order',
+		    'decision' => 'decision', 'dec' => 'decision',
+		    'topic' => 'topic',
+		    'option' => 'option', 'opt' => 'option',
+		    'lead' => 'lead',
+		    'shepherd' => 'shepherd', 'shep' => 'shepherd',
+		    'conflict' => 'conflict', 'conf' => 'conflict',
+		    'status' => 'status');
 
 class PaperSearch {
 
     const ANY_CONFLICT = 1;
+    const ANY_YOURREVIEW = 2;
 
     var $contactId;
     var $privChair;
@@ -130,16 +131,6 @@ class PaperSearch {
 	$this->qa = trim(defval($opt, "qa", ""));
 	$this->qx = trim(defval($opt, "qx", ""));
 
-	$this->filters = array();
-	$this->regex = array();
-	$this->match = array();
-	foreach (array("topic", "conflict", "option", "tag", "re", "cre",
-		       "pri", "cpri", "sec", "csec") as $m)
-	    $this->match[$m] = array();
-	$this->needMatchcount = array();
-	$this->contactmatch = array();
-	$this->contactmatchPC = true;
-	
 	// URL base
 	if (isset($opt["urlbase"]))
 	    $this->urlbase = $opt["urlbase"];
@@ -148,6 +139,18 @@ class PaperSearch {
 	    if ($qtype != "n")
 		$this->urlbase .= "&qt=" . urlencode($qtype);
 	}
+    }
+
+    function _resetQuery() {
+	$this->filters = array();
+	$this->regex = array();
+	$this->match = array();
+	foreach (array("topic", "conflict", "option", "tag", "re", "cre",
+		       "pri", "cpri", "sec", "csec", "twiddletag") as $m)
+	    $this->match[$m] = array();
+	$this->needMatchcount = array();
+	$this->contactmatch = array();
+	$this->contactmatchPC = true;
     }
 
     function warn($text) {
@@ -196,12 +199,35 @@ class PaperSearch {
 	    if (($mi == "all" || $mi == "any") && $confpart == "")
 		return "";
 	    $this->needMatchcount["$mi$mclass"] = true;
-	    $qp = "(${mi}${mclass}count>=" . count($this->match[$mclass][$mi]) . "$confpart)";
+	    $matchcount = ($mi == "any" ? 1 : count($this->match[$mclass][$mi]));
+	    $qp = "(${mi}${mclass}count>=$matchcount$confpart)";
 	    if ($negated)
 		return " or not ifnull($qp, 0)";
 	    else
 		return " or $qp";
 	}
+    }
+
+    function _searchReviewerNameConfpart() {
+	global $Conf;
+	if ($this->privChair)
+	    return "";
+	$au_seerev = ($Conf->setting("au_seerev") && $Conf->setting("rev_blind") > 0);
+	if ($this->amPC) {
+	    $pc_seerev = $Conf->setting("pc_seeallrev");
+	    if ($pc_seerev == 0)
+		$pc_seerev = $Conf->setting("pcrev_any");
+	    $confpart = "";
+	    if (!$pc_seerev) {
+		$this->any |= self::ANY_YOURREVIEW;
+		$confpart .= " and YourReview.reviewNeedsSubmit=0";
+	    } else if ($au_seerev) {
+		$this->any |= self::ANY_CONFLICT;
+		$confpart .= " and conflictType is null";
+	    }
+	    return $confpart;
+	} else
+	    return ($au_seerev ? "" : false);
     }
     
     function _searchReviewer($lword, $mclass, $type) {
@@ -240,12 +266,8 @@ class PaperSearch {
 	} else if (!$this->amPC)
 	    return " or false";
 	else {
-	    $confpart = "";
-	    if (!$this->privChair) {
-		$this->any |= self::ANY_CONFLICT;
-		$confpart = " and conflictType is null";
-	    }
-	    if ($type != "none")
+	    $confpart = $this->_searchReviewerNameConfpart();
+	    if ($type != "none" && $this->privChair)
 		$this->reviewerName = ($this->reviewerName === false ? $lword : null);
 	    $this->contactmatch[] = $lword;
 	    $this->contactmatchPC = false;
@@ -303,9 +325,12 @@ class PaperSearch {
 	
 	$special = null;
 	if (($colon = strpos($word, ':')) !== false) {
-	    $x = substr($word, 0, $colon + 1);
+	    $x = substr($word, 0, $colon);
 	    if (isset($searchTags[$x])) {
 		$special = $searchTags[$x];
+		$word = substr($word, $colon + 1);
+	    } else if (strpos($x, '"') === false) {
+		$special = $x;
 		$word = substr($word, $colon + 1);
 	    }
 	}
@@ -315,65 +340,69 @@ class PaperSearch {
 
 	$lword = sqlq_for_like($word);
 	$mword = $qp = "";
+	$any = false;
 	if ($special ? $special == "ti" : isset($this->fields['ti'])) {
+	    $any = true;
 	    $qp .= " or (title like '%$lword%')";
 	    $mword = $word;
 	}
 	if ($special ? $special == "ab" : isset($this->fields['ab'])) {
+	    $any = true;
 	    $qp .= " or (abstract like '%$lword%')";
 	    $mword = $word;
 	}
 	if (($special ? $special == "au" : isset($this->fields['au']))
 	    && $this->allowAuthor) {
+	    $any = true;
 	    $qp .= " or (${auextra}authorInformation like '%$lword%')";
 	    $mword = $word;
-	} else if ($special == "au")
-	    $qp .= " or false";
+	}
 	if (($special ? $special == "co" : isset($this->fields['co']))
 	    && $this->privChair) {
+	    $any = true;
 	    $qp .= " or (${auextra}Paper.collaborators like '%$lword%')";
 	    $mword = $word;
-	} else if ($special == "co")
-	    $qp .= " or false";
-	if ($special ? $special == "re" : isset($this->fields['re']))
-	    $qp .= $this->_searchReviewer($lword, "re", $type);
-	if ($special ? $special == "sre" : isset($this->fields['sre']))
-	    $qp .= $this->_searchReviewer($lword, "cre", $type);
-	if ($special ? $special == "pri" : isset($this->fields['pri']))
-	    $qp .= $this->_searchReviewer($lword, "pri", $type);
-	if ($special ? $special == "spri" : isset($this->fields['spri']))
-	    $qp .= $this->_searchReviewer($lword, "cpri", $type);
-	if ($special ? $special == "sec" : isset($this->fields['sec']))
-	    $qp .= $this->_searchReviewer($lword, "sec", $type);
-	if ($special ? $special == "ssec" : isset($this->fields['ssec']))
-	    $qp .= $this->_searchReviewer($lword, "csec", $type);
-	if ($special ? $special == "cmt" : isset($this->fields['cmt']))
+	}
+	foreach (array("re", "sre", "pri", "spri", "sec", "ssec") as $rtype)
+	    if ($special ? $special == $rtype : isset($this->fields[$rtype])) {
+		$any = true;
+		$qp .= $this->_searchReviewer($lword, $rtype, $type);
+	    }
+	if ($special ? $special == "cmt" : isset($this->fields['cmt'])) {
+	    $any = true;
 	    $qp .= $this->_searchComment($lword, $type, "cmt");
-	if ($special ? $special == "aucmt" : isset($this->fields['aucmt']))
+	}
+	if ($special ? $special == "aucmt" : isset($this->fields['aucmt'])) {
+	    $any = true;
 	    $qp .= $this->_searchComment($lword, $type, "aucmt");
+	}
 	if ((($special ? $special == "tag" : isset($this->fields['tag']))
 	     || ($special ? $special == "order" : isset($this->fields['order']))
 	     || ($special ? $special == "notag" : isset($this->fields['notag'])))
 	    && $this->amPC) {
 	    require_once("tags.inc");
-	    $confpart = "";
-	    if (!$this->privChair && $Conf->setting("tag_seeall") <= 0) {
-		$confpart = " and conflictType is null";
-		$this->any |= self::ANY_CONFLICT;
-	    }
-	    if (($e = checkTagError($word, true)))
+	    $any = true;
+ 	    if (($e = checkTagError($word, true)))
 		$this->warn(htmlspecialchars($e));
+	    if (($roundtags = $Conf->settingText("tag_rounds", ""))
+		&& strpos($roundtags, " $word ") !== false)
+		$word = "~$word";
+	    $confpart = "";
 	    if ($word && $word[0] == "~")
 		$word = $this->contactId . $word;
+	    else if (!$this->privChair && $Conf->setting("tag_seeall") <= 0) {
+		$this->any |= self::ANY_CONFLICT;
+		$confpart = " and conflictType is null";
+	    }
 	    if (($special ? $special == "order" : isset($this->fields['order']))
 		&& $type != "none")
 		$this->orderTag = ($this->orderTag === false ? $word : null);
 	    $negated = ($special ? $special == "notag" : isset($this->fields['notag']));
 	    $qp .= $this->_searchWordMatch($word, "tag", "tag",
 					   $type, $negated, $confpart);
-	} else if ($special == "tag" || $special == "order" || $special == "notag")
-	    $qp .= " or false";
+	}
 	if ($special ? $special == "status" : isset($this->fields['status'])) {
+	    $any = true;
 	    if (strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
 		$qp .= " or (timeWithdrawn>0)";
 	    else if (strcasecmp($word, "submitted") == 0 || strcasecmp($word, "submit") == 0 || strcasecmp($word, "sub") == 0)
@@ -385,10 +414,11 @@ class PaperSearch {
 	}
 	if (($special ? $special == "decision" : isset($this->fields['decision']))
 	    && ($this->amPC || $Conf->timeAuthorViewDecision())) {
+	    $any = true;
 	    $confpart = "";
 	    if (!$this->amPC && !$Conf->timeAuthorViewDecision()) {
-		$confpart = " and conflictType is null";
 		$this->any |= self::ANY_CONFLICT;
+		$confpart = " and conflictType is null";
 	    }
 	    if (strcasecmp($word, "yes") == 0)
 		$qp .= " or (outcome>0$confpart)";
@@ -414,9 +444,9 @@ class PaperSearch {
 		if (!$any)
 		    $qp .= " or false";
 	    }
-	} else if ($special == "decision")
-	    $qp .= " or false";
+	}
 	if (($special ? $special == "topic" : isset($this->fields['topic']))) {
+	    $any = true;
 	    if ($word == "none" || $word == "any")
 		$qp .= $this->_searchWordMatch($word, "topic", "topicId",
 					       $type, null, false);
@@ -427,14 +457,16 @@ class PaperSearch {
 		foreach ($rf->topicName as $tid => $n)
 		    if (strstr(strtolower($n), $x) !== false)
 			$tids[] = $tid;
-		if (count($tids) == 0 && $word != "none" && $word != "any")
+		if (count($tids) == 0 && $word != "none" && $word != "any") {
 		    $this->warn("&ldquo;" . htmlspecialchars($x) . "&rdquo; does not match any defined paper topic.");
-		else
+		    $qp .= " or false";
+		} else
 		    $qp .= $this->_searchWordMatch($tids, "topic", "topicId",
 						   $type, null, false);
 	    }
 	}
 	if (($special ? $special == "option" : isset($this->fields['option']))) {
+	    $any = true;
 	    if ($word == "none" || $word == "any")
 		$qp .= $this->_searchWordMatch($word, "option", "optionId",
 					       $type, null, false);
@@ -445,15 +477,17 @@ class PaperSearch {
 		foreach ($opt as $oid => $o)
 		    if (strstr(strtolower($o->optionName), $x) !== false)
 			$oids[] = $oid;
-		if (count($oids) == 0)
+		if (count($oids) == 0) {
 		    $this->warn("&ldquo;" . htmlspecialchars($x) . "&rdquo; does not match any defined submission option.");
-		else
+		    $qp .= " or false";
+		} else
 		    $qp .= $this->_searchWordMatch($oids, "option", "optionId",
 						   $type, null, false);
 	    }
 	}
 	if (($special ? $special == "lead" : isset($this->fields['lead']))
 	    && $this->amPC) {
+	    $any = true;
 	    if ($word == "none")
 		$qp .= " or (leadContactId=0)";
 	    else if ($word == "any")
@@ -462,10 +496,10 @@ class PaperSearch {
 		$this->contactmatch[] = $lword;
 		$qp .= " or (leadContactId\1" . (count($this->contactmatch) - 1) . "\1)";
 	    }
-	} else if ($special == "lead")
-	    $qp .= " or false";
+	}
 	if (($special ? $special == "shepherd" : isset($this->fields['shepherd']))
 	    && ($this->amPC || $Conf->timeAuthorViewDecision())) {
+	    $any = true;
 	    if ($word == "none")
 		$qp .= " or (shepherdContactId=0)";
 	    else if ($word == "any")
@@ -474,10 +508,10 @@ class PaperSearch {
 		$this->contactmatch[] = $lword;
 		$qp .= " or (shepherdContactId\1" . (count($this->contactmatch) - 1) . "\1)";
 	    }
-	} else if ($special == "shepherd")
-	    $qp .= " or false";
+	}
 	if (($special ? $special == "conflict" : isset($this->fields['conflict']))
 	    && $this->privChair) {
+	    $any = true;
 	    if ($word == "none" || $word == "any")
 		$x = $word;
 	    else {
@@ -487,7 +521,18 @@ class PaperSearch {
 	    }
 	    $qp .= $this->_searchWordMatch($x, "conflict", "contactId",
 					   $type, null, false);
-	} else if ($special == "conflict")
+	}
+	if (!$any && $special && $this->amPC
+	    && ($this->privChair
+		|| (($roundtags = $Conf->settingText("tag_rounds", ""))
+		    && strpos($roundtags, " $special ") !== false))) {
+	    $any = true;
+	    $confpart = $this->_searchReviewerNameConfpart();
+	    $this->contactmatch[] = $lword;
+	    $qp .= $this->_searchWordMatch((count($this->contactmatch) - 1) . "~$special", "twiddletag", "tag",
+					   $type, null, $confpart);
+	}
+	if (!$any)
 	    $qp .= " or false";
 
 	if ($mword && $type != "none")
@@ -496,7 +541,7 @@ class PaperSearch {
     }
     
     function _searchQueryType($str, $type) {
-	global $searchTags, $Conf;
+	global $Conf;
 
 	// quick emptiness check
 	if ($str == "")
@@ -510,7 +555,7 @@ class PaperSearch {
 	$n = 0;
 	
 	while ($str != "") {
-	    preg_match('/^("[^"]+"?|[a-z]+:"[^"]+"?|[^"\s]+)/s', $str, $m);
+	    preg_match('/^("[^"]+"?|[a-zA-Z][a-zA-Z0-9]*:"[^"]+"?|[^"\s]+)/s', $str, $m);
 	    $word = $m[0];
 	    $str = ltrim(substr($str, strlen($word)));
 	    if ($n == 0 && $str == "" && $type == "any")
@@ -545,6 +590,10 @@ class PaperSearch {
 	if ($type == "uany"
 	    || ($type == "all" && count($tarr) == 1 && !$confpart))
 	    return " join $table as $modtable on ($modtable.paperId=Paper.paperId and $modtable.$tarr[0]$xandclause)";
+	else if (($type == "all" || $type == "any") && count($tarr) == 0 && !$confpart)
+	    return " join $table as $modtable on (false)";
+	else if (count($tarr) == 0)
+	    return " left join $table as $modtable on (false)";
 	else if ($type == "all" && !$confpart)
 	    return " join (select paperId, count($column) as ${type}${fieldabbr}count from $table where (" . join(" or ", $tarr) . ")$andclause group by paperId) as $modtable on ($modtable.paperId=Paper.paperId and $modtable.${type}${fieldabbr}count=" . count($tarr) . ")";
 	else if ($type == "any" && !$confpart)
@@ -558,6 +607,7 @@ class PaperSearch {
 	
 	if ($this->limitName == "x")
 	    return array("create temporary table Matches select Paper.paperId from Paper where false", "");
+	$this->_resetQuery();
 
 	// query parts
 	$this->_searchQueryType($this->q, "any");
@@ -615,7 +665,7 @@ class PaperSearch {
 	if ($this->limitName == "r")
 	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . ")";
 	else if ($this->limitName == "rout")
-	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . " and Limiter.reviewNeedsSubmit>0)";
+	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . " and Limiter.reviewNeedsSubmit!=0)";
 	else if ($this->limitName == "a")
 	    $q .= " join PaperConflict as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . " and Limiter.conflictType>=" . CONFLICT_AUTHOR . ")";
 	else if ($this->limitName == "req")
@@ -623,6 +673,8 @@ class PaperSearch {
 	
 	if (($this->any & self::ANY_CONFLICT) && $this->limitName != "a")
 	    $q .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->contactId . ")";
+	if (($this->any & self::ANY_YOURREVIEW))
+	    $q .= " left join PaperReview as YourReview on (YourReview.paperId=Paper.paperId and YourReview.contactId=" . $this->contactId . ")";
 
 	foreach ($this->match["tag"] as $t => $tarr)
 	    $q .= $this->_tableMatch("PaperTag", "tag", "tag", "", $t, $tarr);
@@ -634,17 +686,26 @@ class PaperSearch {
 	    $q .= $this->_tableMatch("PaperOption", "optionId", "option", "", $t, $tarr);
 	
 	foreach ($this->match["re"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperReview", "reviewId", "re", " and (*reviewNeedsSubmit=1 or *reviewSubmitted>0)", $t, $tarr);
+	    $q .= $this->_tableMatch("PaperReview", "reviewId", "re", "", $t, $tarr);
 	foreach ($this->match["cre"] as $t => $tarr)
 	    $q .= $this->_tableMatch("PaperReview", "reviewId", "cre", " and *reviewSubmitted>0", $t, $tarr);
 	foreach ($this->match["pri"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperReview", "reviewId", "pri", " and *reviewType=" . REVIEW_PRIMARY . " and (*reviewNeedsSubmit=1 or *reviewSubmitted>0)", $t, $tarr);
+	    $q .= $this->_tableMatch("PaperReview", "reviewId", "pri", " and *reviewType=" . REVIEW_PRIMARY, $t, $tarr);
 	foreach ($this->match["cpri"] as $t => $tarr)
 	    $q .= $this->_tableMatch("PaperReview", "reviewId", "cpri", " and *reviewType=" . REVIEW_PRIMARY . " and *reviewSubmitted>0", $t, $tarr);
 	foreach ($this->match["sec"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperReview", "reviewId", "sec", " and *reviewType=" . REVIEW_SECONDARY . " and (*reviewNeedsSubmit=1 or *reviewSubmitted>0)", $t, $tarr);
+	    $q .= $this->_tableMatch("PaperReview", "reviewId", "sec", " and *reviewType=" . REVIEW_SECONDARY, $t, $tarr);
 	foreach ($this->match["csec"] as $t => $tarr)
 	    $q .= $this->_tableMatch("PaperReview", "reviewId", "csec", " and *reviewType=" . REVIEW_SECONDARY . " and *reviewSubmitted>0", $t, $tarr);
+	foreach ($this->match["twiddletag"] as $t => $tarr) {
+	    $xarr = array();
+	    foreach ($tarr as $tx) {
+		preg_match("/^tag=\'(\\d+)(~\\S+)'$/", $tx, $m);
+		foreach ($this->contactmatch[$m[1]] as $c)
+		    $xarr[] = "tag='$c$m[2]'";
+	    }
+	    $q .= $this->_tableMatch("PaperTag", "tag", "twiddletag", "", $t, $xarr);
+	}
 
 	if (count($this->filters))
 	    $q .= " where " . join(" and ", $this->filters);

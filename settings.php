@@ -44,9 +44,10 @@ $SettingGroups = array("acc" => array(
 			     "pcrev_any" => "check",
 			     "pcrev_soft" => "date",
 			     "pcrev_hard" => "date",
+			     "x_rev_roundtag" => "special",
 			     "pc_seeallrev" => 2,
 			     "extrev_chairreq" => "check",
-			     "tags" => "special",
+			     "x_tag_chair" => "special",
 			     "tag_seeall" => "check",
 			     "extrev_soft" => "date",
 			     "extrev_hard" => "date",
@@ -216,21 +217,16 @@ function parseValue($name, $type) {
 function doTags($set) {
     global $Conf, $Values, $Error, $SettingError;
     if (!$set && isset($_REQUEST["tag_chair"])) {
-	$Values["tags"] = preg_split('/\s+/', $_REQUEST["tag_chair"]);
-	foreach ($Values["tags"] as $ct)
-	    if ($ct && !checkTag($ct, false)) {
+	$vs = array();
+	foreach (preg_split('/\s+/', $_REQUEST["tag_chair"]) as $ct)
+	    if ($ct && checkTag($ct, false))
+		$vs[] = $ct;
+	    else {
 		$Error[] = "One of the chair-only tags contains odd characters.";
 		$SettingError["tag_chair"] = true;
 	    }
-    } else if ($set) {
-	$Conf->qe("delete from ChairTag", "while updating tags");
-	if (count($Values["tags"]) > 0) {
-	    $q = "insert into ChairTag (tag) values ";
-	    foreach ($Values["tags"] as $ct)
-		if ($ct)
-		    $q .= "('" . sqlq($ct) . "'), ";
-	    $Conf->qe(substr($q, 0, strlen($q) - 2), "while updating tags");
-	}
+	if (!isset($SettingError["tag_chair"]))
+	    $Values["tag_chair"] = array(1, join(" ", $vs));
     }
 }
 
@@ -447,8 +443,8 @@ function doBanal($set) {
 }
 
 function doSpecial($name, $set) {
-    global $Values;
-    if ($name == "tags")
+    global $Values, $Error, $SettingError;
+    if ($name == "x_tag_chair")
 	doTags($set);
     else if ($name == "topics")
 	doTopics($set);
@@ -465,6 +461,22 @@ function doSpecial($name, $set) {
 	}
     } else if ($name == "banal")
 	doBanal($set);
+    else if ($name == "x_rev_roundtag") {
+	if (!$set && !isset($_REQUEST["rev_roundtag"]))
+	    $Values["rev_roundtag"] = null;
+	else if (!$set) {
+	    require_once("Code/tags.inc");
+	    $t = trim($_REQUEST["rev_roundtag"]);
+	    if ($t == "" || $t == "(None)")
+		$Values["rev_roundtag"] = null;
+	    else if (preg_match('/^[a-zA-Z][a-zA-Z0-9]*$/', $t))
+		$Values["rev_roundtag"] = array(1, $t);
+	    else {
+		$Error[] = "The review round tag contains odd characters.";
+		$SettingError["rev_roundtag"] = true;
+	    }
+	}
+    }
 }
 
 function accountValue($name, $type) {
@@ -546,7 +558,7 @@ if (isset($_REQUEST["update"])) {
 	$Conf->errorMsg(join("<br />\n", $Error));
     else if (count($Values) > 0) {
 	$while = "updating settings";
-	$tables = "Settings write, ChairTag write, TopicArea write, PaperTopic write";
+	$tables = "Settings write, TopicArea write, PaperTopic write";
 	if ($Conf->setting("allowPaperOption"))
 	    $tables .= ", OptionType write, PaperOption write";
 	if (isset($Values['decisions']) || isset($Values['reviewform']))
@@ -658,13 +670,16 @@ function doSelect($name, $nametext, $varr, $tr = false) {
     echo "</select>", ($tr ? "</td></tr>\n" : "<br />\n");
 }
 
-function doTextRow($name, $text, $v, $size = 30, $capclass = "lcaption") {
+function doTextRow($name, $text, $v, $size = 30, $capclass = "lcaption",
+		   $tempText = "") {
     $settingname = (is_array($text) ? $text[0] : $text);
-    echo "<tr><td class='$capclass'>", decorateSettingName($name, $settingname), "</td><td class='lentry'><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='$size' onchange='highlightUpdate()' />";
+    if ($tempText)
+	$tempText = " onfocus=\"tempText(this, '$tempText', 1)\" onblur=\"tempText(this, '$tempText', 0)\"";
+    echo "<tr><td class='$capclass'>", decorateSettingName($name, $settingname), "</td><td class='lentry'><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='$size'$tempText onchange='highlightUpdate()' />";
     if (is_array($text) && isset($text[2]))
 	echo $text[2];
     if (is_array($text) && $text[1])
-	echo "<br /><small>", $text[1], "</small>";
+	echo "<br /><span class='hint'>", $text[1], "</span>";
     echo "</td></tr>\n";
 }
 
@@ -742,8 +757,8 @@ function doSubGroup() {
     echo "</table>\n";
 
     echo "<div class='smgap'></div>\n";
-    doCheckbox("sub_pcconf", "Collect authors' PC conflicts with checkboxes");
-    doCheckbox("sub_collab", "Collect authors' other collaborators as text");
+    doCheckbox("sub_pcconf", "Collect authors&rsquo; PC conflicts with checkboxes");
+    doCheckbox("sub_collab", "Collect authors&rsquo; other collaborators as text");
 
     if (is_executable("Code/banal")) {
 	echo "<div class='smgap'></div><table id='foldbanal' class='", ($Conf->setting("sub_banal") ? "foldo" : "foldc"), "'>";
@@ -842,6 +857,9 @@ function doRevGroup() {
     echo "<table>\n";
     doDateRow("pcrev_soft", "Soft deadline", "pcrev_hard");
     doDateRow("pcrev_hard", "Hard deadline");
+    if (!($rev_roundtag = settingText("rev_roundtag")))
+	$rev_roundtag = "(None)";
+    doTextRow("rev_roundtag", array("Review round", "This <a href='${ConfSiteBase}help$ConfSiteSuffix?t=tags'>tag</a> will mark new PC review assignments.  Examples: &ldquo;round1&rdquo;, &ldquo;round2&rdquo;"), $rev_roundtag, 15, "lcaption", "(None)");
     echo "</table>\n";
 
     echo "<div class='smgap'></div>\n";
@@ -873,8 +891,9 @@ function doRevGroup() {
 
     echo "<div class='smgap'></div>\n";
     $t = expandMailTemplate("requestreview", false);
-    echo "<div id='foldmailbody_requestreview' class='foldc'><button type='button' onclick='void fold(\"mailbody_requestreview\", 0)' class='unfolder'>Edit mail template for external review requests</button>
-<span class='extension'><strong>Mail template for external review requests</strong> (<a href='${ConfSiteBase}mail$ConfSiteSuffix'>keywords</a> allowed)<br /></span>
+    echo "<div id='foldmailbody_requestreview' class='foldc'><a href=\"javascript:fold('mailbody_requestreview', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('mailbody_requestreview', 1)\" class='foldbutton folder'>&ndash;</a>&nbsp;
+  <a href=\"javascript:fold('mailbody_requestreview', 0)\" class='unfolder q'><strong>Mail template for external review requests</strong></a>\n";
+    echo "  <span class='extension'><strong>Mail template for external review requests</strong> (<a href='${ConfSiteBase}mail$ConfSiteSuffix'>keywords</a> allowed)<br /></span>
 <textarea class='tt extension' name='mailbody_requestreview' cols='80' rows='20' onchange='highlightUpdate()'>", htmlspecialchars($t[1]), "</textarea></div>\n";
 
     echo "<hr />";
@@ -907,7 +926,7 @@ function doDecGroup() {
     doCheckbox('au_seerev', '<b>Authors can see reviews</b>');
 
     echo "<div class='smgap'></div>\n<table>";
-    doCheckbox('resp_open', "<b>Collect authors' responses to the reviews:</b>", true);
+    doCheckbox('resp_open', "<b>Collect authors&rsquo; responses to the reviews:</b>", true);
     echo "<tr><td></td><td><table>";
     doDateRow('resp_done', 'Deadline', null, "lxcaption");
     doGraceRow('resp_grace', 'Grace period', "lxcaption");

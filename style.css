@@ -591,15 +591,15 @@ td.llentry {
 td.hint {
 	padding: 0em 0.5em;
 	font-size: smaller;
+	color: #555555;
 }
 div.hint {
 	font-size: smaller;
 	margin-bottom: 0.5ex;
+	color: #555555;
 }
 span.hint {
 	font-size: smaller;
-}
-tr.pt_tags span.hint {
 	color: #555555;
 }
 td.caption span.hint {
@@ -652,6 +652,7 @@ div.f-c {
 }
 div.f-h {
 	font-size: smaller;
+	color: #555555;
 	clear: both;
 }
 span.f-cx {

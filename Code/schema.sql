@@ -37,16 +37,6 @@ CREATE TABLE `ChairAssistant` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
--- Table structure for table `ChairTag`
---
-
-DROP TABLE IF EXISTS `ChairTag`;
-CREATE TABLE `ChairTag` (
-  `tag` varchar(40) NOT NULL,
-  UNIQUE KEY `tag` (`tag`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
---
 -- Table structure for table `ContactAddress`
 --
 
@@ -470,6 +460,7 @@ insert into Settings (name, value) values ('setupPhase', 1);
 insert into Settings (name, value) values ('allowPaperOption', 9);
 # collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
+insert into Settings (name, value, data) values ('tag_chair', 1, 'accept reject pcpaper');
 
 insert into PaperStorage set paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain', paper='' on duplicate key update paper='';
 
@@ -562,8 +553,6 @@ insert into ReviewFormOptions set fieldName='outcome', level=0, description='Uns
 insert into ReviewFormOptions set fieldName='outcome', level=-1, description='Rejected';
 insert into ReviewFormOptions set fieldName='outcome', level=1, description='Accepted as short paper';
 insert into ReviewFormOptions set fieldName='outcome', level=2, description='Accepted';
-
-insert into ChairTag (tag) values ('accept'), ('reject'), ('pcpaper');
 
 delete from Settings where name='revform_update';
 insert into Settings set name='revform_update', value=unix_timestamp(current_timestamp);

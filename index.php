@@ -276,7 +276,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     
     // Overview
     echo "<strong class='grpt'>Reviewing: &nbsp;</strong> ";
-    $result = $Conf->qe("select PaperReview.contactId, count(reviewSubmitted), count(reviewNeedsSubmit), group_concat(overAllMerit), PCMember.contactId as pc from PaperReview join Paper using (paperId) left join PCMember on (PaperReview.contactId=PCMember.contactId) where Paper.timeSubmitted>0 group by PaperReview.contactId", "while fetching review status");
+    $result = $Conf->qe("select PaperReview.contactId, count(reviewSubmitted), count(if(reviewNeedsSubmit=0,reviewSubmitted,1)), group_concat(overAllMerit), PCMember.contactId as pc from PaperReview join Paper using (paperId) left join PCMember on (PaperReview.contactId=PCMember.contactId) where Paper.timeSubmitted>0 group by PaperReview.contactId", "while fetching review status");
     $rf = reviewForm();
     $maxOverAllMerit = $rf->maxNumericScore("overAllMerit");
     $npc = $npcScore = $sumpcScore = $sumpcSubmit = 0;
@@ -296,9 +296,9 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     }
     if ($myrow) {
 	if ($myrow[2] == 1 && $myrow[1] <= 1)
-	   echo "You ", ($myrow[1] == 1 ? "have" : "have not"), " submitted your <a href='search$ConfSiteSuffix?q=&amp;t=r'>review</a>";
+	    echo "You ", ($myrow[1] == 1 ? "have" : "have not"), " submitted your <a href='search$ConfSiteSuffix?q=&amp;t=r'>review</a>";
 	else
-	   echo "You have submitted ", $myrow[1], " of <a href='search$ConfSiteSuffix?q=&amp;t=r'>", $myrow[2], " ", ($myrow[2] == 1 ? "review" : "reviews"), "</a>";
+	    echo "You have submitted ", $myrow[1], " of <a href='search$ConfSiteSuffix?q=&amp;t=r'>", plural($myrow[2], "review"), "</a>";
 	if (in_array("overAllMerit", $rf->fieldOrder) && $myrow[1])
 	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", unparseScoreAverage($myrow[3]->avg, $rf->reviewFields["overAllMerit"]);
 	echo ".<br />";
@@ -385,7 +385,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
     else if ($startable || $Me->privChair) {
 	echo "<strong><a href='paper$ConfSiteSuffix?p=new'>Start new paper</a></strong> <span class='deadline'>(", $Conf->printableDeadlineSetting('sub_reg'), ")</span>";
 	if ($Me->privChair)
-	    echo "<br />\n<small>As an administrator, you can start papers regardless of deadlines and on other people's behalf.</small>";
+	    echo "<br />\n<span class='hint'>As an administrator, you can start papers regardless of deadlines and on other people's behalf.</span>";
     }
 
     $plist = null;

@@ -39,11 +39,15 @@ function tagBase($tag) {
 
 function chairTags() {
     global $Conf;
-    $result = $Conf->q("select tag from ChairTag");
-    $c = array();
-    while (($row = edb_row($result)))
-	$c[$row[0]] = 1;
-    return $c;
+    if ($Conf->setting("tag_chair"))
+	return array_flip(preg_split('/\s+/', $Conf->settingText("tag_chair", "")));
+    else {
+	$result = $Conf->q("select tag from ChairTag");
+	$c = array();
+	while (($row = edb_row($result)))
+	    $c[$row[0]] = 1;
+	return $c;
+    }
 }
 
 function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
@@ -71,15 +75,20 @@ function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
     
     // lock
     $while = "while tagging papers";
-    $Conf->qe("lock tables PaperTag write, ChairTag write, ActionLog write", $while);
+    $Conf->qe("lock tables PaperTag write, ActionLog write", $while);
 
     // check chair tags
     if (!$chair) {
 	$chtags = chairTags();
+	$roundtags = $Conf->settingText("tag_rounds", "");
 	$removetags = array();
-	foreach ($tags as $tag)
-	    if (isset($chtags[tagBase($tag)]))
+	foreach ($tags as $tag) {
+	    $tb = tagBase($tag);
+	    if (isset($chtags[$tb])
+		|| ($roundtags && strpos($roundtags, " $tb ") !== false)
+		|| ($roundtags && $tb[0] == "~" && strpos($roundtags, " " . substr($tb, 1) . " ") !== false))
 		$removetags[] = $tag;
+	}
 	$tags = array_diff($tags, $removetags);
 	if (count($removetags) > 0 && $mode != 'p' && $reporterr)
 	    $Conf->errorMsg("Attempt to change chair-only tags ignored.");
@@ -91,24 +100,33 @@ function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
 
     // delete tags
     if ($mode != "a" && $mode != "ao") {
-	    $q = "delete from PaperTag where (";
-	    if ($mode == "s" || $mode == "so")
-		$q .= "true or ";
-	    else
-		foreach ($pids as $pid)
-		    $q .= "paperId=$pid or ";
+	$q = "delete from PaperTag where (";
+	if ($mode == "s" || $mode == "so")
+	    $q .= "true or ";
+	else
+	    foreach ($pids as $pid)
+		$q .= "paperId=$pid or ";
+	$q = substr($q, 0, strlen($q) - 4) . ")";
+	if ($mode != "p") {
+	    $q .= " and (";
+	    foreach ($tags as $tag)
+		$q .= "tag='" . sqlq(tagBase($tag)) . "' or ";
 	    $q = substr($q, 0, strlen($q) - 4) . ")";
-	    if ($mode != "p") {
-		$q .= " and (";
-		foreach ($tags as $tag)
-		    $q .= "tag='" . sqlq(tagBase($tag)) . "' or ";
-		$q = substr($q, 0, strlen($q) - 4) . ")";
-	    } else {
-		if (!$chair)
-		    $q .= " and tag not in (select tag from ChairTag)";
-		$q .= " and (tag like '$Me->contactId~%' or tag not like '%~%')";
+	} else {
+	    if (!$chair && count($chtags)) {
+		foreach ($chtags as $ct => $xxx)
+		    if ($ct[0] == '~')
+			$q .= " and tag!='$Me->contactId" . sqlq($ct) . "'";
+		    else
+			$q .= " and tag!='" . sqlq($ct) . "'";
 	    }
-	    $Conf->qe($q, $while);
+	    if (!$chair && $roundtags)
+		foreach (explode(' ', $roundtags) as $tround)
+		    if ($tround)
+			$q .= " and tag!='$Me->contactId" . "~" . sqlq($tround) . "'";
+	    $q .= " and (tag like '$Me->contactId~%' or tag not like '%~%')";
+	}
+	$Conf->qe($q, $while);
     }
 
     // add tags
@@ -147,15 +165,21 @@ function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
 }
 
 function tagsToText($t, $makeUrls, $contact = null) {
-    global $Me, $ConfSiteBase, $ConfSiteSuffix;
+    global $Me, $Conf, $ConfSiteBase, $ConfSiteSuffix;
     if ($contact === null)
 	$contact = $Me;
     if (is_object($contact))
 	$contact = $contact->contactId;
     $t = str_replace("#0", "", $t);
     if (strpos($t, "~") !== false) {
-	$t = str_replace($contact . "~", "~", $t);
-	$t = trim(preg_replace('/\b\d+~\S+\s*/', '', $t));
+	$t = str_replace(" ${contact}~", " ~", " $t ");
+	$t = preg_replace('/ \d+~\S+ /', ' ', $t);
+	if (($trounds = $Conf->settingText("tag_rounds"))) {
+	    foreach (explode(' ', $trounds) as $tround)
+		if ($tround)
+		    $t = str_replace(" ~$tround ", " $tround ", $t);
+	}
+	$t = trim($t);
     }
     if ($makeUrls === false)
 	return $t;

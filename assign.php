@@ -119,7 +119,7 @@ if (isset($_REQUEST['retract']) && ($retract = cvtint($_REQUEST['retract'])) > 0
 function pcAssignments() {
     global $Conf, $Me, $prow;
     $while = "while updating PC assignments";
-    $Conf->qe("lock tables PaperReview write, PaperConflict write, PCMember read, ContactInfo read, ActionLog write", $while);
+    $Conf->qe("lock tables PaperReview write, PaperConflict write, PCMember read, ContactInfo read, ActionLog write" . $Conf->tagRoundLocker(true), $while);
     
     // don't record separate PC conflicts on author conflicts
     $result = $Conf->qe("select PCMember.contactId,
@@ -233,7 +233,7 @@ function requestReview($email) {
     $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Requester->contactId, current_timestamp)", $while);
 
     // mark secondary as delegated
-    $Conf->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and reviewType=" . REVIEW_SECONDARY . " and contactId=$Requester->contactId and reviewSubmitted is null and reviewNeedsSubmit=1", $while);
+    $Conf->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=$prow->paperId and reviewType=" . REVIEW_SECONDARY . " and contactId=$Requester->contactId and reviewSubmitted is null and reviewNeedsSubmit=1", $while);
 
     // send confirmation email
     require_once("Code/mailtemplate.inc");

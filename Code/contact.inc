@@ -558,15 +558,12 @@ class Contact {
 		|| ($this->privChair && $prow->conflictType == 0)
 		|| ($this->isPC
 		    && $prow->conflictType == 0 && $rrowSubmitted
-		    && ($conf->timePCViewAllReviews()
-			|| defval($prow, "myReviewSubmitted") > 0))
+		    && $conf->timePCViewAllReviews())
 		|| (defval($prow, "myReviewType") > 0
 		    && $prow->conflictType == 0 && $rrowSubmitted
-		    && defval($prow, "myReviewSubmitted") > 0
+		    && (defval($prow, "myReviewSubmitted") > 0
+			|| defval($prow, "myReviewNeedsSubmit", 1) == 0)
 		    && ($this->isPC || $conf->settings["extrev_view"] >= 1))
-		|| (defval($prow, "myReviewType") == REVIEW_SECONDARY
-		    && $prow->conflictType == 0 && $rrowSubmitted
-		    && $prow->myReviewNeedsSubmit === null)
 		|| ($rrow && $rrow->paperId == $prow->paperId
 		    && $rrow->contactId == $this->contactId)))
 	    return true;
@@ -822,8 +819,9 @@ class Contact {
 	    || ($this->isPC && $prow && $prow->conflictType == 0
 		&& $conf->setting("pc_seeallrev") != 2)
 	    || ($prow && $prow->myReviewType > 0
-		&& defval($prow, "myReviewSubmitted") > 0
-		&& $conf->settings["extrev_view"] >= 2)
+		&& (defval($prow, "myReviewSubmitted") > 0
+		    || defval($prow, "myReviewNeedsSubmit", 1) == 0)
+		&& ($this->isPC || $conf->settings["extrev_view"] >= 2))
 	    || !reviewBlind($rrow))
 	    return true;
 	return false;
@@ -990,19 +988,36 @@ class Contact {
 	$reviewerContactId = (is_object($reviewer) ? $reviewer->contactId : $reviewer);
 	if ($type == 0 && $row && ($row->reviewType == REVIEW_EXTERNAL || $row->reviewType == REVIEW_PC))
 	    return;
-	if ($type > 0 && (!$row || !$row->reviewType))
+	$qtag = "";
+	if ($type > 0 && (!$row || !$row->reviewType)) {
 	    $q = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($paperId, $reviewerContactId, $type, $this->contactId, current_timestamp)";
-	else if ($type > 0 && $row->reviewType != $type)
+	    if (($type == REVIEW_PRIMARY || $type == REVIEW_SECONDARY)
+		&& ($t = $conf->settingText("rev_roundtag"))) {
+		$rounds = $conf->settingText("tag_rounds");
+		if (strpos($rounds, " $t ") === false) {
+		    $rounds = ($rounds ? "$rounds$t " : " $t ");
+		    $conf->qe("insert into Settings (name, value, data) values ('tag_rounds', 1, '" . sqlq($rounds) . "') on duplicate key update data='" . sqlq($rounds) . "'");
+		    $conf->updateSettings();
+		}
+		$qtag = "insert into PaperTag (paperId, tag) values ($paperId, '${reviewerContactId}~" . sqlq($t) . "') on duplicate key update tagIndex=tagIndex";
+	    }
+	} else if ($type > 0 && $row->reviewType != $type)
 	    $q = "update PaperReview set reviewType=$type where reviewId=$row->reviewId";
-	else if ($type <= 0 && $row && $row->reviewType && !$row->reviewModified)
+	else if ($type <= 0 && $row && $row->reviewType && !$row->reviewModified) {
 	    $q = "delete from PaperReview where reviewId=$row->reviewId";
-	else if ($type <= 0 && $row && $row->reviewType)
+	    if (($row->reviewType == REVIEW_PRIMARY || $row->reviewType == REVIEW_SECONDARY)
+		&& ($t = $conf->settingText("rev_roundtag")))
+		$qtag = "delete from PaperTag where paperId=$paperId and tag='${reviewerContactId}~" . sqlq($t) . "'";
+	} else if ($type <= 0 && $row && $row->reviewType)
 	    $q = "update PaperReview set reviewType=" . REVIEW_PC . " where reviewId=$row->reviewId";
 	else
 	    return;
 	
-	if ($conf->qe($q, "while assigning review"))
+	if ($conf->qe($q, "while assigning review")) {
+	    if ($qtag)
+		$conf->q($qtag);
 	    $conf->log("Added $reviewTypeName[$type] reviewer " . (is_object($reviewer) ? $reviewer->email : $reviewer), $this, $paperId);
+	}
     }
 
 }

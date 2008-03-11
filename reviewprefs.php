@@ -179,8 +179,9 @@ topic scores to break ties.</p>
 
 <p>The list shows all submitted papers$topicnote.  Click on a column heading
 to sort by that column.  Enter preferences in the text boxes or by following
-the paper links, or use preference files (below the paper list) to work
-offline.</p>");
+the paper links.  You may also upload preferences from a text file; see the
+&ldquo;Download&rdquo; and &ldquo;Upload&rdquo; links below the paper
+list.</p>");
 
 
 // set options to view

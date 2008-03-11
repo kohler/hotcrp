@@ -88,7 +88,7 @@ function contactQuery($type) {
     if ($type == "crev")
 	$where[] = "PaperReview.reviewSubmitted>0";
     else if ($type == "uncrev" || $type == "myuncextrev")
-	$where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit>0";
+	$where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit!=0";
     if ($type == "extrev" || $type == "myextrev" || $type == "myuncextrev")
 	$where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
     if ($type == "myextrev" || $type == "myuncextrev")

@@ -48,15 +48,15 @@ function parseBulkFile($text, $filename, $type) {
 	    continue;
 
 	// parse a bunch of formats
-	if (preg_match('/^(\d+) *\t([^\t]+)\t([^\t]+)/', $line, $m)) {
+	if (preg_match('/^(\d+)\s+([^\t]+)\t([^\t]+)/', $line, $m)) {
 	    $paperId = $m[1];
 	    $email = trim($m[2]);
 	    $name = trim($m[3]);
-	} else if (preg_match('/^(\d+) *\t([^\t]*?)\s*<(\S+)>\s*/', $line, $m)) {
+	} else if (preg_match('/^(\d+)\s+([^\t]*?)\s*<(\S+)>\s*/', $line, $m)) {
 	    $paperId = $m[1];
 	    $email = $m[3];
 	    $name = $m[2];
-	} else if (preg_match('/^(\d+) *\t([^\t]+)$/', $line, $m)) {
+	} else if (preg_match('/^(\d+)\s+([^\t]+)$/', $line, $m)) {
 	    $paperId = $m[1];
 	    $email = trim($m[2]);
 	    $name = "";

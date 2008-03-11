@@ -1,5 +1,33 @@
 HotCRP NEWS
 
+Version 2.14
+
+* Review field options can take lettered values, such as A-D or X-Z, as
+  well as numeric values.
+
+* Add support for bulk upload of review assignments, PC or external
+  (requested by Matthew Frank).
+
+* Add "private" and "secret" review fields.
+
+* Fix installations that set zlib.output_compression by default (Elliott
+  Karpilovsky).
+
+* Soft limit on the number of concurrent paper format checkers should
+  reduce system load.
+
+* Review preference UI improvements, including uploadable preference files
+  (requested by Greg Minshall).
+
+* Add a setting where PC members can see reviews but not reviewer
+  identities (requested by Matthew Frank).
+
+* Other bug fixes, UI improvements (particularly for paper submission), and
+  documentation improvements.
+
+* Thanks to Michael Vrable, Stefan Savage, and Scott Rose.
+
+
 Version 2.13   22.Jan.2008
 
 * Add support for paper format checking with Geoff Voelker's banal script.

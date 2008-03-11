@@ -175,41 +175,45 @@ function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
 }
 
 function searchQuickref() {
-    global $rowidx, $ConfSiteSuffix;
+    global $rowidx, $Conf, $ConfSiteSuffix;
     echo "<table>\n";
     _searchQuickrefRow("Basics", "", "all papers in the search category");
-    _searchQuickrefRow("", "story", "\"story\" in title, abstract, possibly authors");
+    _searchQuickrefRow("", "story", "&ldquo;story&rdquo; in title, abstract, possibly authors");
     _searchQuickrefRow("", "119", "paper #119");
-    _searchQuickrefRow("", "1 2 5 12-24 kernel", "the numbered papers, plus papers with \"kernel\" in title, abstract, possibly authors");
-    _searchQuickrefRow("", "\"802\"", "\"802\" in title, abstract, possibly authors (not paper #802)");
-    _searchQuickrefRow("", "very new", "\"very\" <i>or</i> \"new\" in title, abstract, possibly authors");
-    _searchQuickrefRow("", "\"very new\"", "the phrase \"very new\" in title, abstract, possibly authors<br />(To search for papers matching both \"very\" and \"new\", but not necessarily the phrase, expand the search options and use \"With <i>all</i> the words\".)");
-    _searchQuickrefRow("Title", "ti:flexible", "title contains \"flexible\"");
-    _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains \"very novel\"");
-    _searchQuickrefRow("Authors", "au:poletto", "author list contains \"poletto\"");
-    _searchQuickrefRow("Collaborators", "co:liskov", "collaborators contains \"liskov\"");
-    _searchQuickrefRow("Topics", "topic:link", "selected topics match \"link\"");
-    _searchQuickrefRow("Options", "option:shadow", "selected submission options match \"shadow\"");
-    _searchQuickrefRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "tag:discuss", "tagged \"discuss\"");
-    _searchQuickrefRow("", "notag:discuss", "not tagged \"discuss\"");
-    _searchQuickrefRow("", "order:discuss", "tagged \"discuss\", sort by tag order");
-    _searchQuickrefRow("Reviews", "re:fdabek", "\"fdabek\" in reviewer name/email");
-    _searchQuickrefRow("", "cre:fdabek", "\"fdabek\" (in reviewer name/email) has completed a review");
+    _searchQuickrefRow("", "1 2 5 12-24 kernel", "the numbered papers, plus papers with &ldquo;kernel&rdquo; in title, abstract, possibly authors");
+    _searchQuickrefRow("", "\"802\"", "&ldquo;802&rdquo; in title, abstract, possibly authors (not paper #802)");
+    _searchQuickrefRow("", "very new", "&ldquo;very&rdquo; <i>or</i> &ldquo;new&rdquo; in title, abstract, possibly authors");
+    _searchQuickrefRow("", "\"very new\"", "the phrase &ldquo;very new&rdquo; in title, abstract, possibly authors<br />(To search for papers matching both &ldquo;very&rdquo; and &ldquo;new&rdquo;, but not necessarily the phrase, expand the search options and use &ldquo;With <i>all</i> the words.&rdquo;)");
+    _searchQuickrefRow("Title", "ti:flexible", "title contains &ldquo;flexible&rdquo;");
+    _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains &ldquo;very novel&rdquo;");
+    _searchQuickrefRow("Authors", "au:poletto", "author list contains &ldquo;poletto&rdquo;");
+    _searchQuickrefRow("Collaborators", "co:liskov", "collaborators contains &ldquo;liskov&rdquo;");
+    _searchQuickrefRow("Topics", "topic:link", "selected topics match &ldquo;link&rdquo;");
+    _searchQuickrefRow("Options", "option:shadow", "selected submission options match &ldquo;shadow&rdquo;");
+    _searchQuickrefRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "tag:discuss", "tagged &ldquo;discuss&rdquo;");
+    _searchQuickrefRow("", "notag:discuss", "not tagged &ldquo;discuss&rdquo;");
+    _searchQuickrefRow("", "order:discuss", "tagged &ldquo;discuss&rdquo;, sort by tag order");
+    _searchQuickrefRow("Reviews", "re:fdabek", "&ldquo;fdabek&rdquo; in reviewer name/email");
+    _searchQuickrefRow("", "cre:fdabek", "&ldquo;fdabek&rdquo; (in reviewer name/email) has completed a review");
     _searchQuickrefRow("", "re:4", "four reviewers (assigned and/or completed)");
     _searchQuickrefRow("", "cre:<3", "less than three completed reviews");
-    _searchQuickrefRow("", "pri:>=1", "at least one primary reviewer (\"cpri:\" and reviewer name/email also work)");
-    _searchQuickrefRow("", "sec:pai", "\"pai\" (reviewer name/email) is secondary reviewer (\"csec:\" and review counts also work)");
+    _searchQuickrefRow("", "pri:>=1", "at least one primary reviewer (&ldquo;cpri:&rdquo; and reviewer name/email also work)");
+    _searchQuickrefRow("", "sec:pai", "&ldquo;pai&rdquo; (reviewer name/email) is secondary reviewer (&ldquo;csec:&rdquo; and review counts also work)");
+    if (($roundtags = $Conf->settingText("tag_rounds"))) {
+	preg_match('/ (\S+) /', $roundtags, $m);
+	_searchQuickrefRow("", "$m[1]:pai", "&ldquo;pai&rdquo; (reviewer name/email) has a &ldquo;$m[1]&rdquo; review assignment");
+    }
     _searchQuickrefRow("Comments", "cmt:>0", "at least one comment visible to PC (including authors' response)");
     _searchQuickrefRow("", "aucmt:>0", "at least one comment visible to authors (including authors' response)");
-    _searchQuickrefRow("Leads", "lead:fdabek", "\"fdabek\" (in name/email) is discussion lead");
+    _searchQuickrefRow("Leads", "lead:fdabek", "&ldquo;fdabek&rdquo; (in name/email) is discussion lead");
     _searchQuickrefRow("", "lead:none", "no assigned discussion lead");
     _searchQuickrefRow("", "lead:any", "some assigned discussion lead");
-    _searchQuickrefRow("Shepherds", "shep:fdabek", "\"fdabek\" (in name/email) is shepherd (\"none\" and \"any\" also work)");
-    _searchQuickrefRow("Conflicts", "conflict:fdabek", "\"fdabek\" (in name/email) has a conflict with the paper");
+    _searchQuickrefRow("Shepherds", "shep:fdabek", "&ldquo;fdabek&rdquo; (in name/email) is shepherd (&ldquo;none&rdquo; and &ldquo;any&rdquo; also work)");
+    _searchQuickrefRow("Conflicts", "conflict:fdabek", "&ldquo;fdabek&rdquo; (in name/email) has a conflict with the paper");
     _searchQuickrefRow("Status", "status:sub", "paper is submitted for review", "t=all");
     _searchQuickrefRow("", "status:unsub", "paper is neither submitted nor withdrawn", "t=all");
     _searchQuickrefRow("", "status:withdrawn", "paper has been withdrawn", "t=all");
-    _searchQuickrefRow("Decision", "dec:accept", "decision matches \"accept\"");
+    _searchQuickrefRow("Decision", "dec:accept", "decision matches &ldquo;accept&rdquo;");
     _searchQuickrefRow("", "dec:yes", "one of the accept decisions");
     _searchQuickrefRow("", "dec:no", "one of the reject decisions");
     _searchQuickrefRow("", "dec:?", "decision unspecified");
@@ -255,7 +259,7 @@ function tags() {
 PC members and administrators can attach tag names to papers.
 Papers can have many tags, and you can invent new tags on the fly.
 Tags are never shown to authors$conflictmsg1.
-It's easy to add and remove tags and to list all papers with a given tag,
+It&rsquo;s easy to add and remove tags and to list all papers with a given tag,
 and <i>ordered</i> tags preserve a particular paper order.
 
 <p>By default, tags are visible to the entire PC, but <em>twiddle tags</em>,
@@ -265,6 +269,14 @@ with names like &ldquo;~tag&rdquo;, are visible only to their creators.</p>");
 Here are some example ways to use tags.
 
 <ul>
+<li><strong>Define reviewing rounds.</strong>
+ Use the <a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>&ldquo;Review round&rdquo; setting</a>
+ to set a tag for the current review round.  New PC
+ assignments are marked with that tag.  If &ldquo;round1&rdquo; were
+ a review round tag, PC member Sylvia could list her &ldquo;round1&rdquo; papers
+ by <a href='${ConfSiteBase}search$ConfSiteSuffix?q=tag:round1'>searching for
+ &ldquo;tag:round1&rdquo;</a>, and an administrator could list Sylvia&rsquo;s
+ &ldquo;round1&rdquo; assignments by <a href='${ConfSiteBase}search$ConfSiteSuffix?q=round1:sylvia'>searching for &ldquo;round1:sylvia&rdquo;</a>.</li>
 <li><strong>Avoid discussing low-ranked submissions at the PC meeting.</strong>
  Mark low-ranked submissions with tag &ldquo;nodiscuss&rdquo;, then ask the PC to
  <a href='${ConfSiteBase}search$ConfSiteSuffix?q=tag:nodiscuss'>search for &ldquo;tag:nodiscuss&rdquo;</a>.

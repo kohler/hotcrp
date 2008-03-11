@@ -413,7 +413,7 @@ class ContactList extends BaseList {
 	    $pq .= ",\n	topicIds, topicInterest";
 	if (isset($queryOptions['reviews']))
 	    $pq .= ",
-	count(coalesce(PaperReview.reviewSubmitted,nullif(PaperReview.reviewNeedsSubmit,0))) as numReviews,
+	count(if(PaperReview.reviewNeedsSubmit<=0,PaperReview.reviewSubmitted,1)) as numReviews,
 	count(PaperReview.reviewSubmitted) as numReviewsSubmitted";
 	if (isset($queryOptions['scores']))
 	    foreach ($queryOptions['scores'] as $score)

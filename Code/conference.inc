@@ -696,7 +696,7 @@ class Conference {
 	// fields
 	$pq = "select Paper.*, PaperConflict.conflictType,
 		count(AllReviews.reviewSubmitted) as reviewCount,
-		count(AllReviews.reviewNeedsSubmit) as startedReviewCount";
+		count(if(AllReviews.reviewNeedsSubmit<=0,AllReviews.reviewSubmitted,1)) as startedReviewCount";
 	$myPaperReview = null;
 	if (!isset($options['author'])) {
 	    $pq .= ",
@@ -793,7 +793,7 @@ class Conference {
 	else if (isset($options['myReviews']))
 	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$reviewContactId)\n";
 	else if (isset($options['myOutstandingReviews']))
-	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$reviewContactId and PaperReview.reviewNeedsSubmit>0)\n";
+	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$reviewContactId and PaperReview.reviewNeedsSubmit!=0)\n";
 	else if (isset($options['myReviewsOpt']))
 	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$reviewContactId)\n";
 	else if (isset($options['allReviews']) || isset($options['allReviewScores']))
@@ -1046,6 +1046,15 @@ class Conference {
 	    return $x;
 	else
 	    return "This includes past advisors and students, people with the same affiliation, and any recent (~2 years) coauthors and collaborators.";
+    }
+
+    function tagRoundLocker($dolocker) {
+	if (!$dolocker || !isset($this->settings["rev_roundtag"]))
+	    return "";
+	else if (strpos(defval($this->settingTexts, "tag_rounds", ""), " " . $this->settingTexts["rev_roundtag"] . " ") === false)
+	    return ", Settings write, PaperTag write";
+	else
+	    return ", PaperTag write";
     }
 
     

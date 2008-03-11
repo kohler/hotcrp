@@ -125,12 +125,11 @@ if (isset($_REQUEST['update']) && $editRrow && $editRrow->reviewSubmitted)
 	$Conf->qe("lock tables PaperReview write", $while);
 	$needsSubmit = 1;
 	if ($editRrow->reviewType == REVIEW_SECONDARY) {
-	    $result = $Conf->qe("select reviewSubmitted from PaperReview where paperId=$prow->paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy=$editRrow->contactId", $while);
-	    $row = edb_row($result);
-	    if ($row && $row[0] > 0 && $Conf->setting("allowPaperOption") >= 3)
-		$needsSubmit = "null";
-	    else
+	    $result = $Conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where requestedBy=$editRrow->contactId and paperId=$prow->paperId", $while);
+	    if (($row = edb_row($result)) && $row[0])
 		$needsSubmit = 0;
+	    else if ($row && $row[1])
+		$needsSubmit = -1;
 	}
 	$result = $Conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=$needsSubmit where reviewId=$editRrow->reviewId", $while);
 	$Conf->qe("unlock tables", $while);
@@ -168,17 +167,10 @@ if (isset($_REQUEST['delete']) && $Me->privChair)
 	    $Conf->confirmMsg("Deleted review.");
 
 	    // perhaps a delegatee needs to redelegate
-	    if ($editRrow->reviewType == REVIEW_EXTERNAL && $editRrow->requestedBy) {
-		$result = $Conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$editRrow->paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy=$editRrow->requestedBy group by paperId", $while);
-		$row = edb_row($result);
-		if (!$row || $row[1] == 0)
-		    $needsSubmit = 1;
-		else if ($row[0] == 0)
-		    $needsSubmit = 0;
-		else
-		    $needsSubmit = null;
-		if ($needsSubmit !== null)
-		    $Conf->qe("update PaperReview set reviewNeedsSubmit=$needsSubmit where paperId=$editRrow->paperId and contactId=$editRrow->requestedBy and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null", $while);
+	    if ($editRrow->reviewType == REVIEW_EXTERNAL && $editRrow->requestedBy > 0) {
+		$result = $Conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where requestedBy=$editRrow->requestedBy and paperId=$editRrow->paperId", $while);
+		if (!($row = edb_row($result)) || $row[0] == 0)
+		    $Conf->qe("update PaperReview set reviewNeedsSubmit=" . ($row && $row[1] ? -1 : 1) . " where reviewType=" . REVIEW_SECONDARY . " and paperId=$editRrow->paperId and contactId=$editRrow->requestedBy and reviewSubmitted is null", $while);
 	    }
 	    
 	    unset($_REQUEST["reviewId"]);
@@ -258,10 +250,10 @@ function refuseReview() {
 	return;
 
     // now the requester must potentially complete their review
-    if ($rrow->requestedBy > 0) {
-	$result = $Conf->qe("select reviewId from PaperReview where requestedBy=$rrow->requestedBy and paperId=$rrow->paperId", $while);
-	if ($result && edb_nrows($result) == 0)
-	    $Conf->qe("update PaperReview set reviewNeedsSubmit=1 where reviewType=" . REVIEW_SECONDARY . " and paperId=$rrow->paperId and contactId=$rrow->requestedBy and reviewSubmitted is null", $while);
+    if ($rrow->reviewType == REVIEW_EXTERNAL && $rrow->requestedBy > 0) {
+	$result = $Conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where requestedBy=$rrow->requestedBy and paperId=$rrow->paperId", $while);
+	if (!($row = edb_row($result)) || $row[0] == 0)
+	    $Conf->qe("update PaperReview set reviewNeedsSubmit=" . ($row && $row[1] ? -1 : 1) . " where reviewType=" . REVIEW_SECONDARY . " and paperId=$rrow->paperId and contactId=$rrow->requestedBy and reviewSubmitted is null", $while);
     }
 
     // send confirmation email

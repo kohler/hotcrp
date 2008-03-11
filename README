@@ -1,5 +1,5 @@
-HotCRP: Conference Review Package 2
-===================================
+HotCRP: Conference Review Package 2.14
+======================================
 
 New version by Eddie Kohler, UCLA
 CRP originally by Dirk Grunwald, University of Colorado
@@ -20,8 +20,8 @@ HotCRP requires the following software.  Tested versions are in parentheses.
 
 The Mail and Mail_Mime PEAR packages are currently distributed as part of
 the HotCRP tarball.  You may need to install additional packages to enable
-PHP's MySQL, PEAR, and mail support.  On Fedora, the "php-mysql",
-"php-pear", and "php-gd" packages are required.  On Debian, you will need
+PHP's MySQL, GD, and PEAR support.  On Fedora, the "php-mysql", "php-pear",
+and "php-gd" packages are required.  On Debian, you will need
 "php5-common", "php5-gd", "php5-mysql", and "libapache[2]-mod-php5".  On
 Ubuntu, you may additionally need to install the "postfix" package for SMTP
 support.
@@ -32,7 +32,8 @@ Additional packages required for paper format checking:
 Load notes: HotCRP should be run on a system with at least 256MB of memory,
 more if paper format checking is used and submission load is expected to be
 high.  If you run HotCRP in a virtual machine, make sure you configure
-suitable swap space.
+suitable swap space!  If MySQL is killed due to memory shortages it may
+corrupt your database.
 
 
 Configuration
@@ -130,11 +131,12 @@ output.
 
 
 Updating the code
------------------ 
+-----------------
 HotCRP is designed so that you can update the code without updating the
-database schema.  Simply copy the new version over your old code (preserve
-your old Code/options.inc).  This gives you access to bug fixes, but not
-new features.  If you want a new feature, see "Code/updateschema.sql".
+database schema.  Simply copy the new version over your old code,
+preserving your old Code/options.inc.  This gives you access to bug fixes,
+but not new features reliant on schema changes.  If you want a new feature,
+see "Code/updateschema.sql".
 
 
 License

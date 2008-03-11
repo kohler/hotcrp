@@ -447,7 +447,7 @@ class PaperList extends BaseList {
 		$a2 = "</a>&nbsp;";
 		if ($row->reviewSubmitted)
 		    $a2 .= "<span class='rstat'>(Complete)</span>";
-		else if ($row->reviewType == REVIEW_SECONDARY && $row->reviewNeedsSubmit == 0)
+		else if ($row->reviewType == REVIEW_SECONDARY && $row->reviewNeedsSubmit <= 0)
 		    $a2 .= "<span class='rstat'>(Delegated)</span>";
 		else if ($row->reviewModified == 0)
 		    $a2 .= "<span class='rstat'>(Not&nbsp;started)</span>";
@@ -477,7 +477,7 @@ class PaperList extends BaseList {
 	    else {
 		if ($row->reviewSubmitted)
 		    return "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs . "\">Complete</a>";
-		else if ($row->reviewType == REVIEW_SECONDARY && $row->reviewNeedsSubmit == 0)
+		else if ($row->reviewType == REVIEW_SECONDARY && $row->reviewNeedsSubmit <= 0)
 		    return "Delegated";
 		else if ($row->reviewModified == 0)
 		    return "<strong class='overdue'>Not&nbsp;started</strong>";
