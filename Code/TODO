@@ -15,7 +15,6 @@ Minor features
 - Search: Assignments & conflicts: [External reviewer]
 - START-style enter-paper-all-at-once (no email verification)?
 - search for scores
-- layout checker from ager@
 - when email off: do not show authors to PC members, do not show reviewers
   to authors
 - send mail from contacts.php

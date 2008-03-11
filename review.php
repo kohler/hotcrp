@@ -518,8 +518,10 @@ function reviewView($prow, $rrow, $editMode) {
 	    echo "\n<tr class='rev_del'>\n  <td class='caption'></td>\n  <td class='entry' colspan='2'>";
 	    if ($nExternalRequests == 0)
 		echo "As a secondary reviewer, you can <a href=\"assign$ConfSiteSuffix?p=$rrow->paperId$linkExtra\">delegate this review to an external reviewer</a>, but if your external reviewer refuses to review the paper, you should complete the review yourself.";
+	    else if ($rrow->reviewNeedsSubmit == 0)
+		echo "A delegated external reviewer has submitted their review, but you can still complete your own if you'd like.";
 	    else
-		echo "This secondary review has been delegated, but you can still complete it if you'd like.";
+		echo "Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete the review yourself.";
 	    echo "</td>\n</tr>\n";
 	}
 	
