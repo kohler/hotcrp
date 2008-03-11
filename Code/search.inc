@@ -31,24 +31,7 @@ $searchTags = array('ti:' => 'ti', 'title:' => 'ti',
 
 class PaperSearch {
 
-    const ANY_REVIEWER = 1;
-    const ANY_SUB_REVIEWER = 2;		// must be 2*ANY_REVIEWER
-    const ANY_NUM_REVIEW = 4;
-    const ANY_SUB_NUM_REVIEW = 8;	// must be 2*ANY_NUM_REVIEW
-    const ANY_PRIMARY = 16;		// 16 * ANY_REVIEWER series
-    const ANY_SUB_PRIMARY = 32;
-    const ANY_NUM_PRIMARY = 64;
-    const ANY_SUB_NUM_PRIMARY = 128;
-    const ANY_SECONDARY = 256;		// 256 * ANY_REVIEWER series
-    const ANY_SUB_SECONDARY = 512;
-    const ANY_NUM_SECONDARY = 1024;
-    const ANY_SUB_NUM_SECONDARY = 2048;
-    const ANY_TOPICS = 16384;
-    const ANY_LEAD = 32768;
-    const ANY_SHEPHERD = 65536;
-    const ANY_CONFLICT = 131072;
-    const ANY_OPTIONS = 262144;
-    const ANY_CONFLICTINFO = 524288;
+    const ANY_CONFLICT = 1;
 
     var $contactId;
     var $privChair;
@@ -63,25 +46,23 @@ class PaperSearch {
     var $urlbase;
     var $warnings;
     
-    var $tagmatch;
-    
     var $q;
     var $qa;
     var $qx;
+
+    var $filters;
+    var $regex;
+    var $match;
+    var $needMatchcount;
+    var $contactmatch;
+    var $contactmatchPC;
     
     function PaperSearch($me, $opt) {
 	global $Conf, $ConfSiteSuffix;
 
+	// contact facts
 	$this->privChair = $me->privChair;
 	$this->amPC = $me->isPC;
-	$this->allowAuthor = ($this->amPC && ($Conf->blindSubmission() <= 1 || $me->privChair));
-	$this->orderTag = false;
-	$this->reviewerName = false;
-	$this->any = 0;
-	$this->contactId = $me->contactId;
-	$this->warnings = null;
-	if ($this->privChair && cvtint($opt["c"]) > 0)
-	    $this->contactId = cvtint($opt["c"]);
 
 	// paper selection
 	$ptype = defval($opt, "t", 0);
@@ -112,7 +93,23 @@ class PaperSearch {
 	else
 	    $this->limitName = "x";
 
-	// query type
+	// track other information
+	$this->allowAuthor = false;
+	if ($me->privChair || $me->isAuthor
+	    || ($this->amPC && $Conf->blindSubmission() <= 1))
+	    $this->allowAuthor = true;
+	$this->orderTag = false;
+	$this->reviewerName = false;
+	$this->any = 0;
+	$this->contactId = $me->contactId;
+	$this->warnings = null;
+	if ($this->privChair && cvtint($opt["c"]) > 0)
+	    $this->contactId = cvtint($opt["c"]);
+
+	// default query fields
+	// NB: If a complex query field, e.g., "re", "tag", or "option", is
+	// default, then it must be the only default or query construction
+	// will break.
 	$this->fields = array();
 	$qtype = defval($opt, "qt", "n");
 	if ($qtype == "n" || $qtype == "ti")
@@ -133,8 +130,15 @@ class PaperSearch {
 	$this->qa = trim(defval($opt, "qa", ""));
 	$this->qx = trim(defval($opt, "qx", ""));
 
-	// tags
-	$this->tagmatch = array();
+	$this->filters = array();
+	$this->regex = array();
+	$this->match = array();
+	foreach (array("topic", "conflict", "option", "tag", "re", "cre",
+		       "pri", "cpri", "sec", "csec") as $m)
+	    $this->match[$m] = array();
+	$this->needMatchcount = array();
+	$this->contactmatch = array();
+	$this->contactmatchPC = true;
 	
 	// URL base
 	if (isset($opt["urlbase"]))
@@ -152,53 +156,102 @@ class PaperSearch {
 	$this->warnings[] = $text;
     }
 
-    function _searchReviewSuffixFactor($submitted, $type, &$suffix, &$factor) {
-	$factor = ($submitted ? 2 : 1);
-	$suffix = ($submitted ? "Sub" : "");
-	if ($type == REVIEW_PRIMARY) {
-	    $factor *= 16;
-	    $suffix .= "Primary";
-	} else if ($type == REVIEW_SECONDARY) {
-	    $factor *= 256;
-	    $suffix .= "Secondary";
+    function _searchWordMatch($word, $mclass, $field,
+			      $type, $negated, $confpart) {
+	if ($word == "any" && ($type == "all" || $type == "any")
+	    && !$negated && !$confpart)
+	    $mi = "uany";
+	else if ($word == "none" || $word == "any")
+	    $mi = "univ";
+	else
+	    $mi = ($negated ? "not" : "") . $type;
+
+	if (!isset($this->match[$mclass][$mi]))
+	    $this->match[$mclass][$mi] = array();
+	
+	if ($mi == "uany") {
+	    $this->match[$mclass][$mi][0] = "true";
+	    return "";
+	} if ($mi == "univ") {
+	    $this->match[$mclass][$mi][0] = "true";
+	    $this->needMatchcount["$mi$mclass"] = true;
+	    if ($negated ? $word == "any" : $word == "none")
+		return " or (${mi}${mclass}count is null$confpart)";
+	    else
+		return " or (${mi}${mclass}count is not null$confpart)";
+	} else {
+	    if (is_array($word) && count($word) == 1)
+		$word = $word[0];
+	    else if (is_array($word) && count($word) == 0)
+		$word = 0;
+	    if (is_array($word))
+		$out = "$field in (" . join(",", $word) . ")";
+	    else if (ctype_digit($word))
+		$out = "$field=$word";
+	    else if ($field == "contactId")
+		$out = "$field$word";
+	    else
+		$out = "$field='" . sqlq($word) . "'";
+	    $this->match[$mclass][$mi][] = $out;
+	    if (($mi == "all" || $mi == "any") && $confpart == "")
+		return "";
+	    $this->needMatchcount["$mi$mclass"] = true;
+	    $qp = "(${mi}${mclass}count>=" . count($this->match[$mclass][$mi]) . "$confpart)";
+	    if ($negated)
+		return " or not ifnull($qp, 0)";
+	    else
+		return " or $qp";
 	}
     }
     
-    function _searchReviewer($word, $type, $submitted, $what = null) {
+    function _searchReviewer($lword, $mclass, $type) {
 	global $Conf;
-	$this->_searchReviewSuffixFactor($submitted, $what, $sub, $anyfac);
-	if (preg_match('/^([<>]?=?\s*)?(\d+)$/s', $word, $m)) {
+	if ($lword == "any")
+	    $lword = ">0";
+	else if ($lword == "none")
+	    $lword = "=0";
+	if (preg_match('/^([<>]?=?\s*)?(\d+)$/s', $lword, $m)) {
 	    $m[1] = ($m[1] ? $m[1] : "=");
 	    if ($m[2] == 0 && $m[1] == "<")
 		return " or false";
 	    if ($m[2] == 0 && $m[1] == ">=")
 		return " or true";
-	    $this->any |= self::ANY_NUM_REVIEW * $anyfac;
-	    $and = "";
+	    $confpart = "";
 	    if (!$this->privChair && !$Conf->timeAuthorViewReviews()) {
 		$this->any |= self::ANY_CONFLICT;
-		$and = " and conflictType is null";
+		$confpart = " and conflictType is null";
 	    }
-	    $q = "";
+	    if ($m[2] == 0 && $m[1] == ">" && !$confpart)
+		$mi = "uany";
+	    else
+		$mi = "univ";
+	    if (!isset($this->match[$mclass][$mi]))
+		$this->match[$mclass][$mi] = array();
+	    $this->match[$mclass][$mi][0] = true;
+	    if ($mi == "uany")
+		return "";
+	    $qp = "";
+	    $this->needMatchcount["$mi$mclass"] = true;
 	    if ($m[1][0] == "<" || ($m[2] == 0 && $m[1] == "="))
-		$q .= " or (numReviews$sub is null$and)";
-	    if ($m[2] != 0 || $m[1][1] == ">")
-		$q .= " or (numReviews$sub" . $m[1] . $m[2] . "$and)";
-	    return $q;
+		$qp .= " or (${mi}${mclass}count is null$confpart)";
+	    if ($m[2] != 0 || $m[1][0] == ">")
+		$qp .= " or (${mi}${mclass}count$m[1]$m[2]$confpart)";
+	    return $qp;
 	} else if (!$this->amPC)
-	    return "";
+	    return " or false";
 	else {
-	    $this->any |= self::ANY_REVIEWER * $anyfac;
-	    $and = "";
+	    $confpart = "";
 	    if (!$this->privChair) {
 		$this->any |= self::ANY_CONFLICT;
-		$and = " and conflictType is null";
+		$confpart = " and conflictType is null";
 	    }
-	    if ($type != "none") {
-		$this->reviewerName = ($this->reviewerName === false ? $word : null);
-		return " or (reviewerInfo$sub like '%$word%'$and)";
-	    } else
-		return " or (reviewerInfo$sub is not null and reviewerInfo$sub like '%$word%'$and)";
+	    if ($type != "none")
+		$this->reviewerName = ($this->reviewerName === false ? $lword : null);
+	    $this->contactmatch[] = $lword;
+	    $this->contactmatchPC = false;
+	    $x = "\1" . (count($this->contactmatch) - 1) . "\1";
+	    return $this->_searchWordMatch($x, $mclass, "contactId",
+					   $type, null, $confpart);
 	}
     }
 
@@ -212,317 +265,352 @@ class PaperSearch {
 		return " or false";
 	    if ($m[2] == 0 && $m[1] == ">=")
 		return " or true";
-	    if ($field == "aucmt" || !$this->privChair)
-		$value = "numAuthorComments";
-	    else if ($this->privChair)
-		$value = "numComments";
-	    else {
+	    $column = ($field == "aucmt" ? "numAuthorComments" : "numComments");
+	    if ($this->privChair)
+		$value = $column;
+	    else if ($this->amPC) {
 		$this->any |= self::ANY_CONFLICT;
-		if ($Conf->timeAuthorViewReviews())
+		if ($Conf->timeAuthorViewReviews() && $field == "aucmt")
+		    $value = "numAuthorComments";
+		else if ($Conf->timeAuthorViewReviews())
 		    $value = "if(conflictType,numAuthorComments,numComments)";
 		else
-		    $value = "if(conflictType,0,numComments)";
-	    }
+		    $value = "if(conflictType,0,$column)";
+	    } else if ($Conf->timeAuthorViewReviews())
+		$value = "numAuthorComments";
+	    else
+		$value = "0";
 	    return " or ($value" . $m[1] . $m[2] . ")";
 	} else
-	    return "";
+	    return " or false";
     }
 
-    function _searchQueryType($str, $type = "any") {
+    function _searchQueryWord($word, $type, &$qpapers) {
 	global $searchTags, $Conf;
-	$q = "";
+
+	// check for paper number
+	if (ctype_digit($word)) {
+	    $qpapers[] = "Paper.paperId=$word";
+	    return "";
+	} else if (preg_match('/^(\d+)-(\d+)$/i', $word, $m)) {
+	    $qpapers[] = "Paper.paperId between $m[1] and $m[2]";
+	    return "";
+	}
+
+	$auextra = "";
+	if (!$this->privChair && $Conf->blindSubmission() >= 1)
+	    $auextra = "Paper.blind=0 and ";
+	
+	$special = null;
+	if (($colon = strpos($word, ':')) !== false) {
+	    $x = substr($word, 0, $colon + 1);
+	    if (isset($searchTags[$x])) {
+		$special = $searchTags[$x];
+		$word = substr($word, $colon + 1);
+	    }
+	}
+
+	if ($word[0] == '"')
+	    $word = str_replace('"', '', $word);
+
+	$lword = sqlq_for_like($word);
+	$mword = $qp = "";
+	if ($special ? $special == "ti" : isset($this->fields['ti'])) {
+	    $qp .= " or (title like '%$lword%')";
+	    $mword = $word;
+	}
+	if ($special ? $special == "ab" : isset($this->fields['ab'])) {
+	    $qp .= " or (abstract like '%$lword%')";
+	    $mword = $word;
+	}
+	if (($special ? $special == "au" : isset($this->fields['au']))
+	    && $this->allowAuthor) {
+	    $qp .= " or (${auextra}authorInformation like '%$lword%')";
+	    $mword = $word;
+	} else if ($special == "au")
+	    $qp .= " or false";
+	if (($special ? $special == "co" : isset($this->fields['co']))
+	    && $this->privChair) {
+	    $qp .= " or (${auextra}Paper.collaborators like '%$lword%')";
+	    $mword = $word;
+	} else if ($special == "co")
+	    $qp .= " or false";
+	if ($special ? $special == "re" : isset($this->fields['re']))
+	    $qp .= $this->_searchReviewer($lword, "re", $type);
+	if ($special ? $special == "sre" : isset($this->fields['sre']))
+	    $qp .= $this->_searchReviewer($lword, "cre", $type);
+	if ($special ? $special == "pri" : isset($this->fields['pri']))
+	    $qp .= $this->_searchReviewer($lword, "pri", $type);
+	if ($special ? $special == "spri" : isset($this->fields['spri']))
+	    $qp .= $this->_searchReviewer($lword, "cpri", $type);
+	if ($special ? $special == "sec" : isset($this->fields['sec']))
+	    $qp .= $this->_searchReviewer($lword, "sec", $type);
+	if ($special ? $special == "ssec" : isset($this->fields['ssec']))
+	    $qp .= $this->_searchReviewer($lword, "csec", $type);
+	if ($special ? $special == "cmt" : isset($this->fields['cmt']))
+	    $qp .= $this->_searchComment($lword, $type, "cmt");
+	if ($special ? $special == "aucmt" : isset($this->fields['aucmt']))
+	    $qp .= $this->_searchComment($lword, $type, "aucmt");
+	if ((($special ? $special == "tag" : isset($this->fields['tag']))
+	     || ($special ? $special == "order" : isset($this->fields['order']))
+	     || ($special ? $special == "notag" : isset($this->fields['notag'])))
+	    && $this->amPC) {
+	    require_once("tags.inc");
+	    $confpart = "";
+	    if (!$this->privChair && $Conf->setting("tag_seeall") <= 0) {
+		$confpart = " and conflictType is null";
+		$this->any |= self::ANY_CONFLICT;
+	    }
+	    if (($e = checkTagError($word, true)))
+		$this->warn(htmlspecialchars($e));
+	    if ($word && $word[0] == "~")
+		$word = $this->contactId . $word;
+	    if (($special ? $special == "order" : isset($this->fields['order']))
+		&& $type != "none")
+		$this->orderTag = ($this->orderTag === false ? $word : null);
+	    $negated = ($special ? $special == "notag" : isset($this->fields['notag']));
+	    $qp .= $this->_searchWordMatch($word, "tag", "tag",
+					   $type, $negated, $confpart);
+	} else if ($special == "tag" || $special == "order" || $special == "notag")
+	    $qp .= " or false";
+	if ($special ? $special == "status" : isset($this->fields['status'])) {
+	    if (strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
+		$qp .= " or (timeWithdrawn>0)";
+	    else if (strcasecmp($word, "submitted") == 0 || strcasecmp($word, "submit") == 0 || strcasecmp($word, "sub") == 0)
+		$qp .= " or (timeSubmitted>0)";
+	    else if (strcasecmp($word, "unsubmitted") == 0 || strcasecmp($word, "unsubmit") == 0 || strcasecmp($word, "unsub") == 0)
+		$qp .= " or (timeSubmitted<=0 and timeWithdrawn<=0)";
+	    else
+		$this->warn("Valid search statuses are 'withdrawn', 'submitted', and 'unsubmitted'.");
+	}
+	if (($special ? $special == "decision" : isset($this->fields['decision']))
+	    && ($this->amPC || $Conf->timeAuthorViewDecision())) {
+	    $confpart = "";
+	    if (!$this->amPC && !$Conf->timeAuthorViewDecision()) {
+		$confpart = " and conflictType is null";
+		$this->any |= self::ANY_CONFLICT;
+	    }
+	    if (strcasecmp($word, "yes") == 0)
+		$qp .= " or (outcome>0$confpart)";
+	    else if (strcasecmp($word, "no") == 0)
+		$qp .= " or (outcome<0$confpart)";
+	    else if ($word == "?")
+		$qp .= " or (outcome=0$confpart)";
+	    else {
+		$rf = reviewForm();
+		$any = false;
+		foreach ($rf->options['outcome'] as $num => $what)
+		    if (strcmp($word, $num) == 0 || strcasecmp($word, $what) == 0) {
+			$qp .= " or (outcome=$num$confpart)";
+			$any = true;
+			break;
+		    }
+		if (!$any)
+		    foreach ($rf->options['outcome'] as $num => $what)
+			if (strstr(strtolower($what), strtolower($word)) !== false) {
+			    $qp .= " or (outcome=$num$confpart)";
+			    $any = true;
+			}
+		if (!$any)
+		    $qp .= " or false";
+	    }
+	} else if ($special == "decision")
+	    $qp .= " or false";
+	if (($special ? $special == "topic" : isset($this->fields['topic']))) {
+	    if ($word == "none" || $word == "any")
+		$qp .= $this->_searchWordMatch($word, "topic", "topicId",
+					       $type, null, false);
+	    else {
+		$rf = reviewForm();
+		$x = strtolower(simplifyWhitespace($word));
+		$tids = array();
+		foreach ($rf->topicName as $tid => $n)
+		    if (strstr(strtolower($n), $x) !== false)
+			$tids[] = $tid;
+		if (count($tids) == 0 && $word != "none" && $word != "any")
+		    $this->warn("&ldquo;" . htmlspecialchars($x) . "&rdquo; does not match any defined paper topic.");
+		else
+		    $qp .= $this->_searchWordMatch($tids, "topic", "topicId",
+						   $type, null, false);
+	    }
+	}
+	if (($special ? $special == "option" : isset($this->fields['option']))) {
+	    if ($word == "none" || $word == "any")
+		$qp .= $this->_searchWordMatch($word, "option", "optionId",
+					       $type, null, false);
+	    else {
+		$opt = paperOptions();
+		$x = strtolower(simplifyWhitespace($word));
+		$oids = array();
+		foreach ($opt as $oid => $o)
+		    if (strstr(strtolower($o->optionName), $x) !== false)
+			$oids[] = $oid;
+		if (count($oids) == 0)
+		    $this->warn("&ldquo;" . htmlspecialchars($x) . "&rdquo; does not match any defined submission option.");
+		else
+		    $qp .= $this->_searchWordMatch($oids, "option", "optionId",
+						   $type, null, false);
+	    }
+	}
+	if (($special ? $special == "lead" : isset($this->fields['lead']))
+	    && $this->amPC) {
+	    if ($word == "none")
+		$qp .= " or (leadContactId=0)";
+	    else if ($word == "any")
+		$qp .= " or (leadContactId!=0)";
+	    else {
+		$this->contactmatch[] = $lword;
+		$qp .= " or (leadContactId\1" . (count($this->contactmatch) - 1) . "\1)";
+	    }
+	} else if ($special == "lead")
+	    $qp .= " or false";
+	if (($special ? $special == "shepherd" : isset($this->fields['shepherd']))
+	    && ($this->amPC || $Conf->timeAuthorViewDecision())) {
+	    if ($word == "none")
+		$qp .= " or (shepherdContactId=0)";
+	    else if ($word == "any")
+		$qp .= " or (shepherdContactId!=0)";
+	    else {
+		$this->contactmatch[] = $lword;
+		$qp .= " or (shepherdContactId\1" . (count($this->contactmatch) - 1) . "\1)";
+	    }
+	} else if ($special == "shepherd")
+	    $qp .= " or false";
+	if (($special ? $special == "conflict" : isset($this->fields['conflict']))
+	    && $this->privChair) {
+	    if ($word == "none" || $word == "any")
+		$x = $word;
+	    else {
+		$this->contactmatch[] = $lword;
+		$this->contactmatchPC = false;
+		$x = "\1" . (count($this->contactmatch) - 1) . "\1";
+	    }
+	    $qp .= $this->_searchWordMatch($x, "conflict", "contactId",
+					   $type, null, false);
+	} else if ($special == "conflict")
+	    $qp .= " or false";
+
+	if ($mword && $type != "none")
+	    $this->regex[] = preg_quote($mword);
+	return ($qp ? "(" . substr($qp, 4) . ")" : "");
+    }
+    
+    function _searchQueryType($str, $type) {
+	global $searchTags, $Conf;
 
 	// quick emptiness check
 	if ($str == "")
-	    return array("", "");
-
-	// quick paper IDs check
-	if (($type == "any" && preg_match('/^\s*\d[\d\s]*$/s', $str))
-	    || ($type == "all" && preg_match('/^\s*\d+\s*$/s', $str))) {
-	    foreach (preg_split('/\s+/', $str) as $word)
-		if ($word != "")
-		    $q .= "Paper.paperId=$word or ";
-	    return array(substr($q, 0, strlen($q) - 4), "");
-	}
-
-	// construct query portion
-	$re = "";
+	    return;
+	
 	$auextra = "";
 	if (!$this->privChair && $Conf->blindSubmission() >= 1)
-	    $auextra = "blind=0 and ";
-	$qjoin = ($type == "all" ? " and " : " or ");
-	$qpapers = "";
-	while (($str = ltrim($str)) != "") {
+	    $auextra = "Paper.blind=0 and ";
+	$qpapers = array();
+	$qnorm = array();
+	$n = 0;
+	
+	while ($str != "") {
 	    preg_match('/^("[^"]+"?|[a-z]+:"[^"]+"?|[^"\s]+)/s', $str, $m);
 	    $word = $m[0];
-	    $str = substr($str, strlen($word));
+	    $str = ltrim(substr($str, strlen($word)));
+	    if ($n == 0 && $str == "" && $type == "any")
+		$type = "all";
+	    ++$n;
 
-	    // check for paper number
-	    if (ctype_digit($word)) {
-		$qpapers .= " or Paper.paperId=$word";
-		continue;
-	    } else if (preg_match('/^(\d+)-(\d+)$/i', $word, $m)) {
-		for ($i = $m[1]; $i <= $m[2]; $i++)
-		    $qpapers .= " or Paper.paperId=$i";
-		continue;
-	    }
-	    
-	    $special = null;
-	    if (($colon = strpos($word, ':')) !== false) {
-		$x = substr($word, 0, $colon + 1);
-		if (isset($searchTags[$x])) {
-		    $special = $searchTags[$x];
-		    $word = substr($word, $colon + 1);
-		}
-	    }
-
-	    if ($word[0] == '"')
-		$word = str_replace('"', '', $word);
-
-	    $lword = sqlq_for_like($word);
-	    $mword = $qp = "";
-	    if ($special ? $special == "ti" : isset($this->fields['ti'])) {
-		$qp .= " or (title like '%$lword%')";
-		$mword = $word;
-	    }
-	    if ($special ? $special == "ab" : isset($this->fields['ab'])) {
-		$qp .= " or (abstract like '%$lword%')";
-		$mword = $word;
-	    }
-	    if (($special ? $special == "au" : isset($this->fields['au'])) && $this->allowAuthor) {
-		$qp .= " or (${auextra}authorInformation like '%$lword%')";
-		$mword = $word;
-	    }
-	    if (($special ? $special == "co" : isset($this->fields['co'])) && $this->privChair) {
-		$qp .= " or (${auextra}Paper.collaborators like '%$lword%')";
-		$mword = $word;
-	    }
-	    if ($special ? $special == "re" : isset($this->fields['re']))
-		$qp .= $this->_searchReviewer($lword, $type, false);
-	    if ($special ? $special == "sre" : isset($this->fields['sre']))
-		$qp .= $this->_searchReviewer($lword, $type, true);
-	    if ($special ? $special == "pri" : isset($this->fields['pri']))
-		$qp .= $this->_searchReviewer($lword, $type, false, REVIEW_PRIMARY);
-	    if ($special ? $special == "spri" : isset($this->fields['spri']))
-		$qp .= $this->_searchReviewer($lword, $type, true, REVIEW_PRIMARY);
-	    if ($special ? $special == "sec" : isset($this->fields['sec']))
-		$qp .= $this->_searchReviewer($lword, $type, false, REVIEW_SECONDARY);
-	    if ($special ? $special == "ssec" : isset($this->fields['ssec']))
-		$qp .= $this->_searchReviewer($lword, $type, true, REVIEW_SECONDARY);
-	    if ($special ? $special == "cmt" : isset($this->fields['cmt']))
-		$qp .= $this->_searchComment($lword, $type, "cmt");
-	    if ($special ? $special == "aucmt" : isset($this->fields['aucmt']))
-		$qp .= $this->_searchComment($lword, $type, "aucmt");
-	    if ((($special ? $special == "tag" : isset($this->fields['tag']))
-		 || ($special ? $special == "order" : isset($this->fields['order']))
-		 || ($special ? $special == "notag" : isset($this->fields['notag'])))
-		&& $this->amPC) {
-		require_once("tags.inc");
-		$confpart = "";
-		if (!$this->privChair && $Conf->setting("tag_seeall") <= 0) {
-		    $confpart = " and conflictType is null";
-		    $this->any |= self::ANY_CONFLICT;
-		}
-		if (($e = checkTagError($word, true)))
-		    $this->warn(htmlspecialchars($e));
-		if ($word && $word[0] == "~")
-		    $word = $this->contactId . $word;
-		if (($special ? $special == "order" : isset($this->fields['order']))
-		    && $type != "none")
-		    $this->orderTag = ($this->orderTag === false ? $word : null);
-		$tt = "";
-		if ($special ? $special == "notag" : isset($this->fields['notag']))
-		    $tt = "not";
-		$tp = ($word == "none" || $word == "any" ? "univ" : "$tt$type");
-		if (!isset($this->tagmatch[$tp]))
-		    $this->tagmatch[$tp] = array();
-		if ($tp == "univ") {
-		    $this->tagmatch[$tp][0] = "true";
-		    $tx = ($word == "none" ? "" : "not ");
-		    $qp .= " or $tx$tt(${tp}tagcount is null$confpart)";
-		} else {
-		    $this->tagmatch[$tp][] = "tag='" . sqlq($word) . "'";
-		    $n = count($this->tagmatch[$tp]);
-		    if ($tt != "not")
-			$qp .= " or (${tp}tagcount>=$n$confpart)";
-		    else if ($n == 1)
-			$qp .= " or (${tp}tagcount is null$confpart)";
-		    else
-			$qp .= " or (${tp}tagcount<$n$confpart)";
-		}
-	    }
-	    if ($special ? $special == "status" : isset($this->fields['status'])) {
-		if (strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
-		    $qp .= " or (timeWithdrawn>0)";
-		else if (strcasecmp($word, "submitted") == 0 || strcasecmp($word, "submit") == 0 || strcasecmp($word, "sub") == 0)
-		    $qp .= " or (timeSubmitted>0)";
-		else if (strcasecmp($word, "unsubmitted") == 0 || strcasecmp($word, "unsubmit") == 0 || strcasecmp($word, "unsub") == 0)
-		    $qp .= " or (timeSubmitted<=0 and timeWithdrawn<=0)";
-		else
-		    $this->warn("Valid search statuses are 'withdrawn', 'submitted', and 'unsubmitted'.");
-	    }
-	    if (($special ? $special == "decision" : isset($this->fields['decision'])) && $this->amPC) {
-		$confpart = "";
-		//if (!$this->privChair && !$Conf->timeAuthorViewDecision())
-		//    $confpart = " and conflictType=0";
-		if (strcasecmp($word, "yes") == 0)
-		    $qp .= " or (outcome>0$confpart)";
-		else if (strcasecmp($word, "no") == 0)
-		    $qp .= " or (outcome<0$confpart)";
-		else if ($word == "?")
-		    $qp .= " or (outcome=0$confpart)";
-		else {
-		    $rf = reviewForm();
-		    $any = false;
-		    foreach ($rf->options['outcome'] as $num => $what)
-			if (strcmp($word, $num) == 0 || strcasecmp($word, $what) == 0) {
-			    $qp .= " or (outcome=$num$confpart)";
-			    $any = true;
-			    break;
-			}
-		    if (!$any)
-			foreach ($rf->options['outcome'] as $num => $what)
-			    if (strstr(strtolower($what), strtolower($word)) !== false) {
-				$qp .= " or (outcome=$num$confpart)";
-				$any = true;
-			    }
-		    if (!$any)
-			$qp .= " or false";
-		}
-	    }
-	    if (($special ? $special == "topic" : isset($this->fields['topic']))) {
-		$rf = reviewForm();
-		$x = strtolower($word);
-		$got = false;
-		foreach ($rf->topicName as $tid => $n)
-		    if (strstr(strtolower($n), $x) !== false) {
-			$qp .= " or (topicIds like '%#$tid#%')";
-			$got = true;
-		    }
-		if ($got)
-		    $this->any |= self::ANY_TOPICS;
-		else
-		    $this->warn("'" . htmlspecialchars($x) . "' does not match any defined paper topic.");
-	    }
-	    if (($special ? $special == "option" : isset($this->fields['option']))) {
-		$opt = paperOptions();
-		$x = strtolower($word);
-		$got = false;
-		foreach ($opt as $oid => $o)
-		    if (strstr(strtolower($o->optionName), $x) !== false) {
-			$qp .= " or (optionIds like '%#${oid}:%')";
-			$got = true;
-		    }
-		if ($type == "none")
-		    $qp = " or (optionIds is not null and (" . substr($qp, 4) . "))";
-		if ($got)
-		    $this->any |= self::ANY_OPTIONS;
-		else
-		    $this->warn("'" . htmlspecialchars($x) . "' does not match any defined submission option.");
-	    }
-	    if (($special ? $special == "lead" : isset($this->fields['lead'])) && $this->amPC) {
-		if ($word == "none")
-		    $qp .= " or (leadContactId=0)";
-		else if ($word == "any")
-		    $qp .= " or (leadContactId!=0)";
-		else {
-		    $this->any |= self::ANY_LEAD;
-		    if ($type != "none")
-			$qp .= " or (leadInfo like '%$lword%')";
-		    else
-			$qp .= " or (leadInfo is not null and leadInfo like '%$lword%')";
-		}
-	    }
-	    if ($special ? $special == "shepherd" : isset($this->fields['shepherd'])) {
-		if ($word == "none")
-		    $qp .= " or (shepherdContactId=0)";
-		else if ($word == "any")
-		    $qp .= " or (shepherdContactId!=0)";
-		else {
-		    if ($type != "none")
-			$qp .= " or (shepherdInfo like '%$lword%')";
-		    else
-			$qp .= " or (shepherdInfo is not null and shepherdInfo like '%$lword%')";
-		}
-	    }
-	    if ($special ? $special == "conflict" : isset($this->fields['conflict'])) {
-		$this->any |= self::ANY_CONFLICTINFO;
-		if ($type != "none")
-		    $qp .= " or (conflictInfo like '%$lword%')";
-		else
-		    $qp .= " or (conflictInfo is not null and conflictInfo like '%$lword%')";
-	    }
-	    
-	    if ($qp)
-		$q .= $qjoin . "(" . substr($qp, 4) . ")";
-	    if ($mword)
-		$re .= ($re == "" ? "" : "|") . preg_quote($mword);
+	    if (($qp = $this->_searchQueryWord($word, $type, $qpapers)))
+		$qnorm[] = $qp;
 	}
 
-	// construct table
-	if (!$q && !$qpapers)
-	    return array("true", "");
+	if (count($qpapers))
+	    $qnorm[] = join(" or ", $qpapers);
+	
+	if ($type == "any" && count($qnorm) > 1)
+	    $qnorm = array("(" . join(" or ", $qnorm) . ")");
 
-	if ($qpapers)
-	    $q = "(" . substr($qpapers, 4) . ")" . $q;
-	else
-	    $q = substr($q, strlen($qjoin));
-	return array(($type == "none" ? "not ($q)" : $q), $re);
-    }
-    
-    function _combineQuery($res, $qr) {
-	if (!is_array($qr))
-	    $qr = array($qr, "");
-	if ($qr[0] == "" || $qr[0] == "true")
-	    return $res;
-	else if ($res[0] == "" || $res[0] == "true")
-	    return $qr;
-	else {
-	    $rr = ($qr[1] ? "$res[1]|$qr[1]" : $res[1]);
-	    return array("($res[0]) and ($qr[0])", $rr);
+	if ($type == "any" || $type == "all") {
+	    foreach ($qnorm as $qp)
+		$this->filters[] = $qp;
+	} else {
+	    foreach ($qnorm as $qp)
+		$this->filters[] = "not ifnull($qp, 0)";
 	}
     }
     
-    function _searchReviewerLimiter($submitted, $type) {
-	$this->_searchReviewSuffixFactor($submitted, $type, $suffix, $fac);
-	$q = " left join (select paperId";
-	if ($this->any & (self::ANY_REVIEWER * $fac))
-	    $q .= ", group_concat(firstName, ' ', lastName, ' ', email) as reviewerInfo$suffix";
-	if ($this->any & (self::ANY_NUM_REVIEW * $fac))
-	    $q .= ", count(reviewId) as numReviews$suffix";
-	$q .= " from PaperReview join ContactInfo using (contactId)
-		where ";
-	if ($type)
-	    $q .= "reviewType=$type and ";
-	if ($submitted)
-	    $q .= "reviewSubmitted>0";
+    function _tableMatch($table, $column, $fieldabbr, $andclause, $type, &$tarr) {
+	global $Conf;
+	$confpart = isset($this->needMatchcount["$type$fieldabbr"]);
+	$modtable = "${table}_$type$fieldabbr";
+	$xandclause = str_replace("*", "$modtable.", $andclause);
+	$andclause = str_replace("*", "", $andclause);
+	if ($type == "uany"
+	    || ($type == "all" && count($tarr) == 1 && !$confpart))
+	    return " join $table as $modtable on ($modtable.paperId=Paper.paperId and $modtable.$tarr[0]$xandclause)";
+	else if ($type == "all" && !$confpart)
+	    return " join (select paperId, count($column) as ${type}${fieldabbr}count from $table where (" . join(" or ", $tarr) . ")$andclause group by paperId) as $modtable on ($modtable.paperId=Paper.paperId and $modtable.${type}${fieldabbr}count=" . count($tarr) . ")";
+	else if ($type == "any" && !$confpart)
+	    return " join $table as $modtable on ($modtable.paperId=Paper.paperId and ($modtable." . join(" or $modtable.", $tarr) . ")$xandclause)";
 	else
-	    $q .= "(reviewNeedsSubmit=1 or reviewSubmitted>0)";
-	$q .= "\n		group by paperId) as ReviewerInfo$suffix
-		on (ReviewerInfo$suffix.paperId=Paper.paperId)";
-	return $q;
+	    return " left join (select paperId, count($column) as ${type}${fieldabbr}count from $table where (" . join(" or ", $tarr) . ")$andclause group by paperId) as $modtable on ($modtable.paperId=Paper.paperId)";
     }
     
     function _searchQuery() {
+	global $Conf;
+	
 	if ($this->limitName == "x")
 	    return array("create temporary table Matches select Paper.paperId from Paper where false", "");
-	
-	$res = $this->_searchQueryType($this->q, "any");
-	$res = $this->_combineQuery($res, $this->_searchQueryType($this->qa, "all"));
-	$res = $this->_combineQuery($res, $this->_searchQueryType($this->qx, "none"));
+
+	// query parts
+	$this->_searchQueryType($this->q, "any");
+	$this->_searchQueryType($this->qa, "all");
+	$this->_searchQueryType($this->qx, "none");
+
+	// status limitation parts
 	if ($this->limitName == "s" || $this->limitName == "r"
 	    || $this->limitName == "req" || $this->limitName == "revs"
 	    || $this->limitName == "acc" || $this->limitName == "und")
-	    $res = $this->_combineQuery($res, "Paper.timeSubmitted>0");
+	    $this->filters[] = "Paper.timeSubmitted>0";
 	else if ($this->limitName == "act")
-	    $res = $this->_combineQuery($res, "Paper.timeWithdrawn<=0");
+	    $this->filters[] = "Paper.timeWithdrawn<=0";
 	else if ($this->limitName == "unsub")
-	    $res = $this->_combineQuery($res, "(Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0)");
-	if ($this->limitName == "acc")
-	    $res = $this->_combineQuery($res, "Paper.outcome>0");
-	else if ($this->limitName == "und")
-	    $res = $this->_combineQuery($res, "Paper.outcome=0");
+	    $this->filters[] = "(Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0)";
 
+	// decision limitation parts
+	if ($this->limitName == "acc")
+	    $this->filters[] = "Paper.outcome>0";
+	else if ($this->limitName == "und")
+	    $this->filters[] = "Paper.outcome=0";
+
+	// search contacts
+	if (count($this->contactmatch)) {
+	    $qa = "select ContactInfo.contactId";
+	    $qb = " from ContactInfo"
+		. ($this->contactmatchPC ? " join PCMember using (contactId)" : "")
+		. " where ";
+	    for ($i = 0; $i < count($this->contactmatch); ++$i) {
+		$s = simplifyWhitespace($this->contactmatch[$i]);
+		if (($pos = strpos($s, "@")) !== false)
+		    $qm = "(email like '" . substr($s, 0, $pos + 1) . "%" . substr($s, $pos + 1) . "%')";
+		else if (preg_match('/\A(.*?)\s*([,\s])\s*(.*)\Z/', $s, $m)) {
+		    if ($m[2] == ",")
+			$qm = "(firstName like '" . trim($m[3]) . "%' and lastName like '" . trim($m[1]) . "%')";
+		    else
+			$qm = "(concat(firstName, ' ', lastName) like '%$s%')";
+		} else
+		    $qm = "(firstName like '%$s%' or lastName like '%$s%' or email like '%$s%')";
+		$qa .= (count($this->contactmatch) == 1 ? ", true" : ", $qm");
+		$qb .= ($i == 0 ? "" : " or ") . $qm;
+	    }
+	    //$Conf->infoMsg(htmlspecialchars($qa . $qb));
+	    $result = $Conf->q($qa . $qb);
+	    $contacts = array_fill(0, count($this->contactmatch), array());
+	    while (($row = edb_row($result)))
+		for ($i = 0; $i < count($this->contactmatch); ++$i)
+		    if ($row[$i + 1])
+			$contacts[$i][] = $row[0];
+	    $this->contactmatch = $contacts;
+	}
+
+	// create query
 	$q = "select Paper.paperId from Paper";
 	if ($this->limitName == "r")
 	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . ")";
@@ -532,43 +620,49 @@ class PaperSearch {
 	    $q .= " join PaperConflict as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . " and Limiter.conflictType>=" . CONFLICT_AUTHOR . ")";
 	else if ($this->limitName == "req")
 	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.requestedBy=" . $this->contactId . " and Limiter.reviewType=" . REVIEW_EXTERNAL . ")";
-
-	// handle tags
-	foreach ($this->tagmatch as $t => $tarr)
-	    $q .= " left join (select paperId, count(tag) as ${t}tagcount from PaperTag where " . join(" or ", $tarr) . " group by paperId) as PaperTag_$t on (PaperTag_$t.paperId=Paper.paperId)";
 	
 	if (($this->any & self::ANY_CONFLICT) && $this->limitName != "a")
 	    $q .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->contactId . ")";
 
-	if ($this->any & (self::ANY_REVIEWER | self::ANY_NUM_REVIEW))
-	    $q .= $this->_searchReviewerLimiter(false, 0);
-	if ($this->any & (self::ANY_SUB_REVIEWER | self::ANY_SUB_NUM_REVIEW))
-	    $q .= $this->_searchReviewerLimiter(true, 0);
-	if ($this->any & (self::ANY_PRIMARY | self::ANY_NUM_PRIMARY))
-	    $q .= $this->_searchReviewerLimiter(false, REVIEW_PRIMARY);
-	if ($this->any & (self::ANY_SUB_PRIMARY | self::ANY_SUB_NUM_PRIMARY))
-	    $q .= $this->_searchReviewerLimiter(true, REVIEW_PRIMARY);
-	if ($this->any & (self::ANY_SECONDARY | self::ANY_NUM_SECONDARY))
-	    $q .= $this->_searchReviewerLimiter(false, REVIEW_SECONDARY);
-	if ($this->any & (self::ANY_SUB_SECONDARY | self::ANY_SUB_NUM_SECONDARY))
-	    $q .= $this->_searchReviewerLimiter(true, REVIEW_SECONDARY);
-
-	if ($this->any & self::ANY_LEAD)
-	    $q .= " left join (select paperId, concat(firstName, ' ', lastName, ' ', email) as leadInfo from Paper join ContactInfo on (Paper.leadContactId=ContactInfo.contactId)) as LeadInfo on (LeadInfo.paperId=Paper.paperId)";
-	if ($this->any & self::ANY_SHEPHERD)
-	    $q .= " left join (select paperId, concat(firstName, ' ', lastName, ' ', email) as shepherdInfo from Paper join ContactInfo on (Paper.shepherdContactId=ContactInfo.contactId)) as ShepherdInfo on (ShepherdInfo.paperId=Paper.paperId)";
-	if ($this->any & self::ANY_CONFLICTINFO)
-	    $q .= " left join (select Paper.paperId, group_concat(firstName, ' ', lastName, ' ', email separator ' ') as conflictInfo from Paper left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.conflictType>0) join ContactInfo on (PaperConflict.contactId=ContactInfo.contactId) group by Paper.paperId) as ConflictInfo on (ConflictInfo.paperId=Paper.paperId)";
+	foreach ($this->match["tag"] as $t => $tarr)
+	    $q .= $this->_tableMatch("PaperTag", "tag", "tag", "", $t, $tarr);
+	foreach ($this->match["conflict"] as $t => $tarr)
+	    $q .= $this->_tableMatch("PaperConflict", "contactId", "conflict", " and *conflictType>0", $t, $tarr);
+	foreach ($this->match["topic"] as $t => $tarr)
+	    $q .= $this->_tableMatch("PaperTopic", "topicId", "topic", "", $t, $tarr);
+	foreach ($this->match["option"] as $t => $tarr)
+	    $q .= $this->_tableMatch("PaperOption", "optionId", "option", "", $t, $tarr);
 	
-	if ($this->any & self::ANY_TOPICS)
-	    $q .= " left join (select paperId, group_concat('#', topicId, '#') as topicIds from PaperTopic group by paperId) as AllPaperTopics on (AllPaperTopics.paperId=Paper.paperId)";
-	if ($this->any & self::ANY_OPTIONS)
-	    $q .= " left join (select paperId, group_concat('#', optionId, ':', value) as optionIds from PaperOption group by paperId) as AllPaperOptions on (AllPaperOptions.paperId=Paper.paperId)";
+	foreach ($this->match["re"] as $t => $tarr)
+	    $q .= $this->_tableMatch("PaperReview", "reviewId", "re", " and (*reviewNeedsSubmit=1 or *reviewSubmitted>0)", $t, $tarr);
+	foreach ($this->match["cre"] as $t => $tarr)
+	    $q .= $this->_tableMatch("PaperReview", "reviewId", "cre", " and *reviewSubmitted>0", $t, $tarr);
+	foreach ($this->match["pri"] as $t => $tarr)
+	    $q .= $this->_tableMatch("PaperReview", "reviewId", "pri", " and *reviewType=" . REVIEW_PRIMARY . " and (*reviewNeedsSubmit=1 or *reviewSubmitted>0)", $t, $tarr);
+	foreach ($this->match["cpri"] as $t => $tarr)
+	    $q .= $this->_tableMatch("PaperReview", "reviewId", "cpri", " and *reviewType=" . REVIEW_PRIMARY . " and *reviewSubmitted>0", $t, $tarr);
+	foreach ($this->match["sec"] as $t => $tarr)
+	    $q .= $this->_tableMatch("PaperReview", "reviewId", "sec", " and *reviewType=" . REVIEW_SECONDARY . " and (*reviewNeedsSubmit=1 or *reviewSubmitted>0)", $t, $tarr);
+	foreach ($this->match["csec"] as $t => $tarr)
+	    $q .= $this->_tableMatch("PaperReview", "reviewId", "csec", " and *reviewType=" . REVIEW_SECONDARY . " and *reviewSubmitted>0", $t, $tarr);
 
-	if ($res[0])
-	    $q .= " where " . $res[0];
+	if (count($this->filters))
+	    $q .= " where " . join(" and ", $this->filters);
 
-	return array("create temporary table Matches $q group by Paper.paperId", $res[1]);
+	// clean up contact matches
+	if (count($this->contactmatch))
+	    for ($i = 0; $i < count($this->contactmatch); $i++) {
+		$carr = $this->contactmatch[$i];
+		if (count($carr) == 0)
+		    $c = "=-1";
+		else if (count($carr) == 1)
+		    $c = "=$carr[0]";
+		else
+		    $c = " in (" . join(",", $carr) . ")";
+		$q = str_replace("\1$i\1", $c, $q);
+	    }
+
+	return array("create temporary table Matches $q group by Paper.paperId", join("|", $this->regex));
     }
 
     function complexSearch(&$queryOptions) {
@@ -622,7 +716,7 @@ class PaperSearch {
 	global $Conf;
 	$x = $this->_searchQuery();
 	$this->matchPreg = $x[1];
-	$Conf->infoMsg(htmlspecialchars($x[0]));
+	//$Conf->infoMsg(htmlspecialchars($x[0]));
 	return $Conf->qe($x[0], "while searching papers");
     }
 

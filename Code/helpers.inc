@@ -952,7 +952,7 @@ function cvtpref($n) {
 }
 
 function maybeSearchPaperId($me) {
-    global $Conf, $ConfSiteBase, $ConfSiteSuffix;
+    global $Conf, $ConfSiteBase, $ConfSiteSuffix, $CurrentList;
 
     // set $_REQUEST["paperId"] from $_REQUEST["p"] for backwards compatibility
     if (!isset($_REQUEST["paperId"]) && isset($_REQUEST["p"]))
@@ -980,18 +980,23 @@ function maybeSearchPaperId($me) {
 	return false;
     }
 
-    // if you can't search, or it looks like a number, don't search
-    if (!$me->isPC || preg_match('/^\s*[1-9]\d*\s*$/s', $_REQUEST["paperId"]))
+    // if invalid contact, or it looks like a number, don't search
+    if (!$me->validated
+	|| preg_match('/^\s*[1-9]\d*\s*$/s', $_REQUEST["paperId"]))
 	return false;
 
     // actually try to search
     require_once("search.inc");
-    $s = new PaperSearch($me, array("q" => $_REQUEST["paperId"], "t" => defval($_REQUEST, "t", 0)));
-    $pl = $s->paperList();
+    $search = new PaperSearch($me, array("q" => $_REQUEST["paperId"], "t" => defval($_REQUEST, "t", 0)));
+    $pl = $search->paperList();
     if (count($pl) == 1) {
 	global $thisMatchPreg;
-	$thisMatchPreg = "/(" . $s->matchPreg . ")/i";
+	if ($search->matchPreg)
+	    $thisMatchPreg = "/(" . $search->matchPreg . ")/i";
 	$_REQUEST["paperId"] = $pl[0];
+	$replaceList = oldestListNumber();
+	$_SESSION["l"][$replaceList] = $search->sessionList($search->limitName);
+	$_REQUEST["ls"] = $replaceList;
 	return true;
     } else {
 	$t = (defval($_REQUEST, "t", 0) ? "&t=" . urlencode($_REQUEST["t"]) : "");

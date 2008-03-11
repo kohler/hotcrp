@@ -246,6 +246,7 @@ function doTopics($set) {
     foreach ($_REQUEST as $k => $v) {
 	if (!(strlen($k) > 3 && $k[0] == "t" && $k[1] == "o" && $k[2] == "p"))
 	    continue;
+	$v = simplifyWhitespace($v);
 	if ($k[3] == "n" && $v != "" && cvtint(substr($k, 4), 100) <= $numnew)
 	    $Conf->qe("insert into TopicArea (topicName) values ('" . sqlq($v) . "')", $while);
 	else if (($k = cvtint(substr($k, 3), -1)) >= 0) {
@@ -525,7 +526,9 @@ if (isset($_REQUEST["update"])) {
     if (array_key_exists("resp_open", $Values)
 	&& $Values["resp_open"] > 0
 	&& (!array_key_exists("au_seerev", $Values)
-	    || $Values["au_seerev"] <= 0))
+	    || $Values["au_seerev"] <= 0)
+	&& (!array_key_exists("resp_done", $Values)
+	    || time() < $Values["resp_done"]))
 	$Conf->warnMsg("You have allowed authors to respond to the reviews, but authors can't see the reviews.  This seems odd.");
     if (array_key_exists("sub_freeze", $Values)
 	&& $Values["sub_freeze"] == 0
