@@ -451,9 +451,10 @@ if ($rrow && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
 function reviewView($prow, $rrow, $editMode) {
     global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Me, $rf, $forceShow,
 	$linkExtra, $useRequest, $nExternalRequests;
-    
+
+    $reviewOrdinal = unparseReviewOrdinal($rrow);
     $reviewLink = "review$ConfSiteSuffix?"
-	. ($rrow ? "r=$rrow->reviewId" : "p=$prow->paperId")
+	. ($rrow ? "r=$reviewOrdinal" : "p=$prow->paperId")
 	. $linkExtra . "&amp;mode=edit&amp;post=1";
     if ($editMode)
 	echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data'>",
@@ -468,9 +469,7 @@ function reviewView($prow, $rrow, $editMode) {
 	echo " id='review$rrow->reviewId'";
     echo ">";
     if ($rrow) {
-	echo "<a href='review$ConfSiteSuffix?r=",
-	    ($rrow->reviewSubmitted ? $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal) : $rrow->reviewId),
-	    "$linkExtra' class='q'>Review";
+	echo "<a href='review$ConfSiteSuffix?r=$reviewOrdinal$linkExtra' class='q'>Review";
 	if ($rrow->reviewSubmitted)
 	    echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
 	echo "</a>";
@@ -489,13 +488,13 @@ function reviewView($prow, $rrow, $editMode) {
 	$sep = $xsep;
     }
     if ($rrow) {
-	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;r=$rrow->reviewId&amp;text=1$linkExtra'>";
+	$a = "<a href='review$ConfSiteSuffix?r=$reviewOrdinal&amp;text=1$linkExtra'>";
 	echo $sep, $a, $Conf->cacheableImage("txt.png", "[Text]", null, "b"),
 	    "</a>&nbsp;", $a, "Text format</a>";
 	$sep = $xsep;
     }
     if ($rrow && !$editMode && $Me->canReview($prow, $rrow, $Conf))
-	echo $sep, "<a class='button' href='review$ConfSiteSuffix?r=$rrow->reviewId'>Edit</a>";
+	echo $sep, "<a class='button' href='review$ConfSiteSuffix?r=$reviewOrdinal'>Edit</a>";
     echo "</td>
 </tr>\n";
     
