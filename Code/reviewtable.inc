@@ -110,70 +110,79 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 
     // bottom links
     // edit your own review
-    $extrarev = array();
     if ($mode == "edit" && !$rrow)
-	$extrarev[] = "    <tr class='hilite'><td><b>Enter&nbsp;review</b></td><td>" . contactHtml($Me->firstName, $Me->lastName) . "</td><td class='empty'></td></tr>\n";
-    else if (!$foundMyReview && $Me->canReview($prow, null, $Conf)) {
-	$x = "    <tr><td colspan='2'><a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=edit$linkExtra'>Enter&nbsp;your&nbsp;own&nbsp;review</a></td></tr>\n";
-	$extrarev[] = $x;
-    }
+	$nonsubrev[] = "    <tr class='hilite'><td><b>Your&nbsp;review</b></td><td>" . contactHtml($Me->firstName, $Me->lastName) . "</td><td class='empty'></td></tr>\n";
 
     // headers
     $numericHeaders = "";
     if ($anyScores)
 	$numericHeaders = "    <tr><td class='empty' colspan='2'></td>" . $rf->webNumericScoresHeader($prow, $Me, $Conf) . "</tr>\n";
     
-    // unfinished review notification
     $notes = array();
+    $t = "";
+    
+    // see all reviews
+    if (count($nonsubrev) + count($subrev) == 0)
+	/* no reviews to view */;
+    else if (($mode != "edit" && $rrow && $Me->canViewReview($prow, null, $Conf))
+	     || ($mode == "edit" && $Me->canViewReview($prow, null, $Conf))) {
+	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=view$linkExtra'>";
+	$x = $a . $Conf->cacheableImage("allreviews24.png", "[All reviews]", null, "dlimg") . "</a>&nbsp;" . $a . "All reviews</a>";
+	$t .= ($t == "" ? "" : $xsep) . $x;
+    } else if ($mode == "view" && !$rrow && $Me->canViewReview($prow, null, $Conf)) {
+	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=view&amp;text=1$linkExtra'>";
+	$x = $a . $Conf->cacheableImage("txt24.png", "[Text]", null, "dlimg") . "</a>&nbsp;" . $a . "Text format</a>";
+	$t .= ($t == "" ? "" : $xsep) . $x;
+    }
+    // new review
+    if (!$foundMyReview && $Me->canReview($prow, null, $Conf)
+	&& !($mode == "edit" && !$rrow)) {
+	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=edit$linkExtra'>";
+	$x = $a . $Conf->cacheableImage("newreview24.png", "[New review]", null, "dlimg") . "</a>&nbsp;" . $a . "Add review</a>";
+	$t .= ($t == "" ? "" : $xsep) . $x;
+    } else if ($foundMyReview && !$rrow) {
+	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=edit$linkExtra'>";
+	$x = $a . $Conf->cacheableImage("newreview24.png", "[New review]", null, "dlimg") . "</a>&nbsp;" . $a . "Your review</a>";
+	$t .= ($t == "" ? "" : $xsep) . $x;
+    }
+    // review assignments
+    if ($mode != "assign" && ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
+	$a = "<a href='assign$ConfSiteSuffix?p=$prow->paperId$linkExtra'>";
+	$x = $a . $Conf->cacheableImage("assign24.png", "[Assign]", null, "dlimg") . "</a>&nbsp;" . $a . ($Me->privChair ? "Manage assignments" : "Manage external reviews") . "</a>";
+	$t .= ($t == "" ? "" : $xsep) . $x;
+    }
+    // override conflict
+    if ($Me->privChair && !$effAssistant) {
+	$a = "<a href=\"" . htmlspecialchars(selfhref(array("forceShow" => 1))) . "\">";
+	$x = $a . $Conf->cacheableImage("override24.png", "[Override]", null, "dlimg") . "</a>&nbsp;" . $a . "Override conflict</a> to show reviewers and allow editing";
+	$t .= ($t == "" ? "" : $xsep) . $x;
+    }
+    // unfinished review notification
     if ($prow->conflictType >= CONFLICT_AUTHOR && !$effAssistant && $notShown
 	&& $Me->canViewReview($prow, null, $Conf)) {
 	$qualifier = (count($subrev) + count($nonsubrev) ? " additional" : "");
 	if ($notShown == 1)
-	    $t = "1$qualifier review remains outstanding.  ";
+	    $x = "1$qualifier review remains outstanding.";
 	else
-	    $t = "$notShown$qualifier reviews remain outstanding.  ";
-	$t .= "You will be emailed when$qualifier reviews are submitted and if any existing reviews are changed.";
-	$notes[] = $t;
-    }
-
-    // forceShow
-    if ($Me->privChair && !$effAssistant)
-	$notes[] = "<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\"><strong>Override your conflict</strong> to show reviewer identities and allow editing</a>";
-
-    // see all reviews
-    $t = "";
-    if (count($nonsubrev) + count($subrev) == 0)
-	/* no reviews to view */;
-    else if (($mode != "edit" && $rrow && $Me->canViewReview($prow, null, $Conf))
-	     || ($mode == "edit" && $Me->canViewReview($prow, null, $Conf)))
-	$t .= "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=view$linkExtra'>All reviews</a>";
-    else if ($mode == "view" && !$rrow && $Me->canViewReview($prow, null, $Conf)) {
-	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=view&amp;text=1$linkExtra'>";
-	$t .= $a . $Conf->cacheableImage("txt24.png", "[Text]", null, "dlimg") . "</a>&nbsp;" . $a . "Text version</a>";
-    }
-    // review assignments
-    if ($mode != "assign" && ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
-	if ($Me->privChair)
-	    $x = "Assign or request reviewers";
-	else
-	    $x = "Request an external review" . ($nRetractable ? " or retract outstanding review requests" : "");
-	$t .= ($t == "" ? "" : $xsep) . "<a href=\"${ConfSiteBase}assign$ConfSiteSuffix?p=$prow->paperId$linkExtra\">$x</a>";
+	    $x = "$notShown$qualifier reviews remain outstanding.";
+	$t .= ($t == "" ? "" : $xsep) . $x;
+	$t .= "<br /><span class='hint'>You will be emailed when$qualifier reviews are submitted and if any existing reviews are changed.</span>";
     }
     if ($t)
-	$extrarev[] = "    <tr><td colspan='" . (2 + $nNumeric) . "'><div class='revnotes'>$t</div></td></tr>\n";
+	$notes[] = $t;
 
     // collect notes
     if (count($notes)) {
-	$class = (count($nonsubrev) + count($subrev) + count($extrarev) ? "revnotes" : "");
+	$class = (count($nonsubrev) + count($subrev) ? "revnotes" : "");
 	$notetxt = "<div class='$class'>" . join("<br />\n", $notes) . "</div>\n";
     } else
 	$notetxt = "";
 
     // completion
-    if (count($nonsubrev) + count($subrev) + count($extrarev))
+    if (count($nonsubrev) + count($subrev))
 	return "<table class='reviewers'>\n"
 	    . $numericHeaders . join("", $subrev) . join("", $nonsubrev)
-	    . join("", $extrarev) . "  </table>\n" . $notetxt;
+	    . "  </table>\n" . $notetxt;
     else
 	return $notetxt;
 }

@@ -87,6 +87,7 @@ Code/Mail-1.1.14
 images/.htaccess
 images/_.gif
 images/GenChart.php
+images/allreviews24.png
 images/ass-1.png
 images/ass0.png
 images/ass1.png
@@ -97,6 +98,7 @@ images/ass3.png
 images/ass3n.png
 images/ass4.png
 images/ass4n.png
+images/assign24.png
 images/bendulft.png
 images/exassignone.png
 images/exsearchaction.png
@@ -104,7 +106,9 @@ images/extagsnone.png
 images/extagssearch.png
 images/extagsset.png
 images/info45.png
+images/newreview24.png
 images/next.png
+images/override24.png
 images/pageresultsex.png
 images/pdf.png
 images/pdf24.png
