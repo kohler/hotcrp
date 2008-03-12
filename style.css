@@ -765,7 +765,8 @@ table.pcass td.colmid {
 	vertical-align: top;
 }
 table.pcass td.name, table.pcass td.name-1, table.pcass td.name0,
-table.pcass td.name1, table.pcass td.name3, table.pcass td.name4 {
+table.pcass td.name1, table.pcass td.name2, table.pcass td.name3, 
+table.pcass td.name4 {
 	padding-right: 1em;
 }
 table.pcass td.name-1 {
