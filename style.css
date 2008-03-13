@@ -859,10 +859,10 @@ table.pt_buttons td.ptb_button {
 	padding: 0px 1em 0px 0px;
 }
 
-div.searchresult {
+div.searchresult, div.assignresult {
 	padding: 0.75em 0.75em;
 }
-div.searchresult table.pltable, table.altable {
+div.searchresult table.pltable, table.altable, div.assignresult table.pltable {
 	width: 100%;
 	position: relative;
 }
@@ -876,6 +876,7 @@ div#plact {
 }
 div#plactr {
 	padding-top: 2px;
+	padding-left: 1em;
 	float: right;
 }
 table.pltable th, table.ppltable th, table.altable th, table.setreviewform th,

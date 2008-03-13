@@ -279,9 +279,10 @@ echo "<form class='assignpc' method='post' action=\"reviewprefs$ConfSiteSuffix?r
     (defval($_REQUEST, "q") ? "&amp;q=" . htmlspecialchars($_REQUEST["q"]) : ""),
     "&amp;post=1\" enctype='multipart/form-data'>",
     "<input id='defaultact' type='hidden' name='defaultact' value='' />",
-    "<input class='hidden' type='submit' name='default' value='1' />";
-echo $pl_text;
-echo "<div class='smgap'></div>";
+    "<input class='hidden' type='submit' name='default' value='1' />",
+    "<div class='assignresult'>\n",
+    $pl_text,
+    "</div>";
 // echo "<table class='center'><tr><td><input class='hbutton' type='submit' name='update' value='Save preferences' /></td></tr></table>\n";
 echo "</form>\n";
 
