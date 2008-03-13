@@ -5,10 +5,12 @@
 
 export PROG=$0
 export FLAGS=""
+structure=no
 while [ $# -gt 0 ]; do
     case "$1" in
+    --structure) structure=yes;;
     -*)	FLAGS="$FLAGS $1";;
-    *)	echo "Usage: $PROG [MYSQL-OPTIONS]" 1>&2; exit 1;;
+    *)	echo "Usage: $PROG [--structure] [MYSQL-OPTIONS]" 1>&2; exit 1;;
     esac
     shift
 done
@@ -74,4 +76,13 @@ dbopt=`getdbopt`
 test -z "$dbopt" && { echo "backupdb.sh: Cannot extract database run options from options.inc!" 1>&2; exit 1; }
 
 echo + mysqldump $FLAGS $dbopt 1>&2
-eval "mysqldump $FLAGS $dbopt"
+if [ "$structure" = yes ]; then
+    eval "mysqldump $FLAGS $dbopt | sed '/^LOCK\|^INSERT\|^UNLOCK\|^\/\*/d
+/^)/s/AUTO_INCREMENT=[0-9]* //
+/^--$/N
+/^--.*-- Dumping data/N
+/^--.*-- Dumping data.*--/d
+/^-- Dump/d' "
+else
+    eval "mysqldump $FLAGS $dbopt"
+fi
