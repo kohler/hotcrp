@@ -18,7 +18,7 @@ $topic = defval($_REQUEST, "t", "topics");
 if (!isset($topicTitles[$topic]))
     $topic = "topics";
 
-$abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
+$abar = "<div class='vbar'><table class='vbar'><tr><td id='vbartabs'><table><tr>\n";
 $abar .= actionTab("Help topics", "help$ConfSiteSuffix?t=topics", $topic == "topics");
 if ($topic == "search" || $topic == "syntax")
     $abar .= actionTab("Search help", "help$ConfSiteSuffix?t=search", $topic == "search");

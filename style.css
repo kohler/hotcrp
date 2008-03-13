@@ -64,6 +64,9 @@ table.vbar td {
 	vertical-align: bottom;
 	min-height: 4px;
 }
+table.vbar td#vbartabs {
+	padding-top: 6px;
+}
 table.vbar div.vbtab, table.vbar div.vbtab1 {
 	margin: 0px 0.75em;
 	white-space: nowrap;
