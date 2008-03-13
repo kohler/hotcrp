@@ -308,8 +308,10 @@ if ($Me->privChair)
     $paperTable->echoPCConflicts($prow, true);
 if ($crow)
     echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><a href='comment$ConfSiteSuffix?p=$prow->paperId$linkExtra'>All comments</a></td>\n</tr>\n\n";
-if ($Me->privChair && $prow->conflictType > 0 && !$forceShow)
-    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><a href=\"", htmlspecialchars(selfHref(array("forceShow" => 1))), "\"><strong>Override your conflict</strong> to see all comments and allow editing</a></td>\n</tr>\n\n";
+if ($Me->privChair && $prow->conflictType > 0 && !$forceShow) {
+    $a = "<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">";
+    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>", $a, $Conf->cacheableImage("override24.png", "[Override]", null, "dlimg"), "</a>&nbsp;", $a, "Override conflict</a> to see all comments and allow editing</a><div class='smgap'></div></td>\n</tr>\n\n";
+}
 
 
 // exit on certain errors

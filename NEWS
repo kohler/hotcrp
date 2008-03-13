@@ -1,6 +1,6 @@
 HotCRP NEWS
 
-Version 2.14
+Version 2.14   12.Mar.2008
 
 * Review field options can take lettered values, such as A-D or X-Z, as
   well as numeric values.
@@ -13,11 +13,13 @@ Version 2.14
 
 * Add "private" and "secret" review fields.
 
+* Review table UI improvements.
+
 * Fix installations that set zlib.output_compression by default (Elliott
   Karpilovsky).
 
-* Soft limit on the number of concurrent paper format checkers should
-  reduce system load.
+* Soft limit on the number of concurrent paper format checker processes
+  should reduce system load at submission time.
 
 * Add a setting where PC members can see reviews but not reviewer
   identities (requested by Matthew Frank).
