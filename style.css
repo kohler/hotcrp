@@ -127,7 +127,7 @@ a.small {
 
 /* body */
 div.body {
-	margin: 2px 8px;
+	margin: 2px 12px;
 	background-color: #ffffff;
 	position: relative;
 	z-index: 3;
@@ -863,7 +863,7 @@ table.pt_buttons td.ptb_button {
 }
 
 div.searchresult, div.assignresult {
-	padding: 0.75em 0.75em;
+	padding: 0.75em 0.5em;
 }
 div.searchresult table.pltable, table.altable, div.assignresult table.pltable {
 	width: 100%;
