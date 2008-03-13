@@ -24,12 +24,12 @@ update Settings set value=4 where name='allowPaperOption';
 
 CREATE TABLE `ContactAddress` (
   `contactId` int(11) NOT NULL,
-  `addressLine1` text NOT NULL,
-  `addressLine2` text NOT NULL,
-  `city` text NOT NULL,
-  `state` text NOT NULL,
-  `zipCode` text NOT NULL,
-  `country` text NOT NULL,
+  `addressLine1` varchar(2048) NOT NULL,
+  `addressLine2` varchar(2048) NOT NULL,
+  `city` varchar(2048) NOT NULL,
+  `state` varchar(2048) NOT NULL,
+  `zipCode` varchar(2048) NOT NULL,
+  `country` varchar(2048) NOT NULL,
   UNIQUE KEY `contactId` (`contactId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 update Settings set value=5 where name='allowPaperOption';
@@ -69,8 +69,8 @@ update Settings set value=7 where name='allowPaperOption';
 -- UPDATE FROM VERSION 2.12 TO VERSION 2.13
 -- Apply if `allowPaperOption <= 7`.
 
-alter table PaperReview add `textField7` text NOT NULL default '';
-alter table PaperReview add `textField8` text NOT NULL default '';
+alter table PaperReview add `textField7` mediumtext NOT NULL;
+alter table PaperReview add `textField8` mediumtext NOT NULL;
 insert into ReviewFormField set fieldName='textField7',
 	shortName='Additional text field';
 insert into ReviewFormField set fieldName='textField8',
@@ -82,6 +82,6 @@ update Settings set value=8 where name='allowPaperOption';
 -- Apply if `allowPaperOption <= 8`.
 
 alter table ReviewFormField add `levelChar` tinyint(1) NOT NULL default '0';
-alter table PaperReviewArchive add `textField7` text NOT NULL default '';
-alter table PaperReviewArchive add `textField8` text NOT NULL default '';
+alter table PaperReviewArchive add `textField7` mediumtext NOT NULL;
+alter table PaperReviewArchive add `textField8` mediumtext NOT NULL;
 update Settings set value=9 where name='allowPaperOption';
