@@ -587,6 +587,8 @@ class Contact {
 	    $whyNot['externalReviewer'] = 1;
 	else if (!$rrowSubmitted)
 	    $whyNot['reviewNotSubmitted'] = 1;
+	else if (!$conf->timeReviewOpen())
+	    $whyNot['deadline'] = "rev_open";
 	else {
 	    $whyNot['reviewNotComplete'] = 1;
 	    if (!$conf->timeReviewPaper($this->isPC, true, true))

@@ -14,6 +14,11 @@ if (isset($_REQUEST["get"]))
 else if (isset($_REQUEST["getgo"]) && isset($_REQUEST["getaction"]))
     $getaction = $_REQUEST["getaction"];
 
+// choose a sensible default action (if someone presses enter on a form element)
+if (isset($_REQUEST["default"]) && defval($_REQUEST, "defaultact"))
+    $_REQUEST[$_REQUEST["defaultact"]] = true;
+else if (isset($_REQUEST["default"]))
+    $_REQUEST["download"] = true;
 
 // paper group
 $tOpt = array();
@@ -806,7 +811,9 @@ if ($pl) {
     echo "<div class='maintabsep'></div>\n\n<div class='searchresult'>";
 
     if ($pl->anySelector)
-	echo "<form method='post' action=\"", htmlspecialchars(selfHref(array("selector" => 1), "search$ConfSiteSuffix")), "\" id='sel' onsubmit='return paperselCheck();'>\n";
+	echo "<form method='post' action=\"", htmlspecialchars(selfHref(array("selector" => 1), "search$ConfSiteSuffix")), "\" id='sel' onsubmit='return paperselCheck();'>\n",
+	    "<input id='defaultact' type='hidden' name='defaultact' value='' />",
+	    "<input class='hidden' type='submit' name='default' value='1' />";
     
     echo $pl_text;
     
