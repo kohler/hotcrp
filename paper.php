@@ -165,7 +165,6 @@ if (isset($_REQUEST["revive"]) && !$newPaper) {
 	$Conf->updatePapersubSetting(true);
 	getProw($Me->contactId);
 	$Conf->log("Revived", $Me, $paperId);
-	$_REQUEST["update"] = true;
     } else
 	$Conf->errorMsg(whyNotText($whyNot, "revive"));
 }

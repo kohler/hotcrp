@@ -739,12 +739,17 @@ class Mailer {
 		where paperId=$row->paperId and conflictType>=" . CONFLICT_AUTHOR . "
 		group by ContactInfo.contactId", "while looking up contact authors to send email");
 
+	// must set the current conflict type in $row for each contact
+	$old_conflictType = $row->conflictType;
+	
 	$contacts = array();
 	while (($contact = edb_orow($result))) {
+	    $row->conflictType = $contact->conflictType;
 	    Mailer::send($template, $row, Contact::makeMinicontact($contact), $otherContact, $rest);
 	    $contacts[] = contactHtml($contact);
 	}
 
+	$row->conflictType = $old_conflictType;
 	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts) && $Me->privChair) {
 	    $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
 	    if (isset($rest["infoNames"]) && $Me->privChair)
@@ -759,19 +764,26 @@ class Mailer {
 	global $Conf, $Me, $mailTemplates;
 
 	$result = $Conf->qe("select ContactInfo.contactId,
-		firstName, lastName, email, password, reviewType as myReviewType
-		from ContactInfo join PaperReview using (contactId)
-		where paperId=$row->paperId
+		firstName, lastName, email, password,
+		conflictType, reviewType as myReviewType
+		from ContactInfo
+		join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$row->paperId)
+		left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$row->paperId)
 		group by ContactInfo.contactId", "while looking up reviewers to send email");
 
 	$rest["headers"] = "Cc: $Conf->contactName <$Conf->contactEmail>";
+
+	// must set the current conflict type in $row for each contact
+	$old_conflictType = $row->conflictType;
 	
 	$contacts = array();
 	while (($contact = edb_orow($result))) {
+	    $row->conflictType = $contact->conflictType;
 	    Mailer::send($template, $row, Contact::makeMinicontact($contact), $otherContact, $rest);
 	    $contacts[] = contactHtml($contact);
 	}
 
+	$row->conflictType = $old_conflictType;
 	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts) && $Me->privChair) {
 	    $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
 	    $Conf->infoMsg("Sent email to paper #$row->paperId's " . pluralx($contacts, "reviewer") . ", " . commajoin($contacts) . $endmsg);
