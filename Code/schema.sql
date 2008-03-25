@@ -124,6 +124,7 @@ CREATE TABLE `Paper` (
   `timeFinalSubmitted` int(11) NOT NULL default '0',
   `pcPaper` tinyint(1) NOT NULL default '0',
   `paperStorageId` int(11) NOT NULL default '0',
+  `sha1` varbinary(20) NOT NULL default '',
   `finalPaperStorageId` int(11) NOT NULL default '0',
   `blind` tinyint(1) NOT NULL default '1',
   `outcome` tinyint(1) NOT NULL default '0',
@@ -457,10 +458,13 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 9);
+insert into Settings (name, value) values ('allowPaperOption', 10);
 # collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
+# default chair-only tags
 insert into Settings (name, value, data) values ('tag_chair', 1, 'accept reject pcpaper');
+# turn on SHA-1 calculation by default
+insert into Settings (name, value) values ('sub_sha1', 1);
 
 insert into PaperStorage set paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain', paper='' on duplicate key update paper='';
 

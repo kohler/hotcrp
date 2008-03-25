@@ -339,9 +339,10 @@ class Conference {
 	if ($prow->timeWithdrawn > 0)
 	    return false;
 	else if ($prow->timeSubmitted > 0)
-	    return !$download || $this->setting('sub_freeze') > 0
-		|| $this->settingsAfter('sub_sub', 'sub_grace')
-		|| $this->setting('sub_open') <= 0;
+	    return true;
+	    //return !$download || $this->setting('sub_freeze') > 0
+	    //	|| $this->settingsAfter('sub_sub', 'sub_grace')
+	    //	|| $this->setting('sub_open') <= 0;
 	else
 	    return !$download && $this->setting('pc_seeall') > 0;
     }
@@ -373,7 +374,7 @@ class Conference {
     }
 
 
-    function cacheableImage($name, $alt = null, $title = null, $class = null) {
+    function cacheableImage($name, $alt, $title = null, $class = null) {
 	global $ConfSiteBase, $ConfSitePATH;
 	$t = "<img src='${ConfSiteBase}images/$name' alt=\"$alt\"";
 	if ($title)
@@ -468,11 +469,15 @@ class Conference {
 		$this->errorMsg($result->getMessage());
 	}
     
-	if (!PEAR::isError($result))
+	if (!PEAR::isError($result)) {
+	    $sha1 = '';
+	    if ($this->setting("sub_sha1") > 0)
+		$sha1 = ", sha1='" . sqlq(sha1($contents, true)) . "'";
 	    $result = $this->qe2("update Paper set "
 		. ($final ? "finalPaperStorageId" : "paperStorageId") . "=$paperStorageId, "
-		. "size=" . strlen($contents) . ", mimetype='" . sqlq($mimetype) . "', timestamp=$timestamp"
+		. "size=" . strlen($contents) . ", mimetype='" . sqlq($mimetype) . "', timestamp=$timestamp" . $sha1
 		. " where paperId=$paperId and timeWithdrawn<=0", $while);
+	}
 
 	$this->qe2("unlock tables", $while);
 
@@ -683,6 +688,7 @@ class Conference {
 	//   "topics"
 	//   "options"
 	//   "scores" => array(fields to score)
+	//   "sha1"
 	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
 
 	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']) || isset($options['myReviewsOpt']) || isset($options['myOutstandingReviews']);

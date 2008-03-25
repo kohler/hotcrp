@@ -100,6 +100,7 @@ images/ass4.png
 images/ass4n.png
 images/assign24.png
 images/bendulft.png
+images/checksum12.png
 images/exassignone.png
 images/exsearchaction.png
 images/extagsnone.png
@@ -119,6 +120,7 @@ images/quicksearchex.png
 images/sortdown.png
 images/sortup.png
 images/stophand45.png
+images/timestamp12.png
 images/txt.png
 images/txt24.png
 images/viewas.png

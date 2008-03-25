@@ -147,7 +147,7 @@ class PaperTable {
     }
     
     function echoPaperRow($prow, $flags) {
-	global $Conf, $Me;
+	global $Conf, $Me, $ConfSiteBase, $ConfSiteSuffix;
 	$final = ($prow->outcome > 0 && $Conf->collectFinalPapers());
 	$canUpload = $this->editable;
 
@@ -163,7 +163,14 @@ class PaperTable {
 	echo $Me->paperStatus($prow->paperId, $prow, 0);
 	$timestamp = "";
 	if (($flags & self::STATUS_DATE) && $prow->timestamp)
-	    $timestamp = "<span class='sep'></span> (last updated " . $Conf->printableTime($prow->timestamp) . ")";
+	    $timestamp = $Conf->cacheableImage("timestamp12.png", "Updated", "Update timestamp") . "&nbsp;" . $Conf->printableTime($prow->timestamp);
+	if (($flags & self::STATUS_DATE) && defval($prow, 'sha1')) {
+	    if ($timestamp)
+		$timestamp .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
+	    $timestamp .= $Conf->cacheableImage("checksum12.png", "SHA-1", "SHA-1 checksum") . "&nbsp;" . bin2hex($prow->sha1);
+	}
+	if ($timestamp)
+	    $timestamp = "<span class='sep'></span> <span class='hint'>$timestamp</span>";
 	if ($Me->canDownloadPaper($prow, $Conf)) {
 	    if ($final && $prow->finalPaperStorageId > 0) {
 		$submissionMimetype = null;
@@ -202,10 +209,10 @@ class PaperTable {
 
 	// conflicts
 	if (($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType >= CONFLICT_AUTHOR)
-	    echo "<br/>\nYou are an <span class='author'>author</span> of this paper.";
+	    echo "<br />\nYou are an <span class='author'>author</span> of this paper.";
 	else if ((($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType > 0)
 		 || (($flags & self::STATUS_CONFLICTINFO_PC) && $Me->isPC && $prow->conflictType > 0))
-	    echo "<br/>\nYou have a <span class='conflict'>conflict</span> with this paper.";
+	    echo "<br />\nYou have a <span class='conflict'>conflict</span> with this paper.";
 	if ($prow->reviewType != null && ($flags & self::STATUS_REVIEWERINFO)) {
 	    if ($prow->reviewType == REVIEW_PRIMARY)
 		echo "<br/>\nYou are a primary reviewer for this paper.";
@@ -216,6 +223,9 @@ class PaperTable {
 	    else
 		echo "<br/>\nYou began a review for this paper.";
 	}
+	if ($Me->isPC && $prow->conflictType <= 0
+	    && $Conf->timeUpdatePaper($prow))
+	    echo "<div class='xsmgap'></div><div class='xwarning'>The authors still have <a href='${ConfSiteBase}deadlines$ConfSiteSuffix'>time</a> to make changes.</div>";
 	echo "</td>\n</tr>\n\n";
     }
 

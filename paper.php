@@ -600,13 +600,13 @@ else if ($newPaper) {
     else if ($timeUpdate) {
 	if ($prow->timeSubmitted <= 0) {
 	    if ($prow->paperStorageId <= 1)
-		$Conf->infoMsg("You must haven't uploaded a paper yet.$updateDeadline");
+		$Conf->warnMsg("You must haven't uploaded a paper yet.$updateDeadline");
 	    else if ($Conf->setting('sub_freeze'))
-		$Conf->infoMsg("You must submit a final version of your paper before it can be reviewed.$updateDeadline");
+		$Conf->warnMsg("You must submit a final version of your paper before it can be reviewed.$updateDeadline");
 	    else
-		$Conf->infoMsg("The current version of the paper is marked as not ready for review.  If you don't submit a reviewable version of the paper, it will not be considered.$updateDeadline"); 
+		$Conf->warnMsg("The current version of the paper is marked as not ready for review.  If you don't submit a reviewable version of the paper, it will not be considered.$updateDeadline"); 
 	} else
-	    $Conf->infoMsg("Your paper is ready for review and will be considered for the conference.  However, you still have time to make changes before submissions are frozen.$updateDeadline");
+	    $Conf->confirmMsg("Your paper is ready for review and will be considered for the conference.  You still have time to make changes.$updateDeadline");
     } else if ($prow->timeWithdrawn <= 0 && $timeSubmit)
 	$Conf->infoMsg("You cannot make any changes as the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override");
     else if ($prow->timeWithdrawn <= 0)

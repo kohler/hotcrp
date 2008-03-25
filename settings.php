@@ -777,7 +777,7 @@ function doSubGroup() {
     }
     
     echo "<hr />\n";
-    doRadio("sub_freeze", array(0 => array("Authors can update submissions until the deadline", "PC members cannot download submitted papers until the submission deadline passes."), 1 => array("Authors must freeze the final version of each submission", "PC members can download papers as soon as they are submitted.")));
+    doRadio("sub_freeze", array(0 => "<strong>Authors can update submissions until the deadline</strong>", 1 => array("Authors must freeze the final version of each submission", "&ldquo;Authors can update submissions&rdquo; is usually the best choice.  Freezing submissions is mostly useful when there is no submission deadline.")));
     
     echo "<div class='smgap'></div><table>\n";
     // compensate for pc_seeall magic

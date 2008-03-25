@@ -84,4 +84,6 @@ update Settings set value=8 where name='allowPaperOption';
 alter table ReviewFormField add `levelChar` tinyint(1) NOT NULL default '0';
 alter table PaperReviewArchive add `textField7` mediumtext NOT NULL;
 alter table PaperReviewArchive add `textField8` mediumtext NOT NULL;
-update Settings set value=9 where name='allowPaperOption';
+alter table Paper add `sha1` varbinary(20) NOT NULL default '';
+update Settings set value=10 where name='allowPaperOption';
+insert into Settings (name, value) values ('sub_sha1', 1);
