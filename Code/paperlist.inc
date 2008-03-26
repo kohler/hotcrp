@@ -655,7 +655,8 @@ class PaperList extends BaseList {
 	else {
 	    $t .= "    <option value='paper' selected='selected'>Papers</option>
     <option value='abstracts'>Abstracts</option>
-    <option value='revform'>Review forms</option>\n";
+    <option value='revform'>Review forms</option>
+    <option value='revformz'>Review forms (zip)</option>\n";
 	    if ($this->contact->isPC && $Conf->timeSubmitFinalPaper())
 		$t .= "    <option value='final'>Final papers</option>\n";
 	    if ($this->contact->isPC || $this->contact->isReviewer)
@@ -671,7 +672,7 @@ class PaperList extends BaseList {
 	if ($this->contact->isPC)
 	    $t .= "    <option value='topics'>Topics</option>\n";
 	if (!$revpref && ($this->contact->privChair || ($this->contact->isPC && $Conf->timePCViewAllReviews())))
-	    $t .= "    <option value='scores'>All scores</option>\n";
+	    $t .= "    <option value='scores'>Scores</option>\n";
 	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='getgo' value='Go' tabindex='6' /></span>";
 	$nlll++;
 

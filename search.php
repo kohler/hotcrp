@@ -176,13 +176,14 @@ if ($getaction == "final" && isset($papersel)) {
 
 // download review form for selected papers
 // (or blank form if no papers selected)
-if ($getaction == "revform" && !isset($papersel)) {
+if (($getaction == "revform" || $getaction == "revformz")
+    && !isset($papersel)) {
     $rf = reviewForm();
     $text = $rf->textFormHeader($Conf, "blank")
 	. $rf->textForm(null, null, $Me, $Conf, null) . "\n";
     downloadText($text, $Opt['downloadPrefix'] . "review.txt", "review form");
     exit;
-} else if ($getaction == "revform") {
+} else if ($getaction == "revform" || $getaction == "revformz") {
     $rf = reviewForm();
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "myReviewsOpt" => 1)), "while selecting papers");
 
@@ -193,16 +194,16 @@ if ($getaction == "revform" && !isset($papersel)) {
 	    $errors[whyNotText($whyNot, "review")] = true;
 	else {
 	    defappend($texts[$paperselmap[$row->paperId]], $rf->textForm($row, $row, $Me, $Conf, null) . "\n");
-	    $rfSuffix = (count($texts) == 1 ? "-$row->paperId" : "s");
+	    $rfSuffix = (count($texts) == 1 ? $row->paperId : "s");
 	}
     }
 
+    ksort($texts);
     if (count($texts) == 0) {
 	if (count($errors) > 0)
 	    $errors[""] = "";
 	$Conf->errorMsg(join("<br/>\n", array_keys($errors)) . "No papers selected.");
-    } else {
-	ksort($texts);
+    } else if ($getaction == "revform") {
 	$text = $rf->textFormHeader($Conf, $rfSuffix == "s") . join("", $texts);
 	if (count($errors)) {
 	    $e = "==-== Some review forms are missing:\n";
@@ -212,6 +213,25 @@ if ($getaction == "revform" && !isset($papersel)) {
 	}
 	downloadText($text, $Opt['downloadPrefix'] . "review$rfSuffix.txt", "review forms");
 	exit;
+    } else {
+	$warnings = array();
+	if (count($errors)) {
+	    $warnings[] = "Some review forms are missing:";
+	    foreach ($errors as $ee => $junk)
+		$warnings[] .= preg_replace('|\s*<.*|', "", $ee);
+	}
+	$files = array();
+	$header = $rf->textFormHeader($Conf, false);
+	foreach ($texts as $sel => $text)
+	    $Conf->zipAdd($tmpdir, $Opt['downloadPrefix'] . "review" . $papersel[$sel] . ".txt", $header . $text, $warnings, $files);
+	if (count($warnings))
+	    $Conf->zipAdd($tmpdir, "README-warnings.txt", join("\n", $warnings) . "\n", $warnings, $files);
+
+	$result = $Conf->zipFinish($tmpdir, $Opt['downloadPrefix'] . "reviews.zip", $files);
+	if (isset($tmpdir) && $tmpdir)
+	    exec("/bin/rm -rf $tmpdir");
+	if (!PEAR::isError($result))
+	    exit;
     }
 }
 

@@ -581,6 +581,40 @@ class Conference {
 	return $result;
     }
 
+    function zipAdd(&$tmpdir, $name, $data, &$warnings, &$files) {
+	if (!isset($tmpdir) || !$tmpdir)
+	    if (($tmpdir = tempdir(null, "crp")) === false) {
+		$warnings[] = "Could not create temporary directory!";
+		return false;
+	    }
+	if (($len = file_put_contents("$tmpdir/$name", $data)) != strlen($data)) {
+	    $warnings[] = "Could not save $name.";
+	    return false;
+	} else {
+	    $files[] = "$tmpdir/$name";
+	    return true;
+	}
+    }
+
+    function zipFinish(&$tmpdir, $name, &$files) {
+	global $zlib_output_compression;
+	
+	$out = system("zip -jq $tmpdir/x.zip " . join(" ", $files) . " 2>&1", $status);
+	if ($status != 0)
+	    return new PEAR_Error("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
+	if (!file_exists("$tmpdir/x.zip"))
+	    return new PEAR_Error("<code>zip</code> output unreadable or empty.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
+
+	// output
+	header("Content-Description: PHP Generated Data");
+	header("Content-Disposition: attachment; filename=$name");
+	header("Content-Type: application/zip");
+	if (!$zlib_output_compression)
+	    header("Content-Length: " . filesize("$tmpdir/x.zip"));
+	readfile("$tmpdir/x.zip");
+	return 1;
+    }
+    
     function __downloadPapers($paperIds, &$tmpdir, $final) {
 	global $Opt, $zlib_output_compression;
 	
@@ -604,39 +638,23 @@ class Conference {
 	    return new PEAR_Error("Could not create temporary directory!");
 
 	// write papers into temporary directory
+	$warnings = array();
+	$files = array();
 	while ($row = edb_row($result)) {
-	    $path = "$tmpdir/" . $this->downloadPaperName($row[0], $row[2], $final);
 	    if ($row[3] == 1)
 		$row[1] = gzinflate($row[1]);
-	    if (($len = file_put_contents($path, $row[1])) != strlen($row[1]))
-		$warnings[] = "Could not save paper #$row[0].";
-	    else if ($len == 0)
+	    if (strlen($row[1]) == 0)
 		$warnings[] = "Paper #$row[0] has not been uploaded yet.";
 	    else
-		$downloadPaths[] = $path;
+		$this->zipAdd($tmpdir, $this->downloadPaperName($row[0], $row[2], $final), $row[1], $warnings, $files);
 	}
-	if (!isset($downloadPaths))
+	if (!count($files))
 	    return new PEAR_Error("No papers could successfully be downloaded.");
-	if (isset($warnings)) {
-	    file_put_contents("$tmpdir/README.warnings", join("\n", $warnings) . "\n");
-	    $downloadPaths[] = "$tmpdir/README.warnings";
-	}
+	if (count($warnings))
+	    $this->zipAdd($tmpdir, "README-warnings.txt", join("\n", $warnings) . "\n", $warnings, $files);
 
 	// run zip
-	$out = system("zip -jq $tmpdir/x.zip " . join(" ", $downloadPaths) . " 2>&1", $status);
-	if ($status != 0)
-	    return new PEAR_Error("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
-	if (!file_exists("$tmpdir/x.zip"))
-	    return new PEAR_Error("<code>zip</code> output unreadable or empty.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
-
-	// output
-	header("Content-Description: PHP Generated Data");
-	header("Content-Disposition: attachment; filename=" . $Opt['downloadPrefix'] . "papers.zip");
-	header("Content-Type: application/zip");
-	if (!$zlib_output_compression)
-	    header("Content-Length: " . filesize("$tmpdir/x.zip"));
-	readfile("$tmpdir/x.zip");
-	return 1;
+	return $this->zipFinish($tmpdir, $Opt['downloadPrefix'] . "papers.zip", $files);
     }
 
     function downloadPapers($paperIds, $final = false) {
