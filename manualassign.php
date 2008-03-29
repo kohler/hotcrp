@@ -95,7 +95,7 @@ and <img src='${ConfSiteBase}images/ass", REVIEW_SECONDARY, ".png' alt='Secondar
 Click on a column heading to sort by that column.</p>\n\n";
 
 
-echo "<form method='get' action='AssignPapers$ConfSiteSuffix' id='selectreviewerform'><div class='inform'>\n";
+echo "<form method='get' action='manualassign$ConfSiteSuffix' id='selectreviewerform'><div class='inform'>\n";
 if (isset($_REQUEST["sort"]))
     echo "  <input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />\n";
 echo "  <select name='reviewer' onchange='e(\"selectreviewerform\").submit()'>\n";
@@ -169,7 +169,7 @@ if ($reviewer >= 0) {
 	$paperList->authorMatch = strtr(substr($showau, 0, strlen($showau) - 1), " ", "|");
 	$paperList->collaboratorsMatch = strtr(substr($showco, 0, strlen($showco) - 1), " ", "|");
     }
-    echo "<form class='assignpc' method='post' action=\"AssignPapers$ConfSiteSuffix?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
+    echo "<form class='assignpc' method='post' action=\"manualassign$ConfSiteSuffix?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
     if (isset($_REQUEST["sort"]))
 	echo "&amp;sort=", urlencode($_REQUEST["sort"]);
     echo "\" enctype='multipart/form-data'><div>\n";
