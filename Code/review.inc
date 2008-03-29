@@ -1,6 +1,6 @@
 <?php 
 // review.inc -- HotCRP helper class for producing review forms and tables
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 global $reviewScoreNames;
@@ -415,15 +415,16 @@ class ReviewForm {
 	
 	$x = "==+== $conf->shortName Paper Review";
 	if ($editable) {
-	    $x .= " Form" . ($type === true ? "s" : "") . "
-==-== Fill out lettered sections A through " . chr(65 + count($this->fieldOrder) - 1) . ".\n";
+	    $x .= " Form" . ($type === true ? "s" : "") . "\n==-== ";
 	    if ($type === "blank")
-		$x .= "==-== To review multiple papers, duplicate the form body from \"Begin Review\"
-==-== through \"End Review\".  Make sure to change the paper number.\n";
-	    $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\"!
-==-== When you are done, upload the review form at this address:
-==-== $conf->paperSite/offline$ConfSiteSuffix
-==-== That site also has further guidance on the review form.\n\n";
+		$x .= "Set the paper number and fill ";
+	    else
+		$x .= "Fill ";
+	    $x .= "out lettered sections A through " . chr(65 + count($this->fieldOrder) - 1) . ".
+==-== DO NOT CHANGE LINES THAT START WITH \"==+==\"!
+==-== A single file can contain multiple forms.
+==-== For further guidance, or to upload this file when you are done, go to:
+==-== $conf->paperSite/offline$ConfSiteSuffix\n\n";
 	} else
 	    $x .= ($type === true ? "s\n\n" : "\n\n");
 	return $x;
