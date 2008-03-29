@@ -198,7 +198,7 @@ echo "<table class='homegrp'>";
 // Sign in
 if (!$Me->valid()) {
     echo "<tr><td id='homeacct'>
-<form method='post' action='index$ConfSiteSuffix' accept-encoding='UTF-8'><div class='f-contain'>
+<form method='post' action='index$ConfSiteSuffix' accept-charset='UTF-8'><div class='f-contain'>
 <input type='hidden' name='cookie' value='1' />
 <div class='f-ii'>
   <div class='f-c", $email_class, "'>Email</div>
@@ -262,7 +262,7 @@ if ($homelist) {
     }
 
     echo "</td></tr><tr><td id='homesearch'>";
-    echo "<form method='get' action='search$ConfSiteSuffix' accept-encoding='UTF-8'><div class='inform'>",
+    echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>",
 	"<input class='textlite' type='text' size='32' name='q' value='' /> &nbsp;<input class='button_small' type='submit' value='Search' />",
 	"</div></form>\n";
     echo "<span class='sep'></span><small><a href='search$ConfSiteSuffix?opt=1'>Advanced search</a></small>";

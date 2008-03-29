@@ -372,7 +372,7 @@ function commentView($prow, $crow, $editMode) {
 	    echo "c=$crow->commentId";
 	else
 	    echo "p=$prow->paperId";
-	echo "$linkExtra&amp;post=1' method='post' enctype='multipart/form-data' accept-encoding='UTF-8'>\n";
+	echo "$linkExtra&amp;post=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'>\n";
     }
 
     echo "<table class='comment'>
@@ -492,7 +492,7 @@ function responseView($prow, $crow, $editMode) {
 	    echo "c=$crow->commentId";
 	else
 	    echo "p=$prow->paperId";
-	echo "$linkExtra&amp;response=1&amp;post=1' method='post' enctype='multipart/form-data' accept-encoding='UTF-8'>\n";
+	echo "$linkExtra&amp;response=1&amp;post=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'>\n";
     }
 
     echo "<table class='comment'>

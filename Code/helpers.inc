@@ -482,7 +482,7 @@ function goPaperForm($baseUrl = null, $args = array()) {
 	else
 	    $baseUrl = "paper$ConfSiteSuffix";
     }
-    $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get' accept-encoding='UTF-8'><div class='inform'>";
+    $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get' accept-charset='UTF-8'><div class='inform'>";
     $x .= "#<input class='textlite' type='text' size='6' name='p' />";
     foreach ($args as $what => $val)
 	$x .= "<input type='hidden' name=\"" . htmlspecialchars($what) . "\" value=\"" . htmlspecialchars($val) . "\" />";

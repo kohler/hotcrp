@@ -456,7 +456,7 @@ if (isset($assignments) && count($assignments) > 0) {
     }
 
     echo "<div class='smgap'></div>";
-    echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-encoding='UTF-8'>\n";
+    echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'>\n";
     echo "<input type='submit' class='button' name='saveassign' value='Save assignment' />\n";
     echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />\n";
     foreach (array("t", "q", "a", "revaddtype", "revtype", "revct", "revaddct", "pctyp", "balance", "badpairs", "bpcount") as $t)
@@ -487,7 +487,7 @@ if (isset($assignments) && count($assignments) > 0) {
     exit;
 }
 
-echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-encoding='UTF-8'>";
+echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'>";
 
 echo "<table>";
 

@@ -60,7 +60,7 @@ function _searchForm($forwhat, $other = null) {
     if ($other && preg_match_all('/(\w+)=([^&]*)/', $other, $matches, PREG_SET_ORDER))
 	foreach ($matches as $m)
 	    $text .= "<input type='hidden' name='$m[1]' value=\"" . htmlspecialchars(urldecode($m[2])) . "\" />";
-    return "<form method='get' action='${ConfSiteBase}search$ConfSiteSuffix' accept-encoding='UTF-8'>"
+    return "<form method='get' action='${ConfSiteBase}search$ConfSiteSuffix' accept-charset='UTF-8'>"
 	. "<input type='text' class='textlite' name='q' value=\""
 	. htmlspecialchars($forwhat) . "\" size='20' /> &nbsp;"
 	. "<input type='submit' class='button' name='go' value='Search' />"

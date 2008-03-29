@@ -424,7 +424,7 @@ $paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->privCh
 
 
 // begin form and table
-echo "<form id='ass' action='assign$ConfSiteSuffix?p=$prow->paperId&amp;post=1$linkExtra' method='post' enctype='multipart/form-data' accept-encoding='UTF-8'>";
+echo "<form id='ass' action='assign$ConfSiteSuffix?p=$prow->paperId&amp;post=1$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'>";
 $paperTable->echoDivEnter();
 echo "<table class='assign'>\n\n";
 

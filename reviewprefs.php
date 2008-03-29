@@ -206,7 +206,7 @@ $pl_text = $pl->text("editReviewPreference", $Me);
 echo "<table id='searchform' class='tablinks1'>
 <tr><td>"; // <div class='tlx'><div class='tld1'>";
 
-echo "<form method='get' action='reviewprefs$ConfSiteSuffix' accept-encoding='UTF-8' id='redisplayform'>\n<table>";
+echo "<form method='get' action='reviewprefs$ConfSiteSuffix' accept-charset='UTF-8' id='redisplayform'>\n<table>";
 
 if ($Me->privChair) {
     echo "<tr><td class='lxcaption'><strong>Preferences:</strong> &nbsp;</td><td class='lentry'>",
@@ -266,7 +266,7 @@ echo "</td></tr></table>\n";
 
 
 // ajax preferences form
-echo "<form id='prefform' method='post' action=\"${ConfSiteBase}paper$ConfSiteSuffix\" enctype='multipart/form-data' accept-encoding='UTF-8'><div>",
+echo "<form id='prefform' method='post' action=\"${ConfSiteBase}paper$ConfSiteSuffix\" enctype='multipart/form-data' accept-charset='UTF-8'><div>",
     "<input type='hidden' name='p' value='' />",
     "<input type='hidden' name='revpref' value='' />";
 if ($Me->privChair)
@@ -277,7 +277,7 @@ echo "</div></form>\n\n";
 // main form
 echo "<form class='assignpc' method='post' action=\"reviewprefs$ConfSiteSuffix?reviewer=$reviewer",
     (defval($_REQUEST, "q") ? "&amp;q=" . htmlspecialchars($_REQUEST["q"]) : ""),
-    "&amp;post=1\" enctype='multipart/form-data' accept-encoding='UTF-8'>",
+    "&amp;post=1\" enctype='multipart/form-data' accept-charset='UTF-8'>",
     "<input id='defaultact' type='hidden' name='defaultact' value='' />",
     "<input class='hidden' type='submit' name='default' value='1' />",
     "<div class='assignresult'>\n",

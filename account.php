@@ -200,7 +200,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1
  }
 
 
-echo "<form id='accountform' method='post' action='account$ConfSiteSuffix' accept-encoding='UTF-8'><div>\n";
+echo "<form id='accountform' method='post' action='account$ConfSiteSuffix' accept-charset='UTF-8'><div>\n";
 if ($newProfile)
     echo "<input type='hidden' name='new' value='1' />\n";
 else if ($Me->contactId != $Acct->contactId)

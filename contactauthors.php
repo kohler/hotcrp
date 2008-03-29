@@ -105,7 +105,7 @@ if ($needMsg)
 if ($OK) {    
     $paperTable = new PaperTable(false, false, true, false);
     
-    echo "<form method='post' action=\"contactauthors$ConfSiteSuffix?p=$paperId&amp;post=1\" enctype='multipart/form-data' accept-encoding='UTF-8'>";
+    echo "<form method='post' action=\"contactauthors$ConfSiteSuffix?p=$paperId&amp;post=1\" enctype='multipart/form-data' accept-charset='UTF-8'>";
     $paperTable->echoDivEnter();
     echo "<table class='paper'>\n";
 

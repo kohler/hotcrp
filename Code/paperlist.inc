@@ -1015,11 +1015,11 @@ class PaperList extends BaseList {
 	if ($taginfo)
 	    $x .= ($this->foldedTags !== false ? " fold4c" : " fold4o");
 	if ($taginfo && $this->foldedTags !== false && count($this->foldedTags))
-	    $Conf->footerStuff .= "<form id='tagloadform' method='post' action='${ConfSiteBase}search$ConfSiteSuffix?get=tags&amp;ajax=1' accept-encoding='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedTags) . "' /><input type='hidden' name='sitebase' value=\"" . htmlspecialchars($ConfSiteBase) . "\" /></div></form><script type='text/javascript'>ajaxTags = true;</script>";
+	    $Conf->footerStuff .= "<form id='tagloadform' method='post' action='${ConfSiteBase}search$ConfSiteSuffix?get=tags&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedTags) . "' /><input type='hidden' name='sitebase' value=\"" . htmlspecialchars($ConfSiteBase) . "\" /></div></form><script type='text/javascript'>ajaxTags = true;</script>";
 	if ($abstractinfo)
 	    $x .= ($this->foldedAbstract !== false ? " fold5c" : " fold5o");
 	if ($abstractinfo && $this->foldedAbstract !== false && count($this->foldedAbstract))
-	    $Conf->footerStuff .= "<form id='abstractloadform' method='post' action='${ConfSiteBase}search$ConfSiteSuffix?get=abstracts&amp;ajax=1' accept-encoding='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedAbstract) . "' /></div></form><script type='text/javascript'>ajaxAbstracts = true;</script>";
+	    $Conf->footerStuff .= "<form id='abstractloadform' method='post' action='${ConfSiteBase}search$ConfSiteSuffix?get=abstracts&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedAbstract) . "' /></div></form><script type='text/javascript'>ajaxAbstracts = true;</script>";
 	if ($authorinfo || !$unfolded || $taginfo || $abstractinfo)
 	    $x .= "\" id=\"foldpl";
 	$x .= "\">\n";
