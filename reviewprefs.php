@@ -267,7 +267,7 @@ echo "</td></tr></table>\n";
 
 // ajax preferences form
 echo "<form id='prefform' method='post' action=\"${ConfSiteBase}paper$ConfSiteSuffix\" enctype='multipart/form-data'><div>",
-    "<input type='hidden' name='paperId' value='' />",
+    "<input type='hidden' name='p' value='' />",
     "<input type='hidden' name='revpref' value='' />";
 if ($Me->privChair)
     echo "<input type='hidden' name='contactId' value='$reviewer' />";

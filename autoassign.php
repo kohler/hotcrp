@@ -303,6 +303,7 @@ function saveAssign() {
     }
 
     // magnanimous
+    $didLead = false;
     if ($atype == "rev" || $atype == "revadd") {
 	$result = $Conf->qe("select PCMember.contactId, paperId,
 		reviewType, reviewModified
@@ -333,14 +334,20 @@ function saveAssign() {
 	foreach ($ass as $pid => $pcs)
 	    if (count($pcs) == 1) {
 		$Conf->qe("update Paper set ${atype}ContactId=" . key($pcs) . " where paperId=$pid", "while updating $atype");
+		$didLead = true;
 		$Conf->log("set $atype to " . $pcm[key($pcs)]->email, $Me, $pid);
 	    }
     }
 
     $Conf->confirmMsg("Assignments saved!");
     
-    // kersplunk
+    // clean up
     $Conf->qe("unlock tables");
+
+    if ($didLead && !$Conf->setting("paperlead")) {
+	$Conf->qe("insert into Settings (name, value) values ('paperlead', 1) on duplicate key update value=value");
+	$Conf->updateSettings();
+    }
 }
 
 if (isset($_REQUEST["assign"]) && isset($_REQUEST["a"]) && isset($_REQUEST["pctyp"]))

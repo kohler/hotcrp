@@ -254,8 +254,8 @@ function maketemptext(input, text, on, do_defact) {
 function makerevprefajax(input, paperId) {
     return function() {
 	var form = e("prefform");
-	if (form && form.paperId && form.revpref) {
-	    form.paperId.value = paperId;
+	if (form && form.p && form.revpref) {
+	    form.p.value = paperId;
 	    form.revpref.value = input.value;
 	    Miniajax.submit("prefform");
 	}
@@ -265,7 +265,7 @@ function makerevprefajax(input, paperId) {
 function addRevprefAjax() {
     var inputs = document.getElementsByTagName("input"), href, pos;
     for (var i = 0; i < inputs.length; i++)
-	if (inputs[i].type == 'text' && inputs[i].name.substr(0, 7) == "revpref") {
+	if (inputs[i].type == "text" && inputs[i].name.substr(0, 7) == "revpref") {
 	    var whichpaper = inputs[i].name.substr(7);
 	    inputs[i].onfocus = maketemptext(inputs[i], "0", 1, true);
 	    inputs[i].onblur = maketemptext(inputs[i], "0", 0);

@@ -238,7 +238,7 @@ if ($homelist) {
 	echo $sep, "<a href='search$ConfSiteSuffix?q=&amp;t=r' class='nowrap'>Your reviews</a>";
 	$sep = $xsep;
     }
-    if ($Me->isPC && $Conf->timePCViewAllReviews()
+    if ($Me->isPC && $Conf->setting("paperlead") > 0
 	&& $Me->amDiscussionLead(0, $Conf)) {
 	echo $sep, "<a href=\"search$ConfSiteSuffix?q=lead:", urlencode($Me->email), "&amp;t=s\" class='nowrap'>Your discussion leads</a>";
 	$sep = $xsep;

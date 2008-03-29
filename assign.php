@@ -151,6 +151,10 @@ function _setLeadOrShepherd($type) {
     $contactId = ($row ? $row->contactId : 0);
     if ($contactId != ($type == "lead" ? $prow->leadContactId : $prow->shepherdContactId)) {
 	$Conf->qe("update Paper set ${type}ContactId=$contactId where paperId=$prow->paperId", "while updating $type");
+	if (!$Conf->setting("paperlead")) {
+	    $Conf->qe("insert into Settings (name, value) values ('paperlead', 1) on duplicate key update value=value");
+	    $Conf->updateSettings();
+	}
 	$Conf->log("set $type to " . $_REQUEST[$type], $Me, $prow->paperId);
     }
 }
