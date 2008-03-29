@@ -939,12 +939,12 @@ $blind\n";
 	    return array();
 	if (!is_array($topicIds))
 	    $topicIds = explode(",", $topicIds);
-	if ($interests && !is_array($interests))
+	if ($interests !== null && !is_array($interests))
 	    $interests = explode(",", $interests);
 	$out = array();
 	for ($i = 0; $i < count($topicIds); $i++)
 	    $out[$this->topicOrder[$topicIds[$i]]] =
-		"<span class='topic" . (isset($interests) ? $interests[$i] : 1)
+		"<span class='topic" . ($interests ? $interests[$i] : 1)
 		. "'>" . htmlspecialchars($this->topicName[$topicIds[$i]])
 		. "</span>";
 	ksort($out);

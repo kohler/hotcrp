@@ -833,7 +833,7 @@ class Conference {
 	if (isset($options['topics']) || isset($options['topicInterestScore'])) {
 	    $pq .= "		left join (select paperId";
 	    if (isset($options['topics']))
-		$pq .= ", group_concat(PaperTopic.topicId) as topicIds, group_concat(TopicInterest.interest) as topicInterest";
+		$pq .= ", group_concat(PaperTopic.topicId) as topicIds, group_concat(ifnull(TopicInterest.interest,1)) as topicInterest";
 	    if (isset($options['topicInterestScore']))
 		$pq .= ", sum(if(interest=2,2,interest-1)) as topicInterestScore";
 	    $pq .= " from PaperTopic left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$reviewContactId) group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)\n";

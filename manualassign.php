@@ -120,10 +120,18 @@ while (($row = edb_orow($result))) {
 echo "</select><span class='lgsep'></span>Show:&nbsp; <select name='kind' onchange='e(\"selectreviewerform\").submit()'>\n";
 echo "  <option value='c'", ($kind == "c" ? " selected='selected'" : ""), ">Conflicts only</option>\n";
 echo "  <option value='a'", ($kind == "a" ? " selected='selected'" : ""), ">Assignments and conflicts</option>\n";
-echo "</select></div></form>\n\n";
+echo "</select><span class='lgsep'></span><input id='assrevimmediate' type='checkbox' checked='checked' />&nbsp;Save assignments as they are made</div></form>\n\n";
 
 
 if ($reviewer >= 0) {
+    // ajax assignment form
+    echo "<form id='assrevform' method='post' action=\"${ConfSiteBase}assign$ConfSiteSuffix?update=1\" enctype='multipart/form-data'><div>",
+	"<input type='hidden' name='p' value='' />",
+	"<input type='hidden' name='pcs$reviewer' value='' />",
+	"<input type='hidden' name='reviewer' value='$reviewer' />";
+    echo "</div></form>\n\n";
+
+
     $result = $Conf->qe("select topicName, interest from TopicArea join TopicInterest using (topicId) where contactId=$reviewer order by topicName");
     $interest = array();
     while (($row = edb_row($result)))

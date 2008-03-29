@@ -118,15 +118,23 @@ if (isset($_REQUEST['retract']) && ($retract = cvtint($_REQUEST['retract'])) > 0
 // change PC assignments
 function pcAssignments() {
     global $Conf, $Me, $prow;
+
+    $where = "";
+    if (isset($_REQUEST["reviewer"])) {
+	$pcm = pcMembers();
+	if (isset($pcm[$_REQUEST["reviewer"]]))
+	    $where = "where PCMember.contactId='" . $_REQUEST["reviewer"] . "'";
+    }
+    
     $while = "while updating PC assignments";
     $Conf->qe("lock tables PaperReview write, PaperConflict write, PCMember read, ContactInfo read, ActionLog write" . $Conf->tagRoundLocker(true), $while);
-    
+
     // don't record separate PC conflicts on author conflicts
     $result = $Conf->qe("select PCMember.contactId,
 	PaperConflict.conflictType, reviewType, reviewModified, reviewId
 	from PCMember
 	left join PaperConflict on (PaperConflict.contactId=PCMember.contactId and PaperConflict.paperId=$prow->paperId)
-	left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.paperId=$prow->paperId)", $while);
+	left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.paperId=$prow->paperId) $where", $while);
     while (($row = edb_orow($result))) {
 	$val = defval($_REQUEST, "pcs$row->contactId", 0);
 	if ($row->conflictType >= CONFLICT_AUTHOR)
@@ -172,6 +180,9 @@ if (isset($_REQUEST['update']) && $Me->privChair) {
 	$Conf->ajaxExit(array("ok" => $OK));
     }
     getProw();
+} else if (isset($_REQUEST["update"]) && defval($_REQUEST, "ajax")) {
+    $Conf->errorMsg("Only administrators can assign papers.");
+    $Conf->ajaxExit(array("ok" => 0));
 }
 
 
@@ -484,6 +495,7 @@ if ($Me->privChair) {
 		echo " [", htmlspecialchars($p->preference), "]";
 	    echo "</td><td class='ass nowrap'>";
 	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href=\"javascript:foldassign($p->contactId)\"><img alt='Assignment' id='assimg$p->contactId' src=\"${ConfSiteBase}images/ass$cid.png\" /><img alt='&gt;' src=\"${ConfSiteBase}images/next.png\" /></a>&nbsp;";
+	    // NB manualassign.php also uses the "pcs$contactId" convention
 	    echo "<select id='pcs", $p->contactId, "' name='pcs", $p->contactId, "' class='extension' size='4' onchange='selassign(this, $p->contactId)' onclick='selassign(null, $p->contactId)' onblur='selassign(0, $p->contactId)' style='position: absolute'>
 	<option value='0'", ($p->conflictType == 0 && $p->reviewType < REVIEW_SECONDARY ? " selected='selected'" : ""), ">None</option>
 	<option value='", REVIEW_PRIMARY, "' ", ($p->conflictType == 0 && $p->reviewType == REVIEW_PRIMARY ? " selected='selected'" : ""), ">Primary</option>

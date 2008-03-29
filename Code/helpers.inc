@@ -1022,8 +1022,11 @@ function outcomeSelector($curOutcome = 0, $id = null) {
 function pcMembers() {
     global $Conf;
     if (!isset($_SESSION["pcmembers"]) || !is_array($_SESSION["pcmembers"])
+	|| count($_SESSION["pcmembers"]) != 2
 	|| $Conf->setting('pc') <= 0
-	|| $_SESSION["pcmembers"][0] <= $Conf->setting('pc')) {
+	|| $_SESSION["pcmembers"][0] < $Conf->setting('pc')
+	|| !is_array($_SESSION["pcmembers"][1])
+	|| count($_SESSION["pcmembers"][1]) == 0) {
 	$pc = array();
 	$result = $Conf->q("select firstName, lastName, email, ContactInfo.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair from ContactInfo join PCMember using (contactId) left join ChairAssistant on (PCMember.contactId=ChairAssistant.contactId) left join Chair on (PCMember.contactId=Chair.contactId) order by lastName, firstName");
 	while (($row = edb_orow($result)))
@@ -1036,8 +1039,11 @@ function pcMembers() {
 function pcMembersAndAdmins() {
     global $Conf;
     if (!isset($_SESSION["pcmembersa"]) || !is_array($_SESSION["pcmembersa"])
+	|| count($_SESSION["pcmembersa"]) != 2
 	|| $Conf->setting('pc') <= 0
-	|| $_SESSION["pcmembersa"][0] <= $Conf->setting('pc')) {
+	|| $_SESSION["pcmembersa"][0] < $Conf->setting('pc')
+	|| !is_array($_SESSION["pcmembersa"][1])
+	|| count($_SESSION["pcmembersa"][1]) == 0) {
 	$pc = array();
 	$result = $Conf->q("select firstName, lastName, email, ContactInfo.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair from ContactInfo left join PCMember using (contactId) left join ChairAssistant on (ContactInfo.contactId=ChairAssistant.contactId) left join Chair on (ContactInfo.contactId=Chair.contactId) where PCMember.contactId is not null or ChairAssistant.contactId is not null order by lastName, firstName");
 	while (($row = edb_orow($result)))

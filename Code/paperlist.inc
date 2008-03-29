@@ -124,6 +124,9 @@ class PaperList extends BaseList {
 	    $queryOptions['reviewerPreference'] = 1;
 	    $Conf->footerStuff .= "<script type='text/javascript'>addRevprefAjax();</script>";
 	    break;
+	case self::FIELD_ASSIGN_REVIEW:
+	    $Conf->footerStuff .= "<script type='text/javascript'>addAssrevAjax();</script>";
+	    break;
 	case self::FIELD_DESIRABILITY:
 	    $queryOptions['desirability'] = 1;
 	    break;
@@ -544,7 +547,7 @@ class PaperList extends BaseList {
 	case self::FIELD_TOPIC_INTEREST:
 	    return htmlspecialchars($row->topicInterestScore + 0);
 	case self::FIELD_TOPIC_NAMES:
-	    return join(", ", $this->rf->webTopicArray($row->topicIds, isset($row->topicInterest) ? $row->topicInterest : null));
+	    return join(", ", $this->rf->webTopicArray($row->topicIds, defval($row, "topicInterest")));
 	case self::FIELD_ALL_REVIEWER_NAMES:
 	    $n = "";
 	    if (isset($reviewList[$row->paperId]))

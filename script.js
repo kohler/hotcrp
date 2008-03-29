@@ -263,13 +263,39 @@ function makerevprefajax(input, paperId) {
 }
 
 function addRevprefAjax() {
-    var inputs = document.getElementsByTagName("input"), href, pos;
+    var inputs = document.getElementsByTagName("input");
     for (var i = 0; i < inputs.length; i++)
 	if (inputs[i].type == "text" && inputs[i].name.substr(0, 7) == "revpref") {
 	    var whichpaper = inputs[i].name.substr(7);
 	    inputs[i].onfocus = maketemptext(inputs[i], "0", 1, true);
 	    inputs[i].onblur = maketemptext(inputs[i], "0", 0);
 	    inputs[i].onchange = makerevprefajax(inputs[i], whichpaper);
+	}
+}
+
+function makeassrevajax(select, pcs, paperId) {
+    return function() {
+	var form = e("assrevform");
+	var immediate = e("assrevimmediate");
+	if (form && form.p && form[pcs] && immediate && immediate.checked) {
+	    form.p.value = paperId;
+	    form[pcs].value = select.value;
+	    Miniajax.submit("assrevform");
+	} else
+	    highlightUpdate();
+    };
+}
+
+function addAssrevAjax() {
+    var form = e("assrevform");
+    if (!form || !form.reviewer)
+	return;
+    var pcs = "pcs" + form.reviewer.value;
+    var inputs = document.getElementsByTagName("select");
+    for (var i = 0; i < inputs.length; i++)
+	if (inputs[i].name.substr(0, 6) == "assrev") {
+	    var whichpaper = inputs[i].name.substr(6);
+	    inputs[i].onchange = makeassrevajax(inputs[i], pcs, whichpaper);
 	}
 }
 
