@@ -95,7 +95,7 @@ and <img src='${ConfSiteBase}images/ass", REVIEW_SECONDARY, ".png' alt='Secondar
 Click on a column heading to sort by that column.</p>\n\n";
 
 
-echo "<form method='get' action='manualassign$ConfSiteSuffix' id='selectreviewerform'><div class='inform'>\n";
+echo "<form method='get' action='manualassign$ConfSiteSuffix' accept-encoding='UTF-8' id='selectreviewerform'><div class='inform'>\n";
 if (isset($_REQUEST["sort"]))
     echo "  <input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />\n";
 echo "  <select name='reviewer' onchange='e(\"selectreviewerform\").submit()'>\n";
@@ -125,7 +125,7 @@ echo "</select><span class='lgsep'></span><input id='assrevimmediate' type='chec
 
 if ($reviewer >= 0) {
     // ajax assignment form
-    echo "<form id='assrevform' method='post' action=\"${ConfSiteBase}assign$ConfSiteSuffix?update=1\" enctype='multipart/form-data'><div>",
+    echo "<form id='assrevform' method='post' action=\"${ConfSiteBase}assign$ConfSiteSuffix?update=1\" enctype='multipart/form-data' accept-encoding='UTF-8'><div>",
 	"<input type='hidden' name='p' value='' />",
 	"<input type='hidden' name='pcs$reviewer' value='' />",
 	"<input type='hidden' name='reviewer' value='$reviewer' />";
@@ -180,7 +180,7 @@ if ($reviewer >= 0) {
     echo "<form class='assignpc' method='post' action=\"manualassign$ConfSiteSuffix?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
     if (isset($_REQUEST["sort"]))
 	echo "&amp;sort=", urlencode($_REQUEST["sort"]);
-    echo "\" enctype='multipart/form-data'><div>\n";
+    echo "\" enctype='multipart/form-data' accept-encoding='UTF-8'><div>\n";
     echo $paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me);
     //if (isset($sau) && ($paperList->authorMatch || $paperList->collaboratorsMatch))
     //   $_SESSION["matchPreg"] = "/(" . $paperList->authorMatch . ($paperList->authorMatch && $paperList->collaboratorsMatch ? "|" : "") . $paperList->collaboratorsMatch . ")/i";

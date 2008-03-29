@@ -149,7 +149,7 @@ else
 . "that account into this one. "
 );
 
-echo "<form method='post' action=\"mergeaccounts$ConfSiteSuffix\">\n";
+echo "<form method='post' action=\"mergeaccounts$ConfSiteSuffix\" accept-encoding='UTF-8'>\n";
 ?>
 
 <table class='form'>

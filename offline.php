@@ -81,7 +81,7 @@ echo "</table></td>\n";
 if ($Me->amReviewer()) {
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
     echo "<td><h3>Upload filled-out forms</h3>
-<form action='offline$ConfSiteSuffix?post=1' method='post' enctype='multipart/form-data'><div class='inform'>
+<form action='offline$ConfSiteSuffix?post=1' method='post' enctype='multipart/form-data' accept-encoding='UTF-8'><div class='inform'>
 	<input type='hidden' name='redirect' value='offline' />
 	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='button' type='submit' value='Upload' name='uploadForm' $disabled/>";
     if ($pastDeadline && $Me->privChair)

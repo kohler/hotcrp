@@ -190,7 +190,7 @@ class PaperTable {
 		|| ($Me->privChair && isset($_REQUEST["forceShow"])))) {
 	    $result = $Conf->q("select ContactInfo.contactId, reviewType, commentId, conflictType, watch from ContactInfo left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperComment on (PaperComment.paperId=$prow->paperId and PaperComment.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId) left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId) where ContactInfo.contactId=$Me->contactId");
 	    $row = edb_row($result);
-	    echo "<span class='sep'></span> <form id='watchform' class='fold7o' action=\"", htmlspecialchars(selfHref(array("post" => 1))), "\" method='post' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"watchform\")'><div class='inform'>",
+	    echo "<span class='sep'></span> <form id='watchform' class='fold7o' action=\"", htmlspecialchars(selfHref(array("post" => 1))), "\" method='post' enctype='multipart/form-data' accept-encoding='UTF-8' onsubmit='return Miniajax.submit(\"watchform\")'><div class='inform'>",
 		"<input type='hidden' name='setwatch' value='1' />",
 		"<input type='checkbox' name='watch' value='", $this->watchCheckbox, "'";
 	    if ($row[4] && ($row[4] & ($Me->defaultWatch >> 1)))
@@ -296,7 +296,7 @@ class PaperTable {
 	    $Conf->footerStuff .= "<form id='checkformatform' class='fold7o' method='post' action='${ConfSiteBase}paper$ConfSiteSuffix?p=$prow->paperId";
 	    if ($final)
 		$Conf->footerStuff .= "&amp;final=1";
-	    $Conf->footerStuff .= "' enctype='multipart/form-data' onsubmit='return Miniajax.submit(\"checkformatform\")'><input type='hidden' name='checkformat' value='1' /></form>";
+	    $Conf->footerStuff .= "' enctype='multipart/form-data' accept-encoding='UTF-8' onsubmit='return Miniajax.submit(\"checkformatform\")'><input type='hidden' name='checkformat' value='1' /></form>";
 	}
 
 	echo "</td>\n</tr>\n\n";
@@ -577,7 +577,7 @@ class PaperTable {
 	    $t = tagsToText($t, false, $Me->contactId);
 	    echo "<tr class='pt_tags'>\n  <td class='caption'>Tags</td>\n  <td class='entry'>";
 	    if ($site && $Me->canSetTags($prow, $Conf)) {
-		echo "<form method='post' action=\"$site\" enctype='multipart/form-data'><div id='foldtags' class='foldc inform'>";
+		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-encoding='UTF-8'><div id='foldtags' class='foldc inform'>";
 		echo "<span class='ellipsis'>", ($t == "" ? "none" : $tx), "&nbsp;</span>";
 		echo "<a href='javascript:fold(\"tags\", 0)'>", $Conf->cacheableImage("next.png", "[Edit]", null, "unfolder"), "</a>";
 		echo "<span class='extension'><input class='textlite' type='text' size='40' name='tags' value=\"", $t, "\" /> &nbsp;<input class='button_small' type='submit' name='settags' value='Save' /> &nbsp; ";
@@ -593,7 +593,7 @@ class PaperTable {
 	global $ConfSiteBase, $ConfSiteSuffix;
 	echo "<tr class='pt_outcome'>
   <td class='caption'>Decision</td>
-  <td class='entry'><form method='get' action='${ConfSiteBase}review$ConfSiteSuffix'><div class='inform'><input type='hidden' name='p' value='$prow->paperId' />";
+  <td class='entry'><form method='get' action='${ConfSiteBase}review$ConfSiteSuffix' accept-encoding='UTF-8'><div class='inform'><input type='hidden' name='p' value='$prow->paperId' />";
 	if (isset($_REQUEST['forceShow']))
 	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
 	echo outcomeSelector($prow->outcome);

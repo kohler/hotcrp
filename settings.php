@@ -968,7 +968,7 @@ function doDecGroup() {
 
 $belowHr = true;
 
-echo "<form method='post' action='settings$ConfSiteSuffix?post=1' enctype='multipart/form-data'><div><input type='hidden' name='group' value='$Group' />\n";
+echo "<form method='post' action='settings$ConfSiteSuffix?post=1' enctype='multipart/form-data' accept-encoding='UTF-8'><div><input type='hidden' name='group' value='$Group' />\n";
 
 echo "<table class='settings'><tr><td class='caption'>";
 echo "<table class='lhsel'>";

@@ -96,7 +96,7 @@ if ($_REQUEST["date"] != "now" && isset($_REQUEST["search"]))
 function searchbar() {
     global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Eclass, $page, $start, $count, $nrows, $maxNrows, $offset;
     
-    echo "<form method='get' action='log$ConfSiteSuffix'>
+    echo "<form method='get' action='log$ConfSiteSuffix' accept-encoding='UTF-8'>
 <table id='searchform'><tr>
   <td class='lxcaption", $Eclass['q'], "'>With <b>any</b> of the words</td>
   <td class='lentry", $Eclass['q'], "'><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>
@@ -147,7 +147,7 @@ function searchbar() {
 	    echo "&nbsp;&nbsp;|&nbsp; <a href='$url&amp;page=earliest'><strong>Oldest</strong></a>";
 	/* echo "</div></td><td id='gopage'><div>";
 	if ($page > 1 || $nrows > $count) {
-	    echo "&nbsp;&nbsp;|&nbsp; Page: <form method='get' action='log$ConfSiteSuffix'>";
+	    echo "&nbsp;&nbsp;|&nbsp; Page: <form method='get' action='log$ConfSiteSuffix' accept-encoding='UTF-8'>";
 	    foreach (array("q", "pap", "acct", "n", "offset") as $x)
 		if ($_REQUEST[$x])
 		    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />";

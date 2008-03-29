@@ -128,7 +128,7 @@ if (count($tOpt) > 1) {
     echo "<table id='contactsform' class='tablinks1'>
 <tr><td><div class='tlx'><div class='tld1'>";
     
-    echo "<form method='get' action='contacts$ConfSiteSuffix'><div class='inform'>";
+    echo "<form method='get' action='contacts$ConfSiteSuffix' accept-encoding='UTF-8'><div class='inform'>";
     if (isset($_REQUEST["sort"]))
 	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />";
     echo "<select id='contactsform1_d' name='t'>";
@@ -143,7 +143,7 @@ if (count($tOpt) > 1) {
     echo "</div><div class='tld2'>";
 
     // Display options
-    echo "<form method='get' action='contacts$ConfSiteSuffix'><div>\n";
+    echo "<form method='get' action='contacts$ConfSiteSuffix' accept-encoding='UTF-8'><div>\n";
     foreach (array("t", "sort") as $x)
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
@@ -210,7 +210,7 @@ else if ($Me->privChair && $_REQUEST["t"] == "all")
 
 
 if ($pl->anySelector) {
-    echo "<form method='get' action='contacts$ConfSiteSuffix'><div>";
+    echo "<form method='get' action='contacts$ConfSiteSuffix' accept-encoding='UTF-8'><div>";
     foreach (array("t", "sort") as $x)
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";

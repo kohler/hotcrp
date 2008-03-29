@@ -679,7 +679,7 @@ echo "<table id='searchform' class='tablinks$activetab'>
 <tr><td><div class='tlx'><div class='tld1'>";
 
 // Basic Search
-echo "<form method='get' action='search$ConfSiteSuffix'><div class='inform'>
+echo "<form method='get' action='search$ConfSiteSuffix' accept-encoding='UTF-8'><div class='inform'>
   <input id='searchform1_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /> &nbsp;in &nbsp;$tselect &nbsp;
   <input class='button' type='submit' value='Search' />
 </div></form>";
@@ -687,7 +687,7 @@ echo "<form method='get' action='search$ConfSiteSuffix'><div class='inform'>
 echo "</div><div class='tld2'>";
 
 // Advanced Search
-echo "<form method='get' action='search$ConfSiteSuffix'>
+echo "<form method='get' action='search$ConfSiteSuffix' accept-encoding='UTF-8'>
 <table><tr>
   <td class='lxcaption'>Search these papers</td>
   <td class='lentry'>$tselect</td>
@@ -737,7 +737,7 @@ echo "</select></td>
 echo "</div><div class='tld3'>";
 
 // Display options
-echo "<form method='get' action='search$ConfSiteSuffix'><div>\n";
+echo "<form method='get' action='search$ConfSiteSuffix' accept-encoding='UTF-8'><div>\n";
 foreach (array("q", "qx", "qa", "qt", "t", "sort") as $x)
     if (isset($_REQUEST[$x]))
 	echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
@@ -831,7 +831,7 @@ if ($pl) {
     echo "<div class='maintabsep'></div>\n\n<div class='searchresult'>";
 
     if ($pl->anySelector)
-	echo "<form method='post' action=\"", htmlspecialchars(selfHref(array("selector" => 1), "search$ConfSiteSuffix")), "\" id='sel' onsubmit='return paperselCheck();'>\n",
+	echo "<form method='post' action=\"", htmlspecialchars(selfHref(array("selector" => 1), "search$ConfSiteSuffix")), "\" accept-encoding='UTF-8' id='sel' onsubmit='return paperselCheck();'>\n",
 	    "<input id='defaultact' type='hidden' name='defaultact' value='' />",
 	    "<input class='hidden' type='submit' name='default' value='1' />";
     

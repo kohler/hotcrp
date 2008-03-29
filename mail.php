@@ -116,14 +116,14 @@ function checkMailPrologue($send) {
     global $Conf, $ConfSiteSuffix;
     if ($send) {
 	echo "<div id='foldmail' class='foldc'><div class='ellipsis'><div class='error'>In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong></div></div><div class='extension'><div class='confirm'>Sent mail as follows.</div>
-	<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail$ConfSiteSuffix' enctype='multipart/form-data'>\n";
+	<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail$ConfSiteSuffix' enctype='multipart/form-data' accept-encoding='UTF-8'>\n";
 	foreach (array("recipients", "subject", "emailBody") as $x)
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
 	echo "<input class='button' type='submit' name='go' value='Prepare more mail' /></td></tr></table>
 </div></div>";
     } else {
 	$Conf->infoMsg("Examine the mails to check that you've gotten the result you want, then select &ldquo;Send&rdquo; to send the checked mails.");
-	echo "<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail$ConfSiteSuffix?postcheck=1' enctype='multipart/form-data'>\n";
+	echo "<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail$ConfSiteSuffix?postcheck=1' enctype='multipart/form-data' accept-encoding='UTF-8'>\n";
 	foreach (array("recipients", "subject", "emailBody") as $x)
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
 	echo "<input class='button' type='submit' name='send' value='Send' /> &nbsp;
@@ -189,7 +189,7 @@ function checkMail($send) {
 	echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n", $closer;
 	$Conf->echoScript("fold('mail', null);");
     } else {
-	echo "<tr class='last'><td class='caption'></td><td class='entry'><form method='post' action='mail$ConfSiteSuffix?postcheck=1' enctype='multipart/form-data'>\n";
+	echo "<tr class='last'><td class='caption'></td><td class='entry'><form method='post' action='mail$ConfSiteSuffix?postcheck=1' enctype='multipart/form-data' accept-encoding='UTF-8'>\n";
 	foreach (array("recipients", "subject", "emailBody", "q", "t", "plimit") as $x)
 	    if (isset($_REQUEST[$x]))
 		echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
@@ -304,7 +304,7 @@ if (isset($_REQUEST["monreq"])) {
     }
 }
 
-echo "<form method='post' action='mail$ConfSiteSuffix?check=1' enctype='multipart/form-data'>
+echo "<form method='post' action='mail$ConfSiteSuffix?check=1' enctype='multipart/form-data' accept-encoding='UTF-8'>
 <table>
 <tr class='topspace'>
   <td class='caption'>Templates</td>

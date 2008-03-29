@@ -229,7 +229,7 @@ $Conf->header("Review Assignments", "bulkassign", $abar);
 echo "<table class='assign'>
   <tr class='id'><td class='caption'></td><td class='entry'></td></tr>
   <tr><td class='caption'>Upload</td><td class='entry'>
-<form action='bulkassign$ConfSiteSuffix?upload=1' method='post' enctype='multipart/form-data'>
+<form action='bulkassign$ConfSiteSuffix?upload=1' method='post' enctype='multipart/form-data' accept-encoding='UTF-8'>
 Assign &nbsp;<select name='t' id='tsel' onchange='fold(\"email\",this.value!=" . REVIEW_EXTERNAL . ")'>
 <option value='", REVIEW_PRIMARY, "' selected='selected'>primary</option>
 <option value='", REVIEW_SECONDARY, "'>secondary</option>

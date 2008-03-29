@@ -457,7 +457,7 @@ function reviewView($prow, $rrow, $editMode) {
 	. ($rrow ? "r=$reviewOrdinal" : "p=$prow->paperId")
 	. $linkExtra . "&amp;mode=edit&amp;post=1";
     if ($editMode)
-	echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data'>",
+	echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-encoding='UTF-8'>",
 	    "<input class='hidden' type='submit' name='default' value='' />";
     else
 	echo "<div class='relative'>";
@@ -504,7 +504,7 @@ function reviewView($prow, $rrow, $editMode) {
 	if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType < REVIEW_SECONDARY) {
 	    echo "\n<tr class='rev_ref'>\n  <td class='caption'></td>\n  <td class='entry' colspan='2'>";
 	    echo "<a id='popupanchor_ref' href=\"javascript:void popup(null, 'ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it\n";
-	    $Conf->footerStuff .= "<div id='popup_ref' class='popupc'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data'><div class='popup_actions'>
+	    $Conf->footerStuff .= "<div id='popup_ref' class='popupc'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-encoding='UTF-8'><div class='popup_actions'>
   <input class='textlite' type='text' name='reason' value='' size='40' />
   <div class='smgap'></div>
   <input class='button' type='submit' name='refuse' value='Refuse review' />
@@ -571,7 +571,7 @@ function reviewView($prow, $rrow, $editMode) {
 	    $buttons[] = "<input class='hbutton' type='submit' value='Save changes' name='update' />";
 	    if ($rrow && $Me->privChair) {
 		$buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
-		$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data'><div class='popup_actions'><input class='button' type='submit' name='delete' value='Delete review' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
+		$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-encoding='UTF-8'><div class='popup_actions'><input class='button' type='submit' name='delete' value='Delete review' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
 	    }
 
 	    echo "    <tr>\n";
