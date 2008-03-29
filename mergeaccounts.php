@@ -114,6 +114,8 @@ if (isset($_REQUEST["merge"])) {
 	    if ($MiniMe->isPC) {
 		$t = time();
 		$Conf->qe("insert into Settings (name, value) values ('pc', $t) on duplicate key update value=$t");
+		unset($_SESSION["pcmembers"]);
+		unset($_SESSION["pcmembersa"]);
 	    }
 
 	    if ($MergeError == "") {

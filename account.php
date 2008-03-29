@@ -94,6 +94,8 @@ if (isset($_REQUEST['register']) && $OK) {
 	    if ($changed) {
 		$t = time();
 		$Conf->qe("insert into Settings (name, value) values ('pc', $t) on duplicate key update value=$t");
+		unset($_SESSION["pcmembers"]);
+		unset($_SESSION["pcmembersa"]);
 	    }
 	}
 	
