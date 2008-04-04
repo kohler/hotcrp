@@ -166,7 +166,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	else
 	    $x = "$notShown$qualifier reviews remain outstanding.";
 	$t .= ($t == "" ? "" : $xsep) . $x;
-	$t .= "<br /><span class='hint'>You will be emailed when$qualifier reviews are submitted and if any existing reviews are changed.</span>";
+	$t .= "<br /><span class='hint'>You will be emailed if$qualifier reviews are submitted or existing reviews are changed.</span>";
     }
     if ($t)
 	$notes[] = $t;

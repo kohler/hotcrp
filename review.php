@@ -184,7 +184,8 @@ if (isset($_REQUEST['delete']) && $Me->privChair)
 // download review form action
 function downloadView($prow, $rr, $editable) {
     global $rf, $Me, $Conf;
-    if ($editable && $prow->reviewType > 0 && $rr->contactId == $Me->contactId)
+    if ($editable && $prow->reviewType > 0
+	&& (!$rr || $rr->contactId == $Me->contactId))
 	return $rf->textForm($prow, $rr, $Me, $Conf, $_REQUEST, true) . "\n";
     else if ($editable)
 	return $rf->textForm($prow, $rr, $Me, $Conf, null, true) . "\n";
@@ -193,22 +194,28 @@ function downloadView($prow, $rr, $editable) {
 }
 
 function downloadForm($editable) {
-    global $rf, $Conf, $Me, $prow, $rrow, $rrows, $myRrow, $Opt;
-    if ($rrow || count($rrows) == 0)
-	$rrows = array($rrow);
+    global $rf, $Conf, $Me, $prow, $rrow, $rrows, $Opt;
+    if ($rrow)
+	$downrrows = array($rrow);
+    else if ($editable)
+	$downrrows = array();
+    else
+	$downrrows = $rrows;
     $text = "";
-    foreach ($rrows as $rr)
+    foreach ($downrrows as $rr)
 	if ($rr->reviewSubmitted
 	    && $Me->canViewReview($prow, $rr, $Conf, $whyNot))
 	    $text .= downloadView($prow, $rr, $editable);
-    foreach ($rrows as $rr)
+    foreach ($downrrows as $rr)
 	if (!$rr->reviewSubmitted && $rr->reviewModified > 0
 	    && $Me->canViewReview($prow, $rr, $Conf))
 	    $text .= downloadView($prow, $rr, $editable);
+    if (count($downrrows) == 0)
+	$text .= downloadView($prow, null, $editable);
     if (!$text)
 	return $Conf->errorMsg(whyNotText($whyNot, "review"));
     if ($editable)
-	$text = $rf->textFormHeader($Conf, count($rrows) > 1, $Me->viewReviewFieldsScore($prow, null, $Conf)) . $text;
+	$text = $rf->textFormHeader($Conf, count($downrrows) > 1, $Me->viewReviewFieldsScore($prow, null, $Conf)) . $text;
     downloadText($text, $Opt['downloadPrefix'] . "review-" . $prow->paperId . ".txt", "review form", !$editable);
     exit;
 }

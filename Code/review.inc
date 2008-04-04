@@ -188,7 +188,7 @@ class ReviewForm {
 	    if ($this->authorView[$field] < -1)
 		$x .= "<br /><span class='hint'>(secret)</span>";
 	    else if ($this->authorView[$field] < 0)
-		$x .= "<br /><span class='hint'>(chairs only)</span>";
+		$x .= "<br /><span class='hint'>(shown only to chairs)</span>";
 	    else if ($this->authorView[$field] == 0)
 		$x .= "<br /><span class='hint'>(hidden from authors)</span>";
 	    $x .= "</td>\n";
@@ -509,6 +509,8 @@ $blind\n";
 	    }
 	    if ($options && isset($this->options[$field][$fval]))
 		$fval = "$fval. " . $this->options[$field][$fval];
+	    else if (!$fval)
+		$fval = "";
 	    if (!$myReview && $fval == "")
 		continue;
 
@@ -516,7 +518,7 @@ $blind\n";
 	    if ($this->authorView[$field] < -1)
 		$x .= " (secret)";
 	    else if ($this->authorView[$field] < 0)
-		$x .= " (chairs only)";
+		$x .= " (shown only to chairs)";
 	    else if ($this->authorView[$field] == 0)
 		$x .= " (hidden from authors)";
 	    $x .= "\n";
@@ -801,7 +803,7 @@ $blind\n";
 	    if ($this->authorView[$field] < -1)
 		$x .= "<br /><span class='hint'>(secret)</span>";
 	    else if ($this->authorView[$field] < 0)
-		$x .= "<br /><span class='hint'>(chairs only)</span>";
+		$x .= "<br /><span class='hint'>(shown only to chairs)</span>";
 	    else if ($this->authorView[$field] == 0)
 		$x .= "<br /><span class='hint'>(hidden from authors)</span>";
 	    $x .= "</td>\n";
