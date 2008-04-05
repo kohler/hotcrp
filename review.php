@@ -207,8 +207,8 @@ function downloadForm($editable) {
 	    && $Me->canViewReview($prow, $rr, $Conf, $whyNot))
 	    $text .= downloadView($prow, $rr, $editable);
     foreach ($downrrows as $rr)
-	if (!$rr->reviewSubmitted && $rr->reviewModified > 0
-	    && $Me->canViewReview($prow, $rr, $Conf))
+	if (!$rr->reviewSubmitted
+	    && $Me->canViewReview($prow, $rr, $Conf, $whyNot))
 	    $text .= downloadView($prow, $rr, $editable);
     if (count($downrrows) == 0)
 	$text .= downloadView($prow, null, $editable);
