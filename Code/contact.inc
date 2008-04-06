@@ -859,33 +859,50 @@ class Contact {
     }
 
     function viewReviewFieldsScore($prow, $rrow, $conf) {
-	// Returns the minimum visible authorView score for a visible review
+	// Returns the maximum authorView score for an invisible review
 	// field.  Values for authorView are:
 	//   -2   admin can view
-	//   -1   admin and PC/review author can view
+	//   -1   admin and review author can view
 	//    0   admin and PC/any reviewer can view
 	//    1   admin and PC/any reviewer and author can view
+	// So returning -3 means all scores are visible.
+	// Deadlines are not considered.
+	// (!$prow && !$rrow) ==> return best case scores that can be seen.
+	// (!$prow &&  $rrow) ==> return worst case scores that can be seen.
+
+	// chair can see everything
 	if ($this->privChair
 	    && (!$prow
 		|| $prow->conflictType == 0
 		|| (isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])))
 	    return -3;
-	if ($prow && $prow->conflictType > 0)
+
+	// author can see author information
+	if (($prow && $prow->conflictType > 0)
+	    || (!$prow && !$this->isReviewer))
 	    return 0;
-	if ($this->privChair)
-	    return -3;
-	else if (!$this->isPC && (!$prow || $prow->myReviewType <= 0))
+
+	// authors and external reviewers of not this paper can't see anything
+	if (!$this->isReviewer
+	    || (!$this->isPC && $prow && $prow->myReviewType <= 0))
 	    return 10000;
-	else if (!$prow && $rrow)
-	    return -1;
-	else if (!$rrow)
-	    return -2;
+
+	// see who this reviewer is
+	if (!$rrow)
+	    $rrowContactId = $this->contactId;
 	else if (isset($rrow->reviewContactId))
-	    return ($rrow->reviewContactId == $this->contactId ? -2 : -1);
+	    $rrowContactId = $rrow->reviewContactId;
 	else if (isset($rrow->contactId))
-	    return ($rrow->contactId == $this->contactId ? -2 : -1);
+	    $rrowContactId = $rrow->contactId;
 	else
-	    return -1;
+	    $rrowContactId = -1;
+
+	// reviewer can see any information they entered
+	if ($rrowContactId == $this->contactId)
+	    return -2;
+
+	// otherwise, can see information visible for all reviewers
+	return -1;
     }
     
     function canViewTags($prow, $Conf, $forceShow = true) {

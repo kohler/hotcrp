@@ -85,11 +85,11 @@ if ($Me->amReviewer()) {
 	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='button' type='submit' value='Upload' name='uploadForm' $disabled/>";
     if ($pastDeadline && $Me->privChair)
 	echo "<br /><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
-    echo "<br /><span class='hint'><strong>Tip:</strong> Upload many forms at once by combining them into a single file.</span>";
+    echo "<br /><span class='hint'><strong>Tip:</strong> You may upload a file containing several forms.</span>";
     echo "</div></form></td>\n";
 }
 echo "</tr></table>\n";
 
 if (($text = $rf->webGuidanceRows($Me->viewReviewFieldsScore(null, null, $Conf))))
-    echo "<hr />\n\n<table>\n<tr class='id'>\n  <td class='caption'></td>\n  <td class='entry'><h3>Review form guidance</h3></td>\n</tr>\n", $text, "<tr class='last'><td class='caption'></td><td class='entry'></td></tr></table>\n";
+    echo "<div class='smgap'></div>\n\n<table>\n<tr class='id'>\n  <td class='caption'></td>\n  <td class='entry'><h3>Review form information</h3></td>\n</tr>\n", $text, "<tr class='last'><td class='caption'></td><td class='entry'></td></tr></table>\n";
 $Conf->footer();
