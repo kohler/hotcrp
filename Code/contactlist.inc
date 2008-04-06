@@ -298,15 +298,8 @@ class ContactList extends BaseList {
 	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
 	    $v = scoreCounts($row->$scoreName, $this->scoreMax[$scoreName]);
 	    $m = "";
-	    if ($v->n > 0) {
+	    if ($v->n > 0)
 		$m = $Conf->textValuesGraph($v, 0, 2, 0, $this->rf->reviewFields[$scoreName]);
-		/*foreach ($scores as $score => $count)
-		    $m .= ($m ? " " : "") . "<span class='sc$score'>$count</span>";
-		$avg = $sum / $n;
-		$dev = ($n > 1 ? sqrt(($sumsq - $sum*$sum/$n) / ($n - 1)) : 0);
-		$avgtext = ($n > 1 ? sprintf("%0.2f &plusmn; %0.2f", $avg, $dev) : sprintf("%0.2f", $avg));
-		$m .= "<br /><span class='sc_sum'>$avgtext</span>"; */
-	    }
 	    return $m;
 	default:
 	    return "";

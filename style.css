@@ -1177,10 +1177,12 @@ div.popup_actions {
 }
 
 /* scores */
+div.sc {
+	font-size: smaller;
+}
 span.sc1, span.sc2, span.sc3, span.sc4, span.sc5,
 span.sc6, span.sc7, span.sc8, span.sc9 {
 	font-weight: bold;
-	font-size: smaller;
 }
 span.sc1 {
 	color: #c88080;
@@ -1198,7 +1200,7 @@ span.sc5, span.sc6, span.sc7, span.sc8, span.sc9 {
 	color: #00F000;
 }
 span.sc_sum {
-	font-size: 69%;
+	font-size: smaller;
 }
 
 /* offline reviewing */

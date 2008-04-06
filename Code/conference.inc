@@ -1275,22 +1275,18 @@ class Conference {
 	if ($levelChar > 1)
 	    $url .= "&c=" . chr($levelChar - 1);
 
-	if ($style == 0) {
-	    $retstr = "<table><tr><td align=\"center\">";
-	    $retstr .= "<img src=\"" . htmlspecialchars($url) . "\" alt=\"$avgtext\" title=\"$avgtext\" align='bottom' />";
-	    $retstr .= "</td><tr><td align=\"center\"><span class='sc_sum'>$avgtext</span></td></tr></table>";
-	} else if ($style == 1) {
+	if ($style == 1) {
 	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=1\" alt=\"$avgtext\" title=\"$avgtext\" width='" . (5 * $v->max + 3)
 		. "' height='" . (5 * max(3, max($v->v)) + 3) . "' />";
 	} else if ($style == 2) {
-	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=2\" alt=\"$avgtext\" title=\"$avgtext\" /><br />";
+	    $retstr = "<div class='sc'><img src=\"" . htmlspecialchars($url) . "&amp;s=2\" alt=\"$avgtext\" title=\"$avgtext\" /><br />";
 	    if ($levelChar > 1)
 		for ($key = $v->max; $key >= 1; $key--)
 		    $retstr .= ($key < $v->max ? " " : "") . "<span class='sc$key'>" . $v->v[$key] . "</span>";
 	    else
 		for ($key = 1; $key <= $v->max; $key++)
 		    $retstr .= ($key > 1 ? " " : "") . "<span class='sc$key'>" . $v->v[$key] . "</span>";
-	    $retstr .= "<br /><span class='sc_sum'>" . $avgtext . "</span>";
+	    $retstr .= "<br /><span class='sc_sum'>" . $avgtext . "</span></div>";
 	}
 	
 	return $retstr;
