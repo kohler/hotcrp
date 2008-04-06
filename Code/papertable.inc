@@ -163,7 +163,7 @@ class PaperTable {
 	echo $Me->paperStatus($prow->paperId, $prow, 0);
 	$timestamp = "";
 	if (($flags & self::STATUS_DATE) && $prow->timestamp)
-	    $timestamp = $Conf->cacheableImage("timestamp12.png", "Updated", "Update timestamp") . "&nbsp;" . $Conf->printableTime($prow->timestamp);
+	    $timestamp = $Conf->cacheableImage("timestamp12.png", "Updated", "Time of last paper update") . "&nbsp;" . $Conf->printableTime($prow->timestamp);
 	if (($flags & self::STATUS_DATE) && defval($prow, 'sha1')) {
 	    if ($timestamp)
 		$timestamp .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
