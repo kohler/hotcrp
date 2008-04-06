@@ -187,17 +187,85 @@ if ($Me->privChair) {
 }
 
 
+// Sidebar
+echo "<div class='homeside'><div class='homeinside'>";
+
+// Conference management
+if ($Me->privChair) {
+    echo "<div id='homemgmt'>";
+    echo "<strong class='grpt'>Administration</strong> ";
+    echo "<ul><li><a href='settings$ConfSiteSuffix'>Settings</a></li>";
+    echo "<li><a href='contacts$ConfSiteSuffix?t=all'>Accounts</a></li>";
+    echo "<li><a href='autoassign$ConfSiteSuffix'>Review assignments</a></li>";
+    echo "<li><a href='mail$ConfSiteSuffix'>Send mail</a></li>";
+    echo "<li><a href='log$ConfSiteSuffix'>Action log</a></li></ul>";
+    echo "</div><hr class='home' />\n";
+}
+
+// Conference info
+echo "<div id='homeinfo'>";
+echo "<strong class='grpt'>Conference information</strong><ul>";
+// Any deadlines set?
+$sep = "";
+if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting('sub_sub')
+    || ($Me->isAuthor && $Conf->setting('resp_open') > 0 && $Conf->setting('resp_done'))
+    || ($Me->isPC && $Conf->setting('rev_open') && $Conf->setting('pcrev_hard'))
+    || ($Me->amReviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard'))) {
+    echo "<li><a href='deadlines$ConfSiteSuffix'>Deadlines</a></li>";
+}
+echo "<li><a href='contacts$ConfSiteSuffix?t=pc'>Program committee members</a></li>";
+if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
+    echo "<li><a href='", $Opt['conferenceSite'], "'>Conference site</a></li>";
+if ($Conf->timeAuthorViewDecision()) {
+    $result = $Conf->qe("select outcome, count(paperId) from Paper where timeSubmitted>0 group by outcome", "while loading acceptance statistics");
+    $n = $nyes = 0;
+    while (($row = edb_row($result))) {
+	$n += $row[1];
+	if ($row[0] > 0)
+	    $nyes += $row[1];
+    }
+    echo "<li>", plural($nyes, "paper"), " were accepted out of ", $n, " submitted.</li>";
+}
+echo "</ul></div>\n";
+
+
+// Profile
+if ($Me->valid()) {
+    echo "<hr class='home' />\n<div id='homeacct'>";
+    if (($nh = contactNameHtml($Me)))
+	echo "Welcome, ", $nh, ".";
+    else
+	echo "Welcome.";
+    echo "<ul><li><a href='account$ConfSiteSuffix'><strong class='grpt'>Your Profile</strong></a></li>",
+	"<li><a href='mergeaccounts$ConfSiteSuffix'>Merge accounts</a></li>";
+    echo "<li><a href='index$ConfSiteSuffix?signout=1'>Sign out</a></li>";
+    // echo "(If this isn't you, please <a href='${ConfSiteBase}index$ConfSiteSuffix?signout=1'>sign out</a>.)";
+    // echo "You will be signed out automatically if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.";
+    echo "</ul></div>\n";
+}
+
+echo "</div></div>";
+// End sidebar
+
+
 // Home message
 if (($v = $Conf->settingText("homemsg")))
     $Conf->infoMsg($v);
 
 
-echo "<table class='homegrp'>";
-
-
 // Sign in
 if (!$Me->valid()) {
-    echo "<tr><td id='homeacct'>
+    $confname = $Conf->longName;
+    if ($Conf->shortName && $Conf->shortName != $Conf->longName)
+	$confname .= " ($Conf->shortName)";
+    echo "<div class='homegrp'>
+Welcome to the ", htmlspecialchars($confname), " submissions site.
+Sign in to submit or review papers.";
+    if (isset($Opt["conferenceSite"]))
+	echo " For general information about ", htmlspecialchars($Conf->shortName), ", see the <a href=\"", htmlspecialchars($Opt["conferenceSite"]), "\">conference site</a>.";
+    echo "</div>
+<hr class='home' />
+<div class='homegrp' id='homeacct'>
 <form method='post' action='index$ConfSiteSuffix' accept-charset='UTF-8'><div class='f-contain'>
 <input type='hidden' name='cookie' value='1' />
 <div class='f-ii'>
@@ -220,7 +288,7 @@ if (!$Me->valid()) {
   <input class='button' type='submit' value='Sign in' name='signin' tabindex='1' />
 </div>
 </div></form>
-<hr class='home' /></td></tr>\n";
+<hr class='home' /></div>\n";
     $Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"login\", null, 2);</script>";
 }
 
@@ -229,7 +297,7 @@ if (!$Me->valid()) {
 $papersub = $Conf->setting("papersub");
 $homelist = ($Me->privChair || ($Me->isPC && $papersub) || ($Me->amReviewer() && $papersub));
 if ($homelist) {
-    echo "<tr><td id='homelist'><table><tr><td>";
+    echo "<div class='homegrp' id='homelist'><table><tr><td>";
 
     // Lists
     echo "<strong class='grpt'>List papers: &nbsp;</strong> ";
@@ -261,18 +329,27 @@ if ($homelist) {
 	$sep = $xsep;
     }
 
-    echo "</td></tr><tr><td id='homesearch'>";
-    echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>",
-	"<input class='textlite' type='text' size='32' name='q' value='' /> &nbsp;<input class='button_small' type='submit' value='Search' />",
-	"</div></form>\n";
-    echo "<span class='sep'></span><small><a href='search$ConfSiteSuffix?opt=1'>Advanced search</a></small>";
-    echo "</td></tr></table><hr class='home' /></td></tr>\n";
+    echo "</td></tr>";
+
+    $tOpt = PaperSearch::searchTypes($Me);
+    if (count($tOpt) > 0) {
+	echo "<tr><td id='homesearch'>",
+	    "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>",
+	    "<input class='textlite' type='text' size='32' name='q' value='' /> &nbsp;in&nbsp; ",
+	    PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0),
+	    " &nbsp; <input class='button' type='submit' value='Search' />",
+	    "</div></form>\n",
+	    "<span class='sep'></span><small><a href='search$ConfSiteSuffix?opt=1'>Advanced search</a></small>",
+	    "</td></tr>";
+    }
+    
+    echo "</table><hr class='home' /></div>\n";
 }
 
 
 // Review assignment
 if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
-    echo "<tr><td id='homerev'>";
+    echo "<div class='homegrp' id='homerev'>";
     
     // Overview
     echo "<strong class='grpt'>Reviewing: &nbsp;</strong> ";
@@ -312,6 +389,8 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    echo "&nbsp; <small>(<a href='contacts$ConfSiteSuffix?t=pc&amp;score%5B%5D=0'>Details</a>)</small>";
 	echo "<br />";
     }
+    if ($Me->privChair || ($Me->isPC && $Conf->timeReviewPaper(true, false, true)))
+	echo "\nAs a PC member, you may review <a href='search$ConfSiteSuffix?q=&amp;t=s'>any submitted paper</a>.<br />";
     if ($myrow && $myrow[1] < $myrow[2]) {
 	$rtyp = ($Me->isPC ? "pcrev_" : "extrev_");
 	if (!$Conf->timeReviewPaper($Me->isPC, true, true))
@@ -332,7 +411,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     }
 
     if (($myrow || $Me->privChair) && $npc)
-	echo "</td></tr>\n<tr><td id='foldre' class='foldc'>";
+	echo "</div>\n<div id='foldre' class='homegrp foldc'>";
 
     // Actions
     $sep = "";
@@ -348,10 +427,6 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	echo $sep, "<a href='offline$ConfSiteSuffix'>Offline reviewing</a>";
 	$sep = $xsep;
     }
-    if ($Me->privChair || ($Me->isPC && $Conf->timeReviewPaper(true, false, true))) {
-	echo $sep, "<a href='search$ConfSiteSuffix?q=&amp;t=s'>Review any paper</a>";
-	$sep = $xsep;
-    }
     if ($Me->isRequester) {
 	echo $sep, "<a href='mail$ConfSiteSuffix?monreq=1'>Monitor external reviews</a>";
 	$sep = $xsep;
@@ -364,14 +439,14 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    echo "<div class='smgap extension'>", $ptext, "</div>";
     }
 
-    echo "<hr class='home' /></td></tr>\n";
+    echo "<hr class='home' /></div>\n";
 }
 
 
 // Authored papers
 if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
     || !$Me->amReviewer()) {
-    echo "<tr><td id='homeau'>";
+    echo "<div class='homegrp' id='homeau'>";
 
     // Overview
     if ($Me->isAuthor)
@@ -425,70 +500,8 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 	    "</span>";
     }
 
-    echo "<hr class='home' /></td></tr>\n";
+    echo "<hr class='home' /></div>\n";
 }
 
 
-// Conference info
-echo "<tr><td id='homeinfo'>";
-echo "<strong class='grpt'>Conference information: &nbsp;</strong> ";
-// Any deadlines set?
-$sep = "";
-if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting('sub_sub')
-    || ($Me->isAuthor && $Conf->setting('resp_open') > 0 && $Conf->setting('resp_done'))
-    || ($Me->isPC && $Conf->setting('rev_open') && $Conf->setting('pcrev_hard'))
-    || ($Me->amReviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard'))) {
-    echo $sep, "<a href='deadlines$ConfSiteSuffix'>Deadlines</a>";
-    $sep = $xsep;
-}
-echo $sep, "<a href='contacts$ConfSiteSuffix?t=pc'>Program committee members</a>";
-if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
-    echo $xsep, "<a href='", $Opt['conferenceSite'], "'>Main conference site</a>";
-if ($Conf->timeAuthorViewDecision()) {
-    $result = $Conf->qe("select outcome, count(paperId) from Paper where timeSubmitted>0 group by outcome", "while loading acceptance statistics");
-    $n = $nyes = 0;
-    while (($row = edb_row($result))) {
-	$n += $row[1];
-	if ($row[0] > 0)
-	    $nyes += $row[1];
-    }
-    echo "<br />", plural($nyes, "paper"), " were accepted out of ", $n, " submitted.";
-}
-    
-echo "<hr class='home' /></td></tr>\n";
-
-
-// Conference management
-if ($Me->privChair) {
-    echo "<tr><td id='homemgmt'>";
-    
-    // Lists
-    echo "<strong class='grpt'>Conference management: &nbsp;</strong> ";
-    echo "<a href='settings$ConfSiteSuffix'>Settings</a>";
-    echo $xsep, "<a href='contacts$ConfSiteSuffix?t=all'>Accounts</a>";
-    echo $xsep, "<a href='autoassign$ConfSiteSuffix'>Review assignments</a>";
-    echo $xsep, "<a href='mail$ConfSiteSuffix'>Mail users</a>";
-    echo $xsep, "<a href='log$ConfSiteSuffix'>Action log</a>";
-
-    echo "<hr class='home' /></td></tr>\n";
-}
-
-
-// Profile
-if ($Me->valid()) {
-    echo "<tr><td id='homeacct'>";
-    if (($nh = contactNameHtml($Me)))
-	echo "Welcome, ", $nh, ".", $xsep;
-    else
-	echo "Welcome.", $xsep;
-    echo "<a href='account$ConfSiteSuffix'><strong class='grpt'>Your Profile</strong></a>",
-	$xsep, "<a href='mergeaccounts$ConfSiteSuffix'>Merge accounts</a>";
-    echo $xsep, "<a href='index$ConfSiteSuffix?signout=1'>Sign out</a>";
-    // echo "(If this isn't you, please <a href='${ConfSiteBase}index$ConfSiteSuffix?signout=1'>sign out</a>.)";
-    // echo "You will be signed out automatically if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.";
-    echo "<hr class='home' /></td></tr>\n";
-}
-
-
-echo "</table>\n";
 $Conf->footer();

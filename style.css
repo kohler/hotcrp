@@ -388,32 +388,46 @@ table.center {
 	margin-left: auto;
 	margin-right: auto;
 }
-table.homegrp {
-	margin: 0.8em auto 0em auto;
+div.homegrp {
+	margin: 0.8em 0em 0em 0.2em;
 }
-td#homesearch, body#home td#foldre {
+td#homesearch {
 	padding-top: .75em;
 }
-td#homelist strong.grpt {
+div#homelist strong.grpt {
 	color: #8b3030;
 }
-td#homemgmt strong.grpt {
+div#homemgmt strong.grpt {
 	color: #466246;
 }
-td#homerev strong.grpt {
+div#homerev strong.grpt {
 	color: #1b1ba4;
 }
-td#homeau strong.grpt {
+div#homeau strong.grpt {
 	color: #923e58;
 }
-td#homeinfo strong.grpt {
+div#homeinfo strong.grpt {
 	color: #777777;
 }
+div.homeside {
+	float: right;
+	background-color: white;
+	padding: 0em 0em 0.5em 1em;
+}
+div.homeinside {
+	background-color: #fffdf0;
+	border: 1px solid #9999cc;
+	padding: 0.5em 1em 0.75em 0.75em;
+}
+div.homeside ul {
+	margin: 0em;
+	padding: 0em 0em 0em 2em;
+	list-style-type: none;
+}
 hr.home {
-	margin: 0.8em -24px 0.8em 0px;
+	margin: 0.8em 0px 0.8em 0px;
 	border: none;
 	border-top: 1px solid #d8deff;
-	clear: both;
 }
 span.deadline {
 	font-style: italic;
@@ -633,6 +647,9 @@ ul.compact {
 /* vertically arranged forms */
 div.f-i:first-child {
 	margin-top: 0px;
+}
+div#homeacct div.f-ii, div#homeacct div.f-i {
+	clear: none;
 }
 div.f-ii {
 	width: auto;

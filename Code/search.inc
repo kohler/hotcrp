@@ -885,5 +885,48 @@ class PaperSearch {
 	    }
 	}
     }
-    
+
+    function searchTypes($me) {
+	global $Conf;
+	$tOpt = array();
+	if ($me->isPC && $Conf->setting("pc_seeall") > 0)
+	    $tOpt["act"] = "Active papers";
+	if ($me->isPC)
+	    $tOpt["s"] = "Submitted papers";
+	if ($me->isPC && ($Conf->timeAuthorViewDecision() || $Conf->setting("paperacc") > 0))
+	    $tOpt["acc"] = "Accepted papers";
+	if ($me->privChair)
+	    $tOpt["all"] = "All papers";
+	if ($me->privChair && $Conf->setting("pc_seeall") <= 0 && defval($_REQUEST, "t") == "act")
+	    $tOpt["act"] = "Active papers";
+	if ($me->isAuthor)
+	    $tOpt["a"] = "Your papers";
+	if ($me->amReviewer())
+	    $tOpt["r"] = "Your reviews";
+	if ($me->reviewsOutstanding
+	    || ($me->amReviewer() && defval($_REQUEST, "t") == "rout"))
+	    $tOpt["rout"] = "Your incomplete reviews";
+	if ($me->isPC)
+	    $tOpt["req"] = "Your review requests";
+	return $tOpt;
+    }
+
+    function searchTypeSelector($tOpt, $type, $tabindex) {
+	if (count($tOpt) > 1) {
+	    $tselect = "<select name='t'";
+	    if ($tabindex)
+		$tselect .= " tabindex='1'";
+	    $tselect .= ">";
+	    foreach ($tOpt as $k => $v) {
+		$tselect .= "<option value='$k'";
+		if ($type == $k)
+		    $tselect .= " selected='selected'";
+		$tselect .= ">$v</option>";
+	    }
+	    $tselect .= "</select>";
+	} else
+	    $tselect = current($tOpt);
+	return $tselect;
+    }
+
 }

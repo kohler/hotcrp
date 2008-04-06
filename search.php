@@ -21,26 +21,7 @@ else if (isset($_REQUEST["default"]))
     $_REQUEST["download"] = true;
 
 // paper group
-$tOpt = array();
-if ($Me->isPC && $Conf->setting("pc_seeall") > 0)
-    $tOpt["act"] = "Active papers";
-if ($Me->isPC)
-    $tOpt["s"] = "Submitted papers";
-if ($Me->isPC && ($Conf->timeAuthorViewDecision() || $Conf->setting("paperacc") > 0))
-    $tOpt["acc"] = "Accepted papers";
-if ($Me->privChair)
-    $tOpt["all"] = "All papers";
-if ($Me->privChair && $Conf->setting("pc_seeall") <= 0 && defval($_REQUEST, "t") == "act")
-    $tOpt["act"] = "Active papers";
-if ($Me->isAuthor)
-    $tOpt["a"] = "Your papers";
-if ($Me->amReviewer())
-    $tOpt["r"] = "Your reviews";
-if ($Me->reviewsOutstanding
-    || ($Me->amReviewer() && defval($_REQUEST, "t") == "rout"))
-    $tOpt["rout"] = "Your incomplete reviews";
-if ($Me->isPC)
-    $tOpt["req"] = "Your review requests";
+$tOpt = PaperSearch::searchTypes($Me);
 if (count($tOpt) == 0) {
     $Conf->header("Search", 'search', actionBar());
     $Conf->errorMsg("You are not allowed to search for papers.");
@@ -661,17 +642,7 @@ else
     $activetab = 1;
 $Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"searchform\", $activetab, 1);</script>";
 
-if (count($tOpt) > 1) {
-    $tselect = "<select name='t' tabindex='1'>";
-    foreach ($tOpt as $k => $v) {
-	$tselect .= "<option value='$k'";
-	if ($_REQUEST["t"] == $k)
-	    $tselect .= " selected='selected'";
-	$tselect .= ">$v</option>";
-    }
-    $tselect .= "</select>";
-} else
-    $tselect = current($tOpt);
+$tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
 
 
 // SEARCH FORMS
