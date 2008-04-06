@@ -253,7 +253,7 @@ echo "<div id='foldemail' class='foldo'><table class='extension'>
 
 <div class='smgap'></div>
 
-<p>This page lets you upload many reviewer assignments at once.  Create a
+<p>You may upload many reviewer assignments at once.  Create a
 tab-separated text file with one line per assignment.  The first column must
 be a paper number, and the second and third columns should contain the
 proposed reviewer's name and email address.  For example:</p>

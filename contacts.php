@@ -36,7 +36,7 @@ if ($Me->privChair
     $tOpt["aurej"] = "Contact authors of rejected papers";
 if ($Me->privChair) {
     $tOpt["auuns"] = "Contact authors of non-submitted papers";
-    $tOpt["all"] = "All accounts";
+    $tOpt["all"] = "All users";
 }
 if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
     $Conf->errorMsg("You aren't allowed to list those accounts.");
@@ -114,7 +114,7 @@ if (isset($_REQUEST["scoresort"])) {
 }
 
 
-$title = ($_REQUEST["t"] == "pc" ? "Program Committee" : "Account Listing");
+$title = ($_REQUEST["t"] == "pc" ? "Program Committee" : "Users");
 $Conf->header($title, "accounts", actionBar());
 
 

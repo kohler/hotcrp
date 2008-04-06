@@ -195,8 +195,8 @@ if ($Me->privChair) {
     echo "<div id='homemgmt'>";
     echo "<strong class='grpt'>Administration</strong> ";
     echo "<ul><li><a href='settings$ConfSiteSuffix'>Settings</a></li>";
-    echo "<li><a href='contacts$ConfSiteSuffix?t=all'>Accounts</a></li>";
-    echo "<li><a href='autoassign$ConfSiteSuffix'>Review assignments</a></li>";
+    echo "<li><a href='contacts$ConfSiteSuffix?t=all'>Users</a></li>";
+    echo "<li><a href='autoassign$ConfSiteSuffix'>Assign reviews</a></li>";
     echo "<li><a href='mail$ConfSiteSuffix'>Send mail</a></li>";
     echo "<li><a href='log$ConfSiteSuffix'>Action log</a></li></ul>";
     echo "</div><hr class='home' />\n";
@@ -389,26 +389,26 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    echo "&nbsp; <small>(<a href='contacts$ConfSiteSuffix?t=pc&amp;score%5B%5D=0'>Details</a>)</small>";
 	echo "<br />";
     }
-    if ($Me->privChair || ($Me->isPC && $Conf->timeReviewPaper(true, false, true)))
-	echo "\nAs a PC member, you may review <a href='search$ConfSiteSuffix?q=&amp;t=s'>any submitted paper</a>.<br />";
     if ($myrow && $myrow[1] < $myrow[2]) {
 	$rtyp = ($Me->isPC ? "pcrev_" : "extrev_");
 	if (!$Conf->timeReviewPaper($Me->isPC, true, true))
-	    echo "<span class='deadline'>The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span>";
+	    echo "<span class='deadline'>The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span><br />";
 	else if (!$Conf->timeReviewPaper($Me->isPC, true, false))
-	    echo "<span class='deadline'><strong class='overdue'>Reviews are overdue.</strong>  They were requested by " . $Conf->printableTimeSetting("${rtyp}soft") . ".</span>";
+	    echo "<span class='deadline'><strong class='overdue'>Reviews are overdue.</strong>  They were requested by " . $Conf->printableTimeSetting("${rtyp}soft") . ".</span><br />";
 	else {
 	    $d = $Conf->printableTimeSetting("${rtyp}soft");
 	    if ($d == "N/A")
 		$d = $Conf->printableTimeSetting("${rtyp}hard");
 	    if ($d != "N/A")
-		echo "<span class='deadline'>Please submit your ", ($myrow[2] == 1 ? "review" : "reviews"), " by $d.</span>";
+		echo "<span class='deadline'>Please submit your ", ($myrow[2] == 1 ? "review" : "reviews"), " by $d.</span><br />";
 	}
     } else if ($Me->isPC && $Conf->timeReviewPaper(true, false, true)) {
 	$d = $Conf->printableTimeSetting("pcrev_soft");
 	if ($d != "N/A")
-	    echo "<span class='deadline'>The review deadline is $d.</span>";
+	    echo "<span class='deadline'>The review deadline is $d.</span><br />";
     }
+    if ($Me->privChair || ($Me->isPC && $Conf->timeReviewPaper(true, false, true)))
+	echo "<span class='hint'>As a PC member, you may review <a href='search$ConfSiteSuffix?q=&amp;t=s'>any submitted paper</a>.</span><br />";
 
     if (($myrow || $Me->privChair) && $npc)
 	echo "</div>\n<div id='foldre' class='homegrp foldc'>";
