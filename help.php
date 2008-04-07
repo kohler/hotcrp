@@ -367,17 +367,17 @@ Follow these steps to prepare to accept paper submissions.
 
 <li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=sub'>Set submission
   policies</a></strong>, including whether submission is blind, whether
-  authors check off conflicted PC members (\"Collect authors' PC conflicts
-  with checkboxes\"), and whether authors must enter additional non-PC collaborators,
-  which can help detect conflicts with external reviewers (\"Collect authors'
-  other collaborators as text\").</p></li>
+  authors check off conflicted PC members (&ldquo;Collect authors' PC conflicts
+  with checkboxes&rdquo;), and whether authors must enter additional non-PC collaborators,
+  which can help detect conflicts with external reviewers (&ldquo;Collect authors'
+  other collaborators as text&rdquo;).</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=sub'>Set submission
   deadlines.</a></strong> Authors first <em>register</em>, then <em>submit</em>
   their papers, possibly multiple times; they choose for each submitted
   version whether that version is ready for review.  Normally, HotCRP allows
   authors to update their papers until the deadline, but you can also require
-  that authors \"freeze\" each submission explicitly; only 
+  that authors &ldquo;freeze&rdquo; each submission explicitly; only 
   administrators can update frozen submissions.
   The only deadline that really matters is the paper submission
   deadline, but HotCRP also supports a separate paper registration deadline,
@@ -410,8 +410,8 @@ Follow these steps to prepare to accept paper submissions.
   &ldquo;Check format requirements&rdquo; button to the Edit Paper screen.
   Clicking the button checks the paper for formatting errors, such as going
   over the page limit.  Papers with formatting errors may still be submitted,
-  since the checker itself can make mistakes, but cheating authors now have no
-  excuse.</p></li>
+  since the checker itself can make mistakes, but the automated checker leaves
+  cheating authors no excuse.</p></li>
 
 <li><p>Take a look at a <a href='${ConfSiteBase}paper$ConfSiteSuffix?p=new'>paper
   submission page</a> to make sure it looks right.</p></li>
@@ -429,13 +429,12 @@ After the submission deadline has passed:
 <li><p>Consider looking through <a
   href='${ConfSiteBase}search$ConfSiteSuffix?q=&amp;t=all'>all papers</a> for
   anomalies.  Withdraw and/or delete duplicates or update details on the <a
-  href='${ConfSiteBase}paper$ConfSiteSuffix'>paper pages</a> (via \"Edit paper\").
+  href='${ConfSiteBase}paper$ConfSiteSuffix'>paper pages</a> (via &ldquo;Edit paper&rdquo;).
   Also consider contacting the authors of <a
   href='${ConfSiteBase}search$ConfSiteSuffix?q=status:unsub&amp;t=all'>papers that
   were never officially submitted</a>, especially if a PDF document was
   uploaded (you can tell from the icon in the search list).  Sometimes a
-  user will uncheck \"The paper is ready for review\" and forget to check
-  it.</p></li>
+  user will uncheck &ldquo;The paper is ready for review&rdquo; by mistake.</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rfo'>Prepare the
   review form.</a></strong> Take a look at the templates to get
@@ -443,8 +442,8 @@ After the submission deadline has passed:
 
 <li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>Set review
   policies and deadlines</a></strong>, including reviewing deadlines, whether
-  review is blind, and whether PC members may review non-assigned papers
-  (usually \"yes\" is the right answer).</p></li>
+  review is blind, and whether PC members may review any paper
+  (usually &ldquo;yes&rdquo; is the right answer).</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}reviewprefs$ConfSiteSuffix'>Collect review
   preferences from the PC.</a></strong> PC members can rank-order papers they
@@ -456,8 +455,8 @@ After the submission deadline has passed:
   href='${ConfSiteBase}paper$ConfSiteSuffix'>paper pages</a>.</p>
 
   <p>If you'd like, you can collect review preferences before the submission
-  deadline.  Select <a href='${ConfSiteBase}settings$ConfSiteSuffix?group=sub'>\"PC can
-  see <i>all registered papers</i> until submission deadline\"</a>, which
+  deadline.  Select <a href='${ConfSiteBase}settings$ConfSiteSuffix?group=sub'>&ldquo;PC can
+  see <i>all registered papers</i> until submission deadline&rdquo;</a>, which
   allows PC members to see abstracts for registered papers that haven't yet
   been submitted.</p></li>
 
@@ -468,14 +467,14 @@ After the submission deadline has passed:
   href='${ConfSiteBase}autoassign$ConfSiteSuffix'>automatically</a> by searching for
   preferences of &minus;100 or less.</p></li>
 
-<li><p><strong><a href='${ConfSiteBase}manualassign$ConfSiteSuffix'>Make
-  review assignments.</a></strong> You can make assignments <a
-  href='${ConfSiteBase}assign$ConfSiteSuffix'>by paging through papers</a>, <a
+<li><p><strong><a href='${ConfSiteBase}manualassign$ConfSiteSuffix'>Assign
+  reviews.</a></strong> You can make assignments <a
+  href='${ConfSiteBase}assign$ConfSiteSuffix'>by paper</a>, <a
   href='${ConfSiteBase}manualassign$ConfSiteSuffix'>by PC member</a>, <a
   href='${ConfSiteBase}bulkassign$ConfSiteSuffix'>by uploading an assignments
   file</a>, or, even easier, <a
   href='${ConfSiteBase}autoassign$ConfSiteSuffix'>automatically</a>.  PC
-  review assignments can be \"primary\" or \"secondary\"; the difference is
+  review assignments can be &ldquo;primary&rdquo; or &ldquo;secondary&rdquo;; the difference is
   that primary reviewers are expected to complete their review, but a
   secondary reviewer can choose to delegate their review to someone else.</p>
 
@@ -492,8 +491,8 @@ After the submission deadline has passed:
 ");
     _alternateRow("Before the meeting", "
 Before the meeting, you will generally <a
-href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>set \"PC can see all
-reviews\"</a>, allowing members to view reviews and scores for
+href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>set &ldquo;PC can see all
+reviews&rdquo;</a>, allowing the program committee to view reviews and scores for
 non-conflicted papers.  (In many conferences, PC members are initially
 prevented from seeing a paper's reviews until they have completed their own
 review for that paper; this supposedly reduces bias.)
@@ -507,15 +506,15 @@ review for that paper; this supposedly reduces bias.)
   into the system as <a
   href='${ConfSiteBase}comment$ConfSiteSuffix'>comments</a>.  On the <a
   href='${ConfSiteBase}settings$ConfSiteSuffix?group=dec'>decision settings page</a>,
-  select \"Authors can see reviews\" and \"Collect responses to the
-  reviews,\" then <a href='${ConfSiteBase}mail$ConfSiteSuffix'>send mail to
+  select &ldquo;Authors can see reviews&rdquo; and &ldquo;Collect responses to the
+  reviews,&rdquo; then <a href='${ConfSiteBase}mail$ConfSiteSuffix'>send mail to
   authors</a> informing them of the response deadlines.  PC members will still
   be able to update their reviews, assuming it's before the <a
   href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>review deadline</a>; authors
   are informed via email of any review changes.  At the end of the response
   period it's generally good to <a
-  href='${ConfSiteBase}settings$ConfSiteSuffix?group=dec'>turn off \"Authors can see
-  reviews\"</a> so PC members can update their reviews in peace.</p></li>
+  href='${ConfSiteBase}settings$ConfSiteSuffix?group=dec'>turn off &ldquo;Authors can see
+  reviews&rdquo;</a> so PC members can update their reviews in peace.</p></li>
 
 <li><p>Set <strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>PC can
   see all reviews</a></strong> if you haven't already.</p></li>
@@ -534,8 +533,8 @@ review for that paper; this supposedly reduces bias.)
 
 <li><p><strong><a href='${ConfSiteBase}settings$ConfSiteSuffix?group=dec'>Define decision
   types (optional).</a></strong> By default, HotCRP has two decision types,
-  \"accept\" and \"reject\", but you can add other types of acceptance and
-  rejection, such as \"accept as short paper\".</p></li>
+  &ldquo;accept&rdquo; and &ldquo;reject,&rdquo; but you can add other types of acceptance and
+  rejection, such as &ldquo;accept as short paper.&rdquo;</p></li>
 
 <li><p>The night before the meeting, <strong><a
   href='${ConfSiteBase}search$ConfSiteSuffix?q=&amp;t=s'>download all

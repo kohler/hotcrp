@@ -9,13 +9,13 @@ $searchTags = array('ti' => 'ti', 'title' => 'ti',
 		    'au' => 'au', 'author' => 'au',
 		    'co' => 'co', 'collab' => 'co', 'collaborators' => 'co',
 		    're' => 're', 'rev' => 're', 'review' => 're',
-		    'sre' => 'sre', 'srev' => 'sre', 'sreview' => 'sre',
-		    'cre' => 'sre', 'crev' => 'sre', 'creview' => 'sre',
-		    'subre' => 'sre', 'subrev' => 'sre', 'subreview' => 'sre',
+		    'sre' => 'cre', 'srev' => 'cre', 'sreview' => 'cre',
+		    'cre' => 'cre', 'crev' => 'cre', 'creview' => 'cre',
+		    'subre' => 'cre', 'subrev' => 'cre', 'subreview' => 'cre',
 		    'pri' => 'pri', 'primary' => 'pri',
-		    'cpri' => 'spri', 'cprimary' => 'spri',
+		    'cpri' => 'cpri', 'cprimary' => 'cpri',
 		    'sec' => 'sec', 'secondary' => 'sec',
-		    'csec' => 'ssec', 'csecondary' => 'ssec',
+		    'csec' => 'csec', 'csecondary' => 'csec',
 		    'cmt' => 'cmt', 'comment' => 'cmt',
 		    'aucmt' => 'aucmt', 'aucomment' => 'aucmt',
 		    'tag' => 'tag',
@@ -363,7 +363,7 @@ class PaperSearch {
 	    $qp .= " or (${auextra}Paper.collaborators like '%$lword%')";
 	    $mword = $word;
 	}
-	foreach (array("re", "sre", "pri", "spri", "sec", "ssec") as $rtype)
+	foreach (array("re", "cre", "pri", "cpri", "sec", "csec") as $rtype)
 	    if ($special ? $special == $rtype : isset($this->fields[$rtype])) {
 		$any = true;
 		$qp .= $this->_searchReviewer($lword, $rtype, $type);
