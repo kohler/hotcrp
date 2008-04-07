@@ -253,7 +253,7 @@ class PaperSearch {
 		$mi = "univ";
 	    if (!isset($this->match[$mclass][$mi]))
 		$this->match[$mclass][$mi] = array();
-	    $this->match[$mclass][$mi][0] = true;
+	    $this->match[$mclass][$mi][0] = "true";
 	    if ($mi == "uany")
 		return "";
 	    $qp = "";
@@ -587,8 +587,9 @@ class PaperSearch {
 	$modtable = "${table}_$type$fieldabbr";
 	$xandclause = str_replace("*", "$modtable.", $andclause);
 	$andclause = str_replace("*", "", $andclause);
-	if ($type == "uany"
-	    || ($type == "all" && count($tarr) == 1 && !$confpart))
+	if ($type == "uany")
+	    return " join $table as $modtable on ($modtable.paperId=Paper.paperId$xandclause)";
+	else if ($type == "all" && count($tarr) == 1 && !$confpart)
 	    return " join $table as $modtable on ($modtable.paperId=Paper.paperId and $modtable.$tarr[0]$xandclause)";
 	else if (($type == "all" || $type == "any") && count($tarr) == 0 && !$confpart)
 	    return " join $table as $modtable on (false)";
