@@ -66,7 +66,9 @@ class PaperSearch {
 	$this->amPC = $me->isPC;
 
 	// paper selection
-	$ptype = defval($opt, "t", 0);
+	$ptype = defval($opt, "t", "");
+	if ($ptype === 0)
+	    $ptype = "";
 	if ($this->privChair && !$ptype && $Conf->timeUpdatePaper())
 	    $this->limitName = "all";
 	else if (($me->privChair && $ptype == "act")
