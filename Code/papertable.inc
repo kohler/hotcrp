@@ -581,7 +581,7 @@ class PaperTable {
 		echo "<span class='ellipsis'>", ($t == "" ? "none" : $tx), "&nbsp;</span>";
 		echo "<a href='javascript:fold(\"tags\", 0)'>", $Conf->cacheableImage("next.png", "[Edit]", null, "unfolder"), "</a>";
 		echo "<span class='extension'><input class='textlite' type='text' size='40' name='tags' value=\"", $t, "\" /> &nbsp;<input class='button_small' type='submit' name='settags' value='Save' /> &nbsp; ";
-		echo "<a href='javascript:fold(\"tags\", 1)'>", $Conf->cacheableImage("prev.png", "[Hide]", null, "folder"), "</a><br /><span class='hint'><a href='${ConfSiteBase}help$ConfSiteSuffix?t=tags'>Help</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span></span>";
+		echo "<a href='javascript:fold(\"tags\", 1)'>", $Conf->cacheableImage("prev.png", "[Hide]", null, "folder"), "</a><br /><span class='hint'><a href='${ConfSiteBase}help$ConfSiteSuffix?t=tags'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span></span>";
 		echo "</div></form>";
 	    } else
 		echo $tx;

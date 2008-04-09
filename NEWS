@@ -1,5 +1,36 @@
 HotCRP NEWS
 
+Version 2.15   9.Apr.2008
+
+* Improve homepage with a right-hand sidebar.
+
+* PC members can download any PDF that is "ready for review," even if the
+  submission period has not closed.  A warning informs them that authors
+  can still update.
+
+* Show SHA-1 checksums for paper submissions (Dave Andersen).
+
+* Download: Review forms (zip) returns a .zip with a separate review form
+  file for each form (Jeff Mogul).
+
+* Display "Your discussion leads" link even before "PC can view all
+  reviews" is set (Brad Beckmann).
+
+* Bug fix: Fix manual chair assignment page (Mark Gebhart).
+
+* Bug fix: Fix review form download from the review page (Mark Gebhart).
+
+* Bug fix: Do not reveal author names to reviewers when authors withdraw a
+  paper already under review (Stefan Savage).
+
+* Bug fix: "Reviewers" user search returns reviewers that completed reviews
+  for papers that have since been withdrawn.
+
+* Bug fix: Authors can see review form guidance.
+
+* Bug fix: Searching for "cre:>0", etc. works.
+
+
 Version 2.14   12.Mar.2008
 
 * Review field options can take lettered values, such as A-D or X-Z, as
