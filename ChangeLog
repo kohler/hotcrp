@@ -1,3 +1,225 @@
+2008-04-06 Sunday 17:37  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/search.inc (1.88): Numeric conversion caused the quicklinks
+	  list to avoid "submitted" in favor of "active"; fix that.
+
+2008-04-06 Sunday 17:18  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/search.inc (1.87): Correct another search bug: "cre:>0".
+
+2008-04-06 Sunday 17:10  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.71), Code/search.inc (1.86): Correct bug: make
+	  "cre:<3" type searches work (there was some confusion about
+	  whether the field name was "sre" or "cre").
+
+2008-04-06 Sunday 17:00  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* contacts.php (1.27): another nit
+
+2008-04-06 Sunday 16:57  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* style.css (1.233), Code/conference.inc (1.249),
+	  Code/contactlist.inc (1.34): clean up presentation of average
+	  scores on contact list
+
+2008-04-06 Sunday 13:39  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/papertable.inc (1.112): A little wording improvement.
+
+2008-04-06 Sunday 13:25  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* offline.php (1.38), Code/contact.inc (1.155): Fix
+	  viewReviewFieldsScore so authors can see review form guidance.
+
+2008-04-06 Sunday 12:39  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* bulkassign.php (1.5), contacts.php (1.26), index.php (1.170),
+	  style.css (1.232): Some more UI tweaks.
+
+2008-04-06 Sunday 12:28  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.169), search.php (1.144), style.css (1.231),
+	  Code/search.inc (1.85): Improve home page UI: general links are
+	  placed in a sidebar on the right side of the page.
+
+2008-04-04 Friday 20:01  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* review.php (1.140): Further fix review form download (Mark
+	  Gebhart).
+
+2008-04-04 Friday 12:03  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* review.php (1.139), Code/review.inc (1.102), Code/reviewtable.inc
+	  (1.51): Review nits, including allowing users to download forms
+	  before starting their reviews (Mark Gebhart).
+
+2008-04-01 Tuesday 23:04  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/contactlist.inc (1.33): Reviewer lists should include people
+	  who reviewed papers that were later withdrawn (Matthew Frank)
+
+2008-03-29 Saturday 16:36  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* offline.php (1.37), Code/review.inc (1.101): Improve help on
+	  uploading multiple forms (Jeff Mogul).
+
+2008-03-29 Saturday 16:06  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.73), assign.php (1.91), autoassign.php (1.34),
+	  bulkassign.php (1.4), comment.php (1.58), contactauthors.php
+	  (1.43), contacts.php (1.25), help.php (1.70), index.php (1.168),
+	  log.php (1.10), mail.php (1.32), manualassign.php (1.57),
+	  mergeaccounts.php (1.44), offline.php (1.36), paper.php (1.165),
+	  review.php (1.138), reviewprefs.php (1.13), search.php (1.143),
+	  settings.php (1.80), Code/helpers.inc (1.204), Code/paperlist.inc
+	  (1.168), Code/papertable.inc (1.111): duh, it is called
+	  accept-charset
+
+2008-03-29 Saturday 16:02  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.72), assign.php (1.90), autoassign.php (1.33),
+	  bulkassign.php (1.3), comment.php (1.57), contactauthors.php
+	  (1.42), contacts.php (1.24), help.php (1.69), index.php (1.167),
+	  log.php (1.9), mail.php (1.31), manualassign.php (1.56),
+	  mergeaccounts.php (1.43), offline.php (1.35), paper.php (1.164),
+	  review.php (1.137), reviewprefs.php (1.12), search.php (1.142),
+	  settings.php (1.79), Code/helpers.inc (1.203), Code/paperlist.inc
+	  (1.167), Code/papertable.inc (1.110): mark all forms as
+	  accept-encoding UTF-8 only. This should be a noop; when there is
+	  no accept-encoding, browsers default to sending in the page's
+	  encoding; but why not be explicit.
+
+2008-03-29 Saturday 08:41  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.71), mergeaccounts.php (1.42): ensure the
+	  pcMembers() lists get updated, at least for the current user,
+	  when PC membership changes
+
+2008-03-28 Friday 23:23  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.89), manualassign.php (1.55), script.js (1.64),
+	  Code/conference.inc (1.248), Code/helpers.inc (1.202),
+	  Code/paperlist.inc (1.166), Code/review.inc (1.100): More bug
+	  fixes for the manual assignments page.
+
+	  Ajax the individual assignments.  Correct SQL for topic interest
+	  finding.  Avoid warnings.  Improve pcmembers session variable; we
+	  were reloading the PC member list every time.
+
+2008-03-28 Friday 21:49  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.88), autoassign.php (1.32), index.php (1.166),
+	  reviewprefs.php (1.11), script.js (1.63): Keep track of whether
+	  any discussion leads have been assigned (Brad Beckmann).
+
+2008-03-28 Friday 21:34  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* manualassign.php (1.54): Fix manual assignment page (Mark
+	  Gebhart).
+
+2008-03-26 Wednesday 13:51  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* search.php (1.141), Code/conference.inc (1.247),
+	  Code/paperlist.inc (1.165): Download: Review forms (zip).
+	  Requested by Jeff Mogul; returns a .zip file with all review
+	  forms, rather than a concatenated review form file.  The name of
+	  the download option is a bit off.
+
+2008-03-24 Monday 20:46  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* paper.php (1.163), settings.php (1.78), tarball.sh (1.81),
+	  Code/conference.inc (1.246), Code/papertable.inc (1.109),
+	  Code/schema.sql (1.109), Code/updateschema.sql (1.6),
+	  images/checksum12.png (1.1), images/timestamp12.png (1.1):
+	  Improve "Authors can update submissions until the deadline."
+
+	  Explain the option better (hopefully leading more users to choose
+	  it).	Allow PC members to download "ready for review" papers
+	  immediately (but show them a warning to tell them that authors
+	  can still make changes).  Show SHA-1 checksums for paper
+	  submissions (Dave Andersen suggestion).  Keep SHA-1 checksums by
+	  default.  Improve UI for update timestamp with icon.
+
+2008-03-16 Sunday 03:31  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* paper.php (1.162), Code/mailtemplate.inc (1.42): Fix problem
+	  where author names could be revealed to reviewers when authors
+	  withdrew a paper currently under consideration (Stefan Savage).
+
+2008-03-12 Wednesday 22:05  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* style.css (1.230): more styles
+
+2008-03-12 Wednesday 21:49  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.68), style.css (1.229): visuals nit
+
+2008-03-12 Wednesday 19:00  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/updateschema.sql (1.5): this is the real 2.14
+
+2008-03-12 Wednesday 18:51  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/: backupdb.sh (1.2), schema.sql (1.108): patch up schema
+
+2008-03-12 Wednesday 17:45  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* reviewprefs.php (1.10), style.css (1.228): more nits
+
+2008-03-12 Wednesday 17:34  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* review.php (1.136), search.php (1.140), Code/contact.inc (1.154):
+	  small UI cleanups
+
+2008-03-12 Wednesday 17:11  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.20), comment.php (1.56), tarball.sh (1.80),
+	  images/override24.png (1.3): to 2.14, hopefully
+
+2008-03-12 Wednesday 16:21  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* images/override24.png (1.2): better override logo
+
+2008-03-11 Tuesday 22:31  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* review.php (1.135): review URLs
+
+2008-03-11 Tuesday 22:22  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* style.css (1.227): huh
+
+2008-03-11 Tuesday 22:18  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* images/allreviews24.png (1.2): nit
+
+2008-03-11 Tuesday 19:04  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.19), review.php (1.134), tarball.sh (1.79),
+	  Code/reviewtable.inc (1.50), images/allreviews24.png (1.1),
+	  images/assign24.png (1.1), images/newreview24.png (1.1),
+	  images/override24.png (1.1): add fun icons for the review links
+	  and clean up that section of the page
+
+2008-03-11 Tuesday 13:18  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* review.php (1.133), Code/TODO (1.99): nit
+
+2008-03-11 Tuesday 13:08  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.18), README (1.32), assign.php (1.87), autoassign.php
+	  (1.31), bulkassign.php (1.2), help.php (1.67), index.php (1.165),
+	  mail.php (1.30), manualassign.php (1.53), review.php (1.132),
+	  reviewprefs.php (1.9), search.php (1.139), settings.php (1.77),
+	  style.css (1.226), tarball.sh (1.78), Code/TODO (1.98),
+	  Code/conference.inc (1.245), Code/contact.inc (1.153),
+	  Code/contactlist.inc (1.32), Code/helpers.inc (1.201),
+	  Code/paperlist.inc (1.164), Code/review.inc (1.99),
+	  Code/reviewtable.inc (1.49), Code/schema.sql (1.107),
+	  Code/search.inc (1.84), Code/tags.inc (1.14): some bug fixes and
+	  appearance cleanups, and allow administrators to define tags
+	  corresponding to review rounds
+
 2008-03-10 Monday 22:08  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* cacheable.php (1.12), Code/header.inc (1.53): Recent PHPs appear
