@@ -1117,16 +1117,15 @@ class Conference {
 	    echo " id='$id'";
 	echo " onload='hotcrpLoad($time, ", -date("Z", $time) / 60, ")'>\n";
 	echo "<div id='header'>\n";
-	echo "  <div id='header_left'><h1>";
+	echo "  <div id='header_left_conf'><h1>";
 	if ($title && $showTitle && $title == "Home")
-	    echo htmlspecialchars($this->shortName);
+	    echo "<a class='q' href='${ConfSiteBase}index$ConfSiteSuffix' title='Home'>", htmlspecialchars($this->shortName), "</a>";
 	else
-	    echo "<a href='${ConfSiteBase}index$ConfSiteSuffix'>", htmlspecialchars($this->shortName), "</a><span class='crumbsep'> &nbsp;|&nbsp; </span>", $title;
-	echo "</h1></div><div id='header_user'>";
+	    echo "<a class='x' href='${ConfSiteBase}index$ConfSiteSuffix' title='Home'>", htmlspecialchars($this->shortName), "</a></h1></div><div id='header_left_page'><h1>", $title;
+	echo "</h1></div><div id='header_right'>";
 	if ($_SESSION["Me"]->valid()) {
 	    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
-	    echo "<strong>",
-		htmlspecialchars($_SESSION["Me"]->email),
+	    echo "<strong>", htmlspecialchars($_SESSION["Me"]->email),
 		"</strong>", $xsep;
 	    if (!$_SESSION["Me"]->privChair && $_SESSION["Me"]->chairContactId > 0)
 		echo "<a href=\"", htmlspecialchars(selfHref(array("chairMode" => 0))), "\">Admin&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Return to administrator view]' /></a>", $xsep;

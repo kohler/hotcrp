@@ -45,8 +45,9 @@ Configuration
   - If you checked HotCRP out from CVS, remove the "Code/options.inc" file.
 
   - Run "sudo Code/createdb.sh" to create the database.  You may also run
-    "sudo Code/createdb.sh [OPTIONS]" to pass options to MySQL.  Type
-    "Code/createdb.sh --help" for more information.
+    "sudo Code/createdb.sh OPTIONS" to pass options to MySQL, such as
+    --user and --password.  Run "Code/createdb.sh --help" for more
+    information.
 
   - Edit 'my.cnf' (typical location: '/etc/my.cnf') to ensure that MySQL
     can handle large objects.  It should contain something like this:

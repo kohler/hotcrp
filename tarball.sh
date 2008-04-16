@@ -106,6 +106,7 @@ images/exsearchaction.png
 images/extagsnone.png
 images/extagssearch.png
 images/extagsset.png
+images/homegrad.png
 images/info45.png
 images/newreview24.png
 images/next.png

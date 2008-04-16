@@ -15,12 +15,9 @@ body {
 div#header, div.vbar, div.nvubar {
 	background: #f3ebd5;
 }
-div#header {
+div#header_right {
 	padding: 8px 12px 0px 12px;
-}
-div#header_user {
 	font-size: smaller;
-	padding: 0.25em 0em 0em 0em;
 	text-align: right;
 	float: right;
 }
@@ -28,10 +25,19 @@ span#usertime {
 	padding-top: 1px;
 	font-size: smaller;
 }
-div#header_left {
+div#header_left_conf {
 	float: left;
-	margin-right: 5%;
-	margin-bottom: 0em;
+	padding: 0.2em 0.8em 0.3em 0.8em;
+	border-bottom: 2px solid #b2a584; /*#9999cc*/
+	border-right: 1px solid #b2a584;
+	background-color: #ffffbb;
+	background-image: url("images/homegrad.png");
+	background-repeat: repeat-x;
+	background-position: bottom;
+}
+div#header_left_page {
+	float: left;
+	padding: 0.2em 0em 0em 0.8em;
 }
 h1 {
 	display: inline;
@@ -54,6 +60,7 @@ div.vbar, div.nvubar {
 	padding: 0px 12px;
 	border-bottom: 2px solid #9999cc;
 	position: relative;
+	clear: left;
 }
 table.vbar {
 	width: 100%;
@@ -101,10 +108,14 @@ table.vbar div.vbtab1y {
 	color: #000000;
 	font-weight: bold;
 }
-.vbtab a, td.listlinks a, div#header_left a {
+div#header_left a {
+	font-weight: normal;
 	text-decoration: none;
 }
-.vbtab a:hover, td.listlinks a:hover, div#header_left a:hover, a.q:hover {
+.vbtab a, td.listlinks a {
+	text-decoration: none;
+}
+.vbtab a:hover, td.listlinks a:hover, div#header_left a:hover, a.q:hover, a.x:hover {
 	text-decoration: underline;
 }
 table.vbar td.gopaper, table.vbar td.listlinks {
@@ -119,6 +130,9 @@ td.spanner {
 a.q {
 	text-decoration: none;
 	color: #000000;
+}
+a.x {
+	text-decoration: none;
 }
 a.small {
 	font-size: smaller;
