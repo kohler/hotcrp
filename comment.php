@@ -341,9 +341,8 @@ function commentIdentityTime($prow, $crow, &$sep) {
 	$sep = ($blind ? "]" : "") . $xsep;
     } else if ($crow && $Me->privChair) {
 	echo "<span id='foldcid$crow->commentId' class='fold4c'>",
-	    "<a href=\"javascript:fold('cid$crow->commentId', 0, 4)\" class='foldbutton unfolder4'>+</a>",
-	    "<a href=\"javascript:fold('cid$crow->commentId', 1, 4)\" class='foldbutton folder4'>&ndash;</a> ",
-	    "<span class='ellipsis4'><i>Hidden for blind review</i></span>",
+	    foldbutton("cid$crow->commentId", "comment", 4),
+	    " <span class='ellipsis4'><i>Hidden for blind review</i></span>",
 	    "<span class='extension4'>", contactHtml($crow), "</span>",
 	    "</span>";
 	$sep = $xsep;

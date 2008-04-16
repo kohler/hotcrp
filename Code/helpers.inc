@@ -169,6 +169,13 @@ function validateEmail($email) {
 	|| preg_match('/^([*+!.&#$|\'\\%\/0-9a-z^_`{}=?~:-]+)@(_\.[0-9a-z]+)$/i', $email);
 }
 
+function foldbutton($foldtype, $title, $foldnum=0) {
+    $showtitle = ($title ? " title='" . htmlspecialchars("Show $title") . "'" : "");
+    $hidetitle = ($title ? " title='" . htmlspecialchars("Hide $title") . "'" : "");
+    $foldclass = ($foldnum ? $foldnum : ""); 
+    $foldnum = ($foldnum ? ", $foldnum" : "");
+    return "<a href=\"javascript:fold('$foldtype', 0$foldnum)\" class='foldbutton unfolder$foldclass'$showtitle>+</a><a href=\"javascript:fold('$foldtype', 1$foldnum)\" class='foldbutton folder$foldclass'$hidetitle>&ndash;</a>";
+}
 
 function reviewType($paperId, $row, $long = 0) {
     if ($row->reviewType == REVIEW_PRIMARY)
@@ -483,7 +490,7 @@ function goPaperForm($baseUrl = null, $args = array()) {
 	    $baseUrl = "paper$ConfSiteSuffix";
     }
     $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get' accept-charset='UTF-8'><div class='inform'>";
-    $x .= "#<input class='textlite' type='text' size='6' name='p' />";
+    $x .= "<input class='textlite' type='text' size='6' name='p' title='Enter paper numbers or search terms' />";
     foreach ($args as $what => $val)
 	$x .= "<input type='hidden' name=\"" . htmlspecialchars($what) . "\" value=\"" . htmlspecialchars($val) . "\" />";
     if (isset($CurrentList) && $CurrentList > 0)

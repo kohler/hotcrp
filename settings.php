@@ -891,7 +891,7 @@ function doRevGroup() {
 
     echo "<div class='smgap'></div>\n";
     $t = expandMailTemplate("requestreview", false);
-    echo "<div id='foldmailbody_requestreview' class='foldc'><a href=\"javascript:fold('mailbody_requestreview', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('mailbody_requestreview', 1)\" class='foldbutton folder'>&ndash;</a>&nbsp;
+    echo "<div id='foldmailbody_requestreview' class='foldc'>", foldbutton("mailbody_requestreview", ""), "&nbsp;
   <a href=\"javascript:fold('mailbody_requestreview', 0)\" class='unfolder q'><strong>Mail template for external review requests</strong></a>\n";
     echo "  <span class='extension'><strong>Mail template for external review requests</strong> (<a href='${ConfSiteBase}mail$ConfSiteSuffix'>keywords</a> allowed)<br /></span>
 <textarea class='tt extension' name='mailbody_requestreview' cols='80' rows='20' onchange='highlightUpdate()'>", htmlspecialchars($t[1]), "</textarea></div>\n";

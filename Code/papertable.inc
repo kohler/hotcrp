@@ -154,8 +154,7 @@ class PaperTable {
 	echo "<tr class='pt_status'>\n";
 	echo "  <td class='caption'>";
 	if ($this->allFolded)
-	    echo "<a href=\"javascript:fold('paper', 0, 9)\" class='foldbutton unfolder9'>+</a>",
-		"<a href=\"javascript:fold('paper', 1, 9)\" class='foldbutton folder9'>&ndash;</a> ";
+	    echo foldbutton("paper", "abstract and authors", 9), " ";
 	echo ($canUpload ? "Status" : "Paper"), "</td>\n";
 	echo "  <td class='entry'>";
 
@@ -346,8 +345,7 @@ class PaperTable {
 	echo "<tr class='pt_authorInformation'>\n";
 	echo "  ", $this->tdCaption("authorInformation");
 	if ($this->authorsFolded)
-	    echo "<a href=\"javascript:fold('authors', 0, 8)\" class='foldbutton unfolder8'>+</a>",
-	    "<a href=\"javascript:fold('authors', 1, 8)\" class='foldbutton folder8'>&ndash;</a> ";
+	    echo foldbutton("authors", "authors", 8), " ";
 	echo "Authors";
 	if ($this->editable)
 	    echo "<br /><small><a href='javascript:authorfold(\"auedit\",1,1)'>More</a> | <a href='javascript:authorfold(\"auedit\",1,-1)'>Fewer</a></small>";
@@ -579,9 +577,9 @@ class PaperTable {
 	    if ($site && $Me->canSetTags($prow, $Conf)) {
 		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div id='foldtags' class='foldc inform'>";
 		echo "<span class='ellipsis'>", ($t == "" ? "none" : $tx), "&nbsp;</span>";
-		echo "<a href='javascript:fold(\"tags\", 0)'>", $Conf->cacheableImage("next.png", "[Edit]", null, "unfolder"), "</a>";
+		echo "<a href='javascript:fold(\"tags\", 0)' title='Edit tags'>", $Conf->cacheableImage("next.png", "[Edit]", null, "unfolder"), "</a>";
 		echo "<span class='extension'><input class='textlite' type='text' size='40' name='tags' value=\"", $t, "\" /> &nbsp;<input class='button_small' type='submit' name='settags' value='Save' /> &nbsp; ";
-		echo "<a href='javascript:fold(\"tags\", 1)'>", $Conf->cacheableImage("prev.png", "[Hide]", null, "folder"), "</a><br /><span class='hint'><a href='${ConfSiteBase}help$ConfSiteSuffix?t=tags'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span></span>";
+		echo "<button type='button' class='button_small' onclick='javascript:fold(\"tags\", 1)'>Cancel</button><br /><span class='hint'><a href='${ConfSiteBase}help$ConfSiteSuffix?t=tags'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span></span>";
 		echo "</div></form>";
 	    } else
 		echo $tx;

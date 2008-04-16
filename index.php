@@ -416,7 +416,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     // Actions
     $sep = "";
     if ($myrow) {
-	echo $sep, "<a href=\"javascript:fold('re', 0)\" class='foldbutton unfolder'>+</a><a href=\"javascript:fold('re', 1)\" class='foldbutton folder'>&ndash;</a>&nbsp;<a href=\"search$ConfSiteSuffix?q=&amp;t=r\"><strong>Your Reviews</strong></a>";
+	echo $sep, foldbutton("re", "review list"), "&nbsp;<a href=\"search$ConfSiteSuffix?q=&amp;t=r\"><strong>Your Reviews</strong></a>";
 	$sep = $xsep;
     }
     if ($Me->isPC && $Conf->timePCReviewPreferences()) {

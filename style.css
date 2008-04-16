@@ -28,7 +28,7 @@ span#usertime {
 div#header_left_conf {
 	float: left;
 	padding: 0.2em 0.8em 0.3em 0.8em;
-	border-bottom: 2px solid #b2a584; /*#9999cc*/
+	border-bottom: 2px solid #b2a584;
 	border-right: 1px solid #b2a584;
 	background-color: #ffffbb;
 	background-image: url("images/homegrad.png");
@@ -118,9 +118,13 @@ div#header_left a {
 .vbtab a:hover, td.listlinks a:hover, div#header_left a:hover, a.q:hover, a.x:hover {
 	text-decoration: underline;
 }
-table.vbar td.gopaper, table.vbar td.listlinks {
+table.vbar td.gopaper {
 	vertical-align: middle;
 	padding: 4px 0.5em;
+}
+table.vbar td.listlinks {
+	vertical-align: middle;
+	padding: 4px 0.75em 4px 0.5em;
 }
 td.spanner {
 	width: 100%;
