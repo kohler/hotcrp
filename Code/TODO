@@ -1,3 +1,13 @@
+- HotNets V underlined
+- Offline reviewing link on search page?
+- [-]/[+] tooltip
+- Tags |> tooltip
+- # tooltip
+- Reviewers can see withdrawn papers that they have been assgned
+- "-word" means "do not include this"?
+- "(All)" same as nothing in search
+
+
 * reviewNeedsSubmit means: -1, delegating; 0, done or successfully delegated; 1, in progress
 
 - downloading reviews from the search screen gets comments as well
