@@ -184,6 +184,7 @@ function searchQuickref() {
     _searchQuickrefRow("", "\"802\"", "&ldquo;802&rdquo; in title, abstract, possibly authors (not paper #802)");
     _searchQuickrefRow("", "very new", "&ldquo;very&rdquo; <i>or</i> &ldquo;new&rdquo; in title, abstract, possibly authors");
     _searchQuickrefRow("", "\"very new\"", "the phrase &ldquo;very new&rdquo; in title, abstract, possibly authors<br />(To search for papers matching both &ldquo;very&rdquo; and &ldquo;new&rdquo;, but not necessarily the phrase, expand the search options and use &ldquo;With <i>all</i> the words.&rdquo;)");
+    _searchQuickrefRow("", "very -new", "&ldquo;very&rdquo; <i>but not</i> &ldquo;new&rdquo; in title, abstract, possibly authors");
     _searchQuickrefRow("Title", "ti:flexible", "title contains &ldquo;flexible&rdquo;");
     _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains &ldquo;very novel&rdquo;");
     _searchQuickrefRow("Authors", "au:poletto", "author list contains &ldquo;poletto&rdquo;");

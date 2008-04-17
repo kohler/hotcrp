@@ -427,7 +427,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 
     // Overview
     if ($Me->isAuthor)
-	echo "<strong class='grpt'>Your submissions: &nbsp;</strong> ";
+	echo "<strong class='grpt'>Your Submissions: &nbsp;</strong> ";
     else
 	echo "<strong class='grpt'>Submissions: &nbsp;</strong> ";
 

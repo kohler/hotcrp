@@ -315,10 +315,12 @@ class PaperSearch {
 	global $searchTags, $Conf;
 
 	// check for paper number
+	if ($word[0] == "#" && preg_match('/^#\d+(-#?\d+)?/', $word))
+	    $word = substr($word, 1);
 	if (ctype_digit($word)) {
 	    $qpapers[] = "Paper.paperId=$word";
 	    return "";
-	} else if (preg_match('/^(\d+)-(\d+)$/i', $word, $m)) {
+	} else if (preg_match('/^(\d+)-#?(\d+)$/', $word, $m)) {
 	    $qpapers[] = "Paper.paperId between $m[1] and $m[2]";
 	    return "";
 	}
@@ -559,13 +561,24 @@ class PaperSearch {
 	$n = 0;
 	
 	while ($str != "") {
-	    preg_match('/^("[^"]+"?|[a-zA-Z][a-zA-Z0-9]*:"[^"]+"?|[^"\s]+)/s', $str, $m);
+	    preg_match('/^([-+]?"[^"]+"?|[a-zA-Z][a-zA-Z0-9]*:"[^"]+"?|[^"\s]+)/s', $str, $m);
 	    $word = $m[0];
 	    $str = ltrim(substr($str, strlen($word)));
 	    if ($n == 0 && $str == "" && $type == "any")
 		$type = "all";
 	    ++$n;
 
+	    if ($word[0] == "-" || $word[0] == "+") {
+		$char = $word[0];
+		$word = substr($word, 1);
+		if (($type == "any" || $type == "all") && $char == "-") {
+		    $this->qx = $word . " " . $this->qx;
+		    continue;
+		} else if ($type == "any" && $char == "+") {
+		    $this->qa = $word . " " . $this->qa;
+		    continue;
+		}
+	    }
 	    if (($qp = $this->_searchQueryWord($word, $type, $qpapers)))
 		$qnorm[] = $qp;
 	}

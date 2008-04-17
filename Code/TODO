@@ -1,6 +1,4 @@
 - Offline reviewing link on search page?
-- "-word" means "do not include this"?
-- "+word" means "must include this"?
 
 
 * reviewNeedsSubmit means: -1, delegating; 0, done or successfully delegated; 1, in progress
