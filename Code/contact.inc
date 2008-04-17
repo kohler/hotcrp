@@ -37,6 +37,7 @@ class Contact {
     var $isAuthor;
     var $isReviewer;
     var $isRequester;
+    var $isDiscussionLead;
     var $roles;
     var $isPC;
     var $privChair;
@@ -80,6 +81,7 @@ class Contact {
 	    else {
 		$this->roles = 0;
 		$this->isAuthor = $this->isReviewer = $this->isRequester = $this->isPC = $this->privChair = $this->reviewsOutstanding = false;
+		$this->isDiscussionLead = null;
 		while (($row = edb_row($result))) {
 		    if ($row[0] >= CONFLICT_AUTHOR)
 			$this->isAuthor = true;
@@ -488,7 +490,7 @@ class Contact {
 	// policy
 	if ($prow->conflictType >= CONFLICT_AUTHOR
 	    || $this->privChair
-	    || ($prow->myReviewType > 0 && $prow->timeSubmitted > 0 && $conf->timeReviewerViewSubmittedPaper())
+	    || ($prow->myReviewType > 0 && $conf->timeReviewerViewSubmittedPaper())
 	    || ($this->isPC && $conf->timePCViewPaper($prow, $download)))
 	    return true;
 	// collect failure reasons
@@ -521,9 +523,9 @@ class Contact {
 	$pblind = paperBlind($prow);
 	if (($prow->conflictType >= CONFLICT_AUTHOR
 	     && (!$this->isPC || !$blindWins || !$pblind))
-	    || ($prow->timeSubmitted > 0
-		&& ($this->isPC || $prow->myReviewType > 0)
-		&& !$pblind)
+	    || ($prow->myReviewType > 0 && !$pblind
+		&& $conf->timeReviewerViewSubmittedPaper())
+	    || ($prow->timeSubmitted > 0 && !$pblind && $this->isPC)
 	    || ($prow->outcome > 0
 		&& ($this->isPC || $prow->myReviewType > 0)
 		&& $conf->timeReviewerViewAcceptedAuthors())
@@ -551,7 +553,8 @@ class Contact {
 	$rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
 	if ($this->privChair && $forceShow)
 	    return true;
-	if ($prow->timeSubmitted > 0
+	if (($prow->timeSubmitted > 0
+	     || defval($prow, "myReviewType") > 0)
 	    && (($prow->conflictType >= CONFLICT_AUTHOR
 		 && $conf->timeAuthorViewReviews() && $rrowSubmitted
 		 && (!$this->reviewsOutstanding || !$this->isReviewer))
@@ -624,7 +627,8 @@ class Contact {
 	    return false;
 	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
 	// policy
-	if ($prow->timeSubmitted > 0
+	if (($prow->timeSubmitted > 0 || $prow->myReviewType > 0
+	     || ($this->privChair && $forceShow))
 	    && (($this->privChair && ($forceShow || $prow->conflictType == 0))
 		|| ($this->isPC && $prow->conflictType == 0)
 		|| $prow->myReviewType > 0
@@ -674,7 +678,7 @@ class Contact {
 	    return false;
 	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
 	// policy
-	if ($prow->timeSubmitted > 0
+	if (($prow->timeSubmitted > 0 || $prow->myReviewType > 0)
 	    && (($this->privChair && ($forceShow || $prow->conflictType == 0))
 		|| ($this->isPC && $prow->conflictType == 0)
 		|| $prow->myReviewType > 0)
@@ -790,9 +794,12 @@ class Contact {
 
     function amDiscussionLead($paperId, $conf, $prow = null) {
 	if ($prow === null && $paperId <= 0) {
-	    $result = $conf->qe("select count(paperId) from Paper where leadContactId=$this->contactId");
-	    $row = edb_row($result);
-	    return $row && $row[0] > 0;
+	    if ($this->isDiscussionLead === null) {
+		$result = $conf->qe("select count(paperId) from Paper where leadContactId=$this->contactId");
+		$row = edb_row($result);
+		$this->isDiscussionLead = $row && $row[0] > 0;
+	    }
+	    return $this->isDiscussionLead;
 	} else if ($prow === null) {
 	    $result = $conf->qe("select paperId from Paper where paperId=$paperId and leadContactId=$this->contactId");
 	    return edb_nrows($result) > 0;

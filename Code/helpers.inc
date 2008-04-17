@@ -831,11 +831,12 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 	$goBase = "paper$ConfSiteSuffix";
     $xmode = (isset($_REQUEST["mode"]) && $goBase == "paper$ConfSiteSuffix" ? array("mode" => $_REQUEST["mode"]) : array());
     
-    $listarg = $listlinks_txt = "";
+    $listarg = $forceShow;
+    $listlinks_txt = "";
     if ($prow) {
 	$listlinks_txt = listLinks($prow->paperId, $goBase, $xmode);
 	if (isset($CurrentList) && $CurrentList > 0)
-	    $listarg = "&amp;ls=$CurrentList";
+	    $listarg .= "&amp;ls=$CurrentList";
     }
 
     // create action bar
@@ -849,7 +850,9 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 	&& ($prow->reviewType > 0
 	    || $Me->canViewReview($prow, null, $Conf)
 	    || ($Me->isPC && $prow->timeSubmitted > 0
-		&& $Conf->timeReviewOpen())))
+		&& $Conf->timeReviewOpen())
+	    || $Me->privChair
+	    || $mode == "review"))
 	$act .= actionTab("Reviews", "${ConfSiteBase}review$ConfSiteSuffix?p=$paperId$listarg", $mode == "review");
 
     if (!$newPaper && $prow
@@ -872,8 +875,7 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 	$act .= actionTab($txt, "${ConfSiteBase}comment$ConfSiteSuffix?p=$paperId$listarg", $mode == "comment");
     }
 
-    if ($mode == "assign"
-	|| ($Me->privChair && $prow && $prow->timeSubmitted > 0))
+    if ($mode == "assign" || ($Me->privChair && $prow))
 	$act .= actionTab("Assignments", "${ConfSiteBase}assign$ConfSiteSuffix?p=$paperId$listarg", $mode == "assign");
     
     if ($thisUrl)

@@ -501,7 +501,7 @@ function reviewView($prow, $rrow, $editMode) {
 	$sep = $xsep;
     }
     if ($rrow && !$editMode && $Me->canReview($prow, $rrow, $Conf))
-	echo $sep, "<a class='button' href='review$ConfSiteSuffix?r=$reviewOrdinal'>Edit</a>";
+	echo $sep, "<a class='button' href='review$ConfSiteSuffix?r=$reviewOrdinal$linkExtra'>Edit</a>";
     echo "</td>
 </tr>\n";
     

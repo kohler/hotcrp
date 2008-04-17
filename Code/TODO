@@ -1,7 +1,6 @@
 - Offline reviewing link on search page?
-- Reviewers can see withdrawn papers that they have been assgned
 - "-word" means "do not include this"?
-- "(All)" same as nothing in search
+- "+word" means "must include this"?
 
 
 * reviewNeedsSubmit means: -1, delegating; 0, done or successfully delegated; 1, in progress

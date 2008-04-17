@@ -47,7 +47,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	    $id .= "&nbsp;(in&nbsp;progress)";
 	else
 	    $id .= "&nbsp;(not&nbsp;started)";
-	$rlink = unparseReviewOrdinal($rr);
+	$rlink = unparseReviewOrdinal($rr) . $linkExtra;
 	if ($rrow && $rrow->reviewId == $rr->reviewId)
 	    $t .= "<td><a href='${ConfSiteBase}review$ConfSiteSuffix?r=$rlink' class='q'><b>$id</b></a></td>";
 	else if (!$canView)

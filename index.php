@@ -224,7 +224,7 @@ if ($Conf->timeAuthorViewDecision()) {
 	if ($row[0] > 0)
 	    $nyes += $row[1];
     }
-    echo "<li>", plural($nyes, "paper"), " were accepted out of ", $n, " submitted.</li>";
+    echo "<li>", plural($nyes, "paper"), " were accepted<br />out of ", $n, " submitted.</li>";
 }
 echo "</ul></div>\n";
 
@@ -297,53 +297,25 @@ Sign in to submit or review papers.";
 $papersub = $Conf->setting("papersub");
 $homelist = ($Me->privChair || ($Me->isPC && $papersub) || ($Me->amReviewer() && $papersub));
 if ($homelist) {
-    echo "<div class='homegrp' id='homelist'><table><tr><td>";
+    echo "<div class='homegrp' id='homelist'>";
 
     // Lists
-    echo "<strong class='grpt'>List papers: &nbsp;</strong> ";
-    $sep = "";
-    if ($Me->isReviewer) {
-	echo $sep, "<a href='search$ConfSiteSuffix?q=&amp;t=r' class='nowrap'>Your reviews</a>";
-	$sep = $xsep;
-    }
-    if ($Me->isPC && $Conf->setting("paperlead") > 0
-	&& $Me->amDiscussionLead(0, $Conf)) {
-	echo $sep, "<a href=\"search$ConfSiteSuffix?q=lead:", urlencode($Me->email), "&amp;t=s\" class='nowrap'>Your discussion leads</a>";
-	$sep = $xsep;
-    }
-    if ($Me->isPC && $Conf->setting("pc_seeall") > 0) {
-	echo $sep, "<a href='search$ConfSiteSuffix?q=&amp;t=act' class='nowrap'>Active</a>";
-	$sep = $xsep;
-    }
-    if ($Me->isPC && $papersub) {
-	echo $sep, "<a href='search$ConfSiteSuffix?q=&amp;t=s' class='nowrap'>Submitted</a>";
-	$sep = $xsep;
-    }
-    if (($Me->isPC && $Conf->timeAuthorViewDecision() && $papersub)
-	|| ($Me->privChair && $Conf->setting("paperacc") > 0)) {
-	echo $sep, "<a href='search$ConfSiteSuffix?q=&amp;t=acc' class='nowrap'>Accepted</a>";
-	$sep = $xsep;
-    }
-    if ($Me->privChair) {
-	echo $sep, "<a href='search$ConfSiteSuffix?q=&amp;t=all' class='nowrap'>All</a>";
-	$sep = $xsep;
-    }
-
-    echo "</td></tr>";
+    echo "<strong class='grpt'>Search: &nbsp;</strong> ";
 
     $tOpt = PaperSearch::searchTypes($Me);
     if (count($tOpt) > 0) {
-	echo "<tr><td id='homesearch'>",
-	    "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>",
-	    "<input class='textlite' type='text' size='32' name='q' value='' /> &nbsp;in&nbsp; ",
+	$q = defval($_REQUEST, "q", "(All)");
+	echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>",
+	    "<input class='textlite' type='text' size='32' name='q' value=\"",
+	    htmlspecialchars($q),
+	    "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" title='Enter paper numbers or search terms' /> &nbsp;in&nbsp; ",
 	    PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0),
 	    " &nbsp; <input class='button' type='submit' value='Search' />",
 	    "</div></form>\n",
-	    "<span class='sep'></span><small><a href='search$ConfSiteSuffix?opt=1'>Advanced search</a></small>",
-	    "</td></tr>";
+	    "<span class='sep'></span><small><a href='search$ConfSiteSuffix?opt=1'>Advanced search</a></small>";
     }
-    
-    echo "</table><hr class='home' /></div>\n";
+
+    echo "<hr class='home' /></div>\n";
 }
 
 
@@ -352,7 +324,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     echo "<div class='homegrp' id='homerev'>";
     
     // Overview
-    echo "<strong class='grpt'>Reviewing: &nbsp;</strong> ";
+    echo "<strong class='grpt'>Reviews: &nbsp;</strong> ";
     $result = $Conf->qe("select PaperReview.contactId, count(reviewSubmitted), count(if(reviewNeedsSubmit=0,reviewSubmitted,1)), group_concat(overAllMerit), PCMember.contactId as pc from PaperReview join Paper using (paperId) left join PCMember on (PaperReview.contactId=PCMember.contactId) where Paper.timeSubmitted>0 group by PaperReview.contactId", "while fetching review status");
     $rf = reviewForm();
     $maxOverAllMerit = $rf->maxNumericScore("overAllMerit");
@@ -419,6 +391,11 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	echo $sep, foldbutton("re", "review list"), "&nbsp;<a href=\"search$ConfSiteSuffix?q=&amp;t=r\"><strong>Your Reviews</strong></a>";
 	$sep = $xsep;
     }
+    if ($Me->isPC && $Conf->setting("paperlead") > 0
+	&& $Me->amDiscussionLead(0, $Conf)) {
+	echo $sep, "<a href=\"search$ConfSiteSuffix?q=&amp;t=lead\" class='nowrap'>Your discussion leads</a>";
+	$sep = $xsep;
+    }
     if ($Me->isPC && $Conf->timePCReviewPreferences()) {
 	echo $sep, "<a href='reviewprefs$ConfSiteSuffix'>Preferences</a>";
 	$sep = $xsep;
@@ -450,7 +427,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 
     // Overview
     if ($Me->isAuthor)
-	echo "<strong class='grpt'>Your Papers: &nbsp;</strong> ";
+	echo "<strong class='grpt'>Your submissions: &nbsp;</strong> ";
     else
 	echo "<strong class='grpt'>Submissions: &nbsp;</strong> ";
 

@@ -810,6 +810,7 @@ class PaperList extends BaseList {
 	    $this->paperLink = "review";
 	    return array(1, 11, 27, 21);
 	  case "r":
+	  case "lead":
 	    $this->paperLink = "review";
 	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71));
 	  case "rout":

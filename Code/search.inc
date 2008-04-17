@@ -85,6 +85,8 @@ class PaperSearch {
 	    $this->limitName = "all";
 	else if ($this->privChair && $ptype == "unsub")
 	    $this->limitName = "unsub";
+	else if ($me->isPC && $ptype == "lead")
+	    $this->limitName = "lead";
 	else if ($me->amReviewer() && (!$ptype || $ptype == "r"))
 	    $this->limitName = "r";
 	else if ($me->amReviewer() && $ptype == "rout")
@@ -618,14 +620,16 @@ class PaperSearch {
 	$this->_searchQueryType($this->qx, "none");
 
 	// status limitation parts
-	if ($this->limitName == "s" || $this->limitName == "r"
-	    || $this->limitName == "req" || $this->limitName == "revs"
+	if ($this->limitName == "s"
+	    || $this->limitName == "req"
 	    || $this->limitName == "acc" || $this->limitName == "und")
 	    $this->filters[] = "Paper.timeSubmitted>0";
 	else if ($this->limitName == "act")
 	    $this->filters[] = "Paper.timeWithdrawn<=0";
 	else if ($this->limitName == "unsub")
 	    $this->filters[] = "(Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0)";
+	else if ($this->limitName == "lead")
+	    $this->filters[] = "Paper.leadContactId=" . $this->contactId;
 
 	// decision limitation parts
 	if ($this->limitName == "acc")
@@ -667,6 +671,8 @@ class PaperSearch {
 	$q = "select Paper.paperId from Paper";
 	if ($this->limitName == "r")
 	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . ")";
+	else if ($this->limitName == "revs")
+	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId)";
 	else if ($this->limitName == "rout")
 	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . " and Limiter.reviewNeedsSubmit!=0)";
 	else if ($this->limitName == "a")
@@ -743,18 +749,18 @@ class PaperSearch {
 	} else if ($this->limitName == "und") {
 	    $queryOptions["undecided"] = 1;
 	    $queryOptions["finalized"] = 1;
-	} else if ($this->limitName == "r") {
-	    $queryOptions["finalized"] = 1;
+	} else if ($this->limitName == "r")
 	    $queryOptions["myReviews"] = 1;
-	} else if ($this->limitName == "rout") {
-	    $queryOptions["finalized"] = 1;
+	else if ($this->limitName == "rout")
 	    $queryOptions["myOutstandingReviews"] = 1;
-	} else if ($this->limitName == "a")
+	else if ($this->limitName == "a")
 	    $queryOptions["author"] = 1;
 	else if ($this->limitName == "req" || $this->limitName == "reqrevs")
 	    $queryOptions["myReviewRequests"] = 1;
 	else if ($this->limitName == "act")
 	    $queryOptions["active"] = 1;
+	else if ($this->limitName == "lead")
+	    $queryOptions["myLead"] = 1;
 	return false;
     }
 
@@ -902,8 +908,9 @@ class PaperSearch {
 	    $tOpt["all"] = "All papers";
 	if ($me->privChair && $Conf->setting("pc_seeall") <= 0 && defval($_REQUEST, "t") == "act")
 	    $tOpt["act"] = "Active papers";
-	if ($me->isAuthor)
-	    $tOpt["a"] = "Your papers";
+	if ($me->isPC && $Conf->setting("paperlead") > 0
+	    && $me->amDiscussionLead(0, $Conf))
+	    $tOpt["lead"] = "Your discussion leads";
 	if ($me->amReviewer())
 	    $tOpt["r"] = "Your reviews";
 	if ($me->reviewsOutstanding
@@ -911,6 +918,8 @@ class PaperSearch {
 	    $tOpt["rout"] = "Your incomplete reviews";
 	if ($me->isPC)
 	    $tOpt["req"] = "Your review requests";
+	if ($me->isAuthor)
+	    $tOpt["a"] = "Your submissions";
 	return $tOpt;
     }
 
@@ -920,7 +929,13 @@ class PaperSearch {
 	    if ($tabindex)
 		$tselect .= " tabindex='1'";
 	    $tselect .= ">";
+	    $ndisabled = 0;
 	    foreach ($tOpt as $k => $v) {
+		if ($k == "a"
+		    || ($ndisabled == 0 && ($k == "lead" || $k == "r"))) {
+		    $tselect .= "<option disabled='disabled'></option>";
+		    $ndisabled++;
+		}
 		$tselect .= "<option value='$k'";
 		if ($type == $k)
 		    $tselect .= " selected='selected'";

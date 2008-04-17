@@ -33,6 +33,8 @@ if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
 }
 if (!isset($_REQUEST["t"]))
     $_REQUEST["t"] = key($tOpt);
+if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
+    $_REQUEST["q"] = "";
 
 
 // paper selection

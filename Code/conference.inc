@@ -894,6 +894,8 @@ class Conference {
 	    $where[] = "outcome=0";
 	if (isset($options['active']))
 	    $where[] = "timeWithdrawn<=0";
+	if (isset($options["myLead"]))
+	    $where[] = "leadContactId=$contactId";
 	
 	if (isset($where))
 	    $pq .= "		where " . join(" and ", $where) . "\n";
