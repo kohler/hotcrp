@@ -643,7 +643,8 @@ span.hint {
 td.caption span.hint {
 	font-weight: normal;
 }
-div#aumg td.hint, table.paper td.hint, table.review td.hint, table.comment td.hint, table.assign td.hint, table.setreviewform td.hint {
+div#aumg td.hint, table.paper td.hint, table.review td.hint, 
+table.comment td.hint, table.assign td.hint, table.setreviewform td.hint {
 	width: 25%;
 }
 td h2, td h3 {
@@ -852,6 +853,11 @@ table.reviewers th {
 table.reviewers td.highlight {
 	padding-right: 0.25em;
 }
+span.revround {
+	font-size: 69%;
+	font-style: italic;
+	/* border-bottom: 1px dotted #777777; */
+}
 table.reviewers td.revscore {
 	padding-right: 0em;
 	text-align: center;
@@ -941,7 +947,13 @@ table.ppltable th.pl_score, table.altable th.pl_id {
 	text-align: center;
 	white-space: nowrap;
 }
-.pl_reviewerTypeIcon, table.pltable th.pl_reviewerTypeIcon,
+.pl_revtypei, table.pltable th.pl_revtypei {
+	text-align: center;
+	padding-left: 3px;
+	padding-right: 3px;
+	white-space: nowrap;
+}
+.pl_reviewRound, table.pltable th.pl_reviewRound,
 .pl_reviewsStatus, table.pltable th.pl_reviewsStatus {
 	text-align: center;
 }
@@ -952,7 +964,7 @@ td.pl_desirability, td.pl_visits {
 }
 td.pl_authors, td.pl_tags, td.pl_topics, td.pl_topicNames, td.pl_affrow,
 td.pl_abstract, td.pl_reviewerNames, td.pl_allPreferences, td.pl_authorsMatch,
-td.pl_collaboratorsMatch {
+td.pl_collaboratorsMatch, td.pl_reviewRound {
 	font-size: smaller;
 }
 td.pl_title img, img.b {

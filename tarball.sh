@@ -80,6 +80,7 @@ Code/sample.pdf
 Code/schema.sql
 Code/search.inc
 Code/tags.inc
+Code/updateschema.inc
 Code/updateschema.sql
 
 Code/Mail-1.1.14

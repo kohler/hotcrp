@@ -87,3 +87,7 @@ alter table PaperReviewArchive add `textField8` mediumtext NOT NULL;
 alter table Paper add `sha1` varbinary(20) NOT NULL default '';
 update Settings set value=10 where name='allowPaperOption';
 insert into Settings (name, value) values ('sub_sha1', 1);
+
+alter table PaperReview add `reviewRound` tinyint(1) NOT NULL default '0';
+alter table PaperReview add key `reviewRound` (`reviewRound`);
+update Settings set value=11 where name='allowPaperOption';

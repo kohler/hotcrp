@@ -204,6 +204,7 @@ CREATE TABLE `PaperReview` (
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
   `reviewType` tinyint(1) NOT NULL default '0',
+  `reviewRound` tinyint(1) NOT NULL default '0',
   `requestedBy` int(11) NOT NULL default '0',
   `requestedOn` timestamp NOT NULL default CURRENT_TIMESTAMP,
   `acceptedOn` timestamp NOT NULL default 0,
@@ -238,6 +239,7 @@ CREATE TABLE `PaperReview` (
   KEY `reviewSubmitted` (`reviewSubmitted`),
   KEY `reviewNeedsSubmit` (`reviewNeedsSubmit`),
   KEY `reviewType` (`reviewType`),
+  KEY `reviewRound` (`reviewRound`),
   KEY `requestedBy` (`requestedBy`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 

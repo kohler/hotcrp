@@ -150,7 +150,7 @@ class PaperSearch {
 	$this->regex = array();
 	$this->match = array();
 	foreach (array("topic", "conflict", "option", "tag", "re", "cre",
-		       "pri", "cpri", "sec", "csec", "twiddletag") as $m)
+		       "pri", "cpri", "sec", "csec", "round") as $m)
 	    $this->match[$m] = array();
 	$this->needMatchcount = array();
 	$this->contactmatch = array();
@@ -390,9 +390,6 @@ class PaperSearch {
 	    $any = true;
  	    if (($e = checkTagError($word, true)))
 		$this->warn(htmlspecialchars($e));
-	    if (($roundtags = $Conf->settingText("tag_rounds", ""))
-		&& strpos($roundtags, " $word ") !== false)
-		$word = "~$word";
 	    $confpart = "";
 	    if ($word && $word[0] == "~")
 		$word = $this->contactId . $word;
@@ -484,7 +481,7 @@ class PaperSearch {
 		    if (strstr(strtolower($o->optionName), $x) !== false)
 			$oids[] = $oid;
 		if (count($oids) == 0) {
-		    $this->warn("&ldquo;" . htmlspecialchars($x) . "&rdquo; does not match any defined submission option.");
+		    $this->warn("&ldquo;" . htmlspecialchars($x) . "&rdquo; doesn't match a submission option.");
 		    $qp .= " or false";
 		} else
 		    $qp .= $this->_searchWordMatch($oids, "option", "optionId",
@@ -528,15 +525,33 @@ class PaperSearch {
 	    $qp .= $this->_searchWordMatch($x, "conflict", "contactId",
 					   $type, null, false);
 	}
-	if (!$any && $special && $this->amPC
-	    && ($this->privChair
-		|| (($roundtags = $Conf->settingText("tag_rounds", ""))
-		    && strpos($roundtags, " $special ") !== false))) {
+	if (($special ? $special == "round" : isset($this->fields["round"]))
+	    && $this->amPC) {
 	    $any = true;
-	    $confpart = $this->_searchReviewerNameConfpart();
-	    $this->contactmatch[] = $lword;
-	    $qp .= $this->_searchWordMatch((count($this->contactmatch) - 1) . "~$special", "twiddletag", "tag",
-					   $type, null, $confpart);
+	    if ($word == "none" || $word == "any")
+		$qp .= $this->_searchWordMatch("0", "option", "optionId",
+					       $type, $word == "any", false);
+	    else {
+		$x = simplifyWhitespace($word);
+		$rounds = array();
+		foreach ($Conf->settings["rounds"] as $rid => $r)
+		    if ($r == $x)
+			$rounds[] = $rid;
+		if (count($rounds) == 0)
+		    foreach ($Conf->settings["rounds"] as $rid => $r)
+			if (strcasecmp($r, $x) == 0)
+			    $rounds[] = $rid;
+		if (count($rounds) == 0)
+		    foreach ($Conf->settings["rounds"] as $rid => $r)
+			if (strstr(strtolower($r), $x) !== false)
+			    $rounds[] = $rid;
+		if (count($rounds) == 0) {
+		    $this->warn("&ldquo;" . htmlspecialchars($x) . "&rdquo; doesn't match a review round.");
+		    $qp .= " or false";
+		} else
+		    $qp .= $this->_searchWordMatch($rounds, "round", "reviewRound",
+						   $type, null, false);
+	    }
 	}
 	if (!$any)
 	    $qp .= " or false";
@@ -680,6 +695,13 @@ class PaperSearch {
 	    $this->contactmatch = $contacts;
 	}
 
+	// create round checker
+	$roundchecker = array();
+	foreach ($this->match["round"] as $t => $tarr)
+	    $roundchecker[] = "(*" . join($t == "any" ? " or *" : " and *", $tarr) . ")";
+	if (($roundchecker = join(" and ", $roundchecker)))
+	    $roundchecker = " and " . $roundchecker;
+
 	// create query
 	$q = "select Paper.paperId from Paper";
 	if ($this->limitName == "r")
@@ -706,27 +728,23 @@ class PaperSearch {
 	    $q .= $this->_tableMatch("PaperTopic", "topicId", "topic", "", $t, $tarr);
 	foreach ($this->match["option"] as $t => $tarr)
 	    $q .= $this->_tableMatch("PaperOption", "optionId", "option", "", $t, $tarr);
-	
+
+	$prereQlen = strlen($q);
 	foreach ($this->match["re"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperReview", "reviewId", "re", "", $t, $tarr);
+	    $q .= $this->_tableMatch("PaperReview", "reviewId", "re", $roundchecker, $t, $tarr);
 	foreach ($this->match["cre"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperReview", "reviewId", "cre", " and *reviewSubmitted>0", $t, $tarr);
+	    $q .= $this->_tableMatch("PaperReview", "reviewId", "cre", " and *reviewSubmitted>0" . $roundchecker, $t, $tarr);
 	foreach ($this->match["pri"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperReview", "reviewId", "pri", " and *reviewType=" . REVIEW_PRIMARY, $t, $tarr);
+	    $q .= $this->_tableMatch("PaperReview", "reviewId", "pri", " and *reviewType=" . REVIEW_PRIMARY . $roundchecker, $t, $tarr);
 	foreach ($this->match["cpri"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperReview", "reviewId", "cpri", " and *reviewType=" . REVIEW_PRIMARY . " and *reviewSubmitted>0", $t, $tarr);
+	    $q .= $this->_tableMatch("PaperReview", "reviewId", "cpri", " and *reviewType=" . REVIEW_PRIMARY . " and *reviewSubmitted>0" . $roundchecker, $t, $tarr);
 	foreach ($this->match["sec"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperReview", "reviewId", "sec", " and *reviewType=" . REVIEW_SECONDARY, $t, $tarr);
+	    $q .= $this->_tableMatch("PaperReview", "reviewId", "sec", " and *reviewType=" . REVIEW_SECONDARY . $roundchecker, $t, $tarr);
 	foreach ($this->match["csec"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperReview", "reviewId", "csec", " and *reviewType=" . REVIEW_SECONDARY . " and *reviewSubmitted>0", $t, $tarr);
-	foreach ($this->match["twiddletag"] as $t => $tarr) {
-	    $xarr = array();
-	    foreach ($tarr as $tx) {
-		preg_match("/^tag=\'(\\d+)(~\\S+)'$/", $tx, $m);
-		foreach ($this->contactmatch[$m[1]] as $c)
-		    $xarr[] = "tag='$c$m[2]'";
-	    }
-	    $q .= $this->_tableMatch("PaperTag", "tag", "twiddletag", "", $t, $xarr);
+	    $q .= $this->_tableMatch("PaperReview", "reviewId", "csec", " and *reviewType=" . REVIEW_SECONDARY . " and *reviewSubmitted>0" . $roundchecker, $t, $tarr);
+	if ($roundchecker && strlen($q) == $prereQlen) {
+	    $tarr = array("true");
+	    $q .= $this->_tableMatch("PaperReview", "reviewId", "re", " and *contactId=" . $this->contactId . $roundchecker, "uany", $tarr);
 	}
 
 	if (count($this->filters))
@@ -744,6 +762,7 @@ class PaperSearch {
 		    $c = " in (" . join(",", $carr) . ")";
 		$q = str_replace("\1$i\1", $c, $q);
 	    }
+	//$Conf->infoMsg(htmlspecialchars($q));
 
 	return array("create temporary table Matches $q group by Paper.paperId", join("|", $this->regex));
     }
@@ -921,9 +940,6 @@ class PaperSearch {
 	    $tOpt["all"] = "All papers";
 	if ($me->privChair && $Conf->setting("pc_seeall") <= 0 && defval($_REQUEST, "t") == "act")
 	    $tOpt["act"] = "Active papers";
-	if ($me->isPC && $Conf->setting("paperlead") > 0
-	    && $me->amDiscussionLead(0, $Conf))
-	    $tOpt["lead"] = "Your discussion leads";
 	if ($me->amReviewer())
 	    $tOpt["r"] = "Your reviews";
 	if ($me->reviewsOutstanding
@@ -931,6 +947,9 @@ class PaperSearch {
 	    $tOpt["rout"] = "Your incomplete reviews";
 	if ($me->isPC)
 	    $tOpt["req"] = "Your review requests";
+	if ($me->isPC && $Conf->setting("paperlead") > 0
+	    && $me->amDiscussionLead(0, $Conf))
+	    $tOpt["lead"] = "Your discussion leads";
 	if ($me->isAuthor)
 	    $tOpt["a"] = "Your submissions";
 	return $tOpt;

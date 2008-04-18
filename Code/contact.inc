@@ -1016,25 +1016,28 @@ class Contact {
 	    return;
 	$qtag = "";
 	if ($type > 0 && (!$row || !$row->reviewType)) {
-	    $q = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($paperId, $reviewerContactId, $type, $this->contactId, current_timestamp)";
+	    $roundqa = $roundqb = "";
 	    if (($type == REVIEW_PRIMARY || $type == REVIEW_SECONDARY)
-		&& ($t = $conf->settingText("rev_roundtag"))) {
-		$rounds = $conf->settingText("tag_rounds");
-		if (strpos($rounds, " $t ") === false) {
+		&& ($t = $conf->settingText("rev_roundtag"))
+		&& $conf->settings["allowPaperOption"] >= 11) {
+		if (!($k = array_search($t, $conf->settings["rounds"]))) {
+		    $rounds = $conf->settingText("tag_rounds", "");
 		    $rounds = ($rounds ? "$rounds$t " : " $t ");
 		    $conf->qe("insert into Settings (name, value, data) values ('tag_rounds', 1, '" . sqlq($rounds) . "') on duplicate key update data='" . sqlq($rounds) . "'");
-		    $conf->updateSettings();
+		    $conf->settings["tag_rounds"] = 1;
+		    $conf->settingTexts["tag_rounds"] = $rounds;
+		    $conf->settings["rounds"][] = $t;
+		    $k = array_search($t, $conf->settings["rounds"]);
 		}
-		$qtag = "insert into PaperTag (paperId, tag) values ($paperId, '${reviewerContactId}~" . sqlq($t) . "') on duplicate key update tagIndex=tagIndex";
+		$roundqa = ", reviewRound";
+		$roundqb = ", $k";
 	    }
+	    $q = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn$roundqa) values ($paperId, $reviewerContactId, $type, $this->contactId, current_timestamp$roundqb)";
 	} else if ($type > 0 && $row->reviewType != $type)
 	    $q = "update PaperReview set reviewType=$type where reviewId=$row->reviewId";
-	else if ($type <= 0 && $row && $row->reviewType && !$row->reviewModified) {
+	else if ($type <= 0 && $row && $row->reviewType && !$row->reviewModified)
 	    $q = "delete from PaperReview where reviewId=$row->reviewId";
-	    if (($row->reviewType == REVIEW_PRIMARY || $row->reviewType == REVIEW_SECONDARY)
-		&& ($t = $conf->settingText("rev_roundtag")))
-		$qtag = "delete from PaperTag where paperId=$paperId and tag='${reviewerContactId}~" . sqlq($t) . "'";
-	} else if ($type <= 0 && $row && $row->reviewType)
+	else if ($type <= 0 && $row && $row->reviewType)
 	    $q = "update PaperReview set reviewType=" . REVIEW_PC . " where reviewId=$row->reviewId";
 	else
 	    return;

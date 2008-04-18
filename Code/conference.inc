@@ -88,6 +88,16 @@ class Conference {
 	    $this->settings["rev_blind"] = 2;
 	if ($this->settings["pc_seeall"] && !$this->timeFinalizePaper())
 	    $this->settings["pc_seeall"] = -1;
+	$this->settings["rounds"] = array("");
+	if (isset($this->settingTexts["tag_rounds"])) {
+	    foreach (split(" ", $this->settingTexts["tag_rounds"]) as $r)
+		if ($r != "")
+		    $this->settings["rounds"][] = $r;
+	}
+	if ($this->settings["allowPaperOption"] < 11) {
+	    require_once("updateschema.inc");
+	    updateSchema($this);
+	}
     }
 
     function setting($name, $defval = false) {
@@ -114,6 +124,7 @@ class Conference {
 	else if (defval($this->settings, "paperacc") <= 0 || !$foraccept)
 	    $this->q("update Settings set value=(select max(outcome) from Paper where timeSubmitted>0 group by paperId>0) where name='paperacc'");
     }
+
 
     function qx($query) {
 	return mysql_query($query, $this->dblink);
@@ -471,7 +482,7 @@ class Conference {
     
 	if (!PEAR::isError($result)) {
 	    $sha1 = '';
-	    if ($this->setting("sub_sha1") > 0)
+	    if (defval($Opt, "disableSHA1") <= 0)
 		$sha1 = ", sha1='" . sqlq(sha1($contents, true)) . "'";
 	    $result = $this->qe2("update Paper set "
 		. ($final ? "finalPaperStorageId" : "paperStorageId") . "=$paperStorageId, "
@@ -723,6 +734,7 @@ class Conference {
 		count(if(AllReviews.reviewNeedsSubmit<=0,AllReviews.reviewSubmitted,1)) as startedReviewCount";
 	$myPaperReview = null;
 	if (!isset($options['author'])) {
+	    $myPaperReview = ($allReviewerQuery ? "MyPaperReview" : "PaperReview");
 	    $pq .= ",
 		PaperReview.reviewType,
 		PaperReview.reviewId,
@@ -730,20 +742,14 @@ class Conference {
 		PaperReview.reviewSubmitted,
 		PaperReview.reviewOrdinal,
 		PaperReview.reviewBlind,
-		PaperReview.contactId as reviewContactId";
-	    if (!$allReviewerQuery) {
-		$myPaperReview = "PaperReview";
+		PaperReview.contactId as reviewContactId,
+		$myPaperReview.reviewType as myReviewType,
+		$myPaperReview.reviewSubmitted as myReviewSubmitted,
+		$myPaperReview.reviewNeedsSubmit as myReviewNeedsSubmit";
+	    if ($this->settings["allowPaperOption"] >= 11)
 		$pq .= ",
-		PaperReview.reviewType as myReviewType,
-		PaperReview.reviewSubmitted as myReviewSubmitted,
-		PaperReview.reviewNeedsSubmit as myReviewNeedsSubmit";
-	    } else {
-		$myPaperReview = "MyPaperReview";
-		$pq .= ",
-		MyPaperReview.reviewType as myReviewType,
-		MyPaperReview.reviewSubmitted as myReviewSubmitted,
-		MyPaperReview.reviewNeedsSubmit as myReviewNeedsSubmit";
-	    }
+		PaperReview.reviewRound,
+		$myPaperReview.reviewRound as myReviewRound";
 	} else
 	    $pq .= ",\nnull as myReviewType";
 	if (isset($options['reviewerName']))
@@ -1075,7 +1081,7 @@ class Conference {
     }
 
     function tagRoundLocker($dolocker) {
-	if (!$dolocker || !isset($this->settings["rev_roundtag"]))
+	if (!$dolocker || !defval($this->settings, "rev_roundtag", ""))
 	    return "";
 	else if (strpos(defval($this->settingTexts, "tag_rounds", ""), " " . $this->settingTexts["rev_roundtag"] . " ") === false)
 	    return ", Settings write, PaperTag write";

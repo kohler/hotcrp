@@ -469,10 +469,10 @@ function doSpecial($name, $set) {
 	    $t = trim($_REQUEST["rev_roundtag"]);
 	    if ($t == "" || $t == "(None)")
 		$Values["rev_roundtag"] = null;
-	    else if (preg_match('/^[a-zA-Z][a-zA-Z0-9]*$/', $t))
+	    else if (preg_match('/^[a-zA-Z0-9]+$/', $t))
 		$Values["rev_roundtag"] = array(1, $t);
 	    else {
-		$Error[] = "The review round tag contains odd characters.";
+		$Error[] = "The review round must contain only letters and numbers.";
 		$SettingError["rev_roundtag"] = true;
 	    }
 	}
@@ -859,7 +859,7 @@ function doRevGroup() {
     doDateRow("pcrev_hard", "Hard deadline");
     if (!($rev_roundtag = settingText("rev_roundtag")))
 	$rev_roundtag = "(None)";
-    doTextRow("rev_roundtag", array("Review round", "This <a href='${ConfSiteBase}help$ConfSiteSuffix?t=tags'>tag</a> will mark new PC review assignments.  Examples: &ldquo;round1&rdquo;, &ldquo;round2&rdquo;"), $rev_roundtag, 15, "lcaption", "(None)");
+    doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments.  Examples: &ldquo;R1&rdquo;, &ldquo;R2&rdquo;"), $rev_roundtag, 15, "lcaption", "(None)");
     echo "</table>\n";
 
     echo "<div class='smgap'></div>\n";

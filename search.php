@@ -755,7 +755,7 @@ if ($Me->isPC && $pl && $pl->headerInfo["tags"]) {
 }
 echo "</td>";
 if ($pl && isset($pl->scoreMax)) {
-    echo "<td class='pad'>";
+    echo "<td class='pad' rowspan='2'>";
     $rf = reviewForm();
     $theScores = defval($_SESSION, "scores", 1);
     if ($Me->amReviewer() && $_REQUEST["t"] != "a")
@@ -773,9 +773,9 @@ if ($pl && isset($pl->scoreMax)) {
 	}
     echo "</td>";
 }
-echo "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
+echo "<td rowspan='2'><input class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
 if ($pl && isset($pl->scoreMax)) {
-    echo "<tr><td colspan='3'><div class='smgap'></div><b>Sort scores by:</b> &nbsp;<select name='scoresort'>";
+    echo "<tr><td colspan='2'><div class='smgap'></div><b>Sort scores by:</b><br /><select name='scoresort'>";
     foreach (array("Minshall score", "Average", "Variance", "Max &minus; min", "Your score") as $k => $v) {
 	echo "<option value='$k'";
 	if (defval($_SESSION, "scoresort", 0) == $k)
@@ -809,6 +809,14 @@ if ($pl) {
 	    "<input class='hidden' type='submit' name='default' value='1' />";
     
     echo $pl_text;
+    if ($pl->count == 0 && $_REQUEST["t"] != "s") {
+	$a = array();
+	foreach (array("q", "qa", "qx", "qt", "sort") as $xa)
+	    if (isset($_REQUEST[$xa]))
+		$a[] = "$xa=" . urlencode($_REQUEST[$xa]);
+	reset($tOpt);
+	echo " in ", strtolower($tOpt[$_REQUEST["t"]]), " (<a href=\"${ConfSiteBase}search$ConfSiteSuffix?", join("&amp;", $a), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
+    }
     
     if ($pl->anySelector)
 	echo "</form>";

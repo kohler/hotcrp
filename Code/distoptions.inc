@@ -77,6 +77,7 @@ $Opt["paperSite"] = "http://your.site.here.com/";
 //                   to 128MB.
 //   disablePDF      Set to disable PDF format submissions.
 //   disablePS       Set to disable PostScript format submissions.
+//   disableSHA1     Set to disable storing SHA-1 hashes of submissions.
 //   dsn             Database configuration information in the format
 //                   "mysql://DBUSER:DBPASSWORD@127.0.0.1/DBNAME".
 //                   The default is derived from $Opt["dbName"], assuming

@@ -233,6 +233,8 @@ function archiveReview($rrow) {
 		requestedOn, acceptedOn, reviewModified, reviewSubmitted,
 		reviewNeedsSubmit, "
 	. join(", ", array_keys($rf->reviewFields));
+    if ($Conf->setting("allowPaperOption") >= 11)
+	$fields .= ", reviewRound";
     // compensate for 2.12 schema error
     if ($Conf->setting("allowPaperOption") == 8)
 	$fields = str_replace(", textField7, textField8", "", $fields);

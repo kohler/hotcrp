@@ -80,13 +80,10 @@ function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
     // check chair tags
     if (!$chair) {
 	$chtags = chairTags();
-	$roundtags = $Conf->settingText("tag_rounds", "");
 	$removetags = array();
 	foreach ($tags as $tag) {
 	    $tb = tagBase($tag);
-	    if (isset($chtags[$tb])
-		|| ($roundtags && strpos($roundtags, " $tb ") !== false)
-		|| ($roundtags && $tb[0] == "~" && strpos($roundtags, " " . substr($tb, 1) . " ") !== false))
+	    if (isset($chtags[$tb]))
 		$removetags[] = $tag;
 	}
 	$tags = array_diff($tags, $removetags);
@@ -173,13 +170,7 @@ function tagsToText($t, $makeUrls, $contact = null) {
     $t = str_replace("#0", "", $t);
     if (strpos($t, "~") !== false) {
 	$t = str_replace(" ${contact}~", " ~", " $t ");
-	$t = preg_replace('/ \d+~\S+ /', ' ', $t);
-	if (($trounds = $Conf->settingText("tag_rounds"))) {
-	    foreach (explode(' ', $trounds) as $tround)
-		if ($tround)
-		    $t = str_replace(" ~$tround ", " $tround ", $t);
-	}
-	$t = trim($t);
+	$t = trim(preg_replace('/ \d+~\S+ /', ' ', $t));
     }
     if ($makeUrls === false)
 	return $t;

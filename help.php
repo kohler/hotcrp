@@ -12,6 +12,7 @@ $topicTitles = array("topics" => "Help topics",
 		     "syntax" => "Search syntax",
 		     "search" => "Search",
 		     "tags" => "Tags",
+		     "revround" => "Review rounds",
 		     "chair" => "Chair's guide");
 
 $topic = defval($_REQUEST, "t", "topics");
@@ -50,6 +51,7 @@ function topics() {
     _alternateRow("<a href='help$ConfSiteSuffix?t=search'>Search</a>", "About paper searching.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=syntax'>Search syntax</a>", "Quick reference to search syntax.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "How to use tags to define paper sets and discussion orders.");
+    _alternateRow("<a href='help$ConfSiteSuffix?t=revround'>Review rounds</a>", "Defining review rounds.");
     echo "</table>";
 }
 
@@ -70,7 +72,7 @@ function _searchForm($forwhat, $other = null) {
 function search() {
     global $ConfSiteBase, $ConfSiteSuffix;
     echo "<table>";
-    _alternateRow("Basics", "
+    _alternateRow("Search basics", "
 All HotCRP paper lists are obtained through search, search syntax is flexible,
 and it's possible to download all matching papers and/or reviews at once.
 
@@ -177,7 +179,7 @@ function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
 function searchQuickref() {
     global $rowidx, $Conf, $ConfSiteSuffix;
     echo "<table>\n";
-    _searchQuickrefRow("Basics", "", "all papers in the search category");
+    _searchQuickrefRow("Syntax basics", "", "all papers in the search category");
     _searchQuickrefRow("", "story", "&ldquo;story&rdquo; in title, abstract, possibly authors");
     _searchQuickrefRow("", "119", "paper #119");
     _searchQuickrefRow("", "1 2 5 12-24 kernel", "the numbered papers, plus papers with &ldquo;kernel&rdquo; in title, abstract, possibly authors");
@@ -256,7 +258,7 @@ function tags() {
     }
 
     echo "<table>";
-    _alternateRow("Basics", "
+    _alternateRow("Tag basics", "
 PC members and administrators can attach tag names to papers.
 Papers can have many tags, and you can invent new tags on the fly.
 Tags are never shown to authors$conflictmsg1.
@@ -270,14 +272,6 @@ with names like &ldquo;~tag&rdquo;, are visible only to their creators.</p>");
 Here are some example ways to use tags.
 
 <ul>
-<li><strong>Define reviewing rounds.</strong>
- Use the <a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>&ldquo;Review round&rdquo; setting</a>
- to set a tag for the current review round.  New PC
- assignments are marked with that tag.  If &ldquo;round1&rdquo; were
- a review round tag, PC member Sylvia could list her &ldquo;round1&rdquo; papers
- by <a href='${ConfSiteBase}search$ConfSiteSuffix?q=tag:round1'>searching for
- &ldquo;tag:round1&rdquo;</a>, and an administrator could list Sylvia&rsquo;s
- &ldquo;round1&rdquo; assignments by <a href='${ConfSiteBase}search$ConfSiteSuffix?q=round1:sylvia'>searching for &ldquo;round1:sylvia&rdquo;</a>.</li>
 <li><strong>Avoid discussing low-ranked submissions at the PC meeting.</strong>
  Mark low-ranked submissions with tag &ldquo;nodiscuss&rdquo;, then ask the PC to
  <a href='${ConfSiteBase}search$ConfSiteSuffix?q=tag:nodiscuss'>search for &ldquo;tag:nodiscuss&rdquo;</a>.
@@ -349,6 +343,32 @@ papers you want, sort them into the right order, select them, and
 choose <b>Define ordered</b> in the tag action area.  If no sort
 gives what you want, search for the desired paper numbers in order.
 For instance, you might search for &ldquo;<a href='${ConfSiteBase}search$ConfSiteSuffix?q=4+1+12+9'>4 1 12 19</a>&rdquo;, then <b>Select all</b> and <b>Define ordered</b>.</p>");
+    echo "</table>\n";
+}
+
+
+
+function revround() {
+    global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Me;
+
+    echo "<table>";
+    _alternateRow("Review round basics", "
+Many conferences divide reviews into multiple <em>rounds</em>.
+HotCRP lets chairs label assignments in each round with names, such as
+&ldquo;R1&rdquo; or &ldquo;lastround&rdquo;.
+(We suggest very short names like &ldquo;R1&rdquo;.)
+The round name for new assignments is set on the <a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>settings page</a>.
+To list your own round &ldquo;R1&rdquo; review assignments, <a href='${ConfSiteBase}search$ConfSiteSuffix?q=round:R1'>search for &ldquo;round:R1&rdquo;</a>.
+To list another PC member&rsquo;s round &ldquo;R1&rdquo; review assignments, <a href='${ConfSiteBase}search$ConfSiteSuffix?q=re:pcname+round:R1'>search for &ldquo;re:pcname round:R1&rdquo;</a>.");
+
+    // get current tag settings
+    if (!$Me->isPC)
+	/* do nothing */;
+    else if (($rounds = trim($Conf->settingText("tag_rounds"))))
+	_alternateRow("Current rounds", "So far the following review rounds have been defined: &ldquo;" . join("&rdquo;, &ldquo;", preg_split('/\s+/', htmlspecialchars($rounds))) . "&rdquo;.");
+    else
+	_alternateRow("Current rounds", "So far no review rounds have been defined.");
+
     echo "</table>\n";
 }
 
@@ -613,6 +633,8 @@ else if ($topic == "syntax")
     searchQuickref();
 else if ($topic == "tags")
     tags();
+else if ($topic == "revround")
+    revround();
 else if ($topic == "chair")
     chair();
 

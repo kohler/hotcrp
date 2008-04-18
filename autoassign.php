@@ -86,6 +86,15 @@ function checkRequest(&$atype, &$reviewtype, $save) {
 	$Error["ass"] = true;
 	return $Conf->errorMsg("Malformed request!");
     }
+    $_REQUEST["rev_roundtag"] = defval($_REQUEST, "rev_roundtag", "");
+    if ($_REQUEST["rev_roundtag"] == "(None)")
+	$_REQUEST["rev_roundtag"] = "";
+    if (($atype == "rev" || $atype == "revadd")
+	&& $_REQUEST["rev_roundtag"] != ""
+	&& !preg_match('/^[a-zA-Z0-9]+$/', $_REQUEST["rev_roundtag"])) {
+	$Error["rev_roundtag"] = true;
+	return $Conf->errorMsg("The review round must contain only letters and numbers.");
+    }
 
     if ($save)
 	/* no check */;
@@ -286,6 +295,12 @@ function saveAssign() {
     if (!checkRequest($atype, $reviewtype, true))
 	return false;
 
+    // set round tag
+    if ($_REQUEST["rev_roundtag"]) {
+	$Conf->settings["rev_roundtag"] = 1;
+	$Conf->settingTexts["rev_roundtag"] = $_REQUEST["rev_roundtag"];
+    } else
+	unset($Conf->settings["rev_roundtag"]);
     
     $Conf->qe("lock tables ContactInfo read, PCMember read, ChairAssistant read, Chair read, PaperReview write, Paper write, PaperConflict write, ActionLog write" . $Conf->tagRoundLocker(($atype == "rev" || $atype == "revadd") && ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY)));
     
@@ -392,12 +407,11 @@ function tdClass($entry, $name) {
     return $td . (isset($Error[$name]) ? " error'>" : "'>");
 }
 
-echo "<table>
-  <tr class='id'><td class='caption'></td><td class='entry'></td></tr>
-</table>\n";
+$idRow = "<tr class='id'><td class='caption'></td><td class='entry'></td></tr>\n";
 
 if (isset($assignments) && count($assignments) > 0) {
-    echo "<table>";
+    echo "<table>", $idRow;
+    $idRow = "";
     echo "<tr class='propass'>", tdClass(false, "propass"), "Proposed assignment</td><td class='entry'>";
     $Conf->infoMsg("If this assignment looks OK to you, select \"Save assignment\" to apply it.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown in square brackets.");
     
@@ -453,13 +467,18 @@ if (isset($assignments) && count($assignments) > 0) {
 	    echo $pcsel[$i];
 	}
 	echo "</table></td></tr></table>\n";
+	$rev_roundtag = defval($_REQUEST, "rev_roundtag");
+	if ($rev_roundtag == "(None)")
+	    $rev_roundtag = "";
+	if ($rev_roundtag)
+	    echo "<strong>Review round:</strong> ", htmlspecialchars($rev_roundtag);
     }
 
     echo "<div class='smgap'></div>";
     echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'>\n";
     echo "<input type='submit' class='button' name='saveassign' value='Save assignment' />\n";
     echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />\n";
-    foreach (array("t", "q", "a", "revaddtype", "revtype", "revct", "revaddct", "pctyp", "balance", "badpairs", "bpcount") as $t)
+    foreach (array("t", "q", "a", "revaddtype", "revtype", "revct", "revaddct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag") as $t)
 	if (isset($_REQUEST[$t]))
 	    echo "<input type='hidden' name='$t' value=\"", htmlspecialchars($_REQUEST[$t]), "\" />\n";
     foreach ($pcm as $id => $p)
@@ -489,7 +508,8 @@ if (isset($assignments) && count($assignments) > 0) {
 
 echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'>";
 
-echo "<table>";
+echo "<table>", $idRow;
+$idRow = "";
 
 echo "<tr>", tdClass(false, "ass"), "Action</td>", tdClass(true, "rev");
 doRadio('a', 'rev', 'Ensure each paper has <i>at least</i>');
@@ -505,6 +525,16 @@ echo "&nbsp; <input type='text' class='textlite' name='revaddct' value=\"", html
     "<select name='revaddtype'>";
 doOptions('revaddtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
 echo "</select>&nbsp; review(s) per paper</td></tr>\n";
+
+// Review round
+echo "<tr><td class='caption'></td>", tdClass(true, "rev_roundtag");
+echo "<input style='visibility: hidden' type='radio' name='a' value='rev_roundtag' disabled='disabled' />&nbsp;";
+echo "Review round: &nbsp;";
+$rev_roundtag = defval($_REQUEST, "rev_roundtag", $Conf->settingText("rev_roundtag"));
+if (!$rev_roundtag)
+    $rev_roundtag = "(None)";
+echo "<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" /> &nbsp;<span class='hint'><a href='${ConfSiteBase}help$ConfSiteSuffix?t=revround' target='new'>What is this?</a></span>";
+echo "<hr /></td></tr>\n";
 
 echo "<tr><td class='caption'></td>", tdClass(true, "prefconflict");
 doRadio('a', 'prefconflict', 'Assign conflicts when PC members have review preferences of &minus;100 or less');

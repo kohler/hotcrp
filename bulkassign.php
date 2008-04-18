@@ -12,6 +12,7 @@ $Me->goIfInvalid();
 $Me->goIfNotPrivChair("index$ConfSiteSuffix");
 $nullMailer = new Mailer(null, null, $Me);
 $nullMailer->width = 10000000;
+$Error = array();
 
 
 // parse my ass
@@ -24,7 +25,7 @@ function tfError(&$tf, $lineno, $text) {
 }
 
 function parseBulkFile($text, $filename, $type) {
-    global $Conf, $Me, $nullMailer;
+    global $Conf, $Me, $nullMailer, $Error;
     $text = cleannl($text);
     $lineno = 0;
     $tf = array('err' => array(), 'filename' => $filename);
@@ -35,6 +36,15 @@ function parseBulkFile($text, $filename, $type) {
     $mailtemplate = $nullMailer->expandTemplate("requestreview", true, false);
     if (isset($_REQUEST["email_requestreview"]))
 	$mailtemplate[1] = $_REQUEST["email_requestreview"];
+
+    // check review round
+    if (($rev_roundtag = defval($_REQUEST, "rev_roundtag")) == "(None)")
+	$rev_roundtag = "";
+    if ($rev_roundtag && !preg_match('/^[a-zA-Z0-9]+$/', $rev_roundtag)) {
+	$Error["rev_roundtag"] = true;
+	return $Conf->errorMsg("The review round must contain only letters and numbers.");
+    }
+    
     // XXX lock tables
     
     while ($text != "") {
@@ -166,6 +176,13 @@ function parseBulkFile($text, $filename, $type) {
     }
 
 
+    // set review round
+    if ($rev_roundtag) {
+	$Conf->settings["rev_roundtag"] = 1;
+	$Conf->settingTexts["rev_roundtag"] = $rev_roundtag;
+    } else
+	unset($Conf->settings["rev_roundtag"]);
+
     // perform assignment
     $nass = 0;
     foreach ($ass as $paperId => $apaper) {
@@ -239,21 +256,29 @@ Assign &nbsp;<select name='t' id='tsel' onchange='fold(\"email\",this.value!=" .
 
 <div class='smgap'></div>\n\n";
 
+if (!isset($_REQUEST["rev_roundtag"]))
+    $rev_roundtag = $Conf->settingText("rev_roundtag");
+else if (($rev_roundtag = $_REQUEST["rev_roundtag"]) == "(None)")
+    $rev_roundtag = "";
 $t = $nullMailer->expandTemplate("requestreview", true, false);
 echo "<div id='foldemail' class='foldo'><table class='extension'>
 <tr><td><input type='checkbox' name='email' value='1' checked='checked' />&nbsp;</td>
 <td>Send email to external reviewers:</td></tr>
-<tr><td></td><td><textarea class='tt' name='email_requestreview' cols='80' rows='20'>", htmlspecialchars($t[1]), "</textarea></td></tr>
-<tr><td><div class='smgap'></div></td></tr>
-</table></div>
+<tr><td></td><td><textarea class='tt' name='email_requestreview' cols='80' rows='20'>", htmlspecialchars($t[1]), "</textarea></td></tr></table>
+<div class='ellipsis";
+if (isset($Error["rev_rountag"]))
+    echo " error";
+echo "'>Review round: &nbsp;<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" /> &nbsp;<span class='hint'><a href='${ConfSiteBase}help$ConfSiteSuffix?t=revround' target='new'>What is this?</a></span></div></div>
 
-&nbsp;<input class='button' type='submit' value='Go' />
+<div class='smgap'></div>
+
+<input class='button' type='submit' value='Go' />
 
 </form>
 
 <div class='smgap'></div>
 
-<p>You may upload many reviewer assignments at once.  Create a
+<p>Use this page to upload many reviewer assignments at once.  Create a
 tab-separated text file with one line per assignment.  The first column must
 be a paper number, and the second and third columns should contain the
 proposed reviewer's name and email address.  For example:</p>

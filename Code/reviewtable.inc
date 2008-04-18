@@ -58,9 +58,15 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	// primary/secondary glyph
 	if ($prow->conflictType > 0 && !$effAssistant)
 	    $x = "";
-	else if ($rr->reviewType > 0)
+	else if ($rr->reviewType > 0) {
 	    $x = $Conf->cacheableImage("ass$rr->reviewType.png", $reviewTypeName[$rr->reviewType]);
-	else
+	    if ($rr->reviewRound > 0) {
+		if (($rround = defval($Conf->settings["rounds"], $rr->reviewRound)))
+		    $x .= "&nbsp;<span class='revround' title='Review round'>" . htmlspecialchars($rround) . "</span>";
+		else
+		    $x .= "&nbsp;<span class='revround' title='Review round'>?$rr->reviewRound</span>";
+	    }
+	} else
 	    $x = "";
 
 	// reviewer identity

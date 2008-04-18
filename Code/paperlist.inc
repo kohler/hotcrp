@@ -491,7 +491,7 @@ class PaperList extends BaseList {
 	    $needSubmit = ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted));
 	    if ($needSubmit)
 		$this->needSubmitReview++;
-	    $a1 = $a2 = "";
+	    $a1 = $a2 = $a3 = "";
 	    if ($row->reviewId) {
 		$a1 = "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs . "\">";
 		$a2 = "</a>";
@@ -509,8 +509,16 @@ class PaperList extends BaseList {
 		    $which .= "n";
 		    $alt .= " (not complete)";
 		}
+		if (!$row->reviewRound)
+		    /* nada */;
+		else if (($t = defval($Conf->settings["rounds"], $row->reviewRound)))
+		    $a3 = htmlspecialchars($t);
+		else
+		    $a3 = "?$row->reviewRound";
+		if ($a3)
+		    $a3 = "&nbsp;<span class='revround' title='Review round'>" . htmlspecialchars($a3) . "</span>";
 	    }
-	    return $a1 . $Conf->cacheableImage("ass$which.png", $alt, $alt) . $a2;
+	    return $a1 . $Conf->cacheableImage("ass$which.png", $alt, $alt) . $a2 . $a3;
 	case self::FIELD_REVIEWS_STATUS:
 	    if ($row->conflictType > 0 && !$this->contact->privChair
 		&& !$Conf->timeAuthorViewReviews())
@@ -1125,7 +1133,7 @@ $paperListFields = array( // array(CSS_FIELD_NAME, COLUMN_TYPE, SORTABLE)
 	PaperList::FIELD_STATUS => array('status', 1, 1),
 	PaperList::FIELD_REVIEWER => array('reviewer', 1, 1),
 	PaperList::FIELD_REVIEWER_TYPE => array('reviewer', 1, 1),
-	PaperList::FIELD_REVIEWER_TYPE_ICON => array('reviewerTypeIcon', 1, 1),
+	PaperList::FIELD_REVIEWER_TYPE_ICON => array('revtypei', 1, 1),
 	PaperList::FIELD_REVIEWER_STATUS => array('reviewer', 1, 0),
 	PaperList::FIELD_REVIEWER_MONITOR => array('reviewer', 1, 1),
 	PaperList::FIELD_STATUS_SHORT => array('status', 1, 1),
