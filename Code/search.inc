@@ -528,10 +528,10 @@ class PaperSearch {
 	if (($special ? $special == "round" : isset($this->fields["round"]))
 	    && $this->amPC) {
 	    $any = true;
-	    if ($word == "none" || $word == "any")
-		$qp .= $this->_searchWordMatch("0", "option", "optionId",
+	    if ($word == "none")
+		$qp .= $this->_searchWordMatch("0", "round", "reviewRound",
 					       $type, $word == "any", false);
-	    else {
+	    else if ($word != "any") {
 		$x = simplifyWhitespace($word);
 		$rounds = array();
 		foreach ($Conf->settings["rounds"] as $rid => $r)
