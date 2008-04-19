@@ -706,7 +706,7 @@ class PaperList extends BaseList {
 	// Tags (search+PC only)
 	if ($this->contact->isPC && !$revpref) {
 	    $t .= $barsep;
-	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Tag</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
+	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Tag</a></span><span class='lld$nlll'><b>:</b><a class='help' href='${ConfSiteBase}help$ConfSiteSuffix?t=tags#changing' title='Learn more'>?</a> &nbsp;";
 	    $t .= "<select name='tagtype'>
     <option value='a' selected='selected'>Add</option><option value='d'>Remove</option><option value='s'>Define</option><option value='so'>Define ordered</option><option value='ao'>Add ordered</option>
   </select> &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></span>";

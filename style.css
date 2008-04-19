@@ -1163,7 +1163,7 @@ span.contactpulldown select {
 }
 
 /* score help */
-a.scorehelp {
+a.scorehelp, a.help {
 	font-size: smaller;
 	font-weight: normal;
 	position: relative;

@@ -295,7 +295,7 @@ Here are some example ways to use tags.
  The PC can now see the order and use quick links to go from paper to paper.$conflictmsg2</li>
 
 <li><strong>Mark tentative decisions during the PC meeting.</strong>
- Chairs add &ldquo;accept&rdquo; and &ldquo;reject&rdquo; tags as decisions are made, leaving the explicit decision setting for the end of the meeting.
+ Chairs add &ldquo;accept&rdquo; and &ldquo;reject&rdquo; tags as decisions are made, leaving explicit decision setting for the end of the meeting.
  Among the reasons for this: PC members can see decisions as soon as they are entered into the system, even for conflicted papers, but they can't see tags for conflicted papers unless you explicitly allow it.</li>
 </ul>
 ");
@@ -310,7 +310,7 @@ To find all papers with tag &ldquo;discuss&rdquo;:&nbsp; " . _searchForm("tag:di
 $conflictmsg3$setting
 Additionally, twiddle tags, which have names like &ldquo;~tag&rdquo;, are
 visible only to their creators; each PC member has an independent set.</p>");
-    _alternateRow("Changing tags", "
+    _alternateRow("<a name='changing'>Changing tags</a>", "
 To change a single paper's tags, go to the Tags entry on its <a href='${ConfSiteBase}review$ConfSiteSuffix'>review page</a>,
 click <img src='${ConfSiteBase}images/next.png' alt='right arrow' />,
 then enter one or more alphanumeric tags separated by spaces.
@@ -323,19 +323,20 @@ their checkboxes, and add tags using the action area.</p>
 
 <p><img src='${ConfSiteBase}images/extagssearch.png' alt='[Setting tags on the search page]' /></p>
 
-<p>You can <b>Add</b> and <b>Remove</b> tags to/from the selected papers, or
-<b>Define</b> a tag, which adds the tag to all selected papers and removes it
-from all non-selected papers.</p>
+<p><b>Add</b> adds tags to the selected papers, while <b>Remove</b> removes
+existing tags.  <b>Define</b> adds the tag to all selected papers and removes
+it from all non-selected papers.</p>
 
 Although any PC member can view or search
 any tag, only PC chairs can change certain tags$chairtags.  $setting");
     _alternateRow("Ordered tags<br />and discussion orders", "
-An ordered tag names an <i>ordered</i> set of papers.  Searching for the
-tag with &ldquo;<a href='${ConfSiteBase}search$ConfSiteSuffix?q=order:tagname'>order:tagname</a>&rdquo; will return the papers in the order
-you defined.  This is useful for PC meeting discussion orders, for example.
-In tag listings, the first paper in the &ldquo;discuss&rdquo; ordered tag will appear as
-&ldquo;discuss#1&rdquo;, the second as &ldquo;discuss#2&rdquo;, and so forth; you can change
-the order by editing the tag numbers.
+Searching for a tag with &ldquo;<a
+href='${ConfSiteBase}search$ConfSiteSuffix?q=order:tagname'>order:tagname</a>&rdquo;
+will return the papers in the order you defined.  For example, this is useful
+for PC meeting discussion orders.  In tag listings, the first paper in the
+&ldquo;discuss&rdquo; ordered tag will appear as &ldquo;discuss#1&rdquo;, the
+second as &ldquo;discuss#2&rdquo;, and so forth.  You can change the order by
+editing the tag numbers.
 
 <p>It's easiest to define ordered tags using the
 <a href='${ConfSiteBase}search$ConfSiteSuffix'>search screen</a>.  Search for the
