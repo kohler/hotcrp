@@ -154,8 +154,8 @@ div.body {
 body#contactauthors div.body, body#comment div.body, body#login div.body,
 body#assign div.body, body#review div.body, body#mail div.body,
 body#account div.body, body#paper_edit div.body, body#paper_view div.body,
-body#autoassign div.body, body#scorehelp div.body, body#offrev div.body,
-body#settings div.body, body#bulkassign div.body {
+body#autoassign div.body, body#assignpc div.body, body#scorehelp div.body, 
+body#offrev div.body, body#settings div.body, body#bulkassign div.body {
 	margin: 0px 0px;
 }
 body#mail td#mailref, pre.email, tt.email {
@@ -193,6 +193,7 @@ div.inform {
 div#footer {
 	margin-top: 0.5em;
 	padding: 0em 12px 3px 12px;
+	clear: both;
 }
 div#footer_crp {
 	float: right;
@@ -537,7 +538,7 @@ td.caption a.foldbutton {
 
 
 /* Captions and entries */
-table.paper, table.review, table.comment, table.assign, table.settings {
+table.paper, table.review, table.comment, table.settings {
 	width: 100%;
 }
 div.relative {
@@ -658,7 +659,7 @@ table.settings td h3 {
 }
 
 
-/* home page */
+/* help pages */
 ul.compact {
 	margin-top: 0.5em;
 	margin-bottom: 0em;
@@ -714,6 +715,22 @@ td.lentry.error input, div.error input {
 }
 span.error, td.error textarea, div.error textarea {
 	color: #ff0000;
+}
+
+
+div.helpside {
+	float: right;
+	background-color: white;
+	padding: 0.5em 0.5em 0.5em 1em;
+	max-width: 20%;
+	font-size: smaller;
+}
+div.helpinside {
+	background-color: #eeeeff;
+	border: 1px solid #ccccee;
+	padding: 0.5em 1em 0.75em 0.75em;
+	max-height: 24em;
+	overflow: auto;
 }
 
 img.dlimg, img.placthook {
@@ -953,12 +970,14 @@ table.ppltable th.pl_score, table.altable th.pl_id {
 	padding-right: 3px;
 	white-space: nowrap;
 }
-.pl_reviewsStatus, table.pltable th.pl_reviewsStatus {
+.pl_reviewsStatus, table.pltable th.pl_reviewsStatus,
+td.pl_selector {
 	text-align: center;
 }
-td.pl_id, td.pl_selector, td.pl_topicMatch, td.pl_reviewPreference,
+td.pl_id, td.pl_topicMatch, td.pl_reviewPreference,
 td.pl_desirability, td.pl_visits {
 	text-align: right;
+	padding-left: 0.4em;
 	padding-right: 0.4em;
 }
 td.pl_authors, td.pl_tags, td.pl_topics, td.pl_topicNames, td.pl_affrow,

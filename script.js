@@ -277,8 +277,10 @@ function makeassrevajax(select, pcs, paperId) {
     return function() {
 	var form = e("assrevform");
 	var immediate = e("assrevimmediate");
+	var roundtag = e("assrevroundtag");
 	if (form && form.p && form[pcs] && immediate && immediate.checked) {
 	    form.p.value = paperId;
+	    form.rev_roundtag.value = (roundtag ? roundtag.value : "");
 	    form[pcs].value = select.value;
 	    Miniajax.submit("assrevform");
 	} else
@@ -296,6 +298,32 @@ function addAssrevAjax() {
 	if (inputs[i].name.substr(0, 6) == "assrev") {
 	    var whichpaper = inputs[i].name.substr(6);
 	    inputs[i].onchange = makeassrevajax(inputs[i], pcs, whichpaper);
+	}
+}
+
+function makeconflictajax(input, pcs, paperId) {
+    return function() {
+	var form = e("assrevform");
+	var immediate = e("assrevimmediate");
+	if (form && form.p && form[pcs] && immediate && immediate.checked) {
+	    form.p.value = paperId;
+	    form[pcs].value = (input.checked ? -1 : 0);
+	    Miniajax.submit("assrevform");
+	} else
+	    highlightUpdate();
+    };
+}
+
+function addConflictAjax() {
+    var form = e("assrevform");
+    if (!form || !form.reviewer)
+	return;
+    var pcs = "pcs" + form.reviewer.value;
+    var inputs = document.getElementsByTagName("input");
+    for (var i = 0; i < inputs.length; i++)
+	if (inputs[i].name == "pap[]") {
+	    var whichpaper = inputs[i].value;
+	    inputs[i].onclick = makeconflictajax(inputs[i], pcs, whichpaper);
 	}
 }
 

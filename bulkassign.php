@@ -236,14 +236,29 @@ if (isset($_REQUEST['upload']) && fileUploaded($_FILES['uploadedFile'], $Conf)
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
 $abar .= actionTab("Automatic", "autoassign$ConfSiteSuffix", false);
 $abar .= actionTab("Manual", "manualassign$ConfSiteSuffix", false);
-$abar .= actionTab("Bulk", "bulkassign$ConfSiteSuffix", true);
+$abar .= actionTab("Offline", "bulkassign$ConfSiteSuffix", true);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 
 $Conf->header("Review Assignments", "bulkassign", $abar);
 
 
-echo "<table class='assign'>
+// Help list
+echo "<div class='helpside'><div class='helpinside'>
+Assignment methods:
+<ul><li><a href='${ConfSiteBase}autoassign$ConfSiteSuffix'>Automatic</a></li>
+ <li><a href='${ConfSiteBase}manualassign$ConfSiteSuffix'>By PC member</a></li>
+ <li><a href='${ConfSiteBase}assign$ConfSiteSuffix'>By paper</a></li>
+ <li><a href='${ConfSiteBase}bulkassign$ConfSiteSuffix' class='q'><strong>Offline (bulk upload)</strong></a></li>
+</ul>
+<hr />
+Types of PC assignment:
+<dl><dt><img src='${ConfSiteBase}images/ass", REVIEW_PRIMARY, ".png' alt='Primary' /> Primary</dt><dd>Expected to review the paper themselves</dd>
+  <dt><img src='${ConfSiteBase}images/ass", REVIEW_SECONDARY, ".png' alt='Secondary' /> Secondary</dt><dd>May delegate to external reviewers</dd></dl>
+</div></div>";
+
+
+echo "<table>
   <tr class='id'><td class='caption'></td><td class='entry'></td></tr>
   <tr><td class='caption'>Upload</td><td class='entry'>
 <form action='bulkassign$ConfSiteSuffix?upload=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'>
@@ -266,7 +281,7 @@ echo "<div id='foldemail' class='foldo'><table class='extension'>
 <td>Send email to external reviewers:</td></tr>
 <tr><td></td><td><textarea class='tt' name='email_requestreview' cols='80' rows='20'>", htmlspecialchars($t[1]), "</textarea></td></tr></table>
 <div class='ellipsis";
-if (isset($Error["rev_rountag"]))
+if (isset($Error["rev_roundtag"]))
     echo " error";
 echo "'>Review round: &nbsp;<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" /> &nbsp;<span class='hint'><a href='${ConfSiteBase}help$ConfSiteSuffix?t=revround' target='new'>What is this?</a></span></div></div>
 

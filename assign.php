@@ -125,6 +125,19 @@ function pcAssignments() {
 	if (isset($pcm[$_REQUEST["reviewer"]]))
 	    $where = "where PCMember.contactId='" . $_REQUEST["reviewer"] . "'";
     }
+    if (isset($_REQUEST["rev_roundtag"])) {
+	if (($rev_roundtag = $_REQUEST["rev_roundtag"]) == "(None)")
+	    $rev_roundtag = "";
+	if ($rev_roundtag && !preg_match('/^[a-zA-Z0-9]+$/', $rev_roundtag)) {
+	    $Conf->errorMsg("The review round must contain only letters and numbers.");
+	    $rev_roundtag = "";
+	}
+	if ($rev_roundtag) {
+	    $Conf->settings["rev_roundtag"] = 1;
+	    $Conf->settingTexts["rev_roundtag"] = $rev_roundtag;
+	} else
+	    unset($Conf->settings["rev_roundtag"]);
+    }
     
     $while = "while updating PC assignments";
     $Conf->qe("lock tables PaperReview write, PaperConflict write, PCMember read, ContactInfo read, ActionLog write" . $Conf->tagRoundLocker(true), $while);

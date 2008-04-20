@@ -374,7 +374,7 @@ else if (isset($_REQUEST["saveassign"]) && isset($_REQUEST["a"]) && isset($_REQU
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
 $abar .= actionTab("Automatic", "autoassign$ConfSiteSuffix", true);
 $abar .= actionTab("Manual", "manualassign$ConfSiteSuffix", false);
-$abar .= actionTab("Bulk", "bulkassign$ConfSiteSuffix", false);
+$abar .= actionTab("Offline", "bulkassign$ConfSiteSuffix", false);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 
@@ -406,6 +406,22 @@ function tdClass($entry, $name) {
     $td = "<td class='" . ($entry ? "entry" : "caption");
     return $td . (isset($Error[$name]) ? " error'>" : "'>");
 }
+
+
+// Help list
+echo "<div class='helpside'><div class='helpinside'>
+Assignment methods:
+<ul><li><a href='${ConfSiteBase}autoassign$ConfSiteSuffix' class='q'><strong>Automatic</strong></a></li>
+ <li><a href='${ConfSiteBase}manualassign$ConfSiteSuffix'>By PC member</a></li>
+ <li><a href='${ConfSiteBase}assign$ConfSiteSuffix'>By paper</a></li>
+ <li><a href='${ConfSiteBase}bulkassign$ConfSiteSuffix'>Offline (bulk upload)</a></li>
+</ul>
+<hr />
+Types of PC assignment:
+<dl><dt><img src='${ConfSiteBase}images/ass", REVIEW_PRIMARY, ".png' alt='Primary' /> Primary</dt><dd>Expected to review the paper themselves</dd>
+  <dt><img src='${ConfSiteBase}images/ass", REVIEW_SECONDARY, ".png' alt='Secondary' /> Secondary</dt><dd>May delegate to external reviewers</dd></dl>
+</div></div>\n";
+
 
 $idRow = "<tr class='id'><td class='caption'></td><td class='entry'></td></tr>\n";
 
@@ -614,7 +630,7 @@ echo "<tr><td class='caption'></td><td class='entry'><div id='foldbadpair' class
     (isset($_REQUEST["badpairs"]) ? "foldo" : "foldc"),
     "'><table id='bptable'>\n";
 for ($i = 1; $i <= 20; $i++) {
-    echo "    <tr id='bp$i' class='auedito'><td class='rentry'>";
+    echo "    <tr id='bp$i' class='auedito'><td class='rentry nowrap'>";
     if ($i == 1)
 	echo "<input type='checkbox' name='badpairs' id='badpairs' value='1'",
 	    (isset($_REQUEST["badpairs"]) ? " checked='checked'" : ""),

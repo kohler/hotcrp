@@ -127,6 +127,9 @@ class PaperList extends BaseList {
 	case self::FIELD_ASSIGN_REVIEW:
 	    $Conf->footerStuff .= "<script type='text/javascript'>addAssrevAjax();</script>";
 	    break;
+	case self::FIELD_SELECTOR_CONFLICT:
+	    $Conf->footerStuff .= "<script type='text/javascript'>addConflictAjax();</script>";
+	    break;
 	case self::FIELD_DESIRABILITY:
 	    $queryOptions['desirability'] = 1;
 	    break;
@@ -338,7 +341,7 @@ class PaperList extends BaseList {
 	case self::FIELD_SELECTOR_ON:
 	    return ($ordinal ? "&nbsp;" : "");
 	case self::FIELD_SELECTOR_CONFLICT:
-	    return "Conflict";
+	    return "Conflict?";
 	case self::FIELD_ASSIGN_REVIEW:
 	    return "Assignment";
 	case self::FIELD_TOPIC_INTEREST:
@@ -535,12 +538,14 @@ class PaperList extends BaseList {
 	    if (($fieldId == self::FIELD_SELECTOR_ON
 		 || ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType > 0))
 		&& (!$this->papersel || in_array($row->paperId, $this->papersel))) {
-		$c = " checked='checked'";
+		$c .= " checked='checked'";
 		$this->unfolded = true;
 	    }
 	    if ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType >= CONFLICT_AUTHOR)
 		$c .= " disabled='disabled'";
-	    return "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='3' id='psel$this->count' onclick='pselClick(event, this, $this->count)' $c/>";
+	    if ($fieldId != self::FIELD_SELECTOR_CONFLICT)
+		$c .= " onclick='pselClick(event, this, $this->count)'";
+	    return "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='3' id='psel$this->count' $c/>";
 	case self::FIELD_ASSIGN_REVIEW:
 	    if ($row->conflictType >= CONFLICT_AUTHOR)
 		return "<span class='author'>Author</span>";
@@ -641,7 +646,7 @@ class PaperList extends BaseList {
     }
 
     function footer($ncol, $listname) {
-	global $Conf;
+	global $Conf, $ConfSiteBase, $ConfSiteSuffix;
 	if ($this->count == 0)
 	    return "";
 
@@ -1151,5 +1156,6 @@ $paperListFields = array( // array(CSS_FIELD_NAME, COLUMN_TYPE, SORTABLE)
 	PaperList::FIELD_COLLABORATORS_MATCH => array('collaboratorsMatch', 2, 0),
 	PaperList::FIELD_OPT_AUTHORS => array('authors', 3, 0),
 	PaperList::FIELD_TAGS => array('tags', 4, 0),
-	PaperList::FIELD_OPT_ABSTRACT => array('abstract', 5, 0)
+	PaperList::FIELD_OPT_ABSTRACT => array('abstract', 5, 0),
+	PaperList::FIELD_FOLD => array('fold', 0, 0)
 	);

@@ -20,11 +20,28 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && $kind == "c") {
 	    $_REQUEST["assrev$p"] = -1;
 }
 
+// set review round
+if (!isset($_REQUEST["rev_roundtag"]))
+    $rev_roundtag = $Conf->settingText("rev_roundtag");
+else if (($rev_roundtag = $_REQUEST["rev_roundtag"]) == "(None)")
+    $rev_roundtag = "";
+$Error = array();
+if ($rev_roundtag && !preg_match('/^[a-zA-Z0-9]+$/', $rev_roundtag)) {
+    $Error["rev_roundtag"] = true;
+    $Conf->errorMsg("The review round must contain only letters and numbers.");
+    $rev_roundtag = "";
+}
+if ($rev_roundtag) {
+    $Conf->settings["rev_roundtag"] = 1;
+    $Conf->settingTexts["rev_roundtag"] = $rev_roundtag;
+} else
+    unset($Conf->settings["rev_roundtag"]);
+
 
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
 $abar .= actionTab("Automatic", "autoassign$ConfSiteSuffix", false);
 $abar .= actionTab("Manual", "manualassign$ConfSiteSuffix", true);
-$abar .= actionTab("Bulk", "bulkassign$ConfSiteSuffix", false);
+$abar .= actionTab("Offline", "bulkassign$ConfSiteSuffix", false);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 
@@ -81,24 +98,34 @@ if (isset($_REQUEST["update"]) && $reviewer > 0)
 else if (isset($_REQUEST["update"]))
     $Conf->errorMsg("You need to select a reviewer.");
 
-echo "<p>Select a program committee member and assign that person conflicts and
-papers to review.  Primary reviewers must review the paper themselves;
-secondary reviewers may delegate the paper or review it themselves.  You can
-also assign reviews and conflicts on the paper pages.</p>
 
-<p>The paper list shows all submitted papers and their topics and reviewers.
-The selected PC member has high interest in <span class='topic2'>bold topics</span>, and low
-interest in <span class='topic0'>grey topics</span>.
-\"Topic score\" is higher the more the PC member is interested in the paper's topics; \"Desirability\" is higher the more people want to review the paper.
-In the reviewer list, <img src='${ConfSiteBase}images/ass", REVIEW_PRIMARY, ".png' alt='Primary' /> indicates a primary reviewer,
-and <img src='${ConfSiteBase}images/ass", REVIEW_SECONDARY, ".png' alt='Secondary' /> a secondary reviewer.
-Click on a column heading to sort by that column.</p>\n\n";
+// Help list
+echo "<div class='helpside'><div class='helpinside'>
+Assignment methods:
+<ul><li><a href='${ConfSiteBase}autoassign$ConfSiteSuffix'>Automatic</a></li>
+ <li><a href='${ConfSiteBase}manualassign$ConfSiteSuffix' class='q'><strong>By PC member</strong></a></li>
+ <li><a href='${ConfSiteBase}assign$ConfSiteSuffix'>By paper</a></li>
+ <li><a href='${ConfSiteBase}bulkassign$ConfSiteSuffix'>Offline (bulk upload)</a></li>
+</ul>
+<hr />\n";
+if ($kind == "a")
+    echo "Types of PC assignment:
+<dl><dt><img src='${ConfSiteBase}images/ass", REVIEW_PRIMARY, ".png' alt='Primary' /> Primary</dt><dd>Expected to review the paper themselves</dd>
+  <dt><img src='${ConfSiteBase}images/ass", REVIEW_SECONDARY, ".png' alt='Secondary' /> Secondary</dt><dd>May delegate to external reviewers</dd></dl>
+<hr />\n";
+echo "<dl><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>\n";
+if ($kind == "a")
+    echo "<dt>Preference</dt><dd><a href='${ConfSiteBase}reviewprefs$ConfSiteSuffix'>Review preference</a></dd>
+  <dt>Topic score</dt><dd>+2 for every paper topic marked high interest, &minus;1 for every paper topic marked low interest</dd>
+  <dt>Desirability</dt><dd>High values mean many PC members want to review the paper</dd>\n";
+echo "</dl>\nClick a heading to sort.\n</div></div>";
 
 
-echo "<form method='get' action='manualassign$ConfSiteSuffix' accept-charset='UTF-8' id='selectreviewerform'><div class='inform'>\n";
-if (isset($_REQUEST["sort"]))
-    echo "  <input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />\n";
-echo "  <select name='reviewer' onchange='e(\"selectreviewerform\").submit()'>\n";
+echo "<form method='get' action='manualassign$ConfSiteSuffix' accept-charset='UTF-8' id='selectreviewerform'>
+<table>
+  <tr class='id'><td class='caption'></td><td class='entry'></td></tr>
+  <tr><td class='caption'>PC member</td><td class='entry'>
+<select name='reviewer'>\n";
 
 $query = "select ContactInfo.contactId, firstName, lastName,
 		count(reviewId) as reviewCount
@@ -108,6 +135,8 @@ $query = "select ContactInfo.contactId, firstName, lastName,
 		group by contactId
 		order by lastName, firstName, email";
 $result = $Conf->qe($query);
+if ($reviewer < 0)
+    echo "<option value='-1' selected='selected'>(Select a PC member)</option>";
 while (($row = edb_orow($result))) {
     echo "<option value='$row->contactId'";
     if ($row->contactId == $reviewer)
@@ -116,36 +145,20 @@ while (($row = edb_orow($result))) {
     echo " (", plural($row->reviewCount, "assignment"), ")";
     echo "</option>";
 }
-
-echo "</select><span class='lgsep'></span>Show:&nbsp; <select name='kind' onchange='e(\"selectreviewerform\").submit()'>\n";
-echo "  <option value='c'", ($kind == "c" ? " selected='selected'" : ""), ">Conflicts only</option>\n";
-echo "  <option value='a'", ($kind == "a" ? " selected='selected'" : ""), ">Assignments and conflicts</option>\n";
-echo "</select><span class='lgsep'></span><input id='assrevimmediate' type='checkbox' checked='checked' />&nbsp;Save assignments as they are made</div></form>\n\n";
-
+echo "</select></td></tr>\n";
 
 if ($reviewer >= 0) {
-    // ajax assignment form
-    echo "<form id='assrevform' method='post' action=\"${ConfSiteBase}assign$ConfSiteSuffix?update=1\" enctype='multipart/form-data' accept-charset='UTF-8'><div>",
-	"<input type='hidden' name='p' value='' />",
-	"<input type='hidden' name='pcs$reviewer' value='' />",
-	"<input type='hidden' name='reviewer' value='$reviewer' />";
-    echo "</div></form>\n\n";
-
-
+    // Topic links
     $result = $Conf->qe("select topicName, interest from TopicArea join TopicInterest using (topicId) where contactId=$reviewer order by topicName");
     $interest = array();
     while (($row = edb_row($result)))
-	$interest[$row[1]][] = $row[0];
-    if (isset($interest[0]) || isset($interest[2])) {
-	echo "<div class='topicinterest'>";
-	if (isset($interest[2]))
-	    echo "<strong>High interest topics:</strong> ", join(", ", $interest[2]), "<br/>";
-	if (isset($interest[0]))
-	    echo "<strong>Low interest topics:</strong> ", join(", ", $interest[0]), "<br/>";
-	echo "</div>\n";
-    }
+	$interest[$row[1]][] = htmlspecialchars($row[0]);
+    if (isset($interest[2]))
+	echo "<tr><td class='caption'>High interest topics</td><td class='entry'><span class='topic2'>", join("</span>, <span class='topic2'>", $interest[2]), "</span></td></tr>\n";
+    if (isset($interest[0]))
+	echo "<tr><td class='caption'>Low interest topics</td><td class='entry'><span class='topic0'>", join("</span>, <span class='topic0'>", $interest[0]), "</span></td></tr>\n";
 
-    // link to conflict search
+    // Conflict information
     $result = $Conf->qe("select firstName, lastName, affiliation, collaborators from ContactInfo where contactId=$reviewer");
     if ($result && ($row = edb_orow($result))) {
 	// search outline from old CRP, done here in a very different way
@@ -168,25 +181,68 @@ if ($reviewer >= 0) {
 		$showau .= $s . " ";
 		$useless[$s] = 1;
 	    }
-	
-	echo "<div class='topicinterest'><a href=\"${ConfSiteBase}search$ConfSiteSuffix?q=", urlencode($sco), "+", urlencode($sau), "&amp;qt=ac&amp;linkto=assign\"><b>Search for conflicts</b></a> (authors match one of \"", htmlspecialchars(substr($showau, 0, strlen($showau) - 1)), "\" or collaborators match one of \"", htmlspecialchars(substr($showco, 0, strlen($showco) - 1)), "\")</div>\n";
+
+	echo "<tr><td class='caption'>Potential conflicts</td><td class='entry top'><table>",
+	    "<tr><td class='lxcaption'>Authors</td><td>", htmlspecialchars(substr($showau, 0, strlen($showau) - 1)), "</td></tr>\n",
+	    "<tr><td class='lxcaption'>Collaborators</td><td>", htmlspecialchars(substr($showco, 0, strlen($showco) - 1)), "</td></tr>\n",
+	    "</table>",
+	    "<a href=\"${ConfSiteBase}search$ConfSiteSuffix?q=", urlencode($sco), "+", urlencode($sau), "&amp;qt=ac&amp;linkto=assign\">Search for potential conflicts</a>",
+	    "</td></tr>\n";
     }
+}
+
+
+echo "<tr><td class='caption'></td><td class='entry'></div></td></tr>
+<tr><td class='caption'>Assignments</td><td class='entry'>",
+    "<input type='radio' name='kind' value='a'",
+    ($kind == "a" ? " checked='checked'" : ""),
+    " />&nbsp;Assign reviews and/or conflicts for all papers<br />\n",
+    "<input type='radio' name='kind' value='c'",
+    ($kind == "c" ? " checked='checked'" : ""),
+    " />&nbsp;Focus on potential conflicts<br />\n";    
+
+if ($kind == "a")
+    echo "<div class='xsmgap'></div>",
+	(isset($Error["rev_roundtag"]) ? "<span class='error'>" : ""),
+	"Review round: &nbsp;",
+	"<input id='assrevroundtag' class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
+	(isset($Error["rev_roundtag"]) ? "</span>" : ""),
+	" &nbsp;<span class='hint'><a href='${ConfSiteBase}help$ConfSiteSuffix?t=revround' target='new'>What is this?</a></span>\n";
+
+echo "<div class='xsmgap'></div><input id='assrevimmediate' type='checkbox' checked='checked' />&nbsp;Save assignments as they are made<br />\n";
+
+echo "<div class='xsmgap'></div><input class='button' type='submit' value='Redisplay' /></td></tr>\n";
+
+echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n";
+
+echo "</table></form>";
+
+if ($reviewer >= 0) {
+    // ajax assignment form
+    echo "<form id='assrevform' method='post' action=\"${ConfSiteBase}assign$ConfSiteSuffix?update=1\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='clear'>",
+	"<input type='hidden' name='kind' value='$kind' />",
+	"<input type='hidden' name='p' value='' />",
+	"<input type='hidden' name='pcs$reviewer' value='' />",
+	"<input type='hidden' name='reviewer' value='$reviewer' />",
+	"<input type='hidden' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag), "\" />",
+	"</div></form>\n\n";
+
 
     $paperList = new PaperList(true, true, new PaperSearch($Me, array("t" => "s", "c" => $reviewer, "urlbase" => "manualassign$ConfSiteSuffix?reviewer=$reviewer")));
     if (isset($sau)) {
 	$paperList->authorMatch = strtr(substr($showau, 0, strlen($showau) - 1), " ", "|");
 	$paperList->collaboratorsMatch = strtr(substr($showco, 0, strlen($showco) - 1), " ", "|");
     }
-    echo "<form class='assignpc' method='post' action=\"manualassign$ConfSiteSuffix?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
+    echo "<div class='searchresult'><form class='assignpc' method='post' action=\"manualassign$ConfSiteSuffix?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
     if (isset($_REQUEST["sort"]))
 	echo "&amp;sort=", urlencode($_REQUEST["sort"]);
     echo "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n";
     echo $paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me);
     //if (isset($sau) && ($paperList->authorMatch || $paperList->collaboratorsMatch))
     //   $_SESSION["matchPreg"] = "/(" . $paperList->authorMatch . ($paperList->authorMatch && $paperList->collaboratorsMatch ? "|" : "") . $paperList->collaboratorsMatch . ")/i";
-    echo "<div class='smgap'></div>\n";
-    echo "<input class='hbutton' type='submit' name='update' value='Save assignments' />\n";
-    echo "</div></form>\n";
+    echo "<div class='smgap'></div>\n",
+	"<table class='center'><tr><td><input class='hbutton' type='submit' name='update' value='Save assignments' /></td></tr></table>\n",
+	"</div></form></div>\n";
 }
 
 $Conf->footer();

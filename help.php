@@ -358,9 +358,9 @@ Many conferences divide reviews into multiple <em>rounds</em>.
 HotCRP lets chairs label assignments in each round with names, such as
 &ldquo;R1&rdquo; or &ldquo;lastround&rdquo;.
 (We suggest very short names like &ldquo;R1&rdquo;.)
-The round name for new assignments is set on the <a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>settings page</a>.
+The round name for new assignments is set on the <a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>settings page</a> and the assignment pages.
 To list your own round &ldquo;R1&rdquo; review assignments, <a href='${ConfSiteBase}search$ConfSiteSuffix?q=round:R1'>search for &ldquo;round:R1&rdquo;</a>.
-To list another PC member&rsquo;s round &ldquo;R1&rdquo; review assignments, <a href='${ConfSiteBase}search$ConfSiteSuffix?q=re:pcname+round:R1'>search for &ldquo;re:pcname round:R1&rdquo;</a>.");
+To list another PC member&rsquo;s round &ldquo;R1&rdquo; review assignments, <a href='${ConfSiteBase}search$ConfSiteSuffix?q=re:membername+round:R1'>search for &ldquo;re:membername round:R1&rdquo;</a>.");
 
     // get current tag settings
     if (!$Me->isPC)
