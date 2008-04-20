@@ -103,8 +103,8 @@ else if (isset($_REQUEST["update"]))
 echo "<div class='helpside'><div class='helpinside'>
 Assignment methods:
 <ul><li><a href='${ConfSiteBase}autoassign$ConfSiteSuffix'>Automatic</a></li>
- <li><a href='${ConfSiteBase}manualassign$ConfSiteSuffix' class='q'><strong>By PC member</strong></a></li>
- <li><a href='${ConfSiteBase}assign$ConfSiteSuffix'>By paper</a></li>
+ <li><a href='${ConfSiteBase}manualassign$ConfSiteSuffix' class='q'><strong>Manual by PC member</strong></a></li>
+ <li><a href='${ConfSiteBase}assign$ConfSiteSuffix'>Manual by paper</a></li>
  <li><a href='${ConfSiteBase}bulkassign$ConfSiteSuffix'>Offline (bulk upload)</a></li>
 </ul>
 <hr />\n";
@@ -116,7 +116,7 @@ if ($kind == "a")
 echo "<dl><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>\n";
 if ($kind == "a")
     echo "<dt>Preference</dt><dd><a href='${ConfSiteBase}reviewprefs$ConfSiteSuffix'>Review preference</a></dd>
-  <dt>Topic score</dt><dd>+2 for every paper topic marked high interest, &minus;1 for every paper topic marked low interest</dd>
+  <dt>Topic score</dt><dd>+2 for each high interest paper topic, &minus;1 for each low interest paper topic</dd>
   <dt>Desirability</dt><dd>High values mean many PC members want to review the paper</dd>\n";
 echo "</dl>\nClick a heading to sort.\n</div></div>";
 

@@ -247,8 +247,8 @@ $Conf->header("Review Assignments", "bulkassign", $abar);
 echo "<div class='helpside'><div class='helpinside'>
 Assignment methods:
 <ul><li><a href='${ConfSiteBase}autoassign$ConfSiteSuffix'>Automatic</a></li>
- <li><a href='${ConfSiteBase}manualassign$ConfSiteSuffix'>By PC member</a></li>
- <li><a href='${ConfSiteBase}assign$ConfSiteSuffix'>By paper</a></li>
+ <li><a href='${ConfSiteBase}manualassign$ConfSiteSuffix'>Manual by PC member</a></li>
+ <li><a href='${ConfSiteBase}assign$ConfSiteSuffix'>Manual by paper</a></li>
  <li><a href='${ConfSiteBase}bulkassign$ConfSiteSuffix' class='q'><strong>Offline (bulk upload)</strong></a></li>
 </ul>
 <hr />

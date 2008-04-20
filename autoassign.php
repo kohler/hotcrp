@@ -412,8 +412,8 @@ function tdClass($entry, $name) {
 echo "<div class='helpside'><div class='helpinside'>
 Assignment methods:
 <ul><li><a href='${ConfSiteBase}autoassign$ConfSiteSuffix' class='q'><strong>Automatic</strong></a></li>
- <li><a href='${ConfSiteBase}manualassign$ConfSiteSuffix'>By PC member</a></li>
- <li><a href='${ConfSiteBase}assign$ConfSiteSuffix'>By paper</a></li>
+ <li><a href='${ConfSiteBase}manualassign$ConfSiteSuffix'>Manual by PC member</a></li>
+ <li><a href='${ConfSiteBase}assign$ConfSiteSuffix'>Manual by paper</a></li>
  <li><a href='${ConfSiteBase}bulkassign$ConfSiteSuffix'>Offline (bulk upload)</a></li>
 </ul>
 <hr />
