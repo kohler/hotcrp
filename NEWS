@@ -1,5 +1,13 @@
 HotCRP NEWS
 
+Version 2.16   21.Apr.2008
+
+* IMPORTANT: Reviewer identity leak fix.
+
+* Improve usability with tooltips and appearance improvements (inspired by
+  John Wilkes).
+
+
 Version 2.15   9.Apr.2008
 
 * Improve homepage with a right-hand sidebar.

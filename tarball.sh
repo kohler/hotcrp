@@ -1,4 +1,4 @@
-export VERSION=2.15
+export VERSION=2.16
 perl -pi -e 's/HotCRP: Conference Review Package 2\.\d+/HotCRP: Conference Review Package '$VERSION'/' README
 
 mkdistdir () {

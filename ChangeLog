@@ -1,3 +1,14 @@
+2008-04-21 Monday 23:13  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/search.inc (1.93): FIX INFORMATION EXPOSURE: Searching for
+	  PC members review lists would return conflicted information,
+	  UNTIL reviews became available to authors. (Stefan Savage)
+
+2008-04-21 Monday 22:46  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* search.php (1.149), Code/conference.inc (1.254), Code/contact.inc
+	  (1.158): download comments: improve search for contact IDs
+
 2008-04-21 Monday 22:09  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* search.php (1.148), Code/paperlist.inc (1.174): Nits on "No
