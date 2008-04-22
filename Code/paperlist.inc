@@ -956,7 +956,7 @@ class PaperList extends BaseList {
 
 	// fetch data
 	if (edb_nrows($result) == 0)
-	    return "No papers";
+	    return "No matching papers";
 	$rows = array();
 	while (($row = edb_orow($result)))
 	    $rows[] = $row;

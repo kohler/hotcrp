@@ -824,7 +824,9 @@ if ($pl) {
 	    if (isset($_REQUEST[$xa]))
 		$a[] = "$xa=" . urlencode($_REQUEST[$xa]);
 	reset($tOpt);
-	echo " in ", strtolower($tOpt[$_REQUEST["t"]]), " (<a href=\"${ConfSiteBase}search$ConfSiteSuffix?", join("&amp;", $a), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
+	echo " in ", strtolower($tOpt[$_REQUEST["t"]]);
+	if (key($tOpt) != $_REQUEST["t"])
+	    echo " (<a href=\"${ConfSiteBase}search$ConfSiteSuffix?", join("&amp;", $a), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
     }
     
     if ($pl->anySelector)
