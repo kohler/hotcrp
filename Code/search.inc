@@ -216,7 +216,9 @@ class PaperSearch {
 	global $Conf;
 	if ($this->privChair)
 	    return "";
-	$au_seerev = ($Conf->setting("au_seerev") && $Conf->setting("rev_blind") > 0);
+	$au_seerev = ($Conf->setting("au_seerev") && $Conf->setting("rev_blind") == 0);
+	// XXX should allow searching nonblind reviews in
+	// optionally-blind-review conferences
 	if ($this->amPC) {
 	    $pc_seerev = $Conf->setting("pc_seeallrev");
 	    if ($pc_seerev == 0)
@@ -225,13 +227,15 @@ class PaperSearch {
 	    if (!$pc_seerev) {
 		$this->any |= self::ANY_YOURREVIEW;
 		$confpart .= " and YourReview.reviewNeedsSubmit=0";
-	    } else if ($au_seerev) {
-		$this->any |= self::ANY_CONFLICT;
-		$confpart .= " and conflictType is null";
 	    }
+	    $this->any |= self::ANY_CONFLICT;
+	    $confpart .= " and conflictType is null";
 	    return $confpart;
+	} else if ($au_seerev) {
+	    $this->any |= self::ANY_CONFLICT;
+	    return " and conflictType is null";
 	} else
-	    return ($au_seerev ? "" : false);
+	    return false;
     }
     
     function _searchReviewer($lword, $mclass, $type) {
