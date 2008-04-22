@@ -675,8 +675,10 @@ class PaperList extends BaseList {
     <option value='revformz'>Review forms (zip)</option>\n";
 	    if ($this->contact->isPC && $Conf->timeSubmitFinalPaper())
 		$t .= "    <option value='final'>Final papers</option>\n";
-	    if ($this->contact->isPC || $this->contact->isReviewer)
+	    if ($this->contact->isPC || $this->contact->isReviewer) {
 		$t .= "    <option value='rev'>All reviews</option>\n";
+		$t .= "    <option value='revz'>All reviews (zip)</option>\n";
+	    }
 	}
 	if ($this->contact->privChair || ($this->contact->isReviewer && $Conf->blindSubmission() < 2))
 	    $t .= "    <option value='authors'>Authors</option>\n";

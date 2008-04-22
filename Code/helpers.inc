@@ -564,7 +564,10 @@ function reviewBlind($rrow) {
 function commentBlind($crow) {
     global $Conf;
     $br = $Conf->blindReview();
-    return $br == 2 || ($br == 1 && (!$crow || $crow->blind));
+    // logic: "$br == 2 || ($br == 1 && (!$crow || $crow->blind))"
+    if ($br != 1 || !$crow)
+	return $br == 1 || $br == 2;
+    return (isset($crow->commentBlind) ? $crow->commentBlind : $crow->blind);
 }
 
 function tabLength($text, $all) {

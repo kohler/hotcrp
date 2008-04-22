@@ -541,6 +541,12 @@ $blind\n";
 	return $x . "\n==+== End Review\n";
     }
 
+    function _prettyPaperTitle($prow, &$l) {
+	$n = "Paper #" . $prow->paperId . ": ";
+	$l = max(14, (int) ((75.5 - strlen($prow->title) - strlen($n)) / 2) + strlen($n));
+	return wordWrapIndent($prow->title, $n, $l) . "\n";
+    }
+    
     function prettyTextForm($prow, $rrow, $contact, $conf, $alwaysAuthorView = true) {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
@@ -565,9 +571,7 @@ $blind\n";
 	    $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
 	}
 	$x .= "---------------------------------------------------------------------------\n";
-	$n = "Paper #" . $prow->paperId . ": ";
-	$l = max(14, (int) ((75.5 - strlen($prow->title) - strlen($n)) / 2) + strlen($n));
-	$x .= wordWrapIndent($prow->title, $n, $l) . "\n";
+	$x .= $this->_prettyPaperTitle($prow, $l);
 	if ($rrow && $contact->canViewReviewerIdentity($prow, $rrow, $conf, true)) {
 	    if (isset($rrow->reviewFirstName))
 		$n = contactText($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
@@ -615,6 +619,24 @@ $blind\n";
 		$lastNumeric = false;
 	    }
 	}
+	return $x;
+    }
+
+    function prettyTextComment($prow, $crow, $contact, $conf) {
+	global $Conf;
+	$conf = ($conf ? $conf : $Conf);
+
+	$x = "===========================================================================\n";
+	$cctype = (isset($crow->commentConflictType) ? $crow->commentConflictType : $crow->conflictType);
+	$n = ($cctype >= CONFLICT_AUTHOR ? "Author's Response" : "Comment");
+	if ($contact->canViewCommentIdentity($prow, $crow, $conf, true))
+	    $n .= " by " . contactText($crow->reviewFirstName, $crow->reviewLastName, $crow->reviewEmail);
+	$x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
+	$x .= $this->_prettyPaperTitle($prow, $l);
+	// $n = "Updated " . $Conf->printableTime($crow->timeModified);
+	// $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
+	$x .= "---------------------------------------------------------------------------\n";
+	$x .= $crow->comment . "\n";
 	return $x;
     }
 

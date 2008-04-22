@@ -108,7 +108,7 @@ if ($getaction == "abstracts" && isset($papersel) && defval($_REQUEST, "ajax")) 
 		$text .= "---------------------------------------------------------------------------\n";
 	    $text .= rtrim($prow->abstract) . "\n\n";
 	    defappend($texts[$paperselmap[$prow->paperId]], $text);
-	    $rfSuffix = (count($texts) == 1 ? "-$prow->paperId" : "s");
+	    $rfSuffix = (count($texts) == 1 ? $prow->paperId : "s");
 	}
     }
 
@@ -157,6 +157,61 @@ if ($getaction == "final" && isset($papersel)) {
 }
 
 
+function downloadReviews(&$texts, &$errors) {
+    global $getaction, $Opt, $Conf, $papersel, $rf;
+
+    ksort($texts);
+    if (count($texts) == 0) {
+	if (count($errors) == 0)
+	    $Conf->errorMsg("No papers selected.");
+	else
+	    $Conf->errorMsg(join("<br />\n", array_keys($errors)) . "<br />Nothing to download.");
+	return;
+    }
+
+    $getforms = ($getaction == "revform" || $getaction == "revformz");
+    $gettext = ($getaction == "rev" || $getaction == "revform");
+    
+    $warnings = array();
+    if (count($errors))
+	$warnings[] = "Some " . ($getforms ? "review forms" : "reviews") . " are missing:";
+    foreach ($errors as $ee => $junk)
+	$warnings[] = preg_replace('|\s*<.*|', "", $ee);
+
+    $rfname = ($getforms && count($texts) == 1 ? "review" : "reviews");
+    if (count($texts) == 1 && $gettext)
+	$rfname .= $papersel[key($texts)];
+    
+    if ($getforms)
+	$header = $rf->textFormHeader($Conf, count($texts) > 1 && $getaction == "revform");
+    else
+	$header = "";
+    
+    if ($gettext) {
+	$text = $header;
+	if (count($warnings) && $getforms)
+	    $text .= "==-== " . join("\n==-== ", $warnings) . "\n\n";
+	else if (count($warnings))
+	    $text .= join("\n", $warnings) . "\n\n";
+	$text .= join("", $texts);
+	downloadText($text, $Opt['downloadPrefix'] . "$rfname.txt", "review forms");
+	exit;
+    } else {
+	$files = array();
+	foreach ($texts as $sel => $text)
+	    $Conf->zipAdd($tmpdir, $Opt['downloadPrefix'] . $rfname . $papersel[$sel] . ".txt", $header . $text, $warnings, $files);
+	if (count($warnings))
+	    $Conf->zipAdd($tmpdir, "README-warnings.txt", join("\n", $warnings) . "\n", $warnings, $files);
+
+	$result = $Conf->zipFinish($tmpdir, $Opt['downloadPrefix'] . "reviews.zip", $files);
+	if (isset($tmpdir) && $tmpdir)
+	    exec("/bin/rm -rf $tmpdir");
+	if (!PEAR::isError($result))
+	    exit;
+    }
+}
+
+
 // download review form for selected papers
 // (or blank form if no papers selected)
 if (($getaction == "revform" || $getaction == "revformz")
@@ -175,52 +230,16 @@ if (($getaction == "revform" || $getaction == "revformz")
     while ($row = edb_orow($result)) {
 	if (!$Me->canReview($row, null, $Conf, $whyNot))
 	    $errors[whyNotText($whyNot, "review")] = true;
-	else {
+	else
 	    defappend($texts[$paperselmap[$row->paperId]], $rf->textForm($row, $row, $Me, $Conf, null) . "\n");
-	    $rfSuffix = (count($texts) == 1 ? $row->paperId : "s");
-	}
     }
 
-    ksort($texts);
-    if (count($texts) == 0) {
-	if (count($errors) > 0)
-	    $errors[""] = "";
-	$Conf->errorMsg(join("<br/>\n", array_keys($errors)) . "No papers selected.");
-    } else if ($getaction == "revform") {
-	$text = $rf->textFormHeader($Conf, $rfSuffix == "s") . join("", $texts);
-	if (count($errors)) {
-	    $e = "==-== Some review forms are missing:\n";
-	    foreach ($errors as $ee => $junk)
-		$e .= "==-== " . preg_replace('|\s*<.*|', "", $ee) . "\n";
-	    $text = "$e\n$text";
-	}
-	downloadText($text, $Opt['downloadPrefix'] . "review$rfSuffix.txt", "review forms");
-	exit;
-    } else {
-	$warnings = array();
-	if (count($errors)) {
-	    $warnings[] = "Some review forms are missing:";
-	    foreach ($errors as $ee => $junk)
-		$warnings[] .= preg_replace('|\s*<.*|', "", $ee);
-	}
-	$files = array();
-	$header = $rf->textFormHeader($Conf, false);
-	foreach ($texts as $sel => $text)
-	    $Conf->zipAdd($tmpdir, $Opt['downloadPrefix'] . "review" . $papersel[$sel] . ".txt", $header . $text, $warnings, $files);
-	if (count($warnings))
-	    $Conf->zipAdd($tmpdir, "README-warnings.txt", join("\n", $warnings) . "\n", $warnings, $files);
-
-	$result = $Conf->zipFinish($tmpdir, $Opt['downloadPrefix'] . "reviews.zip", $files);
-	if (isset($tmpdir) && $tmpdir)
-	    exec("/bin/rm -rf $tmpdir");
-	if (!PEAR::isError($result))
-	    exit;
-    }
+    downloadReviews($texts, $errors);
 }
 
 
 // download all reviews for selected papers
-if ($getaction == "rev" && isset($papersel)) {
+if (($getaction == "rev" || $getaction == "revz") && isset($papersel)) {
     $rf = reviewForm();
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "allReviews" => 1, "reviewerName" => 1)), "while selecting papers");
 
@@ -231,26 +250,16 @@ if ($getaction == "rev" && isset($papersel)) {
     while ($row = edb_orow($result)) {
 	if (!$Me->canViewReview($row, null, $Conf, $whyNot))
 	    $errors[whyNotText($whyNot, "view review")] = true;
-	else if ($row->reviewSubmitted) {
+	else if ($row->reviewSubmitted)
 	    defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextForm($row, $row, $Me, $Conf, false) . "\n");
-	    $rfSuffix = (count($texts) == 1 ? "-$row->paperId" : "s");
-	}
     }
 
-    if (count($texts) == 0)
-	$Conf->errorMsg(join("<br/>\n", array_keys($errors)) . "<br/>\nNo papers selected.");
-    else {
-	ksort($texts);
-	$text = join("", $texts);
-	if (count($errors)) {
-	    $e = "Some reviews are missing:\n";
-	    foreach ($errors as $ee => $junk)
-		$e .= preg_replace('|\s*<.*|', "", $ee) . "\n";
-	    $text = "$e\n$text";
-	}
-	downloadText($text, $Opt['downloadPrefix'] . "review$rfSuffix.txt", "review forms");
-	exit;
-    }
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "allComments" => 1, "reviewerName" => 1)), "while selecting papers");
+    while ($row = edb_orow($result))
+	if ($Me->canViewComment($row, $row, $Conf, $whyNot))
+	    defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextComment($row, $row, $Me, $Conf) . "\n");
+
+    downloadReviews($texts, $errors);
 }
 
 

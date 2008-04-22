@@ -595,7 +595,7 @@ class Mailer {
     }
 
     function getComments($contact) {
-	global $Conf;
+	global $Conf, $rf;
 
 	$q = "select PaperComment.*,
  		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
@@ -611,19 +611,9 @@ class Mailer {
 	    $q .= "\n\t\twhere PaperComment.paperId=" . $this->row->paperId;
 	$result = $Conf->qe($q . "\n\t\torder by commentId", "while retrieving comments");
 	$text = "";
-	while (($crow = edb_orow($result))) {
-	    if (!$contact->canViewComment($this->row, $crow, $Conf, $whyNot, true))
-		continue;
-	    $text .= "===========================================================================\n";
-	    $n = ($crow->conflictType >= CONFLICT_AUTHOR ? "Author's Response" : "Comment");
-	    if ($contact->canViewCommentIdentity($this->row, $crow, $Conf, true))
-		$n .= " by " . contactText($crow);
-	    $text .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
-	    // $n = "Updated " . $Conf->printableTime($crow->timeModified);
-	    // $text .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
-	    $text .= "---------------------------------------------------------------------------\n";
-	    $text .= $crow->comment . "\n\n";
-	}
+	while (($crow = edb_orow($result)))
+	    if ($contact->canViewComment($this->row, $crow, $Conf, $whyNot, true))
+		$text .= $rf->prettyTextComment($this->row, $crow, $contact, $Conf) . "\n";
 	return $text;
     }
 

@@ -711,7 +711,9 @@ class Conference {
 	//   "reviewerContact"	Sets reviewer contact ID
 	//   "allReviews"	All reviews (multiple rows per paper)
 	//   "allReviewScores"	All review scores (multiple rows per paper)
+	//   "allComments"	All comments (multiple rows per paper)
 	//   "reviewerName"	Include reviewer names
+	//   "commenterName"	Include commenter names
 	//   "joins"		Table(s) to join
 	//   "tags"		Include paperTags
 	//   "topics"
@@ -765,6 +767,15 @@ class Conference {
 		if (!$scoresQuery || $rf->reviewFields[$k])
 		    $pq .= ",\t\tPaperReview.$k as $k";
 	}
+	if (isset($options['allComments']))
+	    $pq .= ",
+		PaperComment.commentId,
+		CommentConflict.conflictType as commentConflictType,
+		PaperComment.timeModified,
+		PaperComment.comment,
+		PaperComment.forReviewers,
+		PaperComment.forAuthors,
+		PaperComment.blind as commentBlind";
 	if (isset($options['topics']))
 	    $pq .= ",
 		PaperTopics.topicIds,
@@ -832,8 +843,13 @@ class Conference {
 	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$reviewContactId)\n";
 	if ($allReviewerQuery)
 	    $pq .= "		left join PaperReview as MyPaperReview on (MyPaperReview.paperId=Paper.paperId and MyPaperReview.contactId=$reviewContactId)\n";
+	if (isset($options['allComments']))
+	    $pq .= "		join PaperComment on (PaperComment.paperId=Paper.paperId)
+		left join PaperConflict as CommentConflict on (CommentConflict.paperId=PaperComment.paperId and CommentConflict.contactId=PaperComment.contactId)\n";
 
-	if (isset($options['reviewerName']))
+	if (isset($options['reviewerName']) && isset($options['allComments']))
+	    $pq .= "		left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperComment.contactId)\n";
+	else if (isset($options['reviewerName']))
 	    $pq .= "		left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperReview.contactId)\n";
 	
 	if (isset($options['topics']) || isset($options['topicInterestScore'])) {
@@ -907,7 +923,9 @@ class Conference {
 	    $pq .= "		where " . join(" and ", $where) . "\n";
 
 	// grouping and ordering
-	if ($reviewerQuery || $scoresQuery)
+	if (isset($options["allComments"]))
+	    $pq .= "		group by Paper.paperId, PaperComment.commentId\n";
+	else if ($reviewerQuery || $scoresQuery)
 	    $pq .= "		group by Paper.paperId, PaperReview.reviewId\n";
 	else
 	    $pq .= "		group by Paper.paperId\n";
@@ -917,6 +935,8 @@ class Conference {
 	    $pq .= "		order by Paper.paperId";
 	    if ($reviewerQuery || $scoresQuery)
 		$pq .= ", PaperReview.reviewOrdinal";
+	    if (isset($options["allComments"]))
+		$pq .= ", PaperComment.commentId";
 	}
 
 	//$this->infoMsg(htmlspecialchars($pq));
