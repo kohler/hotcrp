@@ -1,3 +1,107 @@
+2008-04-21 Monday 22:09  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* search.php (1.148), Code/paperlist.inc (1.174): Nits on "No
+	  papers" search result
+
+2008-04-21 Monday 21:38  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* search.php (1.147), Code/TODO (1.105), Code/conference.inc
+	  (1.253), Code/helpers.inc (1.207), Code/mailtemplate.inc (1.43),
+	  Code/paperlist.inc (1.173), Code/review.inc (1.103): Downloading
+	  reviews from the search screen downloads comments as well.  Add
+	  "All reviews (zip)" download option.
+
+2008-04-20 Sunday 00:04  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* autoassign.php (1.37), bulkassign.php (1.8), manualassign.php
+	  (1.59): nits
+
+2008-04-20 Sunday 00:02  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.92), autoassign.php (1.36), bulkassign.php (1.7),
+	  help.php (1.77), manualassign.php (1.58), script.js (1.65),
+	  style.css (1.240), Code/paperlist.inc (1.172): Improve assignment
+	  pages UI.  A help box floats on the right.  All pages allow
+	  setting a review round.  "Conflict only" mode uses Ajax.
+
+2008-04-19 Saturday 16:01  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.76), style.css (1.239), Code/paperlist.inc (1.171):
+	  help improvements
+
+2008-04-18 Friday 17:43  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.75), style.css (1.238), Code/search.inc (1.92): nits
+
+2008-04-18 Friday 15:40  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* README (1.36), autoassign.php (1.35), bulkassign.php (1.6),
+	  help.php (1.74), review.php (1.143), scorehelp.php (1.4),
+	  search.php (1.146), settings.php (1.82), style.css (1.237),
+	  tarball.sh (1.84), Code/conference.inc (1.252), Code/contact.inc
+	  (1.157), Code/distoptions.inc (1.8), Code/paperlist.inc (1.170),
+	  Code/reviewtable.inc (1.53), Code/schema.sql (1.110),
+	  Code/search.inc (1.91), Code/tags.inc (1.15),
+	  Code/updateschema.inc (1.1), Code/updateschema.sql (1.7): Change
+	  the review rounds system to use a PaperReview field, rather than
+	  the tags system.  Also add a function that automatically upgrades
+	  the database to match the code.
+
+2008-04-17 Thursday 12:26  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.73), index.php (1.173), Code/TODO (1.104),
+	  Code/search.inc (1.90): More John Wilkes usability notes.  Search
+	  for "-word" to exclude word.	Search for "+word" to require word.
+	  Search for "#num" to include paper number num.
+
+2008-04-17 Thursday 11:55  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.72), index.php (1.172), review.php (1.142),
+	  search.php (1.145), style.css (1.236), Code/TODO (1.103),
+	  Code/conference.inc (1.251), Code/contact.inc (1.156),
+	  Code/helpers.inc (1.206), Code/paperlist.inc (1.169),
+	  Code/reviewtable.inc (1.52), Code/search.inc (1.89),
+	  images/homegrad.png (1.2): More usability improvements based on
+	  discussion with John Wilkes.	Remove the separate "List" section,
+	  preferring the Search box.  Search box says "(All)" by default,
+	  indicating that pressing Search returns all matches.	Add a "Your
+	  discussion leads" search type.  ("Your discussion leads" remains
+	  as a separate list entry, placed now next to "Your Reviews",
+	  which is better anyway.) Fix forceShow behavior on review
+	  screens.  Assigned reviewers can still access a paper after it
+	  has been withdrawn.  The normal PC cannot.  Hopefully this is
+	  correctly implemented.  Some other nits.
+
+2008-04-16 Wednesday 15:26  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* comment.php (1.59), index.php (1.171), review.php (1.141),
+	  settings.php (1.81), style.css (1.235), Code/TODO (1.102),
+	  Code/helpers.inc (1.205), Code/papertable.inc (1.114): add
+	  tooltips to search and +/- folders (John Wilkes)
+
+2008-04-16 Wednesday 15:07  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* README (1.35), style.css (1.234), tarball.sh (1.83), Code/TODO
+	  (1.101), Code/conference.inc (1.250), images/homegrad.png (1.1):
+	  make home link more of an affordance through highlighting and
+	  shading, hopefully addresses John Wilkes comment
+
+2008-04-16 Wednesday 15:05  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/TODO (1.100): John Wilkes comments
+
+2008-04-16 Wednesday 13:57  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* README (1.34), Code/createdb.sh (1.20): Improve documentation of
+	  Code/createdb.sh (Juan Vargas).
+
+2008-04-09 Wednesday 13:56  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.21), README (1.33), tarball.sh (1.82),
+	  Code/papertable.inc (1.113): To 2.15.
+
+	  Also, change an instance of Help to Learn more.
+
 2008-04-06 Sunday 17:37  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Code/search.inc (1.88): Numeric conversion caused the quicklinks

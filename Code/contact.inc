@@ -722,10 +722,15 @@ class Contact {
 	    return false;
 	// policy
 	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && !$ignoreForceShow;
+	$crow_contactId = 0;
+	if ($crow && isset($crow->commentContactId))
+	    $crow_contactId = $crow->commentContactId;
+	else if ($crow)
+	    $crow_contactId = $crow->contactId;
 	if (($prow->conflictType >= CONFLICT_AUTHOR
 	     && $conf->timeAuthorViewReviews()
 	     && (!$crow || $crow->forAuthors))
-	    || ($crow && $crow->contactId == $this->contactId)
+	    || $crow_contactId == $this->contactId
 	    || ($this->privChair && ($forceShow || $prow->conflictType == 0))
 	    || ($this->isPC && $prow->conflictType == 0
 		&& (!$crow || $crow->forAuthors < 2 || $crow->forReviewers > 0))
@@ -840,8 +845,13 @@ class Contact {
 	if ($crow && $crow->forAuthors > 1)
 	    return $this->canViewAuthors($prow, $conf, false);
 	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && !$ignoreForceShow;
+	$crow_contactId = 0;
+	if ($crow && isset($crow->commentContactId))
+	    $crow_contactId = $crow->commentContactId;
+	else if ($crow)
+	    $crow_contactId = $crow->contactId;
 	if (($this->privChair && $forceShow)
-	    || ($crow && $crow->contactId == $this->contactId)
+	    || $crow_contactId == $this->contactId
 	    || ($this->isPC && $prow->conflictType == 0)
 	    || ($prow->myReviewType > 0 && $prow->conflictType == 0
 		&& $conf->settings["extrev_view"] >= 2)

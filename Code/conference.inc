@@ -770,6 +770,7 @@ class Conference {
 	if (isset($options['allComments']))
 	    $pq .= ",
 		PaperComment.commentId,
+		PaperComment.contactId as commentContactId,
 		CommentConflict.conflictType as commentConflictType,
 		PaperComment.timeModified,
 		PaperComment.comment,

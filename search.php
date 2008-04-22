@@ -175,8 +175,10 @@ function downloadReviews(&$texts, &$errors) {
     $warnings = array();
     if (count($errors))
 	$warnings[] = "Some " . ($getforms ? "review forms" : "reviews") . " are missing:";
-    foreach ($errors as $ee => $junk)
-	$warnings[] = preg_replace('|\s*<.*|', "", $ee);
+    foreach ($errors as $ee => $junk) {
+	$ee = preg_replace('|<a.*?</a>\s*\Z|', "", $ee);
+	$warnings[] = preg_replace('|<.*?>|', "", $ee);
+    }
 
     $rfname = ($getforms && count($texts) == 1 ? "review" : "reviews");
     if (count($texts) == 1 && $gettext)
