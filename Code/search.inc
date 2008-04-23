@@ -57,6 +57,7 @@ class PaperSearch {
     const F_TIMESUBMITTED = 1024;
     const F_AUTHORCOMMENT = 2048;
     const F_REVIEWERCOMMENT = 4096;
+    const F_FALSE = 8192;
 
     var $contactId;
     var $privChair;
@@ -242,9 +243,7 @@ class PaperSearch {
 		$type = "nre";
 		$value = $m[1] . $m[2];
 	    }
-	} else if (!$this->amPC)
-	    $type = "f";
-	else {
+	} else {
 	    if (!$negated && $this->privChair)
 		$this->reviewerName = ($this->reviewerName === false ? $word : null);
 	    $this->contactmatch[] = sqlq_for_like($word);
@@ -259,7 +258,12 @@ class PaperSearch {
 	else if ($this->privChair)
 	    $qt[] = new SearchTerm($type, $rt, $value);
 	else {
-	    $deblinder = ($type == "nre" ? 0 : self::F_NONBLIND);
+	    $deblinder = 0;
+	    if ($type == "re" && $Conf->blindReview() == 2)
+		$deblinder = self::F_FALSE;
+	    else if ($type == "re" && $Conf->blindReview() == 1)
+		$deblinder = self::F_NONBLIND;
+	    
 	    if ($this->amPC) {
 		$pc_seeallrev = $Conf->setting("pc_seeallrev");
 		if ($pc_seeallrev == 1
@@ -657,6 +661,8 @@ class PaperSearch {
 	    $q[] = "MyReview.reviewNeedsSubmit=0";
 	if ($flags & self::F_PAPERNONBLIND)
 	    $q[] = "Paper.blind=0";
+	if ($flags & self::F_FALSE)
+	    $q[] = "false";
     }
     
     function _clauseTermSetField(&$t, $field, $negated, &$f, &$needflags) {
@@ -851,6 +857,8 @@ class PaperSearch {
 	if (($flags & self::F_NONCONFLICT) && $row->conflictType)
 	    return false;
 	if (($flags & self::F_PAPERNONBLIND) && $row->paperBlind)
+	    return false;
+	if ($flags & self::F_FALSE)
 	    return false;
 	return true;
     }
