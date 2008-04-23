@@ -1009,7 +1009,7 @@ class PaperSearch {
 	    $filters[] = "MyReview.reviewType is not null";
 	    $this->needflags |= self::F_REVIEWER;
 	} else if ($this->limitName == "rout") {
-	    $filters[] = "MyReview.reviewType != 0";
+	    $filters[] = "MyReview.reviewNeedsSubmit!=0";
 	    $this->needflags |= self::F_REVIEWER;
 	} else if ($this->limitName == "revs")
 	    $tables["Limiter"] = array("join", "PaperReview", "Paper.paperId=Limiter.paperId");
@@ -1103,7 +1103,7 @@ class PaperSearch {
 		    $c = " in (" . join(",", $carr) . ")";
 		$q = str_replace("\1$i\1", $c, $q);
 	    }
-	$Conf->infoMsg(htmlspecialchars($q));
+	//$Conf->infoMsg(htmlspecialchars($q));
 
 	// actually perform query
 	if (!$Conf->qe("create temporary table Matches $q", "while performing search"))
