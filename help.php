@@ -81,18 +81,18 @@ and it's possible to download all matching papers and/or reviews at once.
 <ul class='compact'>
 <li>" . _searchForm("") . "&nbsp; finds all papers.  (Leave the search field blank.)</li>
 <li>" . _searchForm("12") . "&nbsp; finds paper #12.  When entered from a
- <a href='#quicklinks'>quicksearch</a> box, this search will <i>jump</i> to
+ <a href='#quicklinks'>quicksearch</a> box, this search will jump to
  paper #12 directly.</li>
 <li>Investigate <a href='${ConfSiteBase}help$ConfSiteSuffix?t=syntax'>search syntax</a>.</li>
 <li>Use <a href='#quicklinks'>quicklinks</a> on paper pages to navigate
  through search results.</li>
-<li>On search results pages, <i>shift-click</i> the checkboxes to
+<li>On search results pages, <em>shift-click</em> the checkboxes to
  select paper ranges.</li>
 </ul>
 ");
     _alternateRow("How to search", "
 The default search box returns papers that match
-<i>all</i> of the space-separated terms you enter.
+<em>all</em> of the space-separated terms you enter.
 To search for papers that match <em>some</em> of the terms,
 type &ldquo;term1 OR term2&rdquo;.
 To search for papers that <em>don't</em> match a term,
@@ -147,8 +147,8 @@ You can:</p>
 <li>Send mail to paper authors or reviewers (chairs only).</li>
 </ul>
 
-<p>Select papers one by one, in groups by <i>shift</i>-clicking on either end
-of a <i>range</i> of checkboxes, or using the \"select all\" link.
+<p>Select papers one by one, in groups by <em>shift</em>-clicking on either end
+of a <em>range</em> of checkboxes, or using the \"select all\" link.
 For instance, the easiest way to tag a set of papers is
 to enter their numbers in the search box, search, \"select all\", and add the
 tag.</p>
@@ -266,7 +266,7 @@ PC members and administrators can attach tag names to papers.
 Papers can have many tags, and you can invent new tags on the fly.
 Tags are never shown to authors$conflictmsg1.
 It&rsquo;s easy to add and remove tags and to list all papers with a given tag,
-and <i>ordered</i> tags preserve a particular paper order.
+and <em>ordered</em> tags preserve a particular paper order.
 
 <p>By default, tags are visible to the entire PC, but <em>twiddle tags</em>,
 with names like &ldquo;~tag&rdquo;, are visible only to their creators.</p>");
@@ -481,7 +481,7 @@ After the submission deadline has passed:
 
   <p>If you'd like, you can collect review preferences before the submission
   deadline.  Select <a href='${ConfSiteBase}settings$ConfSiteSuffix?group=sub'>&ldquo;PC can
-  see <i>all registered papers</i> until submission deadline&rdquo;</a>, which
+  see <em>all registered papers</em> until submission deadline&rdquo;</a>, which
   allows PC members to see abstracts for registered papers that haven't yet
   been submitted.</p></li>
 

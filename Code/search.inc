@@ -172,6 +172,7 @@ class PaperSearch {
 	$this->regex = array();
 	$this->contactmatch = array();
 	$this->contactmatchPC = true;
+	$this->rounds = false;
     }
 
     function warn($text) {
@@ -535,9 +536,14 @@ class PaperSearch {
 	}
 	if (($special ? $special == "round" : isset($this->fields["round"]))
 	    && $this->amPC) {
-	    if ($word == "none")
-		$qt[] = new SearchTerm("round", 0, 0);
-	    else if ($word != "any") {
+	    $this->rounds = true;
+	    if ($Conf->setting("allowPaperOption") < 11)
+		$qt[] = new SearchTerm("f");
+	    else if ($word == "none")
+		$qt[] = new SearchTerm("round", 0, array(0));
+	    else if ($word == "any")
+		$qt[] = new SearchTerm("round", 0, range(1, count($Conf->settings["rounds"]) - 1));
+	    else {
 		$x = simplifyWhitespace($word);
 		$rounds = array();
 		foreach ($Conf->settings["rounds"] as $rid => $r)
@@ -561,6 +567,8 @@ class PaperSearch {
 
 	for ($i = $nqt; $i < count($qt) - 1; ++$i)
 	    $qt[$i]->link = true;
+	//if ($negated && count($qt) == $nqt + 1 && $qt[$nqt]->type == "round")
+	//$qt->value = array_diff(array_keys($Conf->settings["rounds"]), $qt->value);
 	if ($negated && count($qt) != $nqt) {
 	    $value = array_splice($qt, $nqt);
 	    $qt[] = new SearchTerm("not", 0, $value);
@@ -644,8 +652,87 @@ class PaperSearch {
 	    $qc[] = $qpn_or;
 	
 	// Now we have an array of arrays in "CNF"
+	if ($this->rounds) {
+	    $rounderror = false;
+	    for ($i = 0; $i < count($qc); $i++)
+		$this->_queryFixRounds($qc[$i], $rounderror);
+	    $this->_queryApplyAllRounds($qc);
+	    if ($rounderror) {
+		global $Conf;
+		$Conf->errorMsg("Complicated use of &ldquo;round:&rdquo; ignored.  Stick to the basics, such as &ldquo;re:reviewername round:roundname&rdquo;.");
+	    }
+	}
     }
 
+    // remove strange uses of rounds
+    function _queryFixRounds(&$qcl, &$rounderror) {
+	global $Conf;
+
+	foreach ($qcl as &$qt)
+	    if ($qt->type == "not") {
+		$this->_queryFixRounds($qt->value, $rounderror);
+		if (count($qt->value) == 1 && $qt->value[0]->type == "round")
+		    $qt = new SearchTerm("round", 0, array_diff(array_keys($Conf->settings["rounds"]), $qt->value[0]->value));
+	    }
+	
+	for ($i = 1; $i < count($qcl); $i++)
+	    if ($qcl[$i]->type == "round") {
+		if ($i == 1 && $qcl[0]->type == "round")
+		    $qcl[0]->value = array_unique(array_merge($qcl[0]->value, $qcl[1]->value));
+		else
+		    $rounderror = true;
+		array_splice($qcl, 1, 1);
+		$i--;
+	    }
+	if ($qcl[0]->type == "round" && count($qcl) > 1) {
+	    $rounderror = true;
+	    array_splice($qcl, 0, 1);
+	}
+    }
+
+    // apply rounds to reviewer searches
+    function _queryApplyRounds(&$qcl, &$roundterm) {
+	$applied = 0;
+	foreach ($qcl as &$qt)
+	    if ($qt->type == "not")
+		$applied += $this->_queryApplyRounds($qt->value, $roundterm);
+	    else if ($qt->type == "re" || $qt->type == "nre") {
+		if (count($roundterm->value) == 0)
+		    $roundterm->value = array(-1);
+		$qt->extra = $roundterm->value;
+		++$applied;
+	    }
+	return $applied;
+    }
+
+    function _queryApplyAllRounds(&$qc) {
+	$roundterm = null;
+	$applied = $first_applied = 0;
+	for ($i = count($qc) - 1; $i >= 0; --$i)
+	    if ($qc[$i][0]->type == "round") {
+		if (!$roundterm || $applied) {
+		    $roundterm =& $qc[$i][0];
+		    $applied = false;
+		} else
+		    $roundterm->value = array_intersect($roundterm->value, $qc[$i][0]->value);
+	    } else if ($roundterm) {
+		$applied += $this->_queryApplyRounds($qc[$i], $roundterm);
+		if ($applied && !$first_applied) {
+		    for ($j = $i + 1; $j < count($qc); ++$j)
+			$this->_queryApplyRounds($qc[$j], $roundterm);
+		    $first_applied = true;
+		}
+	    }
+	if ($roundterm && !$first_applied)
+	    for ($j = 0; $j < count($qc); ++$j)
+		$applied = $this->_queryApplyRounds($qc[$j], $roundterm);
+	if ($roundterm && !$applied) {
+	    $t = new SearchTerm("re", 0, "=" . $this->contactId);
+	    $t->extra = $roundterm->value;
+	    $qc[] = array($t);
+	}
+    }
+	
 
     // QUERY CONSTRUCTION
     // Build a database query corresponding to a set of clauses.
@@ -730,6 +817,8 @@ class PaperSearch {
 	    $this->_clauseTermSetField($t, "collaborators", $negated, $f);
 	} else if ($tt == "nre") {
 	    $rtype = $t->flags & (self::F_TYPEMASK | self::F_NONBLIND | self::F_COMPLETE);
+	    if (isset($t->extra))
+		$rtype = "X" . count($tables);
 	    if (!isset($tables["Numreviews_$rtype"])) {
 		$where = array();
 		if ($rtype & self::F_TYPEMASK)
@@ -738,6 +827,8 @@ class PaperSearch {
 		    $where[] = "reviewBlind=0";
 		if ($rtype & self::F_COMPLETE)
 		    $where[] = "reviewSubmitted>0";
+		if (isset($t->extra))
+		    $where[] = "reviewRound in (" . join(",", $t->extra) . ")";
 		$wheretext = "";
 		if (count($where))
 		    $wheretext = " where " . join(" and ", $where);
@@ -761,6 +852,8 @@ class PaperSearch {
 		$where[] = "reviewBlind=0";
 	    if ($t->flags & self::F_COMPLETE)
 		$where[] = "reviewSubmitted>0";
+	    if (isset($t->extra))
+		$where[] = "reviewRound in (" . join(",", $t->extra) . ")";
 	    $where[] = "contactId" . $t->value;
 	    $wheretext = " where " . join(" and ", $where);
 	    $tables[$thistab] = array("left join", "(select paperId, count(reviewId) as nre from PaperReview$wheretext group by paperId)", "Paper.paperId=$thistab.paperId");
@@ -942,6 +1035,8 @@ class PaperSearch {
 	} else if ($tt == "f")
 	    $ans = false;
 	else if ($tt == "t")
+	    $ans = true;
+	else
 	    $ans = true;
 
 	return $ans;
