@@ -1,5 +1,21 @@
 HotCRP NEWS
 
+Version 2.17   23.Apr.2008
+
+* IMPORTANT: Continue reviewer identity leak fix via search rewrite.
+
+* Rewrite search again.  Search now works like Google search.  "-word"
+  excludes "word" matches from the search.  "word1 OR word2" searches for
+  either "word1" or "word2" (the OR must be uppercase).  The default search
+  box returns papers that match ALL the words.  Searches in title,
+  abstract, and authors match whole words, not portions of words.  The
+  process of building up and executing a query is cleaner and comes closer
+  to the ideal of returning all visible information.
+
+* Paper lists report "0" reviews for papers that never got a review (rather
+  than "0/1").
+
+
 Version 2.16   21.Apr.2008
 
 * IMPORTANT: Reviewer identity leak fix.
