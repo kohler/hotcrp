@@ -79,6 +79,7 @@ class PaperSearch {
     var $contactmatch;
     var $contactmatchPC;
     var $preciseQuery;
+    var $needflags;
     var $rounds;
 
     function PaperSearch($me, $opt) {
@@ -651,8 +652,8 @@ class PaperSearch {
     // The query may be conservative; QUERY EVALUATION makes it precise. 
     // At this point $t->link is garbage, and is reused.
     
-    function _clauseTermSetFlags($flags, &$q, &$needflags) {
-	$needflags |= $flags;
+    function _clauseTermSetFlags($flags, &$q) {
+	$this->needflags |= $flags;
 	if ($flags & self::F_NONCONFLICT)
 	    $q[] = "PaperConflict.conflictType is null";
 	if ($flags & self::F_AUTHOR)
@@ -665,15 +666,15 @@ class PaperSearch {
 	    $q[] = "false";
     }
     
-    function _clauseTermSetField(&$t, $field, $negated, &$f, &$needflags) {
-	$needflags |= $t->flags;
+    function _clauseTermSetField(&$t, $field, $negated, &$f) {
+	$this->needflags |= $t->flags;
 	if ($negated)
 	    $f[] = "false";
 	else if (!ctype_alnum($t->value))
 	    $f[] = "true";
 	else {
 	    $q = array();
-	    $this->_clauseTermSetFlags($t->flags, $q, $needflags);
+	    $this->_clauseTermSetFlags($t->flags, $q);
 	    $q[] = "Paper.$field like '%$t->value%'";
 	    $f[] = "(" . join(" and ", $q) . ")";
 	}
@@ -682,9 +683,9 @@ class PaperSearch {
     }
 
     function _clauseTermSetTable(&$t, $shorttab, $table, $field,
-				 &$tables, &$columns, &$f, &$needflags) {
+				 &$tables, &$columns, &$f) {
 	$q = array();
-	$this->_clauseTermSetFlags($t->flags, $q, $needflags);
+	$this->_clauseTermSetFlags($t->flags, $q);
 	if ($t->value == "none" || $t->value == "any") {
 	    $thistab = "Any" . $shorttab;
 	    $tables[$thistab] = array("left join", $table, "Paper.paperId=$thistab.paperId");
@@ -710,7 +711,6 @@ class PaperSearch {
     function _clauseTermSet(&$t, $negated, &$tables, &$columns, &$f) {
 	global $Conf;
 	$tt = $t->type;
-	$needflags = false;
 	if (($pc_seerev = $Conf->setting("pc_seeallrev")) == 0)
 	    $pc_seerev = $Conf->setting("pcrev_any");
 	$thistab = null;
@@ -718,16 +718,16 @@ class PaperSearch {
 	// collect columns
 	if ($tt == "ti") {
 	    $columns["title"] = "Paper.title";
-	    $this->_clauseTermSetField($t, "title", $negated, $f, $needflags);
+	    $this->_clauseTermSetField($t, "title", $negated, $f);
 	} else if ($tt == "ab") {
 	    $columns["abstract"] = "Paper.abstract";
-	    $this->_clauseTermSetField($t, "abstract", $negated, $f, $needflags);
+	    $this->_clauseTermSetField($t, "abstract", $negated, $f);
 	} else if ($tt == "au") {
 	    $columns["authorInformation"] = "Paper.authorInformation";
-	    $this->_clauseTermSetField($t, "authorInformation", $negated, $f, $needflags);
+	    $this->_clauseTermSetField($t, "authorInformation", $negated, $f);
 	} else if ($tt == "co") {
 	    $columns["collaborators"] = "Paper.collaborators";
-	    $this->_clauseTermSetField($t, "collaborators", $negated, $f, $needflags);
+	    $this->_clauseTermSetField($t, "collaborators", $negated, $f);
 	} else if ($tt == "nre") {
 	    $rtype = $t->flags & (self::F_TYPEMASK | self::F_NONBLIND | self::F_COMPLETE);
 	    if (!isset($tables["Numreviews_$rtype"])) {
@@ -745,7 +745,7 @@ class PaperSearch {
 	    }
 	    $columns["nre_$rtype"] = "Numreviews_$rtype.nre";
 	    $q = array();
-	    $this->_clauseTermSetFlags($t->flags, $q, $needflags);
+	    $this->_clauseTermSetFlags($t->flags, $q);
 	    if ($t->value[0] == "<" || $t->value == "=0")
 		$q[] = "(Numreviews_$rtype.nre is null or Numreviews_$rtype.nre$t->value)";
 	    else
@@ -766,7 +766,7 @@ class PaperSearch {
 	    $tables[$thistab] = array("left join", "(select paperId, count(reviewId) as nre from PaperReview$wheretext group by paperId)", "Paper.paperId=$thistab.paperId");
 	    $columns[$thistab . "_matches"] = "$thistab.nre";
 	    $q = array();
-	    $this->_clauseTermSetFlags($t->flags, $q, $needflags);
+	    $this->_clauseTermSetFlags($t->flags, $q);
 	    $q[] = "$thistab.nre>0";
 	    $f[] = "(" . join(" and ", $q) . ")";
 	    $t->link = $thistab . "_matches";
@@ -785,7 +785,7 @@ class PaperSearch {
 	    }
 	    $columns["ncmt_$rtype"] = "Numcomments_$rtype.ncmt";
 	    $q = array();
-	    $this->_clauseTermSetFlags($t->flags, $q, $needflags);
+	    $this->_clauseTermSetFlags($t->flags, $q);
 	    if ($t->value[0] == "<" || $t->value == "=0")
 		$q[] = "(Numcomments_$rtype.ncmt is null or Numcomments_$rtype.ncmt$t->value)";
 	    else
@@ -799,22 +799,22 @@ class PaperSearch {
 		$f[] = "(Paper.paperId not in (" . join(",", $t->value[1]) . "))";
 	} else if ($tt == "pf") {
 	    $q = array();
-	    $this->_clauseTermSetFlags($t->flags, $q, $needflags);
+	    $this->_clauseTermSetFlags($t->flags, $q);
 	    for ($i = 0; $i < count($t->value); $i += 2)
 		$q[] = "Paper." . $t->value[$i] . $t->value[$i + 1];
 	    $f[] = "(" . join(" and ", $q) . ")";
 	} else if ($tt == "tag") {
 	    $this->_clauseTermSetTable($t, "Tag", "PaperTag", "tag",
-				       $tables, $columns, $f, $needflags);
+				       $tables, $columns, $f);
 	} else if ($tt == "topic") {
 	    $this->_clauseTermSetTable($t, "Topic", "PaperTopic", "topicId",
-				       $tables, $columns, $f, $needflags);
+				       $tables, $columns, $f);
 	} else if ($tt == "option") {
 	    $this->_clauseTermSetTable($t, "Option", "PaperOption", "optionId",
-				       $tables, $columns, $f, $needflags);
+				       $tables, $columns, $f);
 	} else if ($tt == "conflict") {
 	    $this->_clauseTermSetTable($t, "Conflict", "PaperConflict", "contactId",
-				       $tables, $columns, $f, $needflags);
+				       $tables, $columns, $f);
 	} else if ($tt == "not") {
 	    $ff = array();
 	    foreach ($t->value as $subt)
@@ -827,18 +827,6 @@ class PaperSearch {
 	else if ($tt == "t")
 	    $f[] = "true";
 
-	// conflicts, my own review, paper blindness
-	if (($needflags & (self::F_NONCONFLICT | self::F_AUTHOR))
-	    && !isset($tables["PaperConflict"])) {
-	    $tables["PaperConflict"] = array("left join", "PaperConflict", "Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=$this->contactId");
-	    $columns["conflictType"] = "PaperConflict.conflictType";
-	}
-	if (($needflags & self::F_REVIEWER) && !isset($tables["MyReview"])) {
-	    $tables["MyReview"] = array("left join", "PaperReview", "Paper.paperId=MyReview.paperId and MyReview.contactId=$this->contactId");
-	    $columns["myReviewNeedsSubmit"] = "MyReview.reviewNeedsSubmit";
-	}
-	if (($needflags & self::F_PAPERNONBLIND) && !isset($columns["paperBlind"]))
-	    $columns["paperBlind"] = "Paper.blind";
 	if ($tt == "pf")
 	    for ($i = 0; $i < count($t->value); $i += 2)
 		$columns[$t->value[$i]] = "Paper." . $t->value[$i];
@@ -984,6 +972,7 @@ class PaperSearch {
 	$columns = array("paperId" => "Paper.paperId");
 	$filters = array();
 	$this->preciseQuery = false;
+	$this->needflags = 0;
 	foreach ($qc as &$c) {
 	    $f = array();
 	    foreach ($c as &$t)
@@ -996,8 +985,7 @@ class PaperSearch {
 	//$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars(var_export($filters, true)))));
 
 	// status limitation parts
-	if ($this->limitName == "s"
-	    || $this->limitName == "req"
+	if ($this->limitName == "s" || $this->limitName == "req"
 	    || $this->limitName == "acc" || $this->limitName == "und")
 	    $filters[] = "Paper.timeSubmitted>0";
 	else if ($this->limitName == "act")
@@ -1012,6 +1000,33 @@ class PaperSearch {
 	    $filters[] = "Paper.outcome>0";
 	else if ($this->limitName == "und")
 	    $filters[] = "Paper.outcome=0";
+
+	// other search limiters
+	if ($this->limitName == "a") {
+	    $filters[] = "PaperConflict.conflictType>=" . CONFLICT_CONTACTAUTHOR;
+	    $this->needflags |= self::F_AUTHOR;
+	} else if ($this->limitName == "r") {
+	    $filters[] = "MyReview.reviewType is not null";
+	    $this->needflags |= self::F_REVIEWER;
+	} else if ($this->limitName == "rout") {
+	    $filters[] = "MyReview.reviewType != 0";
+	    $this->needflags |= self::F_REVIEWER;
+	} else if ($this->limitName == "revs")
+	    $tables["Limiter"] = array("join", "PaperReview", "Paper.paperId=Limiter.paperId");
+	else if ($this->limitName == "req")
+	    $tables["Limiter"] = array("join", "PaperReivew", "Paper.paperId=Limiter.paperId and Limiter.requestedBy=$this->contactId and Limiter.reviewType=" . REVIEW_EXTERNAL);
+
+	// add common tables: conflicts, my own review, paper blindness
+	if ($this->needflags & (self::F_NONCONFLICT | self::F_AUTHOR)) {
+	    $tables["PaperConflict"] = array("left join", "PaperConflict", "Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=$this->contactId");
+	    $columns["conflictType"] = "PaperConflict.conflictType";
+	}
+	if ($this->needflags & self::F_REVIEWER) {
+	    $tables["MyReview"] = array("left join", "PaperReview", "Paper.paperId=MyReview.paperId and MyReview.contactId=$this->contactId");
+	    $columns["myReviewNeedsSubmit"] = "MyReview.reviewNeedsSubmit";
+	}
+	if ($this->needflags & self::F_PAPERNONBLIND)
+	    $columns["paperBlind"] = "Paper.blind";
 
 	// search contacts
 	if (count($this->contactmatch)) {
@@ -1066,42 +1081,6 @@ class PaperSearch {
 	if (($roundchecker = join(" and ", $roundchecker)))
 	    $roundchecker = " and " . $roundchecker;
 
-	// create query
-	$q = "select Paper.paperId from Paper";
-	if ($this->limitName == "r")
-	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . ")";
-	else if ($this->limitName == "revs")
-	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId)";
-	else if ($this->limitName == "rout")
-	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . " and Limiter.reviewNeedsSubmit!=0)";
-	else if ($this->limitName == "a")
-	    $q .= " join PaperConflict as Limiter on (Limiter.paperId=Paper.paperId and Limiter.contactId=" . $this->contactId . " and Limiter.conflictType>=" . CONFLICT_AUTHOR . ")";
-	else if ($this->limitName == "req")
-	    $q .= " join PaperReview as Limiter on (Limiter.paperId=Paper.paperId and Limiter.requestedBy=" . $this->contactId . " and Limiter.reviewType=" . REVIEW_EXTERNAL . ")";
-	
-	if (($this->any & self::ANY_CONFLICT) && $this->limitName != "a")
-	    $q .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->contactId . ")";
-	if (($this->any & self::ANY_YOURREVIEW))
-	    $q .= " left join PaperReview as YourReview on (YourReview.paperId=Paper.paperId and YourReview.contactId=" . $this->contactId . ")";
-
-	foreach ($this->match["tag"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperTag", "tag", "tag", "", $t, $tarr);
-	foreach ($this->match["conflict"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperConflict", "contactId", "conflict", " and *conflictType>0", $t, $tarr);
-	foreach ($this->match["topic"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperTopic", "topicId", "topic", "", $t, $tarr);
-	foreach ($this->match["option"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperOption", "optionId", "option", "", $t, $tarr);
-
-	$prereQlen = strlen($q);
-	foreach ($this->match["re"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperReview", "reviewId", "re", $roundchecker, $t, $tarr);
-	foreach ($this->match["cre"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperReview", "reviewId", "cre", " and *reviewSubmitted>0" . $roundchecker, $t, $tarr);
-	foreach ($this->match["pri"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperReview", "reviewId", "pri", " and *reviewType=" . REVIEW_PRIMARY . $roundchecker, $t, $tarr);
-	foreach ($this->match["cpri"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperReview", "reviewId", "cpri", " and *reviewType=" . REVIEW_PRIMARY . " and *reviewSubmitted>0" . $roundchecker, $t, $tarr);
 	foreach ($this->match["sec"] as $t => $tarr)
 	    $q .= $this->_tableMatch("PaperReview", "reviewId", "sec", " and *reviewType=" . REVIEW_SECONDARY . $roundchecker, $t, $tarr);
 	foreach ($this->match["csec"] as $t => $tarr)
@@ -1110,9 +1089,6 @@ class PaperSearch {
 	    $tarr = array("true");
 	    $q .= $this->_tableMatch("PaperReview", "reviewId", "re", " and *contactId=" . $this->contactId . $roundchecker, "uany", $tarr);
 	}
-
-	if (count($this->filters))
-	    $q .= " where " . join(" and ", $this->filters);
 	*/
 
 	// clean up contact matches
@@ -1127,7 +1103,7 @@ class PaperSearch {
 		    $c = " in (" . join(",", $carr) . ")";
 		$q = str_replace("\1$i\1", $c, $q);
 	    }
-	//$Conf->infoMsg(htmlspecialchars($q));
+	$Conf->infoMsg(htmlspecialchars($q));
 
 	// actually perform query
 	if (!$Conf->qe("create temporary table Matches $q", "while performing search"))
