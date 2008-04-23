@@ -582,7 +582,7 @@ class PaperTable {
 		echo "<button type='button' class='button_small' onclick='javascript:fold(\"tags\", 1)'>Cancel</button><br /><span class='hint'><a href='${ConfSiteBase}help$ConfSiteSuffix?t=tags'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span></span>";
 		echo "</div></form>";
 	    } else
-		echo $tx;
+		echo ($t == "" ? "none" : $tx);
 	    echo "</td>\n</tr>\n\n";
 	}
     }

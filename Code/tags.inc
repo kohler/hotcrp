@@ -170,7 +170,7 @@ function tagsToText($t, $makeUrls, $contact = null) {
     $t = str_replace("#0", "", $t);
     if (strpos($t, "~") !== false) {
 	$t = str_replace(" ${contact}~", " ~", " $t ");
-	$t = trim(preg_replace('/ \d+~\S+ /', ' ', $t));
+	$t = trim(preg_replace('/ \d+~\S+/', '', $t));
     }
     if ($makeUrls === false)
 	return $t;

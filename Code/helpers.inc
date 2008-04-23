@@ -1,6 +1,6 @@
 <?php
 // helpers.inc -- HotCRP non-class helper functions
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 function defval($var, $idx, $defval = null) {
@@ -148,7 +148,7 @@ function selfHref($extra = array(), $self = null) {
 	$_REQUEST["r"] = $_REQUEST["reviewId"];
     if (isset($_REQUEST["commentId"]) && !isset($_REQUEST["c"]))
 	$_REQUEST["c"] = $_REQUEST["commentId"];
-    foreach (array("p", "r", "c", "mode", "forceShow", "validator", "list", "t", "q", "qa", "qx", "qt", "group", "sort", "monreq") as $what)
+    foreach (array("p", "r", "c", "mode", "forceShow", "validator", "list", "t", "q", "qo", "qx", "qt", "group", "sort", "monreq") as $what)
 	if (isset($_REQUEST[$what]) && !isset($extra[$what])) {
 	    $x .= "$sep$what=" . urlencode($_REQUEST[$what]);
 	    $sep = "&";
@@ -993,9 +993,12 @@ function maybeSearchPaperId($me) {
     }
 
     // if invalid contact, or it looks like a number, don't search
-    if (!$me->validated
-	|| preg_match('/^\s*[1-9]\d*\s*$/s', $_REQUEST["paperId"]))
+    if (!$me->validated)
 	return false;
+    if (preg_match('/^\s*#?([1-9]\d*)\s*$/s', $_REQUEST["paperId"], $m)) {
+	$_REQUEST["paperId"] = $m[1];
+	return false;
+    }
 
     // actually try to search
     require_once("search.inc");
@@ -1004,7 +1007,7 @@ function maybeSearchPaperId($me) {
     if (count($pl) == 1) {
 	global $thisMatchPreg;
 	if ($search->matchPreg)
-	    $thisMatchPreg = "/(" . $search->matchPreg . ")/i";
+	    $thisMatchPreg = "{(" . $search->matchPreg . ")}i";
 	$_REQUEST["paperId"] = $pl[0];
 	$replaceList = oldestListNumber();
 	$_SESSION["l"][$replaceList] = $search->sessionList($search->limitName);

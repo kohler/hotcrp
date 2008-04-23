@@ -637,7 +637,7 @@ if (isset($_REQUEST["scoresort"])) {
 $Conf->header("Search", 'search', actionBar());
 unset($_REQUEST["urlbase"]);
 $Search = new PaperSearch($Me, $_REQUEST);
-if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
+if (isset($_REQUEST["q"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"])) {
     $pl = new PaperList(true, true, $Search);
     $pl->showHeader = PaperList::HEADER_TITLES;
     $pl_text = $pl->text($Search->limitName, $Me);
@@ -648,7 +648,7 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qa"]) || isset($_REQUEST["qx"])) {
 // set up the search form
 if (isset($_REQUEST["redisplay"]))
     $activetab = 3;
-else if (defval($_REQUEST, "qx", "") != "" || defval($_REQUEST, "qa", "") != ""
+else if (defval($_REQUEST, "qx", "") != "" || defval($_REQUEST, "qo", "") != ""
 	 || defval($_REQUEST, "qt", "n") != "n" || defval($_REQUEST, "opt", 0) > 0)
     $activetab = 2;
 else
@@ -703,12 +703,12 @@ echo "</select></td>
 </tr>
 <tr><td><div class='xsmgap'></div></td></tr>
 <tr>
-  <td class='lxcaption'>With <b>any</b> of the words</td>
+  <td class='lxcaption'>With <b>all</b> the words</td>
   <td class='lentry'><input id='searchform2_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /><span class='sep'></span></td>
   <td rowspan='3'><input class='button' type='submit' value='Search' tabindex='2' /></td>
 </tr><tr>
-  <td class='lxcaption'>With <b>all</b> the words</td>
-  <td class='lentry'><input class='textlite' type='text' size='40' name='qa' value=\"", htmlspecialchars(defval($_REQUEST, "qa", "")), "\" tabindex='1' /></td>
+  <td class='lxcaption'>With <b>any</b> of the words</td>
+  <td class='lentry'><input class='textlite' type='text' size='40' name='qo' value=\"", htmlspecialchars(defval($_REQUEST, "qo", "")), "\" tabindex='1' /></td>
 </tr><tr>
   <td class='lxcaption'><b>Without</b> the words</td>
   <td class='lentry'><input class='textlite' type='text' size='40' name='qx' value=\"", htmlspecialchars(defval($_REQUEST, "qx", "")), "\" tabindex='1' /></td>
@@ -722,7 +722,7 @@ echo "</div><div class='tld3'>";
 
 // Display options
 echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div>\n";
-foreach (array("q", "qx", "qa", "qt", "t", "sort") as $x)
+foreach (array("q", "qx", "qo", "qt", "t", "sort") as $x)
     if (isset($_REQUEST[$x]))
 	echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
 
@@ -822,7 +822,7 @@ if ($pl) {
     echo $pl_text;
     if ($pl->count == 0 && $_REQUEST["t"] != "s") {
 	$a = array();
-	foreach (array("q", "qa", "qx", "qt", "sort") as $xa)
+	foreach (array("q", "qo", "qx", "qt", "sort") as $xa)
 	    if (isset($_REQUEST[$xa]))
 		$a[] = "$xa=" . urlencode($_REQUEST[$xa]);
 	reset($tOpt);

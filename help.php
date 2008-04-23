@@ -92,11 +92,13 @@ and it's possible to download all matching papers and/or reviews at once.
 ");
     _alternateRow("How to search", "
 The default search box returns papers that match
-<i>any</i> of the space-separated terms you enter.
-To search for papers that match <i>all</i>
-the terms, or that <i>don't</i> match some terms, select
+<i>all</i> of the space-separated terms you enter.
+To search for papers that match <em>some</em> of the terms,
+type &ldquo;term1 OR term2&rdquo;.
+To search for papers that <em>don't</em> match a term,
+try &ldquo;-term&rdquo;.  Alternately, select
 <a href='${ConfSiteBase}search$ConfSiteSuffix?opt=1'>Advanced search</a>
-and use \"With <b>all</b> the words\" and \"<b>Without</b> the words\".
+and use \"With <b>any</b> the words\" and \"<b>Without</b> the words\".
 
 <p>You can search in several paper classes, depending on your role in the
 conference. Options include:</p>
@@ -182,11 +184,12 @@ function searchQuickref() {
     _searchQuickrefRow("Syntax basics", "", "all papers in the search category");
     _searchQuickrefRow("", "story", "&ldquo;story&rdquo; in title, abstract, possibly authors");
     _searchQuickrefRow("", "119", "paper #119");
-    _searchQuickrefRow("", "1 2 5 12-24 kernel", "the numbered papers, plus papers with &ldquo;kernel&rdquo; in title, abstract, possibly authors");
+    _searchQuickrefRow("", "1 2 5 12-24 kernel", "papers in the numbered set with &ldquo;kernel&rdquo; in title, abstract, possibly authors");
     _searchQuickrefRow("", "\"802\"", "&ldquo;802&rdquo; in title, abstract, possibly authors (not paper #802)");
-    _searchQuickrefRow("", "very new", "&ldquo;very&rdquo; <i>or</i> &ldquo;new&rdquo; in title, abstract, possibly authors");
-    _searchQuickrefRow("", "\"very new\"", "the phrase &ldquo;very new&rdquo; in title, abstract, possibly authors<br />(To search for papers matching both &ldquo;very&rdquo; and &ldquo;new&rdquo;, but not necessarily the phrase, expand the search options and use &ldquo;With <i>all</i> the words.&rdquo;)");
-    _searchQuickrefRow("", "very -new", "&ldquo;very&rdquo; <i>but not</i> &ldquo;new&rdquo; in title, abstract, possibly authors");
+    _searchQuickrefRow("", "very new", "&ldquo;very&rdquo; <em>and</em> &ldquo;new&rdquo; in title, abstract, possibly authors");
+    _searchQuickrefRow("", "\"very new\"", "the phrase &ldquo;very new&rdquo; in title, abstract, possibly authors");
+    _searchQuickrefRow("", "very OR new", "<em>either</em> &ldquo;very&rdquo; <em>or</em> &ldquo;new&rdquo; in title, abstract, possibly authors");
+    _searchQuickrefRow("", "very -new", "&ldquo;very&rdquo; <em>but not</em> &ldquo;new&rdquo; in title, abstract, possibly authors");
     _searchQuickrefRow("Title", "ti:flexible", "title contains &ldquo;flexible&rdquo;");
     _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains &ldquo;very novel&rdquo;");
     _searchQuickrefRow("Authors", "au:poletto", "author list contains &ldquo;poletto&rdquo;");
@@ -194,7 +197,7 @@ function searchQuickref() {
     _searchQuickrefRow("Topics", "topic:link", "selected topics match &ldquo;link&rdquo;");
     _searchQuickrefRow("Options", "option:shadow", "selected submission options match &ldquo;shadow&rdquo;");
     _searchQuickrefRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "tag:discuss", "tagged &ldquo;discuss&rdquo;");
-    _searchQuickrefRow("", "notag:discuss", "not tagged &ldquo;discuss&rdquo;");
+    _searchQuickrefRow("", "-tag:discuss", "not tagged &ldquo;discuss&rdquo;");
     _searchQuickrefRow("", "order:discuss", "tagged &ldquo;discuss&rdquo;, sort by tag order");
     _searchQuickrefRow("Reviews", "re:fdabek", "&ldquo;fdabek&rdquo; in reviewer name/email");
     _searchQuickrefRow("", "cre:fdabek", "&ldquo;fdabek&rdquo; (in reviewer name/email) has completed a review");
