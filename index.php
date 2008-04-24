@@ -383,7 +383,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	echo "<span class='hint'>As a PC member, you may review <a href='search$ConfSiteSuffix?q=&amp;t=s'>any submitted paper</a>.</span><br />";
 
     if (($myrow || $Me->privChair) && $npc)
-	echo "</div>\n<div id='foldre' class='homegrp foldc'>";
+	echo "</div>\n<div id='foldre' class='homegrp foldo'>";
 
     // Actions
     $sep = "";
