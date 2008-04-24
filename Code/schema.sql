@@ -405,6 +405,19 @@ CREATE TABLE `ReviewFormOptions` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
+-- Table structure for table `ReviewRating`
+--
+
+DROP TABLE IF EXISTS `ReviewRating`;
+CREATE TABLE `ReviewRating` (
+  `reviewId` int(11) NOT NULL,
+  `contactId` int(11) NOT NULL,
+  `rating` tinyint(1) NOT NULL default '0',
+  UNIQUE KEY `reviewContact` (`reviewId`,`contactId`),
+  UNIQUE KEY `reviewContactRating` (`reviewId`,`contactId`,`rating`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
 -- Table structure for table `ReviewRequest`
 --
 
@@ -460,7 +473,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 11);
+insert into Settings (name, value) values ('allowPaperOption', 12);
 # collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 # default chair-only tags

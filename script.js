@@ -42,10 +42,10 @@ function highlightUpdate(which, off) {
 		highlightUpdate(ins[i], off);
     }
     if (which.className) {
-	var cc = which.className;
-	if (cc.length > 6 && cc.substring(cc.length - 6) == "_alert")
-	    cc = cc.substring(0, cc.length - 6);
-	which.className = cc + (off ? "" : "_alert");
+	if (off)
+	    which.className = which.className.replace(" alert", "");
+	else
+	    which.className = which.className + " alert";
     }
 }
 
@@ -398,6 +398,41 @@ function addScoreHelp() {
 	    var whichscore = href.substr(pos + 2);
 	    anchors[i].onmouseover = makescorehelp(anchors[i], whichscore, 0);
 	    anchors[i].onmouseout = makescorehelp(anchors[i], whichscore, 1);
+	}
+}
+
+
+// review ratings
+function makeratingajax(reviewid, rating) {
+    return function() {
+	var elt = e("ratingval_" + reviewid);
+	if (elt) {
+	    elt.value = rating;
+	    return Miniajax.submit("ratingform_" + reviewid, function(rv) {
+		var ee, cn;
+		if (rv.ok)
+		    for (var i in {"0": "", "1": "", "n": ""})
+			if ((ee = e("ratinglink_" + i + "_" + reviewid))) {
+			    var cn = ee.className.replace(" on", "");
+			    if (rating == i)
+				cn += " on";
+			    ee.className = cn;
+			}
+		if ((ee = e("ratingform_" + reviewid + "result")) && rv.result)
+		    ee.innerHTML = " &nbsp;<span class='barsep'>|</span>&nbsp; " + rv.result;
+	    });
+	} else
+	    return true;
+    };
+}
+
+function addRatingAjax() {
+    var anchors = document.getElementsByTagName("a"), href, m;
+    for (var i = 0; i < anchors.length; i++)
+	if ((href = anchors[i].getAttribute("href"))
+	    && href.indexOf("rating=") >= 0) {
+	    m = href.match(/r=(\w+).*rating=(\w+)/);
+	    anchors[i].onclick = makeratingajax(m[1], m[2]);
 	}
 }
 

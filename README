@@ -136,9 +136,8 @@ Updating the code
 -----------------
 HotCRP is designed so that you can update the code without updating the
 database schema.  Simply copy the new version over your old code,
-preserving your old Code/options.inc.  This gives you access to bug fixes,
-but not new features reliant on schema changes.  If you want a new feature,
-see "Code/updateschema.sql".
+preserving your old Code/options.inc.  The next time someone uses the site
+the schema should automatically be upgraded.  See "Code/updateschema.inc".
 
 
 License

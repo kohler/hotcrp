@@ -49,8 +49,13 @@ function loadRows() {
     if (!(($prow = $Conf->paperRow($sel, $Me->contactId, $whyNot))
 	  && $Me->canViewPaper($prow, $Conf, $whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
-
-    $rrows = $Conf->reviewRow(array('paperId' => $prow->paperId, 'array' => 1), $whyNot);
+    
+    $selector = array("paperId" => $prow->paperId, "array" => true);
+    if ($Me->isPC) {
+	$selector["ratings"] = true;
+	$selector["myRating"] = $Me->contactId;
+    }
+    $rrows = $Conf->reviewRow($selector, $whyNot);
     $rrow = $myRrow = null;
     $nExternalRequests = 0;
     foreach ($rrows as $rr) {
@@ -139,6 +144,33 @@ if (isset($_REQUEST['update']) && $editRrow && $editRrow->reviewSubmitted)
 	}
 	loadRows();
     }
+
+
+// review rating action
+if (isset($_REQUEST["rating"]) && $rrow) {
+    if (!$Me->isPC)
+	$Conf->errorMsg("Only PC members may rate reviews.");
+    else if ($Me->contactId == $rrow->contactId)
+	$Conf->errorMsg("You can't rate your own review.");
+    else if ($_REQUEST["rating"] != "n" && $_REQUEST["rating"] != "0"
+	     && $_REQUEST["rating"] != "1")
+	$Conf->errorMsg("Invalid rating.");
+    else if ($_REQUEST["rating"] == "n")
+	$Conf->qe("delete from ReviewRating where reviewId=$rrow->reviewId and contactId=$Me->contactId", "while updating rating");
+    else
+	$Conf->qe("insert into ReviewRating (reviewId, contactId, rating) values ($rrow->reviewId, $Me->contactId, " . $_REQUEST["rating"] . ") on duplicate key update rating=" . $_REQUEST["rating"], "while updating rating");
+    if (defval($_REQUEST, "ajax", 0))
+	if ($OK)
+	    $Conf->ajaxExit(array("ok" => 1, "result" => "Thanks! Your feedback has been recorded."));
+	else
+	    $Conf->ajaxExit(array("ok" => 0, "result" => "There was an error while recording your feedback."));
+    if (isset($_REQUEST["allr"])) {
+	$_REQUEST["paperId"] = $rrow->paperId;
+	unset($_REQUEST["reviewId"]);
+	unset($_REQUEST["r"]);
+    }
+    loadRows();
+}
 
 
 // update review action
@@ -459,10 +491,11 @@ if ($rrow && !$Me->canViewReview($prow, $rrow, $Conf, $whyNot))
 // review information
 // XXX reviewer ID
 // XXX "<td class='entry'>", contactHtml($rrow), "</td>"
+$ratingsAjaxDone = false;
 
 function reviewView($prow, $rrow, $editMode) {
     global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Me, $rf, $forceShow,
-	$linkExtra, $useRequest, $nExternalRequests;
+	$linkExtra, $useRequest, $nExternalRequests, $ratingsAjaxDone;
 
     $reviewOrdinal = unparseReviewOrdinal($rrow);
     $reviewLink = "review$ConfSiteSuffix?"
@@ -511,7 +544,46 @@ function reviewView($prow, $rrow, $editMode) {
 </tr>\n";
     
     if (!$editMode) {
-	echo $rf->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow, $Conf), true), "</table></div>\n";
+	$initial = true;
+	if ($Me->isPC && $Conf->setting("allowPaperOption") >= 12
+	    && ($rrow->contactId != $Me->contactId || $rrow->numRatings > 0)) {
+	    $ratesep = "";
+	    echo "<tr>
+  <td class='caption initial'></td>
+  <td class='entry initial' colspan='3'><table class='rev_rating'><tr><td>";
+	    if ($rrow->numRatings) {
+		echo "<span class='rev_rating_summary'>";
+		if ($rrow->numRatings == $rrow->sumRatings)
+		    echo plural($rrow->sumRatings, "reviewer");
+		else
+		    echo $rrow->sumRatings, " of ", $rrow->numRatings, " reviewers";
+		echo " found this review helpful.</span>";
+		$ratesep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
+	    }
+	    if ($rrow->contactId != $Me->contactId) {
+		$ratinglink = "${ConfSiteBase}review$ConfSiteSuffix?r=$reviewOrdinal&amp;";
+		if (!isset($_REQUEST["reviewId"]))
+		    $ratinglink .= "allr=1&amp;";
+		echo $ratesep, "Was this review helpful for you? &nbsp; ",
+		    "<a id='ratinglink_1_$reviewOrdinal' href='${ratinglink}rating=1$linkExtra' class='button",
+		    ($rrow->myRating > 0 ? " on" : ""), "'>Yes</a> &nbsp; ",
+		    "<a id='ratinglink_0_$reviewOrdinal' href='${ratinglink}rating=0$linkExtra' class='button",
+		    ($rrow->myRating <= 0 && $rrow->myRating !== null ? " on" : ""), "'>No</a> &nbsp; ",
+		    "<a id='ratinglink_n_$reviewOrdinal' href='${ratinglink}rating=n$linkExtra' class='button",
+		    ($rrow->myRating === null ? " on" : ""), "'>No opinion</a>",
+		    "<span id='ratingform_${reviewOrdinal}result'></span>";
+		if (!$ratingsAjaxDone) {
+		    $Conf->footerStuff .= "<script type='text/javascript'>addRatingAjax();</script>";
+		    $ratingsAjaxDone = true;
+		}
+		$Conf->footerStuff .= "<form id='ratingform_$reviewOrdinal' action='${ratinglink}$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"ratingform_$reviewOrdinal\")'>"
+		    . "<input id='ratingval_$reviewOrdinal' type='hidden' name='rating' value='' />"
+		    . "</form>";
+	    }
+	    echo "</td></tr></table><div class='xsmgap'></div></td>\n</tr>\n";
+	    $initial = false;
+	}
+	echo $rf->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow, $Conf), $initial), "</table></div>\n";
 	return;
     }
 

@@ -52,6 +52,16 @@ function updateSchema($Conf) {
 	    $Conf->q("delete from PaperTag where " . substr($x, 0, strlen($x) - 3));
 	}
     }
+    if ($Conf->settings["allowPaperOption"] == 11
+	&& $Conf->q("create table `ReviewRating` (
+  `reviewId` int(11) NOT NULL,
+  `contactId` int(11) NOT NULL,
+  `rating` tinyint(1) NOT NULL default '0',
+  UNIQUE KEY `reviewContact` (`reviewId`,`contactId`),
+  UNIQUE KEY `reviewContactRating` (`reviewId`,`contactId`,`rating`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8")
+	&& $Conf->q("update Settings set value=12 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 12;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

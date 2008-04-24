@@ -94,7 +94,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-	if ($this->settings["allowPaperOption"] < 11) {
+	if ($this->settings["allowPaperOption"] < 12) {
 	    require_once("updateschema.inc");
 	    updateSchema($this);
 	}
@@ -1002,13 +1002,28 @@ class Conference {
 		return null;
 	    }
 	}
+	if ((isset($selector["ratings"]) || isset($selector["myRating"]))
+	    && $this->setting("allowPaperOption") < 12) {
+	    unset($selector["ratings"]);
+	    unset($selector["myRating"]);
+	}
 	
 	$q = "select PaperReview.*,
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
-		ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail, ReqCI.contactId as reqContactId
-		from PaperReview
+		ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail, ReqCI.contactId as reqContactId";
+	if (isset($selector["ratings"]))
+	    $q .= ",
+		count(ReviewRating.rating) as numRatings, sum(ReviewRating.rating) as sumRatings";
+	if (isset($selector["myRating"]))
+	    $q .= ",
+		MyRating.rating as myRating";
+	$q .= "\n		from PaperReview
 		join ContactInfo using (contactId)
 		left join ContactInfo as ReqCI on (ReqCI.contactId=PaperReview.requestedBy)\n";
+	if (isset($selector["ratings"]))
+	    $q .= "		left join ReviewRating on (ReviewRating.reviewId=PaperReview.reviewId)\n";
+	if (isset($selector["myRating"]))
+	    $q .= "		left join ReviewRating as MyRating on (MyRating.reviewId=PaperReview.reviewId and MyRating.contactId=" . $selector["myRating"] . ")\n";
 
 	$where = array();
 	if (isset($reviewId))

@@ -776,7 +776,7 @@ $blind\n";
 	    $conf->confirmMsg("<div class='parseerr'><p>" . join("</p>\n<p>", $tf['confirm']) . "</p></div>");
     }
 
-    function webDisplayRows($rrow, $revViewScore, $showGuidance = false) {
+    function webDisplayRows($rrow, $revViewScore, $initial = true) {
 	global $ReviewFormError, $scoreHelps, $Conf, $ConfSiteBase, $ConfSiteSuffix;
 	$x = '';
 
@@ -808,7 +808,7 @@ $blind\n";
 
 	// Analyze fields for initial or final position
 	foreach ($fdisp as $i => &$disp) {
-	    if ($i == 0
+	    if (($i == 0 && $initial)
 		|| (($disp & self::WEB_RIGHT)
 		    && ($i<2 || !($fdisp[$i-2] & self::WEB_RIGHT))))
 		$disp |= self::WEB_INITIAL;
@@ -839,7 +839,7 @@ $blind\n";
 	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))
 		$n = preg_replace("/\\s+/", "&nbsp;", $n);
 	    $x .= "$n";
-	    if ($showGuidance && ($disp & self::WEB_OPTIONS)) {
+	    if ($disp & self::WEB_OPTIONS) {
 		$x .= "<a class='scorehelp' href='${ConfSiteBase}scorehelp$ConfSiteSuffix?f=$field' target='new'>?</a>";
 		if (count($scoreHelps) == 0)
 		    $Conf->footerStuff .= "<script type='text/javascript'>addScoreHelp();</script>";

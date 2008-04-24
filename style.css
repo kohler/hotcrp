@@ -479,7 +479,7 @@ input.button, button, a.button, input.hbutton {
 	color: black;
 	white-space: nowrap;
 }
-input.button_alert, input.hbutton_alert {
+input.button.alert, input.hbutton.alert {
 	font-weight: bold;
 	background: #ffaaaa;
 	border-top: 2px solid #ee6666;
@@ -499,11 +499,11 @@ input.button_small, a.button_small, button.button_small {
 	color: black;
 	white-space: nowrap;
 }
-a.button, a.button_small, a.download, a.button_small_alert,
+a.button, a.button_small, a.download,
 a.rev_start, a.rev_comp, a.rev_edit, a.rev_view {
 	padding: 1px 0.25em;
 }
-input.button_small_alert, a.button_small_alert, button.button_small_alert {
+input.button_small.alert, a.button_small.alert, button.button_small.alert {
 	font-size: smaller;
 	font-weight: bold;
 	background: #ffaaaa;
@@ -514,6 +514,13 @@ input.button_small_alert, a.button_small_alert, button.button_small_alert {
 	text-decoration: none;
 	color: black;
 	white-space: nowrap;
+}
+a.button_small.on, a.button.on {
+	background: #ddddaa;
+	border-top: 1px solid #999966;
+	border-left: 2px solid #999966;
+	border-bottom: 1px solid #dddd66;
+	border-right: 2px solid #dddd66;
 }
 a.button_small {
 	vertical-align: 1px;
@@ -1200,6 +1207,26 @@ tr.k1 td {
 	background: #f0f0ff;
 }
 
+body#offrev td#upload {
+	padding-left: 3em;
+}
+
+span.contactpulldown {
+	position: absolute;
+}
+span.contactpulldown select {
+	vertical-align: top;
+}
+
+/* review ratings */
+table.rev_rating tr td {
+	font-size: 69%;
+	background: #efefef;
+	border: 1px solid #e0e0e0;
+	padding: 0.4em 0.8em;
+}
+
+/* folding */
 .foldc .extension, .foldc .folder, .foldo .ellipsis, .foldo .unfolder,
 .fold1c .extension1, .fold1c .folder1, .fold1o .ellipsis1, .fold1o .unfolder1,
 .fold2c .extension2, .fold2c .folder2, .fold2o .ellipsis2, .fold2o .unfolder2,
@@ -1211,17 +1238,6 @@ tr.k1 td {
 .fold9c .extension9, .fold9c .folder9, .fold9o .ellipsis9, .fold9o .unfolder9,
 .hidden {
 	display: none;
-}
-
-body#offrev td#upload {
-	padding-left: 3em;
-}
-
-span.contactpulldown {
-	position: absolute;
-}
-span.contactpulldown select {
-	vertical-align: top;
 }
 
 /* score help */
