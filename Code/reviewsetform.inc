@@ -250,15 +250,13 @@ function rf_show() {
     $captions = array
 	("description" => "Enter an HTML description for the review field here,
 	including any guidance you'd like to provide to reviewers and authors.",
-	 "options" => "Enter the allowed options one per line,\n"
-	 . ($letterOptions ? "either numbered starting from 1 or using consecutive capital letters" : "numbered starting from 1")
-	 . ". For example:
+	 "options" => "Enter one option per line, numbered starting from 1 (higher numbers are better).  For example:
 	<pre class='entryexample'>1. Reject
 2. Weak reject
 3. Weak accept
-4. Accept</pre>"
-	 . ($letterOptions ? "Higher numbers and lower letters are &ldquo;better.&rdquo;" : " Higher numbers are &ldquo;better.&rdquo;"));
-
+4. Accept</pre>");
+    if ($letterOptions)
+	$captions["options"] .= " Or use consecutive capital letters (lower letters are better).";
 
     echo "<table><tr><td><div class='hgrp'><b>Templates:</b>&nbsp;
 <select name='sample'>";
