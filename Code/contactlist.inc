@@ -161,12 +161,12 @@ class ContactList extends BaseList {
 	    $scoreMax = $this->scoreMax[$scoreName];
 	    $this->sortInfo = array();
 	    $this->sortAverage = array();
-	    $scoresort = defval($_SESSION, "pplscoresort", 1);
-	    if ($scoresort == 0)
+	    $scoresort = defval($_SESSION, "pplscoresort", "A");
+	    if ($scoresort != "A" && $scoresort != "V" && $scoresort != "D")
 		$scoresort = 1;
 	    foreach ($rows as $row)
 		$this->_setSortRow($row, $scoreName, $scoreMax, $scoresort);
-	    usort($rows, array($this, ($scoresort ? "_sortScoreNum" : "_sortScore")));
+	    usort($rows, array($this, "_sortScoreNum"));
 	}
 	if ($this->reverseSort)
 	    return array_reverse($rows);

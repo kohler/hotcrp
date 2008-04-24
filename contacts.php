@@ -107,11 +107,10 @@ if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
     foreach ($_REQUEST["score"] as $s)
 	$_SESSION["pplscores"] |= (1 << $s);
 }
-if (isset($_REQUEST["scoresort"])) {
-    $_SESSION["pplscoresort"] = cvtint($_REQUEST["scoresort"]);
-    if ($_SESSION["pplscoresort"] < 1 || $_SESSION["pplscoresort"] > 3)
-	$_SESSION["pplscoresort"] = 1;
-}
+if (isset($_REQUEST["scoresort"])
+    && ($_REQUEST["scoresort"] == "A" || $_REQUEST["scoresort"] == "V"
+	|| $_REQUEST["scoresort"] == "D"))
+    $_SESSION["pplscoresort"] = $_REQUEST["scoresort"];
 
 
 $title = ($_REQUEST["t"] == "pc" ? "Program Committee" : "Users");
@@ -182,12 +181,13 @@ if (count($tOpt) > 1) {
     echo "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
     if (isset($pl->scoreMax)) {
 	echo "<tr><td colspan='3'><div class='smgap'></div><b>Sort scores by:</b> &nbsp;<select name='scoresort'>";
-	foreach (array("Average", "Variance", "Max &minus; min") as $k => $v) {
-	    echo "<option value='", $k + 1, "'";
-	    if (defval($_SESSION, "pplscoresort", 1) == $k + 1)
-		echo " selected='selected'";
-	    echo ">$v</option>";
-	}
+	foreach ($scoreSorts as $k => $v)
+	    if ($k == "A" || $k == "V" || $k == "D") {
+		echo "<option value='$k'";
+		if (defval($_SESSION, "pplscoresort", "A") == $k)
+		    echo " selected='selected'";
+		echo ">$v</option>";
+	    }
 	echo "</select></td></tr>";
     }
     echo "</table></div></form>";

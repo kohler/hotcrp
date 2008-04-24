@@ -346,7 +346,7 @@ $Conf->footerStuff .= "<script type='text/javascript'>fold(\"psel\",!e(\"plimit\
 echo " />&nbsp;</td><td>Choose specific papers<span class='extension8'>:</span><br />
 <div class='extension8'>";
 $q = defval($_REQUEST, "q", "(All)");
-echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" /> &nbsp;in &nbsp;<select id='t' name='t'>";
+echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;<select id='t' name='t'>";
 foreach ($tOpt as $k => $v) {
     echo "<option value='$k'";
     if ($_REQUEST["t"] == $k)

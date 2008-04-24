@@ -3,6 +3,14 @@
 // HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+global $scoreSorts, $defaultScoreSort;
+$scoreSorts = array("M" => "Minshall score",
+		    "A" => "Average",
+		    "V" => "Variance",
+		    "D" => "Max &minus; min",
+		    "Y" => "Your score");
+$defaultScoreSort = "M";
+
 class BaseList {
 
     const FIELD_SCORE = 50;
@@ -38,10 +46,10 @@ class BaseList {
     }
 
     function _setSortRow($row, $scoreName, $scoreMax, $scoresort) {
-	if ($scoresort == 4 && strlen($scoreName) > 6
+	if ($scoresort == "Y" && strlen($scoreName) > 6
 	    && ($v = defval($row, substr($scoreName, 0, -6))) > 0)
 	    $this->sortInfo[$row->paperId] = ":" . $v;
-	else if ($scoresort == 0 || $scoresort == 4) {
+	else if ($scoresort == "M" || $scoresort == "Y") {
 	    $x = array();
 	    foreach (preg_split('/[\s,]+/', $row->$scoreName) as $i)
 		if (($i = cvtint($i)) > 0)
@@ -59,11 +67,11 @@ class BaseList {
 		    $max = max($max, $i);
 		    $n++;
 		}
-	    if ($n == 0)
+	    if ($n == "M")
 		$this->sortInfo[$row->paperId] = 0;
-	    else if ($scoresort == 1)
+	    else if ($scoresort == "A")
 		$this->sortInfo[$row->paperId] = $x / $n;
-	    else if ($scoresort == 2) {
+	    else if ($scoresort == "V") {
 		if ($n == 1)
 		    $this->sortInfo[$row->paperId] = 0;
 		else

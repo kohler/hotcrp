@@ -74,14 +74,23 @@ class PaperList extends BaseList {
     var $rf;
     
     function PaperList($sortable = true, $list = false, $search = null, $extraText = null) {
-	global $paperListFields;
+	global $paperListFields, $scoreSorts;
 	$this->showHeader = self::HEADER_ALL;
 
 	$s = ($sortable ? defval($_REQUEST, "sort", "") : "");
-	$x = (strlen($s) ? $s[strlen($s)-1] : "");
-	$this->reverseSort = ($x == "R");
-	if ($x == "R" || $x == "N")
+	$this->reverseSort = false;
+	while (strlen($s)) {
+	    $x = strtoupper($s[strlen($s) - 1]);
+	    if ($x == "R")
+		$this->reverseSort = true;
+	    else if ($x == "N")
+		$this->reverseSort = false;
+	    else if (isset($scoreSorts[$x]))
+		$_SESSION["scoresort"] = $x;
+	    else
+		break;
 	    $s = substr($s, 0, strlen($s) - 1);
+	}
 	if (("x" . (int) $s) == ("x" . $s))
 	    $this->sortField = (int) $s;
 	else
@@ -237,7 +246,7 @@ class PaperList extends BaseList {
     }
 
     function _sort($rows, $pidarray) {
-	global $Conf, $reviewScoreNames;
+	global $Conf, $reviewScoreNames, $defaultScoreSort;
 	switch (self::_normalizeField($this->sortField)) {
 	case self::FIELD_ID:
 	    ksort($rows);
@@ -281,13 +290,13 @@ class PaperList extends BaseList {
 	    $scoreName .= "Scores";
 	    $this->sortInfo = array();
 	    $this->sortAverage = array();
-	    $scoresort = defval($_SESSION, "scoresort", 0);
+	    $scoresort = defval($_SESSION, "scoresort", $defaultScoreSort);
 	    foreach ($rows as $row)
 		if (!$this->contact->privChair && !$this->contact->canViewReview($row, null, $Conf))
 		    $this->sortInfo[$row->paperId] = self::LOTSAZEROS;
 		else
 		    $this->_setSortRow($row, $scoreName, $scoreMax, $scoresort);
-	    usort($rows, array($this, ($scoresort == 0 || $scoresort == 4 ? "_sortScore" : "_sortScoreNum")));
+	    usort($rows, array($this, ($scoresort == "M" || $scoresort == "Y" ? "_sortScore" : "_sortScoreNum")));
 	    break;
 	}
 	return $rows;
@@ -777,7 +786,7 @@ class PaperList extends BaseList {
 	switch ($listname) {
 	  case "a":
 	  case "authorHome":
-	    return "My papers";
+	    return "Your submissions";
 	  case "s":
 	    return "Submitted papers";
 	  case "acc":
@@ -788,12 +797,12 @@ class PaperList extends BaseList {
 	    return "Active papers";
 	  case "reviewerHome":
 	  case "r":
-	    return "My reviews";
+	    return "Your reviews";
 	  case "rout":
-	    return "My incomplete reviews";
+	    return "Your incomplete reviews";
 	  case "req":
 	  case "reqrevs":
-	    return "My review requests";
+	    return "Your review requests";
 	  case "reviewAssignment":
 	    return "Review assignments";
 	  case "conflict":

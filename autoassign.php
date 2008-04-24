@@ -668,7 +668,7 @@ $tOpt = array("s" => "Submitted papers",
 if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
     $_REQUEST["t"] = "all";
 $q = ($_REQUEST["q"] == "" ? "(All)" : $_REQUEST["q"]);
-echo "<input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" onchange='highlightUpdate(\"requery\")' /> &nbsp;in &nbsp;<select name='t' onchange='highlightUpdate(\"requery\")' >";
+echo "<input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;<select name='t' onchange='highlightUpdate(\"requery\")' >";
 foreach ($tOpt as $k => $v) {
     echo "<option value='$k'";
     if ($_REQUEST["t"] == $k)
