@@ -151,9 +151,12 @@ div.body {
 	position: relative;
 	z-index: 3;
 }
-body#contactauthors div.body, body#comment div.body, body#login div.body,
-body#assign div.body, body#review div.body, body#mail div.body,
-body#account div.body, body#paper_edit div.body, body#paper_view div.body,
+body#paper_view div.body, body#paper_edit div.body,
+body#review div.body, body#comment div.body, body#contactauthors div.body,
+body#assign div.body {
+	margin: 0em 0em 0em 1em;
+}
+body#mail div.body, body#account div.body,
 body#autoassign div.body, body#assignpc div.body, body#scorehelp div.body, 
 body#offrev div.body, body#settings div.body, body#bulkassign div.body {
 	margin: 0px 0px;
@@ -537,7 +540,86 @@ td.caption a.foldbutton {
 }
 
 
-/* Captions and entries */
+/* Normal captions and entries */
+td.caption {
+	text-align: right;
+	padding: 2px 0.5em 4px 0.5em;
+	margin: 0px;
+	font-weight: bold;
+	color: #555555;
+	width: 11em;
+	background: #fffdf0;
+	border-left: 1px solid #ccb7a3; /* #9999cc; */
+	border-right: 1px solid #ccb7a3; /* #9999cc; */
+}
+td.caption.initial {
+	border-top: 1px solid #ccb7a3; /* #9999cc; */
+}
+td.caption.final {
+	border-bottom: 1px solid #ccb7a3; /* #9999cc; */
+}
+tr.topspace td.caption {
+	padding: 7px 0.5em 3px 4px;
+}
+tr.id td.caption, table.review tr.id td.caption, 
+table.comment tr.id td.caption {
+	border: 0px none;
+	background: #ffffff;
+	color: black;
+}
+tr.last td.caption {
+	padding: 1px 0px;
+	border-bottom: 1px solid #ccb7a3; /* #9999cc; */
+}
+
+table.review td.caption {
+	background: #fff4f6;
+	border-left: 1px solid #cca3a9; /* #9999cc; */
+	border-right: 1px solid #cca3a9; /* #9999cc; */
+}
+table.review td.caption.initial {
+	border-top: 1px solid #cca3a9; /* #9999cc; */
+}
+table.review td.caption.final {
+	border-bottom: 1px solid #cca3a9; /* #9999cc; */
+}
+
+table.comment td.caption {
+	background: #f4f6ff;
+	border-left: 1px solid #a3bfcc; /* #9999cc; */
+	border-right: 1px solid #a3bfcc; /* #9999cc; */
+}
+table.comment td.caption.initial {
+	border-top: 1px solid #a3bfcc; /* #9999cc; */
+}
+table.comment td.caption.final {
+	border-bottom: 1px solid #a3bfcc; /* #9999cc; */
+}
+table.comment h3 {
+	font-weight: normal;
+}
+table.comment h3.editable {
+	font-weight: bold;
+}
+
+table.comment tr.id td.entry, table.review tr.id td.entry {
+	font-size: smaller;
+}
+td.entry, th.entry {
+	padding: 2px 1em 4px 0.5em;
+}
+tr.last td.entry {
+	padding: 0px 1em 0px 0.5em;
+}
+tr.pt_abstract td.entry {
+	font-size: 85%;
+}
+tr.rev_reviewers_hdr td.entry {
+	padding: 1px 1em 3px 0.5em;
+}
+
+
+/* Other types of captions and entries */
 table.paper, table.review, table.comment, table.settings {
 	width: 100%;
 }
@@ -578,44 +660,11 @@ td.mcaption {
 	text-align: right;
 	padding-right: 1em;
 }
-td.caption {
-	text-align: right;
-	padding: 3px 0.5em 3px 4px;
-	font-weight: bold;
-	width: 11em;
-	border-right: 1px solid #9999cc; /* #cc9900 */
-	margin: 0px;
-	background: #fffdf0;
-	color: #555555;
-}
-tr.topspace td.caption {
-	padding: 7px 0.5em 3px 4px;
-}
-tr.id td.caption {
-	border-bottom: 1px solid #9999cc;
-	border-right: none;
-	background: #ffffff;
-	color: black;
-}
-table.comment tr.id td.entry, table.review tr.id td.entry {
-	font-size: smaller;
-}
 table.review, table.comment {
-	border-top: 1px solid #9999cc;
-	padding-top: 10px;
-}
-tr.last td.caption {
-	padding: 0px;
-	border-bottom: 1px solid #9999cc;
-}
-tr.last td.entry {
-	padding: 0px 1em 0px 0.5em;
+	margin-top: 0.5em;
 }
 td.leftentry {
 	width: 15em;
-}
-td.entry, th.entry {
-	padding: 3px 1em 3px 0.5em;
 }
 td.lentry {
 	padding: 2px 0.5em 2px 0em;
@@ -781,9 +830,6 @@ td.entry form {
 tr.pt_actions td, tr.pt_outcome td {
 	white-space: nowrap;
 }
-tr.pt_abstract td.entry {
-	font-size: 85%;
-}
 tr.pt_paper input {
 	margin-top: 4px;
 }
@@ -845,9 +891,6 @@ table.pcass td.nrev {
 	padding-right: 0.65em;
 }
 
-tr.rev_reviewers_hdr td.entry {
-	padding: 1px 1em 3px 0.5em;
-}
 table.topicinterest tr td.ti_interest, table.topicinterest tr th {
 	padding-right: 1px;
 	white-space: nowrap;
@@ -885,7 +928,7 @@ table.reviewers td.rs_id, table.reviewscores td.rs_num {
 	text-align: left;
 }
 div.revnotes {
-	padding: 0.5em 0em;
+	padding: 0.5em 0em 0em 0em;
 }
 table.reviewers td.empty {
 	padding: 0em 0em;
@@ -1037,7 +1080,7 @@ tr.pl_headgap td {
 }
 tr.pl_footgap td {
 	padding-top: 3px;
-	border-bottom: 1px solid #9999cc;
+	border-bottom: 1px solid #ccb7a3; /* #9999cc; */
 }
 table.plt_reviewerHome tr.pl_headrow th {
 	border-bottom: none;
@@ -1068,7 +1111,7 @@ div.merror pre {
 hr {
 	margin: 0.75em 0em;
 	border: none;
-	border-top: 1px solid #9999cc; /* #cc9900; */
+	border-top: 1px solid #9999cc;
 }
 hr.smgap {
 	margin: 0.25em 0em;

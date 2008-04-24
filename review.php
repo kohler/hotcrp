@@ -398,8 +398,9 @@ $paperTable->echoDivEnter();
 echo "<table class='paper'>\n\n";
 $Conf->tableMsg(2, $paperTable);
 
-echo "<tr class='id'>\n  <td class='caption'><h2>#$prow->paperId</h2></td>\n";
-echo "  <td class='entry' colspan='2'><h2>";
+echo "<tr class='id'>
+  <td class='caption'><h2>#$prow->paperId</h2></td>
+  <td class='entry' colspan='2'><h2>";
 $paperTable->echoTitle($prow);
 echo "<img id='foldsession.paper9' alt='' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldreviewp&amp;val=", defval($_SESSION, "foldreviewp", 1), "&amp;cache=1' width='1' height='1' />";
 echo "</h2></td>\n</tr>\n\n";
@@ -433,8 +434,10 @@ echo "  <td class='caption'>";
 if ($reviewTableFolder)
     echo foldbutton("rt", "review list"), "&nbsp;";
 echo "Reviews</td>\n";
-echo "  <td class='entry'>", ($revTable ? $revTable : "None"), "</td>\n";
-echo "</tr>\n\n";
+echo "  <td class='entry'>", ($revTable ? $revTable : "None");
+if ($revTable && $Me->canSetOutcome($prow))
+    echo "<div class='xsmgap'></div>";
+echo "</td>\n</tr>\n\n";
 
 
 if ($Me->canSetOutcome($prow))
@@ -507,108 +510,112 @@ function reviewView($prow, $rrow, $editMode) {
     echo "</td>
 </tr>\n";
     
+    if (!$editMode) {
+	echo $rf->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow, $Conf), true), "</table></div>\n";
+	return;
+    }
 
-    if ($editMode) {
-	// refuse?
-	if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType < REVIEW_SECONDARY) {
-	    echo "\n<tr class='rev_ref'>\n  <td class='caption'></td>\n  <td class='entry' colspan='2'>";
-	    echo "<a id='popupanchor_ref' href=\"javascript:void popup(null, 'ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it\n";
-	    $Conf->footerStuff .= "<div id='popup_ref' class='popupc'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'>
+    // From here on, edit mode.
+    $extraclass = " initial";
+    
+    // refuse?
+    if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType < REVIEW_SECONDARY) {
+	echo "\n<tr class='rev_ref'>
+  <td class='caption$extraclass'></td>
+  <td class='entry$extraclass' colspan='2'>";
+	$extraclass="";
+	echo "<a id='popupanchor_ref' href=\"javascript:void popup(null, 'ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it\n";
+	$Conf->footerStuff .= "<div id='popup_ref' class='popupc'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'>
   <input class='textlite' type='text' name='reason' value='' size='40' />
   <div class='smgap'></div>
   <input class='button' type='submit' name='refuse' value='Refuse review' />
   &nbsp;<button type='button' onclick=\"popup(null, 'ref', 1)\">Cancel</button></div></form></div>";
-	    echo "</td>\n</tr>\n";
-	}
+	echo "</td>\n</tr>\n";
+    }
 
-	// delegate?
-	if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType == REVIEW_SECONDARY) {
-	    echo "\n<tr class='rev_del'>\n  <td class='caption'></td>\n  <td class='entry' colspan='2'>";
-	    if ($nExternalRequests == 0)
-		echo "As a secondary reviewer, you can <a href=\"assign$ConfSiteSuffix?p=$rrow->paperId$linkExtra\">delegate this review to an external reviewer</a>, but if your external reviewer refuses to review the paper, you should complete the review yourself.";
-	    else if ($rrow->reviewNeedsSubmit == 0)
-		echo "A delegated external reviewer has submitted their review, but you can still complete your own if you'd like.";
-	    else
-		echo "Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete the review yourself.";
-	    echo "</td>\n</tr>\n";
-	}
-	
-	// download?
-	echo "\n<tr class='rev_rev'>
-  <td class='caption'></td>
-  <td class='entry' colspan='2'>";
-	if ($rrow && $rrow->contactId != $Me->contactId)
-	    $Conf->infoMsg("You didn't write this review, but as an administrator you can still make changes.");
-	echo "<input class='button_small' type='submit' value='Download", ($editMode ? " form" : ""), "' name='downloadForm' id='downloadForm' />";
-	echo "Upload form:&nbsp; ",
-	    "<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp; ",
-	    "<input class='button_small' type='submit' value='Go' name='uploadForm' />";
+    // delegate?
+    if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType == REVIEW_SECONDARY) {
+	echo "\n<tr class='rev_del'>
+  <td class='caption$extraclass'></td>
+  <td class='entry$extraclass' colspan='2'>";
+	$extraclass = "";
+	if ($nExternalRequests == 0)
+	    echo "As a secondary reviewer, you can <a href=\"assign$ConfSiteSuffix?p=$rrow->paperId$linkExtra\">delegate this review to an external reviewer</a>, but if your external reviewer refuses to review the paper, you should complete the review yourself.";
+	else if ($rrow->reviewNeedsSubmit == 0)
+	    echo "A delegated external reviewer has submitted their review, but you can still complete your own if you'd like.";
+	else
+	    echo "Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete the review yourself.";
 	echo "</td>\n</tr>\n";
     }
     
-    if ($editMode) {
-	// blind?
-	if ($Conf->blindReview() == 1) {
-	    echo "<tr class='rev_blind'>
+    // download?
+    echo "\n<tr class='rev_rev'>
+  <td class='caption$extraclass'></td>
+  <td class='entry$extraclass' colspan='2'>";
+    if ($rrow && $rrow->contactId != $Me->contactId)
+	$Conf->infoMsg("You didn't write this review, but as an administrator you can still make changes.");
+    echo "<input class='button_small' type='submit' value='Download", ($editMode ? " form" : ""), "' name='downloadForm' id='downloadForm' />";
+    echo "Upload form:&nbsp; ",
+	"<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp; ",
+	"<input class='button_small' type='submit' value='Go' name='uploadForm' />";
+    echo "</td>\n</tr>\n";
+
+    // blind?
+    if ($Conf->blindReview() == 1) {
+	echo "<tr class='rev_blind'>
   <td class='caption'>Anonymity</td>
   <td class='entry'><div class='hint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won't know who wrote the review).</div>
     <input type='checkbox' name='blind' value='1'";
-	    if ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))
-		echo " checked='checked'";
-	    echo " />&nbsp;Anonymous review</td>\n</tr>\n";
-	}
-	
-	// form body
-	echo $rf->webFormRows($Me, $prow, $rrow, $useRequest);
-
-	// review actions
-	if ($Me->timeReview($prow, $Conf) || $Me->privChair) {
-	    echo "<tr class='rev_actions'>
-  <td class='caption'></td>
-  <td class='entry'><div class='smgap'></div>",
-		"<table><tr><td><input type='checkbox' name='ready' value='1'";
-	    if ($useRequest ? defval($_REQUEST, "ready") : $rrow && $rrow->reviewSubmitted)
-		echo " checked='checked'";
-	    if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
-		echo " disabled='disabled'";
-	    echo " />&nbsp;</td><td>The review is ready for others to see.";
-	    if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
-		echo "<div class='hint'>Only administrators can remove the review from the system at this point.</div>";
-	    echo "</td></tr></table>",
-		"<div class='smgap'></div><table class='pt_buttons'>\n";
-	    $buttons = array();
-	    $buttons[] = "<input class='hbutton' type='submit' value='Save changes' name='update' />";
-	    if ($rrow && $Me->privChair) {
-		$buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
-		$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='button' type='submit' name='delete' value='Delete review' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
-	    }
-
-	    echo "    <tr>\n";
-	    foreach ($buttons as $b) {
-		$x = (is_array($b) ? $b[0] : $b);
-		echo "      <td class='ptb_button'>", $x, "</td>\n";
-	    }
-	    echo "    </tr>\n    <tr>\n";
-	    foreach ($buttons as $b) {
-		$x = (is_array($b) ? $b[1] : "");
-		echo "      <td class='ptb_explain'>", $x, "</td>\n";
-	    }
-	    echo "    </tr>\n  </table></td>\n</tr>";
-	    if ($Me->privChair)
-		echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>",
-		    "<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines",
-		    "</td>\n</tr>";
-	    echo "\n\n";
-	}
-
-	echo "<tr class='last'><td class='caption'></td></tr>\n";
-	echo "</table>\n</form>\n\n";
-    } else {
-	echo $rf->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow, $Conf), true);
-	echo "<tr class='last'><td class='caption'></td></tr>\n";
-	echo "</table></div>\n";
+	if ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))
+	    echo " checked='checked'";
+	echo " />&nbsp;Anonymous review</td>\n</tr>\n";
     }
     
+    // form body
+    echo $rf->webFormRows($Me, $prow, $rrow, $useRequest);
+
+    // review actions
+    if ($Me->timeReview($prow, $Conf) || $Me->privChair) {
+	echo "<tr class='rev_actions'>
+  <td class='caption'></td>
+  <td class='entry'><div class='smgap'></div>",
+	    "<table><tr><td><input type='checkbox' name='ready' value='1'";
+	if ($useRequest ? defval($_REQUEST, "ready") : $rrow && $rrow->reviewSubmitted)
+	    echo " checked='checked'";
+	if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
+	    echo " disabled='disabled'";
+	echo " />&nbsp;</td><td>The review is ready for others to see.";
+	if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
+	    echo "<div class='hint'>Only administrators can remove the review from the system at this point.</div>";
+	echo "</td></tr></table>",
+	    "<div class='smgap'></div><table class='pt_buttons'>\n";
+	$buttons = array();
+	$buttons[] = "<input class='hbutton' type='submit' value='Save changes' name='update' />";
+	if ($rrow && $Me->privChair) {
+	    $buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
+	    $Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='button' type='submit' name='delete' value='Delete review' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
+	}
+
+	echo "    <tr>\n";
+	foreach ($buttons as $b) {
+	    $x = (is_array($b) ? $b[0] : $b);
+	    echo "      <td class='ptb_button'>", $x, "</td>\n";
+	}
+	echo "    </tr>\n    <tr>\n";
+	foreach ($buttons as $b) {
+	    $x = (is_array($b) ? $b[1] : "");
+	    echo "      <td class='ptb_explain'>", $x, "</td>\n";
+	}
+	echo "    </tr>\n  </table></td>\n</tr>";
+	if ($Me->privChair)
+	    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>",
+		"<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines",
+		"</td>\n</tr>";
+	echo "\n\n";
+    }
+
+    echo "<tr class='last'><td class='caption'></td></tr>\n";
+    echo "</table>\n</form>\n\n";
 }
 
 

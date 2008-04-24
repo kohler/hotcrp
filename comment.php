@@ -321,7 +321,7 @@ if ($Me->privChair && $prow->conflictType > 0 && !$Me->canViewComment($prow, $cr
     $Conf->infoMsg("You have explicitly overridden your conflict and are able to view and edit comments for this paper.");
 
 // close table 
-echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>\n";
+echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n";
 echo "</table>";
 $paperTable->echoDivExit();
 $Conf->tableMsg(0);
@@ -379,6 +379,8 @@ function commentView($prow, $crow, $editMode) {
   <td class='caption'><h3";
     if ($crow)
 	echo " id='comment$crow->commentId'";
+    if ($editMode)
+	echo " class='editable'";
     echo ">", ($crow ? "Comment" : "Add Comment"), "</h3></td>
   <td class='entry'>";
     $sep = "";
@@ -400,80 +402,81 @@ function commentView($prow, $crow, $editMode) {
     if ($crow && ($crow->contactId == $Me->contactId || $Me->privChair) && !$editMode)
 	echo $xsep, "<a class='button' href='comment$ConfSiteSuffix?c=$crow->commentId$linkExtra'>Edit</a>";
     echo "</td>\n</tr>\n\n";
-
-    if ($editMode && $crow && $crow->contactId != $Me->contactId) {
+    
+    if (!$editMode) {
+	echo "<tr>
+  <td class='caption initial final'></td>
+  <td class='entry initial final'>",
+	    htmlWrapText(htmlspecialchars($crow->comment)), "</td>
+</tr>
+</table>\n";
+	return;
+    }
+    
+    // From here on, edit mode.
+    $extraclass = " initial";
+    
+    if ($crow && $crow->contactId != $Me->contactId) {
 	echo "<tr class='rev_rev'>
-  <td class='caption'></td>
-  <td class='entry'>";
+  <td class='caption$extraclass'></td>
+  <td class='entry$extraclass'>";
 	$Conf->infoMsg("You didn't write this comment, but as an administrator you can still make changes.");
 	echo "</td>\n</tr>\n\n";
+	$extraclass = "";
     }
 
-    if ($editMode) {
-	// form body
-	echo "<tr>
-  <td class='caption'></td>
-  <td class='entry'><textarea name='comment' rows='10' cols='80'>";
-	if ($useRequest)
-	    echo htmlspecialchars(defval($_REQUEST, 'comment'));
-	else if ($crow)
-	    echo htmlspecialchars($crow->comment);
-	echo "</textarea></td>
+    // form body
+    echo "<tr>
+  <td class='caption$extraclass'></td>
+  <td class='entry$extraclass'><textarea name='comment' rows='10' cols='80'>";
+    if ($useRequest)
+	echo htmlspecialchars(defval($_REQUEST, 'comment'));
+    else if ($crow)
+	echo htmlspecialchars($crow->comment);
+    echo "</textarea></td>
 </tr>
 
 <tr>
   <td class='caption'>Visibility</td>
   <td class='entry'>For PC and: <input type='checkbox' name='forReviewers' value='1'";
-	if (($useRequest && defval($_REQUEST, 'forReviewers'))
-	    || (!$useRequest && $crow && $crow->forReviewers)
-	    || (!$useRequest && !$crow && $Conf->setting("extrev_view") > 0))
-	    echo " checked='checked'";
-	echo " />&nbsp;Reviewers &nbsp;
+    if (($useRequest && defval($_REQUEST, 'forReviewers'))
+	|| (!$useRequest && $crow && $crow->forReviewers)
+	|| (!$useRequest && !$crow && $Conf->setting("extrev_view") > 0))
+	echo " checked='checked'";
+    echo " />&nbsp;Reviewers &nbsp;
     <input type='checkbox' name='forAuthors' value='1'";
-	if ($useRequest ? defval($_REQUEST, 'forAuthors') : ($crow && $crow->forAuthors))
+    if ($useRequest ? defval($_REQUEST, 'forAuthors') : ($crow && $crow->forAuthors))
+	echo " checked='checked'";
+    echo " />&nbsp;Authors\n";
+
+    // blind?
+    if ($Conf->blindReview() == 1) {
+	echo "<span class='lgsep'></span><input type='checkbox' name='blind' value='1'";
+	if ($useRequest ? defval($_REQUEST, 'blind') : (!$crow || $crow->blind))
 	    echo " checked='checked'";
-	echo " />&nbsp;Authors\n";
-
-	// blind?
-	if ($Conf->blindReview() == 1) {
-	    echo "<span class='lgsep'></span><input type='checkbox' name='blind' value='1'";
-	    if ($useRequest ? defval($_REQUEST, 'blind') : (!$crow || $crow->blind))
-		echo " checked='checked'";
-	    echo " />&nbsp;Anonymous to authors\n";
-	}
-	
-	echo "  </td>
-</tr>\n\n";
-
-	// review actions
-	if (1) {
-	    echo "<tr class='rev_actions'>
-  <td class='caption'></td>
-  <td class='entry'><table class='pt_buttons'>
-    <tr>\n";
-	    echo "      <td class='ptb_button'><input class='hbutton' type='submit' value='Save' name='submit' /></td>\n";
-	    if ($crow)
-		echo "      <td class='ptb_button'><input class='button' type='submit' value='Delete comment' name='delete' /></td>\n";
-	    echo "    </tr>\n  </table></td>\n</tr>";
-	    if (!$Me->timeReview($prow, $Conf))
-		echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>",
-		    "<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines",
-		    "</td>\n</tr>";
-	    echo "\n\n";
-	}
-
-	echo "<tr class='last'><td class='caption'></td></tr>\n";
-	echo "</table>\n</form>\n\n";
-	
-    } else {
-	echo "<tr>
-  <td class='caption'></td>
-  <td class='entry'>", htmlWrapText(htmlspecialchars($crow->comment)), "</td>
-</tr>
-<tr class='last'><td class='caption'></td></tr>
-</table>\n";
+	echo " />&nbsp;Anonymous to authors\n";
     }
     
+    echo "  </td>
+</tr>\n\n";
+
+    // review actions
+    if (1) {
+	echo "<tr class='rev_actions'>
+  <td class='caption final'></td>
+  <td class='entry final'><table class='pt_buttons'>
+    <tr>\n";
+	echo "      <td class='ptb_button'><input class='hbutton' type='submit' value='Save' name='submit' /></td>\n";
+	if ($crow)
+	    echo "      <td class='ptb_button'><input class='button' type='submit' value='Delete comment' name='delete' /></td>\n";
+	echo "    </tr>\n  </table>\n";
+	if (!$Me->timeReview($prow, $Conf))
+	    echo "<div class='smgap'></div>",
+		"<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
+	echo "</td>\n</tr>\n\n";
+    }
+
+    echo "</table>\n</form>\n\n";
 }
 
 
@@ -499,6 +502,8 @@ function responseView($prow, $crow, $editMode) {
   <td class='caption'><h3";
     if ($crow)
 	echo " id='comment$crow->commentId'";
+    if ($editMode)
+	echo " class='editable'";
     echo ">", ($crow ? "Response" : "Add Response"), "</h3></td>
   <td class='entry'>";
     $sep = "";
@@ -508,66 +513,70 @@ function responseView($prow, $crow, $editMode) {
 	echo $sep, "<a class='button' href='comment$ConfSiteSuffix?c=$crow->commentId$linkExtra'>Edit</a>";
     echo "</td>\n</tr>\n\n";
 
-    if ($editMode) {
-	// form body
+    if (!$editMode) {
 	echo "<tr>
-  <td class='caption'></td>
-  <td class='entry'>";
-
-	$limittext = ($wordlimit ? ": the conference system will enforce a limit of $wordlimit words" : "");
-	$Conf->infoMsg("The authors' response is a mechanism to address
-reviewer concerns and correct misunderstandings.
-The response should be addressed to the program committee, who
-will consider it when making their decision.  Don't try to
-augment the paper's content or form&mdash;the conference deadline
-has passed.  Please keep the response short and to the point" . $limittext . ".");
-	if ($prow->conflictType < CONFLICT_AUTHOR)
-	    $Conf->infoMsg("Although you aren't a contact author for this paper, as an administrator you can edit the authors' response.");
-	
-	echo "<textarea name='comment' rows='10' cols='80'>";
-	if ($crow)
-	    echo htmlspecialchars($crow->comment);
-	echo "</textarea></td>
-</tr>\n\n";
-
-	// review actions
-	if (1) {
-	    echo "<tr>
-  <td class='caption'></td>
-  <td class='entry'><input type='checkbox' name='forReviewers' value='1' ";
-	    if (!$crow || $crow->forReviewers > 0)
-		echo "checked='checked' ";
-	    echo "/>&nbsp;The response is ready for reviewers to view.</td>
-</tr><tr class='rev_actions'>
-  <td class='caption'></td>
-  <td class='entry'><table class='pt_buttons'>
-    <tr>\n";
-	    echo "      <td class='ptb_button'><input class='hbutton' type='submit' value='Save' name='submit' /></td>\n";
-	    if ($crow)
-		echo "      <td class='ptb_button'><input class='button' type='submit' value='Delete response' name='delete' /></td>\n";
-	    echo "    </tr>\n  </table></td>\n</tr>";
-	    if (!$Conf->timeAuthorRespond())
-		echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>",
-		    "<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines",
-		    "</td>\n</tr>";
-	    echo "\n\n";
-	}
-
-	echo "<tr class='last'><td class='caption'></td></tr>\n";
-	echo "</table>\n</form>\n\n";
-	
-    } else {
-	echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>";
+  <td class='caption initial final'></td>
+  <td class='entry initial final'>";
 	if ($Me->privChair && $crow->forReviewers < 1)
 	    echo "<i>The <a href='comment$ConfSiteSuffix?c=$crow->commentId$linkExtra'>authors' response</a> is not yet ready for reviewers to view.</i>";
 	else if (!$Me->canViewComment($prow, $crow, $Conf))
 	    echo "<i>The authors' response is not yet ready for reviewers to view.</i>";
 	else
 	    echo htmlWrapText(htmlspecialchars($crow->comment));
-	echo "</td>\n</tr>
-<tr class='last'><td class='caption'></td></tr>
+	echo "</td>
+</tr>
 </table>\n";
+	return;
     }
+
+    // From here on, edit mode.
+    $extraclass = " initial";
+    
+    // form body
+    echo "<tr>
+  <td class='caption$extraclass'></td>
+  <td class='entry$extraclass'>";
+
+    $limittext = ($wordlimit ? ": the conference system will enforce a limit of $wordlimit words" : "");
+    $Conf->infoMsg("The authors' response is a mechanism to address
+reviewer concerns and correct misunderstandings.
+The response should be addressed to the program committee, who
+will consider it when making their decision.  Don't try to
+augment the paper's content or form&mdash;the conference deadline
+has passed.  Please keep the response short and to the point" . $limittext . ".");
+    if ($prow->conflictType < CONFLICT_AUTHOR)
+	$Conf->infoMsg("Although you aren't a contact author for this paper, as an administrator you can edit the authors' response.");
+    
+    echo "<textarea name='comment' rows='10' cols='80'>";
+    if ($crow)
+	echo htmlspecialchars($crow->comment);
+    echo "</textarea></td>
+</tr>\n\n";
+
+    // review actions
+    if (1) {
+	echo "<tr>
+  <td class='caption'></td>
+  <td class='entry'><input type='checkbox' name='forReviewers' value='1' ";
+	if (!$crow || $crow->forReviewers > 0)
+	    echo "checked='checked' ";
+	echo "/>&nbsp;The response is ready for reviewers to view.</td>
+</tr><tr class='rev_actions'>
+  <td class='caption final'></td>
+  <td class='entry final'><table class='pt_buttons'>
+    <tr>\n";
+	echo "      <td class='ptb_button'><input class='hbutton' type='submit' value='Save' name='submit' /></td>\n";
+	if ($crow)
+	    echo "      <td class='ptb_button'><input class='button' type='submit' value='Delete response' name='delete' /></td>\n";
+	echo "    </tr>\n  </table>";
+	if (!$Conf->timeAuthorRespond())
+	    echo "<div class='smgap'></div>",
+		"<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
+	echo "</td>\n</tr>\n\n";
+    }
+
+    echo "<tr class='last'><td class='caption'></td></tr>\n";
+    echo "</table>\n</form>\n\n";
 }
 
 

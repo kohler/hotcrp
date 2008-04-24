@@ -123,8 +123,13 @@ echo "</dl>\nClick a heading to sort.\n</div></div>";
 
 echo "<form method='get' action='manualassign$ConfSiteSuffix' accept-charset='UTF-8' id='selectreviewerform'>
 <table>
-  <tr class='id'><td class='caption'></td><td class='entry'></td></tr>
-  <tr><td class='caption'>PC member</td><td class='entry'>
+  <tr class='id'>
+    <td class='caption'></td>
+    <td class='entry'></td>
+  </tr>
+  <tr>
+    <td class='caption initial'>PC member</td>
+    <td class='entry initial'>
 <select name='reviewer'>\n";
 
 $query = "select ContactInfo.contactId, firstName, lastName,

@@ -26,6 +26,7 @@ class PaperTable {
     var $highlight;
     var $matchPreg;
     var $watchCheckbox;
+    var $initial;
     
     function PaperTable($editable, $useRequest, $allFolded, $authorsFolded,
 			$foldsession = null) {
@@ -52,6 +53,7 @@ class PaperTable {
 	    $this->matchPreg = $_SESSION["l"][$CurrentList]["matchPreg"];
 	$this->highlight = $this->matchPreg !== null;
 	$this->watchCheckbox = 0;
+	$this->initial = true;
     }
 
     function echoDivEnter() {
@@ -79,6 +81,8 @@ class PaperTable {
 	    $c .= " extension8";
 	if ($what == "abstract" && $this->editable)
 	    $c .= " textarea";
+	if ($this->initial)
+	    $c .= " initial";
 	return $c . "'>";
     }
 
@@ -91,6 +95,10 @@ class PaperTable {
 	    $c .= " extension8";
 	if (!$this->editable)
 	    $c .= "' colspan='2";
+	if ($this->initial) {
+	    $c .= " initial";
+	    $this->initial = false;
+	}
 	return $c . "'>";
     }
 
@@ -152,11 +160,19 @@ class PaperTable {
 	$canUpload = $this->editable;
 
 	echo "<tr class='pt_status'>\n";
-	echo "  <td class='caption'>";
+	echo "  <td class='caption";
+	if ($this->initial)
+	    echo " initial";
+	echo "'>";
 	if ($this->allFolded)
 	    echo foldbutton("paper", "abstract and authors", 9), " ";
 	echo ($canUpload ? "Status" : "Paper"), "</td>\n";
-	echo "  <td class='entry'>";
+	echo "  <td class='entry";
+	if ($this->initial) {
+	    echo " initial";
+	    $this->initial = false;
+	}
+	echo "'>";
 
 	// status
 	echo $Me->paperStatus($prow->paperId, $prow, 0);

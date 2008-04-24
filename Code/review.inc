@@ -14,6 +14,13 @@ $scoreHelps = array();
 
 class ReviewForm {
 
+    const WEB_OPTIONS = 1;
+    const WEB_FULL = 2;
+    const WEB_LEFT = 4;
+    const WEB_RIGHT = 8;
+    const WEB_INITIAL = 16;
+    const WEB_FINAL = 32;
+
     var $updatedWhen;
 
     var $reviewFields;
@@ -773,43 +780,66 @@ $blind\n";
 	global $ReviewFormError, $scoreHelps, $Conf, $ConfSiteBase, $ConfSiteSuffix;
 	$x = '';
 
-	$showFields = array();
-	$lastFieldOptions = 0;
+	// Which fields are options?
+	$fshow = array();
+	$fdisp = array();
 	foreach ($this->fieldOrder as $field) {
 	    $fval = ($rrow ? $rrow->$field : "");
 	    $options = isset($this->options[$field]);
 	    if ((!$options && $fval == "")
 		|| $this->authorView[$field] <= $revViewScore)
 		continue;
-	    if ($lastFieldOptions && !$options)
-		$showFields[$lastFieldOptions] = 0;
-	    if ($lastFieldOptions && $options) {
-		$showFields[$field] = 2;
-		$lastFieldOptions = 0;
-	    } else if ($options) {
-		$showFields[$field] = 1;
-		$lastFieldOptions = $field;
-	    } else {
-		$showFields[$field] = 0;
-		$lastFieldOptions = 0;
-	    }
+	    $fshow[] = $field;
+	    $fdisp[] = ($options ? self::WEB_OPTIONS : 0);
 	}
-	
-	foreach ($showFields as $field => $display) {
-	    $options = isset($this->options[$field]);
+
+	// Group fields into positions on the left or right
+	foreach ($fdisp as $i => &$disp) {
+	    if (!($disp & self::WEB_OPTIONS))
+		$disp |= self::WEB_FULL;
+	    else if ($i > 0 && ($fdisp[$i-1] & self::WEB_LEFT))
+		$disp |= self::WEB_RIGHT;
+	    else if ($i+1 < count($fdisp) && ($fdisp[$i+1] & self::WEB_OPTIONS))
+		$disp |= self::WEB_LEFT;
+	    else
+		$disp |= self::WEB_FULL;
+	}
+	unset($disp);
+
+	// Analyze fields for initial or final position
+	foreach ($fdisp as $i => &$disp) {
+	    if ($i == 0
+		|| (($disp & self::WEB_RIGHT)
+		    && ($i<2 || !($fdisp[$i-2] & self::WEB_RIGHT))))
+		$disp |= self::WEB_INITIAL;
+	    if ($i+1 == count($fdisp)
+		|| ($i+2 == count($fdisp) && ($disp & self::WEB_LEFT))
+		|| (($disp & self::WEB_RIGHT) && !($fdisp[$i+1] & self::WEB_LEFT)))
+		$disp |= self::WEB_FINAL;
+	}
+	unset($disp);
+
+	// Actually display
+	foreach ($fshow as $fnum => $field) {
+	    $disp = $fdisp[$fnum];
 	    $fval = ($rrow ? $rrow->$field : "");
-	    if ($options && $fval)
+	    if (($disp & self::WEB_OPTIONS) && $fval)
 		$fval = $this->unparseOption($field, $fval);
 
-	    if ($display <= 1)
+	    if ($disp & (self::WEB_FULL | self::WEB_LEFT))
 		$x .= "\n<tr class='rev_$field'>\n";
+	    $classextra = "";
+	    if ($disp & self::WEB_INITIAL)
+		$classextra .= " initial";
+	    if ($disp & self::WEB_FINAL)
+		$classextra .= " final";
 
-	    $x .= "  <td class='caption rev_$field'>";
+	    $x .= "  <td class='caption rev_$field$classextra'>";
 	    $n = htmlspecialchars($this->shortName[$field]);
 	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))
 		$n = preg_replace("/\\s+/", "&nbsp;", $n);
 	    $x .= "$n";
-	    if ($showGuidance && $options) {
+	    if ($showGuidance && ($disp & self::WEB_OPTIONS)) {
 		$x .= "<a class='scorehelp' href='${ConfSiteBase}scorehelp$ConfSiteSuffix?f=$field' target='new'>?</a>";
 		if (count($scoreHelps) == 0)
 		    $Conf->footerStuff .= "<script type='text/javascript'>addScoreHelp();</script>";
@@ -830,12 +860,14 @@ $blind\n";
 		$x .= "<br /><span class='hint'>(hidden from authors)</span>";
 	    $x .= "</td>\n";
 	    
-	    $x .= "  <td class='entry rev_$field";
-	    if ($display >= 1)
-		$x .= ($display == 1 ? " leftentry'>" : " rightentry'>");
+	    $x .= "  <td class='entry rev_$field$classextra";
+	    if ($disp & self::WEB_LEFT)
+		$x .= " leftentry'>";
+	    else if ($disp & self::WEB_RIGHT)
+		$x .= " rightentry'>";
 	    else
 		$x .= "' colspan='3'>";
-	    if ($options) {
+	    if ($disp & self::WEB_OPTIONS) {
 		if (!$fval || !isset($this->options[$field][$fval]))
 		    $x .= "<span class='rev_${field}_0 rev_unknown'>Unknown</span>";
 		else
@@ -844,12 +876,10 @@ $blind\n";
 		$x .= htmlWrapText(htmlspecialchars($fval));
 	    $x .= "</td>\n";
 
-	    if ($display != 1)
+	    if (!($disp & self::WEB_LEFT))
 		$x .= "</tr>\n";
 	}
 
-	if ($display == 1)
-	    $x .= "</tr>\n";
 	return $x;
     }
     

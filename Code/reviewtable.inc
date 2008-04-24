@@ -135,10 +135,6 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=view$linkExtra'>";
 	$x = $a . $Conf->cacheableImage("allreviews24.png", "[All reviews]", null, "dlimg") . "</a>&nbsp;" . $a . "All reviews</a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
-    } else if ($mode == "view" && !$rrow && $Me->canViewReview($prow, null, $Conf)) {
-	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=view&amp;text=1$linkExtra'>";
-	$x = $a . $Conf->cacheableImage("txt24.png", "[Text]", null, "dlimg") . "</a>&nbsp;" . $a . "Text format</a>";
-	$t .= ($t == "" ? "" : $xsep) . $x;
     }
     // new review
     if (!$foundMyReview && $Me->canReview($prow, null, $Conf)
@@ -155,6 +151,13 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     if ($mode != "assign" && ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
 	$a = "<a href='assign$ConfSiteSuffix?p=$prow->paperId$linkExtra'>";
 	$x = $a . $Conf->cacheableImage("assign24.png", "[Assign]", null, "dlimg") . "</a>&nbsp;" . $a . ($Me->privChair ? "Manage assignments" : "Manage external reviews") . "</a>";
+	$t .= ($t == "" ? "" : $xsep) . $x;
+    }
+    // text format
+    if ($mode == "view" && !$rrow && $Me->canViewReview($prow, null, $Conf)
+	&& count($nonsubrev) + count($subrev) > 0) {
+	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=view&amp;text=1$linkExtra'>";
+	$x = $a . $Conf->cacheableImage("txt24.png", "[Text]", null, "dlimg") . "</a>&nbsp;" . $a . "Text format</a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
     // override conflict

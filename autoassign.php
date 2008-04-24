@@ -401,9 +401,9 @@ function doOptions($name, $opts) {
     }
 }
 
-function tdClass($entry, $name) {
+function tdClass($entry, $name, $extraclass="") {
     global $Error;
-    $td = "<td class='" . ($entry ? "entry" : "caption");
+    $td = "<td class='" . ($entry ? "entry" : "caption") . $extraclass;
     return $td . (isset($Error[$name]) ? " error'>" : "'>");
 }
 
@@ -424,12 +424,13 @@ Types of PC assignment:
 
 
 $idRow = "<tr class='id'><td class='caption'></td><td class='entry'></td></tr>\n";
+$extraclass = " initial";
 
 if (isset($assignments) && count($assignments) > 0) {
     echo "<table>", $idRow;
-    $idRow = "";
-    echo "<tr class='propass'>", tdClass(false, "propass"), "Proposed assignment</td><td class='entry'>";
+    echo "<tr class='propass'>", tdClass(false, "propass", $extraclass), "Proposed assignment</td><td class='entry$extraclass'>";
     $Conf->infoMsg("If this assignment looks OK to you, select \"Save assignment\" to apply it.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown in square brackets.");
+    $idRow = $extraclass = "";
     
     ksort($assignments);
     $atext = array();
@@ -527,7 +528,8 @@ echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF
 echo "<table>", $idRow;
 $idRow = "";
 
-echo "<tr>", tdClass(false, "ass"), "Action</td>", tdClass(true, "rev");
+echo "<tr>", tdClass(false, "ass", $extraclass), "Action</td>",
+    tdClass(true, "rev", $extraclass);
 doRadio('a', 'rev', 'Ensure each paper has <i>at least</i>');
 echo "&nbsp; <input type='text' class='textlite' name='revct' value=\"", htmlspecialchars(defval($_REQUEST, "revct", 1)), "\" size='3' />&nbsp; ",
     "<select name='revtype'>";
