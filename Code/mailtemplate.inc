@@ -598,7 +598,9 @@ class Mailer {
 	global $Conf, $rf;
 
 	$q = "select PaperComment.*,
- 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
+ 		ContactInfo.firstName as reviewFirstName,
+		ContactInfo.lastName as reviewLastName,
+		ContactInfo.email as reviewEmail,
 		PaperConflict.conflictType
 		from PaperComment
  		join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
