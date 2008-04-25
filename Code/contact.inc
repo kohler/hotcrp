@@ -568,7 +568,9 @@ class Contact {
 			|| defval($prow, "myReviewNeedsSubmit", 1) == 0)
 		    && ($this->isPC || $conf->settings["extrev_view"] >= 1))
 		|| ($rrow && $rrow->paperId == $prow->paperId
-		    && $rrow->contactId == $this->contactId)))
+		    && $rrow->contactId == $this->contactId)
+		|| ($rrow && isset($prow->myReviewId)
+		    && $prow->myReviewId == $rrow->reviewId)))
 	    return true;
 	// collect failure reasons
 	if ($prow->timeWithdrawn > 0)
@@ -625,18 +627,24 @@ class Contact {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
-	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
+	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
+	$myReview = $prow->myReviewType > 0
+	    || ($rrow && isset($prow->myReviewId)
+		&& $prow->myReviewId == $rrow->reviewId)
+	    || ($this->privChair && $rrow && $rrow->contactId != $this->contactId);
 	// policy
 	if (($prow->timeSubmitted > 0 || $prow->myReviewType > 0
 	     || ($this->privChair && $forceShow))
 	    && (($this->privChair && ($forceShow || $prow->conflictType == 0))
 		|| ($this->isPC && $prow->conflictType == 0)
-		|| $prow->myReviewType > 0
-		|| ($this->privChair && $rrow && $rrow->contactId != $this->contactId))
-	    && ($conf->timeReviewPaper($this->isPC, $prow->myReviewType > 0, true)
+		|| $myReview)
+	    && ($conf->timeReviewPaper($this->isPC, $myReview, true)
 		|| $this->privChairOverride()
 		|| ($this->privChair && !$submit))
-	    && (!$rrow || $rrow->contactId == $this->contactId || $this->privChair))
+	    && (!$rrow
+		|| $rrow->contactId == $this->contactId
+		|| (isset($prow->myReviewId) && $prow->myReviewId == $rrow->reviewId)
+		|| $this->privChair))
 	    return true;
 	// collect failure reasons
 	if ($rrow && $rrow->contactId != $this->contactId && !$this->privChair)
@@ -816,8 +824,12 @@ class Contact {
 	return ($prow->conflictType >= CONFLICT_AUTHOR || $this->privChair);
     }
     
-    function timeReview($prow, $conf) {
-	return $conf->timeReviewPaper($this->isPC, $prow->myReviewType || $prow->reviewId, true);
+    function timeReview($prow, $rrow, $conf) {
+	$myReview = $prow->myReviewType || $prow->reviewId
+	    || ($rrow && isset($prow->myReviewId)
+		&& $prow->myReviewId == $rrow->reviewId)
+	    || ($this->privChair && $rrow && $rrow->contactId != $this->contactId);
+	return $conf->timeReviewPaper($this->isPC, $myReview, true);
     }
 
     function canViewReviewerIdentity($prow, $rrow, $conf, $ignoreForceShow = false) {
@@ -829,6 +841,8 @@ class Contact {
 	    $rrow_contactId = $rrow->contactId;
 	if (($this->privChair && $forceShow)
 	    || ($rrow && $rrow_contactId == $this->contactId)
+	    || ($rrow && isset($prow->myReviewId)
+		&& $prow->myReviewId == $rrow->reviewId)
 	    || ($this->privChair && $prow && $prow->conflictType == 0)
 	    || ($this->isPC && $prow && $prow->conflictType == 0
 		&& $conf->setting("pc_seeallrev") != 2)
@@ -987,7 +1001,6 @@ class Contact {
 
   
     function generatePassword($length) {  
-	srand((double)microtime()*1000000);  
 	$vowels = array("a", "e", "i", "o", "u");  
 	$cons = array("b", "c", "d", "g", "h", "j", "k", "l", "m", "n", "p",
 		      "r", "s", "t", "u", "v", "w", "tr",  
@@ -999,7 +1012,7 @@ class Contact {
 
 	$password = "";
 	for ($i = 0; $i < $length; $i++)
-	    $password .= $cons[rand(0, $num_cons - 1)] . $vowels[rand(0, $num_vowels - 1)];  
+	    $password .= $cons[mt_rand(0, $num_cons - 1)] . $vowels[mt_rand(0, $num_vowels - 1)];  
 	return substr($password, 0, $length);  
     }
 

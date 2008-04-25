@@ -22,7 +22,9 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     foreach ($rrows as $rr) {
 	$highlight = ($rrow && $rr->reviewId == $rrow->reviewId);
 	$foundRrow += $highlight;
-	$foundMyReview += ($rr->contactId == $Me->contactId);
+	if ($rr->contactId == $Me->contactId
+	    || (isset($prow->myReviewId) && $prow->myReviewId == $rr->reviewId))
+	    $foundMyReview++;
 	$canView = $Me->canViewReview($prow, $rr, $Conf, $whyNot);
 
 	// skip unsubmitted reviews

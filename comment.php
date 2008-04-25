@@ -470,7 +470,7 @@ function commentView($prow, $crow, $editMode) {
 	if ($crow)
 	    echo "      <td class='ptb_button'><input class='button' type='submit' value='Delete comment' name='delete' /></td>\n";
 	echo "    </tr>\n  </table>\n";
-	if (!$Me->timeReview($prow, $Conf))
+	if (!$Me->timeReview($prow, null, $Conf))
 	    echo "<div class='smgap'></div>",
 		"<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
 	echo "</td>\n</tr>\n\n";

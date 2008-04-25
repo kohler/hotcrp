@@ -772,6 +772,8 @@ function whyNotText($whyNot, $action) {
 	$text .= "External reviewers may not view other reviews for the papers they review.  ";
     if (isset($whyNot['differentReviewer']))
 	$text .= "You didn't write this review, so you can't change it.  ";
+    if (isset($whyNot['reviewToken']))
+	$text .= "If you know a valid review token, enter it above to edit that review.  ";
     // finish it off
     if (isset($whyNot['chairMode']))
 	$text .= "<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">" . ucfirst($action) . " the paper anyway</a>  ";
@@ -1196,4 +1198,37 @@ function cleanAuthorText($row) {
     if (!isset($row->authorTable) && strpos($row->authorInformation, "\t") !== false)
 	cleanAuthor($row);
     return $row->authorInformation;
+}
+
+
+function encodeToken($x) {
+    $s = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    $t = "";
+    while ($x > 0) {
+	$t .= $s[$x & 31];
+	$x >>= 5;
+    }
+    return $t;
+}
+
+function decodeToken($x) {
+    $n = 0;
+    $x = trim(strtoupper($x));
+    while (($l = strlen($x))) {
+	$o = ord($x[$l - 1]);
+	$x = substr($x, 0, $l - 1);
+	if ($o >= 65 && $o <= 72)
+	    $n = ($n << 5) + ($o - 65);
+	else if ($o >= 74 && $o <= 78)
+	    $n = ($n << 5) + ($o - 74 + 8);
+	else if ($o >= 80 && $o <= 90)
+	    $n = ($n << 5) + ($o - 80 + 13);
+	else if ($o >= 50 && $o <= 57)
+	    $n = ($n << 5) + ($o - 50 + 24);
+	else if ($o == 46 /*.*/ || $o == 34 /*"*/)
+	    continue;
+	else
+	    return 0;
+    }
+    return $n;
 }

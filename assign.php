@@ -327,7 +327,22 @@ function unassignedAnonymousContact() {
 	$n = ($n == "" ? 2 : $n + 1);
     }
 }
-		
+
+function unassignedReviewToken() {
+    global $rrows;
+    while (1) {
+	$token = mt_rand(1, 2000000000);
+	$good = true;
+	foreach ($rrows as $rr)
+	    if ($rr->reviewToken == $token) {
+		$good = false;
+		break;
+	    }
+	if ($good)
+	    return $token;
+    }
+}
+
 function createAnonymousReview() {
     global $Conf, $Me, $Opt, $prow, $rrows;
 
@@ -342,7 +357,7 @@ function createAnonymousReview() {
 	$reqId = $row[0];
     } else {
 	$qa = "firstName, lastName, email, affiliation, password";
-	$qb = "'Jane Q.', 'Public', '" . sqlq($contactemail) . "', 'Unaffiliated', ''";
+	$qb = "'Jane Q.', 'Public', '" . sqlq($contactemail) . "', 'Unaffiliated', '" . sqlq(Contact::generatePassword(20)) . "'";
 	if ($Conf->setting("allowPaperOption") >= 4) {
 	    $qa .= ", creationTime";
 	    $qb .= ", " . time();
@@ -354,10 +369,17 @@ function createAnonymousReview() {
     }
     
     // store the review request
-    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($prow->paperId, $reqId, " . REVIEW_PC . ", $Me->contactId, current_timestamp)", $while);
-
-    // confirmation message
-    $Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId.");
+    $qa = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn";
+    $qb = ") values ($prow->paperId, $reqId, " . REVIEW_PC . ", $Me->contactId, current_timestamp";
+    if ($Conf->setting("allowPaperOption") >= 13) {
+	$token = unassignedReviewToken();
+	$Conf->qe($qa . ", reviewToken" . $qb . ", $token)", $while);
+	$Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId.  The review token is " . encodeToken($token) . ".");
+    } else {
+	$Conf->qe($qa . $qb . ")", $while);
+	$Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId.");
+    }
+    
     $Conf->qx("unlock tables");
     $Conf->log("Created $contactemail review", $Me, $prow->paperId);
 

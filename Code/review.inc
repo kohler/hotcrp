@@ -289,7 +289,7 @@ class ReviewForm {
 	$submit = defval($req, "ready", false);
 	$while = "while storing review";
 
-	if (!$Me->timeReview($prow, $conf)
+	if (!$Me->timeReview($prow, $rrow, $conf)
 	    && (!isset($req['override']) || !$Me->privChair))
 	    return $conf->errorMsg("The <a href='${ConfSiteBase}deadlines$ConfSiteSuffix'>deadline</a> for entering this review has passed." . ($Me->privChair ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
 	
@@ -353,13 +353,15 @@ class ReviewForm {
 	    return $reviewId;
 	$req['reviewId'] = $reviewId;
 	
-	// log updates
-	$reviewLogname = "Review $reviewId";
-	if ($rrow && $Me->contactId != $rrow->contactId)
-	    $reviewLogname .= " by $rrow->email";
-	$conf->log("$reviewLogname saved", $Me, $prow->paperId);
-	if ($submit && (!$rrow || !$rrow->reviewSubmitted))
-	    $conf->log("$reviewLogname submitted", $Me, $prow->paperId);
+	// log updates -- but not if review token is used
+	if (!$rrow || !$rrow->reviewToken || !isset($_REQUEST["token"])) {
+	    $reviewLogname = "Review $reviewId";
+	    if ($rrow && $Me->contactId != $rrow->contactId)
+		$reviewLogname .= " by $rrow->email";
+	    $conf->log("$reviewLogname saved", $Me, $prow->paperId);
+	    if ($submit && (!$rrow || !$rrow->reviewSubmitted))
+		$conf->log("$reviewLogname submitted", $Me, $prow->paperId);
+	}
 
 	// potentially email chair and authors
 	if ($submit && ($conf->timeEmailChairAboutReview() || $conf->timeEmailAuthorsAboutReview())) {

@@ -203,6 +203,7 @@ CREATE TABLE `PaperReview` (
   `reviewId` int(11) NOT NULL auto_increment,
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
+  `reviewToken` int(11) NOT NULL default '0',
   `reviewType` tinyint(1) NOT NULL default '0',
   `reviewRound` tinyint(1) NOT NULL default '0',
   `requestedBy` int(11) NOT NULL default '0',
@@ -473,7 +474,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 12);
+insert into Settings (name, value) values ('allowPaperOption', 13);
 # collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 # default chair-only tags

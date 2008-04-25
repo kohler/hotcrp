@@ -36,7 +36,7 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $ConfSiteBase, $ConfSiteSuffix, $prow, $rrows, $rrow, $myRrow, $editRrow, $nExternalRequests, $editRrowLogname;
+    global $Conf, $Me, $ConfSiteBase, $ConfSiteSuffix, $prow, $rrows, $rrow, $myRrow, $editRrow, $nExternalRequests, $editRrowLogname, $nReviewTokens, $linkExtra;
     if (!isset($_REQUEST["reviewId"]) && isset($_REQUEST["r"]))
 	$_REQUEST["reviewId"] = $_REQUEST["r"];
     if (isset($_REQUEST["reviewId"]))
@@ -57,17 +57,30 @@ function loadRows() {
     }
     $rrows = $Conf->reviewRow($selector, $whyNot);
     $rrow = $myRrow = null;
-    $nExternalRequests = 0;
+    $nExternalRequests = $nReviewTokens = 0;
+    $thisToken = (isset($_REQUEST["token"]) ? decodeToken($_REQUEST["token"]) : 0);
     foreach ($rrows as $rr) {
 	if (isset($_REQUEST['reviewId'])) {
 	    if ($rr->reviewId == $_REQUEST['reviewId']
 		|| ($rr->reviewOrdinal && $rr->paperId . unparseReviewOrdinal($rr->reviewOrdinal) == $_REQUEST["reviewId"]))
 		$rrow = $rr;
 	}
-	if ($rr->contactId == $Me->contactId)
+	if (!$myRrow && $rr->contactId == $Me->contactId)
 	    $myRrow = $rr;
+	if ($thisToken && $thisToken == $rr->reviewToken) {
+	    $myRrow = $rr;
+	    $prow->myReviewType = $rr->reviewType;
+	    $prow->myReviewId = $rr->reviewId;
+	    $prow->myReviewSubmitted = $rr->reviewSubmitted;
+	    $prow->myReviewNeedsSubmit = $rr->reviewNeedsSubmit;
+	    $_REQUEST["token"] = encodeToken($rr->reviewToken);
+	    if (strpos($linkExtra, "token=") === false)
+		$linkExtra .= "&amp;token=" . urlencode($_REQUEST["token"]);
+	}
 	if ($rr->reviewType == REVIEW_EXTERNAL && $rr->requestedBy == $Me->contactId)
 	    $nExternalRequests++;
+	if ($rr->reviewToken)
+	    $nReviewTokens++;
     }
     if (isset($_REQUEST['reviewId']) && !$rrow)
 	errorMsgExit("That review no longer exists.");
@@ -179,9 +192,11 @@ if (isset($_REQUEST['update']))
 	$Conf->errorMsg(whyNotText($whyNot, "review"));
 	$useRequest = true;
     } else if ($rf->checkRequestFields($_REQUEST, $editRrow)) {
-	if ($rf->saveRequest($_REQUEST, $editRrow, $prow, $Me->contactId))
+	if ($rf->saveRequest($_REQUEST, $editRrow, $prow, $Me->contactId)) {
 	    $Conf->confirmMsg(isset($_REQUEST['ready']) ? "Review submitted." : "Review saved.");
-	loadRows();
+	    loadRows();
+	} else
+	    $useRequest = true;
     } else
 	$useRequest = true;
 
@@ -364,11 +379,12 @@ $editAny = $Me->canReview($prow, null, $Conf, $whyNotEdit);
 
 // can we see any reviews?
 if (!$viewAny && !$editAny) {
+    if (!$Me->canViewPaper($prow, $Conf, $whyNotPaper))
+	errorMsgExit(whyNotText($whyNotPaper, "view"));
     if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
 	$Conf->errorMsg("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
 	$Conf->go("paper$ConfSiteSuffix?p=$prow->paperId$linkExtra");
-    } else
-	errorMsgExit("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
+    }
 }
 if ($forceShow && !$Me->canViewReview($prow, null, $Conf, $fakeWhyNotView, true))
     $Conf->infoMsg("You have used administrator privileges to view and edit reviews for this paper.");
@@ -454,6 +470,25 @@ if ($Me->isPC && ($prow->conflictType == 0 || ($Me->privChair && $forceShow)))
     $paperTable->echoLead($prow);
 if ($viewAny)
     $paperTable->echoShepherd($prow);
+if (($rrow ? isset($prow->myReviewId) : $nReviewTokens)
+    && ($prow->conflictType < CONFLICT_CONTACTAUTHOR || $Me->privChair)) {
+    echo "<tr>
+  <td class='caption'>Review token</td>
+  <td class='entry'><form method='post' action=\"review$ConfSiteSuffix?p=$prow->paperId$linkExtra\" method='post' enctype='multipart/form-data' accept-charset='UTF-8'>",
+	"<input class='textlite' type='text' name='token' value=\"", htmlspecialchars(defval($_REQUEST, "token", "")), "\" size='15' />",
+	" &nbsp; <input class='button' type='submit' value='Go' />",
+	"</form>";
+    if (isset($prow->myReviewId))
+	echo "<div class='xconfirm'>You have entered a valid review token and may <a href=\"review$ConfSiteSuffix?r=$prow->myReviewId&amp;mode=edit$linkExtra\">edit the corresponding review</a>.</div>";
+    echo "</td>
+</tr>\n";
+    $whyNotView["reviewToken"] = true;
+}
+
+
+if (!$viewAny && !$editAny
+    && (!$rrow || !$Me->canViewReview($prow, $rrow, $Conf, $whyNot)))
+    errorMsgExit("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
 
 
 // reviewer information
@@ -501,6 +536,8 @@ function reviewView($prow, $rrow, $editMode) {
     $reviewLink = "review$ConfSiteSuffix?"
 	. ($rrow ? "r=$reviewOrdinal" : "p=$prow->paperId")
 	. $linkExtra . "&amp;mode=edit&amp;post=1";
+    if (isset($_REQUEST["token"]))
+	$reviewLink .= "&amp;token=" . urlencode($_REQUEST["token"]);
     if ($editMode)
 	echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'>",
 	    "<input class='hidden' type='submit' name='default' value='' />";
@@ -528,6 +565,10 @@ function reviewView($prow, $rrow, $editMode) {
 	echo ($rrow->reviewBlind ? "[" : ""), "by ", contactHtml($rrow);
 	$sep = ($rrow->reviewBlind ? "]" : "") . $xsep;
     }
+    if ($rrow && $rrow->reviewToken && $Me->canReview($prow, $rrow, $Conf)) {
+	echo $sep, "Review token: ", encodeToken($rrow->reviewToken);
+	$sep = $xsep;
+    }
     if ($rrow && $rrow->reviewModified > 0) {
 	echo $sep, "Modified ", $Conf->printableTime($rrow->reviewModified);
 	$sep = $xsep;
@@ -538,8 +579,10 @@ function reviewView($prow, $rrow, $editMode) {
 	    "</a>&nbsp;", $a, "Text format</a>";
 	$sep = $xsep;
     }
-    if ($rrow && !$editMode && $Me->canReview($prow, $rrow, $Conf))
+    if ($rrow && !$editMode && $Me->canReview($prow, $rrow, $Conf)) {
 	echo $sep, "<a class='button' href='review$ConfSiteSuffix?r=$reviewOrdinal$linkExtra'>Edit</a>";
+	$sep = $xsep;
+    }
     echo "</td>
 </tr>\n";
     
@@ -624,8 +667,10 @@ function reviewView($prow, $rrow, $editMode) {
     echo "\n<tr class='rev_rev'>
   <td class='caption$extraclass'></td>
   <td class='entry$extraclass' colspan='2'>";
-    if ($rrow && $rrow->contactId != $Me->contactId)
-	$Conf->infoMsg("You didn't write this review, but as an administrator you can still make changes.");
+    if ($rrow && $rrow->contactId != $Me->contactId) {
+	if (!isset($prow->myReviewId) && $Me->privChair)
+	    $Conf->infoMsg("You didn't write this review, but as an administrator you can still make changes.");
+    }
     echo "<input class='button_small' type='submit' value='Download", ($editMode ? " form" : ""), "' name='downloadForm' id='downloadForm' />";
     echo "Upload form:&nbsp; ",
 	"<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp; ",
@@ -647,7 +692,7 @@ function reviewView($prow, $rrow, $editMode) {
     echo $rf->webFormRows($Me, $prow, $rrow, $useRequest);
 
     // review actions
-    if ($Me->timeReview($prow, $Conf) || $Me->privChair) {
+    if ($Me->timeReview($prow, $rrow, $Conf) || $Me->privChair) {
 	echo "<tr class='rev_actions'>
   <td class='caption'></td>
   <td class='entry'><div class='smgap'></div>",
