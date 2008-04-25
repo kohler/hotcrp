@@ -518,25 +518,23 @@ After the submission deadline has passed:
 Chairs and system administrators can access any information stored in the
 conference system, including reviewer identities for conflicted papers.  For
 this reason, some chairs prefer not to use the normal review assignment
-process for their own submissions and other chair conflicts.  HotCRP supports
-an alternate review mechanism for such papers.  For each chair conflict:
+process for their own submissions, and HotCRP supports an alternate review
+mechanism.  For each chair conflict:
 
 <ol>
 
-<li>A system administrator, such as a trusted PC member or student, decides
-  which PC member should review the paper.</li>
-
-<li>The administrator goes to the paper's <a
+<li>A chair or system administrator goes to the paper's <a
   href='${ConfSiteBase}assign$ConfSiteSuffix'>assignment page</a> and clicks
   on &ldquo;Request review&rdquo; without entering a name or email address.
   This creates a new, completely anonymous review slot and reports a
   corresponding <em>review token</em>, a short string of letters and numbers
-  such as &ldquo;9HDZYUB&rdquo;.</li>
+  such as &ldquo;9HDZYUB&rdquo;.  The chair creates as many slots as
+  desired.</li>
 
-<li>The administrator sends the desired reviewer the paper number and the
-  review token.</li>
-
-<li>The administrator repeats these steps for each review.</li>
+<li>The chair sends the resulting review tokens to a PC member designated as
+  the paper's manager.  This trusted party decides which PC members should
+  review the paper, and sends each reviewer the paper number and a review
+  token.</li>
 
 <li>When a reviewer navigates to the paper's review page and enters their
   review token, the system lets them anonymously modify the corresponding
@@ -545,15 +543,17 @@ an alternate review mechanism for such papers.  For each chair conflict:
 </ol>
 
 <p>Reviews entered using this procedure appear to be authored by &ldquo;Jane
-  Q. Public.&rdquo;  Chairs can still see (and edit) the reviews if they
-  override their conflicts, but reviewer identities remain secret.</p>
+  Q. Public.&rdquo; Chairs can still see (and edit) the reviews if they
+  override their conflicts, but reviewer identities are not stored in the
+  database at all.</p>
 
-<p>Alternately, the trusted administrator can send the reviewers the paper and
-  an offline review form via email (not using HotCRP).  The reviewers complete
-  the offline forms and send them to the administrator, who uploads them into
-  the &ldquo;Jane Q. Public&rdquo; review slots.  This leaves no trace.
-  (Review tokens might let evil chairs identify users using modified software
-  or web server access logs.)</p>
+<p>Alternately, the trusted manager can send the reviewers the paper and an
+  offline review form via email (not using HotCRP).  The reviewers complete
+  the offline forms and send them to the manager, who uploads them into the
+  &ldquo;Jane Q. Public&rdquo; review slots using the review tokens.  This
+  way, even web server access logs store only the manager's identity.</p>
+
+<p>Caveat: Currently review tokens cannot be used by external reviewers.</p>
 
 ");
     _alternateRow("Before the meeting", "
