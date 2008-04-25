@@ -141,8 +141,8 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
     // new review
     if (!$foundMyReview && $Me->canReview($prow, null, $Conf)
 	&& !($mode == "edit" && !$rrow)) {
-	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=edit$linkExtra'>";
-	$x = $a . $Conf->cacheableImage("newreview24.png", "[New review]", null, "dlimg") . "</a>&nbsp;" . $a . "Add review</a>";
+	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=edit$linkExtra'";
+	$x = $a . ">" . $Conf->cacheableImage("newreview24.png", "[New review]", null, "dlimg") . "</a>&nbsp;" . $a . " class='button'>Add review</a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     } else if ($foundMyReview && !$rrow) {
 	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=edit$linkExtra'>";
