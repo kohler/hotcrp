@@ -381,11 +381,11 @@ function makescorehelp(anchor, which, dofold) {
 	    elt.className = "scorehelpo";
 	    var x = anchorPos.right - elt.offsetWidth;
 	    elt.style.left = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) + "px";
-	    if (anchorPos.bottom + 5 + elt.offsetHeight > wg.bottom
+	    if (anchorPos.bottom + 7 + elt.offsetHeight > wg.bottom
 		&& anchorPos.top - 2 - elt.offsetHeight >= wg.top - 10)
 		elt.style.top = (anchorPos.top - 2 - elt.offsetHeight) + "px";
 	    else
-		elt.style.top = (anchorPos.bottom + 5) + "px";
+		elt.style.top = (anchorPos.bottom + 7) + "px";
 	}
     };
 }

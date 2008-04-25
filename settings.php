@@ -53,6 +53,7 @@ $SettingGroups = array("acc" => array(
 			     "extrev_hard" => "date",
 			     "extrev_view" => 2,
 			     "mailbody_requestreview" => "string",
+			     "rev_ratings" => 2,
 			     "next" => "rfo"),
 		       "rfo" => array(
 			     "reviewform" => "special",
@@ -70,8 +71,14 @@ $SettingGroups = array("acc" => array(
 			     "final_grace" => "grace"));
 
 $Group = defval($_REQUEST, "group");
-if (!isset($SettingGroups[$Group]))
-    $Group = "sub";
+if (!isset($SettingGroups[$Group])) {
+    if ($Conf->timeAuthorViewReviews())
+	$Group = "dec";
+    else if ($Conf->settingsAfter("sub_sub") || $Conf->timeReviewOpen())
+	$Group = "rev";
+    else
+	$Group = "sub";
+}
 if ($Group == "rfo")
     require_once("Code/reviewsetform.inc");
 if ($Group == "acc")
@@ -103,6 +110,7 @@ $SettingText = array(
 	"extrev_view" => "External reviewers can view reviewer identities setting",
 	"tag_chair" => "Chair tags",
 	"tag_seeall" => "PC can see tags for conflicted papers",
+	"rev_ratings" => "Review ratings setting",
 	"au_seerev" => "Authors can see reviews setting",
 	"au_seedec" => "Authors can see decisions setting",
 	"rev_seedec" => "Reviewers can see decisions setting",
@@ -205,7 +213,7 @@ function parseValue($name, $type) {
 	if (ctype_digit($v) && $v >= 0 && $v <= $type)
 	    return intval($v);
 	else
-	    $err = $SettingText[$name] . ": parse error.";
+	    $err = $SettingText[$name] . ": parse error on &ldquo;" . htmlspecialchars($v) . "&rdquo;.";
     } else
 	return $v;
 
@@ -859,7 +867,7 @@ function doRevGroup() {
     doDateRow("pcrev_hard", "Hard deadline");
     if (!($rev_roundtag = settingText("rev_roundtag")))
 	$rev_roundtag = "(None)";
-    doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments.  Examples: &ldquo;R1&rdquo;, &ldquo;R2&rdquo;"), $rev_roundtag, 15, "lcaption", "(None)");
+    doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments by default.  Examples: &ldquo;R1&rdquo;, &ldquo;R2&rdquo; &nbsp;<span class='barsep'>|</span>&nbsp; <a href='${ConfSiteBase}help$ConfSiteSuffix?t=revround'>What is this?</a>"), $rev_roundtag, 15, "lcaption", "(None)");
     echo "</table>\n";
 
     echo "<div class='smgap'></div>\n";
@@ -912,6 +920,14 @@ function doRevGroup() {
 	$v = join(" ", $t);
     }
     echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='50' onchange='highlightUpdate()' /><br /><small>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</small></td></tr></table>";
+
+    echo "<hr />";
+
+    // Tags
+    echo "<h3>Review ratings</h3>\n";
+
+    echo "Should HotCRP collect ratings of reviews? &nbsp; <a class='hint' href='help$ConfSiteSuffix?t=revrate'>(Learn more)</a><br />\n";
+    doRadio("rev_ratings", array(REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"));
 }
 
 // Review form

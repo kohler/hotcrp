@@ -1022,8 +1022,8 @@ function maybeSearchPaperId($me) {
     }
 }
 
-function outcomeSelector($curOutcome = 0, $id = null) {
-    $text = "<select" . ($id === null ? "" : " id='$id'") . " class='outcome' name='outcome'>\n";
+function outcomeSelector($curOutcome = 0, $id = null, $extra = "") {
+    $text = "<select" . ($id === null ? "" : " id='$id'") . " class='outcome' name='outcome'$extra>\n";
     $rf = reviewForm();
     $outcomeMap = $rf->options['outcome'];
     $outcomes = array_keys($outcomeMap);

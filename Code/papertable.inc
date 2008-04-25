@@ -610,8 +610,8 @@ class PaperTable {
   <td class='entry'><form method='get' action='${ConfSiteBase}review$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='p' value='$prow->paperId' />";
 	if (isset($_REQUEST['forceShow']))
 	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
-	echo outcomeSelector($prow->outcome);
-	echo "&nbsp; <input class='button_small' type='submit' name='setoutcome' value='Set decision' /></div></form></td>\n</tr>\n";
+	echo outcomeSelector($prow->outcome, null, " onchange='highlightUpdate(\"setdecision\")'");
+	echo "&nbsp; <input id='setdecision' class='button' type='submit' name='setoutcome' value='Save' /></div></form></td>\n</tr>\n";
     }
 
 }

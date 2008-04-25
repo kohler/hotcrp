@@ -212,7 +212,7 @@ if ($kind == "a")
 	"Review round: &nbsp;",
 	"<input id='assrevroundtag' class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
 	(isset($Error["rev_roundtag"]) ? "</span>" : ""),
-	" &nbsp;<span class='hint'><a href='${ConfSiteBase}help$ConfSiteSuffix?t=revround' target='new'>What is this?</a></span>\n";
+	" &nbsp;<a class='hint' href='${ConfSiteBase}help$ConfSiteSuffix?t=revround' target='new'>What is this?</a>\n";
 
 echo "<div class='xsmgap'></div><input id='assrevimmediate' type='checkbox' checked='checked' />&nbsp;Save assignments as they are made<br />\n";
 

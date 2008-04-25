@@ -1074,7 +1074,10 @@ class Conference {
 	if ($this->saveMessages)
 	    $_SESSION["msgs"][] = $x;
 	else if ($this->tableMessages)
-	    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry' colspan='", $this->tableMessages, "'>", $x, "</td>\n</tr>\n\n";
+	    echo "<tr>
+  <td class='caption$last'></td>
+  <td class='entry$last' colspan='", $this->tableMessages, "'>", $x, "</td>
+</tr>\n\n";
 	else
 	    echo $x;
     }
@@ -1097,6 +1100,7 @@ class Conference {
     }
 
     function errorMsgExit($text) {
+	$this->closeTableMessages();
 	if ($text)
 	    $this->msg($text, 'merror');
 	$this->footer();
@@ -1200,13 +1204,21 @@ class Conference {
 	$this->headerPrinted = 2;
     }
 
-    function footer() {
+    function closeTableMessages() {
 	if ($this->tableMessages) {
-	    echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>\n";
-	    echo "</table>\n\n";
+	    echo "<tr>
+  <td class='caption final'></td>
+  <td class='entry final' colspan='2'></td>
+</tr>
+</table>\n\n";
 	    if ($this->tableMessagesObj)
 		$this->tableMessagesObj->echoDivExit();
+	    $this->tableMessages = false;
 	}
+    }
+
+    function footer() {
+	$this->closeTableMessages();
 	echo "</div>\n"; // <div class='body'>
 	echo "<div id='footer'>\n",
 	    "  <div id='footer_crp'><a href='http://www.cs.ucla.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software</div>\n",

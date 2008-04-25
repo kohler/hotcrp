@@ -551,7 +551,7 @@ echo "Review round: &nbsp;";
 $rev_roundtag = defval($_REQUEST, "rev_roundtag", $Conf->settingText("rev_roundtag"));
 if (!$rev_roundtag)
     $rev_roundtag = "(None)";
-echo "<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" /> &nbsp;<span class='hint'><a href='${ConfSiteBase}help$ConfSiteSuffix?t=revround' target='new'>What is this?</a></span>";
+echo "<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" /> &nbsp;<a class='hint' href='${ConfSiteBase}help$ConfSiteSuffix?t=revround' target='new'>What is this?</a>";
 echo "<hr /></td></tr>\n";
 
 echo "<tr><td class='caption'></td>", tdClass(true, "prefconflict");

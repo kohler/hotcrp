@@ -36,7 +36,9 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $ConfSiteBase, $ConfSiteSuffix, $prow, $rrows, $rrow, $myRrow, $editRrow, $nExternalRequests, $editRrowLogname, $nReviewTokens, $linkExtra;
+    global $Conf, $Me, $ConfSiteBase, $ConfSiteSuffix, $linkExtra,
+	$prow, $rrows, $rrow, $myRrow, $editRrow,
+	$nExternalRequests, $editRrowLogname, $nReviewTokens, $nRatersSubmitted;
     if (!isset($_REQUEST["reviewId"]) && isset($_REQUEST["r"]))
 	$_REQUEST["reviewId"] = $_REQUEST["r"];
     if (isset($_REQUEST["reviewId"]))
@@ -49,16 +51,16 @@ function loadRows() {
     if (!(($prow = $Conf->paperRow($sel, $Me->contactId, $whyNot))
 	  && $Me->canViewPaper($prow, $Conf, $whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
-    
+
+    $token = (isset($_REQUEST["token"]) ? decodeToken($_REQUEST["token"]) : 0);
     $selector = array("paperId" => $prow->paperId, "array" => true);
-    if ($Me->isPC) {
+    if ($Conf->setting("rev_ratings") != REV_RATINGS_NONE) {
 	$selector["ratings"] = true;
 	$selector["myRating"] = $Me->contactId;
     }
     $rrows = $Conf->reviewRow($selector, $whyNot);
     $rrow = $myRrow = null;
-    $nExternalRequests = $nReviewTokens = 0;
-    $thisToken = (isset($_REQUEST["token"]) ? decodeToken($_REQUEST["token"]) : 0);
+    $nExternalRequests = $nReviewTokens = $nRatersSubmitted = 0;
     foreach ($rrows as $rr) {
 	if (isset($_REQUEST['reviewId'])) {
 	    if ($rr->reviewId == $_REQUEST['reviewId']
@@ -67,7 +69,7 @@ function loadRows() {
 	}
 	if (!$myRrow && $rr->contactId == $Me->contactId)
 	    $myRrow = $rr;
-	if ($thisToken && $thisToken == $rr->reviewToken) {
+	if ($token && $token == $rr->reviewToken) {
 	    $myRrow = $rr;
 	    $prow->myReviewType = $rr->reviewType;
 	    $prow->myReviewId = $rr->reviewId;
@@ -81,6 +83,8 @@ function loadRows() {
 	    $nExternalRequests++;
 	if ($rr->reviewToken)
 	    $nReviewTokens++;
+	if ($rr->reviewSubmitted && ($rr->reviewType > REVIEW_EXTERNAL || $Conf->setting("rev_ratings") != REV_RATINGS_PC))
+	    $nRatersSubmitted++;
     }
     if (isset($_REQUEST['reviewId']) && !$rrow)
 	errorMsgExit("That review no longer exists.");
@@ -160,9 +164,20 @@ if (isset($_REQUEST['update']) && $editRrow && $editRrow->reviewSubmitted)
 
 
 // review rating action
+$canRate = $Conf->setting("rev_ratings");
+if ($canRate == REV_RATINGS_PC)
+    $canRate = $Me->isPC;
+else if ($canRate == REV_RATINGS_PC_EXTERNAL)
+    $canRate = $Me->isPC || $prow->myReviewType > 0;
+else
+    $canRate = false;
+if ($Conf->setting("allowPaperOption") < 12
+    || ($prow->conflictType > 0 && !$forceShow))
+    $canRate = false;
+
 if (isset($_REQUEST["rating"]) && $rrow) {
-    if (!$Me->isPC)
-	$Conf->errorMsg("Only PC members may rate reviews.");
+    if (!$canRate || !$Me->canViewReview($prow, $rrow, $Conf))
+	$Conf->errorMsg("You can't rate that review.");
     else if ($Me->contactId == $rrow->contactId)
 	$Conf->errorMsg("You can't rate your own review.");
     else if ($_REQUEST["rating"] != "n" && $_REQUEST["rating"] != "0"
@@ -530,7 +545,8 @@ $ratingsAjaxDone = false;
 
 function reviewView($prow, $rrow, $editMode) {
     global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Me, $rf, $forceShow,
-	$linkExtra, $useRequest, $nExternalRequests, $ratingsAjaxDone;
+	$linkExtra, $useRequest, $nExternalRequests, $nRatersSubmitted,
+	$ratingsAjaxDone, $canRate;
 
     $reviewOrdinal = unparseReviewOrdinal($rrow);
     $reviewLink = "review$ConfSiteSuffix?"
@@ -588,13 +604,17 @@ function reviewView($prow, $rrow, $editMode) {
     
     if (!$editMode) {
 	$initial = true;
-	if ($Me->isPC && $Conf->setting("allowPaperOption") >= 12
-	    && ($rrow->contactId != $Me->contactId || $rrow->numRatings > 0)) {
+	// Do not show rating counts if rater identity is unambiguous.
+	$visibleRatings = $rrow->numRatings > 0
+	    && ($rrow->contactId != $Me->contactId || $Me->privChair
+		|| $nRatersSubmitted > 2 || $Conf->timePCViewAllReviews()
+		|| $rrow->numRatings > 2);
+	if ($canRate && ($rrow->contactId != $Me->contactId || $visibleRatings)) {
 	    $ratesep = "";
-	    echo "<tr>
+	    echo "<tr class='ratingrow'>
   <td class='caption initial'></td>
   <td class='entry initial' colspan='3'><table class='rev_rating'><tr><td>";
-	    if ($rrow->numRatings) {
+	    if ($visibleRatings) {
 		echo "<span class='rev_rating_summary'>";
 		if ($rrow->numRatings == $rrow->sumRatings)
 		    echo plural($rrow->sumRatings, "reviewer");
@@ -623,7 +643,8 @@ function reviewView($prow, $rrow, $editMode) {
 		    . "<input id='ratingval_$reviewOrdinal' type='hidden' name='rating' value='' />"
 		    . "</form>";
 	    }
-	    echo "</td></tr></table><div class='xsmgap'></div></td>\n</tr>\n";
+	    echo " &nbsp;<span class='barsep'>|</span>&nbsp; <a href='${ConfSiteBase}help$ConfSiteSuffix?t=revrate'>What is this?</a>",
+		"</td></tr></table><div class='xsmgap'></div></td>\n</tr>\n";
 	    $initial = false;
 	}
 	echo $rf->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow, $Conf), $initial), "</table></div>\n";

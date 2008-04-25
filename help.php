@@ -13,6 +13,7 @@ $topicTitles = array("topics" => "Help topics",
 		     "search" => "Search",
 		     "tags" => "Tags",
 		     "revround" => "Review rounds",
+		     "revrate" => "Review ratings",
 		     "chair" => "Chair's guide");
 
 $topic = defval($_REQUEST, "t", "topics");
@@ -52,6 +53,7 @@ function topics() {
     _alternateRow("<a href='help$ConfSiteSuffix?t=syntax'>Search syntax</a>", "Quick reference to search syntax.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "How to use tags to define paper sets and discussion orders.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=revround'>Review rounds</a>", "Defining review rounds.");
+    _alternateRow("<a href='help$ConfSiteSuffix?t=revrate'>Review ratings</a>", "Rating reviews.");
     echo "</table>";
 }
 
@@ -361,17 +363,61 @@ Many conferences divide reviews into multiple <em>rounds</em>.
 HotCRP lets chairs label assignments in each round with names, such as
 &ldquo;R1&rdquo; or &ldquo;lastround&rdquo;.
 (We suggest very short names like &ldquo;R1&rdquo;.)
-The round name for new assignments is set on the <a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>settings page</a> and the assignment pages.
-To list your own round &ldquo;R1&rdquo; review assignments, <a href='${ConfSiteBase}search$ConfSiteSuffix?q=round:R1'>search for &ldquo;round:R1&rdquo;</a>.
 To list another PC member&rsquo;s round &ldquo;R1&rdquo; review assignments, <a href='${ConfSiteBase}search$ConfSiteSuffix?q=re:membername+round:R1'>search for &ldquo;re:membername round:R1&rdquo;</a>.");
 
     // get current tag settings
     if (!$Me->isPC)
 	/* do nothing */;
     else if (($rounds = trim($Conf->settingText("tag_rounds"))))
-	_alternateRow("Current rounds", "So far the following review rounds have been defined: &ldquo;" . join("&rdquo;, &ldquo;", preg_split('/\s+/', htmlspecialchars($rounds))) . "&rdquo;.");
+	_alternateRow("Defined rounds", "So far the following review rounds have been defined: &ldquo;" . join("&rdquo;, &ldquo;", preg_split('/\s+/', htmlspecialchars($rounds))) . "&rdquo;.");
     else
-	_alternateRow("Current rounds", "So far no review rounds have been defined.");
+	_alternateRow("Defined rounds", "So far no review rounds have been defined.");
+
+    _alternateRow("Assigning rounds", "
+New assignments are marked by default with the current round defined in
+<a href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>review settings</a>.
+The automatic and bulk assignment pages also let you set a review round.");
+
+    echo "</table>\n";
+}
+
+
+
+function revrate() {
+    global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Me;
+
+    echo "<table>";
+    _alternateRow("Review ratings basics", "
+PC members and, optionally, external reviewers can rate one another's reviews.
+We hope this feedback will help reviewers improve the quality of their
+reviews.  The interface appears above each visible review:
+
+<p><table class='rev_rating'><tr><td>
+  Was this review helpful for you? &nbsp;
+  <a class='button'>Yes</a> &nbsp;
+  <a class='button'>No</a> &nbsp;
+  <a class='button on'>No opinion</a>
+</td></tr></table></p>
+
+<p>HotCRP reports the number of ratings for each review and how many of those
+  ratings were positive.  It does not report who gave the ratings, and it
+  never shows rating counts to authors.</p>");
+    if ($Conf->setting("rev_ratings") == REV_RATINGS_PC)
+	$what = "only PC members";
+    else if ($Conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)
+	$what = "PC members and external reviewers";
+    else
+	$what = "no one";
+    _alternateRow("Settings and caveats", "
+Chairs set how ratings work on the <a
+href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>review settings
+page</a>.  Currently, $what can rate reviews.
+
+<p>A review's ratings are visible to any unconflicted PC members who can see
+  the review, but HotCRP tries to hide ratings from review authors if they
+  could figure out who assigned the rating.  Thus, if only one PC member could
+  rate a review, then that PC member's rating is hidden from the review
+  author.</p>");
 
     echo "</table>\n";
 }
@@ -681,6 +727,8 @@ else if ($topic == "tags")
     tags();
 else if ($topic == "revround")
     revround();
+else if ($topic == "revrate")
+    revrate();
 else if ($topic == "chair")
     chair();
 

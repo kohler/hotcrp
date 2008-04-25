@@ -49,7 +49,7 @@ h1 span.crumbsep {
 	color: #9999cc;
 }
 span.barsep {
-	color: #9999cc;
+	color: #b4b4df;
 }
 
 /* Tab bar */
@@ -211,7 +211,7 @@ div.info, div.warning, div.confirm, div.merror {
 	background: #eeeeff url(images/info45.png) 10px 10px no-repeat;
 	padding: 0.5em 0.5em 0.5em 65px;
 	border: 1px solid #ccccee;
-	margin: 0.5em 8px;
+	margin: 0.5em 0.75em 0.5em 0em;
 	min-height: 45px;
 }
 div.help {
@@ -574,9 +574,17 @@ table.comment tr.id td.caption {
 	background: #ffffff;
 	color: black;
 }
-tr.last td.caption {
+tr.last td.caption, tr.last td.entry {
 	padding: 1px 0px;
+}
+tr.last td.caption {
 	border-bottom: 1px solid #ccb7a3; /* #9999cc; */
+}
+table.review tr.ratingrow td.caption {
+	padding: 0em 0.5em;
+}
+table.review tr.ratingrow td.entry {
+	padding: 0em 0.5em 0em 0em;
 }
 
 table.review td.caption {
@@ -696,6 +704,9 @@ div.hint {
 span.hint {
 	font-size: smaller;
 	color: #555555;
+}
+a.hint {
+	font-size: smaller;
 }
 td.caption span.hint {
 	font-weight: normal;
@@ -1221,10 +1232,12 @@ span.contactpulldown select {
 /* review ratings */
 table.rev_rating tr td {
 	font-size: 69%;
-	background: #efefef;
-	border: 1px solid #e0e0e0;
 	padding: 0.4em 0.8em;
 }
+span.rev_rating_summary {
+	font-weight: bold;
+}
+
 
 /* folding */
 .foldc .extension, .foldc .folder, .foldo .ellipsis, .foldo .unfolder,
