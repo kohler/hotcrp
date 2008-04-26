@@ -192,7 +192,8 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 <dl><dt><strong>Authors &amp; reviewers</strong></dt><dd>Visible to authors, reviewers, and the PC</dd>
   <dt><strong>Reviewers only</strong></dt><dd>Visible to reviewers and the PC, but not authors</dd>
   <dt><strong>Private</strong></dt><dd>Set by review authors, but visible only to administrators</dd>
-  <dt><strong>Secret</strong></dt><dd>Only set by and visible to administrators</dd></dl>";
+  <dt><strong>Secret</strong></dt><dd>Only set by and visible to administrators</dd></dl>
+</div>";
     }
     $x .= " &nbsp;<select name='authorView_$row->fieldName'>";
     if (isset($_REQUEST["shortName_$row->fieldName"]) && !isset($_REQUEST["authorView_$row->fieldName"]))
@@ -204,7 +205,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 		   "-2" => "Secret") as $v => $t)
 	$x .= "<option value='$v'" . ($view == $v ? " selected='selected'" : "")
 		. ">$t</option>";
-    $x .= "</td><td class='hint'></td></tr>\n";
+    $x .= "</select></td><td class='hint'></td></tr>\n";
 
     // description
     $x .= "<$trclass><td class='rxcaption textarea'>Description</td>"

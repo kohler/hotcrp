@@ -28,7 +28,7 @@ if ($topic == "search" || $topic == "syntax")
     $abar .= actionTab("Search syntax", "help$ConfSiteSuffix?t=syntax", $topic == "syntax");
 if ($topic != "topics" && $topic != "search" && $topic != "syntax")
     $abar .= actionTab($topicTitles[$topic], "help$ConfSiteSuffix?t=$topic", true);
-$abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper' nowrap='nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
+$abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 if ($topic == "topics")
     $Conf->header("Help", null, $abar);
@@ -388,16 +388,18 @@ function revrate() {
 
     echo "<table>";
     _alternateRow("Review ratings basics", "
-PC members and, optionally, external reviewers can rate one another's reviews.
-We hope this feedback will help reviewers improve the quality of their
-reviews.  The interface appears above each visible review:
+PC members and, optionally, external reviewers can rate one another's
+reviews.  We hope this feedback will help reviewers improve the quality of
+their reviews.  The interface appears above each visible review:
 
-<p><table class='rev_rating'><tr><td>
+<div class='smgap'></div>
+
+<table class='rev_rating'><tr><td>
   Was this review helpful for you? &nbsp;
   <a class='button'>Yes</a> &nbsp;
   <a class='button'>No</a> &nbsp;
   <a class='button on'>No opinion</a>
-</td></tr></table></p>
+</td></tr></table>
 
 <p>HotCRP reports the number of ratings for each review and how many of those
   ratings were positive.  It does not report who gave the ratings, and it

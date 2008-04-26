@@ -620,7 +620,7 @@ function bpSelector($i, $which) {
 	    $selected = true;
 	    $numBadPairs = max($i, $numBadPairs);
 	}
-	$x .= ">" . contactText($pc) . "</option>";
+	$x .= ">" . htmlspecialchars(contactText($pc)) . "</option>";
     }
     $y = ($i == 1 ? " onchange='if (!((x=e(\"badpairs\")).checked)) x.click()'" : "");
     return "<select name='bp$which$i'$y><option value='0'"
@@ -645,8 +645,9 @@ for ($i = 1; $i <= 20; $i++) {
 	echo " &nbsp;to the same paper<span class='extension'> &nbsp;(<a href='javascript:authorfold(\"bp\",1,1)'>More</a> | <a href='javascript:authorfold(\"bp\",1,-1)'>Fewer</a>)</span>";
     echo "</td></tr>\n";
 }
-echo "</table></div><input id='bpcount' type='hidden' name='bpcount' value='20' /></td></tr>\n";
+echo "</table></div><input id='bpcount' type='hidden' name='bpcount' value='20' />";
 $Conf->echoScript("authorfold(\"bp\",0,$numBadPairs)");
+echo "</td></tr>\n";
 
 
 // Load balancing

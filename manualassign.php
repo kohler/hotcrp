@@ -197,7 +197,7 @@ if ($reviewer >= 0) {
 }
 
 
-echo "<tr><td class='caption'></td><td class='entry'></div></td></tr>
+echo "<tr><td class='caption'></td><td class='entry'></td></tr>
 <tr><td class='caption'>Assignments</td><td class='entry'>",
     "<input type='radio' name='kind' value='a'",
     ($kind == "a" ? " checked='checked'" : ""),

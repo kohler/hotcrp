@@ -261,7 +261,7 @@ Types of PC assignment:
 echo "<table>
   <tr class='id'><td class='caption'></td><td class='entry'></td></tr>
   <tr><td class='caption initial'>Upload</td><td class='entry'>
-<form action='bulkassign$ConfSiteSuffix?upload=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'>
+<form action='bulkassign$ConfSiteSuffix?upload=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 Assign &nbsp;<select name='t' id='tsel' onchange='fold(\"email\",this.value!=" . REVIEW_EXTERNAL . ")'>
 <option value='", REVIEW_PRIMARY, "' selected='selected'>primary</option>
 <option value='", REVIEW_SECONDARY, "'>secondary</option>
@@ -289,7 +289,7 @@ echo "'>Review round: &nbsp;<input class='textlite' type='text' size='15' name='
 
 <input class='button' type='submit' value='Go' />
 
-</form>
+</div></form>
 
 <div class='smgap'></div>
 
