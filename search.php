@@ -751,7 +751,7 @@ if ($pl && $pl->headerInfo["abstracts"]) {
     echo "<input type='checkbox' name='showabstract' value='1'";
     if (defval($_SESSION, "foldplabstract", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<img id='foldsession.pl5' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldplabstract&amp;val=", defval($_SESSION, "foldplabstract", 1), "&amp;cache=1' width='1' height='1' /><br /><div id='abstractloadformresult'></div>\n";
+    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<img id='foldsession.pl5' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldplabstract&amp;val=", defval($_SESSION, "foldplabstract", 1), "&amp;cache=1' width='1' height='1' alt='' /><br /><div id='abstractloadformresult'></div>\n";
 }
 if ($Me->isPC && $pl && $pl->headerInfo["tags"]) {
     echo "<input type='checkbox' name='showtags' value='1'";
@@ -759,7 +759,7 @@ if ($Me->isPC && $pl && $pl->headerInfo["tags"]) {
 	echo " disabled='disabled'";
     if (defval($_SESSION, "foldpltags", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='foldtags(\"pl\",!this.checked,4)' />&nbsp;Tags<img id='foldsession.pl4' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldpltags&amp;val=", defval($_SESSION, "foldpltags", 1), "&amp;cache=1' width='1' height='1' /><br /><div id='tagloadformresult'></div>\n";
+    echo " onclick='foldtags(\"pl\",!this.checked,4)' />&nbsp;Tags<img id='foldsession.pl4' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldpltags&amp;val=", defval($_SESSION, "foldpltags", 1), "&amp;cache=1' width='1' height='1' alt='' /><br /><div id='tagloadformresult'></div>\n";
 }
 echo "</td>";
 if ($pl && isset($pl->scoreMax)) {

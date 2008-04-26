@@ -416,22 +416,23 @@ table.center {
 div.homegrp {
 	margin: 0.8em 0em 0em 0.2em;
 }
-td#homesearch {
-	padding-top: .75em;
+div#homelist h4, div#homemgmt h4, div#homerev h4, div#homeau h4, 
+div#homeacct h4, div#homeinfo h4 {
+	display: inline;
 }
-div#homelist strong.grpt {
+div#homelist h4 {
 	color: #8b3030;
 }
-div#homemgmt strong.grpt {
+div#homemgmt h4 {
 	color: #466246;
 }
-div#homerev strong.grpt {
+div#homerev h4 {
 	color: #1b1ba4;
 }
-div#homeau strong.grpt {
+div#homeau h4 {
 	color: #923e58;
 }
-div#homeinfo strong.grpt {
+div#homeinfo h4 {
 	color: #666666;
 }
 div.homeside {
