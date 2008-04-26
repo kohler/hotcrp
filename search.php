@@ -812,7 +812,7 @@ if ($pl) {
     echo "<div class='maintabsep'></div>\n\n<div class='searchresult'>";
 
     if ($pl->anySelector)
-	echo "<form method='post' action=\"", htmlspecialchars(selfHref(array("selector" => 1), "search$ConfSiteSuffix")), "\" accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck();'>\n",
+	echo "<form method='post' action=\"", htmlspecialchars(selfHref(array("selector" => 1), "search$ConfSiteSuffix")), "\" accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck();'><div class='inform'>\n",
 	    "<input id='defaultact' type='hidden' name='defaultact' value='' />",
 	    "<input class='hidden' type='submit' name='default' value='1' />";
     
@@ -829,7 +829,7 @@ if ($pl) {
     }
     
     if ($pl->anySelector)
-	echo "</form>";
+	echo "</div></form>";
     echo "</div>\n";
 } else
     echo "<div class='smgap'></div>\n";

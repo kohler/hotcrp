@@ -192,30 +192,34 @@ echo "<div class='homeside'><div class='homeinside'>";
 
 // Conference management
 if ($Me->privChair) {
-    echo "<div id='homemgmt'>";
-    echo "<strong class='grpt'>Administration</strong> ";
-    echo "<ul><li><a href='settings$ConfSiteSuffix'>Settings</a></li>";
-    echo "<li><a href='contacts$ConfSiteSuffix?t=all'>Users</a></li>";
-    echo "<li><a href='autoassign$ConfSiteSuffix'>Assign reviews</a></li>";
-    echo "<li><a href='mail$ConfSiteSuffix'>Send mail</a></li>";
-    echo "<li><a href='log$ConfSiteSuffix'>Action log</a></li></ul>";
-    echo "</div><hr class='home' />\n";
+    echo "<div id='homemgmt'>
+  <h4>Administration</h4>
+  <ul>
+    <li><a href='settings$ConfSiteSuffix'>Settings</a></li>
+    <li><a href='contacts$ConfSiteSuffix?t=all'>Users</a></li>
+    <li><a href='autoassign$ConfSiteSuffix'>Assign reviews</a></li>
+    <li><a href='mail$ConfSiteSuffix'>Send mail</a></li>
+    <li><a href='log$ConfSiteSuffix'>Action log</a></li>
+  </ul>
+</div>
+<hr class='home' />\n";
 }
 
 // Conference info
-echo "<div id='homeinfo'>";
-echo "<strong class='grpt'>Conference information</strong><ul>";
+echo "<div id='homeinfo'>
+  <h4>Conference information</h4>
+  <ul>\n";
 // Any deadlines set?
 $sep = "";
 if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting('sub_sub')
     || ($Me->isAuthor && $Conf->setting('resp_open') > 0 && $Conf->setting('resp_done'))
     || ($Me->isPC && $Conf->setting('rev_open') && $Conf->setting('pcrev_hard'))
     || ($Me->amReviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard'))) {
-    echo "<li><a href='deadlines$ConfSiteSuffix'>Deadlines</a></li>";
+    echo "    <li><a href='deadlines$ConfSiteSuffix'>Deadlines</a></li>\n";
 }
-echo "<li><a href='contacts$ConfSiteSuffix?t=pc'>Program committee members</a></li>";
+echo "    <li><a href='contacts$ConfSiteSuffix?t=pc'>Program committee members</a></li>\n";
 if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
-    echo "<li><a href='", $Opt['conferenceSite'], "'>Conference site</a></li>";
+    echo "    <li><a href='", $Opt['conferenceSite'], "'>Conference site</a></li>\n";
 if ($Conf->timeAuthorViewDecision()) {
     $result = $Conf->qe("select outcome, count(paperId) from Paper where timeSubmitted>0 group by outcome", "while loading acceptance statistics");
     $n = $nyes = 0;
@@ -224,27 +228,29 @@ if ($Conf->timeAuthorViewDecision()) {
 	if ($row[0] > 0)
 	    $nyes += $row[1];
     }
-    echo "<li>", plural($nyes, "paper"), " were accepted<br />out of ", $n, " submitted.</li>";
+    echo "    <li>", plural($nyes, "paper"), " were accepted<br />out of ", $n, " submitted.</li>\n";
 }
-echo "</ul></div>\n";
+echo "  </ul>\n</div>\n";
 
 
 // Profile
 if ($Me->valid()) {
-    echo "<hr class='home' />\n<div id='homeacct'>";
+    echo "<hr class='home' />
+<div id='homeacct'>\n  ";
     if (($nh = contactNameHtml($Me)))
 	echo "Welcome, ", $nh, ".";
     else
 	echo "Welcome.";
-    echo "<ul><li><a href='account$ConfSiteSuffix'><strong class='grpt'>Your Profile</strong></a></li>",
-	"<li><a href='mergeaccounts$ConfSiteSuffix'>Merge accounts</a></li>";
-    echo "<li><a href='index$ConfSiteSuffix?signout=1'>Sign out</a></li>";
-    // echo "(If this isn't you, please <a href='${ConfSiteBase}index$ConfSiteSuffix?signout=1'>sign out</a>.)";
-    // echo "You will be signed out automatically if you are idle for more than ", round(ini_get("session.gc_maxlifetime")/3600), " hours.";
-    echo "</ul></div>\n";
+    echo "
+  <ul>
+    <li><a href='account$ConfSiteSuffix'><h4>Your Profile</h4></a></li>
+    <li><a href='mergeaccounts$ConfSiteSuffix'>Merge accounts</a></li>
+    <li><a href='index$ConfSiteSuffix?signout=1'>Sign out</a></li>
+  </ul>
+</div>\n";
 }
 
-echo "</div></div>";
+echo "</div></div>\n\n";
 // End sidebar
 
 
@@ -297,34 +303,34 @@ Sign in to submit or review papers.";
 $papersub = $Conf->setting("papersub");
 $homelist = ($Me->privChair || ($Me->isPC && $papersub) || ($Me->amReviewer() && $papersub));
 if ($homelist) {
-    echo "<div class='homegrp' id='homelist'>";
+    echo "<div class='homegrp' id='homelist'>\n";
 
     // Lists
-    echo "<strong class='grpt'>Search: &nbsp;</strong> ";
+    echo "  <h4>Search: &nbsp;</h4>\n";
 
     $tOpt = PaperSearch::searchTypes($Me);
-    if (count($tOpt) > 0) {
-	$q = defval($_REQUEST, "q", "(All)");
-	echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>",
-	    "<input class='textlite' type='text' size='32' name='q' value=\"",
-	    htmlspecialchars($q),
-	    "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" title='Enter paper numbers or search terms' /> &nbsp;in&nbsp; ",
-	    PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0),
-	    " &nbsp; <input class='button' type='submit' value='Search' />",
-	    "</div></form>\n",
-	    "<span class='sep'></span><small><a href='search$ConfSiteSuffix?opt=1'>Advanced search</a></small>";
-    }
-
-    echo "<hr class='home' /></div>\n";
+    $q = defval($_REQUEST, "q", "(All)");
+    echo "  <form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>
+    <input class='textlite' type='text' size='32' name='q' value=\"",
+	htmlspecialchars($q),
+	"\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" title='Enter paper numbers or search terms' />
+    &nbsp;in&nbsp; ",
+	PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
+    &nbsp; <input class='button' type='submit' value='Search' />
+  </div></form>
+  <span class='sep'></span>
+  <small><a href='search$ConfSiteSuffix?opt=1'>Advanced search</a></small>
+</div>
+<hr class='home' />\n";
 }
 
 
 // Review assignment
 if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
-    echo "<div class='homegrp' id='homerev'>";
+    echo "<div class='homegrp' id='homerev'>\n";
     
     // Overview
-    echo "<strong class='grpt'>Reviews: &nbsp;</strong> ";
+    echo "  <h4>Reviews: &nbsp;</h4> ";
     $result = $Conf->qe("select PaperReview.contactId, count(reviewSubmitted), count(if(reviewNeedsSubmit=0,reviewSubmitted,1)), group_concat(overAllMerit), PCMember.contactId as pc from PaperReview join Paper using (paperId) left join PCMember on (PaperReview.contactId=PCMember.contactId) where Paper.timeSubmitted>0 group by PaperReview.contactId", "while fetching review status");
     $rf = reviewForm();
     $maxOverAllMerit = $rf->maxNumericScore("overAllMerit");
@@ -350,37 +356,37 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    echo "You have submitted ", $myrow[1], " of <a href='search$ConfSiteSuffix?q=&amp;t=r'>", plural($myrow[2], "review"), "</a>";
 	if (in_array("overAllMerit", $rf->fieldOrder) && $myrow[1])
 	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", unparseScoreAverage($myrow[3]->avg, $rf->reviewFields["overAllMerit"]);
-	echo ".<br />";
+	echo ".<br />\n";
     }
     if (($Me->isPC || $Me->privChair) && $npc) {
-	echo sprintf("The average PC member has submitted %.1f reviews", $sumpcSubmit / $npc);
+	echo sprintf("  The average PC member has submitted %.1f reviews", $sumpcSubmit / $npc);
 	if (in_array("overAllMerit", $rf->fieldOrder) && $npcScore)
 	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", unparseScoreAverage($sumpcScore / $npcScore, $rf->reviewFields["overAllMerit"]);
 	echo ".";
 	if ($Me->isPC || $Me->privChair)
 	    echo "&nbsp; <small>(<a href='contacts$ConfSiteSuffix?t=pc&amp;score%5B%5D=0'>Details</a>)</small>";
-	echo "<br />";
+	echo "<br />\n";
     }
     if ($myrow && $myrow[1] < $myrow[2]) {
 	$rtyp = ($Me->isPC ? "pcrev_" : "extrev_");
 	if (!$Conf->timeReviewPaper($Me->isPC, true, true))
-	    echo "<span class='deadline'>The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span><br />";
+	    echo "  <span class='deadline'>The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span><br />\n";
 	else if (!$Conf->timeReviewPaper($Me->isPC, true, false))
-	    echo "<span class='deadline'><strong class='overdue'>Reviews are overdue.</strong>  They were requested by " . $Conf->printableTimeSetting("${rtyp}soft") . ".</span><br />";
+	    echo "  <span class='deadline'><strong class='overdue'>Reviews are overdue.</strong>  They were requested by " . $Conf->printableTimeSetting("${rtyp}soft") . ".</span><br />\n";
 	else {
 	    $d = $Conf->printableTimeSetting("${rtyp}soft");
 	    if ($d == "N/A")
 		$d = $Conf->printableTimeSetting("${rtyp}hard");
 	    if ($d != "N/A")
-		echo "<span class='deadline'>Please submit your ", ($myrow[2] == 1 ? "review" : "reviews"), " by $d.</span><br />";
+		echo "  <span class='deadline'>Please submit your ", ($myrow[2] == 1 ? "review" : "reviews"), " by $d.</span><br />\n";
 	}
     } else if ($Me->isPC && $Conf->timeReviewPaper(true, false, true)) {
 	$d = $Conf->printableTimeSetting("pcrev_soft");
 	if ($d != "N/A")
-	    echo "<span class='deadline'>The review deadline is $d.</span><br />";
+	    echo "  <span class='deadline'>The review deadline is $d.</span><br />\n";
     }
     if ($Me->privChair || ($Me->isPC && $Conf->timeReviewPaper(true, false, true)))
-	echo "<span class='hint'>As a PC member, you may review <a href='search$ConfSiteSuffix?q=&amp;t=s'>any submitted paper</a>.</span><br />";
+	echo "  <span class='hint'>As a PC member, you may review <a href='search$ConfSiteSuffix?q=&amp;t=s'>any submitted paper</a>.</span><br />\n";
 
     if (($myrow || $Me->privChair) && $npc)
 	echo "</div>\n<div id='foldre' class='homegrp foldo'>";
@@ -427,9 +433,9 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 
     // Overview
     if ($Me->isAuthor)
-	echo "<strong class='grpt'>Your Submissions: &nbsp;</strong> ";
+	echo "<h4>Your Submissions: &nbsp;</h4> ";
     else
-	echo "<strong class='grpt'>Submissions: &nbsp;</strong> ";
+	echo "<h4>Submissions: &nbsp;</h4> ";
 
     $startable = $Conf->timeStartPaper();
     if ($startable && !$Me->valid())
