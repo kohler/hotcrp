@@ -1421,28 +1421,20 @@ class PaperSearch {
 
     function searchTypeSelector($tOpt, $type, $tabindex) {
 	if (count($tOpt) > 1) {
-	    $tselect = "<select name='t'";
-	    if ($tabindex)
-		$tselect .= " tabindex='1'";
-	    $tselect .= ">";
-	    $ndisabled = 0;
-	    $nany = 0;
+	    $sel_opt = array();
 	    foreach ($tOpt as $k => $v) {
-		if (($nany && $k == "a")
-		    || ($nany && !$ndisabled && ($k == "lead" || $k == "r"))) {
-		    $tselect .= "<option disabled='disabled'></option>";
-		    $ndisabled++;
-		}
-		$tselect .= "<option value='$k'";
-		if ($type == $k)
-		    $tselect .= " selected='selected'";
-		$tselect .= ">$v</option>";
-		$nany++;
+		if (count($sel_opt) && $k == "a")
+		    $sel_opt["xxxa"] = null;
+		if (count($sel_opt) && ($k == "lead" || $k == "r") && !isset($sel_opt["xxxa"]))
+		    $sel_opt["xxxb"] = null;
+		$sel_opt[$k] = $v;
 	    }
-	    $tselect .= "</select>";
+	    $sel_extra = array();
+	    if ($tabindex)
+		$sel_extra["tabindex"] = 1;
+	    return tagg_select("t", $sel_opt, $type, $sel_extra);
 	} else
-	    $tselect = current($tOpt);
-	return $tselect;
+	    return current($tOpt);
     }
 
 }

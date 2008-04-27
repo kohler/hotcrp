@@ -1,5 +1,5 @@
 /* style.css -- HotCRP CSS styles */
-/* HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC */
+/* HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC */
 /* Distributed under an MIT-like license; see LICENSE */
 
 /* page background */
@@ -373,19 +373,6 @@ div.lht {
 	z-index: 5;
 	padding: 5px 1em 3px 0.75em;
 }
-
-
-/* PRESENTATION BAD FIX ME */
-div.tinygap {
-	padding: 0.175em 0em;
-}
-div.xsmgap {
-	margin: 0.25em 0em;
-}
-div.smgap {
-	padding: 0.375em 0em;
-}
-
 
 a img {
 	border: none;
@@ -836,16 +823,6 @@ h2 {
 	margin-top: 0em;
 }
 
-table.auview td.entry {
-	padding-right: 0em;
-}
-table.auview td.caption {
-	padding-left: 0.25em;
-	width: auto;
-}
-td.entry form {
-	padding-right: 0.5em;
-}
 tr.pt_actions td, tr.pt_outcome td {
 	white-space: nowrap;
 }
@@ -1132,26 +1109,13 @@ hr {
 	border: none;
 	border-top: 1px solid #9999cc;
 }
-hr.smgap {
+hr.g { /* small gap */
 	margin: 0.25em 0em;
 	border: 0px none;
 }
+
 table.review input#downloadForm {
 	margin-right: 3em;
-}
-
-div#review table.revtop {
-	width: 60%;
-	float: left;
-}
-div#review table.auview {
-	background: #f5f5ff;
-	padding: 10px;
-	border: 1px solid #ccccff;
-	margin-top: 0.5em;
-	width: 40%;
-	float: left;
-	margin-bottom: 0.75em;
 }
 
 body#assignpc div.topicinterest {

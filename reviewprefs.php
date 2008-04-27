@@ -209,8 +209,7 @@ echo "<table id='searchform' class='tablinks1'>
 echo "<form method='get' action='reviewprefs$ConfSiteSuffix' accept-charset='UTF-8' id='redisplayform'>\n<table>";
 
 if ($Me->privChair) {
-    echo "<tr><td class='lxcaption'><strong>Preferences:</strong> &nbsp;</td><td class='lentry'>",
-	"<select name='reviewer' onchange='e(\"redisplayform\").submit()'>";
+    echo "<tr><td class='lxcaption'><strong>Preferences:</strong> &nbsp;</td><td class='lentry'>";
 
     $query = "select ContactInfo.contactId, firstName, lastName,
 		count(preference) as preferenceCount
@@ -220,16 +219,15 @@ if ($Me->privChair) {
 		group by contactId
 		order by lastName, firstName, email";
     $result = $Conf->qe($query);
+    $revopt = array();
     while (($row = edb_orow($result))) {
-	echo "<option value='$row->contactId'";
-	if ($row->contactId == $reviewer)
-	    echo " selected='selected'";
-	echo ">", contactHtml($row);
+	$revopt[$row->contactId] = contactHtml($row);
 	if ($row->preferenceCount <= 0)
-	    echo " (no preferences)";
-	echo "</option>";
+	    $revopt[$row->contactId] .= " (no preferences)";
     }
-    echo "</select><div class='smgap'></div></td></tr>\n";
+
+    echo tagg_select("reviewer", $revopt, $reviewer, array("onchange" => "e(\"redisplayform\").submit()")),
+	"<hr class='g' /></td></tr>\n";
 }
 
 echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'><input class='textlite' type='text' size='32' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>",

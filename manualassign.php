@@ -121,16 +121,88 @@ if ($kind == "a")
 echo "</dl>\nClick a heading to sort.\n</div></div>";
 
 
-echo "<form method='get' action='manualassign$ConfSiteSuffix' accept-charset='UTF-8' id='selectreviewerform'>
-<table>
-  <tr class='id'>
-    <td class='caption'></td>
-    <td class='entry'></td>
-  </tr>
-  <tr>
-    <td class='caption initial'>PC member</td>
-    <td class='entry initial'>
-<select name='reviewer'>\n";
+// Current PC member information
+if ($reviewer >= 0) {
+    // Topic links
+    $result = $Conf->qe("select topicName, interest from TopicArea join TopicInterest using (topicId) where contactId=$reviewer order by topicName");
+    $interest = array();
+    while (($row = edb_row($result)))
+	$interest[$row[1]][] = htmlspecialchars($row[0]);
+    $pcm = pcMembers();
+    echo "<table>
+<tr class='id'>
+  <td class='caption'></td>
+  <td class='entry'><h2>Assignments for ", contactNameHtml($pcm[$reviewer]), "</h2></td>
+</tr>\n";
+    $extraclass = " initial";
+    if (isset($interest[2])) {
+	echo "<tr>
+  <td class='caption$extraclass'>High interest topics</td>
+  <td class='entry$extraclass'><span class='topic2'>", join("</span>, <span class='topic2'>", $interest[2]), "</span></td>
+</tr>\n";
+	$extraclass = "";
+    }
+    if (isset($interest[0])) {
+	echo "<tr>
+  <td class='caption$extraclass'>Low interest topics</td>
+  <td class='entry$extraclass'><span class='topic0'>", join("</span>, <span class='topic0'>", $interest[0]), "</span></td>
+</tr>\n";
+	$extraclass = "";
+    }
+
+    // Conflict information
+    $result = $Conf->qe("select firstName, lastName, affiliation, collaborators from ContactInfo where contactId=$reviewer");
+    if ($result && ($row = edb_orow($result))) {
+	// search outline from old CRP, done here in a very different way
+	preg_match_all('/[a-z]{3,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation), $match);
+	$useless = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1);
+	$search = array();
+	$showco = "";
+	foreach ($match[0] as $s)
+	    if (!isset($useless[$s])) {
+		$search[] = "co:" . $s;
+		$showco .= $s . " ";
+		$useless[$s] = 1;
+	    }
+
+	preg_match_all('/[a-z]{3,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation . " " . $row->collaborators), $match);
+	$useless = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1);
+	$showau = "";
+	foreach ($match[0] as $s)
+	    if (!isset($useless[$s])) {
+		$search[] = "au:" . $s;
+		$showau .= $s . " ";
+		$useless[$s] = 1;
+	    }
+
+	echo "<tr>
+  <td class='caption$extraclass'>Potential conflicts</td>
+  <td class='entry top$extraclass'><table>",
+	    "<tr><td class='lxcaption'>Authors</td><td>", htmlspecialchars(substr($showau, 0, strlen($showau) - 1)), "</td></tr>\n",
+	    "<tr><td class='lxcaption'>Collaborators</td><td>", htmlspecialchars(substr($showco, 0, strlen($showco) - 1)), "</td></tr>\n",
+	    "</table>",
+	    "<a href=\"${ConfSiteBase}search$ConfSiteSuffix?q=", urlencode(join(" OR ", $search)), "&amp;linkto=assign\">Search for potential conflicts</a>",
+	    "<hr class='g' /></td>
+</tr>\n";
+    }
+
+    echo "<tr>
+  <td class='caption$extraclass final'>Change PC member</td>
+  <td class='entry top$extraclass final'>\n";
+} else {
+    echo "<table>
+<tr class='id'>
+  <td class='caption'></td>
+  <td class='entry'></td>
+</tr>
+<tr>
+  <td class='caption initial final'>Choose PC member</td>
+  <td class='entry top initial final'>\n";
+}
+
+
+// Change PC member
+echo "<form method='get' action='manualassign$ConfSiteSuffix' accept-charset='UTF-8' id='selectreviewerform'><div class='inform'>\n";
 
 $query = "select ContactInfo.contactId, firstName, lastName,
 		count(reviewId) as reviewCount
@@ -140,87 +212,44 @@ $query = "select ContactInfo.contactId, firstName, lastName,
 		group by contactId
 		order by lastName, firstName, email";
 $result = $Conf->qe($query);
+$rev_opt = array();
 if ($reviewer < 0)
-    echo "<option value='-1' selected='selected'>(Select a PC member)</option>";
-while (($row = edb_orow($result))) {
-    echo "<option value='$row->contactId'";
-    if ($row->contactId == $reviewer)
-	echo " selected='selected'";
-    echo ">", contactHtml($row);
-    echo " (", plural($row->reviewCount, "assignment"), ")";
-    echo "</option>";
-}
-echo "</select></td></tr>\n";
+    $rev_opt["-1"] = "(Select a PC member)";
+while (($row = edb_orow($result)))
+    $rev_opt[$row->contactId] = contactHtml($row) . " ("
+	. plural($row->reviewCount, "assignment") . ")";
 
-if ($reviewer >= 0) {
-    // Topic links
-    $result = $Conf->qe("select topicName, interest from TopicArea join TopicInterest using (topicId) where contactId=$reviewer order by topicName");
-    $interest = array();
-    while (($row = edb_row($result)))
-	$interest[$row[1]][] = htmlspecialchars($row[0]);
-    if (isset($interest[2]))
-	echo "<tr><td class='caption'>High interest topics</td><td class='entry'><span class='topic2'>", join("</span>, <span class='topic2'>", $interest[2]), "</span></td></tr>\n";
-    if (isset($interest[0]))
-	echo "<tr><td class='caption'>Low interest topics</td><td class='entry'><span class='topic0'>", join("</span>, <span class='topic0'>", $interest[0]), "</span></td></tr>\n";
-
-    // Conflict information
-    $result = $Conf->qe("select firstName, lastName, affiliation, collaborators from ContactInfo where contactId=$reviewer");
-    if ($result && ($row = edb_orow($result))) {
-	// search outline from old CRP, done here in a very different way
-	preg_match_all('/[a-z]{3,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation), $match);
-	$useless = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1);
-	$sco = $showco = "";
-	foreach ($match[0] as $s)
-	    if (!isset($useless[$s])) {
-		$sco .= "co:" . $s . " ";
-		$showco .= $s . " ";
-		$useless[$s] = 1;
-	    }
-
-	preg_match_all('/[a-z]{3,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation . " " . $row->collaborators), $match);
-	$useless = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1);
-	$sau = $showau = "";
-	foreach ($match[0] as $s)
-	    if (!isset($useless[$s])) {
-		$sau .= "au:" . $s . " ";
-		$showau .= $s . " ";
-		$useless[$s] = 1;
-	    }
-
-	echo "<tr><td class='caption'>Potential conflicts</td><td class='entry top'><table>",
-	    "<tr><td class='lxcaption'>Authors</td><td>", htmlspecialchars(substr($showau, 0, strlen($showau) - 1)), "</td></tr>\n",
-	    "<tr><td class='lxcaption'>Collaborators</td><td>", htmlspecialchars(substr($showco, 0, strlen($showco) - 1)), "</td></tr>\n",
-	    "</table>",
-	    "<a href=\"${ConfSiteBase}search$ConfSiteSuffix?q=", urlencode($sco), "+", urlencode($sau), "&amp;qt=ac&amp;linkto=assign\">Search for potential conflicts</a>",
-	    "</td></tr>\n";
-    }
-}
-
-
-echo "<tr><td class='caption'></td><td class='entry'></td></tr>
-<tr><td class='caption'>Assignments</td><td class='entry'>",
-    "<input type='radio' name='kind' value='a'",
+echo tagg_select("reviewer", $rev_opt, $reviewer, array("onchange" => "highlightUpdate(\"assrevupdate\")")),
+    " &nbsp; ",
+    "<input id='assrevupdate' class='button' type='submit' value='Go' />
+    <hr class='g' />
+    <input type='radio' name='kind' value='a' onchange='highlightUpdate(\"assrevupdate\")'",
     ($kind == "a" ? " checked='checked'" : ""),
-    " />&nbsp;Assign reviews and/or conflicts for all papers<br />\n",
-    "<input type='radio' name='kind' value='c'",
+    " />&nbsp;Assign reviews and/or conflicts for all papers<br />
+    <input type='radio' name='kind' value='c' onchange='highlightUpdate(\"assrevupdate\")'",
     ($kind == "c" ? " checked='checked'" : ""),
-    " />&nbsp;Focus on potential conflicts<br />\n";    
+    " />&nbsp;Focus on potential conflicts\n";
 
 if ($kind == "a")
-    echo "<div class='xsmgap'></div>",
+    echo "    <hr class='g' />\n    ",
 	(isset($Error["rev_roundtag"]) ? "<span class='error'>" : ""),
 	"Review round: &nbsp;",
 	"<input id='assrevroundtag' class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
 	(isset($Error["rev_roundtag"]) ? "</span>" : ""),
-	" &nbsp;<a class='hint' href='${ConfSiteBase}help$ConfSiteSuffix?t=revround' target='new'>What is this?</a>\n";
+	" &nbsp;<a class='hint' href='${ConfSiteBase}help$ConfSiteSuffix?t=revround'>What is this?</a>\n";
 
-echo "<div class='xsmgap'></div><input id='assrevimmediate' type='checkbox' checked='checked' />&nbsp;Save assignments as they are made<br />\n";
+echo "    <hr class='g' />
+    <input id='assrevimmediate' type='checkbox' checked='checked' />&nbsp;Save assignments as they are made<br />
+  </td><td>
+  </td></tr></table>
+  </form></td>
+</tr>
+<tr class='last'>
+  <td class='caption'></td>
+  <td class='entry'></td>
+</tr>
+</table>\n";
 
-echo "<div class='xsmgap'></div><input class='button' type='submit' value='Redisplay' /></td></tr>\n";
-
-echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n";
-
-echo "</table></form>";
 
 if ($reviewer >= 0) {
     // ajax assignment form
@@ -231,7 +260,6 @@ if ($reviewer >= 0) {
 	"<input type='hidden' name='reviewer' value='$reviewer' />",
 	"<input type='hidden' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag), "\" />",
 	"</div></form>\n\n";
-
 
     $paperList = new PaperList(true, true, new PaperSearch($Me, array("t" => "s", "c" => $reviewer, "urlbase" => "manualassign$ConfSiteSuffix?reviewer=$reviewer")));
     if (isset($sau)) {
@@ -245,7 +273,7 @@ if ($reviewer >= 0) {
     echo $paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me);
     //if (isset($sau) && ($paperList->authorMatch || $paperList->collaboratorsMatch))
     //   $_SESSION["matchPreg"] = "/(" . $paperList->authorMatch . ($paperList->authorMatch && $paperList->collaboratorsMatch ? "|" : "") . $paperList->collaboratorsMatch . ")/i";
-    echo "<div class='smgap'></div>\n",
+    echo "<hr class='g' />\n",
 	"<table class='center'><tr><td><input class='hbutton' type='submit' name='update' value='Save assignments' /></td></tr></table>\n",
 	"</div></form></div>\n";
 }

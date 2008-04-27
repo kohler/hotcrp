@@ -532,14 +532,19 @@ if ($Me->privChair) {
 	    echo "</td><td class='ass nowrap'>";
 	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href=\"javascript:foldassign($p->contactId)\"><img alt='Assignment' id='assimg$p->contactId' src=\"${ConfSiteBase}images/ass$cid.png\" /><img alt='&gt;' src=\"${ConfSiteBase}images/next.png\" /></a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention
-	    echo "<select id='pcs", $p->contactId, "' name='pcs", $p->contactId, "' class='extension' size='4' onchange='selassign(this, $p->contactId)' onclick='selassign(null, $p->contactId)' onblur='selassign(0, $p->contactId)' style='position: absolute'>
-	<option value='0'", ($p->conflictType == 0 && $p->reviewType < REVIEW_SECONDARY ? " selected='selected'" : ""), ">None</option>
-	<option value='", REVIEW_PRIMARY, "' ", ($p->conflictType == 0 && $p->reviewType == REVIEW_PRIMARY ? " selected='selected'" : ""), ">Primary</option>
-	<option value='", REVIEW_SECONDARY, "' ", ($p->conflictType == 0 && $p->reviewType == REVIEW_SECONDARY ? " selected='selected'" : ""), ">Secondary</option>
-	<option value='-1'", ($p->conflictType > 0 ? " selected='selected'" : ""), ">Conflict</option>
-      </select>";
-	    echo "</div>";
-	    echo "</td>";
+	    echo tagg_select("pcs$p->contactId",
+			     array("0" => "None", REVIEW_PRIMARY => "Primary",
+				   REVIEW_SECONDARY => "Secondary",
+				   "-1" => "Conflict"),
+			     ($p->conflictType == 0 ? $p->reviewType : -1),
+			     array("id" => "pcs$p->contactId",
+				   "class" => "extension",
+				   "size" => 4,
+				   "onchange" => "selassign(this, $p->contactId)",
+				   "onclick" => "selassign(null, $p->contactId)",
+				   "onblur" => "selassign(0, $p->contactId)",
+				   "style" => "position: absolute"));
+	    echo "</div></td>";
 	}
 	echo "</tr>\n";
 
@@ -560,13 +565,12 @@ if ($Me->privChair) {
 // discussion lead
 function _pcSelector($name, $current) {
     global $PC;
-    echo "<select name='$name' onchange='highlightUpdate()'>";
-    if (!$current || !isset($PC[$current]))
-	$current = 0;
-    echo "<option value='0'", ($current == 0 ? " selected='selected'" : ""), ">None</option>";
-    foreach ($PC as $id => $row)
-	echo "<option value=\"", htmlspecialchars($row->email), "\"", ($current == $id ? " selected='selected'" : ""), ">", contactHtml($row->firstName, $row->lastName), "</option>";
-    echo "</select>";
+    $sel_opt = array("0" => "None");
+    foreach ($PC as $row)
+	$sel_opt[htmlspecialchars($row->email)] = contactHtml($row->firstName, $row->lastName);
+    echo tagg_select($name, $sel_opt,
+		     ($current && isset($PC[$current]) ? htmlspecialchars($PC[$current]->email) : 0),
+		     array("onchange" => "highlightUpdate()"));
 }
 
 if ($Me->privChair || ($Me->isPC && $prow->leadContactId && isset($PC[$prow->leadContactId]))) {

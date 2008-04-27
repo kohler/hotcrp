@@ -518,7 +518,7 @@ if ($reviewTableFolder)
 echo "Reviews</td>\n";
 echo "  <td class='entry'>", ($revTable ? $revTable : "None");
 if ($revTable && $Me->canSetOutcome($prow))
-    echo "<div class='xsmgap'></div>";
+    echo "<hr class='g' />";
 echo "</td>\n</tr>\n\n";
 
 
@@ -644,7 +644,7 @@ function reviewView($prow, $rrow, $editMode) {
 		    . "</form>";
 	    }
 	    echo " &nbsp;<span class='barsep'>|</span>&nbsp; <a href='${ConfSiteBase}help$ConfSiteSuffix?t=revrate'>What is this?</a>",
-		"</td></tr></table><div class='xsmgap'></div></td>\n</tr>\n";
+		"</td></tr></table><hr class='g' /></td>\n</tr>\n";
 	    $initial = false;
 	}
 	echo $rf->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow, $Conf), $initial), "</table></div>\n";
@@ -663,7 +663,7 @@ function reviewView($prow, $rrow, $editMode) {
 	echo "<a id='popupanchor_ref' href=\"javascript:void popup(null, 'ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it\n";
 	$Conf->footerStuff .= "<div id='popup_ref' class='popupc'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'>
   <input class='textlite' type='text' name='reason' value='' size='40' />
-  <div class='smgap'></div>
+  <hr class='g' />
   <input class='button' type='submit' name='refuse' value='Refuse review' />
   &nbsp;<button type='button' onclick=\"popup(null, 'ref', 1)\">Cancel</button></div></form></div>";
 	echo "</td>\n</tr>\n";
@@ -716,7 +716,7 @@ function reviewView($prow, $rrow, $editMode) {
     if ($Me->timeReview($prow, $rrow, $Conf) || $Me->privChair) {
 	echo "<tr class='rev_actions'>
   <td class='caption'></td>
-  <td class='entry'><div class='smgap'></div>",
+  <td class='entry'><hr class='g' />",
 	    "<table><tr><td><input type='checkbox' name='ready' value='1'";
 	if ($useRequest ? defval($_REQUEST, "ready") : $rrow && $rrow->reviewSubmitted)
 	    echo " checked='checked'";
@@ -726,7 +726,7 @@ function reviewView($prow, $rrow, $editMode) {
 	if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
 	    echo "<div class='hint'>Only administrators can remove the review from the system at this point.</div>";
 	echo "</td></tr></table>",
-	    "<div class='smgap'></div><table class='pt_buttons'>\n";
+	    "<hr class='g' /><table class='pt_buttons'>\n";
 	$buttons = array();
 	$buttons[] = "<input class='hbutton' type='submit' value='Save changes' name='update' />";
 	if ($rrow && $Me->privChair) {

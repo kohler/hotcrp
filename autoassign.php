@@ -390,15 +390,10 @@ function doRadio($name, $value, $text) {
     echo "/>&nbsp;", $text;
 }
 
-function doOptions($name, $opts) {
-    foreach ($opts as $ovalue => $otext) {
-	echo "<option value='$ovalue'";
-	if (!isset($_REQUEST[$name]) || $_REQUEST[$name] == $ovalue) {
-	    echo " selected='selected'";
-	    $_REQUEST[$name] = $ovalue;
-	}
-	echo ">", $otext, "</option>";
-    }
+function doSelect($name, $opts) {
+    if (!isset($_REQUEST[$name]))
+	$_REQUEST[$name] = key($opts);
+    echo tagg_select($name, $opts, $_REQUEST[$name]);
 }
 
 function tdClass($entry, $name, $extraclass="") {
@@ -455,7 +450,7 @@ if (isset($assignments) && count($assignments) > 0) {
 
     $atype = $_REQUEST["a"];
     if ($atype != "prefconflict") {
-	echo "<div class='smgap'></div>";
+	echo "<hr class='g' />";
 	echo "<strong>Assignment Summary</strong><br />\n";
 	echo "<table class='pcass'><tr><td><table>";
 	$pcsel = array();
@@ -491,7 +486,7 @@ if (isset($assignments) && count($assignments) > 0) {
 	    echo "<strong>Review round:</strong> ", htmlspecialchars($rev_roundtag);
     }
 
-    echo "<div class='smgap'></div>";
+    echo "<hr class='g' />";
     echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'>\n";
     echo "<input type='submit' class='button' name='saveassign' value='Save assignment' />\n";
     echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />\n";
@@ -531,18 +526,16 @@ $idRow = "";
 echo "<tr>", tdClass(false, "ass", $extraclass), "Action</td>",
     tdClass(true, "rev", $extraclass);
 doRadio('a', 'rev', 'Ensure each paper has <i>at least</i>');
-echo "&nbsp; <input type='text' class='textlite' name='revct' value=\"", htmlspecialchars(defval($_REQUEST, "revct", 1)), "\" size='3' />&nbsp; ",
-    "<select name='revtype'>";
-doOptions('revtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
-echo "</select>&nbsp; review(s)</td></tr>\n";
+echo "&nbsp; <input type='text' class='textlite' name='revct' value=\"", htmlspecialchars(defval($_REQUEST, "revct", 1)), "\" size='3' />&nbsp; ";
+doSelect('revtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
+echo "&nbsp; review(s)</td></tr>\n";
 
 echo "<tr><td class='caption'></td>", tdClass(true, "revadd");
 doRadio('a', 'revadd', 'Assign');
 echo "&nbsp; <input type='text' class='textlite' name='revaddct' value=\"", htmlspecialchars(defval($_REQUEST, "revaddct", 1)), "\" size='3' />&nbsp; ",
-    "<i>additional</i>&nbsp; ",
-    "<select name='revaddtype'>";
-doOptions('revaddtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
-echo "</select>&nbsp; review(s) per paper</td></tr>\n";
+    "<i>additional</i>&nbsp; ";
+doSelect('revaddtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
+echo "&nbsp; review(s) per paper</td></tr>\n";
 
 // Review round
 echo "<tr><td class='caption'></td>", tdClass(true, "rev_roundtag");
@@ -551,8 +544,11 @@ echo "Review round: &nbsp;";
 $rev_roundtag = defval($_REQUEST, "rev_roundtag", $Conf->settingText("rev_roundtag"));
 if (!$rev_roundtag)
     $rev_roundtag = "(None)";
-echo "<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" /> &nbsp;<a class='hint' href='${ConfSiteBase}help$ConfSiteSuffix?t=revround' target='new'>What is this?</a>";
-echo "<hr /></td></tr>\n";
+echo "<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"",
+    htmlspecialchars($rev_roundtag),
+    "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
+    " &nbsp;<a class='hint' href='${ConfSiteBase}help$ConfSiteSuffix?t=revround'>What is this?</a>
+<hr /></td></tr>\n";
 
 echo "<tr><td class='caption'></td>", tdClass(true, "prefconflict");
 doRadio('a', 'prefconflict', 'Assign conflicts when PC members have review preferences of &minus;100 or less');
@@ -568,7 +564,7 @@ echo "</td></tr>\n";
 
 
 // PC
-echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></td></tr>\n";
+echo "<tr><td class='caption'></td><td class='entry'><hr class='g' /></td></tr>\n";
 
 echo "<tr><td class='caption'>PC members</td><td class='entry'>";
 doRadio('pctyp', 'all', 'Use entire PC');
@@ -609,23 +605,16 @@ $numBadPairs = 1;
 
 function bpSelector($i, $which) {
     global $numBadPairs;
-    $pcm = pcMembers();
-    $x = "";
-    $selected = false;
-    foreach ($pcm as $pc) {
-	$x .= "<option value='$pc->contactId'";
-	if (isset($_REQUEST["badpairs"])
-	    && defval($_REQUEST, "bp$which$i") == $pc->contactId) {
-	    $x .= " selected='selected'";
-	    $selected = true;
-	    $numBadPairs = max($i, $numBadPairs);
-	}
-	$x .= ">" . htmlspecialchars(contactText($pc)) . "</option>";
-    }
-    $y = ($i == 1 ? " onchange='if (!((x=e(\"badpairs\")).checked)) x.click()'" : "");
-    return "<select name='bp$which$i'$y><option value='0'"
-	. ($selected ? "" : " selected='selected'")
-	. ">(PC member)</option>$x</select>";
+    $sel_opt = array("0" => "(PC member)");
+    foreach (pcMembers() as $pc)
+	$sel_opt[$pc->contactId] = htmlspecialchars(contactNameText($pc));
+    $selected = isset($_REQUEST["badpairs"]) ? defval($_REQUEST, "bp$which$i") : 0;
+    if ($selected && isset($sel_opt[$selected]))
+	$numBadPairs = max($i, $numBadPairs);
+    $sel_extra = array();
+    if ($i == 1)
+	$sel_extra["onchange"] = "if (!((x=e(\"badpairs\")).checked)) x.click()";
+    return tagg_select("bp$which$i", $sel_opt, $selected, $sel_extra);
 }
     
 echo "<tr><td class='caption'></td><td class='entry'><div id='foldbadpair' class='",
@@ -651,7 +640,7 @@ echo "</td></tr>\n";
 
 
 // Load balancing
-echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></td></tr>\n";
+echo "<tr><td class='caption'></td><td class='entry'><hr class='g' /></td></tr>\n";
 echo "<tr><td class='caption'>Load balancing</td><td class='entry'>";
 doRadio('balance', 'new', "Consider only new assignments when balancing load");
 echo "<br />";
@@ -660,7 +649,7 @@ echo "</td></tr>\n";
 
 
 // Paper selection
-echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></td></tr>\n";
+echo "<tr><td class='caption'></td><td class='entry'><hr class='g' /></td></tr>\n";
 echo "<tr><td class='caption'>Paper selection</td><td class='entry'>";
 if (!isset($_REQUEST["q"]))
     $_REQUEST["q"] = join(" ", $papersel);
@@ -671,16 +660,11 @@ $tOpt = array("s" => "Submitted papers",
 if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
     $_REQUEST["t"] = "all";
 $q = ($_REQUEST["q"] == "" ? "(All)" : $_REQUEST["q"]);
-echo "<input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;<select name='t' onchange='highlightUpdate(\"requery\")' >";
-foreach ($tOpt as $k => $v) {
-    echo "<option value='$k'";
-    if ($_REQUEST["t"] == $k)
-	echo " selected='selected'";
-    echo ">$v</option>";
-}
-echo "</select> &nbsp; <input id='requery' class='button' name='requery' type='submit' value='Search' />\n";
+echo "<input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
+    tagg_select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")")),
+    " &nbsp; <input id='requery' class='button' name='requery' type='submit' value='Search' />\n";
 if (isset($_REQUEST["requery"])) {
-    echo "<hr class='smgap' />\n";
+    echo "<hr class='g' />\n";
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
     $plist = new PaperList(false, false, $search);
     $plist->papersel = $papersel;
@@ -690,7 +674,7 @@ echo "</td></tr>\n";
 
 
 // Create assignment
-echo "<tr><td class='caption'></td><td class='entry'><div class='smgap'></div></td></tr>\n";
+echo "<tr><td class='caption'></td><td class='entry'><hr class='g' /></td></tr>\n";
 echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='button' name='assign' value='Create assignment' /></td></tr>\n";
 
 

@@ -159,7 +159,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
     $trclass = "tr class='k" . ($rowidx % 2) . "'";
-    $x = "<$trclass><td colspan='4'><div class='tinygap'></div></td></tr>\n";
+    $x = "<$trclass><td colspan='4'><hr class='g' /></td></tr>\n";
     
     // field name
     $e = (isset($Error[$row->fieldName]) ? " error" : "");
@@ -183,7 +183,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     $x .= "\n</select> <span class='sep'></span>";
 
     // author view
-    $x .= "Visibility<a class='scorehelp' href='${ConfSiteBase}scorehelp$ConfSiteSuffix?f=vis' target='new'>?</a>";
+    $x .= "Visibility<a class='scorehelp' href='${ConfSiteBase}scorehelp$ConfSiteSuffix?f=vis'>?</a>";
     if (count($scoreHelps) == 0)
 	$Conf->footerStuff .= "<script type='text/javascript'>addScoreHelp();</script>";
     if (!isset($scoreHelps["vis"])) {
@@ -195,17 +195,16 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
   <dt><strong>Secret</strong></dt><dd>Only set by and visible to administrators</dd></dl>
 </div>";
     }
-    $x .= " &nbsp;<select name='authorView_$row->fieldName'>";
     if (isset($_REQUEST["shortName_$row->fieldName"]) && !isset($_REQUEST["authorView_$row->fieldName"]))
 	$_REQUEST["authorView_$row->fieldName"] = 0;
-    $view = max(min(cvtint(rf_getField($row, "authorView"), -10000), 1), -2);
-    foreach (array("1" => "Authors &amp; reviewers",
-		   "0" => "Reviewers only",
-		   "-1" => "Private",
-		   "-2" => "Secret") as $v => $t)
-	$x .= "<option value='$v'" . ($view == $v ? " selected='selected'" : "")
-		. ">$t</option>";
-    $x .= "</select></td><td class='hint'></td></tr>\n";
+    $x .= " &nbsp;"
+	. tagg_select("authorView_$row->fieldName",
+		      array("1" => "Authors &amp; reviewers",
+			    "0" => "Reviewers only",
+			    "-1" => "Private",
+			    "-2" => "Secret"),
+		      max(min(cvtint(rf_getField($row, "authorView"), -10000), 1), -2))
+	. "</td><td class='hint'></td></tr>\n";
 
     // description
     $x .= "<$trclass><td class='rxcaption textarea'>Description</td>"
@@ -238,7 +237,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 	$x .= "</tr>\n";
     }
     
-    return $x . "<$trclass><td colspan='4'><div class='tinygap'></div></td></tr>\n";
+    return $x . "<$trclass><td colspan='4'><hr class='g' /></td></tr>\n";
 }
 
 function rf_show() {
@@ -259,20 +258,16 @@ function rf_show() {
     if ($letterOptions)
 	$captions["options"] .= " Or use consecutive capital letters (lower letters are better).";
 
-    echo "<table><tr><td><div class='hgrp'><b>Templates:</b>&nbsp;
-<select name='sample'>";
-    foreach (array("none" => "(none)",
-		   "hotnetsv" => "HotNets V workshop",
-		   "pldi2008" => "PLDI 2008",
-		   "sigcomm2005" => "SIGCOMM 2005",
-		   "worlds2005" => "WORLDS 2005 workshop",
-		   "cgo2004" => "CGO 2004 conference") as $k => $v) {
-	echo "<option value='$k'";
-	if ($k == defval($_REQUEST, 'sample', 'none'))
-	    echo " selected='selected'";
-	echo ">$v</option>";
-    }
-    echo "</select> &nbsp;
+    echo "<table><tr><td><div class='hgrp'><b>Templates:</b>&nbsp; ",
+	tagg_select("sample",
+		    array("none" => "(none)",
+			  "hotnetsv" => "HotNets V workshop",
+			  "pldi2008" => "PLDI 2008",
+			  "sigcomm2005" => "SIGCOMM 2005",
+			  "worlds2005" => "WORLDS 2005 workshop",
+			  "cgo2004" => "CGO 2004 conference"),
+		    defval($_REQUEST, "sample", "none")),
+	" &nbsp;
 <input type='submit' class='button' name='loadsample' value='Load template' /></div></td></tr></table>
 
 <hr />

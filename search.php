@@ -675,7 +675,7 @@ echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'>
 </tr>
 <tr>
   <td class='lxcaption'>Using these fields</td>
-  <td class='lentry'><select name='qt' tabindex='1'>";
+  <td class='lentry'>";
 $qtOpt = array("ti" => "Title",
 	       "ab" => "Abstract");
 if ($Me->privChair || $Conf->blindSubmission() == 0) {
@@ -694,11 +694,10 @@ if ($Me->isPC) {
 }
 if (!isset($qtOpt[defval($_REQUEST, "qt", "")]))
     $_REQUEST["qt"] = "n";
-foreach ($qtOpt as $v => $text)
-    echo "<option value='$v'", ($v == $_REQUEST["qt"] ? " selected='selected'" : ""), ">$text</option>";
-echo "</select></td>
+echo tagg_select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
+    "</td>
 </tr>
-<tr><td><div class='xsmgap'></div></td></tr>
+<tr><td><hr class='g' /></td></tr>
 <tr>
   <td class='lxcaption'>With <b>all</b> the words</td>
   <td class='lentry'><input id='searchform2_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /><span class='sep'></span></td>
@@ -783,14 +782,9 @@ if ($pl && isset($pl->scoreMax)) {
 }
 echo "<td rowspan='2'><input class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
 if ($pl && isset($pl->scoreMax)) {
-    echo "<tr><td colspan='2'><div class='smgap'></div><b>Sort scores by:</b><br /><select name='scoresort'>";
-    foreach ($scoreSorts as $k => $v) {
-	echo "<option value='$k'";
-	if (defval($_SESSION, "scoresort", $defaultScoreSort) == $k)
-	    echo " selected='selected'";
-	echo ">$v</option>";
-    }
-    echo "</select></td></tr>";
+    echo "<tr><td colspan='2'><hr class='g' /><b>Sort scores by:</b><br />",
+	tagg_select("scoresort", $scoreSorts, defval($_SESSION, "scoresort", $defaultScoreSort)),
+	"</td></tr>";
 }
 echo "</table></div></form></div></div></td></tr>\n";
 
@@ -832,6 +826,6 @@ if ($pl) {
 	echo "</div></form>";
     echo "</div>\n";
 } else
-    echo "<div class='smgap'></div>\n";
+    echo "<hr class='g' />\n";
 
 $Conf->footer();

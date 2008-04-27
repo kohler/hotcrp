@@ -844,7 +844,7 @@ $blind\n";
 		$n = preg_replace("/\\s+/", "&nbsp;", $n);
 	    $x .= "$n";
 	    if ($disp & self::WEB_OPTIONS) {
-		$x .= "<a class='scorehelp' href='${ConfSiteBase}scorehelp$ConfSiteSuffix?f=$field' target='new'>?</a>";
+		$x .= "<a class='scorehelp' href='${ConfSiteBase}scorehelp$ConfSiteSuffix?f=$field'>?</a>";
 		if (count($scoreHelps) == 0)
 		    $Conf->footerStuff .= "<script type='text/javascript'>addScoreHelp();</script>";
 		if (!isset($scoreHelps[$field])) {

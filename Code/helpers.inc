@@ -1232,3 +1232,26 @@ function decodeToken($x) {
     }
     return $n;
 }
+
+
+// HTML helpers
+function tagg_select($name, $opt, $selected=null, $extra=null) {
+    $x = "<select name='$name'";
+    foreach (array("id", "tabindex", "onchange", "onclick", "onfocus",
+		   "onblur", "class", "style", "size") as $k)
+	if ($extra && isset($extra[$k]))
+	    $x .= " $k='" . $extra[$k] . "'";
+    $x .= ">";
+    if (!isset($opt[$selected]))
+	$selected = key($opt);
+    foreach ($opt as $value => $text)
+	if ($text === null)
+	    $x .= "<option disabled='disabled'></option>";
+	else {
+	    $x .= "<option value='$value'";
+	    if ($value == $selected)
+		$x .= " selected='selected'";
+	    $x .= ">" . $text . "</option>";
+	}
+    return $x . "</select>";
+}

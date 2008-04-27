@@ -122,7 +122,7 @@ $pl_text = $pl->text($_REQUEST["t"], $Me, "${ConfSiteBase}contacts$ConfSiteSuffi
 
 
 // form
-echo "<div class='xsmgap'></div>\n";
+echo "<hr class='g' />\n";
 if (count($tOpt) > 1) {
     echo "<table id='contactsform' class='tablinks1'>
 <tr><td><div class='tlx'><div class='tld1'>";
@@ -130,14 +130,8 @@ if (count($tOpt) > 1) {
     echo "<form method='get' action='contacts$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>";
     if (isset($_REQUEST["sort"]))
 	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />";
-    echo "<select id='contactsform1_d' name='t'>";
-    foreach ($tOpt as $k => $v) {
-	echo "<option value='$k'";
-	if ($_REQUEST["t"] == $k)
-	    echo " selected='selected'";
-	echo ">$v</option>";
-}
-    echo "</select> &nbsp;<input class='button' type='submit' value='Show' /></div></form>";
+    echo tagg_select("t", $tOpt, $_REQUEST["t"], array("id" => "contactsform1_d")),
+	" &nbsp;<input class='button' type='submit' value='Show' /></div></form>";
 
     echo "</div><div class='tld2'>";
 
@@ -180,15 +174,9 @@ if (count($tOpt) > 1) {
     }
     echo "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
     if (isset($pl->scoreMax)) {
-	echo "<tr><td colspan='3'><div class='smgap'></div><b>Sort scores by:</b> &nbsp;<select name='scoresort'>";
-	foreach ($scoreSorts as $k => $v)
-	    if ($k == "A" || $k == "V" || $k == "D") {
-		echo "<option value='$k'";
-		if (defval($_SESSION, "pplscoresort", "A") == $k)
-		    echo " selected='selected'";
-		echo ">$v</option>";
-	    }
-	echo "</select></td></tr>";
+	echo "<tr><td colspan='3'><hr class='g' /><b>Sort scores by:</b> &nbsp;",
+	    tagg_select("scoresort", array_intersect_key($scoreSorts, array("A" => 1, "V" => 1, "D" => 1)), defval($_SESSION, "pplscoresort", "A")),
+	    "</td></tr>";
     }
     echo "</table></div></form>";
     

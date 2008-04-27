@@ -310,7 +310,7 @@ if ($crow)
     echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><a href='comment$ConfSiteSuffix?p=$prow->paperId$linkExtra'>All comments</a></td>\n</tr>\n\n";
 if ($Me->privChair && $prow->conflictType > 0 && !$forceShow) {
     $a = "<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">";
-    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>", $a, $Conf->cacheableImage("override24.png", "[Override]", null, "dlimg"), "</a>&nbsp;", $a, "Override conflict</a> to see all comments and allow editing</a><div class='smgap'></div></td>\n</tr>\n\n";
+    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>", $a, $Conf->cacheableImage("override24.png", "[Override]", null, "dlimg"), "</a>&nbsp;", $a, "Override conflict</a> to see all comments and allow editing</a><hr class='g' /></td>\n</tr>\n\n";
 }
 
 
@@ -471,7 +471,7 @@ function commentView($prow, $crow, $editMode) {
 	    echo "      <td class='ptb_button'><input class='button' type='submit' value='Delete comment' name='delete' /></td>\n";
 	echo "    </tr>\n  </table>\n";
 	if (!$Me->timeReview($prow, null, $Conf))
-	    echo "<div class='smgap'></div>",
+	    echo "<hr class='g' />",
 		"<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
 	echo "</td>\n</tr>\n\n";
     }
@@ -570,7 +570,7 @@ has passed.  Please keep the response short and to the point" . $limittext . "."
 	    echo "      <td class='ptb_button'><input class='button' type='submit' value='Delete response' name='delete' /></td>\n";
 	echo "    </tr>\n  </table>";
 	if (!$Conf->timeAuthorRespond())
-	    echo "<div class='smgap'></div>",
+	    echo "<hr class='g' />",
 		"<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
 	echo "</td>\n</tr>\n\n";
     }

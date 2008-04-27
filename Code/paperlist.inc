@@ -341,7 +341,7 @@ class PaperList extends BaseList {
 	    return "Reviewer";
 	case self::FIELD_REVIEWER_TYPE:
 	case self::FIELD_REVIEWER_TYPE_ICON:
-	    return "<span class='hastitle' title='Reviewer type'>Type</span>";
+	    return "<span class='hastitle' title='Reviewer type'>Review</span>";
 	case self::FIELD_REVIEWER_STATUS:
 	    return "Review status";
 	case self::FIELD_REVIEWS_STATUS:
@@ -559,13 +559,11 @@ class PaperList extends BaseList {
 	    if ($row->conflictType >= CONFLICT_AUTHOR)
 		return "<span class='author'>Author</span>";
 	    $rt = ($row->conflictType > 0 ? -1 : min(max($row->reviewType, 0), REVIEW_PRIMARY));
-	    $x = "<select name='assrev$row->paperId' tabindex='3' onchange='highlightUpdate()'>";
-	    $x .= "<option value='0'" . ($rt == 0 ? " selected='selected'" : "") . ">None</option>";
-	    $x .= "<option value='" . REVIEW_PRIMARY . "'" . ($rt == REVIEW_PRIMARY ? " selected='selected'" : "") . ">Primary</option>";
-	    $x .= "<option value='" . REVIEW_SECONDARY . "'" . ($rt == REVIEW_SECONDARY ? " selected='selected'" : "") . ">Secondary</option>";
-	    $x .= "<option value='-1'" . ($rt == -1 ? " selected='selected'" : "") . ">Conflict</option>";
-	    $x .= "</select>";
-	    return $x;
+	    return tagg_select("assrev$row->paperId",
+			       array("0" => "None", REVIEW_PRIMARY => "Primary",
+				     REVIEW_SECONDARY => "Secondary",
+				     "-1" => "Conflict"),
+			       $rt, array("tabindex" => 3, "onchange" => "highlightUpdate()"));
 	case self::FIELD_TOPIC_INTEREST:
 	    return htmlspecialchars($row->topicInterestScore + 0);
 	case self::FIELD_TOPIC_NAMES:
@@ -672,35 +670,37 @@ class PaperList extends BaseList {
 
 	// Download
 	$t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Download</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
-	$t .= "<select id='plact${nlll}_d' name='getaction' tabindex='6'>\n";
-	if ($revpref)
-	    $t .= "	<option value='revpref' selected='selected'>Preference file</option>
-    <option value='revprefx'>Preference file with abstracts</option>
-    <option value='abstracts'>Abstracts</option>\n";
-	else {
-	    $t .= "    <option value='paper' selected='selected'>Papers</option>
-    <option value='abstracts'>Abstracts</option>
-    <option value='revform'>Review forms</option>
-    <option value='revformz'>Review forms (zip)</option>\n";
+	$sel_opt = array();
+	if ($revpref) {
+	    $sel_opt["revpref"] = "Preference file";
+	    $sel_opt["revprefx"] = "Preference file with abstracts";
+	    $sel_opt["abstracts"] = "Abstracts";
+	} else {
+	    $sel_opt["paper"] = "Papers";
+	    $sel_opt["abstracts"] = "Abstracts";
+	    $sel_opt["revform"] = "Review forms";
+	    $sel_opt["revformz"] = "Review forms (zip)";
 	    if ($this->contact->isPC && $Conf->timeSubmitFinalPaper())
-		$t .= "    <option value='final'>Final papers</option>\n";
+		$sel_opt["final"] = "Final papers";
 	    if ($this->contact->isPC || $this->contact->isReviewer) {
-		$t .= "    <option value='rev'>All reviews</option>\n";
-		$t .= "    <option value='revz'>All reviews (zip)</option>\n";
+		$sel_opt["rev"] = "All reviews";
+		$sel_opt["revz"] = "All reviews (zip)";
 	    }
 	}
 	if ($this->contact->privChair || ($this->contact->isReviewer && $Conf->blindSubmission() < 2))
-	    $t .= "    <option value='authors'>Authors</option>\n";
+	    $sel_opt["authors"] = "Authors";
 	if ($this->contact->privChair) {
-	    $t .= "    <option value='contact'>Contact emails</option>\n";
-	    $t .= "    <option value='pcconflicts'>PC conflicts</option>\n";
-	    $t .= "    <option value='checkformat'>Format check</option>\n";
+	    $sel_opt["contact"] = "Contact emails";
+	    $sel_opt["pcconflicts"] = "PC conflicts";
+	    $sel_opt["checkformat"] = "Format check";
 	}
 	if ($this->contact->isPC)
-	    $t .= "    <option value='topics'>Topics</option>\n";
+	    $sel_opt["topics"] = "Topics";
 	if (!$revpref && ($this->contact->privChair || ($this->contact->isPC && $Conf->timePCViewAllReviews())))
-	    $t .= "    <option value='scores'>Scores</option>\n";
-	$t .= "</select>&nbsp; <input type='submit' class='button_small' name='getgo' value='Go' tabindex='6' /></span>";
+	    $sel_opt["scores"] = "Scores";
+	$t .= tagg_select("getaction", $sel_opt, key($sel_opt),
+			  array("id" => "plact${nlll}_d", "tabindex" => 6))
+	    . "&nbsp; <input type='submit' class='button_small' name='getgo' value='Go' tabindex='6' /></span>";
 	$nlll++;
 
 	// Upload preferences (review preferences only)
@@ -723,9 +723,8 @@ class PaperList extends BaseList {
 	if ($this->contact->isPC && !$revpref) {
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Tag</a></span><span class='lld$nlll'><b>:</b><a class='help' href='${ConfSiteBase}help$ConfSiteSuffix?t=tags#changing' title='Learn more'>?</a> &nbsp;";
-	    $t .= "<select name='tagtype'>
-    <option value='a' selected='selected'>Add</option><option value='d'>Remove</option><option value='s'>Define</option><option value='so'>Define ordered</option><option value='ao'>Add ordered</option>
-  </select> &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></span>";
+	    $t .= tagg_select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define", "so" => "Define ordered", "ao" => "Add ordered"))
+		. " &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></span>";
 	    $nlll++;
 	}
 
@@ -733,24 +732,27 @@ class PaperList extends BaseList {
 	if ($this->contact->privChair && !$revpref) {
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Assign</a></span><span id='foldass' class='lld$nlll foldc'><b>:</b> &nbsp;";
-	    $t .= "<select id='plact${nlll}_d' name='marktype' onchange='fold(\"ass\", (this.value[0] == \"x\"))'>
-      <option value='xauto' selected='selected'>Automatic assignments</option>
-      <option value='-1' disabled='disabled'></option>
-      <option value='conflict'>Mark conflict</option>
-      <option value='unconflict'>Remove conflict</option>
-      <option value='-3' disabled='disabled'></option>
-      <option value='assign" . REVIEW_PRIMARY . "'>Assign primary review</option>
-      <option value='assign" . REVIEW_SECONDARY . "'>Assign secondary review</option>
-      <option value='assign0'>Unassign reviews</option>
-    </select><span class='extension'> &nbsp;for &nbsp;";
+	    $t .= tagg_select("marktype",
+			      array("xauto" => "Automatic assignments",
+				    "-1" => null,
+				    "conflict" => "Mark conflict",
+				    "unconflict" => "Remove conflict",
+				    "-3" => null,
+				    "assign" . REVIEW_PRIMARY => "Assign primary review",
+				    "assign" . REVIEW_SECONDARY => "Assign secondary review",
+				    "assign0" => "Unassign reviews"),
+			      null, array("id" => "plact${nlll}_d",
+					  "onchange" => "fold(\"ass\", (this.value[0] == \"x\"))"))
+		. "<span class='extension'> &nbsp;for &nbsp;";
 	    // <option value='-2' disabled='disabled'></option>
 	    // <option value='xpcpaper'>Mark as PC-authored</option>
 	    // <option value='xunpcpaper'>Mark as not PC-authored</option>
-	    $t .= "<select name='markpc' id='markpc'>\n";
 	    $pc = pcMembers();
+	    $sel_opt = array();
 	    foreach ($pc as $id => $row)
-		$t .= "<option value=\"" . htmlspecialchars($row->email) . "\">" . contactHtml($row->firstName, $row->lastName) . "</option>\n";
-	    $t .= "</select></span> &nbsp;<input type='submit' class='button_small' name='setassign' value='Go' />";
+		$sel_opt[htmlspecialchars($row->email)] = contactHtml($row->firstName, $row->lastName);
+	    $t .= tagg_select("markpc", $sel_opt, null, array("id" => "markpc"))
+		. "</span> &nbsp;<input type='submit' class='button_small' name='setassign' value='Go' />";
 	    $t .= "</span>";
 	    $nlll++;
 	}
@@ -762,9 +764,10 @@ class PaperList extends BaseList {
 	    $t .= outcomeSelector(0, "plact${nlll}_d") . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></span>";
 	    $nlll++;
 
-	    $t .= $barsep;
-	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Mail</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
-	    $t .= "<select id='plact${nlll}_d' name='recipients'><option value='au'>Contact authors</option><option value='rev'>Reviewers</option></select> &nbsp;<input type='submit' class='button_small' name='sendmail' value='Go' /></span>";
+	    $t .= $barsep
+		. "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Mail</a></span><span class='lld$nlll'><b>:</b> &nbsp;"
+		. tagg_select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), null, array("id" => "plact${nlll}_d"))
+		. " &nbsp;<input type='submit' class='button_small' name='sendmail' value='Go' /></span>";
 	    $nlll++;
 	}
 

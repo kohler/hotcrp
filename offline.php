@@ -91,5 +91,5 @@ if ($Me->amReviewer()) {
 echo "</tr></table>\n";
 
 if (($text = $rf->webGuidanceRows($Me->viewReviewFieldsScore(null, null, $Conf))))
-    echo "<div class='smgap'></div>\n\n<table>\n<tr class='id'>\n  <td class='caption'></td>\n  <td class='entry'><h3>Review form information</h3></td>\n</tr>\n", $text, "<tr class='last'><td class='caption'></td><td class='entry'></td></tr></table>\n";
+    echo "<hr class='g' />\n\n<table>\n<tr class='id'>\n  <td class='caption'></td>\n  <td class='entry'><h3>Review form information</h3></td>\n</tr>\n", $text, "<tr class='last'><td class='caption'></td><td class='entry'></td></tr></table>\n";
 $Conf->footer();

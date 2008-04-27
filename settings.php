@@ -664,18 +664,12 @@ function doRadio($name, $varr) {
 }
 
 function doSelect($name, $nametext, $varr, $tr = false) {
-    $x = setting($name);
-    if ($x === null || !isset($varr[$x]))
-	$x = 0;
-    echo ($tr ? "<tr><td class='nowrap lcaption'>" : ""), decorateSettingName($name, $nametext), ($tr ? "</td><td class='lentry'>" : ": &nbsp;");
-    echo "<select name='$name' onchange='highlightUpdate()'>";
-    foreach ($varr as $k => $text) {
-	echo "<option value='$k'";
-	if ($k == $x)
-	    echo " selected='selected'";
-	echo ">", $text, "</option>";
-    }
-    echo "</select>", ($tr ? "</td></tr>\n" : "<br />\n");
+    echo ($tr ? "<tr><td class='nowrap lcaption'>" : ""),
+	decorateSettingName($name, $nametext),
+	($tr ? "</td><td class='lentry'>" : ": &nbsp;"),
+	tagg_select($name, $varr, setting($name),
+		    array("onchange" => "highlightUpdate()")),
+	($tr ? "</td></tr>\n" : "<br />\n");
 }
 
 function doTextRow($name, $text, $v, $size = 30, $capclass = "lcaption",
@@ -742,7 +736,7 @@ function doMsgGroup() {
     global $Conf, $ConfSiteBase, $ConfSiteSuffix;
     echo "<strong>", decorateSettingName("homemsg", "Home page message"), "</strong> (HTML allowed)<br />
 <textarea class='textlite' name='homemsg' cols='60' rows='10' onchange='highlightUpdate()'>", htmlspecialchars(settingText("homemsg", "")), "</textarea>";
-    echo "<div class='smgap'></div>\n";
+    echo "<hr class='g' />\n";
 
     echo "<strong>", decorateSettingName("conflictdefmsg", "Definition of conflict of interest"), "</strong> (HTML allowed)<br />
 <textarea class='textlite' name='conflictdefmsg' cols='60' rows='2' onchange='highlightUpdate()'>", htmlspecialchars(settingText("conflictdefmsg", $Conf->conflictDefinitionText(true))), "</textarea>";
@@ -754,22 +748,22 @@ function doSubGroup() {
 
     doCheckbox('sub_open', '<b>Open site for submissions</b>');
 
-    echo "<div class='smgap'></div>\n";
+    echo "<hr class='g' />\n";
     echo "<strong>Blind submission:</strong> Are author names visible to reviewers?<br />\n";
     doRadio("sub_blind", array(0 => "Yes", 2 => "No&mdash;submissions are anonymous", 1 => "Maybe (authors decide whether to expose their names)"));
 
-    echo "<div class='smgap'></div>\n<table>\n";
+    echo "<hr class='g' />\n<table>\n";
     doDateRow("sub_reg", "Paper registration deadline", "sub_sub");
     doDateRow("sub_sub", "Paper submission deadline");
     doGraceRow("sub_grace", 'Grace period');
     echo "</table>\n";
 
-    echo "<div class='smgap'></div>\n";
+    echo "<hr class='g' />\n";
     doCheckbox("sub_pcconf", "Collect authors&rsquo; PC conflicts with checkboxes");
     doCheckbox("sub_collab", "Collect authors&rsquo; other collaborators as text");
 
     if (is_executable("Code/banal")) {
-	echo "<div class='smgap'></div><table id='foldbanal' class='", ($Conf->setting("sub_banal") ? "foldo" : "foldc"), "'>";
+	echo "<hr class='g' /><table id='foldbanal' class='", ($Conf->setting("sub_banal") ? "foldo" : "foldc"), "'>";
 	doCheckbox("sub_banal", "<strong>Automated format checker<span class='extension'>:</span></strong>", true, "highlightUpdate();fold(\"banal\",!this.checked)");
 	echo "<tr class='extension'><td></td><td class='top'><table>";
 	$bsetting = explode(";", $Conf->settingText("sub_banal", ""));
@@ -787,7 +781,7 @@ function doSubGroup() {
     echo "<hr />\n";
     doRadio("sub_freeze", array(0 => "<strong>Authors can update submissions until the deadline</strong>", 1 => array("Authors must freeze the final version of each submission", "&ldquo;Authors can update submissions&rdquo; is usually the best choice.  Freezing submissions is mostly useful when there is no submission deadline.")));
     
-    echo "<div class='smgap'></div><table>\n";
+    echo "<hr class='g' /><table>\n";
     // compensate for pc_seeall magic
     if ($Conf->setting("pc_seeall") < 0)
 	$Conf->settings["pc_seeall"] = 1;
@@ -802,7 +796,7 @@ function doOptGroup() {
     if ($Conf->setting("allowPaperOption")) {
 	echo "<h3>Submission options</h3>\n";
 	echo "Options may be selected by authors at submission time, and might include \"Consider this paper for a Best Student Paper award\" or \"Allow the shadow PC to see this paper\".  The \"option name\" should be brief, three or four words at most; it appears as a caption to the left of the option.  The description should be longer and may use HTML.  To delete an option, delete its name.  Add options one at a time.\n";
-	echo "<div class='smgap'></div>\n";
+	echo "<hr class='g' />\n";
 	echo "<table>";
 	$opt = paperOptions();
 	$sep = "";
@@ -811,7 +805,7 @@ function doOptGroup() {
 	    echo "<tr><td class='lxcaption'>Option name</td><td class='lentry'><input type='text' class='textlite' name='optn$o->optionId' value=\"", htmlspecialchars($o->optionName), "\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
 	    echo "<tr><td class='lxcaption'>Description</td><td class='lentry textarea'><textarea class='textlite' name='optd$o->optionId' rows='2' cols='50' onchange='highlightUpdate()'>", htmlspecialchars($o->description), "</textarea><br />\n",
 		"<input type='checkbox' name='optp$o->optionId' value='1'", ($o->pcView ? " checked='checked'" : ""), " />&nbsp;Visible to PC</td></tr>\n";
-	    $sep = "<tr><td></td><td><div class='smgap'></div></td></tr>\n";
+	    $sep = "<tr><td></td><td><hr class='g' /></td></tr>\n";
 	}
     
 	echo ($sep ? "<tr><td colspan='2'><hr /></td></tr>\n" : "");
@@ -827,7 +821,7 @@ function doOptGroup() {
     // Topics
     echo "<hr /><h3>Topics</h3>\n";
     echo "Enter topics one per line.  Authors use checkboxes to identify the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its text.\n";
-    echo "<div class='smgap'></div><table id='newtoptable'>";
+    echo "<hr class='g' /><table id='newtoptable'>";
     $td1 = "<td class='lcaption'>Current</td>";
     foreach ($rf->topicOrder as $tid => $crap) {
 	echo "<tr>$td1<td class='lentry'><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($rf->topicName[$tid]), "\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
@@ -849,11 +843,11 @@ function doRevGroup() {
     doCheckbox('rev_open', '<b>Open site for reviewing</b>');
     doCheckbox('cmt_always', 'Allow comments even if reviewing is closed');
 
-    echo "<div class='smgap'></div>\n";
+    echo "<hr class='g' />\n";
     echo "<strong>Anonymous review:</strong> Are reviewer names visible to authors?<br />\n";
     doRadio("rev_blind", array(0 => "Yes", 2 => "No&mdash;reviewers are anonymous", 1 => "Maybe (reviewers decide whether to expose their names)"));
 
-    echo "<div class='smgap'></div>\n";
+    echo "<hr class='g' />\n";
     doCheckbox('rev_notifychair', 'PC chairs are notified of new reviews by email');
 
     echo "<hr />";
@@ -870,10 +864,10 @@ function doRevGroup() {
     doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments by default.  Examples: &ldquo;R1&rdquo;, &ldquo;R2&rdquo; &nbsp;<span class='barsep'>|</span>&nbsp; <a href='${ConfSiteBase}help$ConfSiteSuffix?t=revround'>What is this?</a>"), $rev_roundtag, 15, "lcaption", "(None)");
     echo "</table>\n";
 
-    echo "<div class='smgap'></div>\n";
+    echo "<hr class='g' />\n";
     doCheckbox('pcrev_any', 'PC members can review <strong>any</strong> submitted paper');
 
-    echo "<div class='smgap'></div>\n";
+    echo "<hr class='g' />\n";
     echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
     doRadio("pc_seeallrev", array(0 => "No&mdash;a PC member can see a paper's reviews only after submitting their own review for that paper", 1 => "Yes", 2 => "Yes, but they can't see who wrote blind reviews"));
 
@@ -885,7 +879,7 @@ function doRevGroup() {
 
     if ($Conf->setting("allowPaperOption") > 1) {
 	doCheckbox('extrev_chairreq', "PC chair must approve proposed external reviewers");
-	echo "<div class='smgap'></div>";
+	echo "<hr class='g' />";
     }
     
     echo "<table>\n";
@@ -893,11 +887,11 @@ function doRevGroup() {
     doDateRow("extrev_hard", "Hard deadline");
     echo "</table>\n";
 
-    echo "<div class='smgap'></div>";
+    echo "<hr class='g' />";
     echo "Can external reviewers view the other reviews for their assigned papers, once they've submitted their own?<br />\n";
     doRadio("extrev_view", array(0 => "No", 2 => "Yes", 1 => "Yes, but they can't see who wrote blind reviews"));
 
-    echo "<div class='smgap'></div>\n";
+    echo "<hr class='g' />\n";
     $t = expandMailTemplate("requestreview", false);
     echo "<div id='foldmailbody_requestreview' class='foldc'>", foldbutton("mailbody_requestreview", ""), "&nbsp;
   <a href=\"javascript:fold('mailbody_requestreview', 0)\" class='unfolder q'><strong>Mail template for external review requests</strong></a>\n";
@@ -910,7 +904,7 @@ function doRevGroup() {
     echo "<h3>Tags</h3>\n";
 
     doCheckbox('tag_seeall', "PC can see tags for conflicted papers");
-    echo "<div class='smgap'></div>";
+    echo "<hr class='g' />";
     echo "<table><tr><td class='lcaption'>", decorateSettingName("tag_chair", "Chair-only tags"), "</td>";
     if (count($Error) > 0)
 	$v = defval($_REQUEST, "tag_chair", "");
@@ -941,18 +935,18 @@ function doDecGroup() {
     global $Conf, $rf;
     doCheckbox('au_seerev', '<b>Authors can see reviews</b>');
 
-    echo "<div class='smgap'></div>\n<table>";
+    echo "<hr class='g' />\n<table>";
     doCheckbox('resp_open', "<b>Collect authors&rsquo; responses to the reviews:</b>", true);
     echo "<tr><td></td><td><table>";
     doDateRow('resp_done', 'Deadline', null, "lxcaption");
     doGraceRow('resp_grace', 'Grace period', "lxcaption");
     echo "</table></td></tr></table>";
 
-    echo "<div class='smgap'></div>\n";
+    echo "<hr class='g' />\n";
     doCheckbox('au_seedec', '<b>Authors can see decisions</b> (accept/reject)');
     doCheckbox('rev_seedec', 'Reviewers can see decisions and accepted authors');
 
-    echo "<div class='smgap'></div>\n";
+    echo "<hr class='g' />\n";
     echo "<table>\n";
     $decs = $rf->options['outcome'];
     krsort($decs);
@@ -967,9 +961,10 @@ function doDecGroup() {
 	    echo "<input type='text' class='textlite' name='dec$k' value=\"", htmlspecialchars($v), "\" size='35' /> &nbsp; ", ($k > 0 ? "Accept class" : "Reject class"), "</td></tr>\n";
 	    $caption = "";
 	}
-    echo "<tr><td class='lcaption'>New decision type<br /></td><td class='lentry nowrap'><input type='text' class='textlite' name='decn' value=\"\" size='35' /> &nbsp; <select name='dtypn'><option value='1' selected='selected'>Accept class</option><option value='-1'>Reject class</option></select>";
-    echo "<br /><small>Examples: &ldquo;Accepted as short paper&rdquo;, &ldquo;Early reject&rdquo;</small>";
-    echo "</td></tr>\n</table>\n";
+    echo "<tr><td class='lcaption'>New decision type<br /></td><td class='lentry nowrap'><input type='text' class='textlite' name='decn' value=\"\" size='35' /> &nbsp; ",
+	tagg_select("dtypn", array("1" => "Accept class", "-1" => "Reject class"), "1"),
+	"<br /><small>Examples: &ldquo;Accepted as short paper&rdquo;, &ldquo;Early reject&rdquo;</small>",
+	"</td></tr>\n</table>\n";
     
     // Final copies
     echo "<hr />";
@@ -1019,7 +1014,7 @@ else if ($Group == "rfo")
 else
     doDecGroup();
 
-echo ($belowHr ? "<hr />\n" : "<div class='smgap'></div>\n");
+echo ($belowHr ? "<hr />\n" : "<hr class='g' />\n");
 echo "<input type='submit' class='hbutton",
     (defval($_REQUEST, "sample", "none") == "none" ? "" : "_alert"),
     "' name='update' value='Save changes' /> ";

@@ -184,7 +184,7 @@ function checkMail($send) {
     }
 
     if (!$any)
-	return $Conf->errorMsg("No users match \"" . htmlspecialchars($recip[$_REQUEST["recipients"]]) . "\" for that search.");
+	return $Conf->errorMsg("No users match \"" . $recip[$_REQUEST["recipients"]] . "\" for that search.");
     else if ($send) {
 	echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n", $closer;
 	$Conf->echoScript("fold('mail', null);");
@@ -235,8 +235,6 @@ if (defval($_REQUEST, "loadtmpl")) {
 
 // Set recipients list, now that template is loaded
 $recip = array();
-if (!isset($_REQUEST["recipients"]))
-    $_REQUEST["recipients"] = "au";
 if ($Me->privChair) {
     $recip["au"] = "Contact authors";
     $recip["s"] = "Contact authors of submitted papers";
@@ -244,7 +242,7 @@ if ($Me->privChair) {
     foreach ($rf->options["outcome"] as $num => $what) {
 	$name = "dec:$what";
 	if ($num && (defval($noutcome, $num) > 0 || $_REQUEST["recipients"] == $name))
-	    $recip[$name] = "Contact authors of $what papers";
+	    $recip[$name] = "Contact authors of " . htmlspecialchars($what) . " papers";
     }
     $recip["rev"] = "Reviewers";
     $recip["crev"] = "Reviewers with complete reviews";
@@ -254,7 +252,7 @@ if ($Me->privChair) {
 $recip["myextrev"] = "Your requested reviewers";
 $recip["myuncextrev"] = "Your requested reviewers with incomplete reviews";
 $recip["pc"] = "Program committee";
-if (!isset($recip[$_REQUEST["recipients"]]))
+if (!isset($_REQUEST["recipients"]) || !isset($recip[$_REQUEST["recipients"]]))
     $_REQUEST["recipients"] = key($recip);
 
 
@@ -308,7 +306,7 @@ echo "<form method='post' action='mail$ConfSiteSuffix?check=1' enctype='multipar
 <table>
 <tr class='topspace'>
   <td class='caption'>Templates</td>
-  <td class='entry'><select name='template' onchange='highlightUpdate(\"loadtmpl\")' >";
+  <td class='entry'>";
 $tmpl = array();
 $tmpl["genericmailtool"] = "Generic";
 if ($Me->privChair) {
@@ -319,43 +317,28 @@ $tmpl["reviewremind"] = "Review reminder";
 $tmpl["myreviewremind"] = "Personalized review reminder";
 if (!isset($_REQUEST["template"]) || !isset($tmpl[$_REQUEST["template"]]))
     $_REQUEST["template"] = "genericmailtool";
-foreach ($tmpl as $num => $what) {
-    echo "<option value='$num'";
-    if ($num == $_REQUEST["template"])
-	echo " selected='selected'";
-    echo ">$what</option>\n";
-}
-echo "  </select> &nbsp;<input id='loadtmpl' class='button' type='submit' name='loadtmpl' value='Load template' /><div class='smgap'></div></td>
+echo tagg_select("template", $tmpl, $_REQUEST["template"], array("onchange" => "highlightUpdate(\"loadtmpl\")")),
+    " &nbsp;<input id='loadtmpl' class='button' type='submit' name='loadtmpl' value='Load template' /><hr class='g' /></td>
 </tr>
 <tr>
   <td class='caption'>Mail to</td>
-  <td class='entry'><select name='recipients' onchange='setmailpsel(this)'>";
-foreach ($recip as $r => $what) {
-    echo "    <option value='$r'";
-    if ($r == $_REQUEST["recipients"])
-	echo " selected='selected'";
-    echo ">", htmlspecialchars($what), "</option>\n";
-}
-echo "  </select><br /><div class='xsmgap'></div>";
+  <td class='entry'>",
+    tagg_select("recipients", $recip, $_REQUEST["recipients"], array("onchange" => "setmailpsel(this)")),
+    "<hr class='g' />\n";
 
 // paper selection
 echo "<table id='foldpsel' class='fold8c'><tr><td><input id='plimit' type='checkbox' name='plimit' value='1' onclick='fold(\"psel\", !this.checked, 8)'";
 if (isset($_REQUEST["plimit"]))
     echo " checked='checked'";
 $Conf->footerStuff .= "<script type='text/javascript'>fold(\"psel\",!e(\"plimit\").checked,8);</script>";
-echo " />&nbsp;</td><td>Choose specific papers<span class='extension8'>:</span><br />
+echo " />&nbsp;</td><td>Choose individual papers<span class='extension8'>:</span><br />
 <div class='extension8'>";
 $q = defval($_REQUEST, "q", "(All)");
-echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;<select id='t' name='t'>";
-foreach ($tOpt as $k => $v) {
-    echo "<option value='$k'";
-    if ($_REQUEST["t"] == $k)
-	echo " selected='selected'";
-    echo ">$v</option>";
-}
-echo "</select>\n";
-echo "</div></td></tr></table>
-<div class='smgap'></div></td>
+echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
+    tagg_select("t", $tOpt, $_REQUEST["t"], array("id" => "t")),
+    "</div>
+   </td></tr></table>
+<hr class='g' /></td>
 </tr>
 
 <tr>
@@ -370,13 +353,13 @@ echo "</div></td></tr></table>
 
 <tr>
   <td class='caption'></td>
-  <td class='entry'><input type='submit' name='prepare' value='Prepare mail' class='button' /><div class='smgap'></div></td>
+  <td class='entry'><input type='submit' name='prepare' value='Prepare mail' class='button' /><hr class='g' /></td>
 </tr>
 
 <tr class='last'>
   <td class='caption'></td>
   <td id='mailref' class='entry'>Keywords enclosed in percent signs, such as <code>%NAME%</code> or <code>%REVIEWDEADLINE%</code>, are expanded for each mail.  Use the following syntax:
-<div class='smgap'></div>
+<hr class='g' />
 <table>
 <tr><td class='plholder'><table>
 <tr><td class='lxcaption'><code>%URL%</code></td>
@@ -404,12 +387,12 @@ echo "</div></td></tr></table>
     <td class='llentry'>First couple words of paper title (useful for mail subject).</td></tr>
 <tr><td class='lxcaption'><code>%OPT(AUTHORS)%</code></td>
     <td class='llentry'>Paper authors (if recipient is allowed to see the authors).</td></tr>
-<tr><td><div class='smgap'></div></td></tr>
+<tr><td><hr class='g' /></td></tr>
 <tr><td class='lxcaption'><code>%REVIEWS%</code></td>
     <td class='llentry'>Pretty-printed paper reviews.</td></tr>
 <tr><td class='lxcaption'><code>%COMMENTS%</code></td>
     <td class='llentry'>Pretty-printed paper comments, if any.</td></tr>
-<tr><td><div class='smgap'></div></td></tr>
+<tr><td><hr class='g' /></td></tr>
 <tr><td class='lxcaption'><code>%IF(SHEPHERD)%...%ENDIF%</code></td>
     <td class='llentry'>Include text only if a shepherd is assigned.</td></tr>
 <tr><td class='lxcaption'><code>%SHEPHERD%</code></td>

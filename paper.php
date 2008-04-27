@@ -649,7 +649,7 @@ if ($mode == "edit" && $Me->privChair)
     $canViewAuthors = true;
 
 if ($editable)
-    $spacer = "<tr><td class='caption'></td><td class='entry'><hr class='smgap' /></td></tr>\n";
+    $spacer = "<tr><td class='caption'></td><td class='entry'><hr class='g' /></td></tr>\n";
 else
     $spacer = "";
 

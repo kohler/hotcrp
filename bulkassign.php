@@ -261,15 +261,16 @@ Types of PC assignment:
 echo "<table>
   <tr class='id'><td class='caption'></td><td class='entry'></td></tr>
   <tr><td class='caption initial'>Upload</td><td class='entry'>
-<form action='bulkassign$ConfSiteSuffix?upload=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
-Assign &nbsp;<select name='t' id='tsel' onchange='fold(\"email\",this.value!=" . REVIEW_EXTERNAL . ")'>
-<option value='", REVIEW_PRIMARY, "' selected='selected'>primary</option>
-<option value='", REVIEW_SECONDARY, "'>secondary</option>
-<option value='", REVIEW_EXTERNAL, "'>external</option>
-</select>&nbsp; reviews from file:&nbsp;
+<form action='bulkassign$ConfSiteSuffix?upload=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class=inform'>
+Assign &nbsp;",
+    tagg_select("t", array(REVIEW_PRIMARY => "primary",
+			   REVIEW_SECONDARY => "secondary",
+			   REVIEW_EXTERNAL => "external"), REVIEW_PRIMARY,
+		array("id" => "tsel", "onchange" => "fold(\"email\",this.value!=" . REVIEW_EXTERNAL . ")")),
+    "&nbsp; reviews from file:&nbsp;
 <input type='file' name='uploadedFile' accept='text/plain' size='30' />
 
-<div class='smgap'></div>\n\n";
+<hr class='g' />\n\n";
 
 if (!isset($_REQUEST["rev_roundtag"]))
     $rev_roundtag = $Conf->settingText("rev_roundtag");
@@ -283,15 +284,19 @@ echo "<div id='foldemail' class='foldo'><table class='extension'>
 <div class='ellipsis";
 if (isset($Error["rev_roundtag"]))
     echo " error";
-echo "'>Review round: &nbsp;<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" /> &nbsp;<a class='hint' href='${ConfSiteBase}help$ConfSiteSuffix?t=revround' target='new'>What is this?</a></div></div>
+echo "'>Review round: &nbsp;",
+    "<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"",
+    htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"),
+    "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
+    " &nbsp;<a class='hint' href='${ConfSiteBase}help$ConfSiteSuffix?t=revround'>What is this?</a></div></div>
 
-<div class='smgap'></div>
+<hr class='g' />
 
 <input class='button' type='submit' value='Go' />
 
 </div></form>
 
-<div class='smgap'></div>
+<hr class='g' />
 
 <p>Use this page to upload many reviewer assignments at once.  Create a
 tab-separated text file with one line per assignment.  The first column must

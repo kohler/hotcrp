@@ -392,7 +392,7 @@ PC members and, optionally, external reviewers can rate one another's
 reviews.  We hope this feedback will help reviewers improve the quality of
 their reviews.  The interface appears above each visible review:
 
-<div class='smgap'></div>
+<hr class='g' />
 
 <table class='rev_rating'><tr><td>
   Was this review helpful for you? &nbsp;
