@@ -243,7 +243,7 @@ if ($Me->valid()) {
 	echo "Welcome.";
     echo "
   <ul>
-    <li><a href='account$ConfSiteSuffix'><h4>Your Profile</h4></a></li>
+    <li><h4><a href='account$ConfSiteSuffix'>Your Profile</a></h4></li>
     <li><a href='mergeaccounts$ConfSiteSuffix'>Merge accounts</a></li>
     <li><a href='index$ConfSiteSuffix?signout=1'>Sign out</a></li>
   </ul>
