@@ -608,7 +608,7 @@ function bpSelector($i, $which) {
     $sel_opt = array("0" => "(PC member)");
     foreach (pcMembers() as $pc)
 	$sel_opt[$pc->contactId] = htmlspecialchars(contactNameText($pc));
-    $selected = isset($_REQUEST["badpairs"]) ? defval($_REQUEST, "bp$which$i") : 0;
+    $selected = isset($_REQUEST["badpairs"]) ? defval($_REQUEST, "bp$which$i") : "0";
     if ($selected && isset($sel_opt[$selected]))
 	$numBadPairs = max($i, $numBadPairs);
     $sel_extra = array();

@@ -287,12 +287,6 @@ function tagaction() {
     
     $act = $_REQUEST["tagtype"];
     $tag = $_REQUEST["tag"];
-    if ($act == "so") {
-	$tag = trim($tag) . '#';
-	if (!checkTag($tag, true))
-	    return;
-	$act = "s";
-    }
     if (count($papers) && ($act == "a" || $act == "d" || $act == "s" || $act == "so" || $act == "ao"))
 	setTags($papers, $tag, $act, $Me->privChair);
 }

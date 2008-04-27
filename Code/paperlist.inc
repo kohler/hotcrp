@@ -269,8 +269,8 @@ class PaperList extends BaseList {
 	    usort($rows, array($this, "_sortPidarray"));
 	    break;
 	case self::FIELD_TAGINDEX:
-	    // $this->sortInfo == careful about conflicts? 
-	    $this->sortInfo = !$this->contact->privChair;
+	    // $this->sortInfo == careful about conflicts?
+	    $this->sortInfo = !$this->contact->privChair && $Conf->setting("tag_seeall") <= 0;
 	    usort($rows, array($this, "_sortTagIndex"));
 	    break;
 	case self::FIELD_TITLE:
@@ -581,10 +581,10 @@ class PaperList extends BaseList {
 		return "<span class='author'>Author</span>";
 	    $rt = ($row->conflictType > 0 ? -1 : min(max($row->reviewType, 0), REVIEW_PRIMARY));
 	    return tagg_select("assrev$row->paperId",
-			       array("0" => "None", REVIEW_PRIMARY => "Primary",
+			       array(0 => "None", REVIEW_PRIMARY => "Primary",
 				     REVIEW_SECONDARY => "Secondary",
-				     "-1" => "Conflict"),
-			       $rt, array("tabindex" => 3, "onchange" => "highlightUpdate()"));
+				     -1 => "Conflict"), $rt,
+			       array("tabindex" => 3, "onchange" => "highlightUpdate()"));
 	case self::FIELD_TOPIC_INTEREST:
 	    return htmlspecialchars($row->topicInterestScore + 0);
 	case self::FIELD_TOPIC_NAMES:
@@ -755,10 +755,10 @@ class PaperList extends BaseList {
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Assign</a></span><span id='foldass' class='lld$nlll foldc'><b>:</b> &nbsp;";
 	    $t .= tagg_select("marktype",
 			      array("xauto" => "Automatic assignments",
-				    "-1" => null,
+				    "zzz1" => null,
 				    "conflict" => "Mark conflict",
 				    "unconflict" => "Remove conflict",
-				    "-3" => null,
+				    "zzz3" => null,
 				    "assign" . REVIEW_PRIMARY => "Assign primary review",
 				    "assign" . REVIEW_SECONDARY => "Assign secondary review",
 				    "assign0" => "Unassign reviews"),
@@ -1111,8 +1111,7 @@ class PaperList extends BaseList {
 		    }
 		    $x .= "    <th class=\"pl_$fdef[0]\">";
 		    $ftext = $this->header($fieldId, $ord++);
-		    if ($this->sortField == null && $fieldId < 10
-			&& $pidarray === null && !$this->search->orderTag)
+		    if ($this->sortField == null && $fieldId < 10)
 			$this->sortField = $fieldId;
 		    if ($fieldId == $this->sortField)
 			$x .= "<a class='pl_sort_def" . ($this->reverseSort ? "_rev" : "") . "' href=\"" . $sortUrl . $fieldId . ($this->reverseSort ? "N" : "R") . "\">" . $ftext . "</a>";

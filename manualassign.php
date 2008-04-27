@@ -49,7 +49,7 @@ $Conf->header("Review Assignments", "assignpc", $abar);
 
 
 $reviewer = cvtint($_REQUEST["reviewer"]);
-if ($reviewer < 0)
+if ($reviewer <= 0)
     $reviewer = $Me->contactId;
 
 
@@ -122,7 +122,7 @@ echo "</dl>\nClick a heading to sort.\n</div></div>";
 
 
 // Current PC member information
-if ($reviewer >= 0) {
+if ($reviewer > 0) {
     // Topic links
     $result = $Conf->qe("select topicName, interest from TopicArea join TopicInterest using (topicId) where contactId=$reviewer order by topicName");
     $interest = array();
@@ -213,8 +213,8 @@ $query = "select ContactInfo.contactId, firstName, lastName,
 		order by lastName, firstName, email";
 $result = $Conf->qe($query);
 $rev_opt = array();
-if ($reviewer < 0)
-    $rev_opt["-1"] = "(Select a PC member)";
+if ($reviewer <= 0)
+    $rev_opt[0] = "(Select a PC member)";
 while (($row = edb_orow($result)))
     $rev_opt[$row->contactId] = contactHtml($row) . " ("
 	. plural($row->reviewCount, "assignment") . ")";
@@ -251,7 +251,7 @@ echo "    <hr class='g' />
 </table>\n";
 
 
-if ($reviewer >= 0) {
+if ($reviewer > 0) {
     // ajax assignment form
     echo "<form id='assrevform' method='post' action=\"${ConfSiteBase}assign$ConfSiteSuffix?update=1\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='clear'>",
 	"<input type='hidden' name='kind' value='$kind' />",

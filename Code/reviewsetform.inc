@@ -199,10 +199,10 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 	$_REQUEST["authorView_$row->fieldName"] = 0;
     $x .= " &nbsp;"
 	. tagg_select("authorView_$row->fieldName",
-		      array("1" => "Authors &amp; reviewers",
-			    "0" => "Reviewers only",
-			    "-1" => "Private",
-			    "-2" => "Secret"),
+		      array(1 => "Authors &amp; reviewers",
+			    0 => "Reviewers only",
+			    -1 => "Private",
+			    -2 => "Secret"),
 		      max(min(cvtint(rf_getField($row, "authorView"), -10000), 1), -2))
 	. "</td><td class='hint'></td></tr>\n";
 

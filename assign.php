@@ -533,9 +533,9 @@ if ($Me->privChair) {
 	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href=\"javascript:foldassign($p->contactId)\"><img alt='Assignment' id='assimg$p->contactId' src=\"${ConfSiteBase}images/ass$cid.png\" /><img alt='&gt;' src=\"${ConfSiteBase}images/next.png\" /></a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention
 	    echo tagg_select("pcs$p->contactId",
-			     array("0" => "None", REVIEW_PRIMARY => "Primary",
+			     array(0 => "None", REVIEW_PRIMARY => "Primary",
 				   REVIEW_SECONDARY => "Secondary",
-				   "-1" => "Conflict"),
+				   -1 => "Conflict"),
 			     ($p->conflictType == 0 ? $p->reviewType : -1),
 			     array("id" => "pcs$p->contactId",
 				   "class" => "extension",
@@ -569,7 +569,7 @@ function _pcSelector($name, $current) {
     foreach ($PC as $row)
 	$sel_opt[htmlspecialchars($row->email)] = contactHtml($row->firstName, $row->lastName);
     echo tagg_select($name, $sel_opt,
-		     ($current && isset($PC[$current]) ? htmlspecialchars($PC[$current]->email) : 0),
+		     ($current && isset($PC[$current]) ? htmlspecialchars($PC[$current]->email) : "0"),
 		     array("onchange" => "highlightUpdate()"));
 }
 

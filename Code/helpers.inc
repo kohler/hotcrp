@@ -1242,7 +1242,7 @@ function tagg_select($name, $opt, $selected=null, $extra=null) {
 	if ($extra && isset($extra[$k]))
 	    $x .= " $k='" . $extra[$k] . "'";
     $x .= ">";
-    if (!isset($opt[$selected]))
+    if ($selected === null || !isset($opt[$selected]))
 	$selected = key($opt);
     foreach ($opt as $value => $text)
 	if ($text === null)

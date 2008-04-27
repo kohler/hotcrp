@@ -962,7 +962,7 @@ function doDecGroup() {
 	    $caption = "";
 	}
     echo "<tr><td class='lcaption'>New decision type<br /></td><td class='lentry nowrap'><input type='text' class='textlite' name='decn' value=\"\" size='35' /> &nbsp; ",
-	tagg_select("dtypn", array("1" => "Accept class", "-1" => "Reject class"), "1"),
+	tagg_select("dtypn", array(1 => "Accept class", -1 => "Reject class")),
 	"<br /><small>Examples: &ldquo;Accepted as short paper&rdquo;, &ldquo;Early reject&rdquo;</small>",
 	"</td></tr>\n</table>\n";
     
