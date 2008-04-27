@@ -1139,10 +1139,11 @@ class Conference {
 	if (!$this->headerPrinted) {
 	    echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n";
 	    // PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n";
-	    echo "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n<head>\n";
-	    echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n";
-	    echo "<meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />\n";
-	    echo "<meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />\n";
+	    echo "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">
+<head>
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />
+<meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />
+<meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />\n";
 	    if (strstr($title, "<") !== false)
 		$title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
 	    echo "<link rel='stylesheet' type='text/css' href='${ConfSiteBase}cacheable$ConfSiteSuffix?file=style.css&amp;mtime=" . filemtime("$ConfSitePATH/style.css") . "' />\n";
