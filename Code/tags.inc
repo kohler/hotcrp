@@ -117,10 +117,6 @@ function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
 		    else
 			$q .= " and tag!='" . sqlq($ct) . "'";
 	    }
-	    if (!$chair && $roundtags)
-		foreach (explode(' ', $roundtags) as $tround)
-		    if ($tround)
-			$q .= " and tag!='$Me->contactId" . "~" . sqlq($tround) . "'";
 	    $q .= " and (tag like '$Me->contactId~%' or tag not like '%~%')";
 	}
 	$Conf->qe($q, $while);

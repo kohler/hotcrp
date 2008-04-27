@@ -12,6 +12,7 @@ class PaperList extends BaseList {
     const FIELD_SELECTOR_CONFLICT = 102;
     
     const FIELD_ID = 1;
+    const FIELD_TAGINDEX = 8;
     const FIELD_PIDARRAY = 9;
     
     const FIELD_TITLE = 11;
@@ -224,8 +225,13 @@ class PaperList extends BaseList {
     }
 
     function _sortReviewsStatus($a, $b) {
-	$x = $a->reviewCount - $b->reviewCount;
-	$x = $x ? $x : $a->startedReviewCount - $b->startedReviewCount;
+	$av = ($a->conflictType > 0 && $this->sortInfo ? 2147483647 : $a->reviewCount);
+	$bv = ($b->conflictType > 0 && $this->sortInfo ? 2147483647 : $b->reviewCount);
+	if (($x = $av - $bv))
+	    return $x;
+	$av = ($a->conflictType > 0 && $this->sortInfo ? 2147483647 : $a->startedReviewCount);
+	$bv = ($b->conflictType > 0 && $this->sortInfo ? 2147483647 : $b->startedReviewCount);
+	$x = $av - $bv;
 	return $x ? $x : $a->paperId - $b->paperId;
     }
 
@@ -245,6 +251,13 @@ class PaperList extends BaseList {
 	return $x ? $x : $a->paperId - $b->paperId;
     }
 
+    function _sortTagIndex($a, $b) {
+	$av = ($a->conflictType > 0 && $this->sortInfo ? 2147483647 : $a->tagIndex);
+	$bv = ($b->conflictType > 0 && $this->sortInfo ? 2147483647 : $b->tagIndex);
+	$x = $av - $bv;
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+
     function _sort($rows, $pidarray) {
 	global $Conf, $reviewScoreNames, $defaultScoreSort;
 	switch (self::_normalizeField($this->sortField)) {
@@ -254,6 +267,11 @@ class PaperList extends BaseList {
 	case self::FIELD_PIDARRAY:
 	    $this->sortInfo = array_flip($pidarray);
 	    usort($rows, array($this, "_sortPidarray"));
+	    break;
+	case self::FIELD_TAGINDEX:
+	    // $this->sortInfo == careful about conflicts? 
+	    $this->sortInfo = !$this->contact->privChair;
+	    usort($rows, array($this, "_sortTagIndex"));
 	    break;
 	case self::FIELD_TITLE:
 	    usort($rows, array("PaperList", "_sortTitle"));
@@ -272,7 +290,9 @@ class PaperList extends BaseList {
 	    usort($rows, array("PaperList", "_sortReviewType"));
 	    break;
 	case self::FIELD_REVIEWS_STATUS:
-	    usort($rows, array("PaperList", "_sortReviewsStatus"));
+	    // $this->sortInfo == careful about conflicts? 
+	    $this->sortInfo = !$this->contact->privChair && !$Conf->timeAuthorViewReviews();
+	    usort($rows, array($this, "_sortReviewsStatus"));
 	    break;
 	case self::FIELD_TOPIC_INTEREST:
 	    usort($rows, array("PaperList", "_sortTopicInterest"));
@@ -532,6 +552,7 @@ class PaperList extends BaseList {
 	    }
 	    return $a1 . $Conf->cacheableImage("ass$which.png", $alt, $alt) . $a2 . $a3;
 	case self::FIELD_REVIEWS_STATUS:
+	    // see also _sortReviewsStatus
 	    if ($row->conflictType > 0 && !$this->contact->privChair
 		&& !$Conf->timeAuthorViewReviews())
 		return "";
@@ -920,8 +941,8 @@ class PaperList extends BaseList {
 	    if ($pidarray !== null)
 		$this->sortField = self::FIELD_PIDARRAY;
 	    if ($this->search->orderTag) {
-		$queryOptions['joins'][] = "left join PaperTag on (Paper.paperId=PaperTag.paperId and PaperTag.tag='" . sqlq($this->search->orderTag) . "')";
-		$queryOptions['order'] = "order by PaperTag.tagIndex, Paper.paperId";
+		$queryOptions["tagIndex"] = $this->search->orderTag;
+		$this->sortField = self::FIELD_TAGINDEX;
 	    }
 	} else if (!in_array($this->sortField, $baseFieldId))
 	    $this->sortField = null;

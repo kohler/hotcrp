@@ -716,6 +716,7 @@ class Conference {
 	//   "commenterName"	Include commenter names
 	//   "joins"		Table(s) to join
 	//   "tags"		Include paperTags
+	//   "tagIndex" => $tag	Include tagIndex of named tag
 	//   "topics"
 	//   "options"
 	//   "scores" => array(fields to score)
@@ -790,6 +791,9 @@ class Conference {
 	if (isset($options['tags']))
 	    $pq .= ",
 		PaperTags.paperTags";
+	if (isset($options["tagIndex"]))
+	    $pq .= ",
+		TagIndex.tagIndex";
 	if (isset($options['scores'])) {
 	    foreach ($options['scores'] as $field) {
 		$pq .= ",\n		PaperScores.${field}Scores";
@@ -868,6 +872,8 @@ class Conference {
 
 	if (isset($options['tags']))
 	    $pq .= "		left join (select paperId, group_concat(tag, '#', tagIndex order by tag separator ' ') as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)\n";
+	if (isset($options["tagIndex"]))
+	    $pq .= "		left join PaperTag as TagIndex on (TagIndex.paperId=Paper.paperId and TagIndex.tag='" . sqlq($options["tagIndex"]) . "')\n";
 
 	if (isset($options['scores'])) {
 	    $pq .= "		left join (select paperId";
