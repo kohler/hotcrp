@@ -22,9 +22,10 @@ The Mail and Mail_Mime PEAR packages are currently distributed as part of
 the HotCRP tarball.  You may need to install additional packages to enable
 PHP's MySQL, GD, and PEAR support.  On Fedora, the "php-mysql", "php-pear",
 and "php-gd" packages are required.  On Debian, you will need
-"php5-common", "php5-gd", "php5-mysql", and "libapache[2]-mod-php5".  On
-Ubuntu, you will need the Debian packages as well as a package for SMTP
-support, such as "postfix".
+"php5-common", "php5-gd", "php5-mysql", and "libapache2-mod-php5" (or
+"libapache-mod-php5" if you are using Apache 1.x).  On Ubuntu, you will
+need the Debian packages as well as a package for SMTP support, such as
+"postfix".
 
 Additional packages required for paper format checking:
 * pdftohtml (0.39)		http://pdftohtml.sourceforge.net/
