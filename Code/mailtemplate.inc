@@ -720,7 +720,7 @@ class Mailer {
 	    $to = $preparation["to"];
 	    $headers = $preparation["headers"];
 	    if (($topos = strpos($headers, "\r\nTo: ")) !== false
-		&& ($nlpos = strpos($headers, "\r\n")) !== false
+		&& ($nlpos = strpos($headers, "\r\n", $topos)) !== false
 		&& ($nlpos + 2 == strlen($headers) || !ctype_space($headers[$nlpos + 2]))) {
 		$to = substr($headers, $topos + 6, $nlpos - $topos - 6);
 		$headers = substr($headers, 0, $topos) . substr($headers, $nlpos);
