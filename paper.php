@@ -661,11 +661,14 @@ echo "<table class='paper", ($mode == "edit" ? " editpaper" : ""), "'>\n\n";
 
 // title
 if (!$newPaper) {
-    echo "<tr class='id'>\n  <td class='caption'><h2>#$paperId</h2></td>\n";
-    echo "  <td class='entry' colspan='2'><h2>";
+    echo "<tr class='id'>
+  <td class='caption'><h2>#$paperId</h2></td>
+  <td class='entry' colspan='2'><h2>";
     $paperTable->echoTitle($prow);
-    echo "</h2></td>\n</tr>\n\n";
-}
+    echo "</h2></td>
+</tr>\n";
+} else
+    echo "<hr class='g' />\n";
 
 
 // Editable title
