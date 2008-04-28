@@ -67,16 +67,17 @@ if ($Me->amReviewer()) {
 
 echo "<table id='offlineform'><tr>
 <td><h3>Download forms</h3>
-<table>";
-$formcaption = "Get forms for: &nbsp;";
+<div>";
 if ($Me->amReviewer()) {
-    echo "<tr><td>Get forms for: &nbsp;</td><td><a href='${ConfSiteBase}search$ConfSiteSuffix?get=revform&amp;q=&amp;t=r&amp;pap=all'>Your reviews</a></td></tr>\n";
+    echo "<a href='${ConfSiteBase}search$ConfSiteSuffix?get=revform&amp;q=&amp;t=r&amp;pap=all'>Your reviews</a><br />\n";
     if ($Me->reviewsOutstanding)
-	echo "<tr><td></td><td><a href='${ConfSiteBase}search$ConfSiteSuffix?get=revform&amp;q=&amp;t=rout&amp;pap=all'>Your incomplete reviews</a></td></tr>\n";
-    echo "<tr><td></td><td><a href='offline$ConfSiteSuffix?downloadForm=1'>Blank form</a></td></tr>\n";
+	echo "<a href='${ConfSiteBase}search$ConfSiteSuffix?get=revform&amp;q=&amp;t=rout&amp;pap=all'>Your incomplete reviews</a><br />\n";
+    echo "<a href='offline$ConfSiteSuffix?downloadForm=1'>Blank form</a></div>
+<hr class='g' />
+<span class='hint'><strong>Tip:</strong> Use <a href='search$ConfSiteSuffix?q='>Search</a> &gt; Download to choose individual papers.\n";
 } else
-    echo "<tr><td><a href='offline$ConfSiteSuffix?downloadForm=1'>Get blank form</a></td></tr>\n";
-echo "</table></td>\n";
+    echo "<a href='offline$ConfSiteSuffix?downloadForm=1'>Blank form</a></div>\n";
+echo "</td>\n";
 if ($Me->amReviewer()) {
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
     echo "<td><h3>Upload filled-out forms</h3>
@@ -90,6 +91,17 @@ if ($Me->amReviewer()) {
 }
 echo "</tr></table>\n";
 
-if (($text = $rf->webGuidanceRows($Me->viewReviewFieldsScore(null, null, $Conf))))
-    echo "<hr class='g' />\n\n<table>\n<tr class='id'>\n  <td class='caption'></td>\n  <td class='entry'><h3>Review form information</h3></td>\n</tr>\n", $text, "<tr class='last'><td class='caption'></td><td class='entry'></td></tr></table>\n";
+if (($text = $rf->webGuidanceRows($Me->viewReviewFieldsScore(null, null, $Conf),
+				  " initial")))
+    echo "<hr class='g' />
+
+<table class='review'>
+<tr class='id'>
+  <td class='caption'></td>
+  <td class='entry'><h3>Review form information</h3></td>
+</tr>\n", $text, "<tr class='last'>
+  <td class='caption'></td>
+  <td class='entry'></td>
+</tr></table>\n";
+
 $Conf->footer();

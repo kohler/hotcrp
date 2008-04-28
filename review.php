@@ -549,9 +549,10 @@ function reviewView($prow, $rrow, $editMode) {
 	$ratingsAjaxDone, $canRate;
 
     $reviewOrdinal = unparseReviewOrdinal($rrow);
-    $reviewLink = "review$ConfSiteSuffix?"
+    $reviewLinkBase = "review$ConfSiteSuffix?"
 	. ($rrow ? "r=$reviewOrdinal" : "p=$prow->paperId")
-	. $linkExtra . "&amp;mode=edit&amp;post=1";
+	. $linkExtra . "&amp;mode=edit&amp;";
+    $reviewLink = $reviewLinkBase . "post=1";
     if (isset($_REQUEST["token"]))
 	$reviewLink .= "&amp;token=" . urlencode($_REQUEST["token"]);
     if ($editMode)
@@ -683,20 +684,31 @@ function reviewView($prow, $rrow, $editMode) {
 	    echo "Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete the review yourself.";
 	echo "</td>\n</tr>\n";
     }
-    
-    // download?
-    echo "\n<tr class='rev_rev'>
+
+    // message?
+    if ($rrow && $rrow->contactId != $Me->contactId
+	&& !isset($prow->myReviewId) && $Me->privChair) {
+	echo "<tr class='rev_rev'>
   <td class='caption$extraclass'></td>
   <td class='entry$extraclass' colspan='2'>";
-    if ($rrow && $rrow->contactId != $Me->contactId) {
-	if (!isset($prow->myReviewId) && $Me->privChair)
-	    $Conf->infoMsg("You didn't write this review, but as an administrator you can still make changes.");
+	$extraclass = "";
+	$Conf->infoMsg("You didn't write this review, but as an administrator you can still make changes.");
+	echo "</td>\n</tr>\n";
     }
-    echo "<input class='button_small' type='submit' value='Download", ($editMode ? " form" : ""), "' name='downloadForm' id='downloadForm' />";
-    echo "Upload form:&nbsp; ",
-	"<input type='file' name='uploadedFile' accept='text/plain' size='30' />&nbsp; ",
-	"<input class='button_small' type='submit' value='Go' name='uploadForm' />";
-    echo "</td>\n</tr>\n";
+    
+    // download?
+    echo "<tr class='rev_rev'>
+  <td class='caption$extraclass'>Offline reviewing</td>
+  <td class='entry$extraclass' colspan='2'>
+    Upload form: &nbsp; <input type='file' name='uploadedFile' accept='text/plain' size='30' />
+    &nbsp; <input class='button_small' type='submit' value='Go' name='uploadForm' />
+    <hr class='g' />
+    <a href='${reviewLinkBase}downloadForm=1'>Download this paper's review form</a>
+    &nbsp;<span class='barsep'>|</span>&nbsp;
+    <span class='hint'><strong>Tip:</strong> Use <a href='search$ConfSiteSuffix'>Search</a> or <a href='offline$ConfSiteSuffix'>Offline reviewing</a> to download or upload many forms at once.</span>
+    <hr class='g' />
+  </td>
+</tr>\n";
 
     // blind?
     if ($Conf->blindReview() == 1) {

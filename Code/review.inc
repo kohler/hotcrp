@@ -887,7 +887,7 @@ $blind\n";
 	return $x;
     }
     
-    function webGuidanceRows($revViewScore) {
+    function webGuidanceRows($revViewScore, $extraclass="") {
 	global $ReviewFormError;
 	$x = '';
 	$needRow = 1;
@@ -900,10 +900,10 @@ $blind\n";
 		continue;
 	    
 	    $x .= "<tr class='rev_$field'>\n";
-	    $x .= "  <td class='caption rev_$field'>";
+	    $x .= "  <td class='caption rev_$field$extraclass'>";
 	    $x .= htmlspecialchars($this->shortName[$field]) . "</td>\n";
 	    
-	    $x .= "  <td class='entry rev_$field'>";
+	    $x .= "  <td class='entry rev_$field$extraclass'>";
 	    if ($this->description[$field])
 		$x .= "<div class='rev_description'>" . $this->description[$field] . "</div>";
 	    if ($options) {
@@ -914,6 +914,7 @@ $blind\n";
 	    }
 	    
 	    $x .= "</td>\n</tr>\n";
+	    $extraclass = "";
 	}
 
 	return $x;
