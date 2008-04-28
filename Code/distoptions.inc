@@ -32,12 +32,20 @@ $Opt["downloadPrefix"] = "yourconf1-";
 //   contactName     Full name for site administrator (the person to contact
 //                   about site problems).  Usually the PC chair(s).
 //   contactEmail    Email address for site administrator.
-//   sendEmail       Boolean.  If false, HotCRP will send no email.  Generally
-//                   it is safe to set this to true.
-//   emailFrom       Email sent by HotCRP appears to come from this address.
-//                   Should be a plausible email address for mail originating
-//                   at the conference server, so things like SPF don't mistake
+//   sendEmail       Boolean.  If false, HotCRP will send no email.  This
+//                   should almost always be set to true.
+//   emailFrom       "From:" address for email sent by HotCRP.  Should be a
+//                   plausible email address for mail originating at the
+//                   conference server, so things like SPF don't mistake
 //                   the mail for spam.
+//   emailSender     Envelope sender address for email sent by HotCRP.  Usually
+//                   defaults to something like "www-data@read.cs.ucla.edu".
+//                   This email address should be connected to a valid mailbox,
+//                   or certain spam filters will reject email from HotCRP.
+//   sendmailParam   Extra parameters to be passed to PHP's mail() function.
+//                   Usually set by default, but if your system's mailer is
+//                   not sendmail, you may need to change it; see
+//                   Code/mailtemplate.inc, sendPrepared().
 
 $Opt["contactName"] = "Your Name";
 $Opt["contactEmail"] = "your@name.edu";

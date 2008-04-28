@@ -706,12 +706,28 @@ class Mailer {
     }
 
     function sendPrepared($preparation) {
-	global $Conf;
+	global $Conf, $Opt;
 	if ($preparation["allowEmail"]) {
-	    if (strpos($preparation["headers"], "\r\nTo: ") !== false)
-		return mail("", $preparation[0], $preparation[1], $preparation["headers"] . "From: $Conf->emailFrom");
-	    else
-		return mail($preparation["to"], $preparation[0], $preparation[1], $preparation["headers"] . "From: $Conf->emailFrom");
+	    // set sendmail parameters
+	    $extra = defval($Opt, "sendmailParam", "");
+	    if (isset($Opt["emailSender"])) {
+		@ini_set("sendmail_from", $Opt["emailSender"]);
+		if (!isset($Opt["sendmailParam"]))
+		    $extra = "-r" . escapeshellarg($Opt["sendmailParam"]);
+	    }
+
+	    // try to extract a valid To: header
+	    $to = $preparation["to"];
+	    $headers = $preparation["headers"];
+	    if (($topos = strpos($headers, "\r\nTo: ")) !== false
+		&& ($nlpos = strpos($headers, "\r\n")) !== false
+		&& ($nlpos + 2 == strlen($headers) || !ctype_space($headers[$nlpos + 2]))) {
+		$to = substr($headers, $topos + 6, $nlpos - $topos - 6);
+		$headers = substr($headers, 0, $topos) . substr($headers, $nlpos);
+	    } else if ($topos !== false)
+		$to = "";
+	    
+	    return mail($to, $preparation[0], $preparation[1], $headers . "From: $Conf->emailFrom");
 	} else
 	    return $Conf->infoMsg("<pre>" . htmlspecialchars("To: " . $preparation["to"] . "\nSubject: $preparation[0]\n" . $preparation["headers"] . "\n$preparation[1]") . "</pre>");
     }
