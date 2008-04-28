@@ -770,15 +770,15 @@ if ($pl && isset($pl->scoreMax)) {
 	    echo "<input type='checkbox' name='score[]' value='$i' ";
 	    if ($theScores & (1 << $i))
 		echo "checked='checked' ";
-	    echo "/>&nbsp;" . htmlspecialchars($rf->shortName[$field]) . "<br />";
+	    echo "onchange='highlightUpdate(\"redisplay\")' />&nbsp;" . htmlspecialchars($rf->shortName[$field]) . "<br />";
 	}
     echo "</td>";
 }
-echo "<td rowspan='2'><input class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
+echo "<td rowspan='2'><input id='redisplay' class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
 if ($pl && isset($pl->scoreMax)) {
     echo "<tr><td colspan='2'><hr class='g' /><b>Sort scores by:</b><br />",
-	tagg_select("scoresort", $scoreSorts, defval($_SESSION, "scoresort", $defaultScoreSort)),
-	"</td></tr>";
+	tagg_select("scoresort", $scoreSorts, defval($_SESSION, "scoresort", $defaultScoreSort), array("onchange" => "highlightUpdate(\"redisplay\")")),
+	"<br /><a href='help$ConfSiteSuffix?t=scoresort' class='hint'>(What is this?)</a></td></tr>";
 }
 echo "</table></div></form></div></div></td></tr>\n";
 

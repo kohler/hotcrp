@@ -14,6 +14,7 @@ $topicTitles = array("topics" => "Help topics",
 		     "tags" => "Tags",
 		     "revround" => "Review rounds",
 		     "revrate" => "Review ratings",
+		     "scoresort" => "Sorting scores",
 		     "chair" => "Chair's guide");
 
 $topic = defval($_REQUEST, "t", "topics");
@@ -54,6 +55,7 @@ function topics() {
     _alternateRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "How to use tags to define paper sets and discussion orders.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=revround'>Review rounds</a>", "Defining review rounds.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=revrate'>Review ratings</a>", "Rating reviews.");
+    _alternateRow("<a href='help$ConfSiteSuffix?t=scoresort'>Sorting scores</a>", "How scores are sorted in paper lists.");
     echo "</table>";
 }
 
@@ -382,7 +384,6 @@ The automatic and bulk assignment pages also let you set a review round.");
 }
 
 
-
 function revrate() {
     global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Me;
 
@@ -424,6 +425,41 @@ page</a>.  Currently, $what can rate reviews.
     echo "</table>\n";
 }
 
+
+function scoresort() {
+    global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Me;
+
+    echo "<table>";
+    _alternateRow("Sorting scores", "
+If a paper search includes columns with score graphs, click on a score column
+heading to sort the paper list using that score.  Search &gt; Display options
+changes how scores are sorted.  There are five choices:
+
+<dl>
+
+<dt>Minshall score</dt>
+<dd>Sort by the number of highest scores, then the number of second-highest
+scores, then the number of third-highest scores, and so on.  This is the
+default.</dd>
+
+<dt>Average</dt>
+<dd>Sort by the average score.</dd>
+
+<dt>Variance</dt>
+<dd>Sort by the variance in scores.</dd>
+
+<dt>Max &minus; min</dt>
+<dd>Sort by the difference between the largest and smallest scores (a good
+measure of differences of opinion).</dd>
+
+<dt>Your score</dt>
+<dd>Sort by your score.  In the score graphs, your score is highlighted with a
+darker colored square.</dd>
+
+</dl>");
+
+    echo "</table>\n";
+}
 
 
 function chair() {
@@ -731,6 +767,8 @@ else if ($topic == "revround")
     revround();
 else if ($topic == "revrate")
     revrate();
+else if ($topic == "scoresort")
+    scoresort();
 else if ($topic == "chair")
     chair();
 

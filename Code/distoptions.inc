@@ -39,13 +39,13 @@ $Opt["downloadPrefix"] = "yourconf1-";
 //                   conference server, so things like SPF don't mistake
 //                   the mail for spam.
 //   emailSender     Envelope sender address for email sent by HotCRP.  Usually
-//                   defaults to something like "www-data@read.cs.ucla.edu".
-//                   This email address should be connected to a valid mailbox,
+//                   defaults to something like "www-data@yourservername".
+//                   This email address should be connected to a valid mailbox
 //                   or certain spam filters will reject email from HotCRP.
 //   sendmailParam   Extra parameters to be passed to PHP's mail() function.
-//                   Usually set by default, but if your system's mailer is
-//                   not sendmail, you may need to change it; see
-//                   Code/mailtemplate.inc, sendPrepared().
+//                   If your system's mailer is not sendmail, you may need to
+//                   change the default value; see Code/mailtemplate.inc,
+//                   sendPrepared().
 
 $Opt["contactName"] = "Your Name";
 $Opt["contactEmail"] = "your@name.edu";
