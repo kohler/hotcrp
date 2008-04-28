@@ -436,11 +436,21 @@ function doBanal($set) {
     // actually create setting
     if (count($Error) == $old_error_count) {
 	$Values["sub_banal"] = array(1, join(";", $bs));
+	$zoomarg = "";
 
-	$cf = new CheckFormat();
-	$s1 = $cf->analyzeFile("$ConfSitePATH/Code/sample.pdf", "letter;2;;6.5inx9in;12;14");
+	// Perhaps we have an old pdftohtml with a bad -zoom.
+	for ($tries = 0; $tries < 2; ++$tries) {
+	    $cf = new CheckFormat();
+	    $s1 = $cf->analyzeFile("$ConfSitePATH/Code/sample.pdf", "letter;2;;6.5inx9in;12;14" . $zoomarg);
+	    $e1 = $cf->errors;
+	    if ($s1 == 1 && ($e1 & CheckFormat::ERR_PAPERSIZE) && $tries == 0)
+		$zoomarg = ">-zoom=1";
+	    else if ($s1 != 2 && $tries == 1)
+		$zoomarg = "";
+	}
+
 	$e1 = $cf->errors;
-	$s2 = $cf->analyzeFile("$ConfSitePATH/Code/sample.pdf", "a4;1;;3inx3in;13;15");
+	$s2 = $cf->analyzeFile("$ConfSitePATH/Code/sample.pdf", "a4;1;;3inx3in;13;15" . $zoomarg);
 	$e2 = $cf->errors;
 	$want_e2 = CheckFormat::ERR_PAPERSIZE | CheckFormat::ERR_PAGELIMIT
 	    | CheckFormat::ERR_TEXTBLOCK | CheckFormat::ERR_BODYFONTSIZE
@@ -766,7 +776,7 @@ function doSubGroup() {
 	echo "<hr class='g' /><table id='foldbanal' class='", ($Conf->setting("sub_banal") ? "foldo" : "foldc"), "'>";
 	doCheckbox("sub_banal", "<strong>Automated format checker<span class='extension'>:</span></strong>", true, "highlightUpdate();fold(\"banal\",!this.checked)");
 	echo "<tr class='extension'><td></td><td class='top'><table>";
-	$bsetting = explode(";", $Conf->settingText("sub_banal", ""));
+	$bsetting = explode(";", preg_replace("/>.*/", "", $Conf->settingText("sub_banal", "")));
 	for ($i = 0; $i < 6; $i++)
 	    $bsetting[$i] = ($bsetting[$i] == "" ? "N/A" : $bsetting[$i]);
 	doTextRow("sub_banal_papersize", array("Paper size", "Examples: &ldquo;letter&rdquo;, &ldquo;A4&rdquo;, &ldquo;8.5in&nbsp;x&nbsp;14in&rdquo;"), setting("sub_banal_papersize", $bsetting[0]), 18, "lxcaption");

@@ -26,30 +26,9 @@
 
 use Data::Dumper;
 
-# mapping from pdftohtml units to inches
-$p2h_per_inch = 144;
-
-# scale factor from pdftohtml units to points
-$p2h_to_points = 72 / $p2h_per_inch;
-
-# minimum amount of text on page for it to be interesting
-$banal_min_density = 8000;
-
-# fudge factor when judging text regions (in inches).
-$banal_text_fudge = 0.02;
-
-# pdftohtml executable
-if (exists $ENV{"PDFTOHTML"}) {
-    $pdftohtml = $ENV{"PDFTOHTML"};
-} elsif (exists $ENV{"PHP_PDFTOHTML"}) {
-    $pdftohtml = $ENV{"PHP_PDFTOHTML"};
-} else {
-    $pdftohtml = "pdftohtml";
-}
-
 sub usage {
     print <<EOF
-usage: banal [-report | -stats | -judge [specs]] files
+usage: banal [-report | -stats | -judge [specs]] [-zoom=N] files
 
 banal has three modes of operation:
 
@@ -94,6 +73,30 @@ banal has three modes of operation:
 EOF
 }
 
+# zoom value
+$zoom = 2 if !defined($zoom);
+usage() if $zoom !~ /^[1-9]\d*/;
+
+# mapping from pdftohtml units to inches
+$p2h_per_inch = 72 * $zoom;
+
+# scale factor from pdftohtml units to points
+$p2h_to_points = 72 / $p2h_per_inch;
+
+# minimum amount of text on page for it to be interesting
+$banal_min_density = 8000;
+
+# fudge factor when judging text regions (in inches).
+$banal_text_fudge = 0.02;
+
+# pdftohtml executable
+if (exists $ENV{"PDFTOHTML"}) {
+    $pdftohtml = $ENV{"PDFTOHTML"};
+} elsif (exists $ENV{"PHP_PDFTOHTML"}) {
+    $pdftohtml = $ENV{"PHP_PDFTOHTML"};
+} else {
+    $pdftohtml = "pdftohtml";
+}
 
 # sketch of perl data structures used
 $page = "
@@ -439,7 +442,7 @@ sub calc_doc_columns ($) {
 
 sub p2h_font_to_font_size ($) {
     my ($font) = @_;
-    my ($pt) = int(($font->{size} + 2) / 2 + 0.5);
+    my ($pt) = int(($font->{size} + 2) / $zoom + 0.5);
 
     if ($font->{family} eq 'Times'
 	|| $font->{family} eq 'Helvetica'
@@ -1011,13 +1014,6 @@ sub banal_file ($$) {
     }
 }
 
-sub banal_check_p2h () {
-    unless (open (FILE, "$pdftohtml 2>&1 |")) {
-	die "Error: Failed to find pdftohtml in path.\n";
-    }
-    close (FILE);
-}
-
 sub banal_open_input ($) {
     my ($fname) = @_;
     my ($base, $ext);
@@ -1031,7 +1027,8 @@ sub banal_open_input ($) {
 
     # 2>&1
     if ($ext =~ /[pP][dD][fF]/) {
-	unless (open (FILE, "$pdftohtml -stdout -enc UTF-8 -xml -zoom 2 $fname 2>/dev/null |")) {
+	$zoomarg = ($zoom == 1 ? "" : "-zoom $zoom");
+	unless (open (FILE, "$pdftohtml -stdout -enc UTF-8 -xml $zoomarg $fname 2>/dev/null |")) {
 	    print STDERR "Error: Failed to open $fname.\n";
 	    return 0;
 	}
@@ -1052,8 +1049,6 @@ sub main () {
     my ($spec);
 
     usage if ($#ARGV < 0);
-
-    banal_check_p2h ();
 
     $spec = banal_get_spec ();
     banal_report_spec ($spec) if (defined $judge);

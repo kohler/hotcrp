@@ -108,7 +108,13 @@ class CheckFormat {
 	global $Opt;
 	if (isset($Opt["pdftohtml"]))
 	    putenv("PHP_PDFTOHTML=" . $Opt["pdftohtml"]);
-	exec("Code/banal " . escapeshellarg($filename), $bo);
+
+	$banal_run = "Code/banal ";
+	if (($gtpos = strpos($spec, ">")) !== false) {
+	    $banal_run .= substr($spec, $gtpos + 1) . " ";
+	    $spec = substr($spec, 0, $gtpos);
+	}
+	exec($banal_run . escapeshellarg($filename), $bo);
 	
 	// analyze banal's output
 	$pi = array();

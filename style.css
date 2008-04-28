@@ -211,8 +211,12 @@ div.info, div.warning, div.confirm, div.merror {
 	background: #eeeeff url(images/info45.png) 10px 10px no-repeat;
 	padding: 0.5em 0.5em 0.5em 65px;
 	border: 1px solid #ccccee;
-	margin: 0.5em 0.75em 0.5em 0em;
+	margin: 0.5em 0.7em 0.5em 0em;
 	min-height: 45px;
+}
+div.body>div.info, div.body>div.warning, div.body>div.confirm,
+div.body>div.merror {
+	margin-left: 0.7em;
 }
 div.help {
 	padding: 0.5em 0.5em 0.5em 0.5em;
