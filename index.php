@@ -394,7 +394,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     // Actions
     $sep = "";
     if ($myrow) {
-	echo $sep, foldbutton("re", "review list"), "&nbsp;<a href=\"search$ConfSiteSuffix?q=&amp;t=r\" title='Search in your reviews (more display options)'><strong>Your Reviews</strong></a>";
+	echo $sep, foldbutton("re", "review list"), "&nbsp;<a href=\"search$ConfSiteSuffix?q=&amp;t=r\" title='Search in your reviews (more display and download options)'><strong>Your Reviews</strong></a>";
 	$sep = $xsep;
     }
     if ($Me->isPC && $Conf->setting("paperlead") > 0
