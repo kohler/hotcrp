@@ -449,6 +449,7 @@ function doBanal($set) {
 		$zoomarg = "";
 	}
 
+	$Values["sub_banal"][1] .= $zoomarg;
 	$e1 = $cf->errors;
 	$s2 = $cf->analyzeFile("$ConfSitePATH/Code/sample.pdf", "a4;1;;3inx3in;13;15" . $zoomarg);
 	$e2 = $cf->errors;
