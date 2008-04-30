@@ -1,3 +1,245 @@
+2008-04-30 Wednesday 12:20  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/banal (1.3): This bit of magic makes Banal report correct
+	  font sizes with both newer and older pdftohtmls.
+
+	  Oddly, pdftohtml 0.40 on my laptop is b u t t s l o w: 30sec to
+	  analyze a file that takes 1sec [on a different computer] with
+	  0.36.  This is just to document that weirdness.
+
+2008-04-29 Tuesday 12:44  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.87): actually set the banal setting (Robbert van
+	  Renesse)
+
+2008-04-28 Monday 15:34  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* README (1.41), settings.php (1.86), style.css (1.249), Code/banal
+	  (1.2), Code/checkformat.inc (1.5), Code/createdb.sh (1.22): -
+	  Make banal implementation a little smarter, so it sort of works
+	  with old pdftohtml versions (Robbert van Rennessee).	- Other
+	  nits (style, less verbose createdb).
+
+2008-04-28 Monday 14:21  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* README (1.40), Code/createdb.sh (1.21): Fix README to improve
+	  Debian/Ubuntu installation description.  Fix Code/createdb.sh to
+	  allow passing passwords to MySQL.
+
+2008-04-28 Monday 12:08  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.179): Tiny nit
+
+2008-04-28 Monday 11:24  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.85), index.php (1.178), search.php (1.156), style.css
+	  (1.248), Code/distoptions.inc (1.10): Add more help on score
+	  sorting and some subtle UI improvements.
+
+2008-04-27 Sunday 23:31  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/mailtemplate.inc (1.47): Fix sendmail envelope sender
+	  specification and test it a bit.
+
+2008-04-27 Sunday 23:11  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/mailtemplate.inc (1.46): nit
+
+2008-04-27 Sunday 23:09  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* style.css (1.247), Code/distoptions.inc (1.9),
+	  Code/mailtemplate.inc (1.45): add suport for $Opt["emailSender"]
+	  and $Opt["sendmailParam"]
+
+2008-04-27 Sunday 22:39  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* paper.php (1.167): Fix space overlap on submit a new paper page.
+
+2008-04-27 Sunday 22:00  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* offline.php (1.40), review.php (1.149), Code/review.inc (1.109):
+	  Fix up guidance for offline review forms (John Wilkes).
+
+2008-04-27 Sunday 09:33  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.96), autoassign.php (1.43), manualassign.php
+	  (1.64), search.php (1.155), settings.php (1.85), Code/helpers.inc
+	  (1.212), Code/paperlist.inc (1.178), Code/reviewsetform.inc
+	  (1.49): Patch up the <select> change; PHP is odd.  Also allow
+	  conflicted PC members to order tags that they can see.
+
+2008-04-26 Saturday 23:21  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/: conference.inc (1.260), paperlist.inc (1.177), tags.inc
+	  (1.17): Fix another set of lame information exposure bugs that
+	  could expose information to PC members through sorting orders.
+	  UGH.	(Dave Andersen)
+
+2008-04-26 Saturday 17:31  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/conference.inc (1.259): nit
+
+2008-04-26 Saturday 17:22  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.177): validator
+
+2008-04-26 Saturday 17:21  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.74), assign.php (1.95), autoassign.php (1.42),
+	  bulkassign.php (1.12), comment.php (1.62), contacts.php (1.29),
+	  help.php (1.84), index.php (1.176), log.php (1.11), mail.php
+	  (1.34), manualassign.php (1.63), offline.php (1.39), paper.php
+	  (1.166), review.php (1.148), reviewprefs.php (1.14), search.php
+	  (1.154), settings.php (1.84), style.css (1.246),
+	  Code/contactlist.inc (1.36), Code/helpers.inc (1.211),
+	  Code/paperlist.inc (1.176), Code/papertable.inc (1.118),
+	  Code/review.inc (1.108), Code/reviewsetform.inc (1.48),
+	  Code/search.inc (1.99): Regularize use of <select> with a
+	  tagg_select() function (shortens code).  Change <div
+	  class="smgap"> to <hr class="g" /> (nicer).  Other cleanups.
+
+2008-04-25 Friday 19:32  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* autoassign.php (1.41), bulkassign.php (1.11), help.php (1.83),
+	  manualassign.php (1.62), Code/reviewsetform.inc (1.47):
+	  validation fixes, some embarrassing
+
+2008-04-25 Friday 19:14  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/reviewtable.inc (1.57): hide some links on the assignments
+	  page
+
+2008-04-25 Friday 19:10  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.175), search.php (1.152), style.css (1.245),
+	  search.php (1.153): validator nits
+
+2008-04-25 Friday 10:35  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* autoassign.php (1.40), bulkassign.php (1.10), help.php (1.82),
+	  manualassign.php (1.61), review.php (1.147), script.js (1.67),
+	  settings.php (1.83), style.css (1.244), Code/conference.inc
+	  (1.258), Code/header.inc (1.54), Code/helpers.inc (1.210),
+	  Code/papertable.inc (1.117): Review rating improvements.  Add a
+	  review ratings setting so chairs can turn it off.  Allow chairs
+	  to open ratings to external reviewers.  Report help.	Don't show
+	  ratings to PC members until there's at least a tiny bit of
+	  ambiguity of who assigned a rating.  Hide rating counts and the
+	  ability to rate from conflicted accounts.
+
+2008-04-25 Friday 10:33  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/review.inc (1.107): Don't change external reviews into PC
+	  reviews if the chair completes them.
+
+2008-04-25 Friday 10:33  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/reviewtable.inc (1.56): Make "add review" look like a button
+	  so people can find it. (Robert Morris)
+
+2008-04-24 Thursday 18:05  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.81): help improvement
+
+2008-04-24 Thursday 17:47  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.94), comment.php (1.61), help.php (1.80),
+	  review.php (1.146), Code/conference.inc (1.257), Code/contact.inc
+	  (1.159), Code/helpers.inc (1.209), Code/review.inc (1.106),
+	  Code/reviewtable.inc (1.55), Code/schema.sql (1.113),
+	  Code/updateschema.inc (1.3): Add "review tokens." A review with
+	  an associated token may be edited by anyone who knows the token.
+	  This gives a somewhat cleaner way to enter anonymous reviews: an
+	  administrator creates an anonymous review, and sends the
+	  corresponding token to the relevant PC member.
+
+	  Caveats: Review tokens are created only for anonymous reviews,
+	  and only PC members can use review tokens (because in order to
+	  use a review token you have to be able to view the paper).
+
+2008-04-24 Thursday 13:28  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* README (1.39), review.php (1.145), script.js (1.66), style.css
+	  (1.243), tarball.sh (1.87), Code/conference.inc (1.256),
+	  Code/review.inc (1.105), Code/schema.sql (1.112),
+	  Code/updateschema.inc (1.2), Code/updateschema.sql (1.8): Record
+	  PC feedback about whether reviews were helpful.
+
+2008-04-24 Thursday 11:30  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* style.css (1.242), Code/reviewsetform.inc (1.46): nits
+
+2008-04-24 Thursday 11:06  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.93), autoassign.php (1.39), bulkassign.php (1.9),
+	  comment.php (1.60), manualassign.php (1.60), review.php (1.144),
+	  style.css (1.241), Code/papertable.inc (1.116), Code/review.inc
+	  (1.104), Code/reviewtable.inc (1.54): Prettier styles.
+
+2008-04-24 Thursday 11:06  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/mailtemplate.inc (1.44): Correct comment emails: include
+	  commenter name when visible to mail receiver.  (SIGCOMM buglet)
+
+2008-04-23 Wednesday 22:22  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* autoassign.php (1.38), contacts.php (1.28), mail.php (1.33),
+	  search.php (1.151), Code/baselist.inc (1.4), Code/contactlist.inc
+	  (1.35), Code/paperlist.inc (1.175): Give score sort types their
+	  own characters, and parse them in sort= arguments.  Improve the
+	  names of paper lists: "Your submissions", not "My papers".
+
+2008-04-23 Wednesday 22:21  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.174): Open the home page review list by default.
+	  The sidebar for settings, etc. makes this reasonable.
+
+2008-04-23 Wednesday 10:08  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.23), README (1.38), tarball.sh (1.86): to 2.17
+
+2008-04-23 Wednesday 10:06  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/conference.inc (1.255): Paper lists report "0" reviews for
+	  papers that never got a review (rather than "0/1").
+
+2008-04-23 Wednesday 09:53  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.79), Code/search.inc (1.98): Review round searching
+	  works again.
+
+2008-04-22 Tuesday 23:43  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/search.inc (1.97): Fix search restriction to authored papers
+	  to actually restrict. (addon to last checkin)
+
+2008-04-22 Tuesday 23:42  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/search.inc (1.96): Fix search restriction to authored papers
+	  to actually restrict.
+
+2008-04-22 Tuesday 23:27  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/search.inc (1.95): Allow users to search non-blind reviewer
+	  names.  Verified that this does not expose blind reviewer names.
+
+2008-04-22 Tuesday 23:19  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.78), search.php (1.150), Code/helpers.inc (1.208),
+	  Code/papertable.inc (1.115), Code/search.inc (1.94),
+	  Code/tags.inc (1.16): Massive search rewrite for better
+	  information hiding.  Search syntax matches Google's, and in
+	  particular supports OR and matches ALL the words by default.
+	  Search words must completely match; no longer will a search for
+	  "act" return "active".  More coherent and sensible story for
+	  hiding information from conflicted PC members, authors, and so
+	  forth.  (Stefan Savage, etc.)
+
+2008-04-21 Monday 23:38  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.22), README (1.37), tarball.sh (1.85), Code/schema.sql
+	  (1.111): To 2.16.
+
 2008-04-21 Monday 23:13  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Code/search.inc (1.93): FIX INFORMATION EXPOSURE: Searching for

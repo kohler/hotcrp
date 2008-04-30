@@ -292,7 +292,7 @@ function archiveReview($rrow) {
     global $Conf;
     $rf = reviewForm();
     $fields = "reviewId, paperId, contactId, reviewType, requestedBy,
-		requestedOn, acceptedOn, reviewModified, reviewSubmitted,
+		requestedOn, reviewModified, reviewSubmitted,
 		reviewNeedsSubmit, "
 	. join(", ", array_keys($rf->reviewFields));
     if ($Conf->setting("allowPaperOption") >= 11)
