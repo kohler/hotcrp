@@ -442,7 +442,7 @@ sub calc_doc_columns ($) {
 
 sub p2h_font_to_font_size ($) {
     my ($font) = @_;
-    my ($pt) = int(($font->{size} + 2) / $zoom + 0.5);
+    my ($pt) = int(($font->{size} + 3) / $zoom);
 
     if ($font->{family} eq 'Times'
 	|| $font->{family} eq 'Helvetica'
