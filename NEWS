@@ -1,5 +1,13 @@
 HotCRP NEWS
 
+Version 2.19   6.May.2008
+
+* Provide visible feedback on Ajax forms.
+
+* Improve manual assignments page with better conflict listings (Rebecca
+  Isaacs).
+
+
 Version 2.18   5.May.2008
 
 * Record PC feedback about whether reviews were helpful.  PC members and,
