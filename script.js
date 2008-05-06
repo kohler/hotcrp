@@ -257,7 +257,7 @@ function setajaxcheck(ename, rv) {
 	var i = (rv.ok ? "check" : "cross");
 	var s = (rv.ok ? "Saved" : (rv.error ? rv.error : "Error"));
 	s = s.replace(/\"/g, "\\\"");
-	elt.innerHTML = "<img class='ajaxresult' src='images/" + i + ".png' alt='' title=\"" + s + "\" />";
+	elt.innerHTML = "<img class='check' src='images/" + i + ".png' alt='' title=\"" + s + "\" />";
     }
 }
 
