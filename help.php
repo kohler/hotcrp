@@ -431,9 +431,9 @@ function scoresort() {
 
     echo "<table>";
     _alternateRow("Sorting scores", "
-If a paper search includes columns with score graphs, click on a score column
-heading to sort the paper list using that score.  Search &gt; Display options
-changes how scores are sorted.  There are five choices:
+Some paper search results include columns with score graphs.  Click on a score
+column heading to sort the paper list using that score.  Search &gt; Display
+options changes how scores are sorted.  There are five choices:
 
 <dl>
 

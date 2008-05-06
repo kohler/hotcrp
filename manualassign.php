@@ -266,7 +266,7 @@ if ($reviewer > 0) {
 	$paperList->authorMatch = strtr(substr($showau, 0, strlen($showau) - 1), " ", "|");
 	$paperList->collaboratorsMatch = strtr(substr($showco, 0, strlen($showco) - 1), " ", "|");
     }
-    echo "<div class='searchresult'><form class='assignpc' method='post' action=\"manualassign$ConfSiteSuffix?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
+    echo "<form class='assignpc' method='post' action=\"manualassign$ConfSiteSuffix?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
     if (isset($_REQUEST["sort"]))
 	echo "&amp;sort=", urlencode($_REQUEST["sort"]);
     echo "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n";
@@ -275,7 +275,7 @@ if ($reviewer > 0) {
     //   $_SESSION["matchPreg"] = "/(" . $paperList->authorMatch . ($paperList->authorMatch && $paperList->collaboratorsMatch ? "|" : "") . $paperList->collaboratorsMatch . ")/i";
     echo "<hr class='g' />\n",
 	"<table class='center'><tr><td><input class='hbutton' type='submit' name='update' value='Save assignments' /></td></tr></table>\n",
-	"</div></form></div>\n";
+	"</div></form>\n";
 }
 
 $Conf->footer();

@@ -156,9 +156,11 @@ body#review div.body, body#comment div.body, body#contactauthors div.body,
 body#assign div.body, body#offrev div.body {
 	margin: 0em 0em 0em 0.75em;
 }
-body#mail div.body, body#account div.body,
-body#autoassign div.body, body#assignpc div.body, body#scorehelp div.body, 
-body#settings div.body, body#bulkassign div.body {
+body#autoassign div.body, body#bulkassign div.body, body#assignpc div.body {
+	margin: 0em 0.5em 0em 0.75em;
+}
+body#mail div.body, body#account div.body, body#scorehelp div.body, 
+body#settings div.body {
 	margin: 0px 0px;
 }
 body#mail td#mailref, pre.email, tt.email {
@@ -389,12 +391,14 @@ span.topic0 {
 span.topic2 {
 	font-weight: bold;
 }
-table.ppltable td.pl_topics span.topic0, table.ppltable td.pl_topics span.topic2 {
+table.ppltable td.pl_topics span.topic0,
+table.ppltable td.pl_topics span.topic2 {
 	color: black;
 	text-decoration: none;
 	font-weight: normal;
 }
-body#revpref table.pltable, body#accounts table.ppltable {
+body#revpref table.pltable,
+body#accounts table.ppltable {
 	margin: 0px auto;
 }
 
@@ -559,6 +563,10 @@ td.caption.final {
 }
 tr.topspace td.caption {
 	padding: 7px 0.5em 3px 4px;
+}
+body#autoassign div.body tr.id td.caption,
+body#bulkassign div.body tr.id td.caption {
+	padding-top: 6px;
 }
 tr.id td.caption, table.review tr.id td.caption, 
 table.comment tr.id td.caption {
@@ -780,7 +788,7 @@ span.error, td.error textarea, div.error textarea {
 div.helpside {
 	float: right;
 	background-color: white;
-	padding: 0.5em 0.5em 0.5em 1em;
+	padding: 0.5em 0.1em 0.5em 1em;
 	max-width: 20%;
 	font-size: smaller;
 }
