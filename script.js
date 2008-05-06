@@ -251,13 +251,23 @@ function maketemptext(input, text, on, do_defact) {
     };
 }
 
+function setajaxcheck(ename, rv) {
+    var elt = e(ename);
+    if (elt) {
+	var i = (rv.ok ? "check" : "cross");
+	var s = (rv.ok ? "Saved" : (rv.error ? rv.error : "Error"));
+	s = s.replace(/\"/g, "\\\"");
+	elt.innerHTML = "<img class='ajaxresult' src='images/" + i + ".png' alt='' title=\"" + s + "\" />";
+    }
+}
+
 function makerevprefajax(input, paperId) {
     return function() {
 	var form = e("prefform");
 	if (form && form.p && form.revpref) {
 	    form.p.value = paperId;
 	    form.revpref.value = input.value;
-	    Miniajax.submit("prefform");
+	    Miniajax.submit("prefform", function(rv) { setajaxcheck("revpref" + paperId + "ok", rv); });
 	}
     };
 }
@@ -282,7 +292,7 @@ function makeassrevajax(select, pcs, paperId) {
 	    form.p.value = paperId;
 	    form.rev_roundtag.value = (roundtag ? roundtag.value : "");
 	    form[pcs].value = select.value;
-	    Miniajax.submit("assrevform");
+	    Miniajax.submit("assrevform", function(rv) { setajaxcheck("assrev" + paperId + "ok", rv); });
 	} else
 	    highlightUpdate();
     };
@@ -308,7 +318,7 @@ function makeconflictajax(input, pcs, paperId) {
 	if (form && form.p && form[pcs] && immediate && immediate.checked) {
 	    form.p.value = paperId;
 	    form[pcs].value = (input.checked ? -1 : 0);
-	    Miniajax.submit("assrevform");
+	    Miniajax.submit("assrevform", function(rv) { setajaxcheck("assrev" + paperId + "ok", rv); });
 	} else
 	    highlightUpdate();
     };

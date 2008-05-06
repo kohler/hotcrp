@@ -35,6 +35,7 @@ class PaperList extends BaseList {
     const FIELD_ALL_PREFERENCES = 44;
     const FIELD_AUTHOR_MATCH = 47;
     const FIELD_COLLABORATORS_MATCH = 48;
+    const FIELD_CONFLICT_CONFIRM = 49;
     
     const FIELD_OPT_AUTHORS = 70;
     const FIELD_TAGS = 71;
@@ -403,6 +404,8 @@ class PaperList extends BaseList {
 	    return "Tags";
 	case self::FIELD_OPT_ABSTRACT:
 	    return "Abstract";
+	case self::FIELD_CONFLICT_CONFIRM:
+	    return "";
 	default:
 	    return "&lt;$fieldId&gt;?";
 	}
@@ -576,6 +579,8 @@ class PaperList extends BaseList {
 	    if ($fieldId != self::FIELD_SELECTOR_CONFLICT)
 		$c .= " onclick='pselClick(event, this, $this->count)'";
 	    return "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='3' id='psel$this->count' $c/>";
+	case self::FIELD_CONFLICT_CONFIRM:
+	    return "<span id='assrev" . $row->paperId . "ok'></span>";
 	case self::FIELD_ASSIGN_REVIEW:
 	    if ($row->conflictType >= CONFLICT_AUTHOR)
 		return "<span class='author'>Author</span>";
@@ -584,7 +589,8 @@ class PaperList extends BaseList {
 			       array(0 => "None", REVIEW_PRIMARY => "Primary",
 				     REVIEW_SECONDARY => "Secondary",
 				     -1 => "Conflict"), $rt,
-			       array("tabindex" => 3, "onchange" => "highlightUpdate()"));
+			       array("tabindex" => 3, "onchange" => "highlightUpdate()"))
+		. "<span id='assrev" . $row->paperId . "ok'></span>";
 	case self::FIELD_TOPIC_INTEREST:
 	    return htmlspecialchars($row->topicInterestScore + 0);
 	case self::FIELD_TOPIC_NAMES:
@@ -608,7 +614,7 @@ class PaperList extends BaseList {
 	    if ($row->conflictType > 0)
 		return "N/A";
 	    $x = (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
-	    return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' value=\"$x\" tabindex='2' />";
+	    return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' value=\"$x\" tabindex='2' /><span id='revpref" . $row->paperId . "ok'></span>";
 	case self::FIELD_DESIRABILITY:
 	    return (isset($row->desirability) ? htmlspecialchars($row->desirability) : "0");
 	case self::FIELD_ALL_PREFERENCES:
@@ -872,7 +878,7 @@ class PaperList extends BaseList {
 	    return array(1, 11, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48);
 	  case "conflict":
 	    $this->paperLink = "assign";
-	    return array(102, 1, 11, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
+	    return array(102, 1, 11, self::FIELD_CONFLICT_CONFIRM, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
 	  case "editReviewPreference":
 	    $this->paperLink = "paper";
 	    return array(100, 1, 11, 36, 27, 40, 70, 72, 37);
@@ -1176,12 +1182,13 @@ $paperListFields = array( // array(CSS_FIELD_NAME, COLUMN_TYPE, SORTABLE)
 	PaperList::FIELD_REVIEWER_STATUS => array('reviewer', 1, 0),
 	PaperList::FIELD_REVIEWER_MONITOR => array('reviewer', 1, 1),
 	PaperList::FIELD_STATUS_SHORT => array('status', 1, 1),
-	PaperList::FIELD_ASSIGN_REVIEW => array('reviewAssignment', 1, 1),
+	PaperList::FIELD_ASSIGN_REVIEW => array('assrev', 1, 1),
 	PaperList::FIELD_TOPIC_INTEREST => array('topicMatch', 1, 1),
 	PaperList::FIELD_TOPIC_NAMES => array('topicNames', 2, 0),
 	PaperList::FIELD_ALL_REVIEWER_NAMES => array('reviewerNames', 2, 0),
-	PaperList::FIELD_REVIEWER_PREFERENCE => array('reviewPreference', 1, 1),
-	PaperList::FIELD_EDIT_REVIEWER_PREFERENCE => array('editReviewPreference', 1, 1),
+	PaperList::FIELD_REVIEWER_PREFERENCE => array('revpref', 1, 1),
+	PaperList::FIELD_EDIT_REVIEWER_PREFERENCE => array('editrevpref', 1, 1),
+	PaperList::FIELD_CONFLICT_CONFIRM => array('conflictconfirm', 1, 0),
 	PaperList::FIELD_REVIEWS_STATUS => array('reviewsStatus', 1, 1),
 	PaperList::FIELD_DESIRABILITY => array('desirability', 1, 1),
 	PaperList::FIELD_ALL_PREFERENCES => array('allPreferences', 2, 0),

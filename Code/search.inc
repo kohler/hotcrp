@@ -76,6 +76,7 @@ class PaperSearch {
     var $qx;
 
     var $regex;
+    var $overrideMatchPreg;
     var $contactmatch;
     var $contactmatchPC;
     var $preciseQuery;
@@ -166,6 +167,8 @@ class PaperSearch {
 	    if ($qtype != "n")
 		$this->urlbase .= "&qt=" . urlencode($qtype);
 	}
+
+	$this->overrideMatchPreg = false;
     }
 
     function _resetQuery() {
@@ -1045,7 +1048,7 @@ class PaperSearch {
 
     // BASIC QUERY FUNCTION
     
-    function _searchQuery() {
+    function search() {
 	global $Conf;
 	
 	if ($this->limitName == "x")
@@ -1226,6 +1229,10 @@ class PaperSearch {
 		if (!$Conf->qe("delete from Matches where paperId in (" . join(",", $delete) . ")", "while performing search"))
 		    return false;
 	}
+
+	// set matchPreg
+	if (!$this->overrideMatchPreg)
+	    $this->matchPreg = join("|", $this->regex);
 	
 	return true;
     }
@@ -1280,19 +1287,10 @@ class PaperSearch {
 	    return null;
     }
 
-    function search() {
-	global $Conf;
-	if (!$this->_searchQuery())
-	    return false;
-	$this->matchPreg = join("|", $this->regex);
-	return true;
-    }
-
     function paperList() {
 	global $Conf;
-	if (!$this->_searchQuery())
+	if (!$this->search())
 	    return array();
-	$this->matchPreg = join("|", $this->regex);
 	$x = array();
 	$result = $Conf->qe("select paperId from Matches", "while searching papers");
 	while (($row = edb_row($result)))

@@ -261,10 +261,17 @@ if ($reviewer > 0) {
 	"<input type='hidden' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag), "\" />",
 	"</div></form>\n\n";
 
-    $paperList = new PaperList(true, true, new PaperSearch($Me, array("t" => "s", "c" => $reviewer, "urlbase" => "manualassign$ConfSiteSuffix?reviewer=$reviewer")));
-    if (isset($sau)) {
-	$paperList->authorMatch = strtr(substr($showau, 0, strlen($showau) - 1), " ", "|");
-	$paperList->collaboratorsMatch = strtr(substr($showco, 0, strlen($showco) - 1), " ", "|");
+    $search = new PaperSearch($Me, array("t" => "s", "c" => $reviewer,
+					 "urlbase" => "manualassign$ConfSiteSuffix?reviewer=$reviewer"));
+    $paperList = new PaperList(true, true, $search);
+    if (isset($showau)) {
+	if ($showau)
+	    $paperList->authorMatch = "\\b" . str_replace(" ", "\\b|\\b", preg_quote(substr($showau, 0, strlen($showau) - 1))) . "\\b";
+	if ($showco)
+	    $paperList->collaboratorsMatch = "\\b" . str_replace(" ", "\\b|\\b", preg_quote(substr($showau, 0, strlen($showco) - 1))) . "\\b";
+	$search->overrideMatchPreg = true;
+	$search->matchPreg = $paperList->authorMatch
+	    . ($showau && $showco ? "|" : "") . $paperList->collaboratorsMatch;
     }
     echo "<form class='assignpc' method='post' action=\"manualassign$ConfSiteSuffix?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
     if (isset($_REQUEST["sort"]))

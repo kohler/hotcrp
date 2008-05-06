@@ -411,16 +411,16 @@ their reviews.  The interface appears above each visible review:
 	$what = "PC members and external reviewers";
     else
 	$what = "no one";
-    _alternateRow("Settings and caveats", "
+    _alternateRow("Settings", "
 Chairs set how ratings work on the <a
 href='${ConfSiteBase}settings$ConfSiteSuffix?group=rev'>review settings
-page</a>.  Currently, $what can rate reviews.
-
-<p>A review's ratings are visible to any unconflicted PC members who can see
-  the review, but HotCRP tries to hide ratings from review authors if they
-  could figure out who assigned the rating.  Thus, if only one PC member could
-  rate a review, then that PC member's rating is hidden from the review
-  author.</p>");
+page</a>." . ($Me->amReviewer() ? "  Currently, $what can rate reviews." : ""));
+    _alternateRow("Visibility", "
+A review's ratings are visible to any unconflicted PC members who can see
+the review, but HotCRP tries to hide ratings from review authors if they
+could figure out who assigned the rating.  Thus, if only one PC member could
+rate a review, then that PC member's rating is hidden from the review
+author.");
 
     echo "</table>\n";
 }

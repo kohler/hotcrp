@@ -805,6 +805,9 @@ img.dlimg, img.placthook {
 	bottom: -6px;
 	margin-top: -6px;
 }
+span.check {
+	padding-left: 0.4em;
+}
 
 span.textlite {
 	border: solid 1px #aaaadd;
@@ -1025,11 +1028,14 @@ table.ppltable th.pl_score, table.altable th.pl_id {
 td.pl_selector {
 	text-align: center;
 }
-td.pl_id, td.pl_topicMatch, td.pl_reviewPreference,
+td.pl_id, td.pl_topicMatch, td.pl_revpref,
 td.pl_desirability, td.pl_visits {
 	text-align: right;
 	padding-left: 0.4em;
 	padding-right: 0.4em;
+}
+td.pl_conflictconfirm {
+	padding: 0em;
 }
 td.pl_authors, td.pl_tags, td.pl_topics, td.pl_topicNames, td.pl_affrow,
 td.pl_abstract, td.pl_reviewerNames, td.pl_allPreferences, td.pl_authorsMatch,
@@ -1048,7 +1054,7 @@ td.pl_lastvisit, td.al_time {
 	font-size: smaller;
 	white-space: nowrap;
 }
-td.pl_name, td.al_name {
+td.pl_name, td.al_name, td.pl_assrev {
 	white-space: nowrap;
 }
 table.ppltable td.pl_score {

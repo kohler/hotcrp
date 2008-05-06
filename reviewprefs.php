@@ -170,7 +170,7 @@ are interested in the paper's topics";
 else
     $topicnote = "";
 
-$Conf->infoMsg("<p>Review preferences are integers.
+$Conf->infoMsg("<p>Review preferences are small integers.
 The higher your preference, the more you want to review a paper.
 0 means you don't care either way; use negative numbers for papers you don't want to review, and &minus;100 or less for conflicts.
 Multiple papers can have the same preference.

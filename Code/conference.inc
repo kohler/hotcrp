@@ -1237,9 +1237,13 @@ class Conference {
 
     function ajaxExit($others = null, $div = false) {
 	$t = "";
+	if (!$others)
+	    $others = array();
 	if (isset($_SESSION["msgs"])) {
 	    foreach ($_SESSION["msgs"] as $msg)
 		if (preg_match('|\A<div class="(.*?)">([\s\S]*)</div>\s*\Z|', $msg, $m)) {
+		    if ($m[1] == "merror" && !isset($others["error"]))
+			$others["error"] = $m[2];
 		    if ($div)
 			$t .= "<div class=\"x$m[1]\">$m[2]</div>\n";
 		    else
@@ -1249,16 +1253,15 @@ class Conference {
 	}
 	header("Content-Type: text/json");
 	echo "({ \"response\": \"", addcslashes($t, "\r\n\"\\"), "\"";
-	if ($others)
-	    foreach ($others as $name => $value) {
-		echo ",\n\"", $name, "\": ";
-		if ($value === null || $value === 0 || $value === false)
-		    echo "0";
-		else if ($value === true || $value === 1)
-		    echo "1";
-		else
-		    echo "\"", addcslashes($value, "\r\n\"\\"), "\"";
-	    }
+	foreach ($others as $name => $value) {
+	    echo ",\n\"", $name, "\": ";
+	    if ($value === null || $value === 0 || $value === false)
+		echo "0";
+	    else if ($value === true || $value === 1)
+		echo "1";
+	    else
+		echo "\"", addcslashes($value, "\r\n\"\\"), "\"";
+	}
 	echo " })";
 	exit;
     }

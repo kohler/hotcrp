@@ -100,7 +100,9 @@ images/ass4.png
 images/ass4n.png
 images/assign24.png
 images/bendulft.png
+images/check.png
 images/checksum12.png
+images/cross.png
 images/exassignone.png
 images/exsearchaction.png
 images/extagsnone.png
