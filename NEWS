@@ -1,5 +1,32 @@
 HotCRP NEWS
 
+Version 2.18   5.May.2008
+
+* Record PC feedback about whether reviews were helpful.  PC members and,
+  optionally, external reviewers can rate one another's reviews.  Hopefully
+  this will help improve the quality of reviews.  "Was this review helpful
+  for you?" appears above each visible review.  HotCRP reports the number
+  of ratings for each review and how many of those ratings were
+  positive. It does not report who gave the ratings, and it never shows
+  rating counts to authors.
+
+* The $Opt["emailSender"] option lets you set the envelope sender in sent
+  mail (Robbert van Renesse).
+
+* Add review tokens, which allow reviewers to edit reviews anonymously.
+
+* Prettier styles.
+
+* Bug fix: Correct commenter identities in comment emails.
+
+* Finish (?) information exposure fixes (David Andersen).
+
+* Banal works with pdftohtml 0.36 (Robbert van Renesse).
+
+* When a paper is withdrawn, its reviewers no longer need to complete their
+  reviews (Stefan Savage).
+
+
 Version 2.17   23.Apr.2008
 
 * IMPORTANT: Continue reviewer identity leak fix via search rewrite.
