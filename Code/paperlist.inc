@@ -618,15 +618,24 @@ class PaperList extends BaseList {
 	case self::FIELD_DESIRABILITY:
 	    return (isset($row->desirability) ? htmlspecialchars($row->desirability) : "0");
 	case self::FIELD_ALL_PREFERENCES:
-	    $x = "";
-	    foreach (explode(';;;', $row->allReviewerPreference) as $rp)
-		if (preg_match("/(.*):::(.*):::(.*)/", $rp, $what)
-		    && $what[3] != 0) {
-		    $x .= ($x ? ", " : "");
-		    $x .= contactHtml($what[2], $what[1]);
-		    $x .= " [" . htmlspecialchars($what[3]) . "]";
+	    $x = array();
+	    $pcm = pcMembers();
+	    if (isset($pcm[0]) && !isset($pcm[0]->prefOrdinal)) {
+		$ord = 0;
+		foreach ($pcm as $pc)
+		    $pc->prefOrdinal = sprintf("-0.%04d", $ord++);
+	    }
+	    foreach (explode(',', $row->allReviewerPreference) as $rp) {
+		$what = explode(' ', $rp);
+		if (count($what) == 2 && isset($pcm[$what[0]]) && $what[1]) {
+		    $pc = $pcm[$what[0]];
+		    $x[$what[1] + $pc->prefOrdinal]
+			= contactHtml($pc->firstName, $pc->lastName)
+			. " [" . htmlspecialchars($what[1]) . "]";
 		}
-	    return $x;
+	    }
+	    krsort($x, SORT_NUMERIC);
+	    return join(", ", $x);
 	case self::FIELD_SCORE:
 	    if ($this->contact->privChair || $this->contact->canViewReview($row, null, $Conf)) {
 		$scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
