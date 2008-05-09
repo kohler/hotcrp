@@ -604,7 +604,7 @@ else if ($newPaper) {
     else if ($timeUpdate) {
 	if ($prow->timeSubmitted <= 0) {
 	    if ($prow->paperStorageId <= 1)
-		$Conf->warnMsg("You must haven't uploaded a paper yet.$updateDeadline");
+		$Conf->warnMsg("You haven't uploaded a paper yet.$updateDeadline");
 	    else if ($Conf->setting('sub_freeze'))
 		$Conf->warnMsg("You must submit a final version of your paper before it can be reviewed.$updateDeadline");
 	    else
