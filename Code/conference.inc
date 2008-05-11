@@ -1150,7 +1150,8 @@ class Conference {
 	    if (strstr($title, "<") !== false)
 		$title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
 	    echo "<link rel='stylesheet' type='text/css' href='${ConfSiteBase}cacheable$ConfSiteSuffix?file=style.css&amp;mtime=" . filemtime("$ConfSitePATH/style.css") . "' />\n";
-	    $this->scriptStuff = "<script type='text/javascript' src='${ConfSiteBase}cacheable$ConfSiteSuffix?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "'></script>\n";
+	    $this->scriptStuff = "<script type='text/javascript' src='${ConfSiteBase}cacheable$ConfSiteSuffix?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "'></script>
+<!--[if lte IE 6]> <script type='text/javascript' src='${ConfSiteBase}cacheable$ConfSiteSuffix?file=supersleight-min.js'></script> <![endif]-->\n";
 	    echo "<title>", $title, " - ", $this->shortName, "</title>\n";
 	    $this->headerPrinted = 1;
 	}

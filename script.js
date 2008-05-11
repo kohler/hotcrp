@@ -1,5 +1,5 @@
 // script.js -- HotCRP JavaScript library
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 function e(id) {
@@ -391,11 +391,10 @@ function makescorehelp(anchor, which, dofold) {
 	    elt.className = "scorehelpo";
 	    var x = anchorPos.right - elt.offsetWidth;
 	    elt.style.left = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) + "px";
-	    if (anchorPos.bottom + 7 + elt.offsetHeight > wg.bottom
-		&& anchorPos.top - 2 - elt.offsetHeight >= wg.top - 10)
+	    if (anchorPos.top - 2 - elt.offsetHeight >= wg.top - 10)
 		elt.style.top = (anchorPos.top - 2 - elt.offsetHeight) + "px";
 	    else
-		elt.style.top = (anchorPos.bottom + 7) + "px";
+		elt.style.top = (anchorPos.bottom + 11) + "px";
 	}
     };
 }

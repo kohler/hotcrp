@@ -107,12 +107,12 @@ Assignment methods:
  <li><a href='${ConfSiteBase}assign$ConfSiteSuffix'>Manual by paper</a></li>
  <li><a href='${ConfSiteBase}bulkassign$ConfSiteSuffix'>Offline (bulk upload)</a></li>
 </ul>
-<hr />\n";
+<hr class='hr' />\n";
 if ($kind == "a")
     echo "Types of PC assignment:
 <dl><dt><img src='${ConfSiteBase}images/ass", REVIEW_PRIMARY, ".png' alt='Primary' /> Primary</dt><dd>Expected to review the paper themselves</dd>
   <dt><img src='${ConfSiteBase}images/ass", REVIEW_SECONDARY, ".png' alt='Secondary' /> Secondary</dt><dd>May delegate to external reviewers</dd></dl>
-<hr />\n";
+<hr class='hr' />\n";
 echo "<dl><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>\n";
 if ($kind == "a")
     echo "<dt>Preference</dt><dd><a href='${ConfSiteBase}reviewprefs$ConfSiteSuffix'>Review preference</a></dd>
@@ -176,7 +176,7 @@ if ($reviewer > 0) {
 	    }
 
 	echo "<tr>
-  <td class='caption$extraclass'>Potential conflicts</td>
+  <td class='caption top$extraclass'>Potential conflicts</td>
   <td class='entry top$extraclass'><table>",
 	    "<tr><td class='lxcaption'>Authors</td><td>", htmlspecialchars(substr($showau, 0, strlen($showau) - 1)), "</td></tr>\n",
 	    "<tr><td class='lxcaption'>Collaborators</td><td>", htmlspecialchars(substr($showco, 0, strlen($showco) - 1)), "</td></tr>\n",
@@ -285,4 +285,5 @@ if ($reviewer > 0) {
 	"</div></form>\n";
 }
 
+echo "<div class='clear'></div>";
 $Conf->footer();

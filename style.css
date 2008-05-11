@@ -432,13 +432,14 @@ div#homeinfo h4 {
 }
 div.homeside {
 	float: right;
-	background-color: white;
-	padding: 0em 0em 0.5em 1em;
+	position: relative;
+	width: 25%;
 }
 div.homeinside {
 	background-color: #fffdf0;
 	border: 1px solid #9999cc;
 	padding: 0.5em 1em 0.75em 0.75em;
+	margin: 0em 0em 0.5em 1em;
 }
 div.homeside ul {
 	margin: 0em;
@@ -446,9 +447,11 @@ div.homeside ul {
 	list-style-type: none;
 }
 hr.home {
-	margin: 0.8em 0px 0.8em 0px;
-	border: none;
-	border-top: 1px solid #d8deff;
+	margin: 0.8em 0px;
+	border: 0;
+	height: 1px;
+	color: #d8deff; /* for IE6 */
+	background-color: #d8deff;
 }
 span.deadline {
 	font-style: italic;
@@ -637,6 +640,7 @@ tr.rev_reviewers_hdr td.entry {
 /* Other types of captions and entries */
 table.paper, table.review, table.comment, table.settings {
 	width: 100%;
+	position: relative;
 }
 div.relative {
 	position: relative;
@@ -787,10 +791,8 @@ span.error, td.error textarea, div.error textarea {
 
 div.helpside {
 	float: right;
-	background-color: white;
-	padding: 0.5em 0.1em 0.5em 1em;
-	max-width: 20%;
-	font-size: smaller;
+	width: 20%;
+	position: relative;
 }
 div.helpinside {
 	background-color: #eeeeff;
@@ -798,6 +800,8 @@ div.helpinside {
 	padding: 0.5em 1em 0.75em 0.75em;
 	max-height: 24em;
 	overflow: auto;
+	margin: 0.5em 0.1em 0.5em 1em;
+	font-size: smaller;
 }
 
 img.dlimg, img.placthook {
@@ -871,8 +875,9 @@ table.rpad tr td {
 
 tr.pt_topics td.entry, tr.pt_actions td,
 td.plholder, tr.rev_actions td.entry, tr.pt_reviews td.entry,
-tr.rev_reviewers td.entry, tr.rev_reviewers_hdr td.entry,
-tr.pt_conflict_ass td.entry, tr.propass td.entry {
+tr.rev_reviewers td.caption, tr.rev_reviewers td.entry,
+tr.rev_reviewers_hdr td.entry, tr.pt_conflict_ass td.entry,
+tr.propass td.entry {
 	vertical-align: top;
 }
 table.pcass td.colmid {
@@ -1122,14 +1127,19 @@ div.merror pre {
 	border: 1px dashed #eecccc;
 }
 
-hr {
+hr.hr {
 	margin: 0.75em 0em;
-	border: none;
-	border-top: 1px solid #9999cc;
+	border: 0;
+	height: 1px;
+	color: #9999cc; /* for IE6 */
+	background-color: #9999cc;
 }
 hr.g { /* small gap */
 	margin: 0.25em 0em;
-	border: 0px none;
+	border: 0;
+}
+* html hr.g { /* fucking IE6 */
+	color: #ffffff;
 }
 
 table.review input#downloadForm {

@@ -732,7 +732,7 @@ function doAccGroup() {
     else
 	doCheckbox("acct_addr", "Collect users' phone numbers");
 
-    echo "<hr /><h3>Program committee &amp; system administrators</h3>";
+    echo "<hr class='hr' /><h3>Program committee &amp; system administrators</h3>";
 
     echo "<p><a href='${ConfSiteBase}account$ConfSiteSuffix?new=1' class='button'>Create account</a> &nbsp;|&nbsp; ",
 	"Select a user's name to edit a profile or change PC/administrator status.</p>\n";
@@ -789,7 +789,7 @@ function doSubGroup() {
 	echo "</table></td></tr></table>";
     }
     
-    echo "<hr />\n";
+    echo "<hr class='hr' />\n";
     doRadio("sub_freeze", array(0 => "<strong>Authors can update submissions until the deadline</strong>", 1 => array("Authors must freeze the final version of each submission", "&ldquo;Authors can update submissions&rdquo; is usually the best choice.  Freezing submissions is mostly useful when there is no submission deadline.")));
     
     echo "<hr class='g' /><table>\n";
@@ -819,7 +819,7 @@ function doOptGroup() {
 	    $sep = "<tr><td></td><td><hr class='g' /></td></tr>\n";
 	}
     
-	echo ($sep ? "<tr><td colspan='2'><hr /></td></tr>\n" : "");
+	echo ($sep ? "<tr><td colspan='2'><hr class='hr' /></td></tr>\n" : "");
 	
 	echo "<tr><td class='lxcaption'>Option name</td><td class='lentry'><input type='text' class='textlite' name='optnn' value=\"New option\" size='50' onchange='highlightUpdate()' onfocus=\"tempText(this, 'New option', 1)\" onblur=\"tempText(this, 'New option', 0)\" /></td></tr>\n";
 	echo "<tr><td class='lxcaption'>Description</td><td class='lentry textarea'><textarea class='textlite' name='optdn' rows='2' cols='50' onchange='highlightUpdate()'></textarea><br />\n",
@@ -830,7 +830,7 @@ function doOptGroup() {
 
 
     // Topics
-    echo "<hr /><h3>Topics</h3>\n";
+    echo "<hr class='hr' /><h3>Topics</h3>\n";
     echo "Enter topics one per line.  Authors use checkboxes to identify the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its text.\n";
     echo "<hr class='g' /><table id='newtoptable'>";
     $td1 = "<td class='lcaption'>Current</td>";
@@ -861,7 +861,7 @@ function doRevGroup() {
     echo "<hr class='g' />\n";
     doCheckbox('rev_notifychair', 'PC chairs are notified of new reviews by email');
 
-    echo "<hr />";
+    echo "<hr class='hr' />";
 
 
     // PC reviews
@@ -882,7 +882,7 @@ function doRevGroup() {
     echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
     doRadio("pc_seeallrev", array(0 => "No&mdash;a PC member can see a paper's reviews only after submitting their own review for that paper", 1 => "Yes", 2 => "Yes, but they can't see who wrote blind reviews"));
 
-    echo "<hr />";
+    echo "<hr class='hr' />";
 
 
     // External reviews
@@ -909,7 +909,7 @@ function doRevGroup() {
     echo "  <span class='extension'><strong>Mail template for external review requests</strong> (<a href='${ConfSiteBase}mail$ConfSiteSuffix'>keywords</a> allowed)<br /></span>
 <textarea class='tt extension' name='mailbody_requestreview' cols='80' rows='20' onchange='highlightUpdate()'>", htmlspecialchars($t[1]), "</textarea></div>\n";
 
-    echo "<hr />";
+    echo "<hr class='hr' />";
 
     // Tags
     echo "<h3>Tags</h3>\n";
@@ -926,7 +926,7 @@ function doRevGroup() {
     }
     echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='50' onchange='highlightUpdate()' /><br /><small>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</small></td></tr></table>";
 
-    echo "<hr />";
+    echo "<hr class='hr' />";
 
     // Tags
     echo "<h3>Review ratings</h3>\n";
@@ -978,7 +978,7 @@ function doDecGroup() {
 	"</td></tr>\n</table>\n";
     
     // Final copies
-    echo "<hr />";
+    echo "<hr class='hr' />";
     echo "<h3>Final copies</h3>\n";
     echo "<table>";
     doCheckbox('final_open', '<b>Collect final copies of accepted papers:</b>', true);
@@ -1025,7 +1025,7 @@ else if ($Group == "rfo")
 else
     doDecGroup();
 
-echo ($belowHr ? "<hr />\n" : "<hr class='g' />\n");
+echo ($belowHr ? "<hr class='hr' />\n" : "<hr class='g' />\n");
 echo "<input type='submit' class='hbutton",
     (defval($_REQUEST, "sample", "none") == "none" ? "" : "_alert"),
     "' name='update' value='Save changes' /> ";

@@ -217,7 +217,7 @@ if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting(
     || ($Me->amReviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard'))) {
     echo "    <li><a href='deadlines$ConfSiteSuffix'>Deadlines</a></li>\n";
 }
-echo "    <li><a href='contacts$ConfSiteSuffix?t=pc'>Program committee members</a></li>\n";
+echo "    <li><a href='contacts$ConfSiteSuffix?t=pc'>Program committee</a></li>\n";
 if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
     echo "    <li><a href='", $Opt['conferenceSite'], "'>Conference site</a></li>\n";
 if ($Conf->timeAuthorViewDecision()) {
@@ -228,7 +228,7 @@ if ($Conf->timeAuthorViewDecision()) {
 	if ($row[0] > 0)
 	    $nyes += $row[1];
     }
-    echo "    <li>", plural($nyes, "paper"), " were accepted<br />out of ", $n, " submitted.</li>\n";
+    echo "    <li>", plural($nyes, "paper"), " were accepted out of ", $n, " submitted.</li>\n";
 }
 echo "  </ul>\n</div>\n";
 
@@ -487,4 +487,5 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 }
 
 
+echo "<div class='clear'></div>\n";
 $Conf->footer();

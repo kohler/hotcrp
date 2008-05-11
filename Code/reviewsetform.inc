@@ -270,7 +270,7 @@ function rf_show() {
 	" &nbsp;
 <input type='submit' class='button' name='loadsample' value='Load template' /></div></td></tr></table>
 
-<hr />
+<hr class='hr' />
 
 <table class='setreviewform'>\n";
 

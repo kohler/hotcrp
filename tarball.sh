@@ -55,6 +55,7 @@ search.php
 sessionvar.php
 settings.php
 style.css
+supersleight-min.js
 
 Code/.htaccess
 Code/backupdb.sh
