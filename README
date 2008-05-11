@@ -1,4 +1,4 @@
-HotCRP: Conference Review Package 2.19
+HotCRP: Conference Review Package 2.20
 ======================================
 
 New version by Eddie Kohler, UCLA
@@ -50,18 +50,6 @@ Configuration
     "sudo Code/createdb.sh OPTIONS" to pass options to MySQL, such as
     --user and --password.  Run "Code/createdb.sh --help" for more
     information.
-
-  - Edit 'my.cnf' (typical location: '/etc/my.cnf') to ensure that MySQL
-    can handle large objects.  It should contain something like this:
-
-	[mysqld]
-	max_allowed_packet=32M
-
-    If you are accepting very large papers, make max_allowed_packet even
-    larger.  Some MySQL setups, such as on Mac OS X, may not have a
-    'my.cnf' by default; just create one.  If you need to edit my.cnf, you
-    must restart the mysqld server; on Linux boxes "sudo /etc/init.d/mysqld
-    restart" often suffices.
 
 * Site configuration
 
@@ -125,6 +113,9 @@ Configuration
     HotCRP sets the PHP memory limit to 128MB.
 
   - HotCRP uses Apache's mod_expires module; consider enabling it.
+
+  - HotCRP sets MySQL's max_allowed_packet variable based on the 
+    upload_max_filesize set in the base directory's ".htaccess".
 
 
 Backing up the database

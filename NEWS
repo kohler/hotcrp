@@ -1,5 +1,20 @@
 HotCRP NEWS
 
+Version 2.20   11.May.2008
+
+* Improve Internet Explorer 6 compatibility.  Reported by Terence Kelly.
+  Includes Drew McLellan's supersleight for transparent PNG support
+  (http://24ways.org/2007/supersleight-transparent-png-in-ie6).
+
+* Some validation fixes.
+
+* Set MySQL's max_allowed_packet on a per-session basis based on PHP's
+  upload_max_filesize, rather than relying on users to set
+  max_allowed_packet correctly.  A problem was reported by Sourabh Jain.
+
+* Bug fixes to preference list, English, and createdb script.
+
+
 Version 2.19   6.May.2008
 
 * Provide visible feedback on Ajax forms.
