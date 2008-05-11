@@ -62,7 +62,7 @@ class Conference {
 	if (!$this->dblink || !mysql_select_db($dbname, $this->dblink))
 	    die("Unable to connect to database");
 	mysql_query("set names 'utf8'", $this->dblink);
-	mysql_query("set @@max_allowed_packet = " . (2 * ini_get("upload_max_filesize")), $this->dblink);
+	mysql_query("set @@max_allowed_packet = " . (2 * ini_get_bytes("upload_max_filesize")), $this->dblink);
 
 	$this->updateSettings();
     }
