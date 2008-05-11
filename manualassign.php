@@ -184,6 +184,7 @@ if ($reviewer > 0) {
 	    "<a href=\"${ConfSiteBase}search$ConfSiteSuffix?q=", urlencode(join(" OR ", $search)), "&amp;linkto=assign\">Search for potential conflicts</a>",
 	    "<div class='g' /></td>
 </tr>\n";
+	$extraclass = "";
     }
 
     echo "<tr>
@@ -236,13 +237,7 @@ if ($kind == "a")
 
 echo "    <div class='g' />
     <input id='assrevimmediate' type='checkbox' checked='checked' />&nbsp;Save assignments as they are made<br />
-  </td><td>
-  </td></tr></table>
-  </form></td>
-</tr>
-<tr class='last'>
-  <td class='caption'></td>
-  <td class='entry'></td>
+  </div></form></td>
 </tr>
 </table>\n";
 

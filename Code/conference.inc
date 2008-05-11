@@ -377,7 +377,7 @@ class Conference {
 
     function go($url) {
 	header("Location: $url");
-	echo "<html>";
+	echo "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">";
 	echo "<body> <p> You should not be here. ";
 	echo "You need to <a href=\"$url\"> login </a> </p> </body>";
 	echo "</html>";

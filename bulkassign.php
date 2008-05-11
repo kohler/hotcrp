@@ -259,8 +259,9 @@ Types of PC assignment:
 
 
 echo "<table class='manyassign'>
-  <tr><td class='caption initial'>Upload</td><td class='entry'>
-<form action='bulkassign$ConfSiteSuffix?upload=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class=inform'>
+<tr>
+  <td class='caption initial final'>Upload</td>
+  <td class='entry initial final'><form action='bulkassign$ConfSiteSuffix?upload=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 Assign &nbsp;",
     tagg_select("t", array(REVIEW_PRIMARY => "primary",
 			   REVIEW_SECONDARY => "secondary",
@@ -318,7 +319,6 @@ identifies the PC member uniquely.  For example:</p>
 100	feldmann
 </pre>
 </td></tr>
-  <tr class='last'><td class='caption'></td><td class='entry'></td></tr>
 </table>\n";
 
 
