@@ -419,7 +419,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	$plist = new PaperList(false, true, new PaperSearch($Me, array("t" => "r")));
 	$ptext = $plist->text("reviewerHome", $Me);
 	if ($plist->count > 0)
-	    echo "<div class='extension'><div class='g' />", $ptext, "</div>";
+	    echo "<div class='extension'><div class='g'></div>", $ptext, "</div>";
     }
 
     echo "<hr class='home' /></div>\n";
@@ -452,7 +452,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 	$plist->showHeader = 0;
 	$ptext = $plist->text("authorHome", $Me);
 	if ($plist->count > 0)
-	    echo "<div class='g' />\n", $ptext;
+	    echo "<div class='g'></div>\n", $ptext;
     }
 
     $deadlines = array();
@@ -475,7 +475,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
     }
     if (count($deadlines) > 0) {
 	if ($plist && $plist->count > 0)
-	    echo "<div class='g' />";
+	    echo "<div class='g'></div>";
 	else if ($startable || $Me->privChair)
 	    echo "<br />";
 	echo "<span class='deadline'>",

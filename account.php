@@ -253,7 +253,7 @@ echo "<div class='f-i'>
 
 
 if ($Conf->setting("acct_addr")) {
-    echo "<div class='g' />\n";
+    echo "<div class='g'></div>\n";
     if ($Conf->setting("allowPaperOption") >= 5) {
 	echo "<div class='f-i'>
   <div class='f-c'>Address line 1</div>
@@ -293,7 +293,7 @@ if ($Conf->setting("acct_addr")) {
 echo "</div></td>\n</tr>\n\n";
 
 if ($Conf->setting("allowPaperOption") >= 6) {
-    echo "<tr><td class='caption'></td><td class='entry'><div class='g' /></td></tr>\n\n",
+    echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n\n",
 	"<tr><td class='caption'>Email notification</td><td class='entry'>",
 	"<input type='checkbox' name='watchcomment' value='", WATCH_COMMENT, "'";
     if ($Acct->defaultWatch & WATCH_COMMENT)
@@ -303,7 +303,7 @@ if ($Conf->setting("allowPaperOption") >= 6) {
 
 
 if ($Acct->isPC || $newProfile)
-    echo "<tr><td class='caption'></td><td class='entry'><div class='g' /><strong>Program committee information</strong></td></tr>\n";
+    echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div><strong>Program committee information</strong></td></tr>\n";
 
 
 if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
@@ -362,11 +362,11 @@ if ($Acct->isPC || $newProfile) {
 
 
 echo "<tr><td class='caption'></td>
-  <td class='entry'><div class='g' />
+  <td class='entry'><div class='g'></div>
     <input class='button' type='submit' value='",
     ($newProfile ? "Create account" : "Save changes"),
     "' name='register' />
-    <div class='g' /></td>
+    <div class='g'></div></td>
 </tr>
 <tr class='last'><td class='caption'></td></tr>
 </table></div></form>\n";

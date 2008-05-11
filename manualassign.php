@@ -182,7 +182,7 @@ if ($reviewer > 0) {
 	    "<tr><td class='lxcaption'>Collaborators</td><td>", htmlspecialchars(substr($showco, 0, strlen($showco) - 1)), "</td></tr>\n",
 	    "</table>",
 	    "<a href=\"${ConfSiteBase}search$ConfSiteSuffix?q=", urlencode(join(" OR ", $search)), "&amp;linkto=assign\">Search for potential conflicts</a>",
-	    "<div class='g' /></td>
+	    "<div class='g'></div></td>
 </tr>\n";
 	$extraclass = "";
     }
@@ -219,7 +219,7 @@ while (($row = edb_orow($result)))
 echo tagg_select("reviewer", $rev_opt, $reviewer, array("onchange" => "highlightUpdate(\"assrevupdate\")")),
     " &nbsp; ",
     "<input id='assrevupdate' class='button' type='submit' value='Go' />
-    <div class='g' />
+    <div class='g'></div>
     <input type='radio' name='kind' value='a' onchange='highlightUpdate(\"assrevupdate\")'",
     ($kind == "a" ? " checked='checked'" : ""),
     " />&nbsp;Assign reviews and/or conflicts for all papers<br />
@@ -228,14 +228,14 @@ echo tagg_select("reviewer", $rev_opt, $reviewer, array("onchange" => "highlight
     " />&nbsp;Focus on potential conflicts\n";
 
 if ($kind == "a")
-    echo "    <div class='g' />\n    ",
+    echo "    <div class='g'></div>\n    ",
 	(isset($Error["rev_roundtag"]) ? "<span class='error'>" : ""),
 	"Review round: &nbsp;",
 	"<input id='assrevroundtag' class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
 	(isset($Error["rev_roundtag"]) ? "</span>" : ""),
 	" &nbsp;<a class='hint' href='${ConfSiteBase}help$ConfSiteSuffix?t=revround'>What is this?</a>\n";
 
-echo "    <div class='g' />
+echo "    <div class='g'></div>
     <input id='assrevimmediate' type='checkbox' checked='checked' />&nbsp;Save assignments as they are made<br />
   </div></form></td>
 </tr>
@@ -271,7 +271,7 @@ if ($reviewer > 0) {
     echo $paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me);
     //if (isset($sau) && ($paperList->authorMatch || $paperList->collaboratorsMatch))
     //   $_SESSION["matchPreg"] = "/(" . $paperList->authorMatch . ($paperList->authorMatch && $paperList->collaboratorsMatch ? "|" : "") . $paperList->collaboratorsMatch . ")/i";
-    echo "<div class='g' />\n",
+    echo "<div class='g'></div>\n",
 	"<table class='center'><tr><td><input class='hbutton' type='submit' name='update' value='Save assignments' /></td></tr></table>\n",
 	"</div></form>\n";
 }

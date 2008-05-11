@@ -159,7 +159,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
     $trclass = "tr class='k" . ($rowidx % 2) . "'";
-    $x = "<$trclass><td colspan='4'><div class='g' /></td></tr>\n";
+    $x = "<$trclass><td colspan='4'><div class='g'></div></td></tr>\n";
     
     // field name
     $e = (isset($Error[$row->fieldName]) ? " error" : "");
@@ -237,7 +237,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 	$x .= "</tr>\n";
     }
     
-    return $x . "<$trclass><td colspan='4'><div class='g' /></td></tr>\n";
+    return $x . "<$trclass><td colspan='4'><div class='g'></div></td></tr>\n";
 }
 
 function rf_show() {

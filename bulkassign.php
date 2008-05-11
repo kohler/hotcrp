@@ -270,7 +270,7 @@ Assign &nbsp;",
     "&nbsp; reviews from file:&nbsp;
 <input type='file' name='uploadedFile' accept='text/plain' size='30' />
 
-<div class='g' />\n\n";
+<div class='g'></div>\n\n";
 
 if (!isset($_REQUEST["rev_roundtag"]))
     $rev_roundtag = $Conf->settingText("rev_roundtag");
@@ -290,13 +290,13 @@ echo "'>Review round: &nbsp;",
     "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
     " &nbsp;<a class='hint' href='${ConfSiteBase}help$ConfSiteSuffix?t=revround'>What is this?</a></div></div>
 
-<div class='g' />
+<div class='g'></div>
 
 <input class='button' type='submit' value='Go' />
 
 </div></form>
 
-<div class='g' />
+<div class='g'></div>
 
 <p>Use this page to upload many reviewer assignments at once.  Create a
 tab-separated text file with one line per assignment.  The first column must

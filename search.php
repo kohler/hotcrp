@@ -691,7 +691,7 @@ if (!isset($qtOpt[defval($_REQUEST, "qt", "")]))
 echo tagg_select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
     "</td>
 </tr>
-<tr><td><div class='g' /></td></tr>
+<tr><td><div class='g'></div></td></tr>
 <tr>
   <td class='lxcaption'>With <b>all</b> the words</td>
   <td class='lentry'><input id='searchform2_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /><span class='sep'></span></td>
@@ -776,7 +776,7 @@ if ($pl && isset($pl->scoreMax)) {
 }
 echo "<td rowspan='2'><input id='redisplay' class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
 if ($pl && isset($pl->scoreMax)) {
-    echo "<tr><td colspan='2'><div class='g' /><b>Sort scores by:</b><br />",
+    echo "<tr><td colspan='2'><div class='g'></div><b>Sort scores by:</b><br />",
 	tagg_select("scoresort", $scoreSorts, defval($_SESSION, "scoresort", $defaultScoreSort), array("onchange" => "highlightUpdate(\"redisplay\")")),
 	"<br /><a href='help$ConfSiteSuffix?t=scoresort' class='hint'>(What is this?)</a></td></tr>";
 }
@@ -820,6 +820,6 @@ if ($pl) {
 	echo "</div></form>";
     echo "</div>\n";
 } else
-    echo "<div class='g' />\n";
+    echo "<div class='g'></div>\n";
 
 $Conf->footer();

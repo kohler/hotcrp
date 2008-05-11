@@ -240,7 +240,7 @@ class PaperTable {
 	}
 	if ($Me->isPC && $prow->conflictType <= 0
 	    && $Conf->timeUpdatePaper($prow))
-	    echo "<div class='g' /><div class='xwarning'>The authors still have <a href='${ConfSiteBase}deadlines$ConfSiteSuffix'>time</a> to make changes.</div>";
+	    echo "<div class='g'></div><div class='xwarning'>The authors still have <a href='${ConfSiteBase}deadlines$ConfSiteSuffix'>time</a> to make changes.</div>";
 	echo "</td>\n</tr>\n\n";
     }
 

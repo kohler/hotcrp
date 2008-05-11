@@ -153,7 +153,7 @@ function searchbar() {
 		    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />";
 	    echo "<input class='textlite' type='text' size='3' name='page' value='' /> &nbsp;<input class='button' type='submit' name='gopage' value='Go' /></form>";
 	    } */
-	echo "</div></td></tr></table><div class='g' />\n";
+	echo "</div></td></tr></table><div class='g'></div>\n";
     }
 }
 
