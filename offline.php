@@ -73,7 +73,7 @@ if ($Me->amReviewer()) {
     if ($Me->reviewsOutstanding)
 	echo "<a href='${ConfSiteBase}search$ConfSiteSuffix?get=revform&amp;q=&amp;t=rout&amp;pap=all'>Your incomplete reviews</a><br />\n";
     echo "<a href='offline$ConfSiteSuffix?downloadForm=1'>Blank form</a></div>
-<hr class='g' />
+<div class='g' />
 <span class='hint'><strong>Tip:</strong> Use <a href='search$ConfSiteSuffix?q='>Search</a> &gt; Download to choose individual papers.\n";
 } else
     echo "<a href='offline$ConfSiteSuffix?downloadForm=1'>Blank form</a></div>\n";
@@ -93,7 +93,7 @@ echo "</tr></table>\n";
 
 if (($text = $rf->webGuidanceRows($Me->viewReviewFieldsScore(null, null, $Conf),
 				  " initial")))
-    echo "<hr class='g' />
+    echo "<div class='g' />
 
 <table class='review'>
 <tr class='id'>

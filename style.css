@@ -159,6 +159,9 @@ body#assign div.body, body#offrev div.body {
 body#autoassign div.body, body#bulkassign div.body, body#assignpc div.body {
 	margin: 0em 0.5em 0em 0.75em;
 }
+table.manyassign {
+	margin-top: 0.75em;
+}
 body#mail div.body, body#account div.body, body#scorehelp div.body, 
 body#settings div.body {
 	margin: 0px 0px;
@@ -355,6 +358,7 @@ span.hastitle {
 /* Left-hand selector, as in settings */
 table.lhsel {
 	width: 100%;
+	position: relative;
 }
 table.lhsel td {
 	padding: 2px 0px;
@@ -362,6 +366,7 @@ table.lhsel td {
 }
 div.lhl0 {
 	padding: 2px 0px 2px 0.9em;
+	position: relative;
 }
 div.lhl1 {
 	background: #ffffff;
@@ -566,10 +571,6 @@ td.caption.final {
 }
 tr.topspace td.caption {
 	padding: 7px 0.5em 3px 4px;
-}
-body#autoassign div.body tr.id td.caption,
-body#bulkassign div.body tr.id td.caption {
-	padding-top: 6px;
 }
 tr.id td.caption, table.review tr.id td.caption, 
 table.comment tr.id td.caption {
@@ -800,7 +801,7 @@ div.helpinside {
 	padding: 0.5em 1em 0.75em 0.75em;
 	max-height: 24em;
 	overflow: auto;
-	margin: 0.5em 0.1em 0.5em 1em;
+	margin: 0.75em 0.1em 0.5em 1em;
 	font-size: smaller;
 }
 
@@ -876,8 +877,8 @@ table.rpad tr td {
 tr.pt_topics td.entry, tr.pt_actions td,
 td.plholder, tr.rev_actions td.entry, tr.pt_reviews td.entry,
 tr.rev_reviewers td.caption, tr.rev_reviewers td.entry,
-tr.rev_reviewers_hdr td.entry, tr.pt_conflict_ass td.entry,
-tr.propass td.entry {
+tr.rev_reviewers_hdr td.caption, tr.rev_reviewers_hdr td.entry,
+tr.pt_conflict_ass td.entry, tr.propass td.entry {
 	vertical-align: top;
 }
 table.pcass td.colmid {
@@ -1129,17 +1130,13 @@ div.merror pre {
 
 hr.hr {
 	margin: 0.75em 0em;
-	border: 0;
+	border: 0px none;
 	height: 1px;
 	color: #9999cc; /* for IE6 */
 	background-color: #9999cc;
 }
-hr.g { /* small gap */
-	margin: 0.25em 0em;
-	border: 0;
-}
-* html hr.g { /* fucking IE6 */
-	color: #ffffff;
+div.g { /* small gap */
+	margin: 0.65em 0em;
 }
 
 table.review input#downloadForm {

@@ -182,7 +182,7 @@ if ($reviewer > 0) {
 	    "<tr><td class='lxcaption'>Collaborators</td><td>", htmlspecialchars(substr($showco, 0, strlen($showco) - 1)), "</td></tr>\n",
 	    "</table>",
 	    "<a href=\"${ConfSiteBase}search$ConfSiteSuffix?q=", urlencode(join(" OR ", $search)), "&amp;linkto=assign\">Search for potential conflicts</a>",
-	    "<hr class='g' /></td>
+	    "<div class='g' /></td>
 </tr>\n";
     }
 
@@ -190,11 +190,7 @@ if ($reviewer > 0) {
   <td class='caption$extraclass final'>Change PC member</td>
   <td class='entry top$extraclass final'>\n";
 } else {
-    echo "<table>
-<tr class='id'>
-  <td class='caption'></td>
-  <td class='entry'></td>
-</tr>
+    echo "<table class='manyassign'>
 <tr>
   <td class='caption initial final'>Choose PC member</td>
   <td class='entry top initial final'>\n";
@@ -222,7 +218,7 @@ while (($row = edb_orow($result)))
 echo tagg_select("reviewer", $rev_opt, $reviewer, array("onchange" => "highlightUpdate(\"assrevupdate\")")),
     " &nbsp; ",
     "<input id='assrevupdate' class='button' type='submit' value='Go' />
-    <hr class='g' />
+    <div class='g' />
     <input type='radio' name='kind' value='a' onchange='highlightUpdate(\"assrevupdate\")'",
     ($kind == "a" ? " checked='checked'" : ""),
     " />&nbsp;Assign reviews and/or conflicts for all papers<br />
@@ -231,14 +227,14 @@ echo tagg_select("reviewer", $rev_opt, $reviewer, array("onchange" => "highlight
     " />&nbsp;Focus on potential conflicts\n";
 
 if ($kind == "a")
-    echo "    <hr class='g' />\n    ",
+    echo "    <div class='g' />\n    ",
 	(isset($Error["rev_roundtag"]) ? "<span class='error'>" : ""),
 	"Review round: &nbsp;",
 	"<input id='assrevroundtag' class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
 	(isset($Error["rev_roundtag"]) ? "</span>" : ""),
 	" &nbsp;<a class='hint' href='${ConfSiteBase}help$ConfSiteSuffix?t=revround'>What is this?</a>\n";
 
-echo "    <hr class='g' />
+echo "    <div class='g' />
     <input id='assrevimmediate' type='checkbox' checked='checked' />&nbsp;Save assignments as they are made<br />
   </td><td>
   </td></tr></table>
@@ -280,7 +276,7 @@ if ($reviewer > 0) {
     echo $paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me);
     //if (isset($sau) && ($paperList->authorMatch || $paperList->collaboratorsMatch))
     //   $_SESSION["matchPreg"] = "/(" . $paperList->authorMatch . ($paperList->authorMatch && $paperList->collaboratorsMatch ? "|" : "") . $paperList->collaboratorsMatch . ")/i";
-    echo "<hr class='g' />\n",
+    echo "<div class='g' />\n",
 	"<table class='center'><tr><td><input class='hbutton' type='submit' name='update' value='Save assignments' /></td></tr></table>\n",
 	"</div></form>\n";
 }

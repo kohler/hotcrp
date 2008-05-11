@@ -418,14 +418,13 @@ Types of PC assignment:
 </div></div>\n";
 
 
-$idRow = "<tr class='id'><td class='caption'></td><td class='entry'></td></tr>\n";
 $extraclass = " initial";
 
 if (isset($assignments) && count($assignments) > 0) {
-    echo "<table>", $idRow;
+    echo "<table class='manyassign'>";
     echo "<tr class='propass'>", tdClass(false, "propass", $extraclass), "Proposed assignment</td><td class='entry$extraclass'>";
     $Conf->infoMsg("If this assignment looks OK to you, select \"Save assignment\" to apply it.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown in square brackets.");
-    $idRow = $extraclass = "";
+    $extraclass = "";
     
     ksort($assignments);
     $atext = array();
@@ -450,7 +449,7 @@ if (isset($assignments) && count($assignments) > 0) {
 
     $atype = $_REQUEST["a"];
     if ($atype != "prefconflict") {
-	echo "<hr class='g' />";
+	echo "<div class='g' />";
 	echo "<strong>Assignment Summary</strong><br />\n";
 	echo "<table class='pcass'><tr><td><table>";
 	$pcsel = array();
@@ -486,7 +485,7 @@ if (isset($assignments) && count($assignments) > 0) {
 	    echo "<strong>Review round:</strong> ", htmlspecialchars($rev_roundtag);
     }
 
-    echo "<hr class='g' />";
+    echo "<div class='g' />";
     echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'>\n";
     echo "<input type='submit' class='button' name='saveassign' value='Save assignment' />\n";
     echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />\n";
@@ -520,8 +519,7 @@ if (isset($assignments) && count($assignments) > 0) {
 
 echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'>";
 
-echo "<table>", $idRow;
-$idRow = "";
+echo "<table class='manyassign'>";
 
 echo "<tr>", tdClass(false, "ass", $extraclass), "Action</td>",
     tdClass(true, "rev", $extraclass);
@@ -564,7 +562,7 @@ echo "</td></tr>\n";
 
 
 // PC
-echo "<tr><td class='caption'></td><td class='entry'><hr class='g' /></td></tr>\n";
+echo "<tr><td class='caption'></td><td class='entry'><div class='g' /></td></tr>\n";
 
 echo "<tr><td class='caption'>PC members</td><td class='entry'>";
 doRadio('pctyp', 'all', 'Use entire PC');
@@ -640,7 +638,7 @@ echo "</td></tr>\n";
 
 
 // Load balancing
-echo "<tr><td class='caption'></td><td class='entry'><hr class='g' /></td></tr>\n";
+echo "<tr><td class='caption'></td><td class='entry'><div class='g' /></td></tr>\n";
 echo "<tr><td class='caption'>Load balancing</td><td class='entry'>";
 doRadio('balance', 'new', "Consider only new assignments when balancing load");
 echo "<br />";
@@ -649,7 +647,7 @@ echo "</td></tr>\n";
 
 
 // Paper selection
-echo "<tr><td class='caption'></td><td class='entry'><hr class='g' /></td></tr>\n";
+echo "<tr><td class='caption'></td><td class='entry'><div class='g' /></td></tr>\n";
 echo "<tr><td class='caption'>Paper selection</td><td class='entry'>";
 if (!isset($_REQUEST["q"]))
     $_REQUEST["q"] = join(" ", $papersel);
@@ -664,7 +662,7 @@ echo "<input class='textlite' type='text' size='40' name='q' value=\"", htmlspec
     tagg_select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")")),
     " &nbsp; <input id='requery' class='button' name='requery' type='submit' value='Search' />\n";
 if (isset($_REQUEST["requery"])) {
-    echo "<hr class='g' />\n";
+    echo "<div class='g' />\n";
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
     $plist = new PaperList(false, false, $search);
     $plist->papersel = $papersel;
@@ -674,7 +672,7 @@ echo "</td></tr>\n";
 
 
 // Create assignment
-echo "<tr><td class='caption'></td><td class='entry'><hr class='g' /></td></tr>\n";
+echo "<tr><td class='caption'></td><td class='entry'><div class='g' /></td></tr>\n";
 echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='button' name='assign' value='Create assignment' /></td></tr>\n";
 
 

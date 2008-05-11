@@ -653,7 +653,7 @@ if ($mode == "edit" && $Me->privChair)
     $canViewAuthors = true;
 
 if ($editable)
-    $spacer = "<tr><td class='caption'></td><td class='entry'><hr class='g' /></td></tr>\n";
+    $spacer = "<tr><td class='caption'></td><td class='entry'><div class='g' /></td></tr>\n";
 else
     $spacer = "";
 
@@ -672,7 +672,7 @@ if (!$newPaper) {
     echo "</h2></td>
 </tr>\n";
 } else
-    echo "<hr class='g' />\n";
+    echo "<div class='g' />\n";
 
 
 // Editable title

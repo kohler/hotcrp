@@ -227,7 +227,7 @@ if ($Me->privChair) {
     }
 
     echo tagg_select("reviewer", $revopt, $reviewer, array("onchange" => "e(\"redisplayform\").submit()")),
-	"<hr class='g' /></td></tr>\n";
+	"<div class='g' /></td></tr>\n";
 }
 
 echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'><input class='textlite' type='text' size='32' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>",

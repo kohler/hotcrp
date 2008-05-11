@@ -122,7 +122,7 @@ $pl_text = $pl->text($_REQUEST["t"], $Me, "${ConfSiteBase}contacts$ConfSiteSuffi
 
 
 // form
-echo "<hr class='g' />\n";
+echo "<div class='g' />\n";
 if (count($tOpt) > 1) {
     echo "<table id='contactsform' class='tablinks1'>
 <tr><td><div class='tlx'><div class='tld1'>";
@@ -174,7 +174,7 @@ if (count($tOpt) > 1) {
     }
     echo "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
     if (isset($pl->scoreMax)) {
-	echo "<tr><td colspan='3'><hr class='g' /><b>Sort scores by:</b> &nbsp;",
+	echo "<tr><td colspan='3'><div class='g' /><b>Sort scores by:</b> &nbsp;",
 	    tagg_select("scoresort", array_intersect_key($scoreSorts, array("A" => 1, "V" => 1, "D" => 1)), defval($_SESSION, "pplscoresort", "A")),
 	    "</td></tr>";
     }

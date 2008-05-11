@@ -318,13 +318,13 @@ $tmpl["myreviewremind"] = "Personalized review reminder";
 if (!isset($_REQUEST["template"]) || !isset($tmpl[$_REQUEST["template"]]))
     $_REQUEST["template"] = "genericmailtool";
 echo tagg_select("template", $tmpl, $_REQUEST["template"], array("onchange" => "highlightUpdate(\"loadtmpl\")")),
-    " &nbsp;<input id='loadtmpl' class='button' type='submit' name='loadtmpl' value='Load template' /><hr class='g' /></td>
+    " &nbsp;<input id='loadtmpl' class='button' type='submit' name='loadtmpl' value='Load template' /><div class='g' /></td>
 </tr>
 <tr>
   <td class='caption'>Mail to</td>
   <td class='entry'>",
     tagg_select("recipients", $recip, $_REQUEST["recipients"], array("onchange" => "setmailpsel(this)")),
-    "<hr class='g' />\n";
+    "<div class='g' />\n";
 
 // paper selection
 echo "<table id='foldpsel' class='fold8c'><tr><td><input id='plimit' type='checkbox' name='plimit' value='1' onclick='fold(\"psel\", !this.checked, 8)'";
@@ -338,7 +338,7 @@ echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", h
     tagg_select("t", $tOpt, $_REQUEST["t"], array("id" => "t")),
     "</div>
    </td></tr></table>
-<hr class='g' /></td>
+<div class='g' /></td>
 </tr>
 
 <tr>
@@ -353,13 +353,13 @@ echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", h
 
 <tr>
   <td class='caption'></td>
-  <td class='entry'><input type='submit' name='prepare' value='Prepare mail' class='button' /><hr class='g' /></td>
+  <td class='entry'><input type='submit' name='prepare' value='Prepare mail' class='button' /><div class='g' /></td>
 </tr>
 
 <tr class='last'>
   <td class='caption'></td>
   <td id='mailref' class='entry'>Keywords enclosed in percent signs, such as <code>%NAME%</code> or <code>%REVIEWDEADLINE%</code>, are expanded for each mail.  Use the following syntax:
-<hr class='g' />
+<div class='g' />
 <table>
 <tr><td class='plholder'><table>
 <tr><td class='lxcaption'><code>%URL%</code></td>
@@ -387,12 +387,12 @@ echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", h
     <td class='llentry'>First couple words of paper title (useful for mail subject).</td></tr>
 <tr><td class='lxcaption'><code>%OPT(AUTHORS)%</code></td>
     <td class='llentry'>Paper authors (if recipient is allowed to see the authors).</td></tr>
-<tr><td><hr class='g' /></td></tr>
+<tr><td><div class='g' /></td></tr>
 <tr><td class='lxcaption'><code>%REVIEWS%</code></td>
     <td class='llentry'>Pretty-printed paper reviews.</td></tr>
 <tr><td class='lxcaption'><code>%COMMENTS%</code></td>
     <td class='llentry'>Pretty-printed paper comments, if any.</td></tr>
-<tr><td><hr class='g' /></td></tr>
+<tr><td><div class='g' /></td></tr>
 <tr><td class='lxcaption'><code>%IF(SHEPHERD)%...%ENDIF%</code></td>
     <td class='llentry'>Include text only if a shepherd is assigned.</td></tr>
 <tr><td class='lxcaption'><code>%SHEPHERD%</code></td>

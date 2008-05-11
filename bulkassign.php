@@ -258,8 +258,7 @@ Types of PC assignment:
 </div></div>";
 
 
-echo "<table>
-  <tr class='id'><td class='caption'></td><td class='entry'></td></tr>
+echo "<table class='manyassign'>
   <tr><td class='caption initial'>Upload</td><td class='entry'>
 <form action='bulkassign$ConfSiteSuffix?upload=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class=inform'>
 Assign &nbsp;",
@@ -270,7 +269,7 @@ Assign &nbsp;",
     "&nbsp; reviews from file:&nbsp;
 <input type='file' name='uploadedFile' accept='text/plain' size='30' />
 
-<hr class='g' />\n\n";
+<div class='g' />\n\n";
 
 if (!isset($_REQUEST["rev_roundtag"]))
     $rev_roundtag = $Conf->settingText("rev_roundtag");
@@ -290,13 +289,13 @@ echo "'>Review round: &nbsp;",
     "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
     " &nbsp;<a class='hint' href='${ConfSiteBase}help$ConfSiteSuffix?t=revround'>What is this?</a></div></div>
 
-<hr class='g' />
+<div class='g' />
 
 <input class='button' type='submit' value='Go' />
 
 </div></form>
 
-<hr class='g' />
+<div class='g' />
 
 <p>Use this page to upload many reviewer assignments at once.  Create a
 tab-separated text file with one line per assignment.  The first column must
