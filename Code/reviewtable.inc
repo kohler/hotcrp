@@ -61,7 +61,7 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 	if ($prow->conflictType > 0 && !$effAssistant)
 	    $x = "";
 	else if ($rr->reviewType > 0) {
-	    $x = $Conf->cacheableImage("ass$rr->reviewType.png", $reviewTypeName[$rr->reviewType]);
+	    $x = $Conf->cacheableImage("ass$rr->reviewType.gif", $reviewTypeName[$rr->reviewType]);
 	    if ($rr->reviewRound > 0) {
 		if (($rround = defval($Conf->settings["rounds"], $rr->reviewRound)))
 		    $x .= "&nbsp;<span class='revround' title='Review round'>" . htmlspecialchars($rround) . "</span>";

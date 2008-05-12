@@ -532,10 +532,10 @@ class PaperList extends BaseList {
 		$a2 = "</a>";
 	    }
 	    if ($row->conflictType > 0 && $this->showConflict) {
-		$which = -1;
+		$which = "-1.png";
 		$alt = "Conflict";
 	    } else if ($row->reviewType === null) {
-		$which = 0;
+		$which = "0.gif";
 		$alt = "";
 	    } else {
 		$which = $row->reviewType;
@@ -544,6 +544,7 @@ class PaperList extends BaseList {
 		    $which .= "n";
 		    $alt .= " (not complete)";
 		}
+		$which .= ".png";
 		if (!$row->reviewRound)
 		    /* nada */;
 		else if (($t = defval($Conf->settings["rounds"], $row->reviewRound)))
@@ -553,7 +554,7 @@ class PaperList extends BaseList {
 		if ($a3)
 		    $a3 = "&nbsp;<span class='revround' title='Review round'>" . htmlspecialchars($a3) . "</span>";
 	    }
-	    return $a1 . $Conf->cacheableImage("ass$which.png", $alt, $alt) . $a2 . $a3;
+	    return $a1 . $Conf->cacheableImage("ass$which", $alt, $alt) . $a2 . $a3;
 	case self::FIELD_REVIEWS_STATUS:
 	    // see also _sortReviewsStatus
 	    if ($row->conflictType > 0 && !$this->contact->privChair
@@ -603,9 +604,9 @@ class PaperList extends BaseList {
 			$n .= ($n ? ", " : "");
 			$n .= contactHtml($xrow->firstName, $xrow->lastName);
 			if ($xrow->reviewType == REVIEW_PRIMARY)
-			    $n .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_PRIMARY . ".png", "Primary");
+			    $n .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_PRIMARY . ".gif", "Primary");
 			else if ($xrow->reviewType == REVIEW_SECONDARY)
-			    $n .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_SECONDARY . ".png", "Secondary");
+			    $n .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_SECONDARY . ".gif", "Secondary");
 		    }
 	    return $n;
 	case self::FIELD_REVIEWER_PREFERENCE:
