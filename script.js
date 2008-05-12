@@ -355,7 +355,7 @@ function addConflictAjax() {
 
 
 // thank you David Flanagan
-var Geometry;
+var Geometry = null;
 if (window.innerWidth) {
     Geometry = function() {
 	return { 
@@ -370,6 +370,18 @@ if (window.innerWidth) {
 } else if (document.documentElement && document.documentElement.clientWidth) {
     Geometry = function() {
 	var e = document.documentElement;
+	return { 
+	    left: e.scrollLeft, 
+	    top: e.scrollTop,
+	    width: e.clientWidth, 
+	    height: e.clientHeight,
+	    right: e.scrollLeft + e.clientWidth,
+	    bottom: e.scrollTop + e.clientHeight
+	};
+    };
+} else if (document.body.clientWidth) {
+    Geometry = function() {
+	var e = document.body;
 	return { 
 	    left: e.scrollLeft, 
 	    top: e.scrollTop,
@@ -401,7 +413,7 @@ function makescorehelp(anchor, which, dofold) {
 	var elt = e("scorehelp_" + which);
 	if (elt && dofold)
 	    elt.className = "scorehelpc";
-	else if (elt) {
+	else if (elt && Geometry) {
 	    var anchorPos = eltPos(anchor);
 	    var wg = Geometry();
 	    elt.className = "scorehelpo";
@@ -467,7 +479,7 @@ function popup(anchor, which, dofold) {
     var elt = e("popup_" + which);
     if (elt && dofold)
 	elt.className = "popupc";
-    else if (elt) {
+    else if (elt && Geometry) {
 	if (!anchor)
 	    anchor = e("popupanchor_" + which);
 	var anchorPos = eltPos(anchor);

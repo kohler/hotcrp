@@ -1,7 +1,7 @@
 // requires prior loading of script.js
 var supersleight = function() {
     var root = false;
-    var applyPositioning = true;
+    var applyPositioning = false;
     
     // Path to a transparent GIF image
     var shim = 'images/_.gif';
