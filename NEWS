@@ -1,5 +1,10 @@
 HotCRP NEWS
 
+Version 2.21   11.May.2008
+
+* Further improve validation and Internet Explorer 6 compatibility.
+
+
 Version 2.20   11.May.2008
 
 * Improve Internet Explorer 6 compatibility.  Reported by Terence Kelly.

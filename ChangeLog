@@ -1,3 +1,80 @@
+2008-05-11 Sunday 20:18  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* paper.php (1.173), reviewprefs.php (1.18): XHTML validation
+
+2008-05-11 Sunday 20:08  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/paperlist.inc (1.182): oopslet
+
+2008-05-11 Sunday 19:58  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* supersleight-min.js (1.2): Prefer supersleight.js (which is now
+	  modified) to supersleight-min.js.
+
+2008-05-11 Sunday 19:58  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* script.js (1.73), supersleight.js (1.2): Javascript nits for IE
+	  5.5 and 6.
+
+2008-05-11 Sunday 19:36  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* images/: ass0.png (1.3), ass1.png (1.3), ass1n.png (1.2),
+	  ass2.png (1.5), ass2n.png (1.4), ass3.png (1.4), ass3n.png (1.2),
+	  ass4.png (1.4), ass4n.png (1.2): remove PNG versions of now-GIF
+	  images
+
+2008-05-11 Sunday 19:33  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.97), autoassign.php (1.47), bulkassign.php (1.17),
+	  manualassign.php (1.71), tarball.sh (1.94), Code/paperlist.inc
+	  (1.181), Code/reviewtable.inc (1.58), images/allreviews24.png
+	  (1.3), images/ass0.gif (1.1), images/ass0.png (1.2),
+	  images/ass1.gif (1.1), images/ass1n.gif (1.1), images/ass2.gif
+	  (1.1), images/ass2n.gif (1.1), images/ass3.gif (1.1),
+	  images/ass3n.gif (1.1), images/ass4.gif (1.1), images/ass4n.gif
+	  (1.1), images/assign24.png (1.2), images/bendulft.png (1.2),
+	  images/checksum12.png (1.2), images/info45.png (1.2),
+	  images/newreview24.png (1.2), images/next.png (1.2),
+	  images/override24.png (1.4), images/pdf.png (1.3),
+	  images/pdf24.png (1.2), images/postscript.png (1.3),
+	  images/postscript24.png (1.2), images/prev.png (1.2),
+	  images/sortdown.png (1.2), images/sortup.png (1.2),
+	  images/stophand45.png (1.2), images/timestamp12.png (1.2),
+	  images/txt.png (1.2), images/txt24.png (1.2), images/viewas.png
+	  (1.3): More Internet Explorer 6 funses.  Use GIF images when
+	  common and possible (on/off transparency).  Massage PNGs to have
+	  sensible backgrounds for transparent pixels.
+
+2008-05-11 Sunday 18:56  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* script.js (1.72): do a bit more at a time in staged_foreach
+
+2008-05-11 Sunday 18:53  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* cacheable.php (1.14), script.js (1.71), supersleight.js (1.1),
+	  tarball.sh (1.93), Code/conference.inc (1.267): More internet
+	  explorer 6 farts.  * Modify Supersleight to not do background
+	  images.  * Modify Supersleight to walk through elements a bit at
+	  a time (so the browser doesnt take a holiday).  * Modify our
+	  Javascript to do the same thing (probably doesnt matter though,
+	  Supersleight is heavier weight).
+
+2008-05-11 Sunday 01:04  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.76), autoassign.php (1.46), bulkassign.php (1.16),
+	  comment.php (1.64), contacts.php (1.31), help.php (1.89),
+	  index.php (1.182), log.php (1.13), mail.php (1.36),
+	  manualassign.php (1.70), offline.php (1.42), paper.php (1.172),
+	  review.php (1.152), reviewprefs.php (1.17), search.php (1.158),
+	  settings.php (1.90), Code/papertable.inc (1.121),
+	  Code/reviewsetform.inc (1.52): don't use empty form for <div>, in
+	  case browsers get confused
+
+2008-05-11 Sunday 00:59  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.26), README (1.44), paper.php (1.171), tarball.sh (1.92):
+	  to version 2.20
+
 2008-05-11 Sunday 00:40  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Code/conference.inc (1.266): set max_allowed_packet correctly
