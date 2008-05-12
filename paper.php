@@ -672,7 +672,7 @@ if (!$newPaper) {
     echo "</h2></td>
 </tr>\n";
 } else
-    echo "<div class='g'></div>\n";
+    echo "<tr><td></td><td><div class='g'></div></td></tr>\n";
 
 
 // Editable title

@@ -257,7 +257,7 @@ if ($pl->headerInfo["abstracts"]) {
     echo "<input type='checkbox' name='showabstract' value='1'";
     if (defval($_SESSION, "foldplabstract", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<img id='foldsession.pl5' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldplabstract&amp;val=", defval($_SESSION, "foldplabstract", 1), "&amp;cache=1' width='1' height='1' /><br /><div id='abstractloadformresult'></div>\n";
+    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<img id='foldsession.pl5' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldplabstract&amp;val=", defval($_SESSION, "foldplabstract", 1), "&amp;cache=1' width='1' height='1' alt='' /><br /><div id='abstractloadformresult'></div>\n";
 }
 echo "</td></tr>\n</table></form>"; // </div></div>
 echo "</td></tr></table>\n";
@@ -276,12 +276,13 @@ echo "</div></form>\n\n";
 echo "<form class='assignpc' method='post' action=\"reviewprefs$ConfSiteSuffix?reviewer=$reviewer",
     (defval($_REQUEST, "q") ? "&amp;q=" . htmlspecialchars($_REQUEST["q"]) : ""),
     "&amp;post=1\" enctype='multipart/form-data' accept-charset='UTF-8'>",
+    "<div class='inform'>",
     "<input id='defaultact' type='hidden' name='defaultact' value='' />",
     "<input class='hidden' type='submit' name='default' value='1' />",
     "<div class='assignresult'>\n",
     $pl_text,
     "</div>";
 // echo "<table class='center'><tr><td><input class='hbutton' type='submit' name='update' value='Save preferences' /></td></tr></table>\n";
-echo "</form>\n";
+echo "</div></form>\n";
 
 $Conf->footer();
