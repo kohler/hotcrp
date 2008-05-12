@@ -544,7 +544,7 @@ class PaperList extends BaseList {
 		    $which .= "n";
 		    $alt .= " (not complete)";
 		}
-		$which .= ".png";
+		$which .= ".gif";
 		if (!$row->reviewRound)
 		    /* nada */;
 		else if (($t = defval($Conf->settings["rounds"], $row->reviewRound)))
