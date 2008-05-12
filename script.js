@@ -235,6 +235,19 @@ function authorfold(prefix, relative, n) {
 }
 
 
+function staged_foreach(a, f, backwards) {
+    var i = (backwards ? a.length - 1 : 0);
+    var step = (backwards ? -1 : 1);
+    var stagef = function() {
+	var x;
+	for (x = 0; i >= 0 && i < a.length && x < 15; i += step, ++x)
+	    f(a[i]);
+	if (i < a.length)
+	    setTimeout(arguments.callee, 0);
+    };
+    stagef();
+}
+
 // temporary text and review preferences
 function tempText(elt, text, on) {
     if (on && elt.value == text)
@@ -274,13 +287,14 @@ function makerevprefajax(input, paperId) {
 
 function addRevprefAjax() {
     var inputs = document.getElementsByTagName("input");
-    for (var i = 0; i < inputs.length; i++)
-	if (inputs[i].type == "text" && inputs[i].name.substr(0, 7) == "revpref") {
-	    var whichpaper = inputs[i].name.substr(7);
-	    inputs[i].onfocus = maketemptext(inputs[i], "0", 1, true);
-	    inputs[i].onblur = maketemptext(inputs[i], "0", 0);
-	    inputs[i].onchange = makerevprefajax(inputs[i], whichpaper);
+    staged_foreach(inputs, function(elt) {
+	if (elt.type == "text" && elt.name.substr(0, 7) == "revpref") {
+	    var whichpaper = elt.name.substr(7);
+	    elt.onfocus = maketemptext(elt, "0", 1, true);
+	    elt.onblur = maketemptext(elt, "0", 0);
+	    elt.onchange = makerevprefajax(elt, whichpaper);
 	}
+    });
 }
 
 function makeassrevajax(select, pcs, paperId) {
@@ -304,11 +318,12 @@ function addAssrevAjax() {
 	return;
     var pcs = "pcs" + form.reviewer.value;
     var inputs = document.getElementsByTagName("select");
-    for (var i = 0; i < inputs.length; i++)
-	if (inputs[i].name.substr(0, 6) == "assrev") {
-	    var whichpaper = inputs[i].name.substr(6);
-	    inputs[i].onchange = makeassrevajax(inputs[i], pcs, whichpaper);
+    staged_foreach(inputs, function(elt) {
+	if (elt.name.substr(0, 6) == "assrev") {
+	    var whichpaper = elt.name.substr(6);
+	    elt.onchange = makeassrevajax(elt, pcs, whichpaper);
 	}
+    });
 }
 
 function makeconflictajax(input, pcs, paperId) {
@@ -330,11 +345,12 @@ function addConflictAjax() {
 	return;
     var pcs = "pcs" + form.reviewer.value;
     var inputs = document.getElementsByTagName("input");
-    for (var i = 0; i < inputs.length; i++)
-	if (inputs[i].name == "pap[]") {
-	    var whichpaper = inputs[i].value;
-	    inputs[i].onclick = makeconflictajax(inputs[i], pcs, whichpaper);
+    staged_foreach(inputs, function(elt) {
+	if (elt.name == "pap[]") {
+	    var whichpaper = elt.value;
+	    elt.onclick = makeconflictajax(elt, pcs, whichpaper);
 	}
+    });
 }
 
 

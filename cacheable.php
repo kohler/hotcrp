@@ -17,7 +17,8 @@ if ($zlib_output_compression) {
 
 $file = isset($_REQUEST["file"]) ? $_REQUEST["file"] : "";
 
-if ($file == "script.js" || $file == "supersleight-min.js")
+if ($file == "script.js" || $file == "supersleight-min.js"
+    || $file == "supersleight.js")
     header("Content-type: text/javascript; charset: UTF-8");
 else if ($file == "style.css")
     header("Content-type: text/css; charset: UTF-8");
