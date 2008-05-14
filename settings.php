@@ -12,6 +12,7 @@ $SettingError = array();
 $Error = array();
 $Values = array();
 $rf = reviewForm();
+$DateExplanation = "Date examples: &ldquo;now&rdquo;, &ldquo;10 Dec 2006 11:59:59pm PST&rdquo; <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
 
 $SettingGroups = array("acc" => array(
 			     "acct_addr" => "check",
@@ -688,7 +689,7 @@ function doTextRow($name, $text, $v, $size = 30, $capclass = "lcaption",
     $settingname = (is_array($text) ? $text[0] : $text);
     if ($tempText)
 	$tempText = " onfocus=\"tempText(this, '$tempText', 1)\" onblur=\"tempText(this, '$tempText', 0)\"";
-    echo "<tr><td class='$capclass'>", decorateSettingName($name, $settingname), "</td><td class='lentry'><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='$size'$tempText onchange='highlightUpdate()' />";
+    echo "<tr><td class='$capclass nowrap'>", decorateSettingName($name, $settingname), "</td><td class='lentry'><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='$size'$tempText onchange='highlightUpdate()' />";
     if (is_array($text) && isset($text[2]))
 	echo $text[2];
     if (is_array($text) && $text[1])
@@ -706,9 +707,12 @@ function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
 	$v = $Conf->parseableTime($x);
     else
 	$v = $x;
-    if (!isset($DateExplanation)) {
-	$text = array($text, "Examples: &ldquo;now&rdquo;, &ldquo;10 Dec 2006 11:59:59pm PST&rdquo; <a href='http://www.gnu.org/software/tar/manual/html_node/tar_109.html'>(more)</a>");
-	$DateExplanation = true;
+    if ($DateExplanation) {
+	if (is_array($text))
+	    $text[1] = $DateExplanation . "<br />" . $text[1];
+	else
+	    $text = array($text, $DateExplanation);
+	$DateExplanation = null;
     }
     doTextRow($name, $text, $v, 30, $capclass);
 }
@@ -849,7 +853,7 @@ function doOptGroup() {
 
 // Reviews
 function doRevGroup() {
-    global $Conf, $Error, $ConfSiteBase, $ConfSiteSuffix;
+    global $Conf, $Error, $ConfSiteBase, $ConfSiteSuffix, $DateExplanation;
 
     doCheckbox('rev_open', '<b>Open site for reviewing</b>');
     doCheckbox('cmt_always', 'Allow comments even if reviewing is closed');
@@ -868,8 +872,10 @@ function doRevGroup() {
     echo "<h3>PC reviews</h3>\n";
 
     echo "<table>\n";
-    doDateRow("pcrev_soft", "Soft deadline", "pcrev_hard");
-    doDateRow("pcrev_hard", "Hard deadline");
+    $date_text = $DateExplanation;
+    $DateExplanation = null;
+    doDateRow("pcrev_soft", "Deadline", "pcrev_hard");
+    doDateRow("pcrev_hard", array("Hard deadline", "Reviews are due by the deadline and cannot be changed after the hard deadline.  You may set either or both.<br />$date_text"));
     if (!($rev_roundtag = settingText("rev_roundtag")))
 	$rev_roundtag = "(None)";
     doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments by default.  Examples: &ldquo;R1&rdquo;, &ldquo;R2&rdquo; &nbsp;<span class='barsep'>|</span>&nbsp; <a href='${ConfSiteBase}help$ConfSiteSuffix?t=revround'>What is this?</a>"), $rev_roundtag, 15, "lcaption", "(None)");
@@ -894,7 +900,7 @@ function doRevGroup() {
     }
     
     echo "<table>\n";
-    doDateRow("extrev_soft", "Soft deadline", "extrev_hard");
+    doDateRow("extrev_soft", "Deadline", "extrev_hard");
     doDateRow("extrev_hard", "Hard deadline");
     echo "</table>\n";
 
