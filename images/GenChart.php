@@ -1,7 +1,6 @@
 <?php
 // GenChart.php -- HotCRP chart generator
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
-// This file is less changed than usual from Dirk Grunwald's version
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 // Generates a PNG image of a bar chat.
@@ -9,8 +8,16 @@
 // Don't forget to change the width and height calculations in
 // Conference::textValuesGraph if you change the width and height here.
 
-if (!isset($_REQUEST["v"]))
+if (!isset($_REQUEST["v"])) {
+    header("HTTP/1.0 400 Bad Request");
     exit;
+}
+
+// fail if no GD support so the browser displays alt text
+if (!function_exists("imagecreate")) {
+    header("HTTP/1.0 503 Service Unavailable");
+    exit;
+}
 
 // parse values
 $s = (isset($_REQUEST["s"]) ? $_REQUEST["s"] : 0);

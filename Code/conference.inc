@@ -1087,20 +1087,20 @@ class Conference {
 	    echo $x;
     }
 
-    function infoMsg($text) {
-	$this->msg($text, 'info');
+    function infoMsg($text, $minimal = false) {
+	$this->msg($text, $minimal ? "xinfo" : "info");
     }
 
-    function warnMsg($text) {
-	$this->msg($text, 'warning');
+    function warnMsg($text, $minimal = false) {
+	$this->msg($text, $minimal ? "xwarning" : "warning");
     }
 
-    function confirmMsg($text) {
-	$this->msg($text, 'confirm');
+    function confirmMsg($text, $minimal = false) {
+	$this->msg($text, $minimal ? "xconfirm" : "confirm");
     }
 
-    function errorMsg($text) {
-	$this->msg($text, 'merror');
+    function errorMsg($text, $minimal = false) {
+	$this->msg($text, $minimal ? "xmerror" : "merror");
 	return false;
     }
 

@@ -1028,6 +1028,10 @@ foreach (array("acc" => "Accounts",
 }
 echo "</table></td><td class='top'><div class='lht'>";
 
+// Good to warn multiple times about GD
+if (!function_exists("imagecreate"))
+    $Conf->warnMsg("Your PHP installation appears to lack GD support, which is required for drawing graphs.  You may want to fix this problem and restart Apache.", true);
+
 if ($Group == "acc")
     doAccGroup();
 else if ($Group == "msg")
