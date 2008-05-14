@@ -285,7 +285,7 @@ class Conference {
     function settingsBetween($name1, $name2, $grace = null) {
 	$now = time();
 	$t = defval($this->settings, $name1, null);
-	if ($t === null || ($t <= 0 && $t > $now))
+	if (($t === null || ($t <= 0 && $t > $now)) && $name1)
 	    return false;
 	$t = defval($this->settings, $name2, null);
 	if ($t !== null && $t > 0 && $grace && isset($this->settings[$grace]))
@@ -325,12 +325,13 @@ class Conference {
 	$st = defval($this->settings, 'rev_open', 0);
 	return $st > 0 && time() >= $st;
     }
-    function timeReviewPaper($isPC = false, $requested = true, $hard = true) {
-	if (!($requested
-	      || ($isPC && $this->settings['pcrev_any'] > 0)))
+    function timeReviewPaper($isPC = false, $requested = true, $hard = true,
+			     $assumeOpen = false) {
+	if (!($requested || ($isPC && $this->settings['pcrev_any'] > 0)))
 	    return false;
+	$od = ($assumeOpen ? "" : "rev_open");
 	$d = ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft");
-	return $this->settingsBetween('rev_open', $d, 'rev_grace') > 0;
+	return $this->settingsBetween($od, $d, 'rev_grace') > 0;
     }
     function timePCReviewPreferences() {
 	return defval($this->settings, "papersub") > 0;

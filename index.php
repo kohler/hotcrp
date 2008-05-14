@@ -369,7 +369,9 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     }
     if ($myrow && $myrow[1] < $myrow[2]) {
 	$rtyp = ($Me->isPC ? "pcrev_" : "extrev_");
-	if (!$Conf->timeReviewPaper($Me->isPC, true, true))
+	if ($Conf->timeReviewPaper($Me->isPC, true, true, true))
+	    echo "  <span class='deadline'>The site is not open for reviewing.</span><br />\n";
+	else if (!$Conf->timeReviewPaper($Me->isPC, true, true))
 	    echo "  <span class='deadline'>The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span><br />\n";
 	else if (!$Conf->timeReviewPaper($Me->isPC, true, false))
 	    echo "  <span class='deadline'><strong class='overdue'>Reviews are overdue.</strong>  They were requested by " . $Conf->printableTimeSetting("${rtyp}soft") . ".</span><br />\n";

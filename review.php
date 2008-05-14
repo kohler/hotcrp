@@ -444,7 +444,10 @@ if ($rrow && ($rrow->contactId == $Me->contactId
 	      || ($Me->privChair && $mode == "edit"))
     && !$Conf->timeReviewPaper($Me->isPC, true, true)) {
     $override = ($Me->privChair ? "  As an administrator, you can override this deadline using the \"Override deadlines\" checkbox." : "");
-    $Conf->infoMsg("The <a href='deadlines$ConfSiteSuffix'>deadline</a> for changing reviews has passed, so the review can no longer be changed.$override");
+    if (!$Conf->timeReviewPaper($Me->isPC, true, true, true))
+	$Conf->infoMsg("The <a href='deadlines$ConfSiteSuffix'>deadline</a> for changing reviews has passed, so the review can no longer be changed.$override");
+    else
+	$Conf->infoMsg("The site is not open for reviewing, so the review cannot be changed.$override");
 }
 
 

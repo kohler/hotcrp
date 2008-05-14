@@ -8,7 +8,7 @@ require_once("Code/tags.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair("index$ConfSiteSuffix");
-$SettingError = array();
+$Highlight = array();
 $Error = array();
 $Values = array();
 $rf = reviewForm();
@@ -174,7 +174,7 @@ function expandMailTemplate($name, $default) {
 }
 
 function parseValue($name, $type) {
-    global $SettingText, $Error, $SettingError;
+    global $SettingText, $Error, $Highlight;
 
     if (!isset($_REQUEST[$name]))
 	return null;
@@ -218,13 +218,13 @@ function parseValue($name, $type) {
     } else
 	return $v;
 
-    $SettingError[$name] = true;
+    $Highlight[$name] = true;
     $Error[] = $err;
     return null;
 }
 
 function doTags($set) {
-    global $Conf, $Values, $Error, $SettingError;
+    global $Conf, $Values, $Error, $Highlight;
     if (!$set && isset($_REQUEST["tag_chair"])) {
 	$vs = array();
 	foreach (preg_split('/\s+/', $_REQUEST["tag_chair"]) as $ct)
@@ -232,9 +232,9 @@ function doTags($set) {
 		$vs[] = $ct;
 	    else {
 		$Error[] = "One of the chair-only tags contains odd characters.";
-		$SettingError["tag_chair"] = true;
+		$Highlight["tag_chair"] = true;
 	    }
-	if (!isset($SettingError["tag_chair"]))
+	if (!isset($Highlight["tag_chair"]))
 	    $Values["tag_chair"] = array(1, join(" ", $vs));
     }
 }
@@ -336,7 +336,7 @@ function doDecisions($set) {
 }
 
 function doBanal($set) {
-    global $Conf, $Values, $SettingError, $Error, $ConfSitePATH;
+    global $Conf, $Values, $Highlight, $Error, $ConfSitePATH;
     if ($set)
 	return true;
     if (!isset($_REQUEST["sub_banal"])) {
@@ -354,7 +354,7 @@ function doBanal($set) {
     if (($s = trim(defval($_REQUEST, "sub_banal_papersize", ""))) != ""
 	&& strcasecmp($s, "N/A") != 0) {
 	if (!cvtdimen($s, 2)) {
-	    $SettingError["sub_banal_papersize"] = true;
+	    $Highlight["sub_banal_papersize"] = true;
 	    $Error[] = "Invalid paper size.";
 	} else
 	    $bs[0] = $s;
@@ -363,7 +363,7 @@ function doBanal($set) {
     if (($s = trim(defval($_REQUEST, "sub_banal_pagelimit", ""))) != ""
 	&& strcasecmp($s, "N/A") != 0) {
 	if (($s = cvtint($s, -1)) <= 0) {
-	    $SettingError["sub_banal_pagelimit"] = true;
+	    $Highlight["sub_banal_pagelimit"] = true;
 	    $Error[] = "Page limit must be a whole number bigger than 0.";
 	} else
 	    $bs[1] = $s;
@@ -375,12 +375,12 @@ function doBanal($set) {
 	if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
 	    $s = $m[1];
 	    if (!($ps = cvtdimen($bs[0]))) {
-		$SettingError["sub_banal_pagesize"] = true;
-		$SettingError["sub_banal_textblock"] = true;
+		$Highlight["sub_banal_pagesize"] = true;
+		$Highlight["sub_banal_textblock"] = true;
 		$Error[] = "You must specify a page size as well as margins.";
 	    } else if (strpos($s, "x") !== false) {
 		if (!($m = cvtdimen($s)) || !is_array($m) || count($m) > 4) {
-		    $SettingError["sub_banal_textblock"] = true;
+		    $Highlight["sub_banal_textblock"] = true;
 		    $Error[] = "Invalid margin definition.";
 		    $s = "";
 		} else if (count($m) == 2)
@@ -392,7 +392,7 @@ function doBanal($set) {
 	    } else {
 		$s = preg_replace('/\s+/', 'x', $s);
 		if (!($m = cvtdimen($s)) || (is_array($m) && count($m) > 4)) {
-		    $SettingError["sub_banal_textblock"] = true;
+		    $Highlight["sub_banal_textblock"] = true;
 		    $Error[] = "Invalid margin definition.";
 		} else if (!is_array($m))
 		    $s = array($ps[0] - 2 * $m, $ps[1] - 2 * $m);
@@ -407,7 +407,7 @@ function doBanal($set) {
 	}
 	// check text block measurements
 	if ($s && !cvtdimen($s, 2)) {
-	    $SettingError["sub_banal_textblock"] = true;
+	    $Highlight["sub_banal_textblock"] = true;
 	    $Error[] = "Invalid text block definition.";
 	} else if ($s)
 	    $bs[3] = $s;
@@ -416,7 +416,7 @@ function doBanal($set) {
     if (($s = trim(defval($_REQUEST, "sub_banal_bodyfontsize", ""))) != ""
 	&& strcasecmp($s, "N/A") != 0) {
 	if (!is_numeric($s) || $s <= 0) {
-	    $SettingError["sub_banal_bodyfontsize"] = true;
+	    $Highlight["sub_banal_bodyfontsize"] = true;
 	    $Error[] = "Minimum body font size must be a number bigger than 0.";
 	} else
 	    $bs[4] = $s;
@@ -425,7 +425,7 @@ function doBanal($set) {
     if (($s = trim(defval($_REQUEST, "sub_banal_bodyleading", ""))) != ""
 	&& strcasecmp($s, "N/A") != 0) {
 	if (!is_numeric($s) || $s <= 0) {
-	    $SettingError["sub_banal_bodyleading"] = true;
+	    $Highlight["sub_banal_bodyleading"] = true;
 	    $Error[] = "Minimum body leading must be a number bigger than 0.";
 	} else
 	    $bs[5] = $s;
@@ -463,7 +463,7 @@ function doBanal($set) {
 }
 
 function doSpecial($name, $set) {
-    global $Values, $Error, $SettingError;
+    global $Values, $Error, $Highlight;
     if ($name == "x_tag_chair")
 	doTags($set);
     else if ($name == "topics")
@@ -493,7 +493,7 @@ function doSpecial($name, $set) {
 		$Values["rev_roundtag"] = array(1, $t);
 	    else {
 		$Error[] = "The review round must contain only letters and numbers.";
-		$SettingError["rev_roundtag"] = true;
+		$Highlight["rev_roundtag"] = true;
 	    }
 	}
     }
@@ -533,8 +533,8 @@ if (isset($_REQUEST["update"])) {
 		$Values[$first] = $Values[$second];
 	    else if ($Values[$second] && $Values[$first] > $Values[$second]) {
 		$Error[] = $SettingText[$first] . " must come before " . $SettingText[$second] . ".";
-		$SettingError[$first] = true;
-		$SettingError[$second] = true;
+		$Highlight[$first] = true;
+		$Highlight[$second] = true;
 	    }
 	}
     if (array_key_exists("sub_sub", $Values))
@@ -567,7 +567,19 @@ if (isset($_REQUEST["update"])) {
 	&& defval($Values, "sub_open", 0) > 0
 	&& defval($Values, "sub_sub", 0) <= 0)
 	$Conf->warnMsg("You have not set a paper submission deadline, but authors can update their submissions until the deadline.  This seems odd.  You probably should (1) specify a paper submission deadline; (2) select &ldquo;Authors must freeze the final version of each submission&rdquo;; or (3) manually turn off &ldquo;Open site for submissions&rdquo; when submissions complete.");
-
+    foreach (array("pcrev_soft", "pcrev_hard", "extrev_soft", "extrev_hard")
+	     as $deadline)
+	if (array_key_exists($deadline, $Values)
+	    && $Values[$deadline] > time()
+	    && $Values[$deadline] != $Conf->setting($deadline)
+	    && (array_key_exists("rev_open", $Values)
+		? $Values["rev_open"] <= 0
+		: $Conf->setting("rev_open") <= 0)) {
+	    $Conf->warnMsg("Review deadline set.  You may also want to open the site for reviewing.");
+	    $Highlight["rev_open"] = true;
+	    break;
+	}
+    
     // unset text messages that equal the default
     if (array_key_exists("conflictdefmsg", $Values)
 	&& trim($Values["conflictdefmsg"]) == $Conf->conflictDefinitionText(true))
@@ -625,8 +637,8 @@ $Conf->header("Conference Settings", "settings", actionBar());
 
 
 function decorateSettingName($name, $text) {
-    global $SettingError;
-    if (isset($SettingError[$name]))
+    global $Highlight;
+    if (isset($Highlight[$name]))
 	return "<span class='error'>$text</span>";
     else
 	return $text;
