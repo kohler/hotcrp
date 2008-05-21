@@ -266,11 +266,11 @@ function doTopics($set) {
 
 function doCleanOptionValues($id) {
     if (defval($_REQUEST, "optvt$id", 0) == 0
-	|| trim(defval($_REQUEST, "optv$id", "")) == "")
+	|| rtrim(defval($_REQUEST, "optv$id", "")) == "")
 	unset($_REQUEST["optv$id"]);
     else {
 	$v = "";
-	foreach (explode("\n", trim(cleannl($_REQUEST["optv$id"]))) as $t)
+	foreach (explode("\n", rtrim(cleannl($_REQUEST["optv$id"]))) as $t)
 	    $v .= trim($t) . "\n";
 	$_REQUEST["optv$id"] = substr($v, 0, strlen($v) - 1);
     }
