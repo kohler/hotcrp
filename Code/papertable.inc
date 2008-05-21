@@ -491,10 +491,10 @@ class PaperTable {
 		if (!defval($o, "optionValues")) {
 		    echo "<input type='checkbox' name='opt$o->optionId' value='1'",
 			(defval($optsel, $o->optionId) ? " checked='checked'" : ""),
-			" />&nbsp;", htmlspecialchars($o->description);
+			" />&nbsp;", $o->description;
 		} else {
 		    if ($o->description)
-			echo "<div class='hint'>", htmlspecialchars($o->description), "</div>";
+			echo "<div class='hint'>", $o->description, "</div>";
 		    echo tagg_select("opt$o->optionId", explode("\n", $o->optionValues), defval($optsel, $o->optionId, 0));
 		}
 		echo "</td>\n</tr>\n\n";
