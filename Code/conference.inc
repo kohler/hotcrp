@@ -95,7 +95,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-	if ($this->settings["allowPaperOption"] < 13) {
+	if ($this->settings["allowPaperOption"] < 14) {
 	    require_once("updateschema.inc");
 	    updateSchema($this);
 	}
@@ -869,7 +869,7 @@ class Conference {
 	}
 
 	if (isset($options['options']) && defval($this->settings, "paperOption")) {
-	    $pq .= "		left join (select paperId, group_concat(PaperOption.optionId) as optionIds from PaperOption group by paperId) as PaperOptions on (PaperOptions.paperId=Paper.paperId)\n";
+	    $pq .= "		left join (select paperId, group_concat(PaperOption.optionId, '#', value) as optionIds from PaperOption group by paperId) as PaperOptions on (PaperOptions.paperId=Paper.paperId)\n";
 	}
 
 	if (isset($options['tags']))

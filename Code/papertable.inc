@@ -479,20 +479,36 @@ class PaperTable {
 	if ((!$this->editable && $prow_optionIds == "")
 	    || !($opt = paperOptions()))
 	    return;
-	$optsel = array_flip(explode(",", $prow_optionIds));
+	preg_match_all('/(\d+)#(\d+)/', $prow_optionIds, $m);
+	$optsel = array();
+	for ($i = 0; $i < count($m[1]); ++$i)
+	    $optsel[$m[1][$i]] = $m[2][$i];
 	if ($this->editable) {
 	    foreach ($opt as $o) {
-		echo "<tr class='pt_option'>\n";
-		echo "  ", $this->tdCaption("option"), htmlspecialchars($o->optionName), "</td>\n";
-		echo "  ", $this->tdEntry("option"), "<input type='checkbox' name='opt$o->optionId' value='1'", (isset($optsel[$o->optionId]) ? " checked='checked'" : ""), " />&nbsp;", $o->description, "</td>\n";
-		echo "</tr>\n\n";
+		echo "<tr class='pt_option'>\n",
+		    "  ", $this->tdCaption("option"), htmlspecialchars($o->optionName), "</td>\n",
+		    "  ", $this->tdEntry("option");
+		if (!defval($o, "optionValues")) {
+		    echo "<input type='checkbox' name='opt$o->optionId' value='1'",
+			(defval($optsel, $o->optionId) ? " checked='checked'" : ""),
+			" />&nbsp;", htmlspecialchars($o->description);
+		} else {
+		    if ($o->description)
+			echo "<div class='hint'>", htmlspecialchars($o->description), "</div>";
+		    echo tagg_select("opt$o->optionId", explode("\n", $o->optionValues), defval($optsel, $o->optionId, 0));
+		}
+		echo "</td>\n</tr>\n\n";
 	    }
 	} else {
 	    $sep = $t = "";
 	    foreach ($opt as $o)
-		if (isset($optsel[$o->optionId])
+		if ((defval($optsel, $o->optionId) || defval($o, "optionValues"))
 		    && ($o->pcView || $showAll || $prow->conflictType >= CONFLICT_AUTHOR)) {
 		    $t .= $sep . htmlspecialchars($o->optionName);
+		    if (defval($o, "optionValues")) {
+			$om = explode("\n", $o->optionValues);
+			$t .= ": " . htmlspecialchars($om[$optsel[$o->optionId]]);
+		    }
 		    $sep = "<span class='sep'> </span>";
 		}
 	    if ($t) {

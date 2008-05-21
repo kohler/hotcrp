@@ -264,6 +264,18 @@ function doTopics($set) {
     }
 }
 
+function doCleanOptionValues($id) {
+    if (defval($_REQUEST, "optvt$id", 0) == 0
+	|| trim(defval($_REQUEST, "optv$id", "")) == "")
+	unset($_REQUEST["optv$id"]);
+    else {
+	$v = "";
+	foreach (explode("\n", trim(cleannl($_REQUEST["optv$id"]))) as $t)
+	    $v .= trim($t) . "\n";
+	$_REQUEST["optv$id"] = substr($v, 0, strlen($v) - 1);
+    }
+}
+
 function doOptions($set) {
     global $Conf, $Values;
     if (!$set) {
@@ -275,24 +287,41 @@ function doOptions($set) {
     
     $ochange = false;
     $anyo = false;
-    foreach (paperOptions() as $id => $o)
+    foreach (paperOptions() as $id => $o) {
+	doCleanOptionValues($id);
 	if (isset($_REQUEST["optn$id"])
 	    && ($_REQUEST["optn$id"] != $o->optionName
 		|| defval($_REQUEST, "optd$id") != $o->description
-		|| defval($_REQUEST, "optp$id", 0) != $o->pcView)) {
+		|| defval($_REQUEST, "optp$id", 0) != $o->pcView
+		|| defval($_REQUEST, "optv$id", "") != defval($o, "optionValues", ""))) {
 	    if ($_REQUEST["optn$id"] == "") {
 		$Conf->qe("delete from OptionType where optionId=$id", $while);
 		$Conf->qe("delete from PaperOption where optionId=$id", $while);
 	    } else {
-		$Conf->qe("update OptionType set optionName='" . sqlq($_REQUEST["optn$id"]) . "', description='" . sqlq(defval($_REQUEST, "optd$id")) . "', pcView=" . (defval($_REQUEST, "optp$id") ? 1 : 0) . " where optionId=$id", $while);
+		$q = "update OptionType set optionName='" . sqlq($_REQUEST["optn$id"])
+		    . "', description='" . sqlq(defval($_REQUEST, "optd$id", ""))
+		    . "', pcView=" . (defval($_REQUEST, "optp$id") ? 1 : 0);
+		if ($Conf->setting("allowPaperOption") >= 14)
+		    $q .= ", optionValues='" . sqlq(defval($_REQUEST, "optv$id")) . "'";
+		$Conf->qe($q . " where optionId=$id", $while);
 		$anyo = true;
 	    }
 	    $ochange = true;
 	} else
 	    $anyo = true;
+    }
     
     if (defval($_REQUEST, "optnn") && $_REQUEST["optnn"] != "New option") {
-	$Conf->qe("insert into OptionType (optionName, description, pcView) values ('" . sqlq($_REQUEST["optnn"]) . "', '" . sqlq(defval($_REQUEST, "optdn", "")) . "', " . (defval($_REQUEST, "optpn") ? 1 : 0) . ")", $while);
+	doCleanOptionValues("n");
+	$qa = "optionName, description, pcView";
+	$qb = "'" . sqlq($_REQUEST["optnn"])
+	    . "', '" . sqlq(defval($_REQUEST, "optdn", ""))
+	    . "', " . (defval($_REQUEST, "optpn") ? 1 : 0);
+	if ($Conf->setting("allowPaperOption") >= 14) {
+	    $qa .= ", optionValues";
+	    $qb .= ", '" . sqlq(defval($_REQUEST, "optvn", "")) . "'";
+	}
+	$Conf->qe("insert into OptionType ($qa) values ($qb)", $while);
 	$ochange = $anyo = true;
     }
 
@@ -817,29 +846,53 @@ function doSubGroup() {
 }
 
 // Submission options
+function doOptGroupOption($o) {
+    global $Conf;
+    $id = $o->optionId;
+
+    echo "<tr><td class='lxcaption'>Option name</td>",
+	"<td class='lentry'><input type='text' class='textlite' name='optn$id' value=\"", htmlspecialchars($o->optionName), "\" size='50' onchange='highlightUpdate()' ",
+	($id == "n" ? "onfocus=\"tempText(this, 'New option', 1)\" onblur=\"tempText(this, 'New option', 0)\" " : ""),
+	"/></td></tr>\n",
+	"<tr><td class='lxcaption'>Description</td>",
+	"<td class='lentry textarea'><textarea class='textlite' name='optd$id' rows='2' cols='50' onchange='highlightUpdate()'>", htmlspecialchars($o->description), "</textarea></td></tr>\n",
+	"<td class='lxcaption'></td>",
+	"<td class='lentry'>";
+
+    if ($Conf->setting("allowPaperOption") >= 14)
+	echo tagg_select("optvt$id", array("Checkbox", "Selector"), defval($o, "optionValues") ? 1 : 0, array("onchange" => "fold(\"optv$id\",this.value==0)")),
+	    "<span class='sep'></span>";
+
+    echo "<input type='checkbox' name='optp$o->optionId' value='1'", ($o->pcView ? " checked='checked'" : ""), " />&nbsp;Visible to PC";
+
+    if ($Conf->setting("allowPaperOption") >= 14)
+	echo "<div id='foldoptv$id' class='", (defval($o, "optionValues") ? "foldo" : "foldc"), "'><div class='extension'>",
+	    "<div class='hint'>Enter the possible values, one per line.  The first value will be the default.</div>",
+	    "<textarea class='textlite' name='optv$id' rows='3' cols='50' onchange='highlightUpdate()'>", htmlspecialchars(defval($o, "optionValues")), "</textarea>",
+	    "</div></div>";
+
+    echo "</td></tr>\n";
+}
+
 function doOptGroup() {
     global $Conf, $rf;
     
     if ($Conf->setting("allowPaperOption")) {
 	echo "<h3>Submission options</h3>\n";
-	echo "Options may be selected by authors at submission time, and might include \"Consider this paper for a Best Student Paper award\" or \"Allow the shadow PC to see this paper\".  The \"option name\" should be brief, three or four words at most; it appears as a caption to the left of the option.  The description should be longer and may use HTML.  To delete an option, delete its name.  Add options one at a time.\n";
+	echo "Options may be selected by authors at submission time, and might include &ldquo;Consider this paper for a Best Student Paper award&rdquo; or &ldquo;Allow the shadow PC to see this paper.&rdquo;  The &ldquo;option name&rdquo; should be brief, three or four words at most; it appears as a caption to the left of the option.  The description should be longer and may use HTML.  To delete an option, delete its name.  Add options one at a time.\n";
 	echo "<div class='g'></div>\n";
 	echo "<table>";
 	$opt = paperOptions();
 	$sep = "";
 	foreach ($opt as $o) {
 	    echo $sep;
-	    echo "<tr><td class='lxcaption'>Option name</td><td class='lentry'><input type='text' class='textlite' name='optn$o->optionId' value=\"", htmlspecialchars($o->optionName), "\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
-	    echo "<tr><td class='lxcaption'>Description</td><td class='lentry textarea'><textarea class='textlite' name='optd$o->optionId' rows='2' cols='50' onchange='highlightUpdate()'>", htmlspecialchars($o->description), "</textarea><br />\n",
-		"<input type='checkbox' name='optp$o->optionId' value='1'", ($o->pcView ? " checked='checked'" : ""), " />&nbsp;Visible to PC</td></tr>\n";
+	    doOptGroupOption($o);
 	    $sep = "<tr><td></td><td><div class='g'></div></td></tr>\n";
 	}
     
 	echo ($sep ? "<tr><td colspan='2'><hr class='hr' /></td></tr>\n" : "");
-	
-	echo "<tr><td class='lxcaption'>Option name</td><td class='lentry'><input type='text' class='textlite' name='optnn' value=\"New option\" size='50' onchange='highlightUpdate()' onfocus=\"tempText(this, 'New option', 1)\" onblur=\"tempText(this, 'New option', 0)\" /></td></tr>\n";
-	echo "<tr><td class='lxcaption'>Description</td><td class='lentry textarea'><textarea class='textlite' name='optdn' rows='2' cols='50' onchange='highlightUpdate()'></textarea><br />\n",
-	    "<input type='checkbox' name='optpn' value='1' checked='checked' />&nbsp;Visible to PC</td></tr>\n";
+
+	doOptGroupOption((object) array("optionId" => "n", "optionName" => "New option", "description" => "", "pcView" => 1, "optionValues" => ""));
 	
 	echo "</table>\n";
     }
@@ -922,7 +975,7 @@ function doRevGroup() {
 
     echo "<div class='g'></div>\n";
     $t = expandMailTemplate("requestreview", false);
-    echo "<div id='foldmailbody_requestreview' class='foldc'>", foldbutton("mailbody_requestreview", ""), "&nbsp;
+    echo "<div id='foldmailbody_requestreview' class='foldc'>", foldbutton("mailbody_requestreview", ""), "
   <a href=\"javascript:fold('mailbody_requestreview', 0)\" class='unfolder q'><strong>Mail template for external review requests</strong></a>\n";
     echo "  <span class='extension'><strong>Mail template for external review requests</strong> (<a href='${ConfSiteBase}mail$ConfSiteSuffix'>keywords</a> allowed)<br /></span>
 <textarea class='tt extension' name='mailbody_requestreview' cols='80' rows='20' onchange='highlightUpdate()'>", htmlspecialchars($t[1]), "</textarea></div>\n";

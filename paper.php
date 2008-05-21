@@ -221,10 +221,10 @@ function requestSameAsPaper($prow) {
 	    return false;
     }
     if ($Conf->setting("paperOption")) {
-	$result = $Conf->q("select OptionType.optionId, PaperOption.paperId from OptionType left join PaperOption on PaperOption.paperId=$prow->paperId and PaperOption.optionId=OptionType.optionId");
+	$result = $Conf->q("select OptionType.optionId, coalesce(PaperOption.value, 0) from OptionType left join PaperOption on PaperOption.paperId=$prow->paperId and PaperOption.optionId=OptionType.optionId");
 	while (($row = edb_row($result))) {
-	    $got = isset($_REQUEST["opt$row[0]"]) && cvtint($_REQUEST["opt$row[0]"]) > 0;
-	    if (($row[1] > 0) != $got)
+	    $got = defval($_REQUEST, "opt$row[0]", 0);
+	    if (cvtint($got, 0) != $row[1])
 		return false;
 	}
     }
@@ -386,7 +386,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$q = "";
 	foreach (paperOptions() as $opt)
 	    if (defval($_REQUEST, "opt$opt->optionId") > 0)
-		$q .= "($paperId, $opt->optionId, 1), ";
+		$q .= "($paperId, $opt->optionId, " . $_REQUEST["opt$opt->optionId"] . "), ";
 	if ($q && !$Conf->qe("insert into PaperOption (paperId, optionId, value) values " . substr($q, 0, strlen($q) - 2), "while updating paper options"))
 	    return false;
     }
