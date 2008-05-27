@@ -318,7 +318,7 @@ $tmpl["myreviewremind"] = "Personalized review reminder";
 if (!isset($_REQUEST["template"]) || !isset($tmpl[$_REQUEST["template"]]))
     $_REQUEST["template"] = "genericmailtool";
 echo tagg_select("template", $tmpl, $_REQUEST["template"], array("onchange" => "highlightUpdate(\"loadtmpl\")")),
-    " &nbsp;<input id='loadtmpl' class='button' type='submit' name='loadtmpl' value='Load template' /><div class='g'></div></td>
+    " &nbsp;<input id='loadtmpl' class='b' type='submit' name='loadtmpl' value='Load template' /><div class='g'></div></td>
 </tr>
 <tr>
   <td class='caption'>Mail to</td>

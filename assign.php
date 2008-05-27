@@ -600,7 +600,7 @@ if (($prow->outcome > 0 && $Me->privChair)
 
 // "Save assignments" button
 if ($Me->privChair)
-    echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='hbutton' name='update' value='Save assignments' />
+    echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='hb' name='update' value='Save assignments' />
     <span id='assresult' style='padding-left:1em'></span>
 </td></tr>\n";
 
@@ -661,7 +661,7 @@ echo "<div class='f-i'><div class='f-ix'>
   <div class='f-e'><input class='textlite' type='text' name='email' value=\"", htmlspecialchars(defval($_REQUEST, "email", "")), "\" size='28' tabindex='1' /></div>
 </div><div class='f-ix'>
   <div class='f-c'>&nbsp;</div>
-  <div class='f-e'><input class='button' type='submit' name='add' value='Request review' tabindex='2' /></div>
+  <div class='f-e'><input class='b' type='submit' name='add' value='Request review' tabindex='2' /></div>
 </div><div class='clear'></div></div>\n\n";
 
 if ($Conf->setting("allowPaperOption") >= 7)

@@ -38,7 +38,7 @@ function highlightUpdate(which, off) {
     if (which.tagName != "INPUT" && which.tagName != "BUTTON") {
 	var ins = which.getElementsByTagName("input");
 	for (var i = 0; i < ins.length; i++)
-	    if (ins[i].className.length >= 7 && ins[i].className.substring(0, 7) == "hbutton")
+	    if (ins[i].className.substr(0, 2) == "hb")
 		highlightUpdate(ins[i], off);
     }
     if (which.className) {

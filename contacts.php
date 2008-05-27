@@ -131,7 +131,7 @@ if (count($tOpt) > 1) {
     if (isset($_REQUEST["sort"]))
 	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />";
     echo tagg_select("t", $tOpt, $_REQUEST["t"], array("id" => "contactsform1_d")),
-	" &nbsp;<input class='button' type='submit' value='Show' /></div></form>";
+	" &nbsp;<input class='b' type='submit' value='Go' /></div></form>";
 
     echo "</div><div class='tld2'>";
 
@@ -172,7 +172,7 @@ if (count($tOpt) > 1) {
 	    }
 	echo "</td>";
     }
-    echo "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
+    echo "<td><input class='b' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
     if (isset($pl->scoreMax)) {
 	echo "<tr><td colspan='3'><div class='g'></div><b>Sort scores by:</b> &nbsp;",
 	    tagg_select("scoresort", array_intersect_key($scoreSorts, array("A" => 1, "V" => 1, "D" => 1)), defval($_SESSION, "pplscoresort", "A")),

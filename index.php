@@ -293,7 +293,7 @@ Sign in to submit or review papers.";
   <input type='radio' name='action' value='new' tabindex='2' />&nbsp;I'm a new user and want to create an account using this email address
 </div>
 <div class='f-i'>
-  <input class='button' type='submit' value='Sign in' name='signin' tabindex='1' />
+  <input class='b' type='submit' value='Sign in' name='signin' tabindex='1' />
 </div>
 </div></form>
 <hr class='home' /></div>\n";
@@ -318,7 +318,7 @@ if ($homelist) {
 	"\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" title='Enter paper numbers or search terms' />
     &nbsp;in&nbsp; ",
 	PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
-    &nbsp; <input class='button' type='submit' value='Search' />
+    &nbsp; <input class='b' type='submit' value='Search' />
   </div></form>
   <span class='sep'></span>
   <small><a href='search$ConfSiteSuffix?opt=1'>Advanced search</a></small>

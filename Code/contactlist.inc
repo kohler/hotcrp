@@ -358,7 +358,7 @@ class ContactList extends BaseList {
 	    . tagg_select("getaction", array("nameemail" => "Names and emails",
 					     "address" => "Addresses"),
 			  null, array("id" => "pplact1_d"))
-	    . "&nbsp; <input type='submit' class='button_small' name='getgo' value='Go' /></span>";
+	    . "&nbsp; <input type='submit' class='bsm' name='getgo' value='Go' /></span>";
 
 	return $t . "</td></tr>\n";
     }

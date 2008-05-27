@@ -473,7 +473,8 @@ div.gopaper {
 
 
 /* buttons */
-input.button, button, a.button, input.hbutton {
+/* All input styles starting with "hb" are treated specially by script. */
+input.button, button.button, a.button, input.hbutton, input.hb {
 	background: #ffffbb;
 	border-top: 1px solid #eeee66;
 	border-left: 2px solid #eeee66;
@@ -483,7 +484,15 @@ input.button, button, a.button, input.hbutton {
 	color: black;
 	white-space: nowrap;
 }
-input.button.alert, input.hbutton.alert {
+input.b, button.b {
+	text-decoration: none;
+	color: black;
+	white-space: nowrap;
+}
+input.b.alert {
+	font-weight: bold;
+}
+input.button.alert, input.hbutton.alert, input.hb.alert {
 	font-weight: bold;
 	background: #ffaaaa;
 	border-top: 1px solid #ee6666;
@@ -499,6 +508,12 @@ input.button_small, a.button_small, button.button_small {
 	border-left: 2px solid #eeee66;
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
+	text-decoration: none;
+	color: black;
+	white-space: nowrap;
+}
+input.bsm, button.bsm {
+	font-size: smaller;
 	text-decoration: none;
 	color: black;
 	white-space: nowrap;

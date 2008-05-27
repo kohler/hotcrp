@@ -494,7 +494,7 @@ if (($rrow ? isset($prow->myReviewId) : $nReviewTokens)
   <td class='caption'>Review token</td>
   <td class='entry'><form method='post' action=\"review$ConfSiteSuffix?p=$prow->paperId$linkExtra\" method='post' enctype='multipart/form-data' accept-charset='UTF-8'>",
 	"<input class='textlite' type='text' name='token' value=\"", htmlspecialchars(defval($_REQUEST, "token", "")), "\" size='15' />",
-	" &nbsp; <input class='button' type='submit' value='Go' />",
+	" &nbsp; <input class='b' type='submit' value='Go' />",
 	"</form>";
     if (isset($prow->myReviewId))
 	echo "<div class='xconfirm'>You have entered a valid review token and may <a href=\"review$ConfSiteSuffix?r=$prow->myReviewId&amp;mode=edit$linkExtra\">edit the corresponding review</a>.</div>";
@@ -668,8 +668,8 @@ function reviewView($prow, $rrow, $editMode) {
 	$Conf->footerStuff .= "<div id='popup_ref' class='popupc'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'>
   <input class='textlite' type='text' name='reason' value='' size='40' />
   <div class='g'></div>
-  <input class='button' type='submit' name='refuse' value='Refuse review' />
-  &nbsp;<button type='button' onclick=\"popup(null, 'ref', 1)\">Cancel</button></div></form></div>";
+  <input class='b' type='submit' name='refuse' value='Refuse review' />
+  &nbsp;<button type='button' class='b' onclick=\"popup(null, 'ref', 1)\">Cancel</button></div></form></div>";
 	echo "</td>\n</tr>\n";
     }
 
@@ -704,7 +704,7 @@ function reviewView($prow, $rrow, $editMode) {
   <td class='caption$extraclass'>Offline reviewing</td>
   <td class='entry$extraclass' colspan='2'>
     Upload form: &nbsp; <input type='file' name='uploadedFile' accept='text/plain' size='30' />
-    &nbsp; <input class='button_small' type='submit' value='Go' name='uploadForm' />
+    &nbsp; <input class='bsm' type='submit' value='Go' name='uploadForm' />
     <div class='g'></div>
     <a href='${reviewLinkBase}downloadForm=1'>Download this paper's review form</a>
     &nbsp;<span class='barsep'>|</span>&nbsp;
@@ -745,8 +745,8 @@ function reviewView($prow, $rrow, $editMode) {
 	$buttons = array();
 	$buttons[] = "<input class='hbutton' type='submit' value='Save changes' name='update' />";
 	if ($rrow && $Me->privChair) {
-	    $buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
-	    $Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='button' type='submit' name='delete' value='Delete review' /> &nbsp;<button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
+	    $buttons[] = array("<button type='button' class='b' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
+	    $Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='delete' value='Delete review' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
 	}
 
 	echo "    <tr>\n";

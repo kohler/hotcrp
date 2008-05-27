@@ -737,14 +737,14 @@ class PaperList extends BaseList {
 	    $sel_opt["scores"] = "Scores";
 	$t .= tagg_select("getaction", $sel_opt, key($sel_opt),
 			  array("id" => "plact${nlll}_d", "tabindex" => 6))
-	    . "&nbsp; <input type='submit' class='button_small' name='getgo' value='Go' tabindex='6' /></span>";
+	    . "&nbsp; <input type='submit' class='bsm' name='getgo' value='Go' tabindex='6' /></span>";
 	$nlll++;
 
 	// Upload preferences (review preferences only)
 	if ($revpref) {
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Upload</a></span><span class='lld$nlll'><b> preference file:</b> &nbsp;";
-	    $t .= "<input id='plact${nlll}_d' type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='defact(\"upload\")' />&nbsp; <input type='submit' class='button_small' name='upload' value='Go' tabindex='6' /></span>";
+	    $t .= "<input id='plact${nlll}_d' type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='defact(\"upload\")' />&nbsp; <input type='submit' class='bsm' name='upload' value='Go' tabindex='6' /></span>";
 	    $nlll++;
 	}
 
@@ -752,7 +752,7 @@ class PaperList extends BaseList {
 	if ($revpref) {
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Set preferences</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
-	    $t .= "<input id='plact${nlll}_d' class='textlite' type='text' name='paprevpref' value='' size='4' tabindex='6' onfocus='defact(\"setpaprevpref\")' /> &nbsp;<input type='submit' class='button_small' name='setpaprevpref' value='Go' tabindex='6' /></span>";
+	    $t .= "<input id='plact${nlll}_d' class='textlite' type='text' name='paprevpref' value='' size='4' tabindex='6' onfocus='defact(\"setpaprevpref\")' /> &nbsp;<input type='submit' class='bsm' name='setpaprevpref' value='Go' tabindex='6' /></span>";
 	    $nlll++;
 	}
 	
@@ -761,7 +761,7 @@ class PaperList extends BaseList {
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Tag</a></span><span class='lld$nlll'><b>:</b><a class='help' href='${ConfSiteBase}help$ConfSiteSuffix?t=tags#changing' title='Learn more'>?</a> &nbsp;";
 	    $t .= tagg_select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define", "so" => "Define ordered", "ao" => "Add ordered"))
-		. " &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='button_small' name='tagact' value='Go' /></span>";
+		. " &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='bsm' name='tagact' value='Go' /></span>";
 	    $nlll++;
 	}
 
@@ -789,7 +789,7 @@ class PaperList extends BaseList {
 	    foreach ($pc as $id => $row)
 		$sel_opt[htmlspecialchars($row->email)] = contactHtml($row->firstName, $row->lastName);
 	    $t .= tagg_select("markpc", $sel_opt, null, array("id" => "markpc"))
-		. "</span> &nbsp;<input type='submit' class='button_small' name='setassign' value='Go' />";
+		. "</span> &nbsp;<input type='submit' class='bsm' name='setassign' value='Go' />";
 	    $t .= "</span>";
 	    $nlll++;
 	}
@@ -798,13 +798,13 @@ class PaperList extends BaseList {
 	if ($this->contact->privChair && !$revpref) {
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Decide</a></span><span class='lld$nlll'><b>:</b> Set to &nbsp;";
-	    $t .= outcomeSelector(0, "plact${nlll}_d") . " &nbsp;<input type='submit' class='button_small' name='setoutcome' value='Go' /></span>";
+	    $t .= outcomeSelector(0, "plact${nlll}_d") . " &nbsp;<input type='submit' class='bsm' name='setoutcome' value='Go' /></span>";
 	    $nlll++;
 
 	    $t .= $barsep
 		. "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Mail</a></span><span class='lld$nlll'><b>:</b> &nbsp;"
 		. tagg_select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), null, array("id" => "plact${nlll}_d"))
-		. " &nbsp;<input type='submit' class='button_small' name='sendmail' value='Go' /></span>";
+		. " &nbsp;<input type='submit' class='bsm' name='sendmail' value='Go' /></span>";
 	    $nlll++;
 	}
 

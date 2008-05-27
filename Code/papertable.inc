@@ -610,8 +610,8 @@ class PaperTable {
 		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div id='foldtags' class='foldc inform'>";
 		echo "<span class='ellipsis'>", ($t == "" ? "none" : $tx), "&nbsp;</span>";
 		echo "<a href='javascript:fold(\"tags\", 0)' title='Edit tags'>", $Conf->cacheableImage("next.png", "[Edit]", null, "unfolder"), "</a>";
-		echo "<span class='extension'><input class='textlite' type='text' size='40' name='tags' value=\"", $t, "\" /> &nbsp;<input class='button_small' type='submit' name='settags' value='Save' /> &nbsp; ";
-		echo "<button type='button' class='button_small' onclick='javascript:fold(\"tags\", 1)'>Cancel</button><br /><span class='hint'><a href='${ConfSiteBase}help$ConfSiteSuffix?t=tags'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span></span>";
+		echo "<span class='extension'><input class='textlite' type='text' size='40' name='tags' value=\"", $t, "\" /> &nbsp;<input class='bsm' type='submit' name='settags' value='Save' /> &nbsp; ";
+		echo "<button type='button' class='bsm' onclick='javascript:fold(\"tags\", 1)'>Cancel</button><br /><span class='hint'><a href='${ConfSiteBase}help$ConfSiteSuffix?t=tags'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span></span>";
 		echo "</div></form>";
 	    } else
 		echo ($t == "" ? "none" : $tx);
@@ -627,7 +627,7 @@ class PaperTable {
 	if (isset($_REQUEST['forceShow']))
 	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
 	echo outcomeSelector($prow->outcome, null, " onchange='highlightUpdate(\"setdecision\")'");
-	echo "&nbsp; <input id='setdecision' class='button' type='submit' name='setoutcome' value='Save' /></div></form></td>\n</tr>\n";
+	echo "&nbsp; <input id='setdecision' class='b' type='submit' name='setoutcome' value='Save' /></div></form></td>\n</tr>\n";
     }
 
 }
