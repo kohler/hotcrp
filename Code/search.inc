@@ -1112,7 +1112,7 @@ class PaperSearch {
 	} else if ($this->limitName == "revs")
 	    $tables["Limiter"] = array("join", "PaperReview", "Paper.paperId=Limiter.paperId");
 	else if ($this->limitName == "req")
-	    $tables["Limiter"] = array("join", "PaperReivew", "Paper.paperId=Limiter.paperId and Limiter.requestedBy=$this->contactId and Limiter.reviewType=" . REVIEW_EXTERNAL);
+	    $tables["Limiter"] = array("join", "PaperReview", "Paper.paperId=Limiter.paperId and Limiter.requestedBy=$this->contactId and Limiter.reviewType=" . REVIEW_EXTERNAL);
 
 	// add common tables: conflicts, my own review, paper blindness
 	if ($this->needflags & (self::F_NONCONFLICT | self::F_AUTHOR)) {
