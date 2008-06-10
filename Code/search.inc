@@ -328,6 +328,61 @@ class PaperSearch {
 	if (count($qt) == $nqt)
 	    $qt[] = new SearchTerm("f");
     }
+    
+    function _searchReviews($word, $rf, $field, $negated, &$qt) {
+	global $Conf;
+	
+	if (isset($rf->options[$field])) {
+	    if ($word == "any")
+		$word = ">0";
+	    else if ($word == "none")
+		$word = "=0";
+	    else if (preg_match('/^([<>]?=?\s*)?([A-Za-z]|\d+)$/s', $word, $m)) {
+		if (($rf->reviewFields[$field] > 1) != (ctype_digit($m[2]) == false))
+		    $word = "=-1";
+		else if ($rf->reviewFields[$field] > 1) {
+		    // switch meaning of inequality
+		    if ($m[1] == "" || $m[1] == "=")
+			$m[1] = "=";
+		    else if ($m[1][0] == "<")
+			$m[1] = ">" . substr($m[1], 1);
+		    else
+			$m[1] = "<" . substr($m[1], 1);
+		    $word = $m[1] . ($rf->reviewFields[$field] - ord(strtoupper($m[2])));
+		} else
+		    $word = ($m[1] ? $m[1] : "=") . $m[2];
+	    } else		// XXX
+		$word = "=-1";
+	} else {
+	    if ($word == "any")
+		$word = "!=''";
+	    else if ($word == "none")
+		$word = "=''";
+	    else
+		$word = " like '" . sqlq($word) . "'";
+	}
+	$value = $field . $word;
+
+	$nqt = count($qt);
+	$rt = self::F_COMPLETE;
+	if ($this->privChair)
+	    $qt[] = new SearchTerm("rf", $rt, $value);
+	else {
+	    if ($this->amPC) {
+		$pc_seeallrev = $Conf->setting("pc_seeallrev");
+		if ($pc_seeallrev >= 1
+		    || ($pc_seeallrev == 0 && $Conf->setting("pcrev_any")))
+		    $qt[] = new SearchTerm("rf", $rt | self::F_NONCONFLICT, $value);
+		else
+		    $qt[] = new SearchTerm("rf", $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
+	    } else if ($Conf->setting("extrev_view") >= 1)
+		$qt[] = new SearchTerm("rf", $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
+	    if ($Conf->timeAuthorViewReviews())
+		$qt[] = new SearchTerm($type, ($rt & ~self::F_TYPEMASK) | self::F_AUTHOR | self::F_COMPLETE, $value);
+	}
+	if (count($qt) == $nqt)
+	    $qt[] = new SearchTerm("f");
+    }
 
     function _searchQueryWord($word, $negated, &$qt) {
 	global $searchTags, $Conf;
@@ -568,6 +623,28 @@ class PaperSearch {
 	    }
 	}
 
+	// Finally, look for a review field.
+	if ($special && !isset($searchTags[$special])) {
+	    $a = preg_split("/([^a-zA-Z0-9])/", $special, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+	    for ($i = 0; $i < count($a); ++$i)
+		$a[$i] = preg_quote($a[$i]);
+	    $field = null;
+	    $rf = reviewForm();
+	    foreach ($rf->fieldOrder as $fn) {
+		if (count($a) == 1 && strcasecmp($a[0], $rf->abbrevName[$fn]) == 0) {
+		    $field = $fn;
+		    break;
+		}
+		for ($i = 0; $i < count($a); ++$i)
+		    if (preg_match("/\\b$a[$i]/i", $rf->shortName[$fn]) === false)
+			break;
+		if ($i == count($a))
+		    $field = ($field === null ? $fn : false);
+	    }
+	    if ($field)
+		$this->_searchReviews($word, $rf, $field, $negated, $qt);
+	}
+
 	for ($i = $nqt; $i < count($qt) - 1; ++$i)
 	    $qt[$i]->link = true;
 	//if ($negated && count($qt) == $nqt + 1 && $qt[$nqt]->type == "round")
@@ -699,7 +776,8 @@ class PaperSearch {
 	foreach ($qcl as &$qt)
 	    if ($qt->type == "not")
 		$applied += $this->_queryApplyRounds($qt->value, $roundterm);
-	    else if ($qt->type == "re" || $qt->type == "nre") {
+	    else if ($qt->type == "re" || $qt->type == "nre"
+		     || $qt->type == "rf") {
 		if (count($roundterm->value) == 0)
 		    $roundterm->value = array(-1);
 		$qt->extra = $roundterm->value;
@@ -846,7 +924,7 @@ class PaperSearch {
 		$q[] = "Numreviews_$rtype.nre$t->value";
 	    $f[] = "(" . join(" and ", $q) . ")";
 	    $t->link = "nre_$rtype";
-	} else if ($tt == "re") {
+	} else if ($tt == "re" || $tt == "rf") {
 	    $thistab = "Reviews_" . count($tables);
 	    $where = array();
 	    if ($t->flags & self::F_TYPEMASK)
@@ -857,7 +935,10 @@ class PaperSearch {
 		$where[] = "reviewSubmitted>0";
 	    if (isset($t->extra))
 		$where[] = "reviewRound in (" . join(",", $t->extra) . ")";
-	    $where[] = "contactId" . $t->value;
+	    if ($tt == "re")
+		$where[] = "contactId" . $t->value;
+	    else
+		$where[] = $t->value;
 	    $wheretext = " where " . join(" and ", $where);
 	    $tables[$thistab] = array("left join", "(select paperId, count(reviewId) as nre from PaperReview$wheretext group by paperId)", "Paper.paperId=$thistab.paperId");
 	    $columns[$thistab . "_matches"] = "$thistab.nre";
@@ -979,6 +1060,8 @@ class PaperSearch {
 		$fieldname = $t->link;
 		$ans = $row->$fieldname > 0;
 	    }
+	} else if ($tt == "rf") {
+	    $ans = $this->_clauseTermCheckFlags($t->flags, $row);
 	} else if ($tt == "ncmt") {
 	    if (!$this->_clauseTermCheckFlags($t->flags, $row))
 		$ans = false;

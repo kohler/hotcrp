@@ -70,7 +70,7 @@ class ReviewForm {
 	// try to filter out noninteresting words
 	$b = array();
 	foreach ($a as $w)
-	    if ($w != "Be" && $w != "The" && $w != "A" && $w != "An" && $w != "For")
+	    if ($w != "Be" && $w != "The" && $w != "A" && $w != "An" && $w != "For" && $w != "To" && $w != "Of")
 		$b[] = $w;
 	if (count($b) == 0)
 	    $b = $a;
