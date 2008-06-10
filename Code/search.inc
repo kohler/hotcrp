@@ -359,7 +359,7 @@ class PaperSearch {
 	    else if ($word == "none")
 		$word = "=''";
 	    else
-		$word = " like '" . sqlq($word) . "'";
+		$word = " like '%" . sqlq_for_like($word) . "%'";
 	}
 	$value = $field . $word;
 
