@@ -378,7 +378,7 @@ class PaperSearch {
 	    } else if ($Conf->setting("extrev_view") >= 1)
 		$qt[] = new SearchTerm("rf", $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
 	    if ($Conf->timeAuthorViewReviews())
-		$qt[] = new SearchTerm($type, ($rt & ~self::F_TYPEMASK) | self::F_AUTHOR | self::F_COMPLETE, $value);
+		$qt[] = new SearchTerm("rf", ($rt & ~self::F_TYPEMASK) | self::F_AUTHOR | self::F_COMPLETE, $value);
 	}
 	if (count($qt) == $nqt)
 	    $qt[] = new SearchTerm("f");
@@ -636,7 +636,8 @@ class PaperSearch {
 		    break;
 		}
 		for ($i = 0; $i < count($a); ++$i)
-		    if (preg_match("/\\b$a[$i]/i", $rf->shortName[$fn]) === false)
+		    if ($a[$i] != "-" && $a[$i] != "_"
+			&& !preg_match("/\\b$a[$i]/i", $rf->shortName[$fn]))
 			break;
 		if ($i == count($a))
 		    $field = ($field === null ? $fn : false);
@@ -918,10 +919,7 @@ class PaperSearch {
 	    $columns["nre_$rtype"] = "Numreviews_$rtype.nre";
 	    $q = array();
 	    $this->_clauseTermSetFlags($t->flags, $q);
-	    if ($t->value[0] == "<" || $t->value == "=0")
-		$q[] = "(Numreviews_$rtype.nre is null or Numreviews_$rtype.nre$t->value)";
-	    else
-		$q[] = "Numreviews_$rtype.nre$t->value";
+	    $q[] = "coalesce(Numreviews_$rtype.nre,0)$t->value";
 	    $f[] = "(" . join(" and ", $q) . ")";
 	    $t->link = "nre_$rtype";
 	} else if ($tt == "re" || $tt == "rf") {
@@ -944,7 +942,7 @@ class PaperSearch {
 	    $columns[$thistab . "_matches"] = "$thistab.nre";
 	    $q = array();
 	    $this->_clauseTermSetFlags($t->flags, $q);
-	    $q[] = "$thistab.nre>0";
+	    $q[] = "coalesce($thistab.nre,0)>0";
 	    $f[] = "(" . join(" and ", $q) . ")";
 	    $t->link = $thistab . "_matches";
 	} else if ($tt == "ncmt") {
@@ -1053,15 +1051,13 @@ class PaperSearch {
 		$x = $row->$fieldname;
 		$ans = eval("return \$x$t->value;");
 	    }
-	} else if ($tt == "re") {
+	} else if ($tt == "re" || $tt == "rf") {
 	    if (!$this->_clauseTermCheckFlags($t->flags, $row))
 		$ans = false;
 	    else {
 		$fieldname = $t->link;
 		$ans = $row->$fieldname > 0;
 	    }
-	} else if ($tt == "rf") {
-	    $ans = $this->_clauseTermCheckFlags($t->flags, $row);
 	} else if ($tt == "ncmt") {
 	    if (!$this->_clauseTermCheckFlags($t->flags, $row))
 		$ans = false;
