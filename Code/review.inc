@@ -64,7 +64,7 @@ class ReviewForm {
 	$this->updateFromDB($conf);
     }
 
-    function abbreviateField($name) {
+    function abbreviateField($name, $type = 0) {
 	$a = preg_split("/\s+/", ucwords($name));
 
 	// try to filter out noninteresting words
@@ -77,8 +77,13 @@ class ReviewForm {
 	
 	array_splice($b, min(3, count($a)));
 	$x = "";
-	foreach ($b as $w)
-	    $x .= substr($w, 0, 3);
+	if ($type == 1) {
+	    foreach ($b as $w)
+		$x .= ($x == "" ? "" : "-") . strtolower($w);
+	} else {
+	    foreach ($b as $w)
+		$x .= substr($w, 0, 3);
+	}
 	return $x;
     }
 

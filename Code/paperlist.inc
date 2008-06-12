@@ -736,7 +736,8 @@ class PaperList extends BaseList {
 	if (!$revpref && ($this->contact->privChair || ($this->contact->isPC && $Conf->timePCViewAllReviews())))
 	    $sel_opt["scores"] = "Scores";
 	$t .= tagg_select("getaction", $sel_opt, key($sel_opt),
-			  array("id" => "plact${nlll}_d", "tabindex" => 6))
+			  array("id" => "plact${nlll}_d", "tabindex" => 6,
+				"class" => "bsm"))
 	    . "&nbsp; <input type='submit' class='bsm' name='getgo' value='Go' tabindex='6' /></span>";
 	$nlll++;
 
@@ -760,7 +761,7 @@ class PaperList extends BaseList {
 	if ($this->contact->isPC && !$revpref) {
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Tag</a></span><span class='lld$nlll'><b>:</b><a class='help' href='${ConfSiteBase}help$ConfSiteSuffix?t=tags#changing' title='Learn more'>?</a> &nbsp;";
-	    $t .= tagg_select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define", "so" => "Define ordered", "ao" => "Add ordered"))
+	    $t .= tagg_select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define", "so" => "Define ordered", "ao" => "Add ordered"), null, array("class" => "bsm"))
 		. " &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='bsm' name='tagact' value='Go' /></span>";
 	    $nlll++;
 	}
@@ -779,7 +780,8 @@ class PaperList extends BaseList {
 				    "assign" . REVIEW_SECONDARY => "Assign secondary review",
 				    "assign0" => "Unassign reviews"),
 			      null, array("id" => "plact${nlll}_d",
-					  "onchange" => "fold(\"ass\", (this.value[0] == \"x\"))"))
+					  "onchange" => "fold(\"ass\", (this.value[0] == \"x\"))",
+					  "class" => "bsm"))
 		. "<span class='extension'> &nbsp;for &nbsp;";
 	    // <option value='-2' disabled='disabled'></option>
 	    // <option value='xpcpaper'>Mark as PC-authored</option>
@@ -788,7 +790,8 @@ class PaperList extends BaseList {
 	    $sel_opt = array();
 	    foreach ($pc as $id => $row)
 		$sel_opt[htmlspecialchars($row->email)] = contactHtml($row->firstName, $row->lastName);
-	    $t .= tagg_select("markpc", $sel_opt, null, array("id" => "markpc"))
+	    $t .= tagg_select("markpc", $sel_opt, null, array("id" => "markpc",
+							      "class" => "bsm"))
 		. "</span> &nbsp;<input type='submit' class='bsm' name='setassign' value='Go' />";
 	    $t .= "</span>";
 	    $nlll++;
@@ -798,12 +801,12 @@ class PaperList extends BaseList {
 	if ($this->contact->privChair && !$revpref) {
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Decide</a></span><span class='lld$nlll'><b>:</b> Set to &nbsp;";
-	    $t .= outcomeSelector(0, "plact${nlll}_d") . " &nbsp;<input type='submit' class='bsm' name='setoutcome' value='Go' /></span>";
+	    $t .= outcomeSelector(0, "plact${nlll}_d", " class='bsm'") . " &nbsp;<input type='submit' class='bsm' name='setoutcome' value='Go' /></span>";
 	    $nlll++;
 
 	    $t .= $barsep
 		. "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Mail</a></span><span class='lld$nlll'><b>:</b> &nbsp;"
-		. tagg_select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), null, array("id" => "plact${nlll}_d"))
+		. tagg_select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), null, array("id" => "plact${nlll}_d", "class" => "bsm"))
 		. " &nbsp;<input type='submit' class='bsm' name='sendmail' value='Go' /></span>";
 	    $nlll++;
 	}

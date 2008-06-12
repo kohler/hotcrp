@@ -705,7 +705,7 @@ echo tagg_select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
 </tr>
 <tr>
   <td class='lxcaption'></td>
-  <td><span style='font-size: x-small'><a href='help$ConfSiteSuffix?t=search'>Search help</a> &nbsp;|&nbsp; <a href='help$ConfSiteSuffix?t=syntax'>Syntax quick reference</a></span></td>
+  <td><span style='font-size: x-small'><a href='help$ConfSiteSuffix?t=search'>Search help</a> &nbsp;|&nbsp; <a href='help$ConfSiteSuffix?t=keywords'>Search keywords</a></span></td>
 </tr></table></form>";
 
 echo "</div><div class='tld3'>";
@@ -778,7 +778,7 @@ echo "<td rowspan='2'><input id='redisplay' class='b' type='submit' name='redisp
 if ($pl && isset($pl->scoreMax)) {
     echo "<tr><td colspan='2'><div class='g'></div><b>Sort scores by:</b><br />",
 	tagg_select("scoresort", $scoreSorts, defval($_SESSION, "scoresort", $defaultScoreSort), array("onchange" => "highlightUpdate(\"redisplay\")")),
-	"<br /><a href='help$ConfSiteSuffix?t=scoresort' class='hint'>(What is this?)</a></td></tr>";
+	"<br /><a href='help$ConfSiteSuffix?t=scoresort' class='hint'>What is this?</a></td></tr>";
 }
 echo "</table></div></form></div></div></td></tr>\n";
 

@@ -495,7 +495,7 @@ function goPaperForm($baseUrl = null, $args = array()) {
 	    $baseUrl = "paper$ConfSiteSuffix";
     }
     $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get' accept-charset='UTF-8'><div class='inform'>";
-    $x .= "<input class='textlite' type='text' size='6' name='p' title='Enter paper numbers or search terms' />";
+    $x .= "<input class='textlite' type='text' size='10' name='p' title='Enter paper numbers or search terms' />";
     foreach ($args as $what => $val)
 	$x .= "<input type='hidden' name=\"" . htmlspecialchars($what) . "\" value=\"" . htmlspecialchars($val) . "\" />";
     if (isset($CurrentList) && $CurrentList > 0)
@@ -1028,7 +1028,7 @@ function maybeSearchPaperId($me) {
 }
 
 function outcomeSelector($curOutcome = 0, $id = null, $extra = "") {
-    $text = "<select" . ($id === null ? "" : " id='$id'") . " class='outcome' name='outcome'$extra>\n";
+    $text = "<select" . ($id === null ? "" : " id='$id'") . " name='outcome'$extra>\n";
     $rf = reviewForm();
     $outcomeMap = $rf->options['outcome'];
     $outcomes = array_keys($outcomeMap);

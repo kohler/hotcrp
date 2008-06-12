@@ -660,7 +660,7 @@ if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
 $q = ($_REQUEST["q"] == "" ? "(All)" : $_REQUEST["q"]);
 echo "<input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
     tagg_select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")")),
-    " &nbsp; <input id='requery' class='button' name='requery' type='submit' value='Search' />\n";
+    " &nbsp; <input id='requery' class='b' name='requery' type='submit' value='Search' />\n";
 if (isset($_REQUEST["requery"])) {
     echo "<div class='g'></div>\n";
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
@@ -673,7 +673,7 @@ echo "</td></tr>\n";
 
 // Create assignment
 echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
-echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='button' name='assign' value='Create assignment' /></td></tr>\n";
+echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='b' name='assign' value='Create assignment' /></td></tr>\n";
 
 
 echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n";

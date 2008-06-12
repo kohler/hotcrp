@@ -9,7 +9,7 @@ $Me->valid();
 
 
 $topicTitles = array("topics" => "Help topics",
-		     "syntax" => "Search syntax",
+		     "keywords" => "Search keywords",
 		     "search" => "Search",
 		     "tags" => "Tags",
 		     "revround" => "Review rounds",
@@ -18,16 +18,18 @@ $topicTitles = array("topics" => "Help topics",
 		     "chair" => "Chair's guide");
 
 $topic = defval($_REQUEST, "t", "topics");
+if ($topic == "syntax")
+    $topic = "keywords";
 if (!isset($topicTitles[$topic]))
     $topic = "topics";
 
 $abar = "<div class='vbar'><table class='vbar'><tr><td id='vbartabs'><table><tr>\n";
 $abar .= actionTab("Help topics", "help$ConfSiteSuffix?t=topics", $topic == "topics");
-if ($topic == "search" || $topic == "syntax")
+if ($topic == "search" || $topic == "keywords")
     $abar .= actionTab("Search help", "help$ConfSiteSuffix?t=search", $topic == "search");
-if ($topic == "search" || $topic == "syntax")
-    $abar .= actionTab("Search syntax", "help$ConfSiteSuffix?t=syntax", $topic == "syntax");
-if ($topic != "topics" && $topic != "search" && $topic != "syntax")
+if ($topic == "search" || $topic == "keywords")
+    $abar .= actionTab("Search keywords", "help$ConfSiteSuffix?t=keywords", $topic == "keywords");
+if ($topic != "topics" && $topic != "search" && $topic != "keywords")
     $abar .= actionTab($topicTitles[$topic], "help$ConfSiteSuffix?t=$topic", true);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
@@ -51,7 +53,7 @@ function topics() {
     echo "<table>";
     _alternateRow("<a href='help$ConfSiteSuffix?t=chair'>Chair's guide</a>", "How to run a conference using HotCRP.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=search'>Search</a>", "About paper searching.");
-    _alternateRow("<a href='help$ConfSiteSuffix?t=syntax'>Search syntax</a>", "Quick reference to search syntax.");
+    _alternateRow("<a href='help$ConfSiteSuffix?t=keywords'>Search keywords</a>", "Quick reference to search keywords and search syntax.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "How to use tags to define paper sets and discussion orders.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=revround'>Review rounds</a>", "Defining review rounds.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=revrate'>Review ratings</a>", "Rating reviews.");
@@ -87,7 +89,8 @@ and it's possible to download all matching papers and/or reviews at once.
 <li>" . _searchForm("12") . "&nbsp; finds paper #12.  When entered from a
  <a href='#quicklinks'>quicksearch</a> box, this search will jump to
  paper #12 directly.</li>
-<li>Investigate <a href='${ConfSiteBase}help$ConfSiteSuffix?t=syntax'>search syntax</a>.</li>
+<li><a href='${ConfSiteBase}help$ConfSiteSuffix?t=keywords'>Search keywords</a>
+ let you search specific fields, review scores, and more.</li>
 <li>Use <a href='#quicklinks'>quicklinks</a> on paper pages to navigate
  through search results.</li>
 <li>On search results pages, <em>shift-click</em> the checkboxes to
@@ -125,7 +128,7 @@ Also, <b>keywords</b> search specific characteristics such as titles,
 authors, reviewer names, and numbers of reviewers.  For example,
 \"ti:foo\" means \"search for 'foo' in paper
 titles\".  Keywords are listed in the
-<a href='help$ConfSiteSuffix?t=syntax'>search syntax reference</a>.</p>");
+<a href='help$ConfSiteSuffix?t=keywords'>search keywords reference</a>.</p>");
     _alternateRow("Search results", "
 Click on a paper number or title to jump to that paper.
 Search matches are <span class='match'>highlighted</span> on paper screens,
@@ -185,7 +188,7 @@ function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
 function searchQuickref() {
     global $rowidx, $Conf, $ConfSiteSuffix;
     echo "<table>\n";
-    _searchQuickrefRow("Syntax basics", "", "all papers in the search category");
+    _searchQuickrefRow("Basics", "", "all papers in the search category");
     _searchQuickrefRow("", "story", "&ldquo;story&rdquo; in title, abstract, possibly authors");
     _searchQuickrefRow("", "119", "paper #119");
     _searchQuickrefRow("", "1 2 5 12-24 kernel", "papers in the numbered set with &ldquo;kernel&rdquo; in title, abstract, possibly authors");
@@ -227,6 +230,34 @@ function searchQuickref() {
     _searchQuickrefRow("", "dec:yes", "one of the accept decisions");
     _searchQuickrefRow("", "dec:no", "one of the reject decisions");
     _searchQuickrefRow("", "dec:?", "decision unspecified");
+
+    // find names of review fields to demonstrate syntax
+    $rf = reviewForm();
+    $f = array(null, null);
+    foreach ($rf->fieldOrder as $fn) {
+	$fx = (isset($rf->options[$fn]) ? 0 : 1);
+	if ($f[$fx] === null)
+	    $f[$fx] = $fn;
+    }
+    $t = "Review&nbsp;fields";
+    if ($f[0]) {
+	$scores = array_keys($rf->options[$f[0]]);
+	$score = $scores[1];
+	$revname = $rf->abbreviateField($rf->shortName[$f[0]], 1);
+	_searchQuickrefRow($t, "$revname:$score", "at least one completed review has " . htmlspecialchars($rf->shortName[$f[0]]) . " score $score");
+	_searchQuickrefRow("", "$revname:>$score", "at least one completed review has " . htmlspecialchars($rf->shortName[$f[0]]) . " score greater than $score");
+	_searchQuickrefRow("", "$revname:2<=$score", "at least two completed reviews have " . htmlspecialchars($rf->shortName[$f[0]]) . " score less than or equal to $score");
+	$revname = $rf->abbreviateField($rf->shortName[$f[0]]);
+	_searchQuickrefRow("", "$revname:$score", "other abbreviations accepted");
+	$t = "";
+    }
+    if ($f[1]) {
+	$revname = $rf->abbreviateField($rf->shortName[$f[1]], 1);
+	_searchQuickrefRow($t, "$revname:finger", "at least one completed review has &ldquo;finger&rdquo; in the " . htmlspecialchars($rf->shortName[$f[1]]) . " field");
+	_searchQuickrefRow($t, "$revname:any", "at least one completed review has text in the " . htmlspecialchars($rf->shortName[$f[1]]) . " field");
+	$revname = $rf->abbreviateField($rf->shortName[$f[1]]);
+	_searchQuickrefRow($t, "$revname:any", "other abbreviations accepted");
+    }
     echo "</table>\n";
 }
 
@@ -759,7 +790,7 @@ if ($topic == "topics")
     topics();
 else if ($topic == "search")
     search();
-else if ($topic == "syntax")
+else if ($topic == "keywords")
     searchQuickref();
 else if ($topic == "tags")
     tags();

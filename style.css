@@ -512,7 +512,7 @@ input.button_small, a.button_small, button.button_small {
 	color: black;
 	white-space: nowrap;
 }
-input.bsm, button.bsm {
+input.bsm, button.bsm, select.bsm {
 	font-size: smaller;
 	text-decoration: none;
 	color: black;

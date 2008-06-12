@@ -218,7 +218,7 @@ while (($row = edb_orow($result)))
 
 echo tagg_select("reviewer", $rev_opt, $reviewer, array("onchange" => "highlightUpdate(\"assrevupdate\")")),
     " &nbsp; ",
-    "<input id='assrevupdate' class='button' type='submit' value='Go' />
+    "<input id='assrevupdate' class='b' type='submit' value='Go' />
     <div class='g'></div>
     <input type='radio' name='kind' value='a' onchange='highlightUpdate(\"assrevupdate\")'",
     ($kind == "a" ? " checked='checked'" : ""),
