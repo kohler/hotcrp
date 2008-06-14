@@ -310,10 +310,11 @@ class Conference {
     function timeSubmitFinalPaper() {
 	return $this->settingsBetween('final_open', 'final_done', 'final_grace');
     }
-    function timeAuthorViewReviews() {
+    function timeAuthorViewReviews($reviewsOutstanding = false) {
 	// also used to determine when authors and conflicts can see
 	// review counts
-	return $this->settingsAfter('au_seerev');
+	$s = $this->setting("au_seerev");
+	return $s == AU_SEEREV_ALWAYS || ($s > 0 && !$reviewsOutstanding);
     }
     function timeAuthorRespond() {
 	return $this->settingsBetween('resp_open', 'resp_done', 'resp_grace');

@@ -60,7 +60,7 @@ $SettingGroups = array("acc" => array(
 			     "reviewform" => "special",
 			     "next" => "dec"),
 		       "dec" => array(
-			     "au_seerev" => "check",
+			     "au_seerev" => 2,
 			     "au_seedec" => "check",
 			     "rev_seedec" => "check",
 			     "resp_open" => "check",
@@ -835,7 +835,7 @@ function doSubGroup() {
     }
     
     echo "<hr class='hr' />\n";
-    doRadio("sub_freeze", array(0 => "<strong>Authors can update submissions until the deadline</strong>", 1 => array("Authors must freeze the final version of each submission", "&ldquo;Authors can update submissions&rdquo; is usually the best choice.  Freezing submissions is mostly useful when there is no submission deadline.")));
+    doRadio("sub_freeze", array(0 => "<strong>Authors can update submissions until the deadline</strong>", 1 => array("Authors must freeze the final version of each submission", "&ldquo;Authors can update submissions until the deadline&rdquo; is usually the best choice.  Freezing submissions is mostly useful when there is no submission deadline.")));
     
     echo "<div class='g'></div><table>\n";
     // compensate for pc_seeall magic
@@ -1015,7 +1015,9 @@ function doRfoGroup() {
 // Responses and decisions
 function doDecGroup() {
     global $Conf, $rf;
-    doCheckbox('au_seerev', '<b>Authors can see reviews</b>');
+    // doCheckbox('au_seerev', '<b>Authors can see reviews</b>');
+    echo "Can <b>authors see reviews</b> for their papers?<br />";
+    doRadio("au_seerev", array(AU_SEEREV_ALWAYS => "Yes", AU_SEEREV_YES => "Yes, once they've completed any requested reviews", AU_SEEREV_NO => "No"));
 
     echo "<div class='g'></div>\n<table>";
     doCheckbox('resp_open', "<b>Collect authors&rsquo; responses to the reviews:</b>", true);

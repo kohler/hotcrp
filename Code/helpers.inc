@@ -728,7 +728,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['responseNotReady']))
 	$text .= "The authors' response for $thisPaper is not yet ready for reviewers to view.  ";
     if (isset($whyNot['reviewsOutstanding']))
-	$text .= "You must complete <a href=\"${ConfSiteBase}search$ConfSiteSuffix?q=&amp;t=r\">your own reviews for other papers</a> before you can view the reviews for papers you authored.  If you can't complete your reviews, please let the conference organizers know via the relevant \"Refuse review\" links.  ";
+	$text .= "You must complete <a href=\"${ConfSiteBase}search$ConfSiteSuffix?q=&amp;t=r\">your assigned reviews for other papers</a> before you can see the reviews for this paper.  If you can't complete your reviews, please let the conference organizers know via the relevant \"Refuse review\" links.  ";
     if (isset($whyNot['reviewNotAssigned']))
 	$text .= "You are not assigned to review $thisPaper.  ";
     if (isset($whyNot['deadline'])) {
@@ -759,9 +759,12 @@ function whyNotText($whyNot, $action) {
 	    else
 		$text .= "The deadline to $action $thisPaper has passed.  ";
 	    $text .= "It was " . $Conf->printableTime($end) . ".  ";
-	} else if ($dname == "au_seerev")
-	    $text .= "Authors can't view paper reviews at the moment.  ";
-	else
+	} else if ($dname == "au_seerev") {
+	    if ($Conf->setting("au_seerev") == AU_SEEREV_YES)
+		$text .= "Authors who are also reviewers can't see reviews for their papers while they still have <a href='${ConfSiteBase}search$ConfSiteSuffix?t=rout&amp;q='>incomplete reviews</a> of their own.  ";
+	    else
+		$text .= "Authors can't view paper reviews at the moment.  ";
+	} else
 	    $text .= "You can't $action $thisPaper at the moment.  ";
 	$text .= "(<a href='${ConfSiteBase}deadlines$ConfSiteSuffix'>View deadlines</a>)  ";
 	if (isset($whyNot['override']) && $whyNot['override'])

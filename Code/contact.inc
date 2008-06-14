@@ -556,8 +556,8 @@ class Contact {
 	if (($prow->timeSubmitted > 0
 	     || defval($prow, "myReviewType") > 0)
 	    && (($prow->conflictType >= CONFLICT_AUTHOR
-		 && $conf->timeAuthorViewReviews() && $rrowSubmitted
-		 && (!$this->reviewsOutstanding || !$this->isReviewer))
+		 && $conf->timeAuthorViewReviews($this->reviewsOutstanding && $this->isReviewer)
+		 && $rrowSubmitted)
 		|| ($this->privChair && $prow->conflictType == 0)
 		|| ($this->isPC
 		    && $prow->conflictType == 0 && $rrowSubmitted

@@ -30,6 +30,10 @@ define("REV_RATINGS_PC", 0);
 define("REV_RATINGS_PC_EXTERNAL", 1);
 define("REV_RATINGS_NONE", 2);
 
+define("AU_SEEREV_NO", 0);
+define("AU_SEEREV_YES", 1);
+define("AU_SEEREV_ALWAYS", 2);
+
 $OK = 1;
 
 $Msg["unknown"] = "Unknown error.";
