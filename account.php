@@ -363,7 +363,7 @@ if ($Acct->isPC || $newProfile) {
 
 echo "<tr><td class='caption'></td>
   <td class='entry'><div class='g'></div>
-    <input class='button' type='submit' value='",
+    <input class='b' type='submit' value='",
     ($newProfile ? "Create account" : "Save changes"),
     "' name='register' />
     <div class='g'></div></td>
