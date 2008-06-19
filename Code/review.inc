@@ -209,7 +209,7 @@ class ReviewForm {
 	    if ($this->description[$field])
 		$x .= "<div class='hint'>" . $this->description[$field] . "</div>\n";
 	    if ($options) {
-		$x .= "<select name='$field' onchange='highlightUpdate()'>\n";
+		$x .= "<select name='$field' onchange='hiliter(this)'>\n";
 		if (!$this->parseOption($field, $fval, true))
 		    $x .= "    <option value='0' selected='selected'>(Unknown)</option>\n";
 		foreach ($this->options[$field] as $num => $what) {
@@ -220,7 +220,7 @@ class ReviewForm {
 		}
 		$x .= "</select>";
 	    } else {
-		$x .= "<textarea name='$field' onchange='highlightUpdate()' cols='80' rows='" . $this->fieldRows[$field] . "'>" . htmlspecialchars($fval) . "</textarea>";
+		$x .= "<textarea name='$field' onchange='hiliter(this)' cols='80' rows='" . $this->fieldRows[$field] . "'>" . htmlspecialchars($fval) . "</textarea>";
 	    }
 	    $x .= "</td>\n";
 	    $x .= "</tr>\n";

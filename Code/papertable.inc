@@ -116,7 +116,7 @@ class PaperTable {
 	global $textAreaRows;
 	
 	if ($this->editable)
-	    echo "<textarea class='textlite' name='$fieldName' rows='$nrows' cols='80' onchange='highlightUpdate()'>";
+	    echo "<textarea class='textlite' name='$fieldName' rows='$nrows' cols='80' onchange='hiliter(this)'>";
 	
 	if ($this->useRequest)
 	    $text = $_REQUEST[$fieldName];
@@ -276,7 +276,7 @@ class PaperTable {
 	    "<input class='textlite' type='file' name='paperUpload' accept='",
 	    (defval($Opt, 'disablePDF') > 0 ? "" : "application/pdf "),
 	    (defval($Opt, 'disablePS') > 0 ? "" : "application/postscript "),
-	    "' size='30' onchange='highlightUpdate()";
+	    "' size='30' onchange='hiliter(this)";
 	if (!$final)
 	    echo ";fold(\"isready\",0)";
 	if ($flags & self::ENABLESUBMIT)
@@ -294,7 +294,7 @@ class PaperTable {
 		($prow && $prow->paperStorageId > 1 ? "foldo" : "foldc"),
 		"'><table class='extension'><tr><td class='nowrap'><input type='checkbox' name='submit' value='1'",
 		($checked ? " checked='checked'" : ""),
-		"/>&nbsp;";
+		" onchange='hiliter(this)' />&nbsp;";
 	    if ($Conf->setting('sub_freeze'))
 		echo "</td><td><strong>This is the final submission.</strong></td></tr><tr><td></td><td><small>You must submit a final version before the deadline or your paper will not be reviewed.  Once you submit a final version you will not be able to make further changes.</small>";
 	    else
@@ -307,7 +307,7 @@ class PaperTable {
 	    && ($final ? $prow->finalPaperStorageId : $prow->paperStorageId) > 0
 	    && defval($prow, "mimetype", "application/pdf") == "application/pdf"
 	    && $Conf->setting("sub_banal")) {
-	    echo "<div id='foldcheckformat' class='foldc'><input class='button' type='submit' name='checkformat' value='Check format requirements' onclick='return docheckformat()' /><div id='checkformatformresult' class='extension'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
+	    echo "<div id='foldcheckformat' class='foldc'><input class='b' type='submit' name='checkformat' value='Check format requirements' onclick='return docheckformat()' /><div id='checkformatformresult' class='extension'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
 	    $Conf->footerStuff .= "<form id='checkformatform' class='fold7o' method='post' action='${ConfSiteBase}paper$ConfSiteSuffix?p=$prow->paperId";
 	    if ($final)
 		$Conf->footerStuff .= "&amp;final=1";
@@ -346,9 +346,9 @@ class PaperTable {
 	    else
 		$auname = $au[0] . $au[1];
 	    echo "<tr id='auedit$n' class='auedito'><td class='rxcaption'>", $n, ".</td>",
-		"<td class='lentry'><input class='textlite' type='text' name='auname$n' size='35' onchange='highlightUpdate()' value=\"", htmlspecialchars($auname), "\" /></td>",
-		"<td class='lentry'><input class='textlite' type='text' name='auemail$n' size='25' onchange='highlightUpdate()' value=\"", htmlspecialchars($au[2]), "\" /></td>",
-		"<td class='lentry'><input class='textlite' type='text' name='auaff$n' size='30' onchange='highlightUpdate()' value=\"", htmlspecialchars($au[3]), "\" /></td></tr>\n";
+		"<td class='lentry'><input class='textlite' type='text' name='auname$n' size='30' onchange='hiliter(this)' value=\"", htmlspecialchars($auname), "\" /></td>",
+		"<td class='lentry'><input class='textlite' type='text' name='auemail$n' size='20' onchange='hiliter(this)' value=\"", htmlspecialchars($au[2]), "\" /></td>",
+		"<td class='lentry'><input class='textlite' type='text' name='auaff$n' size='25' onchange='hiliter(this)' value=\"", htmlspecialchars($au[3]), "\" /></td></tr>\n";
 	}
 	echo "</table><input id='aueditcount' type='hidden' name='aueditcount' value='25' />";
 	$Conf->echoScript("authorfold(\"auedit\",0," . max(count($authorTable) + 1, 5) . ")");
@@ -424,7 +424,7 @@ class PaperTable {
 	    echo "<input type='checkbox' name='blind' value='1'";
 	    if ($blind)
 		echo " checked='checked'";
-	    echo " />&nbsp;Anonymous submission";
+	    echo " onchange='hiliter(this)' />&nbsp;Anonymous submission";
 	} else
 	    echo ($blind ? "Anonymous" : "Non-anonymous"), " submission";
 	echo "</td>\n</tr>\n";
@@ -491,11 +491,11 @@ class PaperTable {
 		if (!defval($o, "optionValues")) {
 		    echo "<input type='checkbox' name='opt$o->optionId' value='1'",
 			(defval($optsel, $o->optionId) ? " checked='checked'" : ""),
-			" />&nbsp;", $o->description;
+			" onchange='hiliter(this)' />&nbsp;", $o->description;
 		} else {
 		    if ($o->description)
 			echo "<div class='hint'>", $o->description, "</div>";
-		    echo tagg_select("opt$o->optionId", explode("\n", $o->optionValues), defval($optsel, $o->optionId, 0));
+		    echo tagg_select("opt$o->optionId", explode("\n", $o->optionValues), defval($optsel, $o->optionId, 0), array("onchange" => "hiliter(this)"));
 		}
 		echo "</td>\n</tr>\n\n";
 	    }
@@ -548,7 +548,7 @@ class PaperTable {
 		    if ($conflict[$id] != CONFLICT_AUTHORMARK)
 			$c .= " disabled='disabled'";
 		}
-		$pcconfs[] = $c . " onchange='highlightUpdate()' /> " . contactHtml($p->firstName, $p->lastName);
+		$pcconfs[] = $c . " onchange='hiliter(this)' /> " . contactHtml($p->firstName, $p->lastName);
 	    }
 	    echo "<tr class='pt_conflict_ass'><td class='caption'>PC conflicts</td>\n  <td class='entry'>";
 	    echo "<div class='hint'>Select the PC members who have conflicts of interest with this paper.  ", $Conf->conflictDefinitionText(), "</div>\n";

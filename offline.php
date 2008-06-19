@@ -83,7 +83,7 @@ if ($Me->amReviewer()) {
     echo "<td><h3>Upload filled-out forms</h3>
 <form action='offline$ConfSiteSuffix?post=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 	<input type='hidden' name='redirect' value='offline' />
-	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='button' type='submit' value='Upload' name='uploadForm' $disabled/>";
+	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Upload' name='uploadForm' $disabled/>";
     if ($pastDeadline && $Me->privChair)
 	echo "<br /><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
     echo "<br /><span class='hint'><strong>Tip:</strong> You may upload a file containing several forms.</span>";

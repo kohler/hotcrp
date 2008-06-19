@@ -165,11 +165,11 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     $e = (isset($Error[$row->fieldName]) ? " error" : "");
     $x .= "<$trclass><td class='rxcaption nowrap$e'>Field name</td><td colspan='3' class='entry$e'><b><input type='text' size='50' class='textlite' name='shortName_$row->fieldName' value=\""
 	. htmlspecialchars(rf_getField($row, 'shortName'))
-	. "\" onchange='highlightUpdate()' /></b></td></tr>\n";
+	. "\" onchange='hiliter(this)' /></b></td></tr>\n";
 
     // form position
     $x .= "<$trclass><td class='rxcaption nowrap'>Form position</td><td class='entry'>"
-	. "<select name='order_$row->fieldName' onchange='highlightUpdate()'>\n"
+	. "<select name='order_$row->fieldName' onchange='hiliter(this)'>\n"
 	. "  <option value='-1'";
     if ($ordinalOrder < 0)
 	$x .= " selected='selected'";
@@ -208,7 +208,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 
     // description
     $x .= "<$trclass><td class='rxcaption textarea'>Description</td>"
-	. "<td class='entry'><textarea name='description_$row->fieldName' rows='6' cols='80' onchange='highlightUpdate()'>"
+	. "<td class='entry'><textarea name='description_$row->fieldName' rows='6' cols='80' onchange='hiliter(this)'>"
 	. htmlentities(rf_getField($row, 'description'))
 	. "</textarea></td>";
     if (isset($captions['description'])) {
@@ -221,7 +221,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     // options
     if (isset($rf->options[$row->fieldName]) || $rf->reviewFields[$row->fieldName]) {
 	$error = (isset($Error["options_$row->fieldName"]) ? " error" : "");
-	$x .= "<$trclass><td class='rxcaption textarea$error'>Options</td><td class='entry$error'><textarea name='options_$row->fieldName' rows='6' cols='80' onchange='highlightUpdate()'>";
+	$x .= "<$trclass><td class='rxcaption textarea$error'>Options</td><td class='entry$error'><textarea name='options_$row->fieldName' rows='6' cols='80' onchange='hiliter(this)'>";
 	$y = '';
 	if (isset($rf->options[$row->fieldName])) {
 	    foreach ($rf->options[$row->fieldName] as $num => $val)
@@ -268,7 +268,7 @@ function rf_show() {
 			  "cgo2004" => "CGO 2004 conference"),
 		    defval($_REQUEST, "sample", "none")),
 	" &nbsp;
-<input type='submit' class='button' name='loadsample' value='Load template' /></div></td></tr></table>
+<input type='submit' class='b' name='loadsample' value='Load template' /></div></td></tr></table>
 
 <hr class='hr' />
 

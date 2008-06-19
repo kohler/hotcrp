@@ -486,9 +486,9 @@ if (isset($assignments) && count($assignments) > 0) {
     }
 
     echo "<div class='g'></div>";
-    echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'>\n";
-    echo "<input type='submit' class='button' name='saveassign' value='Save assignment' />\n";
-    echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />\n";
+    echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'><div class='aahc'><div class='aa'>\n";
+    echo "<input type='submit' class='b' name='saveassign' value='Save assignment' />\n";
+    echo "&nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />\n";
     foreach (array("t", "q", "a", "revaddtype", "revtype", "revct", "revaddct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag") as $t)
 	if (isset($_REQUEST[$t]))
 	    echo "<input type='hidden' name='$t' value=\"", htmlspecialchars($_REQUEST[$t]), "\" />\n";
@@ -509,7 +509,7 @@ if (isset($assignments) && count($assignments) > 0) {
 	echo $pid, ",", join(",", $pcs), " ";
     echo "\" />\n";
     
-    echo "</form></td></tr>\n";
+    echo "</div></div></form></td></tr>\n";
 
     echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n";
     echo "</table>\n";
@@ -517,7 +517,7 @@ if (isset($assignments) && count($assignments) > 0) {
     exit;
 }
 
-echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'>";
+echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'><div class='aahc'>";
 
 echo "<table class='manyassign'>";
 
@@ -673,11 +673,10 @@ echo "</td></tr>\n";
 
 // Create assignment
 echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
-echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='b' name='assign' value='Create assignment' /></td></tr>\n";
+echo "<tr class='last'><td class='caption'></td><td class='entry'><div class='aa'><input type='submit' class='b' name='assign' value='Create assignment' /></div></td></tr>\n";
 
 
-echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n";
 echo "</table>\n";
-echo "</form>";
+echo "</div></form>";
 
 $Conf->footer();

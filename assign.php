@@ -571,7 +571,7 @@ function _pcSelector($name, $current) {
 	$sel_opt[htmlspecialchars($row->email)] = contactHtml($row->firstName, $row->lastName);
     echo tagg_select($name, $sel_opt,
 		     ($current && isset($PC[$current]) ? htmlspecialchars($PC[$current]->email) : "0"),
-		     array("onchange" => "highlightUpdate()"));
+		     array("onchange" => "hiliter(this)"));
 }
 
 if ($Me->privChair || ($Me->isPC && $prow->leadContactId && isset($PC[$prow->leadContactId]))) {

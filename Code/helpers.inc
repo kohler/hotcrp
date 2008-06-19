@@ -291,7 +291,7 @@ function topicTable($prow, $active = 0, $conf = null) {
 		$out .= "checked='checked' ";
 	    if ($active < 0)
 		$out .= "disabled='disabled' ";
-	    $out .= "onclick='highlightUpdate()' />&nbsp;";
+	    $out .= "onclick='hiliter(this)' />&nbsp;";
 	}
 	$out .= htmlspecialchars($rf->topicName[$tid]) . "<br />\n";
 	$i++;

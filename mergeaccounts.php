@@ -172,7 +172,7 @@ echo "<form method='post' action=\"mergeaccounts$ConfSiteSuffix\" accept-charset
     <input type='radio' name='prefer' value='1' />&nbsp;Keep the account named above and delete my current account</td>
 </tr>
 
-<tr><td class='caption'></td><td class='entry'><input class='button' type='submit' value='Merge Account' name='merge' /></td></tr>
+<tr><td class='caption'></td><td class='entry'><input class='b' type='submit' value='Merge Account' name='merge' /></td></tr>
 <tr class='last'><td class='caption'></td></tr>
 </table>
 </form>

@@ -231,7 +231,7 @@ if ($Me->privChair) {
 }
 
 echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'><input class='textlite' type='text' size='32' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>",
-    "<td><input class='button' type='submit' name='redisplay' value='Redisplay' /></td>",
+    "<td><input class='b' type='submit' name='redisplay' value='Redisplay' /></td>",
     "</tr>\n";
 
 echo "<tr><td class='lxcaption'><strong>Show:</strong> &nbsp;</td><td class='lentry'>";

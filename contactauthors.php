@@ -136,7 +136,7 @@ if ($OK) {
     while ($row = edb_row($result)) {
 	echo "<tr><td class='pad'>", contactHtml($row[0], $row[1]), "</td> <td class='pad'>", htmlspecialchars($row[2]), "</td>";
 	if ($Me->privChair || ($numContacts > 1 && $row[3] != $Me->contactId))
-	    echo " <td class='pad'><button class='button' type='submit' name='rem$row[3]' value='1'>Remove contact author</button></td>";
+	    echo " <td class='pad'><button class='b' type='submit' name='rem$row[3]' value='1'>Remove contact author</button></td>";
 	echo "</tr>\n    ";
     }
 

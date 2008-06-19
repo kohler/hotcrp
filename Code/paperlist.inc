@@ -590,7 +590,7 @@ class PaperList extends BaseList {
 			       array(0 => "None", REVIEW_PRIMARY => "Primary",
 				     REVIEW_SECONDARY => "Secondary",
 				     -1 => "Conflict"), $rt,
-			       array("tabindex" => 3, "onchange" => "highlightUpdate()"))
+			       array("tabindex" => 3, "onchange" => "hiliter(this)"))
 		. "<span id='assrev" . $row->paperId . "ok'></span>";
 	case self::FIELD_TOPIC_INTEREST:
 	    return htmlspecialchars($row->topicInterestScore + 0);

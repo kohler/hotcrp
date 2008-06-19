@@ -100,7 +100,7 @@ function searchbar() {
 <table id='searchform'><tr>
   <td class='lxcaption", $Eclass['q'], "'>With <b>any</b> of the words</td>
   <td class='lentry", $Eclass['q'], "'><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>
-  <td rowspan='3'><input class='button' type='submit' name='search' value='Search' /></td>
+  <td rowspan='3'><input class='b' type='submit' name='search' value='Search' /></td>
 </tr><tr>
   <td class='lxcaption", $Eclass['pap'], "'>Concerning paper(s)</td>
   <td class='lentry", $Eclass['pap'], "'><input class='textlite' type='text' size='40' name='pap' value=\"", htmlspecialchars(defval($_REQUEST, "pap", "")), "\" /></td>
@@ -151,7 +151,7 @@ function searchbar() {
 	    foreach (array("q", "pap", "acct", "n", "offset") as $x)
 		if ($_REQUEST[$x])
 		    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />";
-	    echo "<input class='textlite' type='text' size='3' name='page' value='' /> &nbsp;<input class='button' type='submit' name='gopage' value='Go' /></form>";
+	    echo "<input class='textlite' type='text' size='3' name='page' value='' /> &nbsp;<input class='b' type='submit' name='gopage' value='Go' /></form>";
 	    } */
 	echo "</div></td></tr></table><div class='g'></div>\n";
     }

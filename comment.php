@@ -371,7 +371,7 @@ function commentView($prow, $crow, $editMode) {
 	    echo "c=$crow->commentId";
 	else
 	    echo "p=$prow->paperId";
-	echo "$linkExtra&amp;post=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'>\n";
+	echo "$linkExtra&amp;post=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>\n";
     }
 
     echo "<table class='comment'>
@@ -428,7 +428,7 @@ function commentView($prow, $crow, $editMode) {
     // form body
     echo "<tr>
   <td class='caption$extraclass'></td>
-  <td class='entry$extraclass'><textarea name='comment' rows='10' cols='80'>";
+  <td class='entry$extraclass'><textarea name='comment' rows='10' cols='80' onchange='hiliter(this)'>";
     if ($useRequest)
 	echo htmlspecialchars(defval($_REQUEST, 'comment'));
     else if ($crow)
@@ -443,18 +443,18 @@ function commentView($prow, $crow, $editMode) {
 	|| (!$useRequest && $crow && $crow->forReviewers)
 	|| (!$useRequest && !$crow && $Conf->setting("extrev_view") > 0))
 	echo " checked='checked'";
-    echo " />&nbsp;Reviewers &nbsp;
+    echo " onchange='hiliter(this)' />&nbsp;Reviewers &nbsp;
     <input type='checkbox' name='forAuthors' value='1'";
     if ($useRequest ? defval($_REQUEST, 'forAuthors') : ($crow && $crow->forAuthors))
 	echo " checked='checked'";
-    echo " />&nbsp;Authors\n";
+    echo " onchange='hiliter(this)' />&nbsp;Authors\n";
 
     // blind?
     if ($Conf->blindReview() == 1) {
 	echo "<span class='lgsep'></span><input type='checkbox' name='blind' value='1'";
 	if ($useRequest ? defval($_REQUEST, 'blind') : (!$crow || $crow->blind))
 	    echo " checked='checked'";
-	echo " />&nbsp;Anonymous to authors\n";
+	echo " onchange='hiliter(this)' />&nbsp;Anonymous to authors\n";
     }
     
     echo "  </td>
@@ -464,19 +464,19 @@ function commentView($prow, $crow, $editMode) {
     if (1) {
 	echo "<tr class='rev_actions'>
   <td class='caption final'></td>
-  <td class='entry final'><table class='pt_buttons'>
+  <td class='entry final'><div class='aa'><table class='pt_buttons'>
     <tr>\n";
-	echo "      <td class='ptb_button'><input class='hbutton' type='submit' value='Save' name='submit' /></td>\n";
+	echo "      <td class='ptb_button'><input class='bb' type='submit' value='Save' name='submit' /></td>\n";
 	if ($crow)
-	    echo "      <td class='ptb_button'><input class='button' type='submit' value='Delete comment' name='delete' /></td>\n";
-	echo "    </tr>\n  </table>\n";
+	    echo "      <td class='ptb_button'><input class='b' type='submit' value='Delete comment' name='delete' /></td>\n";
+	echo "    </tr>\n  </table></div>\n";
 	if (!$Me->timeReview($prow, null, $Conf))
 	    echo "<div class='g'></div>",
 		"<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
 	echo "</td>\n</tr>\n\n";
     }
 
-    echo "</table>\n</form>\n\n";
+    echo "</table>\n</div></form>\n\n";
 }
 
 
@@ -494,7 +494,7 @@ function responseView($prow, $crow, $editMode) {
 	    echo "c=$crow->commentId";
 	else
 	    echo "p=$prow->paperId";
-	echo "$linkExtra&amp;response=1&amp;post=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'>\n";
+	echo "$linkExtra&amp;response=1&amp;post=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>\n";
     }
 
     echo "<table class='comment'>
@@ -547,7 +547,7 @@ has passed.  Please keep the response short and to the point" . $limittext . "."
     if ($prow->conflictType < CONFLICT_AUTHOR)
 	$Conf->infoMsg("Although you aren't a contact author for this paper, as an administrator you can edit the authors' response.");
     
-    echo "<textarea name='comment' rows='10' cols='80'>";
+    echo "<textarea name='comment' rows='10' cols='80' onchange='hiliter(this)'>";
     if ($crow)
 	echo htmlspecialchars($crow->comment);
     echo "</textarea></td>
@@ -560,15 +560,15 @@ has passed.  Please keep the response short and to the point" . $limittext . "."
   <td class='entry'><input type='checkbox' name='forReviewers' value='1' ";
 	if (!$crow || $crow->forReviewers > 0)
 	    echo "checked='checked' ";
-	echo "/>&nbsp;The response is ready for reviewers to view.</td>
+	echo "onchange='hiliter(this)' />&nbsp;The response is ready for reviewers to view.</td>
 </tr><tr class='rev_actions'>
   <td class='caption final'></td>
-  <td class='entry final'><table class='pt_buttons'>
+  <td class='entry final'><div class='aa'><table class='pt_buttons'>
     <tr>\n";
-	echo "      <td class='ptb_button'><input class='hbutton' type='submit' value='Save' name='submit' /></td>\n";
+	echo "      <td class='ptb_button'><input class='bb' type='submit' value='Save' name='submit' /></td>\n";
 	if ($crow)
-	    echo "      <td class='ptb_button'><input class='button' type='submit' value='Delete response' name='delete' /></td>\n";
-	echo "    </tr>\n  </table>";
+	    echo "      <td class='ptb_button'><input class='b' type='submit' value='Delete response' name='delete' /></td>\n";
+	echo "    </tr>\n  </table></div>";
 	if (!$Conf->timeAuthorRespond())
 	    echo "<div class='g'></div>",
 		"<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
@@ -576,7 +576,7 @@ has passed.  Please keep the response short and to the point" . $limittext . "."
     }
 
     echo "<tr class='last'><td class='caption'></td></tr>\n";
-    echo "</table>\n</form>\n\n";
+    echo "</table>\n</div></form>\n\n";
 }
 
 

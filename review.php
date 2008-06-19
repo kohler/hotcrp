@@ -560,7 +560,8 @@ function reviewView($prow, $rrow, $editMode) {
 	$reviewLink .= "&amp;token=" . urlencode($_REQUEST["token"]);
     if ($editMode)
 	echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'>",
-	    "<input class='hidden' type='submit' name='default' value='' />";
+	    "<input class='hidden' type='submit' name='default' value='' />",
+	    "<div class='aahc'>";
     else
 	echo "<div class='relative'>";
     
@@ -709,8 +710,13 @@ function reviewView($prow, $rrow, $editMode) {
     <a href='${reviewLinkBase}downloadForm=1'>Download this paper's review form</a>
     &nbsp;<span class='barsep'>|</span>&nbsp;
     <span class='hint'><strong>Tip:</strong> Use <a href='search$ConfSiteSuffix'>Search</a> or <a href='offline$ConfSiteSuffix'>Offline reviewing</a> to download or upload many forms at once.</span>
-    <div class='g'></div>
   </td>
+</tr>\n";
+
+    // top save changes button
+    echo "<tr>
+  <td class='caption'></td>
+  <td class='entry'><div class='aa'><input class='bb' type='submit' value='Save changes' name='update' /></div></td>
 </tr>\n";
 
     // blind?
@@ -721,7 +727,7 @@ function reviewView($prow, $rrow, $editMode) {
     <input type='checkbox' name='blind' value='1'";
 	if ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))
 	    echo " checked='checked'";
-	echo " />&nbsp;Anonymous review</td>\n</tr>\n";
+	echo " onchange='hiliter(this)' />&nbsp;Anonymous review</td>\n</tr>\n";
     }
     
     // form body
@@ -737,13 +743,13 @@ function reviewView($prow, $rrow, $editMode) {
 	    echo " checked='checked'";
 	if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
 	    echo " disabled='disabled'";
-	echo " />&nbsp;</td><td>The review is ready for others to see.";
+	echo " onchange='hiliter(this)' />&nbsp;</td><td>The review is ready for others to see.";
 	if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
 	    echo "<div class='hint'>Only administrators can remove the review from the system at this point.</div>";
 	echo "</td></tr></table>",
-	    "<div class='g'></div><table class='pt_buttons'>\n";
+	    "<div class='aa'><table class='pt_buttons'>\n";
 	$buttons = array();
-	$buttons[] = "<input class='hbutton' type='submit' value='Save changes' name='update' />";
+	$buttons[] = "<input class='bb' type='submit' value='Save changes' name='update' />";
 	if ($rrow && $Me->privChair) {
 	    $buttons[] = array("<button type='button' class='b' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
 	    $Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='delete' value='Delete review' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
@@ -759,7 +765,7 @@ function reviewView($prow, $rrow, $editMode) {
 	    $x = (is_array($b) ? $b[1] : "");
 	    echo "      <td class='ptb_explain'>", $x, "</td>\n";
 	}
-	echo "    </tr>\n  </table></td>\n</tr>";
+	echo "    </tr>\n  </table></div></td>\n</tr>";
 	if ($Me->privChair)
 	    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>",
 		"<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines",
@@ -768,7 +774,7 @@ function reviewView($prow, $rrow, $editMode) {
     }
 
     echo "<tr class='last'><td class='caption'></td></tr>\n";
-    echo "</table>\n</form>\n\n";
+    echo "</table>\n</div></form>\n\n";
 }
 
 

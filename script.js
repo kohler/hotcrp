@@ -33,20 +33,36 @@ function highlightUpdate(which, off) {
 	    result.innerHTML = "";
 	which = e(which);
     }
+
     if (!which)
 	which = document;
+
     if (which.tagName != "INPUT" && which.tagName != "BUTTON") {
 	var ins = which.getElementsByTagName("input");
 	for (var i = 0; i < ins.length; i++)
 	    if (ins[i].className.substr(0, 2) == "hb")
 		highlightUpdate(ins[i], off);
     }
+
     if (which.className) {
 	if (off)
 	    which.className = which.className.replace(" alert", "");
 	else
 	    which.className = which.className + " alert";
     }
+}
+
+function hiliter(which, off) {
+    var elt = which;
+    while (elt && (elt.tagName != "DIV" || elt.className.substr(0, 4) != "aahc"))
+	elt = elt.parentNode;
+    
+    if (!elt)
+	highlightUpdate(null, off);
+    else if (off && elt.className)
+	elt.className = elt.className.replace(" alert", "");
+    else if (elt.className)
+	elt.className = elt.className + " alert";
 }
 
 function fold(which, dofold, foldnum) {

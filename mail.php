@@ -119,15 +119,15 @@ function checkMailPrologue($send) {
 	<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail$ConfSiteSuffix' enctype='multipart/form-data' accept-charset='UTF-8'>\n";
 	foreach (array("recipients", "subject", "emailBody") as $x)
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
-	echo "<input class='button' type='submit' name='go' value='Prepare more mail' /></td></tr></table>
+	echo "<input class='b' type='submit' name='go' value='Prepare more mail' /></td></tr></table>
 </div></div>";
     } else {
 	$Conf->infoMsg("Examine the mails to check that you've gotten the result you want, then select &ldquo;Send&rdquo; to send the checked mails.");
 	echo "<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail$ConfSiteSuffix?postcheck=1' enctype='multipart/form-data' accept-charset='UTF-8'>\n";
 	foreach (array("recipients", "subject", "emailBody") as $x)
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
-	echo "<input class='button' type='submit' name='send' value='Send' /> &nbsp;
-<input class='button' type='submit' name='cancel' value='Cancel' /></td></tr></table>\n";
+	echo "<input class='b' type='submit' name='send' value='Send' /> &nbsp;
+<input class='b' type='submit' name='cancel' value='Cancel' /></td></tr></table>\n";
     }
     return true;
 }
@@ -193,8 +193,8 @@ function checkMail($send) {
 	foreach (array("recipients", "subject", "emailBody", "q", "t", "plimit") as $x)
 	    if (isset($_REQUEST[$x]))
 		echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
-	echo "<input class='button' type='submit' name='send' value='Send' /> &nbsp;
-<input class='button' type='submit' name='cancel' value='Cancel' /></td></tr>\n", $closer;
+	echo "<input class='b' type='submit' name='send' value='Send' /> &nbsp;
+<input class='b' type='submit' name='cancel' value='Cancel' /></td></tr>\n", $closer;
     }
     $Conf->footer();
     exit;
@@ -353,7 +353,7 @@ echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", h
 
 <tr>
   <td class='caption'></td>
-  <td class='entry'><input type='submit' name='prepare' value='Prepare mail' class='button' /><div class='g'></div></td>
+  <td class='entry'><input type='submit' name='prepare' value='Prepare mail' class='b' /><div class='g'></div></td>
 </tr>
 
 <tr class='last'>

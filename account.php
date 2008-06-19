@@ -200,7 +200,7 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1
  }
 
 
-echo "<form id='accountform' method='post' action='account$ConfSiteSuffix' accept-charset='UTF-8'><div>\n";
+echo "<form id='accountform' method='post' action='account$ConfSiteSuffix' accept-charset='UTF-8'><div class='aahc'>\n";
 if ($newProfile)
     echo "<input type='hidden' name='new' value='1' />\n";
 else if ($Me->contactId != $Acct->contactId)
@@ -216,28 +216,28 @@ echo "<table id='foldpass' class='form foldc'>
 
 <div class='f-i'>
   <div class='", fcclass('email'), "'>Email</div>
-  <div class='", feclass('email'), "'><input class='textlite' type='text' name='uemail' size='52' value=\"", crpformvalue('uemail', 'email'), "\" /></div>
+  <div class='", feclass('email'), "'><input class='textlite' type='text' name='uemail' size='52' value=\"", crpformvalue('uemail', 'email'), "\" onchange='hiliter(this)' /></div>
 </div>\n\n";
 
 echo "<div class='f-i'><div class='f-ix'>
   <div class='", fcclass('firstName'), "'>First&nbsp;name</div>
-  <div class='", feclass('firstName'), "'><input class='textlite' type='text' name='firstName' size='24' value=\"", crpformvalue('firstName'), "\" /></div>
+  <div class='", feclass('firstName'), "'><input class='textlite' type='text' name='firstName' size='24' value=\"", crpformvalue('firstName'), "\" onchange='hiliter(this)' /></div>
 </div><div class='f-ix'>
   <div class='", fcclass('lastName'), "'>Last&nbsp;name</div>
-  <div class='", feclass('lastName'), "'><input class='textlite' type='text' name='lastName' size='24' value=\"", crpformvalue('lastName'), "\" /></div>
+  <div class='", feclass('lastName'), "'><input class='textlite' type='text' name='lastName' size='24' value=\"", crpformvalue('lastName'), "\" onchange='hiliter(this)' /></div>
 </div><div class='clear'></div></div>\n\n";
 
 if (!$newProfile) {
     echo "<div class='f-i'><div class='f-ix'>
   <div class='", fcclass('password'), "'>Password";
     echo "</div>
-  <div class='", feclass('password'), "'><input class='textlite ellipsis' type='password' name='upassword' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='shiftPassword(1)' />";
+  <div class='", feclass('password'), "'><input class='textlite ellipsis' type='password' name='upassword' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this);shiftPassword(1)' />";
     if ($Me->privChair)
-	echo "<input class='textlite extension' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='shiftPassword(0)' />";
+	echo "<input class='textlite extension' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this);shiftPassword(0)' />";
     echo "</div>
 </div><div class='ellipsis f-ix'>
   <div class='", fcclass('password'), "'>Repeat password</div>
-  <div class='", feclass('password'), "'><input class='textlite' type='password' name='upassword2' size='24' value=\"", crpformvalue('upassword', 'password'), "\" /></div>
+  <div class='", feclass('password'), "'><input class='textlite' type='password' name='upassword2' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this)' /></div>
 </div>
   <div class='f-h'>The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don't use a login password or any other high-security password.";
     if ($Me->privChair)
@@ -248,7 +248,7 @@ if (!$newProfile) {
 
 echo "<div class='f-i'>
   <div class='", fcclass('affiliation'), "'>Affiliation</div>
-  <div class='", feclass('affiliation'), "'><input class='textlite' type='text' name='affiliation' size='52' value=\"", crpformvalue('affiliation'), "\" /></div>
+  <div class='", feclass('affiliation'), "'><input class='textlite' type='text' name='affiliation' size='52' value=\"", crpformvalue('affiliation'), "\" onchange='hiliter(this)' /></div>
 </div>\n\n";
 
 
@@ -257,23 +257,23 @@ if ($Conf->setting("acct_addr")) {
     if ($Conf->setting("allowPaperOption") >= 5) {
 	echo "<div class='f-i'>
   <div class='f-c'>Address line 1</div>
-  <div class='f-e'><input class='textlite' type='text' name='addressLine1' size='52' value=\"", crpformvalue('addressLine1'), "\" /></div>
+  <div class='f-e'><input class='textlite' type='text' name='addressLine1' size='52' value=\"", crpformvalue('addressLine1'), "\" onchange='hiliter(this)' /></div>
 </div>\n\n";
 	echo "<div class='f-i'>
   <div class='f-c'>Address line 2</div>
-  <div class='f-e'><input class='textlite' type='text' name='addressLine2' size='52' value=\"", crpformvalue('addressLine2'), "\" /></div>
+  <div class='f-e'><input class='textlite' type='text' name='addressLine2' size='52' value=\"", crpformvalue('addressLine2'), "\" onchange='hiliter(this)' /></div>
 </div>\n\n";
 	echo "<div class='f-i'><div class='f-ix'>
   <div class='f-c'>City</div>
-  <div class='f-e'><input class='textlite' type='text' name='city' size='32' value=\"", crpformvalue('city'), "\" /></div>
+  <div class='f-e'><input class='textlite' type='text' name='city' size='32' value=\"", crpformvalue('city'), "\" onchange='hiliter(this)' /></div>
 </div>";
 	echo "<div class='f-ix'>
   <div class='f-c'>State/Province/Region</div>
-  <div class='f-e'><input class='textlite' type='text' name='state' size='24' value=\"", crpformvalue('state'), "\" /></div>
+  <div class='f-e'><input class='textlite' type='text' name='state' size='24' value=\"", crpformvalue('state'), "\" onchange='hiliter(this)' /></div>
 </div>";
 	echo "<div class='f-ix'>
   <div class='f-c'>ZIP/Postal code</div>
-  <div class='f-e'><input class='textlite' type='text' name='zipCode' size='12' value=\"", crpformvalue('zipCode'), "\" /></div>
+  <div class='f-e'><input class='textlite' type='text' name='zipCode' size='12' value=\"", crpformvalue('zipCode'), "\" onchange='hiliter(this)' /></div>
 </div><div class='clear'></div></div>\n\n";
 	echo "<div class='f-i'>
   <div class='f-c'>Country</div>
@@ -283,10 +283,10 @@ if ($Conf->setting("acct_addr")) {
     }
     echo "<div class='f-i'><div class='f-ix'>
   <div class='f-c'>Phone <span class='f-cx'>(optional)</span></div>
-  <div class='f-e'><input class='textlite' type='text' name='voicePhoneNumber' size='24' value=\"", crpformvalue('voicePhoneNumber'), "\" /></div>
+  <div class='f-e'><input class='textlite' type='text' name='voicePhoneNumber' size='24' value=\"", crpformvalue('voicePhoneNumber'), "\" onchange='hiliter(this)' /></div>
 </div><div class='f-ix'>
   <div class='f-c'>Fax <span class='f-cx'>(optional)</span></div>
-  <div class='f-e'><input class='textlite' type='text' name='faxPhoneNumber' size='24' value=\"", crpformvalue('faxPhoneNumber'), "\" /></div>
+  <div class='f-e'><input class='textlite' type='text' name='faxPhoneNumber' size='24' value=\"", crpformvalue('faxPhoneNumber'), "\" onchange='hiliter(this)' /></div>
 </div><div class='clear'></div></div>\n";
 }
 
@@ -298,7 +298,7 @@ if ($Conf->setting("allowPaperOption") >= 6) {
 	"<input type='checkbox' name='watchcomment' value='", WATCH_COMMENT, "'";
     if ($Acct->defaultWatch & WATCH_COMMENT)
 	echo " checked='checked'";
-    echo " />&nbsp;Mail me when new comments are available for papers I wrote or reviewed</td></tr>\n\n";
+    echo " onchange='hiliter(this)' />&nbsp;Mail me when new comments are available for papers I wrote or reviewed</td></tr>\n\n";
 }
 
 
@@ -330,7 +330,7 @@ if ($Acct->isPC || $newProfile) {
     We use this information when assigning reviews.
     For example: &ldquo;<tt>Ping Yen Zhang (INRIA)</tt>&rdquo;
     or, for a whole institution, &ldquo;<tt>INRIA</tt>&rdquo;.</div>
-    <textarea class='textlite' name='collaborators' rows='5' cols='50'>", htmlspecialchars($Acct->collaborators), "</textarea></td>
+    <textarea class='textlite' name='collaborators' rows='5' cols='50' onchange='hiliter(this)'>", htmlspecialchars($Acct->collaborators), "</textarea></td>
 </tr>\n\n";
 
     $result = $Conf->q("select TopicArea.topicId, TopicArea.topicName, TopicInterest.interest from TopicArea left join TopicInterest on TopicInterest.contactId=$Acct->contactId and TopicInterest.topicId=TopicArea.topicId order by TopicArea.topicName");
@@ -351,7 +351,7 @@ if ($Acct->isPC || $newProfile) {
 		echo "<input type='radio' name='ti$row[0]' value='$j' ";
 		if ($interest == $j)
 		    echo "checked='checked' ";
-		echo "/></td>";
+		echo "onchange='hiliter(this)' /></td>";
 	    }
 	    echo "</td></tr>\n";
 	}
@@ -361,14 +361,13 @@ if ($Acct->isPC || $newProfile) {
 }
 
 
-echo "<tr><td class='caption'></td>
-  <td class='entry'><div class='g'></div>
-    <input class='b' type='submit' value='",
+echo "<tr class='last'><td class='caption'></td>
+  <td class='entry'><div class='aa'>
+    <input class='bb' type='submit' value='",
     ($newProfile ? "Create account" : "Save changes"),
     "' name='register' />
-    <div class='g'></div></td>
+    </div></td>
 </tr>
-<tr class='last'><td class='caption'></td></tr>
 </table></div></form>\n";
 
 

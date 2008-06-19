@@ -636,7 +636,7 @@ $finalEditMode = false;
 if ($mode == "edit") {
     echo "<form method='post' action=\"paper$ConfSiteSuffix?p=",
 	($newPaper ? "new" : $paperId),
-	"&amp;post=1&amp;mode=edit$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'>";
+	"&amp;post=1&amp;mode=edit$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>";
     $editable = $newPaper || ($prow->timeWithdrawn <= 0
 			      && ($Conf->timeUpdatePaper($prow) || $Me->privChair));
     if ($prow && $prow->outcome > 0 && ($Conf->timeSubmitFinalPaper() || $Me->privChair))
@@ -777,21 +777,21 @@ if ($mode == "edit") {
     echo $spacer;
     echo "<tr class='pt_edit'>
   <td class='caption'></td>
-  <td class='entry' colspan='2'><table class='pt_buttons'>\n";
+  <td class='entry' colspan='2'><div class='aa'><table class='pt_buttons'>\n";
     $buttons = array();
     if ($newPaper)
-	$buttons[] = "<input class='hbutton' type='submit' name='update' value='Register paper' />";
+	$buttons[] = "<input class='bb' type='submit' name='update' value='Register paper' />";
     else if ($prow->timeWithdrawn > 0 && ($Conf->timeFinalizePaper($prow) || $Me->privChair))
-	$buttons[] = "<input class='button' type='submit' name='revive' value='Revive paper' />";
+	$buttons[] = "<input class='b' type='submit' name='revive' value='Revive paper' />";
     else if ($prow->timeWithdrawn > 0)
 	$buttons[] = "The paper has been withdrawn, and the <a href='deadlines$ConfSiteSuffix'>deadline</a> for reviving it has passed.";
     else {
 	if ($prow->outcome > 0 && $Conf->collectFinalPapers() && ($Conf->timeSubmitFinalPaper() || $Me->privChair))
-	    $buttons[] = array("<input class='hbutton' type='submit' name='submitfinal' value='Submit final copy' />", "");
+	    $buttons[] = array("<input class='bb' type='submit' name='submitfinal' value='Submit final copy' />", "");
 	if ($Conf->timeUpdatePaper($prow))
-	    $buttons[] = array("<input class='hbutton' type='submit' name='update' value='Submit paper' />", "");
+	    $buttons[] = array("<input class='bb' type='submit' name='update' value='Submit paper' />", "");
 	else if ($Me->privChair) {
-	    $class = ($prow->outcome > 0 && $Conf->collectFinalPapers() ? "b" : "hbutton");
+	    $class = ($prow->outcome > 0 && $Conf->collectFinalPapers() ? "b" : "bb");
 	    $buttons[] = array("<input class='$class' type='submit' name='update' value='Submit paper' />", "(admin only)");
 	}
 	if ($prow->timeSubmitted <= 0)
@@ -818,7 +818,7 @@ if ($mode == "edit") {
 	$x = (is_array($b) ? $b[1] : "");
 	echo "      <td class='ptb_explain'>", $x, "</td>\n";
     }
-    echo "    </tr>\n  </table></td>\n</tr>\n\n";
+    echo "    </tr>\n  </table></div></td>\n</tr>\n\n";
     if ($Me->privChair) {
 	echo "<tr>
   <td class='caption'></td>
@@ -837,7 +837,7 @@ echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></
 $paperTable->echoDivExit();
 
 if ($mode == "edit")
-    echo "</form>\n";
+    echo "</div></form>\n";
 echo "<div class='clear'></div>\n\n";
 
 

@@ -689,7 +689,7 @@ function settingText($name, $defval = null) {
 	return defval($Conf->settingTexts, $name, $defval);
 }
 
-function doCheckbox($name, $text, $tr = false, $js = "highlightUpdate()") {
+function doCheckbox($name, $text, $tr = false, $js = "hiliter(this)") {
     $x = setting($name);
     echo ($tr ? "<tr><td class='nowrap'>" : ""), "<input type='checkbox' name='$name' value='1'";
     if ($x !== null && $x > 0)
@@ -706,7 +706,7 @@ function doRadio($name, $varr) {
 	echo "<tr><td class='nowrap'><input type='radio' name='$name' value='$k'";
 	if ($k == $x)
 	    echo " checked='checked'";
-	echo " onchange='highlightUpdate()' />&nbsp;</td><td>";
+	echo " onchange='hiliter(this)' />&nbsp;</td><td>";
 	if (is_array($text))
 	    echo decorateSettingName($name, $text[0]), "<br /><small>", $text[1], "</small>";
 	else
@@ -721,7 +721,7 @@ function doSelect($name, $nametext, $varr, $tr = false) {
 	decorateSettingName($name, $nametext),
 	($tr ? "</td><td class='lentry'>" : ": &nbsp;"),
 	tagg_select($name, $varr, setting($name),
-		    array("onchange" => "highlightUpdate()")),
+		    array("onchange" => "hiliter(this)")),
 	($tr ? "</td></tr>\n" : "<br />\n");
 }
 
@@ -730,7 +730,7 @@ function doTextRow($name, $text, $v, $size = 30, $capclass = "lcaption",
     $settingname = (is_array($text) ? $text[0] : $text);
     if ($tempText)
 	$tempText = " onfocus=\"tempText(this, '$tempText', 1)\" onblur=\"tempText(this, '$tempText', 0)\"";
-    echo "<tr><td class='$capclass nowrap'>", decorateSettingName($name, $settingname), "</td><td class='lentry'><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='$size'$tempText onchange='highlightUpdate()' />";
+    echo "<tr><td class='$capclass nowrap'>", decorateSettingName($name, $settingname), "</td><td class='lentry'><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='$size'$tempText onchange='hiliter(this)' />";
     if (is_array($text) && isset($text[2]))
 	echo $text[2];
     if (is_array($text) && $text[1])
@@ -767,6 +767,14 @@ function doGraceRow($name, $text, $capclass = "lcaption") {
     doTextRow($name, $text, unparseGrace(setting($name)), 15, $capclass);
 }
 
+function doActionArea() {
+    echo "<div class='aa'>
+  <input type='submit' class='bb' name='update' value='Save changes' />
+  &nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />
+</div>";
+}
+
+
 
 // Accounts
 function doAccGroup() {
@@ -783,19 +791,18 @@ function doAccGroup() {
 	"Select a user's name to edit a profile or change PC/administrator status.</p>\n";
     $pl = new ContactList(false);
     echo $pl->text("pcadminx", $Me, "${ConfSiteBase}contacts$ConfSiteSuffix?t=pcadmin");
-
-    $belowHr = false;
 }
 
 // Messages
 function doMsgGroup() {
     global $Conf, $ConfSiteBase, $ConfSiteSuffix;
+
     echo "<strong>", decorateSettingName("homemsg", "Home page message"), "</strong> (HTML allowed)<br />
-<textarea class='textlite' name='homemsg' cols='60' rows='10' onchange='highlightUpdate()'>", htmlspecialchars(settingText("homemsg", "")), "</textarea>";
+<textarea class='textlite' name='homemsg' cols='60' rows='10' onchange='hiliter(this)'>", htmlspecialchars(settingText("homemsg", "")), "</textarea>";
     echo "<div class='g'></div>\n";
 
     echo "<strong>", decorateSettingName("conflictdefmsg", "Definition of conflict of interest"), "</strong> (HTML allowed)<br />
-<textarea class='textlite' name='conflictdefmsg' cols='60' rows='2' onchange='highlightUpdate()'>", htmlspecialchars(settingText("conflictdefmsg", $Conf->conflictDefinitionText(true))), "</textarea>";
+<textarea class='textlite' name='conflictdefmsg' cols='60' rows='2' onchange='hiliter(this)'>", htmlspecialchars(settingText("conflictdefmsg", $Conf->conflictDefinitionText(true))), "</textarea>";
 }
 
 // Submissions
@@ -820,7 +827,7 @@ function doSubGroup() {
 
     if (is_executable("Code/banal")) {
 	echo "<div class='g'></div><table id='foldbanal' class='", ($Conf->setting("sub_banal") ? "foldo" : "foldc"), "'>";
-	doCheckbox("sub_banal", "<strong>Automated format checker<span class='extension'>:</span></strong>", true, "highlightUpdate();fold(\"banal\",!this.checked)");
+	doCheckbox("sub_banal", "<strong>Automated format checker<span class='extension'>:</span></strong>", true, "hiliter(this);fold(\"banal\",!this.checked)");
 	echo "<tr class='extension'><td></td><td class='top'><table>";
 	$bsetting = explode(";", preg_replace("/>.*/", "", $Conf->settingText("sub_banal", "")));
 	for ($i = 0; $i < 6; $i++)
@@ -851,24 +858,24 @@ function doOptGroupOption($o) {
     $id = $o->optionId;
 
     echo "<tr><td class='lxcaption'>Option name</td>",
-	"<td class='lentry'><input type='text' class='textlite' name='optn$id' value=\"", htmlspecialchars($o->optionName), "\" size='50' onchange='highlightUpdate()' ",
+	"<td class='lentry'><input type='text' class='textlite' name='optn$id' value=\"", htmlspecialchars($o->optionName), "\" size='50' onchange='hiliter(this)' ",
 	($id == "n" ? "onfocus=\"tempText(this, 'New option', 1)\" onblur=\"tempText(this, 'New option', 0)\" " : ""),
 	"/></td></tr>\n",
 	"<tr><td class='lxcaption'>Description</td>",
-	"<td class='lentry textarea'><textarea class='textlite' name='optd$id' rows='2' cols='50' onchange='highlightUpdate()'>", htmlspecialchars($o->description), "</textarea></td></tr>\n",
+	"<td class='lentry textarea'><textarea class='textlite' name='optd$id' rows='2' cols='50' onchange='hiliter(this)'>", htmlspecialchars($o->description), "</textarea></td></tr>\n",
 	"<td class='lxcaption'></td>",
 	"<td class='lentry'>";
 
     if ($Conf->setting("allowPaperOption") >= 14)
-	echo tagg_select("optvt$id", array("Checkbox", "Selector"), defval($o, "optionValues") ? 1 : 0, array("onchange" => "fold(\"optv$id\",this.value==0)")),
+	echo tagg_select("optvt$id", array("Checkbox", "Selector"), defval($o, "optionValues") ? 1 : 0, array("onchange" => "hiliter(this);fold(\"optv$id\",this.value==0)")),
 	    "<span class='sep'></span>";
 
-    echo "<input type='checkbox' name='optp$o->optionId' value='1'", ($o->pcView ? " checked='checked'" : ""), " />&nbsp;Visible to PC";
+    echo "<input type='checkbox' name='optp$o->optionId' value='1'", ($o->pcView ? " checked='checked'" : ""), " onchange='hiliter(this)' />&nbsp;Visible to PC";
 
     if ($Conf->setting("allowPaperOption") >= 14)
 	echo "<div id='foldoptv$id' class='", (defval($o, "optionValues") ? "foldo" : "foldc"), "'><div class='extension'>",
 	    "<div class='hint'>Enter the possible values, one per line.  The first value will be the default.</div>",
-	    "<textarea class='textlite' name='optv$id' rows='3' cols='50' onchange='highlightUpdate()'>", htmlspecialchars(defval($o, "optionValues")), "</textarea>",
+	    "<textarea class='textlite' name='optv$id' rows='3' cols='50' onchange='hiliter(this)'>", htmlspecialchars(defval($o, "optionValues")), "</textarea>",
 	    "</div></div>";
 
     echo "</td></tr>\n";
@@ -904,12 +911,12 @@ function doOptGroup() {
     echo "<div class='g'></div><table id='newtoptable'>";
     $td1 = "<td class='lcaption'>Current</td>";
     foreach ($rf->topicOrder as $tid => $crap) {
-	echo "<tr>$td1<td class='lentry'><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($rf->topicName[$tid]), "\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
+	echo "<tr>$td1<td class='lentry'><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($rf->topicName[$tid]), "\" size='50' onchange='hiliter(this)' /></td></tr>\n";
 	$td1 = "<td></td>";
     }
     $td1 = "<td class='lcaption' rowspan='40'>New<br /><small><a href='javascript:authorfold(\"newtop\",1,1)'>More</a> | <a href='javascript:authorfold(\"newtop\",1,-1)'>Fewer</a></small></td>";
     for ($i = 1; $i <= 40; $i++) {
-	echo "<tr id='newtop$i' class='auedito'>$td1<td class='lentry'><input type='text' class='textlite' name='topn$i' value=\"\" size='50' onchange='highlightUpdate()' /></td></tr>\n";
+	echo "<tr id='newtop$i' class='auedito'>$td1<td class='lentry'><input type='text' class='textlite' name='topn$i' value=\"\" size='50' onchange='hiliter(this)' /></td></tr>\n";
 	$td1 = "";
     }
     echo "</table><input id='newtopcount' type='hidden' name='newtopcount' value='40' />";
@@ -978,7 +985,7 @@ function doRevGroup() {
     echo "<div id='foldmailbody_requestreview' class='foldc'>", foldbutton("mailbody_requestreview", ""), "
   <a href=\"javascript:fold('mailbody_requestreview', 0)\" class='unfolder q'><strong>Mail template for external review requests</strong></a>\n";
     echo "  <span class='extension'><strong>Mail template for external review requests</strong> (<a href='${ConfSiteBase}mail$ConfSiteSuffix'>keywords</a> allowed)<br /></span>
-<textarea class='tt extension' name='mailbody_requestreview' cols='80' rows='20' onchange='highlightUpdate()'>", htmlspecialchars($t[1]), "</textarea></div>\n";
+<textarea class='tt extension' name='mailbody_requestreview' cols='80' rows='20' onchange='hiliter(this)'>", htmlspecialchars($t[1]), "</textarea></div>\n";
 
     echo "<hr class='hr' />";
 
@@ -995,7 +1002,7 @@ function doRevGroup() {
 	sort($t);
 	$v = join(" ", $t);
     }
-    echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='50' onchange='highlightUpdate()' /><br /><small>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</small></td></tr></table>";
+    echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='50' onchange='hiliter(this)' /><br /><small>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</small></td></tr></table>";
 
     echo "<hr class='hr' />";
 
@@ -1015,6 +1022,7 @@ function doRfoGroup() {
 // Responses and decisions
 function doDecGroup() {
     global $Conf, $rf;
+
     // doCheckbox('au_seerev', '<b>Authors can see reviews</b>');
     echo "Can <b>authors see reviews</b> for their papers?<br />";
     doRadio("au_seerev", array(AU_SEEREV_NO => "No", AU_SEEREV_ALWAYS => "Yes", AU_SEEREV_YES => "Yes, once they've completed any requested reviews"));
@@ -1087,6 +1095,9 @@ echo "</table></td><td class='top'><div class='lht'>";
 if (!function_exists("imagecreate"))
     $Conf->warnMsg("Your PHP installation appears to lack GD support, which is required for drawing graphs.  You may want to fix this problem and restart Apache.", true);
 
+echo "<div class='aahc'>";
+doActionArea();
+
 if ($Group == "acc")
     doAccGroup();
 else if ($Group == "msg")
@@ -1102,13 +1113,8 @@ else if ($Group == "rfo")
 else
     doDecGroup();
 
-echo ($belowHr ? "<hr class='hr' />\n" : "<div class='g'></div>\n");
-echo "<input type='submit' class='hbutton",
-    (defval($_REQUEST, "sample", "none") == "none" ? "" : "_alert"),
-    "' name='update' value='Save changes' /> ";
-echo "&nbsp;<input type='submit' class='button' name='cancel' value='Cancel' />";
-
-echo "</div></td></tr>
+doActionArea();
+echo "</div></div></td></tr>
 </table></div></form>\n";
 
 $Conf->footer();

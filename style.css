@@ -492,6 +492,9 @@ input.b, button.b {
 input.b.alert {
 	font-weight: bold;
 }
+input.bb, button.bb {
+	font-weight: bold;
+}
 input.button.alert, input.hbutton.alert, input.hb.alert {
 	font-weight: bold;
 	background: #ffaaaa;
@@ -563,6 +566,17 @@ td.caption a.foldbutton {
 	border-left: 1px solid #eecc66;
 	border-bottom: 1px solid #999966;
 	border-right: 1px solid #999966;
+}
+
+
+/* Action area */
+div.aa {
+	padding: 0.3em;
+	margin: 0.5em 0em;
+	background: #eeeeee;
+}
+div.aahc.alert div.aa {
+	background: #ffaaaa;
 }
 
 
