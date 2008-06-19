@@ -1045,7 +1045,7 @@ table.ppltable th.pl_score, table.altable th.pl_id {
 	padding-right: 3px;
 	white-space: nowrap;
 }
-.pl_reviewsStatus, table.pltable th.pl_reviewsStatus,
+.pl_revstat, table.pltable th.pl_revstat,
 td.pl_selector {
 	text-align: center;
 }

@@ -21,6 +21,7 @@ class ContactList extends BaseList {
     const FIELD_PAPERS = 9;
     const FIELD_REVIEW_PAPERS = 10;
     const FIELD_AFFILIATION_ROW = 11;
+    const FIELD_REVIEW_RATINGS = 12;
     
     var $showHeader;
     var $sortField;
@@ -75,6 +76,12 @@ class ContactList extends BaseList {
 	}
 	if ($fieldId == self::FIELD_REVIEWS)
 	    $queryOptions['reviews'] = true;
+	if ($fieldId == self::FIELD_REVIEW_RATINGS) {
+	    if ($Conf->setting("rev_ratings") == REV_RATINGS_NONE
+		|| $Conf->setting("allowPaperOption") < 12)
+		return false;
+	    $queryOptions["revratings"] = $queryOptions["reviews"] = true;
+	}
 	if ($fieldId == self::FIELD_PAPERS)
 	    $queryOptions['papers'] = true;
 	if ($fieldId == self::FIELD_REVIEW_PAPERS)
@@ -127,6 +134,19 @@ class ContactList extends BaseList {
 	return $x ? $x : self::_sortBase($a, $b);
     }
 
+    function _sortReviewRatings($a, $b) {
+	global $Conf;
+	if ($b->numRatings && $a->numRatings)
+	    $x = $b->sumRatings / $b->numRatings - $a->sumRatings / $a->numRatings;
+	else if ($b->numRatings || $a->numRatings)
+	    $x = $b->numRatings ? 1 : -1;
+	else
+	    $x = 0;
+	$x = $x ? $x : $b->numReviews - $a->numReviews;
+	$x = $x ? $x : self::_sortBase($a, $b);
+	return $x > 0 ? 1 : ($x == 0 ? 0 : -1);
+    }
+
     function _sortPapers($a, $b) {
 	$x = (int) $a->paperIds - (int) $b->paperIds;
 	$x = $x ? $x : strcmp($a->paperIds, $b->paperIds);
@@ -151,6 +171,9 @@ class ContactList extends BaseList {
 	    break;
 	case self::FIELD_REVIEWS:
 	    usort($rows, array("ContactList", "_sortReviews"));
+	    break;
+	case self::FIELD_REVIEW_RATINGS:
+	    usort($rows, array("ContactList", "_sortReviewRatings"));
 	    break;
 	case self::FIELD_PAPERS:
 	case self::FIELD_REVIEW_PAPERS:
@@ -194,6 +217,8 @@ class ContactList extends BaseList {
 	    return "Low-interest topics";
 	case self::FIELD_REVIEWS:
 	    return "<span class='hastitle' title='\"1/2\" means 1 complete review out of 2 assigned reviews'>Reviews</span>";
+	case self::FIELD_REVIEW_RATINGS:
+	    return "<span class='hastitle' title='Ratings of reviews'>Rating</a>";
 	case self::FIELD_SELECTOR:
 	    return "";
 	case self::FIELD_PAPERS:
@@ -270,6 +295,11 @@ class ContactList extends BaseList {
 		return "$a1<b>$row->numReviewsSubmitted</b></a>";
 	    else
 		return "$a1<b>$row->numReviewsSubmitted</b>/$row->numReviews</a>";
+	case self::FIELD_REVIEW_RATINGS:
+	    if ((!$row->numReviews && !$row->numReviewsSubmitted)
+		|| !$row->numRatings)
+		return "";
+	    return "<span class='hastitle' title='$row->sumRatings of $row->numRatings other reviewers found these reviews helpful'>" . ((int) (100 * ($row->sumRatings / $row->numRatings) + 0.5)) . "%</span>";
 	case self::FIELD_PAPERS:
 	    if (!$row->paperIds)
 		return "";
@@ -322,17 +352,17 @@ class ContactList extends BaseList {
 	  case "pc":
 	  case "admin":
 	  case "pcadmin":
-	    return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS));
+	    return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS));
 	  case "pcadminx":
 	    return array($listname, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS);
 	  case "re":
 	  case "resub":
-	    return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS));
+	    return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS));
 	  case "ext":
 	  case "extsub":
-	    return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_PAPERS));
+	    return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS));
 	  case "req":
-	    return $this->addScores(array("req", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_PAPERS));
+	    return $this->addScores(array("req", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS));
 	  case "au":
 	  case "aurej":
 	  case "auacc":
@@ -408,6 +438,8 @@ class ContactList extends BaseList {
 	    $pq .= ",
 	count(if(PaperReview.reviewNeedsSubmit<=0,PaperReview.reviewSubmitted,1)) as numReviews,
 	count(PaperReview.reviewSubmitted) as numReviewsSubmitted";
+	if (isset($queryOptions["revratings"]))
+	    $pq .= ",\n	count(ReviewRating.rating) as numRatings, sum(ReviewRating.rating) as sumRatings";
 	if (isset($queryOptions['scores']))
 	    foreach ($queryOptions['scores'] as $score)
 		$pq .= ",\n\tgroup_concat(PaperReview.$score) as $score";
@@ -441,6 +473,8 @@ class ContactList extends BaseList {
 		$pq .= " where " . join(" and ", $jwhere);
 	    $pq .= ") as PaperReview on (PaperReview.contactId=ContactInfo.contactId)\n";
 	}
+	if (isset($queryOptions["revratings"]))
+	    $pq .= "	left join ReviewRating on (ReviewRating.reviewId=PaperReview.reviewId)\n";
 	if ($aulimit)
 	    $pq .= "\tjoin PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")\n";
 	if ($this->limit == "au")
@@ -588,7 +622,8 @@ $contactListFields = array(
 	ContactList::FIELD_LASTVISIT => array('lastvisit', 1, 1),
 	ContactList::FIELD_HIGHTOPICS => array('topics', 3, 0),
 	ContactList::FIELD_LOWTOPICS => array('topics', 3, 0),
-	ContactList::FIELD_REVIEWS => array('reviewsStatus', 1, 1),
+	ContactList::FIELD_REVIEWS => array('revstat', 1, 1),
+	ContactList::FIELD_REVIEW_RATINGS => array('revstat', 1, 1),
 	ContactList::FIELD_PAPERS => array('papers', 1, 1),
 	ContactList::FIELD_REVIEW_PAPERS => array('papers', 1, 1),
 	ContactList::FIELD_SCORE => array('score', 1, 1)
