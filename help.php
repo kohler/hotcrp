@@ -688,7 +688,7 @@ review for that paper; this supposedly reduces bias.)
   into the system as <a
   href='${ConfSiteBase}comment$ConfSiteSuffix'>comments</a>.  On the <a
   href='${ConfSiteBase}settings$ConfSiteSuffix?group=dec'>decision settings page</a>,
-  select &ldquo;Authors can see reviews&rdquo; and &ldquo;Collect responses to the
+  update &ldquo;Can authors see reviews&rdquo; and &ldquo;Collect responses to the
   reviews,&rdquo; then <a href='${ConfSiteBase}mail$ConfSiteSuffix'>send mail to
   authors</a> informing them of the response deadlines.  PC members will still
   be able to update their reviews, assuming it's before the <a
