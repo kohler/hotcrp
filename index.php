@@ -278,14 +278,14 @@ Sign in to submit or review papers.";
 <input type='hidden' name='cookie' value='1' />
 <div class='f-ii'>
   <div class='f-c", $email_class, "'>Email</div>
-  <div class='f-e", $email_class, "'><input id='login_d' type='text' class='textlite' name='email' size='42' tabindex='1' ";
+  <div class='f-e", $email_class, "'><input id='login_d' type='text' class='textlite' name='email' size='36' tabindex='1' ";
     if (isset($_REQUEST["email"]))
 	echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" ";
     echo " /></div>
 </div>
 <div class='f-i'>
   <div class='f-c", $password_class, "'>Password</div>
-  <div class='f-e'><input type='password' class='textlite' name='password' size='42' tabindex='1' value='' /></div>
+  <div class='f-e'><input type='password' class='textlite' name='password' size='36' tabindex='1' value='' /></div>
 </div>
 <div class='f-i'>
   <input type='radio' name='action' value='login' checked='checked' tabindex='2' />&nbsp;<b>Sign me in</b><br />
