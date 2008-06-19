@@ -705,7 +705,9 @@ review for that paper; this supposedly reduces bias.)
   href='${ConfSiteBase}search$ConfSiteSuffix?q=&amp;t=s&amp;sort=50'>Examine paper
   scores</a></strong>, either one at a time or en masse, and decide which
   papers will be discussed.  The <a href='help$ConfSiteSuffix?t=tags'>tags</a> system
-  lets you prepare discussion sets and even discussion orders.</p></li>
+  lets you prepare discussion sets and even discussion orders.  Use
+  <a href='${ConfSiteBase}help$ConfSiteSuffix?t=keywords'>search keywords</a>
+  to, for example, find all papers with at least two overall merit ratings of 2 or better.</p></li>
 
 <li><p><strong><a href='${ConfSiteBase}autoassign$ConfSiteSuffix'>Assign discussion leads
   (optional).</a></strong> Discussion leads are expected to be able to
