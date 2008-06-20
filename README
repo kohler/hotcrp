@@ -135,10 +135,15 @@ output.
 
 Updating the code
 -----------------
-HotCRP is designed so that you can update the code without updating the
-database schema.  Simply copy the new version over your old code,
-preserving your old Code/options.inc.  The next time someone uses the site
-the schema should automatically be upgraded.  See "Code/updateschema.inc".
+HotCRP code can be updated without updating the database schema.  Simply
+copy the new version over your old code, preserving your old
+Code/options.inc.  For instance, using GNU tar:
+
+   % cd HOTCRPINSTALLATION
+   % tar --strip=1 -xzf ~/hotcrp-VERSIONNUMBER.tar.gz
+
+The next time someone uses the site the schema should automatically be
+upgraded.  See "Code/updateschema.inc".
 
 
 License
