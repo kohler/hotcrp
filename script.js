@@ -325,7 +325,7 @@ function makeassrevajax(select, pcs, paperId) {
 	    form[pcs].value = select.value;
 	    Miniajax.submit("assrevform", function(rv) { setajaxcheck("assrev" + paperId + "ok", rv); });
 	} else
-	    highlightUpdate();
+	    hiliter(select);
     };
 }
 
@@ -352,7 +352,7 @@ function makeconflictajax(input, pcs, paperId) {
 	    form[pcs].value = (input.checked ? -1 : 0);
 	    Miniajax.submit("assrevform", function(rv) { setajaxcheck("assrev" + paperId + "ok", rv); });
 	} else
-	    highlightUpdate();
+	    hiliter(input);
     };
 }
 
@@ -562,7 +562,7 @@ Miniajax.submit = function(formname, callback, timeout) {
 	    var rv = eval(req.responseText);
 	    callback(rv);
 	    if (rv.ok)
-		highlightUpdate(form, true);
+		hiliter(form, true);
 	} else {
 	    resultelt.innerHTML = "<span class='error'>Network error.  Please try again.</span>";
 	    form.onsubmit = "";

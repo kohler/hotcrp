@@ -264,16 +264,16 @@ if ($reviewer > 0) {
 	$search->matchPreg = $paperList->authorMatch
 	    . ($showau && $showco ? "|" : "") . $paperList->collaboratorsMatch;
     }
-    echo "<form class='assignpc' method='post' action=\"manualassign$ConfSiteSuffix?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
+    echo "<div class='aahc'><form class='assignpc' method='post' action=\"manualassign$ConfSiteSuffix?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
     if (isset($_REQUEST["sort"]))
 	echo "&amp;sort=", urlencode($_REQUEST["sort"]);
-    echo "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n";
+    echo "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
+	"<div class='aa'><table class='center'><tr><td><input type='submit' class='bb' name='update' value='Save assignments' /></td></tr></table></div>\n";
     echo $paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me);
     //if (isset($sau) && ($paperList->authorMatch || $paperList->collaboratorsMatch))
     //   $_SESSION["matchPreg"] = "/(" . $paperList->authorMatch . ($paperList->authorMatch && $paperList->collaboratorsMatch ? "|" : "") . $paperList->collaboratorsMatch . ")/i";
-    echo "<div class='g'></div>\n",
-	"<table class='center'><tr><td><input class='hbutton' type='submit' name='update' value='Save assignments' /></td></tr></table>\n",
-	"</div></form>\n";
+    echo "<div class='aa'><table class='center'><tr><td><input type='submit' class='bb' name='update' value='Save assignments' /></td></tr></table></div>\n";
+	"</div></form></div>\n";
 }
 
 echo "<div class='clear'></div>";
