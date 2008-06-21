@@ -205,7 +205,7 @@ function selassign(elt, which) {
 	var i = e("assimg" + which);
 	var ext = (elt.value == -1 ? ".png" : ".gif");
 	i.src = i.src.replace(/ass-?\d\.\w\w\w/, "ass" + elt.value + ext);
-	highlightUpdate();
+	hiliter(elt);
     }
     var folder = e("folderass" + which);
     if (folder && elt !== 0)

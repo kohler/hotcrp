@@ -39,11 +39,11 @@ Additional packages required for paper format checking:
 Warning: We have had problems with pdftohtml 0.40.  If paper format
 checking takes too long, it should be disabled.
 
-Load notes: HotCRP should be run on a system with at least 256MB of memory,
-more if paper format checking is used and submission load is expected to be
-high.  If you run HotCRP in a virtual machine, make sure you configure
-suitable swap space!  If MySQL is killed due to memory shortages your
-database may be corrupted.
+Load notes: HotCRP requires a system with at least 256MB of memory, more if
+paper format checking is used and submission load is expected to be high.
+If you run HotCRP in a virtual machine, make sure you configure suitable
+swap space!  If MySQL is killed due to memory shortages your database may
+be corrupted.
 
 
 Configuration
@@ -136,8 +136,8 @@ output.
 Updating the code
 -----------------
 HotCRP code can be updated without updating the database schema.  Simply
-copy the new version over your old code, preserving your old
-Code/options.inc.  For instance, using GNU tar:
+copy the new version over your old code, preserving Code/options.inc.  For
+instance, using GNU tar:
 
    % cd HOTCRPINSTALLATION
    % tar --strip=1 -xzf ~/hotcrp-VERSIONNUMBER.tar.gz

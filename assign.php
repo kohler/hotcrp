@@ -459,7 +459,7 @@ $paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->privCh
 
 
 // begin form and table
-echo "<form id='ass' action='assign$ConfSiteSuffix?p=$prow->paperId&amp;post=1$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'>";
+echo "<form id='ass' action='assign$ConfSiteSuffix?p=$prow->paperId&amp;post=1$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>";
 $paperTable->echoDivEnter();
 echo "<table class='assign'>\n\n";
 
@@ -600,8 +600,9 @@ if (($prow->outcome > 0 && $Me->privChair)
 
 // "Save assignments" button
 if ($Me->privChair)
-    echo "<tr><td class='caption'></td><td class='entry'><input type='submit' class='hb' name='update' value='Save assignments' />
-    <span id='assresult' style='padding-left:1em'></span>
+    echo "<tr><td class='caption'></td><td class='entry'><div class='aa'><input type='submit' class='bb' name='update' value='Save assignments' />
+    &nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />
+    <span id='assresult' style='padding-left:1em'></span></div>
 </td></tr>\n";
 
 
@@ -682,7 +683,7 @@ echo "    </td>\n</tr>\n\n";
 echo "<tr class='last'><td class='caption'></td></tr>\n";
 echo "</table>";
 $paperTable->echoDivExit();
-echo "</form>";
+echo "</div></form>";
 
 
 $Conf->footer();
