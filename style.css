@@ -154,17 +154,17 @@ div.body {
 body#paper_view div.body, body#paper_edit div.body,
 body#review div.body, body#comment div.body, body#contactauthors div.body,
 body#assign div.body, body#offrev div.body {
-	margin: 0em 0em 0em 0.75em;
+	margin: 0em 0.5em 0em 0.75em;
 }
 body#autoassign div.body, body#bulkassign div.body, body#assignpc div.body {
 	margin: 0em 0.5em 0em 0.75em;
 }
-table.manyassign {
-	margin-top: 0.75em;
-}
 body#mail div.body, body#account div.body, body#scorehelp div.body, 
 body#settings div.body {
 	margin: 0px 0px;
+}
+table.manyassign {
+	margin-top: 0.75em;
 }
 body#mail td#mailref, pre.email, tt.email {
 	font-size: smaller;
@@ -216,12 +216,8 @@ div.info, div.warning, div.confirm, div.merror {
 	background: #eeeeff url(images/info45.png) 10px 10px no-repeat;
 	padding: 0.5em 0.5em 0.5em 65px;
 	border: 1px solid #ccccee;
-	margin: 0.5em 0.7em 0.5em 0em;
+	margin: 0.5em 0em;
 	min-height: 45px;
-}
-div.body>div.info, div.body>div.warning, div.body>div.confirm,
-div.body>div.merror {
-	margin-left: 0.7em;
 }
 div.help {
 	padding: 0.5em 0.5em 0.5em 0.5em;
@@ -659,6 +655,9 @@ td.entry, th.entry {
 tr.last td.entry {
 	padding: 0px 1em 0px 0.5em;
 }
+table.review td.entry {
+	padding: 2px 0px 4px 0.5em;
+}
 tr.pt_abstract td.entry {
 	font-size: 85%;
 }
@@ -745,8 +744,7 @@ a.hint {
 td.caption span.hint {
 	font-weight: normal;
 }
-div#aumg td.hint, table.paper td.hint, table.review td.hint, 
-table.comment td.hint, table.assign td.hint, table.setreviewform td.hint {
+div#aumg td.hint, table.paper td.hint, table.setreviewform td.hint {
 	width: 25%;
 }
 td h2, td h3 {

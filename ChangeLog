@@ -1,3 +1,157 @@
+2008-06-21 Saturday 10:16  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* manualassign.php (1.73), script.js (1.78): More submission
+	  highlighting
+
+2008-06-21 Saturday 10:01  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* README (1.49), assign.php (1.100), script.js (1.77), style.css
+	  (1.259): More hilighting fixes.
+
+2008-06-20 Friday 15:08  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* README (1.48): README updates
+
+2008-06-19 Thursday 12:06  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.77), assign.php (1.99), autoassign.php (1.49),
+	  comment.php (1.65), contactauthors.php (1.44), help.php (1.93),
+	  log.php (1.14), mail.php (1.38), mergeaccounts.php (1.45),
+	  offline.php (1.43), paper.php (1.176), review.php (1.155),
+	  reviewprefs.php (1.19), script.js (1.76), settings.php (1.98),
+	  style.css (1.258), Code/helpers.inc (1.216), Code/paperlist.inc
+	  (1.186), Code/papertable.inc (1.125), Code/review.inc (1.112),
+	  Code/reviewsetform.inc (1.53), account.php (1.78): Update action
+	  areas for a better highlight appearance -- I like it better,
+	  anyway, although it could be better still.
+
+2008-06-19 Thursday 05:35  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* style.css (1.257), Code/contactlist.inc (1.38),
+	  Code/paperlist.inc (1.185): List review rating percentages in
+	  "Details about the PC," etc.
+
+2008-06-18 Wednesday 18:36  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.92): update help
+
+2008-06-18 Wednesday 18:35  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.91): minor fix
+
+2008-06-18 Wednesday 18:26  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/reviewtable.inc (1.61): "Create review" is even better.
+
+2008-06-18 Wednesday 18:23  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/reviewtable.inc (1.60): Will "Write review" make more sense
+	  than "Add review"?
+
+2008-06-18 Wednesday 18:21  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.187), settings.php (1.97): Nits; reorder the "Can
+	  authors see reviews" setting.
+
+2008-06-14 Saturday 10:19  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.186), settings.php (1.96), Code/conference.inc
+	  (1.271), Code/contact.inc (1.160), Code/header.inc (1.55),
+	  Code/helpers.inc (1.215): Robbert van Renesse: Correct home page:
+	  report deadlines correctly (rather than "Not open for
+	  reviewing").	Laurel Krieger: add the option that authors can see
+	  reviews even before finishing their own.
+
+2008-06-11 Wednesday 22:56  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* README (1.47), autoassign.php (1.48), bulkassign.php (1.18),
+	  help.php (1.90), manualassign.php (1.72), search.php (1.160),
+	  style.css (1.256), tarball.sh (1.96), Code/helpers.inc (1.214),
+	  Code/paperlist.inc (1.184), Code/review.inc (1.111): Some style
+	  updates, and add help for review field searches
+
+2008-06-10 Tuesday 11:30  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/search.inc (1.105): Allow searches like "ove-mer:2>=2": at
+	  least 2 overall merit scores >= 2.  Requested by Robbert van
+	  Renesse.
+
+2008-06-10 Tuesday 10:31  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/search.inc (1.104): Fix review field searching.	Also fix
+	  negated review count searching (need a "coalesce" for null
+	  fields).
+
+2008-06-10 Tuesday 10:13  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/search.inc (1.103): make "like" searches of review fields
+	  work
+
+2008-06-10 Tuesday 10:12  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/: review.inc (1.110), search.inc (1.102): Add simple
+	  searches of review fields (as yet untested; requested by Rich
+	  Draves).
+
+2008-06-02 Monday 22:34  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/search.inc (1.101): Correct typo (Mark Gebhart)
+
+2008-05-26 Monday 22:43  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.98), contacts.php (1.32), index.php (1.185),
+	  mail.php (1.37), paper.php (1.175), review.php (1.154), script.js
+	  (1.75), search.php (1.159), style.css (1.255), Code/paperlist.inc
+	  (1.183), Code/papertable.inc (1.124), Code/reviewtable.inc
+	  (1.59), Code/contactlist.inc (1.37): Unstyle many buttons, so the
+	  platform uses its default button appearance.	This is generally a
+	  better idea since those buttons mesh well with other controls.
+
+2008-05-21 Wednesday 10:53  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/papertable.inc (1.123): It is probably not smart to allow
+	  HTML here, but the settings page says that HTML is allowed, so
+	  allow it.
+
+2008-05-21 Wednesday 10:51  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.95): rtrim is probably better here.
+
+2008-05-21 Wednesday 10:47  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* paper.php (1.174), settings.php (1.94), Code/TODO (1.107),
+	  Code/conference.inc (1.270), Code/papertable.inc (1.122),
+	  Code/schema.sql (1.115), Code/updateschema.inc (1.4): Allow
+	  selector-based paper options (i.e., a dropdown menu rather than a
+	  checkbox).  Do not yet support searching for particular option
+	  values.  Requested by Jeff Mogul.
+
+2008-05-14 Wednesday 10:56  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* README (1.46), index.php (1.184), settings.php (1.93),
+	  Code/conference.inc (1.269), images/GenChart.php (1.17): Improve
+	  behavior when GD support is not installed.  Warn about it early,
+	  so people are encouraged to install it; and the GenChart script
+	  returns a bad result code so the browser shows alt text.
+
+2008-05-14 Wednesday 10:19  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.183), review.php (1.153), settings.php (1.92),
+	  Code/conference.inc (1.268): Show a more sensible message if the
+	  site is not open for reviewing, but the review deadline is in the
+	  future.  Also warn settings users about that situation.  (Robbert
+	  van Renesse)
+
+2008-05-14 Wednesday 09:58  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.91): Add explanations about soft vs. hard
+	  deadlines (Robbert van Renesse).
+
+2008-05-11 Sunday 20:49  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.27), README (1.45), script.js (1.74), tarball.sh (1.95):
+	  Small javascript fix, and to 2.21
+
 2008-05-11 Sunday 20:18  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* paper.php (1.173), reviewprefs.php (1.18): XHTML validation
