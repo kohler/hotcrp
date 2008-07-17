@@ -153,8 +153,8 @@ function parseGrace($v) {
 	return null;
 }
 
-function unparseGrace(&$v) {
-    if (!isset($v) || $v <= 0 || !is_numeric($v))
+function unparseGrace($v) {
+    if ($v === null || $v <= 0 || !is_numeric($v))
 	return "none";
     if ($v % 3600 == 0)
 	return ($v / 3600) . " hr";

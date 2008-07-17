@@ -253,21 +253,21 @@ class Conference {
     function parseableTime($value) {
 	return date("j M Y g:i:sa",$value);
     }
-    function printableTime(&$value) {
-	if (isset($value) && $value > 0)
+    function printableTime($value) {
+	if ($value > 0)
 	    return date("l j M Y g:i:sa T", $value);
 	else
 	    return "N/A";
     }
-    function printableTimeShort(&$value) {
-	if (isset($value) && $value > 0)
+    function printableTimeShort($value) {
+	if ($value > 0)
 	    return date("j M Y g:i:sa", $value);
 	else
 	    return "N/A";
     }
 
     function printableTimeSetting($what) {
-	return $this->printableTime($this->settings[$what]);
+	return $this->printableTime(defval($this->settings, $what, 0));
     }
     function printableDeadlineSetting($what) {
 	if (!isset($this->settings[$what]) || $this->settings[$what] <= 0)
