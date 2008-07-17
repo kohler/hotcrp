@@ -16,9 +16,9 @@ $Me->goIfInvalid();
 $final = (defval($_REQUEST, 'final', 0) != 0);
 
 if (isset($_REQUEST["p"]))
-    $paperId = cvtint($_REQUEST["p"]);
+    $paperId = rcvtint($_REQUEST["p"]);
 else if (isset($_REQUEST["paperId"]))
-    $paperId = cvtint($_REQUEST["paperId"]);
+    $paperId = rcvtint($_REQUEST["paperId"]);
 else {
     $paper = preg_replace("|.*/doc(\.php)?/*|", "", $_SERVER["PHP_SELF"]);
     if (preg_match("/^(" . $Opt['downloadPrefix'] . ")?(paper-?)?(\d+).*$/", $paper, $match)
@@ -41,7 +41,7 @@ if (!isset($Error) && !$Me->canDownloadPaper($paperId, $Conf, $whyNot))
 
 // Actually download paper.
 if (!isset($Error)) {
-    $result = $Conf->downloadPaper($paperId, cvtint($_REQUEST['save']) > 0, $final);
+    $result = $Conf->downloadPaper($paperId, rcvtint($_REQUEST["save"]) > 0, $final);
     if (!PEAR::isError($result))
 	exit;
 }

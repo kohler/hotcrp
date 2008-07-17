@@ -19,7 +19,7 @@ else if (isset($_REQUEST["new"])) {
     $newProfile = true;
 } else if (isset($_REQUEST["contact"])) {
     $Acct = new Contact();
-    if (($id = cvtint($_REQUEST["contact"])) > 0)
+    if (($id = rcvtint($_REQUEST["contact"])) > 0)
 	$Acct->lookupById($id, $Conf);
     else
 	$Acct->lookupByEmail($_REQUEST["contact"], $Conf);

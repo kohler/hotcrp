@@ -132,8 +132,8 @@ class PaperSearch {
 	$this->reviewerName = false;
 	$this->contactId = $me->contactId;
 	$this->warnings = null;
-	if ($this->privChair && cvtint($opt["c"]) > 0)
-	    $this->contactId = cvtint($opt["c"]);
+	if ($this->privChair && rcvtint($opt["c"]) > 0)
+	    $this->contactId = rcvtint($opt["c"]);
 
 	// default query fields
 	// NB: If a complex query field, e.g., "re", "tag", or "option", is

@@ -104,13 +104,13 @@ class Contact {
 		    $this->chairContactId = $this->contactId;
 		// change view ID or chair mode
 		if ($this->privChair || $this->chairContactId > 0) {
-		    $viewContact = cvtint($_REQUEST['viewContact']);
-		    if ($viewContact <= 0 && isset($_REQUEST['viewContact']))
-			$viewContact = $Conf->getContactId($_REQUEST['viewContact']);
-		    $chairMode = cvtint($_REQUEST['chairMode']);
+		    $viewContact = rcvtint($_REQUEST["viewContact"]);
+		    if ($viewContact <= 0 && isset($_REQUEST["viewContact"]))
+			$viewContact = $Conf->getContactId($_REQUEST["viewContact"]);
+		    $chairMode = rcvtint($_REQUEST["chairMode"]);
 		    if ($viewContact > 0) {
 			$this->contactId = $viewContact;
-			unset($_REQUEST['viewContact']);
+			unset($_REQUEST["viewContact"]);
 			unset($_SESSION["l"]);
 			return $this->valid($conf, true);
 		    }

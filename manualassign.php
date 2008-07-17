@@ -48,7 +48,7 @@ $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowr
 $Conf->header("Review Assignments", "assignpc", $abar);
 
 
-$reviewer = cvtint($_REQUEST["reviewer"]);
+$reviewer = rcvtint($_REQUEST["reviewer"]);
 if ($reviewer <= 0)
     $reviewer = $Me->contactId;
 
@@ -75,7 +75,7 @@ function saveAssignments($reviewer) {
 	if ($row->paperId == $lastPaperId || $row->conflictType >= CONFLICT_AUTHOR)
 	    continue;
 	$lastPaperId = $row->paperId;
-	$type = cvtint($_REQUEST["assrev$row->paperId"], 0);
+	$type = rcvtint($_REQUEST["assrev$row->paperId"], 0);
 	if ($type >= 0 && $row->conflictType > 0 && $row->conflictType < CONFLICT_AUTHOR)
 	    $del .= " or paperId=$row->paperId";
 	if ($type < 0 && $row->conflictType < CONFLICT_CHAIRMARK)

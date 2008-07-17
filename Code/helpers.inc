@@ -10,10 +10,6 @@ function defval($var, $idx, $defval = null) {
 	return (isset($var->$idx) ? $var->$idx : $defval);
 }
 
-function vtrim(&$var) {
-    return (isset($var) ? trim($var) : "");
-}
-
 function defappend(&$var, $str) {
     if (!isset($var))
 	$var = "";
@@ -79,16 +75,18 @@ function simplifyWhitespace($x) {
     return trim(preg_replace('/\s+/', " ", $x));
 }
 
-function cvtint(&$value, $default = -1) {
-    if (isset($value)) {
-	$v = trim($value);
-	if (is_numeric($v)) {
-	    $ival = intval($v);
-	    if ($ival == floatval($v))
-		return $ival;
-	}
+function cvtint($value, $default = -1) {
+    $v = trim($value);
+    if (is_numeric($v)) {
+	$ival = intval($v);
+	if ($ival == floatval($v))
+	    return $ival;
     }
     return $default;
+}
+
+function rcvtint(&$value, $default = -1) {
+    return (isset($value) ? cvtint($value, $default) : $default);
 }
 
 function mkarray($value) {
@@ -428,7 +426,7 @@ function listLinks($paperId, $baseUrl = null, $args = array()) {
 	$baseUrl = "paper$ConfSiteSuffix";
 
     if (isset($_REQUEST["ls"])
-	&& ($CurrentList = cvtint($_REQUEST["ls"])) > 0
+	&& ($CurrentList = rcvtint($_REQUEST["ls"])) > 0
 	&& isset($_SESSION["l"][$CurrentList]))
 	$_SESSION["l"][$CurrentList]["timestamp"] = time();
     else if (isset($_REQUEST["list"])) {
@@ -547,11 +545,6 @@ function commajoin($what) {
     if (count($what) == 1)
 	return $what[0];
     return join(", ", array_slice($what, 0, -1)) . " and " . $what[count($what) - 1];
-}
-
-function setRet(&$var, $val, $ret = false) {
-    $var = $val;
-    return $ret;
 }
 
 function paperBlind($prow) {
@@ -790,14 +783,6 @@ function whyNotText($whyNot, $action) {
     if ($text && $action == "view")
 	$text .= "Enter a paper number above, or <a href='${ConfSiteBase}search$ConfSiteSuffix?q='>list the papers you can view</a>.  ";
     return ($text ? substr($text, 0, -2) : $text);
-}
-
-function array_ensure(&$arr, $val) {
-    for ($i = 2; $i < func_num_args(); $i++) {
-	$a = func_get_arg($i);
-	if (!isset($arr[$a]))
-	    $arr[$a] = $val;
-    }
 }
 
 function contactPulldown($id, $name, $conf, $contact) {

@@ -10,11 +10,11 @@ $Me->goIfNotPrivChair("index$ConfSiteSuffix");
 
 if (defval($_REQUEST, "page", "") == "earliest")
     $page = false;
-else if (($page = cvtint($_REQUEST["page"], -1)) <= 0)
+else if (($page = rcvtint($_REQUEST["page"], -1)) <= 0)
     $page = 1;
-if (($count = cvtint($_REQUEST["n"], -1)) <= 0)
+if (($count = rcvtint($_REQUEST["n"], -1)) <= 0)
     $count = 25;
-if (($offset = cvtint($_REQUEST["offset"], -1)) < 0 || $offset >= $count)
+if (($offset = rcvtint($_REQUEST["offset"], -1)) < 0 || $offset >= $count)
     $offset = 0;
 if ($offset == 0 || $page == 1) {
     $start = ($page - 1) * $count;
@@ -78,7 +78,7 @@ if (($str = $_REQUEST["q"])) {
     $wheres[] = "(" . join(" or ", $where) . ")";
 }
 
-if (($count = cvtint($_REQUEST["n"])) <= 0) {
+if (($count = rcvtint($_REQUEST["n"])) <= 0) {
     $Conf->errorMsg("\"Show <i>n</i> records\" requires a number greater than 0.");
     $Eclass["n"] = " error";
     $count = 25;

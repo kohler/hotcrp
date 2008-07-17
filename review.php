@@ -361,7 +361,7 @@ if (isset($_REQUEST['setoutcome'])) {
     if (!$Me->canSetOutcome($prow))
 	$Conf->errorMsg("You cannot set the decision for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Override conflict</a>)" : ""));
     else {
-	$o = cvtint(trim($_REQUEST['outcome']));
+	$o = rcvtint($_REQUEST["outcome"]);
 	$rf = reviewForm();
 	if (isset($rf->options['outcome'][$o])) {
 	    $result = $Conf->qe("update Paper set outcome=$o where paperId=$prow->paperId", "while changing decision");

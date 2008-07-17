@@ -33,7 +33,7 @@ function errorMsgExit($msg) {
 // grab paper row
 function getProw() {
     global $prow, $rrows, $Conf, $Me, $anyPrimary;
-    if (!(($prow = $Conf->paperRow(cvtint($_REQUEST["paperId"]), $Me->contactId, $whyNot))
+    if (!(($prow = $Conf->paperRow(rcvtint($_REQUEST["paperId"]), $Me->contactId, $whyNot))
 	  && $Me->canRequestReview($prow, $Conf, false, $whyNot)))
 	errorMsgExit(whyNotText($whyNot, "request reviews for"));
     $rrows = $Conf->reviewRow(array('paperId' => $prow->paperId, 'array' => 1), $whyNot);
@@ -108,7 +108,7 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
 	$Conf->confirmMsg("Removed request that " . contactHtml($row) . " review paper #$prow->paperId.");
 }
 
-if (isset($_REQUEST['retract']) && ($retract = cvtint($_REQUEST['retract'])) > 0) {
+if (isset($_REQUEST['retract']) && ($retract = rcvtint($_REQUEST['retract'])) > 0) {
     retractRequest($retract, $prow->paperId);
     $Conf->qe("unlock tables");
     getProw();
@@ -417,7 +417,7 @@ if (isset($_REQUEST['add'])) {
 
 // deny review request
 if (isset($_REQUEST['deny']) && $Me->privChair
-    && ($email = vtrim($_REQUEST['email']))) {
+    && ($email = trim(defval($_REQUEST, 'email', "")))) {
     $Conf->qe("lock tables ReviewRequest write, ContactInfo read, PaperReviewRefused write");
     $while = "while denying review request";
     $result = $Conf->qe("select name, firstName, lastName, ContactInfo.email, ContactInfo.contactId from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($email) . "'", $while);
@@ -428,7 +428,7 @@ if (isset($_REQUEST['deny']) && $Me->privChair
 
 	// send anticonfirmation email
 	require_once("Code/mailtemplate.inc");
-	Mailer::send("@denyreviewrequest", $prow, $Requester, (object) array("fullName" => vtrim($_REQUEST["name"]), "email" => $email));
+	Mailer::send("@denyreviewrequest", $prow, $Requester, (object) array("fullName" => trim(defval($_REQUEST, "name", "")), "email" => $email));
 
 	$Conf->confirmMsg("Proposed reviewer denied.");
     } else
@@ -441,9 +441,9 @@ if (isset($_REQUEST['deny']) && $Me->privChair
 
 // add primary or secondary reviewer
 if (isset($_REQUEST['addpc']) && $Me->privChair) {
-    if (($pcid = cvtint($_REQUEST['pcid'])) <= 0)
+    if (($pcid = rcvtint($_REQUEST["pcid"])) <= 0)
 	$Conf->errorMsg("Enter a PC member.");
-    else if (($pctype = cvtint($_REQUEST['pctype'])) == REVIEW_PRIMARY
+    else if (($pctype = rcvtint($_REQUEST["pctype"])) == REVIEW_PRIMARY
 	     || $pctype == REVIEW_SECONDARY)
 	$Me->assignPaper($prow->paperId, findRrow($pcid), $pcid, $pctype, $Conf);
     getProw();

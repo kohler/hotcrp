@@ -31,7 +31,7 @@ function rf_checkOptions(&$var, &$options, &$order, &$levelChar) {
     if (ord($expect) >= 65)
 	$options = array_reverse($options, true);
     $levelChar = (ord($expect) >= 65 ? ord($expect) : 1);
-    return (count($options) >= 2 || (isset($order) && cvtint($order) < 0));
+    return (count($options) >= 2 || (isset($order) && rcvtint($order) < 0));
 }
 
 function rf_update($lock) {
@@ -82,11 +82,11 @@ function rf_update($lock) {
 	    }
 	    $req .= "shortName='" . sqlq($sn) . "', ";
 	}
-	$req .= "authorView=" . max(min(cvtint($_REQUEST["authorView_$field"], 0), 1), -2) . ", ";
+	$req .= "authorView=" . max(min(rcvtint($_REQUEST["authorView_$field"], 0), 1), -2) . ", ";
 	if (isset($_REQUEST["description_$field"]))
 	    $req .= "description='" . sqlq(trim($_REQUEST["description_$field"])) . "', ";
 	if (isset($_REQUEST["order_$field"]))
-	    $req .= "sortOrder='" . cvtint($_REQUEST["order_$field"]) . "', ";
+	    $req .= "sortOrder='" . rcvtint($_REQUEST["order_$field"]) . "', ";
 	if ($rf->reviewFields[$field]) {
 	    if (rf_checkOptions($_REQUEST["options_$field"], $options, $_REQUEST["order_$field"], $levelChar)) {
 		$Conf->qe("delete from ReviewFormOptions where fieldName='" . sqlq($field) . "'", $while);

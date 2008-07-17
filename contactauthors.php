@@ -25,7 +25,7 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 maybeSearchPaperId($Me);
-$paperId = cvtint($_REQUEST["paperId"]);
+$paperId = rcvtint($_REQUEST["paperId"]);
 
 // grab paper row
 $prow = null;

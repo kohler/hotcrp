@@ -79,7 +79,7 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
 if (isset($_REQUEST['setwatch']) && $prow) {
     $ajax = defval($_REQUEST, "ajax", 0);
     if (!$Me->privChair
-	|| ($contactId = cvtint($_REQUEST["contactId"])) <= 0)
+	|| ($contactId = rcvtint($_REQUEST["contactId"])) <= 0)
 	$contactId = $Me->contactId;
     if (defval($_REQUEST, 'watch'))
 	$q = "insert into PaperWatch (paperId, contactId, watch) values ($prow->paperId, $contactId, " . (WATCH_COMMENTSET | WATCH_COMMENT) . ") on duplicate key update watch = watch | " . (WATCH_COMMENTSET | WATCH_COMMENT);

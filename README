@@ -11,7 +11,7 @@ HotCRP requires the following software.  Tested versions are in parentheses.
 
 * Apache			http://apache.org/
   (You may be able to use another web server that works with PHP.)
-* PHP version 5 or higher	http://php.net/
+* PHP version 5.2 or higher	http://php.net/
   - Including MySQL and GD support
 * MySQL version 5 or higher	http://mysql.org/
 * PHP PEAR extensions		http://pear.php.net/

@@ -45,7 +45,7 @@ if (isset($_REQUEST["paperId"]) && trim($_REQUEST["paperId"]) == "new")
     $newPaper = true;
 else {
     maybeSearchPaperId($Me);
-    $paperId = cvtint($_REQUEST["paperId"]);
+    $paperId = rcvtint($_REQUEST["paperId"]);
 }
 
 
@@ -93,7 +93,7 @@ if (!$newPaper) {
 if (isset($_REQUEST['revpref']) && $prow) {
     $ajax = defval($_REQUEST, "ajax", 0);
     if (!$Me->privChair
-	|| ($contactId = cvtint($_REQUEST["contactId"])) <= 0)
+	|| ($contactId = rcvtint($_REQUEST["contactId"])) <= 0)
 	$contactId = $Me->contactId;
     if (($v = cvtpref($_REQUEST['revpref'])) >= -1000000) {
 	$while = "while saving review preference";
@@ -216,7 +216,7 @@ function requestSameAsPaper($prow) {
 	return false;
     $result = $Conf->q("select TopicArea.topicId, PaperTopic.paperId from TopicArea left join PaperTopic on PaperTopic.paperId=$prow->paperId and PaperTopic.topicId=TopicArea.topicId");
     while (($row = edb_row($result))) {
-	$got = isset($_REQUEST["top$row[0]"]) && cvtint($_REQUEST["top$row[0]"]) > 0;
+	$got = rcvtint($_REQUEST["top$row[0]"]) > 0;
 	if (($row[1] > 0) != $got)
 	    return false;
     }
@@ -255,7 +255,10 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$isSubmit = false;
     
     // check that all required information has been entered
-    array_ensure($_REQUEST, "", "title", "abstract", "authorTable", "collaborators");
+    foreach (array("title", "abstract", "authorTable", "collaborators") as $x)
+	if (!isset($_REQUEST[$x]))
+	    $_REQUEST[$x] = "";
+
     $q = "";
 
     foreach (array("title", "abstract", "collaborators") as $x) {
