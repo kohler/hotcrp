@@ -174,8 +174,12 @@ if (count($tOpt) > 1) {
     }
     echo "<td><input class='b' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
     if (isset($pl->scoreMax)) {
+	$ss = array();
+	foreach (array("A", "V", "D") as $k) /* ghetto array_intersect_key */
+	    if (isset($scoreSorts[$k]))
+		$ss[$k] = $scoreSorts[$k];
 	echo "<tr><td colspan='3'><div class='g'></div><b>Sort scores by:</b> &nbsp;",
-	    tagg_select("scoresort", array_intersect_key($scoreSorts, array("A" => 1, "V" => 1, "D" => 1)), defval($_SESSION, "pplscoresort", "A")),
+	    tagg_select("scoresort", $ss, defval($_SESSION, "pplscoresort", "A")),
 	    "</td></tr>";
     }
     echo "</table></div></form>";
