@@ -1081,8 +1081,8 @@ class Conference {
 	    $_SESSION["msgs"][] = $x;
 	else if ($this->tableMessages)
 	    echo "<tr>
-  <td class='caption$last'></td>
-  <td class='entry$last' colspan='", $this->tableMessages, "'>", $x, "</td>
+  <td class='caption'></td>
+  <td class='entry' colspan='", $this->tableMessages, "'>", $x, "</td>
 </tr>\n\n";
 	else
 	    echo $x;

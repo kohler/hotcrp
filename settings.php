@@ -611,7 +611,8 @@ if (isset($_REQUEST["update"])) {
     
     // unset text messages that equal the default
     if (array_key_exists("conflictdefmsg", $Values)
-	&& trim($Values["conflictdefmsg"]) == $Conf->conflictDefinitionText(true))
+	&& $Values["conflictdefmsg"]
+	&& trim($Values["conflictdefmsg"][1]) == $Conf->conflictDefinitionText(true))
 	$Values["conflictdefmsg"] = null;
 
     // report errors
@@ -831,7 +832,8 @@ function doSubGroup() {
 	echo "<tr class='extension'><td></td><td class='top'><table>";
 	$bsetting = explode(";", preg_replace("/>.*/", "", $Conf->settingText("sub_banal", "")));
 	for ($i = 0; $i < 6; $i++)
-	    $bsetting[$i] = ($bsetting[$i] == "" ? "N/A" : $bsetting[$i]);
+	    if (defval($bsetting, $i, "") == "")
+		$bsetting[$i] = "N/A";
 	doTextRow("sub_banal_papersize", array("Paper size", "Examples: &ldquo;letter&rdquo;, &ldquo;A4&rdquo;, &ldquo;8.5in&nbsp;x&nbsp;14in&rdquo;"), setting("sub_banal_papersize", $bsetting[0]), 18, "lxcaption");
 	doTextRow("sub_banal_pagelimit", "Page limit", setting("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption");
 	doTextRow("sub_banal_textblock", array("Text block", "Examples: &ldquo;6.5in&nbsp;x&nbsp;9in&rdquo;, &ldquo;1in&nbsp;margins&rdquo;"), setting("sub_banal_textblock", $bsetting[3]), 18, "lxcaption");

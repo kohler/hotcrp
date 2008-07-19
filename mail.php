@@ -241,7 +241,8 @@ if ($Me->privChair) {
     $recip["unsub"] = "Contact authors of unsubmitted papers";
     foreach ($rf->options["outcome"] as $num => $what) {
 	$name = "dec:$what";
-	if ($num && (defval($noutcome, $num) > 0 || $_REQUEST["recipients"] == $name))
+	if ($num && (defval($noutcome, $num) > 0
+		     || defval($_REQUEST, "recipients", "") == $name))
 	    $recip[$name] = "Contact authors of " . htmlspecialchars($what) . " papers";
     }
     $recip["rev"] = "Reviewers";
