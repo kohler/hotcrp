@@ -1160,7 +1160,7 @@ class Conference {
 	}
     }
 
-    function header($title, $id = "", $actionBar = "<div class='nvubar'></div>", $showTitle = true) {
+    function header($title, $id = "", $actionBar = "<div class='nvbar'></div>", $showTitle = true) {
 	global $ConfSiteBase, $ConfSiteSuffix, $Opt;
 	if ($this->headerPrinted >= 2)
 	    return;
@@ -1196,11 +1196,11 @@ class Conference {
 	echo date("l j M Y g:i:sa T", $time), "<br /><span id='usertime'></span></div>\n";
 	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", $this->shortName, " Public Site</a></div>\n";
 	
-	print "  <div class='clear'></div>\n</div>";
+	print "  <div class='clear'></div>\n";
 
 	print $actionBar;
 
-	print "<div class='body'>\n";
+	print "</div><div class='body'>\n";
 	
 	if (isset($_SESSION["msgs"])) {
 	    foreach ($_SESSION["msgs"] as $m)

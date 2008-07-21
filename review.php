@@ -722,12 +722,14 @@ function reviewView($prow, $rrow, $editMode) {
     // blind?
     if ($Conf->blindReview() == 1) {
 	echo "<tr class='rev_blind'>
-  <td class='caption'>Anonymity</td>
-  <td class='entry'><div class='hint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won't know who wrote the review).</div>
-    <input type='checkbox' name='blind' value='1'";
+  <td class='caption'></td>
+  <td class='entry'><div class='revt'><span class='revfn'>";
+	echo "<input type='checkbox' name='blind' value='1'";
 	if ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))
 	    echo " checked='checked'";
-	echo " onchange='hiliter(this)' />&nbsp;Anonymous review</td>\n</tr>\n";
+	echo " onchange='hiliter(this)' />&nbsp;Anonymous review</span></div>";
+	echo "<div class='revhint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won't know who wrote the review).</div></td>\n
+</tr>\n";
     }
     
     // form body

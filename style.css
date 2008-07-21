@@ -12,8 +12,11 @@ body {
 
 
 /* header */
-div#header, div.vbar, div.nvubar {
-	background: #f3ebd5;
+div#header {
+	background-image: url("images/headgrad.png");
+	background-repeat: repeat-x;
+	background-position: top;
+	background-color: #ffffff;
 }
 div#header_right {
 	padding: 8px 12px 0px 12px;
@@ -53,14 +56,13 @@ span.barsep {
 }
 
 /* Tab bar */
-div.nvubar {
-	height: 0.75em;
-}
-div.vbar, div.nvubar {
+div.vbar, div.nvbar {
 	padding: 0px 12px;
-	border-bottom: 2px solid #9999cc;
 	position: relative;
 	clear: left;
+}
+div.vbar, div.nvbar {
+	border-bottom: 2px solid #9999cc;
 }
 table.vbar {
 	width: 100%;
@@ -1246,6 +1248,42 @@ span.contactpulldown select {
 	vertical-align: top;
 }
 
+/* reviews */
+div.revt {
+	font-size: smaller;
+	padding: 0.25em 1em 0.25em 8px;
+	background: #fff4f6;
+}
+div.revt span.revfn {
+	font-variant: small-caps;
+	font-weight: bold;
+}
+div.revv {
+	padding: 2px 0px 1em 7px;
+}
+div.revev {
+	padding: 5px 0px 1em 2px;
+}
+div.revhint {
+	font-size: smaller;
+	margin-bottom: 0.5ex;
+	color: #555555;
+	background: #fff9fb;
+	padding: 0.2em 1em 0.3em 8px;
+}
+table.revtab {
+	width: 100%;
+}
+td.revle, td.revre {
+	width: 50%;
+}
+td.revle {
+	padding: 0px 0.5em 0px 0px;
+}
+td.revre {
+	padding: 0px 0px 0px 0.5em;
+}
+
 /* review ratings */
 table.rev_rating tr td {
 	font-size: 69%;
@@ -1284,7 +1322,7 @@ div.scorehelpc, div.scorehelpo {
 	text-align: left;
 	border: 3px solid #9999cc;
 	padding: 0.5em;
-	background: #f3ebd5;
+	background: #ffffff;
 	position: absolute;
 	min-width: 15em;
 	z-index: 6;

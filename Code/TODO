@@ -1,4 +1,5 @@
-- potentially use default CSS for buttons, rather than styling them
+- delete users
+
 
 - static HTML snapshot
 
@@ -14,7 +15,6 @@ Minor features
   are allowed to see (e.g. both reviewers + authors)?
 - Search: Assignments & conflicts: [External reviewer]
 - START-style enter-paper-all-at-once (no email verification)?
-- search for scores
 - when email off: do not show authors to PC members, do not show reviewers
   to authors
 - send mail from contacts.php

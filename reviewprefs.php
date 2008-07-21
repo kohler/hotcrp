@@ -198,7 +198,7 @@ $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "c" => $reviewer,
 				     "q" => defval($_REQUEST, "q", "")));
 $pl = new PaperList(true, true, $search);
 $pl->showHeader = PaperList::HEADER_TITLES;
-$pl->extraFooter = "<div id='plactr'><input class='hbutton' type='submit' name='update' value='Save changes' /></div>";
+$pl->extraFooter = "<div id='plactr'><input class='hb' type='submit' name='update' value='Save changes' /></div>";
 $pl_text = $pl->text("editReviewPreference", $Me);
 
 
@@ -282,7 +282,7 @@ echo "<form class='assignpc' method='post' action=\"reviewprefs$ConfSiteSuffix?r
     "<div class='assignresult'>\n",
     $pl_text,
     "</div>";
-// echo "<table class='center'><tr><td><input class='hbutton' type='submit' name='update' value='Save preferences' /></td></tr></table>\n";
+// echo "<table class='center'><tr><td><input class='hb' type='submit' name='update' value='Save preferences' /></td></tr></table>\n";
 echo "</div></form>\n";
 
 $Conf->footer();

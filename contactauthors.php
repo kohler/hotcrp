@@ -142,7 +142,7 @@ if ($OK) {
 
     echo "    <tr><td class='pad'><input class='textlite' type='text' name='name' size='20' /></td>
 	<td class='pad'><input class='textlite' type='text' name='email' size='20' /></td>
-	<td class='pad'><input class='hbutton' type='submit' name='add' value='Add contact author' /></td>
+	<td class='pad'><input class='hb' type='submit' name='add' value='Add contact author' /></td>
     </tr>
   </table></td>
 </tr>

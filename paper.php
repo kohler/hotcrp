@@ -763,7 +763,7 @@ if ($mode != "edit" && $mainPreferences && $prow->conflictType <= 0) {
 	"<div class='inform'>",
 	"<input type='hidden' name='setrevpref' value='1' />",
 	"<input id='prefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$x\" onchange='Miniajax.submit(\"prefform\")' tabindex='1' />&nbsp;
-    <input class='hbutton extension7' type='submit' value='Save preference' tabindex='1' />
+    <input class='hb extension7' type='submit' value='Save preference' tabindex='1' />
     <span id='prefformresult' style='padding-left:1em'></span>",
 	"</div></form></td>\n</tr>\n\n";
     $Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"prefform\", null, 2);Miniajax.onload(\"prefform\");</script>";

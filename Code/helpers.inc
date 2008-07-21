@@ -498,7 +498,7 @@ function goPaperForm($baseUrl = null, $args = array()) {
 	$x .= "<input type='hidden' name=\"" . htmlspecialchars($what) . "\" value=\"" . htmlspecialchars($val) . "\" />";
     if (isset($CurrentList) && $CurrentList > 0)
 	$x .= "<input type='hidden' name='ls' value='$CurrentList' />";
-    $x .= "&nbsp; <input class='button' type='submit' value='Search' /></div></form>";
+    $x .= "&nbsp; <input class='b' type='submit' value='Search' /></div></form>";
     return $x;
 }
 
@@ -837,9 +837,7 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 	    $listarg .= "&amp;ls=$CurrentList";
     }
 
-    // create action bar
-    $x = "<div class='vbar'><table class='vbar'><tr>\n";
-
+    // collect actions
     $act = "";
     if ($newPaper || $paperId > 0)
 	$act .= actionTab("Paper", "${ConfSiteBase}paper$ConfSiteSuffix?p=$paperId$listarg", $mode == "view" || $mode == "edit");
@@ -879,8 +877,11 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
     if ($thisUrl)
 	$act .= actionTab($mode, $thisUrl, true);
 
+    // create action bar
     if ($act)
-	$x .= "<td id='vbartabs'><table><tr>$act</tr></table></td>";
+	$x = "<div class='vbar'><table class='vbar'><tr><td id='vbartabs'><table><tr>$act</tr></table></td>";
+    else
+	$x = "<div class='nvbar'><table class='vbar'><tr>";
 
     $x .= "<td class='spanner'></td>\n";
     
