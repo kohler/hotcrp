@@ -385,8 +385,12 @@ function contactEmailTo($firstName, $lastName = null, $email = null) {
 	    $x = Mailer::mimeHeaderQuote($x, 73 - 21, true);
 	} else if (preg_match("/[^-A-Za-z0-9 !#\$%&'*+\\/=?^_`{|}~]/", $x))
 	    $x = "\"" . addslashes($x) . "\"";
-	if ($email)
+	if ($email) {
+	    $p = strrpos($x, "\n");
+	    if (73 - (strlen($x) - ($p ? $p : 0)) < strlen($email))
+		$x .= "\r\n";
 	    $x .= " <$email>";
+	}
     } else
 	$x = $email;
     return $x;
@@ -857,7 +861,8 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 		 || $Conf->timeAuthorRespond())
 		&& $Me->canViewComment($prow, null, $Conf))
 	    || ($Me->isPC && $prow->timeSubmitted > 0
-		&& $Conf->timeReviewOpen()))) {
+		&& ($Conf->timeReviewOpen()
+		    || $Conf->setting("cmt_always") > 0)))) {
 	if ($prow->conflictType >= CONFLICT_AUTHOR)
 	    $n = $prow->numAuthorComments;
 	else if ($Me->isPC)
