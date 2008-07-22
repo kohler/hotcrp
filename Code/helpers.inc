@@ -387,7 +387,7 @@ function contactEmailTo($firstName, $lastName = null, $email = null) {
 	    $x = "\"" . addslashes($x) . "\"";
 	if ($email) {
 	    $p = strrpos($x, "\n");
-	    if (73 - (strlen($x) - ($p ? $p : 0)) < strlen($email))
+	    if ($p && 73 - (strlen($x) - $p) < strlen($email))
 		$x .= "\r\n";
 	    $x .= " <$email>";
 	}
