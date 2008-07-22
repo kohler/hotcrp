@@ -299,7 +299,7 @@ class ContactList extends BaseList {
 	    if ((!$row->numReviews && !$row->numReviewsSubmitted)
 		|| !$row->numRatings)
 		return "";
-	    return "<span class='hastitle' title='$row->sumRatings of $row->numRatings other reviewers found these reviews helpful'>" . ((int) (100 * ($row->sumRatings / $row->numRatings) + 0.5)) . "%</span>";
+	    return "<span class='hastitle' title='" . plural($row->sumRatings, "helpful rating") . ", " . plural($row->numRatings, "total rating") . "'>" . ((int) (100 * ($row->sumRatings / $row->numRatings) + 0.5)) . "%</span>";
 	case self::FIELD_PAPERS:
 	    if (!$row->paperIds)
 		return "";
@@ -434,12 +434,14 @@ class ContactList extends BaseList {
 	ChairAssistant.contactId as assistant";
 	if (isset($queryOptions['topics']))
 	    $pq .= ",\n	topicIds, topicInterest";
-	if (isset($queryOptions['reviews']))
+	if (isset($queryOptions['reviews'])) {
 	    $pq .= ",
 	count(if(PaperReview.reviewNeedsSubmit<=0,PaperReview.reviewSubmitted,1)) as numReviews,
 	count(PaperReview.reviewSubmitted) as numReviewsSubmitted";
-	if (isset($queryOptions["revratings"]))
-	    $pq .= ",\n	count(ReviewRating.rating) as numRatings, sum(ReviewRating.rating) as sumRatings";
+	    if (isset($queryOptions["revratings"]))
+		$pq .= ",\n	sum(PaperReview.numRatings) as numRatings,
+	sum(PaperReview.sumRatings) as sumRatings";
+	}
 	if (isset($queryOptions['scores']))
 	    foreach ($queryOptions['scores'] as $score)
 		$pq .= ",\n\tgroup_concat(PaperReview.$score) as $score";
@@ -459,9 +461,14 @@ class ContactList extends BaseList {
 	    $j = "left join";
 	    if ($this->limit == "re" || $this->limit == "req" || $this->limit == "ext" || $this->limit == "resub" || $this->limit == "extsub")
 		$j = "join";
-	    $pq .= "	$j (select PaperReview.* from PaperReview join Paper on (Paper.paperId=PaperReview.paperId)";
+	    $pq .= "	$j (select PaperReview.*";
+	    if (isset($queryOptions["revratings"]))
+		$pq .= ", count(rating) as numRatings, sum(rating) as sumRatings";
+	    $pq .= " from PaperReview join Paper on (Paper.paperId=PaperReview.paperId)";
 	    if (!$this->contact->privChair)
 		$pq .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->contact->contactId . ")";
+	    if (isset($queryOptions["revratings"]))
+		$pq .= " left join ReviewRating on (ReviewRating.reviewId=PaperReview.reviewId)";
 	    $jwhere = array();
 	    if ($this->limit == "req" || $this->limit == "ext" || $this->limit == "extsub")
 		$jwhere[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
@@ -471,10 +478,10 @@ class ContactList extends BaseList {
 		$jwhere[] = "(conflictType is null or conflictType=0 or PaperReview.contactId=" . $this->contact->contactId . ")";
 	    if (count($jwhere))
 		$pq .= " where " . join(" and ", $jwhere);
+	    if (isset($queryOptions["revratings"]))
+		$pq .= " group by PaperReview.reviewId";
 	    $pq .= ") as PaperReview on (PaperReview.contactId=ContactInfo.contactId)\n";
 	}
-	if (isset($queryOptions["revratings"]))
-	    $pq .= "	left join ReviewRating on (ReviewRating.reviewId=PaperReview.reviewId)\n";
 	if ($aulimit)
 	    $pq .= "\tjoin PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")\n";
 	if ($this->limit == "au")
