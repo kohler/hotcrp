@@ -1,5 +1,17 @@
 HotCRP NEWS
 
+Version 2.23   22.Jul.2008
+
+* Do not infinite loop when sending mail to non-ASCII names associated with
+  long email addresses.  Reported by Robbert van Renesse and Rich Draves.
+
+* Report correct number of reviews on the program committee page, even if
+  review ratings are enabled.  Reported by Robbert van Renesse.
+
+* Correct PHP warnings and make compatible with older PHPs.  Reported by
+  Jeonghee Shin.
+
+
 Version 2.22   15.Jul.2008
 
 * Appearance fixes: use default controls in most cases.

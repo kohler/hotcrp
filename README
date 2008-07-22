@@ -1,4 +1,4 @@
-HotCRP: Conference Review Package 2.22
+HotCRP: Conference Review Package 2.23
 ======================================
 
 New version by Eddie Kohler, UCLA
@@ -11,8 +11,9 @@ HotCRP requires the following software.  Tested versions are in parentheses.
 
 * Apache			http://apache.org/
   (You may be able to use another web server that works with PHP.)
-* PHP version 5.2 or higher	http://php.net/
+* PHP version 5 or higher	http://php.net/
   - Including MySQL and GD support
+  - PHP 5.2 or higher recommended
 * MySQL version 5 or higher	http://mysql.org/
 * PHP PEAR extensions		http://pear.php.net/
 
