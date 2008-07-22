@@ -799,7 +799,7 @@ class Mailer {
     }
 
     function mimeHeaderQuote($text, $len, $stringent) {
-    	// minimum length
+	// minimum length
 	if ($len < 30)
 	    $len = 30;
 	// replace all special characters used by the encoder
