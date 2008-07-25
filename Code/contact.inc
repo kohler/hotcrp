@@ -910,11 +910,11 @@ class Contact {
 
 	// author can see author information
 	if (($prow && $prow->conflictType > 0)
-	    || (!$prow && !$this->isReviewer))
+	    || (!$prow && !$this->amReviewer()))
 	    return 0;
 
 	// authors and external reviewers of not this paper can't see anything
-	if (!$this->isReviewer
+	if (!$this->amReviewer()
 	    || (!$this->isPC && $prow && $prow->myReviewType <= 0))
 	    return 10000;
 
