@@ -18,7 +18,6 @@ class ReviewForm {
     const WEB_FULL = 2;
     const WEB_LEFT = 4;
     const WEB_RIGHT = 8;
-    const WEB_INITIAL = 16;
     const WEB_FINAL = 32;
 
     var $updatedWhen;
@@ -173,7 +172,7 @@ class ReviewForm {
 
     function webFormRows($contact, $prow, $rrow, $useRequest = false) {
 	global $ReviewFormError, $Conf;
-	$x = '';
+	$x = "";
 	$revViewScore = $contact->viewReviewFieldsScore($prow, $rrow, $Conf);
 	foreach ($this->fieldOrder as $field) {
 	    if ($this->authorView[$field] <= $revViewScore)
@@ -189,27 +188,19 @@ class ReviewForm {
 		    $fval = $rrow->$field;
 	    }
 	    
-	    $x .= "<tr class='rev_$field'>\n";
-
 	    $n = htmlspecialchars($this->shortName[$field]);
 	    $c = "<span class='revfn'>" . $n . "</span>";
 	    if ($this->authorView[$field] < -1)
-		$c .= "<br /><span class='hint'>(secret)</span>";
+		$c .= "<span class='hint'>(secret)</span>";
 	    else if ($this->authorView[$field] < 0)
-		$c .= "<br /><span class='hint'>(shown only to chairs)</span>";
+		$c .= "<span class='hint'>(shown only to chairs)</span>";
 	    else if ($this->authorView[$field] == 0)
-		$c .= "<br /><span class='hint'>(hidden from authors)</span>";
+		$c .= "<span class='hint'>(hidden from authors)</span>";
 	    
-	    $x .= "  <td class='caption";
-	    if (!$this->description[$field])
-		$x .= " textarea";
-	    $x .= "'></td>\n";
-	    
-	    $x .= "  <td class='entry'>";
 	    $x .= "<div class='revt";
 	    if (isset($ReviewFormError[$field]))
 		$x .= " error";
-	    $x .= "'>" . $c . "</div>";
+	    $x .= "'>" . $c . "<div class='clear'></div></div>";
 	    if ($this->description[$field])
 		$x .= "<div class='revhint'>" . $this->description[$field] . "</div>\n";
 	    $x .= "<div class='revev'>";
@@ -227,8 +218,7 @@ class ReviewForm {
 	    } else {
 		$x .= "<textarea name='$field' onchange='hiliter(this)' cols='80' rows='" . $this->fieldRows[$field] . "'>" . htmlspecialchars($fval) . "</textarea>";
 	    }
-	    $x .= "</div></td>\n";
-	    $x .= "</tr>\n";
+	    $x .= "</div>\n";
 	}
 	return $x;
     }
@@ -790,7 +780,7 @@ $blind\n";
 	    $conf->confirmMsg("<div class='parseerr'><p>" . join("</p>\n<p>", $tf['confirm']) . "</p></div>");
     }
 
-    function webDisplayRows($rrow, $revViewScore, $initial = true) {
+    function webDisplayRows($rrow, $revViewScore) {
 	global $ReviewFormError, $scoreHelps, $Conf, $ConfSiteBase, $ConfSiteSuffix;
 
 	// Which fields are options?
@@ -821,10 +811,6 @@ $blind\n";
 
 	// Analyze fields for initial or final position
 	foreach ($fdisp as $i => &$disp) {
-	    if (($i == 0 && $initial)
-		|| (($disp & self::WEB_RIGHT)
-		    && ($i<2 || !($fdisp[$i-2] & self::WEB_RIGHT))))
-		$disp |= self::WEB_INITIAL;
 	    if ($i+1 == count($fdisp)
 		|| ($i+2 == count($fdisp) && ($disp & self::WEB_LEFT))
 		|| (($disp & self::WEB_RIGHT) && !($fdisp[$i+1] & self::WEB_LEFT)))
@@ -841,12 +827,13 @@ $blind\n";
 		$fval = $this->unparseOption($field, $fval);
 
 	    if ($disp & (self::WEB_FULL | self::WEB_LEFT))
-		$x .= "\n<tr class='rev_$field'>\n";
+		$x .= "\n<tr>\n";
 
 	    $n = htmlspecialchars($this->shortName[$field]);
 	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))
 		$n = preg_replace("/\\s+/", "&nbsp;", $n);
-	    $c = "<span class='revfn'>" . $n . "</span>";
+
+	    $c = "<span class='revfn'>" . $n;
 	    if ($disp & self::WEB_OPTIONS) {
 		$c .= "<a class='scorehelp' href='${ConfSiteBase}scorehelp$ConfSiteSuffix?f=$field'>?</a>";
 		if (count($scoreHelps) == 0)
@@ -860,12 +847,13 @@ $blind\n";
 		    $Conf->footerStuff .= $help;
 		}
 	    }
+	    $c .= "</span>";
 	    if ($this->authorView[$field] < -1)
-		$c .= "<br /><span class='hint'>(secret)</span>";
+		$c .= "<span class='hint'>(secret)</span>";
 	    else if ($this->authorView[$field] < 0)
-		$c .= "<br /><span class='hint'>(shown only to chairs)</span>";
+		$c .= "<span class='hint'>(shown only to chairs)</span>";
 	    else if ($this->authorView[$field] == 0)
-		$c .= "<br /><span class='hint'>(hidden from authors)</span>";
+		$c .= "<span class='hint'>(hidden from authors)</span>";
 
 	    $x .= "  <td class='reve rev_$field";
 	    if ($disp & self::WEB_LEFT)
@@ -875,7 +863,7 @@ $blind\n";
 	    else
 		$x .= " revbe' colspan='2'>";
 
-	    $x .= "<div class='revt'>" . $c . "</div>\n";
+	    $x .= "<div class='revt'>" . $c . "<div class='clear'></div></div>\n";
 	    $x .= "<div class='revv'>";
 	    if ($disp & self::WEB_OPTIONS) {
 		if (!$fval || !isset($this->options[$field][$fval]))
@@ -890,7 +878,7 @@ $blind\n";
 		$x .= "</tr>\n";
 	}
 
-	return "<tr><td class='caption final'></td><td class='entry final'><table class='revtab'>" . $x . "</table></td></tr>\n";
+	return "<table class='revtab'>" . $x . "</table>\n";
     }
     
     function webGuidanceRows($revViewScore, $extraclass="") {

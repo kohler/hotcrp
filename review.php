@@ -440,14 +440,15 @@ if ($mode == "edit" && !$Me->canReview($prow, $rrow, $Conf, $whyNot)) {
 if ($mode == "edit" && !$rrow)
     $rrow = $editRrow;
 // print deadline message
+$reviewEditMessage = "";
 if ($rrow && ($rrow->contactId == $Me->contactId
 	      || ($Me->privChair && $mode == "edit"))
     && !$Conf->timeReviewPaper($Me->isPC, true, true)) {
     $override = ($Me->privChair ? "  As an administrator, you can override this deadline using the \"Override deadlines\" checkbox." : "");
     if (!$Conf->timeReviewPaper($Me->isPC, true, true, true))
-	$Conf->infoMsg("The <a href='deadlines$ConfSiteSuffix'>deadline</a> for changing reviews has passed, so the review can no longer be changed.$override");
+	$reviewEditMessage =  "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for changing reviews has passed, so the review can no longer be changed.$override";
     else
-	$Conf->infoMsg("The site is not open for reviewing, so the review cannot be changed.$override");
+	$reviewEditMessage = "The site is not open for reviewing, so the review cannot be changed.$override";
 }
 
 
@@ -549,7 +550,7 @@ $ratingsAjaxDone = false;
 function reviewView($prow, $rrow, $editMode) {
     global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Me, $rf, $forceShow,
 	$linkExtra, $useRequest, $nExternalRequests, $nRatersSubmitted,
-	$ratingsAjaxDone, $canRate;
+	$ratingsAjaxDone, $canRate, $reviewEditMessage;
 
     $reviewOrdinal = unparseReviewOrdinal($rrow);
     $reviewLinkBase = "review$ConfSiteSuffix?"
@@ -565,9 +566,31 @@ function reviewView($prow, $rrow, $editMode) {
     else
 	echo "<div class='relative'>";
     
-    echo "<table class='review'>
-<tr class='id'>
-  <td class='caption'><h3";
+    /* XXX */ echo "<table class='review'>
+<tr>
+  <td class='caption'></td>
+  <td class='entry'>";
+    
+    echo "<table class='revc'>
+  <tr><td class='revcul'></td><td></td><td class='revcur'></td></tr>
+  <tr><td></td><td class='revhead'>";
+
+    // Links
+    if ($rrow) {
+	echo "<div class='floatright'>";
+	$a = "<a href='review$ConfSiteSuffix?r=$reviewOrdinal&amp;text=1$linkExtra'>";
+	echo $a, $Conf->cacheableImage("txt.png", "[Text]", null, "b"),
+	    "</a>&nbsp;", $a, "Text format</a>";
+	if (!$editMode && $Me->canReview($prow, $rrow, $Conf)) {
+	    echo "<br />";
+	    $a = "<a href='review$ConfSiteSuffix?r=$reviewOrdinal$linkExtra'>";
+	    echo $a, $Conf->cacheableImage("newreview.png", "[Edit]", null, "b"),
+		"</a>&nbsp;", $a, "Edit</a>";
+	}
+	echo "</div>";
+    }
+    
+    echo "<h3";
     if ($rrow)
 	echo " id='review$rrow->reviewId'";
     echo ">";
@@ -578,12 +601,11 @@ function reviewView($prow, $rrow, $editMode) {
 	echo "</a>";
     } else
 	echo "Review";
-    echo "</h3></td>
-  <td class='entry' colspan='", ($editMode ? 2 : 3), "'>";
-    $sep = "";
+    echo "</h3>";
+    $open = $sep = " <span class='revinfo'>";
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
     if ($rrow && $Me->canViewReviewerIdentity($prow, $rrow, $Conf)) {
-	echo ($rrow->reviewBlind ? "[" : ""), "by ", contactHtml($rrow);
+	echo $sep, ($rrow->reviewBlind ? "[" : ""), "by ", contactHtml($rrow);
 	$sep = ($rrow->reviewBlind ? "]" : "") . $xsep;
     }
     if ($rrow && $rrow->reviewToken && $Me->canReview($prow, $rrow, $Conf)) {
@@ -594,21 +616,13 @@ function reviewView($prow, $rrow, $editMode) {
 	echo $sep, "Modified ", $Conf->printableTime($rrow->reviewModified);
 	$sep = $xsep;
     }
-    if ($rrow) {
-	$a = "<a href='review$ConfSiteSuffix?r=$reviewOrdinal&amp;text=1$linkExtra'>";
-	echo $sep, $a, $Conf->cacheableImage("txt.png", "[Text]", null, "b"),
-	    "</a>&nbsp;", $a, "Text format</a>";
-	$sep = $xsep;
-    }
-    if ($rrow && !$editMode && $Me->canReview($prow, $rrow, $Conf)) {
-	echo $sep, "<a class='button' href='review$ConfSiteSuffix?r=$reviewOrdinal$linkExtra'>Edit</a>";
-	$sep = $xsep;
-    }
-    echo "</td>
-</tr>\n";
+    if ($sep != $open)
+	echo "</span>\n";
+
+    if ($reviewEditMessage)
+	echo "<div class='hint'>", $reviewEditMessage, "</div>";
     
     if (!$editMode) {
-	$initial = true;
 	// Do not show rating counts if rater identity is unambiguous.
 	$visibleRatings = $rrow->numRatings > 0
 	    && ($rrow->contactId != $Me->contactId || $Me->privChair
@@ -616,9 +630,7 @@ function reviewView($prow, $rrow, $editMode) {
 		|| $rrow->numRatings > 2);
 	if ($canRate && ($rrow->contactId != $Me->contactId || $visibleRatings)) {
 	    $ratesep = "";
-	    echo "<tr class='ratingrow'>
-  <td class='caption initial'></td>
-  <td class='entry initial' colspan='3'><table class='rev_rating'><tr><td>";
+	    echo "<div class='rev_rating'>";
 	    if ($visibleRatings) {
 		echo "<span class='rev_rating_summary'>";
 		if ($rrow->numRatings == $rrow->sumRatings)
@@ -648,88 +660,72 @@ function reviewView($prow, $rrow, $editMode) {
 		    . "<input id='ratingval_$reviewOrdinal' type='hidden' name='rating' value='' />"
 		    . "</form>";
 	    }
-	    echo " &nbsp;<span class='barsep'>|</span>&nbsp; <a href='${ConfSiteBase}help$ConfSiteSuffix?t=revrate'>What is this?</a>",
-		"</td></tr></table><div class='g'></div></td>\n</tr>\n";
-	    $initial = false;
+	    echo " &nbsp;<span class='barsep'>|</span>&nbsp; <a href='${ConfSiteBase}help$ConfSiteSuffix?t=revrate'>What is this?</a></div>";
 	}
-	echo $rf->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow, $Conf), $initial), "</table></div>\n";
+	echo "<div class='clear'></div></td><td></td></tr>
+  <tr><td></td><td class='revcc'>",
+	    $rf->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow, $Conf)),
+	    "</td><td></td></tr>
+  <tr><td class='revcll'></td><td></td><td class='revclr'></td></tr>
+</table>
+</td></tr></table></div>\n";
 	return;
     }
 
     // From here on, edit mode.
-    $extraclass = " initial";
-    
     // refuse?
     if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType < REVIEW_SECONDARY) {
-	echo "\n<tr class='rev_ref'>
-  <td class='caption$extraclass'></td>
-  <td class='entry$extraclass' colspan='2'>";
-	$extraclass="";
-	echo "<a id='popupanchor_ref' href=\"javascript:void popup(null, 'ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it\n";
+	echo "\n<div class='revref'><a id='popupanchor_ref' href=\"javascript:void popup(null, 'ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it</div>\n";
 	$Conf->footerStuff .= "<div id='popup_ref' class='popupc'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'>
   <input class='textlite' type='text' name='reason' value='' size='40' />
   <div class='g'></div>
   <input class='b' type='submit' name='refuse' value='Refuse review' />
   &nbsp;<button type='button' class='b' onclick=\"popup(null, 'ref', 1)\">Cancel</button></div></form></div>";
-	echo "</td>\n</tr>\n";
     }
 
     // delegate?
     if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType == REVIEW_SECONDARY) {
-	echo "\n<tr class='rev_del'>
-  <td class='caption$extraclass'></td>
-  <td class='entry$extraclass' colspan='2'>";
-	$extraclass = "";
+	echo "\n<div class='rev_del'>";
 	if ($nExternalRequests == 0)
 	    echo "As a secondary reviewer, you can <a href=\"assign$ConfSiteSuffix?p=$rrow->paperId$linkExtra\">delegate this review to an external reviewer</a>, but if your external reviewer refuses to review the paper, you should complete the review yourself.";
 	else if ($rrow->reviewNeedsSubmit == 0)
 	    echo "A delegated external reviewer has submitted their review, but you can still complete your own if you'd like.";
 	else
 	    echo "Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete the review yourself.";
-	echo "</td>\n</tr>\n";
+	echo "</div>\n";
     }
 
     // message?
     if ($rrow && $rrow->contactId != $Me->contactId
-	&& !isset($prow->myReviewId) && $Me->privChair) {
-	echo "<tr class='rev_rev'>
-  <td class='caption$extraclass'></td>
-  <td class='entry$extraclass' colspan='2'>";
-	$extraclass = "";
-	$Conf->infoMsg("You didn't write this review, but as an administrator you can still make changes.");
-	echo "</td>\n</tr>\n";
-    }
+	&& !isset($prow->myReviewId) && $Me->privChair)
+	echo "<div class='hint'>You didn't write this review, but as an administrator you can still make changes.</div>\n";
     
     // download?
-    echo "<tr class='rev_rev'>
-  <td class='caption$extraclass'>Offline reviewing</td>
-  <td class='entry$extraclass' colspan='2'>
-    Upload form: &nbsp; <input type='file' name='uploadedFile' accept='text/plain' size='30' />
-    &nbsp; <input class='bsm' type='submit' value='Go' name='uploadForm' />
-    <div class='g'></div>
-    <a href='${reviewLinkBase}downloadForm=1'>Download this paper's review form</a>
-    &nbsp;<span class='barsep'>|</span>&nbsp;
-    <span class='hint'><strong>Tip:</strong> Use <a href='search$ConfSiteSuffix'>Search</a> or <a href='offline$ConfSiteSuffix'>Offline reviewing</a> to download or upload many forms at once.</span>
-  </td>
-</tr>\n";
+    echo "<div class='clear'></div></td><td></td></tr>
+  <tr><td></td><td><table class='revoff'><tr>
+      <td><span class='revfn'>Offline reviewing</span></td>
+      <td>Upload form: &nbsp; <input type='file' name='uploadedFile' accept='text/plain' size='30' />
+      &nbsp; <input class='bsm' type='submit' value='Go' name='uploadForm' /></td>
+    </tr><tr>
+      <td></td>
+      <td><a href='${reviewLinkBase}downloadForm=1'>Download form</a>
+      &nbsp;<span class='barsep'>|</span>&nbsp;
+      <span class='hint'><strong>Tip:</strong> Use <a href='search$ConfSiteSuffix'>Search</a> or <a href='offline$ConfSiteSuffix'>Offline reviewing</a> to download or upload many forms at once.</span></td>
+    </tr></table></td><td></td></tr>\n";
 
     // top save changes button
-    echo "<tr>
-  <td class='caption'></td>
-  <td class='entry'><div class='aa'><input class='bb' type='submit' value='Save changes' name='update' /></div></td>
-</tr>\n";
+    echo "  <tr><td></td><td class='revcc'>";
+    echo "  <div class='aa'><input class='bb' type='submit' value='Save changes' name='update' /></div>\n";
 
     // blind?
     if ($Conf->blindReview() == 1) {
-	echo "<tr class='rev_blind'>
-  <td class='caption'></td>
-  <td class='entry'><div class='revt'><span class='revfn'>";
-	echo "<input type='checkbox' name='blind' value='1'";
+	echo "<div class='revt'><span class='revfn'>",
+	    "<input type='checkbox' name='blind' value='1'";
 	if ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))
 	    echo " checked='checked'";
-	echo " onchange='hiliter(this)' />&nbsp;Anonymous review</span></div>";
-	echo "<div class='revhint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won't know who wrote the review).</div></td>\n
-</tr>\n";
+	echo " onchange='hiliter(this)' />&nbsp;Anonymous review</span><div class='clear'></div></div>\n",
+	    "<div class='revhint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won't know who wrote the review).</div>\n",
+	    "<div class='g'></div>\n";
     }
     
     // form body
@@ -737,19 +733,17 @@ function reviewView($prow, $rrow, $editMode) {
 
     // review actions
     if ($Me->timeReview($prow, $rrow, $Conf) || $Me->privChair) {
-	echo "<tr class='rev_actions'>
-  <td class='caption'></td>
-  <td class='entry'><div class='g'></div>",
-	    "<table><tr><td><input type='checkbox' name='ready' value='1'";
+	echo "  <div class='g'></div>",
+	    "<input type='checkbox' name='ready' value='1'";
 	if ($useRequest ? defval($_REQUEST, "ready") : $rrow && $rrow->reviewSubmitted)
 	    echo " checked='checked'";
 	if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
 	    echo " disabled='disabled'";
-	echo " onchange='hiliter(this)' />&nbsp;</td><td>The review is ready for others to see.";
+	echo " onchange='hiliter(this)' />&nbsp;The review is ready for others to see.";
 	if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
 	    echo "<div class='hint'>Only administrators can remove the review from the system at this point.</div>";
-	echo "</td></tr></table>",
-	    "<div class='aa'><table class='pt_buttons'>\n";
+
+	echo "<div class='aa'><table class='pt_buttons'>\n";
 	$buttons = array();
 	$buttons[] = "<input class='bb' type='submit' value='Save changes' name='update' />";
 	if ($rrow && $Me->privChair) {
@@ -767,16 +761,16 @@ function reviewView($prow, $rrow, $editMode) {
 	    $x = (is_array($b) ? $b[1] : "");
 	    echo "      <td class='ptb_explain'>", $x, "</td>\n";
 	}
-	echo "    </tr>\n  </table></div></td>\n</tr>";
+	echo "    </tr>\n  </table></div>";
 	if ($Me->privChair)
-	    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>",
-		"<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines",
-		"</td>\n</tr>";
-	echo "\n\n";
+	    echo "<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines";
+	//echo "</div>\n";
     }
 
-    echo "<tr class='last'><td class='caption'></td></tr>\n";
-    echo "</table>\n</div></form>\n\n";
+    echo "</td><td></td></tr>
+  <tr><td class='revcll'></td><td></td><td class='revclr'></td></tr>
+</table>
+</td></tr></table></div></form>\n\n";
 }
 
 

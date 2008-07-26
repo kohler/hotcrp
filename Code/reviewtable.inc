@@ -36,6 +36,8 @@ function reviewTable($prow, $rrows, $rrow, $mode) {
 
 	if (($rrow || $mode == "edit") && $highlight)
 	    $t = "    <tr class='hilite'>";
+	else if ($mode == "edit")
+	    continue;
 	else
 	    $t = "    <tr>";
 

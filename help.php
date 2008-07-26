@@ -426,12 +426,12 @@ their reviews.  The interface appears above each visible review:
 
 <div class='g'></div>
 
-<table class='rev_rating'><tr><td>
+<div class='rev_rating'>
   Was this review helpful for you? &nbsp;
   <a class='button'>Yes</a> &nbsp;
   <a class='button'>No</a> &nbsp;
   <a class='button on'>No opinion</a>
-</td></tr></table>
+</div>
 
 <p>HotCRP reports the number of ratings for each review and how many of those
   ratings were positive.  It does not report who gave the ratings, and it

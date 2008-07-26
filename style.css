@@ -599,8 +599,7 @@ td.caption.final {
 tr.topspace td.caption {
 	padding: 7px 0.5em 3px 4px;
 }
-tr.id td.caption, table.review tr.id td.caption, 
-table.comment tr.id td.caption {
+tr.id td.caption, table.comment tr.id td.caption {
 	border: 0px none;
 	background: #ffffff;
 	color: black;
@@ -611,23 +610,10 @@ tr.last td.caption, tr.last td.entry {
 tr.last td.caption {
 	border-bottom: 1px solid #ccb7a3; /* #9999cc; */
 }
-table.review tr.ratingrow td.caption {
-	padding: 0em 0.5em;
-}
-table.review tr.ratingrow td.entry {
-	padding: 0em 0.5em 0em 0em;
-}
 
 table.review td.caption {
-	background: #fff4f6;
-	border-left: 1px solid #cca3a9; /* #9999cc; */
-	border-right: 1px solid #cca3a9; /* #9999cc; */
-}
-table.review td.caption.initial {
-	border-top: 1px solid #cca3a9; /* #9999cc; */
-}
-table.review td.caption.final {
-	border-bottom: 1px solid #cca3a9; /* #9999cc; */
+	background: none;
+	border: none;
 }
 
 table.comment td.caption {
@@ -648,7 +634,7 @@ table.comment h3.editable {
 	font-weight: bold;
 }
 
-table.comment tr.id td.entry, table.review tr.id td.entry {
+table.comment tr.id td.entry {
 	font-size: smaller;
 }
 td.entry, th.entry {
@@ -656,9 +642,6 @@ td.entry, th.entry {
 }
 tr.last td.entry {
 	padding: 0px 1em 0px 0.5em;
-}
-table.review td.entry {
-	padding: 2px 0px 4px 0.5em;
 }
 tr.pt_abstract td.entry {
 	font-size: 85%;
@@ -1168,10 +1151,6 @@ div.g { /* small gap */
 	margin: 0.65em 0em;
 }
 
-table.review input#downloadForm {
-	margin-right: 3em;
-}
-
 body#assignpc div.topicinterest {
 	margin-left: 3em;
 }
@@ -1249,17 +1228,56 @@ span.contactpulldown select {
 }
 
 /* reviews */
+table.revc {
+	background: #f7d0d7;
+	width: 100%;
+	position: relative;
+}
+td.revcul, td.revcur, td.revcll, td.revclr {
+	width: 8px;
+	height: 8px;
+}
+td.revcc {
+	background: #ffffff;
+	padding: 0.4em 0.5em;
+}
+td.revcc div.aa {
+	margin: 0.2em 0em 0.3em;
+}
+td.revhead h3 {
+	display: inline;
+	padding: 0em 0.5em 0em 0em;
+}
+td.revhead span.revinfo {
+	font-size: smaller;
+}
+td.revhead {
+	padding: 0px 0px 4px 0px;
+}
 div.revt {
 	font-size: smaller;
 	padding: 0.25em 1em 0.25em 8px;
-	background: #fff4f6;
+	background: #ffe6f8; /*#ffeaee;*/
 }
 div.revt span.revfn {
 	font-variant: small-caps;
 	font-weight: bold;
+	float: left;
+}
+div.revt span.hint {
+	float: right;
 }
 div.revv {
 	padding: 2px 0px 1em 7px;
+}
+table.revoff {
+	margin: 0.2em 0em 0.5em 0em;
+	font-size: smaller;
+}
+table.revoff span.revfn {
+	font-variant: small-caps;
+	font-weight: bold;
+	padding: 0px 1em 5px 0px;
 }
 div.revev {
 	padding: 5px 0px 1em 2px;
@@ -1276,6 +1294,7 @@ table.revtab {
 }
 td.revle, td.revre {
 	width: 50%;
+	vertical-align: top;
 }
 td.revle {
 	padding: 0px 0.5em 0px 0px;
@@ -1285,9 +1304,9 @@ td.revre {
 }
 
 /* review ratings */
-table.rev_rating tr td {
+div.rev_rating {
 	font-size: 69%;
-	padding: 0.4em 0.8em;
+	padding: 0.4em 0.8em 0.4em 0em;
 }
 span.rev_rating_summary {
 	font-weight: bold;

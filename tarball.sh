@@ -112,6 +112,7 @@ images/extagsset.png
 images/headgrad.png
 images/homegrad.png
 images/info45.png
+images/newreview.png
 images/newreview24.png
 images/next.png
 images/override24.png
