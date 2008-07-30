@@ -130,7 +130,6 @@ function checkMailPrologue($send) {
 	<input class='b' type='submit' name='send' value='Send' /> &nbsp;
 	<input class='b' type='submit' name='cancel' value='Cancel' /></td></tr></table></div>\n";
     }
-    return true;
 }
 
 function checkMail($send) {
@@ -153,10 +152,11 @@ function checkMail($send) {
     $any = false;
     $closer = "";
     $nrows_left = edb_nrows($result);
+    $nrows_print = false;
     while (($row = edb_orow($result))) {
-	if (!$any)
-	    $any = checkMailPrologue($send);
 	$nrows_left--;
+	if ($nrows_left % 5 == 0)
+	    $nrows_print = true;
 	$contact = Contact::makeMinicontact($row);
 	$preparation = Mailer::prepareToSend($template, $row, $contact, $Me, $rest); // see also $show_preparation below
 	if ($preparation[0] != $last[0] || $preparation[1] != $last[1]
@@ -165,9 +165,17 @@ function checkMail($send) {
 	    $checker = "c" . $row->contactId . "p" . $row->paperId;
 	    if ($send && !defval($_REQUEST, $checker))
 		continue;
+	    if (!$any) {
+		checkMailPrologue($send);
+		$any = true;
+	    }
 	    if ($send)
 		Mailer::sendPrepared($preparation);
 	    echo $closer;
+	    if ($nrows_print) {
+		$Conf->echoScript("e('mailcount').innerHTML = \"$nrows_left mails remaining.\";");
+		$nrows_print = false;
+	    }
 	    echo "<table><tr><td class='caption'>To</td><td class='entry'>";
 	    if (!$send)
 		echo "<input type='checkbox' name='$checker' value='1' checked='checked' /> &nbsp;";
@@ -180,12 +188,10 @@ function checkMail($send) {
 		$show_preparation = Mailer::prepareToSend($template, $row, $contact, $Me, $rest);
 		$rest["hideSensitive"] = false;
 	    }
-	    echo "<td class='caption'>Subject</td><td class='entry'><tt class='email'>", htmlspecialchars(Mailer::mimeHeaderUnquote($show_preparation[0])), "</tt></td></tr>\n";
-	    echo "<td class='caption'>Body</td><td class='entry'><pre class='email'>", htmlspecialchars($show_preparation[1]), "</pre></td></tr>\n";
+	    echo "<tr><td class='caption'>Subject</td><td class='entry'><tt class='email'>", htmlspecialchars(Mailer::mimeHeaderUnquote($show_preparation[0])), "</tt></td></tr>\n";
+	    echo "<tr><td class='caption'>Body</td><td class='entry'><pre class='email'>", htmlspecialchars($show_preparation[1]), "</pre></td></tr>\n";
 	    $closer = "</table>\n";
 	}
-	if ($nrows_left % 5 == 0)
-	    $Conf->echoScript("e('mailcount').innerHTML = \"$nrows_left mails remaining.\";");
     }
 
     if (!$any)
@@ -306,7 +312,8 @@ if (isset($_REQUEST["monreq"])) {
     }
 }
 
-echo "<form method='post' action='mail$ConfSiteSuffix?check=1' enctype='multipart/form-data' accept-charset='UTF-8'>
+echo "<form method='post' action='mail$ConfSiteSuffix?check=1' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+<input class='hidden' type='submit' name='default' value='1' />
 <table>
 <tr class='topspace'>
   <td class='caption initial'>Templates</td>
@@ -357,7 +364,7 @@ echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", h
 
 <tr>
   <td class='caption'></td>
-  <td class='entry'><input type='submit' name='prepare' value='Prepare mail' class='b' /><div class='g'></div></td>
+  <td class='entry'><input type='submit' value='Prepare mail' class='b' /><div class='g'></div></td>
 </tr>
 
 <tr class='last'>
@@ -409,7 +416,7 @@ echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", h
 </td></tr>
 
 </table>
-</form>\n";
+</div></form>\n";
 
 $Conf->footer();
 
