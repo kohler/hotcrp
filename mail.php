@@ -114,20 +114,21 @@ function contactQuery($type) {
 
 function checkMailPrologue($send) {
     global $Conf, $ConfSiteSuffix;
-    if ($send) {
-	echo "<div id='foldmail' class='foldc'><div class='ellipsis'><div class='error'>In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong></div></div><div class='extension'><div class='confirm'>Sent mail as follows.</div>
-	<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail$ConfSiteSuffix' enctype='multipart/form-data' accept-charset='UTF-8'>\n";
-	foreach (array("recipients", "subject", "emailBody") as $x)
+    echo "<form method='post' action='mail$ConfSiteSuffix' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
+    foreach (array("recipients", "subject", "emailBody", "q", "t", "plimit") as $x)
+	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
-	echo "<input class='b' type='submit' name='go' value='Prepare more mail' /></td></tr></table>
+    if ($send) {
+	echo "<div id='foldmail' class='foldc'><div class='ellipsis merror'>In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong><br /><span id='mailcount'></span></div><div class='extension'><div class='confirm'>Sent mail as follows.</div>
+	<table><tr><td class='caption'></td><td class='entry'>
+	<input class='b' type='submit' name='go' value='Prepare more mail' />
+	</td></tr></table>
 </div></div>";
     } else {
-	$Conf->infoMsg("Examine the mails to check that you've gotten the result you want, then select &ldquo;Send&rdquo; to send the checked mails.");
-	echo "<table><tr><td class='caption'></td><td class='entry'><form method='post' action='mail$ConfSiteSuffix?postcheck=1' enctype='multipart/form-data' accept-charset='UTF-8'>\n";
-	foreach (array("recipients", "subject", "emailBody") as $x)
-	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
-	echo "<input class='b' type='submit' name='send' value='Send' /> &nbsp;
-<input class='b' type='submit' name='cancel' value='Cancel' /></td></tr></table>\n";
+	echo "<div id='foldmail' class='foldc'><div class='ellipsis merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div><div class='extension info'>Examine the mails to check that you've gotten the results you want, then select &ldquo;Send&rdquo; to send the checked mails.</div>
+	<table class='extension'><tr><td class='caption'></td><td class='entry'>
+	<input class='b' type='submit' name='send' value='Send' /> &nbsp;
+	<input class='b' type='submit' name='cancel' value='Cancel' /></td></tr></table></div>\n";
     }
     return true;
 }
@@ -151,9 +152,11 @@ function checkMail($send) {
     $last = array(0 => "", 1 => "", "to" => "");
     $any = false;
     $closer = "";
+    $nrows_left = edb_nrows($result);
     while (($row = edb_orow($result))) {
 	if (!$any)
 	    $any = checkMailPrologue($send);
+	$nrows_left--;
 	$contact = Contact::makeMinicontact($row);
 	$preparation = Mailer::prepareToSend($template, $row, $contact, $Me, $rest); // see also $show_preparation below
 	if ($preparation[0] != $last[0] || $preparation[1] != $last[1]
@@ -181,21 +184,21 @@ function checkMail($send) {
 	    echo "<td class='caption'>Body</td><td class='entry'><pre class='email'>", htmlspecialchars($show_preparation[1]), "</pre></td></tr>\n";
 	    $closer = "</table>\n";
 	}
+	if ($nrows_left % 5 == 0)
+	    $Conf->echoScript("e('mailcount').innerHTML = \"$nrows_left mails remaining.\";");
     }
 
     if (!$any)
 	return $Conf->errorMsg("No users match \"" . $recip[$_REQUEST["recipients"]] . "\" for that search.");
     else if ($send) {
 	echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n", $closer;
-	$Conf->echoScript("fold('mail', null);");
     } else {
-	echo "<tr class='last'><td class='caption'></td><td class='entry'><form method='post' action='mail$ConfSiteSuffix?postcheck=1' enctype='multipart/form-data' accept-charset='UTF-8'>\n";
-	foreach (array("recipients", "subject", "emailBody", "q", "t", "plimit") as $x)
-	    if (isset($_REQUEST[$x]))
-		echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
+	echo "<tr class='last'><td class='caption'></td><td class='entry'>\n";
 	echo "<input class='b' type='submit' name='send' value='Send' /> &nbsp;
 <input class='b' type='submit' name='cancel' value='Cancel' /></td></tr>\n", $closer;
     }
+    echo "</div></form>";
+    $Conf->echoScript("fold('mail', null);");
     $Conf->footer();
     exit;
 }
@@ -306,7 +309,7 @@ if (isset($_REQUEST["monreq"])) {
 echo "<form method='post' action='mail$ConfSiteSuffix?check=1' enctype='multipart/form-data' accept-charset='UTF-8'>
 <table>
 <tr class='topspace'>
-  <td class='caption'>Templates</td>
+  <td class='caption initial'>Templates</td>
   <td class='entry'>";
 $tmpl = array();
 $tmpl["genericmailtool"] = "Generic";
