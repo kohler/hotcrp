@@ -11,7 +11,7 @@ if (isset($_REQUEST["var"])) {
 	|| $v == "foldpapera" || $v == "foldpaperp" || $v == "foldpaperb"
 	|| $v == "foldpapert"
 	|| $v == "foldplact" || $v == "foldpltags" || $v == "foldplabstract"
-	|| $v == "foldpscollab") {
+	|| $v == "foldplrownum" || $v == "foldpscollab") {
 	if (isset($_REQUEST["val"]))
 	    $_SESSION[$v] = intval($_REQUEST["val"]);
 	else

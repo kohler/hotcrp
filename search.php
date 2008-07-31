@@ -632,10 +632,11 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 // set scores to view
 if (isset($_REQUEST["redisplay"])) {
     $_SESSION["scores"] = 0;
-    $_SESSION["foldplau"] = !defval($_REQUEST, "showau", 0);
-    $_SESSION["foldplanonau"] = !defval($_REQUEST, "showanonau", 0);
-    $_SESSION["foldplabstract"] = !defval($_REQUEST, "showabstract", 0);
-    $_SESSION["foldpltags"] = !defval($_REQUEST, "showtags", 0);
+    foreach (array("au", "anonau", "abstract", "tags", "rownum") as $x) {
+	unset($_SESSION["foldpl$x"]);
+	if (defval($_REQUEST, "show$x", 0))
+	    $_SESSION["foldpl$x"] = 0;
+    }
 }
 if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
     $_SESSION["scores"] = 0;
@@ -766,7 +767,7 @@ if ($pl && $pl->headerInfo["abstracts"]) {
     echo "<input type='checkbox' name='showabstract' value='1'";
     if (defval($_SESSION, "foldplabstract", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<img id='foldsession.pl5' src='sessionvar$ConfSiteSuffix?var=foldplabstract&amp;val=", defval($_SESSION, "foldplabstract", 1), "&amp;cache=1' width='1' height='1' alt='' /><br /><div id='abstractloadformresult'></div>\n";
+    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts", foldsessionpixel("pl5", "foldplabstract"), "<br /><div id='abstractloadformresult'></div>\n";
 }
 if ($Me->isPC && $pl && $pl->headerInfo["tags"]) {
     echo "<input type='checkbox' name='showtags' value='1'";
@@ -774,7 +775,13 @@ if ($Me->isPC && $pl && $pl->headerInfo["tags"]) {
 	echo " disabled='disabled'";
     if (defval($_SESSION, "foldpltags", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='foldtags(\"pl\",!this.checked,4)' />&nbsp;Tags<img id='foldsession.pl4' src='sessionvar$ConfSiteSuffix?var=foldpltags&amp;val=", defval($_SESSION, "foldpltags", 1), "&amp;cache=1' width='1' height='1' alt='' /><br /><div id='tagloadformresult'></div>\n";
+    echo " onclick='foldtags(\"pl\",!this.checked,4)' />&nbsp;Tags", foldsessionpixel("pl4", "foldpltags"), "<br /><div id='tagloadformresult'></div>\n";
+}
+if ($pl && $pl->anySelector) {
+    echo "<input type='checkbox' name='showrownum' value='1'";
+    if (defval($_SESSION, "foldplrownum", 1) == 0)
+	echo " checked='checked'";
+    echo " onclick='foldtags(\"pl\",!this.checked,6)' />&nbsp;Row numbers", foldsessionpixel("pl6", "foldplrownum"), "<br />\n";
 }
 echo "</td>";
 if ($pl && isset($pl->scoreMax)) {

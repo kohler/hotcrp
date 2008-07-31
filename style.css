@@ -1016,7 +1016,7 @@ div#plactr {
 table.pltable th, table.ppltable th, table.altable th, table.setreviewform th,
 table.auedittable th {
 	text-align: left;
-        padding-left: 0.125em;
+	padding-left: 0.125em;
 	padding-right: 0.125em;
 	vertical-align: bottom;
 }
@@ -1030,7 +1030,8 @@ table.pltable th.pl_topicMatch {
 	padding-right: 0.5em;
 }
 table.pltable th.pl_id, .pl_score, table.pltable th.pl_score, 
-table.ppltable th.pl_score, table.altable th.pl_id {
+table.ppltable th.pl_score, table.altable th.pl_id,
+table.pltable th.pl_selector {
 	text-align: center;
 	white-space: nowrap;
 }
@@ -1040,9 +1041,19 @@ table.ppltable th.pl_score, table.altable th.pl_id {
 	padding-right: 3px;
 	white-space: nowrap;
 }
-.pl_revstat, table.pltable th.pl_revstat,
-td.pl_selector {
+.pl_revstat, table.pltable th.pl_revstat {
 	text-align: center;
+}
+.pl_selector {
+	text-align: right;
+	white-space: nowrap;
+}
+table.pltable th.pl_selector {
+	padding-right: 0px;
+}
+span.pl_rownum {
+	font-size: smaller;
+	color: #333333;
 }
 td.pl_id, td.pl_topicMatch, td.pl_revpref,
 td.pl_desirability, td.pl_visits {

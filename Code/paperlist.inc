@@ -52,6 +52,7 @@ class PaperList extends BaseList {
     var $sortAverage;
     var $reverseSort;
     var $sortable;
+    var $specialSortable;
     var $count;
     var $needFinalize;
     var $needSubmitReview;
@@ -98,6 +99,7 @@ class PaperList extends BaseList {
 	else
 	    $this->sortField = null;
 	$this->sortable = $sortable;
+	$this->specialSortable = null;
 
 	$this->paperLink = "";
 	$this->paperLinkArgs = "";
@@ -373,7 +375,12 @@ class PaperList extends BaseList {
 	    return "<span class='hastitle' title='\"1/2\" means 1 complete review out of 2 assigned reviews'>#&nbsp;Reviews</span>";
 	case self::FIELD_SELECTOR:
 	case self::FIELD_SELECTOR_ON:
-	    return ($ordinal ? "&nbsp;" : "");
+	    if ($this->specialSortable == self::FIELD_TAGINDEX)
+		return "<span class='hastitle' title='Sort by tag order'>#</span>";
+	    else if ($this->specialSortable == self::FIELD_PIDARRAY)
+		return "<span class='hastitle' title='Sort by search term order'>#</span>";
+	    else
+		return ($ordinal ? "&nbsp;" : "");
 	case self::FIELD_SELECTOR_CONFLICT:
 	    return "Conflict?";
 	case self::FIELD_ASSIGN_REVIEW:
@@ -579,7 +586,7 @@ class PaperList extends BaseList {
 		$c .= " disabled='disabled'";
 	    if ($fieldId != self::FIELD_SELECTOR_CONFLICT)
 		$c .= " onclick='pselClick(event, this, $this->count)'";
-	    return "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='3' id='psel$this->count' $c/>";
+	    return "<span class='pl_rownum extension6'>" . $this->count . ". </span>" . "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='3' id='psel$this->count' $c/>";
 	case self::FIELD_CONFLICT_CONFIRM:
 	    return "<span id='assrev" . $row->paperId . "ok'></span>";
 	case self::FIELD_ASSIGN_REVIEW:
@@ -699,7 +706,7 @@ class PaperList extends BaseList {
 	$revpref = ($listname == "editReviewPreference");
 		
 	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
-	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'>" . $Conf->cacheableImage("bendulft.png", "^^", null, "placthook") . "</td>\n";
+	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top; padding-right: 4px;'>" . $Conf->cacheableImage("bendulft.png", "^^", null, "placthook") . "</td>\n";
 	$t .= "    <td colspan='" . ($ncol - 1) . "'>"
 	    . "<div id='plact' class='linelinks1'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
 
@@ -959,16 +966,16 @@ class PaperList extends BaseList {
 
 	// paper list query?
 	$pidarray = null;
-	if ($this->sortField === null) {
-	    $pidarray = $this->search->simplePaperList();
-	    if ($pidarray !== null)
-		$this->sortField = self::FIELD_PIDARRAY;
-	    if ($this->search->orderTag) {
-		$queryOptions["tagIndex"] = $this->search->orderTag;
-		$this->sortField = self::FIELD_TAGINDEX;
-	    }
-	} else if (!in_array($this->sortField, $baseFieldId))
+	$this->specialSortable = false;
+	if ($this->search->orderTag) {
+	    $queryOptions["tagIndex"] = $this->search->orderTag;
+	    $this->specialSortable = self::FIELD_TAGINDEX;
+	} else if (($pidarray = $this->search->simplePaperList()) !== null)
+	    $this->specialSortable = self::FIELD_PIDARRAY;
+	if ($this->sortField && !in_array($this->sortField, $baseFieldId))
 	    $this->sortField = null;
+	if (!$this->sortField && $this->specialSortable)
+	    $this->sortField = $this->specialSortable;
 	
 	// get field array
 	$fieldDef = array();
@@ -1092,7 +1099,9 @@ class PaperList extends BaseList {
 	    $x .= ($this->foldedAbstract !== false ? " fold5c" : " fold5o");
 	if ($abstractinfo && $this->foldedAbstract !== false && count($this->foldedAbstract))
 	    $Conf->footerStuff .= "<form id='abstractloadform' method='post' action='search$ConfSiteSuffix?get=abstracts&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedAbstract) . "' /></div></form><script type='text/javascript'>ajaxAbstracts = true;</script>";
-	if ($authorinfo || !$unfolded || $taginfo || $abstractinfo)
+	if ($this->anySelector)
+	    $x .= (defval($_SESSION, "foldplrownum", 1) ? " fold6c" : " fold6o");
+	if ($authorinfo || !$unfolded || $taginfo || $abstractinfo || $this->anySelector)
 	    $x .= "\" id=\"foldpl";
 	$x .= "\">\n";
 
@@ -1124,7 +1133,7 @@ class PaperList extends BaseList {
 	    
 	    if ($this->sortable && $url) {
 		$sortUrl = htmlspecialchars($url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
-		$q = "<a class='pl_sort' href=\"" . $sortUrl;
+		$q = "<a class='pl_sort' title='Change sort' href=\"" . $sortUrl;
 		foreach ($fieldDef as $fieldId => $fdef) {
 		    if ($fdef[1] != 1)
 			continue;
@@ -1136,10 +1145,15 @@ class PaperList extends BaseList {
 		    $ftext = $this->header($fieldId, $ord++);
 		    if ($this->sortField == null && $fieldId < 10)
 			$this->sortField = $fieldId;
-		    if ($fieldId == $this->sortField)
-			$x .= "<a class='pl_sort_def" . ($this->reverseSort ? "_rev" : "") . "' href=\"" . $sortUrl . $fieldId . ($this->reverseSort ? "N" : "R") . "\">" . $ftext . "</a>";
+		    $sortableSelector = $fieldId >= self::FIELD_SELECTOR
+			&& $this->specialSortable;
+		    if ($fieldId == $this->sortField
+			|| ($sortableSelector && $this->sortField == $this->specialSortable))
+			$x .= "<a class='pl_sort_def" . ($this->reverseSort ? "_rev" : "") . "' title='Reverse sort' href=\"" . $sortUrl . $this->sortField . ($this->reverseSort ? "N" : "R") . "\">" . $ftext . "</a>";
 		    else if ($fdef[2])
 			$x .= $q . $fieldId . "\">" . $ftext . "</a>";
+		    else if ($sortableSelector)
+			$x .= $q . $this->specialSortable . "\">" . $ftext . "</a>";
 		    else
 			$x .= $ftext;
 		    if ($titleextra && $fdef[0] == "title") {
