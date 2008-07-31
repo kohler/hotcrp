@@ -343,7 +343,7 @@ Here are some example ways to use tags.
 </ul>
 ");
     _alternateRow("Finding tags", "
-A paper's tags are shown on its <a href='review$ConfSiteSuffix'>review page</a> and the other paper pages.
+A paper's tags are shown like this:
 
 <p><img src='images/extagsnone.png' alt='[Tag list on review screen]' /></p>
 
@@ -354,9 +354,9 @@ $conflictmsg3$setting
 Additionally, twiddle tags, which have names like &ldquo;~tag&rdquo;, are
 visible only to their creators; each PC member has an independent set.</p>");
     _alternateRow("<a name='changing'>Changing tags</a>", "
-To change a single paper's tags, go to the Tags entry on its <a href='review$ConfSiteSuffix'>review page</a>,
-click <img src='images/next.png' alt='right arrow' />,
-then enter one or more alphanumeric tags separated by spaces.
+To change a paper's tags, click the Tags box's <img src='images/newreview.png'
+alt='[Edit]' />&nbsp;Edit link, then enter one or more alphanumeric tags
+separated by spaces.
 
 <p><img src='images/extagsset.png' alt='[Tags entry on review screen]' /></p>
 
@@ -749,10 +749,10 @@ review for that paper; this supposedly reduces bias.)
   reference.</p></li>
 
 <li><p><strong>Paper decisions</strong> can be recorded on the <a
-  href='review$ConfSiteSuffix'>review screens</a> or en masse
-  via the <a
-  href='search$ConfSiteSuffix?q=&amp;t=s'>search
-  screen</a>.  Note that PC members can see paper decisions as soon as they
+  href='review$ConfSiteSuffix'>paper pages</a> or en masse
+  via <a
+  href='search$ConfSiteSuffix?q=&amp;t=s'>search</a>.
+  Note that PC members can see paper decisions as soon as they
   are entered into the system, even when they have a conflict.  If you don't
   like this, mark decisions with <a href='help$ConfSiteSuffix?t=tags'>tags</a> until the
   meeting is over.</p></li>
