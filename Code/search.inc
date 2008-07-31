@@ -483,7 +483,7 @@ class PaperSearch {
 		$rt |= self::F_NONCONFLICT;
 	    if (($special ? $special == "order" : isset($this->fields['order']))
 		&& !$negated)
-		$this->orderTag = ($this->orderTag === false ? $word : null);
+		$this->orderTag = ($this->orderTag === false ? $value : null);
 	    $qt[] = new SearchTerm("tag", $rt, $value);
 	}
 	if (($special ? $special == "topic" : isset($this->fields['topic']))) {
