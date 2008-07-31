@@ -74,7 +74,7 @@ function fold(which, dofold, foldnum) {
 	var elt = e('fold' + which);
 	fold(elt, dofold, foldnum);
 	// check for session
-	var selt = e('foldsession.' + which + foldnumid);
+	var selt = e('foldsession.' + which + foldnum);
 	if (selt)
 	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0));
     } else if (which) {
@@ -281,8 +281,9 @@ function maketemptext(input, text, on, do_defact) {
     };
 }
 
-function setajaxcheck(ename, rv) {
-    var elt = e(ename);
+function setajaxcheck(elt, rv) {
+    if (typeof elt == "string")
+	elt = e(elt);
     if (elt) {
 	var i = (rv.ok ? "check" : "cross");
 	var s = (rv.ok ? "Saved" : (rv.error ? rv.error : "Error"));
@@ -530,7 +531,9 @@ Miniajax.newRequest = function() {
     return null;
 };
 Miniajax.onload = function(formname) {
-    fold(e(formname), 1, 7);
+    var req = Miniajax.newRequest();
+    if (req)
+	fold(e(formname), 1, 7);
 }
 Miniajax.submit = function(formname, callback, timeout) {
     var form = e(formname), req = Miniajax.newRequest();
@@ -541,8 +544,13 @@ Miniajax.submit = function(formname, callback, timeout) {
     var resultelt = e(formname + "result");
     if (!resultelt) 
 	resultelt = {};
+    var checkelt = e(formname + "check");
     if (!callback)
-	callback = function(rv) { resultelt.innerHTML = rv.response; };
+	callback = function(rv) {
+	    resultelt.innerHTML = rv.response; 
+	    if (checkelt)
+		setajaxcheck(checkelt, rv);
+	};
     if (!timeout)
 	timeout = 4000;
     

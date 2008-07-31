@@ -528,11 +528,11 @@ if ($getaction == "checkformat" && $Me->privChair && isset($papersel)) {
 
 
 // set outcome for selected papers
-if (isset($_REQUEST["setoutcome"]) && defval($_REQUEST, 'outcome', "") != "" && isset($papersel))
+if (isset($_REQUEST["setdecision"]) && defval($_REQUEST, "decision", "") != "" && isset($papersel))
     if (!$Me->canSetOutcome(null))
 	$Conf->errorMsg("You cannot set paper decisions.");
     else {
-	$o = rcvtint($_REQUEST['outcome']);
+	$o = rcvtint($_REQUEST["decision"]);
 	$rf = reviewForm();
 	if (isset($rf->options['outcome'][$o])) {
 	    $Conf->qe("update Paper set outcome=$o where " . paperselPredicate($papersel), "while changing decision");
@@ -552,7 +552,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != "" && 
     else if ($mt == "xauto") {
 	$t = (in_array($_REQUEST["t"], array("acc", "s")) ? $_REQUEST["t"] : "all");
 	$q = join($papersel, "+");
-	$Me->go("${ConfSiteBase}autoassign$ConfSiteSuffix?pap=" . join($papersel, "+") . "&t=$t&q=$q");
+	$Me->go("autoassign$ConfSiteSuffix?pap=" . join($papersel, "+") . "&t=$t&q=$q");
     } else if ($mt == "xpcpaper" || $mt == "xunpcpaper") {
 	$Conf->qe("update Paper set pcPaper=" . ($mt == "xpcpaper" ? 1 : 0) . " where " . paperselPredicate($papersel), "while marking PC papers");
 	$Conf->log("Change PC paper status", $Me, $papersel);
@@ -602,7 +602,7 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 	$Conf->errorMsg("Only the PC chairs can send mail.");
     else {
 	$r = (in_array($_REQUEST["recipients"], array("au", "rev")) ? $_REQUEST["recipients"] : "all");
-	$Me->go("${ConfSiteBase}mail$ConfSiteSuffix?pap=" . join($papersel, "+") . "&recipients=$r");
+	$Me->go("mail$ConfSiteSuffix?pap=" . join($papersel, "+") . "&recipients=$r");
     }
 }
 
@@ -744,7 +744,7 @@ if ($pl && $pl->headerInfo["abstracts"]) {
     echo "<input type='checkbox' name='showabstract' value='1'";
     if (defval($_SESSION, "foldplabstract", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<img id='foldsession.pl5' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldplabstract&amp;val=", defval($_SESSION, "foldplabstract", 1), "&amp;cache=1' width='1' height='1' alt='' /><br /><div id='abstractloadformresult'></div>\n";
+    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<img id='foldsession.pl5' src='sessionvar$ConfSiteSuffix?var=foldplabstract&amp;val=", defval($_SESSION, "foldplabstract", 1), "&amp;cache=1' width='1' height='1' alt='' /><br /><div id='abstractloadformresult'></div>\n";
 }
 if ($Me->isPC && $pl && $pl->headerInfo["tags"]) {
     echo "<input type='checkbox' name='showtags' value='1'";
@@ -752,7 +752,7 @@ if ($Me->isPC && $pl && $pl->headerInfo["tags"]) {
 	echo " disabled='disabled'";
     if (defval($_SESSION, "foldpltags", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='foldtags(\"pl\",!this.checked,4)' />&nbsp;Tags<img id='foldsession.pl4' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldpltags&amp;val=", defval($_SESSION, "foldpltags", 1), "&amp;cache=1' width='1' height='1' alt='' /><br /><div id='tagloadformresult'></div>\n";
+    echo " onclick='foldtags(\"pl\",!this.checked,4)' />&nbsp;Tags<img id='foldsession.pl4' src='sessionvar$ConfSiteSuffix?var=foldpltags&amp;val=", defval($_SESSION, "foldpltags", 1), "&amp;cache=1' width='1' height='1' alt='' /><br /><div id='tagloadformresult'></div>\n";
 }
 echo "</td>";
 if ($pl && isset($pl->scoreMax)) {
@@ -813,7 +813,7 @@ if ($pl) {
 	reset($tOpt);
 	echo " in ", strtolower($tOpt[$_REQUEST["t"]]);
 	if (key($tOpt) != $_REQUEST["t"])
-	    echo " (<a href=\"${ConfSiteBase}search$ConfSiteSuffix?", join("&amp;", $a), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
+	    echo " (<a href=\"search$ConfSiteSuffix?", join("&amp;", $a), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
     }
     
     if ($pl->anySelector)

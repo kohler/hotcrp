@@ -155,14 +155,14 @@ echo "<form method='post' action=\"mergeaccounts$ConfSiteSuffix\" accept-charset
 <table class='form'>
 
 <tr>
-  <td class='caption'>Email:</td>
+  <td class='caption initial'>Email</td>
   <td class='entry'><input type='text' class='textlite' name='email' size='50'
     <?php if (isset($_REQUEST["email"])) echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" "; ?>
   /></td>
 </tr>
 
 <tr>
-  <td class='caption'>Password:</td>
+  <td class='caption'>Password</td>
   <td class='entry'><input type='password' class='textlite' name='password' size='50' /></td>
 </tr>
 

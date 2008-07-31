@@ -9,9 +9,9 @@ $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $rf = reviewForm();
 $useRequest = false;
-$sawResponse = false;
-$forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair ? "&amp;forceShow=1" : "");
-$linkExtra = $forceShow;
+$forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair);
+$linkExtra = ($forceShow ? "&amp;forceShow=1" : "");
+$Error = array();
 
 
 // header
@@ -21,7 +21,7 @@ function confHeader() {
 	$title = "Paper #$prow->paperId Comments";
     else
 	$title = "Paper Comments";
-    $Conf->header($title, "comment", actionBar($prow, false, "comment"), false);
+    $Conf->header($title, "comment", actionBar($prow, false, "c"), false);
     if (isset($CurrentList) && $CurrentList > 0
 	&& strpos($linkExtra, "ls=") === false)
 	$linkExtra .= "&amp;ls=" . $CurrentList;
@@ -36,37 +36,27 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $prow, $crows, $crow, $savedCommentId, $savedCrow;
-    if (!isset($_REQUEST["commentId"]) && isset($_REQUEST["c"]))
-	$_REQUEST["commentId"] = $_REQUEST["c"];
-    if (isset($_REQUEST["commentId"]))
-	$sel = array("commentId" => $_REQUEST["commentId"]);
-    else {
-	maybeSearchPaperId($Me);
-	$sel = array("paperId" => $_REQUEST["paperId"]);
-    }
-    $sel['topics'] = $sel['options'] = $sel['tags'] = 1;
-    if (!(($prow = $Conf->paperRow($sel, $Me->contactId, $whyNot))
-	  && $Me->canViewPaper($prow, $Conf, $whyNot)))
+    global $Conf, $Me, $prow, $paperTable, $crow, $savedCommentId, $savedCrow;
+    if (!($prow = PaperTable::paperRow($whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
-
-    $result = $Conf->qe("select PaperComment.*, firstName, lastName, email
-		from PaperComment
-		join ContactInfo using (contactId)
-		where paperId=$prow->paperId
-		order by commentId");
-    $crows = array();
+    $paperTable = new PaperTable($prow);
+    $paperTable->resolveReview();
+    $paperTable->resolveComments();
+    $paperTable->watchCheckbox = WATCH_COMMENT;
+    
     $crow = null;
-    while ($row = edb_orow($result)) {
-	$crows[] = $row;
-	if (isset($_REQUEST['commentId']) && $row->commentId == $_REQUEST['commentId'])
+    $cid = defval($_REQUEST, "commentId", "xxx");
+    foreach ($paperTable->crows as $row) {
+	if ($row->commentId == $cid
+	    || ($cid == "response" && $row->forAuthors > 1))
 	    $crow = $row;
 	if (isset($savedCommentId) && $row->commentId == $savedCommentId)
 	    $savedCrow = $row;
     }
-    if (isset($_REQUEST['commentId']) && !$crow)
+    if ($cid != "xxx" && !$crow && $cid != "response" && $cid != "new")
 	errorMsgExit("That comment does not exist.");
 }
+
 loadRows();
 
 
@@ -120,8 +110,6 @@ function watch() {
 		left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId)
 		where conflictType>=" . CONFLICT_AUTHOR . " or reviewType is not null or watch is not null or commentId is not null");
     
-    $sendNamed = array();
-    $sendAnon = array();
     $saveProw = (object) null;
     $lastContactId = 0;
     setReviewInfo($saveProw, $prow);
@@ -201,9 +189,9 @@ function saveComment($text) {
 	$Conf->qe("update Paper set numComments=(select count(commentId) from PaperComment where paperId=$prow->paperId), numAuthorComments=(select count(commentId) from PaperComment where paperId=$prow->paperId and forAuthors>0) where paperId=$prow->paperId", $while);
     }
     
-    unset($_REQUEST["commentId"]);
     unset($_REQUEST["c"]);
     $_REQUEST["paperId"] = $prow->paperId;
+    $_REQUEST["commentId"] = $savedCommentId;
 }
 
 function saveResponse($text) {
@@ -267,335 +255,45 @@ if (isset($_REQUEST["settags"])) {
 }
 
 
+// can we view/edit reviews?
+$viewAny = $Me->canViewReview($prow, null, $Conf, $whyNotView);
+$editAny = $Me->canReview($prow, null, $Conf, $whyNotEdit);
+
+
+// can we see any reviews?
+if (!$viewAny && !$editAny) {
+    if (!$Me->canViewPaper($prow, $Conf, $whyNotPaper))
+	errorMsgExit(whyNotText($whyNotPaper, "view"));
+    if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
+	$Conf->errorMsg("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
+	$Conf->go("paper$ConfSiteSuffix?p=$prow->paperId$linkExtra");
+    }
+}
+
+
 // page header
 confHeader();
 
 
+// mode
+if ($paperTable->mode == "r" || $paperTable->mode == "re")
+    $paperTable->fixReviewMode();
+
+
 // paper table
-$canViewAuthors = $Me->canViewAuthors($prow, $Conf, $forceShow);
-$authorsFolded = (!$canViewAuthors && $Me->privChair && paperBlind($prow) ? 1 : 2);
-$paperTable = new PaperTable(false, false, true, $authorsFolded, "review");
-$paperTable->watchCheckbox = WATCH_COMMENT;
+$paperTable->initialize(false, false, true, "review");
+$paperTable->paptabBegin($prow);
 
+if (!$viewAny && !$editAny
+    && (!$paperTable->rrow
+	|| !$Me->canViewReview($prow, $paperTable->rrow, $Conf, $whyNot))) {
+    $paperTable->paptabEndWithReviewMessage();
 
-// begin table
-$paperTable->echoDivEnter();
-echo "<table class='paper'>\n\n";
-$Conf->tableMsg(2, $paperTable);
+} else if ($paperTable->mode == "r" && !$paperTable->rrow) {
+    $paperTable->paptabEndWithReviews();
 
+} else
+    $paperTable->paptabEndWithEditableReview();
 
-// title
-echo "<tr class='id'>\n  <td class='caption'><h2>#$prow->paperId</h2></td>\n";
-echo "  <td class='entry' colspan='2'><h2>";
-$paperTable->echoTitle($prow);
-echo "<img id='foldsession.paper9' alt='' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldreviewp&amp;val=", defval($_SESSION, "foldreviewp", 1), "&amp;cache=1' width='1' height='1' />";
-echo "</h2></td>\n</tr>\n\n";
-
-
-// paper body
-$paperTable->echoPaperRow($prow, PaperTable::STATUS_CONFLICTINFO_PC);
-if ($canViewAuthors || $Me->privChair) {
-    $paperTable->echoAuthorInformation($prow);
-    $paperTable->echoContactAuthor($prow);
-    $paperTable->echoCollaborators($prow);
-}
-$paperTable->echoAbstractRow($prow);
-$paperTable->echoTopics($prow);
-$paperTable->echoOptions($prow, $Me->privChair);
-if ($Me->canViewTags($prow, $Conf, $forceShow))
-    $paperTable->echoTags($prow, "${ConfSiteBase}comment$ConfSiteSuffix?p=$prow->paperId$linkExtra");
-if ($Me->privChair)
-    $paperTable->echoPCConflicts($prow, true);
-if ($crow)
-    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'><a href='comment$ConfSiteSuffix?p=$prow->paperId$linkExtra'>All comments</a></td>\n</tr>\n\n";
-if ($Me->privChair && $prow->conflictType > 0 && !$forceShow) {
-    $a = "<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">";
-    echo "<tr>\n  <td class='caption'></td>\n  <td class='entry'>", $a, $Conf->cacheableImage("override24.png", "[Override]", null, "dlimg"), "</a>&nbsp;", $a, "Override conflict</a> to see all comments and allow editing</a><div class='g'></div></td>\n</tr>\n\n";
-}
-
-
-// exit on certain errors
-if (!$Me->canViewComment($prow, $crow, $Conf, $whyNot))
-    errorMsgExit(whyNotText($whyNot, "comment"));
-if ($Me->privChair && $prow->conflictType > 0 && !$Me->canViewComment($prow, $crow, $Conf, $fakeWhyNot, true))
-    $Conf->infoMsg("You have explicitly overridden your conflict and are able to view and edit comments for this paper.");
-
-// close table 
-echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n";
-echo "</table>";
-$paperTable->echoDivExit();
-$Conf->tableMsg(0);
-
-
-
-// review information
-// XXX reviewer ID
-// XXX "<td class='entry'>", contactHtml($rrow), "</td>"
-
-function commentIdentityTime($prow, $crow, &$sep) {
-    global $Conf, $Me;
-    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
-    if ($crow && $Me->canViewCommentIdentity($prow, $crow, $Conf)) {
-	$blind = ($crow->blind && $crow->forAuthors > 0);
-	echo ($blind ? "[" : ""), "by ", contactHtml($crow);
-	$sep = ($blind ? "]" : "") . $xsep;
-    } else if ($crow && $Me->privChair) {
-	echo "<span id='foldcid$crow->commentId' class='fold4c'>",
-	    foldbutton("cid$crow->commentId", "comment", 4),
-	    " <span class='ellipsis4'><i>Hidden for blind review</i></span>",
-	    "<span class='extension4'>", contactHtml($crow), "</span>",
-	    "</span>";
-	$sep = $xsep;
-    }
-    if ($crow && $crow->timeModified > 0) {
-	echo $sep, $Conf->printableTime($crow->timeModified);
-	$sep = $xsep;
-    }
-}
-
-function commentView($prow, $crow, $editMode) {
-    global $Conf, $ConfSiteSuffix, $Me, $rf, $forceShow, $linkExtra, $useRequest, $anyComment;
-
-    if ($crow && $crow->forAuthors > 1)
-	return responseView($prow, $crow, $editMode);
-    
-    if (!$Me->canViewComment($prow, $crow, $Conf))
-	return;
-    if ($editMode && !$Me->canComment($prow, $crow, $Conf))
-	$editMode = false;
-    $anyComment = true;
-    
-    if ($editMode) {
-	echo "<form action='comment$ConfSiteSuffix?";
-	if ($crow)
-	    echo "c=$crow->commentId";
-	else
-	    echo "p=$prow->paperId";
-	echo "$linkExtra&amp;post=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>\n";
-    }
-
-    echo "<table class='comment'>
-<tr class='id'>
-  <td class='caption'><h3";
-    if ($crow)
-	echo " id='comment$crow->commentId'";
-    if ($editMode)
-	echo " class='editable'";
-    echo ">", ($crow ? "Comment" : "Add Comment"), "</h3></td>
-  <td class='entry'>";
-    $sep = "";
-    commentIdentityTime($prow, $crow, $sep);
-    if (!$crow || $prow->conflictType >= CONFLICT_AUTHOR)
-	/* do nothing */;
-    else if (!$crow->forAuthors && !$crow->forReviewers)
-	echo $sep, "For PC only";
-    else {
-	echo $sep, "For PC";
-	if ($crow->forReviewers)
-	    echo " + reviewers";
-	if ($crow->forAuthors && $crow->blind)
-	    echo " + authors (anonymous to authors)";
-	else if ($crow->forAuthors)
-	    echo " + authors";
-    }
-    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
-    if ($crow && ($crow->contactId == $Me->contactId || $Me->privChair) && !$editMode)
-	echo $xsep, "<a class='button' href='comment$ConfSiteSuffix?c=$crow->commentId$linkExtra'>Edit</a>";
-    echo "</td>\n</tr>\n\n";
-    
-    if (!$editMode) {
-	echo "<tr>
-  <td class='caption initial final'></td>
-  <td class='entry initial final'>",
-	    htmlWrapText(htmlspecialchars($crow->comment)), "</td>
-</tr>
-</table>\n";
-	return;
-    }
-    
-    // From here on, edit mode.
-    $extraclass = " initial";
-    
-    if ($crow && $crow->contactId != $Me->contactId) {
-	echo "<tr class='rev_rev'>
-  <td class='caption$extraclass'></td>
-  <td class='entry$extraclass'>";
-	$Conf->infoMsg("You didn't write this comment, but as an administrator you can still make changes.");
-	echo "</td>\n</tr>\n\n";
-	$extraclass = "";
-    }
-
-    // form body
-    echo "<tr>
-  <td class='caption$extraclass'></td>
-  <td class='entry$extraclass'><textarea name='comment' rows='10' cols='80' onchange='hiliter(this)'>";
-    if ($useRequest)
-	echo htmlspecialchars(defval($_REQUEST, 'comment'));
-    else if ($crow)
-	echo htmlspecialchars($crow->comment);
-    echo "</textarea></td>
-</tr>
-
-<tr>
-  <td class='caption'>Visibility</td>
-  <td class='entry'>For PC and: <input type='checkbox' name='forReviewers' value='1'";
-    if (($useRequest && defval($_REQUEST, 'forReviewers'))
-	|| (!$useRequest && $crow && $crow->forReviewers)
-	|| (!$useRequest && !$crow && $Conf->setting("extrev_view") > 0))
-	echo " checked='checked'";
-    echo " onchange='hiliter(this)' />&nbsp;Reviewers &nbsp;
-    <input type='checkbox' name='forAuthors' value='1'";
-    if ($useRequest ? defval($_REQUEST, 'forAuthors') : ($crow && $crow->forAuthors))
-	echo " checked='checked'";
-    echo " onchange='hiliter(this)' />&nbsp;Authors\n";
-
-    // blind?
-    if ($Conf->blindReview() == 1) {
-	echo "<span class='lgsep'></span><input type='checkbox' name='blind' value='1'";
-	if ($useRequest ? defval($_REQUEST, 'blind') : (!$crow || $crow->blind))
-	    echo " checked='checked'";
-	echo " onchange='hiliter(this)' />&nbsp;Anonymous to authors\n";
-    }
-    
-    echo "  </td>
-</tr>\n\n";
-
-    // review actions
-    if (1) {
-	echo "<tr class='rev_actions'>
-  <td class='caption final'></td>
-  <td class='entry final'><div class='aa'><table class='pt_buttons'>
-    <tr>\n";
-	echo "      <td class='ptb_button'><input class='bb' type='submit' value='Save' name='submit' /></td>\n";
-	if ($crow)
-	    echo "      <td class='ptb_button'><input class='b' type='submit' value='Delete comment' name='delete' /></td>\n";
-	echo "    </tr>\n  </table></div>\n";
-	if (!$Me->timeReview($prow, null, $Conf))
-	    echo "<div class='g'></div>",
-		"<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
-	echo "</td>\n</tr>\n\n";
-    }
-
-    echo "</table>\n</div></form>\n\n";
-}
-
-
-function responseView($prow, $crow, $editMode) {
-    global $Conf, $ConfSiteSuffix, $Me, $rf, $forceShow, $linkExtra, $useRequest, $sawResponse;
-
-    if ($editMode && !$Me->canRespond($prow, $crow, $Conf))
-	$editMode = false;
-    $sawResponse = true;
-    $wordlimit = $Conf->setting("resp_words", 0);
-    
-    if ($editMode) {
-	echo "<form action='comment$ConfSiteSuffix?";
-	if ($crow)
-	    echo "c=$crow->commentId";
-	else
-	    echo "p=$prow->paperId";
-	echo "$linkExtra&amp;response=1&amp;post=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>\n";
-    }
-
-    echo "<table class='comment'>
-<tr class='id'>
-  <td class='caption'><h3";
-    if ($crow)
-	echo " id='comment$crow->commentId'";
-    if ($editMode)
-	echo " class='editable'";
-    echo ">", ($crow ? "Response" : "Add Response"), "</h3></td>
-  <td class='entry'>";
-    $sep = "";
-    commentIdentityTime($prow, $crow, $sep);
-    if ($crow && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair)
-	&& !$editMode && $Me->canRespond($prow, $crow, $Conf))
-	echo $sep, "<a class='button' href='comment$ConfSiteSuffix?c=$crow->commentId$linkExtra'>Edit</a>";
-    echo "</td>\n</tr>\n\n";
-
-    if (!$editMode) {
-	echo "<tr>
-  <td class='caption initial final'></td>
-  <td class='entry initial final'>";
-	if ($Me->privChair && $crow->forReviewers < 1)
-	    echo "<i>The <a href='comment$ConfSiteSuffix?c=$crow->commentId$linkExtra'>authors' response</a> is not yet ready for reviewers to view.</i>";
-	else if (!$Me->canViewComment($prow, $crow, $Conf))
-	    echo "<i>The authors' response is not yet ready for reviewers to view.</i>";
-	else
-	    echo htmlWrapText(htmlspecialchars($crow->comment));
-	echo "</td>
-</tr>
-</table>\n";
-	return;
-    }
-
-    // From here on, edit mode.
-    $extraclass = " initial";
-    
-    // form body
-    echo "<tr>
-  <td class='caption$extraclass'></td>
-  <td class='entry$extraclass'>";
-
-    $limittext = ($wordlimit ? ": the conference system will enforce a limit of $wordlimit words" : "");
-    $Conf->infoMsg("The authors' response is a mechanism to address
-reviewer concerns and correct misunderstandings.
-The response should be addressed to the program committee, who
-will consider it when making their decision.  Don't try to
-augment the paper's content or form&mdash;the conference deadline
-has passed.  Please keep the response short and to the point" . $limittext . ".");
-    if ($prow->conflictType < CONFLICT_AUTHOR)
-	$Conf->infoMsg("Although you aren't a contact author for this paper, as an administrator you can edit the authors' response.");
-    
-    echo "<textarea name='comment' rows='10' cols='80' onchange='hiliter(this)'>";
-    if ($crow)
-	echo htmlspecialchars($crow->comment);
-    echo "</textarea></td>
-</tr>\n\n";
-
-    // review actions
-    if (1) {
-	echo "<tr>
-  <td class='caption'></td>
-  <td class='entry'><input type='checkbox' name='forReviewers' value='1' ";
-	if (!$crow || $crow->forReviewers > 0)
-	    echo "checked='checked' ";
-	echo "onchange='hiliter(this)' />&nbsp;The response is ready for reviewers to view.</td>
-</tr><tr class='rev_actions'>
-  <td class='caption final'></td>
-  <td class='entry final'><div class='aa'><table class='pt_buttons'>
-    <tr>\n";
-	echo "      <td class='ptb_button'><input class='bb' type='submit' value='Save' name='submit' /></td>\n";
-	if ($crow)
-	    echo "      <td class='ptb_button'><input class='b' type='submit' value='Delete response' name='delete' /></td>\n";
-	echo "    </tr>\n  </table></div>";
-	if (!$Conf->timeAuthorRespond())
-	    echo "<div class='g'></div>",
-		"<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
-	echo "</td>\n</tr>\n\n";
-    }
-
-    echo "<tr class='last'><td class='caption'></td></tr>\n";
-    echo "</table>\n</div></form>\n\n";
-}
-
-
-if ($crow)
-    commentView($prow, $crow, true);
-else {
-    $anyComment = false;
-    foreach ($crows as $cr)
-	commentView($prow, $cr, $cr->forAuthors > 1 && $prow->conflictType >= CONFLICT_AUTHOR);
-    if ($Me->canComment($prow, null, $Conf))
-	commentView($prow, null, true);
-    if (!$sawResponse && $Conf->timeAuthorRespond()
-	&& ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair))
-	responseView($prow, null, true);
-    if (!$anyComment && !$sawResponse) {
-	echo "<table class='comment'><tr class='id'><td></td></tr></table>\n";
-	$Conf->infoMsg("No comments are available for this paper." . ($Me->privChair ? "  As administrator, you may <a href='" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "'>override your conflict</a> to enter a comment yourself." : ""));
-    }
-}
-
-
+echo foldsessionpixel("paper9", "foldpaperp"), foldsessionpixel("paper5", "foldpapert"), foldsessionpixel("paper6", "foldpaperb");
 $Conf->footer();

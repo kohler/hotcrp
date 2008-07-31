@@ -118,7 +118,7 @@ function noBadPair($pc, $pid) {
 }
 
 function doAssign() {
-    global $Conf, $ConfSiteBase, $ConfSiteSuffix, $papersel, $assignments, $assignprefs, $badpairs;
+    global $Conf, $ConfSiteSuffix, $papersel, $assignments, $assignprefs, $badpairs;
 
     // check request
     if (!checkRequest($atype, $reviewtype, false))
@@ -279,8 +279,8 @@ function doAssign() {
     if ($badpids) {
 	$b = array();
 	foreach ($badpids as $pid)
-	    $b[] = "<a href='${ConfSiteBase}paper$ConfSiteSuffix?p=$pid'>$pid</a>";
-	$Conf->warnMsg("I wasn't able to complete the assignment, probably because of some conflicts in the PC members you selected.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . " (<a href='${ConfSiteBase}search$ConfSiteSuffix?q=" . join("+", $badpids) . "'>list them all</a>).");
+	    $b[] = "<a href='paper$ConfSiteSuffix?p=$pid'>$pid</a>";
+	$Conf->warnMsg("I wasn't able to complete the assignment, probably because of some conflicts in the PC members you selected.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . " (<a href='search$ConfSiteSuffix?q=" . join("+", $badpids) . "'>list them all</a>).");
     }
     if (count($assignments) == 0) {
 	$Conf->warnMsg("Nothing to assign.");
@@ -406,15 +406,15 @@ function tdClass($entry, $name, $extraclass="") {
 // Help list
 echo "<div class='helpside'><div class='helpinside'>
 Assignment methods:
-<ul><li><a href='${ConfSiteBase}autoassign$ConfSiteSuffix' class='q'><strong>Automatic</strong></a></li>
- <li><a href='${ConfSiteBase}manualassign$ConfSiteSuffix'>Manual by PC member</a></li>
- <li><a href='${ConfSiteBase}assign$ConfSiteSuffix'>Manual by paper</a></li>
- <li><a href='${ConfSiteBase}bulkassign$ConfSiteSuffix'>Offline (bulk upload)</a></li>
+<ul><li><a href='autoassign$ConfSiteSuffix' class='q'><strong>Automatic</strong></a></li>
+ <li><a href='manualassign$ConfSiteSuffix'>Manual by PC member</a></li>
+ <li><a href='assign$ConfSiteSuffix'>Manual by paper</a></li>
+ <li><a href='bulkassign$ConfSiteSuffix'>Offline (bulk upload)</a></li>
 </ul>
 <hr class='hr' />
 Types of PC assignment:
-<dl><dt><img src='${ConfSiteBase}images/ass", REVIEW_PRIMARY, ".gif' alt='Primary' /> Primary</dt><dd>Expected to review the paper themselves</dd>
-  <dt><img src='${ConfSiteBase}images/ass", REVIEW_SECONDARY, ".gif' alt='Secondary' /> Secondary</dt><dd>May delegate to external reviewers</dd></dl>
+<dl><dt><img src='images/ass", REVIEW_PRIMARY, ".gif' alt='Primary' /> Primary</dt><dd>Expected to review the paper themselves</dd>
+  <dt><img src='images/ass", REVIEW_SECONDARY, ".gif' alt='Secondary' /> Secondary</dt><dd>May delegate to external reviewers</dd></dl>
 </div></div>\n";
 
 
@@ -545,7 +545,7 @@ if (!$rev_roundtag)
 echo "<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"",
     htmlspecialchars($rev_roundtag),
     "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
-    " &nbsp;<a class='hint' href='${ConfSiteBase}help$ConfSiteSuffix?t=revround'>What is this?</a>
+    " &nbsp;<a class='hint' href='help$ConfSiteSuffix?t=revround'>What is this?</a>
 <hr class='hr' /></td></tr>\n";
 
 echo "<tr><td class='caption'></td>", tdClass(true, "prefconflict");

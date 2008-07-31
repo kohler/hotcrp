@@ -211,7 +211,7 @@ if (isset($_REQUEST["redirect"]))
 
 echo "<table id='foldpass' class='form foldc'>
 <tr>
-  <td class='caption'>Contact information</td>
+  <td class='caption initial'>Contact information</td>
   <td class='entry'><div class='f-contain'>
 
 <div class='f-i'>

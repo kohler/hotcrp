@@ -257,14 +257,14 @@ if ($pl->headerInfo["abstracts"]) {
     echo "<input type='checkbox' name='showabstract' value='1'";
     if (defval($_SESSION, "foldplabstract", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<img id='foldsession.pl5' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldplabstract&amp;val=", defval($_SESSION, "foldplabstract", 1), "&amp;cache=1' width='1' height='1' alt='' /><br /><div id='abstractloadformresult'></div>\n";
+    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<img id='foldsession.pl5' src='sessionvar$ConfSiteSuffix?var=foldplabstract&amp;val=", defval($_SESSION, "foldplabstract", 1), "&amp;cache=1' width='1' height='1' alt='' /><br /><div id='abstractloadformresult'></div>\n";
 }
 echo "</td></tr>\n</table></form>"; // </div></div>
 echo "</td></tr></table>\n";
 
 
 // ajax preferences form
-echo "<form id='prefform' method='post' action=\"${ConfSiteBase}paper$ConfSiteSuffix\" enctype='multipart/form-data' accept-charset='UTF-8'><div>",
+echo "<form id='prefform' method='post' action=\"paper$ConfSiteSuffix\" enctype='multipart/form-data' accept-charset='UTF-8'><div>",
     "<input type='hidden' name='p' value='' />",
     "<input type='hidden' name='revpref' value='' />";
 if ($Me->privChair)

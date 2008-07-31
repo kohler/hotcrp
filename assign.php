@@ -8,6 +8,11 @@ require_once("Code/papertable.inc");
 require_once("Code/reviewtable.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
+if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->privChair)
+    $linkExtra = "&amp;forceShow=1";
+else
+    $linkExtra = "";
+$forceShow = "&amp;forceShow=1";
 $_REQUEST["forceShow"] = 1;
 $rf = reviewForm();
 $PC = pcMembers();
@@ -32,15 +37,13 @@ function errorMsgExit($msg) {
 
 // grab paper row
 function getProw() {
-    global $prow, $rrows, $Conf, $Me, $anyPrimary;
-    if (!(($prow = $Conf->paperRow(rcvtint($_REQUEST["paperId"]), $Me->contactId, $whyNot))
-	  && $Me->canRequestReview($prow, $Conf, false, $whyNot)))
+    global $prow, $rrows, $Conf, $Me;
+    if (!($prow = PaperTable::paperRow($whyNot)))
+	errorMsgExit(whyNotText($whyNot, "view"));
+    if (!$Me->canRequestReview($prow, $Conf, false, $whyNot))
 	errorMsgExit(whyNotText($whyNot, "request reviews for"));
+    
     $rrows = $Conf->reviewRow(array('paperId' => $prow->paperId, 'array' => 1), $whyNot);
-    $anyPrimary = false;
-    foreach ($rrows as $rr)
-	if ($rr->reviewType == REVIEW_PRIMARY)
-	    $anyPrimary = true;
 }
 
 function findRrow($contactId) {
@@ -53,12 +56,6 @@ function findRrow($contactId) {
 
 
 // forceShow
-if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->privChair)
-    $forceShow = "&amp;forceShow=1";
-else
-    $forceShow = "";
-$linkExtra = $forceShow;
-maybeSearchPaperId($Me);
 getProw();
 
 
@@ -166,27 +163,9 @@ function pcAssignments() {
     }
 }
 
-function _setLeadOrShepherd($type) {
-    global $Conf, $Me, $prow;
-    $row = ($_REQUEST[$type] === "0" ? null : pcByEmail($_REQUEST[$type]));
-    $contactId = ($row ? $row->contactId : 0);
-    if ($contactId != ($type == "lead" ? $prow->leadContactId : $prow->shepherdContactId)) {
-	$Conf->qe("update Paper set ${type}ContactId=$contactId where paperId=$prow->paperId", "while updating $type");
-	if (!$Conf->setting("paperlead")) {
-	    $Conf->qe("insert into Settings (name, value) values ('paperlead', 1) on duplicate key update value=value");
-	    $Conf->updateSettings();
-	}
-	$Conf->log("set $type to " . $_REQUEST[$type], $Me, $prow->paperId);
-    }
-}
-
 if (isset($_REQUEST['update']) && $Me->privChair) {
     pcAssignments();
     $Conf->qe("unlock tables");
-    if (isset($_REQUEST["lead"]))
-	_setLeadOrShepherd("lead");
-    if (isset($_REQUEST["shepherd"]))
-	_setLeadOrShepherd("shepherd");
     if (defval($_REQUEST, "ajax")) {
 	if ($OK)
 	    $Conf->confirmMsg("Assignments saved.");
@@ -329,16 +308,11 @@ function unassignedAnonymousContact() {
 }
 
 function unassignedReviewToken() {
-    global $rrows;
+    global $Conf;
     while (1) {
 	$token = mt_rand(1, 2000000000);
-	$good = true;
-	foreach ($rrows as $rr)
-	    if ($rr->reviewToken == $token) {
-		$good = false;
-		break;
-	    }
-	if ($good)
+	$result = $Conf->qe("select reviewId from PaperReview where reviewToken=$token", "while checking review token");
+	if (edb_nrows($result) == 0)
 	    return $token;
     }
 }
@@ -454,43 +428,27 @@ if (isset($_REQUEST['addpc']) && $Me->privChair) {
 confHeader();
 
 
-$canViewAuthors = $Me->canViewAuthors($prow, $Conf, true);
-$paperTable = new PaperTable(false, false, true, !$canViewAuthors && $Me->privChair, "assign");
+$paperTable = new PaperTable($prow);
+$paperTable->initialize(false, false, true, "assign");
 
 
 // begin form and table
 echo "<form id='ass' action='assign$ConfSiteSuffix?p=$prow->paperId&amp;post=1$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>";
-$paperTable->echoDivEnter();
-echo "<table class='assign'>\n\n";
+$paperTable->paptabBegin($prow);
 
 
-// title
-echo "<tr class='id'>
-  <td class='caption'><h2>#", $prow->paperId, "</h2></td>
-  <td class='entry' colspan='2'><h2>";
-$paperTable->echoTitle($prow);
-// session folders
-echo "<img id='foldsession.paper9' alt='' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldassignp&amp;val=", defval($_SESSION, "foldassignp", 1), "&amp;cache=1' width='1' height='1' />";
-echo "<img id='foldsession.authors8' alt='' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldassigna&amp;val=", defval($_SESSION, "foldassigna", 1), "&amp;cache=1' width='1' height='1' />";
-echo "</h2>";
-echo "</td>\n</tr>\n\n";
 
+// reviewer information
+$t = reviewTable($prow, $rrows, null, null, "assign");
+$t .= reviewLinks($prow, $rrows, null, null, "assign");
 
-// paper body
-$paperTable->echoPaperRow($prow, PaperTable::STATUS_CONFLICTINFO);
-if ($canViewAuthors || $Me->privChair) {
-    $paperTable->echoAuthorInformation($prow);
-    $paperTable->echoContactAuthor($prow);
-    $paperTable->echoCollaborators($prow);
-}
-$paperTable->echoAbstractRow($prow);
-$paperTable->echoTopics($prow);
-$paperTable->echoOptions($prow, $Me->privChair);
-$paperTable->echoTags($prow);
+if ($t != "")
+    echo "	<tr><td colspan='3' class='papsep'></td></tr>
+	<tr><td></td><td class='papcc'>", $t, "</td><td></td></tr>\n";
 
 
 // PC assignments
-if ($Me->privChair) {
+if ($Me->actChair($prow)) {
     $result = $Conf->qe("select ContactInfo.contactId, firstName, lastName,
 	PaperConflict.conflictType,
 	PaperReview.reviewType,	preference,
@@ -508,9 +466,14 @@ if ($Me->privChair) {
 	$pcx[] = $row;
 
     // PC conflicts row
-    echo "<tr class='pt_conflict_ass'>
-  <td class='caption'>PC assignments<br /><span class='hint'>Any review preferences are in brackets</span></td>
-  <td class='entry'><table class='pcass'><tr><td><table>\n";
+    echo "	<tr><td colspan='3' class='papsep'></td></tr>
+	<tr><td></td><td class='papcc'>",
+	"<div class='papt'><span class='papfn'>PC review assignments</span>",
+	"<div class='clear'></div></div>",
+	"<div class='paphint'>Any review preferences are in brackets.</div>",
+	"<div class='papv'>",
+	"<table class='pcass'><tr><td><table>\n";
+
     $n = intval((count($pcx) + 2) / 3);
     for ($i = 0; $i < count($pcx); $i++) {
 	if (($i % $n) == 0 && $i)
@@ -531,7 +494,7 @@ if ($Me->privChair) {
 	    if ($p->conflictType == 0 && $p->preference)
 		echo " [", htmlspecialchars($p->preference), "]";
 	    echo "</td><td class='ass nowrap'>";
-	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href=\"javascript:foldassign($p->contactId)\"><img alt='Assignment' id='assimg$p->contactId' src=\"${ConfSiteBase}images/ass$cid$extension\" /><img alt='&gt;' src=\"${ConfSiteBase}images/next.png\" /></a>&nbsp;";
+	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href=\"javascript:foldassign($p->contactId)\"><img alt='Assignment' id='assimg$p->contactId' src=\"images/ass$cid$extension\" /><img alt='&gt;' src=\"images/next.png\" /></a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention
 	    echo tagg_select("pcs$p->contactId",
 			     array(0 => "None", REVIEW_PRIMARY => "Primary",
@@ -558,61 +521,14 @@ if ($Me->privChair) {
 	    echo ", ", $numPrimary, " primary";
 	echo "</td></tr>\n";
     }
-    echo "    </table></td></tr>
-  </table></td>\n</tr>\n\n";
+
+    echo "    </table></td></tr></table></div>\n\n",
+	"<div class='aa'>",
+	"<input type='submit' class='bb' name='update' value='Save assignments' />",
+	" &nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />",
+	" <span id='assresult' style='padding-left:1em'></span></div>\n\n",
+	"</td><td></td></tr>\n";
 }
-
-
-// discussion lead
-function _pcSelector($name, $current) {
-    global $PC;
-    $sel_opt = array("0" => "None");
-    foreach ($PC as $row)
-	$sel_opt[htmlspecialchars($row->email)] = contactHtml($row->firstName, $row->lastName);
-    echo tagg_select($name, $sel_opt,
-		     ($current && isset($PC[$current]) ? htmlspecialchars($PC[$current]->email) : "0"),
-		     array("onchange" => "hiliter(this)"));
-}
-
-if ($Me->privChair || ($Me->isPC && $prow->leadContactId && isset($PC[$prow->leadContactId]))) {
-    echo "<tr><td class='caption'>Discussion lead</td><td class='entry'>";
-    if ($Me->privChair)
-	_pcSelector("lead", $prow->leadContactId);
-    else
-	echo contactHtml($PC[$prow->leadContactId]->firstName,
-			 $PC[$prow->leadContactId]->lastName);
-    echo "</td></tr>\n";
-}
-
-
-// shepherd
-if (($prow->outcome > 0 && $Me->privChair)
-    || ($Me->isPC && $prow->shepherdContactId && isset($PC[$prow->shepherdContactId]))) {
-    echo "<tr><td class='caption'>Shepherd</td><td class='entry'>";
-    if ($Me->privChair)
-	_pcSelector("shepherd", $prow->shepherdContactId);
-    else
-	echo contactHtml($PC[$prow->shepherdContactId]->firstName,
-			 $PC[$prow->shepherdContactId]->lastName);
-    echo "</td></tr>\n";
-}
-
-
-// "Save assignments" button
-if ($Me->privChair)
-    echo "<tr><td class='caption'></td><td class='entry'><div class='aa'><input type='submit' class='bb' name='update' value='Save assignments' />
-    &nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />
-    <span id='assresult' style='padding-left:1em'></span></div>
-</td></tr>\n";
-
-
-// reviewer information
-$revTable = reviewTable($prow, $rrows, null, "assign");
-$revTableClass = (preg_match("/<th/", $revTable) ? "rev_reviewers_hdr" : "rev_reviewers");
-echo "<tr class='", $revTableClass, "'>\n";
-echo "  <td class='caption'>Reviews</td>\n";
-echo "  <td class='entry'>", ($revTable ? $revTable : "None"), "</td>
-</tr>\n\n";
 
 
 // outstanding requests
@@ -620,7 +536,12 @@ if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
     $qa = ($Conf->setting("allowPaperOption") >= 7 ? ", reason" : "");
     $result = $Conf->qe("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy$qa from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=$prow->paperId", "while finding outstanding requests");
     if (edb_nrows($result) > 0) {
-	echo "<tr class='rev_reviewers'>\n  <td class='caption'>Proposed reviewers</td>\n  <td class='entry'><table class='reviewers'>\n";
+	echo "	<tr><td colspan='3' class='papsep'></td></tr>
+	<tr><td></td><td class='papcc'>",
+	    "<div class='papt'><span class='papfn'>Proposed reviewers</span>",
+	    "<div class='clear'></div></div>",
+	    "<div class='papv'>",
+	    "<table class='reviewers'>\n";
 	while (($row = edb_orow($result))) {
 	    echo "<tr><td>", htmlspecialchars($row->name), "</td><td>&lt;",
 		"<a href=\"mailto:", urlencode($row->email), "\">",
@@ -629,61 +550,65 @@ if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
 		urlencode($row->name), "&amp;email=", urlencode($row->email);
 	    if (defval($row, "reason", ""))
 		echo "&amp;reason=", htmlspecialchars($row->reason);
-	    echo "&amp;add=1$forceShow\">Approve</a>&nbsp; ",
+	    echo "&amp;add=1\">Approve</a>&nbsp; ",
 		"<a class='button_small' href=\"assign$ConfSiteSuffix?p=$prow->paperId&amp;name=",
 		urlencode($row->name), "&amp;email=", urlencode($row->email),
-		"&amp;deny=1$forceShow\">Deny</a></td></tr>\n",
+		"&amp;deny=1\">Deny</a></td></tr>\n",
 		"<tr><td colspan='3'><small>Requester: ", contactHtml($row->reqFirstName, $row->reqLastName), "</small></td></tr>\n";
 	}
-	echo "</table>\n  </td>\n</tr>\n\n";
+	echo "</table></div>\n\n",
+	    "</td><td></td></tr>\n";
     }
 }
 
 
-// add external reviewers
-echo "<tr>
-  <td class='caption'>External reviews</td>
-  <td class='entry'>";
+echo tagg_cbox("pap", true), "</td></tr></table>\n";
 
-echo "<div class='hint'>Use this form to request an external review.
-External reviewers get access to their assigned papers, including ";
+
+// add external reviewers
+echo "<table class='pbox'><tr>
+  <td class='pboxl'></td>
+  <td class='pboxr'>";
+
+echo tagg_cbox("rev", false), "\t<tr><td></td><td class='revhead'>",
+    "<h3>Request an external review</h3>\n",
+    "<div class='hint'>External reviewers get access to their assigned papers, including ";
 if ($Conf->setting("extrev_view") >= 2)
     echo "the other reviewers' identities and ";
 echo "any eventual decision.  Before requesting an external review,
  you should generally check personally whether they are interested.";
 if ($Me->privChair)
-    echo "\n<p>To create a review with no associated reviewer, leave Name and Email blank.</p>";
-echo "</div>\n";
+    echo "\nTo create a review with no associated reviewer, leave Name and Email blank.";
+echo "</div></td><td></td></tr>
+	<tr><td></td><td class='revcc'>";
 echo "<div class='f-i'><div class='f-ix'>
   <div class='f-c'>Name</div>
   <div class='f-e'><input class='textlite' type='text' name='name' value=\"", htmlspecialchars(defval($_REQUEST, "name", "")), "\" size='32' tabindex='1' /></div>
 </div><div class='f-ix'>
   <div class='f-c'>Email</div>
   <div class='f-e'><input class='textlite' type='text' name='email' value=\"", htmlspecialchars(defval($_REQUEST, "email", "")), "\" size='28' tabindex='1' /></div>
-</div><div class='f-ix'>
-  <div class='f-c'>&nbsp;</div>
-  <div class='f-e'><input class='b' type='submit' name='add' value='Request review' tabindex='2' /></div>
 </div><div class='clear'></div></div>\n\n";
 
 if ($Conf->setting("allowPaperOption") >= 7)
     echo "<div class='f-i'>
   <div class='f-c'>Note to reviewer <span class='f-cx'>(optional)</span></div>
-  <div class='f-e'><input class='textlite' type='text' name='reason' value=\"", htmlspecialchars(defval($_REQUEST, "reason", "")), "\" size='64' tabindex='1' /></div>
+  <div class='f-e'><textarea name='reason' cols='72' rows='2' tabindex='1'>", htmlspecialchars(defval($_REQUEST, "reason", "")), "</textarea></div>
 <div class='clear'></div></div>\n\n";
 
-if ($Me->privChair)
+echo "<div class='f-i'>
+  <input class='b' type='submit' name='add' value='Request review' tabindex='2' /></div>\n\n";
+
+
+if ($Me->actChair($prow))
     echo "<div class='f-i'>
   <input type='checkbox' name='override' value='1' />&nbsp;Override deadlines and any previous refusal
 </div>\n";
 
-echo "    </td>\n</tr>\n\n";
+echo "</td><td></td>\n", tagg_cbox("rev", true),
+    "</td></tr></table>\n";
 
-
-// close this table
-echo "<tr class='last'><td class='caption'></td></tr>\n";
-echo "</table>";
-$paperTable->echoDivExit();
 echo "</div></form>";
 
 
+echo foldsessionpixel("paper9", "foldpaperp"), foldsessionpixel("paper5", "foldpapert"), foldsessionpixel("paper6", "foldpaperb"), foldsessionpixel("paper8", "foldassigna");
 $Conf->footer();

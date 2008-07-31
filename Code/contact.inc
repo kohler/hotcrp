@@ -55,12 +55,15 @@ class Contact {
 	if ($conf == null)
 	    $conf = $Conf;
 	if (!$this->validated && $this->contactId > 0) {
+	    $qr = "";
+	    if (isset($_SESSION["rev_tokens"]))
+		$qr = " or PaperReview.reviewToken in (" . join(", ", $_SESSION["rev_tokens"]) . ")";
 	    $qa = "select max(conflictType),
 		PaperReview.contactId as reviewer,
 		max(PaperReview.reviewNeedsSubmit) as reviewNeedsSubmit,
 		count(ExtPaperReview.requestedBy) as requester";
-	    $qb = "left join PaperReview using (contactId)
-		left join PaperConflict using (contactId)
+	    $qb = "left join PaperReview on (PaperReview.contactId=ContactInfo.contactId$qr)
+		left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId)
 		left join PaperReview as ExtPaperReview on (ExtPaperReview.requestedBy=ContactInfo.contactId)";
 	    if ($conf->setting("allowPaperOption") >= 6)
 		$qa .= ",
@@ -75,7 +78,7 @@ class Contact {
 		left join ChairAssistant on (ChairAssistant.contactId=ContactInfo.contactId)
 		left join Chair on (Chair.contactId=ContactInfo.contactId)";
 	    }
-	    $result = $conf->q("$qa from ContactInfo $qb where ContactInfo.contactId=$this->contactId group by ContactInfo.contactId");
+	    $result = $conf->qe("$qa from ContactInfo $qb where ContactInfo.contactId=$this->contactId group by ContactInfo.contactId");
 	    if (edb_nrows($result) == 0)
 		$this->invalidate();
 	    else {
@@ -187,16 +190,15 @@ class Contact {
     }
 
     function goIfInvalid() {
-	global $ConfSiteBase, $ConfSiteSuffix;
+	global $ConfSiteSuffix;
 	if (!$this->valid()) {
-	    require_once("review.inc");
 	    $x = array("afterLogin" => 1, "blind" => 1);
 	    $rf = reviewForm();
 	    foreach ($rf->reviewFields as $k => $v)
 		if (isset($_REQUEST[$k]))
 		    $x[$k] = $_REQUEST[$k];
 	    $_SESSION["afterLogin"] = selfHref($x);
-	    $this->goAlert("${ConfSiteBase}index$ConfSiteSuffix", "You have invalid credentials and need to sign in.");
+	    $this->goAlert("index$ConfSiteSuffix", "You have invalid credentials and need to sign in.");
 	}
     }
 
@@ -375,6 +377,11 @@ class Contact {
 	if ($this->privChair)
 	    $whyNot["override"] = 1;
 	return false;
+    }
+
+    function canEditPaper($prow, $conf, &$whyNot = null) {
+	return ($prow->conflictType >= CONFLICT_AUTHOR
+		|| $this->privChair);
     }
     
     function canUpdatePaper($prow, $conf, &$whyNot = null) {
@@ -623,28 +630,30 @@ class Contact {
 	return false;
     }
 
+    function ownReview($rrow) {
+	return $rrow->contactId == $this->contactId
+	    || (isset($_SESSION["rev_tokens"]) && array_search($rrow->reviewToken, $_SESSION["rev_tokens"]) !== false);
+    }
+
     function canReview($prow, $rrow, $conf, &$whyNot = null, $submit = false) {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
+	assert(!$rrow || $rrow->paperId == $prow->paperId);
 	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
-	$myReview = $prow->myReviewType > 0
-	    || ($rrow && isset($prow->myReviewId)
-		&& $prow->myReviewId == $rrow->reviewId)
-	    || ($this->privChair && $rrow && $rrow->contactId != $this->contactId);
+	$manager = $this->actChair($prow);
+	if ($rrow)
+	    $myReview = $manager || $this->ownReview($rrow);
+	else
+	    $myReview = $prow->myReviewType > 0;
 	// policy
-	if (($prow->timeSubmitted > 0 || $prow->myReviewType > 0
-	     || ($this->privChair && $forceShow))
-	    && (($this->privChair && ($forceShow || $prow->conflictType == 0))
-		|| ($this->isPC && $prow->conflictType == 0)
+	if (($prow->timeSubmitted > 0 || $myReview
+	     || ($manager && $forceShow))
+	    && (($this->isPC && $prow->conflictType == 0 && !$rrow)
 		|| $myReview)
 	    && ($conf->timeReviewPaper($this->isPC, $myReview, true)
 		|| $this->privChairOverride()
-		|| ($this->privChair && !$submit))
-	    && (!$rrow
-		|| $rrow->contactId == $this->contactId
-		|| (isset($prow->myReviewId) && $prow->myReviewId == $rrow->reviewId)
-		|| $this->privChair))
+		|| ($manager && !$submit)))
 	    return true;
 	// collect failure reasons
 	if ($rrow && $rrow->contactId != $this->contactId && !$this->privChair)
@@ -674,6 +683,19 @@ class Contact {
 
     function canSubmitReview($prow, $rrow, $conf, &$whyNot = null) {
 	return $this->canReview($prow, $rrow, $conf, $whyNot, true);
+    }
+
+    function canRateReview($prow, $rrow, $conf) {
+	if ($conf->setting("allowPaperOption") < 12)
+	    return false;
+	$rs = $conf->setting("rev_ratings");
+	if ($rs == REV_RATINGS_PC)
+	    return $this->actPC($prow);
+	else if ($rs == REV_RATINGS_PC_EXTERNAL)
+	    return $this->actPC($prow)
+		|| ($prow->conflictType <= 0 && $prow->myReviewType > 0);
+	else
+	    return false;
     }
 
 
@@ -820,7 +842,7 @@ class Contact {
 	    return $prow->leadContactId == $this->contactId;
     }
 
-    function canManagePaper($prow) {
+    function canEditContactAuthors($prow) {
 	return ($prow->conflictType >= CONFLICT_AUTHOR || $this->privChair);
     }
     
@@ -841,8 +863,7 @@ class Contact {
 	    $rrow_contactId = $rrow->contactId;
 	if (($this->privChair && $forceShow)
 	    || ($rrow && $rrow_contactId == $this->contactId)
-	    || ($rrow && isset($prow->myReviewId)
-		&& $prow->myReviewId == $rrow->reviewId)
+	    || ($rrow && $this->ownReview($rrow))
 	    || ($this->privChair && $prow && $prow->conflictType == 0)
 	    || ($this->isPC && $prow && $prow->conflictType == 0
 		&& $conf->setting("pc_seeallrev") != 2)
@@ -854,7 +875,7 @@ class Contact {
 	    return true;
 	return false;
     }
-    
+
     function canViewCommentIdentity($prow, $crow, $conf, $ignoreForceShow = false) {
 	if ($crow && $crow->forAuthors > 1)
 	    return $this->canViewAuthors($prow, $conf, false);
@@ -947,6 +968,19 @@ class Contact {
 	return ($this->isPC
 		&& (!$prow || $prow->conflictType <= 0
 		    || ($this->privChair && $forceShow)));
+    }
+
+    function actChair($prow, $forceShow = false) {
+	return ($this->privChair
+		&& (!$prow || $prow->conflictType <= 0
+		    || $forceShow || defval($_REQUEST, "forceShow")));
+    }
+
+    function actPC($prow) {
+	return ($this->isPC
+		&& (!$prow
+		    || $prow->conflictType <= 0
+		    || ($this->privChair && defval($_REQUEST, "forceShow"))));
     }
 
     function canSetOutcome($prow) {

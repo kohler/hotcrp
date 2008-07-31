@@ -70,6 +70,10 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table OptionType add `optionValues` text NOT NULL default ''")
 	&& $Conf->q("update Settings set value=14 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 14;
+    if ($Conf->settings["allowPaperOption"] == 14
+	&& $Conf->q("insert ignore into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0")
+	&& $Conf->q("update Settings set value=15 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 15;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

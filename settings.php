@@ -779,7 +779,7 @@ function doActionArea() {
 
 // Accounts
 function doAccGroup() {
-    global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Me, $belowHr;
+    global $Conf, $ConfSiteSuffix, $Me, $belowHr;
 
     if ($Conf->setting("allowPaperOption") >= 5)
 	doCheckbox("acct_addr", "Collect users' addresses and phone numbers");
@@ -788,15 +788,15 @@ function doAccGroup() {
 
     echo "<hr class='hr' /><h3>Program committee &amp; system administrators</h3>";
 
-    echo "<p><a href='${ConfSiteBase}account$ConfSiteSuffix?new=1' class='button'>Create account</a> &nbsp;|&nbsp; ",
+    echo "<p><a href='account$ConfSiteSuffix?new=1' class='button'>Create account</a> &nbsp;|&nbsp; ",
 	"Select a user's name to edit a profile or change PC/administrator status.</p>\n";
     $pl = new ContactList(false);
-    echo $pl->text("pcadminx", $Me, "${ConfSiteBase}contacts$ConfSiteSuffix?t=pcadmin");
+    echo $pl->text("pcadminx", $Me, "contacts$ConfSiteSuffix?t=pcadmin");
 }
 
 // Messages
 function doMsgGroup() {
-    global $Conf, $ConfSiteBase, $ConfSiteSuffix;
+    global $Conf, $ConfSiteSuffix;
 
     echo "<strong>", decorateSettingName("homemsg", "Home page message"), "</strong> (HTML allowed)<br />
 <textarea class='textlite' name='homemsg' cols='60' rows='10' onchange='hiliter(this)'>", htmlspecialchars(settingText("homemsg", "")), "</textarea>";
@@ -808,7 +808,7 @@ function doMsgGroup() {
 
 // Submissions
 function doSubGroup() {
-    global $Conf, $ConfSiteBase;
+    global $Conf;
 
     doCheckbox('sub_open', '<b>Open site for submissions</b>');
 
@@ -927,7 +927,7 @@ function doOptGroup() {
 
 // Reviews
 function doRevGroup() {
-    global $Conf, $Error, $ConfSiteBase, $ConfSiteSuffix, $DateExplanation;
+    global $Conf, $Error, $ConfSiteSuffix, $DateExplanation;
 
     doCheckbox('rev_open', '<b>Open site for reviewing</b>');
     doCheckbox('cmt_always', 'Allow comments even if reviewing is closed');
@@ -952,7 +952,7 @@ function doRevGroup() {
     doDateRow("pcrev_hard", array("Hard deadline", "Reviews are due by the deadline and cannot be changed after the hard deadline.  You may set either or both.<br />$date_text"));
     if (!($rev_roundtag = settingText("rev_roundtag")))
 	$rev_roundtag = "(None)";
-    doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments by default.  Examples: &ldquo;R1&rdquo;, &ldquo;R2&rdquo; &nbsp;<span class='barsep'>|</span>&nbsp; <a href='${ConfSiteBase}help$ConfSiteSuffix?t=revround'>What is this?</a>"), $rev_roundtag, 15, "lcaption", "(None)");
+    doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments by default.  Examples: &ldquo;R1&rdquo;, &ldquo;R2&rdquo; &nbsp;<span class='barsep'>|</span>&nbsp; <a href='help$ConfSiteSuffix?t=revround'>What is this?</a>"), $rev_roundtag, 15, "lcaption", "(None)");
     echo "</table>\n";
 
     echo "<div class='g'></div>\n";
@@ -986,7 +986,7 @@ function doRevGroup() {
     $t = expandMailTemplate("requestreview", false);
     echo "<div id='foldmailbody_requestreview' class='foldc'>", foldbutton("mailbody_requestreview", ""), "
   <a href=\"javascript:fold('mailbody_requestreview', 0)\" class='unfolder q'><strong>Mail template for external review requests</strong></a>\n";
-    echo "  <span class='extension'><strong>Mail template for external review requests</strong> (<a href='${ConfSiteBase}mail$ConfSiteSuffix'>keywords</a> allowed)<br /></span>
+    echo "  <span class='extension'><strong>Mail template for external review requests</strong> (<a href='mail$ConfSiteSuffix'>keywords</a> allowed)<br /></span>
 <textarea class='tt extension' name='mailbody_requestreview' cols='80' rows='20' onchange='hiliter(this)'>", htmlspecialchars($t[1]), "</textarea></div>\n";
 
     echo "<hr class='hr' />";
@@ -1075,7 +1075,7 @@ $belowHr = true;
 
 echo "<form method='post' action='settings$ConfSiteSuffix?post=1' enctype='multipart/form-data' accept-charset='UTF-8'><div><input type='hidden' name='group' value='$Group' />\n";
 
-echo "<table class='settings'><tr><td class='caption final'>";
+echo "<table class='settings'><tr><td class='caption initial final'>";
 echo "<table class='lhsel'>";
 foreach (array("acc" => "Accounts",
 	       "msg" => "Messages",

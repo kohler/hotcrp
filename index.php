@@ -28,6 +28,8 @@ if (isset($_REQUEST["signin"]) || isset($_REQUEST["signout"])) {
     unset($_SESSION["foldplabstract"]);
     unset($_SESSION["foldpltags"]);
     unset($_SESSION["info"]);
+    unset($_SESSION["rev_tokens"]);
+    unset($_SESSION["rev_token_fail"]);
 }
 
 function doCreateAccount() {
@@ -176,6 +178,31 @@ if ($Me->valid() && (($_SESSION["AskedYouToUpdateContactInfo"] < 2
 
 if ($Me->privChair && $Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
     $Conf->warnMsg("The systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP's preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users will likely be booted off the system earlier than you expect.");
+
+// review tokens
+if (isset($_REQUEST["token"]) && $Me->valid() && $Conf->setting("allowPaperOption") >= 13) {
+    foreach (preg_split('/\s+/', $_REQUEST["token"]) as $x)
+	if ($x == "")
+	    /* no complaints */;
+	else if (!($token = decodeToken($x)))
+	    $Conf->errorMsg("Invalid review token &ldquo;" . htmlspecialchars($token) . ".&rdquo;  Check your typing and try again.");
+	else if (defval($_SESSION, "rev_token_fail", 0) >= 5)
+	    $Conf->errorMsg("Too many failed attempts to use a review token.  <a href='index$ConfSiteSuffix?signout=1'>Sign out</a> and in to try again.");
+	else {
+	    $result = $Conf->qe("select paperId from PaperReview where reviewToken=$token", "while searching for review token");
+	    if (($row = edb_row($result))) {
+		$Conf->infoMsg("Review token &ldquo;" . htmlspecialchars($x) . "&rdquo; lets you review paper #" . $row[0] . ".");
+		if (!isset($_SESSION["rev_tokens"]) || array_search($token, $_SESSION["rev_tokens"]) === false)
+		    $_SESSION["rev_tokens"][] = $token;
+		$Me->isReviewer = true;
+	    } else {
+		$Conf->errorMsg("Review token &ldquo;" . htmlspecialchars($x) . "&rdquo; hasn't been assigned.");
+		$_SESSION["rev_token_fail"] = defval($_SESSION, "rev_token_fail", 0) + 1;
+	    }
+	}
+}
+if (isset($_REQUEST["cleartokens"]) && $Me->valid())
+    unset($_SESSION["rev_tokens"]);
 
 
 $Conf->header("Home", "home", actionBar(null, false, ""));
@@ -327,6 +354,32 @@ if ($homelist) {
 }
 
 
+// Review token printing
+function reviewTokenGroup() {
+    global $reviewTokenGroupPrinted, $ConfSiteSuffix;
+    if ($reviewTokenGroupPrinted)
+	return;
+    
+    echo "<div class='homegrp' id='homerev'>\n";
+
+    echo "  <h4>Review tokens: &nbsp;</h4> ",
+	"<form method='get' action='index$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>",
+	"<input class='textlite' type='text' name='token' size='15' value='' />",
+	" &nbsp;<input class='b' type='submit' value='Save' />",
+	"<div class='hint'>If you have been given a review token, enter it here to gain access to the corresponding review.";
+    if (isset($_SESSION["rev_tokens"])) {
+	$t = array();
+	foreach ($_SESSION["rev_tokens"] as $tt)
+	    $t[] = encodeToken($tt);
+	echo "<br />Current ", pluralx(count($t), "token"), ": ", textArrayJoin($t), ".";
+    }
+    echo "</div></div></form>\n";
+
+    echo "<hr class='home' /></div>\n";
+    $reviewTokenGroupPrinted = true;
+}
+
+
 // Review assignment
 if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     echo "<div class='homegrp' id='homerev'>\n";
@@ -425,7 +478,11 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    echo "<div class='extension'><div class='g'></div>", $ptext, "</div>";
     }
 
-    echo "<hr class='home' /></div>\n";
+    if ($Conf->setting("rev_tokens")) {
+	echo "</div>\n";
+	reviewTokenGroup();
+    } else
+	echo "<hr class='home' /></div>\n";
 }
 
 
@@ -488,6 +545,11 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 
     echo "<hr class='home' /></div>\n";
 }
+
+
+// Review tokens
+if ($Me->valid() && $Conf->setting("rev_tokens"))
+    reviewTokenGroup();
 
 
 echo "<div class='clear'></div>\n";

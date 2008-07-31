@@ -95,7 +95,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-	if ($this->settings["allowPaperOption"] < 14) {
+	if ($this->settings["allowPaperOption"] < 15) {
 	    require_once("updateschema.inc");
 	    updateSchema($this);
 	}
@@ -765,7 +765,6 @@ class Conference {
 		ReviewerContactInfo.email as reviewEmail,
 		ReviewerContactInfo.lastLogin as reviewLastLogin";
 	if ($reviewerQuery || $scoresQuery) {
-	    require_once('review.inc');
 	    $rf = reviewForm();
 	    foreach ($rf->fieldOrder as $k)
 		if (!$scoresQuery || $rf->reviewFields[$k])
@@ -837,18 +836,21 @@ class Conference {
 	
 	$pq .= "		left join PaperReview as AllReviews on (AllReviews.paperId=Paper.paperId)\n";
 
+	$qr = "";
+	if (isset($_SESSION["rev_tokens"]))
+	    $qr = " or PaperReview.reviewToken in (" . join(", ", $_SESSION["rev_tokens"]) . ")";
 	if (isset($options['myReviewRequests']))
 	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.requestedBy=$reviewContactId and PaperReview.reviewType=" . REVIEW_EXTERNAL . ")\n";
 	else if (isset($options['myReviews']))
-	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$reviewContactId)\n";
+	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$reviewContactId$qr))\n";
 	else if (isset($options['myOutstandingReviews']))
-	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$reviewContactId and PaperReview.reviewNeedsSubmit!=0)\n";
+	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$reviewContactId$qr) and PaperReview.reviewNeedsSubmit!=0)\n";
 	else if (isset($options['myReviewsOpt']))
-	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$reviewContactId)\n";
+	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$reviewContactId$qr))\n";
 	else if (isset($options['allReviews']) || isset($options['allReviewScores']))
 	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
 	else if (!isset($options['author']))
-	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$reviewContactId)\n";
+	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$reviewContactId$qr))\n";
 	if ($allReviewerQuery)
 	    $pq .= "		left join PaperReview as MyPaperReview on (MyPaperReview.paperId=Paper.paperId and MyPaperReview.contactId=$reviewContactId)\n";
 	if (isset($options['allComments']))
@@ -1236,32 +1238,34 @@ class Conference {
 	$this->scriptStuff = "";
     }
 
-    function ajaxExit($others = null, $div = false) {
+    function ajaxExit($values = null, $div = false) {
+	if (!$values)
+	    $values = array();
 	$t = "";
-	if (!$others)
-	    $others = array();
-	if (isset($_SESSION["msgs"])) {
-	    foreach ($_SESSION["msgs"] as $msg)
-		if (preg_match('|\A<div class="(.*?)">([\s\S]*)</div>\s*\Z|', $msg, $m)) {
-		    if ($m[1] == "merror" && !isset($others["error"]))
-			$others["error"] = $m[2];
-		    if ($div)
-			$t .= "<div class=\"x$m[1]\">$m[2]</div>\n";
-		    else
-			$t .= "<span class=\"$m[1]\">$m[2]</span>\n";
-		}
-	    unset($_SESSION["msgs"]);
-	}
+	foreach (defval($_SESSION, "msgs", array()) as $msg)
+	    if (preg_match('|\A<div class="(.*?)">([\s\S]*)</div>\s*\Z|', $msg, $m)) {
+		if ($m[1] == "merror" && !isset($values["error"]))
+		    $values["error"] = $m[2];
+		if ($div)
+		    $t .= "<div class=\"x$m[1]\">$m[2]</div>\n";
+		else
+		    $t .= "<span class=\"$m[1]\">$m[2]</span>\n";
+	    }
+	if (!isset($values["response"]))
+	    $values["response"] = $t;
+	unset($_SESSION["msgs"]);
 	header("Content-Type: text/json");
-	echo "({ \"response\": \"", addcslashes($t, "\r\n\"\\"), "\"";
-	foreach ($others as $name => $value) {
-	    echo ",\n\"", $name, "\": ";
+	echo "({ ";
+	$sep = "";
+	foreach ($values as $name => $value) {
+	    echo $sep, "\"", $name, "\": ";
 	    if ($value === null || $value === 0 || $value === false)
 		echo "0";
 	    else if ($value === true || $value === 1)
 		echo "1";
 	    else
 		echo "\"", addcslashes($value, "\r\n\"\\"), "\"";
+	    $sep = ", ";
 	}
 	echo " })";
 	exit;

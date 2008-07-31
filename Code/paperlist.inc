@@ -226,14 +226,20 @@ class PaperList extends BaseList {
     }
 
     function _sortReviewsStatus($a, $b) {
-	$av = ($a->conflictType > 0 && $this->sortInfo ? 2147483647 : $a->reviewCount);
-	$bv = ($b->conflictType > 0 && $this->sortInfo ? 2147483647 : $b->reviewCount);
-	if (($x = $av - $bv))
-	    return $x;
-	$av = ($a->conflictType > 0 && $this->sortInfo ? 2147483647 : $a->startedReviewCount);
-	$bv = ($b->conflictType > 0 && $this->sortInfo ? 2147483647 : $b->startedReviewCount);
-	$x = $av - $bv;
-	return $x ? $x : $a->paperId - $b->paperId;
+	global $Conf;
+	$aok = ($a->conflictType == 0 || ($a->conflictType >= CONFLICT_AUTHOR && $Conf->timeAuthorViewReviews()) || $this->contact->privChair);
+	$bok = ($b->conflictType == 0 || ($b->conflictType >= CONFLICT_AUTHOR && $Conf->timeAuthorViewReviews()) || $this->contact->privChair);
+	$av = ($aok ? $a->reviewCount : 2147483647);
+	$bv = ($bok ? $b->reviewCount : 2147483647);
+	if ($av == $bv) {
+	    $av = ($aok ? $a->startedReviewCount : 2147483647);
+	    $bv = ($bok ? $b->startedReviewCount : 2147483647);
+	    if ($av == $bv) {
+		$av = $a->paperId;
+		$bv = $b->paperId;
+	    }
+	}
+	return ($av < $bv ? -1 : ($av == $bv ? 0 : 1));
     }
 
     function _sortTopicInterest($a, $b) {
@@ -291,8 +297,6 @@ class PaperList extends BaseList {
 	    usort($rows, array("PaperList", "_sortReviewType"));
 	    break;
 	case self::FIELD_REVIEWS_STATUS:
-	    // $this->sortInfo == careful about conflicts? 
-	    $this->sortInfo = !$this->contact->privChair && !$Conf->timeAuthorViewReviews();
 	    usort($rows, array($this, "_sortReviewsStatus"));
 	    break;
 	case self::FIELD_TOPIC_INTEREST:
@@ -444,29 +448,24 @@ class PaperList extends BaseList {
 	global $Conf;
 	if (($pl = $this->paperLink))
 	    return $pl;
-	if (($row->reviewCount && $this->contact->canViewReview($row, null, $Conf))
-	    || ($this->contact->isPC && $this->contact->canReview($row, null, $Conf)))
-	    return "review";
 	return "paper";
     }
     
     function content($fieldId, $row, $reviewList) {
-	global $ConfSiteBase, $ConfSiteSuffix, $Conf, $reviewTypeName, $reviewScoreNames;
+	global $ConfSiteSuffix, $Conf, $reviewTypeName, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
 	    $pl = $this->_paperLink($row);
-	    if ($pl == "review" && isset($row->reviewId) && isset($row->reviewFirstName))
-		$l = "r=" . unparseReviewOrdinal($row);
-	    else
-		$l = "p=" . $row->paperId;
-	    return "<a href='${ConfSiteBase}$pl$ConfSiteSuffix?$l" . $this->paperLinkArgs . "' tabindex='4'>#$row->paperId</a>";
+	    $l = "p=" . $row->paperId;
+	    if (isset($row->reviewId) && isset($row->reviewFirstName))
+		$l .= "&amp;r=" . unparseReviewOrdinal($row);
+	    return "<a href='$pl$ConfSiteSuffix?$l" . $this->paperLinkArgs . "' tabindex='4'>#$row->paperId</a>";
 	case self::FIELD_TITLE:
 	    $pl = $this->_paperLink($row);
-	    if ($pl == "review" && isset($row->reviewId) && isset($row->reviewFirstName))
-		$l = "r=" . unparseReviewOrdinal($row);
-	    else
-		$l = "p=" . $row->paperId;
-	    return "<a href='${ConfSiteBase}$pl$ConfSiteSuffix?$l" . $this->paperLinkArgs . "' tabindex='5'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
+	    $l = "p=" . $row->paperId;
+	    if (isset($row->reviewId) && isset($row->reviewFirstName))
+		$l .= "&amp;r=" . unparseReviewOrdinal($row);
+	    return "<a href='$pl$ConfSiteSuffix?$l" . $this->paperLinkArgs . "' tabindex='5'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
@@ -481,7 +480,7 @@ class PaperList extends BaseList {
 	    if ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted))
 		$this->needSubmitReview++;
 	    if ($row->reviewId) {
-		$a1 = "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs . "\">";
+		$a1 = "<a href=\"review$ConfSiteSuffix?r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs . "\">";
 		$a2 = "</a>&nbsp;";
 		if ($row->reviewSubmitted)
 		    $a2 .= "<span class='rstat'>(Complete)</span>";
@@ -514,7 +513,7 @@ class PaperList extends BaseList {
 		return "";
 	    else {
 		if ($row->reviewSubmitted)
-		    return "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs . "\">Complete</a>";
+		    return "<a href=\"review$ConfSiteSuffix?r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs . "\">Complete</a>";
 		else if ($row->reviewType == REVIEW_SECONDARY && $row->reviewNeedsSubmit <= 0)
 		    return "Delegated";
 		else if ($row->reviewModified == 0)
@@ -528,7 +527,7 @@ class PaperList extends BaseList {
 		$this->needSubmitReview++;
 	    $a1 = $a2 = $a3 = "";
 	    if ($row->reviewId) {
-		$a1 = "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs . "\">";
+		$a1 = "<a href=\"review$ConfSiteSuffix?r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs . "\">";
 		$a2 = "</a>";
 	    }
 	    if ($row->conflictType > 0 && $this->showConflict) {
@@ -558,7 +557,8 @@ class PaperList extends BaseList {
 	case self::FIELD_REVIEWS_STATUS:
 	    // see also _sortReviewsStatus
 	    if ($row->conflictType > 0 && !$this->contact->privChair
-		&& !$Conf->timeAuthorViewReviews())
+		&& ($row->conflictType < CONFLICT_AUTHOR
+		    || !$Conf->timeAuthorViewReviews()))
 		return "";
 	    else if ($row->reviewCount != $row->startedReviewCount)
 		return "<b>$row->reviewCount</b>/$row->startedReviewCount";
@@ -661,7 +661,7 @@ class PaperList extends BaseList {
 	    $aus = array();
 	    cleanAuthor($row);
 	    foreach ($row->authorTable as $au)
-		$aus[] = $au[1];
+		$aus[] = abbreviateName($au[0], $au[1]);
 	    return htmlspecialchars(join(", ", $aus));
 	case self::FIELD_OPT_ABSTRACT:
 	    if ($row->abstract == "")
@@ -690,7 +690,7 @@ class PaperList extends BaseList {
     }
 
     function footer($ncol, $listname) {
-	global $Conf, $ConfSiteBase, $ConfSiteSuffix;
+	global $Conf, $ConfSiteSuffix;
 	if ($this->count == 0)
 	    return "";
 
@@ -760,7 +760,7 @@ class PaperList extends BaseList {
 	// Tags (search+PC only)
 	if ($this->contact->isPC && !$revpref) {
 	    $t .= $barsep;
-	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Tag</a></span><span class='lld$nlll'><b>:</b><a class='help' href='${ConfSiteBase}help$ConfSiteSuffix?t=tags#changing' title='Learn more'>?</a> &nbsp;";
+	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Tag</a></span><span class='lld$nlll'><b>:</b><a class='help' href='help$ConfSiteSuffix?t=tags#changing' title='Learn more'>?</a> &nbsp;";
 	    $t .= tagg_select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define", "so" => "Define ordered", "ao" => "Add ordered"), null, array("class" => "bsm"))
 		. " &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='bsm' name='tagact' value='Go' /></span>";
 	    $nlll++;
@@ -801,7 +801,7 @@ class PaperList extends BaseList {
 	if ($this->contact->privChair && !$revpref) {
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Decide</a></span><span class='lld$nlll'><b>:</b> Set to &nbsp;";
-	    $t .= outcomeSelector(0, "plact${nlll}_d", " class='bsm'") . " &nbsp;<input type='submit' class='bsm' name='setoutcome' value='Go' /></span>";
+	    $t .= decisionSelector(0, "plact${nlll}_d", " class='bsm'") . " &nbsp;<input type='submit' class='bsm' name='setdecision' value='Go' /></span>";
 	    $nlll++;
 
 	    $t .= $barsep
@@ -913,7 +913,7 @@ class PaperList extends BaseList {
     }
 
     function text($listname, $me) {
-	global $Conf, $ConfSiteBase, $ConfSiteSuffix, $paperListFields;
+	global $Conf, $ConfSiteSuffix, $paperListFields;
 
 	$this->contact = $me;
 	$this->count = 0;
@@ -1083,16 +1083,16 @@ class PaperList extends BaseList {
 	if ($taginfo)
 	    $x .= ($this->foldedTags !== false ? " fold4c" : " fold4o");
 	if ($taginfo && $this->foldedTags !== false && count($this->foldedTags))
-	    $Conf->footerStuff .= "<form id='tagloadform' method='post' action='${ConfSiteBase}search$ConfSiteSuffix?get=tags&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedTags) . "' /><input type='hidden' name='sitebase' value=\"" . htmlspecialchars($ConfSiteBase) . "\" /></div></form><script type='text/javascript'>ajaxTags = true;</script>";
+	    $Conf->footerStuff .= "<form id='tagloadform' method='post' action='search$ConfSiteSuffix?get=tags&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedTags) . "' /></div></form><script type='text/javascript'>ajaxTags = true;</script>";
 	if ($abstractinfo)
 	    $x .= ($this->foldedAbstract !== false ? " fold5c" : " fold5o");
 	if ($abstractinfo && $this->foldedAbstract !== false && count($this->foldedAbstract))
-	    $Conf->footerStuff .= "<form id='abstractloadform' method='post' action='${ConfSiteBase}search$ConfSiteSuffix?get=abstracts&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedAbstract) . "' /></div></form><script type='text/javascript'>ajaxAbstracts = true;</script>";
+	    $Conf->footerStuff .= "<form id='abstractloadform' method='post' action='search$ConfSiteSuffix?get=abstracts&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedAbstract) . "' /></div></form><script type='text/javascript'>ajaxAbstracts = true;</script>";
 	if ($authorinfo || !$unfolded || $taginfo || $abstractinfo)
 	    $x .= "\" id=\"foldpl";
 	$x .= "\">\n";
 
-	$t .= "<img id='foldplactsession' alt='' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldplact&amp;val=" . defval($_SESSION, "foldplact", 1) . "&amp;cache=1' width='1' height='1' />";
+	$t .= "<img id='foldplactsession' alt='' src='sessionvar$ConfSiteSuffix?var=foldplact&amp;val=" . defval($_SESSION, "foldplact", 1) . "&amp;cache=1' width='1' height='1' />";
 
 	if ($this->showHeader) {
 	    $x .= "  <tr class=\"pl_headrow\">\n";
@@ -1115,11 +1115,11 @@ class PaperList extends BaseList {
 	    if ($taginfo && $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
 		$titleextra .= "<a class='unfolder4' href='javascript:foldtags(\"pl\",0,4)'>Show tags</a><a class='folder4' href='javascript:foldtags(\"pl\",1,4)'>Hide tags</a><span id='tagloadformresult'></span>";
-		$titleextra .= "<img id='foldsession.pl4' alt='' src='${ConfSiteBase}sessionvar$ConfSiteSuffix?var=foldpltags&amp;val=" . defval($_SESSION, "foldpltags", 1) . "&amp;cache=1' width='1' height='1' />";
+		$titleextra .= "<img id='foldsession.pl4' alt='' src='sessionvar$ConfSiteSuffix?var=foldpltags&amp;val=" . defval($_SESSION, "foldpltags", 1) . "&amp;cache=1' width='1' height='1' />";
 	    }
 	    
 	    if ($this->sortable && $url) {
-		$sortUrl = $ConfSiteBase . htmlspecialchars($url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
+		$sortUrl = htmlspecialchars($url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
 		$q = "<a class='pl_sort' href=\"" . $sortUrl;
 		foreach ($fieldDef as $fieldId => $fdef) {
 		    if ($fdef[1] != 1)

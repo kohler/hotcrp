@@ -11,9 +11,9 @@ $Me->goIfInvalid();
 
 // header
 function confHeader() {
-    global $paperId, $ConfSiteSuffix, $prow, $Conf;
-    $title = ($paperId > 0 ? "Paper #$paperId Contact Authors" : "Paper Contact Authors");
-    $Conf->header($title, "contactauthors", actionBar($prow, false, "Contact Authors", "contactauthors$ConfSiteSuffix?p=$paperId"), false);
+    global $ConfSiteSuffix, $prow, $Conf;
+    $title = ($prow ? "Paper #$prow->paperId Contact Authors" : "Paper Contact Authors");
+    $Conf->header($title, "contactauthors", actionBar($prow, false, "Contact Authors", "contactauthors$ConfSiteSuffix?p=" . ($prow ? $prow->paperId : "")), false);
 }
 
 function errorMsgExit($msg) {
@@ -23,25 +23,20 @@ function errorMsgExit($msg) {
 }
 
 
-// collect paper ID
-maybeSearchPaperId($Me);
-$paperId = rcvtint($_REQUEST["paperId"]);
-
 // grab paper row
 $prow = null;
 function getProw($contactId) {
-    global $prow, $paperId, $Conf, $Me;
-    if (!($prow = $Conf->paperRow($paperId, $contactId, $whyNot))
-	|| !$Me->canViewPaper($prow, $Conf, $whyNot))
+    global $prow;
+    if (!($prow = PaperTable::paperRow($whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
 }
 getProw($Me->contactId);
 
 
 // check permissions
-$notAuthor = !$Me->amPaperAuthor($paperId, $Conf);
+$notAuthor = !$Me->amPaperAuthor($prow->paperId, $Conf);
 if ($notAuthor && !$Me->privChair)
-    errorMsgExit("You are not an author of paper #$paperId.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
+    errorMsgExit("You are not an author of paper #$prow->paperId.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
 
 function pt_data_html($what, $row) {
     global $can_update;
@@ -66,8 +61,8 @@ function removeContactAuthor($paperId, $contactId) {
 confHeader();
 
 
-if (!$Me->canManagePaper($prow))
-    errorMsgExit("You can't manage paper #$paperId since you are not a contact author.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
+if (!$Me->canEditContactAuthors($prow))
+    errorMsgExit("You can't manage paper #$prow->paperId since you are not a contact author.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
 
 
 $needMsg = true;
@@ -77,7 +72,7 @@ if (isset($_REQUEST["add"])) {
     if (!isset($_REQUEST["email"]) || trim($_REQUEST["email"]) == "")
 	$Conf->errorMsg("You must enter the new contact author's email address."); 
     else if (($id = $Conf->getContactId($_REQUEST["email"], true)) > 0) {
-	if (addContactAuthor($paperId, $id))
+	if (addContactAuthor($prow->paperId, $id))
 	    $Conf->confirmMsg("Contact author added.");
     }
 }
@@ -87,13 +82,13 @@ foreach ($_REQUEST as $k => $v)
 	$needMsg = false;
 	$while = "while removing contact author";
 	$Conf->qe("lock tables PaperConflict write, ActionLog write", $while);
-	$result = $Conf->qe("select count(paperId) from PaperConflict where paperId=$paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . " group by paperId", $while);
+	$result = $Conf->qe("select count(paperId) from PaperConflict where paperId=$prow->paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . " group by paperId", $while);
 	$row = edb_row($result);
 	if (!$Me->privChair && (!$row || $row[0] <= 1))
 	    $Conf->errorMsg("Only a system administrator can remove the last contact author.");
-	else if (removeContactAuthor($paperId, $id)) {
+	else if (removeContactAuthor($prow->paperId, $id)) {
 	    $Conf->confirmMsg("Contact author removed.");
-	    $Conf->log("Removed as contact author by $Me->email", $id, $paperId);
+	    $Conf->log("Removed as contact author by $Me->email", $id, $prow->paperId);
 	}
 	$Conf->qe("unlock tables", $while);
     }
@@ -102,15 +97,16 @@ if ($needMsg)
     $Conf->infoMsg("Use this screen to change your paper's contact authors.  Contact authors can edit paper information, upload new versions, submit the paper, and view reviews, whether or not they're named in the author list.  Every paper must have at least one contact author.");
 
 
-if ($OK) {    
-    $paperTable = new PaperTable(false, false, true, false);
+if ($OK) {
+    $paperTable = new PaperTable($prow);
+    $paperTable->initialize(false, false, true);
     
-    echo "<form method='post' action=\"contactauthors$ConfSiteSuffix?p=$paperId&amp;post=1\" enctype='multipart/form-data' accept-charset='UTF-8'>";
+    echo "<form method='post' action=\"contactauthors$ConfSiteSuffix?p=$prow->paperId&amp;post=1\" enctype='multipart/form-data' accept-charset='UTF-8'>";
     $paperTable->echoDivEnter();
     echo "<table class='paper'>\n";
 
     // title
-    echo "<tr class='id'>\n  <td class='caption'><h2>#$paperId</h2></td>\n";
+    echo "<tr class='id'>\n  <td class='caption'><h2>#$prow->paperId</h2></td>\n";
     echo "  <td class='entry' colspan='2'><h2>";
     $paperTable->echoTitle($prow);
     echo "</h2></td>\n</tr>\n\n";
@@ -129,7 +125,7 @@ if ($OK) {
     $q = "select firstName, lastName, email, contactId
 	from ContactInfo
 	join PaperConflict using (contactId)
-	where paperId=$paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . "
+	where paperId=$prow->paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . "
 	order by lastName, firstName, email";
     $result = $Conf->qe($q, "while finding contact authors");
     $numContacts = edb_nrows($result);

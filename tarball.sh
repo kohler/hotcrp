@@ -62,6 +62,7 @@ Code/backupdb.sh
 Code/banal
 Code/baselist.inc
 Code/checkformat.inc
+Code/commentview.inc
 Code/conference.inc
 Code/contact.inc
 Code/contactlist.inc
@@ -71,6 +72,7 @@ Code/distoptions.inc
 Code/header.inc
 Code/helpers.inc
 Code/mailtemplate.inc
+Code/paperactions.inc
 Code/paperlist.inc
 Code/papertable.inc
 Code/review.inc
@@ -103,6 +105,7 @@ images/assign24.png
 images/bendulft.png
 images/check.png
 images/checksum12.png
+images/comment24.png
 images/cross.png
 images/exassignone.png
 images/exsearchaction.png

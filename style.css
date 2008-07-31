@@ -56,13 +56,17 @@ span.barsep {
 }
 
 /* Tab bar */
-div.vbar, div.nvbar {
+div.vbar {
 	padding: 0px 12px;
 	position: relative;
 	clear: left;
-}
-div.vbar, div.nvbar {
 	border-bottom: 2px solid #9999cc;
+}
+div.nvbar {
+	padding: 0px 12px;
+	margin-bottom: -4px;
+	position: relative;
+	clear: left;
 }
 table.vbar {
 	width: 100%;
@@ -617,8 +621,10 @@ table.review td.caption {
 }
 
 table.comment td.caption {
-	background: #f4f6ff;
-	border-left: 1px solid #a3bfcc; /* #9999cc; */
+	background: none;
+	border: none;
+	/* background: #f4f6ff;
+	border-left: 1px solid #a3bfcc; /* #9999cc;
 	border-right: 1px solid #a3bfcc; /* #9999cc; */
 }
 table.comment td.caption.initial {
@@ -627,16 +633,7 @@ table.comment td.caption.initial {
 table.comment td.caption.final {
 	border-bottom: 1px solid #a3bfcc; /* #9999cc; */
 }
-table.comment h3 {
-	font-weight: normal;
-}
-table.comment h3.editable {
-	font-weight: bold;
-}
 
-table.comment tr.id td.entry {
-	font-size: smaller;
-}
 td.entry, th.entry {
 	padding: 2px 1em 4px 0.5em;
 }
@@ -853,6 +850,7 @@ div.nextpaperlink, div.floatright {
 
 h2 {
 	margin-top: 0em;
+	font-size: larger;
 }
 
 tr.pt_actions td, tr.pt_outcome td {
@@ -861,7 +859,7 @@ tr.pt_actions td, tr.pt_outcome td {
 tr.pt_paper input {
 	margin-top: 4px;
 }
-tr.pt_status span.pstat {
+tr.pt_status span.pstat, table.paptab span.pstat {
 	margin-right: 1em;
 }
 span.author, span.conflict {
@@ -929,6 +927,9 @@ table.topicinterest tr td.ti_interest, table.topicinterest tr th {
 table.topicinterest tr td.ti_topic {
 	padding-right: 0.5em;
 }
+table.reviewers, div.revnotes {
+	margin-bottom: 0.5em;
+}
 table.reviewers td {
 	padding-right: 1em;
 }
@@ -955,9 +956,6 @@ table.reviewers td.revscore {
 }
 table.reviewers td.rs_id, table.reviewscores td.rs_num {
 	text-align: left;
-}
-div.revnotes {
-	padding: 0.5em 0em 0em 0em;
 }
 table.reviewers td.empty {
 	padding: 0em 0em;
@@ -1227,6 +1225,111 @@ span.contactpulldown select {
 	vertical-align: top;
 }
 
+/* reviews and comments */
+table.pbox {
+	position: relative;
+	width: 100%;
+	margin: 0.5em 0em;
+}
+td.pboxl {
+	width: 12em;
+	padding-right: 1em;
+}
+
+/* paper strip */
+div.papstripc {
+	width: 12em;
+	position: relative;
+	top: 1em;
+}
+div.papstrip {
+	position: absolute;
+	width: 100%;
+	z-index: 4;
+	font-size: smaller;
+}
+div.pst {
+	padding: 0.25em 0.5em 0.25em 4px;
+	background: #eaeaea; /*#ffeaee;*/
+}
+div.pst span.psfn {
+	font-variant: small-caps;
+	font-weight: bold;
+	float: left;
+}
+div.pst span.hint {
+	float: right;
+}
+div.psv {
+	padding: 2px 0px 1em 4px;
+}
+
+/* paper */
+table.papc {
+	background: #cec1ff;
+	width: 100%;
+	position: relative;
+}
+td.papcul, td.papculs, td.papcur, td.papcll, td.papclr {
+	width: 8px;
+	height: 8px;
+}
+td.pboxi h2 {
+	text-align: right;
+	padding-right: 8px;
+}
+table.papc h2 {
+	padding-bottom: 8px;
+}
+td.papcc {
+	background: #ffffff;
+	padding: 0.4em 0.5em;
+}
+td.papsep {
+	background: #cec1ff;
+	height: 2px;
+}
+table.paptab {
+	width: 100%;
+}
+td.papbe {
+	padding-bottom: 0.5em;
+}
+td.paple, td.papre {
+	width: 50%;
+	vertical-align: top;
+}
+td.paple {
+	padding: 0px 0.5em 0px 0px;
+	font-size: smaller;
+}
+td.papre {
+	padding: 0px 0px 0px 0.5em;
+	font-size: smaller;
+}
+div.papt {
+	padding: 0.25em 1em 0.25em 8px;
+	background: #eaeaff; /*#ffeaee;*/
+}
+div.papt span.papfn {
+	font-variant: small-caps;
+	font-weight: bold;
+	float: left;
+}
+div.papt span.hint {
+	float: right;
+}
+div.paphint {
+	font-size: smaller;
+	margin-bottom: 0.5ex;
+	color: #555555;
+	background: #f8f8ff;
+	padding: 0.2em 1em 0.3em 8px;
+}
+div.papv {
+	padding: 2px 0px 1em 7px;
+}
+
 /* reviews */
 table.revc {
 	background: #f7d0d7;
@@ -1313,13 +1416,86 @@ span.rev_rating_summary {
 }
 
 
+/* comments */
+table.cmtc {
+	width: 100%;
+	position: relative;
+	background: #e6e1cf;
+}
+table.cmtc.response {
+	background: #ffddc1;
+}
+td.cmtcul, td.cmtcur, td.cmtcll, td.cmtclr {
+	width: 8px;
+	height: 8px;
+}
+td.cmtcc {
+	background: #ffffff;
+	padding: 0.4em 0.5em;
+}
+td.cmtcc div.aa {
+	margin: 0.2em 0em 0.3em;
+}
+td.cmthead h3 {
+	display: inline;
+	padding: 0em 0.5em 0em 0em;
+	font-weight: normal;
+}
+td.cmthead h3.editable {
+	font-weight: bold;
+}
+td.cmthead span.revinfo {
+	font-size: smaller;
+}
+td.cmthead {
+	padding: 0px 0px 4px 0px;
+}
+div.cmtt {
+	font-size: smaller;
+	padding: 0.25em 1em 0.25em 8px;
+	background: #ffe6f8; /*#ffeaee;*/
+}
+div.cmtt span.cmtfn {
+	font-variant: small-caps;
+	font-weight: bold;
+	float: left;
+}
+div.cmtt span.hint {
+	float: right;
+}
+div.cmtv {
+	padding: 2px 0px 1em 7px;
+}
+table.cmtoff {
+	margin: 0.2em 0em 0.5em 0em;
+	font-size: smaller;
+}
+table.cmtoff span.cmtfn {
+	font-variant: small-caps;
+	font-weight: bold;
+	padding: 0px 1em 5px 0px;
+}
+div.cmtev {
+	padding: 5px 0px 1em 2px;
+}
+div.cmthint {
+	font-size: smaller;
+	margin-bottom: 0.5ex;
+	color: #555555;
+	background: #fff9fb;
+	padding: 0.2em 1em 0.3em 8px;
+}
+
+
 /* folding */
 .foldc .extension, .foldc .folder, .foldo .ellipsis, .foldo .unfolder,
+.foldc .extension0, .foldc .folder0, .foldo .ellipsis0, .foldo .unfolder0,
 .fold1c .extension1, .fold1c .folder1, .fold1o .ellipsis1, .fold1o .unfolder1,
 .fold2c .extension2, .fold2c .folder2, .fold2o .ellipsis2, .fold2o .unfolder2,
 .fold3c .extension3, .fold3c .folder3, .fold3o .ellipsis3, .fold3o .unfolder3,
 .fold4c .extension4, .fold4c .folder4, .fold4o .ellipsis4, .fold4o .unfolder4,
 .fold5c .extension5, .fold5c .folder5, .fold5o .ellipsis5, .fold5o .unfolder5,
+.fold6c .extension6, .fold6c .folder6, .fold6o .ellipsis6, .fold6o .unfolder6,
 .fold7c .extension7, .fold7c .folder7, .fold7o .ellipsis7, .fold7o .unfolder7,
 .fold8c .extension8, .fold8c .folder8, .fold8o .ellipsis8, .fold8o .unfolder8,
 .fold9c .extension9, .fold9c .folder9, .fold9o .ellipsis9, .fold9o .unfolder9,

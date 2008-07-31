@@ -234,14 +234,14 @@ class ContactList extends BaseList {
     }
     
     function content($fieldId, $row) {
-	global $ConfSiteBase, $Conf, $ConfSiteSuffix, $reviewTypeName, $reviewScoreNames;
+	global $Conf, $ConfSiteSuffix, $reviewTypeName, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_NAME:
 	    $t = contactHtml($row->firstName, $row->lastName);
 	    if (trim($t) == "")
 		$t = "[No name]";
 	    if ($this->contact->privChair)
-		$t = "<a href='${ConfSiteBase}account$ConfSiteSuffix?contact=$row->contactId'>$t</a>";
+		$t = "<a href='account$ConfSiteSuffix?contact=$row->contactId'>$t</a>";
 	    if ($row->chair)
 		$t .= " <span class='pcrole'>(Chair)</span>";
 	    else if ($row->assistant)
@@ -249,7 +249,7 @@ class ContactList extends BaseList {
 	    else if ($row->pc && $this->limit != "pc")
 		$t .= " <span class='pcrole'>(PC)</span>";
 	    if ($this->contact->privChair && $row->email != $this->contact->email)
-		$t .= " <a href=\"${ConfSiteBase}index$ConfSiteSuffix?viewContact=" . urlencode($row->email) . "\">"
+		$t .= " <a href=\"index$ConfSiteSuffix?viewContact=" . urlencode($row->email) . "\">"
 		    . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . htmlspecialchars(contactNameText($row)))
 		    . "</a>";
 	    return $t;
@@ -290,7 +290,7 @@ class ContactList extends BaseList {
 	case self::FIELD_REVIEWS:
 	    if (!$row->numReviews && !$row->numReviewsSubmitted)
 		return "";
-	    $a1 = "<a href=\"${ConfSiteBase}search$ConfSiteSuffix?t=s&amp;q=re:" . urlencode($row->email) . "\">";
+	    $a1 = "<a href=\"search$ConfSiteSuffix?t=s&amp;q=re:" . urlencode($row->email) . "\">";
 	    if ($row->numReviews == $row->numReviewsSubmitted)
 		return "$a1<b>$row->numReviewsSubmitted</b></a>";
 	    else
@@ -309,7 +309,7 @@ class ContactList extends BaseList {
 	    $extra = "&amp;list=" . ($all ? "all:" : "s:") . join("+", $x);
 	    $m = array();
 	    foreach ($x as $v)
-		$m[] = "<a href=\"${ConfSiteBase}paper$ConfSiteSuffix?p=$v$extra\">$v</a>";
+		$m[] = "<a href=\"paper$ConfSiteSuffix?p=$v$extra\">$v</a>";
 	    return join(", ", $m);
 	case self::FIELD_REVIEW_PAPERS:
 	    if (!$row->paperIds)
@@ -319,7 +319,7 @@ class ContactList extends BaseList {
 	    $extra = "&amp;list=s:" . join("+", array_keys($x));
 	    $m = array();
 	    foreach ($x as $k => $v)
-		$m[] = "<a href=\"${ConfSiteBase}review$ConfSiteSuffix?r=$v$extra\">$k</a>";
+		$m[] = "<a href=\"review$ConfSiteSuffix?r=$v$extra\">$k</a>";
 	    return join(", ", $m);
 	case self::FIELD_SCORE:
 	    if (!$row->pc && !$this->contact->privChair
@@ -394,7 +394,7 @@ class ContactList extends BaseList {
     }
 
     function text($listname, $me, $url) {
-	global $Conf, $ConfSiteBase, $contactListFields;
+	global $Conf, $contactListFields;
 
 	$this->contact = $me;
 	$this->count = 0;
@@ -568,7 +568,7 @@ class ContactList extends BaseList {
 	    $ord = 0;
 
 	    if ($this->sortable && $url) {
-		$sortUrl = $ConfSiteBase . htmlspecialchars($url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
+		$sortUrl = htmlspecialchars($url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
 		$q = "<a class='pl_sort' href=\"" . $sortUrl;
 		foreach ($fieldDef as $fieldId => $fdef) {
 		    if ($fdef[1] != 1)

@@ -102,20 +102,20 @@ else if (isset($_REQUEST["update"]))
 // Help list
 echo "<div class='helpside'><div class='helpinside'>
 Assignment methods:
-<ul><li><a href='${ConfSiteBase}autoassign$ConfSiteSuffix'>Automatic</a></li>
- <li><a href='${ConfSiteBase}manualassign$ConfSiteSuffix' class='q'><strong>Manual by PC member</strong></a></li>
- <li><a href='${ConfSiteBase}assign$ConfSiteSuffix'>Manual by paper</a></li>
- <li><a href='${ConfSiteBase}bulkassign$ConfSiteSuffix'>Offline (bulk upload)</a></li>
+<ul><li><a href='autoassign$ConfSiteSuffix'>Automatic</a></li>
+ <li><a href='manualassign$ConfSiteSuffix' class='q'><strong>Manual by PC member</strong></a></li>
+ <li><a href='assign$ConfSiteSuffix'>Manual by paper</a></li>
+ <li><a href='bulkassign$ConfSiteSuffix'>Offline (bulk upload)</a></li>
 </ul>
 <hr class='hr' />\n";
 if ($kind == "a")
     echo "Types of PC assignment:
-<dl><dt><img src='${ConfSiteBase}images/ass", REVIEW_PRIMARY, ".gif' alt='Primary' /> Primary</dt><dd>Expected to review the paper themselves</dd>
-  <dt><img src='${ConfSiteBase}images/ass", REVIEW_SECONDARY, ".gif' alt='Secondary' /> Secondary</dt><dd>May delegate to external reviewers</dd></dl>
+<dl><dt><img src='images/ass", REVIEW_PRIMARY, ".gif' alt='Primary' /> Primary</dt><dd>Expected to review the paper themselves</dd>
+  <dt><img src='images/ass", REVIEW_SECONDARY, ".gif' alt='Secondary' /> Secondary</dt><dd>May delegate to external reviewers</dd></dl>
 <hr class='hr' />\n";
 echo "<dl><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>\n";
 if ($kind == "a")
-    echo "<dt>Preference</dt><dd><a href='${ConfSiteBase}reviewprefs$ConfSiteSuffix'>Review preference</a></dd>
+    echo "<dt>Preference</dt><dd><a href='reviewprefs$ConfSiteSuffix'>Review preference</a></dd>
   <dt>Topic score</dt><dd>+2 for each high interest paper topic, &minus;1 for each low interest paper topic</dd>
   <dt>Desirability</dt><dd>High values mean many PC members want to review the paper</dd>\n";
 echo "</dl>\nClick a heading to sort.\n</div></div>";
@@ -181,7 +181,7 @@ if ($reviewer > 0) {
 	    "<tr><td class='lxcaption'>Authors</td><td>", htmlspecialchars(substr($showau, 0, strlen($showau) - 1)), "</td></tr>\n",
 	    "<tr><td class='lxcaption'>Collaborators</td><td>", htmlspecialchars(substr($showco, 0, strlen($showco) - 1)), "</td></tr>\n",
 	    "</table>",
-	    "<a href=\"${ConfSiteBase}search$ConfSiteSuffix?q=", urlencode(join(" OR ", $search)), "&amp;linkto=assign\">Search for potential conflicts</a>",
+	    "<a href=\"search$ConfSiteSuffix?q=", urlencode(join(" OR ", $search)), "&amp;linkto=assign\">Search for potential conflicts</a>",
 	    "<div class='g'></div></td>
 </tr>\n";
 	$extraclass = "";
@@ -233,7 +233,7 @@ if ($kind == "a")
 	"Review round: &nbsp;",
 	"<input id='assrevroundtag' class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
 	(isset($Error["rev_roundtag"]) ? "</span>" : ""),
-	" &nbsp;<a class='hint' href='${ConfSiteBase}help$ConfSiteSuffix?t=revround'>What is this?</a>\n";
+	" &nbsp;<a class='hint' href='help$ConfSiteSuffix?t=revround'>What is this?</a>\n";
 
 echo "    <div class='g'></div>
     <input id='assrevimmediate' type='checkbox' checked='checked' />&nbsp;Save assignments as they are made<br />
@@ -244,7 +244,7 @@ echo "    <div class='g'></div>
 
 if ($reviewer > 0) {
     // ajax assignment form
-    echo "<form id='assrevform' method='post' action=\"${ConfSiteBase}assign$ConfSiteSuffix?update=1\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='clear'>",
+    echo "<form id='assrevform' method='post' action=\"assign$ConfSiteSuffix?update=1\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='clear'>",
 	"<input type='hidden' name='kind' value='$kind' />",
 	"<input type='hidden' name='p' value='' />",
 	"<input type='hidden' name='pcs$reviewer' value='' />",
@@ -270,8 +270,6 @@ if ($reviewer > 0) {
     echo "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
 	"<div class='aa'><table class='center'><tr><td><input type='submit' class='bb' name='update' value='Save assignments' /></td></tr></table></div>\n";
     echo $paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me);
-    //if (isset($sau) && ($paperList->authorMatch || $paperList->collaboratorsMatch))
-    //   $_SESSION["matchPreg"] = "/(" . $paperList->authorMatch . ($paperList->authorMatch && $paperList->collaboratorsMatch ? "|" : "") . $paperList->collaboratorsMatch . ")/i";
     echo "<div class='aa'><table class='center'><tr><td><input type='submit' class='bb' name='update' value='Save assignments' /></td></tr></table></div>\n";
 	"</div></form></div>\n";
 }

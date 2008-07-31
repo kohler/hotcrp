@@ -34,6 +34,12 @@ define("AU_SEEREV_NO", 0);
 define("AU_SEEREV_YES", 1);
 define("AU_SEEREV_ALWAYS", 2);
 
+$ReviewFormCache = null;
+$reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
+			  "grammar", "reviewerQualification", "potential",
+			  "fixability", "interestToCommunity", "longevity",
+			  "likelyPresentation", "suitableForShort");
+
 $OK = 1;
 
 $Msg["unknown"] = "Unknown error.";
@@ -100,7 +106,11 @@ if (!isset($Opt['dsn']))
 $Conf = new Conference();
 
 // Now load review code (which requires that $Conf exist)
-require_once("$ConfSitePATH/Code/review.inc");
+function __autoload($class_name) {
+    global $ConfSitePATH;
+    if ($class_name == "ReviewForm")
+	require_once("$ConfSitePATH/Code/review.inc");
+}
 
 // How long before a session is automatically logged out?
 //

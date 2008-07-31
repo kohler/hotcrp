@@ -155,7 +155,7 @@ function rf_getField($row, $name, $ordinalOrder = null) {
 }
 
 function rf_formFieldText($row, $ordinalOrder, $numRows) {
-    global $rf, $Error, $rowidx, $captions, $Conf, $ConfSiteBase, $ConfSiteSuffix, $scoreHelps;
+    global $rf, $Error, $rowidx, $captions, $Conf, $ConfSiteSuffix, $scoreHelps;
 
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
     $trclass = "tr class='k" . ($rowidx % 2) . "'";
@@ -183,7 +183,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     $x .= "\n</select> <span class='sep'></span>";
 
     // author view
-    $x .= "Visibility<a class='scorehelp' href='${ConfSiteBase}scorehelp$ConfSiteSuffix?f=vis'>?</a>";
+    $x .= "Visibility<a class='scorehelp' href='scorehelp$ConfSiteSuffix?f=vis'>?</a>";
     if (count($scoreHelps) == 0)
 	$Conf->footerStuff .= "<script type='text/javascript'>addScoreHelp();</script>";
     if (!isset($scoreHelps["vis"])) {

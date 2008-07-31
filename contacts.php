@@ -118,7 +118,7 @@ $Conf->header($title, "accounts", actionBar());
 
 
 $pl = new ContactList(true);
-$pl_text = $pl->text($_REQUEST["t"], $Me, "${ConfSiteBase}contacts$ConfSiteSuffix?t=" . $_REQUEST["t"]);
+$pl_text = $pl->text($_REQUEST["t"], $Me, "contacts$ConfSiteSuffix?t=" . $_REQUEST["t"]);
 
 
 // form
@@ -196,9 +196,9 @@ if (count($tOpt) > 1) {
 
 
 if ($Me->privChair && $_REQUEST["t"] == "pc")
-    $Conf->infoMsg("<p><a href='${ConfSiteBase}account$ConfSiteSuffix?new=1&amp;pc=1' class='button'>Add PC member</a></p><p>Select a PC member's name to edit their profile or remove them from the PC.</p>");
+    $Conf->infoMsg("<p><a href='account$ConfSiteSuffix?new=1&amp;pc=1' class='button'>Add PC member</a></p><p>Select a PC member's name to edit their profile or remove them from the PC.</p>");
 else if ($Me->privChair && $_REQUEST["t"] == "all")
-    $Conf->infoMsg("<p><a href='${ConfSiteBase}account$ConfSiteSuffix?new=1' class='button'>Create account</a></p><p>Select an account name to edit that profile.  Select <img src='${ConfSiteBase}images/viewas.png' alt='[Act as]' /> to view the site as that user would see it.</p>");
+    $Conf->infoMsg("<p><a href='account$ConfSiteSuffix?new=1' class='button'>Create account</a></p><p>Select an account name to edit that profile.  Select <img src='images/viewas.png' alt='[Act as]' /> to view the site as that user would see it.</p>");
 
 
 if ($pl->anySelector) {

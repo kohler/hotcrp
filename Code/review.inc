@@ -3,12 +3,6 @@
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-global $reviewScoreNames;
-$reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
-			  "grammar", "reviewerQualification", "potential",
-			  "fixability", "interestToCommunity", "longevity",
-			  "likelyPresentation", "suitableForShort");
-
 global $scoreHelps;
 $scoreHelps = array();
 
@@ -163,6 +157,8 @@ class ReviewForm {
 	    $this->topicOrder[$topicid] = $i++;
 	
 	$this->updatedWhen = time();
+
+	$_SESSION["rf"] = serialize($this);
     }
 
     function validate($conf, $always = false) {
@@ -283,7 +279,7 @@ class ReviewForm {
     }
 
     function saveRequest($req, $rrow, $prow, $contactId, $conf = null) {
-	global $Conf, $ConfSiteBase, $ConfSiteSuffix;
+	global $Conf, $ConfSiteSuffix;
 	$conf = ($conf ? $conf : $Conf);
 	$Me = $_SESSION['Me'];
 	$submit = defval($req, "ready", false);
@@ -291,7 +287,7 @@ class ReviewForm {
 
 	if (!$Me->timeReview($prow, $rrow, $conf)
 	    && (!isset($req['override']) || !$Me->privChair))
-	    return $conf->errorMsg("The <a href='${ConfSiteBase}deadlines$ConfSiteSuffix'>deadline</a> for entering this review has passed." . ($Me->privChair ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
+	    return $conf->errorMsg("The <a href='deadlines$ConfSiteSuffix'>deadline</a> for entering this review has passed." . ($Me->privChair ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
 	
 	$q = "";
 	foreach ($this->fieldOrder as $field)
@@ -356,7 +352,8 @@ class ReviewForm {
 	$req['reviewId'] = $reviewId;
 	
 	// log updates -- but not if review token is used
-	if (!$rrow || !$rrow->reviewToken || !isset($_REQUEST["token"])) {
+	if (!$rrow || !$rrow->reviewToken || !isset($_SESSION["rev_tokens"])
+	    || array_search($rrow->reviewToken, $_SESSION["rev_tokens"]) === false) {
 	    $reviewLogname = "Review $reviewId";
 	    if ($rrow && $Me->contactId != $rrow->contactId)
 		$reviewLogname .= " by $rrow->email";
@@ -638,10 +635,14 @@ $blind\n";
 	$conf = ($conf ? $conf : $Conf);
 
 	$x = "===========================================================================\n";
-	$cctype = (isset($crow->commentConflictType) ? $crow->commentConflictType : $crow->conflictType);
-	$n = ($cctype >= CONFLICT_AUTHOR ? "Author's Response" : "Comment");
-	if ($contact->canViewCommentIdentity($prow, $crow, $conf, true))
-	    $n .= " by " . contactText($crow->reviewFirstName, $crow->reviewLastName, $crow->reviewEmail);
+	$n = ($crow->forAuthors > 1 ? "Author's Response" : "Comment");
+	if ($contact->canViewCommentIdentity($prow, $crow, $conf, true)) {
+	    $n .= " by ";
+	    if (isset($crow->reviewFirstName))
+		$n .= contactText($crow->reviewFirstName, $crow->reviewLastName, $crow->reviewEmail);
+	    else
+		$n .= contactText($crow);
+	}
 	$x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
 	$x .= $this->_prettyPaperTitle($prow, $l);
 	// $n = "Updated " . $Conf->printableTime($crow->timeModified);
@@ -718,8 +719,9 @@ $blind\n";
 		    $field = "anonymity";
 		    $mode = 1;
 		} else if (preg_match('/^==\+== [A-Z]\.\s*(.*?)\s*$/', $line, $match)) {
-		    $fname = str_replace(" (hidden from authors)", "", $match[1]);
-		    $fname = str_replace(" (PC only)", "", $fname);
+		    $fname = $match[1];
+		    if (!isset($this->fieldName[strtolower($fname)]))
+			$fname = preg_replace('/\s*\((hidden from authors|PC only|shown only to chairs|secret)\)\Z/', "", $fname);
 		    $fn =& $this->fieldName[strtolower($fname)];
 		    if (isset($fn)) {
 			$field = $fn;
@@ -781,7 +783,7 @@ $blind\n";
     }
 
     function webDisplayRows($rrow, $revViewScore) {
-	global $ReviewFormError, $scoreHelps, $Conf, $ConfSiteBase, $ConfSiteSuffix;
+	global $ReviewFormError, $scoreHelps, $Conf, $ConfSiteSuffix;
 
 	// Which fields are options?
 	$fshow = array();
@@ -835,7 +837,7 @@ $blind\n";
 
 	    $c = "<span class='revfn'>" . $n;
 	    if ($disp & self::WEB_OPTIONS) {
-		$c .= "<a class='scorehelp' href='${ConfSiteBase}scorehelp$ConfSiteSuffix?f=$field'>?</a>";
+		$c .= "<a class='scorehelp' href='scorehelp$ConfSiteSuffix?f=$field'>?</a>";
 		if (count($scoreHelps) == 0)
 		    $Conf->footerStuff .= "<script type='text/javascript'>addScoreHelp();</script>";
 		if (!isset($scoreHelps[$field])) {
@@ -1005,6 +1007,251 @@ $blind\n";
 	return array_values($out);
     }
 
+    function show($prow, $rrows, $rrow, &$options) {
+	global $Conf, $ConfSiteSuffix, $Me, $forceShow,
+	    $linkExtra, $useRequest;
+
+	if (!$options)
+	    $options = array();
+	$editmode = defval($options, "edit", false);
+
+	$reviewOrdinal = unparseReviewOrdinal($rrow);
+	$reviewLinkBase = "review$ConfSiteSuffix?p=$prow->paperId"
+	    . ($rrow ? "&amp;r=$reviewOrdinal" : "")
+	    . $linkExtra . "&amp;mode=re&amp;";
+	$reviewLink = $reviewLinkBase . "post=1";
+	if ($editmode)
+	    echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'>",
+		"<input class='hidden' type='submit' name='default' value='' />",
+		"<div class='aahc'>";
+	else
+	    echo "<div class='relative'>";
+    
+	echo "<table class='pbox'><tr>
+  <td class='pboxl'></td>
+  <td class='pboxr'>";
+    
+	echo tagg_cbox("rev", false), "\t<tr><td></td><td class='revhead'>";
+
+	// Links
+	if ($rrow) {
+	    echo "<div class='floatright'>";
+	    if (!$editmode && $Me->canReview($prow, $rrow, $Conf)) {
+		$a = "<a href='review$ConfSiteSuffix?r=$reviewOrdinal$linkExtra'>";
+		echo $a,
+		    $Conf->cacheableImage("newreview.png", "[Edit]", null, "b"),
+		    "</a>&nbsp;", $a, "Edit</a><br />";
+	    }
+	    $a = "<a href='review$ConfSiteSuffix?r=$reviewOrdinal&amp;text=1$linkExtra'>";
+	    echo $a, $Conf->cacheableImage("txt.png", "[Text]", null, "b"),
+		"</a>&nbsp;", $a, "Text format</a>",
+		"</div>";
+	}
+
+	echo "<h3>";
+	if ($rrow) {
+	    echo "<a href='review$ConfSiteSuffix?r=$reviewOrdinal$linkExtra' name='review$reviewOrdinal' class='q'>";
+	    if ($editmode)
+		echo "Edit ";
+	    echo "Review";
+	    if ($rrow->reviewSubmitted)
+		echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
+	    echo "</a>";
+	} else
+	    echo "Write Review";
+	echo "</h3>\n";
+
+	$open = $sep = " <span class='revinfo'>";
+	$xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
+	$showtoken = $rrow && $rrow->reviewToken && $Me->canReview($prow, $rrow, $Conf);
+	if ($rrow && $Me->canViewReviewerIdentity($prow, $rrow, $Conf)
+	    && (!$showtoken || !preg_match('/^anonymous\d*$/', $rrow->email))) {
+	    echo $sep, ($rrow->reviewBlind ? "[" : ""), "by ", contactHtml($rrow), ($rrow->reviewBlind ? "]" : "");
+	    $sep = $xsep;
+	}
+	if ($showtoken) {
+	    echo $sep, "Review token ", encodeToken($rrow->reviewToken);
+	    $sep = $xsep;
+	}
+	if ($rrow && $rrow->reviewModified > 0) {
+	    echo $sep, "Modified ", $Conf->printableTime($rrow->reviewModified);
+	    $sep = $xsep;
+	}
+	if ($sep != $open)
+	    echo "</span>\n";
+
+	if (!$editmode) {
+	    // Do not show rating counts if rater identity is unambiguous.
+	    $visibleRatings = false;
+	    if ($rrow->numRatings > 0) {
+		if (!isset($options["nsubraters"])) {
+		    $options["nsubraters"] = 0;
+		    $rateset = $Conf->setting("rev_ratings");
+		    foreach ($rrows as $rr)
+			if ($rr->reviewSubmitted
+			    && ($rateset == REV_RATINGS_PC
+				? $rr->reviewType > REVIEW_EXTERNAL
+				: $rateset == REV_RATINGS_PC_EXTERNAL))
+			    $options["nsubraters"]++;
+		}
+		$visibleRatings = ($rrow->contactId != $Me->contactId
+		    || $Me->actChair($prow) || $options["nsubraters"] > 2
+		    || $Conf->timePCViewAllReviews()
+		    || $rrow->numRatings > 2);
+	    }
+	    if ($Me->canRateReview($prow, $rrow, $Conf)
+		&& ($rrow->contactId != $Me->contactId || $visibleRatings)) {
+		$ratesep = "";
+		echo "<div class='rev_rating'>";
+		if ($visibleRatings) {
+		    echo "<span class='rev_rating_summary'>";
+		    if ($rrow->numRatings == $rrow->sumRatings)
+			echo plural($rrow->sumRatings, "reviewer");
+		    else
+			echo $rrow->sumRatings, " of ", $rrow->numRatings, " reviewers";
+		    echo " found this review helpful.</span>";
+		    $ratesep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
+		}
+		if ($rrow->contactId != $Me->contactId) {
+		    $ratinglink = "review$ConfSiteSuffix?r=$reviewOrdinal&amp;";
+		    if (!isset($_REQUEST["reviewId"]))
+			$ratinglink .= "allr=1&amp;";
+		    echo $ratesep, "Was this review helpful for you? &nbsp; ",
+			"<a id='ratinglink_1_$reviewOrdinal' href='${ratinglink}rating=1$linkExtra' class='button",
+			($rrow->myRating > 0 ? " on" : ""), "'>Yes</a> &nbsp; ",
+			"<a id='ratinglink_0_$reviewOrdinal' href='${ratinglink}rating=0$linkExtra' class='button",
+			($rrow->myRating <= 0 && $rrow->myRating !== null ? " on" : ""), "'>No</a> &nbsp; ",
+			"<a id='ratinglink_n_$reviewOrdinal' href='${ratinglink}rating=n$linkExtra' class='button",
+			($rrow->myRating === null ? " on" : ""), "'>No opinion</a>",
+			"<span id='ratingform_${reviewOrdinal}result'></span>";
+		    if (!defval($options, "ratingsajax")) {
+			$Conf->footerStuff .= "<script type='text/javascript'>addRatingAjax();</script>";
+			$options["ratingsajax"] = true;
+		    }
+		    $Conf->footerStuff .= "<form id='ratingform_$reviewOrdinal' action='${ratinglink}$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"ratingform_$reviewOrdinal\")'>"
+			. "<input id='ratingval_$reviewOrdinal' type='hidden' name='rating' value='' />"
+			. "</form>";
+		}
+		echo " &nbsp;<span class='barsep'>|</span>&nbsp; <a href='help$ConfSiteSuffix?t=revrate'>What is this?</a></div>";
+	    }
+	    echo "<div class='clear'></div></td><td></td></tr>
+  <tr><td></td><td class='revcc'>",
+		$this->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow, $Conf)),
+		"</td><td></td></tr>\n", tagg_cbox("rev", true),
+		"</td></tr>\n</table></div>\n\n";
+	    return;
+	}
+
+	// From here on, edit mode.
+	if (defval($options, "editmessage"))
+	    echo "<div class='hint'>", defval($options, "editmessage"), "</div>\n";
+    
+	// refuse?
+	if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType < REVIEW_SECONDARY) {
+	    echo "\n<div class='revref'><a id='popupanchor_ref' href=\"javascript:void popup(null, 'ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it</div>\n";
+	    $Conf->footerStuff .= "<div id='popup_ref' class='popupc'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'>
+  <input class='textlite' type='text' name='reason' value='' size='40' />
+  <div class='g'></div>
+  <input class='b' type='submit' name='refuse' value='Refuse review' />
+  &nbsp;<button type='button' class='b' onclick=\"popup(null, 'ref', 1)\">Cancel</button></div></form></div>";
+	}
+
+	// delegate?
+	if ($rrow && !$rrow->reviewSubmitted
+	    && $rrow->reviewType == REVIEW_SECONDARY) {
+	    echo "\n<div class='rev_del'>";
+
+	    $ndelegated = 0;
+	    foreach ($rrows as $rr)
+		if ($rr->reviewType == REVIEW_EXTERNAL
+		    && $rr->requestedBy == $Me->contactId)
+		    $ndelegated++;
+
+	    if ($ndelegated == 0)
+		echo "As a secondary reviewer, you can <a href=\"assign$ConfSiteSuffix?p=$rrow->paperId$linkExtra\">delegate this review to an external reviewer</a>, but if your external reviewer refuses to review the paper, you should complete the review yourself.";
+	    else if ($rrow->reviewNeedsSubmit == 0)
+		echo "A delegated external reviewer has submitted their review, but you can still complete your own if you'd like.";
+	    else
+		echo "Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete the review yourself.";
+	    echo "</div>\n";
+	}
+
+	// message?
+	if ($rrow && $rrow->contactId != $Me->contactId
+	    && !isset($prow->myReviewId) && $Me->privChair)
+	    echo "<div class='hint'>You didn't write this review, but as an administrator you can still make changes.</div>\n";
+
+	// download?
+	echo "<div class='clear'></div></td><td></td></tr>
+  <tr><td></td><td><table class='revoff'><tr>
+      <td><span class='revfn'>Offline reviewing</span></td>
+      <td>Upload form: &nbsp; <input type='file' name='uploadedFile' accept='text/plain' size='30' />
+      &nbsp; <input class='b' type='submit' value='Go' name='uploadForm' /></td>
+    </tr><tr>
+      <td></td>
+      <td><a href='${reviewLinkBase}downloadForm=1'>Download form</a>
+      &nbsp;<span class='barsep'>|</span>&nbsp;
+      <span class='hint'><strong>Tip:</strong> Use <a href='search$ConfSiteSuffix'>Search</a> or <a href='offline$ConfSiteSuffix'>Offline reviewing</a> to download or upload many forms at once.</span></td>
+    </tr></table></td><td></td></tr>\n";
+
+	// top save changes button
+	echo "  <tr><td></td><td class='revcc'>",
+	    "  <div class='aa'><input class='bb' type='submit' value='Save changes' name='update' /></div>\n";
+
+	// blind?
+	if ($Conf->blindReview() == 1) {
+	    echo "<div class='revt'><span class='revfn'>",
+		"<input type='checkbox' name='blind' value='1'";
+	    if ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))
+		echo " checked='checked'";
+	    echo " onchange='hiliter(this)' />&nbsp;Anonymous review</span><div class='clear'></div></div>\n",
+		"<div class='revhint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won't know who wrote the review).</div>\n",
+		"<div class='g'></div>\n";
+	}
+
+	// form body
+	echo $this->webFormRows($Me, $prow, $rrow, $useRequest);
+
+	// review actions
+	if ($Me->timeReview($prow, $rrow, $Conf) || $Me->privChair) {
+	    echo "  <div class='g'></div>",
+		"<input type='checkbox' name='ready' value='1'";
+	    if ($useRequest ? defval($_REQUEST, "ready") : $rrow && $rrow->reviewSubmitted)
+		echo " checked='checked'";
+	    if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
+		echo " disabled='disabled'";
+	    echo " onchange='hiliter(this)' />&nbsp;The review is ready for others to see.";
+	    if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
+		echo "<div class='hint'>Only administrators can remove the review from the system at this point.</div>";
+
+	    echo "<div class='aa'><table class='pt_buttons'>\n";
+	    $buttons = array();
+	    $buttons[] = "<input class='bb' type='submit' value='Save changes' name='update' />";
+	    if ($rrow && $Me->privChair) {
+		$buttons[] = array("<button type='button' class='b' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
+		$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='delete' value='Delete review' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
+	    }
+
+	    echo "    <tr>\n";
+	    foreach ($buttons as $b) {
+		$x = (is_array($b) ? $b[0] : $b);
+		echo "      <td class='ptb_button'>", $x, "</td>\n";
+	    }
+	    echo "    </tr>\n    <tr>\n";
+	    foreach ($buttons as $b) {
+		$x = (is_array($b) ? $b[1] : "");
+		echo "      <td class='ptb_explain'>", $x, "</td>\n";
+	    }
+	    echo "    </tr>\n  </table></div>";
+	    if ($Me->privChair)
+		echo "<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines";
+	    //echo "</div>\n";
+	}
+
+	echo "</td><td></td></tr>\n", tagg_cbox("rev", true),
+	    "</td></tr>\n</table></div></form>\n\n";
+    }
+
     function numNumericScores($prow, $contact, $conf) {
 	$revNullViewScore = $contact->viewReviewFieldsScore($prow, null, $conf);
 	$n = 0;
@@ -1021,17 +1268,5 @@ $blind\n";
 	else
 	    return 0;
     }
-    
-}
 
-
-function reviewForm($conf = null) {
-    global $Conf;
-    $conf = ($conf ? $conf : $Conf);
-    if (!isset($_SESSION["reviewForm"])
-	|| !isset($_SESSION["reviewForm"]->reviewFields))
-	$_SESSION["reviewForm"] = new ReviewForm($conf);
-    else
-	$_SESSION["reviewForm"]->validate($conf);
-    return $_SESSION["reviewForm"];
 }

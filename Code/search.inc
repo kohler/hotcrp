@@ -214,9 +214,12 @@ class PaperSearch {
 
 	if (!$negated) {
 	    if (ctype_alnum($word))
-		$this->regex[] = '\b' . $word . '\b';
-	    else
-		$this->regex[] = '\b' . preg_replace('/\s+/', '\s+', preg_quote($word)) . '\b';
+		$this->regex[$rtype][] = '\b' . $word . '\b';
+	    else {
+		$word = preg_replace('/\s+/', '\s+', preg_quote($word));
+		$word = str_replace('\*', '\S*', $word);
+		$this->regex[$rtype][] = '\b' . $word . '\b';
+	    }
 	}
     }
 
@@ -838,6 +841,11 @@ class PaperSearch {
     
     function _clauseTermSetField(&$t, $field, $negated, &$f) {
 	$this->needflags |= $t->flags;
+	$v = $t->value;
+	if ($v && $v[0] == "*")
+	    $v = substr($v, 1);
+	if ($v && $v[strlen($v) - 1] == "*")
+	    $v = substr($v, 0, strlen($v) - 1);
 	if ($negated)
 	    $f[] = "false";
 	else if (!ctype_alnum($t->value))
@@ -1030,6 +1038,7 @@ class PaperSearch {
 	if (!$this->_clauseTermCheckFlags($t->flags, $row))
 	    return false;
 	$m = preg_replace('/\s+/', '\s+', trim(preg_quote($t->value)));
+	$m = str_replace('\*', '\S*', $m);
 	$fieldname = $t->link;
 	if (!preg_match('{\b' . $m . '\b}i', $row->$fieldname))
 	    return false;
@@ -1199,7 +1208,10 @@ class PaperSearch {
 	    $columns["conflictType"] = "PaperConflict.conflictType";
 	}
 	if ($this->needflags & self::F_REVIEWER) {
-	    $tables["MyReview"] = array("left join", "PaperReview", "Paper.paperId=MyReview.paperId and MyReview.contactId=$this->contactId");
+	    $qb = "";
+	    if (isset($_SESSION["rev_tokens"]))
+		$qb = " or MyReview.reviewToken in (" . join(", ", $_SESSION["rev_tokens"]) . ")";
+	    $tables["MyReview"] = array("left join", "PaperReview", "Paper.paperId=MyReview.paperId and (MyReview.contactId=$this->contactId$qb)");
 	    $columns["myReviewNeedsSubmit"] = "MyReview.reviewNeedsSubmit";
 	}
 	if ($this->needflags & self::F_PAPERNONBLIND)
@@ -1310,8 +1322,14 @@ class PaperSearch {
 	}
 
 	// set matchPreg
-	if (!$this->overrideMatchPreg)
-	    $this->matchPreg = join("|", $this->regex);
+	if (!$this->overrideMatchPreg) {
+	    $this->matchPreg = array();
+	    foreach (array("ti" => "title", "au" => "authorInformation",
+			   "ab" => "abstract", "co" => "collaborators")
+		     as $k => $v)
+		if (isset($this->regex[$k]) && count($this->regex[$k]))
+		    $this->matchPreg[$v] = join("|", $this->regex[$k]);
+	}
 	
 	return true;
     }
@@ -1437,7 +1455,7 @@ class PaperSearch {
 	$l["timestamp"] = time();
 	$l["listid"] = $this->listId($sort);
 	if ($this->matchPreg)
-	    $l["matchPreg"] = "{(" . $this->matchPreg . ")}i";
+	    $l["matchPreg"] = $this->matchPreg;
 	return $l;
     }
     

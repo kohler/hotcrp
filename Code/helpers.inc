@@ -151,7 +151,7 @@ function selfHref($extra = array(), $self = null) {
 	$_REQUEST["r"] = $_REQUEST["reviewId"];
     if (isset($_REQUEST["commentId"]) && !isset($_REQUEST["c"]))
 	$_REQUEST["c"] = $_REQUEST["commentId"];
-    foreach (array("p", "r", "c", "mode", "forceShow", "validator", "list", "t", "q", "qo", "qx", "qt", "group", "sort", "monreq") as $what)
+    foreach (array("p", "r", "c", "m", "mode", "forceShow", "validator", "list", "t", "q", "qo", "qx", "qt", "group", "sort", "monreq") as $what)
 	if (isset($_REQUEST[$what]) && !isset($extra[$what])) {
 	    $x .= "$sep$what=" . urlencode($_REQUEST[$what]);
 	    $sep = "&";
@@ -170,6 +170,11 @@ function validateEmail($email) {
     // Allow @_.com email addresses.  Simpler than RFC822 validation.
     return preg_match('/^([*+!.&#$|\'\\%\/0-9a-z^_`{}=?~:-]+)@(([0-9a-z-]+\.)+[0-9a-z]+)$/i', $email)
 	|| preg_match('/^([*+!.&#$|\'\\%\/0-9a-z^_`{}=?~:-]+)@(_\.[0-9a-z]+)$/i', $email);
+}
+
+function foldsessionpixel($name, $var) {
+    global $ConfSiteSuffix;
+    return "<img id='foldsession." . $name . "' alt='' src='sessionvar$ConfSiteSuffix?var=" . $var . "&amp;val=" . defval($_SESSION, $var, 1) . "&amp;cache=1' width='1' height='1' />";
 }
 
 function foldbutton($foldtype, $title, $foldnum=0) {
@@ -254,14 +259,10 @@ function topicTable($prow, $active = 0, $conf = null) {
     // read from paper row if appropriate
     if ($paperId > 0 && $active < 0 && isset($prow->topicIds)) {
 	$top = $rf->webTopicArray($prow->topicIds, defval($prow, "topicInterest"));
-	$out = "<table class='rpad'><tr>\n	<td>";
-	$colheight = (int) ((count($top) + 1) / 2);
-	for ($i = 0; $i < count($top); $i++) {
-	    if ($i > 0 && ($i % $colheight) == 0)
-		$out .= "</td>\n	<td>";
-	    $out .= $top[$i] . "<br />\n";
-	}
-	return $out . "</td>\n</tr></table>";
+	$t = "";
+	foreach ($top as $tx)
+	    $t .= "<span class='autblentry'>" . $tx . "</span>";
+	return $t;
     }
 
     // get current topics
@@ -305,7 +306,7 @@ function authorTable($aus, $viewAs = null) {
     foreach ($aus as $aux) {
 	$au = trim(is_array($aux) ? contactHtml($aux) : $aux);
 	if ($au != '') {
-	    if (strlen($au) > 40)
+	    if (strlen($au) > 30)
 		$out .= "<span class='autblentry_long'>";
 	    else
 		$out .= "<span class='autblentry'>";
@@ -316,6 +317,17 @@ function authorTable($aus, $viewAs = null) {
 	}
     }
     return $out;
+}
+
+function abbreviateName($f, $l) {
+    if ($f != "" && $l == "")
+	return $f;
+    else if ($f != "" && ctype_upper($f[0]))
+	return $f[0] . ". " . $l;
+    else if ($l != "")
+	return $l;
+    else
+	return "???";
 }
 
 function _cleanContactText(&$f, &$l, &$e) {
@@ -424,7 +436,7 @@ function _tryNewList($opt, $which) {
 }
 
 function listLinks($paperId, $baseUrl = null, $args = array()) {
-    global $Me, $ConfSiteBase, $ConfSiteSuffix, $Conf, $CurrentList;
+    global $Me, $ConfSiteSuffix, $Conf, $CurrentList;
     $replaceList = oldestListNumber();
     if ($baseUrl === null)
 	$baseUrl = "paper$ConfSiteSuffix";
@@ -466,20 +478,20 @@ function listLinks($paperId, $baseUrl = null, $args = array()) {
     $list = $_SESSION["l"][$CurrentList];
     $x = "";
     if ($k > 0)
-	$x .= "<a href=\"${ConfSiteBase}$baseUrl?p="
+	$x .= "<a href=\"$baseUrl?p="
 	    . $list[$k - 1] . $urlrest . "\">"
 	    . $Conf->cacheableImage("prev.png", "&lt;-")
 	    . "#" . $list[$k - 1] . "</a>";
     if (isset($list["description"])) {
 	$x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
 	if (defval($list, "url"))
-	    $x .= "<a href=\"${ConfSiteBase}" . htmlspecialchars($list["url"]) . "\">" . $list["description"] . "</a>";
+	    $x .= "<a href=\"" . htmlspecialchars($list["url"]) . "\">" . $list["description"] . "</a>";
 	else
 	    $x .= $listinfo["description"];
     }
     if (isset($list[$k + 1])) {
 	$x .= ($k > 0 || isset($list["description"]) ? "&nbsp;&nbsp;" : "");
-	$x .= "<a href=\"${ConfSiteBase}$baseUrl?p="
+	$x .= "<a href=\"$baseUrl?p="
 	    . $list[$k + 1] . $urlrest . "\">#" . $list[$k + 1]
 	    . $Conf->cacheableImage("next.png", "-&gt;") . "</a>";
     }
@@ -487,7 +499,7 @@ function listLinks($paperId, $baseUrl = null, $args = array()) {
 }
 
 function goPaperForm($baseUrl = null, $args = array()) {
-    global $Conf, $ConfSiteBase, $ConfSiteSuffix, $CurrentList;
+    global $Conf, $ConfSiteSuffix, $CurrentList;
     if (!$_SESSION["Me"]->valid())
 	return "";
     if ($baseUrl === null) {
@@ -496,7 +508,7 @@ function goPaperForm($baseUrl = null, $args = array()) {
 	else
 	    $baseUrl = "paper$ConfSiteSuffix";
     }
-    $x = "<form class='gopaper' action='${ConfSiteBase}$baseUrl' method='get' accept-charset='UTF-8'><div class='inform'>";
+    $x = "<form class='gopaper' action='$baseUrl' method='get' accept-charset='UTF-8'><div class='inform'>";
     $x .= "<input class='textlite' type='text' size='10' name='p' title='Enter paper numbers or search terms' />";
     foreach ($args as $what => $val)
 	$x .= "<input type='hidden' name=\"" . htmlspecialchars($what) . "\" value=\"" . htmlspecialchars($val) . "\" />";
@@ -684,7 +696,7 @@ function ini_get_bytes($varname) {
 }
 
 function whyNotText($whyNot, $action) {
-    global $ConfSiteBase, $Conf, $ConfSiteSuffix;
+    global $Conf, $ConfSiteSuffix;
     if (!is_array($whyNot))
 	$whyNot = array($whyNot => 1);
     $paperId = (isset($whyNot['paperId']) ? $whyNot['paperId'] : -1);
@@ -696,9 +708,7 @@ function whyNotText($whyNot, $action) {
 	$xid = (isset($whyNot[$x]) ? " \"" . $whyNot[$x] . "\"" : "");
 	$text .= "Invalid " . $whyNot['invalidId'] . " number" . htmlspecialchars($xid) . ".  ";
     }
-    if (isset($whyNot['noPaper']) && $paperId < 0 && $reviewId > 0)
-	$text .= "No such review" . ($reviewId < 0 ? "" : " #$reviewId") . ".  ";
-    else if (isset($whyNot['noPaper']))
+    if (isset($whyNot['noPaper']))
 	$text .= "No such paper" . ($paperId < 0 ? "" : " #$paperId") . ".  ";
     if (isset($whyNot['noReview']))
 	$text .= "No such review" . ($reviewId < 0 ? "" : " #$reviewId") . ".  ";
@@ -725,7 +735,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['responseNotReady']))
 	$text .= "The authors' response for $thisPaper is not yet ready for reviewers to view.  ";
     if (isset($whyNot['reviewsOutstanding']))
-	$text .= "You must complete <a href=\"${ConfSiteBase}search$ConfSiteSuffix?q=&amp;t=r\">your assigned reviews for other papers</a> before you can see the reviews for this paper.  If you can't complete your reviews, please let the conference organizers know via the relevant \"Refuse review\" links.  ";
+	$text .= "You will get access to the reviews for your submitted papers once you complete <a href=\"search$ConfSiteSuffix?q=&amp;t=r\">your assigned reviews for other papers</a>.  If you can't complete your reviews, please let the conference organizers know via the &ldquo;Refuse review&rdquo; links.  ";
     if (isset($whyNot['reviewNotAssigned']))
 	$text .= "You are not assigned to review $thisPaper.  ";
     if (isset($whyNot['deadline'])) {
@@ -758,12 +768,12 @@ function whyNotText($whyNot, $action) {
 	    $text .= "It was " . $Conf->printableTime($end) . ".  ";
 	} else if ($dname == "au_seerev") {
 	    if ($Conf->setting("au_seerev") == AU_SEEREV_YES)
-		$text .= "Authors who are also reviewers can't see reviews for their papers while they still have <a href='${ConfSiteBase}search$ConfSiteSuffix?t=rout&amp;q='>incomplete reviews</a> of their own.  ";
+		$text .= "Authors who are also reviewers can't see reviews for their papers while they still have <a href='search$ConfSiteSuffix?t=rout&amp;q='>incomplete reviews</a> of their own.  ";
 	    else
 		$text .= "Authors can't view paper reviews at the moment.  ";
 	} else
 	    $text .= "You can't $action $thisPaper at the moment.  ";
-	$text .= "(<a href='${ConfSiteBase}deadlines$ConfSiteSuffix'>View deadlines</a>)  ";
+	$text .= "(<a class='nowrap' href='deadlines$ConfSiteSuffix'>View deadlines</a>)  ";
 	if (isset($whyNot['override']) && $whyNot['override'])
 	    $text .= "Select the &ldquo;Override deadlines&rdquo; checkbox to override this deadline as an administrator.  ";
     }
@@ -781,11 +791,11 @@ function whyNotText($whyNot, $action) {
 	$text .= "If you know a valid review token, enter it above to edit that review.  ";
     // finish it off
     if (isset($whyNot['chairMode']))
-	$text .= "<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">" . ucfirst($action) . " the paper anyway</a>  ";
+	$text .= "(<a class='nowrap' href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">" . ucfirst($action) . " the paper anyway</a>)  ";
     if (isset($whyNot['forceShow']))
-	$text .= "<a href=\"". htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Show " . ($action == "comment" ? "comments" : "reviews") . " anyway</a>  ";
+	$text .= "(<a class='nowrap' href=\"". htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Override conflict</a>)  ";
     if ($text && $action == "view")
-	$text .= "Enter a paper number above, or <a href='${ConfSiteBase}search$ConfSiteSuffix?q='>list the papers you can view</a>.  ";
+	$text .= "Enter a paper number above, or <a href='search$ConfSiteSuffix?q='>list the papers you can view</a>.  ";
     return ($text ? substr($text, 0, -2) : $text);
 }
 
@@ -817,7 +827,7 @@ function actionTab($text, $url, $default) {
 }
 
 function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
-    global $Me, $Conf, $ConfSiteBase, $ConfSiteSuffix, $CurrentList;
+    global $Me, $Conf, $ConfSiteSuffix, $CurrentList;
     if ($newPaper)
 	$paperId = "new";
     else
@@ -825,8 +835,12 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
     $forceShow = ($Me->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] ? "&amp;forceShow=1" : "");
 
     // collect list links now, so we find the current list
-    if ($mode == "assign" || $mode == "review" || $mode == "comment")
-	$goBase = "$mode$ConfSiteSuffix";
+    if ($mode == "assign")
+	$goBase = "assign$ConfSiteSuffix";
+    else if ($mode == "r" || $mode == "re" || $mode == "review")
+	$goBase = "review$ConfSiteSuffix";
+    else if ($mode == "c" || $mode == "comment")
+	$goBase = "comment$ConfSiteSuffix";
     else if ($mode == "" && $Me->isPC && $Conf->setting("rev_open"))
 	$goBase = "review$ConfSiteSuffix";
     else
@@ -842,54 +856,7 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
     }
 
     // collect actions
-    $act = "";
-    if ($newPaper || $paperId > 0)
-	$act .= actionTab("Paper", "${ConfSiteBase}paper$ConfSiteSuffix?p=$paperId$listarg", $mode == "view" || $mode == "edit");
-    
-    if (!$newPaper && $prow
-	&& ($prow->reviewType > 0
-	    || $Me->canViewReview($prow, null, $Conf)
-	    || ($Me->isPC && $prow->timeSubmitted > 0
-		&& $Conf->timeReviewOpen())
-	    || $Me->privChair
-	    || $mode == "review"))
-	$act .= actionTab("Reviews", "${ConfSiteBase}review$ConfSiteSuffix?p=$paperId$listarg", $mode == "review");
-
-    if (!$newPaper && $prow
-	&& ($prow->reviewType > 0
-	    || (($mode == "comment" || $prow->numAuthorComments > 0
-		 || $Conf->timeAuthorRespond())
-		&& $Me->canViewComment($prow, null, $Conf))
-	    || ($Me->isPC && $prow->timeSubmitted > 0
-		&& ($Conf->timeReviewOpen()
-		    || $Conf->setting("cmt_always") > 0)))) {
-	if ($prow->conflictType >= CONFLICT_AUTHOR)
-	    $n = $prow->numAuthorComments;
-	else if ($Me->isPC)
-	    $n = $prow->numComments;
-	else {
-	    $result = $Conf->q("select count(commentId) from PaperComment where paperId=$prow->paperId and (forReviewers>0 or contactId=$Me->contactId)");
-	    $row = edb_row($result);
-	    $n = ($row ? $row[0] : 0);
-	}
-	$txt = ($n ? "Comments ($n)" : "Comments");
-	$act .= actionTab($txt, "${ConfSiteBase}comment$ConfSiteSuffix?p=$paperId$listarg", $mode == "comment");
-    }
-
-    if ($mode == "assign" || ($Me->privChair && $prow))
-	$act .= actionTab("Assignments", "${ConfSiteBase}assign$ConfSiteSuffix?p=$paperId$listarg", $mode == "assign");
-    
-    if ($thisUrl)
-	$act .= actionTab($mode, $thisUrl, true);
-
-    // create action bar
-    if ($act)
-	$x = "<div class='vbar'><table class='vbar'><tr><td id='vbartabs'><table><tr>$act</tr></table></td>";
-    else
-	$x = "<div class='nvbar'><table class='vbar'><tr>";
-
-    $x .= "<td class='spanner'></td>\n";
-    
+    $x = "<div class='nvbar'><table class='vbar'><tr><td class='spanner'></td>\n";
     if ($listlinks_txt)
 	$x .= "  <td class='listlinks nowrap'>" . $listlinks_txt . "</td>\n";
     
@@ -898,11 +865,11 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
     return $x . "</tr></table></div>";
 }
 
-function parseReviewOrdinal($n) {
-    $n = strtoupper($n);
-    if (preg_match('/^[A-Z]$/', $n))
-	return ord($n) - 64;
-    else if (preg_match('/^([A-Z])([A-Z])$/', $n, $m))
+function parseReviewOrdinal($text) {
+    $text = strtoupper($text);
+    if (preg_match('/^[A-Z]$/', $text))
+	return ord($text) - 64;
+    else if (preg_match('/^([A-Z])([A-Z])$/', $text, $m))
 	return (ord($m[0]) - 64) * 26 + ord($m[1]) - 64;
     else
 	return -1;
@@ -964,65 +931,8 @@ function cvtpref($n) {
 	return -1000001;
 }
 
-function maybeSearchPaperId($me) {
-    global $Conf, $ConfSiteBase, $ConfSiteSuffix, $CurrentList;
-
-    // set $_REQUEST["paperId"] from $_REQUEST["p"] for backwards compatibility
-    if (!isset($_REQUEST["paperId"]) && isset($_REQUEST["p"]))
-	$_REQUEST["paperId"] = $_REQUEST["p"];
-    
-    // if a complex request, or a form upload, don't search
-    foreach ($_REQUEST as $k => $v)
-	if ($k != "paperId" && $k != "mode" && $k != "forceShow" && $k != "go"
-	    && $k != "viewContact" && $k != "chairMode" && $k != "ls"
-	    && $k != "p" && $k != "t" && !isset($_COOKIE[$k]))
-	    return false;
-
-    // if no paper ID set, find one
-    if (!isset($_REQUEST["paperId"])) {
-	$q = "select min(Paper.paperId) from Paper ";
-	if ($me->isPC)
-	    $q .= "where timeSubmitted>0";
-	else if ($me->isReviewer)
-	    $q .= "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$me->contactId)";
-	else
-	    $q .= "join ContactInfo on (ContactInfo.paperId=Paper.paperId and ContactInfo.contactId=$me->contactId and ContactInfo.conflictType>=" . CONFLICT_AUTHOR . ")";
-	$result = $Conf->q($q);
-	if (($paperId = edb_row($result)))
-	    $_REQUEST["paperId"] = $paperId[0];
-	return false;
-    }
-
-    // if invalid contact, or it looks like a number, don't search
-    if (!$me->validated)
-	return false;
-    if (preg_match('/^\s*#?([1-9]\d*)\s*$/s', $_REQUEST["paperId"], $m)) {
-	$_REQUEST["paperId"] = $m[1];
-	return false;
-    }
-
-    // actually try to search
-    require_once("search.inc");
-    $search = new PaperSearch($me, array("q" => $_REQUEST["paperId"], "t" => defval($_REQUEST, "t", 0)));
-    $pl = $search->paperList();
-    if (count($pl) == 1) {
-	global $thisMatchPreg;
-	if ($search->matchPreg)
-	    $thisMatchPreg = "{(" . $search->matchPreg . ")}i";
-	$_REQUEST["paperId"] = $pl[0];
-	$replaceList = oldestListNumber();
-	$_SESSION["l"][$replaceList] = $search->sessionList($search->limitName);
-	$_REQUEST["ls"] = $replaceList;
-	return true;
-    } else {
-	$t = (defval($_REQUEST, "t", 0) ? "&t=" . urlencode($_REQUEST["t"]) : "");
-	$Conf->go("${ConfSiteBase}search$ConfSiteSuffix?q=" . urlencode($_REQUEST["paperId"]) . $t);
-	exit;
-    }
-}
-
-function outcomeSelector($curOutcome = 0, $id = null, $extra = "") {
-    $text = "<select" . ($id === null ? "" : " id='$id'") . " name='outcome'$extra>\n";
+function decisionSelector($curOutcome = 0, $id = null, $extra = "") {
+    $text = "<select" . ($id === null ? "" : " id='$id'") . " name='decision'$extra>\n";
     $rf = reviewForm();
     $outcomeMap = $rf->options['outcome'];
     $outcomes = array_keys($outcomeMap);
@@ -1199,6 +1109,17 @@ function cleanAuthorText($row) {
     return $row->authorInformation;
 }
 
+function reviewForm() {
+    global $Conf, $ReviewFormCache;
+    if (!$ReviewFormCache && isset($_SESSION["rf"]))
+	$ReviewFormCache = @unserialize($_SESSION["rf"]);
+    if (!$ReviewFormCache || !$ReviewFormCache->reviewFields)
+	$ReviewFormCache = new ReviewForm($Conf);
+    else
+	$ReviewFormCache->validate($Conf);
+    return $ReviewFormCache;
+}
+
 
 function encodeToken($x) {
     $s = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1253,4 +1174,13 @@ function tagg_select($name, $opt, $selected=null, $extra=null) {
 	    $x .= ">" . $text . "</option>";
 	}
     return $x . "</select>";
+}
+
+function tagg_cbox($type, $bottom, $classextra="") {
+    $c = ($bottom ? "l" : "u");
+    if ($bottom)
+	return "	<tr><td class='${type}cll'></td><td></td><td class='${type}clr'></td></tr>\n</table>";
+    else
+	return "<table class='${type}c" . ($classextra ? " $classextra" : "")
+	    . "'>\n	<tr><td class='${type}cul'></td><td></td><td class='${type}cur'></td></tr>\n";
 }

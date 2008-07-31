@@ -8,22 +8,36 @@ require_once("Code/papertable.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $useRequest = false;
-$linkExtra = "";
-$PaperError = array();
-if (isset($_REQUEST["emailNote"]) && $_REQUEST["emailNote"] == "Optional explanation")
+$forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair);
+$linkExtra = ($forceShow ? "&amp;forceShow=1" : "");
+$Error = array();
+if (isset($_REQUEST["emailNote"])
+    && $_REQUEST["emailNote"] == "Optional explanation")
     unset($_REQUEST["emailNote"]);
+if (defval($_REQUEST, "mode") == "edit")
+    $_REQUEST["mode"] = "pe";
+else if (defval($_REQUEST, "mode") == "view")
+    $_REQUEST["mode"] = "p";
 
 
 // header
 function confHeader() {
-    global $paperId, $newPaper, $prow, $mode, $Conf, $linkExtra, $CurrentList;
-    if ($paperId > 0)
-	$title = "Paper #$paperId";
+    global $paperId, $newPaper, $prow, $paperTable, $Conf, $linkExtra,
+	$CurrentList;
+    if ($paperTable)
+	$mode = $paperTable->mode;
     else
+	$mode = "p";
+    if ($paperId <= 0)
 	$title = ($newPaper ? "New Paper" : "Paper View");
-    if ($mode == "edit")
-	$title = "Edit $title";
-    $Conf->header($title, "paper_" . $mode, actionBar($prow, $newPaper, $mode), false);
+    else if ($mode == "pe")
+	$title = "Edit Paper #$paperId";
+    else if ($mode == "r")
+	$title = "Paper #$paperId Reviews";
+    else
+	$title = "Paper #$paperId";
+
+    $Conf->header($title, "paper_" . ($mode == "pe" ? "edit" : "view"), actionBar($prow, $newPaper, $mode), false);
     if (isset($CurrentList) && $CurrentList > 0
 	&& strpos($linkExtra, "ls=") === false)
 	$linkExtra .= "&amp;ls=" . $CurrentList;
@@ -37,22 +51,9 @@ function errorMsgExit($msg) {
 
 
 // collect paper ID: either a number or "new"
-$newPaper = false;
+$newPaper = (defval($_REQUEST, "p") == "new"
+	     || defval($_REQUEST, "paperId") == "new");
 $paperId = -1;
-if (!isset($_REQUEST["paperId"]) && isset($_REQUEST["p"]))
-    $_REQUEST["paperId"] = $_REQUEST["p"];
-if (isset($_REQUEST["paperId"]) && trim($_REQUEST["paperId"]) == "new")
-    $newPaper = true;
-else {
-    maybeSearchPaperId($Me);
-    $paperId = rcvtint($_REQUEST["paperId"]);
-}
-
-
-// mode
-$mode = "view";
-if ($newPaper || (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "edit"))
-    $mode = "edit";
 
 
 // general error messages
@@ -60,56 +61,24 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
     $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  Any changes were lost.");
 
 
-// date mode
-$mainPreferences = false;
-if ($mode == "view" && $Me->isPC && $Conf->timePCReviewPreferences())
-    $mainPreferences = true;
-
-
 // grab paper row
-$prow = null;
-function getProw($contactId) {
-    global $prow, $paperId, $Conf, $Me, $mainPreferences;
-    if (!($prow = $Conf->paperRow(array('paperId' => $paperId,
-					'topics' => 1, 'tags' => 1, 'options' => 1,
-					'reviewerPreference' => $mainPreferences),
-				  $contactId, $whyNot))
-	|| !$Me->canViewPaper($prow, $Conf, $whyNot))
+function getProw() {
+    global $prow;
+    if (!($prow = PaperTable::paperRow($whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
-    cleanAuthor($prow);
 }
+$prow = null;
 if (!$newPaper) {
-    getProw($Me->contactId);
-    // perfect mode: default to edit for non-submitted papers
-    if ($mode == "view"
-	&& (!isset($_REQUEST["mode"]) || $_REQUEST["mode"] != "view")
-	&& $prow->conflictType >= CONFLICT_AUTHOR
-	&& $Conf->timeUpdatePaper($prow))
-	$mode = "edit";
+    getProw();
+    $paperId = $prow->paperId;
 }
 
 
 // set review preference action
-if (isset($_REQUEST['revpref']) && $prow) {
-    $ajax = defval($_REQUEST, "ajax", 0);
-    if (!$Me->privChair
-	|| ($contactId = rcvtint($_REQUEST["contactId"])) <= 0)
-	$contactId = $Me->contactId;
-    if (($v = cvtpref($_REQUEST['revpref'])) >= -1000000) {
-	$while = "while saving review preference";
-	$Conf->qe("lock tables PaperReviewPreference write", $while);
-	$Conf->qe("delete from PaperReviewPreference where contactId=$contactId and paperId=$prow->paperId", $while);
-	$result = $Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values ($prow->paperId, $contactId, $v)", $while);
-	$Conf->qe("unlock tables", $while);
-	if ($result)
-	    $Conf->confirmMsg("Review preference saved.");
-	getProw($Me->contactId);
-    } else {
-	$Conf->errorMsg($ajax ? "Preferences must be small positive or negative integers." : "Preferences must be small integers.  0 means don't care; positive numbers mean you want to review a paper, negative numbers mean you don't.  The greater the absolute value, the stronger your feelings.");
-	$PaperError['revpref'] = true;
-    }
-    if ($ajax)
-	$Conf->ajaxExit(array("ok" => $OK && !defval($PaperError, 'revpref')));
+if (isset($_REQUEST["setrevpref"]) && $prow) {
+    require_once("Code/paperactions.inc");
+    PaperActions::setReviewPreference($prow);
+    getProw();
 }
 
 
@@ -126,7 +95,7 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
 	    $_SESSION["info"] = array();
 	$_SESSION["info"]["nbanal"] = defval($_SESSION["info"], "nbanal", 0) + 1;
 	if ($_SESSION["info"]["nbanal"] >= 3 && $_SESSION["info"]["nbanal"] <= 6)
-	    $cf->msg("info", "To run the format checker for many papers, use Download &gt; Format check on the <a href='${ConfSiteBase}search$ConfSiteSuffix?q='>search page</a>.");
+	    $cf->msg("info", "To run the format checker for many papers, use Download &gt; Format check on the <a href='search$ConfSiteSuffix?q='>search page</a>.");
     }
     
     $cf->reportMessages();
@@ -141,7 +110,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	$Conf->qe("update Paper set timeWithdrawn=" . time() . ", timeSubmitted=if(timeSubmitted>0,-100,0) where paperId=$paperId", "while withdrawing paper");
 	$Conf->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$paperId", "while withdrawing paper");
 	$Conf->updatePapersubSetting(false);
-	getProw($Me->contactId);
+	getProw();
 
 	// email contact authors themselves
 	require_once("Code/mailtemplate.inc");
@@ -167,7 +136,7 @@ if (isset($_REQUEST["revive"]) && !$newPaper) {
 	$Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . ") set PaperReview.reviewNeedsSubmit=-1 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY, "while reviving paper");
 	$Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . " and Req.reviewSubmitted>0) set PaperReview.reviewNeedsSubmit=0 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY, "while reviving paper");
 	$Conf->updatePapersubSetting(true);
-	getProw($Me->contactId);
+	getProw();
 	$Conf->log("Revived", $Me, $paperId);
     } else
 	$Conf->errorMsg(whyNotText($whyNot, "revive"));
@@ -198,6 +167,9 @@ function setRequestAuthorTable() {
     if (!count($_REQUEST["authorTable"]) && !$anyAuthors)
 	unset($_REQUEST["authorTable"]);
 }
+if (isset($_REQUEST["auname1"]) || isset($_REQUEST["auemail1"])
+    || isset($_REQUEST["aueditcount"]))
+    setRequestAuthorTable();
 
 
 // update paper action
@@ -243,7 +215,7 @@ function uploadPaper($isSubmitFinal) {
 }
 
 function updatePaper($Me, $isSubmit, $isSubmitFinal) {
-    global $ConfSiteSuffix, $paperId, $newPaper, $PaperError, $Conf, $prow;
+    global $ConfSiteSuffix, $paperId, $newPaper, $Error, $Conf, $prow;
     $contactId = $Me->contactId;
     if ($isSubmitFinal)
 	$isSubmit = false;
@@ -265,7 +237,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	if (trim($_REQUEST[$x]) == "") {
 	    if ($x != "collaborators"
 		|| ($Conf->setting("sub_collab") && $isSubmit))
-		$PaperError[$x] = 1;
+		$Error[$x] = 1;
 	}
 	if ($x == "title")
 	    $_REQUEST[$x] = simplifyWhitespace($_REQUEST[$x]);
@@ -273,7 +245,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     }
     
     if (!is_array($_REQUEST["authorTable"]) || count($_REQUEST["authorTable"]) == 0)
-	$PaperError["authorInformation"] = 1;
+	$Error["authorInformation"] = 1;
     else {
 	$q .= "authorInformation='";
 	foreach ($_REQUEST["authorTable"] as $x)
@@ -282,16 +254,16 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     }
 
     // any missing fields?
-    if (count($PaperError) > 0) {
+    if (count($Error) > 0) {
 	$fields = array();
 	$collab = false;
-	if (isset($PaperError["title"]))
+	if (isset($Error["title"]))
 	    $fields[] = "Title";
-	if (isset($PaperError["authorInformation"]))
+	if (isset($Error["authorInformation"]))
 	    $fields[] = "Authors";
-	if (isset($PaperError["abstract"]))
+	if (isset($Error["abstract"]))
 	    $fields[] = "Abstract";
-	if (isset($PaperError["collaborators"])) {
+	if (isset($Error["collaborators"])) {
 	    $collab = ($Conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
 	    $fields[] = $collab;
 	}
@@ -317,7 +289,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     if ($newPaper && (isset($_REQUEST["contact_email"]) || isset($_REQUEST["contact_name"])) && $Me->privChair)
 	if (!($contactId = $Conf->getContactId($_REQUEST["contact_email"], "contact_"))) {
 	    $Conf->errorMsg("You must supply a valid email address for the contact author.");
-	    $PaperError["contactAuthor"] = 1;
+	    $Error["contactAuthor"] = 1;
 	    return false;
 	}
 
@@ -415,16 +387,16 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // upload paper if appropriate
     if (fileUploaded($_FILES['paperUpload'], $Conf)) {
 	if ($newPaper)
-	    getProw($contactId);
+	    getProw();
 	if (!uploadPaper($isSubmitFinal))
 	    return false;
     }
 
     // submit paper if appropriate
     if ($isSubmitFinal || $isSubmit) {
-	getProw($contactId);
+	getProw();
 	if (($isSubmitFinal ? $prow->finalPaperStorageId : $prow->paperStorageId) <= 1) {
-	    $PaperError["paper"] = 1;
+	    $Error["paper"] = 1;
 	    return $Conf->errorMsg(whyNotText("notUploaded", ($isSubmitFinal ? "submit a final copy for" : "submit"), $paperId));
 	}
 	$result = $Conf->qe("update Paper set " . ($isSubmitFinal ? "timeFinalSubmitted" : "timeSubmitted") . "=" . time() . " where paperId=$paperId",
@@ -440,7 +412,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$Conf->updatePapersubSetting(true);
     
     // confirmation message
-    getProw($contactId);
+    getProw();
     if ($isSubmitFinal) {
 	$what = "Submitted final copy for";
 	$subject = "Updated paper #$paperId final copy";
@@ -501,7 +473,6 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 
 if (isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"])) {
     // get missing parts of request
-    setRequestAuthorTable();
     if (!$newPaper)
 	setRequestFromPaper($prow);
 
@@ -526,7 +497,7 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"])) {
 	$Conf->errorMsg(whyNotText($whyNot, $action));
     } else if (updatePaper($Me, isset($_REQUEST["submit"]), isset($_REQUEST["submitfinal"]))) {
 	if ($newPaper)
-	    $Conf->go("paper$ConfSiteSuffix?p=$paperId&mode=edit");
+	    $Conf->go("paper$ConfSiteSuffix?p=$paperId&mode=pe");
     }
 
     // use request?
@@ -581,202 +552,186 @@ function deadlineSettingIs($dname, $conf) {
 	return "  The deadline was $deadline.";
 }
 
-$override = ($Me->privChair ? "  As an administrator, you can override this deadline using the \"Override deadlines\" checkbox." : "");
-if ($mode != "edit")
-    /* do nothing */;
-else if ($newPaper) {
-    $timeStart = $Conf->timeStartPaper();
-    $startDeadline = deadlineSettingIs("sub_reg", $Conf);
-    if (!$timeStart) {
-	if ($Conf->setting("sub_open") <= 0)
-	    $msg = "You can't register new papers because the conference site has not been opened for submissions.$override";
-	else
-	    $msg = "You can't register new papers since the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed.$startDeadline$override";
-	if (!$Me->privChair)
-	    errorMsgExit($msg);
-	$Conf->infoMsg($msg);
-    }
-} else if ($prow->conflictType >= CONFLICT_AUTHOR
-	   && ($Conf->timeUpdatePaper($prow) || $prow->timeSubmitted <= 0)) {
-    $timeUpdate = $Conf->timeUpdatePaper($prow);
-    $updateDeadline = deadlineSettingIs("sub_update", $Conf);
-    $timeSubmit = $Conf->timeFinalizePaper($prow);
-    $submitDeadline = deadlineSettingIs("sub_sub", $Conf); 
-    if ($timeUpdate && $prow->timeWithdrawn > 0)
-	$Conf->infoMsg("Your paper has been withdrawn, but you can still revive it.$updateDeadline");
-    else if ($timeUpdate) {
-	if ($prow->timeSubmitted <= 0) {
-	    if ($prow->paperStorageId <= 1)
-		$Conf->warnMsg("You haven't uploaded a paper yet.$updateDeadline");
-	    else if ($Conf->setting('sub_freeze'))
-		$Conf->warnMsg("You must submit a final version of your paper before it can be reviewed.$updateDeadline");
-	    else
-		$Conf->warnMsg("The current version of the paper is marked as not ready for review.  If you don't submit a reviewable version of the paper, it will not be considered.$updateDeadline"); 
-	} else
-	    $Conf->confirmMsg("Your paper is ready for review and will be considered for the conference.  You still have time to make changes.$updateDeadline");
-    } else if ($prow->timeWithdrawn <= 0 && $timeSubmit)
-	$Conf->infoMsg("You cannot make any changes as the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override");
-    else if ($prow->timeWithdrawn <= 0)
-	$Conf->infoMsg("The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override");
-} else if ($prow->conflictType >= CONFLICT_AUTHOR && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper()) {
-    $updateDeadline = deadlineSettingIs("final_done", $Conf);
-    $Conf->infoMsg("Congratulations!  This paper was accepted.  Submit a final copy for your paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or edit contact authors, allowing others to view reviews and make changes.");
-} else if ($prow->conflictType >= CONFLICT_AUTHOR) {
-    $override2 = ($Me->privChair ? "  However, as an administrator, you can update the paper anyway by selecting \"Override deadlines\"." : "");
-    $Conf->infoMsg("This paper is under review and can no longer be changed, although you may still withdraw it from the conference.$override2");
-} else if (!$Me->privChair)
-    errorMsgExit("You can't edit paper #$paperId since you aren't one of its contact authors.");
-else
-    $Conf->infoMsg("You aren't a contact author for this paper, but as an administrator you can still make changes.");
-
 
 // page header
 confHeader();
 
 
-// begin table
-$finalEditMode = false;
-if ($mode == "edit") {
-    echo "<form method='post' action=\"paper$ConfSiteSuffix?p=",
-	($newPaper ? "new" : $paperId),
-	"&amp;post=1&amp;mode=edit$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>";
-    $editable = $newPaper || ($prow->timeWithdrawn <= 0
-			      && ($Conf->timeUpdatePaper($prow) || $Me->privChair));
-    if ($prow && $prow->outcome > 0 && ($Conf->timeSubmitFinalPaper() || $Me->privChair))
-	$editable = $finalEditMode = true;
-} else
-    $editable = false;
-if ($editable)
-    setRequestAuthorTable();
-
-
-// prepare paper table
-$canViewAuthors = $Me->canViewAuthors($prow, $Conf, false);
-if ($mode == "edit" && $Me->privChair)
-    $canViewAuthors = true;
-
-if ($editable)
-    $spacer = "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
-else
-    $spacer = "";
-
-$paperTable = new PaperTable($editable, $editable && $useRequest, false, !$canViewAuthors && $Me->privChair, "paper");
-
-$paperTable->echoDivEnter();
-echo "<table class='paper", ($mode == "edit" ? " editpaper" : ""), "'>\n\n";
-
-
-// title
-if (!$newPaper) {
-    echo "<tr class='id'>
-  <td class='caption'><h2>#$paperId</h2></td>
-  <td class='entry' colspan='2'><h2>";
-    $paperTable->echoTitle($prow);
-    echo "</h2></td>
-</tr>\n";
-} else
-    echo "<tr><td></td><td><div class='g'></div></td></tr>\n";
-
-
-// Editable title
-if ($editable)
-    $paperTable->echoTitleRow($prow);
-
-
-// Current status
-$flags = PaperTable::STATUS_DATE;
-if ($editable && $newPaper)
-    $flags += PaperTable::OPTIONAL;
-if (!$editable)
-    $flags += PaperTable::STATUS_CONFLICTINFO | PaperTable::STATUS_REVIEWERINFO;
-if (!$newPaper) {
-    $paperTable->echoPaperRow($prow, $flags);
-    if ($mode != "edit" && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair))
-	$paperTable->echoEditRow($prow);
+// correct modes
+$paperTable = new PaperTable($prow);
+if ($paperTable->mode == "r" || $paperTable->mode == "re") {
+    $rf = reviewForm();
+    $paperTable->resolveReview();
+    $paperTable->resolveComments();
+    $paperTable->fixReviewMode();
 }
 
 
-// Upload paper
-if ($editable)
-    $paperTable->echoUploadRow($prow,
+// prepare paper table
+$finalEditMode = false;
+if ($paperTable->mode == "pe") {
+    $editable = $newPaper
+	|| ($prow->timeWithdrawn <= 0
+	    && ($Conf->timeUpdatePaper($prow) || $Me->actChair($prow)));
+    if ($prow && $prow->outcome > 0
+	&& ($Conf->timeSubmitFinalPaper() || $Me->actChair($prow)))
+	$editable = $finalEditMode = true;
+} else
+    $editable = false;
+
+$paperTable->initialize($editable, $editable && $useRequest,
+			$paperTable->mode != "p" && $paperTable->mode != "pe",
+			"paper");
+
+// produce paper table
+if ($paperTable->mode == "r") {
+    $paperTable->paptabBegin();
+    $paperTable->paptabEndWithReviews(); 
+
+} else if ($paperTable->mode == "re") {
+    $paperTable->paptabBegin();
+    $paperTable->paptabEndWithEditableReview();
+
+} else if ($paperTable->mode != "pe") {
+    $paperTable->paptabBegin();
+    if ($Me->isPC
+	&& ($Conf->timeReviewOpen() || $Conf->timeAuthorViewReviews()))
+	$paperTable->paptabEndWithReviewMessage();
+    else
+	echo tagg_cbox("pap", true), "</td></tr></table>\n";
+
+} else {
+    assert(!$prow || $Me->canViewAuthors($prow, $Conf, false) || $Me->actChair($prow, true));
+    
+    $override = ($Me->privChair ? "  As an administrator, you can override this deadline using the \"Override deadlines\" checkbox." : "");
+    if ($newPaper) {
+	$timeStart = $Conf->timeStartPaper();
+	$startDeadline = deadlineSettingIs("sub_reg", $Conf);
+	if (!$timeStart) {
+	    if ($Conf->setting("sub_open") <= 0)
+		$msg = "You can't register new papers because the conference site has not been opened for submissions.$override";
+	    else
+		$msg = "You can't register new papers since the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed.$startDeadline$override";
+	    if (!$Me->privChair)
+		errorMsgExit($msg);
+	    $Conf->infoMsg($msg);
+	}
+    } else if ($prow->conflictType >= CONFLICT_AUTHOR
+	       && ($Conf->timeUpdatePaper($prow) || $prow->timeSubmitted <= 0)) {
+	$timeUpdate = $Conf->timeUpdatePaper($prow);
+	$updateDeadline = deadlineSettingIs("sub_update", $Conf);
+	$timeSubmit = $Conf->timeFinalizePaper($prow);
+	$submitDeadline = deadlineSettingIs("sub_sub", $Conf); 
+	if ($timeUpdate && $prow->timeWithdrawn > 0)
+	    $Conf->infoMsg("Your paper has been withdrawn, but you can still revive it.$updateDeadline");
+	else if ($timeUpdate) {
+	    if ($prow->timeSubmitted <= 0) {
+		if ($prow->paperStorageId <= 1)
+		    $Conf->warnMsg("You haven't uploaded a paper yet.$updateDeadline");
+		else if ($Conf->setting('sub_freeze'))
+		    $Conf->warnMsg("You must submit a final version of your paper before it can be reviewed.$updateDeadline");
+		else
+		    $Conf->warnMsg("The current version of the paper is marked as not ready for review.  If you don't submit a reviewable version of the paper, it will not be considered.$updateDeadline"); 
+	    } else
+		$Conf->confirmMsg("Your paper is ready for review and will be considered for the conference.  You still have time to make changes.$updateDeadline");
+	} else if ($prow->timeWithdrawn <= 0 && $timeSubmit)
+	    $Conf->infoMsg("You cannot make any changes as the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override");
+	else if ($prow->timeWithdrawn <= 0)
+	    $Conf->infoMsg("The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override");
+    } else if ($prow->conflictType >= CONFLICT_AUTHOR && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper()) {
+	$updateDeadline = deadlineSettingIs("final_done", $Conf);
+	$Conf->infoMsg("Congratulations!  This paper was accepted.  Submit a final copy for your paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or edit contact authors, allowing others to view reviews and make changes.");
+    } else if ($prow->conflictType >= CONFLICT_AUTHOR) {
+	$override2 = ($Me->privChair ? "  However, as an administrator, you can update the paper anyway by selecting \"Override deadlines\"." : "");
+	$Conf->infoMsg("This paper is under review and can no longer be changed, although you may still withdraw it from the conference.$override2");
+    } else if (!$Me->privChair)
+	errorMsgExit("You can't edit paper #$paperId since you aren't one of its contact authors.");
+    else
+	$Conf->infoMsg("You aren't a contact author for this paper, but as an administrator you can still make changes.");
+
+    $spacer = "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
+    
+    echo "<form method='post' action=\"paper$ConfSiteSuffix?p=",
+	($newPaper ? "new" : $paperId),
+	"&amp;post=1&amp;mode=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>";
+    $paperTable->echoDivEnter();
+    echo "<table class='paper", ($paperTable->mode == "pe" ? " editpaper" : ""), "'>\n\n";
+
+
+    // title
+    if (!$newPaper) {
+	echo "<tr class='id'>
+  <td class='caption'><h2>#$paperId</h2></td>
+  <td class='entry' colspan='2'><h2>";
+	$paperTable->echoTitle($prow);
+	echo "</h2></td>
+</tr>\n";
+    } else
+	echo "<tr><td></td><td><div class='g'></div></td></tr>\n";
+
+
+    // Editable title
+    if ($editable)
+	$paperTable->echoTitleRow($prow);
+
+
+    // Current status
+    $flags = PaperTable::STATUS_DATE;
+    if ($editable && $newPaper)
+	$flags += PaperTable::OPTIONAL;
+    if (!$editable)
+	$paperTable->echoPaperRow($prow, $flags);
+
+
+    // Upload paper
+    if ($editable)
+	$paperTable->echoUploadRow($prow,
 		($finalEditMode ? PaperTable::FINALCOPY : 0)
 		+ ($newPaper ? PaperTable::OPTIONAL : 0)
 		+ (!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0));
 
-echo $spacer;
+    echo $spacer;
 
 
-// Authors
-if ($newPaper || $canViewAuthors || $Me->privChair)
+    // Authors
     $paperTable->echoAuthorInformation($prow);
 
-// Contact authors
-if ($newPaper)
-    $paperTable->echoNewContactAuthor($Me->privChair);
-else if ($canViewAuthors || $Me->privChair)
-    $paperTable->echoContactAuthor($prow, $mode == "edit" || $prow->conflictType >= CONFLICT_AUTHOR);
+    // Contact authors
+    if ($newPaper)
+	$paperTable->echoNewContactAuthor($Me->privChair);
+    else
+	$paperTable->echoContactAuthor($prow, $paperTable->mode == "pe" || $prow->conflictType >= CONFLICT_AUTHOR);
 
-// Anonymity
-if ($Conf->blindSubmission() == 1 && !$finalEditMode)
-    $paperTable->echoAnonymity($prow);
+    // Anonymity
+    if ($Conf->blindSubmission() == 1 && !$finalEditMode)
+	$paperTable->echoAnonymity($prow);
 
-echo $spacer;
-
-
-// Abstract
-$paperTable->echoAbstractRow($prow);
-
-echo $spacer;
+    echo $spacer;
 
 
-// Topics
-if (!$finalEditMode)
-    $paperTable->echoTopics($prow);
+    // Abstract
+    $paperTable->echoAbstractRow($prow);
+
+    echo $spacer;
 
 
-// Options
-$paperTable->echoOptions($prow, $Me->privChair);
+    // Topics
+    if (!$finalEditMode)
+	$paperTable->echoTopics($prow);
 
 
-// Tags
-if ($prow && $Me->canViewTags($prow, $Conf) && !$editable)
-    $paperTable->echoTags($prow);
+    // Options
+    $paperTable->echoOptions($prow, $Me->privChair);
 
 
-// Potential conflicts
-if ($paperTable->editable || $Me->privChair)
-    $paperTable->echoPCConflicts($prow, !$paperTable->editable);
-if (($newPaper || $canViewAuthors || $Me->privChair) && !$finalEditMode)
-    $paperTable->echoCollaborators($prow);
+    // Potential conflicts
+    if ($paperTable->editable || $Me->privChair)
+	$paperTable->echoPCConflicts($prow, !$paperTable->editable);
+    if (!$finalEditMode)
+	$paperTable->echoCollaborators($prow);
 
 
-// Review preference
-if ($mode != "edit" && $mainPreferences && $prow->conflictType <= 0) {
-    $x = (isset($prow->reviewerPreference) ? htmlspecialchars($prow->reviewerPreference) : "0");
-    $x = ($x == "0" ? "" : $x);
-    echo "<tr class='pt_preferences'>
-  <td class='caption";
-    if (isset($PaperError['revpref']))
-	echo " error";
-    echo "'>Review preference</td>
-  <td class='entry'><form id='prefform' class='fold7o' action=\"${ConfSiteBase}paper$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra\" method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"prefform\")'>",
-	"<div class='inform'>",
-	"<input type='hidden' name='setrevpref' value='1' />",
-	"<input id='prefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$x\" onchange='Miniajax.submit(\"prefform\")' tabindex='1' />&nbsp;
-    <input class='hb extension7' type='submit' value='Save preference' tabindex='1' />
-    <span id='prefformresult' style='padding-left:1em'></span>",
-	"</div></form></td>\n</tr>\n\n";
-    $Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"prefform\", null, 2);Miniajax.onload(\"prefform\");</script>";
-}
-
-
-// Outcome
-// if ($mode != "edit" && $Me->canSetOutcome($prow))
-//     $paperTable->echoOutcomeSelector($prow);
-
-
-// Submit button
-if ($mode == "edit") {
+    // Submit button
     echo $spacer;
     echo "<tr class='pt_edit'>
   <td class='caption'></td>
@@ -804,12 +759,12 @@ if ($mode == "edit") {
 	    $Conf->footerStuff .= "<div id='popup_w' class='popupc'><p>Are you sure you want to withdraw this paper from consideration and/or publication?";
 	    if (!$Me->privChair || $prow->conflictType >= CONFLICT_AUTHOR)
 		$Conf->footerStuff .= "  Only administrators can undo this step.";
-	    $Conf->footerStuff .= "</p><form method='post' action=\"paper$ConfSiteSuffix?p=$paperId&amp;post=1&amp;mode=edit$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'w', 1)\">Cancel</button></div></form></div>";
+	    $Conf->footerStuff .= "</p><form method='post' action=\"paper$ConfSiteSuffix?p=$paperId&amp;post=1&amp;mode=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'w', 1)\">Cancel</button></div></form></div>";
 	}
     }
     if ($Me->privChair && !$newPaper) {
 	$buttons[] = array("<button type='button' class='b' onclick=\"popup(this, 'd', 0)\">Delete paper</button>", "(admin only)");
-	$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"paper$ConfSiteSuffix?p=$paperId&amp;post=1&amp;mode=edit$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='delete' value='Delete paper' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
+	$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"paper$ConfSiteSuffix?p=$paperId&amp;post=1&amp;mode=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='delete' value='Delete paper' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
     }
     echo "    <tr>\n";
     foreach ($buttons as $b) {
@@ -831,17 +786,17 @@ if ($mode == "edit") {
 	echo "      <tr><td><input type='checkbox' name='override' value='1' />&nbsp;Override deadlines</td></tr>\n";
 	echo "  </table></td>\n</tr>\n\n";
     }
+
+
+    // End paper view
+    echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>
+</table>";
+    $paperTable->echoDivExit();
+
+    echo "</div></form>\n";
+    echo "<div class='clear'></div>\n\n";
 }
 
 
-// End paper view
-echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>
-</table>";
-$paperTable->echoDivExit();
-
-if ($mode == "edit")
-    echo "</div></form>\n";
-echo "<div class='clear'></div>\n\n";
-
-
+echo foldsessionpixel("paper9", "foldpaperp"), foldsessionpixel("paper5", "foldpapert"), foldsessionpixel("paper6", "foldpaperb");
 $Conf->footer();

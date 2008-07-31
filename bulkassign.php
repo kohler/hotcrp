@@ -246,15 +246,15 @@ $Conf->header("Review Assignments", "bulkassign", $abar);
 // Help list
 echo "<div class='helpside'><div class='helpinside'>
 Assignment methods:
-<ul><li><a href='${ConfSiteBase}autoassign$ConfSiteSuffix'>Automatic</a></li>
- <li><a href='${ConfSiteBase}manualassign$ConfSiteSuffix'>Manual by PC member</a></li>
- <li><a href='${ConfSiteBase}assign$ConfSiteSuffix'>Manual by paper</a></li>
- <li><a href='${ConfSiteBase}bulkassign$ConfSiteSuffix' class='q'><strong>Offline (bulk upload)</strong></a></li>
+<ul><li><a href='autoassign$ConfSiteSuffix'>Automatic</a></li>
+ <li><a href='manualassign$ConfSiteSuffix'>Manual by PC member</a></li>
+ <li><a href='assign$ConfSiteSuffix'>Manual by paper</a></li>
+ <li><a href='bulkassign$ConfSiteSuffix' class='q'><strong>Offline (bulk upload)</strong></a></li>
 </ul>
 <hr class='hr' />
 Types of PC assignment:
-<dl><dt><img src='${ConfSiteBase}images/ass", REVIEW_PRIMARY, ".gif' alt='Primary' /> Primary</dt><dd>Expected to review the paper themselves</dd>
-  <dt><img src='${ConfSiteBase}images/ass", REVIEW_SECONDARY, ".gif' alt='Secondary' /> Secondary</dt><dd>May delegate to external reviewers</dd></dl>
+<dl><dt><img src='images/ass", REVIEW_PRIMARY, ".gif' alt='Primary' /> Primary</dt><dd>Expected to review the paper themselves</dd>
+  <dt><img src='images/ass", REVIEW_SECONDARY, ".gif' alt='Secondary' /> Secondary</dt><dd>May delegate to external reviewers</dd></dl>
 </div></div>";
 
 
@@ -288,7 +288,7 @@ echo "'>Review round: &nbsp;",
     "<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"",
     htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"),
     "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
-    " &nbsp;<a class='hint' href='${ConfSiteBase}help$ConfSiteSuffix?t=revround'>What is this?</a></div></div>
+    " &nbsp;<a class='hint' href='help$ConfSiteSuffix?t=revround'>What is this?</a></div></div>
 
 <div class='g'></div>
 
