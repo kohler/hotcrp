@@ -347,6 +347,28 @@ if ($getaction == "pcconflicts" && isset($papersel) && $Me->privChair) {
 }
 
 
+// download text PC conflict information for selected papers
+if (($getaction == "lead" || $getaction == "shepherd")
+    && isset($papersel) && $Me->privChair) {
+    $idq = paperselPredicate($papersel, "Paper.");
+    $result = $Conf->qe("select Paper.paperId, title, email, firstName, lastName
+		from Paper
+		join ContactInfo on (ContactInfo.contactId=Paper.${getaction}ContactId)
+		where $idq
+		group by Paper.paperId", "while fetching PC conflicts");
+    if ($result) {
+	$texts = array();
+	while (($row = edb_row($result)))
+	    if ($row[2])
+		defappend($texts[$paperselmap[$row[0]]], $row[0] . "\t" . $row[1] . "\t" . $row[2] . "\t" . trim("$row[3] $row[4]") . "\n");
+	ksort($texts);
+	$text = "#paper\ttitle\t${getaction}email\t${getaction}name\n" . join("", $texts);
+	downloadText($text, $Opt['downloadPrefix'] . "${getaction}s.txt", "${getaction}s");
+	exit;
+    }
+}
+
+
 // download text contact author information, with email, for selected papers
 if ($getaction == "contact" && $Me->privChair && isset($papersel)) {
     // Note that this is chair only

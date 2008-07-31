@@ -735,6 +735,10 @@ class PaperList extends BaseList {
 	    $sel_opt["topics"] = "Topics";
 	if (!$revpref && ($this->contact->privChair || ($this->contact->isPC && $Conf->timePCViewAllReviews())))
 	    $sel_opt["scores"] = "Scores";
+	if ($Conf->setting("paperlead") > 0) {
+	    $sel_opt["lead"] = "Discussion leads";
+	    $sel_opt["shepherd"] = "Shepherds";
+	}
 	$t .= tagg_select("getaction", $sel_opt, key($sel_opt),
 			  array("id" => "plact${nlll}_d", "tabindex" => 6,
 				"class" => "bsm"))
