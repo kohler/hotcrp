@@ -8,7 +8,7 @@ function checkTagError($tag, $forsearch = false) {
 	return "Empty tag.";
     else if (strlen($tag) > TAG_MAXLEN)
 	return "Tag \"$tag\" too long; maximum " . TAG_MAXLEN . " characters.";
-    else if (!preg_match('/\A~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*#?\d*\Z/', $tag)
+    else if (!preg_match('/\A~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*#?(-\d)?\d*\Z/', $tag)
 	     || ($forsearch && strpos($tag, "#") !== false))
 	// Note that tags MUST NOT contain HTML special characters.
 	return "Tag \"$tag\" contains odd characters.";
@@ -51,6 +51,17 @@ function chairTags() {
     }
 }
 
+global $orderedTagStepMap;
+$orderedTagStepMap = array(1, 1, 1, 1, 1, 2, 2, 2, 3, 4);
+
+function orderedTagStep($mode) {
+    global $orderedTagStepMap;
+    if (strlen($mode) == 2)
+	return $orderedTagStepMap[mt_rand(0, 9)];
+    else
+	return 1;
+}
+
 function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
     global $Conf, $Me;
     if (!is_array($pids))
@@ -60,7 +71,7 @@ function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
     $ok = true;
     $tags = array();
     foreach (preg_split('/\s+/', $tagtext) as $tag) {
-	if ($mode == "so" || $mode == "ao")
+	if ($mode == "so" || $mode == "ao" || $mode == "sos" || $mode == "aos")
 	    $tag .= "#";
 	if ($tag != "" && ($tag = checkTag($tag, $reporterr))
 	    && ($ok = ($ok && $tag)))
@@ -97,9 +108,9 @@ function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
     }
 
     // delete tags
-    if ($mode != "a" && $mode != "ao") {
+    if ($mode != "a" && $mode != "ao" && $mode != "aos") {
 	$q = "delete from PaperTag where (";
-	if ($mode == "s" || $mode == "so")
+	if ($mode == "s" || $mode == "so" || $mode == "sos")
 	    $q .= "true or ";
 	else
 	    foreach ($pids as $pid)
@@ -139,19 +150,20 @@ function setTags($pids, $tagtext, $mode, $chair, $reporterr = true) {
 		    if (!isset($tagIndex[$base])) {
 			$result = $Conf->qe("select max(tagIndex) from PaperTag where tag='" . sqlq($base) . "'", $while);
 			if (($row = edb_row($result)))
-			    $tagIndex[$base] = $row[0] + 1;
+			    $tagIndex[$base] = $row[0] + orderedTagStep($mode);
 			else
-			    $tagIndex[$base] = 1;
+			    $tagIndex[$base] = orderedTagStep($mode);
 		    }
 		    $q .= "($pid, '" . sqlq($base) . "', " . $tagIndex[$base] . "), ";
-		    $tagIndex[$base]++;
+		    $tagIndex[$base] += orderedTagStep($mode);
+		    error_log($tagIndex[$base]);
 		}
 	    }
 	}
 	$Conf->qe(substr($q, 0, strlen($q) - 2) . " on duplicate key update tagIndex=tagIndex", $while);
     }
 
-    $modeexplanation = array("so" => "define ordered", "ao" => "add ordered", "d" => "remove", "s" => "define", "a" => "add", "p" => "set");
+    $modeexplanation = array("so" => "define ordered", "ao" => "add ordered", "sos" => "define strict ordered", "aos" => "add strict ordered", "d" => "remove", "s" => "define", "a" => "add", "p" => "set");
     $Conf->log("Tag " . $modeexplanation[$mode] . ": " . join(", ", $tags), $Me, $pids);
     
     $Conf->qe("unlock tables", $while);

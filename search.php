@@ -287,7 +287,7 @@ function tagaction() {
     
     $act = $_REQUEST["tagtype"];
     $tag = $_REQUEST["tag"];
-    if (count($papers) && ($act == "a" || $act == "d" || $act == "s" || $act == "so" || $act == "ao"))
+    if (count($papers) && ($act == "a" || $act == "d" || $act == "s" || $act == "so" || $act == "ao" || $act == "sos" || $act == "aos"))
 	setTags($papers, $tag, $act, $Me->privChair);
 }
 if (isset($_REQUEST["tagact"]) && $Me->isPC && isset($papersel) && isset($_REQUEST["tag"]))

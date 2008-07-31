@@ -765,7 +765,7 @@ class PaperList extends BaseList {
 	if ($this->contact->isPC && !$revpref) {
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Tag</a></span><span class='lld$nlll'><b>:</b><a class='help' href='help$ConfSiteSuffix?t=tags#changing' title='Learn more'>?</a> &nbsp;";
-	    $t .= tagg_select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define", "so" => "Define ordered", "ao" => "Add ordered"), null, array("class" => "bsm"))
+	    $t .= tagg_select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define", "so" => "Define ordered", "ao" => "Add ordered", "sos" => "Define sequential", "aos" => "Add sequential"), null, array("class" => "bsm"))
 		. " &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='bsm' name='tagact' value='Go' /></span>";
 	    $nlll++;
 	}

@@ -479,7 +479,7 @@ class PaperSearch {
 	     || ($special ? $special == "order" : isset($this->fields['order'])))
 	    && $this->amPC) {
 	    require_once("tags.inc");
-	    if (preg_match('/\A([^#]+)#([<>!]?=?)(\d+)\Z/', $word, $m)
+	    if (preg_match('/\A([^#]+)#([<>!]?=?)(-?\d+)\Z/', $word, $m)
 		&& $m[1] != "any" && $m[1] != "none") {
 		$tagword = $m[1];
 		$extra = ($m[2] == "!" ? "!=" : ($m[2] == "" ? "=" : $m[2])) . $m[3];

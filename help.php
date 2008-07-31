@@ -372,23 +372,31 @@ it from all non-selected papers.</p>
 
 Although any PC member can view or search
 any tag, only PC chairs can change certain tags$chairtags.  $setting");
-    _alternateRow("Ordered tags<br />and discussion orders", "
-Searching for a tag with &ldquo;<a
-href='search$ConfSiteSuffix?q=order:tagname'>order:tagname</a>&rdquo;
-will return the papers in the order you defined.  For example, this is useful
-for PC meeting discussion orders.  In tag listings, the first paper in the
-&ldquo;discuss&rdquo; ordered tag will appear as &ldquo;discuss#1&rdquo;, the
-second as &ldquo;discuss#2&rdquo;, and so forth.  Change the order by
-editing the tag numbers.  Search within the order with search terms like
-<a href='search$ConfSiteSuffix?q=tag:discuss%232'>&ldquo;tag:discuss#2&rdquo;</a>
-or <a href='search$ConfSiteSuffix?q=tag:discuss%23%3E1'>&ldquo;tag:discuss#>1&rdquo;</a>.
+    _alternateRow("Tag values<br />and discussion orders", "
+Tags can have optional per-paper numeric values, which are displayed as
+&ldquo;tag#100&rdquo;.  Searching for a tag with &ldquo;<a
+href='search$ConfSiteSuffix?q=order:tagname'>order:tagname</a>&rdquo; will
+return the papers sorted by the tag value.  This is useful, for example, for
+PC meeting discussion orders.  Change the order by editing the tag numbers.
+Search within the order with search terms like &ldquo;<a
+href='search$ConfSiteSuffix?q=tag:discuss%232'>tag:discuss#2</a>&rdquo;
+or &ldquo;<a
+href='search$ConfSiteSuffix?q=tag:discuss%23%3E1'>tag:discuss#>1</a>&rdquo;.
 
 <p>It's easiest to define ordered tags using the
 <a href='search$ConfSiteSuffix'>search screen</a>.  Search for the
 papers you want, sort them into the right order, select them, and
 choose <b>Define ordered</b> in the tag action area.  If no sort
-gives what you want, search for the desired paper numbers in order.
-For instance, you might search for &ldquo;<a href='search$ConfSiteSuffix?q=4+1+12+9'>4 1 12 19</a>&rdquo;, then <b>Select all</b> and <b>Define ordered</b>.</p>");
+gives what you want, search for the desired paper numbers in order&mdash;for instance, you might search for &ldquo;<a href='search$ConfSiteSuffix?q=4+1+12+9'>4 1 12 19</a>&rdquo;&mdash;then <b>Select all</b> and <b>Define ordered</b>.
+To add new papers at the end of an existing discussion order, use <b>Add
+ordered</b>.</p>
+
+<p>The <b>Define ordered</b> and <b>Add ordered</b> tag actions sometimes skip
+tag values.  For instance, a defined order might assign values
+&ldquo;discuss#1&rdquo;, &ldquo;discuss#3&rdquo;, &ldquo;discuss#6&rdquo;, and
+&ldquo;discuss#7&rdquo; to adjacent papers.  The gaps make it difficult for PC
+members to infer tag values for their conflicted papers.  If you don't care
+about that and want sequential values, use <b>Define sequential</b>.</p>");
     echo "</table>\n";
 }
 
