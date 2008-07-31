@@ -169,9 +169,16 @@ class PaperTable {
 	if (isset($Error[$what]))
 	    $c .= " error";
 	$c .= "'><span class='${type}fn'>";
-	if (!($fold = defval($extra, "fold", false)))
-	    $c .= (is_array($name) ? $name[0] : $name);
-	else {
+	$editfolder = defval($extra, "editfolder", false);
+	if (!($fold = defval($extra, "fold", false))) {
+	    $n .= (is_array($name) ? $name[0] : $name);
+	    if ($editfolder)
+		$c .= "<a class='q unfolder' title='Edit' "
+		    . "href='javascript:fold(\"$editfolder\", 0)'>"
+		    . $n . "</a><span class='extension'>" . $n . "</span>";
+	    else
+		$c .= $n;
+	} else {
 	    $foldnum = defval($extra, "foldnum", 0);
 	    if (!is_array($name))
 		$name = array($name, $name);
@@ -187,7 +194,7 @@ class PaperTable {
 		$c .= foldsessionpixel($fold . $foldnum, $foldsession);
 	}
 	$c .= "</span>";
-	if (($editfolder = defval($extra, "editfolder", false))) {
+	if ($editfolder) {
 	    $a = "<a class='unfolder' href='javascript:fold(\"$editfolder\", 0)' title='Edit'>";
 	    $c .= "<span class='hint'>" . $a
 		. $Conf->cacheableImage("newreview.png", "[Edit]", null, "b")
@@ -988,21 +995,10 @@ class PaperTable {
 	    "<div class='psv'>", authorTable($pcconfs), "</div>\n";
     }
 
-    function echoLead($prow) {
-	if ($prow->leadContactId) {
-	    $pc = pcMembers();
-	    echo "<tr class='pt_conflict'><td class='caption'>Discussion lead</td><td class='entry'>";
-	    if (($row = defval($pc, $prow->leadContactId, null)))
-		echo contactHtml($row->firstName, $row->lastName);
-	    else
-		echo "(Unknown contact ID!)";
-	    echo "</td></tr>\n";
-	}
-    }
-
-    function _papstripLeadShepherd($prow, $type, $name, $defaultEdit) {
+    function _papstripLeadShepherd($prow, $type, $name) {
 	global $Conf, $ConfSiteSuffix, $Me, $Error, $linkExtra;
-	$editable = $Me->actChair($prow) && $defaultEdit >= 0;
+	$editable = $Me->actChair($prow);
+	$defaultEdit = ($this->mode == "assign");
 
 	$field = $type . "ContactId";
 	if ($prow->$field == 0 && !$editable)
@@ -1047,46 +1043,12 @@ class PaperTable {
 	echo "\n\n";
     }
 
-    function papstripLead($prow, $defaultEdit = false) {
-	$this->_papstripLeadShepherd($prow, "lead", "Discussion lead", $defaultEdit);
+    function papstripLead($prow) {
+	$this->_papstripLeadShepherd($prow, "lead", "Discussion lead");
     }
 
-    function echoShepherd($prow) {
-	if ($prow->shepherdContactId) {
-	    $pc = pcMembers();
-	    echo "<tr class='pt_conflict'><td class='caption'>Shepherd</td><td class='entry'>";
-	    if (($row = defval($pc, $prow->shepherdContactId, null)))
-		echo contactHtml($row->firstName, $row->lastName);
-	    else
-		echo "(Unknown contact ID!)";
-	    echo "</td></tr>\n";
-	}
-    }
-
-    function papstripShepherd($prow, $defaultEdit = false) {
-	$this->_papstripLeadShepherd($prow, "shepherd", "Shepherd", $defaultEdit);
-    }
-
-    function echoTags($prow, $site = null) {
-	global $Conf, $ConfSiteSuffix, $Me;
-	$t = isset($prow->paperTags) ? $prow->paperTags : "";
-	if ($site || $t) {
-	    // Note that tags MUST NOT contain HTML special characters.
-	    require_once("tags.inc");
-	    $tx = tagsToText($t, true, $Me->contactId);
-	    $t = tagsToText($t, false, $Me->contactId);
-	    echo "<tr class='pt_tags'>\n  <td class='caption'>Tags</td>\n  <td class='entry'>";
-	    if ($site && $Me->canSetTags($prow, $Conf)) {
-		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div id='foldtags' class='foldc inform'>";
-		echo "<span class='ellipsis'>", ($t == "" ? "none" : $tx), "&nbsp;</span>";
-		echo "<a href='javascript:fold(\"tags\", 0)' title='Edit tags'>", $Conf->cacheableImage("next.png", "[Edit]", null, "unfolder"), "</a>";
-		echo "<span class='extension'><input class='textlite' type='text' size='40' name='tags' value=\"", $t, "\" /> &nbsp;<input class='bsm' type='submit' name='settags' value='Save' /> &nbsp; ";
-		echo "<button type='button' class='bsm' onclick='javascript:fold(\"tags\", 1)'>Cancel</button><br /><span class='hint'><a href='help$ConfSiteSuffix?t=tags'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span></span>";
-		echo "</div></form>";
-	    } else
-		echo ($t == "" ? "none" : $tx);
-	    echo "</td>\n</tr>\n\n";
-	}
+    function papstripShepherd($prow) {
+	$this->_papstripLeadShepherd($prow, "shepherd", "Shepherd");
     }
 
     function papstripTags($prow, $site = null) {
@@ -1121,21 +1083,12 @@ class PaperTable {
 	}
     }
 
-    function echoOutcomeSelector($prow) {
-	global $ConfSiteSuffix;
-	echo "<tr class='pt_outcome'>
-  <td class='caption'>Decision</td>
-  <td class='entry'><form method='get' action='review$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='p' value='$prow->paperId' />";
-	if (isset($_REQUEST['forceShow']))
-	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
-	echo decisionSelector($prow->outcome, null, " onchange='highlightUpdate(\"setdecision\")'");
-	echo "&nbsp; <input id='setdecision' class='b' type='submit' name='setdecision' value='Save' /></div></form></td>\n</tr>\n";
-    }
-
     function papstripOutcomeSelector($prow) {
-	global $Conf, $ConfSiteSuffix, $Error, $linkExtra;
-	echo $this->papt("decision", "Decision", array("type" => "ps")),
-	    "<div class='psv'><form id='decisionform' class='fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"decisionform\")'>",
+	global $Conf, $ConfSiteSuffix, $rf, $Error, $linkExtra;
+	echo "<div id='folddecision' class='",
+	    ($this->mode == "assign" ? "foldo" : "foldc"), "'>",
+	    $this->papt("decision", "Decision", array("type" => "ps", "editfolder" => "decision")),
+	    "<div class='psv'><form id='decisionform' class='extension fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"decisionform\")'>",
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setdecision' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
@@ -1143,7 +1096,9 @@ class PaperTable {
 	echo decisionSelector($prow->outcome, null, " onchange='Miniajax.submit(\"decisionform\")'"),
 	    "&nbsp; <input class='b extension7' type='submit' value='Save' />",
 	    " <span id='decisionformresult'></span>",
-	    "</div></form></div>\n";
+	    "</div></form><div class='ellipsis'>",
+	    $rf->options["outcome"][$prow->outcome],
+	    "</div></div></div>\n";
 	$Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"decisionform\");</script>";
     }
 

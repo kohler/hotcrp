@@ -430,6 +430,7 @@ confHeader();
 
 $paperTable = new PaperTable($prow);
 $paperTable->initialize(false, false, true, "assign");
+$paperTable->mode = "assign";
 
 
 // begin form and table
