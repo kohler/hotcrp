@@ -173,6 +173,97 @@ function expandMailTemplate($name, $default) {
     return $nullMailer->expandTemplate($name, true, $default);
 }
 
+function _cleanXHTMLError(&$err, $etype) {
+    $err = "Your XHTML code contains $etype.  Please fix this; the setting only accepts XHTML content tags, such as <tt>&lt;p&gt;</tt>, <tt>&lt;strong&gt;</tt>, and <tt>&lt;h1&gt;</tt>.";
+    return false;
+}
+
+$goodtags = array_flip(array("a", "abbr", "acronym", "address", "area", "b", "bdo", "big", "blockquote", "br", "button", "caption", "center", "cite", "code", "col", "colgroup", "dd", "del", "dir", "div", "dfn", "dl", "dt", "em", "font", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "img", "ins", "kbd", "label", "legend", "li", "link", "map", "menu", "noscript", "ol", "optgroup", "option", "p", "pre", "q", "s", "samp", "select", "small", "span", "strike", "strong", "sub", "sup", "table", "tbody", "td", "textarea", "tfoot", "th", "thead", "title", "tr", "tt", "u", "ul", "var"));
+$emptytags = array_flip(array("base", "meta", "link", "hr", "br", "param", "img", "area", "input", "col"));
+
+function cleanXHTML($t, &$err) {
+    global $goodtags, $emptytags;
+    $tagstack = array();
+    
+    $x = "";
+    while ($t != "") {
+	if (($p = strpos($t, "<")) === false) {
+	    $x .= $t;
+	    break;
+	}
+	$x .= substr($t, 0, $p);
+	$t = substr($t, $p);
+	
+	if (preg_match('/\A<!\[[ie]/', $t))
+	    return _cleanXHTMLError($err, "an Internet Explorer conditional comment");
+	else if (preg_match('/\A(<!\[CDATA\[.*?)(\]\]>|\Z)(.*)\Z/s', $t, $m)) {
+	    $x .= $m[1] . "]]>";
+	    $t = $m[3];
+	} else if (preg_match('/\A<!--.*?(-->|\Z)(.*)\Z/s', $t, $m))
+	    $t = $m[2];
+	else if (preg_match('/\A<!(\S+)/s', $t, $m))
+	    return _cleanXHTMLError($err, "<code>$m[1]</code> declarations");
+	else if (preg_match('/\A<\s*([A-Za-z]+)\s*(.*)\Z/s', $t, $m)) {
+	    $tag = strtolower($m[1]);
+	    $t = $m[2];
+	    $x .= "<" . $tag;
+	    if (!isset($goodtags[$tag]))
+		return _cleanXHTMLError($err, "some <code>&lt;$tag&gt;</code> tag");
+	    while ($t != "" && $t[0] != "/" && $t[0] != ">") {
+		if (!preg_match(",\\A([^\\s/<>='\"]+)\\s*(.*)\\Z,s", $t, $m))
+		    return _cleanXHTMLError($err, "garbage within some <code>&lt;$tag&gt;</code> tag");
+		$attr = strtolower($m[1]);
+		if (strlen($attr) > 2 && $attr[0] == "o" && $attr[1] == "n")
+		    return _cleanXHTMLError($err, "an event handler attribute in some <code>&lt;$tag&gt;</code> tag");
+		else if ($attr == "style" || $attr == "script")
+		    return _cleanXHTMLError($err, "a <code>$attr</code> attribute in some <code>&lt;$tag&gt;</code> tag");
+		$x .= " " . $attr . "=";
+		$t = $m[2];
+		if (preg_match("/\\A=\\s*('.*?'|\".*?\")(.*)\\Z", $t, $m)) {
+		    $x .= $m[1];
+		    $t = $m[2];
+		} else
+		    $x .= "\"$attr\" ";
+	    }
+	    if ($t == "")
+		return _cleanXHTMLError($err, "an unclosed <code>&lt;$tag&gt;</code> tag");
+	    else if ($t[0] == ">") {
+		$t = substr($t, 1);
+		if (isset($emptytags[$tag])
+		    && !preg_match(',\A\s*<\s*/' . $tag . '\s*>,si', $t))
+		    // automagically close empty tags
+		    $x .= " />";
+		else {
+		    $x .= ">";
+		    $tagstack[] = $tag;
+		}
+	    } else if (preg_match(',\A/\s*>(.*)\Z,s', $t, $m)) {
+		$x .= " />";
+		$t = $m[1];
+	    } else
+		return _cleanXHTMLError($err, "garbage in some <code>&lt;$tag&gt;</code> tag");
+	} else if (preg_match(',\A<\s*/\s*([A-Za-z]+)\s*>(.*)\Z,s', $t, $m)) {
+	    $tag = strtolower($m[1]);
+	    if (!isset($goodtags[$tag]))
+		return _cleanXHTMLError($err, "some <code>&lt;/$tag&gt;</code> tag");
+	    else if (count($tagstack) == 0)
+		return _cleanXHTMLError($err, "a extra close tag <code>&lt;/$tag&gt;</code>");
+	    else if (($last = array_pop($tagstack)) != $tag)
+		return _cleanXHTMLError($err, "a close tag <code>&lt;/$tag</code> that doesn't match the open tag <code>&lt;$last</code>");
+	    $x .= "</$tag>";
+	    $t = $m[2];
+	} else {
+	    $x .= "&lt;";
+	    $t = substr($t, 1);
+	}
+    }
+    
+    if (count($tagstack) > 0)
+	return _cleanXHTMLError($err, "unclosed tags, including <code>&lt;$tagstack[0]&gt;</code>");
+    
+    return $x;
+}
+    
 function parseValue($name, $type) {
     global $SettingText, $Error, $Highlight;
 
@@ -206,8 +297,8 @@ function parseValue($name, $type) {
 	}
 	return ($v == "" ? 0 : array(0, $v));
     } else if ($type == "htmlstring") {
-	if ($v && preg_match("/(<!DOCTYPE|<\s*head\s*>|<\s*body\s*>)/i", $v, $m))
-	    $err = $SettingText[$name] . ": Your HTML code appears to contain a <code>" . htmlspecialchars($m[1]) . "</code> definition.  Please remove it; this setting only accepts HTML content tags, such as <tt>&lt;p&gt;</tt>, <tt>&lt;strong&gt;</tt>, and <tt>&lt;h1&gt;</tt>.";
+	if (($v = cleanXHTML($v, $err)) === false)
+	    $err = $SettingText[$name] . ": $err";
 	else
 	    return ($v == "" ? 0 : array(0, $v));
     } else if (is_int($type)) {
@@ -265,6 +356,7 @@ function doTopics($set) {
 }
 
 function doCleanOptionValues($id) {
+    global $Error;
     if (defval($_REQUEST, "optvt$id", 0) == 0
 	|| rtrim(defval($_REQUEST, "optv$id", "")) == "")
 	unset($_REQUEST["optv$id"]);
@@ -274,11 +366,21 @@ function doCleanOptionValues($id) {
 	    $v .= trim($t) . "\n";
 	$_REQUEST["optv$id"] = substr($v, 0, strlen($v) - 1);
     }
+    if (count($Error) > 0)
+	$_REQUEST["optd$id"] = cleanXHTML($_REQUEST["optd$id"], $err);
 }
 
 function doOptions($set) {
-    global $Conf, $Values;
+    global $Conf, $Values, $Error;
     if (!$set) {
+	foreach ($_REQUEST as $k => &$v)
+	    if (substr($k, 0, 4) == "optd"
+		&& (ctype_digit(substr($k, 4)) || $k == "optn")) {
+		if (cleanXHTML($v, $err) === false) {
+		    $Error[] = $err;
+		    return;
+		}
+	    }
 	if ($Conf->setting("allowPaperOption"))
 	    $Values["options"] = true;
 	return;
@@ -798,11 +900,11 @@ function doAccGroup() {
 function doMsgGroup() {
     global $Conf, $ConfSiteSuffix;
 
-    echo "<strong>", decorateSettingName("homemsg", "Home page message"), "</strong> (HTML allowed)<br />
+    echo "<strong>", decorateSettingName("homemsg", "Home page message"), "</strong> (XHTML allowed)<br />
 <textarea class='textlite' name='homemsg' cols='60' rows='10' onchange='hiliter(this)'>", htmlspecialchars(settingText("homemsg", "")), "</textarea>";
     echo "<div class='g'></div>\n";
 
-    echo "<strong>", decorateSettingName("conflictdefmsg", "Definition of conflict of interest"), "</strong> (HTML allowed)<br />
+    echo "<strong>", decorateSettingName("conflictdefmsg", "Definition of conflict of interest"), "</strong> (XHTML allowed)<br />
 <textarea class='textlite' name='conflictdefmsg' cols='60' rows='2' onchange='hiliter(this)'>", htmlspecialchars(settingText("conflictdefmsg", $Conf->conflictDefinitionText(true))), "</textarea>";
 }
 
@@ -856,8 +958,14 @@ function doSubGroup() {
 
 // Submission options
 function doOptGroupOption($o) {
-    global $Conf;
+    global $Conf, $Error;
     $id = $o->optionId;
+    if (count($Error) > 0 && isset($_REQUEST["optn$id"]))
+	$o = (object) array("optionId" => $id,
+		"optionName" => defval($_REQUEST, "optn$id", $o->optionName),
+		"description" => defval($_REQUEST, "optd$id", $o->description),
+		"optionValues" => defval($_REQUEST, "optv$id", $o->optionValues),
+		"pcView" => defval($_REQUEST, "optp$id", $o->pcView));
 
     echo "<tr><td class='lxcaption'>Option name</td>",
 	"<td class='lentry'><input type='text' class='textlite' name='optn$id' value=\"", htmlspecialchars($o->optionName), "\" size='50' onchange='hiliter(this)' ",
@@ -888,7 +996,7 @@ function doOptGroup() {
     
     if ($Conf->setting("allowPaperOption")) {
 	echo "<h3>Submission options</h3>\n";
-	echo "Options may be selected by authors at submission time, and might include &ldquo;Consider this paper for a Best Student Paper award&rdquo; or &ldquo;Allow the shadow PC to see this paper.&rdquo;  The &ldquo;option name&rdquo; should be brief, three or four words at most; it appears as a caption to the left of the option.  The description should be longer and may use HTML.  To delete an option, delete its name.  Add options one at a time.\n";
+	echo "Options may be selected by authors at submission time, and might include &ldquo;Consider this paper for a Best Student Paper award&rdquo; or &ldquo;Allow the shadow PC to see this paper.&rdquo;  The &ldquo;option name&rdquo; should be brief.  The description should be longer and may use XHTML.  To delete an option, delete its name.  Add options one at a time.\n";
 	echo "<div class='g'></div>\n";
 	echo "<table>";
 	$opt = paperOptions();

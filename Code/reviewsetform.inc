@@ -83,8 +83,14 @@ function rf_update($lock) {
 	    $req .= "shortName='" . sqlq($sn) . "', ";
 	}
 	$req .= "authorView=" . max(min(rcvtint($_REQUEST["authorView_$field"], 0), 1), -2) . ", ";
-	if (isset($_REQUEST["description_$field"]))
-	    $req .= "description='" . sqlq(trim($_REQUEST["description_$field"])) . "', ";
+	if (isset($_REQUEST["description_$field"])) {
+	    if (($d = cleanXHTML($_REQUEST["description_$field"], $err)) === false) {
+		$Error["description_$field"] = 1;
+		$Conf->errorMsg(htmlspecialchars($sn) . " description: " . $err);
+		continue;
+	    } else
+		$req .= "description='" . sqlq(trim($d)) . "', ";
+	}
 	if (isset($_REQUEST["order_$field"]))
 	    $req .= "sortOrder='" . rcvtint($_REQUEST["order_$field"]) . "', ";
 	if ($rf->reviewFields[$field]) {
@@ -207,7 +213,8 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 	. "</td><td class='hint'></td></tr>\n";
 
     // description
-    $x .= "<$trclass><td class='rxcaption textarea'>Description</td>"
+    $error = (isset($Error["description_$row->fieldName"]) ? " error" : "");
+    $x .= "<$trclass><td class='rxcaption textarea$error'>Description</td>"
 	. "<td class='entry'><textarea name='description_$row->fieldName' rows='6' cols='80' onchange='hiliter(this)'>"
 	. htmlentities(rf_getField($row, 'description'))
 	. "</textarea></td>";
