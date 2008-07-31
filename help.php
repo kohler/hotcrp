@@ -377,8 +377,10 @@ href='search$ConfSiteSuffix?q=order:tagname'>order:tagname</a>&rdquo;
 will return the papers in the order you defined.  For example, this is useful
 for PC meeting discussion orders.  In tag listings, the first paper in the
 &ldquo;discuss&rdquo; ordered tag will appear as &ldquo;discuss#1&rdquo;, the
-second as &ldquo;discuss#2&rdquo;, and so forth.  You can change the order by
-editing the tag numbers.
+second as &ldquo;discuss#2&rdquo;, and so forth.  Change the order by
+editing the tag numbers.  Search within the order with search terms like
+<a href='search$ConfSiteSuffix?q=tag:discuss%232'>&ldquo;tag:discuss#2&rdquo;</a>
+or <a href='search$ConfSiteSuffix?q=tag:discuss%23%3E1'>&ldquo;tag:discuss#>1&rdquo;</a>.
 
 <p>It's easiest to define ordered tags using the
 <a href='search$ConfSiteSuffix'>search screen</a>.  Search for the

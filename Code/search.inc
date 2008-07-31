@@ -473,9 +473,17 @@ class PaperSearch {
 	     || ($special ? $special == "order" : isset($this->fields['order'])))
 	    && $this->amPC) {
 	    require_once("tags.inc");
- 	    if (($e = checkTagError($word, true)))
+	    if (preg_match('/\A([^#]+)#([<>!]?=?)(\d+)\Z/', $word, $m)
+		&& $m[1] != "any" && $m[1] != "none") {
+		$tagword = $m[1];
+		$extra = ($m[2] == "!" ? "!=" : ($m[2] == "" ? "=" : $m[2])) . $m[3];
+	    } else {
+		$tagword = $word;
+		$extra = null;
+	    }
+ 	    if (($e = checkTagError($tagword, true)))
 		$this->warn(htmlspecialchars($e));
-	    $value = $word;
+	    $value = $tagword;
 	    $rt = 0;
 	    if ($value && $value[0] == "~")
 		$value = $this->contactId . $value;
@@ -484,7 +492,7 @@ class PaperSearch {
 	    if (($special ? $special == "order" : isset($this->fields['order']))
 		&& !$negated)
 		$this->orderTag = ($this->orderTag === false ? $value : null);
-	    $qt[] = new SearchTerm("tag", $rt, $value);
+	    $qt[] = new SearchTerm("tag", $rt, $extra ? array($value, $extra) : $value);
 	}
 	if (($special ? $special == "topic" : isset($this->fields['topic']))) {
 	    $type = "topic";
@@ -862,6 +870,7 @@ class PaperSearch {
 
     function _clauseTermSetTable(&$t, $shorttab, $table, $field,
 				 &$tables, &$columns, &$f) {
+	// see also first "tag" case below
 	$q = array();
 	$this->_clauseTermSetFlags($t->flags, $q);
 	if ($t->value == "none" || $t->value == "any") {
@@ -985,6 +994,16 @@ class PaperSearch {
 	    $this->_clauseTermSetFlags($t->flags, $q);
 	    for ($i = 0; $i < count($t->value); $i += 2)
 		$q[] = "Paper." . $t->value[$i] . $t->value[$i + 1];
+	    $f[] = "(" . join(" and ", $q) . ")";
+	} else if ($tt == "tag" && is_array($t->value)) {
+	    // expanded from _clauseTermSetTable
+	    $q = array();
+	    $this->_clauseTermSetFlags($t->flags, $q);
+	    $thistab = "Tag_" . count($tables);
+	    $tables[$thistab] = array("left join", "PaperTag", "Paper.paperId=$thistab.paperId and $thistab.tag='" . sqlq($t->value[0]) . "' and $thistab.tagIndex" . $t->value[1]);
+	    $columns[$thistab . "_ct"] = "count($thistab.tag)";
+	    $t->link = $thistab . "_ct";
+	    $q[] = "$thistab.tag is not null";
 	    $f[] = "(" . join(" and ", $q) . ")";
 	} else if ($tt == "tag") {
 	    $this->_clauseTermSetTable($t, "Tag", "PaperTag", "tag",
@@ -1114,7 +1133,7 @@ class PaperSearch {
 		$ans = false;
 	    else {
 		$fieldname = $t->link;
-		if ($t->value == "none")
+		if (is_string($t->value) && $t->value == "none")
 		    $ans = $row->$fieldname == 0;
 		else
 		    $ans = $row->$fieldname != 0;

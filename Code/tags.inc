@@ -8,7 +8,8 @@ function checkTagError($tag, $forsearch = false) {
 	return "Empty tag.";
     else if (strlen($tag) > TAG_MAXLEN)
 	return "Tag \"$tag\" too long; maximum " . TAG_MAXLEN . " characters.";
-    else if (!preg_match('/\A~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*#?\d*\Z/', $tag))
+    else if (!preg_match('/\A~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*#?\d*\Z/', $tag)
+	     || ($forsearch && strpos($tag, "#") !== false))
 	// Note that tags MUST NOT contain HTML special characters.
 	return "Tag \"$tag\" contains odd characters.";
     else if (($tag == "none" || $tag == "any") && !$forsearch)
