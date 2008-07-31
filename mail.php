@@ -101,6 +101,9 @@ function contactQuery($type) {
     } else if ($type == "rev" || $type == "crev" || $type == "uncrev" || $type == "extrev" || $type == "myextrev" || $type == "myuncextrev") {
 	$q = "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId)";
 	$orderby = "email, Paper.paperId";
+    } else if ($type == "lead" || $type == "shepherd") {
+	$q = "select $contactInfo, conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from Paper join ContactInfo on (ContactInfo.contactId=Paper.${type}ContactId) left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=ContactInfo.contactId)";
+	$orderby = "email, Paper.paperId";
     } else {
 	$q = "select $contactInfo, PaperConflict.conflictType, $paperInfo, 0 as myReviewType from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId)";
 	$where[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
@@ -210,10 +213,16 @@ function checkMail($send) {
 }
 
 // Check paper outcome counts
-$result = $Conf->q("select outcome, count(paperId) from Paper group by outcome");
+$result = $Conf->q("select outcome, count(paperId), max(leadContactId), max(shepherdContactId) from Paper group by outcome");
 $noutcome = array();
-while (($row = edb_row($result)))
+$anyLead = $anyShepherd = false;
+while (($row = edb_row($result))) {
     $noutcome[$row[0]] = $row[1];
+    if ($row[2])
+	$anyLead = true;
+    if ($row[3])
+	$anyShepherd = true;
+}
 
 // Load template
 if (defval($_REQUEST, "loadtmpl")) {
@@ -258,6 +267,10 @@ if ($Me->privChair) {
     $recip["crev"] = "Reviewers with complete reviews";
     $recip["uncrev"] = "Reviewers with incomplete reviews";
     $recip["extrev"] = "External reviewers";
+    if ($anyLead)
+	$recip["lead"] = "Discussion leads";
+    if ($anyShepherd)
+	$recip["shepherd"] = "Shepherds";
 }
 $recip["myextrev"] = "Your requested reviewers";
 $recip["myuncextrev"] = "Your requested reviewers with incomplete reviews";
