@@ -373,12 +373,12 @@ it from all non-selected papers.</p>
 Although any PC member can view or search
 any tag, only PC chairs can change certain tags$chairtags.  $setting");
     _alternateRow("Tag values<br />and discussion orders", "
-Tags can have optional per-paper numeric values, which are displayed as
+Tags have optional per-paper numeric values, which are displayed as
 &ldquo;tag#100&rdquo;.  Searching for a tag with &ldquo;<a
 href='search$ConfSiteSuffix?q=order:tagname'>order:tagname</a>&rdquo; will
 return the papers sorted by the tag value.  This is useful, for example, for
-PC meeting discussion orders.  Change the order by editing the tag numbers.
-Search within the order with search terms like &ldquo;<a
+PC meeting discussion orders.  Change the order by editing the tag values.
+Search for specific values with search terms like &ldquo;<a
 href='search$ConfSiteSuffix?q=tag:discuss%232'>tag:discuss#2</a>&rdquo;
 or &ldquo;<a
 href='search$ConfSiteSuffix?q=tag:discuss%23%3E1'>tag:discuss#>1</a>&rdquo;.
