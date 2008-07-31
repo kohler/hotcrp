@@ -174,6 +174,6 @@ function tagsToText($t, $makeUrls, $contact = null) {
     if (!is_string($makeUrls))
 	$makeUrls = "";
     return preg_replace('/(~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*)/',
-			"<a class='q' href=\"${makeUrls}search$ConfSiteSuffix?q=tag:\$1\">\$1</a>",
+			"<a class='q' href=\"${makeUrls}search$ConfSiteSuffix?q=tag:\$1\" title='Tag search'>\$1</a>",
 			$t);
 }
