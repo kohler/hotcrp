@@ -214,8 +214,9 @@ function searchQuickref() {
     _searchQuickrefRow("", "cre:fdabek", "&ldquo;fdabek&rdquo; (in reviewer name/email) has completed a review");
     _searchQuickrefRow("", "re:4", "four reviewers (assigned and/or completed)");
     _searchQuickrefRow("", "cre:<3", "less than three completed reviews");
-    _searchQuickrefRow("", "pri:>=1", "at least one primary reviewer (&ldquo;cpri:&rdquo; and reviewer name/email also work)");
-    _searchQuickrefRow("", "sec:pai", "&ldquo;pai&rdquo; (reviewer name/email) is secondary reviewer (&ldquo;csec:&rdquo; and review counts also work)");
+    _searchQuickrefRow("", "ire:>0", "at least one incomplete review");
+    _searchQuickrefRow("", "pri:>=1", "at least one primary reviewer (&ldquo;cpri:&rdquo;, &ldquo;ipri:&rdquo;, and reviewer name/email also work)");
+    _searchQuickrefRow("", "sec:pai", "&ldquo;pai&rdquo; (reviewer name/email) is secondary reviewer (&ldquo;csec:&rdquo;, &ldquo;isec:&rdquo;, and review counts also work)");
     if (($roundtags = $Conf->settingText("tag_rounds"))) {
 	preg_match('/ (\S+) /', $roundtags, $m);
 	_searchQuickrefRow("", "round:$m[1]", "review assignment is &ldquo;$m[1]&rdquo;");

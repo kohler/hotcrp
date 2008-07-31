@@ -12,10 +12,13 @@ $searchTags = array('ti' => 'ti', 'title' => 'ti',
 		    'sre' => 'cre', 'srev' => 'cre', 'sreview' => 'cre',
 		    'cre' => 'cre', 'crev' => 'cre', 'creview' => 'cre',
 		    'subre' => 'cre', 'subrev' => 'cre', 'subreview' => 'cre',
+		    'ire' => 'ire', 'irev' => 'ire', 'ireview' => 'ire',
 		    'pri' => 'pri', 'primary' => 'pri',
 		    'cpri' => 'cpri', 'cprimary' => 'cpri',
+		    'ipri' => 'ipri', 'iprimary' => 'ipri',
 		    'sec' => 'sec', 'secondary' => 'sec',
 		    'csec' => 'csec', 'csecondary' => 'csec',
+		    'isec' => 'isec', 'isecondary' => 'isec',
 		    'cmt' => 'cmt', 'comment' => 'cmt',
 		    'aucmt' => 'aucmt', 'aucomment' => 'aucmt',
 		    'tag' => 'tag',
@@ -48,16 +51,17 @@ class PaperSearch {
 
     const F_TYPEMASK = 7;
     const F_COMPLETE = 8;
-    const F_NONCONFLICT = 16;
-    const F_AUTHOR = 32;
-    const F_REVIEWER = 64;
-    const F_NONBLIND = 128;
-    const F_PAPERNONBLIND = 256;
-    const F_TIMEWITHDRAWN = 512;
-    const F_TIMESUBMITTED = 1024;
-    const F_AUTHORCOMMENT = 2048;
-    const F_REVIEWERCOMMENT = 4096;
-    const F_FALSE = 8192;
+    const F_INCOMPLETE = 16;
+    const F_NONCONFLICT = 32;
+    const F_AUTHOR = 64;
+    const F_REVIEWER = 128;
+    const F_NONBLIND = 256;
+    const F_PAPERNONBLIND = 512;
+    const F_TIMEWITHDRAWN = 1024;
+    const F_TIMESUBMITTED = 2048;
+    const F_AUTHORCOMMENT = 4096;
+    const F_REVIEWERCOMMENT = 8192;
+    const F_FALSE = 16384;
 
     var $contactId;
     var $privChair;
@@ -232,14 +236,16 @@ class PaperSearch {
 	    $word = "=0";
 
 	$rt = 0;
-	if ($rtype == "pri" || $rtype == "cpri")
+	if ($rtype == "pri" || $rtype == "cpri" || $rtype == "ipri")
 	    $rt = REVIEW_PRIMARY;
-	else if ($rtype == "sec" || $rtype == "csec")
+	else if ($rtype == "sec" || $rtype == "csec" || $rtype == "isec")
 	    $rt = REVIEW_SECONDARY;
-	else if ($rtype == "ext" || $rtype == "cext")
+	else if ($rtype == "ext" || $rtype == "cext" || $rtype == "iext")
 	    $rt = REVIEW_EXTERNAL;
 	if ($rtype == "cre" || $rtype == "cpri" || $rtype == "csec" || $rtype == "cext")
 	    $rt |= self::F_COMPLETE;
+	if ($rtype == "ire" || $rtype == "ipri" || $rtype == "isec" || $rtype == "iext")
+	    $rt |= self::F_INCOMPLETE;
 	
 	if (preg_match('/^([<>]?=?\s*)?(\d+)$/s', $word, $m)) {
 	    $m[1] = ($m[1] ? $m[1] : "=");
@@ -436,7 +442,7 @@ class PaperSearch {
 	    $this->_searchField($word, "au", $negated, $qt, true);
 	if ($special ? $special == "co" : isset($this->fields['co']))
 	    $this->_searchField($word, "co", $negated, $qt, true);
-	foreach (array("re", "cre", "pri", "cpri", "sec", "csec") as $rtype)
+	foreach (array("re", "cre", "ire", "pri", "cpri", "ipri", "sec", "csec", "isec") as $rtype)
 	    if ($special ? $special == $rtype : isset($this->fields[$rtype]))
 		$this->_searchReviewer($word, $rtype, $negated, $qt);
 	foreach (array("cmt", "aucmt") as $ctype)
@@ -916,7 +922,7 @@ class PaperSearch {
 	    $columns["collaborators"] = "Paper.collaborators";
 	    $this->_clauseTermSetField($t, "collaborators", $negated, $f);
 	} else if ($tt == "nre") {
-	    $rtype = $t->flags & (self::F_TYPEMASK | self::F_NONBLIND | self::F_COMPLETE);
+	    $rtype = $t->flags & (self::F_TYPEMASK | self::F_NONBLIND | self::F_COMPLETE | self::F_INCOMPLETE);
 	    if (isset($t->extra))
 		$rtype = "X" . count($tables);
 	    if (!isset($tables["Numreviews_$rtype"])) {
@@ -927,6 +933,8 @@ class PaperSearch {
 		    $where[] = "reviewBlind=0";
 		if ($rtype & self::F_COMPLETE)
 		    $where[] = "reviewSubmitted>0";
+		else if ($rtype & self::F_INCOMPLETE)
+		    $where[] = "reviewNeedsSubmit>0";
 		if (isset($t->extra))
 		    $where[] = "reviewRound in (" . join(",", $t->extra) . ")";
 		$wheretext = "";
@@ -949,6 +957,8 @@ class PaperSearch {
 		$where[] = "reviewBlind=0";
 	    if ($t->flags & self::F_COMPLETE)
 		$where[] = "reviewSubmitted>0";
+	    else if ($t->flags & self::F_INCOMPLETE)
+		$where[] = "reviewNeedsSubmit>0";
 	    if (isset($t->extra))
 		$where[] = "reviewRound in (" . join(",", $t->extra) . ")";
 	    if ($tt != "rf" || !is_array($t->value))
