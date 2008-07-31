@@ -618,6 +618,7 @@ class ContactList extends BaseList {
 }
 
 
+global $contactListFields;
 $contactListFields = array(
 	ContactList::FIELD_SELECTOR => array('selector', 1, 0),
 	ContactList::FIELD_SELECTOR_ON => array('selector', 1, 0),
