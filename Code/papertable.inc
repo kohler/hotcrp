@@ -3,6 +3,7 @@
 // HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+global $textAreaRows;
 $textAreaRows = array("title" => 1, "abstract" => 12, "authorInformation" => 5,
 		      "collaborators" => 6);
 
@@ -171,7 +172,7 @@ class PaperTable {
 	$c .= "'><span class='${type}fn'>";
 	$editfolder = defval($extra, "editfolder", false);
 	if (!($fold = defval($extra, "fold", false))) {
-	    $n .= (is_array($name) ? $name[0] : $name);
+	    $n = (is_array($name) ? $name[0] : $name);
 	    if ($editfolder)
 		$c .= "<a class='q unfolder' title='Edit' "
 		    . "href='javascript:fold(\"$editfolder\", 0)'>"
