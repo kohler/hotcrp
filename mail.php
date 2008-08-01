@@ -163,6 +163,8 @@ function checkMail($send) {
     $subject = trim(preg_replace('/[\n\r\t]+/', ' ', defval($_REQUEST, "subject", "")));
     if (substr($subject, 0, strlen($subjectPrefix)) != $subjectPrefix)
 	$subject = $subjectPrefix . $subject;
+    if ($send)
+	$Conf->log("Mailing \"$subject\"", $Me->contactId);
     $emailBody = cleannl($_REQUEST["emailBody"]);
 
     $template = array($subject, $emailBody);
@@ -189,8 +191,10 @@ function checkMail($send) {
 		checkMailPrologue($send);
 		$any = true;
 	    }
-	    if ($send)
+	    if ($send) {
 		Mailer::sendPrepared($preparation);
+		$Conf->log("Receiver of mail \"$preparation[0]\"", $row->contactId, $row->paperId);
+	    }
 	    echo $closer;
 	    if ($nrows_print) {
 		$Conf->echoScript("e('mailcount').innerHTML = \"$nrows_left mails remaining.\";");

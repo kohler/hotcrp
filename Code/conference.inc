@@ -1287,7 +1287,7 @@ class Conference {
 		$paperId = null;
 	    }
 	}
-	if ($paperId === null)
+	if ($paperId === null || $paperId === 0)
 	    $paperId = "null";
 	$this->q("insert into ActionLog (ipaddr, contactId, paperId, action) values ('" . sqlq($_SERVER['REMOTE_ADDR']) . "', " . (is_numeric($who) ? $who : $who->contactId) . ", $paperId, '" . sqlq($text) . "')");
     }
