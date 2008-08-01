@@ -1022,8 +1022,8 @@ $blind\n";
 	$reviewLink = $reviewLinkBase . "post=1";
 	if ($editmode)
 	    echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'>",
-		"<input class='hidden' type='submit' name='default' value='' />",
-		"<div class='aahc'>";
+		"<div class='aahc'>",
+		"<input class='hidden' type='submit' name='default' value='' />";
 	else
 	    echo "<div class='relative'>";
     
@@ -1129,8 +1129,9 @@ $blind\n";
 			$options["ratingsajax"] = true;
 		    }
 		    $Conf->footerStuff .= "<form id='ratingform_$reviewOrdinal' action='${ratinglink}$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"ratingform_$reviewOrdinal\")'>"
+			. "<div class='inform'>"
 			. "<input id='ratingval_$reviewOrdinal' type='hidden' name='rating' value='' />"
-			. "</form>";
+			. "</div></form>";
 		}
 		echo " &nbsp;<span class='barsep'>|</span>&nbsp; <a href='help$ConfSiteSuffix?t=revrate'>What is this?</a></div>";
 	    }

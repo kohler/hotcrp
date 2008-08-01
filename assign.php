@@ -605,7 +605,7 @@ if ($Me->actChair($prow))
   <input type='checkbox' name='override' value='1' />&nbsp;Override deadlines and any previous refusal
 </div>\n";
 
-echo "</td><td></td>\n", tagg_cbox("rev", true),
+echo "</td><td></td></tr>\n", tagg_cbox("rev", true),
     "</td></tr></table>\n";
 
 echo "</div></form>";

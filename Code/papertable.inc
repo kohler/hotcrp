@@ -406,7 +406,6 @@ class PaperTable {
 	if ($Me->isPC && $prow->conflictType <= 0
 	    && $Conf->timeUpdatePaper($prow))
 	    echo "<div class='g'></div><div class='xwarning'>The authors still have <a href='deadlines$ConfSiteSuffix'>time</a> to make changes.</div>";
-	echo "</td>\n</tr>\n\n";
     }
 
     function echoUploadRow($prow, $flags) {
@@ -669,7 +668,8 @@ class PaperTable {
 		$this->authorData($prow->authorTable, "last"),
 		" <a class='folder' href='javascript:fold(\"paper\", 0, 9)'>[details]</a>",
 		"</span><span class='extension9'>",
-		$this->authorData($prow->authorTable, "col", $Me);
+		$this->authorData($prow->authorTable, "col", $Me),
+		"</span>";
 
 	} else {
 	    echo $this->papt("authorInformation", $auname),
@@ -1070,7 +1070,7 @@ class PaperTable {
 	    if ($editable) {
 		echo "<div class='ellipsis'>", ($t == "" ? "none" : $tx),
 		    "</div><div class='extension'>",
-		    "<textarea cols='20' rows='2' name='tags'>", $t, "</textarea></br>",
+		    "<textarea cols='20' rows='2' name='tags'>", $t, "</textarea><br />",
 		    "<input class='bsm' type='submit' name='settags' value='Save' /> &nbsp; ",
 		    "<button type='button' class='bsm' onclick='javascript:fold(\"tags\", 1)'>Cancel</button><br />",
 		    "<span class='hint'><a href='help$ConfSiteSuffix?t=tags'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
