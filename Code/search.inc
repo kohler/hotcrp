@@ -583,6 +583,10 @@ class PaperSearch {
 		    $this->warn("&ldquo;" . htmlspecialchars($word) . "&rdquo; doesn't match a decision.");
 		    $value[] = -10000000;
 		}
+		if (count($value) == 1)
+		    $value = "=" . $value[0];
+		else
+		    $value = " in (" . join(",", $value) . ")";
 	    }
 	    $value = array("outcome", $value);
 	    $nqt = count($qt);
