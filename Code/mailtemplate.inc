@@ -353,6 +353,7 @@ class Mailer {
     var $text;
     var $textstart;
     var $hideSensitive;
+    var $hideReviews;
     var $reason;
     var $rrow;
     var $reviewNumber;
@@ -372,6 +373,7 @@ class Mailer {
 	$this->rrow = defval($rest, "rrow", null);
 	$this->reviewNumber = defval($rest, "reviewNumber", "");
 	$this->commentId = defval($rest, "commentId", null);
+	$this->hideReviews = defval($rest, "hideReviews", false);
 	$this->statistics = null;
 	$this->width = 75;
     }
@@ -574,6 +576,8 @@ class Mailer {
 
     function getReviews($contact, $finalized) {
 	global $Conf, $Me, $rf;
+	if ($this->hideReviews)
+	    return "[Reviews are hidden since you have incomplete reviews of your own.]";
 
 	$result = $Conf->qe("select Paper.title, PaperReview.*,
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
@@ -596,6 +600,8 @@ class Mailer {
 
     function getComments($contact) {
 	global $Conf, $rf;
+	if ($this->hideReviews)
+	    return "";
 
 	$q = "select PaperComment.*,
  		ContactInfo.firstName as reviewFirstName,
@@ -613,9 +619,13 @@ class Mailer {
 	    $q .= "\n\t\twhere PaperComment.paperId=" . $this->row->paperId;
 	$result = $Conf->qe($q . "\n\t\torder by commentId", "while retrieving comments");
 	$text = "";
+	// save old au_seerev setting, and reset it so authors can see them.
+	$old_au_seerev = $Conf->setting("au_seerev");
+	$Conf->settings["au_seerev"] = AU_SEEREV_ALWAYS;
 	while (($crow = edb_orow($result)))
 	    if ($contact->canViewComment($this->row, $crow, $Conf, $whyNot, true))
 		$text .= $rf->prettyTextComment($this->row, $crow, $contact, $Conf) . "\n";
+	$Conf->settings["au_seerev"] = $old_au_seerev;
 	return $text;
     }
 

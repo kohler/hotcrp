@@ -311,8 +311,8 @@ class Conference {
 	return $this->settingsBetween('final_open', 'final_done', 'final_grace');
     }
     function timeAuthorViewReviews($reviewsOutstanding = false) {
-	// also used to determine when authors and conflicts can see
-	// review counts
+	// also used to determine when authors can see review counts
+	// and comments.  see also mailtemplate.inc
 	$s = $this->setting("au_seerev");
 	return $s == AU_SEEREV_ALWAYS || ($s > 0 && !$reviewsOutstanding);
     }

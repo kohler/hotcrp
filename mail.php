@@ -12,6 +12,7 @@ $Me->goIfNotPC("index$ConfSiteSuffix");
 $rf = reviewForm();
 $nullMailer = new Mailer(null, null, $Me);
 $nullMailer->width = 10000000;
+$checkReviewNeedsSubmit = false;
 
 // create options
 $tOpt = array();
@@ -62,7 +63,7 @@ else
 $subjectPrefix = "[$Conf->shortName] ";
 
 function contactQuery($type) {
-    global $Me, $rf, $papersel;
+    global $Conf, $Me, $rf, $papersel, $checkReviewNeedsSubmit;
     $contactInfo = "firstName, lastName, email, password, ContactInfo.contactId";
     $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind, Paper.shepherdContactId";
 
@@ -105,7 +106,13 @@ function contactQuery($type) {
 	$q = "select $contactInfo, conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from Paper join ContactInfo on (ContactInfo.contactId=Paper.${type}ContactId) left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=ContactInfo.contactId)";
 	$orderby = "email, Paper.paperId";
     } else {
-	$q = "select $contactInfo, PaperConflict.conflictType, $paperInfo, 0 as myReviewType from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId)";
+	if (!$Conf->timeAuthorViewReviews(true) && $Conf->timeAuthorViewReviews()) {
+	    $qa = ", reviewNeedsSubmit";
+	    $qb = " left join (select contactId, max(reviewNeedsSubmit) as reviewNeedsSubmit from PaperReview group by PaperReview.contactId) as PaperReview using (contactId)";
+	    $checkReviewNeedsSubmit = true;
+	} else
+	    $qa = $qb = "";
+	$q = "select $contactInfo$qa, PaperConflict.conflictType, $paperInfo, 0 as myReviewType from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId)$qb";
 	$where[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
 	$orderby = "email, Paper.paperId";
     }
@@ -116,7 +123,7 @@ function contactQuery($type) {
 }
 
 function checkMailPrologue($send) {
-    global $Conf, $ConfSiteSuffix;
+    global $Conf, $ConfSiteSuffix, $Me;
     echo "<form method='post' action='mail$ConfSiteSuffix' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
     foreach (array("recipients", "subject", "emailBody", "q", "t", "plimit") as $x)
 	if (isset($_REQUEST[$x]))
@@ -128,6 +135,14 @@ function checkMailPrologue($send) {
 	</td></tr></table>
 </div></div>";
     } else {
+	if (isset($_REQUEST["emailBody"]) && $Me->privChair
+	    && (strpos($_REQUEST["emailBody"], "%REVIEWS%")
+		|| strpos($_REQUEST["emailBody"], "%COMMENTS%"))) {
+	    if (!$Conf->timeAuthorViewReviews())
+		echo "<div class='warning'>Although these mails contain reviews and/or comments, authors can't see reviews or comments on the site.  (<a href='settings$ConfSiteSuffix?group=dec' class='nowrap'>Change this setting</a>)</div>\n";
+	    else if (!$Conf->timeAuthorViewReviews(true))
+		echo "<div class='warning'>Mails to users who have not completed their own reviews will not include reviews or comments.  (<a href='settings$ConfSiteSuffix?group=dec' class='nowrap'>Change the setting</a>)</div>\n";
+	}
 	echo "<div id='foldmail' class='foldc'><div class='ellipsis merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div><div class='extension info'>Examine the mails to check that you've gotten the results you want, then select &ldquo;Send&rdquo; to send the checked mails.</div>
 	<table class='extension'><tr><td class='caption'></td><td class='entry'>
 	<input class='b' type='submit' name='send' value='Send' /> &nbsp;
@@ -136,7 +151,8 @@ function checkMailPrologue($send) {
 }
 
 function checkMail($send) {
-    global $Conf, $ConfSiteSuffix, $Me, $subjectPrefix, $recip;
+    global $Conf, $ConfSiteSuffix, $Me, $subjectPrefix, $recip,
+	$checkReviewNeedsSubmit;
     $q = contactQuery($_REQUEST["recipients"]);
     if (!$q)
 	return $Conf->errorMsg("Bad recipients value");
@@ -161,6 +177,7 @@ function checkMail($send) {
 	if ($nrows_left % 5 == 0)
 	    $nrows_print = true;
 	$contact = Contact::makeMinicontact($row);
+	$rest["hideReviews"] = $checkReviewNeedsSubmit && $row->reviewNeedsSubmit;
 	$preparation = Mailer::prepareToSend($template, $row, $contact, $Me, $rest); // see also $show_preparation below
 	if ($preparation[0] != $last[0] || $preparation[1] != $last[1]
 	    || $preparation["to"] != $last["to"]) {
