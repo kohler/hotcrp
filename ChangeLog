@@ -1,3 +1,240 @@
+2008-08-01 Friday 14:25  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/search.inc (1.112): Fix dec: searches.
+
+2008-08-01 Friday 11:07  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* style.css (1.265), Code/commentview.inc (1.2),
+	  Code/papertable.inc (1.131), Code/review.inc (1.117): IE fixes.
+	  Ah, IE.
+
+2008-08-01 Friday 10:09  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/papertable.inc (1.130), Code/review.inc (1.116), assign.php
+	  (1.104): XHTML validation
+
+2008-07-31 Thursday 15:47  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.102), Code/reviewsetform.inc (1.56): Validate the
+	  XHTML entered into XHTML messages, like the home page message.
+
+	  This makes me feel better about having a test site open to the
+	  Internet on which anyone has chair privilege.
+
+2008-07-31 Thursday 14:08  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* search.php (1.165), sessionvar.php (1.16), style.css (1.264),
+	  Code/paperlist.inc (1.190): Search > Display options gains "Row
+	  numbers" display.  Special sorts, namely order: tag searches and
+	  paper number lists, gain explicit order column heading, over the
+	  selector.  Use titles to explain stuff.  Ideas, including
+	  selector heading, from Rich Draves (thanks!).
+
+2008-07-31 Thursday 13:05  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* LICENSE (1.3): correct Grunwald reference
+
+2008-07-31 Thursday 13:02  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.100), images/extagsnone.png (1.2),
+	  images/extagsset.png (1.2): Update Help images and text for new
+	  review format.
+
+2008-07-31 Thursday 10:19  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.99): Help improvements
+
+2008-07-31 Thursday 10:18  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.98), search.php (1.164), Code/paperlist.inc (1.189),
+	  Code/search.inc (1.111), Code/tags.inc (1.21): "Define ordered"
+	  and "Add ordered" tag actions skip some tag values.
+
+	  This hides information from conflicted PC members, since they can
+	  no longer infer their papers' position in an order by looking for
+	  gaps.  New "Define sequential" and "Add sequential" actions do
+	  the old sequential style.
+
+	  Also allow negative tag values.
+
+2008-07-31 Thursday 10:13  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/papertable.inc (1.129): Quiet warnings
+
+2008-07-31 Thursday 10:13  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/contactlist.inc (1.41): Fix dangerous code: define all
+	  globals
+
+2008-07-31 Thursday 00:56  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.103), Code/papertable.inc (1.128): The decision
+	  selector was, arguably, too prominent.  Hide it behind a fold.
+	  But on the assignments page, all selectors (including lead and
+	  shepherd) are unfolded by default.
+
+2008-07-31 Thursday 00:55  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/tags.inc (1.20): Link title explains what this link does
+
+2008-07-31 Thursday 00:32  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.97), Code/search.inc (1.110), help.php (1.93.2.2),
+	  Code/search.inc (1.106.2.3): Search for incomplete reviews with
+	  "ire:WHATEVER" syntax.  Requested by Rich Draves.
+
+2008-07-31 Thursday 00:19  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.96), Code/search.inc (1.109), Code/tags.inc (1.19),
+	  help.php (1.93.2.1), Code/search.inc (1.106.2.2), Code/tags.inc
+	  (1.17.2.1): Search: "tag:pcrating#3" and similar
+	  ("tag:pcrating#>2", "tag:pcrating#!=4") search within tag orders
+	  in the obvious way.  Requested by Rich Draves.
+
+2008-07-30 Wednesday 23:22  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/: search.inc (1.108), search.inc (1.106.2.1): order:
+	  searches work for private tags (Rich Draves reported this bug).
+
+2008-07-30 Wednesday 23:16  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* search.php (1.163), Code/paperlist.inc (1.188), search.php
+	  (1.161.2.1), Code/paperlist.inc (1.186.2.2): Search > Download:
+	  Add downloads of text files with shepherds or discussion leads
+	  (Jeff Mogul request).
+
+2008-07-30 Wednesday 23:03  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* mail.php (1.42), mail.php (1.39.2.3), Code/options.inc
+	  (1.21.2.1): Mail tool: Add "Discussion leads" and "Shepherds"
+	  recipient types.
+
+	  Jeff Mogul request.
+
+2008-07-30 Wednesday 19:39  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* images/comment24.png (1.1): Whoops, forgot this.
+
+2008-07-30 Wednesday 19:39  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.80), assign.php (1.102), autoassign.php (1.51),
+	  bulkassign.php (1.19), comment.php (1.67), contactauthors.php
+	  (1.47), contacts.php (1.34), help.php (1.95), index.php (1.188),
+	  log.php (1.16), manualassign.php (1.75), mergeaccounts.php
+	  (1.46), offline.php (1.44), paper.php (1.179), review.php
+	  (1.159), reviewprefs.php (1.22), script.js (1.79), search.php
+	  (1.162), sessionvar.php (1.15), settings.php (1.101), style.css
+	  (1.263), tarball.sh (1.100), Code/commentview.inc (1.1),
+	  Code/conference.inc (1.275), Code/contact.inc (1.163),
+	  Code/contactlist.inc (1.40), Code/header.inc (1.56),
+	  Code/helpers.inc (1.222), Code/paperactions.inc (1.1),
+	  Code/paperlist.inc (1.187), Code/papertable.inc (1.127),
+	  Code/review.inc (1.115), Code/reviewsetform.inc (1.55),
+	  Code/reviewtable.inc (1.63), Code/schema.sql (1.116),
+	  Code/search.inc (1.107), Code/tags.inc (1.18),
+	  Code/updateschema.inc (1.5): Major rewrite of the paper view
+	  subsystem.
+
+	  - Papers appear in a compact blue box with title, authors,
+	  topics, and	options.  Abstract, authors, and topics/options are
+	  separately folded.  - The compressed author display shows first
+	  initial and last name.  - PC-mostly information is shown in a
+	  left-hand column.  Examples: tags,   PC conflicts, other
+	  conflicts, decision, lead, shepherd.	- Decision, lead, and
+	  shepherd have AJAX editing.  - The "paper", "review", and
+	  "comment" pages are effectively combined into   one display.
+	  (The pages differ in response to POST requests.) - Comments and
+	  reviews are shown together on a single page.
+
+	  Also:
+
+	  - Review token rearrangement.  Enter tokens on the index page;
+	  they are   remembered in a session variable.	This lets external
+	  reviewers use   review tokens, since owning the token gives them
+	  the right to view the   paper.  - Remove $ConfSiteBase.  - Search
+	  highlight improvement.  Searches on specific fields only
+	  highlight matches in those fields.  (For example, given
+	  "au:sylvia",	 a title "Sylvia" won't highlight.) - Search
+	  highlight improvement.  A match automagically expands a folded
+	  field, so you can see what matched.  - Search syntax improvement:
+	  "blah*" searches for words that start with   "blah".	Actually
+	  the star can go anywhere; it matches any number of   characters.
+
+	  COMMENTS GREATLY DESIRED.
+
+2008-07-29 Tuesday 23:52  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* mail.php (1.39.2.2): Mail tool: same fix.
+
+2008-07-29 Tuesday 23:50  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* mail.php (1.41): Mail: Correct some validation bugs (while
+	  preserving correct semantics).
+
+	  Also make pressing return do the expected thing by adding a
+	  hidden <input type="submit">.
+
+2008-07-29 Tuesday 23:28  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* mail.php (1.39.2.1), mail.php (1.40): Mail fixes.
+
+	  (1) I'm not sure the prior code actually obeyed the check boxes
+	  on prepared mails, because of some overzealous validation fixes.
+	  (2) Mail preparation uses JavaScript to discourage early clicking
+	  on the "Send" button.  Robbert van Renesse reported a problem
+	  that ended up being Rich Draves clicking on Send early.  (3)
+	  Report number of emails remaining using JavaScript.
+
+2008-07-29 Tuesday 23:26  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/paperlist.inc (1.186.2.1): Paper lists don't show conflicted
+	  PC members review counts.
+
+	  Previously, conflicted PC members could see review counts when
+	  authors could.  Fixing this incredibly minor leak will cause Fred
+	  Douglis to email me less.
+
+2008-07-25 Friday 17:33  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.94), review.php (1.158), style.css (1.262),
+	  tarball.sh (1.99), Code/review.inc (1.114), Code/reviewtable.inc
+	  (1.62), images/newreview.png (1.1): More review style
+	  improvements.
+
+	  A review is enclosed in a colored box.  This is much better than
+	  the previous design.
+
+2008-07-25 Friday 15:20  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/: contact.inc (1.162), contact.inc (1.161.2.1): PC members
+	  always count as reviewers.
+
+	  Fixes a problem reported by Laurel Krieger.
+
+2008-07-22 Tuesday 14:23  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/helpers.inc (1.221): Minor improvement to email linebreaking
+
+2008-07-22 Tuesday 13:46  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/helpers.inc (1.220): Show comments tab when comments are
+	  allowed.
+
+2008-07-22 Tuesday 12:43  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.29), README (1.52): to 2.23 (port from branch)
+
+2008-07-22 Tuesday 12:43  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* NEWS (1.28.2.1), README (1.51.2.1), tarball.sh (1.97.2.1): to
+	  2.23
+
+2008-07-22 Tuesday 12:34  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/: contactlist.inc (1.38.2.1), helpers.inc (1.217.2.1),
+	  mailtemplate.inc (1.47.2.1): Port last two changes into old style
+	  branch.
+
 2008-07-22 Tuesday 12:26  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Code/contactlist.inc (1.39): Review ratings no longer influence
