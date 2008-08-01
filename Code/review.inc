@@ -857,13 +857,15 @@ $blind\n";
 	    else if ($this->authorView[$field] == 0)
 		$c .= "<span class='hint'>(hidden from authors)</span>";
 
+	    if ($disp & self::WEB_RIGHT)
+		$x .= "  <td class='revce'></td>\n";
 	    $x .= "  <td class='reve rev_$field";
 	    if ($disp & self::WEB_LEFT)
 		$x .= " revle'>";
 	    else if ($disp & self::WEB_RIGHT)
 		$x .= " revre'>";
 	    else
-		$x .= " revbe' colspan='2'>";
+		$x .= " revbe' colspan='3'>";
 
 	    $x .= "<div class='revt'>" . $c . "<div class='clear'></div></div>\n";
 	    $x .= "<div class='revv'>";
@@ -1136,9 +1138,10 @@ $blind\n";
 		echo " &nbsp;<span class='barsep'>|</span>&nbsp; <a href='help$ConfSiteSuffix?t=revrate'>What is this?</a></div>";
 	    }
 	    echo "<div class='clear'></div></td><td></td></tr>
-  <tr><td></td><td class='revcc'>",
+  <tr><td></td><td class='revct'><div class='inrevct'>",
 		$this->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow, $Conf)),
-		"</td><td></td></tr>\n", tagg_cbox("rev", true),
+		"</div></td>",
+		"<td></td></tr>\n", tagg_cbox("rev", true),
 		"</td></tr>\n</table></div>\n\n";
 	    return;
 	}

@@ -1154,7 +1154,7 @@ class PaperTable {
 
 	// main paper table
 	echo "    <td class='pboxt'><table class='papc'>
-	<tr><td class='papculs'></td><td></td><td></td></tr>
+	<tr><td class='papculs'></td><td></td><td class='papcur'></td></tr>
 	<tr><td></td><td>";
 	if ($Me->canEditPaper($prow, $Conf)) {
 	    echo "<div class='floatright'>";
@@ -1164,27 +1164,25 @@ class PaperTable {
 	}
 	echo "<h2>";
 	$this->echoTitle($prow);
-	echo "</h2></td><td class='papcur'></td></tr>
+	echo "</h2></td><td></td></tr>
     </table></td>
 </tr><tr>
     <td class='pboxl'></td>
     <td class='pboxr'><table class='papc'>
-	<tr><td class='papculs'></td><td class='papcc'>";
+	<tr><td class='papcl'></td><td class='papct'><div class='inpapct'>";
 
 	$this->echoDivEnter($prow);
-	echo "<table class='paptab'><tr><td class='papbe' colspan='2'>";
+	echo "<table class='paptab'><tr><td class='papbe' colspan='3'>";
 	$this->paptabDownload($prow);
-	// XXX PaperTable::STATUS_CONFLICTINFO_PC
 	echo "</td></tr>
 	<tr><td class='paple'>";
 	$this->paptabAbstract($prow);
-	echo "</td><td class='papre'>";
-	// XXXX XXXX XXXX
+	echo "</td><td class='papce'></td><td class='papre'>";
 	$this->paptabAuthors($prow);
 	$this->paptabTopicsOptions($prow, $Me->actChair($prow));
 	echo "</td></tr></table>";
 	$this->echoDivExit();
-	echo "</td><td></td></tr>\n";
+	echo "</div></td><td class='papcr'></td></tr>\n";
     }
 
     function paptabEndWithReviews() {
@@ -1194,10 +1192,10 @@ class PaperTable {
 
 	if ($forceShow && !$Me->canViewReview($prow, null, $Conf, $fakeWhyNotView, true)) {
 	    echo "	<tr><td colspan='3' class='papsep'></td></tr>
-	<tr><td></td><td class='papcc'>",
+	<tr><td></td><td class='papcc'><div class='inpapcc'>",
 		"You have used administrator privileges to view and edit ",
 		"reviews for this paper. (<a href=\"", htmlspecialchars(selfHref(array("forceShow" => 0))), "\">Unprivileged view</a>)",
-		"</td><td></td></tr>\n";
+		"</div></td><td></td></tr>\n";
 	}
 	
 	echo "	<tr><td colspan='3' class='papsep'></td></tr>
@@ -1218,11 +1216,12 @@ class PaperTable {
 	if ($Me->canViewReview($prow, null, $Conf)
 	    && count($this->rrows) + count($this->crows) > 0) {
 	    $a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=r&amp;text=1$linkExtra'>";
-	    echo "<table class='pbox'><tr><td class='pboxl'></td>",
+	    echo "<div class='relative'>",
+		"<table class='pbox'><tr><td class='pboxl'></td>",
 		"<td class='pboxr'>", $a,
 		$Conf->cacheableImage("txt24.png", "[Text]", null, "dlimg"),
 		"</a>&nbsp;", $a, "Reviews and comments in text format</a>",
-		"</td></tr></table>\n";
+		"</td></tr></table></div>\n";
 	}
 
 	$opt = array("edit" => false);

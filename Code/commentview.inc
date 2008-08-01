@@ -54,12 +54,14 @@ class CommentView {
 		echo "c=$crow->commentId";
 	    else
 		echo "p=$prow->paperId";
-	    echo "$linkExtra&amp;post=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>\n";
+	    echo "$linkExtra&amp;post=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'>";
+	    if (!$crow && $foldnew)
+		echo "<div class='aahc foldc' id='foldaddcomment'>";
+	    else
+		echo "<div class='aahc'>";
 	}
 
-	echo "<table class='pbox",
-	    ($editMode && !$crow && $foldnew ? " foldc' id='foldaddcomment" : ""),
-	    "'><tr>
+	echo "<table class='pbox'><tr>
   <td class='pboxl'></td>
   <td class='pboxr'>", tagg_cbox("cmt", false),
 	    "\t<tr><td></td><td class='cmthead'>";
