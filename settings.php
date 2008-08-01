@@ -1134,7 +1134,7 @@ function doDecGroup() {
     global $Conf, $rf;
 
     // doCheckbox('au_seerev', '<b>Authors can see reviews</b>');
-    echo "Can <b>authors see reviews</b> for their papers?<br />";
+    echo "Can <b>authors see reviews and comments</b> for their papers?<br />";
     doRadio("au_seerev", array(AU_SEEREV_NO => "No", AU_SEEREV_ALWAYS => "Yes", AU_SEEREV_YES => "Yes, once they've completed any requested reviews"));
 
     echo "<div class='g'></div>\n<table>";
