@@ -7,15 +7,15 @@ function e(id) {
 }
 
 function hotcrpLoad(servtime, servzone) {
-    var elt = e("usertime");
+    var s, d, elt = e("usertime");
     if (elt && Math.abs) {
-	var d = new Date();
+	d = new Date();
 	// print local time if local time is more than 10 minutes off,
 	// or if server time is more than 3 time zones distant
 	if (Math.abs(d.getTime()/1000 - servtime) <= 10 * 60
 	    && Math.abs(d.getTimezoneOffset() - servzone) <= 3 * 60)
 	    return;
-	var s = ["Sun", "Mon", "Tues", "Wednes", "Thurs", "Fri", "Satur"][d.getDay()];
+	s = ["Sun", "Mon", "Tues", "Wednes", "Thurs", "Fri", "Satur"][d.getDay()];
 	s += "day " + d.getDate() + " ";
 	s += ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
 	s += " " + d.getFullYear() + " " + (((d.getHours() + 11) % 12) + 1);
@@ -27,8 +27,9 @@ function hotcrpLoad(servtime, servzone) {
 }
 
 function highlightUpdate(which, off) {
+    var ins, i, result;
     if (typeof which == "string") {
-	var result = e(which + "result");
+	result = e(which + "result");
 	if (result && !off)
 	    result.innerHTML = "";
 	which = e(which);
@@ -38,8 +39,8 @@ function highlightUpdate(which, off) {
 	which = document;
 
     if (which.tagName != "INPUT" && which.tagName != "BUTTON") {
-	var ins = which.getElementsByTagName("input");
-	for (var i = 0; i < ins.length; i++)
+	ins = which.getElementsByTagName("input");
+	for (i = 0; i < ins.length; i++)
 	    if (ins[i].className.substr(0, 2) == "hb")
 		highlightUpdate(ins[i], off);
     }
@@ -66,20 +67,19 @@ function hiliter(which, off) {
 }
 
 function fold(which, dofold, foldnum) {
-    var foldnumid = (foldnum ? foldnum : "");
+    var i, elt, selt, opentxt, closetxt, foldnumid = (foldnum ? foldnum : "");
     if (which instanceof Array) {
-	for (var i = 0; i < which.length; i++)
+	for (i = 0; i < which.length; i++)
 	    fold(which[i], dofold, foldnum);
     } else if (typeof which == "string") {
-	var elt = e('fold' + which);
+	elt = e('fold' + which);
 	fold(elt, dofold, foldnum);
 	// check for session
-	var selt = e('foldsession.' + which + foldnum);
-	if (selt)
+	if ((selt = e('foldsession.' + which + foldnum)))
 	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0));
     } else if (which) {
-	var opentxt = "fold" + foldnumid + "o";
-	var closetxt = "fold" + foldnumid + "c";
+	opentxt = "fold" + foldnumid + "o";
+	closetxt = "fold" + foldnumid + "c";
 	if (dofold == null && which.className.indexOf(opentxt) >= 0)
 	    dofold = true;
 	if (dofold)
@@ -144,15 +144,16 @@ function doRole(what) {
 
 
 // paper selection
-function papersel(onoff) {
+function papersel(onoff, name) {
     var ins = document.getElementsByTagName("input");
+    name = (name ? name : "pap[]");
     for (var i = 0; i < ins.length; i++)
-	if (ins[i].name == "pap[]")
+	if (ins[i].name == name)
 	    ins[i].checked = onoff;
 }
 
 var paperselDocheck = true;
-function paperselCheck() {
+function paperselCheck(name) {
     if (!paperselDocheck)
 	return true;
     var ins = document.getElementsByTagName("input");
@@ -163,20 +164,26 @@ function paperselCheck() {
     return false;
 }
 
-var pselclick_last = null;
-function pselClick(evt, elt, thisnum) {
-    if (!evt.shiftKey || !pselclick_last)
+var pselclick_last = {};
+function pselClick(evt, elt, thisnum, name) {
+    var i, j, sel;
+    name = (name ? name : "psel");
+    if (!evt.shiftKey || !pselclick_last[name])
 	/* nada */;
     else {
-	var i = (pselclick_last <= thisnum ? pselclick_last : thisnum + 1);
-	var j = (pselclick_last <= thisnum ? thisnum - 1 : pselclick_last);
+	if (pselclick_last[name] <= thisnum) {
+	    i = pselclick_last[name];
+	    j = thisnum - 1;
+	} else {
+	    i = thisnum + 1;
+	    j = pselclick_last[name];
+	}
 	for (; i <= j; i++) {
-	    var sel = e("psel" + i);
-	    if (sel)
+	    if ((sel = e(name + i)))
 		sel.checked = elt.checked;
 	}
     }
-    pselclick_last = thisnum;
+    pselclick_last[name] = thisnum;
     return true;
 }
 
@@ -203,7 +210,7 @@ function selassign(elt, which) {
     if (elt) {
 	e("ass" + which).className = "name" + elt.value;
 	var i = e("assimg" + which);
-	var ext = (elt.value == -1 ? ".png" : ".gif");
+	var ext = (elt.value < 0 ? ".png" : ".gif");
 	i.src = i.src.replace(/ass-?\d\.\w\w\w/, "ass" + elt.value + ext);
 	hiliter(elt);
     }

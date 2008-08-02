@@ -393,7 +393,6 @@ a img {
 
 span.topic0 {
 	color: gray;
-	text-decoration: line-through;
 }
 span.topic2 {
 	font-weight: bold;
@@ -897,12 +896,12 @@ table.pcass td.colmid {
 	padding-left: 0.5em;
 	vertical-align: top;
 }
-table.pcass td.name, table.pcass td.name-1, table.pcass td.name0,
-table.pcass td.name1, table.pcass td.name2, table.pcass td.name3, 
-table.pcass td.name4 {
+table.pcass td.name, table.pcass td.name-1, table.pcass td.name-2,
+table.pcass td.name0, table.pcass td.name1, table.pcass td.name2, 
+table.pcass td.name3, table.pcass td.name4 {
 	padding-right: 1em;
 }
-table.pcass td.name-1 {
+table.pcass td.name-1, table.pcass td.name-2 {
 	color: gray;
 }
 table.pcass td.name3, table.pcass td.name4 {
@@ -910,13 +909,23 @@ table.pcass td.name3, table.pcass td.name4 {
 }
 table.pcass td.ass {
 	padding-right: 0.45em;
-	text-align: right;
 	font-size: smaller;
+	white-space: nowrap;
 }
 table.pcass td.nrev {
 	font-size: 69%;
 	padding-bottom: 2px;
 	padding-right: 0.65em;
+}
+span.asspref1, span.asspref-1 {
+	font-size: 69%;
+	font-weight: normal;
+}
+span.asspref1 {
+	color: #008000;
+}
+span.asspref-1 {
+	color: #800000;
 }
 
 table.topicinterest tr td.ti_interest, table.topicinterest tr th {

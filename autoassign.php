@@ -13,6 +13,15 @@ $Me->goIfNotPrivChair("index$ConfSiteSuffix");
 // paper selection
 if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
     $_REQUEST["q"] = "";
+if (isset($_REQUEST["pcs"]) && is_string($_REQUEST["pcs"]))
+    $_REQUEST["pcs"] = preg_split('/\s+/', $_REQUEST["pcs"]);
+if (isset($_REQUEST["pcs"]) && is_array($_REQUEST["pcs"])) {
+    $pcsel = array();
+    foreach ($_REQUEST["pcs"] as $p)
+	if (($p = cvtint($p)) > 0)
+	    $pcsel[$p] = 1;
+} else
+    $pcsel = pcMembers();
 if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
     $_REQUEST["pap"] = preg_split('/\s+/', $_REQUEST["pap"]);
 if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && !isset($_REQUEST["requery"])) {
@@ -82,7 +91,8 @@ function checkRequest(&$atype, &$reviewtype, $save) {
     
     $atype = $_REQUEST["a"];
     if ($atype != "rev" && $atype != "revadd" && $atype != "lead"
-	&& $atype != "shepherd" && $atype != "prefconflict") {
+	&& $atype != "shepherd" && $atype != "prefconflict"
+	&& $atype != "clear") {
 	$Error["ass"] = true;
 	return $Conf->errorMsg("Malformed request!");
     }
@@ -94,6 +104,15 @@ function checkRequest(&$atype, &$reviewtype, $save) {
     if (($atype == "rev" || $atype == "revadd")
 	&& ($reviewtype != REVIEW_PRIMARY && $reviewtype != REVIEW_SECONDARY)) {
 	$Error["ass"] = true;
+	return $Conf->errorMsg("Malformed request!");
+    }
+    if ($atype == "clear")
+	$reviewtype = defval($_REQUEST, "cleartype", "");
+    if ($atype == "clear"
+	&& ($reviewtype != REVIEW_PRIMARY && $reviewtype != REVIEW_SECONDARY
+	    && $reviewtype != "conflict" && $reviewtype != "lead"
+	    && $reviewtype != "shepherd")) {
+	$Error["clear"] = true;
 	return $Conf->errorMsg("Malformed request!");
     }
     $_REQUEST["rev_roundtag"] = defval($_REQUEST, "rev_roundtag", "");
@@ -128,7 +147,7 @@ function noBadPair($pc, $pid) {
 }
 
 function doAssign() {
-    global $Conf, $ConfSiteSuffix, $papersel, $assignments, $assignprefs, $badpairs;
+    global $Conf, $ConfSiteSuffix, $papersel, $pcsel, $assignments, $assignprefs, $badpairs;
 
     // check request
     if (!checkRequest($atype, $reviewtype, false))
@@ -144,7 +163,7 @@ function doAssign() {
     if ($_REQUEST["pctyp"] == "sel") {
 	$pck = array_keys($pcm);
 	foreach ($pck as $pcid)
-	    if (!isset($_REQUEST["pcs$pcid"]))
+	    if (!isset($pcsel[$pcid]))
 		unset($pcm[$pcid]);
 	if (!count($pcm)) {
 	    $Conf->errorMsg("Select one or more PC members to assign.");
@@ -154,10 +173,13 @@ function doAssign() {
 
     // prefconflict is a special case
     if ($atype == "prefconflict") {
+	$papers = array_fill_keys($papersel, 1);
 	$result = $Conf->qe("select paperId, contactId, preference from PaperReviewPreference where preference<=-100", "while fetching preferences");
 	$assignments = array();
 	$assignprefs = array();
 	while (($row = edb_row($result))) {
+	    if (!isset($papers[$row[0]]) || !isset($pcm[$row[1]]))
+		continue;
 	    if (!isset($assignments[$row[0]]))
 		$assignments[$row[0]] = array();
 	    $assignments[$row[0]][] = $row[1];
@@ -169,7 +191,34 @@ function doAssign() {
 	}
 	return;
     }
-    
+
+    // clear is another special case
+    if ($atype == "clear") {
+	$papers = array_fill_keys($papersel, 1);
+	if ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY)
+	    $q = "select paperId, contactId from PaperReview where reviewType=" . $reviewtype;
+	else if ($reviewtype == "conflict")
+	    $q = "select paperId, contactId from PaperConflict where conflictType>0 and conflictType<" . CONFLICT_AUTHOR;
+	else if ($reviewtype == "lead" || $reviewtype == "shepherd")
+	    $q = "select paperId, ${reviewtype}ContactId from Paper where ${reviewtype}ContactId!=0";
+	$result = $Conf->qe($q, "while checking clearable assignments");
+	$assignments = array();
+	$assignprefs = array();
+	while (($row = edb_row($result))) {
+	    if (!isset($papers[$row[0]]) || !isset($pcm[$row[1]]))
+		continue;
+	    if (!isset($assignments[$row[0]]))
+		$assignments[$row[0]] = array();
+	    $assignments[$row[0]][] = $row[1];
+	    $assignprefs["$row[0]:$row[1]"] = "X";
+	}
+	if (count($assignments) == 0) {
+	    $Conf->warnMsg("Nothing to assign.");
+	    unset($assignments);
+	}
+	return;
+    }
+
     // prepare to balance load
     $load = array_fill_keys(array_keys($pcm), 0);
     if (defval($_REQUEST, "balance", "new") != "new") {
@@ -331,7 +380,7 @@ function saveAssign() {
     $didLead = false;
     if ($atype == "rev" || $atype == "revadd") {
 	$result = $Conf->qe("select PCMember.contactId, paperId,
-		reviewType, reviewModified
+		reviewId, reviewType, reviewModified
 		from PCMember join PaperReview using (contactId)",
 			"while getting existing reviews");
 	while (($row = edb_orow($result)))
@@ -355,6 +404,30 @@ function saveAssign() {
 	    . " on duplicate key update conflictType=greatest(conflictType," . CONFLICT_CHAIRMARK . ")";
 	$Conf->qe($q, "while storing conflicts");
 	$Conf->log("stored conflicts based on preferences", $Me);
+    } else if ($atype == "clear") {
+	if ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY) {
+	    $result = $Conf->qe("select PCMember.contactId, paperId,
+		reviewId, reviewType, reviewModified
+		from PCMember join PaperReview using (contactId)
+		where reviewType=$reviewtype",
+			"while getting existing reviews");
+	    while (($row = edb_orow($result)))
+		if (isset($ass[$row->paperId][$row->contactId])) {
+		    $Me->assignPaper($row->paperId, $row, $pcm[$row->contactId],
+				     0, $Conf);
+		    unset($ass[$row->paperId][$row->contactId]);
+		}
+	} else if ($reviewtype == "conflict") {
+	    foreach ($ass as $pid => $pcs) {
+		foreach ($pcs as $pc => $ignore)
+		    $Conf->qe("delete from PaperConflict where paperId=$pid and contactId=$pc and conflictType<" . CONFLICT_AUTHOR, "while clearing conflicts");
+	    }
+	} else if ($reviewtype == "lead" || $reviewtype == "shepherd") {
+	    foreach ($ass as $pid => $pcs) {
+		foreach ($pcs as $pc => $ignore)
+		    $Conf->qe("update Paper set ${reviewtype}ContactId=0 where paperId=$pid and ${reviewtype}ContactId=$pc", "while clearing ${reviewtype}s");
+	    }
+	}
     } else {
 	foreach ($ass as $pid => $pcs)
 	    if (count($pcs) == 1) {
@@ -434,9 +507,25 @@ if (isset($assignments) && count($assignments) > 0) {
     echo "<table class='manyassign'>";
     echo "<tr class='propass'>", tdClass(false, "propass", $extraclass), "Proposed assignment</td><td class='entry$extraclass'>";
     $helplist = "";
-    $Conf->infoMsg("If this assignment looks OK to you, select \"Save assignment\" to apply it.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown in square brackets.");
+    $Conf->infoMsg("If this assignment looks OK to you, select \"Save assignment\" to apply it.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown as &ldquo;P#&rdquo;.");
     $extraclass = "";
     
+    $atype = $_REQUEST["a"];
+    if ($atype == "clear" || $atype == "rev" || $atype == "revadd")
+	$reviewtype = $_REQUEST["${atype}type"];
+    else
+	$reviewtype = 0;
+    if ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY)
+	$reviewtypename = strtolower($reviewTypeName[$reviewtype]);
+    else if ($reviewtype == "conflict" || $atype == "prefconflict")
+	$reviewtypename = "conflict";
+    else if ($reviewtype == "lead" || $atype == "lead")
+	$reviewtypename = "discussion lead";
+    else if ($reviewtype == "shepherd" || $atype == "shepherd")
+	$reviewtypename = "shepherd";
+    else
+	$reviewtypename = "";
+
     ksort($assignments);
     $atext = array();
     $pcm = pcMembers();
@@ -446,32 +535,37 @@ if (isset($assignments) && count($assignments) > 0) {
 	$t = "";
 	foreach ($pcm as $pc)
 	    if (in_array($pc->contactId, $pcs)) {
-		$t = $t . ($t ? ", " : "") . contactHtml($pc->firstName, $pc->lastName);
-		if ($assignprefs["$pid:$pc->contactId"] != 0)
-		    $t .= " [" . $assignprefs["$pid:$pc->contactId"] . "]";
+		$t .= ($t ? ", " : "") . contactHtml($pc->firstName, $pc->lastName);
+		$pref = $assignprefs["$pid:$pc->contactId"];
+		if ($pref !== "X" && $pref != 0)
+		    $t .= " <span class='asspref" . ($pref > 0 ? 1 : -1)
+			. "'>P" . decorateNumber($pref) . "</span>";
 		$pc_nass[$pc->contactId] = defval($pc_nass, $pc->contactId, 0) + 1;
 	    }
-	$atext[$pid] = "<span class='pl_callouthdr'>Proposed assignment:</span> $t";
+	if ($atype == "clear")
+	    $t = "remove $t";
+	$atext[$pid] = "<span class='pl_callouthdr'>Proposed $reviewtypename assignment:</span> $t";
     }
 
     $search = new PaperSearch($Me, array("t" => "s", "q" => join(" ", array_keys($assignments))));
     $plist = new PaperList(false, false, $search, $atext);
     echo $plist->text("reviewers", $Me);
 
-    $atype = $_REQUEST["a"];
     if ($atype != "prefconflict") {
 	echo "<div class='g'></div>";
 	echo "<strong>Assignment Summary</strong><br />\n";
 	echo "<table class='pcass'><tr><td><table>";
-	$pcsel = array();
+	$pcdesc = array();
 	foreach ($pcm as $id => $p) {
 	    $nnew = defval($pc_nass, $id, 0);
-	    if ($atype == "rev" || $atype == "revadd") {
+	    if ($atype == "clear")
+		$nnew = -$nnew;
+	    if ($reviewtype == REVIEW_PRIMARY) {
 		$nreviews[$id] += $nnew;
-		if ($_REQUEST["${atype}type"] == REVIEW_PRIMARY)
-		    $nprimary[$id] += $nnew;
-		else
-		    $nsecondary[$id] += $nnew;
+		$nprimary[$id] += $nnew;
+	    } else if ($reviewtype == REVIEW_SECONDARY) {
+		$nreviews[$id] += $nnew;
+		$nsecondary[$id] += $nnew;
 	    }
 	    $c = "<tr><td class='name'>"
 		. contactHtml($p->firstName, $p->lastName)
@@ -480,13 +574,13 @@ if (isset($assignments) && count($assignments) > 0) {
 		. plural($nreviews[$id], "review");
 	    if ($nprimary[$id] && $nprimary[$id] < $nreviews[$id])
 		$c .= ", " . $nprimary[$id] . " primary";
-	    $pcsel[] = $c . "</td></tr>\n";
+	    $pcdesc[] = $c . "</td></tr>\n";
 	}
-	$n = intval((count($pcsel) + 2) / 3);
-	for ($i = 0; $i < count($pcsel); $i++) {
+	$n = intval((count($pcdesc) + 2) / 3);
+	for ($i = 0; $i < count($pcdesc); $i++) {
 	    if (($i % $n) == 0 && $i)
 		echo "</table></td><td class='colmid'><table>";
-	    echo $pcsel[$i];
+	    echo $pcdesc[$i];
 	}
 	echo "</table></td></tr></table>\n";
 	$rev_roundtag = defval($_REQUEST, "rev_roundtag");
@@ -500,7 +594,7 @@ if (isset($assignments) && count($assignments) > 0) {
     echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'><div class='aahc'><div class='aa'>\n";
     echo "<input type='submit' class='b' name='saveassign' value='Save assignment' />\n";
     echo "&nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />\n";
-    foreach (array("t", "q", "a", "revaddtype", "revtype", "revct", "revaddct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag") as $t)
+    foreach (array("t", "q", "a", "revaddtype", "revtype", "cleartype", "revct", "revaddct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag") as $t)
 	if (isset($_REQUEST[$t]))
 	    echo "<input type='hidden' name='$t' value=\"", htmlspecialchars($_REQUEST[$t]), "\" />\n";
     foreach ($pcm as $id => $p)
@@ -548,7 +642,7 @@ echo "<input class='textlite' type='text' size='40' name='q' value=\"", htmlspec
     tagg_select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")")),
     " &nbsp; <input id='requery' class='b' name='requery' type='submit' value='List' />\n";
 if (isset($_REQUEST["requery"]))
-    echo "<br /><span class='hint'>Assignments will apply to the checked papers in the list below.</span>";
+    echo "<br /><span class='hint'>Assignments will apply to the papers selected in the list below.</span>";
 echo "</td></tr>\n";
 echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
 
@@ -592,6 +686,13 @@ echo "<tr><td class='caption'></td>", tdClass(true, "shepherd");
 doRadio('a', 'shepherd', 'Assign shepherd from reviewers, preferring high scores');
 echo "</td></tr>\n";
 
+echo "<tr><td class='caption'></td>", tdClass(true, "clear");
+echo "<div class='g'></div>";
+doRadio('a', 'clear', 'Clear all &nbsp;');
+doSelect('cleartype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", "conflict" => "conflict", "lead" => "discussion lead", "shepherd" => "shepherd"));
+echo " &nbsp;assignments for selected papers and PC members";
+echo "</td></tr>\n";
+
 
 // PC
 echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
@@ -603,28 +704,30 @@ echo "</td></tr>\n";
 echo "<tr><td class='caption'></td><td class='entry'>";
 echo "<table><tr><td>";
 doRadio('pctyp', 'sel', '');
-echo "</td><td>Use selected PC members:";
+echo "</td><td>Use selected PC members: &nbsp; ",
+    "(<a href='javascript:papersel(1,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>All</a> &nbsp;<span class='barsep'>|</span>&nbsp; <a href='javascript:papersel(0,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>None</a>)</small>";
 echo "</td></tr>\n<tr><td></td><td><table class='pcass'><tr><td><table>";
 
 $pcm = pcMembers();
 countReviews($nreviews, $nprimary, $nsecondary);
-$pcsel = array();
+$pcdesc = array();
 foreach ($pcm as $id => $p) {
-    $c = "<tr><td><input type='checkbox' name='pcs$id' value='1'";
-    if (isset($_REQUEST["pcs$id"]))
+    $count = count($pcdesc) + 1;
+    $c = "<tr><td><input type='checkbox' id='pcsel$count' name='pcs[]' value='$id'";
+    if (isset($pcsel[$id]))
 	$c .= " checked='checked'";
-    $c .= " onclick='e(\"pctyp_sel\").checked=true' />&nbsp;</td><td class='name'>" . contactHtml($p->firstName, $p->lastName) . "</td></tr><tr><td></td><td class='nrev'>"
+    $c .= " onclick='pselClick(event, this, $count, \"pcsel\");e(\"pctyp_sel\").checked=true' />&nbsp;</td><td class='name'>" . contactHtml($p->firstName, $p->lastName) . "</td></tr><tr><td></td><td class='nrev'>"
 	. plural($nreviews[$id], "review");
     if ($nprimary[$id] && $nprimary[$id] < $nreviews[$id])
 	$c .= ", " . $nprimary[$id] . " primary";
     $c .= "</td></tr>";
-    $pcsel[] = $c;
+    $pcdesc[] = $c;
 }
-$n = intval((count($pcsel) + 2) / 3);
-for ($i = 0; $i < count($pcsel); $i++) {
+$n = intval((count($pcdesc) + 2) / 3);
+for ($i = 0; $i < count($pcdesc); $i++) {
     if (($i % $n) == 0 && $i)
 	echo "</table></td><td class='colmid'><table>";
-    echo $pcsel[$i];
+    echo $pcdesc[$i];
 }
 echo "</table></td></tr></table></td></tr></table>";
 echo "</td></tr>\n";
@@ -646,7 +749,8 @@ function bpSelector($i, $which) {
 	$sel_extra["onchange"] = "if (!((x=e(\"badpairs\")).checked)) x.click()";
     return tagg_select("bp$which$i", $sel_opt, $selected, $sel_extra);
 }
-    
+
+echo "</table><table class='manyassignx'>\n";
 echo "<tr><td class='caption'></td><td class='entry'><div id='foldbadpair' class='",
     (isset($_REQUEST["badpairs"]) ? "foldo" : "foldc"),
     "'><table id='bptable'>\n";
@@ -670,7 +774,6 @@ echo "</td></tr>\n";
 
 
 // Load balancing
-echo "</table><table class='manyassignx'>\n";
 echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
 echo "<tr><td class='caption'>Load balancing</td><td class='entry'>";
 doRadio('balance', 'new', "Consider only new assignments when balancing load");

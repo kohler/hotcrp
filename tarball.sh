@@ -91,6 +91,7 @@ images/.htaccess
 images/_.gif
 images/GenChart.php
 images/allreviews24.png
+images/ass-2.png
 images/ass-1.png
 images/ass0.gif
 images/ass1.gif

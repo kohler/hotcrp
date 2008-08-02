@@ -330,6 +330,15 @@ function abbreviateName($f, $l) {
 	return "???";
 }
 
+function decorateNumber($n) {
+    if ($n < 0)
+	return "&minus;" . (-$n);
+    else if ($n > 0)
+	return $n;
+    else
+	return 0;
+}
+
 function _cleanContactText(&$f, &$l, &$e) {
     if (is_array($f)) {
 	if ($e === null && count($f) > 2)

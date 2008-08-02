@@ -456,14 +456,16 @@ if ($t != "")
 if ($Me->actChair($prow)) {
     $result = $Conf->qe("select ContactInfo.contactId, firstName, lastName,
 	PaperConflict.conflictType,
-	PaperReview.reviewType,	preference,
-	group_concat(AllReviews.reviewType separator '') as allReviews
+	PaperReview.reviewType,	coalesce(preference, 0) as preference,
+	group_concat(AllReviews.reviewType separator '') as allReviews,
+	coalesce(PaperTopics.topicInterestScore,0) as topicInterestScore
 	from ContactInfo
 	join PCMember using (contactId)
 	left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$prow->paperId)
 	left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$prow->paperId)
 	left join PaperReviewPreference on (PaperReviewPreference.contactId=ContactInfo.contactId and PaperReviewPreference.paperId=$prow->paperId)
 	left join PaperReview as AllReviews on (AllReviews.contactId=ContactInfo.contactId)
+	left join (select contactId, sum(if(interest=2,2,interest-1)) as topicInterestScore from PaperTopic join TopicInterest using (topicId) where paperId=$prow->paperId group by contactId) as PaperTopics on (PaperTopics.contactId=ContactInfo.contactId)
 	group by email
 	order by lastName, firstName, email", "while looking up PC");
     $pcx = array();
@@ -475,9 +477,12 @@ if ($Me->actChair($prow)) {
 	<tr><td></td><td class='papcc'>",
 	"<div class='papt'><span class='papfn'>PC review assignments</span>",
 	"<div class='clear'></div></div>",
-	"<div class='paphint'>Any review preferences are in brackets.</div>",
-	"<div class='papv'>",
-	"<table class='pcass'><tr><td><table>\n";
+	"<div class='paphint'>Review preferences are shown as &ldquo;P#&rdquo;";
+    if (count($rf->topicName))
+	echo ", topic scores as &ldquo;T#&rdquo;";
+    echo ".</div><div class='papv'>";
+
+    echo "<table class='pcass'><tr><td><table>\n";
 
     $n = intval((count($pcx) + 2) / 3);
     for ($i = 0; $i < count($pcx); $i++) {
@@ -488,17 +493,32 @@ if ($Me->actChair($prow)) {
 	// first, name and assignment
 	echo "      <tr>";
 	if ($p->conflictType >= CONFLICT_AUTHOR) {
-	    echo "<td id='ass$p->contactId' class='name-1' colspan='2'>";
-	    echo str_replace(' ', "&nbsp;", contactHtml($p));
-	    echo " <small>(Author)</small></td>";
+	    echo "<td id='ass$p->contactId' class='name-2'>",
+		str_replace(' ', "&nbsp;", contactHtml($p)),
+		"</td><td class='ass'>",
+		"<img alt='(Author)' title='Author' src='images/ass-2.png' />",
+		"</td>";
 	} else {
 	    $cid = ($p->conflictType > 0 ? -1 : $p->reviewType + 0);
 	    $extension = ($cid == -1 ? ".png" : ".gif");
 	    echo "<td id='ass$p->contactId' class='name$cid'>";
 	    echo str_replace(' ', "&nbsp;", contactHtml($p));
-	    if ($p->conflictType == 0 && $p->preference)
-		echo " [", htmlspecialchars($p->preference), "]";
-	    echo "</td><td class='ass nowrap'>";
+	    if ($p->conflictType == 0
+		&& ($p->preference || $p->topicInterestScore)) {
+		if ($p->preference != 0)
+		    $type = ($p->preference > 0 ? 1 : -1);
+		else
+		    $type = ($p->topicInterestScore > 0 ? 1 : -1);
+		echo " <span class='asspref", $type, "'>";
+		if ($p->preference)
+		    echo "P", decorateNumber($p->preference);
+		if ($p->preference && $p->topicInterestScore)
+		    echo " ";
+		if ($p->topicInterestScore)
+		    echo "T", decorateNumber($p->topicInterestScore);
+		echo "</span>";
+	    }
+	    echo "</td><td class='ass'>";
 	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href=\"javascript:foldassign($p->contactId)\"><img alt='Assignment' id='assimg$p->contactId' src=\"images/ass$cid$extension\" /><img alt='&gt;' src=\"images/next.png\" /></a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention
 	    echo tagg_select("pcs$p->contactId",
@@ -518,7 +538,7 @@ if ($Me->actChair($prow)) {
 	echo "</tr>\n";
 
 	// then, number of reviews
-	echo "      <tr><td colspan='2' class='nrev'>";
+	echo "      <tr><td class='nrev' colspan='2'>";
 	$numReviews = strlen($p->allReviews);
 	$numPrimary = preg_match_all("|" . REVIEW_PRIMARY . "|", $p->allReviews, $matches);
 	echo plural($numReviews, "review");
