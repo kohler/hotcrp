@@ -1,7 +1,7 @@
 <?php
 
 function updateSchema($Conf) {
-    global $Opt;
+    global $Opt, $OK;
     error_log("Note: updating schema from version " . $Conf->settings["allowPaperOption"]);
     
     if ($Conf->settings["allowPaperOption"] == 6
@@ -74,6 +74,15 @@ function updateSchema($Conf) {
 	&& $Conf->q("insert ignore into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0")
 	&& $Conf->q("update Settings set value=15 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 15;
+    if ($Conf->settings["allowPaperOption"] == 15) {
+	// It's OK if this fails!  Update 11 added reviewRound to
+	// PaperReviewArchive (so old databases have the column), but I forgot
+	// to upgrade schema.sql (so new databases lack the column).
+	$Conf->q("alter table PaperReviewArchive add `reviewRound` tinyint(1) NOT NULL default '0'");
+	$OK = true;
+	if ($Conf->q("update Settings set value=16 where name='allowPaperOption'"))
+	    $Conf->settings["allowPaperOption"] = 16;
+    }
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

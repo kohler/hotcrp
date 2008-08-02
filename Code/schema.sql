@@ -255,6 +255,7 @@ CREATE TABLE `PaperReviewArchive` (
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
   `reviewType` tinyint(1) NOT NULL default '0',
+  `reviewRound` tinyint(1) NOT NULL default '0',
   `requestedBy` int(11) NOT NULL default '0',
   `requestedOn` timestamp NOT NULL default CURRENT_TIMESTAMP,
   `reviewBlind` tinyint(1) NOT NULL default '1',
