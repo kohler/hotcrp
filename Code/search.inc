@@ -19,6 +19,9 @@ $searchTags = array('ti' => 'ti', 'title' => 'ti',
 		    'sec' => 'sec', 'secondary' => 'sec',
 		    'csec' => 'csec', 'csecondary' => 'csec',
 		    'isec' => 'isec', 'isecondary' => 'isec',
+		    'ext' => 'ext', 'external' => 'ext',
+		    'cext' => 'cext', 'cexternal' => 'cext',
+		    'iext' => 'iext', 'iexternal' => 'iext',
 		    'cmt' => 'cmt', 'comment' => 'cmt',
 		    'aucmt' => 'aucmt', 'aucomment' => 'aucmt',
 		    'tag' => 'tag',
@@ -442,7 +445,7 @@ class PaperSearch {
 	    $this->_searchField($word, "au", $negated, $qt, true);
 	if ($special ? $special == "co" : isset($this->fields['co']))
 	    $this->_searchField($word, "co", $negated, $qt, true);
-	foreach (array("re", "cre", "ire", "pri", "cpri", "ipri", "sec", "csec", "isec") as $rtype)
+	foreach (array("re", "cre", "ire", "pri", "cpri", "ipri", "sec", "csec", "isec", "ext", "cext", "iext") as $rtype)
 	    if ($special ? $special == $rtype : isset($this->fields[$rtype]))
 		$this->_searchReviewer($word, $rtype, $negated, $qt);
 	foreach (array("cmt", "aucmt") as $ctype)
