@@ -1156,12 +1156,30 @@ class PaperTable {
 	echo "    <td class='pboxt'><table class='papc'>
 	<tr><td class='papculs'></td><td></td><td class='papcur'></td></tr>
 	<tr><td></td><td>";
-	if ($Me->canEditPaper($prow, $Conf)) {
-	    echo "<div class='floatright'>";
+
+	$t = "";
+	if ($this->mode != "assign" && $Me->canEditPaper($prow, $Conf)) {
 	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;m=pe$linkExtra'>";
-	    echo $a, $Conf->cacheableImage("newreview24.png", "[Edit]", null, "b"),
-		"</a>&nbsp;", $a, "Edit</a></div>";
+	    $t .= $a . $Conf->cacheableImage(($Me->actChair($prow)  && 0 ? "newreview.png" : "newreview24.png"), "[Edit]", null, "b")
+		. "</a>&nbsp;" . $a . "Edit</a>";
 	}
+	if ($this->mode != "assign" && $Me->actChair($prow)) {
+	    $a = "<a href='assign$ConfSiteSuffix?p=$prow->paperId$linkExtra'>";
+	    if ($t != "")
+		$t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
+	    $t .= $a . $Conf->cacheableImage("assign24.png", "[Assign]", null, "b")
+		. "</a>&nbsp;" . $a . "Assign</a>";
+	}
+	if ($this->mode == "assign") {
+	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId$linkExtra'>";
+	    if ($t != "")
+		$t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
+	    $t .= $a . $Conf->cacheableImage("view24.png", "[View]", null, "b")
+		. "</a>&nbsp;" . $a . "Normal view</a>";
+	}
+	if ($t != "")
+	    echo "<div class='floatright'>", $t, "</div>";
+
 	echo "<h2>";
 	$this->echoTitle($prow);
 	echo "</h2></td><td></td></tr>

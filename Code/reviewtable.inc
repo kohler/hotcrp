@@ -10,7 +10,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
     
     $subrev = array();
     $nonsubrev = array();
-    $foundRrow = $foundMyReview = $notShown = $nRetractable = 0;
+    $foundRrow = $foundMyReview = $notShown = 0;
     $actingConflict = ($prow->conflictType > 0 && !$forceShow);
     $effAssistant = $Me->privChair && !$actingConflict;
     $anyScores = false;
@@ -101,18 +101,17 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	    /* nothing */;
 	else if (($prow->conflictType > 0 && !$effAssistant) || $rr->reviewType != REVIEW_EXTERNAL)
 	    $t .= "<td class='empty'></td>";
-	else
-	    $t .= "<td><small>Requested by " . contactHtml($rr->reqFirstName, $rr->reqLastName) . "</small></td>";
+	else {
+	    $t .= "<td><small>Requested by " . contactHtml($rr->reqFirstName, $rr->reqLastName);
+	    if ($rr->reviewModified <= 0
+		&& $rr->reviewType == REVIEW_EXTERNAL
+		&& ($rr->requestedBy == $Me->contactId || $effAssistant))
+		$t .= " (<a href=\"assign$ConfSiteSuffix?p=$prow->paperId&amp;retract=$rr->reviewId$linkExtra\" title='Retract this review request'><strong>Retract</strong></a>)";
+	    $t .= "</small></td>";
+	}
 
 	// scores or retract request
-	if ($rr->reviewModified <= 0
-	    && $rr->reviewType == REVIEW_EXTERNAL
-	    && ($rr->requestedBy == $Me->contactId || $effAssistant)) {
-	    if ($mode == "assign") {
-		$t .= "<td><a href=\"assign$ConfSiteSuffix?p=$prow->paperId&amp;retract=$rr->reviewId$linkExtra\">Retract review request</a></td>";
-	    } else
-		$nRetractable++;
-	} else if ($mode == "assign")
+	if ($mode == "assign")
 	    $t .= "<td class='empty'></td>";
 	else if ($mode != "edit" && $mode != "re")
 	    $t .= $rf->webNumericScoresRow($rr, $prow, $Me, $Conf, $anyScores);

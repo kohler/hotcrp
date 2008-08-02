@@ -20,8 +20,8 @@ $PC = pcMembers();
 
 // header
 function confHeader() {
-    global $prow, $Conf, $linkExtra, $CurrentList;
-    $title = ($prow ? "Paper #$prow->paperId Review Assignments" : "Paper Review Assignments");
+    global $prow, $Conf, $ConfSiteBase, $linkExtra, $CurrentList;
+    $title = ($prow ? "<a href='paper$ConfSiteBase?p=$prow->paperId'>Paper #$prow->paperId</a> Review Assignments" : "Paper Review Assignments");
     $Conf->header($title, "assign", actionBar($prow, false, "assign"), false);
     if (isset($CurrentList) && $CurrentList > 0
 	&& strpos($linkExtra, "ls=") === false)
@@ -37,12 +37,16 @@ function errorMsgExit($msg) {
 
 // grab paper row
 function getProw() {
-    global $prow, $rrows, $Conf, $Me;
+    global $prow, $rrows, $Conf, $ConfSiteSuffix, $Me;
     if (!($prow = PaperTable::paperRow($whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
-    if (!$Me->canRequestReview($prow, $Conf, false, $whyNot))
-	errorMsgExit(whyNotText($whyNot, "request reviews for"));
-    
+    if (!$Me->canRequestReview($prow, $Conf, false, $whyNot)) {
+	$wnt = whyNotText($whyNot, "request reviews for");
+	if (!$Conf->headerPrinted)
+	    $Me->goAlert("paper$ConfSiteSuffix?p=$prow->paperId", $wnt);
+	else
+	    errorMsgExit($wnt);
+    }
     $rrows = $Conf->reviewRow(array('paperId' => $prow->paperId, 'array' => 1), $whyNot);
 }
 

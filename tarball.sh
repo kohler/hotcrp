@@ -132,6 +132,7 @@ images/stophand45.png
 images/timestamp12.png
 images/txt.png
 images/txt24.png
+images/view24.png
 images/viewas.png
 
 EOF
