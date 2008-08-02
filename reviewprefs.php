@@ -162,20 +162,23 @@ $Conf->header("Review Preferences", "revpref", actionBar());
 
 
 $rf = reviewForm();
-if (count($rf->topicName))
+if (count($rf->topicName)) {
     $topicnote = " and their topics.  You have high
 interest in <span class='topic2'>bold topics</span> and low interest in <span
 class='topic0'>grey topics</span>.  &ldquo;Topic score&rdquo; is higher the more you
 are interested in the paper's topics";
-else
-    $topicnote = "";
+    $topicnote2 = ", using topic scores to break ties";
+} else
+    $topicnote = $topicnote2 = "";
 
-$Conf->infoMsg("<p>Review preferences are small integers.
-The higher your preference, the more you want to review a paper.
-0 means you don't care either way; use negative numbers for papers you don't want to review, and &minus;100 or less for conflicts.
-Multiple papers can have the same preference.
-The system will try to assign your reviews in preference order, using
-topic scores to break ties.</p>
+$Conf->infoMsg("<p>Review preferences are small integers that indicate how much you want to
+review a paper.  Positive numbers mean you want to review the paper, negative
+numbers mean you don't.  The further from 0, the stronger you feel; the
+default, 0, means you're indifferent.  &minus;100 indicates a conflict, and
+&minus;20 to 20 is a typical range for real preferences.  Multiple papers can
+have the same preference.  The system's automatic assignment algorithm
+attempts to assign reviews in preference order$topicnote2.  Different users'
+preference values are not compared and need not use the same scale.</p>
 
 <p>The list shows all submitted papers$topicnote.  Click on a column heading
 to sort by that column.  Enter preferences in the text boxes or by following
