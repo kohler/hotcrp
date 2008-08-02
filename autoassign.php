@@ -705,7 +705,7 @@ echo "<tr><td class='caption'></td><td class='entry'>";
 echo "<table><tr><td>";
 doRadio('pctyp', 'sel', '');
 echo "</td><td>Use selected PC members: &nbsp; ",
-    "(<a href='javascript:papersel(1,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>All</a> &nbsp;<span class='barsep'>|</span>&nbsp; <a href='javascript:papersel(0,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>None</a>)</small>";
+    "(<a href='javascript:papersel(1,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>All</a> | <a href='javascript:papersel(0,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>None</a>)</small>";
 echo "</td></tr>\n<tr><td></td><td><table class='pcass'><tr><td><table>";
 
 $pcm = pcMembers();
