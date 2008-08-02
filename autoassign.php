@@ -28,6 +28,16 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && !isset($_REQUEST["r
     $papersel = $search->paperList();
 }
 sort($papersel);
+if ((isset($_REQUEST["prevt"]) && isset($_REQUEST["t"]) && $_REQUEST["prevt"] != $_REQUEST["t"])
+    || (isset($_REQUEST["prevq"]) && isset($_REQUEST["q"]) && $_REQUEST["prevq"] != $_REQUEST["q"])) {
+    if (isset($_REQUEST["pap"]) && isset($_REQUEST["assign"]))
+	$Conf->infoMsg("You changed the paper search.  Please review the resulting paper list.");
+    unset($_REQUEST["assign"]);
+    $_REQUEST["requery"] = 1;
+}
+if (!isset($_REQUEST["assign"]) && !isset($_REQUEST["requery"]) && isset($_REQUEST["default"])
+    && ($_REQUEST["default"] == "assign" || $_REQUEST["default"] == "requery"))
+    $_REQUEST[$_REQUEST["default"]] = 1;
 
 // bad pairs
 $badpairs = array();
@@ -404,7 +414,7 @@ function tdClass($entry, $name, $extraclass="") {
 
 
 // Help list
-echo "<div class='helpside'><div class='helpinside'>
+$helplist = "<div class='helpside'><div class='helpinside'>
 Assignment methods:
 <ul><li><a href='autoassign$ConfSiteSuffix' class='q'><strong>Automatic</strong></a></li>
  <li><a href='manualassign$ConfSiteSuffix'>Manual by PC member</a></li>
@@ -413,8 +423,8 @@ Assignment methods:
 </ul>
 <hr class='hr' />
 Types of PC assignment:
-<dl><dt><img src='images/ass", REVIEW_PRIMARY, ".gif' alt='Primary' /> Primary</dt><dd>Expected to review the paper themselves</dd>
-  <dt><img src='images/ass", REVIEW_SECONDARY, ".gif' alt='Secondary' /> Secondary</dt><dd>May delegate to external reviewers</dd></dl>
+<dl><dt><img src='images/ass" . REVIEW_PRIMARY . ".gif' alt='Primary' /> Primary</dt><dd>Expected to review the paper themselves</dd>
+  <dt><img src='images/ass" . REVIEW_SECONDARY . ".gif' alt='Secondary' /> Secondary</dt><dd>May delegate to external reviewers</dd></dl>
 </div></div>\n";
 
 
@@ -423,6 +433,7 @@ $extraclass = " initial";
 if (isset($assignments) && count($assignments) > 0) {
     echo "<table class='manyassign'>";
     echo "<tr class='propass'>", tdClass(false, "propass", $extraclass), "Proposed assignment</td><td class='entry$extraclass'>";
+    $helplist = "";
     $Conf->infoMsg("If this assignment looks OK to you, select \"Save assignment\" to apply it.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown in square brackets.");
     $extraclass = "";
     
@@ -517,20 +528,41 @@ if (isset($assignments) && count($assignments) > 0) {
     exit;
 }
 
-echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'><div class='aahc'>";
+echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'><div class='aahc'>", $helplist,
+    "<input id='defaultact' type='submit' class='hidden' name='default' value='1' />",
+    "<table class='manyassign'>";
 
-echo "<table class='manyassign'>";
+// paper selection
+echo "<tr>", tdClass(false, "pap", $extraclass), "Paper selection</td>",
+    tdClass(true, "pap", $extraclass);
+if (!isset($_REQUEST["q"]))
+    $_REQUEST["q"] = join(" ", $papersel);
+$tOpt = array("s" => "Submitted papers",
+	      "acc" => "Accepted papers",
+	      "und" => "Undecided papers",
+	      "all" => "All papers");
+if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
+    $_REQUEST["t"] = "all";
+$q = ($_REQUEST["q"] == "" ? "(All)" : $_REQUEST["q"]);
+echo "<input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1);defact('requery')\" onblur=\"tempText(this, '(All)', 0)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
+    tagg_select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")")),
+    " &nbsp; <input id='requery' class='b' name='requery' type='submit' value='List' />\n";
+if (isset($_REQUEST["requery"]))
+    echo "<br /><span class='hint'>Assignments will apply to the checked papers in the list below.</span>";
+echo "</td></tr>\n";
+echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
 
-echo "<tr>", tdClass(false, "ass", $extraclass), "Action</td>",
-    tdClass(true, "rev", $extraclass);
+
+// action
+echo "<tr>", tdClass(false, "ass"), "Action</td>", tdClass(true, "rev");
 doRadio('a', 'rev', 'Ensure each paper has <i>at least</i>');
-echo "&nbsp; <input type='text' class='textlite' name='revct' value=\"", htmlspecialchars(defval($_REQUEST, "revct", 1)), "\" size='3' />&nbsp; ";
+echo "&nbsp; <input type='text' class='textlite' name='revct' value=\"", htmlspecialchars(defval($_REQUEST, "revct", 1)), "\" size='3' onfocus='defact(\"assign\")' />&nbsp; ";
 doSelect('revtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
 echo "&nbsp; review(s)</td></tr>\n";
 
 echo "<tr><td class='caption'></td>", tdClass(true, "revadd");
 doRadio('a', 'revadd', 'Assign');
-echo "&nbsp; <input type='text' class='textlite' name='revaddct' value=\"", htmlspecialchars(defval($_REQUEST, "revaddct", 1)), "\" size='3' />&nbsp; ",
+echo "&nbsp; <input type='text' class='textlite' name='revaddct' value=\"", htmlspecialchars(defval($_REQUEST, "revaddct", 1)), "\" size='3' onfocus='defact(\"assign\")' />&nbsp; ",
     "<i>additional</i>&nbsp; ";
 doSelect('revaddtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
 echo "&nbsp; review(s) per paper</td></tr>\n";
@@ -544,9 +576,9 @@ if (!$rev_roundtag)
     $rev_roundtag = "(None)";
 echo "<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"",
     htmlspecialchars($rev_roundtag),
-    "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
+    "\" onfocus=\"tempText(this, '(None)', 1);defact('assign')\" onblur=\"tempText(this, '(None)', 0)\" />",
     " &nbsp;<a class='hint' href='help$ConfSiteSuffix?t=revround'>What is this?</a>
-<hr class='hr' /></td></tr>\n";
+<div class='g'></div></td></tr>\n";
 
 echo "<tr><td class='caption'></td>", tdClass(true, "prefconflict");
 doRadio('a', 'prefconflict', 'Assign conflicts when PC members have review preferences of &minus;100 or less');
@@ -638,6 +670,7 @@ echo "</td></tr>\n";
 
 
 // Load balancing
+echo "</table><table class='manyassignx'>\n";
 echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
 echo "<tr><td class='caption'>Load balancing</td><td class='entry'>";
 doRadio('balance', 'new', "Consider only new assignments when balancing load");
@@ -647,33 +680,25 @@ echo "</td></tr>\n";
 
 
 // Paper selection
-echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
-echo "<tr><td class='caption'>Paper selection</td><td class='entry'>";
-if (!isset($_REQUEST["q"]))
-    $_REQUEST["q"] = join(" ", $papersel);
-$tOpt = array("s" => "Submitted papers",
-	      "acc" => "Accepted papers",
-	      "und" => "Undecided papers",
-	      "all" => "All papers");
-if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
-    $_REQUEST["t"] = "all";
-$q = ($_REQUEST["q"] == "" ? "(All)" : $_REQUEST["q"]);
-echo "<input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
-    tagg_select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")")),
-    " &nbsp; <input id='requery' class='b' name='requery' type='submit' value='Search' />\n";
 if (isset($_REQUEST["requery"])) {
-    echo "<div class='g'></div>\n";
+    echo "<tr><td class='caption'>Paper list</td><td class='entry'><div class='g'></div>\n";
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
     $plist = new PaperList(false, false, $search);
-    $plist->papersel = $papersel;
+    $plist->papersel = array_fill_keys($papersel, 1);
+    foreach (preg_split('/\s+/', defval($_REQUEST, "prevpap")) as $p)
+	if (!isset($plist->papersel[$p]))
+	    $plist->papersel[$p] = 0;
     echo $plist->text("reviewersSel", $Me);
+    echo "<input type='hidden' name='prevt' value=\"", htmlspecialchars($_REQUEST["t"]), "\" />",
+	"<input type='hidden' name='prevq' value=\"", htmlspecialchars($_REQUEST["q"]), "\" />",
+	"<input type='hidden' name='prevpap' value=\"", htmlspecialchars(join(" ", $plist->headerInfo["pap"])), "\" />",
+	"</td></tr>\n";
 }
-echo "</td></tr>\n";
 
 
 // Create assignment
 echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
-echo "<tr class='last'><td class='caption'></td><td class='entry'><div class='aa'><input type='submit' class='b' name='assign' value='Create assignment' /></div></td></tr>\n";
+echo "<tr class='last'><td class='caption'></td><td class='entry'><div class='aa'><input type='submit' class='b' name='assign' value='Prepare assignment' /> &nbsp; <span class='hint'>You'll be able to check the assignment before it is saved.</span></div></td></tr>\n";
 
 
 echo "</table>\n";

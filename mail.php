@@ -144,7 +144,7 @@ function checkMailPrologue($send) {
 		echo "<div class='warning'>Mails to users who have not completed their own reviews will not include reviews or comments.  (<a href='settings$ConfSiteSuffix?group=dec' class='nowrap'>Change the setting</a>)</div>\n";
 	}
 	echo "<div id='foldmail' class='foldc'><div class='ellipsis merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div><div class='extension info'>Examine the mails to check that you've gotten the results you want, then select &ldquo;Send&rdquo; to send the checked mails.</div>
-	<table class='extension'><tr><td class='caption'></td><td class='entry'>
+	<table class='extension'><tr><td class='caption initial'></td><td class='entry'>
 	<input class='b' type='submit' name='send' value='Send' /> &nbsp;
 	<input class='b' type='submit' name='cancel' value='Cancel' /></td></tr></table></div>\n";
     }
@@ -398,7 +398,7 @@ echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", h
 
 <tr>
   <td class='caption'></td>
-  <td class='entry'><input type='submit' value='Prepare mail' class='b' /><div class='g'></div></td>
+  <td class='entry'><div class='aa'><input type='submit' value='Prepare mail' class='b' /> &nbsp; <span class='hint'>You'll be able to review the mails before they are sent.</span></div><div class='g'></div></td>
 </tr>
 
 <tr class='last'>

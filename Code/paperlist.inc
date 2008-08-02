@@ -148,6 +148,9 @@ class PaperList extends BaseList {
 	    break;
 	case self::FIELD_ALL_PREFERENCES:
 	    $queryOptions['allReviewerPreference'] = 1;
+	    $ord = 0;
+	    foreach (pcMembers() as $pc)
+		$pc->prefOrdinal = sprintf("-0.%04d", $ord++);
 	    break;
 	case self::FIELD_SCORE:
 	    if (!$this->scoresOk)
@@ -578,7 +581,7 @@ class PaperList extends BaseList {
 	    $c = "";
 	    if (($fieldId == self::FIELD_SELECTOR_ON
 		 || ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType > 0))
-		&& (!$this->papersel || in_array($row->paperId, $this->papersel))) {
+		&& (!$this->papersel || defval($this->papersel, $row->paperId, 1))) {
 		$c .= " checked='checked'";
 		$this->unfolded = true;
 	    }
@@ -628,11 +631,6 @@ class PaperList extends BaseList {
 	case self::FIELD_ALL_PREFERENCES:
 	    $x = array();
 	    $pcm = pcMembers();
-	    if (isset($pcm[0]) && !isset($pcm[0]->prefOrdinal)) {
-		$ord = 0;
-		foreach ($pcm as $pc)
-		    $pc->prefOrdinal = sprintf("-0.%04d", $ord++);
-	    }
 	    foreach (explode(',', $row->allReviewerPreference) as $rp) {
 		$what = explode(' ', $rp);
 		if (count($what) == 2 && isset($pcm[$what[0]]) && $what[1]) {
@@ -1184,14 +1182,14 @@ class PaperList extends BaseList {
 
 	// session variable to remember the list
 	if ($this->listNumber) {
-	    $ids = $this->search->decorateSessionList($ids, $listname, defval($_REQUEST, "sort", ""));
+	    $idx = $this->search->decorateSessionList($ids, $listname, defval($_REQUEST, "sort", ""));
 	    if (isset($_REQUEST["sort"]))
 		$url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
-	    $ids["url"] = $url;
-	    $_SESSION["l"][$this->listNumber] = $ids;
+	    $idx["url"] = $url;
+	    $_SESSION["l"][$this->listNumber] = $idx;
 	}
 
-	$this->headerInfo = array("authors" => $authorinfo, "tags" => $taginfo, "abstracts" => $abstractinfo);
+	$this->headerInfo = array("authors" => $authorinfo, "tags" => $taginfo, "abstracts" => $abstractinfo, "pap" => $ids);
 
 	return $x;
     }

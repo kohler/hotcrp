@@ -649,7 +649,8 @@ tr.rev_reviewers_hdr td.entry {
 
 
 /* Other types of captions and entries */
-table.paper, table.review, table.comment, table.settings {
+table.paper, table.review, table.comment, table.settings,
+table.manyassignx {
 	width: 100%;
 	position: relative;
 }
