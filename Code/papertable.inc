@@ -1322,7 +1322,7 @@ class PaperTable {
 
 	if ($this->editrrow && ($Me->ownReview($this->editrrow) || $actChair)
 	    && !$Conf->timeReviewPaper($actPC, true, true)) {
-	    if ($Me->actChair)
+	    if ($Me->actChair($prow))
 		$override = "  As an administrator, you can override this deadline using the &ldquo;Override deadlines&rdquo; checkbox.";
 	    else {
 		$override = "";
