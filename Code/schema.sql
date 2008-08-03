@@ -213,6 +213,7 @@ CREATE TABLE `PaperReview` (
   `reviewModified` int(1) default NULL,
   `reviewSubmitted` int(1) default NULL,
   `reviewOrdinal` int(1) default NULL,
+  `reviewEditVersion` int(1) NOT NULL default '0',
   `reviewNeedsSubmit` tinyint(1) NOT NULL default '1',
   `overAllMerit` tinyint(1) NOT NULL default '0',
   `reviewerQualification` tinyint(1) NOT NULL default '0',

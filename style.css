@@ -1143,7 +1143,8 @@ span.match {
 	font-weight: bold;
 }
 
-div.merror div.parseerr p, div.confirm div.parseerr p {
+div.merror div.parseerr p, div.warning div.parseerr p,
+div.confirm div.parseerr p {
 	margin: 0px;
 	padding: 0px 0px 0px 3em;
 	text-indent: -3em;

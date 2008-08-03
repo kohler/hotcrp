@@ -36,7 +36,7 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 		    $tf['confirm'][] = (isset($req['submit']) ? "Submitted" : "Uploaded") . " review for paper #$prow->paperId.";
 	    }
 	} else
-	    $rf->tfError($tf, whyNotText($whyNot, "review"));
+	    $rf->tfError($tf, true, whyNotText($whyNot, "review"));
     }
     $rf->textFormMessages($tf, $Conf);
     // Uploading forms may have completed the reviewer's task; check that

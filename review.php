@@ -75,9 +75,9 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     if (!($req = $rf->parseTextForm($tf, $Conf)))
 	/* error already reported */;
     else if (isset($req['paperId']) && $req['paperId'] != $prow->paperId)
-	$rf->tfError($tf, "This review form is for paper #" . $req['paperId'] . ", not paper #$prow->paperId; did you mean to upload it here?  I have ignored the form.<br /><a class='button_small' href='review$ConfSiteSuffix?p=" . $req['paperId'] . "'>Review paper #" . $req['paperId'] . "</a> <a class='button_small' href='offline$ConfSiteSuffix'>General review upload site</a>");
+	$rf->tfError($tf, true, "This review form is for paper #" . $req['paperId'] . ", not paper #$prow->paperId; did you mean to upload it here?  I have ignored the form.<br /><a class='button_small' href='review$ConfSiteSuffix?p=" . $req['paperId'] . "'>Review paper #" . $req['paperId'] . "</a> <a class='button_small' href='offline$ConfSiteSuffix'>General review upload site</a>");
     else if (!$Me->canSubmitReview($prow, $paperTable->editrrow, $Conf, $whyNot))
-	$rf->tfError($tf, whyNotText($whyNot, "review"));
+	$rf->tfError($tf, true, whyNotText($whyNot, "review"));
     else {
 	$req['paperId'] = $prow->paperId;
 	if ($rf->checkRequestFields($req, $paperTable->editrrow, $tf)) {
@@ -87,7 +87,7 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     }
 
     if (count($tf['err']) == 0 && $rf->parseTextForm($tf, $Conf))
-	$rf->tfError($tf, "Only the first review form in the file was parsed.  <a href='offline$ConfSiteSuffix'>Upload multiple-review files here.</a>");
+	$rf->tfError($tf, false, "Only the first review form in the file was parsed.  <a href='offline$ConfSiteSuffix'>Upload multiple-review files here.</a>");
 
     $rf->textFormMessages($tf, $Conf);
     loadRows();

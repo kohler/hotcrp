@@ -83,6 +83,10 @@ function updateSchema($Conf) {
 	if ($Conf->q("update Settings set value=16 where name='allowPaperOption'"))
 	    $Conf->settings["allowPaperOption"] = 16;
     }
+    if ($Conf->settings["allowPaperOption"] == 16
+	&& $Conf->q("alter table PaperReview add `reviewEditVersion` int(1) NOT NULL default '0'")
+	&& $Conf->q("update Settings set value=17 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 17;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

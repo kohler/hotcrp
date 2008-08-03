@@ -203,7 +203,7 @@ class ReviewForm {
 	    if ($options) {
 		$x .= "<select name='$field' onchange='hiliter(this)'>\n";
 		if (!$this->parseOption($field, $fval, true))
-		    $x .= "    <option value='0' selected='selected'>(Unknown)</option>\n";
+		    $x .= "    <option value='0' selected='selected'>(Your choice here)</option>\n";
 		foreach ($this->options[$field] as $num => $what) {
 		    $x .= "    <option value='$num'";
 		    if ($num == $fval)
@@ -219,7 +219,7 @@ class ReviewForm {
 	return $x;
     }
 
-    function tfError(&$tf, $text, $field = null) {
+    function tfError(&$tf, $isError, $text, $field = null) {
 	$e = htmlspecialchars($tf['filename']) . ":";
 	if (is_int($field))
 	    $e .= $field;
@@ -229,13 +229,15 @@ class ReviewForm {
 	    $e .= $tf['fieldLineno'][$field];
 	if (defval($tf, 'paperId'))
 	    $e .= " (paper #" . $tf['paperId'] . ")";
+	$tf[$isError ? 'anyErrors' : 'anyWarnings'] = true;
 	$tf['err'][] = "<span class='lineno'>" . $e . ":</span> " . $text;
     }
 
-    function checkRequestFields($req, $rrow, &$tf = null, $conf = null) {
+    function checkRequestFields(&$req, $rrow, &$tf = null, $conf = null) {
 	global $ReviewFormError, $Conf;
 	$conf = ($conf ? $conf : $Conf);
 	$submit = defval($req, "ready", false);
+	$nokfields = 0;
 	foreach ($this->fieldOrder as $field) {
 	    if (!isset($req[$field]) && !$submit)
 		continue;
@@ -244,7 +246,7 @@ class ReviewForm {
 		$missing[] = $this->shortName[$field];
 	    if (isset($this->options[$field])) {
 		$fval = trim($fval);
-		if ($fval == "" || $fval == "0") {
+		if ($fval === "" || $fval === "0" || $fval[0] === "(") {
 		    if ($submit && $this->authorView[$field] >= 0) {
 			$provide[] = $this->shortName[$field];
 			$ReviewFormError[$field] = 1;
@@ -252,30 +254,42 @@ class ReviewForm {
 		} else if (!$this->parseOption($field, $fval, false)) {
 		    $outofrange[] = $field;
 		    $ReviewFormError[$field] = 1;
-		}
-	    }
+		} else
+		    $nokfields++;
+	    } else if (trim($fval) !== "")
+		$nokfields++;
 	}
 	if (isset($missing) && $tf)
-	    self::tfError($tf, "Warning: " . textArrayJoin($missing) . " " . pluralx($missing, "field") . " missing from form.  Preserving any existing values.");
-	if (!isset($provide) && !isset($outofrange))
-	    return 1;
-	if (isset($provide)) {
+	    self::tfError($tf, false, textArrayJoin($missing) . " " . pluralx($missing, "field") . " missing from form.  Preserving any existing values.");
+	if ($nokfields == 0) {
 	    if ($tf)
-		self::tfError($tf, "You must set " . textArrayJoin($provide) . " before you can submit your review.");
-	    else
-		$conf->errorMsg("You must set " . textArrayJoin($provide) . " before you can submit your review.  Please fix this and submit again.");
+		$tf["ignoredBlank"][] = "#" . $req["paperId"];
+	    return 0;
+	}
+	if ($rrow && defval($rrow, "reviewEditVersion", 0) > defval($req, "version", 0) && $tf && isset($tf["text"])) {
+	    self::tfError($tf, true, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line &ldquo;<code>==+== Version " . $rrow->reviewEditVersion . "</code>&rdquo; to your offline review form for paper #" . $req["paperId"] . " and upload the form again.");
+	    return 0;
 	}
 	if (isset($outofrange)) {
 	    if ($tf)
 		foreach ($outofrange as $field)
-		    self::tfError($tf, "Bad value for field \"" . htmlentities($this->shortName[$field]) . "\"", $field);
+		    self::tfError($tf, true, "Bad value for field \"" . htmlentities($this->shortName[$field]) . "\"", $field);
 	    else {
 		foreach ($outofrange as $field)
 		    $oor2[] = htmlspecialchars($this->shortName[$field]);
 		$conf->errorMsg("Bad values for " . textArrayJoin($oor2) . ".  Please fix this and submit again.");
 	    }
+	    return 0;
 	}
-	return 0;
+	if (isset($provide)) {
+	    $w = "This review is still not ready for others to see because you did not set some mandatory fields.  Please set " . htmlspecialchars(textArrayJoin($provide)) . " and submit again.";
+	    if ($tf)
+		self::tfError($tf, false, $w);
+	    else
+		$conf->warnMsg($w);
+	    $req["ready"] = false;
+	}
+	return 1;
     }
 
     function saveRequest($req, $rrow, $prow, $contactId, $conf = null) {
@@ -289,7 +303,8 @@ class ReviewForm {
 	    && (!isset($req['override']) || !$Me->privChair))
 	    return $conf->errorMsg("The <a href='deadlines$ConfSiteSuffix'>deadline</a> for entering this review has passed." . ($Me->privChair ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
 	
-	$q = "";
+	$q = array();
+	$different = false;
 	foreach ($this->fieldOrder as $field)
 	    if (isset($req[$field])) {
 		$fval = $req[$field];
@@ -302,14 +317,17 @@ class ReviewForm {
 			$fval .= "\n";
 		    $req[$field] = $fval;
 		}
-		$q .= "$field='" . sqlq($fval) . "', ";
+		if ($rrow && strcmp($rrow->$field, $fval) != 0
+		    && strcmp(cleannl($rrow->$field), cleannl($fval)) != 0)
+		    $different = true;
+		$q[] = "$field='" . sqlq($fval) . "'";
 	    }
 
 	// potentially assign review ordinal (requires table locking since
 	// mySQL is stupid)
 	$locked = false;
 	if ($submit && (!$rrow || !$rrow->reviewSubmitted)) {
-	    $q .= "reviewSubmitted=" . time() . ", reviewNeedsSubmit=0, ";
+	    $q[] = "reviewSubmitted=" . time() . ", reviewNeedsSubmit=0";
 	    if (!$rrow || !$rrow->reviewOrdinal) {
 		$result = $conf->qe("lock tables PaperReview write", $while);
 		if (!$result)
@@ -318,25 +336,33 @@ class ReviewForm {
 		$result = $conf->qe("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=$prow->paperId group by paperId", $while);
 		if ($result) {
 		    $crow = edb_row($result);
-		    $q .= "reviewOrdinal=coalesce(reviewOrdinal, " . ($crow[0] + 1) . "), ";
+		    $q[].= "reviewOrdinal=coalesce(reviewOrdinal, " . ($crow[0] + 1) . ")";
 		}
 	    }
 	}
 
-	// blind?
+	// blind? reviewer type? edit version?
 	$reviewBlind = ($conf->blindReview() > 1 || ($conf->blindReview() == 1 && defval($req, 'blind')) ? 1 : 0);
-	$q .= "reviewBlind=$reviewBlind, ";
+	if ($rrow && $reviewBlind != $rrow->reviewBlind)
+	    $different = true;
+	$q[] = "reviewBlind=$reviewBlind";
 	if ($rrow && $rrow->reviewType == REVIEW_EXTERNAL
 	    && $Me->contactId == $rrow->contactId
 	    && $Me->isPC)
-	    $q .= "reviewType=" . REVIEW_PC . ", ";
+	    $q[] = "reviewType=" . REVIEW_PC;
+	if ($rrow && $different && isset($req["version"])
+	    && $req["version"] > defval($rrow, "reviewEditVersion")
+	    && $Conf->setting("allowPaperOption") >= 17)
+	    $q[] = "reviewEditVersion=" . $req["version"];
+	if (!$rrow || $different)
+	    $q[] = "reviewModified=" . time();
 
 	// actually affect database
 	if ($rrow) {
-	    $result = $conf->qe("update PaperReview set $q reviewModified=" . time() . " where reviewId=$rrow->reviewId", $while);
+	    $result = $conf->qe("update PaperReview set " . join(", ", $q) . " where reviewId=$rrow->reviewId", $while);
 	    $reviewId = $rrow->reviewId;
 	} else {
-	    $result = $conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contactId, requestedOn=current_timestamp, $q reviewModified=" . time(), $while);
+	    $result = $conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contactId, requestedOn=current_timestamp, " . join(", ", $q), $while);
 	    $reviewId = $conf->lastInsertId($while);
 	}
 
@@ -429,7 +455,7 @@ class ReviewForm {
 	    else
 		$x .= "Fill ";
 	    $x .= "out lettered sections A through " . chr(65 + count($this->fieldOrder) - 1) . ".
-==-== DO NOT CHANGE LINES THAT START WITH \"==+==\"!
+==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" UNLESS DIRECTED!
 ==-== A single file can contain multiple forms.
 ==-== For further guidance, or to upload this file when you are done, go to:
 ==-== $conf->paperSite/offline$ConfSiteSuffix\n\n";
@@ -460,6 +486,8 @@ class ReviewForm {
 	else if ($rrow && isset($rrow->reviewOrdinal))
 	    $x .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
 	$x .= "\n";
+	if ($myReview && $rrow && defval($rrow, "reviewEditVersion"))
+	    $x .= "==+== Version " . $rrow->reviewEditVersion . "\n";
 	if (!$myReview && $prow)
 	    $x .= wordWrapIndent($prow->title, "==-== Paper: ", "==-==        ") . "\n";
 	if ($contact->canViewReviewerIdentity($prow, $rrow, $conf)) {
@@ -483,7 +511,7 @@ class ReviewForm {
 		$x .= wordWrapIndent($prow->title, "==-== Title: ", "==-==        ") . "\n";
 	    $x .= "
 ==+== Review Readiness
-==-== Enter \"Ready\" here if the review is ready for others to see:
+==-== Enter \"Ready\" if the review is ready for others to see:
 
 Ready\n";
 	    if ($conf->blindReview() == 1) {
@@ -492,7 +520,7 @@ Ready\n";
 		    $blind = "Open";
 		$x .= "\n==+== Review Anonymity
 ==-== " . $conf->shortName . " allows either anonymous or open review.
-==-== Enter \"Open\" here if you want to expose your name to authors:
+==-== Enter \"Open\" if you want to expose your name to authors:
 
 $blind\n";
 	    }
@@ -533,16 +561,18 @@ $blind\n";
 	    if (defval($this->description, $field))
 		$x .= wordWrapIndent($this->description[$field], "==-==    ", "==-==    ") . "\n";
 	    if ($options && $myReview) {
-		if ($this->reviewFields[$field] <= 1)
-		    $x .= "==-== Enter a number from 1 to " . count($this->options[$field]) . ".\n";
-		else
-		    $x .= "==-== Enter a letter from " . chr($this->reviewFields[$field] - count($this->options[$field])) . " to " . chr($this->reviewFields[$field] - 1) . ".\n";
 		$first = true;
 		foreach ($this->options[$field] as $num => $value) {
 		    $y = ($first ? "==-== Choices: " : "==-==          ") . "$num. ";
 		    $x .= wordWrapIndent($value, $y, str_pad("==-==", strlen($y))) . "\n";
 		    $first = false;
 		}
+		if ($this->reviewFields[$field] <= 1)
+		    $x .= "==-== Enter the number of your choice:\n";
+		else
+		    $x .= "==-== Enter the letter of your choice:\n";
+		if ($fval == "")
+		    $fval = "(Your choice here)";
 	    }
 	    $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
 	}
@@ -654,7 +684,7 @@ $blind\n";
 
     function garbageMessage(&$tf, $lineno, &$garbage) {
 	if (isset($garbage))
-	    self::tfError($tf, "Review form appears to begin with garbage; ignoring it.", $lineno);
+	    self::tfError($tf, false, "Review form appears to begin with garbage; ignoring it.", $lineno);
 	unset($garbage);
     }
 
@@ -697,7 +727,7 @@ $blind\n";
 		    && !preg_match("/$conf->shortName Paper Review Form/", $line)) {
 		    preg_match('/\A==\+==\s+(.*?)\s+Paper Review Form/', $line, $m);
 		    $this->garbageMessage($tf, $lineno, $garbage);
-		    self::tfError($tf, "This review form appears to be for the wrong conference!  (I was expecting \"" . htmlentities($conf->shortName) . " Paper Review Form\", but found \"" . htmlentities($m[1]) . " Paper Review Form\".)", $lineno);
+		    self::tfError($tf, true, "This review form appears to be for the wrong conference!  (I was expecting \"" . htmlentities($conf->shortName) . " Paper Review Form\", but found \"" . htmlentities($m[1]) . " Paper Review Form\".)", $lineno);
 		    return null;
 		} else if (preg_match('/^==\+== Paper #?(\d+)/i', $line, $match)) {
 		    if ($nfields > 0)
@@ -712,6 +742,9 @@ $blind\n";
 		    $req['ready'] = true;
 		} else if (preg_match('/^==\+== Open Review\s*$/i', $line)) {
 		    $req['blind'] = 0;
+		} else if (preg_match('/^==\+== Version\s*(\d+)$/i', $line, $match)) {
+		    if (defval($req, "version", 0) < $match[1])
+			$req['version'] = $match[1];
 		} else if (preg_match('/^==\+== Review Readiness\s*/i', $line)) {
 		    $field = "readiness";
 		    $mode = 1;
@@ -729,7 +762,7 @@ $blind\n";
 			$nfields++;
 		    } else {
 			$this->garbageMessage($tf, $lineno, $garbage);
-			self::tfError($tf, "Review field &ldquo;" . htmlentities($fname) . "&rdquo; is not used for $conf->shortName reviews.  Ignoring this section.", $lineno);
+			self::tfError($tf, true, "Review field &ldquo;" . htmlentities($fname) . "&rdquo; is not used for $conf->shortName reviews.  Ignoring this section.", $lineno);
 			$field = null;
 		    }
 		    $mode = 1;
@@ -753,7 +786,7 @@ $blind\n";
 	}
 
 	if ($nfields == 0 && $tf['firstLineno'] == 1)
-	    self::tfError($tf, "That didn't appear to be a review form; I was not able to extract any information from it.  Please check its formatting and try again.", $lineno);
+	    self::tfError($tf, true, "That didn't appear to be a review form; I was not able to extract any information from it.  Please check its formatting and try again.", $lineno);
 
 	$tf['text'] = $text;
 	$tf['lineno'] = $lineno - 1;
@@ -775,9 +808,14 @@ $blind\n";
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
 
-	if (count($tf['err']) > 0)
-	    $conf->errorMsg("There were errors while parsing the uploaded reviews file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf['err']) . "</p></div>");
-
+	if (isset($tf["ignoredBlank"]) && count($tf["ignoredBlank"]) > 0) {
+	    unset($tf["paperId"]);
+	    self::tfError($tf, false, "Ignored blank " . pluralx(count($tf["ignoredBlank"]), "review form") . " for " . pluralx(count($tf["ignoredBlank"]), "paper") . " " . textArrayJoin($tf["ignoredBlank"]) . ".");
+	}
+	if (count($tf['err']) > 0) {
+	    $conf->msg("There were " . (defval($tf, 'anyErrors') && defval($tf, 'anyWarnings') ? "errors and warnings" : (defval($tf, 'anyErrors') ? "errors" : "warnings")) . " while parsing the uploaded reviews file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf['err']) . "</p></div>",
+		       defval($tf, 'anyErrors') ? "merror" : "warning");
+	}
 	if (count($tf['confirm']) > 0)
 	    $conf->confirmMsg("<div class='parseerr'><p>" . join("</p>\n<p>", $tf['confirm']) . "</p></div>");
     }
@@ -1022,11 +1060,13 @@ $blind\n";
 	    . ($rrow ? "&amp;r=$reviewOrdinal" : "")
 	    . $linkExtra . "&amp;mode=re&amp;";
 	$reviewLink = $reviewLinkBase . "post=1";
-	if ($editmode)
+	if ($editmode) {
 	    echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'>",
 		"<div class='aahc'>",
 		"<input class='hidden' type='submit' name='default' value='' />";
-	else
+	    if ($rrow)
+		echo "<input type='hidden' name='version' value=\"", defval($rrow, "reviewEditVersion", 0) + 1, "\" />";
+	} else
 	    echo "<div class='relative'>";
     
 	echo "<table class='pbox'><tr>
