@@ -1,4 +1,108 @@
 - delete users
+- string options
+- 1. We had an author withdraw their paper several weeks after submission.
+  As a result, the paper, all its reviews and the review assignments also
+  vanished.  And not only that, even though we actually reviewed 176
+  papers, the system tells everyone it was only 175 (this means more to me
+  than is healthy)!!! Need to restrict this to the chair after the
+  submission deadline. [Rebecca Isaacs]
+- 2. It would be helpful to store information about reviews outstanding by
+  reviewing round eg paper n has 1/3 for the first round and 4/5 for the
+  second.  In fact it would also be great to be able to look at paper
+  rankings by round to see how things changed.  I would really like stats
+  to see the value of multiple reviewing rounds - how much first round
+  reviews predict the eventual outcome etc. [Rebecca Isaacs]
+- 3. The line endings in the email composition page are messed up for
+  me. [Rebecca Isaacs]
+- 4. Can you list both authors and institutions in the conflicts page?  And
+  for that matter it would be helpful (to the chair at least) if the source
+  of conflict was listed, eg requested by author (or PC) vs matching words
+  in author list, etc. [Rebecca Isaacs]
+- 5. It would be nice to have multiple review forms, in particular to have
+  a different form for externals. [Rebecca Isaacs]
+- 6. Have you considered functionality so the automatic review assignment
+  can take into account nominated reviewers?  Eg so 1st round reviewers can
+  suggest 2nd round people through the system and the chair doesn't have to
+  do reviewing rearrangements manually. [Rebecca Isaacs]
+- 7. The default on the bulk review form is that reviews are ready, it
+  should be the opposite so people can upload incrementally. [Rebecca
+  Isaacs]
+- It looks like it took my new upload as overriding textual fields with
+  empty fields, but keeping scores unmodified if I offered no new score.  I
+  think that (a) if one tries to replace a populated text field with an
+  empty one, especially anything but perhaps PC comments, it should
+  disallow this, and perhaps more obviously (b) if I have marked a review
+  as "ready to be viewed" online and then upload a file that does NOT say
+  it's ready, it should flag an error rather than do any updates. [Fred
+  Douglis]
+- Should comments be visible to PC members immediately? [Robbert van Renesse]
+- i like the fact that i can see - just based on simple averaging - how
+  harsh or liberal a reviewer is. however in defense of harsh reviewers who
+  may have obtained genuinely crummy papers and liberal ones who might have
+  recd instant-accepts, what might be useful is once all or most of reviews
+  are in, looking at the deviation of the 'harsh' reviewer from other
+  reviews of the papers he/she reviewed, and likewise for 'liberal reviewer
+  and recompute a balanced score. as long as this is available just before
+  the PC meeting then during the PC meeting we would know who is a softie
+  and who is trying to 'kill' papers. am not sure if this feature exists
+  now. [Balachander Krishnamurthy]
+- it would be great to infer area/sub-topic expert based on self-rating of
+  reviewers in their reviews to see where reviewers are in the cheriton
+  scale (1..100, where cheriton is 420). this would help assing conflict
+  papers, poorly reviewed papers, last minute papers to such
+  reviewers. [Balachander Krishnamurthy]
+
+
+* From the "Assign reviews manually by PC member" page, you can get to
+  "Assign reviews manually by paper," but not vice versa. [Benjamin Pierce]
+
+* When you first create an assignment, you're given a very useful list of
+  all the papers and who they're assigned to.  But I can't find any way to
+  get back to this list afterward. [Benjamin Pierce]
+
+* The "manual assignment" pages don't give much information about why a
+  paper was assigned as it was.  In particular, they don't indicate topic
+  matches/mismatches.  This is important when tweaking the assignment.
+
+* Again for tweaking the assignment, it would be really helpful to have a
+  *single* global view of the whole assignment, showing all available
+  information and allowing papers to be reassigned at will.
+
+* There should be a bulk *download* option -- this would allow you to save
+  away the current assignment and restore it later if you messed things up.
+  (This would require the bulk upload feature to be able to delete
+  assignments as well as add them -- and/or to be able to say "these are
+  exactly the reviewers for this paper".  This would be useful more
+  generally.)
+
+* When I was stepping through the assignments paper by paper, the "next
+  paper" links at the top took me from paper #18 to paper #87 and then to
+  paper #19!  Similarly, #119 got sorted between 101 and 102, and there was
+  one other instance of the same.
+
+* Is there a way to search for all PC-authored papers?
+
+* The blank review form says at the top 'DO NOT CHANGE LINES THAT START
+  WITH "==+=="!'  But 9 lines down, it says to replace 000000 with the
+  paper number in a line that starts this way!
+
+* Further down the review form, it is a bit unclear exactly where the
+  letters and numbers are to be entered.  Should people delete all the
+  ==-== lines except the one they want?  Delete all of them and replace
+  them by a single letter?  Leave them and add a letter?  Put the letter
+  someplace in the top line?  (I can guess which is intended, but it is not
+  100% clear, and this is likely to lead to needless confusion.)
+
+* The default invitation letter to external reviewers suggests that they
+  don't need to let the requesting PC member know whether or not they can
+  do the review.  It seems better to ask them to confirm one way or the
+  other.  (Indeed, I think the web site should provide a way for an
+  external reviewer to agree to do the review without actually entering
+  it.)
+
+* How about cc'ing the requesting PC member on the invitation request
+  email?
+
 
 
 - static HTML snapshot
