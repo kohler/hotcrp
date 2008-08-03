@@ -917,7 +917,7 @@ table.pcass td.nrev {
 	padding-bottom: 2px;
 	padding-right: 0.65em;
 }
-span.asspref1, span.asspref-1 {
+span.asspref, span.asspref1, span.asspref-1 {
 	font-size: 69%;
 	font-weight: normal;
 }

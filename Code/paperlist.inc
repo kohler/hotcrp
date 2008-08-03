@@ -147,10 +147,17 @@ class PaperList extends BaseList {
 	    $queryOptions['desirability'] = 1;
 	    break;
 	case self::FIELD_ALL_PREFERENCES:
-	    $queryOptions['allReviewerPreference'] = 1;
+	    $queryOptions['allReviewerPreference'] = $queryOptions['topics']
+		= $queryOptions['allConflictType'] = 1;
 	    $ord = 0;
-	    foreach (pcMembers() as $pc)
+	    $pcm = pcMembers();
+	    foreach ($pcm as $pc) {
 		$pc->prefOrdinal = sprintf("-0.%04d", $ord++);
+		$pc->topicInterest = array();
+	    }
+	    $result = $Conf->qe("select contactId, topicId, interest from TopicInterest", "while finding topic interests");
+	    while (($row = edb_row($result)))
+		$pcm[$row[0]]->topicInterest[$row[1]] = $row[2];
 	    break;
 	case self::FIELD_SCORE:
 	    if (!$this->scoresOk)
@@ -630,18 +637,34 @@ class PaperList extends BaseList {
 	    return (isset($row->desirability) ? htmlspecialchars($row->desirability) : "0");
 	case self::FIELD_ALL_PREFERENCES:
 	    $x = array();
-	    $pcm = pcMembers();
 	    foreach (explode(',', $row->allReviewerPreference) as $rp) {
 		$what = explode(' ', $rp);
-		if (count($what) == 2 && isset($pcm[$what[0]]) && $what[1]) {
-		    $pc = $pcm[$what[0]];
-		    $x[$what[1] + $pc->prefOrdinal]
-			= contactHtml($pc->firstName, $pc->lastName)
-			. " [" . htmlspecialchars($what[1]) . "]";
-		}
+		if (count($what) == 2 && $what[1])
+		    $x[$what[0]] = $what[1];
 	    }
-	    krsort($x, SORT_NUMERIC);
-	    return join(", ", $x);
+	    foreach (explode(',', $row->allConflictType) as $rp) {
+		$what = explode(' ', $rp);
+		if (count($what) == 2 && $what[1])
+		    $x[$what[0]] = "X";
+	    }
+	    $text = "";
+	    $topicids = split(" ", $row->topicIds);
+	    foreach (pcMembers() as $pc) {
+		$pref = defval($x, $pc->contactId, 0);
+		if ($pref === "X")
+		    continue;
+		$tis = 0;
+		foreach ($topicids as $t)
+		    if (($i = defval($pc->topicInterest, $t, 1)) == 2)
+			$tis += 2;
+		    else
+			$tis += $i - 1;
+		if ($tis || $pref)
+		    $text .= ($text == "" ? "" : ", ")
+			. contactHtml($pc->firstName, $pc->lastName)
+			. preferenceSpan($pref, $tis);
+	    }
+	    return $text;
 	case self::FIELD_SCORE:
 	    if ($this->contact->privChair || $this->contact->canViewReview($row, null, $Conf)) {
 		$scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];

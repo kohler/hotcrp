@@ -339,6 +339,21 @@ function decorateNumber($n) {
 	return 0;
 }
 
+function preferenceSpan($preference, $topicInterestScore) {
+    if ($preference != 0)
+	$type = ($preference > 0 ? 1 : -1);
+    else
+	$type = ($topicInterestScore > 0 ? 1 : -1);
+    $t = " <span class='asspref$type'>";
+    if ($preference)
+	$t .= "P" . decorateNumber($preference);
+    if ($preference && $topicInterestScore)
+	$t .= " ";
+    if ($topicInterestScore)
+	$t .= "T" . decorateNumber($topicInterestScore);
+    return $t . "</span>";
+}
+
 function _cleanContactText(&$f, &$l, &$e) {
     if (is_array($f)) {
 	if ($e === null && count($f) > 2)

@@ -815,6 +815,9 @@ class Conference {
 	if (defval($options, 'desirability'))
 	    $pq .= ",
 		coalesce(APRP.desirability, 0) as desirability";
+	if (defval($options, 'allConflictType'))
+	    $pq .= ",
+		AllConflict.allConflictType";
 
 	// tables
 	$pq .= "
@@ -899,6 +902,8 @@ class Conference {
 	    $subq .= " from PaperReviewPreference group by paperId";
 	    $pq .= "		left join ($subq) as APRP on (APRP.paperId=Paper.paperId)\n";
 	}
+	if (defval($options, 'allConflictType'))
+	    $pq .= "		left join (select paperId, group_concat(concat(contactId,' ',conflictType) separator ',') as allConflictType from PaperConflict group by paperId) as AllConflict on (AllConflict.paperId=Paper.paperId)\n";
 
 
 	// conditions

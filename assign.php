@@ -504,20 +504,8 @@ if ($Me->actChair($prow)) {
 	    echo "<td id='ass$p->contactId' class='name$cid'>";
 	    echo str_replace(' ', "&nbsp;", contactHtml($p));
 	    if ($p->conflictType == 0
-		&& ($p->preference || $p->topicInterestScore)) {
-		if ($p->preference != 0)
-		    $type = ($p->preference > 0 ? 1 : -1);
-		else
-		    $type = ($p->topicInterestScore > 0 ? 1 : -1);
-		echo " <span class='asspref", $type, "'>";
-		if ($p->preference)
-		    echo "P", decorateNumber($p->preference);
-		if ($p->preference && $p->topicInterestScore)
-		    echo " ";
-		if ($p->topicInterestScore)
-		    echo "T", decorateNumber($p->topicInterestScore);
-		echo "</span>";
-	    }
+		&& ($p->preference || $p->topicInterestScore))
+		echo preferenceSpan($p->preference, $p->topicInterestScore);
 	    echo "</td><td class='ass'>";
 	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href=\"javascript:foldassign($p->contactId)\"><img alt='Assignment' id='assimg$p->contactId' src=\"images/ass$cid$extension\" /><img alt='&gt;' src=\"images/next.png\" /></a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention
