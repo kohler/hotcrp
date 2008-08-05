@@ -670,7 +670,10 @@ if ($paperTable->mode == "r") {
     if (!$newPaper) {
 	echo "<tr class='id'>
   <td class='caption'><h2>#$paperId</h2></td>
-  <td class='entry' colspan='2'><h2>";
+  <td class='entry' colspan='2'><div class='floatright'>";
+	$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId$linkExtra'>";
+	echo $a, $Conf->cacheableImage("view24.png", "[View]", null, "b"),
+	    "</a>&nbsp;", $a, "Normal view</a></div><h2>";
 	$paperTable->echoTitle($prow);
 	echo "</h2></td>
 </tr>\n";
