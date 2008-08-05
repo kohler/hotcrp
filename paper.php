@@ -124,7 +124,17 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	// email reviewers
 	if ($prow->startedReviewCount > 0)
 	    Mailer::sendReviewers("@withdrawreviewer", $prow, null, array("reason" => defval($_REQUEST, "emailNote", "")));
-	
+
+	// remove voting tags so people don't have phantom votes
+	require_once("Code/tags.inc");
+	$vt = voteTags();
+	if (count($vt) > 0) {
+	    $q = array();
+	    foreach ($vt as $t => $v)
+		$q[] = "tag='" . sqlq($t) . "' or tag like '%~" . sqlq_for_like($t) . "'";
+	    $Conf->qe("delete from PaperTag where paperId=$prow->paperId and (" . join(" or ", $q) . ")", "while cleaning up voting tags");
+	}
+
 	$Conf->log("Withdrew", $Me, $paperId);
     } else
 	$Conf->errorMsg(whyNotText($whyNot, "withdraw"));
@@ -520,7 +530,7 @@ if (isset($_REQUEST['delete'])) {
 	// XXX email self?
 
 	$error = false;
-	$tables = array('Paper', 'PaperStorage', 'PaperComment', 'PaperConflict', 'PaperReview', 'PaperReviewArchive', 'PaperReviewPreference', 'PaperTopic');
+	$tables = array('Paper', 'PaperStorage', 'PaperComment', 'PaperConflict', 'PaperReview', 'PaperReviewArchive', 'PaperReviewPreference', 'PaperTopic', 'PaperTag');
 	if ($Conf->setting("allowPaperOption"))
 	    $tables[] = 'PaperOption';
 	foreach ($tables as $table) {

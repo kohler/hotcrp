@@ -27,6 +27,7 @@ $searchTags = array('ti' => 'ti', 'title' => 'ti',
 		    'tag' => 'tag',
 		    'notag' => 'notag',
 		    'ord' => 'order', 'order' => 'order',
+		    'rord' => 'rorder', 'rorder' => 'rorder',
 		    'decision' => 'decision', 'dec' => 'decision',
 		    'topic' => 'topic',
 		    'option' => 'option', 'opt' => 'option',
@@ -73,6 +74,7 @@ class PaperSearch {
     var $allowAuthor;
     var $fields;
     var $orderTag;
+    var $orderReverse;
     var $reviewerName;
     var $matchPreg;
     var $urlbase;
@@ -136,6 +138,7 @@ class PaperSearch {
 	    || ($this->amPC && $Conf->blindSubmission() <= 1))
 	    $this->allowAuthor = true;
 	$this->orderTag = false;
+	$this->orderReverse = false;
 	$this->reviewerName = false;
 	$this->contactId = $me->contactId;
 	$this->warnings = null;
@@ -159,7 +162,7 @@ class PaperSearch {
 	if ($this->amPC && $qtype == "re")
 	    $this->fields["re"] = 1;
 	if ($this->amPC && $qtype == "tag")
-	    $this->fields["tag"] = $this->fields["order"] = 1;
+	    $this->fields["tag"] = 1;
 
 	// the query itself
 	$this->q = trim(defval($opt, "q", ""));
@@ -479,7 +482,7 @@ class PaperSearch {
 	    $qt[] = new SearchTerm("pf", $rt, array("shepherdContactId", $x));
 	}
 	if ((($special ? $special == "tag" : isset($this->fields['tag']))
-	     || ($special ? $special == "order" : isset($this->fields['order'])))
+	     || $special == "order" || $special == "rorder")
 	    && $this->amPC) {
 	    require_once("tags.inc");
 	    if (preg_match('/\A([^#]+)#([<>!]?=?)(-?\d+)\Z/', $word, $m)
@@ -498,9 +501,11 @@ class PaperSearch {
 		$value = $this->contactId . $value;
 	    else if (!$this->privChair && $Conf->setting("tag_seeall") <= 0)
 		$rt |= self::F_NONCONFLICT;
-	    if (($special ? $special == "order" : isset($this->fields['order']))
-		&& !$negated)
+	    if (($special == "order" || $special == "rorder" || !$special)
+		&& !$negated) {
 		$this->orderTag = ($this->orderTag === false ? $value : null);
+		$this->orderReverse = ($special == "rorder");
+	    }
 	    $qt[] = new SearchTerm("tag", $rt, $extra ? array($value, $extra) : $value);
 	}
 	if (($special ? $special == "topic" : isset($this->fields['topic']))) {
@@ -1452,6 +1457,8 @@ class PaperSearch {
 	    $t = substr($d, 4);
 	else if (substr($d, 0, 6) == "notag:" || substr($d, 0, 6) == "order:")
 	    $t = substr($d, 6);
+	else if (substr($d, 0, 7) == "rorder:")
+	    $t = substr($d, 7);
 	else
 	    return false;
 	require_once("tags.inc");

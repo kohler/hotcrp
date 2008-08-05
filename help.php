@@ -14,6 +14,7 @@ $topicTitles = array("topics" => "Help topics",
 		     "tags" => "Tags",
 		     "revround" => "Review rounds",
 		     "revrate" => "Review ratings",
+		     "votetags" => "Voting tags",
 		     "scoresort" => "Sorting scores",
 		     "chair" => "Chair's guide");
 
@@ -57,6 +58,7 @@ function topics() {
     _alternateRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "How to use tags to define paper sets and discussion orders.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=revround'>Review rounds</a>", "Defining review rounds.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=revrate'>Review ratings</a>", "Rating reviews.");
+    _alternateRow("<a href='help$ConfSiteSuffix?t=votetags'>Voting tags</a>", "Voting for papers.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=scoresort'>Sorting scores</a>", "How scores are sorted in paper lists.");
     echo "</table>";
 }
@@ -209,7 +211,7 @@ function searchQuickref() {
     _searchQuickrefRow("Options", "option:shadow", "selected submission options match &ldquo;shadow&rdquo;");
     _searchQuickrefRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "tag:discuss", "tagged &ldquo;discuss&rdquo;");
     _searchQuickrefRow("", "-tag:discuss", "not tagged &ldquo;discuss&rdquo;");
-    _searchQuickrefRow("", "order:discuss", "tagged &ldquo;discuss&rdquo;, sort by tag order");
+    _searchQuickrefRow("", "order:discuss", "tagged &ldquo;discuss&rdquo;, sort by tag order (&ldquo;rorder:&rdquo; for reverse order)");
     _searchQuickrefRow("Reviews", "re:fdabek", "&ldquo;fdabek&rdquo; in reviewer name/email");
     _searchQuickrefRow("", "cre:fdabek", "&ldquo;fdabek&rdquo; (in reviewer name/email) has completed a review");
     _searchQuickrefRow("", "re:4", "four reviewers (assigned and/or completed)");
@@ -267,11 +269,26 @@ function searchQuickref() {
 }
 
 
+function _currentVoteTags() {
+    global $ConfSiteSuffix;
+    require_once("Code/tags.inc");
+    $vt = array_keys(voteTags());
+    if (count($vt)) {
+	sort($vt);
+	$votetags = " (currently ";
+	foreach ($vt as $v)
+	    $votetags .= "&ldquo;<a href=\"search$ConfSiteSuffix?q=rorder:$v\">$v</a>&rdquo;, ";
+	return substr($votetags, 0, strlen($votetags) - 2) . ")";
+    } else
+	return "";
+}
+
 function tags() {
     global $Conf, $ConfSiteSuffix, $Me;
 
     // get current tag settings
     $chairtags = "";
+    $votetags = "";
     $conflictmsg1 = "";
     $conflictmsg2 = "";
     $conflictmsg3 = "";
@@ -284,9 +301,11 @@ function tags() {
 	    sort($ct);
 	    $chairtags = " (currently ";
 	    foreach ($ct as $c)
-		$chairtags .= "&ldquo;$c&rdquo;, ";
+		$chairtags .= "&ldquo;<a href=\"search$ConfSiteSuffix?q=tag:$c\">$c</a>&rdquo;, ";
 	    $chairtags = substr($chairtags, 0, strlen($chairtags) - 2) . ")";
 	}
+
+	$votetags = _currentVoteTags();
 
 	if ($Me->privChair)
 	    $setting = "  (<a href='settings$ConfSiteSuffix?group=rev'>Change this setting</a>)";
@@ -323,14 +342,21 @@ Here are some example ways to use tags.
  (You might make the &ldquo;nodiscuss&rdquo; tag chair-only so an evil PC member couldn't add it to a high-ranked paper, but it's usually better to trust the PC.)</li>
 
 <li><strong>Mark controversial papers that would benefit from additional review.</strong>
- Tell PC members to add the tag &ldquo;controversy&rdquo; when the current reviewers disagree.
- A <a href='search$ConfSiteSuffix?q=tag:controversy'>search</a> shows you where the PC thinks more review is needed.</li>
+ PC members could add the &ldquo;controversy&rdquo; tag when the current reviewers disagree.
+ A <a href='search$ConfSiteSuffix?q=tag:controversy'>search</a> shows where the PC thinks more review is needed.</li>
 
 <li><strong>Mark PC-authored papers for extra scrutiny.</strong>
  First, <a href='search$ConfSiteSuffix?t=s&amp;qt=au'>search for PC members' last names in author fields</a>.
  Check for accidental matches and select the papers with PC members as authors, then use the action area below the search list to add the tag &ldquo;pcpaper&rdquo;.
  A <a href='search$ConfSiteSuffix?t=s&amp;qx=tag:pcpaper'>search</a> shows papers without PC authors.
  (Since PC members can see whether a paper is tagged &ldquo;pcpaper&rdquo;, you may want to delay defining the tag until just before the meeting.)</li>
+
+<li><strong>Vote for papers.</strong>
+ The chair can define special voting tags$votetags$setting.
+ Each PC member is assigned an allotment of votes to distribute among papers.
+ For instance, if &ldquo;v&rdquo; were a voting tag with an allotment of 10, then a PC member could assign 5 votes to a paper by adding the twiddle tag &ldquo;~v#5&rdquo;.
+ The system automatically sums PC members' votes into the public &ldquo;v&rdquo; tag.
+ To search for papers by vote count, search for &ldquo;<a href='search$ConfSiteSuffix?t=s&amp;q=rorder:v'>rorder:v</a>&rdquo;. (<a href='help$ConfSiteSuffix?t=votetags'>Learn more</a>)</li>
 
 <li><strong>Define a discussion order for the PC meeting.</strong>
  Publishing the order lets PC members prepare to discuss upcoming papers.
@@ -503,6 +529,35 @@ measure of differences of opinion).</dd>
 darker colored square.</dd>
 
 </dl>");
+
+    echo "</table>\n";
+}
+
+
+function showvotetags() {
+    global $Conf, $ConfSiteSuffix, $Me;
+
+    echo "<table>";
+    _alternateRow("Voting tags basics", "
+Some conferences have PC members vote for papers.
+Each PC member is assigned a vote allotment, and can distribute that allotment
+arbitrarily among unconflicted papers.
+The PC's aggregated vote totals might be used, for example, to determine
+which papers to discuss.
+
+<p>HotCRP supports voting through the <a href='help$ConfSiteSuffix?t=tags'>tags system</a>.
+The chair can <a href='settings$ConfSiteSuffix?group=rev'>define a set of voting tags</a> and corresponding allotments" . _currentVoteTags() . ".
+PC members vote by assigning the corresponding twiddle tags;
+the aggregated PC vote is visible in the public tag.</p>
+
+<p>For example, assume that an administrator defines a voting tag &ldquo;vote&rdquo; with an allotment of 10 votes.
+To vote for a paper, PC members add the &ldquo;~vote&rdquo; tag.
+Adding &ldquo;~vote#2&rdquo; assigns two votes, and so forth.
+The system ensures no PC member exceeds the allotment.
+The publicly visible &ldquo;vote&rdquo; tag is automatically set to the total number of PC votes for each paper.
+To learn who has voted for a paper, just hover:</p>
+
+<p><img src='images/extagvotehover.png' alt='[Hovering over a voting tag]' /></p>");
 
     echo "</table>\n";
 }
@@ -812,6 +867,8 @@ else if ($topic == "revround")
     revround();
 else if ($topic == "revrate")
     revrate();
+else if ($topic == "votetags")
+    showvotetags();
 else if ($topic == "scoresort")
     scoresort();
 else if ($topic == "chair")

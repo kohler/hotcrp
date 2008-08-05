@@ -131,7 +131,7 @@ if ($getaction == "tags" && isset($papersel) && defval($_REQUEST, "ajax")) {
 	if (!$Me->canViewTags($prow, $Conf))
 	    $t = "";
 	else
-	    $t = tagsToText($prow->paperTags, $csb, $Me->contactId);
+	    $t = tagsToText($prow->paperTags, $csb, $Me);
 	$response["tags$prow->paperId"] = $t;
     }
     $response["ok"] = (count($response) > 0);
@@ -267,7 +267,7 @@ if (($getaction == "rev" || $getaction == "revz") && isset($papersel)) {
 
 // set tags for selected papers
 function tagaction() {
-    global $Conf, $Me, $papersel;
+    global $Conf, $Me, $Error, $papersel;
     require_once("Code/tags.inc");
     
     $errors = array();
@@ -289,6 +289,8 @@ function tagaction() {
     $tag = $_REQUEST["tag"];
     if (count($papers) && ($act == "a" || $act == "d" || $act == "s" || $act == "so" || $act == "ao" || $act == "sos" || $act == "aos"))
 	setTags($papers, $tag, $act, $Me->privChair);
+    if (isset($Error["tags"]))
+	$Conf->errorMsg($Error["tags"]);
 }
 if (isset($_REQUEST["tagact"]) && $Me->isPC && isset($papersel) && isset($_REQUEST["tag"]))
     tagaction();
@@ -836,7 +838,7 @@ if ($pl) {
     echo $pl_text;
     if ($pl->count == 0 && $_REQUEST["t"] != "s") {
 	$a = array();
-	foreach (array("q", "qo", "qx", "qt", "sort") as $xa)
+	foreach (array("q", "qo", "qx", "qt", "sort", "showtags") as $xa)
 	    if (isset($_REQUEST[$xa]))
 		$a[] = "$xa=" . urlencode($_REQUEST[$xa]);
 	reset($tOpt);

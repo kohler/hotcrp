@@ -113,6 +113,7 @@ images/exsearchaction.png
 images/extagsnone.png
 images/extagssearch.png
 images/extagsset.png
+images/extagvotehover.png
 images/headgrad.png
 images/homegrad.png
 images/info45.png

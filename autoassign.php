@@ -443,7 +443,7 @@ function saveAssign() {
     $Conf->qe("unlock tables");
 
     if ($didLead && !$Conf->setting("paperlead")) {
-	$Conf->qe("insert into Settings (name, value) values ('paperlead', 1) on duplicate key update value=value");
+	$Conf->qe("insert into Settings (name, value) values ('paperlead', 1) on duplicate key update value=1");
 	$Conf->updateSettings();
     }
 }

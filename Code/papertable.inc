@@ -1058,25 +1058,27 @@ class PaperTable {
 	if ($site || $t) {
 	    // Note that tags MUST NOT contain HTML special characters.
 	    require_once("tags.inc");
-	    $tx = tagsToText($t, true, $Me->contactId);
-	    $t = tagsToText($t, false, $Me->contactId);
+	    $tx = tagsToText($t, true, $Me);
 	    $editable = $site && $Me->canSetTags($prow, $Conf);
 
 	    if ($editable)
-		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div id='foldtags' class='foldc inform'>";
+		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div id='foldtags' class='", (isset($Error["tags"]) ? "foldo" : "foldc"), " inform'>";
 
 	    echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($editable ? "tags" : 0))),
 		"<div class='psv'>";
 	    if ($editable) {
-		echo "<div class='ellipsis'>", ($t == "" ? "none" : $tx),
-		    "</div><div class='extension'>",
-		    "<textarea cols='20' rows='2' name='tags'>", $t, "</textarea><br />",
+		$t = tagsToText($t, false, $Me, true);
+		echo "<div class='ellipsis'>", ($tx == "" ? "none" : $tx),
+		    "</div><div class='extension'>";
+		if (isset($Error["tags"]))
+		    echo "<div class='xmerror'>", $Error["tags"], "</div>";
+		echo "<textarea cols='20' rows='2' name='tags'>", $t, "</textarea><br />",
 		    "<input class='bsm' type='submit' name='settags' value='Save' /> &nbsp; ",
 		    "<button type='button' class='bsm' onclick='javascript:fold(\"tags\", 1)'>Cancel</button><br />",
 		    "<span class='hint'><a href='help$ConfSiteSuffix?t=tags'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
 		    "</div>";
 	    } else
-		echo ($t == "" ? "none" : $tx);
+		echo ($tx == "" ? "none" : $tx);
 	    echo "</div>";
 
 	    if ($editable)
@@ -1086,6 +1088,8 @@ class PaperTable {
 
     function papstripOutcomeSelector($prow) {
 	global $Conf, $ConfSiteSuffix, $rf, $Error, $linkExtra;
+	if (!$rf)
+	    $rf = reviewForm();
 	echo "<div id='folddecision' class='",
 	    ($this->mode == "assign" ? "foldo" : "foldc"), "'>",
 	    $this->papt("decision", "Decision", array("type" => "ps", "editfolder" => "decision")),
