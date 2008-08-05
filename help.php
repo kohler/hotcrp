@@ -468,10 +468,10 @@ their reviews.  The interface appears above each visible review:
 <div class='g'></div>
 
 <div class='rev_rating'>
-  Was this review helpful for you? &nbsp;
-  <a class='button'>Yes</a> &nbsp;
-  <a class='button'>No</a> &nbsp;
-  <a class='button on'>No opinion</a>
+  How helpful was this review? &nbsp;
+  <a class='button'>Very helpful</a> &nbsp;
+  <a class='button'>Needs work</a> &nbsp;
+  <a class='button on'>Average</a>
 </div>
 
 <p>HotCRP reports the number of ratings for each review and how many of those
