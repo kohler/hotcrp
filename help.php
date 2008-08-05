@@ -469,9 +469,9 @@ their reviews.  The interface appears above each visible review:
 
 <div class='rev_rating'>
   How helpful was this review? &nbsp;
+  <a class='button on'>Average</a> &nbsp;
   <a class='button'>Very helpful</a> &nbsp;
-  <a class='button'>Needs work</a> &nbsp;
-  <a class='button on'>Average</a>
+  <a class='button'>Needs work</a>
 </div>
 
 <p>HotCRP reports the number of ratings for each review and how many of those

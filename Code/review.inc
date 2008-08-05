@@ -1159,12 +1159,12 @@ $blind\n";
 		    if (!isset($_REQUEST["reviewId"]))
 			$ratinglink .= "allr=1&amp;";
 		    echo $ratesep, "How helpful was this review? &nbsp; ",
+			"<a id='ratinglink_n_$reviewOrdinal' href='${ratinglink}rating=n$linkExtra' class='button",
+			($rrow->myRating === null ? " on" : ""), "'>Average</a> &nbsp; ",
 			"<a id='ratinglink_1_$reviewOrdinal' href='${ratinglink}rating=1$linkExtra' class='button",
 			($rrow->myRating > 0 ? " on" : ""), "'>Very helpful</a> &nbsp; ",
 			"<a id='ratinglink_0_$reviewOrdinal' href='${ratinglink}rating=0$linkExtra' class='button",
-			($rrow->myRating <= 0 && $rrow->myRating !== null ? " on" : ""), "'>Needs work</a> &nbsp; ",
-			"<a id='ratinglink_n_$reviewOrdinal' href='${ratinglink}rating=n$linkExtra' class='button",
-			($rrow->myRating === null ? " on" : ""), "'>Average</a>",
+			($rrow->myRating <= 0 && $rrow->myRating !== null ? " on" : ""), "'>Needs work</a>",
 			"<span id='ratingform_${reviewOrdinal}result'></span>";
 		    if (!defval($options, "ratingsajax")) {
 			$Conf->footerStuff .= "<script type='text/javascript'>addRatingAjax();</script>";
