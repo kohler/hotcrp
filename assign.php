@@ -36,7 +36,7 @@ function errorMsgExit($msg) {
 
 
 // grab paper row
-function getProw() {
+function loadRows() {
     global $prow, $rrows, $Conf, $ConfSiteSuffix, $Me;
     if (!($prow = PaperTable::paperRow($whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
@@ -60,7 +60,7 @@ function findRrow($contactId) {
 
 
 // forceShow
-getProw();
+loadRows();
 
 
 
@@ -112,7 +112,7 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
 if (isset($_REQUEST['retract']) && ($retract = rcvtint($_REQUEST['retract'])) > 0) {
     retractRequest($retract, $prow->paperId);
     $Conf->qe("unlock tables");
-    getProw();
+    loadRows();
 }
 
 
@@ -175,7 +175,7 @@ if (isset($_REQUEST['update']) && $Me->privChair) {
 	    $Conf->confirmMsg("Assignments saved.");
 	$Conf->ajaxExit(array("ok" => $OK));
     }
-    getProw();
+    loadRows();
 } else if (isset($_REQUEST["update"]) && defval($_REQUEST, "ajax")) {
     $Conf->errorMsg("Only administrators can assign papers.");
     $Conf->ajaxExit(array("ok" => 0));
@@ -374,7 +374,7 @@ if (isset($_REQUEST['add'])) {
 	if (!createAnonymousReview())
 	    $Conf->qx("unlock tables");
 	unset($_REQUEST["reason"]);
-	getProw();
+	loadRows();
     } else if (trim($_REQUEST["email"]) == "")
 	$Conf->errorMsg("An email address is required to request a review.");
     else {
@@ -388,7 +388,7 @@ if (isset($_REQUEST['add'])) {
 	    unset($_REQUEST["reason"]);
 	} else
 	    $Conf->qx("unlock tables");
-	getProw();
+	loadRows();
     }
 }
 
@@ -424,7 +424,15 @@ if (isset($_REQUEST['addpc']) && $Me->privChair) {
     else if (($pctype = rcvtint($_REQUEST["pctype"])) == REVIEW_PRIMARY
 	     || $pctype == REVIEW_SECONDARY)
 	$Me->assignPaper($prow->paperId, findRrow($pcid), $pcid, $pctype, $Conf);
-    getProw();
+    loadRows();
+}
+
+
+// paper actions
+if (isset($_REQUEST["settags"])) {
+    require_once("Code/paperactions.inc");
+    PaperActions::setTags($prow);
+    loadRows();
 }
 
 

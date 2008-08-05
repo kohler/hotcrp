@@ -541,6 +541,14 @@ if (isset($_REQUEST['delete'])) {
 }
 
 
+// paper actions
+if (isset($_REQUEST["settags"])) {
+    require_once("Code/paperactions.inc");
+    PaperActions::setTags($prow);
+    loadRows();
+}
+
+
 // messages for the author
 function deadlineSettingIs($dname, $conf) {
     $deadline = $conf->printableTimeSetting($dname);

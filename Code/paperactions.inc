@@ -64,7 +64,7 @@ class PaperActions {
 	    if ($contactId != $prow->$field) {
 		$Conf->qe("update Paper set $field=$contactId where paperId=$prow->paperId", "while updating $type");
 		if (!$Conf->setting("paperlead")) {
-		    $Conf->qe("insert into Settings (name, value) values ('paperlead', 1) on duplicate key update value=value");
+		    $Conf->qe("insert into Settings (name, value) values ('paperlead', 1) on duplicate key update value=1");
 		    $Conf->updateSettings();
 		}
 		if ($OK)
@@ -78,6 +78,20 @@ class PaperActions {
 	}
 	if ($ajax && $ajaxexit)
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, $type)));
+    }
+
+    function setTags($prow) {
+	global $Conf, $Me, $Error, $OK, $forceShow;
+	$ajax = defval($_REQUEST, "ajax", false);
+        if ($Me->canSetTags($prow, $Conf, $forceShow)) {
+	    require_once("Code/tags.inc");
+	    setTags($prow->paperId, defval($_REQUEST, "tags", ""), 'p', $Me->privChair);
+	} else {
+	    $Conf->errorMsg("You cannot set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Override conflict</a>)" : ""));
+	    $Error["tags"] = true;
+	}
+	if ($ajax)
+	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "tags")));
     }
 
 }

@@ -244,14 +244,11 @@ if (isset($_REQUEST['submit']) && defval($_REQUEST, 'response')) {
 }
 
 
-// set tags action (see also review.php)
+// paper actions
 if (isset($_REQUEST["settags"])) {
-    if ($Me->canSetTags($prow, $Conf, $forceShow)) {
-	require_once("Code/tags.inc");
-	setTags($prow->paperId, defval($_REQUEST, "tags", ""), 'p', $Me->privChair);
-	loadRows();
-    } else
-	$Conf->errorMsg("You cannot set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Override conflict</a>)" : ""));
+    require_once("Code/paperactions.inc");
+    PaperActions::setTags($prow);
+    loadRows();
 }
 
 
