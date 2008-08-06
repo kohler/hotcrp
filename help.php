@@ -471,18 +471,26 @@ their reviews.  The interface appears above each visible review:
 <div class='g'></div>
 
 <div class='rev_rating'>
-  How helpful was this review? &nbsp;
+  How helpful is this review? &nbsp;
   <a class='button on'>Average</a> &nbsp;
   <a class='button'>Very helpful</a> &nbsp;
   <a class='button'>Needs work</a>
 </div>
+
+<p>When rating a review, please consider its value for both the program
+  committee and the authors.  Helpful reviews are specific, clear, technically
+  focused, and, when possible, provide direction for the authors' future work.
+  Ratings will be most effective if &ldquo;very helpful&rdquo; and
+  &ldquo;needs work&rdquo; are used sparingly.</p>
 
 <p>HotCRP reports the numbers of non-average ratings for each review.
   It does not report who gave the ratings, and it
   never shows rating counts to authors.</p>
 
 <p>To find which of your reviews might need work, simply
-<a href='search$ConfSiteSuffix?q=rate:-'>search for &ldquo;rate:&minus;&rdquo;</a>.</p>");
+<a href='search$ConfSiteSuffix?q=rate:-'>search for &ldquo;rate:&minus;&rdquo;</a>.
+To find all reviews with &ldquo;very helpful&rdquo; ratings,
+<a href='search$ConfSiteSuffix?q=re:any+rate:%2B'>search for &ldquo;re:any rate:+&rdquo;</a>.</p>");
     if ($Conf->setting("rev_ratings") == REV_RATINGS_PC)
 	$what = "only PC members";
     else if ($Conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)

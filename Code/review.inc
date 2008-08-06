@@ -1160,7 +1160,7 @@ $blind\n";
 		    $ratinglink = "review$ConfSiteSuffix?r=$reviewOrdinal&amp;";
 		    if (!isset($_REQUEST["reviewId"]))
 			$ratinglink .= "allr=1&amp;";
-		    echo $ratesep, "How helpful was this review? &nbsp; ",
+		    echo $ratesep, "How helpful is this review? &nbsp; ",
 			"<a id='ratinglink_n_$reviewOrdinal' href='${ratinglink}rating=n$linkExtra' class='button",
 			($rrow->myRating === null ? " on" : ""), "'>Average</a> &nbsp; ",
 			"<a id='ratinglink_1_$reviewOrdinal' href='${ratinglink}rating=1$linkExtra' class='button",
