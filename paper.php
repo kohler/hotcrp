@@ -557,6 +557,10 @@ if (isset($_REQUEST["settags"])) {
     PaperActions::setTags($prow);
     loadRows();
 }
+if (isset($_REQUEST["tagreport"])) {
+    require_once("Code/paperactions.inc");
+    PaperActions::tagReport($prow);
+}
 
 
 // messages for the author

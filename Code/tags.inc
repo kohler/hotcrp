@@ -330,7 +330,8 @@ function tagsToText($t, $makeUrls, $contact, $drop = false) {
 		if (($hash = strpos($tag, "#")) === false)
 		    $hash = strlen($tag);
 		$base = substr($tag, $p + 1, $hash - ($p + 1));
-		$vote[$base][substr($tag, 0, $p)] = substr($tag, $hash + 1);
+		if (($amt = substr($tag, $hash + 1)) > 0)
+		    $vote[$base][substr($tag, 0, $p)] = $amt;
 	    }
     }
 

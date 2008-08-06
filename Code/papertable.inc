@@ -196,7 +196,8 @@ class PaperTable {
 	}
 	$c .= "</span>";
 	if ($editfolder) {
-	    $a = "<a class='unfolder' href='javascript:fold(\"$editfolder\", 0)' title='Edit'>";
+	    $x = defval($extra, "oneditunfold", "");
+	    $a = "<a class='unfolder' href='javascript:$x;fold(\"$editfolder\", 0)' title='Edit'>";
 	    $c .= "<span class='hint'>" . $a
 		. $Conf->cacheableImage("newreview.png", "[Edit]", null, "b")
 		. "</a>&nbsp;" . $a . "Edit</a></span>";
@@ -1062,18 +1063,21 @@ class PaperTable {
 	    $editable = $site && $Me->canSetTags($prow, $Conf);
 
 	    if ($editable)
-		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div id='foldtags' class='", (isset($Error["tags"]) ? "foldo" : "foldc"), " inform'>";
+		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div id='foldtags' class='", (isset($Error["tags"]) ? "foldo" : "foldc"), " inform'><input type='hidden' name='settags' value='1' />";
 
-	    echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($editable ? "tags" : 0))),
+	    echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($editable ? "tags" : 0), "oneditunfold" => "Miniajax.submit(\"tagreportform\")")),
 		"<div class='psv'>";
 	    if ($editable) {
+		// tag report form
+		$Conf->footerStuff .= "<form id='tagreportform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'><input type='hidden' name='tagreport' value='1' /></form>";
+
 		$t = tagsToText($t, false, $Me, true);
 		echo "<div class='ellipsis'>", ($tx == "" ? "none" : $tx),
-		    "</div><div class='extension'>";
+		    "</div><div class='extension'><div id='tagreportformresult'></div>";
 		if (isset($Error["tags"]))
 		    echo "<div class='xmerror'>", $Error["tags"], "</div>";
-		echo "<textarea cols='20' rows='2' name='tags'>", $t, "</textarea><br />",
-		    "<input class='bsm' type='submit' name='settags' value='Save' /> &nbsp; ",
+		echo "<textarea cols='20' rows='2' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>", $t, "</textarea><br />",
+		    "<input class='bsm' type='submit' value='Save' /> &nbsp; ",
 		    "<button type='button' class='bsm' onclick='javascript:fold(\"tags\", 1)'>Cancel</button><br />",
 		    "<span class='hint'><a href='help$ConfSiteSuffix?t=tags'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
 		    "</div>";

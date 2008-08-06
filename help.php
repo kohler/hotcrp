@@ -548,11 +548,11 @@ function showvotetags() {
 Some conferences have PC members vote for papers.
 Each PC member is assigned a vote allotment, and can distribute that allotment
 arbitrarily among unconflicted papers.
-The PC's aggregated vote totals might be used, for example, to determine
+The PC's aggregated vote totals might help determine
 which papers to discuss.
 
 <p>HotCRP supports voting through the <a href='help$ConfSiteSuffix?t=tags'>tags system</a>.
-The chair can <a href='settings$ConfSiteSuffix?group=rev'>define a set of voting tags</a> and corresponding allotments" . _currentVoteTags() . ".
+The chair can <a href='settings$ConfSiteSuffix?group=rev'>define a set of voting tags</a> and allotments" . _currentVoteTags() . ".
 PC members vote by assigning the corresponding twiddle tags;
 the aggregated PC vote is visible in the public tag.</p>
 

@@ -775,7 +775,8 @@ if ($Me->isPC && $pl && $pl->headerInfo["tags"]) {
     echo "<input type='checkbox' name='showtags' value='1'";
     if (($_REQUEST["t"] == "a" && !$Me->privChair) || !$pl->headerInfo["tags"])
 	echo " disabled='disabled'";
-    if (defval($_SESSION, "foldpltags", 1) == 0)
+    if (defval($_REQUEST, "showtags")
+	|| defval($_SESSION, "foldpltags", 1) == 0)
 	echo " checked='checked'";
     echo " onclick='foldtags(\"pl\",!this.checked,4)' />&nbsp;Tags", foldsessionpixel("pl4", "foldpltags"), "<br /><div id='tagloadformresult'></div>\n";
 }

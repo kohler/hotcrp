@@ -109,6 +109,23 @@ function crpfocus(id, subfocus, seltype) {
     return !(selt || felt);
 }
 
+function crpSubmitKeyFilter(elt, event) {
+    var e = event || window.event;
+    var code = e.charCode || e.keyCode;
+    var form;
+    if (e.ctrlKey || e.altKey || e.shiftKey || code != 13)
+	return true;
+    form = elt;
+    while (form && form.tagName != "FORM")
+	form = form.parentNode;
+    if (form) {
+	elt.blur();
+	form.submit();
+	return false;
+    } else
+	return true;
+}
+
 
 // accounts
 function contactPulldown(which) {

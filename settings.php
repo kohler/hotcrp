@@ -323,9 +323,9 @@ function doTags($set, $what) {
     if (!$set && $what == "tag_chair" && isset($_REQUEST["tag_chair"])) {
 	$vs = array();
 	foreach (preg_split('/\s+/', $_REQUEST["tag_chair"]) as $t)
-	    if ($t && checkTag($t, false))
+	    if ($t !== "" && checkTag($t, false))
 		$vs[] = $t;
-	    else {
+	    else if ($t !== "") {
 		$Error[] = "One of the chair-only tags contains odd characters.";
 		$Highlight["tag_chair"] = true;
 	    }
@@ -339,11 +339,11 @@ function doTags($set, $what) {
     if (!$set && $what == "tag_vote" && isset($_REQUEST["tag_vote"])) {
 	$vs = array();
 	foreach (preg_split('/\s+/', $_REQUEST["tag_vote"]) as $t)
-	    if ($t && checkTag($t, false)) {
+	    if ($t !== "" && checkTag($t, false)) {
 		if (preg_match('/\A([^#]+)(|#|#0+|#-\d*)\Z/', $t, $m))
 		    $t = $m[1] . "#1";
 		$vs[] = $t;
-	    } else {
+	    } else if ($t !== "") {
 		$Error[] = "One of the voting tags contains odd characters.";
 		$Highlight["tag_vote"] = true;
 	    }
@@ -360,6 +360,8 @@ function doTags($set, $what) {
 	// check allotments
 	$pcm = pcMembers();
 	foreach (preg_split('/\s+/', $Values["tag_vote"][1]) as $t) {
+	    if ($t === "")
+		continue;
 	    $base = substr($t, 0, strpos($t, "#"));
 	    $allotment = substr($t, strlen($base) + 1);
 
