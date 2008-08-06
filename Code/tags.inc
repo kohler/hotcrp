@@ -351,7 +351,7 @@ function tagsToText($t, $makeUrls, $contact, $drop = false) {
 	    $t = trim(preg_replace("/ " . preg_quote($tag) . "(#-?\\d*)? /", " ", " $t "));
     }
 
-    if ($makeUrls === false)
+    if ($makeUrls === false || $t === "")
 	return $t;
 
     // decorate with URL matches
