@@ -181,15 +181,12 @@ class PaperList extends BaseList {
 	    break;
 	case self::FIELD_REVIEWER_TYPE:
 	case self::FIELD_REVIEWER_TYPE_ICON:
-	    if ($this->search->reviewerName && !isset($queryOptions['allReviewScores'])) {
-		// if reviewer name is unique, use that to decide icons to show
-		// NB $this->search->reviewerName is sqlq'd already
-		$result = $Conf->q("select contactId from ContactInfo where concat(firstName, ' ', lastName, ' ', email) like '%" . $this->search->reviewerName . "%'");
-		if (edb_nrows($result) == 1) {
-		    $row = edb_row($result);
-		    $queryOptions['reviewerContact'] = $row[0];
+	    // if search names a specific reviewer, link there
+	    if ($this->search->reviewerContact
+		&& !isset($queryOptions['allReviewScores'])) {
+		$queryOptions['reviewerContact'] = $this->search->reviewerContact;
+		if ($this->search->reviewerContact != $this->contact->contactId)
 		    $this->showConflict = false;
-		}
 	    }
 	    break;
 	case self::FIELD_TAGS:
@@ -462,10 +459,21 @@ class PaperList extends BaseList {
     }
 
     function _paperLink($row) {
-	global $Conf;
-	if (($pl = $this->paperLink))
-	    return $pl;
-	return "paper";
+	global $Conf, $ConfSiteSuffix;
+	if (!($pl = $this->paperLink))
+	    $pl = "paper";
+	$pl .= $ConfSiteSuffix . "?p=" . $row->paperId;
+	$doreview = isset($row->reviewId) && ($this->search->reviewerContact || isset($row->reviewFirstName));
+	if ($doreview) {
+	    $rord = unparseReviewOrdinal($row);
+	    $pl .= "&amp;r=" . $rord;
+	    if ($row->reviewSubmitted > 0)
+		$pl .= "&amp;m=r";
+	}
+	$pl .= $this->paperLinkArgs;
+	if ($doreview && $row->reviewSubmitted > 0)
+	    $pl .= "#review" . $rord;
+	return $pl;
     }
     
     function content($fieldId, $row, $reviewList) {
@@ -473,16 +481,10 @@ class PaperList extends BaseList {
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
 	    $pl = $this->_paperLink($row);
-	    $l = "p=" . $row->paperId;
-	    if (isset($row->reviewId) && isset($row->reviewFirstName))
-		$l .= "&amp;r=" . unparseReviewOrdinal($row);
-	    return "<a href='$pl$ConfSiteSuffix?$l" . $this->paperLinkArgs . "' tabindex='4'>#$row->paperId</a>";
+	    return "<a href='$pl' tabindex='4'>#$row->paperId</a>";
 	case self::FIELD_TITLE:
 	    $pl = $this->_paperLink($row);
-	    $l = "p=" . $row->paperId;
-	    if (isset($row->reviewId) && isset($row->reviewFirstName))
-		$l .= "&amp;r=" . unparseReviewOrdinal($row);
-	    return "<a href='$pl$ConfSiteSuffix?$l" . $this->paperLinkArgs . "' tabindex='5'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
+	    return "<a href='$pl' tabindex='5'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)

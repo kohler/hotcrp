@@ -76,7 +76,7 @@ class PaperSearch {
     var $fields;
     var $orderTag;
     var $orderReverse;
-    var $reviewerName;
+    var $reviewerContact;
     var $matchPreg;
     var $urlbase;
     var $warnings;
@@ -141,7 +141,7 @@ class PaperSearch {
 	    $this->allowAuthor = true;
 	$this->orderTag = false;
 	$this->orderReverse = false;
-	$this->reviewerName = false;
+	$this->reviewerContact = 0;
 	$this->contactId = $me->contactId;
 	$this->warnings = null;
 	if ($this->privChair && rcvtint($opt["c"]) > 0)
@@ -267,12 +267,11 @@ class PaperSearch {
 		$value = $m[1] . $m[2];
 	    }
 	} else {
-	    if (!$negated && $this->privChair)
-		$this->reviewerName = ($this->reviewerName === false ? $word : null);
 	    $this->contactmatch[] = sqlq_for_like($word);
 	    $this->contactmatchPC = false;
 	    $type = "re";
 	    $value = "\1" . (count($this->contactmatch) - 1) . "\1";
+	    $this->reviewerContact++;
 	}
 
 	$nqt = count($qt);
@@ -800,7 +799,7 @@ class PaperSearch {
 	    $this->_queryApplyAllRounds($qc);
 	    if ($rounderror) {
 		global $Conf;
-		$Conf->errorMsg("Complicated use of &ldquo;round:&rdquo; ignored.  Stick to the basics, such as &ldquo;re:reviewername round:roundname&rdquo;.");
+		$Conf->errorMsg("Unexpected use of &ldquo;round:&rdquo; or &ldquo;rate:&rdquo; ignored.  Stick to the basics, such as &ldquo;re:reviewername round:roundname&rdquo;.");
 	    }
 	}
     }
@@ -887,6 +886,7 @@ class PaperSearch {
 	    $t = new SearchTerm("re", 0, "=" . $this->contactId);
 	    $t->extra = $roundterm->value;
 	    $qc[] = array($t);
+	    $this->reviewerContact++;
 	}
     }
 
@@ -1448,6 +1448,25 @@ class PaperSearch {
 		if (isset($this->regex[$k]) && count($this->regex[$k]))
 		    $this->matchPreg[$v] = join("|", $this->regex[$k]);
 	}
+
+	// set reviewerContact if the query is about exactly one reviewer
+	if ($this->reviewerContact == 1) {
+	    $this->reviewerContact = false;
+	    foreach ($qc as &$c) {
+		if (count($c) == 1 && $c[0]->type == "re") {
+		    $v = $c[0]->value[0];
+		    if ($v[0] == "=")
+			$this->reviewerContact = (int) substr($v, 1);
+		    else if ($v[0] == "\1") {
+			$v = (int) substr($v, 1, strlen($v) - 2);
+			if (count($this->contactmatch[$v]) == 1)
+			    $this->reviewerContact = $this->contactmatch[$v][0];
+		    }
+		    break;
+		}
+	    }
+	} else
+	    $this->reviewerContact = false;
 	
 	return true;
     }
