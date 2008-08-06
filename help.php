@@ -479,7 +479,10 @@ their reviews.  The interface appears above each visible review:
 
 <p>HotCRP reports the numbers of non-average ratings for each review.
   It does not report who gave the ratings, and it
-  never shows rating counts to authors.</p>");
+  never shows rating counts to authors.</p>
+
+<p>To find which of your reviews might need work, simply
+<a href='search$ConfSiteSuffix?q=rate:-'>search for &ldquo;rate:&minus;&rdquo;</a>.</p>");
     if ($Conf->setting("rev_ratings") == REV_RATINGS_PC)
 	$what = "only PC members";
     else if ($Conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)
