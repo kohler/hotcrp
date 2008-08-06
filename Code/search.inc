@@ -34,7 +34,8 @@ $searchTags = array('ti' => 'ti', 'title' => 'ti',
 		    'lead' => 'lead',
 		    'shepherd' => 'shepherd', 'shep' => 'shepherd',
 		    'conflict' => 'conflict', 'conf' => 'conflict',
-		    'status' => 'status');
+		    'status' => 'status',
+		    'rating' => 'rate', 'rate' => 'rate');
 
 class SearchTerm {
     var $type;
@@ -88,9 +89,10 @@ class PaperSearch {
     var $overrideMatchPreg;
     var $contactmatch;
     var $contactmatchPC;
+    var $noratings;
     var $preciseQuery;
     var $needflags;
-    var $rounds;
+    var $reviewAdjust;
 
     function PaperSearch($me, $opt) {
 	global $Conf, $ConfSiteSuffix;
@@ -185,7 +187,8 @@ class PaperSearch {
 	$this->regex = array();
 	$this->contactmatch = array();
 	$this->contactmatchPC = true;
-	$this->rounds = false;
+	$this->noratings = false;
+	$this->reviewAdjust = false;
     }
 
     function warn($text) {
@@ -352,7 +355,7 @@ class PaperSearch {
 		$value = "$field>0";
 	    else if ($word == "none")
 		$value = "$field=0";
-	    else if (preg_match('/^(\d*?)([<>]?=?\s*)?([A-Za-z]|\d+)$/s', $word, $m)) {
+	    else if (preg_match('/^(\d*?)([<>]?=?)?\s*([A-Za-z]|\d+)$/s', $word, $m)) {
 		if ($m[1] == "")
 		    $m[1] = 1;
 		if (($rf->reviewFields[$field] > 1) != (ctype_digit($m[3]) == false))
@@ -624,13 +627,13 @@ class PaperSearch {
 	}
 	if (($special ? $special == "round" : isset($this->fields["round"]))
 	    && $this->amPC) {
-	    $this->rounds = true;
+	    $this->reviewAdjust = true;
 	    if ($Conf->setting("allowPaperOption") < 11)
 		$qt[] = new SearchTerm("f");
 	    else if ($word == "none")
-		$qt[] = new SearchTerm("round", 0, array(0));
+		$qt[] = new SearchTerm("revadj", 0, array("round" => 0));
 	    else if ($word == "any")
-		$qt[] = new SearchTerm("round", 0, range(1, count($Conf->settings["rounds"]) - 1));
+		$qt[] = new SearchTerm("revadj", 0, array("round" => range(1, count($Conf->settings["rounds"]) - 1)));
 	    else {
 		$x = simplifyWhitespace($word);
 		$rounds = array();
@@ -649,7 +652,34 @@ class PaperSearch {
 		    $this->warn("&ldquo;" . htmlspecialchars($x) . "&rdquo; doesn't match a review round.");
 		    $qt[] = new SearchTerm("f");
 		} else
-		    $qt[] = new SearchTerm("round", 0, $rounds);
+		    $qt[] = new SearchTerm("revadj", 0, array("round" => $rounds));
+	    }
+	}
+	if (($special ? $special == "rate" : isset($this->fields["rate"]))) {
+	    $this->reviewAdjust = true;
+	    if ($Conf->setting("allowPaperOption") < 12)
+		$qt[] = new SearchTerm("f");
+	    else if (preg_match('/\A(good|bad|\+|-|\xE2\x88\x92)\s*(|[!=<>]?=?)\s*(\d*)\Z/', $word, $m)
+		     && ($m[3] !== "" || $m[2] === "")) {
+		$term = ($m[1] == "good" || $m[1] == "+" ? "numGood" : "numBad");
+		if ($m[3] === "") {
+		    $m[2] = ">";
+		    $m[3] = "0";
+		}
+		if ($m[2] === "")
+		    $m[2] = ($m[3] == 0 ? "=" : ">=");
+		else if ($m[2] === "==")
+		    $m[2] = "=";
+		else if ($m[2] === "!")
+		    $m[2] = "!=";
+		if ($m[2][0] === "<" || $m[2] === "!="
+		    || ($m[2] === "=" && $m[3] == 0)
+		    || ($m[2] === ">=" && $m[3] == 0))
+		    $term = "coalesce($term,0)";
+		$qt[] = new SearchTerm("revadj", 0, array("rate" => $term . $m[2] . $m[3]));
+	    } else {
+		$this->warn("Bad review rating query &ldquo;" . htmlspecialchars($word) . "&rdquo;.");
+		$qt[] = new SearchTerm("f");
 	    }
 	}
 
@@ -763,7 +793,7 @@ class PaperSearch {
 	    $qc[] = $qpn_or;
 	
 	// Now we have an array of arrays in "CNF"
-	if ($this->rounds) {
+	if ($this->reviewAdjust) {
 	    $rounderror = false;
 	    for ($i = 0; $i < count($qc); $i++)
 		$this->_queryFixRounds($qc[$i], $rounderror);
@@ -782,20 +812,30 @@ class PaperSearch {
 	foreach ($qcl as &$qt)
 	    if ($qt->type == "not") {
 		$this->_queryFixRounds($qt->value, $rounderror);
-		if (count($qt->value) == 1 && $qt->value[0]->type == "round")
-		    $qt = new SearchTerm("round", 0, array_diff(array_keys($Conf->settings["rounds"]), $qt->value[0]->value));
+		if (count($qt->value) == 1 && $qt->value[0]->type == "revadj") {
+		    $negterm = $qt->value[0];
+		    $x = array();
+		    if (isset($negterm->value["round"]))
+			$x["round"] = array_diff(array_keys($Conf->settings["rounds"]), $negterm->value["round"]);
+		    if (isset($negterm->value["rate"]))
+			$x["rate"] = "not (" . $negterm->value["rate"] . ")";
+		    $qt = new SearchTerm("revadj", 0, $x);
+		}
 	    }
 	
 	for ($i = 1; $i < count($qcl); $i++)
-	    if ($qcl[$i]->type == "round") {
-		if ($i == 1 && $qcl[0]->type == "round")
-		    $qcl[0]->value = array_unique(array_merge($qcl[0]->value, $qcl[1]->value));
-		else
+	    if ($qcl[$i]->type == "revadj") {
+		if ($i == 1 && $qcl[0]->type == "revadj") {
+		    if (isset($qcl[1]->value["round"]))
+			$qcl[0]->value["round"] = array_unique(array_merge(defval($qcl[0]->value, "round", array()), $qcl[1]->value["round"]));
+		    if (isset($qcl[1]->value["rate"]))
+			$qcl[0]->value["rate"] = "(" . defval($qcl[0]->value, "rate", "false") . ") or (" . $qcl[1]->value["rate"] . ")";
+		} else
 		    $rounderror = true;
 		array_splice($qcl, 1, 1);
 		$i--;
 	    }
-	if ($qcl[0]->type == "round" && count($qcl) > 1) {
+	if ($qcl[0]->type == "revadj" && count($qcl) > 1) {
 	    $rounderror = true;
 	    array_splice($qcl, 0, 1);
 	}
@@ -809,8 +849,6 @@ class PaperSearch {
 		$applied += $this->_queryApplyRounds($qt->value, $roundterm);
 	    else if ($qt->type == "re" || $qt->type == "nre"
 		     || $qt->type == "rf") {
-		if (count($roundterm->value) == 0)
-		    $roundterm->value = array(-1);
 		$qt->extra = $roundterm->value;
 		++$applied;
 	    }
@@ -821,12 +859,19 @@ class PaperSearch {
 	$roundterm = null;
 	$applied = $first_applied = 0;
 	for ($i = count($qc) - 1; $i >= 0; --$i)
-	    if ($qc[$i][0]->type == "round") {
+	    if ($qc[$i][0]->type == "revadj") {
 		if (!$roundterm || $applied) {
 		    $roundterm =& $qc[$i][0];
 		    $applied = false;
-		} else
-		    $roundterm->value = array_intersect($roundterm->value, $qc[$i][0]->value);
+		} else {
+		    if (isset($roundterm->value["round"])
+			&& isset($qc[$i][0]->value["round"]))
+			$roundterm->value["round"] = array_intersect($roundterm->value["round"], $qc[$i][0]->value["round"]);
+		    else if (isset($qc[$i][0]->value["round"]))
+			$roundterm->value["round"] = $qc[$i][0]->value["round"];
+		    if (isset($qc[$i][0]->value["rate"]))
+			$roundterm->value["rate"] = "(" . defval($roundterm->value, "rate", "true") . ") and (" . $qc[$i][0]->value["rate"] . ")";
+		}
 	    } else if ($roundterm) {
 		$applied += $this->_queryApplyRounds($qc[$i], $roundterm);
 		if ($applied && !$first_applied) {
@@ -844,7 +889,7 @@ class PaperSearch {
 	    $qc[] = array($t);
 	}
     }
-	
+
 
     // QUERY CONSTRUCTION
     // Build a database query corresponding to a set of clauses.
@@ -912,6 +957,42 @@ class PaperSearch {
 	    $q[] = "$thistab.$field is not null";
 	$f[] = "(" . join(" and ", $q) . ")";
     }
+
+    function unusableRatings($privChair, $contactId) {
+	global $Conf;
+	if ($privChair || $Conf->timePCViewAllReviews())
+	    return array();
+	$noratings = array();
+	$rateset = $Conf->setting("rev_rating");
+	if ($rateset == REV_RATINGS_PC)
+	    $npr_constraint = "reviewType>" . REVIEW_EXTERNAL;
+	else
+	    $npr_constraint = "true";
+	// This query supposedly returns those reviewIds whose ratings
+	// are not visible to the current querier
+	$result = $Conf->q("select MPR.reviewId
+	from PaperReview as MPR
+	left join (select paperId, count(reviewId) as numReviews from PaperReview where $npr_constraint and reviewNeedsSubmit<=0 group by paperId) as NPR on (NPR.paperId=MPR.paperId)
+	left join (select paperId, count(rating) as numRatings from PaperReview join ReviewRating using (reviewId) group by paperId) as NRR on (NRR.paperId=MPR.paperId)
+	where MPR.contactId=$contactId
+	and numReviews<=2
+	and numRatings<=2");
+	while (($row = edb_row($result)))
+	    $noratings[] = $row[0];
+	return $noratings;
+    }
+
+    function _clauseTermSetRating(&$reviewtable, &$where, $rate) {
+	global $Conf;
+	if ($this->noratings === false)
+	    $this->noratings = self::unusableRatings($this->privChair, $this->contactId);
+
+	$reviewtable = "PaperReview left join (select reviewId, sum(rating) as numGood, (count(rating) - sum(rating)) as numBad from ReviewRating";
+	if (count($this->noratings) > 0)
+	    $reviewtable .= " where not (reviewId in (" . join(",", $this->noratings) . "))";
+	$reviewtable .= " group by reviewId) as Ratings using (reviewId)";
+	$where[] = $rate;
+    }
     
     function _clauseTermSet(&$t, $negated, &$tables, &$columns, &$f) {
 	global $Conf;
@@ -939,6 +1020,7 @@ class PaperSearch {
 		$rtype = "X" . count($tables);
 	    if (!isset($tables["Numreviews_$rtype"])) {
 		$where = array();
+		$reviewtable = "PaperReview";
 		if ($rtype & self::F_TYPEMASK)
 		    $where[] = "reviewType=" . ($rtype & self::F_TYPEMASK);
 		if ($rtype & self::F_NONBLIND)
@@ -947,12 +1029,18 @@ class PaperSearch {
 		    $where[] = "reviewSubmitted>0";
 		else if ($rtype & self::F_INCOMPLETE)
 		    $where[] = "reviewNeedsSubmit>0";
-		if (isset($t->extra))
-		    $where[] = "reviewRound in (" . join(",", $t->extra) . ")";
+		if (isset($t->extra) && isset($t->extra["round"])) {
+		    if (count($t->extra["round"]) == 0)
+			$where[] = "false";
+		    else
+			$where[] = "reviewRound in (" . join(",", $t->extra["round"]) . ")";
+		}
+		if (isset($t->extra) && isset($t->extra["rate"]))
+		    $this->_clauseTermSetRating($reviewtable, $where, $t->extra["rate"]);
 		$wheretext = "";
 		if (count($where))
 		    $wheretext = " where " . join(" and ", $where);
-		$tables["Numreviews_$rtype"] = array("left join", "(select paperId, count(reviewId) as nre from PaperReview$wheretext group by paperId)", "Paper.paperId=Numreviews_$rtype.paperId");
+		$tables["Numreviews_$rtype"] = array("left join", "(select paperId, count(reviewId) as nre from $reviewtable$wheretext group by paperId)", "Paper.paperId=Numreviews_$rtype.paperId");
 	    }
 	    $columns["nre_$rtype"] = "Numreviews_$rtype.nre";
 	    $q = array();
@@ -962,6 +1050,7 @@ class PaperSearch {
 	    $t->link = "nre_$rtype";
 	} else if ($tt == "re" || $tt == "rf") {
 	    $thistab = "Reviews_" . count($tables);
+	    $reviewtable = "PaperReview";
 	    $where = array();
 	    if ($t->flags & self::F_TYPEMASK)
 		$where[] = "reviewType=" . ($t->flags & self::F_TYPEMASK);
@@ -971,8 +1060,14 @@ class PaperSearch {
 		$where[] = "reviewSubmitted>0";
 	    else if ($t->flags & self::F_INCOMPLETE)
 		$where[] = "reviewNeedsSubmit>0";
-	    if (isset($t->extra))
-		$where[] = "reviewRound in (" . join(",", $t->extra) . ")";
+	    if (isset($t->extra) && isset($t->extra["round"])) {
+		if (count($t->extra["round"]) == 0)
+		    $where[] = "false";
+		else
+		    $where[] = "reviewRound in (" . join(",", $t->extra["round"]) . ")";
+	    }
+	    if (isset($t->extra) && isset($t->extra["rate"]))
+		$this->_clauseTermSetRating($reviewtable, $where, $t->extra["rate"]);
 	    if ($tt != "rf" || !is_array($t->value))
 		$t->value = array($t->value, 1);
 	    if ($tt == "re")
@@ -980,7 +1075,7 @@ class PaperSearch {
 	    else
 		$where[] = $t->value[0];
 	    $wheretext = " where " . join(" and ", $where);
-	    $tables[$thistab] = array("left join", "(select paperId, count(reviewId) as nre from PaperReview$wheretext group by paperId)", "Paper.paperId=$thistab.paperId");
+	    $tables[$thistab] = array("left join", "(select paperId, count(reviewId) as nre from $reviewtable$wheretext group by paperId)", "Paper.paperId=$thistab.paperId");
 	    $columns[$thistab . "_matches"] = "$thistab.nre";
 	    $q = array();
 	    $this->_clauseTermSetFlags($t->flags, $q);
@@ -1302,24 +1397,6 @@ class PaperSearch {
 	if (count($filters))
 	    $q .= " where " . join(" and ", $filters);
 	$q .= " group by Paper.paperId";
-
-	/*
-	// create round checker
-	$roundchecker = array();
-	foreach ($this->match["round"] as $t => $tarr)
-	    $roundchecker[] = "(*" . join($t == "any" ? " or *" : " and *", $tarr) . ")";
-	if (($roundchecker = join(" and ", $roundchecker)))
-	    $roundchecker = " and " . $roundchecker;
-
-	foreach ($this->match["sec"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperReview", "reviewId", "sec", " and *reviewType=" . REVIEW_SECONDARY . $roundchecker, $t, $tarr);
-	foreach ($this->match["csec"] as $t => $tarr)
-	    $q .= $this->_tableMatch("PaperReview", "reviewId", "csec", " and *reviewType=" . REVIEW_SECONDARY . " and *reviewSubmitted>0" . $roundchecker, $t, $tarr);
-	if ($roundchecker && strlen($q) == $prereQlen) {
-	    $tarr = array("true");
-	    $q .= $this->_tableMatch("PaperReview", "reviewId", "re", " and *contactId=" . $this->contactId . $roundchecker, "uany", $tarr);
-	}
-	*/
 
 	// clean up contact matches
 	if (count($this->contactmatch))

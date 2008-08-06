@@ -1124,6 +1124,7 @@ $blind\n";
 
 	if (!$editmode) {
 	    // Do not show rating counts if rater identity is unambiguous.
+	    // See also PaperSearch::_clauseTermSetRating.
 	    $visibleRatings = false;
 	    if ($rrow->numRatings > 0) {
 		if (!isset($options["nsubraters"])) {
@@ -1146,12 +1147,13 @@ $blind\n";
 		$ratesep = "";
 		echo "<div class='rev_rating'>";
 		if ($visibleRatings) {
-		    echo "<span class='rev_rating_summary'>";
-		    if ($rrow->numRatings == $rrow->sumRatings)
-			echo plural($rrow->sumRatings, "reviewer");
-		    else
-			echo $rrow->sumRatings, " of ", $rrow->numRatings, " reviewers";
-		    echo " found this review helpful.</span>";
+		    echo "<span class='rev_rating_summary'>Ratings: ";
+		    $ratearr = array();
+		    if ($rrow->sumRatings > 0)
+			$ratearr[] = $rrow->sumRatings . " &ldquo;very helpful&rdquo;";
+		    if ($rrow->sumRatings < $rrow->numRatings)
+			$ratearr[] = ($rrow->numRatings - $rrow->sumRatings) . " &ldquo;needs work&rdquo;";
+		    echo join(", ", $ratearr), "</span>";
 		    $ratesep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
 		}
 		if ($rrow->contactId != $Me->contactId) {

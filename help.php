@@ -223,6 +223,9 @@ function searchQuickref() {
 	preg_match('/ (\S+) /', $roundtags, $m);
 	_searchQuickrefRow("", "round:$m[1]", "review assignment is &ldquo;$m[1]&rdquo;");
     }
+    if ($Conf->setting("allowPaperOption") >= 12
+	&& $Conf->setting("rev_ratings") != REV_RATINGS_NONE)
+	_searchQuickrefRow("", "rate:+", "review was rated positively (&ldquo;rate:-&rdquo; and &ldquo;rate:+>2&rdquo; also work; can combine with &ldquo;re:&rdquo;)");
     _searchQuickrefRow("Comments", "cmt:>0", "at least one comment visible to PC (including authors' response)");
     _searchQuickrefRow("", "aucmt:>0", "at least one comment visible to authors (including authors' response)");
     _searchQuickrefRow("Leads", "lead:fdabek", "&ldquo;fdabek&rdquo; (in name/email) is discussion lead");
@@ -474,8 +477,8 @@ their reviews.  The interface appears above each visible review:
   <a class='button'>Needs work</a>
 </div>
 
-<p>HotCRP reports the number of ratings for each review and how many of those
-  ratings were positive.  It does not report who gave the ratings, and it
+<p>HotCRP reports the numbers of non-average ratings for each review.
+  It does not report who gave the ratings, and it
   never shows rating counts to authors.</p>");
     if ($Conf->setting("rev_ratings") == REV_RATINGS_PC)
 	$what = "only PC members";

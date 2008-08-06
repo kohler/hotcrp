@@ -136,15 +136,11 @@ class ContactList extends BaseList {
 
     function _sortReviewRatings($a, $b) {
 	global $Conf;
-	if ($b->numRatings && $a->numRatings)
-	    $x = $b->sumRatings / $b->numRatings - $a->sumRatings / $a->numRatings;
-	else if ($b->numRatings || $a->numRatings)
-	    $x = $b->numRatings ? 1 : -1;
-	else
-	    $x = 0;
-	$x = $x ? $x : $b->numReviews - $a->numReviews;
-	$x = $x ? $x : self::_sortBase($a, $b);
-	return $x > 0 ? 1 : ($x == 0 ? 0 : -1);
+	if ((int) $a->sumRatings != (int) $b->sumRatings)
+	    return ($a->sumRatings > $b->sumRatings ? -1 : 1);
+	if ((int) $a->numRatings != (int) $b->numRatings)
+	    return ($a->numRatings > $b->numRatings ? 1 : -1);
+	return self::_sortBase($a, $b);
     }
 
     function _sortPapers($a, $b) {
@@ -299,7 +295,17 @@ class ContactList extends BaseList {
 	    if ((!$row->numReviews && !$row->numReviewsSubmitted)
 		|| !$row->numRatings)
 		return "";
-	    return "<span class='hastitle' title='" . plural($row->sumRatings, "helpful rating") . ", " . plural($row->numRatings, "total rating") . "'>" . ((int) (100 * ($row->sumRatings / $row->numRatings) + 0.5)) . "%</span>";
+	    $a = array();
+	    $b = array();
+	    if ($row->sumRatings > 0) {
+		$a[] = $row->sumRatings . " &ldquo;very helpful&rdquo;";
+		$b[] = "<a href=\"search$ConfSiteSuffix?q=re:" . urlencode($row->email) . "+rate:%2B\">+" . $row->sumRatings . "</a>";
+	    }
+	    if ($row->sumRatings < $row->numRatings) {
+		$a[] = ($row->numRatings - $row->sumRatings) . " &ldquo;needs work&rdquo;";
+		$b[] = "<a href=\"search$ConfSiteSuffix?q=re:" . urlencode($row->email) . "+rate:-\">&minus;" . ($row->numRatings - $row->sumRatings) . "</a>";
+	    }
+	    return "<span class='hastitle' title='" . join(", ", $a) . "'>" . join(" ", $b) . "</span>";
 	case self::FIELD_PAPERS:
 	    if (!$row->paperIds)
 		return "";
@@ -467,8 +473,14 @@ class ContactList extends BaseList {
 	    $pq .= " from PaperReview join Paper on (Paper.paperId=PaperReview.paperId)";
 	    if (!$this->contact->privChair)
 		$pq .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->contact->contactId . ")";
-	    if (isset($queryOptions["revratings"]))
-		$pq .= " left join ReviewRating on (ReviewRating.reviewId=PaperReview.reviewId)";
+	    if (isset($queryOptions["revratings"])) {
+		require_once("search.inc");
+		$badratings = PaperSearch::unusableRatings($me->privChair, $me->contactId);
+		$pq .= " left join ReviewRating on (ReviewRating.reviewId=PaperReview.reviewId";
+		if (count($badratings) > 0)
+		    $pq .= " and not (ReviewRating.reviewId in (" . join(",", $badratings) . "))";
+		$pq .= ")";
+	    }
 	    $jwhere = array();
 	    if ($this->limit == "req" || $this->limit == "ext" || $this->limit == "extsub")
 		$jwhere[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;

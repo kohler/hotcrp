@@ -366,7 +366,7 @@ function reviewTokenGroup() {
 	"<form method='get' action='index$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>",
 	"<input class='textlite' type='text' name='token' size='15' value='' />",
 	" &nbsp;<input class='b' type='submit' value='Save' />",
-	"<div class='hint'>If you have been given a review token, enter it here to gain access to the corresponding review.";
+	"<div class='hint'>If you have a review token, enter it here to gain access to the corresponding review.";
     if (isset($_SESSION["rev_tokens"])) {
 	$t = array();
 	foreach ($_SESSION["rev_tokens"] as $tt)
@@ -471,6 +471,26 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	$sep = $xsep;
     }
     
+    if ($myrow && $Conf->setting("allowPaperOption") >= 12
+	&& $Conf->setting("rev_ratings") != REV_RATINGS_NONE) {
+	$badratings = PaperSearch::unusableRatings($Me->privChair, $Me->contactId);
+	$qx = (count($badratings) ? " and not (reviewId in (" . join(",", $badratings) . "))" : "");
+	$result = $Conf->qe("select count(good), count(bad) from PaperReview left join (select reviewId, 1 as good from ReviewRating where rating>0$qx group by reviewId) as G on (G.reviewId=PaperReview.reviewId) left join (select reviewId, 1 as bad from ReviewRating where rating<1$qx group by reviewId) as B on (B.reviewId=PaperReview.reviewId) where PaperReview.contactId=$Me->contactId group by PaperReview.contactId", "while checking ratings");
+	if (($row = edb_row($result)) && ($row[0] || $row[1])) {
+	    $a = array();
+	    if ($row[0])
+		$a[] = "<a href=\"search$ConfSiteBase?q=rate:%2B\" title='List reviews'>$row[0] of your reviews</a> as very helpful";
+	    if ($row[1])
+		$a[] = "<a href=\"search$ConfSiteBase?q=rate:-\" title='List reviews'>$row[1] of your reviews</a> as needing work";
+	    echo "<div class='hint g'>\nOther reviewers ",
+		"<a href='help$ConfSiteSuffix?t=revrate' title='What is this?'>rated</a> ",
+		join(" and ", $a);
+	    if ($row[0] && $row[1])
+		echo " (these sets might overlap)";
+	    echo ".</div>\n";
+	}
+    }
+
     if ($Me->isReviewer) {
 	$plist = new PaperList(false, true, new PaperSearch($Me, array("t" => "r")));
 	$ptext = $plist->text("reviewerHome", $Me);
