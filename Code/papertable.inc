@@ -1026,8 +1026,9 @@ class PaperTable {
 	    echo "<div class='extension'>",
 		tagg_select($type, $opt,
 			    ($value && isset($pc[$value]) ? htmlspecialchars($pc[$value]->email) : "0"),
-			    array("onchange" => "Miniajax.submit(\"${type}form\")")),
-		"&nbsp; <input class='b extension7' type='submit' value='Save' />",
+			    array("onchange" => "Miniajax.submit(\"${type}form\")",
+				  "id" => "fold${type}_d")),
+		" <input class='b extension7' type='submit' value='Save' />",
 		" <span id='${type}formresult'></span>",
 		"</div><div class='ellipsis'>";
 	}
@@ -1076,7 +1077,7 @@ class PaperTable {
 		    "</div><div class='extension'><div id='tagreportformresult'></div>";
 		if (isset($Error["tags"]))
 		    echo "<div class='xmerror'>", $Error["tags"], "</div>";
-		echo "<textarea cols='20' rows='2' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>", $t, "</textarea><br />",
+		echo "<textarea id='foldtags_d' cols='20' rows='2' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>", $t, "</textarea><br />",
 		    "<input class='bsm' type='submit' value='Save' /> &nbsp; ",
 		    "<button type='button' class='bsm' onclick='javascript:fold(\"tags\", 1)'>Cancel</button><br />",
 		    "<span class='hint'><a href='help$ConfSiteSuffix?t=tags'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
@@ -1102,8 +1103,8 @@ class PaperTable {
 	    "<input type='hidden' name='setdecision' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
 	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
-	echo decisionSelector($prow->outcome, null, " onchange='Miniajax.submit(\"decisionform\")'"),
-	    "&nbsp; <input class='b extension7' type='submit' value='Save' />",
+	echo decisionSelector($prow->outcome, null, " onchange='Miniajax.submit(\"decisionform\")' id='folddecision_d'"),
+	    " <input class='b extension7' type='submit' value='Save' />",
 	    " <span id='decisionformresult'></span>",
 	    "</div></form><div class='ellipsis'>",
 	    $rf->options["outcome"][$prow->outcome],
@@ -1122,7 +1123,7 @@ class PaperTable {
 	$rp = (isset($prow->reviewerPreference) ? htmlspecialchars($prow->reviewerPreference) : "0");
 	$rp = ($rp == "0" ? "" : $rp);
 	echo "<input id='revprefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$rp\" onchange='Miniajax.submit(\"revprefform\")' tabindex='1' />",
-	    "&nbsp; <input class='b extension7' type='submit' value='Save' />",
+	    " <input class='b extension7' type='submit' value='Save' />",
 	    " <span id='revprefformresult'></span>",
 	    "</div></form></div>\n";
 	$Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"revprefform\");</script>";

@@ -75,8 +75,11 @@ function fold(which, dofold, foldnum) {
 	elt = e('fold' + which);
 	fold(elt, dofold, foldnum);
 	// check for session
-	if ((selt = e('foldsession.' + which + foldnum)))
+	if ((selt = e('foldsession.' + which + foldnumid)))
 	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0));
+	// check for focus
+	if (!dofold && (selt = e("fold" + which + foldnumid + "_d")))
+	    selt.focus();
     } else if (which) {
 	opentxt = "fold" + foldnumid + "o";
 	closetxt = "fold" + foldnumid + "c";
