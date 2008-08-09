@@ -495,12 +495,24 @@ class PaperSearch {
 		$tagword = $word;
 		$extra = null;
 	    }
+
+	    $twiddlecid = $this->contactId;
+	    if ($this->privChair && ($twiddle = strpos($tagword, "~")) > 0) {
+		$c = substr($tagword, 0, $twiddle);
+		$twiddlecid = matchContact(pcMembers(), null, null, $c);
+		if ($twiddlecid == -2)
+		    $this->warn("&ldquo;" . htmlspecialchars($c) . "&rdquo; matches no PC member.");
+		else if ($twiddlecid <= 0)
+		    $this->warn("&ldquo;" . htmlspecialchars($c) . "&rdquo; matches more than one PC member; be more specific to disambiguate.");
+		$tagword = substr($tagword, $twiddle);
+	    }
+
  	    if (($e = checkTagError($tagword, true)))
 		$this->warn(htmlspecialchars($e));
 	    $value = $tagword;
 	    $rt = 0;
-	    if ($value && $value[0] == "~")
-		$value = $this->contactId . $value;
+	    if ($value && $twiddle !== false)
+		$value = $twiddlecid . $value;
 	    else if (!$this->privChair && $Conf->setting("tag_seeall") <= 0)
 		$rt |= self::F_NONCONFLICT;
 	    if (($special == "order" || $special == "rorder" || !$special)

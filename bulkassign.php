@@ -88,28 +88,7 @@ function parseBulkFile($text, $filename, $type) {
 	// PC members
 	if ($type != REVIEW_EXTERNAL) {
 	    list($firstName, $lastName) = splitName(simplifyWhitespace($name));
-	    if (!$lastName)
-		$lastName = $email;
-	    if (!$firstName)
-		$firstName = $lastName;
-	    $cid = -2;
-	    $matchprio = 1000;
-	    foreach ($pcm as $pcid => $pc) {
-		$x = array($pc->email, $email,
-			   $pc->lastName, $lastName,
-			   $pc->firstName, $firstName);
-		for ($i = 0; $i < count($x) && $i <= $matchprio; $i += 2)
-		    if ($x[$i+1]
-			&& (strncasecmp($x[$i], $x[$i+1], strlen($x[$i+1])) == 0
-			    || ($i >= 2 && strlen($x[$i+1]) < strlen($x[$i])
-				&& stripos($x[$i], $x[$i+1]) !== false))) {
-			$prio = (strcasecmp($x[$i], $x[$i+1]) == 0 ? $i : $i+1);
-			if ($matchprio >= $prio) {
-			    $cid = ($matchprio > $prio ? $pcid : -1);
-			    $matchprio = $prio;
-			}
-		    }
-	    }
+	    $cid = matchContact($pcm, $firstName, $lastName, $email);
 	    // assign
 	    if ($cid <= 0) {
 		if ($cid == -2)

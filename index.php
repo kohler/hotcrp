@@ -365,7 +365,7 @@ function reviewTokenGroup() {
     echo "  <h4>Review tokens: &nbsp;</h4> ",
 	"<form method='get' action='index$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>",
 	"<input class='textlite' type='text' name='token' size='15' value='' />",
-	" &nbsp;<input class='b' type='submit' value='Save' />",
+	" &nbsp;<input class='b' type='submit' value='Go' />",
 	"<div class='hint'>If you have a review token, enter it here to gain access to the corresponding review.";
     if (isset($_SESSION["rev_tokens"])) {
 	$t = array();

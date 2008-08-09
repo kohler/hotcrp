@@ -1011,6 +1011,72 @@ function pcByEmail($email) {
     return null;
 }
 
+function matchContact($pcm, $firstName, $lastName, $email) {
+    $lastmax = $firstmax = false;
+    if (!$lastName) {
+	$lastName = $email;
+	$lastmax = true;
+    }
+    if (!$firstName) {
+	$firstName = $lastName;
+	$firstmax = true;
+    }
+    assert(is_string($email) && is_string($firstName) && is_string($lastName));
+    
+    $cid = -2;
+    $matchprio = 0;
+    foreach ($pcm as $pcid => $pc) {
+	// Match full email => definite match.
+	// Otherwise, sum priorities as follows:
+	//   Entire front of email, or entire first or last name => +10 each
+	//   Part of word in email, first, or last name          => +1 each
+	// If a string is used for more than one of email, first, and last,
+	// don't count a match more than once.  Pick closest match.
+
+	$emailprio = $firstprio = $lastprio = 0;
+	if ($email !== "") {
+	    if ($pc->email === $email)
+		return $pcid;
+	    if (($pos = stripos($pc->email, $email)) !== false) {
+		if ($pos === 0 && $pc->email[strlen($email)] == "@")
+		    $emailprio = 10;
+		else if ($pos === 0 || !ctype_alnum($pc->email[$pos - 1]))
+		    $emailprio = 1;
+	    }
+	}
+	if ($firstName != "") {
+	    if (($pos = stripos($pc->firstName, $firstName)) !== false) {
+		if ($pos === 0 && strlen($pc->firstName) == strlen($firstName))
+		    $firstprio = 10;
+		else if ($pos === 0 || !ctype_alnum($pc->firstName[$pos - 1]))
+		    $firstprio = 1;
+	    }
+	}
+	if ($lastName != "") {
+	    if (($pos = stripos($pc->lastName, $lastName)) !== false) {
+		if ($pos === 0 && strlen($pc->lastName) == strlen($lastName))
+		    $lastprio = 10;
+		else if ($pos === 0 || !ctype_alnum($pc->firstName[$pos - 1]))
+		    $lastprio = 1;
+	    }
+	}
+	if ($lastmax && $firstmax)
+	    $thisprio = max($emailprio, $firstprio, $lastprio);
+	else if ($lastmax)
+	    $thisprio = max($emailprio, $lastprio) + $firstprio;
+	else if ($firstmax)
+	    $thisprio = $emailprio + max($firstprio, $lastprio);
+	else
+	    $thisprio = $emailprio + $firstprio + $lastprio;
+
+	if ($thisprio && $matchprio <= $thisprio) {
+	    $cid = ($matchprio < $thisprio ? $pcid : -1);
+	    $matchprio = $thisprio;
+	}
+    }
+    return $cid;
+}
+
 function paperOptions() {
     global $Conf;
     if ($Conf->setting('paperOption') <= 0 || $Conf->setting('allowPaperOption') <= 0)
