@@ -135,7 +135,7 @@ if (isset($_REQUEST['register']) && $OK) {
 	    $Acct->lookupByEmail($_REQUEST["uemail"], $Conf);
 	    $Acct->valid($Conf);
 	    if ($newProfile)
-		$Conf->confirmMsg("Successfully created an account for " . htmlspecialchars($Acct->email) . ".  A password has been emailed to that address.  You may now create another account if you'd like.");
+		$Conf->confirmMsg("Successfully created <a href=\"account$ConfSiteSuffix?contact=" . urlencode($Acct->email) . "\">an account for " . htmlspecialchars($Acct->email) . "</a>.  A password has been emailed to that address.  You may now create another account if you'd like.");
 	    else {
 		$Conf->log("Account updated" . ($Me->contactId == $Acct->contactId ? "" : " by $Me->email"), $Acct);
 		$Conf->confirmMsg("Account profile successfully updated.");
