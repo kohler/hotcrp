@@ -90,6 +90,7 @@ class PaperSearch {
     var $contactmatch;
     var $contactmatchPC;
     var $noratings;
+    var $interestingRatings;
     var $preciseQuery;
     var $needflags;
     var $reviewAdjust;
@@ -188,6 +189,7 @@ class PaperSearch {
 	$this->contactmatch = array();
 	$this->contactmatchPC = true;
 	$this->noratings = false;
+	$this->interestingRatings = array();
 	$this->reviewAdjust = false;
     }
 
@@ -403,7 +405,7 @@ class PaperSearch {
     }
 
     function _searchQueryWord($word, $negated, &$qt) {
-	global $searchTags, $Conf;
+	global $searchTags, $ratingTypes, $Conf;
 	$nqt = count($qt);
 
 	// check for paper number
@@ -496,8 +498,9 @@ class PaperSearch {
 		$extra = null;
 	    }
 
+	    $twiddle = strpos($tagword, "~");
 	    $twiddlecid = $this->contactId;
-	    if ($this->privChair && ($twiddle = strpos($tagword, "~")) > 0) {
+	    if ($this->privChair && $twiddle > 0) {
 		$c = substr($tagword, 0, $twiddle);
 		$twiddlecid = matchContact(pcMembers(), null, null, $c);
 		if ($twiddlecid == -2)
@@ -593,14 +596,7 @@ class PaperSearch {
 		$value = "=0";
 	    else {
 		$rf = reviewForm();
-		$value = array();
-		foreach ($rf->options['outcome'] as $n => $what)
-		    if (strcmp($word, $n) == 0 || strcasecmp($word, $what) == 0)
-			$value[] = $n;
-		if (!count($value))
-		    foreach ($rf->options['outcome'] as $n => $what)
-			if (strstr(strtolower($what), strtolower($word)) !== false)
-			    $value[] = $n;
+		$value = matchValue($rf->options["outcome"], $word, true);
 		if (count($value) == 0) {
 		    $this->warn("&ldquo;" . htmlspecialchars($word) . "&rdquo; doesn't match a decision.");
 		    $value[] = -10000000;
@@ -647,18 +643,7 @@ class PaperSearch {
 		$qt[] = new SearchTerm("revadj", 0, array("round" => range(1, count($Conf->settings["rounds"]) - 1)));
 	    else {
 		$x = simplifyWhitespace($word);
-		$rounds = array();
-		foreach ($Conf->settings["rounds"] as $rid => $r)
-		    if ($r == $x)
-			$rounds[] = $rid;
-		if (count($rounds) == 0)
-		    foreach ($Conf->settings["rounds"] as $rid => $r)
-			if (strcasecmp($r, $x) == 0)
-			    $rounds[] = $rid;
-		if (count($rounds) == 0)
-		    foreach ($Conf->settings["rounds"] as $rid => $r)
-			if (strstr(strtolower($r), $x) !== false)
-			    $rounds[] = $rid;
+		$rounds = matchValue($Conf->settings["rounds"], $x);
 		if (count($rounds) == 0) {
 		    $this->warn("&ldquo;" . htmlspecialchars($x) . "&rdquo; doesn't match a review round.");
 		    $qt[] = new SearchTerm("f");
@@ -670,9 +655,9 @@ class PaperSearch {
 	    $this->reviewAdjust = true;
 	    if ($Conf->setting("allowPaperOption") < 12)
 		$qt[] = new SearchTerm("f");
-	    else if (preg_match('/\A(good|bad|\+|-|\xE2\x88\x92)\s*(|[!=<>]?=?)\s*(\d*)\Z/', $word, $m)
+	    else if (preg_match('/\A(.+?)\s*(|[!=<>]?=?)\s*(\d*)\Z/', $word, $m)
 		     && ($m[3] !== "" || $m[2] === "")) {
-		$term = ($m[1] == "good" || $m[1] == "+" ? "numGood" : "numBad");
+		// adjust counts
 		if ($m[3] === "") {
 		    $m[2] = ">";
 		    $m[3] = "0";
@@ -683,11 +668,36 @@ class PaperSearch {
 		    $m[2] = "=";
 		else if ($m[2] === "!")
 		    $m[2] = "!=";
-		if ($m[2][0] === "<" || $m[2] === "!="
-		    || ($m[2] === "=" && $m[3] == 0)
-		    || ($m[2] === ">=" && $m[3] == 0))
-		    $term = "coalesce($term,0)";
-		$qt[] = new SearchTerm("revadj", 0, array("rate" => $term . $m[2] . $m[3]));
+
+		// resolve rating type
+		if ($m[1] === "+" || $m[1] === "good") {
+		    $this->interestingRatings["good"] = ">0";
+		    $term = "nrate_good";
+		} else if ($m[1] === "-" || $m[1] === "bad"
+			   || $m[1] == "\xE2\x88\x92" /* unicode MINUS */) {
+		    $this->interestingRatings["bad"] = "<1";
+		    $term = "nrate_bad";
+		} else {
+		    $rf = reviewForm();	/* load for $ratingTypes */
+		    $x = array_diff(matchValue($ratingTypes, $m[1]),
+				    array("n")); /* don't allow "average" */
+		    if (count($x) == 0) {
+			$this->warn("Unknown rating type &ldquo;" . htmlspecialchars($m[1]) . "&rdquo;.");
+			$qt[] = new SearchTerm("f");
+		    } else {
+			$type = count($this->interestingRatings);
+			$this->interestingRatings[$type] = " in (" . join(",", $x) . ")";
+			$term = "nrate_$type";
+		    }
+		}
+
+		if (count($qt) == $nqt) {
+		    if ($m[2][0] === "<" || $m[2] === "!="
+			|| ($m[2] === "=" && $m[3] == 0)
+			|| ($m[2] === ">=" && $m[3] == 0))
+			$term = "coalesce($term,0)";
+		    $qt[] = new SearchTerm("revadj", 0, array("rate" => $term . $m[2] . $m[3]));
+		}
 	    } else {
 		$this->warn("Bad review rating query &ldquo;" . htmlspecialchars($word) . "&rdquo;.");
 		$qt[] = new SearchTerm("f");
@@ -996,13 +1006,18 @@ class PaperSearch {
 
     function _clauseTermSetRating(&$reviewtable, &$where, $rate) {
 	global $Conf;
+
+	$noratings = "";
 	if ($this->noratings === false)
 	    $this->noratings = self::unusableRatings($this->privChair, $this->contactId);
-
-	$reviewtable = "PaperReview left join (select reviewId, sum(rating) as numGood, (count(rating) - sum(rating)) as numBad from ReviewRating";
 	if (count($this->noratings) > 0)
-	    $reviewtable .= " where not (reviewId in (" . join(",", $this->noratings) . "))";
-	$reviewtable .= " group by reviewId) as Ratings using (reviewId)";
+	    $noratings .= " and not (reviewId in (" . join(",", $this->noratings) . "))";
+	else
+	    $noratings = "";
+
+	$reviewtable = "PaperReview";
+	foreach ($this->interestingRatings as $k => $v)
+	    $reviewtable .= " left join (select reviewId, count(rating) as nrate_$k from ReviewRating where rating$v$noratings group by reviewId) as Ratings_$k on (Ratings_$k.reviewId=PaperReview.reviewId)";
 	$where[] = $rate;
     }
     
@@ -1052,7 +1067,7 @@ class PaperSearch {
 		$wheretext = "";
 		if (count($where))
 		    $wheretext = " where " . join(" and ", $where);
-		$tables["Numreviews_$rtype"] = array("left join", "(select paperId, count(reviewId) as nre from $reviewtable$wheretext group by paperId)", "Paper.paperId=Numreviews_$rtype.paperId");
+		$tables["Numreviews_$rtype"] = array("left join", "(select paperId, count(PaperReview.reviewId) as nre from $reviewtable$wheretext group by paperId)", "Paper.paperId=Numreviews_$rtype.paperId");
 	    }
 	    $columns["nre_$rtype"] = "Numreviews_$rtype.nre";
 	    $q = array();
@@ -1087,7 +1102,7 @@ class PaperSearch {
 	    else
 		$where[] = $t->value[0];
 	    $wheretext = " where " . join(" and ", $where);
-	    $tables[$thistab] = array("left join", "(select paperId, count(reviewId) as nre from $reviewtable$wheretext group by paperId)", "Paper.paperId=$thistab.paperId");
+	    $tables[$thistab] = array("left join", "(select paperId, count(PaperReview.reviewId) as nre from $reviewtable$wheretext group by paperId)", "Paper.paperId=$thistab.paperId");
 	    $columns[$thistab . "_matches"] = "$thistab.nre";
 	    $q = array();
 	    $this->_clauseTermSetFlags($t->flags, $q);

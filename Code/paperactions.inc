@@ -95,7 +95,7 @@ class PaperActions {
     }
 
     function tagReport($prow) {
-	global $Conf, $ConfSiteBase, $Me, $Error, $OK, $forceShow;
+	global $Conf, $ConfSiteSuffix, $Me, $Error, $OK, $forceShow;
 	$ajax = defval($_REQUEST, "ajax", false);
 	if ($Me->canViewTags($prow, $Conf, $forceShow)) {
 	    require_once("Code/tags.inc");
@@ -112,7 +112,7 @@ class PaperActions {
 		ksort($vt);
 		foreach ($vt as $tag => $v)
 		    if (max($v, 0) > 0)
-			$r .= ($r === "" ? "" : ", ") . "<a class='q' href=\"search$ConfSiteBase?q=rorder:~$tag&amp;showtags=1\">~$tag</a>#" . max($v, 0);
+			$r .= ($r === "" ? "" : ", ") . "<a class='q' href=\"search$ConfSiteSuffix?q=rorder:~$tag&amp;showtags=1\">~$tag</a>#" . max($v, 0);
 		if ($r !== "")
 		    $Conf->confirmMsg("Unallocated <a href='help$ConfSiteSuffix?t=votetags'>votes</a>: $r");
 	    }

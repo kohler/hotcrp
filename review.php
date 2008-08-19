@@ -129,8 +129,7 @@ if (isset($_REQUEST["rating"]) && $paperTable->rrow) {
 	$Conf->errorMsg("You can't rate that review.");
     else if ($Me->contactId == $paperTable->rrow->contactId)
 	$Conf->errorMsg("You can't rate your own review.");
-    else if ($_REQUEST["rating"] != "n" && $_REQUEST["rating"] != "0"
-	     && $_REQUEST["rating"] != "1")
+    else if (!isset($ratingTypes[$_REQUEST["rating"]]))
 	$Conf->errorMsg("Invalid rating.");
     else if ($_REQUEST["rating"] == "n")
 	$Conf->qe("delete from ReviewRating where reviewId=" . $paperTable->rrow->reviewId . " and contactId=$Me->contactId", "while updating rating");
@@ -247,15 +246,7 @@ else if (isset($_REQUEST['text']))
 function archiveReview($rrow) {
     global $Conf;
     $rf = reviewForm();
-    $fields = "reviewId, paperId, contactId, reviewType, requestedBy,
-		requestedOn, reviewModified, reviewSubmitted,
-		reviewNeedsSubmit, "
-	. join(", ", array_keys($rf->reviewFields));
-    if ($Conf->setting("allowPaperOption") >= 11)
-	$fields .= ", reviewRound";
-    // compensate for 2.12 schema error
-    if ($Conf->setting("allowPaperOption") == 8)
-	$fields = str_replace(", textField7, textField8", "", $fields);
+    $fields = $rf->reviewArchiveFields();
     $Conf->qe("insert into PaperReviewArchive ($fields) select $fields from PaperReview where reviewId=$rrow->reviewId", "while archiving review");
 }
 

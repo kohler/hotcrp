@@ -459,7 +459,8 @@ The automatic and bulk assignment pages also let you set a review round.");
 
 
 function revrate() {
-    global $Conf, $ConfSiteSuffix, $Me;
+    global $Conf, $ConfSiteSuffix, $ratingTypes, $Me;
+    $rf = reviewForm();
 
     echo "<table>";
     _alternateRow("Review ratings basics", "
@@ -470,17 +471,33 @@ their reviews.  The interface appears above each visible review:
 <div class='g'></div>
 
 <div class='rev_rating'>
-  How helpful is this review? &nbsp;
-  <a class='button on'>Average</a> &nbsp;
-  <a class='button'>Very helpful</a> &nbsp;
-  <a class='button'>Needs work</a>
+  How helpful is this review? &nbsp;<form><div class='inform'>"
+		  . tagg_select("rating", $ratingTypes, "n")
+		  . "</div></form>
 </div>
 
 <p>When rating a review, please consider its value for both the program
   committee and the authors.  Helpful reviews are specific, clear, technically
   focused, and, when possible, provide direction for the authors' future work.
-  Ratings will be most effective if &ldquo;very helpful&rdquo; and
-  &ldquo;needs work&rdquo; are used sparingly.</p>
+  The rating options are:</p>
+
+<dl>
+<dt><strong>Average</strong></dt>
+<dd>The review has acceptable quality.  This is the default, and should be
+  used for most reviews.</dd>
+<dt><strong>Very helpful</strong></dt>
+<dd>Great review.  Thorough, clear, constructive, and gives
+  good ideas for next steps.</dd>
+<dt><strong>Not complete</strong></dt>
+<dd>The review is incomplete or too terse and therefore not as helpful as it
+  should be.</dd>
+<dt><strong>Not convincing</strong></dt>
+<dd>The review's arguments are not convincing or not technical enough.</dd>
+<dt><strong>Not constructive</strong></dt>
+<dd>The review's tone is unnecessarily aggressive.</dd>
+<dt><strong>Not correct</strong></dt>
+<dd>The review misunderstands the paper.</dd>
+</dl>
 
 <p>HotCRP reports the numbers of non-average ratings for each review.
   It does not report who gave the ratings, and it
@@ -488,8 +505,10 @@ their reviews.  The interface appears above each visible review:
 
 <p>To find which of your reviews might need work, simply
 <a href='search$ConfSiteSuffix?q=rate:-'>search for &ldquo;rate:&minus;&rdquo;</a>.
-To find all reviews with &ldquo;very helpful&rdquo; ratings,
-<a href='search$ConfSiteSuffix?q=re:any+rate:%2B'>search for &ldquo;re:any rate:+&rdquo;</a>.</p>");
+To find all reviews with positive ratings,
+<a href='search$ConfSiteSuffix?q=re:any+rate:%2B'>search for &ldquo;re:any&nbsp;rate:+&rdquo;</a>.
+You may also search for reviews with specific ratings; for instance,
+<a href='search$ConfSiteSuffix?q=rate:helpful'>search for &ldquo;rate:helpful&rdquo;</a>.</p>");
     if ($Conf->setting("rev_ratings") == REV_RATINGS_PC)
 	$what = "only PC members";
     else if ($Conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)
@@ -503,7 +522,7 @@ page</a>." . ($Me->amReviewer() ? "  Currently, $what can rate reviews." : ""));
     _alternateRow("Visibility", "
 A review's ratings are visible to any unconflicted PC members who can see
 the review, but HotCRP tries to hide ratings from review authors if they
-could figure out who assigned the rating.  Thus, if only one PC member could
+could figure out who assigned the rating: if only one PC member could
 rate a review, then that PC member's rating is hidden from the review
 author.");
 

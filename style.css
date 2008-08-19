@@ -1443,6 +1443,9 @@ div.rev_rating {
 	font-size: 69%;
 	padding: 0.4em 0.8em 0.4em 0em;
 }
+div.rev_rating select, div.rev_rating input {
+	font-size: smaller;
+}
 span.rev_rating_summary {
 	font-weight: bold;
 }

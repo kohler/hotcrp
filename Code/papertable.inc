@@ -199,7 +199,8 @@ class PaperTable {
 	$c .= "</span>";
 	if ($editfolder) {
 	    $x = defval($extra, "oneditunfold", "");
-	    $a = "<a class='unfolder' href='javascript:$x;fold(\"$editfolder\", 0)' title='Edit'>";
+	    $a = "<a class='unfolder' href='javascript:" . $x . ($x ? ";" : "")
+		   . "fold(\"$editfolder\", 0)' title='Edit'>";
 	    $c .= "<span class='hint'>" . $a
 		. $Conf->cacheableImage("newreview.png", "[Edit]", null, "b")
 		. "</a>&nbsp;" . $a . "Edit</a></span>";

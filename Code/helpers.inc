@@ -1074,6 +1074,26 @@ function matchContact($pcm, $firstName, $lastName, $email) {
     return $cid;
 }
 
+function matchValue($a, $word, $allowKey = false) {
+    $outa = array();
+    $outb = array();
+    $outc = array();
+    foreach ($a as $k => $v)
+	if (strcmp($word, $v) == 0
+	    || ($allowKey && strcmp($word, $k) == 0))
+	    $outa[] = $k;
+	else if (strcasecmp($word, $v) == 0)
+	    $outb[] = $k;
+	else if (strstr(strtolower($v), strtolower($word)) !== false)
+	    $outc[] = $k;
+    if (count($outa) > 0)
+	return $outa;
+    else if (count($outb) > 0)
+	return $outb;
+    else
+	return $outc;
+}
+
 function paperOptions() {
     global $Conf;
     if ($Conf->setting('paperOption') <= 0 || $Conf->setting('allowPaperOption') <= 0)
@@ -1256,7 +1276,7 @@ function tagg_select($name, $opt, $selected=null, $extra=null) {
 	    $x .= "<option disabled='disabled'></option>";
 	else {
 	    $x .= "<option value='$value'";
-	    if ($value == $selected)
+	    if (strcmp($value, $selected) == 0)
 		$x .= " selected='selected'";
 	    $x .= ">" . $text . "</option>";
 	}

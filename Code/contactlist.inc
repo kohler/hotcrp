@@ -298,11 +298,11 @@ class ContactList extends BaseList {
 	    $a = array();
 	    $b = array();
 	    if ($row->sumRatings > 0) {
-		$a[] = $row->sumRatings . " &ldquo;very helpful&rdquo;";
+		$a[] = $row->sumRatings . " positive";
 		$b[] = "<a href=\"search$ConfSiteSuffix?q=re:" . urlencode($row->email) . "+rate:%2B\">+" . $row->sumRatings . "</a>";
 	    }
 	    if ($row->sumRatings < $row->numRatings) {
-		$a[] = ($row->numRatings - $row->sumRatings) . " &ldquo;needs work&rdquo;";
+		$a[] = ($row->numRatings - $row->sumRatings) . " negative";
 		$b[] = "<a href=\"search$ConfSiteSuffix?q=re:" . urlencode($row->email) . "+rate:-\">&minus;" . ($row->numRatings - $row->sumRatings) . "</a>";
 	    }
 	    return "<span class='hastitle' title='" . join(", ", $a) . "'>" . join(" ", $b) . "</span>";
@@ -469,7 +469,7 @@ class ContactList extends BaseList {
 		$j = "join";
 	    $pq .= "	$j (select PaperReview.*";
 	    if (isset($queryOptions["revratings"]))
-		$pq .= ", count(rating) as numRatings, sum(rating) as sumRatings";
+		$pq .= ", count(rating) as numRatings, sum(if(rating>0,1,0)) as sumRatings";
 	    $pq .= " from PaperReview join Paper on (Paper.paperId=PaperReview.paperId)";
 	    if (!$this->contact->privChair)
 		$pq .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->contact->contactId . ")";

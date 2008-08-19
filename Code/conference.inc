@@ -898,7 +898,7 @@ class Conference {
 	    if (defval($options, 'allReviewerPreference'))
 		$subq .= ", group_concat(concat(contactId,' ',preference) separator ',') as allReviewerPreference";
 	    if (defval($options, 'desirability'))
-		$subq .= ", sum(greatest(least(preference,1),-1)) as desirability";
+		$subq .= ", sum(if(preference<=-100,0,greatest(least(preference,1),-1))) as desirability";
 	    $subq .= " from PaperReviewPreference group by paperId";
 	    $pq .= "		left join ($subq) as APRP on (APRP.paperId=Paper.paperId)\n";
 	}
@@ -1026,7 +1026,8 @@ class Conference {
 		ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail, ReqCI.contactId as reqContactId";
 	if (isset($selector["ratings"]))
 	    $q .= ",
-		count(ReviewRating.rating) as numRatings, sum(ReviewRating.rating) as sumRatings";
+		group_concat(ReviewRating.rating order by ReviewRating.rating desc) as allRatings,
+		count(ReviewRating.rating) as numRatings";
 	if (isset($selector["myRating"]))
 	    $q .= ",
 		MyRating.rating as myRating";
@@ -1167,10 +1168,12 @@ class Conference {
 	}
     }
 
-    function header($title, $id = "", $actionBar = "<div class='nvbar'></div>", $showTitle = true) {
+    function header($title, $id = "", $actionBar = null, $showTitle = true) {
 	global $ConfSiteBase, $ConfSiteSuffix, $Opt;
 	if ($this->headerPrinted >= 2)
 	    return;
+	if ($actionBar === null)
+	    $actionBar = actionBar();
 	
 	$this->header_head($title);
 	$time = time();

@@ -6,6 +6,11 @@
 global $scoreHelps;
 $scoreHelps = array();
 
+global $ratingTypes;
+$ratingTypes = array("n" => "average", 1 => "very helpful",
+		     0 => "not complete", -1 => "not convincing",
+		     -2 => "not constructive", -3 => "not correct");
+
 class ReviewForm {
 
     const WEB_OPTIONS = 1;
@@ -164,6 +169,20 @@ class ReviewForm {
     function validate($conf, $always = false) {
 	if ($always || !$this->updatedWhen || $this->updatedWhen <= $conf->settings['revform_update'])
 	    $this->updateFromDB($conf);
+    }
+
+    function reviewArchiveFields() {
+	global $Conf;
+        $fields = "reviewId, paperId, contactId, reviewType, requestedBy,
+		requestedOn, reviewModified, reviewSubmitted,
+		reviewNeedsSubmit, "
+	    . join(", ", array_keys($this->reviewFields));
+	if ($Conf->setting("allowPaperOption") >= 11)
+	    $fields .= ", reviewRound";
+	// compensate for 2.12 schema error
+	if ($Conf->setting("allowPaperOption") == 8)
+	    $fields = str_replace(", textField7, textField8", "", $fields);
+	return $fields;
     }
 
     function webFormRows($contact, $prow, $rrow, $useRequest = false) {
@@ -1049,7 +1068,7 @@ $blind\n";
 
     function show($prow, $rrows, $rrow, &$options) {
 	global $Conf, $ConfSiteSuffix, $Me, $forceShow,
-	    $linkExtra, $useRequest;
+	    $linkExtra, $useRequest, $ratingTypes;
 
 	if (!$options)
 	    $options = array();
@@ -1140,27 +1159,39 @@ $blind\n";
 		$visibleRatings = ($rrow->contactId != $Me->contactId
 		    || $Me->actChair($prow) || $options["nsubraters"] > 2
 		    || $Conf->timePCViewAllReviews()
-		    || $rrow->numRatings > 2);
+		    || strpos($rrow->allRatings, ",") !== false);
 	    }
 	    if ($Me->canRateReview($prow, $rrow, $Conf)
 		&& ($rrow->contactId != $Me->contactId || $visibleRatings)) {
 		$ratesep = "";
 		echo "<div class='rev_rating'>";
 		if ($visibleRatings) {
+		    $rates = array();
+		    foreach (explode(",", $rrow->allRatings) as $r)
+			$rates[$r] = defval($rates, $r, 0) + 1;
 		    echo "<span class='rev_rating_summary'>Ratings: ";
 		    $ratearr = array();
-		    if ($rrow->sumRatings > 0)
-			$ratearr[] = $rrow->sumRatings . " &ldquo;very helpful&rdquo;";
-		    if ($rrow->sumRatings < $rrow->numRatings)
-			$ratearr[] = ($rrow->numRatings - $rrow->sumRatings) . " &ldquo;needs work&rdquo;";
+		    foreach ($rates as $type => $count)
+			if (isset($ratingTypes[$type]))
+			    $ratearr[] = $count . " &ldquo;" . htmlspecialchars($ratingTypes[$type]) . "&rdquo;";
 		    echo join(", ", $ratearr), "</span>";
 		    $ratesep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
 		}
 		if ($rrow->contactId != $Me->contactId) {
-		    $ratinglink = "review$ConfSiteSuffix?r=$reviewOrdinal&amp;";
+		    $ratinglink = "review$ConfSiteSuffix?r=$reviewOrdinal";
 		    if (!isset($_REQUEST["reviewId"]))
-			$ratinglink .= "allr=1&amp;";
-		    echo $ratesep, "How helpful is this review? &nbsp; ",
+		        $ratinglink .= "&amp;allr=1";
+		    echo $ratesep, "<form id='ratingform_$reviewOrdinal' action='$ratinglink$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
+			"How helpful is this review? &nbsp;",
+			tagg_select("rating", $ratingTypes, ($rrow->myRating === null ? "n" : $rrow->myRating)),
+			" <input class='b extension7' type='submit' value='Save' />",
+			"</div></form>",
+			"<span id='ratingform_${reviewOrdinal}result'></span>";
+		    if (!defval($options, "ratingsajax")) {
+			$Conf->footerStuff .= "<script type='text/javascript'>addRatingAjax();</script>";
+			$options["ratingsajax"] = true;
+		    }
+		    /*echo $ratesep, "Your review rating: &nbsp; ";
 			"<a id='ratinglink_n_$reviewOrdinal' href='${ratinglink}rating=n$linkExtra' class='button",
 			($rrow->myRating === null ? " on" : ""), "'>Average</a> &nbsp; ",
 			"<a id='ratinglink_1_$reviewOrdinal' href='${ratinglink}rating=1$linkExtra' class='button",
@@ -1175,7 +1206,7 @@ $blind\n";
 		    $Conf->footerStuff .= "<form id='ratingform_$reviewOrdinal' action='${ratinglink}$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"ratingform_$reviewOrdinal\")'>"
 			. "<div class='inform'>"
 			. "<input id='ratingval_$reviewOrdinal' type='hidden' name='rating' value='' />"
-			. "</div></form>";
+			. "</div></form>"; */
 		}
 		echo " &nbsp;<span class='barsep'>|</span>&nbsp; <a href='help$ConfSiteSuffix?t=revrate'>What is this?</a></div>";
 	    }

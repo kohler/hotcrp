@@ -485,6 +485,7 @@ function addScoreHelp() {
 
 
 // review ratings
+/*
 function makeratingajax(reviewid, rating) {
     return function() {
 	var elt = e("ratingval_" + reviewid);
@@ -516,6 +517,30 @@ function addRatingAjax() {
 	    m = href.match(/r=(\w+).*rating=(\w+)/);
 	    anchors[i].onclick = makeratingajax(m[1], m[2]);
 	}
+}
+*/
+function makeratingajax(form, id) {
+    var selects;
+    form.className = "fold7c";
+    form.onsubmit = function() {
+	return Miniajax.submit(id, function(rv) {
+		if ((ee = e(id + "result")) && rv.result)
+		    ee.innerHTML = " &nbsp;<span class='barsep'>|</span>&nbsp; " + rv.result;
+	    });
+    };
+    selects = form.getElementsByTagName("select");
+    for (var i = 0; i < selects.length; ++i)
+	selects[i].onchange = function() {
+	    void form.onsubmit();
+	};
+}
+
+function addRatingAjax() {
+    var forms = document.getElementsByTagName("form"), id;
+    for (var i = 0; i < forms.length; ++i)
+	if ((id = forms[i].getAttribute("id"))
+	    && id.substr(0, 11) == "ratingform_")
+	    makeratingajax(forms[i], id);
 }
 
 
