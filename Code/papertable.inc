@@ -169,6 +169,8 @@ class PaperTable {
 	$c = "<div class='${type}t";
 	if (isset($Error[$what]))
 	    $c .= " error";
+	if (isset($extra["extraclass"]))
+	    $c .= " " . $extra["extraclass"];
 	$c .= "'><span class='${type}fn'>";
 	$editfolder = defval($extra, "editfolder", false);
 	if (!($fold = defval($extra, "fold", false))) {
@@ -728,27 +730,28 @@ class PaperTable {
 		$extra = array("fold" => "paper", "foldnum" => 5,
 			       "showtitle" => "Show " . strtolower($tanda),
 			       "hidetitle" => "Hide " . strtolower($tanda));
-		$before = "<div class='papv ellipsis5'></div><div class='extension5'>";
-		$after = "</div>";
+		$before = "<div class='papv ellipsis5'></div>";
+		$eclass = " extension5";
 	    } else {
 		$extra = null;
-		$before = $after = "";
+		$before = $eclass = "";
 	    }
 
 	    if ($topicdata != "") {
 		echo $this->papt("topics", array("Topics", $tanda), $extra),
-		    $before, "<div class='papv'>", $topicdata, "</div>\n\n";
-		$extra = null;
+		    $before,
+		    "<div class='papv$eclass'>", $topicdata, "</div>\n\n";
+		if ($extra)
+		    $extra = array("extraclass" => "extension5");
 		$before = "";
 		$tanda = "Options";
 	    }
 
 	    if ($optiondata != "") {
 		echo $this->papt("options", array("Options", $tanda), $extra),
-		    $before, "<div class='papv'>", $optiondata, "</div>\n\n";
+		    $before,
+		    "<div class='papv$eclass'>", $optiondata, "</div>\n\n";
 	    }
-
-	    echo $after;
 	}
     }
 

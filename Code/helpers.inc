@@ -259,10 +259,7 @@ function topicTable($prow, $active = 0, $conf = null) {
     // read from paper row if appropriate
     if ($paperId > 0 && $active < 0 && isset($prow->topicIds)) {
 	$top = $rf->webTopicArray($prow->topicIds, defval($prow, "topicInterest"));
-	$t = "";
-	foreach ($top as $tx)
-	    $t .= "<span class='autblentry'>" . $tx . "</span>";
-	return $t;
+	return join(" <span class='sep'></span> ", $top);
     }
 
     // get current topics

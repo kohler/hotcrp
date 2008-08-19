@@ -397,6 +397,9 @@ span.topic0 {
 span.topic2 {
 	font-weight: bold;
 }
+span.topic0, span.topic1, span.topic2 {
+	white-space: nowrap;
+}
 table.ppltable td.pl_topics span.topic0,
 table.ppltable td.pl_topics span.topic2 {
 	color: black;
