@@ -14,9 +14,9 @@ function crpmergeone($table, $field, $oldid, $newid) {
 	$MergeError .= $Conf->dbErrorText(true, "", 0);
 }
 
-function crpmergeonex($table, $field, $oldid, $newid) {
+function crpmergeoneignore($table, $field, $oldid, $newid) {
     global $Conf, $MergeError;
-    if (!$Conf->q("update $table set $field=$newid where $field=$oldid")
+    if (!$Conf->q("update ignore $table set $field=$newid where $field=$oldid")
 	&& !$Conf->q("delete from $table where $field=$oldid"))
 	$MergeError .= $Conf->dbErrorText(true, "", 0);
 }
@@ -55,7 +55,14 @@ if (isset($_REQUEST["merge"])) {
 	    $newid = $Me->contactId;
 	    
 	    $while = "while merging conflicts";
-	    $Conf->q("lock tables Paper write, ContactInfo write, PaperConflict write, PCMember write, ChairAssistant write, Chair write, ActionLog write, TopicInterest write, PaperComment write, PaperReview write, PaperReviewArchive write, PaperReviewPreference write, PaperReviewRefused write", $while);
+	    $t = "Paper write, ContactInfo write, PaperConflict write, PCMember write, ChairAssistant write, Chair write, ActionLog write, TopicInterest write, PaperComment write, PaperReview write, PaperReview as B write, PaperReviewArchive write, PaperReviewPreference write, PaperReviewRefused write, ReviewRequest write";
+	    if ($Conf->setting("allowPaperOption") >= 5)
+		$t .= ", ContactAddress write";
+	    if ($Conf->setting("allowPaperOption") >= 6)
+		$t .= ", PaperWatch write";
+	    if ($Conf->setting("allowPaperOption") >= 12)
+		$t .= ", ReviewRating write";
+	    $Conf->q("lock tables $t", $while);
 	    
 	    crpmergeone("Paper", "leadContactId", $oldid, $newid);
 	    crpmergeone("Paper", "shepherdContactId", $oldid, $newid);
@@ -79,32 +86,47 @@ if (isset($_REQUEST["merge"])) {
 		$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($values, 2) . " on duplicate key update conflictType=greatest(conflictType, values(conflictType))", $while);
 	    $Conf->qe("delete from PaperConflict where contactId=$oldid", $while);
 	    
-	    crpmergeonex("PCMember", "contactId", $oldid, $newid);
-	    crpmergeonex("ChairAssistant", "contactId", $oldid, $newid);
-	    crpmergeonex("Chair", "contactId", $oldid, $newid);
+	    crpmergeoneignore("PCMember", "contactId", $oldid, $newid);
+	    crpmergeoneignore("ChairAssistant", "contactId", $oldid, $newid);
+	    crpmergeoneignore("Chair", "contactId", $oldid, $newid);
 	    if ($Conf->setting("allowPaperOption") >= 6) {
 		if (($MiniMe->roles | $Me->roles) != $Me->roles) {
 		    $Me->roles |= $MiniMe->roles;
 		    $Conf->qe("update ContactInfo set roles=$Me->roles where contactId=$Me->contactId", $while);
 		}
 	    }
-	    
+
 	    crpmergeone("ActionLog", "contactId", $oldid, $newid);
-	    crpmergeone("TopicInterest", "contactId", $oldid, $newid);
+	    crpmergeoneignore("TopicInterest", "contactId", $oldid, $newid);
 	    crpmergeone("PaperComment", "contactId", $oldid, $newid);
-	    crpmergeone("PaperReview", "contactId", $oldid, $newid);
+
+	    // archive duplicate reviews
+	    $result = $Conf->q("select PaperReview.reviewId from PaperReview join PaperReview B on (PaperReview.paperId=B.paperId and PaperReview.contactId=$oldid and B.contactId=$newid)");
+	    while (($row = edb_row($result))) {
+		$rf = reviewForm();
+		$fields = $rf->reviewArchiveFields();
+		if (!$Conf->q("insert into PaperReviewArchive ($fields) select $fields from PaperReview where reviewId=$row[0]"))
+		    $MergeError .= $Conf->dbErrorText(true, "", 0);
+	    }
+	    crpmergeoneignore("PaperReview", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReview", "requestedBy", $oldid, $newid);
 	    crpmergeone("PaperReviewArchive", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReviewArchive", "requestedBy", $oldid, $newid);
-	    crpmergeone("PaperReviewPreference", "contactId", $oldid, $newid);
+	    crpmergeoneignore("PaperReviewPreference", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReviewRefused", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReviewRefused", "requestedBy", $oldid, $newid);
+	    crpmergeone("ReviewRequest", "requestedBy", $oldid, $newid);
+	    if ($Conf->setting("allowPaperOption") >= 6)
+		crpmergeoneignore("PaperWatch", "contactId", $oldid, $newid);
+	    if ($Conf->setting("allowPaperOption") >= 12)
+		crpmergeoneignore("ReviewRating", "contactId", $oldid, $newid);
 
-	    // XXX ensure uniqueness in PaperReview
-	    
 	    // Remove the old contact record
 	    if ($MergeError == "") {
 		if (!$Conf->q("delete from ContactInfo where contactId=$oldid"))
+		    $MergeError .= $Conf->dbErrorText($result, "", 0);
+		if ($Conf->setting("allowPaperOption") >= 5
+		    && !$Conf->q("delete from ContactAddress where contactId=$oldid"))
 		    $MergeError .= $Conf->dbErrorText($result, "", 0);
 	    }
 
