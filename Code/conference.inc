@@ -341,7 +341,7 @@ class Conference {
 	return $this->settingsAfter('pc_seeallrev');
     }
     function timePCViewDecision() {
-	return true;
+	return $this->settingsAfter('rev_seedec');
     }
     function timeReviewerViewDecision() {
 	return $this->settingsAfter('rev_seedec');

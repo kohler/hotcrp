@@ -615,9 +615,9 @@ class PaperSearch {
 	    if ($this->privChair)
 		$qt[] = new SearchTerm("pf", 0, $value);
 	    else {
-		if ($this->amPC)
+		if ($this->amPC && $Conf->timePCViewDecision())
 		    $qt[] = new SearchTerm("pf", self::F_NONCONFLICT, $value);
-		else
+		else if ($Conf->timeReviewerViewDecision())
 		    $qt[] = new SearchTerm("pf", self::F_REVIEWER, $value);
 		if ($Conf->timeAuthorViewDecision())
 		    $qt[] = new SearchTerm("pf", self::F_AUTHOR, $value);

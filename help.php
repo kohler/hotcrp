@@ -367,8 +367,7 @@ Here are some example ways to use tags.
  The PC can now see the order and use quick links to go from paper to paper.$conflictmsg2</li>
 
 <li><strong>Mark tentative decisions during the PC meeting.</strong>
- Chairs add &ldquo;accept&rdquo; and &ldquo;reject&rdquo; tags as decisions are made, leaving explicit decision setting for the end of the meeting.
- Among the reasons for this: PC members can see decisions as soon as they are entered into the system, even for conflicted papers, but they can't see tags for conflicted papers unless you explicitly allow it.</li>
+ Chairs can add &ldquo;accept&rdquo; and &ldquo;reject&rdquo; tags as decisions are made, leaving explicit decision setting for the end of the meeting.</li>
 </ul>
 ");
     _alternateRow("Finding tags", "
@@ -820,11 +819,7 @@ review for that paper; this supposedly reduces bias.)
 <li><p><strong>Paper decisions</strong> can be recorded on the <a
   href='review$ConfSiteSuffix'>paper pages</a> or en masse
   via <a
-  href='search$ConfSiteSuffix?q=&amp;t=s'>search</a>.
-  Note that PC members can see paper decisions as soon as they
-  are entered into the system, even when they have a conflict.  If you don't
-  like this, mark decisions with <a href='help$ConfSiteSuffix?t=tags'>tags</a> until the
-  meeting is over.</p></li>
+  href='search$ConfSiteSuffix?q=&amp;t=s'>search</a>.</p></li>
 
 <li><p><strong>Shepherding (optional).</strong> If your conference uses
   shepherding for accepted papers, you can assign shepherds either <a
@@ -846,8 +841,9 @@ review for that paper; this supposedly reduces bias.)
 <li><p>Give reviewers some time to <strong>update their reviews</strong> in
   response to PC discussion (optional).</p></li>
 
-<li><p>Set <strong><a href='settings$ConfSiteSuffix?group=dec'>Authors can
-  see reviews and decisions.</a></strong></p></li>
+<li><p>Set <strong><a href='settings$ConfSiteSuffix?group=dec'>&ldquo;Authors
+  can see reviews and decisions&rdquo;</a></strong> (and, most likely,
+  &ldquo;PC and reviewers can see reviews and decisions&rdquo;).</p></li>
 
 <li><p><strong><a href='mail$ConfSiteSuffix'>Send mail to
   authors</a></strong> informing them that reviews and decisions are

@@ -1229,9 +1229,10 @@ function doDecGroup() {
     doGraceRow('resp_grace', 'Grace period', "lxcaption");
     echo "</table></td></tr></table>";
 
-    echo "<div class='g'></div>\n";
-    doCheckbox('au_seedec', '<b>Authors can see decisions</b> (accept/reject)');
-    doCheckbox('rev_seedec', 'Reviewers can see decisions and accepted authors');
+    echo "<div class='g'></div>\n<table>\n";
+    doCheckbox('au_seedec', '<b>Authors can see decisions</b> (accept/reject)', true);
+    doCheckbox('rev_seedec', 'PC and reviewers can see decisions and accepted authors', true);
+    echo "</table>\n";
 
     echo "<div class='g'></div>\n";
     echo "<table>\n";
