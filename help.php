@@ -541,22 +541,24 @@ options changes how scores are sorted.  There are five choices:
 
 <dl>
 
-<dt>Minshall score</dt>
-<dd>Sort by the number of highest scores, then the number of second-highest
-scores, then the number of third-highest scores, and so on.  This is the
-default.</dd>
+<dt><strong>Minshall score</strong> (default)</dt>
 
-<dt>Average</dt>
+<dd>Sort by the number of highest scores, then the number of second-highest
+scores, then the number of third-highest scores, and so on.  (Phantom scores
+are added to ensure all papers have the same number of scores.  A paper's
+phantom scores equal one less than its minimum real score.)</dd>
+
+<dt><strong>Average</strong></dt>
 <dd>Sort by the average score.</dd>
 
-<dt>Variance</dt>
+<dt><strong>Variance</strong></dt>
 <dd>Sort by the variance in scores.</dd>
 
-<dt>Max &minus; min</dt>
+<dt><strong>Max &minus; min</strong></dt>
 <dd>Sort by the difference between the largest and smallest scores (a good
 measure of differences of opinion).</dd>
 
-<dt>Your score</dt>
+<dt><strong>Your score</strong></dt>
 <dd>Sort by your score.  In the score graphs, your score is highlighted with a
 darker colored square.</dd>
 

@@ -55,7 +55,9 @@ class BaseList {
 		if (($i = cvtint($i)) > 0)
 		    $x[] = chr($i + 48);
 	    rsort($x);
-	    $this->sortInfo[$row->paperId] = implode($x) . self::LOTSAZEROS;
+	    $x = (count($x) == 0 ? "0" : implode($x));
+	    $x .= str_pad("", 14, chr(ord($x[strlen($x) - 1]) - 1));
+	    $this->sortInfo[$row->paperId] = $x;
 	} else {
 	    $x = $x2 = $n = $max = 0;
 	    $min = $scoreMax;
@@ -67,7 +69,7 @@ class BaseList {
 		    $max = max($max, $i);
 		    $n++;
 		}
-	    if ($n == "M")
+	    if ($n == 0)
 		$this->sortInfo[$row->paperId] = 0;
 	    else if ($scoresort == "A")
 		$this->sortInfo[$row->paperId] = $x / $n;
