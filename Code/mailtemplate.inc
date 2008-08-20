@@ -617,12 +617,12 @@ class Mailer {
 	    $q .= "\n\t\twhere PaperComment.commentId=$this->commentId";
 	else
 	    $q .= "\n\t\twhere PaperComment.paperId=" . $this->row->paperId;
-	$result = $Conf->qe($q . "\n\t\torder by commentId", "while retrieving comments");
 	$text = "";
 	// save old au_seerev setting, and reset it so authors can see them.
 	$old_au_seerev = $Conf->setting("au_seerev");
 	$Conf->settings["au_seerev"] = AU_SEEREV_ALWAYS;
-	while (($crow = edb_orow($result)))
+	$crows = $Conf->commentRows($q . "\n\t\torder by commentId");
+	foreach ($crows as $crow)
 	    if ($contact->canViewComment($this->row, $crow, $Conf, $whyNot, true))
 		$text .= $rf->prettyTextComment($this->row, $crow, $contact, $Conf) . "\n";
 	$Conf->settings["au_seerev"] = $old_au_seerev;

@@ -318,8 +318,9 @@ function setTags($pids, $tagtext, $mode, $chair) {
     return true;
 }
 
-function tagsToText($t, $makeUrls, $contact, $drop = false) {
+function tagsToText($prow, $makeUrls, $contact, $drop = false) {
     global $Conf, $ConfSiteSuffix;
+    $t = defval($prow, "paperTags", "");
     if ($drop || $makeUrls !== false)
 	$vtags = voteTags();
     // Who has voted, and how much did they vote?
@@ -367,7 +368,10 @@ function tagsToText($t, $makeUrls, $contact, $drop = false) {
 	    foreach (pcMembers() as $pcm)
 		if (($count = defval($vote[$base], $pcm->contactId, 0)) > 0)
 		    $v[] = contactNameHtml($pcm) . ($count > 1 ? " ($count)" : "");
-	    $title = "PC votes: " . join(", ", $v);
+	    if (!$contact->privChair && $prow->conflictType > 0)
+		$title = "PC votes hidden";
+	    else
+		$title = "PC votes: " . join(", ", $v);
 	} else if ($base[0] === "~" && isset($vtags[substr($base, 1)])) {
 	    $link = "rorder";
 	    $title = "Vote search";

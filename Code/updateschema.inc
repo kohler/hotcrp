@@ -87,6 +87,21 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table PaperReview add `reviewEditVersion` int(1) NOT NULL default '0'")
 	&& $Conf->q("update Settings set value=17 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 17;
+    if ($Conf->settings["allowPaperOption"] == 17
+	&& $Conf->q("alter table PaperReviewPreference add key `paperId` (`paperId`)")
+	&& $Conf->q("create table PaperRank (
+  `paperId` int(11) NOT NULL,
+  `contactId` int(11) NOT NULL,
+  `rank` int(11) NOT NULL,
+  UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
+  KEY `paperId` (`paperId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;")
+	&& $Conf->q("update Settings set value=18 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 18;
+    if ($Conf->settings["allowPaperOption"] == 18
+	&& $Conf->q("alter table PaperComment add `replyTo` int(11) NOT NULL")
+	&& $Conf->q("update Settings set value=19 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 19;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

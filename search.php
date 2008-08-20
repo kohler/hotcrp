@@ -131,7 +131,7 @@ if ($getaction == "tags" && isset($papersel) && defval($_REQUEST, "ajax")) {
 	if (!$Me->canViewTags($prow, $Conf))
 	    $t = "";
 	else
-	    $t = tagsToText($prow->paperTags, $csb, $Me);
+	    $t = tagsToText($prow, $csb, $Me);
 	$response["tags$prow->paperId"] = $t;
     }
     $response["ok"] = (count($response) > 0);
@@ -256,8 +256,8 @@ if (($getaction == "rev" || $getaction == "revz") && isset($papersel)) {
 	    defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextForm($row, $row, $Me, $Conf, false) . "\n");
     }
 
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "allComments" => 1, "reviewerName" => 1)), "while selecting papers");
-    while ($row = edb_orow($result))
+    $crows = $Conf->commentRows($Conf->paperQuery($Me, array("paperId" => $papersel, "allComments" => 1, "reviewerName" => 1)));
+    foreach ($crows as $row)
 	if ($Me->canViewComment($row, $row, $Conf, $whyNot))
 	    defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextComment($row, $row, $Me, $Conf) . "\n");
 

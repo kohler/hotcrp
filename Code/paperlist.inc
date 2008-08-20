@@ -708,7 +708,7 @@ class PaperList extends BaseList {
 	    if ($this->foldedTags === false && $row->paperTags == "")
 		return "";
 	    else if ($this->foldedTags === false) {
-		$t = tagsToText($row->paperTags, true, $this->contact);
+		$t = tagsToText($row, true, $this->contact);
 		return "<span id='tags$row->paperId'>" . $t . "</span>";
 	    } else {
 		$this->foldedTags[] = $row->paperId;

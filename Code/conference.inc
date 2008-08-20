@@ -95,7 +95,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-	if ($this->settings["allowPaperOption"] < 17) {
+	if ($this->settings["allowPaperOption"] < 19) {
 	    require_once("updateschema.inc");
 	    updateSchema($this);
 	}
@@ -770,7 +770,7 @@ class Conference {
 		if (!$scoresQuery || $rf->reviewFields[$k])
 		    $pq .= ",\t\tPaperReview.$k as $k";
 	}
-	if (isset($options['allComments']))
+	if (isset($options['allComments'])) {
 	    $pq .= ",
 		PaperComment.commentId,
 		PaperComment.contactId as commentContactId,
@@ -780,6 +780,10 @@ class Conference {
 		PaperComment.forReviewers,
 		PaperComment.forAuthors,
 		PaperComment.blind as commentBlind";
+	    if ($this->settings["allowPaperOption"] >= 19)
+		$pq .= ",
+		PaperComment.replyTo";
+	}
 	if (isset($options['topics']))
 	    $pq .= ",
 		PaperTopics.topicIds,
@@ -984,6 +988,23 @@ class Conference {
 	}
 
 	return null;
+    }
+
+    function commentRows($q) {
+	$result = $this->qe($q, "while loading comments");
+	$crows = array();
+	while (($row = edb_orow($result))) {
+	    $crows[$row->commentId] = $row;
+	    $row->readerContacts = array($row->contactId => 1);
+	    for ($r = $row; defval($r, "replyTo", 0) && isset($crows[$r->replyTo]); $r = $crows[$r->replyTo])
+		/* do nothing */;
+	    $row->threadHead = $r->commentId;
+	    $r->readerContacts[$row->contactId] = 1;
+	}
+	foreach ($crows as $row)
+	    if ($row->threadHead != $row->commentId)
+		$row->readerContacts = $crows[$row->threadHead]->readerContacts;
+	return $crows;
     }
 
     

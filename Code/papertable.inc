@@ -877,58 +877,32 @@ class PaperTable {
 	$prow_optionIds = isset($prow->optionIds) ? $prow->optionIds : "";
 	if (!($opt = paperOptions()))
 	    return;
+	assert($this->editable);
 	preg_match_all('/(\d+)#(\d+)/', $prow_optionIds, $m);
 	$optsel = array();
 	for ($i = 0; $i < count($m[1]); ++$i)
 	    $optsel[$m[1][$i]] = $m[2][$i];
-	if ($this->editable) {
-	    foreach ($opt as $o) {
-		echo "<tr class='pt_option'>\n",
-		    "  ", $this->tdCaption("option"), htmlspecialchars($o->optionName), "</td>\n",
-		    "  ", $this->tdEntry("option");
-		if (!defval($o, "optionValues")) {
-		    echo "<input type='checkbox' name='opt$o->optionId' value='1'",
-			(defval($optsel, $o->optionId) ? " checked='checked'" : ""),
-			" onchange='hiliter(this)' />&nbsp;", $o->description;
-		} else {
-		    if ($o->description)
-			echo "<div class='hint'>", $o->description, "</div>";
-		    echo tagg_select("opt$o->optionId", explode("\n", $o->optionValues), defval($optsel, $o->optionId, 0), array("onchange" => "hiliter(this)"));
-		}
-		echo "</td>\n</tr>\n\n";
+	foreach ($opt as $o) {
+	    echo "<tr class='pt_option'>\n",
+		"  ", $this->tdCaption("option"), htmlspecialchars($o->optionName), "</td>\n",
+		"  ", $this->tdEntry("option");
+	    if (!defval($o, "optionValues")) {
+		echo "<input type='checkbox' name='opt$o->optionId' value='1'",
+		    (defval($optsel, $o->optionId) ? " checked='checked'" : ""),
+		    " onchange='hiliter(this)' />&nbsp;", $o->description;
+	    } else {
+		if ($o->description)
+		    echo "<div class='hint'>", $o->description, "</div>";
+		echo tagg_select("opt$o->optionId", explode("\n", $o->optionValues), defval($optsel, $o->optionId, 0), array("onchange" => "hiliter(this)"));
 	    }
-	} else {
-	    $sep = $t = "";
-	    foreach ($opt as $o) {
-		$om = defval($o, "optionValues");
-		$ov = defval($optsel, $o->optionId, 0);
-		if (($om || $ov)
-		    && ($o->pcView || $showAll
-			|| $prow->conflictType >= CONFLICT_AUTHOR)) {
-		    if ($om) {
-			$om = explode("\n", $om);
-			if (defval($om, $ov, "") != "") {
-			    $t .= $sep . htmlspecialchars("$o->optionName: $om[$ov]");
-			    $sep = "<span class='sep'> </span>";
-			}
-		    } else {
-			$t .= $sep . htmlspecialchars($o->optionName);
-			$sep = "<span class='sep'> </span>";
-		    }
-		}
-	    }
-	    if ($t) {
-		echo "<tr class='pt_option'>\n";
-		echo "  ", $this->tdCaption("option"), "Options</td>\n";
-		echo "  ", $this->tdEntry("option"), $t, "</td>\n";
-		echo "</tr>\n\n";
-	    }
+	    echo "</td>\n</tr>\n\n";
 	}
     }
 
     function echoPCConflicts($prow, $admins) {
 	global $Conf;
-	if ($this->editable && !$Conf->setting("sub_pcconf"))
+	assert($this->editable);
+	if (!$Conf->setting("sub_pcconf"))
 	    return;
 	$pcm = ($admins ? pcMembersAndAdmins() : pcMembers());
 	$conflict = array();
@@ -946,37 +920,25 @@ class PaperTable {
 		    $conflict[$row[0]] = $row[1];
 	}
 
-	if ($this->editable) {
-	    foreach ($pcm as $id => $p) {
-		$c = "<input type='checkbox' name='pcc$id' value='1'";
-		if (defval($conflict, $id) > 0) {
-		    $c .= " checked='checked'";
-		    if ($conflict[$id] != CONFLICT_AUTHORMARK)
-			$c .= " disabled='disabled'";
-		}
-		$pcconfs[] = $c . " onchange='hiliter(this)' /> " . contactHtml($p->firstName, $p->lastName);
+	foreach ($pcm as $id => $p) {
+	    $c = "<input type='checkbox' name='pcc$id' value='1'";
+	    if (defval($conflict, $id) > 0) {
+		$c .= " checked='checked'";
+		if ($conflict[$id] != CONFLICT_AUTHORMARK)
+		    $c .= " disabled='disabled'";
 	    }
-	    echo "<tr class='pt_conflict_ass'><td class='caption'>PC conflicts</td>\n  <td class='entry'>";
-	    echo "<div class='hint'>Select the PC members who have conflicts of interest with this paper.  ", $Conf->conflictDefinitionText(), "</div>\n";
-	    echo "<table class='rpad'><tr><td>";
-	    $n = intval((count($pcconfs) + 2) / 3);
-	    for ($i = 0; $i < count($pcconfs); $i++) {
-		if (($i % $n) == 0 && $i)
-		    echo "</td><td class='colmid'>";
-		echo $pcconfs[$i], "<br />";
-	    }
-	    echo "</td></tr></table></td></tr>\n\n";
-	    
-	} else {
-	    foreach ($pcm as $id => $p)
-		if (defval($conflict, $id))
-		    $pcconfs[] = contactHtml($p->firstName, $p->lastName);
-	    if ($prow->pcPaper)
-		$pcconfs[] = "<b>PC paper</b>";
-	    if (!isset($pcconfs))
-		$pcconfs[] = "None";
-	    echo "<tr class='pt_conflict'><td class='caption'>PC conflicts</td><td class='entry'>", authorTable($pcconfs), "</td></tr>\n\n";
+	    $pcconfs[] = $c . " onchange='hiliter(this)' /> " . contactHtml($p->firstName, $p->lastName);
 	}
+	echo "<tr class='pt_conflict_ass'><td class='caption'>PC conflicts</td>\n  <td class='entry'>";
+	echo "<div class='hint'>Select the PC members who have conflicts of interest with this paper.  ", $Conf->conflictDefinitionText(), "</div>\n";
+	echo "<table class='rpad'><tr><td>";
+	$n = intval((count($pcconfs) + 2) / 3);
+	for ($i = 0; $i < count($pcconfs); $i++) {
+	    if (($i % $n) == 0 && $i)
+		echo "</td><td class='colmid'>";
+	    echo $pcconfs[$i], "<br />";
+	}
+	echo "</td></tr></table></td></tr>\n\n";
     }
 
     function papstripPCConflicts($prow, $admins) {
@@ -1060,11 +1022,10 @@ class PaperTable {
 
     function papstripTags($prow, $site = null) {
 	global $Conf, $ConfSiteSuffix, $Me, $Error;
-	$t = isset($prow->paperTags) ? $prow->paperTags : "";
-	if ($site || $t) {
+	if ($site || defval($prow, "paperTags", "") !== "") {
 	    // Note that tags MUST NOT contain HTML special characters.
 	    require_once("tags.inc");
-	    $tx = tagsToText($t, true, $Me);
+	    $tx = tagsToText($prow, true, $Me);
 	    $editable = $site && $Me->canSetTags($prow, $Conf);
 
 	    if ($editable)
@@ -1076,7 +1037,7 @@ class PaperTable {
 		// tag report form
 		$Conf->footerStuff .= "<form id='tagreportform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'><input type='hidden' name='tagreport' value='1' /></form>";
 
-		$t = tagsToText($t, false, $Me, true);
+		$t = tagsToText($prow, false, $Me, true);
 		echo "<div class='ellipsis'>", ($tx == "" ? "none" : $tx),
 		    "</div><div class='extension'><div id='tagreportformresult'></div>";
 		if (isset($Error["tags"]))
@@ -1526,13 +1487,9 @@ class PaperTable {
 
     function resolveComments() {
 	global $Conf;
-	$result = $Conf->qe("select PaperComment.*, firstName, lastName, email
+	$this->crows = $Conf->commentRows("select PaperComment.*, firstName, lastName, email
 		from PaperComment join ContactInfo using (contactId)
-		where paperId=" . $this->prow->paperId . " order by commentId",
-			    "while loading comments");
-	$this->crows = array();
-	while ($row = edb_orow($result))
-	    $this->crows[] = $row;
+		where paperId=" . $this->prow->paperId . " order by commentId");
     }
 
     function fixReviewMode() {

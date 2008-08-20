@@ -1173,8 +1173,6 @@ function doRevGroup() {
     // Tags
     echo "<h3>Tags</h3>\n";
 
-    doCheckbox('tag_seeall', "PC can see tags for conflicted papers");
-    echo "<div class='g'></div>";
     echo "<table><tr><td class='lcaption'>", decorateSettingName("tag_chair", "Chair-only tags"), "</td>";
     if (count($Error) > 0)
 	$v = defval($_REQUEST, "tag_chair", "");
@@ -1183,7 +1181,7 @@ function doRevGroup() {
 	sort($t);
 	$v = join(" ", $t);
     }
-    echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='50' onchange='hiliter(this)' /><br /><small>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</small></td></tr>";
+    echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='50' onchange='hiliter(this)' /><br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
     echo "<tr><td class='lcaption'>", decorateSettingName("tag_vote", "Voting tags"), "</td>";
     if (count($Error) > 0)
@@ -1196,9 +1194,12 @@ function doRevGroup() {
 	    $x .= "$n#$v ";
 	$v = trim($x);
     }
-    echo "<td><input type='text' class='textlite' name='tag_vote' value=\"", htmlspecialchars($v), "\" size='50' onchange='hiliter(this)' /><br /><small>&ldquo;vote#10&rdquo; declares a voting tag named &ldquo;vote&rdquo; with an allotment of 10 votes per PC member. (<a href='help$ConfSiteSuffix?t=votetags'>What is this?</a>)</small></td></tr>";
+    echo "<td><input type='text' class='textlite' name='tag_vote' value=\"", htmlspecialchars($v), "\" size='50' onchange='hiliter(this)' /><br /><div class='hint'>&ldquo;vote#10&rdquo; declares a voting tag named &ldquo;vote&rdquo; with an allotment of 10 votes per PC member. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='help$ConfSiteSuffix?t=votetags'>What is this?</a></div></td></tr>";
     echo "</table>";
 
+    echo "<div class='g'></div>\n";
+    doCheckbox('tag_seeall', "PC can see tags for conflicted papers");
+    
     echo "<hr class='hr' />";
 
     // Tags

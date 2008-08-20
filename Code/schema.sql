@@ -163,6 +163,7 @@ CREATE TABLE `PaperComment` (
   `forReviewers` tinyint(1) NOT NULL default '0',
   `forAuthors` tinyint(1) NOT NULL default '0',
   `blind` tinyint(1) NOT NULL default '1',
+  `replyTo` int(11) NOT NULL,
   PRIMARY KEY  (`commentId`),
   UNIQUE KEY `commentId` (`commentId`),
   KEY `contactId` (`contactId`),
@@ -303,7 +304,21 @@ CREATE TABLE `PaperReviewPreference` (
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
   `preference` int(4) NOT NULL default '0',
-  UNIQUE KEY `contactPaper` (`contactId`,`paperId`)
+  UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
+  KEY `paperId` (`paperId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `PaperRank`
+--
+
+DROP TABLE IF EXISTS `PaperRank`;
+CREATE TABLE `PaperRank` (
+  `paperId` int(11) NOT NULL,
+  `contactId` int(11) NOT NULL,
+  `rank` int(11) NOT NULL,
+  UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
+  KEY `paperId` (`paperId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
@@ -475,7 +490,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 15);
+insert into Settings (name, value) values ('allowPaperOption', 19);
 # collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 # default chair-only tags
