@@ -545,8 +545,8 @@ options changes how scores are sorted.  There are five choices:
 
 <dd>Sort by the number of highest scores, then the number of second-highest
 scores, then the number of third-highest scores, and so on.  (Phantom scores
-are added to ensure all papers have the same number of scores.  A paper's
-phantom scores equal one less than its minimum real score.)</dd>
+are added as necessary until all papers have the same number of scores.  A
+paper's phantom scores equal one less than its minimum real score.)</dd>
 
 <dt><strong>Average</strong></dt>
 <dd>Sort by the average score.</dd>
