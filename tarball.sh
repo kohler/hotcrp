@@ -1,6 +1,15 @@
 export VERSION=2.22
 perl -pi -e 's/HotCRP: Conference Review Package 2\.\d+/HotCRP: Conference Review Package '$VERSION'/' README
 
+# check that schema.sql and updateschema.inc agree on schema version
+updatenum=`grep 'settings.*allowPaperOption.*=' Code/updateschema.inc | tail -n 1 | sed 's/.*= *//;s/;.*//'`
+schemanum=`grep 'allowPaperOption' Code/schema.sql | sed 's/.*, *//;s/).*//'`
+if [ "$updatenum" != "$schemanum" ]; then
+    echo "error: allowPaperOption schema number in Code/schema.sql ($schemanum)" 1>&2
+    echo "error: differs from number in Code/updateschema.inc ($updatenum)" 1>&2
+    exit 1
+fi
+
 mkdistdir () {
     crpd=hotcrp-$VERSION
     rm -rf $crpd
