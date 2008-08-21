@@ -614,7 +614,8 @@ if ($paperTable->mode == "r") {
 } else if ($paperTable->mode == "re") {
     $paperTable->paptabBegin();
     $paperTable->paptabEndWithEditableReview();
-    $paperTable->paptabComments();
+    if (!$paperTable->rrow)
+	$paperTable->paptabComments();
 
 } else if ($paperTable->mode != "pe") {
     $paperTable->paptabBegin();

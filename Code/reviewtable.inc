@@ -173,7 +173,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode) {
 
     // comments
     $pret = "";
-    if ($crows && count($crows) > 0) {
+    if ($crows && count($crows) > 0 && !$rrow) {
 	$cids = array();
 	$cnames = array();
 	foreach ($crows as $cr)
@@ -237,7 +237,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode) {
     }
 
     // new comment
-    if ($mode != "assign" && $Me->canComment($prow, null, $Conf)) {
+    if ($mode != "assign" && $Me->canComment($prow, null, $Conf) && !$rrow) {
 	if ($rrow)
 	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;c=new$linkExtra#commentnew'>";
 	else
