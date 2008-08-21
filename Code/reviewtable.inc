@@ -130,31 +130,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
     if ($anyScores)
 	$numericHeaders = "    <tr><td class='empty' colspan='2'></td>" . $rf->webNumericScoresHeader($prow, $Me, $Conf) . "</tr>\n";
     
-    $notes = array();
-
-    // comments
-    if ($crows && count($crows) > 0) {
-	$cids = array();
-	$cnames = array();
-	foreach ($crows as $cr)
-	    if ($Me->canViewComment($prow, $cr, $Conf)) {
-		$cids[] = $cr->commentId;
-		$n = "<a class='nowrap' href='#comment$cr->commentId'>";
-		if ($Me->canViewCommentIdentity($prow, $cr, $Conf))
-		    $n .= htmlspecialchars(abbreviateName($cr->firstName, $cr->lastName));
-		else
-		    $n .= "anonymous";
-		if ($cr->forAuthors > 1 && $cr->forReviewers > 0)
-		    $n .= " (Response)";
-		else if ($cr->forAuthors > 1)
-		    $n .= " (Response in progress)";
-		$cnames[] = $n . "</a>";
-	    }
-	if (count($cids) > 0)
-	    $notes[] = "<a href='#comment$cids[0]'><strong>" . plural(count($cids), "Comment") . "</strong></a> by " . join(", ", $cnames);
-    }
-
     // unfinished review notification
+    $notetxt = "";
     if ($prow->conflictType >= CONFLICT_AUTHOR && !$effAssistant && $notShown
 	&& $Me->canViewReview($prow, null, $Conf)) {
 	$qualifier = (count($subrev) + count($nonsubrev) ? " additional" : "");
@@ -163,14 +140,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	else
 	    $t = "$notShown$qualifier reviews remain outstanding.";
 	$t .= "<br /><span class='hint'>You will be emailed if$qualifier reviews are submitted or existing reviews are changed.</span>";
-	$notes[] = $t;
+	$notetxt = "<div class='revnotes'>" . $t . "</div>";
     }
-
-    // collect notes
-    if (count($notes)) {
-	$notetxt = "<div class='revnotes'>" . join("</div><div class='revnotes'>\n", $notes) . "</div>\n";
-    } else
-	$notetxt = "";
 
     // completion
     if (count($nonsubrev) + count($subrev))
@@ -198,6 +169,29 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode) {
 	if ($rr->contactId == $Me->contactId
 	    || (!$myrr && $Me->ownReview($rr)))
 	    $myrr = $rr;
+    }
+
+    // comments
+    $pret = "";
+    if ($crows && count($crows) > 0) {
+	$cids = array();
+	$cnames = array();
+	foreach ($crows as $cr)
+	    if ($Me->canViewComment($prow, $cr, $Conf)) {
+		$cids[] = $cr->commentId;
+		$n = "<a class='nowrap' href='#comment$cr->commentId'>";
+		if ($Me->canViewCommentIdentity($prow, $cr, $Conf))
+		    $n .= htmlspecialchars(abbreviateName($cr->firstName, $cr->lastName));
+		else
+		    $n .= "anonymous";
+		if ($cr->forAuthors > 1 && $cr->forReviewers > 0)
+		    $n .= " (Response)";
+		else if ($cr->forAuthors > 1)
+		    $n .= " (Response in progress)";
+		$cnames[] = $n . "</a>";
+	    }
+	if (count($cids) > 0)
+	    $pret = "<div class='revnotes'><a href='#comment$cids[0]'><strong>" . plural(count($cids), "Comment") . "</strong></a> by " . join(", ", $cnames) . "</div>";
     }
 
     $t = "";
@@ -279,5 +273,5 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode) {
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 
-    return $t;
+    return $pret . $t;
 }

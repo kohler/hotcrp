@@ -42,7 +42,7 @@ class CommentView {
 	if ($crow && $crow->forAuthors > 1)
 	    return $this->showResponse($prow, $crow, $useRequest, $editMode);
 
-	if (!$Me->canViewComment($prow, $crow, $Conf))
+	if ($crow && !$Me->canViewComment($prow, $crow, $Conf))
 	    return;
 	if ($editMode && !$Me->canComment($prow, $crow, $Conf))
 	    $editMode = false;
@@ -90,19 +90,20 @@ class CommentView {
 	echo "</h3>";
 	$this->commentIdentityTime($prow, $crow);
 
-	if (!$crow || $prow->conflictType >= CONFLICT_AUTHOR)
+	$xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
+	if (!$crow || ($prow->conflictType >= CONFLICT_AUTHOR
+		       && (!$Me->privChair || !$forceShow)))
 	    /* do nothing */;
-	else if (!$crow->forAuthors && !$crow->forReviewers)
-	    echo "<div class='hint'>For PC only</div>";
 	else {
-	    echo "<div class='hint'>For PC";
-	    if ($crow->forReviewers)
-		echo " + reviewers";
-	    if ($crow->forAuthors && $crow->blind)
-		echo " + authors (anonymous to authors)";
-	    else if ($crow->forAuthors)
-		echo " + authors";
-	    echo "</div>\n";
+	    $x = array();
+	    if ($crow->forAuthors)
+		$x[] = "show authors";
+	    if ($crow->forReviewers == 0)
+		$x[] = "no external reviewers";
+	    else if ($crow->forReviewers == -1)
+		$x[] = "tied to reviews";
+	    if (count($x))
+		echo $xsep, "<span class='hint'>", join(", ", $x), "</span>\n";
 	}
 
 	if ($crow && $editMode && $crow->contactId != $Me->contactId)
@@ -127,25 +128,24 @@ class CommentView {
 	    echo htmlspecialchars($crow->comment);
 	echo "</textarea>
   <div class='g'></div>
-  Visible to PC and: <input type='checkbox' name='forReviewers' value='1'";
-	if (($useRequest && defval($_REQUEST, 'forReviewers'))
-	    || (!$useRequest && $crow && $crow->forReviewers)
-	    || (!$useRequest && !$crow && $Conf->setting("extrev_view") > 0))
+  Visibility: &nbsp;<input type='checkbox' name='forAuthors' value='1'";
+	if ($useRequest ? defval($_REQUEST, "forAuthors") : ($crow && $crow->forAuthors))
 	    echo " checked='checked'";
-	echo " onchange='hiliter(this)' />&nbsp;Reviewers &nbsp;
-    <input type='checkbox' name='forAuthors' value='1'";
-	if ($useRequest ? defval($_REQUEST, 'forAuthors') : ($crow && $crow->forAuthors))
-	    echo " checked='checked'";
-	echo " onchange='hiliter(this)' />&nbsp;Authors\n";
-
+	echo " onchange='hiliter(this)' />&nbsp;<span class='hastitle' title='Show this comment to authors along with the reviews. (The comment is hidden when reviews are invisible.)'>Show authors</span>\n";
 	// blind?
 	if ($Conf->blindReview() == 1) {
-	    echo "<span class='lgsep'></span><input type='checkbox' name='blind' value='1'";
+	    echo " &nbsp; (<input type='checkbox' name='blind' value='1'";
 	    if ($useRequest ? defval($_REQUEST, 'blind')
 		: (!$crow || $crow->blind))
 		echo " checked='checked'";
-	    echo " onchange='hiliter(this)' />&nbsp;Anonymous to authors\n";
+	    echo " onchange='hiliter(this)' />&nbsp;Anonymous to authors)\n";
 	}
+	// For authors?
+	echo "<span class='sep'></span><input type='checkbox' name='reviewLinked' value='1'";
+	if (($useRequest && defval($_REQUEST, 'reviewLinked'))
+	    || (!$useRequest && $crow && $crow->forReviewers == -1))
+	    echo " checked='checked'";
+	echo " onchange='hiliter(this)' />&nbsp;<span class='hastitle' title='Hide this comment from PC members and reviewers who cannot see the reviews.'>Tied to reviews</span>\n";
 
 	// review actions
 	echo "<div class='aa'><table class='pt_buttons'>

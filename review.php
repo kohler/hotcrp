@@ -365,14 +365,14 @@ $paperTable->resolveComments();
 
 if (!$viewAny && !$editAny
     && (!$paperTable->rrow
-	|| !$Me->canViewReview($prow, $paperTable->rrow, $Conf, $whyNot))) {
+	|| !$Me->canViewReview($prow, $paperTable->rrow, $Conf, $whyNot)))
     $paperTable->paptabEndWithReviewMessage();
-
-} else if ($paperTable->mode == "r" && !$paperTable->rrow) {
+else if ($paperTable->mode == "r" && !$paperTable->rrow)
     $paperTable->paptabEndWithReviews();
-
-} else
+else
     $paperTable->paptabEndWithEditableReview();
+
+$paperTable->paptabComments();
 
 echo foldsessionpixel("paper9", "foldpaperp"), foldsessionpixel("paper5", "foldpapert"), foldsessionpixel("paper6", "foldpaperb");
 $Conf->footer();

@@ -584,9 +584,9 @@ $paperTable = new PaperTable($prow);
 if ($paperTable->mode == "r" || $paperTable->mode == "re") {
     $rf = reviewForm();
     $paperTable->resolveReview();
-    $paperTable->resolveComments();
     $paperTable->fixReviewMode();
 }
+$paperTable->resolveComments();
 
 
 // prepare paper table
@@ -609,10 +609,12 @@ $paperTable->initialize($editable, $editable && $useRequest,
 if ($paperTable->mode == "r") {
     $paperTable->paptabBegin();
     $paperTable->paptabEndWithReviews(); 
+    $paperTable->paptabComments();
 
 } else if ($paperTable->mode == "re") {
     $paperTable->paptabBegin();
     $paperTable->paptabEndWithEditableReview();
+    $paperTable->paptabComments();
 
 } else if ($paperTable->mode != "pe") {
     $paperTable->paptabBegin();
@@ -621,6 +623,7 @@ if ($paperTable->mode == "r") {
 	$paperTable->paptabEndWithReviewMessage();
     else
 	echo tagg_cbox("pap", true), "</td></tr></table>\n";
+    $paperTable->paptabComments();
 
 } else {
     assert(!$prow || $Me->canViewAuthors($prow, $Conf, false) || $Me->actChair($prow, true));

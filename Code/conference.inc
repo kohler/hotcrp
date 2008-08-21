@@ -995,19 +995,20 @@ class Conference {
 	$crows = array();
 	while (($row = edb_orow($result))) {
 	    $crows[$row->commentId] = $row;
-	    $row->readerContacts = array($row->contactId => 1);
+	    $cid = defval($row, "commentContactId", $row->contactId);
+	    $row->threadContacts = array($cid => 1);
 	    for ($r = $row; defval($r, "replyTo", 0) && isset($crows[$r->replyTo]); $r = $crows[$r->replyTo])
 		/* do nothing */;
 	    $row->threadHead = $r->commentId;
-	    $r->readerContacts[$row->contactId] = 1;
+	    $r->threadContacts[$cid] = 1;
 	}
 	foreach ($crows as $row)
 	    if ($row->threadHead != $row->commentId)
-		$row->readerContacts = $crows[$row->threadHead]->readerContacts;
+		$row->threadContacts = $crows[$row->threadHead]->threadContacts;
 	return $crows;
     }
 
-    
+
     function paperContactAuthors($paperId) {
 	$result = $this->qe("select firstName, lastName, email, contactId from ContactInfo join PaperConflict using (contactId) where paperId=$paperId and conflictType>=" . CONFLICT_AUTHOR, "while looking up paper contact authors");
 	$aus = array();

@@ -747,6 +747,14 @@ class Contact {
     }
 
     function canViewComment($prow, $crow, $conf, &$whyNot = null, $ignoreForceShow = false) {
+	// Policy outline:
+	// forAuthors 2, forReviewers 1     response, ready for reviewers
+	// forAuthors 2, forReviewers 0     response, not ready for reviewers
+	// forAuthors 1/0                   comment for authors/not for authors
+	// forAuthors 1/0, forReviewers 1   comment for PC, reviewers, anytime
+	// forAuthors 1/0, forReviewers 0   comment for PC, anytime
+	// forAuthors 1/0, forReviewers -1  comment for PC, reviewers, postrev
+
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
 	    return false;
@@ -757,15 +765,26 @@ class Contact {
 	    $crow_contactId = $crow->commentContactId;
 	else if ($crow)
 	    $crow_contactId = $crow->contactId;
-	if (($prow->conflictType >= CONFLICT_AUTHOR
-	     && $conf->timeAuthorViewReviews()
-	     && (!$crow || $crow->forAuthors))
-	    || $crow_contactId == $this->contactId
-	    || ($this->privChair && ($forceShow || $prow->conflictType == 0))
-	    || ($this->isPC && $prow->conflictType == 0
-		&& (!$crow || $crow->forAuthors < 2 || $crow->forReviewers > 0))
-	    || ($prow->myReviewType > 0 && $prow->conflictType == 0
-		&& (!$crow || $crow->forReviewers > 0)))
+	if ($crow && isset($crow->threadContacts)
+	    && isset($crow->threadContacts[$this->contactId]))
+	    $thread_contactId = $this->contactId;
+	if ($crow_contactId == $this->contactId		// wrote this comment
+	    || ($prow->conflictType >= CONFLICT_AUTHOR	// author's response
+		&& $crow && $crow->forAuthors == 2)
+	    || ($prow->conflictType >= CONFLICT_AUTHOR	// author viewable
+		&& $conf->timeAuthorViewReviews()
+		&& (!$crow || $crow->forAuthors != 0))
+	    || ($this->privChair			// chair privilege
+		&& ($prow->conflictType == 0 || $forceShow))
+	    || ($prow->conflictType == 0		// reviewer postrev
+		&& $this->canViewReview($prow, null, $conf, $xWhyNot, $ignoreForceShow)
+		&& (!$crow || $crow->forReviewers != 0))
+	    || ($prow->conflictType == 0		// reviewer prerev
+		&& ($this->isPC || $prow->myReviewType > 0)
+		&& (!$crow || $crow->forReviewers == 1))
+	    || ($prow->conflictType == 0		// PC prerev
+		&& $this->isPC
+		&& (!$crow || ($crow->forAuthors != 2 && $crow->forReviewers == 0))))
 	    return true;
 	// collect failure reasons
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->isPC && $prow->myReviewType <= 0)

@@ -144,7 +144,7 @@ function saveComment($text) {
     global $Me, $Conf, $prow, $crow, $savedCommentId;
 
     // options
-    $forReviewers = (defval($_REQUEST, "forReviewers") ? 1 : 0);
+    $reviewLinked = (defval($_REQUEST, "reviewLinked") ? 1 : 0);
     $forAuthors = (defval($_REQUEST, "forAuthors") ? 1 : 0);
     $blind = 0;
     if ($Conf->blindReview() > 1
@@ -154,6 +154,7 @@ function saveComment($text) {
 	$forAuthors = 2;
 	$blind = $prow->blind;	// use $prow->blind setting on purpose
     }
+    $forReviewers = ($reviewLinked ? -1 : 1);
 
     // query
     if (!$text) {
@@ -283,14 +284,14 @@ $paperTable->paptabBegin($prow);
 
 if (!$viewAny && !$editAny
     && (!$paperTable->rrow
-	|| !$Me->canViewReview($prow, $paperTable->rrow, $Conf, $whyNot))) {
+	|| !$Me->canViewReview($prow, $paperTable->rrow, $Conf, $whyNot)))
     $paperTable->paptabEndWithReviewMessage();
-
-} else if ($paperTable->mode == "r" && !$paperTable->rrow) {
+else if ($paperTable->mode == "r" && !$paperTable->rrow)
     $paperTable->paptabEndWithReviews();
-
-} else
+else
     $paperTable->paptabEndWithEditableReview();
+
+$paperTable->paptabComments();
 
 echo foldsessionpixel("paper9", "foldpaperp"), foldsessionpixel("paper5", "foldpapert"), foldsessionpixel("paper6", "foldpaperb");
 $Conf->footer();

@@ -21,6 +21,7 @@ class PaperTable {
     var $prow;
     var $rrows;
     var $crows;
+    var $mycrows;
     var $rrow;
     var $editrrow;
     var $mode;
@@ -1177,9 +1178,25 @@ class PaperTable {
 	echo "</div></td><td class='papcr'></td></tr>\n";
     }
 
+    function _paptabReviewLinks($rtable, $editrrow, $ifempty) {
+	require_once("reviewtable.inc");
+	$t = "";
+	if ($rtable)
+	    $t .= reviewTable($this->prow, $this->rrows, $this->mycrows,
+			      $editrrow, $this->mode);
+	$t .= reviewLinks($this->prow, $this->rrows, $this->mycrows,
+			  $editrrow, $this->mode);
+	if (($empty = ($t == "")))
+	    $t = $ifempty;
+	if ($t != "")
+	    echo "	<tr><td colspan='3' class='papsep'></td></tr>
+	<tr><td></td><td class='papcc'>", $t, "</td><td></td></tr>\n";
+	echo tagg_cbox("pap", true), "</td></tr></table>\n";
+	return $empty;
+    }
+
     function paptabEndWithReviews() {
 	global $Conf, $ConfSiteSuffix, $Me, $rf, $forceShow, $linkExtra;
-	require_once("reviewtable.inc");
 	$prow = $this->prow;
 
 	if ($forceShow && !$Me->canViewReview($prow, null, $Conf, $fakeWhyNotView, true)) {
@@ -1190,19 +1207,9 @@ class PaperTable {
 		"</div></td><td></td></tr>\n";
 	}
 	
-	echo "	<tr><td colspan='3' class='papsep'></td></tr>
-	<tr><td></td><td class='papcc'>";
-
-	$t = reviewTable($prow, $this->rrows, $this->crows, null, $this->mode)
-	    . reviewLinks($prow, $this->rrows, $this->crows, null, $this->mode);
-	if ($t == "") {
-	    echo "<div class='hint'>There are no reviews or comments for you to view.</div></td><td></td>",
-		tagg_cbox("pap", true), "</td></tr></table>";
+	$empty = $this->_paptabReviewLinks(true, null, "<div class='hint'>There are no reviews or comments for you to view.</div>");
+	if ($empty)
 	    return;
-	}
-
-	echo $t, "</td><td></td></tr>\n",
-	    tagg_cbox("pap", true), "</td></tr></table>\n";
 
 	// text format link
 	if ($Me->canViewReview($prow, null, $Conf)
@@ -1224,15 +1231,20 @@ class PaperTable {
 	    if (!$rr->reviewSubmitted && $rr->reviewModified > 0
 		&& $Me->canViewReview($prow, $rr, $Conf))
 		$rf->show($prow, $this->rrows, $rr, $opt);
+    }
+
+    function paptabComments() {
+	global $Conf, $ConfSiteSuffix, $Me, $rf, $forceShow, $linkExtra;
+	$prow = $this->prow;
 
 	// show comments as well
-	if (count($this->crows) || $Me->canComment($prow, null, $Conf)
+	if (count($this->mycrows) || $Me->canComment($prow, null, $Conf)
 	    || $Conf->timeAuthorRespond()) {
 	    require_once("Code/commentview.inc");
 	    $cv = new CommentView;
 	    $editablecid = defval($_REQUEST, "commentId", "xxx");
 	    $editableresponse = $Conf->timeAuthorRespond() && $prow->conflictType >= CONFLICT_AUTHOR;
-	    foreach ($this->crows as $cr)
+	    foreach ($this->mycrows as $cr)
 		$cv->show($prow, $cr, false, $cr->commentId == $editablecid || ($editableresponse && $cr->forAuthors > 1));
 
 	    // comment editing
@@ -1254,12 +1266,11 @@ class PaperTable {
 		"You can't see the reviews for this paper.  ",
 		whyNotText($whyNot, "review"), "</td><td></td></tr>\n";
 	}
-	echo tagg_cbox("pap", true), "</td></tr></table>";
+	$this->_paptabReviewLinks(false, null, "");
     }
 
     function paptabEndWithEditableReview() {
 	global $Conf, $ConfSiteSuffix, $Me, $rf, $forceShow, $linkExtra;
-	require_once("reviewtable.inc");
 	$prow = $this->prow;
 	$actPC = $Me->actPC($prow);
 	$actChair = $Me->actChair($prow);
@@ -1284,12 +1295,7 @@ class PaperTable {
 	<tr><td></td><td class='papcc'>", join("<br />\n", $msgs), "</td><td></td></tr>\n";
 
 	// links
-	$t = reviewLinks($prow, $this->rrows, $this->crows, $this->editrrow, $this->mode);
-	if ($t != "")
-	    echo "	<tr><td colspan='3' class='papsep'></td></tr>
-	<tr><td></td><td class='papcc'>", $t, "</td><td></td></tr>\n";
-
-	echo tagg_cbox("pap", true), "</td></tr></table>\n";
+	$this->_paptabReviewLinks(false, $this->editrrow, "");
 
 	// review form, possibly with deadline warning
 	$opt = array("edit" => $this->mode == "re");
@@ -1486,10 +1492,15 @@ class PaperTable {
     }
 
     function resolveComments() {
-	global $Conf;
-	$this->crows = $Conf->commentRows("select PaperComment.*, firstName, lastName, email
+	global $Conf, $Me;
+	$this->crows = $Conf->commentRows
+	    ("select PaperComment.*, firstName, lastName, email
 		from PaperComment join ContactInfo using (contactId)
 		where paperId=" . $this->prow->paperId . " order by commentId");
+	$this->mycrows = array();
+	foreach ($this->crows as $crow)
+	    if ($Me->canViewComment($this->prow, $crow, $Conf))
+		$this->mycrows[] = $crow;
     }
 
     function fixReviewMode() {
