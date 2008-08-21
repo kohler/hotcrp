@@ -34,10 +34,7 @@ class PaperActions {
 	    $contactId = $Me->contactId;
 	if (($v = cvtpref($_REQUEST['revpref'])) >= -1000000) {
 	    $while = "while saving review preference";
-	    $Conf->qe("lock tables PaperReviewPreference write", $while);
-	    $Conf->qe("delete from PaperReviewPreference where contactId=$contactId and paperId=$prow->paperId", $while);
-	    $result = $Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values ($prow->paperId, $contactId, $v)", $while);
-	    $Conf->qe("unlock tables", $while);
+	    $result = $Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values ($prow->paperId, $contactId, $v) on duplicate key update preference=values(preference)", $while);
 	    if ($result)
 		$Conf->confirmMsg($ajax ? "Saved" : "Review preference saved.");
 	    else
@@ -48,6 +45,67 @@ class PaperActions {
 	}
 	if ($ajax)
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "revpref")));
+    }
+
+    function setRank($prow) {
+	global $Conf, $Me, $Error, $OK;
+	$ajax = defval($_REQUEST, "ajax", false);
+	if (!$Me->canRankPaper($prow, $Conf)) {
+	    $Conf->errorMsg("You don't have permission to rank this paper.");
+	    $Error["rank"] = true;
+	} else if (isset($_REQUEST["rank"])) {
+	    $rank = trim($_REQUEST["rank"]);
+	    if ($rank === "" || strcasecmp($rank, "none") == 0)
+		$rank = 0;
+	    else
+		$rank = cvtint($rank);
+	    $while = "while saving rank";
+	    if ($rank < 0) {
+		$Conf->errorMsg("Rank must be a positive integer or &ldquo;none&rdquo;.");
+		$Error["rank"] = true;
+	    } else {
+		if ($rank == 0)
+		    $result = $Conf->qe("delete from PaperRank where paperId=$prow->paperId and contactId=$Me->contactId", $while);
+		else
+		    $result = $Conf->qe("insert into PaperRank (paperId, contactId, rank) values ($prow->paperId, $Me->contactId, $rank) on duplicate key update rank=values(rank)", $while);
+		if ($result)
+		    $Conf->confirmMsg($ajax ? "Saved" : "Rank saved.");
+		else
+		    $Error["rank"] = true;
+	    }
+	} else {
+	    $Conf->errorMsg("Rank missing.");
+	    $Error["rank"] = true;
+	}
+	if ($ajax)
+	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "rank")));
+    }
+
+    function rankContext($prow) {
+	global $Conf, $ConfSiteSuffix, $Me, $Error, $OK;
+	$ajax = defval($_REQUEST, "ajax", false);
+	if (!$Me->canRankPaper($prow, $Conf)) {
+	    $Conf->errorMsg("You don't have permission to rank this paper.");
+	    $Error["rank"] = true;
+	} else {
+	    $result = $Conf->qe("select Paper.paperId, title, rank from Paper join PaperRank on (PaperRank.paperId=Paper.paperId and PaperRank.contactId=$Me->contactId) order by rank, Paper.paperId", "while loading paper ranks");
+	    $x = array();
+	    $prowIndex = -1;
+	    while (($row = edb_row($result))) {
+		$t = "$row[2]. <a class='q' href='paper$ConfSiteSuffix?p=$row[0]'>#$row[0] " . htmlspecialchars(titleWords($row[1], 48)) . "</a>";
+		if ($row[0] == $prow->paperId) {
+		    $prowIndex = count($x);
+		    $t = "<div class='rankctx_h'>" . $t . "</div>";
+		} else
+		    $t = "<div class='rankctx'>" . $t . "</div>";
+		$x[] = $t;
+	    }
+	    $first = max(0, min($prowIndex - 3, count($x) - 7));
+	    $x = array_slice($x, $first, min(7, count($x) - $first));
+	    $Conf->confirmMsg(join("", $x));
+	}
+	if ($ajax)
+	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "rank")), true);
     }
 
     function setLeadOrShepherd($prow, $type, $ajaxexit = true) {

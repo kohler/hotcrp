@@ -1010,7 +1010,7 @@ class PaperTable {
 	echo "</div>";
 	if ($editable)
 	    echo "</div></div></form>";
-	echo "\n\n";
+	echo "\n";
     }
 
     function papstripLead($prow) {
@@ -1054,6 +1054,7 @@ class PaperTable {
 
 	    if ($editable)
 		echo "</div></form>";
+	    echo "\n";
 	}
     }
 
@@ -1095,6 +1096,33 @@ class PaperTable {
 	$Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"revprefform\");</script>";
     }
 
+    function papstripRank($prow) {
+	global $Conf, $ConfSiteSuffix, $linkExtra;
+	// rank context form
+	$Conf->footerStuff .= "<form id='rankctxform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankctxform\")'><input type='hidden' name='rankctx' value='1' /></form>";
+	echo "<div id='foldrank' class='foldc fold2c'>",
+	    $this->papt("rank", "Rank", array("type" => "ps", "editfolder" => "rank")),
+	    "<div class='psv'><form id='rankform' class='extension fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankform\")'>",
+	    "<div class='inform'>",
+	    "<input type='hidden' name='setrank' value='1' />";
+	if (isset($_REQUEST["forceShow"]))
+	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
+	$rp = (isset($prow->rank) ? htmlspecialchars($prow->rank) : "0");
+	$rp = ($rp == "0" ? "" : $rp);
+	echo "<input id='foldrank_d' class='textlite' type='text' size='4' name='rank' value=\"$rp\" onchange='Miniajax.submit(\"rankform\")' tabindex='1' />",
+	    " <input class='b extension7' type='submit' value='Save' />",
+	    " <span id='rankformresult'></span>",
+	    "</div></form>",
+	    "<div class='ellipsis'>",
+	    ($rp == "" ? "None" : $rp);
+	if ($rp != "")
+	    echo "<span class='ellipsis2'> &nbsp; <a href='javascript:void 0' onclick='javascript:fold(\"rank\", 0, 2);void Miniajax.submit(\"rankctxform\")'>(context)</a>";
+	echo "</div>",
+	    "<div id='rankctxformresult' class='extension2'>Loading...</div>",
+	    "</div></div>\n";
+	$Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"rankform\");</script>";
+    }
+
 
     // Functions for overall paper table viewing
 
@@ -1107,11 +1135,13 @@ class PaperTable {
 	<tr><td class='papcul'></td><td></td><td></td></tr>
 	<tr><td></td><td><h2>#", $this->prow->paperId, "</h2></td><td></td></tr>
     </table>
-    <div class='papstripc'><div class='papstrip'>";
+    <div class='papstripc'><div class='papstrip'>\n";
 
 	// Paper strip
 	if ($Me->canViewTags($prow, $Conf, $forceShow))
 	    $this->papstripTags($prow, "review$ConfSiteSuffix?p=$prow->paperId$linkExtra");
+	if ($Me->canRankPaper($prow, $Conf) && $Conf->setting("rank"))
+	    $this->papstripRank($prow);
 	if ($Me->actChair($prow) || $prow->conflictType >= CONFLICT_AUTHOR) {
 	    $this->papstripPCConflicts($prow, true);
 	    $this->papstripCollaborators($prow);
@@ -1234,7 +1264,8 @@ class PaperTable {
     }
 
     function paptabComments() {
-	global $Conf, $ConfSiteSuffix, $Me, $rf, $forceShow, $linkExtra;
+	global $Conf, $ConfSiteSuffix, $Me, $rf, $forceShow, $linkExtra,
+	    $useRequest;
 	$prow = $this->prow;
 
 	// show comments as well
@@ -1244,12 +1275,16 @@ class PaperTable {
 	    $cv = new CommentView;
 	    $editablecid = defval($_REQUEST, "commentId", "xxx");
 	    $editableresponse = $Conf->timeAuthorRespond() && $prow->conflictType >= CONFLICT_AUTHOR;
-	    foreach ($this->mycrows as $cr)
-		$cv->show($prow, $cr, false, $cr->commentId == $editablecid || ($editableresponse && $cr->forAuthors > 1));
+	    foreach ($this->mycrows as $cr) {
+		$editMode = ($editablecid == $cr->commentId
+			     || ($editableresponse && $cr->forAuthors > 1));
+		$cv->show($prow, $cr, $editMode && $useRequest, $editMode);
+	    }
 
 	    // comment editing
 	    if ($Me->canComment($prow, null, $Conf))
-		$cv->show($prow, null, false, true, $editablecid != "new");
+		$cv->show($prow, null, $editablecid == "new" && $useRequest,
+			  true, $editablecid != "new");
 	    if (!$cv->nresponse && $Conf->timeAuthorRespond()
 		&& ($prow->conflictType >= CONFLICT_AUTHOR
 		    || ($Me->actChair($prow) && $editablecid == "response")))
@@ -1413,6 +1448,8 @@ class PaperTable {
 	    $sel["reviewerPreference"] = true;
 	if ($Me->isPC)
 	    $sel["tags"] = true;
+	if ($Me->amReviewer() && $Conf->setting("rank"))
+	    $sel["ranks"] = true;
 
 	if (!($prow = $Conf->paperRow($sel, $Me, $whyNot)))
 	    return null;
@@ -1466,6 +1503,8 @@ class PaperTable {
 	    $sel["ratings"] = true;
 	    $sel["myRating"] = $Me->contactId;
 	}
+	if ($Conf->setting("rank"))
+	    $sel["ranks"] = true;
 	$this->rrows = $Conf->reviewRow($sel, $whyNot);
 	
 	$rrid = strtoupper(defval($_REQUEST, "reviewId", ""));

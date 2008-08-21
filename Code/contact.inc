@@ -698,6 +698,12 @@ class Contact {
 	    return false;
     }
 
+    function canRankPaper($prow, $conf) {
+	return $conf->setting("rank")
+	    && ($this->actPC($prow)
+		|| ($prow->conflictType <= 0 && $prow->myReviewType > 0));
+    }
+
 
     function canComment($prow, $crow, $conf, &$whyNot = null, $submit = false) {
 	// check whether this is a response

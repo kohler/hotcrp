@@ -910,19 +910,15 @@ function unparseReviewOrdinal($ord) {
 	return chr(intval(($ord - 1) / 26) + 65) . chr(($ord % 26) + 64);
 }
 
-function titleWords($title) {
+function titleWords($title, $chars = 40) {
     // assume that title whitespace has been simplified
-    $pos = 0;
-    $len = strlen($title);
-    while (1) {
-	$npos = strpos($title, " ", ($pos ? $pos + 1 : 0));
-	if ($npos === false && ($pos == 0 || $len <= 40))
-	    return $title;
-	else if ($npos === false || $npos > 40)
-	    return substr($title, 0, $pos) . "...";
-	else
-	    $pos = $npos;
-    }
+    if (strlen($title) > $chars) {
+	$title = substr($title, 0, $chars);
+	if (($pos = strrpos($title, " ")) > 0)
+	    $title = substr($title, 0, $pos);
+	return $title . "...";
+    } else
+	return $title;
 }
 
 function downloadText($text, $filename, $description, $inline = false, $length = true) {

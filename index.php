@@ -217,11 +217,11 @@ if ($Me->privChair) {
 
 
 // Sidebar
-echo "<div class='homeside'><div class='homeinside'>";
+echo "<div class='homeside'>";
 
 // Conference management
 if ($Me->privChair) {
-    echo "<div id='homemgmt'>
+    echo "<div id='homemgmt' class='homeinside'>
   <h4>Administration</h4>
   <ul>
     <li><a href='settings$ConfSiteSuffix'>Settings</a></li>
@@ -230,12 +230,11 @@ if ($Me->privChair) {
     <li><a href='mail$ConfSiteSuffix'>Send mail</a></li>
     <li><a href='log$ConfSiteSuffix'>Action log</a></li>
   </ul>
-</div>
-<hr class='home' />\n";
+</div>\n";
 }
 
-// Conference info
-echo "<div id='homeinfo'>
+// Conference info sidebar
+echo "<div class='homeinside'><div id='homeinfo'>
   <h4>Conference information</h4>
   <ul>\n";
 // Any deadlines set?
@@ -264,8 +263,7 @@ echo "  </ul>\n</div>\n";
 
 // Profile
 if ($Me->valid()) {
-    echo "<hr class='home' />
-<div id='homeacct'>\n  ";
+    echo "<div id='homeacct'>\n  ";
     if (($nh = contactNameHtml($Me)))
 	echo "Welcome, ", $nh, ".";
     else
@@ -501,7 +499,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 		    textArrayJoin($a);
 		if (count($a) > 1)
 		    echo " (these sets might overlap)";
-		echo ".<a class='help' href='help$ConfSiteSuffix?t=revrate' title='What are ratings?'>?</a></div>\n";
+		echo ".<a class='help' href='help$ConfSiteSuffix?t=revrate' title='About ratings'>?</a></div>\n";
 	    }
 	}
     }

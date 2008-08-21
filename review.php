@@ -316,6 +316,11 @@ if (isset($_REQUEST["setrevpref"])) {
     PaperActions::setReviewPreference($prow);
     loadRows();
 }
+if (isset($_REQUEST["setrank"])) {
+    require_once("Code/paperactions.inc");
+    PaperActions::setRank($prow);
+    loadRows();
+}
 if (isset($_REQUEST["setlead"])) {
     require_once("Code/paperactions.inc");
     PaperActions::setLeadOrShepherd($prow, "lead");

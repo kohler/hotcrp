@@ -12,8 +12,8 @@ class CommentView {
 	$this->ncomment = $this->nresponse = 0;
     }
 
-    function commentIdentityTime($prow, $crow) {
-	global $Conf, $Me;
+    function commentIdentityTime($prow, $crow, $response) {
+	global $Conf, $Me, $forceShow;
 	$open = $sep = " <span class='revinfo'>";
 	$xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 	if ($crow && $Me->canViewCommentIdentity($prow, $crow, $Conf)) {
@@ -31,6 +31,20 @@ class CommentView {
 	if ($crow && $crow->timeModified > 0) {
 	    echo $sep, $Conf->printableTime($crow->timeModified);
 	    $sep = $xsep;
+	}
+	if ($crow && !$response
+	    && ($prow->conflictType == 0 || ($Me->privChair && $forceShow))) {
+	    $x = array();
+	    if (!$crow->forAuthors)
+		$x[] = "hidden from authors";
+	    if ($crow->forReviewers == 0)
+		$x[] = "hidden from external reviewers";
+	    else if ($crow->forReviewers == -1)
+		$x[] = "tied to reviews";
+	    if (count($x)) {
+		echo $sep, "<span class='cmtinfo'>", join(", ", $x), "</span>";
+		$sep = $xsep;
+	    }
 	}
 	if ($sep != $open)
 	    echo "</span>\n";
@@ -68,7 +82,7 @@ class CommentView {
 
 	// Links
 	if ($crow && ($crow->contactId == $Me->contactId || $Me->privChair)
-	    && !$editMode) {
+	    && !$editMode && $Me->canComment($prow, $crow, $Conf)) {
 	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId'>";
 	    echo "<div class='floatright'>", $a,
 		$Conf->cacheableImage("newreview.png", "[Edit]", null, "b"),
@@ -88,23 +102,7 @@ class CommentView {
 	else
 	    echo ($crow ? "Comment" : "Add Comment");
 	echo "</h3>";
-	$this->commentIdentityTime($prow, $crow);
-
-	$xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
-	if (!$crow || ($prow->conflictType >= CONFLICT_AUTHOR
-		       && (!$Me->privChair || !$forceShow)))
-	    /* do nothing */;
-	else {
-	    $x = array();
-	    if ($crow->forAuthors)
-		$x[] = "show authors";
-	    if ($crow->forReviewers == 0)
-		$x[] = "no external reviewers";
-	    else if ($crow->forReviewers == -1)
-		$x[] = "tied to reviews";
-	    if (count($x))
-		echo $xsep, "<span class='hint'>", join(", ", $x), "</span>\n";
-	}
+	$this->commentIdentityTime($prow, $crow, false);
 
 	if ($crow && $editMode && $crow->contactId != $Me->contactId)
 	    echo "<div class='hint'>You didn't write this comment, but as an administrator you can still make changes.</div>\n";
@@ -131,7 +129,7 @@ class CommentView {
   Visibility: &nbsp;<input type='checkbox' name='forAuthors' value='1'";
 	if ($useRequest ? defval($_REQUEST, "forAuthors") : ($crow && $crow->forAuthors))
 	    echo " checked='checked'";
-	echo " onchange='hiliter(this)' />&nbsp;<span class='hastitle' title='Show this comment to authors along with the reviews. (The comment is hidden when reviews are invisible.)'>Show authors</span>\n";
+	echo " onchange='hiliter(this)' />&nbsp;<span class='hastitle' title='Show this comment to authors along with the reviews. (The comment is hidden when reviews are invisible.)'>Show to authors</span>\n";
 	// blind?
 	if ($Conf->blindReview() == 1) {
 	    echo " &nbsp; (<input type='checkbox' name='blind' value='1'";
@@ -145,7 +143,7 @@ class CommentView {
 	if (($useRequest && defval($_REQUEST, 'reviewLinked'))
 	    || (!$useRequest && $crow && $crow->forReviewers == -1))
 	    echo " checked='checked'";
-	echo " onchange='hiliter(this)' />&nbsp;<span class='hastitle' title='Hide this comment from PC members and reviewers who cannot see the reviews.'>Tied to reviews</span>\n";
+	echo " onchange='hiliter(this)' />&nbsp;<span class='hastitle' title='Hide this comment from PC members and reviewers who cannot see the reviews.'>Tie to reviews</span>\n";
 
 	// review actions
 	echo "<div class='aa'><table class='pt_buttons'>
@@ -203,7 +201,7 @@ class CommentView {
 	if ($editMode)
 	    echo " class='editable'";
 	echo ">Response</h3>";
-	$this->commentIdentityTime($prow, $crow);
+	$this->commentIdentityTime($prow, $crow, true);
 
 	if ($editMode) {
 	    $limittext = ($wordlimit ? ": the conference system will enforce a limit of $wordlimit words" : "");

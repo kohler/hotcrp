@@ -74,10 +74,20 @@ if (!$newPaper) {
 }
 
 
-// set review preference action
+// paper actions
 if (isset($_REQUEST["setrevpref"]) && $prow) {
     require_once("Code/paperactions.inc");
     PaperActions::setReviewPreference($prow);
+    getProw();
+}
+if (isset($_REQUEST["setrank"]) && $prow) {
+    require_once("Code/paperactions.inc");
+    PaperActions::setRank($prow);
+    getProw();
+}
+if (isset($_REQUEST["rankctx"]) && $prow) {
+    require_once("Code/paperactions.inc");
+    PaperActions::rankContext($prow);
     getProw();
 }
 

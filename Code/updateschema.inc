@@ -105,4 +105,6 @@ function updateSchema($Conf) {
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;
+    if ($Conf->settings["allowPaperOption"] < 19)
+	unset($Conf->settings["rank"]);
 }

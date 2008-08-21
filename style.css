@@ -276,7 +276,7 @@ span.confirm {
 	font-style: italic;
 	color: #006600;
 }
-span.error {
+span.error, span.merror {
 	font-style: italic;
 	color: #660000;
 }
@@ -427,9 +427,6 @@ div#homeacct h4, div#homeinfo h4 {
 div#homelist h4 {
 	color: #8b3030;
 }
-div#homemgmt h4 {
-	color: #466246;
-}
 div#homerev h4 {
 	color: #1b1ba4;
 }
@@ -437,7 +434,7 @@ div#homeau h4 {
 	color: #923e58;
 }
 div#homeinfo h4 {
-	color: #666666;
+	color: #555555;
 }
 div.homeside {
 	float: right;
@@ -446,9 +443,16 @@ div.homeside {
 }
 div.homeinside {
 	background-color: #fffdf0;
-	border: 1px solid #9999cc;
+	border: 1px solid #b2a584 /*#9999cc*/;
 	padding: 0.5em 1em 0.75em 0.75em;
 	margin: 0em 0em 0.5em 1em;
+}
+div#homeacct {
+	margin: 1em 0em 0em 0em;
+}
+div#homemgmt {
+	background-color: #ffffdd;
+	/*border: 1px solid #b2a584;*/
 }
 div.homeside ul {
 	margin: 0em;
@@ -1288,6 +1292,23 @@ div.psv {
 	padding: 2px 0px 1em 4px;
 }
 
+/* ranks */
+div#rankctxformresult {
+	font-size: smaller;
+}
+div#rankctxformresult div.xconfirm {
+	background: none;
+	border: 0px none;
+	padding: 0px;
+}
+div.rankctx, div.rankctx_h {
+	padding-left: 2em;
+	text-indent: -2em;
+}
+div.rankctx_h {
+	font-weight: bold;
+}
+
 /* paper */
 table.papc {
 	background: #cec1ff;
@@ -1481,6 +1502,9 @@ td.cmthead h3.editable {
 }
 td.cmthead span.revinfo {
 	font-size: smaller;
+}
+td.cmthead span.cmtinfo {
+	color: #555555;
 }
 td.cmthead {
 	padding: 0px 0px 4px 0px;
