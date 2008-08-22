@@ -1,6 +1,6 @@
 HotCRP NEWS
 
-Version 2.24
+Version 2.24   22.Aug.2008
 
 * Major changes
 
@@ -40,9 +40,9 @@ Version 2.24
 ** Ordered tags: The "define ordered" and "add ordered" tag actions skip
    order steps; for example, they might assign order 1, 3, 4, 7, 8, 10.
    This hides information from conflicted PC members, since they can no
-   longer infer their papers' position in an order by looking for gaps.
-   New "Define sequential" and "Add sequential" actions do the old
-   sequential style.
+   longer infer conflicted papers' positions by looking for gaps.  New
+   "Define sequential" and "Add sequential" actions do the old sequential
+   style.
 
 ** Search highlight improvements: Searching only highlights terms in the
    relevant fields; for example, "au:john" won't highlight "john" in the
@@ -53,7 +53,7 @@ Version 2.24
    "ready" review forms that lack required fields are saved anyway, they're
    just not marked as "ready" (Rebecca Isaacs request).  The system detects
    and rejects attempts to upload an offline form after a review is edited
-   online (Fred Douglis request).  Clarify where numeric scores are entered
+   online (Fred Douglis report).  Clarify where numeric scores are entered
    (Benjamin Pierce request).
 
 ** Paper assignment UI improvements.  Reorder fields, make submission
