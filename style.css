@@ -1495,35 +1495,32 @@ td.cmtcc div.aa {
 td.cmthead h3 {
 	display: inline;
 	padding: 0em 0.5em 0em 0em;
-	font-weight: normal;
-}
-td.cmthead h3.editable {
-	font-weight: bold;
-}
-td.cmthead span.revinfo {
-	font-size: smaller;
-}
-td.cmthead span.cmtinfo {
-	color: #555555;
 }
 td.cmthead {
 	padding: 0px 0px 4px 0px;
 }
+td.cmthead span.cmtfn {
+	font-size: smaller;
+}
 div.cmtt {
 	font-size: smaller;
 	padding: 0.25em 1em 0.25em 8px;
-	background: #ffe6f8; /*#ffeaee;*/
+	background: #f7f1df; /*#ffeaee;*/
 }
 div.cmtt span.cmtfn {
-	font-variant: small-caps;
-	font-weight: bold;
 	float: left;
 }
 div.cmtt span.hint {
 	float: right;
 }
+div.cmtt div.floatright {
+	padding-left: 0.5em;
+}
 div.cmtv {
 	padding: 2px 0px 1em 7px;
+}
+div#foldaddcomment div.cmtv {
+	padding-bottom: 0px;
 }
 table.cmtoff {
 	margin: 0.2em 0em 0.5em 0em;
