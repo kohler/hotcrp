@@ -47,6 +47,95 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     $Conf->errorMsg("Select a review form to upload.");
 
 
+// upload tag indexes action
+function setTagIndexes() {
+    global $Conf, $ConfSiteSuffix, $Me, $Error;
+    require_once("Code/tags.inc");
+    if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["file"], $Conf)) {
+	if (($text = file_get_contents($_FILES["file"]["tmp_name"])) === false) {
+	    $Conf->errorMsg("Internal error: cannot read file.");
+	    return;
+	}
+	$filename = htmlspecialchars($_FILES["file"]["name"]) . ":";
+    } else if (!($text = defval($_REQUEST, "data"))) {
+	$Conf->errorMsg("Tag data missing.");
+	return;
+    } else
+	$filename = "line ";
+
+    $tag = defval($_REQUEST, "tag");
+    $curIndex = 0;
+    $lineno = 1;
+    $settings = array();
+    $titles = array();
+    $linenos = array();
+    $errors = array();
+    foreach (explode("\n", rtrim(cleannl($text))) as $l) {
+	if (!$tag && substr($l, 0, 6) == "# Tag:")
+	    $tag = checkTag(trim(substr($l, 6)), false);
+	if ($l == "" || $l[0] == "#") {
+	    ++$lineno;
+	    continue;
+	}
+	if (preg_match('/\A\s*?([Xx=]|>*|\([-\d]+\))\s+(\d+)\s*(.*?)\s*\Z/', $l, $m)) {
+	    if (isset($settings[$m[2]]))
+		$errors[$lineno] = "Paper #$m[2] already given on line " . $linenos[$m[2]];
+	    if ($m[1] == "X" || $m[1] == "x")
+		$settings[$m[2]] = null;
+	    else if ($m[1] == "" || $m[1] == ">")
+		$settings[$m[2]] = $curIndex = $curIndex + 1;
+	    else if ($m[1][0] == "(")
+		$settings[$m[2]] = $curIndex = substr($m[1], 1, -1);
+	    else if ($m[1] == "=")
+		$settings[$m[2]] = $curIndex;
+	    else
+		$settings[$m[2]] = $curIndex = $curIndex + strlen($m[1]);
+	    $titles[$m[2]] = $m[3];
+	    $linenos[$m[2]] = $lineno;
+	} else if (trim($l) !== "")
+	    $errors[$lineno] = "Syntax error";
+	++$lineno;
+    }
+
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => array_keys($settings))), "while selecting papers");
+    $settingrank = ($Conf->setting("tag_rank") && $tag == "~" . $Conf->settingText("tag_rank"));
+    while (($row = edb_orow($result)))
+	if ($settingrank ? !$Me->canSetRank($row, $Conf, true)
+	    : !$Me->canSetTags($row, $Conf)) {
+	    $errors[$linenos[$row->paperId]] = "You cannot rank paper #$row->paperId.";
+	    unset($settings[$row->paperId]);
+	} else if ($titles[$row->paperId] !== ""
+		 && strcmp($row->title, $titles[$row->paperId]) != 0
+		 && strcasecmp($row->title, simplifyWhitespace($titles[$row->paperId])) != 0)
+	    $errors[$linenos[$row->paperId]] = "Warning: Title doesn't match";
+
+    if (count($errors)) {
+	ksort($errors);
+	$Error["tags"] = "";
+	foreach ($errors as $lineno => $error)
+	    $Error["tags"] .= $filename . $lineno . ": " . $error . "<br />\n";
+    }
+    
+    if (!$tag)
+	defappend($Error["tags"], "No tag defined");
+    else if (count($settings)) {
+	setTags(array_keys($settings), $tag, "d", $Me->privChair);
+	foreach ($settings as $pid => $value)
+	    if ($value !== null)
+		setTags($pid, $tag . "#" . $value, "a", $Me->privChair);
+    }
+    if (isset($Error["tags"]))
+	$Conf->errorMsg($Error["tags"]);
+    else if (isset($_REQUEST["setvote"]))
+	$Conf->confirmMsg("Votes saved.");
+    else
+	$Conf->confirmMsg("Ranking saved.  To view it, <a href='search$ConfSiteSuffix?q=order:" . urlencode($tag) . "'>search for &ldquo;order:$tag&rdquo;</a>.");
+}
+if ((isset($_REQUEST["setvote"]) || isset($_REQUEST["setrank"]))
+    && $Me->amReviewer())
+    setTagIndexes();
+
+
 $pastDeadline = !$Conf->timeReviewPaper($Me->isPC, true, true);
 
 if ($pastDeadline && !$Conf->settingsAfter("rev_open") && !$Me->privChair) {
@@ -65,9 +154,11 @@ if ($Me->amReviewer()) {
 } else
     $Conf->infoMsg("You aren't registered as a reviewer or PC member for this conference, but for your information, you may download the review form anyway.");
 
-echo "<table id='offlineform'><tr>
-<td><h3>Download forms</h3>
-<div>";
+
+echo "<table id='offlineform'>";
+
+// Review forms
+echo "<tr><td><h3>Download forms</h3>\n<div>";
 if ($Me->amReviewer()) {
     echo "<a href='search$ConfSiteSuffix?get=revform&amp;q=&amp;t=r&amp;pap=all'>Your reviews</a><br />\n";
     if ($Me->reviewsOutstanding)
@@ -81,15 +172,41 @@ echo "</td>\n";
 if ($Me->amReviewer()) {
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
     echo "<td><h3>Upload filled-out forms</h3>
-<form action='offline$ConfSiteSuffix?post=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
-	<input type='hidden' name='redirect' value='offline' />
-	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Upload' name='uploadForm' $disabled/>";
+<form action='offline$ConfSiteSuffix?uploadForm=1&amp;post=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+	<input type='hidden' name='postnonempty' value='1' />
+	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Upload' $disabled/>";
     if ($pastDeadline && $Me->privChair)
 	echo "<br /><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
     echo "<br /><span class='hint'><strong>Tip:</strong> You may upload a file containing several forms.</span>";
     echo "</div></form></td>\n";
 }
-echo "</tr></table>\n";
+echo "</tr>\n";
+
+
+// Ranks
+if ($Conf->setting("tag_rank") && $Me->amReviewer()) {
+    $ranktag = $Conf->settingText("tag_rank");
+    echo "<tr><td><div class='g'></div></td></tr>\n",
+	"<tr><td><h3>Download ranking file</h3>\n<div>";
+    echo "<a href=\"search$ConfSiteSuffix?get=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=r&amp;pap=all\">Your reviews</a>";
+    if ($Me->isPC)
+	echo "<br />\n<a href=\"search$ConfSiteSuffix?get=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=s&amp;pap=all\">All submitted papers</a>";
+    echo "</div></td>\n";
+
+    $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
+    echo "<td><h3>Upload ranking file</h3>
+<form action='offline$ConfSiteSuffix?setrank=1&amp;tag=%7E$ranktag&amp;post=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+	<input type='hidden' name='upload' value='1' />
+	<input type='file' name='file' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Upload' $disabled/>";
+    if ($pastDeadline && $Me->privChair)
+	echo "<br /><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
+    echo "<br /><span class='hint'><strong>Tip:</strong> <a href='search$ConfSiteSuffix?q=order:%7E$ranktag'>&ldquo;order:~$ranktag&rdquo;</a> searches by your ranking.</span>";
+    echo "</div></form></td>\n";
+    echo "</tr>\n";
+}
+
+echo "</table>\n";
+
 
 if (($text = $rf->webGuidanceRows($Me->viewReviewFieldsScore(null, null, $Conf),
 				  " initial")))

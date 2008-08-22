@@ -296,6 +296,67 @@ if (isset($_REQUEST["tagact"]) && $Me->isPC && isset($papersel) && isset($_REQUE
     tagaction();
 
 
+// download votes
+if ($getaction == "votes" && isset($papersel) && defval($_REQUEST, "tag")
+    && $Me->isPC) {
+    require_once("Code/tags.inc");
+    if (($tag = checkTag($_REQUEST["tag"])) !== false) {
+	$q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag));
+	$result = $Conf->qe($q, "while selecting papers");
+	$texts = array();
+	while (($row = edb_orow($result)))
+	    if ($Me->canViewTags($row, $Conf))
+		defappend($texts[$paperselmap[$row->paperId]], "(" . (int) $row->tagIndex . ")\t$row->paperId\t$row->title\n");
+	ksort($texts);
+	$text = "# Tag: " . trim($_REQUEST["tag"]) . "\n"
+	    . "#votes\tpaper\ttitle\n" . join("", $texts);
+	downloadText($text, $Opt['downloadPrefix'] . "votes.txt", "votes");
+	exit;
+    }
+}
+
+
+// download rank
+$settingrank = ($Conf->setting("tag_rank") && defval($_REQUEST, "tag") == "~" . $Conf->settingText("tag_rank"));
+if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
+    && ($Me->isPC || ($Me->amReviewer() && $settingrank))) {
+    require_once("Code/tags.inc");
+    if (($tag = checkTag($_REQUEST["tag"])) !== false) {
+	$q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"));
+	$result = $Conf->qe($q, "while selecting papers");
+	$real = "";
+	$null = "\n";
+	while (($row = edb_orow($result)))
+	    if ($settingrank ? $Me->canSetRank($row, $Conf)
+		: $Me->canSetTags($row, $Conf)) {
+		if ($row->tagIndex === null)
+		    $null .= "X\t$row->paperId\t$row->title\n";
+		else if ($real === "" || $lastIndex == $row->tagIndex - 1)
+		    $real .= "\t$row->paperId\t$row->title\n";
+		else if ($lastIndex == $row->tagIndex)
+		    $real .= "=\t$row->paperId\t$row->title\n";
+		else
+		    $real .= str_pad("", min($row->tagIndex - $lastIndex, 5), ">") . "\t$row->paperId\t$row->title\n";
+		$lastIndex = $row->tagIndex;
+	    }
+	$text = "# Edit the rank order by rearranging this file's lines.\n"
+	    . "# The first line has the highest rank, and so forth.\n"
+	    . "# Lines that start with \"#\" are ignored.  Lines for unranked papers start with\n"
+	    . "# \"X\"; they appear at the end, sorted by overall merit.  Rank them by deleting\n"
+	    . "# the \"X\"s and rearranging the lines.  A line that starts with \"=\" marks a\n"
+	    . "# paper with the same rank as the preceding paper.  A line that starts with\n"
+	    . "# \">>\", \">>>\", and so forth indicates a rank gap between the preceding paper\n"
+	    . "# and the current paper.  When you are done, upload the file at\n"
+	    . "#   $Conf->paperSite/offline$ConfSiteSuffix\n"
+	    . "# Tag: " . trim($_REQUEST["tag"]) . "\n"
+	    . "\n"
+	    . $real . $null;	
+	downloadText($text, $Opt['downloadPrefix'] . "rank.txt", "rank");
+	exit;
+    }
+}
+
+
 // download text author information for selected papers
 if ($getaction == "authors" && isset($papersel)
     && ($Me->privChair || ($Me->isPC && $Conf->blindSubmission() < 2))) {

@@ -102,9 +102,11 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table PaperComment add `replyTo` int(11) NOT NULL")
 	&& $Conf->q("update Settings set value=19 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 19;
+    if ($Conf->settings["allowPaperOption"] == 19
+	&& $Conf->q("drop table PaperRank")
+	&& $Conf->q("update Settings set value=20 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 20;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;
-    if ($Conf->settings["allowPaperOption"] < 19)
-	unset($Conf->settings["rank"]);
 }

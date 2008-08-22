@@ -87,13 +87,12 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 		$n = contactHtml($rr->firstName, $rr->lastName);
 	    else
 		$n = "[Token " . encodeToken($rr->reviewToken) . "]";
-	    $t .= "<td>" . $n . ($x ? " $x" : "") . "</td>";
-	    if ($mode == "assign") {
-		$t .= "<td>" . contactHtml(null, null, $rr->email);
-		if ($Me->privChair && $rr->email != $Me->email)
-		    $t .= " <a href=\"" . htmlspecialchars(selfHref(array("viewContact" => $rr->email))) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . contactHtml($rr->firstName, $rr->lastName)) . "</a>";
-		$t .= "</td>";
-	    }
+	    $t .= "<td>" . $n . ($x ? " $x" : "");
+	    if ($Me->privChair && $rr->email != $Me->email)
+		$t .= " <a href=\"" . htmlspecialchars(selfHref(array("viewContact" => $rr->email))) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . contactHtml($rr->firstName, $rr->lastName)) . "</a>";
+	    $t .= "</td>";
+	    if ($mode == "assign")
+		$t .= "<td>" . contactHtml(null, null, $rr->email) . "</td>";
 	}
 
 	// review type
@@ -237,11 +236,8 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode) {
     }
 
     // new comment
-    if ($mode != "assign" && $Me->canComment($prow, null, $Conf) && !$rrow) {
-	if ($rrow)
-	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;c=new$linkExtra#commentnew'>";
-	else
-	    $a = "<a href=\"#commentnew\" onclick='fold(\"addcomment\", 0);return 1'>";
+    if ($mode != "assign" && $Me->canComment($prow, null, $Conf)) {
+	$a = "<a href=\"#commentnew\" onclick='fold(\"addcomment\", 0);return 1'>";
 	$x = $a . $Conf->cacheableImage("comment24.png", "[Add comment]", null, "dlimg") . "</a>&nbsp;" . $a . "Add comment</a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }

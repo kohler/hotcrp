@@ -50,7 +50,8 @@ class PaperActions {
     function setRank($prow) {
 	global $Conf, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
-	if (!$Me->canRankPaper($prow, $Conf)) {
+	$tag = $Conf->settingText("tag_rank", "");
+	if (!$Me->canSetRank($prow, $Conf)) {
 	    $Conf->errorMsg("You don't have permission to rank this paper.");
 	    $Error["rank"] = true;
 	} else if (isset($_REQUEST["rank"])) {
@@ -64,10 +65,11 @@ class PaperActions {
 		$Conf->errorMsg("Rank must be a positive integer or &ldquo;none&rdquo;.");
 		$Error["rank"] = true;
 	    } else {
+		$mytag = $Me->contactId . "~" . $tag;
 		if ($rank == 0)
-		    $result = $Conf->qe("delete from PaperRank where paperId=$prow->paperId and contactId=$Me->contactId", $while);
+		    $result = $Conf->qe("delete from PaperTag where paperId=$prow->paperId and tag='" . sqlq($mytag) . "'", $while);
 		else
-		    $result = $Conf->qe("insert into PaperRank (paperId, contactId, rank) values ($prow->paperId, $Me->contactId, $rank) on duplicate key update rank=values(rank)", $while);
+		    $result = $Conf->qe("insert into PaperTag (paperId, tag, tagIndex) values ($prow->paperId, '" . sqlq($mytag) . "', $rank) on duplicate key update tagIndex=values(tagIndex)", $while);
 		if ($result)
 		    $Conf->confirmMsg($ajax ? "Saved" : "Rank saved.");
 		else
@@ -84,11 +86,12 @@ class PaperActions {
     function rankContext($prow) {
 	global $Conf, $ConfSiteSuffix, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
-	if (!$Me->canRankPaper($prow, $Conf)) {
+	$tag = $Conf->settingText("tag_rank", "");
+	if (!$Me->canSetRank($prow, $Conf)) {
 	    $Conf->errorMsg("You don't have permission to rank this paper.");
 	    $Error["rank"] = true;
 	} else {
-	    $result = $Conf->qe("select Paper.paperId, title, rank from Paper join PaperRank on (PaperRank.paperId=Paper.paperId and PaperRank.contactId=$Me->contactId) order by rank, Paper.paperId", "while loading paper ranks");
+	    $result = $Conf->qe("select Paper.paperId, title, tagIndex from Paper join PaperTag on (PaperTag.paperId=Paper.paperId and PaperTag.tag='" . sqlq($Me->contactId . "~" . $tag) . "') order by tagIndex, Paper.paperId", "while loading paper ranks");
 	    $x = array();
 	    $prowIndex = -1;
 	    while (($row = edb_row($result))) {

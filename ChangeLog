@@ -1,3 +1,346 @@
+2008-08-21 Thursday 16:10  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.112): Tweak help again
+
+2008-08-21 Thursday 10:26  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* index.php (1.192), paper.php (1.186), review.php (1.165),
+	  style.css (1.272), Code/commentview.inc (1.4),
+	  Code/conference.inc (1.285), Code/contact.inc (1.165),
+	  Code/header.inc (1.57), Code/helpers.inc (1.228),
+	  Code/paperactions.inc (1.5), Code/papertable.inc (1.141),
+	  Code/updateschema.inc (1.9): Preparation for paper ranking.
+
+	  Show a sidebar including the current rank, optionally editable.
+	  Clicking a "context" link loads the rank context for this paper.
+
+	  Also separate administration box on home page.  Also some minor
+	  comment improvements in wording.
+
+2008-08-20 Wednesday 22:09  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* comment.php (1.70), paper.php (1.185), review.php (1.164),
+	  Code/TODO (1.113), Code/reviewtable.inc (1.66): Hide comments
+	  from edit screens.
+
+2008-08-20 Wednesday 22:04  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* comment.php (1.69), paper.php (1.184), review.php (1.163),
+	  Code/commentview.inc (1.3), Code/conference.inc (1.284),
+	  Code/contact.inc (1.164), Code/papertable.inc (1.140),
+	  Code/reviewtable.inc (1.65): Comment visibility changes.
+
+	  - Comments are generally available to external reviewers.  - Add
+	  "review-tied" comments, which are visible only when the reviews
+	  themselves are visible.  "[ ] Tied to reviews" (with a tooltip)
+	  is the   checkbox text.  Robbert van Renesse request.  - Show
+	  comments more frequently.
+
+2008-08-20 Wednesday 13:37  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* search.php (1.168), settings.php (1.107), Code/TODO (1.112),
+	  Code/conference.inc (1.283), Code/mailtemplate.inc (1.50),
+	  Code/paperlist.inc (1.195), Code/papertable.inc (1.139),
+	  Code/schema.sql (1.119), Code/tags.inc (1.25),
+	  Code/updateschema.inc (1.8): Update schema for comment threading
+	  and paper ranking.
+
+	  - Conflicted PC members can see vote tags when allowed, but they
+	  can't   hover to unpack the vote tag and see who voted for them.
+	  - Remove some unused code for old-style paper tables.
+
+2008-08-20 Wednesday 13:32  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* tarball.sh (1.104): Update tarball.sh to update schema version
+	  number mismatches
+
+2008-08-20 Wednesday 08:29  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.111): Help nit.  Why is it so hard for me to write
+	  good help text?
+
+2008-08-20 Wednesday 00:41  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.110), Code/baselist.inc (1.5): Improve Minshall score
+	  (see help).
+
+	  Terence Kelly was unhappy with the old definition.
+
+2008-08-19 Tuesday 16:42  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.109), index.php (1.191), review.php (1.162),
+	  script.js (1.83), style.css (1.271), Code/conference.inc (1.282),
+	  Code/contactlist.inc (1.43), Code/helpers.inc (1.227),
+	  Code/paperactions.inc (1.4), Code/papertable.inc (1.138),
+	  Code/review.inc (1.124), Code/search.inc (1.119): Review ratings:
+	  More choices for ratings.
+
+	  Robbert van Renesse suggestion.  Not just "average, very helpful,
+	  needs work," but "average, very helpful, not complete, not
+	  convincing, not constructive, not correct."  Requires changing
+	  the UI for entering ratings.	unfortunately this makes the
+	  ratings themselves a little bit more irritating (a selector
+	  rather than buttons), we'll see if this matters.
+
+	  Also allow searching for specific ratings.
+
+	  Also don't count conflict preferences (<=-100) as negative
+	  preferences in the desirability score.
+
+	  Also fix some tag links.
+
+2008-08-19 Tuesday 16:37  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* account.php (1.81): Account page: Add a link to the account you
+	  just created.
+
+2008-08-19 Tuesday 16:37  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* mergeaccounts.php (1.47): Merge accounts: Fix some minor bugs
+	  when merging two PC members together.
+
+2008-08-18 Monday 18:25  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* style.css (1.270), Code/helpers.inc (1.226), Code/papertable.inc
+	  (1.137): Little visual fix for topics and options.
+
+2008-08-18 Monday 17:54  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.108), settings.php (1.106), Code/conference.inc
+	  (1.281), Code/search.inc (1.118): PC members cannot see decisions
+	  immediately.
+
+	  It makes more sense if the "reviewers can see decisions" setting
+	  applies to both PC and reviewers.
+
+2008-08-09 Saturday 11:51  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* bulkassign.php (1.20), index.php (1.190), Code/TODO (1.111),
+	  Code/helpers.inc (1.225), Code/search.inc (1.117): Smarter match
+	  algorithm for bulk assignments to match PC members.  Chairs can
+	  search for other PC twiddle tags, using syntax like
+	  "tag:frank~vote".
+
+2008-08-06 Wednesday 12:42  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/: paperlist.inc (1.194), search.inc (1.116): Reviewer
+	  searches link to the relevant reviews.
+
+2008-08-06 Wednesday 12:42  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.107), Code/review.inc (1.123): Tweak review rating
+	  help to add an initial definition of "helpful." I don't feel
+	  entirely comfortable with conference software defining what makes
+	  a review good, but something is better than nothing.
+
+2008-08-05 Tuesday 23:51  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* script.js (1.82), Code/papertable.inc (1.136): Automagically put
+	  the focus where it belongs
+
+2008-08-05 Tuesday 23:39  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.106), paper.php (1.183), script.js (1.81), search.php
+	  (1.167), settings.php (1.105), Code/paperactions.inc (1.3),
+	  Code/papertable.inc (1.135), Code/tags.inc (1.24): Some little
+	  voting tag bug fixes, and report unallocated votes.
+
+	  Also in the tags textarea return means submit.
+
+2008-08-05 Tuesday 20:05  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.105): a bit more help
+
+2008-08-05 Tuesday 19:43  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.104), index.php (1.189), Code/contactlist.inc (1.42),
+	  Code/review.inc (1.122), Code/search.inc (1.115): Review rating
+	  updates: make review ratings searchable.
+
+	  "rate:+" searches for reviews with positive ratings.	"rate:-"
+	  searches for reviews with negative ratings.  Other searches work,
+	  like "rate:+2" and "rate:+ re:reviewername".	These searches seem
+	  to hide information like we want(jesus that was annoying).
+
+	  Display review ratings better.  Link to very helpful/needing work
+	  reviews on the home page.  Fix up the review ratings column in
+	  the PC display: listing the number of positive and negative
+	  feedbacks is much better than providing a percentage.
+
+2008-08-05 Tuesday 19:40  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/tags.inc (1.23): Nit for papers with no tags
+
+2008-08-05 Tuesday 15:16  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.103), Code/review.inc (1.121): This is a better order
+	  for the rating links
+
+2008-08-05 Tuesday 15:09  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* help.php (1.102), Code/review.inc (1.120): Very helpful/Needs
+	  work/Average is a better rating scale than Yes/No/No opinion.
+
+2008-08-05 Tuesday 14:21  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* autoassign.php (1.55), help.php (1.101), paper.php (1.182),
+	  search.php (1.166), settings.php (1.104), tarball.sh (1.103),
+	  Code/paperlist.inc (1.193), Code/papertable.inc (1.134),
+	  Code/search.inc (1.114), Code/tags.inc (1.22),
+	  images/extagvotehover.png (1.1): Tag editing fixes and voting
+	  tags, a new feature.
+
+	  Changes: - Remove chair-only tags from the editable tag list.  -
+	  Report tag setting errors in the tag box.  - On tag setting
+	  error, prefer editable tag box.
+
+	  - rorder: searches search in reverse tag order.  - "showtags=1"
+	  search request shows tags even if the session doesn't.  - Ordered
+	  tag search links do "order:" searches.  - A couple bug fixes.
+
+	  New features: - Voting tags captures the idea of voting for
+	  papers like OSDI likes to do.    The system lets users vote
+	  within their allotments and automagically    tracks the total
+	  vote.  The best way to learn about voting tags is    probably the
+	  help.
+
+2008-08-05 Tuesday 14:14  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* paper.php (1.181): Paper edit pages gain a link back to the
+	  normal view.
+
+2008-08-05 Tuesday 14:13  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.108), comment.php (1.68), paper.php (1.180),
+	  review.php (1.161), Code/paperactions.inc (1.2): Allow tag
+	  setting on paper and assignment pages as well as review and
+	  comment pages.
+
+2008-08-03 Sunday 14:28  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* offline.php (1.45), review.php (1.160), style.css (1.269),
+	  Code/TODO (1.110), Code/conference.inc (1.280), Code/review.inc
+	  (1.119), Code/schema.sql (1.118), Code/updateschema.inc (1.7):
+	  Offline reviewing updates.
+
+	  - Blank review forms ignored on upload (inspired by Rebecca
+	  Isaacs request).
+
+	  - Supposedly "ready" review forms that lack required fields are
+	  saved, they're   just marked as "unready." (inspired by Rebecca
+	  Isaacs request)
+
+	  - The system detects attempts to upload an offline form after an
+	  online edit	and rejects those attempts.  Users can override
+	  with a "==+== Version"   field.  (inspired by Fred Douglis
+	  request)
+
+	  - Make it clearer where numeric option values go in the offline
+	  form	 (Benjamin Pierce request).
+
+	  - Make it clear that you can change "==+==" lines if told
+	  (Benjamin Pierce).
+
+	  - Uploading an unchanged review doesn't count as a modification.
+
+2008-08-03 Sunday 02:00  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.107), style.css (1.268), Code/conference.inc
+	  (1.279), Code/helpers.inc (1.224), Code/paperlist.inc (1.192):
+	  Manual assignment by PC member lists preferences and topic scores
+	  (Benjamin Pierce request)
+
+2008-08-03 Sunday 01:59  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/TODO (1.109): List TODOs
+
+2008-08-02 Saturday 14:57  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* autoassign.php (1.54): appearance nit
+
+2008-08-02 Saturday 14:56  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.106), autoassign.php (1.53), script.js (1.80),
+	  style.css (1.267), tarball.sh (1.102), Code/helpers.inc (1.223),
+	  images/ass-2.png (1.1): Assignment improvements.
+
+	  - Per paper assignment pages show topic interest scores as well
+	  as   preferences.  - This is shown more compactly.  - Author
+	  conflicts are shown more concisely too.  - Automatic assignments:
+	  Shift-click on PC members to select ranges.  - PC members are all
+	  selected by default.	- "Select all/none" for PC members.  -
+	  Automatic assignments gain "Clear" options to clear assignments,
+	   leads, shepherds, conflicts.  - A bug fix or two.
+
+2008-08-02 Saturday 14:43  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* reviewprefs.php (1.23): Improve (hopefully) review preference
+	  help description.
+
+2008-08-02 Saturday 08:54  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/papertable.inc (1.133): Nit
+
+2008-08-02 Saturday 08:54  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/: conference.inc (1.278), schema.sql (1.117),
+	  updateschema.inc (1.6): Embarrassing bug: fix the new-conference
+	  schema to match the updated-conference schema.  Reported by
+	  Benjamin Pierce
+
+2008-08-01 Friday 23:52  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* assign.php (1.105), tarball.sh (1.101), Code/papertable.inc
+	  (1.132), Code/reviewtable.inc (1.64), images/view24.png (1.1):
+	  Better formatting on review retraction links.  Chairs get a
+	  consistently placed "Assign" link on paper pages.  Everyone gets
+	  a consistently placed "Normal view" link on assign pages.  Assign
+	  pages forward you to paper pages on permission problems.
+
+2008-08-01 Friday 23:51  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/search.inc (1.113): External reviewer searches.
+
+2008-08-01 Friday 23:51  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* Code/review.inc (1.118): "Refuse review" reason field is bigger
+	  (Benjamin Pierce).
+
+2008-08-01 Friday 23:09  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* autoassign.php (1.52), mail.php (1.45), style.css (1.266),
+	  Code/paperlist.inc (1.191): Minor UI improvements will hopefully
+	  placate Jeff Mogul.
+
+	  - "Prepare assignment" makes it clear that the autoassigner has a
+	    confirmation step.	- Reorder paper selection to a more logical
+	  place.  - Paper selection doesn't require an intervening "List,"
+	  it is smartish.
+
+	  Also minor warning reduction in paperlist when PCs change.
+
+2008-08-01 Friday 16:06  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* mail.php (1.44), Code/conference.inc (1.277): Log sent mails
+	  (Mogul)
+
+2008-08-01 Friday 15:59  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* settings.php (1.103): Wording tweak for clarity (Mogul)
+
+2008-08-01 Friday 15:55  Eddie Kohler <kohler@cs.ucla.edu>
+
+	* mail.php (1.43), Code/conference.inc (1.276),
+	  Code/mailtemplate.inc (1.49): Mail tool: Improve %REVIEWS% and
+	  %COMMENTS%.
+
+	  - Include %COMMENTS% even if reviews are not shown on the site.
+	  But	include a warning.  (Jeff Mogul)
+
+	  - If authors can see reviews only after finishing their own, then
+	  the mail   tool will hide reviews and comments from authors who
+	  have not finished   their own reviews.  And include a warning.
+
 2008-08-01 Friday 14:25  Eddie Kohler <kohler@cs.ucla.edu>
 
 	* Code/search.inc (1.112): Fix dec: searches.

@@ -1,5 +1,126 @@
 HotCRP NEWS
 
+Version 2.24
+
+* Major changes
+
+** New paper display.  Paper, review, and comment views are unified into a
+   single display format.  The paper view shows initial words of abstract
+   and compressed author list; both are easily unfoldable.  Tags,
+   discussion leads, shepherds, review preferences, PC conflicts, and other
+   PC-type information appear in a strip down the left hand side.  Paper
+   views summarize comment counts and comment authorship.  I think this is
+   a huge improvement.
+
+** Voting tags.  Chairs can define tags used for voting, with vote
+   allotments, as in "vote#20".  PC members vote for papers by assigning
+   the corresponding twiddle tag, as in "~vote#1".  The system prevents
+   users from going over their allotments, and automagically maintains a
+   public "vote" tag that sums users' votes.
+
+** Ranking tag.  Preliminary support for paper rankings via the tags system.
+
+** Review ratings are searchable and gain more options.  The current set of
+   ratings is "Average, Very helpful, Not complete, Not convincing, Not
+   constructive, Not correct."  (Is this too many?)  The home page reports
+   a user's rated reviews.  Searching for "rate:+" finds positively rated
+   reviews, "rate:-" negatively rated reviews, and e.g. "rate:convincing"
+   finds "not convincing" rated reviews.  Robbert van Renesse feedback was
+   very helpful.
+
+* New features and new behavior
+
+** New search syntax: Support partial word matches, as in "foo*" or
+   "bl*ah".  Search for a tag in reverse order with "rorder:tag".  Search
+   within tag orders with, for instance, "tag:pcrating#2" or
+   "tag:pcrating#>2" (Rich Draves request).  Search for incomplete reviews
+   with "ire:whatever" (Rich Draves request).  Chairs and administrators
+   can search other users' twiddle tags, as in "tag:frank~vote".
+
+** Ordered tags: The "define ordered" and "add ordered" tag actions skip
+   order steps; for example, they might assign order 1, 3, 4, 7, 8, 10.
+   This hides information from conflicted PC members, since they can no
+   longer infer their papers' position in an order by looking for gaps.
+   New "Define sequential" and "Add sequential" actions do the old
+   sequential style.
+
+** Search highlight improvements: Searching only highlights terms in the
+   relevant fields; for example, "au:john" won't highlight "john" in the
+   title.  Also automagically unfold any field that contains a highlight.
+
+** Offline reviewing improvements.  Blank review forms ignored on upload,
+   rather than causing warnings (Rebecca Isaacs request).  Supposedly
+   "ready" review forms that lack required fields are saved anyway, they're
+   just not marked as "ready" (Rebecca Isaacs request).  The system detects
+   and rejects attempts to upload an offline form after a review is edited
+   online (Fred Douglis request).  Clarify where numeric scores are entered
+   (Benjamin Pierce request).
+
+** Paper assignment UI improvements.  Reorder fields, make submission
+   behavior clearer.  Automatic assignment: can shift-click on PC member
+   ranges.  Show topic interest scores and preferences as "Txxx Pyyy".
+   Automatic assignment can clear existing assignments.  Bug fixes.
+   (Benjamin Pierce and Jeff Mogul requests)
+
+** Comment visibility changes.  Users can mark a comment as "tied to
+   reviews," which means that PC members who haven't read the reviews can't
+   see the comment either.  This is more useful, arguably, than hiding
+   comments from external reviewers.  (Robbert van Renesse request)
+
+** A tweak to Minshall score improves its behavior when papers have
+   different numbers of reviews (Terence Kelly report).
+
+** External reviewers can use review tokens, since owning a review token
+   confers the right to view the corresponding paper.
+
+* Bug fixes and minor UI improvements
+
+** The "Reviewers can see decisions" setting also applies to the PC.
+
+** "Merge accounts" bug fixes.
+
+** PC members always count as reviewers, even if they haven't had any
+   reviews assigned yet (Laurel Krieger report).
+
+** Paper lists never show conflicted PC members counts of reviews
+   (Fred Douglis report).
+
+** Mail tool: Include %COMMENTS% in mails even when sending mail before
+   reviews are visible in the site.  This is the same as the %REVIEWS%
+   behavior.  (Jeff Mogul report)  Also, issue a warning about sending mail
+   with %REVIEWS% or %COMMENTS% when reviews aren't visible on the site.
+
+** Mail tool: If authors can see reviews only after finishing their own,
+   then the mail tool will hide reviews and comments from authors who have
+   not finished their own reviews.  And include a warning.
+
+** Mail tool: JavaScript discourages users from clicking on the "Send"
+   button too early (Robbert van Renesse, Rich Draves report).
+
+** Mail tool: Report how many emails remain to be sent.
+
+** Mail tool: Add "Discussion leads" and "Shepherds" recipient types (Jeff
+   Mogul request).
+
+** Mail tool: The action log tracks sent mail (Jeff Mogul request).
+
+** "Refuse review" reason field is bigger (Benjamin Pierce report).
+
+** Search bug fix: "order:~privatetag" works (Rich Draves report).
+
+** Search: Add Download > Discussion leads and Download > Shepherds (Jeff
+   Mogul request).
+
+** Search: Add Display options > Row numbers (Rich Draves request).
+
+** Search: Tag order searches gain an explicit search column heading so that
+   the sort order can be reversed.  Request and UI ideas from Rich Draves.
+
+** Settings: Validate XHTML, preventing cross-site scripting bugs.
+
+* Special thanks to Robbert van Renesse.
+
+
 Version 2.23   22.Jul.2008
 
 * Do not infinite loop when sending mail to non-ASCII names associated with

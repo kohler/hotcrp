@@ -192,7 +192,11 @@ function saveComment($text) {
     
     unset($_REQUEST["c"]);
     $_REQUEST["paperId"] = $prow->paperId;
-    $_REQUEST["commentId"] = $savedCommentId;
+    if ($text == "")
+	unset($_REQUEST["commentId"]);
+    else
+	$_REQUEST["commentId"] = $savedCommentId;
+    $_REQUEST["noedit"] = 1;
 }
 
 function saveResponse($text) {
@@ -242,7 +246,8 @@ if (isset($_REQUEST['submit']) && defval($_REQUEST, 'response')) {
 	saveComment("");
 	loadRows();
     }
-}
+} else if (isset($_REQUEST["cancel"]) && $crow)
+    $_REQUEST["noedit"] = 1;
 
 
 // paper actions

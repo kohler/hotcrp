@@ -592,7 +592,6 @@ confHeader();
 // correct modes
 $paperTable = new PaperTable($prow);
 if ($paperTable->mode == "r" || $paperTable->mode == "re") {
-    $rf = reviewForm();
     $paperTable->resolveReview();
     $paperTable->fixReviewMode();
 }
@@ -616,12 +615,12 @@ $paperTable->initialize($editable, $editable && $useRequest,
 			"paper");
 
 // produce paper table
-if ($paperTable->mode == "r") {
+if ($paperTable->mode == "r" && !$paperTable->rrow) {
     $paperTable->paptabBegin();
     $paperTable->paptabEndWithReviews(); 
     $paperTable->paptabComments();
 
-} else if ($paperTable->mode == "re") {
+} else if ($paperTable->mode == "re" || $paperTable->mode == "r") {
     $paperTable->paptabBegin();
     $paperTable->paptabEndWithEditableReview();
     if (!$paperTable->rrow)
@@ -696,14 +695,14 @@ if ($paperTable->mode == "r") {
 
     // title
     if (!$newPaper) {
+	$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId$linkExtra'";
 	echo "<tr class='id'>
-  <td class='caption'><h2>#$paperId</h2></td>
+  <td class='caption'><h2>", $a, " class='q'>#$paperId</a></h2></td>
   <td class='entry' colspan='2'><div class='floatright'>";
-	$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId$linkExtra'>";
-	echo $a, $Conf->cacheableImage("view24.png", "[View]", null, "b"),
-	    "</a>&nbsp;", $a, "Normal view</a></div><h2>";
+	echo $a, ">", $Conf->cacheableImage("view24.png", "[View]", null, "b"),
+	    "</a>&nbsp;", $a, "Normal view</a></div><h2>", $a, " class='q'>";
 	$paperTable->echoTitle($prow);
-	echo "</h2></td>
+	echo "</a></h2></td>
 </tr>\n";
     } else
 	echo "<tr><td></td><td><div class='g'></div></td></tr>\n";

@@ -698,9 +698,9 @@ class Contact {
 	    return false;
     }
 
-    function canRankPaper($prow, $conf) {
-	return $conf->setting("rank")
-	    && ($this->actPC($prow)
+    function canSetRank($prow, $conf, $forceShow = null) {
+	return $conf->setting("tag_rank")
+	    && ($this->actPC($prow, $forceShow)
 		|| ($prow->conflictType <= 0 && $prow->myReviewType > 0));
     }
 
@@ -1001,11 +1001,11 @@ class Contact {
 		    || $forceShow || defval($_REQUEST, "forceShow")));
     }
 
-    function actPC($prow) {
+    function actPC($prow, $forceShow = null) {
 	return ($this->isPC
 		&& (!$prow
 		    || $prow->conflictType <= 0
-		    || ($this->privChair && defval($_REQUEST, "forceShow"))));
+		    || ($this->privChair && ($forceShow === null ? defval($_REQUEST, "forceShow") : $forceShow))));
     }
 
     function canSetOutcome($prow) {

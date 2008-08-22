@@ -50,6 +50,7 @@ $SettingGroups = array("acc" => array(
 			     "extrev_chairreq" => "check",
 			     "x_tag_chair" => "special",
 			     "x_tag_vote" => "special",
+			     "x_tag_rank" => "special",
 			     "tag_seeall" => "check",
 			     "extrev_soft" => "date",
 			     "extrev_hard" => "date",
@@ -112,6 +113,7 @@ $SettingText = array(
 	"extrev_view" => "External reviewers can view reviewer identities setting",
 	"tag_chair" => "Chair tags",
 	"tag_vote" => "Voting tags",
+	"tag_rank" => "Rank tag",
 	"tag_seeall" => "PC can see tags for conflicted papers",
 	"rev_ratings" => "Review ratings setting",
 	"au_seerev" => "Authors can see reviews setting",
@@ -323,10 +325,11 @@ function doTags($set, $what) {
     if (!$set && $what == "tag_chair" && isset($_REQUEST["tag_chair"])) {
 	$vs = array();
 	foreach (preg_split('/\s+/', $_REQUEST["tag_chair"]) as $t)
-	    if ($t !== "" && checkTag($t, false))
+	    if ($t !== "" && checkTag($t, false)
+		&& strstr($t, "~") === false && strstr($t, "#") === false)
 		$vs[] = $t;
 	    else if ($t !== "") {
-		$Error[] = "One of the chair-only tags contains odd characters.";
+		$Error[] = "Chair-only tag &ldquo;" . htmlspecialchars($t) . "&rdquo; contains odd characters.";
 		$Highlight["tag_chair"] = true;
 	    }
 	$v = array(count($vs), join(" ", $vs));
@@ -339,12 +342,13 @@ function doTags($set, $what) {
     if (!$set && $what == "tag_vote" && isset($_REQUEST["tag_vote"])) {
 	$vs = array();
 	foreach (preg_split('/\s+/', $_REQUEST["tag_vote"]) as $t)
-	    if ($t !== "" && checkTag($t, false)) {
+	    if ($t !== "" && checkTag($t, false)
+		&& strstr($t, "~") === false) {
 		if (preg_match('/\A([^#]+)(|#|#0+|#-\d*)\Z/', $t, $m))
 		    $t = $m[1] . "#1";
 		$vs[] = $t;
 	    } else if ($t !== "") {
-		$Error[] = "One of the voting tags contains odd characters.";
+		$Error[] = "Voting tag &ldquo;" . htmlspecialchars($t) . "&rdquo; contains odd characters.";
 		$Highlight["tag_vote"] = true;
 	    }
 	$v = array(count($vs), join(" ", $vs));
@@ -394,6 +398,27 @@ function doTags($set, $what) {
 		$q[] = "($pid, '" . sqlq($base) . "', $what)";
 	    $Conf->qe("insert into PaperTag values " . join(", ", $q), "while counting votes");
 	}
+    }
+
+    if (!$set && $what == "tag_rank" && isset($_REQUEST["tag_rank"])) {
+	$vs = array();
+	foreach (preg_split('/\s+/', $_REQUEST["tag_rank"]) as $t)
+	    if ($t !== "" && checkTag($t, false)
+		&& strstr($t, "~") === false && strstr($t, "#") === false)
+		$vs[] = $t;
+	    else if ($t !== "") {
+		$Error[] = "Rank tag &ldquo;" . htmlspecialchars($t) . "&rdquo; contains odd characters.";
+		$Highlight["tag_rank"] = true;
+	    }
+	if (count($vs) > 1) {
+	    $Error[] = "At most one rank tag is currently supported.";
+	    $Highlight["tag_rank"] = true;
+	}
+	$v = array(count($vs), join(" ", $vs));
+	if (!isset($Highlight["tag_rank"])
+	    && ($Conf->setting("tag_rank") !== $v[0]
+		|| $Conf->settingText("tag_rank") !== $v[1]))
+	    $Values["tag_rank"] = $v;
     }
 }
 
@@ -662,7 +687,8 @@ function doBanal($set) {
 
 function doSpecial($name, $set) {
     global $Values, $Error, $Highlight;
-    if ($name == "x_tag_chair" || $name == "x_tag_vote")
+    if ($name == "x_tag_chair" || $name == "x_tag_vote"
+	|| $name == "x_tag_rank")
 	doTags($set, substr($name, 2));
     else if ($name == "topics")
 	doTopics($set);
@@ -1181,7 +1207,7 @@ function doRevGroup() {
 	sort($t);
 	$v = join(" ", $t);
     }
-    echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='50' onchange='hiliter(this)' /><br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
+    echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
     echo "<tr><td class='lcaption'>", decorateSettingName("tag_vote", "Voting tags"), "</td>";
     if (count($Error) > 0)
@@ -1194,7 +1220,14 @@ function doRevGroup() {
 	    $x .= "$n#$v ";
 	$v = trim($x);
     }
-    echo "<td><input type='text' class='textlite' name='tag_vote' value=\"", htmlspecialchars($v), "\" size='50' onchange='hiliter(this)' /><br /><div class='hint'>&ldquo;vote#10&rdquo; declares a voting tag named &ldquo;vote&rdquo; with an allotment of 10 votes per PC member. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='help$ConfSiteSuffix?t=votetags'>What is this?</a></div></td></tr>";
+    echo "<td><input type='text' class='textlite' name='tag_vote' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>&ldquo;vote#10&rdquo; declares a voting tag named &ldquo;vote&rdquo; with an allotment of 10 votes per PC member. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='help$ConfSiteSuffix?t=votetags'>What is this?</a></div></td></tr>";
+
+    echo "<tr><td class='lcaption'>", decorateSettingName("tag_rank", "Ranking tag"), "</td>";
+    if (count($Error) > 0)
+	$v = defval($_REQUEST, "tag_rank", "");
+    else
+	$v = $Conf->settingText("tag_rank", "");
+    echo "<td><input type='text' class='textlite' name='tag_rank' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>If set, the <a href='offline$ConfSiteSuffix'>offline reviewing page</a> will expose support for uploading rankings by this tag.</div></td></tr>";
     echo "</table>";
 
     echo "<div class='g'></div>\n";

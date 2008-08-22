@@ -95,7 +95,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-	if ($this->settings["allowPaperOption"] < 19) {
+	if ($this->settings["allowPaperOption"] < 20) {
 	    require_once("updateschema.inc");
 	    updateSchema($this);
 	}
@@ -723,7 +723,6 @@ class Conference {
 	//   "topics"
 	//   "options"
 	//   "scores" => array(fields to score)
-	//   "ranks"
 	//   "order" => $sql	$sql is SQL 'order by' clause (or empty)
 
 	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']) || isset($options['myReviewsOpt']) || isset($options['myOutstandingReviews']);
@@ -822,9 +821,6 @@ class Conference {
 	if (defval($options, 'allConflictType'))
 	    $pq .= ",
 		AllConflict.allConflictType";
-	if (defval($options, "ranks"))
-	    $pq .= ",
-		PaperRank.rank";
 
 	// tables
 	$pq .= "
@@ -911,15 +907,6 @@ class Conference {
 	}
 	if (defval($options, 'allConflictType'))
 	    $pq .= "		left join (select paperId, group_concat(concat(contactId,' ',conflictType) separator ',') as allConflictType from PaperConflict group by paperId) as AllConflict on (AllConflict.paperId=Paper.paperId)\n";
-
-	if (defval($options, "ranks")) {
-	    $rankContactId = $reviewContactId;
-	    if (isset($options["allReviews"]))
-		$rankContactId = "PaperReview.contactId";
-	    else if (isset($options["allComments"]))
-		$rankContactId = "PaperComment.contactId";
-	    $pq .= "		left join PaperRank on (PaperRank.paperId=Paper.paperId and PaperRank.contactId=$rankContactId)\n";
-	}
 
 
 	// conditions
@@ -1065,9 +1052,6 @@ class Conference {
 	if (isset($selector["myRating"]))
 	    $q .= ",
 		MyRating.rating as myRating";
-	if (isset($selector["ranks"]))
-	    $q .= ",
-		PaperRank.rank";
 	$q .= "\n		from PaperReview
 		join ContactInfo using (contactId)
 		left join ContactInfo as ReqCI on (ReqCI.contactId=PaperReview.requestedBy)\n";
@@ -1075,8 +1059,6 @@ class Conference {
 	    $q .= "		left join ReviewRating on (ReviewRating.reviewId=PaperReview.reviewId)\n";
 	if (isset($selector["myRating"]))
 	    $q .= "		left join ReviewRating as MyRating on (MyRating.reviewId=PaperReview.reviewId and MyRating.contactId=" . $selector["myRating"] . ")\n";
-	if (isset($selector["ranks"]))
-	    $q .= "		left join PaperRank on (PaperRank.paperId=PaperReview.paperId and PaperRank.contactId=PaperReview.contactId)\n";
 
 	$where = array();
 	if (isset($reviewId))

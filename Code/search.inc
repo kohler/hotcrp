@@ -347,7 +347,7 @@ class PaperSearch {
 	if (count($qt) == $nqt)
 	    $qt[] = new SearchTerm("f");
     }
-    
+
     function _searchReviews($word, $rf, $field, $negated, &$qt) {
 	global $Conf;
 
@@ -402,6 +402,57 @@ class PaperSearch {
 	}
 	if (count($qt) == $nqt)
 	    $qt[] = new SearchTerm("f");
+    }
+
+    function _searchTags($word, $special, $negated, &$qt) {
+	global $Conf;
+	require_once("tags.inc");
+
+	// allow external reviewers to search their own rank tag
+	if (!$this->amPC) {
+	    $ranktag = "~" . $Conf->settingText("tag_rank");
+	    if (!$Conf->setting("tag_rank")
+		|| substr($word, 0, strlen($ranktag)) !== $ranktag
+		|| (strlen($word) > strlen($ranktag)
+		    && $word[strlen($ranktag)] != "#"))
+		return;
+	}
+
+	if (preg_match('/\A([^#]+)#([<>!]?=?)(-?\d+)\Z/', $word, $m)
+	    && $m[1] != "any" && $m[1] != "none") {
+	    $tagword = $m[1];
+	    $extra = ($m[2] == "!" ? "!=" : ($m[2] == "" ? "=" : $m[2])) . $m[3];
+	} else {
+	    $tagword = $word;
+	    $extra = null;
+	}
+
+	$twiddle = strpos($tagword, "~");
+	$twiddlecid = $this->contactId;
+	if ($this->privChair && $twiddle > 0) {
+	    $c = substr($tagword, 0, $twiddle);
+	    $twiddlecid = matchContact(pcMembers(), null, null, $c);
+	    if ($twiddlecid == -2)
+		$this->warn("&ldquo;" . htmlspecialchars($c) . "&rdquo; matches no PC member.");
+	    else if ($twiddlecid <= 0)
+		$this->warn("&ldquo;" . htmlspecialchars($c) . "&rdquo; matches more than one PC member; be more specific to disambiguate.");
+	    $tagword = substr($tagword, $twiddle);
+	}
+
+	if (($e = checkTagError($tagword, true)))
+	    $this->warn(htmlspecialchars($e));
+	$value = $tagword;
+	$rt = 0;
+	if ($value && $twiddle !== false)
+	    $value = $twiddlecid . $value;
+	else if (!$this->privChair && $Conf->setting("tag_seeall") <= 0)
+	    $rt |= self::F_NONCONFLICT;
+	if (($special == "order" || $special == "rorder" || !$special)
+	    && !$negated) {
+	    $this->orderTag = ($this->orderTag === false ? $value : null);
+	    $this->orderReverse = ($special == "rorder");
+	}
+	$qt[] = new SearchTerm("tag", $rt, $extra ? array($value, $extra) : $value);
     }
 
     function _searchQueryWord($word, $negated, &$qt) {
@@ -485,46 +536,9 @@ class PaperSearch {
 	    $rt = ($this->privChair ? 0 : self::F_NONCONFLICT);
 	    $qt[] = new SearchTerm("pf", $rt, array("shepherdContactId", $x));
 	}
-	if ((($special ? $special == "tag" : isset($this->fields['tag']))
-	     || $special == "order" || $special == "rorder")
-	    && $this->amPC) {
-	    require_once("tags.inc");
-	    if (preg_match('/\A([^#]+)#([<>!]?=?)(-?\d+)\Z/', $word, $m)
-		&& $m[1] != "any" && $m[1] != "none") {
-		$tagword = $m[1];
-		$extra = ($m[2] == "!" ? "!=" : ($m[2] == "" ? "=" : $m[2])) . $m[3];
-	    } else {
-		$tagword = $word;
-		$extra = null;
-	    }
-
-	    $twiddle = strpos($tagword, "~");
-	    $twiddlecid = $this->contactId;
-	    if ($this->privChair && $twiddle > 0) {
-		$c = substr($tagword, 0, $twiddle);
-		$twiddlecid = matchContact(pcMembers(), null, null, $c);
-		if ($twiddlecid == -2)
-		    $this->warn("&ldquo;" . htmlspecialchars($c) . "&rdquo; matches no PC member.");
-		else if ($twiddlecid <= 0)
-		    $this->warn("&ldquo;" . htmlspecialchars($c) . "&rdquo; matches more than one PC member; be more specific to disambiguate.");
-		$tagword = substr($tagword, $twiddle);
-	    }
-
- 	    if (($e = checkTagError($tagword, true)))
-		$this->warn(htmlspecialchars($e));
-	    $value = $tagword;
-	    $rt = 0;
-	    if ($value && $twiddle !== false)
-		$value = $twiddlecid . $value;
-	    else if (!$this->privChair && $Conf->setting("tag_seeall") <= 0)
-		$rt |= self::F_NONCONFLICT;
-	    if (($special == "order" || $special == "rorder" || !$special)
-		&& !$negated) {
-		$this->orderTag = ($this->orderTag === false ? $value : null);
-		$this->orderReverse = ($special == "rorder");
-	    }
-	    $qt[] = new SearchTerm("tag", $rt, $extra ? array($value, $extra) : $value);
-	}
+	if (($special ? $special == "tag" : isset($this->fields['tag']))
+	    || $special == "order" || $special == "rorder")
+	    $this->_searchTags($word, $special, $negated, $qt);
 	if (($special ? $special == "topic" : isset($this->fields['topic']))) {
 	    $type = "topic";
 	    $value = null;
