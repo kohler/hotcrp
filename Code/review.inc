@@ -1210,6 +1210,10 @@ $blind\n";
 		}
 		echo " &nbsp;<span class='barsep'>|</span>&nbsp; <a href='help$ConfSiteSuffix?t=revrate'>What is this?</a></div>";
 	    }
+
+	    if (defval($options, "editmessage"))
+		echo "<div class='hint'>", defval($options, "editmessage"), "</div>\n";
+    
 	    echo "<div class='clear'></div></td><td></td></tr>
   <tr><td></td><td class='revct'><div class='inrevct'>",
 		$this->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow, $Conf)),
