@@ -1,6 +1,6 @@
 <?php
 // cacheable.php -- HotCRP cacheability helper
-// HotCRP is Copyright (c) 2006-2007 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 header("Cache-Control: public, max-age=315576000");
