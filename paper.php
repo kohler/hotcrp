@@ -434,45 +434,60 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // confirmation message
     getProw();
     if ($isSubmitFinal) {
-	$what = "Submitted final copy for";
+	$actiontext = "Submitted final copy for";
 	$subject = "Updated paper #$paperId final copy";
+	$confirmtext = "submission of a final copy for";
+    } else if ($isSubmit) {
+	$actiontext = "Submitted";
+	$subject = "Submitted paper #$paperId";
+	$confirmtext = "submission of";
+    } else if ($newPaper) {
+	$actiontext = "Registered new";
+	$subject = "Registered paper #$paperId";
+	$confirmtext = "registration of";
     } else {
-	$what = ($isSubmit ? "Submitted" : ($newPaper ? "Registered" : "Updated"));
-	$subject = $what . " paper #$paperId";
+	$actiontext = "Updated";
+	$subject = "Updated paper #$paperId";
+	$confirmtext = "update of";
     }
-    $Conf->confirmMsg("$what paper #$paperId.");
-    
 
-    // send paper email
-    $m = "This mail confirms the "
-	. ($isSubmitFinal ? "submission of a final copy for"
-	   : ($isSubmit ? "submission of"
-	      : ($newPaper ? "registration of" : "update of")))
-	. " paper #$paperId at the %CONFNAME% submission site.
+    // additional information
+    $extratext = "";
+    if ($isSubmitFinal) {
+	$deadline = $Conf->printableTimeSetting("final_done");
+	if ($deadline != "N/A")
+	    $extratext = "You have until $deadline to make further changes.";
+    } else {
+	if ($isSubmit || $prow->timeSubmitted > 0)
+	    $extratext = "You will receive email when reviews are available.";
+	else if ($Conf->setting("sub_freeze") > 0)
+	    $extratext = "You have not yet submitted a final version of this paper.";
+	else if ($prow->size == 0)
+	    $extratext = "You have not yet uploaded the paper itself.";
+	else
+	    $extratext = "This version of the paper is marked as not ready for review.";
+	$deadline = $Conf->printableTimeSetting("sub_update");
+	if ($deadline != "N/A" && ($prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0))
+	    $extratext .= "  You have until $deadline to update the paper further.";
+	$deadline = $Conf->printableTimeSetting("sub_sub");
+	if ($deadline != "N/A" && $prow->timeSubmitted <= 0)
+	    $extratext .= "  <strong>If you do not submit the paper by $deadline, it will not be considered for the conference.</strong>";
+    }
+
+    // HTML confirmation
+    if ($isSubmitFinal || $prow->timeSubmitted > 0)
+	$Conf->confirmMsg($actiontext . " paper #$paperId.  " . $extratext);
+    else
+	$Conf->warnMsg($actiontext . " paper #$paperId.  " . $extratext);
+
+    // mail confirmation
+    $m = "This mail confirms the $confirmtext paper #$paperId at the %CONFNAME% submission site.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
   Paper site: %URL%/paper$ConfSiteSuffix?p=%NUMBER%\n\n";
-    if ($isSubmitFinal) {
-	$deadline = $Conf->printableTimeSetting("final_done");
-	$m .= ($deadline != "N/A" ? "You have until $deadline to make further changes.\n\n" : "");
-    } else {
-	if ($isSubmit || $prow->timeSubmitted > 0)
-	    $m .= "You will receive email when reviews are available.";
-	else if ($Conf->setting("sub_freeze") > 0)
-	    $m .= "You have not yet submitted a final version of this paper.";
-	else if ($prow->size == 0)
-	    $m .= "You have not yet uploaded the paper itself.";
-	else
-	    $m .= "This version of the paper is marked as not ready for review.";
-	$deadline = $Conf->printableTimeSetting("sub_update");
-	if ($deadline != "N/A" && ($prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0))
-	    $m .= "  You have until $deadline to update the paper further.";
-	$deadline = $Conf->printableTimeSetting("sub_sub");
-	if ($deadline != "N/A" && $prow->timeSubmitted <= 0)
-	    $m .= "  If you do not submit the paper by $deadline, it will not be considered for the conference.";
-	$m .= "\n\n";
-    }
+    if ($extratext !== "")
+	$m .= preg_replace("|</?strong>|", "", $extratext) . "\n\n";
     if ($Me->privChair && isset($_REQUEST["emailNote"]))
 	$m .= "A conference administrator provided the following reason for this update: %REASON%\n\n";
     else if ($Me->privChair && $prow->conflictType < CONFLICT_AUTHOR)
@@ -487,7 +502,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	Mailer::sendContactAuthors(array("$subject %TITLEHINT%", $m), $prow, null, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
     }
     
-    $Conf->log($what, $Me, $paperId);
+    $Conf->log($actiontext, $Me, $paperId);
     return true;
 }
 
