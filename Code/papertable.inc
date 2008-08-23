@@ -1022,12 +1022,12 @@ class PaperTable {
     }
 
     function papstripTags($prow, $site = null) {
-	global $Conf, $ConfSiteSuffix, $Me, $Error;
+	global $Conf, $ConfSiteSuffix, $Me, $Error, $forceShow;
 	if ($site || defval($prow, "paperTags", "") !== "") {
 	    // Note that tags MUST NOT contain HTML special characters.
 	    require_once("tags.inc");
 	    $tx = tagsToText($prow, true, $Me);
-	    $editable = $site && $Me->canSetTags($prow, $Conf);
+	    $editable = $site && $Me->canSetTags($prow, $Conf, $forceShow);
 
 	    if ($editable)
 		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div id='foldtags' class='", (isset($Error["tags"]) ? "foldo" : "foldc"), " inform'><input type='hidden' name='settags' value='1' />";
@@ -1039,7 +1039,7 @@ class PaperTable {
 		$Conf->footerStuff .= "<form id='tagreportform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'><input type='hidden' name='tagreport' value='1' /></form>";
 
 		$t = tagsToText($prow, false, $Me, true);
-		echo "<div class='ellipsis'>", ($tx == "" ? "none" : $tx),
+		echo "<div class='ellipsis'>", ($tx == "" ? "None" : $tx),
 		    "</div><div class='extension'><div id='tagreportformresult'></div>";
 		if (isset($Error["tags"]))
 		    echo "<div class='xmerror'>", $Error["tags"], "</div>";
@@ -1049,7 +1049,7 @@ class PaperTable {
 		    "<span class='hint'><a href='help$ConfSiteSuffix?t=tags'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
 		    "</div>";
 	    } else
-		echo ($tx == "" ? "none" : $tx);
+		echo ($tx == "" ? "None" : $tx);
 	    echo "</div>";
 
 	    if ($editable)

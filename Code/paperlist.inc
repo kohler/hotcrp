@@ -705,11 +705,11 @@ class PaperList extends BaseList {
 	case self::FIELD_TAGS:
 	    if (!$this->contact->canViewTags($row, $Conf))
 		return "";
-	    if ($this->foldedTags === false && $row->paperTags == "")
-		return "";
-	    else if ($this->foldedTags === false) {
-		$t = tagsToText($row, true, $this->contact);
-		return "<span id='tags$row->paperId'>" . $t . "</span>";
+	    if ($this->foldedTags === false) {
+		if (($t = $row->paperTags) !== "")
+		    if (($t = tagsToText($row, true, $this->contact)) !== "")
+			$t = "<span id='tags$row->paperId'>" . $t . "</span>";
+		return $t;
 	    } else {
 		$this->foldedTags[] = $row->paperId;
 		return "<span id='tags$row->paperId'><em>Loading</em></span>";
@@ -795,7 +795,10 @@ class PaperList extends BaseList {
 	if ($this->contact->isPC && !$revpref) {
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Tag</a></span><span class='lld$nlll'><b>:</b><a class='help' href='help$ConfSiteSuffix?t=tags' title='Learn more'>?</a> &nbsp;";
-	    $t .= tagg_select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define", "so" => "Define ordered", "ao" => "Add ordered", "sos" => "Define sequential", "aos" => "Add sequential"), null, array("class" => "bsm"))
+	    $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "so" => "Define ordered", "ao" => "Add ordered", "sos" => "Define sequential", "aos" => "Add sequential");
+	    if ($this->contact->privChair)
+		$tagopt["cr"] = "Calculate rank";
+	    $t .= tagg_select("tagtype", $tagopt, null, array("class" => "bsm"))
 		. " &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='bsm' name='tagact' value='Go' /></span>";
 	    $nlll++;
 	}

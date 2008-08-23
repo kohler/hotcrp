@@ -325,8 +325,7 @@ function doTags($set, $what) {
     if (!$set && $what == "tag_chair" && isset($_REQUEST["tag_chair"])) {
 	$vs = array();
 	foreach (preg_split('/\s+/', $_REQUEST["tag_chair"]) as $t)
-	    if ($t !== "" && checkTag($t, false)
-		&& strstr($t, "~") === false && strstr($t, "#") === false)
+	    if ($t !== "" && checkTag($t, CHECKTAG_QUIET | CHECKTAG_NOPRIVATE | CHECKTAG_NOINDEX))
 		$vs[] = $t;
 	    else if ($t !== "") {
 		$Error[] = "Chair-only tag &ldquo;" . htmlspecialchars($t) . "&rdquo; contains odd characters.";
@@ -342,8 +341,7 @@ function doTags($set, $what) {
     if (!$set && $what == "tag_vote" && isset($_REQUEST["tag_vote"])) {
 	$vs = array();
 	foreach (preg_split('/\s+/', $_REQUEST["tag_vote"]) as $t)
-	    if ($t !== "" && checkTag($t, false)
-		&& strstr($t, "~") === false) {
+	    if ($t !== "" && checkTag($t, CHECKTAG_QUIET | CHECKTAG_NOPRIVATE)) {
 		if (preg_match('/\A([^#]+)(|#|#0+|#-\d*)\Z/', $t, $m))
 		    $t = $m[1] . "#1";
 		$vs[] = $t;
@@ -403,8 +401,7 @@ function doTags($set, $what) {
     if (!$set && $what == "tag_rank" && isset($_REQUEST["tag_rank"])) {
 	$vs = array();
 	foreach (preg_split('/\s+/', $_REQUEST["tag_rank"]) as $t)
-	    if ($t !== "" && checkTag($t, false)
-		&& strstr($t, "~") === false && strstr($t, "#") === false)
+	    if ($t !== "" && checkTag($t, CHECKTAG_QUIET | CHECKTAG_NOPRIVATE | CHECKTAG_NOINDEX))
 		$vs[] = $t;
 	    else if ($t !== "") {
 		$Error[] = "Rank tag &ldquo;" . htmlspecialchars($t) . "&rdquo; contains odd characters.";

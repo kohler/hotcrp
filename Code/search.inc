@@ -418,7 +418,7 @@ class PaperSearch {
 		return;
 	}
 
-	if (preg_match('/\A([^#]+)#([<>!]?=?)(-?\d+)\Z/', $word, $m)
+	if (preg_match('/\A([^#<>!=]+)#?([<>!]?=?)(-?\d+)\Z/', $word, $m)
 	    && $m[1] != "any" && $m[1] != "none") {
 	    $tagword = $m[1];
 	    $extra = ($m[2] == "!" ? "!=" : ($m[2] == "" ? "=" : $m[2])) . $m[3];
@@ -439,7 +439,7 @@ class PaperSearch {
 	    $tagword = substr($tagword, $twiddle);
 	}
 
-	if (($e = checkTagError($tagword, true)))
+	if (($e = checkTagError($tagword, CHECKTAG_ALLOWRESERVED | CHECKTAG_NOINDEX)))
 	    $this->warn(htmlspecialchars($e));
 	$value = $tagword;
 	$rt = 0;
@@ -1599,7 +1599,7 @@ class PaperSearch {
 	else
 	    return false;
 	require_once("tags.inc");
-	if (!checkTag($t, false))
+	if (!checkTag($t, CHECKTAG_QUIET))
 	    return false;
 	if ($d[0] == "o" && !$this->qx)
 	    return $d;

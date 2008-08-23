@@ -84,6 +84,7 @@ Code/mailtemplate.inc
 Code/paperactions.inc
 Code/paperlist.inc
 Code/papertable.inc
+Code/rank.inc
 Code/review.inc
 Code/reviewsetform.inc
 Code/reviewtable.inc

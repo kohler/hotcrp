@@ -147,10 +147,8 @@ class PaperActions {
         if ($Me->canSetTags($prow, $Conf, $forceShow)) {
 	    require_once("Code/tags.inc");
 	    setTags($prow->paperId, defval($_REQUEST, "tags", ""), 'p', $Me->privChair);
-	} else {
-	    $Conf->errorMsg("You cannot set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Override conflict</a>)" : ""));
-	    $Error["tags"] = true;
-	}
+	} else
+	    $Error["tags"] = "You can't set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Override conflict</a>)" : "");
 	if ($ajax)
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "tags")));
     }

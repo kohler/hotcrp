@@ -289,6 +289,11 @@ function tagaction() {
     $tag = $_REQUEST["tag"];
     if (count($papers) && ($act == "a" || $act == "d" || $act == "s" || $act == "so" || $act == "ao" || $act == "sos" || $act == "aos"))
 	setTags($papers, $tag, $act, $Me->privChair);
+    else if (count($papers) && $act == "cr" && $Me->privChair
+	     && checkTag($tag, CHECKTAG_NOINDEX | CHECKTAG_NOPRIVATE | CHECKTAG_ERRORARRAY)) {
+	require_once("Code/rank.inc");
+	setRankIRV($papers, $tag);
+    }
     if (isset($Error["tags"]))
 	$Conf->errorMsg($Error["tags"]);
 }
@@ -300,7 +305,7 @@ if (isset($_REQUEST["tagact"]) && $Me->isPC && isset($papersel) && isset($_REQUE
 if ($getaction == "votes" && isset($papersel) && defval($_REQUEST, "tag")
     && $Me->isPC) {
     require_once("Code/tags.inc");
-    if (($tag = checkTag($_REQUEST["tag"])) !== false) {
+    if (($tag = checkTag($_REQUEST["tag"], CHECKTAG_NOINDEX)) !== false) {
 	$q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag));
 	$result = $Conf->qe($q, "while selecting papers");
 	$texts = array();
@@ -321,7 +326,7 @@ $settingrank = ($Conf->setting("tag_rank") && defval($_REQUEST, "tag") == "~" . 
 if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
     && ($Me->isPC || ($Me->amReviewer() && $settingrank))) {
     require_once("Code/tags.inc");
-    if (($tag = checkTag($_REQUEST["tag"])) !== false) {
+    if (($tag = checkTag($_REQUEST["tag"], CHECKTAG_NOINDEX)) !== false) {
 	$q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"));
 	$result = $Conf->qe($q, "while selecting papers");
 	$real = "";

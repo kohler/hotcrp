@@ -162,13 +162,14 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode) {
     
     $nvisible = 0;
     $myrr = null;
-    foreach ($rrows as $rr) {
-	if ($Me->canViewReview($prow, $rr, $Conf, $whyNot))
-	    $nvisible++;
-	if ($rr->contactId == $Me->contactId
-	    || (!$myrr && $Me->ownReview($rr)))
-	    $myrr = $rr;
-    }
+    if ($rrows)
+	foreach ($rrows as $rr) {
+	    if ($Me->canViewReview($prow, $rr, $Conf, $whyNot))
+		$nvisible++;
+	    if ($rr->contactId == $Me->contactId
+		|| (!$myrr && $Me->ownReview($rr)))
+		$myrr = $rr;
+	}
 
     // comments
     $pret = "";

@@ -72,7 +72,7 @@ function setTagIndexes() {
     $errors = array();
     foreach (explode("\n", rtrim(cleannl($text))) as $l) {
 	if (!$tag && substr($l, 0, 6) == "# Tag:")
-	    $tag = checkTag(trim(substr($l, 6)), false);
+	    $tag = checkTag(trim(substr($l, 6)), CHECKTAG_QUIET | CHECKTAG_NOINDEX);
 	if ($l == "" || $l[0] == "#") {
 	    ++$lineno;
 	    continue;

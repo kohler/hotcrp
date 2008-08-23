@@ -6,27 +6,36 @@
 // Note that tags MUST NOT contain HTML or URL special characters:
 // no "'&<>
 
-function checkTagError($tag, $forsearch = false) {
+define("CHECKTAG_ALLOWRESERVED", 1);
+define("CHECKTAG_NOPRIVATE", 2);
+define("CHECKTAG_NOINDEX", 4);
+define("CHECKTAG_QUIET", 8);
+define("CHECKTAG_ERRORARRAY", 16);
+
+function checkTagError($tag, $flags) {
     if ($tag == "")
 	return "Empty tag.";
     else if (strlen($tag) > TAG_MAXLEN)
 	return "Tag \"$tag\" too long; maximum " . TAG_MAXLEN . " characters.";
-    else if (!preg_match('/\A~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*#?(-\d)?\d*\Z/', $tag)
-	     || ($forsearch && strpos($tag, "#") !== false))
+    else if (!preg_match('/\A~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*(#(-\d)?\d*)?\Z/', $tag, $m))
 	return "Tag \"$tag\" contains odd characters.";
-    else if (($tag == "none" || $tag == "any") && !$forsearch)
+    else if (count($m) > 1 && $m[1] && ($flags & CHECKTAG_NOINDEX))
+	return "Tag numbers not allowed here.";
+    else if ($tag[0] === "~" && ($flags & CHECKTAG_NOPRIVATE))
+	return "Twiddle tags not allowed here.";
+    else if (($tag === "none" || $tag === "any") && !($flags & CHECKTAG_ALLOWRESERVED))
 	return "Tag \"$tag\" is reserved.";
     else
 	return "";
 }
 
-function checkTag($tag, $reporterr = true) {
+function checkTag($tag, $flags) {
     global $Conf, $Me, $Error;
-    $e = checkTagError($tag);
-    if ($e && $reporterr === true)
-	$Conf->errorMsg(htmlspecialchars($e));
-    else if ($e && $reporterr !== false)
+    $e = checkTagError($tag, $flags);
+    if ($e && ($flags & CHECKTAG_ERRORARRAY))
 	defappend($Error["tags"], htmlspecialchars($e) . "<br />\n");
+    else if ($e && !($flags & CHECKTAG_QUIET))
+	$Conf->errorMsg(htmlspecialchars($e));
     if ($e != "")
 	return false;
     else if ($tag[0] == "~")
@@ -88,7 +97,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
 	if (($mode == "so" || $mode == "ao" || $mode == "sos" || $mode == "aos")
 	    && $tag != "")
 	    $tag .= "#";
-	if ($tag != "" && ($tag = checkTag($tag, "e"))
+	if ($tag != "" && ($tag = checkTag($tag, CHECKTAG_ERRORARRAY))
 	    && ($ok = ($ok && $tag)))
 	    $tags[] = $tag;
     }
@@ -140,7 +149,24 @@ function setTags($pids, $tagtext, $mode, $chair) {
 	}
 	if (count($nexttags) + $multivote != count($tags)) {
 	    $t = htmlspecialchars(tagBase($deltags[count($deltags) - 1]));
-	    defappend($Error["tags"], "The shared &ldquo;$t&rdquo; tag keeps track of vote totals and cannot be modified.  Use the &ldquo;~$t&rdquo; tag to change your vote (for instance, &ldquo;~$t#1&rdquo; is one vote).<br />\n");
+	    defappend($Error["tags"], "The shared tag &ldquo;$t&rdquo; keeps track of vote totals and cannot be modified.  Use the private tag &ldquo;~$t&rdquo; to change your vote (for instance, &ldquo;~$t#1&rdquo; is one vote).<br />\n");
+	}
+	$tags = $nexttags;
+    }
+
+    // check rank tag
+    if (!$chair && $Conf->setting("tag_rank")) {
+	$ranktag = $Conf->settingText("tag_rank");
+	$nexttags = array();
+	foreach ($tags as $tag) {
+	    if (tagBase($tag) === $ranktag)
+		$deltags[] = $tag;
+	    else
+		$nexttags[] = $tag;
+	}
+	if (count($nexttags) != count($tags)) {
+	    $t = htmlspecialchars(tagBase($deltags[count($deltags) - 1]));
+	    defappend($Error["tags"], "The shared tag &ldquo;$t&rdquo; keeps track of the global ranking and cannot be modified.  Use the private tag &ldquo;~$t&rdquo; to change your ranking.<br />\n");
 	}
 	$tags = $nexttags;
     }
@@ -352,6 +378,8 @@ function tagsToText($prow, $makeUrls, $contact, $drop = false) {
 	foreach ($vtags as $tag => $v)
 	    $t = trim(preg_replace("/ " . preg_quote($tag) . "(#-?\\d*)? /", " ", " $t "));
     }
+    if ($drop && $Conf->setting("tag_rank"))
+	$t = trim(preg_replace("/ " . preg_quote($Conf->settingText("tag_rank")) . "(#-?\\d*)? /", " ", " $t "));
 
     if ($makeUrls === false || $t === "")
 	return $t;
