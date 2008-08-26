@@ -57,16 +57,16 @@ class PaperActions {
 	} else if (isset($_REQUEST["rank"])) {
 	    $rank = trim($_REQUEST["rank"]);
 	    if ($rank === "" || strcasecmp($rank, "none") == 0)
-		$rank = 0;
+		$rank = null;
 	    else
-		$rank = cvtint($rank);
+		$rank = cvtint($rank, false);
 	    $while = "while saving rank";
-	    if ($rank < 0) {
-		$Conf->errorMsg("Rank must be a positive integer or &ldquo;none&rdquo;.");
+	    if ($rank === false) {
+		$Conf->errorMsg("Rank must be an integer or &ldquo;none&rdquo;.");
 		$Error["rank"] = true;
 	    } else {
 		$mytag = $Me->contactId . "~" . $tag;
-		if ($rank == 0)
+		if ($rank === null)
 		    $result = $Conf->qe("delete from PaperTag where paperId=$prow->paperId and tag='" . sqlq($mytag) . "'", $while);
 		else
 		    $result = $Conf->qe("insert into PaperTag (paperId, tag, tagIndex) values ($prow->paperId, '" . sqlq($mytag) . "', $rank) on duplicate key update tagIndex=values(tagIndex)", $while);
