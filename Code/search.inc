@@ -578,6 +578,7 @@ class PaperSearch {
 	    // match all options
 	    $qo = array();
 	    foreach (paperOptions() as $oid => $o)
+		// See also checkOptionNameUnique() in settings.php
 		if ($oname == "none" || $oname == "any"
 		    || strstr(strtolower($o->optionName), $oname) !== false) {
 		    // find the relevant values

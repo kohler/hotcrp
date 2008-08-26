@@ -502,7 +502,8 @@ function doOptions($set) {
 	    $anyo = true;
     }
     
-    if (defval($_REQUEST, "optnn") && $_REQUEST["optnn"] != "New option") {
+    if (defval($_REQUEST, "optnn") && $_REQUEST["optnn"] != "New option"
+	&& $_REQUEST["optnn"] != "(Enter new option here)") {
 	doCleanOptionValues("n");
 	$qa = "optionName, description, pcView";
 	$qb = "'" . sqlq($_REQUEST["optnn"])
@@ -1051,8 +1052,18 @@ function doSubGroup() {
 }
 
 // Submission options
+function checkOptionNameUnique($oname) {
+    if ($oname == "" || $oname == "none" || $oname == "any")
+	return false;
+    $m = 0;
+    foreach (paperOptions() as $oid => $o)
+	if (strstr(strtolower($o->optionName), $oname) !== false)
+	    $m++;
+    return $m == 1;
+}
+
 function doOptGroupOption($o) {
-    global $Conf, $Error;
+    global $Conf, $ConfSiteSuffix, $Error;
     $id = $o->optionId;
     if (count($Error) > 0 && isset($_REQUEST["optn$id"]))
 	$o = (object) array("optionId" => $id,
@@ -1061,14 +1072,19 @@ function doOptGroupOption($o) {
 		"optionValues" => defval($_REQUEST, "optv$id", $o->optionValues),
 		"pcView" => defval($_REQUEST, "optp$id", $o->pcView));
 
-    echo "<tr><td class='lxcaption'>Option name</td>",
-	"<td class='lentry'><input type='text' class='textlite' name='optn$id' value=\"", htmlspecialchars($o->optionName), "\" size='50' onchange='hiliter(this)' ",
-	($id == "n" ? "onfocus=\"tempText(this, 'New option', 1)\" onblur=\"tempText(this, 'New option', 0)\" " : ""),
-	"/></td></tr>\n",
-	"<tr><td class='lxcaption'>Description</td>",
-	"<td class='lentry textarea'><textarea class='textlite' name='optd$id' rows='2' cols='50' onchange='hiliter(this)'>", htmlspecialchars($o->description), "</textarea></td></tr>\n",
-	"<td class='lxcaption'></td>",
-	"<td class='lentry'>";
+    echo "<tr><td><div class='f-contain'>\n",
+	"  <div class='f-i'>",
+	"<div class='f-c'>Option name</div>",
+	"<div class='f-e'><input type='text' class='textlite' name='optn$id' value=\"", htmlspecialchars($o->optionName), "\" size='50' onchange='hiliter(this)' ",
+	($id == "n" ? "onfocus=\"tempText(this, '(Enter new option here)', 1)\" onblur=\"tempText(this, '(Enter new option here)', 0)\" " : ""),
+	"/></div>\n",
+	"  <div class='f-i'>",
+	"<div class='f-c'>Description</div>",
+	"<div class='f-e'><textarea class='textlite' name='optd$id' rows='2' cols='50' onchange='hiliter(this)'>", htmlspecialchars($o->description), "</textarea></div>",
+	"</div></td></tr>\n",
+	"  <tr><td><div class='f-i'>",
+	"<div class='f-c'>Type</div>",
+	"<div class='f-e'>";
 
     if ($Conf->setting("allowPaperOption") >= 14)
 	echo tagg_select("optvt$id", array("Checkbox", "Selector"), defval($o, "optionValues") ? 1 : 0, array("onchange" => "hiliter(this);fold(\"optv$id\",this.value==0)")),
@@ -1078,15 +1094,39 @@ function doOptGroupOption($o) {
 
     if ($Conf->setting("allowPaperOption") >= 14)
 	echo "<div id='foldoptv$id' class='", (defval($o, "optionValues") ? "foldo" : "foldc"), "'><div class='extension'>",
-	    "<div class='hint'>Enter the possible values, one per line.  The first value will be the default.</div>",
+	    "<div class='hint'>Enter the selector choices one per line.  The first choice will be the default.</div>",
 	    "<textarea class='textlite' name='optv$id' rows='3' cols='50' onchange='hiliter(this)'>", htmlspecialchars(defval($o, "optionValues")), "</textarea>",
 	    "</div></div>";
+
+    echo "</div></td><td>";
+
+    if ($id !== "n") {
+	echo "<div class='f-i'>",
+	    "<div class='f-c'>Example search</div>",
+	    "<div class='f-e'>";
+	$oabbrev = simplifyWhitespace($o->optionName);
+	foreach (preg_split('/\s+/', preg_replace('/[^a-z\s]/', '', strtolower($o->optionName))) as $oword)
+	    if (checkOptionNameUnique($oword)) {
+		$oabbrev = $oword;
+		break;
+	    }
+	if (($v = defval($o, "optionValues", "")) !== "") {
+	    $a = explode("\n", $v);
+	    if (count($a) > 1 && $a[1] !== "")
+		$oabbrev .= "#" . strtolower(simplifyWhitespace($a[1]));
+	}
+	if (strstr($oabbrev, " ") !== false)
+	    $oabbrev = "\"$oabbrev\"";
+	echo "&ldquo;<a href=\"search$ConfSiteSuffix?q=opt:", urlencode($oabbrev), "\">",
+	    "opt:", htmlspecialchars($oabbrev), "</a>&rdquo;",
+	    "</div></div>";
+    }
 
     echo "</td></tr>\n";
 }
 
 function doOptGroup() {
-    global $Conf, $rf;
+    global $Conf, $ConfSiteSuffix, $rf;
     
     if ($Conf->setting("allowPaperOption")) {
 	echo "<h3>Submission options</h3>\n";
@@ -1098,12 +1138,12 @@ function doOptGroup() {
 	foreach ($opt as $o) {
 	    echo $sep;
 	    doOptGroupOption($o);
-	    $sep = "<tr><td></td><td><div class='g'></div></td></tr>\n";
+	    $sep = "<tr><td colspan='2'><hr class='hr' /></td></tr>\n";
 	}
     
-	echo ($sep ? "<tr><td colspan='2'><hr class='hr' /></td></tr>\n" : "");
+	echo $sep;
 
-	doOptGroupOption((object) array("optionId" => "n", "optionName" => "New option", "description" => "", "pcView" => 1, "optionValues" => ""));
+	doOptGroupOption((object) array("optionId" => "n", "optionName" => "(Enter new option here)", "description" => "", "pcView" => 1, "optionValues" => ""));
 	
 	echo "</table>\n";
     }
@@ -1115,7 +1155,20 @@ function doOptGroup() {
     echo "<div class='g'></div><table id='newtoptable'>";
     $td1 = "<td class='lcaption'>Current</td>";
     foreach ($rf->topicOrder as $tid => $crap) {
-	echo "<tr>$td1<td class='lentry'><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($rf->topicName[$tid]), "\" size='50' onchange='hiliter(this)' /></td></tr>\n";
+	echo "<tr>$td1<td class='lentry'><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($rf->topicName[$tid]), "\" size='50' onchange='hiliter(this)' /></td>";
+	if ($td1 !== "<td></td>") {
+	    // example search
+	    echo "<td class='llentry' rowspan='40'><div class='f-i'>",
+		"<div class='f-c'>Example search</div>";
+	    $oabbrev = strtolower($rf->topicName[$tid]);
+	    if (strstr($oabbrev, " ") !== false)
+		$oabbrev = "\"$oabbrev\"";
+	    echo "&ldquo;<a href=\"search$ConfSiteSuffix?q=topic:", urlencode($oabbrev), "\">",
+		"topic:", htmlspecialchars($oabbrev), "</a>&rdquo;",
+		"<div class='hint'>Abbreviations are also allowed.</div>",
+		"</div></td>";
+	}
+	echo "</tr>\n";
 	$td1 = "<td></td>";
     }
     $td1 = "<td class='lcaption' rowspan='40'>New<br /><small><a href='javascript:authorfold(\"newtop\",1,1)'>More</a> | <a href='javascript:authorfold(\"newtop\",1,-1)'>Fewer</a></small></td>";
@@ -1123,7 +1176,8 @@ function doOptGroup() {
 	echo "<tr id='newtop$i' class='auedito'>$td1<td class='lentry'><input type='text' class='textlite' name='topn$i' value=\"\" size='50' onchange='hiliter(this)' /></td></tr>\n";
 	$td1 = "";
     }
-    echo "</table><input id='newtopcount' type='hidden' name='newtopcount' value='40' />";
+    echo "</table>",
+	"<input id='newtopcount' type='hidden' name='newtopcount' value='40' />";
     $Conf->echoScript("authorfold(\"newtop\",0,3)");
 }
 
