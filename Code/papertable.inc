@@ -1113,8 +1113,7 @@ class PaperTable {
 	    else
 		$rp = substr($prow->paperTags, $pos + 1);
 	} else
-	    $rp = "0";
-	$rp = ($rp == "0" ? "" : $rp);
+	    $rp = "";
 	
 	// rank context form
 	$Conf->footerStuff .= "<form id='rankctxform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankctxform\")'><input type='hidden' name='rankctx' value='1' /></form>";
@@ -1132,7 +1131,7 @@ class PaperTable {
 	    " <div class='hint'><strong>Tip:</strong> Use <a href='offline$ConfSiteSuffix'>offline reviewing</a> to rank many papers at once.</div>",
 	    "</div></form>",
 	    "<div class='ellipsis'>",
-	    ($rp == "" ? "None" : $rp);
+	    ($rp === "" ? "None" : $rp);
 	if ($rp != "")
 	    echo "<span class='ellipsis2'> &nbsp; <a href='javascript:void 0' onclick='javascript:fold(\"rank\", 0, 2);void Miniajax.submit(\"rankctxform\")'>(context)</a>";
 	echo "</div>",
