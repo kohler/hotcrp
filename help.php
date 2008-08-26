@@ -208,7 +208,7 @@ function searchQuickref() {
     _searchQuickrefRow("Authors", "au:poletto", "author list contains &ldquo;poletto&rdquo;");
     _searchQuickrefRow("Collaborators", "co:liskov", "collaborators contains &ldquo;liskov&rdquo;");
     _searchQuickrefRow("Topics", "topic:link", "selected topics match &ldquo;link&rdquo;");
-    _searchQuickrefRow("Options", "option:shadow", "selected submission options match &ldquo;shadow&rdquo;");
+    _searchQuickrefRow("Options", "opt:shadow", "selected submission options match &ldquo;shadow&rdquo;");
     _searchQuickrefRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "tag:discuss", "tagged &ldquo;discuss&rdquo;");
     _searchQuickrefRow("", "-tag:discuss", "not tagged &ldquo;discuss&rdquo;");
     _searchQuickrefRow("", "order:discuss", "tagged &ldquo;discuss&rdquo;, sort by tag order (&ldquo;rorder:&rdquo; for reverse order)");

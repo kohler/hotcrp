@@ -566,28 +566,52 @@ class PaperSearch {
 	}
 	if (($special ? $special == "option" : isset($this->fields['option']))) {
 	    $type = "option";
-	    $value = null;
-	    if ($word == "none" || $word == "any")
-		$value = $word;
-	    else {
-		$opt = paperOptions();
-		$x = strtolower(simplifyWhitespace($word));
-		$oids = array();
-		foreach ($opt as $oid => $o)
-		    if (strstr(strtolower($o->optionName), $x) !== false)
-			$oids[] = $oid;
-		if (count($oids) == 0) {
-		    $this->warn("&ldquo;" . htmlspecialchars($x) . "&rdquo; doesn't match a submission option.");
-		    $type = "f";
-		} else
-		    $value = $oids;
+	    if (($pos = strpos($word, "#")) !== false) {
+		$oname = substr($word, 0, $pos);
+		$oval = strtolower(simplifyWhitespace(substr($word, $pos + 1)));
+	    } else {
+		$oname = $word;
+		$oval = "";
 	    }
-	    if ($this->amPC || $x[0] == "f")
-		$qt[] = new SearchTerm($type, 0, $value);
-	    else {
-		$qt[] = new SearchTerm($type, self::F_REVIEWER, $value);
-		$qt[] = new SearchTerm($type, self::F_AUTHOR, $value);
+	    $oname = strtolower(simplifyWhitespace($oname));
+
+	    // match all options
+	    $qo = array();
+	    foreach (paperOptions() as $oid => $o)
+		if ($oname == "none" || $oname == "any"
+		    || strstr(strtolower($o->optionName), $oname) !== false) {
+		    // find the relevant values
+		    if ($oval !== ""
+			&& ($v = defval($o, "optionValues", "")) !== "") {
+			$xval = matchValue(explode("\n", $v), $oval);
+			if (count($xval) == 0)
+			    continue;
+			$xval = " in (" . join(",", $xval) . ")";
+		    } else if ($oval === "" || $oval === "yes")
+			$xval = "!=0";
+		    else if ($oval === "no")
+			$xval = "=0";
+		    else
+			continue;
+
+		    // add the query to $qo
+		    if ($this->privChair || ($this->amPC && $o->pcView))
+			$qo[] = new SearchTerm($type, 0, array($oid, $xval));
+		    else {
+			if ($o->pcView)
+			    $qo[] = new SearchTerm($type, self::F_REVIEWER, array($oid, $xval));
+			$qo[] = new SearchTerm($type, self::F_AUTHOR, array($oid, $xval));
+		    }
+		}
+
+	    // if "none", negate
+	    if (count($qo) > 0 && $oname === "none")
+		$qo = array("not", 0, $qo);
+	    if (count($qo) == 0) {
+		$this->warn("&ldquo;" . htmlspecialchars($word) . "&rdquo; doesn't match a submission option.");
+		$qo[] = new SearchTerm("f", 0, "");
 	    }
+	    $qt = array_merge($qt, $qo);
 	}
 	if ($special ? $special == "status" : isset($this->fields['status'])) {
 	    if (strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
@@ -1170,8 +1194,15 @@ class PaperSearch {
 	    $this->_clauseTermSetTable($t, "Topic", "PaperTopic", "topicId",
 				       $tables, $columns, $f);
 	} else if ($tt == "option") {
-	    $this->_clauseTermSetTable($t, "Option", "PaperOption", "optionId",
-				       $tables, $columns, $f);
+	    // expanded from _clauseTermSetTable
+	    $q = array();
+	    $this->_clauseTermSetFlags($t->flags, $q);
+	    $thistab = "Option_" . count($tables);
+	    $tables[$thistab] = array("left join", "PaperOption", "Paper.paperId=$thistab.paperId and $thistab.optionId=" . $t->value[0]);
+	    $columns[$thistab . "_x"] = "coalesce($thistab.value,0)" . $t->value[1];
+	    $t->link = $thistab . "_x";
+	    $q[] = $columns[$t->link];
+	    $f[] = "(" . join(" and ", $q) . ")";
 	} else if ($tt == "conflict") {
 	    $this->_clauseTermSetTable($t, "Conflict", "PaperConflict", "contactId",
 				       $tables, $columns, $f);
