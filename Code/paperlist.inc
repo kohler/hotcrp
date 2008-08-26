@@ -727,16 +727,10 @@ class PaperList extends BaseList {
 	$barsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 	$nlll = 1;
 	$revpref = ($listname == "editReviewPreference");
-		
-	$t = "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
-	$t .= "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top; padding-right: 4px;'>" . $Conf->cacheableImage("bendulft.png", "^^", null, "placthook") . "</td>\n";
-	$t .= "    <td colspan='" . ($ncol - 1) . "'>"
-	    . "<div id='plact' class='linelinks1'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
-
-	// Linelinks
-
+	$whichlll = 1;
+	
 	// Download
-	$t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Download</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
+	$t = "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Download</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
 	$sel_opt = array();
 	if ($revpref) {
 	    $sel_opt["revpref"] = "Preference file";
@@ -777,6 +771,8 @@ class PaperList extends BaseList {
 
 	// Upload preferences (review preferences only)
 	if ($revpref) {
+	    if (isset($_REQUEST["upload"]))
+		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Upload</a></span><span class='lld$nlll'><b> preference file:</b> &nbsp;";
 	    $t .= "<input id='plact${nlll}_d' type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='defact(\"upload\")' />&nbsp; <input type='submit' class='bsm' name='upload' value='Go' tabindex='6' /></span>";
@@ -785,6 +781,8 @@ class PaperList extends BaseList {
 
 	// Set preferences (review preferences only)
 	if ($revpref) {
+	    if (isset($_REQUEST["setpaprevpref"]))
+		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Set preferences</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
 	    $t .= "<input id='plact${nlll}_d' class='textlite' type='text' name='paprevpref' value='' size='4' tabindex='6' onfocus='defact(\"setpaprevpref\")' /> &nbsp;<input type='submit' class='bsm' name='setpaprevpref' value='Go' tabindex='6' /></span>";
@@ -793,6 +791,8 @@ class PaperList extends BaseList {
 	
 	// Tags (search+PC only)
 	if ($this->contact->isPC && !$revpref) {
+	    if (isset($_REQUEST["tagact"]))
+		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Tag</a></span><span class='lld$nlll'><b>:</b><a class='help' href='help$ConfSiteSuffix?t=tags' title='Learn more'>?</a> &nbsp;";
 	    $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "so" => "Define ordered", "ao" => "Add ordered", "sos" => "Define sequential", "aos" => "Add sequential");
@@ -805,6 +805,8 @@ class PaperList extends BaseList {
 
 	// Assignments (search+admin only)
 	if ($this->contact->privChair && !$revpref) {
+	    if (isset($_REQUEST["setassign"]))
+		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Assign</a></span><span id='foldass' class='lld$nlll foldc'><b>:</b> &nbsp;";
 	    $t .= tagg_select("marktype",
@@ -836,6 +838,8 @@ class PaperList extends BaseList {
 
 	// Decide, Mail (search+admin only)
 	if ($this->contact->privChair && !$revpref) {
+	    if (isset($_REQUEST["sendmail"]))
+		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Decide</a></span><span class='lld$nlll'><b>:</b> Set to &nbsp;";
 	    $t .= decisionSelector(0, "plact${nlll}_d", " class='bsm'") . " &nbsp;<input type='submit' class='bsm' name='setdecision' value='Go' /></span>";
@@ -848,7 +852,12 @@ class PaperList extends BaseList {
 	    $nlll++;
 	}
 
-	return $t . "</div>" . $this->extraFooter . "</td></tr>\n";
+	// Linelinks container
+	return "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n"
+	    . "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top; padding-right: 4px;'>" . $Conf->cacheableImage("bendulft.png", "^^", null, "placthook") . "</td>\n"
+	    . "    <td colspan='" . ($ncol - 1) . "'>"
+	    . "<div id='plact' class='linelinks$whichlll'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then "
+	    . $t . "</div>" . $this->extraFooter . "</td></tr>\n";
     }
 
     function addScores($a) {
