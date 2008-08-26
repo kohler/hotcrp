@@ -557,7 +557,7 @@ class PaperList extends BaseList {
 		$alt = "";
 	    } else {
 		$which = $row->reviewType;
-		$alt = $reviewTypeName[$row->reviewType];
+		$alt = $reviewTypeName[$row->reviewType] . " review";
 		if ($needSubmit) {
 		    $which .= "n";
 		    $alt .= " (not complete)";
