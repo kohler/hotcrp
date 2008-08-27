@@ -25,6 +25,7 @@ class PaperTable {
     var $rrow;
     var $editrrow;
     var $mode;
+    var $allreviewslink;
 
     var $editable;
     var $useRequest;
@@ -1233,7 +1234,7 @@ class PaperTable {
 	    $t .= reviewTable($this->prow, $this->rrows, $this->mycrows,
 			      $editrrow, $this->mode);
 	$t .= reviewLinks($this->prow, $this->rrows, $this->mycrows,
-			  $editrrow, $this->mode);
+			  $editrrow, $this->mode, $this->allreviewslink);
 	if (($empty = ($t == "")))
 	    $t = $ifempty;
 	if ($t != "")
@@ -1289,8 +1290,8 @@ class PaperTable {
 	$prow = $this->prow;
 
 	// show comments as well
-	if (count($this->mycrows) || $Me->canComment($prow, null, $Conf)
-	    || $Conf->timeAuthorRespond()) {
+	if ((count($this->mycrows) || $Me->canComment($prow, null, $Conf)
+	     || $Conf->timeAuthorRespond()) && !$this->allreviewslink) {
 	    require_once("Code/commentview.inc");
 	    $cv = new CommentView;
 	    $editablecid = defval($_REQUEST, "commentId", "xxx");

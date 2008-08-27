@@ -377,8 +377,7 @@ else if ($paperTable->mode == "r" && !$paperTable->rrow)
 else
     $paperTable->paptabEndWithEditableReview();
 
-if ($paperTable->mode != "re" || !$paperTable->rrow)
-    $paperTable->paptabComments();
+$paperTable->paptabComments();
 
 echo foldsessionpixel("paper9", "foldpaperp"), foldsessionpixel("paper5", "foldpapert"), foldsessionpixel("paper6", "foldpaperb");
 $Conf->footer();

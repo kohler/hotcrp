@@ -453,7 +453,7 @@ $paperTable->paptabBegin($prow);
 
 // reviewer information
 $t = reviewTable($prow, $rrows, null, null, "assign");
-$t .= reviewLinks($prow, $rrows, null, null, "assign");
+$t .= reviewLinks($prow, $rrows, null, null, "assign", $allreviewslink);
 
 if ($t != "")
     echo "	<tr><td colspan='3' class='papsep'></td></tr>

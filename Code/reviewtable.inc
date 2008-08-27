@@ -153,7 +153,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 
 
 // links below review table
-function reviewLinks($prow, $rrows, $crows, $rrow, $mode) {
+function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     global $Conf, $ConfSiteSuffix, $Me, $forceShow, $linkExtra;
 
     $actingConflict = ($prow->conflictType > 0 && !$forceShow);
@@ -197,8 +197,10 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode) {
     $t = "";
 
     // see all reviews
+    $allreviewslink = false;
     if (($nvisible > 1 || ($nvisible > 0 && !$myrr))
 	&& ($mode != "r" || $rrow)) {
+	$allreviewslink = true;
 	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;m=r$linkExtra'>";
 	$x = $a . $Conf->cacheableImage("allreviews24.png", "[All reviews]", null, "dlimg") . "</a>&nbsp;" . $a . "All reviews</a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
@@ -237,7 +239,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode) {
     }
 
     // new comment
-    if ($mode != "assign" && $Me->canComment($prow, null, $Conf)) {
+    if (!$allreviewslink && $Me->canComment($prow, null, $Conf)) {
 	$a = "<a href=\"#commentnew\" onclick='fold(\"addcomment\", 0);return 1'>";
 	$x = $a . $Conf->cacheableImage("comment24.png", "[Add comment]", null, "dlimg") . "</a>&nbsp;" . $a . "Add comment</a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
