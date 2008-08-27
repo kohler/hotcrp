@@ -360,6 +360,11 @@ class ReviewForm {
 	    }
 	}
 
+	// check whether used a review token
+	$usedReviewToken = $rrow && $rrow->reviewToken
+	    && isset($_SESSION["rev_tokens"])
+	    && array_search($rrow->reviewToken, $_SESSION["rev_tokens"]) !== false;
+
 	// blind? reviewer type? edit version?
 	$reviewBlind = ($conf->blindReview() > 1 || ($conf->blindReview() == 1 && defval($req, 'blind')) ? 1 : 0);
 	if ($rrow && $reviewBlind != $rrow->reviewBlind)
@@ -367,7 +372,7 @@ class ReviewForm {
 	$q[] = "reviewBlind=$reviewBlind";
 	if ($rrow && $rrow->reviewType == REVIEW_EXTERNAL
 	    && $Me->contactId == $rrow->contactId
-	    && $Me->isPC)
+	    && $Me->isPC && !$usedReviewToken)
 	    $q[] = "reviewType=" . REVIEW_PC;
 	if ($rrow && $different && isset($req["version"])
 	    && $req["version"] > defval($rrow, "reviewEditVersion")
@@ -397,8 +402,7 @@ class ReviewForm {
 	$req['reviewId'] = $reviewId;
 	
 	// log updates -- but not if review token is used
-	if (!$rrow || !$rrow->reviewToken || !isset($_SESSION["rev_tokens"])
-	    || array_search($rrow->reviewToken, $_SESSION["rev_tokens"]) === false) {
+	if (!$usedReviewToken) {
 	    $reviewLogname = "Review $reviewId";
 	    if ($rrow && $Me->contactId != $rrow->contactId)
 		$reviewLogname .= " by $rrow->email";
@@ -431,7 +435,7 @@ class ReviewForm {
 	    $fake_rrow = (object) array("contactId" => $contactId, "reviewBlind" => $reviewBlind);
 
 	    require_once("mailtemplate.inc");
-	    
+
 	    $tmpl = ($rrow && $rrow->reviewSubmitted ? "@reviewupdate" : "@reviewsubmit");
 	    $submitter = $Me;
 	    if ($contactId != $submitter->contactId) {

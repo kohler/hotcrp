@@ -748,9 +748,9 @@ class Conference {
 		PaperReview.reviewOrdinal,
 		PaperReview.reviewBlind,
 		PaperReview.contactId as reviewContactId,
-		$myPaperReview.reviewType as myReviewType,
-		$myPaperReview.reviewSubmitted as myReviewSubmitted,
-		$myPaperReview.reviewNeedsSubmit as myReviewNeedsSubmit";
+		max($myPaperReview.reviewType) as myReviewType,
+		max($myPaperReview.reviewSubmitted) as myReviewSubmitted,
+		min($myPaperReview.reviewNeedsSubmit) as myReviewNeedsSubmit";
 	    if ($this->settings["allowPaperOption"] >= 11)
 		$pq .= ",
 		PaperReview.reviewRound,

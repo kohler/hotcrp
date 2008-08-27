@@ -551,6 +551,11 @@ class Contact {
 	return false;
     }
 
+    function ownReview($rrow) {
+	return $rrow->contactId == $this->contactId
+	    || (isset($_SESSION["rev_tokens"]) && array_search($rrow->reviewToken, $_SESSION["rev_tokens"]) !== false);
+    }
+
     function canViewReview($prow, $rrow, $conf, &$whyNot = null, $ignoreForceShow = false) {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
@@ -575,7 +580,7 @@ class Contact {
 			|| defval($prow, "myReviewNeedsSubmit", 1) == 0)
 		    && ($this->isPC || $conf->settings["extrev_view"] >= 1))
 		|| ($rrow && $rrow->paperId == $prow->paperId
-		    && $rrow->contactId == $this->contactId)
+		    && $this->ownReview($rrow))
 		|| ($rrow && isset($prow->myReviewId)
 		    && $prow->myReviewId == $rrow->reviewId)))
 	    return true;
@@ -628,11 +633,6 @@ class Contact {
 		$whyNot['override'] = 1;
 	}
 	return false;
-    }
-
-    function ownReview($rrow) {
-	return $rrow->contactId == $this->contactId
-	    || (isset($_SESSION["rev_tokens"]) && array_search($rrow->reviewToken, $_SESSION["rev_tokens"]) !== false);
     }
 
     function canReview($prow, $rrow, $conf, &$whyNot = null, $submit = false) {
