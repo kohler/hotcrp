@@ -191,7 +191,7 @@ if (isset($_REQUEST["token"]) && $Me->valid() && $Conf->setting("allowPaperOptio
 	else {
 	    $result = $Conf->qe("select paperId from PaperReview where reviewToken=$token", "while searching for review token");
 	    if (($row = edb_row($result))) {
-		$Conf->infoMsg("Review token &ldquo;" . htmlspecialchars($x) . "&rdquo; lets you review paper #" . $row[0] . ".");
+		$Conf->infoMsg("Review token &ldquo;" . htmlspecialchars($x) . "&rdquo; lets you review <a href='paper$ConfSiteSuffix?p=$row[0]'>paper #" . $row[0] . "</a>.");
 		if (!isset($_SESSION["rev_tokens"]) || array_search($token, $_SESSION["rev_tokens"]) === false)
 		    $_SESSION["rev_tokens"][] = $token;
 		$Me->isReviewer = true;
@@ -369,7 +369,8 @@ function reviewTokenGroup() {
 	$t = array();
 	foreach ($_SESSION["rev_tokens"] as $tt)
 	    $t[] = encodeToken($tt);
-	echo "<br />Current ", pluralx(count($t), "token"), ": ", textArrayJoin($t), ".";
+	echo "<br />Current ", pluralx(count($t), "token"), ": ", textArrayJoin($t), ".",
+	    " (<a href='index$ConfSiteSuffix?cleartokens=1'>Clear tokens</a>)";
     }
     echo "</div></div></form>\n";
 
