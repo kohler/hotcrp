@@ -348,7 +348,7 @@ function createAnonymousReview() {
     
     // store the review request
     $qa = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn";
-    $qb = ") values ($prow->paperId, $reqId, " . REVIEW_PC . ", $Me->contactId, current_timestamp";
+    $qb = ") values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Me->contactId, current_timestamp";
     if ($Conf->setting("allowPaperOption") >= 13) {
 	$token = unassignedReviewToken();
 	$Conf->qe($qa . ", reviewToken" . $qb . ", $token)", $while);
