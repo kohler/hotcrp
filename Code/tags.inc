@@ -51,6 +51,15 @@ function tagBase($tag) {
 	return $tag;
 }
 
+function tagSplit($tag) {
+    if ($tag === false || !($pos = strpos($tag, "#")))
+	return array($tag, false);
+    else if ($pos == strlen($tag) - 1)
+	return array(substr($tag, 0, $pos), false);
+    else
+	return array(substr($tag, 0, $pos), (int) substr($tag, $pos + 1));
+}
+
 function chairTags() {
     global $Conf;
     if ($Conf->setting("tag_chair"))
@@ -89,6 +98,10 @@ function setTags($pids, $tagtext, $mode, $chair) {
     if (!is_array($pids))
 	$pids = array($pids);
     $mytagprefix = $Me->contactId . "~";
+
+    // check modes
+    if ($mode == "da" && !$chair)
+	$mode = "d";
 
     // check tags for direct validity
     $ok = true;
@@ -181,18 +194,27 @@ function setTags($pids, $tagtext, $mode, $chair) {
 
     // delete tags
     if ($mode != "a" && $mode != "ao" && $mode != "aos") {
-	$q = "delete from PaperTag where (";
+	$q = "delete from PaperTag where ";
 	if ($mode == "s" || $mode == "so" || $mode == "sos")
-	    $q .= "true or ";
+	    $q .= "true";
 	else
-	    foreach ($pids as $pid)
-		$q .= "paperId=$pid or ";
-	$q = substr($q, 0, strlen($q) - 4) . ")";
+	    $q .= "paperId in (" . join(",", $pids) . ")";
+	$dels = array();
 	if ($mode != "p") {
-	    $q .= " and (";
-	    foreach ($tags as $tag)
-		$q .= "tag='" . sqlq(tagBase($tag)) . "' or ";
-	    $q = substr($q, 0, strlen($q) - 4) . ")";
+	    foreach ($tags as $tag) {
+		$ts = tagSplit($tag);
+		$qx = "";
+		if ($ts[1] !== false && ($mode == "d" || $mode == "da"))
+		    $qx = " and tagIndex=$ts[1]";
+		if ($mode == "da"
+		    && substr($ts[0], 0, strlen($mytagprefix)) === $mytagprefix) {
+		    $dels[] = "(tag like '%~" . sqlq_for_like(substr($ts[0], strlen($mytagprefix))) . "'$qx)";
+		    continue;
+		} else if ($mode == "da")
+		    $dels[] = "(tag like '%~" . sqlq_for_like($ts[0]) . "'$qx)";
+		$dels[] = "(tag='" . sqlq($ts[0]) . "'$qx)";
+	    }
+	    $q .= " and (" . join(" or ", $dels) . ")";
 	} else {
 	    if (!$chair && count($chtags)) {
 		foreach ($chtags as $ct => $xxx)
@@ -207,7 +229,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
     }
 
     // check for vote changes
-    if (count($vchanges) && $mode != "d") {
+    if (count($vchanges) && $mode != "d" && $mode != "da") {
 	$q = "";
 	foreach ($vchanges as $base => &$val) {
 	    $q .= ($q === "" ? "" : ",") . "'" . sqlq($base) . "'";
@@ -222,7 +244,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
 
     // add tags
     $vreduced = array();
-    if ($mode != "d" && count($tags)) {
+    if ($mode != "d" && $mode != "da" && count($tags)) {
 	$q = "";
 	$delvotes = array();
 	$tagIndex = array();
@@ -338,7 +360,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
 	defappend($Error["tags"], "You exhausted your vote allotment for " . textArrayJoin($vtext) . ".  You may want to change <a href=\"search$ConfSiteSuffix?q=$q&amp;showtags=1\">your other votes</a> and try again.<br />\n");
     }
 
-    $modeexplanation = array("so" => "define ordered", "ao" => "add ordered", "sos" => "define strict ordered", "aos" => "add strict ordered", "d" => "remove", "s" => "define", "a" => "add", "p" => "set");
+    $modeexplanation = array("so" => "define ordered", "ao" => "add ordered", "sos" => "define strict ordered", "aos" => "add strict ordered", "d" => "remove", "da" => "remove all", "s" => "define", "a" => "add", "p" => "set");
     $Conf->log("Tag " . $modeexplanation[$mode] . ": " . join(", ", $tags), $Me, $pids);
     
     return true;

@@ -271,23 +271,22 @@ function tagaction() {
     require_once("Code/tags.inc");
     
     $errors = array();
-    $papers = array();
+    $papers = $papersel;
     if (!$Me->privChair) {
 	$result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel)), "while selecting papers");
 	while (($row = edb_orow($result)))
-	    if ($row->conflictType > 0)
-		$errors[] = whyNotText(array("conflict" => 1, "paperId" => $row->paperId));
-	    else
-		$papers[] = $row->paperId;
-    } else
-	$papers = $papersel;
+	    if ($row->conflictType > 0) {
+		$errors[] = "You have a conflict with paper #" . $row->paperId . " and cannot change its tags.";
+		$papers = array_diff($papers, array($row->paperId));
+	    }
+    }
 
     if (count($errors))
 	$Conf->errorMsg(join("<br/>", $errors));
     
     $act = $_REQUEST["tagtype"];
     $tag = $_REQUEST["tag"];
-    if (count($papers) && ($act == "a" || $act == "d" || $act == "s" || $act == "so" || $act == "ao" || $act == "sos" || $act == "aos"))
+    if (count($papers) && ($act == "a" || $act == "d" || $act == "s" || $act == "so" || $act == "ao" || $act == "sos" || $act == "aos" || $act == "da"))
 	setTags($papers, $tag, $act, $Me->privChair);
     else if (count($papers) && $act == "cr" && $Me->privChair
 	     && checkTag($tag, CHECKTAG_NOINDEX | CHECKTAG_NOPRIVATE | CHECKTAG_ERRORARRAY)) {
