@@ -200,7 +200,7 @@ if ($Conf->setting("tag_rank") && $Me->amReviewer()) {
 	<input type='file' name='file' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Upload' $disabled/>";
     if ($pastDeadline && $Me->privChair)
 	echo "<br /><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
-    echo "<br /><span class='hint'><strong>Tip:</strong> <a href='search$ConfSiteSuffix?q=order:%7E$ranktag'>&ldquo;order:~$ranktag&rdquo;</a> searches by your ranking.</span>";
+    echo "<br /><span class='hint'><strong>Tip:</strong> &ldquo;<a href='search$ConfSiteSuffix?q=order:%7E$ranktag'>order:~$ranktag</a>&rdquo; searches by your ranking.</span>";
     echo "</div></form></td>\n";
     echo "</tr>\n";
 }
