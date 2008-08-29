@@ -525,11 +525,10 @@ class ReviewForm {
 	    $x .= "==-== Updated " . $conf->printableTime($rrow->reviewModified) . "\n";
 
 	if ($myReview) {
-	    $x .= "\n==+== Paper #";
 	    if ($prow)
-		$x .= "$prow->paperId\n";
+		$x .= "\n==+== Paper #$prow->paperId\n";
 	    else
-		$x .= "000000\n==-== Replace '000000' with the actual paper number.\n";
+		$x .= "\n==+== Paper Number\n\n(Enter paper number here)\n";
 	    if ($prow)
 		$x .= wordWrapIndent($prow->title, "==-== Title: ", "==-==        ") . "\n";
 	    $x .= "
@@ -755,11 +754,17 @@ $blind\n";
 		} else if (preg_match('/^==\+== Paper #?(\d+)/i', $line, $match)) {
 		    if ($nfields > 0)
 			break;
-		    else {
-			$req['paperId'] = $tf['paperId'] = $match[1];
-			$req['blind'] = 1;
-			$tf['firstLineno'] = $lineno;
-		    }
+		    $req['paperId'] = $tf['paperId'] = $match[1];
+		    $req['blind'] = 1;
+		    $tf['firstLineno'] = $lineno;
+		} else if (preg_match('/^==\+== Paper (Number|\#)\s*$/i', $line)) {
+		    if ($nfields > 0)
+			break;
+		    $field = "paperNumber";
+		    $tf["fieldLineno"][$field] = $lineno;
+		    $mode = 1;
+		    $req['blind'] = 1;
+		    $tf['firstLineno'] = $lineno;
 		} else if (preg_match('/^==\+== Submit Review\s*$/i', $line)
 			   || preg_match('/^==\+== Review Ready\s*$/i', $line)) {
 		    $req['ready'] = true;
@@ -818,6 +823,16 @@ $blind\n";
 	    $req["ready"] = strcasecmp(trim($req["readiness"]), "Ready") == 0;
 	if (isset($req["anonymity"]))
 	    $req["blind"] = strcasecmp(trim($req["anonymity"]), "Open") != 0;
+
+	if (isset($req["paperId"]))
+	    /* OK */;
+	else if (isset($req["paperNumber"])
+		 && ($pid = cvtint(trim($req["paperNumber"]), -1)) > 0)
+	    $req["paperId"] = $tf["paperId"] = $pid;
+	else if ($nfields > 0) {
+	    self::tfError($tf, true, "This review form doesn't report which paper number it is for.  Make sure you've entered the paper number in the right place and try again.", defval($tf["fieldLineno"], "paperNumber", $lineno));
+	    $nfields = 0;
+	}
 	
 	if ($nfields == 0 && $text) // try again
 	    return $this->parseTextForm($tf, $conf);
