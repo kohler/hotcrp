@@ -1165,12 +1165,28 @@ class PaperTable {
 	    $this->papstripPCConflicts($prow, true);
 	    $this->papstripCollaborators($prow);
 	}
+
+	//$foldDecisions = $Me->canSetOutcome($prow)
+	//    && $prow->outcome == 0 && $prow->leadContactId == 0
+	//    && $prow->shepherdContactId == 0;
+	$foldDecisions = false;
+	if ($foldDecisions) {
+	    echo "<div id='foldoutcomelead' class='fold5c'><div class='ellipsis5'>",
+		$this->papt("outcomelead", "Decision, Lead, Shepherd",
+			    array("type" => "ps",
+				  "fold" => "outcomelead", "foldnum" => 5,
+				  "showtitle" => "Edit decision, discussion lead, and shepherd")),
+		"<div class='papv'></div></div><div class='extension5'>";
+	}
 	if ($Me->canSetOutcome($prow))
 	    $this->papstripOutcomeSelector($prow);
 	if ($Me->actPC($prow))
 	    $this->papstripLead($prow);
 	if ($Me->actPC($prow) || $Me->canViewDecision($prow, $Conf))
 	    $this->papstripShepherd($prow);
+	if ($foldDecisions)
+	    echo "</div></div>";
+
 	if ($Me->actPC($prow) && $Conf->timePCReviewPreferences())
 	    $this->papstripReviewPreference($prow);
 
