@@ -16,6 +16,7 @@ $forceShow = "&amp;forceShow=1";
 $_REQUEST["forceShow"] = 1;
 $rf = reviewForm();
 $PC = pcMembers();
+$Error = array();
 
 
 // header
@@ -212,10 +213,17 @@ function requestReviewChecks($themHtml, $reqId) {
 }
 
 function requestReview($email) {
-    global $Conf, $Me, $Opt, $prow;
+    global $Conf, $Me, $Error, $Opt, $prow;
     
-    if (($reqId = $Conf->getContactId($email, true, false)) <= 0)
+    if (($reqId = $Conf->getContactId($email, true, false)) <= 0) {
+	if (trim($email) === "" || !validateEmail($email)) {
+	    $Conf->errorMsg("&ldquo;" . htmlspecialchars(trim($email)) . "&rdquo; is not a valid email address.");
+	    $Error["email"] = true;
+	} else
+	    $Conf->errorMsg("Error while finding account for &ldquo;" . htmlspecialchars(trim($email)) . ".&rdquo;");
 	return false;
+    }
+
     $Them = new Contact();
     $Them->lookupById($reqId, $Conf);
     $reason = trim(defval($_REQUEST, "reason", ""));
@@ -608,7 +616,7 @@ echo "<div class='f-i'><div class='f-ix'>
   <div class='f-c'>Name</div>
   <div class='f-e'><input class='textlite' type='text' name='name' value=\"", htmlspecialchars(defval($_REQUEST, "name", "")), "\" size='32' tabindex='1' /></div>
 </div><div class='f-ix'>
-  <div class='f-c'>Email</div>
+  <div class='f-c", (isset($Error["email"]) ? " error" : ""), "'>Email</div>
   <div class='f-e'><input class='textlite' type='text' name='email' value=\"", htmlspecialchars(defval($_REQUEST, "email", "")), "\" size='28' tabindex='1' /></div>
 </div><div class='clear'></div></div>\n\n";
 
