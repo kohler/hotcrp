@@ -618,9 +618,9 @@ $finalEditMode = false;
 if ($paperTable->mode == "pe") {
     $editable = $newPaper
 	|| ($prow->timeWithdrawn <= 0
-	    && ($Conf->timeUpdatePaper($prow) || $Me->actChair($prow)));
+	    && ($Conf->timeUpdatePaper($prow) || $Me->actChair($prow, true)));
     if ($prow && $prow->outcome > 0
-	&& ($Conf->timeSubmitFinalPaper() || $Me->actChair($prow)))
+	&& ($Conf->timeSubmitFinalPaper() || $Me->actChair($prow, true)))
 	$editable = $finalEditMode = true;
 } else
     $editable = false;
