@@ -116,24 +116,17 @@ class PaperSearch {
 	else if ($me->isPC && ($ptype == "und" || $ptype == "undec"))
 	    $this->limitName = "und";
 	else if ($me->isPC && ($ptype == "acc" || $ptype == "revs"
-			       || $ptype == "reqrevs"))
+			       || $ptype == "reqrevs" || $ptype == "req"
+			       || $ptype == "lead"))
 	    $this->limitName = $ptype;
-	else if ($this->privChair && $ptype == "all")
-	    $this->limitName = "all";
-	else if ($this->privChair && $ptype == "unsub")
-	    $this->limitName = "unsub";
-	else if ($me->isPC && $ptype == "lead")
-	    $this->limitName = "lead";
+	else if ($this->privChair && ($ptype == "all" || $ptype == "unsub"))
+	    $this->limitName = $ptype;
 	else if ($me->amReviewer() && (!$ptype || $ptype == "r"))
 	    $this->limitName = "r";
 	else if ($me->amReviewer() && $ptype == "rout")
 	    $this->limitName = "rout";
-	else if ($me->isAuthor && (!$ptype || $ptype == "a"))
-	    $this->limitName = "a";
-	else if ($me->isPC && $ptype == "req")
-	    $this->limitName = "req";
 	else
-	    $this->limitName = "x";
+	    $this->limitName = "a";
 
 	// track other information
 	$this->allowAuthor = false;
