@@ -446,7 +446,10 @@ $paperTable->mode = "assign";
 
 
 // begin form and table
-echo "<form id='ass' action='assign$ConfSiteSuffix?p=$prow->paperId&amp;post=1$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>";
+$loginFormBegin = "<form id='ass' action='assign$ConfSiteSuffix?p=$prow->paperId&amp;post=1$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>";
+$loginFormEnd = "</div></form>\n\n";
+
+echo $loginFormBegin;
 $paperTable->paptabBegin($prow);
 
 
@@ -583,11 +586,10 @@ if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
 }
 
 
-echo tagg_cbox("pap", true), "</td></tr></table>\n";
-
+echo tagg_cbox("pap", true), "</td></tr></table>\n", $loginFormEnd;
 
 // add external reviewers
-echo "<table class='pbox'><tr>
+echo $loginFormBegin, "<table class='pbox'><tr>
   <td class='pboxl'></td>
   <td class='pboxr'>";
 
@@ -626,9 +628,7 @@ if ($Me->actChair($prow))
 </div>\n";
 
 echo "</td><td></td></tr>\n", tagg_cbox("rev", true),
-    "</td></tr></table>\n";
-
-echo "</div></form>";
+    "</td></tr></table>\n", $loginFormEnd;
 
 
 echo foldsessionpixel("paper9", "foldpaperp"), foldsessionpixel("paper5", "foldpapert"), foldsessionpixel("paper6", "foldpaperb"), foldsessionpixel("paper8", "foldassigna");
