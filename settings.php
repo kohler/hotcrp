@@ -1130,7 +1130,7 @@ function doOptGroup() {
     
     if ($Conf->setting("allowPaperOption")) {
 	echo "<h3>Submission options</h3>\n";
-	echo "Options may be selected by authors at submission time, and might include &ldquo;Consider this paper for a Best Student Paper award&rdquo; or &ldquo;Allow the shadow PC to see this paper.&rdquo;  The &ldquo;option name&rdquo; should be brief.  The description should be longer and may use XHTML.  To delete an option, delete its name.  Add options one at a time.\n";
+	echo "Options are selected by authors at submission time.  Examples have included &ldquo;PC-authored paper,&rdquo; &ldquo;Consider this paper for a Best Student Paper award,&rdquo; and &ldquo;Allow the shadow PC to see this paper.&rdquo;  The &ldquo;option name&rdquo; should be brief (&ldquo;PC paper,&rdquo; &ldquo;Best Student Paper,&rdquo; &ldquo;Shadow PC&rdquo;).  The description should be more descriptive and may use XHTML.  To delete an option, delete its name.  Add options one at a time.\n";
 	echo "<div class='g'></div>\n";
 	echo "<table>";
 	$opt = paperOptions();
@@ -1165,7 +1165,7 @@ function doOptGroup() {
 		$oabbrev = "\"$oabbrev\"";
 	    echo "&ldquo;<a href=\"search$ConfSiteSuffix?q=topic:", urlencode($oabbrev), "\">",
 		"topic:", htmlspecialchars($oabbrev), "</a>&rdquo;",
-		"<div class='hint'>Abbreviations are also allowed.</div>",
+		"<div class='hint'>Topic abbreviations are also allowed.</div>",
 		"</div></td>";
 	}
 	echo "</tr>\n";
