@@ -709,12 +709,12 @@ if ($paperTable->mode == "r" && !$paperTable->rrow) {
 
     // title
     if (!$newPaper) {
-	$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId$linkExtra'";
+	$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;mode=p$linkExtra'";
 	echo "<tr class='id'>
   <td class='caption'><h2>", $a, " class='q'>#$paperId</a></h2></td>
   <td class='entry' colspan='2'><div class='floatright'>";
 	echo $a, ">", $Conf->cacheableImage("view24.png", "[View]", null, "b"),
-	    "</a>&nbsp;", $a, "Normal view</a></div><h2>", $a, " class='q'>";
+	    "</a>&nbsp;", $a, ">Normal view</a></div><h2>", $a, " class='q'>";
 	$paperTable->echoTitle($prow);
 	echo "</a></h2></td>
 </tr>\n";
