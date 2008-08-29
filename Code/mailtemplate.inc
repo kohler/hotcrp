@@ -63,7 +63,14 @@ On behalf of the %CONFNAME% program committee, %OTHERCONTACT% would like to soli
      Authors: %OPT(AUTHORS)%
   Paper site: %URL%/review%PHP%?p=%NUMBER%
 
-If you are willing to review this paper, you may enter your review on the conference site, or complete a review form offline and upload it.  %IF(DEADLINE(extrev_soft))%Please enter your review by %DEADLINE(extrev_soft)%.  %ENDIF%If you cannot complete the review, please use the conference site to explicitly refuse the review, or contact %OTHERNAME% directly.  For reference, your account information is as follows.
+If you are willing to review this paper, you may enter your review on the conference site or complete a review form offline and upload it.%IF(DEADLINE(extrev_soft))%  Your review is requested by %DEADLINE(extrev_soft)%.%ENDIF%
+
+Once you've decided, please take a moment to accept or refuse this review request by using one of these links.  You may also contact %OTHERNAME% directly or refuse the request using the conference site.
+
+      Accept: %URL%/review%PHP%?p=%NUMBER%&accept=1&%LOGINURLPARTS%
+      Refuse: %URL%/review%PHP%?p=%NUMBER%&refuse=1&%LOGINURLPARTS%
+
+For reference, your account information is as follows.
 
         Site: %URL%/
        Email: %EMAIL%
@@ -501,6 +508,8 @@ class Mailer {
 
 	if ($what == "%LOGINURL%")
 	    return $Conf->paperSite . "/?email=" . urlencode($this->contact->email) . "&password=" . urlencode($this->hideSensitive ? "HIDDEN" : $this->contact->password);
+	if ($what == "%LOGINURLPARTS%")
+	    return "email=" . urlencode($this->contact->email) . "&password=" . urlencode($this->hideSensitive ? "HIDDEN" : $this->contact->password);
 	if ($what == "%EMAIL%")
 	    return $this->contact->email;
 	if ($what == "%PASSWORD%")
@@ -656,7 +665,16 @@ class Mailer {
 		    $this->text .= $line . "\n";
 	    } else if (preg_match('/^([ \t][ \t]*.*?: )(%[\w()]+%)$/', $line, $m))
 		$this->text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true), $this->width) . "\n";
-	    else if (strpos($line, '%') !== false) {
+	    else if (preg_match('/^([ \t][ \t]*.*?: )(%URL%\S*)$/', $line, $m)) {
+		// do not wrap lines that start with %URL%
+		$this->textstart = strlen($this->text);
+		while (preg_match('/^(.*?)(%[\w()]+%)(.*)$/s', $line, $m)) {
+		    $this->text .= $m[1];
+		    $this->text .= $this->expandvar($m[2]);
+		    $line = $m[3];
+		}
+		$this->text .= $line . "\n";
+	    } else if (strpos($line, '%') !== false) {
 		$this->textstart = strlen($this->text);
 		while (preg_match('/^(.*?)(%[\w()]+%)(.*)$/s', $line, $m)) {
 		    $this->text .= $m[1];

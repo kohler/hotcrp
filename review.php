@@ -6,6 +6,19 @@
 require_once("Code/header.inc");
 require_once("Code/papertable.inc");
 $Me = $_SESSION["Me"];
+
+// special case: if "accept" or "refuse" is set, and "email" and "password"
+// are both set, vector through the signin page
+if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])
+    && (isset($_REQUEST["accept"]) || isset($_REQUEST["refuse"]))) {
+    $after = "";
+    foreach (array("paperId", "reviewId", "commentId", "p", "r", "c", "accept", "refuse") as $opt)
+	if (isset($_REQUEST[$opt]))
+	    $after .= ($after === "" ? "" : "&") . $opt . "=" . urlencode($_REQUEST[$opt]);
+    error_log(("index$ConfSiteSuffix?email=" . urlencode($_REQUEST["email"]) . "&password=" . urlencode($_REQUEST["password"]) . "&go=" . urlencode("review$ConfSiteSuffix?$after")));
+    $Me->go("index$ConfSiteSuffix?email=" . urlencode($_REQUEST["email"]) . "&password=" . urlencode($_REQUEST["password"]) . "&go=" . urlencode("review$ConfSiteSuffix?$after"));
+}
+
 $Me->goIfInvalid();
 $rf = reviewForm();
 $useRequest = isset($_REQUEST["afterLogin"]);
@@ -256,7 +269,7 @@ function refuseReview() {
     $while = "while refusing review";
     $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperReviewArchive write", $while);
 
-    $rrow = $paperTable->rrow;
+    $rrow = $paperTable->editrrow;
     if ($rrow->reviewModified > 0)
 	archiveReview($rrow);
 
@@ -290,16 +303,35 @@ function refuseReview() {
 }
 
 if (isset($_REQUEST['refuse'])) {
-    if (!$paperTable->rrow
-	|| ($paperTable->rrow->contactId != $Me->contactId && !$Me->privChair))
+    if (!$paperTable->editrrow
+	|| (!$Me->ownReview($paperTable->editrrow) && !$Me->privChair))
 	$Conf->errorMsg("This review was not assigned to you, so you cannot refuse it.");
-    else if ($paperTable->rrow->reviewType >= REVIEW_SECONDARY)
+    else if ($paperTable->editrrow->reviewType >= REVIEW_SECONDARY)
 	$Conf->errorMsg("PC members cannot refuse reviews that were explicitly assigned to them.  Contact the PC chairs directly if you really cannot finish this review.");
-    else if ($paperTable->rrow->reviewSubmitted)
+    else if ($paperTable->editrrow->reviewSubmitted)
 	$Conf->errorMsg("This review has already been submitted; you can't refuse it now.");
-    else {
+    else if ($_REQUEST["refuse"] == "1") {
+	$Conf->confirmMsg("<p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like, or just select &ldquo;Refuse review.&rdquo;</p><div class='g'></div><form method='post' action=\"review$ConfSiteSuffix?p=" . $paperTable->prow->paperId . "&amp;r=" . $paperTable->editrrow->reviewId . "$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>
+  <input type='hidden' name='refuse' value='refuse' />
+  <textarea name='reason' rows='3' cols='40'></textarea>
+  <span class='sep'></span>
+  <input class='b' type='submit' value='Refuse review' />
+  </div></form>");
+    } else {
 	refuseReview();
 	$Conf->qe("unlock tables");
+	loadRows();
+    }
+}
+
+if (isset($_REQUEST["accept"])) {
+    if (!$paperTable->editrrow
+	|| (!$Me->ownReview($paperTable->editrrow) && !$Me->privChair))
+	$Conf->errorMsg("This review was not assigned to you, so you cannot confirm your intention to write it.");
+    else {
+	if ($paperTable->editrrow->reviewModified <= 0)
+	    $Conf->qe("update PaperReview set reviewModified=1 where reviewId=" . $paperTable->editrrow->reviewId . " and coalesce(reviewModified,0)<=0", "while confirming review");
+	$Conf->confirmMsg("Thank you for confirming your intention to finish this review.  You can download the paper and review form below.");
 	loadRows();
     }
 }
