@@ -1366,6 +1366,11 @@ div.papt span.papfn {
 	font-weight: bold;
 	float: left;
 }
+div.papt span.papfnh {
+	font-variant: normal;
+	font-weight: normal;
+	color: #555555;
+}
 div.papt span.hint {
 	float: right;
 }

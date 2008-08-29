@@ -413,7 +413,7 @@ class Contact {
 	    return false;
 	// policy
 	if (($prow->conflictType >= CONFLICT_AUTHOR || $this->privChair)
-	    && $prow->timeWithdrawn <= 0 && $prow->timeSubmitted <= 0
+	    && $prow->timeWithdrawn <= 0
 	    && ($conf->timeFinalizePaper($prow) || $this->privChairOverride()))
 	    return true;
 	// collect failure reasons

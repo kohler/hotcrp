@@ -62,14 +62,14 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
 
 
 // grab paper row
-function getProw() {
+function loadRows() {
     global $prow;
     if (!($prow = PaperTable::paperRow($whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
 }
 $prow = null;
 if (!$newPaper) {
-    getProw();
+    loadRows();
     $paperId = $prow->paperId;
 }
 
@@ -78,17 +78,17 @@ if (!$newPaper) {
 if (isset($_REQUEST["setrevpref"]) && $prow) {
     require_once("Code/paperactions.inc");
     PaperActions::setReviewPreference($prow);
-    getProw();
+    loadRows();
 }
 if (isset($_REQUEST["setrank"]) && $prow) {
     require_once("Code/paperactions.inc");
     PaperActions::setRank($prow);
-    getProw();
+    loadRows();
 }
 if (isset($_REQUEST["rankctx"]) && $prow) {
     require_once("Code/paperactions.inc");
     PaperActions::rankContext($prow);
-    getProw();
+    loadRows();
 }
 
 
@@ -120,7 +120,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	$Conf->qe("update Paper set timeWithdrawn=" . time() . ", timeSubmitted=if(timeSubmitted>0,-100,0) where paperId=$paperId", "while withdrawing paper");
 	$Conf->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$paperId", "while withdrawing paper");
 	$Conf->updatePapersubSetting(false);
-	getProw();
+	loadRows();
 
 	// email contact authors themselves
 	require_once("Code/mailtemplate.inc");
@@ -156,7 +156,7 @@ if (isset($_REQUEST["revive"]) && !$newPaper) {
 	$Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . ") set PaperReview.reviewNeedsSubmit=-1 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY, "while reviving paper");
 	$Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . " and Req.reviewSubmitted>0) set PaperReview.reviewNeedsSubmit=0 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY, "while reviving paper");
 	$Conf->updatePapersubSetting(true);
-	getProw();
+	loadRows();
 	$Conf->log("Revived", $Me, $paperId);
     } else
 	$Conf->errorMsg(whyNotText($whyNot, "revive"));
@@ -407,14 +407,14 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // upload paper if appropriate
     if (fileUploaded($_FILES['paperUpload'], $Conf)) {
 	if ($newPaper)
-	    getProw();
+	    loadRows();
 	if (!uploadPaper($isSubmitFinal))
 	    return false;
     }
 
     // submit paper if appropriate
     if ($isSubmitFinal || $isSubmit) {
-	getProw();
+	loadRows();
 	if (($isSubmitFinal ? $prow->finalPaperStorageId : $prow->paperStorageId) <= 1) {
 	    $Error["paper"] = 1;
 	    return $Conf->errorMsg(whyNotText("notUploaded", ($isSubmitFinal ? "submit a final copy for" : "submit"), $paperId));
@@ -432,7 +432,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$Conf->updatePapersubSetting(true);
     
     // confirmation message
-    getProw();
+    loadRows();
     if ($isSubmitFinal) {
 	$actiontext = "Submitted final copy for";
 	$subject = "Updated paper #$paperId final copy";
@@ -642,11 +642,7 @@ if ($paperTable->mode == "r" && !$paperTable->rrow) {
 
 } else if ($paperTable->mode != "pe") {
     $paperTable->paptabBegin();
-    if ($Me->isPC
-	&& ($Conf->timeReviewOpen() || $Conf->timeAuthorViewReviews()))
-	$paperTable->paptabEndWithReviewMessage();
-    else
-	echo tagg_cbox("pap", true), "</td></tr></table>\n";
+    $paperTable->paptabEndWithReviewMessage();
     $paperTable->paptabComments();
 
 } else {
@@ -698,155 +694,8 @@ if ($paperTable->mode == "r" && !$paperTable->rrow) {
     else
 	$Conf->infoMsg("You aren't a contact author for this paper, but as an administrator you can still make changes.");
 
-    $spacer = "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
-    
-    echo "<form method='post' action=\"paper$ConfSiteSuffix?p=",
-	($newPaper ? "new" : $paperId),
-	"&amp;post=1&amp;mode=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>";
-    $paperTable->echoDivEnter();
-    echo "<table class='paper", ($paperTable->mode == "pe" ? " editpaper" : ""), "'>\n\n";
-
-
-    // title
-    if (!$newPaper) {
-	$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;mode=p$linkExtra'";
-	echo "<tr class='id'>
-  <td class='caption'><h2>", $a, " class='q'>#$paperId</a></h2></td>
-  <td class='entry' colspan='2'><div class='floatright'>";
-	echo $a, ">", $Conf->cacheableImage("view24.png", "[View]", null, "b"),
-	    "</a>&nbsp;", $a, ">Normal view</a></div><h2>", $a, " class='q'>";
-	$paperTable->echoTitle($prow);
-	echo "</a></h2></td>
-</tr>\n";
-    } else
-	echo "<tr><td></td><td><div class='g'></div></td></tr>\n";
-
-
-    // Editable title
-    if ($editable)
-	$paperTable->echoTitleRow($prow);
-
-
-    // Current status
-    $flags = PaperTable::STATUS_DATE;
-    if ($editable && $newPaper)
-	$flags += PaperTable::OPTIONAL;
-    if (!$editable)
-	$paperTable->echoPaperRow($prow, $flags);
-
-
-    // Upload paper
-    if ($editable)
-	$paperTable->echoUploadRow($prow,
-		($finalEditMode ? PaperTable::FINALCOPY : 0)
-		+ ($newPaper ? PaperTable::OPTIONAL : 0)
-		+ (!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0));
-
-    echo $spacer;
-
-
-    // Authors
-    $paperTable->echoAuthorInformation($prow);
-
-    // Contact authors
-    if ($newPaper)
-	$paperTable->echoNewContactAuthor($Me->privChair);
-    else
-	$paperTable->echoContactAuthor($prow, $paperTable->mode == "pe" || $prow->conflictType >= CONFLICT_AUTHOR);
-
-    // Anonymity
-    if ($Conf->blindSubmission() == 1 && !$finalEditMode)
-	$paperTable->echoAnonymity($prow);
-
-    echo $spacer;
-
-
-    // Abstract
-    $paperTable->echoAbstractRow($prow);
-
-    echo $spacer;
-
-
-    // Topics
-    if (!$finalEditMode)
-	$paperTable->echoTopics($prow);
-
-
-    // Options
-    $paperTable->echoOptions($prow, $Me->privChair);
-
-
-    // Potential conflicts
-    if ($paperTable->editable || $Me->privChair)
-	$paperTable->echoPCConflicts($prow, !$paperTable->editable);
-    if (!$finalEditMode)
-	$paperTable->echoCollaborators($prow);
-
-
-    // Submit button
-    echo $spacer;
-    echo "<tr class='pt_edit'>
-  <td class='caption'></td>
-  <td class='entry' colspan='2'><div class='aa'><table class='pt_buttons'>\n";
-    $buttons = array();
-    if ($newPaper)
-	$buttons[] = "<input class='bb' type='submit' name='update' value='Register paper' />";
-    else if ($prow->timeWithdrawn > 0 && ($Conf->timeFinalizePaper($prow) || $Me->privChair))
-	$buttons[] = "<input class='b' type='submit' name='revive' value='Revive paper' />";
-    else if ($prow->timeWithdrawn > 0)
-	$buttons[] = "The paper has been withdrawn, and the <a href='deadlines$ConfSiteSuffix'>deadline</a> for reviving it has passed.";
-    else {
-	if ($prow->outcome > 0 && $Conf->collectFinalPapers() && ($Conf->timeSubmitFinalPaper() || $Me->privChair))
-	    $buttons[] = array("<input class='bb' type='submit' name='submitfinal' value='Submit final copy' />", "");
-	if ($Conf->timeUpdatePaper($prow))
-	    $buttons[] = array("<input class='bb' type='submit' name='update' value='Submit paper' />", "");
-	else if ($Me->privChair) {
-	    $class = ($prow->outcome > 0 && $Conf->collectFinalPapers() ? "b" : "bb");
-	    $buttons[] = array("<input class='$class' type='submit' name='update' value='Submit paper' />", "(admin only)");
-	}
-	if ($prow->timeSubmitted <= 0)
-	    $buttons[] = "<input class='b' type='submit' name='withdraw' value='Withdraw paper' />";
-	else {
-	    $buttons[] = "<button type='button' class='b' onclick=\"popup(this, 'w', 0)\">Withdraw paper</button>";
-	    $Conf->footerStuff .= "<div id='popup_w' class='popupc'><p>Are you sure you want to withdraw this paper from consideration and/or publication?";
-	    if (!$Me->privChair || $prow->conflictType >= CONFLICT_AUTHOR)
-		$Conf->footerStuff .= "  Only administrators can undo this step.";
-	    $Conf->footerStuff .= "</p><form method='post' action=\"paper$ConfSiteSuffix?p=$paperId&amp;post=1&amp;mode=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'w', 1)\">Cancel</button></div></form></div>";
-	}
-    }
-    if ($Me->privChair && !$newPaper) {
-	$buttons[] = array("<button type='button' class='b' onclick=\"popup(this, 'd', 0)\">Delete paper</button>", "(admin only)");
-	$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"paper$ConfSiteSuffix?p=$paperId&amp;post=1&amp;mode=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='delete' value='Delete paper' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
-    }
-    echo "    <tr>\n";
-    foreach ($buttons as $b) {
-	$x = (is_array($b) ? $b[0] : $b);
-	echo "      <td class='ptb_button'>", $x, "</td>\n";
-    }
-    echo "    </tr>\n    <tr>\n";
-    foreach ($buttons as $b) {
-	$x = (is_array($b) ? $b[1] : "");
-	echo "      <td class='ptb_explain'>", $x, "</td>\n";
-    }
-    echo "    </tr>\n  </table></div></td>\n</tr>\n\n";
-    if ($Me->privChair) {
-	echo "<tr>
-  <td class='caption'></td>
-  <td class='entry' colspan='2'><table>\n";
-	echo "      <tr><td><input type='checkbox' name='doemail' value='1' checked='checked' />&nbsp;Email authors, including:&nbsp; ";
-	echo "<input type='text' class='textlite' name='emailNote' size='30' value='Optional explanation' onfocus=\"tempText(this, 'Optional explanation', 1)\" onblur=\"tempText(this, 'Optional explanation', 0)\" /></td></tr>\n";
-	echo "      <tr><td><input type='checkbox' name='override' value='1' />&nbsp;Override deadlines</td></tr>\n";
-	echo "  </table></td>\n</tr>\n\n";
-    }
-
-
-    // End paper view
-    echo "<tr class='last'><td class='caption'></td><td class='entry' colspan='2'></td></tr>
-</table>";
-    $paperTable->echoDivExit();
-
-    echo "</div></form>\n";
-    echo "<div class='clear'></div>\n\n";
+    $paperTable->paptabBegin();
+    $paperTable->paptabEndWithReviewMessage();
 }
 
 

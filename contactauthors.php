@@ -65,10 +65,7 @@ if (!$Me->canEditContactAuthors($prow))
     errorMsgExit("You can't manage paper #$prow->paperId since you are not a contact author.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
 
 
-$needMsg = true;
-
 if (isset($_REQUEST["add"])) {
-    $needMsg = false;
     if (!isset($_REQUEST["email"]) || trim($_REQUEST["email"]) == "")
 	$Conf->errorMsg("You must enter the new contact author's email address."); 
     else if (($id = $Conf->getContactId($_REQUEST["email"], true)) > 0) {
@@ -79,7 +76,6 @@ if (isset($_REQUEST["add"])) {
 
 foreach ($_REQUEST as $k => $v)
     if (substr($k, 0, 3) == "rem" && ($id = cvtint(substr($k, 3))) > 0) {
-	$needMsg = false;
 	$while = "while removing contact author";
 	$Conf->qe("lock tables PaperConflict write, ActionLog write", $while);
 	$result = $Conf->qe("select count(paperId) from PaperConflict where paperId=$prow->paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . " group by paperId", $while);
@@ -93,34 +89,19 @@ foreach ($_REQUEST as $k => $v)
 	$Conf->qe("unlock tables", $while);
     }
 
-if ($needMsg)
-    $Conf->infoMsg("Use this screen to change your paper's contact authors.  Contact authors can edit paper information, upload new versions, submit the paper, and view reviews, whether or not they're named in the author list.  Every paper must have at least one contact author.");
-
 
 if ($OK) {
     $paperTable = new PaperTable($prow);
     $paperTable->initialize(false, false, true);
     
-    echo "<form method='post' action=\"contactauthors$ConfSiteSuffix?p=$prow->paperId&amp;post=1\" enctype='multipart/form-data' accept-charset='UTF-8'>";
-    $paperTable->echoDivEnter();
-    echo "<table class='paper'>\n";
-
-    // title
-    echo "<tr class='id'>\n  <td class='caption'><h2>#$prow->paperId</h2></td>\n";
-    echo "  <td class='entry' colspan='2'><h2>";
-    $paperTable->echoTitle($prow);
-    echo "</h2></td>\n</tr>\n\n";
-
-    // Paper contents
-    $paperTable->echoPaperRow($prow, 0);
-    $paperTable->echoAuthorInformation($prow);
-    $paperTable->echoAbstractRow($prow);
-    $paperTable->echoCollaborators($prow);
-    $paperTable->echoTopics($prow);
+    $paperTable->paptabBegin();
 
     // Contact authors
-    echo "<tr>\n  <td class='caption textarea'>Contact&nbsp;authors</td>\n";
-    echo "  <td class='entry plholder'><table class='pltable'>
+    $t = "<form method='post' action=\"contactauthors$ConfSiteSuffix?p=$prow->paperId&amp;post=1\" enctype='multipart/form-data' accept-charset='UTF-8'>"
+	. "<div class='papt'>Contact authors</div>"
+	. "<div class='paphint'>A paper's contact authors are HotCRP users who can edit paper information and view reviews.  Every author is a contact author, but you can also add additional contact authors who aren't named in the author list.  Every paper must have at least one contact author.</div>"
+	. "<div class='papv'>"
+	. "<table class='pltable'>
     <tr class='pl_headrow'><th>Name</th> <th>Email</th> <th></th></tr>\n";
     $q = "select firstName, lastName, email, contactId
 	from ContactInfo
@@ -130,23 +111,22 @@ if ($OK) {
     $result = $Conf->qe($q, "while finding contact authors");
     $numContacts = edb_nrows($result);
     while ($row = edb_row($result)) {
-	echo "<tr><td class='pad'>", contactHtml($row[0], $row[1]), "</td> <td class='pad'>", htmlspecialchars($row[2]), "</td>";
+	$t .= "<tr><td class='pad'>" . contactHtml($row[0], $row[1])
+	    . "</td> <td class='pad'>" . htmlspecialchars($row[2]) . "</td>";
 	if ($Me->privChair || ($numContacts > 1 && $row[3] != $Me->contactId))
-	    echo " <td class='pad'><button class='b' type='submit' name='rem$row[3]' value='1'>Remove contact author</button></td>";
-	echo "</tr>\n    ";
+	    $t .= " <td class='pad'><button class='b' type='submit' name='rem$row[3]' value='1'>Remove contact author</button></td>";
+	$t .= "</tr>\n    ";
     }
 
-    echo "    <tr><td class='pad'><input class='textlite' type='text' name='name' size='20' /></td>
+    $t .= "    <tr><td class='pad'><input class='textlite' type='text' name='name' size='20' /></td>
 	<td class='pad'><input class='textlite' type='text' name='email' size='20' /></td>
 	<td class='pad'><input class='hb' type='submit' name='add' value='Add contact author' /></td>
     </tr>
-  </table></td>
-</tr>
+  </table></div></form>";
 
-<tr class='last'><td class='caption'></td></tr>
-</table>";
-    $paperTable->echoDivExit();
-    echo "</form>\n";
+    $paperTable->_paptabSepContaining($t);
+
+    $paperTable->paptabEndWithReviewMessage();
     
 } else {
     $Conf->errorMsg("The paper disappeared!");
