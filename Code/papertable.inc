@@ -1132,7 +1132,10 @@ class PaperTable {
 		. "</a>&nbsp;" . $a . "Assign</a>";
 	}
 	if ($prow && ($this->mode == "assign" || $this->mode == "pe")) {
-	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId$linkExtra'>";
+	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId";
+	    if ($this->mode == "pe")
+		$a .= "&amp;mode=p";
+	    $a .= "$linkExtra'>";
 	    if ($t != "")
 		$t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
 	    $t .= $a . $Conf->cacheableImage("view24.png", "[View]", null, "b")

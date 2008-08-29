@@ -121,12 +121,14 @@ class PaperSearch {
 	    $this->limitName = $ptype;
 	else if ($this->privChair && ($ptype == "all" || $ptype == "unsub"))
 	    $this->limitName = $ptype;
-	else if ($me->amReviewer() && (!$ptype || $ptype == "r"))
-	    $this->limitName = "r";
-	else if ($me->amReviewer() && $ptype == "rout")
-	    $this->limitName = "rout";
-	else
+	else if ($ptype == "r" || $ptype == "rout" || $ptype == "a")
+	    $this->limitName = $ptype;
+	else if (!$me->amReviewer())
 	    $this->limitName = "a";
+	else if (!$me->isAuthor)
+	    $this->limitName = "r";
+	else
+	    $this->limitName = "ar";
 
 	// track other information
 	$this->allowAuthor = false;
@@ -955,7 +957,7 @@ class PaperSearch {
 	if ($flags & self::F_NONCONFLICT)
 	    $q[] = "PaperConflict.conflictType is null";
 	if ($flags & self::F_AUTHOR)
-	    $q[] = "PaperConflict.conflictType>=" . CONFLICT_CONTACTAUTHOR;
+	    $q[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
 	if ($flags & self::F_REVIEWER)
 	    $q[] = "MyReview.reviewNeedsSubmit=0";
 	if ($flags & self::F_PAPERNONBLIND)
@@ -1223,7 +1225,7 @@ class PaperSearch {
     // overestimate produced by the database to a precise result.
     
     function _clauseTermCheckFlags($flags, &$row) {
-	if (($flags & self::F_AUTHOR) && $row->conflictType < CONFLICT_CONTACTAUTHOR)
+	if (($flags & self::F_AUTHOR) && $row->conflictType < CONFLICT_AUTHOR)
 	    return false;
 	if (($flags & self::F_REVIEWER) && $row->myReviewNeedsSubmit !== 0)
 	    return false;
@@ -1391,11 +1393,14 @@ class PaperSearch {
 
 	// other search limiters
 	if ($this->limitName == "a") {
-	    $filters[] = "PaperConflict.conflictType>=" . CONFLICT_CONTACTAUTHOR;
+	    $filters[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
 	    $this->needflags |= self::F_AUTHOR;
 	} else if ($this->limitName == "r") {
 	    $filters[] = "MyReview.reviewType is not null";
 	    $this->needflags |= self::F_REVIEWER;
+	} else if ($this->limitName == "ar") {
+	    $filters[] = "(PaperConflict.conflictType>=" . CONFLICT_AUTHOR . " or MyReview.reviewType is not null)";
+	    $this->needflags |= self::F_AUTHOR | self::F_REVIEWER;
 	} else if ($this->limitName == "rout") {
 	    $filters[] = "MyReview.reviewNeedsSubmit!=0";
 	    $this->needflags |= self::F_REVIEWER;

@@ -78,7 +78,7 @@ foreach ($_REQUEST as $k => $v)
     if (substr($k, 0, 3) == "rem" && ($id = cvtint(substr($k, 3))) > 0) {
 	$while = "while removing contact author";
 	$Conf->qe("lock tables PaperConflict write, ActionLog write", $while);
-	$result = $Conf->qe("select count(paperId) from PaperConflict where paperId=$prow->paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . " group by paperId", $while);
+	$result = $Conf->qe("select count(paperId) from PaperConflict where paperId=$prow->paperId and conflictType>=" . CONFLICT_AUTHOR . " group by paperId", $while);
 	$row = edb_row($result);
 	if (!$Me->privChair && (!$row || $row[0] <= 1))
 	    $Conf->errorMsg("Only a system administrator can remove the last contact author.");
@@ -106,7 +106,7 @@ if ($OK) {
     $q = "select firstName, lastName, email, contactId
 	from ContactInfo
 	join PaperConflict using (contactId)
-	where paperId=$prow->paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . "
+	where paperId=$prow->paperId and conflictType>=" . CONFLICT_AUTHOR . "
 	order by lastName, firstName, email";
     $result = $Conf->qe($q, "while finding contact authors");
     $numContacts = edb_nrows($result);

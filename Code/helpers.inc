@@ -489,8 +489,11 @@ function listLinks($paperId, $baseUrl = null, $args = array()) {
 	    _tryNewList(array("t" => "all"), $replaceList);
 	    $k = array_search($paperId, $_SESSION["l"][$replaceList]);
 	}
-	$CurrentList = $replaceList;
+	$CurrentList = ($k === false ? 0 : $replaceList);
     }
+
+    if ($CurrentList == 0)
+	return "";
 
     $urlrest = "&amp;ls=" . $CurrentList;
     foreach ($args as $what => $val)
