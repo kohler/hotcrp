@@ -72,27 +72,12 @@
   exactly the reviewers for this paper".  This would be useful more
   generally.) [Benjamin Pierce]
 
-* When I was stepping through the assignments paper by paper, the "next
-  paper" links at the top took me from paper #18 to paper #87 and then to
-  paper #19!  Similarly, #119 got sorted between 101 and 102, and there was
-  one other instance of the same. [Benjamin Pierce]
-
 * Is there a way to search for all PC-authored papers? [Benjamin Pierce]
 
-* The default invitation letter to external reviewers suggests that they
-  don't need to let the requesting PC member know whether or not they can
-  do the review.  It seems better to ask them to confirm one way or the
-  other.  (Indeed, I think the web site should provide a way for an
-  external reviewer to agree to do the review without actually entering
-  it.) [Benjamin Pierce]
-
 * How about cc'ing the requesting PC member on the invitation request
-  email? [Benjamin Pierce]
+  email? [Benjamin Pierce] -- won't cc, but maybe resend mail
 
-* At some point I was trying to request an external review but I mangled
-  the email field.  HotCRP just gave me the same page back, with no
-  indication that anything had gone wrong except that the review I thought
-  I'd just requested didn't appear on the pending list. [Benjamin Pierce]
+- Check that review tokens and external reviewer requests mix
 
 * When I'm sending mail to people via the website, I want to make sure that
   it's going to be CC'd to me.  It would be helpful if the mail template
