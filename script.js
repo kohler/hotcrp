@@ -688,6 +688,13 @@ function docheckformat() {
     return Miniajax.submit('checkformatform', null, 10000);
 }
 
+function dosubmitdecision() {
+    var sel = e("folddecision_d");
+    if (sel && sel.value > 0)
+	fold("shepherd", 0, 2);
+    return Miniajax.submit("decisionform");
+}
+
 
 // mail
 function setmailpsel(sel) {

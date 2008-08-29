@@ -965,10 +965,9 @@ class PaperTable {
 	    "<div class='psv'>", authorTable($pcconfs), "</div>\n";
     }
 
-    function _papstripLeadShepherd($prow, $type, $name) {
+    function _papstripLeadShepherd($prow, $type, $name, $showedit, $wholefold) {
 	global $Conf, $ConfSiteSuffix, $Me, $Error, $linkExtra;
 	$editable = $Me->actChair($prow);
-	$defaultEdit = ($this->mode == "assign");
 
 	$field = $type . "ContactId";
 	if ($prow->$field == 0 && !$editable)
@@ -978,12 +977,12 @@ class PaperTable {
 
 	if ($editable) {
 	    echo "<form id='${type}form' class='fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"${type}form\")'>",
-		"<div id='fold$type' class='", ($defaultEdit ? "foldo" : "foldc"), " inform'>",
+		"<div id='fold$type' class='", ($showedit ? "foldo" : "foldc"), ($wholefold ? " fold2c" : " fold2o"), " inform'><div class='extension2'>",
 		"<input type='hidden' name='set$type' value='1' />";
 	    $Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"${type}form\");</script>";
 	}
-	
-	echo $this->papt($type, $name, array("type" => "ps", "editfolder" => ($editable && !$defaultEdit ? $type : 0))),
+
+	echo $this->papt($type, $name, array("type" => "ps", "editfolder" => ($editable && !$showedit ? $type : 0))),
 	    "<div class='psv'>";
 
 	if ($editable) {
@@ -1010,16 +1009,16 @@ class PaperTable {
 
 	echo "</div>";
 	if ($editable)
-	    echo "</div></div></form>";
+	    echo "</div></div></div></form>";
 	echo "\n";
     }
 
-    function papstripLead($prow) {
-	$this->_papstripLeadShepherd($prow, "lead", "Discussion lead");
+    function papstripLead($prow, $showedit) {
+	$this->_papstripLeadShepherd($prow, "lead", "Discussion lead", $showedit, false);
     }
 
-    function papstripShepherd($prow) {
-	$this->_papstripLeadShepherd($prow, "shepherd", "Shepherd");
+    function papstripShepherd($prow, $showedit, $fold) {
+	$this->_papstripLeadShepherd($prow, "shepherd", "Shepherd", $showedit, $fold);
     }
 
     function papstripTags($prow, $site = null) {
@@ -1059,19 +1058,19 @@ class PaperTable {
 	}
     }
 
-    function papstripOutcomeSelector($prow) {
+    function papstripOutcomeSelector($prow, $showedit) {
 	global $Conf, $ConfSiteSuffix, $rf, $Error, $linkExtra;
 	if (!$rf)
 	    $rf = reviewForm();
 	echo "<div id='folddecision' class='",
-	    ($this->mode == "assign" ? "foldo" : "foldc"), "'>",
-	    $this->papt("decision", "Decision", array("type" => "ps", "editfolder" => "decision")),
-	    "<div class='psv'><form id='decisionform' class='extension fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"decisionform\")'>",
+	    ($showedit ? "foldo" : "foldc"), "'>",
+	    $this->papt("decision", "Decision", array("type" => "ps", "editfolder" => ($showedit ? 0 : "decision"))),
+	    "<div class='psv'><form id='decisionform' class='extension fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitdecision()'>",
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setdecision' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
 	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
-	echo decisionSelector($prow->outcome, null, " onchange='Miniajax.submit(\"decisionform\")' id='folddecision_d'"),
+	echo decisionSelector($prow->outcome, null, " onchange='dosubmitdecision()' id='folddecision_d'"),
 	    " <input class='b extension7' type='submit' value='Save' />",
 	    " <span id='decisionformresult'></span>",
 	    "</div></form><div class='ellipsis'>",
@@ -1166,26 +1165,15 @@ class PaperTable {
 	    $this->papstripCollaborators($prow);
 	}
 
-	//$foldDecisions = $Me->canSetOutcome($prow)
-	//    && $prow->outcome == 0 && $prow->leadContactId == 0
-	//    && $prow->shepherdContactId == 0;
 	$foldDecisions = false;
-	if ($foldDecisions) {
-	    echo "<div id='foldoutcomelead' class='fold5c'><div class='ellipsis5'>",
-		$this->papt("outcomelead", "Decision, Lead, Shepherd",
-			    array("type" => "ps",
-				  "fold" => "outcomelead", "foldnum" => 5,
-				  "showtitle" => "Edit decision, discussion lead, and shepherd")),
-		"<div class='papv'></div></div><div class='extension5'>";
-	}
+	$foldShepherd = $Me->canSetOutcome($prow) && $prow->outcome <= 0
+	    && $prow->shepherdContactId == 0 && $this->mode != "assign";
 	if ($Me->canSetOutcome($prow))
-	    $this->papstripOutcomeSelector($prow);
+	    $this->papstripOutcomeSelector($prow, $foldDecisions);
 	if ($Me->actPC($prow))
-	    $this->papstripLead($prow);
+	    $this->papstripLead($prow, $foldDecisions || $this->mode == "assign");
 	if ($Me->actPC($prow) || $Me->canViewDecision($prow, $Conf))
-	    $this->papstripShepherd($prow);
-	if ($foldDecisions)
-	    echo "</div></div>";
+	    $this->papstripShepherd($prow, $foldDecisions || $this->mode == "assign", $foldShepherd);
 
 	if ($Me->actPC($prow) && $Conf->timePCReviewPreferences())
 	    $this->papstripReviewPreference($prow);
