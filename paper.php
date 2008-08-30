@@ -614,7 +614,7 @@ if ($paperTable->mode == "pe") {
     $editable = false;
 
 $paperTable->initialize($editable, $editable && $useRequest,
-			$paperTable->mode != "p" && $paperTable->mode != "pe",
+			$paperTable->mode != "pe" && (count($paperTable->rrows) || count($paperTable->mycrows)),
 			"paper");
 
 // produce paper table
