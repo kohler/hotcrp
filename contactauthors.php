@@ -100,7 +100,7 @@ if ($OK) {
     // Contact authors
     $t = "<form method='post' action=\"contactauthors$ConfSiteSuffix?p=$prow->paperId&amp;post=1\" enctype='multipart/form-data' accept-charset='UTF-8'>"
 	. "<div class='papt'>Contact authors</div>"
-	. "<div class='paphint'>A paper's contact authors are HotCRP users who can edit paper information and view reviews.  Every paper author is a contact author by default, but you can add additional contact authors who aren't named in the author list.  Every paper must have at least one contact author.</div>"
+	. "<div class='paphint'>A paper's contact authors are HotCRP users who can edit paper information and view reviews.  Every paper author with a HotCRP account is a contact author by default, but you can add additional contact authors who aren't named in the author list.  Every paper must have at least one contact author.</div>"
 	. "<div class='papv'>"
 	. "<table class='pltable'>
     <tr class='pl_headrow'><th>Name</th> <th>Email</th> <th></th></tr>\n";
