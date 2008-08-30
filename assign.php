@@ -454,10 +454,10 @@ $paperTable->mode = "assign";
 
 
 // begin form and table
-$loginFormBegin = "<form id='ass' action='assign$ConfSiteSuffix?p=$prow->paperId&amp;post=1$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>";
+$loginFormBegin = "action='assign$ConfSiteSuffix?p=$prow->paperId&amp;post=1$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>";
 $loginFormEnd = "</div></form>\n\n";
 
-echo $loginFormBegin;
+echo "<form id='ass' ", $loginFormBegin;
 $paperTable->paptabBegin($prow);
 
 
@@ -597,7 +597,7 @@ if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
 echo tagg_cbox("pap", true), "</td></tr></table>\n", $loginFormEnd;
 
 // add external reviewers
-echo $loginFormBegin, "<table class='pbox'><tr>
+echo "<form ", $loginFormBegin, "<table class='pbox'><tr>
   <td class='pboxl'></td>
   <td class='pboxr'>";
 

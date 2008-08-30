@@ -906,7 +906,7 @@ class PaperTable {
 		"<div class='psv'>";
 	    if ($editable) {
 		// tag report form
-		$Conf->footerStuff .= "<form id='tagreportform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'><input type='hidden' name='tagreport' value='1' /></form>";
+		$Conf->footerStuff .= "<form id='tagreportform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'><div class='aahc'><input type='hidden' name='tagreport' value='1' /></div></form>";
 
 		$t = tagsToText($prow, false, $Me, true);
 		echo "<div class='ellipsis'>", ($tx == "" ? "None" : $tx),
@@ -986,7 +986,7 @@ class PaperTable {
 	    $rp = "";
 	
 	// rank context form
-	$Conf->footerStuff .= "<form id='rankctxform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankctxform\")'><input type='hidden' name='rankctx' value='1' /></form>";
+	$Conf->footerStuff .= "<form id='rankctxform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankctxform\")'><div class='aahc'><input type='hidden' name='rankctx' value='1' /></div></form>";
 	
 	echo "<div id='foldrank' class='foldc fold2c'>",
 	    $this->papt("rank", "Rank", array("type" => "ps", "editfolder" => "rank")),
