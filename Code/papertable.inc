@@ -312,7 +312,8 @@ class PaperTable {
 		echo "<br/>\nYou began a review for this paper.";
 	}
 	if ($Me->isPC && $prow->conflictType <= 0
-	    && $Conf->timeUpdatePaper($prow))
+	    && $Conf->timeUpdatePaper($prow) && $this->mode != "assign"
+	    && $this->mode != "contact")
 	    echo "<div class='g'></div><div class='xwarning'>The authors still have <a href='deadlines$ConfSiteSuffix'>time</a> to make changes.</div>";
     }
 
@@ -1200,14 +1201,16 @@ class PaperTable {
 	    $t .= $a . $Conf->cacheableImage(($Me->actChair($prow)  && 0 ? "newreview.png" : "newreview24.png"), "[Edit]", null, "b")
 		. "</a>&nbsp;" . $a . "Edit</a>";
 	}
-	if ($prow && $this->mode != "assign" && $Me->actChair($prow)) {
+	if ($prow && $this->mode != "assign" && $this->mode != "contact"
+	    && $Me->actChair($prow)) {
 	    $a = "<a href='assign$ConfSiteSuffix?p=$prow->paperId$linkExtra'>";
 	    if ($t != "")
 		$t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
 	    $t .= $a . $Conf->cacheableImage("assign24.png", "[Assign]", null, "b")
 		. "</a>&nbsp;" . $a . "Assign</a>";
 	}
-	if ($prow && ($this->mode == "assign" || $this->mode == "pe")) {
+	if ($prow && ($this->mode == "assign" || $this->mode == "pe"
+		      || $this->mode == "contact")) {
 	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId";
 	    if ($this->mode == "pe")
 		$a .= "&amp;mode=p";
