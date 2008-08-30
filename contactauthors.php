@@ -99,7 +99,7 @@ if ($OK) {
     // Contact authors
     $t = "<form method='post' action=\"contactauthors$ConfSiteSuffix?p=$prow->paperId&amp;post=1\" enctype='multipart/form-data' accept-charset='UTF-8'>"
 	. "<div class='papt'>Contact authors</div>"
-	. "<div class='paphint'>A paper's contact authors are HotCRP users who can edit paper information and view reviews.  Every author is a contact author, but you can also add additional contact authors who aren't named in the author list.  Every paper must have at least one contact author.</div>"
+	. "<div class='paphint'>A paper's contact authors are HotCRP users who can edit paper information and view reviews.  Every author starts out as a contact author, and you can add additional contact authors who aren't named in the author list.  Every paper must have at least one contact author.</div>"
 	. "<div class='papv'>"
 	. "<table class='pltable'>
     <tr class='pl_headrow'><th>Name</th> <th>Email</th> <th></th></tr>\n";
@@ -120,7 +120,7 @@ if ($OK) {
 
     $t .= "    <tr><td class='pad'><input class='textlite' type='text' name='name' size='20' /></td>
 	<td class='pad'><input class='textlite' type='text' name='email' size='20' /></td>
-	<td class='pad'><input class='hb' type='submit' name='add' value='Add contact author' /></td>
+	<td class='pad'><input class='bb' type='submit' name='add' value='Add contact author' /></td>
     </tr>
   </table></div></form>";
 

@@ -652,7 +652,7 @@ Follow these steps to prepare to accept paper submissions.
 
 <li><p><strong><a href='settings$ConfSiteSuffix?group=sub'>Set
   up the automated format checker (optional).</a></strong> This adds a
-  &ldquo;Check format requirements&rdquo; button to the Edit Paper screen.
+  &ldquo;Check format&rdquo; button to the Edit Paper screen.
   Clicking the button checks the paper for formatting errors, such as going
   over the page limit.  Papers with formatting errors may still be submitted,
   since the checker itself can make mistakes, but the automated checker leaves

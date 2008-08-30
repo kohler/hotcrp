@@ -274,13 +274,15 @@ if (!$viewAny && !$editAny) {
 }
 
 
-// page header
-confHeader();
-
-
 // mode
 if ($paperTable->mode == "r" || $paperTable->mode == "re")
     $paperTable->fixReviewMode();
+if ($paperTable->mode == "pe")
+    $Conf->go("paper$ConfSiteSuffix?p=$prow->paperId$linkExtra");
+
+
+// page header
+confHeader();
 
 
 // paper table

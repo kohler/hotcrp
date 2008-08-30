@@ -204,7 +204,7 @@ class CheckFormat {
 		    $minpct = min($minpct, $pct);
 		}
 	    if (count($px) > 0) {
-		$pie[] = "Text block too big/margins too small: text block bigger than maximum "
+		$pie[] = "Margins too small: text block bigger than maximum "
 		    . unparsedimen($p) . " on "
 		    . pluralx($px, "page") . " " . commarangejoin($px) . " by "
 		    . ($minpct == $maxpct ? "" : "$minpct&ndash;")

@@ -337,7 +337,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$result = $Conf->lastInsertId("while updating paper information");
 	if (!$result)
 	    return false;
-	$paperId = $result;
+	$paperId = $_REQUEST["p"] = $_REQUEST["paperId"] = $result;
 
 	$result = $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($paperId, $contactId, " . CONFLICT_CONTACTAUTHOR . ")", "while updating paper information");
 	if (!$result)
@@ -588,18 +588,6 @@ if (isset($_REQUEST["tagreport"])) {
 }
 
 
-// messages for the author
-function deadlineSettingIs($dname, $conf) {
-    $deadline = $conf->printableTimeSetting($dname);
-    if ($deadline == "N/A")
-	return "";
-    else if (time() < $conf->setting($dname))
-	return "  The deadline is $deadline.";
-    else
-	return "  The deadline was $deadline.";
-}
-
-
 // page header
 confHeader();
 
@@ -630,73 +618,17 @@ $paperTable->initialize($editable, $editable && $useRequest,
 			"paper");
 
 // produce paper table
-if ($paperTable->mode == "r" && !$paperTable->rrow) {
-    $paperTable->paptabBegin();
+$paperTable->paptabBegin();
+
+if ($paperTable->mode == "r" && !$paperTable->rrow)
     $paperTable->paptabEndWithReviews(); 
-    $paperTable->paptabComments();
-
-} else if ($paperTable->mode == "re" || $paperTable->mode == "r") {
-    $paperTable->paptabBegin();
+else if ($paperTable->mode == "re" || $paperTable->mode == "r")
     $paperTable->paptabEndWithEditableReview();
-    $paperTable->paptabComments();
-
-} else if ($paperTable->mode != "pe") {
-    $paperTable->paptabBegin();
+else
     $paperTable->paptabEndWithReviewMessage();
+
+if ($paperTable->mode != "pe")
     $paperTable->paptabComments();
-
-} else {
-    assert(!$prow || $Me->canViewAuthors($prow, $Conf, false) || $Me->actChair($prow, true));
-    
-    $override = ($Me->privChair ? "  As an administrator, you can override this deadline using the \"Override deadlines\" checkbox." : "");
-    if ($newPaper) {
-	$timeStart = $Conf->timeStartPaper();
-	$startDeadline = deadlineSettingIs("sub_reg", $Conf);
-	if (!$timeStart) {
-	    if ($Conf->setting("sub_open") <= 0)
-		$msg = "You can't register new papers because the conference site has not been opened for submissions.$override";
-	    else
-		$msg = "You can't register new papers since the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed.$startDeadline$override";
-	    if (!$Me->privChair)
-		errorMsgExit($msg);
-	    $Conf->infoMsg($msg);
-	}
-    } else if ($prow->conflictType >= CONFLICT_AUTHOR
-	       && ($Conf->timeUpdatePaper($prow) || $prow->timeSubmitted <= 0)) {
-	$timeUpdate = $Conf->timeUpdatePaper($prow);
-	$updateDeadline = deadlineSettingIs("sub_update", $Conf);
-	$timeSubmit = $Conf->timeFinalizePaper($prow);
-	$submitDeadline = deadlineSettingIs("sub_sub", $Conf); 
-	if ($timeUpdate && $prow->timeWithdrawn > 0)
-	    $Conf->infoMsg("Your paper has been withdrawn, but you can still revive it.$updateDeadline");
-	else if ($timeUpdate) {
-	    if ($prow->timeSubmitted <= 0) {
-		if ($prow->paperStorageId <= 1)
-		    $Conf->warnMsg("You haven't uploaded a paper yet.$updateDeadline");
-		else if ($Conf->setting('sub_freeze'))
-		    $Conf->warnMsg("You must submit a final version of your paper before it can be reviewed.$updateDeadline");
-		else
-		    $Conf->warnMsg("The current version of the paper is marked as not ready for review.  If you don't submit a reviewable version of the paper, it will not be considered.$updateDeadline"); 
-	    } else
-		$Conf->confirmMsg("Your paper is ready for review and will be considered for the conference.  You still have time to make changes.$updateDeadline");
-	} else if ($prow->timeWithdrawn <= 0 && $timeSubmit)
-	    $Conf->infoMsg("You cannot make any changes as the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override");
-	else if ($prow->timeWithdrawn <= 0)
-	    $Conf->infoMsg("The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override");
-    } else if ($prow->conflictType >= CONFLICT_AUTHOR && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper()) {
-	$updateDeadline = deadlineSettingIs("final_done", $Conf);
-	$Conf->infoMsg("Congratulations!  This paper was accepted.  Submit a final copy for your paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or edit contact authors, allowing others to view reviews and make changes.");
-    } else if ($prow->conflictType >= CONFLICT_AUTHOR) {
-	$override2 = ($Me->privChair ? "  However, as an administrator, you can update the paper anyway by selecting \"Override deadlines\"." : "");
-	$Conf->infoMsg("This paper is under review and can no longer be changed, although you may still withdraw it from the conference.$override2");
-    } else if (!$Me->privChair)
-	errorMsgExit("You can't edit paper #$paperId since you aren't one of its contact authors.");
-    else
-	$Conf->infoMsg("You aren't a contact author for this paper, but as an administrator you can still make changes.");
-
-    $paperTable->paptabBegin();
-    $paperTable->paptabEndWithReviewMessage();
-}
 
 
 echo foldsessionpixel("paper9", "foldpaperp"), foldsessionpixel("paper5", "foldpapert"), foldsessionpixel("paper6", "foldpaperb");

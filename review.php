@@ -386,13 +386,15 @@ if (!$viewAny && !$editAny) {
 }
 
 
-// page header
-confHeader();
-
-
 // mode
 if ($paperTable->mode == "r" || $paperTable->mode == "re")
     $paperTable->fixReviewMode();
+if ($paperTable->mode == "pe")
+    $Conf->go("paper$ConfSiteSuffix?p=$prow->paperId$linkExtra");
+
+
+// page header
+confHeader();
 
 
 // paper table
@@ -409,7 +411,8 @@ else if ($paperTable->mode == "r" && !$paperTable->rrow)
 else
     $paperTable->paptabEndWithEditableReview();
 
-$paperTable->paptabComments();
+if ($paperTable->mode != "pe")
+    $paperTable->paptabComments();
 
 echo foldsessionpixel("paper9", "foldpaperp"), foldsessionpixel("paper5", "foldpapert"), foldsessionpixel("paper6", "foldpaperb");
 $Conf->footer();

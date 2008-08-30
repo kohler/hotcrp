@@ -9,7 +9,6 @@ $textAreaRows = array("title" => 1, "abstract" => 12, "authorInformation" => 5,
 
 class PaperTable {
 
-    const OPTIONAL = 2;
     const FINALCOPY = 4;
     const ENABLESUBMIT = 8;
     
@@ -259,34 +258,41 @@ class PaperTable {
 		"<span id='watchformresult' style='padding-left:1em'></span></div></form>";
 	    $Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"watchform\");</script>";
 	    } */
-    
+
+    function downloadInfo($prow) {
+	global $Conf, $ConfSiteSuffix, $Me;
+	$t = "";
+	if ($prow->timestamp)
+	    $t = $Conf->cacheableImage("timestamp12.png", "Updated", "Time of most recent paper update") . "&nbsp;<span title='Time of most recent paper update'>" . $Conf->printableTime($prow->timestamp) . "</span>";
+	if (defval($prow, 'sha1')) {
+	    if ($t)
+		$t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
+	    $t .= $Conf->cacheableImage("checksum12.png", "SHA-1", "SHA-1 checksum") . "&nbsp;<span title='SHA-1 checksum'>" . bin2hex($prow->sha1) . "</span>";
+	}
+	if ($t)
+	    $t = "<span class='sep'></span> <span class='hint'>$t</span>";
+	if ($Me->canDownloadPaper($prow, $Conf)) {
+	    if ($prow->outcome > 0 && $prow->finalPaperStorageId > 0
+		&& $Conf->collectFinalPapers()) {
+		$submissionMimetype = null;
+		return "Final copy: " . paperDownload($prow, true) . $t
+		    . " &nbsp;|&nbsp; <a class='black' href=\""
+		    . $Conf->makeDownloadPath($prow->paperId, $submissionMimetype, false)
+		    . "\">Submission</a>";
+	    } else if ($prow->size > 0)
+		return paperDownload($prow) . $t;
+	} else
+	    return $t;
+    }
+
     function paptabDownload($prow) {
 	global $Conf, $Me, $ConfSiteSuffix;
 	$final = ($prow->outcome > 0 && $Conf->collectFinalPapers());
 
 	// status
 	echo $Me->paperStatus($prow->paperId, $prow, 0);
-	$timestamp = "";
-	if ($prow->timestamp)
-	    $timestamp = $Conf->cacheableImage("timestamp12.png", "Updated", "Time of most recent paper update") . "&nbsp;<span title='Time of most recent paper update'>" . $Conf->printableTime($prow->timestamp) . "</span>";
-	if (defval($prow, 'sha1')) {
-	    if ($timestamp)
-		$timestamp .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
-	    $timestamp .= $Conf->cacheableImage("checksum12.png", "SHA-1", "SHA-1 checksum") . "&nbsp;<span title='SHA-1 checksum'>" . bin2hex($prow->sha1) . "</span>";
-	}
-	if ($timestamp)
-	    $timestamp = "<span class='sep'></span> <span class='hint'>$timestamp</span>";
-	if ($Me->canDownloadPaper($prow, $Conf)) {
-	    if ($final && $prow->finalPaperStorageId > 0) {
-		$submissionMimetype = null;
-		echo " Final copy: ", paperDownload($prow, true), $timestamp,
-		    " &nbsp;|&nbsp; <a class='black' href=\"",
-		    $Conf->makeDownloadPath($prow->paperId, $submissionMimetype, false),
-		    "\">Submission</a>";
-	    } else if ($prow->size > 0)
-		echo " ", paperDownload($prow), $timestamp;
-	} else
-	    echo $timestamp;
+	if (($t = $this->downloadInfo($prow)))
+	    echo " ", $t;
 
 	// conflicts
 	$flags = self::STATUS_CONFLICTINFO;
@@ -324,8 +330,8 @@ class PaperTable {
 	$maxSize = ini_get("upload_max_filesize") . "B";
 	$t .= " <span class='papfnh'>(max size $maxSize)</span>";
 	echo $this->papt("paper", $t), "<div class='papv'>";
-
-	echo ($final ? "Final copy:&nbsp; " : ""),
+	
+	echo ($final ? "Upload final copy:&nbsp; " : ""),
 	    "<input class='textlite' type='file' name='paperUpload' accept='",
 	    (defval($Opt, 'disablePDF') > 0 ? "" : "application/pdf "),
 	    (defval($Opt, 'disablePS') > 0 ? "" : "application/postscript "),
@@ -356,11 +362,13 @@ class PaperTable {
 	} else
 	    echo "<input type='hidden' name='submit' value='1' />";
 
+	if (($t = $this->downloadInfo($prow)))
+	    echo "<div class='g'></div>Current version: &nbsp;", $t;
 	if ($prow
 	    && ($final ? $prow->finalPaperStorageId : $prow->paperStorageId) > 0
 	    && defval($prow, "mimetype", "application/pdf") == "application/pdf"
 	    && $Conf->setting("sub_banal")) {
-	    echo "<div id='foldcheckformat' class='foldc'><input class='b' type='submit' name='checkformat' value='Check format requirements' onclick='return docheckformat()' /><div id='checkformatformresult' class='extension'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
+	    echo "<div id='foldcheckformat' class='foldc'><input class='b' type='submit' name='checkformat' value='Check format' onclick='return docheckformat()' /><div id='checkformatformresult' class='extension'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
 	    $Conf->footerStuff .= "<form id='checkformatform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId";
 	    if ($final)
 		$Conf->footerStuff .= "&amp;final=1";
@@ -662,7 +670,7 @@ class PaperTable {
 	    echo authorTable($aus, $Me);
 	}
 	if ($editMode || ($editMode === false && ($this->editable || $Me->privChair)))
-	    echo "<a class='button_small' href='contactauthors$ConfSiteSuffix?p=$prow->paperId'>Edit&nbsp;contact&nbsp;authors</a>";
+	    echo "(<a href='contactauthors$ConfSiteSuffix?p=$prow->paperId'>Edit&nbsp;contact&nbsp;authors</a>)";
 	echo "</div>\n\n";
     }
 
@@ -1005,6 +1013,72 @@ class PaperTable {
 
     // Functions for editing
 
+    function deadlineSettingIs($dname) {
+	global $Conf;
+	$deadline = $Conf->printableTimeSetting($dname);
+	if ($deadline == "N/A")
+	    return "";
+	else if (time() < $Conf->setting($dname))
+	    return "  The deadline is $deadline.";
+	else
+	    return "  The deadline was $deadline.";
+    }
+
+    function editMessage() {
+	global $Conf, $ConfSiteSuffix, $Me;
+	$prow = $this->prow;
+	$m = "";
+
+	$override = ($Me->privChair ? "  As an administrator, you can override this deadline using the \"Override deadlines\" checkbox." : "");
+	if (!$prow) {
+	    $timeStart = $Conf->timeStartPaper();
+	    $startDeadline = $this->deadlineSettingIs("sub_reg");
+	    if (!$timeStart) {
+		if ($Conf->setting("sub_open") <= 0)
+		    $msg = "You can't register new papers because the conference site has not been opened for submissions.$override";
+		else
+		    $msg = "You can't register new papers since the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed.$startDeadline$override";
+		if (!$Me->privChair)
+		    errorMsgExit($msg);
+		$m .= "<div class='xinfo'>" . $msg . "</div>";
+	    } else
+		$m .= "<div class='xinfo'>" . "Enter information about your paper here.  You don't have to upload the paper itself right away, but the paper will not be considered until it is complete.$startDeadline" . "</div>";
+	} else if ($prow->conflictType >= CONFLICT_AUTHOR
+		   && ($Conf->timeUpdatePaper($prow)
+		       || $prow->timeSubmitted <= 0)) {
+	    $timeUpdate = $Conf->timeUpdatePaper($prow);
+	    $updateDeadline = $this->deadlineSettingIs("sub_update");
+	    $timeSubmit = $Conf->timeFinalizePaper($prow);
+	    $submitDeadline = $this->deadlineSettingIs("sub_sub"); 
+	    if ($timeUpdate && $prow->timeWithdrawn > 0)
+		$m .= "<div class='xinfo'>" . "This paper has been withdrawn, but you can still revive it.$updateDeadline" . "</div>";
+	    else if ($timeUpdate) {
+		if ($prow->timeSubmitted <= 0) {
+		    if ($prow->paperStorageId <= 1)
+			$m .= "<div class='xwarning'>" . "You haven't uploaded a paper yet.$updateDeadline" . "</div>";
+		    else if ($Conf->setting('sub_freeze'))
+			$m .= "<div class='xwarning'>" . "You must submit a final version of this paper before it can be reviewed.$updateDeadline" . "</div>";
+		    else
+			$m .= "<div class='xwarning'>" . "The current version of the paper is marked as not ready for review.  If you don't submit a reviewable version of the paper, it will not be considered.$updateDeadline" . "</div>"; 
+		} else if ($this->mode == "pe")
+		    $m .= "<div class='xconfirm'>" . "This paper is ready for review and will be considered for the conference, but you still have time to make changes if necessary.$updateDeadline" . "</div>";
+	    } else if ($prow->timeWithdrawn <= 0 && $timeSubmit)
+		$m .= "<div class='xwarning'>" . "You cannot make any changes as the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override" . "</div>";
+	    else if ($prow->timeWithdrawn <= 0)
+		$m .= "<div class='xwarning'>" . "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override" . "</div>";
+	} else if ($prow->conflictType >= CONFLICT_AUTHOR && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper()) {
+	    $updateDeadline = $this->deadlineSettingIs("final_done");
+	    $m .= "<div class='xinfo'>" . "Congratulations!  This paper was accepted.  Submit a final copy for the paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or edit contact authors, allowing others to view reviews and make changes." . "</div>";
+	} else if ($prow->conflictType >= CONFLICT_AUTHOR) {
+	    $override2 = ($Me->privChair ? "  However, as an administrator, you can update the paper anyway by selecting \"Override deadlines\"." : "");
+	    if ($this->mode == "pe")
+		$m .= "<div class='xinfo'>" . "This paper is under review and can no longer be changed, although you may still withdraw it from the conference.$override2" . "</div>";
+	} else
+	    $m .= "<div class='xinfo'>" . "You aren't a contact author for this paper, but as an administrator you can still make changes." . "</div>";
+
+	return $m;
+    }
+
     function echoActions() {
 	global $Conf, $ConfSiteSuffix, $Me, $linkExtra;
 	$prow = $this->prow;
@@ -1032,7 +1106,8 @@ class PaperTable {
 	    else {
 		$buttons[] = "<button type='button' class='b' onclick=\"popup(this, 'w', 0)\">Withdraw paper</button>";
 		$Conf->footerStuff .= "<div id='popup_w' class='popupc'><p>Are you sure you want to withdraw this paper from consideration and/or publication?";
-		if (!$Me->privChair || $prow->conflictType >= CONFLICT_AUTHOR)
+		if ((!$Me->privChair || $prow->conflictType >= CONFLICT_AUTHOR)
+		    && !$Conf->timeFinalizePaper($prow))
 		    $Conf->footerStuff .= "  Only administrators can undo this step.";
 		$Conf->footerStuff .= "</p><form method='post' action=\"paper$ConfSiteSuffix?p=" . $prow->paperId . "&amp;post=1&amp;mode=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'w', 1)\">Cancel</button></div></form></div>";
 	    }
@@ -1097,14 +1172,15 @@ class PaperTable {
 	$paperId = ($prow ? $prow->paperId : "new");
 
 	echo "<table class='pbox'><tr>
-    <td class='pboxi'><table class='papc'>
+    <td class='pboxi'>";
+	if ($prow) {
+	    echo "<table class='papc'>
 	<tr><td class='papcul'></td><td></td><td></td></tr>
 	<tr><td></td><td>";
-	if ($prow) {
 	    $pa = "<a href='paper$ConfSiteSuffix?p=$paperId$linkExtra' class='q'>";
-	    echo "<h2>", $pa, "#", $this->prow->paperId, "</a></h2>";
-	} 
-	echo "</td><td></td></tr>\n    </table>\n";
+	    echo "<h2>", $pa, "#", $this->prow->paperId, "</a></h2>",
+		"</td><td></td></tr>\n    </table>\n";
+	}
 
 	// paper strip
 	echo "    <div class='papstripc'><div class='papstrip'>\n";
@@ -1168,10 +1244,12 @@ class PaperTable {
 	    $spacer = "<div class='g'></div>\n\n";
 	    echo $form, "<div class='aahc'>";
 
+	    if (($m = $this->editMessage()))
+		echo $m, $spacer;
+
 	    $this->paptabTitle($prow);
 	    $this->echoUploadRow($prow,
 		($finalEditMode ? PaperTable::FINALCOPY : 0)
-		+ (!$prow ? PaperTable::OPTIONAL : 0)
 		+ (!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0));
 
 	    // Authorship
@@ -1206,6 +1284,8 @@ class PaperTable {
 	    
 	} else {
 	    echo "<table class='paptab'><tr><td class='papbe' colspan='3'>";
+	    if ($this->mode == "pe" && ($m = $this->editMessage()))
+		echo $m, "<div class='g'></div>\n";
 	    $this->paptabDownload($prow);
 	    echo "</td></tr>
 	<tr><td class='paple'>";
@@ -1540,33 +1620,42 @@ class PaperTable {
 
     function resolveComments() {
 	global $Conf, $Me;
-	$this->crows = $Conf->commentRows
-	    ("select PaperComment.*, firstName, lastName, email
+	if ($this->prow) {
+	    $this->crows = $Conf->commentRows
+		("select PaperComment.*, firstName, lastName, email
 		from PaperComment join ContactInfo using (contactId)
 		where paperId=" . $this->prow->paperId . " order by commentId");
-	$this->mycrows = array();
-	foreach ($this->crows as $crow)
-	    if ($Me->canViewComment($this->prow, $crow, $Conf))
-		$this->mycrows[] = $crow;
+	    $this->mycrows = array();
+	    foreach ($this->crows as $crow)
+		if ($Me->canViewComment($this->prow, $crow, $Conf))
+		    $this->mycrows[] = $crow;
+	} else
+	    $this->crows = $this->mycrows = array();
     }
 
     function fixReviewMode() {
 	global $Conf, $Me;
+	$prow = $this->prow;
 	if ($this->mode == "re" && $this->rrow
-	    && !$Me->canReview($this->prow, $this->rrow, $Conf, $whyNot, false))
+	    && !$Me->canReview($prow, $this->rrow, $Conf, $whyNot, false))
 	    $this->mode = "r";
 	if ($this->mode == "r" && $this->rrow
-	    && !$Me->canViewReview($this->prow, $this->rrow, $Conf, $whyNot))
+	    && !$Me->canViewReview($prow, $this->rrow, $Conf, $whyNot))
 	    $this->rrow = $this->editrrow = null;
 	if ($this->mode == "r" && !$this->rrow && !$this->editrrow
-	    && !$Me->canViewReview($this->prow, $this->rrow, $Conf, $whyNot)
-	    && $Me->canReview($this->prow, $this->rrow, $Conf, $whyNot, false))  {
+	    && !$Me->canViewReview($prow, $this->rrow, $Conf, $whyNot)
+	    && $Me->canReview($prow, $this->rrow, $Conf, $whyNot, false))  {
 	    $this->mode = "re";
 	    foreach ($this->rrows as $rr)
 		if ($rr->contactId == $Me->contactId
 		    || (!$this->editrrow && $Me->ownReview($rr)))
 		    $this->editrrow = $rr;
 	}
+	if ($this->mode == "r" && $prow && !count($this->rrows)
+	    && !count($this->mycrows)
+	    && $prow->conflictType >= CONFLICT_AUTHOR
+	    && ($Conf->timeFinalizePaper($prow) || $prow->timeSubmitted <= 0))
+	    $this->mode = "pe";
     }
 
 }
