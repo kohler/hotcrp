@@ -594,11 +594,11 @@ confHeader();
 
 // correct modes
 $paperTable = new PaperTable($prow);
+$paperTable->resolveComments();
 if ($paperTable->mode == "r" || $paperTable->mode == "re") {
     $paperTable->resolveReview();
     $paperTable->fixReviewMode();
 }
-$paperTable->resolveComments();
 
 
 // prepare paper table
