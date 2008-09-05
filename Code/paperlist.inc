@@ -795,16 +795,11 @@ class PaperList extends BaseList {
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Tag</a></span><span class='lld$nlll'><b>:</b><a class='help' href='help$ConfSiteSuffix?t=tags' title='Learn more'>?</a> &nbsp;";
-	    $tagopt = array("a" => "Add", "d" => "Remove");
-	    if ($this->contact->privChair)
-		$tagopt["da"] = "Remove all";
-	    $tagopt["s"] = "Define";
-	    $tagopt["so"] = "Define ordered";
-	    $tagopt["ao"] = "Add ordered";
-	    $tagopt["sos"] = "Define sequential";
-	    $tagopt["aos"] = "Add sequential";
-	    if ($this->contact->privChair)
+	    $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "so" => "Define ordered", "ao" => "Add ordered", "sos" => "Define sequential", "aos" => "Add sequential");
+	    if ($this->contact->privChair) {
+		$tagopt["da"] = "Clear twiddle";
 		$tagopt["cr"] = "Calculate rank";
+	    }
 	    $t .= tagg_select("tagtype", $tagopt, null, array("class" => "bsm"))
 		. " &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='bsm' name='tagact' value='Go' /></span>";
 	    $nlll++;

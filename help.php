@@ -396,8 +396,8 @@ their checkboxes, and add tags using the action area.</p>
 
 <p><b>Add</b> adds tags to the selected papers, <b>Remove</b> removes existing
 tags from the selected papers, and <b>Define</b> adds the tag to all selected
-papers and removes it from all non-selected papers.  The chair-only <b>Remove
-all</b> action removes a tag and all users' matching twiddle tags.</p>
+papers and removes it from all non-selected papers.  The chair-only <b>Clear
+twiddle</b> action removes a tag and all users' matching twiddle tags.</p>
 
 Although any PC member can view or search
 any tag, only PC chairs can change certain tags$chairtags.  $setting");
