@@ -291,7 +291,9 @@ function tagaction() {
     else if (count($papers) && $act == "cr" && $Me->privChair
 	     && checkTag($tag, CHECKTAG_NOINDEX | CHECKTAG_NOPRIVATE | CHECKTAG_ERRORARRAY)) {
 	require_once("Code/rank.inc");
-	setRankBySchulze($papers, $tag);
+	$r = new PaperRank($tag, $papers);
+	$r->civsrp();
+	$r->save();
 	if ($_REQUEST["q"] === "")
 	    $_REQUEST["q"] = "order:$tag";
     }
