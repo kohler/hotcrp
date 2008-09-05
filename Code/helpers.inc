@@ -1140,7 +1140,18 @@ function unparseScoreAverage($avg, $levelChar) {
 }
 
 
-function splitName($name) {
+function splitName($name, $withEmail = false) {
+    if ($withEmail) {
+	if (preg_match('%^\s*\"?(.*?)\"?\s*<([^<>]+)>\s*$%', $name, $m)
+	    || preg_match('%^\s*\"(.*)\"\s+(\S+)\s*$%', $name, $m))
+	    return array_merge(splitName($m[1]), array($m[2]));
+	else if (!preg_match('%^\s*(.*?)\s+(\S+)\s*$%', $name, $m))
+	    return array("", "", trim($name));
+	else if (strpos($m[1], "@") !== false && strpos($m[2], "@") === false)
+	    return array_merge(splitName($m[2]), array($m[1]));
+	else
+	    return array_merge(splitName($m[1]), array($m[2]));
+    }
     if (($p1 = strrpos($name, ",")) !== false) {
 	$first = trim(substr($name, $p1 + 1));
 	if (!preg_match('@^(Esq\.?|Ph\.?D\.?|M\.?[SD]\.?|Esquire|Junior|Senior|Jr.?|Sr.?|I+)$@i', $first))

@@ -48,6 +48,35 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 
 
 // upload tag indexes action
+function saveTagIndexes($tag, &$settings, &$titles, &$linenos, &$errors) {
+    global $Conf, $Me, $Error;
+
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => array_keys($settings))), "while selecting papers");
+    $settingrank = ($Conf->setting("tag_rank") && $tag == "~" . $Conf->settingText("tag_rank"));
+    while (($row = edb_orow($result)))
+	if ($settings[$row->paperId] !== null
+	    && !($settingrank
+		 ? $Me->canSetRank($row, $Conf, true)
+		 : $Me->canSetTags($row, $Conf))) {
+	    $errors[$linenos[$row->paperId]] = "You cannot rank paper #$row->paperId. (" . ($Me->isPC?"PC":"npc") . $Me->contactId . $row->conflictType . ")";
+	    unset($settings[$row->paperId]);
+	} else if ($titles[$row->paperId] !== ""
+		   && strcmp($row->title, $titles[$row->paperId]) != 0
+		   && strcasecmp($row->title, simplifyWhitespace($titles[$row->paperId])) != 0)
+	    $errors[$linenos[$row->paperId]] = "Warning: Title doesn't match";
+
+    if (!$tag)
+	defappend($Error["tags"], "No tag defined");
+    else if (count($settings)) {
+	setTags(array_keys($settings), $tag, "d", $Me->privChair);
+	foreach ($settings as $pid => $value)
+	    if ($value !== null)
+		setTags($pid, $tag . "#" . $value, "a", $Me->privChair);
+    }
+
+    $settings = $titles = $linenos = array();
+}
+
 function setTagIndexes() {
     global $Conf, $ConfSiteSuffix, $Me, $Error;
     require_once("Code/tags.inc");
@@ -63,13 +92,11 @@ function setTagIndexes() {
     } else
 	$filename = "line ";
 
+    $RealMe = $Me;
     $tag = defval($_REQUEST, "tag");
     $curIndex = 0;
     $lineno = 1;
-    $settings = array();
-    $titles = array();
-    $linenos = array();
-    $errors = array();
+    $settings = $titles = $linenos = $errors = array();
     foreach (explode("\n", rtrim(cleannl($text))) as $l) {
 	if (!$tag && substr($l, 0, 6) == "# Tag:")
 	    $tag = checkTag(trim(substr($l, 6)), CHECKTAG_QUIET | CHECKTAG_NOINDEX);
@@ -92,37 +119,35 @@ function setTagIndexes() {
 		$settings[$m[2]] = $curIndex = $curIndex + strlen($m[1]);
 	    $titles[$m[2]] = $m[3];
 	    $linenos[$m[2]] = $lineno;
+	} else if ($RealMe->privChair && preg_match('/\A\s*<\s*([^<>]*?(|<[^<>]*>))\s*>\s*\Z/', $l, $m)) {
+	    if (count($settings) && $Me)
+		saveTagIndexes($tag, $settings, $titles, $linenos, $errors);
+	    list($firstName, $lastName, $email) = splitName(simplifyWhitespace($m[1]), true);
+	    if (($cid = matchContact(pcMembers(), $firstName, $lastName, $email)) < 0) {
+		if ($cid == -2)
+		    $errors[$lineno] = htmlspecialchars(trim("$firstName $lastName <$email>")) . " matches no PC member";
+		else
+		    $errors[$lineno] = htmlspecialchars(trim("$firstName $lastName <$email>")) . " matches more than one PC member, give a full email address to disambiguate";
+		$Me = null;
+	    } else {
+		$Me = new Contact();
+		$Me->lookupById($cid, $Conf);
+		$Me->valid();
+	    }
 	} else if (trim($l) !== "")
 	    $errors[$lineno] = "Syntax error";
 	++$lineno;
     }
 
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => array_keys($settings))), "while selecting papers");
-    $settingrank = ($Conf->setting("tag_rank") && $tag == "~" . $Conf->settingText("tag_rank"));
-    while (($row = edb_orow($result)))
-	if ($settingrank ? !$Me->canSetRank($row, $Conf, true)
-	    : !$Me->canSetTags($row, $Conf)) {
-	    $errors[$linenos[$row->paperId]] = "You cannot rank paper #$row->paperId.";
-	    unset($settings[$row->paperId]);
-	} else if ($titles[$row->paperId] !== ""
-		 && strcmp($row->title, $titles[$row->paperId]) != 0
-		 && strcasecmp($row->title, simplifyWhitespace($titles[$row->paperId])) != 0)
-	    $errors[$linenos[$row->paperId]] = "Warning: Title doesn't match";
+    if (count($settings) && $Me)
+	saveTagIndexes($tag, $settings, $titles, $linenos, $errors);
+    $Me = $RealMe;
 
     if (count($errors)) {
 	ksort($errors);
 	$Error["tags"] = "";
 	foreach ($errors as $lineno => $error)
 	    $Error["tags"] .= $filename . $lineno . ": " . $error . "<br />\n";
-    }
-    
-    if (!$tag)
-	defappend($Error["tags"], "No tag defined");
-    else if (count($settings)) {
-	setTags(array_keys($settings), $tag, "d", $Me->privChair);
-	foreach ($settings as $pid => $value)
-	    if ($value !== null)
-		setTags($pid, $tag . "#" . $value, "a", $Me->privChair);
     }
     if (isset($Error["tags"]))
 	$Conf->errorMsg($Error["tags"]);

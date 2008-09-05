@@ -58,43 +58,28 @@ function parseBulkFile($text, $filename, $type) {
 	    continue;
 
 	// parse a bunch of formats
-	if (preg_match('/^(\d+)\s+([^\t]+)\t([^\t]+)/', $line, $m)) {
+	if (preg_match('/^(\d+)\s+([^\t]+\t?[^\t]*)$/', $line, $m)) {
 	    $paperId = $m[1];
-	    $email = trim($m[2]);
-	    $name = trim($m[3]);
-	} else if (preg_match('/^(\d+)\s+([^\t]*?)\s*<(\S+)>\s*/', $line, $m)) {
-	    $paperId = $m[1];
-	    $email = $m[3];
-	    $name = $m[2];
-	} else if (preg_match('/^(\d+)\s+([^\t]+)$/', $line, $m)) {
-	    $paperId = $m[1];
-	    $email = trim($m[2]);
-	    $name = "";
+	    list($firstName, $lastName, $email) = splitName(simplifyWhitespace($m[2]), true);
 	} else {
 	    tfError($tf, $lineno, "bad format");
 	    continue;
 	}
 
-	// check emails
-	if ($name && $email
-	    && strpos($name, "@") !== false && strpos($email, "@") === false) {
-	    $tmp = $name;
-	    $name = $email;
-	    $email = $tmp;
-	}
-
-	$nameemail = ($name && $email ? "$name <$email>" : "$name$email");
+	if (($firstName || $lastName) && $email)
+	    $nameemail = trim("$firstName $lastName") . " <$email>";
+	else
+	    $nameemail = trim("$firstName $lastName") . $email;
 	
 	// PC members
 	if ($type != REVIEW_EXTERNAL) {
-	    list($firstName, $lastName) = splitName(simplifyWhitespace($name));
 	    $cid = matchContact($pcm, $firstName, $lastName, $email);
 	    // assign
 	    if ($cid <= 0) {
 		if ($cid == -2)
 		    tfError($tf, $lineno, htmlspecialchars($nameemail) . " matches no PC member");
 		else
-		    tfError($tf, $lineno, htmlspecialchars($nameemail) . " matches more than one PC member; give a full email address to disambiguate");
+		    tfError($tf, $lineno, htmlspecialchars($nameemail) . " matches more than one PC member, give a full email address to disambiguate");
 		continue;
 	    }
 	} else {
