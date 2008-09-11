@@ -20,6 +20,7 @@
 //                   2007 Conference".
 //   downloadPrefix  Prefix for downloaded files, such as papers.  Should
 //                   end in a dash.  Example: "hotnets5-".
+//   If your mysql database isn't running on localhost, see $Opt['dsn'] below.
 
 $Opt["dbName"] = "YourConfI";
 $Opt["shortName"] = "YourConf I";
@@ -73,6 +74,12 @@ $Opt["paperSite"] = "http://your.site.here.com/";
 
 // OPTIONAL SETTINGS (the defaults are reasonable)
 //
+//   dsn             Database configuration information in the format
+//                   "mysql://DBUSER:DBPASSWORD@DBHOST/DBNAME".
+//                   The default is derived from $Opt["dbName"], assuming
+//                   that DBUSER, DBPASSWORD, and DBNAME are all the same
+//                   and that DBHOST is "localhost".
+//                   Example: "mysql://HotNetsV:HotNetsV@localhost/HotNetsV".
 //   sessionName     Internal name used to distinguish conference sessions
 //                   running on the same server.  NO SPACES ALLOWED.  Defaults
 //                   to $Opt["dbName"].
@@ -86,11 +93,6 @@ $Opt["paperSite"] = "http://your.site.here.com/";
 //   disablePDF      Set to disable PDF format submissions.
 //   disablePS       Set to disable PostScript format submissions.
 //   disableSHA1     Set to disable storing SHA-1 hashes of submissions.
-//   dsn             Database configuration information in the format
-//                   "mysql://DBUSER:DBPASSWORD@127.0.0.1/DBNAME".
-//                   The default is derived from $Opt["dbName"], assuming
-//                   that DBUSER, DBPASSWORD, and DBNAME are all the same.
-//                   Example: "mysql://HotNetsV:HotNetsV@127.0.0.1/HotNetsV".
 //   dbDumpDir       Directory where user-requested database dumps are stored.
 //   pdftohtml       Pathname to pdftohtml executable (used only by the "banal"
 //                   paper format checker).
