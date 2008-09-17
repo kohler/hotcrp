@@ -1565,7 +1565,12 @@ div.cmthint {
 }
 
 /* score help */
-a.scorehelp, a.help {
+a.scorehelp {
+	font-weight: normal;
+	position: relative;
+	text-decoration: none;
+}
+a.help {
 	font-size: smaller;
 	font-weight: normal;
 	position: relative;
@@ -1578,7 +1583,7 @@ div.scorehelpc, div.scorehelpo {
 	text-align: left;
 	border: 3px solid #9999cc;
 	padding: 0.5em;
-	background: #ffffff;
+	background: #f8f8ff;
 	position: absolute;
 	min-width: 15em;
 	z-index: 6;
@@ -1587,7 +1592,7 @@ div.scorehelpc, tr.aueditc td {
 	display: none;
 }
 div.scorehelpc span.rev_num, div.scorehelpo span.rev_num {
-	font-size: smaller;
+	font-size: medium;
 }
 
 /* popup dialogs */

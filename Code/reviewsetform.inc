@@ -189,7 +189,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     $x .= "\n</select> <span class='sep'></span>";
 
     // author view
-    $x .= "Visibility<a class='scorehelp' href='scorehelp$ConfSiteSuffix?f=vis'>?</a>";
+    $x .= "Visibility <a class='scorehelp' href='scorehelp$ConfSiteSuffix?f=vis'>(choices)</a>";
     if (count($scoreHelps) == 0)
 	$Conf->footerStuff .= "<script type='text/javascript'>addScoreHelp();</script>";
     if (!isset($scoreHelps["vis"])) {

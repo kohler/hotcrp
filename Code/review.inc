@@ -913,7 +913,7 @@ $blind\n";
 
 	    $c = "<span class='revfn'>" . $n;
 	    if ($disp & self::WEB_OPTIONS) {
-		$c .= "<a class='scorehelp' href='scorehelp$ConfSiteSuffix?f=$field'>?</a>";
+		$c .= " <a class='scorehelp' href='scorehelp$ConfSiteSuffix?f=$field'>(?)</a>";
 		if (count($scoreHelps) == 0)
 		    $Conf->footerStuff .= "<script type='text/javascript'>addScoreHelp();</script>";
 		if (!isset($scoreHelps[$field])) {
