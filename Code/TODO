@@ -101,6 +101,93 @@
   the number of comments and the last time a comment was entered. [Fred
   Douglis]
 
+* It would be nice if the chair email generated when a review is updated
+  included a diff.  (Otherwise is it usually close to impossible to figure
+  out what changed.)  I would use this a lot, because I try to read all the
+  reviews as they come in, to track how everything is going. [Benjamin
+  Pierce]
+
+* Is there a way for me to sign up to see comments that are entered on
+  every paper whatsoever?  (Or does this already happen for the PC chair?)
+  [Benjamin Pierce]
+
+* Meta-comment: One problem with several areas of HotCRP's interface is
+  that, although it is doing something reasonable, it is hard for users to
+  see or predict what it is doing.  This could be corrected by writing a
+  longer manual, of course, but I think it's probably more useful to find
+  ways of adding little snippets of text here and there that give better
+  hints of what is going to happen.  (If the snippets start getting too
+  cluttered, there could be a way to disable them selectively.) [Benjamin
+  Pierce]
+
+* But maybe instead of sending a literal CC, the PC member could be sent a
+  redacted copy [of the external review request] with the password blanked
+  out? [Benjamin Pierce]
+
+* Mainly that the PC member can't see the wording of the request -- it
+  feels like shooting blind.  (More concretely, they can't see, for
+  example, what deadline the subreviewers are being given.)  Also, it means
+  that they don't have a copy of the email in their files, so they can't do
+  things like forward it with "PING" added to the subject line... :-)
+  [Benjamin Pierce]
+
+* Once I've overridden my conflict status for a paper, the "add review"
+  button should appear (even if I'm not assigned as a reviewer). [Benjamin
+  Pierce]
+
+* Clarify on paper submission page the difference between authors and
+  contact authors.  We had some papers that didn't list some of the contact
+  authors as authors. [Mark Gebhart, MICRO 41]
+
+* (From Paolo) The search system is great, but the "display option" feature
+  needs to be improved to match it. Basically, every time you do a search
+  it'd be good to be able to turn on or off the field you want to show for
+  the search output. For example, when you're doing assignments (as we
+  did), and you do a search for (say) "tag:pcpaper" papers, I would like to
+  be able to show all the reviewers that are assigned to the PC papers
+  without having to click. Currently the display options only let you see
+  tags, authors and a few more fields.  I think it'd be a major improvement
+  if you could also turn on the review assignments and pretty much every
+  other field of a paper. [Mark Gebhart, MICRO 41]
+
+* Ability to search accepted papers for those that have / have not
+  submitted final copies of their paper [Mark Gebhart, MICRO 41]
+
+* Include an option to have both a soft and hard deadline for the
+  collection of final papers. [Mark Gebhart, MICRO 41]
+
+* Here are some policy decisions that we changed by editing the code:
+
+  Ability to prevent reviewers from seeing other reviews of papers they
+  reviewed until shortly before PC meeting [Mark Gebhart, MICRO 41]
+
+  Ability to show reviews to authors without showing comments to
+  authors.  We had some PC comments that were entered before the PC
+  meeting that we didn't want to expose until after decisions had been
+  made. [Mark Gebhart, MICRO 41]
+
+  Not allow PC members to see anything about papers they didn't review
+  until PC meeting [Mark Gebhart, MICRO 41]
+
+  Allow PC members to view a paper's manuscript if they can view any
+  information about a paper [Mark Gebhart, MICRO 41]
+
+* At the hotel where the PC meeting was held it was not possible to provide
+  internet access to PC members.  To allow PC members to view content
+  during the meeting we used wget to spider the submission site a couple of
+  days before the meeting as each member and burned a custom cd for each PC
+  member.  We had to make quite a few code changes to create a version of
+  the site to spider that would not generate an large number of pages.  We
+  removed the ability to search and anything else that would depend on
+  generating dynamic content.  The resulting spidered webpages were around
+  100mb per PC member.  This seemed to work very well for the meeting and
+  we didn't have any trouble with people accessing their files on their
+  machines.  We found this to be quite useful and while it involved a fair
+  amount of work the ability to turn off all of the dynamic content with a
+  setting or flag in the code would be a great addition.  We realize this
+  may not be easy to do. [Mark Gebhart, MICRO 41]
+
+
 
 - static HTML snapshot
 
