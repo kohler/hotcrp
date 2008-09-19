@@ -440,8 +440,10 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	if ($d != "N/A")
 	    echo "  <span class='deadline'>The review deadline is $d.</span><br />\n";
     }
-    if ($Me->privChair || ($Me->isPC && $Conf->timeReviewPaper(true, false, true)))
+    if ($Me->isPC && $Conf->timeReviewPaper(true, false, true))
 	echo "  <span class='hint'>As a PC member, you may review <a href='search$ConfSiteSuffix?q=&amp;t=s'>any submitted paper</a>.</span><br />\n";
+    else if ($Me->privChair)
+	echo "  <span class='hint'>As an administrator, you may review <a href='search$ConfSiteSuffix?q=&amp;t=s'>any submitted paper</a>.</span><br />\n";
 
     if (($myrow || $Me->privChair) && $npc)
 	echo "</div>\n<div id='foldre' class='homegrp foldo'>";
