@@ -120,7 +120,7 @@ class PaperTable {
 	    $this->matchPreg = null;
 
 	$this->highlight = $this->matchPreg !== null;
-	$this->watchCheckbox = 0;
+	$this->watchCheckbox = WATCH_COMMENT;
 	$this->initial = true;
     }
 
@@ -234,30 +234,6 @@ class PaperTable {
 	    $this->entryData("title", $prow),
 	    "</div>\n\n";
     }
-    
-    /* // watch note
-	if ($this->watchCheckbox && $Conf->setting("allowPaperOption") >= 6
-	    && $prow->timeSubmitted >= 0
-	    && (($prow->conflictType >= CONFLICT_AUTHOR || $prow->conflictType <= 0)
-		|| ($Me->privChair && isset($_REQUEST["forceShow"])))) {
-	    $result = $Conf->q("select ContactInfo.contactId, reviewType, commentId, conflictType, watch from ContactInfo left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperComment on (PaperComment.paperId=$prow->paperId and PaperComment.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId) left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId) where ContactInfo.contactId=$Me->contactId");
-	    $row = edb_row($result);
-	    echo "<span class='sep'></span> <form id='watchform' class='fold7o' action=\"", htmlspecialchars(selfHref(array("post" => 1))), "\" method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"watchform\")'><div class='inform'>",
-		"<input type='hidden' name='setwatch' value='1' />",
-		"<input type='checkbox' name='watch' value='", $this->watchCheckbox, "'";
-	    if ($row[4] && ($row[4] & ($Me->defaultWatch >> 1)))
-		$watchValue = $row[4];
-	    else if ($row[1] || $row[2] || $row[3] >= CONFLICT_AUTHOR)
-		$watchValue = $Me->defaultWatch;
-	    else
-		$watchValue = 0;
-	    if ($watchValue & $this->watchCheckbox)
-		echo " checked='checked'";
-	    echo " onchange='Miniajax.submit(\"watchform\")' />&nbsp;Mail me when updated comments are available&nbsp; ",
-		"<input class='bsm extension7' type='submit' value='Save' /> ",
-		"<span id='watchformresult' style='padding-left:1em'></span></div></form>";
-	    $Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"watchform\");</script>";
-	    } */
 
     function downloadInfo($prow) {
 	global $Conf, $ConfSiteSuffix, $Me;
@@ -1011,6 +987,44 @@ class PaperTable {
 	$Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"rankform\");</script>";
     }
 
+    function papstripWatch($prow) {
+	global $Conf, $ConfSiteSuffix, $Me, $linkExtra;
+	if (!($this->watchCheckbox
+	      && $Conf->setting("allowPaperOption") >= 6
+	      && $prow->timeSubmitted >= 0
+	      && ($prow->conflictType >= CONFLICT_AUTHOR
+		  || $prow->conflictType <= 0
+		  || ($Me->privChair && isset($_REQUEST["forceShow"])))))
+	    return;
+	// watch note
+	$result = $Conf->q("select ContactInfo.contactId, reviewType, commentId, conflictType, watch from ContactInfo left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperComment on (PaperComment.paperId=$prow->paperId and PaperComment.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId) left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId) where ContactInfo.contactId=$Me->contactId");
+	$row = edb_row($result);
+
+	echo "<form id='watchform' class='fold7o' action=\"comment$ConfSiteSuffix?p=$prow->paperId&amp;post=1$linkExtra\" method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"watchform\")'>",
+	    "<div class='inform'>",
+	    "<input type='hidden' name='setwatch' value='1' />";
+
+	$checkbox = "<input type='checkbox' name='watch' value='" . $this->watchCheckbox . "'";
+	if ($row[4] && ($row[4] & ($Me->defaultWatch >> 1)))
+	    $watchValue = $row[4];
+	else if ($row[1] || $row[2] || $row[3] >= CONFLICT_AUTHOR)
+	    $watchValue = $Me->defaultWatch;
+	else
+	    $watchValue = 0;
+	if ($watchValue & $this->watchCheckbox)
+	    $checkbox .= " checked='checked'";
+	$checkbox .= " onchange='Miniajax.submit(\"watchform\")' />";
+
+	echo $this->papt("watch", $checkbox . "&nbsp;Comment notification",
+			 array("type" => "ps")),
+	    "<div class='paphint'>If selected, the system will email you when updated comments are available. <span id='watchformresult'></span></div>",
+	    "<div class='papv'>",
+	    "<input class='b extension7' type='submit' value='Save' />",
+	    "</div></div></form>\n\n";
+
+	$Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"watchform\");</script>";
+    }
+
 
     // Functions for editing
 
@@ -1149,6 +1163,7 @@ class PaperTable {
 	    $this->papstripTags($prow, "review$ConfSiteSuffix?p=$prow->paperId$linkExtra");
 	if ($Me->canSetRank($prow, $Conf))
 	    $this->papstripRank($prow);
+	$this->papstripWatch($prow);
 	if (($Me->actChair($prow) || $prow->conflictType >= CONFLICT_AUTHOR)
 	    && !$this->editable) {
 	    $this->papstripPCConflicts($prow);

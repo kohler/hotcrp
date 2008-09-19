@@ -42,7 +42,6 @@ function loadRows() {
     $paperTable = new PaperTable($prow);
     $paperTable->resolveReview();
     $paperTable->resolveComments();
-    $paperTable->watchCheckbox = WATCH_COMMENT;
     
     $crow = null;
     $cid = defval($_REQUEST, "commentId", "xxx");
@@ -77,7 +76,7 @@ if (isset($_REQUEST['setwatch']) && $prow) {
 	$q = "insert into PaperWatch (paperId, contactId, watch) values ($prow->paperId, $contactId, " . WATCH_COMMENTSET . ") on duplicate key update watch = (watch | " . WATCH_COMMENTSET . ") & " . (~WATCH_COMMENT & 127);
     $Conf->qe($q, "while saving watch preference");
     if ($OK)
-	$Conf->confirmMsg("Mail preference saved.");
+	$Conf->confirmMsg("Saved");
     if ($ajax)
 	$Conf->ajaxExit(array("ok" => $OK));
 }
