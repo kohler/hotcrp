@@ -1372,6 +1372,9 @@ div.papt span.papfn {
 	font-weight: bold;
 	float: left;
 }
+div.aahc div.papt span.papfn {
+	font-size: smaller;
+}
 div.papt span.papfnh {
 	font-variant: normal;
 	font-weight: normal;
