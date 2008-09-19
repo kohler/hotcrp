@@ -88,9 +88,9 @@ function contactQuery($type) {
     // reviewer limit
     if ($type == "crev")
 	$where[] = "PaperReview.reviewSubmitted>0";
-    else if ($type == "uncrev" || $type == "myuncextrev")
+    else if ($type == "uncrev" || $type == "myuncextrev" || $type == "uncextrev")
 	$where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit!=0";
-    if ($type == "extrev" || $type == "myextrev" || $type == "myuncextrev")
+    if ($type == "extrev" || $type == "myextrev" || $type == "uncextrev" || $type == "myuncextrev")
 	$where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
     if ($type == "myextrev" || $type == "myuncextrev")
 	$where[] = "PaperReview.requestedBy=" . $Me->contactId;
@@ -99,7 +99,7 @@ function contactQuery($type) {
     if ($type == "pc") {
 	$q = "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo join PCMember using (contactId)";
 	$orderby = "email";
-    } else if ($type == "rev" || $type == "crev" || $type == "uncrev" || $type == "extrev" || $type == "myextrev" || $type == "myuncextrev") {
+    } else if ($type == "rev" || $type == "crev" || $type == "uncrev" || $type == "extrev" || $type == "myextrev" || $type == "uncextrev" || $type == "myuncextrev") {
 	$q = "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId)";
 	$orderby = "email, Paper.paperId";
     } else if ($type == "lead" || $type == "shepherd") {
@@ -288,6 +288,7 @@ if ($Me->privChair) {
     $recip["crev"] = "Reviewers with complete reviews";
     $recip["uncrev"] = "Reviewers with incomplete reviews";
     $recip["extrev"] = "External reviewers";
+    $recip["uncextrev"] = "External reviewers with incomplete reviews";
     if ($anyLead)
 	$recip["lead"] = "Discussion leads";
     if ($anyShepherd)
