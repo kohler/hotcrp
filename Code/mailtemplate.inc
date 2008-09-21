@@ -754,9 +754,9 @@ class Mailer {
 		$headers = substr($headers, 0, $topos) . substr($headers, $nlpos);
 	    } else if ($topos !== false)
 		$to = "";
-	    
+
 	    return mail($to, $preparation[0], $preparation[1], $headers . "From: $Conf->emailFrom", $extra);
-	} else
+	} else if (!$Opt["sendEmail"])
 	    return $Conf->infoMsg("<pre>" . htmlspecialchars("To: " . $preparation["to"] . "\nSubject: $preparation[0]\n" . $preparation["headers"] . "\n$preparation[1]") . "</pre>");
     }
     
