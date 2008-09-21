@@ -1148,7 +1148,7 @@ class PaperSearch {
 	    if (!isset($tables["Numcomments_$rtype"])) {
 		$where = array();
 		if ($rtype & self::F_REVIEWERCOMMENT)
-		    $where[] = "forReviewers>0";
+		    $where[] = "forReviewers!=0";
 		if ($rtype & self::F_AUTHORCOMMENT)
 		    $where[] = "forAuthors>0";
 		$wheretext = "";

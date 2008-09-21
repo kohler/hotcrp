@@ -184,7 +184,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 		    $n .= htmlspecialchars(abbreviateName($cr->firstName, $cr->lastName));
 		else
 		    $n .= "anonymous";
-		if ($cr->forAuthors > 1 && $cr->forReviewers > 0)
+		if ($cr->forAuthors > 1 && $cr->forReviewers != 0)
 		    $n .= " (Response)";
 		else if ($cr->forAuthors > 1)
 		    $n .= " (Response in progress)";

@@ -757,9 +757,10 @@ class Contact {
 	// forAuthors 2, forReviewers 1     response, ready for reviewers
 	// forAuthors 2, forReviewers 0     response, not ready for reviewers
 	// forAuthors 1/0                   comment for authors/not for authors
-	// forAuthors 1/0, forReviewers 1   comment for PC, reviewers, anytime
-	// forAuthors 1/0, forReviewers 0   comment for PC, anytime
-	// forAuthors 1/0, forReviewers -1  comment for PC, reviewers, postrev
+	// forAuthors 1/0, forReviewers 1   comment for PC, reviewers
+	// forAuthors 1/0, forReviewers 0   comment for PC
+	// forAuthors 1/0, forReviewers -1  comment for PC, reviewers
+	// (now all comments are postrev, before forReviewers>=0 meant anytime)
 
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
@@ -784,13 +785,7 @@ class Contact {
 		&& ($prow->conflictType == 0 || $forceShow))
 	    || ($prow->conflictType == 0		// reviewer postrev
 		&& $this->canViewReview($prow, null, $conf, $xWhyNot, $ignoreForceShow)
-		&& (!$crow || $crow->forReviewers != 0))
-	    || ($prow->conflictType == 0		// reviewer prerev
-		&& ($this->isPC || $prow->myReviewType > 0)
-		&& (!$crow || $crow->forReviewers == 1))
-	    || ($prow->conflictType == 0		// PC prerev
-		&& $this->isPC
-		&& (!$crow || ($crow->forAuthors != 2 && $crow->forReviewers == 0))))
+		&& (!$crow || $this->isPC || $crow->forReviewers != 0)))
 	    return true;
 	// collect failure reasons
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->isPC && $prow->myReviewType <= 0)
@@ -801,7 +796,7 @@ class Contact {
 	    $whyNot['conflict'] = 1;
 	else if ($prow->myReviewType > 0 && !$this->isPC && defval($prow, "myReviewSubmitted") > 0)
 	    $whyNot['externalReviewer'] = 1;
-	else if ($crow && $crow->forAuthors > 1 && $crow->forReviewers < 1)
+	else if ($crow && $crow->forAuthors > 1 && $crow->forReviewers == 0)
 	    $whyNot['responseNotReady'] = 1;
 	else
 	    $whyNot['reviewNotComplete'] = 1;

@@ -12,13 +12,14 @@ $useRequest = false;
 $forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair);
 $linkExtra = ($forceShow ? "&amp;forceShow=1" : "");
 $Error = array();
+$CommentMsg = array();
 
 
 // header
 function confHeader() {
     global $prow, $mode, $Conf, $linkExtra, $CurrentList;
     if ($prow)
-	$title = "Paper #$prow->paperId Comments";
+	$title = "Paper #$prow->paperId";
     else
 	$title = "Paper Comments";
     $Conf->header($title, "comment", actionBar($prow, false, "c"), false);
@@ -90,10 +91,15 @@ function setReviewInfo($dst, $src) {
     $dst->conflictType = $src->conflictType;
 }
 
-function watch() {
+function watch($newComment) {
     global $Conf, $Me, $prow, $savedCrow;
 
-    if ($Conf->setting("allowPaperOption") < 6 || !$savedCrow)
+    $apo = $Conf->setting("allowPaperOption");
+    if ($apo < 6 || !$savedCrow)
+	return;
+
+    // ignore changes to a comment within 3 hours (see saveComment())
+    if ($apo >= 21 && $savedCrow->timeNotified != $savedCrow->timeModified)
 	return;
 
     $result = $Conf->qe("select ContactInfo.contactId,
@@ -112,6 +118,7 @@ function watch() {
     $saveProw = (object) null;
     $lastContactId = 0;
     setReviewInfo($saveProw, $prow);
+    $tmpl = ($savedCrow->forAuthors > 1 ? "@responsenotify" : "@commentnotify");
 
     while (($row = edb_orow($result))) {
 	if ($row->contactId == $lastContactId)
@@ -130,7 +137,7 @@ function watch() {
 	if ($minic->canViewComment($prow, $savedCrow, $Conf)
 	    && $minic->contactId != $Me->contactId) {
 	    require_once("Code/mailtemplate.inc");
-	    Mailer::send("@commentnotify", $prow, $minic, null, array("commentId" => $savedCrow->commentId));
+	    Mailer::send($tmpl, $prow, $minic, null, array("commentId" => $savedCrow->commentId));
 	}
     }
 
@@ -140,48 +147,76 @@ function watch() {
 
 // update comment action
 function saveComment($text) {
-    global $Me, $Conf, $prow, $crow, $savedCommentId;
+    global $Me, $Conf, $CommentMsg, $prow, $crow, $savedCommentId;
 
     // options
-    $reviewLinked = (defval($_REQUEST, "reviewLinked") ? 1 : 0);
-    $forAuthors = (defval($_REQUEST, "forAuthors") ? 1 : 0);
+    $visibility = defval($_REQUEST, "visibility", "r");
+    if ($visibility != "a" && $visibility != "r" && $visibility != "p")
+	$visibility = "r";
+    $forReviewers = ($visibility == "p" ? 0 : -1);
+    $forAuthors = ($visibility == "a" ? 1 : 0);
     $blind = 0;
     if ($Conf->blindReview() > 1
 	|| ($Conf->blindReview() == 1 && defval($_REQUEST, "blind")))
 	$blind = 1;
     if (isset($_REQUEST["response"])) {
 	$forAuthors = 2;
+	$forReviewers = (defval($_REQUEST, "forReviewers") ? -1 : 0);
 	$blind = $prow->blind;	// use $prow->blind setting on purpose
     }
-    $forReviewers = ($reviewLinked ? -1 : 1);
 
     // query
+    $now = time();
+    $notify = ($Conf->setting("allowPaperOption") >= 21);
     if (!$text) {
 	$change = true;
 	$q = "delete from PaperComment where commentId=$crow->commentId";
     } else if (!$crow) {
 	$change = true;
-	$q = "insert into PaperComment (contactId, paperId, timeModified, comment, forReviewers, forAuthors, blind) values ($Me->contactId, $prow->paperId, " . time() . ", '" . sqlq($text) . "', $forReviewers, $forAuthors, $blind)";
+	if ($notify) {
+	    $qa = ", timeNotified";
+	    $qb = ", $now";
+	} else
+	    $qa = $qb = "";
+	$q = "insert into PaperComment (contactId, paperId, timeModified$qa, comment, forReviewers, forAuthors, blind) values ($Me->contactId, $prow->paperId, $now$qb, '" . sqlq($text) . "', $forReviewers, $forAuthors, $blind)";
     } else {
 	$change = ($crow->forAuthors != $forAuthors);
-	$q = "update PaperComment set timeModified=" . time() . ", comment='" . sqlq($text) . "', forReviewers=$forReviewers, forAuthors=$forAuthors, blind=$blind where commentId=$crow->commentId";
+	if ($crow->timeModified >= $now)
+	    $now = $crow->timeModified + 1;
+	// do not notify on updates within 3 hours
+	if ($notify && $crow->timeNotified + 10800 < $now)
+	    $qa = ", timeNotified=$now";
+	else
+	    $qa = "";
+	$q = "update PaperComment set timeModified=$now$qa, comment='" . sqlq($text) . "', forReviewers=$forReviewers, forAuthors=$forAuthors, blind=$blind where commentId=$crow->commentId";
     }
 
     $while = "while saving comment";
     $result = $Conf->qe($q, $while);
     if (!$result)
-	return;
+	return false;
 
     // comment ID
     if ($crow)
 	$savedCommentId = $crow->commentId;
     else if (!($savedCommentId = $Conf->lastInsertId($while)))
-	return;
+	return false;
 
     // log, end
-    $action = ($text == "" ? "deleted" : "saved");
-    $Conf->confirmMsg("Comment $action");
-    $Conf->log("Comment $savedCommentId $action", $Me, $prow->paperId);
+    $what = ($forAuthors > 1 ? "Response" : "Comment");
+    if ($text != "" && $forAuthors > 1 && $forReviewers == 0) {
+	$deadline = $Conf->printableTimeSetting("resp_done");
+	if ($deadline != "N/A")
+	    $extratext = "  You have until $deadline to send the response to the reviewers.";
+	else
+	    $extratext = "";
+	$CommentMsg[$savedCommentId] = "<div class='xwarning'>$what saved.  However, at your request, this response will not be shown to reviewers.$extratext</div>";
+    } else if ($text != "")
+	$CommentMsg[$savedCommentId] = "<div class='xconfirm'>$what saved.</div>";
+    else
+	$Conf->confirmMsg("$what deleted.");
+    $Conf->log("Comment $savedCommentId " . ($text != "" ? "saved" : "deleted"),
+	       $Me, $prow->paperId);
 
     // adjust comment counts
     if ($change) {
@@ -196,6 +231,8 @@ function saveComment($text) {
     else
 	$_REQUEST["commentId"] = $savedCommentId;
     $_REQUEST["noedit"] = 1;
+
+    return ($crow ? false : true);
 }
 
 function saveResponse($text) {
@@ -208,7 +245,7 @@ function saveResponse($text) {
 	    return $Conf->errorMsg("A paper response has already been entered.  <a href=\"comment$ConfSiteSuffix?c=$row[0]$linkExtra\">Edit that response</a>");
     }
 
-    saveComment($text);
+    return saveComment($text);
 }
 
 if (isset($_REQUEST['submit']) && defval($_REQUEST, 'response')) {
@@ -220,10 +257,10 @@ if (isset($_REQUEST['submit']) && defval($_REQUEST, 'response')) {
 	$useRequest = true;
     } else {
 	$Conf->qe("lock tables Paper write, PaperComment write, ActionLog write");
-	saveResponse($text);
+	$newComment = saveResponse($text);
 	$Conf->qe("unlock tables");
 	loadRows();
-	watch();
+	watch($newComment);
     }
 } else if (isset($_REQUEST['submit'])) {
     if (!$Me->canSubmitComment($prow, $crow, $Conf, $whyNot)) {
@@ -233,9 +270,9 @@ if (isset($_REQUEST['submit']) && defval($_REQUEST, 'response')) {
 	$Conf->errorMsg("Enter a comment.");
 	$useRequest = true;
     } else {
-	saveComment($text);
+	$newComment = saveComment($text);
 	loadRows();
-	watch();
+	watch($newComment);
     }
 } else if (isset($_REQUEST['delete']) && $crow) {
     if (!$Me->canSubmitComment($prow, $crow, $Conf, $whyNot)) {

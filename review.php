@@ -35,7 +35,7 @@ else if (defval($_REQUEST, "mode") == "view")
 function confHeader() {
     global $prow, $Conf, $linkExtra, $CurrentList;
     if ($prow)
-	$title = "Paper #$prow->paperId Reviews";
+	$title = "Paper #$prow->paperId";
     else
 	$title = "Paper Reviews";
     $Conf->header($title, "review", actionBar($prow, false, "r"), false);

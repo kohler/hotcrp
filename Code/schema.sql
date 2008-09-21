@@ -159,6 +159,7 @@ CREATE TABLE `PaperComment` (
   `contactId` int(11) NOT NULL,
   `paperId` int(11) NOT NULL,
   `timeModified` int(11) NOT NULL,
+  `timeNotified` int(11) NOT NULL default '0',
   `comment` mediumtext NOT NULL,
   `forReviewers` tinyint(1) NOT NULL default '0',
   `forAuthors` tinyint(1) NOT NULL default '0',
@@ -477,7 +478,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 20);
+insert into Settings (name, value) values ('allowPaperOption', 21);
 # collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 # default chair-only tags

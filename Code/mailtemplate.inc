@@ -61,7 +61,7 @@ On behalf of the %CONFNAME% program committee, %OTHERCONTACT% would like to soli
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/review%PHP%?p=%NUMBER%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
 If you are willing to review this paper, you may enter your review on the conference site or complete a review form offline and upload it.%IF(DEADLINE(extrev_soft))%  Your review is requested by %DEADLINE(extrev_soft)%.%ENDIF%
 
@@ -209,7 +209,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been submitted.  The review is available at the paper site.
 
-  Paper site: %URL%/review%PHP%?p=%NUMBER%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
    Review by: %OPT(REVIEWAUTHOR)%
@@ -224,7 +224,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated.  The review is available at the paper site.
 
-  Paper site: %URL%/review%PHP%?p=%NUMBER%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
    Review by: %OPT(REVIEWAUTHOR)%
@@ -241,7 +241,7 @@ The %CONFNAME% program committee is delighted to inform you that your paper #%NU
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/review%PHP%?p=%NUMBER%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
 Your paper was one of %NUMACCEPTED% accepted out of %NUMSUBMITTED% submissions.  Congratulations!
 
@@ -264,7 +264,7 @@ The %CONFNAME% program committee is sorry to inform you that your paper #%NUMBER
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/review%PHP%?p=%NUMBER%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
 %NUMACCEPTED% papers were accepted out of %NUMSUBMITTED% submissions.
 
@@ -281,9 +281,21 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "commentnotify" =>
      array("[%CONFSHORTNAME%] Comment for #%NUMBER% %TITLEHINT%",
-	   "A comment for %CONFNAME% paper #%NUMBER% has been submitted or updated.  The comment is copied below, and is available at the paper site.
+	   "A comment for %CONFNAME% paper #%NUMBER% is available as shown below.  For the most up-to-date comments, or to turn off comment emails, see the paper site.
 
-  Paper site: %URL%/comment%PHP%?p=%NUMBER%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+- %CONFSHORTNAME% Submissions
+
+%COMMENTS%\n"),
+
+     "responsenotify" =>
+     array("[%CONFSHORTNAME%] Response for #%NUMBER% %TITLEHINT%",
+	   "The authors' response for %CONFNAME% paper #%NUMBER% is available as shown below.  The authors may still update their response; for the most up-to-date version, or to turn off comment emails, see the paper site.
+
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -316,7 +328,7 @@ This is a reminder to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REV
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/review%PHP%?p=%NUMBER%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
 To sign in to the submissions site, either click the link below or paste it into your web browser's location field.
 
@@ -336,7 +348,7 @@ This is a reminder from %OTHERCONTACT% to finish your review for %CONFNAME% pape
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/review%PHP%?p=%NUMBER%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
 To sign in to the submissions site, either click the link below or paste it into your web browser's location field.
 

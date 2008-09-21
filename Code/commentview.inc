@@ -41,9 +41,8 @@ class CommentView {
 	    $sep = $xsep;
 	} else if ($crow && $Me->privChair) {
 	    echo $sep, "<span id='foldcid$crow->commentId' class='fold4c'>",
-		foldbutton("cid$crow->commentId", "comment", 4),
-		" <span class='ellipsis4'><i>Hidden for blind review</i></span>",
-		"<span class='extension4'>", contactHtml($crow), "</span>",
+		"<a class='q unfolder4' href=\"javascript:fold('cid$crow->commentId', 0, 4)\" title='Show author'>+&nbsp;<i>Hidden for blind review</i></a>",
+		"<span class='extension4'><a class='folder4' href=\"javascript:fold('cid$crow->commentId', 1, 4)\" title='Hide author'>[blind]</a> ", contactHtml($crow), "</span>",
 		"</span>";
 	    $sep = $xsep;
 	}
@@ -54,23 +53,20 @@ class CommentView {
 	echo "</span>";
 	if ($crow && !$response
 	    && ($prow->conflictType == 0 || ($Me->privChair && $forceShow))) {
-	    $x = array();
-	    if (!$crow->forAuthors)
-		$x[] = "hidden from authors";
-	    else if ($crow->blind)
-		$x[] = "anonymous to authors";
-	    if ($crow->forReviewers == 0)
-		$x[] = "hidden from external reviewers";
-	    else if ($crow->forReviewers == -1)
-		$x[] = "tied to reviews";
-	    if (count($x))
-		echo "<span class='hint'>(", join(", ", $x), ")</span>";
+	    if ($crow->forAuthors == 0 && $crow->forReviewers == 0)
+		$x = "shown only to PC reviewers";
+	    else if ($crow->forAuthors == 0)
+		$x = "hidden from authors";
+	    else
+		$x = "";
+	    if ($x)
+		echo "<span class='hint'>(", $x, ")</span>";
 	}
 	echo "<div class='clear'></div>";
     }
 
     function show($prow, $crow, $useRequest, $editMode, $foldnew = true) {
-	global $Conf, $ConfSiteSuffix, $Me, $forceShow, $linkExtra;
+	global $Conf, $ConfSiteSuffix, $CommentMsg, $Me, $forceShow, $linkExtra;
 
 	if ($crow && $crow->forAuthors > 1)
 	    return $this->showResponse($prow, $crow, $useRequest, $editMode);
@@ -123,6 +119,9 @@ class CommentView {
 	    echo "<div class='hint'>You didn't write this comment, but as an administrator you can still make changes.</div>\n";
 
 	echo "</div><div class='cmtv", (!$crow && $editMode && $foldnew ? " extension" : ""), "'>";
+
+	if (isset($CommentMsg) && $crow && isset($CommentMsg[$crow->commentId]))
+	    echo $CommentMsg[$crow->commentId];
     
 	if (!$editMode) {
 	    echo htmlWrapText(htmlspecialchars($crow->comment)), "</div>\n\n";
@@ -138,10 +137,19 @@ class CommentView {
 	    echo htmlspecialchars($crow->comment);
 	echo "</textarea>
   <div class='g'></div>
-  Visibility: &nbsp;<input type='checkbox' name='forAuthors' value='1'";
-	if ($useRequest ? defval($_REQUEST, "forAuthors") : ($crow && $crow->forAuthors))
+  <table><tr><td>Show to: &nbsp; </td>
+    <td><input type='radio' name='visibility' value='p'";
+	if ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($crow && $crow->forAuthors == 0 && $crow->forReviewers == 0))
 	    echo " checked='checked'";
-	echo " onchange='hiliter(this)' />&nbsp;<span class='hastitle' title='Show this comment to authors along with the reviews. (The comment is hidden when reviews are invisible.)'>Shown to authors</span>\n";
+	echo " onchange='hiliter(this)' />&nbsp;PC reviewers only</td></tr>
+    <tr><td></td><td><input type='radio' name='visibility' value='r'";
+	if ($useRequest ? defval($_REQUEST, "visibility") == "r" : (!$crow || ($crow->forAuthors == 0 && $crow->forReviewers != 0)))
+	    echo " checked='checked'";
+	echo " onchange='hiliter(this)' />&nbsp;PC and external reviewers</td></tr>
+    <tr><td></td><td><input type='radio' name='visibility' value='a'";
+	if ($useRequest ? defval($_REQUEST, "visibility") == "a" : ($crow && $crow->forAuthors != 0))
+	    echo " checked='checked'";
+	echo " onchange='hiliter(this)' />&nbsp;Authors and reviewers";
 	// blind?
 	if ($Conf->blindReview() == 1) {
 	    echo " &nbsp; (<input type='checkbox' name='blind' value='1'";
@@ -149,13 +157,9 @@ class CommentView {
 		: (!$crow || $crow->blind))
 		echo " checked='checked'";
 	    echo " onchange='hiliter(this)' />&nbsp;Anonymous to authors)\n";
-	}
-	// For authors?
-	echo "<span class='sep'></span><input type='checkbox' name='reviewLinked' value='1'";
-	if (($useRequest && defval($_REQUEST, 'reviewLinked'))
-	    || (!$useRequest && $crow && $crow->forReviewers == -1))
-	    echo " checked='checked'";
-	echo " onchange='hiliter(this)' />&nbsp;<span class='hastitle' title='Hide this comment from PC members and reviewers who cannot see the reviews.'>Tied to reviews</span>\n";
+	} else if ($Conf->blindReview() == 2)
+	    echo " (anonymous to authors)";
+	echo "</td></tr></table>\n";
 
 	// review actions
 	echo "<div class='aa'><table class='pt_buttons'>\n",
@@ -175,7 +179,7 @@ class CommentView {
     }
 
     function showResponse($prow, $crow, $useRequest, $editMode) {
-	global $Conf, $ConfSiteSuffix, $Me, $forceShow, $linkExtra;
+	global $Conf, $ConfSiteSuffix, $CommentMsg, $Me, $forceShow, $linkExtra;
 
 	$this->endTable();
 	if ($editMode && !$Me->canRespond($prow, $crow, $Conf))
@@ -234,8 +238,11 @@ has passed.  Please keep the response short and to the point",
 	echo "</td><td></td></tr>
   <tr><td></td><td class='cmtcc'>";
 
+	if (isset($CommentMsg) && $crow && isset($CommentMsg[$crow->commentId]))
+	    echo $CommentMsg[$crow->commentId];
+    
 	if (!$editMode) {
-	    if ($Me->privChair && $crow->forReviewers < 1)
+	    if ($Me->privChair && $crow->forReviewers == 0)
 		echo "<i>The <a href='comment$ConfSiteSuffix?c=$crow->commentId$linkExtra'>authors' response</a> is not yet ready for reviewers to view.</i>";
 	    else if (!$Me->canViewComment($prow, $crow, $Conf))
 		echo "<i>The authors' response is not yet ready for reviewers to view.</i>";
@@ -257,9 +264,9 @@ has passed.  Please keep the response short and to the point",
   <div class='g'></div>
   <input type='checkbox' name='forReviewers' value='1' ";
 	if ($useRequest ? defval($_REQUEST, "forReviewers")
-	    : (!$crow || $crow->forReviewers > 0))
+	    : (!$crow || $crow->forReviewers != 0))
 	    echo "checked='checked' ";
-	echo "onchange='hiliter(this)' />&nbsp;The response is ready for reviewers to view.\n";
+	echo "onchange='hiliter(this)' />&nbsp;This response should be sent to the reviewers.\n";
 
 	// review actions
 	echo "<div class='aa'><table class='pt_buttons'>
