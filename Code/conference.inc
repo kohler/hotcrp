@@ -694,7 +694,7 @@ class Conference {
 		$ids[] = "$field=$id";
 	if (is_array($optarr) && count($ids) == 0)
 	    $ids[] = "$field=0";
-	return "(" . join(" or ", $ids) . ")";
+	return (count($ids) ? "(" . join(" or ", $ids) . ")" : "false");
     }
     
     function paperQuery($contact, $options = array()) {
@@ -910,6 +910,7 @@ class Conference {
 
 
 	// conditions
+	$where = array();
 	if (isset($options['paperId']))
 	    $where[] = $this->_paperQuery_where($options['paperId'], "Paper.paperId");
 	if (isset($options["reviewId"])) {
@@ -936,7 +937,7 @@ class Conference {
 	if (isset($options["myLead"]))
 	    $where[] = "leadContactId=$contactId";
 	
-	if (isset($where))
+	if (count($where))
 	    $pq .= "		where " . join(" and ", $where) . "\n";
 
 	// grouping and ordering
