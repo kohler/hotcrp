@@ -182,7 +182,8 @@ class CommentView {
 	global $Conf, $ConfSiteSuffix, $CommentMsg, $Me, $forceShow, $linkExtra;
 
 	$this->endTable();
-	if ($editMode && !$Me->canRespond($prow, $crow, $Conf))
+	if ($editMode && !$Me->canRespond($prow, $crow, $Conf)
+	    && ($crow || !$Me->privChair))
 	    $editMode = false;
 	$this->nresponse++;
 	$wordlimit = $Conf->setting("resp_words", 0);
