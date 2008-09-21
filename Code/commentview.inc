@@ -175,7 +175,7 @@ class CommentView {
 	if (!$Me->timeReview($prow, null, $Conf))
 	    echo "<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
 
-	echo "</div></form>\n\n";
+	echo "</div></div></form>\n\n";
     }
 
     function showResponse($prow, $crow, $useRequest, $editMode) {
