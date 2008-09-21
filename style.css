@@ -1430,7 +1430,7 @@ td.revhead {
 div.revt {
 	font-size: smaller;
 	padding: 0.25em 1em 0.25em 8px;
-	background: #ffe6f8; /*#ffeaee;*/
+	background: #ffecef; /* #ffe6f8; */
 }
 div.revt span.revfn {
 	font-variant: small-caps;
