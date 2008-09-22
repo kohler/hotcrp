@@ -11,7 +11,7 @@ AddDefaultCharset UTF-8
 
 
 # Prevent access to CVS and README directories.
-<FilesMatch "^(CVS|\.svn|README|LICENSE|.*\.sh)$">
+<FilesMatch "^(CVS|\.svn|\.git|README|LICENSE|.*\.sh)$">
 Order allow,deny
 Deny from all
 </FilesMatch>
