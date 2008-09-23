@@ -561,7 +561,8 @@ class PaperSearch {
 	}
 	if (($special ? $special == "option" : isset($this->fields['option']))) {
 	    $type = "option";
-	    if (($pos = strpos($word, "#")) !== false) {
+	    if ((($pos = strpos($word, "#")) !== false)
+		|| (($pos = strpos($word, "=")) !== false)) {
 		$oname = substr($word, 0, $pos);
 		$oval = strtolower(simplifyWhitespace(substr($word, $pos + 1)));
 	    } else {
