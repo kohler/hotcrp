@@ -1,5 +1,40 @@
 HotCRP NEWS
 
+Version 2.25   22.Sep.2008
+
+* Many bug fixes for new-style paper views.
+
+* Comments: Now ALL comments are "tied to the reviews."  Comment entry
+  gives you three visibility choices, as radio buttons: "PC reviewers
+  only," "PC and external reviewers," and "Authors and reviewers."
+  Previous "tied to reviews" plan considered confusing, and external
+  reviewers selection requested, by Benjamin Pierce.
+
+* Comment notifications: Limit emails to once every 3 hours, to avoid
+  comment notification storms when people edit authors' responses.
+  Requested by Benjamin Pierce.
+
+* Ranks: "Calculate rank" tag action for chairs uses Schulze's algorithm (a
+  Condorcet method) to calculate a global rank tag from users' local ranks.
+  Code also supports the CIVS-Ranked Pairs algorithm developed by Andrew
+  Myers for his CIVS (Condorcet Internet Voting Service), as well as range
+  voting and IRV.  Special thanks to Andrew Myers for answering questions
+  and providing a useful test case.
+
+* Search for specific submission option values with "opt:name=value".
+
+* External reviewer request emails include "accept review" and "refuse
+  review" links that, when clicked, record the reviewer's choice.  ("Accept
+  review" marks a review as "in progress", rather than "not started";
+  "refuse review" refuses it.)  Benjamin Pierce request.
+
+* Bug fixes and improvements to settings pages, search, review tokens,
+  comment display, database interaction, "ASCII art" detection in reviews,
+  wording.
+
+* Thanks also to Benjamin Pierce, Richard Gass, Michael Vrable, and others.
+
+
 Version 2.24   22.Aug.2008
 
 * Major changes
