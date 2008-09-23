@@ -292,7 +292,7 @@ function tagaction() {
 	     && checkTag($tag, CHECKTAG_NOINDEX | CHECKTAG_NOPRIVATE | CHECKTAG_ERRORARRAY)) {
 	require_once("Code/rank.inc");
 	$r = new PaperRank($tag, $papers);
-	$r->civsrp();
+	$r->schulze();
 	$r->save();
 	if ($_REQUEST["q"] === "")
 	    $_REQUEST["q"] = "order:$tag";
