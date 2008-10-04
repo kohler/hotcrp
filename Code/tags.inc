@@ -248,7 +248,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
     // add tags
     $vreduced = array();
     if ($mode != "d" && $mode != "da" && count($tags)) {
-	$q = "";
+	$q_keepold = $q_keepnew = "";
 	$delvotes = array();
 	$tagIndex = array();
 	foreach ($pids as $pid) {
@@ -283,11 +283,20 @@ function setTags($pids, $tagtext, $mode, $chair) {
 			continue;
 		    }
 		}
-		$q .= "($pid, '" . sqlq($base) . "', " . $index . "), ";
+		// add to the right query, which differ in behavior on setting
+		// a tag that's already set.  $q_keepnew keeps the new value,
+		// $q_keepold keeps the old value.
+		$thisq = "($pid, '" . sqlq($base) . "', " . $index . "), ";
+		if (strlen($base) + 1 < strlen($tag))
+		    $q_keepnew .= $thisq;
+		else
+		    $q_keepold .= $thisq;
 	    }
 	}
-	if ($q != "")
-	    $Conf->qe("insert into PaperTag (paperId, tag, tagIndex) values " . substr($q, 0, strlen($q) - 2) . " on duplicate key update tagIndex=values(tagIndex)", $while);
+	if ($q_keepnew != "")
+	    $Conf->qe("insert into PaperTag (paperId, tag, tagIndex) values " . substr($q_keepnew, 0, strlen($q_keepnew) - 2) . " on duplicate key update tagIndex=values(tagIndex)", $while);
+	if ($q_keepold != "")
+	    $Conf->qe("insert into PaperTag (paperId, tag, tagIndex) values " . substr($q_keepold, 0, strlen($q_keepold) - 2) . " on duplicate key update tagIndex=tagIndex", $while);
 	if (count($delvotes))
 	    $Conf->qe("delete from PaperTag where " . join(" or ", $delvotes), "while deleting zero votes");
     }
