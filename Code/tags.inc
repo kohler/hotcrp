@@ -17,7 +17,7 @@ function checkTagError($tag, $flags) {
 	return "Empty tag.";
     else if (strlen($tag) > TAG_MAXLEN)
 	return "Tag \"$tag\" too long; maximum " . TAG_MAXLEN . " characters.";
-    else if (!preg_match('/\A~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*(#(-\d)?\d*)?\Z/', $tag, $m))
+    else if (!preg_match('/\A~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*([#=](-\d)?\d*)?\Z/', $tag, $m))
 	return "Tag \"$tag\" contains odd characters.";
     else if (count($m) > 1 && $m[1] && ($flags & CHECKTAG_NOINDEX))
 	return "Tag numbers not allowed here.";
@@ -45,14 +45,17 @@ function checkTag($tag, $flags) {
 }
 
 function tagBase($tag) {
-    if ($tag !== false && ($pos = strpos($tag, "#")) > 0)
+    if ($tag === false)
+	return false;
+    if (($pos = strpos($tag, "#")) > 0 || ($pos = strpos($tag, "=")) > 0)
 	return substr($tag, 0, $pos);
-    else
-	return $tag;
+    return $tag;
 }
 
 function tagSplit($tag) {
-    if ($tag === false || !($pos = strpos($tag, "#")))
+    if ($tag === false)
+	return array(false, false);
+    else if (!($pos = strpos($tag, "#")) && !($pos = strpos($tag, "=")))
 	return array($tag, false);
     else if ($pos == strlen($tag) - 1)
 	return array(substr($tag, 0, $pos), false);
@@ -73,7 +76,7 @@ function voteTags() {
     if ($Conf->setting("tag_vote")) {
 	$vt = array();
 	foreach (preg_split('/\s+/', $Conf->settingText("tag_vote", "")) as $t)
-	    if (($p = strpos($t, "#")) > 0)
+	    if (($p = strpos($t, "#")) > 0 || ($p = strpos($t, "=")) > 0)
 		$vt[substr($t, 0, $p)] = cvtint(substr($t, $p + 1));
 	    else
 		$vt[$t] = 1;
