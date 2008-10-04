@@ -399,8 +399,8 @@ tags from the selected papers, and <b>Define</b> adds the tag to all selected
 papers and removes it from all non-selected papers.  The chair-only <b>Clear
 twiddle</b> action removes a tag and all users' matching twiddle tags.</p>
 
-Although any PC member can view or search
-any tag, only PC chairs can change certain tags$chairtags.  $setting");
+<p>Although any PC member can view or search
+any tag, only PC chairs can change certain tags$chairtags.  $setting</p>");
     _alternateRow("Tag values<br />and discussion orders", "
 Tags have optional per-paper numeric values, which are displayed as
 &ldquo;tag#100&rdquo;.  Searching for a tag with &ldquo;<a
@@ -410,22 +410,26 @@ PC meeting discussion orders.  Change the order by editing the tag values.
 Search for specific values with search terms like &ldquo;<a
 href='search$ConfSiteSuffix?q=tag:discuss%232'>tag:discuss#2</a>&rdquo;
 or &ldquo;<a
-href='search$ConfSiteSuffix?q=tag:discuss%23%3E1'>tag:discuss#>1</a>&rdquo;.
+href='search$ConfSiteSuffix?q=tag:discuss%3E1'>tag:discuss>1</a>&rdquo;.
 
-<p>It's easiest to define ordered tags using the
-<a href='search$ConfSiteSuffix'>search screen</a>.  Search for the
-papers you want, sort them into the right order, select them, and
-choose <b>Define ordered</b> in the tag action area.  If no sort
-gives what you want, search for the desired paper numbers in order&mdash;for instance, you might search for &ldquo;<a href='search$ConfSiteSuffix?q=4+1+12+9'>4 1 12 19</a>&rdquo;&mdash;then <b>Select all</b> and <b>Define ordered</b>.
-To add new papers at the end of an existing discussion order, use <b>Add
+<p>It's common to assign increasing tag values to a set of papers.  Do this
+using the <a href='search$ConfSiteSuffix'>search screen</a>.  Search for the
+papers you want, sort them into the right order, select their checkboxes, and
+choose <b>Define ordered</b> in the tag action area.  If no sort gives what
+you want, search for the desired paper numbers in order&mdash;for instance,
+you might search for &ldquo;<a href='search$ConfSiteSuffix?q=4+1+12+9'>4 1 12
+19</a>&rdquo;&mdash;then <b>Select all</b> and <b>Define ordered</b>.  To add
+new papers at the end of an existing discussion order, use <b>Add
 ordered</b>.</p>
 
-<p>The <b>Define ordered</b> and <b>Add ordered</b> tag actions sometimes skip
-tag values.  For instance, a defined order might assign values
-&ldquo;discuss#1&rdquo;, &ldquo;discuss#3&rdquo;, &ldquo;discuss#6&rdquo;, and
-&ldquo;discuss#7&rdquo; to adjacent papers.  The gaps make it difficult for PC
-members to infer tag values for their conflicted papers.  If you don't care
-about that and want sequential values, use <b>Define sequential</b>.</p>");
+<p><b>Define ordered</b> could assign values &ldquo;discuss#1&rdquo;,
+&ldquo;discuss#3&rdquo;, &ldquo;discuss#6&rdquo;, and &ldquo;discuss#7&rdquo;
+to adjacent papers.  These value gaps mean that PC members can't easily infer
+where conflicted papers fit in.  (Any given gap might be natural or due to a
+missing conflict.)  In contrast, the <b>Define sequential</b> action assigns
+strictly sequential values, like &ldquo;discuss#1&rdquo;,
+&ldquo;discuss#2&rdquo;, &ldquo;discuss#3&rdquo;, &ldquo;discuss#4&rdquo;.
+<b>Define ordered</b> is better for most purposes.</p>");
     echo "</table>\n";
 }
 
