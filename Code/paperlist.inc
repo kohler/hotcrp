@@ -795,8 +795,9 @@ class PaperList extends BaseList {
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Tag</a></span><span class='lld$nlll'><b>:</b><a class='help' href='help$ConfSiteSuffix?t=tags' title='Learn more'>?</a> &nbsp;";
-	    $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "so" => "Define ordered", "ao" => "Add ordered", "sos" => "Define sequential", "aos" => "Add sequential");
+	    $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add ordered", "aos" => "Add sequential", "so" => "Define ordered", "sos" => "Define sequential");
 	    if ($this->contact->privChair) {
+		$tagopt["xxxb"] = null;
 		$tagopt["da"] = "Clear twiddle";
 		$tagopt["cr"] = "Calculate rank";
 	    }
