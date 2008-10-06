@@ -813,11 +813,11 @@ class PaperSearch {
 
     function _queryMakeClauses(&$qt, &$qc) {
 	// group words into "CNF" clauses: an array of clauses connected by
-	// AND, each of which is an array of terms connected by OR.
+	// AND, where each clause is an array of terms connected by OR.
 	// Words connected by "OR" are in the same CNF clause.
 	// All words connected by "OR" to any paper number are in the same
 	// CNF clause.
-	
+
 	$qc = array();
 	$qpn_or = array();
 	$qpn = new SearchTerm("pn", 0, array(array(), array()));
@@ -1164,10 +1164,12 @@ class PaperSearch {
 	    $f[] = "(" . join(" and ", $q) . ")";
 	    $t->link = "ncmt_$rtype";
 	} else if ($tt == "pn") {
+	    $q = array();
 	    if (count($t->value[0]))
-		$f[] = "(Paper.paperId in (" . join(",", $t->value[0]) . "))";
+		$q[] = "Paper.paperId in (" . join(",", $t->value[0]) . ")";
 	    if (count($t->value[1]))
-		$f[] = "(Paper.paperId not in (" . join(",", $t->value[1]) . "))";
+		$q[] = "Paper.paperId not in (" . join(",", $t->value[1]) . ")";
+	    $f[] = "(" . join(" and ", $q) . ")";
 	} else if ($tt == "pf") {
 	    $q = array();
 	    $this->_clauseTermSetFlags($t->flags, $q);
