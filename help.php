@@ -190,19 +190,28 @@ function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
 }
 
 function searchQuickref() {
-    global $rowidx, $Conf, $ConfSiteSuffix;
+    global $rowidx, $Conf, $ConfSiteSuffix, $Me;
+
+    // how to report author searches?
+    if ($Conf->blindSubmission() == BLIND_NEVER)
+	$aunote = "";
+    else if ($Conf->blindSubmission() == BLIND_OPTIONAL)
+	$aunote = "<br /><span class='hint'>Search only examines visible fields.  For example, PC member searches do not examine anonymous authors.</span>";
+    else
+	$aunote = "<br /><span class='hint'>Search only examines visible fields.  For example, PC member searches do not examine authors.</span>";
+
     echo "<table>\n";
     _searchQuickrefRow("Basics", "", "all papers in the search category");
-    _searchQuickrefRow("", "story", "&ldquo;story&rdquo; in title, abstract, possibly authors");
+    _searchQuickrefRow("", "story", "&ldquo;story&rdquo; in title, abstract, authors$aunote");
     _searchQuickrefRow("", "119", "paper #119");
-    _searchQuickrefRow("", "1 2 5 12-24 kernel", "papers in the numbered set with &ldquo;kernel&rdquo; in title, abstract, possibly authors");
-    _searchQuickrefRow("", "\"802\"", "&ldquo;802&rdquo; in title, abstract, possibly authors (not paper #802)");
-    _searchQuickrefRow("", "very new", "&ldquo;very&rdquo; <em>and</em> &ldquo;new&rdquo; in title, abstract, possibly authors");
-    _searchQuickrefRow("", "\"very new\"", "the phrase &ldquo;very new&rdquo; in title, abstract, possibly authors");
-    _searchQuickrefRow("", "very OR new", "<em>either</em> &ldquo;very&rdquo; <em>or</em> &ldquo;new&rdquo; in title, abstract, possibly authors");
-    _searchQuickrefRow("", "very -new", "&ldquo;very&rdquo; <em>but not</em> &ldquo;new&rdquo; in title, abstract, possibly authors");
-    _searchQuickrefRow("", "ve*", "words that <em>start with</em> &ldquo;ve&rdquo; in title, abstract, possibly authors");
-    _searchQuickrefRow("", "*me*", "words that <em>contain</em> &ldquo;me&rdquo; in title, abstract, possibly authors");
+    _searchQuickrefRow("", "1 2 5 12-24 kernel", "papers in the numbered set with &ldquo;kernel&rdquo; in title, abstract, authors");
+    _searchQuickrefRow("", "\"802\"", "&ldquo;802&rdquo; in title, abstract, authors (not paper #802)");
+    _searchQuickrefRow("", "very new", "&ldquo;very&rdquo; <em>and</em> &ldquo;new&rdquo; in title, abstract, authors");
+    _searchQuickrefRow("", "\"very new\"", "the phrase &ldquo;very new&rdquo; in title, abstract, authors");
+    _searchQuickrefRow("", "very OR new", "<em>either</em> &ldquo;very&rdquo; <em>or</em> &ldquo;new&rdquo; in title, abstract, authors");
+    _searchQuickrefRow("", "very -new", "&ldquo;very&rdquo; <em>but not</em> &ldquo;new&rdquo; in title, abstract, authors");
+    _searchQuickrefRow("", "ve*", "words that <em>start with</em> &ldquo;ve&rdquo; in title, abstract, authors");
+    _searchQuickrefRow("", "*me*", "words that <em>contain</em> &ldquo;me&rdquo; in title, abstract, authors");
     _searchQuickrefRow("Title", "ti:flexible", "title contains &ldquo;flexible&rdquo;");
     _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains &ldquo;very novel&rdquo;");
     _searchQuickrefRow("Authors", "au:poletto", "author list contains &ldquo;poletto&rdquo;");

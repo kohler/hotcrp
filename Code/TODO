@@ -195,9 +195,6 @@
   be achieved with settings already available -- right?  So maybe this is a
   documentation issue...) [Benjamin Pierce]
 
-* What does "possibly authors" mean in the Search Help page? [Benjamin
-  Pierce]
-
 * It would be nice if there were some mechanism for preventing misspelling
   of tag names when new tags are added.  E.g., when a new tag is added,
   there could be a little extra confirmation dialog asking whether you want
