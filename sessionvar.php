@@ -7,13 +7,7 @@ require_once("Code/header.inc");
 
 if (isset($_REQUEST["var"])) {
     $v = $_REQUEST["var"];
-    if ($v == "foldassigna"
-	|| $v == "foldpapera" || $v == "foldpaperp" || $v == "foldpaperb"
-	|| $v == "foldpapert"
-	|| $v == "foldpfabstract" || $v == "foldpfau" || $v == "foldpfanonau"
-	|| $v == "foldplact" || $v == "foldpltags"
-	|| $v == "foldplabstract" || $v == "foldplau" || $v == "foldplanonau"
-	|| $v == "foldplrownum" || $v == "foldpscollab") {
+    if (in_array($v, $allowedSessionVars)) {
 	if (isset($_REQUEST["val"]))
 	    $_SESSION[$v] = intval($_REQUEST["val"]);
 	else

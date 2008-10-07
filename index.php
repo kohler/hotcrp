@@ -23,13 +23,11 @@ if (isset($_REQUEST["signin"]) || isset($_REQUEST["signout"])) {
     $Me->invalidate();
     unset($_SESSION["AskedYouToUpdateContactInfo"]);
     unset($_SESSION["l"]);
-    unset($_SESSION["foldplau"]);
-    unset($_SESSION["foldplanonau"]);
-    unset($_SESSION["foldplabstract"]);
-    unset($_SESSION["foldpltags"]);
     unset($_SESSION["info"]);
     unset($_SESSION["rev_tokens"]);
     unset($_SESSION["rev_token_fail"]);
+    foreach ($allowedSessionVars as $v)
+	unset($_SESSION[$v]);
 }
 
 function doCreateAccount() {

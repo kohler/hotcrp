@@ -45,6 +45,12 @@ $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
 			  "fixability", "interestToCommunity", "longevity",
 			  "likelyPresentation", "suitableForShort");
 
+$allowedSessionVars = array("foldassigna", "foldpapera", "foldpaperp",
+			    "foldpaperb", "foldpapert", "foldpfabstract",
+			    "foldpfau", "foldpfanonau", "foldplact",
+			    "foldpltags", "foldplabstract", "foldplau",
+			    "foldplanonau", "foldplrownum", "foldpscollab");
+
 $OK = 1;
 
 $Msg["unknown"] = "Unknown error.";
