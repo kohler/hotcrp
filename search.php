@@ -127,11 +127,12 @@ if ($getaction == "tags" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $result = $Conf->qe($q, "while selecting papers");
     $response = array();
     $csb = htmlspecialchars(defval($_REQUEST, "sitebase", ""));
+    $highlight = defval($_REQUEST, "highlight", false);
     while ($prow = edb_orow($result)) {
 	if (!$Me->canViewTags($prow, $Conf))
 	    $t = "";
 	else
-	    $t = tagsToText($prow, $csb, $Me);
+	    $t = tagsToText($prow, $csb, $Me, false, $highlight);
 	$response["tags$prow->paperId"] = $t;
     }
     $response["ok"] = (count($response) > 0);

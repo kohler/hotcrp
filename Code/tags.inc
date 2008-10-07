@@ -406,7 +406,8 @@ function setTags($pids, $tagtext, $mode, $chair) {
     return true;
 }
 
-function tagsToText($prow, $makeUrls, $contact, $drop = false) {
+function tagsToText($prow, $makeUrls, $contact, $drop = false,
+		    $highlight = false) {
     global $Conf, $ConfSiteSuffix;
     $t = defval($prow, "paperTags", "");
     if ($drop || $makeUrls !== false)
@@ -469,7 +470,11 @@ function tagsToText($prow, $makeUrls, $contact, $drop = false) {
 	    $link = ($base === $tag ? "tag" : "order");
 	    $title = "Tag search";
 	}
-	$tt .= "<a class='q' href=\"${makeUrls}search$ConfSiteSuffix?q=$link:$base\" title=\"$title\">" . $base . "</a>" . substr($tag, strlen($base)) . " ";
+	$tx = "<a class='q' href=\"${makeUrls}search$ConfSiteSuffix?q=$link:$base\" title=\"$title\">" . $base . "</a>" . substr($tag, strlen($base));
+	if ($highlight !== false && $highlight == $base)
+	    $tt = "<strong>" . $tx . "</strong> " . $tt;
+	else
+	    $tt .= $tx.  " ";
     }
     return rtrim($tt);
 }

@@ -713,7 +713,8 @@ class PaperList extends BaseList {
 		return "";
 	    if ($this->foldedTags === false) {
 		if (($t = $row->paperTags) !== "")
-		    if (($t = tagsToText($row, true, $this->contact)) !== "")
+		    if (($t = tagsToText($row, true, $this->contact, false,
+					 $this->search->orderTag)) !== "")
 			$t = "<span id='tags$row->paperId'>" . $t . "</span>";
 		return $t;
 	    } else {
@@ -1140,8 +1141,12 @@ class PaperList extends BaseList {
 	    $x .= " fold3c";
 	if ($taginfo)
 	    $x .= ($this->foldedTags !== false ? " fold4c" : " fold4o");
-	if ($taginfo && $this->foldedTags !== false && count($this->foldedTags))
-	    $Conf->footerStuff .= "<form id='tagloadform' method='post' action='search$ConfSiteSuffix?get=tags&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedTags) . "' /></div></form><script type='text/javascript'>ajaxTags = true;</script>";
+	if ($taginfo && $this->foldedTags !== false && count($this->foldedTags)) {
+	    $Conf->footerStuff .= "<form id='tagloadform' method='post' action='search$ConfSiteSuffix?get=tags&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedTags) . "' />";
+	    if ($this->search->orderTag)
+		$Conf->footerStuff .= "<input type='hidden' name='highlight' value=\"" . htmlspecialchars($this->search->orderTag) . "\" />";
+	    $Conf->footerStuff .= "</div></form><script type='text/javascript'>ajaxTags = true;</script>";
+	}
 	if ($abstractinfo)
 	    $x .= ($this->foldedAbstract !== false ? " fold5c" : " fold5o");
 	if ($abstractinfo && $this->foldedAbstract !== false && count($this->foldedAbstract))
