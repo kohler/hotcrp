@@ -608,6 +608,7 @@ if ($paperTable->mode == "pe") {
 	|| ($prow->timeWithdrawn <= 0
 	    && ($Conf->timeUpdatePaper($prow) || $Me->actChair($prow, true)));
     if ($prow && $prow->outcome > 0
+	&& $Conf->collectFinalPapers()
 	&& ($Conf->timeSubmitFinalPaper() || $Me->actChair($prow, true)))
 	$editable = $finalEditMode = true;
 } else
