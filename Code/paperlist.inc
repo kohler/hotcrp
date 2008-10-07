@@ -495,7 +495,12 @@ class PaperList extends BaseList {
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
 		$this->needFinalize++;
-	    return $this->contact->paperStatus($row->paperId, $row, $fieldId == self::FIELD_STATUS ? 0 : -1);
+	    $long = 0;
+	    if ($this->search->limitName != "a" && $this->contact->privChair)
+		$long = 2;
+	    if ($fieldId == self::FIELD_STATUS_SHORT)
+		$long = ($long == 2 ? -2 : -1);
+	    return $this->contact->paperStatus($row->paperId, $row, $long);
 	case self::FIELD_REVIEWER:
 	    return contactHtml($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail);
 	case self::FIELD_REVIEWER_MONITOR:

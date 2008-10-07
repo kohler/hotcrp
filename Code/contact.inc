@@ -915,7 +915,7 @@ class Contact {
 	return false;
     }
     
-    function canViewDecision($prow, $conf) {
+    function canViewDecision($prow, $conf, $forceShow = false) {
 	if (($prow && $prow->conflictType >= CONFLICT_AUTHOR && $conf->timeAuthorViewDecision())
 	    // || ($this->isPC
 	    //     && (!$prow || $prow->conflictType == 0)
@@ -925,7 +925,8 @@ class Contact {
 		&& defval($prow, "myReviewSubmitted", 0) > 0
 		&& $conf->timeReviewerViewDecision())
 	    || ($this->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
-	    || ($this->privChair && (!$prow || $prow->conflictType == 0)))
+	    || ($this->privChair && (!$prow || $prow->conflictType == 0))
+	    || ($this->privChair && $forceShow))
 	    return true;
 	return false;
     }
@@ -1012,18 +1013,14 @@ class Contact {
 	return true;
     }
     
-    function paperStatus($paperId, $row, $long = 0, $conf = null) {
+    function paperStatus($paperId, $row, $long) {
 	global $Conf;
-	$conf = ($conf ? $conf : $Conf);
-	if (!$this->privChair && $row->conflictType < CONFLICT_AUTHOR)
-	    $long = min($long, 0);
-
-	if ($row->timeWithdrawn > 0) {
-	    $x = "<span class='pstat pstat_with'>Withdrawn</span>";
-	    return $x . ($long > 0 ? " at " . $conf->printableTime($row->timeWithdrawn) : '');
-	} else if ($row->timeSubmitted <= 0 && $row->paperStorageId == 1) {
+	if ($row->timeWithdrawn > 0)
+	    return "<span class='pstat pstat_with'>Withdrawn</span>";
+	else if ($row->timeSubmitted <= 0 && $row->paperStorageId == 1)
 	    return "<span class='pstat pstat_noup'>In progress</span>";
-	} else if (isset($row->outcome) && $row->outcome != 0 && $this->canViewDecision($row, $conf)) {
+	else if (isset($row->outcome) && $row->outcome != 0
+		 && $this->canViewDecision($row, $Conf, abs($long) > 1)) {
 	    $rf = reviewForm();
 	    $x =& $rf->options['outcome'][$row->outcome];
 	    if (isset($x))
@@ -1033,7 +1030,7 @@ class Contact {
 	//} else if (isset($row->reviewCount) && $row->reviewCount > 0) {
 	//    if ($long < 0 && $row->conflictType < CONFLICT_AUTHOR)
 	//	return "";
-	//    else if ($this->canViewReview($row, null, $conf))
+	//    else if ($this->canViewReview($row, null, $Conf))
 	//	return "<span class='pstat pstat_rev'>Reviews&nbsp;available</span>";
 	//    else
 	//	return "<span class='pstat pstat_rev'>Under&nbsp;review</span>";
@@ -1042,13 +1039,8 @@ class Contact {
 		if ($long < 0)
 		    return "";
 		$x = "<span class='pstat pstat_sub'>Submitted</span>";
-		if ($long > 0)
-		    $x .= " at " . $conf->printableTime($row->timeSubmitted);
-	    } else {
+	    } else
 		$x = "<span class='pstat pstat_prog'>In progress</span>";
-		if ($long > 0)
-		    $x .= "updated at " . $conf->printableTime($row->timestamp);
-	    }
 	    return $x;
 	}
     }
