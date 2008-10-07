@@ -419,8 +419,11 @@ choose <b>Define ordered</b> in the tag action area.  If no sort gives what
 you want, search for the desired paper numbers in order&mdash;for instance,
 you might search for &ldquo;<a href='search$ConfSiteSuffix?q=4+1+12+9'>4 1 12
 19</a>&rdquo;&mdash;then <b>Select all</b> and <b>Define ordered</b>.  To add
-new papers at the end of an existing discussion order, use <b>Add
-ordered</b>.</p>
+new papers at the end of an existing discussion order, use <b>Add ordered</b>.
+To insert papers into an existing order, use <b>Add ordered</b> with a tag
+value; for example, to insert starting at value 5, use <b>Add ordered</b> with
+&ldquo;tag#5&rdquo;.  The rest of the order is renumbered to accomodate the
+insertion.</p>
 
 <p><b>Define ordered</b> could assign values &ldquo;discuss#1&rdquo;,
 &ldquo;discuss#3&rdquo;, &ldquo;discuss#6&rdquo;, and &ldquo;discuss#7&rdquo;

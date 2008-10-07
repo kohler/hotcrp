@@ -109,14 +109,10 @@ function setTags($pids, $tagtext, $mode, $chair) {
     // check tags for direct validity
     $ok = true;
     $tags = array();
-    foreach (preg_split('/\s+/', $tagtext) as $tag) {
-	if (($mode == "so" || $mode == "ao" || $mode == "sos" || $mode == "aos")
-	    && $tag != "")
-	    $tag .= "#";
+    foreach (preg_split('/\s+/', $tagtext) as $tag)
 	if ($tag != "" && ($tag = checkTag($tag, CHECKTAG_ERRORARRAY))
 	    && ($ok = ($ok && $tag)))
 	    $tags[] = $tag;
-    }
     if (!$ok)
 	return false;
 
@@ -245,31 +241,49 @@ function setTags($pids, $tagtext, $mode, $chair) {
 	    $vchanges[$row[0]] = max($vchanges[$row[0]] - $row[1], 0);
     }
 
+    // extract tag indexes into a separate array
+    $tagIndex = array();
+    $explicitIndex = array();
+    $modeOrdered = ($mode == "so" || $mode == "ao" || $mode == "sos"
+		    || $mode == "aos");
+    foreach ($tags as &$tag) {
+	$base = tagBase($tag);
+	if (strlen($base) + 1 < strlen($tag)) {
+	    $tagIndex[$base] = $explicitIndex[$base] =
+		(int) substr($tag, strlen($base) + 1);
+	} else if (strlen($base) + 1 == strlen($tag) || $modeOrdered) {
+	    $result = $Conf->qe("select max(tagIndex) from PaperTag where tag='" . sqlq($base) . "'", $while);
+	    if (($row = edb_row($result)))
+		$tagIndex[$base] = $row[0] + orderedTagStep($mode);
+	    else
+		$tagIndex[$base] = orderedTagStep($mode);
+	}
+    }
+
+    // if inserting tags into an order, shift existing tags 
+    $reorders = array();
+    if (($mode == "ao" || $mode == "aos") && count($explicitIndex)) {
+	$q = "";
+	foreach ($explicitIndex as $base => $index)
+	    $q .= "(tag='" . sqlq($base) . "' and tagIndex>=$index) or ";
+	$result = $Conf->qe("select paperId, tag, tagIndex from PaperTag where " . substr($q, 0, strlen($q) - 4) . " order by tagIndex", "while reordering tags");
+	while (($row = edb_row($result)))
+	    if (!in_array($row[0], $pids))
+		$reorders[$row[1]][] = array($row[0], $row[2]);
+    }
+
     // add tags
     $vreduced = array();
     if ($mode != "d" && $mode != "da" && count($tags)) {
 	$q_keepold = $q_keepnew = "";
 	$delvotes = array();
-	$tagIndex = array();
 	foreach ($pids as $pid) {
 	    foreach ($tags as $tag) {
 		$base = tagBase($tag);
-		// choose index
-		if (strlen($base) == strlen($tag))
-		    $index = 0;
-		else if (strlen($base) + 1 < strlen($tag))
-		    $index = substr($tag, strlen($base) + 1);
-		else {
-		    if (!isset($tagIndex[$base])) {
-			$result = $Conf->qe("select max(tagIndex) from PaperTag where tag='" . sqlq($base) . "'", $while);
-			if (($row = edb_row($result)))
-			    $tagIndex[$base] = $row[0] + orderedTagStep($mode);
-			else
-			    $tagIndex[$base] = orderedTagStep($mode);
-		    }
-		    $index = $tagIndex[$base];
+		// choose index, bump running index in ordered mode
+		$index = defval($tagIndex, $base, 0);
+		if ($modeOrdered)
 		    $tagIndex[$base] += orderedTagStep($mode);
-		}
 		// check vote totals
 		if (isset($vchanges[$base])) {
 		    if ($index > $vchanges[$base]) {
@@ -287,12 +301,26 @@ function setTags($pids, $tagtext, $mode, $chair) {
 		// a tag that's already set.  $q_keepnew keeps the new value,
 		// $q_keepold keeps the old value.
 		$thisq = "($pid, '" . sqlq($base) . "', " . $index . "), ";
-		if (strlen($base) + 1 < strlen($tag))
+		if (isset($explicitIndex[$base]))
 		    $q_keepnew .= $thisq;
 		else
 		    $q_keepold .= $thisq;
 	    }
 	}
+	// if adding ordered tags in the middle of an order, reorder old tags
+	foreach ($reorders as $base => $pairs) {
+	    $last = null;
+	    foreach ($pairs as $p)
+		if ($p[1] < $tagIndex[$base]) {
+		    $thisq = "($p[0], '" . sqlq($base) . "', " . $tagIndex[$base] . "), ";
+		    $q_keepnew .= $thisq;
+		    if ($last === null || $last != $p[1])
+			$tagIndex[$base] += orderedTagStep($mode);
+		    $last = $p[1];
+		} else
+		    break;
+	}
+	// store changes
 	if ($q_keepnew != "")
 	    $Conf->qe("insert into PaperTag (paperId, tag, tagIndex) values " . substr($q_keepnew, 0, strlen($q_keepnew) - 2) . " on duplicate key update tagIndex=values(tagIndex)", $while);
 	if ($q_keepold != "")
@@ -372,7 +400,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
 	defappend($Error["tags"], "You exhausted your vote allotment for " . textArrayJoin($vtext) . ".  You may want to change <a href=\"search$ConfSiteSuffix?q=$q&amp;showtags=1\">your other votes</a> and try again.<br />\n");
     }
 
-    $modeexplanation = array("so" => "define ordered", "ao" => "add ordered", "sos" => "define strict ordered", "aos" => "add strict ordered", "d" => "remove", "da" => "clear twiddle", "s" => "define", "a" => "add", "p" => "set");
+    $modeexplanation = array("so" => "define ordered", "ao" => "add ordered", "sos" => "define sequential", "aos" => "add sequential", "d" => "remove", "da" => "clear twiddle", "s" => "define", "a" => "add", "p" => "set");
     $Conf->log("Tag " . $modeexplanation[$mode] . ": " . join(", ", $tags), $Me, $pids);
     
     return true;
