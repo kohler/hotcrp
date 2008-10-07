@@ -268,9 +268,15 @@ class PaperList extends BaseList {
     }
 
     function _sortTagIndex($a, $b) {
-	$av = ($a->conflictType > 0 && $this->sortInfo ? 2147483647 : $a->tagIndex);
-	$bv = ($b->conflictType > 0 && $this->sortInfo ? 2147483647 : $b->tagIndex);
-	$x = $av - $bv;
+	if (($a->conflictType > 0 && $this->sortInfo) || $a->tagIndex === null)
+	    $av = 2147483647;
+	else
+	    $av = $a->tagIndex;
+	if (($b->conflictType > 0 && $this->sortInfo) || $b->tagIndex === null)
+	    $bv = 2147483647;
+	else
+	    $bv = $b->tagIndex;
+	$x = ($av < $bv ? -1 : ($av == $bv ? 0 : 1));
 	return $x ? $x : $a->paperId - $b->paperId;
     }
 
