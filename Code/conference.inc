@@ -87,6 +87,14 @@ class Conference {
 	    $this->settings["sub_blind"] = 2;
 	if (!isset($this->settings["rev_blind"]))
 	    $this->settings["rev_blind"] = 2;
+	if (!isset($this->settings["seedec"])) {
+	    $au = defval($this->settings, "au_seedec", false);
+	    $re = defval($this->settings, "rev_seedec", false);
+	    if ($au)
+		$this->settings["seedec"] = SEEDEC_ALL;
+	    else if ($re)
+		$this->settings["seedec"] = SEEDEC_REV;
+	}
 	if ($this->settings["pc_seeall"] && !$this->timeFinalizePaper())
 	    $this->settings["pc_seeall"] = -1;
 	$this->settings["rounds"] = array("");
@@ -320,7 +328,7 @@ class Conference {
 	return $this->settingsBetween('resp_open', 'resp_done', 'resp_grace');
     }
     function timeAuthorViewDecision() {
-	return $this->settingsAfter('au_seedec');
+	return $this->setting("seedec") >= SEEDEC_ALL;
     }
     function timeReviewOpen() {
 	$st = defval($this->settings, 'rev_open', 0);
@@ -341,13 +349,13 @@ class Conference {
 	return $this->settingsAfter('pc_seeallrev');
     }
     function timePCViewDecision() {
-	return $this->settingsAfter('rev_seedec');
+	return $this->setting("seedec") >= SEEDEC_REV;
     }
     function timeReviewerViewDecision() {
-	return $this->settingsAfter('rev_seedec');
+	return $this->setting("seedec") >= SEEDEC_REV;
     }
     function timeReviewerViewAcceptedAuthors() {
-	return $this->settingsAfter('rev_seedec');
+	return $this->setting("seedec") >= SEEDEC_ALL;
     }
     function timePCViewPaper($prow, $download) {
 	if ($prow->timeWithdrawn > 0)

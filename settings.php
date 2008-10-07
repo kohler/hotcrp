@@ -63,8 +63,7 @@ $SettingGroups = array("acc" => array(
 			     "next" => "dec"),
 		       "dec" => array(
 			     "au_seerev" => 2,
-			     "au_seedec" => "check",
-			     "rev_seedec" => "check",
+			     "seedec" => 2,
 			     "resp_open" => "check",
 			     "resp_done" => "date",
 			     "resp_grace" => "grace",
@@ -117,8 +116,7 @@ $SettingText = array(
 	"tag_seeall" => "PC can see tags for conflicted papers",
 	"rev_ratings" => "Review ratings setting",
 	"au_seerev" => "Authors can see reviews setting",
-	"au_seedec" => "Authors can see decisions setting",
-	"rev_seedec" => "Reviewers can see decisions setting",
+	"seedec" => "Decision visibility",
 	"final_open" => "Collect final copies setting",
 	"final_done" => "Final copy upload deadline",
 	"homemsg" => "Home page message",
@@ -1314,10 +1312,9 @@ function doDecGroup() {
     doGraceRow('resp_grace', 'Grace period', "lxcaption");
     echo "</table></td></tr></table>";
 
-    echo "<div class='g'></div>\n<table>\n";
-    doCheckbox('au_seedec', '<b>Authors can see decisions</b> (accept/reject)', true);
-    doCheckbox('rev_seedec', 'PC and reviewers can see decisions and accepted authors', true);
-    echo "</table>\n";
+    echo "<div class='g'></div>\n<hr class='hr' />\n",
+	"Who can see <b>decisions</b> (accept/reject)?<br />\n";
+    doRadio("seedec", array(SEEDEC_ADMIN => "Only administrators", SEEDEC_REV => "PC and external reviewers", SEEDEC_ALL => "<b>Authors</b>, PC members, and reviewers (and reviewers can see accepted authors)"));
 
     echo "<div class='g'></div>\n";
     echo "<table>\n";

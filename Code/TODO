@@ -197,12 +197,6 @@
   be achieved with settings already available -- right?  So maybe this is a
   documentation issue...) [Benjamin Pierce]
 
-* PC members should be able to view and search on accepted/rejected
-  decisions (it was very inconvenient that only I could see that during the
-  meeting).  In fact, why separate this mechanism from the tagging
-  mechanism (instead of just having special tags)?  Seems like needless
-  duplication of very similar functionality. [Benjamin Pierce]
-
 * What does "possibly authors" mean in the Search Help page? [Benjamin
   Pierce]
 
