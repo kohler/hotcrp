@@ -65,6 +65,7 @@ class PaperList extends BaseList {
     var $authorMatch;
     var $collaboratorsMatch;
     var $extraText;
+    var $foldtype;
     var $unfolded;
     var $foldedAbstract;
     var $foldedTags;
@@ -115,6 +116,7 @@ class PaperList extends BaseList {
 	$this->showConflict = true;
 	$this->papersel = null;
 	$this->extraFooter = "";
+	$this->foldtype = "foldpl";
 	$this->rf = reviewForm();
     }
 
@@ -987,12 +989,12 @@ class PaperList extends BaseList {
 	$this->scoresOk = $me->privChair || ($me->isPC && $Conf->timePCViewAllReviews());
 
 	// check what is folded
-	if (defval($_SESSION, "foldplabstract", 1))
+	if (defval($_SESSION, $this->foldtype . "abstract", 1))
 	    $this->foldedAbstract = array();
 	else
 	    $this->foldedAbstract = false;
 	if (!defval($_REQUEST, "showtags")
-	    && defval($_SESSION, "foldpltags", 1))
+	    && defval($_SESSION, $this->foldtype . "tags", 1))
 	    $this->foldedTags = array();
 	else
 	    $this->foldedTags = false;
@@ -1139,9 +1141,9 @@ class PaperList extends BaseList {
 
 	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname);
 	if ($authorinfo & 1)
-	    $x .= (defval($_SESSION, "foldplau", 1) ? " fold1c" : " fold1o");
+	    $x .= (defval($_SESSION, $this->foldtype . "au", 1) ? " fold1c" : " fold1o");
 	if ($authorinfo & 2)
-	    $x .= (defval($_SESSION, "foldplanonau", 1) ? " fold2c" : " fold2o");
+	    $x .= (defval($_SESSION, $this->foldtype . "anonau", 1) ? " fold2c" : " fold2o");
 	if (!$unfolded)
 	    $x .= " fold3c";
 	if ($taginfo)
@@ -1157,7 +1159,7 @@ class PaperList extends BaseList {
 	if ($abstractinfo && $this->foldedAbstract !== false && count($this->foldedAbstract))
 	    $Conf->footerStuff .= "<form id='abstractloadform' method='post' action='search$ConfSiteSuffix?get=abstracts&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedAbstract) . "' /></div></form><script type='text/javascript'>ajaxAbstracts = true;</script>";
 	if ($this->anySelector)
-	    $x .= (defval($_SESSION, "foldplrownum", 1) ? " fold6c" : " fold6o");
+	    $x .= (defval($_SESSION, $this->foldtype . "rownum", 1) ? " fold6c" : " fold6o");
 	if ($authorinfo || !$unfolded || $taginfo || $abstractinfo || $this->anySelector)
 	    $x .= "\" id=\"foldpl";
 	$x .= "\">\n";
@@ -1185,7 +1187,7 @@ class PaperList extends BaseList {
 	    if ($taginfo && $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
 		$titleextra .= "<a class='unfolder4' href='javascript:foldtags(\"pl\",0,4)'>Show tags</a><a class='folder4' href='javascript:foldtags(\"pl\",1,4)'>Hide tags</a><span id='tagloadformresult'></span>";
-		$titleextra .= "<img id='foldsession.pl4' alt='' src='sessionvar$ConfSiteSuffix?var=foldpltags&amp;val=" . defval($_SESSION, "foldpltags", 1) . "&amp;cache=1' width='1' height='1' />";
+		$titleextra .= foldsessionpixel("pl4", $this->foldtype . "tags");
 	    }
 	    
 	    if ($this->sortable && $url) {

@@ -816,14 +816,14 @@ echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
 $viewAccAuthors = ($_REQUEST["t"] == "acc" && $Conf->timeReviewerViewAcceptedAuthors());
 if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAccAuthors) {
     echo "<input type='checkbox' name='showau' value='1'";
-    if ($Conf->blindSubmission() == BLIND_OPTIONAL && (!$pl || !($pl->headerInfo["authors"] & 1)))
-	echo " disabled='disabled'";
     if (defval($_SESSION, "foldplau", 1) == 0)
 	echo " checked='checked'";
     echo " onclick='fold(\"pl\",!this.checked,1)";
     if ($viewAccAuthors)
 	echo ";fold(\"pl\",!this.checked,2)";
-    echo "' />&nbsp;Authors<br />\n";
+    echo "' />&nbsp;Authors",
+	foldsessionpixel("pl1", "foldplau"),
+	"<br />\n";
 }
 if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair && !$viewAccAuthors) {
     echo "<input type='checkbox' name='showanonau' value='1'";
@@ -833,13 +833,16 @@ if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair && !$viewAccAut
 	echo " checked='checked'";
     echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;",
 	($Conf->blindSubmission() == BLIND_OPTIONAL ? "Anonymous authors" : "Authors"),
+	foldsessionpixel("pl2", "foldplanonau"),
 	"<br />\n";
 }
 if ($pl && $pl->headerInfo["abstracts"]) {
     echo "<input type='checkbox' name='showabstract' value='1'";
     if (defval($_SESSION, "foldplabstract", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts", foldsessionpixel("pl5", "foldplabstract"), "<br /><div id='abstractloadformresult'></div>\n";
+    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts",
+	foldsessionpixel("pl5", "foldplabstract"),
+	"<br /><div id='abstractloadformresult'></div>\n";
 }
 if ($Me->isPC && $pl && $pl->headerInfo["tags"]) {
     echo "<input type='checkbox' name='showtags' value='1'";

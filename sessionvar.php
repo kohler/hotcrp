@@ -10,7 +10,9 @@ if (isset($_REQUEST["var"])) {
     if ($v == "foldassigna"
 	|| $v == "foldpapera" || $v == "foldpaperp" || $v == "foldpaperb"
 	|| $v == "foldpapert"
-	|| $v == "foldplact" || $v == "foldpltags" || $v == "foldplabstract"
+	|| $v == "foldpfabstract" || $v == "foldpfau" || $v == "foldpfanonau"
+	|| $v == "foldplact" || $v == "foldpltags"
+	|| $v == "foldplabstract" || $v == "foldplau" || $v == "foldplanonau"
 	|| $v == "foldplrownum" || $v == "foldpscollab") {
 	if (isset($_REQUEST["val"]))
 	    $_SESSION[$v] = intval($_REQUEST["val"]);

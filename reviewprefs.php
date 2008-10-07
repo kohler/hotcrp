@@ -190,9 +190,9 @@ list.</p>");
 
 // set options to view
 if (isset($_REQUEST["redisplay"])) {
-    $_SESSION["foldplau"] = !defval($_REQUEST, "showau", 0);
-    $_SESSION["foldplanonau"] = !defval($_REQUEST, "showanonau", 0);
-    $_SESSION["foldplabstract"] = !defval($_REQUEST, "showabstract", 0);
+    $_SESSION["foldpfau"] = !defval($_REQUEST, "showau", 0);
+    $_SESSION["foldpfanonau"] = !defval($_REQUEST, "showanonau", 0);
+    $_SESSION["foldpfabstract"] = !defval($_REQUEST, "showabstract", 0);
 }
 
 
@@ -202,6 +202,7 @@ $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "c" => $reviewer,
 				     "q" => defval($_REQUEST, "q", "")));
 $pl = new PaperList(true, true, $search);
 $pl->showHeader = PaperList::HEADER_TITLES;
+$pl->foldtype = "foldpf";
 $pl->extraFooter = "<div id='plactr'><input class='hb' type='submit' name='update' value='Save changes' /></div>";
 $pl_text = $pl->text("editReviewPreference", $Me);
 
@@ -243,25 +244,29 @@ if ($Conf->blindSubmission() <= BLIND_OPTIONAL) {
     echo "<input type='checkbox' name='showau' value='1'";
     if ($Conf->blindSubmission() == BLIND_OPTIONAL && !($pl->headerInfo["authors"] & 1))
 	echo " disabled='disabled'";
-    if (defval($_SESSION, "foldplau", 1) == 0)
+    if (defval($_SESSION, "foldpfau", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='fold(\"pl\",!this.checked,1)' />&nbsp;Authors<span class='sep'></span>\n";
+    echo " onclick='fold(\"pl\",!this.checked,1)' />&nbsp;Authors",
+	foldsessionpixel("pl1", "foldpfau"),
+	"<span class='sep'></span>\n";
 }
 if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair) {
     echo "<input type='checkbox' name='showanonau' value='1'";
     if (!($pl->headerInfo["authors"] & 2))
 	echo " disabled='disabled'";
-    if (defval($_SESSION, "foldplanonau", 1) == 0)
+    if (defval($_SESSION, "foldpfanonau", 1) == 0)
 	echo " checked='checked'";
     echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;",
 	($Conf->blindSubmission() == BLIND_OPTIONAL ? "Anonymous authors" : "Authors"),
+	foldsessionpixel("pl2", "foldpfanonau"),
 	"<span class='sep'></span>\n";
 }
 if ($pl->headerInfo["abstracts"]) {
     echo "<input type='checkbox' name='showabstract' value='1'";
-    if (defval($_SESSION, "foldplabstract", 1) == 0)
+    if (defval($_SESSION, "foldpfabstract", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts<img id='foldsession.pl5' src='sessionvar$ConfSiteSuffix?var=foldplabstract&amp;val=", defval($_SESSION, "foldplabstract", 1), "&amp;cache=1' width='1' height='1' alt='' /><br /><div id='abstractloadformresult'></div>\n";
+    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts",
+	foldsessionpixel("pl5", "foldpfabstract"), "<br /><div id='abstractloadformresult'></div>\n";
 }
 echo "</td></tr>\n</table></form>"; // </div></div>
 echo "</td></tr></table>\n";
