@@ -450,6 +450,8 @@ function tagsToText($prow, $makeUrls, $contact, $drop = false,
     // decorate with URL matches
     if (!is_string($makeUrls))
 	$makeUrls = "";
+    if ($highlight !== false && ($pos = strpos($highlight, "~")) !== false)
+	$highlight = substr($highlight, $pos);
     $tt = "";
     foreach (preg_split('/\s+/', $t) as $tag) {
 	$base = tagBase($tag);
