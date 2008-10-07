@@ -156,8 +156,8 @@ function saveComment($text) {
     $forReviewers = ($visibility == "p" ? 0 : -1);
     $forAuthors = ($visibility == "a" ? 1 : 0);
     $blind = 0;
-    if ($Conf->blindReview() > 1
-	|| ($Conf->blindReview() == 1 && defval($_REQUEST, "blind")))
+    if ($Conf->blindReview() > BLIND_OPTIONAL
+	|| ($Conf->blindReview() == BLIND_OPTIONAL && defval($_REQUEST, "blind")))
 	$blind = 1;
     if (isset($_REQUEST["response"])) {
 	$forAuthors = 2;

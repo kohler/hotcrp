@@ -26,13 +26,13 @@ if ($Me->privChair || ($Me->isPC && $Conf->timePCViewAllReviews())) {
 }
 if ($Me->isPC)
     $tOpt["req"] = "External reviewers you requested";
-if ($Me->privChair || ($Me->isPC && !$Conf->blindSubmission()))
+if ($Me->privChair || ($Me->isPC && $Conf->blindSubmission() == BLIND_NEVER))
     $tOpt["au"] = "Contact authors of submitted papers";
 if ($Me->privChair
     || ($Me->isPC && $Conf->timeReviewerViewDecision()))
     $tOpt["auacc"] = "Contact authors of accepted papers";
 if ($Me->privChair
-    || ($Me->isPC && !$Conf->blindSubmission() && $Conf->timeReviewerViewDecision()))
+    || ($Me->isPC && $Conf->blindSubmission() == BLIND_NEVER && $Conf->timeReviewerViewDecision()))
     $tOpt["aurej"] = "Contact authors of rejected papers";
 if ($Me->privChair) {
     $tOpt["auuns"] = "Contact authors of non-submitted papers";

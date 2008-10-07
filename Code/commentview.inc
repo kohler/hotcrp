@@ -151,13 +151,13 @@ class CommentView {
 	    echo " checked='checked'";
 	echo " onchange='hiliter(this)' />&nbsp;Authors and reviewers";
 	// blind?
-	if ($Conf->blindReview() == 1) {
+	if ($Conf->blindReview() == BLIND_OPTIONAL) {
 	    echo " &nbsp; (<input type='checkbox' name='blind' value='1'";
 	    if ($useRequest ? defval($_REQUEST, 'blind')
 		: (!$crow || $crow->blind))
 		echo " checked='checked'";
 	    echo " onchange='hiliter(this)' />&nbsp;Anonymous to authors)\n";
-	} else if ($Conf->blindReview() == 2)
+	} else if ($Conf->blindReview() == BLIND_ALWAYS)
 	    echo " (anonymous to authors)";
 	echo "</td></tr></table>\n";
 

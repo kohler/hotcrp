@@ -134,7 +134,7 @@ class PaperSearch {
 	// track other information
 	$this->allowAuthor = false;
 	if ($me->privChair || $me->isAuthor
-	    || ($this->amPC && $Conf->blindSubmission() <= 1))
+	    || ($this->amPC && $Conf->blindSubmission() <= BLIND_OPTIONAL))
 	    $this->allowAuthor = true;
 	$this->orderTag = false;
 	$this->orderReverse = false;
@@ -207,16 +207,16 @@ class PaperSearch {
 
 	if ($this->privChair
 	    || ($this->amPC && !$blind)
-	    || ($this->amPC && $Conf->blindSubmission() == 0))
+	    || ($this->amPC && $Conf->blindSubmission() == BLIND_NEVER))
 	    $qt[] = new SearchTerm($rtype, 0, $word);
 	else {
-	    if ($blind && $Conf->blindSubmission() == 2)
-		/* only look at authors */;
+	    if ($blind && $Conf->blindSubmission() == BLIND_ALWAYS)
+		/* only look at papers you submitted */;
 	    else if ($this->amPC)
 		$qt[] = new SearchTerm($rtype, self::F_PAPERNONBLIND, $word);
 	    else {
 		$rt = self::F_REVIEWER;
-		if ($blind && $Conf->blindSubmission() != 0)
+		if ($blind && $Conf->blindSubmission() != BLIND_NEVER)
 		    $rt |= self::F_PAPERNONBLIND;
 		$qt[] = new SearchTerm($rtype, $rt, $word);
 	    }
@@ -279,9 +279,9 @@ class PaperSearch {
 	    $qt[] = new SearchTerm($type, $rt, $value);
 	else {
 	    $deblinder = 0;
-	    if ($type == "re" && $Conf->blindReview() == 2)
+	    if ($type == "re" && $Conf->blindReview() == BLIND_ALWAYS)
 		$deblinder = self::F_FALSE;
-	    else if ($type == "re" && $Conf->blindReview() == 1)
+	    else if ($type == "re" && $Conf->blindReview() == BLIND_OPTIONAL)
 		$deblinder = self::F_NONBLIND;
 	    
 	    if ($this->amPC) {

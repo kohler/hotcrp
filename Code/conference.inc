@@ -84,9 +84,9 @@ class Conference {
 	    if (!isset($this->settings[$x]))
 		$this->settings[$x] = 0;
 	if (!isset($this->settings["sub_blind"]))
-	    $this->settings["sub_blind"] = 2;
+	    $this->settings["sub_blind"] = BLIND_ALWAYS;
 	if (!isset($this->settings["rev_blind"]))
-	    $this->settings["rev_blind"] = 2;
+	    $this->settings["rev_blind"] = BLIND_ALWAYS;
 	if (!isset($this->settings["seedec"])) {
 	    $au = defval($this->settings, "au_seedec", false);
 	    $re = defval($this->settings, "rev_seedec", false);

@@ -239,22 +239,22 @@ echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'>
     "</tr>\n";
 
 echo "<tr><td class='lxcaption'><strong>Show:</strong> &nbsp;</td><td class='lentry'>";
-if ($Conf->blindSubmission() <= 1) {
+if ($Conf->blindSubmission() <= BLIND_OPTIONAL) {
     echo "<input type='checkbox' name='showau' value='1'";
-    if ($Conf->blindSubmission() == 1 && !($pl->headerInfo["authors"] & 1))
+    if ($Conf->blindSubmission() == BLIND_OPTIONAL && !($pl->headerInfo["authors"] & 1))
 	echo " disabled='disabled'";
     if (defval($_SESSION, "foldplau", 1) == 0)
 	echo " checked='checked'";
     echo " onclick='fold(\"pl\",!this.checked,1)' />&nbsp;Authors<span class='sep'></span>\n";
 }
-if ($Conf->blindSubmission() >= 1 && $Me->privChair) {
+if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair) {
     echo "<input type='checkbox' name='showanonau' value='1'";
     if (!($pl->headerInfo["authors"] & 2))
 	echo " disabled='disabled'";
     if (defval($_SESSION, "foldplanonau", 1) == 0)
 	echo " checked='checked'";
     echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;",
-	($Conf->blindSubmission() == 1 ? "Anonymous authors" : "Authors"),
+	($Conf->blindSubmission() == BLIND_OPTIONAL ? "Anonymous authors" : "Authors"),
 	"<span class='sep'></span>\n";
 }
 if ($pl->headerInfo["abstracts"]) {

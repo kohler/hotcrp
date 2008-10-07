@@ -590,21 +590,23 @@ function commajoin($what) {
 function paperBlind($prow) {
     global $Conf;
     $bs = $Conf->blindSubmission();
-    return $bs == 2 || ($bs == 1 && (!$prow || $prow->blind));
+    return $bs == BLIND_ALWAYS
+	|| ($bs == BLIND_OPTIONAL && (!$prow || $prow->blind));
 }
 
 function reviewBlind($rrow) {
     global $Conf;
     $br = $Conf->blindReview();
-    return $br == 2 || ($br == 1 && (!$rrow || $rrow->reviewBlind));
+    return $br == BLIND_ALWAYS
+	|| ($br == BLIND_OPTIONAL && (!$rrow || $rrow->reviewBlind));
 }
 
 function commentBlind($crow) {
     global $Conf;
     $br = $Conf->blindReview();
-    // logic: "$br == 2 || ($br == 1 && (!$crow || $crow->blind))"
-    if ($br != 1 || !$crow)
-	return $br == 1 || $br == 2;
+    // logic: "$br == BLIND_ALWAYS || ($br == BLIND_OPTIONAL && (!$crow || $crow->blind))"
+    if ($br != BLIND_OPTIONAL || !$crow)
+	return $br >= BLIND_OPTIONAL;
     return (isset($crow->commentBlind) ? $crow->commentBlind : $crow->blind);
 }
 

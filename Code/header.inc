@@ -34,6 +34,10 @@ define("SEEDEC_ALL", 2);
 define("SEEDEC_REV", 1);
 define("SEEDEC_ADMIN", 0);
 
+define("BLIND_ALWAYS", 2);	/* ordering is important */
+define("BLIND_OPTIONAL", 1);
+define("BLIND_NEVER", 0);
+
 $ReviewFormCache = null;
 $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
 			  "grammar", "reviewerQualification", "potential",

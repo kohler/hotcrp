@@ -316,8 +316,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // blind?
     if ($isSubmitFinal)
 	/* do nothing */;
-    else if ($Conf->blindSubmission() > 1
-	     || ($Conf->blindSubmission() == 1 && defval($_REQUEST, 'blind')))
+    else if ($Conf->blindSubmission() > BLIND_OPTIONAL
+	     || ($Conf->blindSubmission() == BLIND_OPTIONAL && defval($_REQUEST, 'blind')))
 	$q .= "blind=1, ";
     else
 	$q .= "blind=0, ";

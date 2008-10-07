@@ -368,9 +368,9 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 
 // download text author information for selected papers
 if ($getaction == "authors" && isset($papersel)
-    && ($Me->privChair || ($Me->isPC && $Conf->blindSubmission() < 2))) {
+    && ($Me->privChair || ($Me->isPC && $Conf->blindSubmission() < BLIND_ALWAYS))) {
     $idq = paperselPredicate($papersel);
-    if (!$Me->privChair && $Conf->blindSubmission() == 1)
+    if (!$Me->privChair && $Conf->blindSubmission() == BLIND_OPTIONAL)
 	$idq = "($idq) and blind=0";
     $result = $Conf->qe("select paperId, title, authorInformation from Paper where $idq", "while fetching authors");
     if ($result) {
@@ -473,7 +473,7 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	    $scores[] = $field;
     
     $header = '#paper';
-    if ($Conf->blindSubmission() == 1)
+    if ($Conf->blindSubmission() == BLIND_OPTIONAL)
 	$header .= "\tblind";
     $header .= "\tdecision";
     foreach ($scores as $score)
@@ -489,7 +489,7 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	    $errors[] = whyNotText($whyNot, "view review") . "<br />";
 	else if ($row->reviewSubmitted) {
 	    $text = $row->paperId;
-	    if ($Conf->blindSubmission() == 1)
+	    if ($Conf->blindSubmission() == BLIND_OPTIONAL)
 		$text .= "\t" . $row->blind;
 	    $text .= "\t" . $row->outcome;
 	    foreach ($scores as $score)
@@ -767,10 +767,10 @@ echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'>
   <td class='lentry'>";
 $qtOpt = array("ti" => "Title",
 	       "ab" => "Abstract");
-if ($Me->privChair || $Conf->blindSubmission() == 0) {
+if ($Me->privChair || $Conf->blindSubmission() == BLIND_NEVER) {
     $qtOpt["au"] = "Authors";
     $qtOpt["n"] = "Title, abstract, and authors";
-} else if ($Conf->blindSubmission() == 1) {
+} else if ($Conf->blindSubmission() == BLIND_OPTIONAL) {
     $qtOpt["au"] = "Non-blind authors";
     $qtOpt["n"] = "Title, abstract, and non-blind authors";
 } else
@@ -814,9 +814,9 @@ foreach (array("q", "qx", "qo", "qt", "t", "sort") as $x)
 echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
   <td class='pad'>";
 $viewAccAuthors = ($_REQUEST["t"] == "acc" && $Conf->timeReviewerViewAcceptedAuthors());
-if ($Conf->blindSubmission() <= 1 || $viewAccAuthors) {
+if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAccAuthors) {
     echo "<input type='checkbox' name='showau' value='1'";
-    if ($Conf->blindSubmission() == 1 && (!$pl || !($pl->headerInfo["authors"] & 1)))
+    if ($Conf->blindSubmission() == BLIND_OPTIONAL && (!$pl || !($pl->headerInfo["authors"] & 1)))
 	echo " disabled='disabled'";
     if (defval($_SESSION, "foldplau", 1) == 0)
 	echo " checked='checked'";
@@ -825,14 +825,14 @@ if ($Conf->blindSubmission() <= 1 || $viewAccAuthors) {
 	echo ";fold(\"pl\",!this.checked,2)";
     echo "' />&nbsp;Authors<br />\n";
 }
-if ($Conf->blindSubmission() >= 1 && $Me->privChair && !$viewAccAuthors) {
+if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair && !$viewAccAuthors) {
     echo "<input type='checkbox' name='showanonau' value='1'";
     if (!$pl || !($pl->headerInfo["authors"] & 2))
 	echo " disabled='disabled'";
     if (defval($_SESSION, "foldplanonau", 1) == 0)
 	echo " checked='checked'";
     echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;",
-	($Conf->blindSubmission() == 1 ? "Anonymous authors" : "Authors"),
+	($Conf->blindSubmission() == BLIND_OPTIONAL ? "Anonymous authors" : "Authors"),
 	"<br />\n";
 }
 if ($pl && $pl->headerInfo["abstracts"]) {

@@ -760,7 +760,7 @@ class PaperList extends BaseList {
 		$sel_opt["revz"] = "All reviews (zip)";
 	    }
 	}
-	if ($this->contact->privChair || ($this->contact->isReviewer && $Conf->blindSubmission() < 2))
+	if ($this->contact->privChair || ($this->contact->isReviewer && $Conf->blindSubmission() < BLIND_ALWAYS))
 	    $sel_opt["authors"] = "Authors";
 	if ($this->contact->privChair) {
 	    $sel_opt["contact"] = "Contact emails";
@@ -1173,7 +1173,7 @@ class PaperList extends BaseList {
 		$titleextra .= "<span class='sep'></span><a class='unfolder3' href='javascript:fold(\"pl\",0,3)'>Show all papers</a>";
 	    if ($authorinfo && $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
-		if ($Conf->blindSubmission() == 0)
+		if ($Conf->blindSubmission() == BLIND_NEVER)
 		    $titleextra .= "<a class='unfolder1' href='javascript:fold(\"pl\",0,1)'>Show authors</a><a class='folder1' href='javascript:fold(\"pl\",1,1)'>Hide authors</a>";
 		else if ($this->contact->privChair && $authorinfo == 2)
 		    $titleextra .= "<a class='unfolder2' href='javascript:fold(\"pl\",0,2)'>Show authors</a><a class='folder2' href='javascript:fold(\"pl\",1,2)'>Hide authors</a>";

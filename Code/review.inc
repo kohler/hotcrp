@@ -366,7 +366,7 @@ class ReviewForm {
 	    && array_search($rrow->reviewToken, $_SESSION["rev_tokens"]) !== false;
 
 	// blind? reviewer type? edit version?
-	$reviewBlind = ($conf->blindReview() > 1 || ($conf->blindReview() == 1 && defval($req, 'blind')) ? 1 : 0);
+	$reviewBlind = ($conf->blindReview() > BLIND_OPTIONAL || ($conf->blindReview() == BLIND_OPTIONAL && defval($req, 'blind')) ? 1 : 0);
 	if ($rrow && $reviewBlind != $rrow->reviewBlind)
 	    $different = true;
 	$q[] = "reviewBlind=$reviewBlind";
@@ -536,7 +536,7 @@ class ReviewForm {
 ==-== Enter \"Ready\" if the review is ready for others to see:
 
 Ready\n";
-	    if ($conf->blindReview() == 1) {
+	    if ($conf->blindReview() == BLIND_OPTIONAL) {
 		$blind = "Anonymous";
 		if ($rrow && !$rrow->reviewBlind)
 		    $blind = "Open";
@@ -1301,7 +1301,7 @@ $blind\n";
 	    "  <div class='aa'><input class='bb' type='submit' value='Save changes' name='update' /></div>\n";
 
 	// blind?
-	if ($Conf->blindReview() == 1) {
+	if ($Conf->blindReview() == BLIND_OPTIONAL) {
 	    echo "<div class='revt'><span class='revfn'>",
 		"<input type='checkbox' name='blind' value='1'";
 	    if ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))
