@@ -110,6 +110,10 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table PaperComment add `timeNotified` int(11) NOT NULL default '0'")
 	&& $Conf->q("update Settings set value=21 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 21;
+    if ($Conf->settings["allowPaperOption"] == 21
+	&& $Conf->q("update PaperConflict set conflictType=8 where conflictType=3")
+	&& $Conf->q("update Settings set value=22 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 22;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

@@ -756,6 +756,7 @@ class PaperTable {
 	if (!count($pcm))
 	    return;
 	$conflict = array();
+	$maxauthormark = ($Conf->setting("allowPaperOption") >= 22 ? CONFLICT_MAXAUTHORMARK : CONFLICT_AUTHORMARK);
 	if ($this->useRequest) {
 	    foreach ($pcm as $id => $row)
 		if (isset($_REQUEST["pcc$id"]))
@@ -764,7 +765,8 @@ class PaperTable {
 	if ($prow) {
 	    $result = $Conf->qe("select contactId, conflictType from PaperConflict where paperId=$prow->paperId", "while finding conflicted PC members");
 	    while (($row = edb_row($result)))
-		if ($row[1] != CONFLICT_AUTHORMARK || !$this->useRequest)
+		if ($row[1] < CONFLICT_AUTHORMARK || $row[1] > $maxauthormark
+		    || !$this->useRequest)
 		    $conflict[$row[0]] = $row[1];
 	}
 
@@ -772,7 +774,8 @@ class PaperTable {
 	    $c = "<input type='checkbox' name='pcc$id' value='1'";
 	    if (defval($conflict, $id) > 0) {
 		$c .= " checked='checked'";
-		if ($conflict[$id] != CONFLICT_AUTHORMARK)
+		if ($conflict[$id] < CONFLICT_AUTHORMARK
+		    || $conflict[$id] > $maxauthormark)
 		    $c .= " disabled='disabled'";
 	    }
 	    $pcconfs[] = $c . " onchange='hiliter(this)' /> " . contactHtml($p->firstName, $p->lastName);
