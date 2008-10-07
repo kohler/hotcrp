@@ -464,8 +464,6 @@ class PaperSearch {
 	    if ($m[1] <= $m[2]) {
 		for ($i = $m[1]; $i <= $m[2]; ++$i)
 		    $qt[] = new SearchTerm($negated ? "npn" : "pn", 0, $i);
-		for ($i = $nqt; $i < count($qt) - 1; ++$i)
-		    $qt[$i]->link = true;
 	    } else
 		$qt[] = new SearchTerm($negated ? "npn" : "pn", 0, -1);
 	    return;
@@ -799,18 +797,6 @@ class PaperSearch {
     // is to combine all paper numbers into a single group, and link associated
     // "or" terms.
     
-    function _queryAddClause(&$qc, &$qpn_or, &$qthis, &$qthis_pn) {
-	if (!$qthis)
-	    /* nothing */;
-	else if ($qthis_pn) {
-	    foreach ($qthis as $q)
-		$qpn_or[] = $q;
-	} else
-	    $qc[] = $qthis;
-	$qthis = null;
-	$qthis_pn = false;
-    }
-
     function _queryMakeClauses(&$qt, &$qc) {
 	// group words into "CNF" clauses: an array of clauses connected by
 	// AND, where each clause is an array of terms connected by OR.
@@ -818,35 +804,52 @@ class PaperSearch {
 	// All words connected by "OR" to any paper number are in the same
 	// CNF clause.
 
+	$tpn = new SearchTerm("pn", 0, array(array(), array()));
 	$qc = array();
-	$qpn_or = array();
-	$qpn = new SearchTerm("pn", 0, array(array(), array()));
-	$qthis = null;
-	$qthis_pn = false;
-	foreach ($qt as &$t)
-	    if ($t->type == "pn" || $t->type == "npn") {
-		if ($t->type == "pn")
-		    $qpn->value[0][] = $t->value;
-		else
-		    $qpn->value[1][] = $t->value;
-		if ($t->link)
-		    $qthis_pn = true;
-		else
-		    $this->_queryAddClause($qc, $qpn_or, $qthis, $qthis_pn);
-	    } else {
-		if (!$qthis)
-		    $qthis = array();
-		$qthis[] = $t;
-		if (!$t->link)
-		    $this->_queryAddClause($qc, $qpn_or, $qthis, $qthis_pn);
-	    }
+	$qor = null;
+	for ($i = 0; $i < count($qt); ++$i) {
+	    $t = $qt[$i];
 
-	if ($qthis)
-	    $this->_queryAddClause($qc, $qpn_or, $qthis, $qthis_pn);
-	if (count($qpn->value[0]) || count($qpn->value[1]))
-	    $qpn_or[] = $qpn;
-	if (count($qpn_or))
-	    $qc[] = $qpn_or;
+	    if ($t->type == "pn" || $t->type == "npn") {
+		// Combine adjacent paper number queries.
+		$x = array(array(), array());
+		while (1) {
+		    $x[$t->type == "pn" ? 0 : 1][] = $t->value;
+		    if ($i + 1 == count($qt)
+			|| $t->link
+			|| ($qt[$i+1]->type != "pn"
+			    && $qt[$i+1]->type != "npn"))
+			break;
+		    ++$i;
+		    $t = $qt[$i];
+		}
+		// Collect top-level paper numbers into a single $tpn.
+		if ((!$t->link || $i + 1 == count($qt)) && !$qor) {
+		    $tpn->value[0] = array_merge($tpn->value[0], $x[0]);
+		    $tpn->value[1] = array_merge($tpn->value[1], $x[1]);
+		    continue;
+		}
+		$tt = new SearchTerm("pn", 0, $x);
+	    } else
+		$tt = $t;
+
+	    // Clauses joined by OR go into a $qor array.
+	    if ($qor)
+		$qor[] = $tt;
+	    else if ($t->link)
+		$qor = array($tt);
+	    else
+		$qc[] = array($tt);
+
+	    // If done with an OR array, we've built a clause.
+	    if ((!$t->link || $i + 1 == count($qt)) && $qor) {
+		$qc[] = $qor;
+		$qor = null;
+	    }
+	}
+
+	if (count($tpn->value[0]) || count($tpn->value[1]))
+	    $qc[] = array($tpn);
 	
 	// Now we have an array of arrays in "CNF"
 	if ($this->reviewAdjust) {
@@ -1169,6 +1172,8 @@ class PaperSearch {
 		$q[] = "Paper.paperId in (" . join(",", $t->value[0]) . ")";
 	    if (count($t->value[1]))
 		$q[] = "Paper.paperId not in (" . join(",", $t->value[1]) . ")";
+	    if (!count($q))
+		$q[] = "false";
 	    $f[] = "(" . join(" and ", $q) . ")";
 	} else if ($tt == "pf") {
 	    $q = array();
