@@ -9,7 +9,7 @@ require_once('Code/search.inc');
 require_once("Code/mailtemplate.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPrivChair("index$ConfSiteSuffix");
+$Me->goIfNotPrivChair();
 $nullMailer = new Mailer(null, null, $Me);
 $nullMailer->width = 10000000;
 $Error = array();

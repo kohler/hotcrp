@@ -8,7 +8,7 @@ require_once("Code/paperlist.inc");
 require_once("Code/search.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPC("index$ConfSiteSuffix");
+$Me->goIfNotPC();
 $reviewer = rcvtint($_REQUEST["reviewer"]);
 if ($reviewer <= 0 || !$Me->privChair)
     $reviewer = $Me->contactId;

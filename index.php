@@ -157,8 +157,7 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["action"]) && isset($_REQUEST["
 	// if we get here, login failed
 	$Me->invalidate();
     }
-} else
-    unset($_SESSION["afterLogin"]);
+}
 
 // set a cookie to test that their browser supports cookies
 if (!$Me->valid())

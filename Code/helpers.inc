@@ -142,8 +142,12 @@ function fileUploaded(&$var, $conf) {
 function selfHref($extra = array(), $self = null) {
     global $CurrentList, $ConfSiteSuffix;
     $x = ($self ? $self : $_SERVER["PHP_SELF"]);
-    if ($ConfSiteSuffix == "" && strlen($x) > 4 && substr($x, strlen($x) - 4, 4) == ".php")
-	$x = substr($x, 0, strlen($x) - 4);
+    if ($ConfSiteSuffix == "" && strlen($x) > 4) {
+	if (substr($x, strlen($x) - 4, 4) == ".php")
+	    $x = substr($x, 0, strlen($x) - 4);
+	else if (($pos = strpos($x, ".php/")) !== false)
+	    $x = substr($x, 0, $pos) . substr($x, $pos + 4);
+    }
     $sep = "?";
     if (isset($_REQUEST["paperId"]) && !isset($_REQUEST["p"]))
 	$_REQUEST["p"] = $_REQUEST["paperId"];

@@ -8,7 +8,7 @@ require_once("Code/paperlist.inc");
 require_once("Code/search.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPrivChair("index$ConfSiteSuffix");
+$Me->goIfNotPrivChair();
 
 // paper selection
 if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")

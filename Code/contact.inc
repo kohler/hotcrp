@@ -184,13 +184,17 @@ class Contact {
     }
 
     function goAlert($url, $message = "") {
-	global $Conf;
+	global $Conf, $ConfSiteSuffix;
 	$Conf->errorMsg($message);
+	if ($url === false) {
+	    $url = "index" . $ConfSiteSuffix;
+	    if (preg_match("|/doc(\.php)?/|", $_SERVER["PHP_SELF"]))
+		$url = "../" . $url;
+	}
 	go($url);
     }
 
     function goIfInvalid() {
-	global $ConfSiteSuffix;
 	if (!$this->valid()) {
 	    $x = array("afterLogin" => 1, "blind" => 1);
 	    $rf = reviewForm();
@@ -198,23 +202,18 @@ class Contact {
 		if (isset($_REQUEST[$k]))
 		    $x[$k] = $_REQUEST[$k];
 	    $_SESSION["afterLogin"] = selfHref($x);
-	    $this->goAlert("index$ConfSiteSuffix", "You have invalid credentials and need to sign in.");
+	    $this->goAlert(false, "You have invalid credentials and need to sign in.");
 	}
     }
 
-    function goIfNotAuthor($url) {
-	if (!$this->valid() || !$this->isAuthor)
-	    $this->goAlert($url, "That page is only accessible to paper authors.");
-    }
-
-    function goIfNotPC($url) {
+    function goIfNotPC() {
 	if (!$this->valid() || !($this->privChair || $this->isPC))
-	    $this->goAlert($url, "That page is only accessible to program committee members.");
+	    $this->goAlert(false, "That page is only accessible to program committee members.");
     }
 
-    function goIfNotPrivChair($url) {
+    function goIfNotPrivChair() {
 	if (!$this->valid() || !$this->privChair)
-	    $this->goAlert($url, "That page is only accessible to conference administrators.");
+	    $this->goAlert(false, "That page is only accessible to conference administrators.");
     }
 
     function updateDB($conf, $where = "") {

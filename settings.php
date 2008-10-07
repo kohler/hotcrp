@@ -7,7 +7,7 @@ require_once("Code/header.inc");
 require_once("Code/tags.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPrivChair("index$ConfSiteSuffix");
+$Me->goIfNotPrivChair();
 $Highlight = array();
 $Error = array();
 $Values = array();

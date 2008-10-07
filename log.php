@@ -6,7 +6,7 @@
 require_once("Code/header.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
-$Me->goIfNotPrivChair("index$ConfSiteSuffix");
+$Me->goIfNotPrivChair();
 
 if (defval($_REQUEST, "page", "") == "earliest")
     $page = false;
