@@ -236,7 +236,12 @@ function searchQuickref() {
     _searchQuickrefRow("Status", "status:sub", "paper is submitted for review", "t=all");
     _searchQuickrefRow("", "status:unsub", "paper is neither submitted nor withdrawn", "t=all");
     _searchQuickrefRow("", "status:withdrawn", "paper has been withdrawn", "t=all");
-    _searchQuickrefRow("Decision", "dec:accept", "decision matches &ldquo;accept&rdquo;");
+
+    $rf = reviewForm();
+    foreach ($rf->options["outcome"] as $dec)
+	$dec = simplifyWhitespace(strtolower($dec));
+    $qdec = (strpos($dec, " ") !== false ? "\"$dec\"" : $dec);
+    _searchQuickrefRow("Decision", "dec:$qdec", "decision is &ldquo;$dec&rdquo; (partial matches OK)");
     _searchQuickrefRow("", "dec:yes", "one of the accept decisions");
     _searchQuickrefRow("", "dec:no", "one of the reject decisions");
     _searchQuickrefRow("", "dec:?", "decision unspecified");
