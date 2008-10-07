@@ -189,6 +189,32 @@
   setting or flag in the code would be a great addition.  We realize this
   may not be easy to do. [Mark Gebhart, MICRO 41]
 
+* It would be really useful to be able to turn off sending emails about
+  comments to anyone outside of the PC.  During the PC meeting, they
+  naturally get used for all sorts of tasks like communicating final
+  suggestions to the authors that reveal too much (e.g., the current
+  acceptance state) to the outside reviewers.  (I guess this can actually
+  be achieved with settings already available -- right?  So maybe this is a
+  documentation issue...) [Benjamin Pierce]
+
+* PC members should be able to view and search on accepted/rejected
+  decisions (it was very inconvenient that only I could see that during the
+  meeting).  In fact, why separate this mechanism from the tagging
+  mechanism (instead of just having special tags)?  Seems like needless
+  duplication of very similar functionality. [Benjamin Pierce]
+
+* What does "possibly authors" mean in the Search Help page? [Benjamin
+  Pierce]
+
+* It would be nice if there were some mechanism for preventing misspelling
+  of tag names when new tags are added.  E.g., when a new tag is added,
+  there could be a little extra confirmation dialog asking whether you want
+  to add that tag. [Benjamin Pierce]
+
+* For the sake of paranoia, it would be very nice to be able to make a
+  *complete* textual dump of all information about all papers -- reviews,
+  comments, scores, tags, decisions, etc.  I was sweating the whole weekend
+  wondering what we'd do if the network went down. [Benjamin Pierce]
 
 
 - static HTML snapshot
