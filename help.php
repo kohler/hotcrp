@@ -512,13 +512,14 @@ their reviews.  The interface appears above each visible review:
 <dt><strong>Very helpful</strong></dt>
 <dd>Great review.  Thorough, clear, constructive, and gives
   good ideas for next steps.</dd>
-<dt><strong>Not complete</strong></dt>
-<dd>The review is incomplete or too terse and therefore not as helpful as it
-  should be.</dd>
-<dt><strong>Not convincing</strong></dt>
-<dd>The review's arguments are not convincing or not technical enough.</dd>
+<dt><strong>Too short</strong></dt>
+<dd>The review is incomplete or too terse.</dd>
+<dt><strong>Too vague</strong></dt>
+<dd>The review's arguments are weak, mushy, or otherwise technically
+  unconvincing.</dd>
 <dt><strong>Not constructive</strong></dt>
-<dd>The review's tone is unnecessarily aggressive.</dd>
+<dd>The review's tone is unnecessarily aggressive or gives little useful
+  direction.</dd>
 <dt><strong>Not correct</strong></dt>
 <dd>The review misunderstands the paper.</dd>
 </dl>
