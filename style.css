@@ -1177,6 +1177,9 @@ hr.hr {
 div.g { /* small gap */
 	margin: 0.65em 0em;
 }
+div.ug { /* microgap */
+	margin: 0.35em 0em;
+}
 
 body#assignpc div.topicinterest {
 	margin-left: 3em;
@@ -1569,6 +1572,7 @@ div.cmthint {
 .fold7c .extension7, .fold7c .folder7, .fold7o .ellipsis7, .fold7o .unfolder7,
 .fold8c .extension8, .fold8c .folder8, .fold8o .ellipsis8, .fold8o .unfolder8,
 .fold9c .extension9, .fold9c .folder9, .fold9o .ellipsis9, .fold9o .unfolder9,
+.fold10c .extension10, .fold10c .folder10, .fold10o .ellipsis10, .fold10o .unfolder10,
 .hidden {
 	display: none;
 }

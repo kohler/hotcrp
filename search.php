@@ -811,7 +811,11 @@ foreach (array("q", "qx", "qo", "qt", "t", "sort") as $x)
     if (isset($_REQUEST[$x]))
 	echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
 
-echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
+echo "<table><tr>
+  <td class='pad'><strong>Show:</strong></td>\n";
+if ($pl && isset($pl->scoreMax))
+    echo "<td class='pad'><strong>Scores:</strong></td>\n";
+echo "</tr><tr>
   <td class='pad'>";
 $viewAccAuthors = ($_REQUEST["t"] == "acc" && $Conf->timeReviewerViewAcceptedAuthors());
 if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAccAuthors) {
@@ -857,11 +861,11 @@ if ($pl && $pl->anySelector) {
     echo "<input type='checkbox' name='showrownum' value='1'";
     if (defval($_SESSION, "foldplrownum", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='foldtags(\"pl\",!this.checked,6)' />&nbsp;Row numbers", foldsessionpixel("pl6", "foldplrownum"), "<br />\n";
+    echo " onclick='fold(\"pl\",!this.checked,6)' />&nbsp;Row numbers", foldsessionpixel("pl6", "foldplrownum"), "<br />\n";
 }
 echo "</td>";
 if ($pl && isset($pl->scoreMax)) {
-    echo "<td class='pad' rowspan='2'>";
+    echo "<td class='pad'>";
     $rf = reviewForm();
     $theScores = defval($_SESSION, "scores", 1);
     if ($Me->amReviewer() && $_REQUEST["t"] != "a")
@@ -879,11 +883,11 @@ if ($pl && isset($pl->scoreMax)) {
 	}
     echo "</td>";
 }
-echo "<td rowspan='2'><input id='redisplay' class='b' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
+echo "<td><input id='redisplay' class='b' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
 if ($pl && isset($pl->scoreMax)) {
-    echo "<tr><td colspan='2'><div class='g'></div><b>Sort scores by:</b><br />",
+    echo "<tr><td></td><td colspan='2'><div class='ug'>Sort by: &nbsp;",
 	tagg_select("scoresort", $scoreSorts, defval($_SESSION, "scoresort", $defaultScoreSort), array("onchange" => "highlightUpdate(\"redisplay\")")),
-	"<br /><a href='help$ConfSiteSuffix?t=scoresort' class='hint'>What is this?</a></td></tr>";
+	" &nbsp; <a href='help$ConfSiteSuffix?t=scoresort' class='hint'>What is this?</a></div></td></tr>\n";
 }
 echo "</table></div></form></div></div></td></tr>\n";
 
