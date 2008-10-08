@@ -49,7 +49,8 @@ $allowedSessionVars = array("foldassigna", "foldpapera", "foldpaperp",
 			    "foldpaperb", "foldpapert", "foldpfabstract",
 			    "foldpfau", "foldpfanonau", "foldplact",
 			    "foldpltags", "foldplabstract", "foldplau",
-			    "foldplanonau", "foldplrownum", "foldpscollab");
+			    "foldplanonau", "foldplreviewers", "foldplrownum",
+			    "foldpscollab");
 
 $OK = 1;
 

@@ -140,6 +140,38 @@ if ($getaction == "tags" && isset($papersel) && defval($_REQUEST, "ajax")) {
 }
 
 
+// download selected reviewers
+if ($getaction == "reviewers" && isset($papersel) && defval($_REQUEST, "ajax")
+    && $Me->privChair) {
+    $result = $Conf->qe("select Paper.paperId, reviewId, reviewType,
+		reviewSubmitted, reviewModified,
+		PaperReview.contactId, lastName, firstName, email
+		from Paper
+		join PaperReview using (paperId)
+		join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
+		where Paper.paperId in (" . join(",", $papersel) . ")
+		order by lastName, firstName, email", "while fetching reviews");
+    while (($xrow = edb_orow($result)))
+	if ($xrow->lastName) {
+	    $x = "reviewers" . $xrow->paperId;
+	    if (isset($response[$x]))
+		$response[$x] .= ", ";
+	    else
+		$response[$x] = "";
+	    $response[$x] .= contactHtml($xrow->firstName, $xrow->lastName);
+	    if ($xrow->reviewType == REVIEW_PRIMARY)
+		$response[$x] .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_PRIMARY . ".gif", "Primary");
+	    else if ($xrow->reviewType == REVIEW_SECONDARY)
+		$response[$x] .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_SECONDARY . ".gif", "Secondary");
+	}
+    foreach ($papersel as $pid)
+	if (!isset($response["reviewers" . $pid]))
+	    $response["reviewers" . $pid] = "";
+    $response["ok"] = (count($response) > 0);
+    $Conf->ajaxExit($response);
+}
+
+
 // download selected final copies
 if ($getaction == "final" && isset($papersel)) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
@@ -856,6 +888,13 @@ if ($Me->isPC && $pl && $pl->headerInfo["tags"]) {
 	|| defval($_SESSION, "foldpltags", 1) == 0)
 	echo " checked='checked'";
     echo " onclick='foldplinfo(this,4,\"tags\")' />&nbsp;Tags", foldsessionpixel("pl4", "foldpltags"), "<br /><div id='tagsloadformresult'></div>\n";
+}
+if ($Me->privChair && $pl) {
+    echo "<input type='checkbox' name='showreviewers' value='1'";
+    if (defval($_REQUEST, "showreviewers")
+	|| defval($_SESSION, "foldplreviewers", 1) == 0)
+	echo " checked='checked'";
+    echo " onclick='foldplinfo(this,10,\"reviewers\")' />&nbsp;Reviewers", foldsessionpixel("pl10", "foldplreviewers"), "<br /><div id='reviewersloadformresult'></div>\n";
 }
 if ($pl && $pl->anySelector) {
     echo "<input type='checkbox' name='showrownum' value='1'";

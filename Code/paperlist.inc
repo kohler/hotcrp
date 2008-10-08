@@ -36,10 +36,11 @@ class PaperList extends BaseList {
     const FIELD_AUTHOR_MATCH = 47;
     const FIELD_COLLABORATORS_MATCH = 48;
     const FIELD_CONFLICT_CONFIRM = 49;
-    
+
     const FIELD_OPT_AUTHORS = 70;
     const FIELD_TAGS = 71;
     const FIELD_OPT_ABSTRACT = 72;
+    const FIELD_OPT_ALL_REVIEWER_NAMES = 73;
     const FIELD_FOLD = 75;
 
     const HEADER_ALL = 2;
@@ -69,6 +70,7 @@ class PaperList extends BaseList {
     var $unfolded;
     var $foldedAbstract;
     var $foldedTags;
+    var $foldedReviewers;
     var $paperLink;
     var $paperLinkArgs;
     var $showConflict;
@@ -133,6 +135,12 @@ class PaperList extends BaseList {
 	    break;
 	case self::FIELD_ALL_REVIEWER_NAMES:
 	    $queryOptions['reviewList'] = 1;
+	    break;
+	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
+	    if (!$this->contact->privChair)
+		return false;
+	    if ($this->foldedReviewers === false)
+		$queryOptions["reviewList"] = 1;
 	    break;
 	case self::FIELD_REVIEWER_PREFERENCE:
 	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
@@ -409,6 +417,8 @@ class PaperList extends BaseList {
 		return "Reviewers";
 	    else
 		return "Reviewers (" . count($reviewList[$row->paperId]) . ")";
+	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
+	    return "Reviewers";
 	case self::FIELD_REVIEWER_PREFERENCE:
 	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
 	    return "Preference";
@@ -628,8 +638,15 @@ class PaperList extends BaseList {
 	    return htmlspecialchars($row->topicInterestScore + 0);
 	case self::FIELD_TOPIC_NAMES:
 	    return join(", ", $this->rf->webTopicArray($row->topicIds, defval($row, "topicInterest")));
+	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
+	    if ($this->foldedReviewers !== false) {
+		$this->foldedReviewers[] = $row->paperId;
+		return "<span id='reviewers$row->paperId'><em>Loading</em></span>";
+	    }
+	    /* fallthrough */
 	case self::FIELD_ALL_REVIEWER_NAMES:
 	    $n = "";
+	    // see also search.php > getaction == "reviewers"
 	    if (isset($reviewList[$row->paperId]))
 		foreach ($reviewList[$row->paperId] as $xrow)
 		    if ($xrow->lastName) {
@@ -932,23 +949,26 @@ class PaperList extends BaseList {
 	    return array(1, 11, 20);
 	  case "s":
 	  case "acc":
-	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71));
+	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73));
 	  case "all":
 	  case "act":
-	    return array(100, 1, 11, 20, 27, 70, 72, 71);
+	    return array(100, 1, 11, 20, 27, 70, 72, 71, 73);
 	  case "reviewerHome":
 	    $this->paperLink = "review";
 	    return array(1, 11, 27, 21);
 	  case "r":
 	  case "lead":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71));
+	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73));
 	  case "rout":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71));
+	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73));
 	  case "req":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71));
+	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73));
+	  case "reqrevs":
+	    $this->paperLink = "review";
+	    return array(1, 11, self::FIELD_REVIEWER_MONITOR, self::FIELD_REVIEWER_STATUS, 41, 21, 70, 72, 71, 73);
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
 	    return array(1, 11, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48);
@@ -967,9 +987,6 @@ class PaperList extends BaseList {
 	  case "revs":
 	    $this->paperLink = "review";
 	    return array(1, 11, 25, 27);
-	  case "reqrevs":
-	    $this->paperLink = "review";
-	    return array(1, 11, self::FIELD_REVIEWER_MONITOR, self::FIELD_REVIEWER_STATUS, 41, 21, 70, 72, 71);
 	  default:
 	    return null;
 	}
@@ -998,6 +1015,11 @@ class PaperList extends BaseList {
 	    $this->foldedTags = array();
 	else
 	    $this->foldedTags = false;
+	if (!defval($_REQUEST, "showreviewers")
+	    && defval($_SESSION, $this->foldtype . "reviewers", 1))
+	    $this->foldedReviewers = array();
+	else
+	    $this->foldedReviewers = false;
 
 	// get paper list
 	if (!($baseFieldId = $this->listFields($listname))) {
@@ -1046,7 +1068,7 @@ class PaperList extends BaseList {
 	}
 	$unfolded = $this->unfolded;
 
-	// prepare review query
+	// prepare review query (see also search > getaction == "reviewers")
 	$reviewList = array();
 	if (isset($queryOptions['reviewList'])) {
 	    $result = $Conf->qe("select Paper.paperId, reviewId, reviewType,
@@ -1089,7 +1111,7 @@ class PaperList extends BaseList {
 	$ids = array();
 	$anyData = array();
 	$body = '';
-	$authorinfo = $taginfo = $abstractinfo = false;
+	$foldinfo = array();
 	foreach ($srows as $row) {
 	    $ids[] = $row->paperId;
 	    $trclass = "k" . ($this->count % 2);
@@ -1109,17 +1131,12 @@ class PaperList extends BaseList {
 	    foreach ($fieldDef as $fieldId => $fdef)
 		if ($fdef[1] >= 2 && ($d = $this->content($fieldId, $row, $reviewList))) {
 		    $t .= "  <tr class=\"pl_$fdef[0] pl_callout $trclass";
-		    if ($fdef[1] == 3) {
-			$authorinfo |= (paperBlind($row) ? 2 : 1);
-			$t .= " extension" . (paperBlind($row) ? 2 : 1);
-		    } else if ($fdef[1] == 4) {
-			$taginfo = true;
-			$t .= " extension4";
-		    } else if ($fdef[1] == 5) {
-			$abstractinfo = true;
-			$t .= " extension5";
-		    }
-		    if ($fdef[1] == 4 || $fdef[1] == 5)
+		    $ftype = $fdef[1];
+		    if ($ftype == 3)
+			$ftype = (paperBlind($row) ? 2 : 1);
+		    $foldinfo[$ftype] = true;
+		    $t .= " extension" . $ftype;
+		    if ($ftype >= 4)
 			$t .= "\" id=\"pl_$fdef[0]$row->paperId";
 		    $t .= "\">\n";
 		    $t .= "<td class=\"pl_$fdef[0] pl_callout\" colspan='$ncol'>";
@@ -1140,27 +1157,31 @@ class PaperList extends BaseList {
 	}
 
 	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname);
-	if ($authorinfo & 1)
+	if ($foldinfo[1])
 	    $x .= (defval($_SESSION, $this->foldtype . "au", 1) ? " fold1c" : " fold1o");
-	if ($authorinfo & 2)
+	if ($foldinfo[2])
 	    $x .= (defval($_SESSION, $this->foldtype . "anonau", 1) ? " fold2c" : " fold2o");
 	if (!$unfolded)
 	    $x .= " fold3c";
-	if ($taginfo)
+	if ($foldinfo[4])
 	    $x .= ($this->foldedTags !== false ? " fold4c" : " fold4o");
-	if ($taginfo && $this->foldedTags !== false && count($this->foldedTags)) {
+	if ($foldinfo[4] && $this->foldedTags !== false && count($this->foldedTags)) {
 	    $Conf->footerStuff .= "<form id='tagsloadform' method='post' action='search$ConfSiteSuffix?get=tags&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedTags) . "' />";
 	    if ($this->search->orderTag)
 		$Conf->footerStuff .= "<input type='hidden' name='highlight' value=\"" . htmlspecialchars($this->search->orderTag) . "\" />";
 	    $Conf->footerStuff .= "</div></form><script type='text/javascript'>plinfo_ajax_load.tags = true;</script>";
 	}
-	if ($abstractinfo)
+	if ($foldinfo[5])
 	    $x .= ($this->foldedAbstract !== false ? " fold5c" : " fold5o");
-	if ($abstractinfo && $this->foldedAbstract !== false && count($this->foldedAbstract))
+	if ($foldinfo[5] && $this->foldedAbstract !== false && count($this->foldedAbstract))
 	    $Conf->footerStuff .= "<form id='abstractloadform' method='post' action='search$ConfSiteSuffix?get=abstracts&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedAbstract) . "' /></div></form><script type='text/javascript'>plinfo_ajax_load.abstract = true;</script>";
+	if ($foldinfo[10])
+	    $x .= ($this->foldedReviewers !== false ? " fold10c" : " fold10o");
+	if ($foldinfo[10] && $this->foldedReviewers !== false && count($this->foldedReviewers))
+	    $Conf->footerStuff .= "<form id='reviewersloadform' method='post' action='search$ConfSiteSuffix?get=reviewers&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedReviewers) . "' /></div></form><script type='text/javascript'>plinfo_ajax_load.reviewers = true;</script>";
 	if ($this->anySelector)
 	    $x .= (defval($_SESSION, $this->foldtype . "rownum", 1) ? " fold6c" : " fold6o");
-	if ($authorinfo || !$unfolded || $taginfo || $abstractinfo || $this->anySelector)
+	if (count($foldinfo) || !$unfolded || $this->anySelector)
 	    $x .= "\" id=\"foldpl";
 	$x .= "\">\n";
 
@@ -1173,18 +1194,19 @@ class PaperList extends BaseList {
 	    $titleextra = "";
 	    if (!$unfolded)
 		$titleextra .= "<span class='sep'></span><a class='unfolder3' href='javascript:fold(\"pl\",0,3)'>Show all papers</a>";
-	    if ($authorinfo && $this->showHeader == self::HEADER_ALL) {
+	    if (($foldinfo[1] || $foldinfo[2])
+		&& $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
 		if ($Conf->blindSubmission() == BLIND_NEVER)
 		    $titleextra .= "<a class='unfolder1' href='javascript:fold(\"pl\",0,1)'>Show authors</a><a class='folder1' href='javascript:fold(\"pl\",1,1)'>Hide authors</a>";
-		else if ($this->contact->privChair && $authorinfo == 2)
+		else if ($this->contact->privChair && $foldinfo[2] && !$foldinfo[1])
 		    $titleextra .= "<a class='unfolder2' href='javascript:fold(\"pl\",0,2)'>Show authors</a><a class='folder2' href='javascript:fold(\"pl\",1,2)'>Hide authors</a>";
-		else if ($this->contact->privChair && $authorinfo > 1)
+		else if ($this->contact->privChair && $foldinfo[2])
 		    $titleextra .= "<a class='unfolder1' href='javascript:fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='extension1 unfolder2' href='javascript:fold(\"pl\",0,2)'>Show all authors</a><a class='folder2' href='javascript:fold(\"pl\",1,1);fold(\"pl\",1,2)'>Hide authors</a>";
 		else
 		    $titleextra .= "<a class='unfolder1' href='javascript:fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='folder1' href='javascript:fold(\"pl\",1,1)'>Hide authors</a>";
 	    }
-	    if ($taginfo && $this->showHeader == self::HEADER_ALL) {
+	    if ($foldinfo[4] && $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
 		$titleextra .= "<a class='unfolder4' href='javascript:foldplinfo(0,4,\"tags\")'>Show tags</a><a class='folder4' href='javascript:foldplinfo(1,4,\"tags\")'>Hide tags</a><span id='tagsloadformresult'></span>";
 		$titleextra .= foldsessionpixel("pl4", $this->foldtype . "tags");
@@ -1250,7 +1272,7 @@ class PaperList extends BaseList {
 	    $_SESSION["l"][$this->listNumber] = $idx;
 	}
 
-	$this->headerInfo = array("authors" => $authorinfo, "tags" => $taginfo, "abstracts" => $abstractinfo, "pap" => $ids);
+	$this->headerInfo = array("authors" => ($foldinfo[2] ? 2 : 0) | ($foldinfo[1] ? 1 : 0), "tags" => defval($foldinfo, 4, false), "abstracts" => defval($foldinfo, 5, false), "pap" => $ids);
 
 	return $x;
     }
@@ -1275,7 +1297,7 @@ $paperListFields = array( // array(CSS_FIELD_NAME, COLUMN_TYPE, SORTABLE)
 	PaperList::FIELD_ASSIGN_REVIEW => array('assrev', 1, 1),
 	PaperList::FIELD_TOPIC_INTEREST => array('topicMatch', 1, 1),
 	PaperList::FIELD_TOPIC_NAMES => array('topicNames', 2, 0),
-	PaperList::FIELD_ALL_REVIEWER_NAMES => array('reviewerNames', 2, 0),
+	PaperList::FIELD_ALL_REVIEWER_NAMES => array('reviewers', 2, 0),
 	PaperList::FIELD_REVIEWER_PREFERENCE => array('revpref', 1, 1),
 	PaperList::FIELD_EDIT_REVIEWER_PREFERENCE => array('editrevpref', 1, 1),
 	PaperList::FIELD_CONFLICT_CONFIRM => array('conflictconfirm', 1, 0),
@@ -1288,5 +1310,6 @@ $paperListFields = array( // array(CSS_FIELD_NAME, COLUMN_TYPE, SORTABLE)
 	PaperList::FIELD_OPT_AUTHORS => array('authors', 3, 0),
 	PaperList::FIELD_TAGS => array('tags', 4, 0),
 	PaperList::FIELD_OPT_ABSTRACT => array('abstract', 5, 0),
+	PaperList::FIELD_OPT_ALL_REVIEWER_NAMES => array("reviewers", 10, 0),
 	PaperList::FIELD_FOLD => array('fold', 0, 0)
 	);

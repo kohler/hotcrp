@@ -1082,7 +1082,7 @@ td.pl_conflictconfirm {
 	padding: 0em;
 }
 td.pl_authors, td.pl_tags, td.pl_topics, td.pl_topicNames, td.pl_affrow,
-td.pl_abstract, td.pl_reviewerNames, td.pl_allPreferences, td.pl_authorsMatch,
+td.pl_abstract, td.pl_reviewers, td.pl_allPreferences, td.pl_authorsMatch,
 td.pl_collaboratorsMatch {
 	font-size: smaller;
 }

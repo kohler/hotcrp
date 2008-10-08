@@ -56,10 +56,6 @@
 * From the "Assign reviews manually by PC member" page, you can get to
   "Assign reviews manually by paper," but not vice versa. [Benjamin Pierce]
 
-* When you first create an assignment, you're given a very useful list of
-  all the papers and who they're assigned to.  But I can't find any way to
-  get back to this list afterward. [Benjamin Pierce]
-
 * Again for tweaking the assignment, it would be really helpful to have a
   *single* global view of the whole assignment, showing all available
   information and allowing papers to be reassigned at will. [Benjamin
