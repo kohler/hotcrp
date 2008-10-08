@@ -1149,15 +1149,15 @@ class PaperList extends BaseList {
 	if ($taginfo)
 	    $x .= ($this->foldedTags !== false ? " fold4c" : " fold4o");
 	if ($taginfo && $this->foldedTags !== false && count($this->foldedTags)) {
-	    $Conf->footerStuff .= "<form id='tagloadform' method='post' action='search$ConfSiteSuffix?get=tags&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedTags) . "' />";
+	    $Conf->footerStuff .= "<form id='tagsloadform' method='post' action='search$ConfSiteSuffix?get=tags&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedTags) . "' />";
 	    if ($this->search->orderTag)
 		$Conf->footerStuff .= "<input type='hidden' name='highlight' value=\"" . htmlspecialchars($this->search->orderTag) . "\" />";
-	    $Conf->footerStuff .= "</div></form><script type='text/javascript'>ajaxTags = true;</script>";
+	    $Conf->footerStuff .= "</div></form><script type='text/javascript'>plinfo_ajax_load.tags = true;</script>";
 	}
 	if ($abstractinfo)
 	    $x .= ($this->foldedAbstract !== false ? " fold5c" : " fold5o");
 	if ($abstractinfo && $this->foldedAbstract !== false && count($this->foldedAbstract))
-	    $Conf->footerStuff .= "<form id='abstractloadform' method='post' action='search$ConfSiteSuffix?get=abstracts&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedAbstract) . "' /></div></form><script type='text/javascript'>ajaxAbstracts = true;</script>";
+	    $Conf->footerStuff .= "<form id='abstractloadform' method='post' action='search$ConfSiteSuffix?get=abstracts&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedAbstract) . "' /></div></form><script type='text/javascript'>plinfo_ajax_load.abstract = true;</script>";
 	if ($this->anySelector)
 	    $x .= (defval($_SESSION, $this->foldtype . "rownum", 1) ? " fold6c" : " fold6o");
 	if ($authorinfo || !$unfolded || $taginfo || $abstractinfo || $this->anySelector)
@@ -1186,7 +1186,7 @@ class PaperList extends BaseList {
 	    }
 	    if ($taginfo && $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
-		$titleextra .= "<a class='unfolder4' href='javascript:foldtags(\"pl\",0,4)'>Show tags</a><a class='folder4' href='javascript:foldtags(\"pl\",1,4)'>Hide tags</a><span id='tagloadformresult'></span>";
+		$titleextra .= "<a class='unfolder4' href='javascript:foldplinfo(0,4,\"tags\")'>Show tags</a><a class='folder4' href='javascript:foldplinfo(1,4,\"tags\")'>Hide tags</a><span id='tagsloadformresult'></span>";
 		$titleextra .= foldsessionpixel("pl4", $this->foldtype . "tags");
 	    }
 	    

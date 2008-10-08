@@ -844,7 +844,7 @@ if ($pl && $pl->headerInfo["abstracts"]) {
     echo "<input type='checkbox' name='showabstract' value='1'";
     if (defval($_SESSION, "foldplabstract", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts",
+    echo " onclick='foldplinfo(this,5,\"abstract\")' />&nbsp;Abstracts",
 	foldsessionpixel("pl5", "foldplabstract"),
 	"<br /><div id='abstractloadformresult'></div>\n";
 }
@@ -855,7 +855,7 @@ if ($Me->isPC && $pl && $pl->headerInfo["tags"]) {
     if (defval($_REQUEST, "showtags")
 	|| defval($_SESSION, "foldpltags", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='foldtags(\"pl\",!this.checked,4)' />&nbsp;Tags", foldsessionpixel("pl4", "foldpltags"), "<br /><div id='tagloadformresult'></div>\n";
+    echo " onclick='foldplinfo(this,4,\"tags\")' />&nbsp;Tags", foldsessionpixel("pl4", "foldpltags"), "<br /><div id='tagsloadformresult'></div>\n";
 }
 if ($pl && $pl->anySelector) {
     echo "<input type='checkbox' name='showrownum' value='1'";

@@ -265,7 +265,7 @@ if ($pl->headerInfo["abstracts"]) {
     echo "<input type='checkbox' name='showabstract' value='1'";
     if (defval($_SESSION, "foldpfabstract", 1) == 0)
 	echo " checked='checked'";
-    echo " onclick='foldabstract(\"pl\",!this.checked,5)' />&nbsp;Abstracts",
+    echo " onclick='foldplinfo(this,5,\"abstract\")' />&nbsp;Abstracts",
 	foldsessionpixel("pl5", "foldpfabstract"), "<br /><div id='abstractloadformresult'></div>\n";
 }
 echo "</td></tr>\n</table></form>"; // </div></div>

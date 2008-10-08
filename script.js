@@ -648,33 +648,24 @@ Miniajax.submit = function(formname, callback, timeout) {
 };
 
 
-// abstracts and tags
-var ajaxAbstracts = false;
-function foldabstract(which, dofold, foldnum) {
+// ajax loading of paper information
+var plinfo_ajax_load = { };
+function foldplinfo(dofold, foldnum, type, which) {
+    if (!which)
+	which = "pl";
+    if (dofold.checked !== undefined)
+	dofold = !dofold.checked;
     fold(which, dofold, foldnum);
-    if (!dofold && ajaxAbstracts)
-	Miniajax.submit("abstractloadform", function(rv) {
-		var elt;
-		for (var i in rv) 
-		    if (i.substr(0, 8) == "abstract" && (elt = e(i)))
-			elt.innerHTML = rv[i];
-		ajaxAbstracts = false;
-	    });
-}
-
-var ajaxTags = false;
-function foldtags(which, dofold, foldnum) {
-    fold(which, dofold, foldnum);
-    if (!dofold && ajaxTags)
-	Miniajax.submit("tagloadform", function(rv) {
+    if (!dofold && plinfo_ajax_load[type])
+	Miniajax.submit(type + "loadform", function(rv) {
 		var elt, eltx;
 		for (var i in rv) 
-		    if (i.substr(0, 4) == "tags" && (elt = e(i)))
+		    if (i.substr(0, type.length) == type && (elt = e(i)))
 			if (rv[i] == "" && (eltx = e("pl_" + i)))
 			    eltx.innerHTML = "";
 			else
 			    elt.innerHTML = rv[i];
-		ajaxTags = false;
+		plinfo_ajax_load[type] = false;
 		fold(which, dofold, foldnum);
 	    });
 }
