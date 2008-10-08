@@ -207,7 +207,8 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     }
 
     // edit paper
-    if ($mode != "pe" && $prow->conflictType >= CONFLICT_AUTHOR) {
+    if ($mode != "pe" && $prow->conflictType >= CONFLICT_AUTHOR
+	&& !$Me->actChair($prow)) {
 	$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;m=pe$linkExtra'>";
 	$x = $a . $Conf->cacheableImage("newreview24.png", "[Edit paper]", null, "dlimg") . "</a>&nbsp;" . $a . "<strong>Edit paper</strong></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;

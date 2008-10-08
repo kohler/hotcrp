@@ -649,7 +649,7 @@ class Contact {
 	if (($prow->timeSubmitted > 0 || $myReview
 	     || ($manager && $forceShow))
 	    && (($this->isPC && $prow->conflictType == 0 && !$rrow)
-		|| $myReview)
+		|| $myReview || ($manager && $forceShow))
 	    && ($conf->timeReviewPaper($this->isPC, $myReview, true)
 		|| $this->privChairOverride()
 		|| ($manager && !$submit)))

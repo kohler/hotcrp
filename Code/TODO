@@ -131,10 +131,6 @@
   things like forward it with "PING" added to the subject line... :-)
   [Benjamin Pierce]
 
-* Once I've overridden my conflict status for a paper, the "add review"
-  button should appear (even if I'm not assigned as a reviewer). [Benjamin
-  Pierce]
-
 * Clarify on paper submission page the difference between authors and
   contact authors.  We had some papers that didn't list some of the contact
   authors as authors. [Mark Gebhart, MICRO 41]
