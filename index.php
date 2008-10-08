@@ -28,6 +28,8 @@ if (isset($_REQUEST["signin"]) || isset($_REQUEST["signout"])) {
     unset($_SESSION["rev_token_fail"]);
     foreach ($allowedSessionVars as $v)
 	unset($_SESSION[$v]);
+    if (isset($_REQUEST["signout"]))
+	unset($_SESSION["afterLogin"]);
 }
 
 function doCreateAccount() {
