@@ -899,7 +899,7 @@ tr.pt_conflict_ass td.entry, tr.propass td.entry {
 	vertical-align: top;
 }
 table.pcass td.colmid {
-	border-left: 1px dotted #cc9900;
+	border-left: 1px dotted #cec1ff;
 	padding-left: 0.5em;
 	vertical-align: top;
 }
@@ -918,6 +918,13 @@ table.pcass td.ass {
 	padding-right: 0.45em;
 	font-size: smaller;
 	white-space: nowrap;
+}
+table.pcass td.confsel {
+	padding-right: 1em;
+	white-space: nowrap;
+}
+table.pcass td.confsel select {
+	font-size: 69%;
 }
 table.pcass td.nrev {
 	font-size: 69%;

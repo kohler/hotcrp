@@ -52,6 +52,10 @@ $allowedSessionVars = array("foldassigna", "foldpapera", "foldpaperp",
 			    "foldplanonau", "foldplreviewers", "foldplrownum",
 			    "foldpscollab");
 
+$authorConflictTypes = array(0 => "No conflict", 3 => "Advisor/student",
+			     2 => "Recent collaborator", 4 => "Institutional",
+			     5 => "Personal", 6 => "Other");
+
 $OK = 1;
 
 $Msg["unknown"] = "Unknown error.";

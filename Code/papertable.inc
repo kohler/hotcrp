@@ -748,19 +748,24 @@ class PaperTable {
     }
 
     function echoPCConflicts($prow) {
-	global $Conf;
+	global $Conf, $authorConflictTypes;
+
 	assert($this->editable);
 	if (!$Conf->setting("sub_pcconf"))
 	    return;
 	$pcm = pcMembers();
 	if (!count($pcm))
 	    return;
-	$conflict = array();
+
 	$maxauthormark = ($Conf->setting("allowPaperOption") >= 22 ? CONFLICT_MAXAUTHORMARK : CONFLICT_AUTHORMARK);
+	$selectors = ($maxauthormark == CONFLICT_MAXAUTHORMARK && $Conf->setting("sub_pcconfsel"));
+
+	$conflict = array();
 	if ($this->useRequest) {
 	    foreach ($pcm as $id => $row)
-		if (isset($_REQUEST["pcc$id"]))
-		    $conflict[$id] = CONFLICT_AUTHORMARK;
+		if (isset($_REQUEST["pcc$id"])
+		    && ($ct = cvtint($_REQUEST["pcc$id"])) > 0)
+		    $conflict[$id] = max(min($ct, $maxauthormark), CONFLICT_AUTHORMARK);
 	}
 	if ($prow) {
 	    $result = $Conf->qe("select contactId, conflictType from PaperConflict where paperId=$prow->paperId", "while finding conflicted PC members");
@@ -770,27 +775,56 @@ class PaperTable {
 		    $conflict[$row[0]] = $row[1];
 	}
 
-	foreach ($pcm as $id => $p) {
-	    $c = "<input type='checkbox' name='pcc$id' value='1'";
-	    if (defval($conflict, $id) > 0) {
-		$c .= " checked='checked'";
-		if ($conflict[$id] < CONFLICT_AUTHORMARK
-		    || $conflict[$id] > $maxauthormark)
-		    $c .= " disabled='disabled'";
+	$pcconfs = array();
+	if ($selectors) {
+	    foreach ($pcm as $id => $p) {
+		$c = "<tr><td class='name0'>". contactHtml($p->firstName, $p->lastName) . "</td><td class='confsel'>";
+		if (isset($conflict[$id]) && $conflict[$id] > 0
+		    && ($conflict[$id] < CONFLICT_AUTHORMARK
+			|| $conflict[$id] > $maxauthormark)) {
+		    if ($conflict[$id] >= CONFLICT_AUTHOR)
+			$c .= "<strong>Author</strong>";
+		    else
+			$c .= "<strong>Conflict</strong>";
+		} else
+		    $c .= tagg_select("pcc$id", $authorConflictTypes,
+				      defval($conflict, $id, 0),
+				      array("onchange" => "hiliter(this)"));
+		$c .= "</td></tr>\n";
+		$pcconfs[] = $c;
 	    }
-	    $pcconfs[] = $c . " onchange='hiliter(this)' /> " . contactHtml($p->firstName, $p->lastName);
+	    $tclass = "pcass";
+	    $topen = "<table>";
+	    $tswitch = "</table></td><td class='colmid'><table>";
+	    $tclose = "</table>";
+	} else {
+	    foreach ($pcm as $id => $p) {
+		$c = "<input type='checkbox' name='pcc$id' value='" . CONFLICT_AUTHORMARK . "'";
+		if (defval($conflict, $id) > 0) {
+		    $c .= " checked='checked'";
+		    if ($conflict[$id] < CONFLICT_AUTHORMARK
+			|| $conflict[$id] > $maxauthormark)
+			$c .= " disabled='disabled'";
+		}
+		$pcconfs[] = $c . " onchange='hiliter(this)' /> " . contactHtml($p->firstName, $p->lastName) . "<br />\n";
+	    }
+	    $tclass = "rpad";
+	    $topen = $tclose = "";
+	    $tswitch = "</td><td class='colmid'>";
 	}
 
 	echo $this->papt("pcconf", "PC conflicts"),
 	    "<div class='paphint'>Select the PC members who have conflicts of interest with this paper.  ", $Conf->conflictDefinitionText(), "</div>\n",
-	    "<div class='papv'><table class='rpad'><tr><td>";
-	$n = intval((count($pcconfs) + 2) / 3);
+	    "<div class='papv'><table class='", $tclass, "'><tr><td>", $topen;
+	$n = ($selectors
+	      ? intval((count($pcconfs) + 1) / 2)
+	      : intval((count($pcconfs) + 2) / 3));
 	for ($i = 0; $i < count($pcconfs); $i++) {
 	    if (($i % $n) == 0 && $i)
-		echo "</td><td class='colmid'>";
-	    echo $pcconfs[$i], "<br />";
+		echo $tswitch;
+	    echo $pcconfs[$i];
 	}
-	echo "</td></tr></table></div>\n\n";
+	echo $tclose, "</td></tr></table></div>\n\n";
     }
 
     function papstripPCConflicts($prow) {
@@ -803,6 +837,7 @@ class PaperTable {
 	$result = $Conf->qe("select contactId, conflictType from PaperConflict where paperId=$prow->paperId", "while finding conflicted PC members");
 	while (($row = edb_row($result)))
 	    $conflict[$row[0]] = $row[1];
+	$pcconfs = array();
 	foreach ($pcm as $id => $p)
 	    if (defval($conflict, $id))
 		$pcconfs[] = contactHtml($p->firstName, $p->lastName);

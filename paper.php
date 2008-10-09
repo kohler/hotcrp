@@ -392,15 +392,16 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	if (!$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType>=" . CONFLICT_AUTHORMARK . " and conflictType<=" . $maxauthormark, "while updating conflicts"))
 	    return false;
 	$q = "";
+	$pcm = pcMembers();
 	foreach ($_REQUEST as $key => $value)
 	    if (strlen($key) > 3
 		&& $key[0] == 'p' && $key[1] == 'c' && $key[2] == 'c'
-		&& ($id = cvtint(substr($key, 3))) > 0 && $value > 0)
-		$q .= ",$id";
+		&& ($id = cvtint(substr($key, 3))) > 0 && isset($pcm[$id])
+		&& $value > 0)
+		$q .= "($paperId, $id, " . max(min($value, $maxauthormark), CONFLICT_AUTHORMARK) . "), ";
 	if ($q && !$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType)
-	select $paperId, PCMember.contactId, " . CONFLICT_AUTHORMARK . "
-	from PCMember left join PaperConflict on (PCMember.contactId=PaperConflict.contactId and PaperConflict.paperId=$paperId)
-	where conflictType is null and PCMember.contactId in (" . substr($q, 1) . ")",
+	values " . substr($q, 0, strlen($q) - 2) . "
+	on duplicate key update conflictType=conflictType",
 			     "while updating conflicts"))
 	    return false;
     }

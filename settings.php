@@ -28,6 +28,7 @@ $SettingGroups = array("acc" => array(
 			     "sub_sub" => "date",
 			     "sub_grace" => "grace",
 			     "sub_pcconf" => "check",
+			     "sub_pcconfsel" => "check",
 			     "sub_collab" => "check",
 			     "banal" => "special",
 			     "sub_freeze" => 1,
@@ -101,6 +102,7 @@ $SettingText = array(
 	"sub_blind" => "Blind submission setting",
 	"rev_blind" => "Blind review setting",
 	"sub_pcconf" => "Collect PC conflicts setting",
+	"sub_pcconfsel" => "Collect conflict types setting",
 	"sub_collab" => "Collect collaborators setting",
 	"acct_addr" => "Collect addresses setting",
 	"sub_freeze" => "Submitters can update until the deadline setting",
@@ -1017,9 +1019,17 @@ function doSubGroup() {
     doGraceRow("sub_grace", 'Grace period');
     echo "</table>\n";
 
-    echo "<div class='g'></div>\n";
-    doCheckbox("sub_pcconf", "Collect authors&rsquo; PC conflicts with checkboxes");
-    doCheckbox("sub_collab", "Collect authors&rsquo; other collaborators as text");
+    echo "<div class='g'></div>\n<table id='foldpcconf' class='fold",
+	($Conf->setting("sub_pcconf") ? "o" : "c"), "'>\n";
+    doCheckbox("sub_pcconf", "Collect authors&rsquo; PC conflicts", true,
+	       "hiliter(this);fold(\"pcconf\",!this.checked)");
+    if ($Conf->setting("allowPaperOption") >= 22) {
+	echo "<tr class='extension'><td></td><td>";
+	doCheckbox("sub_pcconfsel", "Collect PC conflict types (&ldquo;Advisor/student,&rdquo; &ldquo;Recent collaborator,&rdquo; etc.)");
+	echo "</td></tr>\n";
+    }
+    doCheckbox("sub_collab", "Collect authors&rsquo; other collaborators as text", true);
+    echo "</table>\n";
 
     if (is_executable("Code/banal")) {
 	echo "<div class='g'></div><table id='foldbanal' class='", ($Conf->setting("sub_banal") ? "foldo" : "foldc"), "'>";
