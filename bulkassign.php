@@ -169,6 +169,7 @@ function parseBulkFile($text, $filename, $type) {
 
 
     // possible complaints
+    $Conf->updateRevTokensSetting(false);
     if (count($tf["err"]) > 0) {
 	ksort($tf["err"]);
 	$errorMsg = "were errors while parsing the uploaded assignment file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf["err"]) . "</p></div>";

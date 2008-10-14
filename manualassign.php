@@ -90,6 +90,7 @@ function saveAssignments($reviewer) {
 	$Conf->qe("delete from PaperConflict where contactId=$reviewer and (" . substr($del, 4) . ")", $while);
     
     $Conf->qe("unlock tables", $while);
+    $Conf->updateRevTokensSetting(false);
 }
 
 

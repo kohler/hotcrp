@@ -441,6 +441,7 @@ function saveAssign() {
     
     // clean up
     $Conf->qe("unlock tables");
+    $Conf->updateRevTokensSetting(false);
 
     if ($didLead && !$Conf->setting("paperlead")) {
 	$Conf->qe("insert into Settings (name, value) values ('paperlead', 1) on duplicate key update value=1");

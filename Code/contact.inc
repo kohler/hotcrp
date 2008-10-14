@@ -1113,6 +1113,8 @@ class Contact {
 	if ($conf->qe($q, "while assigning review")) {
 	    if ($qtag)
 		$conf->q($qtag);
+	    if ($row && defval($row, "reviewToken", 0) != 0 && $type <= 0)
+		$conf->settings["rev_tokens"] = -1;
 	    $conf->log("Added $reviewTypeName[$type] reviewer " . (is_object($reviewer) ? $reviewer->email : $reviewer), $this, $paperId);
 	}
     }

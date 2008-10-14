@@ -80,8 +80,9 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
     // NB caller unlocks tables
 
     // check for outstanding review request
+    $qa = ($Conf->setting("allowPaperOption") >= 13 ? ", reviewToken" : "");
     $result = $Conf->qe("select reviewType, reviewModified, reviewSubmitted, requestedBy, paperId,
-		firstName, lastName, email, password
+		firstName, lastName, email, password$qa
 		from PaperReview
 		join ContactInfo using (contactId)
 		where reviewId=$reviewId", $while);
@@ -95,6 +96,8 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
 	return $Conf->errorMsg("You can't retract that review request since the reviewer has already started their review.");
     else if (!$Me->privChair && $Me->contactId != $row->requestedBy)
 	return $Conf->errorMsg("You can't retract that review request since you didn't make the request in the first place.");
+    if (defval($row, "reviewToken", 0) != 0)
+	$Conf->settings["rev_tokens"] = -1;
 
     // at this point, success; remove the review request
     $Conf->qe("delete from PaperReview where reviewId=$reviewId", $while);
@@ -113,6 +116,7 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
 if (isset($_REQUEST['retract']) && ($retract = rcvtint($_REQUEST['retract'])) > 0) {
     retractRequest($retract, $prow->paperId);
     $Conf->qe("unlock tables");
+    $Conf->updateRevTokensSetting(false);
     loadRows();
 }
 
@@ -171,6 +175,7 @@ function pcAssignments() {
 if (isset($_REQUEST['update']) && $Me->privChair) {
     pcAssignments();
     $Conf->qe("unlock tables");
+    $Conf->updateRevTokensSetting(false);
     if (defval($_REQUEST, "ajax")) {
 	if ($OK)
 	    $Conf->confirmMsg("Assignments saved.");
@@ -368,6 +373,8 @@ function createAnonymousReview() {
     
     $Conf->qx("unlock tables");
     $Conf->log("Created $contactemail review", $Me, $prow->paperId);
+    if ($token)
+	$Conf->updateRevTokensSetting(true);
 
     return true;
 }
@@ -430,8 +437,10 @@ if (isset($_REQUEST['addpc']) && $Me->privChair) {
     if (($pcid = rcvtint($_REQUEST["pcid"])) <= 0)
 	$Conf->errorMsg("Enter a PC member.");
     else if (($pctype = rcvtint($_REQUEST["pctype"])) == REVIEW_PRIMARY
-	     || $pctype == REVIEW_SECONDARY)
+	     || $pctype == REVIEW_SECONDARY) {
 	$Me->assignPaper($prow->paperId, findRrow($pcid), $pcid, $pctype, $Conf);
+	$Conf->updateRevTokensSetting(false);
+    }
     loadRows();
 }
 

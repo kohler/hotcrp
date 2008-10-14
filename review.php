@@ -189,6 +189,8 @@ if (isset($_REQUEST['delete']) && $Me->privChair)
 	if ($result) {
 	    $Conf->log("$editRrowLogname deleted", $Me, $prow->paperId);
 	    $Conf->confirmMsg("Deleted review.");
+	    if (defval($paperTable->editrrow, "reviewToken", 0) != 0)
+		$Conf->updateRevTokensSetting(true);
 
 	    // perhaps a delegatee needs to redelegate
 	    if ($paperTable->editrrow->reviewType == REVIEW_EXTERNAL && $paperTable->editrrow->requestedBy > 0) {
@@ -272,6 +274,7 @@ function refuseReview() {
     $rrow = $paperTable->editrrow;
     if ($rrow->reviewModified > 0)
 	archiveReview($rrow);
+    $hadToken = defval($rrow, "reviewToken", 0) != 0;
 
     $result = $Conf->qe("delete from PaperReview where reviewId=$rrow->reviewId", $while);
     if (!$result)
@@ -296,6 +299,8 @@ function refuseReview() {
     // confirmation message
     $Conf->confirmMsg("The request for you to review paper #$prow->paperId has been removed.  Mail was sent to the person who originally requested the review.");
     $Conf->qe("unlock tables");
+    if ($hadToken)
+	$Conf->updateRevTokensSetting(true);
 
     $prow = null;
     confHeader();

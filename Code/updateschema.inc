@@ -71,7 +71,7 @@ function updateSchema($Conf) {
 	&& $Conf->q("update Settings set value=14 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 14;
     if ($Conf->settings["allowPaperOption"] == 14
-	&& $Conf->q("insert ignore into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0")
+	&& $Conf->q("insert into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0 on duplicate key update value=values(value)")
 	&& $Conf->q("update Settings set value=15 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 15;
     if ($Conf->settings["allowPaperOption"] == 15) {

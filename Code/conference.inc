@@ -134,6 +134,11 @@ class Conference {
 	    $this->q("update Settings set value=(select max(outcome) from Paper where timeSubmitted>0 group by paperId>0) where name='paperacc'");
     }
 
+    function updateRevTokensSetting($always) {
+	if ($always || defval($this->settings, "rev_tokens", 0) < 0)
+	    $this->qe("insert into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0 on duplicate key update value=values(value)", "while updating review tokens settings");
+    }
+
 
     function qx($query) {
 	return mysql_query($query, $this->dblink);

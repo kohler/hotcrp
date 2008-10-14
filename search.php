@@ -718,6 +718,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != "" && 
 	if ($nworked)
 	    $Conf->confirmMsg(($asstype == 0 ? "Unassigned reviews." : "Assigned reviews."));
 	$Conf->qe("unlock tables");
+	$Conf->updateRevTokensSetting(false);
     }
 }
 
