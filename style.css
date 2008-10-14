@@ -1298,12 +1298,6 @@ div.pst span.psfn {
 div.pst span.hint {
 	float: right;
 }
-div.paphint {
-	margin-bottom: 0.5ex;
-	color: #555555;
-	background: #f3f3f3;
-	padding: 0.2em 1em 0.3em 8px;
-}
 div.psv {
 	padding: 2px 0px 1em 4px;
 }
@@ -1397,7 +1391,7 @@ div.paphint {
 	font-size: smaller;
 	margin-bottom: 0.5ex;
 	color: #555555;
-	background: #f8f8ff;
+	background: #f8f8f6;
 	padding: 0.2em 1em 0.3em 8px;
 }
 div.papv {
