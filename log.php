@@ -33,7 +33,7 @@ $_REQUEST["acct"] = trim(defval($_REQUEST, "acct", ""));
 $_REQUEST["n"] = trim(defval($_REQUEST, "n", "25"));
 $_REQUEST["date"] = trim(defval($_REQUEST, "date", "now"));
 
-if ($_REQUEST["pap"] && !preg_match('/\A[\d\s]+\Z/', $_REQUEST["pap"])) {
+if ($_REQUEST["pap"] && !preg_match('/\A[\d\s]+\z/', $_REQUEST["pap"])) {
     $Conf->errorMsg("The \"Concerning paper(s)\" field requires space-separated paper numbers.");
     $Eclass["pap"] = " error";
 } else if ($_REQUEST["pap"]) {

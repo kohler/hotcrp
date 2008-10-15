@@ -32,10 +32,10 @@ sub unslash ($) {
    my($b) = "";
    while ($a ne "") {
       if ($a =~ m|\A\\|) {
-         if ($a =~ m|\A\\([0-7]{1,3})(.*)\Z|s) {
+         if ($a =~ m|\A\\([0-7]{1,3})(.*)\z|s) {
 	    $b .= chr(oct($1));
 	    $a = $2;
-	 } elsif ($a =~ m |\A\\([nrftvb])(.*)\Z|s) {
+	 } elsif ($a =~ m |\A\\([nrftvb])(.*)\z|s) {
 	    $b .= eval("\"\\$1\"");
 	    $a = $2;
 	 } else {

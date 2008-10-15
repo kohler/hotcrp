@@ -104,7 +104,7 @@ function setTagIndexes() {
 	    ++$lineno;
 	    continue;
 	}
-	if (preg_match('/\A\s*?([Xx=]|>*|\([-\d]+\))\s+(\d+)\s*(.*?)\s*\Z/', $l, $m)) {
+	if (preg_match('/\A\s*?([Xx=]|>*|\([-\d]+\))\s+(\d+)\s*(.*?)\s*\z/', $l, $m)) {
 	    if (isset($settings[$m[2]]))
 		$errors[$lineno] = "Paper #$m[2] already given on line " . $linenos[$m[2]];
 	    if ($m[1] == "X" || $m[1] == "x")
@@ -119,7 +119,7 @@ function setTagIndexes() {
 		$settings[$m[2]] = $curIndex = $curIndex + strlen($m[1]);
 	    $titles[$m[2]] = $m[3];
 	    $linenos[$m[2]] = $lineno;
-	} else if ($RealMe->privChair && preg_match('/\A\s*<\s*([^<>]*?(|<[^<>]*>))\s*>\s*\Z/', $l, $m)) {
+	} else if ($RealMe->privChair && preg_match('/\A\s*<\s*([^<>]*?(|<[^<>]*>))\s*>\s*\z/', $l, $m)) {
 	    if (count($settings) && $Me)
 		saveTagIndexes($tag, $settings, $titles, $linenos, $errors);
 	    list($firstName, $lastName, $email) = splitName(simplifyWhitespace($m[1]), true);

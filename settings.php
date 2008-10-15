@@ -200,21 +200,21 @@ function cleanXHTML($t, &$err) {
 	
 	if (preg_match('/\A<!\[[ie]/', $t))
 	    return _cleanXHTMLError($err, "an Internet Explorer conditional comment");
-	else if (preg_match('/\A(<!\[CDATA\[.*?)(\]\]>|\Z)(.*)\Z/s', $t, $m)) {
+	else if (preg_match('/\A(<!\[CDATA\[.*?)(\]\]>|\z)(.*)\z/s', $t, $m)) {
 	    $x .= $m[1] . "]]>";
 	    $t = $m[3];
-	} else if (preg_match('/\A<!--.*?(-->|\Z)(.*)\Z/s', $t, $m))
+	} else if (preg_match('/\A<!--.*?(-->|\z)(.*)\z/s', $t, $m))
 	    $t = $m[2];
 	else if (preg_match('/\A<!(\S+)/s', $t, $m))
 	    return _cleanXHTMLError($err, "<code>$m[1]</code> declarations");
-	else if (preg_match('/\A<\s*([A-Za-z]+)\s*(.*)\Z/s', $t, $m)) {
+	else if (preg_match('/\A<\s*([A-Za-z]+)\s*(.*)\z/s', $t, $m)) {
 	    $tag = strtolower($m[1]);
 	    $t = $m[2];
 	    $x .= "<" . $tag;
 	    if (!isset($goodtags[$tag]))
 		return _cleanXHTMLError($err, "some <code>&lt;$tag&gt;</code> tag");
 	    while ($t != "" && $t[0] != "/" && $t[0] != ">") {
-		if (!preg_match(",\\A([^\\s/<>='\"]+)\\s*(.*)\\Z,s", $t, $m))
+		if (!preg_match(",\\A([^\\s/<>='\"]+)\\s*(.*)\\z,s", $t, $m))
 		    return _cleanXHTMLError($err, "garbage within some <code>&lt;$tag&gt;</code> tag");
 		$attr = strtolower($m[1]);
 		if (strlen($attr) > 2 && $attr[0] == "o" && $attr[1] == "n")
@@ -223,7 +223,7 @@ function cleanXHTML($t, &$err) {
 		    return _cleanXHTMLError($err, "a <code>$attr</code> attribute in some <code>&lt;$tag&gt;</code> tag");
 		$x .= " " . $attr . "=";
 		$t = $m[2];
-		if (preg_match("/\\A=\\s*('.*?'|\".*?\")(.*)\\Z", $t, $m)) {
+		if (preg_match("/\\A=\\s*('.*?'|\".*?\")(.*)\\z", $t, $m)) {
 		    $x .= $m[1];
 		    $t = $m[2];
 		} else
@@ -241,12 +241,12 @@ function cleanXHTML($t, &$err) {
 		    $x .= ">";
 		    $tagstack[] = $tag;
 		}
-	    } else if (preg_match(',\A/\s*>(.*)\Z,s', $t, $m)) {
+	    } else if (preg_match(',\A/\s*>(.*)\z,s', $t, $m)) {
 		$x .= " />";
 		$t = $m[1];
 	    } else
 		return _cleanXHTMLError($err, "garbage in some <code>&lt;$tag&gt;</code> tag");
-	} else if (preg_match(',\A<\s*/\s*([A-Za-z]+)\s*>(.*)\Z,s', $t, $m)) {
+	} else if (preg_match(',\A<\s*/\s*([A-Za-z]+)\s*>(.*)\z,s', $t, $m)) {
 	    $tag = strtolower($m[1]);
 	    if (!isset($goodtags[$tag]))
 		return _cleanXHTMLError($err, "some <code>&lt;/$tag&gt;</code> tag");
@@ -342,7 +342,7 @@ function doTags($set, $what) {
 	$vs = array();
 	foreach (preg_split('/\s+/', $_REQUEST["tag_vote"]) as $t)
 	    if ($t !== "" && checkTag($t, CHECKTAG_QUIET | CHECKTAG_NOPRIVATE)) {
-		if (preg_match('/\A([^#]+)(|#|#0+|#-\d*)\Z/', $t, $m))
+		if (preg_match('/\A([^#]+)(|#|#0+|#-\d*)\z/', $t, $m))
 		    $t = $m[1] . "#1";
 		$vs[] = $t;
 	    } else if ($t !== "") {

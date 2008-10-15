@@ -38,7 +38,7 @@ class Conference {
 	$this->contactEmail = $Opt['contactEmail'];
 	$this->emailFrom = $Opt['emailFrom'];
 	// remove final slash from $Opt['paperSite']
-	$this->paperSite = preg_replace('|/+\Z|', '', $Opt['paperSite']);
+	$this->paperSite = preg_replace('|/+\z|', '', $Opt['paperSite']);
 	if (!$this->paperSite)
 	    die("Package misconfigured: \$Opt[\"paperSite\"] is not set.  Perhaps the web server cannot read <tt>Code/options.inc</tt>?");
 	$this->shortName = $Opt['shortName'];
@@ -1286,7 +1286,7 @@ class Conference {
 	    $values = array();
 	$t = "";
 	foreach (defval($_SESSION, "msgs", array()) as $msg)
-	    if (preg_match('|\A<div class="(.*?)">([\s\S]*)</div>\s*\Z|', $msg, $m)) {
+	    if (preg_match('|\A<div class="(.*?)">([\s\S]*)</div>\s*\z|', $msg, $m)) {
 		if ($m[1] == "merror" && !isset($values["error"]))
 		    $values["error"] = $m[2];
 		if ($div)

@@ -414,7 +414,7 @@ class PaperSearch {
 		return;
 	}
 
-	if (preg_match('/\A([^#<>!=]+)#?([<>!]?=?)(-?\d+)\Z/', $word, $m)
+	if (preg_match('/\A([^#<>!=]+)#?([<>!]?=?)(-?\d+)\z/', $word, $m)
 	    && $m[1] != "any" && $m[1] != "none") {
 	    $tagword = $m[1];
 	    $extra = ($m[2] == "!" ? "!=" : ($m[2] == "" ? "=" : $m[2])) . $m[3];
@@ -689,7 +689,7 @@ class PaperSearch {
 	    $this->reviewAdjust = true;
 	    if ($Conf->setting("allowPaperOption") < 12)
 		$qt[] = new SearchTerm("f");
-	    else if (preg_match('/\A(.+?)\s*(|[!=<>]?=?)\s*(\d*)\Z/', $word, $m)
+	    else if (preg_match('/\A(.+?)\s*(|[!=<>]?=?)\s*(\d*)\z/', $word, $m)
 		     && ($m[3] !== "" || $m[2] === "")) {
 		// adjust counts
 		if ($m[3] === "") {
@@ -1443,7 +1443,7 @@ class PaperSearch {
 		$s = simplifyWhitespace($this->contactmatch[$i]);
 		if (($pos = strpos($s, "@")) !== false)
 		    $qm = "(email like '" . substr($s, 0, $pos + 1) . "%" . substr($s, $pos + 1) . "%')";
-		else if (preg_match('/\A(.*?)\s*([,\s])\s*(.*)\Z/', $s, $m)) {
+		else if (preg_match('/\A(.*?)\s*([,\s])\s*(.*)\z/', $s, $m)) {
 		    if ($m[2] == ",")
 			$qm = "(firstName like '" . trim($m[3]) . "%' and lastName like '" . trim($m[1]) . "%')";
 		    else

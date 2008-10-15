@@ -472,9 +472,9 @@ function listLinks($paperId, $baseUrl = null, $args = array()) {
 	$_SESSION["l"][$CurrentList]["timestamp"] = time();
     else if (isset($_REQUEST["list"])) {
 	$l = $_REQUEST["list"];
-	if (preg_match('/\A[a-z]+\Z/', $l))
+	if (preg_match('/\A[a-z]+\z/', $l))
 	    _tryNewList(array("t" => $l), $replaceList);
-	else if (preg_match('/\A(all|s):(.*)\Z/s', $l, $m))
+	else if (preg_match('/\A(all|s):(.*)\z/s', $l, $m))
 	    _tryNewList(array("t" => $m[1], "q" => $m[2]), $replaceList);
 	else
 	    _tryNewList(array("q" => $l), $replaceList);

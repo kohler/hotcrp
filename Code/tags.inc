@@ -17,7 +17,7 @@ function checkTagError($tag, $flags) {
 	return "Empty tag.";
     else if (strlen($tag) > TAG_MAXLEN)
 	return "Tag \"$tag\" too long; maximum " . TAG_MAXLEN . " characters.";
-    else if (!preg_match('/\A~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*([#=](-\d)?\d*)?\Z/', $tag, $m))
+    else if (!preg_match('/\A~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*([#=](-\d)?\d*)?\z/', $tag, $m))
 	return "Tag \"$tag\" contains odd characters.";
     else if (count($m) > 1 && $m[1] && ($flags & CHECKTAG_NOINDEX))
 	return "Tag numbers not allowed here.";

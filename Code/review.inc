@@ -87,7 +87,7 @@ class ReviewForm {
 
     function parseOption($optname, $text, $strict) {
 	if (!$strict && strlen($text) > 1
-	    && preg_match('/\A\s*([0-9]+|[A-Z])(\W|\Z)/', $text, $m))
+	    && preg_match('/\A\s*([0-9]+|[A-Z])(\W|\z)/', $text, $m))
 	    $text = $m[1];
 	if (!$strict && ($xval = cvtint($text)) > 0)
 	    $text = $xval;
@@ -782,7 +782,7 @@ $blind\n";
 		} else if (preg_match('/^==\+== [A-Z]\.\s*(.*?)\s*$/', $line, $match)) {
 		    $fname = $match[1];
 		    if (!isset($this->fieldName[strtolower($fname)]))
-			$fname = preg_replace('/\s*\((hidden from authors|PC only|shown only to chairs|secret)\)\Z/', "", $fname);
+			$fname = preg_replace('/\s*\((hidden from authors|PC only|shown only to chairs|secret)\)\z/', "", $fname);
 		    $fn =& $this->fieldName[strtolower($fname)];
 		    if (isset($fn)) {
 			$field = $fn;
@@ -908,7 +908,7 @@ $blind\n";
 		$x .= "\n<tr>\n";
 
 	    $n = htmlspecialchars($this->shortName[$field]);
-	    if (preg_match("/\\A\\S+\\s+\\S+\\Z/", $n))
+	    if (preg_match("/\\A\\S+\\s+\\S+\\z/", $n))
 		$n = preg_replace("/\\s+/", "&nbsp;", $n);
 
 	    $c = "<span class='revfn'>" . $n;

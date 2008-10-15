@@ -209,7 +209,7 @@ function downloadReviews(&$texts, &$errors) {
     if (count($errors))
 	$warnings[] = "Some " . ($getforms ? "review forms" : "reviews") . " are missing:";
     foreach ($errors as $ee => $junk) {
-	$ee = preg_replace('|<a.*?</a>\s*\Z|', "", $ee);
+	$ee = preg_replace('|<a.*?</a>\s*\z|', "", $ee);
 	$warnings[] = preg_replace('|<.*?>|', "", $ee);
     }
 
