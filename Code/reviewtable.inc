@@ -235,7 +235,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     if ($mode != "assign"
 	&& ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
 	$a = "<a href='assign$ConfSiteSuffix?p=$prow->paperId$linkExtra'>";
-	$x = $a . $Conf->cacheableImage("assign24.png", "[Assign]", null, "dlimg") . "</a>&nbsp;" . $a . ($Me->privChair ? "Manage assignments" : "Manage external reviews") . "</a>";
+	$x = $a . $Conf->cacheableImage("assign24.png", "[Assign]", null, "dlimg") . "</a>&nbsp;" . $a . ($Me->privChair ? "Assign reviews" : "External reviews") . "</a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 

@@ -632,7 +632,7 @@ echo "<div class='f-i'><div class='f-ix'>
 if ($Conf->setting("allowPaperOption") >= 7)
     echo "<div class='f-i'>
   <div class='f-c'>Note to reviewer <span class='f-cx'>(optional)</span></div>
-  <div class='f-e'><textarea name='reason' cols='72' rows='2' tabindex='1'>", htmlspecialchars(defval($_REQUEST, "reason", "")), "</textarea></div>
+  <div class='f-e'><textarea class='papertext' name='reason' rows='2' tabindex='1'>", htmlspecialchars(defval($_REQUEST, "reason", "")), "</textarea></div>
 <div class='clear'></div></div>\n\n";
 
 echo "<div class='f-i'>

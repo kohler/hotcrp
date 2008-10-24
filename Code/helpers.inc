@@ -1167,7 +1167,7 @@ function splitName($name, $withEmail = false) {
     if (preg_match('@[^\s,]+(\s+Jr\.?|\s+Sr\.?|\s+i+|\s+Ph\.?D\.?|\s+M\.?[SD]\.?)?(,.*)?\s*$@i', $name, $m)) {
 	$first = trim(substr($name, 0, strlen($name) - strlen($m[0])));
 	$last = trim($m[0]);
-	if (preg_match('@^(\S.*?)\s+(v[oa]n)$@i', $first, $m)) {
+	if (preg_match('@^(\S.*?)\s+(v[oa]n|d[eu])$@i', $first, $m)) {
 	    $first = $m[1];
 	    $last = $m[2] . " " . $last;
 	}

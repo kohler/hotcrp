@@ -405,7 +405,7 @@ class PaperTable {
 	    $authorTable = ($prow ? $prow->authorTable : array());
 	for ($n = 1; $n <= 25; $n++) {
 	    $au = ($n <= count($authorTable) ? $authorTable[$n - 1] : $blankAu);
-	    if ($au[0] && $au[1] && !preg_match('@^\s*(von\s+|van\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$@i', $au[1]))
+	    if ($au[0] && $au[1] && !preg_match('@^\s*(v[oa]n\s+|d[eu]\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$@i', $au[1]))
 		$auname = $au[1] . ", " . $au[0];
 	    else if ($au[0] && $au[1])
 		$auname = $au[0] . " " . $au[1];
@@ -853,7 +853,7 @@ class PaperTable {
 		$pcconfs[] = contactHtml($p->firstName, $p->lastName);
 	if ($prow->pcPaper)
 	    $pcconfs[] = "<b>PC paper</b>";
-	if (!isset($pcconfs))
+	if (!count($pcconfs))
 	    $pcconfs[] = "None";
 
 	echo $this->papt("pcconflict", "PC conflicts", array("type" => "ps")),
