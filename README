@@ -70,15 +70,15 @@ Configuration
     generally require adding a <Directory> for the HotCRP directory, and an
     Alias redirecting a particular URL to that directory.  For example,
     this section of httpd.conf makes the "/testconf" URL point at a HotCRP
-    installation in /home/kohler/testconf-crp.
+    installation in /home/kohler/hotcrp.
 
-	<Directory "/home/kohler/testconf-crp">
+	<Directory "/home/kohler/hotcrp">
 	        Options Indexes Includes FollowSymLinks MultiViews
 	        AllowOverride all
 	        Order allow,deny
 	        Allow from all
 	</Directory>
-	Alias /testconf /home/kohler/hotnets-crp
+	Alias /testconf /home/kohler/hotcrp
 
     Note that the first argument to Alias should NOT end in a slash.  The
     "AllowOverride all" directive is required.
