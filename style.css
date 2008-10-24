@@ -845,6 +845,9 @@ input.textlite-tt, textarea.tt {
 	font-family: monospace;
 	white-space: nowrap;
 }
+.papertext {
+	width: 96%;
+}
 
 div.prevpaperlink, table.floatleft {
 	float: left;

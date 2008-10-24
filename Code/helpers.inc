@@ -238,11 +238,11 @@ function paperDownload($prow, $final = false, $conf = null) {
     $mimetype = defval($prow, "mimetype", "");
     $p = $conf->makeDownloadPath($prow->paperId, $mimetype, $final);
     if ($mimetype == "application/postscript")
-	$x = "<a href=\"$p\" class='q'>" . $Conf->cacheableImage("postscript24.png", "[PS]", null, "dlimg");
+	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("postscript24.png", "[PS]", null, "dlimg");
     else if ($mimetype == "application/pdf")
-	$x = "<a href=\"$p\" class='q'>" . $Conf->cacheableImage("pdf24.png", "[PDF]", null, "dlimg");
+	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("pdf24.png", "[PDF]", null, "dlimg");
     else
-	$x .= "<a href=\"$p\">View paper";
+	$x .= "<a href=\"$p\" class='nowrap'>View paper";
 
     if (($final || !$prow->finalPaperStorageId)	&& isset($prow->size))
 	$x .= "&nbsp;<span class='dlsize'>"

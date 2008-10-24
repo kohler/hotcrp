@@ -217,7 +217,7 @@ class PaperTable {
 	    $text = nl2br($text);
 
 	if ($this->editable)
-	    $text = "<textarea class='textlite' name='$fieldName' rows='" . $textAreaRows[$fieldName] . "' cols='80' onchange='hiliter(this)'>" . $text . "</textarea>";
+	    $text = "<textarea class='textlite papertext' name='$fieldName' rows='" . $textAreaRows[$fieldName] . "' onchange='hiliter(this)'>" . $text . "</textarea>";
 	return $text;
     }
 
@@ -235,30 +235,42 @@ class PaperTable {
 	    "</div>\n\n";
     }
 
-    function downloadInfo($prow) {
+    function _downloadInfo($prow, $editable) {
 	global $Conf, $ConfSiteSuffix, $Me;
+
+	// timestamp, SHA-1 checksum
 	$t = "";
 	if ($prow->timestamp)
-	    $t = $Conf->cacheableImage("timestamp12.png", "Updated", "Time of most recent paper update") . "&nbsp;<span title='Time of most recent paper update'>" . $Conf->printableTime($prow->timestamp) . "</span>";
+	    $t = "<span class='nowrap' title='Time of must recent paper update'>" . $Conf->cacheableImage("timestamp12.png", "Updated", "Time of most recent paper update") . " " . $Conf->printableTime($prow->timestamp) . "</span>";
 	if (defval($prow, 'sha1')) {
 	    if ($t)
 		$t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
-	    $t .= $Conf->cacheableImage("checksum12.png", "SHA-1", "SHA-1 checksum") . "&nbsp;<span title='SHA-1 checksum'>" . bin2hex($prow->sha1) . "</span>";
+	    $t .= "<span class='nowrap' title='SHA-1 checksum'>" . $Conf->cacheableImage("checksum12.png", "SHA-1", "SHA-1 checksum") . " " . bin2hex($prow->sha1) . "</span>";
 	}
 	if ($t)
-	    $t = "<span class='sep'></span> <span class='hint'>$t</span>";
+	    $t = "<span class='hint'>$t</span>";
+
+	// download marker
+	$d = "";
 	if ($Me->canDownloadPaper($prow, $Conf)) {
 	    if ($prow->outcome > 0 && $prow->finalPaperStorageId > 0
 		&& $Conf->collectFinalPapers()) {
 		$submissionMimetype = null;
-		return "Final copy: " . paperDownload($prow, true) . $t
-		    . " &nbsp;|&nbsp; <a class='black' href=\""
+		$d = ($editable ? "Current final copy: &nbsp;" : "Final copy: &nbsp;")
+		    . paperDownload($prow, true)
+		    . "<br />\n(<a class='black' href=\""
 		    . $Conf->makeDownloadPath($prow->paperId, $submissionMimetype, false)
-		    . "\">Submission</a>";
-	    } else if ($prow->size > 0)
-		return paperDownload($prow) . $t;
-	} else
-	    return $t;
+		    . "\">Submission version</a>)";
+	    } else if ($prow->size > 0) {
+		$d = ($editable ? "Current version: &nbsp;" : "")
+		    . paperDownload($prow);
+	    }
+	}
+	if ($d !== "" && !$editable)
+	    $d = $Me->paperStatus($prow->paperId, $prow, 0) . $d;
+
+	// return table
+	return "<table><tr><td class='nowrap'>" . $d . "</td><td><span class='sep'></span></td><td>" . $t . "</td></tr></table>";
     }
 
     function paptabDownload($prow) {
@@ -266,9 +278,7 @@ class PaperTable {
 	$final = ($prow->outcome > 0 && $Conf->collectFinalPapers());
 
 	// status
-	echo $Me->paperStatus($prow->paperId, $prow, 0);
-	if (($t = $this->downloadInfo($prow)))
-	    echo " ", $t;
+	echo $this->_downloadInfo($prow, false);
 
 	// conflicts
 	$flags = self::STATUS_CONFLICTINFO;
@@ -339,8 +349,8 @@ class PaperTable {
 	} else
 	    echo "<input type='hidden' name='submit' value='1' />";
 
-	if (($t = $this->downloadInfo($prow)))
-	    echo "<div class='g'></div>Current version: &nbsp;", $t;
+	if (($t = $this->_downloadInfo($prow, true)))
+	    echo "<div class='g'></div>", $t;
 	if ($prow
 	    && ($final ? $prow->finalPaperStorageId : $prow->paperStorageId) > 0
 	    && defval($prow, "mimetype", "application/pdf") == "application/pdf"
