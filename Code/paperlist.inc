@@ -771,11 +771,11 @@ class PaperList extends BaseList {
 	    $sel_opt["abstracts"] = "Abstracts";
 	} else {
 	    $sel_opt["paper"] = "Papers";
+	    if ($this->contact->isPC && $Conf->timeSubmitFinalPaper())
+		$sel_opt["final"] = "Final papers";
 	    $sel_opt["abstracts"] = "Abstracts";
 	    $sel_opt["revform"] = "Review forms";
 	    $sel_opt["revformz"] = "Review forms (zip)";
-	    if ($this->contact->isPC && $Conf->timeSubmitFinalPaper())
-		$sel_opt["final"] = "Final papers";
 	    if ($this->contact->isPC || $this->contact->isReviewer) {
 		$sel_opt["rev"] = "All reviews";
 		$sel_opt["revz"] = "All reviews (zip)";
