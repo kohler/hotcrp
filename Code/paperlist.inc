@@ -449,14 +449,16 @@ class PaperList extends BaseList {
 
     function _contentDownload($row) {
 	global $Conf;
+	$final = $row->finalPaperStorageId != 0;
+	$finalsuffix = ($final ? "f" : "");
 	if ($row->size == 0 || !$this->contact->canDownloadPaper($row, $Conf))
 	    return "";
 	else if ($row->mimetype == "application/pdf")
-	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\">" . $Conf->cacheableImage("pdf.png", "[PDF]") . "</a>";
+	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $final) . "\">" . $Conf->cacheableImage("pdf$finalsuffix.png", "[PDF]") . "</a>";
 	else if ($row->mimetype == "application/postscript")
-	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\">" . $Conf->cacheableImage("postscript.png", "[PS]") . "</a>";
+	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $final) . "\">" . $Conf->cacheableImage("postscript$finalsuffix.png", "[PS]") . "</a>";
 	else
-	    return "&nbsp;<small><a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype) . "\">[Download]</a></small>";
+	    return "&nbsp;<small><a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $final) . "\">[Download]</a></small>";
     }
 
     function _joinMatches($m) {

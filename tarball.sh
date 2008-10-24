@@ -134,9 +134,13 @@ images/next.png
 images/override24.png
 images/pageresultsex.png
 images/pdf.png
+images/pdff.png
 images/pdf24.png
+images/pdff24.png
 images/postscript.png
+images/postscriptf.png
 images/postscript24.png
+images/postscriptf24.png
 images/prev.png
 images/quicksearchex.png
 images/sortdown.png
