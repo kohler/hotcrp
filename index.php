@@ -332,20 +332,20 @@ if ($homelist) {
     echo "<div class='homegrp' id='homelist'>\n";
 
     // Lists
-    echo "  <h4>Search: &nbsp;</h4>\n";
+    echo "<table><tr><td><h4>Search: &nbsp;&nbsp;</h4></td>\n";
 
     $tOpt = PaperSearch::searchTypes($Me);
     $q = defval($_REQUEST, "q", "(All)");
-    echo "  <form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>
+    echo "  <td><form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>
     <input class='textlite' type='text' size='32' name='q' value=\"",
 	htmlspecialchars($q),
 	"\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" title='Enter paper numbers or search terms' />
     &nbsp;in&nbsp; ",
 	PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
     &nbsp; <input class='b' type='submit' value='Search' />
-  </div></form>
-  <span class='sep'></span>
-  <small><a href='search$ConfSiteSuffix?opt=1'>Advanced search</a></small>
+  </div></form><br />
+  <span style='font-size: x-small'><a href='help$ConfSiteSuffix?t=search'>Search help</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='help$ConfSiteSuffix?t=keywords'>Search keywords</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='search$ConfSiteSuffix?opt=1'>Advanced search</a></span>
+  </td></tr></table>
 </div>
 <hr class='home' />\n";
 }

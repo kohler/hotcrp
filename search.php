@@ -833,7 +833,7 @@ echo tagg_select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
 </tr>
 <tr>
   <td class='lxcaption'></td>
-  <td><span style='font-size: x-small'><a href='help$ConfSiteSuffix?t=search'>Search help</a> &nbsp;|&nbsp; <a href='help$ConfSiteSuffix?t=keywords'>Search keywords</a></span></td>
+  <td><span style='font-size: x-small'><a href='help$ConfSiteSuffix?t=search'>Search help</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='help$ConfSiteSuffix?t=keywords'>Search keywords</a></span></td>
 </tr></table></form>";
 
 echo "</div><div class='tld3'>";
