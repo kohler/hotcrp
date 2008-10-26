@@ -204,7 +204,7 @@ if (isset($_REQUEST["cleartokens"]) && $Me->valid())
     unset($_SESSION["rev_tokens"]);
 
 
-$Conf->header("Home", "home", actionBar(null, false, ""));
+$Conf->header($Me->valid() ? "Home" : "Sign in", "home", actionBar(null, false, ""));
 $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 
 
