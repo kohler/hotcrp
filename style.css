@@ -835,9 +835,6 @@ span.textlite {
 	padding: 0px 4px;
 	background: #fcfcfc;
 }
-input.textlite, input.textlite-tt, textarea {
-	background: #fcfcfc;
-}
 textarea {
 	font-family: verdana, tahoma, sans-serif;
 }
