@@ -58,6 +58,7 @@ class PaperList extends BaseList {
     var $needFinalize;
     var $needSubmitReview;
     var $anySelector;
+    var $anyFinalPaper;
     var $listNumber;
     var $contact;
     var $scoresOk;
@@ -449,7 +450,8 @@ class PaperList extends BaseList {
 
     function _contentDownload($row) {
 	global $Conf;
-	$final = $row->finalPaperStorageId != 0;
+	if (($final = $row->finalPaperStorageId != 0))
+	    $this->anyFinalPaper = true;
 	$finalsuffix = ($final ? "f" : "");
 	if ($row->size == 0 || !$this->contact->canDownloadPaper($row, $Conf))
 	    return "";
@@ -611,7 +613,7 @@ class PaperList extends BaseList {
 	case self::FIELD_SELECTOR:
 	case self::FIELD_SELECTOR_ON:
 	case self::FIELD_SELECTOR_CONFLICT:
-	    $this->anySelector = 1;
+	    $this->anySelector = true;
 	    $c = "";
 	    if (($fieldId == self::FIELD_SELECTOR_ON
 		 || ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType > 0))
@@ -770,9 +772,11 @@ class PaperList extends BaseList {
 	    $sel_opt["revprefx"] = "Preference file with abstracts";
 	    $sel_opt["abstracts"] = "Abstracts";
 	} else {
-	    $sel_opt["paper"] = "Papers";
-	    if ($this->contact->isPC && $Conf->timeSubmitFinalPaper())
+	    if ($this->contact->isPC && $this->anyFinalPaper) {
 		$sel_opt["final"] = "Final papers";
+		$sel_opt["paper"] = "Submitted papers";
+	    } else
+		$sel_opt["paper"] = "Papers";
 	    $sel_opt["abstracts"] = "Abstracts";
 	    $sel_opt["revform"] = "Review forms";
 	    $sel_opt["revformz"] = "Review forms (zip)";
@@ -1001,7 +1005,8 @@ class PaperList extends BaseList {
 	$this->count = 0;
 	$this->needFinalize = 0;
 	$this->needSubmitReview = 0;
-	$this->anySelector = 0;
+	$this->anySelector = false;
+	$this->anyFinalPaper = false;
 	$url = $this->search->url();
 
 	// check role type
