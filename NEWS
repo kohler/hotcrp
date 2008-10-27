@@ -1,5 +1,30 @@
 HotCRP NEWS
 
+Version 2.26   27.Oct.2008
+
+* Submitters can be forced to define what type of conflict a PC member has.
+  Requested by Dina Papagiannaki.
+
+* Administrator search results can display reviewers.  Requested by
+  Benjamin Pierce and Mark Gebhart.
+
+* Improve review ratings.
+
+* Bug fixes: Avoid infinite doc/ URL redirections, correctly track review
+  tokens (Mike Marty requests).
+
+* Ordered tagging improvements: "Add ordered" preserves old order values;
+  "Add ordered" can insert papers into an existing tag order at a specific
+  point.
+
+* Search bug fixes: "1-10 OR foo" works correctly, as does "1-10 -6".
+
+* Search list PDF icons link to final papers when they are available (Fred
+  Douglis request).
+
+* Many help and usability improvements inspired by Benjamin Pierce requests.
+
+
 Version 2.25   22.Sep.2008
 
 * Many bug fixes for new-style paper views.
