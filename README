@@ -35,10 +35,13 @@ distributed as part of the HotCRP tarball (Mail 1.1.14, Mail_Mime 1.4.0).
 
 Additional packages required for paper format checking:
 
-* pdftohtml (0.39)		http://pdftohtml.sourceforge.net/
+* pdftohtml (0.36/0.39/later)	http://pdftohtml.sourceforge.net/
 
-Warning: We have had problems with pdftohtml 0.40.  If paper format
-checking takes too long, it should be disabled.
+Warning: The pdftohtml package has had several bugs that affect HotCRP.
+Version 0.36 reports incorrect sizes, although HotCRP attempts to
+compensate.  Some installs of version 0.40 process papers far too slowly.
+Test paper format checking in your environment; if it reports incorrect
+results or takes too long, disable it.
 
 Load notes: HotCRP requires a system with at least 256MB of memory, more if
 paper format checking is used and submission load is expected to be high.
