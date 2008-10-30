@@ -8,20 +8,39 @@ function cvtdimen($text, $ndimen = -1) {
     $text = trim(str_replace("\xC2\xA0", " ", strtolower($text)));
     $n = $text;
     $a = array();
-    while (preg_match('/^\s*(\d+\.?\d*|\d*\.\d+)\s*(in?|cm|mm|pt)\s*(.*)$/', $n, $m)) {
+    $unit = array();
+    while (preg_match('/^\s*(\d+\.?\d*|\d*\.\d+)\s*(in?|cm?|mm|pt|)\s*(.*)$/', $n, $m)) {
+	$a[] = $m[1];
 	if ($m[2] == "i" || $m[2] == "in")
-	    $a[] = $m[1] * 72;
+	    $unit[] = 72;
 	else if ($m[2] == "c" || $m[2] == "cm")
-	    $a[] = $m[1] * 72 * 0.393700787;
+	    $unit[] = 72 * 0.393700787;
 	else if ($m[2] == "mm")
-	    $a[] = $m[1] * 72 * 0.0393700787;
+	    $unit[] = 72 * 0.0393700787;
 	else if ($m[2] == "pt")
-	    $a[] = $m[1];
+	    $unit[] = 1;
 	else
-	    return false;
-	if ($m[3] == "") {
+	    $unit[] = 0;
+	if ($m[3] == "") {	// end of string
+	    // fail on bad number of dimensions
 	    if ($ndimen > 0 && count($a) != $ndimen)
 		return false;
+
+	    // spread known units to unknown positions, using two passes
+	    $unitrep = 0;
+	    for ($i = count($unit) - 1; $i >= 0; --$i)
+		$unit[$i] = $unitrep = ($unit[$i] ? $unit[$i] : $unitrep);
+	    $unitrep = 0;
+	    for ($i = 0; $i < count($unit); ++$i)
+		$unit[$i] = $unitrep = ($unit[$i] ? $unit[$i] : $unitrep);
+
+	    // multiply dimensions by units, fail on unknown units
+	    for ($i = 0; $i < count($unit); ++$i)
+		if ($unit[$i])
+		    $a[$i] *= $unit[$i];
+		else
+		    return false;
+
 	    return (count($a) == 1 ? $a[0] : $a);
 	} else if ($m[3][0] == "x")
 	    $n = substr($m[3], 1);
