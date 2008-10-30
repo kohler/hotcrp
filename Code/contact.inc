@@ -32,7 +32,7 @@ class Contact {
     
     // Roles
     const ROLE_PC = 1;
-    const ROLE_ASSISTANT = 2;
+    const ROLE_ADMIN = 2;
     const ROLE_CHAIR = 4;
     var $isAuthor;
     var $isReviewer;
@@ -96,13 +96,13 @@ class Contact {
 			$this->isRequester = true;
 		    if (($row[4] & self::ROLE_PC) || $row[5] > 0)
 			$this->roles |= self::ROLE_PC;
-		    if (($row[4] & self::ROLE_ASSISTANT) || $row[6] > 0)
-			$this->roles |= self::ROLE_ASSISTANT;
+		    if (($row[4] & self::ROLE_ADMIN) || $row[6] > 0)
+			$this->roles |= self::ROLE_ADMIN;
 		    if (($row[4] & self::ROLE_CHAIR) || $row[7] > 0)
 			$this->roles |= self::ROLE_CHAIR;
 		}
-		$this->isPC = ($this->roles & (self::ROLE_PC | self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
-		$this->privChair = ($this->roles & (self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
+		$this->isPC = ($this->roles & (self::ROLE_PC | self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
+		$this->privChair = ($this->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
 		if ($this->privChair)
 		    $this->chairContactId = $this->contactId;
 		// change view ID or chair mode
@@ -344,11 +344,11 @@ class Contact {
 	if (defval($o, "isPC", false))
 	    $c->roles |= self::ROLE_PC;
 	if (defval($o, "isAssistant", false))
-	    $c->roles |= self::ROLE_ASSISTANT;
+	    $c->roles |= self::ROLE_ADMIN;
 	if (defval($o, "isChair", false))
 	    $c->roles |= self::ROLE_CHAIR;
-	$c->isPC = ($c->roles & (self::ROLE_PC | self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
-	$c->privChair = ($c->roles & (self::ROLE_ASSISTANT | self::ROLE_CHAIR)) != 0;
+	$c->isPC = ($c->roles & (self::ROLE_PC | self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
+	$c->privChair = ($c->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
 	return $c;
     }
     

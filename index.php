@@ -53,14 +53,13 @@ function doCreateAccount() {
 
     // handle setup phase
     if (defval($Conf->settings, "setupPhase", false)) {
-	$msg .= "  As the first user, you have been automatically signed in and assigned PC chair privilege.  Your password is \"<tt>" . htmlspecialchars($Me->password) . "</tt>\".  All later users will have to sign in normally.";
-	$while = "while granting PC chair privilege";
-	$Conf->qe("insert into Chair (contactId) values (" . $Me->contactId . ")", $while);
-	$Conf->qe("insert into PCMember (contactId) values (" . $Me->contactId . ")", $while);
+	$msg .= "  As the first user, you have been automatically signed in and assigned system administrator privilege.  Your password is \"<tt>" . htmlspecialchars($Me->password) . "</tt>\".  All later users will have to sign in normally.";
+	$while = "while granting system administrator privilege";
+	$Conf->qe("insert into ChairAssistant (contactId) values (" . $Me->contactId . ")", $while);
 	if ($Conf->setting("allowPaperOption") >= 6)
-	    $Conf->qe("update ContactInfo set roles=" . (Contact::ROLE_PC | Contact::ROLE_CHAIR) . " where contactId=" . $Me->contactId, $while);
+	    $Conf->qe("update ContactInfo set roles=" . (Contact::ROLE_ADMIN) . " where contactId=" . $Me->contactId, $while);
 	$Conf->qe("delete from Settings where name='setupPhase'", "while leaving setup phase");
-	$Conf->log("Granted PC chair privilege to first user", $Me);
+	$Conf->log("Granted system administrator privilege to first user", $Me);
 	$Conf->confirmMsg($msg);
 	if (!function_exists("imagecreate"))
 	    $Conf->warnMsg("Your PHP installation appears to lack GD support, which is required for drawing score graphs.  You may want to fix this problem and restart Apache.");

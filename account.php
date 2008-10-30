@@ -71,14 +71,26 @@ if (isset($_REQUEST['register']) && $OK) {
 	    }
 	}
 
-	if ($Me->privChair && $Me->contactId != $Acct->contactId) {
+	if ($Me->privChair) {
 	    // initialize roles too
-	    if (isset($_REQUEST["chair"]))
+	    if (isset($_REQUEST["pctype"])) {
+		if ($_REQUEST["pctype"] == "chair")
+		    $_REQUEST["pc"] = $_REQUEST["chair"] = 1;
+		else if ($_REQUEST["pctype"] == "pc") {
+		    unset($_REQUEST["chair"]);
+		    $_REQUEST["pc"] = 1;
+		} else {
+		    unset($_REQUEST["chair"]);
+		    unset($_REQUEST["pc"]);
+		}
+	    } else if (isset($_REQUEST["chair"]))
 		$_REQUEST["pc"] = 1;
+	    $checkass = !isset($_REQUEST["ass"]) && $Me->contactId == $Acct->contactId && ($Acct->roles & Contact::ROLE_ADMIN) != 0;
+
 	    $while = "while initializing roles";
 	    $changed = false;
 	    foreach (array("pc" => "PCMember", "ass" => "ChairAssistant", "chair" => "Chair") as $k => $table) {
-		$role = ($k == "pc" ? Contact::ROLE_PC : ($k == "ass" ? Contact::ROLE_ASSISTANT : Contact::ROLE_CHAIR));
+		$role = ($k == "pc" ? Contact::ROLE_PC : ($k == "ass" ? Contact::ROLE_ADMIN : Contact::ROLE_CHAIR));
 		if (($Acct->roles & $role) != 0 && !isset($_REQUEST[$k])) {
 		    $Conf->qe("delete from $table where contactId=$Acct->contactId", $while);
 		    $Conf->log("Removed as $table by $Me->email", $Acct);
@@ -91,6 +103,18 @@ if (isset($_REQUEST['register']) && $OK) {
 		    $changed = true;
 		}
 	    }
+
+	    // ensure there's at least one system administrator
+	    if ($checkass) {
+		$result = $Conf->qe("select contactId from ChairAssistant", $while);
+		if (edb_nrows($result) == 0) {
+		    $Conf->qe("insert into ChairAssistant (contactId) values ($Acct->contactId)", $while);
+		    $Conf->warnMsg("Refusing to drop the only system administrator.");
+		    $_REQUEST["ass"] = 1;
+		    $Acct->roles |= Contact::ROLE_ADMIN;
+		}
+	    }
+
 	    if ($changed) {
 		$t = time();
 		$Conf->qe("insert into Settings (name, value) values ('pc', $t) on duplicate key update value=$t");
@@ -172,7 +196,7 @@ function capclass($what) {
 
 if (!$newProfile) {
     $_REQUEST["pc"] = ($Acct->roles & Contact::ROLE_PC) != 0;
-    $_REQUEST["ass"] = ($Acct->roles & Contact::ROLE_ASSISTANT) != 0;
+    $_REQUEST["ass"] = ($Acct->roles & Contact::ROLE_ADMIN) != 0;
     $_REQUEST["chair"] = ($Acct->roles & Contact::ROLE_CHAIR) != 0;
 }
 
@@ -309,16 +333,27 @@ if ($Acct->isPC || $newProfile)
 if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     echo "<tr>
   <td class='caption'>Roles</td>
-  <td class='entry'>\n";
-    foreach (array("pc" => "PC&nbsp;member", "chair" => "PC&nbsp;chair", "ass" => "System&nbsp;administrator") as $key => $value) {
-	echo "    <input type='checkbox' name='$key' id='$key' value='1' ";
-	if (defval($_REQUEST, $key))
-	    echo "checked='checked' ";
-	if ($Acct->contactId == $Me->contactId)
-	    echo "disabled='disabled' ";
-	echo "onclick='doRole(this)' />&nbsp;", $value, "&nbsp;&nbsp;\n";
+  <td class='entry'><table><tr><td class='nowrap'>\n";
+
+    $pct = defval($_REQUEST, "pctype");
+    if ($pct != "chair" && $pct != "pc" && $pct != "no") {
+	if (defval($_REQUEST, "chair"))
+	    $pct = "chair";
+	else
+	    $pct = defval($_REQUEST, "pc") ? "pc" : "no";
     }
-    echo "<div class='hint'>PC chairs and system administrators have full privilege over all operations of the site.  Administrators need not be members of the PC.</div>\n";
+    foreach (array("chair" => "PC chair", "pc" => "PC member",
+		   "no" => "Not on the PC") as $k => $v) {
+	echo "<input type='radio' name='pctype' value='$k'",
+	    ($k == $pct ? " checked='checked'" : ""),
+	    " onchange='hiliter(this)' />&nbsp;$v<br />\n";
+    }
+
+    echo "</td><td><span class='sep'></span></td><td class='nowrap'>";
+    echo "<input type='checkbox' name='ass' value='1' ",
+	(defval($_REQUEST, "ass") ? "checked='checked' " : ""),
+	"onchange='hiliter(this)' />&nbsp;</td><td>System administrator<br />",
+	"<div class='hint'>System administrators have full control over all site operations.  Administrators need not be members of the PC.  There's always at least one system administrator.</div></td></tr></table>\n";
     echo "  </td>\n</tr>\n\n";
 }
 

@@ -97,7 +97,7 @@ Configuration
     set '$Opt["sessionLifetime"]' to the correct session timeout.
 
   - Sign in to the site to create an account.  The first account created
-    automatically receives PC chair privilege.
+    automatically receives system administrator privilege.
 
     If your server configuration doesn't allow .htaccess files to set
     options, Apache will report an "Error 500" when you try to load HotCRP.

@@ -114,6 +114,11 @@ function updateSchema($Conf) {
 	&& $Conf->q("update PaperConflict set conflictType=8 where conflictType=3")
 	&& $Conf->q("update Settings set value=22 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 22;
+    if ($Conf->settings["allowPaperOption"] == 22
+	&& $Conf->q("insert into ChairAssistant (contactId) select contactId from Chair on duplicate key update ChairAssistant.contactId=ChairAssistant.contactId")
+	&& $Conf->q("update ContactInfo set roles=roles+2 where roles=5")
+	&& $Conf->q("update Settings set value=23 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 23;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

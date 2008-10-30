@@ -153,15 +153,6 @@ function shiftPassword(direction) {
 	    form.upassword.value = form.upassword2.value = form.upasswordt.value;
 }
 
-function doRole(what) {
-    var pc = e("pc");
-    var chair = e("chair");
-    if (pc == what && !pc.checked)
-	chair.checked = false;
-    if (pc != what && chair.checked)
-	pc.checked = true;
-}
-
 
 // paper selection
 function papersel(onoff, name) {
