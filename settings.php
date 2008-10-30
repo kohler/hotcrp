@@ -953,7 +953,7 @@ function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
 	    $text = array($text, $DateExplanation);
 	$DateExplanation = null;
     }
-    doTextRow($name, $text, $v, 30, $capclass);
+    doTextRow($name, $text, $v, 30, $capclass, "N/A");
 }
 
 function doGraceRow($name, $text, $capclass = "lcaption") {
@@ -962,7 +962,7 @@ function doGraceRow($name, $text, $capclass = "lcaption") {
 	$text = array($text, "Example: &ldquo;15 min&rdquo;");
 	$GraceExplanation = true;
     }
-    doTextRow($name, $text, unparseGrace(setting($name)), 15, $capclass);
+    doTextRow($name, $text, unparseGrace(setting($name)), 15, $capclass, "none");
 }
 
 function doActionArea() {
@@ -1039,12 +1039,12 @@ function doSubGroup() {
 	for ($i = 0; $i < 6; $i++)
 	    if (defval($bsetting, $i, "") == "")
 		$bsetting[$i] = "N/A";
-	doTextRow("sub_banal_papersize", array("Paper size", "Examples: &ldquo;letter&rdquo;, &ldquo;A4&rdquo;, &ldquo;8.5in&nbsp;x&nbsp;14in&rdquo;"), setting("sub_banal_papersize", $bsetting[0]), 18, "lxcaption");
-	doTextRow("sub_banal_pagelimit", "Page limit", setting("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption");
-	doTextRow("sub_banal_textblock", array("Text block", "Examples: &ldquo;6.5in&nbsp;x&nbsp;9in&rdquo;, &ldquo;1in&nbsp;margins&rdquo;"), setting("sub_banal_textblock", $bsetting[3]), 18, "lxcaption");
+	doTextRow("sub_banal_papersize", array("Paper size", "Examples: &ldquo;letter&rdquo;, &ldquo;A4&rdquo;, &ldquo;8.5in&nbsp;x&nbsp;14in&rdquo;"), setting("sub_banal_papersize", $bsetting[0]), 18, "lxcaption", "N/A");
+	doTextRow("sub_banal_pagelimit", "Page limit", setting("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption", "N/A");
+	doTextRow("sub_banal_textblock", array("Text block", "Examples: &ldquo;6.5in&nbsp;x&nbsp;9in&rdquo;, &ldquo;1in&nbsp;margins&rdquo;"), setting("sub_banal_textblock", $bsetting[3]), 18, "lxcaption", "N/A");
 	echo "</table></td><td><span class='sep'></span></td><td class='top'><table>";
-	doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp; pt"), setting("sub_banal_bodyfontsize", $bsetting[4]), 4, "lxcaption");
-	doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp; pt"), setting("sub_banal_bodyleading", $bsetting[5]), 4, "lxcaption");
+	doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp; pt"), setting("sub_banal_bodyfontsize", $bsetting[4]), 4, "lxcaption", "N/A");
+	doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp; pt"), setting("sub_banal_bodyleading", $bsetting[5]), 4, "lxcaption", "N/A");
 	echo "</table></td></tr></table>";
     }
     
