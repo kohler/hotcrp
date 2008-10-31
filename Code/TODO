@@ -197,6 +197,10 @@
   comments, scores, tags, decisions, etc.  I was sweating the whole weekend
   wondering what we'd do if the network went down. [Benjamin Pierce]
 
+* it would be cute to have 1 config of hotcrp so that PC members get given
+  as many scores drawn from a normal distribution as they have papers, and
+  then can only use each score once. [Jon Crowcroft]
+
 
 - static HTML snapshot
 
