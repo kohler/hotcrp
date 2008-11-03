@@ -845,6 +845,9 @@ input.textlite-tt, textarea.tt {
 .papertext {
 	width: 96%;
 }
+.reviewtext {
+	width: 99%;
+}
 
 div.prevpaperlink, table.floatleft {
 	float: left;

@@ -1,4 +1,4 @@
-<?php 
+<?php
 // review.php -- HotCRP paper review display/edit page
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
@@ -94,7 +94,7 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     else {
 	$req['paperId'] = $prow->paperId;
 	if ($rf->checkRequestFields($req, $paperTable->editrrow, $tf)) {
-	    if ($rf->saveRequest($req, $paperTable->editrrow, $prow, $Me->contactId))
+	    if ($rf->saveRequest($req, $paperTable->editrrow, $prow))
 		$tf['confirm'][] = "Uploaded review for paper #$prow->paperId.";
 	}
     }
@@ -168,8 +168,8 @@ if (isset($_REQUEST['update'])) {
 	$Conf->errorMsg(whyNotText($whyNot, "review"));
 	$useRequest = true;
     } else if ($rf->checkRequestFields($_REQUEST, $paperTable->editrrow)) {
-	if ($rf->saveRequest($_REQUEST, $paperTable->editrrow, $prow, $Me->contactId)) {
-	    $Conf->confirmMsg(isset($_REQUEST['ready']) ? "Review submitted." : "Review saved.");
+	if ($rf->saveRequest($_REQUEST, $paperTable->editrrow, $prow)) {
+	    $Conf->confirmMsg(defval($_REQUEST, "ready", false) ? "Review submitted." : "Review saved.  However, this version is marked as not ready for others to see.  Please finish the review and submit again.");
 	    loadRows();
 	} else
 	    $useRequest = true;
@@ -198,7 +198,7 @@ if (isset($_REQUEST['delete']) && $Me->privChair)
 		if (!($row = edb_row($result)) || $row[0] == 0)
 		    $Conf->qe("update PaperReview set reviewNeedsSubmit=" . ($row && $row[1] ? -1 : 1) . " where reviewType=" . REVIEW_SECONDARY . " and paperId=" . $paperTable->editrrow->paperId . " and contactId=" . $paperTable->editrrow->requestedBy . " and reviewSubmitted is null", $while);
 	    }
-	    
+
 	    unset($_REQUEST["reviewId"]);
 	    unset($_REQUEST["r"]);
 	    $_REQUEST["paperId"] = $paperTable->editrrow->paperId;
@@ -267,7 +267,7 @@ function archiveReview($rrow) {
 
 function refuseReview() {
     global $Conf, $Opt, $Me, $prow, $paperTable;
-    
+
     $while = "while refusing review";
     $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperReviewArchive write", $while);
 

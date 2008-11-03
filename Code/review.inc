@@ -1,4 +1,4 @@
-<?php 
+<?php
 // review.inc -- HotCRP helper class for producing review forms and tables
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
@@ -72,7 +72,7 @@ class ReviewForm {
 		$b[] = $w;
 	if (count($b) == 0)
 	    $b = $a;
-	
+
 	array_splice($b, min(3, count($a)));
 	$x = "";
 	if ($type == 1) {
@@ -231,7 +231,7 @@ class ReviewForm {
 		}
 		$x .= "</select>";
 	    } else {
-		$x .= "<textarea name='$field' onchange='hiliter(this)' cols='80' rows='" . $this->fieldRows[$field] . "'>" . htmlspecialchars($fval) . "</textarea>";
+		$x .= "<textarea name='$field' class='reviewtext' onchange='hiliter(this)' rows='" . $this->fieldRows[$field] . "'>" . htmlspecialchars($fval) . "</textarea>";
 	    }
 	    $x .= "</div>\n";
 	}
@@ -311,7 +311,7 @@ class ReviewForm {
 	return 1;
     }
 
-    function saveRequest($req, $rrow, $prow, $contactId, $conf = null) {
+    function saveRequest($req, $rrow, $prow, $conf = null) {
 	global $Conf, $ConfSiteSuffix;
 	$conf = ($conf ? $conf : $Conf);
 	$Me = $_SESSION['Me'];
@@ -321,7 +321,7 @@ class ReviewForm {
 	if (!$Me->timeReview($prow, $rrow, $conf)
 	    && (!isset($req['override']) || !$Me->privChair))
 	    return $conf->errorMsg("The <a href='deadlines$ConfSiteSuffix'>deadline</a> for entering this review has passed." . ($Me->privChair ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
-	
+
 	$q = array();
 	$different = false;
 	foreach ($this->fieldOrder as $field)
@@ -355,7 +355,7 @@ class ReviewForm {
 		$result = $conf->qe("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=$prow->paperId group by paperId", $while);
 		if ($result) {
 		    $crow = edb_row($result);
-		    $q[].= "reviewOrdinal=coalesce(reviewOrdinal, " . ($crow[0] + 1) . ")";
+		    $q[] = "reviewOrdinal=coalesce(reviewOrdinal, " . ($crow[0] + 1) . ")";
 		}
 	    }
 	}
@@ -385,9 +385,11 @@ class ReviewForm {
 	if ($rrow) {
 	    $result = $conf->qe("update PaperReview set " . join(", ", $q) . " where reviewId=$rrow->reviewId", $while);
 	    $reviewId = $rrow->reviewId;
+	    $contactId = $rrow->contactId;
 	} else {
-	    $result = $conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contactId, requestedOn=current_timestamp, " . join(", ", $q), $while);
+	    $result = $conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$Me->contactId, reviewType=" . REVIEW_PC . ", requestedBy=$Me->contactId, requestedOn=current_timestamp, " . join(", ", $q), $while);
 	    $reviewId = $conf->lastInsertId($while);
+	    $contactId = $Me->contactId;
 	}
 
 	// unlock tables even if problem
@@ -400,7 +402,7 @@ class ReviewForm {
 	if (!$reviewId)
 	    return $reviewId;
 	$req['reviewId'] = $reviewId;
-	
+
 	// log updates -- but not if review token is used
 	if (!$usedReviewToken) {
 	    $reviewLogname = "Review $reviewId";
@@ -413,7 +415,7 @@ class ReviewForm {
 
 	// potentially email chair and authors
 	if ($submit && ($conf->timeEmailChairAboutReview() || $conf->timeEmailAuthorsAboutReview())) {
-	    
+
 	    // fetch review ordinal
 	    if (!$rrow || !$rrow->reviewSubmitted) {
 		$result = $conf->q("select reviewOrdinal from PaperReview where reviewId=$reviewId");
@@ -461,7 +463,7 @@ class ReviewForm {
 	if ($rrow && $rrow->reviewType == REVIEW_EXTERNAL && $submit
 	    && $conf->setting("allowPaperOption") >= 3)
 	    $conf->q("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId=$rrow->requestedBy and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
-	
+
 	return $result;
     }
 
@@ -486,7 +488,7 @@ class ReviewForm {
 	    $x .= ($type === true ? "s\n\n" : "\n\n");
 	return $x;
     }
-    
+
     function textForm($prow, $rrow, $contact, $conf, $req = null, $alwaysMyReview = false) {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
@@ -1245,7 +1247,7 @@ $blind\n";
 	// From here on, edit mode.
 	if (defval($options, "editmessage"))
 	    echo "<div class='hint'>", defval($options, "editmessage"), "</div>\n";
-    
+
 	// refuse?
 	if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType < REVIEW_SECONDARY) {
 	    echo "\n<div class='revref'><a id='popupanchor_ref' href=\"javascript:void popup(null, 'ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it</div>\n";
