@@ -81,7 +81,7 @@ class PaperSearch {
     var $matchPreg;
     var $urlbase;
     var $warnings;
-    
+
     var $q;
     var $qo;
     var $qx;
@@ -201,7 +201,7 @@ class PaperSearch {
     // By default terms are linked by "and" ($t->link == false);
     // occasionally terms are linked by "or" ($t->link == true).
     // Negation is represented by nesting within a "not" term ($t->type "not").
-    
+
     function _searchField($word, $rtype, $negated, &$qt, $blind) {
 	global $Conf;
 
@@ -236,7 +236,7 @@ class PaperSearch {
 
     function _searchReviewer($word, $rtype, $negated, &$qt) {
 	global $Conf;
-	
+
 	if ($word == "any")
 	    $word = ">0";
 	else if ($word == "none")
@@ -253,7 +253,7 @@ class PaperSearch {
 	    $rt |= self::F_COMPLETE;
 	if ($rtype == "ire" || $rtype == "ipri" || $rtype == "isec" || $rtype == "iext")
 	    $rt |= self::F_INCOMPLETE;
-	
+
 	if (preg_match('/^([<>]?=?\s*)?(\d+)$/s', $word, $m)) {
 	    $m[1] = ($m[1] ? $m[1] : "=");
 	    if ($m[2] == 0 && $m[1] == "<")
@@ -283,7 +283,7 @@ class PaperSearch {
 		$deblinder = self::F_FALSE;
 	    else if ($type == "re" && $Conf->blindReview() == BLIND_OPTIONAL)
 		$deblinder = self::F_NONBLIND;
-	    
+
 	    if ($this->amPC) {
 		$pc_seeallrev = $Conf->setting("pc_seeallrev");
 		if ($pc_seeallrev == 1
@@ -307,12 +307,12 @@ class PaperSearch {
 
     function _searchComment($word, $ctype, &$qt) {
 	global $Conf;
-	
+
 	if ($word == "" || $word == "any")
 	    $word = ">0";
 	else if ($word == "none")
 	    $word = "=0";
-	
+
 	if (preg_match('/^([<>]?=?\s*)?(\d+)$/s', $word, $m)) {
 	    $m[1] = ($m[1] ? $m[1] : "=");
 	    if ($m[2] == 0 && $m[1] == "<")
@@ -451,7 +451,13 @@ class PaperSearch {
 	$qt[] = new SearchTerm("tag", $rt, $extra ? array($value, $extra) : $value);
     }
 
-    function _searchQueryWord($word, $negated, &$qt) {
+    function _searchPopWord(&$str) {
+	preg_match('/^([-+]?"[^"]+"?|[a-zA-Z][a-zA-Z0-9]*:"[^"]+"?|[^"\s]+)/s', $str, $m);
+	$str = ltrim(substr($str, strlen($m[0])));
+	return $m[0];
+    }
+
+    function _searchQueryWord($word, &$rest, $negated, &$qt) {
 	global $searchTags, $ratingTypes, $Conf;
 	$nqt = count($qt);
 
@@ -480,6 +486,8 @@ class PaperSearch {
 		$special = $x;
 		$word = substr($word, $colon + 1);
 	    }
+	    if ($special !== null && $word === false)
+		$word = $this->_searchPopWord($rest);
 	}
 
 	if ($word[0] == '"')
@@ -770,13 +778,11 @@ class PaperSearch {
 	    $qt[] = new SearchTerm("not", 0, $value);
 	}
     }
-    
+
     function _searchQueryType($str, $type, &$qt) {
 	$nqt = count($qt);
-	while ($str != "") {
-	    preg_match('/^([-+]?"[^"]+"?|[a-zA-Z][a-zA-Z0-9]*:"[^"]+"?|[^"\s]+)/s', $str, $m);
-	    $word = $m[0];
-	    $str = ltrim(substr($str, strlen($word)));
+	while ($str !== "") {
+	    $word = $this->_searchPopWord($str);
 	    if ($word == "OR" || $type == "any") {
 		if (count($qt) > $nqt)
 		    $qt[count($qt) - 1]->link = true;
@@ -788,7 +794,7 @@ class PaperSearch {
 		$neg = ($word[0] == "-");
 		$word = substr($word, 1);
 	    }
-	    $this->_searchQueryWord($word, $neg || $type == "none", $qt);
+	    $this->_searchQueryWord($word, $str, $neg || $type == "none", $qt);
 	}
     }
 
@@ -797,7 +803,7 @@ class PaperSearch {
     // Combines the term series into clauses.  The basic purpose of this step
     // is to combine all paper numbers into a single group, and link associated
     // "or" terms.
-    
+
     function _queryMakeClauses(&$qt, &$qc) {
 	// group words into "CNF" clauses: an array of clauses connected by
 	// AND, where each clause is an array of terms connected by OR.
@@ -851,7 +857,7 @@ class PaperSearch {
 
 	if (count($tpn->value[0]) || count($tpn->value[1]))
 	    $qc[] = array($tpn);
-	
+
 	// Now we have an array of arrays in "CNF"
 	if ($this->reviewAdjust) {
 	    $rounderror = false;
@@ -882,7 +888,7 @@ class PaperSearch {
 		    $qt = new SearchTerm("revadj", 0, $x);
 		}
 	    }
-	
+
 	for ($i = 1; $i < count($qcl); $i++)
 	    if ($qcl[$i]->type == "revadj") {
 		if ($i == 1 && $qcl[0]->type == "revadj") {
@@ -954,9 +960,9 @@ class PaperSearch {
 
     // QUERY CONSTRUCTION
     // Build a database query corresponding to a set of clauses.
-    // The query may be conservative; QUERY EVALUATION makes it precise. 
+    // The query may be conservative; QUERY EVALUATION makes it precise.
     // At this point $t->link is garbage, and is reused.
-    
+
     function _clauseTermSetFlags($flags, &$q) {
 	$this->needflags |= $flags;
 	if ($flags & self::F_NONCONFLICT)
@@ -970,7 +976,7 @@ class PaperSearch {
 	if ($flags & self::F_FALSE)
 	    $q[] = "false";
     }
-    
+
     function _clauseTermSetField(&$t, $field, $negated, &$f) {
 	$this->needflags |= $t->flags;
 	$v = $t->value;
@@ -1059,7 +1065,7 @@ class PaperSearch {
 	    $reviewtable .= " left join (select reviewId, count(rating) as nrate_$k from ReviewRating where rating$v$noratings group by reviewId) as Ratings_$k on (Ratings_$k.reviewId=PaperReview.reviewId)";
 	$where[] = $rate;
     }
-    
+
     function _clauseTermSet(&$t, $negated, &$tables, &$columns, &$f) {
 	global $Conf;
 	$tt = $t->type;
@@ -1232,7 +1238,7 @@ class PaperSearch {
     // QUERY EVALUATION
     // Check the results of the query, reducing the possibly conservative
     // overestimate produced by the database to a precise result.
-    
+
     function _clauseTermCheckFlags($flags, &$row) {
 	if (($flags & self::F_AUTHOR) && $row->conflictType < CONFLICT_AUTHOR)
 	    return false;
@@ -1246,7 +1252,7 @@ class PaperSearch {
 	    return false;
 	return true;
     }
-    
+
     function _clauseTermCheckField(&$t, &$row) {
 	if (!$this->_clauseTermCheckFlags($t->flags, $row))
 	    return false;
@@ -1257,7 +1263,7 @@ class PaperSearch {
 	    return false;
 	return true;
     }
-    
+
     function _clauseTermCheck(&$t, &$row) {
 	global $Conf;
 	$tt = $t->type;
@@ -1300,7 +1306,7 @@ class PaperSearch {
 		$ans = false;
 	    else {
 		$ans = true;
-		for ($i = 0; $ans && $i < count($t->value); $i += 2) { 
+		for ($i = 0; $ans && $i < count($t->value); $i += 2) {
 		    $fieldname = $t->value[$i];
 		    $expr = $t->value[$i + 1];
 		    if ($expr[0] == '=')
@@ -1348,10 +1354,10 @@ class PaperSearch {
 
 
     // BASIC QUERY FUNCTION
-    
+
     function search() {
 	global $Conf;
-	
+
 	if ($this->limitName == "x")
 	    return array("create temporary table Matches select Paper.paperId from Paper where false", "");
 	$this->_resetQuery();
@@ -1547,7 +1553,7 @@ class PaperSearch {
 	    }
 	} else
 	    $this->reviewerContact = false;
-	
+
 	return true;
     }
 
@@ -1645,7 +1651,7 @@ class PaperSearch {
 	else
 	    return (($d[0] == "n") == ($this->qx == "") ? "notag:" : "tag:") . $t;
     }
-    
+
     function description($listname) {
 	require_once("paperlist.inc");
 	$desc = PaperList::listDescription($listname);
@@ -1677,7 +1683,7 @@ class PaperSearch {
 	    $l["matchPreg"] = $this->matchPreg;
 	return $l;
     }
-    
+
     function sessionList($listname) {
 	return $this->decorateSessionList($this->paperList(), $listname);
     }
