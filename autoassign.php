@@ -88,7 +88,7 @@ if (!function_exists('array_fill_keys')) {
 
 function checkRequest(&$atype, &$reviewtype, $save) {
     global $Error, $Conf;
-    
+
     $atype = $_REQUEST["a"];
     if ($atype != "rev" && $atype != "revadd" && $atype != "lead"
 	&& $atype != "shepherd" && $atype != "prefconflict"
@@ -128,13 +128,13 @@ function checkRequest(&$atype, &$reviewtype, $save) {
     if ($save)
 	/* no check */;
     else if ($atype == "rev" && rcvtint($_REQUEST["revct"], -1) <= 0) {
-	$Error["rev"] = $Error["ass"] = true;
+	$Error["rev"] = true;
 	return $Conf->errorMsg("Enter the number of reviews you want to assign.");
     } else if ($atype == "revadd" && rcvtint($_REQUEST["revaddct"], -1) <= 0) {
-	$Error["revadd"] = $Error["ass"] = true;
+	$Error["revadd"] = true;
 	return $Conf->errorMsg("You must assign at least one review.");
     }
-	
+
     return true;
 }
 
@@ -158,7 +158,7 @@ function doAssign() {
     $prefs = array();
     foreach ($pcm as $pc)
 	$prefs[$pc->contactId] = array();
-    
+
     // choose PC members to use for assignment
     if ($_REQUEST["pctyp"] == "sel") {
 	$pck = array_keys($pcm);
@@ -360,9 +360,9 @@ function saveAssign() {
 	$Conf->settingTexts["rev_roundtag"] = $_REQUEST["rev_roundtag"];
     } else
 	unset($Conf->settings["rev_roundtag"]);
-    
+
     $Conf->qe("lock tables ContactInfo read, PCMember read, ChairAssistant read, Chair read, PaperReview write, Paper write, PaperConflict write, ActionLog write" . $Conf->tagRoundLocker(($atype == "rev" || $atype == "revadd") && ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY)));
-    
+
     // parse assignment
     $pcm = pcMembers();
     $ass = array();
@@ -438,7 +438,7 @@ function saveAssign() {
     }
 
     $Conf->confirmMsg("Assignments saved!");
-    
+
     // clean up
     $Conf->qe("unlock tables");
     $Conf->updateRevTokensSetting(false);
@@ -480,10 +480,9 @@ function doSelect($name, $opts) {
     echo tagg_select($name, $opts, $_REQUEST[$name]);
 }
 
-function tdClass($entry, $name, $extraclass="") {
+function divClass($name) {
     global $Error;
-    $td = "<td class='" . ($entry ? "entry" : "caption") . $extraclass;
-    return $td . (isset($Error[$name]) ? " error'>" : "'>");
+    return "<div" . (isset($Error[$name]) ? " class='error'" : "") . ">";
 }
 
 
@@ -505,12 +504,11 @@ Types of PC assignment:
 $extraclass = " initial";
 
 if (isset($assignments) && count($assignments) > 0) {
-    echo "<table class='manyassign'>";
-    echo "<tr class='propass'>", tdClass(false, "propass", $extraclass), "Proposed assignment</td><td class='entry$extraclass'>";
+    echo divClass("propass"), "<h3>Proposed assignment</h3>";
     $helplist = "";
     $Conf->infoMsg("If this assignment looks OK to you, select \"Save assignment\" to apply it.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown as &ldquo;P#&rdquo;.");
     $extraclass = "";
-    
+
     $atype = $_REQUEST["a"];
     if ($atype == "clear" || $atype == "rev" || $atype == "revadd")
 	$reviewtype = $_REQUEST["${atype}type"];
@@ -614,22 +612,17 @@ if (isset($assignments) && count($assignments) > 0) {
     foreach ($assignments as $pid => $pcs)
 	echo $pid, ",", join(",", $pcs), " ";
     echo "\" />\n";
-    
-    echo "</div></div></form></td></tr>\n";
 
-    echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n";
-    echo "</table>\n";
+    echo "</div></div></form></div>\n";
     $Conf->footer();
     exit;
 }
 
 echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'><div class='aahc'>", $helplist,
-    "<input id='defaultact' type='submit' class='hidden' name='default' value='1' />",
-    "<table class='manyassign'>";
+    "<input id='defaultact' type='submit' class='hidden' name='default' value='1' />";
 
 // paper selection
-echo "<tr>", tdClass(false, "pap", $extraclass), "Paper selection</td>",
-    tdClass(true, "pap", $extraclass);
+echo divClass("pap"), "<h3>Paper selection</h3>";
 if (!isset($_REQUEST["q"]))
     $_REQUEST["q"] = join(" ", $papersel);
 $tOpt = array("s" => "Submitted papers",
@@ -642,28 +635,41 @@ $q = ($_REQUEST["q"] == "" ? "(All)" : $_REQUEST["q"]);
 echo "<input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1);defact('requery')\" onblur=\"tempText(this, '(All)', 0)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
     tagg_select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")")),
     " &nbsp; <input id='requery' class='b' name='requery' type='submit' value='List' />\n";
-if (isset($_REQUEST["requery"]))
-    echo "<br /><span class='hint'>Assignments will apply to the papers selected in the list below.</span>";
-echo "</td></tr>\n";
-echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
+if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
+    echo "<br /><span class='hint'>Assignments will apply to the selected papers.</span>
+<div class='g'></div>";
+
+    $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
+    $plist = new PaperList(false, false, $search);
+    $plist->papersel = array_fill_keys($papersel, 1);
+    foreach (preg_split('/\s+/', defval($_REQUEST, "prevpap")) as $p)
+	if (!isset($plist->papersel[$p]))
+	    $plist->papersel[$p] = 0;
+    echo $plist->text("reviewersSel", $Me);
+    echo "<input type='hidden' name='prevt' value=\"", htmlspecialchars($_REQUEST["t"]), "\" />",
+	"<input type='hidden' name='prevq' value=\"", htmlspecialchars($_REQUEST["q"]), "\" />",
+	"<input type='hidden' name='prevpap' value=\"", htmlspecialchars(join(" ", $plist->headerInfo["pap"])), "\" />";
+}
+echo "</div>\n";
+// echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
 
 
 // action
-echo "<tr>", tdClass(false, "ass"), "Action</td>", tdClass(true, "rev");
+echo divClass("ass"), "<h3>Action</h3>", divClass("rev");
 doRadio('a', 'rev', 'Ensure each paper has <i>at least</i>');
 echo "&nbsp; <input type='text' class='textlite' name='revct' value=\"", htmlspecialchars(defval($_REQUEST, "revct", 1)), "\" size='3' onfocus='defact(\"assign\")' />&nbsp; ";
 doSelect('revtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
-echo "&nbsp; review(s)</td></tr>\n";
+echo "&nbsp; review(s)</div>\n";
 
-echo "<tr><td class='caption'></td>", tdClass(true, "revadd");
+echo divClass("revadd");
 doRadio('a', 'revadd', 'Assign');
 echo "&nbsp; <input type='text' class='textlite' name='revaddct' value=\"", htmlspecialchars(defval($_REQUEST, "revaddct", 1)), "\" size='3' onfocus='defact(\"assign\")' />&nbsp; ",
     "<i>additional</i>&nbsp; ";
 doSelect('revaddtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
-echo "&nbsp; review(s) per paper</td></tr>\n";
+echo "&nbsp; review(s) per paper</div>\n";
 
 // Review round
-echo "<tr><td class='caption'></td>", tdClass(true, "rev_roundtag");
+echo divClass("rev_roundtag");
 echo "<input style='visibility: hidden' type='radio' name='a' value='rev_roundtag' disabled='disabled' />&nbsp;";
 echo "Review round: &nbsp;";
 $rev_roundtag = defval($_REQUEST, "rev_roundtag", $Conf->settingText("rev_roundtag"));
@@ -672,38 +678,32 @@ if (!$rev_roundtag)
 echo "<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"",
     htmlspecialchars($rev_roundtag),
     "\" onfocus=\"tempText(this, '(None)', 1);defact('assign')\" onblur=\"tempText(this, '(None)', 0)\" />",
-    " &nbsp;<a class='hint' href='help$ConfSiteSuffix?t=revround'>What is this?</a>
-<div class='g'></div></td></tr>\n";
+    " &nbsp;<a class='hint' href='help$ConfSiteSuffix?t=revround'>What is this?</a></div>
+<div class='g'></div>\n";
 
-echo "<tr><td class='caption'></td>", tdClass(true, "prefconflict");
 doRadio('a', 'prefconflict', 'Assign conflicts when PC members have review preferences of &minus;100 or less');
-echo "</td></tr>\n";
+echo "<br />\n";
 
-echo "<tr><td class='caption'></td>", tdClass(true, "lead");
 doRadio('a', 'lead', 'Assign discussion lead from reviewers, preferring high scores');
-echo "</td></tr>\n";
+echo "<br />\n";
 
-echo "<tr><td class='caption'></td>", tdClass(true, "shepherd");
 doRadio('a', 'shepherd', 'Assign shepherd from reviewers, preferring high scores');
-echo "</td></tr>\n";
 
-echo "<tr><td class='caption'></td>", tdClass(true, "clear");
-echo "<div class='g'></div>";
+echo "<div class='g'></div>", divClass("clear");
 doRadio('a', 'clear', 'Clear all &nbsp;');
 doSelect('cleartype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", "conflict" => "conflict", "lead" => "discussion lead", "shepherd" => "shepherd"));
 echo " &nbsp;assignments for selected papers and PC members";
-echo "</td></tr>\n";
+echo "</div></div>\n";
 
 
 // PC
-echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
+//echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
 
-echo "<tr><td class='caption'>PC members</td><td class='entry'>";
-doRadio('pctyp', 'all', 'Use entire PC');
-echo "</td></tr>\n";
+echo "<h3>PC members</h3><table><tr><td>";
+doRadio('pctyp', 'all', '');
+echo "</td><td>Use entire PC</td></tr>\n";
 
-echo "<tr><td class='caption'></td><td class='entry'>";
-echo "<table><tr><td>";
+echo "<tr><td>";
 doRadio('pctyp', 'sel', '');
 echo "</td><td>Use selected PC members: &nbsp; ",
     "(<a href='javascript:papersel(1,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>All</a> | <a href='javascript:papersel(0,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>None</a>)</small>";
@@ -751,8 +751,7 @@ function bpSelector($i, $which) {
     return tagg_select("bp$which$i", $sel_opt, $selected, $sel_extra);
 }
 
-echo "</table><table class='manyassignx'>\n";
-echo "<tr><td class='caption'></td><td class='entry'><div id='foldbadpair' class='",
+echo "<div class='g'></div><div class='relative'><div id='foldbadpair' class='",
     (isset($_REQUEST["badpairs"]) ? "foldo" : "foldc"),
     "'><table id='bptable'>\n";
 for ($i = 1; $i <= 20; $i++) {
@@ -771,41 +770,22 @@ for ($i = 1; $i <= 20; $i++) {
 }
 echo "</table></div><input id='bpcount' type='hidden' name='bpcount' value='20' />";
 $Conf->echoScript("authorfold(\"bp\",0,$numBadPairs)");
-echo "</td></tr>\n";
+echo "</div>\n";
 
 
 // Load balancing
-echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
-echo "<tr><td class='caption'>Load balancing</td><td class='entry'>";
-doRadio('balance', 'new', "Consider only new assignments when balancing load");
+// echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
+echo "<h3>Load balancing</h3>";
+doRadio('balance', 'new', "Spread new assignments equally among PC members");
 echo "<br />";
-doRadio('balance', 'all', "Consider all existing assignments when balancing load");
-echo "</td></tr>\n";
-
-
-// Paper selection
-if (isset($_REQUEST["requery"])) {
-    echo "<tr><td class='caption'>Paper list</td><td class='entry'><div class='g'></div>\n";
-    $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
-    $plist = new PaperList(false, false, $search);
-    $plist->papersel = array_fill_keys($papersel, 1);
-    foreach (preg_split('/\s+/', defval($_REQUEST, "prevpap")) as $p)
-	if (!isset($plist->papersel[$p]))
-	    $plist->papersel[$p] = 0;
-    echo $plist->text("reviewersSel", $Me);
-    echo "<input type='hidden' name='prevt' value=\"", htmlspecialchars($_REQUEST["t"]), "\" />",
-	"<input type='hidden' name='prevq' value=\"", htmlspecialchars($_REQUEST["q"]), "\" />",
-	"<input type='hidden' name='prevpap' value=\"", htmlspecialchars(join(" ", $plist->headerInfo["pap"])), "\" />",
-	"</td></tr>\n";
-}
+doRadio('balance', 'all', "Spread assignments so that PC members have roughly equal overall load");
 
 
 // Create assignment
-echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
-echo "<tr class='last'><td class='caption'></td><td class='entry'><div class='aa'><input type='submit' class='b' name='assign' value='Prepare assignment' /> &nbsp; <span class='hint'>You'll be able to check the assignment before it is saved.</span></div></td></tr>\n";
+echo "<div class='g'></div>\n";
+echo "<div class='aa'><input type='submit' class='b' name='assign' value='Prepare assignment' /> &nbsp; <span class='hint'>You'll be able to check the assignment before it is saved.</span></div>\n";
 
 
-echo "</table>\n";
 echo "</div></form>";
 
 $Conf->footer();
