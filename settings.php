@@ -801,7 +801,7 @@ if (isset($_REQUEST["update"])) {
 	    $Highlight["rev_open"] = true;
 	    break;
 	}
-    
+
     // unset text messages that equal the default
     if (array_key_exists("conflictdefmsg", $Values)
 	&& $Values["conflictdefmsg"]
@@ -845,7 +845,7 @@ if (isset($_REQUEST["update"])) {
 	$Conf->qe("delete from Settings where " . substr($dq, 4), $while);
 	if (strlen($aq))
 	    $Conf->qe("insert into Settings (name, value, data) values " . substr($aq, 2), $while);
-	
+
 	$Conf->qe("unlock tables", $while);
 	$Conf->log("Updated settings group '$Group'", $Me);
 	$Conf->updateSettings();

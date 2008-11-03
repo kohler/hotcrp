@@ -170,8 +170,8 @@ Thank you,
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 Thank you,
-- %CONFSHORTNAME% Submissions\n"),     
-     
+- %CONFSHORTNAME% Submissions\n"),
+
      "withdrawreviewer" =>
      array("[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
 	   "Dear %NAME%,
@@ -302,7 +302,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions
 
 %COMMENTS%\n"),
-     
+
      "genericmailtool" =>
      array("[%CONFSHORTNAME%] Paper #%NUMBER% %TITLEHINT%",
 	   "Dear %NAME%,
@@ -396,7 +396,7 @@ class Mailer {
 	$this->statistics = null;
 	$this->width = 75;
     }
-    
+
     function _pushIf($yes) {
 	if ($yes !== false && $yes !== true && $yes !== null)
 	    $yes = (bool) $yes;
@@ -418,7 +418,7 @@ class Mailer {
 	    return false;
 	}
     }
-    
+
     function expandvar($what, $isbool = false) {
 	global $Conf, $ConfSiteSuffix;
 	$len = strlen($what);
@@ -435,7 +435,7 @@ class Mailer {
 	    $yes = $this->_popIf();
 	    return ($yes === null ? $what : "");
 	}
-	
+
 	if ($len > 7 && substr($what, 0, 5) == "%OPT(" && substr($what, $len - 2) == ")%") {
 	    $inner = "%" . substr($what, 5, $len - 7) . "%";
 	    if ($isbool)
@@ -445,7 +445,7 @@ class Mailer {
 	    else
 		return ($yes === null ? $what : "");
 	}
-	
+
 	if ($len > 10 && substr($what, 0, 8) == "%URLENC(" && substr($what, $len - 2) == ")%") {
 	    $inner = "%" . substr($what, 8, $len - 10) . "%";
 	    $yes = $this->expandvar($inner, true);
@@ -506,7 +506,7 @@ class Mailer {
 	    return $this->statistics[0];
 	if ($what == "%NUMACCEPTED%")
 	    return $this->statistics[1];
-	
+
 	if ($what == "%OTHERCONTACT%" && $this->otherContact)
 	    return contactText($this->otherContact);
 	if ($what == "%OTHERNAME%" && $this->otherContact)
@@ -586,7 +586,7 @@ class Mailer {
 		return ($isbool ? false : "Hidden for blind review");
 	    return contactText($this->otherContact);
 	}
-	
+
 	if ($what == "%REVIEWS%")
 	    return $this->getReviews($this->contact, false);
 	if ($what == "%COMMENTS%")
@@ -657,7 +657,7 @@ class Mailer {
 		$a[] = $this->expand($t);
 	    return $a;
 	}
-	
+
 	$lines = explode("\n", $text);
 	if (strlen($text) && $text[strlen($text) - 1] == "\n")
 	    array_pop($lines);
@@ -670,7 +670,7 @@ class Mailer {
 		if (($m = $this->expandvar($line, false)) != "")
 		    $this->text .= $m . "\n";
 	    } else if (preg_match('/^([ \t][ \t]*.*?: )(%OPT\([\w()]+\)%)$/', $line, $m)) {
-		
+
 		if (($yes = $this->expandvar($m[2], true)))
 		    $this->text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true), $this->width) . "\n";
 		else if ($yes === null)
@@ -733,7 +733,7 @@ class Mailer {
 	if (substr($headers, strlen($headers) - 2) != "\r\n")
 	    $headers .= "\r\n";
 	$headers .= "To: " . contactEmailTo($emailTo) . "\r\n";
-	
+
 	$mailer = new Mailer($row, $contact, $otherContact, $rest);
 	$m = $mailer->expand($template);
 	$m[0] = rtrim($m[0]);
@@ -771,7 +771,7 @@ class Mailer {
 	} else if (!$Opt["sendEmail"])
 	    return $Conf->infoMsg("<pre>" . htmlspecialchars("To: " . $preparation["to"] . "\nSubject: $preparation[0]\n" . $preparation["headers"] . "\n$preparation[1]") . "</pre>");
     }
-    
+
     function send($template, $row, $contact, $otherContact = null, $rest = array()) {
 	$preparation = self::prepareToSend($template, $row, $contact, $otherContact, $rest);
 	if ($preparation)
@@ -789,7 +789,7 @@ class Mailer {
 
 	// must set the current conflict type in $row for each contact
 	$old_conflictType = $row->conflictType;
-	
+
 	$contacts = array();
 	while (($contact = edb_orow($result))) {
 	    $row->conflictType = $contact->conflictType;
@@ -823,7 +823,7 @@ class Mailer {
 
 	// must set the current conflict type in $row for each contact
 	$old_conflictType = $row->conflictType;
-	
+
 	$contacts = array();
 	while (($contact = edb_orow($result))) {
 	    $row->conflictType = $contact->conflictType;
@@ -892,5 +892,5 @@ class Mailer {
 	} else
 	    return $text;
     }
-    
+
 }

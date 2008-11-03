@@ -7,7 +7,7 @@
 function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
     global $Conf, $ConfSiteSuffix, $Me, $rf, $forceShow,
 	$linkExtra, $reviewTypeName;
-    
+
     $subrev = array();
     $nonsubrev = array();
     $foundRrow = $foundMyReview = $notShown = 0;
@@ -16,7 +16,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
     $anyScores = false;
     $nNumeric = $rf->numNumericScores($prow, $Me, $Conf);
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
-    
+
     // actual rows
     foreach ($rrows as $rr) {
 	$highlight = ($rrow && $rr->reviewId == $rrow->reviewId);
@@ -128,7 +128,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
     $numericHeaders = "";
     if ($anyScores)
 	$numericHeaders = "    <tr><td class='empty' colspan='2'></td>" . $rf->webNumericScoresHeader($prow, $Me, $Conf) . "</tr>\n";
-    
+
     // unfinished review notification
     $notetxt = "";
     if ($prow->conflictType >= CONFLICT_AUTHOR && !$effAssistant && $notShown
@@ -159,7 +159,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     $actingConflict = ($prow->conflictType > 0 && !$forceShow);
     $effAssistant = $Me->actChair($prow) && !$actingConflict;
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
-    
+
     $nvisible = 0;
     $myrr = null;
     if ($rrows)
