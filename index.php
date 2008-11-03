@@ -81,9 +81,36 @@ function doCreateAccount() {
     return null;
 }
 
+function doLDAPLogin() {
+    global $Conf, $Opt, $password_class;
+
+    // check for bogus configurations
+    if (!function_exists("ldap_connect") || !function_exists("ldap_bind"))
+	return $Conf->errorMsg("Internal error: <code>\$Opt[\"ldapLogin\"]</code> is set, but this PHP installation doesn't support LDAP.  Logins will fail until this error is fixed.");
+    if (!preg_match('/\A\s*(\S+)\s+([^*]+)\*(.*?)\s*\z/s', $Opt["ldapLogin"], $m))
+	return $Conf->errorMsg("Internal error: <code>\$Opt[\"ldapLogin\"]</code> syntax error; expected &ldquo;<code><i>LDAP-URL</i> <i>distinguished-name</i></code>&rdquo;, where <code><i>distinguished-name</i></code> contains a <code>*</code> character to be replaced by the user's email address.  Logins will fail until this error is fixed.");
+
+    // connect to the LDAP server
+    if (!($ldapc = @ldap_connect($m[0])))
+	return $Conf->errorMsg("Internal error: ldap_connect.  Logins disabled until this error is fixed.");
+    $qemail = addcslashes($_REQUEST["email"], ',=+<>#;\"');
+    if (@ldap_bind($ldapc, $m[1] . $qemail . $m[2], $_REQUEST["password"])) {
+	ldap_close($ldapc);
+	return true;
+    }
+
+    // connection failed, report error
+    if (ldap_errno($ldapc) < 5)
+	return $Conf->errorMsg("LDAP protocol error: " . htmlspecialchars(ldap_error($ldapc)) . ".  Logins will fail until this error is fixed.");
+    else {
+	$password_class = " error";
+	return $Conf->errorMsg("That password doesn't match.  Please use your LDAP username and password.  <span class='hint'>(LDAP error number: " . ldap_errno($ldapc) . ")</span>");
+    }
+}
+
 function doLogin() {
-    global $Conf, $ConfSiteSuffix, $Me, $email_class, $password_class;
-    
+    global $Conf, $Opt, $ConfSiteSuffix, $Me, $email_class, $password_class;
+
     // In all cases, we need to look up the account information
     // to determine if the user is registered
     if (!isset($_REQUEST["email"])
@@ -129,13 +156,16 @@ function doLogin() {
 	return $Conf->errorMsg("You tried to sign in without providing a password.  Please enter your password and try again.  If you've forgotten your password, enter your email address and use the \"I forgot my password, email it to me\" option.");
     }
 
-    if ($Me->password != $_REQUEST["password"]) {
+    if (isset($Opt["ldapLogin"])) {
+	if (!doLDAPLogin())
+	    return false;
+    } else if ($Me->password != $_REQUEST["password"]) {
 	$password_class = " error";
 	return $Conf->errorMsg("That password doesn't match.  If you've forgotten your password, enter your email address and use the \"I forgot my password, email it to me\" option.");
     }
 
     $Conf->qe("update ContactInfo set visits=visits+1, lastLogin=" . time() . " where contactId=" . $Me->contactId, "while recording login statistics");
-    
+
     if (isset($_REQUEST["go"]))
 	$where = $_REQUEST["go"];
     else if (isset($_SESSION["afterLogin"]))
@@ -167,7 +197,7 @@ if ($Me->valid() && !isset($_SESSION["AskedYouToUpdateContactInfo"]))
     $_SESSION["AskedYouToUpdateContactInfo"] = 0;
 if ($Me->valid() && (($_SESSION["AskedYouToUpdateContactInfo"] < 2
 		      && !($Me->lastName && $Me->affiliation))
-		     || ($_SESSION["AskedYouToUpdateContactInfo"] < 3 
+		     || ($_SESSION["AskedYouToUpdateContactInfo"] < 3
 			 && ($Me->roles & Contact::ROLE_PC)
 			 && !$Me->collaborators))) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 1;
@@ -300,7 +330,9 @@ Sign in to submit or review papers.";
 <form method='post' action='index$ConfSiteSuffix' accept-charset='UTF-8'><div class='f-contain'>
 <input type='hidden' name='cookie' value='1' />
 <div class='f-ii'>
-  <div class='f-c", $email_class, "'>Email</div>
+  <div class='f-c", $email_class, "'>",
+	(isset($Opt["ldapLogin"]) ? "Username" : "Email"),
+	"</div>
   <div class='f-e", $email_class, "'><input id='login_d' type='text' class='textlite' name='email' size='36' tabindex='1' ";
     if (isset($_REQUEST["email"]))
 	echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" ";
@@ -309,13 +341,17 @@ Sign in to submit or review papers.";
 <div class='f-i'>
   <div class='f-c", $password_class, "'>Password</div>
   <div class='f-e'><input type='password' class='textlite' name='password' size='36' tabindex='1' value='' /></div>
-</div>
-<div class='f-i'>
+</div>\n";
+    if (isset($Opt["ldapLogin"]))
+	echo "<input type='hidden' name='action' value='login' />\n";
+    else {
+	echo "<div class='f-i'>
   <input type='radio' name='action' value='login' checked='checked' tabindex='2' />&nbsp;<b>Sign me in</b><br />
   <input type='radio' name='action' value='forgot' tabindex='2' />&nbsp;I forgot my password, email it to me<br />
   <input type='radio' name='action' value='new' tabindex='2' />&nbsp;I'm a new user and want to create an account using this email address
-</div>
-<div class='f-i'>
+</div>\n";
+    }
+    echo "<div class='f-i'>
   <input class='b' type='submit' value='Sign in' name='signin' tabindex='1' />
 </div>
 </div></form>
@@ -355,7 +391,7 @@ function reviewTokenGroup() {
     global $reviewTokenGroupPrinted, $ConfSiteSuffix;
     if ($reviewTokenGroupPrinted)
 	return;
-    
+
     echo "<div class='homegrp' id='homerev'>\n";
 
     echo "  <h4>Review tokens: &nbsp;</h4> ",
@@ -380,7 +416,7 @@ function reviewTokenGroup() {
 // Review assignment
 if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     echo "<div class='homegrp' id='homerev'>\n";
-    
+
     // Overview
     echo "  <h4>Reviews: &nbsp;</h4> ";
     $result = $Conf->qe("select PaperReview.contactId, count(reviewSubmitted), count(if(reviewNeedsSubmit=0,reviewSubmitted,1)), group_concat(overAllMerit), PCMember.contactId as pc from PaperReview join Paper using (paperId) left join PCMember on (PaperReview.contactId=PCMember.contactId) where Paper.timeSubmitted>0 group by PaperReview.contactId", "while fetching review status");
@@ -469,7 +505,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	echo $sep, "<a href='mail$ConfSiteSuffix?monreq=1'>Monitor external reviews</a>";
 	$sep = $xsep;
     }
-    
+
     if ($myrow && $Conf->setting("allowPaperOption") >= 12
 	&& $Conf->setting("rev_ratings") != REV_RATINGS_NONE) {
 	$badratings = PaperSearch::unusableRatings($Me->privChair, $Me->contactId);

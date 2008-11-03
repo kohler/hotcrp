@@ -1,4 +1,4 @@
-<?php 
+<?php
 // conference.inc -- HotCRP central helper class (singleton)
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
@@ -162,7 +162,7 @@ class Conference {
 	    $text .= "\n<p>Please try again or contact the site administrator at $this->emailFrom.</p>";
 	return $text;
     }
-  
+
     function qe($query, $while = "", $suggestRetry = false) {
 	global $OK;
 	$result = mysql_query($query, $this->dblink);

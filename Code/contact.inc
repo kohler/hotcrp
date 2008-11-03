@@ -1,10 +1,10 @@
-<?php 
+<?php
 // contact.inc -- HotCRP helper class representing system users
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 class Contact {
-    
+
     // Which conference are we dealing with?
     var $shortConfName;
 
@@ -29,7 +29,7 @@ class Contact {
     var $state;
     var $zipCode;
     var $country;
-    
+
     // Roles
     const ROLE_PC = 1;
     const ROLE_ADMIN = 2;
@@ -137,7 +137,7 @@ class Contact {
 	return array("addressLine1", "addressLine2", "city", "state",
 		     "zipCode", "country");
     }
-    
+
     function invalidate() {
 	$this->shortConfName = 0;
 
@@ -157,7 +157,7 @@ class Contact {
 	$this->reviewsOustanding = false;
 	$this->chairContactId = 0;
     }
-  
+
     function amReviewer() {
 	return $this->isPC || $this->isReviewer;
     }
@@ -259,7 +259,7 @@ class Contact {
 	$contactId = $conf->lastInsertId("while creating contact");
 	if (!$contactId)
 	    return false;
-	
+
 	// update paper authorship based on authorInformation fields
 	// (ignore errors)
 	$addAuthor = array();
@@ -274,7 +274,7 @@ class Contact {
 	}
 	if (count($addAuthor))
 	    $conf->q("insert into PaperConflict (paperId, contactId, conflictType) values " . join(", ", $addAuthor) . " on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")");
-	
+
 	return $this->lookupByEmail($this->email, $conf);
     }
 
@@ -282,7 +282,7 @@ class Contact {
 	$result = $conf->q($query);
 	if (edb_nrows($result) >= 1) {
 	    $fromdb = edb_orow($result);
-	  
+
 	    $this->contactId = $fromdb->contactId;
 	    $this->visits = $fromdb->visits;
 	    $this->firstName = $fromdb->firstName;
@@ -351,7 +351,7 @@ class Contact {
 	$c->privChair = ($c->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
 	return $c;
     }
-    
+
 
     // viewing permissions
 
@@ -367,7 +367,7 @@ class Contact {
     function privChairOverride() {
 	return $this->privChair && isset($_REQUEST["override"]) && $_REQUEST["override"] > 0;
     }
-    
+
     function canStartPaper($conf, &$whyNot = null) {
 	$whyNot = array();
 	if ($this->privChairOverride() || $conf->timeStartPaper())
@@ -382,7 +382,7 @@ class Contact {
 	return ($prow->conflictType >= CONFLICT_AUTHOR
 		|| $this->privChair);
     }
-    
+
     function canUpdatePaper($prow, $conf, &$whyNot = null) {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
@@ -405,7 +405,7 @@ class Contact {
 	    $whyNot["override"] = 1;
 	return false;
     }
-    
+
     function canFinalizePaper($prow, $conf, &$whyNot = null) {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
@@ -428,7 +428,7 @@ class Contact {
 	    $whyNot["override"] = 1;
 	return false;
     }
-    
+
     function canWithdrawPaper($prow, $conf, &$whyNot = null) {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
@@ -444,7 +444,7 @@ class Contact {
 	    $whyNot["author"] = 1;
 	return false;
     }
-    
+
     function canRevivePaper($prow, $conf, &$whyNot = null) {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
@@ -465,7 +465,7 @@ class Contact {
 	    $whyNot["override"] = 1;
 	return false;
     }
-    
+
     function canSubmitFinalPaper($prow, $conf, &$whyNot = null) {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
@@ -516,11 +516,11 @@ class Contact {
 	    $whyNot["permission"] = 1;
 	return false;
     }
-    
+
     function canDownloadPaper($prow, $conf, &$whyNot = null) {
 	return $this->canViewPaper($prow, $conf, $whyNot, true);
     }
-    
+
     function canViewAuthors($prow, $conf, $blindWins, &$whyNot = null) {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $conf, $whyNot)))
@@ -746,7 +746,7 @@ class Contact {
 	}
 	return false;
     }
-    
+
     function canSubmitComment($prow, $crow, $conf, &$whyNot = null) {
 	return $this->canComment($prow, $crow, $conf, $whyNot, true);
     }
@@ -835,7 +835,7 @@ class Contact {
 	return false;
     }
 
-    
+
     function amPaperAuthor($paperId, $conf, $prow = null) {
 	if ($prow === null) {
 	    // Query for a specific match of the author and paper
@@ -864,7 +864,7 @@ class Contact {
     function canEditContactAuthors($prow) {
 	return ($prow->conflictType >= CONFLICT_AUTHOR || $this->privChair);
     }
-    
+
     function timeReview($prow, $rrow, $conf) {
 	$myReview = $prow->myReviewType || $prow->reviewId
 	    || ($rrow && isset($prow->myReviewId)
@@ -913,7 +913,7 @@ class Contact {
 	    return true;
 	return false;
     }
-    
+
     function canViewDecision($prow, $conf, $forceShow = false) {
 	if (($prow && $prow->conflictType >= CONFLICT_AUTHOR && $conf->timeAuthorViewDecision())
 	    // || ($this->isPC
@@ -976,7 +976,7 @@ class Contact {
 	// otherwise, can see information visible for all reviewers
 	return -1;
     }
-    
+
     function canViewTags($prow, $Conf, $forceShow = true) {
 	return ($this->isPC
 		&& (!$prow || $prow->conflictType <= 0
@@ -1011,7 +1011,7 @@ class Contact {
 	    return false;
 	return true;
     }
-    
+
     function paperStatus($paperId, $row, $long) {
 	global $Conf;
 	if ($row->timeWithdrawn > 0)
@@ -1044,29 +1044,34 @@ class Contact {
 	}
     }
 
-  
-    function generatePassword($length) {  
-	$vowels = array("a", "e", "i", "o", "u");  
-	$cons = array("b", "c", "d", "g", "h", "j", "k", "l", "m", "n", "p",
-		      "r", "s", "t", "u", "v", "w", "tr",  
-		      "cr", "br", "fr", "th", "dr", "ch", "ph", "wr", "st",
-		      "sp", "sw", "pr", "sl", "cl");  
-      
-	$num_vowels = count($vowels);  
-	$num_cons = count($cons);  
 
+    function generatePassword($length) {
+	global $Opt;
+	if (isset($Opt["ldapLogin"]))
+	    return "<stored in LDAP>";
+
+	$l = array("a", "e", "i", "o", "u", "y", "a", "e", "i", "o", "u", "y",
+		   "a", "e", "i", "o", "u", "y", "a", "e", "i", "o", "u", "y",
+		   "a", "e", "i", "o", "u", "y", "a", "e", "i", "o", "u", "y",
+		   "b", "c", "d", "g", "h", "j", "k", "l", "m", "n", "p",
+		   "r", "s", "t", "u", "v", "w", "tr",
+		   "cr", "br", "fr", "th", "dr", "ch", "ph", "wr", "st",
+		   "sp", "sw", "pr", "sl", "cl",
+		   "2", "3", "4", "5", "6", "7", "8", "9",
+		   "-", "@", "_", "+", "=");
+	$n = count($l);
 	$password = "";
-	for ($i = 0; $i < $length; $i++)
-	    $password .= $cons[mt_rand(0, $num_cons - 1)] . $vowels[mt_rand(0, $num_vowels - 1)];  
-	return substr($password, 0, $length);  
+	while (strlen($password) < $length)
+	    $password .= $l[mt_rand(0, $n - 1)];
+	return $password;
     }
 
     function sendAccountInfo($conf, $create, $sensitive) {
 	require_once("mailtemplate.inc");
 	global $mailTemplates;
 	$mailer = new Mailer(null, $this);
-	$preparation = $mailer->prepareToSend($create ? "@createaccount" : "@accountinfo", null, $this); 
-	
+	$preparation = $mailer->prepareToSend($create ? "@createaccount" : "@accountinfo", null, $this);
+
 	if ($preparation["allowEmail"] || !$sensitive) {
 	    $mailer->sendPrepared($preparation);
 	    return true;
@@ -1109,7 +1114,7 @@ class Contact {
 	    $q = "update PaperReview set reviewType=" . REVIEW_PC . " where reviewId=$row->reviewId";
 	else
 	    return;
-	
+
 	if ($conf->qe($q, "while assigning review")) {
 	    if ($qtag)
 		$conf->q($qtag);

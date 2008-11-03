@@ -98,5 +98,9 @@ $Opt["paperSite"] = "http://your.site.here.com/";
 //                   paper format checker).
 //   banalLimit      Limit on number of parallel paper format checker
 //                   executions.  Defaults to 8.
+//   ldapLogin       If set, use LDAP to authenticate users.  The ldapLogin
+//                   string must have the form "LDAP_URL DN_PATTERN", where
+//                   DN_PATTERN contains a "*" character to be replaced by
+//                   the username.  Example: "ldaps://ldapserver/ uid=*,o=ORG"
 
 $Opt["disablePS"] = true;

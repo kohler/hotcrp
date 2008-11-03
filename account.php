@@ -1,4 +1,4 @@
-<?php 
+<?php
 // account.php -- HotCRP account management page
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
@@ -122,12 +122,12 @@ if (isset($_REQUEST['register']) && $OK) {
 		unset($_SESSION["pcmembersa"]);
 	    }
 	}
-	
+
 	$Acct->firstName = $_REQUEST["firstName"];
 	$Acct->lastName = $_REQUEST["lastName"];
 	$Acct->email = $_REQUEST["uemail"];
 	$Acct->affiliation = $_REQUEST["affiliation"];
-	if (!$newProfile)
+	if (!$newProfile && !isset($Opt["ldapLogin"]))
 	    $Acct->password = $_REQUEST["upassword"];
 	foreach (array("voicePhoneNumber", "faxPhoneNumber", "collaborators",
 		       "addressLine1", "addressLine2", "city", "state",
