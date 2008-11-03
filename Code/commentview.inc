@@ -130,7 +130,7 @@ class CommentView {
 
 	// From here on, edit mode.
 	// form body
-	echo "<textarea name='comment' rows='10' cols='80' onchange='hiliter(this)'>";
+	echo "<textarea name='comment' class='reviewtext' rows='10' onchange='hiliter(this)'>";
 	if ($useRequest)
 	    echo htmlspecialchars(defval($_REQUEST, 'comment'));
 	else if ($crow)
@@ -141,12 +141,12 @@ class CommentView {
     <td><input type='radio' name='visibility' value='p'";
 	if ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($crow && $crow->forAuthors == 0 && $crow->forReviewers == 0))
 	    echo " checked='checked'";
-	echo " onchange='hiliter(this)' />&nbsp;PC reviewers only</td></tr>
-    <tr><td></td><td><input type='radio' name='visibility' value='r'";
+	echo " onchange='hiliter(this)' />&nbsp;PC reviewers only<br />
+    <input type='radio' name='visibility' value='r'";
 	if ($useRequest ? defval($_REQUEST, "visibility") == "r" : (!$crow || ($crow->forAuthors == 0 && $crow->forReviewers != 0)))
 	    echo " checked='checked'";
-	echo " onchange='hiliter(this)' />&nbsp;PC and external reviewers</td></tr>
-    <tr><td></td><td><input type='radio' name='visibility' value='a'";
+	echo " onchange='hiliter(this)' />&nbsp;PC and external reviewers<br />
+    <input type='radio' name='visibility' value='a'";
 	if ($useRequest ? defval($_REQUEST, "visibility") == "a" : ($crow && $crow->forAuthors != 0))
 	    echo " checked='checked'";
 	echo " onchange='hiliter(this)' />&nbsp;Authors and reviewers";
@@ -256,7 +256,7 @@ has passed.  Please keep the response short and to the point",
 
 	// From here on, edit mode.
 	// form body
-	echo "<textarea name='comment' rows='10' cols='80' onchange='hiliter(this)'>";
+	echo "<textarea name='comment' class='reviewtext' rows='10' onchange='hiliter(this)'>";
 	if ($useRequest)
 	    echo htmlspecialchars(defval($_REQUEST, 'comment'));
 	else if ($crow)

@@ -215,7 +215,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     // description
     $error = (isset($Error["description_$row->fieldName"]) ? " error" : "");
     $x .= "<$trclass><td class='rxcaption textarea$error'>Description</td>"
-	. "<td class='entry'><textarea name='description_$row->fieldName' rows='6' cols='80' onchange='hiliter(this)'>"
+	. "<td class='entry'><textarea name='description_$row->fieldName' class='reviewtext' rows='6' onchange='hiliter(this)'>"
 	. htmlentities(rf_getField($row, 'description'))
 	. "</textarea></td>";
     if (isset($captions['description'])) {
@@ -228,7 +228,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     // options
     if (isset($rf->options[$row->fieldName]) || $rf->reviewFields[$row->fieldName]) {
 	$error = (isset($Error["options_$row->fieldName"]) ? " error" : "");
-	$x .= "<$trclass><td class='rxcaption textarea$error'>Options</td><td class='entry$error'><textarea name='options_$row->fieldName' rows='6' cols='80' onchange='hiliter(this)'>";
+	$x .= "<$trclass><td class='rxcaption textarea$error'>Options</td><td class='entry$error'><textarea name='options_$row->fieldName' class='reviewtext' rows='6' onchange='hiliter(this)'>";
 	$y = '';
 	if (isset($rf->options[$row->fieldName])) {
 	    foreach ($rf->options[$row->fieldName] as $num => $val)
