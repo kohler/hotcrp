@@ -209,6 +209,9 @@ if ($Me->privChair && $Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
 
 // review tokens
 if (isset($_REQUEST["token"]) && $Me->valid() && $Conf->setting("allowPaperOption") >= 13) {
+    $oldtokens = isset($_SESSION["rev_tokens"]);
+    unset($_SESSION["rev_tokens"]);
+    $tokeninfo = array();
     foreach (preg_split('/\s+/', $_REQUEST["token"]) as $x)
 	if ($x == "")
 	    /* no complaints */;
@@ -219,7 +222,7 @@ if (isset($_REQUEST["token"]) && $Me->valid() && $Conf->setting("allowPaperOptio
 	else {
 	    $result = $Conf->qe("select paperId from PaperReview where reviewToken=$token", "while searching for review token");
 	    if (($row = edb_row($result))) {
-		$Conf->infoMsg("Review token &ldquo;" . htmlspecialchars($x) . "&rdquo; lets you review <a href='paper$ConfSiteSuffix?p=$row[0]'>paper #" . $row[0] . "</a>.");
+		$tokeninfo[] = "Review token &ldquo;" . htmlspecialchars($x) . "&rdquo; lets you review <a href='paper$ConfSiteSuffix?p=$row[0]'>paper #" . $row[0] . "</a>.";
 		if (!isset($_SESSION["rev_tokens"]) || array_search($token, $_SESSION["rev_tokens"]) === false)
 		    $_SESSION["rev_tokens"][] = $token;
 		$Me->isReviewer = true;
@@ -228,6 +231,10 @@ if (isset($_REQUEST["token"]) && $Me->valid() && $Conf->setting("allowPaperOptio
 		$_SESSION["rev_token_fail"] = defval($_SESSION, "rev_token_fail", 0) + 1;
 	    }
 	}
+    if (count($tokeninfo))
+	$Conf->infoMsg(join("<br />\n", $tokeninfo));
+    else if ($oldtokens)
+	$Conf->infoMsg("Review tokens cleared.");
 }
 if (isset($_REQUEST["cleartokens"]) && $Me->valid())
     unset($_SESSION["rev_tokens"]);
@@ -394,19 +401,16 @@ function reviewTokenGroup() {
 
     echo "<div class='homegrp' id='homerev'>\n";
 
+    $tokens = array();
+    foreach (defval($_SESSION, "rev_tokens", array()) as $tt)
+	$tokens[] = encodeToken($tt);
     echo "  <h4>Review tokens: &nbsp;</h4> ",
 	"<form action='index$ConfSiteSuffix' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
-	"<input class='textlite' type='text' name='token' size='15' value='' />",
+	"<input class='textlite' type='text' name='token' size='15' value=\"",
+	htmlspecialchars(join(" ", $tokens)), "\" />",
 	" &nbsp;<input class='b' type='submit' value='Go' />",
-	"<div class='hint'>If you have a review token, enter it here to gain access to the corresponding review.";
-    if (isset($_SESSION["rev_tokens"])) {
-	$t = array();
-	foreach ($_SESSION["rev_tokens"] as $tt)
-	    $t[] = encodeToken($tt);
-	echo "<br />Current ", pluralx(count($t), "token"), ": ", textArrayJoin($t), ".",
-	    " (<a href='index$ConfSiteSuffix?cleartokens=1'>Clear tokens</a>)";
-    }
-    echo "</div></div></form>\n";
+	"<div class='hint'>Enter review tokens here to gain access to the corresponding reviews.</div>",
+	"</div></form>\n";
 
     echo "<hr class='home' /></div>\n";
     $reviewTokenGroupPrinted = true;
