@@ -17,6 +17,8 @@ class PaperTable {
     const STATUS_CONFLICTINFO_PC = 128;
     const STATUS_REVIEWERINFO = 256;
 
+    const PAPERLINKS_TYPE = 2;
+
     var $prow;
     var $rrows;
     var $crows;
@@ -189,7 +191,7 @@ class PaperTable {
 	    $a = "<a class='unfolder' href='javascript:" . $x . ($x ? ";" : "")
 		   . "fold(\"$editfolder\", 0)' title='Edit'>";
 	    $c .= "<span class='hint'>" . $a
-		. $Conf->cacheableImage("newreview.png", "[Edit]", null, "b")
+		. $Conf->cacheableImage("edit.png", "[Edit]", null, "b")
 		. "</a>&nbsp;" . $a . "Edit</a></span>";
 	}
 	$c .= "<div class='clear'></div></div>";
@@ -1237,15 +1239,56 @@ class PaperTable {
 	$prow = $this->prow;
 	$paperId = ($prow ? $prow->paperId : "new");
 
+	// what actions are supported?
+	$canEdit = ($prow && $Me->canEditPaper($prow, $Conf));
+	$canReview = ($prow && $Me->canReview($prow, null, $Conf));
+	$canAssign = ($prow && $Me->actChair($prow));
+	$canHome = ($prow && ($canEdit || $canAssign || $this->mode == "contact"));
+
 	echo "<table class='pbox'><tr>
     <td class='pboxi'>";
 	if ($prow) {
-	    echo "<table class='papc'>
-	<tr><td class='papcul'></td><td></td><td></td></tr>
-	<tr><td></td><td>";
+	    if ((self::PAPERLINKS_TYPE & 2)
+		&& ($canEdit || $canReview || $canAssign || $canHome)) {
+		echo "<div class='psmode'>";
+
+		// home link
+		$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId";
+		if ($this->mode == "pe")
+		    $a .= "&amp;mode=p";
+		$a .= "$linkExtra'>";
+		$highlight = ($this->mode != "assign" && $this->mode != "pe"
+			      && $this->mode != "contact" && $this->mode != "re");
+		echo "<div class='", ($highlight ? "papmodex" : "papmode"),
+		    "'>", $a, $Conf->cacheableImage("view18.png", "[Main]", null, "b"),
+		    "</a>&nbsp;", $a, "Main</a></div>\n";
+
+		if ($canEdit) {
+		    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;m=pe$linkExtra'>";
+		    echo "<div class='", ($this->mode == "pe" ? "papmodex" : "papmode"),
+			"'>", $a, $Conf->cacheableImage("edit18.png", "[Edit]", null, "b"),
+			"</a>&nbsp;", $a, "Edit</a></div>\n";
+		}
+
+		if ($canReview) {
+		    $a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;m=re$linkExtra'>";
+		    echo "<div class='", ($this->mode == "re" && (!$this->editrrow || $this->editrrow->contactId == $Me->contactId) ? "papmodex" : "papmode"),
+			"'>", $a, $Conf->cacheableImage("review18.png", "[Review]", null, "b"),
+			"</a>&nbsp;", $a, "Review</a></div>\n";
+		}
+
+		if ($Me->actChair($prow)) {
+		    $a = "<a href='assign$ConfSiteSuffix?p=$prow->paperId$linkExtra'>";
+		    echo "<div class='", ($this->mode == "assign" ? "papmodex" : "papmode"),
+			"'>", $a, $Conf->cacheableImage("assign18.png", "[Assign]", null, "b"),
+			"</a>&nbsp;", $a, "Assign</a></div>\n";
+		}
+
+		echo "<div class='clear'></div></div>";
+	    }
+
 	    $pa = "<a href='paper$ConfSiteSuffix?p=$paperId$linkExtra' class='q'>";
-	    echo "<h2>", $pa, "#", $this->prow->paperId, "</a></h2>",
-		"</td><td></td></tr>\n    </table>\n";
+	    echo "<div class='papnum'><h2>", $pa, "#", $this->prow->paperId, "</a></h2></div>";
 	}
 
 	// paper strip
@@ -1259,34 +1302,38 @@ class PaperTable {
 	<tr><td class='papculs'></td><td></td><td class='papcur'></td></tr>
 	<tr><td></td><td>";
 
-	$t = "";
-	if ($prow && $this->mode != "assign" && $this->mode != "pe"
-	    && $Me->canEditPaper($prow, $Conf)) {
-	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;m=pe$linkExtra'>";
-	    $t .= $a . $Conf->cacheableImage(($Me->actChair($prow)  && 0 ? "newreview.png" : "newreview24.png"), "[Edit]", null, "b")
-		. "</a>&nbsp;" . $a . "Edit</a>";
-	}
-	if ($prow && $this->mode != "assign" && $this->mode != "contact"
-	    && $Me->actChair($prow)) {
-	    $a = "<a href='assign$ConfSiteSuffix?p=$prow->paperId$linkExtra'>";
+	if (self::PAPERLINKS_TYPE & 1) {
+	    $t = "";
+	    if ($prow && ($this->mode == "assign" || $this->mode == "pe"
+			  || $this->mode == "contact")) {
+		$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId";
+		if ($this->mode == "pe")
+		    $a .= "&amp;mode=p";
+		$a .= "$linkExtra'>";
+		if ($t != "")
+		    $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
+		$t .= $a . $Conf->cacheableImage("view24.png", "[View]", null, "b elimg")
+		    . "</a>&nbsp;" . $a . "View</a>";
+	    }
+	    if ($prow && $this->mode != "assign" && $this->mode != "pe"
+		&& $Me->canEditPaper($prow, $Conf)) {
+		$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;m=pe$linkExtra'>";
+		if ($t != "")
+		    $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
+		$t .= $a . $Conf->cacheableImage("edit24.png", "[Edit]", null, "b elimg")
+		    . "</a>&nbsp;" . $a . "Edit</a>";
+	    }
+	    if ($prow && $this->mode != "assign" && $this->mode != "contact"
+		&& $Me->actChair($prow)) {
+		$a = "<a href='assign$ConfSiteSuffix?p=$prow->paperId$linkExtra'>";
+		if ($t != "")
+		    $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
+		$t .= $a . $Conf->cacheableImage("assign24.png", "[Assign]", null, "b elimg")
+		    . "</a>&nbsp;" . $a . "Assign</a>";
+	    }
 	    if ($t != "")
-		$t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
-	    $t .= $a . $Conf->cacheableImage("assign24.png", "[Assign]", null, "b")
-		. "</a>&nbsp;" . $a . "Assign</a>";
+		echo "<div class='floatright'>", $t, "</div>";
 	}
-	if ($prow && ($this->mode == "assign" || $this->mode == "pe"
-		      || $this->mode == "contact")) {
-	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId";
-	    if ($this->mode == "pe")
-		$a .= "&amp;mode=p";
-	    $a .= "$linkExtra'>";
-	    if ($t != "")
-		$t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
-	    $t .= $a . $Conf->cacheableImage("view24.png", "[View]", null, "b")
-		. "</a>&nbsp;" . $a . "Normal view</a>";
-	}
-	if ($t != "")
-	    echo "<div class='floatright'>", $t, "</div>";
 
 	echo "<h2>";
 	if ($prow) {
@@ -1300,7 +1347,9 @@ class PaperTable {
 </tr><tr>
     <td class='pboxl'></td>
     <td class='pboxr'><table class='papc'>
-	<tr><td class='papcl'></td><td class='papct'><div class='inpapct'>";
+	<tr><td class='papcl'>",
+	    $Conf->cacheableImage("_.gif", "", null, "_"),
+	    "</td><td class='papct'><div class='inpapct'>";
 
 	$form = "<form method='post' action=\"paper$ConfSiteSuffix?p="
 	    . ($prow ? $prow->paperId : "new")
@@ -1432,7 +1481,7 @@ class PaperTable {
 		"<table class='pbox'><tr><td class='pboxl'></td>",
 		"<td class='pboxr'>", $a,
 		$Conf->cacheableImage("txt24.png", "[Text]", null, "dlimg"),
-		"</a>&nbsp;", $a, "Reviews and comments in text format</a>",
+		"</a>&nbsp;", $a, "Reviews and comments in plain text</a>",
 		"</td></tr></table></div>\n";
 	}
 

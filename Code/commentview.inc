@@ -105,7 +105,7 @@ class CommentView {
 	    && !$editMode && $Me->canComment($prow, $crow, $Conf)) {
 	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId'>";
 	    echo "<div class='floatright'>", $a,
-		$Conf->cacheableImage("newreview.png", "[Edit]", null, "b"),
+		$Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
 		"</a>&nbsp;", $a, "Edit</a></div>";
 	}
 
@@ -211,7 +211,7 @@ class CommentView {
 	    && !$editMode && $Me->canRespond($prow, $crow, $Conf)) {
 	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId'>";
 	    echo "<div class='floatright'>", $a,
-		$Conf->cacheableImage("newreview.png", "[Edit]", null, "b"),
+		$Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
 		"</a>&nbsp;", $a, "Edit</a></div>";
 	}
 

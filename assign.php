@@ -1,4 +1,4 @@
-<?php 
+<?php
 // assign.php -- HotCRP per-paper assignment/conflict management page
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
@@ -21,8 +21,11 @@ $Error = array();
 
 // header
 function confHeader() {
-    global $prow, $Conf, $ConfSiteBase, $linkExtra, $CurrentList;
-    $title = ($prow ? "<a href='paper$ConfSiteBase?p=$prow->paperId'>Paper #$prow->paperId</a> Review Assignments" : "Paper Review Assignments");
+    global $prow, $Conf, $ConfSiteSuffix, $linkExtra, $CurrentList;
+    if ($prow)
+	$title = "<a href='paper$ConfSiteSuffix?p=$prow->paperId' class='q'>Paper #$prow->paperId</a>";
+    else
+	$title = "Paper Review Assignments";
     $Conf->header($title, "assign", actionBar($prow, false, "assign"), false);
     if (isset($CurrentList) && $CurrentList > 0
 	&& strpos($linkExtra, "ls=") === false)

@@ -113,12 +113,16 @@ images/ass3.gif
 images/ass3n.gif
 images/ass4.gif
 images/ass4n.gif
+images/assign18.png
 images/assign24.png
 images/bendulft.png
 images/check.png
 images/checksum12.png
 images/comment24.png
 images/cross.png
+images/edit.png
+images/edit18.png
+images/edit24.png
 images/exassignone.png
 images/exsearchaction.png
 images/extagsnone.png
@@ -128,8 +132,6 @@ images/extagvotehover.png
 images/headgrad.png
 images/homegrad.png
 images/info45.png
-images/newreview.png
-images/newreview24.png
 images/next.png
 images/override24.png
 images/pageresultsex.png
@@ -143,12 +145,15 @@ images/postscript24.png
 images/postscriptf24.png
 images/prev.png
 images/quicksearchex.png
+images/review18.png
+images/review24.png
 images/sortdown.png
 images/sortup.png
 images/stophand45.png
 images/timestamp12.png
 images/txt.png
 images/txt24.png
+images/view18.png
 images/view24.png
 images/viewas.png
 

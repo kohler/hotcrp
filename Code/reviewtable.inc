@@ -202,7 +202,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 	&& ($mode != "r" || $rrow)) {
 	$allreviewslink = true;
 	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;m=r$linkExtra'>";
-	$x = $a . $Conf->cacheableImage("allreviews24.png", "[All reviews]", null, "dlimg") . "</a>&nbsp;" . $a . "All reviews</a>";
+	$x = $a . $Conf->cacheableImage("view24.png", "[All reviews]", null, "dlimg") . "</a>&nbsp;" . $a . "All reviews</a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 
@@ -210,7 +210,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     if ($mode != "pe" && $prow->conflictType >= CONFLICT_AUTHOR
 	&& !$Me->actChair($prow)) {
 	$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;m=pe$linkExtra'>";
-	$x = $a . $Conf->cacheableImage("newreview24.png", "[Edit paper]", null, "dlimg") . "</a>&nbsp;" . $a . "<strong>Edit paper</strong></a>";
+	$x = $a . $Conf->cacheableImage("edit24.png", "[Edit paper]", null, "dlimg") . "</a>&nbsp;" . $a . "<strong>Edit paper</strong></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 
@@ -221,13 +221,13 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 	$myrlink = unparseReviewOrdinal($myrr);
 	$a = "<a href='review$ConfSiteSuffix?r=$myrlink$linkExtra'>";
 	if ($Me->canReview($prow, $myrr, $Conf))
-	    $x = $a . $Conf->cacheableImage("newreview24.png", "[Edit review]", null, "dlimg") . "</a>&nbsp;" . $a . "<b>Edit your review</b></a>";
+	    $x = $a . $Conf->cacheableImage("review24.png", "[Edit review]", null, "dlimg") . "</a>&nbsp;" . $a . "<b>Edit your review</b></a>";
 	else
-	    $x = $a . $Conf->cacheableImage("newreview24.png", "[Your review]", null, "dlimg") . "</a>&nbsp;" . $a . "<b>Your review</b></a>";
+	    $x = $a . $Conf->cacheableImage("review24.png", "[Your review]", null, "dlimg") . "</a>&nbsp;" . $a . "<b>Your review</b></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     } else if (!$myrr && !$rrow && $Me->canReview($prow, null, $Conf)) {
 	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;m=re$linkExtra'>";
-	$x = $a . $Conf->cacheableImage("newreview24.png", "[Write review]", null, "dlimg") . "</a>&nbsp;" . $a . "<b>Write review</b></a>";
+	$x = $a . $Conf->cacheableImage("review24.png", "[Write review]", null, "dlimg") . "</a>&nbsp;" . $a . "<b>Write review</b></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 

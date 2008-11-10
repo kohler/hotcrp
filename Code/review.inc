@@ -1121,12 +1121,12 @@ $blind\n";
 	    if (!$editmode && $Me->canReview($prow, $rrow, $Conf)) {
 		$a = "<a href='review$ConfSiteSuffix?r=$reviewOrdinal$linkExtra'>";
 		echo $a,
-		    $Conf->cacheableImage("newreview.png", "[Edit]", null, "b"),
+		    $Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
 		    "</a>&nbsp;", $a, "Edit</a><br />";
 	    }
 	    $a = "<a href='review$ConfSiteSuffix?r=$reviewOrdinal&amp;text=1$linkExtra'>";
 	    echo $a, $Conf->cacheableImage("txt.png", "[Text]", null, "b"),
-		"</a>&nbsp;", $a, "Text format</a>",
+		"</a>&nbsp;", $a, "Plain text</a>",
 		"</div>";
 	}
 

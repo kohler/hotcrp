@@ -826,6 +826,11 @@ img.dlimg, img.placthook {
 	bottom: -6px;
 	margin-top: -6px;
 }
+img.elimg {
+	position: relative;
+	bottom: -3px;
+	margin-top: -20px;
+}
 img.check {
 	padding-left: 0.4em;
 }
@@ -1275,6 +1280,7 @@ table.pbox {
 }
 td.pboxi, td.pboxl {
 	width: 13em;
+	vertical-align: top;
 }
 
 /* paper strip */
@@ -1305,6 +1311,36 @@ div.psv {
 	padding: 2px 0px 1em 4px;
 }
 
+div.psmode {
+	padding: 0em 0em 1em 0em;
+	position: absolute;
+	left: -5px;
+	top: -1.2ex;
+	z-index: -1;
+}
+div.papmode, div.papmodex {
+	float: left;
+	text-align: center;
+	font-size: smaller;
+	padding: 0.2ex 5px 0.6ex 5px;
+	margin: 0px 5px;
+}
+div.papmodex {
+	background: #cec1ff;
+}
+div.papmodex a {
+	font-weight: bold;
+	text-decoration: none;
+}
+div.papmodex a:hover {
+	text-decoration: underline;
+}
+div.papmode img, div.papmodex img {
+	position: relative;
+	margin: -10px 0px;
+	bottom: 10px;
+}
+
 /* ranks */
 div#rankctxformresult {
 	font-size: smaller;
@@ -1328,16 +1364,20 @@ table.papc {
 	width: 100%;
 	position: relative;
 }
-td.papcul, td.papculs, td.papcur, td.papcll, td.papclr {
+td.papculs, td.papcur, td.papcll, td.papclr {
 	width: 8px;
 	height: 8px;
 }
-td.papcl, td.papcr {
+td.papcl, td.papcr, td.papcl img._ {
 	width: 8px;
+}
+td.pboxi div.papnum {
+	width: 13em;
+	background: #cec1ff;
 }
 td.pboxi h2 {
 	text-align: right;
-	padding-right: 8px;
+	padding: 8px;
 }
 table.papc h2 {
 	padding-bottom: 8px;

@@ -398,7 +398,7 @@ $conflictmsg3$setting
 Additionally, twiddle tags, which have names like &ldquo;~tag&rdquo;, are
 visible only to their creators; each PC member has an independent set.</p>");
     _alternateRow("<a name='changing'>Changing tags</a>", "
-To change a paper's tags, click the Tags box's <img src='images/newreview.png'
+To change a paper's tags, click the Tags box's <img src='images/edit.png'
 alt='[Edit]' />&nbsp;Edit link, then enter one or more alphanumeric tags
 separated by spaces.
 
