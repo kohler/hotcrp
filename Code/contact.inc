@@ -105,6 +105,9 @@ class Contact {
 		$this->privChair = ($this->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
 		if ($this->privChair)
 		    $this->chairContactId = $this->contactId;
+		if ($this->chairContactId == $this->contactId
+		    && !$this->privChair)
+		    $this->chairContactId = 0;
 		// change view ID or chair mode
 		if ($this->privChair || $this->chairContactId > 0) {
 		    $viewContact = rcvtint($_REQUEST["viewContact"]);
@@ -119,6 +122,7 @@ class Contact {
 		    }
 		    if ($chairMode >= 0 && !$this->privChair) {
 			$this->contactId = $this->chairContactId;
+			unset($_REQUEST["chairMode"]);
 			return $this->valid($conf, true);
 		    }
 		}
