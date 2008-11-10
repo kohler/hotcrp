@@ -1174,14 +1174,14 @@ class PaperTable {
 		if ((!$Me->privChair || $prow->conflictType >= CONFLICT_AUTHOR)
 		    && !$Conf->timeFinalizePaper($prow))
 		    $Conf->footerStuff .= "  Only administrators can undo this step.";
-		$Conf->footerStuff .= "</p><form method='post' action=\"paper$ConfSiteSuffix?p=" . $prow->paperId . "&amp;post=1&amp;mode=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'w', 1)\">Cancel</button></div></form></div>";
+		$Conf->footerStuff .= "</p><form method='post' action=\"paper$ConfSiteSuffix?p=" . $prow->paperId . "&amp;post=1&amp;m=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'w', 1)\">Cancel</button></div></form></div>";
 	    }
 	    if (!$this->editable)
 		$buttons[] = "<button type='button' class='b' onclick='document.location=\"contactauthors$ConfSiteSuffix?p=" . $prow->paperId . "$linkExtra\"'>Edit contact authors</button>";
 	}
 	if ($Me->privChair && $prow) {
 	    $buttons[] = array("<button type='button' class='b' onclick=\"popup(this, 'd', 0)\">Delete paper</button>", "(admin only)");
-	    $Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"paper$ConfSiteSuffix?p=" . $prow->paperId . "&amp;post=1&amp;mode=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='delete' value='Delete paper' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
+	    $Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"paper$ConfSiteSuffix?p=" . $prow->paperId . "&amp;post=1&amp;m=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='delete' value='Delete paper' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
 	}
 	echo "    <tr>\n";
 	foreach ($buttons as $b) {
@@ -1254,8 +1254,8 @@ class PaperTable {
 
 		// home link
 		$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId";
-		if ($this->mode == "pe")
-		    $a .= "&amp;mode=p";
+		if ($this->mode == "pe" || $this->mode == "re")
+		    $a .= "&amp;m=p";
 		$a .= "$linkExtra'>";
 		$highlight = ($this->mode != "assign" && $this->mode != "pe"
 			      && $this->mode != "contact" && $this->mode != "re");
@@ -1308,7 +1308,7 @@ class PaperTable {
 			  || $this->mode == "contact")) {
 		$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId";
 		if ($this->mode == "pe")
-		    $a .= "&amp;mode=p";
+		    $a .= "&amp;m=p";
 		$a .= "$linkExtra'>";
 		if ($t != "")
 		    $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
@@ -1353,7 +1353,7 @@ class PaperTable {
 
 	$form = "<form method='post' action=\"paper$ConfSiteSuffix?p="
 	    . ($prow ? $prow->paperId : "new")
-	    . "&amp;post=1&amp;mode=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'>";
+	    . "&amp;post=1&amp;m=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'>";
 
 	$this->echoDivEnter($prow);
 	if ($this->editable) {
@@ -1476,7 +1476,7 @@ class PaperTable {
 	// text format link
 	if ($Me->canViewReview($prow, null, $Conf)
 	    && count($this->rrows) + count($this->crows) > 0) {
-	    $a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;mode=r&amp;text=1$linkExtra'>";
+	    $a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;m=r&amp;text=1$linkExtra'>";
 	    echo "<div class='relative'>",
 		"<table class='pbox'><tr><td class='pboxl'></td>",
 		"<td class='pboxr'>", $a,

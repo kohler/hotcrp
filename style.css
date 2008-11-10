@@ -1331,6 +1331,7 @@ div.papmodex {
 div.papmodex a {
 	font-weight: bold;
 	text-decoration: none;
+	color: black;
 }
 div.papmodex a:hover {
 	text-decoration: underline;
