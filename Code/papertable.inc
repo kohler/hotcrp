@@ -1,4 +1,4 @@
-<?php 
+<?php
 // papertable.inc -- HotCRP helper class for producing paper tables
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
@@ -11,7 +11,7 @@ class PaperTable {
 
     const FINALCOPY = 4;
     const ENABLESUBMIT = 8;
-    
+
     const STATUS_DATE = 16;
     const STATUS_CONFLICTINFO = 64;
     const STATUS_CONFLICTINFO_PC = 128;
@@ -79,7 +79,7 @@ class PaperTable {
     function initialize($editable, $useRequest, $allFolded,
 			$foldsession = null) {
 	global $thisMatchPreg, $CurrentList;
-	
+
 	$this->editable = $editable;
 	$this->useRequest = $useRequest;
 
@@ -92,7 +92,7 @@ class PaperTable {
 	    $this->foldState &= ~4;
 	if ($foldsession && !defval($_SESSION, "foldpapert", 1))
 	    $this->foldState &= ~8;
-	
+
 	$this->allFolded = $allFolded;
 
 	$this->matchPreg = array();
@@ -138,7 +138,7 @@ class PaperTable {
 	    if ($this->entryMatches)
 		$this->foldState &= ~(1 | 2);
 	}
-	
+
 	echo "<div id='foldpaper' class='",
 	    ($this->foldState & 1 ? "fold8c" : "fold8o"),
 	    ($this->foldState & 2 ? " fold9c" : " fold9o"),
@@ -199,7 +199,7 @@ class PaperTable {
     function entryData($fieldName, $prow, $authorTable = false) {
 	global $textAreaRows;
 	$this->entryMatches = 0;
-	
+
 	if ($this->useRequest)
 	    $text = $_REQUEST[$fieldName];
 	else if ($prow)
@@ -212,7 +212,7 @@ class PaperTable {
 	    $text = preg_replace($this->matchPreg[$fieldName], "<span class='match'>\$1</span>", htmlspecialchars($text), -1, $this->entryMatches);
 	else
 	    $text = htmlspecialchars($text);
-	
+
 	if ($authorTable == "col" && !$this->editable)
 	    $text = nl2br($text);
 
@@ -307,7 +307,7 @@ class PaperTable {
 	global $Conf, $ConfSiteSuffix, $Opt;
 	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0
 		  && $Conf->collectFinalPapers());
-	
+
 	if (defval($Opt, 'disablePS') > 0)
 	    $t = "PDF file";
 	else if (defval($Opt, 'disablePDF') > 0)
@@ -317,7 +317,7 @@ class PaperTable {
 	$maxSize = ini_get("upload_max_filesize") . "B";
 	$t .= " <span class='papfnh'>(max size $maxSize)</span>";
 	echo $this->papt("paper", $t), "<div class='papv'>";
-	
+
 	echo ($final ? "Upload final copy:&nbsp; " : ""),
 	    "<input class='textlite' type='file' name='paperUpload' accept='",
 	    (defval($Opt, 'disablePDF') > 0 ? "" : "application/pdf "),
@@ -328,7 +328,7 @@ class PaperTable {
 	if ($flags & self::ENABLESUBMIT)
 	    echo ";form.submit.disabled=false";
 	echo "' />";
-	
+
 	if (!$final) {
 	    if ($this->useRequest)
 		$checked = defval($_REQUEST, "submit");
@@ -530,7 +530,7 @@ class PaperTable {
 	    if ($Conf->blindSubmission() == BLIND_OPTIONAL && $prow->blind)
 		$inauthors = "[blind] ";
 	}
-	
+
 	// "author" or "authors"?
 	$auname = pluralx(count($prow->authorTable), "Author");
 
@@ -708,7 +708,7 @@ class PaperTable {
 	$data = $this->entryData("collaborators", $prow, "col");
 	if ($this->entryMatches || !$this->allFolded)
 	    $fold = 0;
-	
+
 	echo "<div id='foldpscollab' class='fold", ($fold ? "c" : "o"), "'>",
 	    $this->papt("collaborators", $name,
 			array("type" => "ps", "fold" => "pscollab",
@@ -722,7 +722,7 @@ class PaperTable {
 	global $Conf;
 	assert($this->editable);
 	$topicMode = (int) $this->useRequest;
-	if (($topicTable = topicTable($prow, $topicMode, $Conf))) { 
+	if (($topicTable = topicTable($prow, $topicMode, $Conf))) {
 	    echo $this->papt("topics", "Topics"),
 		"<div class='paphint'>Select any topics that apply to your paper.</div>",
 		"<div class='papv'>", $topicTable, "</div>\n\n";
@@ -1009,10 +1009,10 @@ class PaperTable {
 		$rp = substr($prow->paperTags, $pos + 1);
 	} else
 	    $rp = "";
-	
+
 	// rank context form
 	$Conf->footerStuff .= "<form id='rankctxform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankctxform\")'><div class='aahc'><input type='hidden' name='rankctx' value='1' /></div></form>";
-	
+
 	echo "<div id='foldrank' class='foldc fold2c'>",
 	    $this->papt("rank", "Rank", array("type" => "ps", "editfolder" => "rank")),
 	    "<div class='psv'><form id='rankform' class='extension fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankform\")'>",
@@ -1112,7 +1112,7 @@ class PaperTable {
 	    $timeUpdate = $Conf->timeUpdatePaper($prow);
 	    $updateDeadline = $this->deadlineSettingIs("sub_update");
 	    $timeSubmit = $Conf->timeFinalizePaper($prow);
-	    $submitDeadline = $this->deadlineSettingIs("sub_sub"); 
+	    $submitDeadline = $this->deadlineSettingIs("sub_sub");
 	    if ($timeUpdate && $prow->timeWithdrawn > 0)
 		$m .= "<div class='xinfo'>" . "This paper has been withdrawn, but you can still revive it.$updateDeadline" . "</div>";
 	    else if ($timeUpdate) {
@@ -1122,7 +1122,7 @@ class PaperTable {
 		    else if ($Conf->setting('sub_freeze'))
 			$m .= "<div class='xwarning'>" . "You must submit a final version of this paper before it can be reviewed.$updateDeadline" . "</div>";
 		    else
-			$m .= "<div class='xwarning'>" . "The current version of the paper is marked as not ready for review.  If you don't submit a reviewable version of the paper, it will not be considered.$updateDeadline" . "</div>"; 
+			$m .= "<div class='xwarning'>" . "The current version of the paper is marked as not ready for review.  If you don't submit a reviewable version of the paper, it will not be considered.$updateDeadline" . "</div>";
 		} else if ($this->mode == "pe")
 		    $m .= "<div class='xconfirm'>" . "This paper is ready for review and will be considered for the conference, but you still have time to make changes if necessary.$updateDeadline" . "</div>";
 	    } else if ($prow->timeWithdrawn <= 0 && $timeSubmit)
@@ -1349,7 +1349,7 @@ class PaperTable {
 	    $this->echoActions();
 
 	    echo "</div></form>";
-	    
+
 	} else {
 	    echo "<table class='paptab'><tr><td class='papbe' colspan='3'>";
 	    if ($this->mode == "pe" && ($m = $this->editMessage()))
@@ -1419,7 +1419,7 @@ class PaperTable {
 		. "You have used administrator privileges to view and edit "
 		. "reviews for this paper. (<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 0))) . "\">Unprivileged view</a>)"
 		. "</div>");
-	
+
 	$empty = $this->_paptabReviewLinks(true, null, "<div class='hint'>There are no reviews or comments for you to view.</div>");
 	if ($empty)
 	    return;
@@ -1559,7 +1559,7 @@ class PaperTable {
 		return false;
 	    }
 	}
-	
+
 	// if a complex request, or a form upload, don't search
 	foreach ($_REQUEST as $k => $v)
 	    if ($k != "p" && $k != "paperId" && $k != "m" && $k != "mode"
@@ -1662,7 +1662,7 @@ class PaperTable {
 	    $sel["myRating"] = $Me->contactId;
 	}
 	$this->rrows = $Conf->reviewRow($sel, $whyNot);
-	
+
 	$rrid = strtoupper(defval($_REQUEST, "reviewId", ""));
 	while ($rrid != "" && $rrid[0] == "0")
 	    $rrid = substr($rrid, 1);
