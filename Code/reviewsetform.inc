@@ -1,4 +1,4 @@
-<?php 
+<?php
 // Code/reviewsetform.php -- HotCRP review form definition page
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
@@ -37,7 +37,7 @@ function rf_checkOptions(&$var, &$options, &$order, &$levelChar) {
 function rf_update($lock) {
     global $Conf, $rf, $Error;
     $letterOptions = $Conf->setting("allowPaperOption") >= 9;
-    
+
     if (isset($_REQUEST['loadsample']) && isset($_REQUEST['sample'])) {
 	require_once('reviewtemplate.inc');
 	if ($_REQUEST['sample'] == 'sigcomm2005')
@@ -65,12 +65,12 @@ function rf_update($lock) {
 
     if (!isset($_REQUEST['update']))
 	return;
-    
+
     $while = "while updating review form";
     $scoreModified = array();
     if ($lock)
 	$Conf->qe("lock tables ReviewFormField write, PaperReview write, ReviewFormOptions write");
-    
+
     foreach (array_keys($rf->reviewFields) as $field) {
 	$req = '';
 	if (isset($_REQUEST["shortName_$field"])) {
@@ -104,13 +104,13 @@ function rf_update($lock) {
 		}
 		if ($optext)
 		    $Conf->qe("insert into ReviewFormOptions (fieldName, level, description) values " . substr($optext, 0, strlen($optext) - 2), $while);
-		
+
 		$result = $Conf->qe("update PaperReview set $field=0 where $field>" . count($options), $while);
 		if (edb_nrows_affected($result, $Conf) > 0)
 		    $scoreModified[] = htmlspecialchars($_REQUEST["shortName_$field"]);
 		if ($letterOptions)
 		    $req .= "levelChar=" . ($rf->reviewFields[$field] ? $levelChar : 0) . ", ";
-		
+
 		unset($_REQUEST["options_$field"]);
 		$updates = 1;
 	    } else {
@@ -166,7 +166,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
     $trclass = "tr class='k" . ($rowidx % 2) . "'";
     $x = "<$trclass><td colspan='4'><div class='g'></div></td></tr>\n";
-    
+
     // field name
     $e = (isset($Error[$row->fieldName]) ? " error" : "");
     $x .= "<$trclass><td class='rxcaption nowrap$e'>Field name</td><td colspan='3' class='entry$e'><b><input type='text' size='50' class='textlite' name='shortName_$row->fieldName' value=\""
@@ -243,7 +243,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 	    $x .= "<td></td>";
 	$x .= "</tr>\n";
     }
-    
+
     return $x . "<$trclass><td colspan='4'><div class='g'></div></td></tr>\n";
 }
 

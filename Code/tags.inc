@@ -260,7 +260,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
 	}
     }
 
-    // if inserting tags into an order, shift existing tags 
+    // if inserting tags into an order, shift existing tags
     $reorders = array();
     if (($mode == "ao" || $mode == "aos") && count($explicitIndex)) {
 	$q = "";
@@ -353,7 +353,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
 		if (!in_array($row[0], $xpids))
 		    $xpids[] = $row[0];
 	}
-				
+
 	// count votes
 	$vcount = array();
 	$q = "select paperId, substring(tag from position('~' in tag) + 1) as tagBase, sum(tagIndex) from PaperTag where paperId in (" . join(",", $xpids) . ") and (";
@@ -402,7 +402,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
 
     $modeexplanation = array("so" => "define ordered", "ao" => "add ordered", "sos" => "define sequential", "aos" => "add sequential", "d" => "remove", "da" => "clear twiddle", "s" => "define", "a" => "add", "p" => "set");
     $Conf->log("Tag " . $modeexplanation[$mode] . ": " . join(", ", $tags), $Me, $pids);
-    
+
     return true;
 }
 

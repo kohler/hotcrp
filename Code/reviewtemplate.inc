@@ -1,4 +1,4 @@
-<?php 
+<?php
 // Code/reviewtemplate.inc -- HotCRP template review forms
 // Placed in the public domain
 

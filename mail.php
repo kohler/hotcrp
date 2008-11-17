@@ -1,4 +1,4 @@
-<?php 
+<?php
 // mail.php -- HotCRP mail tool
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
@@ -159,7 +159,7 @@ function checkMail($send) {
     $result = $Conf->qe($q, "while fetching mail recipients");
     if (!$result)
 	return;
-    
+
     $subject = trim(preg_replace('/[\n\r\t]+/', ' ', defval($_REQUEST, "subject", "")));
     if (substr($subject, 0, strlen($subjectPrefix)) != $subjectPrefix)
 	$subject = $subjectPrefix . $subject;
@@ -459,10 +459,10 @@ $Conf->footer();
 //   } else if ($who == "author-late-review") {
 //       $query = "SELECT DISTINCT firstName, lastName, email, Paper.paperId, Paper.title, Paper.authorInformation, Paper.blind "
 //              . "FROM ContactInfo, Paper, PaperReview, Settings "
-// 	     . "WHERE Paper.timeSubmitted>0 "
-// 	     . "AND PaperReview.paperId = Paper.paperId "
-// 	     . "AND Paper.contactId = ContactInfo.contactId "
-// 	     . "AND PaperReview.reviewSubmitted>0 "
-// 	     . "AND PaperReview.reviewModified > Settings.value "
-// 	     . "AND Settings.name = 'resp_open' "
-// 	     . " $group_order";
+//	     . "WHERE Paper.timeSubmitted>0 "
+//	     . "AND PaperReview.paperId = Paper.paperId "
+//	     . "AND Paper.contactId = ContactInfo.contactId "
+//	     . "AND PaperReview.reviewSubmitted>0 "
+//	     . "AND PaperReview.reviewModified > Settings.value "
+//	     . "AND Settings.name = 'resp_open' "
+//	     . " $group_order";

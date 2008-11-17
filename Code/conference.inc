@@ -4,14 +4,14 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Conference {
-    
+
     var $shortName;
     var $longName;
     var $paperSite;
     var $contactName;
     var $contactEmail;
     var $emailFrom;
-  
+
     var $dblink;
 
     var $settings;
@@ -33,7 +33,7 @@ class Conference {
 	$this->tableMessages = false;
 	$this->scriptStuff = "";
 	$this->footerStuff = "";
-	
+
 	$this->contactName = $Opt['contactName'];
 	$this->contactEmail = $Opt['contactEmail'];
 	$this->emailFrom = $Opt['emailFrom'];
@@ -112,11 +112,11 @@ class Conference {
     function setting($name, $defval = false) {
 	return defval($this->settings, $name, $defval);
     }
-    
+
     function settingText($name, $defval = false) {
 	return defval($this->settingTexts, $name, $defval);
     }
-    
+
     // update the 'papersub' setting: are there any submitted papers?
     function updatePapersubSetting($forsubmit) {
 	$papersub = defval($this->settings, "papersub");
@@ -200,11 +200,11 @@ class Conference {
 			  $sendInfo = true) {
 	global $Me;
 	// XXX should lock table
-	
+
 	$email = ($email ? trim($email) : "");
 	if (!$email)
 	    return false;
-	
+
 	$result = $this->q("select contactId from ContactInfo where email='" . sqlq($email) . "'");
 	if (edb_nrows($result) > 0) {
 	    $row = edb_row($result);
@@ -217,9 +217,9 @@ class Conference {
 	// validate email address
 	if (!validateEmail($email))
 	    return false;
-	
+
 	$p = (is_string($registerFromRequest) ? $registerFromRequest : "");
-	
+
 	// try to add them
 	$newguy = new Contact();
 	$result = $newguy->initialize($email, $this);
@@ -249,7 +249,7 @@ class Conference {
 	    // actually update database
 	    $result = $newguy->updateDB($this, "while creating account for " . htmlspecialchars($email));
 	}
-	
+
 	if ($result) {
 	    if ($Me->privChair)
 		$this->infoMsg("Created account for " . htmlspecialchars($email) . ".");
@@ -258,7 +258,7 @@ class Conference {
 	    $this->log("$Me->email created account", $newguy);
 	} else
 	    $this->log("$Me->email account creation failure", $newguy);
-	
+
 	return $newguy->contactId;
     }
 
@@ -389,7 +389,7 @@ class Conference {
     function blindReview() {
 	return $this->settings['rev_blind'];
     }
-    
+
 
     function go($url) {
 	header("Location: $url");
@@ -428,7 +428,7 @@ class Conference {
 
 	$paperId = (is_numeric($prow) ? $prow : $prow->paperId);
 	$while = "while storing paper in database";
-	
+
 	if ($uploadId && fileUploaded($_FILES[$uploadId], $this))
 	    $filename = $_FILES[$uploadId]['tmp_name'];
 	else
@@ -495,7 +495,7 @@ class Conference {
 	    if (PEAR::isError($result))
 		$this->errorMsg($result->getMessage());
 	}
-    
+
 	if (!PEAR::isError($result)) {
 	    $sha1 = '';
 	    if (defval($Opt, "disableSHA1") <= 0)
@@ -515,7 +515,7 @@ class Conference {
 	if (defval($Opt, 'emailSubmissions', false)) {
 	    if (is_numeric($prow))
 		$prow = $this->paperRow($paperId);
-	    
+
 	    require_once("Mail.php");
 	    require_once("Mail/mime.php");
 
@@ -536,7 +536,7 @@ class Conference {
 	    if ($autxt)
 		$message .= wordWrapIndent($autxt, "Contact authors: ");
 	    $message .= "\n";
-	    
+
 	    $mime = new Mail_mime("\n");
 	    $mime->setTXTBody($message);
 	    $mime->addAttachment($contents, $mimetype, $this->downloadPaperName($paperId, $mimetype, false), false);
@@ -551,7 +551,7 @@ class Conference {
 	    else
 		$this->infoMsg("<pre>" . htmlspecialchars($body) . "</pre>");
 	}
-	
+
 	return strlen($contents);
     }
 
@@ -560,10 +560,10 @@ class Conference {
 	$title = $Opt['downloadPrefix'] . ($final ? "final" : "paper");
 	return $title . $paperId . $this->getFileExtension($mimetype);
     }
-    
+
     function __downloadPaper($paperId, $saveit, $final) {
 	global $zlib_output_compression;
-	
+
 	// Database query
 	$storefield = ($final ? "finalPaperStorageId" : "paperStorageId");
 	$result = $this->q("select PaperStorage.mimetype, paper, PaperStorage.paperStorageId, compression
@@ -594,7 +594,7 @@ class Conference {
 	if ($compression == 1)
 	    $content = gzinflate($content);
 	if (!$zlib_output_compression)
-	    header("Content-Length: " . strlen($content)); 
+	    header("Content-Length: " . strlen($content));
 	print $content;
 	return 1;
     }
@@ -625,7 +625,7 @@ class Conference {
 
     function zipFinish(&$tmpdir, $name, &$files) {
 	global $zlib_output_compression;
-	
+
 	$out = system("zip -jq $tmpdir/x.zip " . join(" ", $files) . " 2>&1", $status);
 	if ($status != 0)
 	    return new PEAR_Error("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
@@ -641,10 +641,10 @@ class Conference {
 	readfile("$tmpdir/x.zip");
 	return 1;
     }
-    
+
     function __downloadPapers($paperIds, &$tmpdir, $final) {
 	global $Opt, $zlib_output_compression;
-	
+
 	// special cases
 	if (count($paperIds) == 0)
 	    return new PEAR_Error("No papers selected for download.");
@@ -659,7 +659,7 @@ class Conference {
 	$result = $this->q($q);
 	if (!$result)
 	    return new PEAR_Error("Database error while downloading papers: " . mysql_error($this->dblink));
-	
+
 	// set up temporary directory
 	if (($tmpdir = tempdir(null, "crp")) === false)
 	    return new PEAR_Error("Could not create temporary directory!");
@@ -709,7 +709,7 @@ class Conference {
 	    $ids[] = "$field=0";
 	return (count($ids) ? "(" . join(" or ", $ids) . ")" : "false");
     }
-    
+
     function paperQuery($contact, $options = array()) {
 	// Options:
 	//   "paperId" => $pid	Only paperId $pid (if array, any of those)
@@ -843,7 +843,7 @@ class Conference {
 	    $pq .= "		join PaperReview as ReviewSelector on (ReviewSelector.paperId=Paper.paperId)\n";
 	if (isset($options['commentId']))
 	    $pq .= "		join PaperComment as CommentSelector on (CommentSelector.paperId=Paper.paperId)\n";
-	
+
 	if (isset($options['author']))
 	    $pq .= "		join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . " and PaperConflict.contactId=$contactId)\n";
 	else
@@ -852,7 +852,7 @@ class Conference {
 	if (isset($options['joins']))
 	    foreach ($options['joins'] as $jt)
 		$pq .= "		$jt\n";
-	
+
 	$pq .= "		left join PaperReview as AllReviews on (AllReviews.paperId=Paper.paperId)\n";
 
 	$qr = "";
@@ -880,7 +880,7 @@ class Conference {
 	    $pq .= "		left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperComment.contactId)\n";
 	else if (isset($options['reviewerName']))
 	    $pq .= "		left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperReview.contactId)\n";
-	
+
 	if (isset($options['topics']) || isset($options['topicInterestScore'])) {
 	    $pq .= "		left join (select paperId";
 	    if (isset($options['topics']))
@@ -905,7 +905,7 @@ class Conference {
 		$pq .= ", group_concat($field) as ${field}Scores";
 	    $pq .= " from PaperReview where reviewSubmitted>0 group by paperId) as PaperScores on (PaperScores.paperId=Paper.paperId)\n";
 	}
-	
+
 	if (defval($options, 'reviewerPreference'))
 	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$reviewContactId)\n";
 	if (defval($options, 'allReviewerPreference')
@@ -949,7 +949,7 @@ class Conference {
 	    $where[] = "timeWithdrawn<=0";
 	if (isset($options["myLead"]))
 	    $where[] = "leadContactId=$contactId";
-	
+
 	if (count($where))
 	    $pq .= "		where " . join(" and ", $where) . "\n";
 
@@ -982,7 +982,7 @@ class Conference {
 	    $whyNot['paperId'] = $sel['paperId'];
 	if (isset($sel['reviewId']))
 	    $whyNot['reviewId'] = $sel['reviewId'];
-	
+
 	if (isset($sel['paperId']) && cvtint($sel['paperId']) < 0)
 	    $whyNot['invalidId'] = 'paper';
 	else if (isset($sel['reviewId']) && cvtint($sel['reviewId']) < 0
@@ -991,7 +991,7 @@ class Conference {
 	else {
 	    $q = $this->paperQuery($contactId, $sel);
 	    $result = $this->q($q);
-	    
+
 	    if (!$result)
 		$whyNot['dbError'] = "Database error while fetching paper (" . htmlspecialchars($q) . "): " . mysql_error($this->dblink);
 	    else if (edb_nrows($result) == 0)
@@ -1055,7 +1055,7 @@ class Conference {
 	    unset($selector["ratings"]);
 	    unset($selector["myRating"]);
 	}
-	
+
 	$q = "select PaperReview.*,
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
 		ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail, ReqCI.contactId as reqContactId";
@@ -1101,7 +1101,7 @@ class Conference {
 	$x = array();
 	while (($row = edb_orow($result)))
 	    $x[] = $row;
-	
+
 	if (isset($selector['array']))
 	    return $x;
 	else if (count($x) == 1)
@@ -1112,12 +1112,12 @@ class Conference {
 	    $whyNot['multipleReviews'] = 1;
 	return null;
     }
-	
+
 
     //
     // Message routines
     //
-    
+
     function msg($text, $type) {
 	$x = "<div class=\"$type\">$text</div>\n";
 	if ($this->saveMessages)
@@ -1178,11 +1178,11 @@ class Conference {
 	    return ", PaperTag write";
     }
 
-    
+
     //
     // Conference header, footer
     //
-    
+
     function header_head($title) {
 	global $ConfSiteBase, $ConfSiteSuffix, $ConfSitePATH, $Opt;
 	if (!$this->headerPrinted) {
@@ -1209,7 +1209,7 @@ class Conference {
 	    return;
 	if ($actionBar === null)
 	    $actionBar = actionBar();
-	
+
 	$this->header_head($title);
 	$time = time();
 	// JavaScript's idea of a timezone offset is the negative of PHP's
@@ -1240,13 +1240,13 @@ class Conference {
 	}
 	echo date("l j M Y g:i:sa T", $time), "<br /><span id='usertime'></span></div>\n";
 	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", $this->shortName, " Public Site</a></div>\n";
-	
+
 	print "  <div class='clear'></div>\n";
 
 	print $actionBar;
 
 	print "</div><div class='body'>\n";
-	
+
 	if (isset($_SESSION["msgs"])) {
 	    foreach ($_SESSION["msgs"] as $m)
 		echo $m;
@@ -1318,7 +1318,7 @@ class Conference {
     //
     // Action recording
     //
-  
+
     function log($text, $who, $paperId = null) {
 	if (is_array($paperId)) {
 	    if (count($paperId) == 0)
@@ -1362,16 +1362,16 @@ class Conference {
 	    return ($final ? $x . "&amp;final=1" : $x);
 	}
     }
-  
+
     function allowEmailTo($email) {
 	global $Opt;
 	return $Opt['sendEmail'] && strstr($email, "@")
 	    && !preg_match('/@_\.com$/', $email);
     }
-    
+
     function textValuesGraph($v, $max, $style, $myscore = 0, $levelChar = 0) {
 	global $ConfSiteBase, $ConfSiteSuffix;
-	
+
 	if (is_string($v))
 	    $v = scoreCounts($v, $max);
 
@@ -1401,8 +1401,8 @@ class Conference {
 		    $retstr .= ($key > 1 ? " " : "") . "<span class='sc$key'>" . $v->v[$key] . "</span>";
 	    $retstr .= "<br /><span class='sc_sum'>" . $avgtext . "</span></div>";
 	}
-	
+
 	return $retstr;
     }
-    
+
 }

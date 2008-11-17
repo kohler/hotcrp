@@ -252,7 +252,7 @@ function doAssign() {
 		join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId)
 		group by paperId, PCMember.contactId) as PaperTopics on (Paper.paperId=PaperTopics.paperId and PCMember.contactId=PaperTopics.contactId)
 	group by Paper.paperId, PCMember.contactId");
-    
+
     if ($atype == "rev" || $atype == "revadd") {
 	while (($row = edb_orow($result))) {
 	    if ($row->conflictType > 0 || $row->reviewType > 0)
@@ -287,7 +287,7 @@ function doAssign() {
 		$papers[$row[0]] -= $row[1];
     } else
 	$papers = array_fill_keys($papersel, 1);
-    
+
     // now, loop forever
     $pcids = array_keys($pcm);
     $assignments = array();

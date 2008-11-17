@@ -184,7 +184,7 @@ function foldsessionpixel($name, $var) {
 function foldbutton($foldtype, $title, $foldnum=0) {
     $showtitle = ($title ? " title='" . htmlspecialchars("Show $title") . "'" : "");
     $hidetitle = ($title ? " title='" . htmlspecialchars("Hide $title") . "'" : "");
-    $foldclass = ($foldnum ? $foldnum : ""); 
+    $foldclass = ($foldnum ? $foldnum : "");
     $foldnum = ($foldnum ? ", $foldnum" : "");
     return "<a href=\"javascript:fold('$foldtype', 0$foldnum)\" class='foldbutton unfolder$foldclass'$showtitle>+</a><a href=\"javascript:fold('$foldtype', 1$foldnum)\" class='foldbutton folder$foldclass'$hidetitle>&ndash;</a>";
 }
@@ -234,7 +234,7 @@ function paperDownload($prow, $final = false, $conf = null) {
     // don't allow PC to download papers in progress
     if ($prow->timeSubmitted <= 0 && !$Me->canDownloadPaper($prow, $conf))
 	return "";
-    
+
     $mimetype = defval($prow, "mimetype", "");
     $p = $conf->makeDownloadPath($prow->paperId, $mimetype, $final);
     $finalsuffix = ($final ? "f" : "");
@@ -646,7 +646,7 @@ function htmlWrapText($text) {
 	$lines[$i] = $l . "<br />\n";
     }
     return join("", $lines);
-    
+
     // $lines = explode("\n", $text);
     // Rules: Indented line that starts with "-", "*", or "#[.]" starts
     //   indented text.
@@ -667,7 +667,7 @@ function htmlWrapText($text) {
     //		$out .= $line . "\n";
     //    else if (preg_match("/^(\\s+)(-+|\\*+|\\d+\\.?)\\s/", $line, $matches)) {
     //		$x = tabLength($line, false);
-    //    } 
+    //    }
     // }
 }
 
@@ -681,12 +681,12 @@ function htmlFold($text, $maxWords) {
 	return $text;
 
     $x = join(" ", array_slice($words, 0, $maxWords));
-    
+
     $fid = (isset($foldId) ? $foldId : 1);
     $foldId = $fid + 1;
 
     $x .= "<span id='fold$fid' class='foldc'><span class='ellipsis'> ... </span><a class='unfolder' href='javascript:fold($fid, 0)'>[More]</a><span class='extension'> " . join(" ", array_slice($words, $maxWords)) . " </span><a class='folder' href='javascript:fold($fid, 1)'>[Less]</a></span>";
-    
+
     return $x;
 }
 
@@ -702,7 +702,7 @@ function wordWrapIndent($text, $info, $indent = 18, $totWidth = 75, $rjinfo = tr
 	$out .= $text[0];
 	$text = substr($text, 1);
     }
-    
+
     $out .= preg_replace("/^(?!\\Z)/m", $indent, wordwrap($text, $totWidth - $indentlen));
     if (strlen($info) <= $indentlen) {
 	$info = str_pad($info, $indentlen, " ", ($rjinfo ? STR_PAD_LEFT : STR_PAD_RIGHT));
@@ -760,7 +760,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['notUploaded']))
 	$text .= ucfirst($thisPaper) . " can't be submitted because you haven't yet uploaded the paper itself.  Upload the paper and try again.  ";
     if (isset($whyNot['reviewNotSubmitted']))
-	$text .= "This review is not yet ready for others to see.  "; 
+	$text .= "This review is not yet ready for others to see.  ";
     if (isset($whyNot['reviewNotComplete']))
 	$text .= "Your own review for $thisPaper is not complete, so you can't view other people's reviews.  ";
     if (isset($whyNot['responseNotReady']))
@@ -833,7 +833,7 @@ function whyNotText($whyNot, $action) {
 function contactPulldown($id, $name, $conf, $contact) {
     echo "<input class='textlite' id='${id}_name' name='${name}_name' type='text' value=\"", htmlspecialchars(trim("$contact->firstName $contact->lastName")), "\" />&nbsp;&nbsp;";
     echo "<input class='textlite' id='${id}_email' name='${name}_email' type='text' value=\"", htmlspecialchars($contact->email), "\" />&nbsp;&nbsp;";
-    
+
     $result = $conf->q("select firstName, lastName, email from ContactInfo order by lastName, firstName, email");
     if ($result) {
 	echo "<span class='foldc' id='fold$id'><a class='button_small unfolder' href=\"javascript:fold('${id}', 0)\">Show&nbsp;list</a>";
@@ -877,7 +877,7 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
     else
 	$goBase = "paper$ConfSiteSuffix";
     $xmode = (isset($_REQUEST["mode"]) && $goBase == "paper$ConfSiteSuffix" ? array("mode" => $_REQUEST["mode"]) : array());
-    
+
     $listarg = $forceShow;
     $listlinks_txt = "";
     if ($prow) {
@@ -890,9 +890,9 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
     $x = "<div class='nvbar'><table class='vbar'><tr><td class='spanner'></td>\n";
     if ($listlinks_txt)
 	$x .= "  <td class='listlinks nowrap'>" . $listlinks_txt . "</td>\n";
-    
+
     $x .= "  <td class='gopaper nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n";
-    
+
     return $x . "</tr></table></div>";
 }
 
@@ -1025,7 +1025,7 @@ function matchContact($pcm, $firstName, $lastName, $email) {
 	$firstmax = true;
     }
     assert(is_string($email) && is_string($firstName) && is_string($lastName));
-    
+
     $cid = -2;
     $matchprio = 0;
     foreach ($pcm as $pcid => $pc) {

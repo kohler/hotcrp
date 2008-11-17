@@ -38,7 +38,7 @@ class BaseList {
 	$x = strcmp($this->sortInfo[$b->paperId], $this->sortInfo[$a->paperId]);
 	return $x ? $x : $this->_sortBase($a, $b);
     }
-    
+
     function _sortScoreNum($a, $b) {
 	$x = $this->sortInfo[$b->paperId] - $this->sortInfo[$a->paperId];
 	$x = $x ? $x : $this->sortAverage[$b->paperId] - $this->sortAverage[$a->paperId];

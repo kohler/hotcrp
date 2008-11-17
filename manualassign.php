@@ -88,7 +88,7 @@ function saveAssignments($reviewer) {
 	$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($ins, 2) . " on duplicate key update conflictType=greatest(conflictType,values(conflictType))", $while);
     if ($del)
 	$Conf->qe("delete from PaperConflict where contactId=$reviewer and (" . substr($del, 4) . ")", $while);
-    
+
     $Conf->qe("unlock tables", $while);
     $Conf->updateRevTokensSetting(false);
 }

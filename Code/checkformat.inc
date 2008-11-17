@@ -107,7 +107,7 @@ class CheckFormat {
     const ERR_TEXTBLOCK = 8;
     const ERR_BODYFONTSIZE = 16;
     const ERR_BODYLEADING = 32;
-    
+
     var $msgs;
     var $errors;
     var $pages;
@@ -122,7 +122,7 @@ class CheckFormat {
 	$this->msgs[] = array($type, $what);
 	return 0;
     }
-    
+
     function analyzeFile($filename, $spec) {
 	global $Opt;
 	if (isset($Opt["pdftohtml"]))
@@ -134,7 +134,7 @@ class CheckFormat {
 	    $spec = substr($spec, 0, $gtpos);
 	}
 	exec($banal_run . escapeshellarg($filename), $bo);
-	
+
 	// analyze banal's output
 	$pi = array();
 	$papersize = null;
@@ -314,7 +314,7 @@ class CheckFormat {
 	    return $this->msg("error", "Server too busy to check paper formats at the moment.  This is a transient error; feel free to try again.");
 	if ($limit > 0)
 	    $Conf->q("insert into Settings (name,value,data) values ('banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
-	
+
 	$status = $this->_analyzePaper($paperId, $final, $spec, $tmpdir);
 	if (isset($tmpdir) && $tmpdir)
 	    exec("/bin/rm -rf $tmpdir");

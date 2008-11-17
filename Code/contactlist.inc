@@ -9,7 +9,7 @@ class ContactList extends BaseList {
 
     const FIELD_SELECTOR = 100;
     const FIELD_SELECTOR_ON = 101;
-    
+
     const FIELD_NAME = 1;
     const FIELD_EMAIL = 2;
     const FIELD_AFFILIATION = 3;
@@ -22,7 +22,7 @@ class ContactList extends BaseList {
     const FIELD_REVIEW_PAPERS = 10;
     const FIELD_AFFILIATION_ROW = 11;
     const FIELD_REVIEW_RATINGS = 12;
-    
+
     var $showHeader;
     var $sortField;
     var $reverseSort;
@@ -37,7 +37,7 @@ class ContactList extends BaseList {
     var $haveAffrow;
     var $haveTopics;
     var $rf;
-    
+
     function ContactList($sortable = true) {
 	global $contactListFields;
 	$this->showHeader = true;
@@ -62,7 +62,7 @@ class ContactList extends BaseList {
 	else
 	    return $fieldId;
     }
-    
+
     function selector($fieldId, &$queryOptions) {
 	global $Conf, $reviewScoreNames;
 	if (!$this->contact->isPC
@@ -108,11 +108,11 @@ class ContactList extends BaseList {
 	$x = $x ? $x : strcasecmp($a->firstName, $b->firstName);
 	return $x ? $x : strcasecmp($a->email, $b->email);
     }
-    
+
     function _sortEmail($a, $b) {
 	return strcasecmp($a->email, $b->email);
     }
-    
+
     function _sortAffiliation($a, $b) {
 	$x = strcasecmp($a->affiliation, $b->affiliation);
 	return $x ? $x : self::_sortBase($a, $b);
@@ -122,7 +122,7 @@ class ContactList extends BaseList {
 	$x = $b->visits - $a->visits;
 	return $x ? $x : self::_sortBase($a, $b);
     }
- 
+
     function _sortLastVisit($a, $b) {
 	$x = $b->lastLogin - $a->lastLogin;
 	return $x ? $x : self::_sortBase($a, $b);
@@ -192,7 +192,7 @@ class ContactList extends BaseList {
 	else
 	    return $rows;
     }
-    
+
     function header($fieldId, $ordinal, $row = null) {
 	global $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
@@ -228,7 +228,7 @@ class ContactList extends BaseList {
 	    return "&lt;$fieldId&gt;?";
 	}
     }
-    
+
     function content($fieldId, $row) {
 	global $Conf, $ConfSiteSuffix, $reviewTypeName, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
@@ -385,7 +385,7 @@ class ContactList extends BaseList {
 	global $Conf;
 	if ($this->count == 0)
 	    return "";
-	
+
 	$t = "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top'>" . $Conf->cacheableImage("bendulft.png", "^^", null, "placthook") . "</td>\n";
 	$t .= "    <td id='pplact' class='linelinks1' colspan='" . ($ncol - 1) . "'><b>Select people</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
 
@@ -415,7 +415,7 @@ class ContactList extends BaseList {
 
 	if (!in_array($this->sortField, $baseFieldId))
 	    $this->sortField = null;
-	
+
 	// get field array
 	$fieldDef = array();
 	$ncol = 0;
@@ -456,7 +456,7 @@ class ContactList extends BaseList {
 	group_concat(PaperReview.reviewId) as reviewIds";
 	else if (isset($queryOptions['papers']))
 	    $pq .= ",\n\tgroup_concat(PaperConflict.paperId) as paperIds";
-	
+
 	$pq .= "\n	from ContactInfo\n";
 	$pq .= ($this->limit == "pc" ? "\tjoin" : "\tleft join") . " PCMember on (PCMember.contactId=ContactInfo.contactId)\n";
 	$pq .= "\tleft join Chair on (Chair.contactId=ContactInfo.contactId)
@@ -510,7 +510,7 @@ class ContactList extends BaseList {
 	    $pq .= "\twhere Chair.contactId is not null or ChairAssistant.contactId is not null\n";
 	if ($this->limit == "pcadmin" || $this->limit == "pcadminx")
 	    $pq .= "\twhere Chair.contactId is not null or ChairAssistant.contactId is not null or PCMember.contactId is not null";
-	
+
 	$pq .= "	group by ContactInfo.contactId
 	order by lastName, firstName, email";
 
@@ -536,7 +536,7 @@ class ContactList extends BaseList {
 	    if (($this->limit == "resub" || $this->limit == "extsub")
 		&& $row->numReviewsSubmitted == 0)
 		continue;
-	    
+
 	    $trclass = "k" . ($this->count % 2);
 	    $this->count++;
 
@@ -549,7 +549,7 @@ class ContactList extends BaseList {
 			$anyData[$fieldId] = 1;
 		}
 	    $t .= "  </tr>\n";
-	    
+
 	    foreach ($fieldDef as $fieldId => $fdef)
 		if ($fdef[1] >= 2 && ($d = $this->content($fieldId, $row))) {
 		    $t .= "  <tr class=\"pl_$fdef[0] pl_callout $trclass";
@@ -601,7 +601,7 @@ class ContactList extends BaseList {
 			$x .= $ftext;
 		    $x .= "</th>\n";
 		}
-		
+
 	    } else {
 		foreach ($fieldDef as $fieldId => $fdef)
 		    if ($fdef[1] == 1 && isset($anyData[$fieldId]))
@@ -610,7 +610,7 @@ class ContactList extends BaseList {
 		    else if ($fdef[1] == 1)
 			$x .= "    <th class=\"pl_$fdef[0]\"></th>\n";
 	    }
-	    
+
 	    $x .= "  </tr>\n";
 	    $x .= "  <tr><td class='pl_headgap' colspan='$ncol'></td></tr>\n";
 	}
@@ -621,7 +621,7 @@ class ContactList extends BaseList {
 	reset($fieldDef);
 	if (key($fieldDef) == self::FIELD_SELECTOR)
 	    $x .= $this->footer($ncol);
-	
+
 	$x .= "</table>";
 
 	return $x;

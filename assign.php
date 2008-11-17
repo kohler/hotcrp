@@ -76,7 +76,7 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
 // retract review request
 function retractRequest($reviewId, $lock = true, $confirm = true) {
     global $Conf, $Me, $prow;
-    
+
     $while = "while retracting review request";
     if ($lock)
 	$Conf->qe("lock tables PaperReview write, ContactInfo read", $while);
@@ -147,7 +147,7 @@ function pcAssignments() {
 	} else
 	    unset($Conf->settings["rev_roundtag"]);
     }
-    
+
     $while = "while updating PC assignments";
     $Conf->qe("lock tables PaperReview write, PaperConflict write, PCMember read, ContactInfo read, ActionLog write" . $Conf->tagRoundLocker(true), $while);
 
@@ -222,7 +222,7 @@ function requestReviewChecks($themHtml, $reqId) {
 
 function requestReview($email) {
     global $Conf, $Me, $Error, $Opt, $prow;
-    
+
     if (($reqId = $Conf->getContactId($email, true, false)) <= 0) {
 	if (trim($email) === "" || !validateEmail($email)) {
 	    $Conf->errorMsg("&ldquo;" . htmlspecialchars(trim($email)) . "&rdquo; is not a valid email address.");
@@ -235,7 +235,7 @@ function requestReview($email) {
     $Them = new Contact();
     $Them->lookupById($reqId, $Conf);
     $reason = trim(defval($_REQUEST, "reason", ""));
-    
+
     $while = "while requesting review";
     $otherTables = ($Conf->setting("extrev_chairreq") ? ", ReviewRequest write" : "");
     $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo read, PaperConflict read" . $otherTables, $while);
@@ -255,7 +255,7 @@ function requestReview($email) {
 	    $Conf->qe("delete from ReviewRequest where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($Them->email) . "'", $while);
 	}
     }
-    
+
     // store the review request
     $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Requester->contactId, current_timestamp)", $while);
 
@@ -281,7 +281,7 @@ function proposeReview($email) {
     $name = trim(defval($_REQUEST, "name", ""));
     $reason = trim(defval($_REQUEST, "reason", ""));
     $reqId = $Conf->getContactId($email, false);
-    
+
     $while = "while recording review request";
     $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ReviewRequest write, ContactInfo read, PaperConflict read", $while);
     // NB caller unlocks tables on error
@@ -298,7 +298,7 @@ function proposeReview($email) {
 	$qb .= ", '" . sqlq(trim($_REQUEST["reason"])) . "'";
     }
     $result = $Conf->qe("insert into ReviewRequest ($qa) values ($qb) on duplicate key update paperId=paperId", $while);
-    
+
     // send confirmation email
     require_once("Code/mailtemplate.inc");
     Mailer::send("@proposereview", $prow, (object) array("fullName" => $name, "email" => $email), $Me, array("emailTo" => $Opt['contactEmail'], "headers" => "Cc: " . contactEmailTo($Me), "reason" => $reason));
@@ -361,7 +361,7 @@ function createAnonymousReview() {
 	    return $result;
 	$reqId = $Conf->lastInsertId($while);
     }
-    
+
     // store the review request
     $qa = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn";
     $qb = ") values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Me->contactId, current_timestamp";
@@ -373,7 +373,7 @@ function createAnonymousReview() {
 	$Conf->qe($qa . $qb . ")", $while);
 	$Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId.");
     }
-    
+
     $Conf->qx("unlock tables");
     $Conf->log("Created $contactemail review", $Me, $prow->paperId);
     if ($token)

@@ -121,7 +121,7 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
     foreach (split("\n", $text) as $line) {
 	$line = trim($line);
 	$lineno++;
-	
+
 	if ($line == "" || $line[0] == "#" || substr($line, 0, 6) == "==-== ")
 	    /* do nothing */;
 	else if (preg_match('/^(\d+)\s*[\t,]\s*([^\s,]+)\s*([\t,]|$)/', $line, $m)) {

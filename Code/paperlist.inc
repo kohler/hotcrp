@@ -10,13 +10,13 @@ class PaperList extends BaseList {
     const FIELD_SELECTOR = 100;
     const FIELD_SELECTOR_ON = 101;
     const FIELD_SELECTOR_CONFLICT = 102;
-    
+
     const FIELD_ID = 1;
     const FIELD_TAGINDEX = 8;
     const FIELD_PIDARRAY = 9;
-    
+
     const FIELD_TITLE = 11;
-    
+
     const FIELD_STATUS = 20;
     const FIELD_STATUS_SHORT = 21;
     const FIELD_REVIEWER = 25;
@@ -46,7 +46,7 @@ class PaperList extends BaseList {
     const HEADER_ALL = 2;
     const HEADER_TITLES = 1;
     const HEADER_NONE = 0;
-    
+
     var $showHeader;
     var $sortField;
     var $sortInfo;
@@ -79,7 +79,7 @@ class PaperList extends BaseList {
     var $extraFooter;
     var $papersel;
     var $rf;
-    
+
     function PaperList($sortable = true, $list = false, $search = null, $extraText = null) {
 	global $paperListFields, $scoreSorts;
 	$this->showHeader = self::HEADER_ALL;
@@ -215,16 +215,16 @@ class PaperList extends BaseList {
     function _sortBase($a, $b) {
 	return $a->paperId - $b->paperId;
     }
-    
+
     function _sortPidarray($a, $b) {
 	return $this->sortInfo[$a->paperId] - $this->sortInfo[$b->paperId];
     }
-    
+
     function _sortTitle($a, $b) {
 	$x = strcasecmp($a->title, $b->title);
 	return $x ? $x : $a->paperId - $b->paperId;
     }
-    
+
     function _sortStatus($a, $b) {
 	$x = $b->outcome - $a->outcome;
 	$x = $x ? $x : ($a->timeWithdrawn > 0) - ($b->timeWithdrawn > 0);
@@ -232,7 +232,7 @@ class PaperList extends BaseList {
 	$x = $x ? $x : ($b->paperStorageId > 1) - ($a->paperStorageId > 1);
 	return $x ? $x : $a->paperId - $b->paperId;
     }
-    
+
     function _sortReviewer($a, $b) {
 	$x = strcasecmp($a->reviewLastName, $b->reviewLastName);
 	$x = $x ? $x : strcasecmp($a->reviewFirstName, $b->reviewFirstName);
@@ -266,13 +266,13 @@ class PaperList extends BaseList {
 	$x = $b->topicInterestScore - $a->topicInterestScore;
 	return $x ? $x : $a->paperId - $b->paperId;
     }
-    
+
     function _sortReviewerPreference($a, $b) {
 	$x = $b->reviewerPreference - $a->reviewerPreference;
 	$x = $x ? $x : defval($b, "topicInterestScore", 0) - defval($a, "topicInterestScore", 0);
 	return $x ? $x : $a->paperId - $b->paperId;
     }
-    
+
     function _sortDesirability($a, $b) {
 	$x = $b->desirability - $a->desirability;
 	return $x ? $x : $a->paperId - $b->paperId;
@@ -376,7 +376,7 @@ class PaperList extends BaseList {
 	    }
 	}
     }
-    
+
     function header($fieldId, $ordinal, $row = null, $reviewList = null) {
 	global $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
@@ -502,7 +502,7 @@ class PaperList extends BaseList {
 	    $pl .= "#review" . $rord;
 	return $pl;
     }
-    
+
     function content($fieldId, $row, $reviewList) {
 	global $ConfSiteSuffix, $Conf, $reviewTypeName, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
@@ -768,7 +768,7 @@ class PaperList extends BaseList {
 	$nlll = 1;
 	$revpref = ($listname == "editReviewPreference");
 	$whichlll = 1;
-	
+
 	// Download
 	$t = "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Download</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
 	$sel_opt = array();
@@ -830,7 +830,7 @@ class PaperList extends BaseList {
 	    $t .= "<input id='plact${nlll}_d' class='textlite' type='text' name='paprevpref' value='' size='4' tabindex='6' onfocus='defact(\"setpaprevpref\")' /> &nbsp;<input type='submit' class='bsm' name='setpaprevpref' value='Go' tabindex='6' /></span>";
 	    $nlll++;
 	}
-	
+
 	// Tags (search+PC only)
 	if ($this->contact->isPC && !$revpref) {
 	    if (isset($_REQUEST["tagact"]))
@@ -952,7 +952,7 @@ class PaperList extends BaseList {
 	    return null;
 	}
     }
-    
+
     function listFields($listname) {
 	switch ($listname) {
 	  case "a":
@@ -1042,7 +1042,7 @@ class PaperList extends BaseList {
 	// check paper link destination
 	if (isset($_REQUEST["linkto"]) && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
 	    $this->paperLink = $_REQUEST["linkto"];
-	
+
 	// initialize query
 	$queryOptions = array("joins" => array());
 	if ($this->search->complexSearch($queryOptions)) {
@@ -1065,7 +1065,7 @@ class PaperList extends BaseList {
 	    $this->sortField = null;
 	if (!$this->sortField && $this->specialSortable)
 	    $this->sortField = $this->specialSortable;
-	
+
 	// get field array
 	$fieldDef = array();
 	$ncol = 0;
@@ -1094,7 +1094,7 @@ class PaperList extends BaseList {
 	    while (($row = edb_orow($result)))
 		$reviewList[$row->paperId][] = $row;
 	}
-	
+
 	// prepare query text
 	if ($me->contactId == $this->search->contactId)
 	    $pq = $Conf->paperQuery($me, $queryOptions);
@@ -1139,7 +1139,7 @@ class PaperList extends BaseList {
 			$anyData[$fieldId] = 1;
 		}
 	    $t .= "  </tr>\n";
-	    
+
 	    foreach ($fieldDef as $fieldId => $fdef)
 		if ($fdef[1] >= 2 && ($d = $this->content($fieldId, $row, $reviewList))) {
 		    $t .= "  <tr class=\"pl_$fdef[0] pl_callout $trclass";
@@ -1223,7 +1223,7 @@ class PaperList extends BaseList {
 		$titleextra .= "<a class='unfolder4' href='javascript:foldplinfo(0,4,\"tags\")'>Show tags</a><a class='folder4' href='javascript:foldplinfo(1,4,\"tags\")'>Hide tags</a><span id='tagsloadformresult'></span>";
 		$titleextra .= foldsessionpixel("pl4", $this->foldtype . "tags");
 	    }
-	    
+
 	    if ($this->sortable && $url) {
 		$sortUrl = htmlspecialchars($url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
 		$q = "<a class='pl_sort' title='Change sort' href=\"" . $sortUrl;
@@ -1255,7 +1255,7 @@ class PaperList extends BaseList {
 		    }
 		    $x .= "</th>\n";
 		}
-		
+
 	    } else {
 		foreach ($fieldDef as $fieldId => $fdef)
 		    if ($fdef[1] == 1 && isset($anyData[$fieldId]))
@@ -1264,7 +1264,7 @@ class PaperList extends BaseList {
 		    else if ($fdef[1] == 1)
 			$x .= "    <th class=\"pl_$fdef[0]\"></th>\n";
 	    }
-	    
+
 	    $x .= "  </tr>\n";
 	    $x .= "  <tr><td class='pl_headgap' colspan='$ncol'></td></tr>\n";
 	}

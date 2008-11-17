@@ -1,4 +1,4 @@
-<?php 
+<?php
 // settings.php -- HotCRP chair-only conference settings management page
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
@@ -188,7 +188,7 @@ $emptytags = array_flip(array("base", "meta", "link", "hr", "br", "param", "img"
 function cleanXHTML($t, &$err) {
     global $goodtags, $emptytags;
     $tagstack = array();
-    
+
     $x = "";
     while ($t != "") {
 	if (($p = strpos($t, "<")) === false) {
@@ -197,7 +197,7 @@ function cleanXHTML($t, &$err) {
 	}
 	$x .= substr($t, 0, $p);
 	$t = substr($t, $p);
-	
+
 	if (preg_match('/\A<!\[[ie]/', $t))
 	    return _cleanXHTMLError($err, "an Internet Explorer conditional comment");
 	else if (preg_match('/\A(<!\[CDATA\[.*?)(\]\]>|\z)(.*)\z/s', $t, $m)) {
@@ -261,13 +261,13 @@ function cleanXHTML($t, &$err) {
 	    $t = substr($t, 1);
 	}
     }
-    
+
     if (count($tagstack) > 0)
 	return _cleanXHTMLError($err, "unclosed tags, including <code>&lt;$tagstack[0]&gt;</code>");
-    
+
     return $x;
 }
-    
+
 function parseValue($name, $type) {
     global $SettingText, $Error, $Highlight;
 
@@ -426,7 +426,7 @@ function doTopics($set) {
 	return;
     }
     $while = "while updating topics";
-    
+
     $numnew = defval($_REQUEST, "newtopcount", 50);
     foreach ($_REQUEST as $k => $v) {
 	if (!(strlen($k) > 3 && $k[0] == "t" && $k[1] == "o" && $k[2] == "p"))
@@ -475,7 +475,7 @@ function doOptions($set) {
 	return;
     }
     $while = "while updating options";
-    
+
     $ochange = false;
     $anyo = false;
     foreach (paperOptions() as $id => $o) {
@@ -501,7 +501,7 @@ function doOptions($set) {
 	} else
 	    $anyo = true;
     }
-    
+
     if (defval($_REQUEST, "optnn") && $_REQUEST["optnn"] != "New option"
 	&& $_REQUEST["optnn"] != "(Enter new option here)") {
 	doCleanOptionValues("n");
@@ -551,7 +551,7 @@ function doDecisions($set) {
 	for ($k = $delta; true; $k += $delta)
 	    if (!isset($dec[$k]))
 		break;
-	
+
 	$Conf->qe("insert into ReviewFormOptions set fieldName='outcome', level=$k, description='" . sqlq($_REQUEST["decn"]) . "'");
     }
 }
@@ -775,7 +775,7 @@ if (isset($_REQUEST["update"])) {
 	if (($row = edb_row($result)) && $row[0] != $Conf->setting("papersub"))
 	    $Values["papersub"] = $row[0];
     }
-    
+
     // warn on other relationships
     if (array_key_exists("resp_open", $Values)
 	&& $Values["resp_open"] > 0
@@ -1047,10 +1047,10 @@ function doSubGroup() {
 	doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp; pt"), setting("sub_banal_bodyleading", $bsetting[5]), 4, "lxcaption", "N/A");
 	echo "</table></td></tr></table>";
     }
-    
+
     echo "<hr class='hr' />\n";
     doRadio("sub_freeze", array(0 => "<strong>Authors can update submissions until the deadline</strong>", 1 => array("Authors must freeze the final version of each submission", "&ldquo;Authors can update submissions until the deadline&rdquo; is usually the best choice.  Freezing submissions is mostly useful when there is no submission deadline.")));
-    
+
     echo "<div class='g'></div><table>\n";
     // compensate for pc_seeall magic
     if ($Conf->setting("pc_seeall") < 0)
@@ -1135,7 +1135,7 @@ function doOptGroupOption($o) {
 
 function doOptGroup() {
     global $Conf, $ConfSiteSuffix, $rf;
-    
+
     if ($Conf->setting("allowPaperOption")) {
 	echo "<h3>Submission options</h3>\n";
 	echo "Options are selected by authors at submission time.  Examples have included &ldquo;PC-authored paper,&rdquo; &ldquo;Consider this paper for a Best Student Paper award,&rdquo; and &ldquo;Allow the shadow PC to see this paper.&rdquo;  The &ldquo;option name&rdquo; should be brief (&ldquo;PC paper,&rdquo; &ldquo;Best Student Paper,&rdquo; &ldquo;Shadow PC&rdquo;).  The description should be more descriptive and may use XHTML.  To delete an option, delete its name.  Add options one at a time.\n";
@@ -1148,11 +1148,11 @@ function doOptGroup() {
 	    doOptGroupOption($o);
 	    $sep = "<tr><td colspan='2'><hr class='hr' /></td></tr>\n";
 	}
-    
+
 	echo $sep;
 
 	doOptGroupOption((object) array("optionId" => "n", "optionName" => "(Enter new option here)", "description" => "", "pcView" => 1, "optionValues" => ""));
-	
+
 	echo "</table>\n";
     }
 
@@ -1236,7 +1236,7 @@ function doRevGroup() {
 	doCheckbox('extrev_chairreq', "PC chair must approve proposed external reviewers");
 	echo "<div class='g'></div>";
     }
-    
+
     echo "<table>\n";
     doDateRow("extrev_soft", "Deadline", "extrev_hard");
     doDateRow("extrev_hard", "Hard deadline");
@@ -1291,7 +1291,7 @@ function doRevGroup() {
 
     echo "<div class='g'></div>\n";
     doCheckbox('tag_seeall', "PC can see tags for conflicted papers");
-    
+
     echo "<hr class='hr' />";
 
     // Tags
@@ -1345,7 +1345,7 @@ function doDecGroup() {
 	tagg_select("dtypn", array(1 => "Accept class", -1 => "Reject class")),
 	"<br /><small>Examples: &ldquo;Accepted as short paper&rdquo;, &ldquo;Early reject&rdquo;</small>",
 	"</td></tr>\n</table>\n";
-    
+
     // Final copies
     echo "<hr class='hr' />";
     echo "<h3>Final copies</h3>\n";

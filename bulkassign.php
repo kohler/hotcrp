@@ -44,9 +44,9 @@ function parseBulkFile($text, $filename, $type) {
 	$Error["rev_roundtag"] = true;
 	return $Conf->errorMsg("The review round must contain only letters and numbers.");
     }
-    
+
     // XXX lock tables
-    
+
     while ($text != "") {
 	$pos = strpos($text, "\n");
 	$line = ($pos === FALSE ? $text : substr($text, 0, $pos + 1));
@@ -70,7 +70,7 @@ function parseBulkFile($text, $filename, $type) {
 	    $nameemail = trim("$firstName $lastName") . " <$email>";
 	else
 	    $nameemail = trim("$firstName $lastName") . $email;
-	
+
 	// PC members
 	if ($type != REVIEW_EXTERNAL) {
 	    $cid = matchContact($pcm, $firstName, $lastName, $email);
@@ -98,7 +98,7 @@ function parseBulkFile($text, $filename, $type) {
 	$lnameemail[$lineno] = $nameemail;
     }
 
-    
+
     // examine assignments for duplicates and bugs
     if (count($ass) > 0) {
 	$paperIds = join(", ", array_keys($ass));

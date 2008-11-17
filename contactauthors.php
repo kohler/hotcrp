@@ -1,4 +1,4 @@
-<?php 
+<?php
 // contactauthors.php -- HotCRP paper contact author management page
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
@@ -67,7 +67,7 @@ if (!$Me->canEditContactAuthors($prow))
 
 if (isset($_REQUEST["add"])) {
     if (!isset($_REQUEST["email"]) || trim($_REQUEST["email"]) == "")
-	$Conf->errorMsg("You must enter the new contact author's email address."); 
+	$Conf->errorMsg("You must enter the new contact author's email address.");
     else if (($id = $Conf->getContactId($_REQUEST["email"], true)) > 0) {
 	if (addContactAuthor($prow->paperId, $id))
 	    $Conf->confirmMsg("Contact author added.");
@@ -94,7 +94,7 @@ if ($OK) {
     $paperTable = new PaperTable($prow);
     $paperTable->initialize(false, false, true);
     $paperTable->mode = "contact";
-    
+
     $paperTable->paptabBegin();
 
     // Contact authors
@@ -128,7 +128,7 @@ if ($OK) {
     $paperTable->_paptabSepContaining($t);
 
     $paperTable->paptabEndWithReviewMessage();
-    
+
 } else {
     $Conf->errorMsg("The paper disappeared!");
 }

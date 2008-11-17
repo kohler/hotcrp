@@ -603,7 +603,7 @@ class Mailer {
 	$result = $Conf->qe("select Paper.title, PaperReview.*,
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
 		conflictType, ContactReview.reviewType as myReviewType
- 		from PaperReview
+		from PaperReview
 		join Paper using (paperId)
 		join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)
 		left join PaperConflict on (PaperConflict.contactId=$contact->contactId and PaperConflict.paperId=PaperReview.paperId)
@@ -625,12 +625,12 @@ class Mailer {
 	    return "";
 
 	$q = "select PaperComment.*,
- 		ContactInfo.firstName as reviewFirstName,
+		ContactInfo.firstName as reviewFirstName,
 		ContactInfo.lastName as reviewLastName,
 		ContactInfo.email as reviewEmail,
 		PaperConflict.conflictType
 		from PaperComment
- 		join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
+		join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
 		left join PaperConflict on (PaperConflict.paperId=PaperComment.paperId and PaperConflict.contactId=PaperComment.contactId)";
 	if (is_array($this->commentId))
 	    $q .= "\n\t\twhere PaperComment.commentId in (" . join(", ", $this->commentId) . ")";
@@ -839,7 +839,7 @@ class Mailer {
     }
 
     function mimeHeaderQuote($text, $len, $stringent) {
-    	// minimum length
+   	// minimum length
 	if ($len < 30)
 	    $len = 30;
 	// replace all special characters used by the encoder

@@ -1,4 +1,4 @@
-<?php 
+<?php
 // search.php -- HotCRP paper search page
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
@@ -204,7 +204,7 @@ function downloadReviews(&$texts, &$errors) {
 
     $getforms = ($getaction == "revform" || $getaction == "revformz");
     $gettext = ($getaction == "rev" || $getaction == "revform");
-    
+
     $warnings = array();
     if (count($errors))
 	$warnings[] = "Some " . ($getforms ? "review forms" : "reviews") . " are missing:";
@@ -216,12 +216,12 @@ function downloadReviews(&$texts, &$errors) {
     $rfname = ($getforms && count($texts) == 1 ? "review" : "reviews");
     if (count($texts) == 1 && $gettext)
 	$rfname .= $papersel[key($texts)];
-    
+
     if ($getforms)
 	$header = $rf->textFormHeader($Conf, count($texts) > 1 && $getaction == "revform");
     else
 	$header = "";
-    
+
     if ($gettext) {
 	$text = $header;
 	if (count($warnings) && $getforms)
@@ -302,7 +302,7 @@ if (($getaction == "rev" || $getaction == "revz") && isset($papersel)) {
 function tagaction() {
     global $Conf, $Me, $Error, $papersel;
     require_once("Code/tags.inc");
-    
+
     $errors = array();
     $papers = $papersel;
     if (!$Me->privChair) {
@@ -316,7 +316,7 @@ function tagaction() {
 
     if (count($errors))
 	$Conf->errorMsg(join("<br/>", $errors));
-    
+
     $act = $_REQUEST["tagtype"];
     $tag = $_REQUEST["tag"];
     if (count($papers) && ($act == "a" || $act == "d" || $act == "s" || $act == "so" || $act == "ao" || $act == "sos" || $act == "aos" || $act == "da"))
@@ -391,7 +391,7 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 	    . "#   $Conf->paperSite/offline$ConfSiteSuffix\n"
 	    . "# Tag: " . trim($_REQUEST["tag"]) . "\n"
 	    . "\n"
-	    . $real . $null;	
+	    . $real . $null;
 	downloadText($text, $Opt['downloadPrefix'] . "rank.txt", "rank");
 	exit;
     }
@@ -433,7 +433,7 @@ if ($getaction == "pcconflicts" && isset($papersel) && $Me->privChair) {
     $result = $Conf->qe("select Paper.paperId, title, group_concat(email separator ' ')
 		from Paper
 		left join (select PaperConflict.paperId, email
- 			from PaperConflict join PCMember using (contactId)
+			from PaperConflict join PCMember using (contactId)
 			join ContactInfo on (PCMember.contactId=ContactInfo.contactId))
 			as PCConflict on (PCConflict.paperId=Paper.paperId)
 		where $idq
@@ -503,7 +503,7 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	if ($rf->authorView[$field] > $revViewScore
 	    && isset($rf->options[$field]))
 	    $scores[] = $field;
-    
+
     $header = '#paper';
     if ($Conf->blindSubmission() == BLIND_OPTIONAL)
 	$header .= "\tblind";
@@ -511,7 +511,7 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
     foreach ($scores as $score)
 	$header .= "\t" . $rf->abbrevName[$score];
     $header .= "\trevieweremail\treviewername\n";
-    
+
     $errors = array();
     if ($Me->privChair)
 	$_REQUEST["forceShow"] = 1;
@@ -621,7 +621,7 @@ if ($getaction == "checkformat" && $Me->privChair && isset($papersel)) {
     // generate output gradually since this takes so long
     $text = "#paper\tformat\tpages\ttitle\n";
     downloadText($text, $Opt['downloadPrefix'] . "formatcheck.txt", "format checker", false, false);
-    
+
     // compose report
     $texts = array();
     while ($row = edb_row($result))
@@ -750,7 +750,7 @@ if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
 }
 if (isset($_REQUEST["scoresort"]) && isset($scoreSorts[$_REQUEST["scoresort"]]))
     $_SESSION["scoresort"] = $_REQUEST["scoresort"];
-    
+
 
 // search
 $Conf->header("Search", 'search', actionBar());
@@ -952,7 +952,7 @@ if ($pl) {
 	echo "<form method='post' action=\"", htmlspecialchars(selfHref(array("selector" => 1), "search$ConfSiteSuffix")), "\" accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck();'><div class='inform'>\n",
 	    "<input id='defaultact' type='hidden' name='defaultact' value='' />",
 	    "<input class='hidden' type='submit' name='default' value='1' />";
-    
+
     echo $pl_text;
     if ($pl->count == 0 && $_REQUEST["t"] != "s") {
 	$a = array();
@@ -964,7 +964,7 @@ if ($pl) {
 	if (key($tOpt) != $_REQUEST["t"])
 	    echo " (<a href=\"search$ConfSiteSuffix?", join("&amp;", $a), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
     }
-    
+
     if ($pl->anySelector)
 	echo "</div></form>";
     echo "</div>\n";

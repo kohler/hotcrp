@@ -1,4 +1,4 @@
-<?php 
+<?php
 // help.php -- HotCRP help page
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
@@ -646,7 +646,7 @@ Follow these steps to prepare to accept paper submissions.
   their papers, possibly multiple times; they choose for each submitted
   version whether that version is ready for review.  Normally, HotCRP allows
   authors to update their papers until the deadline, but you can also require
-  that authors &ldquo;freeze&rdquo; each submission explicitly; only 
+  that authors &ldquo;freeze&rdquo; each submission explicitly; only
   administrators can update frozen submissions.
   The only deadline that really matters is the paper submission
   deadline, but HotCRP also supports a separate paper registration deadline,

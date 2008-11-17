@@ -1,4 +1,4 @@
-<?php 
+<?php
 // offline.php -- HotCRP offline review management page
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE

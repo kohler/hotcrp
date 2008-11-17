@@ -53,7 +53,7 @@ class ReviewForm {
 				    'grammar' => 1,
 				    'likelyPresentation' => 1,
 				    'suitableForShort' => 1);
-	
+
 	if ($conf->setting("allowPaperOption") >= 8) {
 	    $this->reviewFields["textField7"] = 0;
 	    $this->reviewFields["textField8"] = 0;
@@ -103,7 +103,7 @@ class ReviewForm {
 	    return "";
 	return ($opt1 <= 1 ? $value : chr($opt1 - $value));
     }
-    
+
     function updateFromDB($conf) {
 	$this->fieldOrder = array();
 	$this->shortName = array();
@@ -117,7 +117,7 @@ class ReviewForm {
 	$this->topicOrder = array();
 
 	$while = "while updating review form information";
-	
+
 	$result = $conf->qe("select * from ReviewFormField order by sortOrder, shortName", $while);
 	if (!$result)
 	    return;
@@ -134,7 +134,7 @@ class ReviewForm {
 	    if ($this->reviewFields[$n] && isset($row->levelChar))
 		$this->reviewFields[$n] = max($row->levelChar, 1);
 	}
-	
+
 	$result = $conf->qe("select fieldName, level, description from ReviewFormOptions order by fieldName, level", $while);
 	if (!$result)
 	    return;
@@ -160,7 +160,7 @@ class ReviewForm {
 	}
 	foreach ($leftovers as $topicid)
 	    $this->topicOrder[$topicid] = $i++;
-	
+
 	$this->updatedWhen = time();
 
 	$_SESSION["rf"] = serialize($this);
@@ -202,7 +202,7 @@ class ReviewForm {
 		else
 		    $fval = $rrow->$field;
 	    }
-	    
+
 	    $n = htmlspecialchars($this->shortName[$field]);
 	    $c = "<span class='revfn'>" . $n . "</span>";
 	    if ($this->authorView[$field] < -1)
@@ -211,7 +211,7 @@ class ReviewForm {
 		$c .= "<span class='hint'>(shown only to chairs)</span>";
 	    else if ($this->authorView[$field] == 0)
 		$c .= "<span class='hint'>(hidden from authors)</span>";
-	    
+
 	    $x .= "<div class='revt";
 	    if (isset($ReviewFormError[$field]))
 		$x .= " error";
@@ -471,7 +471,7 @@ class ReviewForm {
     function textFormHeader($conf, $type, $editable = true) {
 	global $Conf, $ConfSiteSuffix;
 	$conf = ($conf ? $conf : $Conf);
-	
+
 	$x = "==+== $conf->shortName Paper Review";
 	if ($editable) {
 	    $x .= " Form" . ($type === true ? "s" : "") . "\n==-== ";
@@ -608,7 +608,7 @@ $blind\n";
 	$l = max(14, (int) ((75.5 - strlen($prow->title) - strlen($n)) / 2) + strlen($n));
 	return wordWrapIndent($prow->title, $n, $l) . "\n";
     }
-    
+
     function prettyTextForm($prow, $rrow, $contact, $conf, $alwaysAuthorView = true) {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
@@ -718,7 +718,7 @@ $blind\n";
 	return array('text' => cleannl($contents), 'filename' => $printFilename,
 		     'lineno' => 0, 'err' => array(), 'confirm' => array());
     }
-    
+
     function parseTextForm(&$tf, $conf = null) {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
@@ -735,7 +735,7 @@ $blind\n";
 	$nfields = 0;
 	$field = 0;
 	$anyDirectives = 0;
-	
+
 	while ($text != "") {
 	    $pos = strpos($text, "\n");
 	    $line = ($pos === FALSE ? $text : substr($text, 0, $pos + 1));
@@ -745,7 +745,7 @@ $blind\n";
 		// make sure we record that we saw the last field
 		if ($mode && $field != null && !isset($req[$field]))
 		    $req[$field] = "";
-		
+
 		$anyDirectives++;
 		if (preg_match("/Paper Review Form/", $line)
 		    && !preg_match("/$conf->shortName Paper Review Form/", $line)) {
@@ -835,7 +835,7 @@ $blind\n";
 	    self::tfError($tf, true, "This review form doesn't report which paper number it is for.  Make sure you've entered the paper number in the right place and try again.", defval($tf["fieldLineno"], "paperNumber", $lineno));
 	    $nfields = 0;
 	}
-	
+
 	if ($nfields == 0 && $text) // try again
 	    return $this->parseTextForm($tf, $conf);
 	else if ($nfields == 0)
@@ -843,7 +843,7 @@ $blind\n";
 	else
 	    return $req;
     }
-    
+
     function textFormMessages(&$tf, $conf = null) {
 	global $Conf;
 	$conf = ($conf ? $conf : $Conf);
@@ -962,23 +962,23 @@ $blind\n";
 
 	return "<table class='revtab'>" . $x . "</table>\n";
     }
-    
+
     function webGuidanceRows($revViewScore, $extraclass="") {
 	global $ReviewFormError;
 	$x = '';
 	$needRow = 1;
-	
+
 	foreach ($this->fieldOrder as $field) {
 	    if ($this->authorView[$field] <= $revViewScore)
 		continue;
 	    $options = isset($this->options[$field]);
 	    if (!$this->description[$field] && !$options)
 		continue;
-	    
+
 	    $x .= "<tr class='rev_$field'>\n";
 	    $x .= "  <td class='caption rev_$field$extraclass'>";
 	    $x .= htmlspecialchars($this->shortName[$field]) . "</td>\n";
-	    
+
 	    $x .= "  <td class='entry rev_$field$extraclass'>";
 	    if ($this->description[$field])
 		$x .= "<div class='rev_description'>" . $this->description[$field] . "</div>";
@@ -988,7 +988,7 @@ $blind\n";
 		    $x .= "<br />\n<span class='rev_num rev_num_$num'>$num.</span> " . htmlspecialchars($val);
 		$x .= "</div>";
 	    }
-	    
+
 	    $x .= "</td>\n</tr>\n";
 	    $extraclass = "";
 	}
@@ -999,7 +999,7 @@ $blind\n";
     function webFieldAbbrev($field) {
 	return "<span class='hastitle' title=\"" . htmlspecialchars($this->shortName[$field]) . "\">" . htmlspecialchars($this->abbrevName[$field]) . "</span>";
     }
-    
+
     function webNumericScoresHeader($prow, $contact, $conf) {
 	$revViewScore = $contact->viewReviewFieldsScore($prow, null, $conf);
 	$x = "";
@@ -1027,7 +1027,7 @@ $blind\n";
 	    }
 	return $x;
     }
-    
+
     function webNumericScoresTable($rrows, $prow, $contact, $conf, $links) {
 	$revNullViewScore = $contact->viewReviewFieldsScore($prow, null, $conf);
 	$reviewnum = 65;
@@ -1108,11 +1108,11 @@ $blind\n";
 		echo "<input type='hidden' name='version' value=\"", defval($rrow, "reviewEditVersion", 0) + 1, "\" />";
 	} else
 	    echo "<div class='relative'>";
-    
+
 	echo "<table class='pbox'><tr>
   <td class='pboxl'></td>
   <td class='pboxr'>";
-    
+
 	echo tagg_cbox("rev", false), "\t<tr><td></td><td class='revhead'>";
 
 	// Links
@@ -1234,7 +1234,7 @@ $blind\n";
 
 	    if (defval($options, "editmessage"))
 		echo "<div class='hint'>", defval($options, "editmessage"), "</div>\n";
-    
+
 	    echo "<div class='clear'></div></td><td></td></tr>
   <tr><td></td><td class='revct'><div class='inrevct'>",
 		$this->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow, $Conf)),

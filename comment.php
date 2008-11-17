@@ -1,4 +1,4 @@
-<?php 
+<?php
 // comment.php -- HotCRP paper comment display/edit page
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
@@ -43,7 +43,7 @@ function loadRows() {
     $paperTable = new PaperTable($prow);
     $paperTable->resolveReview();
     $paperTable->resolveComments();
-    
+
     $crow = null;
     $cid = defval($_REQUEST, "commentId", "xxx");
     foreach ($paperTable->crows as $row) {
@@ -114,7 +114,7 @@ function watch($newComment) {
 		left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId)
 		left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId)
 		where conflictType>=" . CONFLICT_AUTHOR . " or reviewType is not null or watch is not null or commentId is not null");
-    
+
     $saveProw = (object) null;
     $lastContactId = 0;
     setReviewInfo($saveProw, $prow);
@@ -223,7 +223,7 @@ function saveComment($text) {
 	$Conf->q("unlock tables");	// just in case
 	$Conf->qe("update Paper set numComments=(select count(commentId) from PaperComment where paperId=$prow->paperId), numAuthorComments=(select count(commentId) from PaperComment where paperId=$prow->paperId and forAuthors>0) where paperId=$prow->paperId", $while);
     }
-    
+
     unset($_REQUEST["c"]);
     $_REQUEST["paperId"] = $prow->paperId;
     if ($text == "")

@@ -21,7 +21,7 @@ class PaperRank {
 	$this->papersel = $papersel;
 	$this->userrank = array();
 
-	// generate random order for paper comparisons 
+	// generate random order for paper comparisons
 	if (count($papersel)) {
 	    $range = range(0, count($papersel) - 1);
 	    shuffle($range);
@@ -475,5 +475,5 @@ class PaperRank {
 	if ($result)
 	    $Conf->confirmMsg("Ranks saved.");
     }
-    
+
 }

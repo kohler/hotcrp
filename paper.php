@@ -98,7 +98,7 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
     require_once("Code/checkformat.inc");
     $cf = new CheckFormat();
     $status = $cf->analyzePaper($prow->paperId, false, $Conf->settingText("sub_banal", ""));
-    
+
     // chairs get a hint message about multiple checking
     if ($Me->privChair) {
 	if (!isset($_SESSION["info"]))
@@ -107,7 +107,7 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
 	if ($_SESSION["info"]["nbanal"] >= 3 && $_SESSION["info"]["nbanal"] <= 6)
 	    $cf->msg("info", "To run the format checker for many papers, use Download &gt; Format check on the <a href='search$ConfSiteSuffix?q='>search page</a>.");
     }
-    
+
     $cf->reportMessages();
     if ($ajax)
 	$Conf->ajaxExit(array("status" => $status), true);
@@ -130,7 +130,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	    Mailer::sendContactAuthors("@authorwithdraw", $prow, null, array("infoNames" => 1));
 	else
 	    Mailer::sendContactAuthors("@adminwithdraw", $prow, null, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
-	    
+
 	// email reviewers
 	if ($prow->startedReviewCount > 0)
 	    Mailer::sendReviewers("@withdrawreviewer", $prow, null, array("reason" => defval($_REQUEST, "emailNote", "")));
@@ -245,7 +245,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // clear 'isSubmit' if no paper has been uploaded
     if (!fileUploaded($_FILES['paperUpload'], $Conf) && ($newPaper || $prow->size == 0))
 	$isSubmit = false;
-    
+
     // check that all required information has been entered
     foreach (array("title", "abstract", "authorTable", "collaborators") as $x)
 	if (!isset($_REQUEST[$x]))
@@ -263,7 +263,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    $_REQUEST[$x] = simplifyWhitespace($_REQUEST[$x]);
 	$q .= "$x='" . sqlqtrim($_REQUEST[$x]) . "', ";
     }
-    
+
     if (!is_array($_REQUEST["authorTable"]) || count($_REQUEST["authorTable"]) == 0)
 	$Error["authorInformation"] = 1;
     else {
@@ -321,7 +321,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$q .= "blind=1, ";
     else
 	$q .= "blind=0, ";
-    
+
     // update Paper table
     if ($newPaper)
 	$q .= "paperStorageId=1";
@@ -405,7 +405,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 			     "while updating conflicts"))
 	    return false;
     }
-    
+
     // upload paper if appropriate
     if (fileUploaded($_FILES['paperUpload'], $Conf)) {
 	if ($newPaper)
@@ -432,7 +432,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     }
     if ($isSubmit || $Conf->setting("pc_seeall"))
 	$Conf->updatePapersubSetting(true);
-    
+
     // confirmation message
     loadRows();
     if ($isSubmitFinal) {
@@ -503,7 +503,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	require_once("Code/mailtemplate.inc");
 	Mailer::sendContactAuthors(array("$subject %TITLEHINT%", $m), $prow, null, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
     }
-    
+
     $Conf->log($actiontext, $Me, $paperId);
     return true;
 }
@@ -571,7 +571,7 @@ if (isset($_REQUEST['delete'])) {
 		$Conf->updatePaperaccSetting(false);
 	    $Conf->log("Deleted", $Me, $paperId);
 	}
-	
+
 	$prow = null;
 	errorMsgExit("");
     }
@@ -624,7 +624,7 @@ $paperTable->initialize($editable, $editable && $useRequest,
 $paperTable->paptabBegin();
 
 if ($paperTable->mode == "r" && !$paperTable->rrow)
-    $paperTable->paptabEndWithReviews(); 
+    $paperTable->paptabEndWithReviews();
 else if ($paperTable->mode == "re" || $paperTable->mode == "r")
     $paperTable->paptabEndWithEditableReview();
 else

@@ -126,7 +126,7 @@ echo "<div class='g'></div>\n";
 if (count($tOpt) > 1) {
     echo "<table id='contactsform' class='tablinks1'>
 <tr><td><div class='tlx'><div class='tld1'>";
-    
+
     echo "<form method='get' action='contacts$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>";
     if (isset($_REQUEST["sort"]))
 	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />";
@@ -183,7 +183,7 @@ if (count($tOpt) > 1) {
 	    "</td></tr>";
     }
     echo "</table></div></form>";
-    
+
     echo "</div></div></td></tr>\n";
 
     // Tab selectors

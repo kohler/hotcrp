@@ -8,7 +8,7 @@ class CommentView {
     var $ncomment;
     var $nresponse;
     var $mode;
-    
+
     function CommentView() {
 	$this->ncomment = $this->nresponse = $this->mode = 0;
     }
@@ -122,7 +122,7 @@ class CommentView {
 
 	if (isset($CommentMsg) && $crow && isset($CommentMsg[$crow->commentId]))
 	    echo $CommentMsg[$crow->commentId];
-    
+
 	if (!$editMode) {
 	    echo htmlWrapText(htmlspecialchars($crow->comment)), "</div>\n\n";
 	    return;
@@ -187,7 +187,7 @@ class CommentView {
 	    $editMode = false;
 	$this->nresponse++;
 	$wordlimit = $Conf->setting("resp_words", 0);
-    
+
 	if ($editMode) {
 	    echo "<form action='comment$ConfSiteSuffix?";
 	    if ($crow)
@@ -241,7 +241,7 @@ has passed.  Please keep the response short and to the point",
 
 	if (isset($CommentMsg) && $crow && isset($CommentMsg[$crow->commentId]))
 	    echo $CommentMsg[$crow->commentId];
-    
+
 	if (!$editMode) {
 	    if ($Me->privChair && $crow->forReviewers == 0)
 		echo "<i>The <a href='comment$ConfSiteSuffix?c=$crow->commentId$linkExtra'>authors' response</a> is not yet ready for reviewers to view.</i>";

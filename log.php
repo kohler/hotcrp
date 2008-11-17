@@ -1,4 +1,4 @@
-<?php 
+<?php
 // log.php -- HotCRP action log
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
@@ -95,7 +95,7 @@ if ($_REQUEST["date"] != "now" && isset($_REQUEST["search"]))
 
 function searchbar() {
     global $Conf, $ConfSiteSuffix, $Eclass, $page, $start, $count, $nrows, $maxNrows, $offset;
-    
+
     echo "<form method='get' action='log$ConfSiteSuffix' accept-charset='UTF-8'>
 <table id='searchform'><tr>
   <td class='lxcaption", $Eclass['q'], "'>With <b>any</b> of the words</td>
@@ -191,7 +191,7 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
 	$maxNrows -= $n - 1;
 	$n = 0;
     }
-    
+
     $n++;
     if ($n == 1) {
 	if ($start != 0 && !$firstDate)
@@ -211,7 +211,7 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
   <th class='al_act'>Action</th>
 </tr>\n";
     }
-    
+
     $k = 1 - $k;
     echo "<tr class='k$k al'>";
     echo "<td class='pl_id'>", htmlspecialchars($row->logId), "</td>";
@@ -219,7 +219,7 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
     echo "<td class='al_ip'>", htmlspecialchars($row->ipaddr), "</td>";
     echo "<td class='pl_name'>", contactHtml($row->firstName, $row->lastName, $row->email), "</td>";
     echo "<td class='al_act'>";
-    
+
     $act = $row->action;
     if (preg_match('/^Review (\d+)/', $act, $m)) {
 	echo "<a href=\"review$ConfSiteSuffix?r=$m[1]\">Review ",
@@ -238,7 +238,7 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
 	    "\">papers</a> ",
 	    preg_replace('/(\d+)/', "<a href=\"paper$ConfSiteSuffix?p=\$1\">\$1</a>", $m[1]),
 	    ")";
-    } else 
+    } else
 	echo htmlspecialchars($act);
 
     if ($row->paperId)

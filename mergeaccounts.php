@@ -1,4 +1,4 @@
-<?php 
+<?php
 // mergeaccounts.php -- HotCRP account merging page
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
@@ -44,16 +44,16 @@ if (isset($_REQUEST["merge"])) {
 		$_REQUEST["Me"] = $Me = $MiniMe;
 		$MiniMe = $mm;
 	    }
-	    
+
 	    require_once("Code/mailtemplate.inc");
 	    Mailer::send("@mergeaccount", null, $MiniMe, $Me, array("headers" => "Cc: " . contactEmailTo($Me)));
-	    
+
 	    // Now, scan through all the tables that possibly
 	    // specify a contactID and change it from their 2nd
 	    // contactID to their first contactId
 	    $oldid = $MiniMe->contactId;
 	    $newid = $Me->contactId;
-	    
+
 	    $while = "while merging conflicts";
 	    $t = "Paper write, ContactInfo write, PaperConflict write, PCMember write, ChairAssistant write, Chair write, ActionLog write, TopicInterest write, PaperComment write, PaperReview write, PaperReview as B write, PaperReviewArchive write, PaperReviewPreference write, PaperReviewRefused write, ReviewRequest write";
 	    if ($Conf->setting("allowPaperOption") >= 5)
@@ -63,7 +63,7 @@ if (isset($_REQUEST["merge"])) {
 	    if ($Conf->setting("allowPaperOption") >= 12)
 		$t .= ", ReviewRating write";
 	    $Conf->q("lock tables $t", $while);
-	    
+
 	    crpmergeone("Paper", "leadContactId", $oldid, $newid);
 	    crpmergeone("Paper", "shepherdContactId", $oldid, $newid);
 
@@ -76,7 +76,7 @@ if (isset($_REQUEST["merge"])) {
 	    }
 	    foreach ($qs as $q)
 		$Conf->qe($q, $while);
-	    
+
 	    // ensure uniqueness in PaperConflict
 	    $result = $Conf->qe("select paperId, conflictType from PaperConflict where contactId=$oldid", $while);
 	    $values = "";
@@ -85,7 +85,7 @@ if (isset($_REQUEST["merge"])) {
 	    if ($values)
 		$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($values, 2) . " on duplicate key update conflictType=greatest(conflictType, values(conflictType))", $while);
 	    $Conf->qe("delete from PaperConflict where contactId=$oldid", $while);
-	    
+
 	    crpmergeoneignore("PCMember", "contactId", $oldid, $newid);
 	    crpmergeoneignore("ChairAssistant", "contactId", $oldid, $newid);
 	    crpmergeoneignore("Chair", "contactId", $oldid, $newid);

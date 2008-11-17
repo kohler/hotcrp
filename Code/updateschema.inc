@@ -3,7 +3,7 @@
 function updateSchema($Conf) {
     global $Opt, $OK;
     error_log("Note: updating schema from version " . $Conf->settings["allowPaperOption"]);
-    
+
     if ($Conf->settings["allowPaperOption"] == 6
 	&& $Conf->q("alter table ReviewRequest add `reason` text")
 	&& $Conf->q("update Settings set value=7 where name='allowPaperOption'"))
