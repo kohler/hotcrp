@@ -169,8 +169,17 @@ class Contact {
     function trim() {
 	$this->contactId = trim($this->contactId);
 	$this->visits = trim($this->visits);
-	$this->firstName = simplifyWhitespace($this->firstName);
-	$this->lastName = simplifyWhitespace($this->lastName);
+
+	// Prevent users' names from containing the characters < and >.  This
+	// aids the parsing and quoting of generated email To: and Cc: lines,
+	// since users can't generate anything like a <quoted email address>.
+	// The translated characters are U+2039 and U+203A, single left and
+	// right guillemets.
+	foreach (array("firstName", "lastName") as $k)
+	    $this->$k = str_replace(array("<", ">"),
+				    array("\342\200\271", "\342\200\272"),
+				    simplifyWhitespace($this->$k));
+
 	foreach (array("email", "affiliation", "voicePhoneNumber",
 		       "faxPhoneNumber", "password", "note", "addressLine1",
 		       "addressLine2", "city", "state", "zipCode", "country")

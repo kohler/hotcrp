@@ -57,11 +57,15 @@ if (isset($_REQUEST['register']) && $OK) {
 	$UpdateError = "Passwords cannot begin or end with spaces.";
 	$Error['password'] = true;
     } else if ($_REQUEST["uemail"] != $Acct->email
-	     && $Conf->getContactId($_REQUEST["uemail"])) {
-	$UpdateError = "An account is already registered with email address \"" . htmlspecialchars($_REQUEST["uemail"]) . "\".";
+	       && $Conf->getContactId($_REQUEST["uemail"])) {
+	$UpdateError = "An account is already registered with email address &ldquo;" . htmlspecialchars($_REQUEST["uemail"]) . "&rdquo;.";
 	if (!$newProfile)
 	    $UpdateError .= "You may want to <a href='mergeaccounts$ConfSiteSuffix'>merge these accounts</a>.";
-	$Error['email'] = true;
+	$Error["uemail"] = true;
+    } else if ($_REQUEST["uemail"] != $Acct->email
+	       && !validateEmail($_REQUEST["uemail"])) {
+	$UpdateError = "&ldquo;" . htmlspecialchars($_REQUEST["uemail"]) . "&rdquo; is not a valid email address.";
+	$Error["uemail"] = true;
     } else {
 	if ($newProfile) {
 	    $result = $Acct->initialize($_REQUEST["uemail"], $Conf);
@@ -166,6 +170,8 @@ if (isset($_REQUEST['register']) && $OK) {
 	    }
 	    if (isset($_REQUEST["redirect"]))
 		$Me->go("index$ConfSiteSuffix");
+	    foreach (array("firstName", "lastName", "affiliation") as $k)
+		$_REQUEST[$k] = $Acct->$k;
 	}
     }
 }
@@ -239,8 +245,8 @@ echo "<table id='foldpass' class='form foldc'>
   <td class='entry'><div class='f-contain'>
 
 <div class='f-i'>
-  <div class='", fcclass('email'), "'>Email</div>
-  <div class='", feclass('email'), "'><input class='textlite' type='text' name='uemail' size='52' value=\"", crpformvalue('uemail', 'email'), "\" onchange='hiliter(this)' /></div>
+  <div class='", fcclass('uemail'), "'>Email</div>
+  <div class='", feclass('uemail'), "'><input class='textlite' type='text' name='uemail' size='52' value=\"", crpformvalue('uemail', 'email'), "\" onchange='hiliter(this)' /></div>
 </div>\n\n";
 
 echo "<div class='f-i'><div class='f-ix'>
