@@ -190,6 +190,11 @@ if ($getaction == "final" && isset($papersel)) {
 }
 
 
+function whyNotToText($e) {
+    $e = preg_replace('|<a.*?</a>\s*\z|', "", $e);
+    return preg_replace('|<.*?>|', "", $e);
+}
+
 function downloadReviews(&$texts, &$errors) {
     global $getaction, $Opt, $Conf, $papersel, $rf;
 
@@ -206,19 +211,24 @@ function downloadReviews(&$texts, &$errors) {
     $gettext = ($getaction == "rev" || $getaction == "revform");
 
     $warnings = array();
-    if (count($errors))
-	$warnings[] = "Some " . ($getforms ? "review forms" : "reviews") . " are missing:";
-    foreach ($errors as $ee => $junk) {
-	$ee = preg_replace('|<a.*?</a>\s*\z|', "", $ee);
-	$warnings[] = preg_replace('|<.*?>|', "", $ee);
+    $nerrors = 0;
+    foreach ($errors as $ee => $iserror) {
+	$warnings[] = whyNotToText($ee);
+	if ($iserror)
+	    $nerrors++;
     }
+    if ($nerrors)
+	array_unshift($warnings, "Some " . ($getforms ? "review forms" : "reviews") . " are missing:");
 
-    $rfname = ($getforms && count($texts) == 1 ? "review" : "reviews");
+    if ($getforms && (count($texts) == 1 || !$gettext))
+	$rfname = "review";
+    else
+	$rfname = "reviews";
     if (count($texts) == 1 && $gettext)
 	$rfname .= $papersel[key($texts)];
 
     if ($getforms)
-	$header = $rf->textFormHeader($Conf, count($texts) > 1 && $getaction == "revform");
+	$header = $rf->textFormHeader($Conf, count($texts) > 1 && $gettext);
     else
 	$header = "";
 
@@ -263,10 +273,18 @@ if (($getaction == "revform" || $getaction == "revformz")
     $texts = array();
     $errors = array();
     while ($row = edb_orow($result)) {
-	if (!$Me->canReview($row, null, $Conf, $whyNot))
+	$canreview = $Me->canReview($row, null, $Conf, $whyNot);
+	if (!$canreview && !isset($whyNot["deadline"])
+	    && !isset($whyNot["reviewNotAssigned"]))
 	    $errors[whyNotText($whyNot, "review")] = true;
-	else
+	else {
+	    if (!$canreview) {
+		$t = whyNotText($whyNot, "review");
+		$errors[$t] = false;
+		defappend($texts[$paperselmap[$row->paperId]], wordWrapIndent(strtoupper(whyNotToText($t)) . "\n\n", "==-== ", "==-== "));
+	    }
 	    defappend($texts[$paperselmap[$row->paperId]], $rf->textForm($row, $row, $Me, $Conf, null) . "\n");
+	}
     }
 
     downloadReviews($texts, $errors);

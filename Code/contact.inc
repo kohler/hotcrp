@@ -659,6 +659,8 @@ class Contact {
 		|| ($manager && !$submit)))
 	    return true;
 	// collect failure reasons
+	// The "reviewNotAssigned" and "deadline" failure reasons are special.
+	// If either is set, the system will still allow review form download.
 	if ($rrow && $rrow->contactId != $this->contactId && !$this->privChair)
 	    $whyNot['differentReviewer'] = 1;
 	else if (!$this->isPC && $prow->myReviewType <= 0)
