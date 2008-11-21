@@ -21,6 +21,7 @@ class Conference {
     var $headerPrinted;
     var $tableMessages;
     var $tableMessagesObj;
+    var $msgcount;
 
     var $scriptStuff;
     var $footerStuff;
@@ -31,6 +32,7 @@ class Conference {
 	$this->saveMessages = true;
 	$this->headerPrinted = 0;
 	$this->tableMessages = false;
+	$this->msgcount = 0;
 	$this->scriptStuff = "";
 	$this->footerStuff = "";
 
@@ -1122,13 +1124,16 @@ class Conference {
 	$x = "<div class=\"$type\">$text</div>\n";
 	if ($this->saveMessages)
 	    $_SESSION["msgs"][] = $x;
-	else if ($this->tableMessages)
+	else if ($this->tableMessages) {
 	    echo "<tr>
   <td class='caption'></td>
   <td class='entry' colspan='", $this->tableMessages, "'>", $x, "</td>
 </tr>\n\n";
-	else
+	    $this->msgcount++;
+	} else {
 	    echo $x;
+	    $this->msgcount++;
+	}
     }
 
     function infoMsg($text, $minimal = false) {
@@ -1248,8 +1253,10 @@ class Conference {
 	print "</div><div class='body'>\n";
 
 	if (isset($_SESSION["msgs"])) {
-	    foreach ($_SESSION["msgs"] as $m)
+	    foreach ($_SESSION["msgs"] as $m) {
 		echo $m;
+		$this->msgcount++;
+	    }
 	    unset($_SESSION["msgs"]);
 	}
 	$this->saveMessages = false;

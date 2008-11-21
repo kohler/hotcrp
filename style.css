@@ -1189,6 +1189,9 @@ hr.hr {
 	color: #9999cc; /* for IE6 */
 	background-color: #9999cc;
 }
+div.msgpg { /* message-paper gap */
+	margin: 1em 0em;
+}
 div.g { /* small gap */
 	margin: 0.65em 0em;
 }
@@ -1311,12 +1314,15 @@ div.psv {
 	padding: 2px 0px 1em 4px;
 }
 
+div.psmodec {
+	position: relative;
+	top: -2.1ex;
+	left: -5px;
+	z-index: -1;
+}
 div.psmode {
 	padding: 0em 0em 1em 0em;
 	position: absolute;
-	left: -5px;
-	top: -1.2ex;
-	z-index: -1;
 }
 div.papmode, div.papmodex {
 	float: left;

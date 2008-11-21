@@ -1245,12 +1245,18 @@ class PaperTable {
 	$canAssign = ($prow && $Me->actChair($prow));
 	$canHome = ($prow && ($canEdit || $canAssign || $this->mode == "contact"));
 
+	// a little extra space after messages
+	if ($prow && (self::PAPERLINKS_TYPE & 2)
+	    && ($canEdit || $canReview || $canAssign || $canHome)
+	    && $Conf->msgcount > 0)
+	    echo "<div class='msgpg'></div>\n";
+
 	echo "<table class='pbox'><tr>
     <td class='pboxi'>";
 	if ($prow) {
 	    if ((self::PAPERLINKS_TYPE & 2)
 		&& ($canEdit || $canReview || $canAssign || $canHome)) {
-		echo "<div class='psmode'>";
+		echo "<div class='psmodec'><div class='psmode'>";
 
 		// home link
 		$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId";
@@ -1284,7 +1290,7 @@ class PaperTable {
 			"</a>&nbsp;", $a, "Assign</a></div>\n";
 		}
 
-		echo "<div class='clear'></div></div>";
+		echo "<div class='clear'></div></div></div>";
 	    }
 
 	    $pa = "<a href='paper$ConfSiteSuffix?p=$paperId$linkExtra' class='q'>";
