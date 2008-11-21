@@ -130,9 +130,9 @@ function checkMailPrologue($send) {
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
     if ($send) {
 	echo "<div id='foldmail' class='foldc'><div class='ellipsis merror'>In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong><br /><span id='mailcount'></span></div><div class='extension'><div class='confirm'>Sent mail as follows.</div>
-	<table><tr><td class='caption'></td><td class='entry'>
+	<div class='aa'>
 	<input class='b' type='submit' name='go' value='Prepare more mail' />
-	</td></tr></table>
+	</div>
 </div></div>";
     } else {
 	if (isset($_REQUEST["emailBody"]) && $Me->privChair
@@ -143,10 +143,11 @@ function checkMailPrologue($send) {
 	    else if (!$Conf->timeAuthorViewReviews(true))
 		echo "<div class='warning'>Mails to users who have not completed their own reviews will not include reviews or comments.  (<a href='settings$ConfSiteSuffix?group=dec' class='nowrap'>Change the setting</a>)</div>\n";
 	}
-	echo "<div id='foldmail' class='foldc'><div class='ellipsis merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div><div class='extension info'>Examine the mails to check that you've gotten the results you want, then select &ldquo;Send&rdquo; to send the checked mails.</div>
-	<table class='extension'><tr><td class='caption initial'></td><td class='entry'>
+	echo "<div id='foldmail' class='foldc'><div class='ellipsis merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div><div class='extension info'>Examine the mails to verify that you've gotten the results you want, then select &ldquo;Send&rdquo; to send the checked mails.</div>
+        <div class='aa extension'>
 	<input class='b' type='submit' name='send' value='Send' /> &nbsp;
-	<input class='b' type='submit' name='cancel' value='Cancel' /></td></tr></table></div>\n";
+	<input class='b' type='submit' name='cancel' value='Cancel' />
+        </div>\n";
     }
 }
 
@@ -171,7 +172,6 @@ function checkMail($send) {
     $rest = array("cc" => $_REQUEST["cc"], "replyto" => $_REQUEST["replyto"]);
     $last = array("subject" => "", "body" => "", "to" => "");
     $any = false;
-    $closer = "";
     $nrows_left = edb_nrows($result);
     $nrows_print = false;
     while (($row = edb_orow($result))) {
@@ -198,15 +198,11 @@ function checkMail($send) {
 		Mailer::sendPrepared($preparation);
 		$Conf->log("Receiver of mail \"$preparation[0]\"", $row->contactId, $row->paperId);
 	    }
-	    echo $closer;
 	    if ($nrows_print) {
 		$Conf->echoScript("e('mailcount').innerHTML = \"$nrows_left mails remaining.\";");
 		$nrows_print = false;
 	    }
-	    echo "<table><tr><td class='caption'>To</td><td class='entry'>";
-	    if (!$send)
-		echo "<input type='checkbox' name='$checker' value='1' checked='checked' /> &nbsp;";
-	    echo htmlspecialchars(Mailer::mimeHeaderUnquote($preparation["to"])), "</td></tr>\n";
+
 	    // hide passwords from non-chair users
 	    if ($Me->privChair)
 		$show_preparation =& $preparation;
@@ -215,20 +211,36 @@ function checkMail($send) {
 		$show_preparation = Mailer::prepareToSend($template, $row, $contact, $Me, $rest);
 		$rest["hideSensitive"] = false;
 	    }
-	    echo "<tr><td class='caption'>Subject</td><td class='entry'><tt class='email'>", htmlspecialchars(Mailer::mimeHeaderUnquote($show_preparation["subject"])), "</tt></td></tr>\n";
-	    echo "<tr><td class='caption'>Body</td><td class='entry'><pre class='email'>", htmlspecialchars($show_preparation["body"]), "</pre></td></tr>\n";
-	    $closer = "</table>\n";
+
+	    echo "<div class='mail'><table>\n";
+	    if ($send)
+		echo "<td class='mhx'></td>";
+	    else
+		echo "<td><input type='checkbox' name='$checker' value='1' checked='checked' /> &nbsp;</td>";
+
+	    echo "<td><table>\n";
+	    foreach (array("fullTo" => "To", "cc" => "Cc", "bcc" => "Bcc",
+			   "replyto" => "Reply-To", "subject" => "Subject") as $k => $t)
+		if (isset($show_preparation[$k])) {
+		    $x = htmlspecialchars(Mailer::mimeHeaderUnquote($show_preparation[$k]));
+		    echo "  <tr><td class='mhn'>", $t, ":</td>",
+			"<td class='mhd'>", $x, "</td></tr>\n";
+		}
+	    echo " </table></td></tr>\n";
+
+	    echo " <tr><td></td><td colspan='2' class='mhb'>",
+		"<pre class='email'>", htmlspecialchars($show_preparation["body"]), "</pre></td></tr>\n",
+		"</table></div>\n";
 	}
     }
 
     if (!$any)
 	return $Conf->errorMsg("No users match \"" . $recip[$_REQUEST["recipients"]] . "\" for that search.");
-    else if ($send) {
-	echo "<tr class='last'><td class='caption'></td><td class='entry'></td></tr>\n", $closer;
-    } else {
-	echo "<tr class='last'><td class='caption'></td><td class='entry'>\n";
-	echo "<input class='b' type='submit' name='send' value='Send' /> &nbsp;
-<input class='b' type='submit' name='cancel' value='Cancel' /></td></tr>\n", $closer;
+    else if (!$send) {
+	echo "<div class='aa'>",
+	    "<input class='b' type='submit' name='send' value='Send' /> &nbsp;
+<input class='b' type='submit' name='cancel' value='Cancel' />",
+	    "</div>\n";
     }
     echo "</div></form>";
     $Conf->echoScript("fold('mail', null);");
@@ -360,10 +372,9 @@ if (isset($_REQUEST["monreq"])) {
 
 echo "<form method='post' action='mail$ConfSiteSuffix?check=1' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 <input class='hidden' type='submit' name='default' value='1' />
-<table>
-<tr class='topspace'>
-  <td class='caption initial'>Templates</td>
-  <td class='entry'>";
+
+<div class='aa'>
+  <strong>Templates:</strong> &nbsp;";
 $tmpl = array();
 $tmpl["genericmailtool"] = "Generic";
 if ($Me->privChair) {
@@ -375,11 +386,13 @@ $tmpl["myreviewremind"] = "Personalized review reminder";
 if (!isset($_REQUEST["template"]) || !isset($tmpl[$_REQUEST["template"]]))
     $_REQUEST["template"] = "genericmailtool";
 echo tagg_select("template", $tmpl, $_REQUEST["template"], array("onchange" => "highlightUpdate(\"loadtmpl\")")),
-    " &nbsp;<input id='loadtmpl' class='b' type='submit' name='loadtmpl' value='Load template' /><div class='g'></div></td>
-</tr>
-<tr>
-  <td class='caption'>Mail to</td>
-  <td class='entry'>",
+    " &nbsp;<input id='loadtmpl' class='b' type='submit' name='loadtmpl' value='Load' /> &nbsp;
+ <span class='hint'>Templates are prepared mail texts for common conference tasks.</span>
+</div>
+
+<div class='mail'><table>
+ <tr><td class='mhx'></td><td><table>
+  <tr><td class='mhn'>To:</td><td class='mhdd'>",
     tagg_select("recipients", $recip, $_REQUEST["recipients"], array("onchange" => "setmailpsel(this)")),
     "<div class='g'></div>\n";
 
@@ -396,39 +409,32 @@ echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", h
     "</div>
    </td></tr></table>
 <div class='g'></div></td>
-</tr>\n\n";
+</tr>\n";
 
 if ($Me->privChair) {
-    echo "<tr>
-  <td class='caption'>Cc</td>
-  <td class='entry'><input type='text' class='textlite-tt' name='cc' value=\"", htmlspecialchars($_REQUEST["cc"]), "\" size='64' /></td>
-</tr>
+    echo "  <tr><td class='mhn'>Cc:</td><td class='mhd'>",
+	"<input type='text' class='textlite-tt' name='cc' value=\"", htmlspecialchars($_REQUEST["cc"]), "\" size='64' /></td></tr>
 
-<tr>
-  <td class='caption'>Reply to</td>
-  <td class='entry'><input type='text' class='textlite-tt' name='replyto' value=\"", htmlspecialchars($_REQUEST["replyto"]), "\" size='64' />
-  <div class='g'></div></td>
-</tr>\n\n";
+  <tr><td class='mhn'>Reply-To:</td><td class='mhd'>",
+	"<input type='text' class='textlite-tt' name='replyto' value=\"", htmlspecialchars($_REQUEST["replyto"]), "\" size='64' />
+  <div class='g'></div></td></tr>\n\n";
 }
 
-echo "<tr>
-  <td class='caption'>Subject</td>
-  <td class='entry'><tt>[", htmlspecialchars($Conf->shortName), "]&nbsp;</tt><input type='text' class='textlite-tt' name='subject' value=\"", htmlspecialchars($_REQUEST["subject"]), "\" size='64' /></td>
-</tr>
+echo "  <tr><td class='mhn'>Subject:</td><td class='mhd'>",
+    "<tt>[", htmlspecialchars($Conf->shortName), "]&nbsp;</tt><input type='text' class='textlite-tt' name='subject' value=\"", htmlspecialchars($_REQUEST["subject"]), "\" size='64' /></td></tr>
+ </table></td></tr>
 
-<tr>
-  <td class='caption textarea'>Body</td>
-  <td class='entry'><textarea class='tt' rows='20' name='emailBody' cols='80'>", htmlspecialchars($_REQUEST["emailBody"]), "</textarea></td>
-</tr>
+ <tr><td></td><td class='mhb'>
+  <textarea class='tt' rows='20' name='emailBody' cols='80'>", htmlspecialchars($_REQUEST["emailBody"]), "</textarea>
+ </td></tr>
+</table></div>
 
-<tr>
-  <td class='caption'></td>
-  <td class='entry'><div class='aa'><input type='submit' value='Prepare mail' class='b' /> &nbsp; <span class='hint'>You'll be able to review the mails before they are sent.</span></div><div class='g'></div></td>
-</tr>
+<div class='aa'>
+  <input type='submit' value='Prepare mail' class='b' /> &nbsp; <span class='hint'>You'll be able to review the mails before they are sent.</span>
+</div>
 
-<tr class='last'>
-  <td class='caption'></td>
-  <td id='mailref' class='entry'>Keywords enclosed in percent signs, such as <code>%NAME%</code> or <code>%REVIEWDEADLINE%</code>, are expanded for each mail.  Use the following syntax:
+
+<div id='mailref'>Keywords enclosed in percent signs, such as <code>%NAME%</code> or <code>%REVIEWDEADLINE%</code>, are expanded for each mail.  Use the following syntax:
 <div class='g'></div>
 <table>
 <tr><td class='plholder'><table>
@@ -471,10 +477,9 @@ echo "<tr>
     <td class='llentry'>Shepherd name, if any.</td></tr>
 <tr><td class='lxcaption'><code>%SHEPHERDEMAIL%</code></td>
     <td class='llentry'>Shepherd email, if any.</td></tr>
-</table></td></tr></table>
-</td></tr>
+</table></td></tr>
+</table></div>
 
-</table>
 </div></form>\n";
 
 $Conf->footer();

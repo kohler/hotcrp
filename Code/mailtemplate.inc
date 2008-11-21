@@ -817,17 +817,20 @@ class Mailer {
 	$m["subject"] = substr(Mailer::mimeHeader("Subject: ", $m["subject"]), 9);
 	$m["allowEmail"] = $Conf->allowEmailTo($emailTo->email);
 	$m["to"] = $emailTo->email;
+	$hdr = Mailer::mimeEmailHeader("To: ", contactEmailTo($emailTo));
+	$m["fullTo"] = substr($hdr, 4);
 
 	// parse headers
-	$headers = "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n";
-	$headers .= Mailer::mimeEmailHeader("To: ", contactEmailTo($emailTo)) . "\r\n";
+	$headers = "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n" . $hdr . "\r\n";
 	foreach (array("replyto" => "Reply-To: ", "cc" => "Cc: ", "bcc" => "Bcc: ") as $n => $h)
 	    if (isset($m[$n]) && $m[$n] != "" && $m[$n] != "<none>") {
-		$x = Mailer::mimeEmailHeader($h, $m[$n]);
-		if ($x === false)
+		$hdr = Mailer::mimeEmailHeader($h, $m[$n]);
+		if ($hdr === false)
 		    return $Conf->errorMsg("$h &ldquo;<tt>" . htmlspecialchars($m[$n]) . "</tt>&rdquo; contains an invalid email address");
-		$headers .= $x . "\r\n";
-	    }
+		$m[$n] = substr($hdr, strlen($h));
+		$headers .= $hdr . "\r\n";
+	    } else
+		unset($m[$n]);
 	$m["headers"] = $headers;
 
 	return $m;

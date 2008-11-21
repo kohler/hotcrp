@@ -165,14 +165,13 @@ body#assign div.body, body#offrev div.body {
 body#autoassign div.body, body#bulkassign div.body, body#assignpc div.body {
 	margin: 0em 0.5em 0em 0.75em;
 }
-body#mail div.body, body#account div.body, body#scorehelp div.body, 
-body#settings div.body {
+body#account div.body, body#scorehelp div.body, body#settings div.body {
 	margin: 0px 0px;
 }
 table.manyassign {
 	margin-top: 0.75em;
 }
-body#mail td#mailref, pre.email, tt.email {
+div#mailref, pre.email, tt.email {
 	font-size: smaller;
 }
 
@@ -582,6 +581,7 @@ div.aa {
 	padding: 0.3em;
 	margin: 0.5em 0em;
 	background: #f2f2f2;
+	clear: both;
 }
 div.aahc.alert div.aa {
 	background: #ffaaaa;
@@ -1602,6 +1602,36 @@ div.cmthint {
 	color: #555555;
 	background: #fff9fb;
 	padding: 0.2em 1em 0.3em 8px;
+}
+
+
+/* mail */
+div.mail {
+	background-color: #e6e1cf;
+	padding: 8px;
+	margin: 8px 0px;
+	float: left;
+}
+div.mail td.mhx {
+	padding: 0em 1em;
+}
+div.mail td.mhn {
+	text-align: right;
+	font-weight: bold;
+}
+div.mail td.mhn, div.mail td.mhd, div.mail td.mhdd {
+	padding: 2px 4px;
+}
+div.mail td.mhb {
+	padding: 4px 2em 4px 0px;
+}
+div.mail td.mhb pre {
+	background-color: #ffffff;
+	padding: 4px 8px;
+}
+div.mail td.mhd {
+	font-size: smaller;
+	font-family: monospace;
 }
 
 
