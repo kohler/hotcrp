@@ -120,7 +120,6 @@ function updateSchema($Conf) {
 	&& $Conf->q("update Settings set value=23 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 23;
     if ($Conf->settings["allowPaperOption"] == 23
-	&& $Conf->q("update ContactInfo set firstName=replace(replace(firstName,'<','\342\200\271'),'>','\342\200\272'), lastName=replace(replace(lastName,'<','\342\200\271'),'>','\342\200\272') where firstName like '%<%' or firstName like '%>%' or lastName like '%<%' or lastName like '%>%'")
 	&& $Conf->q("update Settings set value=24 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 24;
 
