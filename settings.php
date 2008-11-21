@@ -296,7 +296,7 @@ function parseValue($name, $type) {
 	if (substr($name, 0, 9) == "mailbody_") {
 	    $t = expandMailTemplate(substr($name, 9), true);
 	    $v = cleannl($v);
-	    if ($t[1] == $v)
+	    if ($t["body"] == $v)
 		return 0;
 	}
 	return ($v == "" ? 0 : array(0, $v));

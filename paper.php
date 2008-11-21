@@ -501,7 +501,9 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // send email to all contact authors
     if (!$Me->privChair || defval($_REQUEST, "doemail") > 0) {
 	require_once("Code/mailtemplate.inc");
-	Mailer::sendContactAuthors(array("$subject %TITLEHINT%", $m), $prow, null, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
+	Mailer::sendContactAuthors(array("subject" => "$subject %TITLEHINT%",
+					 "body" => $m),
+				   $prow, null, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
     }
 
     $Conf->log($actiontext, $Me, $paperId);

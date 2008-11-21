@@ -172,8 +172,12 @@ function selfHref($extra = array(), $self = null) {
 function validateEmail($email) {
     // validate email address
     // Allow @_.com email addresses.  Simpler than RFC822 validation.
-    return preg_match('/^([*+!.&#$|\'\\%\/0-9a-z^_`{}=?~:-]+)@(([0-9a-z-]+\.)+[0-9a-z]+)$/i', $email)
-	|| preg_match('/^([*+!.&#$|\'\\%\/0-9a-z^_`{}=?~:-]+)@(_\.[0-9a-z]+)$/i', $email);
+    if (!preg_match(':\A[-!#$%&\'*+/0-9=?A-Z^_`a-z{|}~]+@(.+)\z:', $email, $m))
+	return false;
+    if ($m[1][0] == "_")
+	return preg_match(':\A_\.[0-9A-Za-z]+\z:', $m[1]);
+    else
+	return preg_match(':\A([-0-9A-Za-z]+\.)+[0-9A-Za-z]+\z:', $m[1]);
 }
 
 function foldsessionpixel($name, $var) {
@@ -368,10 +372,8 @@ function _cleanContactText(&$f, &$l, &$e) {
 	if (isset($f->lastName) || isset($f->firstName)) {
 	    $l = defval($f, "lastName", "");
 	    $f = defval($f, "firstName", "");
-	} else {
-	    $l = defval($f, "fullName", "");
-	    $f = "";
-	}
+	} else
+	    list($f, $l) = splitName(defval($f, "fullName", ""));
     }
 }
 
@@ -416,22 +418,15 @@ function contactNameHtml($firstName, $lastName = null, $email = null) {
 
 function contactEmailTo($firstName, $lastName = null, $email = null) {
     _cleanContactText($firstName, $lastName, $email);
+    if (!$email)
+	$email = "none";
     if ($firstName || $lastName) {
 	$x = trim("$firstName $lastName");
-	if (preg_match("/[\x80-\xFF]/", $x)) {
-	    require_once("mailtemplate.inc");
-	    $x = Mailer::mimeHeaderQuote($x, 73 - 21, true);
-	} else if (preg_match("/[^-A-Za-z0-9 !#\$%&'*+\\/=?^_`{|}~]/", $x))
-	    $x = "\"" . addslashes($x) . "\"";
-	if ($email) {
-	    $p = strrpos($x, "\n");
-	    if ($p && 73 - (strlen($x) - $p) < strlen($email))
-		$x .= "\r\n";
-	    $x .= " <$email>";
-	}
+	if (preg_match('/[\000-\037()[\]<>@,;:\\".]/', $x))
+	    $x = "\"" . addcslashes($x, '"\\') . "\"";
+	return $email ? "$x <$email>" : "$x <none>";
     } else
-	$x = $email;
-    return $x;
+	return $email ? $email : "<none>";
 }
 
 function oldestListNumber($listid = "") {

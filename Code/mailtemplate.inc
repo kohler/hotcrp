@@ -6,8 +6,8 @@
 global $mailTemplates;
 $mailTemplates = array
     ("createaccount" =>
-     array("[%CONFSHORTNAME%] New account information",
-	   "Greetings,
+     array("subject" => "[%CONFSHORTNAME%] New account information",
+	   "body" => "Greetings,
 
 An account has been created for you at the %CONFNAME% submissions site, including an initial password.
 
@@ -26,8 +26,8 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "accountinfo" =>
-     array("[%CONFSHORTNAME%] Account information",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Account information",
+	   "body" => "Dear %NAME%,
 
 Here is your account information for the %CONFNAME% submissions site.
 
@@ -44,8 +44,8 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "mergeaccount" =>
-     array("[%CONFSHORTNAME%] Merged account",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Merged account",
+	   "body" => "Dear %NAME%,
 
 Your account at the %CONFSHORTNAME% submissions site has been merged with the account of %OTHERCONTACT%.  From now on, you should log in using the %OTHEREMAIL% account.
 
@@ -54,8 +54,8 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "requestreview" =>
-     array("[%CONFSHORTNAME%] Review request for paper #%NUMBER%",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER%",
+	   "body" => "Dear %NAME%,
 
 On behalf of the %CONFNAME% program committee, %OTHERCONTACT% would like to solicit your help with the review of %CONFNAME% paper #%NUMBER%.%IF(REASON)%  They supplied this note: %REASON%%ENDIF%
 
@@ -86,8 +86,8 @@ Thanks for your help -- we appreciate that reviewing is hard work!
 - %CONFSHORTNAME% Submissions\n"),
 
      "retractrequest" =>
-     array("[%CONFSHORTNAME%] Retracting review request for paper #%NUMBER%",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Retracting review request for paper #%NUMBER%",
+	   "body" => "Dear %NAME%,
 
 %OTHERNAME% has retracted a previous request that you review %CONFNAME% paper #%NUMBER%.  There's no need to complete your review.
 
@@ -100,8 +100,8 @@ Thank you,
 - %CONFSHORTNAME% Submissions\n"),
 
      "proposereview" =>
-     array("[%CONFSHORTNAME%] Proposed reviewer for paper #%NUMBER%",
-	   "Greetings,
+     array("subject" => "[%CONFSHORTNAME%] Proposed reviewer for paper #%NUMBER%",
+	   "body" => "Greetings,
 
 %OTHERCONTACT% would like %CONTACT% to review %CONFNAME% paper #%NUMBER%.%IF(REASON)%  They supplied this note: %REASON%%ENDIF%
 
@@ -114,8 +114,8 @@ Visit the assignment page to approve or deny the request.
 - %CONFSHORTNAME% Submissions\n"),
 
      "denyreviewrequest" =>
-     array("[%CONFSHORTNAME%] Proposed reviewer for paper #%NUMBER% denied",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Proposed reviewer for paper #%NUMBER% denied",
+	   "body" => "Dear %NAME%,
 
 Your proposal that %OTHERCONTACT% review %CONFNAME% paper #%NUMBER% has been denied by an administrator.  You may want to propose someone else.
 
@@ -129,8 +129,8 @@ Thank you,
 - %CONFSHORTNAME% Submissions\n"),
 
      "refusereviewrequest" =>
-     array("[%CONFSHORTNAME%] Review request for paper #%NUMBER% refused",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER% refused",
+	   "body" => "Dear %NAME%,
 
 %OTHERCONTACT% cannot complete the review of %CONFNAME% paper #%NUMBER% that you requested.  %IF(REASON)%They gave the reason \"%REASON%\".  %ENDIF%You may want to find an alternate reviewer.
 
@@ -141,8 +141,8 @@ Thank you,
 - %CONFSHORTNAME% Submissions\n"),
 
      "authorwithdraw" =>
-     array("[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
+	   "body" => "Dear %NAME%,
 
 An author of %CONFNAME% paper #%NUMBER% has withdrawn the paper from consideration.  The paper will not be reviewed.
 
@@ -156,8 +156,8 @@ Thank you,
 - %CONFSHORTNAME% Submissions\n"),
 
      "adminwithdraw" =>
-     array("[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
+	   "body" => "Dear %NAME%,
 
 %CONFNAME% paper #%NUMBER% has been withdrawn from consideration and will not be reviewed.
 
@@ -173,8 +173,8 @@ Thank you,
 - %CONFSHORTNAME% Submissions\n"),
 
      "withdrawreviewer" =>
-     array("[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
+	   "body" => "Dear %NAME%,
 
 %CONFSHORTNAME% paper #%NUMBER%, which you reviewed or have been assigned to review, has been withdrawn from consideration for the conference.
 
@@ -191,8 +191,8 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "deletepaper" =>
-     array("[%CONFSHORTNAME%] Deleted paper #%NUMBER% %TITLEHINT%",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Deleted paper #%NUMBER% %TITLEHINT%",
+	   "body" => "Dear %NAME%,
 
 Your %CONFNAME% paper #%NUMBER% has been removed from the submission database by an administrator.  This is usually done to remove duplicate papers.  %IF(REASON)%The following reason was provided for deleting the paper: %REASON%%ENDIF%
 
@@ -204,8 +204,8 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "reviewsubmit" =>
-     array("[%CONFSHORTNAME%] Submitted review #%REVIEWNUMBER% %TITLEHINT%",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Submitted review #%REVIEWNUMBER% %TITLEHINT%",
+	   "body" => "Dear %NAME%,
 
 Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been submitted.  The review is available at the paper site.
 
@@ -219,8 +219,8 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "reviewupdate" =>
-     array("[%CONFSHORTNAME%] Updated review #%REVIEWNUMBER% %TITLEHINT%",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Updated review #%REVIEWNUMBER% %TITLEHINT%",
+	   "body" => "Dear %NAME%,
 
 Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated.  The review is available at the paper site.
 
@@ -234,8 +234,8 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "acceptnotify" =>
-     array("[%CONFSHORTNAME%] Accepted paper #%NUMBER% %TITLEHINT%",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Accepted paper #%NUMBER% %TITLEHINT%",
+	   "body" => "Dear %NAME%,
 
 The %CONFNAME% program committee is delighted to inform you that your paper #%NUMBER% has been accepted to appear in the conference.
 
@@ -257,8 +257,8 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 %COMMENTS%\n"),
 
      "rejectnotify" =>
-     array("[%CONFSHORTNAME%] Rejected paper #%NUMBER% %TITLEHINT%",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Rejected paper #%NUMBER% %TITLEHINT%",
+	   "body" => "Dear %NAME%,
 
 The %CONFNAME% program committee is sorry to inform you that your paper #%NUMBER% was rejected, and will not appear in the conference.
 
@@ -280,8 +280,8 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 %COMMENTS%\n"),
 
      "commentnotify" =>
-     array("[%CONFSHORTNAME%] Comment for #%NUMBER% %TITLEHINT%",
-	   "A comment for %CONFNAME% paper #%NUMBER% is available as shown below.  For the most up-to-date comments, or to turn off comment emails, see the paper site.
+     array("subject" => "[%CONFSHORTNAME%] Comment for #%NUMBER% %TITLEHINT%",
+	   "body" => "A comment for %CONFNAME% paper #%NUMBER% is available as shown below.  For the most up-to-date comments, or to turn off comment emails, see the paper site.
 
   Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
@@ -292,8 +292,8 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 %COMMENTS%\n"),
 
      "responsenotify" =>
-     array("[%CONFSHORTNAME%] Response for #%NUMBER% %TITLEHINT%",
-	   "The authors' response for %CONFNAME% paper #%NUMBER% is available as shown below.  The authors may still update their response; for the most up-to-date version, or to turn off comment emails, see the paper site.
+     array("subject" => "[%CONFSHORTNAME%] Response for #%NUMBER% %TITLEHINT%",
+	   "body" => "The authors' response for %CONFNAME% paper #%NUMBER% is available as shown below.  The authors may still update their response; for the most up-to-date version, or to turn off comment emails, see the paper site.
 
   Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
@@ -304,8 +304,8 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 %COMMENTS%\n"),
 
      "genericmailtool" =>
-     array("[%CONFSHORTNAME%] Paper #%NUMBER% %TITLEHINT%",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Paper #%NUMBER% %TITLEHINT%",
+	   "body" => "Dear %NAME%,
 
 Your message here.
 
@@ -321,8 +321,8 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "reviewremind" =>
-     array("[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
+	   "body" => "Dear %NAME%,
 
 This is a reminder to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please \"refuse\" the review using the site or contact the person who requested the review directly.
 
@@ -341,8 +341,8 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "myreviewremind" =>
-     array("[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
-	   "Dear %NAME%,
+     array("subject" => "[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
+	   "body" => "Dear %NAME%,
 
 This is a reminder from %OTHERCONTACT% to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please \"refuse\" the review using the site or contact %OTHERNAME% directly.
 
@@ -365,6 +365,10 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 class Mailer {
 
+    const EXPAND_BODY = 0;
+    const EXPAND_HEADER = 1;
+    const EXPAND_EMAIL = 2;
+
     var $row;
     var $contact;
     var $otherContact;
@@ -379,6 +383,7 @@ class Mailer {
     var $commentId;
     var $statistics;
     var $width;
+    var $expansionType;
 
     function Mailer($row, $contact, $otherContact = null, $rest = array()) {
 	$this->row = $row;
@@ -395,6 +400,7 @@ class Mailer {
 	$this->hideReviews = defval($rest, "hideReviews", false);
 	$this->statistics = null;
 	$this->width = 75;
+	$this->expansionType = null;
     }
 
     function _pushIf($yes) {
@@ -417,6 +423,43 @@ class Mailer {
 		$this->textstart = strlen($this->text);
 	    return false;
 	}
+    }
+
+    function _expandContact($contact, $out) {
+	$firstName = $contact;
+	$lastName = $email = null;
+	_cleanContactText($firstName, $lastName, $email);
+
+	if ($out[0] == "n")
+	    $t = trim("$firstName $lastName");
+	else if ($out[0] == "f")
+	    $t = $firstName;
+	else if ($out[0] == "l")
+	    $t = $lastName;
+	else
+	    $t = "";
+	if ($t == "" && $out == "n" && $email
+	    && $this->expansionType != self::EXPAND_EMAIL)
+	    $t = $email;
+	if ($t != "" && $this->expansionType == self::EXPAND_EMAIL
+	    && preg_match('#[\000-\037()[\]<>@,;:\\".]#', $t))
+	    $t = "\"" . addcslashes($t, '"\\') . "\"";
+
+	if ($email == "" && $this->expansionType == self::EXPAND_EMAIL)
+	    $email = "<none>";
+	if ($out == "e")
+	    $t = $email;
+	else if ($out == "ne" && $this->expansionType == self::EXPAND_EMAIL) {
+	    if ($t == "")
+		$t = $email;
+	    else if ($email[0] == "<")
+		$t .= " $email";
+	    else
+		$t .= " <$email>";
+	} else if ($out == "ne" && $email != "")
+	    $t = ($t == "" ? $email : "$t <$email>");
+
+	return $t;
     }
 
     function expandvar($what, $isbool = false) {
@@ -487,7 +530,7 @@ class Mailer {
 	if ($what == "%CONFLONGNAME%")
 	    return $Conf->longName;
 	if ($what == "%ADMIN%")
-	    return "$Conf->contactName <$Conf->contactEmail>";
+	    return $this->_expandContact((object) array("fullName" => $Conf->contactName, "email" => $Conf->contactEmail), "ne");
 	if ($what == "%URL%")
 	    return $Conf->paperSite;
 	if ($what == "%PHP%")
@@ -508,11 +551,11 @@ class Mailer {
 	    return $this->statistics[1];
 
 	if ($what == "%OTHERCONTACT%" && $this->otherContact)
-	    return contactText($this->otherContact);
+	    return $this->_expandContact($this->otherContact, "ne");
 	if ($what == "%OTHERNAME%" && $this->otherContact)
-	    return contactNameText($this->otherContact);
+	    return $this->_expandContact($this->otherContact, "n");
 	if ($what == "%OTHEREMAIL%" && $this->otherContact)
-	    return $this->otherContact->email;
+	    return $this->_expandContact($this->otherContact, "e");
 
 	// if no contact, this is a pre-expansion
 	if (!$this->contact)
@@ -522,18 +565,18 @@ class Mailer {
 	    return $Conf->paperSite . "/?email=" . urlencode($this->contact->email) . "&password=" . urlencode($this->hideSensitive ? "HIDDEN" : $this->contact->password);
 	if ($what == "%LOGINURLPARTS%")
 	    return "email=" . urlencode($this->contact->email) . "&password=" . urlencode($this->hideSensitive ? "HIDDEN" : $this->contact->password);
-	if ($what == "%EMAIL%")
-	    return $this->contact->email;
 	if ($what == "%PASSWORD%")
 	    return ($this->hideSensitive ? "HIDDEN" : $this->contact->password);
 	if ($what == "%CONTACT%")
-	    return contactText($this->contact);
+	    return $this->_expandContact($this->contact, "ne");
 	if ($what == "%NAME%")
-	    return contactNameText($this->contact);
+	    return $this->_expandContact($this->contact, "n");
 	if ($what == "%FIRST%")
-	    return $this->contact->firstName;
+	    return $this->_expandContact($this->contact, "f");
 	if ($what == "%LAST%")
-	    return $this->contact->lastName;
+	    return $this->_expandContact($this->contact, "l");
+	if ($what == "%EMAIL%")
+	    return $this->_expandContact($this->contact, "e");
 
 	if ($what == "%REASON%")
 	    return $this->reason;
@@ -567,24 +610,36 @@ class Mailer {
 	    || $what == "%SHEPHERDEMAIL%") {
 	    $pc = pcMembers();
 	    if (defval($this->row, "shepherdContactId") <= 0
-		|| !defval($pc, $this->row->shepherdContactId, null))
-		return ($isbool ? false : "(no shepherd assigned)");
+		|| !defval($pc, $this->row->shepherdContactId, null)) {
+		if ($isbool)
+		    return false;
+		else if ($this->expansionType == self::EXPAND_EMAIL)
+		    return "<none>";
+		else
+		    return "(no shepherd assigned)";
+	    }
 	    $shep = $pc[$this->row->shepherdContactId];
 	    if ($what == "%SHEPHERD%")
-		return contactText($shep);
+		return $this->_expandContact($shep, "ne");
 	    else if ($what == "%SHEPHERDNAME%")
-		return contactNameText($shep);
+		return $this->_expandContact($shep, "n");
 	    else
-		return $shep->email;
+		return $this->_expandContact($shep, "e");
 	}
 
 	if ($what == "%REVIEWAUTHOR%" && $this->otherContact) {
 	    if (reviewBlind($this->rrow)
 		&& defval($this->contact, "privChair") <= 0
 		&& (!isset($this->contact->canViewReviewerIdentity)
-		    || !$this->contact->canViewReviewerIdentity($this->row, $this->rrow, $Conf, true)))
-		return ($isbool ? false : "Hidden for blind review");
-	    return contactText($this->otherContact);
+		    || !$this->contact->canViewReviewerIdentity($this->row, $this->rrow, $Conf, true))) {
+		if ($isbool)
+		    return false;
+		else if ($this->expansionType == self::EXPAND_EMAIL)
+		    return "<hidden>";
+		else
+		    return "Hidden for blind review";
+	    }
+	    return $this->_expandContact($this->otherContact, "ne");
 	}
 
 	if ($what == "%REVIEWS%")
@@ -650,17 +705,35 @@ class Mailer {
 	return $text;
     }
 
-    function expand($text) {
+    function expand($text, $field = null) {
 	if (is_array($text)) {
 	    $a = array();
-	    foreach ($text as $t)
-		$a[] = $this->expand($t);
+	    foreach ($text as $k => $t)
+		$a[$k] = $this->expand($t, $k);
 	    return $a;
 	}
 
-	$lines = explode("\n", $text);
-	if (strlen($text) && $text[strlen($text) - 1] == "\n")
+	// leave early on empty string
+	if ($text == "")
+	    return "";
+
+	// width, expansion type based on field
+	$width = 100000;
+	if ($field == "to" || $field == "cc" || $field == "bcc"
+	    || $field == "replyto")
+	    $this->expansionType = self::EXPAND_EMAIL;
+	else if ($field != "body" && $field != "")
+	    $this->expansionType = self::EXPAND_HEADER;
+	else {
+	    $this->expansionType = self::EXPAND_BODY;
+	    $width = $this->width;
+	}
+
+	// separate text into lines
+	$lines = explode("\n", cleannl($text));
+	if (count($lines) && $lines[count($lines) - 1] === "")
 	    array_pop($lines);
+
 	$this->text = "";
 	for ($i = 0; $i < count($lines); $i++) {
 	    $line = rtrim($lines[$i]);
@@ -672,11 +745,11 @@ class Mailer {
 	    } else if (preg_match('/^([ \t][ \t]*.*?: )(%OPT\([\w()]+\)%)$/', $line, $m)) {
 
 		if (($yes = $this->expandvar($m[2], true)))
-		    $this->text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true), $this->width) . "\n";
+		    $this->text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true), $width) . "\n";
 		else if ($yes === null)
 		    $this->text .= $line . "\n";
 	    } else if (preg_match('/^([ \t][ \t]*.*?: )(%[\w()]+%)$/', $line, $m))
-		$this->text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true), $this->width) . "\n";
+		$this->text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true), $width) . "\n";
 	    else if (preg_match('/^([ \t][ \t]*.*?: )(%URL%\S*)$/', $line, $m)) {
 		// do not wrap lines that start with %URL%
 		$this->textstart = strlen($this->text);
@@ -694,10 +767,15 @@ class Mailer {
 		    $line = $m[3];
 		}
 		$this->text .= $line;
-		$this->text = substr($this->text, 0, $this->textstart) . wordWrapIndent(substr($this->text, $this->textstart), "", 0, $this->width) . "\n";
+		$this->text = substr($this->text, 0, $this->textstart) . wordWrapIndent(substr($this->text, $this->textstart), "", 0, $width) . "\n";
 	    } else
-		$this->text .= wordWrapIndent($line, "", 0, $this->width) . "\n";
+		$this->text .= wordWrapIndent($line, "", 0, $width) . "\n";
 	}
+
+	// lose newlines on header expansion
+	if ($this->expansionType != self::EXPAND_BODY)
+	    $this->text = rtrim(preg_replace('/[\r\n\f\x0B]+/', ' ', $this->text));
+
 	return $this->text;
     }
 
@@ -705,21 +783,24 @@ class Mailer {
 	global $Conf, $mailTemplates;
 	$m = $mailTemplates[$templateName];
 	if (!$default && ($t = $Conf->settingText("mailsubj_" . $templateName)) !== false)
-	    $m[0] = $t;
+	    $m["subject"] = $t;
 	if (!$default && ($t = $Conf->settingText("mailbody_" . $templateName)) !== false)
-	    $m[1] = $t;
-	if ($expand) {
-	    $m[0] = $this->expand($m[0]);
-	    $m[1] = $this->expand($m[1]);
-	}
+	    $m["body"] = $t;
+	if ($expand)
+	    $m = $this->expand($m);
 	return $m;
     }
 
     function prepareToSend($template, $row, $contact, $otherContact = null, $rest = array()) {
 	global $Conf, $mailTemplates;
 
+	// look up template
 	if (is_string($template) && $template[0] == "@")
 	    $template = self::expandTemplate(substr($template, 1));
+	// add rest fields to template for expansion
+	foreach (array("cc", "bcc", "replyto") as $f)
+	    if (isset($rest[$f]))
+		$template[$f] = $rest[$f];
 
 	if (!isset($rest["emailTo"]) || !$rest["emailTo"])
 	    $emailTo = $contact;
@@ -729,19 +810,26 @@ class Mailer {
 	    $emailTo = $rest["emailTo"];
 	if (!$emailTo || !$emailTo->email)
 	    return $Conf->errorMsg("no email in Mailer::send");
-	$headers = "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n" . defval($rest, "headers", "");
-	if (substr($headers, strlen($headers) - 2) != "\r\n")
-	    $headers .= "\r\n";
-	$headers .= "To: " . contactEmailTo($emailTo) . "\r\n";
 
+	// expand the template
 	$mailer = new Mailer($row, $contact, $otherContact, $rest);
 	$m = $mailer->expand($template);
-	$m[0] = rtrim($m[0]);
-	if (preg_match("/[\x80-\xFF]/", $m[0]))
-	    $m[0] = Mailer::mimeHeaderQuote($m[0], 73 - 21, false);
+	$m["subject"] = substr(Mailer::mimeHeader("Subject: ", $m["subject"]), 9);
 	$m["allowEmail"] = $Conf->allowEmailTo($emailTo->email);
 	$m["to"] = $emailTo->email;
+
+	// parse headers
+	$headers = "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n";
+	$headers .= Mailer::mimeEmailHeader("To: ", contactEmailTo($emailTo)) . "\r\n";
+	foreach (array("replyto" => "Reply-To: ", "cc" => "Cc: ", "bcc" => "Bcc: ") as $n => $h)
+	    if (isset($m[$n]) && $m[$n] != "" && $m[$n] != "<none>") {
+		$x = Mailer::mimeEmailHeader($h, $m[$n]);
+		if ($x === false)
+		    return $Conf->errorMsg("$h &ldquo;<tt>" . htmlspecialchars($m[$n]) . "</tt>&rdquo; contains an invalid email address");
+		$headers .= $x . "\r\n";
+	    }
 	$m["headers"] = $headers;
+
 	return $m;
     }
 
@@ -767,9 +855,9 @@ class Mailer {
 	    } else if ($topos !== false)
 		$to = "";
 
-	    return mail($to, $preparation[0], $preparation[1], $headers . "From: $Conf->emailFrom", $extra);
+	    return mail($to, $preparation["subject"], $preparation["body"], $headers . "From: $Conf->emailFrom", $extra);
 	} else if (!$Opt["sendEmail"])
-	    return $Conf->infoMsg("<pre>" . htmlspecialchars("To: " . $preparation["to"] . "\nSubject: $preparation[0]\n" . $preparation["headers"] . "\n$preparation[1]") . "</pre>");
+	    return $Conf->infoMsg("<pre>" . htmlspecialchars("To: " . $preparation["to"] . "\n" . $preparation["headers"] . "Subject: " . $preparation["subject"] . "\n\n" . $preparation["body"]) . "</pre>");
     }
 
     function send($template, $row, $contact, $otherContact = null, $rest = array()) {
@@ -809,7 +897,7 @@ class Mailer {
     }
 
     function sendReviewers($template, $row, $otherContact = null, $rest = array()) {
-	global $Conf, $Me, $mailTemplates;
+	global $Conf, $Me, $Opt, $mailTemplates;
 
 	$result = $Conf->qe("select ContactInfo.contactId,
 		firstName, lastName, email, password,
@@ -819,7 +907,8 @@ class Mailer {
 		left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$row->paperId)
 		group by ContactInfo.contactId", "while looking up reviewers to send email");
 
-	$rest["headers"] = "Cc: $Conf->contactName <$Conf->contactEmail>";
+	if (!isset($rest["cc"]))
+	    $rest["cc"] = defval($Opt, "emailCc", "$Conf->contactName <$Conf->contactEmail>");
 
 	// must set the current conflict type in $row for each contact
 	$old_conflictType = $row->conflictType;
@@ -838,51 +927,150 @@ class Mailer {
 	}
     }
 
-    function mimeHeaderQuote($text, $len, $stringent) {
-   	// minimum length
-	if ($len < 30)
-	    $len = 30;
-	// replace all special characters used by the encoder
-	$text = str_replace(array('=',   '_',   '?',   ' '),
-			    array('=3D', '=5F', '=3F', '_'), $text);
-	// replace nonsafe characters
-	if ($stringent)
-	    $matcher = '#[^-0-9a-zA-Z!*+/=_]#';
+
+    /// Quote potentially non-ASCII header text a la RFC2047 and/or RFC822.
+    function mimeAppend(&$result, &$linelen, $str, $utf8) {
+	if ($utf8) {
+	    // replace all special characters used by the encoder
+	    $str = str_replace(array('=',   '_',   '?',   ' '),
+			       array('=3D', '=5F', '=3F', '_'), $str);
+	    // define nonsafe characters
+	    if ($utf8 > 1)
+		$matcher = ',[^-0-9a-zA-Z!*+/=_],';
+	    else
+		$matcher = ',[\x80-\xFF],';
+	    preg_match_all($matcher, $str, $m, PREG_OFFSET_CAPTURE);
+	    $xstr = "";
+	    $last = 0;
+	    foreach ($m[0] as $mx) {
+		$xstr .= substr($str, $last, $mx[1] - $last)
+		    . "=" . strtoupper(dechex(ord($mx[0])));
+		$last = $mx[1] + 1;
+	    }
+	    $xstr .= substr($str, $last);
+        } else
+	    $xstr = $str;
+
+	// append words to the line
+	while ($xstr != "") {
+	    $z = strlen($xstr);
+	    assert($z > 0);
+
+	    // add a line break
+	    $maxlinelen = ($utf8 ? 76 - 12 : 78);
+	    if (($linelen + $z > $maxlinelen && $linelen > 30)
+		|| ($utf8 && substr($result, strlen($result) - 2) == "?=")) {
+		$result .= "\r\n ";
+		$linelen = 1;
+		while (!$utf8 && $xstr !== "" && ctype_space($xstr[0])) {
+		    $xstr = substr($xstr, 1);
+		    --$z;
+		}
+	    }
+
+	    // if encoding, skip intact UTF-8 characters;
+	    // otherwise, try to break at a space
+	    if ($utf8 && $linelen + $z > $maxlinelen) {
+		$z = $maxlinelen - $linelen;
+		if ($xstr[$z - 1] == "=")
+		    $z -= 1;
+		else if ($xstr[$z - 2] == "=")
+		    $z -= 2;
+		while ($z > 3
+		       && $xstr[$z] == "="
+		       && ($chr = hexdec(substr($xstr, $z + 1, 2))) >= 128
+		       && $chr < 192)
+		    $z -= 3;
+	    } else if ($linelen + $z > $maxlinelen) {
+		$y = strrpos(substr($xstr, 0, $maxlinelen - $linelen), " ");
+		if ($y > 0)
+		    $z = $y;
+	    }
+
+	    // append
+	    if ($utf8)
+		$astr = "=?utf-8?q?" . substr($xstr, 0, $z) . "?=";
+	    else
+		$astr = substr($xstr, 0, $z);
+
+	    $result .= $astr;
+	    $linelen += strlen($astr);
+
+	    $xstr = substr($xstr, $z);
+	}
+    }
+
+    function mimeEmailHeader($header, $str) {
+	if (preg_match('/[\r\n]/', $str))
+	    $str = simplifyWhitespace($str);
+
+	$text = $header;
+	$linelen = strlen($text);
+
+	// separate $str into emails, quote each separately
+	while (preg_match("/\\A[,\\s]*((?:(?:\"(?:[^\"\\\\]|\\\\.)*\"|[^\\s\\000-\\037()[\\]<>@,;:\\\\\".]+)\\s*?)*)\\s*<\\s*(.*?)\\s*>\\s*(.*)\\z/s", $str, $m)
+	       || preg_match('/\A[,\s]*()([^\s\000-\037()[\]<>@,;:\\".]+)\s*(.*)\z/s', $str, $m)) {
+	    list($name, $email, $str) = array($m[1], $m[2], $m[3]);
+	    if (strpos($email, "@") !== false && !validateEmail($email))
+		return false;
+	    if ($str != "" && $str[0] != ",")
+		return false;
+	    if ($email == "none" || $email == "hidden")
+		continue;
+
+	    if ($text !== $header) {
+		$text .= ", ";
+		$linelen += 2;
+	    }
+
+	    // unquote any existing UTF-8 encoding
+	    if ($name[0] == "="
+		&& strcasecmp(substr($name, 0, 10), "=?utf-8?q?") == 0)
+		$name = self::mimeHeaderUnquote($name);
+
+	    $utf8 = preg_match('/[\x80-\xFF]/', $name) ? 2 : 0;
+	    if ($name[0] == "\"" && preg_match("/\\A\"([^\\\\\"]|\\\\.)*\"\\z/s", $name)) {
+		if ($utf8)
+		    self::mimeAppend($text, $linelen, substr($name, 1, -1), $utf8);
+		else
+		    self::mimeAppend($text, $linelen, $name, false);
+	    } else if ($utf8)
+		self::mimeAppend($text, $linelen, $name, $utf8);
+	    else if (preg_match(',\A[-!#$%&\'*+/0-9=?A-Z^_`a-z{|}~ \t]*\z,', $name))
+		self::mimeAppend($text, $linelen, $name, false);
+	    else {
+		$name = preg_replace(',(?=[^-!#$%&\'*+/0-9=?A-Z^_`a-z{|}~ \t]),', '\\', $name);
+		self::mimeAppend($text, $linelen, "\"$name\"", false);
+	    }
+
+	    if ($name == "")
+		self::mimeAppend($text, $linelen, $email, false);
+	    else
+		self::mimeAppend($text, $linelen, " <$email>", false);
+	}
+
+	if (!preg_match('/\A[\s,]*\z/', $str))
+	    return false;
+	return $text;
+    }
+
+    function mimeHeader($header, $str) {
+	if (preg_match('/[\r\n]/', $str))
+	    $str = simplifyWhitespace($str);
+
+	$text = $header;
+	$linelen = strlen($text);
+	if (preg_match('/[\x80-\xFF]/', $str))
+	    self::mimeAppend($text, $linelen, $str, true);
 	else
-	    $matcher = '#[\x80-\xFF]#';
-	preg_match_all($matcher, $text, $m, PREG_OFFSET_CAPTURE);
-	$ntext = "";
-	$last = 0;
-	foreach ($m[0] as $mx) {
-	    $ntext .= substr($text, $last, $mx[1] - $last)
-		. "=" . strtoupper(dechex(ord($mx[0])));
-	    $last = $mx[1] + 1;
-	}
-	$ntext .= substr($text, $last);
-	// create encoded-words
-	$xpref = "";
-	while (strlen($ntext) > $len) {
-	    $z = $len;
-	    if ($ntext[$z - 1] == '=')
-		$z += 2;
-	    else if ($ntext[$z - 2] == '=')
-		$z += 1;
-	    // skip intact UTF-8 characters
-	    while ($z < strlen($ntext)
-		   && $ntext[$z] == '='
-		   && ($chr = hexdec(substr($ntext, $z + 1, 2))) >= 128
-		   && $chr < 192)
-		$z += 3;
-	    $xpref .= "=?utf-8?q?" . substr($ntext, 0, $z) . "?=\r\n ";
-	    $ntext = substr($ntext, $z);
-	}
-	return $xpref . "=?utf-8?q?" . $ntext . "?=";
+	    self::mimeAppend($text, $linelen, $str, false);
+	return $text;
     }
 
     function mimeHeaderUnquote($text) {
 	if (strlen($text) > 2 && $text[0] == '=' && $text[1] == '?') {
 	    $out = '';
-	    while (preg_match('/\A=\?utf-8\?q\?(.*?)\?=(\r?\n )?/', $text, $m)) {
+	    while (preg_match('/\A=\?utf-8\?q\?(.*?)\?=(\r?\n )?/i', $text, $m)) {
 		$f = str_replace('_', ' ', $m[1]);
 		$out .= preg_replace('/=([0-9A-F][0-9A-F])/e',
 				     'chr(hexdec("\1"))', $f);

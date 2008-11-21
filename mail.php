@@ -125,7 +125,7 @@ function contactQuery($type) {
 function checkMailPrologue($send) {
     global $Conf, $ConfSiteSuffix, $Me;
     echo "<form method='post' action='mail$ConfSiteSuffix' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
-    foreach (array("recipients", "subject", "emailBody", "q", "t", "plimit") as $x)
+    foreach (array("recipients", "subject", "emailBody", "cc", "replyto", "q", "t", "plimit") as $x)
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
     if ($send) {
@@ -160,16 +160,16 @@ function checkMail($send) {
     if (!$result)
 	return;
 
-    $subject = trim(preg_replace('/[\n\r\t]+/', ' ', defval($_REQUEST, "subject", "")));
+    $subject = trim(defval($_REQUEST, "subject", ""));
     if (substr($subject, 0, strlen($subjectPrefix)) != $subjectPrefix)
 	$subject = $subjectPrefix . $subject;
     if ($send)
 	$Conf->log("Mailing \"$subject\"", $Me->contactId);
-    $emailBody = cleannl($_REQUEST["emailBody"]);
+    $emailBody = $_REQUEST["emailBody"];
 
-    $template = array($subject, $emailBody);
-    $rest = array("headers" => "Cc: $Conf->contactName <$Conf->contactEmail>");
-    $last = array(0 => "", 1 => "", "to" => "");
+    $template = array("subject" => $subject, "body" => $emailBody);
+    $rest = array("cc" => $_REQUEST["cc"], "replyto" => $_REQUEST["replyto"]);
+    $last = array("subject" => "", "body" => "", "to" => "");
     $any = false;
     $closer = "";
     $nrows_left = edb_nrows($result);
@@ -181,8 +181,11 @@ function checkMail($send) {
 	$contact = Contact::makeMinicontact($row);
 	$rest["hideReviews"] = $checkReviewNeedsSubmit && $row->reviewNeedsSubmit;
 	$preparation = Mailer::prepareToSend($template, $row, $contact, $Me, $rest); // see also $show_preparation below
-	if ($preparation[0] != $last[0] || $preparation[1] != $last[1]
-	    || $preparation["to"] != $last["to"]) {
+	if ($preparation["subject"] != $last["subject"]
+	    || $preparation["body"] != $last["body"]
+	    || $preparation["to"] != $last["to"]
+	    || $preparation["cc"] != $last["cc"]
+	    || $preparation["replyto"] != $last["replyto"]) {
 	    $last = $preparation;
 	    $checker = "c" . $row->contactId . "p" . $row->paperId;
 	    if ($send && !defval($_REQUEST, $checker))
@@ -212,8 +215,8 @@ function checkMail($send) {
 		$show_preparation = Mailer::prepareToSend($template, $row, $contact, $Me, $rest);
 		$rest["hideSensitive"] = false;
 	    }
-	    echo "<tr><td class='caption'>Subject</td><td class='entry'><tt class='email'>", htmlspecialchars(Mailer::mimeHeaderUnquote($show_preparation[0])), "</tt></td></tr>\n";
-	    echo "<tr><td class='caption'>Body</td><td class='entry'><pre class='email'>", htmlspecialchars($show_preparation[1]), "</pre></td></tr>\n";
+	    echo "<tr><td class='caption'>Subject</td><td class='entry'><tt class='email'>", htmlspecialchars(Mailer::mimeHeaderUnquote($show_preparation["subject"])), "</tt></td></tr>\n";
+	    echo "<tr><td class='caption'>Body</td><td class='entry'><pre class='email'>", htmlspecialchars($show_preparation["body"]), "</pre></td></tr>\n";
 	    $closer = "</table>\n";
 	}
     }
@@ -267,8 +270,8 @@ if (defval($_REQUEST, "loadtmpl")) {
 	$_REQUEST["t"] = "req";
     } else
 	$_REQUEST["recipients"] = "s";
-    $_REQUEST["subject"] = $nullMailer->expand($mailTemplates[$t][0]);
-    $_REQUEST["emailBody"] = $nullMailer->expand($mailTemplates[$t][1]);
+    $_REQUEST["subject"] = $nullMailer->expand($mailTemplates[$t]["subject"]);
+    $_REQUEST["emailBody"] = $nullMailer->expand($mailTemplates[$t]["body"]);
 }
 
 
@@ -303,11 +306,19 @@ if (!isset($_REQUEST["recipients"]) || !isset($recip[$_REQUEST["recipients"]]))
 
 // Set subject and body if necessary
 if (!isset($_REQUEST["subject"]))
-    $_REQUEST["subject"] = $nullMailer->expand($mailTemplates["genericmailtool"][0]);
+    $_REQUEST["subject"] = $nullMailer->expand($mailTemplates["genericmailtool"]["subject"]);
 if (!isset($_REQUEST["emailBody"]))
-    $_REQUEST["emailBody"] = $nullMailer->expand($mailTemplates["genericmailtool"][1]);
+    $_REQUEST["emailBody"] = $nullMailer->expand($mailTemplates["genericmailtool"]["body"]);
 if (substr($_REQUEST["subject"], 0, strlen($subjectPrefix)) == $subjectPrefix)
     $_REQUEST["subject"] = substr($_REQUEST["subject"], strlen($subjectPrefix));
+if (isset($_REQUEST["cc"]) && $Me->privChair)
+    $_REQUEST["cc"] = simplifyWhitespace($_REQUEST["cc"]);
+else
+    $_REQUEST["cc"] = defval($Opt, "emailCc", "$Conf->contactName <$Conf->contactEmail>");
+if (isset($_REQUEST["replyto"]) && $Me->privChair)
+    $_REQUEST["replyto"] = simplifyWhitespace($_REQUEST["replyto"]);
+else
+    $_REQUEST["replyto"] = defval($Opt, "emailReplyTo", "");
 
 
 // Check or send
@@ -385,9 +396,22 @@ echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", h
     "</div>
    </td></tr></table>
 <div class='g'></div></td>
+</tr>\n\n";
+
+if ($Me->privChair) {
+    echo "<tr>
+  <td class='caption'>Cc</td>
+  <td class='entry'><input type='text' class='textlite-tt' name='cc' value=\"", htmlspecialchars($_REQUEST["cc"]), "\" size='64' /></td>
 </tr>
 
 <tr>
+  <td class='caption'>Reply to</td>
+  <td class='entry'><input type='text' class='textlite-tt' name='replyto' value=\"", htmlspecialchars($_REQUEST["replyto"]), "\" size='64' />
+  <div class='g'></div></td>
+</tr>\n\n";
+}
+
+echo "<tr>
   <td class='caption'>Subject</td>
   <td class='entry'><tt>[", htmlspecialchars($Conf->shortName), "]&nbsp;</tt><input type='text' class='textlite-tt' name='subject' value=\"", htmlspecialchars($_REQUEST["subject"]), "\" size='64' /></td>
 </tr>

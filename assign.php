@@ -108,7 +108,7 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
     // send confirmation email, if the review site is open
     if ($Conf->timeReviewOpen()) {
 	require_once("Code/mailtemplate.inc");
-	Mailer::send("@retractrequest", $prow, $row, $Me, array("headers" => "Cc: " . contactEmailTo($Me)));
+	Mailer::send("@retractrequest", $prow, $row, $Me, array("cc" => contactEmailTo($Me)));
     }
 
     // confirmation message
@@ -301,7 +301,7 @@ function proposeReview($email) {
 
     // send confirmation email
     require_once("Code/mailtemplate.inc");
-    Mailer::send("@proposereview", $prow, (object) array("fullName" => $name, "email" => $email), $Me, array("emailTo" => $Opt['contactEmail'], "headers" => "Cc: " . contactEmailTo($Me), "reason" => $reason));
+    Mailer::send("@proposereview", $prow, (object) array("fullName" => $name, "email" => $email), $Me, array("emailTo" => $Opt['contactEmail'], "cc" => contactEmailTo($Me), "reason" => $reason));
 
     // confirmation message
     $Conf->confirmMsg("Proposed that " . htmlspecialchars("$name <$email>") . " review paper #$prow->paperId.  The chair must approve this proposal for it to take effect.");

@@ -43,6 +43,9 @@ $Opt["downloadPrefix"] = "yourconf1-";
 //                   defaults to something like "www-data@yourservername".
 //                   This email address should be connected to a valid mailbox
 //                   or certain spam filters will reject email from HotCRP.
+//   emailCc         Default "Cc:" address for email sent by HotCRP.  If not
+//                   set, the default Cc is $Opt["contactEmail"].
+//   emailReplyTo    If set, default "Reply-To:" field for email sent by HotCRP.
 //   sendmailParam   Extra parameters to be passed to PHP's mail() function.
 //                   If your system's mailer is not sendmail, you may need to
 //                   change the default value; see Code/mailtemplate.inc,
