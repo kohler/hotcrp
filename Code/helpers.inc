@@ -917,13 +917,20 @@ function unparseReviewOrdinal($ord) {
 
 function titleWords($title, $chars = 40) {
     // assume that title whitespace has been simplified
-    if (strlen($title) > $chars) {
-	$title = substr($title, 0, $chars);
-	if (($pos = strrpos($title, " ")) > 0)
-	    $title = substr($title, 0, $pos);
-	return $title . "...";
-    } else
+    if (strlen($title) <= $chars)
 	return $title;
+    // don't over-shorten due to UTF-8
+    if (preg_match('/[\200-\377]/', $title)) {
+	for ($i = 0; $i < $chars && $chars < strlen($title); ++$i)
+	    if (ord($title[$i]) >= 0200 && ord($title[$i]) <= 277)
+		++$chars;
+	if (strlen($title) <= $chars)
+	    return $title;
+    }
+    $title = substr($title, 0, $chars);
+    if (($pos = strrpos($title, " ")) > 0)
+	$title = substr($title, 0, $pos);
+    return $title . "...";
 }
 
 function downloadText($text, $filename, $description, $inline = false, $length = true) {
