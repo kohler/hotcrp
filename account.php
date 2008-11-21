@@ -75,6 +75,8 @@ if (isset($_REQUEST['register']) && $OK) {
 	    }
 	}
 
+	$updatepc = false;
+
 	if ($Me->privChair) {
 	    // initialize roles too
 	    if (isset($_REQUEST["pctype"])) {
@@ -92,19 +94,18 @@ if (isset($_REQUEST['register']) && $OK) {
 	    $checkass = !isset($_REQUEST["ass"]) && $Me->contactId == $Acct->contactId && ($Acct->roles & Contact::ROLE_ADMIN) != 0;
 
 	    $while = "while initializing roles";
-	    $changed = false;
 	    foreach (array("pc" => "PCMember", "ass" => "ChairAssistant", "chair" => "Chair") as $k => $table) {
 		$role = ($k == "pc" ? Contact::ROLE_PC : ($k == "ass" ? Contact::ROLE_ADMIN : Contact::ROLE_CHAIR));
 		if (($Acct->roles & $role) != 0 && !isset($_REQUEST[$k])) {
 		    $Conf->qe("delete from $table where contactId=$Acct->contactId", $while);
 		    $Conf->log("Removed as $table by $Me->email", $Acct);
 		    $Acct->roles &= ~$role;
-		    $changed = true;
+		    $updatepc = true;
 		} else if (($Acct->roles & $role) == 0 && isset($_REQUEST[$k])) {
 		    $Conf->qe("insert into $table (contactId) values ($Acct->contactId)", $while);
 		    $Conf->log("Added as $table by $Me->email", $Acct);
 		    $Acct->roles |= $role;
-		    $changed = true;
+		    $updatepc = true;
 		}
 	    }
 
@@ -118,14 +119,16 @@ if (isset($_REQUEST['register']) && $OK) {
 		    $Acct->roles |= Contact::ROLE_ADMIN;
 		}
 	    }
-
-	    if ($changed) {
-		$t = time();
-		$Conf->qe("insert into Settings (name, value) values ('pc', $t) on duplicate key update value=$t");
-		unset($_SESSION["pcmembers"]);
-		unset($_SESSION["pcmembersa"]);
-	    }
 	}
+
+	// ensure changes in PC member data are reflected immediately
+	if (($Acct->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR))
+	    && !$updatepc
+	    && ($Acct->firstName != $_REQUEST["firstName"]
+		|| $Acct->lastName != $_REQUEST["lastName"]
+		|| $Acct->email != $_REQUEST["uemail"]
+		|| $Acct->affiliation != $_REQUEST["affiliation"]))
+	    $updatepc = true;
 
 	$Acct->firstName = $_REQUEST["firstName"];
 	$Acct->lastName = $_REQUEST["lastName"];
@@ -144,6 +147,13 @@ if (isset($_REQUEST['register']) && $OK) {
 
 	if ($OK)
 	    $Acct->updateDB($Conf);
+
+	if ($updatepc) {
+	    $t = time();
+	    $Conf->qe("insert into Settings (name, value) values ('pc', $t) on duplicate key update value=$t");
+	    unset($_SESSION["pcmembers"]);
+	    unset($_SESSION["pcmembersa"]);
+	}
 
 	// if PC member, update collaborators and areas of expertise
 	if (($Acct->isPC || $newProfile) && $OK) {
