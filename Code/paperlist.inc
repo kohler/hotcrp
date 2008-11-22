@@ -1120,6 +1120,15 @@ class PaperList extends BaseList {
 	if (isset($queryOptions["allReviewScores"]))
 	    $this->_sortReviewOrdinal($srows);
 
+	// count non-callout columns
+	$skipcallout = 0;
+	foreach ($fieldDef as $fieldId => $fdef)
+	    if ($fieldId < self::FIELD_SELECTOR && $fieldId > self::FIELD_ID)
+		break;
+	    else
+		++$skipcallout;
+
+	// print rows
 	$ids = array();
 	$anyData = array();
 	$body = '';
@@ -1151,7 +1160,9 @@ class PaperList extends BaseList {
 		    if ($ftype >= 4)
 			$t .= "\" id=\"pl_$fdef[0]$row->paperId";
 		    $t .= "\">\n";
-		    $t .= "<td class=\"pl_$fdef[0] pl_callout\" colspan='$ncol'>";
+		    if ($skipcallout > 0)
+			$t .= "<td colspan='$skipcallout'></td>";
+		    $t .= "<td class=\"pl_$fdef[0] pl_callout\" colspan='" . ($ncol - $skipcallout) . "'>";
 		    $t .= "<span class='pl_callouthdr'>" . $this->header($fieldId, -1, $row, $reviewList) . ":</span>";
 		    $t .= $d . "</td>\n  </tr>\n";
 		}

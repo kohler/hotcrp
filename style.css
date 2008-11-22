@@ -1104,9 +1104,6 @@ td.pl_collaboratorsMatch {
 td.pl_title img, img.b {
 	vertical-align: text-bottom;
 }
-td.pl_callout {
-	padding-left: 60px;
-}
 td.pl_lastvisit, td.al_time {
 	padding-left: 0.125em;
 	padding-right: 0.4em;

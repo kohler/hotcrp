@@ -867,7 +867,7 @@ echo "<table><tr>
 if ($pl && isset($pl->scoreMax))
     echo "<td class='pad'><strong>Scores:</strong></td>\n";
 echo "</tr><tr>
-  <td class='pad'>";
+  <td rowspan='2' class='pad'>";
 $viewAccAuthors = ($_REQUEST["t"] == "acc" && $Conf->timeReviewerViewAcceptedAuthors());
 if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAccAuthors) {
     echo "<input type='checkbox' name='showau' value='1'";
@@ -943,7 +943,7 @@ if ($pl && isset($pl->scoreMax)) {
 }
 echo "<td><input id='redisplay' class='b' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
 if ($pl && isset($pl->scoreMax)) {
-    echo "<tr><td></td><td colspan='2'><div class='ug'>Sort by: &nbsp;",
+    echo "<tr><td colspan='2'><div class='ug'>Sort by: &nbsp;",
 	tagg_select("scoresort", $scoreSorts, defval($_SESSION, "scoresort", $defaultScoreSort), array("onchange" => "highlightUpdate(\"redisplay\")")),
 	" &nbsp; <a href='help$ConfSiteSuffix?t=scoresort' class='hint'>What is this?</a></div></td></tr>\n";
 }
