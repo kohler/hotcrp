@@ -760,7 +760,7 @@ class PaperList extends BaseList {
 	case self::FIELD_OPT_ABSTRACT:
 	    if ($row->abstract == "")
 		return "";
-	    if (!isset($this->folds->abstract))
+	    if ($this->folds->abstract === false)
 		return htmlspecialchars($row->abstract);
 	    else {
 		$this->folds->abstract[] = $row->paperId;
