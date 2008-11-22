@@ -50,6 +50,7 @@ $allowedSessionVars = array("foldassigna", "foldpapera", "foldpaperp",
 			    "foldpfau", "foldpfanonau", "foldplact",
 			    "foldpltags", "foldplabstract", "foldplau",
 			    "foldplanonau", "foldplreviewers", "foldplrownum",
+			    "foldplshepherd", "foldpllead",
 			    "foldpscollab");
 
 $authorConflictTypes = array(0 => "No conflict", 3 => "Advisor/student",

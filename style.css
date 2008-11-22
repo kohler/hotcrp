@@ -1652,6 +1652,8 @@ div.mail td.mhd {
 .fold8c .fx8, .fold8o .fn8,
 .fold9c .fx9, .fold9o .fn9,
 .fold10c .fx10, .fold10o .fn10,
+.fold11c .fx11, .fold11o .fn11,
+.fold12c .fx12, .fold12o .fn12,
 .hidden {
 	display: none;
 }

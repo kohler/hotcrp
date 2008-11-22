@@ -67,7 +67,7 @@ if ($getaction == "paper" && isset($papersel)) {
 
 
 // download selected abstracts
-if ($getaction == "abstracts" && isset($papersel) && defval($_REQUEST, "ajax")) {
+if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
     $result = $Conf->qe($q, "while selecting papers");
     $response = array();
@@ -79,7 +79,7 @@ if ($getaction == "abstracts" && isset($papersel) && defval($_REQUEST, "ajax")) 
     }
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
-} else if ($getaction == "abstracts" && isset($papersel)) {
+} else if ($getaction == "abstract" && isset($papersel)) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "topics" => 1));
     $result = $Conf->qe($q, "while selecting papers");
     $texts = array();
@@ -151,6 +151,7 @@ if ($getaction == "reviewers" && isset($papersel) && defval($_REQUEST, "ajax")
 		join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
 		where Paper.paperId in (" . join(",", $papersel) . ")
 		order by lastName, firstName, email", "while fetching reviews");
+    $response = array();
     while (($xrow = edb_orow($result)))
 	if ($xrow->lastName) {
 	    $x = "reviewers" . $xrow->paperId;
@@ -469,20 +470,34 @@ if ($getaction == "pcconflicts" && isset($papersel) && $Me->privChair) {
 }
 
 
-// download text PC conflict information for selected papers
+// download text lead or shepherd information for selected papers
 if (($getaction == "lead" || $getaction == "shepherd")
-    && isset($papersel) && $Me->privChair) {
+    && isset($papersel) && $Me->isPC) {
     $idq = paperselPredicate($papersel, "Paper.");
-    $result = $Conf->qe("select Paper.paperId, title, email, firstName, lastName
+    $result = $Conf->qe("select Paper.paperId, title, email, firstName, lastName, conflictType
 		from Paper
 		join ContactInfo on (ContactInfo.contactId=Paper.${getaction}ContactId)
+		left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$Me->contactId)
 		where $idq
-		group by Paper.paperId", "while fetching PC conflicts");
-    if ($result) {
+		group by Paper.paperId", "while fetching ${getaction}s");
+    $shep = $getaction == "shepherd";
+    if (defval($_REQUEST, "ajax")) {
+	$response = array();
+	while (($row = edb_orow($result)))
+	    if ($Me->actPC($row, true) || ($shep && $Me->canViewDecision($row, $Conf)))
+		$response[$getaction . $row->paperId] = contactNameHtml($row);
+	foreach ($papersel as $pid)
+	    if (!isset($response[$getaction . $pid]))
+		$response[$getaction . $pid] = "";
+	$response["ok"] = (count($response) > 0);
+	$Conf->ajaxExit($response);
+    } else if ($result) {
 	$texts = array();
-	while (($row = edb_row($result)))
-	    if ($row[2])
-		defappend($texts[$paperselmap[$row[0]]], $row[0] . "\t" . $row[1] . "\t" . $row[2] . "\t" . trim("$row[3] $row[4]") . "\n");
+	while (($row = edb_orow($result)))
+	    if ($Me->actPC($row, true) || ($shep && $Me->canViewDecision($row, $Conf)))
+		defappend($texts[$paperselmap[$row->paperId]],
+			  $row->paperId . "\t" . $row->title . "\t"
+			  . $row->email . "\t" . trim("$row->firstName $row->lastName") . "\n");
 	ksort($texts);
 	$text = "#paper\ttitle\t${getaction}email\t${getaction}name\n" . join("", $texts);
 	downloadText($text, $Opt['downloadPrefix'] . "${getaction}s.txt", "${getaction}s");
@@ -755,7 +770,8 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 // set scores to view
 if (isset($_REQUEST["redisplay"])) {
     $_SESSION["scores"] = 0;
-    foreach (array("au", "anonau", "abstract", "tags", "rownum") as $x) {
+    foreach (array("au", "anonau", "abstract", "tags", "reviewers",
+		   "shepherd", "lead", "rownum") as $x) {
 	unset($_SESSION["foldpl$x"]);
 	if (defval($_REQUEST, "show$x", 0))
 	    $_SESSION["foldpl$x"] = 0;
@@ -796,7 +812,35 @@ $tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
 
 
 // SEARCH FORMS
-echo "<table id='searchform' class='tablinks$activetab'>
+
+// Prepare more display options
+$ajaxDisplayChecked = false;
+
+function ajaxDisplayer($type, $foldnum, $title, $disabled = false) {
+    global $ajaxDisplayChecked;
+    $t = "<input type='checkbox' name='show$type' value='1'";
+    if (defval($_REQUEST, "show$type")
+	|| defval($_SESSION, "foldpl$type", 1) == 0) {
+	$t .= " checked='checked'";
+	$ajaxDisplayChecked = true;
+    }
+    if ($disabled)
+	$t .= " disabled='disabled'";
+    return $t . " onclick='foldplinfo(this,$foldnum,\"$type\")' />&nbsp;$title"
+	. foldsessionpixel("pl$foldnum", "foldpl$type")
+	. "<br /><div id='${type}loadformresult'></div>\n";
+}
+
+$moredisplay = "";
+if ($Me->privChair && $pl)
+    $moredisplay .= ajaxDisplayer("reviewers", 10, "Reviewers");
+if ($Me->isPC && $pl && $pl->headerInfo["lead"])
+    $moredisplay .= ajaxDisplayer("lead", 12, "Discussion leads");
+if ($Me->isPC && $pl && $pl->headerInfo["shepherd"])
+    $moredisplay .= ajaxDisplayer("shepherd", 11, "Shepherds");
+
+echo "<table id='searchform' class='tablinks$activetab",
+    ($ajaxDisplayChecked ? " fold4o" : " fold4c"), "'>
 <tr><td><div class='tlx'><div class='tld1'>";
 
 // Basic Search
@@ -807,7 +851,7 @@ echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><
 
 echo "</div><div class='tld2'>";
 
-// Advanced Search
+// Advanced search
 echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'>
 <table><tr>
   <td class='lxcaption'>Search these papers</td>
@@ -864,8 +908,10 @@ foreach (array("q", "qx", "qo", "qt", "t", "sort") as $x)
 
 echo "<table><tr>
   <td class='pad'><strong>Show:</strong></td>\n";
+if ($moredisplay !== "")
+    echo "  <td class='fx4'></td>\n";
 if ($pl && isset($pl->scoreMax))
-    echo "<td class='pad'><strong>Scores:</strong></td>\n";
+    echo "  <td class='pad'><strong>Scores:</strong></td>\n";
 echo "</tr><tr>
   <td rowspan='2' class='pad'>";
 $viewAccAuthors = ($_REQUEST["t"] == "acc" && $Conf->timeReviewerViewAcceptedAuthors());
@@ -891,37 +937,29 @@ if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair && !$viewAccAut
 	foldsessionpixel("pl2", "foldplanonau"),
 	"<br />\n";
 }
-if ($pl && $pl->headerInfo["abstracts"]) {
-    echo "<input type='checkbox' name='showabstract' value='1'";
-    if (defval($_SESSION, "foldplabstract", 1) == 0)
-	echo " checked='checked'";
-    echo " onclick='foldplinfo(this,5,\"abstract\")' />&nbsp;Abstracts",
-	foldsessionpixel("pl5", "foldplabstract"),
-	"<br /><div id='abstractloadformresult'></div>\n";
-}
-if ($Me->isPC && $pl && $pl->headerInfo["tags"]) {
-    echo "<input type='checkbox' name='showtags' value='1'";
-    if (($_REQUEST["t"] == "a" && !$Me->privChair) || !$pl->headerInfo["tags"])
-	echo " disabled='disabled'";
-    if (defval($_REQUEST, "showtags")
-	|| defval($_SESSION, "foldpltags", 1) == 0)
-	echo " checked='checked'";
-    echo " onclick='foldplinfo(this,4,\"tags\")' />&nbsp;Tags", foldsessionpixel("pl4", "foldpltags"), "<br /><div id='tagsloadformresult'></div>\n";
-}
-if ($Me->privChair && $pl) {
-    echo "<input type='checkbox' name='showreviewers' value='1'";
-    if (defval($_REQUEST, "showreviewers")
-	|| defval($_SESSION, "foldplreviewers", 1) == 0)
-	echo " checked='checked'";
-    echo " onclick='foldplinfo(this,10,\"reviewers\")' />&nbsp;Reviewers", foldsessionpixel("pl10", "foldplreviewers"), "<br /><div id='reviewersloadformresult'></div>\n";
-}
+
+if ($pl && $pl->headerInfo["abstract"])
+    echo ajaxDisplayer("abstract", 5, "Abstracts");
+if ($Me->isPC && $pl && $pl->headerInfo["tags"])
+    echo ajaxDisplayer("tags", 4, "Tags",
+		       ($_REQUEST["t"] == "a" && !$Me->privChair));
 if ($pl && $pl->anySelector) {
     echo "<input type='checkbox' name='showrownum' value='1'";
     if (defval($_SESSION, "foldplrownum", 1) == 0)
 	echo " checked='checked'";
     echo " onclick='fold(\"pl\",!this.checked,6)' />&nbsp;Row numbers", foldsessionpixel("pl6", "foldplrownum"), "<br />\n";
 }
-echo "</td>";
+
+if ($moredisplay !== "") {
+    echo "<div class='ug'></div>",
+	"<a class='fn4' href='javascript:void fold(e(\"searchform\"),0,4)'>More &#187;</a>",
+	"</td><td rowspan='2' class='pad fx4'>", $moredisplay,
+	"<div class='ug'></div>",
+	"<a class='fx4' href='javascript:void fold(e(\"searchform\"),1,4)'>&#171; Fewer</a>",
+	"</td>";
+} else
+    echo "</td>";
+
 if ($pl && isset($pl->scoreMax)) {
     echo "<td class='pad'>";
     $rf = reviewForm();

@@ -261,7 +261,7 @@ if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair) {
 	foldsessionpixel("pl2", "foldpfanonau"),
 	"<span class='sep'></span>\n";
 }
-if ($pl->headerInfo["abstracts"]) {
+if ($pl->headerInfo["abstract"]) {
     echo "<input type='checkbox' name='showabstract' value='1'";
     if (defval($_SESSION, "foldpfabstract", 1) == 0)
 	echo " checked='checked'";
