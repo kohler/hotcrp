@@ -38,6 +38,8 @@ if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
 
 
 // paper selection
+PaperSearch::parsePapersel();
+
 function paperselPredicate($papersel, $prefix = "") {
     if (count($papersel) == 1)
 	return "${prefix}paperId=$papersel[0]";
@@ -45,7 +47,12 @@ function paperselPredicate($papersel, $prefix = "") {
 	return "${prefix}paperId in (" . join(", ", $papersel) . ")";
 }
 
-PaperSearch::parsePapersel();
+function cleanAjaxResponse(&$response, $type) {
+    global $papersel;
+    foreach ($papersel as $pid)
+	if (!isset($response[$type . $pid]))
+	    $response[$type . $pid] = "";
+}
 
 
 // download selected papers
@@ -165,9 +172,7 @@ if ($getaction == "reviewers" && isset($papersel) && defval($_REQUEST, "ajax")
 	    else if ($xrow->reviewType == REVIEW_SECONDARY)
 		$response[$x] .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_SECONDARY . ".gif", "Secondary");
 	}
-    foreach ($papersel as $pid)
-	if (!isset($response["reviewers" . $pid]))
-	    $response["reviewers" . $pid] = "";
+    cleanAjaxResponse($response, "reviewers");
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
 }
@@ -486,9 +491,7 @@ if (($getaction == "lead" || $getaction == "shepherd")
 	while (($row = edb_orow($result)))
 	    if ($Me->actPC($row, true) || ($shep && $Me->canViewDecision($row, $Conf)))
 		$response[$getaction . $row->paperId] = contactNameHtml($row);
-	foreach ($papersel as $pid)
-	    if (!isset($response[$getaction . $pid]))
-		$response[$getaction . $pid] = "";
+	cleanAjaxResponse($response, $getaction);
 	$response["ok"] = (count($response) > 0);
 	$Conf->ajaxExit($response);
     } else if ($result) {
@@ -625,21 +628,43 @@ if (($getaction == "revpref" || $getaction == "revprefx") && $Me->isPC && isset(
 
 
 // download topics for selected papers
-if ($getaction == "topics" && $Me->privChair && isset($papersel)) {
-    $result = $Conf->qe("select paperId, title, topicName from Paper join PaperTopic using (paperId) join TopicArea using (topicId) where " . paperselPredicate($papersel) . " order by paperId", "while fetching topics");
+if ($getaction == "topics" && isset($papersel)) {
+    $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "topics" => 1));
+    $result = $Conf->qe($q, "while selecting papers");
 
-    // compose scores
-    $texts = array();
-    while ($row = edb_orow($result))
-	defappend($texts[$paperselmap[$row->paperId]], $row->paperId . "\t" . $row->title . "\t" . $row->topicName . "\n");
+    $rf = reviewForm();
+    if (defval($_REQUEST, "ajax")) {
+	$response = array();
+	while ($row = edb_orow($result))
+	    if ($Me->canViewPaper($row, $Conf))
+		$response["topics$row->paperId"] = join(", ", $rf->webTopicArray($row->topicIds));
+	cleanAjaxResponse($response, "topics");
+	$response["ok"] = (count($response) > 0);
+	$Conf->ajaxExit($response);
 
-    if (count($texts) == "")
-	$Conf->errorMsg(join("", $errors) . "No papers selected.");
-    else {
-	ksort($texts);
-	$text = "#paper\ttitle\ttopic\n" . join("", $texts);
-	downloadText($text, $Opt['downloadPrefix'] . "topics.txt", "topics");
-	exit;
+    } else {
+	$texts = array();
+
+	while ($row = edb_orow($result)) {
+	    if (!$Me->canViewPaper($row, $Conf) || $row->topicIds === "")
+		continue;
+	    $topicIds = explode(",", $row->topicIds);
+	    $out = array();
+	    for ($i = 0; $i < count($topicIds); ++$i)
+		$out[$rf->topicOrder[$topicIds[$i]]] =
+		    $row->paperId . "\t" . $row->title . "\t" . $rf->topicName[$topicIds[$i]] . "\n";
+	    ksort($out);
+	    defappend($texts[$paperselmap[$row->paperId]], join("", $out));
+	}
+
+	if (count($texts) == "")
+	    $Conf->errorMsg(join("", $errors) . "No papers selected.");
+	else {
+	    ksort($texts);
+	    $text = "#paper\ttitle\ttopic\n" . join("", $texts);
+	    downloadText($text, $Opt['downloadPrefix'] . "topics.txt", "topics");
+	    exit;
+	}
     }
 }
 
@@ -771,7 +796,7 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 if (isset($_REQUEST["redisplay"])) {
     $_SESSION["scores"] = 0;
     foreach (array("au", "anonau", "abstract", "tags", "reviewers",
-		   "shepherd", "lead", "rownum") as $x) {
+		   "shepherd", "lead", "topics", "rownum") as $x) {
 	unset($_SESSION["foldpl$x"]);
 	if (defval($_REQUEST, "show$x", 0))
 	    $_SESSION["foldpl$x"] = 0;
@@ -832,6 +857,8 @@ function ajaxDisplayer($type, $foldnum, $title, $disabled = false) {
 }
 
 $moredisplay = "";
+if ($pl && $pl->headerInfo["topics"])
+    $moredisplay .= ajaxDisplayer("topics", 13, "Topics");
 if ($Me->privChair && $pl)
     $moredisplay .= ajaxDisplayer("reviewers", 10, "Reviewers");
 if ($Me->isPC && $pl && $pl->headerInfo["lead"])

@@ -642,7 +642,7 @@ Miniajax.submit = function(formname, callback, timeout) {
 // ajax loading of paper information
 var plinfo_title = {
     abstract: "Abstract", tags: "Tags", reviewers: "Reviewers",
-    shepherd: "Shepherd", lead: "Discussion lead"
+    shepherd: "Shepherd", lead: "Discussion lead", topics: "Topics"
 };
 var plinfo_needload = { };
 function foldplinfo(dofold, foldnum, type, which) {
