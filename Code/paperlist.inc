@@ -530,7 +530,10 @@ class PaperList extends BaseList {
 	    return "<a href='$pl' tabindex='4'>#$row->paperId</a>";
 	case self::FIELD_TITLE:
 	    $pl = $this->_paperLink($row);
-	    return "<a href='$pl' tabindex='5'>" . htmlspecialchars($row->title) . "</a>" . $this->_contentDownload($row);
+	    $x = htmlspecialchars($row->title);
+	    if (isset($this->search->matchPreg["title"]))
+		$x = highlightMatch($this->search->matchPreg["title"], $x);
+	    return "<a href='$pl' tabindex='5'>" . $x . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
