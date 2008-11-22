@@ -1127,7 +1127,7 @@ class PaperList extends BaseList {
 	    else
 		++$skipcallout;
 
-	// print rows
+	// collect row data
 	$ids = array();
 	$anyData = array();
 	$body = '';

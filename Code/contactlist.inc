@@ -529,6 +529,15 @@ class ContactList extends BaseList {
 	// sort rows
 	$srows = $this->_sort($rows);
 
+	// count non-callout columns
+	$skipcallout = 0;
+	foreach ($fieldDef as $fieldId => $fdef)
+	    if ($fieldId < self::FIELD_SELECTOR)
+		break;
+	    else
+		++$skipcallout;
+
+	// collect row data
 	$anyData = array();
 	$body = '';
 	$extrainfo = false;
@@ -550,16 +559,24 @@ class ContactList extends BaseList {
 		}
 	    $t .= "  </tr>\n";
 
+	    $tt = "";
 	    foreach ($fieldDef as $fieldId => $fdef)
-		if ($fdef[1] >= 2 && ($d = $this->content($fieldId, $row))) {
-		    $t .= "  <tr class=\"pl_$fdef[0] pl_callout $trclass";
+		if ($fdef[1] >= 2
+		    && ($d = $this->content($fieldId, $row)) !== "") {
+		    $tt .= "<div";
+		    //$t .= "  <tr class=\"pl_$fdef[0] pl_callout $trclass";
 		    if ($fdef[1] == 3 || $fdef[1] == 4)
-			$t .= " fx" . ($fdef[1] - 2);
-		    $t .= "\">\n";
-		    $t .= "<td class=\"pl_$fdef[0] pl_callout\" colspan='$ncol'>";
-		    $t .= "<span class='pl_callouthdr'>" . $this->header($fieldId, -1, $row) . ":</span>";
-		    $t .= $d . "</td>\n  </tr>\n";
+			$tt .= " class=\"fx" . ($fdef[1] - 2) . "\"";
+		    $tt .= "\"><h6>" . $this->header($fieldId, -1, $row)
+			. ":</h6> " . $d . "</div>";
 		}
+
+	    if ($tt !== "") {
+		$t .= "  <tr class=\"plx $trclass\">";
+		if ($skipcallout > 0)
+		    $t .= "<td colspan=\"$skipcallout\"></td>";
+		$t .= "<td colspan=\"" . ($ncol - $skipcallout) . "\">$tt</td></tr>\n";
+	    }
 
 	    $body .= $t;
 	}
