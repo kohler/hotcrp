@@ -1096,11 +1096,6 @@ td.pl_desirability, td.pl_visits {
 td.pl_conflictconfirm {
 	padding: 0em;
 }
-td.pl_authors, td.pl_tags, td.pl_topics, td.pl_topicNames, td.pl_affrow,
-td.pl_abstract, td.pl_reviewers, td.pl_allPreferences, td.pl_authorsMatch,
-td.pl_collaboratorsMatch {
-	font-size: smaller;
-}
 td.pl_title img, img.b {
 	vertical-align: text-bottom;
 }
@@ -1119,9 +1114,15 @@ table.ppltable td.pl_score {
 	padding-left: 0.2em;
 	padding-right: 0.2em;
 }
-span.pl_callouthdr {
+tr.plx td {
+	font-size: smaller;
+}
+tr.plx td h6 {
+	display: inline;
+	font-size: inherit;
+	font-weight: normal;
 	font-style: italic;
-	padding-right: 0.5em;
+	padding-right: 0.25em;
 }
 span.pcrole {
 	font-weight: bold;

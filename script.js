@@ -57,7 +57,7 @@ function hiliter(which, off) {
     var elt = which;
     while (elt && (elt.tagName != "DIV" || elt.className.substr(0, 4) != "aahc"))
 	elt = elt.parentNode;
-    
+
     if (!elt)
 	highlightUpdate(null, off);
     else if (off && elt.className)
@@ -394,10 +394,10 @@ function addConflictAjax() {
 var Geometry = null;
 if (window.innerWidth) {
     Geometry = function() {
-	return { 
-	    left: window.pageXOffset, 
+	return {
+	    left: window.pageXOffset,
 	    top: window.pageYOffset,
-	    width: window.innerWidth, 
+	    width: window.innerWidth,
 	    height: window.innerHeight,
 	    right: window.pageXOffset + window.innerWidth,
 	    bottom: window.pageYOffset + window.innerHeight
@@ -406,10 +406,10 @@ if (window.innerWidth) {
 } else if (document.documentElement && document.documentElement.clientWidth) {
     Geometry = function() {
 	var e = document.documentElement;
-	return { 
-	    left: e.scrollLeft, 
+	return {
+	    left: e.scrollLeft,
 	    top: e.scrollTop,
-	    width: e.clientWidth, 
+	    width: e.clientWidth,
 	    height: e.clientHeight,
 	    right: e.scrollLeft + e.clientWidth,
 	    bottom: e.scrollTop + e.clientHeight
@@ -418,10 +418,10 @@ if (window.innerWidth) {
 } else if (document.body.clientWidth) {
     Geometry = function() {
 	var e = document.body;
-	return { 
-	    left: e.scrollLeft, 
+	return {
+	    left: e.scrollLeft,
 	    top: e.scrollTop,
-	    width: e.clientWidth, 
+	    width: e.clientWidth,
 	    height: e.clientHeight,
 	    right: e.scrollLeft + e.clientWidth,
 	    bottom: e.scrollTop + e.clientHeight
@@ -584,18 +584,18 @@ Miniajax.submit = function(formname, callback, timeout) {
 	return true;
     }
     var resultelt = e(formname + "result");
-    if (!resultelt) 
+    if (!resultelt)
 	resultelt = {};
     var checkelt = e(formname + "check");
     if (!callback)
 	callback = function(rv) {
-	    resultelt.innerHTML = rv.response; 
+	    resultelt.innerHTML = rv.response;
 	    if (checkelt)
 		setajaxcheck(checkelt, rv);
 	};
     if (!timeout)
 	timeout = 4000;
-    
+
     // set request
     var timer = setTimeout(function() {
 			       req.abort();
@@ -603,7 +603,7 @@ Miniajax.submit = function(formname, callback, timeout) {
 			       form.onsubmit = "";
 			       fold(form, 0, 7);
 			   }, timeout);
-    
+
     req.onreadystatechange = function() {
 	if (req.readyState != 4)
 	    return;
@@ -619,7 +619,7 @@ Miniajax.submit = function(formname, callback, timeout) {
 	    fold(form, 0, 7);
 	}
     }
-    
+
     // collect form value
     var pairs = [], regexp = /%20/g;
     for (var i = 0; i < form.elements.length; i++) {
@@ -640,32 +640,54 @@ Miniajax.submit = function(formname, callback, timeout) {
 
 
 // ajax loading of paper information
-var plinfo_ajax_load = { };
+var plinfo_title = {
+    abstract: "Abstract", tags: "Tags", reviewers: "Reviewers"
+};
+var plinfo_needload = { };
 function foldplinfo(dofold, foldnum, type, which) {
+    var container, i, divs;
+
+    // fold
     if (!which)
 	which = "pl";
     if (dofold.checked !== undefined)
 	dofold = !dofold.checked;
     fold(which, dofold, foldnum);
-    if (!dofold && plinfo_ajax_load[type])
+
+    // may need to load information by ajax
+    if (!dofold && plinfo_needload[type]) {
+	// set up "loading" display
+	if ((container = e("fold" + which))) {
+	    divs = container.getElementsByTagName("div");
+	    for (i = 0; i < divs.length; i++)
+		if (divs[i].id.substr(0, type.length) == type) {
+		    if (divs[i].className == "")
+			divs[i].className = "extension" + foldnum;
+		    divs[i].innerHTML = "<h6>" + plinfo_title[type] + ":</h6> Loading";
+		}
+	}
+
+	// initiate load
 	Miniajax.submit(type + "loadform", function(rv) {
 		var elt, eltx;
-		for (var i in rv) 
-		    if (i.substr(0, type.length) == type && (elt = e(i)))
-			if (rv[i] == "" && (eltx = e("pl_" + i)))
-			    eltx.innerHTML = "";
+		for (var i in rv)
+		    if (i.substr(0, type.length) == type && (elt = e(i))) {
+			if (rv[i] == "")
+			    elt.innerHTML = "";
 			else
-			    elt.innerHTML = rv[i];
-		plinfo_ajax_load[type] = false;
+			    elt.innerHTML = "<h6>" + plinfo_title[type] + ":</h6> " + rv[i];
+		    }
+		plinfo_needload[type] = false;
 		fold(which, dofold, foldnum);
 	    });
+    }
 }
 
 function docheckformat() {
     var form = e("checkformatform");
     if (!form.onsubmit)
 	return true;
-    fold('checkformat', 0); 
+    fold('checkformat', 0);
     return Miniajax.submit('checkformatform', null, 10000);
 }
 

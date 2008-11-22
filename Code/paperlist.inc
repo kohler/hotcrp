@@ -650,7 +650,7 @@ class PaperList extends BaseList {
 	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
 	    if ($this->foldedReviewers !== false) {
 		$this->foldedReviewers[] = $row->paperId;
-		return "<span id='reviewers$row->paperId'><em>Loading</em></span>";
+		return false;
 	    }
 	    /* fallthrough */
 	case self::FIELD_ALL_REVIEWER_NAMES:
@@ -736,23 +736,22 @@ class PaperList extends BaseList {
 	    if ($row->abstract == "")
 		return "";
 	    if ($this->foldedAbstract === false)
-		return "<span id='abstract$row->paperId'>" . htmlspecialchars($row->abstract) . "</span>";
+		return htmlspecialchars($row->abstract);
 	    else {
 		$this->foldedAbstract[] = $row->paperId;
-		return "<span id='abstract$row->paperId'><em>Loading</em></span>";
+		return false;
 	    }
 	case self::FIELD_TAGS:
 	    if (!$this->contact->canViewTags($row, $Conf))
 		return "";
 	    if ($this->foldedTags === false) {
 		if (($t = $row->paperTags) !== "")
-		    if (($t = tagsToText($row, true, $this->contact, false,
-					 $this->search->orderTag)) !== "")
-			$t = "<span id='tags$row->paperId'>" . $t . "</span>";
+		    $t = tagsToText($row, true, $this->contact, false,
+				    $this->search->orderTag);
 		return $t;
 	    } else {
 		$this->foldedTags[] = $row->paperId;
-		return "<span id='tags$row->paperId'><em>Loading</em></span>";
+		return false;
 	    }
 	default:
 	    return "";
@@ -1149,23 +1148,29 @@ class PaperList extends BaseList {
 		}
 	    $t .= "  </tr>\n";
 
+	    $tt = "";
 	    foreach ($fieldDef as $fieldId => $fdef)
-		if ($fdef[1] >= 2 && ($d = $this->content($fieldId, $row, $reviewList))) {
-		    $t .= "  <tr class=\"pl_$fdef[0] pl_callout $trclass";
+		if ($fdef[1] >= 2
+		    && ($d = $this->content($fieldId, $row, $reviewList)) !== "") {
 		    $ftype = $fdef[1];
 		    if ($ftype == 3)
 			$ftype = (paperBlind($row) ? 2 : 1);
 		    $foldinfo[$ftype] = true;
-		    $t .= " extension" . $ftype;
-		    if ($ftype >= 4)
-			$t .= "\" id=\"pl_$fdef[0]$row->paperId";
-		    $t .= "\">\n";
-		    if ($skipcallout > 0)
-			$t .= "<td colspan='$skipcallout'></td>";
-		    $t .= "<td class=\"pl_$fdef[0] pl_callout\" colspan='" . ($ncol - $skipcallout) . "'>";
-		    $t .= "<span class='pl_callouthdr'>" . $this->header($fieldId, -1, $row, $reviewList) . ":</span>";
-		    $t .= $d . "</td>\n  </tr>\n";
+		    $tt .= "<div id=\"$fdef[0]$row->paperId\"";
+		    if ($d !== false)
+			$tt .= " class=\"extension$ftype\"><h6>"
+			    . $this->header($fieldId, -1, $row, $reviewList)
+			    . ":</h6> " . $d . "</div>";
+		    else
+			$tt .= "></div>";
 		}
+
+	    if ($tt !== "") {
+		$t .= "  <tr class=\"plx $trclass\">";
+		if ($skipcallout > 0)
+		    $t .= "<td colspan=\"$skipcallout\"></td>";
+		$t .= "<td colspan=\"" . ($ncol - $skipcallout) . "\">$tt</td></tr>\n";
+	    }
 
 	    if ($this->extraText && isset($this->extraText[$row->paperId]))
 		$t .= "  <tr class=\"pl_extra $trclass\">\n"
@@ -1192,16 +1197,16 @@ class PaperList extends BaseList {
 	    $Conf->footerStuff .= "<form id='tagsloadform' method='post' action='search$ConfSiteSuffix?get=tags&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedTags) . "' />";
 	    if ($this->search->orderTag)
 		$Conf->footerStuff .= "<input type='hidden' name='highlight' value=\"" . htmlspecialchars($this->search->orderTag) . "\" />";
-	    $Conf->footerStuff .= "</div></form><script type='text/javascript'>plinfo_ajax_load.tags = true;</script>";
+	    $Conf->footerStuff .= "</div></form><script type='text/javascript'>plinfo_needload.tags = true;</script>";
 	}
 	if (isset($foldinfo[5]))
 	    $x .= ($this->foldedAbstract !== false ? " fold5c" : " fold5o");
 	if (isset($foldinfo[5]) && $this->foldedAbstract !== false && count($this->foldedAbstract))
-	    $Conf->footerStuff .= "<form id='abstractloadform' method='post' action='search$ConfSiteSuffix?get=abstracts&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedAbstract) . "' /></div></form><script type='text/javascript'>plinfo_ajax_load.abstract = true;</script>";
+	    $Conf->footerStuff .= "<form id='abstractloadform' method='post' action='search$ConfSiteSuffix?get=abstracts&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedAbstract) . "' /></div></form><script type='text/javascript'>plinfo_needload.abstract = true;</script>";
 	if (isset($foldinfo[10]))
 	    $x .= ($this->foldedReviewers !== false ? " fold10c" : " fold10o");
 	if (isset($foldinfo[10]) && $this->foldedReviewers !== false && count($this->foldedReviewers))
-	    $Conf->footerStuff .= "<form id='reviewersloadform' method='post' action='search$ConfSiteSuffix?get=reviewers&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedReviewers) . "' /></div></form><script type='text/javascript'>plinfo_ajax_load.reviewers = true;</script>";
+	    $Conf->footerStuff .= "<form id='reviewersloadform' method='post' action='search$ConfSiteSuffix?get=reviewers&amp;ajax=1' accept-charset='UTF-8'><div class='inform'><input type='hidden' name='pap' value='" . join(" ", $this->foldedReviewers) . "' /></div></form><script type='text/javascript'>plinfo_needload.reviewers = true;</script>";
 	if ($this->anySelector)
 	    $x .= (defval($_SESSION, $this->foldtype . "rownum", 1) ? " fold6c" : " fold6o");
 	if (count($foldinfo) || !$unfolded || $this->anySelector)
