@@ -1205,7 +1205,7 @@ $blind\n";
 		    echo $ratesep, "<form id='ratingform_$reviewOrdinal' action='$ratinglink$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
 			"How helpful is this review? &nbsp;",
 			tagg_select("rating", $ratingTypes, ($rrow->myRating === null ? "n" : $rrow->myRating)),
-			" <input class='b extension7' type='submit' value='Save' />",
+			" <input class='b fx7' type='submit' value='Save' />",
 			"</div></form>",
 			"<span id='ratingform_${reviewOrdinal}result'></span>";
 		    if (!defval($options, "ratingsajax")) {

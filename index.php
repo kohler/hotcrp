@@ -549,7 +549,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	$plist = new PaperList(false, true, new PaperSearch($Me, array("t" => "r")));
 	$ptext = $plist->text("reviewerHome", $Me);
 	if ($plist->count > 0)
-	    echo "<div class='extension'><div class='g'></div>", $ptext, "</div>";
+	    echo "<div class='fx'><div class='g'></div>", $ptext, "</div>";
     }
 
     if ($Conf->setting("rev_tokens")) {

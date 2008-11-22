@@ -41,8 +41,8 @@ class CommentView {
 	    $sep = $xsep;
 	} else if ($crow && $Me->privChair) {
 	    echo $sep, "<span id='foldcid$crow->commentId' class='fold4c'>",
-		"<a class='q unfolder4' href=\"javascript:fold('cid$crow->commentId', 0, 4)\" title='Show author'>+&nbsp;<i>Hidden for blind review</i></a>",
-		"<span class='extension4'><a class='folder4' href=\"javascript:fold('cid$crow->commentId', 1, 4)\" title='Hide author'>[blind]</a> ", contactHtml($crow), "</span>",
+		"<a class='q fn4' href=\"javascript:fold('cid$crow->commentId', 0, 4)\" title='Show author'>+&nbsp;<i>Hidden for blind review</i></a>",
+		"<span class='fx4'><a class='fx4' href=\"javascript:fold('cid$crow->commentId', 1, 4)\" title='Hide author'>[blind]</a> ", contactHtml($crow), "</span>",
 		"</span>";
 	    $sep = $xsep;
 	}
@@ -110,7 +110,7 @@ class CommentView {
 	}
 
 	if (!$crow && $editMode && $foldnew)
-	    echo "<h3><a class='q unfolder' href='javascript:fold(\"addcomment\", 0)'>+&nbsp;Add Comment</a><span class='extension'>Add Comment</span></h3>";
+	    echo "<h3><a class='q fn' href='javascript:fold(\"addcomment\", 0)'>+&nbsp;Add Comment</a><span class='fx'>Add Comment</span></h3>";
 	else if (!$crow)
 	    echo "<h3>Add Comment</h3>";
 	$this->commentIdentityTime($prow, $crow, false);
@@ -118,7 +118,7 @@ class CommentView {
 	if ($crow && $editMode && $crow->contactId != $Me->contactId)
 	    echo "<div class='hint'>You didn't write this comment, but as an administrator you can still make changes.</div>\n";
 
-	echo "</div><div class='cmtv", (!$crow && $editMode && $foldnew ? " extension" : ""), "'>";
+	echo "</div><div class='cmtv", (!$crow && $editMode && $foldnew ? " fx" : ""), "'>";
 
 	if (isset($CommentMsg) && $crow && isset($CommentMsg[$crow->commentId]))
 	    echo $CommentMsg[$crow->commentId];

@@ -242,11 +242,11 @@ if (!isset($_REQUEST["rev_roundtag"]))
 else if (($rev_roundtag = $_REQUEST["rev_roundtag"]) == "(None)")
     $rev_roundtag = "";
 $t = $nullMailer->expandTemplate("requestreview", true, false);
-echo "<div id='foldemail' class='foldo'><table class='extension'>
+echo "<div id='foldemail' class='foldo'><table class='fx'>
 <tr><td><input type='checkbox' name='email' value='1' checked='checked' />&nbsp;</td>
 <td>Send email to external reviewers:</td></tr>
 <tr><td></td><td><textarea class='tt' name='email_requestreview' cols='80' rows='20'>", htmlspecialchars($t["body"]), "</textarea></td></tr></table>
-<div class='ellipsis";
+<div class='fn";
 if (isset($Error["rev_roundtag"]))
     echo " error";
 echo "'>Review round: &nbsp;",

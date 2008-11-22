@@ -554,7 +554,7 @@ class ContactList extends BaseList {
 		if ($fdef[1] >= 2 && ($d = $this->content($fieldId, $row))) {
 		    $t .= "  <tr class=\"pl_$fdef[0] pl_callout $trclass";
 		    if ($fdef[1] == 3 || $fdef[1] == 4)
-			$t .= " extension" . ($fdef[1] - 2);
+			$t .= " fx" . ($fdef[1] - 2);
 		    $t .= "\">\n";
 		    $t .= "<td class=\"pl_$fdef[0] pl_callout\" colspan='$ncol'>";
 		    $t .= "<span class='pl_callouthdr'>" . $this->header($fieldId, -1, $row) . ":</span>";

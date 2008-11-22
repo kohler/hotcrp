@@ -630,7 +630,7 @@ class PaperList extends BaseList {
 		$c .= " disabled='disabled'";
 	    if ($fieldId != self::FIELD_SELECTOR_CONFLICT)
 		$c .= " onclick='pselClick(event, this, $this->count)'";
-	    return "<span class='pl_rownum extension6'>" . $this->count . ". </span>" . "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='3' id='psel$this->count' $c/>";
+	    return "<span class='pl_rownum fx6'>" . $this->count . ". </span>" . "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='3' id='psel$this->count' $c/>";
 	case self::FIELD_CONFLICT_CONFIRM:
 	    return "<span id='assrev" . $row->paperId . "ok'></span>";
 	case self::FIELD_ASSIGN_REVIEW:
@@ -865,7 +865,7 @@ class PaperList extends BaseList {
 			      null, array("id" => "plact${nlll}_d",
 					  "onchange" => "fold(\"ass\", (this.value[0] == \"x\"))",
 					  "class" => "bsm"))
-		. "<span class='extension'> &nbsp;for &nbsp;";
+		. "<span class='fx'> &nbsp;for &nbsp;";
 	    // <option value='-2' disabled='disabled'></option>
 	    // <option value='xpcpaper'>Mark as PC-authored</option>
 	    // <option value='xunpcpaper'>Mark as not PC-authored</option>
@@ -1158,7 +1158,7 @@ class PaperList extends BaseList {
 		    $foldinfo[$ftype] = true;
 		    $tt .= "<div id=\"$fdef[0]$row->paperId\"";
 		    if ($d !== false)
-			$tt .= " class=\"extension$ftype\"><h6>"
+			$tt .= " class=\"fx$ftype\"><h6>"
 			    . $this->header($fieldId, -1, $row, $reviewList)
 			    . ":</h6> " . $d . "</div>";
 		    else
@@ -1179,7 +1179,7 @@ class PaperList extends BaseList {
 		    . "</td>\n  </tr>\n";
 
 	    if (!$this->unfolded)
-		$t = str_replace("<tr class=\"", "<tr class=\"extension3 ", $t);
+		$t = str_replace("<tr class=\"", "<tr class=\"fx3 ", $t);
 
 	    $body .= $t;
 	}
@@ -1221,22 +1221,22 @@ class PaperList extends BaseList {
 
 	    $titleextra = "";
 	    if (!$unfolded)
-		$titleextra .= "<span class='sep'></span><a class='unfolder3' href='javascript:fold(\"pl\",0,3)'>Show all papers</a>";
+		$titleextra .= "<span class='sep'></span><a class='fn3' href='javascript:fold(\"pl\",0,3)'>Show all papers</a>";
 	    if ((isset($foldinfo[1]) || isset($foldinfo[2]))
 		&& $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
 		if ($Conf->blindSubmission() == BLIND_NEVER)
-		    $titleextra .= "<a class='unfolder1' href='javascript:fold(\"pl\",0,1)'>Show authors</a><a class='folder1' href='javascript:fold(\"pl\",1,1)'>Hide authors</a>";
+		    $titleextra .= "<a class='fn1' href='javascript:fold(\"pl\",0,1)'>Show authors</a><a class='fx1' href='javascript:fold(\"pl\",1,1)'>Hide authors</a>";
 		else if ($this->contact->privChair && isset($foldinfo[2]) && !$foldinfo[1])
-		    $titleextra .= "<a class='unfolder2' href='javascript:fold(\"pl\",0,2)'>Show authors</a><a class='folder2' href='javascript:fold(\"pl\",1,2)'>Hide authors</a>";
+		    $titleextra .= "<a class='fn2' href='javascript:fold(\"pl\",0,2)'>Show authors</a><a class='fx2' href='javascript:fold(\"pl\",1,2)'>Hide authors</a>";
 		else if ($this->contact->privChair && isset($foldinfo[2]))
-		    $titleextra .= "<a class='unfolder1' href='javascript:fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='extension1 unfolder2' href='javascript:fold(\"pl\",0,2)'>Show all authors</a><a class='folder2' href='javascript:fold(\"pl\",1,1);fold(\"pl\",1,2)'>Hide authors</a>";
+		    $titleextra .= "<a class='fn1' href='javascript:fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='fx1 fn2' href='javascript:fold(\"pl\",0,2)'>Show all authors</a><a class='fx2' href='javascript:fold(\"pl\",1,1);fold(\"pl\",1,2)'>Hide authors</a>";
 		else
-		    $titleextra .= "<a class='unfolder1' href='javascript:fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='folder1' href='javascript:fold(\"pl\",1,1)'>Hide authors</a>";
+		    $titleextra .= "<a class='fn1' href='javascript:fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='fx1' href='javascript:fold(\"pl\",1,1)'>Hide authors</a>";
 	    }
 	    if (isset($foldinfo[4]) && $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
-		$titleextra .= "<a class='unfolder4' href='javascript:foldplinfo(0,4,\"tags\")'>Show tags</a><a class='folder4' href='javascript:foldplinfo(1,4,\"tags\")'>Hide tags</a><span id='tagsloadformresult'></span>";
+		$titleextra .= "<a class='fn4' href='javascript:foldplinfo(0,4,\"tags\")'>Show tags</a><a class='fx4' href='javascript:foldplinfo(1,4,\"tags\")'>Hide tags</a><span id='tagsloadformresult'></span>";
 		$titleextra .= foldsessionpixel("pl4", $this->foldtype . "tags");
 	    }
 

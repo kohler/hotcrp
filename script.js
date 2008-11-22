@@ -662,7 +662,7 @@ function foldplinfo(dofold, foldnum, type, which) {
 	    for (i = 0; i < divs.length; i++)
 		if (divs[i].id.substr(0, type.length) == type) {
 		    if (divs[i].className == "")
-			divs[i].className = "extension" + foldnum;
+			divs[i].className = "fx" + foldnum;
 		    divs[i].innerHTML = "<h6>" + plinfo_title[type] + ":</h6> Loading";
 		}
 	}

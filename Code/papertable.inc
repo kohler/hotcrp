@@ -165,20 +165,20 @@ class PaperTable {
 	if (!($fold = defval($extra, "fold", false))) {
 	    $n = (is_array($name) ? $name[0] : $name);
 	    if ($editfolder)
-		$c .= "<a class='q unfolder' title='Edit' "
+		$c .= "<a class='q fn' title='Edit' "
 		    . "href='javascript:fold(\"$editfolder\", 0)'>"
-		    . $n . "</a><span class='extension'>" . $n . "</span>";
+		    . $n . "</a><span class='fx'>" . $n . "</span>";
 	    else
 		$c .= $n;
 	} else {
 	    $foldnum = defval($extra, "foldnum", 0);
 	    if (!is_array($name))
 		$name = array($name, $name);
-	    $c .= "<a class='q unfolder$foldnum' "
+	    $c .= "<a class='q fn$foldnum' "
 		. "href='javascript:fold(\"$fold\", 0, $foldnum)' "
 		. "title=\"" . defval($extra, "showtitle", "Show")
 		. "\">+&nbsp;" . $name[1] . "</a>"
-		. "<a class='q folder$foldnum' "
+		. "<a class='q fx$foldnum' "
 		. "href='javascript:fold(\"$fold\", 1, $foldnum)' "
 		. "title=\"" . defval($extra, "hidetitle", "Hide")
 		. "\">&minus;&nbsp;" . $name[0] . "</a>";
@@ -188,7 +188,7 @@ class PaperTable {
 	$c .= "</span>";
 	if ($editfolder) {
 	    $x = defval($extra, "oneditunfold", "");
-	    $a = "<a class='unfolder' href='javascript:" . $x . ($x ? ";" : "")
+	    $a = "<a class='fn' href='javascript:" . $x . ($x ? ";" : "")
 		   . "fold(\"$editfolder\", 0)' title='Edit'>";
 	    $c .= "<span class='hint'>" . $a
 		. $Conf->cacheableImage("edit.png", "[Edit]", null, "b")
@@ -340,7 +340,7 @@ class PaperTable {
 		$checked = !$prow || $prow->paperStorageId <= 1 || $prow->timeSubmitted > 0;
 	    echo "<div id='foldisready' class='",
 		($prow && $prow->paperStorageId > 1 ? "foldo" : "foldc"),
-		"'><table class='extension'><tr><td class='nowrap'><input type='checkbox' name='submit' value='1'",
+		"'><table class='fx'><tr><td class='nowrap'><input type='checkbox' name='submit' value='1'",
 		($checked ? " checked='checked'" : ""),
 		" onchange='hiliter(this)' />&nbsp;";
 	    if ($Conf->setting('sub_freeze'))
@@ -357,7 +357,7 @@ class PaperTable {
 	    && ($final ? $prow->finalPaperStorageId : $prow->paperStorageId) > 0
 	    && defval($prow, "mimetype", "application/pdf") == "application/pdf"
 	    && $Conf->setting("sub_banal")) {
-	    echo "<div id='foldcheckformat' class='foldc'><input class='b' type='submit' name='checkformat' value='Check format' onclick='return docheckformat()' /><div id='checkformatformresult' class='extension'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
+	    echo "<div id='foldcheckformat' class='foldc'><input class='b' type='submit' name='checkformat' value='Check format' onclick='return docheckformat()' /><div id='checkformatformresult' class='fx'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
 	    $Conf->footerStuff .= "<form id='checkformatform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId";
 	    if ($final)
 		$Conf->footerStuff .= "&amp;final=1";
@@ -377,9 +377,9 @@ class PaperTable {
 				       "showtitle" => "Show full abstract",
 				       "hidetitle" => "Abbreviate abstract")),
 		    "<div class='papv abstract'>",
-		    "<span class='ellipsis6'>", $shortdata,
-		    " <a class='unfolder6' href='javascript:fold(\"paper\", 0, 6)'>[more]</a>",
-		    "</span><span class='extension6'>", $data,
+		    "<span class='fn6'>", $shortdata,
+		    " <a class='fn6' href='javascript:fold(\"paper\", 0, 6)'>[more]</a>",
+		    "</span><span class='fx6'>", $data,
 		    "</span></div>\n\n";
 		return;
 	    }
@@ -517,13 +517,13 @@ class PaperTable {
 
 	// anonymity folding
 	if (!$viewable) {
-	    echo "<div class='ellipsis8'>",
+	    echo "<div class='fn8'>",
 		$this->papt("authorInformation", "Authors"),
-		"<div class='papv'><a class='q unfolder8' ",
+		"<div class='papv'><a class='q fn8' ",
 		"href='javascript:fold(\"paper\", 0, 8)' title='Show authors'>",
 		"+&nbsp;<i>Hidden for blind review</i></a></div></div>\n",
-		"<div class='extension8'>";
-	    $inauthors = "<a class='q folder8' "
+		"<div class='fx8'>";
+	    $inauthors = "<a class='q fx8' "
 		. "href='javascript:fold(\"paper\", 1, 8)' "
 		. "title='Hide authors'>[blind]</a> ";
 	    $afterauthors = "</div>\n";
@@ -543,10 +543,10 @@ class PaperTable {
 				   "showtitle" => "Show full authors",
 				   "hidetitle" => "Show abbreviated authors")),
 		"<div class='papv'>", $inauthors,
-		"<span class='ellipsis9'>",
+		"<span class='fn9'>",
 		$this->authorData($prow->authorTable, "last"),
-		" <a class='folder' href='javascript:fold(\"paper\", 0, 9)'>[details]</a>",
-		"</span><span class='extension9'>",
+		" <a class='fn9' href='javascript:fold(\"paper\", 0, 9)'>[details]</a>",
+		"</span><span class='fx9'>",
 		$this->authorData($prow->authorTable, "col", $Me),
 		"</span>";
 
@@ -559,7 +559,7 @@ class PaperTable {
 	echo "</div>\n";
 
 	if (count($contacts) > 0) {
-	    echo "<div class='extension9'>",
+	    echo "<div class='fx9'>",
 		$this->papt("authorInformation", pluralx(count($contacts), "Contact author")),
 		"<div class='papv'>",
 		$this->authorData($contacts, "col", $Me),
@@ -606,8 +606,8 @@ class PaperTable {
 		$extra = array("fold" => "paper", "foldnum" => 5,
 			       "showtitle" => "Show " . strtolower($tanda),
 			       "hidetitle" => "Hide " . strtolower($tanda));
-		$before = "<div class='papv ellipsis5'></div>";
-		$eclass = " extension5";
+		$before = "<div class='papv fn5'></div>";
+		$eclass = " fx5";
 	    } else {
 		$extra = null;
 		$before = $eclass = "";
@@ -618,7 +618,7 @@ class PaperTable {
 		    $before,
 		    "<div class='papv$eclass'>", $topicdata, "</div>\n\n";
 		if ($extra)
-		    $extra = array("extraclass" => "extension5");
+		    $extra = array("extraclass" => "fx5");
 		$before = "";
 		$tanda = "Options";
 	    }
@@ -716,7 +716,7 @@ class PaperTable {
 			array("type" => "ps", "fold" => "pscollab",
 			      "foldsession" => "foldpscollab",
 			      "folded" => $fold)),
-	    "<div class='psv'><div class='extension'>", $data,
+	    "<div class='psv'><div class='fx'>", $data,
 	    "</div></div></div>\n\n";
     }
 
@@ -874,7 +874,7 @@ class PaperTable {
 
 	if ($editable) {
 	    echo "<form id='${type}form' class='fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"${type}form\")'>",
-		"<div id='fold$type' class='", ($showedit ? "foldo" : "foldc"), ($wholefold ? " fold2c" : " fold2o"), " inform'><div class='extension2'>",
+		"<div id='fold$type' class='", ($showedit ? "foldo" : "foldc"), ($wholefold ? " fold2c" : " fold2o"), " inform'><div class='fx2'>",
 		"<input type='hidden' name='set$type' value='1' />";
 	    $Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"${type}form\");</script>";
 	}
@@ -887,14 +887,14 @@ class PaperTable {
 	    foreach ($pc as $row)
 		$opt[htmlspecialchars($row->email)] = contactHtml($row->firstName, $row->lastName);
 
-	    echo "<div class='extension'>",
+	    echo "<div class='fx'>",
 		tagg_select($type, $opt,
 			    ($value && isset($pc[$value]) ? htmlspecialchars($pc[$value]->email) : "0"),
 			    array("onchange" => "Miniajax.submit(\"${type}form\")",
 				  "id" => "fold${type}_d")),
-		" <input class='b extension7' type='submit' value='Save' />",
+		" <input class='b fx7' type='submit' value='Save' />",
 		" <span id='${type}formresult'></span>",
-		"</div><div class='ellipsis'>";
+		"</div><div class='fn'>";
 	}
 
 	if (!$value)
@@ -936,8 +936,8 @@ class PaperTable {
 		$Conf->footerStuff .= "<form id='tagreportform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'><div class='aahc'><input type='hidden' name='tagreport' value='1' /></div></form>";
 
 		$t = tagsToText($prow, false, $Me, true);
-		echo "<div class='ellipsis'>", ($tx == "" ? "None" : $tx),
-		    "</div><div class='extension'><div id='tagreportformresult'></div>";
+		echo "<div class='fn'>", ($tx == "" ? "None" : $tx),
+		    "</div><div class='fx'><div id='tagreportformresult'></div>";
 		if (isset($Error["tags"]))
 		    echo "<div class='xmerror'>", $Error["tags"], "</div>";
 		echo "<textarea id='foldtags_d' cols='20' rows='2' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>", $t, "</textarea><br />",
@@ -962,15 +962,15 @@ class PaperTable {
 	echo "<div id='folddecision' class='",
 	    ($showedit ? "foldo" : "foldc"), "'>",
 	    $this->papt("decision", "Decision", array("type" => "ps", "editfolder" => ($showedit ? 0 : "decision"))),
-	    "<div class='psv'><form id='decisionform' class='extension fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitdecision()'>",
+	    "<div class='psv'><form id='decisionform' class='fx fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitdecision()'>",
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setdecision' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
 	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
 	echo decisionSelector($prow->outcome, null, " onchange='dosubmitdecision()' id='folddecision_d'"),
-	    " <input class='b extension7' type='submit' value='Save' />",
+	    " <input class='b fx7' type='submit' value='Save' />",
 	    " <span id='decisionformresult'></span>",
-	    "</div></form><div class='ellipsis'>",
+	    "</div></form><div class='fn'>",
 	    $rf->options["outcome"][$prow->outcome],
 	    "</div></div></div>\n";
 	$Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"decisionform\");</script>";
@@ -987,7 +987,7 @@ class PaperTable {
 	$rp = (isset($prow->reviewerPreference) ? htmlspecialchars($prow->reviewerPreference) : "0");
 	$rp = ($rp == "0" ? "" : $rp);
 	echo "<input id='revprefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$rp\" onchange='Miniajax.submit(\"revprefform\")' tabindex='1' />",
-	    " <input class='b extension7' type='submit' value='Save' />",
+	    " <input class='b fx7' type='submit' value='Save' />",
 	    " <span id='revprefformresult'></span>",
 	    "</div></form></div>\n";
 	$Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"revprefform\");</script>";
@@ -1017,22 +1017,22 @@ class PaperTable {
 
 	echo "<div id='foldrank' class='foldc fold2c'>",
 	    $this->papt("rank", "Rank", array("type" => "ps", "editfolder" => "rank")),
-	    "<div class='psv'><form id='rankform' class='extension fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankform\")'>",
+	    "<div class='psv'><form id='rankform' class='fx fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankform\")'>",
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setrank' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
 	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
 	echo "<input id='foldrank_d' class='textlite' type='text' size='4' name='rank' value=\"$rp\" onchange='Miniajax.submit(\"rankform\")' tabindex='1' />",
-	    " <input class='b extension7' type='submit' value='Save' />",
+	    " <input class='b fx7' type='submit' value='Save' />",
 	    " <span id='rankformresult'></span>",
 	    " <div class='hint'><strong>Tip:</strong> Use <a href='offline$ConfSiteSuffix'>offline reviewing</a> to rank many papers at once.</div>",
 	    "</div></form>",
-	    "<div class='ellipsis'>",
+	    "<div class='fn'>",
 	    ($rp === "" ? "None" : $rp);
 	if ($rp != "")
-	    echo "<span class='ellipsis2'> &nbsp; <a href='javascript:void 0' onclick='javascript:fold(\"rank\", 0, 2);void Miniajax.submit(\"rankctxform\")'>(context)</a>";
+	    echo "<span class='fn2'> &nbsp; <a href='javascript:void 0' onclick='javascript:fold(\"rank\", 0, 2);void Miniajax.submit(\"rankctxform\")'>(context)</a>";
 	echo "</div>",
-	    "<div id='rankctxformresult' class='extension2'>Loading...</div>",
+	    "<div id='rankctxformresult' class='fx2'>Loading...</div>",
 	    "</div></div>\n";
 	$Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"rankform\");</script>";
     }
@@ -1069,7 +1069,7 @@ class PaperTable {
 			 array("type" => "ps")),
 	    "<div class='paphint'>If selected, the system will email you when updated comments are available. <span id='watchformresult'></span></div>",
 	    "<div class='papv'>",
-	    "<input class='b extension7' type='submit' value='Save' />",
+	    "<input class='b fx7' type='submit' value='Save' />",
 	    "</div></div></form>\n\n";
 
 	$Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"watchform\");</script>";

@@ -271,17 +271,17 @@ if (!$newProfile) {
     echo "<div class='f-i'><div class='f-ix'>
   <div class='", fcclass('password'), "'>Password";
     echo "</div>
-  <div class='", feclass('password'), "'><input class='textlite ellipsis' type='password' name='upassword' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this);shiftPassword(1)' />";
+  <div class='", feclass('password'), "'><input class='textlite fn' type='password' name='upassword' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this);shiftPassword(1)' />";
     if ($Me->privChair)
-	echo "<input class='textlite extension' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this);shiftPassword(0)' />";
+	echo "<input class='textlite fx' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this);shiftPassword(0)' />";
     echo "</div>
-</div><div class='ellipsis f-ix'>
+</div><div class='fn f-ix'>
   <div class='", fcclass('password'), "'>Repeat password</div>
   <div class='", feclass('password'), "'><input class='textlite' type='password' name='upassword2' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this)' /></div>
 </div>
   <div class='f-h'>The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don't use a login password or any other high-security password.";
     if ($Me->privChair)
-	echo "  <span class='sep'></span><span class='f-cx'><a class='unfolder' href='javascript:void fold(\"pass\")'>Show password</a><a class='folder' href='javascript:void fold(\"pass\")'>Hide password</a></span>";
+	echo "  <span class='sep'></span><span class='f-cx'><a class='fn' href='javascript:void fold(\"pass\")'>Show password</a><a class='fx' href='javascript:void fold(\"pass\")'>Hide password</a></span>";
     echo "</div>\n  <div class='clear'></div></div>\n\n";
 }
 

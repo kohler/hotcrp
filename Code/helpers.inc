@@ -190,7 +190,7 @@ function foldbutton($foldtype, $title, $foldnum=0) {
     $hidetitle = ($title ? " title='" . htmlspecialchars("Hide $title") . "'" : "");
     $foldclass = ($foldnum ? $foldnum : "");
     $foldnum = ($foldnum ? ", $foldnum" : "");
-    return "<a href=\"javascript:fold('$foldtype', 0$foldnum)\" class='foldbutton unfolder$foldclass'$showtitle>+</a><a href=\"javascript:fold('$foldtype', 1$foldnum)\" class='foldbutton folder$foldclass'$hidetitle>&ndash;</a>";
+    return "<a href=\"javascript:fold('$foldtype', 0$foldnum)\" class='foldbutton fn$foldclass'$showtitle>+</a><a href=\"javascript:fold('$foldtype', 1$foldnum)\" class='foldbutton fx$foldclass'$hidetitle>&ndash;</a>";
 }
 
 function reviewType($paperId, $row, $long = 0) {
@@ -680,7 +680,7 @@ function htmlFold($text, $maxWords) {
     $fid = (isset($foldId) ? $foldId : 1);
     $foldId = $fid + 1;
 
-    $x .= "<span id='fold$fid' class='foldc'><span class='ellipsis'> ... </span><a class='unfolder' href='javascript:fold($fid, 0)'>[More]</a><span class='extension'> " . join(" ", array_slice($words, $maxWords)) . " </span><a class='folder' href='javascript:fold($fid, 1)'>[Less]</a></span>";
+    $x .= "<span id='fold$fid' class='foldc'><span class='fn'> ... </span><a class='fn' href='javascript:fold($fid, 0)'>[More]</a><span class='fx'> " . join(" ", array_slice($words, $maxWords)) . " </span><a class='fx' href='javascript:fold($fid, 1)'>[Less]</a></span>";
 
     return $x;
 }
@@ -831,8 +831,8 @@ function contactPulldown($id, $name, $conf, $contact) {
 
     $result = $conf->q("select firstName, lastName, email from ContactInfo order by lastName, firstName, email");
     if ($result) {
-	echo "<span class='foldc' id='fold$id'><a class='button_small unfolder' href=\"javascript:fold('${id}', 0)\">Show&nbsp;list</a>";
-	echo "<span class='contactpulldown extension'>";
+	echo "<span class='foldc' id='fold$id'><a class='button_small fn' href=\"javascript:fold('${id}', 0)\">Show&nbsp;list</a>";
+	echo "<span class='contactpulldown fx'>";
 	echo "<select id='${id}_pulldown' name='${name}_pulldown' onchange='contactPulldown(\"$id\")' size='6'>";
 	while (($row = edb_row($result))) {
 	    $selected = ($row[2] == $contact->email ? " selected='selected'" : "");

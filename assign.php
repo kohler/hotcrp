@@ -546,7 +546,7 @@ if ($Me->actChair($prow)) {
 				   -1 => "Conflict"),
 			     ($p->conflictType == 0 ? $p->reviewType : -1),
 			     array("id" => "pcs$p->contactId",
-				   "class" => "extension",
+				   "class" => "fx",
 				   "size" => 4,
 				   "onchange" => "selassign(this, $p->contactId)",
 				   "onclick" => "selassign(null, $p->contactId)",

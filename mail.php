@@ -129,7 +129,7 @@ function checkMailPrologue($send) {
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
     if ($send) {
-	echo "<div id='foldmail' class='foldc'><div class='ellipsis merror'>In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong><br /><span id='mailcount'></span></div><div class='extension'><div class='confirm'>Sent mail as follows.</div>
+	echo "<div id='foldmail' class='foldc'><div class='fn merror'>In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong><br /><span id='mailcount'></span></div><div class='fx'><div class='confirm'>Sent mail as follows.</div>
 	<div class='aa'>
 	<input class='b' type='submit' name='go' value='Prepare more mail' />
 	</div>
@@ -143,8 +143,8 @@ function checkMailPrologue($send) {
 	    else if (!$Conf->timeAuthorViewReviews(true))
 		echo "<div class='warning'>Mails to users who have not completed their own reviews will not include reviews or comments.  (<a href='settings$ConfSiteSuffix?group=dec' class='nowrap'>Change the setting</a>)</div>\n";
 	}
-	echo "<div id='foldmail' class='foldc'><div class='ellipsis merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div><div class='extension info'>Examine the mails to verify that you've gotten the results you want, then select &ldquo;Send&rdquo; to send the checked mails.</div>
-        <div class='aa extension'>
+	echo "<div id='foldmail' class='foldc'><div class='fn merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div><div class='fx info'>Examine the mails to verify that you've gotten the results you want, then select &ldquo;Send&rdquo; to send the checked mails.</div>
+        <div class='aa fx'>
 	<input class='b' type='submit' name='send' value='Send' /> &nbsp;
 	<input class='b' type='submit' name='cancel' value='Cancel' />
         </div>\n";
@@ -401,8 +401,8 @@ echo "<table id='foldpsel' class='fold8c'><tr><td><input id='plimit' type='check
 if (isset($_REQUEST["plimit"]))
     echo " checked='checked'";
 $Conf->footerStuff .= "<script type='text/javascript'>fold(\"psel\",!e(\"plimit\").checked,8);</script>";
-echo " />&nbsp;</td><td>Choose individual papers<span class='extension8'>:</span><br />
-<div class='extension8'>";
+echo " />&nbsp;</td><td>Choose individual papers<span class='fx8'>:</span><br />
+<div class='fx8'>";
 $q = defval($_REQUEST, "q", "(All)");
 echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
     tagg_select("t", $tOpt, $_REQUEST["t"], array("id" => "t")),

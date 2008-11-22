@@ -1032,8 +1032,8 @@ div.searchresult table.pltable, table.altable, div.assignresult table.pltable {
 	width: 100%;
 	position: relative;
 }
-table.pltable th a.unfolder1, table.pltable th a.unfolder2, table.pltable th a.unfolder4,
-table.pltable th a.folder1, table.pltable th a.folder2, table.pltable th a.folder4 {
+table.pltable th a.fn1, table.pltable th a.fn2, table.pltable th a.fn4,
+table.pltable th a.fx1, table.pltable th a.fx2, table.pltable th a.fx4 {
 	font-weight: normal;
 }
 div#plact {
@@ -1640,18 +1640,18 @@ div.mail td.mhd {
 
 
 /* folding */
-.foldc .extension, .foldc .folder, .foldo .ellipsis, .foldo .unfolder,
-.foldc .extension0, .foldc .folder0, .foldo .ellipsis0, .foldo .unfolder0,
-.fold1c .extension1, .fold1c .folder1, .fold1o .ellipsis1, .fold1o .unfolder1,
-.fold2c .extension2, .fold2c .folder2, .fold2o .ellipsis2, .fold2o .unfolder2,
-.fold3c .extension3, .fold3c .folder3, .fold3o .ellipsis3, .fold3o .unfolder3,
-.fold4c .extension4, .fold4c .folder4, .fold4o .ellipsis4, .fold4o .unfolder4,
-.fold5c .extension5, .fold5c .folder5, .fold5o .ellipsis5, .fold5o .unfolder5,
-.fold6c .extension6, .fold6c .folder6, .fold6o .ellipsis6, .fold6o .unfolder6,
-.fold7c .extension7, .fold7c .folder7, .fold7o .ellipsis7, .fold7o .unfolder7,
-.fold8c .extension8, .fold8c .folder8, .fold8o .ellipsis8, .fold8o .unfolder8,
-.fold9c .extension9, .fold9c .folder9, .fold9o .ellipsis9, .fold9o .unfolder9,
-.fold10c .extension10, .fold10c .folder10, .fold10o .ellipsis10, .fold10o .unfolder10,
+.foldc .fx, .foldo .fn,
+.foldc .fx0, .foldo .fn0,
+.fold1c .fx1, .fold1o .fn1,
+.fold2c .fx2, .fold2o .fn2,
+.fold3c .fx3, .fold3o .fn3,
+.fold4c .fx4, .fold4o .fn4,
+.fold5c .fx5, .fold5o .fn5,
+.fold6c .fx6, .fold6o .fn6,
+.fold7c .fx7, .fold7o .fn7,
+.fold8c .fx8, .fold8o .fn8,
+.fold9c .fx9, .fold9o .fn9,
+.fold10c .fx10, .fold10o .fn10,
 .hidden {
 	display: none;
 }
