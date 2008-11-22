@@ -41,10 +41,11 @@ class PaperList extends BaseList {
     const FIELD_TAGS = 71;
     const FIELD_OPT_ABSTRACT = 72;
     const FIELD_OPT_TOPIC_NAMES = 73;
-    const FIELD_OPT_ALL_REVIEWER_NAMES = 74;
-    const FIELD_OPT_PC_CONFLICTS = 75;
-    const FIELD_LEAD = 76;
-    const FIELD_SHEPHERD = 77;
+    const FIELD_COLLABORATORS = 74;
+    const FIELD_OPT_ALL_REVIEWER_NAMES = 75;
+    const FIELD_OPT_PC_CONFLICTS = 76;
+    const FIELD_LEAD = 77;
+    const FIELD_SHEPHERD = 78;
     const FIELD_FOLD = 80;
 
     const HEADER_ALL = 2;
@@ -221,6 +222,10 @@ class PaperList extends BaseList {
 	case self::FIELD_LEAD:
 	case self::FIELD_SHEPHERD:
 	    if (!$this->contact->isPC)
+		return false;
+	    break;
+	case self::FIELD_COLLABORATORS:
+	    if (!$Conf->setting("sub_collab"))
 		return false;
 	    break;
 	case self::FIELD_OPT_PC_CONFLICTS:
@@ -469,6 +474,8 @@ class PaperList extends BaseList {
 	    return "Discussion lead";
 	case self::FIELD_SHEPHERD:
 	    return "Shepherd";
+	case self::FIELD_COLLABORATORS:
+	    return "Collaborators";
 	case self::FIELD_CONFLICT_CONFIRM:
 	    return "";
 	default:
@@ -845,6 +852,21 @@ class PaperList extends BaseList {
 		$this->folds->shepherd[] = $row->paperId;
 		return false;
 	    }
+	case self::FIELD_COLLABORATORS:
+	    if ($row->collaborators == ""
+		|| strcasecmp($row->collaborators, "None") == 0)
+		return "";
+	    if ($this->folds->collab === false) {
+		$x = "";
+		foreach (explode("\n", $row->collaborators) as $c)
+		    $x .= ($x === "" ? "" : ", ") . htmlspecialchars(trim($c));
+		if (isset($this->search->matchPreg["collaborators"]))
+		    $x = highlightMatch($this->search->matchPreg["collaborators"], $x);
+		return $x;
+	    } else {
+		$this->folds->collab[] = $row->paperId;
+		return false;
+	    }
 	default:
 	    return "";
 	}
@@ -1050,26 +1072,26 @@ class PaperList extends BaseList {
 	    return array(1, 11, 20);
 	case "s":
 	case "acc":
-	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77));
+	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
 	case "all":
 	case "act":
-	    return array(100, 1, 11, 20, 27, 70, 72, 71, 73, 74, 75, 76, 77);
+	    return array(100, 1, 11, 20, 27, 70, 72, 71, 73, 74, 75, 76, 77, 78);
 	case "reviewerHome":
 	    $this->paperLink = "review";
 	    return array(1, 11, 27, 21);
 	case "r":
 	case "lead":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77));
+	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
 	case "rout":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77));
+	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
 	case "req":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77));
+	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
 	case "reqrevs":
 	    $this->paperLink = "review";
-	    return array(1, 11, self::FIELD_REVIEWER_MONITOR, self::FIELD_REVIEWER_STATUS, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77);
+	    return array(1, 11, self::FIELD_REVIEWER_MONITOR, self::FIELD_REVIEWER_STATUS, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78);
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
 	    return array(1, 11, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48);
@@ -1110,7 +1132,7 @@ class PaperList extends BaseList {
 	// check what is folded
 	$this->folds = (object) array();
 	foreach (array("abstract", "tags", "reviewers", "shepherd", "lead",
-		       "topics", "pcconf") as $k)
+		       "topics", "pcconf", "collab") as $k)
 	    if (!defval($_REQUEST, "show$k")
 		&& defval($_SESSION, $this->foldtype . $k, 1))
 		$this->folds->$k = array();
@@ -1279,7 +1301,7 @@ class PaperList extends BaseList {
 
 	foreach (array("tags" => 4, "abstract" => 5, "reviewers" => 10,
 		       "shepherd" => 11, "lead" => 12, "topics" => 13,
-		       "pcconf" => 14) as $k => $n) {
+		       "pcconf" => 14, "collab" => 15) as $k => $n) {
 	    if (!isset($foldinfo[$n]))
 		continue;
 	    $x .= " fold$n" . ($this->folds->$k !== false ? "c" : "o");
@@ -1400,6 +1422,7 @@ class PaperList extends BaseList {
 		"lead" => defval($foldinfo, 12, false),
 		"topics" => defval($foldinfo, 13, false),
 		"pcconf" => defval($foldinfo, 14, false),
+		"collab" => defval($foldinfo, 15, false),
 		"pap" => $ids
 	);
 
@@ -1444,5 +1467,6 @@ $paperListFields = array( // array(CSS_FIELD_NAME, COLUMN_TYPE, SORTABLE)
 	PaperList::FIELD_LEAD => array("lead", 12, 0),
 	PaperList::FIELD_SHEPHERD => array("shepherd", 11, 0),
 	PaperList::FIELD_OPT_PC_CONFLICTS => array("pcconf", 14, 0),
+	PaperList::FIELD_COLLABORATORS => array("collab", 15, 0),
 	PaperList::FIELD_FOLD => array('fold', 0, 0)
 	);

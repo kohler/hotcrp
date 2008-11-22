@@ -81,11 +81,8 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
 
     $matchPreg = "";
     if (isset($_REQUEST["ls"]) && isset($_SESSION["l"][$_REQUEST["ls"]])
-	&& isset($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"])) {
+	&& isset($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"]))
 	$matchPreg = defval($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"], "abstract", "");
-	if ($matchPreg !== "")
-	    $matchPreg = "{($matchPreg)}i";
-    }
 
     while ($prow = edb_orow($result)) {
 	if (!$Me->canViewPaper($prow, $Conf, $whyNot))
@@ -154,6 +151,34 @@ if ($getaction == "tags" && isset($papersel) && defval($_REQUEST, "ajax")) {
 	else
 	    $t = tagsToText($prow, $csb, $Me, false, $highlight);
 	$response["tags$prow->paperId"] = $t;
+    }
+    $response["ok"] = (count($response) > 0);
+    $Conf->ajaxExit($response);
+}
+
+
+// download selected collaborators
+if ($getaction == "collab" && isset($papersel) && defval($_REQUEST, "ajax")) {
+    $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
+    $result = $Conf->qe($q, "while selecting papers");
+    $response = array();
+
+    $matchPreg = "";
+    if (isset($_REQUEST["ls"]) && isset($_SESSION["l"][$_REQUEST["ls"]])
+	&& isset($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"]))
+	$matchPreg = defval($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"], "collaborators", "");
+
+    while ($prow = edb_orow($result)) {
+	if (!$Me->canViewPaper($prow, $Conf, $whyNot))
+	    $Conf->errorMsg(whyNotText($whyNot, "view"));
+	else {
+	    $x = "";
+	    foreach (explode("\n", $prow->collaborators) as $c)
+		$x .= ($x === "" ? "" : ", ") . htmlspecialchars(trim($c));
+	    if ($matchPreg !== "")
+		$x = highlightMatch($matchPreg, $x);
+	    $response["collab$prow->paperId"] = $x;
+	}
     }
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
@@ -827,7 +852,7 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 if (isset($_REQUEST["redisplay"])) {
     $_SESSION["scores"] = 0;
     foreach (array("au", "anonau", "abstract", "tags", "reviewers",
-		   "shepherd", "lead", "topics", "rownum") as $x) {
+		   "shepherd", "lead", "topics", "collab", "rownum") as $x) {
 	unset($_SESSION["foldpl$x"]);
 	if (defval($_REQUEST, "show$x", 0))
 	    $_SESSION["foldpl$x"] = 0;
@@ -888,6 +913,8 @@ function ajaxDisplayer($type, $foldnum, $title, $disabled = false) {
 }
 
 $moredisplay = "";
+if ($pl && $pl->headerInfo["collab"])
+    $moredisplay .= ajaxDisplayer("collab", 15, "Collaborators");
 if ($pl && $pl->headerInfo["topics"])
     $moredisplay .= ajaxDisplayer("topics", 13, "Topics");
 if ($Me->privChair && $pl)

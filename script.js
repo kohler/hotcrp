@@ -643,7 +643,7 @@ Miniajax.submit = function(formname, callback, timeout) {
 var plinfo_title = {
     abstract: "Abstract", tags: "Tags", reviewers: "Reviewers",
     shepherd: "Shepherd", lead: "Discussion lead", topics: "Topics",
-    pcconf: "PC conflicts"
+    pcconf: "PC conflicts", collab: "Collaborators"
 };
 var plinfo_needload = { };
 function foldplinfo(dofold, foldnum, type, which) {

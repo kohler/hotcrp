@@ -51,7 +51,7 @@ $allowedSessionVars = array("foldassigna", "foldpapera", "foldpaperp",
 			    "foldpltags", "foldplabstract", "foldplau",
 			    "foldplanonau", "foldplreviewers", "foldplrownum",
 			    "foldplshepherd", "foldpllead", "foldpltopics",
-			    "foldplpcconf", "foldpscollab");
+			    "foldplpcconf", "foldplcollab", "foldpscollab");
 
 $authorConflictTypes = array(0 => "No conflict", 3 => "Advisor/student",
 			     2 => "Recent collaborator", 4 => "Institutional",
