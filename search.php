@@ -465,21 +465,39 @@ if ($getaction == "authors" && isset($papersel)
 
 
 // download text PC conflict information for selected papers
-if ($getaction == "pcconflicts" && isset($papersel) && $Me->privChair) {
+if ($getaction == "pcconf" && isset($papersel) && $Me->privChair) {
     $idq = paperselPredicate($papersel, "Paper.");
-    $result = $Conf->qe("select Paper.paperId, title, group_concat(email separator ' ')
+    $result = $Conf->qe("select Paper.paperId, title, group_concat(PaperConflict.contactId separator ' ')
 		from Paper
-		left join (select PaperConflict.paperId, email
-			from PaperConflict join PCMember using (contactId)
-			join ContactInfo on (PCMember.contactId=ContactInfo.contactId))
-			as PCConflict on (PCConflict.paperId=Paper.paperId)
+		left join PaperConflict on (PaperConflict.paperId=Paper.paperId)
 		where $idq
 		group by Paper.paperId", "while fetching PC conflicts");
-    if ($result) {
+    $pcm = pcMembers();
+    if (defval($_REQUEST, "ajax")) {
+	$response = array();
+	while (($row = edb_row($result))) {
+	    $x = " " . $row[2] . " ";
+	    $y = array();
+	    foreach ($pcm as $pc)
+		if (strpos($x, " $pc->contactId ") !== false)
+		    $y[] = contactHtml($pc->firstName, $pc->lastName);
+	    $response["pcconf$row[0]"] = join(", ", $y);
+	}
+	cleanAjaxResponse($response, $getaction);
+	$response["ok"] = (count($response) > 0);
+	$Conf->ajaxExit($response);
+    } else if ($result) {
 	$texts = array();
-	while (($row = edb_row($result)))
-	    if ($row[2])
-		defappend($texts[$paperselmap[$row[0]]], $row[0] . "\t" . $row[1] . "\t" . $row[2] . "\n");
+	while (($row = edb_row($result))) {
+	    $x = " " . $row[2] . " ";
+	    $y = array();
+	    foreach ($pcm as $pc)
+		if (strpos($x, " $pc->contactId ") !== false)
+		    $y[] = $pc->email;
+	    sort($y);
+	    if (count($y))
+		defappend($texts[$paperselmap[$row[0]]], $row[0] . "\t" . $row[1] . "\t" . join(" ", $y) . "\n");
+	}
 	ksort($texts);
 	$text = "#paper\ttitle\tPC conflicts\n" . join("", $texts);
 	downloadText($text, $Opt['downloadPrefix'] . "pcconflicts.txt", "PC conflicts");
@@ -874,6 +892,8 @@ if ($pl && $pl->headerInfo["topics"])
     $moredisplay .= ajaxDisplayer("topics", 13, "Topics");
 if ($Me->privChair && $pl)
     $moredisplay .= ajaxDisplayer("reviewers", 10, "Reviewers");
+if ($Me->privChair && $pl)
+    $moredisplay .= ajaxDisplayer("pcconf", 14, "PC conflicts");
 if ($Me->isPC && $pl && $pl->headerInfo["lead"])
     $moredisplay .= ajaxDisplayer("lead", 12, "Discussion leads");
 if ($Me->isPC && $pl && $pl->headerInfo["shepherd"])

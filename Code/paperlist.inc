@@ -42,8 +42,9 @@ class PaperList extends BaseList {
     const FIELD_OPT_ABSTRACT = 72;
     const FIELD_OPT_TOPIC_NAMES = 73;
     const FIELD_OPT_ALL_REVIEWER_NAMES = 74;
-    const FIELD_LEAD = 75;
-    const FIELD_SHEPHERD = 76;
+    const FIELD_OPT_PC_CONFLICTS = 75;
+    const FIELD_LEAD = 76;
+    const FIELD_SHEPHERD = 77;
     const FIELD_FOLD = 80;
 
     const HEADER_ALL = 2;
@@ -221,6 +222,12 @@ class PaperList extends BaseList {
 	case self::FIELD_SHEPHERD:
 	    if (!$this->contact->isPC)
 		return false;
+	    break;
+	case self::FIELD_OPT_PC_CONFLICTS:
+	    if (!$this->contact->privChair)
+		return false;
+	    if ($this->folds->pcconf === false)
+		$queryOptions["allConflictType"] = 1;
 	    break;
 	}
 	return true;
@@ -435,6 +442,8 @@ class PaperList extends BaseList {
 		return "Reviewers (" . count($reviewList[$row->paperId]) . ")";
 	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
 	    return "Reviewers";
+	case self::FIELD_OPT_PC_CONFLICTS:
+	    return "PC conflicts";
 	case self::FIELD_REVIEWER_PREFERENCE:
 	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
 	    return "Preference";
@@ -695,6 +704,17 @@ class PaperList extends BaseList {
 			    $n .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_SECONDARY . ".gif", "Secondary");
 		    }
 	    return $n;
+	case self::FIELD_OPT_PC_CONFLICTS:
+	    if ($this->folds->pcconf !== false) {
+		$this->folds->pcconf[] = $row->paperId;
+		return false;
+	    }
+	    $x = "," . $row->allConflictType;
+	    $y = array();
+	    foreach (pcMembers() as $pc)
+		if (strpos($x, "," . $pc->contactId . " ") !== false)
+		    $y[] = contactHtml($pc->firstName, $pc->lastName);
+	    return join(", ", $y);
 	case self::FIELD_REVIEWER_PREFERENCE:
 	    return (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
 	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
@@ -865,7 +885,7 @@ class PaperList extends BaseList {
 	    $sel_opt["authors"] = "Authors";
 	if ($this->contact->privChair) {
 	    $sel_opt["contact"] = "Contact emails";
-	    $sel_opt["pcconflicts"] = "PC conflicts";
+	    $sel_opt["pcconf"] = "PC conflicts";
 	    $sel_opt["checkformat"] = "Format check";
 	}
 	$sel_opt["topics"] = "Topics";
@@ -1030,26 +1050,26 @@ class PaperList extends BaseList {
 	    return array(1, 11, 20);
 	case "s":
 	case "acc":
-	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76));
+	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77));
 	case "all":
 	case "act":
-	    return array(100, 1, 11, 20, 27, 70, 72, 71, 73, 74, 75, 76);
+	    return array(100, 1, 11, 20, 27, 70, 72, 71, 73, 74, 75, 76, 77);
 	case "reviewerHome":
 	    $this->paperLink = "review";
 	    return array(1, 11, 27, 21);
 	case "r":
 	case "lead":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76));
+	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77));
 	case "rout":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76));
+	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77));
 	case "req":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76));
+	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77));
 	case "reqrevs":
 	    $this->paperLink = "review";
-	    return array(1, 11, self::FIELD_REVIEWER_MONITOR, self::FIELD_REVIEWER_STATUS, 41, 21, 70, 72, 71, 73, 74, 75, 76);
+	    return array(1, 11, self::FIELD_REVIEWER_MONITOR, self::FIELD_REVIEWER_STATUS, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77);
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
 	    return array(1, 11, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48);
@@ -1090,7 +1110,7 @@ class PaperList extends BaseList {
 	// check what is folded
 	$this->folds = (object) array();
 	foreach (array("abstract", "tags", "reviewers", "shepherd", "lead",
-		       "topics") as $k)
+		       "topics", "pcconf") as $k)
 	    if (!defval($_REQUEST, "show$k")
 		&& defval($_SESSION, $this->foldtype . $k, 1))
 		$this->folds->$k = array();
@@ -1258,8 +1278,8 @@ class PaperList extends BaseList {
 	    $x .= " fold3c";
 
 	foreach (array("tags" => 4, "abstract" => 5, "reviewers" => 10,
-		       "shepherd" => 11, "lead" => 12, "topics" => 13)
-		 as $k => $n) {
+		       "shepherd" => 11, "lead" => 12, "topics" => 13,
+		       "pcconf" => 14) as $k => $n) {
 	    if (!isset($foldinfo[$n]))
 		continue;
 	    $x .= " fold$n" . ($this->folds->$k !== false ? "c" : "o");
@@ -1379,6 +1399,7 @@ class PaperList extends BaseList {
 		"shepherd" => defval($foldinfo, 11, false),
 		"lead" => defval($foldinfo, 12, false),
 		"topics" => defval($foldinfo, 13, false),
+		"pcconf" => defval($foldinfo, 14, false),
 		"pap" => $ids
 	);
 
@@ -1422,5 +1443,6 @@ $paperListFields = array( // array(CSS_FIELD_NAME, COLUMN_TYPE, SORTABLE)
 	PaperList::FIELD_OPT_ALL_REVIEWER_NAMES => array("reviewers", 10, 0),
 	PaperList::FIELD_LEAD => array("lead", 12, 0),
 	PaperList::FIELD_SHEPHERD => array("shepherd", 11, 0),
+	PaperList::FIELD_OPT_PC_CONFLICTS => array("pcconf", 14, 0),
 	PaperList::FIELD_FOLD => array('fold', 0, 0)
 	);
