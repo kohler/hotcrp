@@ -78,11 +78,24 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
     $result = $Conf->qe($q, "while selecting papers");
     $response = array();
+
+    $matchPreg = "";
+    if (isset($_REQUEST["ls"]) && isset($_SESSION["l"][$_REQUEST["ls"]])
+	&& isset($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"])) {
+	$matchPreg = defval($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"], "abstract", "");
+	if ($matchPreg !== "")
+	    $matchPreg = "{($matchPreg)}i";
+    }
+
     while ($prow = edb_orow($result)) {
 	if (!$Me->canViewPaper($prow, $Conf, $whyNot))
 	    $Conf->errorMsg(whyNotText($whyNot, "view"));
-	else
-	    $response["abstract$prow->paperId"] = $prow->abstract;
+	else {
+	    $x = htmlspecialchars($prow->abstract);
+	    if ($matchPreg !== "")
+		$x = highlightMatch($matchPreg, $x);
+	    $response["abstract$prow->paperId"] = $x;
+	}
     }
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);

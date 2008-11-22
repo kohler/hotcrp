@@ -336,6 +336,16 @@ function abbreviateName($f, $l) {
 	return "???";
 }
 
+function highlightMatch($match, $text, &$n = null) {
+    if ($match == "") {
+	$n = 0;
+	return $text;
+    }
+    if ($match[0] != "{")
+	$match = "{($match)}i";
+    return preg_replace($match, "<span class='match'>\$1</span>", $text, -1, $n);
+}
+
 function decorateNumber($n) {
     if ($n < 0)
 	return "&minus;" . (-$n);

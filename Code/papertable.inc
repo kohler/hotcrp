@@ -211,7 +211,7 @@ class PaperTable {
 
 	if ($this->highlight && isset($textAreaRows[$fieldName])
 	    && !$this->editable && isset($this->matchPreg[$fieldName]))
-	    $text = preg_replace($this->matchPreg[$fieldName], "<span class='match'>\$1</span>", htmlspecialchars($text), -1, $this->entryMatches);
+	    $text = highlightMatch($this->matchPreg[$fieldName], htmlspecialchars($text), $this->entryMatches);
 	else
 	    $text = htmlspecialchars($text);
 
@@ -225,7 +225,7 @@ class PaperTable {
 
     function echoTitle($prow) {
 	if ($this->highlight && isset($this->matchPreg["title"]))
-	    echo preg_replace($this->matchPreg["title"], "<span class='match'>\$1</span>", htmlspecialchars($prow->title));
+	    echo highlightMatch($this->matchPreg["title"], htmlspecialchars($prow->title));
 	else
 	    echo htmlspecialchars($prow->title);
     }
@@ -435,7 +435,7 @@ class PaperTable {
 	    foreach ($table as $au) {
 		$n = abbreviateName($au[0], $au[1]);
 		if ($highpreg !== false) {
-		    $n = preg_replace($highpreg, "<span class='match'>\$1</span>", htmlspecialchars($n), -1, $nm);
+		    $n = highlightMatch($highpreg, htmlspecialchars($n), $nm);
 		    $this->entryMatches += $nm;
 		} else
 		    $n = htmlspecialchars($n);
@@ -451,7 +451,7 @@ class PaperTable {
 		if ($au[2] != "")
 		    $n .= " <$au[2]>";
 		if ($highpreg !== false) {
-		    $n = preg_replace($highpreg, "<span class='match'>\$1</span>", htmlspecialchars($n), -1, $nm);
+		    $n = highlightMatch($highpreg, htmlspecialchars($n), $nm);
 		    $this->entryMatches += $nm;
 		} else
 		    $n = htmlspecialchars($n);

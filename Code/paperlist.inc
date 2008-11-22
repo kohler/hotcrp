@@ -754,15 +754,31 @@ class PaperList extends BaseList {
 		return "";
 	    $aus = array();
 	    cleanAuthor($row);
-	    foreach ($row->authorTable as $au)
-		$aus[] = abbreviateName($au[0], $au[1]);
-	    return htmlspecialchars(join(", ", $aus));
+	    if (!isset($this->search->matchPreg["authorInformation"])) {
+		foreach ($row->authorTable as $au)
+		    $aus[] = abbreviateName($au[0], $au[1]);
+		return htmlspecialchars(join(", ", $aus));
+	    } else {
+		$m = $this->search->matchPreg["authorInformation"];
+		foreach ($row->authorTable as $au) {
+		    $first = htmlspecialchars($au[0]);
+		    $x = highlightMatch($m, trim($first . " " . htmlspecialchars($au[1])), $nm);
+		    if ((!$nm || substr($x, 0, strlen($first)) == $first)
+			&& strlen($first) && ctype_upper($first[0]))
+			$x = $first[0] . ". " . substr($x, strlen($first) + 1);
+		    $aus[] = $x;
+		}
+		return join(", ", $aus);
+	    }
 	case self::FIELD_OPT_ABSTRACT:
 	    if ($row->abstract == "")
 		return "";
-	    if ($this->folds->abstract === false)
-		return htmlspecialchars($row->abstract);
-	    else {
+	    if ($this->folds->abstract === false) {
+		$x = htmlspecialchars($row->abstract);
+		if (isset($this->search->matchPreg["abstract"]))
+		    $x = highlightMatch($this->search->matchPreg["abstract"], $x);
+		return $x;
+	    } else {
 		$this->folds->abstract[] = $row->paperId;
 		return false;
 	    }
@@ -1246,11 +1262,10 @@ class PaperList extends BaseList {
 	    $x .= " fold$n" . ($this->folds->$k !== false ? "c" : "o");
 	    if ($this->folds->$k !== false && count($this->folds->$k)) {
 		$Conf->footerStuff .= "<form id='${k}loadform' method='post'"
-		    . " action='search$ConfSiteSuffix?get=$k&amp;ajax=1'"
-		    . " accept-charset='UTF-8'><div class='inform'>"
-		    . "<input type='hidden' name='pap' value='"
-		    . join(" ", $this->folds->$k)
-		    . "' />";
+		    . " action='search$ConfSiteSuffix?get=$k&amp;ajax=1"
+		    . $this->paperLinkArgs . "' accept-charset='UTF-8'>"
+		    . "<div class='inform'><input type='hidden' name='pap'"
+		    . " value='" . join(" ", $this->folds->$k) . "' />";
 		if ($k == "tags" && $this->search->orderTag)
 		    $Conf->footerStuff .= "<input type='hidden'"
 			. " name='highlight' value=\""
