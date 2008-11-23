@@ -13,6 +13,7 @@ $rf = reviewForm();
 $nullMailer = new Mailer(null, null, $Me);
 $nullMailer->width = 10000000;
 $checkReviewNeedsSubmit = false;
+$Error = array();
 
 // create options
 $tOpt = array();
@@ -152,8 +153,8 @@ function checkMailPrologue($send) {
 }
 
 function checkMail($send) {
-    global $Conf, $ConfSiteSuffix, $Me, $subjectPrefix, $recip,
-	$checkReviewNeedsSubmit;
+    global $Conf, $ConfSiteSuffix, $Me, $Error, $subjectPrefix, $recip,
+	$checkReviewNeedsSubmit, $mailHeaders;
     $q = contactQuery($_REQUEST["recipients"]);
     if (!$q)
 	return $Conf->errorMsg("Bad recipients value");
@@ -169,18 +170,28 @@ function checkMail($send) {
     $emailBody = $_REQUEST["emailBody"];
 
     $template = array("subject" => $subject, "body" => $emailBody);
-    $rest = array("cc" => $_REQUEST["cc"], "replyto" => $_REQUEST["replyto"]);
+    $rest = array("cc" => $_REQUEST["cc"], "replyto" => $_REQUEST["replyto"],
+		  "error" => false);
     $last = array("subject" => "", "body" => "", "to" => "");
     $any = false;
     $nrows_left = edb_nrows($result);
     $nrows_print = false;
+    $preperrors = array();
     while (($row = edb_orow($result))) {
 	$nrows_left--;
 	if ($nrows_left % 5 == 0)
 	    $nrows_print = true;
 	$contact = Contact::makeMinicontact($row);
 	$rest["hideReviews"] = $checkReviewNeedsSubmit && $row->reviewNeedsSubmit;
+	$rest["error"] = false;
 	$preparation = Mailer::prepareToSend($template, $row, $contact, $Me, $rest); // see also $show_preparation below
+	if ($rest["error"] !== false) {
+	    $Error[$rest["error"]] = true;
+	    $emsg = $mailHeaders[$rest["error"]] . " &ldquo;<tt>" . htmlspecialchars($rest[$rest["error"]]) . "</tt>&rdquo; isn't a valid email list.  Make sure multiple email address are separated by commas and odd characters are contained in quotes.";
+	    if (!isset($preperrors[$emsg]))
+		$Conf->errorMsg($emsg);
+	    $preperrors[$emsg] = true;
+	}
 	if ($preparation["subject"] != $last["subject"]
 	    || $preparation["body"] != $last["body"]
 	    || $preparation["to"] != $last["to"]
@@ -234,8 +245,10 @@ function checkMail($send) {
 	}
     }
 
-    if (!$any)
-	return $Conf->errorMsg("No users match \"" . $recip[$_REQUEST["recipients"]] . "\" for that search.");
+    if (!$any && !count($preperrors))
+	return $Conf->errorMsg("No users match &ldquo;" . $recip[$_REQUEST["recipients"]] . "&rdquo; for that search.");
+    else if (!$any)
+	return false;
     else if (!$send) {
 	echo "<div class='aa'>",
 	    "<input class='b' type='submit' name='send' value='Send' /> &nbsp;
@@ -412,12 +425,15 @@ echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", h
 </tr>\n";
 
 if ($Me->privChair) {
-    echo "  <tr><td class='mhn'>Cc:</td><td class='mhd'>",
-	"<input type='text' class='textlite-tt' name='cc' value=\"", htmlspecialchars($_REQUEST["cc"]), "\" size='64' /></td></tr>
-
-  <tr><td class='mhn'>Reply-To:</td><td class='mhd'>",
-	"<input type='text' class='textlite-tt' name='replyto' value=\"", htmlspecialchars($_REQUEST["replyto"]), "\" size='64' />
-  <div class='g'></div></td></tr>\n\n";
+    foreach ($mailHeaders as $n => $t)
+	if ($n != "bcc") {
+	    $ec = (isset($Error[$n]) ? " error" : "");
+	    echo "  <tr><td class='mhn$ec'>$t:</td><td class='mhd$ec'>",
+		"<input type='text' class='textlite-tt' name='$n' value=\"",
+		htmlspecialchars($_REQUEST[$n]), "\" size='64' />",
+		($n == "replyto" ? "<div class='g'></div>" : ""),
+		"</td></tr>\n\n";
+	}
 }
 
 echo "  <tr><td class='mhn'>Subject:</td><td class='mhd'>",

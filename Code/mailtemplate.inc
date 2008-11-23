@@ -3,6 +3,9 @@
 // HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+global $mailHeaders;
+$mailHeaders = array("cc" => "Cc", "bcc" => "Bcc", "replyto" => "Reply-To");
+
 global $mailTemplates;
 $mailTemplates = array
     ("createaccount" =>
@@ -791,14 +794,15 @@ class Mailer {
 	return $m;
     }
 
-    function prepareToSend($template, $row, $contact, $otherContact = null, $rest = array()) {
-	global $Conf, $mailTemplates;
+    function prepareToSend($template, $row, $contact, $otherContact = null,
+			   &$rest = array()) {
+	global $Conf, $mailHeaders, $mailTemplates;
 
 	// look up template
 	if (is_string($template) && $template[0] == "@")
 	    $template = self::expandTemplate(substr($template, 1));
 	// add rest fields to template for expansion
-	foreach (array("cc", "bcc", "replyto") as $f)
+	foreach ($mailHeaders as $f => $x)
 	    if (isset($rest[$f]))
 		$template[$f] = $rest[$f];
 
@@ -822,12 +826,17 @@ class Mailer {
 
 	// parse headers
 	$headers = "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n" . $hdr . "\r\n";
-	foreach (array("replyto" => "Reply-To: ", "cc" => "Cc: ", "bcc" => "Bcc: ") as $n => $h)
+	foreach ($mailHeaders as $n => $h)
 	    if (isset($m[$n]) && $m[$n] != "" && $m[$n] != "<none>") {
-		$hdr = Mailer::mimeEmailHeader($h, $m[$n]);
-		if ($hdr === false)
-		    return $Conf->errorMsg("$h &ldquo;<tt>" . htmlspecialchars($m[$n]) . "</tt>&rdquo; contains an invalid email address");
-		$m[$n] = substr($hdr, strlen($h));
+		$hdr = Mailer::mimeEmailHeader($h . ": ", $m[$n]);
+		if ($hdr === false) {
+		    if (isset($rest["error"]))
+			$rest["error"] = $n;
+		    else
+			$Conf->errorMsg("$h &ldquo;<tt>" . htmlspecialchars($m[$n]) . "</tt>&rdquo; isn't a valid email list.");
+		    return false;
+		}
+		$m[$n] = substr($hdr, strlen($h) + 2);
 		$headers .= $hdr . "\r\n";
 	    } else
 		unset($m[$n]);
@@ -1012,7 +1021,7 @@ class Mailer {
 
 	// separate $str into emails, quote each separately
 	while (preg_match("/\\A[,\\s]*((?:(?:\"(?:[^\"\\\\]|\\\\.)*\"|[^\\s\\000-\\037()[\\]<>@,;:\\\\\".]+)\\s*?)*)\\s*<\\s*(.*?)\\s*>\\s*(.*)\\z/s", $str, $m)
-	       || preg_match('/\A[,\s]*()([^\s\000-\037()[\]<>@,;:\\".]+)\s*(.*)\z/s', $str, $m)) {
+	       || preg_match("/\\A[,\\s]*()<?([^\\s\\000-\\037()[\\]<>,;:\\\\\"]+)\\s*(.*)\\z/s", $str, $m)) {
 	    list($name, $email, $str) = array($m[1], $m[2], $m[3]);
 	    if (strpos($email, "@") !== false && !validateEmail($email))
 		return false;
