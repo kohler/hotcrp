@@ -272,7 +272,10 @@ class PaperTable {
 	    $d = $Me->paperStatus($prow->paperId, $prow, 0) . $d;
 
 	// return table
-	return "<table><tr><td class='nowrap'>" . $d . "</td><td><span class='sep'></span></td><td>" . $t . "</td></tr></table>";
+	if ($d !== "" || $t !== "")
+	    return "<table><tr><td class='nowrap'>" . $d . "</td><td><span class='sep'></span></td><td>" . $t . "</td></tr></table>";
+	else
+	    return "";
     }
 
     function paptabDownload($prow) {
