@@ -1254,48 +1254,52 @@ class PaperTable {
 	    && $Conf->msgcount > 0)
 	    echo "<div class='msgpg'></div>\n";
 
-	echo "<table class='pbox'><tr>
-    <td class='pboxi'>";
-	if ($prow) {
-	    if ((self::PAPERLINKS_TYPE & 2)
-		&& ($canEdit || $canReview || $canAssign || $canHome)) {
-		echo "<div class='psmodec'><div class='psmode'>";
+	echo "<table class='pbox'>";
 
-		// home link
-		$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId";
-		if ($this->mode == "pe" || $this->mode == "re")
-		    $a .= "&amp;m=p";
-		$a .= "$linkExtra'>";
-		$highlight = ($this->mode != "assign" && $this->mode != "pe"
-			      && $this->mode != "contact" && $this->mode != "re");
-		echo "<div class='", ($highlight ? "papmodex" : "papmode"),
-		    "'>", $a, $Conf->cacheableImage("view18.png", "[Main]", null, "b"),
-		    "</a>&nbsp;", $a, "Main</a></div>\n";
+	// paper tabs
+	if ($prow && (self::PAPERLINKS_TYPE & 2)
+	    && ($canEdit || $canReview || $canAssign || $canHome)) {
+	    echo "<tr>\n    <td colspan='3' class='pboxt'>",
+		"<div class='psmodec'><div class='psmode'>";
 
-		if ($canEdit) {
-		    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;m=pe$linkExtra'>";
-		    echo "<div class='", ($this->mode == "pe" ? "papmodex" : "papmode"),
-			"'>", $a, $Conf->cacheableImage("edit18.png", "[Edit]", null, "b"),
-			"</a>&nbsp;", $a, "Edit</a></div>\n";
-		}
+	    // home link
+	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId";
+	    if ($this->mode == "pe" || $this->mode == "re")
+		$a .= "&amp;m=p";
+	    $a .= "$linkExtra'>";
+	    $highlight = ($this->mode != "assign" && $this->mode != "pe"
+			  && $this->mode != "contact" && $this->mode != "re");
+	    echo "<div class='", ($highlight ? "papmodex" : "papmode"),
+		"'>", $a, $Conf->cacheableImage("view18.png", "[Main]", null, "b"),
+		"</a>&nbsp;", $a, "Main</a></div>\n";
 
-		if ($canReview) {
-		    $a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;m=re$linkExtra'>";
-		    echo "<div class='", ($this->mode == "re" && (!$this->editrrow || $this->editrrow->contactId == $Me->contactId) ? "papmodex" : "papmode"),
-			"'>", $a, $Conf->cacheableImage("review18.png", "[Review]", null, "b"),
-			"</a>&nbsp;", $a, "Review</a></div>\n";
-		}
-
-		if ($Me->actChair($prow)) {
-		    $a = "<a href='assign$ConfSiteSuffix?p=$prow->paperId$linkExtra'>";
-		    echo "<div class='", ($this->mode == "assign" ? "papmodex" : "papmode"),
-			"'>", $a, $Conf->cacheableImage("assign18.png", "[Assign]", null, "b"),
-			"</a>&nbsp;", $a, "Assign</a></div>\n";
-		}
-
-		echo "<div class='clear'></div></div></div>";
+	    if ($canEdit) {
+		$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;m=pe$linkExtra'>";
+		echo "<div class='", ($this->mode == "pe" ? "papmodex" : "papmode"),
+		    "'>", $a, $Conf->cacheableImage("edit18.png", "[Edit]", null, "b"),
+		    "</a>&nbsp;", $a, "Edit</a></div>\n";
 	    }
 
+	    if ($canReview) {
+		$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;m=re$linkExtra'>";
+		echo "<div class='", ($this->mode == "re" && (!$this->editrrow || $this->editrrow->contactId == $Me->contactId) ? "papmodex" : "papmode"),
+		    "'>", $a, $Conf->cacheableImage("review18.png", "[Review]", null, "b"),
+		    "</a>&nbsp;", $a, "Review</a></div>\n";
+	    }
+
+	    if ($canAssign) {
+		$a = "<a href='assign$ConfSiteSuffix?p=$prow->paperId$linkExtra'>";
+		echo "<div class='", ($this->mode == "assign" ? "papmodex" : "papmode"),
+		    "'>", $a, $Conf->cacheableImage("assign18.png", "[Assign]", null, "b"),
+		    "</a>&nbsp;", $a, "Assign</a></div>\n";
+	    }
+
+	    echo "<div class='clear'></div></div></div></td>\n</tr>\n";
+	}
+
+	// paper number
+	echo "<tr>\n    <td class='pboxi'>";
+	if ($prow) {
 	    $pa = "<a href='paper$ConfSiteSuffix?p=$paperId$linkExtra' class='q'>";
 	    echo "<div class='papnum'><h2>", $pa, "#", $this->prow->paperId, "</a></h2></div>";
 	}
