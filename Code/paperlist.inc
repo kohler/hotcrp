@@ -69,8 +69,6 @@ class PaperList extends BaseList {
     var $scoresOk;
     var $scoreMax;
     var $search;
-    var $authorMatch;
-    var $collaboratorsMatch;
     var $extraText;
     var $foldtype;
     var $unfolded;
@@ -772,14 +770,14 @@ class PaperList extends BaseList {
 	    }
 	    return "";
 	case self::FIELD_AUTHOR_MATCH:
-	    if (!isset($this->authorMatch))
+	    if (defval($this->search->matchPreg, "authorInformation", "") == "")
 		return "";
-	    preg_match_all("/(" . $this->authorMatch . ")/i", $row->authorInformation, $matches);
+	    preg_match_all("{(" . $this->search->matchPreg["authorInformation"] . ")}i", $row->authorInformation, $matches);
 	    return $this->_joinMatches($matches);
 	case self::FIELD_COLLABORATORS_MATCH:
-	    if (!isset($this->collaboratorsMatch))
+	    if (defval($this->search->matchPreg, "collaborators", "") == "")
 		return "";
-	    preg_match_all("/(" . $this->collaboratorsMatch . ")/i", $row->collaborators, $matches);
+	    preg_match_all("{(" . $this->search->matchPreg["collaborators"] . ")}i", $row->collaborators, $matches);
 	    return $this->_joinMatches($matches);
 	case self::FIELD_OPT_AUTHORS:
 	    if (!$this->contact->privChair && paperBlind($row))
@@ -1261,15 +1259,18 @@ class PaperList extends BaseList {
 	    foreach ($fieldDef as $fieldId => $fdef)
 		if ($fdef[1] >= 2
 		    && ($d = $this->content($fieldId, $row, $reviewList)) !== "") {
-		    $ftype = $fdef[1];
-		    if ($ftype == 3)
-			$ftype = (paperBlind($row) ? 2 : 1);
-		    $foldinfo[$ftype] = true;
 		    $tt .= "<div id=\"$fdef[0]$row->paperId\"";
+		    if ($fdef[1] > 2) {
+			if ($fdef[1] == 3)
+			    $ftype = (paperBlind($row) ? 2 : 1);
+			else
+			    $ftype = $fdef[1];
+			$foldinfo[$ftype] = true;
+			if ($d !== false)
+			    $tt .= " class=\"fx$ftype\">";
+		    }
 		    if ($d !== false)
-			$tt .= " class=\"fx$ftype\"><h6>"
-			    . $this->header($fieldId, -1, $row, $reviewList)
-			    . ":</h6> " . $d . "</div>";
+			$tt .= "><h6>" . $this->header($fieldId, -1, $row, $reviewList) . ":</h6> " . $d . "</div>";
 		    else
 			$tt .= "></div>";
 		}

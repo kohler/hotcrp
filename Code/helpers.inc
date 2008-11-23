@@ -342,7 +342,7 @@ function highlightMatch($match, $text, &$n = null) {
 	return $text;
     }
     if ($match[0] != "{")
-	$match = "{($match)}i";
+	$match = "{(" . $match . ")}i";
     return preg_replace($match, "<span class='match'>\$1</span>", $text, -1, $n);
 }
 

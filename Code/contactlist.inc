@@ -31,8 +31,6 @@ class ContactList extends BaseList {
     var $anySelector;
     var $contact;
     var $scoreMax;
-    var $authorMatch;
-    var $collaboratorsMatch;
     var $limit;
     var $haveAffrow;
     var $haveTopics;

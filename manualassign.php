@@ -257,13 +257,12 @@ if ($reviewer > 0) {
 					 "urlbase" => "manualassign$ConfSiteSuffix?reviewer=$reviewer"));
     $paperList = new PaperList(true, true, $search);
     if (isset($showau)) {
-	if ($showau)
-	    $paperList->authorMatch = "\\b" . str_replace(" ", "\\b|\\b", preg_quote(substr($showau, 0, strlen($showau) - 1))) . "\\b";
-	if ($showco)
-	    $paperList->collaboratorsMatch = "\\b" . str_replace(" ", "\\b|\\b", preg_quote(substr($showau, 0, strlen($showco) - 1))) . "\\b";
 	$search->overrideMatchPreg = true;
-	$search->matchPreg = $paperList->authorMatch
-	    . ($showau && $showco ? "|" : "") . $paperList->collaboratorsMatch;
+	$search->matchPreg = array();
+	if ($showau)
+	    $search->matchPreg["authorInformation"] = "\\b" . str_replace(" ", "\\b|\\b", preg_quote(substr($showau, 0, strlen($showau) - 1))) . "\\b";
+	if ($showco)
+	    $search->matchPreg["collaborators"] = "\\b" . str_replace(" ", "\\b|\\b", preg_quote(substr($showau, 0, strlen($showco) - 1))) . "\\b";
     }
     echo "<div class='aahc'><form class='assignpc' method='post' action=\"manualassign$ConfSiteSuffix?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
     if (isset($_REQUEST["sort"]))
