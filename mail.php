@@ -364,18 +364,12 @@ if (isset($_REQUEST["monreq"])) {
     if ($plist->count == 0)
 	$Conf->infoMsg("You have not requested any external reviews.  <a href='index$ConfSiteSuffix'>Return home</a>");
     else {
-	echo "<table>
-<tr class='topspace'>
-  <td class='caption'>Requested reviews</td>
-  <td class='entry top'>", $ptext, "</td>
-</tr><tr>
-  <td class='caption'></td>
-  <td class='entry'><div class='info'>";
+	echo "<h2>Requested reviews</h2>\n\n", $ptext, "<div class='info'>";
 	if ($plist->needSubmitReview > 0)
 	    echo "Some of your requested external reviewers have not completed their reviews.  To send them an email reminder, check the text below and then select &ldquo;Prepare mail.&rdquo;  You'll get a chance to review the emails and select specific reviewers to remind.";
 	else
 	    echo "All of your requested external reviewers have completed their reviews.  <a href='index$ConfSiteSuffix'>Return home</a>";
-	echo "</div></td>\n</tr></table>\n";
+	echo "</div>\n";
     }
     if ($plist->needSubmitReview == 0) {
 	$Conf->footer();
@@ -400,7 +394,7 @@ if (!isset($_REQUEST["template"]) || !isset($tmpl[$_REQUEST["template"]]))
     $_REQUEST["template"] = "genericmailtool";
 echo tagg_select("template", $tmpl, $_REQUEST["template"], array("onchange" => "highlightUpdate(\"loadtmpl\")")),
     " &nbsp;<input id='loadtmpl' class='b' type='submit' name='loadtmpl' value='Load' /> &nbsp;
- <span class='hint'>Templates are prepared mail texts for common conference tasks.</span>
+ <span class='hint'>Templates are mail texts prepared for common conference tasks.</span>
 </div>
 
 <div class='mail'><table>
