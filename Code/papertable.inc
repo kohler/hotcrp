@@ -1423,7 +1423,9 @@ class PaperTable {
 	}
 	$this->echoDivExit();
 
-	echo "</div></td><td class='papcr'></td></tr>\n";
+	echo "</div></td><td class='papcr'>",
+	    $Conf->cacheableImage("_.gif", "", null, "_"),
+	    "</td></tr>\n";
 
 	if (!$this->editable && $this->mode == "pe") {
 	    $this->_paptabSepBegin();
