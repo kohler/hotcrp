@@ -4,12 +4,12 @@
 // Distributed under an MIT-like license; see LICENSE
 
 global $scoreSorts, $defaultScoreSort;
-$scoreSorts = array("M" => "Minshall score",
+$scoreSorts = array("C" => "Counts",
 		    "A" => "Average",
 		    "V" => "Variance",
 		    "D" => "Max &minus; min",
 		    "Y" => "Your score");
-$defaultScoreSort = "M";
+$defaultScoreSort = "C";
 
 class BaseList {
 

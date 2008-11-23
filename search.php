@@ -863,6 +863,8 @@ if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
     foreach ($_REQUEST["score"] as $s)
 	$_SESSION["scores"] |= (1 << $s);
 }
+if (defval($_REQUEST, "scoresort") == "M")
+    $_REQUEST["scoresort"] = "C";
 if (isset($_REQUEST["scoresort"]) && isset($scoreSorts[$_REQUEST["scoresort"]]))
     $_SESSION["scoresort"] = $_REQUEST["scoresort"];
 
@@ -1068,7 +1070,7 @@ if ($pl && isset($pl->scoreMax)) {
 }
 echo "<td><input id='redisplay' class='b' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
 if ($pl && isset($pl->scoreMax)) {
-    echo "<tr><td colspan='2'><div class='ug'>Sort by: &nbsp;",
+    echo "<tr><td colspan='2'><div class='ug'>Sort scores by: &nbsp;",
 	tagg_select("scoresort", $scoreSorts, defval($_SESSION, "scoresort", $defaultScoreSort), array("onchange" => "highlightUpdate(\"redisplay\")")),
 	" &nbsp; <a href='help$ConfSiteSuffix?t=scoresort' class='hint'>What is this?</a></div></td></tr>\n";
 }

@@ -566,12 +566,12 @@ options changes how scores are sorted.  There are five choices:
 
 <dl>
 
-<dt><strong>Minshall score</strong> (default)</dt>
+<dt><strong>Counts</strong> (default)</dt>
 
 <dd>Sort by the number of highest scores, then the number of second-highest
-scores, then the number of third-highest scores, and so on.  (Phantom scores
-are added as necessary until all papers have the same number of scores.  A
-paper's phantom scores measure just below its minimum real score.)</dd>
+scores, then the number of third-highest scores, and so on.  To sort a paper
+with fewer reviews than others, HotCRP adds phantom reviews with scores just
+below the paper's lowest real score.  Also known as Minshall score.</dd>
 
 <dt><strong>Average</strong></dt>
 <dd>Sort by the average score.</dd>

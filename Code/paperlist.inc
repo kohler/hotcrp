@@ -95,6 +95,8 @@ class PaperList extends BaseList {
 		$this->reverseSort = true;
 	    else if ($x == "N")
 		$this->reverseSort = false;
+	    else if ($x == "M")
+		$_SESSION["scoresort"] = "C";
 	    else if (isset($scoreSorts[$x]))
 		$_SESSION["scoresort"] = $x;
 	    else
