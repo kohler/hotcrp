@@ -225,11 +225,12 @@ class PaperSearch {
 
 	if (!$negated) {
 	    if (ctype_alnum($word))
-		$this->regex[$rtype][] = '\b' . $word . '\b';
+		$this->regex[$rtype][] = '(?:\W|\A)' . $word . '(?:\W|\z)';
 	    else {
 		$word = preg_replace('/\s+/', '\s+', preg_quote($word));
 		$word = str_replace('\*', '\S*', $word);
-		$this->regex[$rtype][] = '\b' . $word . '\b';
+		$word = str_replace('\\\\\S*', '\*', $word);
+		$this->regex[$rtype][] = '(?:\W|\A)' . $word . '(?:\W|\z)';
 	    }
 	}
     }
@@ -491,7 +492,7 @@ class PaperSearch {
 	}
 
 	if ($word[0] == '"')
-	    $word = str_replace('"', '', $word);
+	    $word = str_replace(array('"', '*'), array('', '\*'), $word);
 	if ($special ? $special == "notag" : isset($this->fields['notag'])) {
 	    $special = "tag";
 	    $negated = !$negated;
@@ -986,7 +987,7 @@ class PaperSearch {
 	    $v = substr($v, 0, strlen($v) - 1);
 	if ($negated)
 	    $f[] = "false";
-	else if (!ctype_alnum($t->value))
+	else if (!ctype_alnum($v))
 	    $f[] = "true";
 	else {
 	    $q = array();
@@ -1258,8 +1259,9 @@ class PaperSearch {
 	    return false;
 	$m = preg_replace('/\s+/', '\s+', trim(preg_quote($t->value)));
 	$m = str_replace('\*', '\S*', $m);
+	$m = str_replace('\\\\\S*', '\*', $m);
 	$fieldname = $t->link;
-	if (!preg_match('{\b' . $m . '\b}i', $row->$fieldname))
+	if (!preg_match('{(?:\W|\A)' . $m . '(?:\W|\z)}i', $row->$fieldname))
 	    return false;
 	return true;
     }
