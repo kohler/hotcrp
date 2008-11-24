@@ -1267,7 +1267,7 @@ class PaperList extends BaseList {
 			    $ftype = $fdef[1];
 			$foldinfo[$ftype] = true;
 			if ($d !== false)
-			    $tt .= " class=\"fx$ftype\">";
+			    $tt .= " class=\"fx$ftype\"";
 		    }
 		    if ($d !== false)
 			$tt .= "><h6>" . $this->header($fieldId, -1, $row, $reviewList) . ":</h6> " . $d . "</div>";
