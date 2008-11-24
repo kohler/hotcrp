@@ -643,24 +643,27 @@ Miniajax.submit = function(formname, callback, timeout) {
 var plinfo_title = {
     abstract: "Abstract", tags: "Tags", reviewers: "Reviewers",
     shepherd: "Shepherd", lead: "Discussion lead", topics: "Topics",
-    pcconf: "PC conflicts", collab: "Collaborators"
+    pcconf: "PC conflicts", collab: "Collaborators", authors: "Authors"
 };
 var plinfo_needload = { };
 function foldplinfo(dofold, foldnum, type, which) {
-    var container, i, divs;
+    var elt, i, divs;
 
     // fold
     if (!which)
 	which = "pl";
     if (dofold.checked !== undefined)
 	dofold = !dofold.checked;
-    fold(which, dofold, foldnum);
+    if (foldnum >= 0)
+	fold(which, dofold, foldnum);
+    if (type == "aufull" && !dofold && (elt = e("showau")) && !elt.checked)
+	elt.click();
 
     // may need to load information by ajax
-    if (!dofold && plinfo_needload[type]) {
+    if ((!dofold || foldnum < 0) && plinfo_needload[type]) {
 	// set up "loading" display
-	if ((container = e("fold" + which))) {
-	    divs = container.getElementsByTagName("div");
+	if (foldnum >= 0 && (elt = e("fold" + which))) {
+	    divs = elt.getElementsByTagName("div");
 	    for (i = 0; i < divs.length; i++)
 		if (divs[i].id.substr(0, type.length) == type) {
 		    if (divs[i].className == "")
@@ -669,9 +672,15 @@ function foldplinfo(dofold, foldnum, type, which) {
 		}
 	}
 
+	// maybe set
+	if ((elt = e(type + "form_unfold")))
+	    elt.value = (dofold ? "" : "1");
+
 	// initiate load
 	Miniajax.submit(type + "loadform", function(rv) {
 		var elt, eltx;
+		if ("type" in rv)
+		    type = rv["type"];
 		for (var i in rv)
 		    if (i.substr(0, type.length) == type && (elt = e(i))) {
 			if (rv[i] == "")
@@ -679,8 +688,10 @@ function foldplinfo(dofold, foldnum, type, which) {
 			else
 			    elt.innerHTML = "<h6>" + plinfo_title[type] + ":</h6> " + rv[i];
 		    }
-		plinfo_needload[type] = false;
-		fold(which, dofold, foldnum);
+		if (foldnum >= 0) {
+		    plinfo_needload[type] = false;
+		    fold(which, dofold, foldnum);
+		}
 	    });
     }
 }

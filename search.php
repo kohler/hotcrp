@@ -78,11 +78,7 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
     $result = $Conf->qe($q, "while selecting papers");
     $response = array();
-
-    $matchPreg = "";
-    if (isset($_REQUEST["ls"]) && isset($_SESSION["l"][$_REQUEST["ls"]])
-	&& isset($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"]))
-	$matchPreg = defval($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"], "abstract", "");
+    $matchPreg = PaperList::sessionMatchPreg("abstract");
 
     while ($prow = edb_orow($result)) {
 	if (!$Me->canViewPaper($prow, $Conf, $whyNot))
@@ -157,16 +153,33 @@ if ($getaction == "tags" && isset($papersel) && defval($_REQUEST, "ajax")) {
 }
 
 
+// download selected authors
+if ($getaction == "authors" && isset($papersel) && defval($_REQUEST, "ajax")) {
+    $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
+    $result = $Conf->qe($q, "while selecting papers");
+    $response = array();
+    $matchPreg = PaperList::sessionMatchPreg("authorInformation");
+    $full = defval($_REQUEST, "full", 0);
+    $_SESSION["foldplaufull"] = !$full;
+
+    while ($prow = edb_orow($result)) {
+	if (!$Me->canViewPaper($prow, $Conf, $whyNot))
+	    $Conf->errorMsg(whyNotText($whyNot, "view"));
+	else
+	    $response["authors$prow->paperId"] = PaperList::authorInfo($prow, $Me, $full, $matchPreg);
+    }
+    $response["ok"] = (count($response) > 0);
+    $response["type"] = "authors";
+    $Conf->ajaxExit($response);
+}
+
+
 // download selected collaborators
 if ($getaction == "collab" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
     $result = $Conf->qe($q, "while selecting papers");
     $response = array();
-
-    $matchPreg = "";
-    if (isset($_REQUEST["ls"]) && isset($_SESSION["l"][$_REQUEST["ls"]])
-	&& isset($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"]))
-	$matchPreg = defval($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"], "collaborators", "");
+    $matchPreg = PaperList::sessionMatchPreg("collaborators");
 
     while ($prow = edb_orow($result)) {
 	if (!$Me->canViewPaper($prow, $Conf, $whyNot))
@@ -851,8 +864,8 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 // set scores to view
 if (isset($_REQUEST["redisplay"])) {
     $_SESSION["scores"] = 0;
-    foreach (array("au", "anonau", "abstract", "tags", "reviewers",
-		   "shepherd", "lead", "topics", "collab", "rownum") as $x) {
+    foreach (array("au", "anonau", "abstract", "tags", "reviewers", "shepherd",
+		   "lead", "topics", "collab", "aufull", "rownum") as $x) {
 	unset($_SESSION["foldpl$x"]);
 	if (defval($_REQUEST, "show$x", 0))
 	    $_SESSION["foldpl$x"] = 0;
@@ -897,6 +910,9 @@ $tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
 // SEARCH FORMS
 
 // Prepare more display options
+$viewAllAuthors =
+    ($_REQUEST["t"] == "acc" && $Conf->timeReviewerViewAcceptedAuthors())
+    || $_REQUEST["t"] == "a";
 $ajaxDisplayChecked = false;
 
 function ajaxDisplayer($type, $foldnum, $title, $disabled = false) {
@@ -909,12 +925,16 @@ function ajaxDisplayer($type, $foldnum, $title, $disabled = false) {
     }
     if ($disabled)
 	$t .= " disabled='disabled'";
-    return $t . " onclick='foldplinfo(this,$foldnum,\"$type\")' />&nbsp;$title"
-	. foldsessionpixel("pl$foldnum", "foldpl$type")
-	. "<br /><div id='${type}loadformresult'></div>\n";
+    $t .= " onclick='foldplinfo(this,$foldnum,\"$type\")' />&nbsp;$title";
+    if ($foldnum >= 0)
+	$t .= foldsessionpixel("pl$foldnum", "foldpl$type");
+    return $t . "<br /><div id='${type}loadformresult'></div>\n";
 }
 
 $moredisplay = "";
+if ($pl && ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAllAuthors
+	    || $Me->privChair))
+    $moredisplay .= ajaxDisplayer("aufull", -1, "Full author info");
 if ($pl && $pl->headerInfo["collab"])
     $moredisplay .= ajaxDisplayer("collab", 15, "Collaborators");
 if ($pl && $pl->headerInfo["topics"])
@@ -1002,21 +1022,22 @@ if ($moredisplay !== "")
 if ($pl && isset($pl->scoreMax))
     echo "  <td class='pad'><strong>Scores:</strong></td>\n";
 echo "</tr><tr>
-  <td rowspan='2' class='pad'>";
-$viewAccAuthors = ($_REQUEST["t"] == "acc" && $Conf->timeReviewerViewAcceptedAuthors());
-if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAccAuthors) {
-    echo "<input type='checkbox' name='showau' value='1'";
+  <td class='pad'>";
+if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAllAuthors) {
+    echo "<input id='showau' type='checkbox' name='showau' value='1'";
     if (defval($_SESSION, "foldplau", 1) == 0)
 	echo " checked='checked'";
     echo " onclick='fold(\"pl\",!this.checked,1)";
-    if ($viewAccAuthors)
+    if ($viewAllAuthors)
 	echo ";fold(\"pl\",!this.checked,2)";
     echo "' />&nbsp;Authors",
 	foldsessionpixel("pl1", "foldplau"),
 	"<br />\n";
 }
-if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair && !$viewAccAuthors) {
-    echo "<input type='checkbox' name='showanonau' value='1'";
+if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair && !$viewAllAuthors) {
+    echo "<input ",
+	($Conf->blindSubmission() == BLIND_OPTIONAL ? "" : "id='showau' "),
+	"type='checkbox' name='showanonau' value='1'";
     if (!$pl || !($pl->headerInfo["authors"] & 2))
 	echo " disabled='disabled'";
     if (defval($_SESSION, "foldplanonau", 1) == 0)
@@ -1042,15 +1063,15 @@ if ($pl && $pl->anySelector) {
 if ($moredisplay !== "") {
     echo "<div class='ug'></div>",
 	"<a class='fn4' href='javascript:void fold(e(\"searchform\"),0,4)'>More &#187;</a>",
-	"</td><td rowspan='2' class='pad fx4'>", $moredisplay,
+	"</td><td class='pad fx4'>", $moredisplay,
 	"<div class='ug'></div>",
 	"<a class='fx4' href='javascript:void fold(e(\"searchform\"),1,4)'>&#171; Fewer</a>",
-	"</td>";
+	"</td>\n";
 } else
-    echo "</td>";
+    echo "</td>\n";
 
 if ($pl && isset($pl->scoreMax)) {
-    echo "<td class='pad'>";
+    echo "  <td class='pad'><table><tr><td>";
     $rf = reviewForm();
     $theScores = defval($_SESSION, "scores", 1);
     if ($Me->amReviewer() && $_REQUEST["t"] != "a")
@@ -1066,15 +1087,17 @@ if ($pl && isset($pl->scoreMax)) {
 		echo "checked='checked' ";
 	    echo "onchange='highlightUpdate(\"redisplay\")' />&nbsp;" . htmlspecialchars($rf->shortName[$field]) . "<br />";
 	}
-    echo "</td>";
-}
-echo "<td><input id='redisplay' class='b' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
-if ($pl && isset($pl->scoreMax)) {
-    echo "<tr><td colspan='2'><div class='ug'>Sort scores by: &nbsp;",
+    echo "<div class='g'></div></td>
+    <td><input id='redisplay' class='b' type='submit' name='redisplay' value='Redisplay' /></td>
+  </tr><tr>
+    <td colspan='2'>Sort scores by: &nbsp;",
 	tagg_select("scoresort", $scoreSorts, defval($_SESSION, "scoresort", $defaultScoreSort), array("onchange" => "highlightUpdate(\"redisplay\")")),
-	" &nbsp; <a href='help$ConfSiteSuffix?t=scoresort' class='hint'>What is this?</a></div></td></tr>\n";
-}
-echo "</table></div></form></div></div></td></tr>\n";
+	" &nbsp; <a href='help$ConfSiteSuffix?t=scoresort' class='hint'>What is this?</a></td>
+  </tr></table></td>\n";
+} else
+    echo "<td><input id='redisplay' class='b' type='submit' name='redisplay' value='Redisplay' /></td>\n";
+
+echo "</tr></table></div></form></div></div></td></tr>\n";
 
 // Tab selectors
 echo "<tr><td class='tllx'><table><tr>

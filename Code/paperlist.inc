@@ -538,6 +538,50 @@ class PaperList extends BaseList {
 	return $pl;
     }
 
+    // content downloaders
+    function sessionMatchPreg($name) {
+	if (isset($_REQUEST["ls"])
+	    && isset($_SESSION["l"][$_REQUEST["ls"]])
+	    && isset($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"]))
+	    return defval($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"],
+			  $name, "");
+	else
+	    return "";
+    }
+
+    function authorInfo($row, $contact, $full, $highlight) {
+	if (!$contact->privChair && paperBlind($row))
+	    return "";
+	cleanAuthor($row);
+	$aus = array();
+	if ($full) {
+	    foreach ($row->authorTable as $au) {
+		$n = trim("$au[0] $au[1]");
+		if ($au[3] != "")
+		    $n .= " ($au[3])";
+		$n = htmlspecialchars($n);
+		if ($highlight !== "")
+		    $n = highlightMatch($highlight, $n);
+		$aus[] = $n;
+	    }
+	    return join(", ", $aus);
+	} else if ($highlight === "") {
+	    foreach ($row->authorTable as $au)
+		$aus[] = abbreviateName($au[0], $au[1]);
+	    return htmlspecialchars(join(", ", $aus));
+	} else {
+	    foreach ($row->authorTable as $au) {
+		$first = htmlspecialchars($au[0]);
+		$x = highlightMatch($highlight, trim($first . " " . htmlspecialchars($au[1])), $nm);
+		if ((!$nm || substr($x, 0, strlen($first)) == $first)
+		    && strlen($first) && ctype_upper($first[0]))
+		    $x = $first[0] . ". " . substr($x, strlen($first) + 1);
+		$aus[] = $x;
+	    }
+	    return join(", ", $aus);
+	}
+    }
+
     function content($fieldId, $row, $reviewList) {
 	global $ConfSiteSuffix, $Conf, $reviewTypeName, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
@@ -780,26 +824,10 @@ class PaperList extends BaseList {
 	    preg_match_all("{(" . $this->search->matchPreg["collaborators"] . ")}i", $row->collaborators, $matches);
 	    return $this->_joinMatches($matches);
 	case self::FIELD_OPT_AUTHORS:
-	    if (!$this->contact->privChair && paperBlind($row))
-		return "";
-	    $aus = array();
-	    cleanAuthor($row);
-	    if (!isset($this->search->matchPreg["authorInformation"])) {
-		foreach ($row->authorTable as $au)
-		    $aus[] = abbreviateName($au[0], $au[1]);
-		return htmlspecialchars(join(", ", $aus));
-	    } else {
-		$m = $this->search->matchPreg["authorInformation"];
-		foreach ($row->authorTable as $au) {
-		    $first = htmlspecialchars($au[0]);
-		    $x = highlightMatch($m, trim($first . " " . htmlspecialchars($au[1])), $nm);
-		    if ((!$nm || substr($x, 0, strlen($first)) == $first)
-			&& strlen($first) && ctype_upper($first[0]))
-			$x = $first[0] . ". " . substr($x, strlen($first) + 1);
-		    $aus[] = $x;
-		}
-		return join(", ", $aus);
-	    }
+	    $highlight = defval($this->search->matchPreg, "authorInformation", "");
+	    return self::authorInfo($row, $this->contact,
+				    $this->folds->aufull === false,
+				    $highlight);
 	case self::FIELD_OPT_ABSTRACT:
 	    if ($row->abstract == "")
 		return "";
@@ -1132,7 +1160,7 @@ class PaperList extends BaseList {
 	// check what is folded
 	$this->folds = (object) array();
 	foreach (array("abstract", "tags", "reviewers", "shepherd", "lead",
-		       "topics", "pcconf", "collab") as $k)
+		       "topics", "pcconf", "collab", "aufull") as $k)
 	    if (!defval($_REQUEST, "show$k")
 		&& defval($_SESSION, $this->foldtype . $k, 1))
 		$this->folds->$k = array();
@@ -1302,6 +1330,7 @@ class PaperList extends BaseList {
 	if (!$unfolded)
 	    $x .= " fold3c";
 
+	// Ajax load forms for extra fields
 	foreach (array("tags" => 4, "abstract" => 5, "reviewers" => 10,
 		       "shepherd" => 11, "lead" => 12, "topics" => 13,
 		       "pcconf" => 14, "collab" => 15) as $k => $n) {
@@ -1322,6 +1351,17 @@ class PaperList extends BaseList {
 		    . "<script type='text/javascript'>"
 		    . "plinfo_needload.$k = true;</script>";
 	    }
+	}
+	// full authorship is a special case
+	if (isset($foldinfo[1]) || isset($foldinfo[2])) {
+	    $Conf->footerStuff .= "<form id='aufullloadform' method='post'"
+		. " action='search$ConfSiteSuffix?get=authors&amp;ajax=1"
+		. $this->paperLinkArgs . "' accept-charset='UTF-8'>"
+		. "<div class='inform'><input type='hidden' name='pap'"
+		. " value='" . join(" ", $ids) . "' /><input type='hidden'"
+		. " id='aufullform_unfold' name='full' value='' /></div></form>"
+		. "<script type='text/javascript'>"
+		. "plinfo_needload.aufull = true;</script>";
 	}
 
 	if ($this->anySelector)
