@@ -614,7 +614,7 @@ To vote for a paper, PC members add the &ldquo;~vote&rdquo; tag.
 Adding &ldquo;~vote#2&rdquo; assigns two votes, and so forth.
 The system ensures no PC member exceeds the allotment.
 The publicly visible &ldquo;vote&rdquo; tag is automatically set to the total number of PC votes for each paper.
-To learn who has voted for a paper, just hover:</p>
+Hover to learn how the PC voted:</p>
 
 <p><img src='images/extagvotehover.png' alt='[Hovering over a voting tag]' /></p>");
 

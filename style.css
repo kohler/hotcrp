@@ -491,12 +491,18 @@ input.button, button.button, a.button, input.hbutton, input.hb {
 	color: black;
 	white-space: nowrap;
 }
-input.b, button.b {
+input.b, button.b, select.b, input.bsm, button.bsm, select.bsm {
 	text-decoration: none;
 	color: black;
 	white-space: nowrap;
 }
-input.b.alert {
+input.bsm, button.bsm, select.bsm {
+	font-size: smaller;
+}
+div#plact input, div#plact button, div#plact select {
+	font-size: 100%;
+}
+input.b.alert, input.bsm.alert {
 	font-weight: bold;
 }
 input.bb, button.bb {
@@ -518,12 +524,6 @@ input.button_small, a.button_small, button.button_small {
 	border-left: 2px solid #eeee66;
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
-	text-decoration: none;
-	color: black;
-	white-space: nowrap;
-}
-input.bsm, button.bsm, select.bsm {
-	font-size: smaller;
 	text-decoration: none;
 	color: black;
 	white-space: nowrap;
@@ -1321,7 +1321,7 @@ div.psv {
 
 div.psmodec {
 	position: relative;
-	top: -2.6ex;
+	top: -2.4ex;
 	left: -5px;
 	z-index: -1;
 }

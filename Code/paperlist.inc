@@ -946,9 +946,8 @@ class PaperList extends BaseList {
 	    $sel_opt["shepherd"] = "Shepherds";
 	}
 	$t .= tagg_select("getaction", $sel_opt, key($sel_opt),
-			  array("id" => "plact${nlll}_d", "tabindex" => 6,
-				"class" => "bsm"))
-	    . "&nbsp; <input type='submit' class='bsm' name='getgo' value='Go' tabindex='6' /></span>";
+			  array("id" => "plact${nlll}_d", "tabindex" => 6))
+	    . "&nbsp; <input type='submit' class='b' name='getgo' value='Go' tabindex='6' /></span>";
 	$nlll++;
 
 	// Upload preferences (review preferences only)
@@ -957,7 +956,7 @@ class PaperList extends BaseList {
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Upload</a></span><span class='lld$nlll'><b> preference file:</b> &nbsp;";
-	    $t .= "<input id='plact${nlll}_d' type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='defact(\"upload\")' />&nbsp; <input type='submit' class='bsm' name='upload' value='Go' tabindex='6' /></span>";
+	    $t .= "<input id='plact${nlll}_d' type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='defact(\"upload\")' />&nbsp; <input type='submit' class='b' name='upload' value='Go' tabindex='6' /></span>";
 	    $nlll++;
 	}
 
@@ -967,7 +966,7 @@ class PaperList extends BaseList {
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Set preferences</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
-	    $t .= "<input id='plact${nlll}_d' class='textlite' type='text' name='paprevpref' value='' size='4' tabindex='6' onfocus='defact(\"setpaprevpref\")' /> &nbsp;<input type='submit' class='bsm' name='setpaprevpref' value='Go' tabindex='6' /></span>";
+	    $t .= "<input id='plact${nlll}_d' class='textlite' type='text' name='paprevpref' value='' size='4' tabindex='6' onfocus='defact(\"setpaprevpref\")' /> &nbsp;<input type='submit' class='b' name='setpaprevpref' value='Go' tabindex='6' /></span>";
 	    $nlll++;
 	}
 
@@ -983,8 +982,8 @@ class PaperList extends BaseList {
 		$tagopt["da"] = "Clear twiddle";
 		$tagopt["cr"] = "Calculate rank";
 	    }
-	    $t .= tagg_select("tagtype", $tagopt, null, array("class" => "bsm"))
-		. " &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='bsm' name='tagact' value='Go' /></span>";
+	    $t .= tagg_select("tagtype", $tagopt, null, array("class" => "b"))
+		. " &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='b' name='tagact' value='Go' /></span>";
 	    $nlll++;
 	}
 
@@ -1004,8 +1003,7 @@ class PaperList extends BaseList {
 				    "assign" . REVIEW_SECONDARY => "Assign secondary review",
 				    "assign0" => "Unassign reviews"),
 			      null, array("id" => "plact${nlll}_d",
-					  "onchange" => "fold(\"ass\", (this.value[0] == \"x\"))",
-					  "class" => "bsm"))
+					  "onchange" => "fold(\"ass\", (this.value[0] == \"x\"))"))
 		. "<span class='fx'> &nbsp;for &nbsp;";
 	    // <option value='-2' disabled='disabled'></option>
 	    // <option value='xpcpaper'>Mark as PC-authored</option>
@@ -1014,9 +1012,8 @@ class PaperList extends BaseList {
 	    $sel_opt = array();
 	    foreach ($pc as $id => $row)
 		$sel_opt[htmlspecialchars($row->email)] = contactHtml($row->firstName, $row->lastName);
-	    $t .= tagg_select("markpc", $sel_opt, null, array("id" => "markpc",
-							      "class" => "bsm"))
-		. "</span> &nbsp;<input type='submit' class='bsm' name='setassign' value='Go' />";
+	    $t .= tagg_select("markpc", $sel_opt, null, array("id" => "markpc"))
+		. "</span> &nbsp;<input type='submit' class='b' name='setassign' value='Go' />";
 	    $t .= "</span>";
 	    $nlll++;
 	}
@@ -1027,13 +1024,13 @@ class PaperList extends BaseList {
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Decide</a></span><span class='lld$nlll'><b>:</b> Set to &nbsp;";
-	    $t .= decisionSelector(0, "plact${nlll}_d", " class='bsm'") . " &nbsp;<input type='submit' class='bsm' name='setdecision' value='Go' /></span>";
+	    $t .= decisionSelector(0, "plact${nlll}_d") . " &nbsp;<input type='submit' class='b' name='setdecision' value='Go' /></span>";
 	    $nlll++;
 
 	    $t .= $barsep
 		. "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Mail</a></span><span class='lld$nlll'><b>:</b> &nbsp;"
-		. tagg_select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), null, array("id" => "plact${nlll}_d", "class" => "bsm"))
-		. " &nbsp;<input type='submit' class='bsm' name='sendmail' value='Go' /></span>";
+		. tagg_select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), null, array("id" => "plact${nlll}_d"))
+		. " &nbsp;<input type='submit' class='b' name='sendmail' value='Go' /></span>";
 	    $nlll++;
 	}
 
