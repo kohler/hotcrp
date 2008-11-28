@@ -53,7 +53,7 @@ function doCreateAccount() {
 
     // handle setup phase
     if (defval($Conf->settings, "setupPhase", false)) {
-	$msg .= "  As the first user, you have been automatically signed in and assigned system administrator privilege.  Your password is \"<tt>" . htmlspecialchars($Me->password) . "</tt>\".  All later users will have to sign in normally.";
+	$msg .= "  As the first user, you have been automatically signed in and assigned system administrator privilege.  Your password is &ldquo;<tt>" . htmlspecialchars($Me->password) . "</tt>&rdquo;.  All later users will have to sign in normally.";
 	$while = "while granting system administrator privilege";
 	$Conf->qe("insert into ChairAssistant (contactId) values (" . $Me->contactId . ")", $while);
 	if ($Conf->setting("allowPaperOption") >= 6)
@@ -153,7 +153,7 @@ function doLogin() {
 
     if (!isset($_REQUEST["password"]) || $_REQUEST["password"] == "") {
 	$password_class = " error";
-	return $Conf->errorMsg("You tried to sign in without providing a password.  Please enter your password and try again.  If you've forgotten your password, enter your email address and use the \"I forgot my password, email it to me\" option.");
+	return $Conf->errorMsg("Enter your password.  If you've forgotten it, enter your email address and use the &ldquo;I forgot my password, email it to me&rdquo; option.");
     }
 
     if (isset($Opt["ldapLogin"])) {
@@ -161,7 +161,7 @@ function doLogin() {
 	    return false;
     } else if ($Me->password != $_REQUEST["password"]) {
 	$password_class = " error";
-	return $Conf->errorMsg("That password doesn't match.  If you've forgotten your password, enter your email address and use the \"I forgot my password, email it to me\" option.");
+	return $Conf->errorMsg("That password doesn't match.  If you've forgotten your password, enter your email address and use the &ldquo;I forgot my password, email it to me&rdquo; option.");
     }
 
     $Conf->qe("update ContactInfo set visits=visits+1, lastLogin=" . time() . " where contactId=" . $Me->contactId, "while recording login statistics");
