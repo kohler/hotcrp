@@ -76,6 +76,8 @@ class PaperTable {
 	    $this->mode = $_REQUEST["m"];
 	else
 	    $this->mode = key($ms);
+	if ($this->mode == "p" && isset($ms["r"]))
+	    $this->mode = "r";
     }
 
     function initialize($editable, $useRequest, $allFolded,
