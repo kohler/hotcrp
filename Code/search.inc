@@ -202,6 +202,19 @@ class PaperSearch {
     // occasionally terms are linked by "or" ($t->link == true).
     // Negation is represented by nesting within a "not" term ($t->type "not").
 
+    function _fieldPreg($word) {
+	if (ctype_alnum($word))
+	    return '\b' . $word . '\b';
+	else {
+	    $a = (ctype_alnum($word[0]) ? '\b' : '');
+	    $b = (ctype_alnum($word[strlen($word) - 1]) ? '\b' : '');
+	    $word = preg_replace('/\s+/', '\s+', preg_quote($word));
+	    $word = str_replace('\*', '\S*', $word);
+	    $word = str_replace('\\\\\S*', '\*', $word);
+	    return $a . $word . $b;
+	}
+    }
+
     function _searchField($word, $rtype, $negated, &$qt, $blind) {
 	global $Conf;
 
@@ -223,16 +236,8 @@ class PaperSearch {
 	    $qt[] = new SearchTerm($rtype, self::F_AUTHOR, $word);
 	}
 
-	if (!$negated) {
-	    if (ctype_alnum($word))
-		$this->regex[$rtype][] = '(?:\W|\A)' . $word . '(?:\W|\z)';
-	    else {
-		$word = preg_replace('/\s+/', '\s+', preg_quote($word));
-		$word = str_replace('\*', '\S*', $word);
-		$word = str_replace('\\\\\S*', '\*', $word);
-		$this->regex[$rtype][] = '(?:\W|\A)' . $word . '(?:\W|\z)';
-	    }
-	}
+	if (!$negated)
+	    $this->regex[$rtype][] = self::_fieldPreg($word);
     }
 
     function _searchReviewer($word, $rtype, $negated, &$qt) {
@@ -453,7 +458,7 @@ class PaperSearch {
     }
 
     function _searchPopWord(&$str) {
-	preg_match('/^([-+]?"[^"]+"?|[a-zA-Z][a-zA-Z0-9]*:"[^"]+"?|[^"\s]+)/s', $str, $m);
+	preg_match('/^([-+]?"[^"]*"?|[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?|[^"\s]+)/s', $str, $m);
 	$str = ltrim(substr($str, strlen($m[0])));
 	return $m[0];
     }
@@ -992,7 +997,7 @@ class PaperSearch {
 	else {
 	    $q = array();
 	    $this->_clauseTermSetFlags($t->flags, $q);
-	    $q[] = "Paper.$field like '%$t->value%'";
+	    $q[] = "Paper.$field like '%$v%'";
 	    $f[] = "(" . join(" and ", $q) . ")";
 	}
 	$t->link = $field;
@@ -1257,11 +1262,9 @@ class PaperSearch {
     function _clauseTermCheckField(&$t, &$row) {
 	if (!$this->_clauseTermCheckFlags($t->flags, $row))
 	    return false;
-	$m = preg_replace('/\s+/', '\s+', trim(preg_quote($t->value)));
-	$m = str_replace('\*', '\S*', $m);
-	$m = str_replace('\\\\\S*', '\*', $m);
+	$m = self::_fieldPreg($t->value);
 	$fieldname = $t->link;
-	if (!preg_match('{(?:\W|\A)' . $m . '(?:\W|\z)}i', $row->$fieldname))
+	if (!preg_match('{' . $m . '}i', $row->$fieldname))
 	    return false;
 	return true;
     }
