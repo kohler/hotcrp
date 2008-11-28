@@ -394,7 +394,7 @@ if (!isset($_REQUEST["template"]) || !isset($tmpl[$_REQUEST["template"]]))
     $_REQUEST["template"] = "genericmailtool";
 echo tagg_select("template", $tmpl, $_REQUEST["template"], array("onchange" => "highlightUpdate(\"loadtmpl\")")),
     " &nbsp;<input id='loadtmpl' class='b' type='submit' name='loadtmpl' value='Load' /> &nbsp;
- <span class='hint'>Templates are mail texts prepared for common conference tasks.</span>
+ <span class='hint'>Templates are mail texts tailored for common conference tasks.</span>
 </div>
 
 <div class='mail'><table>
