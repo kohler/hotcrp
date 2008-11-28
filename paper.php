@@ -30,10 +30,10 @@ function confHeader() {
 	$mode = "p";
     if ($paperId <= 0)
 	$title = ($newPaper ? "New Paper" : "Paper View");
-    else if ($mode == "pe")
+    /* else if ($mode == "pe")
 	$title = "Edit Paper #$paperId";
     else if ($mode == "r")
-	$title = "Paper #$paperId Reviews";
+	$title = "Paper #$paperId Reviews"; */
     else
 	$title = "Paper #$paperId";
 
@@ -592,10 +592,6 @@ if (isset($_REQUEST["tagreport"])) {
 }
 
 
-// page header
-confHeader();
-
-
 // correct modes
 $paperTable = new PaperTable($prow);
 $paperTable->resolveComments();
@@ -603,6 +599,10 @@ if ($paperTable->mode == "r" || $paperTable->mode == "re") {
     $paperTable->resolveReview();
     $paperTable->fixReviewMode();
 }
+
+
+// page header
+confHeader();
 
 
 // prepare paper table

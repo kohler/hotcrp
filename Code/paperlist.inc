@@ -1479,7 +1479,7 @@ global $paperListFields;
 $paperListFields = array( // array(CSS_FIELD_NAME, COLUMN_TYPE, SORTABLE)
 	PaperList::FIELD_SELECTOR => array('selector', 1, 0),
 	PaperList::FIELD_SELECTOR_ON => array('selector', 1, 0),
-	PaperList::FIELD_SELECTOR_CONFLICT => array('selector', 1, 0),
+	PaperList::FIELD_SELECTOR_CONFLICT => array('confselector', 1, 0),
 	PaperList::FIELD_ID => array('id', 1, 1),
 	PaperList::FIELD_TITLE => array('title', 1, 1),
 	PaperList::FIELD_STATUS => array('status', 1, 1),

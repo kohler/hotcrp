@@ -405,7 +405,7 @@ table.ppltable td.pl_topics span.topic2 {
 	text-decoration: none;
 	font-weight: normal;
 }
-body#revpref table.pltable,
+body#revpref table.pltable, body#assignpc table.pltable,
 body#accounts table.ppltable {
 	margin: 0px auto;
 }
@@ -1083,6 +1083,10 @@ table.pltable th.pl_selector {
 	text-align: right;
 	white-space: nowrap;
 }
+.pl_confselector {
+	text-align: center;
+	white-space: nowrap;
+}
 table.pltable th.pl_selector {
 	padding-right: 0px;
 }
@@ -1317,7 +1321,7 @@ div.psv {
 
 div.psmodec {
 	position: relative;
-	top: -2.1ex;
+	top: -2.6ex;
 	left: -5px;
 	z-index: -1;
 }
@@ -1329,7 +1333,7 @@ div.papmode, div.papmodex {
 	float: left;
 	text-align: center;
 	font-size: smaller;
-	padding: 0.2ex 5px 0.6ex 5px;
+	padding: 0.5ex 5px 0.6ex 5px;
 	margin: 0px 5px;
 }
 div.papmodex {
@@ -1427,7 +1431,7 @@ div.papt span.papfn {
 	font-weight: bold;
 	float: left;
 }
-div.aahc div.papt span.papfn {
+body#paper_edit span.papfn {
 	font-size: smaller;
 }
 div.papt span.papfnh {
@@ -1438,7 +1442,7 @@ div.papt span.papfnh {
 div.papt span.hint {
 	float: right;
 }
-div.paphint {
+div.paphint, div.pshint {
 	font-size: smaller;
 	margin-bottom: 0.5ex;
 	color: #555555;

@@ -1070,7 +1070,7 @@ class PaperTable {
 
 	echo $this->papt("watch", $checkbox . "&nbsp;Comment notification",
 			 array("type" => "ps")),
-	    "<div class='paphint'>If selected, the system will email you when updated comments are available. <span id='watchformresult'></span></div>",
+	    "<div class='pshint'>If selected, the system will email you when updated comments are available. <span id='watchformresult'></span></div>",
 	    "<div class='papv'>",
 	    "<input class='b fx7' type='submit' value='Save' />",
 	    "</div></div></form>\n\n";
