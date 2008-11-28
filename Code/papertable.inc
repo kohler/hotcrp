@@ -259,17 +259,19 @@ class PaperTable {
 		&& $Conf->collectFinalPapers()) {
 		$submissionMimetype = null;
 		$d = ($editable ? "Current final copy: &nbsp;" : "Final copy: &nbsp;")
-		    . paperDownload($prow, true)
-		    . "<br />\n(<a class='black' href=\""
-		    . $Conf->makeDownloadPath($prow->paperId, $submissionMimetype, false)
-		    . "\">Submission version</a>)";
+		    . paperDownload($prow, true);
+		if (!$editable)
+		    $d .= "<br />\n<small><a class='black' href=\""
+			. $Conf->makeDownloadPath($prow->paperId, $submissionMimetype, false)
+			. "\">Submission version</a></small>";
 	    } else if ($prow->size > 0) {
 		$d = ($editable ? "Current version: &nbsp;" : "")
 		    . paperDownload($prow);
 	    }
 	}
 	if ($d !== "" && !$editable)
-	    $d = $Me->paperStatus($prow->paperId, $prow, 0) . $d;
+	    $d = $Me->paperStatus($prow->paperId, $prow, 0)
+		. "</td><td class='nowrap'>" . $d;
 
 	// return table
 	if ($d !== "" || $t !== "")
