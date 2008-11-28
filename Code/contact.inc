@@ -566,6 +566,7 @@ class Contact {
 	// policy
 	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && !$ignoreForceShow;
 	$rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
+	$pc_seeallrev = ($this->isPC ? $conf->setting("pc_seeallrev") : 0);
 	if ($this->privChair && $forceShow)
 	    return true;
 	if (($prow->timeSubmitted > 0
@@ -576,7 +577,8 @@ class Contact {
 		|| ($this->privChair && $prow->conflictType == 0)
 		|| ($this->isPC
 		    && $prow->conflictType == 0 && $rrowSubmitted
-		    && $conf->timePCViewAllReviews())
+		    && $pc_seeallrev > 0
+		    && ($pc_seeallrev != 3 || !defval($prow, "myReviewType")))
 		|| (defval($prow, "myReviewType") > 0
 		    && $prow->conflictType == 0 && $rrowSubmitted
 		    && (defval($prow, "myReviewSubmitted") > 0
@@ -891,7 +893,7 @@ class Contact {
 	    || ($rrow && $this->ownReview($rrow))
 	    || ($this->privChair && $prow && $prow->conflictType == 0)
 	    || ($this->isPC && $prow && $prow->conflictType == 0
-		&& $conf->setting("pc_seeallrev") != 2)
+		&& !$conf->setting("pc_seeblindrev"))
 	    || ($prow && $prow->myReviewType > 0
 		&& (defval($prow, "myReviewSubmitted") > 0
 		    || defval($prow, "myReviewNeedsSubmit", 1) == 0)

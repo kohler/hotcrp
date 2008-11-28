@@ -47,7 +47,8 @@ $SettingGroups = array("acc" => array(
 			     "pcrev_soft" => "date",
 			     "pcrev_hard" => "date",
 			     "x_rev_roundtag" => "special",
-			     "pc_seeallrev" => 2,
+			     "pc_seeallrev" => 3,
+			     "pc_seeblindrev" => 1,
 			     "extrev_chairreq" => "check",
 			     "x_tag_chair" => "special",
 			     "x_tag_vote" => "special",
@@ -111,7 +112,8 @@ $SettingText = array(
 	"pcrev_any" => "PC can review any paper setting",
 	"extrev_chairreq" => "PC chair must approve proposed external reviewers",
 	"pc_seeallrev" => "PC can see all reviews setting",
-	"extrev_view" => "External reviewers can view reviewer identities setting",
+	"pc_seeblindrev" => "PC can see blind reviewer identities setting",
+	"extrev_view" => "External reviewers can view reviews setting",
 	"tag_chair" => "Chair tags",
 	"tag_vote" => "Voting tags",
 	"tag_rank" => "Rank tag",
@@ -1224,7 +1226,14 @@ function doRevGroup() {
 
     echo "<div class='g'></div>\n";
     echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
-    doRadio("pc_seeallrev", array(0 => "No&mdash;a PC member can see a paper's reviews only after submitting their own review for that paper", 1 => "Yes", 2 => "Yes, but they can't see who wrote blind reviews"));
+    doRadio("pc_seeallrev", array(0 => "No&mdash;a PC member can see a paper's reviews only after submitting their own review for that paper",
+				  3 => "Yes, unless they haven't completed an assigned review for the same paper",
+				  1 => "Yes"));
+
+    echo "<div class='g'></div>\n";
+    echo "Can PC members see who wrote blind reviews?<br />\n";
+    doRadio("pc_seeblindrev", array(0 => "Yes",
+				    1 => "Only after completing a review for the same paper"));
 
     echo "<hr class='hr' />";
 
@@ -1243,7 +1252,7 @@ function doRevGroup() {
     echo "</table>\n";
 
     echo "<div class='g'></div>";
-    echo "Can external reviewers view the other reviews for their assigned papers, once they've submitted their own?<br />\n";
+    echo "Can external reviewers see the other reviews for their assigned papers, once they've submitted their own?<br />\n";
     doRadio("extrev_view", array(0 => "No", 2 => "Yes", 1 => "Yes, but they can't see who wrote blind reviews"));
 
     echo "<div class='g'></div>\n";

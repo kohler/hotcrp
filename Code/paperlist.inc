@@ -369,7 +369,8 @@ class PaperList extends BaseList {
 	    $this->sortAverage = array();
 	    $scoresort = defval($_SESSION, "scoresort", $defaultScoreSort);
 	    foreach ($rows as $row)
-		if (!$this->contact->privChair && !$this->contact->canViewReview($row, null, $Conf))
+		if (!$this->contact->privChair
+		    && !$this->contact->canViewReview($row, null, $Conf))
 		    $this->sortInfo[$row->paperId] = self::LOTSAZEROS;
 		else
 		    $this->_setSortRow($row, $scoreName, $scoreMax, $scoresort);

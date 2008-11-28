@@ -99,6 +99,10 @@ class Conference {
 	}
 	if ($this->settings["pc_seeall"] && !$this->timeFinalizePaper())
 	    $this->settings["pc_seeall"] = -1;
+	if (defval($this->settings, "pc_seeallrev") == 2) {
+	    $this->settings["pc_seeblindrev"] = 1;
+	    $this->settings["pc_seeallrev"] = 1;
+	}
 	$this->settings["rounds"] = array("");
 	if (isset($this->settingTexts["tag_rounds"])) {
 	    foreach (split(" ", $this->settingTexts["tag_rounds"]) as $r)

@@ -55,19 +55,20 @@ class SearchTerm {
 
 class PaperSearch {
 
-    const F_TYPEMASK = 7;
-    const F_COMPLETE = 8;
-    const F_INCOMPLETE = 16;
-    const F_NONCONFLICT = 32;
-    const F_AUTHOR = 64;
-    const F_REVIEWER = 128;
-    const F_NONBLIND = 256;
-    const F_PAPERNONBLIND = 512;
-    const F_TIMEWITHDRAWN = 1024;
-    const F_TIMESUBMITTED = 2048;
-    const F_AUTHORCOMMENT = 4096;
-    const F_REVIEWERCOMMENT = 8192;
-    const F_FALSE = 16384;
+    const F_TYPEMASK = 0x00007;
+    const F_COMPLETE = 0x00008;
+    const F_INCOMPLETE = 0x00010;
+    const F_NONCONFLICT = 0x00020;
+    const F_AUTHOR = 0x00040;
+    const F_REVIEWER = 0x00080;
+    const F_NONREVIEWER = 0x00100;
+    const F_NONBLIND = 0x00200;
+    const F_PAPERNONBLIND = 0x00400;
+    const F_TIMEWITHDRAWN = 0x00800;
+    const F_TIMESUBMITTED = 0x01000;
+    const F_AUTHORCOMMENT = 0x02000;
+    const F_REVIEWERCOMMENT = 0x04000;
+    const F_FALSE = 0x08000;
 
     var $contactId;
     var $privChair;
@@ -290,20 +291,35 @@ class PaperSearch {
 	    else if ($type == "re" && $Conf->blindReview() == BLIND_OPTIONAL)
 		$deblinder = self::F_NONBLIND;
 
-	    if ($this->amPC) {
+	    if ($this->amPC && $type != "re") {
+		// 28.Nov.2008 -- PC users can always count reviews for
+		// non-conflicted papers.  The "can see all reviews" settings
+		// only apply to reviewer names.  This is a change from prior
+		// behavior, but prior behavior wasn't particularly consistent
+		// (the "can review any submitted paper" setting was affecting
+		// visibility; it shouldn't).
+		$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $value);
+
+	    } else if ($this->amPC) {
 		$pc_seeallrev = $Conf->setting("pc_seeallrev");
+		$pc_seeblindrev = $Conf->setting("pc_seeblindrev");
+
 		if ($pc_seeallrev == 1
-		    || ($pc_seeallrev == 0 && $Conf->setting("pcrev_any")))
+		    && ($deblinder == 0 || $pc_seeblindrev == 0))
 		    $qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $value);
 		else {
-		    if ($pc_seeallrev == 2)
-			$qt[] = new SearchTerm($type, $rt | $deblinder | self::F_NONCONFLICT, $value);
 		    $qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
+		    if ($pc_seeallrev == 1)
+			$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT | $deblinder, $value);
+		    if ($pc_seeallrev == 3)
+			$qt[] = new SearchTerm($type, $rt | self::F_NONREVIEWER | self::F_NONCONFLICT | $deblinder, $value);
 		}
+
 	    } else if ($Conf->setting("extrev_view") == 2)
 		$qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
 	    else if ($Conf->setting("extrev_view") == 1)
 		$qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_NONCONFLICT | $deblinder, $value);
+
 	    if ($Conf->timeAuthorViewReviews())
 		$qt[] = new SearchTerm($type, ($rt & ~self::F_TYPEMASK) | self::F_AUTHOR | self::F_COMPLETE | $deblinder, $value);
 	}
@@ -339,6 +355,7 @@ class PaperSearch {
 	else if ($this->privChair)
 	    $qt[] = new SearchTerm($type, $rt, $value);
 	else {
+	    // XXX may expose information to the PC inappropriately
 	    if ($this->amPC)
 		$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $value);
 	    else
@@ -392,11 +409,14 @@ class PaperSearch {
 	else {
 	    if ($this->amPC) {
 		$pc_seeallrev = $Conf->setting("pc_seeallrev");
-		if ($pc_seeallrev >= 1
-		    || ($pc_seeallrev == 0 && $Conf->setting("pcrev_any")))
+
+		if ($pc_seeallrev == 1)
 		    $qt[] = new SearchTerm("rf", $rt | self::F_NONCONFLICT, $value);
-		else
+		else {
 		    $qt[] = new SearchTerm("rf", $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
+		    if ($pc_seeallrev == 3)
+			$qt[] = new SearchTerm("rf", $rt | self::F_NONREVIEWER | self::F_NONCONFLICT, $value);
+		}
 	    } else if ($Conf->setting("extrev_view") >= 1)
 		$qt[] = new SearchTerm("rf", $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
 	    if ($Conf->timeAuthorViewReviews())
@@ -977,6 +997,8 @@ class PaperSearch {
 	    $q[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
 	if ($flags & self::F_REVIEWER)
 	    $q[] = "MyReview.reviewNeedsSubmit=0";
+	if ($flags & self::F_NONREVIEWER)
+	    $q[] = "MyReview.reviewNeedsSubmit is null";
 	if ($flags & self::F_PAPERNONBLIND)
 	    $q[] = "Paper.blind=0";
 	if ($flags & self::F_FALSE)
@@ -1075,8 +1097,6 @@ class PaperSearch {
     function _clauseTermSet(&$t, $negated, &$tables, &$columns, &$f) {
 	global $Conf;
 	$tt = $t->type;
-	if (($pc_seerev = $Conf->setting("pc_seeallrev")) == 0)
-	    $pc_seerev = $Conf->setting("pcrev_any");
 	$thistab = null;
 
 	// collect columns
@@ -1249,6 +1269,8 @@ class PaperSearch {
 	if (($flags & self::F_AUTHOR) && $row->conflictType < CONFLICT_AUTHOR)
 	    return false;
 	if (($flags & self::F_REVIEWER) && $row->myReviewNeedsSubmit !== 0)
+	    return false;
+	if (($flags & self::F_NONREVIEWER) && $row->myReviewNeedsSubmit !== null)
 	    return false;
 	if (($flags & self::F_NONCONFLICT) && $row->conflictType)
 	    return false;
@@ -1434,7 +1456,7 @@ class PaperSearch {
 	    $tables["PaperConflict"] = array("left join", "PaperConflict", "Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=$this->contactId");
 	    $columns["conflictType"] = "PaperConflict.conflictType";
 	}
-	if ($this->needflags & self::F_REVIEWER) {
+	if ($this->needflags & (self::F_REVIEWER | self::F_NONREVIEWER)) {
 	    $qb = "";
 	    if (isset($_SESSION["rev_tokens"]))
 		$qb = " or MyReview.reviewToken in (" . join(", ", $_SESSION["rev_tokens"]) . ")";
