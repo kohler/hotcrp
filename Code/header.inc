@@ -119,6 +119,8 @@ if (!isset($Opt['dbPassword']))
     $Opt['dbPassword'] = $Opt['dbName'];
 if (!isset($Opt['dsn']))
     $Opt['dsn'] = "mysql://" . $Opt['dbUser'] . ":" . $Opt['dbPassword'] . "@localhost/" . $Opt['dbName'];
+if (isset($Opt["timezone"]) && function_exists("date_default_timezone_set"))
+    date_default_timezone_set($Opt["timezone"]);
 
 // Create the conference
 $Conf = new Conference();

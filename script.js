@@ -6,8 +6,8 @@ function e(id) {
     return document.getElementById(id);
 }
 
-function hotcrpLoad(servtime, servzone) {
-    var s, d, elt = e("usertime");
+function hotcrpLoad(servtime, servzone, hr24) {
+    var s, d, hr, elt = e("usertime");
     if (elt && Math.abs) {
 	d = new Date();
 	// print local time if local time is more than 10 minutes off,
@@ -18,10 +18,13 @@ function hotcrpLoad(servtime, servzone) {
 	s = ["Sun", "Mon", "Tues", "Wednes", "Thurs", "Fri", "Satur"][d.getDay()];
 	s += "day " + d.getDate() + " ";
 	s += ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
-	s += " " + d.getFullYear() + " " + (((d.getHours() + 11) % 12) + 1);
+	s += " " + d.getFullYear();
+	hr = d.getHours();
+	s += " " + (hr24 ? hr : ((hr + 11) % 12) + 1);
 	s += ":" + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
 	s += ":" + (d.getSeconds() < 10 ? "0" : "") + d.getSeconds();
-	s += (d.getHours() < 12 ? "am" : "pm");
+	if (!hr24)
+	    s += (hr < 12 ? "am" : "pm");
 	elt.innerHTML = "Your local time: " + s;
     }
 }

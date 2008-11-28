@@ -266,19 +266,29 @@ class Conference {
 
 
     function parseableTime($value) {
-	return date("j M Y g:i:sa",$value);
+	global $Opt;
+	if (defval($Opt, "time24hour"))
+	    return date("j M Y H:i:s", $value);
+	else
+	    return date("j M Y g:i:sa", $value);
     }
     function printableTime($value) {
-	if ($value > 0)
-	    return date("l j M Y g:i:sa T", $value);
-	else
+	global $Opt;
+	if ($value <= 0)
 	    return "N/A";
+	else if (defval($Opt, "time24hour"))
+	    return date("l j M Y H:i:s T", $value);
+	else
+	    return date("l j M Y g:i:sa T", $value);
     }
     function printableTimeShort($value) {
-	if ($value > 0)
-	    return date("j M Y g:i:sa", $value);
-	else
+	global $Opt;
+	if ($value <= 0)
 	    return "N/A";
+	else if (defval($Opt, "time24hour"))
+	    return date("j M Y H:i:s", $value);
+	else
+	    return date("j M Y g:i:sa", $value);
     }
 
     function printableTimeSetting($what) {
@@ -1221,9 +1231,10 @@ class Conference {
 	echo "</head><body";
 	if ($id)
 	    echo " id='$id'";
-	echo " onload='hotcrpLoad($time, ", -date("Z", $time) / 60, ")'>\n";
-	echo "<div id='header'>\n";
-	echo "  <div id='header_left_conf'><h1>";
+	echo " onload='hotcrpLoad($time, ", -date("Z", $time) / 60, ", ",
+	    (defval($Opt, "time24hour") ? 1 : 0), ")'>\n",
+	    "<div id='header'>\n",
+	    "  <div id='header_left_conf'><h1>";
 	if ($title && $showTitle && $title == "Home")
 	    echo "<a class='q' href='${ConfSiteBase}index$ConfSiteSuffix' title='Home'>", htmlspecialchars($this->shortName), "</a>";
 	else
@@ -1243,7 +1254,7 @@ class Conference {
 	    echo "'>Help</a>", $xsep;
 	    echo "<a href='${ConfSiteBase}index$ConfSiteSuffix?signout=1'>Sign&nbsp;out</a>", $xsep;
 	}
-	echo date("l j M Y g:i:sa T", $time), "<br /><span id='usertime'></span></div>\n";
+	echo $this->printableTime($time), "<br /><span id='usertime'></span></div>\n";
 	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", $this->shortName, " Public Site</a></div>\n";
 
 	print "  <div class='clear'></div>\n";

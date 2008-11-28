@@ -93,6 +93,10 @@ $Opt["paperSite"] = "http://your.site.here.com/";
 //                   the PHP initialization file, 'php.ini'.
 //   memoryLimit     Maximum amount of memory a PHP script can use.  Defaults
 //                   to 128MB.
+//   timezone        Server timezone.  See http://php.net/manual/en/timezones
+//                   for a list.
+//   time24hour      Set to true to use 24-hour timestamps, rather than the
+//                   default am/pm.
 //   disablePDF      Set to disable PDF format submissions.
 //   disablePS       Set to disable PostScript format submissions.
 //   disableSHA1     Set to disable storing SHA-1 hashes of submissions.
