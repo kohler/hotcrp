@@ -1195,7 +1195,7 @@ hr.hr {
 	background-color: #9999cc;
 }
 div.msgpg { /* message-paper gap */
-	margin: 1em 0em;
+	margin: 2ex 0em;
 }
 div.g { /* small gap */
 	margin: 0.65em 0em;
