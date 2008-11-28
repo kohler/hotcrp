@@ -949,6 +949,12 @@ if ($pl) {
 	$moredisplay .= ajaxDisplayer("lead", 12, "Discussion leads");
     if ($Me->isPC && $pl->headerInfo["shepherd"])
 	$moredisplay .= ajaxDisplayer("shepherd", 11, "Shepherds");
+    if ($pl->anySelector) {
+	$moredisplay .= "<input type='checkbox' name='showrownum' value='1'";
+	if (defval($_SESSION, "foldplrownum", 1) == 0)
+	    $moredisplay .= " checked='checked'";
+	$moredisplay .= " onclick='fold(\"pl\",!this.checked,6)' />&nbsp;Row numbers" . foldsessionpixel("pl6", "foldplrownum") . "<br />\n";
+    }
 }
 
 
@@ -1027,7 +1033,7 @@ if ($pl) {
     if ($moredisplay !== "")
 	echo "  <td class='fx4'></td>\n";
     if (isset($pl->scoreMax))
-	echo "  <td class='pad'><strong>Scores:</strong></td>\n";
+	echo "  <td class='padl'><strong>Scores:</strong></td>\n";
     echo "</tr><tr>
   <td class='pad'>";
     if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAllAuthors) {
@@ -1060,12 +1066,6 @@ if ($pl) {
     if ($Me->isPC && $pl->headerInfo["tags"])
 	echo ajaxDisplayer("tags", 4, "Tags",
 			   ($_REQUEST["t"] == "a" && !$Me->privChair));
-    if ($pl->anySelector) {
-	echo "<input type='checkbox' name='showrownum' value='1'";
-	if (defval($_SESSION, "foldplrownum", 1) == 0)
-	    echo " checked='checked'";
-	echo " onclick='fold(\"pl\",!this.checked,6)' />&nbsp;Row numbers", foldsessionpixel("pl6", "foldplrownum"), "<br />\n";
-    }
 
     if ($moredisplay !== "") {
 	echo "<div class='ug'></div>",
@@ -1078,7 +1078,7 @@ if ($pl) {
 	echo "</td>\n";
 
     if (isset($pl->scoreMax)) {
-	echo "  <td class='pad'><table><tr><td>";
+	echo "  <td class='padl'><table><tr><td>";
 	$rf = reviewForm();
 	$theScores = defval($_SESSION, "scores", 1);
 	if ($Me->amReviewer() && $_REQUEST["t"] != "a")
