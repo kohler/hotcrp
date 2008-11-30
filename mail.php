@@ -61,7 +61,7 @@ if (isset($_REQUEST["monreq"]))
 else
     $Conf->header("Send Mail", "mail", actionBar());
 
-$subjectPrefix = "[$Conf->shortName] ";
+$subjectPrefix = "[" . $Opt["shortName"] . "] ";
 
 function contactQuery($type) {
     global $Conf, $Me, $rf, $papersel, $checkReviewNeedsSubmit;
@@ -339,7 +339,7 @@ if (substr($_REQUEST["subject"], 0, strlen($subjectPrefix)) == $subjectPrefix)
 if (isset($_REQUEST["cc"]) && $Me->privChair)
     $_REQUEST["cc"] = simplifyWhitespace($_REQUEST["cc"]);
 else
-    $_REQUEST["cc"] = defval($Opt, "emailCc", "$Conf->contactName <$Conf->contactEmail>");
+    $_REQUEST["cc"] = defval($Opt, "emailCc", $Opt["contactName"] . " <" . $Opt["contactEmail"] . ">");
 if (isset($_REQUEST["replyto"]) && $Me->privChair)
     $_REQUEST["replyto"] = simplifyWhitespace($_REQUEST["replyto"]);
 else
@@ -431,7 +431,7 @@ if ($Me->privChair) {
 }
 
 echo "  <tr><td class='mhn'>Subject:</td><td class='mhd'>",
-    "<tt>[", htmlspecialchars($Conf->shortName), "]&nbsp;</tt><input type='text' class='textlite-tt' name='subject' value=\"", htmlspecialchars($_REQUEST["subject"]), "\" size='64' /></td></tr>
+    "<tt>[", htmlspecialchars($Opt["shortName"]), "]&nbsp;</tt><input type='text' class='textlite-tt' name='subject' value=\"", htmlspecialchars($_REQUEST["subject"]), "\" size='64' /></td></tr>
  </table></td></tr>
 
  <tr><td></td><td class='mhb'>

@@ -12,20 +12,30 @@
 //
 //   dbName          Database name.  Use the name you supplied to
 //                   "Code/createdb.sh".  NO SPACES ALLOWED.
-//   dbUser	     Database user name.  Defaults to $Opt['dbName'].
-//   dbPassword      Password for database user.  Defaults to $Opt['dbName'].
+//   dbUser          Database user name.  Defaults to $Opt["dbName"].
+//   dbPassword      Password for database user.  Defaults to $Opt["dbName"].
 //   shortName       Short name of the conference.  Examples: "SIGCOMM 2007",
 //                   "HotNets V".
 //   longName        Longer name of the conference.  Example: "ACM SIGCOMM
 //                   2007 Conference".
 //   downloadPrefix  Prefix for downloaded files, such as papers.  Should
-//                   end in a dash.  Example: "hotnets5-".
-//   If your mysql database isn't running on localhost, see $Opt['dsn'] below.
+//                   end in a dash.  Example: "hotnets5-".  Defaults to
+//                   $Opt["dbName"] plus a dash.
+//   If your mysql database isn't running on localhost, see $Opt["dsn"] below.
 
 $Opt["dbName"] = "YourConfI";
 $Opt["shortName"] = "YourConf I";
 $Opt["longName"] = "Your Conference I";
 $Opt["downloadPrefix"] = "yourconf1-";
+
+
+// URLS
+//
+//   conferenceSite  Conference site URL (e.g., CFP, registration).
+//   paperSite       URL for this HotCRP installation.  Used in emails.
+
+$Opt["conferenceSite"] = "http://your.site.here.com/";
+$Opt["paperSite"] = "http://your.site.here.com/";
 
 
 // EMAIL
@@ -66,15 +76,6 @@ $Opt["emailFrom"] = "from@your.site.here.com";
 $Opt["emailSubmissions"] = 0;
 
 
-// URLS
-//
-//   conferenceSite  Conference site URL (e.g., CFP, registration).
-//   paperSite       URL for this HotCRP installation.  Used in emails.
-
-$Opt["conferenceSite"] = "http://your.site.here.com/";
-$Opt["paperSite"] = "http://your.site.here.com/";
-
-
 // OPTIONAL SETTINGS (the defaults are reasonable)
 //
 //   dsn             Database configuration information in the format
@@ -83,6 +84,8 @@ $Opt["paperSite"] = "http://your.site.here.com/";
 //                   that DBUSER, DBPASSWORD, and DBNAME are all the same
 //                   and that DBHOST is "localhost".
 //                   Example: "mysql://HotNetsV:HotNetsV@localhost/HotNetsV".
+//   multiconference Set to true to run multiple conferences out of this
+//                   installation.  See README.
 //   sessionName     Internal name used to distinguish conference sessions
 //                   running on the same server.  NO SPACES ALLOWED.  Defaults
 //                   to $Opt["dbName"].

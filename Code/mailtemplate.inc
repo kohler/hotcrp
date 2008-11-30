@@ -466,7 +466,7 @@ class Mailer {
     }
 
     function expandvar($what, $isbool = false) {
-	global $Conf, $ConfSiteSuffix;
+	global $Conf, $ConfSiteSuffix, $Opt;
 	$len = strlen($what);
 
 	if ($len > 6 && substr($what, 0, 4) == "%IF(" && substr($what, $len - 2) == ")%") {
@@ -523,19 +523,19 @@ class Mailer {
 	}
 
 	if ($what == "%CONFNAME%") {
-	    $t = $Conf->longName;
-	    if ($Conf->shortName && $Conf->shortName != $Conf->longName)
-		$t .= " ($Conf->shortName)";
+	    $t = $Opt["longName"];
+	    if ($Opt["shortName"] && $Opt["shortName"] != $Opt["longName"])
+		$t .= " (" . $Opt["shortName"] . ")";
 	    return $t;
 	}
 	if ($what == "%CONFSHORTNAME%")
-	    return $Conf->shortName;
+	    return $Opt["shortName"];
 	if ($what == "%CONFLONGNAME%")
-	    return $Conf->longName;
+	    return $Opt["longName"];
 	if ($what == "%ADMIN%")
-	    return $this->_expandContact((object) array("fullName" => $Conf->contactName, "email" => $Conf->contactEmail), "ne");
+	    return $this->_expandContact((object) array("fullName" => $Opt["contactName"], "email" => $Opt["contactEmail"]), "ne");
 	if ($what == "%URL%")
-	    return $Conf->paperSite;
+	    return $Opt["paperSite"];
 	if ($what == "%PHP%")
 	    return $ConfSiteSuffix;
 	if (($what == "%NUMACCEPTED%" || $what == "%NUMSUBMITTED%")
@@ -565,7 +565,7 @@ class Mailer {
 	    return ($isbool ? null : $what);
 
 	if ($what == "%LOGINURL%")
-	    return $Conf->paperSite . "/?email=" . urlencode($this->contact->email) . "&password=" . urlencode($this->hideSensitive ? "HIDDEN" : $this->contact->password);
+	    return $Opt["paperSite"] . "/?email=" . urlencode($this->contact->email) . "&password=" . urlencode($this->hideSensitive ? "HIDDEN" : $this->contact->password);
 	if ($what == "%LOGINURLPARTS%")
 	    return "email=" . urlencode($this->contact->email) . "&password=" . urlencode($this->hideSensitive ? "HIDDEN" : $this->contact->password);
 	if ($what == "%PASSWORD%")
@@ -867,7 +867,7 @@ class Mailer {
 	    } else if ($topos !== false)
 		$to = "";
 
-	    return mail($to, $preparation["subject"], $preparation["body"], $headers . "From: $Conf->emailFrom", $extra);
+	    return mail($to, $preparation["subject"], $preparation["body"], $headers . "From: " . $Opt["emailFrom"], $extra);
 	} else if (!$Opt["sendEmail"])
 	    return $Conf->infoMsg("<pre>" . htmlspecialchars("To: " . $preparation["to"] . "\n" . $preparation["headers"] . "Subject: " . $preparation["subject"] . "\n\n" . $preparation["body"]) . "</pre>");
     }
@@ -920,7 +920,7 @@ class Mailer {
 		group by ContactInfo.contactId", "while looking up reviewers to send email");
 
 	if (!isset($rest["cc"]))
-	    $rest["cc"] = defval($Opt, "emailCc", "$Conf->contactName <$Conf->contactEmail>");
+	    $rest["cc"] = defval($Opt, "emailCc", $Opt["contactName"] . " <" . $Opt["contactEmail"] . ">");
 
 	// must set the current conflict type in $row for each contact
 	$old_conflictType = $row->conflictType;

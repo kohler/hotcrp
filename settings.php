@@ -18,6 +18,8 @@ $SettingGroups = array("acc" => array(
 			     "acct_addr" => "check",
 			     "next" => "msg"),
 		       "msg" => array(
+			     "opt.shortName" => "string",
+			     "opt.longName" => "string",
 			     "homemsg" => "htmlstring",
 			     "conflictdefmsg" => "htmlstring",
 			     "next" => "sub"),
@@ -272,6 +274,11 @@ function cleanXHTML($t, &$err) {
 
 function parseValue($name, $type) {
     global $SettingText, $Error, $Highlight;
+
+    // PHP changes incoming variable names, substituting "." with "_".
+    if (!isset($_REQUEST[$name]) && substr($name, 0, 4) === "opt."
+	&& isset($_REQUEST["opt_" . substr($name, 4)]))
+	$_REQUEST[$name] = $_REQUEST["opt_" . substr($name, 4)];
 
     if (!isset($_REQUEST[$name]))
 	return null;
@@ -843,6 +850,8 @@ if (isset($_REQUEST["update"])) {
 		    $aq .= ", ('$n', '" . sqlq($v[0]) . "', '" . sqlq($v[1]) . "')";
 		else if ($v !== null)
 		    $aq .= ", ('$n', '" . sqlq($v) . "', null)";
+		if (substr($n, 0, 4) === "opt.")
+		    $Opt[substr($n, 4)] = (is_array($v) ? $v[1] : $v);
 	    }
 	$Conf->qe("delete from Settings where " . substr($dq, 4), $while);
 	if (strlen($aq))
@@ -995,13 +1004,21 @@ function doAccGroup() {
 
 // Messages
 function doMsgGroup() {
-    global $Conf, $ConfSiteSuffix;
+    global $Conf, $ConfSiteSuffix, $Opt;
 
-    echo "<strong>", decorateSettingName("homemsg", "Home page message"), "</strong> (XHTML allowed)<br />
-<textarea class='textlite' name='homemsg' cols='60' rows='10' onchange='hiliter(this)'>", htmlspecialchars(settingText("homemsg", "")), "</textarea>";
-    echo "<div class='g'></div>\n";
+    echo "<div class='f-c'>", decorateSettingName("opt.shortName", "Conference abbreviation"), "</div>
+<input class='textlite' name='opt.shortName' size='20' onchange='hiliter(this)' value=\"", htmlspecialchars($Opt["shortName"]), "\" />
+<div class='g'></div>\n";
 
-    echo "<strong>", decorateSettingName("conflictdefmsg", "Definition of conflict of interest"), "</strong> (XHTML allowed)<br />
+    echo "<div class='f-c'>", decorateSettingName("opt.longName", "Full conference name"), "</div>
+<input class='textlite' name='opt.longName' size='70' onchange='hiliter(this)' value=\"", htmlspecialchars($Opt["longName"]), "\" />
+<div class='g'></div>\n";
+
+    echo "<div class='f-c'>", decorateSettingName("homemsg", "Home page message"), " <span class='f-cx'>(XHTML allowed)</span></div>
+<textarea class='textlite' name='homemsg' cols='60' rows='10' onchange='hiliter(this)'>", htmlspecialchars(settingText("homemsg", "")), "</textarea>
+<div class='g'></div>\n";
+
+    echo "<div class='f-c'>", decorateSettingName("conflictdefmsg", "Definition of conflict of interest"), " <span class='f-cx'>(XHTML allowed)</span></div>
 <textarea class='textlite' name='conflictdefmsg' cols='60' rows='2' onchange='hiliter(this)'>", htmlspecialchars(settingText("conflictdefmsg", $Conf->conflictDefinitionText(true))), "</textarea>";
 }
 

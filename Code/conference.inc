@@ -5,13 +5,6 @@
 
 class Conference {
 
-    var $shortName;
-    var $longName;
-    var $paperSite;
-    var $contactName;
-    var $contactEmail;
-    var $emailFrom;
-
     var $dblink;
 
     var $settings;
@@ -36,16 +29,6 @@ class Conference {
 	$this->scriptStuff = "";
 	$this->footerStuff = "";
 
-	$this->contactName = $Opt['contactName'];
-	$this->contactEmail = $Opt['contactEmail'];
-	$this->emailFrom = $Opt['emailFrom'];
-	// remove final slash from $Opt['paperSite']
-	$this->paperSite = preg_replace('|/+\z|', '', $Opt['paperSite']);
-	if (!$this->paperSite)
-	    die("Package misconfigured: \$Opt[\"paperSite\"] is not set.  Perhaps the web server cannot read <tt>Code/options.inc</tt>?");
-	$this->shortName = $Opt['shortName'];
-	$this->longName = $Opt['longName'];
-
 	// unpack dsn and connect to database
 	if (!isset($Opt['dsn']))
 	    die("Package misconfigured: \$Opt[\"dsn\"] is not set.  Perhaps the web server cannot read <tt>Code/options.inc</tt>?");
@@ -62,11 +45,16 @@ class Conference {
 	    die("Package misconfigured: dsn syntax error");
 
 	if (!$this->dblink || !mysql_select_db($dbname, $this->dblink))
-	    die("Unable to connect to database");
+	    die("Unable to connect to database at " . $Opt["dsn"]);
 	mysql_query("set names 'utf8'", $this->dblink);
 	mysql_query("set @@max_allowed_packet = " . (2 * ini_get_bytes("upload_max_filesize")), $this->dblink);
 
 	$this->updateSettings();
+
+	// clean up options: remove final slash from $Opt["paperSite"]
+	$Opt["paperSite"] = preg_replace('|/+\z|', '', $Opt["paperSite"]);
+	if (!$Opt["paperSite"])
+	    die("Package misconfigured: \$Opt[\"paperSite\"] is not set.  Perhaps the web server cannot read <tt>Code/options.inc</tt>?");
     }
 
     //
@@ -74,6 +62,7 @@ class Conference {
     //
 
     function updateSettings() {
+	global $Opt;
 	$this->settings = array();
 	$this->settingTexts = array();
 	$result = $this->q("select name, value, data from Settings");
@@ -81,6 +70,8 @@ class Conference {
 	    $this->settings[$row[0]] = $row[1];
 	    if ($row[2] !== null)
 		$this->settingTexts[$row[0]] = $row[2];
+	    if (substr($row[0], 0, 4) == "opt.")
+		$Opt[substr($row[0], 4)] = ($row[2] === null ? $row[1] : $row[2]);
 	}
 	foreach (array("pc_seeall", "pcrev_any", "extrev_view", "rev_notifychair") as $x)
 	    if (!isset($this->settings[$x]))
@@ -159,13 +150,14 @@ class Conference {
     }
 
     function dbErrorText($getdb = true, $while = "", $suggestRetry = true) {
+	global $Opt;
 	$text = "<p>Database error";
 	if ($while)
 	    $text .= " $while";
 	if ($getdb)
 	    $text .= ": " . htmlspecialchars(mysql_error($this->dblink)) . "</p>";
 	if ($suggestRetry)
-	    $text .= "\n<p>Please try again or contact the site administrator at $this->emailFrom.</p>";
+	    $text .= "\n<p>Please try again or contact the site administrator at " . $Opt["emailFrom"] . ".</p>";
 	return $text;
     }
 
@@ -440,7 +432,7 @@ class Conference {
     //
 
     function storePaper($uploadId, $prow, $final, $override) {
-	global $Opt, $ConfSiteSuffix;
+	global $ConfSiteSuffix, $Opt;
 
 	$paperId = (is_numeric($prow) ? $prow : $prow->paperId);
 	$while = "while storing paper in database";
@@ -536,8 +528,8 @@ class Conference {
 	    require_once("Mail/mime.php");
 
 	    // prepare data
-	    $subject = "[$this->shortName] Paper #$paperId upload";
-	    $message = "           Paper: $this->paperSite/paper$ConfSiteSuffix?p=$paperId
+	    $subject = "[" . $Opt["shortName"] . "] Paper #$paperId upload";
+	    $message = "           Paper: " . $Opt["paperSite"] . "/paper$ConfSiteSuffix?p=$paperId
        Submitted: " . $this->printableTime($timestamp) . "\n\n"
 		. wordWrapIndent(trim($prow->title), "Title: ") . "\n"
 		. wordWrapIndent(trim($prow->abstract), "Abstract: ") . "\n\n"
@@ -558,7 +550,7 @@ class Conference {
 	    $mime->addAttachment($contents, $mimetype, $this->downloadPaperName($paperId, $mimetype, false), false);
 
 	    $body = $mime->get();
-	    $hdrs = $mime->headers(array("From" => $this->emailFrom,
+	    $hdrs = $mime->headers(array("From" => $Opt["emailFrom"],
 					 "Subject" => $subject));
 
 	    $mfac =& Mail::factory("mail");
@@ -1217,7 +1209,7 @@ class Conference {
 	    echo "<link rel='stylesheet' type='text/css' href='${ConfSiteBase}cacheable$ConfSiteSuffix?file=style.css&amp;mtime=" . filemtime("$ConfSitePATH/style.css") . "' />\n";
 	    $this->scriptStuff = "<script type='text/javascript' src='${ConfSiteBase}cacheable$ConfSiteSuffix?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "'></script>\n";
 	    $this->scriptStuff .= "<!--[if lte IE 6]> <script type='text/javascript' src='${ConfSiteBase}cacheable$ConfSiteSuffix?file=supersleight.js'></script> <![endif]-->\n";
-	    echo "<title>", $title, " - ", $this->shortName, "</title>\n";
+	    echo "<title>", $title, " - ", $Opt["shortName"], "</title>\n";
 	    $this->headerPrinted = 1;
 	}
     }
@@ -1240,9 +1232,9 @@ class Conference {
 	    "<div id='header'>\n",
 	    "  <div id='header_left_conf'><h1>";
 	if ($title && $showTitle && $title == "Home")
-	    echo "<a class='q' href='${ConfSiteBase}index$ConfSiteSuffix' title='Home'>", htmlspecialchars($this->shortName), "</a>";
+	    echo "<a class='q' href='${ConfSiteBase}index$ConfSiteSuffix' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a>";
 	else
-	    echo "<a class='x' href='${ConfSiteBase}index$ConfSiteSuffix' title='Home'>", htmlspecialchars($this->shortName), "</a></h1></div><div id='header_left_page'><h1>", $title;
+	    echo "<a class='x' href='${ConfSiteBase}index$ConfSiteSuffix' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a></h1></div><div id='header_left_page'><h1>", $title;
 	echo "</h1></div><div id='header_right'>";
 	if ($_SESSION["Me"]->valid()) {
 	    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
@@ -1259,7 +1251,7 @@ class Conference {
 	    echo "<a href='${ConfSiteBase}index$ConfSiteSuffix?signout=1'>Sign&nbsp;out</a>", $xsep;
 	}
 	echo $this->printableTime($time), "<br /><span id='usertime'></span></div>\n";
-	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", $this->shortName, " Public Site</a></div>\n";
+	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", $Opt["shortName"], " Public Site</a></div>\n";
 
 	print "  <div class='clear'></div>\n";
 

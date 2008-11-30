@@ -312,7 +312,7 @@ class ReviewForm {
     }
 
     function saveRequest($req, $rrow, $prow, $conf = null) {
-	global $Conf, $ConfSiteSuffix;
+	global $Conf, $ConfSiteSuffix, $Opt;
 	$conf = ($conf ? $conf : $Conf);
 	$Me = $_SESSION['Me'];
 	$submit = defval($req, "ready", false);
@@ -447,7 +447,7 @@ class ReviewForm {
 	    $rest = array("rrow" => $fake_rrow, "reviewNumber" => $prow->paperId . $reviewnum);
 
 	    if ($conf->timeEmailChairAboutReview()) {
-		$chairContact = (object) array("email" => $Conf->contactEmail, "fullName" => $Conf->contactName, "privChair" => 1);
+		$chairContact = (object) array("email" => $Opt["contactEmail"], "fullName" => $Opt["contactName"], "privChair" => 1);
 		Mailer::send($tmpl, $prow, $chairContact, $submitter, $rest);
 	    }
 
@@ -469,10 +469,10 @@ class ReviewForm {
 
 
     function textFormHeader($conf, $type, $editable = true) {
-	global $Conf, $ConfSiteSuffix;
+	global $Conf, $ConfSiteSuffix, $Opt;
 	$conf = ($conf ? $conf : $Conf);
 
-	$x = "==+== $conf->shortName Paper Review";
+	$x = "==+== " . $Opt["shortName"] . " Paper Review";
 	if ($editable) {
 	    $x .= " Form" . ($type === true ? "s" : "") . "\n==-== ";
 	    if ($type === "blank")
@@ -483,14 +483,14 @@ class ReviewForm {
 ==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" UNLESS DIRECTED!
 ==-== A single file can contain multiple forms.
 ==-== For further guidance, or to upload this file when you are done, go to:
-==-== $conf->paperSite/offline$ConfSiteSuffix\n\n";
+==-== " . $Opt["paperSite"] . "/offline$ConfSiteSuffix\n\n";
 	} else
 	    $x .= ($type === true ? "s\n\n" : "\n\n");
 	return $x;
     }
 
     function textForm($prow, $rrow, $contact, $conf, $req = null, $alwaysMyReview = false) {
-	global $Conf;
+	global $Conf, $Opt;
 	$conf = ($conf ? $conf : $Conf);
 
 	$rrow_contactId = 0;
@@ -543,7 +543,7 @@ Ready\n";
 		if ($rrow && !$rrow->reviewBlind)
 		    $blind = "Open";
 		$x .= "\n==+== Review Anonymity
-==-== " . $conf->shortName . " allows either anonymous or open review.
+==-== " . $Opt["shortName"] . " allows either anonymous or open review.
 ==-== Enter \"Open\" if you want to expose your name to authors:
 
 $blind\n";
@@ -610,7 +610,7 @@ $blind\n";
     }
 
     function prettyTextForm($prow, $rrow, $contact, $conf, $alwaysAuthorView = true) {
-	global $Conf;
+	global $Conf, $Opt;
 	$conf = ($conf ? $conf : $Conf);
 
 	$rrow_contactId = 0;
@@ -624,7 +624,7 @@ $blind\n";
 	    $revViewScore = $contact->viewReviewFieldsScore($prow, $rrow, $conf);
 
 	$x = "===========================================================================\n";
-	$n = "$conf->shortName Review";
+	$n = $Opt["shortName"] . " Review";
 	if ($rrow && isset($rrow->reviewOrdinal))
 	    $n .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
 	$x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
@@ -720,7 +720,7 @@ $blind\n";
     }
 
     function parseTextForm(&$tf, $conf = null) {
-	global $Conf;
+	global $Conf, $Opt;
 	$conf = ($conf ? $conf : $Conf);
 
 	$text = $tf['text'];
@@ -748,10 +748,10 @@ $blind\n";
 
 		$anyDirectives++;
 		if (preg_match("/Paper Review Form/", $line)
-		    && !preg_match("/$conf->shortName Paper Review Form/", $line)) {
+		    && !preg_match("/" . $Opt["shortName"] . " Paper Review Form/", $line)) {
 		    preg_match('/\A==\+==\s+(.*?)\s+Paper Review Form/', $line, $m);
 		    $this->garbageMessage($tf, $lineno, $garbage);
-		    self::tfError($tf, true, "This review form appears to be for the wrong conference!  (I was expecting \"" . htmlentities($conf->shortName) . " Paper Review Form\", but found \"" . htmlentities($m[1]) . " Paper Review Form\".)", $lineno);
+		    self::tfError($tf, true, "This review form appears to be for the wrong conference!  (I was expecting \"" . htmlentities($Opt["shortName"]) . " Paper Review Form\", but found \"" . htmlentities($m[1]) . " Paper Review Form\".)", $lineno);
 		    return null;
 		} else if (preg_match('/^==\+== Paper #?(\d+)/i', $line, $match)) {
 		    if ($nfields > 0)
@@ -792,7 +792,7 @@ $blind\n";
 			$nfields++;
 		    } else {
 			$this->garbageMessage($tf, $lineno, $garbage);
-			self::tfError($tf, true, "Review field &ldquo;" . htmlentities($fname) . "&rdquo; is not used for $conf->shortName reviews.  Ignoring this section.", $lineno);
+			self::tfError($tf, true, "Review field &ldquo;" . htmlentities($fname) . "&rdquo; is not used for " . $Opt["shortName"] . " reviews.  Ignoring this section.", $lineno);
 			$field = null;
 		    }
 		    $mode = 1;
@@ -1088,7 +1088,7 @@ $blind\n";
     }
 
     function show($prow, $rrows, $rrow, &$options) {
-	global $Conf, $ConfSiteSuffix, $Me, $forceShow,
+	global $Conf, $ConfSiteSuffix, $Opt, $Me, $forceShow,
 	    $linkExtra, $useRequest, $ratingTypes;
 
 	if (!$options)
@@ -1309,7 +1309,7 @@ $blind\n";
 	    if ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))
 		echo " checked='checked'";
 	    echo " onchange='hiliter(this)' />&nbsp;Anonymous review</span><div class='clear'></div></div>\n",
-		"<div class='revhint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won't know who wrote the review).</div>\n",
+		"<div class='revhint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won't know who wrote the review).</div>\n",
 		"<div class='g'></div>\n";
 	}
 

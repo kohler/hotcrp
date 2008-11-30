@@ -671,13 +671,13 @@ class PaperTable {
     }
 
     function echoAnonymity($prow) {
-	global $Conf;
+	global $Conf, $Opt;
 	$blind = ($this->useRequest ? isset($_REQUEST['blind']) : (!$prow || $prow->blind));
 	assert($this->editable);
 	echo $this->papt("blind", "<input type='checkbox' name='blind' value='1'"
 			 . ($blind ? " checked='checked'" : "")
 			 . " onchange='hiliter(this)' />&nbsp;Anonymous submission"),
-	    "<div class='paphint'>", htmlspecialchars($Conf->shortName), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (reviewers won't be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
+	    "<div class='paphint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (reviewers won't be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
 	    "<div class='papv'></div>\n\n";
     }
 

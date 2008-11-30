@@ -944,8 +944,8 @@ function titleWords($title, $chars = 40) {
 }
 
 function downloadText($text, $filename, $description, $inline = false, $length = true) {
-    global $Conf, $zlib_output_compression;
-    header("Content-Description: $Conf->shortName $description, PHP generated data");
+    global $Conf, $Opt, $zlib_output_compression;
+    header("Content-Description: " . $Opt["shortName"] . " $description, PHP generated data");
     header("Content-Disposition: " . ($inline ? "inline" : "attachment") . "; filename=$filename");
     header("Content-Type: text/plain");
     if ($length && !$zlib_output_compression)

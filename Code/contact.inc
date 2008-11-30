@@ -6,7 +6,7 @@
 class Contact {
 
     // Which conference are we dealing with?
-    var $shortConfName;
+    var $confDsn;
 
     // Information from the SQL definition
     var $contactId;
@@ -134,7 +134,7 @@ class Contact {
 	    $this->lookupByEmail($Opt['validatorContact'], $conf);
 	    return $this->valid($conf, $update);
 	}
-	return $this->contactId > 0 && $conf->shortName == $this->shortConfName;
+	return $this->contactId > 0 && $this->confDsn == $Opt["dsn"];
     }
 
     function _addressKeys() {
@@ -143,7 +143,7 @@ class Contact {
     }
 
     function invalidate() {
-	$this->shortConfName = 0;
+	$this->confDsn = 0;
 
 	$this->contactId = 0;
 	$this->visits = 0;
@@ -283,6 +283,7 @@ class Contact {
     }
 
     function updateFromQuery($query, $conf) {
+	global $Opt;
 	$result = $conf->q($query);
 	if (edb_nrows($result) >= 1) {
 	    $fromdb = edb_orow($result);
@@ -300,7 +301,7 @@ class Contact {
 	    $this->collaborators = $fromdb->collaborators;
 	    $this->defaultWatch = defval($fromdb, "defaultWatch", 0);
 
-	    $this->shortConfName = $conf->shortName;
+	    $this->confDsn = $Opt["dsn"];
 
 	    $this->trim();
 	    $this->validated = false;

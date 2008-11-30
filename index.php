@@ -73,7 +73,7 @@ function doCreateAccount() {
 	    $msg .= "  The email address you provided seems invalid.";
 	else
 	    $msg .= "  The conference system is not set up to mail passwords at this time.";
-	$msg .= "  Although an account was created for you, you need the site administrator's help to retrieve your password.  The site administrator is " . htmlspecialchars("$Conf->contactName <$Conf->contactEmail>") . ".";
+	$msg .= "  Although an account was created for you, you need the site administrator's help to retrieve your password.  The site administrator is " . htmlspecialchars($Opt["contactName"] . " <" . $Opt["contactEmail"] . ">") . ".";
     }
     if (isset($_REQUEST["password"]) && $_REQUEST["password"] != "")
 	$msg .= "  Note that the password you supplied on the login screen was ignored.";
@@ -323,14 +323,14 @@ if (($v = $Conf->settingText("homemsg")))
 
 // Sign in
 if (!$Me->valid()) {
-    $confname = $Conf->longName;
-    if ($Conf->shortName && $Conf->shortName != $Conf->longName)
-	$confname .= " ($Conf->shortName)";
+    $confname = $Opt["longName"];
+    if ($Opt["shortName"] && $Opt["shortName"] != $Opt["longName"])
+	$confname .= " (" . $Opt["shortName"] . ")";
     echo "<div class='homegrp'>
 Welcome to the ", htmlspecialchars($confname), " submissions site.
 Sign in to submit or review papers.";
     if (isset($Opt["conferenceSite"]))
-	echo " For general information about ", htmlspecialchars($Conf->shortName), ", see the <a href=\"", htmlspecialchars($Opt["conferenceSite"]), "\">conference site</a>.";
+	echo " For general information about ", htmlspecialchars($Opt["shortName"]), ", see the <a href=\"", htmlspecialchars($Opt["conferenceSite"]), "\">conference site</a>.";
     echo "</div>
 <hr class='home' />
 <div class='homegrp' id='homeacct'>

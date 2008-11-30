@@ -62,21 +62,25 @@ $OK = 1;
 
 $Msg["unknown"] = "Unknown error.";
 
-// Determine path to conference site on file system
-$here = substr(__FILE__, 0, strrpos(__FILE__,'/'));
-if (file_exists($here . "/Code/header.inc"))
-    $ConfSitePATH = $here;
-else if (file_exists($here . "/../Code/header.inc"))
-    $ConfSitePATH = substr($here, 0, strrpos($here,'/'));
-else
-    $ConfSitePATH = "/var/www/html";
 
-// Determine relative path to conference home in URLs
-{
-    $toplev = array('Chair' => 1, 'Code' => 1, 'Download' => 1, 'doc' => 1,
-		    'doc.php' => 1, 'PC' => 1, 'Reviewer' => 1);
-    $url = $_SERVER['PHP_SELF'];
+// set up conference path variables
+function setPathVariables() {
+    global $ConfSitePATH, $ConfSiteBase, $ConfSiteSuffix;
+
+    // Determine path to conference site on file system
+    $here = substr(__FILE__, 0, strrpos(__FILE__, '/'));
+    if (file_exists($here . "/Code/header.inc"))
+	$ConfSitePATH = $here;
+    else if (file_exists($here . "/../Code/header.inc"))
+	$ConfSitePATH = substr($here, 0, strrpos($here,'/'));
+    else
+	$ConfSitePATH = "/var/www/html";
+
+    // Determine relative path to conference home in URLs
+    $toplev = array("Code" => 1, "doc" => 1, "doc.php" => 1);
+    $url = $_SERVER["PHP_SELF"];
     $ndotdot = 0;
+    $ConfSiteBase = "";
     while (($rpos = strrpos($url, "/")) !== false) {
 	$last = substr($url, $rpos + 1);
 	if (isset($toplev[$last])) {
@@ -86,16 +90,16 @@ else
 	$ndotdot++;
 	$url = substr($url, 0, $rpos);
     }
-    if (!isset($ConfSiteBase))
-	$ConfSiteBase = "";
+
+    // Determine whether to include the .php suffix
+    $ConfSiteSuffix = ".php";
+    if (function_exists("apache_get_modules")) {
+	if (array_search("mod_rewrite", apache_get_modules()) !== false)
+	    $ConfSiteSuffix = "";
+    }
 }
 
-// Determine whether to include the .php suffix
-$ConfSiteSuffix = ".php";
-if (function_exists("apache_get_modules")) {
-    if (array_search("mod_rewrite", apache_get_modules()) !== false)
-	$ConfSiteSuffix = "";
-}
+setPathVariables();
 
 
 // Bring in code
@@ -111,16 +115,49 @@ require_once("PEAR.php");
 // Set up conference options
 include("$ConfSitePATH/Code/options.inc");
 
+// Multi-conference support
+function setMulticonference() {
+    global $ConfSiteBase, $Opt;
+
+    $url = explode("/", $_SERVER["PHP_SELF"]);
+    $npop = strlen($ConfSiteBase) / 3;
+    if ($url[count($url) - 1] == "")
+	$npop++;
+    if ($npop + 2 > count($url))
+	return;
+    $confabbr = $url[count($url) - $npop - 2];
+
+    $nchanged = 0;
+    foreach (array("dbName", "dbUser", "dbPassword", "dsn") as $k)
+	if (isset($Opt[$k])) {
+	    $Opt[$k] = str_replace("*", $confabbr, $Opt[$k]);
+	    ++$nchanged;
+	}
+    if ($nchanged == 0)
+	$Opt["dbName"] = $confabbr;
+
+    foreach (array("sessionName", "downloadPrefix", "conferenceSite",
+		   "paperSite") as $k)
+	if (isset($Opt[$k]))
+	    $Opt[$k] = str_replace("*", $confabbr, $Opt[$k]);
+
+    if (!isset($Opt["downloadPrefix"]))
+	$Opt["downloadPrefix"] = $confabbr . "-";
+}
+
+if (isset($Opt["multiconference"]) && $Opt["multiconference"])
+    setMulticonference();
+
 if (!isset($Opt['sessionName']))
     $Opt['sessionName'] = $Opt['dbName'];
+if (!isset($Opt["downloadPrefix"]))
+    $Opt["downloadPrefix"] = $Opt["dbName"] . "-";
 if (!isset($Opt['dbUser']))
     $Opt['dbUser'] = $Opt['dbName'];
 if (!isset($Opt['dbPassword']))
     $Opt['dbPassword'] = $Opt['dbName'];
 if (!isset($Opt['dsn']))
     $Opt['dsn'] = "mysql://" . $Opt['dbUser'] . ":" . $Opt['dbPassword'] . "@localhost/" . $Opt['dbName'];
-if (isset($Opt["timezone"]) && function_exists("date_default_timezone_set"))
-    date_default_timezone_set($Opt["timezone"]);
 
 // Create the conference
 $Conf = new Conference();
@@ -131,6 +168,10 @@ function __autoload($class_name) {
     if ($class_name == "ReviewForm")
 	require_once("$ConfSitePATH/Code/review.inc");
 }
+
+// Set server timezone
+if (isset($Opt["timezone"]) && function_exists("date_default_timezone_set"))
+    date_default_timezone_set($Opt["timezone"]);
 
 // How long before a session is automatically logged out?
 //
