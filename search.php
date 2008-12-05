@@ -1020,7 +1020,7 @@ echo tagg_select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
 echo "</div>";
 
 // Display options
-if ($pl) {
+if ($pl && $pl->count > 0) {
     echo "<div class='tld3'>";
 
     echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div>\n";
@@ -1112,7 +1112,7 @@ echo "</td></tr>
 <tr><td class='tllx'><table><tr>
   <td><div class='tll1'><a onclick='return crpfocus(\"searchform\", 1)' href=''>Basic search</a></div></td>
   <td><div class='tll2'><a onclick='return crpfocus(\"searchform\", 2)' href=''>Advanced search</a></div></td>\n";
-if ($pl)
+if ($pl && $pl->count > 0)
     echo "  <td><div class='tll3'><a onclick='return crpfocus(\"searchform\", 3)' href=''>Display options</a></div></td>\n";
 echo "</tr></table></td></tr>
 </table>\n\n";
