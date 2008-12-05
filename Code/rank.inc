@@ -139,16 +139,49 @@ class PaperRank {
 	foreach ($this->userrank as $user => &$ranks)
 	    foreach ($ranks as $rr) {
 		$paperrange[$rr[1]] +=
-		    ($maxuserrank[$user] - $rr[0] - 0.5)
+		    ($maxuserrank[$user] - $rr[0] + 0.5)
 		    / ($maxuserrank[$user] - $minuserrank[$user] + 1);
 		$paperrangecount[$rr[1]]++;
 	    }
 
-	// ranges to averages, then sort
+	// ranges to averages
 	foreach ($paperrange as $p => $range) {
 	    if ($paperrangecount[$p])
 		$range /= $paperrangecount[$p];
 	    $this->rank[$p] = (int) max(99 - 99 * $range, 1);
+	}
+    }
+
+
+    // global rank calculation by range values (1-99)
+    function rawrangevote() {
+	global $Conf;
+
+	// calculate $minuserrank, $maxuserrank
+	$minuserrank = $maxuserrank = array();
+	foreach ($this->userrank as $user => &$ranks) {
+	    foreach ($ranks as &$rr) {
+		if ($rr[0] >= 1)
+		    $rr[0] = min($rr[0], 99);
+	    }
+	}
+
+	// map ranks to ranges
+	$paperrange = array_fill(0, count($this->papersel), 0);
+	$paperrangecount = array_fill(0, count($this->papersel), 0);
+	foreach ($this->userrank as $user => &$ranks)
+	    foreach ($ranks as $rr) {
+		$paperrange[$rr[1]] += $rr[0];
+		$paperrangecount[$rr[1]]++;
+	    }
+
+	// ranges to averages
+	foreach ($paperrange as $p => $range) {
+	    if ($paperrangecount[$p]) {
+		$range = ($range + 0.5) / $paperrangecount[$p];
+		$this->rank[$p] = min((int) $range, 99);
+	    } else
+		$this->rank[$p] = 99;
 	}
     }
 
