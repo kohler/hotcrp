@@ -138,11 +138,10 @@ td.spanner {
 }
 
 
-a.q {
-	text-decoration: none;
+a.q, a.u {
 	color: #000000;
 }
-a.x {
+a.q, a.x {
 	text-decoration: none;
 }
 a.small {

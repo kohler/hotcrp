@@ -1132,10 +1132,8 @@ $blind\n";
 
 	echo "<h3>";
 	if ($rrow) {
-	    echo "<a href='review$ConfSiteSuffix?r=$reviewOrdinal$linkExtra' name='review$reviewOrdinal' class='q'>";
-	    if ($editmode)
-		echo "Edit ";
-	    echo "Review";
+	    echo "<a href='review$ConfSiteSuffix?r=$reviewOrdinal$linkExtra' name='review$reviewOrdinal' class='",
+		($editmode ? "q'>Edit " : "u'>"), "Review";
 	    if ($rrow->reviewSubmitted)
 		echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
 	    echo "</a>";
