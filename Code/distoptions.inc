@@ -112,5 +112,7 @@ $Opt["emailSubmissions"] = 0;
 //                   string must have the form "LDAP_URL DN_PATTERN", where
 //                   DN_PATTERN contains a "*" character to be replaced by
 //                   the username.  Example: "ldaps://ldapserver/ uid=*,o=ORG"
+//   stylesheets     Optional array of additional stylesheet filenames/URIs to
+//                   be included after "style.css".  Example: array("x.css").
 
 $Opt["disablePS"] = true;

@@ -1194,6 +1194,16 @@ class Conference {
     // Conference header, footer
     //
 
+    function header_css_link($css) {
+	global $ConfSiteBase, $ConfSiteSuffix, $ConfSitePATH;
+	echo "<link rel='stylesheet' type='text/css' href=\"";
+	if (strpos($css, "/") === false
+	    && ($mtime = @filemtime("$ConfSitePATH/$css")) !== false)
+	    echo "${ConfSiteBase}cacheable$ConfSiteSuffix?file=", urlencode($css), "&amp;mtime=", $mtime, "\" />\n";
+	else
+	    echo str_replace("\"", "&quot;", $css), "\" />\n";
+    }
+
     function header_head($title) {
 	global $ConfSiteBase, $ConfSiteSuffix, $ConfSitePATH, $Opt;
 	if (!$this->headerPrinted) {
@@ -1206,7 +1216,12 @@ class Conference {
 <meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />\n";
 	    if (strstr($title, "<") !== false)
 		$title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
-	    echo "<link rel='stylesheet' type='text/css' href='${ConfSiteBase}cacheable$ConfSiteSuffix?file=style.css&amp;mtime=" . filemtime("$ConfSitePATH/style.css") . "' />\n";
+
+	    $this->header_css_link("style.css");
+	    if (isset($Opt["stylesheets"]))
+		foreach ($Opt["stylesheets"] as $css)
+		    $this->header_css_link($css);
+
 	    $this->scriptStuff = "<script type='text/javascript' src='${ConfSiteBase}cacheable$ConfSiteSuffix?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "'></script>\n";
 	    $this->scriptStuff .= "<!--[if lte IE 6]> <script type='text/javascript' src='${ConfSiteBase}cacheable$ConfSiteSuffix?file=supersleight.js'></script> <![endif]-->\n";
 	    echo "<title>", $title, " - ", $Opt["shortName"], "</title>\n";

@@ -16,11 +16,15 @@ if ($zlib_output_compression) {
 }
 
 $file = isset($_REQUEST["file"]) ? $_REQUEST["file"] : "";
+if (strpos($file, "/") !== false)
+    $file = "";
+if ($file)
+    $mtime = @filemtime($file);
 
 if ($file == "script.js" || $file == "supersleight-min.js"
     || $file == "supersleight.js")
     header("Content-type: text/javascript; charset: UTF-8");
-else if ($file == "style.css")
+else if (substr($file, -4) === ".css" && $mtime !== false)
     header("Content-type: text/css; charset: UTF-8");
 else {
     header("Content-type: text/plain");
@@ -30,7 +34,7 @@ else {
     exit;
 }
 
-$last_modified = gmdate("D, d M Y H:i:s", filemtime($file)) . " GMT";
+$last_modified = gmdate("D, d M Y H:i:s", $mtime) . " GMT";
 $etag = '"' . md5($last_modified) . '"';
 header("Last-Modified: $last_modified");
 header("ETag: $etag");
