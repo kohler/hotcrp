@@ -47,13 +47,6 @@ h1 {
 	font-size: 144%;
 	margin: 0em;
 }
-h1 span.crumbsep {
-	font-weight: normal;
-	color: #9999cc;
-}
-span.barsep {
-	color: #b4b4df;
-}
 
 /* Tab bar */
 div.vbar {
@@ -121,8 +114,8 @@ div#header_left a {
 .vbtab a, td.listlinks a {
 	text-decoration: none;
 }
-.vbtab a:hover, .vbtab1 a:hover, td.listlinks a:hover, div#header_left a:hover, 
-a.q:hover, a.x:hover {
+.vbtab a:hover, .vbtab1 a:hover, td.listlinks a:hover,
+div#header_left a:hover {
 	text-decoration: underline;
 }
 table.vbar td.gopaper {
@@ -138,14 +131,56 @@ td.spanner {
 }
 
 
+/* generic horizontal styles */
 a.q, a.u {
 	color: #000000;
 }
 a.q, a.x {
 	text-decoration: none;
 }
+a.q:hover, a.x:hover {
+	text-decoration: underline;
+}
 a.small {
 	font-size: smaller;
+}
+span.barsep {
+	color: #b4b4df;
+}
+a img {
+	border: none;
+}
+span.sep {
+	padding-right: 1em;
+}
+span.lgsep {
+	padding-right: 2em;
+}
+.nowrap {
+	white-space: nowrap;
+}
+
+
+/* generic vertical styles */
+div.g { /* small gap */
+	margin: 0.65em 0em;
+}
+div.ug { /* microgap */
+	margin: 0.35em 0em;
+}
+.clear {
+	clear: both;
+}
+div.clear {
+	margin: 0em;
+}
+form {
+	margin-bottom: 0px;
+	display: inline;
+}
+div.inform {
+	margin: 0em;
+	display: inline;
 }
 
 
@@ -182,22 +217,6 @@ table, tr, td {
 	border: 0px none;
 	border-collapse: collapse;
 	empty-cells: show;
-}
-
-
-.clear {
-	clear: both;
-}
-div.clear, div.min {
-	margin: 0em;
-}
-form {
-	margin-bottom: 0px;
-	display: inline;
-}
-div.inform {
-	margin: 0em;
-	display: inline;
 }
 
 
@@ -385,10 +404,8 @@ div.lht {
 	padding: 5px 1em 3px 0.75em;
 }
 
-a img {
-	border: none;
-}
 
+/* topics */
 span.topic0 {
 	color: gray;
 }
@@ -404,6 +421,12 @@ table.ppltable td.pl_topics span.topic2 {
 	text-decoration: none;
 	font-weight: normal;
 }
+
+
+table.center {
+	margin-left: auto;
+	margin-right: auto;
+}
 body#revpref table.pltable, body#assignpc table.pltable,
 body#accounts table.ppltable {
 	margin: 0px auto;
@@ -411,10 +434,6 @@ body#accounts table.ppltable {
 
 
 /* Main */
-table.center {
-	margin-left: auto;
-	margin-right: auto;
-}
 div.homegrp {
 	margin: 0.8em 0em 0em 0.2em;
 }
@@ -515,7 +534,6 @@ input.button.alert, input.hbutton.alert, input.hb.alert {
 	border-bottom: 1px solid #996666;
 	border-right: 2px solid #996666;
 }
-a.download, a.rev_start, a.rev_comp, a.rev_edit, a.rev_view,
 input.button_small, a.button_small, button.button_small {
 	font-size: smaller;
 	background: #ffffbb;
@@ -527,8 +545,7 @@ input.button_small, a.button_small, button.button_small {
 	color: black;
 	white-space: nowrap;
 }
-a.button, a.button_small, a.download,
-a.rev_start, a.rev_comp, a.rev_edit, a.rev_view {
+a.button, a.button_small {
 	padding: 1px 0.25em;
 }
 input.button_small.alert, a.button_small.alert, button.button_small.alert {
@@ -654,8 +671,7 @@ tr.rev_reviewers_hdr td.entry {
 
 
 /* Other types of captions and entries */
-table.paper, table.review, table.comment, table.settings,
-table.manyassignx {
+table.paper, table.review, table.comment, table.settings {
 	width: 100%;
 	position: relative;
 }
@@ -1196,20 +1212,11 @@ hr.hr {
 div.msgpg { /* message-paper gap */
 	margin: 2ex 0em;
 }
-div.g { /* small gap */
-	margin: 0.65em 0em;
-}
-div.ug { /* microgap */
-	margin: 0.35em 0em;
-}
 
 body#assignpc div.topicinterest {
 	margin-left: 3em;
 }
 
-.nowrap {
-	white-space: nowrap;
-}
 span.autblentry {
 	margin-right: 0.75em;
 	white-space: nowrap;
@@ -1229,11 +1236,8 @@ span.rev_num {
 	color: red;
 }
 
-span.sep, span.reviewer, span.reviewstatus {
+span.reviewer, span.reviewstatus {
 	padding-right: 1em;
-}
-span.lgsep {
-	padding-right: 2em;
 }
 span.rstat {
 	font-size: smaller;
