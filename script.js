@@ -81,6 +81,8 @@ function fold(which, dofold, foldnum) {
 	// check for session
 	if ((selt = e('foldsession.' + which + foldnumid)))
 	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0) + '&u=' + foldsession_unique++);
+	else if ((selt = e('foldsession.' + which)))
+	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0) + '&sub=' + foldnumid + '&u=' + foldsession_unique++);
 	// check for focus
 	if (!dofold && (selt = e("fold" + which + foldnumid + "_d")))
 	    selt.focus();

@@ -193,9 +193,9 @@ if (isset($_REQUEST["redisplay"])) {
     $_SESSION["pfdisplay"] = "";
     foreach ($paperListFolds as $n => $v)
 	if (defval($_REQUEST, "show$n"))
-	    session_textarray_set("pfdisplay", $v, true);
+	    $_SESSION["pfdisplay"] .= chr($v);
 }
-$pldisplay = session_textarray_split("pfdisplay");
+$pldisplay = defval($_SESSION, "pfdisplay", "");
 
 
 // search
@@ -241,34 +241,34 @@ echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'>
     "<td><input class='b' type='submit' name='redisplay' value='Redisplay' /></td>",
     "</tr>\n";
 
-echo "<tr><td class='lxcaption'><strong>Show:</strong> &nbsp;</td><td class='lentry'>";
+echo "<tr><td class='lxcaption'><strong>Show:</strong> &nbsp;",
+    foldsessionpixel("pl", "pfdisplay", null),
+    "</td><td class='lentry'>";
 if ($Conf->blindSubmission() <= BLIND_OPTIONAL) {
     echo "<input type='checkbox' name='showau' value='1'";
     if ($Conf->blindSubmission() == BLIND_OPTIONAL && !($pl->headerInfo["authors"] & 1))
 	echo " disabled='disabled'";
-    if (array_search(1, $pldisplay) !== false)
+    if (strpos($pldisplay, "\1") !== false)
 	echo " checked='checked'";
     echo " onclick='fold(\"pl\",!this.checked,1)' />&nbsp;Authors",
-	foldsessionpixel("pl1", "pfdisplay", 1),
 	"<span class='sep'></span>\n";
 }
 if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair) {
     echo "<input type='checkbox' name='showanonau' value='1'";
     if (!($pl->headerInfo["authors"] & 2))
 	echo " disabled='disabled'";
-    if (array_search(2, $pldisplay) !== false)
+    if (strpos($pldisplay, "\2") !== false)
 	echo " checked='checked'";
     echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;",
 	($Conf->blindSubmission() == BLIND_OPTIONAL ? "Anonymous authors" : "Authors"),
-	foldsessionpixel("pl2", "pfdisplay", 2),
 	"<span class='sep'></span>\n";
 }
 if ($pl->headerInfo["abstract"]) {
     echo "<input type='checkbox' name='showabstract' value='1'";
-    if (array_search(5, $pldisplay) !== false)
+    if (strpos($pldisplay, "\5") !== false)
 	echo " checked='checked'";
     echo " onclick='foldplinfo(this,5,\"abstract\")' />&nbsp;Abstracts",
-	foldsessionpixel("pl5", "pfdisplay", 5), "<br /><div id='abstractloadformresult'></div>\n";
+	"<br /><div id='abstractloadformresult'></div>\n";
 }
 echo "</td></tr>\n</table></form>"; // </div></div>
 echo "</td></tr></table>\n";

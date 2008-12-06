@@ -8,10 +8,17 @@ require_once("Code/header.inc");
 if (isset($_REQUEST["var"])) {
     $v = $_REQUEST["var"];
     if (in_array($v, $allowedSessionVars)) {
-	if (isset($_REQUEST["sub"])) {
-	    require_once("Code/textarray.inc");
+	if (isset($_REQUEST["sub"]) && $_REQUEST["sub"] == "")
+	    /* do nothing */;
+	else if (isset($_REQUEST["sub"])) {
+	    $str = defval($_SESSION, $v, "");
 	    $on = !(isset($_REQUEST["val"]) && intval($_REQUEST["val"]) > 0);
-	    session_textarray_set($v, intval($_REQUEST["sub"]), $on);
+	    if (($sub = intval($_REQUEST["sub"])) > 0 && $sub < 256) {
+		$str = str_replace(chr($sub), "", $str);
+		if ($on)
+		    $str .= chr($sub);
+		$_SESSION[$v] = $str;
+	    }
 	} else if (isset($_REQUEST["val"]))
 	    $_SESSION[$v] = intval($_REQUEST["val"]);
 	else

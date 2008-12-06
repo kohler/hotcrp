@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("baselist.inc");
-require_once("textarray.inc");
 
 class PaperList extends BaseList {
 
@@ -1188,10 +1187,10 @@ class PaperList extends BaseList {
 
 	// check what is folded
 	$this->folds = (object) array();
-	$pldisplay = session_textarray_split($this->foldtype . "display");
+	$pldisplay = defval($_SESSION, $this->foldtype . "display", "");
 	foreach ($paperListFolds as $n => $foldnum) {
 	    if (!defval($_REQUEST, "show$n")
-		&& array_search($foldnum, $pldisplay) === false)
+		&& strpos($pldisplay, chr($foldnum)) === false)
 		$this->folds->$n = array();
 	    else
 		$this->folds->$n = false;
@@ -1370,7 +1369,7 @@ class PaperList extends BaseList {
 	if (!$unfolded)
 	    $x .= " fold3c";
 	if ($this->anySelector)
-	    $x .= " fold6" . (array_search(6, $pldisplay) === false ? "c" : "o");
+	    $x .= " fold6" . (strpos($pldisplay, "\6") === false ? "c" : "o");
 	if (count($foldinfo) || !$unfolded || $this->anySelector)
 	    $x .= "\" id=\"foldpl";
 	$x .= "\">\n";
@@ -1399,7 +1398,6 @@ class PaperList extends BaseList {
 	    if (isset($foldinfo[4]) && $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
 		$titleextra .= "<a class='fn4' href='javascript:foldplinfo(0,4,\"tags\")'>Show tags</a><a class='fx4' href='javascript:foldplinfo(1,4,\"tags\")'>Hide tags</a><span id='tagsloadformresult'></span>";
-		$titleextra .= foldsessionpixel("pl4", $this->foldtype . "display", 4);
 	    }
 
 	    if ($this->sortable && $url) {
