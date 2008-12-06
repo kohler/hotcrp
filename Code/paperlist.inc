@@ -4,6 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("baselist.inc");
+require_once("textarray.inc");
 
 class PaperList extends BaseList {
 
@@ -122,7 +123,7 @@ class PaperList extends BaseList {
 	$this->showConflict = true;
 	$this->papersel = null;
 	$this->extraFooter = "";
-	$this->foldtype = "foldpl";
+	$this->foldtype = "pl";
 	$this->rf = reviewForm();
     }
 
@@ -185,13 +186,15 @@ class PaperList extends BaseList {
 	    if (!$this->scoresOk)
 		return false;
 	    $score = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
-	    $revViewScore = $this->contact->viewReviewFieldsScore(null, true);
-	    if ($this->rf->authorView[$score] <= $revViewScore)
-		return false;
-	    if (!isset($queryOptions['scores']))
-		$queryOptions['scores'] = array();
-	    $queryOptions['scores'][] = $score;
-	    $this->scoreMax[$score] = $this->rf->maxNumericScore($score);
+	    if ($this->folds->$score === false) {
+		$revView = $this->contact->viewReviewFieldsScore(null, true);
+		if ($this->rf->authorView[$score] <= $revView)
+		    return false;
+		if (!isset($queryOptions['scores']))
+		    $queryOptions['scores'] = array();
+		$queryOptions['scores'][] = $score;
+		$this->scoreMax[$score] = $this->rf->maxNumericScore($score);
+	    }
 	    break;
 	case self::FIELD_FOLD:
 	    $this->unfolded = false;
@@ -583,7 +586,7 @@ class PaperList extends BaseList {
 	}
     }
 
-    function content($fieldId, $row, $reviewList) {
+    function content($fieldId, $row, $reviewList, &$tdextra) {
 	global $ConfSiteSuffix, $Conf, $reviewTypeName, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
@@ -807,11 +810,19 @@ class PaperList extends BaseList {
 	    }
 	    return $text;
 	case self::FIELD_SCORE:
-	    if ($this->contact->privChair || $this->contact->canViewReview($row, null)) {
-		$scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
-		$itemName = "${scoreName}Scores";
-		if ($row->$itemName)
-		    return $Conf->textValuesGraph($row->$itemName, $this->scoreMax[$scoreName], 1, defval($row, $scoreName), $this->rf->reviewFields[$scoreName]);
+	    $scoreidx = $fieldId - self::FIELD_SCORE;
+	    $scoreName = $reviewScoreNames[$scoreidx];
+	    $tdextra = " fx" . $fieldId;
+	    if ($this->folds->$scoreName === false) {
+		if ($this->contact->canViewReview($row, null)) {
+		    $itemName = "${scoreName}Scores";
+		    if ($row->$itemName)
+			return $Conf->textValuesGraph($row->$itemName, $this->scoreMax[$scoreName], 1, defval($row, $scoreName), $this->rf->reviewFields[$scoreName]);
+		}
+	    } else {
+		$tdextra .= "\" id=\"" . $scoreName . $row->paperId;
+		array_push($this->folds->$scoreName, $row->paperId);
+		return false;
 	    }
 	    return "";
 	case self::FIELD_AUTHOR_MATCH:
@@ -1044,11 +1055,12 @@ class PaperList extends BaseList {
     }
 
     function addScores($a) {
+	global $reviewScoreNames;
 	if ($this->scoresOk) {
-	    $scores = defval($_SESSION, "scores", 1);
-	    for ($i = 0; $i < self::FIELD_NUMSCORES; $i++)
-		if ($scores & (1 << $i))
-		    array_push($a, self::FIELD_SCORE + $i);
+	    $rf = reviewForm();
+	    foreach ($rf->fieldOrder as $fn)
+		if (($k = array_search($fn, $reviewScoreNames)) !== false)
+		    array_push($a, self::FIELD_SCORE + $k);
 	    $this->scoreMax = array();
 	}
 	return $a;
@@ -1141,8 +1153,21 @@ class PaperList extends BaseList {
 	}
     }
 
+    function _addAjaxLoadForm($formname, $getname, $pap, $extra = "") {
+	global $Conf, $ConfSiteSuffix;
+	$Conf->footerStuff .= "<form id='${formname}loadform' method='post'"
+	    . " action='search$ConfSiteSuffix?get=$getname&amp;ajax=1"
+	    . $this->paperLinkArgs . "' accept-charset='UTF-8'>"
+	    . "<div class='inform'><input type='hidden' name='pap'"
+	    . " value='" . join(" ", $pap) . "' />"
+	    . $extra
+	    . "</div></form><script type='text/javascript'>"
+	    . "plinfo_needload.$formname = true;</script>";
+    }
+
     function text($listname, $me) {
-	global $Conf, $ConfSiteSuffix, $paperListFields;
+	global $Conf, $ConfSiteSuffix, $paperListFields, $paperListFolds,
+	    $reviewScoreNames;
 
 	$this->contact = $me;
 	$this->count = 0;
@@ -1155,20 +1180,21 @@ class PaperList extends BaseList {
 	// check role type
 	$this->scoresOk = $me->privChair || ($me->isPC && $Conf->timePCViewAllReviews());
 
-	// check what is folded
-	$this->folds = (object) array();
-	foreach (array("abstract", "tags", "reviewers", "shepherd", "lead",
-		       "topics", "pcconf", "collab", "aufull") as $k)
-	    if (!defval($_REQUEST, "show$k")
-		&& defval($_SESSION, $this->foldtype . $k, 1))
-		$this->folds->$k = array();
-	    else
-		$this->folds->$k = false;
-
 	// get paper list
 	if (!($baseFieldId = $this->listFields($listname))) {
 	    $Conf->errorMsg("There is no paper list query named '" . htmlspecialchars($listname) . "'.");
 	    return null;
+	}
+
+	// check what is folded
+	$this->folds = (object) array();
+	$pldisplay = session_textarray_split($this->foldtype . "display");
+	foreach ($paperListFolds as $n => $foldnum) {
+	    if (!defval($_REQUEST, "show$n")
+		&& array_search($foldnum, $pldisplay) === false)
+		$this->folds->$n = array();
+	    else
+		$this->folds->$n = false;
 	}
 
 	// check paper link destination
@@ -1274,9 +1300,10 @@ class PaperList extends BaseList {
 	    $t = "  <tr class=\"pl $trclass\">\n";
 	    foreach ($fieldDef as $fieldId => $fdef)
 		if ($fdef[1] == 1) {
-		    $c = $this->content($fieldId, $row, $reviewList);
-		    $t .= "    <td class=\"pl_$fdef[0]\">$c</td>\n";
-		    if ($c != "")
+		    $tx = "";
+		    $c = $this->content($fieldId, $row, $reviewList, $tx);
+		    $t .= "    <td class=\"pl_$fdef[0]$tx\">$c</td>\n";
+		    if ($c !== "")
 			$anyData[$fieldId] = 1;
 		}
 	    $t .= "  </tr>\n";
@@ -1284,7 +1311,7 @@ class PaperList extends BaseList {
 	    $tt = "";
 	    foreach ($fieldDef as $fieldId => $fdef)
 		if ($fdef[1] >= 2
-		    && ($d = $this->content($fieldId, $row, $reviewList)) !== "") {
+		    && ($d = $this->content($fieldId, $row, $reviewList, $tx)) !== "") {
 		    $tt .= "<div id=\"$fdef[0]$row->paperId\"";
 		    if ($fdef[1] > 2) {
 			if ($fdef[1] == 3)
@@ -1321,49 +1348,29 @@ class PaperList extends BaseList {
 	}
 
 	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname);
-	if (isset($foldinfo[1]))
-	    $x .= (defval($_SESSION, $this->foldtype . "au", 1) ? " fold1c" : " fold1o");
-	if (isset($foldinfo[2]))
-	    $x .= (defval($_SESSION, $this->foldtype . "anonau", 1) ? " fold2c" : " fold2o");
-	if (!$unfolded)
-	    $x .= " fold3c";
-
 	// Ajax load forms for extra fields
-	foreach (array("tags" => 4, "abstract" => 5, "reviewers" => 10,
-		       "shepherd" => 11, "lead" => 12, "topics" => 13,
-		       "pcconf" => 14, "collab" => 15) as $k => $n) {
-	    if (!isset($foldinfo[$n]))
+	foreach ($paperListFolds as $k => $n) {
+	    if ($n >= 50 && !isset($fieldDef[$n]))
 		continue;
-	    $x .= " fold$n" . ($this->folds->$k !== false ? "c" : "o");
-	    if ($this->folds->$k !== false && count($this->folds->$k)) {
-		$Conf->footerStuff .= "<form id='${k}loadform' method='post'"
-		    . " action='search$ConfSiteSuffix?get=$k&amp;ajax=1"
-		    . $this->paperLinkArgs . "' accept-charset='UTF-8'>"
-		    . "<div class='inform'><input type='hidden' name='pap'"
-		    . " value='" . join(" ", $this->folds->$k) . "' />";
-		if ($k == "tags" && $this->search->orderTag)
-		    $Conf->footerStuff .= "<input type='hidden'"
-			. " name='highlight' value=\""
-			. htmlspecialchars($this->search->orderTag) . "\" />";
-		$Conf->footerStuff .= "</div></form>"
-		    . "<script type='text/javascript'>"
-		    . "plinfo_needload.$k = true;</script>";
+	    if ($n >= 50 ? isset($fieldDef[$n]) : isset($foldinfo[$n])) {
+		$x .= " fold$n" . ($this->folds->$k !== false ? "c" : "o");
+		if ($this->folds->$k !== false && count($this->folds->$k)) {
+		    $extra = "";
+		    if ($k == "tags" && $this->search->orderTag)
+			$extra = "<input type='hidden' name='highlight' value=\"" . htmlspecialchars($this->search->orderTag) . "\" />";
+		    $this->_addAjaxLoadForm($k, $k, $this->folds->$k, $extra);
+		}
 	    }
 	}
 	// full authorship is a special case
-	if (isset($foldinfo[1]) || isset($foldinfo[2])) {
-	    $Conf->footerStuff .= "<form id='aufullloadform' method='post'"
-		. " action='search$ConfSiteSuffix?get=authors&amp;ajax=1"
-		. $this->paperLinkArgs . "' accept-charset='UTF-8'>"
-		. "<div class='inform'><input type='hidden' name='pap'"
-		. " value='" . join(" ", $ids) . "' /><input type='hidden'"
-		. " id='aufullform_unfold' name='full' value='' /></div></form>"
-		. "<script type='text/javascript'>"
-		. "plinfo_needload.aufull = true;</script>";
-	}
-
+	if (isset($foldinfo[1]) || isset($foldinfo[2]))
+	    $this->_addAjaxLoadForm("aufull", "authors", $ids,
+				    "<input type='hidden' id='aufullform_unfold' name='full' value='' />");
+	// total folding, row number folding
+	if (!$unfolded)
+	    $x .= " fold3c";
 	if ($this->anySelector)
-	    $x .= (defval($_SESSION, $this->foldtype . "rownum", 1) ? " fold6c" : " fold6o");
+	    $x .= " fold6" . (array_search(6, $pldisplay) === false ? "c" : "o");
 	if (count($foldinfo) || !$unfolded || $this->anySelector)
 	    $x .= "\" id=\"foldpl";
 	$x .= "\">\n";
@@ -1392,7 +1399,7 @@ class PaperList extends BaseList {
 	    if (isset($foldinfo[4]) && $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
 		$titleextra .= "<a class='fn4' href='javascript:foldplinfo(0,4,\"tags\")'>Show tags</a><a class='fx4' href='javascript:foldplinfo(1,4,\"tags\")'>Hide tags</a><span id='tagsloadformresult'></span>";
-		$titleextra .= foldsessionpixel("pl4", $this->foldtype . "tags");
+		$titleextra .= foldsessionpixel("pl4", $this->foldtype . "display", 4);
 	    }
 
 	    if ($this->sortable && $url) {
@@ -1405,7 +1412,10 @@ class PaperList extends BaseList {
 			$x .= "    <th class=\"pl_$fdef[0]\"></th>\n";
 			continue;
 		    }
-		    $x .= "    <th class=\"pl_$fdef[0]\">";
+		    $x .= "    <th class=\"pl_$fdef[0]";
+		    if (self::_normalizeField($fieldId) == self::FIELD_SCORE)
+			$x .= " fx" . $fieldId;
+		    $x .= "\">";
 		    $ftext = $this->header($fieldId, $ord++);
 		    if ($this->sortField == null && $fieldId < 10)
 			$this->sortField = $fieldId;
@@ -1511,3 +1521,12 @@ $paperListFields = array( // array(CSS_FIELD_NAME, COLUMN_TYPE, SORTABLE)
 	PaperList::FIELD_COLLABORATORS => array("collab", 15, 0),
 	PaperList::FIELD_FOLD => array('fold', 0, 0)
 	);
+
+
+global $paperListFolds, $reviewScoreNames;
+$paperListFolds = array("au" => 1, "anonau" => 2, "tags" => 4, "abstract" => 5,
+			"rownum" => 6, "reviewers" => 10, "shepherd" => 11,
+			"lead" => 12, "topics" => 13, "pcconf" => 14,
+			"collab" => 15, "aufull" => -2);
+foreach ($reviewScoreNames as $k => $n)
+    $paperListFolds[$n] = PaperList::FIELD_SCORE + $k;

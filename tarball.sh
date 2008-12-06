@@ -93,6 +93,7 @@ Code/sample.pdf
 Code/schema.sql
 Code/search.inc
 Code/tags.inc
+Code/textarray.inc
 Code/updateschema.inc
 Code/updateschema.sql
 

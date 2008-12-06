@@ -46,13 +46,8 @@ $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
 			  "likelyPresentation", "suitableForShort");
 
 $allowedSessionVars = array("foldassigna", "foldpapera", "foldpaperp",
-			    "foldpaperb", "foldpapert", "foldpfabstract",
-			    "foldpfau", "foldpfanonau", "foldplact",
-			    "foldpltags", "foldplabstract", "foldplau",
-			    "foldplanonau", "foldplreviewers", "foldplrownum",
-			    "foldplshepherd", "foldpllead", "foldpltopics",
-			    "foldplpcconf", "foldplcollab", "foldplaufull",
-			    "foldpscollab");
+			    "foldpaperb", "foldpapert", "pfdisplay",
+			    "pldisplay", "foldpscollab");
 
 $authorConflictTypes = array(0 => "No conflict", 3 => "Advisor/student",
 			     2 => "Recent collaborator", 4 => "Institutional",

@@ -1066,7 +1066,6 @@ div#plactr {
 table.pltable th, table.ppltable th, table.altable th, table.setreviewform th,
 table.auedittable th {
 	text-align: left;
-	padding-left: 0.125em;
 	padding-right: 0.125em;
 	vertical-align: bottom;
 }
@@ -1177,7 +1176,6 @@ tr.pl_footgap td {
 }
 table.plt_reviewerHome tr.pl_headrow th {
 	border-bottom: none;
-	font-size: smaller;
 }
 
 span.match {
@@ -1667,6 +1665,22 @@ div.mail td.mhd {
 .fold13c .fx13, .fold13o .fn13,
 .fold14c .fx14, .fold14o .fn14,
 .fold15c .fx15, .fold15o .fn15,
+.fold16c .fx16, .fold16o .fn16,
+.fold17c .fx17, .fold17o .fn17,
+.fold18c .fx18, .fold18o .fn18,
+.fold19c .fx19, .fold19o .fn19,
+.fold50c .fx50, .fold50o .fn50,
+.fold51c .fx51, .fold51o .fn51,
+.fold52c .fx52, .fold52o .fn52,
+.fold53c .fx53, .fold53o .fn53,
+.fold54c .fx54, .fold54o .fn54,
+.fold55c .fx55, .fold55o .fn55,
+.fold56c .fx56, .fold56o .fn56,
+.fold57c .fx57, .fold57o .fn57,
+.fold58c .fx58, .fold58o .fn58,
+.fold59c .fx59, .fold59o .fn59,
+.fold60c .fx60, .fold60o .fn60,
+.fold61c .fx61, .fold61o .fn61,
 .hidden {
 	display: none;
 }

@@ -180,9 +180,22 @@ function validateEmail($email) {
 	return preg_match(':\A([-0-9A-Za-z]+\.)+[0-9A-Za-z]+\z:', $m[1]);
 }
 
-function foldsessionpixel($name, $var) {
+function foldsessionpixel($name, $var, $sub = null) {
     global $ConfSiteSuffix;
-    return "<img id='foldsession." . $name . "' alt='' src='sessionvar$ConfSiteSuffix?var=" . $var . "&amp;val=" . defval($_SESSION, $var, 1) . "&amp;cache=1' width='1' height='1' />";
+
+    if ($sub) {
+	if (!isset($_SESSION[$var])
+	    || array_search($sub, explode(" ", $_SESSION[$var])) === false)
+	    $val = 1;
+	else
+	    $val = 0;
+	$sub = "&amp;sub=" . $sub;
+    } else {
+	$sub = "";
+	$val = defval($_SESSION, $var, 1);
+    }
+
+    return "<img id='foldsession." . $name . "' alt='' src='sessionvar$ConfSiteSuffix?var=" . $var . $sub . "&amp;val=" . $val . "&amp;cache=1' width='1' height='1' />";
 }
 
 function foldbutton($foldtype, $title, $foldnum=0) {

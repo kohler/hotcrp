@@ -6,6 +6,7 @@
 require_once("Code/header.inc");
 require_once("Code/paperlist.inc");
 require_once("Code/search.inc");
+require_once("Code/textarray.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $getaction = "";
@@ -160,7 +161,7 @@ if ($getaction == "authors" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $response = array();
     $matchPreg = PaperList::sessionMatchPreg("authorInformation");
     $full = defval($_REQUEST, "full", 0);
-    $_SESSION["foldplaufull"] = !$full;
+    session_textarray_set("pldisplay", $paperListFolds["aufull"], $full);
 
     while ($prow = edb_orow($result)) {
 	if (!$Me->canViewPaper($prow, $whyNot))
@@ -647,6 +648,29 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 }
 
 
+// download score graphs for selected papers
+if ($getaction && defval($paperListFolds, $getaction) >= 50
+    && defval($_REQUEST, "ajax")) {
+    $rf = reviewForm();
+    $revView = $Me->viewReviewFieldsScore(null, true);
+    $response = array();
+    if ($rf->authorView[$getaction] > $revView) {
+	$result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "scores" => array($getaction))), "while selecting papers");
+	$revView = $Me->viewReviewFieldsScore(null, true);
+	$scoreMax = $rf->maxNumericScore($getaction);
+	$itemName = "${getaction}Scores";
+	$reviewField = $rf->reviewFields[$getaction];
+	while (($row = edb_orow($result))) {
+	    if ($Me->canViewReview($row, null) && $row->$itemName)
+		$response[$getaction . $row->paperId] = $Conf->textValuesGraph($row->$itemName, $scoreMax, 1, defval($row, $getaction), $reviewField);
+	}
+    }
+    cleanAjaxResponse($response, $getaction);
+    $response["ok"] = (count($response) > 0);
+    $Conf->ajaxExit($response);
+}
+
+
 // download preferences for selected papers
 function downloadRevpref($extended) {
     global $Conf, $Me, $Opt, $papersel, $paperselmap;
@@ -861,15 +885,18 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 }
 
 
-// set scores to view
+// exit early if Ajax
+if (defval($_REQUEST, "ajax"))
+    $Conf->ajaxExit(array("response" => ""));
+
+
+// set fields to view
 if (isset($_REQUEST["redisplay"])) {
     $_SESSION["scores"] = 0;
-    foreach (array("au", "anonau", "abstract", "tags", "reviewers", "shepherd",
-		   "lead", "topics", "collab", "aufull", "rownum") as $x) {
-	unset($_SESSION["foldpl$x"]);
-	if (defval($_REQUEST, "show$x", 0))
-	    $_SESSION["foldpl$x"] = 0;
-    }
+    $_SESSION["pldisplay"] = "";
+    foreach ($paperListFolds as $n => $v)
+	if (defval($_REQUEST, "show$n", 0))
+	    session_textarray_set("pldisplay", $v, true);
 }
 if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
     $_SESSION["scores"] = 0;
@@ -911,12 +938,14 @@ $tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
 
 // Prepare more display options
 $ajaxDisplayChecked = false;
+$pldisplay = session_textarray_split("pldisplay");
 
-function ajaxDisplayer($type, $foldnum, $title, $disabled = false) {
-    global $ajaxDisplayChecked;
+function ajaxDisplayer($type, $title, $disabled = false) {
+    global $ajaxDisplayChecked, $paperListFolds, $pldisplay;
+    $foldnum = defval($paperListFolds, $type, -1);
     $t = "<input type='checkbox' name='show$type' value='1'";
     if (defval($_REQUEST, "show$type")
-	|| defval($_SESSION, "foldpl$type", 1) == 0) {
+	|| array_search($foldnum, $pldisplay) !== false) {
 	$t .= " checked='checked'";
 	$ajaxDisplayChecked = true;
     }
@@ -924,7 +953,7 @@ function ajaxDisplayer($type, $foldnum, $title, $disabled = false) {
 	$t .= " disabled='disabled'";
     $t .= " onclick='foldplinfo(this,$foldnum,\"$type\")' />&nbsp;$title";
     if ($foldnum >= 0)
-	$t .= foldsessionpixel("pl$foldnum", "foldpl$type");
+	$t .= foldsessionpixel("pl$foldnum", "pldisplay", $foldnum);
     return $t . "<br /><div id='${type}loadformresult'></div>\n";
 }
 
@@ -936,24 +965,25 @@ if ($pl) {
 
     if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAllAuthors
 	|| $Me->privChair)
-	$moredisplay .= ajaxDisplayer("aufull", -1, "Full author info");
+	$moredisplay .= ajaxDisplayer("aufull", "Full author info");
+    $ajaxDisplayChecked = false;
     if ($pl->headerInfo["collab"])
-	$moredisplay .= ajaxDisplayer("collab", 15, "Collaborators");
+	$moredisplay .= ajaxDisplayer("collab", "Collaborators");
     if ($pl->headerInfo["topics"])
-	$moredisplay .= ajaxDisplayer("topics", 13, "Topics");
+	$moredisplay .= ajaxDisplayer("topics", "Topics");
     if ($Me->privChair)
-	$moredisplay .= ajaxDisplayer("reviewers", 10, "Reviewers");
+	$moredisplay .= ajaxDisplayer("reviewers", "Reviewers");
     if ($Me->privChair)
-	$moredisplay .= ajaxDisplayer("pcconf", 14, "PC conflicts");
+	$moredisplay .= ajaxDisplayer("pcconf", "PC conflicts");
     if ($Me->isPC && $pl->headerInfo["lead"])
-	$moredisplay .= ajaxDisplayer("lead", 12, "Discussion leads");
+	$moredisplay .= ajaxDisplayer("lead", "Discussion leads");
     if ($Me->isPC && $pl->headerInfo["shepherd"])
-	$moredisplay .= ajaxDisplayer("shepherd", 11, "Shepherds");
+	$moredisplay .= ajaxDisplayer("shepherd", "Shepherds");
     if ($pl->anySelector) {
 	$moredisplay .= "<input type='checkbox' name='showrownum' value='1'";
-	if (defval($_SESSION, "foldplrownum", 1) == 0)
+	if (array_search(6, $pldisplay) !== false)
 	    $moredisplay .= " checked='checked'";
-	$moredisplay .= " onclick='fold(\"pl\",!this.checked,6)' />&nbsp;Row numbers" . foldsessionpixel("pl6", "foldplrownum") . "<br />\n";
+	$moredisplay .= " onclick='fold(\"pl\",!this.checked,6)' />&nbsp;Row numbers" . foldsessionpixel("pl6", "pldisplay", 6) . "<br />\n";
     }
 }
 
@@ -1038,13 +1068,13 @@ if ($pl && $pl->count > 0) {
   <td class='pad'>";
     if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAllAuthors) {
 	echo "<input id='showau' type='checkbox' name='showau' value='1'";
-	if (defval($_SESSION, "foldplau", 1) == 0)
+	if (array_search(1, $pldisplay) !== false)
 	    echo " checked='checked'";
 	echo " onclick='fold(\"pl\",!this.checked,1)";
 	if ($viewAllAuthors)
 	    echo ";fold(\"pl\",!this.checked,2)";
 	echo "' />&nbsp;Authors",
-	    foldsessionpixel("pl1", "foldplau"),
+	    foldsessionpixel("pl1", "pldisplay", 1),
 	    "<br />\n";
     }
     if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair && !$viewAllAuthors) {
@@ -1053,18 +1083,18 @@ if ($pl && $pl->count > 0) {
 	    "type='checkbox' name='showanonau' value='1'";
 	if (!$pl || !($pl->headerInfo["authors"] & 2))
 	    echo " disabled='disabled'";
-	if (defval($_SESSION, "foldplanonau", 1) == 0)
+	if (array_search(2, $pldisplay) !== false)
 	    echo " checked='checked'";
 	echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;",
 	    ($Conf->blindSubmission() == BLIND_OPTIONAL ? "Anonymous authors" : "Authors"),
-	    foldsessionpixel("pl2", "foldplanonau"),
+	    foldsessionpixel("pl2", "pldisplay", 2),
 	    "<br />\n";
     }
 
     if ($pl->headerInfo["abstract"])
-	echo ajaxDisplayer("abstract", 5, "Abstracts");
+	echo ajaxDisplayer("abstract", "Abstracts");
     if ($Me->isPC && $pl->headerInfo["tags"])
-	echo ajaxDisplayer("tags", 4, "Tags",
+	echo ajaxDisplayer("tags", "Tags",
 			   ($_REQUEST["t"] == "a" && !$Me->privChair));
 
     if ($moredisplay !== "") {
@@ -1088,11 +1118,12 @@ if ($pl && $pl->count > 0) {
 	foreach ($rf->fieldOrder as $field)
 	    if ($rf->authorView[$field] > $revViewScore
 		&& isset($rf->options[$field])) {
-		$i = array_search($field, $reviewScoreNames);
-		echo "<input type='checkbox' name='score[]' value='$i' ";
-		if ($theScores & (1 << $i))
-		    echo "checked='checked' ";
-		echo "onchange='highlightUpdate(\"redisplay\")' />&nbsp;" . htmlspecialchars($rf->shortName[$field]) . "<br />";
+		//$i = array_search($field, $reviewScoreNames);
+		//echo "<input type='checkbox' name='score[]' value='$i' ";
+		//if ($theScores & (1 << $i))
+		//echo "checked='checked' ";
+		//echo "onchange='highlightUpdate(\"redisplay\")' />&nbsp;" . htmlspecialchars($rf->shortName[$field]) . "<br />";
+		echo ajaxDisplayer($field, htmlspecialchars($rf->shortName[$field]));
 	    }
 	echo "<div class='g'></div></td>
     <td><input id='redisplay' class='b' type='submit' name='redisplay' value='Redisplay' /></td>

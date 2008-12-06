@@ -69,6 +69,7 @@ function hiliter(which, off) {
 	elt.className = elt.className + " alert";
 }
 
+var foldsession_unique = 1;
 function fold(which, dofold, foldnum) {
     var i, elt, selt, opentxt, closetxt, foldnumid = (foldnum ? foldnum : "");
     if (which instanceof Array) {
@@ -79,7 +80,7 @@ function fold(which, dofold, foldnum) {
 	fold(elt, dofold, foldnum);
 	// check for session
 	if ((selt = e('foldsession.' + which + foldnumid)))
-	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0));
+	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0) + '&u=' + foldsession_unique++);
 	// check for focus
 	if (!dofold && (selt = e("fold" + which + foldnumid + "_d")))
 	    selt.focus();
@@ -646,11 +647,12 @@ Miniajax.submit = function(formname, callback, timeout) {
 var plinfo_title = {
     abstract: "Abstract", tags: "Tags", reviewers: "Reviewers",
     shepherd: "Shepherd", lead: "Discussion lead", topics: "Topics",
-    pcconf: "PC conflicts", collab: "Collaborators", authors: "Authors"
+    pcconf: "PC conflicts", collab: "Collaborators", authors: "Authors",
+    aufull: "Authors"
 };
 var plinfo_needload = { };
 function foldplinfo(dofold, foldnum, type, which) {
-    var elt, i, divs;
+    var elt, i, divs, h6, callback;
 
     // fold
     if (!which)
@@ -661,6 +663,10 @@ function foldplinfo(dofold, foldnum, type, which) {
 	fold(which, dofold, foldnum);
     if (type == "aufull" && !dofold && (elt = e("showau")) && !elt.checked)
 	elt.click();
+    if (plinfo_title[type])
+	h6 = "<h6>" + plinfo_title[type] + ":</h6> ";
+    else
+	h6 = "";
 
     // may need to load information by ajax
     if ((!dofold || foldnum < 0) && plinfo_needload[type]) {
@@ -671,7 +677,7 @@ function foldplinfo(dofold, foldnum, type, which) {
 		if (divs[i].id.substr(0, type.length) == type) {
 		    if (divs[i].className == "")
 			divs[i].className = "fx" + foldnum;
-		    divs[i].innerHTML = "<h6>" + plinfo_title[type] + ":</h6> Loading";
+		    divs[i].innerHTML = h6 + " Loading";
 		}
 	}
 
@@ -689,7 +695,7 @@ function foldplinfo(dofold, foldnum, type, which) {
 			if (rv[i] == "")
 			    elt.innerHTML = "";
 			else
-			    elt.innerHTML = "<h6>" + plinfo_title[type] + ":</h6> " + rv[i];
+			    elt.innerHTML = h6 + rv[i];
 		    }
 		if (foldnum >= 0) {
 		    plinfo_needload[type] = false;
