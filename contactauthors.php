@@ -34,7 +34,7 @@ getProw($Me->contactId);
 
 
 // check permissions
-$notAuthor = !$Me->amPaperAuthor($prow->paperId, $Conf);
+$notAuthor = !$Me->amPaperAuthor($prow->paperId);
 if ($notAuthor && !$Me->privChair)
     errorMsgExit("You are not an author of paper #$prow->paperId.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
 

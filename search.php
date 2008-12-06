@@ -61,7 +61,7 @@ if ($getaction == "paper" && isset($papersel)) {
     $result = $Conf->qe($q, "while selecting papers");
     $downloads = array();
     while ($row = edb_orow($result)) {
-	if (!$Me->canViewPaper($row, $Conf, $whyNot, true))
+	if (!$Me->canViewPaper($row, $whyNot, true))
 	    $Conf->errorMsg(whyNotText($whyNot, "view"));
 	else
 	    $downloads[] = $row->paperId;
@@ -81,7 +81,7 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $matchPreg = PaperList::sessionMatchPreg("abstract");
 
     while ($prow = edb_orow($result)) {
-	if (!$Me->canViewPaper($prow, $Conf, $whyNot))
+	if (!$Me->canViewPaper($prow, $whyNot))
 	    $Conf->errorMsg(whyNotText($whyNot, "view"));
 	else {
 	    $x = htmlspecialchars($prow->abstract);
@@ -98,7 +98,7 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $texts = array();
     $rf = reviewForm();
     while ($prow = edb_orow($result)) {
-	if (!$Me->canViewPaper($prow, $Conf, $whyNot))
+	if (!$Me->canViewPaper($prow, $whyNot))
 	    $Conf->errorMsg(whyNotText($whyNot, "view"));
 	else {
 	    $text = "===========================================================================\n";
@@ -107,7 +107,7 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
 	    $text .= wordWrapIndent($prow->title, $n, $l) . "\n";
 	    $text .= "---------------------------------------------------------------------------\n";
 	    $l = strlen($text);
-	    if ($Me->canViewAuthors($prow, $Conf, $_REQUEST["t"] != "a"))
+	    if ($Me->canViewAuthors($prow, $_REQUEST["t"] != "a"))
 		$text .= wordWrapIndent(cleanAuthorText($prow), "Authors: ", 14) . "\n";
 	    if ($prow->topicIds != "") {
 		$tt = "";
@@ -142,7 +142,7 @@ if ($getaction == "tags" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $csb = htmlspecialchars(defval($_REQUEST, "sitebase", ""));
     $highlight = defval($_REQUEST, "highlight", false);
     while ($prow = edb_orow($result)) {
-	if (!$Me->canViewTags($prow, $Conf))
+	if (!$Me->canViewTags($prow))
 	    $t = "";
 	else
 	    $t = tagsToText($prow, $csb, $Me, false, $highlight);
@@ -163,7 +163,7 @@ if ($getaction == "authors" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $_SESSION["foldplaufull"] = !$full;
 
     while ($prow = edb_orow($result)) {
-	if (!$Me->canViewPaper($prow, $Conf, $whyNot))
+	if (!$Me->canViewPaper($prow, $whyNot))
 	    $Conf->errorMsg(whyNotText($whyNot, "view"));
 	else
 	    $response["authors$prow->paperId"] = PaperList::authorInfo($prow, $Me, $full, $matchPreg);
@@ -182,7 +182,7 @@ if ($getaction == "collab" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $matchPreg = PaperList::sessionMatchPreg("collaborators");
 
     while ($prow = edb_orow($result)) {
-	if (!$Me->canViewPaper($prow, $Conf, $whyNot))
+	if (!$Me->canViewPaper($prow, $whyNot))
 	    $Conf->errorMsg(whyNotText($whyNot, "view"));
 	else {
 	    $x = "";
@@ -235,7 +235,7 @@ if ($getaction == "final" && isset($papersel)) {
     $result = $Conf->qe($q, "while selecting papers");
     $downloads = array();
     while ($row = edb_orow($result)) {
-	if (!$Me->canViewPaper($row, $Conf, $whyNot))
+	if (!$Me->canViewPaper($row, $whyNot))
 	    $Conf->errorMsg(whyNotText($whyNot, "view"));
 	else
 	    $downloads[] = $row->paperId;
@@ -285,7 +285,7 @@ function downloadReviews(&$texts, &$errors) {
 	$rfname .= $papersel[key($texts)];
 
     if ($getforms)
-	$header = $rf->textFormHeader($Conf, count($texts) > 1 && $gettext);
+	$header = $rf->textFormHeader(count($texts) > 1 && $gettext);
     else
 	$header = "";
 
@@ -319,8 +319,8 @@ function downloadReviews(&$texts, &$errors) {
 if (($getaction == "revform" || $getaction == "revformz")
     && !isset($papersel)) {
     $rf = reviewForm();
-    $text = $rf->textFormHeader($Conf, "blank")
-	. $rf->textForm(null, null, $Me, $Conf, null) . "\n";
+    $text = $rf->textFormHeader("blank")
+	. $rf->textForm(null, null, $Me, null) . "\n";
     downloadText($text, $Opt['downloadPrefix'] . "review.txt", "review form");
     exit;
 } else if ($getaction == "revform" || $getaction == "revformz") {
@@ -330,7 +330,7 @@ if (($getaction == "revform" || $getaction == "revformz")
     $texts = array();
     $errors = array();
     while ($row = edb_orow($result)) {
-	$canreview = $Me->canReview($row, null, $Conf, $whyNot);
+	$canreview = $Me->canReview($row, null, $whyNot);
 	if (!$canreview && !isset($whyNot["deadline"])
 	    && !isset($whyNot["reviewNotAssigned"]))
 	    $errors[whyNotText($whyNot, "review")] = true;
@@ -340,7 +340,7 @@ if (($getaction == "revform" || $getaction == "revformz")
 		$errors[$t] = false;
 		defappend($texts[$paperselmap[$row->paperId]], wordWrapIndent(strtoupper(whyNotToText($t)) . "\n\n", "==-== ", "==-== "));
 	    }
-	    defappend($texts[$paperselmap[$row->paperId]], $rf->textForm($row, $row, $Me, $Conf, null) . "\n");
+	    defappend($texts[$paperselmap[$row->paperId]], $rf->textForm($row, $row, $Me, null) . "\n");
 	}
     }
 
@@ -358,16 +358,16 @@ if (($getaction == "rev" || $getaction == "revz") && isset($papersel)) {
     if ($Me->privChair)
 	$_REQUEST["forceShow"] = 1;
     while ($row = edb_orow($result)) {
-	if (!$Me->canViewReview($row, null, $Conf, $whyNot))
+	if (!$Me->canViewReview($row, null, $whyNot))
 	    $errors[whyNotText($whyNot, "view review")] = true;
 	else if ($row->reviewSubmitted)
-	    defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextForm($row, $row, $Me, $Conf, false) . "\n");
+	    defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextForm($row, $row, $Me, false) . "\n");
     }
 
     $crows = $Conf->commentRows($Conf->paperQuery($Me, array("paperId" => $papersel, "allComments" => 1, "reviewerName" => 1)));
     foreach ($crows as $row)
-	if ($Me->canViewComment($row, $row, $Conf, $whyNot))
-	    defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextComment($row, $row, $Me, $Conf) . "\n");
+	if ($Me->canViewComment($row, $row, $whyNot))
+	    defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextComment($row, $row, $Me) . "\n");
 
     downloadReviews($texts, $errors);
 }
@@ -421,7 +421,7 @@ if ($getaction == "votes" && isset($papersel) && defval($_REQUEST, "tag")
 	$result = $Conf->qe($q, "while selecting papers");
 	$texts = array();
 	while (($row = edb_orow($result)))
-	    if ($Me->canViewTags($row, $Conf))
+	    if ($Me->canViewTags($row))
 		defappend($texts[$paperselmap[$row->paperId]], "(" . (int) $row->tagIndex . ")\t$row->paperId\t$row->title\n");
 	ksort($texts);
 	$text = "# Tag: " . trim($_REQUEST["tag"]) . "\n"
@@ -443,8 +443,8 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 	$real = "";
 	$null = "\n";
 	while (($row = edb_orow($result)))
-	    if ($settingrank ? $Me->canSetRank($row, $Conf)
-		: $Me->canSetTags($row, $Conf)) {
+	    if ($settingrank ? $Me->canSetRank($row)
+		: $Me->canSetTags($row)) {
 		if ($row->tagIndex === null)
 		    $null .= "X\t$row->paperId\t$row->title\n";
 		else if ($real === "" || $lastIndex == $row->tagIndex - 1)
@@ -558,7 +558,7 @@ if (($getaction == "lead" || $getaction == "shepherd")
     if (defval($_REQUEST, "ajax")) {
 	$response = array();
 	while (($row = edb_orow($result)))
-	    if ($Me->actPC($row, true) || ($shep && $Me->canViewDecision($row, $Conf)))
+	    if ($Me->actPC($row, true) || ($shep && $Me->canViewDecision($row)))
 		$response[$getaction . $row->paperId] = contactNameHtml($row);
 	cleanAjaxResponse($response, $getaction);
 	$response["ok"] = (count($response) > 0);
@@ -566,7 +566,7 @@ if (($getaction == "lead" || $getaction == "shepherd")
     } else if ($result) {
 	$texts = array();
 	while (($row = edb_orow($result)))
-	    if ($Me->actPC($row, true) || ($shep && $Me->canViewDecision($row, $Conf)))
+	    if ($Me->actPC($row, true) || ($shep && $Me->canViewDecision($row)))
 		defappend($texts[$paperselmap[$row->paperId]],
 			  $row->paperId . "\t" . $row->title . "\t"
 			  . $row->email . "\t" . trim("$row->firstName $row->lastName") . "\n");
@@ -603,7 +603,7 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 
     // compose scores
     $scores = array();
-    $revViewScore = $Me->viewReviewFieldsScore(null, true, $Conf);
+    $revViewScore = $Me->viewReviewFieldsScore(null, true);
     foreach ($rf->fieldOrder as $field)
 	if ($rf->authorView[$field] > $revViewScore
 	    && isset($rf->options[$field]))
@@ -622,7 +622,7 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	$_REQUEST["forceShow"] = 1;
     $texts = array();
     while (($row = edb_orow($result))) {
-	if (!$Me->canViewReview($row, null, $Conf, $whyNot))
+	if (!$Me->canViewReview($row, null, $whyNot))
 	    $errors[] = whyNotText($whyNot, "view review") . "<br />";
 	else if ($row->reviewSubmitted) {
 	    $text = $row->paperId;
@@ -631,7 +631,7 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	    $text .= "\t" . $row->outcome;
 	    foreach ($scores as $score)
 		$text .= "\t" . $rf->unparseOption($score, $row->$score);
-	    if ($Me->canViewReviewerIdentity($row, $row, $Conf))
+	    if ($Me->canViewReviewerIdentity($row, $row))
 		$text .= "\t" . $row->reviewEmail . "\t" . trim($row->reviewFirstName . " " . $row->reviewLastName);
 	    defappend($texts[$paperselmap[$row->paperId]], $text . "\n");
 	}
@@ -669,7 +669,7 @@ function downloadRevpref($extended) {
 	    $t .= $prow->reviewerPreference;
 	$t .= "\t" . $prow->title . "\n";
 	if ($extended) {
-	    if ($Rev->canViewAuthors($prow, $Conf, true))
+	    if ($Rev->canViewAuthors($prow, true))
 		$t .= wordWrapIndent(cleanAuthorText($prow), "#  Authors: ", "#           ") . "\n";
 	    $t .= wordWrapIndent(rtrim($prow->abstract), "# Abstract: ", "#           ") . "\n";
 	    if ($prow->topicIds != "") {
@@ -705,7 +705,7 @@ if ($getaction == "topics" && isset($papersel)) {
     if (defval($_REQUEST, "ajax")) {
 	$response = array();
 	while ($row = edb_orow($result))
-	    if ($Me->canViewPaper($row, $Conf))
+	    if ($Me->canViewPaper($row))
 		$response["topics$row->paperId"] = join(", ", $rf->webTopicArray($row->topicIds));
 	cleanAjaxResponse($response, "topics");
 	$response["ok"] = (count($response) > 0);
@@ -715,7 +715,7 @@ if ($getaction == "topics" && isset($papersel)) {
 	$texts = array();
 
 	while ($row = edb_orow($result)) {
-	    if (!$Me->canViewPaper($row, $Conf) || $row->topicIds === "")
+	    if (!$Me->canViewPaper($row) || $row->topicIds === "")
 		continue;
 	    $topicIds = explode(",", $row->topicIds);
 	    $out = array();
@@ -1082,7 +1082,7 @@ if ($pl && $pl->count > 0) {
 	$rf = reviewForm();
 	$theScores = defval($_SESSION, "scores", 1);
 	if ($Me->amReviewer() && $_REQUEST["t"] != "a")
-	    $revViewScore = $Me->viewReviewFieldsScore(null, true, $Conf);
+	    $revViewScore = $Me->viewReviewFieldsScore(null, true);
 	else
 	    $revViewScore = 0;
 	foreach ($rf->fieldOrder as $field)

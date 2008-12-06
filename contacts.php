@@ -160,7 +160,7 @@ if (count($tOpt) > 1) {
 	echo "<td class='pad'>";
 	$rf = reviewForm();
 	$theScores = defval($_SESSION, "pplscores", 1);
-	$revViewScore = $Me->viewReviewFieldsScore(null, true, $Conf);
+	$revViewScore = $Me->viewReviewFieldsScore(null, true);
 	foreach ($rf->fieldOrder as $field)
 	    if ($rf->authorView[$field] > $revViewScore
 		&& isset($rf->options[$field])) {

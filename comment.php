@@ -134,7 +134,7 @@ function watch($newComment) {
 
 	$minic = Contact::makeMinicontact($row);
 	setReviewInfo($prow, $row);
-	if ($minic->canViewComment($prow, $savedCrow, $Conf)
+	if ($minic->canViewComment($prow, $savedCrow)
 	    && $minic->contactId != $Me->contactId) {
 	    require_once("Code/mailtemplate.inc");
 	    Mailer::send($tmpl, $prow, $minic, null, array("commentId" => $savedCrow->commentId));
@@ -249,7 +249,7 @@ function saveResponse($text) {
 }
 
 if (isset($_REQUEST['submit']) && defval($_REQUEST, 'response')) {
-    if (!$Me->canRespond($prow, $crow, $Conf, $whyNot, true)) {
+    if (!$Me->canRespond($prow, $crow, $whyNot, true)) {
 	$Conf->errorMsg(whyNotText($whyNot, "respond"));
 	$useRequest = true;
     } else if (!($text = defval($_REQUEST, 'comment')) && !$crow) {
@@ -263,7 +263,7 @@ if (isset($_REQUEST['submit']) && defval($_REQUEST, 'response')) {
 	watch($newComment);
     }
 } else if (isset($_REQUEST['submit'])) {
-    if (!$Me->canSubmitComment($prow, $crow, $Conf, $whyNot)) {
+    if (!$Me->canSubmitComment($prow, $crow, $whyNot)) {
 	$Conf->errorMsg(whyNotText($whyNot, "comment"));
 	$useRequest = true;
     } else if (!($text = defval($_REQUEST, 'comment')) && !$crow) {
@@ -275,7 +275,7 @@ if (isset($_REQUEST['submit']) && defval($_REQUEST, 'response')) {
 	watch($newComment);
     }
 } else if (isset($_REQUEST['delete']) && $crow) {
-    if (!$Me->canSubmitComment($prow, $crow, $Conf, $whyNot)) {
+    if (!$Me->canSubmitComment($prow, $crow, $whyNot)) {
 	$Conf->errorMsg(whyNotText($whyNot, "comment"));
 	$useRequest = true;
     } else {
@@ -295,13 +295,13 @@ if (isset($_REQUEST["settags"])) {
 
 
 // can we view/edit reviews?
-$viewAny = $Me->canViewReview($prow, null, $Conf, $whyNotView);
-$editAny = $Me->canReview($prow, null, $Conf, $whyNotEdit);
+$viewAny = $Me->canViewReview($prow, null, $whyNotView);
+$editAny = $Me->canReview($prow, null, $whyNotEdit);
 
 
 // can we see any reviews?
 if (!$viewAny && !$editAny) {
-    if (!$Me->canViewPaper($prow, $Conf, $whyNotPaper))
+    if (!$Me->canViewPaper($prow, $whyNotPaper))
 	errorMsgExit(whyNotText($whyNotPaper, "view"));
     if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
 	$Conf->errorMsg("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
@@ -327,7 +327,7 @@ $paperTable->paptabBegin($prow);
 
 if (!$viewAny && !$editAny
     && (!$paperTable->rrow
-	|| !$Me->canViewReview($prow, $paperTable->rrow, $Conf, $whyNot)))
+	|| !$Me->canViewReview($prow, $paperTable->rrow, $whyNot)))
     $paperTable->paptabEndWithReviewMessage();
 else if ($paperTable->mode == "r" && !$paperTable->rrow)
     $paperTable->paptabEndWithReviews();

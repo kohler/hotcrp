@@ -44,7 +44,7 @@ function loadRows() {
     global $prow, $rrows, $Conf, $ConfSiteSuffix, $Me;
     if (!($prow = PaperTable::paperRow($whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
-    if (!$Me->canRequestReview($prow, $Conf, false, $whyNot)) {
+    if (!$Me->canRequestReview($prow, false, $whyNot)) {
 	$wnt = whyNotText($whyNot, "request reviews for");
 	if (!$Conf->headerPrinted)
 	    $Me->goAlert("paper$ConfSiteSuffix?p=$prow->paperId", $wnt);
@@ -383,7 +383,7 @@ function createAnonymousReview() {
 }
 
 if (isset($_REQUEST['add'])) {
-    if (!$Me->canRequestReview($prow, $Conf, true, $whyNot))
+    if (!$Me->canRequestReview($prow, true, $whyNot))
 	$Conf->errorMsg(whyNotText($whyNot, "request reviews for"));
     else if (!isset($_REQUEST["email"]) || !isset($_REQUEST["name"]))
 	$Conf->errorMsg("An email address is required to request a review.");

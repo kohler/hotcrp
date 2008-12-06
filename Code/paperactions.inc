@@ -51,7 +51,7 @@ class PaperActions {
 	global $Conf, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
 	$tag = $Conf->settingText("tag_rank", "");
-	if (!$Me->canSetRank($prow, $Conf)) {
+	if (!$Me->canSetRank($prow)) {
 	    $Conf->errorMsg("You don't have permission to rank this paper.");
 	    $Error["rank"] = true;
 	} else if (isset($_REQUEST["rank"])) {
@@ -87,7 +87,7 @@ class PaperActions {
 	global $Conf, $ConfSiteSuffix, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
 	$tag = $Conf->settingText("tag_rank", "");
-	if (!$Me->canSetRank($prow, $Conf)) {
+	if (!$Me->canSetRank($prow)) {
 	    $Conf->errorMsg("You don't have permission to rank this paper.");
 	    $Error["rank"] = true;
 	} else {
@@ -144,7 +144,7 @@ class PaperActions {
     function setTags($prow) {
 	global $Conf, $Me, $Error, $OK, $forceShow;
 	$ajax = defval($_REQUEST, "ajax", false);
-        if ($Me->canSetTags($prow, $Conf, $forceShow)) {
+        if ($Me->canSetTags($prow, $forceShow)) {
 	    require_once("Code/tags.inc");
 	    setTags($prow->paperId, defval($_REQUEST, "tags", ""), 'p', $Me->privChair);
 	} else
@@ -156,7 +156,7 @@ class PaperActions {
     function tagReport($prow) {
 	global $Conf, $ConfSiteSuffix, $Me, $Error, $OK, $forceShow;
 	$ajax = defval($_REQUEST, "ajax", false);
-	if ($Me->canViewTags($prow, $Conf, $forceShow)) {
+	if ($Me->canViewTags($prow, $forceShow)) {
 	    require_once("Code/tags.inc");
 	    $vt = voteTags();
 	    if (count($vt) > 0) {

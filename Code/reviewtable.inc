@@ -14,7 +14,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
     $actingConflict = ($prow->conflictType > 0 && !$forceShow);
     $effAssistant = $Me->privChair && !$actingConflict;
     $anyScores = false;
-    $nNumeric = $rf->numNumericScores($prow, $Me, $Conf);
+    $nNumeric = $rf->numNumericScores($prow, $Me);
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 
     // actual rows
@@ -24,7 +24,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	if ($rr->contactId == $Me->contactId
 	    || (isset($prow->myReviewId) && $prow->myReviewId == $rr->reviewId))
 	    $foundMyReview++;
-	$canView = $Me->canViewReview($prow, $rr, $Conf, $whyNot);
+	$canView = $Me->canViewReview($prow, $rr, $whyNot);
 
 	// skip unsubmitted reviews
 	if (!$canView && $actingConflict) {
@@ -77,8 +77,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	    $x = "";
 
 	// reviewer identity
-	$showtoken = $rr->reviewToken && $Me->canReview($prow, $rr, $Conf);
-	if (!$Me->canViewReviewerIdentity($prow, $rr, $Conf)) {
+	$showtoken = $rr->reviewToken && $Me->canReview($prow, $rr);
+	if (!$Me->canViewReviewerIdentity($prow, $rr)) {
 	    $t .= ($x ? "<td>$x</td>" : "<td class='empty'></td>");
 	    if ($mode == "assign")
 		$t .= "<td class='empty'></td>";
@@ -113,7 +113,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	if ($mode == "assign")
 	    $t .= "<td class='empty'></td>";
 	else if ($mode != "edit" && $mode != "re")
-	    $t .= $rf->webNumericScoresRow($rr, $prow, $Me, $Conf, $anyScores);
+	    $t .= $rf->webNumericScoresRow($rr, $prow, $Me, $anyScores);
 
 	$t .= "<td></td></tr>\n";
 
@@ -127,12 +127,12 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
     // headers
     $numericHeaders = "";
     if ($anyScores)
-	$numericHeaders = "    <tr><td class='empty' colspan='2'></td>" . $rf->webNumericScoresHeader($prow, $Me, $Conf) . "</tr>\n";
+	$numericHeaders = "    <tr><td class='empty' colspan='2'></td>" . $rf->webNumericScoresHeader($prow, $Me) . "</tr>\n";
 
     // unfinished review notification
     $notetxt = "";
     if ($prow->conflictType >= CONFLICT_AUTHOR && !$effAssistant && $notShown
-	&& $Me->canViewReview($prow, null, $Conf)) {
+	&& $Me->canViewReview($prow, null)) {
 	$qualifier = (count($subrev) + count($nonsubrev) ? " additional" : "");
 	if ($notShown == 1)
 	    $t = "1$qualifier review remains outstanding.";
@@ -164,7 +164,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     $myrr = null;
     if ($rrows)
 	foreach ($rrows as $rr) {
-	    if ($Me->canViewReview($prow, $rr, $Conf, $whyNot))
+	    if ($Me->canViewReview($prow, $rr, $whyNot))
 		$nvisible++;
 	    if ($rr->contactId == $Me->contactId
 		|| (!$myrr && $Me->ownReview($rr)))
@@ -177,10 +177,10 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 	$cids = array();
 	$cnames = array();
 	foreach ($crows as $cr)
-	    if ($Me->canViewComment($prow, $cr, $Conf)) {
+	    if ($Me->canViewComment($prow, $cr)) {
 		$cids[] = $cr->commentId;
 		$n = "<a class='nowrap' href='#comment$cr->commentId'>";
-		if ($Me->canViewCommentIdentity($prow, $cr, $Conf))
+		if ($Me->canViewCommentIdentity($prow, $cr))
 		    $n .= htmlspecialchars(abbreviateName($cr->firstName, $cr->lastName));
 		else
 		    $n .= "anonymous";
@@ -220,12 +220,12 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     else if ($myrr && $rrow != $myrr) {
 	$myrlink = unparseReviewOrdinal($myrr);
 	$a = "<a href='review$ConfSiteSuffix?r=$myrlink$linkExtra'>";
-	if ($Me->canReview($prow, $myrr, $Conf))
+	if ($Me->canReview($prow, $myrr))
 	    $x = $a . $Conf->cacheableImage("review24.png", "[Edit review]", null, "dlimg") . "</a>&nbsp;" . $a . "<b>Edit your review</b></a>";
 	else
 	    $x = $a . $Conf->cacheableImage("review24.png", "[Your review]", null, "dlimg") . "</a>&nbsp;" . $a . "<b>Your review</b></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
-    } else if (!$myrr && !$rrow && $Me->canReview($prow, null, $Conf)) {
+    } else if (!$myrr && !$rrow && $Me->canReview($prow, null)) {
 	$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;m=re$linkExtra'>";
 	$x = $a . $Conf->cacheableImage("review24.png", "[Write review]", null, "dlimg") . "</a>&nbsp;" . $a . "<b>Write review</b></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
@@ -241,7 +241,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 
     // new comment
     if (!$allreviewslink && $mode != "assign" && $mode != "contact"
-	&& $Me->canComment($prow, null, $Conf)) {
+	&& $Me->canComment($prow, null)) {
 	$a = "<a href=\"#commentnew\" onclick='fold(\"addcomment\", 0);return 1'>";
 	$x = $a . $Conf->cacheableImage("comment24.png", "[Add comment]", null, "dlimg") . "</a>&nbsp;" . $a . "Add comment</a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;

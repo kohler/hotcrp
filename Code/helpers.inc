@@ -229,18 +229,17 @@ function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
     return $x;
 }
 
-function paperDownload($prow, $final = false, $conf = null) {
+function paperDownload($prow, $final = false) {
     global $Conf, $Me;
-    $conf = ($conf == null ? $Conf : $conf);
     if ($final && !$prow->finalPaperStorageId)
 	$final = false;
 
     // don't allow PC to download papers in progress
-    if ($prow->timeSubmitted <= 0 && !$Me->canDownloadPaper($prow, $conf))
+    if ($prow->timeSubmitted <= 0 && !$Me->canDownloadPaper($prow))
 	return "";
 
     $mimetype = defval($prow, "mimetype", "");
-    $p = $conf->makeDownloadPath($prow->paperId, $mimetype, $final);
+    $p = $Conf->makeDownloadPath($prow->paperId, $mimetype, $final);
     $finalsuffix = ($final ? "f" : "");
     if ($mimetype == "application/postscript")
 	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("postscript${finalsuffix}24.png", "[PS]", null, "dlimg");
@@ -258,11 +257,9 @@ function paperDownload($prow, $final = false, $conf = null) {
     return $x;
 }
 
-function topicTable($prow, $active = 0, $conf = null) {
+function topicTable($prow, $active = 0) {
     global $Conf;
     $rf = reviewForm();
-    if ($conf == null)
-	$conf = $Conf;
     $paperId = ($prow ? $prow->paperId : -1);
 
     // read from paper row if appropriate

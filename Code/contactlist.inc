@@ -89,7 +89,7 @@ class ContactList extends BaseList {
 	if (self::_normalizeField($fieldId) == self::FIELD_SCORE) {
 	    // XXX scoresOk
 	    $score = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
-	    $revViewScore = $this->contact->viewReviewFieldsScore(null, true, $Conf);
+	    $revViewScore = $this->contact->viewReviewFieldsScore(null, true);
 	    if ($this->rf->authorView[$score] <= $revViewScore)
 		return false;
 	    if (!isset($queryOptions['scores']))

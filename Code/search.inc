@@ -1759,7 +1759,7 @@ class PaperSearch {
 	if ($me->isPC)
 	    $tOpt["req"] = "Your review requests";
 	if ($me->isPC && $Conf->setting("paperlead") > 0
-	    && $me->amDiscussionLead(0, $Conf))
+	    && $me->amDiscussionLead(0))
 	    $tOpt["lead"] = "Your discussion leads";
 	if ($me->isAuthor)
 	    $tOpt["a"] = "Your submissions";

@@ -85,11 +85,11 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     // parse form, store reviews
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
 
-    if (!($req = $rf->parseTextForm($tf, $Conf)))
+    if (!($req = $rf->parseTextForm($tf)))
 	/* error already reported */;
     else if (isset($req['paperId']) && $req['paperId'] != $prow->paperId)
 	$rf->tfError($tf, true, "This review form is for paper #" . $req['paperId'] . ", not paper #$prow->paperId; did you mean to upload it here?  I have ignored the form.<br /><a class='button_small' href='review$ConfSiteSuffix?p=" . $req['paperId'] . "'>Review paper #" . $req['paperId'] . "</a> <a class='button_small' href='offline$ConfSiteSuffix'>General review upload site</a>");
-    else if (!$Me->canSubmitReview($prow, $paperTable->editrrow, $Conf, $whyNot))
+    else if (!$Me->canSubmitReview($prow, $paperTable->editrrow, $whyNot))
 	$rf->tfError($tf, true, whyNotText($whyNot, "review"));
     else {
 	$req['paperId'] = $prow->paperId;
@@ -99,10 +99,10 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 	}
     }
 
-    if (count($tf['err']) == 0 && $rf->parseTextForm($tf, $Conf))
+    if (count($tf['err']) == 0 && $rf->parseTextForm($tf))
 	$rf->tfError($tf, false, "Only the first review form in the file was parsed.  <a href='offline$ConfSiteSuffix'>Upload multiple-review files here.</a>");
 
-    $rf->textFormMessages($tf, $Conf);
+    $rf->textFormMessages($tf);
     loadRows();
 } else if (isset($_REQUEST['uploadForm']))
     $Conf->errorMsg("Select a review form to upload.");
@@ -137,8 +137,8 @@ if (isset($_REQUEST['update']) && $paperTable->editrrow && $paperTable->editrrow
 
 // review rating action
 if (isset($_REQUEST["rating"]) && $paperTable->rrow) {
-    if (!$Me->canRateReview($prow, $paperTable->rrow, $Conf)
-	|| !$Me->canViewReview($prow, $paperTable->rrow, $Conf))
+    if (!$Me->canRateReview($prow, $paperTable->rrow)
+	|| !$Me->canViewReview($prow, $paperTable->rrow))
 	$Conf->errorMsg("You can't rate that review.");
     else if ($Me->contactId == $paperTable->rrow->contactId)
 	$Conf->errorMsg("You can't rate your own review.");
@@ -164,7 +164,7 @@ if (isset($_REQUEST["rating"]) && $paperTable->rrow) {
 
 // update review action
 if (isset($_REQUEST['update'])) {
-    if (!$Me->canSubmitReview($prow, $paperTable->editrrow, $Conf, $whyNot)) {
+    if (!$Me->canSubmitReview($prow, $paperTable->editrrow, $whyNot)) {
 	$Conf->errorMsg(whyNotText($whyNot, "review"));
 	$useRequest = true;
     } else if ($rf->checkRequestFields($_REQUEST, $paperTable->editrrow)) {
@@ -212,11 +212,11 @@ function downloadView($prow, $rr, $editable) {
     global $rf, $Me, $Conf;
     if ($editable && $prow->reviewType > 0
 	&& (!$rr || $rr->contactId == $Me->contactId))
-	return $rf->textForm($prow, $rr, $Me, $Conf, $_REQUEST, true) . "\n";
+	return $rf->textForm($prow, $rr, $Me, $_REQUEST, true) . "\n";
     else if ($editable)
-	return $rf->textForm($prow, $rr, $Me, $Conf, null, true) . "\n";
+	return $rf->textForm($prow, $rr, $Me, null, true) . "\n";
     else
-	return $rf->prettyTextForm($prow, $rr, $Me, $Conf, false) . "\n";
+	return $rf->prettyTextForm($prow, $rr, $Me, false) . "\n";
 }
 
 function downloadForm($editable) {
@@ -230,24 +230,24 @@ function downloadForm($editable) {
     $text = "";
     foreach ($downrrows as $rr)
 	if ($rr->reviewSubmitted
-	    && $Me->canViewReview($prow, $rr, $Conf, $whyNot))
+	    && $Me->canViewReview($prow, $rr, $whyNot))
 	    $text .= downloadView($prow, $rr, $editable);
     foreach ($downrrows as $rr)
 	if (!$rr->reviewSubmitted
-	    && $Me->canViewReview($prow, $rr, $Conf, $whyNot))
+	    && $Me->canViewReview($prow, $rr, $whyNot))
 	    $text .= downloadView($prow, $rr, $editable);
     if (count($downrrows) == 0)
 	$text .= downloadView($prow, null, $editable);
     if (!$editable && !$paperTable->rrow) {
 	$paperTable->resolveComments();
 	foreach ($paperTable->crows as $cr)
-	    if ($Me->canViewComment($prow, $cr, $Conf, $whyNot, true))
-		$text .= $rf->prettyTextComment($prow, $cr, $Me, $Conf) . "\n";
+	    if ($Me->canViewComment($prow, $cr, $whyNot, true))
+		$text .= $rf->prettyTextComment($prow, $cr, $Me) . "\n";
     }
     if (!$text)
 	return $Conf->errorMsg(whyNotText($whyNot, "review"));
     if ($editable)
-	$text = $rf->textFormHeader($Conf, count($downrrows) > 1, $Me->viewReviewFieldsScore($prow, null, $Conf)) . $text;
+	$text = $rf->textFormHeader(count($downrrows) > 1, $Me->viewReviewFieldsScore($prow, null)) . $text;
     downloadText($text, $Opt['downloadPrefix'] . "review-" . $prow->paperId . ".txt", "review form", !$editable);
     exit;
 }
@@ -376,13 +376,13 @@ if (isset($_REQUEST["settags"])) {
 
 
 // can we view/edit reviews?
-$viewAny = $Me->canViewReview($prow, null, $Conf, $whyNotView);
-$editAny = $Me->canReview($prow, null, $Conf, $whyNotEdit);
+$viewAny = $Me->canViewReview($prow, null, $whyNotView);
+$editAny = $Me->canReview($prow, null, $whyNotEdit);
 
 
 // can we see any reviews?
 if (!$viewAny && !$editAny) {
-    if (!$Me->canViewPaper($prow, $Conf, $whyNotPaper))
+    if (!$Me->canViewPaper($prow, $whyNotPaper))
 	errorMsgExit(whyNotText($whyNotPaper, "view"));
     if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
 	$Conf->errorMsg("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
@@ -409,7 +409,7 @@ $paperTable->resolveComments();
 
 if (!$viewAny && !$editAny
     && (!$paperTable->rrow
-	|| !$Me->canViewReview($prow, $paperTable->rrow, $Conf, $whyNot)))
+	|| !$Me->canViewReview($prow, $paperTable->rrow, $whyNot)))
     $paperTable->paptabEndWithReviewMessage();
 else if ($paperTable->mode == "r" && !$paperTable->rrow)
     $paperTable->paptabEndWithReviews();

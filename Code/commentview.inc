@@ -35,7 +35,7 @@ class CommentView {
 	echo "<span class='cmtfn'>";
 	$sep = "";
 	$xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
-	if ($crow && $Me->canViewCommentIdentity($prow, $crow, $Conf)) {
+	if ($crow && $Me->canViewCommentIdentity($prow, $crow)) {
 	    $blind = ($crow->blind && $crow->forAuthors > 0);
 	    echo $sep, ($blind ? "[" : ""), contactHtml($crow), ($blind ? "]" : "");
 	    $sep = $xsep;
@@ -71,11 +71,11 @@ class CommentView {
 	if ($crow && $crow->forAuthors > 1)
 	    return $this->showResponse($prow, $crow, $useRequest, $editMode);
 
-	if ($crow && !$Me->canViewComment($prow, $crow, $Conf))
+	if ($crow && !$Me->canViewComment($prow, $crow))
 	    return;
 	if ($this->mode != 1)
 	    $this->beginTable();
-	if ($editMode && !$Me->canComment($prow, $crow, $Conf))
+	if ($editMode && !$Me->canComment($prow, $crow))
 	    $editMode = false;
 	$this->ncomment++;
 
@@ -102,7 +102,7 @@ class CommentView {
 
 	// Links
 	if ($crow && ($crow->contactId == $Me->contactId || $Me->privChair)
-	    && !$editMode && $Me->canComment($prow, $crow, $Conf)) {
+	    && !$editMode && $Me->canComment($prow, $crow)) {
 	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId'>";
 	    echo "<div class='floatright'>", $a,
 		$Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
@@ -172,7 +172,7 @@ class CommentView {
 	if ($crow)
 	    echo "      <td class='ptb_button'><span class='lgsep'></span><input class='b' type='submit' value='Delete comment' name='delete' /></td>\n";
 	echo "    </tr>\n  </table></div>\n";
-	if (!$Me->timeReview($prow, null, $Conf))
+	if (!$Me->timeReview($prow, null))
 	    echo "<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
 
 	echo "</div></div></form>\n\n";
@@ -182,7 +182,7 @@ class CommentView {
 	global $Conf, $ConfSiteSuffix, $CommentMsg, $Me, $forceShow, $linkExtra;
 
 	$this->endTable();
-	if ($editMode && !$Me->canRespond($prow, $crow, $Conf)
+	if ($editMode && !$Me->canRespond($prow, $crow)
 	    && ($crow || !$Me->privChair))
 	    $editMode = false;
 	$this->nresponse++;
@@ -208,7 +208,7 @@ class CommentView {
 
 	// Links
 	if ($crow && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair)
-	    && !$editMode && $Me->canRespond($prow, $crow, $Conf)) {
+	    && !$editMode && $Me->canRespond($prow, $crow)) {
 	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId'>";
 	    echo "<div class='floatright'>", $a,
 		$Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
@@ -245,7 +245,7 @@ has passed.  Please keep the response short and to the point",
 	if (!$editMode) {
 	    if ($Me->privChair && $crow->forReviewers == 0)
 		echo "<i>The <a href='comment$ConfSiteSuffix?c=$crow->commentId$linkExtra'>authors' response</a> is not yet ready for reviewers to view.</i>";
-	    else if (!$Me->canViewComment($prow, $crow, $Conf))
+	    else if (!$Me->canViewComment($prow, $crow))
 		echo "<i>The authors' response is not yet ready for reviewers to view.</i>";
 	    else
 		echo htmlWrapText(htmlspecialchars($crow->comment));

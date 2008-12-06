@@ -55,14 +55,14 @@ class PaperTable {
 	$ms = array();
 	if (isset($_REQUEST["reviewId"]))
 	    $ms["re"] = true;
-	if ($Me->canViewReview($prow, null, $Conf))
+	if ($Me->canViewReview($prow, null))
 	    $ms["r"] = true;
-	if ($Me->canReview($prow, null, $Conf))
+	if ($Me->canReview($prow, null))
 	    $ms["re"] = true;
 	if ($prow->conflictType >= CONFLICT_AUTHOR
 	    && ($Conf->timeFinalizePaper($prow) || $prow->timeSubmitted <= 0))
 	    $ms["pe"] = true;
-	if ($Me->canViewPaper($prow, $Conf))
+	if ($Me->canViewPaper($prow))
 	    $ms["p"] = true;
 	if ($prow->conflictType >= CONFLICT_AUTHOR
 	    || $Me->actChair($prow, true))
@@ -256,7 +256,7 @@ class PaperTable {
 
 	// download marker
 	$d = "";
-	if ($Me->canDownloadPaper($prow, $Conf)) {
+	if ($Me->canDownloadPaper($prow)) {
 	    if ($prow->outcome > 0 && $prow->finalPaperStorageId > 0
 		&& $Conf->collectFinalPapers()) {
 		$submissionMimetype = null;
@@ -479,7 +479,7 @@ class PaperTable {
     function paptabAuthors($prow) {
 	global $Conf, $Me, $forceShow;
 
-	$viewable = $Me->canViewAuthors($prow, $Conf, $forceShow);
+	$viewable = $Me->canViewAuthors($prow, $forceShow);
 	if (!$viewable && !$Me->actChair($prow, true)) {
 	    echo $this->papt("authorInformation", "Authors"),
 		"<div class='papv'><i>Hidden for blind review</i></div>\n\n";
@@ -578,7 +578,7 @@ class PaperTable {
 
     function paptabTopicsOptions($prow, $showAllOptions) {
 	global $Conf;
-	$topicdata = topicTable($prow, -1, $Conf);
+	$topicdata = topicTable($prow, -1);
 	$optiondata = "";
 	if (($options = paperOptions())) {
 	    preg_match_all('/(\d+)#(\d+)/', defval($prow, "optionIds", ""), $m);
@@ -731,7 +731,7 @@ class PaperTable {
 	global $Conf;
 	assert($this->editable);
 	$topicMode = (int) $this->useRequest;
-	if (($topicTable = topicTable($prow, $topicMode, $Conf))) {
+	if (($topicTable = topicTable($prow, $topicMode))) {
 	    echo $this->papt("topics", "Topics"),
 		"<div class='paphint'>Select any topics that apply to your paper.</div>",
 		"<div class='papv'>", $topicTable, "</div>\n\n";
@@ -931,7 +931,7 @@ class PaperTable {
 	    // Note that tags MUST NOT contain HTML special characters.
 	    require_once("tags.inc");
 	    $tx = tagsToText($prow, true, $Me);
-	    $editable = $site && $Me->canSetTags($prow, $Conf, $forceShow);
+	    $editable = $site && $Me->canSetTags($prow, $forceShow);
 
 	    if ($editable)
 		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div id='foldtags' class='", (isset($Error["tags"]) ? "foldo" : "foldc"), " inform'><input type='hidden' name='settags' value='1' />";
@@ -1216,9 +1216,9 @@ class PaperTable {
     function _papstrip() {
 	global $Conf, $ConfSiteSuffix, $Me, $forceShow, $linkExtra;
 	$prow = $this->prow;
-	if ($Me->canViewTags($prow, $Conf, $forceShow))
+	if ($Me->canViewTags($prow, $forceShow))
 	    $this->papstripTags($prow, "review$ConfSiteSuffix?p=$prow->paperId$linkExtra");
-	if ($Me->canSetRank($prow, $Conf))
+	if ($Me->canSetRank($prow))
 	    $this->papstripRank($prow);
 	$this->papstripWatch($prow);
 	if (($Me->actChair($prow) || $prow->conflictType >= CONFLICT_AUTHOR)
@@ -1234,7 +1234,7 @@ class PaperTable {
 	    $this->papstripOutcomeSelector($prow, $foldDecisions);
 	if ($Me->actPC($prow))
 	    $this->papstripLead($prow, $foldDecisions || $this->mode == "assign");
-	if ($Me->actPC($prow) || $Me->canViewDecision($prow, $Conf))
+	if ($Me->actPC($prow) || $Me->canViewDecision($prow))
 	    $this->papstripShepherd($prow, $foldDecisions || $this->mode == "assign", $foldShepherd);
 
 	if ($Me->actPC($prow) && $Conf->timePCReviewPreferences())
@@ -1247,8 +1247,8 @@ class PaperTable {
 	$paperId = ($prow ? $prow->paperId : "new");
 
 	// what actions are supported?
-	$canEdit = ($prow && $Me->canEditPaper($prow, $Conf));
-	$canReview = ($prow && $Me->canReview($prow, null, $Conf));
+	$canEdit = ($prow && $Me->canEditPaper($prow));
+	$canReview = ($prow && $Me->canReview($prow, null));
 	$canAssign = ($prow && $Me->actChair($prow));
 	$canHome = ($prow && ($canEdit || $canAssign || $this->mode == "contact"));
 
@@ -1333,7 +1333,7 @@ class PaperTable {
 		    . "</a>&nbsp;" . $a . "View</a>";
 	    }
 	    if ($prow && $this->mode != "assign" && $this->mode != "pe"
-		&& $Me->canEditPaper($prow, $Conf)) {
+		&& $Me->canEditPaper($prow)) {
 		$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;m=pe$linkExtra'>";
 		if ($t != "")
 		    $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
@@ -1482,7 +1482,7 @@ class PaperTable {
 	    $rf = reviewForm();
 	$prow = $this->prow;
 
-	if ($forceShow && !$Me->canViewReview($prow, null, $Conf, $fakeWhyNotView, true))
+	if ($forceShow && !$Me->canViewReview($prow, null, $fakeWhyNotView, true))
 	    $this->_paptabSepContaining("<div class='inpapcc'>"
 		. "You have used administrator privileges to view and edit "
 		. "reviews for this paper. (<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 0))) . "\">Unprivileged view</a>)"
@@ -1493,7 +1493,7 @@ class PaperTable {
 	    return;
 
 	// text format link
-	if ($Me->canViewReview($prow, null, $Conf)
+	if ($Me->canViewReview($prow, null)
 	    && count($this->rrows) + count($this->crows) > 0) {
 	    $a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;m=r&amp;text=1$linkExtra'>";
 	    echo "<div class='relative'>",
@@ -1510,7 +1510,7 @@ class PaperTable {
 		$rf->show($prow, $this->rrows, $rr, $opt);
 	foreach ($this->rrows as $rr)
 	    if (!$rr->reviewSubmitted && $rr->reviewModified > 0
-		&& $Me->canViewReview($prow, $rr, $Conf))
+		&& $Me->canViewReview($prow, $rr))
 		$rf->show($prow, $this->rrows, $rr, $opt);
     }
 
@@ -1520,7 +1520,7 @@ class PaperTable {
 	$prow = $this->prow;
 
 	// show comments as well
-	if ((count($this->mycrows) || $Me->canComment($prow, null, $Conf)
+	if ((count($this->mycrows) || $Me->canComment($prow, null)
 	     || $Conf->timeAuthorRespond()) && !$this->allreviewslink) {
 	    require_once("Code/commentview.inc");
 	    $cv = new CommentView;
@@ -1536,7 +1536,7 @@ class PaperTable {
 	    }
 
 	    // comment editing
-	    if ($Me->canComment($prow, null, $Conf))
+	    if ($Me->canComment($prow, null))
 		$cv->show($prow, null, $editablecid == "new" && $useRequest,
 			  true, $editablecid != "new");
 	    if (!$cv->nresponse && $Conf->timeAuthorRespond()
@@ -1551,7 +1551,7 @@ class PaperTable {
     function paptabEndWithReviewMessage() {
 	global $Conf, $ConfSiteSuffix, $Me, $linkExtra;
 
-	if (!$Me->canViewReview($this->prow, null, $Conf, $whyNot)
+	if (!$Me->canViewReview($this->prow, null, $whyNot)
 	    && $this->rrows)
 	    $this->_paptabSepContaining("You can't see the reviews for this paper.  " . whyNotText($whyNot, "review"));
 
@@ -1570,7 +1570,7 @@ class PaperTable {
 	$actChair = $Me->actChair($prow);
 
 	// review messages
-	$viewall = $Me->canViewReview($prow, null, $Conf, $whyNot, true);
+	$viewall = $Me->canViewReview($prow, null, $whyNot, true);
 	$msgs = array();
 	if (!$this->rrow && $this->prow->reviewType <= 0)
 	    $msgs[] = "You haven't been assigned to review this paper, but you can review it anyway.";
@@ -1605,7 +1605,7 @@ class PaperTable {
 		$opt["editmessage"] = "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for changing reviews has passed, so the review can no longer be changed.$override";
 	    else
 		$opt["editmessage"] = "The site is not open for reviewing, so the review cannot be changed.$override";
-	} else if (!$Me->canReview($prow, $this->editrrow, $Conf))
+	} else if (!$Me->canReview($prow, $this->editrrow))
 	    $opt["edit"] = false;
 
 	$rf->show($prow, $this->rrows, $this->editrrow, $opt);
@@ -1709,9 +1709,9 @@ class PaperTable {
 
 	if (!($prow = $Conf->paperRow($sel, $Me, $whyNot)))
 	    return null;
-	if (!$Me->canViewPaper($prow, $Conf, $whyNot)
+	if (!$Me->canViewPaper($prow, $whyNot)
 	    || (!isset($_REQUEST["paperId"])
-		&& !$Me->canViewReview($prow, null, $Conf))) {
+		&& !$Me->canViewReview($prow, null))) {
 	    // Don't allow querier to probe review/comment<->paper mapping
 	    if (!isset($_REQUEST["paperId"]))
 		$whyNot = array("invalidId" => "paper");
@@ -1763,7 +1763,7 @@ class PaperTable {
 		where paperId=" . $this->prow->paperId . " order by commentId");
 	    $this->mycrows = array();
 	    foreach ($this->crows as $crow)
-		if ($Me->canViewComment($this->prow, $crow, $Conf))
+		if ($Me->canViewComment($this->prow, $crow))
 		    $this->mycrows[] = $crow;
 	} else
 	    $this->crows = $this->mycrows = array();
@@ -1773,14 +1773,14 @@ class PaperTable {
 	global $Conf, $Me;
 	$prow = $this->prow;
 	if ($this->mode == "re" && $this->rrow
-	    && !$Me->canReview($prow, $this->rrow, $Conf, $whyNot, false))
+	    && !$Me->canReview($prow, $this->rrow, $whyNot, false))
 	    $this->mode = "r";
 	if ($this->mode == "r" && $this->rrow
-	    && !$Me->canViewReview($prow, $this->rrow, $Conf, $whyNot))
+	    && !$Me->canViewReview($prow, $this->rrow, $whyNot))
 	    $this->rrow = $this->editrrow = null;
 	if ($this->mode == "r" && !$this->rrow && !$this->editrrow
-	    && !$Me->canViewReview($prow, $this->rrow, $Conf, $whyNot)
-	    && $Me->canReview($prow, $this->rrow, $Conf, $whyNot, false))  {
+	    && !$Me->canViewReview($prow, $this->rrow, $whyNot)
+	    && $Me->canReview($prow, $this->rrow, $whyNot, false))  {
 	    $this->mode = "re";
 	    foreach ($this->rrows as $rr)
 		if ($rr->contactId == $Me->contactId

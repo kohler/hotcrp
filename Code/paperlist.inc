@@ -185,7 +185,7 @@ class PaperList extends BaseList {
 	    if (!$this->scoresOk)
 		return false;
 	    $score = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
-	    $revViewScore = $this->contact->viewReviewFieldsScore(null, true, $Conf);
+	    $revViewScore = $this->contact->viewReviewFieldsScore(null, true);
 	    if ($this->rf->authorView[$score] <= $revViewScore)
 		return false;
 	    if (!isset($queryOptions['scores']))
@@ -370,7 +370,7 @@ class PaperList extends BaseList {
 	    $scoresort = defval($_SESSION, "scoresort", $defaultScoreSort);
 	    foreach ($rows as $row)
 		if (!$this->contact->privChair
-		    && !$this->contact->canViewReview($row, null, $Conf))
+		    && !$this->contact->canViewReview($row, null))
 		    $this->sortInfo[$row->paperId] = self::LOTSAZEROS;
 		else
 		    $this->_setSortRow($row, $scoreName, $scoreMax, $scoresort);
@@ -494,7 +494,7 @@ class PaperList extends BaseList {
 	    $finaltitle = "Final copy";
 	}
 	$finalsuffix = ($final ? "f" : "");
-	if ($row->size == 0 || !$this->contact->canDownloadPaper($row, $Conf))
+	if ($row->size == 0 || !$this->contact->canDownloadPaper($row))
 	    return "";
 	else if ($row->mimetype == "application/pdf")
 	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $final) . "\">" . $Conf->cacheableImage("pdf$finalsuffix.png", "[PDF]", $finaltitle) . "</a>";
@@ -807,7 +807,7 @@ class PaperList extends BaseList {
 	    }
 	    return $text;
 	case self::FIELD_SCORE:
-	    if ($this->contact->privChair || $this->contact->canViewReview($row, null, $Conf)) {
+	    if ($this->contact->privChair || $this->contact->canViewReview($row, null)) {
 		$scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
 		$itemName = "${scoreName}Scores";
 		if ($row->$itemName)
@@ -842,7 +842,7 @@ class PaperList extends BaseList {
 		return false;
 	    }
 	case self::FIELD_TAGS:
-	    if (!$this->contact->canViewTags($row, $Conf))
+	    if (!$this->contact->canViewTags($row))
 		return "";
 	    if ($this->folds->tags === false) {
 		if (($t = $row->paperTags) !== "")
@@ -868,7 +868,7 @@ class PaperList extends BaseList {
 	    }
 	case self::FIELD_SHEPHERD:
 	    if ((!$this->contact->actPC($row, true)
-		 && !$this->contact->canViewDecision($row, $Conf))
+		 && !$this->contact->canViewDecision($row))
 		|| !$row->shepherdContactId)
 		return "";
 	    if ($this->folds->shepherd === false) {

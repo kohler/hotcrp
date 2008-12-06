@@ -634,7 +634,7 @@ class Mailer {
 	    if (reviewBlind($this->rrow)
 		&& defval($this->contact, "privChair") <= 0
 		&& (!isset($this->contact->canViewReviewerIdentity)
-		    || !$this->contact->canViewReviewerIdentity($this->row, $this->rrow, $Conf, true))) {
+		    || !$this->contact->canViewReviewerIdentity($this->row, $this->rrow, true))) {
 		if ($isbool)
 		    return false;
 		else if ($this->expansionType == self::EXPAND_EMAIL)
@@ -671,7 +671,7 @@ class Mailer {
 	    $text = "";
 	    while (($row = edb_orow($result)))
 		if ($row->reviewSubmitted)
-		    $text .= $rf->prettyTextForm($row, $row, $contact, $Conf, true) . "\n";
+		    $text .= $rf->prettyTextForm($row, $row, $contact, true) . "\n";
 	    return $text;
 	} else
 	    return "";
@@ -702,8 +702,8 @@ class Mailer {
 	$Conf->settings["au_seerev"] = AU_SEEREV_ALWAYS;
 	$crows = $Conf->commentRows($q . "\n\t\torder by commentId");
 	foreach ($crows as $crow)
-	    if ($contact->canViewComment($this->row, $crow, $Conf, $whyNot, true))
-		$text .= $rf->prettyTextComment($this->row, $crow, $contact, $Conf) . "\n";
+	    if ($contact->canViewComment($this->row, $crow, $whyNot, true))
+		$text .= $rf->prettyTextComment($this->row, $crow, $contact) . "\n";
 	$Conf->settings["au_seerev"] = $old_au_seerev;
 	return $text;
     }

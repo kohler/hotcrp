@@ -16,8 +16,8 @@ if (defval($_REQUEST, "post") && !count($_POST))
 
 // download blank review form action
 if (isset($_REQUEST['downloadForm'])) {
-    $text = $rf->textFormHeader($Conf, "blank")
-	. $rf->textForm(null, null, $Me, $Conf, null) . "\n";
+    $text = $rf->textFormHeader("blank")
+	. $rf->textForm(null, null, $Me, null) . "\n";
     downloadText($text, $Opt['downloadPrefix'] . "review.txt", "review form");
     exit;
 }
@@ -26,9 +26,9 @@ if (isset($_REQUEST['downloadForm'])) {
 // upload review form action
 if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Conf)) {
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
-    while (($req = $rf->parseTextForm($tf, $Conf))) {
+    while (($req = $rf->parseTextForm($tf))) {
 	if (($prow = $Conf->paperRow($req['paperId'], $Me->contactId, $whyNot))
-	    && $Me->canSubmitReview($prow, null, $Conf, $whyNot)) {
+	    && $Me->canSubmitReview($prow, null, $whyNot)) {
 	    $rrow = $Conf->reviewRow(array('paperId' => $prow->paperId, 'contactId' => $Me->contactId));
 	    if ($rf->checkRequestFields($req, $rrow, $tf)) {
 		$result = $rf->saveRequest($req, $rrow, $prow);
@@ -38,7 +38,7 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 	} else
 	    $rf->tfError($tf, true, whyNotText($whyNot, "review"));
     }
-    $rf->textFormMessages($tf, $Conf);
+    $rf->textFormMessages($tf);
     // Uploading forms may have completed the reviewer's task; check that
     // by revalidating their contact.
     $Me->validated = false;
@@ -56,8 +56,8 @@ function saveTagIndexes($tag, &$settings, &$titles, &$linenos, &$errors) {
     while (($row = edb_orow($result)))
 	if ($settings[$row->paperId] !== null
 	    && !($settingrank
-		 ? $Me->canSetRank($row, $Conf, true)
-		 : $Me->canSetTags($row, $Conf))) {
+		 ? $Me->canSetRank($row, true)
+		 : $Me->canSetTags($row))) {
 	    $errors[$linenos[$row->paperId]] = "You cannot rank paper #$row->paperId. (" . ($Me->isPC?"PC":"npc") . $Me->contactId . $row->conflictType . ")";
 	    unset($settings[$row->paperId]);
 	} else if ($titles[$row->paperId] !== ""
@@ -233,7 +233,7 @@ if ($Conf->setting("tag_rank") && $Me->amReviewer()) {
 echo "</table>\n";
 
 
-if (($text = $rf->webGuidanceRows($Me->viewReviewFieldsScore(null, null, $Conf),
+if (($text = $rf->webGuidanceRows($Me->viewReviewFieldsScore(null, null),
 				  " initial")))
     echo "<div class='g'></div>
 

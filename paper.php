@@ -116,7 +116,7 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
 
 // withdraw and revive actions
 if (isset($_REQUEST["withdraw"]) && !$newPaper) {
-    if ($Me->canWithdrawPaper($prow, $Conf, $whyNot)) {
+    if ($Me->canWithdrawPaper($prow, $whyNot)) {
 	$Conf->qe("update Paper set timeWithdrawn=" . time() . ", timeSubmitted=if(timeSubmitted>0,-100,0) where paperId=$paperId", "while withdrawing paper");
 	$Conf->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$paperId", "while withdrawing paper");
 	$Conf->updatePapersubSetting(false);
@@ -150,7 +150,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	$Conf->errorMsg(whyNotText($whyNot, "withdraw"));
 }
 if (isset($_REQUEST["revive"]) && !$newPaper) {
-    if ($Me->canRevivePaper($prow, $Conf, $whyNot)) {
+    if ($Me->canRevivePaper($prow, $whyNot)) {
 	$Conf->qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100," . time() . ",0) where paperId=$paperId", "while reviving paper");
 	$Conf->qe("update PaperReview set reviewNeedsSubmit=1 where paperId=$paperId and reviewSubmitted is null", "while reviving paper");
 	$Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . ") set PaperReview.reviewNeedsSubmit=-1 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY, "while reviving paper");
@@ -518,13 +518,13 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"])) {
     // check deadlines
     if ($newPaper)
 	// we know that canStartPaper implies canFinalizePaper
-	$ok = $Me->canStartPaper($Conf, $whyNot);
+	$ok = $Me->canStartPaper($whyNot);
     else if (isset($_REQUEST["submitfinal"]))
-	$ok = $Me->canSubmitFinalPaper($prow, $Conf, $whyNot);
+	$ok = $Me->canSubmitFinalPaper($prow, $whyNot);
     else {
-	$ok = $Me->canUpdatePaper($prow, $Conf, $whyNot);
+	$ok = $Me->canUpdatePaper($prow, $whyNot);
 	if (!$ok && isset($_REQUEST["submit"]) && requestSameAsPaper($prow))
-	    $ok = $Me->canFinalizePaper($prow, $Conf, $whyNot);
+	    $ok = $Me->canFinalizePaper($prow, $whyNot);
     }
 
     // actually update

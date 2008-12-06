@@ -493,7 +493,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	$sep = $xsep;
     }
     if ($Me->isPC && $Conf->setting("paperlead") > 0
-	&& $Me->amDiscussionLead(0, $Conf)) {
+	&& $Me->amDiscussionLead(0)) {
 	echo $sep, "<a href=\"search$ConfSiteSuffix?q=&amp;t=lead\" class='nowrap'>Your discussion leads</a>";
 	$sep = $xsep;
     }
