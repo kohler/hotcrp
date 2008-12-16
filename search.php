@@ -1146,11 +1146,14 @@ if ($pl && $pl->count > 0) {
 	    if ($rf->authorView[$field] > $revViewScore
 		&& isset($rf->options[$field]))
 		echo ajaxDisplayer($field, htmlspecialchars($rf->shortName[$field]));
+	$onchange = "highlightUpdate(\"redisplay\")";
+	if ($Me->privChair)
+	    $onchange .= ";foldplinfo_extra()";
 	echo "<div class='g'></div></td>
     <td><input id='redisplay' class='b' type='submit' name='redisplay' value='Redisplay' /></td>
   </tr><tr>
     <td colspan='2'>Sort method: &nbsp;",
-	    tagg_select("scoresort", $scoreSorts, $_SESSION["scoresort"], array("onchange" => "highlightUpdate(\"redisplay\")", "id" => "scoresort")),
+	    tagg_select("scoresort", $scoreSorts, $_SESSION["scoresort"], array("onchange" => $onchange, "id" => "scoresort")),
 	    " &nbsp; <a href='help$ConfSiteSuffix?t=scoresort' class='hint'>What is this?</a>";
 
 	// "Save display options"
