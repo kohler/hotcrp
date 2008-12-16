@@ -161,7 +161,10 @@ if ($getaction == "authors" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $matchPreg = PaperList::sessionMatchPreg("authorInformation");
     $full = defval($_REQUEST, "full", 0);
 
-    $pldisplay = defval($_SESSION, "pldisplay", "");
+    if (isset($_SESSION["pldisplay"]))
+	$pldisplay = $_SESSION["pldisplay"];
+    else
+	$pldisplay = $Conf->settingText("pldisplay_default", chr(PaperList::FIELD_SCORE));
     str_replace(chr($paperListFolds["aufull"]), "", $pldisplay);
     if ($full)
 	$pldisplay .= chr($paperListFolds["aufull"]);
@@ -889,11 +892,6 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 }
 
 
-// exit early if Ajax
-if (defval($_REQUEST, "ajax"))
-    $Conf->ajaxExit(array("response" => ""));
-
-
 // set fields to view
 if (isset($_REQUEST["redisplay"])) {
     $_SESSION["pldisplay"] = "";
@@ -902,11 +900,39 @@ if (isset($_REQUEST["redisplay"])) {
 	    $_SESSION["pldisplay"] .= chr($v);
 }
 if (!isset($_SESSION["pldisplay"]))
-    $_SESSION["pldisplay"] = chr(PaperList::FIELD_SCORE);
+    $_SESSION["pldisplay"] = $Conf->settingText("pldisplay_default", chr(PaperList::FIELD_SCORE));
 if (defval($_REQUEST, "scoresort") == "M")
     $_REQUEST["scoresort"] = "C";
 if (isset($_REQUEST["scoresort"]) && isset($scoreSorts[$_REQUEST["scoresort"]]))
     $_SESSION["scoresort"] = $_REQUEST["scoresort"];
+if (!isset($_SESSION["scoresort"]))
+    $_SESSION["scoresort"] = $Conf->settingText("scoresort_default", $defaultScoreSort);
+
+
+// save display options
+if (isset($_REQUEST["savedisplayoptions"]) && $Me->privChair) {
+    $while = "while saving display options";
+    if ($_SESSION["pldisplay"] != chr(PaperList::FIELD_SCORE)) {
+	$pldisplay = str_split($_SESSION["pldisplay"]);
+	sort($pldisplay);
+	$_SESSION["pldisplay"] = join("", $pldisplay);
+	$Conf->qe("insert into Settings (name, value, data) values ('pldisplay_default', 1, '" . sqlq($_SESSION["pldisplay"]) . "') on duplicate key update data=values(data)", $while);
+    } else
+	$Conf->qe("delete from Settings where name='pldisplay_default'", $while);
+    if ($_SESSION["scoresort"] != "C")
+	$Conf->qe("insert into Settings (name, value, data) values ('scoresort_default', 1, '" . sqlq($_SESSION["scoresort"]) . "') on duplicate key update data=values(data)", $while);
+    else
+	$Conf->qe("delete from Settings where name='scoresort_default'", $while);
+    if ($OK && defval($_REQUEST, "ajax"))
+	$Conf->ajaxExit(array("ok" => 1));
+    else if ($OK)
+	$Conf->confirmMsg("Display options saved.");
+}
+
+
+// exit early if Ajax
+if (defval($_REQUEST, "ajax"))
+    $Conf->ajaxExit(array("response" => ""));
 
 
 // search
@@ -938,7 +964,7 @@ $tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
 
 // Prepare more display options
 $ajaxDisplayChecked = false;
-$pldisplay = defval($_SESSION, "pldisplay", "");
+$pldisplay = $_SESSION["pldisplay"];
 
 function ajaxDisplayer($type, $title, $disabled = false) {
     global $ajaxDisplayChecked, $paperListFolds, $pldisplay;
@@ -1051,7 +1077,7 @@ echo "</div>";
 if ($pl && $pl->count > 0) {
     echo "<div class='tld3'>";
 
-    echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div>\n";
+    echo "<form id='foldredisplay' class='fold5c' method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div>\n";
     foreach (array("q", "qx", "qo", "qt", "t", "sort") as $x)
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
@@ -1073,6 +1099,8 @@ if ($pl && $pl->count > 0) {
 	echo " onclick='fold(\"pl\",!this.checked,1)";
 	if ($viewAllAuthors)
 	    echo ";fold(\"pl\",!this.checked,2)";
+	if ($Me->privChair)
+	    echo ";foldplinfo_extra()";
 	echo "' />&nbsp;Authors<br />\n";
     }
     if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair && !$viewAllAuthors) {
@@ -1083,7 +1111,10 @@ if ($pl && $pl->count > 0) {
 	    echo " disabled='disabled'";
 	if (strpos($pldisplay, "\2") !== false)
 	    echo " checked='checked'";
-	echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;",
+	echo " onclick='fold(\"pl\",!this.checked,2)";
+	if ($Me->privChair)
+	    echo ";foldplinfo_extra()";
+	echo "' />&nbsp;",
 	    ($Conf->blindSubmission() == BLIND_OPTIONAL ? "Anonymous authors" : "Authors"),
 	    "<br />\n";
     }
@@ -1118,9 +1149,32 @@ if ($pl && $pl->count > 0) {
 	echo "<div class='g'></div></td>
     <td><input id='redisplay' class='b' type='submit' name='redisplay' value='Redisplay' /></td>
   </tr><tr>
-    <td colspan='2'>Sort scores by: &nbsp;",
-	    tagg_select("scoresort", $scoreSorts, defval($_SESSION, "scoresort", $defaultScoreSort), array("onchange" => "highlightUpdate(\"redisplay\")")),
-	    " &nbsp; <a href='help$ConfSiteSuffix?t=scoresort' class='hint'>What is this?</a></td>
+    <td colspan='2'>Sort method: &nbsp;",
+	    tagg_select("scoresort", $scoreSorts, $_SESSION["scoresort"], array("onchange" => "highlightUpdate(\"redisplay\")", "id" => "scoresort")),
+	    " &nbsp; <a href='help$ConfSiteSuffix?t=scoresort' class='hint'>What is this?</a>";
+
+	// "Save display options"
+	if ($Me->privChair) {
+	    echo "\n<div class='g'></div>
+    <a class='fx5' href='javascript:",
+		"e(\"scoresortsave\").value=e(\"scoresort\").value;",
+		"void Miniajax.submit(\"savedisplayoptionsform\")'>",
+		"Make these display options the default</a>",
+		" <span id='savedisplayoptionsformcheck'></span>";
+	    $Conf->footerStuff .= "<form id='savedisplayoptionsform' method='post' action='search$ConfSiteSuffix?savedisplayoptions=1' enctype='multipart/form-data' accept-charset='UTF-8'>"
+		. "<div><input id='scoresortsave' type='hidden' name='scoresort' value='" . $_SESSION["scoresort"] . "' /></div>"
+		. "</form>"
+		. "<script type='text/javascript'>function foldplinfo_extra() { fold(\"redisplay\", 0, 5); }";
+	    // strings might be in different orders, so sort before comparing
+	    $pld = str_split($Conf->settingText("pldisplay_default", chr(PaperList::FIELD_SCORE)));
+	    sort($pld);
+	    if ($_SESSION["pldisplay"] != join("", $pld)
+		|| $_SESSION["scoresort"] != $Conf->settingText("scoresort_default", $defaultScoreSort))
+		$Conf->footerStuff .= " foldplinfo_extra();";
+	    $Conf->footerStuff .= "</script>";
+	}
+
+	echo "</td>
   </tr></table></td>\n";
     } else
 	echo "<td><input id='redisplay' class='b' type='submit' name='redisplay' value='Redisplay' /></td>\n";
@@ -1148,7 +1202,7 @@ if ($pl) {
     echo "<div class='maintabsep'></div>\n\n<div class='searchresult'>";
 
     if ($pl->anySelector)
-	echo "<form method='post' action=\"", htmlspecialchars(selfHref(array("selector" => 1), "search$ConfSiteSuffix")), "\" accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck();'><div class='inform'>\n",
+	echo "<form method='post' action=\"", htmlspecialchars(selfHref(array("selector" => 1), "search$ConfSiteSuffix")), "\" enctype='multipart/formdata' accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck();'><div class='inform'>\n",
 	    "<input id='defaultact' type='hidden' name='defaultact' value='' />",
 	    "<input class='hidden' type='submit' name='default' value='1' />";
 

@@ -376,7 +376,7 @@ class PaperList extends BaseList {
 		    $this->sortInfo[$row->paperId] = self::LOTSAZEROS;
 		else
 		    $this->_setSortRow($row, $scoreName, $scoreMax, $scoresort);
-	    usort($rows, array($this, ($scoresort == "M" || $scoresort == "Y" ? "_sortScore" : "_sortScoreNum")));
+	    usort($rows, array($this, ($scoresort == "M" || $scoresort == "C" || $scoresort == "Y" ? "_sortScore" : "_sortScoreNum")));
 	    break;
 	}
 	return $rows;

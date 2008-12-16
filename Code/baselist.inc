@@ -49,7 +49,7 @@ class BaseList {
 	if ($scoresort == "Y" && strlen($scoreName) > 6
 	    && ($v = defval($row, substr($scoreName, 0, -6))) > 0)
 	    $this->sortInfo[$row->paperId] = ":" . $v;
-	else if ($scoresort == "M" || $scoresort == "Y") {
+	else if ($scoresort == "M" || $scoresort == "C" || $scoresort == "Y") {
 	    $x = array();
 	    foreach (preg_split('/[\s,]+/', $row->$scoreName) as $i)
 		if (($i = cvtint($i)) > 0)
