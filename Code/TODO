@@ -201,6 +201,19 @@
   as many scores drawn from a normal distribution as they have papers, and
   then can only use each score once. [Jon Crowcroft]
 
+* Someone on the NSDI noted that they encountered a race between their
+  (somewhat tedious) filling out of their review preferences (i.e.,
+  assigning integer values to each submitted paper) and the PC chair's
+  use of the auto-assigner.
+
+  So PC member X starts a lengthy process of filling in his prefs, then
+  discovers that sometime in the middle of this, HotCRP has captured his
+  preferences to that point and has ignored the rest of his work.
+
+  Suggestion: have the reviewprefs page somehow indicate to the user
+  (perhaps by changing the background color to something lurid?) that
+  the reviews have already been assigned. [Jeff Mogul]
+
 
 - static HTML snapshot
 

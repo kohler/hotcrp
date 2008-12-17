@@ -1,5 +1,27 @@
 HotCRP NEWS
 
+Version 2.27   16.Dec.2008
+
+* Search results: Add tons of Display options, load them all by Ajax, and
+  chairs gain a "Make these options the default" link.
+
+* Search: Fix searches that mix letters and non-letters.
+
+* Mail tool: Add "Cc" and "Reply-To" fields accessible to chairs.
+
+* Preliminary multiconference support: run multiple conference sites from a
+  single installation.  See README.
+
+* Paper view improvements.
+
+* Support older pdftohtml 0.36 programs (Anton Cohen).
+
+* You can choose the time zone and request 24-hour time.
+
+* Thanks to Anton Cohen, Benjamin Pierce, Alan Parry, Margo Seltzer, Mark
+  Gebhart, Paolo Faraboschi, John Wilkes, Dina Papagiannaki, and others.
+
+
 Version 2.26   27.Oct.2008
 
 * Submitters can be forced to define what type of conflict a PC member has.
