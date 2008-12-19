@@ -709,6 +709,21 @@ function foldplinfo(dofold, foldnum, type, which) {
     }
 }
 
+function savedisplayoptions() {
+    var elt = e("savedisplayoptionsformcheck");
+    e("scoresortsave").value = e("scoresort").value;
+    Miniajax.submit("savedisplayoptionsform", function (rv) {
+	    fold("redisplay", 1, 5);
+	    if (rv.ok)
+		elt.innerHTML = "<span class='confirm'>Preferences saved</span>";
+	    else
+		elt.innerHTML = "<span class='error'>Preferences not saved</span>";
+	    setTimeout(function() {
+		    elt.innerHTML = "";
+		}, rv.ok ? 2000 : 4000);
+	});
+}
+
 function docheckformat() {
     var form = e("checkformatform");
     if (!form.onsubmit)

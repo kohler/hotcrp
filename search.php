@@ -1159,15 +1159,13 @@ if ($pl && $pl->count > 0) {
 	// "Save display options"
 	if ($Me->privChair) {
 	    echo "\n<div class='g'></div>
-    <a class='fx5' href='javascript:",
-		"e(\"scoresortsave\").value=e(\"scoresort\").value;",
-		"void Miniajax.submit(\"savedisplayoptionsform\")'>",
+    <a class='fx5' href='javascript:void savedisplayoptions()'>",
 		"Make these display options the default</a>",
-		" <span id='savedisplayoptionsformcheck'></span>";
+		" <span id='savedisplayoptionsformcheck' class='fn5'></span>";
 	    $Conf->footerStuff .= "<form id='savedisplayoptionsform' method='post' action='search$ConfSiteSuffix?savedisplayoptions=1' enctype='multipart/form-data' accept-charset='UTF-8'>"
-		. "<div><input id='scoresortsave' type='hidden' name='scoresort' value='" . $_SESSION["scoresort"] . "' /></div>"
-		. "</form>"
-		. "<script type='text/javascript'>function foldplinfo_extra() { fold(\"redisplay\", 0, 5); }";
+. "<div><input id='scoresortsave' type='hidden' name='scoresort' value='"
+. $_SESSION["scoresort"] . "' /></div></form>"
+. "<script type='text/javascript'>function foldplinfo_extra() { fold('redisplay', 0, 5); }";
 	    // strings might be in different orders, so sort before comparing
 	    $pld = str_split($Conf->settingText("pldisplay_default", chr(PaperList::FIELD_SCORE)));
 	    sort($pld);
