@@ -1,5 +1,10 @@
 HotCRP NEWS
 
+Version 2.28   20.Dec.2008
+
+* Allow periods in email addresses (Jeff Mogul).
+
+
 Version 2.27   16.Dec.2008
 
 * Search results: Add tons of Display options, load them all by Ajax, and
