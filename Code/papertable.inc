@@ -926,7 +926,7 @@ class PaperTable {
     }
 
     function papstripTags($prow, $site = null) {
-	global $Conf, $ConfSiteSuffix, $Me, $Error, $forceShow;
+	global $Conf, $ConfSiteSuffix, $Me, $Error, $forceShow, $linkExtra;
 	if ($site || defval($prow, "paperTags", "") !== "") {
 	    // Note that tags MUST NOT contain HTML special characters.
 	    require_once("tags.inc");
@@ -940,7 +940,7 @@ class PaperTable {
 		"<div class='psv'>";
 	    if ($editable) {
 		// tag report form
-		$Conf->footerStuff .= "<form id='tagreportform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'><div class='aahc'><input type='hidden' name='tagreport' value='1' /></div></form>";
+		$Conf->footerStuff .= "<form id='tagreportform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'><div class='aahc'><input type='hidden' name='tagreport' value='1' /></div></form>";
 
 		$t = tagsToText($prow, false, $Me, true);
 		echo "<div class='fn'>", ($tx == "" ? "None" : $tx),
