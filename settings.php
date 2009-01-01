@@ -18,8 +18,8 @@ $SettingGroups = array("acc" => array(
 			     "acct_addr" => "check",
 			     "next" => "msg"),
 		       "msg" => array(
-			     "opt.shortName" => "string",
-			     "opt.longName" => "string",
+			     "opt.shortName" => "simplestring",
+			     "opt.longName" => "simplestring",
 			     "homemsg" => "htmlstring",
 			     "conflictdefmsg" => "htmlstring",
 			     "next" => "sub"),
@@ -308,6 +308,9 @@ function parseValue($name, $type) {
 	    if ($t["body"] == $v)
 		return 0;
 	}
+	return ($v == "" ? 0 : array(0, $v));
+    } else if ($type == "simplestring") {
+	$v = simplifyWhitespace($v);
 	return ($v == "" ? 0 : array(0, $v));
     } else if ($type == "htmlstring") {
 	if (($v = cleanXHTML($v, $err)) === false)

@@ -1224,7 +1224,7 @@ class Conference {
 
 	    $this->scriptStuff = "<script type='text/javascript' src='${ConfSiteBase}cacheable$ConfSiteSuffix?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "'></script>\n";
 	    $this->scriptStuff .= "<!--[if lte IE 6]> <script type='text/javascript' src='${ConfSiteBase}cacheable$ConfSiteSuffix?file=supersleight.js'></script> <![endif]-->\n";
-	    echo "<title>", $title, " - ", $Opt["shortName"], "</title>\n";
+	    echo "<title>", $title, " - ", htmlspecialchars($Opt["shortName"]), "</title>\n";
 	    $this->headerPrinted = 1;
 	}
     }
@@ -1266,7 +1266,7 @@ class Conference {
 	    echo "<a href='${ConfSiteBase}index$ConfSiteSuffix?signout=1'>Sign&nbsp;out</a>", $xsep;
 	}
 	echo $this->printableTime($time), "<br /><span id='usertime'></span></div>\n";
-	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", $Opt["shortName"], " Public Site</a></div>\n";
+	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", htmlspecialchars($Opt["shortName"]), " Public Site</a></div>\n";
 
 	print "  <div class='clear'></div>\n";
 

@@ -743,7 +743,7 @@ $blind\n";
 
 		$anyDirectives++;
 		if (preg_match("/Paper Review Form/", $line)
-		    && !preg_match("/" . $Opt["shortName"] . " Paper Review Form/", $line)) {
+		    && !preg_match("/" . preg_quote($Opt["shortName"]) . " Paper Review Form/", $line)) {
 		    preg_match('/\A==\+==\s+(.*?)\s+Paper Review Form/', $line, $m);
 		    $this->garbageMessage($tf, $lineno, $garbage);
 		    self::tfError($tf, true, "This review form appears to be for the wrong conference!  (I was expecting \"" . htmlentities($Opt["shortName"]) . " Paper Review Form\", but found \"" . htmlentities($m[1]) . " Paper Review Form\".)", $lineno);
@@ -787,7 +787,7 @@ $blind\n";
 			$nfields++;
 		    } else {
 			$this->garbageMessage($tf, $lineno, $garbage);
-			self::tfError($tf, true, "Review field &ldquo;" . htmlentities($fname) . "&rdquo; is not used for " . $Opt["shortName"] . " reviews.  Ignoring this section.", $lineno);
+			self::tfError($tf, true, "Review field &ldquo;" . htmlentities($fname) . "&rdquo; is not used for " . htmlspecialchars($Opt["shortName"]) . " reviews.  Ignoring this section.", $lineno);
 			$field = null;
 		    }
 		    $mode = 1;
