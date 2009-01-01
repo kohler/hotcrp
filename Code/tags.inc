@@ -234,6 +234,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
 	    $q .= ($q === "" ? "" : ",") . "'" . sqlq($base) . "'";
 	    $val = $vtags[substr($base, strpos($base, "~") + 1)];
 	}
+	unset($val);
 	if ($mode != "p")	// must delete old versions for correct totals
 	    $Conf->qe("delete from PaperTag where paperId in (" . join(",", $pids) . ") and tag in ($q)", "while deleting old votes");
 	$result = $Conf->qe("select tag, sum(tagIndex) from PaperTag where tag in ($q) group by tag", "while checking vote totals");
@@ -246,7 +247,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
     $explicitIndex = array();
     $modeOrdered = ($mode == "so" || $mode == "ao" || $mode == "sos"
 		    || $mode == "aos");
-    foreach ($tags as &$tag) {
+    foreach ($tags as $tag) {
 	$base = tagBase($tag);
 	if (strlen($base) + 1 < strlen($tag)) {
 	    $tagIndex[$base] = $explicitIndex[$base] =
