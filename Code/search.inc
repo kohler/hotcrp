@@ -440,10 +440,11 @@ class PaperSearch {
 		return;
 	}
 
-	if (preg_match('/\A([^#<>!=]+)#?([<>!]?=?)(-?\d+)\z/', $word, $m)
-	    && $m[1] != "any" && $m[1] != "none") {
+	if (preg_match('/\A([^#<>!=]+)(#?)([<>!]?=?)(-?\d+)\z/', $word, $m)
+	    && $m[1] != "any" && $m[1] != "none"
+	    && ($m[2] != "" || $m[3] != "")) {
 	    $tagword = $m[1];
-	    $extra = ($m[2] == "!" ? "!=" : ($m[2] == "" ? "=" : $m[2])) . $m[3];
+	    $extra = ($m[3] == "!" ? "!=" : ($m[3] == "" ? "=" : $m[3])) . $m[4];
 	} else {
 	    $tagword = $word;
 	    $extra = null;
