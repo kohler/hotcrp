@@ -442,13 +442,13 @@ value; for example, to insert starting at value 5, use <b>Add ordered</b> with
 &ldquo;tag#5&rdquo;.  The rest of the order is renumbered to accomodate the
 insertion.</p>
 
-<p><b>Define ordered</b> could assign values &ldquo;discuss#1&rdquo;,
-&ldquo;discuss#3&rdquo;, &ldquo;discuss#6&rdquo;, and &ldquo;discuss#7&rdquo;
-to adjacent papers.  These value gaps mean that PC members can't easily infer
-where conflicted papers fit in.  (Any given gap might be natural or due to a
-missing conflict.)  In contrast, the <b>Define sequential</b> action assigns
-strictly sequential values, like &ldquo;discuss#1&rdquo;,
-&ldquo;discuss#2&rdquo;, &ldquo;discuss#3&rdquo;, &ldquo;discuss#4&rdquo;.
+<p><b>Define ordered</b> might assign values &ldquo;tag#1&rdquo;,
+&ldquo;tag#3&rdquo;, &ldquo;tag#6&rdquo;, and &ldquo;tag#7&rdquo;
+to adjacent papers.  The gaps make it harder to infer
+conflicted papers' positions.  (Any given gap might or might not hold a
+conflicted paper.)  In contrast, the <b>Define sequential</b> action assigns
+strictly sequential values, like &ldquo;tag#1&rdquo;,
+&ldquo;tag#2&rdquo;, &ldquo;tag#3&rdquo;, &ldquo;tag#4&rdquo;.
 <b>Define ordered</b> is better for most purposes.</p>");
     echo "</table>\n";
 }
