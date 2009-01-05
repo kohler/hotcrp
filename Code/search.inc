@@ -460,9 +460,10 @@ class PaperSearch {
 	    else if ($twiddlecid <= 0)
 		$this->warn("&ldquo;" . htmlspecialchars($c) . "&rdquo; matches more than one PC member; be more specific to disambiguate.");
 	    $tagword = substr($tagword, $twiddle);
-	}
+	} else if ($twiddle === 0 && $tagword[1] === "~")
+	    $twiddlecid = "";
 
-	if (($e = checkTagError($tagword, CHECKTAG_ALLOWRESERVED | CHECKTAG_NOINDEX))) {
+	if (($e = checkTagError($tagword, CHECKTAG_ALLOWRESERVED | CHECKTAG_NOINDEX | ($this->privChair ? CHECKTAG_CHAIR : 0)))) {
 	    $this->warn(htmlspecialchars($e));
 	    $qt[] = new SearchTerm("f", 0, "");
 	    return;

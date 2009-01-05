@@ -9,18 +9,21 @@
 define("CHECKTAG_ALLOWRESERVED", 1);
 define("CHECKTAG_NOPRIVATE", 2);
 define("CHECKTAG_NOINDEX", 4);
-define("CHECKTAG_QUIET", 8);
-define("CHECKTAG_ERRORARRAY", 16);
+define("CHECKTAG_CHAIR", 8);
+define("CHECKTAG_QUIET", 16);
+define("CHECKTAG_ERRORARRAY", 32);
 
 function checkTagError($tag, $flags) {
     if ($tag == "")
 	return "Empty tag.";
     else if (strlen($tag) > TAG_MAXLEN)
 	return "Tag \"$tag\" too long; maximum " . TAG_MAXLEN . " characters.";
-    else if (!preg_match('/\A~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*([#=](-\d)?\d*)?\z/', $tag, $m))
+    else if (!preg_match('/\A~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*([#=](-\d)?\d*)?\z/', $tag, $m))
 	return "Tag \"$tag\" contains odd characters.";
     else if (count($m) > 1 && $m[1] && ($flags & CHECKTAG_NOINDEX))
 	return "Tag numbers not allowed here.";
+    else if ($tag[0] === "~" && $tag[1] === "~" && !($flags & CHECKTAG_CHAIR))
+	return "Tag \"$tag\" is exclusively for chairs.";
     else if ($tag[0] === "~" && ($flags & CHECKTAG_NOPRIVATE))
 	return "Twiddle tags not allowed here.";
     else if (($tag === "none" || $tag === "any") && !($flags & CHECKTAG_ALLOWRESERVED))
@@ -38,7 +41,7 @@ function checkTag($tag, $flags) {
 	$Conf->errorMsg(htmlspecialchars($e));
     if ($e != "")
 	return false;
-    else if ($tag[0] == "~")
+    else if ($tag[0] == "~" && $tag[1] != "~")
 	return $Me->contactId . $tag;
     else
 	return $tag;
@@ -109,8 +112,9 @@ function setTags($pids, $tagtext, $mode, $chair) {
     // check tags for direct validity
     $ok = true;
     $tags = array();
+    $checkflags = ($chair ? CHECKTAG_CHAIR : 0) + CHECKTAG_ERRORARRAY;
     foreach (preg_split('/\s+/', $tagtext) as $tag)
-	if ($tag != "" && ($tag = checkTag($tag, CHECKTAG_ERRORARRAY))
+	if ($tag != "" && ($tag = checkTag($tag, $checkflags))
 	    && ($ok = ($ok && $tag)))
 	    $tags[] = $tag;
     if (!$ok)
@@ -430,7 +434,10 @@ function tagsToText($prow, $makeUrls, $contact, $drop = false,
     $t = str_replace("#0", "", $t);
     if (strpos($t, "~") !== false) {
 	$t = str_replace(" " . $contact->contactId . "~", " ~", " $t ");
-	$t = trim(preg_replace('/ \d+~\S+/', '', $t));
+	if ($contact->privChair)
+	    $t = trim(preg_replace('/ \d+~\S+/', '', $t));
+	else
+	    $t = trim(preg_replace('/ [\d~]+~\S+/', '', $t));
     }
 
     // drop chair and vote tags when appropriate

@@ -344,8 +344,9 @@ Tags are never shown to authors$conflictmsg1.
 It&rsquo;s easy to add and remove tags and to list all papers with a given tag,
 and <em>ordered</em> tags preserve a particular paper order.
 
-<p>By default, tags are visible to the entire PC, but <em>twiddle tags</em>,
-with names like &ldquo;~tag&rdquo;, are visible only to their creators.</p>");
+<p><em>Twiddle tags</em>, with names like &ldquo;~tag&rdquo;, are visible only
+to their creators.  Tags with two twiddles, such as &ldquo;~~tag&rdquo;, are
+visible only to PC chairs.  All other tags are visible to the entire PC.</p>");
 
     _alternateRow("Using tags", "
 Here are some example ways to use tags.
@@ -416,7 +417,7 @@ papers and removes it from all non-selected papers.  The chair-only <b>Clear
 twiddle</b> action removes a tag and all users' matching twiddle tags.</p>
 
 <p>Although any PC member can view or search
-any tag, only PC chairs can change certain tags$chairtags.  $setting</p>");
+most tags, only PC chairs can change certain tags$chairtags.  $setting</p>");
     _alternateRow("Tag values<br />and discussion orders", "
 Tags have optional per-paper numeric values, which are displayed as
 &ldquo;tag#100&rdquo;.  Searching for a tag with &ldquo;<a
