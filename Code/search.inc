@@ -462,8 +462,12 @@ class PaperSearch {
 	    $tagword = substr($tagword, $twiddle);
 	}
 
-	if (($e = checkTagError($tagword, CHECKTAG_ALLOWRESERVED | CHECKTAG_NOINDEX)))
+	if (($e = checkTagError($tagword, CHECKTAG_ALLOWRESERVED | CHECKTAG_NOINDEX))) {
 	    $this->warn(htmlspecialchars($e));
+	    $qt[] = new SearchTerm("f", 0, "");
+	    return;
+	}
+
 	$value = $tagword;
 	$rt = 0;
 	if ($value && $twiddle !== false)
