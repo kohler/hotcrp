@@ -1083,11 +1083,16 @@ if ($pl && $pl->count > 0) {
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
 
     echo "<table><tr>
-  <td class='pad'><strong>Show:</strong>",
-	foldsessionpixel("pl", "pldisplay", null),
-	"</td>\n";
+  <td class='pad nowrap'><strong>Show:</strong>",
+	foldsessionpixel("pl", "pldisplay", null);
     if ($moredisplay !== "")
-	echo "  <td class='fx4'></td>\n";
+	echo "<span class='sep'></span>",
+	    "<a class='fn4' href='javascript:void fold(e(\"searchform\"),0,4)'>More &#187;</a>",
+	    "</td>\n  <td class='fx4'>",
+	    //"<a class='fx4' href='javascript:void fold(e(\"searchform\"),1,4)'>&#171; Fewer</a>",
+	    "</td>\n";
+    else
+	echo "</td>\n";
     if (isset($pl->scoreMax))
 	echo "  <td class='padl'><strong>Scores:</strong></td>\n";
     echo "</tr><tr>
@@ -1126,11 +1131,11 @@ if ($pl && $pl->count > 0) {
 			   ($_REQUEST["t"] == "a" && !$Me->privChair));
 
     if ($moredisplay !== "") {
-	echo "<div class='ug'></div>",
-	    "<a class='fn4' href='javascript:void fold(e(\"searchform\"),0,4)'>More &#187;</a>",
+	echo //"<div class='ug'></div>",
+	    //"<a class='fn4' href='javascript:void fold(e(\"searchform\"),0,4)'>More &#187;</a>",
 	    "</td><td class='pad fx4'>", $moredisplay,
-	    "<div class='ug'></div>",
-	    "<a class='fx4' href='javascript:void fold(e(\"searchform\"),1,4)'>&#171; Fewer</a>",
+	    //"<div class='ug'></div>",
+	    //"<a class='fx4' href='javascript:void fold(e(\"searchform\"),1,4)'>&#171; Fewer</a>",
 	    "</td>\n";
     } else
 	echo "</td>\n";
