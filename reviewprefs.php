@@ -1,6 +1,6 @@
 <?php
 // reviewprefs.php -- HotCRP review preference global settings page
-// HotCRP is Copyright (c) 2006-2008 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2009 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
