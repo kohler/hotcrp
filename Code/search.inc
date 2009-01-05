@@ -818,7 +818,8 @@ class PaperSearch {
 	    if ($word == "OR" || $type == "any") {
 		if (count($qt) > $nqt)
 		    $qt[count($qt) - 1]->link = true;
-		continue;
+		if ($word == "OR")
+		    continue;
 	    }
 
 	    $neg = false;
