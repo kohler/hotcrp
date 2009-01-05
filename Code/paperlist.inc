@@ -956,7 +956,7 @@ class PaperList extends BaseList {
 	    $sel_opt["lead"] = "Discussion leads";
 	    $sel_opt["shepherd"] = "Shepherds";
 	}
-	$t .= tagg_select("getaction", $sel_opt, key($sel_opt),
+	$t .= tagg_select("getaction", $sel_opt, defval($_REQUEST, "getaction"),
 			  array("id" => "plact${nlll}_d", "tabindex" => 6))
 	    . "&nbsp; <input type='submit' class='b' name='getgo' value='Go' tabindex='6' /></span>";
 	$nlll++;
@@ -993,7 +993,8 @@ class PaperList extends BaseList {
 		$tagopt["da"] = "Clear twiddle";
 		$tagopt["cr"] = "Calculate rank";
 	    }
-	    $t .= tagg_select("tagtype", $tagopt, null, array("class" => "b"))
+	    $t .= tagg_select("tagtype", $tagopt, defval($_REQUEST, "tagtype"),
+			      array("class" => "b"))
 		. " &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='b' name='tagact' value='Go' /></span>";
 	    $nlll++;
 	}
@@ -1013,8 +1014,9 @@ class PaperList extends BaseList {
 				    "assign" . REVIEW_PRIMARY => "Assign primary review",
 				    "assign" . REVIEW_SECONDARY => "Assign secondary review",
 				    "assign0" => "Unassign reviews"),
-			      null, array("id" => "plact${nlll}_d",
-					  "onchange" => "fold(\"ass\", (this.value[0] == \"x\"))"))
+			      defval($_REQUEST, "marktype"),
+			      array("id" => "plact${nlll}_d",
+				    "onchange" => "fold(\"ass\", (this.value[0] == \"x\"))"))
 		. "<span class='fx'> &nbsp;for &nbsp;";
 	    // <option value='-2' disabled='disabled'></option>
 	    // <option value='xpcpaper'>Mark as PC-authored</option>
@@ -1023,7 +1025,8 @@ class PaperList extends BaseList {
 	    $sel_opt = array();
 	    foreach ($pc as $id => $row)
 		$sel_opt[htmlspecialchars($row->email)] = contactHtml($row->firstName, $row->lastName);
-	    $t .= tagg_select("markpc", $sel_opt, null, array("id" => "markpc"))
+	    $t .= tagg_select("markpc", $sel_opt, defval($_REQUEST, "markpc"),
+			      array("id" => "markpc"))
 		. "</span> &nbsp;<input type='submit' class='b' name='setassign' value='Go' />";
 	    $t .= "</span>";
 	    $nlll++;
@@ -1040,7 +1043,7 @@ class PaperList extends BaseList {
 
 	    $t .= $barsep
 		. "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Mail</a></span><span class='lld$nlll'><b>:</b> &nbsp;"
-		. tagg_select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), null, array("id" => "plact${nlll}_d"))
+		. tagg_select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), defval($_REQUEST, "recipients"), array("id" => "plact${nlll}_d"))
 		. " &nbsp;<input type='submit' class='b' name='sendmail' value='Go' /></span>";
 	    $nlll++;
 	}
