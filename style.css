@@ -1304,6 +1304,9 @@ div.papstrip {
 	z-index: 4;
 	font-size: smaller;
 }
+div.papstrip textarea {
+	font-size: small;
+}
 div.pst {
 	padding: 0.25em 0.5em 0.25em 4px;
 	background: #eaeaea; /*#ffeaee;*/
