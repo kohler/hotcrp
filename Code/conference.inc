@@ -1302,10 +1302,9 @@ class Conference {
     function footer() {
 	global $Opt;
 	$this->closeTableMessages();
-	echo "</div>\n<div id='footer'>\n  <div id='footer_crp'>";
-	if (isset($Opt["extraFooter"]))
-	    echo $Opt["extraFooter"], " <span class='barsep'>|</span> ";
-	echo "<a href='http://www.cs.ucla.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software",
+	echo "</div>\n<div id='footer'>\n  <div id='footer_crp'>",
+	    defval($Opt, "extraFooter", ""),
+	    "<a href='http://www.cs.ucla.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software",
 	    "</div>\n  <div class='clear'></div></div>\n",
 	    $this->scriptStuff, $this->footerStuff,
 	    "</body>\n</html>\n";
