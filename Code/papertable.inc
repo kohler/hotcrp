@@ -1312,20 +1312,21 @@ class PaperTable {
 	}
 
 	// paper number
-	echo "<tr>\n    <td class='pboxi'>";
+	$pboxclass = ($prow ? "pbox" : "pboxn");
+	echo "<tr>\n    <td class='${pboxclass}i'>";
 	if ($prow) {
 	    $pa = "<a href='paper$ConfSiteSuffix?p=$paperId$linkExtra' class='q'>";
 	    echo "<div class='papnum'><h2>", $pa, "#", $this->prow->paperId, "</a></h2></div>";
-	}
 
-	// paper strip
-	echo "    <div class='papstripc'><div class='papstrip'>\n";
-	if ($prow)
+	    // paper strip
+	    echo "    <div class='papstripc'><div class='papstrip'>\n";
 	    $this->_papstrip();
-	echo "</div></div></td>\n";
+	    echo "</div></div>";
+	}
+	echo "</td>\n";
 
 	// main paper table
-	echo "    <td class='pboxt'><table class='papc'>
+	echo "    <td class='${pboxclass}t'><table class='papc'>
 	<tr><td class='papculs'></td><td></td><td class='papcur'></td></tr>
 	<tr><td></td><td>";
 
@@ -1371,9 +1372,10 @@ class PaperTable {
 	    echo "New paper";
 	echo "</h2></td><td></td></tr>
     </table></td>
+    <td class='${pboxclass}j'></td>
 </tr><tr>
-    <td class='pboxl'></td>
-    <td class='pboxr'><table class='papc'>
+    <td class='${pboxclass}l'></td>
+    <td class='${pboxclass}r'><table class='papc'>
 	<tr><td class='papcl'>",
 	    $Conf->cacheableImage("_.gif", "", null, "_"),
 	    "</td><td class='papct'><div class='inpapct'>";

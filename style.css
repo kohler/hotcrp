@@ -1291,6 +1291,10 @@ td.pboxi, td.pboxl {
 	width: 13em;
 	vertical-align: top;
 }
+td.pboxni, td.pboxnl, td.pboxnj {
+	width: 3em;
+	vertical-align: top;
+}
 
 /* paper strip */
 div.papstripc {
