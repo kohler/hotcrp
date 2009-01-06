@@ -244,7 +244,7 @@ class PaperTable {
 
 	// timestamp, SHA-1 checksum
 	$t = "";
-	if ($prow->timestamp || $prow->timeSubmitted >= 0) {
+	if ($prow->timestamp || $prow->timeSubmitted > 0) {
 	    $tm = ($prow->timestamp ? $prow->timestamp : $prow->timeSubmitted);
 	    $t = "<span class='nowrap' title='Time of must recent paper update'>" . $Conf->cacheableImage("timestamp12.png", "Updated", "Time of most recent paper update") . " " . $Conf->printableTime($tm) . "</span>";
 	}
@@ -1058,7 +1058,7 @@ class PaperTable {
 	global $Conf, $ConfSiteSuffix, $Me, $linkExtra;
 	if (!($this->watchCheckbox
 	      && $Conf->setting("allowPaperOption") >= 6
-	      && $prow->timeSubmitted >= 0
+	      && $prow->timeSubmitted > 0
 	      && ($prow->conflictType >= CONFLICT_AUTHOR
 		  || $prow->conflictType <= 0
 		  || ($Me->privChair && isset($_REQUEST["forceShow"])))))
