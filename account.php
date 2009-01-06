@@ -338,7 +338,7 @@ if ($Conf->setting("allowPaperOption") >= 6) {
 	"<input type='checkbox' name='watchcomment' value='", WATCH_COMMENT, "'";
     if ($Acct->defaultWatch & WATCH_COMMENT)
 	echo " checked='checked'";
-    echo " onchange='hiliter(this)' />&nbsp;Mail me when new comments are available for papers I wrote or reviewed</td></tr>\n\n";
+    echo " onchange='hiliter(this)' />&nbsp;Send mail when new comments are available for authored or reviewed papers</td></tr>\n\n";
 }
 
 
