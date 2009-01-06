@@ -115,5 +115,7 @@ $Opt["emailSubmissions"] = 0;
 //                   the username.  Example: "ldaps://ldapserver/ uid=*,o=ORG"
 //   stylesheets     Optional array of additional stylesheet filenames/URIs to
 //                   be included after "style.css".  Example: array("x.css").
+//   extraFooter     Optional extra HTML text shown at the bottom of every
+//                   page, before the HotCRP link.
 
 $Opt["disablePS"] = true;
