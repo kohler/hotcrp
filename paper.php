@@ -235,7 +235,7 @@ function uploadPaper($isSubmitFinal) {
 }
 
 function updatePaper($Me, $isSubmit, $isSubmitFinal) {
-    global $ConfSiteSuffix, $paperId, $newPaper, $Error, $Conf, $prow;
+    global $ConfSiteSuffix, $paperId, $newPaper, $Error, $Conf, $Opt, $prow;
     $contactId = $Me->contactId;
     if ($isSubmitFinal)
 	$isSubmit = false;
@@ -243,7 +243,9 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // XXX lock tables
 
     // clear 'isSubmit' if no paper has been uploaded
-    if (!fileUploaded($_FILES['paperUpload'], $Conf) && ($newPaper || $prow->size == 0))
+    if (!fileUploaded($_FILES['paperUpload'], $Conf)
+	&& ($newPaper || $prow->size == 0)
+	&& !defval($Opt, "noPapers"))
 	$isSubmit = false;
 
     // check that all required information has been entered
@@ -417,7 +419,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // submit paper if appropriate
     if ($isSubmitFinal || $isSubmit) {
 	loadRows();
-	if (($isSubmitFinal ? $prow->finalPaperStorageId : $prow->paperStorageId) <= 1) {
+	if (($isSubmitFinal ? $prow->finalPaperStorageId : $prow->paperStorageId) <= 1
+	    && !defval($Opt, "noPapers")) {
 	    $Error["paper"] = 1;
 	    return $Conf->errorMsg(whyNotText("notUploaded", ($isSubmitFinal ? "submit a final copy for" : "submit"), $paperId));
 	}
@@ -464,7 +467,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    $extratext = "You will receive email when reviews are available.";
 	else if ($Conf->setting("sub_freeze") > 0)
 	    $extratext = "You have not yet submitted a final version of this paper.";
-	else if ($prow->size == 0)
+	else if ($prow->size == 0 && !defval($Opt, "noPapers"))
 	    $extratext = "You have not yet uploaded the paper itself.";
 	else
 	    $extratext = "This version of the paper is marked as not ready for review.";

@@ -100,9 +100,10 @@ $Opt["emailSubmissions"] = 0;
 //                   for a list.
 //   time24hour      Set to true to use 24-hour timestamps, rather than the
 //                   default am/pm.
-//   disablePDF      Set to disable PDF format submissions.
-//   disablePS       Set to disable PostScript format submissions.
-//   disableSHA1     Set to disable storing SHA-1 hashes of submissions.
+//   disablePDF      Set to true to disable PDF format submissions.
+//   disablePS       Set to true to disable PostScript format submissions.
+//   disableSHA1     Set to true to not store SHA-1 hashes of submissions.
+//   noPapers        Set to true to collect abstracts only, not papers.
 //   dbDumpDir       Directory where user-requested database dumps are stored.
 //   pdftohtml       Pathname to pdftohtml executable (used only by the "banal"
 //                   paper format checker).

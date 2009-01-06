@@ -244,8 +244,10 @@ class PaperTable {
 
 	// timestamp, SHA-1 checksum
 	$t = "";
-	if ($prow->timestamp)
-	    $t = "<span class='nowrap' title='Time of must recent paper update'>" . $Conf->cacheableImage("timestamp12.png", "Updated", "Time of most recent paper update") . " " . $Conf->printableTime($prow->timestamp) . "</span>";
+	if ($prow->timestamp || $prow->timeSubmitted >= 0) {
+	    $tm = ($prow->timestamp ? $prow->timestamp : $prow->timeSubmitted);
+	    $t = "<span class='nowrap' title='Time of must recent paper update'>" . $Conf->cacheableImage("timestamp12.png", "Updated", "Time of most recent paper update") . " " . $Conf->printableTime($tm) . "</span>";
+	}
 	if (defval($prow, 'sha1')) {
 	    if ($t)
 		$t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
@@ -276,8 +278,10 @@ class PaperTable {
 		. "</td><td class='nowrap'>" . $d;
 
 	// return table
-	if ($d !== "" || $t !== "")
+	if ($d !== "")
 	    return "<table><tr><td class='nowrap'>" . $d . "</td><td><span class='sep'></span></td><td>" . $t . "</td></tr></table>";
+	else if ($t !== "")
+	    return "<table><tr><td>$t</td></tr></table>";
 	else
 	    return "";
     }
@@ -292,19 +296,19 @@ class PaperTable {
 	// conflicts
 	$flags = self::STATUS_CONFLICTINFO;
 	if (($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType >= CONFLICT_AUTHOR)
-	    echo "<br />\nYou are an <span class='author'>author</span> of this paper.";
+	    echo "<div class='g'></div>\nYou are an <span class='author'>author</span> of this paper.";
 	else if ((($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType > 0)
 		 || (($flags & self::STATUS_CONFLICTINFO_PC) && $Me->isPC && $prow->conflictType > 0))
-	    echo "<br />\nYou have a <span class='conflict'>conflict</span> with this paper.";
+	    echo "<div class='g'></div>\nYou have a <span class='conflict'>conflict</span> with this paper.";
 	if ($prow->reviewType != null && ($flags & self::STATUS_REVIEWERINFO)) {
 	    if ($prow->reviewType == REVIEW_PRIMARY)
-		echo "<br/>\nYou are a primary reviewer for this paper.";
+		echo "<div class='g'></div>\nYou are a primary reviewer for this paper.";
 	    else if ($prow->reviewType == REVIEW_SECONDARY)
-		echo "<br/>\nYou are a secondary reviewer for this paper.";
+		echo "<div class='g'></div>\nYou are a secondary reviewer for this paper.";
 	    else if ($prow->reviewType == REVIEW_EXTERNAL)
-		echo "<br/>\nYou were requested to review this paper.";
+		echo "<div class='g'></div>\nYou were requested to review this paper.";
 	    else
-		echo "<br/>\nYou began a review for this paper.";
+		echo "<div class='g'></div>\nYou began a review for this paper.";
 	}
 	if ($Me->isPC && $prow->conflictType <= 0
 	    && $Conf->timeUpdatePaper($prow) && $this->mode != "assign"
@@ -316,27 +320,33 @@ class PaperTable {
 	global $Conf, $ConfSiteSuffix, $Opt;
 	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0
 		  && $Conf->collectFinalPapers());
+	$maxsize = " <span class='papfnh'>(max size "
+	    . ini_get("upload_max_filesize") . "B)</span>";
 
-	if (defval($Opt, 'disablePS') > 0)
-	    $t = "PDF file";
-	else if (defval($Opt, 'disablePDF') > 0)
-	    $t = "PostScript file";
+	if (defval($Opt, "noPapers"))
+	    $t = ($final ? null : "Status");
+	else if (defval($Opt, "disablePS"))
+	    $t = "PDF file" . $maxsize;
+	else if (defval($Opt, "disablePDF"))
+	    $t = "PostScript file" . $maxsize;
 	else
-	    $t = "PDF/PostScript file";
-	$maxSize = ini_get("upload_max_filesize") . "B";
-	$t .= " <span class='papfnh'>(max size $maxSize)</span>";
-	echo $this->papt("paper", $t), "<div class='papv'>";
+	    $t = "PDF/PostScript file" . $maxsize;
+	if ($t !== null)
+	    echo $this->papt("paper", $t);
+	echo "<div class='papv'>";
 
-	echo ($final ? "Upload final copy:&nbsp; " : ""),
-	    "<input class='textlite' type='file' name='paperUpload' accept='",
-	    (defval($Opt, 'disablePDF') > 0 ? "" : "application/pdf "),
-	    (defval($Opt, 'disablePS') > 0 ? "" : "application/postscript "),
-	    "' size='30' onchange='hiliter(this)";
-	if (!$final)
-	    echo ";fold(\"isready\",0)";
-	if ($flags & self::ENABLESUBMIT)
-	    echo ";form.submit.disabled=false";
-	echo "' />";
+	if (!defval($Opt, "noPapers")) {
+	    echo ($final ? "Upload final copy:&nbsp; " : ""), "<input ",
+		"class='textlite' type='file' name='paperUpload' accept='",
+		(defval($Opt, "disablePDF") ? "" : "application/pdf "),
+		(defval($Opt, "disablePS") ? "" : "application/postscript "),
+		"' size='30' onchange='hiliter(this)";
+	    if (!$final)
+		echo ";fold(\"isready\",0)";
+	    if ($flags & self::ENABLESUBMIT)
+		echo ";form.submit.disabled=false";
+	    echo "' />";
+	}
 
 	if (!$final) {
 	    if ($this->useRequest)
@@ -346,14 +356,14 @@ class PaperTable {
 	    else
 		$checked = !$prow || $prow->paperStorageId <= 1 || $prow->timeSubmitted > 0;
 	    echo "<div id='foldisready' class='",
-		($prow && $prow->paperStorageId > 1 ? "foldo" : "foldc"),
+		(($prow && $prow->paperStorageId > 1) || defval($Opt, "noPapers") ? "foldo" : "foldc"),
 		"'><table class='fx'><tr><td class='nowrap'><input type='checkbox' name='submit' value='1'",
 		($checked ? " checked='checked'" : ""),
 		" onchange='hiliter(this)' />&nbsp;";
 	    if ($Conf->setting('sub_freeze'))
 		echo "</td><td><strong>This is the final submission.</strong></td></tr><tr><td></td><td><small>You must submit a final version before the deadline or your paper will not be reviewed.  Once you submit a final version you will not be able to make further changes.</small>";
 	    else
-		echo "The paper is ready for review.";
+		echo "The submission is ready for review.";
 	    echo "</td></tr></table></div>\n";
 	} else
 	    echo "<input type='hidden' name='submit' value='1' />";
@@ -1101,7 +1111,7 @@ class PaperTable {
 	$prow = $this->prow;
 	$m = "";
 
-	$override = ($Me->privChair ? "  As an administrator, you can override this deadline using the \"Override deadlines\" checkbox." : "");
+	$override = ($Me->privChair ? "  As an administrator, you can override this deadline using the &ldquo;Override deadlines&rdquo; checkbox." : "");
 	if (!$prow) {
 	    $timeStart = $Conf->timeStartPaper();
 	    $startDeadline = $this->deadlineSettingIs("sub_reg");

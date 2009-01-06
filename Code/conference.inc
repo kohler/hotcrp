@@ -448,8 +448,8 @@ class Conference {
 
 	    // Check if paper is postscript or PDF, only kinds allowed.
 	    // We ignore the mimetype since MacOS browsers get this wrong
-	    $allowPDF = defval($Opt, 'disablePDF') <= 0;
-	    $allowPS = defval($Opt, 'disablePS') <= 0;
+	    $allowPDF = !defval($Opt, 'disablePDF');
+	    $allowPS = !defval($Opt, 'disablePS');
 	    if ($allowPDF && strncasecmp("%PDF-", $contents, 5) == 0)
 		$mimetype = "application/pdf";
 	    else if ($allowPS && strncasecmp("%!PS-", $contents, 5) == 0)
@@ -506,7 +506,7 @@ class Conference {
 
 	if (!PEAR::isError($result)) {
 	    $sha1 = '';
-	    if (defval($Opt, "disableSHA1") <= 0)
+	    if (!defval($Opt, "disableSHA1"))
 		$sha1 = ", sha1='" . sqlq(sha1($contents, true)) . "'";
 	    $result = $this->qe2("update Paper set "
 		. ($final ? "finalPaperStorageId" : "paperStorageId") . "=$paperStorageId, "
