@@ -104,7 +104,6 @@ $Opt["emailSubmissions"] = 0;
 //   disablePS       Set to true to disable PostScript format submissions.
 //   disableSHA1     Set to true to not store SHA-1 hashes of submissions.
 //   noPapers        Set to true to collect abstracts only, not papers.
-//   dbDumpDir       Directory where user-requested database dumps are stored.
 //   pdftohtml       Pathname to pdftohtml executable (used only by the "banal"
 //                   paper format checker).
 //   banalLimit      Limit on number of parallel paper format checker
