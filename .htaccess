@@ -10,7 +10,7 @@ php_flag magic_quotes_gpc off
 AddDefaultCharset UTF-8
 
 
-# Prevent access to CVS and README directories.
+# Prevent access to SCM and README directories.
 <FilesMatch "^(CVS|\.svn|\.git|README|LICENSE|.*\.sh)$">
 Order allow,deny
 Deny from all
@@ -26,3 +26,6 @@ RewriteCond %{REQUEST_FILENAME}.php -f
 RewriteCond %{REQUEST_URI} ^(.*)$
 RewriteRule ^.*$ %1.php [L]
 </IfModule>
+
+# Uncomment this line to grant access only via https.  Requires mod_ssl.
+# SSLRequireSSL
