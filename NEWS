@@ -1,5 +1,17 @@
 HotCRP NEWS
 
+Version 2.30   7.Jan.2009
+
+* Add chair-only tags: double-twiddle tags, like "~~tag", are only visible
+  to and changeable by chairs and administrators.  Andrew Myers idea.
+
+* Bug fix: Advanced search > With *any* of the words works.  Reported by
+  John Wilkes.
+
+* Other UI tweaks.  Additional options $Opt["extraFooter"] (Jeff Mogul) and
+  $Opt["noPapers"] (C. Craig Ross).
+
+
 Version 2.29   1.Jan.2009
 
 * Bug fix release.  Fixes bugs in tag search and tag setting, some reported
