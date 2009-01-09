@@ -32,7 +32,7 @@ function checkTagError($tag, $flags) {
 	return "";
 }
 
-function checkTag($tag, $flags) {
+function checkTag($tag, $flags, $contactId = null) {
     global $Conf, $Me, $Error;
     $e = checkTagError($tag, $flags);
     if ($e && ($flags & CHECKTAG_ERRORARRAY))
@@ -42,7 +42,7 @@ function checkTag($tag, $flags) {
     if ($e != "")
 	return false;
     else if ($tag[0] == "~" && $tag[1] != "~")
-	return $Me->contactId . $tag;
+	return ($contactId ? $contactId : $Me->contactId) . $tag;
     else
 	return $tag;
 }
@@ -103,7 +103,8 @@ function setTags($pids, $tagtext, $mode, $chair) {
     global $Conf, $ConfSiteSuffix, $Me, $Error;
     if (!is_array($pids))
 	$pids = array($pids);
-    $mytagprefix = $Me->contactId . "~";
+    $contactId = (is_int($chair) ? $chair : $Me->contactId);
+    $mytagprefix = $contactId . "~";
 
     // check modes
     if ($mode == "da" && !$chair)
@@ -114,7 +115,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
     $tags = array();
     $checkflags = ($chair ? CHECKTAG_CHAIR : 0) + CHECKTAG_ERRORARRAY;
     foreach (preg_split('/\s+/', $tagtext) as $tag)
-	if ($tag != "" && ($tag = checkTag($tag, $checkflags))
+	if ($tag != "" && ($tag = checkTag($tag, $checkflags, $contactId))
 	    && ($ok = ($ok && $tag)))
 	    $tags[] = $tag;
     if (!$ok)
@@ -148,14 +149,16 @@ function setTags($pids, $tagtext, $mode, $chair) {
 	$multivote = 0;
 	foreach ($tags as $tag) {
 	    $base = tagBase($tag);
+	    $twiddle = strpos($base, "~");
 	    if (isset($vtags[$base]))
 		$deltags[] = $tag;
-	    else if (substr($base, 0, strlen($mytagprefix)) === $mytagprefix
-		     && isset($vtags[substr($base, strlen($mytagprefix))])) {
+	    else if ($twiddle > 0
+		     && isset($vtags[substr($base, $twiddle + 1)])) {
 		if (isset($vchanges[$base])) // only one vote per tag
 		    $multivote++;
 		else {
-		    if (strlen($base) == strlen($tag))
+		    if (strlen($base) == strlen($tag)
+			&& $mode != "d" && $mode != "da")
 			$tag .= "#1";
 		    $nexttags[] = $tag;
 		    $vchanges[$base] = 0;
@@ -189,7 +192,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
 
     // exit if nothing to do
     if (count($tags) == 0 && $mode != 'p') {
-	$Conf->q("unlock tables");
+	$Conf->qe("unlock tables", $while);
 	if (count($deltags) == 0)
 	    defappend($Error["tags"], "No tags specified.<br />\n");
 	return false;
@@ -222,7 +225,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
 	    if (!$chair && count($chtags)) {
 		foreach ($chtags as $ct => $xxx)
 		    if ($ct[0] == '~')
-			$q .= " and tag!='$Me->contactId" . sqlq($ct) . "'";
+			$q .= " and tag!='$contactId" . sqlq($ct) . "'";
 		    else
 			$q .= " and tag!='" . sqlq($ct) . "'";
 	    }
