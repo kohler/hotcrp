@@ -172,9 +172,10 @@ if (isset($_REQUEST['register']) && $OK) {
 	    // Refresh the results
 	    $Acct->lookupByEmail($_REQUEST["uemail"], $Conf);
 	    $Acct->valid($Conf);
-	    if ($newProfile)
-		$Conf->confirmMsg("Successfully created <a href=\"account$ConfSiteSuffix?contact=" . urlencode($Acct->email) . "\">an account for " . htmlspecialchars($Acct->email) . "</a>.  A password has been emailed to that address.  You may now create another account if you'd like.");
-	    else {
+	    if ($newProfile) {
+		$Conf->confirmMsg("Successfully created <a href=\"account$ConfSiteSuffix?contact=" . urlencode($Acct->email) . "\">an account for " . htmlspecialchars($Acct->email) . "</a>.  A password has been emailed to that address.  You may now <a href='account$ConfSiteSuffix?contact=new'>create another account</a>, or edit the " . htmlspecialchars($Acct->email) . " account below.");
+		$newProfile = false;
+	    } else {
 		$Conf->log("Account updated" . ($Me->contactId == $Acct->contactId ? "" : " by $Me->email"), $Acct);
 		$Conf->confirmMsg("Account profile successfully updated.");
 	    }
@@ -186,6 +187,89 @@ if (isset($_REQUEST['register']) && $OK) {
     }
 }
 
+function databaseTracks($who) {
+    global $Conf;
+    $tracks = (object) array("soleAuthor" => array(),
+			     "author" => array(),
+			     "review" => array(),
+			     "comment" => array());
+
+    // find authored papers
+    $result = $Conf->qe("select Paper.paperId, count(pc.contactId)
+	from Paper
+	join PaperConflict c on (c.paperId=Paper.paperId and c.contactId=$who and c.conflictType>=" . CONFLICT_AUTHOR . ")
+	join PaperConflict pc on (pc.paperId=Paper.paperId and pc.conflictType>=" . CONFLICT_AUTHOR . ")
+	group by Paper.paperId order by Paper.paperId");
+    while (($row = edb_row($result))) {
+	if ($row[1] == 1)
+	    $tracks->soleAuthor[] = $row[0];
+	$tracks->author[] = $row[0];
+    }
+
+    // find reviews
+    $result = $Conf->qe("select paperId from PaperReview
+	where PaperReview.contactId=$who
+	group by paperId order by paperId");
+    while (($row = edb_row($result)))
+	$tracks->review[] = $row[0];
+
+    // find comments
+    $result = $Conf->qe("select paperId from PaperComment
+	where PaperComment.contactId=$who
+	group by paperId order by paperId");
+    while (($row = edb_row($result)))
+	$tracks->comment[] = $row[0];
+
+    return $tracks;
+}
+
+function textArrayPapers($pids) {
+    global $ConfSiteSuffix;
+    $ls = "&amp;list=" . join("+", $pids);
+    return textArrayJoin(preg_replace('/(\d+)/', "<a href='paper$ConfSiteSuffix?p=\$1$ls'>\$1</a>", $pids));
+}
+
+if (isset($_REQUEST["delete"]) && $OK) {
+    if (!$Me->privChair)
+	$Conf->errorMsg("Only administrators can delete users.");
+    else if ($Acct->contactId == $Me->contactId)
+	$Conf->errorMsg("You aren't allowed to delete yourself.");
+    else {
+	$tracks = databaseTracks($Acct->contactId);
+	if (count($tracks->soleAuthor))
+	    $Conf->errorMsg("This user can't be deleted since they are sole contact author for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".  You will be able to delete the user after deleting those papers or adding additional contact authors.");
+	else {
+	    $while = "while deleting user";
+	    foreach (array("ContactInfo", "Chair", "ChairAssistant",
+			   "ContactAddress", "PCMember", "PaperComment",
+			   "PaperConflict", "PaperReview",
+			   "PaperReviewPreference", "PaperReviewRefused",
+			   "PaperWatch", "ReviewRating", "TopicInterest")
+		     as $table)
+		$Conf->qe("delete from $table where contactId=$Acct->contactId", $while);
+	    // tags are special because of voting tags, so go through
+	    // Code/tags.inc
+	    require_once("Code/tags.inc");
+	    $prefix = $Acct->contactId . "~";
+	    $result = $Conf->qe("select paperId, tag from PaperTag where tag like '$prefix%'", $while);
+	    $pids = $tags = array();
+	    while (($row = edb_row($result))) {
+		$pids[$row[0]] = 1;
+		$tags[substr($row[1], strlen($prefix) - 1)] = 1;
+	    }
+	    if (count($pids) > 0)
+		setTags(array_keys($pids), join(" ", array_keys($tags)), "d", $Acct->contactId);
+	    // recalculate Paper.numComments if necessary
+	    // (XXX lock tables?)
+	    foreach ($tracks->comment as $pid)
+		$Conf->qe("update Paper set numComments=(select count(commentId) from PaperComment where paperId=$pid), numAuthorComments=(select count(commentId) from PaperComment where paperId=$pid and forAuthors>0) where paperId=$pid", $while);
+	    // done
+	    $Conf->confirmMsg("Permanently deleted user " . htmlspecialchars($Acct->email) . ".");
+	    $Conf->log("Permanently deleted user " . htmlspecialchars($Acct->email) . " ($Acct->contactId)", $Me);
+	    $Me->go("contacts$ConfSiteSuffix?t=all");
+	}
+    }
+}
 
 function crpformvalue($val, $field = null) {
     global $Acct;
@@ -413,12 +497,48 @@ if ($Acct->isPC || $newProfile) {
 
 
 echo "<tr class='last'><td class='caption'></td>
-  <td class='entry'><div class='aa'>
-    <input class='bb' type='submit' value='",
-    ($newProfile ? "Create account" : "Save changes"),
-    "' name='register' />
-    </div></td>
-</tr>
+  <td class='entry'><div class='aa'><table class='pt_buttons'>\n";
+$buttons = array("<input class='bb' type='submit' value='"
+		 . ($newProfile ? "Create account" : "Save changes")
+		 . "' name='register' />");
+if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
+    $tracks = databaseTracks($Acct->contactId);
+    $buttons[] = array("<button type='button' class='b' onclick=\"popup(this, 'd', 0)\">Delete user</button>", "(admin only)");
+    if (count($tracks->soleAuthor)) {
+	$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p><strong>This user cannot be deleted</strong> because they are the sole contact author for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".  Delete these papers from the database or add alternate contact authors and you will be able to delete this user.\n<div class='popup_actions'><button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Close</button></div></div>";
+    } else {
+	$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this user from the database and <strong>cannot be undone</strong>.</p>";
+	if (count($tracks->author) + count($tracks->review) + count($tracks->comment)) {
+	    $x = $y = array();
+	    if (count($tracks->author)) {
+		$x[] = "contact author for " . pluralx($tracks->author, "paper") . " " . textArrayPapers($tracks->author);
+		$y[] = "delete " . pluralx($tracks->author, "this") . " " . pluralx($tracks->author, "authorship association");
+	    }
+	    if (count($tracks->review)) {
+		$x[] = "reviewer for " . pluralx($tracks->review, "paper") . " " . textArrayPapers($tracks->review);
+		$y[] = "<strong>permanently delete</strong> " . pluralx($tracks->review, "this") . " " . pluralx($tracks->review, "review");
+	    }
+	    if (count($tracks->comment)) {
+		$x[] = "commenter for " . pluralx($tracks->comment, "paper") . " " . textArrayPapers($tracks->comment);
+		$y[] = "<strong>permanently delete</strong> " . pluralx($tracks->comment, "this") . " " . pluralx($tracks->comment, "comment");
+	    }
+	    $Conf->footerStuff .= "<p>This user is " . textArrayJoin($x)
+		. ".  Deleting the user will also " . textArrayJoin($y) . ".</p>";
+	}
+	$Conf->footerStuff .= "<form method='post' action=\"account$ConfSiteSuffix?contact=" . $Acct->contactId . "&amp;post=1\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='delete' value='Delete user' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
+    }
+}
+echo "    <tr>\n";
+foreach ($buttons as $b) {
+    $x = (is_array($b) ? $b[0] : $b);
+    echo "      <td class='ptb_button'>", $x, "</td>\n";
+}
+echo "    </tr>\n    <tr>\n";
+foreach ($buttons as $b) {
+    $x = (is_array($b) ? $b[1] : "");
+    echo "      <td class='ptb_explain'>", $x, "</td>\n";
+}
+echo "    </tr>\n    </table></div></td>\n</tr>
 </table></div></form>\n";
 
 
