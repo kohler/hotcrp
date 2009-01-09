@@ -461,7 +461,7 @@ confHeader();
 
 
 $paperTable = new PaperTable($prow);
-$paperTable->initialize(false, false, true, "assign");
+$paperTable->initialize(false, false, "assign");
 $paperTable->mode = "assign";
 
 

@@ -80,8 +80,7 @@ class PaperTable {
 	    $this->mode = "r";
     }
 
-    function initialize($editable, $useRequest, $allFolded,
-			$foldsession = null) {
+    function initialize($editable, $useRequest, $foldsession = null) {
 	global $thisMatchPreg, $CurrentList;
 
 	$this->editable = $editable;
@@ -97,7 +96,9 @@ class PaperTable {
 	if ($foldsession && !defval($_SESSION, "foldpapert", 1))
 	    $this->foldState &= ~8;
 
-	$this->allFolded = $allFolded;
+	$this->allFolded = ($this->mode == "re"
+			    || $foldsession == "assign"
+			    || ($this->mode != "pe" && (count($this->rrows) || count($this->crows))));
 
 	$this->matchPreg = array();
 	$matcher = null;

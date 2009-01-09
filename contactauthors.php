@@ -92,7 +92,7 @@ foreach ($_REQUEST as $k => $v)
 
 if ($OK) {
     $paperTable = new PaperTable($prow);
-    $paperTable->initialize(false, false, true);
+    $paperTable->initialize(false, false);
     $paperTable->mode = "contact";
 
     $paperTable->paptabBegin();

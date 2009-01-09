@@ -403,7 +403,7 @@ confHeader();
 
 
 // paper table
-$paperTable->initialize(false, false, true, "review");
+$paperTable->initialize(false, false, "review");
 $paperTable->paptabBegin($prow);
 $paperTable->resolveComments();
 
