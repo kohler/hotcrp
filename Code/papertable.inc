@@ -479,7 +479,7 @@ class PaperTable {
 			. substr($m[0], 5, strlen($m[0]) - 9)
 			. "</a>&gt;";
 		if ($au[2] != "" && $viewAs !== null && $viewAs->email != $au[2]
-		    && $viewAs->privChair)
+		    && $viewAs->privChair && defval($au, 4))
 		    $n .= " <a href=\"" . htmlspecialchars(selfHref(array("viewContact" => $au[2]))) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . contactNameHtml($au)) . "</a>";
 		$names[] = $n;
 	    }
@@ -502,7 +502,7 @@ class PaperTable {
 	// find contact author information, combine with author table
 	$result = $Conf->qe("select firstName, lastName, email, '' as affiliation, contactId
 		from ContactInfo join PaperConflict using (contactId)
-		where paperId=$prow->paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . "
+		where paperId=$prow->paperId and conflictType>=" . CONFLICT_AUTHOR . "
 		order by lastName, firstName, email", "while finding contact authors");
 	$contacts = array();
 	while (($row = edb_row($result))) {
