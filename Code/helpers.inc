@@ -594,7 +594,10 @@ function tempdir($dir, $prefix, $mode = 0700) {
 function pluralx($n, $what) {
     if (is_array($n))
 	$n = count($n);
-    return ($n == 1 ? $what : $what . 's');
+    if ($what == "this")
+	return ($n == 1 ? "this" : "these");
+    else
+	return ($n == 1 ? $what : $what . "s");
 }
 
 function plural($n, $what) {
