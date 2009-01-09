@@ -206,7 +206,7 @@ class Conference {
 	$result = $this->q("select contactId from ContactInfo where email='" . sqlq($email) . "'");
 	if (edb_nrows($result) > 0) {
 	    $row = edb_row($result);
-	    return $row[0];
+	    return (int) $row[0];
 	}
 
 	if ($registerFromRequest === false)

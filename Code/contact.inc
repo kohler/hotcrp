@@ -167,7 +167,7 @@ class Contact {
     }
 
     function trim() {
-	$this->contactId = trim($this->contactId);
+	$this->contactId = (int) trim($this->contactId);
 	$this->visits = trim($this->visits);
 	$this->firstName = simplifyWhitespace($this->firstName);
 	$this->lastName = simplifyWhitespace($this->lastName);
@@ -260,7 +260,7 @@ class Contact {
 	$result = $conf->q("insert into ContactInfo ($qa) values ($qb)");
 	if (!$result)
 	    return $result;
-	$contactId = $conf->lastInsertId("while creating contact");
+	$contactId = (int) $conf->lastInsertId("while creating contact");
 	if (!$contactId)
 	    return false;
 
@@ -288,7 +288,7 @@ class Contact {
 	if (edb_nrows($result) >= 1) {
 	    $fromdb = edb_orow($result);
 
-	    $this->contactId = $fromdb->contactId;
+	    $this->contactId = (int) $fromdb->contactId;
 	    $this->visits = $fromdb->visits;
 	    $this->firstName = $fromdb->firstName;
 	    $this->lastName = $fromdb->lastName;
@@ -338,7 +338,7 @@ class Contact {
 	// they provide all necessary information.
 	$c = new Contact();
 	$c->invalidate();
-	$c->contactId = $o->contactId;
+	$c->contactId = (int) $o->contactId;
 	$c->firstName = defval($o, "firstName", '');
 	$c->lastName = defval($o, "lastName", '');
 	$c->email = defval($o, "email", '');
