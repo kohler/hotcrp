@@ -229,7 +229,10 @@ function setTags($pids, $tagtext, $mode, $chair) {
 		    else
 			$q .= " and tag!='" . sqlq($ct) . "'";
 	    }
-	    $q .= " and (tag like '$mytagprefix%' or tag not like '%~%')";
+	    $q .= " and (tag like '$mytagprefix%' or tag not like '%~%'";
+	    if ($chair)
+		$q .= " or tag like '~~%'";
+	    $q .= ")";
 	}
 	$Conf->qe($q, $while);
     }
