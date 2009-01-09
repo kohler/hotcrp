@@ -406,7 +406,8 @@ function doTags($set, $what) {
 	    $q = array();
 	    foreach ($pvals as $pid => $what)
 		$q[] = "($pid, '" . sqlq($base) . "', $what)";
-	    $Conf->qe("insert into PaperTag values " . join(", ", $q), "while counting votes");
+	    if (count($q) > 0)
+		$Conf->qe("insert into PaperTag values " . join(", ", $q), "while counting votes");
 	}
     }
 
