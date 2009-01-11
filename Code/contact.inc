@@ -253,6 +253,12 @@ class Contact {
 	$this->password = $this->generatePassword(10);
 	$qa = "email, password";
 	$qb = "'" . sqlq($this->email) . "', '" . sqlq($this->password) . "'";
+	foreach (array("firstName", "lastName", "affiliation", "collaborators",
+		       "voicePhoneNumber", "faxPhoneNumber") as $k)
+	    if (isset($this->$k) && $this->$k) {
+		$qa .= ", $k";
+		$qb .= ", '" . sqlq($this->$k) . "'";
+	    }
 	if ($Conf->setting("allowPaperOption") >= 4) {
 	    $qa .= ", creationTime";
 	    $qb .= ", " . time();
