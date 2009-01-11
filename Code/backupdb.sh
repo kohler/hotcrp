@@ -56,6 +56,9 @@ while ($t =~ m&\$Opt\[['"'"'"](.*?)['"'"'"]\]\s*=\s*\"(([^\"\\]|\\.)*)\"&g) {
 while ($t =~ m&\$Opt\[['"'"'"](.*?)['"'"'"]\]\s*=\s*'"'"'([^'"'"']*)'"'"'&g) {
    $Opt{$1} = $2;
 }
+while ($t =~ m&\$Opt\[['"'"'"](.*?)['"'"'"]\]\s*=\s*([\d.]+)&g) {
+   $Opt{$1} = $2;
+}
 
 sub fixshell ($) {
     my($a) = @_;
@@ -63,7 +66,10 @@ sub fixshell ($) {
     $a;
 }
 
-if (exists($Opt{"dsn"}) || !exists($Opt{"dbName"})) {
+if ($Opt{"multiconference"}) {
+   print STDERR "backupdb.sh: Not smart enough for multiconference yet\n";
+   print "";
+} elsif (exists($Opt{"dsn"}) || !exists($Opt{"dbName"})) {
    print "";
 } else {
    $Opt{"dbUser"} = $Opt{"dbName"} if (!exists($Opt{"dbUser"}));
