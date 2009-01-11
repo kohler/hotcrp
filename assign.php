@@ -233,7 +233,7 @@ function requestReview($email) {
     }
 
     $Them = new Contact();
-    $Them->lookupById($reqId, $Conf);
+    $Them->lookupById($reqId);
     $reason = trim(defval($_REQUEST, "reason", ""));
 
     $while = "while requesting review";

@@ -50,10 +50,8 @@ class Contact {
     // Initialization functions
     //
 
-    function valid($conf = null, $update = false) {
+    function valid($update = false) {
 	global $Conf, $Opt;
-	if ($conf == null)
-	    $conf = $Conf;
 	if (!$this->validated && $this->contactId > 0) {
 	    $qr = "";
 	    if (isset($_SESSION["rev_tokens"]))
@@ -65,7 +63,7 @@ class Contact {
 	    $qb = "left join PaperReview on (PaperReview.contactId=ContactInfo.contactId$qr)
 		left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId)
 		left join PaperReview as ExtPaperReview on (ExtPaperReview.requestedBy=ContactInfo.contactId)";
-	    if ($conf->setting("allowPaperOption") >= 6)
+	    if ($Conf->setting("allowPaperOption") >= 6)
 		$qa .= ",
 		ContactInfo.roles, 0, 0, 0";
 	    else {
@@ -78,7 +76,7 @@ class Contact {
 		left join ChairAssistant on (ChairAssistant.contactId=ContactInfo.contactId)
 		left join Chair on (Chair.contactId=ContactInfo.contactId)";
 	    }
-	    $result = $conf->qe("$qa from ContactInfo $qb where ContactInfo.contactId=$this->contactId group by ContactInfo.contactId");
+	    $result = $Conf->qe("$qa from ContactInfo $qb where ContactInfo.contactId=$this->contactId group by ContactInfo.contactId");
 	    if (edb_nrows($result) == 0)
 		$this->invalidate();
 	    else {
@@ -118,21 +116,21 @@ class Contact {
 			$this->contactId = $viewContact;
 			unset($_REQUEST["viewContact"]);
 			unset($_SESSION["l"]);
-			return $this->valid($conf, true);
+			return $this->valid(true);
 		    }
 		    if ($chairMode >= 0 && !$this->privChair) {
 			$this->contactId = $this->chairContactId;
 			unset($_REQUEST["chairMode"]);
-			return $this->valid($conf, true);
+			return $this->valid(true);
 		    }
 		}
 		if ($update)
-		    $this->lookupById($this->contactId, $conf);
+		    $this->lookupById($this->contactId);
 		$this->validated = true;
 	    }
 	} else if (isset($Opt['validatorContact']) && $Opt['validatorContact'] && !$this->contactId && isset($_REQUEST['validator'])) {
-	    $this->lookupByEmail($Opt['validatorContact'], $conf);
-	    return $this->valid($conf, $update);
+	    $this->lookupByEmail($Opt['validatorContact']);
+	    return $this->valid($update);
 	}
 	return $this->contactId > 0 && $this->confDsn == $Opt["dsn"];
     }
@@ -220,10 +218,11 @@ class Contact {
 	    $this->goAlert(false, "That page is only accessible to conference administrators.");
     }
 
-    function updateDB($conf, $where = "") {
+    function updateDB($where = "") {
+	global $Conf;
 	$this->trim();
 	$qa = "";
-	if ($conf->setting("allowPaperOption") >= 6)
+	if ($Conf->setting("allowPaperOption") >= 6)
 	    $qa = ", roles='$this->roles', defaultWatch='$this->defaultWatch'";
 	$query = sprintf("update ContactInfo set firstName='%s', lastName='%s',
 		email='%s', affiliation='%s', voicePhoneNumber='%s',
@@ -236,38 +235,39 @@ class Contact {
 			 sqlq($this->password),
 			 sqlq($this->collaborators),
 			 $this->contactId);
-	$result = $conf->qe($query, $where);
-	if (!$result || $conf->setting("allowPaperOption") < 5)
+	$result = $Conf->qe($query, $where);
+	if (!$result || $Conf->setting("allowPaperOption") < 5)
 	    return $result;
-	$conf->qx("delete from ContactAddress where contactId=$this->contactId");
+	$Conf->qx("delete from ContactAddress where contactId=$this->contactId");
 	if ($this->addressLine1 || $this->addressLine2 || $this->city
 	    || $this->state || $this->zipCode || $this->country) {
 	    $query = "insert into ContactAddress (contactId, addressLine1, addressLine2, city, state, zipCode, country) values ($this->contactId, '" . sqlq($this->addressLine1) . "', '" . sqlq($this->addressLine2) . "', '" . sqlq($this->city) . "', '" . sqlq($this->state) . "', '" . sqlq($this->zipCode) . "', '" . sqlq($this->country) . "')";
-	    $result = $conf->qe($query, $where);
+	    $result = $Conf->qe($query, $where);
 	}
 	return $result;
     }
 
-    function initialize($email, $conf) {
+    function initialize($email) {
+	global $Conf;
 	$this->email = trim($email);
 	$this->password = $this->generatePassword(10);
 	$qa = "email, password";
 	$qb = "'" . sqlq($this->email) . "', '" . sqlq($this->password) . "'";
-	if ($conf->setting("allowPaperOption") >= 4) {
+	if ($Conf->setting("allowPaperOption") >= 4) {
 	    $qa .= ", creationTime";
 	    $qb .= ", " . time();
 	}
-	$result = $conf->q("insert into ContactInfo ($qa) values ($qb)");
+	$result = $Conf->q("insert into ContactInfo ($qa) values ($qb)");
 	if (!$result)
 	    return $result;
-	$contactId = (int) $conf->lastInsertId("while creating contact");
+	$contactId = (int) $Conf->lastInsertId("while creating contact");
 	if (!$contactId)
 	    return false;
 
 	// update paper authorship based on authorInformation fields
 	// (ignore errors)
 	$addAuthor = array();
-	$result = $conf->q("select paperId, authorInformation from Paper where authorInformation like '%	" . sqlq_for_like($this->email) . "	%'");
+	$result = $Conf->q("select paperId, authorInformation from Paper where authorInformation like '%	" . sqlq_for_like($this->email) . "	%'");
 	while (($row = edb_orow($result))) {
 	    cleanAuthor($row);
 	    foreach ($row->authorTable as $au)
@@ -277,14 +277,14 @@ class Contact {
 		}
 	}
 	if (count($addAuthor))
-	    $conf->q("insert into PaperConflict (paperId, contactId, conflictType) values " . join(", ", $addAuthor) . " on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")");
+	    $Conf->q("insert into PaperConflict (paperId, contactId, conflictType) values " . join(", ", $addAuthor) . " on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")");
 
-	return $this->lookupByEmail($this->email, $conf);
+	return $this->lookupByEmail($this->email);
     }
 
-    function updateFromQuery($query, $conf) {
-	global $Opt;
-	$result = $conf->q($query);
+    function updateFromQuery($query) {
+	global $Conf, $Opt;
+	$result = $Conf->q($query);
 	if (edb_nrows($result) >= 1) {
 	    $fromdb = edb_orow($result);
 
@@ -312,19 +312,20 @@ class Contact {
 	return $result;
     }
 
-    function lookupByEmail($email, $conf) {
+    function lookupByEmail($email) {
 	return $this->updateFromQuery("select ContactInfo.* from ContactInfo
-		where email='" . sqlqtrim($email) . "'", $conf);
+		where email='" . sqlqtrim($email) . "'");
     }
 
-    function lookupById($contactId, $conf) {
+    function lookupById($contactId) {
 	return $this->updateFromQuery("select ContactInfo.* from ContactInfo
-		where ContactInfo.contactId=$contactId", $conf);
+		where ContactInfo.contactId=$contactId");
     }
 
-    function lookupAddress($conf) {
-	if ($conf->setting("allowPaperOption") >= 5) {
-	    $result = $conf->qx("select * from ContactAddress where contactId=$this->contactId");
+    function lookupAddress() {
+	global $Conf;
+	if ($Conf->setting("allowPaperOption") >= 5) {
+	    $result = $Conf->qx("select * from ContactAddress where contactId=$this->contactId");
 	    foreach (self::_addressKeys() as $k)
 		$this->$k = null;
 	    if (($row = edb_orow($result)))

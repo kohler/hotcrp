@@ -685,7 +685,7 @@ function downloadRevpref($extended) {
     $Rev = $Me;
     if (($rev = rcvtint($_REQUEST["reviewer"])) > 0 && $Me->privChair) {
 	$Rev = new Contact();
-	if (!$Rev->lookupById($rev, $Conf) || !$Rev->valid())
+	if (!$Rev->lookupById($rev) || !$Rev->valid())
 	    return $Conf->errorMsg("No such reviewer");
     }
     $q = $Conf->paperQuery($Rev, array("paperId" => $papersel, "topics" => 1, "reviewerPreference" => 1));
@@ -840,7 +840,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != "" && 
     } else if ($mt == "xpcpaper" || $mt == "xunpcpaper") {
 	$Conf->qe("update Paper set pcPaper=" . ($mt == "xpcpaper" ? 1 : 0) . " where " . paperselPredicate($papersel), "while marking PC papers");
 	$Conf->log("Change PC paper status", $Me, $papersel);
-    } else if (!$mpc || !$pc->lookupByEmail($mpc, $Conf))
+    } else if (!$mpc || !$pc->lookupByEmail($mpc))
 	$Conf->errorMsg("'" . htmlspecialchars($mpc) . " is not a PC member.");
     else if ($mt == "conflict" || $mt == "unconflict") {
 	$while = "while marking conflicts";

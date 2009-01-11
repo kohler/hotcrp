@@ -42,7 +42,7 @@ function doCreateAccount() {
 	$email_class = " error";
 	return $Conf->errorMsg("&ldquo;" . htmlspecialchars($_REQUEST["email"]) . "&rdquo; is not a valid email address.");
     } else if (!$Me->valid()) {
-	$result = $Me->initialize($_REQUEST["email"], $Conf);
+	$result = $Me->initialize($_REQUEST["email"]);
 	if (!$result)
 	    return $Conf->errorMsg($Conf->dbErrorText(true, "while adding your account"));
     }
@@ -131,7 +131,7 @@ function doLogin() {
     } else if (!isset($_COOKIE["CRPTestCookie"]))
 	return $Conf->errorMsg("You appear to have disabled cookies in your browser, but this site needs to set cookies to function.  Google has <a href='http://www.google.com/cookies.html'>an informative article on how to enable them</a>.");
 
-    $Me->lookupByEmail($_REQUEST["email"], $Conf);
+    $Me->lookupByEmail($_REQUEST["email"]);
     if ($_REQUEST["action"] == "new") {
 	if (!($reg = doCreateAccount()))
 	    return $reg;

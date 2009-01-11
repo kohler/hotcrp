@@ -20,17 +20,17 @@ else if (isset($_REQUEST["new"])) {
 } else if (isset($_REQUEST["contact"])) {
     $Acct = new Contact();
     if (($id = rcvtint($_REQUEST["contact"])) > 0)
-	$Acct->lookupById($id, $Conf);
+	$Acct->lookupById($id);
     else
-	$Acct->lookupByEmail($_REQUEST["contact"], $Conf);
-    if (!$Acct->valid($Conf)) {
+	$Acct->lookupByEmail($_REQUEST["contact"]);
+    if (!$Acct->valid()) {
 	$Conf->errorMsg("Invalid contact.");
 	$Acct = $Me;
     }
 } else
     $Acct = $Me;
 
-$Acct->lookupAddress($Conf);
+$Acct->lookupAddress();
 
 
 if (isset($_REQUEST["register"])) {
@@ -68,7 +68,7 @@ if (isset($_REQUEST['register']) && $OK) {
 	$Error["uemail"] = true;
     } else {
 	if ($newProfile) {
-	    $result = $Acct->initialize($_REQUEST["uemail"], $Conf);
+	    $result = $Acct->initialize($_REQUEST["uemail"]);
 	    if ($OK) {
 		$Acct->sendAccountInfo($Conf, true, false);
 		$Conf->log("Account created by $Me->email", $Acct);
@@ -146,7 +146,7 @@ if (isset($_REQUEST['register']) && $OK) {
 	    $Acct->defaultWatch |= WATCH_COMMENT;
 
 	if ($OK)
-	    $Acct->updateDB($Conf);
+	    $Acct->updateDB();
 
 	if ($updatepc) {
 	    $t = time();
@@ -170,8 +170,8 @@ if (isset($_REQUEST['register']) && $OK) {
 
 	if ($OK) {
 	    // Refresh the results
-	    $Acct->lookupByEmail($_REQUEST["uemail"], $Conf);
-	    $Acct->valid($Conf);
+	    $Acct->lookupByEmail($_REQUEST["uemail"]);
+	    $Acct->valid();
 	    if ($newProfile) {
 		$Conf->confirmMsg("Successfully created <a href=\"account$ConfSiteSuffix?contact=" . urlencode($Acct->email) . "\">an account for " . htmlspecialchars($Acct->email) . "</a>.  A password has been emailed to that address.  You may now <a href='account$ConfSiteSuffix?contact=new'>create another account</a>, or edit the " . htmlspecialchars($Acct->email) . " account below.");
 		$newProfile = false;

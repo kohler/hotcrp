@@ -28,7 +28,7 @@ if (isset($_REQUEST["merge"])) {
 	$MergeError = "Enter the password of the account to merge.";
     else {
 	$MiniMe = new Contact();
-	$MiniMe->lookupByEmail($_REQUEST["email"], $Conf);
+	$MiniMe->lookupByEmail($_REQUEST["email"]);
 
 	if (!$MiniMe->valid())
 	    $MergeError = "No account for " . htmlspecialchars($_REQUEST["email"]) . " exists.  Did you enter the correct email address?";

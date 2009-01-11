@@ -220,7 +220,7 @@ class Conference {
 
 	// try to add them
 	$newguy = new Contact();
-	$result = $newguy->initialize($email, $this);
+	$result = $newguy->initialize($email);
 	if ($result) {
 	    // rigamarole to handle separate or joined first and last names
 	    if (isset($_REQUEST["${p}firstName"]) || isset($_REQUEST["${p}lastName"])) {
@@ -245,7 +245,7 @@ class Conference {
 		$newguy->faxPhoneNumber = $_REQUEST["${p}faxPhoneNumber"];
 
 	    // actually update database
-	    $result = $newguy->updateDB($this, "while creating account for " . htmlspecialchars($email));
+	    $result = $newguy->updateDB("while creating account for " . htmlspecialchars($email));
 	}
 
 	if ($result) {

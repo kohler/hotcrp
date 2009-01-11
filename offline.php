@@ -131,7 +131,7 @@ function setTagIndexes() {
 		$Me = null;
 	    } else {
 		$Me = new Contact();
-		$Me->lookupById($cid, $Conf);
+		$Me->lookupById($cid);
 		$Me->valid();
 	    }
 	} else if (trim($l) !== "")

@@ -442,7 +442,7 @@ class ReviewForm {
 	    $submitter = $Me;
 	    if ($contactId != $submitter->contactId) {
 		$submitter = new Contact();
-		$submitter->lookupById($contactId, $Conf);
+		$submitter->lookupById($contactId);
 	    }
 	    $rest = array("rrow" => $fake_rrow, "reviewNumber" => $prow->paperId . $reviewnum);
 

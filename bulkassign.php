@@ -158,7 +158,7 @@ function parseBulkFile($text, $filename, $type) {
 	    $Me->assignPaper($paperId, null, $cid, $t, $Conf);
 	    if ($type == REVIEW_EXTERNAL && $doemail) {
 		$Them = new Contact();
-		$Them->lookupById($cid, $Conf);
+		$Them->lookupById($cid);
 		if (!$prow)
 		    $prow = $Conf->paperRow($paperId);
 		Mailer::send($mailtemplate, $prow, $Them, $Me);
