@@ -32,6 +32,23 @@ if (isset($_REQUEST["signin"]) || isset($_REQUEST["signout"])) {
 	unset($_SESSION["afterLogin"]);
 }
 
+function doFirstUser($msg) {
+    global $Conf, $Opt, $Me;
+    $msg .= "As the first user, you have been automatically signed in and assigned system administrator privilege.";
+    if (!isset($Opt["ldapLogin"]))
+	$msg .= "  Your password is &ldquo;<tt>" . htmlspecialchars($Me->password) . "</tt>&rdquo;.  All later users will have to sign in normally.";
+    $while = "while granting system administrator privilege";
+    $Conf->qe("insert into ChairAssistant (contactId) values (" . $Me->contactId . ")", $while);
+    if ($Conf->setting("allowPaperOption") >= 6)
+	$Conf->qe("update ContactInfo set roles=" . (Contact::ROLE_ADMIN) . " where contactId=" . $Me->contactId, $while);
+    $Conf->qe("delete from Settings where name='setupPhase'", "while leaving setup phase");
+    $Conf->log("Granted system administrator privilege to first user", $Me);
+    $Conf->confirmMsg($msg);
+    if (!function_exists("imagecreate"))
+	$Conf->warnMsg("Your PHP installation appears to lack GD support, which is required for drawing score graphs.  You may want to fix this problem and restart Apache.");
+    return true;
+}
+
 function doCreateAccount() {
     global $Conf, $Opt, $Me, $email_class;
 
@@ -52,31 +69,20 @@ function doCreateAccount() {
     $msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".  ";
 
     // handle setup phase
-    if (defval($Conf->settings, "setupPhase", false)) {
-	$msg .= "  As the first user, you have been automatically signed in and assigned system administrator privilege.  Your password is &ldquo;<tt>" . htmlspecialchars($Me->password) . "</tt>&rdquo;.  All later users will have to sign in normally.";
-	$while = "while granting system administrator privilege";
-	$Conf->qe("insert into ChairAssistant (contactId) values (" . $Me->contactId . ")", $while);
-	if ($Conf->setting("allowPaperOption") >= 6)
-	    $Conf->qe("update ContactInfo set roles=" . (Contact::ROLE_ADMIN) . " where contactId=" . $Me->contactId, $while);
-	$Conf->qe("delete from Settings where name='setupPhase'", "while leaving setup phase");
-	$Conf->log("Granted system administrator privilege to first user", $Me);
-	$Conf->confirmMsg($msg);
-	if (!function_exists("imagecreate"))
-	    $Conf->warnMsg("Your PHP installation appears to lack GD support, which is required for drawing score graphs.  You may want to fix this problem and restart Apache.");
-	return true;
-    }
+    if (defval($Conf->settings, "setupPhase", false))
+	return doFirstUser($msg);
 
     if ($Conf->allowEmailTo($Me->email))
-	$msg .= "  A password has been emailed to you.  Return here when you receive it to complete the registration process.  If you don't receive the email, check your spam folders and verify that you entered the correct address.";
+	$msg .= "A password has been emailed to you.  Return here when you receive it to complete the registration process.  If you don't receive the email, check your spam folders and verify that you entered the correct address.";
     else {
 	if ($Opt['sendEmail'])
-	    $msg .= "  The email address you provided seems invalid.";
+	    $msg .= "The email address you provided seems invalid.";
 	else
-	    $msg .= "  The conference system is not set up to mail passwords at this time.";
-	$msg .= "  Although an account was created for you, you need the site administrator's help to retrieve your password.  The site administrator is " . htmlspecialchars($Opt["contactName"] . " <" . $Opt["contactEmail"] . ">") . ".";
+	    $msg .= "The conference system is not set up to mail passwords at this time.";
+	$msg .= "Although an account was created for you, you need the site administrator's help to retrieve your password.  The site administrator is " . htmlspecialchars($Opt["contactName"] . " <" . $Opt["contactEmail"] . ">") . ".";
     }
     if (isset($_REQUEST["password"]) && $_REQUEST["password"] != "")
-	$msg .= "  Note that the password you supplied on the login screen was ignored.";
+	$msg .= "Note that the password you supplied on the login screen was ignored.";
     $Conf->confirmMsg($msg);
     return null;
 }
@@ -131,6 +137,13 @@ function doLogin() {
     } else if (!isset($_COOKIE["CRPTestCookie"]))
 	return $Conf->errorMsg("You appear to have disabled cookies in your browser, but this site needs to set cookies to function.  Google has <a href='http://www.google.com/cookies.html'>an informative article on how to enable them</a>.");
 
+    // do LDAP login before validation, since we might create an account
+    if (isset($Opt["ldapLogin"])) {
+	$_REQUEST["action"] = "login";
+	if (!doLDAPLogin())
+	    return false;
+    }
+
     $Me->lookupByEmail($_REQUEST["email"]);
     if ($_REQUEST["action"] == "new") {
 	if (!($reg = doCreateAccount()))
@@ -139,8 +152,16 @@ function doLogin() {
     }
 
     if (!$Me->valid()) {
-	$email_class = " error";
-	return $Conf->errorMsg("No account for " . htmlspecialchars($_REQUEST["email"]) . " exists.  Did you enter the correct email address?");
+	if (isset($Opt["ldapLogin"])) {
+	    $result = $Me->initialize($_REQUEST["email"]);
+	    if (!$result)
+		return $Conf->errorMsg($Conf->dbErrorText(true, "while adding your account"));
+	    if (defval($Conf->settings, "setupPhase", false))
+		return doFirstUser($msg);
+	} else {
+	    $email_class = " error";
+	    return $Conf->errorMsg("No account for " . htmlspecialchars($_REQUEST["email"]) . " exists.  Did you enter the correct email address?");
+	}
     }
 
     if ($_REQUEST["action"] == "forgot") {
@@ -156,10 +177,7 @@ function doLogin() {
 	return $Conf->errorMsg("Enter your password.  If you've forgotten it, enter your email address and use the &ldquo;I forgot my password, email it to me&rdquo; option.");
     }
 
-    if (isset($Opt["ldapLogin"])) {
-	if (!doLDAPLogin())
-	    return false;
-    } else if ($Me->password != $_REQUEST["password"]) {
+    if ($Me->password != $_REQUEST["password"] && !isset($Opt["ldapLogin"])) {
 	$password_class = " error";
 	return $Conf->errorMsg("That password doesn't match.  If you've forgotten your password, enter your email address and use the &ldquo;I forgot my password, email it to me&rdquo; option.");
     }
