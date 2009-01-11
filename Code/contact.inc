@@ -251,6 +251,24 @@ class Contact {
 	global $Conf;
 	$this->email = trim($email);
 	$this->password = $this->generatePassword(10);
+
+	// update paper authorship based on authorInformation fields
+	// (ignore errors)
+	$addAuthor = array();
+	$result = $Conf->q("select paperId, authorInformation from Paper where authorInformation like '%	" . sqlq_for_like($this->email) . "	%'");
+	while (($row = edb_orow($result))) {
+	    cleanAuthor($row);
+	    foreach ($row->authorTable as $au)
+		if (strcasecmp($au[2], $this->email) == 0) {
+		    $addAuthor[] = "($row->paperId, *, " . CONFLICT_AUTHOR . ")";
+		    if ($this->firstName == "")
+			$this->firstName = $au[0];
+		    if ($this->lastName == "")
+			$this->lastName = $au[1];
+		    break;
+		}
+	}
+
 	$qa = "email, password";
 	$qb = "'" . sqlq($this->email) . "', '" . sqlq($this->password) . "'";
 	foreach (array("firstName", "lastName", "affiliation", "collaborators",
@@ -270,20 +288,8 @@ class Contact {
 	if (!$contactId)
 	    return false;
 
-	// update paper authorship based on authorInformation fields
-	// (ignore errors)
-	$addAuthor = array();
-	$result = $Conf->q("select paperId, authorInformation from Paper where authorInformation like '%	" . sqlq_for_like($this->email) . "	%'");
-	while (($row = edb_orow($result))) {
-	    cleanAuthor($row);
-	    foreach ($row->authorTable as $au)
-		if (strcasecmp($au[2], $this->email) == 0) {
-		    $addAuthor[] = "($row->paperId, $contactId, " . CONFLICT_AUTHOR . ")";
-		    break;
-		}
-	}
 	if (count($addAuthor))
-	    $Conf->q("insert into PaperConflict (paperId, contactId, conflictType) values " . join(", ", $addAuthor) . " on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")");
+	    $Conf->q("insert into PaperConflict (paperId, contactId, conflictType) values " . str_replace("*", $contactId, join(", ", $addAuthor)) . " on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")");
 
 	return $this->lookupByEmail($this->email);
     }
