@@ -88,30 +88,14 @@ function doCreateAccount() {
 }
 
 function doLDAPLogin() {
-    global $Conf, $Opt, $password_class;
-
     // check for bogus configurations
     if (!function_exists("ldap_connect") || !function_exists("ldap_bind"))
 	return $Conf->errorMsg("Internal error: <code>\$Opt[\"ldapLogin\"]</code> is set, but this PHP installation doesn't support LDAP.  Logins will fail until this error is fixed.");
-    if (!preg_match('/\A\s*(\S+)\s+([^*]+)\*(.*?)\s*\z/s', $Opt["ldapLogin"], $m))
-	return $Conf->errorMsg("Internal error: <code>\$Opt[\"ldapLogin\"]</code> syntax error; expected &ldquo;<code><i>LDAP-URL</i> <i>distinguished-name</i></code>&rdquo;, where <code><i>distinguished-name</i></code> contains a <code>*</code> character to be replaced by the user's email address.  Logins will fail until this error is fixed.");
 
-    // connect to the LDAP server
-    if (!($ldapc = @ldap_connect($m[0])))
-	return $Conf->errorMsg("Internal error: ldap_connect.  Logins disabled until this error is fixed.");
-    $qemail = addcslashes($_REQUEST["email"], ',=+<>#;\"');
-    if (@ldap_bind($ldapc, $m[1] . $qemail . $m[2], $_REQUEST["password"])) {
-	ldap_close($ldapc);
-	return true;
-    }
-
-    // connection failed, report error
-    if (ldap_errno($ldapc) < 5)
-	return $Conf->errorMsg("LDAP protocol error: " . htmlspecialchars(ldap_error($ldapc)) . ".  Logins will fail until this error is fixed.");
-    else {
-	$password_class = " error";
-	return $Conf->errorMsg("That password doesn't match.  Please use your LDAP username and password.  <span class='hint'>(LDAP error number: " . ldap_errno($ldapc) . ")</span>");
-    }
+    // the body is elsewhere because we need LDAP constants, which might[?]
+    // cause errors absent LDAP support
+    require_once("Code/ldaplogin.inc");
+    return ldapLoginAction();
 }
 
 function doLogin() {
@@ -122,7 +106,10 @@ function doLogin() {
     if (!isset($_REQUEST["email"])
         || ($_REQUEST["email"] = trim($_REQUEST["email"])) == "") {
 	$email_class = " error";
-	return $Conf->errorMsg("Enter your email address.");
+	if (isset($Opt["ldapLogin"]))
+	    return $Conf->errorMsg("Enter your LDAP username.");
+	else
+	    return $Conf->errorMsg("Enter your email address.");
     }
 
     // Check for the cookie
@@ -153,7 +140,7 @@ function doLogin() {
 
     if (!$Me->valid()) {
 	if (isset($Opt["ldapLogin"])) {
-	    $result = $Me->initialize($_REQUEST["email"]);
+	    $result = $Me->initialize($_REQUEST["email"], true);
 	    if (!$result)
 		return $Conf->errorMsg($Conf->dbErrorText(true, "while adding your account"));
 	    if (defval($Conf->settings, "setupPhase", false))
@@ -349,6 +336,7 @@ Welcome to the ", htmlspecialchars($confname), " submissions site.
 Sign in to submit or review papers.";
     if (isset($Opt["conferenceSite"]))
 	echo " For general information about ", htmlspecialchars($Opt["shortName"]), ", see the <a href=\"", htmlspecialchars($Opt["conferenceSite"]), "\">conference site</a>.";
+    $passwordFocus = ($email_class == "" && $password_class != "");
     echo "</div>
 <hr class='home' />
 <div class='homegrp' id='homeacct'>
@@ -358,14 +346,18 @@ Sign in to submit or review papers.";
   <div class='f-c", $email_class, "'>",
 	(isset($Opt["ldapLogin"]) ? "Username" : "Email"),
 	"</div>
-  <div class='f-e", $email_class, "'><input id='login_d' type='text' class='textlite' name='email' size='36' tabindex='1' ";
+  <div class='f-e", $email_class, "'><input",
+	($passwordFocus ? "" : " id='login_d'"),
+	" type='text' class='textlite' name='email' size='36' tabindex='1' ";
     if (isset($_REQUEST["email"]))
 	echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" ";
     echo " /></div>
 </div>
 <div class='f-i'>
   <div class='f-c", $password_class, "'>Password</div>
-  <div class='f-e'><input type='password' class='textlite' name='password' size='36' tabindex='1' value='' /></div>
+  <div class='f-e'><input",
+	($passwordFocus ? " id='login_d'" : ""),
+	" type='password' class='textlite' name='password' size='36' tabindex='1' value='' /></div>
 </div>\n";
     if (isset($Opt["ldapLogin"]))
 	echo "<input type='hidden' name='action' value='login' />\n";

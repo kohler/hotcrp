@@ -34,12 +34,16 @@ $Acct->lookupAddress();
 
 
 if (isset($_REQUEST["register"])) {
-    $needFields = array('uemail', 'firstName', 'lastName', 'affiliation');
-    if (!$newProfile)
-	$needFields[] = "upassword";
+    $needFields = array('firstName', 'lastName', 'affiliation');
+    if (!isset($Opt["ldapLogin"])) {
+	$needFields[] = "uemail";
+	if (!$newProfile)
+	    $needFields[] = "upassword";
+    }
     foreach ($needFields as $field)
 	if (!isset($_REQUEST[$field])) {
-	    $Conf->errorMsg("Required form fields missing.");
+	    if ($OK)
+		$Conf->errorMsg("Required form fields missing.");
 	    $Error[$field] = true;
 	    $OK = 0;
 	}
@@ -47,6 +51,10 @@ if (isset($_REQUEST["register"])) {
 
 if (isset($_REQUEST['register']) && $OK) {
     $_REQUEST["uemail"] = trim($_REQUEST["uemail"]);
+    if (isset($Opt["ldapLogin"])) {
+	$_REQUEST["uemail"] = $Me->email;
+	$_REQUEST["upassword"] = $_REQUEST["upassword2"] = $Me->password;
+    }
     if (!$newProfile && defval($_REQUEST, "upassword", "") == "") {
 	$UpdateError = "Blank passwords are not allowed.";
 	$Error['password'] = true;
@@ -336,11 +344,17 @@ if (isset($_REQUEST["redirect"]))
 echo "<table id='foldpass' class='form foldc'>
 <tr>
   <td class='caption initial'>Contact information</td>
-  <td class='entry'><div class='f-contain'>
+  <td class='entry'><div class='f-contain'>\n\n";
 
-<div class='f-i'>
+if (!isset($Opt["ldapLogin"]))
+    echo "<div class='f-i'>
   <div class='", fcclass('uemail'), "'>Email</div>
   <div class='", feclass('uemail'), "'><input class='textlite' type='text' name='uemail' size='52' value=\"", crpformvalue('uemail', 'email'), "\" onchange='hiliter(this)' /></div>
+</div>\n\n";
+else
+    echo "<div class='f-i'>
+  <div class='", fcclass("uemail"), "'>Username</div>
+  <div class='", feclass("uemail"), "'>", crpformvalue('uemail', 'email'), "</div>
 </div>\n\n";
 
 echo "<div class='f-i'><div class='f-ix'>
@@ -351,7 +365,7 @@ echo "<div class='f-i'><div class='f-ix'>
   <div class='", feclass('lastName'), "'><input class='textlite' type='text' name='lastName' size='24' value=\"", crpformvalue('lastName'), "\" onchange='hiliter(this)' /></div>
 </div><div class='clear'></div></div>\n\n";
 
-if (!$newProfile) {
+if (!$newProfile && !isset($Opt["ldapLogin"])) {
     echo "<div class='f-i'><div class='f-ix'>
   <div class='", fcclass('password'), "'>Password";
     echo "</div>

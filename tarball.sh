@@ -80,6 +80,7 @@ Code/createdb.sh
 Code/distoptions.inc
 Code/header.inc
 Code/helpers.inc
+Code/ldaplogin.inc
 Code/mailtemplate.inc
 Code/paperactions.inc
 Code/paperlist.inc

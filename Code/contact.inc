@@ -247,7 +247,7 @@ class Contact {
 	return $result;
     }
 
-    function initialize($email) {
+    function initialize($email, $useRequest = false) {
 	global $Conf;
 	$this->email = trim($email);
 	$this->password = $this->generatePassword(10);
@@ -272,11 +272,15 @@ class Contact {
 	$qa = "email, password";
 	$qb = "'" . sqlq($this->email) . "', '" . sqlq($this->password) . "'";
 	foreach (array("firstName", "lastName", "affiliation", "collaborators",
-		       "voicePhoneNumber", "faxPhoneNumber") as $k)
+		       "voicePhoneNumber", "faxPhoneNumber") as $k) {
+	    if ($useRequest && isset($_REQUEST[$k])
+		&& defval($this, $k, "") == "")
+		$this->$k = trim($_REQUEST[$k]);
 	    if (isset($this->$k) && $this->$k) {
 		$qa .= ", $k";
 		$qb .= ", '" . sqlq($this->$k) . "'";
 	    }
+	}
 	if ($Conf->setting("allowPaperOption") >= 4) {
 	    $qa .= ", creationTime";
 	    $qb .= ", " . time();
