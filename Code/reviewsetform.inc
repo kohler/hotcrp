@@ -9,7 +9,7 @@ function rf_checkOptions(&$var, &$options, &$order, &$levelChar) {
 	return false;
     $var = cleannl($var);
     if ($var && ord($var[0]) >= 65 && ord($var[0]) <= 90
-	&& $Conf->setting("allowPaperOption") >= 9)
+	&& $Conf->sversion >= 9)
 	$expect = $var[0];
     else
 	$expect = 1;
@@ -36,7 +36,7 @@ function rf_checkOptions(&$var, &$options, &$order, &$levelChar) {
 
 function rf_update($lock) {
     global $Conf, $rf, $Error;
-    $letterOptions = $Conf->setting("allowPaperOption") >= 9;
+    $letterOptions = $Conf->sversion >= 9;
 
     if (isset($_REQUEST['loadsample']) && isset($_REQUEST['sample'])) {
 	require_once('reviewtemplate.inc');
@@ -249,7 +249,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 
 function rf_show() {
     global $Conf, $captions;
-    $letterOptions = $Conf->setting("allowPaperOption") >= 9;
+    $letterOptions = $Conf->sversion >= 9;
     $result = $Conf->qe("select * from ReviewFormField", "while loading review form");
     if (!$result)
 	return;

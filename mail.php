@@ -66,6 +66,8 @@ $subjectPrefix = "[" . $Opt["shortName"] . "] ";
 function contactQuery($type) {
     global $Conf, $Me, $rf, $papersel, $checkReviewNeedsSubmit;
     $contactInfo = "firstName, lastName, email, password, ContactInfo.contactId";
+    if ($Conf->sversion >= 25)
+	$contactInfo .= ", preferredEmail";
     $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind, Paper.shepherdContactId";
 
     // paper limit

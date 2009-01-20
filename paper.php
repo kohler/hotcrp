@@ -390,7 +390,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 
     // update PC conflicts if appropriate
     if ($Conf->setting("sub_pcconf")) {
-	$maxauthormark = ($Conf->setting("allowPaperOption") >= 22 ? CONFLICT_MAXAUTHORMARK : CONFLICT_AUTHORMARK);
+	$maxauthormark = ($Conf->sversion >= 22 ? CONFLICT_MAXAUTHORMARK : CONFLICT_AUTHORMARK);
 	if (!$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType>=" . CONFLICT_AUTHORMARK . " and conflictType<=" . $maxauthormark, "while updating conflicts"))
 	    return false;
 	$q = "";
@@ -563,7 +563,7 @@ if (isset($_REQUEST['delete'])) {
 
 	$error = false;
 	$tables = array('Paper', 'PaperStorage', 'PaperComment', 'PaperConflict', 'PaperReview', 'PaperReviewArchive', 'PaperReviewPreference', 'PaperTopic', 'PaperTag');
-	if ($Conf->setting("allowPaperOption"))
+	if ($Conf->sversion >= 1)
 	    $tables[] = 'PaperOption';
 	foreach ($tables as $table) {
 	    $result = $Conf->qe("delete from $table where paperId=$paperId", "while deleting paper");

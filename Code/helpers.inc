@@ -1129,7 +1129,7 @@ function matchValue($a, $word, $allowKey = false) {
 
 function paperOptions() {
     global $Conf;
-    if ($Conf->setting('paperOption') <= 0 || $Conf->setting('allowPaperOption') <= 0)
+    if ($Conf->setting('paperOption') <= 0 || $Conf->sversion <= 0)
 	return array();
     if (!isset($_SESSION["paperOption"]) || !is_array($_SESSION["paperOption"])
 	|| $_SESSION["paperOption"][0] <= $Conf->setting("paperOption")) {

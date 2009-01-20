@@ -232,7 +232,7 @@ function searchQuickref() {
 	preg_match('/ (\S+) /', $roundtags, $m);
 	_searchQuickrefRow("", "round:$m[1]", "review assignment is &ldquo;$m[1]&rdquo;");
     }
-    if ($Conf->setting("allowPaperOption") >= 12
+    if ($Conf->sversion >= 12
 	&& $Conf->setting("rev_ratings") != REV_RATINGS_NONE)
 	_searchQuickrefRow("", "rate:+", "review was rated positively (&ldquo;rate:-&rdquo; and &ldquo;rate:+>2&rdquo; also work; can combine with &ldquo;re:&rdquo;)");
     _searchQuickrefRow("Comments", "cmt:>0", "at least one comment visible to PC (including authors' response)");

@@ -144,6 +144,8 @@ if (isset($_REQUEST['register']) && $OK) {
 	$Acct->affiliation = $_REQUEST["affiliation"];
 	if (!$newProfile && !isset($Opt["ldapLogin"]))
 	    $Acct->password = $_REQUEST["upassword"];
+	if (isset($_REQUEST["preferredEmail"]))
+	    $Acct->preferredEmail = $_REQUEST["preferredEmail"];
 	foreach (array("voicePhoneNumber", "faxPhoneNumber", "collaborators",
 		       "addressLine1", "addressLine2", "city", "state",
 		       "zipCode", "country") as $v)
@@ -355,6 +357,11 @@ else
     echo "<div class='f-i'>
   <div class='", fcclass("uemail"), "'>Username</div>
   <div class='", feclass("uemail"), "'>", crpformvalue('uemail', 'email'), "</div>
+</div>
+
+<div class='f-i'>
+  <div class='", fcclass("preferredEmail"), "'>Email</div>
+  <div class='", feclass("preferredEmail"), "'><input class='textlite' type='text' name='preferredEmail' size='52' value=\"", crpformvalue("preferredEmail", "preferredEmail"), "\" onchange='hiliter(this)' /></div>
 </div>\n\n";
 
 echo "<div class='f-i'><div class='f-ix'>
@@ -392,7 +399,7 @@ echo "<div class='f-i'>
 
 if ($Conf->setting("acct_addr")) {
     echo "<div class='g'></div>\n";
-    if ($Conf->setting("allowPaperOption") >= 5) {
+    if ($Conf->sversion >= 5) {
 	echo "<div class='f-i'>
   <div class='f-c'>Address line 1</div>
   <div class='f-e'><input class='textlite' type='text' name='addressLine1' size='52' value=\"", crpformvalue('addressLine1'), "\" onchange='hiliter(this)' /></div>
@@ -430,7 +437,7 @@ if ($Conf->setting("acct_addr")) {
 
 echo "</div></td>\n</tr>\n\n";
 
-if ($Conf->setting("allowPaperOption") >= 6) {
+if ($Conf->sversion >= 6) {
     echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n\n",
 	"<tr><td class='caption'>Email notification</td><td class='entry'>",
 	"<input type='checkbox' name='watchcomment' value='", WATCH_COMMENT, "'";

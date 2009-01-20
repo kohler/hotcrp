@@ -9,6 +9,7 @@ class Conference {
 
     var $settings;
     var $settingTexts;
+    var $sversion;
 
     var $saveMessages;
     var $headerPrinted;
@@ -100,10 +101,11 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-	if ($this->settings["allowPaperOption"] < 24) {
+	if ($this->settings["allowPaperOption"] < 25) {
 	    require_once("updateschema.inc");
 	    updateSchema($this);
 	}
+	$this->sversion = defval($this, "settings", 0);
     }
 
     function setting($name, $defval = false) {
@@ -772,7 +774,7 @@ class Conference {
 		max($myPaperReview.reviewType) as myReviewType,
 		max($myPaperReview.reviewSubmitted) as myReviewSubmitted,
 		min($myPaperReview.reviewNeedsSubmit) as myReviewNeedsSubmit";
-	    if ($this->settings["allowPaperOption"] >= 11)
+	    if ($this->sversion >= 11)
 		$pq .= ",
 		PaperReview.reviewRound,
 		$myPaperReview.reviewRound as myReviewRound";
@@ -800,7 +802,7 @@ class Conference {
 		PaperComment.forReviewers,
 		PaperComment.forAuthors,
 		PaperComment.blind as commentBlind";
-	    if ($this->settings["allowPaperOption"] >= 19)
+	    if ($this->sversion >= 19)
 		$pq .= ",
 		PaperComment.replyTo";
 	}
@@ -1059,7 +1061,7 @@ class Conference {
 	    }
 	}
 	if ((isset($selector["ratings"]) || isset($selector["myRating"]))
-	    && $this->setting("allowPaperOption") < 12) {
+	    && $this->sversion < 12) {
 	    unset($selector["ratings"]);
 	    unset($selector["myRating"]);
 	}

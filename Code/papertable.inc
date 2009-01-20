@@ -787,7 +787,7 @@ class PaperTable {
 	if (!count($pcm))
 	    return;
 
-	$maxauthormark = ($Conf->setting("allowPaperOption") >= 22 ? CONFLICT_MAXAUTHORMARK : CONFLICT_AUTHORMARK);
+	$maxauthormark = ($Conf->sversion >= 22 ? CONFLICT_MAXAUTHORMARK : CONFLICT_AUTHORMARK);
 	$selectors = ($maxauthormark == CONFLICT_MAXAUTHORMARK && $Conf->setting("sub_pcconfsel"));
 
 	$conflict = array();
@@ -1058,7 +1058,7 @@ class PaperTable {
     function papstripWatch($prow) {
 	global $Conf, $ConfSiteSuffix, $Me, $linkExtra;
 	if (!($this->watchCheckbox
-	      && $Conf->setting("allowPaperOption") >= 6
+	      && $Conf->sversion >= 6
 	      && $prow->timeSubmitted > 0
 	      && ($prow->conflictType >= CONFLICT_AUTHOR
 		  || $prow->conflictType <= 0

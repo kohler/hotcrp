@@ -16,7 +16,7 @@ An account has been created for you at the %CONFNAME% submissions site, includin
 
         Site: %URL%/
        Email: %EMAIL%
-    Password: %PASSWORD%
+    Password: %OPT(PASSWORD)%
 
 To sign in directly, either click the link below or paste it into your web browser's location field.
 
@@ -36,7 +36,7 @@ Here is your account information for the %CONFNAME% submissions site.
 
         Site: %URL%/
        Email: %EMAIL%
-    Password: %PASSWORD%
+    Password: %OPT(PASSWORD)%
 
 To sign in directly, either click the link below or paste it into your web browser's location field.
 
@@ -77,7 +77,7 @@ For reference, your account information is as follows.
 
         Site: %URL%/
        Email: %EMAIL%
-    Password: %PASSWORD%
+    Password: %OPT(PASSWORD)%
 
 To sign in, either click the link below or paste it into your web browser's location field.
 
@@ -432,6 +432,8 @@ class Mailer {
 	$firstName = $contact;
 	$lastName = $email = null;
 	_cleanContactText($firstName, $lastName, $email);
+	if (is_object($contact) && defval($contact, "preferredEmail", "") != "")
+	    $email = $contact->preferredEmail;
 
 	if ($out[0] == "n")
 	    $t = trim("$firstName $lastName");
@@ -561,15 +563,13 @@ class Mailer {
 	    return $this->_expandContact($this->otherContact, "e");
 
 	// if no contact, this is a pre-expansion
-	if (!$this->contact)
-	    return ($isbool ? null : $what);
+	if (!$this->contact) {
+	    if ($what == "%PASSWORD%" && isset($Opt["ldapLogin"]) && $isbool)
+		return false;
+	    else
+		return ($isbool ? null : $what);
+	}
 
-	if ($what == "%LOGINURL%")
-	    return $Opt["paperSite"] . "/?email=" . urlencode($this->contact->email) . "&password=" . urlencode($this->hideSensitive ? "HIDDEN" : $this->contact->password);
-	if ($what == "%LOGINURLPARTS%")
-	    return "email=" . urlencode($this->contact->email) . "&password=" . urlencode($this->hideSensitive ? "HIDDEN" : $this->contact->password);
-	if ($what == "%PASSWORD%")
-	    return ($this->hideSensitive ? "HIDDEN" : $this->contact->password);
 	if ($what == "%CONTACT%")
 	    return $this->_expandContact($this->contact, "ne");
 	if ($what == "%NAME%")
@@ -580,6 +580,16 @@ class Mailer {
 	    return $this->_expandContact($this->contact, "l");
 	if ($what == "%EMAIL%")
 	    return $this->_expandContact($this->contact, "e");
+
+	$password = null;
+	if (!isset($Opt["ldapLogin"]))
+	    $password = ($this->hideSensitive ? "HIDDEN" : $this->contact->password);
+	if ($what == "%LOGINURL%")
+	    return $Opt["paperSite"] . "/?email=" . urlencode($this->contact->email) . ($password ? "&password=$password" : "");
+	if ($what == "%LOGINURLPARTS%")
+	    return "email=" . urlencode($this->contact->email) . ($password ? "&password=$password" : "");
+	if ($what == "%PASSWORD%")
+	    return ($isbool || $password !== null ? $password : "");
 
 	if ($what == "%REASON%")
 	    return $this->reason;
@@ -815,12 +825,21 @@ class Mailer {
 	if (!$emailTo || !$emailTo->email)
 	    return $Conf->errorMsg("no email in Mailer::send");
 
+	// use preferredEmail if it's set
+	if (defval($emailTo, "preferredEmail", "") != "") {
+	    $xemailTo = (object) array("email" => $emailTo->preferredEmail);
+	    foreach (array("firstName", "lastName", "fullName") as $k)
+		if (defval($emailTo, $k, "") != "")
+		    $xemailTo->$k = $emailTo->$k;
+	    $emailTo = $xemailTo;
+	}
+
 	// expand the template
 	$mailer = new Mailer($row, $contact, $otherContact, $rest);
 	$m = $mailer->expand($template);
 	$m["subject"] = substr(Mailer::mimeHeader("Subject: ", $m["subject"]), 9);
-	$m["allowEmail"] = $Conf->allowEmailTo($emailTo->email);
 	$m["to"] = $emailTo->email;
+	$m["allowEmail"] = $Conf->allowEmailTo($m["to"]);
 	$hdr = Mailer::mimeEmailHeader("To: ", contactEmailTo($emailTo));
 	$m["fullTo"] = substr($hdr, 4);
 
@@ -880,9 +899,10 @@ class Mailer {
 
     function sendContactAuthors($template, $row, $otherContact = null, $rest = array()) {
 	global $Conf, $Me, $mailTemplates;
+	$qa = ($Conf->sversion >= 25 ? ", preferredEmail" : "");
 
 	$result = $Conf->qe("select ContactInfo.contactId,
-		firstName, lastName, email, password, conflictType, 0 as myReviewType
+		firstName, lastName, email$qa, password, conflictType, 0 as myReviewType
 		from ContactInfo join PaperConflict using (contactId)
 		where paperId=$row->paperId and conflictType>=" . CONFLICT_AUTHOR . "
 		group by ContactInfo.contactId", "while looking up contact authors to send email");
@@ -910,9 +930,10 @@ class Mailer {
 
     function sendReviewers($template, $row, $otherContact = null, $rest = array()) {
 	global $Conf, $Me, $Opt, $mailTemplates;
+	$qa = ($Conf->sversion >= 25 ? ", preferredEmail" : "");
 
 	$result = $Conf->qe("select ContactInfo.contactId,
-		firstName, lastName, email, password,
+		firstName, lastName, email$qa, password,
 		conflictType, reviewType as myReviewType
 		from ContactInfo
 		join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$row->paperId)

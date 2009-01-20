@@ -122,6 +122,10 @@ function updateSchema($Conf) {
     if ($Conf->settings["allowPaperOption"] == 23
 	&& $Conf->q("update Settings set value=24 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 24;
+    if ($Conf->settings["allowPaperOption"] == 24
+	&& $Conf->q("alter table ContactInfo add `preferredEmail` varchar(120)")
+	&& $Conf->q("update Settings set value=25 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 25;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

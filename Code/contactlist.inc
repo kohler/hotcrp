@@ -76,7 +76,7 @@ class ContactList extends BaseList {
 	    $queryOptions['reviews'] = true;
 	if ($fieldId == self::FIELD_REVIEW_RATINGS) {
 	    if ($Conf->setting("rev_ratings") == REV_RATINGS_NONE
-		|| $Conf->setting("allowPaperOption") < 12)
+		|| $Conf->sversion < 12)
 		return false;
 	    $queryOptions["revratings"] = $queryOptions["reviews"] = true;
 	}

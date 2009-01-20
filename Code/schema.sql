@@ -63,6 +63,7 @@ CREATE TABLE `ContactInfo` (
   `firstName` varchar(60) NOT NULL default '',
   `lastName` varchar(60) NOT NULL default '',
   `email` varchar(120) NOT NULL,
+  `preferredEmail` varchar(120),
   `affiliation` varchar(2048) NOT NULL default '',
   `voicePhoneNumber` varchar(2048) NOT NULL default '',
   `faxPhoneNumber` varchar(2048) NOT NULL default '',

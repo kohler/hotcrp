@@ -94,7 +94,7 @@ function setReviewInfo($dst, $src) {
 function watch($newComment) {
     global $Conf, $Me, $prow, $savedCrow;
 
-    $apo = $Conf->setting("allowPaperOption");
+    $apo = $Conf->sversion;
     if ($apo < 6 || !$savedCrow)
 	return;
 
@@ -102,8 +102,9 @@ function watch($newComment) {
     if ($apo >= 21 && $savedCrow->timeNotified != $savedCrow->timeModified)
 	return;
 
+    $qa = ($apo >= 25 ? ", preferredEmail" : "");
     $result = $Conf->qe("select ContactInfo.contactId,
-		firstName, lastName, email, password, roles, defaultWatch,
+		firstName, lastName, email$qa, password, roles, defaultWatch,
 		reviewType as myReviewType,
 		reviewSubmitted as myReviewSubmitted,
 		reviewNeedsSubmit as myReviewNeedsSubmit,
@@ -167,7 +168,7 @@ function saveComment($text) {
 
     // query
     $now = time();
-    $notify = ($Conf->setting("allowPaperOption") >= 21);
+    $notify = ($Conf->sversion >= 21);
     if (!$text) {
 	$change = true;
 	$q = "delete from PaperComment where commentId=$crow->commentId";

@@ -39,7 +39,7 @@ function doFirstUser($msg) {
 	$msg .= "  Your password is &ldquo;<tt>" . htmlspecialchars($Me->password) . "</tt>&rdquo;.  All later users will have to sign in normally.";
     $while = "while granting system administrator privilege";
     $Conf->qe("insert into ChairAssistant (contactId) values (" . $Me->contactId . ")", $while);
-    if ($Conf->setting("allowPaperOption") >= 6)
+    if ($Conf->sversion >= 6)
 	$Conf->qe("update ContactInfo set roles=" . (Contact::ROLE_ADMIN) . " where contactId=" . $Me->contactId, $while);
     $Conf->qe("delete from Settings where name='setupPhase'", "while leaving setup phase");
     $Conf->log("Granted system administrator privilege to first user", $Me);
@@ -213,7 +213,7 @@ if ($Me->privChair && $Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
     $Conf->warnMsg("The systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP's preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users will likely be booted off the system earlier than you expect.");
 
 // review tokens
-if (isset($_REQUEST["token"]) && $Me->valid() && $Conf->setting("allowPaperOption") >= 13) {
+if (isset($_REQUEST["token"]) && $Me->valid() && $Conf->sversion >= 13) {
     $oldtokens = isset($_SESSION["rev_tokens"]);
     unset($_SESSION["rev_tokens"]);
     $tokeninfo = array();
@@ -520,7 +520,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	$sep = $xsep;
     }
 
-    if ($myrow && $Conf->setting("allowPaperOption") >= 12
+    if ($myrow && $Conf->sversion >= 12
 	&& $Conf->setting("rev_ratings") != REV_RATINGS_NONE) {
 	$badratings = PaperSearch::unusableRatings($Me->privChair, $Me->contactId);
 	$qx = (count($badratings) ? " and not (PaperReview.reviewId in (" . join(",", $badratings) . "))" : "");

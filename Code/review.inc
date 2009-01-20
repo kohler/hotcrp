@@ -54,7 +54,7 @@ class ReviewForm {
 				    'likelyPresentation' => 1,
 				    'suitableForShort' => 1);
 
-	if ($conf->setting("allowPaperOption") >= 8) {
+	if ($conf->sversion >= 8) {
 	    $this->reviewFields["textField7"] = 0;
 	    $this->reviewFields["textField8"] = 0;
 	}
@@ -179,10 +179,10 @@ class ReviewForm {
 		requestedOn, reviewModified, reviewSubmitted,
 		reviewNeedsSubmit, "
 	    . join(", ", array_keys($this->reviewFields));
-	if ($Conf->setting("allowPaperOption") >= 11)
+	if ($Conf->sversion >= 11)
 	    $fields .= ", reviewRound";
 	// compensate for 2.12 schema error
-	if ($Conf->setting("allowPaperOption") == 8)
+	if ($Conf->sversion == 8)
 	    $fields = str_replace(", textField7, textField8", "", $fields);
 	return $fields;
     }
@@ -376,7 +376,7 @@ class ReviewForm {
 	    $q[] = "reviewType=" . REVIEW_PC;
 	if ($rrow && $different && isset($req["version"])
 	    && $req["version"] > defval($rrow, "reviewEditVersion")
-	    && $Conf->setting("allowPaperOption") >= 17)
+	    && $Conf->sversion >= 17)
 	    $q[] = "reviewEditVersion=" . $req["version"];
 	if (!$rrow || $different)
 	    $q[] = "reviewModified=" . time();
@@ -461,7 +461,7 @@ class ReviewForm {
 
 	// if external, forgive the requestor from finishing their review
 	if ($rrow && $rrow->reviewType == REVIEW_EXTERNAL && $submit
-	    && $Conf->setting("allowPaperOption") >= 3)
+	    && $Conf->sversion >= 3)
 	    $Conf->q("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId=$rrow->requestedBy and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
 
 	return $result;

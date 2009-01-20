@@ -83,7 +83,7 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
     // NB caller unlocks tables
 
     // check for outstanding review request
-    $qa = ($Conf->setting("allowPaperOption") >= 13 ? ", reviewToken" : "");
+    $qa = ($Conf->sversion >= 13 ? ", reviewToken" : "");
     $result = $Conf->qe("select reviewType, reviewModified, reviewSubmitted, requestedBy, paperId,
 		firstName, lastName, email, password$qa
 		from PaperReview
@@ -293,7 +293,7 @@ function proposeReview($email) {
     // check for outstanding review request
     $qa = "paperId, name, email, requestedBy";
     $qb = "$prow->paperId, '" . sqlq($name) . "', '" . sqlq($email) . "', $Me->contactId";
-    if ($Conf->setting("allowPaperOption") >= 7) {
+    if ($Conf->sversion >= 7) {
 	$qa .= ", reason";
 	$qb .= ", '" . sqlq(trim($_REQUEST["reason"])) . "'";
     }
@@ -352,7 +352,7 @@ function createAnonymousReview() {
     } else {
 	$qa = "firstName, lastName, email, affiliation, password";
 	$qb = "'Jane Q.', 'Public', '" . sqlq($contactemail) . "', 'Unaffiliated', '" . sqlq(Contact::generatePassword(20)) . "'";
-	if ($Conf->setting("allowPaperOption") >= 4) {
+	if ($Conf->sversion >= 4) {
 	    $qa .= ", creationTime";
 	    $qb .= ", " . time();
 	}
@@ -365,7 +365,7 @@ function createAnonymousReview() {
     // store the review request
     $qa = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn";
     $qb = ") values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Me->contactId, current_timestamp";
-    if ($Conf->setting("allowPaperOption") >= 13) {
+    if ($Conf->sversion >= 13) {
 	$token = unassignedReviewToken();
 	$Conf->qe($qa . ", reviewToken" . $qb . ", $token)", $while);
 	$Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId.  The review token is " . encodeToken($token) . ".");
@@ -577,7 +577,7 @@ if ($Me->actChair($prow)) {
 
 // outstanding requests
 if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
-    $qa = ($Conf->setting("allowPaperOption") >= 7 ? ", reason" : "");
+    $qa = ($Conf->sversion >= 7 ? ", reason" : "");
     $result = $Conf->qe("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy$qa from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=$prow->paperId", "while finding outstanding requests");
     if (edb_nrows($result) > 0) {
 	echo "	<tr><td colspan='3' class='papsep'></td></tr>
@@ -632,7 +632,7 @@ echo "<div class='f-i'><div class='f-ix'>
   <div class='f-e'><input class='textlite' type='text' name='email' value=\"", htmlspecialchars(defval($_REQUEST, "email", "")), "\" size='28' tabindex='1' /></div>
 </div><div class='clear'></div></div>\n\n";
 
-if ($Conf->setting("allowPaperOption") >= 7)
+if ($Conf->sversion >= 7)
     echo "<div class='f-i'>
   <div class='f-c'>Note to reviewer <span class='f-cx'>(optional)</span></div>
   <div class='f-e'><textarea class='papertext' name='reason' rows='2' tabindex='1'>", htmlspecialchars(defval($_REQUEST, "reason", "")), "</textarea></div>

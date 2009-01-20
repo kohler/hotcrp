@@ -52,8 +52,9 @@ function ldapLoginAction() {
 	return ldapLoginBindFailure($ldapc);
 
     // use LDAP information to prepopulate the database with names
-    $sr = @ldap_search($ldapc, $dn, "(cn=*)", array("sn", "givenname", "cn",
-						    "telephonenumber", "fax"));
+    $sr = @ldap_search($ldapc, $dn, "(cn=*)",
+		       array("sn", "givenname", "cn", "mail", "telephonenumber",
+			     "fax"));
     if ($sr) {
 	$e = @ldap_get_entries($ldapc, $sr);
 	$e = ($e["count"] == 1 ? $e[0] : array());
@@ -63,6 +64,8 @@ function ldapLoginAction() {
 	    $_REQUEST["lastName"] = $e["sn"][0];
 	if (isset($e["givenname"]) && $e["givenname"]["count"] == 1)
 	    $_REQUEST["firstName"] = $e["givenname"][0];
+	if (isset($e["mail"]) && $e["mail"]["count"] == 1)
+	    $_REQUEST["preferredEmail"] = $e["mail"][0];
 	if (isset($e["telephonenumber"]) && $e["telephonenumber"]["count"] == 1)
 	    $_REQUEST["voicePhoneNumber"] = $e["telephonenumber"][0];
 	if (isset($e["fax"]) && $e["fax"]["count"] == 1)

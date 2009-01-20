@@ -14,6 +14,7 @@ class Contact {
     var $firstName;
     var $lastName;
     var $email;
+    var $preferredEmail;
     var $affiliation;
     var $collaborators;
     var $voicePhoneNumber;
@@ -63,7 +64,7 @@ class Contact {
 	    $qb = "left join PaperReview on (PaperReview.contactId=ContactInfo.contactId$qr)
 		left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId)
 		left join PaperReview as ExtPaperReview on (ExtPaperReview.requestedBy=ContactInfo.contactId)";
-	    if ($Conf->setting("allowPaperOption") >= 6)
+	    if ($Conf->sversion >= 6)
 		$qa .= ",
 		ContactInfo.roles, 0, 0, 0";
 	    else {
@@ -145,9 +146,9 @@ class Contact {
 
 	$this->contactId = 0;
 	$this->visits = 0;
-	foreach (array("firstName", "lastName", "email", "affiliation",
-		       "voicePhoneNumber", "faxPhoneNumber", "password",
-		       "collaborators") as $k)
+	foreach (array("firstName", "lastName", "email", "preferredEmail",
+		       "affiliation", "voicePhoneNumber", "faxPhoneNumber",
+		       "password", "collaborators") as $k)
 	    $this->$k = '';
 	foreach (self::_addressKeys() as $k)
 	    $this->$k = null;
@@ -169,9 +170,10 @@ class Contact {
 	$this->visits = trim($this->visits);
 	$this->firstName = simplifyWhitespace($this->firstName);
 	$this->lastName = simplifyWhitespace($this->lastName);
-	foreach (array("email", "affiliation", "voicePhoneNumber",
-		       "faxPhoneNumber", "password", "note", "addressLine1",
-		       "addressLine2", "city", "state", "zipCode", "country")
+	foreach (array("email", "preferredEmail", "affiliation",
+		       "voicePhoneNumber", "faxPhoneNumber", "password", "note",
+		       "addressLine1", "addressLine2", "city", "state",
+		       "zipCode", "country")
 		 as $k)
 	    if ($this->$k)
 		$this->$k = trim($this->$k);
@@ -222,8 +224,10 @@ class Contact {
 	global $Conf;
 	$this->trim();
 	$qa = "";
-	if ($Conf->setting("allowPaperOption") >= 6)
-	    $qa = ", roles='$this->roles', defaultWatch='$this->defaultWatch'";
+	if ($Conf->sversion >= 6)
+	    $qa .= ", roles='$this->roles', defaultWatch='$this->defaultWatch'";
+	if ($Conf->sversion >= 25 && $this->preferredEmail != "")
+	    $qa .= ", preferredEmail='" . sqlq($this->preferredEmail) . "'";
 	$query = sprintf("update ContactInfo set firstName='%s', lastName='%s',
 		email='%s', affiliation='%s', voicePhoneNumber='%s',
 		faxPhoneNumber='%s', password='%s', collaborators='%s'$qa
@@ -236,7 +240,7 @@ class Contact {
 			 sqlq($this->collaborators),
 			 $this->contactId);
 	$result = $Conf->qe($query, $where);
-	if (!$result || $Conf->setting("allowPaperOption") < 5)
+	if (!$result || $Conf->sversion < 5)
 	    return $result;
 	$Conf->qx("delete from ContactAddress where contactId=$this->contactId");
 	if ($this->addressLine1 || $this->addressLine2 || $this->city
@@ -272,16 +276,19 @@ class Contact {
 	$qa = "email, password";
 	$qb = "'" . sqlq($this->email) . "', '" . sqlq($this->password) . "'";
 	foreach (array("firstName", "lastName", "affiliation", "collaborators",
-		       "voicePhoneNumber", "faxPhoneNumber") as $k) {
+		       "voicePhoneNumber", "faxPhoneNumber", "preferredEmail")
+		 as $k) {
 	    if ($useRequest && isset($_REQUEST[$k])
 		&& defval($this, $k, "") == "")
 		$this->$k = trim($_REQUEST[$k]);
-	    if (isset($this->$k) && $this->$k) {
+	    if (isset($this->$k) && $this->$k
+		&& ($k != "preferredEmail"
+		    || $Conf->sversion >= 25)) {
 		$qa .= ", $k";
 		$qb .= ", '" . sqlq($this->$k) . "'";
 	    }
 	}
-	if ($Conf->setting("allowPaperOption") >= 4) {
+	if ($Conf->sversion >= 4) {
 	    $qa .= ", creationTime";
 	    $qb .= ", " . time();
 	}
@@ -309,6 +316,7 @@ class Contact {
 	    $this->firstName = $fromdb->firstName;
 	    $this->lastName = $fromdb->lastName;
 	    $this->email = $fromdb->email;
+	    $this->preferredEmail = defval($fromdb, "preferredEmail", null);
 	    $this->affiliation = $fromdb->affiliation;
 	    $this->voicePhoneNumber = $fromdb->voicePhoneNumber;
 	    $this->faxPhoneNumber = $fromdb->faxPhoneNumber;
@@ -340,7 +348,7 @@ class Contact {
 
     function lookupAddress() {
 	global $Conf;
-	if ($Conf->setting("allowPaperOption") >= 5) {
+	if ($Conf->sversion >= 5) {
 	    $result = $Conf->qx("select * from ContactAddress where contactId=$this->contactId");
 	    foreach (self::_addressKeys() as $k)
 		$this->$k = null;
@@ -356,10 +364,11 @@ class Contact {
 	$c = new Contact();
 	$c->invalidate();
 	$c->contactId = (int) $o->contactId;
-	$c->firstName = defval($o, "firstName", '');
-	$c->lastName = defval($o, "lastName", '');
-	$c->email = defval($o, "email", '');
-	$c->password = defval($o, "password", '');
+	$c->firstName = defval($o, "firstName", "");
+	$c->lastName = defval($o, "lastName", "");
+	$c->email = defval($o, "email", "");
+	$c->preferredEmail = defval($o, "preferredEmail", "");
+	$c->password = defval($o, "password", "");
 	$c->isAuthor = defval($o, "isAuthor", false) != 0;
 	$c->isReviewer = defval($o, "isReviewer", false) != 0;
 	$c->roles = defval($o, "roles", 0);
@@ -723,7 +732,7 @@ class Contact {
 
     function canRateReview($prow, $rrow) {
 	global $Conf;
-	if ($Conf->setting("allowPaperOption") < 12)
+	if ($Conf->sversion < 12)
 	    return false;
 	$rs = $Conf->setting("rev_ratings");
 	if ($rs == REV_RATINGS_PC)

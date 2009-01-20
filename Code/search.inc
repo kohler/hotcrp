@@ -709,7 +709,7 @@ class PaperSearch {
 	if (($special ? $special == "round" : isset($this->fields["round"]))
 	    && $this->amPC) {
 	    $this->reviewAdjust = true;
-	    if ($Conf->setting("allowPaperOption") < 11)
+	    if ($Conf->sversion < 11)
 		$qt[] = new SearchTerm("f");
 	    else if ($word == "none")
 		$qt[] = new SearchTerm("revadj", 0, array("round" => 0));
@@ -727,7 +727,7 @@ class PaperSearch {
 	}
 	if (($special ? $special == "rate" : isset($this->fields["rate"]))) {
 	    $this->reviewAdjust = true;
-	    if ($Conf->setting("allowPaperOption") < 12)
+	    if ($Conf->sversion < 12)
 		$qt[] = new SearchTerm("f");
 	    else if (preg_match('/\A(.+?)\s*(|[!=<>]?=?)\s*(\d*)\z/', $word, $m)
 		     && ($m[3] !== "" || $m[2] === "")) {

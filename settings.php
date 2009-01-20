@@ -483,7 +483,7 @@ function doOptions($set) {
 		    return;
 		}
 	    }
-	if ($Conf->setting("allowPaperOption"))
+	if ($Conf->sversion >= 1)
 	    $Values["options"] = true;
 	return;
     }
@@ -505,7 +505,7 @@ function doOptions($set) {
 		$q = "update OptionType set optionName='" . sqlq($_REQUEST["optn$id"])
 		    . "', description='" . sqlq(defval($_REQUEST, "optd$id", ""))
 		    . "', pcView=" . (defval($_REQUEST, "optp$id") ? 1 : 0);
-		if ($Conf->setting("allowPaperOption") >= 14)
+		if ($Conf->sversion >= 14)
 		    $q .= ", optionValues='" . sqlq(defval($_REQUEST, "optv$id")) . "'";
 		$Conf->qe($q . " where optionId=$id", $while);
 		$anyo = true;
@@ -522,7 +522,7 @@ function doOptions($set) {
 	$qb = "'" . sqlq($_REQUEST["optnn"])
 	    . "', '" . sqlq(defval($_REQUEST, "optdn", ""))
 	    . "', " . (defval($_REQUEST, "optpn") ? 1 : 0);
-	if ($Conf->setting("allowPaperOption") >= 14) {
+	if ($Conf->sversion >= 14) {
 	    $qa .= ", optionValues";
 	    $qb .= ", '" . sqlq(defval($_REQUEST, "optvn", "")) . "'";
 	}
@@ -825,7 +825,7 @@ if (isset($_REQUEST["update"])) {
     if (count($Error) == 0 && count($Values) > 0) {
 	$while = "updating settings";
 	$tables = "Settings write, TopicArea write, PaperTopic write";
-	if ($Conf->setting("allowPaperOption"))
+	if ($Conf->sversion >= 1)
 	    $tables .= ", OptionType write, PaperOption write";
 	if (isset($Values['decisions']) || isset($Values['reviewform']))
 	    $tables .= ", ReviewFormOptions write";
@@ -993,7 +993,7 @@ function doActionArea() {
 function doAccGroup() {
     global $Conf, $ConfSiteSuffix, $Me, $belowHr;
 
-    if ($Conf->setting("allowPaperOption") >= 5)
+    if ($Conf->sversion >= 5)
 	doCheckbox("acct_addr", "Collect users' addresses and phone numbers");
     else
 	doCheckbox("acct_addr", "Collect users' phone numbers");
@@ -1046,7 +1046,7 @@ function doSubGroup() {
 	($Conf->setting("sub_pcconf") ? "o" : "c"), "'>\n";
     doCheckbox("sub_pcconf", "Collect authors&rsquo; PC conflicts", true,
 	       "hiliter(this);fold(\"pcconf\",!this.checked)");
-    if ($Conf->setting("allowPaperOption") >= 22) {
+    if ($Conf->sversion >= 22) {
 	echo "<tr class='fx'><td></td><td>";
 	doCheckbox("sub_pcconfsel", "Collect PC conflict types (&ldquo;Advisor/student,&rdquo; &ldquo;Recent collaborator,&rdquo; etc.)");
 	echo "</td></tr>\n";
@@ -1117,13 +1117,13 @@ function doOptGroupOption($o) {
 	"<div class='f-c'>Type</div>",
 	"<div class='f-e'>";
 
-    if ($Conf->setting("allowPaperOption") >= 14)
+    if ($Conf->sversion >= 14)
 	echo tagg_select("optvt$id", array("Checkbox", "Selector"), defval($o, "optionValues") ? 1 : 0, array("onchange" => "hiliter(this);fold(\"optv$id\",this.value==0)")),
 	    "<span class='sep'></span>";
 
     echo "<input type='checkbox' name='optp$o->optionId' value='1'", ($o->pcView ? " checked='checked'" : ""), " onchange='hiliter(this)' />&nbsp;Visible to reviewers";
 
-    if ($Conf->setting("allowPaperOption") >= 14)
+    if ($Conf->sversion >= 14)
 	echo "<div id='foldoptv$id' class='", (defval($o, "optionValues") ? "foldo" : "foldc"), "'><div class='fx'>",
 	    "<div class='hint'>Enter the selector choices one per line.  The first choice will be the default.</div>",
 	    "<textarea class='textlite' name='optv$id' rows='3' cols='50' onchange='hiliter(this)'>", htmlspecialchars(defval($o, "optionValues")), "</textarea>",
@@ -1159,7 +1159,7 @@ function doOptGroupOption($o) {
 function doOptGroup() {
     global $Conf, $ConfSiteSuffix, $rf;
 
-    if ($Conf->setting("allowPaperOption")) {
+    if ($Conf->sversion >= 1) {
 	echo "<h3>Submission options</h3>\n";
 	echo "Options are selected by authors at submission time.  Examples have included &ldquo;PC-authored paper,&rdquo; &ldquo;Consider this paper for a Best Student Paper award,&rdquo; and &ldquo;Allow the shadow PC to see this paper.&rdquo;  The &ldquo;option name&rdquo; should be brief (&ldquo;PC paper,&rdquo; &ldquo;Best Student Paper,&rdquo; &ldquo;Shadow PC&rdquo;).  The description should be more descriptive and may use XHTML.  To delete an option, delete its name.  Add options one at a time.\n";
 	echo "<div class='g'></div>\n";
@@ -1262,7 +1262,7 @@ function doRevGroup() {
     // External reviews
     echo "<h3>External reviews</h3>\n";
 
-    if ($Conf->setting("allowPaperOption") > 1) {
+    if ($Conf->sversion >= 2) {
 	doCheckbox('extrev_chairreq', "PC chair must approve proposed external reviewers");
 	echo "<div class='g'></div>";
     }

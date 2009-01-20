@@ -56,11 +56,11 @@ if (isset($_REQUEST["merge"])) {
 
 	    $while = "while merging conflicts";
 	    $t = "Paper write, ContactInfo write, PaperConflict write, PCMember write, ChairAssistant write, Chair write, ActionLog write, TopicInterest write, PaperComment write, PaperReview write, PaperReview as B write, PaperReviewArchive write, PaperReviewPreference write, PaperReviewRefused write, ReviewRequest write";
-	    if ($Conf->setting("allowPaperOption") >= 5)
+	    if ($Conf->sversion >= 5)
 		$t .= ", ContactAddress write";
-	    if ($Conf->setting("allowPaperOption") >= 6)
+	    if ($Conf->sversion >= 6)
 		$t .= ", PaperWatch write";
-	    if ($Conf->setting("allowPaperOption") >= 12)
+	    if ($Conf->sversion >= 12)
 		$t .= ", ReviewRating write";
 	    $Conf->q("lock tables $t", $while);
 
@@ -89,7 +89,7 @@ if (isset($_REQUEST["merge"])) {
 	    crpmergeoneignore("PCMember", "contactId", $oldid, $newid);
 	    crpmergeoneignore("ChairAssistant", "contactId", $oldid, $newid);
 	    crpmergeoneignore("Chair", "contactId", $oldid, $newid);
-	    if ($Conf->setting("allowPaperOption") >= 6) {
+	    if ($Conf->sversion >= 6) {
 		if (($MiniMe->roles | $Me->roles) != $Me->roles) {
 		    $Me->roles |= $MiniMe->roles;
 		    $Conf->qe("update ContactInfo set roles=$Me->roles where contactId=$Me->contactId", $while);
@@ -116,16 +116,16 @@ if (isset($_REQUEST["merge"])) {
 	    crpmergeone("PaperReviewRefused", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReviewRefused", "requestedBy", $oldid, $newid);
 	    crpmergeone("ReviewRequest", "requestedBy", $oldid, $newid);
-	    if ($Conf->setting("allowPaperOption") >= 6)
+	    if ($Conf->sversion >= 6)
 		crpmergeoneignore("PaperWatch", "contactId", $oldid, $newid);
-	    if ($Conf->setting("allowPaperOption") >= 12)
+	    if ($Conf->sversion >= 12)
 		crpmergeoneignore("ReviewRating", "contactId", $oldid, $newid);
 
 	    // Remove the old contact record
 	    if ($MergeError == "") {
 		if (!$Conf->q("delete from ContactInfo where contactId=$oldid"))
 		    $MergeError .= $Conf->dbErrorText($result, "", 0);
-		if ($Conf->setting("allowPaperOption") >= 5
+		if ($Conf->sversion >= 5
 		    && !$Conf->q("delete from ContactAddress where contactId=$oldid"))
 		    $MergeError .= $Conf->dbErrorText($result, "", 0);
 	    }
