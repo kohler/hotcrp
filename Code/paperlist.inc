@@ -922,7 +922,9 @@ class PaperList extends BaseList {
 	$whichlll = 1;
 
 	// Download
-	$t = "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Download</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
+	if (defval($_REQUEST, "atab") == "download")
+	    $whichlll = $nlll;
+	$t = "<span class='lll$nlll'><a href=\"" . selfHref(array("atab" => "download")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Download</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
 	$sel_opt = array();
 	if ($revpref) {
 	    $sel_opt["revpref"] = "Preference file";
@@ -963,30 +965,33 @@ class PaperList extends BaseList {
 
 	// Upload preferences (review preferences only)
 	if ($revpref) {
-	    if (isset($_REQUEST["upload"]))
+	    if (isset($_REQUEST["upload"])
+		|| defval($_REQUEST, "atab") == "uploadpref")
 		$whichlll = $nlll;
 	    $t .= $barsep;
-	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Upload</a></span><span class='lld$nlll'><b> preference file:</b> &nbsp;";
+	    $t .= "<span class='lll$nlll'><a href=\"" . selfHref(array("atab" => "uploadpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Upload</a></span><span class='lld$nlll'><b> preference file:</b> &nbsp;";
 	    $t .= "<input id='plact${nlll}_d' type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='defact(\"upload\")' />&nbsp; <input type='submit' class='b' name='upload' value='Go' tabindex='6' /></span>";
 	    $nlll++;
 	}
 
 	// Set preferences (review preferences only)
 	if ($revpref) {
-	    if (isset($_REQUEST["setpaprevpref"]))
+	    if (isset($_REQUEST["setpaprevpref"])
+		|| defval($_REQUEST, "atab") == "setpref")
 		$whichlll = $nlll;
 	    $t .= $barsep;
-	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Set preferences</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
+	    $t .= "<span class='lll$nlll'><a href=\"" . selfHref(array("atab" => "setpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Set preferences</a></span><span class='lld$nlll'><b>:</b> &nbsp;";
 	    $t .= "<input id='plact${nlll}_d' class='textlite' type='text' name='paprevpref' value='' size='4' tabindex='6' onfocus='defact(\"setpaprevpref\")' /> &nbsp;<input type='submit' class='b' name='setpaprevpref' value='Go' tabindex='6' /></span>";
 	    $nlll++;
 	}
 
 	// Tags (search+PC only)
 	if ($this->contact->isPC && !$revpref) {
-	    if (isset($_REQUEST["tagact"]))
+	    if (isset($_REQUEST["tagact"])
+		|| defval($_REQUEST, "atab") == "tags")
 		$whichlll = $nlll;
 	    $t .= $barsep;
-	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Tag</a></span><span class='lld$nlll'><b>:</b><a class='help' href='help$ConfSiteSuffix?t=tags' title='Learn more'>?</a> &nbsp;";
+	    $t .= "<span class='lll$nlll'><a href=\"" . selfHref(array("atab" => "tags")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Tag</a></span><span class='lld$nlll'><b>:</b><a class='help' href='help$ConfSiteSuffix?t=tags' title='Learn more'>?</a> &nbsp;";
 	    $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add ordered", "aos" => "Add sequential", "so" => "Define ordered", "sos" => "Define sequential");
 	    if ($this->contact->privChair) {
 		$tagopt["xxxb"] = null;
@@ -1001,10 +1006,12 @@ class PaperList extends BaseList {
 
 	// Assignments (search+admin only)
 	if ($this->contact->privChair && !$revpref) {
-	    if (isset($_REQUEST["setassign"]))
+	    if (isset($_REQUEST["setassign"])
+		|| defval($_REQUEST, "atab") == "assign")
 		$whichlll = $nlll;
 	    $t .= $barsep;
-	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Assign</a></span><span id='foldass' class='lld$nlll foldc'><b>:</b> &nbsp;";
+	    $t .= "<span class='lll$nlll'><a href=\"" . selfHref(array("atab" => "assign")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Assign</a></span><span id='foldass' class='lld$nlll foldo'><b>:</b> &nbsp;";
+	    $Conf->footerStuff .= "<script type='text/javascript'>fold('ass')</script>";
 	    $t .= tagg_select("marktype",
 			      array("xauto" => "Automatic assignments",
 				    "zzz1" => null,
@@ -1034,15 +1041,18 @@ class PaperList extends BaseList {
 
 	// Decide, Mail (search+admin only)
 	if ($this->contact->privChair && !$revpref) {
-	    if (isset($_REQUEST["sendmail"]))
+	    if (defval($_REQUEST, "atab") == "decide")
 		$whichlll = $nlll;
 	    $t .= $barsep;
-	    $t .= "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Decide</a></span><span class='lld$nlll'><b>:</b> Set to &nbsp;";
+	    $t .= "<span class='lll$nlll'><a href=\"" . selfHref(array("atab" => "decide")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Decide</a></span><span class='lld$nlll'><b>:</b> Set to &nbsp;";
 	    $t .= decisionSelector(0, "plact${nlll}_d") . " &nbsp;<input type='submit' class='b' name='setdecision' value='Go' /></span>";
 	    $nlll++;
 
+	    if (isset($_REQUEST["sendmail"])
+		|| defval($_REQUEST, "atab") == "mail")
+		$whichlll = $nlll;
 	    $t .= $barsep
-		. "<span class='lll$nlll'><a href='javascript:void crpfocus(\"plact\",$nlll)'>Mail</a></span><span class='lld$nlll'><b>:</b> &nbsp;"
+		. "<span class='lll$nlll'><a href=\"" . selfHref(array("atab" => "mail")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Mail</a></span><span class='lld$nlll'><b>:</b> &nbsp;"
 		. tagg_select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), defval($_REQUEST, "recipients"), array("id" => "plact${nlll}_d"))
 		. " &nbsp;<input type='submit' class='b' name='sendmail' value='Go' /></span>";
 	    $nlll++;
@@ -1052,7 +1062,9 @@ class PaperList extends BaseList {
 	return "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n"
 	    . "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top; padding-right: 4px;'>" . $Conf->cacheableImage("bendulft.png", "^^", null, "placthook") . "</td>\n"
 	    . "    <td colspan='" . ($ncol - 1) . "'>"
-	    . "<div id='plact' class='linelinks$whichlll'><b>Select papers</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then "
+	    . "<div id='plact' class='linelinks$whichlll'><a name='plact'><b>Select papers</b></a> (or <a href=\""
+	    . selfHref(array("selectall" => 1))
+	    . "#plact\" onclick='return papersel(true)'>select all " . $this->count . "</a>), then "
 	    . $t . "</div>" . $this->extraFooter . "</td></tr>\n";
     }
 
@@ -1187,6 +1199,9 @@ class PaperList extends BaseList {
 	    $Conf->errorMsg("There is no paper list query named '" . htmlspecialchars($listname) . "'.");
 	    return null;
 	}
+	if (defval($_REQUEST, "selectall") > 0
+	    && $baseFieldId[0] == self::FIELD_SELECTOR)
+	    $baseFieldId[0] = self::FIELD_SELECTOR_ON;
 
 	// check what is folded
 	$this->folds = (object) array();
@@ -1453,7 +1468,8 @@ class PaperList extends BaseList {
 
 	$x .= $body;
 	reset($fieldDef);
-	if (key($fieldDef) == self::FIELD_SELECTOR)
+	if (key($fieldDef) == self::FIELD_SELECTOR
+	    || key($fieldDef) == self::FIELD_SELECTOR_ON)
 	    $x .= $this->footer($ncol, $listname);
 	$x .= "</table>";
 

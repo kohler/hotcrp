@@ -155,7 +155,7 @@ function selfHref($extra = array(), $self = null) {
 	$_REQUEST["r"] = $_REQUEST["reviewId"];
     if (isset($_REQUEST["commentId"]) && !isset($_REQUEST["c"]))
 	$_REQUEST["c"] = $_REQUEST["commentId"];
-    foreach (array("p", "r", "c", "m", "mode", "forceShow", "validator", "list", "t", "q", "qo", "qx", "qt", "group", "sort", "monreq") as $what)
+    foreach (array("p", "r", "c", "m", "mode", "forceShow", "validator", "list", "t", "q", "qo", "qx", "qt", "tab", "atab", "group", "sort", "monreq") as $what)
 	if (isset($_REQUEST[$what]) && !isset($extra[$what])) {
 	    $x .= "$sep$what=" . urlencode($_REQUEST[$what]);
 	    $sep = "&";

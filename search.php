@@ -951,9 +951,14 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"])) {
 if (isset($_REQUEST["redisplay"]))
     $activetab = 3;
 else if (defval($_REQUEST, "qx", "") != "" || defval($_REQUEST, "qo", "") != ""
-	 || defval($_REQUEST, "qt", "n") != "n" || defval($_REQUEST, "opt", 0) > 0)
+	 || defval($_REQUEST, "qt", "n") != "n")
     $activetab = 2;
 else
+    $activetab = 1;
+$tabs = array("display" => 3, "advanced" => 2, "normal" => 1);
+if (isset($tabs[defval($_REQUEST, "tab", "x")]))
+    $activetab = $tabs[$_REQUEST["tab"]];
+if ($activetab == 3 && (!$pl || $pl->count == 0))
     $activetab = 1;
 $Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"searchform\", $activetab, 1);</script>";
 
@@ -987,10 +992,10 @@ if ($pl) {
 	($_REQUEST["t"] == "acc" && $Conf->timeReviewerViewAcceptedAuthors())
 	|| $_REQUEST["t"] == "a";
 
+    $ajaxDisplayChecked = false;
     if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAllAuthors
 	|| $Me->privChair)
 	$moredisplay .= ajaxDisplayer("aufull", "Full author info");
-    $ajaxDisplayChecked = false;
     if ($pl->headerInfo["collab"])
 	$moredisplay .= ajaxDisplayer("collab", "Collaborators");
     if ($pl->headerInfo["topics"])
@@ -1012,9 +1017,10 @@ if ($pl) {
 }
 
 
-echo "<table id='searchform' class='tablinks$activetab",
-    ($ajaxDisplayChecked ? " fold4o" : " fold4c"), "'>
+echo "<table id='searchform' class='tablinks$activetab fold4o'>
 <tr><td><div class='tlx'><div class='tld1'>";
+if (!$ajaxDisplayChecked)
+    $Conf->footerStuff .= "<script type='text/javascript'>fold(e('searchform'),1,4)</script>";
 
 // Basic search
 echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>
@@ -1191,10 +1197,10 @@ if ($pl && $pl->count > 0) {
 // Tab selectors
 echo "</td></tr>
 <tr><td class='tllx'><table><tr>
-  <td><div class='tll1'><a onclick='return crpfocus(\"searchform\", 1)' href=''>Basic search</a></div></td>
-  <td><div class='tll2'><a onclick='return crpfocus(\"searchform\", 2)' href=''>Advanced search</a></div></td>\n";
+  <td><div class='tll1'><a onclick='return crpfocus(\"searchform\", 1)' href=\"", selfHref(array("tab" => "basic")), "\">Basic search</a></div></td>
+  <td><div class='tll2'><a onclick='return crpfocus(\"searchform\", 2)' href=\"", selfHref(array("tab" => "advanced")), "\">Advanced search</a></div></td>\n";
 if ($pl && $pl->count > 0)
-    echo "  <td><div class='tll3'><a onclick='return crpfocus(\"searchform\", 3)' href=''>Display options</a></div></td>\n";
+    echo "  <td><div class='tll3'><a onclick='return crpfocus(\"searchform\", 3)' href=\"", selfHref(array("tab" => "display")), "\">Display options</a></div></td>\n";
 echo "</tr></table></td></tr>
 </table>\n\n";
 

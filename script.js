@@ -167,6 +167,7 @@ function papersel(onoff, name) {
     for (var i = 0; i < ins.length; i++)
 	if (ins[i].name == name)
 	    ins[i].checked = onoff;
+    return false;
 }
 
 var paperselDocheck = true;

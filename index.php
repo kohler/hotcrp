@@ -396,7 +396,7 @@ if ($homelist) {
 	PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
     &nbsp; <input class='b' type='submit' value='Search' />
   </div></form><br />
-  <span style='font-size: x-small'><a href='help$ConfSiteSuffix?t=search'>Search help</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='help$ConfSiteSuffix?t=keywords'>Search keywords</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='search$ConfSiteSuffix?opt=1'>Advanced search</a></span>
+  <span style='font-size: x-small'><a href='help$ConfSiteSuffix?t=search'>Search help</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='help$ConfSiteSuffix?t=keywords'>Search keywords</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='search$ConfSiteSuffix?tab=advanced'>Advanced search</a></span>
   </td></tr></table>
 </div>
 <hr class='home' />\n";
