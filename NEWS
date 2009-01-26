@@ -1,5 +1,17 @@
 HotCRP NEWS
 
+Version 2.31   26.Jan.2009
+
+* Administrators can delete users.
+
+* LDAP improvements: Autocreate new LDAP users, and allow emailing LDAP
+  users.  Thanks to David Ames of the Linux Foundation.
+
+* Bug fixes: Allow chairs to remove double-twiddle tags.  Avoid error
+  message when adding the first voting tag.  Display improvements.
+  Slightly better support for browsers without Javascript.
+
+
 Version 2.30   7.Jan.2009
 
 * Add chair-only tags: double-twiddle tags, like "~~tag", are only visible
