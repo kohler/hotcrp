@@ -110,7 +110,8 @@ class CommentView {
 	}
 
 	if (!$crow && $editMode && $foldnew)
-	    echo "<h3><a class='q fn' href='javascript:fold(\"addcomment\", 0)'>+&nbsp;Add Comment</a><span class='fx'>Add Comment</span></h3>";
+	    echo "<h3><a class='q fn' href=\"", selfHref(array("c" => "new")),
+		"\" onclick='fold(\"addcomment\", 0);location.hash=\"#commentnew\";return false'>+&nbsp;Add Comment</a><span class='fx'>Add Comment</span></h3>";
 	else if (!$crow)
 	    echo "<h3>Add Comment</h3>";
 	$this->commentIdentityTime($prow, $crow, false);
