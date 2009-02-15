@@ -215,6 +215,8 @@ function searchQuickref() {
     _searchQuickrefRow("Title", "ti:flexible", "title contains &ldquo;flexible&rdquo;");
     _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains &ldquo;very novel&rdquo;");
     _searchQuickrefRow("Authors", "au:poletto", "author list contains &ldquo;poletto&rdquo;");
+    if ($Me->isPC)
+	_searchQuickrefRow("", "au:pc", "one or more contact authors are PC members");
     _searchQuickrefRow("Collaborators", "co:liskov", "collaborators contains &ldquo;liskov&rdquo;");
     _searchQuickrefRow("Topics", "topic:link", "selected topics match &ldquo;link&rdquo;");
     _searchQuickrefRow("Options", "opt:shadow", "selected submission options match &ldquo;shadow&rdquo;");

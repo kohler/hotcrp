@@ -216,7 +216,7 @@ class PaperSearch {
 	}
     }
 
-    function _searchField($word, $rtype, $negated, &$qt, $blind) {
+    function _searchField($word, $rtype, $add_regex, &$qt, $blind) {
 	global $Conf;
 
 	if ($this->privChair
@@ -237,7 +237,7 @@ class PaperSearch {
 	    $qt[] = new SearchTerm($rtype, self::F_AUTHOR, $word);
 	}
 
-	if (!$negated)
+	if ($add_regex)
 	    $this->regex[$rtype][] = self::_fieldPreg($word);
     }
 
@@ -522,7 +522,8 @@ class PaperSearch {
 		$word = $this->_searchPopWord($rest);
 	}
 
-	if ($word[0] == '"')
+	$quoted = ($word[0] == '"');
+	if ($quoted)
 	    $word = str_replace(array('"', '*'), array('', '\*'), $word);
 	if ($special ? $special == "notag" : isset($this->fields['notag'])) {
 	    $special = "tag";
@@ -530,13 +531,15 @@ class PaperSearch {
 	}
 
 	if ($special ? $special == "ti" : isset($this->fields['ti']))
-	    $this->_searchField($word, "ti", $negated, $qt, false);
+	    $this->_searchField($word, "ti", !$negated, $qt, false);
 	if ($special ? $special == "ab" : isset($this->fields['ab']))
-	    $this->_searchField($word, "ab", $negated, $qt, false);
-	if ($special ? $special == "au" : isset($this->fields['au']))
-	    $this->_searchField($word, "au", $negated, $qt, true);
+	    $this->_searchField($word, "ab", !$negated, $qt, false);
+	if ($special == "au" && !$quoted && strcasecmp($word, "pc") == 0)
+	    $this->_searchField(array_keys(pcMembers()), "au_cid", false, $qt, true);
+	else if ($special ? $special == "au" : isset($this->fields['au']))
+	    $this->_searchField($word, "au", !$negated, $qt, true);
 	if ($special ? $special == "co" : isset($this->fields['co']))
-	    $this->_searchField($word, "co", $negated, $qt, true);
+	    $this->_searchField($word, "co", !$negated, $qt, true);
 	foreach (array("re", "cre", "ire", "pri", "cpri", "ipri", "sec", "csec", "isec", "ext", "cext", "iext") as $rtype)
 	    if ($special ? $special == $rtype : isset($this->fields[$rtype]))
 		$this->_searchReviewer($word, $rtype, $negated, $qt);
@@ -1033,7 +1036,7 @@ class PaperSearch {
 	$this->preciseQuery = true;
     }
 
-    function _clauseTermSetTable(&$t, $shorttab, $table, $field,
+    function _clauseTermSetTable(&$t, $shorttab, $table, $field, $where,
 				 &$tables, &$columns, &$f) {
 	// see also first "tag" case below
 	$q = array();
@@ -1051,6 +1054,8 @@ class PaperSearch {
 	    $thistab = $shorttab . "_" . count($tables);
 	    $tables[$thistab] = array("left join", $table, "Paper.paperId=$thistab.paperId and $thistab.$field='" . sqlq($t->value) . "'");
 	}
+	if ($where)
+	    $tables[$thistab][2] .= str_replace("%", $thistab, $where);
 	$columns[$thistab . "_ct"] = "count($thistab.$field)";
 	$t->link = $thistab . "_ct";
 	if ($t->value == "none")
@@ -1119,6 +1124,9 @@ class PaperSearch {
 	} else if ($tt == "co") {
 	    $columns["collaborators"] = "Paper.collaborators";
 	    $this->_clauseTermSetField($t, "collaborators", $negated, $f);
+	} else if ($tt == "au_cid") {
+	    $this->_clauseTermSetTable($t, "AuthorConflict", "PaperConflict", "contactId", " and %.conflictType>=" . CONFLICT_AUTHOR,
+				       $tables, $columns, $f);
 	} else if ($tt == "nre") {
 	    $rtype = $t->flags & (self::F_TYPEMASK | self::F_NONBLIND | self::F_COMPLETE | self::F_INCOMPLETE);
 	    if (isset($t->extra))
@@ -1232,10 +1240,10 @@ class PaperSearch {
 	    $q[] = "$thistab.tag is not null";
 	    $f[] = "(" . join(" and ", $q) . ")";
 	} else if ($tt == "tag") {
-	    $this->_clauseTermSetTable($t, "Tag", "PaperTag", "tag",
+	    $this->_clauseTermSetTable($t, "Tag", "PaperTag", "tag", "",
 				       $tables, $columns, $f);
 	} else if ($tt == "topic") {
-	    $this->_clauseTermSetTable($t, "Topic", "PaperTopic", "topicId",
+	    $this->_clauseTermSetTable($t, "Topic", "PaperTopic", "topicId", "",
 				       $tables, $columns, $f);
 	} else if ($tt == "option") {
 	    // expanded from _clauseTermSetTable
@@ -1248,7 +1256,7 @@ class PaperSearch {
 	    $q[] = $columns[$t->link];
 	    $f[] = "(" . join(" and ", $q) . ")";
 	} else if ($tt == "conflict") {
-	    $this->_clauseTermSetTable($t, "Conflict", "PaperConflict", "contactId",
+	    $this->_clauseTermSetTable($t, "Conflict", "PaperConflict", "contactId", "",
 				       $tables, $columns, $f);
 	} else if ($tt == "not") {
 	    $ff = array();
