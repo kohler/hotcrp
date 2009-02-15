@@ -318,6 +318,7 @@ function doAssign() {
 		    $assignments[$pid] = array();
 		$assignments[$pid][] = $pc;
 		$assignprefs["$pid:$pc"] = round($pref);
+		$prefs[$pc][$pid] = -1000001;
 		$papers[$pid]--;
 		$load[$pc]++;
 		break;
