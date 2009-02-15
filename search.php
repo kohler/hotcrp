@@ -1226,7 +1226,7 @@ if ($pl) {
 		$a[] = "$xa=" . urlencode($_REQUEST[$xa]);
 	reset($tOpt);
 	echo " in ", strtolower($tOpt[$_REQUEST["t"]]);
-	if (key($tOpt) != $_REQUEST["t"])
+	if (key($tOpt) != $_REQUEST["t"] && $_REQUEST["t"] !== "all")
 	    echo " (<a href=\"search$ConfSiteSuffix?", join("&amp;", $a), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
     }
 
