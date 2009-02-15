@@ -1,7 +1,5 @@
 - make sure that refused reviewers do not get emails on comments
 
-- delete users
-
 - string options
 
 - 1. We had an author withdraw their paper several weeks after submission.
@@ -128,17 +126,6 @@
 * Clarify on paper submission page the difference between authors and
   contact authors.  We had some papers that didn't list some of the contact
   authors as authors. [Mark Gebhart, MICRO 41]
-
-* (From Paolo) The search system is great, but the "display option" feature
-  needs to be improved to match it. Basically, every time you do a search
-  it'd be good to be able to turn on or off the field you want to show for
-  the search output. For example, when you're doing assignments (as we
-  did), and you do a search for (say) "tag:pcpaper" papers, I would like to
-  be able to show all the reviewers that are assigned to the PC papers
-  without having to click. Currently the display options only let you see
-  tags, authors and a few more fields.  I think it'd be a major improvement
-  if you could also turn on the review assignments and pretty much every
-  other field of a paper. [Mark Gebhart, MICRO 41]
 
 * Ability to search accepted papers for those that have / have not
   submitted final copies of their paper [Mark Gebhart, MICRO 41]
