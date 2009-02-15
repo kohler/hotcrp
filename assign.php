@@ -538,7 +538,7 @@ if ($Me->actChair($prow)) {
 		&& ($p->preference || $p->topicInterestScore))
 		echo preferenceSpan($p->preference, $p->topicInterestScore);
 	    echo "</td><td class='ass'>";
-	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href=\"javascript:foldassign($p->contactId)\"><img alt='Assignment' id='assimg$p->contactId' src=\"images/ass$cid$extension\" /><img alt='&gt;' src=\"images/next.png\" /></a>&nbsp;";
+	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'><img alt='Assignment' id='assimg$p->contactId' src=\"images/ass$cid$extension\" /><img alt='&gt;' src=\"images/next.png\" /></a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention
 	    echo tagg_select("pcs$p->contactId",
 			     array(0 => "None", REVIEW_PRIMARY => "Primary",

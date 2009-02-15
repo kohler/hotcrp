@@ -41,8 +41,8 @@ class CommentView {
 	    $sep = $xsep;
 	} else if ($crow && $Me->privChair) {
 	    echo $sep, "<span id='foldcid$crow->commentId' class='fold4c'>",
-		"<a class='q fn4' href=\"javascript:fold('cid$crow->commentId', 0, 4)\" title='Show author'>+&nbsp;<i>Hidden for blind review</i></a>",
-		"<span class='fx4'><a class='fx4' href=\"javascript:fold('cid$crow->commentId', 1, 4)\" title='Hide author'>[blind]</a> ", contactHtml($crow), "</span>",
+		"<a class='q fn4' href=\"javascript:void fold('cid$crow->commentId', 0, 4)\" title='Show author'>+&nbsp;<i>Hidden for blind review</i></a>",
+		"<span class='fx4'><a class='fx4' href=\"javascript:void fold('cid$crow->commentId', 1, 4)\" title='Hide author'>[blind]</a> ", contactHtml($crow), "</span>",
 		"</span>";
 	    $sep = $xsep;
 	}
@@ -169,7 +169,7 @@ class CommentView {
 	if ($crow)
 	    echo "      <td class='ptb_button'><input class='b' type='submit' value='Cancel' name='cancel' /></td>\n";
 	else
-	    echo "      <td class='ptb_button'><button class='b' type='button' onclick='javascript:fold(\"addcomment\", 1)'>Cancel</button></td>\n";
+	    echo "      <td class='ptb_button'><button class='b' type='button' onclick='javascript:void fold(\"addcomment\", 1)'>Cancel</button></td>\n";
 	if ($crow)
 	    echo "      <td class='ptb_button'><span class='lgsep'></span><input class='b' type='submit' value='Delete comment' name='delete' /></td>\n";
 	echo "    </tr>\n  </table></div>\n";

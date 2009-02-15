@@ -169,7 +169,8 @@ class PaperTable {
 	    $n = (is_array($name) ? $name[0] : $name);
 	    if ($editfolder)
 		$c .= "<a class='q fn' title='Edit' "
-		    . "href='javascript:fold(\"$editfolder\", 0)'>"
+		    . "href=\"" . selfHref(array("atab" => $what))
+		    . "\" onclick='return fold(\"$editfolder\", 0)'>"
 		    . $n . "</a><span class='fx'>" . $n . "</span>";
 	    else
 		$c .= $n;
@@ -178,11 +179,12 @@ class PaperTable {
 	    if (!is_array($name))
 		$name = array($name, $name);
 	    $c .= "<a class='q fn$foldnum' "
-		. "href='javascript:fold(\"$fold\", 0, $foldnum)' "
+		. "href=\"" . selfHref(array("atab" => $what))
+		. "\" onclick='return fold(\"$fold\", 0, $foldnum)' "
 		. "title=\"" . defval($extra, "showtitle", "Show")
 		. "\">+&nbsp;" . $name[1] . "</a>"
 		. "<a class='q fx$foldnum' "
-		. "href='javascript:fold(\"$fold\", 1, $foldnum)' "
+		. "href='javascript:void fold(\"$fold\", 1, $foldnum)' "
 		. "title=\"" . defval($extra, "hidetitle", "Hide")
 		. "\">&minus;&nbsp;" . $name[0] . "</a>";
 	    if (($foldsession = defval($extra, "foldsession", false)))
@@ -191,8 +193,9 @@ class PaperTable {
 	$c .= "</span>";
 	if ($editfolder) {
 	    $x = defval($extra, "oneditunfold", "");
-	    $a = "<a class='fn' href='javascript:" . $x . ($x ? ";" : "")
-		   . "fold(\"$editfolder\", 0)' title='Edit'>";
+	    $a = "<a class='fn' href=\"" . selfHref(array("atab" => $what))
+		. "\" onclick='" . $x . ($x ? ";" : "")
+		. "return fold(\"$editfolder\", 0)' title='Edit'>";
 	    $c .= "<span class='hint'>" . $a
 		. $Conf->cacheableImage("edit.png", "[Edit]", null, "b")
 		. "</a>&nbsp;" . $a . "Edit</a></span>";
@@ -396,7 +399,7 @@ class PaperTable {
 				       "hidetitle" => "Abbreviate abstract")),
 		    "<div class='papv abstract'>",
 		    "<span class='fn6'>", $shortdata,
-		    " <a class='fn6' href='javascript:fold(\"paper\", 0, 6)'>[more]</a>",
+		    " <a class='fn6' href='javascript:void fold(\"paper\", 0, 6)'>[more]</a>",
 		    "</span><span class='fx6'>", $data,
 		    "</span></div>\n\n";
 		return;
@@ -411,7 +414,7 @@ class PaperTable {
 	if ($prow)
 	    cleanAuthor($prow);
 
-	echo $this->papt("authorInformation", "Authors <span class='papfnh'>(<a href='javascript:authorfold(\"auedit\",1,1)'>More</a> | <a href='javascript:authorfold(\"auedit\",1,-1)'>Fewer</a>)</span>"),
+	echo $this->papt("authorInformation", "Authors <span class='papfnh'>(<a href='javascript:void authorfold(\"auedit\",1,1)'>More</a> | <a href='javascript:void authorfold(\"auedit\",1,-1)'>Fewer</a>)</span>"),
 	    "<div class='paphint'>List the paper's authors one per line, including their email addresses and affiliations.";
 	if ($Conf->blindSubmission() == BLIND_ALWAYS)
 	    echo " Submission is blind, so reviewers will not be able to see author information.";
@@ -538,11 +541,11 @@ class PaperTable {
 	    echo "<div class='fn8'>",
 		$this->papt("authorInformation", "Authors"),
 		"<div class='papv'><a class='q fn8' ",
-		"href='javascript:fold(\"paper\", 0, 8)' title='Show authors'>",
+		"href='javascript:void fold(\"paper\", 0, 8)' title='Show authors'>",
 		"+&nbsp;<i>Hidden for blind review</i></a></div></div>\n",
 		"<div class='fx8'>";
 	    $inauthors = "<a class='q fx8' "
-		. "href='javascript:fold(\"paper\", 1, 8)' "
+		. "href='javascript:void fold(\"paper\", 1, 8)' "
 		. "title='Hide authors'>[blind]</a> ";
 	    $afterauthors = "</div>\n";
 	} else {
@@ -563,7 +566,7 @@ class PaperTable {
 		"<div class='papv'>", $inauthors,
 		"<span class='fn9'>",
 		$this->authorData($prow->authorTable, "last"),
-		" <a class='fn9' href='javascript:fold(\"paper\", 0, 9)'>[details]</a>",
+		" <a class='fn9' href='javascript:void fold(\"paper\", 0, 9)'>[details]</a>",
 		"</span><span class='fx9'>",
 		$this->authorData($prow->authorTable, "col", $Me),
 		"</span>";
@@ -929,11 +932,11 @@ class PaperTable {
     }
 
     function papstripLead($prow, $showedit) {
-	$this->_papstripLeadShepherd($prow, "lead", "Discussion lead", $showedit, false);
+	$this->_papstripLeadShepherd($prow, "lead", "Discussion lead", $showedit || defval($_REQUEST, "atab") == "lead", false);
     }
 
     function papstripShepherd($prow, $showedit, $fold) {
-	$this->_papstripLeadShepherd($prow, "shepherd", "Shepherd", $showedit, $fold);
+	$this->_papstripLeadShepherd($prow, "shepherd", "Shepherd", $showedit || defval($_REQUEST, "atab") == "shepherd", $fold);
     }
 
     function papstripTags($prow, $site = null) {
@@ -943,9 +946,10 @@ class PaperTable {
 	    require_once("tags.inc");
 	    $tx = tagsToText($prow, true, $Me);
 	    $editable = $site && $Me->canSetTags($prow, $forceShow);
+	    $unfolded = $editable && (isset($Error["tags"]) || defval($_REQUEST, "atab") == "tags");
 
 	    if ($editable)
-		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div id='foldtags' class='", (isset($Error["tags"]) ? "foldo" : "foldc"), " inform'><input type='hidden' name='settags' value='1' />";
+		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div id='foldtags' class='", ($unfolded ? "foldo" : "foldc"), " inform'>";
 
 	    echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($editable ? "tags" : 0), "oneditunfold" => "Miniajax.submit(\"tagreportform\")")),
 		"<div class='psv'>";
@@ -955,12 +959,17 @@ class PaperTable {
 
 		$t = tagsToText($prow, false, $Me, true);
 		echo "<div class='fn'>", ($tx == "" ? "None" : $tx),
-		    "</div><div class='fx'><div id='tagreportformresult'></div>";
+		    "</div><div class='fx'><div id='tagreportformresult'>";
+		if ($unfolded) {
+		    require_once("paperactions.inc");
+		    echo PaperActions::tagReport($prow, true);
+		}
+		echo "</div>";
 		if (isset($Error["tags"]))
 		    echo "<div class='xmerror'>", $Error["tags"], "</div>";
 		echo "<textarea id='foldtags_d' cols='20' rows='2' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>", $t, "</textarea><br />",
-		    "<input class='bsm' type='submit' value='Save' /> &nbsp; ",
-		    "<button type='button' class='bsm' onclick='javascript:fold(\"tags\", 1)'>Cancel</button><br />",
+		    "<input class='bsm' type='submit' name='settags' value='Save' /> &nbsp; ",
+		    "<input class='bsm' type='submit' name='cancelsettags' value='Cancel' onclick='return fold(\"tags\", 1)' /><br />",
 		    "<span class='hint'><a href='help$ConfSiteSuffix?t=tags'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
 		    "</div>";
 	    } else
@@ -978,7 +987,7 @@ class PaperTable {
 	if (!$rf)
 	    $rf = reviewForm();
 	echo "<div id='folddecision' class='",
-	    ($showedit ? "foldo" : "foldc"), "'>",
+	    ($showedit || defval($_REQUEST, "atab") == "decision" ? "foldo" : "foldc"), "'>",
 	    $this->papt("decision", "Decision", array("type" => "ps", "editfolder" => ($showedit ? 0 : "decision"))),
 	    "<div class='psv'><form id='decisionform' class='fx fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitdecision()'>",
 	    "<div class='inform'>",
@@ -1048,7 +1057,7 @@ class PaperTable {
 	    "<div class='fn'>",
 	    ($rp === "" ? "None" : $rp);
 	if ($rp != "")
-	    echo "<span class='fn2'> &nbsp; <a href='javascript:void 0' onclick='javascript:fold(\"rank\", 0, 2);void Miniajax.submit(\"rankctxform\")'>(context)</a>";
+	    echo "<span class='fn2'> &nbsp; <a href='javascript:void 0' onclick='fold(\"rank\", 0, 2);void Miniajax.submit(\"rankctxform\")'>(context)</a>";
 	echo "</div>",
 	    "<div id='rankctxformresult' class='fx2'>Loading...</div>",
 	    "</div></div>\n";

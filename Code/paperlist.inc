@@ -1400,22 +1400,22 @@ class PaperList extends BaseList {
 
 	    $titleextra = "";
 	    if (!$unfolded)
-		$titleextra .= "<span class='sep'></span><a class='fn3' href='javascript:fold(\"pl\",0,3)'>Show all papers</a>";
+		$titleextra .= "<span class='sep'></span><a class='fn3' href='javascript:void fold(\"pl\",0,3)'>Show all papers</a>";
 	    if ((isset($foldinfo[1]) || isset($foldinfo[2]))
 		&& $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
 		if ($Conf->blindSubmission() == BLIND_NEVER)
-		    $titleextra .= "<a class='fn1' href='javascript:fold(\"pl\",0,1)'>Show authors</a><a class='fx1' href='javascript:fold(\"pl\",1,1)'>Hide authors</a>";
+		    $titleextra .= "<a class='fn1' href='javascript:void fold(\"pl\",0,1)'>Show authors</a><a class='fx1' href='javascript:void fold(\"pl\",1,1)'>Hide authors</a>";
 		else if ($this->contact->privChair && isset($foldinfo[2]) && !$foldinfo[1])
-		    $titleextra .= "<a class='fn2' href='javascript:fold(\"pl\",0,2)'>Show authors</a><a class='fx2' href='javascript:fold(\"pl\",1,2)'>Hide authors</a>";
+		    $titleextra .= "<a class='fn2' href='javascript:void fold(\"pl\",0,2)'>Show authors</a><a class='fx2' href='javascript:void fold(\"pl\",1,2)'>Hide authors</a>";
 		else if ($this->contact->privChair && isset($foldinfo[2]))
-		    $titleextra .= "<a class='fn1' href='javascript:fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='fx1 fn2' href='javascript:fold(\"pl\",0,2)'>Show all authors</a><a class='fx2' href='javascript:fold(\"pl\",1,1);fold(\"pl\",1,2)'>Hide authors</a>";
+		    $titleextra .= "<a class='fn1' href='javascript:void fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='fx1 fn2' href='javascript:void fold(\"pl\",0,2)'>Show all authors</a><a class='fx2' href='javascript:fold(\"pl\",1,1);void fold(\"pl\",1,2)'>Hide authors</a>";
 		else
-		    $titleextra .= "<a class='fn1' href='javascript:fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='fx1' href='javascript:fold(\"pl\",1,1)'>Hide authors</a>";
+		    $titleextra .= "<a class='fn1' href='javascript:void fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='fx1' href='javascript:void fold(\"pl\",1,1)'>Hide authors</a>";
 	    }
 	    if (isset($foldinfo[4]) && $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
-		$titleextra .= "<a class='fn4' href='javascript:foldplinfo(0,4,\"tags\")'>Show tags</a><a class='fx4' href='javascript:foldplinfo(1,4,\"tags\")'>Hide tags</a><span id='tagsloadformresult'></span>";
+		$titleextra .= "<a class='fn4' href='javascript:void foldplinfo(0,4,\"tags\")'>Show tags</a><a class='fx4' href='javascript:void foldplinfo(1,4,\"tags\")'>Hide tags</a><span id='tagsloadformresult'></span>";
 	    }
 
 	    if ($this->sortable && $url) {

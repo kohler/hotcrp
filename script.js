@@ -102,6 +102,7 @@ function fold(which, dofold, foldnum) {
 	    } catch (err) {
 	    }
     }
+    return false;
 }
 
 function crpfocus(id, subfocus, seltype) {
@@ -222,6 +223,7 @@ function foldassign(which) {
 	e("pcs" + which).focus();
     }
     selassign_blur = 0;
+    return false;
 }
 
 function selassign(elt, which) {
@@ -274,6 +276,7 @@ function authorfold(prefix, relative, n) {
 	    elt.innerHTML = elt.innerHTML + "";
 	} catch (err) {
 	}
+    return false;
 }
 
 
@@ -708,6 +711,8 @@ function foldplinfo(dofold, foldnum, type, which) {
 		}
 	    });
     }
+
+    return false;
 }
 
 function savedisplayoptions() {

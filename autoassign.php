@@ -765,7 +765,7 @@ for ($i = 1; $i <= 20; $i++) {
     echo "</td><td class='lentry'>", bpSelector($i, "a"),
 	" &nbsp;and&nbsp; ", bpSelector($i, "b");
     if ($i == 1)
-	echo " &nbsp;to the same paper<span class='fx'> &nbsp;(<a href='javascript:authorfold(\"bp\",1,1)'>More</a> | <a href='javascript:authorfold(\"bp\",1,-1)'>Fewer</a>)</span>";
+	echo " &nbsp;to the same paper<span class='fx'> &nbsp;(<a href='javascript:void authorfold(\"bp\",1,1)'>More</a> | <a href='javascript:void authorfold(\"bp\",1,-1)'>Fewer</a>)</span>";
     echo "</td></tr>\n";
 }
 echo "</table></div><input id='bpcount' type='hidden' name='bpcount' value='20' />";

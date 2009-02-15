@@ -1045,7 +1045,7 @@ function doSubGroup() {
     echo "<div class='g'></div>\n<table id='foldpcconf' class='fold",
 	($Conf->setting("sub_pcconf") ? "o" : "c"), "'>\n";
     doCheckbox("sub_pcconf", "Collect authors&rsquo; PC conflicts", true,
-	       "hiliter(this);fold(\"pcconf\",!this.checked)");
+	       "hiliter(this);void fold(\"pcconf\",!this.checked)");
     if ($Conf->sversion >= 22) {
 	echo "<tr class='fx'><td></td><td>";
 	doCheckbox("sub_pcconfsel", "Collect PC conflict types (&ldquo;Advisor/student,&rdquo; &ldquo;Recent collaborator,&rdquo; etc.)");
@@ -1056,7 +1056,7 @@ function doSubGroup() {
 
     if (is_executable("Code/banal")) {
 	echo "<div class='g'></div><table id='foldbanal' class='", ($Conf->setting("sub_banal") ? "foldo" : "foldc"), "'>";
-	doCheckbox("sub_banal", "<strong>Automated format checker<span class='fx'>:</span></strong>", true, "hiliter(this);fold(\"banal\",!this.checked)");
+	doCheckbox("sub_banal", "<strong>Automated format checker<span class='fx'>:</span></strong>", true, "hiliter(this);void fold(\"banal\",!this.checked)");
 	echo "<tr class='fx'><td></td><td class='top'><table>";
 	$bsetting = explode(";", preg_replace("/>.*/", "", $Conf->settingText("sub_banal", "")));
 	for ($i = 0; $i < 6; $i++)
@@ -1118,7 +1118,7 @@ function doOptGroupOption($o) {
 	"<div class='f-e'>";
 
     if ($Conf->sversion >= 14)
-	echo tagg_select("optvt$id", array("Checkbox", "Selector"), defval($o, "optionValues") ? 1 : 0, array("onchange" => "hiliter(this);fold(\"optv$id\",this.value==0)")),
+	echo tagg_select("optvt$id", array("Checkbox", "Selector"), defval($o, "optionValues") ? 1 : 0, array("onchange" => "hiliter(this);void fold(\"optv$id\",this.value==0)")),
 	    "<span class='sep'></span>";
 
     echo "<input type='checkbox' name='optp$o->optionId' value='1'", ($o->pcView ? " checked='checked'" : ""), " onchange='hiliter(this)' />&nbsp;Visible to reviewers";
@@ -1202,7 +1202,7 @@ function doOptGroup() {
 	echo "</tr>\n";
 	$td1 = "<td></td>";
     }
-    $td1 = "<td class='lcaption' rowspan='40'>New<br /><small><a href='javascript:authorfold(\"newtop\",1,1)'>More</a> | <a href='javascript:authorfold(\"newtop\",1,-1)'>Fewer</a></small></td>";
+    $td1 = "<td class='lcaption' rowspan='40'>New<br /><small><a href='javascript:void authorfold(\"newtop\",1,1)'>More</a> | <a href='javascript:void authorfold(\"newtop\",1,-1)'>Fewer</a></small></td>";
     for ($i = 1; $i <= 40; $i++) {
 	echo "<tr id='newtop$i' class='auedito'>$td1<td class='lentry'><input type='text' class='textlite' name='topn$i' value=\"\" size='50' onchange='hiliter(this)' /></td></tr>\n";
 	$td1 = "";
@@ -1279,7 +1279,7 @@ function doRevGroup() {
     echo "<div class='g'></div>\n";
     $t = expandMailTemplate("requestreview", false);
     echo "<div id='foldmailbody_requestreview' class='foldc'>", foldbutton("mailbody_requestreview", ""), "
-  <a href=\"javascript:fold('mailbody_requestreview', 0)\" class='fn q'><strong>Mail template for external review requests</strong></a>\n";
+  <a href='javascript:void fold(\"mailbody_requestreview\", 0)' class='fn q'><strong>Mail template for external review requests</strong></a>\n";
     echo "  <span class='fx'><strong>Mail template for external review requests</strong> (<a href='mail$ConfSiteSuffix'>keywords</a> allowed)<br /></span>
 <textarea class='tt fx' name='mailbody_requestreview' cols='80' rows='20' onchange='hiliter(this)'>", htmlspecialchars($t[1]), "</textarea></div>\n";
 

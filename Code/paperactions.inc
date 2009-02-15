@@ -156,9 +156,10 @@ class PaperActions {
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "tags")));
     }
 
-    function tagReport($prow) {
+    function tagReport($prow, $return = false) {
 	global $Conf, $ConfSiteSuffix, $Me, $Error, $OK, $forceShow;
 	$ajax = defval($_REQUEST, "ajax", false);
+	$r = "";
 	if ($Me->canViewTags($prow, $forceShow)) {
 	    require_once("Code/tags.inc");
 	    $vt = voteTags();
@@ -170,18 +171,21 @@ class PaperActions {
 		$result = $Conf->qe("select tag, sum(tagIndex) from PaperTag where tag in ($q) group by tag", "while finding vote tag totals");
 		while (($row = edb_row($result)))
 		    $vt[substr($row[0], strlen($mytagprefix))] -= $row[1];
-		$r = "";
 		ksort($vt);
 		foreach ($vt as $tag => $v)
 		    if (max($v, 0) > 0)
 			$r .= ($r === "" ? "" : ", ") . "<a class='q' href=\"search$ConfSiteSuffix?q=rorder:~$tag&amp;showtags=1\">~$tag</a>#" . max($v, 0);
 		if ($r !== "")
-		    $Conf->confirmMsg("Unallocated <a href='help$ConfSiteSuffix?t=votetags'>votes</a>: $r");
+		    $r = "Unallocated <a href='help$ConfSiteSuffix?t=votetags'>votes</a>: $r";
 	    }
 	} else {
 	    $Conf->errorMsg("You can't view tags for paper #$prow->paperId.");
 	    $Error["tags"] = true;
 	}
+	if ($return)
+	    return $r !== "" ? "<div class='xconfirm'>$r</div>" : "";
+	else if ($r !== "")
+	    $Conf->confirmMsg($r);
 	if ($ajax)
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "tags")), true);
     }
