@@ -1,6 +1,11 @@
 HotCRP NEWS
 
-Version 2.32   15.Sun.2009
+Version 2.33   15.Feb.2009
+
+* Re-fix "Don't assign (X) and (Y) to the same paper."
+
+
+Version 2.32   15.Feb.2009
 
 * Add "au:pc" search, which returns papers whose contact authors contain at
   least one PC member.
