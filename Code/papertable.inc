@@ -1133,9 +1133,11 @@ class PaperTable {
 	    $updateDeadline = $this->deadlineSettingIs("sub_update");
 	    $timeSubmit = $Conf->timeFinalizePaper($prow);
 	    $submitDeadline = $this->deadlineSettingIs("sub_sub");
-	    if ($timeUpdate && $prow->timeWithdrawn > 0)
-		$m .= "<div class='xinfo'>" . "This paper has been withdrawn, but you can still revive it.$updateDeadline" . "</div>";
-	    else if ($timeUpdate) {
+	    if ($prow->timeWithdrawn > 0) {
+		if ($timeUpdate)
+		    $m .= "<div class='xinfo'>" . "This paper has been withdrawn, but you can still revive it.$updateDeadline" . "</div>";
+		// otherwise no message
+	    } else if ($timeUpdate) {
 		if ($prow->timeSubmitted <= 0) {
 		    if ($prow->paperStorageId <= 1)
 			$m .= "<div class='xwarning'>" . "You haven't uploaded a paper yet.$updateDeadline" . "</div>";
@@ -1145,9 +1147,11 @@ class PaperTable {
 			$m .= "<div class='xwarning'>" . "The current version of the paper is marked as not ready for review.  If you don't submit a reviewable version of the paper, it will not be considered.$updateDeadline" . "</div>";
 		} else if ($this->mode == "pe")
 		    $m .= "<div class='xconfirm'>" . "This paper is ready for review and will be considered for the conference, but you still have time to make changes if necessary.$updateDeadline" . "</div>";
-	    } else if ($prow->timeWithdrawn <= 0 && $timeSubmit)
+	    } else if ($timeSubmit)
 		$m .= "<div class='xwarning'>" . "You cannot make any changes as the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override" . "</div>";
-	    else if ($prow->timeWithdrawn <= 0)
+	    else if ($Conf->settingsBetween("", "sub_grace", "sub_sub"))
+		$m .= "<div class='xwarning'>" . "The site is not open for submission updates at the moment.$override" . "</div>";
+	    else
 		$m .= "<div class='xwarning'>" . "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override" . "</div>";
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper()) {
 	    $updateDeadline = $this->deadlineSettingIs("final_done");

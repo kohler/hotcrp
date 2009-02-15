@@ -601,9 +601,14 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 
     $deadlines = array();
     if ($plist && $plist->needFinalize > 0) {
-	if (!$Conf->timeFinalizePaper())
-	    $deadlines[] = "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting papers has passed.";
-	else if (!$Conf->timeUpdatePaper()) {
+	if (!$Conf->timeFinalizePaper()) {
+	    // Be careful not to refer to a future deadline; perhaps an admin
+	    // just turned off submissions.
+	    if ($Conf->settingsBetween("", "sub_sub", "sub_grace"))
+		$deadlines[] = "The site is not open for submissions at the moment.";
+	    else
+		$deadlines[] = "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting papers has passed.";
+	} else if (!$Conf->timeUpdatePaper()) {
 	    $deadlines[] = "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for updating papers has passed, but you can still submit.";
 	    $time = $Conf->printableTimeSetting('sub_sub');
 	    if ($time != 'N/A')
