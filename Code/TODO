@@ -2,6 +2,8 @@
 
 - string options
 
+- upload multiple documents [Gareth Gale]
+
 - 1. We had an author withdraw their paper several weeks after submission.
   As a result, the paper, all its reviews and the review assignments also
   vanished.  And not only that, even though we actually reviewed 176
@@ -198,6 +200,82 @@
   Suggestion: have the reviewprefs page somehow indicate to the user
   (perhaps by changing the background color to something lurid?) that
   the reviews have already been assigned. [Jeff Mogul]
+
+* Do not log updates to reviews made using chair power, if those reviews
+  are explicitly anonymous. [John Wilkes]
+
+2. [possible defect] When looking at possible conflicts for a paper using
+  "search for potential conflicts" on "Assign papers - manual by PC
+  member", the set of "reviews to be done" doesn't seem to be that of the
+  selected PC member.  I can't quite work out what it is - I thought at
+  first that it was the viewer's list, but it seems to change if the PC
+  member changes, so I'm not quite sure what's going on. [John Wilkes]
+
+3. Having to hit "Go" on the "Change PC member" proved a fruitful source of
+  user-errors - we kept on forgetting to push the go button.  Please can it
+  just happen automagically? [John Wilkes]
+
+4. It's somewhat of tedious to flip back and forth between per-paper and
+  per-PC member review assignments.  Could some better navigation shortcuts
+  be made available? [John Wilkes]
+
+Multi-round assignment process.  Doing this showed up a couple of issues:
+
+5. On the automatic assignments page, there's an option to specify "Don't
+  assign PC member 1 and 2 to the same paper."  That has to be re-entered
+  each time - it's not sticky, whereas I think it should be. [John Wilkes]
+
+6. It would also be nice to be able to specify a simple list, rather than
+  having to provide everything as pairwise restrictions.  (We had a clump
+  of 4 people, which turned into a lot of separate rules of this form.)
+  [John Wilkes]
+
+7. [much more important] subsequent rounds ignored existing assignments
+  when applying the "Don't assign PC member 1 and 2 to the same paper"
+  rule.  That is, a round would happily assign reviewer 2 to a paper that
+  had reviewer 1 assigned in a prior round.  This meant that we needed to
+  do a fair amount of manual tweaking - indeed, coping with this is where
+  we spent the bulk of the time in the entire assignment process. [John
+  Wilkes]
+
+8. Review types.  HotCRP has the notion of primary and secondary reviews.
+  Great!  But their meanings seem to be hard-wired.  We wanted to use them
+  for "full" and "light" - which is what we did, but we then had to
+  admonish the PC to not get confused by the labels.  Better would be to
+  offer a set of labels, with the current ones as defaults. [John Wilkes]
+
+9. Reviewing load. We also wanted to assign our own weights to different
+  review types when doing the load balancing.  (For us, a light review was
+  worth half as much as a full one.)  In the end, Joe wrote an SQL query to
+  calculate the weights, and we used the multi-round assignment process to
+  roughly balance the loads. [John Wilkes]
+
+10. Conflict checking
+
+    * The list of names/words to ignore could usefully be both longer
+  (e.g., add "Labs" and "research" to the list), and settable by the PC
+  chair.
+
+    * Conflicts of the form "username (affiliation)" leads to entire
+  "affiliation" getting marked as a conflict, which seems overkill.  Or was
+  that the intent?  The help text seems to suggest not. [John Wilkes]
+
+Format checker: This worked really nicely.  But ...
+
+11. It would be really helpful to be able to state "x% overage is OK" for
+  the format checker, rather than editing the individual settings by hand,
+  which tended to confuse people about what the real rules were. [John
+  Wilkes]
+
+12. It would also be nice to be able to say "we need either A4 or US paper"
+  - at moment, you cannot. [John Wilkes]
+
+13. Author paper-withdraws: It's fine that an author can withdraw their
+  paper from consideration up to the submission deadline.  it's less good
+  if they do so after reviewing has started.  it's all too easy to miss
+  this.  Please can such actions be made more visible (e.g., a notification
+  email to the PC chair), or made so that it's an option to forbid them?
+  [John Wilkes]
 
 
 - static HTML snapshot
