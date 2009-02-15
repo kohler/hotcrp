@@ -230,14 +230,6 @@ Multi-round assignment process.  Doing this showed up a couple of issues:
   of 4 people, which turned into a lot of separate rules of this form.)
   [John Wilkes]
 
-7. [much more important] subsequent rounds ignored existing assignments
-  when applying the "Don't assign PC member 1 and 2 to the same paper"
-  rule.  That is, a round would happily assign reviewer 2 to a paper that
-  had reviewer 1 assigned in a prior round.  This meant that we needed to
-  do a fair amount of manual tweaking - indeed, coping with this is where
-  we spent the bulk of the time in the entire assignment process. [John
-  Wilkes]
-
 8. Review types.  HotCRP has the notion of primary and secondary reviews.
   Great!  But their meanings seem to be hard-wired.  We wanted to use them
   for "full" and "light" - which is what we did, but we then had to

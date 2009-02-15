@@ -138,7 +138,7 @@ function checkRequest(&$atype, &$reviewtype, $save) {
     return true;
 }
 
-function noBadPair($pc, $pid) {
+function noBadPair($pc, $pid, $prefs) {
     global $badpairs;
     foreach ($badpairs[$pc] as $opc => $val)
 	if (defval($prefs[$opc], $pid, 0) < -1000000)
@@ -312,7 +312,7 @@ function doAssign() {
 	    $pref = current($prefs[$pc]);
 	    next($prefs[$pc]);
 	    if ($pref >= -1000000 && isset($papers[$pid]) && $papers[$pid] > 0
-		&& (!isset($badpairs[$pc]) || noBadPair($pc, $pid))) {
+		&& (!isset($badpairs[$pc]) || noBadPair($pc, $pid, $prefs))) {
 		// make assignment
 		if (!isset($assignments[$pid]))
 		    $assignments[$pid] = array();
