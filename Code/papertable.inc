@@ -245,7 +245,7 @@ class PaperTable {
 
 	// timestamp, SHA-1 checksum
 	$t = "";
-	if ($prow->timestamp || $prow->timeSubmitted > 0) {
+	if ($prow && ($prow->timestamp || $prow->timeSubmitted > 0)) {
 	    $tm = ($prow->timestamp ? $prow->timestamp : $prow->timeSubmitted);
 	    $t = "<span class='nowrap' title='Time of must recent paper update'>" . $Conf->cacheableImage("timestamp12.png", "Updated", "Time of most recent paper update") . " " . $Conf->printableTime($tm) . "</span>";
 	}
@@ -259,7 +259,7 @@ class PaperTable {
 
 	// download marker
 	$d = "";
-	if ($Me->canDownloadPaper($prow)) {
+	if ($prow && $Me->canDownloadPaper($prow)) {
 	    if ($prow->outcome > 0 && $prow->finalPaperStorageId > 0
 		&& $Conf->collectFinalPapers()) {
 		$submissionMimetype = null;
