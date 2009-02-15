@@ -118,7 +118,8 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
 if (isset($_REQUEST["withdraw"]) && !$newPaper) {
     if ($Me->canWithdrawPaper($prow, $whyNot)) {
 	$Conf->qe("update Paper set timeWithdrawn=" . time() . ", timeSubmitted=if(timeSubmitted>0,-100,0) where paperId=$paperId", "while withdrawing paper");
-	$Conf->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$paperId", "while withdrawing paper");
+	$result = $Conf->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$paperId", "while withdrawing paper");
+	$numreviews = edb_nrows_affected($result);
 	$Conf->updatePapersubSetting(false);
 	loadRows();
 
@@ -132,7 +133,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	    Mailer::sendContactAuthors("@adminwithdraw", $prow, null, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
 
 	// email reviewers
-	if ($prow->startedReviewCount > 0)
+	if ($numreviews > 0 || $prow->startedReviewCount > 0)
 	    Mailer::sendReviewers("@withdrawreviewer", $prow, null, array("reason" => defval($_REQUEST, "emailNote", "")));
 
 	// remove voting tags so people don't have phantom votes

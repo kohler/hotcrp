@@ -26,8 +26,9 @@ function edb_nrows($result) {
 
 // number of rows affected by an update/insert query, or 'false' if result is
 // an error
-function edb_nrows_affected($result, $conf) {
-    return ($result ? mysql_affected_rows($conf->dblink) : false);
+function edb_nrows_affected($result) {
+    global $Conf;
+    return ($result ? mysql_affected_rows($Conf->dblink) : false);
 }
 
 // next row as an array, or 'false' if no more rows or result is an error
