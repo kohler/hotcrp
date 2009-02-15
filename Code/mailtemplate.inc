@@ -585,9 +585,9 @@ class Mailer {
 	if (!isset($Opt["ldapLogin"]))
 	    $password = ($this->hideSensitive ? "HIDDEN" : $this->contact->password);
 	if ($what == "%LOGINURL%")
-	    return $Opt["paperSite"] . "/?email=" . urlencode($this->contact->email) . ($password ? "&password=$password" : "");
+	    return $Opt["paperSite"] . "/?email=" . urlencode($this->contact->email) . ($password ? "&password=" . urlencode($password) : "");
 	if ($what == "%LOGINURLPARTS%")
-	    return "email=" . urlencode($this->contact->email) . ($password ? "&password=$password" : "");
+	    return "email=" . urlencode($this->contact->email) . ($password ? "&password=" . urlencode($password) : "");
 	if ($what == "%PASSWORD%")
 	    return ($isbool || $password !== null ? $password : "");
 
