@@ -485,40 +485,6 @@ function addScoreHelp() {
 
 
 // review ratings
-/*
-function makeratingajax(reviewid, rating) {
-    return function() {
-	var elt = e("ratingval_" + reviewid);
-	if (elt) {
-	    elt.value = rating;
-	    return Miniajax.submit("ratingform_" + reviewid, function(rv) {
-		var ee, cn;
-		if (rv.ok)
-		    for (var i in {"0": "", "1": "", "n": ""})
-			if ((ee = e("ratinglink_" + i + "_" + reviewid))) {
-			    var cn = ee.className.replace(" on", "");
-			    if (rating == i)
-				cn += " on";
-			    ee.className = cn;
-			}
-		if ((ee = e("ratingform_" + reviewid + "result")) && rv.result)
-		    ee.innerHTML = " &nbsp;<span class='barsep'>|</span>&nbsp; " + rv.result;
-	    });
-	} else
-	    return true;
-    };
-}
-
-function addRatingAjax() {
-    var anchors = document.getElementsByTagName("a"), href, m;
-    for (var i = 0; i < anchors.length; i++)
-	if ((href = anchors[i].getAttribute("href"))
-	    && href.indexOf("rating=") >= 0) {
-	    m = href.match(/r=(\w+).*rating=(\w+)/);
-	    anchors[i].onclick = makeratingajax(m[1], m[2]);
-	}
-}
-*/
 function makeratingajax(form, id) {
     var selects;
     form.className = "fold7c";
