@@ -45,9 +45,9 @@ $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
 			  "fixability", "interestToCommunity", "longevity",
 			  "likelyPresentation", "suitableForShort");
 
-$allowedSessionVars = array("foldassigna", "foldpapera", "foldpaperp",
-			    "foldpaperb", "foldpapert", "pfdisplay",
-			    "pldisplay", "foldpscollab");
+$allowedSessionVars = array("foldassigna", "foldpaperp", "foldpaperb",
+			    "foldpapert", "foldpscollab",
+			    "pfdisplay", "pldisplay");
 
 $authorConflictTypes = array(0 => "No conflict", 3 => "Advisor/student",
 			     2 => "Recent collaborator", 4 => "Institutional",
