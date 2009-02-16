@@ -272,6 +272,18 @@ Format checker: This worked really nicely.  But ...
   in?  This is low priority in comparison to my previous request :-). [John
   Wilkes]
 
+2. The choice(s) for autoassign discussion lead I was given were rather
+  limited:
+
+    * Assign discussion lead from reviewers, preferring high scores
+
+  It would be nice to have some other alternatives .. ."preferring low
+  scores" is popular; "preferring primary reviewers" is another,
+  "preferring knowledgeable" is also good. [John Wilkes]
+
+4. The "manual by PC member" page gives no indication of discussion
+  leads. [John Wilkes]
+
 
 - static HTML snapshot
 
