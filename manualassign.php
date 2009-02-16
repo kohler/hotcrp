@@ -156,7 +156,7 @@ if ($reviewer > 0) {
     if ($result && ($row = edb_orow($result))) {
 	// search outline from old CRP, done here in a very different way
 	preg_match_all('/[a-z]{3,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation), $match);
-	$useless = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1);
+	$useless = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1, "none" => 1);
 	$search = array();
 	$showco = "";
 	foreach ($match[0] as $s)
@@ -167,7 +167,7 @@ if ($reviewer > 0) {
 	    }
 
 	preg_match_all('/[a-z]{3,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation . " " . $row->collaborators), $match);
-	$useless = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1);
+	$useless = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1, "none" => 1);
 	$showau = "";
 	foreach ($match[0] as $s)
 	    if (!isset($useless[$s])) {
