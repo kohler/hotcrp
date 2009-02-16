@@ -270,7 +270,7 @@ if ($reviewer > 0) {
     echo "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
 	"<div class='aa'><table class='center'><tr><td><input type='submit' class='bb' name='update' value='Save assignments' /></td></tr></table></div>\n";
     echo $paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me);
-    echo "<div class='aa'><table class='center'><tr><td><input type='submit' class='bb' name='update' value='Save assignments' /></td></tr></table></div>\n";
+    echo "<div class='aa'><table class='center'><tr><td><input type='submit' class='bb' name='update' value='Save assignments' /></td></tr></table></div>\n",
 	"</div></form></div>\n";
 }
 

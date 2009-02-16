@@ -233,7 +233,7 @@ class ReviewForm {
 		}
 		$x .= "</select>";
 	    } else {
-		$x .= "<textarea name='$field' class='reviewtext' onchange='hiliter(this)' rows='" . $this->fieldRows[$field] . "'>" . htmlspecialchars($fval) . "</textarea>";
+		$x .= "<textarea name='$field' class='reviewtext' onchange='hiliter(this)' rows='" . $this->fieldRows[$field] . "' cols='60'>" . htmlspecialchars($fval) . "</textarea>";
 	    }
 	    $x .= "</div>\n";
 	}

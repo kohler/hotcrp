@@ -131,7 +131,7 @@ class CommentView {
 
 	// From here on, edit mode.
 	// form body
-	echo "<textarea name='comment' class='reviewtext' rows='10' onchange='hiliter(this)'>";
+	echo "<textarea name='comment' class='reviewtext' rows='10' cols='60' onchange='hiliter(this)'>";
 	if ($useRequest)
 	    echo htmlspecialchars(defval($_REQUEST, 'comment'));
 	else if ($crow)
@@ -257,7 +257,7 @@ has passed.  Please keep the response short and to the point",
 
 	// From here on, edit mode.
 	// form body
-	echo "<textarea name='comment' class='reviewtext' rows='10' onchange='hiliter(this)'>";
+	echo "<textarea name='comment' class='reviewtext' rows='10' cols='60' onchange='hiliter(this)'>";
 	if ($useRequest)
 	    echo htmlspecialchars(defval($_REQUEST, 'comment'));
 	else if ($crow)

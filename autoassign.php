@@ -712,7 +712,7 @@ echo "</td><td>Use entire PC</td></tr>\n";
 echo "<tr><td>";
 doRadio('pctyp', 'sel', '');
 echo "</td><td>Use selected PC members: &nbsp; ",
-    "(<a href='javascript:papersel(1,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>All</a> | <a href='javascript:papersel(0,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>None</a>)</small>";
+    "(<a href='javascript:papersel(1,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>All</a> | <a href='javascript:papersel(0,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>None</a>)";
 echo "</td></tr>\n<tr><td></td><td><table class='pcass'><tr><td><table>";
 
 $pcm = pcMembers();
@@ -737,7 +737,6 @@ for ($i = 0; $i < count($pcdesc); $i++) {
     echo $pcdesc[$i];
 }
 echo "</table></td></tr></table></td></tr></table>";
-echo "</td></tr>\n";
 
 
 // Bad pairs

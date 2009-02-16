@@ -232,7 +232,7 @@ class PaperTable {
 	    $text = nl2br($text);
 
 	if ($this->editable)
-	    $text = "<textarea class='textlite papertext' name='$fieldName' rows='" . $textAreaRows[$fieldName] . "' onchange='hiliter(this)'>" . $text . "</textarea>";
+	    $text = "<textarea class='textlite papertext' name='$fieldName' rows='" . $textAreaRows[$fieldName] . "' cols='60' onchange='hiliter(this)'>" . $text . "</textarea>";
 	return $text;
     }
 

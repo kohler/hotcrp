@@ -1176,13 +1176,14 @@ class PaperList extends BaseList {
 
     function _addAjaxLoadForm($formname, $getname, $pap, $extra = "") {
 	global $Conf, $ConfSiteSuffix;
-	$Conf->footerStuff .= "<form id='${formname}loadform' method='post'"
+	$Conf->footerStuff .= "<div>"
+	    . "<form id='${formname}loadform' method='post'"
 	    . " action='search$ConfSiteSuffix?get=$getname&amp;ajax=1"
 	    . $this->paperLinkArgs . "' accept-charset='UTF-8'>"
 	    . "<div class='inform'><input type='hidden' name='pap'"
 	    . " value='" . join(" ", $pap) . "' />"
 	    . $extra
-	    . "</div></form><script type='text/javascript'>"
+	    . "</div></form></div><script type='text/javascript'>"
 	    . "plinfo_needload.$formname = true;</script>";
     }
 

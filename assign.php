@@ -605,7 +605,7 @@ if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
 }
 
 
-echo $loginFormEnd, tagg_cbox("pap", true), "</td></tr></table>\n";
+echo tagg_cbox("pap", true), $loginFormEnd, "</td></tr></table>\n";
 
 // add external reviewers
 echo "<form ", $loginFormBegin, "<table class='pbox'><tr>
@@ -634,7 +634,7 @@ echo "<div class='f-i'><div class='f-ix'>
 if ($Conf->sversion >= 7)
     echo "<div class='f-i'>
   <div class='f-c'>Note to reviewer <span class='f-cx'>(optional)</span></div>
-  <div class='f-e'><textarea class='papertext' name='reason' rows='2' tabindex='1'>", htmlspecialchars(defval($_REQUEST, "reason", "")), "</textarea></div>
+  <div class='f-e'><textarea class='papertext' name='reason' rows='2' cols='60' tabindex='1'>", htmlspecialchars(defval($_REQUEST, "reason", "")), "</textarea></div>
 <div class='clear'></div></div>\n\n";
 
 echo "<div class='f-i'>
