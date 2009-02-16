@@ -1145,6 +1145,9 @@ tr.plx td h6 {
 	font-style: italic;
 	padding-right: 0.25em;
 }
+#autoassign tr.plx td div.plextra, #autoassign tr.plx td div.plextra h6 {
+	font-weight: bold;
+}
 span.pcrole {
 	font-weight: bold;
 	font-size: smaller;

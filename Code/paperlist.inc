@@ -1345,18 +1345,15 @@ class PaperList extends BaseList {
 			$tt .= "></div>";
 		}
 
+	    if ($this->extraText && isset($this->extraText[$row->paperId]))
+		$tt .= "<div id=\"plextra$row->paperId\" class=\"plextra\">" . $this->extraText[$row->paperId] . "</div>";
+
 	    if ($tt !== "") {
 		$t .= "  <tr class=\"plx $trclass\">";
 		if ($skipcallout > 0)
 		    $t .= "<td colspan=\"$skipcallout\"></td>";
 		$t .= "<td colspan=\"" . ($ncol - $skipcallout) . "\">$tt</td></tr>\n";
 	    }
-
-	    if ($this->extraText && isset($this->extraText[$row->paperId]))
-		$t .= "  <tr class=\"pl_extra $trclass\">\n"
-		    . "<td class=\"pl_extra pl_callout\" colspan='$ncol'>"
-		    . $this->extraText[$row->paperId]
-		    . "</td>\n  </tr>\n";
 
 	    if (!$this->unfolded)
 		$t = str_replace("<tr class=\"", "<tr class=\"fx3 ", $t);

@@ -262,6 +262,16 @@ Format checker: This worked really nicely.  But ...
 12. It would also be nice to be able to say "we need either A4 or US paper"
   - at moment, you cannot. [John Wilkes]
 
+* it would be nice if there was an easy way to send email from one of a
+  paper's pages to the author(s) or reviewers.  As it is, it seems I have
+  to go back to the home page, select Send Mail, select "Choose individual
+  papers" and type in the paper number.
+
+  Instead, how about a "send email about this paper" link on the "paper"
+  page/tab which took me to the "send email" page with those values filled
+  in?  This is low priority in comparison to my previous request :-). [John
+  Wilkes]
+
 
 - static HTML snapshot
 

@@ -110,8 +110,8 @@ function checkRequest(&$atype, &$reviewtype, $save) {
 	$reviewtype = defval($_REQUEST, "cleartype", "");
     if ($atype == "clear"
 	&& ($reviewtype != REVIEW_PRIMARY && $reviewtype != REVIEW_SECONDARY
-	    && $reviewtype != "conflict" && $reviewtype != "lead"
-	    && $reviewtype != "shepherd")) {
+	    && $reviewtype !== "conflict" && $reviewtype !== "lead"
+	    && $reviewtype !== "shepherd")) {
 	$Error["clear"] = true;
 	return $Conf->errorMsg("Malformed request!");
     }
@@ -197,9 +197,9 @@ function doAssign() {
 	$papers = array_fill_keys($papersel, 1);
 	if ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY)
 	    $q = "select paperId, contactId from PaperReview where reviewType=" . $reviewtype;
-	else if ($reviewtype == "conflict")
+	else if ($reviewtype === "conflict")
 	    $q = "select paperId, contactId from PaperConflict where conflictType>0 and conflictType<" . CONFLICT_AUTHOR;
-	else if ($reviewtype == "lead" || $reviewtype == "shepherd")
+	else if ($reviewtype === "lead" || $reviewtype === "shepherd")
 	    $q = "select paperId, ${reviewtype}ContactId from Paper where ${reviewtype}ContactId!=0";
 	$result = $Conf->qe($q, "while checking clearable assignments");
 	$assignments = array();
@@ -267,6 +267,8 @@ function doAssign() {
 	    else
 		$prefs[$row->contactId][$row->paperId] = max($row->overAllMerit * 50 + $row->preference + ($row->topicInterestScore / 100), -1000000);
 	}
+	$badpairs = array();	// bad pairs only relevant for reviews,
+				// not discussion leads or shephers
     }
 
     // sort preferences
@@ -338,9 +340,11 @@ function doAssign() {
 	    $badpids[] = $pid;
     if ($badpids) {
 	$b = array();
+	$pidx = join("+", $badpids);
 	foreach ($badpids as $pid)
-	    $b[] = "<a href='paper$ConfSiteSuffix?p=$pid'>$pid</a>";
-	$Conf->warnMsg("I wasn't able to complete the assignment, probably because of some conflicts in the PC members you selected.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . " (<a href='search$ConfSiteSuffix?q=" . join("+", $badpids) . "'>list them all</a>).");
+	    $b[] = "<a href='paper$ConfSiteSuffix?p=$pid&amp;list=$pidx'>$pid</a>";
+	$x = ($atype == "rev" || $atype == "revadd" ? ", possibly because of some conflicts in the PC members you selected" : "");
+	$Conf->warnMsg("I wasn't able to complete the assignment$x.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . " (<a class='nowrap' href='search$ConfSiteSuffix?q=$pidx'>list them</a>).");
     }
     if (count($assignments) == 0) {
 	$Conf->warnMsg("Nothing to assign.");
@@ -418,12 +422,12 @@ function saveAssign() {
 				     0, $Conf);
 		    unset($ass[$row->paperId][$row->contactId]);
 		}
-	} else if ($reviewtype == "conflict") {
+	} else if ($reviewtype === "conflict") {
 	    foreach ($ass as $pid => $pcs) {
 		foreach ($pcs as $pc => $ignore)
 		    $Conf->qe("delete from PaperConflict where paperId=$pid and contactId=$pc and conflictType<" . CONFLICT_AUTHOR, "while clearing conflicts");
 	    }
-	} else if ($reviewtype == "lead" || $reviewtype == "shepherd") {
+	} else if ($reviewtype === "lead" || $reviewtype === "shepherd") {
 	    foreach ($ass as $pid => $pcs) {
 		foreach ($pcs as $pc => $ignore)
 		    $Conf->qe("update Paper set ${reviewtype}ContactId=0 where paperId=$pid and ${reviewtype}ContactId=$pc", "while clearing ${reviewtype}s");
@@ -516,12 +520,12 @@ if (isset($assignments) && count($assignments) > 0) {
     else
 	$reviewtype = 0;
     if ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY)
-	$reviewtypename = strtolower($reviewTypeName[$reviewtype]);
-    else if ($reviewtype == "conflict" || $atype == "prefconflict")
-	$reviewtypename = "conflict";
-    else if ($reviewtype == "lead" || $atype == "lead")
+	$reviewtypename = strtolower($reviewTypeName[$reviewtype]) . " assignment";
+    else if ($reviewtype === "conflict" || $atype == "prefconflict")
+	$reviewtypename = "conflict assignment";
+    else if ($reviewtype === "lead" || $atype == "lead")
 	$reviewtypename = "discussion lead";
-    else if ($reviewtype == "shepherd" || $atype == "shepherd")
+    else if ($reviewtype === "shepherd" || $atype == "shepherd")
 	$reviewtypename = "shepherd";
     else
 	$reviewtypename = "";
@@ -544,7 +548,7 @@ if (isset($assignments) && count($assignments) > 0) {
 	    }
 	if ($atype == "clear")
 	    $t = "remove $t";
-	$atext[$pid] = "<span class='pl_callouthdr'>Proposed $reviewtypename assignment:</span> $t";
+	$atext[$pid] = "<h6>Proposed $reviewtypename:</h6> $t";
     }
 
     $search = new PaperSearch($Me, array("t" => "s", "q" => join(" ", array_keys($assignments))));
