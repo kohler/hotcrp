@@ -461,8 +461,8 @@ confHeader();
 
 
 $paperTable = new PaperTable($prow);
-$paperTable->initialize(false, false, "assign");
 $paperTable->mode = "assign";
+$paperTable->initialize(false, false);
 
 
 // begin form and table
@@ -650,6 +650,4 @@ if ($Me->actChair($prow))
 echo "</td><td></td></tr>\n", tagg_cbox("rev", true),
     "</td></tr></table>\n", $loginFormEnd;
 
-
-echo foldsessionpixel("paper9", "foldpaperp"), foldsessionpixel("paper5", "foldpapert"), foldsessionpixel("paper6", "foldpaperb"), foldsessionpixel("paper8", "foldassigna");
 $Conf->footer();

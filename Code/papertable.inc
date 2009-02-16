@@ -80,24 +80,24 @@ class PaperTable {
 	    $this->mode = "r";
     }
 
-    function initialize($editable, $useRequest, $foldsession = null) {
+    function initialize($editable, $useRequest) {
 	global $thisMatchPreg, $CurrentList;
 
 	$this->editable = $editable;
 	$this->useRequest = $useRequest;
 
 	$this->foldState = 15;
-	if ($foldsession && !defval($_SESSION, "fold${foldsession}a", 1))
+	if ($this->mode == "assign"
+	    && !defval($_SESSION, "foldassigna", 1))
 	    $this->foldState &= ~1;
-	if ($foldsession && !defval($_SESSION, "foldpaperp", 1))
+	if (!defval($_SESSION, "foldpaperp", 1))
 	    $this->foldState &= ~2;
-	if ($foldsession && !defval($_SESSION, "foldpaperb", 1))
+	if (!defval($_SESSION, "foldpaperb", 1))
 	    $this->foldState &= ~4;
-	if ($foldsession && !defval($_SESSION, "foldpapert", 1))
+	if (!defval($_SESSION, "foldpapert", 1))
 	    $this->foldState &= ~8;
 
-	$this->allFolded = ($this->mode == "re"
-			    || $foldsession == "assign"
+	$this->allFolded = ($this->mode == "re" || $this->mode == "assign"
 			    || ($this->mode != "pe" && (count($this->rrows) || count($this->crows))));
 
 	$this->matchPreg = array();
@@ -395,6 +395,7 @@ class PaperTable {
 	    if ($shortdata != "") { /* "" might happen if really long word */
 		echo $this->papt("abstract", "Abstract",
 				 array("fold" => "paper", "foldnum" => 6,
+				       "foldsession" => "foldpaperb",
 				       "showtitle" => "Show full abstract",
 				       "hidetitle" => "Abbreviate abstract")),
 		    "<div class='papv abstract'>",
@@ -542,7 +543,10 @@ class PaperTable {
 		$this->papt("authorInformation", "Authors"),
 		"<div class='papv'><a class='q fn8' ",
 		"href='javascript:void fold(\"paper\", 0, 8)' title='Show authors'>",
-		"+&nbsp;<i>Hidden for blind review</i></a></div></div>\n",
+		"+&nbsp;<i>Hidden for blind review</i></a>";
+	    if ($this->mode == "assign")
+		echo foldsessionpixel("paper8", "foldassigna");
+	    echo "</div></div>\n",
 		"<div class='fx8'>";
 	    $inauthors = "<a class='q fx8' "
 		. "href='javascript:void fold(\"paper\", 1, 8)' "
@@ -561,6 +565,7 @@ class PaperTable {
 	if ($this->allFolded) {
 	    echo $this->papt("authorInformation", $auname,
 			     array("fold" => "paper", "foldnum" => 9,
+				   "foldsession" => "foldpaperp",
 				   "showtitle" => "Show full authors",
 				   "hidetitle" => "Show abbreviated authors")),
 		"<div class='papv'>", $inauthors,
@@ -625,6 +630,7 @@ class PaperTable {
 
 	    if ($this->allFolded) {
 		$extra = array("fold" => "paper", "foldnum" => 5,
+			       "foldsession" => "foldpapert",
 			       "showtitle" => "Show " . strtolower($tanda),
 			       "hidetitle" => "Hide " . strtolower($tanda));
 		$before = "<div class='papv fn5'></div>";

@@ -403,7 +403,7 @@ confHeader();
 
 
 // paper table
-$paperTable->initialize(false, false, "review");
+$paperTable->initialize(false, false);
 $paperTable->paptabBegin($prow);
 $paperTable->resolveComments();
 
@@ -419,5 +419,4 @@ else
 if ($paperTable->mode != "pe")
     $paperTable->paptabComments();
 
-echo foldsessionpixel("paper9", "foldpaperp"), foldsessionpixel("paper5", "foldpapert"), foldsessionpixel("paper6", "foldpaperb");
 $Conf->footer();

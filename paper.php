@@ -622,7 +622,7 @@ if ($paperTable->mode == "pe") {
 } else
     $editable = false;
 
-$paperTable->initialize($editable, $editable && $useRequest, "paper");
+$paperTable->initialize($editable, $editable && $useRequest);
 
 // produce paper table
 $paperTable->paptabBegin();
@@ -637,6 +637,4 @@ else
 if ($paperTable->mode != "pe")
     $paperTable->paptabComments();
 
-
-echo foldsessionpixel("paper9", "foldpaperp"), foldsessionpixel("paper5", "foldpapert"), foldsessionpixel("paper6", "foldpaperb");
 $Conf->footer();
