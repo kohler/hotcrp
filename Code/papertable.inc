@@ -1278,7 +1278,7 @@ class PaperTable {
 	    $this->papstripReviewPreference($prow);
     }
 
-    function paptabBegin() {
+    function paptabBegin($contentopener = "") {
 	global $Conf, $ConfSiteSuffix, $Me, $forceShow, $linkExtra;
 	$prow = $this->prow;
 	$paperId = ($prow ? $prow->paperId : "new");
@@ -1402,7 +1402,7 @@ class PaperTable {
     <td class='${pboxclass}j'></td>
 </tr><tr>
     <td class='${pboxclass}l'></td>
-    <td class='${pboxclass}r'><table class='papc'>
+    <td class='${pboxclass}r'>", $contentopener, "<table class='papc'>
 	<tr><td class='papcl'>",
 	    $Conf->cacheableImage("_.gif", "", null, "_"),
 	    "</td><td class='papct'><div class='inpapct'>";
