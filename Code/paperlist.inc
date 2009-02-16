@@ -269,7 +269,13 @@ class PaperList extends BaseList {
     }
 
     function _sortReviewType($a, $b) {
-	$x = $b->reviewType - $a->reviewType;
+	$ar = $a->reviewType;
+	$br = $b->reviewType;
+	if ($this->contact->privChair && !$ar && $a->conflictType)
+	    $ar = -$a->conflictType;
+	if ($this->contact->privChair && !$br && $b->conflictType)
+	    $br = -$b->conflictType;
+	$x = $br - $ar;
 	return $x ? $x : $a->paperId - $b->paperId;
     }
 
