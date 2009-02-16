@@ -86,16 +86,22 @@ class PaperTable {
 	$this->editable = $editable;
 	$this->useRequest = $useRequest;
 
-	$this->foldState = 15;
-	if ($this->mode == "assign"
-	    && !defval($_SESSION, "foldassigna", 1))
-	    $this->foldState &= ~1;
-	if (!defval($_SESSION, "foldpaperp", 1))
-	    $this->foldState &= ~2;
-	if (!defval($_SESSION, "foldpaperb", 1))
-	    $this->foldState &= ~4;
-	if (!defval($_SESSION, "foldpapert", 1))
-	    $this->foldState &= ~8;
+	$this->foldState = 1023;
+	$pfold = defval($_REQUEST, "pfold");
+	foreach (array("a" => 8, "p" => 9, "b" => 6, "t" => 5) as $k => $v) {
+	    if ($k == "a")
+		$svar = ($this->mode == "assign" ? "foldassigna" : null);
+	    else
+		$svar = "foldpaper$k";
+	    if ($pfold && substr($pfold, 0, 1) == $v) {
+		$sval = (substr($pfold, 1, 1) == "o" ? 0 : 1);
+		if ($svar)
+		    $_SESSION[$svar] = $sval;
+		if (!$sval)
+		    $this->foldState &= ~(1 << $v);
+	    } else if ($svar && !defval($_SESSION, $svar, 1))
+		$this->foldState &= ~(1 << $v);
+	}
 
 	$this->allFolded = ($this->mode == "re" || $this->mode == "assign"
 			    || ($this->mode != "pe" && (count($this->rrows) || count($this->crows))));
@@ -132,23 +138,23 @@ class PaperTable {
     function echoDivEnter($prow = null) {
 	// if highlighting, automatically unfold abstract/authors
 	if ($this->highlight && $prow && $this->allFolded
-	    && ($this->foldState & 4)) {
+	    && ($this->foldState & 64)) {
 	    $data = $this->entryData("abstract", $prow);
 	    if ($this->entryMatches)
-		$this->foldState &= ~4;
+		$this->foldState &= ~64;
 	}
-	if ($this->highlight && $prow && ($this->foldState & 1)) {
+	if ($this->highlight && $prow && ($this->foldState & 256)) {
 	    cleanAuthor($prow);
 	    $data = $this->entryData("authorInformation", $prow);
 	    if ($this->entryMatches)
-		$this->foldState &= ~(1 | 2);
+		$this->foldState &= ~(256 | 512);
 	}
 
 	echo "<div id='foldpaper' class='",
-	    ($this->foldState & 1 ? "fold8c" : "fold8o"),
-	    ($this->foldState & 2 ? " fold9c" : " fold9o"),
-	    ($this->foldState & 4 ? " fold6c" : " fold6o"),
-	    ($this->foldState & 8 ? " fold5c" : " fold5o"), "'>";
+	    ($this->foldState & 256 ? "fold8c" : "fold8o"),
+	    ($this->foldState & 512 ? " fold9c" : " fold9o"),
+	    ($this->foldState & 64 ? " fold6c" : " fold6o"),
+	    ($this->foldState & 32 ? " fold5c" : " fold5o"), "'>";
     }
 
     function echoDivExit() {
@@ -179,12 +185,13 @@ class PaperTable {
 	    if (!is_array($name))
 		$name = array($name, $name);
 	    $c .= "<a class='q fn$foldnum' "
-		. "href=\"" . selfHref(array("atab" => $what))
+		. "href=\"" . selfHref(array("pfold" => $foldnum . "o"))
 		. "\" onclick='return fold(\"$fold\", 0, $foldnum)' "
 		. "title=\"" . defval($extra, "showtitle", "Show")
 		. "\">+&nbsp;" . $name[1] . "</a>"
 		. "<a class='q fx$foldnum' "
-		. "href='javascript:void fold(\"$fold\", 1, $foldnum)' "
+		. "href=\"" . selfHref(array("pfold" => $foldnum . "c"))
+		. "\" onclick='return fold(\"$fold\", 1, $foldnum)' "
 		. "title=\"" . defval($extra, "hidetitle", "Hide")
 		. "\">&minus;&nbsp;" . $name[0] . "</a>";
 	    if (($foldsession = defval($extra, "foldsession", false)))
