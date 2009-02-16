@@ -404,7 +404,7 @@ confHeader();
 
 // paper table
 $paperTable->initialize(false, false);
-$paperTable->paptabBegin($prow);
+$paperTable->paptabBegin();
 $paperTable->resolveComments();
 
 if (!$viewAny && !$editAny

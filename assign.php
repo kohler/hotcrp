@@ -470,7 +470,7 @@ $loginFormBegin = "action='assign$ConfSiteSuffix?p=$prow->paperId&amp;post=1$lin
 $loginFormEnd = "</div></form>\n\n";
 
 echo "<form id='ass' ", $loginFormBegin;
-$paperTable->paptabBegin($prow);
+$paperTable->paptabBegin();
 
 
 
