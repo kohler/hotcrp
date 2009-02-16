@@ -1191,8 +1191,10 @@ if ($pl && $pl->count > 0) {
     } else
 	echo "<td><input id='redisplay' class='b' type='submit' name='redisplay' value='Redisplay' /></td>\n";
 
-    echo "</tr></table></div></form></div></div>";
+    echo "</tr></table></div></form></div>";
 }
+
+echo "</div>";
 
 // Tab selectors
 echo "</td></tr>
