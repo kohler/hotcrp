@@ -205,7 +205,7 @@ class Contact {
 	    foreach ($rf->reviewFields as $k => $v)
 		if (isset($_REQUEST[$k]))
 		    $x[$k] = $_REQUEST[$k];
-	    $_SESSION["afterLogin"] = selfHref($x);
+	    $_SESSION["afterLogin"] = selfHref($x, null, false);
 	    $this->goAlert(false, "You have invalid credentials and need to sign in.");
 	}
     }

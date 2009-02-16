@@ -24,7 +24,7 @@ class PaperActions {
 		$Error["decision"] = true;
 	    }
 	} else
-	    $Conf->errorMsg("You can't set the decision for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Override conflict</a>)" : ""));
+	    $Conf->errorMsg("You can't set the decision for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : ""));
 	if ($ajax)
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "decision")));
     }
@@ -151,7 +151,7 @@ class PaperActions {
 	    require_once("Code/tags.inc");
 	    setTags($prow->paperId, defval($_REQUEST, "tags", ""), 'p', $Me->privChair);
 	} else
-	    $Error["tags"] = "You can't set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Override conflict</a>)" : "");
+	    $Error["tags"] = "You can't set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : "");
 	if ($ajax)
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "tags")));
     }

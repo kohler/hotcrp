@@ -89,7 +89,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 		$n = "[Token " . encodeToken($rr->reviewToken) . "]";
 	    $t .= "<td>" . $n . ($x ? " $x" : "");
 	    if ($Me->privChair && $rr->email != $Me->email)
-		$t .= " <a href=\"" . htmlspecialchars(selfHref(array("viewContact" => $rr->email))) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . contactHtml($rr->firstName, $rr->lastName)) . "</a>";
+		$t .= " <a href=\"" . selfHref(array("viewContact" => $rr->email)) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . contactHtml($rr->firstName, $rr->lastName)) . "</a>";
 	    $t .= "</td>";
 	    if ($mode == "assign")
 		$t .= "<td>" . contactHtml(null, null, $rr->email) . "</td>";

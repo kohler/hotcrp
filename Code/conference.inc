@@ -1258,7 +1258,7 @@ class Conference {
 	    echo "<strong>", htmlspecialchars($_SESSION["Me"]->email),
 		"</strong>", $xsep;
 	    if (!$_SESSION["Me"]->privChair && $_SESSION["Me"]->chairContactId > 0)
-		echo "<a href=\"", htmlspecialchars(selfHref(array("chairMode" => 0))), "\">Admin&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Return to administrator view]' /></a>", $xsep;
+		echo "<a href=\"", selfHref(array("chairMode" => 0)), "\">Admin&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Return to administrator view]' /></a>", $xsep;
 	    echo "<a href='${ConfSiteBase}help$ConfSiteSuffix";
 	    if ($id == "search")
 		echo "?t=", $id;

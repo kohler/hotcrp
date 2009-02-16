@@ -491,7 +491,7 @@ class PaperTable {
 			. "</a>&gt;";
 		if ($au[2] != "" && $viewAs !== null && $viewAs->email != $au[2]
 		    && $viewAs->privChair && defval($au, 4))
-		    $n .= " <a href=\"" . htmlspecialchars(selfHref(array("viewContact" => $au[2]))) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . contactNameHtml($au)) . "</a>";
+		    $n .= " <a href=\"" . selfHref(array("viewContact" => $au[2])) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . contactNameHtml($au)) . "</a>";
 		$names[] = $n;
 	    }
 	    return join("<br />\n", $names);
@@ -1524,7 +1524,7 @@ class PaperTable {
 	if ($forceShow && !$Me->canViewReview($prow, null, $fakeWhyNotView, true))
 	    $this->_paptabSepContaining("<div class='inpapcc'>"
 		. "You have used administrator privileges to view and edit "
-		. "reviews for this paper. (<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 0))) . "\">Unprivileged view</a>)"
+		. "reviews for this paper. (<a href=\"" . selfHref(array("forceShow" => 0)) . "\">Unprivileged view</a>)"
 		. "</div>");
 
 	$empty = $this->_paptabReviewLinks(true, null, "<div class='hint'>There are no reviews or comments for you to view.</div>");
@@ -1614,7 +1614,7 @@ class PaperTable {
 	if (!$this->rrow && $this->prow->reviewType <= 0)
 	    $msgs[] = "You haven't been assigned to review this paper, but you can review it anyway.";
 	if ($forceShow && !$viewall) {
-	    $msgs[] = "You have used administrator privileges to view and edit reviews for this paper. (<a href=\"" . htmlspecialchars(selfHref(array("forceShow" => 0))) . "\">Unprivileged view</a>)";
+	    $msgs[] = "You have used administrator privileges to view and edit reviews for this paper. (<a href=\"" . selfHref(array("forceShow" => 0)) . "\">Unprivileged view</a>)";
 	} else if (!$viewall && isset($whyNot["reviewNotComplete"])) {
 	    $nother = 0;
 	    foreach ($this->rrows as $rr)

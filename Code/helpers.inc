@@ -140,7 +140,7 @@ function fileUploaded(&$var, $conf) {
     }
 }
 
-function selfHref($extra = array(), $self = null) {
+function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
     global $CurrentList, $ConfSiteSuffix;
     $x = ($self ? $self : $_SERVER["PHP_SELF"]);
     if ($ConfSiteSuffix == "" && strlen($x) > 4) {
@@ -167,7 +167,7 @@ function selfHref($extra = array(), $self = null) {
     }
     if (isset($CurrentList) && $CurrentList > 0)
 	$x .= $sep . "ls=" . $CurrentList;
-    return $x;
+    return $htmlspecialchars ? htmlspecialchars($x) : $x;
 }
 
 function validateEmail($email) {
@@ -331,7 +331,7 @@ function authorTable($aus, $viewAs = null) {
 		$out .= "<span class='autblentry'>";
 	    $out .= $au;
 	    if ($viewAs !== null && is_array($aux) && count($aux) >= 2 && $viewAs->email != $aux[2] && $viewAs->privChair)
-		$out .= " <a href=\"" . htmlspecialchars(selfHref(array("viewContact" => $aux[2]))) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . (is_array($aux) ? contactNameHtml($aux) : $aux)) . "</a>";
+		$out .= " <a href=\"" . selfHref(array("viewContact" => $aux[2])) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . (is_array($aux) ? contactNameHtml($aux) : $aux)) . "</a>";
 	    $out .= "</span> ";
 	}
     }
@@ -843,9 +843,9 @@ function whyNotText($whyNot, $action) {
 	$text .= "If you know a valid review token, enter it above to edit that review.  ";
     // finish it off
     if (isset($whyNot['chairMode']))
-	$text .= "(<a class='nowrap' href=\"" . htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">" . ucfirst($action) . " the paper anyway</a>)  ";
+	$text .= "(<a class='nowrap' href=\"" . selfHref(array("forceShow" => 1)) . "\">" . ucfirst($action) . " the paper anyway</a>)  ";
     if (isset($whyNot['forceShow']))
-	$text .= "(<a class='nowrap' href=\"". htmlspecialchars(selfHref(array("forceShow" => 1))) . "\">Override conflict</a>)  ";
+	$text .= "(<a class='nowrap' href=\"". selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)  ";
     if ($text && $action == "view")
 	$text .= "Enter a paper number above, or <a href='search$ConfSiteSuffix?q='>list the papers you can view</a>.  ";
     return ($text ? substr($text, 0, -2) : $text);
