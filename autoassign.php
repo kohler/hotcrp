@@ -646,6 +646,7 @@ if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
 
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
     $plist = new PaperList(false, false, $search);
+    $plist->footer = false;
     $plist->papersel = array_fill_keys($papersel, 1);
     foreach (preg_split('/\s+/', defval($_REQUEST, "prevpap")) as $p)
 	if (!isset($plist->papersel[$p]))

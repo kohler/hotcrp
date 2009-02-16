@@ -77,7 +77,7 @@ class PaperList extends BaseList {
     var $paperLinkArgs;
     var $showConflict;
     var $headerInfo;
-    var $extraFooter;
+    var $footer;
     var $papersel;
     var $rf;
 
@@ -121,7 +121,7 @@ class PaperList extends BaseList {
 	$this->scoresOk = false;
 	$this->showConflict = true;
 	$this->papersel = null;
-	$this->extraFooter = "";
+	$this->footer = true;
 	$this->foldtype = "pl";
 	$this->rf = reviewForm();
     }
@@ -913,7 +913,7 @@ class PaperList extends BaseList {
 
     function footer($ncol, $listname) {
 	global $Conf, $ConfSiteSuffix;
-	if ($this->count == 0)
+	if ($this->count == 0 || !$this->footer)
 	    return "";
 
 	$barsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
@@ -1059,13 +1059,14 @@ class PaperList extends BaseList {
 	}
 
 	// Linelinks container
+	$extraFooter = ($this->footer && $this->footer !== true ? $this->footer : "");
 	return "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n"
 	    . "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top; padding-right: 4px;'>" . $Conf->cacheableImage("bendulft.png", "^^", null, "placthook") . "</td>\n"
 	    . "    <td colspan='" . ($ncol - 1) . "'>"
 	    . "<div id='plact' class='linelinks$whichlll'><a name='plact'><b>Select papers</b></a> (or <a href=\""
 	    . selfHref(array("selectall" => 1))
 	    . "#plact\" onclick='return papersel(true)'>select all " . $this->count . "</a>), then "
-	    . $t . "</div>" . $this->extraFooter . "</td></tr>\n";
+	    . $t . "</div>" . $extraFooter . "</td></tr>\n";
     }
 
     function addScores($a) {

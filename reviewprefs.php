@@ -205,7 +205,7 @@ $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "c" => $reviewer,
 $pl = new PaperList(true, true, $search);
 $pl->showHeader = PaperList::HEADER_TITLES;
 $pl->foldtype = "pf";
-$pl->extraFooter = "<div id='plactr'><input class='hb' type='submit' name='update' value='Save changes' /></div>";
+$pl->footer = "<div id='plactr'><input class='hb' type='submit' name='update' value='Save changes' /></div>";
 $pl_text = $pl->text("editReviewPreference", $Me);
 
 
