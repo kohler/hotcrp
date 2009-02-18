@@ -439,21 +439,22 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 
     // confirmation message
     loadRows();
+    $subject = "[%CONFSHORTNAME%] ";
     if ($isSubmitFinal) {
 	$actiontext = "Submitted final copy for";
-	$subject = "Updated paper #$paperId final copy";
+	$subject .= "Updated paper #$paperId final copy";
 	$confirmtext = "submission of a final copy for";
     } else if ($isSubmit) {
 	$actiontext = "Submitted";
-	$subject = "Submitted paper #$paperId";
+	$subject .= "Submitted paper #$paperId";
 	$confirmtext = "submission of";
     } else if ($newPaper) {
 	$actiontext = "Registered new";
-	$subject = "Registered paper #$paperId";
+	$subject .= "Registered paper #$paperId";
 	$confirmtext = "registration of";
     } else {
 	$actiontext = "Updated";
-	$subject = "Updated paper #$paperId";
+	$subject .= "Updated paper #$paperId";
 	$confirmtext = "update of";
     }
 
