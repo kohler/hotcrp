@@ -1748,9 +1748,12 @@ class PaperTable {
 
 	if (!($prow = $Conf->paperRow($sel, $Me, $whyNot)))
 	    return null;
+	$rrow = null;
+	if (isset($sel["reviewId"]))
+	    $rrow = $Conf->reviewRow($sel);
 	if (!$Me->canViewPaper($prow, $whyNot)
 	    || (!isset($_REQUEST["paperId"])
-		&& !$Me->canViewReview($prow, null))) {
+		&& !$Me->canViewReview($prow, $rrow))) {
 	    // Don't allow querier to probe review/comment<->paper mapping
 	    if (!isset($_REQUEST["paperId"]))
 		$whyNot = array("invalidId" => "paper");
