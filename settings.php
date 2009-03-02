@@ -182,7 +182,7 @@ function expandMailTemplate($name, $default) {
 }
 
 function _cleanXHTMLError(&$err, $etype) {
-    $err = "Your XHTML code contains $etype.  Please fix this; the setting only accepts XHTML content tags, such as <tt>&lt;p&gt;</tt>, <tt>&lt;strong&gt;</tt>, and <tt>&lt;h1&gt;</tt>.";
+    $err = "Your XHTML code contains $etype.  Please fix this; the setting only accepts XHTML content tags, such as <tt>&lt;p&gt;</tt>, <tt>&lt;strong&gt;</tt>, and <tt>&lt;h1&gt;</tt>, and restricts the use of attributes.";
     return false;
 }
 
@@ -218,16 +218,18 @@ function cleanXHTML($t, &$err) {
 	    if (!isset($goodtags[$tag]))
 		return _cleanXHTMLError($err, "some <code>&lt;$tag&gt;</code> tag");
 	    while ($t != "" && $t[0] != "/" && $t[0] != ">") {
-		if (!preg_match(",\\A([^\\s/<>='\"]+)\\s*(.*)\\z,s", $t, $m))
-		    return _cleanXHTMLError($err, "garbage within some <code>&lt;$tag&gt;</code> tag");
+		if (!preg_match(',\A([^\s/<>=\'"]+)\s*(.*)\z,s', $t, $m))
+		    return _cleanXHTMLError($err, "garbage <code>" . htmlspecialchars($t) . "</code> within some <code>&lt;$tag&gt;</code> tag");
 		$attr = strtolower($m[1]);
 		if (strlen($attr) > 2 && $attr[0] == "o" && $attr[1] == "n")
 		    return _cleanXHTMLError($err, "an event handler attribute in some <code>&lt;$tag&gt;</code> tag");
-		else if ($attr == "style" || $attr == "script")
+		else if ($attr == "style" || $attr == "script" || $attr == "id")
 		    return _cleanXHTMLError($err, "a <code>$attr</code> attribute in some <code>&lt;$tag&gt;</code> tag");
 		$x .= " " . $attr . "=";
 		$t = $m[2];
-		if (preg_match("/\\A=\\s*('.*?'|\".*?\")(.*)\\z", $t, $m)) {
+		if (preg_match(',\A=\s*(\'.*?\'|".*?"|\w+)\s*(.*)\z,s', $t, $m)) {
+		    if ($m[1][0] != "'" && $m[1][0] != "\"")
+			$m[1] = "\"$m[1]\"";
 		    $x .= $m[1];
 		    $t = $m[2];
 		} else

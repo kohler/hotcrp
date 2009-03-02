@@ -488,6 +488,13 @@ class ReviewForm {
 	return $x;
     }
 
+    function cleanDescription($d) {
+	$d = preg_replace('|\s*<\s*br\s*/?\s*>\s*(?:<\s*/\s*br\s*>\s*)?|si', "\n", $d);
+	$d = preg_replace('|\s*<\s*li\s*>|si', "\n* ", $d);
+	$d = preg_replace(',<(?:[^"\'>]|".*?"|\'.*?\')*>,s', "", $d);
+	return html_entity_decode($d, ENT_QUOTES, "UTF-8");
+    }
+
     function textForm($prow, $rrow, $contact, $req = null, $alwaysMyReview = false) {
 	global $Conf, $Opt;
 
@@ -580,8 +587,12 @@ $blind\n";
 	    else if ($this->authorView[$field] == 0)
 		$x .= " (hidden from authors)";
 	    $x .= "\n";
-	    if (defval($this->description, $field))
-		$x .= wordWrapIndent($this->description[$field], "==-==    ", "==-==    ") . "\n";
+	    if (defval($this->description, $field)) {
+		$d = cleannl($this->description[$field]);
+		if (strpbrk($d, "&<") !== false)
+		    $d = self::cleanDescription($d);
+		$x .= wordWrapIndent($d, "==-==    ", "==-==    ") . "\n";
+	    }
 	    if ($options && $myReview) {
 		$first = true;
 		foreach ($this->options[$field] as $num => $value) {

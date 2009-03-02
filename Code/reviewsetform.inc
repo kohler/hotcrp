@@ -256,7 +256,8 @@ function rf_show() {
 
     $captions = array
 	("description" => "Enter an HTML description for the review field here,
-	including any guidance you'd like to provide to reviewers and authors.",
+	including any guidance you'd like to provide to reviewers and authors.
+	(Note that complex HTML will not appear on offline review forms.)",
 	 "options" => "Enter one option per line, numbered starting from 1 (higher numbers are better).  For example:
 	<pre class='entryexample'>1. Reject
 2. Weak reject
