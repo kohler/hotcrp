@@ -1638,7 +1638,8 @@ class PaperTable {
 		$override = "  As an administrator, you can override this deadline using the &ldquo;Override deadlines&rdquo; checkbox.";
 	    else {
 		$override = "";
-		$opt["edit"] = false;
+		if ($this->editrrow->reviewSubmitted)
+		    $opt["edit"] = false;
 	    }
 	    if (!$Conf->timeReviewPaper($actPC, true, true, true))
 		$opt["editmessage"] = "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for changing reviews has passed, so the review can no longer be changed.$override";
@@ -1815,7 +1816,9 @@ class PaperTable {
 	global $Conf, $Me;
 	$prow = $this->prow;
 	if ($this->mode == "re" && $this->rrow
-	    && !$Me->canReview($prow, $this->rrow, $whyNot, false))
+	    && !$Me->canReview($prow, $this->rrow, $whyNot, false)
+	    && ($this->rrow->contactId != $Me->contactId
+		|| $this->rrow->reviewSubmitted))
 	    $this->mode = "r";
 	if ($this->mode == "r" && $this->rrow
 	    && !$Me->canViewReview($prow, $this->rrow, $whyNot))
