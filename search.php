@@ -256,7 +256,7 @@ if ($getaction == "final" && isset($papersel)) {
 
 
 function whyNotToText($e) {
-    $e = preg_replace('|<a.*?</a>\s*\z|', "", $e);
+    $e = preg_replace('|\(?<a.*?</a>\)?\s*\z|i', "", $e);
     return preg_replace('|<.*?>|', "", $e);
 }
 
@@ -299,9 +299,11 @@ function downloadReviews(&$texts, &$errors) {
 
     if ($gettext) {
 	$text = $header;
-	if (count($warnings) && $getforms)
-	    $text .= "==-== " . join("\n==-== ", $warnings) . "\n\n";
-	else if (count($warnings))
+	if (count($warnings) && $getforms) {
+	    foreach ($warnings as $w)
+		$text .= wordWrapIndent(whyNotToText($w) . "\n", "==-== ", "==-== ");
+	    $text .= "\n";
+	} else if (count($warnings))
 	    $text .= join("\n", $warnings) . "\n\n";
 	$text .= join("", $texts);
 	downloadText($text, $Opt['downloadPrefix'] . "$rfname.txt", "review forms");
@@ -346,7 +348,8 @@ if (($getaction == "revform" || $getaction == "revformz")
 	    if (!$canreview) {
 		$t = whyNotText($whyNot, "review");
 		$errors[$t] = false;
-		defappend($texts[$paperselmap[$row->paperId]], wordWrapIndent(strtoupper(whyNotToText($t)) . "\n\n", "==-== ", "==-== "));
+		if (!isset($whyNot["deadline"]))
+		    defappend($texts[$paperselmap[$row->paperId]], wordWrapIndent(strtoupper(whyNotToText($t)) . "\n\n", "==-== ", "==-== "));
 	    }
 	    defappend($texts[$paperselmap[$row->paperId]], $rf->textForm($row, $row, $Me, null) . "\n");
 	}
