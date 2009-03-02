@@ -76,7 +76,7 @@ function rf_update($lock) {
 	if (isset($_REQUEST["shortName_$field"])) {
 	    $sn = trim($_REQUEST["shortName_$field"]);
 	    if ($sn == "" || $sn == "<None>") {
-		$Error[$field] = 1;
+		$Error[$field] = true;
 		$shortNameError = true;
 		$sn = "<None>";
 	    }
@@ -85,7 +85,7 @@ function rf_update($lock) {
 	$req .= "authorView=" . max(min(rcvtint($_REQUEST["authorView_$field"], 0), 1), -2) . ", ";
 	if (isset($_REQUEST["description_$field"])) {
 	    if (($d = cleanXHTML($_REQUEST["description_$field"], $err)) === false) {
-		$Error["description_$field"] = 1;
+		$Error["description_$field"] = true;
 		$Conf->errorMsg(htmlspecialchars($sn) . " description: " . $err);
 		continue;
 	    } else
@@ -114,7 +114,7 @@ function rf_update($lock) {
 		unset($_REQUEST["options_$field"]);
 		$updates = 1;
 	    } else {
-		$Error["options_$field"] = 1;
+		$Error["options_$field"] = true;
 		$optionError = 1;
 		continue;
 	    }

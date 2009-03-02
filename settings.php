@@ -870,8 +870,14 @@ if (isset($_REQUEST["update"])) {
     }
 
     // report errors
-    if (count($Error) > 0)
-	$Conf->errorMsg(join("<br />\n", $Error));
+    if (count($Error) > 0) {
+	$filter_error = array();
+	foreach ($Error as $e)
+	    if ($e !== true && $e !== 1)
+		$filter_error[] = $e;
+	if (count($filter_error))
+	    $Conf->errorMsg(join("<br />\n", $filter_error));
+    }
 } else if ($Group == "rfo")
     rf_update(false);
 
