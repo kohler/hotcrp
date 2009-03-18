@@ -1066,13 +1066,15 @@ class PaperList extends BaseList {
 
 	// Linelinks container
 	$extraFooter = ($this->footer && $this->footer !== true ? $this->footer : "");
-	return "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n"
+	return " <tfoot>\n"
+	    . "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n"
 	    . "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top; padding-right: 4px;'>" . $Conf->cacheableImage("bendulft.png", "^^", null, "placthook") . "</td>\n"
 	    . "    <td colspan='" . ($ncol - 1) . "'>"
 	    . "<div id='plact' class='linelinks$whichlll'><a name='plact'><b>Select papers</b></a> (or <a href=\""
 	    . selfHref(array("selectall" => 1))
 	    . "#plact\" onclick='return papersel(true)'>select all " . $this->count . "</a>), then "
-	    . $t . "</div>" . $extraFooter . "</td></tr>\n";
+	    . $t . "</div>" . $extraFooter . "</td></tr>\n"
+	    . " </tfoot>\n";
     }
 
     function addScores($a) {
@@ -1400,7 +1402,7 @@ class PaperList extends BaseList {
 	$t .= "<img id='foldplactsession' alt='' src='sessionvar$ConfSiteSuffix?var=foldplact&amp;val=" . defval($_SESSION, "foldplact", 1) . "&amp;cache=1' width='1' height='1' />";
 
 	if ($this->showHeader) {
-	    $x .= "  <tr class=\"pl_headrow\">\n";
+	    $x .= " <thead>\n  <tr class=\"pl_headrow\">\n";
 	    $ord = 0;
 
 	    $titleextra = "";
@@ -1467,11 +1469,12 @@ class PaperList extends BaseList {
 			$x .= "    <th class=\"pl_$fdef[0]\"></th>\n";
 	    }
 
-	    $x .= "  </tr>\n";
-	    $x .= "  <tr><td class='pl_headgap' colspan='$ncol'></td></tr>\n";
+	    $x .= "  </tr>\n"
+		. "  <tr><td class='pl_headgap' colspan='$ncol'></td></tr>\n"
+		. " </thead>\n";
 	}
 
-	$x .= $body;
+	$x .= " <tbody>\n" . $body . " </tbody>\n";
 	reset($fieldDef);
 	if (key($fieldDef) == self::FIELD_SELECTOR
 	    || key($fieldDef) == self::FIELD_SELECTOR_ON)
