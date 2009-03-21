@@ -523,13 +523,13 @@ class PaperTable {
 		    $match = $i;
 	    if (($row[0] != "" || $row[1] != "") && $match < 0) {
 		$contact_n = $row[0] . " " . $row[1];
-		$contact_preg = str_replace("\\.", "\\S*", "/\\b" . preg_quote($row[0]) . "\\b.*\\b" . preg_quote($row[1]) . "\\b/i");
+		$contact_preg = str_replace("\\.", "\\S*", "{\\b" . preg_quote($row[0]) . "\\b.*\\b" . preg_quote($row[1]) . "\\b}i");
 		for ($i = 0; $match < 0 && $i < count($prow->authorTable); ++$i) {
 		    $f = $prow->authorTable[$i][0];
 		    $l = $prow->authorTable[$i][1];
 		    if (($f != "" || $l != "") && $prow->authorTable[$i][2] == "") {
 			$author_n = $f . " " . $l;
-			$author_preg = str_replace("\\.", "\\S*", "/\\b" . preg_quote($f) . "\\b.*\\b" . preg_quote($l) . "\\b/i");
+			$author_preg = str_replace("\\.", "\\S*", "{\\b" . preg_quote($f) . "\\b.*\\b" . preg_quote($l) . "\\b}i");
 			if (preg_match($contact_preg, $author_n)
 			    || preg_match($author_preg, $contact_n))
 			    $match = $i;

@@ -449,14 +449,14 @@ function tagsToText($prow, $makeUrls, $contact, $drop = false,
     // drop chair and vote tags when appropriate
     if ($drop && !$contact->privChair && count(($chtags = chairTags())) > 0) {
 	foreach ($chtags as $tag => $v)
-	    $t = trim(preg_replace("/ " . preg_quote($tag) . "(#-?\\d*)? /", " ", " $t "));
+	    $t = trim(preg_replace("{ " . preg_quote($tag) . "(#-?\\d*)? }", " ", " $t "));
     }
     if ($drop && count($vtags) > 0) {
 	foreach ($vtags as $tag => $v)
-	    $t = trim(preg_replace("/ " . preg_quote($tag) . "(#-?\\d*)? /", " ", " $t "));
+	    $t = trim(preg_replace("{ " . preg_quote($tag) . "(#-?\\d*)? }", " ", " $t "));
     }
     if ($drop && $Conf->setting("tag_rank"))
-	$t = trim(preg_replace("/ " . preg_quote($Conf->settingText("tag_rank")) . "(#-?\\d*)? /", " ", " $t "));
+	$t = trim(preg_replace("{ " . preg_quote($Conf->settingText("tag_rank")) . "(#-?\\d*)? }", " ", " $t "));
 
     if ($makeUrls === false || $t === "")
 	return $t;
