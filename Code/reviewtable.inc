@@ -269,7 +269,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 
     // override conflict
     if ($Me->privChair && !$effAssistant) {
-	$a = "<a href=\"" . htmlspecialchars(selfhref(array("forceShow" => 1))) . "\">";
+	$a = "<a href=\"" . selfHref(array("forceShow" => 1)) . "\">";
 	$x = $a . $Conf->cacheableImage("override24.png", "[Override]", null, "dlimg") . "</a>&nbsp;" . $a . "Override conflict</a> to show reviewers and allow editing";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
