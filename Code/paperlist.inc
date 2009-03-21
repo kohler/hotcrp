@@ -1202,7 +1202,8 @@ class PaperList extends BaseList {
 	$url = $this->search->url();
 
 	// check role type
-	$this->scoresOk = $me->privChair || ($me->isPC && $Conf->timePCViewAllReviews());
+	$this->scoresOk = $me->privChair || $me->amReviewer()
+	    || $Conf->timeAuthorViewReviews();
 
 	// get paper list
 	if (!($baseFieldId = $this->listFields($listname))) {
