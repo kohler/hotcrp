@@ -868,7 +868,7 @@ input.textlite-tt, textarea.tt {
 .papertext {
 	width: 96%;
 }
-.reviewtext {
+.reviewtext, textarea#foldtags_d {
 	width: 99%;
 }
 
@@ -1271,6 +1271,48 @@ a.pl_sort_def_rev {
 
 tr.k1 td {
 	background: #f0f0ff;
+}
+tr.k0.red td {
+	background: #ffe4e4;
+}
+tr.k1.red td {
+	background: #f8dddd;
+}
+tr.k0.orange td {
+	background: #fdf5d6;
+}
+tr.k1.orange td {
+	background: #f5eed0; /*#fcf4cf;*/
+}
+tr.k0.yellow td {
+	background: #ffffda;
+}
+tr.k1.yellow td {
+	background: #f6f6d8;
+}
+tr.k0.green td {
+	background: #e4ffe4;
+}
+tr.k1.green td {
+	background: #ddf8dd;
+}
+tr.k0.blue td {
+	background: #e0e0ff;
+}
+tr.k1.blue td {
+	background: #ddddf8;
+}
+tr.k0.purple td, tr.k0.violet td {
+	background: #f2e0f8;
+}
+tr.k1.purple td, tr.k1.violet td {
+	background: #f2dbf2;
+}
+tr.k0.grey td, tr.k0.gray td {
+	background: #e4e4e4;
+}
+tr.k1.grey td, tr.k1.gray td {
+	background: #dddddd;
 }
 
 body#offrev td#upload {

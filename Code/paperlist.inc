@@ -917,7 +917,7 @@ class PaperList extends BaseList {
 	}
     }
 
-    function footer($ncol, $listname) {
+    function footer($ncol, $listname, $trclass) {
 	global $Conf, $ConfSiteSuffix;
 	if ($this->count == 0 || !$this->footer)
 	    return "";
@@ -1067,7 +1067,7 @@ class PaperList extends BaseList {
 	// Linelinks container
 	$extraFooter = ($this->footer && $this->footer !== true ? $this->footer : "");
 	return " <tfoot>\n"
-	    . "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n"
+	    . "  <tr class='pl_footgap $trclass'><td class='pl_blank' colspan='$ncol'></td></tr>\n"
 	    . "  <tr class='pl_footrow'>\n    <td class='pl_selector' style='vertical-align: top; padding-right: 4px;'>" . $Conf->cacheableImage("bendulft.png", "^^", null, "placthook") . "</td>\n"
 	    . "    <td colspan='" . ($ncol - 1) . "'>"
 	    . "<div id='plact' class='linelinks$whichlll'><a name='plact'><b>Select papers</b></a> (or <a href=\""
@@ -1231,6 +1231,9 @@ class PaperList extends BaseList {
 
 	// initialize query
 	$queryOptions = array("joins" => array());
+	// need tags for row coloring
+	if ($this->contact->canViewTags(null))
+	    $queryOptions["tags"] = 1;
 	if ($this->search->complexSearch($queryOptions)) {
 	    if (!$this->search->search())
 		return NULL;
@@ -1319,9 +1322,16 @@ class PaperList extends BaseList {
 	$anyData = array();
 	$body = '';
 	$foldinfo = array();
+	$colorre = "/(?:\\A| )(?:" . $this->contact->contactId . "~"
+	    . ($this->contact->privChair ? "|~~" : "")
+	    . ")?(red|orange|yellow|green|blue|violet|purple|grey|gray)#/";
 	foreach ($srows as $row) {
 	    $ids[] = $row->paperId;
 	    $trclass = "k" . ($this->count % 2);
+	    if (defval($row, "paperTags")
+		&& $this->contact->canViewTags($row)
+		&& preg_match($colorre, $row->paperTags, $m))
+		$trclass .= " " . $m[1];
 	    $this->count++;
 	    $this->unfolded = $unfolded;
 
@@ -1479,7 +1489,7 @@ class PaperList extends BaseList {
 	reset($fieldDef);
 	if (key($fieldDef) == self::FIELD_SELECTOR
 	    || key($fieldDef) == self::FIELD_SELECTOR_ON)
-	    $x .= $this->footer($ncol, $listname);
+	    $x .= $this->footer($ncol, $listname, $trclass);
 	$x .= "</table>";
 
 	// session variable to remember the list
