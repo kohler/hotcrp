@@ -480,12 +480,14 @@ CREATE TABLE `TopicInterest` (
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
 insert into Settings (name, value) values ('allowPaperOption', 25);
-# collect PC conflicts from authors by default, but not collaborators
+-- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
-# default chair-only tags
+-- default chair-only tags
 insert into Settings (name, value, data) values ('tag_chair', 1, 'accept reject pcpaper');
-# turn on SHA-1 calculation by default
+-- turn on SHA-1 calculation by default
 insert into Settings (name, value) values ('sub_sha1', 1);
+-- allow PC members to review any paper by default
+insert into Settings (name, value) values ('pcrev_any', 1);
 
 insert into PaperStorage set paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain', paper='' on duplicate key update paper='';
 
