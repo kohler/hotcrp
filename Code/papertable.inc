@@ -981,7 +981,8 @@ class PaperTable {
 		if (isset($Error["tags"]))
 		    echo "<div class='xmerror'>", $Error["tags"], "</div>";
 		echo "<textarea id='foldtags_d' cols='20' rows='2' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>", $t, "</textarea><br />",
-		    "<input class='bsm' type='submit' name='settags' value='Save' /> &nbsp; ",
+		    "<input type='hidden' name='settingtags' value='1' />",
+		    "<input class='bsm' type='submit' value='Save' /> &nbsp; ",
 		    "<input class='bsm' type='submit' name='cancelsettags' value='Cancel' onclick='return fold(\"tags\", 1)' /><br />",
 		    "<span class='hint'><a href='help$ConfSiteSuffix?t=tags'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
 		    "</div>";

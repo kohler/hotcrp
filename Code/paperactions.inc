@@ -146,6 +146,8 @@ class PaperActions {
 
     function setTags($prow) {
 	global $Conf, $Me, $Error, $OK, $forceShow;
+	if (isset($_REQUEST["cancelsettags"]))
+	    return;
 	$ajax = defval($_REQUEST, "ajax", false);
         if ($Me->canSetTags($prow, $forceShow)) {
 	    require_once("Code/tags.inc");

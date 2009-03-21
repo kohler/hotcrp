@@ -368,7 +368,7 @@ if (isset($_REQUEST["setshepherd"])) {
     PaperActions::setLeadOrShepherd($prow, "shepherd");
     loadRows();
 }
-if (isset($_REQUEST["settags"])) {
+if (isset($_REQUEST["settingtags"])) {
     require_once("Code/paperactions.inc");
     PaperActions::setTags($prow);
     loadRows();
