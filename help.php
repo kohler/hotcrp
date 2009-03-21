@@ -16,6 +16,7 @@ $topicTitles = array("topics" => "Help topics",
 		     "revrate" => "Review ratings",
 		     "votetags" => "Voting tags",
 		     "scoresort" => "Sorting scores",
+		     "ranking" => "Paper ranking",
 		     "chair" => "Chair's guide");
 
 $topic = defval($_REQUEST, "t", "topics");
@@ -56,10 +57,11 @@ function topics() {
     _alternateRow("<a href='help$ConfSiteSuffix?t=search'>Search</a>", "About paper searching.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=keywords'>Search keywords</a>", "Quick reference to search keywords and search syntax.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "How to use tags to define paper sets and discussion orders.");
+    _alternateRow("<a href='help$ConfSiteSuffix?t=scoresort'>Sorting scores</a>", "How scores are sorted in paper lists.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=revround'>Review rounds</a>", "Defining review rounds.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=revrate'>Review ratings</a>", "Rating reviews.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=votetags'>Voting tags</a>", "Voting for papers.");
-    _alternateRow("<a href='help$ConfSiteSuffix?t=scoresort'>Sorting scores</a>", "How scores are sorted in paper lists.");
+    _alternateRow("<a href='help$ConfSiteSuffix?t=ranking'>Paper ranking</a>", "Ranking papers using tags.");
     echo "</table>";
 }
 
@@ -378,6 +380,12 @@ Here are some example ways to use tags.
  The system automatically sums PC members' votes into the public &ldquo;v&rdquo; tag.
  To search for papers by vote count, search for &ldquo;<a href='search$ConfSiteSuffix?t=s&amp;q=rorder:v'>rorder:v</a>&rdquo;. (<a href='help$ConfSiteSuffix?t=votetags'>Learn more</a>)</li>
 
+<li><strong>Rank papers.</strong>
+ Each PC member can set tags indicating their preference ranking for papers.
+ For instance, a PC member's favorite paper would get tag &ldquo;~rank#1&rdquo;, the next favorite &ldquo;~rank#2&rdquo;, and so forth.
+ The chair can then combine these rankings into a global preference order using a Condorcet method.
+ (<a href='help$ConfSiteSuffix?t=ranking'>Learn more</a>)</li>
+
 <li><strong>Define a discussion order for the PC meeting.</strong>
  Publishing the order lets PC members prepare to discuss upcoming papers.
  Define an ordered tag such as &ldquo;discuss&rdquo; (see below for how), then ask the PC to <a href='search$ConfSiteSuffix?q=order:discuss'>search for &ldquo;order:discuss&rdquo;</a>.
@@ -620,6 +628,94 @@ The publicly visible &ldquo;vote&rdquo; tag is automatically set to the total nu
 Hover to learn how the PC voted:</p>
 
 <p><img src='images/extagvotehover.png' alt='[Hovering over a voting tag]' /></p>");
+
+    echo "</table>\n";
+}
+
+
+function showranking() {
+    global $Conf, $ConfSiteSuffix, $Me;
+
+    echo "<table>";
+    _alternateRow("Ranking basics", "
+Paper ranking is an alternate method to extract the PC's preference order for
+submitted papers.  Each PC member ranks the submitted papers, and a voting
+algorithm, <a href='http://en.wikipedia.org/wiki/Schulze_method'>the Schulze
+method</a> by default, combines these rankings into a global preference order.
+
+<p>HotCRP supports ranking through the <a
+href='help$ConfSiteSuffix?t=tags'>tags system</a>.  The chair can <a
+href='settings$ConfSiteSuffix?group=rev'>define a tag to be used for
+ranking</a>.  PC members vote by assigning the corresponding twiddle tags.
+For instance, a paper tagged &ldquo;~rank#1&rdquo; is the user's first
+preference, a paper tagged &ldquo;~rank#2&rdquo; is the second preference,
+and so forth.  To combine PC rankings into a global preference order, the PC
+chair goes to the <a href='search$ConfSiteSuffix?q='>search page</a>, selects
+all papers, and chooses Tags &gt; Calculate&nbsp;rank, entering
+&ldquo;rank&rdquo; for the tag.  At that point, the global rank can be viewed
+by a <a href='search$ConfSiteSuffix?q=order:rank'>search for
+&ldquo;order:rank&rdquo;</a>.</p>
+
+<p>PC members may enter rankings by manipulating tags directly, but it will
+generally be easier to use the <a href='offline$ConfSiteSuffix'>offline
+ranking form</a>.  Download a ranking file, rearrange the lines to create a
+rank, and upload the form again.  For example, here is an initial ranking
+file:</p>
+
+<pre class='entryexample'>
+# Edit the rank order by rearranging this file's lines.
+# The first line has the highest rank.
+
+# Lines that start with \"#\" are ignored.  Unranked papers appear at the end
+# in lines starting with \"X\", sorted by overall merit.  Create a rank by
+# removing the \"X\"s and rearranging the lines.  A line that starts with \"=\"
+# marks a paper with the same rank as the preceding paper.  A line that starts
+# with \">>\", \">>>\", and so forth indicates a rank gap between the preceding
+# paper and the current paper.  When you are done, upload the file at
+#   http://your.site.here.com/offline
+
+# Tag: ~rank
+
+
+X	1	Write-Back Caches Considered Harmful
+X	2	Deconstructing Suffix Trees
+X	4	Deploying Congestion Control Using Homogeneous Modalities
+X	5	The Effect of Collaborative Epistemologies on Theory
+X	6	The Influence of Probabilistic Methodologies on Networking
+X	8	Rooter: A Methodology for the Typical Unification of Access Points and Redundancy
+X	10	Decoupling Lambda Calculus from 802.11 Mesh Networks in Moore's Law
+X	11	Analyzing Scatter/Gather I/O Using Encrypted Epistemologies
+</pre>
+
+<p>The user might edit the file as follows:</p>
+
+<pre class='entryexample'>
+	8	Rooter: A Methodology for the Typical Unification of Access Points and Redundancy
+	5	The Effect of Collaborative Epistemologies on Theory
+=	1	Write-Back Caches Considered Harmful
+	2	Deconstructing Suffix Trees
+>>	4	Deploying Congestion Control Using Homogeneous Modalities
+
+X	6	The Influence of Probabilistic Methodologies on Networking
+X	10	Decoupling Lambda Calculus from 802.11 Mesh Networks in Moore's Law
+X	11	Analyzing Scatter/Gather I/O Using Encrypted Epistemologies
+</pre>
+
+<p>Uploading this file produces the following ranking:</p>
+
+<p><table><tr><th class='pad'>ID</th><th>Title</th><th>Rank tag</th></tr>
+<tr><td class='pad'>#8</td><td class='pad'>Rooter: A Methodology for the Typical Unification of Access Points and Redundancy</td><td class='pad'>~rank#1</td></tr>
+<tr><td class='pad'>#5</td><td class='pad'>The Effect of Collaborative Epistemologies on Theory</td><td class='pad'>~rank#2</td></tr>
+<tr><td class='pad'>#1</td><td class='pad'>Write-Back Caches Considered Harmful</td><td class='pad'>~rank#2</td></tr>
+<tr><td class='pad'>#2</td><td class='pad'>Deconstructing Suffix Trees</td><td class='pad'>~rank#3</td></tr>
+<tr><td class='pad'>#4</td><td class='pad'>Deploying Congestion Control Using Homogeneous Modalities</td><td class='pad'>~rank#5</td></tr></table></p>
+
+<p>Since #6, #10, and #11 still had X prefixes, they were not assigned a rank.
+ The user can search for &ldquo;order:~rank&rdquo; to see their ranking, and
+ inside the system; an administrator can search for
+ &ldquo;order:<i>pcname</i>~rank&rdquo; to see a particular user's ranking.
+ Once a global ranking is assigned, &ldquo;order:rank&rdquo; will show it.</p>
+");
 
     echo "</table>\n";
 }
@@ -931,6 +1027,8 @@ else if ($topic == "votetags")
     showvotetags();
 else if ($topic == "scoresort")
     scoresort();
+else if ($topic == "ranking")
+    showranking();
 else if ($topic == "chair")
     chair();
 

@@ -467,14 +467,14 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 		$lastIndex = $row->tagIndex;
 	    }
 	$text = "# Edit the rank order by rearranging this file's lines.\n"
-	    . "# The first line has the highest rank, and so forth.\n"
-	    . "# Lines that start with \"#\" are ignored.  Lines for unranked papers start with\n"
-	    . "# \"X\"; they appear at the end, sorted by overall merit.  Rank them by deleting\n"
-	    . "# the \"X\"s and rearranging the lines.  A line that starts with \"=\" marks a\n"
-	    . "# paper with the same rank as the preceding paper.  A line that starts with\n"
-	    . "# \">>\", \">>>\", and so forth indicates a rank gap between the preceding paper\n"
-	    . "# and the current paper.  When you are done, upload the file at\n"
-	    . "#   " . $Opt["paperSite"] . "/offline$ConfSiteSuffix\n"
+	    . "# The first line has the highest rank.\n\n"
+	    . "# Lines that start with \"#\" are ignored.  Unranked papers appear at the end\n"
+	    . "# in lines starting with \"X\", sorted by overall merit.  Create a rank by\n"
+	    . "# removing the \"X\"s and rearranging the lines.  A line that starts with \"=\"\n"
+	    . "# marks a paper with the same rank as the preceding paper.  A line that starts\n"
+	    . "# with \">>\", \">>>\", and so forth indicates a rank gap between the preceding\n"
+	    . "# paper and the current paper.  When you are done, upload the file at\n"
+	    . "#   " . $Opt["paperSite"] . "/offline$ConfSiteSuffix\n\n"
 	    . "# Tag: " . trim($_REQUEST["tag"]) . "\n"
 	    . "\n"
 	    . $real . $null;

@@ -806,10 +806,10 @@ span.f-cx {
 }
 
 
-td.pad {
+td.pad, th.pad {
 	padding-right: 1em;
 }
-td.padl {
+td.padl, th.padl {
 	padding-left: 2em;
 }
 td.error, td.error input, div.error, div.error input {
