@@ -755,10 +755,18 @@ td h2, td h3 {
 	margin-top: 0px;
 	margin-bottom: 0px;
 }
+
+
+/* settings */
 table.settings td h3 {
 	background: #eff1ff;
 	margin-bottom: 0.5em;
 	padding: 0px 4px;
+}
+table#foldtag_color th {
+	text-align: left;
+	font-size: smaller;
+	padding-right: 1em;
 }
 
 

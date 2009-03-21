@@ -55,6 +55,7 @@ $SettingGroups = array("acc" => array(
 			     "x_tag_chair" => "special",
 			     "x_tag_vote" => "special",
 			     "x_tag_rank" => "special",
+			     "x_tag_color" => "special",
 			     "tag_seeall" => "check",
 			     "extrev_soft" => "date",
 			     "extrev_hard" => "date",
@@ -119,6 +120,7 @@ $SettingText = array(
 	"tag_chair" => "Chair tags",
 	"tag_vote" => "Voting tags",
 	"tag_rank" => "Rank tag",
+	"tag_color" => "Tag colors",
 	"tag_seeall" => "PC can see tags for conflicted papers",
 	"rev_ratings" => "Review ratings setting",
 	"au_seerev" => "Authors can see reviews setting",
@@ -432,6 +434,25 @@ function doTags($set, $what) {
 		|| $Conf->settingText("tag_rank") !== $v[1]))
 	    $Values["tag_rank"] = $v;
     }
+
+    if (!$set && $what == "tag_color") {
+	$vs = array();
+	$any_set = false;
+	foreach (explode("|", "red|orange|yellow|green|blue|purple|grey") as $k)
+	    if (isset($_REQUEST["tag_color_" . $k])) {
+		$any_set = true;
+		foreach (preg_split('/,*\s+/', $_REQUEST["tag_color_" . $k]) as $t)
+		    if ($t !== "" && checkTag($t, CHECKTAG_QUIET | CHECKTAG_NOPRIVATE | CHECKTAG_NOINDEX))
+			$vs[] = $t . "=" . $k;
+		    else if ($t !== "") {
+			$Error[] = ucfirst($k) . " color tag &ldquo;" . htmlspecialchars($t) . "&rdquo; contains odd characters.";
+			$Highlight["tag_color_" . $k] = true;
+		    }
+	    }
+	$v = array(1, join(" ", $vs));
+	if ($any_set && $Conf->settingText("tag_color") !== $v[1])
+	    $Values["tag_color"] = $v;
+    }
 }
 
 function doTopics($set) {
@@ -701,7 +722,7 @@ function doBanal($set) {
 function doSpecial($name, $set) {
     global $Values, $Error, $Highlight;
     if ($name == "x_tag_chair" || $name == "x_tag_vote"
-	|| $name == "x_tag_rank")
+	|| $name == "x_tag_rank" || $name == "x_tag_color")
 	doTags($set, substr($name, 2));
     else if ($name == "topics")
 	doTopics($set);
@@ -1292,10 +1313,12 @@ function doRevGroup() {
 
     echo "<div class='g'></div>\n";
     $t = expandMailTemplate("requestreview", false);
-    echo "<div id='foldmailbody_requestreview' class='foldc'>", foldbutton("mailbody_requestreview", ""), "
-  <a href='javascript:void fold(\"mailbody_requestreview\", 0)' class='fn q'><strong>Mail template for external review requests</strong></a>\n";
-    echo "  <span class='fx'><strong>Mail template for external review requests</strong> (<a href='mail$ConfSiteSuffix'>keywords</a> allowed)<br /></span>
-<textarea class='tt fx' name='mailbody_requestreview' cols='80' rows='20' onchange='hiliter(this)'>", htmlspecialchars($t[1]), "</textarea></div>\n";
+    echo "<table id='foldmailbody_requestreview' class='foldc'>",
+	"<tr><td>", foldbutton("mailbody_requestreview", ""), "&nbsp;</td>",
+	"<td><a href='javascript:void fold(\"mailbody_requestreview\")' class='q'><strong>Mail template for external review requests</strong></a>",
+	" <span class='fx'>(<a href='mail$ConfSiteSuffix'>keywords</a> allowed)<br /></span>
+<textarea class='tt fx' name='mailbody_requestreview' cols='80' rows='20' onchange='hiliter(this)'>", htmlspecialchars($t[1]), "</textarea>",
+	"</td></tr></table>\n";
 
     echo "<hr class='hr' />";
 
@@ -1335,6 +1358,25 @@ function doRevGroup() {
 
     echo "<div class='g'></div>\n";
     doCheckbox('tag_seeall', "PC can see tags for conflicted papers");
+
+    echo "<div class='g'></div>\n";
+    echo "<table id='foldtag_color' class='foldc'><tr>",
+	"<td>", foldbutton("tag_color", ""), "&nbsp;</td>",
+	"<td><a href='javascript:void fold(\"tag_color\")' class='q'><strong>Colors</strong></a><br />\n",
+	"<div class='hint fx'>Papers tagged with a color name, or with one of the associated tags (if any), will appear in that color in paper lists.</div>",
+	"<div class='smg fx'></div>",
+	"<table class='fx'><tr><th colspan='2'>Color name</th><th>Tags</th></tr>";
+    $t = $Conf->settingText("tag_color", "");
+    foreach (explode("|", "red|orange|yellow|green|blue|purple|grey") as $k) {
+	if (count($Error) > 0)
+	    $v = defval($_REQUEST, "tag_color_$k", "");
+	else {
+	    preg_match_all("/(\\S+)=$k/", $t, $m);
+	    $v = join(" ", $m[1]);
+	}
+	echo "<tr class='k0 $k'><td class='lxcaption'></td><td class='lxcaption'>$k</td><td class='lentry'><input type='text' class='textlite' name='tag_color_$k' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /></td></tr>";
+    }
+    echo "</table></td></tr></table>\n";
 
     echo "<hr class='hr' />";
 

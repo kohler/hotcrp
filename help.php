@@ -347,6 +347,7 @@ Papers can have many tags, and you can invent new tags on the fly.
 Tags are never shown to authors$conflictmsg1.
 It&rsquo;s easy to add and remove tags and to list all papers with a given tag,
 and <em>ordered</em> tags preserve a particular paper order.
+Tags also affect color highlighting in paper lists.
 
 <p><em>Twiddle tags</em>, with names like &ldquo;~tag&rdquo;, are visible only
 to their creators.  Tags with two twiddles, such as &ldquo;~~tag&rdquo;, are
@@ -460,6 +461,17 @@ conflicted paper.)  In contrast, the <b>Define sequential</b> action assigns
 strictly sequential values, like &ldquo;tag#1&rdquo;,
 &ldquo;tag#2&rdquo;, &ldquo;tag#3&rdquo;, &ldquo;tag#4&rdquo;.
 <b>Define ordered</b> is better for most purposes.</p>");
+    _alternateRow("Tag colors", "
+The tag names &ldquo;red&rdquo;, &ldquo;orange&rdquo;, &ldquo;yellow&rdquo;,
+&ldquo;green&rdquo;, &ldquo;blue&rdquo;, &ldquo;purple&rdquo;, and
+&ldquo;grey&rdquo; act as highlight colors.  For example, papers tagged with
+&ldquo;red&rdquo; will appear red in paper lists (for people who can see that
+tag).  Tag a paper &ldquo;~red&rdquo; to make it red in your own paper list,
+but no one else's.  System administrators can also <a
+href='settings$ConfSiteSuffix?group=rev'>associate other tags with colors</a>
+so that, for example, &ldquo;<a
+href='search$ConfSiteSuffix?q=tag:reject'>tag:reject</a>&rdquo; papers show up
+as grey.");
     echo "</table>\n";
 }
 

@@ -1317,21 +1317,30 @@ class PaperList extends BaseList {
 	    else
 		++$skipcallout;
 
+	// tag colors
+	$colorre = "/(?:\\A| )(?:" . $this->contact->contactId . "~"
+	    . ($this->contact->privChair ? "|~~" : "")
+	    . ")?(red|orange|yellow|green|blue|violet|purple|grey|gray";
+	$colormap = array();
+	foreach (explode(" ", $Conf->settingText("tag_color", "")) as $k)
+	    if ($k != "" && ($i = strpos($k, "=")) !== false) {
+		$colorre .= "|" . substr($k, 0, $i);
+		$colormap[substr($k, 0, $i)] = substr($k, $i + 1);
+	    }
+	$colorre .= ")#/";
+
 	// collect row data
 	$ids = array();
 	$anyData = array();
 	$body = '';
 	$foldinfo = array();
-	$colorre = "/(?:\\A| )(?:" . $this->contact->contactId . "~"
-	    . ($this->contact->privChair ? "|~~" : "")
-	    . ")?(red|orange|yellow|green|blue|violet|purple|grey|gray)#/";
 	foreach ($srows as $row) {
 	    $ids[] = $row->paperId;
 	    $trclass = "k" . ($this->count % 2);
 	    if (defval($row, "paperTags")
 		&& $this->contact->canViewTags($row)
 		&& preg_match($colorre, $row->paperTags, $m))
-		$trclass .= " " . $m[1];
+		$trclass .= " " . defval($colormap, $m[1], $m[1]);
 	    $this->count++;
 	    $this->unfolded = $unfolded;
 
