@@ -98,9 +98,13 @@ function setTagIndexes() {
     $lineno = 1;
     $settings = $titles = $linenos = $errors = array();
     foreach (explode("\n", rtrim(cleannl($text))) as $l) {
-	if (!$tag && substr($l, 0, 6) == "# Tag:")
-	    $tag = checkTag(trim(substr($l, 6)), CHECKTAG_QUIET | CHECKTAG_NOINDEX);
-	if ($l == "" || $l[0] == "#") {
+	if (substr($l, 0, 4) == "Tag:" || substr($l, 0, 6) == "# Tag:") {
+	    if (!$tag)
+		$tag = checkTag(trim(substr($l, ($l[0] == "#" ? 6 : 4))),
+				CHECKTAG_QUIET | CHECKTAG_NOINDEX);
+	    ++$lineno;
+	    continue;
+	} else if ($l == "" || $l[0] == "#") {
 	    ++$lineno;
 	    continue;
 	}

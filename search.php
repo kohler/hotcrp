@@ -475,7 +475,7 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 	    . "# with \">>\", \">>>\", and so forth indicates a rank gap between the preceding\n"
 	    . "# paper and the current paper.  When you are done, upload the file at\n"
 	    . "#   " . $Opt["paperSite"] . "/offline$ConfSiteSuffix\n\n"
-	    . "# Tag: " . trim($_REQUEST["tag"]) . "\n"
+	    . "Tag: " . trim($_REQUEST["tag"]) . "\n"
 	    . "\n"
 	    . $real . $null;
 	downloadText($text, $Opt['downloadPrefix'] . "rank.txt", "rank");
