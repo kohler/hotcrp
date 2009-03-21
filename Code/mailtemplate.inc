@@ -1057,12 +1057,13 @@ class Mailer {
 	    }
 
 	    // unquote any existing UTF-8 encoding
-	    if ($name[0] == "="
+	    if ($name != "" && $name[0] == "="
 		&& strcasecmp(substr($name, 0, 10), "=?utf-8?q?") == 0)
 		$name = self::mimeHeaderUnquote($name);
 
 	    $utf8 = preg_match('/[\x80-\xFF]/', $name) ? 2 : 0;
-	    if ($name[0] == "\"" && preg_match("/\\A\"([^\\\\\"]|\\\\.)*\"\\z/s", $name)) {
+	    if ($name != "" && $name[0] == "\""
+		&& preg_match("/\\A\"([^\\\\\"]|\\\\.)*\"\\z/s", $name)) {
 		if ($utf8)
 		    self::mimeAppend($text, $linelen, substr($name, 1, -1), $utf8);
 		else

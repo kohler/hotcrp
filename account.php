@@ -76,7 +76,7 @@ if (isset($_REQUEST['register']) && $OK) {
 	$Error["uemail"] = true;
     } else {
 	if ($newProfile) {
-	    $result = $Acct->initialize($_REQUEST["uemail"]);
+	    $result = $Acct->initialize($_REQUEST["uemail"], true);
 	    if ($OK) {
 		$Acct->sendAccountInfo($Conf, true, false);
 		$Conf->log("Account created by $Me->email", $Acct);
@@ -183,7 +183,7 @@ if (isset($_REQUEST['register']) && $OK) {
 	    $Acct->lookupByEmail($_REQUEST["uemail"]);
 	    $Acct->valid();
 	    if ($newProfile) {
-		$Conf->confirmMsg("Successfully created <a href=\"account$ConfSiteSuffix?contact=" . urlencode($Acct->email) . "\">an account for " . htmlspecialchars($Acct->email) . "</a>.  A password has been emailed to that address.  You may now <a href='account$ConfSiteSuffix?contact=new'>create another account</a>, or edit the " . htmlspecialchars($Acct->email) . " account below.");
+		$Conf->confirmMsg("Successfully created <a href=\"account$ConfSiteSuffix?contact=" . urlencode($Acct->email) . "\">an account for " . htmlspecialchars($Acct->email) . "</a>.  A password has been emailed to that address.  You may now <a href='account$ConfSiteSuffix?new=1'>create another account</a>, or edit the " . htmlspecialchars($Acct->email) . " account below.");
 		$newProfile = false;
 	    } else {
 		$Conf->log("Account updated" . ($Me->contactId == $Acct->contactId ? "" : " by $Me->email"), $Acct);
