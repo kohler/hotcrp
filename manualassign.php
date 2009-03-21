@@ -220,13 +220,13 @@ while (($row = edb_orow($result)))
 echo tagg_select("reviewer", $rev_opt, $reviewer, array("onchange" => "highlightUpdate(\"assrevupdate\")")),
     " &nbsp; ",
     "<input id='assrevupdate' class='b' type='submit' value='Go' />
-    <div class='g'></div>
-    <input type='radio' name='kind' value='a' onchange='highlightUpdate(\"assrevupdate\")'",
-    ($kind == "a" ? " checked='checked'" : ""),
-    " />&nbsp;Assign reviews and/or conflicts for all papers<br />
-    <input type='radio' name='kind' value='c' onchange='highlightUpdate(\"assrevupdate\")'",
-    ($kind == "c" ? " checked='checked'" : ""),
-    " />&nbsp;Focus on potential conflicts\n";
+    <div class='g'></div>\n",
+    tagg_radio("kind", "a", $kind == "a",
+	       array("onchange" => "highlightUpdate('assrevupdate')")),
+    "&nbsp;", tagg_label("Assign reviews and/or conflicts for all papers"), "<br />\n",
+    tagg_radio("kind", "c", $kind == "c",
+	       array("onchange" => "highlightUpdate('assrevupdate')")),
+    "&nbsp;", tagg_label("Focus on potential conflicts"), "\n";
 
 if ($kind == "a")
     echo "    <div class='g'></div>\n    ",
@@ -236,8 +236,9 @@ if ($kind == "a")
 	(isset($Error["rev_roundtag"]) ? "</span>" : ""),
 	" &nbsp;<a class='hint' href='help$ConfSiteSuffix?t=revround'>What is this?</a>\n";
 
-echo "    <div class='g'></div>
-    <input id='assrevimmediate' type='checkbox' checked='checked' />&nbsp;Save assignments as they are made<br />
+echo "    <div class='g'></div>\n    ",
+    tagg_checkbox(false, false, true, array("id" => "assrevimmediate")),
+    "&nbsp;", tagg_label("Save assignments as they are made", "assrevimmediate"), "<br />
   </div></form></td>
 </tr>
 </table>\n";

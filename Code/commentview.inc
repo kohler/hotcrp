@@ -139,25 +139,17 @@ class CommentView {
 	echo "</textarea>
   <div class='g'></div>
   <table><tr><td>Show to: &nbsp; </td>
-    <td><input type='radio' name='visibility' value='p'";
-	if ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($crow && $crow->forAuthors == 0 && $crow->forReviewers == 0))
-	    echo " checked='checked'";
-	echo " onchange='hiliter(this)' />&nbsp;PC reviewers only<br />
-    <input type='radio' name='visibility' value='r'";
-	if ($useRequest ? defval($_REQUEST, "visibility") == "r" : (!$crow || ($crow->forAuthors == 0 && $crow->forReviewers != 0)))
-	    echo " checked='checked'";
-	echo " onchange='hiliter(this)' />&nbsp;PC and external reviewers<br />
-    <input type='radio' name='visibility' value='a'";
-	if ($useRequest ? defval($_REQUEST, "visibility") == "a" : ($crow && $crow->forAuthors != 0))
-	    echo " checked='checked'";
-	echo " onchange='hiliter(this)' />&nbsp;Authors and reviewers";
+    <td>", tagg_radio_h("visibility", "p", ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($crow && $crow->forAuthors == 0 && $crow->forReviewers == 0))),
+	    "&nbsp;", tagg_label("PC reviewers only"), "<br />\n";
+	echo tagg_radio_h("visibility", "r", ($useRequest ? defval($_REQUEST, "visibility") == "r" : (!$crow || ($crow->forAuthors == 0 && $crow->forReviewers != 0)))),
+	    "&nbsp;", tagg_label("PC and external reviewers"), "<br />\n";
+	echo tagg_radio_h("visibility", "a", ($useRequest ? defval($_REQUEST, "visibility") == "a" : ($crow && $crow->forAuthors != 0))),
+	    "&nbsp;", tagg_label("Authors and reviewers");
 	// blind?
 	if ($Conf->blindReview() == BLIND_OPTIONAL) {
-	    echo " &nbsp; (<input type='checkbox' name='blind' value='1'";
-	    if ($useRequest ? defval($_REQUEST, 'blind')
-		: (!$crow || $crow->blind))
-		echo " checked='checked'";
-	    echo " onchange='hiliter(this)' />&nbsp;Anonymous to authors)\n";
+	    echo " &nbsp; (",
+		tagg_checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, "blind") : !$crow || $crow->blind)),
+		"&nbsp;", tagg_label("Anonymous to authors"), ")\n";
 	} else if ($Conf->blindReview() == BLIND_ALWAYS)
 	    echo " (anonymous to authors)";
 	echo "</td></tr></table>\n";
@@ -174,7 +166,7 @@ class CommentView {
 	    echo "      <td class='ptb_button'><span class='lgsep'></span><input class='b' type='submit' value='Delete comment' name='delete' /></td>\n";
 	echo "    </tr>\n  </table></div>\n";
 	if (!$Me->timeReview($prow, null))
-	    echo "<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
+	    echo tagg_checkbox("override"), "&nbsp;", tagg_label("Override&nbsp;deadlines");
 
 	echo "</div></div></form>\n\n";
     }
@@ -263,12 +255,9 @@ has passed.  Please keep the response short and to the point",
 	else if ($crow)
 	    echo htmlspecialchars($crow->comment);
 	echo "</textarea>
-  <div class='g'></div>
-  <input type='checkbox' name='forReviewers' value='1' ";
-	if ($useRequest ? defval($_REQUEST, "forReviewers")
-	    : (!$crow || $crow->forReviewers != 0))
-	    echo "checked='checked' ";
-	echo "onchange='hiliter(this)' />&nbsp;This response should be sent to the reviewers.\n";
+  <div class='g'></div>\n  ",
+	    tagg_checkbox_h("forReviewers", 1, ($useRequest ? defval($_REQUEST, "forReviewers") : !$crow || $crow->forReviewers != 0)),
+	    "&nbsp;", tagg_label("This response should be sent to the reviewers."), "\n";
 
 	// review actions
 	echo "<div class='aa'><table class='pt_buttons'>
@@ -278,7 +267,7 @@ has passed.  Please keep the response short and to the point",
 	    echo "      <td class='ptb_button'><input class='b' type='submit' value='Delete response' name='delete' /></td>\n";
 	echo "    </tr>\n  </table></div>\n";
 	if (!$Conf->timeAuthorRespond())
-	    echo "<input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
+	    echo tagg_checkbox("override"), "&nbsp;", tagg_label("Override&nbsp;deadlines");
 
 	echo "</td><td></td></tr>\n", tagg_cbox("cmt", true),
 	    "</td></tr>\n</table>\n</div></form>\n\n";

@@ -440,10 +440,9 @@ echo "</div></td>\n</tr>\n\n";
 if ($Conf->sversion >= 6) {
     echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n\n",
 	"<tr><td class='caption'>Email notification</td><td class='entry'>",
-	"<input type='checkbox' name='watchcomment' value='", WATCH_COMMENT, "'";
-    if ($Acct->defaultWatch & WATCH_COMMENT)
-	echo " checked='checked'";
-    echo " onchange='hiliter(this)' />&nbsp;Send mail when new comments are available for authored or reviewed papers</td></tr>\n\n";
+	tagg_checkbox_h("watchcomment", WATCH_COMMENT, $Acct->defaultWatch & WATCH_COMMENT),
+	"&nbsp;", tagg_label("Send mail when new comments are available for authored or reviewed papers"),
+	"</td></tr>\n\n";
 }
 
 
@@ -465,15 +464,13 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     }
     foreach (array("chair" => "PC chair", "pc" => "PC member",
 		   "no" => "Not on the PC") as $k => $v) {
-	echo "<input type='radio' name='pctype' value='$k'",
-	    ($k == $pct ? " checked='checked'" : ""),
-	    " onchange='hiliter(this)' />&nbsp;$v<br />\n";
+	echo tagg_radio_h("pctype", $k, $k == $pct), "&nbsp;",
+	    tagg_label($v), "<br />\n";
     }
 
     echo "</td><td><span class='sep'></span></td><td class='nowrap'>";
-    echo "<input type='checkbox' name='ass' value='1' ",
-	(defval($_REQUEST, "ass") ? "checked='checked' " : ""),
-	"onchange='hiliter(this)' />&nbsp;</td><td>System administrator<br />",
+    echo tagg_checkbox_h("ass", 1, defval($_REQUEST, "ass")),
+	"&nbsp;</td><td>", tagg_label("System administrator"), "<br />",
 	"<div class='hint'>System administrators have full control over all site operations.  Administrators need not be members of the PC.  There's always at least one system administrator.</div></td></tr></table>\n";
     echo "  </td>\n</tr>\n\n";
 }
@@ -503,11 +500,8 @@ if ($Acct->isPC || $newProfile) {
 	    echo "      <tr><td class='ti_topic'>", htmlspecialchars($row[1]), "</td>";
 	    $interest = isset($row[2]) ? $row[2] : 1;
 	    for ($j = 0; $j < 3; $j++) {
-		echo "<td class='ti_interest'>";
-		echo "<input type='radio' name='ti$row[0]' value='$j' ";
-		if ($interest == $j)
-		    echo "checked='checked' ";
-		echo "onchange='hiliter(this)' /></td>";
+		echo "<td class='ti_interest'>",
+		    tagg_radio_h("ti$row[0]", $j, $interest == $j), "</td>";
 	    }
 	    echo "</td></tr>\n";
 	}

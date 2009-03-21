@@ -362,11 +362,14 @@ Sign in to submit or review papers.";
     if (isset($Opt["ldapLogin"]))
 	echo "<input type='hidden' name='action' value='login' />\n";
     else {
-	echo "<div class='f-i'>
-  <input type='radio' name='action' value='login' checked='checked' tabindex='2' />&nbsp;<b>Sign me in</b><br />
-  <input type='radio' name='action' value='forgot' tabindex='2' />&nbsp;I forgot my password, email it to me<br />
-  <input type='radio' name='action' value='new' tabindex='2' />&nbsp;I'm a new user and want to create an account using this email address
-</div>\n";
+	echo "<div class='f-i'>\n  ",
+	    tagg_radio("action", "login", true, array("tabindex" => 2)),
+	    "&nbsp;", tagg_label("<b>Sign me in</b>"), "<br />\n";
+	echo tagg_radio("action", "forgot", false, array("tabindex" => 2)),
+	    "&nbsp;", tagg_label("I forgot my password, email it to me"), "<br />\n";
+	echo tagg_radio("action", "new", false, array("tabindex" => 2)),
+	    "&nbsp;", tagg_label("I'm a new user and want to create an account using this email address");
+	echo "\n</div>\n";
     }
     echo "<div class='f-i'>
   <input class='b' type='submit' value='Sign in' name='signin' tabindex='1' />

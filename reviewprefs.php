@@ -245,29 +245,23 @@ echo "<tr><td class='lxcaption'><strong>Show:</strong> &nbsp;",
     foldsessionpixel("pl", "pfdisplay", null),
     "</td><td class='lentry'>";
 if ($Conf->blindSubmission() <= BLIND_OPTIONAL) {
-    echo "<input type='checkbox' name='showau' value='1'";
-    if ($Conf->blindSubmission() == BLIND_OPTIONAL && !($pl->headerInfo["authors"] & 1))
-	echo " disabled='disabled'";
-    if (strpos($pldisplay, "\1") !== false)
-	echo " checked='checked'";
-    echo " onclick='fold(\"pl\",!this.checked,1)' />&nbsp;Authors",
+    echo tagg_checkbox("showau", 1, strpos($pldisplay, "\1") !== false,
+		       array("disabled" => ($Conf->blindSubmission() == BLIND_OPTIONAL && !($pl->headerInfo["authors"] & 1)),
+			     "onchange" => "fold('pl',!this.checked,1)")),
+	"&nbsp;", tagg_label("Authors"),
 	"<span class='sep'></span>\n";
 }
 if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair) {
-    echo "<input type='checkbox' name='showanonau' value='1'";
-    if (!($pl->headerInfo["authors"] & 2))
-	echo " disabled='disabled'";
-    if (strpos($pldisplay, "\2") !== false)
-	echo " checked='checked'";
-    echo " onclick='fold(\"pl\",!this.checked,2)' />&nbsp;",
-	($Conf->blindSubmission() == BLIND_OPTIONAL ? "Anonymous authors" : "Authors"),
+    echo tagg_checkbox("showanonau", 1, strpos($pldisplay, "\2") !== false,
+		       array("disabled" => !($pl->headerInfo["authors"] & 2),
+			     "onchange" => "fold('pl',!this.checked,2)")),
+	"&nbsp;", tagg_label($Conf->blindSubmission() == BLIND_OPTIONAL ? "Anonymous authors" : "Authors"),
 	"<span class='sep'></span>\n";
 }
 if ($pl->headerInfo["abstract"]) {
-    echo "<input type='checkbox' name='showabstract' value='1'";
-    if (strpos($pldisplay, "\5") !== false)
-	echo " checked='checked'";
-    echo " onclick='foldplinfo(this,5,\"abstract\")' />&nbsp;Abstracts",
+    echo tagg_checkbox("showabstract", 1, strpos($pldisplay, "\5") !== false,
+		       array("onchange" => "foldplinfo(this,5,'abstract')")),
+	"&nbsp;", tagg_label("Abstracts"),
 	"<br /><div id='abstractloadformresult'></div>\n";
 }
 echo "</td></tr>\n</table></form>"; // </div></div>

@@ -886,12 +886,13 @@ if (isset($_REQUEST["update"])) {
 $Conf->header("Conference Settings", "settings", actionBar());
 
 
-function decorateSettingName($name, $text) {
+function decorateSettingName($name, $text, $islabel = false) {
     global $Highlight;
     if (isset($Highlight[$name]))
-	return "<span class='error'>$text</span>";
-    else
-	return $text;
+	$text = "<span class='error'>$text</span>";
+    if ($islabel)
+	$text = tagg_label($text);
+    return $text;
 }
 
 function setting($name, $defval = null) {
@@ -912,10 +913,11 @@ function settingText($name, $defval = null) {
 
 function doCheckbox($name, $text, $tr = false, $js = "hiliter(this)") {
     $x = setting($name);
-    echo ($tr ? "<tr><td class='nowrap'>" : ""), "<input type='checkbox' name='$name' value='1'";
-    if ($x !== null && $x > 0)
-	echo " checked='checked'";
-    echo " onchange='$js' />&nbsp;", ($tr ? "</td><td>" : ""), decorateSettingName($name, $text), ($tr ? "</td></tr>\n" : "<br />\n");
+    echo ($tr ? "<tr><td class='nowrap'>" : ""),
+	tagg_checkbox($name, 1, $x !== null && $x > 0, array("onchange" => $js)),
+	"&nbsp;", ($tr ? "</td><td>" : ""),
+	decorateSettingName($name, $text, true),
+	($tr ? "</td></tr>\n" : "<br />\n");
 }
 
 function doRadio($name, $varr) {
@@ -924,14 +926,12 @@ function doRadio($name, $varr) {
 	$x = 0;
     echo "<table>\n";
     foreach ($varr as $k => $text) {
-	echo "<tr><td class='nowrap'><input type='radio' name='$name' value='$k'";
-	if ($k == $x)
-	    echo " checked='checked'";
-	echo " onchange='hiliter(this)' />&nbsp;</td><td>";
+	echo "<tr><td class='nowrap'>", tagg_radio_h($name, $k, $k == $x),
+	    "&nbsp;</td><td>";
 	if (is_array($text))
-	    echo decorateSettingName($name, $text[0]), "<br /><small>", $text[1], "</small>";
+	    echo decorateSettingName($name, $text[0], true), "<br /><small>", $text[1], "</small>";
 	else
-	    echo decorateSettingName($name, $text);
+	    echo decorateSettingName($name, $text, true);
 	echo "</td></tr>\n";
     }
     echo "</table>\n";
@@ -1129,7 +1129,8 @@ function doOptGroupOption($o) {
 	echo tagg_select("optvt$id", array("Checkbox", "Selector"), defval($o, "optionValues") ? 1 : 0, array("onchange" => "hiliter(this);void fold(\"optv$id\",this.value==0)")),
 	    "<span class='sep'></span>";
 
-    echo "<input type='checkbox' name='optp$o->optionId' value='1'", ($o->pcView ? " checked='checked'" : ""), " onchange='hiliter(this)' />&nbsp;Visible to reviewers";
+    echo tagg_checkbox_h("optp$o->optionId", 1, $o->pcView),
+	"&nbsp;", tagg_label("Visible to reviewers");
 
     if ($Conf->sversion >= 14)
 	echo "<div id='foldoptv$id' class='", (defval($o, "optionValues") ? "foldo" : "foldc"), "'><div class='fx'>",
@@ -1237,23 +1238,9 @@ function doRevGroup() {
     echo "<hr class='hr' />";
 
 
-    // PC reviews
-    echo "<h3>PC reviews</h3>\n";
+    // Review visibility
+    echo "<h3>Review visibility</h3>\n";
 
-    echo "<table>\n";
-    $date_text = $DateExplanation;
-    $DateExplanation = null;
-    doDateRow("pcrev_soft", "Deadline", "pcrev_hard");
-    doDateRow("pcrev_hard", array("Hard deadline", "Reviews are due by the deadline and cannot be changed after the hard deadline.  You may set either or both.<br />$date_text"));
-    if (!($rev_roundtag = settingText("rev_roundtag")))
-	$rev_roundtag = "(None)";
-    doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments by default.  Examples: &ldquo;R1&rdquo;, &ldquo;R2&rdquo; &nbsp;<span class='barsep'>|</span>&nbsp; <a href='help$ConfSiteSuffix?t=revround'>What is this?</a>"), $rev_roundtag, 15, "lcaption", "(None)");
-    echo "</table>\n";
-
-    echo "<div class='g'></div>\n";
-    doCheckbox('pcrev_any', 'PC members can review <strong>any</strong> submitted paper');
-
-    echo "<div class='g'></div>\n";
     echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
     doRadio("pc_seeallrev", array(0 => "No&mdash;a PC member can see a paper's reviews only after submitting their own review for that paper",
 				  3 => "Yes, unless they haven't completed an assigned review for the same paper",
@@ -1263,6 +1250,29 @@ function doRevGroup() {
     echo "Can PC members see who wrote blind reviews?<br />\n";
     doRadio("pc_seeblindrev", array(0 => "Yes",
 				    1 => "Only after completing a review for the same paper"));
+
+    echo "<div class='g'></div>";
+    echo "Can external reviewers see the other reviews for their assigned papers, once they've submitted their own?<br />\n";
+    doRadio("extrev_view", array(0 => "No", 2 => "Yes", 1 => "Yes, but they can't see who wrote blind reviews"));
+
+    echo "<hr class='hr' />";
+
+
+    // PC reviews
+    echo "<h3>PC reviews</h3>\n";
+
+    echo "<table>\n";
+    $date_text = $DateExplanation;
+    $DateExplanation = null;
+    doDateRow("pcrev_soft", array("Deadline", "Reviews are due by the deadline."), "pcrev_hard");
+    doDateRow("pcrev_hard", array("Hard deadline", "Reviews <em>cannot be entered or changed</em> after the hard deadline.  If set, this should generally be after the PC meeting.<br />$date_text"));
+    if (!($rev_roundtag = settingText("rev_roundtag")))
+	$rev_roundtag = "(None)";
+    doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments by default.  Examples: &ldquo;R1&rdquo;, &ldquo;R2&rdquo; &nbsp;<span class='barsep'>|</span>&nbsp; <a href='help$ConfSiteSuffix?t=revround'>What is this?</a>"), $rev_roundtag, 15, "lcaption", "(None)");
+    echo "</table>\n";
+
+    echo "<div class='g'></div>\n";
+    doCheckbox('pcrev_any', 'PC members can review <strong>any</strong> submitted paper');
 
     echo "<hr class='hr' />";
 
@@ -1279,10 +1289,6 @@ function doRevGroup() {
     doDateRow("extrev_soft", "Deadline", "extrev_hard");
     doDateRow("extrev_hard", "Hard deadline");
     echo "</table>\n";
-
-    echo "<div class='g'></div>";
-    echo "Can external reviewers see the other reviews for their assigned papers, once they've submitted their own?<br />\n";
-    doRadio("extrev_view", array(0 => "No", 2 => "Yes", 1 => "Yes, but they can't see who wrote blind reviews"));
 
     echo "<div class='g'></div>\n";
     $t = expandMailTemplate("requestreview", false);

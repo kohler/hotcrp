@@ -303,15 +303,13 @@ function topicTable($prow, $active = 0) {
 	    continue;
 	if ($i > 0 && ($i % $colheight) == 0)
 	    $out .= "</td><td>";
+	$tname = htmlspecialchars($rf->topicName[$tid]);
 	if ($paperId <= 0 || $active >= 0) {
-	    $out .= "<input type='checkbox' name='top$tid' value='1' ";
-	    if ($active > 0 ? isset($_REQUEST["top$tid"]) : isset($paperTopic[$tid]))
-		$out .= "checked='checked' ";
-	    if ($active < 0)
-		$out .= "disabled='disabled' ";
-	    $out .= "onclick='hiliter(this)' />&nbsp;";
-	}
-	$out .= htmlspecialchars($rf->topicName[$tid]) . "<br />\n";
+	    $out .= tagg_checkbox_h("top$tid", 1, ($active > 0 ? isset($_REQUEST["top$tid"]) : isset($paperTopic[$tid])),
+				    array("disabled" => $active < 0))
+		. "&nbsp;" . tagg_label($tname) . "<br />\n";
+	} else
+	    $out .= $tname . "<br />\n";
 	$i++;
     }
     return $out . "</td></tr></table>";
@@ -1335,4 +1333,54 @@ function tagg_cbox($type, $bottom, $classextra="") {
     else
 	return "<table class='${type}c" . ($classextra ? " $classextra" : "")
 	    . "'>\n	<tr><td class='${type}cul'></td><td></td><td class='${type}cur'></td></tr>\n";
+}
+
+
+global $tagg_controlid;
+$tagg_controlid = 0;
+
+function tagg_checkbox($name, $value = 1, $checked = false, $js = null) {
+    global $tagg_controlid;
+    $id = "taggctl" . ++$tagg_controlid;
+    if ($js && defval($js, "id"))
+	$id = $js["id"];
+    $t = "<input type=\"checkbox\" id=\"$id\"";
+    if ($name)
+	$t .= " name=\"$name\" value=\"" . htmlspecialchars($value) . "\"";
+    if ($checked)
+	$t .= " checked=\"checked\"";
+    if ($js && isset($js["tabindex"]))
+	$t .= " tabindex=\"" . $js["tabindex"] . "\"";
+    if ($js && defval($js, "disabled"))
+	$t .= " disabled=\"disabled\"";
+    if ($js && defval($js, "onchange"))
+	$t .= " onchange=\"" . $js["onchange"] . "\"";
+    if ($js && isset($js["onclick"]))
+	$t .= " onclick=\"" . $js["onclick"] . "\"";
+    return $t . " />";
+}
+
+function tagg_radio($name, $value = 1, $checked = false, $js = null) {
+    $t = tagg_checkbox($name, $value, $checked, $js);
+    return "<input type=\"radio\"" . substr($t, 22);
+}
+
+function tagg_checkbox_h($name, $value = 1, $checked = false, $js = null) {
+    if (!$js)
+	$js = array();
+    if (!isset($js["onchange"]))
+	$js["onchange"] = "hiliter(this)";
+    return tagg_checkbox($name, $value, $checked, $js);
+}
+
+function tagg_radio_h($name, $value = 1, $checked = false, $js = null) {
+    $t = tagg_checkbox_h($name, $value, $checked, $js);
+    return "<input type=\"radio\"" . substr($t, 22);
+}
+
+function tagg_label($text, $id = null) {
+    global $tagg_controlid;
+    if (!$id)
+	$id = "taggctl" . $tagg_controlid;
+    return "<label for=\"$id\">" . $text . "</label>";
 }

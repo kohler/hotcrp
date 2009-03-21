@@ -1266,10 +1266,9 @@ $blind\n";
 	// blind?
 	if ($Conf->blindReview() == BLIND_OPTIONAL) {
 	    echo "<div class='revt'><span class='revfn'>",
-		"<input type='checkbox' name='blind' value='1'";
-	    if ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))
-		echo " checked='checked'";
-	    echo " onchange='hiliter(this)' />&nbsp;Anonymous review</span><div class='clear'></div></div>\n",
+		tagg_checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))),
+		"&nbsp;", tagg_label("Anonymous review"),
+		"</span><div class='clear'></div></div>\n",
 		"<div class='revhint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won't know who wrote the review).</div>\n",
 		"<div class='g'></div>\n";
 	}
@@ -1280,12 +1279,9 @@ $blind\n";
 	// review actions
 	if ($Me->timeReview($prow, $rrow) || $Me->privChair) {
 	    echo "  <div class='g'></div>",
-		"<input type='checkbox' name='ready' value='1'";
-	    if ($useRequest ? defval($_REQUEST, "ready") : $rrow && $rrow->reviewSubmitted)
-		echo " checked='checked'";
-	    if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
-		echo " disabled='disabled'";
-	    echo " onchange='hiliter(this)' />&nbsp;The review is ready for others to see.";
+		tagg_checkbox_h("ready", 1, ($useRequest ? defval($_REQUEST, "ready") : $rrow && $rrow->reviewSubmitted),
+				array("disabled" => ($rrow && $rrow->reviewSubmitted && !$Me->privChair))),
+		"&nbsp;", tagg_label("The review is ready for others to see.");
 	    if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
 		echo "<div class='hint'>Only administrators can remove the review from the system at this point.</div>";
 
@@ -1309,7 +1305,7 @@ $blind\n";
 	    }
 	    echo "    </tr>\n  </table></div>";
 	    if ($Me->privChair)
-		echo "<input type='checkbox' name='override' value='1' />&nbsp;Override deadlines";
+		echo tagg_checkbox("override"), "&nbsp;", tagg_label("Override deadlines");
 	    //echo "</div>\n";
 	}
 

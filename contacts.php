@@ -144,16 +144,14 @@ if (count($tOpt) > 1) {
     echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
   <td class='pad'>";
     if ($pl->haveAffrow !== null) {
-	echo "<input type='checkbox' name='showaff' value='1'";
-	if ($pl->haveAffrow)
-	    echo " checked='checked'";
-	echo " onclick='fold(\"ppl\",!this.checked,2)' />&nbsp;Affiliations<br />\n";
+	echo tagg_checkbox("showaff", 1, $pl->haveAffrow,
+			   array("onchange" => "fold('ppl',!this.checked,2)")),
+	    "&nbsp;", tagg_label("Affiliations"), "<br />\n";
     }
     if ($pl->haveTopics !== null) {
-	echo "<input type='checkbox' name='showtop' value='1'";
-	if ($pl->haveTopics)
-	    echo " checked='checked'";
-	echo " onclick='fold(\"ppl\",!this.checked,1)' />&nbsp;Topic interests<br />\n";
+	echo tagg_checkbox("showtop", 1, $pl->haveTopics,
+			   array("onchange" => "fold('ppl',!this.checked,1)")),
+	    "&nbsp;", tagg_label("Topic interests"), "<br />\n";
     }
     echo "</td>";
     if (isset($pl->scoreMax)) {
@@ -165,10 +163,8 @@ if (count($tOpt) > 1) {
 	    if ($rf->authorView[$field] > $revViewScore
 		&& isset($rf->options[$field])) {
 		$i = array_search($field, $reviewScoreNames);
-		echo "<input type='checkbox' name='score[]' value='$i' ";
-		if ($theScores & (1 << $i))
-		    echo "checked='checked' ";
-		echo "/>&nbsp;" . htmlspecialchars($rf->shortName[$field]) . "<br />";
+		echo tagg_checkbox("score[]", $i, $theScores & (1 << $i)),
+		    "&nbsp;", tagg_label(htmlspecialchars($rf->shortName[$field])), "<br />";
 	    }
 	echo "</td>";
     }

@@ -201,7 +201,7 @@ if ($Me->amReviewer()) {
 	<input type='hidden' name='postnonempty' value='1' />
 	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Upload' $disabled/>";
     if ($pastDeadline && $Me->privChair)
-	echo "<br /><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
+	echo "<br />", tagg_checkbox("override"), "&nbsp;", tagg_label("Override&nbsp;deadlines");
     echo "<br /><span class='hint'><strong>Tip:</strong> You may upload a file containing several forms.</span>";
     echo "</div></form></td>\n";
 }
@@ -224,7 +224,7 @@ if ($Conf->setting("tag_rank") && $Me->amReviewer()) {
 	<input type='hidden' name='upload' value='1' />
 	<input type='file' name='file' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Upload' $disabled/>";
     if ($pastDeadline && $Me->privChair)
-	echo "<br /><input type='checkbox' name='override' value='1' />&nbsp;Override&nbsp;deadlines";
+	echo "<br />", tagg_checkbox("override"), "&nbsp;", tagg_label("Override&nbsp;deadlines");
     echo "<br /><span class='hint'><strong>Tip:</strong> &ldquo;<a href='search$ConfSiteSuffix?q=order:%7E$ranktag'>order:~$ranktag</a>&rdquo; searches by your ranking.</span>";
     echo "</div></form></td>\n";
     echo "</tr>\n";

@@ -190,8 +190,10 @@ echo "<form method='post' action=\"mergeaccounts$ConfSiteSuffix\" accept-charset
 
 <tr>
   <td class='caption'></td>
-  <td class='entry'><input type='radio' name='prefer' value='0' checked='checked' />&nbsp;Keep my current account (<?php echo htmlspecialchars($Me->email) ?>)<br />
-    <input type='radio' name='prefer' value='1' />&nbsp;Keep the account named above and delete my current account</td>
+  <td class='entry'><?php
+    echo tagg_radio("prefer", 0, true), "&nbsp;", tagg_label("Keep my current account (" . htmlspecialchars($Me->email) . ")"), "<br />\n",
+	tagg_radio("prefer", 1), "&nbsp;", tagg_label("Keep the account named above and delete my current account");
+  ?></td>
 </tr>
 
 <tr><td class='caption'></td><td class='entry'><input class='b' type='submit' value='Merge Account' name='merge' /></td></tr>

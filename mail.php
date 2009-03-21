@@ -406,11 +406,13 @@ echo tagg_select("template", $tmpl, $_REQUEST["template"], array("onchange" => "
     "<div class='g'></div>\n";
 
 // paper selection
-echo "<table id='foldpsel' class='fold8c'><tr><td><input id='plimit' type='checkbox' name='plimit' value='1' onclick='fold(\"psel\", !this.checked, 8)'";
-if (isset($_REQUEST["plimit"]))
-    echo " checked='checked'";
+echo "<table id='foldpsel' class='fold8c'><tr><td>",
+    tagg_checkbox("plimit", 1, isset($_REQUEST["plimit"]),
+		  array("id" => "plimit",
+			"onchange" => "fold('psel', !this.checked, 8)")),
+    "&nbsp;</td><td>", tagg_label("Choose individual papers", "plimit");
 $Conf->footerStuff .= "<script type='text/javascript'>fold(\"psel\",!e(\"plimit\").checked,8);</script>";
-echo " />&nbsp;</td><td>Choose individual papers<span class='fx8'>:</span><br />
+echo "<span class='fx8'>:</span><br />
 <div class='fx8'>";
 $q = defval($_REQUEST, "q", "(All)");
 echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",

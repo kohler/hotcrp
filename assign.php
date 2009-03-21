@@ -642,9 +642,7 @@ echo "<div class='f-i'>
 
 
 if ($Me->actChair($prow))
-    echo "<div class='f-i'>
-  <input type='checkbox' name='override' value='1' />&nbsp;Override deadlines and any previous refusal
-</div>\n";
+    echo "<div class='f-i'>\n  ", tagg_checkbox("override"), "&nbsp;", tagg_label("Override deadlines and any previous refusal"), "\n</div>\n";
 
 echo "</td><td></td></tr>\n", tagg_cbox("rev", true),
     "</td></tr></table>\n", $loginFormEnd;

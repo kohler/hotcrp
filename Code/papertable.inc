@@ -368,13 +368,13 @@ class PaperTable {
 		$checked = !$prow || $prow->paperStorageId <= 1 || $prow->timeSubmitted > 0;
 	    echo "<div id='foldisready' class='",
 		(($prow && $prow->paperStorageId > 1) || defval($Opt, "noPapers") ? "foldo" : "foldc"),
-		"'><table class='fx'><tr><td class='nowrap'><input type='checkbox' name='submit' value='1'",
-		($checked ? " checked='checked'" : ""),
-		" onchange='hiliter(this)' />&nbsp;";
+		"'><table class='fx'><tr><td class='nowrap'>",
+		tagg_checkbox_h("submit", 1, $checked), "&nbsp;";
 	    if ($Conf->setting('sub_freeze'))
-		echo "</td><td><strong>This is the final submission.</strong></td></tr><tr><td></td><td><small>You must submit a final version before the deadline or your paper will not be reviewed.  Once you submit a final version you will not be able to make further changes.</small>";
+		echo "</td><td>", tagg_label("<strong>This is the final submission.</strong>"),
+		    "</td></tr><tr><td></td><td><small>You must submit a final version before the deadline or your paper will not be reviewed.  Once you submit a final version you will not be able to make further changes.</small>";
 	    else
-		echo "The submission is ready for review.";
+		echo tagg_label("The submission is ready for review.");
 	    echo "</td></tr></table></div>\n";
 	} else
 	    echo "<input type='hidden' name='submit' value='1' />";
@@ -701,9 +701,8 @@ class PaperTable {
 	global $Conf, $Opt;
 	$blind = ($this->useRequest ? isset($_REQUEST['blind']) : (!$prow || $prow->blind));
 	assert($this->editable);
-	echo $this->papt("blind", "<input type='checkbox' name='blind' value='1'"
-			 . ($blind ? " checked='checked'" : "")
-			 . " onchange='hiliter(this)' />&nbsp;Anonymous submission"),
+	echo $this->papt("blind", tagg_checkbox_h("blind", 1, $blind)
+			 . "&nbsp;" . tagg_label("Anonymous submission")),
 	    "<div class='paphint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (reviewers won't be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
 	    "<div class='papv'></div>\n\n";
     }
@@ -777,10 +776,8 @@ class PaperTable {
 	    $optsel[$m[1][$i]] = $m[2][$i];
 	foreach ($opt as $o) {
 	    if (!defval($o, "optionValues")) {
-		echo $this->papt("option", "<input type='checkbox' name='opt$o->optionId' value='1'"
-				 . (defval($optsel, $o->optionId) ? " checked='checked'" : "")
-				 . " onchange='hiliter(this)' />&nbsp;"
-				 . htmlspecialchars($o->optionName));
+		echo $this->papt("option", tagg_checkbox_h("opt$o->optionId", 1, defval($optsel, $o->optionId))
+				 . "&nbsp;" . tagg_label(htmlspecialchars($o->optionName)));
 		if ($o->description)
 		    echo "<div class='paphint'>", $o->description, "</div>";
 		echo "<div class='papv'></div>\n\n";
@@ -845,14 +842,10 @@ class PaperTable {
 	    $tclose = "</table>";
 	} else {
 	    foreach ($pcm as $id => $p) {
-		$c = "<input type='checkbox' name='pcc$id' value='" . CONFLICT_AUTHORMARK . "'";
-		if (defval($conflict, $id) > 0) {
-		    $c .= " checked='checked'";
-		    if ($conflict[$id] < CONFLICT_AUTHORMARK
-			|| $conflict[$id] > $maxauthormark)
-			$c .= " disabled='disabled'";
-		}
-		$pcconfs[] = $c . " onchange='hiliter(this)' /> " . contactHtml($p->firstName, $p->lastName) . "<br />\n";
+		$checked = defval($conflict, $id) > 0;
+		$disabled = $checked && ($conflict[$id] < CONFLICT_AUTHORMARK || $conflict[$id] > $maxauthormark);
+		$pcconfs[] = tagg_checkbox_h("pcc$id", CONFLICT_AUTHORMARK, $checked, array("disabled" => $disabled))
+		    . "&nbsp;" . tagg_label(contactHtml($p->firstName, $p->lastName)) . "<br />\n";
 	    }
 	    $tclass = "rpad";
 	    $topen = $tclose = "";
@@ -1095,18 +1088,18 @@ class PaperTable {
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setwatch' value='1' />";
 
-	$checkbox = "<input type='checkbox' name='watch' value='" . $this->watchCheckbox . "'";
 	if ($row[4] && ($row[4] & ($Me->defaultWatch >> 1)))
 	    $watchValue = $row[4];
 	else if ($row[1] || $row[2] || $row[3] >= CONFLICT_AUTHOR)
 	    $watchValue = $Me->defaultWatch;
 	else
 	    $watchValue = 0;
-	if ($watchValue & $this->watchCheckbox)
-	    $checkbox .= " checked='checked'";
-	$checkbox .= " onchange='Miniajax.submit(\"watchform\")' />";
 
-	echo $this->papt("watch", $checkbox . "&nbsp;Comment notification",
+	echo $this->papt("watch",
+			 tagg_checkbox("watch", $this->watchCheckbox,
+				       $watchValue & $this->watchCheckbox,
+				       array("onchange" => "Miniajax.submit('watchform')"))
+			 . "&nbsp;" . tagg_label("Comment notification"),
 			 array("type" => "ps")),
 	    "<div class='pshint'>If selected, the system will email you when updated comments are available. <span id='watchformresult'></span></div>",
 	    "<div class='papv'>",
@@ -1241,9 +1234,12 @@ class PaperTable {
 	echo "    </tr>\n  </table></div>\n";
 	if ($Me->privChair) {
 	    echo "  <div class='g'></div>\n  <table>\n",
-		"    <tr><td><input type='checkbox' name='doemail' value='1' checked='checked' />&nbsp;Email authors, including:&nbsp; ",
+		"    <tr><td>",
+		tagg_checkbox("doemail", 1, true), "&nbsp;",
+		tagg_label("Email authors, including:"), "&nbsp; ",
 		"<input type='text' class='textlite' name='emailNote' size='30' value='Optional explanation' onfocus=\"tempText(this, 'Optional explanation', 1)\" onblur=\"tempText(this, 'Optional explanation', 0)\" /></td></tr>\n",
-		"    <tr><td><input type='checkbox' name='override' value='1' />&nbsp;Override deadlines</td></tr>\n",
+		"    <tr><td>", tagg_checkbox("override"), "&nbsp;",
+		tagg_label("Override deadlines"), "</td></tr>\n",
 		"  </table>\n";
 	}
     }

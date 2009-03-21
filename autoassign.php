@@ -471,12 +471,12 @@ $Conf->header("Review Assignments", "autoassign", $abar);
 
 
 function doRadio($name, $value, $text) {
-    echo "<input type='radio' name='$name' value='$value' id='${name}_$value' ";
-    if (!isset($_REQUEST[$name]) || $_REQUEST[$name] == $value) {
-	echo "checked='checked' ";
+    if (($checked = (!isset($_REQUEST[$name]) || $_REQUEST[$name] == $value)))
 	$_REQUEST[$name] = $value;
-    }
-    echo "/>&nbsp;", $text;
+    echo tagg_radio($name, $value, $checked, array("id" => "${name}_$value")),
+	"&nbsp;";
+    if ($text != "")
+	echo tagg_label($text, "${name}_$value");
 }
 
 function doSelect($name, $opts) {
@@ -707,11 +707,11 @@ echo "</div></div>\n";
 
 echo "<h3>PC members</h3><table><tr><td>";
 doRadio('pctyp', 'all', '');
-echo "</td><td>Use entire PC</td></tr>\n";
+echo "</td><td>", tagg_label("Use entire PC", "pctyp_all"), "</td></tr>\n";
 
 echo "<tr><td>";
 doRadio('pctyp', 'sel', '');
-echo "</td><td>Use selected PC members: &nbsp; ",
+echo "</td><td>", tagg_label("Use selected PC members:", "pctyp_sel"), " &nbsp; ",
     "(<a href='javascript:papersel(1,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>All</a> | <a href='javascript:papersel(0,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>None</a>)";
 echo "</td></tr>\n<tr><td></td><td><table class='pcass'><tr><td><table>";
 
@@ -720,10 +720,13 @@ countReviews($nreviews, $nprimary, $nsecondary);
 $pcdesc = array();
 foreach ($pcm as $id => $p) {
     $count = count($pcdesc) + 1;
-    $c = "<tr><td><input type='checkbox' id='pcsel$count' name='pcs[]' value='$id'";
-    if (isset($pcsel[$id]))
-	$c .= " checked='checked'";
-    $c .= " onclick='pselClick(event, this, $count, \"pcsel\");e(\"pctyp_sel\").checked=true' />&nbsp;</td><td class='name'>" . contactHtml($p->firstName, $p->lastName) . "</td></tr><tr><td></td><td class='nrev'>"
+    $c = "<tr><td>"
+	. tagg_checkbox("pcs[]", $id, isset($pcsel[$id]),
+			array("id" => "pcsel$count",
+			      "onchange" => "pselClick(event, this, $count, 'pcsel');e('pctyp_sel').checked=true"))
+	. "&nbsp;</td><td class='name'>"
+	. tagg_label(contactHtml($p->firstName, $p->lastName), "pcsel$count")
+	. "</td></tr><tr><td></td><td class='nrev'>"
 	. plural($nreviews[$id], "review");
     if ($nprimary[$id] && $nprimary[$id] < $nreviews[$id])
 	$c .= ", " . $nprimary[$id] . " primary";
@@ -762,9 +765,10 @@ echo "<div class='g'></div><div class='relative'><div id='foldbadpair' class='",
 for ($i = 1; $i <= 20; $i++) {
     echo "    <tr id='bp$i' class='auedito'><td class='rentry nowrap'>";
     if ($i == 1)
-	echo "<input type='checkbox' name='badpairs' id='badpairs' value='1'",
-	    (isset($_REQUEST["badpairs"]) ? " checked='checked'" : ""),
-	    " onclick='fold(\"badpair\", !this.checked);authorfold(\"bp\", this.checked?1:-1, 0)' />&nbsp;Don't assign &nbsp;";
+	echo tagg_checkbox("badpairs", 1, isset($_REQUEST["badpairs"]),
+			   array("id" => "badpairs",
+				 "onchange" => "fold('badpair', !this.checked);authorfold('bp', this.checked?1:-1, 0)")),
+	    "&nbsp;", tagg_label("Don't assign", "badpairs"), " &nbsp;";
     else
 	echo "or &nbsp;";
     echo "</td><td class='lentry'>", bpSelector($i, "a"),
