@@ -1494,12 +1494,12 @@ class PaperList extends BaseList {
 		. " </thead>\n";
 	}
 
-	$x .= " <tbody>\n" . $body . " </tbody>\n";
 	reset($fieldDef);
 	if (key($fieldDef) == self::FIELD_SELECTOR
 	    || key($fieldDef) == self::FIELD_SELECTOR_ON)
 	    $x .= $this->footer($ncol, $listname, $trclass);
-	$x .= "</table>";
+
+	$x .= " <tbody>\n" . $body . " </tbody>\n</table>";
 
 	// session variable to remember the list
 	if ($this->listNumber) {
