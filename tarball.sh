@@ -1,4 +1,4 @@
-export VERSION=2.33
+export VERSION=2.34
 perl -pi -e 's/HotCRP: Conference Review Package 2\.\d+/HotCRP: Conference Review Package '$VERSION'/' README
 
 # check that schema.sql and updateschema.inc agree on schema version
@@ -7,6 +7,14 @@ schemanum=`grep 'allowPaperOption' Code/schema.sql | sed 's/.*, *//;s/).*//'`
 if [ "$updatenum" != "$schemanum" ]; then
     echo "error: allowPaperOption schema number in Code/schema.sql ($schemanum)" 1>&2
     echo "error: differs from number in Code/updateschema.inc ($updatenum)" 1>&2
+    exit 1
+fi
+
+# check that HOTCRP_VERSION is up to date -- unless first argument is -n
+versionnum=`grep 'HOTCRP_VERSION' Code/header.inc | head -n 1 | sed 's/.*, "//;s/".*//'`
+if [ "$versionnum" != "$VERSION" -a "$1" != "-n" ]; then
+    echo "error: HOTCRP_VERSION in Code/header.inc ($versionnum)" 1>&2
+    echo "error: differs from current version ($VERSION)" 1>&2
     exit 1
 fi
 

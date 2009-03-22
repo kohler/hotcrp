@@ -1,5 +1,30 @@
 HotCRP NEWS
 
+Version 2.34   21.Mar.2009
+
+* Tag colors!  After a Dan Wallach suggestion.  Tag a paper "red" and it
+  shows up as red in paper lists.  Or instruct the system that "reject"
+  means red and papers tagged "reject" show up as red in paper lists.  Also
+  orange, yellow, green, blue, purple, and grey.
+
+* Score columns appear as soon as any scores can be displayed.  (They are
+  still empty and hidden when no scores can be displayed.)
+
+* Add help for paper rankings.
+
+* Add <label> elements for all checkboxes and radio buttons.
+
+* Translate HTML in review descriptions to text for offline forms.  (Only
+  simple cases like <ul> lists.)
+
+* Include "[%CONFSHORTNAME%]" prefix in paper registration emails.
+
+* Bug fixes to per-paper tag setting, account creation, "Override conflict"
+  links, conference titles containing slashes, review viewing, and XHTML.
+
+* Thanks to Stefan Lorenz and John Wilkes.
+
+
 Version 2.33   15.Feb.2009
 
 * Re-fix "Don't assign (X) and (Y) to the same paper."
