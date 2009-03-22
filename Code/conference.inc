@@ -1306,8 +1306,10 @@ class Conference {
 	$this->closeTableMessages();
 	echo "</div>\n<div id='footer'>\n  <div id='footer_crp'>",
 	    defval($Opt, "extraFooter", ""),
-	    "<a href='http://www.cs.ucla.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software",
-	    "</div>\n  <div class='clear'></div></div>\n",
+	    "<a href='http://www.cs.ucla.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software";
+	if (!defval($Opt, "noFooterVersion", 0))
+	    echo "<!-- Version ", HOTCRP_VERSION, " -->";
+	echo "</div>\n  <div class='clear'></div></div>\n",
 	    $this->scriptStuff, $this->footerStuff,
 	    "</body>\n</html>\n";
 	$this->scriptStuff = "";

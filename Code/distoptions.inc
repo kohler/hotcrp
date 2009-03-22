@@ -117,5 +117,6 @@ $Opt["emailSubmissions"] = 0;
 //   extraFooter     Optional extra HTML text shown at the bottom of every
 //                   page, before the HotCRP link.  If set, should generally
 //                   end with " <span class='barsep'>|</span> ".
+//   noFooterVersion Set to true to avoid a version comment in footer HTML.
 
 $Opt["disablePS"] = true;

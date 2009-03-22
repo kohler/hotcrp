@@ -39,6 +39,8 @@ define("BLIND_ALWAYS", 2);	/* ordering is important */
 define("BLIND_OPTIONAL", 1);
 define("BLIND_NEVER", 0);
 
+define("HOTCRP_VERSION", "2.34");
+
 $ReviewFormCache = null;
 $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
 			  "grammar", "reviewerQualification", "potential",
