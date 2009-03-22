@@ -1260,8 +1260,9 @@ $blind\n";
     </tr></table></td><td></td></tr>\n";
 
 	// top save changes button
-	echo "  <tr><td></td><td class='revcc'>",
-	    "  <div class='aa'><input class='bb' type='submit' value='Save changes' name='update' /></div>\n";
+	echo "  <tr><td></td><td class='revcc'>";
+	if ($Me->timeReview($prow, $rrow) || $Me->privChair)
+	    echo "  <div class='aa'><input class='bb' type='submit' value='Save changes' name='update' /></div>\n";
 
 	// blind?
 	if ($Conf->blindReview() == BLIND_OPTIONAL) {
