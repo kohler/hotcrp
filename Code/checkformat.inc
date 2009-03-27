@@ -9,7 +9,7 @@ function cvtdimen($text, $ndimen = -1) {
     $n = $text;
     $a = array();
     $unit = array();
-    while (preg_match('/^\s*(\d+\.?\d*|\d*\.\d+)\s*(in?|cm?|mm|pt|)\s*(.*)$/', $n, $m)) {
+    while (preg_match('/^\s*(\d+\.?\d*|\.\d+)\s*(in?|cm?|mm|pt|)\s*(.*)$/', $n, $m)) {
 	$a[] = $m[1];
 	if ($m[2] == "i" || $m[2] == "in")
 	    $unit[] = 72;
@@ -234,7 +234,7 @@ class CheckFormat {
 
 	// font size
 	if (count($banal_desired) > 4 && $banal_desired[4]
-	    && ($p = cvtint($banal_desired[4])) > 0) {
+	    && ($p = cvtnum($banal_desired[4])) > 0) {
 	    $px = array();
 	    $bodypages = 0;
 	    $minval = 1000;
@@ -257,7 +257,7 @@ class CheckFormat {
 
 	// leading
 	if (count($banal_desired) > 5 && $banal_desired[5]
-	    && ($p = cvtint($banal_desired[5])) > 0) {
+	    && ($p = cvtnum($banal_desired[5])) > 0) {
 	    $px = array();
 	    $minval = 1000;
 	    foreach ($pi as $pg)

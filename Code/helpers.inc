@@ -86,6 +86,13 @@ function cvtint($value, $default = -1) {
     return $default;
 }
 
+function cvtnum($value, $default = -1) {
+    $v = trim($value);
+    if (is_numeric($v))
+	return floatval($v);
+    return $default;
+}
+
 function rcvtint(&$value, $default = -1) {
     return (isset($value) ? cvtint($value, $default) : $default);
 }
