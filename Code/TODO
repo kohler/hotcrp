@@ -1,5 +1,32 @@
 - make sure that refused reviewers do not get emails on comments
 
+- I had a quick question. I was looking if there is an option in hotcrp
+  that I could enable so that TPC members are notified when a new paper has
+  been assigned to them, and did not manage to find it. Is this feature
+  supported? If not, would it be an easy fix? [Dina Papagiannaki]
+
+- Author response word counting function [Mike Marty]
+
+- It would be great to be able to assign reviews manually, but then ask the
+  system to look for swaps that would make both reviewers happier according
+  to their preferences. I'd want to be able to confirm one swap at a
+  time. [Andrew Myers]
+
+- There seems to be no way to select the set of papers for "Assign, manual
+  by PC member".  If you select a set (e.g., tag:short) in Automatic
+  assignment, and then select Manual, the selection is forgotten. [John
+  Wilkes]
+
+- The meaning and purpose of "Focus on potential conflicts" wasn't
+  immediately obvious to me.  If I'm trying to assign reviews to a paper,
+  it's not clear how having a list of conflicts for a PC member is that
+  helpful - I'd rather keep the list of papers I'm trying to assign, and
+  remove the conflicted ones. [John Wilkes]
+
+- On the other hand, if I click "Focus on potential conflicts" in order to
+  mark real/mistaken a PC member's conflicts, the "Save assignment" button
+  is confusing.  "Save conflicts" would be better. [John Wilkes]
+
 - string options
 
 - upload multiple documents [Gareth Gale]
