@@ -30,6 +30,9 @@ sub usage {
     print <<EOF
 usage: banal [-report | -stats | -judge [specs]] [-zoom=N] files
 
+-zoom N  passed to pdftohtml.  -zoom=1 means do not pass a zoom argument,
+         and use pdftohtml\'s default zoom.
+
 banal has three modes of operation:
 
 -report  print full formatting info for all pages.  this mode is
@@ -75,7 +78,7 @@ EOF
 
 # zoom value
 $zoom = 2 if !defined($zoom);
-usage() if $zoom !~ /^[1-9]\d*/;
+usage() if $zoom !~ /^[1-9]\d*(\.\d*)?$/;
 
 # mapping from pdftohtml units to inches
 $p2h_per_inch = 72 * $zoom;
@@ -442,7 +445,7 @@ sub calc_doc_columns ($) {
 
 sub p2h_font_to_font_size ($) {
     my ($font) = @_;
-    my ($pt) = int(($font->{size} + 2) / $zoom + 0.5);
+    my ($pt) = ($font->{size} + 3) / $zoom;
 
     if ($font->{family} eq 'Times'
 	|| $font->{family} eq 'Helvetica'
@@ -514,9 +517,9 @@ sub report_verbose ($) {
 	printf ("  margins: %.2fin x %.2fin x %.2fin x %.2fin (l/r/t/b)\n", 
 		$left_i, $right_i, $top_i, $bot_i);
 
-	printf ("  body font: %dpt (id %d)\n", $page->{pagespec}->{bodyfont},
+	printf ("  body font: %gpt (id %d)\n", $page->{pagespec}->{bodyfont},
 		$page->{pagedata}->{bodyfont}->{id});
-	printf ("  leading: %.1fpt\n", $page->{pagespec}->{lead});
+	printf ("  leading: %gpt\n", $page->{pagespec}->{lead});
 	printf ("  columns: %d\n", $page->{pagespec}->{ncols});
 	print   "  type: ", $page->{pagespec}->{type}, "\n";
 
