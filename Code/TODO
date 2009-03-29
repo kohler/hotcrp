@@ -17,16 +17,6 @@
   assignment, and then select Manual, the selection is forgotten. [John
   Wilkes]
 
-- The meaning and purpose of "Focus on potential conflicts" wasn't
-  immediately obvious to me.  If I'm trying to assign reviews to a paper,
-  it's not clear how having a list of conflicts for a PC member is that
-  helpful - I'd rather keep the list of papers I'm trying to assign, and
-  remove the conflicted ones. [John Wilkes]
-
-- On the other hand, if I click "Focus on potential conflicts" in order to
-  mark real/mistaken a PC member's conflicts, the "Save assignment" button
-  is confusing.  "Save conflicts" would be better. [John Wilkes]
-
 - string options
 
 - upload multiple documents [Gareth Gale]

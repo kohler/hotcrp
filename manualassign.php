@@ -223,10 +223,10 @@ echo tagg_select("reviewer", $rev_opt, $reviewer, array("onchange" => "highlight
     <div class='g'></div>\n",
     tagg_radio("kind", "a", $kind == "a",
 	       array("onchange" => "highlightUpdate('assrevupdate')")),
-    "&nbsp;", tagg_label("Assign reviews and/or conflicts for all papers"), "<br />\n",
+    "&nbsp;", tagg_label("Assign reviews and/or conflicts"), "<br />\n",
     tagg_radio("kind", "c", $kind == "c",
 	       array("onchange" => "highlightUpdate('assrevupdate')")),
-    "&nbsp;", tagg_label("Focus on potential conflicts"), "\n";
+    "&nbsp;", tagg_label("Assign conflicts only (and limit papers to potential conflicts)"), "\n";
 
 if ($kind == "a")
     echo "    <div class='g'></div>\n    ",
