@@ -77,7 +77,7 @@ EOF
 }
 
 # zoom value
-$zoom = 2 if !defined($zoom);
+$zoom = 3 if !defined($zoom);
 usage() if $zoom !~ /^[1-9]\d*(\.\d*)?$/;
 
 # mapping from pdftohtml units to inches
