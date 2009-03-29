@@ -241,8 +241,8 @@ class CheckFormat {
 	    foreach ($pi as $pg) {
 		if (defval($pg, "type") == "body")
 		    $bodypages++;
-		if (($pp = cvtint(defval($pg, "bodyfont"))) > 0
-		    && $pp + 0.3 < $p && defval($pg, "type") == "body") {
+		if (($pp = cvtnum(defval($pg, "bodyfont"))) > 0
+		    && $pp < $p && defval($pg, "type") == "body") {
 		    $px[] = $pg["pageno"];
 		    $minval = min($minval, $pp);
 		}
@@ -261,8 +261,8 @@ class CheckFormat {
 	    $px = array();
 	    $minval = 1000;
 	    foreach ($pi as $pg)
-		if (($pp = cvtint(defval($pg, "leading"))) > 0
-		    && $pp + 0.3 < $p && defval($pg, "type") == "body") {
+		if (($pp = cvtnum(defval($pg, "leading"))) > 0
+		    && $pp < $p && defval($pg, "type") == "body") {
 		    $px[] = $pg["pageno"];
 		    $minval = min($minval, $pp);
 		}
