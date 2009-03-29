@@ -54,10 +54,10 @@ if ($reviewer <= 0)
 
 
 function saveAssignments($reviewer) {
-    global $Conf, $Me, $reviewTypeName, $kind;
+    global $Conf, $Me, $kind;
 
     $while = "while saving review assignments";
-    $result = $Conf->qe("lock tables Paper read, PaperReview write, PaperConflict write" . $Conf->tagRoundLocker($kind == "a" && ($type == REVIEW_PRIMARY || $type == REVIEW_SECONDARY)), $while);
+    $result = $Conf->qe("lock tables Paper read, PaperReview write, PaperConflict write" . $Conf->tagRoundLocker($kind == "a"), $while);
     if (!$result)
 	return $result;
 
