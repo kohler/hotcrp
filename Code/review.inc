@@ -1061,7 +1061,7 @@ $blind\n";
 	$reviewOrdinal = unparseReviewOrdinal($rrow);
 	$reviewLinkBase = "review$ConfSiteSuffix?p=$prow->paperId"
 	    . ($rrow ? "&amp;r=$reviewOrdinal" : "")
-	    . $linkExtra . "&amp;mode=re&amp;";
+	    . $linkExtra . "&amp;m=re&amp;";
 	$reviewLink = $reviewLinkBase . "post=1";
 	if ($editmode) {
 	    echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'>",

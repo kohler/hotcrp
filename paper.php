@@ -541,7 +541,7 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"])) {
 	$Conf->errorMsg(whyNotText($whyNot, $action));
     } else if (updatePaper($Me, isset($_REQUEST["submit"]), isset($_REQUEST["submitfinal"]))) {
 	if ($newPaper)
-	    $Conf->go("paper$ConfSiteSuffix?p=$paperId&mode=pe");
+	    $Conf->go("paper$ConfSiteSuffix?p=$paperId&m=pe");
     }
 
     // use request?
