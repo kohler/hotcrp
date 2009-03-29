@@ -709,7 +709,7 @@ function doBanal($set) {
 
 	$Values["sub_banal"][1] .= $zoomarg;
 	$e1 = $cf->errors;
-	$s2 = $cf->analyzeFile("$ConfSitePATH/Code/sample.pdf", "a4;1;;3inx3in;13;15" . $zoomarg);
+	$s2 = $cf->analyzeFile("$ConfSitePATH/Code/sample.pdf", "a4;1;;3inx3in;14;15" . $zoomarg);
 	$e2 = $cf->errors;
 	$want_e2 = CheckFormat::ERR_PAPERSIZE | CheckFormat::ERR_PAGELIMIT
 	    | CheckFormat::ERR_TEXTBLOCK | CheckFormat::ERR_BODYFONTSIZE
