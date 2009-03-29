@@ -902,7 +902,8 @@ function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
 	$goBase = "review$ConfSiteSuffix";
     else
 	$goBase = "paper$ConfSiteSuffix";
-    $xmode = (isset($_REQUEST["mode"]) && $goBase == "paper$ConfSiteSuffix" ? array("mode" => $_REQUEST["mode"]) : array());
+    $xmode = defval($_REQUEST, "m", defval($_REQUEST, "mode"));
+    $xmode = ($xmode && $goBase == "paper$ConfSiteSuffix" ? array("m" => $xmode) : array());
 
     $listarg = $forceShow;
     $listlinks_txt = "";
