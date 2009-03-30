@@ -298,6 +298,10 @@ class ReviewForm {
 	    }
 	    return 0;
 	}
+	if ($nokfields == 0 && $tf) {
+	    $tf["ignoredBlank"][] = "#" . $req["paperId"];
+	    return 0;
+	}
 	if (isset($provide)) {
 	    $w = "This review is still not ready for others to see because you did not set some mandatory fields.  Please set " . htmlspecialchars(textArrayJoin($provide)) . " and submit again.";
 	    if ($tf)
@@ -306,12 +310,7 @@ class ReviewForm {
 		$Conf->warnMsg($w);
 	    $req["unready"] = true;
 	}
-	if ($nokfields == 0) {
-	    if ($tf)
-		$tf["ignoredBlank"][] = "#" . $req["paperId"];
-	    return 0;
-	}
-	return 1;
+	return ($nokfields > 0);
     }
 
     function saveRequest($req, $rrow, $prow) {
