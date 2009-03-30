@@ -257,6 +257,7 @@ class ReviewForm {
     function checkRequestFields(&$req, $rrow, &$tf = null) {
 	global $ReviewFormError, $Conf;
 	$submit = defval($req, "ready", false);
+	unset($req["unready"]);
 	$nokfields = 0;
 	foreach ($this->fieldOrder as $field) {
 	    if (!isset($req[$field]) && !$submit)
@@ -281,12 +282,8 @@ class ReviewForm {
 	}
 	if (isset($missing) && $tf)
 	    self::tfError($tf, false, textArrayJoin($missing) . " " . pluralx($missing, "field") . " missing from form.  Preserving any existing values.");
-	if ($nokfields == 0) {
-	    if ($tf)
-		$tf["ignoredBlank"][] = "#" . $req["paperId"];
-	    return 0;
-	}
-	if ($rrow && defval($rrow, "reviewEditVersion", 0) > defval($req, "version", 0) && $tf && isset($tf["text"])) {
+	if ($rrow && defval($rrow, "reviewEditVersion", 0) > defval($req, "version", 0)
+	    && $nokfields > 0 && $tf && isset($tf["text"])) {
 	    self::tfError($tf, true, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line &ldquo;<code>==+== Version " . $rrow->reviewEditVersion . "</code>&rdquo; to your offline review form for paper #" . $req["paperId"] . " and upload the form again.");
 	    return 0;
 	}
@@ -307,7 +304,12 @@ class ReviewForm {
 		self::tfError($tf, false, $w);
 	    else
 		$Conf->warnMsg($w);
-	    $req["ready"] = false;
+	    $req["unready"] = true;
+	}
+	if ($nokfields == 0) {
+	    if ($tf)
+		$tf["ignoredBlank"][] = "#" . $req["paperId"];
+	    return 0;
 	}
 	return 1;
     }
@@ -315,7 +317,7 @@ class ReviewForm {
     function saveRequest($req, $rrow, $prow) {
 	global $Conf, $ConfSiteSuffix, $Opt;
 	$Me = $_SESSION['Me'];
-	$submit = defval($req, "ready", false);
+	$submit = defval($req, "ready", false) && !defval($req, "unready", false);
 	$while = "while storing review";
 
 	if (!$Me->timeReview($prow, $rrow)
@@ -1280,7 +1282,7 @@ $blind\n";
 	// review actions
 	if ($Me->timeReview($prow, $rrow) || $Me->privChair) {
 	    echo "  <div class='g'></div>",
-		tagg_checkbox_h("ready", 1, ($useRequest ? defval($_REQUEST, "ready") : $rrow && $rrow->reviewSubmitted),
+		tagg_checkbox_h("ready", 1, ($useRequest ? defval($_REQUEST, "ready") : !$rrow || !$rrow->reviewModified || $rrow->reviewSubmitted),
 				array("disabled" => ($rrow && $rrow->reviewSubmitted && !$Me->privChair))),
 		"&nbsp;", tagg_label("The review is ready for others to see.");
 	    if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
