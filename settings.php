@@ -68,7 +68,7 @@ $SettingGroups = array("acc" => array(
 			     "next" => "dec"),
 		       "dec" => array(
 			     "au_seerev" => 2,
-			     "seedec" => 2,
+			     "seedec" => 3,
 			     "resp_open" => "check",
 			     "resp_done" => "date",
 			     "resp_grace" => "grace",
@@ -1410,7 +1410,7 @@ function doDecGroup() {
 
     echo "<div class='g'></div>\n<hr class='hr' />\n",
 	"Who can see <b>decisions</b> (accept/reject)?<br />\n";
-    doRadio("seedec", array(SEEDEC_ADMIN => "Only administrators", SEEDEC_REV => "PC and external reviewers", SEEDEC_ALL => "<b>Authors</b>, PC members, and reviewers (and reviewers can see accepted authors)"));
+    doRadio("seedec", array(SEEDEC_ADMIN => "Only administrators", SEEDEC_NCREV => "PC members and external reviewers", SEEDEC_REV => "All PC members (conflicted or not) and external reviewers", SEEDEC_ALL => "<b>Authors</b>, all PC members, and reviewers (and reviewers can see accepted authors)"));
 
     echo "<div class='g'></div>\n";
     echo "<table>\n";

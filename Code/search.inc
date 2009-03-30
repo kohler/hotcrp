@@ -685,10 +685,11 @@ class PaperSearch {
 	    }
 	    $value = array("outcome", $value);
 	    $nqt = count($qt);
-	    if ($this->privChair)
+	    if ($this->privChair
+		|| ($this->amPC && $Conf->timePCViewDecision(true)))
 		$qt[] = new SearchTerm("pf", 0, $value);
 	    else {
-		if ($this->amPC && $Conf->timePCViewDecision())
+		if ($this->amPC && $Conf->timePCViewDecision(false))
 		    $qt[] = new SearchTerm("pf", self::F_NONCONFLICT, $value);
 		else if ($Conf->timeReviewerViewDecision())
 		    $qt[] = new SearchTerm("pf", self::F_REVIEWER, $value);

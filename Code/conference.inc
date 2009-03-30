@@ -343,7 +343,7 @@ class Conference {
 	return $this->settingsBetween('resp_open', 'resp_done', 'resp_grace');
     }
     function timeAuthorViewDecision() {
-	return $this->setting("seedec") >= SEEDEC_ALL;
+	return $this->setting("seedec") == SEEDEC_ALL;
     }
     function timeReviewOpen() {
 	$st = defval($this->settings, 'rev_open', 0);
@@ -363,14 +363,18 @@ class Conference {
     function timePCViewAllReviews() {
 	return $this->settingsAfter('pc_seeallrev');
     }
-    function timePCViewDecision() {
-	return $this->setting("seedec") >= SEEDEC_REV;
+    function timePCViewDecision($conflicted) {
+	$s = $this->setting("seedec");
+	if ($conflicted)
+	    return $s == SEEDEC_ALL || $s == SEEDEC_REV;
+	else
+	    return $s >= SEEDEC_REV;
     }
     function timeReviewerViewDecision() {
 	return $this->setting("seedec") >= SEEDEC_REV;
     }
     function timeReviewerViewAcceptedAuthors() {
-	return $this->setting("seedec") >= SEEDEC_ALL;
+	return $this->setting("seedec") == SEEDEC_ALL;
     }
     function timePCViewPaper($prow, $download) {
 	if ($prow->timeWithdrawn > 0)

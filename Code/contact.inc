@@ -973,10 +973,7 @@ class Contact {
     function canViewDecision($prow, $forceShow = false) {
 	global $Conf;
 	if (($prow && $prow->conflictType >= CONFLICT_AUTHOR && $Conf->timeAuthorViewDecision())
-	    // || ($this->isPC
-	    //     && (!$prow || $prow->conflictType == 0)
-	    //     && $Conf->timePCViewDecision())
-	    || ($this->isPC && $Conf->timePCViewDecision())
+	    || ($this->isPC && $Conf->timePCViewDecision($prow && $prow->conflictType > 0))
 	    || ($prow && defval($prow, "myReviewType", 0) > 0
 		&& defval($prow, "myReviewSubmitted", 0) > 0
 		&& $Conf->timeReviewerViewDecision())

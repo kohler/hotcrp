@@ -31,6 +31,7 @@ define("AU_SEEREV_NO", 0);
 define("AU_SEEREV_YES", 1);
 define("AU_SEEREV_ALWAYS", 2);
 
+define("SEEDEC_NCREV", 3);
 define("SEEDEC_ALL", 2);
 define("SEEDEC_REV", 1);
 define("SEEDEC_ADMIN", 0);
