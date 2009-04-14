@@ -23,11 +23,11 @@ if ($file)
 
 if ($file == "script.js" || $file == "supersleight-min.js"
     || $file == "supersleight.js")
-    header("Content-type: text/javascript; charset: UTF-8");
+    header("Content-Type: text/javascript; charset=utf-8");
 else if (substr($file, -4) === ".css" && $mtime !== false)
-    header("Content-type: text/css; charset: UTF-8");
+    header("Content-Type: text/css; charset=utf-8");
 else {
-    header("Content-type: text/plain");
+    header("Content-Type: text/plain; charset=utf-8");
     if (!$zlib_output_compression)
 	header("Content-Length: 10");
     echo "Go away.\r\n";
