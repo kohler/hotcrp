@@ -969,7 +969,7 @@ function downloadText($text, $filename, $description, $inline = false, $length =
     global $Conf, $Opt, $zlib_output_compression;
     header("Content-Description: " . $Opt["shortName"] . " $description, PHP generated data");
     header("Content-Disposition: " . ($inline ? "inline" : "attachment") . "; filename=$filename");
-    header("Content-Type: text/plain");
+    header("Content-Type: text/plain; charset=utf-8");
     if ($length && !$zlib_output_compression)
 	header("Content-Length: " . strlen($text));
     print $text;
