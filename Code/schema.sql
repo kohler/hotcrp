@@ -488,6 +488,8 @@ insert into Settings (name, value, data) values ('tag_chair', 1, 'accept reject 
 insert into Settings (name, value) values ('sub_sha1', 1);
 -- allow PC members to review any paper by default
 insert into Settings (name, value) values ('pcrev_any', 1);
+-- allow external reviewers to see the other reviews by default
+insert into Settings (name, value) values ('extrev_view', 2);
 
 insert into PaperStorage set paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain', paper='' on duplicate key update paper='';
 
