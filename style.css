@@ -1278,50 +1278,71 @@ a.pl_sort_def_rev {
 }
 
 tr.k1 td {
-	background: #f0f0ff;
+	background: #f2f2ff;
 }
-tr.k0.red td {
+tr.k0.red td, tr.k1.red td {
 	background: #ffe4e4;
 }
-tr.k1.red td {
+tr.pl.k0.red td, tr.pl.k1.red td {
+	border-top: 1px solid #f8dddd;
+}
+/*tr.k1.red td {
 	background: #f8dddd;
+}*/
+tr.k0.orange td, tr.k1.orange td {
+	background: #fdf0d6;
 }
-tr.k0.orange td {
-	background: #fdf5d6;
+tr.pl.k0.orange td, tr.pl.k1.orange td {
+	border-top: 1px solid #f2e4c8;
 }
-tr.k1.orange td {
-	background: #f5eed0; /*#fcf4cf;*/
+/*tr.k1.orange td {
+	background: #f5eed0;
+}*/
+tr.k0.yellow td, tr.k1.yellow td {
+	background: #ffffd5;
 }
-tr.k0.yellow td {
-	background: #ffffda;
+tr.pl.k0.yellow td, tr.pl.k1.yellow td {
+	border-top: 1px solid #f3f3d0;
 }
-tr.k1.yellow td {
+/*tr.k1.yellow td {
 	background: #f6f6d8;
-}
-tr.k0.green td {
+}*/
+tr.k0.green td, tr.k1.green td {
 	background: #e4ffe4;
 }
-tr.k1.green td {
-	background: #ddf8dd;
+tr.pl.k0.green td, tr.pl.k1.green td {
+	border-top: 1px solid #d2f6d2;
 }
-tr.k0.blue td {
+/*tr.k1.green td {
+	background: #ddf8dd;
+}*/
+tr.k0.blue td, tr.k1.blue td {
 	background: #e0e0ff;
 }
-tr.k1.blue td {
-	background: #ddddf8;
+tr.pl.k0.blue td, tr.pl.k1.blue td {
+	border-top: 1px solid #d6d6f2;
 }
-tr.k0.purple td, tr.k0.violet td {
+/*tr.k1.blue td {
+	background: #ddddf8;
+}*/
+tr.k0.purple td, tr.k0.violet td, tr.k1.purple td, tr.k1.violet td {
 	background: #f2e0f8;
 }
-tr.k1.purple td, tr.k1.violet td {
+tr.pl.k0.purple td, tr.pl.k1.purple td, tr.pl.k0.violet td, tr.pl.k1.violet td {
+	border-top: 1px solid #f0d8f0;
+}
+/*tr.k1.purple td, tr.k1.violet td {
 	background: #f2dbf2;
+}*/
+tr.k0.grey td, tr.k0.gray td, tr.k1.grey td, tr.k1.gray td {
+	background: #e2e2e2;
 }
-tr.k0.grey td, tr.k0.gray td {
-	background: #e4e4e4;
+tr.pl.k0.grey td, tr.pl.k1.grey td, tr.pl.k0.gray td, tr.pl.k1.gray td {
+	border-top: 1px solid #d9d9d9;
 }
-tr.k1.grey td, tr.k1.gray td {
+/*tr.k1.grey td, tr.k1.gray td {
 	background: #dddddd;
-}
+}*/
 
 body#offrev td#upload {
 	padding-left: 3em;
