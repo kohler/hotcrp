@@ -241,6 +241,16 @@ class PaperSearch {
 	    $this->regex[$rtype][] = self::_fieldPreg($word);
     }
 
+    function _cleanCompar($compar) {
+	$compar = trim($compar);
+	if ($compar == "" || $compar == "==")
+	    return "=";
+	else if ($compar == "!")
+	    return "!=";
+	else
+	    return $compar;
+    }
+
     function _searchReviewer($word, $rtype, $negated, &$qt) {
 	global $Conf;
 
@@ -261,8 +271,8 @@ class PaperSearch {
 	if ($rtype == "ire" || $rtype == "ipri" || $rtype == "isec" || $rtype == "iext")
 	    $rt |= self::F_INCOMPLETE;
 
-	if (preg_match('/^([<>]?=?\s*)?(\d+)$/s', $word, $m)) {
-	    $m[1] = ($m[1] ? $m[1] : "=");
+	if (preg_match('/\A([<>]?=?\s*)?(\d+)\z/s', $word, $m)) {
+	    $m[1] = self::_cleanCompar($m[1]);
 	    if ($m[2] == 0 && $m[1] == "<")
 		$type = "f";
 	    else if ($m[2] == 0 && $m[1] == ">=")
@@ -335,8 +345,8 @@ class PaperSearch {
 	else if ($word == "none")
 	    $word = "=0";
 
-	if (preg_match('/^([<>]?=?\s*)?(\d+)$/s', $word, $m)) {
-	    $m[1] = ($m[1] ? $m[1] : "=");
+	if (preg_match('/\A([<>]?=?\s*)?(\d+)\z/s', $word, $m)) {
+	    $m[1] = self::_cleanCompar($m[1]);
 	    if ($m[2] == 0 && $m[1] == "<")
 		$type = "f";
 	    else if ($m[2] == 0 && $m[1] == ">=")
@@ -375,22 +385,21 @@ class PaperSearch {
 		$value = "$field>0";
 	    else if ($word == "none")
 		$value = "$field=0";
-	    else if (preg_match('/^(\d*?)([<>]?=?)?\s*([A-Za-z]|\d+)$/s', $word, $m)) {
+	    else if (preg_match('/\A(\d*?)([<>]?=?)?\s*([A-Za-z]|\d+)\z/s', $word, $m)) {
 		if ($m[1] == "")
 		    $m[1] = 1;
+		$m[2] = self::_cleanCompar($m[2]);
 		if (($rf->reviewFields[$field] > 1) != (ctype_digit($m[3]) == false))
 		    $value = "$field=-1";
 		else if ($rf->reviewFields[$field] > 1) {
 		    // switch meaning of inequality
-		    if ($m[2] == "" || $m[2] == "=")
-			$m[2] = "=";
-		    else if ($m[2][0] == "<")
+		    if ($m[2][0] == "<")
 			$m[2] = ">" . substr($m[2], 1);
 		    else
 			$m[2] = "<" . substr($m[2], 1);
 		    $value = array($field . $m[2] . ($rf->reviewFields[$field] - ord(strtoupper($m[3]))), $m[1]);
 		} else
-		    $value = array($field . ($m[2] ? $m[2] : "=") . $m[3], $m[1]);
+		    $value = array($field . $m[2] . $m[3], $m[1]);
 	    } else		// XXX
 		$value = "$field=-1";
 	} else {
@@ -440,11 +449,11 @@ class PaperSearch {
 		return;
 	}
 
-	if (preg_match('/\A([^#<>!=]+)(#?)([<>!]?=?)(-?\d+)\z/', $word, $m)
+	if (preg_match('/\A([^#<>!=]+)(#?)([<>!=]?=?)(-?\d+)\z/', $word, $m)
 	    && $m[1] != "any" && $m[1] != "none"
 	    && ($m[2] != "" || $m[3] != "")) {
 	    $tagword = $m[1];
-	    $extra = ($m[3] == "!" ? "!=" : ($m[3] == "" ? "=" : $m[3])) . $m[4];
+	    $extra = self::_cleanCompar($m[3]) . $m[4];
 	} else {
 	    $tagword = $word;
 	    $extra = null;
@@ -483,8 +492,83 @@ class PaperSearch {
 	$qt[] = new SearchTerm("tag", $rt, $extra ? array($value, $extra) : $value);
     }
 
+    function _searchOptions($word, $negate, &$qt) {
+	$type = "option";
+	if (preg_match('/\A(.*?)([:#][<>!=]?=?|[<>!=]=?)(.*)\z/', $word, $m)) {
+	    $oname = $m[1];
+	    if ($m[2][0] == ":" || $m[2][0] == "#")
+		$m[2] = substr($m[2], 1);
+	    $ocompar = self::_cleanCompar($m[2]);
+	    $oval = strtolower(simplifyWhitespace($m[3]));
+	} else {
+	    $oname = $word;
+	    $ocompar = "=";
+	    $oval = "";
+	}
+	$oname = strtolower(simplifyWhitespace($oname));
+
+	// match all options
+	$qo = array();
+	$option_failure = false;
+	foreach (paperOptions() as $oid => $o)
+	    // See also checkOptionNameUnique() in settings.php
+	    if ($oname == "none" || $oname == "any"
+		|| strstr(strtolower($o->optionName), $oname) !== false) {
+		// find the relevant values
+		if ($oval !== ""
+		    && ($v = defval($o, "optionValues", "")) !== "") {
+		    if (substr($v, 0, 2) == "\x7Fi") {
+			if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
+			    $xval = $ocompar . $m[1];
+			else {
+			    $this->warn("Submission option &ldquo;" . htmlspecialchars($o->optionName) . "&rdquo; takes integer values.");
+			    $option_failure = true;
+			    continue;
+			}
+		    } else {
+			$xval = matchValue(explode("\n", $v), $oval);
+			if (count($xval) == 0)
+			    continue;
+			else if (count($xval) == 1)
+			    $xval = $ocompar . $xval[0];
+			else if ($ocompar != "=" && $ocompar != "!=") {
+			    $this->warn("Submission option &ldquo;" . htmlspecialchars("$oname:$oval") . "&rdquo; matches multiple values, can't use " . htmlspecialchars($ocompar) . ".");
+			    $option_failure = true;
+			    continue;
+			} else
+			    $xval = ($ocompar == "!=" ? " not in " : " in ")
+				. "(" . join(",", $xval) . ")";
+		    }
+		} else if ($oval === "" || $oval === "yes")
+		    $xval = "!=0";
+		else if ($oval === "no")
+		    $xval = "=0";
+		else
+		    continue;
+
+		// add the query to $qo
+		if ($this->privChair || ($this->amPC && $o->pcView))
+		    $qo[] = new SearchTerm($type, 0, array($oid, $xval));
+		else {
+		    if ($o->pcView)
+			$qo[] = new SearchTerm($type, self::F_REVIEWER, array($oid, $xval));
+		    $qo[] = new SearchTerm($type, self::F_AUTHOR, array($oid, $xval));
+		}
+	    }
+
+	// if "none", negate
+	if (count($qo) > 0 && $oname === "none")
+	    $qo = array("not", 0, $qo);
+	if (count($qo) == 0) {
+	    if (!$option_failure)
+		$this->warn("&ldquo;" . htmlspecialchars($word) . "&rdquo; doesn't match a submission option.");
+	    $qo[] = new SearchTerm("f", 0, "");
+	}
+	$qt = array_merge($qt, $qo);
+    }
+
     function _searchPopWord(&$str) {
-	preg_match('/^([-+]?"[^"]*"?|[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?|[^"\s]+)/s', $str, $m);
+	preg_match('/\A([-+]?"[^"]*"?|[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?|[^"\s]+)/s', $str, $m);
 	$str = ltrim(substr($str, strlen($m[0])));
 	return $m[0];
     }
@@ -494,12 +578,12 @@ class PaperSearch {
 	$nqt = count($qt);
 
 	// check for paper number
-	if ($word[0] == "#" && preg_match('/^#\d+(-#?\d+)?/', $word))
+	if ($word[0] == "#" && preg_match('/\A#\d+(-#?\d+)?/', $word))
 	    $word = substr($word, 1);
 	if (ctype_digit($word)) {
 	    $qt[] = new SearchTerm($negated ? "npn" : "pn", 0, $word);
 	    return;
-	} else if (preg_match('/^(\d+)-#?(\d+)$/', $word, $m)) {
+	} else if (preg_match('/\A(\d+)-#?(\d+)$/', $word, $m)) {
 	    if ($m[1] <= $m[2]) {
 		for ($i = $m[1]; $i <= $m[2]; ++$i)
 		    $qt[] = new SearchTerm($negated ? "npn" : "pn", 0, $i);
@@ -601,57 +685,8 @@ class PaperSearch {
 		$qt[] = new SearchTerm($type, self::F_AUTHOR, $value);
 	    }
 	}
-	if (($special ? $special == "option" : isset($this->fields['option']))) {
-	    $type = "option";
-	    if ((($pos = strpos($word, "#")) !== false)
-		|| (($pos = strpos($word, "=")) !== false)) {
-		$oname = substr($word, 0, $pos);
-		$oval = strtolower(simplifyWhitespace(substr($word, $pos + 1)));
-	    } else {
-		$oname = $word;
-		$oval = "";
-	    }
-	    $oname = strtolower(simplifyWhitespace($oname));
-
-	    // match all options
-	    $qo = array();
-	    foreach (paperOptions() as $oid => $o)
-		// See also checkOptionNameUnique() in settings.php
-		if ($oname == "none" || $oname == "any"
-		    || strstr(strtolower($o->optionName), $oname) !== false) {
-		    // find the relevant values
-		    if ($oval !== ""
-			&& ($v = defval($o, "optionValues", "")) !== "") {
-			$xval = matchValue(explode("\n", $v), $oval);
-			if (count($xval) == 0)
-			    continue;
-			$xval = " in (" . join(",", $xval) . ")";
-		    } else if ($oval === "" || $oval === "yes")
-			$xval = "!=0";
-		    else if ($oval === "no")
-			$xval = "=0";
-		    else
-			continue;
-
-		    // add the query to $qo
-		    if ($this->privChair || ($this->amPC && $o->pcView))
-			$qo[] = new SearchTerm($type, 0, array($oid, $xval));
-		    else {
-			if ($o->pcView)
-			    $qo[] = new SearchTerm($type, self::F_REVIEWER, array($oid, $xval));
-			$qo[] = new SearchTerm($type, self::F_AUTHOR, array($oid, $xval));
-		    }
-		}
-
-	    // if "none", negate
-	    if (count($qo) > 0 && $oname === "none")
-		$qo = array("not", 0, $qo);
-	    if (count($qo) == 0) {
-		$this->warn("&ldquo;" . htmlspecialchars($word) . "&rdquo; doesn't match a submission option.");
-		$qo[] = new SearchTerm("f", 0, "");
-	    }
-	    $qt = array_merge($qt, $qo);
-	}
+	if (($special ? $special == "option" : isset($this->fields['option'])))
+	    $this->_searchOptions($word, $negated, $qt);
 	if ($special ? $special == "status" : isset($this->fields['status'])) {
 	    if (strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
 		$qt[] = new SearchTerm("pf", 0, array("timeWithdrawn", ">0"));
@@ -733,7 +768,7 @@ class PaperSearch {
 	    $this->reviewAdjust = true;
 	    if ($Conf->sversion < 12)
 		$qt[] = new SearchTerm("f");
-	    else if (preg_match('/\A(.+?)\s*(|[!=<>]?=?)\s*(\d*)\z/', $word, $m)
+	    else if (preg_match('/\A(.+?)\s*(|[<>!=]?=?)\s*(\d*)\z/', $word, $m)
 		     && ($m[3] !== "" || $m[2] === "")) {
 		// adjust counts
 		if ($m[3] === "") {
@@ -742,10 +777,8 @@ class PaperSearch {
 		}
 		if ($m[2] === "")
 		    $m[2] = ($m[3] == 0 ? "=" : ">=");
-		else if ($m[2] === "==")
-		    $m[2] = "=";
-		else if ($m[2] === "!")
-		    $m[2] = "!=";
+		else
+		    $m[2] = self::_cleanCompar($m[2]);
 
 		// resolve rating type
 		if ($m[1] === "+" || $m[1] === "good") {
@@ -803,6 +836,8 @@ class PaperSearch {
 	    }
 	    if ($field)
 		$this->_searchReviews($word, $rf, $field, $negated, $qt);
+	    else
+		$this->_searchOptions("$special:$word", $negated, $qt);
 	}
 
 	for ($i = $nqt; $i < count($qt) - 1; ++$i)
@@ -1630,21 +1665,21 @@ class PaperSearch {
     }
 
     function simplePaperList() {
-	if (!$this->qo && !$this->qx && preg_match('/^\s*#?\d[-#\d\s]*$/s', $this->q)) {
+	if (!$this->qo && !$this->qx && preg_match('/\A\s*#?\d[-#\d\s]*\z/s', $this->q)) {
 	    $a = array();
 	    foreach (preg_split('/\s+/', $this->q) as $word) {
-		if ($word[0] == "#" && preg_match('/^#\d+(-#?\d+)?/', $word))
+		if ($word[0] == "#" && preg_match('/\A#\d+(-#?\d+)?/', $word))
 		    $word = substr($word, 1);
 		if (ctype_digit($word))
 		    $a[] = $word;
-		else if (preg_match('/^(\d+)-#?(\d+)$/s', $word, $m)) {
+		else if (preg_match('/\A(\d+)-#?(\d+)\z/s', $word, $m)) {
 		    for ($i = $m[1]; $i <= $m[2]; $i++)
 			$a[] = $i;
 		} else
 		    return null;
 	    }
 	    return $a;
-	} else if (!$this->qx && !$this->q && preg_match('/^\s*#?(\d+)\s*$/s', $this->qo, $m))
+	} else if (!$this->qx && !$this->q && preg_match('/\A\s*#?(\d+)\s*\z/s', $this->qo, $m))
 	    return array($m[1]);
 	else
 	    return null;

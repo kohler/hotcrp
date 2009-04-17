@@ -617,7 +617,10 @@ class PaperTable {
 		if (($ov || $om)
 		    && ($o->pcView || $showAllOptions
 			|| $prow->conflictType >= CONFLICT_AUTHOR)) {
-		    if ($om) {
+		    if (substr($om, 0, 2) == "\x7Fi") {
+			if ($ov != "")
+			    $optiondata .= htmlspecialchars("$o->optionName: " . $ov) . "<br />\n";
+		    } else if ($om) {
 			$om = explode("\n", $om);
 			if (defval($om, $ov, "") != "")
 			    $optiondata .= htmlspecialchars("$o->optionName: $om[$ov]") . "<br />\n";
@@ -775,17 +778,23 @@ class PaperTable {
 	for ($i = 0; $i < count($m[1]); ++$i)
 	    $optsel[$m[1][$i]] = $m[2][$i];
 	foreach ($opt as $o) {
-	    if (!defval($o, "optionValues")) {
-		echo $this->papt("option", tagg_checkbox_h("opt$o->optionId", 1, defval($optsel, $o->optionId))
+	    $ov = defval($o, "optionValues");
+	    $optid = "opt$o->optionId";
+	    $myval = ($this->useRequest ? defval($_REQUEST, $optid)
+		      : defval($optsel, $o->optionId));
+	    if ($ov == "") {
+		echo $this->papt($optid, tagg_checkbox_h($optid, 1, $myval)
 				 . "&nbsp;" . tagg_label(htmlspecialchars($o->optionName)));
 		if ($o->description)
 		    echo "<div class='paphint'>", $o->description, "</div>";
 		echo "<div class='papv'></div>\n\n";
 	    } else {
-		echo $this->papt("option", htmlspecialchars($o->optionName));
-		if ($o->description)
+		echo $this->papt($optid, htmlspecialchars($o->optionName));
 		    echo "<div class='paphint'>", $o->description, "</div>";
-		echo "<div class='papv'>", tagg_select("opt$o->optionId", explode("\n", $o->optionValues), defval($optsel, $o->optionId, 0), array("onchange" => "hiliter(this)")), "</div>\n\n";
+		if (substr($ov, 0, 2) == "\x7Fi")
+		    echo "<div class='papv'><input type='text' class='textlite' name='$optid' value=\"", htmlspecialchars($myval), "\" size='8' onchange='hiliter(this)' /></div>\n\n";
+		else
+		    echo "<div class='papv'>", tagg_select("opt$o->optionId", explode("\n", $o->optionValues), $myval, array("onchange" => "hiliter(this)")), "</div>\n\n";
 	    }
 	}
     }

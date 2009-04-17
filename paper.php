@@ -276,6 +276,26 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$q .= "', ";
     }
 
+    // check option values
+    $emsg = "";
+    if (!$isSubmitFinal && $Conf->setting("paperOption")) {
+	foreach (paperOptions() as $opt) {
+	    $oname = "opt$opt->optionId";
+	    $v = trim(defval($_REQUEST, $oname, 0));
+	    if ($opt->optionValues == "")
+		$_REQUEST[$oname] = ($v == 0 || $v == "" ? "" : 1);
+	    else if (substr($opt->optionValues, 0, 2) == "\x7Fi") {
+		if ($v == "" || ($v = cvtint($v, null)) !== null)
+		    $_REQUEST[$oname] = ($v == "" ? "0" : $v);
+		else {
+		    $Error["opt$opt->optionId"] = 1;
+		    $emsg .= "The value for &ldquo;" . htmlspecialchars($opt->optionName) . "&rdquo; must be an integer.  ";
+		}
+	    } else
+		$_REQUEST[$oname] = cvtint($v, 0);
+	}
+    }
+
     // any missing fields?
     if (count($Error) > 0) {
 	$fields = array();
@@ -290,14 +310,16 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    $collab = ($Conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
 	    $fields[] = $collab;
 	}
-	$emsg = "Before " . ($isSubmit ? "submitting" : "registering") . " your paper, you must enter ";
-	if (count($fields) == 1)
-	    $emsg .= "a value for the " . commajoin($fields) . " field.";
-	else
-	    $emsg .= "values for the " . commajoin($fields) . " fields.";
-	if ($collab)
-	    $emsg .= "  If none of the authors have potential conflicts, just enter &ldquo;None&rdquo; in the $collab field.";
-	$emsg .= "  Fix the highlighted " . pluralx($fields, "field") . " and try again.";
+	if (count($fields) > 0) {
+	    $emsg .= "Before " . ($isSubmit ? "submitting" : "registering") . " your paper, you must enter ";
+	    if (count($fields) == 1)
+		$emsg .= "a value for the " . commajoin($fields) . " field.  ";
+	    else
+		$emsg .= "values for the " . commajoin($fields) . " fields.  ";
+	    if ($collab)
+		$emsg .= "If none of the authors have potential conflicts, just enter &ldquo;None&rdquo; in the $collab field.  ";
+	}
+	$emsg .= "Fix the highlighted " . pluralx($fields, "field") . " and try again.";
 	if (fileUploaded($_FILES["paperUpload"], $Conf) && $newPaper)
 	    $emsg .= "  <strong>Please note that the paper you tried to upload was ignored.</strong>";
 	$Conf->errorMsg($emsg);
@@ -383,7 +405,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    return false;
 	$q = "";
 	foreach (paperOptions() as $opt)
-	    if (defval($_REQUEST, "opt$opt->optionId") > 0)
+	    if (defval($_REQUEST, "opt$opt->optionId", "") != "")
 		$q .= "($paperId, $opt->optionId, " . $_REQUEST["opt$opt->optionId"] . "), ";
 	if ($q && !$Conf->qe("insert into PaperOption (paperId, optionId, value) values " . substr($q, 0, strlen($q) - 2), "while updating paper options"))
 	    return false;

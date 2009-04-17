@@ -481,28 +481,36 @@ function doTopics($set) {
 }
 
 function doCleanOptionValues($id) {
-    global $Error;
-    if (defval($_REQUEST, "optvt$id", 0) == 0
-	|| rtrim(defval($_REQUEST, "optv$id", "")) == "")
+    global $Error, $Highlight;
+    $optvt = defval($_REQUEST, "optvt$id", 0);
+    if ($optvt == 0)
 	unset($_REQUEST["optv$id"]);
+    else if ($optvt == 2)
+	$_REQUEST["optv$id"] = "\x7Fi";
     else {
 	$v = "";
 	foreach (explode("\n", rtrim(cleannl($_REQUEST["optv$id"]))) as $t)
 	    $v .= trim($t) . "\n";
-	$_REQUEST["optv$id"] = substr($v, 0, strlen($v) - 1);
+	if ($v[0] == "\x7F") {
+	    $Error[] = "Illegal character in selector options.";
+	    $Highlight["optv$id"] = true;
+	} else if ($v == "\n") {
+	    $Error[] = "Enter options for the selector, one per line.";
+	    $Highlight["optv$id"] = true;
+	} else
+	    $_REQUEST["optv$id"] = substr($v, 0, strlen($v) - 1);
     }
-    if (count($Error) > 0)
-	$_REQUEST["optd$id"] = cleanXHTML($_REQUEST["optd$id"], $err);
 }
 
 function doOptions($set) {
-    global $Conf, $Values, $Error;
+    global $Conf, $Values, $Error, $Highlight;
     if (!$set) {
 	foreach ($_REQUEST as $k => &$v)
 	    if (substr($k, 0, 4) == "optd"
 		&& (ctype_digit(substr($k, 4)) || $k == "optn")) {
 		if (cleanXHTML($v, $err) === false) {
 		    $Error[] = $err;
+		    $Highlight[$k] = true;
 		    return;
 		}
 	    }
@@ -551,6 +559,9 @@ function doOptions($set) {
 	}
 	$Conf->qe("insert into OptionType ($qa) values ($qb)", $while);
 	$ochange = $anyo = true;
+    } else if (trim(defval($_REQUEST, "optdn", "")) != "") {
+	$Highlight["optnn"] = true;
+	$Error[] = "Specify a name for your new option.";
     }
 
     if (!$anyo)
@@ -1134,30 +1145,46 @@ function doOptGroupOption($o) {
 
     echo "<tr><td><div class='f-contain'>\n",
 	"  <div class='f-i'>",
-	"<div class='f-c'>Option name</div>",
+	"<div class='f-c'>",
+	decorateSettingName("optn$id", "Option name"),
+	"</div>",
 	"<div class='f-e'><input type='text' class='textlite' name='optn$id' value=\"", htmlspecialchars($o->optionName), "\" size='50' onchange='hiliter(this)' ",
 	($id == "n" ? "onfocus=\"tempText(this, '(Enter new option here)', 1)\" onblur=\"tempText(this, '(Enter new option here)', 0)\" " : ""),
 	"/></div>\n",
 	"  <div class='f-i'>",
-	"<div class='f-c'>Description</div>",
+	"<div class='f-c'>",
+	decorateSettingName("optd$id", "Description"),
+	"</div>",
 	"<div class='f-e'><textarea class='textlite' name='optd$id' rows='2' cols='50' onchange='hiliter(this)'>", htmlspecialchars($o->description), "</textarea></div>",
 	"</div></td></tr>\n",
 	"  <tr><td><div class='f-i'>",
-	"<div class='f-c'>Type</div>",
+	"<div class='f-c'>", decorateSettingName("optv$id", "Type"), "</div>",
 	"<div class='f-e'>";
 
-    if ($Conf->sversion >= 14)
-	echo tagg_select("optvt$id", array("Checkbox", "Selector"), defval($o, "optionValues") ? 1 : 0, array("onchange" => "hiliter(this);void fold(\"optv$id\",this.value==0)")),
+    if ($Conf->sversion >= 14) {
+	$oval = defval($o, "optionValues", "");
+	if (count($Error) > 0)
+	    $optvt = defval($_REQUEST, "optvt$id", 0);
+	else
+	    $optvt = (substr($oval, 0, 2) == "\x7Fi" ? 2 : ($oval ? 1 : 0));
+	echo tagg_select("optvt$id", array("Checkbox", "Selector", "Number"),
+			 $optvt,
+			 array("onchange" => "hiliter(this);void fold(\"optv$id\",this.value!=1);void fold(\"optv$id\",this.value!=2,1)")),
 	    "<span class='sep'></span>";
+    }
 
     echo tagg_checkbox_h("optp$o->optionId", 1, $o->pcView),
 	"&nbsp;", tagg_label("Visible to reviewers");
 
-    if ($Conf->sversion >= 14)
-	echo "<div id='foldoptv$id' class='", (defval($o, "optionValues") ? "foldo" : "foldc"), "'><div class='fx'>",
+    if ($Conf->sversion >= 14) {
+	echo "<div id='foldoptv$id' class='",
+	    ($optvt == 1 ? "foldo" : "foldc"),
+	    ($optvt == 2 ? " fold1o" : " fold1c"),
+	    "'><div class='fx'>",
 	    "<div class='hint'>Enter the selector choices one per line.  The first choice will be the default.</div>",
 	    "<textarea class='textlite' name='optv$id' rows='3' cols='50' onchange='hiliter(this)'>", htmlspecialchars(defval($o, "optionValues")), "</textarea>",
 	    "</div></div>";
+    }
 
     echo "</div></td><td>";
 

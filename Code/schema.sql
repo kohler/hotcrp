@@ -447,7 +447,7 @@ DROP TABLE IF EXISTS `Settings`;
 CREATE TABLE `Settings` (
   `name` char(40) NOT NULL,
   `value` int(11) NOT NULL,
-  `data` text, 
+  `data` text,
   UNIQUE KEY `name` (`name`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
