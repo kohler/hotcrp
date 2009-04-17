@@ -397,9 +397,13 @@ echo "<div class='f-i'>
 </div>\n\n";
 
 
-if ($Conf->setting("acct_addr")) {
+$any_address = ($Acct->addressLine1 || $Acct->addressLine2 || $Acct->city
+		|| $Acct->state || $Acct->zipCode || $Acct->country);
+if ($Conf->setting("acct_addr") || $Acct->amReviewer()
+    || $any_address || $Acct->voicePhoneNumber || $Acct->faxPhoneNumber) {
     echo "<div class='g'></div>\n";
-    if ($Conf->sversion >= 5) {
+    if ($Conf->sversion >= 5
+	&& ($Conf->setting("acct_addr") || $any_address)) {
 	echo "<div class='f-i'>
   <div class='f-c'>Address line 1</div>
   <div class='f-e'><input class='textlite' type='text' name='addressLine1' size='52' value=\"", crpformvalue('addressLine1'), "\" onchange='hiliter(this)' /></div>
@@ -428,11 +432,13 @@ if ($Conf->setting("acct_addr")) {
     }
     echo "<div class='f-i'><div class='f-ix'>
   <div class='f-c'>Phone <span class='f-cx'>(optional)</span></div>
-  <div class='f-e'><input class='textlite' type='text' name='voicePhoneNumber' size='24' value=\"", crpformvalue('voicePhoneNumber'), "\" onchange='hiliter(this)' /></div>
-</div><div class='f-ix'>
+  <div class='f-e'><input class='textlite' type='text' name='voicePhoneNumber' size='24' value=\"", crpformvalue('voicePhoneNumber'), "\" onchange='hiliter(this)' /></div>\n</div>";
+    if ($Conf->setting("acct_addr") || $Acct->faxPhoneNumber)
+	echo "<div class='f-ix'>
   <div class='f-c'>Fax <span class='f-cx'>(optional)</span></div>
   <div class='f-e'><input class='textlite' type='text' name='faxPhoneNumber' size='24' value=\"", crpformvalue('faxPhoneNumber'), "\" onchange='hiliter(this)' /></div>
-</div><div class='clear'></div></div>\n";
+</div>";
+    echo "<div class='clear'></div></div>\n";
 }
 
 echo "</div></td>\n</tr>\n\n";
