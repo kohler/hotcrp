@@ -247,6 +247,7 @@ function searchQuickref() {
     _searchQuickrefRow("", "lead:any", "some assigned discussion lead");
     _searchQuickrefRow("Shepherds", "shep:fdabek", "&ldquo;fdabek&rdquo; (in name/email) is shepherd (&ldquo;none&rdquo; and &ldquo;any&rdquo; also work)");
     _searchQuickrefRow("Conflicts", "conflict:fdabek", "&ldquo;fdabek&rdquo; (in name/email) has a conflict with the paper");
+    _searchQuickrefRow("", "conflict:pc", "some PC member has a conflict with the paper");
     _searchQuickrefRow("Status", "status:sub", "paper is submitted for review", "t=all");
     _searchQuickrefRow("", "status:unsub", "paper is neither submitted nor withdrawn", "t=all");
     _searchQuickrefRow("", "status:withdrawn", "paper has been withdrawn", "t=all");

@@ -738,6 +738,8 @@ class PaperSearch {
 	    && $this->privChair) {
 	    if ($word == "none" || $word == "any")
 		$value = $word;
+	    else if (strcasecmp($word, "pc") == 0)
+		$value = array_keys(pcMembers());
 	    else {
 		$this->contactmatch[] = sqlq_for_like($word);
 		$this->contactmatchPC = false;
