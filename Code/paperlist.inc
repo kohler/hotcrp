@@ -675,17 +675,19 @@ class PaperList extends BaseList {
 	    if ($row->conflictType > 0 && $this->showConflict) {
 		$which = "-1.png";
 		$alt = "Conflict";
+		$class = "-1";
 	    } else if ($row->reviewType === null) {
 		$which = "0.gif";
 		$alt = "";
+		$class = "0";
 	    } else {
-		$which = $row->reviewType;
+		$class = $row->reviewType;
 		$alt = $reviewTypeName[$row->reviewType] . " review";
 		if ($needSubmit) {
-		    $which .= "n";
+		    $class .= "n";
 		    $alt .= " (not complete)";
 		}
-		$which .= ".gif";
+		$which = "$class.gif";
 		if (!$row->reviewRound)
 		    /* nada */;
 		else if (($t = defval($Conf->settings["rounds"], $row->reviewRound)))
@@ -695,7 +697,7 @@ class PaperList extends BaseList {
 		if ($a3)
 		    $a3 = "&nbsp;<span class='revround' title='Review round'>" . htmlspecialchars($a3) . "</span>";
 	    }
-	    return $a1 . $Conf->cacheableImage("ass$which", $alt, $alt) . $a2 . $a3;
+	    return $a1 . $Conf->cacheableImage("ass$which", $alt, $alt, "ass$class") . $a2 . $a3;
 	case self::FIELD_REVIEWS_STATUS:
 	    // see also _sortReviewsStatus
 	    if ($row->conflictType > 0 && !$this->contact->privChair
