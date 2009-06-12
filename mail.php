@@ -497,6 +497,8 @@ echo "  <tr><td class='mhn'>Subject:</td><td class='mhd'>",
     <td class='llentry'>Shepherd name, if any.</td></tr>
 <tr><td class='lxcaption'><code>%SHEPHERDEMAIL%</code></td>
     <td class='llentry'>Shepherd email, if any.</td></tr>
+<tr><td class='lxcaption'><code>%TAGVALUE(t)%</code></td>
+    <td class='llentry'>Value of paper's tag <code>t</code>.</td></tr>
 </table></td></tr>
 </table></div>
 
