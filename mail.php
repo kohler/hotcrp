@@ -132,7 +132,7 @@ function checkMailPrologue($send) {
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
     if ($send) {
-	echo "<div id='foldmail' class='foldc'><div class='fn merror'>In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong><br /><span id='mailcount'></span></div><div class='fx'><div class='confirm'>Sent mail as follows.</div>
+	echo "<div id='foldmail' class='foldc'><div class='fn merror'>In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong><br /><span id='mailcount'></span></div><div id='mailwarnings'></div><div class='fx'><div class='confirm'>Sent mail as follows.</div>
 	<div class='aa'>
 	<input class='b' type='submit' name='go' value='Prepare more mail' />
 	</div>
@@ -146,7 +146,7 @@ function checkMailPrologue($send) {
 	    else if (!$Conf->timeAuthorViewReviews(true))
 		echo "<div class='warning'>Mails to users who have not completed their own reviews will not include reviews or comments.  (<a href='settings$ConfSiteSuffix?group=dec' class='nowrap'>Change the setting</a>)</div>\n";
 	}
-	echo "<div id='foldmail' class='foldc'><div class='fn merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div><div class='fx info'>Examine the mails to verify that you've gotten the results you want, then select &ldquo;Send&rdquo; to send the checked mails.</div>
+	echo "<div id='foldmail' class='foldc'><div class='fn merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div><div id='mailwarnings'></div><div class='fx info'>Examine the mails to verify that you've gotten the results you want, then select &ldquo;Send&rdquo; to send the checked mails.</div>
         <div class='aa fx'>
 	<input class='b' type='submit' name='send' value='Send' /> &nbsp;
 	<input class='b' type='submit' name='cancel' value='Cancel' />
@@ -173,11 +173,12 @@ function checkMail($send) {
 
     $template = array("subject" => $subject, "body" => $emailBody);
     $rest = array("cc" => $_REQUEST["cc"], "replyto" => $_REQUEST["replyto"],
-		  "error" => false);
+		  "error" => false, "mstate" => new MailerState());
     $last = array("subject" => "", "body" => "", "to" => "");
     $any = false;
     $nrows_left = edb_nrows($result);
     $nrows_print = false;
+    $nwarnings = 0;
     $preperrors = array();
     while (($row = edb_orow($result))) {
 	$nrows_left--;
@@ -209,7 +210,7 @@ function checkMail($send) {
 	    }
 	    if ($send) {
 		Mailer::sendPrepared($preparation);
-		$Conf->log("Receiver of mail \"$preparation[0]\"", $row->contactId, $row->paperId);
+		$Conf->log("Receiver of mail \"" . $preparation["subject"] . "\"", $row->contactId, $row->paperId);
 	    }
 	    if ($nrows_print) {
 		$Conf->echoScript("e('mailcount').innerHTML = \"$nrows_left mails remaining.\";");
@@ -244,6 +245,11 @@ function checkMail($send) {
 	    echo " <tr><td></td><td colspan='2' class='mhb'>",
 		"<pre class='email'>", htmlspecialchars($show_preparation["body"]), "</pre></td></tr>\n",
 		"</table></div>\n";
+	}
+	if ($nwarnings != $rest["mstate"]->nwarnings()) {
+	    $nwarnings = $rest["mstate"]->nwarnings();
+	    echo "<div id='foldmailwarn$nwarnings' class='hidden'><div class='warning'>", join("<br />", $rest["mstate"]->warnings()), "</div></div>";
+	    $Conf->echoScript("e('mailwarnings').innerHTML = e('foldmailwarn$nwarnings').innerHTML;");
 	}
     }
 

@@ -366,6 +366,41 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 );
 
 
+class MailerState {
+    var $unexpanded;
+    var $tagless;
+    var $tags;
+
+    function MailerState() {
+	$this->unexpanded = array();
+	$this->tagless = array();
+	$this->tags = array();
+    }
+
+    function nwarnings() {
+	return count($this->unexpanded) + count($this->tagless);
+    }
+
+    function warnings() {
+	$e = array();
+	if (count($this->unexpanded) == 1)
+	    $e[] = "Keyword-like string <tt>" . htmlspecialchars(join("", array_keys($this->unexpanded))) . "</tt> was not recognized as a keyword.";
+	else if (count($this->unexpanded)) {
+	    $a = array_keys($this->unexpanded);
+	    natcasesort($a);
+	    for ($i = 0; $i < count($a); ++$i)
+		$a[$i] = "<tt>" . htmlspecialchars($a[$i]) . "</tt>";
+	    $e[] = "Keyword-like strings " . commajoin($a) . " were not recognized as keywords.";
+	}
+	if (count($this->tagless)) {
+	    $a = array_keys($this->tagless);
+	    sort($a, SORT_NUMERIC);
+	    $e[] = pluralx(count($this->tagless), "Paper") . " " . commajoin($a) . " did not have some requested tag values.";
+	}
+	return $e;
+    }
+}
+
 class Mailer {
 
     const EXPAND_BODY = 0;
@@ -387,6 +422,7 @@ class Mailer {
     var $statistics;
     var $width;
     var $expansionType;
+    var $mstate;
 
     function Mailer($row, $contact, $otherContact = null, $rest = array()) {
 	$this->row = $row;
@@ -404,6 +440,10 @@ class Mailer {
 	$this->statistics = null;
 	$this->width = 75;
 	$this->expansionType = null;
+	if (isset($rest["mstate"]))
+	    $this->mstate = $rest["mstate"];
+	else
+	    $this->mstate = new MailerState();
     }
 
     function _pushIf($yes) {
@@ -595,8 +635,12 @@ class Mailer {
 	    return $this->reason;
 
 	// rest is only there if we have a real paper
-	if (!$this->row || defval($this->row, "paperId") <= 0)
-	    return ($isbool ? false : $what);
+	if (!$this->row || defval($this->row, "paperId") <= 0) {
+	    if ($isbool)
+		return false;
+	    $this->mstate->unexpanded[$what] = true;
+	    return $what;
+	}
 
 	if ($what == "%TITLE%")
 	    return $this->row->title;
@@ -660,7 +704,35 @@ class Mailer {
 	if ($what == "%COMMENTS%")
 	    return $this->getComments($this->contact);
 
-	return ($isbool ? false : $what);
+	if ($len > 12 && substr($what, 0, 10) == "%TAGVALUE("
+	    && substr($what, $len - 2) == ")%") {
+	    require_once("tags.inc");
+	    $t = checkTag(substr($what, 10, $len - 12), CHECKTAG_QUIET | CHECKTAG_NOINDEX | CHECKTAG_NOPRIVATE);
+	    if ($t !== "") {
+		if (!isset($this->mstate->tags[$t])) {
+		    $this->mstate->tags[$t] = array();
+		    $result = $Conf->qe("select paperId, tagIndex from PaperTag where tag='" . sqlq($t) . "'");
+		    while (($row = edb_row($result)))
+			$this->mstate->tags[$t][$row[0]] = $row[1];
+		}
+		$tv = defval($this->mstate->tags[$t], $this->row->paperId);
+		if ($isbool)
+		    return $tv !== null;
+		else if ($tv !== null)
+		    return $tv;
+		else {
+		    $this->mstate->tagless[$this->row->paperId] = true;
+		    return "(none)";
+		}
+	    }
+	}
+
+	if ($isbool)
+	    return false;
+	else {
+	    $this->mstate->unexpanded[$what] = true;
+	    return $what;
+	}
     }
 
     function getReviews($contact, $finalized) {

@@ -611,6 +611,7 @@ function plural($n, $what) {
 }
 
 function commajoin($what) {
+    $what = array_values($what);
     if (count($what) == 2)
 	return $what[0] . " and " . $what[1];
     if (count($what) == 1)
