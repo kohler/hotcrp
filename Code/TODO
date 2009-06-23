@@ -3,6 +3,8 @@
 - generic (no names, passwords) emails to contact authors should be grouped
   by paper and sent To: all authors of a paper at once [Chris Frost]
 
+- Chair searches do not display chair scores by default [Jane-Ellen Long]
+
 - I had a quick question. I was looking if there is an option in hotcrp
   that I could enable so that TPC members are notified when a new paper has
   been assigned to them, and did not manage to find it. Is this feature
