@@ -146,6 +146,8 @@ class PaperList extends BaseList {
 		$queryOptions["topics"] = 1;
 	    break;
 	case self::FIELD_ALL_REVIEWER_NAMES:
+	    if (!$this->contact->privChair)
+		return false;
 	    $queryOptions['reviewList'] = 1;
 	    break;
 	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
@@ -756,7 +758,7 @@ class PaperList extends BaseList {
 	case self::FIELD_ALL_REVIEWER_NAMES:
 	    $n = "";
 	    // see also search.php > getaction == "reviewers"
-	    if (isset($reviewList[$row->paperId]))
+	    if (isset($reviewList[$row->paperId])) {
 		foreach ($reviewList[$row->paperId] as $xrow)
 		    if ($xrow->lastName) {
 			$n .= ($n ? ", " : "");
@@ -766,6 +768,9 @@ class PaperList extends BaseList {
 			else if ($xrow->reviewType == REVIEW_SECONDARY)
 			    $n .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_SECONDARY . ".gif", "Secondary");
 		    }
+		if (!$this->contact->canViewReviewerIdentity($row, null, true))
+		    $n = "<span class='fn20'><em>Hidden for conflict</em></span><span class='fx20'>$n</span>";
+	    }
 	    return $n;
 	case self::FIELD_OPT_PC_CONFLICTS:
 	    if ($this->folds->pcconf !== false) {
@@ -822,10 +827,13 @@ class PaperList extends BaseList {
 	    $scoreName = $reviewScoreNames[$scoreidx];
 	    $tdextra = " fx" . $fieldId;
 	    if ($this->folds->$scoreName === false) {
-		if ($this->contact->canViewReview($row, null)) {
-		    $itemName = "${scoreName}Scores";
-		    if ($row->$itemName)
-			return $Conf->textValuesGraph($row->$itemName, $this->scoreMax[$scoreName], 1, defval($row, $scoreName), $this->rf->reviewFields[$scoreName]);
+		$allowed = $this->contact->canViewReview($row, null, $fakeWhyNotView, true);
+		$fname = "${scoreName}Scores";
+		if (($allowed || $this->contact->privChair) && $row->$fname) {
+		    $t = $Conf->textValuesGraph($row->$fname, $this->scoreMax[$scoreName], 1, defval($row, $scoreName), $this->rf->reviewFields[$scoreName]);
+		    if (!$allowed)
+			$t = "<span class='fx20'>$t</span>";
+		    return $t;
 		}
 	    } else {
 		$tdextra .= "\" id=\"" . $scoreName . $row->paperId;
@@ -1418,7 +1426,10 @@ class PaperList extends BaseList {
 	    $x .= " fold3c";
 	if ($this->anySelector)
 	    $x .= " fold6" . (strpos($pldisplay, "\6") === false ? "c" : "o");
-	if (count($foldinfo) || !$unfolded || $this->anySelector)
+	if ($this->contact->privChair)
+	    $x .= " fold20" . (defval($_REQUEST, "forceShow") ? "o" : "c");
+	if (count($foldinfo) || !$unfolded || $this->anySelector
+	    || $this->contact->privChair)
 	    $x .= "\" id=\"foldpl";
 	$x .= "\">\n";
 
@@ -1575,6 +1586,6 @@ global $paperListFolds, $reviewScoreNames;
 $paperListFolds = array("au" => 1, "anonau" => 2, "tags" => 4, "abstract" => 5,
 			"rownum" => 6, "reviewers" => 10, "shepherd" => 11,
 			"lead" => 12, "topics" => 13, "pcconf" => 14,
-			"collab" => 15, "aufull" => -2);
+			"collab" => 15, "aufull" => -2, "force" => 20);
 foreach ($reviewScoreNames as $k => $n)
     $paperListFolds[$n] = PaperList::FIELD_SCORE + $k;

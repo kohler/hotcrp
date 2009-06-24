@@ -211,13 +211,16 @@ if ($getaction == "reviewers" && isset($papersel) && defval($_REQUEST, "ajax")
     && $Me->privChair) {
     $result = $Conf->qe("select Paper.paperId, reviewId, reviewType,
 		reviewSubmitted, reviewModified,
-		PaperReview.contactId, lastName, firstName, email
+		PaperReview.contactId, lastName, firstName, email,
+		conflictType
 		from Paper
 		join PaperReview using (paperId)
 		join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
+		left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$Me->contactId)
 		where Paper.paperId in (" . join(",", $papersel) . ")
 		order by lastName, firstName, email", "while fetching reviews");
     $response = array();
+    $conflict = array();
     while (($xrow = edb_orow($result)))
 	if ($xrow->lastName) {
 	    $x = "reviewers" . $xrow->paperId;
@@ -230,7 +233,13 @@ if ($getaction == "reviewers" && isset($papersel) && defval($_REQUEST, "ajax")
 		$response[$x] .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_PRIMARY . ".gif", "Primary");
 	    else if ($xrow->reviewType == REVIEW_SECONDARY)
 		$response[$x] .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_SECONDARY . ".gif", "Secondary");
+	    if ($xrow->conflictType != 0)
+		$conflict[$x] = true;
 	}
+    if (count($conflict)) {
+	foreach ($conflict as $x => $y)
+	    $response[$x] = "<span class='fn20'><em>Hidden for conflict</em></span><span class='fx20'>" . $response[$x] . "</span>";
+    }
     cleanAjaxResponse($response, "reviewers");
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
@@ -938,6 +947,16 @@ if (defval($_REQUEST, "ajax"))
     $Conf->ajaxExit(array("response" => ""));
 
 
+// set display options, including forceShow if chair
+$pldisplay = $_SESSION["pldisplay"];
+if ($Me->privChair) {
+    if (strpos($pldisplay, chr($paperListFolds["force"])) !== false)
+	$_REQUEST["forceShow"] = 1;
+    else
+	unset($_REQUEST["forceShow"]);
+}
+
+
 // search
 $Conf->header("Search", 'search', actionBar());
 unset($_REQUEST["urlbase"]);
@@ -972,7 +991,6 @@ $tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
 
 // Prepare more display options
 $ajaxDisplayChecked = false;
-$pldisplay = $_SESSION["pldisplay"];
 
 function ajaxDisplayer($type, $title, $disabled = false) {
     global $ajaxDisplayChecked, $paperListFolds, $pldisplay;
@@ -1180,6 +1198,15 @@ if ($pl && $pl->count > 0) {
 		$Conf->footerStuff .= " foldplinfo_extra();";
 	    $Conf->footerStuff .= "</script>";
 	}
+
+	// Conflict display
+	if ($Me->privChair)
+	    echo "\n<div class='g'></div>",
+		tagg_checkbox("showforce", 1, !!defval($_REQUEST, "forceShow"),
+			      array("id" => "showforce",
+				    "onchange" => "fold('pl',!this.checked,20)")),
+		"&nbsp;", tagg_label("Override conflicts", "showforce"),
+		"<br />\n";
 
 	echo "</td>
   </tr></table></td>\n";
