@@ -377,11 +377,12 @@ class PaperList extends BaseList {
 	    $this->sortAverage = array();
 	    $scoresort = defval($_SESSION, "scoresort", $defaultScoreSort);
 	    foreach ($rows as $row)
-		if (!$this->contact->privChair
-		    && !$this->contact->canViewReview($row, null))
-		    $this->sortInfo[$row->paperId] = self::LOTSAZEROS;
-		else
+		if ($this->contact->canViewReview($row, null))
 		    $this->_setSortRow($row, $scoreName, $scoreMax, $scoresort);
+		else {
+		    $this->sortInfo[$row->paperId] = self::LOTSAZEROS;
+		    $this->sortAverage[$row->paperId] = 0;
+		}
 	    usort($rows, array($this, ($scoresort == "M" || $scoresort == "C" || $scoresort == "Y" ? "_sortScore" : "_sortScoreNum")));
 	    break;
 	}
