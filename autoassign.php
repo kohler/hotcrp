@@ -77,6 +77,15 @@ function countReviews(&$reviews, &$primary, &$secondary) {
     }
 }
 
+function conflictedPapers() {
+    global $Conf, $Me;
+    $result = $Conf->qe("select paperId from PaperConflict where conflictType!=0 and contactId=$Me->contactId");
+    $confs = array();
+    while (($row = edb_row($result)))
+	$confs[$row[0]] = true;
+    return $confs;
+}
+
 if (!function_exists('array_fill_keys')) {
     function array_fill_keys($a, $v) {
 	$x = array();
@@ -511,7 +520,7 @@ $extraclass = " initial";
 if (isset($assignments) && count($assignments) > 0) {
     echo divClass("propass"), "<h3>Proposed assignment</h3>";
     $helplist = "";
-    $Conf->infoMsg("If this assignment looks OK to you, select \"Save assignment\" to apply it.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown as &ldquo;P#&rdquo;.");
+    $Conf->infoMsg("If this assignment looks OK to you, select &ldquo;Save assignment&rdquo; to apply it.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown as &ldquo;P#&rdquo;.");
     $extraclass = "";
 
     $atype = $_REQUEST["a"];
@@ -534,6 +543,7 @@ if (isset($assignments) && count($assignments) > 0) {
     $atext = array();
     $pcm = pcMembers();
     countReviews($nreviews, $nprimary, $nsecondary);
+    $conflictedPapers = conflictedPapers();
     $pc_nass = array();
     foreach ($assignments as $pid => $pcs) {
 	$t = "";
@@ -548,6 +558,8 @@ if (isset($assignments) && count($assignments) > 0) {
 	    }
 	if ($atype == "clear")
 	    $t = "remove $t";
+	if (isset($conflictedPapers[$pid]))
+	    $t = PaperList::wrapConflict($t);
 	$atext[$pid] = "<h6>Proposed $reviewtypename:</h6> $t";
     }
 

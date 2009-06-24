@@ -238,7 +238,7 @@ if ($getaction == "reviewers" && isset($papersel) && defval($_REQUEST, "ajax")
 	}
     if (count($conflict)) {
 	foreach ($conflict as $x => $y)
-	    $response[$x] = "<span class='fn20'><em>Hidden for conflict</em></span><span class='fx20'>" . $response[$x] . "</span>";
+	    $response[$x] = PaperList::wrapConflict($response[$x]);
     }
     cleanAjaxResponse($response, "reviewers");
     $response["ok"] = (count($response) > 0);

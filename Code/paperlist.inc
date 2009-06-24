@@ -594,6 +594,10 @@ class PaperList extends BaseList {
 	}
     }
 
+    function wrapConflict($text) {
+	return "<span class='fn20'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"javascript:void fold('pl',0,20)\">Show</a></span><span class='fx20'>$text</span>";
+    }
+
     function content($fieldId, $row, $reviewList, &$tdextra) {
 	global $ConfSiteSuffix, $Conf, $reviewTypeName, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
@@ -769,7 +773,7 @@ class PaperList extends BaseList {
 			    $n .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_SECONDARY . ".gif", "Secondary");
 		    }
 		if (!$this->contact->canViewReviewerIdentity($row, null, true))
-		    $n = "<span class='fn20'><em>Hidden for conflict</em></span><span class='fx20'>$n</span>";
+		    $n = $this->wrapConflict($n);
 	    }
 	    return $n;
 	case self::FIELD_OPT_PC_CONFLICTS:
