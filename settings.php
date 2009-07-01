@@ -573,8 +573,24 @@ function doOptions($set) {
 }
 
 function doDecisions($set) {
-    global $Conf, $Values, $rf;
+    global $Conf, $Values, $rf, $Error, $Highlight;
     if (!$set) {
+	if (defval($_REQUEST, "decn", "") != ""
+	    && !defval($_REQUEST, "decn_confirm")) {
+	    $delta = (defval($_REQUEST, "dtypn", 1) > 0 ? 1 : -1);
+	    $match_accept = (stripos($_REQUEST["decn"], "accept") !== false);
+	    $match_reject = (stripos($_REQUEST["decn"], "reject") !== false);
+	    if ($delta > 0 && $match_reject) {
+		$Error[] = "You are trying to add an Accept-class decision that has &ldquo;reject&rdquo; in its name, which is usually a mistake.  To add the decision anyway, check the &ldquo;Confirm&rdquo; box and try again.";
+		$Highlight["decn"] = true;
+		return;
+	    } else if ($delta < 0 && $match_accept) {
+		$Error[] = "You are trying to add a Reject-class decision that has &ldquo;accept&rdquo; in its name, which is usually a mistake.  To add the decision anyway, check the &ldquo;Confirm&rdquo; box and try again.";
+		$Highlight["decn"] = true;
+		return;
+	    }
+	}
+
 	$Values["decisions"] = true;
 	return;
     }
@@ -1422,7 +1438,7 @@ function doRfoGroup() {
 
 // Responses and decisions
 function doDecGroup() {
-    global $Conf, $rf;
+    global $Conf, $rf, $Highlight, $Error;
 
     // doCheckbox('au_seerev', '<b>Authors can see reviews</b>');
     echo "Can <b>authors see reviews and comments</b> for their papers?<br />";
@@ -1443,21 +1459,51 @@ function doDecGroup() {
     echo "<table>\n";
     $decs = $rf->options['outcome'];
     krsort($decs);
-    $n = 0;
+
+    // count papers per decision
+    $decs_pcount = array();
+    $result = $Conf->qe("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
+    while (($row = edb_row($result)))
+	$decs_pcount[$row[0]] = $row[1];
+
+    // real decisions
+    $n_real_decs = 0;
     foreach ($decs as $k => $v)
-	if ($k)
-	    $n++;
-    $caption = "<td class='lcaption' rowspan='$n'>Current decision types</td>";
+	$n_real_decs += ($k ? 1 : 0);
+    $caption = "<td class='lcaption' rowspan='$n_real_decs'>Current decision types</td>";
     foreach ($decs as $k => $v)
 	if ($k) {
-	    echo "<tr>$caption<td class='lentry nowrap'>";
-	    echo "<input type='text' class='textlite' name='dec$k' value=\"", htmlspecialchars($v), "\" size='35' /> &nbsp; ", ($k > 0 ? "Accept class" : "Reject class"), "</td></tr>\n";
+	    if (count($Error) > 0)
+		$v = defval($_REQUEST, "dec$k", $v);
+	    echo "<tr>$caption<td class='lentry nowrap'>",
+		"<input type='text' class='textlite' name='dec$k' value=\"", htmlspecialchars($v), "\" size='35' onchange='hiliter(this)' />",
+		" &nbsp; ", ($k > 0 ? "Accept class" : "Reject class"), "</td>";
+	    if (isset($decs_pcount[$k]) && $decs_pcount[$k])
+		echo "<td class='lentry nowrap'>", plural($decs_pcount[$k], "paper"), "</td>";
+	    echo "</tr>\n";
 	    $caption = "";
 	}
-    echo "<tr><td class='lcaption'>New decision type<br /></td><td class='lentry nowrap'><input type='text' class='textlite' name='decn' value=\"\" size='35' /> &nbsp; ",
-	tagg_select("dtypn", array(1 => "Accept class", -1 => "Reject class")),
+
+    // new decision
+    $v = "";
+    $vclass = 1;
+    if (count($Error) > 0) {
+	$v = defval($_REQUEST, "decn", $v);
+	$vclass = defval($_REQUEST, "dtypn", $vclass);
+    }
+    echo "<tr><td class='lcaption'>",
+	decorateSettingName("decn", "New decision type"),
+	"<br /></td>",
+	"<td class='lentry nowrap'><input type='text' class='textlite' name='decn' value=\"", htmlspecialchars($v), "\" size='35' onchange='hiliter(this)' /> &nbsp; ",
+	tagg_select("dtypn", array(1 => "Accept class", -1 => "Reject class"),
+		    $vclass, array("onchange" => "hiliter(this)")),
 	"<br /><small>Examples: &ldquo;Accepted as short paper&rdquo;, &ldquo;Early reject&rdquo;</small>",
-	"</td></tr>\n</table>\n";
+	"</td>";
+    if (defval($Highlight, "decn"))
+	echo "<td class='lentry nowrap'>",
+	    tagg_checkbox_h("decn_confirm", 1, false),
+	    "&nbsp;<span class='error'>", tagg_label("Confirm"), "</span></td>";
+    echo "</tr>\n</table>\n";
 
     // Final copies
     echo "<hr class='hr' />";
