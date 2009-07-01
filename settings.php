@@ -869,7 +869,7 @@ if (isset($_REQUEST["update"])) {
 	&& $Conf->setting("pcrev_soft") > 0
 	&& time() < $Conf->setting("pcrev_soft")
 	&& count($Error) == 0)
-	$Conf->warnMsg("You have allowed authors to see reviews and comments, although it is before the review deadline.");
+	$Conf->warnMsg("Authors can now see reviews and comments although it is before the review deadline.  This is sometimes unintentional.");
 
     // unset text messages that equal the default
     if (array_key_exists("conflictdefmsg", $Values)
