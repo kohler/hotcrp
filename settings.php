@@ -864,6 +864,12 @@ if (isset($_REQUEST["update"])) {
 	    $Highlight["rev_open"] = true;
 	    break;
 	}
+    if (array_key_exists("au_seerev", $Values)
+	&& $Values["au_seerev"] != AU_SEEREV_NO
+	&& $Conf->setting("pcrev_soft") > 0
+	&& time() < $Conf->setting("pcrev_soft")
+	&& count($Error) == 0)
+	$Conf->warnMsg("You have allowed authors to see reviews and comments, although it is before the review deadline.");
 
     // unset text messages that equal the default
     if (array_key_exists("conflictdefmsg", $Values)
