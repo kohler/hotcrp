@@ -517,9 +517,9 @@ class Contact {
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
-	if ($prow->outcome <= 0)
+	if ($prow->outcome <= 0 || !$Conf->timeAuthorViewDecision())
 	    $whyNot["notAccepted"] = 1;
-	if (!$Conf->timeSubmitFinalPaper() && !$this->privChairOverride())
+	else if (!$Conf->timeSubmitFinalPaper() && !$this->privChairOverride())
 	    $whyNot["deadline"] = "final_done";
 	if ($this->privChair)
 	    $whyNot["override"] = 1;

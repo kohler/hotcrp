@@ -331,7 +331,8 @@ class Conference {
 	return $this->setting('final_open') > 0;
     }
     function timeSubmitFinalPaper() {
-	return $this->settingsBetween('final_open', 'final_done', 'final_grace');
+	return $this->timeAuthorViewDecision()
+	    && $this->settingsBetween('final_open', 'final_done', 'final_grace');
     }
     function timeAuthorViewReviews($reviewsOutstanding = false) {
 	// also used to determine when authors can see review counts

@@ -1178,7 +1178,8 @@ class PaperTable {
 		$m .= "<div class='xwarning'>" . "The site is not open for submission updates at the moment.$override" . "</div>";
 	    else
 		$m .= "<div class='xwarning'>" . "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override" . "</div>";
-	} else if ($prow->conflictType >= CONFLICT_AUTHOR && $prow->outcome > 0 && $Conf->timeSubmitFinalPaper()) {
+	} else if ($prow->conflictType >= CONFLICT_AUTHOR && $prow->outcome > 0
+		   && $Conf->timeSubmitFinalPaper()) {
 	    $updateDeadline = $this->deadlineSettingIs("final_done");
 	    $m .= "<div class='xinfo'>" . "Congratulations!  This paper was accepted.  Submit a final copy for the paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or edit contact authors, allowing others to view reviews and make changes." . "</div>";
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR) {
@@ -1205,7 +1206,9 @@ class PaperTable {
 	else if ($prow->timeWithdrawn > 0)
 	    $buttons[] = "The paper has been withdrawn, and the <a href='deadlines$ConfSiteSuffix'>deadline</a> for reviving it has passed.";
 	else {
-	    if ($prow->outcome > 0 && $Conf->collectFinalPapers() && ($Conf->timeSubmitFinalPaper() || $Me->privChair) && $this->mode == "pe")
+	    if ($prow->outcome > 0 && $Conf->collectFinalPapers()
+		&& ($Conf->timeSubmitFinalPaper() || $Me->privChair)
+		&& $this->mode == "pe")
 		$buttons[] = array("<input class='bb' type='submit' name='submitfinal' value='Submit final copy' />", "");
 	    if ($Conf->timeUpdatePaper($prow) && $this->mode == "pe")
 		$buttons[] = array("<input class='bb' type='submit' name='update' value='Submit paper' />", "");
