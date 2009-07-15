@@ -74,6 +74,7 @@ $SettingGroups = array("acc" => array(
 			     "resp_grace" => "grace",
 			     "decisions" => "special",
 			     "final_open" => "check",
+			     "final_soft" => "date",
 			     "final_done" => "date",
 			     "final_grace" => "grace"));
 
@@ -126,7 +127,8 @@ $SettingText = array(
 	"au_seerev" => "Authors can see reviews setting",
 	"seedec" => "Decision visibility",
 	"final_open" => "Collect final copies setting",
-	"final_done" => "Final copy upload deadline",
+	"final_soft" => "Final copy upload deadline",
+	"final_done" => "Final copy upload hard deadline",
 	"homemsg" => "Home page message",
 	"conflictdefmsg" => "Definition of conflict of interest",
 	"mailbody_requestreview" => "Mail template for external review requests"
@@ -810,7 +812,8 @@ if (isset($_REQUEST["update"])) {
 
     // check date relationships
     foreach (array("sub_reg" => "sub_sub", "pcrev_soft" => "pcrev_hard",
-		   "extrev_soft" => "extrev_hard") as $first => $second)
+		   "extrev_soft" => "extrev_hard", "final_soft" => "final_done")
+	     as $first => $second)
 	if (!isset($Values[$first]) && isset($Values[$second]))
 	    $Values[$first] = $Values[$second];
 	else if (isset($Values[$first]) && isset($Values[$second])) {
@@ -1453,7 +1456,7 @@ function doDecGroup() {
     echo "<div class='g'></div>\n<table>";
     doCheckbox('resp_open', "<b>Collect authors&rsquo; responses to the reviews:</b>", true);
     echo "<tr><td></td><td><table>";
-    doDateRow('resp_done', 'Deadline', null, "lxcaption");
+    doDateRow('resp_done', 'Hard deadline', null, "lxcaption");
     doGraceRow('resp_grace', 'Grace period', "lxcaption");
     echo "</table></td></tr></table>";
 
@@ -1517,7 +1520,8 @@ function doDecGroup() {
     echo "<table>";
     doCheckbox('final_open', '<b>Collect final copies of accepted papers:</b>', true);
     echo "<tr><td></td><td><table>";
-    doDateRow("final_done", "Deadline", null, "lxcaption");
+    doDateRow("final_soft", "Deadline", "final_done", "lxcaption");
+    doDateRow("final_done", "Hard deadline", null, "lxcaption");
     doGraceRow("final_grace", "Grace period", "lxcaption");
     echo "</table></td></tr></table>\n\n";
 }

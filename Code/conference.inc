@@ -101,7 +101,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-	if ($this->settings["allowPaperOption"] < 25) {
+	if ($this->settings["allowPaperOption"] < 26) {
 	    require_once("updateschema.inc");
 	    updateSchema($this);
 	}

@@ -60,7 +60,9 @@ class PaperList extends BaseList {
     var $sortable;
     var $specialSortable;
     var $count;
+    var $accepted;
     var $needFinalize;
+    var $needFinalCopy;
     var $needSubmitReview;
     var $anySelector;
     var $anyFinalPaper;
@@ -614,6 +616,10 @@ class PaperList extends BaseList {
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
 		$this->needFinalize++;
+	    if ($row->outcome > 0)
+		$this->accepted++;
+	    if ($row->outcome > 0 && $row->timeFinalSubmitted <= 0)
+		$this->needFinalCopy++;
 	    $long = 0;
 	    if ($this->search->limitName != "a" && $this->contact->privChair)
 		$long = 2;
@@ -1210,7 +1216,9 @@ class PaperList extends BaseList {
 
 	$this->contact = $me;
 	$this->count = 0;
+	$this->accepted = 0;
 	$this->needFinalize = 0;
+	$this->needFinalCopy = 0;
 	$this->needSubmitReview = 0;
 	$this->anySelector = false;
 	$this->anyFinalPaper = false;

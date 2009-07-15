@@ -1180,7 +1180,7 @@ class PaperTable {
 		$m .= "<div class='xwarning'>" . "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override" . "</div>";
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR && $prow->outcome > 0
 		   && $Conf->timeSubmitFinalPaper()) {
-	    $updateDeadline = $this->deadlineSettingIs("final_done");
+	    $updateDeadline = $this->deadlineSettingIs("final_soft");
 	    $m .= "<div class='xinfo'>" . "Congratulations!  This paper was accepted.  Submit a final copy for the paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or edit contact authors, allowing others to view reviews and make changes." . "</div>";
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR) {
 	    $override2 = ($Me->privChair ? "  However, as an administrator, you can update the paper anyway by selecting \"Override deadlines\"." : "");

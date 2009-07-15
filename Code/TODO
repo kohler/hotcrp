@@ -159,9 +159,6 @@
 * Ability to search accepted papers for those that have / have not
   submitted final copies of their paper [Mark Gebhart, MICRO 41]
 
-* Include an option to have both a soft and hard deadline for the
-  collection of final papers. [Mark Gebhart, MICRO 41]
-
 * Here are some policy decisions that we changed by editing the code:
 
   Ability to prevent reviewers from seeing other reviews of papers they

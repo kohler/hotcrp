@@ -625,6 +625,13 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 	else
 	    $deadlines[] = "The site is not open for submissions at the moment.";
     }
+    if ($plist && $Conf->timeSubmitFinalPaper() && $plist->accepted > 0) {
+	$time = $Conf->printableTimeSetting("final_soft");
+	if ($Conf->settingsAfter("final_soft") && $plist->needFinalCopy > 0)
+	    $deadlines[] = "<strong class='overdue'>Final copies are overdue.</strong>  They were requested by $time.";
+	else if ($time != "N/A")
+	    $deadlines[] = "Submit final copies of your accepted papers by $time.";
+    }
     if (count($deadlines) > 0) {
 	if ($plist && $plist->count > 0)
 	    echo "<div class='g'></div>";
