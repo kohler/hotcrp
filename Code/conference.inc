@@ -105,7 +105,7 @@ class Conference {
 	    require_once("updateschema.inc");
 	    updateSchema($this);
 	}
-	$this->sversion = defval($this, "settings", 0);
+	$this->sversion = $this->settings["allowPaperOption"];
     }
 
     function setting($name, $defval = false) {
