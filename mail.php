@@ -194,12 +194,11 @@ function checkMail($send) {
 	    if (!isset($preperrors[$emsg]))
 		$Conf->errorMsg($emsg);
 	    $preperrors[$emsg] = true;
-	}
-	if ($preparation["subject"] != $last["subject"]
-	    || $preparation["body"] != $last["body"]
-	    || $preparation["to"] != $last["to"]
-	    || $preparation["cc"] != $last["cc"]
-	    || $preparation["replyto"] != $last["replyto"]) {
+	} else if ($preparation["subject"] != $last["subject"]
+		   || $preparation["body"] != $last["body"]
+		   || $preparation["to"] != $last["to"]
+		   || $preparation["cc"] != $last["cc"]
+		   || $preparation["replyto"] != $last["replyto"]) {
 	    $last = $preparation;
 	    $checker = "c" . $row->contactId . "p" . $row->paperId;
 	    if ($send && !defval($_REQUEST, $checker))
