@@ -876,7 +876,7 @@ input.textlite-tt, textarea.tt {
 .papertext {
 	width: 96%;
 }
-.reviewtext, textarea#foldtags_d {
+.reviewtext, textarea#foldtags_d, div#popup_ref textarea {
 	width: 99%;
 }
 
