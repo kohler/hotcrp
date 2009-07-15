@@ -1371,7 +1371,7 @@ function doRevGroup() {
 	"<tr><td>", foldbutton("mailbody_requestreview", ""), "&nbsp;</td>",
 	"<td><a href='javascript:void fold(\"mailbody_requestreview\")' class='q'><strong>Mail template for external review requests</strong></a>",
 	" <span class='fx'>(<a href='mail$ConfSiteSuffix'>keywords</a> allowed)<br /></span>
-<textarea class='tt fx' name='mailbody_requestreview' cols='80' rows='20' onchange='hiliter(this)'>", htmlspecialchars($t[1]), "</textarea>",
+<textarea class='tt fx' name='mailbody_requestreview' cols='80' rows='20' onchange='hiliter(this)'>", htmlspecialchars($t["body"]), "</textarea>",
 	"</td></tr></table>\n";
 
     echo "<hr class='hr' />";
