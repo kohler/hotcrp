@@ -622,7 +622,7 @@ class Mailer {
 	    return $this->_expandContact($this->contact, "e");
 
 	$password = null;
-	if (!isset($Opt["ldapLogin"]))
+	if (!isset($Opt["ldapLogin"]) && isset($this->contact->password))
 	    $password = ($this->hideSensitive ? "HIDDEN" : $this->contact->password);
 	if ($what == "%LOGINURL%")
 	    return $Opt["paperSite"] . "/?email=" . urlencode($this->contact->email) . ($password ? "&password=" . urlencode($password) : "");
