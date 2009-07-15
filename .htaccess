@@ -16,6 +16,9 @@ Order allow,deny
 Deny from all
 </FilesMatch>
 
+# Don't use MultiViews, which can conflict with mod_rewrite suffixless URLs.
+Options -MultiViews
+
 # Add .php to suffixless URLs.
 <IfModule mod_rewrite.c>
 RewriteEngine on
