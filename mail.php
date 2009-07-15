@@ -190,7 +190,7 @@ function checkMail($send) {
 	$preparation = Mailer::prepareToSend($template, $row, $contact, $Me, $rest); // see also $show_preparation below
 	if ($rest["error"] !== false) {
 	    $Error[$rest["error"]] = true;
-	    $emsg = $mailHeaders[$rest["error"]] . " &ldquo;<tt>" . htmlspecialchars($rest[$rest["error"]]) . "</tt>&rdquo; isn't a valid email list.  Make sure email address are separated by commas.  When mixing names and email addresses, put odd name characters in \"quotes\" and email addresses in &lt;angle brackets&gt;.";
+	    $emsg = "This " . $mailHeaders[$rest["error"]] . " field isn't a valid email list: <blockquote><tt>" . htmlspecialchars($rest[$rest["error"]]) . "</tt></blockquote>  Make sure email address are separated by commas.  When mixing names and email addresses, try putting names in \"quotes\" and email addresses in &lt;angle brackets&gt;.";
 	    if (!isset($preperrors[$emsg]))
 		$Conf->errorMsg($emsg);
 	    $preperrors[$emsg] = true;
