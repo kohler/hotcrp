@@ -1624,7 +1624,8 @@ class PaperTable {
 	    $msgs[] = "You haven't been assigned to review this paper, but you can review it anyway.";
 	if ($forceShow && !$viewall) {
 	    $msgs[] = "You have used administrator privileges to view and edit reviews for this paper. (<a href=\"" . selfHref(array("forceShow" => 0)) . "\">Unprivileged view</a>)";
-	} else if (!$viewall && isset($whyNot["reviewNotComplete"])) {
+	} else if (!$viewall && isset($whyNot["reviewNotComplete"])
+		   && ($Me->isPC || $Conf->setting("extrev_view"))) {
 	    $nother = 0;
 	    foreach ($this->rrows as $rr)
 		if (!$Me->ownReview($rr) && $rr->reviewSubmitted)
@@ -1636,7 +1637,7 @@ class PaperTable {
 	    $this->_paptabSepContaining(join("<br />\n", $msgs));
 
 	// links
-	$this->_paptabReviewLinks(false, $this->editrrow, "");
+	$this->_paptabReviewLinks(true, $this->editrrow, "");
 
 	// review form, possibly with deadline warning
 	$opt = array("edit" => $this->mode == "re");

@@ -11,8 +11,10 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
     $subrev = array();
     $nonsubrev = array();
     $foundRrow = $foundMyReview = $notShown = 0;
-    $actingConflict = ($prow->conflictType > 0 && !$forceShow);
-    $effAssistant = $Me->privChair && !$actingConflict;
+    $hideUnviewable = ($prow->conflictType > 0 && !$forceShow);
+    if (!$Me->isPC && !$Conf->setting("extrev_view"))
+	$hideUnviewable = true;
+    $effAssistant = $Me->privChair && !$hideUnviewable;
     $anyScores = false;
     $nNumeric = $rf->numNumericScores($prow, $Me);
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
@@ -27,15 +29,13 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	$canView = $Me->canViewReview($prow, $rr, $whyNot);
 
 	// skip unsubmitted reviews
-	if (!$canView && $actingConflict) {
+	if (!$canView && $hideUnviewable) {
 	    if ($rr->reviewNeedsSubmit == 1 && $rr->reviewModified)
 		$notShown++;
 	    continue;
 	}
 
-	if ($mode == "edit" || $mode == "re")
-	    continue;
-	else if ($rrow && $highlight)
+	if ($rrow && $highlight)
 	    $t = "    <tr class='hilite'>";
 	else
 	    $t = "    <tr>";
@@ -51,9 +51,11 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	else
 	    $id .= "&nbsp;(not&nbsp;started)";
 	$rlink = unparseReviewOrdinal($rr);
-	if ($rrow && $rrow->reviewId == $rr->reviewId)
+	if ($rrow && $rrow->reviewId == $rr->reviewId) {
+	    if ($Me->contactId == $rr->contactId && !$rr->reviewSubmitted)
+		$id = "Your $id";
 	    $t .= "<td><a href='review$ConfSiteSuffix?r=$rlink$linkExtra' class='q'><b>$id</b></a></td>";
-	else if (!$canView)
+	} else if (!$canView)
 	    $t .= "<td>$id</td>";
 	else if ($rrow || $rr->reviewModified <= 0)
 	    $t .= "<td><a href='review$ConfSiteSuffix?r=$rlink$linkExtra'>$id</a></td>";
