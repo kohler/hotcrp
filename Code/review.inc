@@ -1224,13 +1224,14 @@ $blind\n";
 
 	// delegate?
 	if ($rrow && !$rrow->reviewSubmitted
+	    && $rrow->contactId == $Me->contactId
 	    && $rrow->reviewType == REVIEW_SECONDARY) {
 	    echo "\n<div class='rev_del'>";
 
 	    $ndelegated = 0;
 	    foreach ($rrows as $rr)
 		if ($rr->reviewType == REVIEW_EXTERNAL
-		    && $rr->requestedBy == $Me->contactId)
+		    && $rr->requestedBy == $rrow->contactId)
 		    $ndelegated++;
 
 	    if ($ndelegated == 0)
