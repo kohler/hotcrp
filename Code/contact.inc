@@ -590,8 +590,10 @@ class Contact {
     }
 
     function ownReview($rrow) {
+	global $Conf;
 	return $rrow->contactId == $this->contactId
-	    || (isset($_SESSION["rev_tokens"]) && array_search($rrow->reviewToken, $_SESSION["rev_tokens"]) !== false);
+	    || (isset($_SESSION["rev_tokens"]) && array_search($rrow->reviewToken, $_SESSION["rev_tokens"]) !== false)
+	    || ($rrow->requestedBy == $this->contactId && $rrow->reviewType == REVIEW_EXTERNAL && $Conf->setting("pcrev_editdelegate"));
     }
 
     function canViewReview($prow, $rrow, &$whyNot = null, $ignoreForceShow = false) {

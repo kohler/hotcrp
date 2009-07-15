@@ -51,6 +51,7 @@ $SettingGroups = array("acc" => array(
 			     "x_rev_roundtag" => "special",
 			     "pc_seeallrev" => 3,
 			     "pc_seeblindrev" => 1,
+			     "pcrev_editdelegate" => "check",
 			     "extrev_chairreq" => "check",
 			     "x_tag_chair" => "special",
 			     "x_tag_vote" => "special",
@@ -114,7 +115,8 @@ $SettingText = array(
 	"rev_notifychair" => "Notify chairs about reviews setting",
 	"pc_seeall" => "PC can see all papers setting",
 	"pcrev_any" => "PC can review any paper setting",
-	"extrev_chairreq" => "PC chair must approve proposed external reviewers",
+	"extrev_chairreq" => "PC chair must approve proposed external reviewers setting",
+	"pcrev_editdelegate" => "PC members can edit delegated reviews setting",
 	"pc_seeallrev" => "PC can see all reviews setting",
 	"pc_seeblindrev" => "PC can see blind reviewer identities setting",
 	"extrev_view" => "External reviewers can view reviews setting",
@@ -1353,10 +1355,10 @@ function doRevGroup() {
     // External reviews
     echo "<h3>External reviews</h3>\n";
 
-    if ($Conf->sversion >= 2) {
+    if ($Conf->sversion >= 2)
 	doCheckbox('extrev_chairreq', "PC chair must approve proposed external reviewers");
-	echo "<div class='g'></div>";
-    }
+    doCheckbox("pcrev_editdelegate", "PC members can edit external reviews they requested");
+    echo "<div class='g'></div>";
 
     echo "<table>\n";
     doDateRow("extrev_soft", "Deadline", "extrev_hard");
