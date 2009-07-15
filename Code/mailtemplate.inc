@@ -1113,8 +1113,24 @@ class Mailer {
 	$linelen = strlen($text);
 
 	// separate $str into emails, quote each separately
-	while (preg_match("/\\A[,\\s]*((?:(?:\"(?:[^\"\\\\]|\\\\.)*\"|[^\\s\\000-\\037()[\\]<>@,;:\\\\\".]+)\\s*?)*)\\s*<\\s*(.*?)\\s*>\\s*(.*)\\z/s", $str, $m)
-	       || preg_match("/\\A[,\\s]*()<?([^\\s\\000-\\037()[\\]<>,;:\\\\\"]+)\\s*(.*)\\z/s", $str, $m)) {
+	while (true) {
+
+	    // try three types of match in turn:
+	    // 1. name <email> [RFC 822]
+	    $match = preg_match("/\\A[,\\s]*((?:(?:\"(?:[^\"\\\\]|\\\\.)*\"|[^\\s\\000-\\037()[\\]<>@,;:\\\\\".]+)\\s*?)*)\\s*<\\s*(.*?)\\s*>\\s*(.*)\\z/s", $str, $m);
+	    // 2. name including periods but no quotes <email> (canonicalize)
+	    if (!$match) {
+		$match = preg_match("/\\A[,\\s]*((?:[^\\s\\000-\\037()[\\]<>@,;:\\\\\"]+\\s*?)*)\\s*<\\s*(.*?)\\s*>\\s*(.*)\\z/s", $str, $m);
+		if ($match)
+		    $m[1] = "\"$m[1]\"";
+	    }
+	    // 3. bare email
+	    if (!$match)
+		$match = preg_match("/\\A[,\\s]*()<?\\s*([^\\s\\000-\\037()[\\]<>,;:\\\\\"]+)\\s*>?\\s*(.*)\\z/s", $str, $m);
+	    // otherwise, fail
+	    if (!$match)
+		break;
+
 	    list($name, $email, $str) = array($m[1], $m[2], $m[3]);
 	    if (strpos($email, "@") !== false && !validateEmail($email))
 		return false;
