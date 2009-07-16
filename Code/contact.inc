@@ -153,7 +153,7 @@ class Contact {
 	foreach (self::_addressKeys() as $k)
 	    $this->$k = null;
 	$this->note = 0;
-	$this->defaultWatch = 0;
+	$this->defaultWatch = WATCH_COMMENT;
 
 	$this->roles = 0;
 	$this->isAuthor = $this->isReviewer = $this->isPC = $this->privChair = false;
