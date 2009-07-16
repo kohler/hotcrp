@@ -119,7 +119,7 @@ if (isset($_REQUEST['update']) && $paperTable->editrrow && $paperTable->editrrow
 	$Conf->qe("lock tables PaperReview write", $while);
 	$needsSubmit = 1;
 	if ($paperTable->editrrow->reviewType == REVIEW_SECONDARY) {
-	    $result = $Conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where requestedBy=" . $paperTable->editrrow->contactId . " and paperId=$prow->paperId", $while);
+	    $result = $Conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$prow->paperId and requestedBy=" . $paperTable->editrrow->contactId . " and reviewType=" . REVIEW_EXTERNAL, $while);
 	    if (($row = edb_row($result)) && $row[0])
 		$needsSubmit = 0;
 	    else if ($row && $row[1])
@@ -194,7 +194,7 @@ if (isset($_REQUEST['delete']) && $Me->privChair)
 
 	    // perhaps a delegatee needs to redelegate
 	    if ($paperTable->editrrow->reviewType == REVIEW_EXTERNAL && $paperTable->editrrow->requestedBy > 0) {
-		$result = $Conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where requestedBy=" . $paperTable->editrrow->requestedBy . " and paperId=" . $paperTable->editrrow->paperId, $while);
+		$result = $Conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=" . $paperTable->editrrow->paperId . " and requestedBy=" . $paperTable->editrrow->requestedBy . " and reviewType=" . REVIEW_EXTERNAL, $while);
 		if (!($row = edb_row($result)) || $row[0] == 0)
 		    $Conf->qe("update PaperReview set reviewNeedsSubmit=" . ($row && $row[1] ? -1 : 1) . " where reviewType=" . REVIEW_SECONDARY . " and paperId=" . $paperTable->editrrow->paperId . " and contactId=" . $paperTable->editrrow->requestedBy . " and reviewSubmitted is null", $while);
 	    }
@@ -286,7 +286,7 @@ function refuseReview() {
 
     // now the requester must potentially complete their review
     if ($rrow->reviewType == REVIEW_EXTERNAL && $rrow->requestedBy > 0) {
-	$result = $Conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where requestedBy=$rrow->requestedBy and paperId=$rrow->paperId", $while);
+	$result = $Conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$rrow->paperId and requestedBy=$rrow->requestedBy and reviewType=" . REVIEW_EXTERNAL, $while);
 	if (!($row = edb_row($result)) || $row[0] == 0)
 	    $Conf->qe("update PaperReview set reviewNeedsSubmit=" . ($row && $row[1] ? -1 : 1) . " where reviewType=" . REVIEW_SECONDARY . " and paperId=$rrow->paperId and contactId=$rrow->requestedBy and reviewSubmitted is null", $while);
     }
