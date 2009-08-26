@@ -100,6 +100,20 @@ Configuration
     'session.gc_maxlifetime' to 86400 anyway, then edit Code/options.inc to
     set '$Opt["sessionLifetime"]' to the correct session timeout.
 
+  - Edit MySQL's 'my.cnf' (typical location: '/etc/my.cnf') to ensure that
+    MySQL can handle paper-sized objects.  It should contain something like
+    this:
+
+       [mysqld]
+       max_allowed_packet=32M
+
+    max_allowed_packet must be at least as large as the largest paper you
+    are willing to accept.  It defaults to 1M on some systems, which is not
+    nearly large enough.  HotCRP will warn you if it is too small.  Some
+    MySQL setups, such as on Mac OS X, may not have a 'my.cnf' by default;
+    just create one.  If you edit my.cnf, also restart the mysqld server.
+    On Linux boxes "sudo /etc/init.d/mysqld restart" often suffices.
+
   - Sign in to the site to create an account.  The first account created
     automatically receives system administrator privilege.
 
@@ -126,9 +140,6 @@ Configuration
     HotCRP sets the PHP memory limit to 128MB.
 
   - HotCRP uses Apache's mod_expires module; consider enabling it.
-
-  - HotCRP sets MySQL's max_allowed_packet variable based on the 
-    upload_max_filesize set in the base directory's ".htaccess".
 
 
 Backing up the database

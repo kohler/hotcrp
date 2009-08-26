@@ -47,8 +47,11 @@ class Conference {
 
 	if (!$this->dblink || !mysql_select_db($dbname, $this->dblink))
 	    die("Unable to connect to database at " . $Opt["dsn"]);
-	mysql_query("set names 'utf8'", $this->dblink);
-	mysql_query("set @@max_allowed_packet = " . (2 * ini_get_bytes("upload_max_filesize")), $this->dblink);
+	$max_file_size = ini_get_bytes("upload_max_filesize");
+	// XXX NB: Many MySQL versions, if not all of them, will ignore the
+	// @@max_allowed_packet setting.  Keeping the code in case it's
+	// useful for some installations.
+	mysql_query("set names 'utf8'; set @@max_allowed_packet = $max_file_size", $this->dblink);
 
 	$this->updateSettings();
 
