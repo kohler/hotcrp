@@ -126,12 +126,13 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table ContactInfo add `preferredEmail` varchar(120)")
 	&& $Conf->q("update Settings set value=25 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 25;
-    if ($Conf->settings["allowPaperOption"] == 25
-	&& $Conf->settings["final_done"] > 0
-	&& $Conf->q("insert into Settings (name, value) values ('final_soft', " . $Conf->settings["final_done"] . ")")
-	&& $Conf->q("update Settings set value=26 where name='allowPaperOption'")) {
-	$Conf->settings["final_soft"] = $Conf->settings["final_done"];
-	$Conf->settings["allowPaperOption"] = 26;
+    if ($Conf->settings["allowPaperOption"] == 25) {
+	if ($Conf->settings["final_done"] > 0
+	    && !isset($Conf->settings["final_soft"])
+	    && $Conf->q("insert into Settings (name, value) values ('final_soft', " . $Conf->settings["final_done"] . ") on duplicate key update value=values(value)"))
+	    $Conf->settings["final_soft"] = $Conf->settings["final_done"];
+	if ($Conf->q("update Settings set value=26 where name='allowPaperOption'"))
+	    $Conf->settings["allowPaperOption"] = 26;
     }
 
     if ($Conf->settings["allowPaperOption"] < 10)
