@@ -103,7 +103,9 @@ class Conference {
 	}
 	if ($this->settings["allowPaperOption"] < 26) {
 	    require_once("updateschema.inc");
+	    $oldOK = $OK;
 	    updateSchema($this);
+	    $OK = $oldOK;
 	}
 	$this->sversion = $this->settings["allowPaperOption"];
     }
