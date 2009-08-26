@@ -449,11 +449,12 @@ class Conference {
 	if ($uploadId && fileUploaded($_FILES[$uploadId], $this))
 	    $filename = $_FILES[$uploadId]['tmp_name'];
 	else
-	    return 0;
+	    return false;
 
 	if (isset($filename)) {
-	    if (($contents = file_get_contents($filename)) === false)
-		return 0;
+	    if (($contents = file_get_contents($filename)) === false
+		|| strlen($contents) == 0)
+		return false;
 
 	    // Check if paper is postscript or PDF, only kinds allowed.
 	    // We ignore the mimetype since MacOS browsers get this wrong
