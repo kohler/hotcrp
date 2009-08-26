@@ -132,7 +132,7 @@ Configuration
 * Configuration notes
 
   - Uploaded papers and reviews are limited in size by several PHP
-    configuration variables, set by default to 20 megabytes in the base
+    configuration variables, set by default to 15 megabytes in the base
     directory's ".htaccess".  You may want to lower them.
 
   - HotCRP PHP scripts can take a lot of memory, particularly if they're
