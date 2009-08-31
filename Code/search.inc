@@ -224,7 +224,8 @@ class PaperSearch {
 	    || ($this->amPC && $Conf->blindSubmission() == BLIND_NEVER))
 	    $qt[] = new SearchTerm($rtype, 0, $word);
 	else {
-	    if ($blind && $Conf->blindSubmission() == BLIND_ALWAYS)
+	    if ($blind && $Conf->blindSubmission() == BLIND_ALWAYS
+		&& !$Conf->timeReviewerViewAcceptedAuthors())
 		/* only look at papers you submitted */;
 	    else if ($this->amPC)
 		$qt[] = new SearchTerm($rtype, self::F_PAPERNONBLIND, $word);
@@ -1038,6 +1039,7 @@ class PaperSearch {
     // At this point $t->link is garbage, and is reused.
 
     function _clauseTermSetFlags($flags, &$q) {
+	global $Conf;
 	$this->needflags |= $flags;
 	if ($flags & self::F_NONCONFLICT)
 	    $q[] = "PaperConflict.conflictType is null";
@@ -1047,8 +1049,12 @@ class PaperSearch {
 	    $q[] = "MyReview.reviewNeedsSubmit=0";
 	if ($flags & self::F_NONREVIEWER)
 	    $q[] = "MyReview.reviewNeedsSubmit is null";
-	if ($flags & self::F_PAPERNONBLIND)
-	    $q[] = "Paper.blind=0";
+	if ($flags & self::F_PAPERNONBLIND) {
+	    if ($Conf->timeReviewerViewAcceptedAuthors())
+		$this->preciseQuery = true;
+	    else
+		$q[] = "Paper.blind=0";
+	}
 	if ($flags & self::F_FALSE)
 	    $q[] = "false";
     }
@@ -1319,15 +1325,22 @@ class PaperSearch {
     // overestimate produced by the database to a precise result.
 
     function _clauseTermCheckFlags($flags, &$row) {
+	global $Conf;
 	if (($flags & self::F_AUTHOR) && $row->conflictType < CONFLICT_AUTHOR)
 	    return false;
-	if (($flags & self::F_REVIEWER) && $row->myReviewNeedsSubmit !== 0)
+	if (($flags & self::F_REVIEWER)
+	    && $row->myReviewNeedsSubmit !== 0
+	    && $row->myReviewNeedsSubmit !== "0")
 	    return false;
-	if (($flags & self::F_NONREVIEWER) && $row->myReviewNeedsSubmit !== null)
+	if (($flags & self::F_NONREVIEWER)
+	    && $row->myReviewNeedsSubmit !== null)
 	    return false;
 	if (($flags & self::F_NONCONFLICT) && $row->conflictType)
 	    return false;
-	if (($flags & self::F_PAPERNONBLIND) && $row->paperBlind)
+	// NB: F_REVIEWER must be set by caller if necessary
+	if (($flags & self::F_PAPERNONBLIND)
+	    && ($row->paperBlind || $Conf->blindSubmission() == BLIND_ALWAYS)
+	    && !($row->outcome > 0 && $Conf->timeReviewerViewAcceptedAuthors()))
 	    return false;
 	if ($flags & self::F_FALSE)
 	    return false;
@@ -1421,7 +1434,7 @@ class PaperSearch {
 	} else if ($tt == "not") {
 	    $ans = true;
 	    foreach ($t->value as $subt)
-		$ans = !$this->_clauseTermCheck($subt, $row);
+		$ans = $ans && !$this->_clauseTermCheck($subt, $row);
 	} else if ($tt == "f")
 	    $ans = false;
 	else if ($tt == "t")
@@ -1516,8 +1529,11 @@ class PaperSearch {
 	    $tables["MyReview"] = array("left join", "PaperReview", "Paper.paperId=MyReview.paperId and (MyReview.contactId=$this->contactId$qb)");
 	    $columns["myReviewNeedsSubmit"] = "MyReview.reviewNeedsSubmit";
 	}
-	if ($this->needflags & self::F_PAPERNONBLIND)
+	if ($this->needflags & self::F_PAPERNONBLIND) {
 	    $columns["paperBlind"] = "Paper.blind";
+	    if ($Conf->timeReviewerViewAcceptedAuthors())
+		$columns["outcome"] = "Paper.outcome";
+	}
 
 	// search contacts
 	if (count($this->contactmatch)) {
@@ -1600,9 +1616,12 @@ class PaperSearch {
 		}
 		unset($c);
 	    }
-	    if (count($delete))
-		if (!$Conf->qe("delete from Matches where paperId in (" . join(",", $delete) . ")", "while performing search"))
+	    if (count($delete)) {
+		$q = "delete from Matches where paperId in (" . join(",", $delete) . ")";
+		//$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars($q))));
+		if (!$Conf->qe($q, "while performing search"))
 		    return false;
+	    }
 	}
 
 	// set matchPreg
