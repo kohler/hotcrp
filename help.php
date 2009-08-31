@@ -940,13 +940,19 @@ review for that paper; this supposedly reduces bias.)
 <li><p>Set <strong><a href='settings$ConfSiteSuffix?group=rev'>PC can
   see all reviews</a></strong> if you haven't already.</p></li>
 
-<li><p><strong><a
-  href='search$ConfSiteSuffix?q=&amp;t=s&amp;sort=50'>Examine paper
-  scores</a></strong>, either one at a time or en masse, and decide which
-  papers will be discussed.  The <a href='help$ConfSiteSuffix?t=tags'>tags</a> system
-  lets you prepare discussion sets and even discussion orders.  Use
-  <a href='help$ConfSiteSuffix?t=keywords'>search keywords</a>
-  to, for example, find all papers with at least two overall merit ratings of 2 or better.</p></li>
+<li><p><strong><a href='search$ConfSiteSuffix?q=&amp;t=s&amp;sort=50'>Examine
+  paper scores</a></strong>, either one at a time or en masse, and decide
+  which papers will be discussed.  The <a
+  href='help$ConfSiteSuffix?t=tags'>tags</a> system lets you prepare
+  discussion sets.  Use <a href='help$ConfSiteSuffix?t=keywords'>search
+  keywords</a> to, for example, find all papers with at least two overall
+  merit ratings of 2 or better.</p></li>
+
+<li><p><strong>Assign discussion order using <a
+  href='help$ConfSiteSuffix?t=tags'>tags</a></strong> (optional).  Common
+  discussion orders include sorted by overall ranking (high-to-low,
+  low-to-high, or alternating) and sorted by topic.  Explicit tag-based orders
+  make it easier for the PC to follow along.</p></li>
 
 <li><p><strong><a href='autoassign$ConfSiteSuffix'>Assign discussion leads
   (optional).</a></strong> Discussion leads are expected to be able to
