@@ -912,9 +912,10 @@ function actionBar($mode = "", $prow = null) {
     global $Me, $Conf, $ConfSiteSuffix, $CurrentList;
     $forceShow = ($Me->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] ? "&amp;forceShow=1" : "");
 
-    // collect list links now, so we find the current list
+    $goBase = "paper$ConfSiteSuffix?p=";
     $xmode = array();
     $listtype = "p";
+
     if ($mode == "assign")
 	$goBase = "assign$ConfSiteSuffix?p=";
     else if ($mode == "r" || $mode == "re" || $mode == "review")
@@ -923,16 +924,16 @@ function actionBar($mode = "", $prow = null) {
 	$goBase = "comment$ConfSiteSuffix?p=";
     else if ($mode == "contactauthors")
 	$goBase = "contactauthors$ConfSiteSuffix?p=";
-    else if ($mode == "account" && $Me->privChair) {
-	$goBase = "account$ConfSiteSuffix?contact=";
+    else if ($mode == "account") {
 	$listtype = "a";
+	if ($Me->privChair)
+	    $goBase = "account$ConfSiteSuffix?contact=";
+	else
+	    $prow = null;
     } else if ($mode == "" && $Me->isPC && $Conf->setting("rev_open"))
 	$goBase = "review$ConfSiteSuffix?p=";
-    else {
-	$goBase = "paper$ConfSiteSuffix?p=";
-	if (($wantmode = defval($_REQUEST, "m", defval($_REQUEST, "mode"))))
-	    $xmode["m"] = $wantmode;
-    }
+    else if (($wantmode = defval($_REQUEST, "m", defval($_REQUEST, "mode"))))
+	$xmode["m"] = $wantmode;
 
     $listarg = $forceShow;
     $listlinks_txt = "";
