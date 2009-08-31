@@ -19,7 +19,7 @@ else if (isset($_REQUEST["new"])) {
     $newProfile = true;
 } else if (isset($_REQUEST["contact"])) {
     $Acct = new Contact();
-    if (($id = rcvtint($_REQUEST["contact"])) > 0)
+    if (($id = cvtint($_REQUEST["contact"])) > 0)
 	$Acct->lookupById($id);
     else
 	$Acct->lookupByEmail($_REQUEST["contact"]);
@@ -310,6 +310,14 @@ if (!$newProfile) {
     $_REQUEST["chair"] = ($Acct->roles & Contact::ROLE_CHAIR) != 0;
 }
 
+$_REQUEST["pctype"] = defval($_REQUEST, "pctype");
+if (!in_array($_REQUEST["pctype"], array("chair", "pc", "no"))) {
+    if (defval($_REQUEST, "chair"))
+	$_REQUEST["pctype"] = "chair";
+    else
+	$_REQUEST["pctype"] = defval($_REQUEST, "pc") ? "pc" : "no";
+}
+
 
 if ($newProfile)
     $Conf->header("Create Account", "account", actionBar("account"));
@@ -334,16 +342,18 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1
  }
 
 
-echo "<form id='accountform' method='post' action='account$ConfSiteSuffix' accept-charset='UTF-8'><div class='aahc'>\n";
+echo "<form id='accountform' method='post' action='account$ConfSiteSuffix";
 if ($newProfile)
-    echo "<input type='hidden' name='new' value='1' />\n";
+    echo "?new=1";
 else if ($Me->contactId != $Acct->contactId)
-    echo "<input type='hidden' name='contact' value='$Acct->contactId' />\n";
+    echo "?contact=", $Acct->contactId;
+echo "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>\n";
 if (isset($_REQUEST["redirect"]))
     echo "<input type='hidden' name='redirect' value=\"", htmlspecialchars($_REQUEST["redirect"]), "\" />\n";
 
-
-echo "<table id='foldpass' class='form foldc'>
+echo "<table id='foldaccount' class='form foldc ",
+    ($_REQUEST["pctype"] == "no" ? "fold1c" : "fold1o"),
+    " fold2c'>
 <tr>
   <td class='caption initial'>Contact information</td>
   <td class='entry'><div class='f-contain'>\n\n";
@@ -351,7 +361,7 @@ echo "<table id='foldpass' class='form foldc'>
 if (!isset($Opt["ldapLogin"]))
     echo "<div class='f-i'>
   <div class='", fcclass('uemail'), "'>Email</div>
-  <div class='", feclass('uemail'), "'><input class='textlite' type='text' name='uemail' size='52' value=\"", crpformvalue('uemail', 'email'), "\" onchange='hiliter(this)' /></div>
+  <div class='", feclass('uemail'), "'><input class='textlite' type='text' name='uemail' id='account_d' size='52' value=\"", crpformvalue('uemail', 'email'), "\" onchange='hiliter(this)' /></div>
 </div>\n\n";
 else
     echo "<div class='f-i'>
@@ -361,7 +371,7 @@ else
 
 <div class='f-i'>
   <div class='", fcclass("preferredEmail"), "'>Email</div>
-  <div class='", feclass("preferredEmail"), "'><input class='textlite' type='text' name='preferredEmail' size='52' value=\"", crpformvalue("preferredEmail", "preferredEmail"), "\" onchange='hiliter(this)' /></div>
+  <div class='", feclass("preferredEmail"), "'><input class='textlite' type='text' name='preferredEmail' id='account_d' size='52' value=\"", crpformvalue("preferredEmail", "preferredEmail"), "\" onchange='hiliter(this)' /></div>
 </div>\n\n";
 
 echo "<div class='f-i'><div class='f-ix'>
@@ -378,15 +388,15 @@ if (!$newProfile && !isset($Opt["ldapLogin"])) {
     echo "</div>
   <div class='", feclass('password'), "'><input class='textlite fn' type='password' name='upassword' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this);shiftPassword(1)' />";
     if ($Me->privChair)
-	echo "<input class='textlite fx' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this);shiftPassword(0)' />";
+	echo "<input class='textlite fx' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upasswordt', 'password'), "\" onchange='hiliter(this);shiftPassword(0)' />";
     echo "</div>
 </div><div class='fn f-ix'>
   <div class='", fcclass('password'), "'>Repeat password</div>
-  <div class='", feclass('password'), "'><input class='textlite' type='password' name='upassword2' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this)' /></div>
+  <div class='", feclass('password'), "'><input class='textlite' type='password' name='upassword2' size='24' value=\"", crpformvalue('upassword2', 'password'), "\" onchange='hiliter(this)' /></div>
 </div>
   <div class='f-h'>The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don't use a login password or any other high-security password.";
     if ($Me->privChair)
-	echo "  <span class='sep'></span><span class='f-cx'><a class='fn' href='javascript:void fold(\"pass\")'>Show password</a><a class='fx' href='javascript:void fold(\"pass\")'>Hide password</a></span>";
+	echo "  <span class='sep'></span><span class='f-cx'><a class='fn' href='javascript:void fold(\"account\")'>Show password</a><a class='fx' href='javascript:void fold(\"account\")'>Hide password</a></span>";
     echo "</div>\n  <div class='clear'></div></div>\n\n";
 }
 
@@ -452,26 +462,16 @@ if ($Conf->sversion >= 6) {
 }
 
 
-if ($Acct->isPC || $newProfile)
-    echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div><strong>Program committee information</strong></td></tr>\n";
-
-
 if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     echo "<tr>
   <td class='caption'>Roles</td>
   <td class='entry'><table><tr><td class='nowrap'>\n";
 
-    $pct = defval($_REQUEST, "pctype");
-    if ($pct != "chair" && $pct != "pc" && $pct != "no") {
-	if (defval($_REQUEST, "chair"))
-	    $pct = "chair";
-	else
-	    $pct = defval($_REQUEST, "pc") ? "pc" : "no";
-    }
     foreach (array("chair" => "PC chair", "pc" => "PC member",
 		   "no" => "Not on the PC") as $k => $v) {
-	echo tagg_radio_h("pctype", $k, $k == $pct), "&nbsp;",
-	    tagg_label($v), "<br />\n";
+	echo tagg_radio_h("pctype", $k, $k == $_REQUEST["pctype"],
+			  array("id" => "pctype_$k", "onchange" => "hiliter(this);fold('account',e('pctype_no').checked,1)")),
+	    "&nbsp;", tagg_label($v), "<br />\n";
     }
 
     echo "</td><td><span class='sep'></span></td><td class='nowrap'>";
@@ -482,19 +482,22 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
 }
 
 
-if ($Acct->isPC || $newProfile) {
-    echo "<tr>
+if ($newProfile || $Acct->isPC || $Me->privChair) {
+    echo "<tr class='fx1'><td class='caption'></td><td class='entry'><div class='g'></div><strong>Program committee information</strong></td></tr>\n";
+
+
+    echo "<tr class='fx1'>
   <td class='caption'>Collaborators and other affiliations</td>
   <td class='entry'><div class='hint'>Please list potential conflicts of interest.  ", $Conf->conflictDefinitionText(), "  List one conflict per line.
     We use this information when assigning reviews.
     For example: &ldquo;<tt>Ping Yen Zhang (INRIA)</tt>&rdquo;
     or, for a whole institution, &ldquo;<tt>INRIA</tt>&rdquo;.</div>
-    <textarea class='textlite' name='collaborators' rows='5' cols='50' onchange='hiliter(this)'>", htmlspecialchars($Acct->collaborators), "</textarea></td>
+    <textarea class='textlite' name='collaborators' rows='5' cols='50' onchange='hiliter(this)'>", crpformvalue("collaborators"), "</textarea></td>
 </tr>\n\n";
 
     $result = $Conf->q("select TopicArea.topicId, TopicArea.topicName, TopicInterest.interest from TopicArea left join TopicInterest on TopicInterest.contactId=$Acct->contactId and TopicInterest.topicId=TopicArea.topicId order by TopicArea.topicName");
     if (edb_nrows($result) > 0) {
-	echo "<tr id='topicinterest'>
+	echo "<tr id='topicinterest' class='fx1'>
   <td class='caption'>Topic interests</td>
   <td class='entry' id='topicinterest'><div class='hint'>
     Please indicate your interest in reviewing papers on these conference
@@ -504,7 +507,10 @@ if ($Acct->isPC || $newProfile) {
 	for ($i = 0; $i < edb_nrows($result); $i++) {
 	    $row = edb_row($result);
 	    echo "      <tr><td class='ti_topic'>", htmlspecialchars($row[1]), "</td>";
-	    $interest = isset($row[2]) ? $row[2] : 1;
+	    $tiname = "ti$row[0]";
+	    $interest = cvtint(defval($_REQUEST, $tiname, ""));
+	    if ($interest < 0 || $interest > 2)
+		$interest = isset($row[2]) ? $row[2] : 1;
 	    for ($j = 0; $j < 3; $j++) {
 		echo "<td class='ti_interest'>",
 		    tagg_radio_h("ti$row[0]", $j, $interest == $j), "</td>";
@@ -562,5 +568,5 @@ foreach ($buttons as $b) {
 echo "    </tr>\n    </table></div></td>\n</tr>
 </table></div></form>\n";
 
-
+$Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"account\");</script>";
 $Conf->footer();
