@@ -603,7 +603,7 @@ class PaperTable {
     }
 
     function paptabTopicsOptions($prow, $showAllOptions) {
-	global $Conf;
+	global $Conf, $Me, $forceShow;
 	$topicdata = topicTable($prow, -1);
 	$optiondata = "";
 	if (($options = paperOptions())) {
@@ -615,7 +615,9 @@ class PaperTable {
 		$om = defval($o, "optionValues");
 		$ov = defval($optsel, $o->optionId, 0);
 		if (($ov || $om)
-		    && ($o->pcView || $showAllOptions
+		    && ($o->pcView == 1
+			|| ($o->pcView == 2 && $Me->canViewAuthors($prow, $forceShow))
+			|| $showAllOptions
 			|| $prow->conflictType >= CONFLICT_AUTHOR)) {
 		    if (substr($om, 0, 2) == "\x7Fi") {
 			if ($ov != "")

@@ -537,11 +537,12 @@ function doOptions($set) {
 		$Conf->qe("delete from OptionType where optionId=$id", $while);
 		$Conf->qe("delete from PaperOption where optionId=$id", $while);
 	    } else {
+		$pcview = cvtint(defval($_REQUEST, "optp$id", 0));
 		$q = "update OptionType set optionName='" . sqlq($_REQUEST["optn$id"])
 		    . "', description='" . sqlq(defval($_REQUEST, "optd$id", ""))
-		    . "', pcView=" . (defval($_REQUEST, "optp$id") ? 1 : 0);
+		    . "', pcView=" . min(max($pcview, 0), 2);
 		if ($Conf->sversion >= 14)
-		    $q .= ", optionValues='" . sqlq(defval($_REQUEST, "optv$id")) . "'";
+		    $q .= ", optionValues='" . sqlq(defval($_REQUEST, "optv$id", "")) . "'";
 		$Conf->qe($q . " where optionId=$id", $while);
 		$anyo = true;
 	    }
@@ -1183,40 +1184,10 @@ function doOptGroupOption($o) {
 	decorateSettingName("optd$id", "Description"),
 	"</div>",
 	"<div class='f-e'><textarea class='textlite' name='optd$id' rows='2' cols='50' onchange='hiliter(this)'>", htmlspecialchars($o->description), "</textarea></div>",
-	"</div></td></tr>\n",
-	"  <tr><td><div class='f-i'>",
-	"<div class='f-c'>", decorateSettingName("optv$id", "Type"), "</div>",
-	"<div class='f-e'>";
-
-    if ($Conf->sversion >= 14) {
-	$oval = defval($o, "optionValues", "");
-	if (count($Error) > 0)
-	    $optvt = defval($_REQUEST, "optvt$id", 0);
-	else
-	    $optvt = (substr($oval, 0, 2) == "\x7Fi" ? 2 : ($oval ? 1 : 0));
-	echo tagg_select("optvt$id", array("Checkbox", "Selector", "Number"),
-			 $optvt,
-			 array("onchange" => "hiliter(this);void fold(\"optv$id\",this.value!=1);void fold(\"optv$id\",this.value!=2,1)")),
-	    "<span class='sep'></span>";
-    }
-
-    echo tagg_checkbox_h("optp$o->optionId", 1, $o->pcView),
-	"&nbsp;", tagg_label("Visible to reviewers");
-
-    if ($Conf->sversion >= 14) {
-	echo "<div id='foldoptv$id' class='",
-	    ($optvt == 1 ? "foldo" : "foldc"),
-	    ($optvt == 2 ? " fold1o" : " fold1c"),
-	    "'><div class='fx'>",
-	    "<div class='hint'>Enter the selector choices one per line.  The first choice will be the default.</div>",
-	    "<textarea class='textlite' name='optv$id' rows='3' cols='50' onchange='hiliter(this)'>", htmlspecialchars(defval($o, "optionValues")), "</textarea>",
-	    "</div></div>";
-    }
-
-    echo "</div></td><td>";
+	"</div></td>";
 
     if ($id !== "n") {
-	echo "<div class='f-i'>",
+	echo "<td style='padding-left: 1em'><div class='f-i'>",
 	    "<div class='f-c'>Example search</div>",
 	    "<div class='f-e'>";
 	$oabbrev = simplifyWhitespace($o->optionName);
@@ -1234,10 +1205,44 @@ function doOptGroupOption($o) {
 	    $oabbrev = "\"$oabbrev\"";
 	echo "&ldquo;<a href=\"search$ConfSiteSuffix?q=opt:", urlencode($oabbrev), "\">",
 	    "opt:", htmlspecialchars($oabbrev), "</a>&rdquo;",
+	    "</div></div></td>";
+    }
+
+    echo "</tr>\n  <tr><td><table><tr>";
+
+    if ($Conf->sversion >= 14) {
+	echo "<td class='pad'><div class='f-i'><div class='f-c'>",
+	    decorateSettingName("optvt$id", "Type"), "</div><div class='f-e'>";
+	$oval = defval($o, "optionValues", "");
+	if (count($Error) > 0)
+	    $optvt = defval($_REQUEST, "optvt$id", 0);
+	else
+	    $optvt = (substr($oval, 0, 2) == "\x7Fi" ? 2 : ($oval ? 1 : 0));
+	echo tagg_select("optvt$id", array("Checkbox", "Selector", "Number"),
+			 $optvt,
+			 array("onchange" => "hiliter(this);void fold(\"optv$id\",this.value!=1);void fold(\"optv$id\",this.value!=2,1)")),
+	    "</div></div></td>";
+    }
+
+    echo "<td class='pad'><div class='f-i'><div class='f-c'>",
+	decorateSettingName("optp$id", "Visibility"), "</div><div class='f-e'>",
+	tagg_select("optp$id", array("Administrators only", "Visible to reviewers", "Visible if authors are visible"), $o->pcView),
+	"</div></div></td></tr></table>";
+
+    if ($Conf->sversion >= 14) {
+	$value = defval($o, "optionValues", "");
+	if ($optvt != 1)
+	    $value = "";
+	echo "<div id='foldoptv$id' class='",
+	    ($optvt == 1 ? "foldo" : "foldc"),
+	    ($optvt == 2 ? " fold1o" : " fold1c"),
+	    "'><div class='fx'>",
+	    "<div class='hint'>Enter the selector choices one per line.  The first choice will be the default.</div>",
+	    "<textarea class='textlite' name='optv$id' rows='3' cols='50' onchange='hiliter(this)'>", htmlspecialchars($value), "</textarea>",
 	    "</div></div>";
     }
 
-    echo "</td></tr>\n";
+    echo "</div></td></tr>\n";
 }
 
 function doOptGroup() {
@@ -1273,7 +1278,7 @@ function doOptGroup() {
 	echo "<tr>$td1<td class='lentry'><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($rf->topicName[$tid]), "\" size='50' onchange='hiliter(this)' /></td>";
 	if ($td1 !== "<td></td>") {
 	    // example search
-	    echo "<td class='llentry' rowspan='40'><div class='f-i'>",
+	    echo "<td class='llentry' style='vertical-align: top' rowspan='40'><div class='f-i'>",
 		"<div class='f-c'>Example search</div>";
 	    $oabbrev = strtolower($rf->topicName[$tid]);
 	    if (strstr($oabbrev, " ") !== false)

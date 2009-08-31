@@ -548,11 +548,14 @@ class PaperSearch {
 		    continue;
 
 		// add the query to $qo
-		if ($this->privChair || ($this->amPC && $o->pcView))
+		if ($this->privChair || ($this->amPC && $o->pcView == 1))
 		    $qo[] = new SearchTerm($type, 0, array($oid, $xval));
 		else {
+		    $rt = self::F_REVIEWER;
+		    if ($o->pcView == 2 && $Conf->blindSubmission() != BLIND_NEVER)
+			$rt |= self::F_PAPERNONBLIND;
 		    if ($o->pcView)
-			$qo[] = new SearchTerm($type, self::F_REVIEWER, array($oid, $xval));
+			$qo[] = new SearchTerm($type, $rt, array($oid, $xval));
 		    $qo[] = new SearchTerm($type, self::F_AUTHOR, array($oid, $xval));
 		}
 	    }
