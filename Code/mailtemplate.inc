@@ -237,7 +237,10 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "acceptnotify" =>
-     array("subject" => "[%CONFSHORTNAME%] Accepted paper #%NUMBER% %TITLEHINT%",
+     array("mailtool_name" => "Accept notification",
+	   "mailtool_priority" => 10,
+	   "mailtool_recipients" => "dec:yes",
+	   "subject" => "[%CONFSHORTNAME%] Accepted paper #%NUMBER% %TITLEHINT%",
 	   "body" => "Dear %NAME%,
 
 The %CONFNAME% program committee is delighted to inform you that your paper #%NUMBER% has been accepted to appear in the conference.
@@ -260,7 +263,10 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 %COMMENTS%\n"),
 
      "rejectnotify" =>
-     array("subject" => "[%CONFSHORTNAME%] Rejected paper #%NUMBER% %TITLEHINT%",
+     array("mailtool_name" => "Reject notification",
+	   "mailtool_priority" => 11,
+	   "mailtool_recipients" => "dec:no",
+	   "subject" => "[%CONFSHORTNAME%] Rejected paper #%NUMBER% %TITLEHINT%",
 	   "body" => "Dear %NAME%,
 
 The %CONFNAME% program committee is sorry to inform you that your paper #%NUMBER% was rejected, and will not appear in the conference.
@@ -307,7 +313,11 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 %COMMENTS%\n"),
 
      "genericmailtool" =>
-     array("subject" => "[%CONFSHORTNAME%] Paper #%NUMBER% %TITLEHINT%",
+     array("mailtool_name" => "Generic",
+	   "mailtool_pc" => true,
+	   "mailtool_priority" => 0,
+	   "mailtool_recipients" => "s",
+	   "subject" => "[%CONFSHORTNAME%] Paper #%NUMBER% %TITLEHINT%",
 	   "body" => "Dear %NAME%,
 
 Your message here.
@@ -324,7 +334,11 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "reviewremind" =>
-     array("subject" => "[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
+     array("mailtool_name" => "Review reminder",
+	   "mailtool_pc" => true,
+	   "mailtool_priority" => 20,
+	   "mailtool_recipients" => "uncrev",
+	   "subject" => "[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
 	   "body" => "Dear %NAME%,
 
 This is a reminder to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please \"refuse\" the review using the site or contact the person who requested the review directly.
@@ -344,7 +358,12 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n"),
 
      "myreviewremind" =>
-     array("subject" => "[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
+     array("mailtool_name" => "Personalized review reminder",
+	   "mailtool_pc" => true,
+	   "mailtool_priority" => 21,
+	   "mailtool_recipients" => "myuncextrev",
+	   "mailtool_search_type" => "t",
+	   "subject" => "[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
 	   "body" => "Dear %NAME%,
 
 This is a reminder from %OTHERCONTACT% to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please \"refuse\" the review using the site or contact %OTHERNAME% directly.
@@ -364,6 +383,11 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 - %CONFSHORTNAME% Submissions\n")
 
 );
+
+// load local mail templates if any
+global $ConfSitePATH;
+if (file_exists("$ConfSitePATH/Code/mailtemplate-local.inc"))
+    require_once("$ConfSitePATH/Code/mailtemplate-local.inc");
 
 
 class MailerState {

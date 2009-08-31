@@ -283,27 +283,28 @@ while (($row = edb_row($result))) {
 // Load template
 if (defval($_REQUEST, "loadtmpl")) {
     $t = defval($_REQUEST, "template", "genericmailtool");
-    if ($t == "rejectnotify") {
+    if (!isset($mailTemplates[$t])
+	|| !isset($mailTemplates[$t]["mailtool_name"]))
+	$t = "genericmailtool";
+    $template = $mailTemplates[$t];
+    $_REQUEST["recipients"] = defval($template, "mailtool_recipients", "s");
+    if (isset($template["mailtool_search_type"]))
+	$_REQUEST["t"] = $template["mailtool_search_type"];
+    if ($_REQUEST["recipients"] == "dec:no") {
 	$x = min(array_keys($rf->options["outcome"]));
 	foreach ($noutcome as $o => $n)
 	    if ($o < 0 && $n > defval($noutcome, $x))
 		$x = $o;
 	$_REQUEST["recipients"] = "dec:" . $rf->options["outcome"][$x];
-    } else if ($t == "acceptnotify") {
+    } else if ($_REQUEST["recipients"] == "dec:yes") {
 	$x = max(array_keys($rf->options["outcome"]));
 	foreach ($noutcome as $o => $n)
 	    if ($o > 0 && $n > defval($noutcome, $x))
 		$x = $o;
 	$_REQUEST["recipients"] = "dec:" . $rf->options["outcome"][$x];
-    } else if ($t == "reviewremind")
-	$_REQUEST["recipients"] = "uncrev";
-    else if ($t == "myreviewremind") {
-	$_REQUEST["recipients"] = "myuncextrev";
-	$_REQUEST["t"] = "req";
-    } else
-	$_REQUEST["recipients"] = "s";
-    $_REQUEST["subject"] = $nullMailer->expand($mailTemplates[$t]["subject"]);
-    $_REQUEST["emailBody"] = $nullMailer->expand($mailTemplates[$t]["body"]);
+    }
+    $_REQUEST["subject"] = $nullMailer->expand($template["subject"]);
+    $_REQUEST["emailBody"] = $nullMailer->expand($template["body"]);
 }
 
 
@@ -390,13 +391,15 @@ echo "<form method='post' action='mail$ConfSiteSuffix?check=1' enctype='multipar
 <div class='aa'>
   <strong>Templates:</strong> &nbsp;";
 $tmpl = array();
-$tmpl["genericmailtool"] = "Generic";
-if ($Me->privChair) {
-    $tmpl["acceptnotify"] = "Accept notification";
-    $tmpl["rejectnotify"] = "Reject notification";
+foreach ($mailTemplates as $k => $v) {
+    if (isset($v["mailtool_name"])
+	&& ($Me->privChair || defval($v, "mailtool_pc")))
+	$tmpl[$k] = defval($v, "mailtool_priority", 100);
 }
-$tmpl["reviewremind"] = "Review reminder";
-$tmpl["myreviewremind"] = "Personalized review reminder";
+asort($tmpl);
+foreach ($tmpl as $k => &$v) {
+    $v = $mailTemplates[$k]["mailtool_name"];
+}
 if (!isset($_REQUEST["template"]) || !isset($tmpl[$_REQUEST["template"]]))
     $_REQUEST["template"] = "genericmailtool";
 echo tagg_select("template", $tmpl, $_REQUEST["template"], array("onchange" => "highlightUpdate(\"loadtmpl\")")),
