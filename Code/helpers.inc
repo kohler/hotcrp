@@ -607,7 +607,7 @@ function pluralx($n, $what) {
 }
 
 function plural($n, $what) {
-    return $n . ' ' . pluralx($n, $what);
+    return (is_array($n) ? count($n) : $n) . ' ' . pluralx($n, $what);
 }
 
 function commajoin($what) {
@@ -1345,14 +1345,16 @@ function tagg_cbox($type, $bottom, $classextra="") {
 }
 
 
-global $tagg_controlid;
+global $tagg_controlid, $tagg_lastcontrolid;
 $tagg_controlid = 0;
 
 function tagg_checkbox($name, $value = 1, $checked = false, $js = null) {
-    global $tagg_controlid;
-    $id = "taggctl" . ++$tagg_controlid;
+    global $tagg_controlid, $tagg_lastcontrolid;
     if ($js && defval($js, "id"))
 	$id = $js["id"];
+    else
+	$id = "taggctl" . ++$tagg_controlid;
+    $tagg_lastcontrolid = $id;
     $t = "<input type=\"checkbox\" id=\"$id\"";
     if ($name)
 	$t .= " name=\"$name\" value=\"" . htmlspecialchars($value) . "\"";
@@ -1388,8 +1390,8 @@ function tagg_radio_h($name, $value = 1, $checked = false, $js = null) {
 }
 
 function tagg_label($text, $id = null) {
-    global $tagg_controlid;
+    global $tagg_lastcontrolid;
     if (!$id)
-	$id = "taggctl" . $tagg_controlid;
+	$id = $tagg_lastcontrolid;
     return "<label for=\"$id\">" . $text . "</label>";
 }

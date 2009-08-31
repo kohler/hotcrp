@@ -50,11 +50,12 @@ function parseBulkFile($text, $filename, $type) {
     while ($text != "") {
 	$pos = strpos($text, "\n");
 	$line = ($pos === FALSE ? $text : substr($text, 0, $pos + 1));
-	$lineno++;
+	++$lineno;
 	$text = substr($text, strlen($line));
+	$line = trim($line);
 
 	// skip blank lines
-	if (trim($line) == "" || $line[0] == "#" || $line[0] == "!")
+	if ($line == "" || $line[0] == "#" || $line[0] == "!")
 	    continue;
 
 	// parse a bunch of formats

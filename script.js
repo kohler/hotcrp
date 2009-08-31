@@ -114,7 +114,7 @@ function crpfocus(id, subfocus, seltype) {
 	felt.focus();
     if ((selt || felt) && window.event)
 	window.event.returnValue = false;
-    if (seltype >= 1)
+    if (seltype && seltype >= 1)
 	window.scrollTo(0, 0);
     return !(selt || felt);
 }
