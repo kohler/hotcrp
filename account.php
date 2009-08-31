@@ -30,170 +30,245 @@ else if (isset($_REQUEST["new"])) {
 } else
     $Acct = $Me;
 
-$Acct->lookupAddress();
+if ($Acct)
+    $Acct->lookupAddress();
 
 
-if (isset($_REQUEST["register"])) {
-    $needFields = array('firstName', 'lastName', 'affiliation');
-    if (!isset($Opt["ldapLogin"])) {
-	$needFields[] = "uemail";
-	if (!$newProfile)
-	    $needFields[] = "upassword";
+function tfError(&$tf, $errorField, $text) {
+    global $Conf, $Error, $UpdateError;
+    if (!isset($tf["lineno"])) {
+	$UpdateError = $text;
+	if ($errorField)
+	    $Error[$errorField] = true;
+    } else {
+	$lineno = $tf["lineno"];
+	if ($tf["filename"])
+	    $l = htmlspecialchars($tf["filename"]) . ":" . $lineno;
+	else
+	    $l = "line " . $lineno;
+	$tf["err"][$lineno] = "<span class='lineno'>$l:</span> $text";
     }
-    foreach ($needFields as $field)
-	if (!isset($_REQUEST[$field])) {
-	    if ($OK)
-		$Conf->errorMsg("Required form fields missing.");
-	    $Error[$field] = true;
-	    $OK = 0;
-	}
+    return false;
 }
 
-if (isset($_REQUEST['register']) && $OK) {
+function createUser(&$tf, $newProfile) {
+    global $Conf, $ConfSiteSuffix, $Acct, $Me, $Opt, $OK;
+
     $_REQUEST["uemail"] = trim($_REQUEST["uemail"]);
     if (isset($Opt["ldapLogin"])) {
-	$_REQUEST["uemail"] = $Me->email;
-	$_REQUEST["upassword"] = $_REQUEST["upassword2"] = $Me->password;
+	$_REQUEST["uemail"] = $Acct->email;
+	$_REQUEST["upassword"] = $_REQUEST["upassword2"] = $Acct->password;
+    } else if ($newProfile)
+	$_REQUEST["upassword"] = "";
+
+    // check for missing fields
+    $any_missing = false;
+    foreach (array("firstName", "lastName", "affiliation",
+		   "uemail", "upassword") as $field)
+	if (!isset($_REQUEST[$field]))
+	    $Error[$field] = $any_missing = true;
+    if ($any_missing)
+	return tfError($tf, false, "Required form fields missing.");
+
+    // check passwords
+    if (!$newProfile) {
+	if (defval($_REQUEST, "upassword", "") == "")
+	    return tfError($tf, "password", "Blank passwords are not allowed.");
+	else if ($_REQUEST["upassword"] != defval($_REQUEST, "upassword2", ""))
+	    return tfError($tf, "password", "The two passwords you entered did not match.");
+	else if (trim($_REQUEST["upassword"]) != $_REQUEST["upassword"])
+	    return tfError($tf, "password", "Passwords cannot begin or end with spaces.");
     }
-    if (!$newProfile && defval($_REQUEST, "upassword", "") == "") {
-	$UpdateError = "Blank passwords are not allowed.";
-	$Error['password'] = true;
-    } else if (!$newProfile && $_REQUEST["upassword"] != defval($_REQUEST, "upassword2", "")) {
-	$UpdateError = "The two passwords you entered did not match.";
-	$Error['password'] = true;
-    } else if (!$newProfile && trim($_REQUEST["upassword"]) != $_REQUEST["upassword"]) {
-	$UpdateError = "Passwords cannot begin or end with spaces.";
-	$Error['password'] = true;
-    } else if ($_REQUEST["uemail"] != $Acct->email
-	       && $Conf->getContactId($_REQUEST["uemail"])) {
-	$UpdateError = "An account is already registered with email address &ldquo;" . htmlspecialchars($_REQUEST["uemail"]) . "&rdquo;.";
-	if (!$newProfile)
-	    $UpdateError .= "You may want to <a href='mergeaccounts$ConfSiteSuffix'>merge these accounts</a>.";
-	$Error["uemail"] = true;
-    } else if ($_REQUEST["uemail"] != $Acct->email
-	       && !validateEmail($_REQUEST["uemail"])) {
-	$UpdateError = "&ldquo;" . htmlspecialchars($_REQUEST["uemail"]) . "&rdquo; is not a valid email address.";
-	$Error["uemail"] = true;
-    } else {
-	if ($newProfile) {
-	    $result = $Acct->initialize($_REQUEST["uemail"], true);
-	    if ($OK) {
-		$Acct->sendAccountInfo($Conf, true, false);
-		$Conf->log("Account created by $Me->email", $Acct);
-	    }
-	}
 
-	$updatepc = false;
+    // check email
+    if ($newProfile || $_REQUEST["uemail"] != $Acct->email) {
+	if ($Conf->getContactId($_REQUEST["uemail"])) {
+	    $msg = "An account is already registered with email address &ldquo;" . htmlspecialchars($_REQUEST["uemail"]) . "&rdquo;.";
+	    if (!$newProfile)
+		$msg .= "You may want to <a href='mergeaccounts$ConfSiteSuffix'>merge these accounts</a>.";
+	    return tfError($tf, "uemail", $msg);
+	} else if (!validateEmail($_REQUEST["uemail"]))
+	    return tfError($tf, "uemail", "&ldquo;" . htmlspecialchars($_REQUEST["uemail"]) . "&rdquo; is not a valid email address.");
+    }
 
-	if ($Me->privChair) {
-	    // initialize roles too
-	    if (isset($_REQUEST["pctype"])) {
-		if ($_REQUEST["pctype"] == "chair")
-		    $_REQUEST["pc"] = $_REQUEST["chair"] = 1;
-		else if ($_REQUEST["pctype"] == "pc") {
-		    unset($_REQUEST["chair"]);
-		    $_REQUEST["pc"] = 1;
-		} else {
-		    unset($_REQUEST["chair"]);
-		    unset($_REQUEST["pc"]);
-		}
-	    } else if (isset($_REQUEST["chair"]))
+    // at this point we will create the account
+    if ($newProfile) {
+	$Acct = new Contact();
+	$result = $Acct->initialize($_REQUEST["uemail"], true);
+	if (!$result)
+	    return tfError($tf, "uemail", "Database error, please try again");
+	$Acct->sendAccountInfo($Conf, true, false);
+	$Conf->log("Account created by $Me->email", $Acct);
+    }
+
+    $updatepc = false;
+
+    if ($Me->privChair) {
+	// initialize roles too
+	if (isset($_REQUEST["pctype"])) {
+	    if ($_REQUEST["pctype"] == "chair")
+		$_REQUEST["pc"] = $_REQUEST["chair"] = 1;
+	    else if ($_REQUEST["pctype"] == "pc") {
+		unset($_REQUEST["chair"]);
 		$_REQUEST["pc"] = 1;
-	    $checkass = !isset($_REQUEST["ass"]) && $Me->contactId == $Acct->contactId && ($Acct->roles & Contact::ROLE_ADMIN) != 0;
-
-	    $while = "while initializing roles";
-	    foreach (array("pc" => "PCMember", "ass" => "ChairAssistant", "chair" => "Chair") as $k => $table) {
-		$role = ($k == "pc" ? Contact::ROLE_PC : ($k == "ass" ? Contact::ROLE_ADMIN : Contact::ROLE_CHAIR));
-		if (($Acct->roles & $role) != 0 && !isset($_REQUEST[$k])) {
-		    $Conf->qe("delete from $table where contactId=$Acct->contactId", $while);
-		    $Conf->log("Removed as $table by $Me->email", $Acct);
-		    $Acct->roles &= ~$role;
-		    $updatepc = true;
-		} else if (($Acct->roles & $role) == 0 && isset($_REQUEST[$k])) {
-		    $Conf->qe("insert into $table (contactId) values ($Acct->contactId)", $while);
-		    $Conf->log("Added as $table by $Me->email", $Acct);
-		    $Acct->roles |= $role;
-		    $updatepc = true;
-		}
-	    }
-
-	    // ensure there's at least one system administrator
-	    if ($checkass) {
-		$result = $Conf->qe("select contactId from ChairAssistant", $while);
-		if (edb_nrows($result) == 0) {
-		    $Conf->qe("insert into ChairAssistant (contactId) values ($Acct->contactId)", $while);
-		    $Conf->warnMsg("Refusing to drop the only system administrator.");
-		    $_REQUEST["ass"] = 1;
-		    $Acct->roles |= Contact::ROLE_ADMIN;
-		}
-	    }
-	}
-
-	// ensure changes in PC member data are reflected immediately
-	if (($Acct->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR))
-	    && !$updatepc
-	    && ($Acct->firstName != $_REQUEST["firstName"]
-		|| $Acct->lastName != $_REQUEST["lastName"]
-		|| $Acct->email != $_REQUEST["uemail"]
-		|| $Acct->affiliation != $_REQUEST["affiliation"]))
-	    $updatepc = true;
-
-	$Acct->firstName = $_REQUEST["firstName"];
-	$Acct->lastName = $_REQUEST["lastName"];
-	$Acct->email = $_REQUEST["uemail"];
-	$Acct->affiliation = $_REQUEST["affiliation"];
-	if (!$newProfile && !isset($Opt["ldapLogin"]))
-	    $Acct->password = $_REQUEST["upassword"];
-	if (isset($_REQUEST["preferredEmail"]))
-	    $Acct->preferredEmail = $_REQUEST["preferredEmail"];
-	foreach (array("voicePhoneNumber", "faxPhoneNumber", "collaborators",
-		       "addressLine1", "addressLine2", "city", "state",
-		       "zipCode", "country") as $v)
-	    if (isset($_REQUEST[$v]))
-		$Acct->$v = $_REQUEST[$v];
-	$Acct->defaultWatch = 0;
-	if (isset($_REQUEST["watchcomment"]))
-	    $Acct->defaultWatch |= WATCH_COMMENT;
-
-	if ($OK)
-	    $Acct->updateDB();
-
-	if ($updatepc) {
-	    $t = time();
-	    $Conf->qe("insert into Settings (name, value) values ('pc', $t) on duplicate key update value=$t");
-	    unset($_SESSION["pcmembers"]);
-	    unset($_SESSION["pcmembersa"]);
-	}
-
-	// if PC member, update collaborators and areas of expertise
-	if (($Acct->isPC || $newProfile) && $OK) {
-	    // remove all current interests
-	    $Conf->qe("delete from TopicInterest where contactId=$Acct->contactId", "while updating topic interests");
-
-	    foreach ($_REQUEST as $key => $value)
-		if ($OK && strlen($key) > 2 && $key[0] == 't' && $key[1] == 'i'
-		    && ($id = (int) substr($key, 2)) > 0
-		    && is_numeric($value)
-		    && ($value = (int) $value) >= 0 && $value < 3)
-		    $Conf->qe("insert into TopicInterest (contactId, topicId, interest) values ($Acct->contactId, $id, $value)", "while updating topic interests");
-	}
-
-	if ($OK) {
-	    // Refresh the results
-	    $Acct->lookupByEmail($_REQUEST["uemail"]);
-	    $Acct->valid();
-	    if ($newProfile) {
-		$Conf->confirmMsg("Successfully created <a href=\"account$ConfSiteSuffix?contact=" . urlencode($Acct->email) . "\">an account for " . htmlspecialchars($Acct->email) . "</a>.  A password has been emailed to that address.  You may now <a href='account$ConfSiteSuffix?new=1'>create another account</a>, or edit the " . htmlspecialchars($Acct->email) . " account below.");
-		$newProfile = false;
 	    } else {
-		$Conf->log("Account updated" . ($Me->contactId == $Acct->contactId ? "" : " by $Me->email"), $Acct);
-		$Conf->confirmMsg("Account profile successfully updated.");
+		unset($_REQUEST["chair"]);
+		unset($_REQUEST["pc"]);
 	    }
-	    if (isset($_REQUEST["redirect"]))
-		$Me->go("index$ConfSiteSuffix");
-	    foreach (array("firstName", "lastName", "affiliation") as $k)
-		$_REQUEST[$k] = $Acct->$k;
+	} else if (isset($_REQUEST["chair"]))
+	    $_REQUEST["pc"] = 1;
+	$checkass = !isset($_REQUEST["ass"]) && $Me->contactId == $Acct->contactId && ($Acct->roles & Contact::ROLE_ADMIN) != 0;
+
+	$while = "while initializing roles";
+	foreach (array("pc" => "PCMember", "ass" => "ChairAssistant", "chair" => "Chair") as $k => $table) {
+	    $role = ($k == "pc" ? Contact::ROLE_PC : ($k == "ass" ? Contact::ROLE_ADMIN : Contact::ROLE_CHAIR));
+	    if (($Acct->roles & $role) != 0 && !isset($_REQUEST[$k])) {
+		$Conf->qe("delete from $table where contactId=$Acct->contactId", $while);
+		$Conf->log("Removed as $table by $Me->email", $Acct);
+		$Acct->roles &= ~$role;
+		$updatepc = true;
+	    } else if (($Acct->roles & $role) == 0 && isset($_REQUEST[$k])) {
+		$Conf->qe("insert into $table (contactId) values ($Acct->contactId)", $while);
+		$Conf->log("Added as $table by $Me->email", $Acct);
+		$Acct->roles |= $role;
+		$updatepc = true;
+	    }
 	}
+
+	// ensure there's at least one system administrator
+	if ($checkass) {
+	    $result = $Conf->qe("select contactId from ChairAssistant", $while);
+	    if (edb_nrows($result) == 0) {
+		$Conf->qe("insert into ChairAssistant (contactId) values ($Acct->contactId)", $while);
+		$Conf->warnMsg("Refusing to drop the only system administrator.");
+		$_REQUEST["ass"] = 1;
+		$Acct->roles |= Contact::ROLE_ADMIN;
+	    }
+	}
+    }
+
+    // ensure changes in PC member data are reflected immediately
+    if (($Acct->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR))
+	&& !$updatepc
+	&& ($Acct->firstName != $_REQUEST["firstName"]
+	    || $Acct->lastName != $_REQUEST["lastName"]
+	    || $Acct->email != $_REQUEST["uemail"]
+	    || $Acct->affiliation != $_REQUEST["affiliation"]))
+	$updatepc = true;
+
+    $Acct->firstName = $_REQUEST["firstName"];
+    $Acct->lastName = $_REQUEST["lastName"];
+    $Acct->email = $_REQUEST["uemail"];
+    $Acct->affiliation = $_REQUEST["affiliation"];
+    if (!$newProfile && !isset($Opt["ldapLogin"]))
+	$Acct->password = $_REQUEST["upassword"];
+    if (isset($_REQUEST["preferredEmail"]))
+	$Acct->preferredEmail = $_REQUEST["preferredEmail"];
+    foreach (array("voicePhoneNumber", "faxPhoneNumber", "collaborators",
+		   "addressLine1", "addressLine2", "city", "state",
+		   "zipCode", "country") as $v)
+	if (isset($_REQUEST[$v]))
+	    $Acct->$v = $_REQUEST[$v];
+    $Acct->defaultWatch = 0;
+    if (isset($_REQUEST["watchcomment"]))
+	$Acct->defaultWatch |= WATCH_COMMENT;
+
+    if ($OK)
+	$Acct->updateDB();
+
+    if ($updatepc) {
+	$t = time();
+	$Conf->qe("insert into Settings (name, value) values ('pc', $t) on duplicate key update value=$t");
+	unset($_SESSION["pcmembers"]);
+	unset($_SESSION["pcmembersa"]);
+    }
+
+    // if PC member, update collaborators and areas of expertise
+    if (($Acct->isPC || $newProfile) && $OK) {
+	// remove all current interests
+	$Conf->qe("delete from TopicInterest where contactId=$Acct->contactId", "while updating topic interests");
+
+	foreach ($_REQUEST as $key => $value)
+	    if ($OK && strlen($key) > 2 && $key[0] == 't' && $key[1] == 'i'
+		&& ($id = (int) substr($key, 2)) > 0
+		&& is_numeric($value)
+		&& ($value = (int) $value) >= 0 && $value < 3)
+		$Conf->qe("insert into TopicInterest (contactId, topicId, interest) values ($Acct->contactId, $id, $value)", "while updating topic interests");
+    }
+
+    if ($OK) {
+	// Refresh the results
+	$Acct->lookupByEmail($_REQUEST["uemail"]);
+	$Acct->valid();
+	if (!$newProfile)
+	    $Conf->log("Account updated" . ($Me->contactId == $Acct->contactId ? "" : " by $Me->email"), $Acct);
+	foreach (array("firstName", "lastName", "affiliation") as $k)
+	    $_REQUEST[$k] = $Acct->$k;
+    }
+
+    return $Acct;
+}
+
+function parseBulkFile($text, $filename) {
+    global $Conf, $ConfSiteSuffix, $Acct;
+    $text = cleannl($text);
+    $tf = array("err" => array(), "filename" => $filename, "lineno" => 0);
+    $success = array();
+
+    while ($text != "") {
+	$pos = strpos($text, "\n");
+	$line = ($pos === FALSE ? $text : substr($text, 0, $pos + 1));
+	++$tf["lineno"];
+	$text = substr($text, strlen($line));
+	$line = trim($line);
+
+	// skip blank lines
+	if ($line == "" || $line[0] == "#" || $line[0] == "!")
+	    continue;
+
+	$_REQUEST["affiliation"] = "";
+	if (preg_match('/^(.*\@\S+)\s+([^\s"][^"]*)$/', $line, $m)) {
+	    $line = $m[1];
+	    $_REQUEST["affiliation"] = simplifyWhitespace($m[2]);
+	}
+	list($_REQUEST["firstName"], $_REQUEST["lastName"],
+	     $_REQUEST["uemail"]) = splitName(simplifyWhitespace($line), true);
+	if (createUser($tf, true))
+	    $success[] = "<a href=\"account$ConfSiteSuffix?contact=" . urlencode($Acct->email) . "\">" . htmlspecialchars(contactText($Acct->firstName, $Acct->lastName, $Acct->email)) . "</a>";
+    }
+
+    if (count($tf["err"]) > 0) {
+	ksort($tf["err"]);
+	$errorMsg = "were errors while parsing the uploaded account file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf["err"]) . "</p></div>";
+    }
+    if (count($success) > 0 && count($tf["err"]) > 0)
+	$Conf->confirmMsg("Created " . plural($success, "account") . " " . commajoin($success) . ".<br />However, there $errorMsg");
+    else if (count($success) > 0)
+	$Conf->confirmMsg("Created " . plural($success, "account") . " " . commajoin($success) . ".");
+    else if (count($tf["err"]) > 0)
+	$Conf->errorMsg("There $errorMsg");
+    else
+	$Conf->warnMsg("Nothing to do.");
+}
+
+if (isset($_REQUEST["register"]) && $newProfile
+    && fileUploaded($_FILES["bulk"], $Conf)) {
+    if (($text = file_get_contents($_FILES["bulk"]["tmp_name"])) === false)
+	$Conf->errorMsg("Internal error: cannot read file.");
+    else
+	parseBulkFile($text, $_FILES["bulk"]["name"]);
+    $Acct = new Contact();
+    $Acct->invalidate();
+} else if (isset($_REQUEST["register"])) {
+    $tf = array();
+    if (createUser($tf, $newProfile)) {
+	if ($newProfile) {
+	    $Conf->confirmMsg("Created <a href=\"account$ConfSiteSuffix?contact=" . urlencode($Acct->email) . "\">an account for " . htmlspecialchars($Acct->email) . "</a>.  A password has been emailed to that address.  You may now create another account.");
+	    $_REQUEST["uemail"] = $_REQUEST["firstName"] = $_REQUEST["lastName"] = $_REQUEST["affiliation"] = "";
+	} else
+	    $Conf->confirmMsg("Account profile updated.");
+	if (isset($_REQUEST["redirect"]))
+	    $Me->go("index$ConfSiteSuffix");
     }
 }
 
@@ -449,6 +524,19 @@ if ($Conf->setting("acct_addr") || $Acct->amReviewer()
   <div class='f-e'><input class='textlite' type='text' name='faxPhoneNumber' size='24' value=\"", crpformvalue('faxPhoneNumber'), "\" onchange='hiliter(this)' /></div>
 </div>";
     echo "<div class='clear'></div></div>\n";
+}
+
+if ($newProfile) {
+    echo "<div class='f-i'><table style='font-size: smaller'><tr><td>", foldbutton("account", "", 2),
+	"&nbsp;</td><td><a href=\"javascript:void fold('account',null,2)\"><strong>Bulk account creation</strong></a></td></tr>",
+	"<tr class='fx2'><td></td><td>",
+	"<p>Create a text file with one line per account.  Specify name, email address, and (if any) affiliation.  For example:</p>\n",
+	"<pre class='entryexample'>
+John Adams &lt;john@earbox.org&gt; UC Berkeley
+Adams, John Quincy &lt;quincy@whitehouse.gov&gt;
+</pre>\n",
+	"<div class='g'></div>Upload: <input type='file' name='bulk' accept='text/plain' size='30' onchange='hiliter(this)' />",
+	"</td></tr></table></div>\n\n";
 }
 
 echo "</div></td>\n</tr>\n\n";
