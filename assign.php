@@ -26,7 +26,7 @@ function confHeader() {
 	$title = "<a href='paper$ConfSiteSuffix?p=$prow->paperId' class='q'>Paper #$prow->paperId</a>";
     else
 	$title = "Paper Review Assignments";
-    $Conf->header($title, "assign", actionBar($prow, false, "assign"), false);
+    $Conf->header($title, "assign", actionBar("assign", $prow), false);
     if (isset($CurrentList) && $CurrentList > 0
 	&& strpos($linkExtra, "ls=") === false)
 	$linkExtra .= "&amp;ls=" . $CurrentList;

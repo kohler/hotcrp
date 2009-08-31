@@ -117,8 +117,8 @@ $title = ($_REQUEST["t"] == "pc" ? "Program Committee" : "Users");
 $Conf->header($title, "accounts", actionBar());
 
 
-$pl = new ContactList(true);
-$pl_text = $pl->text($_REQUEST["t"], $Me, "contacts$ConfSiteSuffix?t=" . $_REQUEST["t"]);
+$pl = new ContactList(true, $Me->privChair);
+$pl_text = $pl->text($_REQUEST["t"], $Me, "contacts$ConfSiteSuffix?t=" . $_REQUEST["t"], $tOpt[$_REQUEST["t"]]);
 
 
 // form

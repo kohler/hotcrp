@@ -38,7 +38,7 @@ function confHeader() {
 	$title = "Paper #$prow->paperId";
     else
 	$title = "Paper Reviews";
-    $Conf->header($title, "review", actionBar($prow, false, "r"), false);
+    $Conf->header($title, "review", actionBar("r", $prow), false);
     if (isset($CurrentList) && $CurrentList > 0
 	&& strpos($linkExtra, "ls=") === false)
 	$linkExtra .= "&amp;ls=" . $CurrentList;

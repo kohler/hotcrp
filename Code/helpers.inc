@@ -467,55 +467,84 @@ function oldestListNumber($listid = "") {
     for ($i = 1; $i <= 8; $i++)
 	if (!isset($_SESSION["l"][$i]))
 	    return $i;
-	else if ($listid && $_SESSION["l"][$i]["listid"] == $listid)
+	else if ($listid && defval($_SESSION["l"][$i], "listid") == $listid)
 	    return $i;
 	else if (!$oldest
-		 || (defval($_SESSION["l"][$i], 'timestamp')
-		     < defval($_SESSION["l"][$oldest], 'timestamp')))
+		 || (defval($_SESSION["l"][$i], "timestamp")
+		     < defval($_SESSION["l"][$oldest], "timestamp")))
 	    $oldest = $i;
     return $oldest;
 }
 
-function _tryNewList($opt, $which) {
-    global $Conf, $Me;
-    require_once("search.inc");
-    $search = new PaperSearch($Me, $opt);
-    $_SESSION["l"][$which] = $search->sessionList($search->limitName);
-    $Conf->qx("drop temporary table Matches");
+function _tryNewList($opt, $which, $listtype) {
+    global $Conf, $ConfSiteSuffix, $Me;
+    if ($listtype == "a" && $Me->privChair) {
+	$searchtype = (defval($opt, "t") === "all" ? "all" : "pc");
+	$q = "select email from ContactInfo";
+	if ($searchtype == "pc")
+	    $q .= " join PCMember using (contactId)";
+	$result = $Conf->qx("$q order by lastName, firstName, email");
+	$a = array();
+	while (($row = edb_row($result)))
+	    $a[] = $row[0];
+	$a["url"] = "contacts$ConfSiteSuffix?t=" . $searchtype;
+	$a["description"] = ($searchtype == "pc" ? "Program committee" : "Users");
+	$a["type"] = "a";
+	$_SESSION["l"][$which] = $a;
+    } else {
+	require_once("search.inc");
+	$search = new PaperSearch($Me, $opt);
+	$_SESSION["l"][$which] = $search->sessionList($search->limitName);
+	$Conf->qx("drop temporary table Matches");
+    }
 }
 
-function listLinks($paperId, $baseUrl = null, $args = array()) {
+function _oneListLink($id, $baseUrl, $urlrest, $listtype, $isprev) {
+    global $Conf;
+    if ($listtype == "a") {
+	$result = $Conf->qx("select email from ContactInfo where contactId=$id");
+	$row = edb_row($result);
+	$paperText = ($row ? htmlspecialchars($row[0]) : "#$id");
+    } else
+	$paperText = "#$id";
+    return "<a href=\"$baseUrl$id$urlrest\">"
+	. ($isprev ? $Conf->cacheableImage("prev.png", "&lt;-") : "")
+	. $paperText
+	. ($isprev ? "" : $Conf->cacheableImage("next.png", "-&gt;"))
+	. "</a>";
+}
+
+function listLinks($id, $baseUrl, $args, $listtype) {
     global $Me, $ConfSiteSuffix, $Conf, $CurrentList;
     $replaceList = oldestListNumber();
-    if ($baseUrl === null)
-	$baseUrl = "paper$ConfSiteSuffix";
 
     if (isset($_REQUEST["ls"])
 	&& ($CurrentList = rcvtint($_REQUEST["ls"])) > 0
-	&& isset($_SESSION["l"][$CurrentList]))
+	&& isset($_SESSION["l"][$CurrentList])
+	&& defval($_SESSION["l"][$CurrentList], "type", "p") == $listtype)
 	$_SESSION["l"][$CurrentList]["timestamp"] = time();
-    else if (isset($_REQUEST["list"])) {
+    else if (isset($_REQUEST["list"]) && $listtype == "p") {
 	$l = $_REQUEST["list"];
 	if (preg_match('/\A[a-z]+\z/', $l))
-	    _tryNewList(array("t" => $l), $replaceList);
+	    _tryNewList(array("t" => $l), $replaceList, $listtype);
 	else if (preg_match('/\A(all|s):(.*)\z/s', $l, $m))
-	    _tryNewList(array("t" => $m[1], "q" => $m[2]), $replaceList);
+	    _tryNewList(array("t" => $m[1], "q" => $m[2]), $replaceList, $listtype);
 	else
-	    _tryNewList(array("q" => $l), $replaceList);
+	    _tryNewList(array("q" => $l), $replaceList, $listtype);
 	$CurrentList = $replaceList;
     } else
 	$CurrentList = 0;
 
     $k = false;
     if ($CurrentList != 0)
-	$k = array_search($paperId, $_SESSION["l"][$CurrentList]);
+	$k = array_search($id, $_SESSION["l"][$CurrentList]);
 
-    if ($paperId > 0 && $k === false && !isset($_REQUEST["list"])) {
-	_tryNewList(array(), $replaceList);
-	$k = array_search($paperId, $_SESSION["l"][$replaceList]);
+    if ($k === false && !isset($_REQUEST["list"])) {
+	_tryNewList(array(), $replaceList, $listtype);
+	$k = array_search($id, $_SESSION["l"][$replaceList]);
 	if ($k === false && $Me->privChair) {
-	    _tryNewList(array("t" => "all"), $replaceList);
-	    $k = array_search($paperId, $_SESSION["l"][$replaceList]);
+	    _tryNewList(array("t" => "all"), $replaceList, $listtype);
+	    $k = array_search($id, $_SESSION["l"][$replaceList]);
 	}
 	$CurrentList = ($k === false ? 0 : $replaceList);
     }
@@ -530,22 +559,17 @@ function listLinks($paperId, $baseUrl = null, $args = array()) {
     $list = $_SESSION["l"][$CurrentList];
     $x = "";
     if ($k > 0)
-	$x .= "<a href=\"$baseUrl?p="
-	    . $list[$k - 1] . $urlrest . "\">"
-	    . $Conf->cacheableImage("prev.png", "&lt;-")
-	    . "#" . $list[$k - 1] . "</a>";
+	$x .= _oneListLink($list[$k - 1], $baseUrl, $urlrest, $listtype, true);
     if (isset($list["description"])) {
 	$x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
 	if (defval($list, "url"))
 	    $x .= "<a href=\"" . htmlspecialchars($list["url"]) . "\">" . $list["description"] . "</a>";
 	else
-	    $x .= $listinfo["description"];
+	    $x .= $list["description"];
     }
     if (isset($list[$k + 1])) {
 	$x .= ($k > 0 || isset($list["description"]) ? "&nbsp;&nbsp;" : "");
-	$x .= "<a href=\"$baseUrl?p="
-	    . $list[$k + 1] . $urlrest . "\">#" . $list[$k + 1]
-	    . $Conf->cacheableImage("next.png", "-&gt;") . "</a>";
+	$x .= _oneListLink($list[$k + 1], $baseUrl, $urlrest, $listtype, false);
     }
     return $x;
 }
@@ -554,12 +578,12 @@ function goPaperForm($baseUrl = null, $args = array()) {
     global $Conf, $ConfSiteSuffix, $CurrentList;
     if (!$_SESSION["Me"]->valid())
 	return "";
-    if ($baseUrl === null) {
-	if ($_SESSION["Me"]->isPC && $Conf->setting("rev_open"))
-	    $baseUrl = "review$ConfSiteSuffix";
-	else
-	    $baseUrl = "paper$ConfSiteSuffix";
-    }
+    if ($baseUrl !== null && substr($baseUrl, -3) === "?p")
+	$baseUrl = substr($baseUrl, 0, -3);
+    else if ($_SESSION["Me"]->isPC && $Conf->setting("rev_open"))
+	$baseUrl = "review$ConfSiteSuffix";
+    else
+	$baseUrl = "paper$ConfSiteSuffix";
     $x = "<form class='gopaper' action='$baseUrl' method='get' accept-charset='UTF-8'><div class='inform'>";
     $x .= "<input class='textlite' type='text' size='10' name='p' title='Enter paper numbers or search terms' />";
     foreach ($args as $what => $val)
@@ -884,32 +908,37 @@ function actionTab($text, $url, $default) {
 	return "    <td><div class='vbtab'><a href='$url'>$text</a></div></td>\n";
 }
 
-function actionBar($prow = null, $newPaper = false, $mode = "", $thisUrl = "") {
+function actionBar($mode = "", $prow = null) {
     global $Me, $Conf, $ConfSiteSuffix, $CurrentList;
-    if ($newPaper)
-	$paperId = "new";
-    else
-	$paperId = ($prow == null ? -1 : $prow->paperId);
     $forceShow = ($Me->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] ? "&amp;forceShow=1" : "");
 
     // collect list links now, so we find the current list
+    $xmode = array();
+    $listtype = "p";
     if ($mode == "assign")
-	$goBase = "assign$ConfSiteSuffix";
+	$goBase = "assign$ConfSiteSuffix?p=";
     else if ($mode == "r" || $mode == "re" || $mode == "review")
-	$goBase = "review$ConfSiteSuffix";
+	$goBase = "review$ConfSiteSuffix?p=";
     else if ($mode == "c" || $mode == "comment")
-	$goBase = "comment$ConfSiteSuffix";
-    else if ($mode == "" && $Me->isPC && $Conf->setting("rev_open"))
-	$goBase = "review$ConfSiteSuffix";
-    else
-	$goBase = "paper$ConfSiteSuffix";
-    $xmode = defval($_REQUEST, "m", defval($_REQUEST, "mode"));
-    $xmode = ($xmode && $goBase == "paper$ConfSiteSuffix" ? array("m" => $xmode) : array());
+	$goBase = "comment$ConfSiteSuffix?p=";
+    else if ($mode == "contactauthors")
+	$goBase = "contactauthors$ConfSiteSuffix?p=";
+    else if ($mode == "account" && $Me->privChair) {
+	$goBase = "account$ConfSiteSuffix?contact=";
+	$listtype = "a";
+    } else if ($mode == "" && $Me->isPC && $Conf->setting("rev_open"))
+	$goBase = "review$ConfSiteSuffix?p=";
+    else {
+	$goBase = "paper$ConfSiteSuffix?p=";
+	if (($wantmode = defval($_REQUEST, "m", defval($_REQUEST, "mode"))))
+	    $xmode["m"] = $wantmode;
+    }
 
     $listarg = $forceShow;
     $listlinks_txt = "";
     if ($prow) {
-	$listlinks_txt = listLinks($prow->paperId, $goBase, $xmode);
+	$id = ($listtype === "a" ? $prow->contactId : $prow->paperId);
+	$listlinks_txt = listLinks($id, $goBase, $xmode, $listtype);
 	if (isset($CurrentList) && $CurrentList > 0)
 	    $listarg .= "&amp;ls=$CurrentList";
     }

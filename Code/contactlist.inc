@@ -35,8 +35,10 @@ class ContactList extends BaseList {
     var $haveAffrow;
     var $haveTopics;
     var $rf;
+    var $listNumber;
+    var $contactLinkArgs;
 
-    function ContactList($sortable = true) {
+    function ContactList($sortable = true, $list = false) {
 	global $contactListFields;
 	$this->showHeader = true;
 
@@ -52,6 +54,9 @@ class ContactList extends BaseList {
 	$this->sortable = $sortable;
 	$this->haveAffrow = $this->haveTopics = null;
 	$this->rf = reviewForm();
+
+	$this->contactLinkArgs = "";
+	$this->listNumber = $list;
     }
 
     function _normalizeField($fieldId) {
@@ -235,7 +240,7 @@ class ContactList extends BaseList {
 	    if (trim($t) == "")
 		$t = "[No name]";
 	    if ($this->contact->privChair)
-		$t = "<a href='account$ConfSiteSuffix?contact=$row->contactId'>$t</a>";
+		$t = "<a href=\"account$ConfSiteSuffix?contact=$row->contactId$this->contactLinkArgs\">$t</a>";
 	    if ($row->chair)
 		$t .= " <span class='pcrole'>(Chair)</span>";
 	    else if ($row->assistant)
@@ -397,8 +402,8 @@ class ContactList extends BaseList {
 	return $t . "</td></tr>\n";
     }
 
-    function text($listname, $me, $url) {
-	global $Conf, $contactListFields;
+    function text($listname, $me, $url, $listtitle = "") {
+	global $Conf, $ConfSiteSuffix, $contactListFields;
 
 	$this->contact = $me;
 	$this->count = 0;
@@ -410,6 +415,11 @@ class ContactList extends BaseList {
 	    return null;
 	}
 	$this->limit = array_shift($baseFieldId);
+
+	if ($this->listNumber === true) {
+	    $this->listNumber = oldestListNumber("account:" . $this->limit);
+	    $this->contactLinkArgs .= "&amp;ls=" . $this->listNumber;
+	}
 
 	if (!in_array($this->sortField, $baseFieldId))
 	    $this->sortField = null;
@@ -539,6 +549,7 @@ class ContactList extends BaseList {
 	$anyData = array();
 	$body = '';
 	$extrainfo = false;
+	$ids = array();
 	foreach ($srows as $row) {
 	    if (($this->limit == "resub" || $this->limit == "extsub")
 		&& $row->numReviewsSubmitted == 0)
@@ -546,6 +557,7 @@ class ContactList extends BaseList {
 
 	    $trclass = "k" . ($this->count % 2);
 	    $this->count++;
+	    $ids[] = $row->contactId;
 
 	    $t = "  <tr class=\"pl $trclass\">\n";
 	    foreach ($fieldDef as $fieldId => $fdef)
@@ -638,6 +650,15 @@ class ContactList extends BaseList {
 	    $x .= $this->footer($ncol);
 
 	$x .= "</table>";
+
+	if ($this->listNumber) {
+	    $ids["description"] = ($listtitle ? $listtitle : "Users");
+	    $ids["timestamp"] = time();
+	    $ids["listid"] = "account:" . $this->limit;
+	    $ids["url"] = "contacts$ConfSiteSuffix?t=" . $this->limit;
+	    $ids["type"] = "a";
+	    $_SESSION["l"][$this->listNumber] = $ids;
+	}
 
 	return $x;
     }

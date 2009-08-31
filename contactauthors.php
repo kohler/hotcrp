@@ -13,7 +13,7 @@ $Me->goIfInvalid();
 function confHeader() {
     global $ConfSiteSuffix, $prow, $Conf;
     $title = ($prow ? "Paper #$prow->paperId Contact Authors" : "Paper Contact Authors");
-    $Conf->header($title, "contactauthors", actionBar($prow, false, "Contact Authors", "contactauthors$ConfSiteSuffix?p=" . ($prow ? $prow->paperId : "")), false);
+    $Conf->header($title, "contactauthors", actionBar("contactauthors", $prow), false);
 }
 
 function errorMsgExit($msg) {
