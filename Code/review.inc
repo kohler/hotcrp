@@ -610,7 +610,7 @@ $blind\n";
 	    }
 	    $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
 	}
-	return $x . "\n==+== End Review\n";
+	return $x . "\n==+== Scratchpad (for private notes)\n\n==+== End Review\n";
     }
 
     function _prettyPaperTitle($prow, &$l) {
