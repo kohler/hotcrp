@@ -612,22 +612,20 @@ class PaperTable {
 	    for ($i = 0; $i < count($m[1]); ++$i)
 		$optsel[$m[1][$i]] = $m[2][$i];
 	    foreach ($options as $o) {
-		$om = defval($o, "optionValues");
 		$ov = defval($optsel, $o->optionId, 0);
-		if (($ov || $om)
+		if (($ov || $o->type)
 		    && ($o->pcView == 1
 			|| ($o->pcView == 2 && $Me->canViewAuthors($prow, $forceShow))
 			|| $showAllOptions
 			|| $prow->conflictType >= CONFLICT_AUTHOR)) {
-		    if (substr($om, 0, 2) == "\x7Fi") {
-			if ($ov != "")
-			    $optiondata .= htmlspecialchars("$o->optionName: " . $ov) . "<br />\n";
-		    } else if ($om) {
-			$om = explode("\n", $om);
+		    if ($o->type == 0)
+			$optiondata .= htmlspecialchars($o->optionName) . "<br />\n";
+		    else if ($o->type == 1) {
+			$om = explode("\n", $o->optionValues);
 			if (defval($om, $ov, "") != "")
 			    $optiondata .= htmlspecialchars("$o->optionName: $om[$ov]") . "<br />\n";
-		    } else
-			$optiondata .= htmlspecialchars($o->optionName) . "<br />\n";
+		    } else if ($o->type == 2 && $ov != "")
+			$optiondata .= htmlspecialchars("$o->optionName: " . $ov) . "<br />\n";
 		}
 	    }
 	}
@@ -779,12 +777,24 @@ class PaperTable {
 	$optsel = array();
 	for ($i = 0; $i < count($m[1]); ++$i)
 	    $optsel[$m[1][$i]] = $m[2][$i];
+	$optdata = null;
 	foreach ($opt as $o) {
-	    $ov = defval($o, "optionValues");
 	    $optid = "opt$o->optionId";
-	    $myval = ($this->useRequest ? defval($_REQUEST, $optid)
-		      : defval($optsel, $o->optionId));
-	    if ($ov == "") {
+	    if ($this->useRequest)
+		$myval = defval($_REQUEST, $optid);
+	    else if ($o->type < 3)
+		$myval = defval($optsel, $o->optionId);
+	    else {
+		if (!$optdata) {
+		    $optdata = array();
+		    $result = $Conf->qe("select optionId, data from PaperOption where paperId=$prow->paperId", "while reading options");
+		    while (($row = edb_row($result)))
+			$optdata[$row[0]] = $row[1];
+		}
+		$myval = defval($optdata, $o->optionId);
+	    }
+
+	    if ($o->type == 0) {
 		echo $this->papt($optid, tagg_checkbox_h($optid, 1, $myval)
 				 . "&nbsp;" . tagg_label(htmlspecialchars($o->optionName)));
 		if ($o->description)
@@ -792,11 +802,14 @@ class PaperTable {
 		echo "<div class='papv'></div>\n\n";
 	    } else {
 		echo $this->papt($optid, htmlspecialchars($o->optionName));
+		if ($o->description)
 		    echo "<div class='paphint'>", $o->description, "</div>";
-		if (substr($ov, 0, 2) == "\x7Fi")
+		if ($o->type == 1)
+		    echo "<div class='papv'>", tagg_select("opt$o->optionId", explode("\n", $o->optionValues), $myval, array("onchange" => "hiliter(this)")), "</div>\n\n";
+		else if ($o->type == 2)
 		    echo "<div class='papv'><input type='text' class='textlite' name='$optid' value=\"", htmlspecialchars($myval), "\" size='8' onchange='hiliter(this)' /></div>\n\n";
 		else
-		    echo "<div class='papv'>", tagg_select("opt$o->optionId", explode("\n", $o->optionValues), $myval, array("onchange" => "hiliter(this)")), "</div>\n\n";
+		    echo "<div class='papv'><input type='text' class='textlite papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' /></div>\n\n";
 	    }
 	}
     }

@@ -1173,8 +1173,15 @@ function paperOptions() {
 	|| $_SESSION["paperOption"][0] <= $Conf->setting("paperOption")) {
 	$opt = array();
 	$result = $Conf->q("select * from OptionType order by optionName");
-	while (($row = edb_orow($result)))
+	while (($row = edb_orow($result))) {
+	    if (!isset($row->optionValues))	   // backwards compatibility
+		$row->optionValues = "";
+	    if (!isset($row->type) && $row->optionValues == "\x7Fi")
+		$row->type = 2;
+	    else if (!isset($row->type))
+		$row->type = ($row->optionValues ? 1 : 0);
 	    $opt[$row->optionId] = $row;
+	}
 	$_SESSION["paperOption"] = array($Conf->setting("paperOption"), $opt);
     }
     return $_SESSION["paperOption"][1];

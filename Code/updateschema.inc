@@ -134,6 +134,13 @@ function updateSchema($Conf) {
 	if ($Conf->q("update Settings set value=26 where name='allowPaperOption'"))
 	    $Conf->settings["allowPaperOption"] = 26;
     }
+    if ($Conf->settings["allowPaperOption"] == 26
+	&& $Conf->q("alter table PaperOption add `data` text")
+	&& $Conf->q("alter table OptionType add `type` tinyint(1) NOT NULL default '0'")
+	&& $Conf->q("update OptionType set type=2 where optionValues='\x7Fi'")
+	&& $Conf->q("update OptionType set type=1 where type=0 and optionValues!=''")
+	&& $Conf->q("update Settings set value=27 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 27;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

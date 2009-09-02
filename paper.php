@@ -213,7 +213,15 @@ function requestSameAsPaper($prow) {
 	if (($row[1] > 0) != $got)
 	    return false;
     }
-    if ($Conf->setting("paperOption")) {
+    if ($Conf->setting("paperOption") && $Conf->sversion >= 27) {
+	$result = $Conf->q("select OptionType.optionId, OptionType.type, coalesce(PaperOption.value, 0), coalesce(PaperOption.data, '') from OptionType left join PaperOption on PaperOption.paperId=$prow->paperId and PaperOption.optionId=OptionType.optionId");
+	while (($row = edb_row($result))) {
+	    $got = defval($_REQUEST, "opt$row[0]", "");
+	    if ($row[1] == 3 ? cvtint($got, 0) != $row[2]
+		: simplifyWhitespace($got) != $row[3])
+		return false;
+	}
+    } else if ($Conf->setting("paperOption")) { // backwards compatibility
 	$result = $Conf->q("select OptionType.optionId, coalesce(PaperOption.value, 0) from OptionType left join PaperOption on PaperOption.paperId=$prow->paperId and PaperOption.optionId=OptionType.optionId");
 	while (($row = edb_row($result))) {
 	    $got = defval($_REQUEST, "opt$row[0]", 0);
@@ -281,18 +289,20 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     if (!$isSubmitFinal && $Conf->setting("paperOption")) {
 	foreach (paperOptions() as $opt) {
 	    $oname = "opt$opt->optionId";
-	    $v = trim(defval($_REQUEST, $oname, 0));
-	    if ($opt->optionValues == "")
+	    $v = trim(defval($_REQUEST, $oname, ""));
+	    if ($opt->type == 0)
 		$_REQUEST[$oname] = ($v == 0 || $v == "" ? "" : 1);
-	    else if (substr($opt->optionValues, 0, 2) == "\x7Fi") {
+	    else if ($opt->type == 1)
+		$_REQUEST[$oname] = cvtint($v, 0);
+	    else if ($opt->type == 2) {
 		if ($v == "" || ($v = cvtint($v, null)) !== null)
 		    $_REQUEST[$oname] = ($v == "" ? "0" : $v);
 		else {
 		    $Error["opt$opt->optionId"] = 1;
-		    $emsg .= "The value for &ldquo;" . htmlspecialchars($opt->optionName) . "&rdquo; must be an integer.  ";
+		    $emsg .= "&ldquo;" . htmlspecialchars($opt->optionName) . "&rdquo; must be an integer.  ";
 		}
 	    } else
-		$_REQUEST[$oname] = cvtint($v, 0);
+		$_REQUEST[$oname] = $v;
 	}
     }
 
@@ -404,10 +414,16 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	if (!$Conf->qe("delete from PaperOption where paperId=$paperId", "while updating paper options"))
 	    return false;
 	$q = "";
-	foreach (paperOptions() as $opt)
-	    if (defval($_REQUEST, "opt$opt->optionId", "") != "")
-		$q .= "($paperId, $opt->optionId, " . $_REQUEST["opt$opt->optionId"] . "), ";
-	if ($q && !$Conf->qe("insert into PaperOption (paperId, optionId, value) values " . substr($q, 0, strlen($q) - 2), "while updating paper options"))
+	$q_optdata = ($Conf->sversion >= 27 ? ", null" : "");
+	foreach (paperOptions() as $o)
+	    if (defval($_REQUEST, "opt$o->optionId", "") != "") {
+		if ($o->type == 3)
+		    $q .= "($paperId, $o->optionId, 1, '" . sqlq($_REQUEST["opt$o->optionId"]) . "'), ";
+		else
+		    $q .= "($paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . $q_optdata . "), ";
+	    }
+	$q_optdata = ($Conf->sversion >= 27 ? ", data" : "");
+	if ($q && !$Conf->qe("insert into PaperOption (paperId, optionId, value$q_optdata) values " . substr($q, 0, strlen($q) - 2), "while updating paper options"))
 	    return false;
     }
 

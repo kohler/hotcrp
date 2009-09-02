@@ -516,30 +516,27 @@ class PaperSearch {
 	    if ($oname == "none" || $oname == "any"
 		|| strstr(strtolower($o->optionName), $oname) !== false) {
 		// find the relevant values
-		if ($oval !== ""
-		    && ($v = defval($o, "optionValues", "")) !== "") {
-		    if (substr($v, 0, 2) == "\x7Fi") {
-			if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
-			    $xval = $ocompar . $m[1];
-			else {
-			    $this->warn("Submission option &ldquo;" . htmlspecialchars($o->optionName) . "&rdquo; takes integer values.");
-			    $option_failure = true;
-			    continue;
-			}
-		    } else {
-			$xval = matchValue(explode("\n", $v), $oval);
-			if (count($xval) == 0)
-			    continue;
-			else if (count($xval) == 1)
-			    $xval = $ocompar . $xval[0];
-			else if ($ocompar != "=" && $ocompar != "!=") {
-			    $this->warn("Submission option &ldquo;" . htmlspecialchars("$oname:$oval") . "&rdquo; matches multiple values, can't use " . htmlspecialchars($ocompar) . ".");
-			    $option_failure = true;
-			    continue;
-			} else
-			    $xval = ($ocompar == "!=" ? " not in " : " in ")
-				. "(" . join(",", $xval) . ")";
+		if ($oval !== "" && $o->type == 2) {
+		    if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
+			$xval = $ocompar . $m[1];
+		    else {
+			$this->warn("Submission option &ldquo;" . htmlspecialchars($o->optionName) . "&rdquo; takes integer values.");
+			$option_failure = true;
+			continue;
 		    }
+		} else if ($oval !== "" && $o->type == 1) {
+		    $xval = matchValue(explode("\n", $o->optionValues), $oval);
+		    if (count($xval) == 0)
+			continue;
+		    else if (count($xval) == 1)
+			$xval = $ocompar . $xval[0];
+		    else if ($ocompar != "=" && $ocompar != "!=") {
+			$this->warn("Submission option &ldquo;" . htmlspecialchars("$oname:$oval") . "&rdquo; matches multiple values, can't use " . htmlspecialchars($ocompar) . ".");
+			$option_failure = true;
+			continue;
+		    } else
+			$xval = ($ocompar == "!=" ? " not in " : " in ")
+			    . "(" . join(",", $xval) . ")";
 		} else if ($oval === "" || $oval === "yes")
 		    $xval = "!=0";
 		else if ($oval === "no")

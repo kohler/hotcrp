@@ -485,25 +485,21 @@ function doTopics($set) {
 }
 
 function doCleanOptionValues($id) {
-    global $Error, $Highlight;
-    $optvt = defval($_REQUEST, "optvt$id", 0);
-    if ($optvt == 0)
-	unset($_REQUEST["optv$id"]);
-    else if ($optvt == 2)
-	$_REQUEST["optv$id"] = "\x7Fi";
-    else {
+    global $Conf, $Error, $Highlight;
+    $optvt = cvtint(defval($_REQUEST, "optvt$id", 0));
+    if ($optvt < 0 || $optvt > 3 || ($Conf->sversion < 27 && $optvt > 1))
+	$optvt = $_REQUEST["optvt$id"] = 0;
+    if ($optvt == 1) {
 	$v = "";
 	foreach (explode("\n", rtrim(cleannl($_REQUEST["optv$id"]))) as $t)
 	    $v .= trim($t) . "\n";
-	if ($v[0] == "\x7F") {
-	    $Error[] = "Illegal character in selector options.";
-	    $Highlight["optv$id"] = true;
-	} else if ($v == "\n") {
+	if ($v == "\n") {
 	    $Error[] = "Enter options for the selector, one per line.";
 	    $Highlight["optv$id"] = true;
 	} else
 	    $_REQUEST["optv$id"] = substr($v, 0, strlen($v) - 1);
-    }
+    } else
+	unset($_REQUEST["optv$id"]);
 }
 
 function doOptions($set) {
@@ -532,7 +528,8 @@ function doOptions($set) {
 	    && ($_REQUEST["optn$id"] != $o->optionName
 		|| defval($_REQUEST, "optd$id") != $o->description
 		|| defval($_REQUEST, "optp$id", 0) != $o->pcView
-		|| defval($_REQUEST, "optv$id", "") != defval($o, "optionValues", ""))) {
+		|| defval($_REQUEST, "optv$id", "") != defval($o, "optionValues", "")
+		|| defval($_REQUEST, "optvt$id", 0) != defval($o, "type", 0))) {
 	    if ($_REQUEST["optn$id"] == "") {
 		$Conf->qe("delete from OptionType where optionId=$id", $while);
 		$Conf->qe("delete from PaperOption where optionId=$id", $while);
@@ -543,6 +540,8 @@ function doOptions($set) {
 		    . "', pcView=" . min(max($pcview, 0), 2);
 		if ($Conf->sversion >= 14)
 		    $q .= ", optionValues='" . sqlq(defval($_REQUEST, "optv$id", "")) . "'";
+		if ($Conf->sversion >= 27)
+		    $q .= ", type='" . defval($_REQUEST, "optvt$id", 0) . "'";
 		$Conf->qe($q . " where optionId=$id", $while);
 		$anyo = true;
 	    }
@@ -561,6 +560,10 @@ function doOptions($set) {
 	if ($Conf->sversion >= 14) {
 	    $qa .= ", optionValues";
 	    $qb .= ", '" . sqlq(defval($_REQUEST, "optvn", "")) . "'";
+	}
+	if ($Conf->sversion >= 27) {
+	    $qa .= ", type";
+	    $qb .= ", '" . sqlq(defval($_REQUEST, "optvtn", 0)) . "'";
 	}
 	$Conf->qe("insert into OptionType ($qa) values ($qb)", $while);
 	$ochange = $anyo = true;
@@ -1168,6 +1171,7 @@ function doOptGroupOption($o) {
 	$o = (object) array("optionId" => $id,
 		"optionName" => defval($_REQUEST, "optn$id", $o->optionName),
 		"description" => defval($_REQUEST, "optd$id", $o->description),
+		"type" => defval($_REQUEST, "optvt$id", $o->type),
 		"optionValues" => defval($_REQUEST, "optv$id", $o->optionValues),
 		"pcView" => defval($_REQUEST, "optp$id", $o->pcView));
 
@@ -1196,8 +1200,8 @@ function doOptGroupOption($o) {
 		$oabbrev = $oword;
 		break;
 	    }
-	if (($v = defval($o, "optionValues", "")) !== "") {
-	    $a = explode("\n", $v);
+	if ($o->optionValues !== "") {
+	    $a = explode("\n", $o->optionValues);
 	    if (count($a) > 1 && $a[1] !== "")
 		$oabbrev .= "#" . strtolower(simplifyWhitespace($a[1]));
 	}
@@ -1213,13 +1217,15 @@ function doOptGroupOption($o) {
     if ($Conf->sversion >= 14) {
 	echo "<td class='pad'><div class='f-i'><div class='f-c'>",
 	    decorateSettingName("optvt$id", "Type"), "</div><div class='f-e'>";
-	$oval = defval($o, "optionValues", "");
+	$oval = $o->optionValues;
 	if (count($Error) > 0)
 	    $optvt = defval($_REQUEST, "optvt$id", 0);
 	else
-	    $optvt = (substr($oval, 0, 2) == "\x7Fi" ? 2 : ($oval ? 1 : 0));
-	echo tagg_select("optvt$id", array("Checkbox", "Selector", "Number"),
-			 $optvt,
+	    $optvt = $o->type;
+	$otypes = array("Checkbox", "Selector");
+	if ($Conf->sversion >= 27)
+	    array_push($otypes, "Number", "Text");
+	echo tagg_select("optvt$id", $otypes, $optvt,
 			 array("onchange" => "hiliter(this);void fold(\"optv$id\",this.value!=1);void fold(\"optv$id\",this.value!=2,1)")),
 	    "</div></div></td>";
     }
@@ -1230,7 +1236,7 @@ function doOptGroupOption($o) {
 	"</div></div></td></tr></table>";
 
     if ($Conf->sversion >= 14) {
-	$value = defval($o, "optionValues", "");
+	$value = $o->optionValues;
 	if ($optvt != 1)
 	    $value = "";
 	echo "<div id='foldoptv$id' class='",
@@ -1263,7 +1269,7 @@ function doOptGroup() {
 
 	echo $sep;
 
-	doOptGroupOption((object) array("optionId" => "n", "optionName" => "(Enter new option here)", "description" => "", "pcView" => 1, "optionValues" => ""));
+	doOptGroupOption((object) array("optionId" => "n", "optionName" => "(Enter new option here)", "description" => "", "pcView" => 1, "type" => 0, "optionValues" => ""));
 
 	echo "</table>\n";
     }
