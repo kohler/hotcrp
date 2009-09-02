@@ -60,6 +60,9 @@ function createUser(&$tf, $newProfile) {
 	$_REQUEST["upassword"] = $_REQUEST["upassword2"] = $Acct->password;
     } else if ($newProfile)
 	$_REQUEST["upassword"] = "";
+    else if (defval($_REQUEST, "whichpassword") == "t"
+	     && isset($_REQUEST["upasswordt"]))
+	$_REQUEST["upassword"] = $_REQUEST["upassword2"] = $_REQUEST["upasswordt"];
 
     // check for missing fields
     $any_missing = false;
@@ -204,6 +207,7 @@ function createUser(&$tf, $newProfile) {
 	    $Conf->log("Account updated" . ($Me->contactId == $Acct->contactId ? "" : " by $Me->email"), $Acct);
 	foreach (array("firstName", "lastName", "affiliation") as $k)
 	    $_REQUEST[$k] = $Acct->$k;
+	$_REQUEST["upassword"] = $_REQUEST["upassword2"] = $_REQUEST["upasswordt"] = $Acct->password;
     }
 
     return $Acct;
@@ -425,6 +429,8 @@ else if ($Me->contactId != $Acct->contactId)
 echo "' enctype='multipart/form-data' accept-charset='UTF-8' autocomplete='off'><div class='aahc'>\n";
 if (isset($_REQUEST["redirect"]))
     echo "<input type='hidden' name='redirect' value=\"", htmlspecialchars($_REQUEST["redirect"]), "\" />\n";
+if ($Me->privChair)
+    echo "<input type='hidden' name='whichpassword' value='' />\n";
 
 echo "<table id='foldaccount' class='form foldc ",
     ($_REQUEST["pctype"] == "no" ? "fold1c" : "fold1o"),
@@ -461,9 +467,9 @@ if (!$newProfile && !isset($Opt["ldapLogin"])) {
     echo "<div class='f-i'><div class='f-ix'>
   <div class='", fcclass('password'), "'>Password";
     echo "</div>
-  <div class='", feclass('password'), "'><input class='textlite fn' type='password' name='upassword' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this);shiftPassword(1)' />";
+  <div class='", feclass('password'), "'><input class='textlite fn' type='password' name='upassword' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this)' />";
     if ($Me->privChair)
-	echo "<input class='textlite fx' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upasswordt', 'password'), "\" onchange='hiliter(this);shiftPassword(0)' />";
+	echo "<input class='textlite fx' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upasswordt', 'password'), "\" onchange='hiliter(this)' />";
     echo "</div>
 </div><div class='fn f-ix'>
   <div class='", fcclass('password'), "'>Repeat password</div>
@@ -471,7 +477,7 @@ if (!$newProfile && !isset($Opt["ldapLogin"])) {
 </div>
   <div class='f-h'>The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don't use a login password or any other high-security password.";
     if ($Me->privChair)
-	echo "  <span class='sep'></span><span class='f-cx'><a class='fn' href='javascript:void fold(\"account\")'>Show password</a><a class='fx' href='javascript:void fold(\"account\")'>Hide password</a></span>";
+	echo "  <span class='sep'></span><span class='f-cx'><a class='fn' href='javascript:void shiftPassword(0)'>Show password</a><a class='fx' href='javascript:void shiftPassword(1)'>Hide password</a></span>";
     echo "</div>\n  <div class='clear'></div></div>\n\n";
 }
 

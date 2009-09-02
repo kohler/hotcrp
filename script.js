@@ -153,11 +153,9 @@ function contactPulldown(which) {
 
 function shiftPassword(direction) {
     var form = e("accountform");
-    if (form && form.upassword && form.upasswordt && form.upassword.value != form.upasswordt.value)
-	if (direction)
-	    form.upasswordt.value = form.upassword.value;
-	else
-	    form.upassword.value = form.upassword2.value = form.upasswordt.value;
+    fold("account", direction);
+    if (form && form.whichpassword)
+	form.whichpassword.value = direction ? "" : "t";
 }
 
 
