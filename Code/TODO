@@ -34,6 +34,71 @@
 
 - upload multiple documents [Gareth Gale]
 
+- When external reviewers submit their reviews, it might be a good idea to
+  inform the requesting PC member that the review has been
+  submitted. Perhaps this could be an option available in the settings
+  panel ? [Moses Charikar]
+
+- More than once, PC members asked if they could upload pdf files they had
+  received as reviews. In one case, I converted the pdf to text, but in
+  general, it would be useful to have a pdf upload option for reviews. I
+  agree that it interferes with viewing everything on one screen, but in
+  some cases (with a lot of math) pdf is very handy. If this is supported,
+  it would also be good to send such pdf reviews as attachments (if they
+  are meant to be seen by authors) when reviews are sent out, or be
+  available to authors online when the reviews are made visible. [Moses
+  Charikar]
+
+- We didn't do a full fledged rebuttal phase, but I contacted authors on a
+  case by case basis, typically forwarding snippets of reviews and
+  requesting a response. I got back email responses which I posted as a
+  comment. It would be convenient if the system had a mechanism to allow
+  authors to respond on the conference server (without having all reviews
+  visible to them) and have the response appear as a comment
+  automatically. A couple more related things: a. It would be convenient to
+  allow PC members to initiate such author communication (in an anonymous
+  fashion). As PC chair, all communication to authors was channeled through
+  me - such a feature would take some of the load off.  b. Authors
+  sometimes responded with pdf files, so it would be convenient to allow
+  pdf uploads in author responses. [Moses Charikar]
+
+- As PC chair, I used the action log quite frequently. It occurred to me
+  that it might have been convenient for PC members to have such a list too
+  - restricted to papers that they were assigned to, or have commented on
+  ... basically all papers that they would receive email notification
+  about. This would allow them to scan through all the new things that have
+  happened since the last time they logged in. [Moses Charikar]
+
+- In several cases, we compared multiple papers. To facilitate this, I
+  added a common tag to a group of papers and also created a dummy paper to
+  hold the comments relevant to that group. It would be nice if the system
+  supported such a discussion. One idea might be to allow comments to have
+  tags, and then the comment shows up for all papers that have the matching
+  tag. Alternately, a comment could be associated with multiple papers and
+  this could be specified when the comment is entered (this will be hard to
+  do if the group of relevant papers is large.) [Moses Charikar]
+
+- We found the graphical display of score distributions for PC members
+  very useful. Two suggestions: a. It would be useful to have the option of
+  displaying distributions corresponding to scores given by a PC member
+  together with scores assigned by external reviewers invited by this PC
+  member. b. One PC member suggested that these distributions be displayed
+  on every paper page next to the reviewer names, so that they can be
+  factored in while interpreting the scores assigned. [Moses Charikar]
+
+- I had mentioned that "review delegated" stays on even if an external
+  reviewer refuses the review. You tried to debug this earlier and thought
+  it was something to do with the chair. Apparently this happened also with
+  other PC members. [Moses Charikar]
+
+- One PC member said "The server lost the name of my external reviewer
+  that I entered in the name field (on two occasions; see, e.g., #21), and
+  rudely addressed the person by their email address.  :) Now it does not
+  allow me to change "[no name]" in the name field." [Moses Charikar]
+
+- While displaying abstracts of papers, paragraph breaks are
+  ignored. [Moses Charikar]
+
 - 1. We had an author withdraw their paper several weeks after submission.
   As a result, the paper, all its reviews and the review assignments also
   vanished.  And not only that, even though we actually reviewed 176
