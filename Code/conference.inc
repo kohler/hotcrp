@@ -67,7 +67,7 @@ class Conference {
     //
 
     function updateSettings() {
-	global $Opt;
+	global $Opt, $OK;
 	$this->settings = array();
 	$this->settingTexts = array();
 	$result = $this->q("select name, value, data from Settings");
