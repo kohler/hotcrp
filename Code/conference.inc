@@ -179,17 +179,6 @@ class Conference {
 	return $result;
     }
 
-    function qe2($query, $while = "", $suggestRetry = false) {
-	global $OK;
-	$result = mysql_query($query, $this->dblink);
-	if ($result === false) {
-	    $this->errorMsg($this->dbErrorText(true, $while . " (" . htmlspecialchars($query) . ")", $suggestRetry));
-	    $OK = false;
-	    return new PEAR_Error("Database error");
-	}
-	return $result;
-    }
-
     function lastInsertId($while = "", $suggestRetry = false) {
 	global $OK;
 	$result = mysql_insert_id($this->dblink);
@@ -444,97 +433,100 @@ class Conference {
     // Paper storage
     //
 
-    function storePaper($uploadId, $prow, $final, $override) {
-	global $ConfSiteSuffix, $Opt;
-
-	$paperId = (is_numeric($prow) ? $prow : $prow->paperId);
+    function storePDF($uploadId, $paperId, $mimetypes = null) {
 	$while = "while storing paper in database";
 
-	if ($uploadId && fileUploaded($_FILES[$uploadId], $this))
-	    $filename = $_FILES[$uploadId]['tmp_name'];
+	if (!$uploadId
+	    || !fileUploaded($_FILES[$uploadId], $this)
+	    || !isset($_FILES[$uploadId]["tmp_name"]))
+	    return $this->errorMsg("There was an upload error with your file.  Please try again.");
+
+	$filename = $_FILES[$uploadId]["tmp_name"];
+	if (($contents = file_get_contents($filename)) === false
+	    || strlen($contents) == 0)
+	    return $this->errorMsg("Your uploaded file appears to be empty.  Please try again.");
+
+	// Check if paper one of the allowed mimetypes.
+	// We prefer to look at data since MacOS browsers get this wrong.
+	if (strncasecmp("%PDF-", $contents, 5) == 0)
+	    $mimetype = "application/pdf";
+	else if (strncasecmp("%!PS-", $contents, 5) == 0)
+	    $mimetype = "application/postscript";
 	else
+	    $mimetype = defval($_FILES[$uploadId], "type", "application/octet-stream");
+	if (!$mimetypes)
+	    $mimetypes = array("application/pdf");
+	if (array_search($mimetype, $mimetypes) === false) {
+	    $message = "Your uploaded file does not appear to be ";
+	    if (count($mimetypes) == 1 && $mimetypes[0] == "application/pdf")
+		$message .= "a PDF.  ";
+	    else if (count($mimetypes) == 1 && $mimetypes[0] == "application/postscript")
+		$message .= "a PostScript file.  ";
+	    else if (count($mimetypes) == 2 && $mimetypes[0] == "application/pdf" && $mimetypes[1] == "application/postscript")
+		$message .= "a PDF or PostScript file.  ";
+	    else if (count($mimetypes) > 0)
+		$message .= "a valid type (one of " . join(", ", $mimetypes) . ").  ";
+	    else
+		$message .= "valid (internal error: there are no valid formats).  ";
+	    $message .= "(Your file has MIME type &ldquo;" . htmlentities($mimetype) . "&rdquo; and starts with &ldquo;" . htmlspecialchars(substr($contents, 0, 5)) . "&rdquo;.)<br />Please convert your file to a supported type and try again.";
+	    return $this->errorMsg($message);
+	}
+
+	// store the paper
+	$timestamp = time();
+	if (!$this->qe("insert into PaperStorage set paperId=$paperId, timestamp=$timestamp, mimetype='" . sqlq($mimetype) . "', paper='" . sqlq(substr($contents, 0, 400000)) . "'", $while))
 	    return false;
 
-	if (isset($filename)) {
-	    if (($contents = file_get_contents($filename)) === false
-		|| strlen($contents) == 0)
-		return false;
+	$paperStorageId = $this->lastInsertId($while);
+	if (!$paperStorageId)
+	    return $this->errorMsg("Database error: last_insert_id unsuccessful!");
 
-	    // Check if paper is postscript or PDF, only kinds allowed.
-	    // We ignore the mimetype since MacOS browsers get this wrong
-	    $allowPDF = !defval($Opt, 'disablePDF');
-	    $allowPS = !defval($Opt, 'disablePS');
-	    if ($allowPDF && strncasecmp("%PDF-", $contents, 5) == 0)
-		$mimetype = "application/pdf";
-	    else if ($allowPS && strncasecmp("%!PS-", $contents, 5) == 0)
-		$mimetype = "application/postscript";
-	    else {
-		$mimetype = "application/octet-stream";
-		if (isset($_FILES[$uploadid]["type"]))
-		    $mimetype = $_FILES[$uploadid]["type"];
-		$message = "You appear to be submitting a file that's not in a valid format for this conference.  ";
-		if ($allowPDF && $allowPS)
-		    $message .= "Valid formats are PDF and PostScript.  ";
-		else if ($allowPDF)
-		    $message .= "PDF is the only valid format.  ";
-		else if ($allowPS)
-		    $message .= "PostScript is the only valid format.  ";
-		else
-		    $message .= "Internal error: there are no valid formats.  ";
-		$message .= "You tried to upload a file with MIME type '" . htmlentities($mimetype) . "'; ";
-		$message .= "its first 10 bytes are " . htmlspecialchars(substr($contents, 0, 5)) . ".<br/><br/>Please check the file contents; if you think this message is in error, contact the site administrator.";
-		return $this->errorMsg($message);
-	    }
-	}
-
-	$result = $this->qe2("lock tables Paper write, PaperStorage write", $while);
-	if (PEAR::isError($result))
-	    return $result;
-
-	$timestamp = time();
-	$result = $this->qe2("insert into PaperStorage set paperId=$paperId, timestamp=$timestamp, mimetype='" . sqlq($mimetype) . "', paper='" . sqlq(substr($contents, 0, 400000)) . "'", $while);
-	if (!PEAR::isError($result)) {
-	    $paperStorageId = $this->lastInsertId($while);
-	    if (!$paperStorageId)
-		$result = new PEAR_Error("last_insert_id unsuccessful!");
-	}
-	if (!PEAR::isError($result)) {
-	    for ($pos = 400000; $pos < strlen($contents) && $result; $pos += 400000)
-		$result = $this->qe2("update PaperStorage set paper=concat(paper,'" . sqlq(substr($contents, $pos, 400000)) . "') where paperStorageId=$paperStorageId", $while);
-	}
+	for ($pos = 400000; $pos < strlen($contents); $pos += 400000)
+	    if (!$this->qe("update PaperStorage set paper=concat(paper,'" . sqlq(substr($contents, $pos, 400000)) . "') where paperStorageId=$paperStorageId", $while))
+		break;
 
 	// check that paper storage succeeded
-	if (!PEAR::isError($result))
-	    $result = $this->qe2("select length(paper) from PaperStorage where paperStorageId=$paperStorageId", $while);
-	if (!PEAR::isError($result)) {
-	    if (edb_nrows($result) == 0)
-		$result = new PEAR_Error("Paper upload unsuccessful!");
-	    else {
-		$row = edb_row($result);
-		if ($row[0] != strlen($contents))
-		    $result = new PEAR_Error("Failed to store your paper.  Usually, this is because the file you tried to upload was too big for our system.");
-	    }
-	    if (PEAR::isError($result))
-		$this->errorMsg($result->getMessage());
-	}
+	if (!($result = $this->qe("select length(paper) from PaperStorage where paperStorageId=$paperStorageId", $while))
+	    || !($row = edb_row($result))
+	    || $row[0] != strlen($contents))
+	    return $this->errorMsg("Failed to store your paper.  Usually, this is because the file you tried to upload was too big for our system.  Please try again.");
 
-	if (!PEAR::isError($result)) {
-	    $sha1 = '';
-	    if (!defval($Opt, "disableSHA1"))
-		$sha1 = ", sha1='" . sqlq(sha1($contents, true)) . "'";
-	    $result = $this->qe2("update Paper set "
-		. ($final ? "finalPaperStorageId" : "paperStorageId") . "=$paperStorageId, "
-		. "size=" . strlen($contents) . ", mimetype='" . sqlq($mimetype) . "', timestamp=$timestamp" . $sha1
-		. " where paperId=$paperId and timeWithdrawn<=0", $while);
-	}
+	// return data about the paper
+	return array("paperStorageId" => $paperStorageId,
+		     "contents" => $contents, "size" => strlen($contents),
+		     "mimetype" => $mimetype, "timestamp" => $timestamp,
+		     "sha1" => sha1($contents, true));
+    }
 
-	$this->qe2("unlock tables", $while);
+    function storePaper($uploadId, $prow, $final) {
+	global $ConfSiteSuffix, $Opt;
+	$paperId = (is_numeric($prow) ? $prow : $prow->paperId);
 
-	if (PEAR::isError($result))
-	    return $result;
+	$mimetypes = array();
+	if (!defval($Opt, "disablePDF"))
+	    $mimetypes[] = "application/pdf";
+	if (!defval($Opt, "disablePS"))
+	    $mimetypes[] = "application/postscript";
+
+	$answer = $this->storePDF($uploadId, $paperId, $mimetypes);
+	if (!$answer)
+	    return false;
+
+	$while = "while storing paper in database";
+
+	$sha1 = "";
+	if (!defval($Opt, "disableSHA1"))
+	    $sha1 = ", sha1='" . sqlq($answer["sha1"]) . "'";
+	if (!$this->qe("update Paper set "
+		. ($final ? "finalPaperStorageId" : "paperStorageId") . "=" . $answer["paperStorageId"]
+		. ", size=" . $answer["size"]
+		. ", mimetype='" . sqlq($answer["mimetype"])
+		. "', timestamp=" . $answer["timestamp"] . $sha1
+		. " where paperId=$paperId and timeWithdrawn<=0", $while))
+	    return false;
 
 	// potentially email the paper to Greg Minshall
-	if (defval($Opt, 'emailSubmissions', false)) {
+	if (defval($Opt, "emailSubmissions", false)) {
 	    if (is_numeric($prow))
 		$prow = $this->paperRow($paperId);
 
@@ -544,7 +536,7 @@ class Conference {
 	    // prepare data
 	    $subject = "[" . $Opt["shortName"] . "] Paper #$paperId upload";
 	    $message = "           Paper: " . $Opt["paperSite"] . "/paper$ConfSiteSuffix?p=$paperId
-       Submitted: " . $this->printableTime($timestamp) . "\n\n"
+       Submitted: " . $this->printableTime($answer["timestamp"]) . "\n\n"
 		. wordWrapIndent(trim($prow->title), "Title: ") . "\n"
 		. wordWrapIndent(trim($prow->abstract), "Abstract: ") . "\n\n"
 		. wordWrapIndent(cleanAuthorText($prow), "Authors: ") . "\n"
@@ -561,7 +553,8 @@ class Conference {
 
 	    $mime = new Mail_mime("\n");
 	    $mime->setTXTBody($message);
-	    $mime->addAttachment($contents, $mimetype, $this->downloadPaperName($paperId, $mimetype, false), false);
+	    $mime->addAttachment($answer["contents"], $answer["mimetype"],
+				 $this->downloadPaperName($paperId, $contents["mimetype"], false), false);
 
 	    $body = $mime->get();
 	    $hdrs = $mime->headers(array("From" => $Opt["emailFrom"],
@@ -574,7 +567,7 @@ class Conference {
 		$this->infoMsg("<pre>" . htmlspecialchars($body) . "</pre>");
 	}
 
-	return strlen($contents);
+	return $answer["size"];
     }
 
     function downloadPaperName($paperId, $mimetype, $final) {

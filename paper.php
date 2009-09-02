@@ -234,13 +234,9 @@ function requestSameAsPaper($prow) {
 
 function uploadPaper($isSubmitFinal) {
     global $prow, $Conf, $Me;
-    $result = $Conf->storePaper('paperUpload', $prow, $isSubmitFinal,
-				$Me->privChair && defval($_REQUEST, "override"));
-    if ($result === false || PEAR::isError($result)) {
-	$Conf->errorMsg("There was an error while trying to update your paper.  Please try again.");
-	return false;
-    }
-    return true;
+    return $Conf->storePaper('paperUpload', $prow, $isSubmitFinal,
+			     $Me->privChair && defval($_REQUEST, "override"))
+	!== false;
 }
 
 function updatePaper($Me, $isSubmit, $isSubmitFinal) {
