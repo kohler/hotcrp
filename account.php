@@ -422,7 +422,7 @@ if ($newProfile)
     echo "?new=1";
 else if ($Me->contactId != $Acct->contactId)
     echo "?contact=", $Acct->contactId;
-echo "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>\n";
+echo "' enctype='multipart/form-data' accept-charset='UTF-8' autocomplete='off'><div class='aahc'>\n";
 if (isset($_REQUEST["redirect"]))
     echo "<input type='hidden' name='redirect' value=\"", htmlspecialchars($_REQUEST["redirect"]), "\" />\n";
 
