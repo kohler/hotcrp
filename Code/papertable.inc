@@ -785,7 +785,7 @@ class PaperTable {
 	    else if ($o->type < 3)
 		$myval = defval($optsel, $o->optionId);
 	    else {
-		if (!$optdata) {
+		if (!$optdata && $prow) {
 		    $optdata = array();
 		    $result = $Conf->qe("select optionId, data from PaperOption where paperId=$prow->paperId", "while reading options");
 		    while (($row = edb_row($result)))
