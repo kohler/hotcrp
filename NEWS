@@ -1,5 +1,37 @@
 HotCRP NEWS
 
+Version 2.35
+
+* Paper options: Support numeric values, text values, and PDF uploads.
+
+* Account display/profile page: Usability improvements, add links between
+  people, support bulk upload of many users at once.
+
+* "conflict:pc" search returns all PC conflict papers.
+
+* Web review forms default to "ready for others to see."
+
+* Chair paper lists: Sorting doesn't expose conflicted scores by default;
+  an "override conflicts" checkbox shows conflicted scores.
+
+* Fix information leak: Final copy upload support doesn't expose paper
+  acceptance.
+
+* New settings: soft deadline for final copy collection; "PC members can
+  edit external reviews they requested"; format checker understands
+  fractional point sizes; "Visible if authors are visible" setting for
+  paper options.
+
+* Bug fixes and improvements to createdb.sh, quicklinks, default conference
+  settings, decision type settings, mailer.
+
+* Thanks to John Heidemann, John P. John, Jane-Ellen Long, Tadayoshi Kohno,
+  Mark Gebhart, Moses Charikar, Tony Del Porto, Ian Goldberg, Adam
+  Moskowitz, Tom Anderson, Jeff Mogul, David Wagner, John Wilkes, and Alex
+  Aiken.  Special thanks to John Heidemann for providing patches! in
+  addition to bug reports and feature requests.
+
+
 Version 2.34   21.Mar.2009
 
 * Tag colors!  After a Dan Wallach suggestion.  Tag a paper "red" and it
