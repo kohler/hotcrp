@@ -13,7 +13,10 @@ $Me->goIfInvalid();
 
 // Determine the intended paper
 
-$final = (defval($_REQUEST, 'final', 0) != 0);
+if (defval($_REQUEST, "final", 0) != 0)
+    $documentType = -1;
+else
+    $documentType = cvtint(defval($_REQUEST, "dt", 0), 0);
 
 if (isset($_REQUEST["p"]))
     $paperId = rcvtint($_REQUEST["p"]);
@@ -21,15 +24,21 @@ else if (isset($_REQUEST["paperId"]))
     $paperId = rcvtint($_REQUEST["paperId"]);
 else {
     $paper = preg_replace("|.*/doc(\.php)?/*|", "", $_SERVER["PHP_SELF"]);
-    if (preg_match("/^(" . $Opt['downloadPrefix'] . ")?(paper-?)?(\d+).*$/", $paper, $match)
-	&& $match[3] > 0)
+    if (preg_match("/^(" . $Opt["downloadPrefix"] . ")?([-A-Za-z0-9]*?)?-?(\d+)\..*$/", $paper, $match)
+	&& $match[3] > 0) {
 	$paperId = $match[3];
-    else if (preg_match("/^(" . $Opt['downloadPrefix'] . ")?(final-?)(\d+).*$/", $paper, $match)
-	     && $match[3] > 0) {
-	$paperId = $match[3];
-	$final = true;
+	$pt = strtolower($match[2]);
+	if ($pt == "final")
+	    $documentType = -1;
+	else if ($pt != "paper") {
+	    foreach (paperOptions() as $o)
+		if ($o->optionAbbrev == $pt)
+		    $documentType = $o->optionId;
+	    if ($documentType <= 0)
+		$Error = "Invalid paper name &ldquo;" . htmlspecialchars($paper) . "&rdquo;.";
+	}
     } else
-	$Error = "Invalid paper name '" . htmlspecialchars($paper) . "'.";
+	$Error = "Invalid paper name &ldquo;" . htmlspecialchars($paper) . "&rdquo;.";
 }
 
 
@@ -41,7 +50,7 @@ if (!isset($Error) && !$Me->canDownloadPaper($paperId, $whyNot))
 
 // Actually download paper.
 if (!isset($Error)) {
-    $result = $Conf->downloadPaper($paperId, rcvtint($_REQUEST["save"]) > 0, $final);
+    $result = $Conf->downloadPaper($paperId, rcvtint($_REQUEST["save"]) > 0, $documentType);
     if (!PEAR::isError($result))
 	exit;
 }

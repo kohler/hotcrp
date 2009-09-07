@@ -852,6 +852,11 @@ img.dlimg, img.placthook {
 	bottom: -6px;
 	margin-top: -6px;
 }
+img.sdlimg {
+	position: relative;
+	bottom: -4px;
+	margin-top: -4px;
+}
 img.elimg {
 	position: relative;
 	bottom: -3px;

@@ -582,25 +582,33 @@ class Conference {
 	$title = $Opt["downloadPrefix"];
 	if ($documentType < 0)
 	    $title .= "final";
-	else
+	else if ($documentType == 0)
 	    $title .= "paper";
+	else {
+	    $opt = paperOptions();
+	    if (($o = $opt[$documentType]) && $o->type == 4)
+		$title .= $o->optionAbbrev;
+	    else
+		$title .= "xxx";
+	}
+	if (ctype_digit($title[strlen($title) - 1]))
+	    $title .= "-";
 	return $title . $paperId . $this->getFileExtension($mimetype);
     }
 
-    function __downloadPaper($paperId, $saveit, $final) {
+    function __downloadPaper($paperId, $saveit, $documentType) {
 	global $zlib_output_compression;
 
 	// Database query
-	$storefield = ($final ? "finalPaperStorageId" : "paperStorageId");
-	$result = $this->q("select PaperStorage.mimetype, paper, PaperStorage.paperStorageId, compression
-	from Paper
-	left join PaperStorage on (PaperStorage.paperStorageId=Paper.$storefield)
-	where Paper.paperId=$paperId");
+	if ($documentType <= 0)
+	    $result = $this->q("select s.mimetype, s.paper, s.paperStorageId, s.compression from Paper p left join PaperStorage s on (s.paperStorageId=p." . ($documentType < 0 ? "finalPaperStorageId" : "paperStorageId") . ") where p.paperId=$paperId");
+	else
+	    $result = $this->q("select s.mimetype, s.paper, s.paperStorageId, s.compression from PaperOption o left join PaperStorage s on (s.paperStorageId=o.value) where o.paperId=$paperId and o.optionId=$documentType");
 	if (!$result) {
 	    $this->log("Error downloading for review: " . mysql_error($this->dblink), $_SESSION["Me"], $paperId);
 	    return new PEAR_Error("Database error while downloading paper.");
 	} else if (edb_nrows($result) == 0)
-	    return new PEAR_Error("There is no paper #$paperId.");
+	    return new PEAR_Error("No such document.");
 
 	// Check data
 	$row = edb_row($result);
@@ -615,7 +623,7 @@ class Conference {
 	// Print paper
 	header("Content-Type: $mimetype");
 	header("Content-Description: PHP Generated Data");
-	$name = $this->downloadPaperName($paperId, $mimetype, $final ? -1 : 0);
+	$name = $this->downloadPaperName($paperId, $mimetype, $documentType);
 	header("Content-Disposition: " . ($saveit ? "attachment" : "inline") . "; filename=$name");
 	if ($compression == 1)
 	    $content = gzinflate($content);
@@ -625,8 +633,8 @@ class Conference {
 	return 1;
     }
 
-    function downloadPaper($paperId, $saveit, $final = false) {
-	$result = $this->__downloadPaper($paperId, $saveit, $final);
+    function downloadPaper($paperId, $saveit, $documentType = 0) {
+	$result = $this->__downloadPaper($paperId, $saveit, $documentType);
 	if (PEAR::isError($result))
 	    $this->errorMsg($result->getMessage());
 	else
@@ -675,7 +683,7 @@ class Conference {
 	if (count($paperIds) == 0)
 	    return new PEAR_Error("No papers selected for download.");
 	else if (count($paperIds) == 1)
-	    return $this->__downloadPaper($paperIds[0], 1, $final);
+	    return $this->__downloadPaper($paperIds[0], 1, $final ? -1 : 0);
 
 	// paper query
 	$q = "select Paper.paperId, paper, PaperStorage.mimetype, compression from PaperStorage join Paper on (PaperStorage.paperStorageId=Paper." . ($final ? "finalPaperStorageId" : "paperStorageId") . ") where (";

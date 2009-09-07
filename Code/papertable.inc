@@ -645,6 +645,8 @@ class PaperTable {
 			    $optiondata .= htmlspecialchars("$o->optionName: $om[$ov]") . "<br />\n";
 		    } else if ($o->type == 2 && $ov != "")
 			$optiondata .= htmlspecialchars("$o->optionName: " . $ov) . "<br />\n";
+		    else if ($o->type == 4 && $ov)
+			$optiondata .= "<a href=\"" . $Conf->makeDownloadPath($prow->paperId, "application/pdf", $o->optionId) . "\">" . $Conf->cacheableImage("pdf.png", "[PDF]", null, "sdlimg") . "&nbsp;" . htmlspecialchars($o->optionName) . "</a><br />\n";
 		}
 	    }
 	}
@@ -801,7 +803,7 @@ class PaperTable {
 	    $optid = "opt$o->optionId";
 	    if ($this->useRequest)
 		$myval = defval($_REQUEST, $optid);
-	    else if ($o->type < 3)
+	    else if ($o->type != 3)
 		$myval = defval($optsel, $o->optionId);
 	    else {
 		if (!$optdata && $prow) {
@@ -819,7 +821,7 @@ class PaperTable {
 		if ($o->description)
 		    echo "<div class='paphint'>", $o->description, "</div>";
 		echo "<div class='papv'></div>\n\n";
-	    } else {
+	    } else if ($o->type < 4) {
 		echo $this->papt($optid, htmlspecialchars($o->optionName));
 		if ($o->description)
 		    echo "<div class='paphint'>", $o->description, "</div>";
@@ -829,6 +831,27 @@ class PaperTable {
 		    echo "<div class='papv'><input type='text' class='textlite' name='$optid' value=\"", htmlspecialchars($myval), "\" size='8' onchange='hiliter(this)' /></div>\n\n";
 		else
 		    echo "<div class='papv'><input type='text' class='textlite papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' /></div>\n\n";
+	    } else {
+		echo $this->papt($optid, htmlspecialchars($o->optionName)
+				 . " <span class='papfnh'>(PDF, max size "
+				 . ini_get("upload_max_filesize")
+				 . "B)</span>");
+		if ($o->description)
+		    echo "<div class='paphint'>", $o->description, "</div>";
+		echo "<div class='papv'>";
+		$doc = null;
+		if (defval($optsel, $o->optionId)) {
+		    $doc = paperDocumentData($prow, $o->optionId, $optsel[$o->optionId]);
+		    if ($doc) {
+			$d = "<td class='nowrap'>" . documentDownload($doc) . "</td>";
+			if (($stamps = $this->pdfStamps($doc)))
+			    $d .= "<td><span class='sep'></span></td><td>$stamps</td>";
+			echo "<table><tr>", $d, "</tr></table>\n";
+		    }
+		}
+		echo ($doc ? "<div class='g'></div>\nUpload new version:" : "Upload:"),
+		    "&nbsp; <input class='textlite' type='file' name='$optid' accept='application/pdf' size='30' onchange='hiliter(this)' />",
+		    "</div>\n\n";
 	    }
 	}
     }

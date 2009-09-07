@@ -486,8 +486,29 @@ function doTopics($set) {
 
 function doCleanOptionValues($id) {
     global $Conf, $Error, $Highlight;
+
+    if (!isset($_REQUEST["optn$id"])
+	|| ($id == "n"
+	    && ($_REQUEST["optn$id"] == "New option"
+		|| $_REQUEST["optn$id"] == "(Enter new option here)"))) {
+	unset($_REQUEST["optn$id"]);
+	return;
+    }
+    $_REQUEST["optn$id"] = simplifyWhitespace($_REQUEST["optn$id"]);
+    if ($_REQUEST["optn$id"] == "")
+	return;
+
+    if (isset($_REQUEST["optd$id"])) {
+	$t = cleanXHTML($_REQUEST["optd$id"], $err);
+	if ($t === false) {
+	    $Error[] = $err;
+	    $Highlight["optd$id"] = true;
+	} else
+	    $_REQUEST["optd$id"] = $t;
+    }
+
     $optvt = cvtint(defval($_REQUEST, "optvt$id", 0));
-    if ($optvt < 0 || $optvt > 3 || ($Conf->sversion < 27 && $optvt > 1))
+    if ($optvt < 0 || $optvt > 4 || ($Conf->sversion < 27 && $optvt > 1))
 	$optvt = $_REQUEST["optvt$id"] = 0;
     if ($optvt == 1) {
 	$v = "";
@@ -505,20 +526,30 @@ function doCleanOptionValues($id) {
 function doOptions($set) {
     global $Conf, $Values, $Error, $Highlight;
     if (!$set) {
-	foreach ($_REQUEST as $k => &$v)
-	    if (substr($k, 0, 4) == "optd"
-		&& (ctype_digit(substr($k, 4)) || $k == "optn")) {
-		if (cleanXHTML($v, $err) === false) {
-		    $Error[] = $err;
-		    $Highlight[$k] = true;
-		    return;
-		}
+	$optkeys = array_keys(paperOptions());
+	$optkeys[] = "n";
+	$optabbrs = array("paper" => -1, "final" => -1);
+	foreach ($optkeys as $id) {
+	    doCleanOptionValues($id);
+	    if (($oabbr = defval($_REQUEST, "optn$id", ""))) {
+		$oabbr = preg_replace("/-+\$/", "", preg_replace("/[^a-z0-9_]+/", "-", strtolower($oabbr)));
+		if (defval($optabbrs, $oabbr, 0) == -1) {
+		    $Error[] = "Option name &ldquo;" . htmlspecialchars($_REQUEST["optn$id"]) . "&rdquo; is reserved, since it abbreviates to &ldquo;$oabbr&rdquo;.  Please pick another option name.";
+		    $Highlight["optn$id"] = true;
+		} else if (defval($optabbrs, $oabbr)) {
+		    $Error[] = "Two or more options have the same abbreviation, &ldquo;$oabbr&rdquo;.  Please pick another option name to ensure unique abbreviations.";
+		    $Highlight["optn$id"] = $Highlight[$optabbrs[$oabbr]] = true;
+		} else
+		    $optabbrs[$oabbr] = "optn$id";
 	    }
-	if ($Conf->sversion >= 1)
+	}
+	if ($Conf->sversion >= 1 && count($Error) == 0)
 	    $Values["options"] = true;
 	return;
     }
     $while = "while updating options";
+
+    //
 
     $ochange = false;
     $anyo = false;
@@ -1218,15 +1249,14 @@ function doOptGroupOption($o) {
 	echo "<td class='pad'><div class='f-i'><div class='f-c'>",
 	    decorateSettingName("optvt$id", "Type"), "</div><div class='f-e'>";
 	$oval = $o->optionValues;
-	if (count($Error) > 0)
-	    $optvt = defval($_REQUEST, "optvt$id", 0);
-	else
-	    $optvt = $o->type;
+	$optvt = (count($Error) > 0 ? defval($_REQUEST, "optvt$id", 0) : $o->type);
 	$otypes = array("Checkbox", "Selector");
 	if ($Conf->sversion >= 27)
-	    array_push($otypes, "Number", "Text");
+	    array_push($otypes, "Numeric", "Text");
+	if ($Conf->sversion >= 28)
+	    array_push($otypes, "PDF upload");
 	echo tagg_select("optvt$id", $otypes, $optvt,
-			 array("onchange" => "hiliter(this);void fold(\"optv$id\",this.value!=1);void fold(\"optv$id\",this.value!=2,1)")),
+			 array("onchange" => "hiliter(this);void fold(\"optv$id\",this.value!=1)")),
 	    "</div></div></td>";
     }
 
@@ -1239,9 +1269,7 @@ function doOptGroupOption($o) {
 	$value = $o->optionValues;
 	if ($optvt != 1)
 	    $value = "";
-	echo "<div id='foldoptv$id' class='",
-	    ($optvt == 1 ? "foldo" : "foldc"),
-	    ($optvt == 2 ? " fold1o" : " fold1c"),
+	echo "<div id='foldoptv$id' class='", ($optvt == 1 ? "foldo" : "foldc"),
 	    "'><div class='fx'>",
 	    "<div class='hint'>Enter the selector choices one per line.  The first choice will be the default.</div>",
 	    "<textarea class='textlite' name='optv$id' rows='3' cols='50' onchange='hiliter(this)'>", htmlspecialchars($value), "</textarea>",
