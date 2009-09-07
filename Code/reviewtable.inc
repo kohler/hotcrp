@@ -7,6 +7,8 @@
 function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
     global $Conf, $ConfSiteSuffix, $Me, $rf, $forceShow,
 	$linkExtra, $reviewTypeName;
+    if (!$rf)
+	$rf = reviewForm();
 
     $subrev = array();
     $nonsubrev = array();
