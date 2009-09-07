@@ -23,8 +23,8 @@ if (isset($_REQUEST["p"]))
 else if (isset($_REQUEST["paperId"]))
     $paperId = rcvtint($_REQUEST["paperId"]);
 else {
-    $paper = preg_replace("|.*/doc(\.php)?/*|", "", $_SERVER["PHP_SELF"]);
-    if (preg_match("/^(" . $Opt["downloadPrefix"] . ")?([-A-Za-z0-9]*?)?-?(\d+)\..*$/", $paper, $match)
+    $paper = preg_replace("|.*/doc(\\.php)?/*|", "", $_SERVER["PHP_SELF"]);
+    if (preg_match("/^(" . $Opt["downloadPrefix"] . ")?([-A-Za-z0-9_]*?)?-?(\\d+)\\..*$/", $paper, $match)
 	&& $match[3] > 0) {
 	$paperId = $match[3];
 	$pt = strtolower($match[2]);
