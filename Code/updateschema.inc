@@ -141,6 +141,13 @@ function updateSchema($Conf) {
 	&& $Conf->q("update OptionType set type=1 where type=0 and optionValues!=''")
 	&& $Conf->q("update Settings set value=27 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 27;
+    if ($Conf->settings["allowPaperOption"] == 27
+	&& $Conf->q("alter table PaperStorage add `sha1` varbinary(20) NOT NULL default ''")
+	&& $Conf->q("alter table PaperStorage add `documentType` int(3) NOT NULL default '0'")
+	&& $Conf->q("update PaperStorage s, Paper p set s.sha1=p.sha1 where s.paperStorageId=p.paperStorageId and p.finalPaperStorageId=0 and s.paperStorageId>0")
+	&& $Conf->q("update PaperStorage s, Paper p set s.sha1=p.sha1, s.documentType=-1 where s.paperStorageId=p.finalPaperStorageId and s.paperStorageId>0")
+	&& $Conf->q("update Settings set value=28 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 28;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

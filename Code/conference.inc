@@ -105,7 +105,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-	if ($this->settings["allowPaperOption"] < 27) {
+	if ($this->settings["allowPaperOption"] < 28) {
 	    require_once("updateschema.inc");
 	    $oldOK = $OK;
 	    updateSchema($this);
@@ -433,7 +433,8 @@ class Conference {
     // Paper storage
     //
 
-    function storePDF($uploadId, $paperId, $mimetypes = null) {
+    function storePDF($uploadId, $paperId, $documentType, $mimetypes = null) {
+	global $Opt;
 	$while = "while storing paper in database";
 
 	if (!$uploadId
@@ -473,8 +474,12 @@ class Conference {
 	}
 
 	// store the paper
+	$extra = "";
+	$contents_sha1 = (!defval($Opt, "disableSHA1") ? sha1($contents, true) : "");
+	if ($this->sversion >= 28)
+	    $extra = ", sha1='" . sqlq($contents_sha1) . "', documentType=$documentType";
 	$timestamp = time();
-	if (!$this->qe("insert into PaperStorage set paperId=$paperId, timestamp=$timestamp, mimetype='" . sqlq($mimetype) . "', paper='" . sqlq(substr($contents, 0, 400000)) . "'", $while))
+	if (!$this->qe("insert into PaperStorage set paperId=$paperId, timestamp=$timestamp, mimetype='" . sqlq($mimetype) . "', paper='" . sqlq(substr($contents, 0, 400000)) . "'" . $extra, $while))
 	    return false;
 
 	$paperStorageId = $this->lastInsertId($while);
@@ -492,10 +497,12 @@ class Conference {
 	    return $this->errorMsg("Failed to store your paper.  Usually, this is because the file you tried to upload was too big for our system.  Please try again.");
 
 	// return data about the paper
-	return array("paperStorageId" => $paperStorageId,
-		     "contents" => $contents, "size" => strlen($contents),
-		     "mimetype" => $mimetype, "timestamp" => $timestamp,
-		     "sha1" => sha1($contents, true));
+	return (object) array("paperStorageId" => $paperStorageId,
+			      "contents" => $contents,
+			      "size" => strlen($contents),
+			      "mimetype" => $mimetype,
+			      "timestamp" => $timestamp,
+			      "sha1" => $contents_sha1);
     }
 
     function storePaper($uploadId, $prow, $final) {
@@ -508,20 +515,20 @@ class Conference {
 	if (!defval($Opt, "disablePS"))
 	    $mimetypes[] = "application/postscript";
 
-	$answer = $this->storePDF($uploadId, $paperId, $mimetypes);
-	if (!$answer)
+	$doc = $this->storePDF($uploadId, $paperId, $final ? -1 : 0, $mimetypes);
+	if (!$doc)
 	    return false;
 
 	$while = "while storing paper in database";
 
 	$sha1 = "";
-	if (!defval($Opt, "disableSHA1"))
-	    $sha1 = ", sha1='" . sqlq($answer["sha1"]) . "'";
+	if ($this->sversion >= 10)
+	    $sha1 = ", sha1='" . sqlq($doc->sha1) . "'";
 	if (!$this->qe("update Paper set "
-		. ($final ? "finalPaperStorageId" : "paperStorageId") . "=" . $answer["paperStorageId"]
-		. ", size=" . $answer["size"]
-		. ", mimetype='" . sqlq($answer["mimetype"])
-		. "', timestamp=" . $answer["timestamp"] . $sha1
+		. ($final ? "finalPaperStorageId" : "paperStorageId") . "=" . $doc->paperStorageId
+		. ", size=" . $doc->size
+		. ", mimetype='" . sqlq($doc->mimetype)
+		. "', timestamp=" . $doc->timestamp . $sha1
 		. " where paperId=$paperId and timeWithdrawn<=0", $while))
 	    return false;
 
@@ -536,7 +543,7 @@ class Conference {
 	    // prepare data
 	    $subject = "[" . $Opt["shortName"] . "] Paper #$paperId upload";
 	    $message = "           Paper: " . $Opt["paperSite"] . "/paper$ConfSiteSuffix?p=$paperId
-       Submitted: " . $this->printableTime($answer["timestamp"]) . "\n\n"
+       Submitted: " . $this->printableTime($doc->timestamp) . "\n\n"
 		. wordWrapIndent(trim($prow->title), "Title: ") . "\n"
 		. wordWrapIndent(trim($prow->abstract), "Abstract: ") . "\n\n"
 		. wordWrapIndent(cleanAuthorText($prow), "Authors: ") . "\n"
@@ -553,8 +560,8 @@ class Conference {
 
 	    $mime = new Mail_mime("\n");
 	    $mime->setTXTBody($message);
-	    $mime->addAttachment($answer["contents"], $answer["mimetype"],
-				 $this->downloadPaperName($paperId, $contents["mimetype"], false), false);
+	    $mime->addAttachment($doc->contents, $doc->mimetype,
+				 $this->downloadPaperName($paperId, $doc->mimetype, 0), false);
 
 	    $body = $mime->get();
 	    $hdrs = $mime->headers(array("From" => $Opt["emailFrom"],
@@ -567,12 +574,16 @@ class Conference {
 		$this->infoMsg("<pre>" . htmlspecialchars($body) . "</pre>");
 	}
 
-	return $answer["size"];
+	return $doc->size;
     }
 
-    function downloadPaperName($paperId, $mimetype, $final) {
+    function downloadPaperName($paperId, $mimetype, $documentType) {
 	global $Opt;
-	$title = $Opt['downloadPrefix'] . ($final ? "final" : "paper");
+	$title = $Opt["downloadPrefix"];
+	if ($documentType < 0)
+	    $title .= "final";
+	else
+	    $title .= "paper";
 	return $title . $paperId . $this->getFileExtension($mimetype);
     }
 
@@ -604,7 +615,7 @@ class Conference {
 	// Print paper
 	header("Content-Type: $mimetype");
 	header("Content-Description: PHP Generated Data");
-	$name = $this->downloadPaperName($paperId, $mimetype, $final);
+	$name = $this->downloadPaperName($paperId, $mimetype, $final ? -1 : 0);
 	header("Content-Disposition: " . ($saveit ? "attachment" : "inline") . "; filename=$name");
 	if ($compression == 1)
 	    $content = gzinflate($content);
@@ -688,7 +699,7 @@ class Conference {
 	    if (strlen($row[1]) == 0)
 		$warnings[] = "Paper #$row[0] has not been uploaded yet.";
 	    else
-		$this->zipAdd($tmpdir, $this->downloadPaperName($row[0], $row[2], $final), $row[1], $warnings, $files);
+		$this->zipAdd($tmpdir, $this->downloadPaperName($row[0], $row[2], $final ? -1 : 0), $row[1], $warnings, $files);
 	}
 	if (!count($files))
 	    return new PEAR_Error("No papers could successfully be downloaded.");
@@ -1392,13 +1403,18 @@ class Conference {
 	    return "";
     }
 
-    function makeDownloadPath($paperId, &$mimetype, $final = false) {
+    function makeDownloadPath($paperId, $mimetype, $documentType) {
 	global $ConfSiteBase, $ConfSiteSuffix;
-	if (isset($mimetype) && $mimetype)
-	    return $ConfSiteBase . "doc$ConfSiteSuffix/" . $this->downloadPaperName($paperId, $mimetype, $final);
+	if ($mimetype)
+	    return $ConfSiteBase . "doc$ConfSiteSuffix/" . $this->downloadPaperName($paperId, $mimetype, $documentType);
 	else {
 	    $x = $ConfSiteBase . "doc$ConfSiteSuffix?p=" . $paperId;
-	    return ($final ? $x . "&amp;final=1" : $x);
+	    if ($documentType < 0)
+		return $x . "&amp;final=1";
+	    else if ($documentType > 0)
+		return $x . "&amp;dt=$documentType";
+	    else
+		return $x;
 	}
     }
 

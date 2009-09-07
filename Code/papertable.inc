@@ -9,7 +9,6 @@ $textAreaRows = array("title" => 1, "abstract" => 12, "authorInformation" => 5,
 
 class PaperTable {
 
-    const FINALCOPY = 4;
     const ENABLESUBMIT = 8;
 
     const STATUS_DATE = 16;
@@ -250,87 +249,79 @@ class PaperTable {
 	    "</div>\n\n";
     }
 
-    function _downloadInfo($prow, $editable) {
-	global $Conf, $ConfSiteSuffix, $Me;
+    function pdfStamps($data) {
+	global $Conf, $Opt;
 
-	// timestamp, SHA-1 checksum
-	$t = "";
-	if ($prow && ($prow->timestamp || $prow->timeSubmitted > 0)) {
-	    $tm = ($prow->timestamp ? $prow->timestamp : $prow->timeSubmitted);
-	    $t = "<span class='nowrap' title='Time of must recent paper update'>" . $Conf->cacheableImage("timestamp12.png", "Updated", "Time of most recent paper update") . " " . $Conf->printableTime($tm) . "</span>";
-	}
-	if (defval($prow, 'sha1')) {
-	    if ($t)
-		$t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
-	    $t .= "<span class='nowrap' title='SHA-1 checksum'>" . $Conf->cacheableImage("checksum12.png", "SHA-1", "SHA-1 checksum") . " " . bin2hex($prow->sha1) . "</span>";
-	}
-	if ($t)
-	    $t = "<span class='hint'>$t</span>";
-
-	// download marker
-	$d = "";
-	if ($prow && $Me->canDownloadPaper($prow)) {
-	    if ($prow->outcome > 0 && $prow->finalPaperStorageId > 0
-		&& $Conf->collectFinalPapers()) {
-		$submissionMimetype = null;
-		$d = ($editable ? "Current final copy: &nbsp;" : "Final copy: &nbsp;")
-		    . paperDownload($prow, true);
-		if (!$editable)
-		    $d .= "<br />\n<small><a class='black' href=\""
-			. $Conf->makeDownloadPath($prow->paperId, $submissionMimetype, false)
-			. "\">Submission version</a></small>";
-	    } else if ($prow->size > 0) {
-		$d = ($editable ? "Current version: &nbsp;" : "")
-		    . paperDownload($prow);
-	    }
-	}
-	if ($d !== "" && !$editable)
-	    $d = $Me->paperStatus($prow->paperId, $prow, 0)
-		. "</td><td class='nowrap'>" . $d;
-
-	// return table
-	if ($d !== "")
-	    return "<table><tr><td class='nowrap'>" . $d . "</td><td><span class='sep'></span></td><td>" . $t . "</td></tr></table>";
-	else if ($t !== "")
-	    return "<table><tr><td>$t</td></tr></table>";
+	$t = array();
+	$tm = defval($data, "timestamp", defval($data, "timeSubmitted", 0));
+	if ($tm > 0)
+	    $t[] = "<span class='nowrap' title='Time of most recent update'>" . $Conf->cacheableImage("timestamp12.png", "Updated", "Time of most recent update") . " " . $Conf->printableTime($tm) . "</span>";
+	$sha1 = defval($data, "sha1");
+	if ($sha1 && !defval($Opt, "disableSHA1"))
+	    $t[] = "<span class='nowrap' title='SHA-1 checksum'>" . $Conf->cacheableImage("checksum12.png", "SHA-1", "SHA-1 checksum") . " " . bin2hex($sha1) . "</span>";
+	if (count($t) > 0)
+	    return "<span class='hint'>" . join(" &nbsp;<span class='barsep'>|</span>&nbsp; ", $t) . "</span>";
 	else
 	    return "";
     }
 
     function paptabDownload($prow) {
 	global $Conf, $Me, $ConfSiteSuffix;
+	assert(!$this->editable);
 	$final = ($prow->outcome > 0 && $Conf->collectFinalPapers());
+	$out = array();
 
-	// status
-	echo $this->_downloadInfo($prow, false);
+	// status and download
+	if ($prow && $Me->canDownloadPaper($prow)) {
+	    $t = "<td class='nowrap'>" . $Me->paperStatus($prow->paperId, $prow, 0) . "</td>";
+	    if ($prow->outcome > 0 && $prow->finalPaperStorageId > 0
+		&& $Conf->collectFinalPapers()) {
+		$data = paperDocumentData($prow, -1);
+		$t .= "<td class='nowrap'>Final copy: &nbsp;"
+		    . documentDownload($data)
+		    . "<br /><small><a class='black' href=\""
+		    . $Conf->makeDownloadPath($prow->paperId, null, 0)
+		    . "\">Submission version</a></small></td>";
+	    } else {
+		$data = paperDocumentData($prow, 0);
+		if ($data && $data->paperStorageId > 1)
+		    $t .= "<td class='nowrap'>" . documentDownload($data) . "</td>";
+	    }
+	    if ($data && ($stamps = $this->pdfStamps($data)))
+		$t .= "<td><span class='sep'></span></td><td>$stamps</td>";
+	    $out[] = "<table><tr>$t</tr></table>";
+	}
 
 	// conflicts
 	$flags = self::STATUS_CONFLICTINFO;
 	if (($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType >= CONFLICT_AUTHOR)
-	    echo "<div class='g'></div>\nYou are an <span class='author'>author</span> of this paper.";
+	    $out[] = "You are an <span class='author'>author</span> of this paper.";
 	else if ((($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType > 0)
 		 || (($flags & self::STATUS_CONFLICTINFO_PC) && $Me->isPC && $prow->conflictType > 0))
-	    echo "<div class='g'></div>\nYou have a <span class='conflict'>conflict</span> with this paper.";
+	    $out[] = "You have a <span class='conflict'>conflict</span> with this paper.";
 	if ($prow->reviewType != null && ($flags & self::STATUS_REVIEWERINFO)) {
 	    if ($prow->reviewType == REVIEW_PRIMARY)
-		echo "<div class='g'></div>\nYou are a primary reviewer for this paper.";
+		$out[] = "You are a primary reviewer for this paper.";
 	    else if ($prow->reviewType == REVIEW_SECONDARY)
-		echo "<div class='g'></div>\nYou are a secondary reviewer for this paper.";
+		$out[] = "You are a secondary reviewer for this paper.";
 	    else if ($prow->reviewType == REVIEW_EXTERNAL)
-		echo "<div class='g'></div>\nYou were requested to review this paper.";
+		$out[] = "You were requested to review this paper.";
 	    else
-		echo "<div class='g'></div>\nYou began a review for this paper.";
+		$out[] = "You began a review for this paper.";
 	}
 	if ($Me->isPC && $prow->conflictType <= 0
 	    && $Conf->timeUpdatePaper($prow) && $this->mode != "assign"
 	    && $this->mode != "contact")
-	    echo "<div class='g'></div><div class='xwarning'>The authors still have <a href='deadlines$ConfSiteSuffix'>time</a> to make changes.</div>";
+	    $out[] = "<div class='xwarning'>The authors still have <a href='deadlines$ConfSiteSuffix'>time</a> to make changes.</div>";
+
+	echo join("<div class='g'></div>\n", $out);
     }
 
     function echoUploadRow($prow, $flags) {
-	global $Conf, $ConfSiteSuffix, $Opt;
-	$final = (($flags & self::FINALCOPY) != 0 && $prow->outcome > 0
-		  && $Conf->collectFinalPapers());
+	global $Conf, $ConfSiteSuffix, $Me, $Opt;
+	$final = ($prow && $prow->outcome > 0
+		  && ($Me->canSubmitFinalPaper($prow, $whyNot, true)
+		      || defval($whyNot, "deadline") == "final_done"));
 	$maxsize = " <span class='papfnh'>(max size "
 	    . ini_get("upload_max_filesize") . "B)</span>";
 
@@ -342,21 +333,59 @@ class PaperTable {
 	    $t = "PostScript file" . $maxsize;
 	else
 	    $t = "PDF/PostScript file" . $maxsize;
+	if ($t !== null && $final)
+	    $t = "Final copy $t";
 	if ($t !== null)
 	    echo $this->papt("paper", $t);
 	echo "<div class='papv'>";
 
+	// current version, if any
+	$d = "";
+	$doc = null;
+	if ($prow && $Me->canDownloadPaper($prow)
+	    && ($final ? $prow->finalPaperStorageId > 0 : $prow->paperStorageId > 1)) {
+	    $doc = paperDocumentData($prow, $final ? -1 : 0);
+	    if ($doc) {
+		$d .= "<td class='nowrap'>" . documentDownload($doc) . "</td>";
+		if ($doc->mimetype == "application/pdf"
+		    && $Conf->setting("sub_banal"))
+		    $d .= "<td><span class='sep'></span></td><td><input class='b' type='submit' name='checkformat' value='Check format' onclick='return docheckformat()' /></td>";
+		if (($stamps = $this->pdfStamps($doc)))
+		    $d .= "<td><span class='sep'></span></td><td>$stamps</td>";
+	    }
+	}
+	if ($d)
+	    echo "<table><tr>", $d, "</tr></table>\n";
+
+	// uploader
+	$uploader = "";
 	if (!defval($Opt, "noPapers")) {
-	    echo ($final ? "Upload final copy:&nbsp; " : ""), "<input ",
-		"class='textlite' type='file' name='paperUpload' accept='",
-		(defval($Opt, "disablePDF") ? "" : "application/pdf "),
-		(defval($Opt, "disablePS") ? "" : "application/postscript "),
-		"' size='30' onchange='hiliter(this)";
+	    $uploader = ($doc ? "<div class='g'></div>\nUpload new version:" : "Upload:")
+		. "&nbsp; <input class='textlite' type='file' name='paperUpload' accept='"
+		. (defval($Opt, "disablePDF") ? "" : "application/pdf ")
+		. (defval($Opt, "disablePS") ? "" : "application/postscript ")
+		. "' size='30' onchange='hiliter(this)";
 	    if (!$final)
-		echo ";fold(\"isready\",0)";
+		$uploader .= ";fold(\"isready\",0)";
 	    if ($flags & self::ENABLESUBMIT)
-		echo ";form.submit.disabled=false";
-	    echo "' />";
+		$uploader .= ";form.submit.disabled=false";
+	    $uploader .= "' />";
+	}
+
+	if ($prow
+	    && ($final ? $prow->finalPaperStorageId : $prow->paperStorageId) > 0
+	    && defval($prow, "mimetype", "application/pdf") == "application/pdf"
+	    && $Conf->setting("sub_banal")) {
+	    echo "<div id='foldcheckformat' class='foldc'><div id='checkformatformresult' class='fx'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
+	    $Conf->footerStuff .= "<form id='checkformatform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId";
+	    if ($final)
+		$Conf->footerStuff .= "&amp;final=1";
+	    $Conf->footerStuff .= "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"checkformatform\")'><input type='hidden' name='checkformat' value='1' /></form>";
+	}
+
+	if (!$final && (!$doc || $Conf->setting("sub_freeze"))) {
+	    echo $uploader;
+	    $uploader = "";
 	}
 
 	if (!$final) {
@@ -366,9 +395,10 @@ class PaperTable {
 		$checked = $prow && $prow->timeSubmitted > 0;
 	    else
 		$checked = !$prow || $prow->paperStorageId <= 1 || $prow->timeSubmitted > 0;
+	    $s = ($doc ? " style='margin-top: 0.5ex'" : "");
 	    echo "<div id='foldisready' class='",
 		(($prow && $prow->paperStorageId > 1) || defval($Opt, "noPapers") ? "foldo" : "foldc"),
-		"'><table class='fx'><tr><td class='nowrap'>",
+		"'$s><table class='fx'><tr><td class='nowrap'>",
 		tagg_checkbox_h("submit", 1, $checked), "&nbsp;";
 	    if ($Conf->setting('sub_freeze'))
 		echo "</td><td>", tagg_label("<strong>This is the final submission.</strong>"),
@@ -379,18 +409,7 @@ class PaperTable {
 	} else
 	    echo "<input type='hidden' name='submit' value='1' />";
 
-	if (($t = $this->_downloadInfo($prow, true)))
-	    echo "<div class='g'></div>", $t;
-	if ($prow
-	    && ($final ? $prow->finalPaperStorageId : $prow->paperStorageId) > 0
-	    && defval($prow, "mimetype", "application/pdf") == "application/pdf"
-	    && $Conf->setting("sub_banal")) {
-	    echo "<div id='foldcheckformat' class='foldc'><input class='b' type='submit' name='checkformat' value='Check format' onclick='return docheckformat()' /><div id='checkformatformresult' class='fx'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
-	    $Conf->footerStuff .= "<form id='checkformatform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId";
-	    if ($final)
-		$Conf->footerStuff .= "&amp;final=1";
-	    $Conf->footerStuff .= "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"checkformatform\")'><input type='hidden' name='checkformat' value='1' /></form>";
-	}
+	echo $uploader;
 
 	echo "</div>\n\n";
     }
@@ -1437,7 +1456,6 @@ class PaperTable {
 
 	$this->echoDivEnter($prow);
 	if ($this->editable) {
-	    global $finalEditMode; // XXX
 	    $spacer = "<div class='g'></div>\n\n";
 	    echo $form, "<div class='aahc'>";
 
@@ -1446,8 +1464,7 @@ class PaperTable {
 
 	    $this->paptabTitle($prow);
 	    $this->echoUploadRow($prow,
-		($finalEditMode ? PaperTable::FINALCOPY : 0)
-		+ (!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0));
+		(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0));
 
 	    // Authorship
 	    echo $spacer;
@@ -1456,7 +1473,8 @@ class PaperTable {
 		$this->echoNewContactAuthor($Me->privChair);
 	    else
 		$this->echoContactAuthor($prow, $this->mode == "pe" || $prow->conflictType >= CONFLICT_AUTHOR);
-	    if ($Conf->blindSubmission() == BLIND_OPTIONAL && !$finalEditMode)
+	    if ($Conf->blindSubmission() == BLIND_OPTIONAL
+		&& $this->editable != "f")
 		$this->echoAnonymity($prow);
 
 	    echo $spacer;
@@ -1468,7 +1486,7 @@ class PaperTable {
 	    $this->echoOptions($prow, $Me->privChair);
 
 	    // Potential conflicts
-	    if (!$finalEditMode || $Me->privChair) {
+	    if ($this->editable != "f" || $Me->privChair) {
 		$this->echoPCConflicts($prow);
 		$this->echoCollaborators($prow);
 	    }

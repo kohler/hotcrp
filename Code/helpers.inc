@@ -252,32 +252,66 @@ function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
     return $x;
 }
 
-function paperDownload($prow, $final = false) {
-    global $Conf, $Me;
-    if ($final && !$prow->finalPaperStorageId)
-	$final = false;
-
-    // don't allow PC to download papers in progress
-    if ($prow->timeSubmitted <= 0 && !$Me->canDownloadPaper($prow))
-	return "";
-
-    $mimetype = defval($prow, "mimetype", "");
-    $p = $Conf->makeDownloadPath($prow->paperId, $mimetype, $final);
-    $finalsuffix = ($final ? "f" : "");
+function documentDownload($data) {
+    global $Conf;
+    $mimetype = defval($data, "mimetype", "");
+    $documentType = defval($data, "documentType", 0);
+    $p = $Conf->makeDownloadPath($data->paperId, $mimetype, $documentType);
+    $finalsuffix = ($documentType < 0 ? "f" : "");
     if ($mimetype == "application/postscript")
 	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("postscript${finalsuffix}24.png", "[PS]", null, "dlimg");
     else if ($mimetype == "application/pdf")
 	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("pdf${finalsuffix}24.png", "[PDF]", null, "dlimg");
     else
-	$x .= "<a href=\"$p\" class='nowrap'>View paper";
+	$x = "<a href=\"$p\" class='nowrap'>View paper";
+    if (defval($data, "size", 0) > 0)
+	$x .= "&nbsp;<span class='dlsize'>" . round($data->size/1024) . "kB</span>";
+    return $x . "</a>";
+}
 
-    if (($final || !$prow->finalPaperStorageId)	&& isset($prow->size))
-	$x .= "&nbsp;<span class='dlsize'>"
-	    . round($prow->size/1024) . "kB</span>";
+function paperDocumentData($prow, $documentType = 0, $paperStorageId = 0) {
+    global $Conf, $Opt;
+    assert($paperStorageId || $documentType <= 0);
+    if ($documentType < 0 && $prow->finalPaperStorageId <= 0)
+	$documentType = 0;
+    if ($paperStorageId == 0 && $documentType <= 0)
+	$paperStorageId = ($documentType < 0 ? $prow->finalPaperStorageId : $prow->paperStorageId);
+    if ($paperStorageId == 1)
+	return null;
 
-    $x .= "</a>";
-    //$x .= "&nbsp;<span class='dlsave'><a href=\"$p?save=1\">Save to disk</a></span>";
-    return $x;
+    // pre-load document object from paper
+    $doc = (object) array("paperId" => $prow->paperId,
+			  "mimetype" => defval($prow, "mimetype", ""),
+			  "size" => defval($prow, "size", 0),
+			  "timestamp" => defval($prow, "timestamp", 0),
+			  "sha1" => defval($prow, "sha1", ""));
+    if ($prow->finalPaperStorageId > 0) {
+	$doc->paperStorageId = $prow->finalPaperStorageId;
+	$doc->documentType = -1;
+    } else {
+	$doc->paperStorageId = $prow->paperStorageId;
+	$doc->documentType = 0;
+    }
+
+    // load document object from database if pre-loaded version doesn't work
+    if ($paperStorageId > 0
+	&& ($doc->documentType != $documentType
+	    || $paperStorageId != $doc->paperStorageId)) {
+	$qa = ($Conf->sversion >= 28 ? "sha1, documentType" : "'' as sha1, $documentType as documentType");
+	$result = $Conf->qe("select paperStorageId, paperId, length(paper) as size, mimetype, timestamp, $qa from PaperStorage where paperStorageId=$paperStorageId", "while reading documents");
+	$doc = edb_orow($result);
+    }
+
+    return $doc;
+}
+
+function paperDownload($prow, $final = false) {
+    global $Conf, $Me;
+    // don't let PC download papers in progress
+    if ($prow->timeSubmitted <= 0 && !$Me->canDownloadPaper($prow))
+	return "";
+    $data = paperDocumentData($prow, $final ? -1 : 0);
+    return $data ? documentDownload($data) : "";
 }
 
 function topicTable($prow, $active = 0) {

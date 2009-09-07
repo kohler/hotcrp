@@ -234,9 +234,7 @@ function requestSameAsPaper($prow) {
 
 function uploadPaper($isSubmitFinal) {
     global $prow, $Conf, $Me;
-    return $Conf->storePaper('paperUpload', $prow, $isSubmitFinal,
-			     $Me->privChair && defval($_REQUEST, "override"))
-	!== false;
+    return $Conf->storePaper('paperUpload', $prow, $isSubmitFinal) !== false;
 }
 
 function updatePaper($Me, $isSubmit, $isSubmitFinal) {
@@ -647,15 +645,14 @@ confHeader();
 
 
 // prepare paper table
-$finalEditMode = false;
 if ($paperTable->mode == "pe") {
     $editable = $newPaper
 	|| ($prow->timeWithdrawn <= 0
 	    && ($Conf->timeUpdatePaper($prow) || $Me->actChair($prow, true)));
-    if ($prow && $prow->outcome > 0
-	&& $Conf->collectFinalPapers()
-	&& ($Conf->timeSubmitFinalPaper() || $Me->actChair($prow, true)))
-	$editable = $finalEditMode = true;
+    if ($prow && $prow->outcome > 0 && $Conf->collectFinalPapers()
+	&& (($Conf->timeAuthorViewDecision() && $Conf->timeSubmitFinalPaper())
+	    || $Me->actChair($prow, true)))
+	$editable = "f";
 } else
     $editable = false;
 

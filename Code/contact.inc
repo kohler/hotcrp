@@ -502,24 +502,30 @@ class Contact {
 	return false;
     }
 
-    function canSubmitFinalPaper($prow, &$whyNot = null) {
+    function canSubmitFinalPaper($prow, &$whyNot = null, $override = false) {
 	global $Conf;
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
 	// policy
+	$privChairOverride = ($override ? $this->privChair : $this->privChairOverride());
 	if (($prow->conflictType >= CONFLICT_AUTHOR || $this->privChair)
+	    && $Conf->collectFinalPapers()
 	    && $prow->timeWithdrawn <= 0 && $prow->outcome > 0
-	    && ($Conf->timeSubmitFinalPaper() || $this->privChairOverride()))
+	    && ($Conf->timeSubmitFinalPaper() || $privChairOverride))
 	    return true;
 	// collect failure reasons
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->privChair)
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
-	if ($prow->outcome <= 0 || !$Conf->timeAuthorViewDecision())
+	// NB logic order here is important elsewhere
+	if (!$Conf->collectFinalPapers()
+	    || (!$Conf->timeAuthorViewDecision() && !$privChairOverride))
+	    $whyNot["deadline"] = "final_open";
+	else if ($prow->outcome <= 0)
 	    $whyNot["notAccepted"] = 1;
-	else if (!$Conf->timeSubmitFinalPaper() && !$this->privChairOverride())
+	else if (!$Conf->timeSubmitFinalPaper() && !$privChairOverride)
 	    $whyNot["deadline"] = "final_done";
 	if ($this->privChair)
 	    $whyNot["override"] = 1;
@@ -1074,7 +1080,7 @@ class Contact {
 	if ($row->timeWithdrawn > 0)
 	    return "<span class='pstat pstat_with'>Withdrawn</span>";
 	else if ($row->timeSubmitted <= 0 && $row->paperStorageId == 1)
-	    return "<span class='pstat pstat_noup'>In progress</span>";
+	    return "<span class='pstat pstat_noup'>Not uploaded</span>";
 	else if (isset($row->outcome) && $row->outcome != 0
 		 && $this->canViewDecision($row, abs($long) > 1)) {
 	    $rf = reviewForm();

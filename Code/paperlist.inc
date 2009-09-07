@@ -501,20 +501,22 @@ class PaperList extends BaseList {
 	global $Conf;
 	$finalsuffix = "";
 	$finaltitle = null;
-	if (($final = $row->finalPaperStorageId != 0)) {
+	$documentType = 0;
+	if ($row->finalPaperStorageId != 0) {
 	    $this->anyFinalPaper = true;
 	    $finalsuffix = "f";
 	    $finaltitle = "Final copy";
+	    $documentType = -1;
 	}
-	$finalsuffix = ($final ? "f" : "");
+	$finalsuffix = ($documentType < 0 ? "f" : "");
 	if ($row->size == 0 || !$this->contact->canDownloadPaper($row))
 	    return "";
 	else if ($row->mimetype == "application/pdf")
-	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $final) . "\">" . $Conf->cacheableImage("pdf$finalsuffix.png", "[PDF]", $finaltitle) . "</a>";
+	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $documentType) . "\">" . $Conf->cacheableImage("pdf$finalsuffix.png", "[PDF]", $finaltitle) . "</a>";
 	else if ($row->mimetype == "application/postscript")
-	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $final) . "\">" . $Conf->cacheableImage("postscript$finalsuffix.png", "[PS]", $finaltitle) . "</a>";
+	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $documentType) . "\">" . $Conf->cacheableImage("postscript$finalsuffix.png", "[PS]", $finaltitle) . "</a>";
 	else
-	    return "&nbsp;<small><a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $final) . "\">[Download]</a></small>";
+	    return "&nbsp;<small><a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $documentType) . "\">[Download]</a></small>";
     }
 
     function _joinMatches($m) {
