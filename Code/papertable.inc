@@ -1497,7 +1497,7 @@ class PaperTable {
 	    else
 		$this->echoContactAuthor($prow, $this->mode == "pe" || $prow->conflictType >= CONFLICT_AUTHOR);
 	    if ($Conf->blindSubmission() == BLIND_OPTIONAL
-		&& $this->editable != "f")
+		&& $this->editable !== "f")
 		$this->echoAnonymity($prow);
 
 	    echo $spacer;
@@ -1509,7 +1509,7 @@ class PaperTable {
 	    $this->echoOptions($prow, $Me->privChair);
 
 	    // Potential conflicts
-	    if ($this->editable != "f" || $Me->privChair) {
+	    if ($this->editable !== "f" || $Me->privChair) {
 		$this->echoPCConflicts($prow);
 		$this->echoCollaborators($prow);
 	    }
