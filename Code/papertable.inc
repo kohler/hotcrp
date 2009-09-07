@@ -633,10 +633,8 @@ class PaperTable {
 	    foreach ($options as $o) {
 		$ov = defval($optsel, $o->optionId, 0);
 		if (($ov || $o->type)
-		    && ($o->pcView == 1
-			|| ($o->pcView == 2 && $Me->canViewAuthors($prow, $forceShow))
-			|| $showAllOptions
-			|| $prow->conflictType >= CONFLICT_AUTHOR)) {
+		    && ($showAllOptions
+			|| $Me->canViewPaperOption($prow, $o))) {
 		    if ($o->type == 0)
 			$optiondata .= htmlspecialchars($o->optionName) . "<br />\n";
 		    else if ($o->type == 1) {

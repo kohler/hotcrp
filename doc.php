@@ -32,9 +32,10 @@ else {
 	    $documentType = -1;
 	else if ($pt != "paper") {
 	    foreach (paperOptions() as $o)
-		if ($o->optionAbbrev == $pt)
+		if ($o->optionAbbrev == $pt
+		    && $Me->canViewPaperOption($paperId, $o))
 		    $documentType = $o->optionId;
-	    if ($documentType <= 0)
+	    if ($documentType <= 0 && !isset($Error))
 		$Error = "Invalid paper name &ldquo;" . htmlspecialchars($paper) . "&rdquo;.";
 	}
     } else

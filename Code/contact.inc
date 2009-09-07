@@ -595,6 +595,25 @@ class Contact {
 	return false;
     }
 
+    function canViewPaperOption($prow, $opt, &$whyNot = null) {
+	global $Conf;
+	// fetch paper
+	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
+	    return false;
+	// policy
+	if ($prow->conflictType >= CONFLICT_AUTHOR
+	    || $this->privChair)
+	    return true;
+	if (!$this->canViewPaper($prow, $whyNot))
+	    return false;	// $whyNot already set
+	if (($prow->myReviewType > 0 || $this->isPC)
+	    && ($opt->pcView == 1
+		|| ($opt->pcView == 2 && $this->canViewAuthors($prow, true))))
+	    return true;
+	$whyNot["permission"] = 1;
+	return false;
+    }
+
     function ownReview($rrow) {
 	global $Conf;
 	return $rrow->contactId == $this->contactId
