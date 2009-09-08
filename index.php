@@ -213,6 +213,10 @@ if ($Me->valid() && (($_SESSION["AskedYouToUpdateContactInfo"] < 2
 if ($Me->privChair) {
     if (preg_match("/^[1-4]\\./", phpversion()))
 	$Conf->warnMsg("HotCRP requires PHP version 5.2 or higher.  You are running PHP version " . htmlspecialchars(phpversion()) . ".");
+    if (get_magic_quotes_gpc())
+	$Conf->errorMsg("The PHP <code>magic_quotes_gpc</code> feature is on.  This is a bad idea; disable it in your <code>php.ini</code> configuration file.");
+    if (get_magic_quotes_runtime())
+	$Conf->errorMsg("The PHP <code>magic_quotes_runtime</code> feature is on.  This is a bad idea; disable it in your <code>php.ini</code> configuration file.");
     if ($Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
 	$Conf->warnMsg("The systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP's preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users will likely be booted off the system earlier than you expect.");
     $result = $Conf->qx("show variables like 'max_allowed_packet'");
@@ -257,13 +261,6 @@ if (isset($_REQUEST["cleartokens"]) && $Me->valid())
 
 $Conf->header($Me->valid() ? "Home" : "Sign in", "home", actionBar());
 $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
-
-
-// if chair, check PHP setup
-if ($Me->privChair) {
-    if (get_magic_quotes_gpc())
-	$Conf->errorMsg("The PHP <code>magic_quotes_gpc</code> feature is on.  This is a bad idea; disable it in your <code>php.ini</code> configuration file.");
-}
 
 
 // Sidebar
