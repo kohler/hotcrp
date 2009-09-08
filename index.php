@@ -211,6 +211,8 @@ if ($Me->valid() && (($_SESSION["AskedYouToUpdateContactInfo"] < 2
 
 // check global system settings
 if ($Me->privChair) {
+    if (preg_match("/^[1-4]\\./", phpversion()))
+	$Conf->warnMsg("HotCRP requires PHP version 5.2 or higher.  You are running PHP version " . htmlspecialchars(phpversion()) . ".");
     if ($Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
 	$Conf->warnMsg("The systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP's preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users will likely be booted off the system earlier than you expect.");
     $result = $Conf->qx("show variables like 'max_allowed_packet'");
