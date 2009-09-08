@@ -1899,6 +1899,7 @@ class PaperTable {
 	if ($this->mode == "r" && $prow && !count($this->rrows)
 	    && !count($this->mycrows)
 	    && $prow->conflictType >= CONFLICT_AUTHOR
+	    && !$Me->actChair($prow, true)
 	    && ($Conf->timeFinalizePaper($prow) || $prow->timeSubmitted <= 0))
 	    $this->mode = "pe";
     }
