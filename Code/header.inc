@@ -8,6 +8,7 @@ define("REVIEW_PRIMARY", 4);
 define("REVIEW_SECONDARY", 3);
 define("REVIEW_PC", 2);
 define("REVIEW_EXTERNAL", 1);
+global $reviewTypeName;
 $reviewTypeName = array("None", "External", "PC", "Secondary", "Primary");
 
 define("CONFLICT_NONE", 0);
@@ -42,23 +43,29 @@ define("BLIND_NEVER", 0);
 
 define("HOTCRP_VERSION", "2.34");
 
+global $rf;
+$rf = null;
+global $ReviewFormCache;
 $ReviewFormCache = null;
+
+global $reviewScoreNames;
 $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
 			  "grammar", "reviewerQualification", "potential",
 			  "fixability", "interestToCommunity", "longevity",
 			  "likelyPresentation", "suitableForShort");
 
+global $allowedSessionVars;
 $allowedSessionVars = array("foldassigna", "foldpaperp", "foldpaperb",
 			    "foldpapert", "foldpscollab",
 			    "pfdisplay", "pldisplay");
 
+global $authorConflictTypes;
 $authorConflictTypes = array(0 => "No conflict", 3 => "Advisor/student",
 			     2 => "Recent collaborator", 4 => "Institutional",
 			     5 => "Personal", 6 => "Other");
 
+global $OK;
 $OK = 1;
-
-$Msg["unknown"] = "Unknown error.";
 
 
 // set up conference path variables
@@ -111,6 +118,8 @@ ini_set("include_path", ini_get("include_path") . ":$ConfSitePATH/Code/Mail-1.1.
 require_once("PEAR.php");
 
 // Set up conference options
+global $Opt;
+$Opt = array();
 include("$ConfSitePATH/Code/options.inc");
 
 // Multi-conference support
@@ -158,6 +167,7 @@ if (!isset($Opt['dsn']))
     $Opt['dsn'] = "mysql://" . $Opt['dbUser'] . ":" . $Opt['dbPassword'] . "@localhost/" . $Opt['dbName'];
 
 // Create the conference
+global $Conf;
 $Conf = new Conference();
 
 // Now load review code (which requires that $Conf exist)

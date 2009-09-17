@@ -8,6 +8,8 @@
  * Set up this file before running HotCRP for the first time.
  *****************************************************************************/
 
+global $Opt;
+
 // CONFERENCE NAMES
 //
 //   dbName          Database name.  Use the name you supplied to
