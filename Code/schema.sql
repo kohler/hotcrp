@@ -344,7 +344,7 @@ CREATE TABLE `PaperStorage` (
   PRIMARY KEY  (`paperStorageId`),
   UNIQUE KEY `paperStorageId` (`paperStorageId`),
   KEY `paperId` (`paperId`),
-  KEY `mimetype` (`mimetype`),
+  KEY `mimetype` (`mimetype`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
