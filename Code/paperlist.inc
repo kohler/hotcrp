@@ -1103,8 +1103,7 @@ class PaperList extends BaseList {
     function addScores($a) {
 	global $reviewScoreNames;
 	if ($this->scoresOk) {
-	    $rf = reviewForm();
-	    foreach ($rf->fieldOrder as $fn)
+	    foreach ($this->rf->fieldOrder as $fn)
 		if (($k = array_search($fn, $reviewScoreNames)) !== false)
 		    array_push($a, self::FIELD_SCORE + $k);
 	    $this->scoreMax = array();
