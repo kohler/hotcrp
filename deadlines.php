@@ -74,7 +74,7 @@ if ($sub_sub) {
     echo "<tr><td class='rcaption nowrap'>Paper submission deadline</td>";
     echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('sub_sub'), "</td>";
     echo "<td class='nowrap entry'>", printableInterval($sub_sub - $now), "</td>";
-    echo "<td>You can submit registered papers until this deadline.  Only submitted papers will be reviewed.</td></tr>\n";
+    echo "<td>Only papers submitted by this deadline will be reviewed.</td></tr>\n";
 }
 
 $resp_done = $Conf->setting('resp_done');
