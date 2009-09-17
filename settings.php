@@ -960,7 +960,6 @@ if (isset($_REQUEST["update"])) {
 	$Conf->qe("unlock tables", $while);
 	$Conf->log("Updated settings group '$Group'", $Me);
 	$Conf->updateSettings();
-	$rf->validate($Conf, true);
     }
 
     // report errors
@@ -972,6 +971,9 @@ if (isset($_REQUEST["update"])) {
 	if (count($filter_error))
 	    $Conf->errorMsg(join("<br />\n", $filter_error));
     }
+
+    // update the review form in case it's changed
+    $rf->validate($Conf, true);
 } else if ($Group == "rfo")
     rf_update(false);
 
