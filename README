@@ -180,10 +180,11 @@ replacement is also performed on the sessionName, downloadPrefix,
 conferenceSite, and paperSite options.)
 
 You will still need to create a new database for each conference using the
-"Code/createdb.sh" script.  Note that the "Code/backupdb.sh" script doesn't
-work for multiconference installations, and that several important options,
-such as contactName and contactEmail, cannot yet be set using the web
-interface.
+"Code/createdb.sh" script, and convince your Apache to use the HotCRP
+install directory for all relevant URLs.  Note that the "Code/backupdb.sh"
+script doesn't work for multiconference installations, and that several
+important options, such as contactName and contactEmail, cannot yet be set
+using the web interface.
 
 
 License
