@@ -55,14 +55,11 @@ Configuration
 -------------
 * Database configuration
 
-  - Decide on a name for your database (no spaces allowed).
-
-  - If you checked HotCRP out from CVS, remove the "Code/options.inc" file.
-
   - Run "sudo Code/createdb.sh" to create the database.  You may also run
     "sudo Code/createdb.sh OPTIONS" to pass options to MySQL, such as
     --user and --password.  Run "Code/createdb.sh --help" for more
-    information.
+    information.  You will need to decide on a name for your database (no
+    spaces allowed).
 
 * Site configuration
 
@@ -132,7 +129,7 @@ Configuration
 * Configuration notes
 
   - Uploaded papers and reviews are limited in size by several PHP
-    configuration variables, set by default to 15 megabytes in the base
+    configuration variables, set by default to 15 megabytes in the HotCRP
     directory's ".htaccess".  You may want to lower them.
 
   - HotCRP PHP scripts can take a lot of memory, particularly if they're
@@ -151,15 +148,12 @@ output.
 
 Updating the code
 -----------------
-HotCRP code can be updated without updating the database schema.  Simply
-copy the new version over your old code, preserving Code/options.inc.  For
-instance, using GNU tar:
+HotCRP code can be updated at any time without bringing down the site.
+Simply copy the new version over your old code, preserving
+Code/options.inc.  For instance, using GNU tar:
 
    % cd HOTCRPINSTALLATION
-   % tar --strip=1 -xzf ~/hotcrp-VERSIONNUMBER.tar.gz
-
-The next time someone uses the site the schema should automatically be
-upgraded.  See "Code/updateschema.inc".
+   % tar --strip=1 -xzf ~/hotcrp-NEWVERSION.tar.gz
 
 
 Multiconference support
