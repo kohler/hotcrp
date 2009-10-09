@@ -258,12 +258,15 @@ class Contact {
 
 	// update paper authorship based on authorInformation fields
 	// (ignore errors)
+	$bestEmail = $this->email;
+	if ($useRequest && isset($_REQUEST["preferredEmail"]))
+	    $bestEmail = $_REQUEST["preferredEmail"];
 	$addAuthor = array();
-	$result = $Conf->q("select paperId, authorInformation from Paper where authorInformation like '%	" . sqlq_for_like($this->email) . "	%'");
+	$result = $Conf->q("select paperId, authorInformation from Paper where authorInformation like '%	" . sqlq_for_like($bestEmail) . "	%'");
 	while (($row = edb_orow($result))) {
 	    cleanAuthor($row);
 	    foreach ($row->authorTable as $au)
-		if (strcasecmp($au[2], $this->email) == 0) {
+		if (strcasecmp($au[2], $bestEmail) == 0) {
 		    $addAuthor[] = "($row->paperId, *, " . CONFLICT_AUTHOR . ")";
 		    if ($this->firstName == "")
 			$this->firstName = $au[0];

@@ -291,20 +291,20 @@ $countries = array("United States",
 
 function countrySelector($name, $country) {
     global $countries;
-    echo "<select name=\"$name\">\n";
-    echo "<option";
+    $t = "<select name=\"$name\">\n";
+    $t .= "<option";
     if (!$country)
-	echo " selected='selected'";
-    echo " value=''>(Select one)</option>\n";
+	$t .= " selected='selected'";
+    $t .= " value=''>(Select one)</option>\n";
     foreach ($countries as $c) {
-	echo "<option";
+	$t .= "<option";
 	if ($country == $c) {
-	    echo " selected='selected'";
+	    $t .= " selected='selected'";
 	    $country = null;
 	}
-	echo ">", $c, "</option>\n";
+	$t .= ">" . $c . "</option>\n";
     }
     if ($country)
-	echo "<option selected='selected'>", htmlspecialchars($country), "</option>\n";
-    echo "</select>";
+	$t .= "<option selected='selected'>" . htmlspecialchars($country) . "</option>\n";
+    return $t . "</select>";
 }

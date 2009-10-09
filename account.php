@@ -54,11 +54,16 @@ function tfError(&$tf, $errorField, $text) {
 function createUser(&$tf, $newProfile) {
     global $Conf, $ConfSiteSuffix, $Acct, $Me, $Opt, $OK;
 
-    $_REQUEST["uemail"] = trim($_REQUEST["uemail"]);
-    if (isset($Opt["ldapLogin"])) {
+    if (!isset($Opt["ldapLogin"]))
+	$_REQUEST["uemail"] = trim(defval($_REQUEST, "uemail", ""));
+    else if ($newProfile)
+	$_REQUEST["uemail"] = trim(defval($_REQUEST, "newUsername", ""));
+    else
 	$_REQUEST["uemail"] = $Acct->email;
+
+    if (isset($Opt["ldapLogin"]))
 	$_REQUEST["upassword"] = $_REQUEST["upassword2"] = $Acct->password;
-    } else if ($newProfile)
+    else if ($newProfile)
 	$_REQUEST["upassword"] = "";
     else if (defval($_REQUEST, "whichpassword") == "t"
 	     && isset($_REQUEST["upasswordt"]))
@@ -90,9 +95,14 @@ function createUser(&$tf, $newProfile) {
 	    if (!$newProfile)
 		$msg .= "You may want to <a href='mergeaccounts$ConfSiteSuffix'>merge these accounts</a>.";
 	    return tfError($tf, "uemail", $msg);
+	} else if (isset($Opt["ldapLogin"])) {
+	    if ($_REQUEST["uemail"] == "")
+		return tfError($tf, "newUsername", "Not a valid LDAP username.");
 	} else if (!validateEmail($_REQUEST["uemail"]))
 	    return tfError($tf, "uemail", "&ldquo;" . htmlspecialchars($_REQUEST["uemail"]) . "&rdquo; is not a valid email address.");
     }
+    if (isset($_REQUEST["preferredEmail"]) && !validateEmail($_REQUEST["preferredEmail"]))
+	return tfError($tf, "preferredEmail", "&ldquo;" . htmlspecialchars($_REQUEST["preferredEmail"]) . "&rdquo; is not a valid email address.");
 
     // at this point we will create the account
     if ($newProfile) {
@@ -268,7 +278,7 @@ if (isset($_REQUEST["register"]) && $newProfile
     if (createUser($tf, $newProfile)) {
 	if ($newProfile) {
 	    $Conf->confirmMsg("Created <a href=\"account$ConfSiteSuffix?contact=" . urlencode($Acct->email) . "\">an account for " . htmlspecialchars($Acct->email) . "</a>.  A password has been emailed to that address.  You may now create another account.");
-	    $_REQUEST["uemail"] = $_REQUEST["firstName"] = $_REQUEST["lastName"] = $_REQUEST["affiliation"] = "";
+	    $_REQUEST["uemail"] = $_REQUEST["newUsername"] = $_REQUEST["firstName"] = $_REQUEST["lastName"] = $_REQUEST["affiliation"] = "";
 	} else
 	    $Conf->confirmMsg("Account profile updated.");
 	if (isset($_REQUEST["redirect"]))
@@ -364,24 +374,39 @@ function crpformvalue($val, $field = null) {
     global $Acct;
     if (isset($_REQUEST[$val]))
 	return htmlspecialchars($_REQUEST[$val]);
-    else
+    else if ($field !== false)
 	return htmlspecialchars($field ? $Acct->$field : $Acct->$val);
+    else
+	return "";
 }
 
-function fcclass($what) {
+function fcclass($what = false) {
     global $Error;
-    return (isset($Error[$what]) ? "f-c error" : "f-c");
+    return ($what && isset($Error[$what]) ? "f-c error" : "f-c");
 }
 
-function feclass($what) {
+function feclass($what = false) {
     global $Error;
-    return (isset($Error[$what]) ? "f-e error" : "f-e");
+    return ($what && isset($Error[$what]) ? "f-e error" : "f-e");
 }
 
-function capclass($what) {
-    global $Error;
-    return (isset($Error[$what]) ? "caption error" : "caption");
+function echofield($type, $classname, $captiontext, $entrytext) {
+    if ($type <= 1)
+	echo "<div class='f-i'>";
+    if ($type >= 1)
+	echo "<div class='f-ix'>";
+    echo "<div class='", fcclass($classname), "'>", $captiontext, "</div>",
+	"<div class='", feclass($classname), "'>", $entrytext, "</div></div>\n";
+    if ($type > 2)
+	echo "<div class='clear'></div></div>\n";
 }
+
+function textinput($name, $value, $size, $id = false, $password = false) {
+    return "<input type=\"" . ($password ? "password" : "text")
+	. "\" class=\"textlite\" name=\"$name\" " . ($id ? "id=\"$id\" " : "")
+	. "size=\"$size\" value=\"$value\" onchange=\"hiliter(this)\" />";
+}
+
 
 if (!$newProfile) {
     $_REQUEST["pc"] = ($Acct->roles & Contact::ROLE_PC) != 0;
@@ -418,15 +443,19 @@ else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1
 } else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 2;
     $Conf->infoMsg("Please take a moment to update your contact information.");
- }
+}
 
 
-echo "<form id='accountform' method='post' action='account$ConfSiteSuffix";
+$params = array();
 if ($newProfile)
-    echo "?new=1";
+    $params[] = "new=1";
 else if ($Me->contactId != $Acct->contactId)
-    echo "?contact=", $Acct->contactId;
-echo "' enctype='multipart/form-data' accept-charset='UTF-8' autocomplete='off'><div class='aahc'>\n";
+    $params[] = "contact=" . $Acct->contactId;
+if (isset($_REQUEST["ls"]))
+    $params[] = "ls=" . urlencode($_REQUEST["ls"]);
+echo "<form id='accountform' method='post' action='account$ConfSiteSuffix",
+    (count($params) ? "?" . join("&amp;", $params) : ""),
+    "' enctype='multipart/form-data' accept-charset='UTF-8' autocomplete='off'><div class='aahc'>\n";
 if (isset($_REQUEST["redirect"]))
     echo "<input type='hidden' name='redirect' value=\"", htmlspecialchars($_REQUEST["redirect"]), "\" />\n";
 if ($Me->privChair)
@@ -440,40 +469,28 @@ echo "<table id='foldaccount' class='form foldc ",
   <td class='entry'><div class='f-contain'>\n\n";
 
 if (!isset($Opt["ldapLogin"]))
-    echo "<div class='f-i'>
-  <div class='", fcclass('uemail'), "'>Email</div>
-  <div class='", feclass('uemail'), "'><input class='textlite' type='text' name='uemail' id='account_d' size='52' value=\"", crpformvalue('uemail', 'email'), "\" onchange='hiliter(this)' /></div>
-</div>\n\n";
-else
-    echo "<div class='f-i'>
-  <div class='", fcclass("uemail"), "'>Username</div>
-  <div class='", feclass("uemail"), "'>", crpformvalue('uemail', 'email'), "</div>
-</div>
+    echofield(0, "uemail", "Email", textinput("uemail", crpformvalue("uemail", "email"), 52, "account_d"));
+else if (!$newProfile) {
+    echofield(0, "uemail", "Username", crpformvalue("uemail", "email"));
+    echofield(0, "preferredEmail", "Email", textinput("preferredEmail", crpformvalue("preferredEmail"), 52, "account_d"));
+} else {
+    echofield(0, "uemail", "Username", textinput("newUsername", crpformvalue("newUsername", false), 52, "account_d"));
+    echofield(0, "preferredEmail", "Email", textinput("preferredEmail", crpformvalue("preferredEmail"), 52));
+}
 
-<div class='f-i'>
-  <div class='", fcclass("preferredEmail"), "'>Email</div>
-  <div class='", feclass("preferredEmail"), "'><input class='textlite' type='text' name='preferredEmail' id='account_d' size='52' value=\"", crpformvalue("preferredEmail", "preferredEmail"), "\" onchange='hiliter(this)' /></div>
-</div>\n\n";
-
-echo "<div class='f-i'><div class='f-ix'>
-  <div class='", fcclass('firstName'), "'>First&nbsp;name</div>
-  <div class='", feclass('firstName'), "'><input class='textlite' type='text' name='firstName' size='24' value=\"", crpformvalue('firstName'), "\" onchange='hiliter(this)' /></div>
-</div><div class='f-ix'>
-  <div class='", fcclass('lastName'), "'>Last&nbsp;name</div>
-  <div class='", feclass('lastName'), "'><input class='textlite' type='text' name='lastName' size='24' value=\"", crpformvalue('lastName'), "\" onchange='hiliter(this)' /></div>
-</div><div class='clear'></div></div>\n\n";
+echofield(1, "firstName", "First&nbsp;name", textinput("firstName", crpformvalue("firstName"), 24));
+echofield(3, "lastName", "Last&nbsp;name", textinput("lastName", crpformvalue("lastName"), 24));
 
 if (!$newProfile && !isset($Opt["ldapLogin"])) {
     echo "<div class='f-i'><div class='f-ix'>
-  <div class='", fcclass('password'), "'>Password";
-    echo "</div>
+  <div class='", fcclass('password'), "'>Password</div>
   <div class='", feclass('password'), "'><input class='textlite fn' type='password' name='upassword' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this)' />";
     if ($Me->privChair)
 	echo "<input class='textlite fx' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upasswordt', 'password'), "\" onchange='hiliter(this)' />";
     echo "</div>
 </div><div class='fn f-ix'>
   <div class='", fcclass('password'), "'>Repeat password</div>
-  <div class='", feclass('password'), "'><input class='textlite' type='password' name='upassword2' size='24' value=\"", crpformvalue('upassword2', 'password'), "\" onchange='hiliter(this)' /></div>
+  <div class='", feclass('password'), "'>", textinput("upassword2", crpformvalue("upassword2", "password"), 24, false, true), "</div>
 </div>
   <div class='f-h'>The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don't use a login password or any other high-security password.";
     if ($Me->privChair)
@@ -482,10 +499,7 @@ if (!$newProfile && !isset($Opt["ldapLogin"])) {
 }
 
 
-echo "<div class='f-i'>
-  <div class='", fcclass('affiliation'), "'>Affiliation</div>
-  <div class='", feclass('affiliation'), "'><input class='textlite' type='text' name='affiliation' size='52' value=\"", crpformvalue('affiliation'), "\" onchange='hiliter(this)' /></div>
-</div>\n\n";
+echofield(0, "affiliation", "Affiliation", textinput("affiliation", crpformvalue("affiliation"), 52));
 
 
 $any_address = ($Acct->addressLine1 || $Acct->addressLine2 || $Acct->city
@@ -495,40 +509,16 @@ if ($Conf->setting("acct_addr") || $Acct->amReviewer()
     echo "<div class='g'></div>\n";
     if ($Conf->sversion >= 5
 	&& ($Conf->setting("acct_addr") || $any_address)) {
-	echo "<div class='f-i'>
-  <div class='f-c'>Address line 1</div>
-  <div class='f-e'><input class='textlite' type='text' name='addressLine1' size='52' value=\"", crpformvalue('addressLine1'), "\" onchange='hiliter(this)' /></div>
-</div>\n\n";
-	echo "<div class='f-i'>
-  <div class='f-c'>Address line 2</div>
-  <div class='f-e'><input class='textlite' type='text' name='addressLine2' size='52' value=\"", crpformvalue('addressLine2'), "\" onchange='hiliter(this)' /></div>
-</div>\n\n";
-	echo "<div class='f-i'><div class='f-ix'>
-  <div class='f-c'>City</div>
-  <div class='f-e'><input class='textlite' type='text' name='city' size='32' value=\"", crpformvalue('city'), "\" onchange='hiliter(this)' /></div>
-</div>";
-	echo "<div class='f-ix'>
-  <div class='f-c'>State/Province/Region</div>
-  <div class='f-e'><input class='textlite' type='text' name='state' size='24' value=\"", crpformvalue('state'), "\" onchange='hiliter(this)' /></div>
-</div>";
-	echo "<div class='f-ix'>
-  <div class='f-c'>ZIP/Postal code</div>
-  <div class='f-e'><input class='textlite' type='text' name='zipCode' size='12' value=\"", crpformvalue('zipCode'), "\" onchange='hiliter(this)' /></div>
-</div><div class='clear'></div></div>\n\n";
-	echo "<div class='f-i'>
-  <div class='f-c'>Country</div>
-  <div class='f-e'>";
-	countrySelector("country", (isset($_REQUEST["country"]) ? $_REQUEST["country"] : $Acct->country));
-	echo "</div>\n</div>\n";
+	echofield(0, false, "Address line 1", textinput("addressLine1", crpformvalue("addressLine1"), 52));
+	echofield(0, false, "Address line 2", textinput("addressLine2", crpformvalue("addressLine2"), 52));
+	echofield(1, false, "City", textinput("city", crpformvalue("city"), 32));
+	echofield(2, false, "State/Province/Region", textinput("state", crpformvalue("state"), 24));
+	echofield(3, false, "ZIP/Postal code", textinput("zipCode", crpformvalue("zipCode"), 12));
+	echofield(0, false, "Country", countrySelector("country", (isset($_REQUEST["country"]) ? $_REQUEST["country"] : $Acct->country)));
     }
-    echo "<div class='f-i'><div class='f-ix'>
-  <div class='f-c'>Phone <span class='f-cx'>(optional)</span></div>
-  <div class='f-e'><input class='textlite' type='text' name='voicePhoneNumber' size='24' value=\"", crpformvalue('voicePhoneNumber'), "\" onchange='hiliter(this)' /></div>\n</div>";
+    echofield(1, false, "Phone <span class='f-cx'>(optional)</span>", textinput("voicePhoneNumber", crpformvalue("voicePhoneNumber"), 24));
     if ($Conf->setting("acct_addr") || $Acct->faxPhoneNumber)
-	echo "<div class='f-ix'>
-  <div class='f-c'>Fax <span class='f-cx'>(optional)</span></div>
-  <div class='f-e'><input class='textlite' type='text' name='faxPhoneNumber' size='24' value=\"", crpformvalue('faxPhoneNumber'), "\" onchange='hiliter(this)' /></div>
-</div>";
+	echofield(2, false, "Fax <span class='f-cx'>(optional)</span>", textinput("faxPhoneNumber", crpformvalue("faxPhoneNumber"), 24));
     echo "<div class='clear'></div></div>\n";
 }
 
