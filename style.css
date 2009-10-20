@@ -923,11 +923,11 @@ pre.email {
 	margin: 0em;
 }
 
-table.rpad1 tr td {
-	padding-right: 1em;
-}
-table.rpad tr td {
+td.rpad {
 	padding-right: 2em;
+}
+div.pcconfaff {
+	font-size: 69%;
 }
 
 tr.pt_topics td.entry, tr.pt_actions td,

@@ -1088,7 +1088,7 @@ function pcMembers() {
 	|| !is_array($_SESSION["pcmembers"][1])
 	|| count($_SESSION["pcmembers"][1]) == 0) {
 	$pc = array();
-	$result = $Conf->q("select firstName, lastName, email, ContactInfo.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair from ContactInfo join PCMember using (contactId) left join ChairAssistant on (PCMember.contactId=ChairAssistant.contactId) left join Chair on (PCMember.contactId=Chair.contactId) order by lastName, firstName");
+	$result = $Conf->q("select firstName, lastName, affiliation, email, ContactInfo.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair from ContactInfo join PCMember using (contactId) left join ChairAssistant on (PCMember.contactId=ChairAssistant.contactId) left join Chair on (PCMember.contactId=Chair.contactId) order by lastName, firstName");
 	while (($row = edb_orow($result)))
 	    $pc[$row->contactId] = $row;
 	$_SESSION["pcmembers"] = array($Conf->setting('pc'), $pc);

@@ -901,24 +901,31 @@ class PaperTable {
 		$pcconfs[] = $c;
 	    }
 	    $tclass = "pcass";
-	    $topen = "<table>";
+	    $topen = "<td><table>";
 	    $tswitch = "</table></td><td class='colmid'><table>";
 	    $tclose = "</table>";
 	} else {
 	    foreach ($pcm as $id => $p) {
 		$checked = defval($conflict, $id) > 0;
 		$disabled = $checked && ($conflict[$id] < CONFLICT_AUTHORMARK || $conflict[$id] > $maxauthormark);
-		$pcconfs[] = tagg_checkbox_h("pcc$id", CONFLICT_AUTHORMARK, $checked, array("disabled" => $disabled))
-		    . "&nbsp;" . tagg_label(contactHtml($p->firstName, $p->lastName)) . "<br />\n";
+		$cbox = tagg_checkbox_h("pcc$id", CONFLICT_AUTHORMARK, $checked, array($disabled => $disabled));
+		$aff = ($p->affiliation === "" ? "" : "<div class='pcconfaff'>" . htmlspecialchars($p->affiliation) . "</div>");
+		$label = tagg_label(contactHtml($p->firstName, $p->lastName) . $aff);
+		if ($aff !== "")
+		    $pcconfs[] = "<table><tr><td>$cbox&nbsp;</td><td>$label</td></table>\n";
+		else
+		    $pcconfs[] = "$cbox&nbsp;$label<br />\n";
 	    }
-	    $tclass = "rpad";
-	    $topen = $tclose = "";
-	    $tswitch = "</td><td class='colmid'>";
+	    $tclass = "";
+	    $topen = "<td class='rpad'>";
+	    $tclose = "";
+	    $tswitch = "</td><td class='rpad'>";
 	}
 
 	echo $this->papt("pcconf", "PC conflicts"),
 	    "<div class='paphint'>Select the PC members who have conflicts of interest with this paper.  ", $Conf->conflictDefinitionText(), "</div>\n",
-	    "<div class='papv'><table class='", $tclass, "'><tr><td>", $topen;
+	    "<div class='papv'><table",
+	    ($tclass === "" ? "" : " class='$tclass'"), "><tr>", $topen;
 	$n = ($selectors
 	      ? intval((count($pcconfs) + 1) / 2)
 	      : intval((count($pcconfs) + 2) / 3));
