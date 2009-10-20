@@ -487,16 +487,17 @@ function doTopics($set) {
 function doCleanOptionValues($id) {
     global $Conf, $Error, $Highlight;
 
+    $name = simplifyWhitespace(defval($_REQUEST, "optn$id", ""));
     if (!isset($_REQUEST["optn$id"])
-	|| ($id == "n"
-	    && ($_REQUEST["optn$id"] == "New option"
-		|| $_REQUEST["optn$id"] == "(Enter new option here)"))) {
+	|| ($id == "n" && ($name === "" || $name === "New option" || $name === "(Enter new option here)"))) {
 	unset($_REQUEST["optn$id"]);
 	return;
-    }
-    $_REQUEST["optn$id"] = simplifyWhitespace($_REQUEST["optn$id"]);
-    if ($_REQUEST["optn$id"] == "")
+    } else if ($name === ""
+	       || defval($_REQUEST, "optfp$id", "") === "delete") {
+	$_REQUEST["optn$id"] = "";
 	return;
+    } else
+	$_REQUEST["optn$id"] = $name;
 
     if (isset($_REQUEST["optd$id"])) {
 	$t = cleanXHTML($_REQUEST["optd$id"], $err);
@@ -521,6 +522,55 @@ function doCleanOptionValues($id) {
 	    $_REQUEST["optv$id"] = substr($v, 0, strlen($v) - 1);
     } else
 	unset($_REQUEST["optv$id"]);
+
+    $pcview = cvtint(defval($_REQUEST, "optp$id", 0));
+    $_REQUEST["optp$id"] = min(max($pcview, 0), 2);
+}
+
+function doCleanOptionFormPositions() {
+    $opt = paperOptions();
+
+    // valid keys for options, and whether the position is new
+    $optname = array();
+    $optreorder = array();
+    foreach ($opt as $id => $o)
+	if (defval($_REQUEST, "optn$id", "") != "") {
+	    $optname[$id] = defval($_REQUEST, "optn$id", $o->optionName);
+	    $_REQUEST["optfp$id"] = defval($_REQUEST, "optfp$id", $o->sortOrder);
+	    $optreorder[$id] = $_REQUEST["optfp$id"] != $o->sortOrder;
+	}
+    if (isset($_REQUEST["optnn"])) {
+	$optname["n"] = $_REQUEST["optnn"];
+	$_REQUEST["optfpn"] = defval($_REQUEST, "optfpn", count($optname) - 1);
+	$optreorder["n"] = true;
+    }
+
+    // assign "optfp" request variables sequentially starting from 0;
+    // a changed position takes priority over an unchanged position
+    $pos = array();
+    $set = array();
+    for ($i = 0; $i < count($optname); ++$i) {
+	$best = -1;
+	$bestpos = 1000;
+
+	foreach ($optname as $id => $name)
+	    if (!isset($set[$id])
+		&& ($best < 0
+		    || $_REQUEST["optfp$id"] < $bestpos
+		    || ($_REQUEST["optfp$id"] == $bestpos
+			&& $optreorder[$id] && !$optreorder[$best])
+		    || ($_REQUEST["optfp$id"] == $bestpos
+			&& strcasecmp($name, $optname[$best]) < 0)
+		    || ($_REQUEST["optfp$id"] == $bestpos
+			&& strcasecmp($name, $optname[$best]) == 0
+			&& strcmp($name, $optname[$best]) < 0))) {
+		$best = $id;
+		$bestpos = $_REQUEST["optfp$id"];
+	    }
+
+	$set[$best] = true;
+	$_REQUEST["optfp$best"] = $i;
+    }
 }
 
 function doOptions($set) {
@@ -548,46 +598,53 @@ function doOptions($set) {
 	return;
     }
     $while = "while updating options";
-
-    //
+    if ($Conf->sversion >= 29)
+	doCleanOptionFormPositions();
 
     $ochange = false;
     $anyo = false;
     foreach (paperOptions() as $id => $o) {
 	doCleanOptionValues($id);
+
+	if (isset($_REQUEST["optn$id"]) && $_REQUEST["optn$id"] === "") {
+	    // delete option
+	    $Conf->qe("delete from OptionType where optionId=$id", $while);
+	    $Conf->qe("delete from PaperOption where optionId=$id", $while);
+	    $ochange = true;
+	    continue;
+	}
+
+	// otherwise, option exists
+	$anyo = true;
+
+	// did it change?
 	if (isset($_REQUEST["optn$id"])
 	    && ($_REQUEST["optn$id"] != $o->optionName
 		|| defval($_REQUEST, "optd$id") != $o->description
 		|| defval($_REQUEST, "optp$id", 0) != $o->pcView
 		|| defval($_REQUEST, "optv$id", "") != defval($o, "optionValues", "")
-		|| defval($_REQUEST, "optvt$id", 0) != defval($o, "type", 0))) {
-	    if ($_REQUEST["optn$id"] == "") {
-		$Conf->qe("delete from OptionType where optionId=$id", $while);
-		$Conf->qe("delete from PaperOption where optionId=$id", $while);
-	    } else {
-		$pcview = cvtint(defval($_REQUEST, "optp$id", 0));
-		$q = "update OptionType set optionName='" . sqlq($_REQUEST["optn$id"])
-		    . "', description='" . sqlq(defval($_REQUEST, "optd$id", ""))
-		    . "', pcView=" . min(max($pcview, 0), 2);
-		if ($Conf->sversion >= 14)
-		    $q .= ", optionValues='" . sqlq(defval($_REQUEST, "optv$id", "")) . "'";
-		if ($Conf->sversion >= 27)
-		    $q .= ", type='" . defval($_REQUEST, "optvt$id", 0) . "'";
-		$Conf->qe($q . " where optionId=$id", $while);
-		$anyo = true;
-	    }
+		|| defval($_REQUEST, "optvt$id", 0) != defval($o, "type", 0)
+		|| defval($_REQUEST, "optfp$id", $o->sortOrder) != $o->sortOrder)) {
+	    $q = "update OptionType set optionName='" . sqlq($_REQUEST["optn$id"])
+		. "', description='" . sqlq(defval($_REQUEST, "optd$id", ""))
+		. "', pcView=" . $_REQUEST["optp$id"];
+	    if ($Conf->sversion >= 14)
+		$q .= ", optionValues='" . sqlq(defval($_REQUEST, "optv$id", "")) . "'";
+	    if ($Conf->sversion >= 27)
+		$q .= ", type='" . defval($_REQUEST, "optvt$id", 0) . "'";
+	    if ($Conf->sversion >= 29)
+		$q .= ", sortOrder=" . defval($_REQUEST, "optfp$id", $o->sortOrder);
+	    $Conf->qe($q . " where optionId=$id", $while);
 	    $ochange = true;
-	} else
-	    $anyo = true;
+	}
     }
 
-    if (defval($_REQUEST, "optnn") && $_REQUEST["optnn"] != "New option"
-	&& $_REQUEST["optnn"] != "(Enter new option here)") {
+    if (isset($_REQUEST["optnn"])) {
 	doCleanOptionValues("n");
 	$qa = "optionName, description, pcView";
 	$qb = "'" . sqlq($_REQUEST["optnn"])
 	    . "', '" . sqlq(defval($_REQUEST, "optdn", ""))
-	    . "', " . (defval($_REQUEST, "optpn") ? 1 : 0);
+	    . "', " . $_REQUEST["optpn"];
 	if ($Conf->sversion >= 14) {
 	    $qa .= ", optionValues";
 	    $qb .= ", '" . sqlq(defval($_REQUEST, "optvn", "")) . "'";
@@ -595,6 +652,10 @@ function doOptions($set) {
 	if ($Conf->sversion >= 27) {
 	    $qa .= ", type";
 	    $qb .= ", '" . sqlq(defval($_REQUEST, "optvtn", 0)) . "'";
+	}
+	if ($Conf->sversion >= 29) {
+	    $qa .= ", sortOrder";
+	    $qb .= ", '" . sqlq(defval($_REQUEST, "optfpn", 0)) . "'";
 	}
 	$Conf->qe("insert into OptionType ($qa) values ($qb)", $while);
 	$ochange = $anyo = true;
@@ -1206,12 +1267,13 @@ function doOptGroupOption($o) {
 		"description" => defval($_REQUEST, "optd$id", $o->description),
 		"type" => defval($_REQUEST, "optvt$id", $o->type),
 		"optionValues" => defval($_REQUEST, "optv$id", $o->optionValues),
-		"pcView" => defval($_REQUEST, "optp$id", $o->pcView));
+		"pcView" => defval($_REQUEST, "optp$id", $o->pcView),
+		"sortOrder" => defval($_REQUEST, "optfp$id", $o->sortOrder));
 
     echo "<tr><td><div class='f-contain'>\n",
 	"  <div class='f-i'>",
 	"<div class='f-c'>",
-	decorateSettingName("optn$id", "Option name"),
+	decorateSettingName("optn$id", ($id === "n" ? "New option name" : "Option name")),
 	"</div>",
 	"<div class='f-e'><input type='text' class='textlite' name='optn$id' value=\"", htmlspecialchars($o->optionName), "\" size='50' onchange='hiliter(this)' ",
 	($id == "n" ? "onfocus=\"tempText(this, '(Enter new option here)', 1)\" onblur=\"tempText(this, '(Enter new option here)', 0)\" " : ""),
@@ -1264,8 +1326,23 @@ function doOptGroupOption($o) {
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
 	decorateSettingName("optp$id", "Visibility"), "</div><div class='f-e'>",
-	tagg_select("optp$id", array("Administrators only", "Visible to reviewers", "Visible if authors are visible"), $o->pcView),
-	"</div></div></td></tr></table>";
+	tagg_select("optp$id", array("Administrators only", "Visible to reviewers", "Visible if authors are visible"), $o->pcView, array("onchange" => "hiliter(this)")),
+	"</div></div></td>";
+
+    if ($Conf->sversion >= 29) {
+	echo "<td class='pad'><div class='f-i'><div class='f-c'>",
+	    decorateSettingName("optfp$id", "Form position"), "</div><div class='f-e'>";
+	$opt = paperOptions();
+	$x = array();
+	for ($i = 0; $i <= count($opt); ++$i)
+	    $x[$i] = ordinal($i + 1);
+	if ($id !== "n")
+	    $x["delete"] = "Delete option";
+	echo tagg_select("optfp$id", $x, $o->sortOrder, array("onchange" => "hiliter(this)")),
+	    "</div></div></td>";
+    }
+
+    echo "</tr></table>";
 
     if ($Conf->sversion >= 14) {
 	$value = $o->optionValues;
@@ -1286,7 +1363,10 @@ function doOptGroup() {
 
     if ($Conf->sversion >= 1) {
 	echo "<h3>Submission options</h3>\n";
-	echo "Options are selected by authors at submission time.  Examples have included &ldquo;PC-authored paper,&rdquo; &ldquo;Consider this paper for a Best Student Paper award,&rdquo; and &ldquo;Allow the shadow PC to see this paper.&rdquo;  The &ldquo;option name&rdquo; should be brief (&ldquo;PC paper,&rdquo; &ldquo;Best Student Paper,&rdquo; &ldquo;Shadow PC&rdquo;).  The description should be more descriptive and may use XHTML.  To delete an option, delete its name.  Add options one at a time.\n";
+	echo "Options are selected by authors at submission time.  Examples have included &ldquo;PC-authored paper,&rdquo; &ldquo;Consider this paper for a Best Student Paper award,&rdquo; and &ldquo;Allow the shadow PC to see this paper.&rdquo;  The &ldquo;option name&rdquo; should be brief (&ldquo;PC paper,&rdquo; &ldquo;Best Student Paper,&rdquo; &ldquo;Shadow PC&rdquo;).  The description should be more descriptive and may use XHTML.  ";
+	if ($Conf->sversion < 29)
+	    echo "To delete an option, delete its name.  ";
+	echo "Add options one at a time.\n";
 	echo "<div class='g'></div>\n";
 	echo "<table>";
 	$opt = paperOptions();
@@ -1299,7 +1379,7 @@ function doOptGroup() {
 
 	echo $sep;
 
-	doOptGroupOption((object) array("optionId" => "n", "optionName" => "(Enter new option here)", "description" => "", "pcView" => 1, "type" => 0, "optionValues" => ""));
+	doOptGroupOption((object) array("optionId" => "n", "optionName" => "(Enter new option here)", "description" => "", "pcView" => 1, "type" => 0, "optionValues" => "", "sortOrder" => count($opt)));
 
 	echo "</table>\n";
     }

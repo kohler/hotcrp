@@ -148,6 +148,10 @@ function updateSchema($Conf) {
 	&& $Conf->q("update PaperStorage s, Paper p set s.sha1=p.sha1, s.documentType=-1 where s.paperStorageId=p.finalPaperStorageId and s.paperStorageId>0")
 	&& $Conf->q("update Settings set value=28 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 28;
+    if ($Conf->settings["allowPaperOption"] == 28
+	&& $Conf->q("alter table OptionType add `sortOrder` tinyint(1) NOT NULL default '0'")
+	&& $Conf->q("update Settings set value=29 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 29;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

@@ -1214,7 +1214,9 @@ function paperOptions() {
     if (!isset($_SESSION["paperOption"]) || !is_array($_SESSION["paperOption"])
 	|| $_SESSION["paperOption"][0] <= $Conf->setting("paperOption")) {
 	$opt = array();
-	$result = $Conf->q("select * from OptionType order by optionName");
+	$orderby = ($Conf->sversion >= 29 ? "sortOrder, " : "") . "optionName";
+	$result = $Conf->q("select * from OptionType order by $orderby");
+	$order = 0;
 	while (($row = edb_orow($result))) {
 	    if (!isset($row->optionValues))	   // backwards compatibility
 		$row->optionValues = "";
@@ -1223,6 +1225,7 @@ function paperOptions() {
 	    else if (!isset($row->type))
 		$row->type = ($row->optionValues ? 1 : 0);
 	    $row->optionAbbrev = preg_replace("/-+\$/", "", preg_replace("/[^a-z0-9_]+/", "-", strtolower($row->optionName)));
+	    $row->sortOrder = $order++;
 	    $opt[$row->optionId] = $row;
 	}
 	$_SESSION["paperOption"] = array($Conf->setting("paperOption"), $opt);
