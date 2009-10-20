@@ -264,11 +264,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     $q = "";
 
     foreach (array("title", "abstract", "collaborators") as $x) {
-	if (trim($_REQUEST[$x]) == "") {
-	    if ($x != "collaborators"
-		|| ($Conf->setting("sub_collab") && $isSubmit))
-		$Error[$x] = 1;
-	}
+	if (trim($_REQUEST[$x]) == "" && $x != "collaborators")
+	    $Error[$x] = 1;
 	if ($x == "title")
 	    $_REQUEST[$x] = simplifyWhitespace($_REQUEST[$x]);
 	$q .= "$x='" . sqlqtrim($_REQUEST[$x]) . "', ";
@@ -312,6 +309,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     }
 
     // any missing fields?
+    $collaborators_error = (trim($_REQUEST["collaborators"]) == "" && $Conf->setting("sub_collab"));
+    $collaborators_field = ($Conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
     if (count($Error) > 0) {
 	$fields = array();
 	$collab = false;
@@ -321,18 +320,16 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    $fields[] = "Authors";
 	if (isset($Error["abstract"]))
 	    $fields[] = "Abstract";
-	if (isset($Error["collaborators"])) {
-	    $collab = ($Conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
-	    $fields[] = $collab;
-	}
+	if ($collaborators_error)
+	    $fields[] = $collaborators_field;
 	if (count($fields) > 0) {
 	    $emsg .= "Before " . ($isSubmit ? "submitting" : "registering") . " your paper, you must enter ";
 	    if (count($fields) == 1)
 		$emsg .= "a value for the " . commajoin($fields) . " field.  ";
 	    else
 		$emsg .= "values for the " . commajoin($fields) . " fields.  ";
-	    if ($collab)
-		$emsg .= "If none of the authors have potential conflicts, just enter &ldquo;None&rdquo; in the $collab field.  ";
+	    if ($collaborators_error)
+		$emsg .= "If none of the authors have potential conflicts, just enter &ldquo;None&rdquo; in the $collaborators_field field.  ";
 	}
 	if ($emsg != "")
 	    $emsg .= "Fix the highlighted " . pluralx($fields, "field") . " and try again.";
@@ -349,7 +346,10 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 		    $Conf->qe("insert into PaperOption (paperId, optionId, value, data) values ($prow->paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . ", null) on duplicate key update value=VALUES(value)", "while uploading option PDF");
 	}
 	return false;
-    }
+    } else if ($collaborators_error // a warning, not an error
+	       && !$isSubmitFinal
+	       && (!$isSubmit || $Conf->setting("sub_freeze") <= 0))
+	$Conf->warnMsg("Please enter the authors' potential conflicts in the $collaborators_field field.  If none of the authors have potential conflicts, just enter &ldquo;None&rdquo;.");
 
     // defined contact ID
     if ($newPaper && (isset($_REQUEST["contact_email"]) || isset($_REQUEST["contact_name"])) && $Me->privChair)
