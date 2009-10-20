@@ -473,7 +473,8 @@ function makescorehelp(anchor, which, dofold) {
 function addScoreHelp() {
     var anchors = document.getElementsByTagName("a"), href, pos;
     for (var i = 0; i < anchors.length; i++)
-	if (anchors[i].className == 'scorehelp' && (href = anchors[i].getAttribute('href'))
+	if (anchors[i].className.match(/^scorehelp(?: |$)/)
+	    && (href = anchors[i].getAttribute('href'))
 	    && (pos = href.indexOf("f=")) >= 0) {
 	    var whichscore = href.substr(pos + 2);
 	    anchors[i].onmouseover = makescorehelp(anchors[i], whichscore, 0);

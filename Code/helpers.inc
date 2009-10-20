@@ -677,6 +677,14 @@ function commajoin($what) {
     return join(", ", array_slice($what, 0, -1)) . " and " . $what[count($what) - 1];
 }
 
+function ordinal($n) {
+    if ($n >= 1 && $n <= 3)
+	return $n . ($n == 1 ? "st" : ($n == 2 ? "nd" : "rd"));
+    else
+	return $n . "th";
+}
+
+
 function paperBlind($prow) {
     global $Conf;
     $bs = $Conf->blindSubmission();

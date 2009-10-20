@@ -174,22 +174,14 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 	. "\" onchange='hiliter(this)' /></b></td></tr>\n";
 
     // form position
-    $x .= "<$trclass><td class='rxcaption nowrap'>Form position</td><td class='entry'>"
-	. "<select name='order_$row->fieldName' onchange='hiliter(this)'>\n"
-	. "  <option value='-1'";
-    if ($ordinalOrder < 0)
-	$x .= " selected='selected'";
-    $x .= ">Off form</option>";
-    for ($i = 0; $i < $numRows; $i++) {
-	$x .= "<option value='$i'";
-	if ($ordinalOrder == $i)
-	    $x .= " selected='selected'";
-	$x .= ">" . ($i + 1) . ($i == 0 ? "st" : ($i == 1 ? "nd" : ($i == 2 ? "rd" : "th"))) . "</option>";
-    }
-    $x .= "\n</select> <span class='sep'></span>";
+    $x .= "<$trclass><td class='rxcaption nowrap'>Form position</td><td class='entry'>";
+    $fp_opt = array();
+    $fp_opt["-1"] = "Off form";
+    for ($i = 0; $i < $numRows; ++$i)
+	$fp_opt["$i"] = ordinal($i + 1);
+    $x .= tagg_select("order_$row->fieldName", $fp_opt, $ordinalOrder, array("onchange" => "hiliter(this)")) . " <span class='sep'></span>";
 
     // author view
-    $x .= "Visibility <a class='scorehelp' href='scorehelp$ConfSiteSuffix?f=vis'>(choices)</a>";
     if (count($scoreHelps) == 0)
 	$Conf->footerStuff .= "<script type='text/javascript'>addScoreHelp();</script>";
     if (!isset($scoreHelps["vis"])) {
@@ -203,13 +195,14 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     }
     if (isset($_REQUEST["shortName_$row->fieldName"]) && !isset($_REQUEST["authorView_$row->fieldName"]))
 	$_REQUEST["authorView_$row->fieldName"] = 0;
-    $x .= " &nbsp;"
+    $x .= "Visibility &nbsp;"
 	. tagg_select("authorView_$row->fieldName",
 		      array(1 => "Authors &amp; reviewers",
 			    0 => "Reviewers only",
 			    -1 => "Private",
 			    -2 => "Secret"),
 		      max(min(cvtint(rf_getField($row, "authorView"), -10000), 1), -2))
+	. " &nbsp;<a class='scorehelp small' href='scorehelp$ConfSiteSuffix?f=vis'>(What is this?)</a>"
 	. "</td><td class='hint'></td></tr>\n";
 
     // description
