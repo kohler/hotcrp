@@ -7,7 +7,7 @@ banal by Geoff Voelker, UCSD
 
 Prerequisites
 -------------
-HotCRP requires the following software.  Tested versions are in parentheses.
+HotCRP requires the following software.
 
 * Apache			http://apache.org/
   (You may be able to use another web server that works with PHP.)
@@ -16,6 +16,7 @@ HotCRP requires the following software.  Tested versions are in parentheses.
   - PHP 5.2 or higher recommended
 * MySQL version 5 or higher	http://mysql.org/
 * PHP PEAR extensions		http://pear.php.net/
+* The zip compressor		http://www.info-zip.org/
 
 Apache is preloaded on most Linux distributions.  You may need to install
 additional packages for PHP, MySQL, GD, and PEAR, such as:
