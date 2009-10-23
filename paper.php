@@ -446,7 +446,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     }
 
     // update PC conflicts if appropriate
-    if ($Conf->setting("sub_pcconf")) {
+    if ($Conf->setting("sub_pcconf") && (!$isSubmitFinal || $Me->privChair)) {
 	$maxauthormark = ($Conf->sversion >= 22 ? CONFLICT_MAXAUTHORMARK : CONFLICT_AUTHORMARK);
 	if (!$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType>=" . CONFLICT_AUTHORMARK . " and conflictType<=" . $maxauthormark, "while updating conflicts"))
 	    return false;
