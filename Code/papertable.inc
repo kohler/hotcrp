@@ -722,7 +722,7 @@ class PaperTable {
     function echoAnonymity($prow) {
 	global $Conf, $Opt;
 	$blind = ($this->useRequest ? isset($_REQUEST['blind']) : (!$prow || $prow->blind));
-	assert($this->editable);
+	assert(!!$this->editable);
 	echo $this->papt("blind", tagg_checkbox_h("blind", 1, $blind)
 			 . "&nbsp;" . tagg_label("Anonymous submission")),
 	    "<div class='paphint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (reviewers won't be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
@@ -734,7 +734,7 @@ class PaperTable {
 	if (!$Conf->setting("sub_collab"))
 	    return;
 	$sub_pcconf = $Conf->setting("sub_pcconf");
-	assert($this->editable);
+	assert(!!$this->editable);
 
 	echo $this->papt("collaborators", ($sub_pcconf ? "Other conflicts" : "Potential conflicts")),
 	    "<div class='paphint'>";
@@ -777,7 +777,7 @@ class PaperTable {
 
     function echoTopics($prow) {
 	global $Conf;
-	assert($this->editable);
+	assert(!!$this->editable);
 	$topicMode = (int) $this->useRequest;
 	if (($topicTable = topicTable($prow, $topicMode))) {
 	    echo $this->papt("topics", "Topics"),
@@ -791,7 +791,7 @@ class PaperTable {
 	$prow_optionIds = isset($prow->optionIds) ? $prow->optionIds : "";
 	if (!($opt = paperOptions()))
 	    return;
-	assert($this->editable);
+	assert(!!$this->editable);
 	preg_match_all('/(\d+)#(\d+)/', $prow_optionIds, $m);
 	$optsel = array();
 	for ($i = 0; $i < count($m[1]); ++$i)
@@ -857,7 +857,7 @@ class PaperTable {
     function echoPCConflicts($prow) {
 	global $Conf, $authorConflictTypes;
 
-	assert($this->editable);
+	assert(!!$this->editable);
 	if (!$Conf->setting("sub_pcconf"))
 	    return;
 	$pcm = pcMembers();
