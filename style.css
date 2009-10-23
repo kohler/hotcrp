@@ -517,7 +517,7 @@ input.b, button.b, select.b, input.bsm, button.bsm, select.bsm {
 input.bsm, button.bsm, select.bsm {
 	font-size: smaller;
 }
-div#plact input, div#plact button, div#plact select {
+#plact input, #plact button, #plact select {
 	font-size: 100%;
 }
 input.b.alert, input.bsm.alert {
@@ -1067,11 +1067,11 @@ table.pltable th a.fn1, table.pltable th a.fn2, table.pltable th a.fn4,
 table.pltable th a.fx1, table.pltable th a.fx2, table.pltable th a.fx4 {
 	font-weight: normal;
 }
-div#plact {
-	padding-top: 2px;
+#plact {
+	margin-top: 2px;
 	float: left;
 }
-div#plactr {
+#plactr {
 	padding-top: 2px;
 	padding-left: 1em;
 	float: right;
@@ -1106,7 +1106,7 @@ table.pltable th.pl_selector {
 .pl_revstat, table.pltable th.pl_revstat {
 	text-align: center;
 }
-.pl_selector {
+.pl_selector, .pl_footselector {
 	text-align: right;
 	white-space: nowrap;
 }
@@ -1176,11 +1176,11 @@ tr.al td {
 tr.pl_headrow td, tr.pl_headrow th, tr.al_headrow th, table.setreviewform th {
 	border-bottom: 1px solid #999999;
 }
-tr.pl_headrow td, tr.pl_footrow td, tr.pl_headrow th, tr.al_headrow th, 
+tr.pl_headrow td, td.pl_footer, tr.pl_headrow th, tr.al_headrow th,
 table.setreviewform th, table.auedittable th {
 	font-size: smaller;
 }
-tr.pl_footrow td {
+td.pl_selector, td.pl_footer {
 	padding-top: 3px;
 }
 tr.pl_headgap td {
