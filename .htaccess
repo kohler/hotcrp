@@ -10,8 +10,8 @@ php_flag magic_quotes_gpc off
 AddDefaultCharset UTF-8
 
 
-# Prevent access to SCM and README directories.
-<FilesMatch "^(CVS|\.svn|\.git|README|LICENSE|.*\.sh)$">
+# Prevent access to SCM directories, test, README, etc.
+<FilesMatch "^(CVS|\.svn|\.git|README|LICENSE|test|.*\.sh)$">
 Order allow,deny
 Deny from all
 </FilesMatch>
