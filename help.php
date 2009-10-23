@@ -445,24 +445,24 @@ href='search$ConfSiteSuffix?q=tag:discuss%3E1'>tag:discuss>1</a>&rdquo;.
 <p>It's common to assign increasing tag values to a set of papers.  Do this
 using the <a href='search$ConfSiteSuffix'>search screen</a>.  Search for the
 papers you want, sort them into the right order, select their checkboxes, and
-choose <b>Define ordered</b> in the tag action area.  If no sort gives what
+choose <b>Define order</b> in the tag action area.  If no sort gives what
 you want, search for the desired paper numbers in order&mdash;for instance,
 you might search for &ldquo;<a href='search$ConfSiteSuffix?q=4+1+12+9'>4 1 12
-19</a>&rdquo;&mdash;then <b>Select all</b> and <b>Define ordered</b>.  To add
-new papers at the end of an existing discussion order, use <b>Add ordered</b>.
-To insert papers into an existing order, use <b>Add ordered</b> with a tag
-value; for example, to insert starting at value 5, use <b>Add ordered</b> with
+19</a>&rdquo;&mdash;then <b>Select all</b> and <b>Define order</b>.  To add
+new papers at the end of an existing discussion order, use <b>Add to order</b>.
+To insert papers into an existing order, use <b>Add to order</b> with a tag
+value; for example, to insert starting at value 5, use <b>Add to order</b> with
 &ldquo;tag#5&rdquo;.  The rest of the order is renumbered to accomodate the
 insertion.</p>
 
-<p><b>Define ordered</b> might assign values &ldquo;tag#1&rdquo;,
+<p><b>Define order</b> might assign values &ldquo;tag#1&rdquo;,
 &ldquo;tag#3&rdquo;, &ldquo;tag#6&rdquo;, and &ldquo;tag#7&rdquo;
 to adjacent papers.  The gaps make it harder to infer
 conflicted papers' positions.  (Any given gap might or might not hold a
-conflicted paper.)  In contrast, the <b>Define sequential</b> action assigns
+conflicted paper.)  In contrast, the <b>Define gapless order</b> action assigns
 strictly sequential values, like &ldquo;tag#1&rdquo;,
 &ldquo;tag#2&rdquo;, &ldquo;tag#3&rdquo;, &ldquo;tag#4&rdquo;.
-<b>Define ordered</b> is better for most purposes.</p>");
+<b>Define order</b> is better for most purposes.</p>");
     _alternateRow("Tag colors", "
 The tag names &ldquo;red&rdquo;, &ldquo;orange&rdquo;, &ldquo;yellow&rdquo;,
 &ldquo;green&rdquo;, &ldquo;blue&rdquo;, &ldquo;purple&rdquo;, and
