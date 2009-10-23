@@ -291,9 +291,10 @@ fi
 
 create_options_inc () {
     awk 'BEGIN { p = 1 }
-/^\$Opt\[.shortName.\]/ { p = 0 }
+/^\$Opt\[.dbName.\]/ { p = 0 }
 { if (p) print }' < ${PROGDIR}distoptions.inc
     cat <<__EOF__
+\$Opt["dbName"] = "$DBNAME";
 \$Opt["dbPassword"] = "`php_dbpass`";
 __EOF__
     awk 'BEGIN { p = 0 }
