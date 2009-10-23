@@ -497,6 +497,25 @@ class PaperList extends BaseList {
 	}
     }
 
+    function col($fieldId) {
+	global $reviewScoreNames;
+	switch (self::_normalizeField($fieldId)) {
+	case self::FIELD_ID:
+	case self::FIELD_REVIEWS_STATUS:
+	case self::FIELD_SELECTOR:
+	case self::FIELD_SELECTOR_ON:
+	case self::FIELD_SELECTOR_CONFLICT:
+	case self::FIELD_TOPIC_INTEREST:
+	case self::FIELD_REVIEWER_PREFERENCE:
+	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
+	case self::FIELD_DESIRABILITY:
+	case self::FIELD_SCORE:
+	    return "<col width='0*' />";
+	default:
+	    return "<col />";
+	}
+    }
+
     function _contentDownload($row) {
 	global $Conf;
 	$finalsuffix = "";
@@ -1448,6 +1467,13 @@ class PaperList extends BaseList {
 
 	$t .= "<img id='foldplactsession' alt='' src='sessionvar$ConfSiteSuffix?var=foldplact&amp;val=" . defval($_SESSION, "foldplact", 1) . "&amp;cache=1' width='1' height='1' />";
 
+	// columns
+	foreach ($fieldDef as $fieldId => $fdef) {
+	    if ($fdef[1] == 1)
+		$x .= $this->col($fieldId);
+	}
+
+	// header cells
 	if ($this->showHeader) {
 	    $x .= " <thead>\n  <tr class=\"pl_headrow\">\n";
 	    $ord = 0;
