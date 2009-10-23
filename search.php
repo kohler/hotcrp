@@ -418,12 +418,26 @@ function tagaction() {
 	setTags($papers, $tag, $act, $Me->privChair);
     else if (count($papers) && $act == "cr" && $Me->privChair
 	     && checkTag($tag, CHECKTAG_NOINDEX | CHECKTAG_NOPRIVATE | CHECKTAG_ERRORARRAY)) {
-	require_once("Code/rank.inc");
-	$r = new PaperRank($tag, $papers);
-	$r->schulze();
-	$r->save();
-	if ($_REQUEST["q"] === "")
-	    $_REQUEST["q"] = "order:$tag";
+	$source_tag = trim(defval($_REQUEST, "tagcr_source", ""));
+	$source_tag = ($source_tag == "" ? $tag : $source_tag);
+	if (checkTag($source_tag, CHECKTAG_NOINDEX | CHECKTAG_NOPRIVATE | CHECKTAG_ERRORARRAY)) {
+	    require_once("Code/rank.inc");
+	    ini_set("max_execution_time", 1200);
+	    $Conf->header("Search", 'search', actionBar());
+	    $r = new PaperRank($source_tag, $tag, $papers, defval($_REQUEST, "tagcr_gapless"));
+	    $method = defval($_REQUEST, "tagcr_method");
+	    if ($method == "irv")
+		$r->irv();
+	    else if ($method == "range")
+		$r->rangevote();
+	    else if ($method == "civs")
+		$r->civsrp();
+	    else
+		$r->schulze();
+	    $r->save();
+	    if ($_REQUEST["q"] === "")
+		$_REQUEST["q"] = "order:$tag";
+	}
     }
     if (isset($Error["tags"]))
 	$Conf->errorMsg($Error["tags"]);

@@ -1053,6 +1053,19 @@ img.timestamp12 {
 	background-position: -40px -11px;
 }
 
+img.expander {
+	background-image: url(images/sprite.png);
+	width: 9px;
+	height: 9px;
+	border: 0 none;
+}
+.foldc img.expander {
+	background-position: -11px 0px;
+}
+.foldo img.expander {
+	background-position: -21px 0px;
+}
+
 table.topicinterest tr td.ti_interest, table.topicinterest tr th {
 	padding-right: 1px;
 	white-space: nowrap;
@@ -1843,6 +1856,7 @@ div.mail td.mhd {
 .fold59c .fx59, .fold59o .fn59,
 .fold60c .fx60, .fold60o .fn60,
 .fold61c .fx61, .fold61o .fn61,
+.fold99c .fx99, .fold99o .fn99,
 .hidden {
 	display: none;
 }

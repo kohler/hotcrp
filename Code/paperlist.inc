@@ -1036,16 +1036,33 @@ class PaperList extends BaseList {
 		|| defval($_REQUEST, "atab") == "tags")
 		$whichlll = $nlll;
 	    $t .= $barsep;
-	    $t .= "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "tags")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Tag</a></td><td class='lld$nlll'><b>:</b><a class='help' href='help$ConfSiteSuffix?t=tags' title='Learn more'>?</a> &nbsp;";
+	    $t .= "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "tags")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Tag</a></td><td id='foldplacttags' class='lld$nlll foldc fold99c'><table><tr><td><b>:</b><a class='help' href='help$ConfSiteSuffix?t=tags' title='Learn more'>?</a> &nbsp;";
 	    $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order");
+	    $tagextra = array("class" => "b", "id" => "placttagtype");
 	    if ($this->contact->privChair) {
 		$tagopt["xxxb"] = null;
 		$tagopt["da"] = "Clear twiddle";
 		$tagopt["cr"] = "Calculate rank";
+		$tagextra["onchange"] = "placttagtype_fold()";
+		$Conf->footerScript("placttagtype_fold()");
 	    }
 	    $t .= tagg_select("tagtype", $tagopt, defval($_REQUEST, "tagtype"),
-			      array("class" => "b"))
-		. " &nbsp;tag(s) &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value='' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='b' name='tagact' value='Go' /></td>";
+			      $tagextra) . " &nbsp;";
+	    if ($this->contact->privChair) {
+		$t .= "<span class='fx99'><a href='#' onclick=\"return fold('placttags')\">"
+		    . $Conf->cacheableImage("_.gif", "More...", null, "expander")
+		    . "</a>&nbsp;</span></td><td>";
+	    }
+	    $t .= "tag<span class='fn99'>(s)</span> &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value=\"" . htmlspecialchars(defval($_REQUEST, "tag", "")) . "\"' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='b' name='tagact' value='Go' />";
+	    if ($this->contact->privChair) {
+		$t .= "<div class='fx' style='margin: 2px'>Source tag: &nbsp;~<input class='textlite' type='text' name='tagcr_source' value=\"" . htmlspecialchars(defval($_REQUEST, "tagcr_source", "")) . "\" size='15' /><br />Method: &nbsp;"
+		    . tagg_select("tagcr_method", array("schulze" => "Schulze method", "irv" => "Instant-runoff voting", "range" => "Range voting", "civs" => "CIVS Ranked Pairs"), defval($_REQUEST, "tagcr_method"))
+		    . "<br />"
+		    . tagg_checkbox("tagcr_gapless", 1, defval($_REQUEST, "tagcr_gapless"))
+		    . "&nbsp;" . tagg_label("Gapless order")
+		    . "</div>";
+	    }
+	    $t .= "</td></tr></table></td>";
 	    $nlll++;
 	}
 

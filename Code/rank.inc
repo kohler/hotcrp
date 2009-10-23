@@ -7,6 +7,8 @@ require_once("tags.inc");
 class PaperRank {
 
     var $tag;
+    var $dest_tag;
+    var $ordertype;
     var $papersel;
     var $userrank;
     var $papershuffle;
@@ -15,9 +17,10 @@ class PaperRank {
     var $rank;
     var $currank;
 
-    function PaperRank($tag, $papersel) {
+    function PaperRank($source_tag, $dest_tag, $papersel, $strict) {
 	global $Conf;
-	$this->tag = $tag;
+	$this->dest_tag = $dest_tag;
+	$this->ordertype = ($strict ? "aos" : "ao");
 	$this->papersel = $papersel;
 	$this->userrank = array();
 
@@ -31,11 +34,11 @@ class PaperRank {
 
 	// delete global ranks
 	$while = "while computing global ranking";
-	$Conf->qe("delete from PaperTag where tag='" . sqlq($tag) . "'", $while);
+	$Conf->qe("delete from PaperTag where tag='" . sqlq($dest_tag) . "'", $while);
 
 	// load current ranks: $userrank maps user => [rank, paper]
-	$result = $Conf->qe("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($tag) . "' and paperId in (" . join(",", $papersel) . ")", $while);
-	$len = strlen($tag) + 1;
+	$result = $Conf->qe("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($source_tag) . "' and paperId in (" . join(",", $papersel) . ")", $while);
+	$len = strlen($source_tag) + 1;
 	while (($row = edb_row($result))) {
 	    $l = (int) substr($row[1], 0, strlen($row[1]) - $len);
 	    $this->userrank[$l][] = array((int) $row[2], (int) $row[0]);
@@ -59,7 +62,7 @@ class PaperRank {
     }
 
     function _nextRank() {
-	$this->currank += orderedTagStep("ao");
+	$this->currank += orderedTagStep($this->ordertype);
 	return $this->currank;
     }
 
@@ -494,13 +497,14 @@ class PaperRank {
 	foreach ($this->papersel as $p)
 	    if ($this->anypref[$p] == 0)
 		$this->rank[$p] = $norank;
+	$this->_info();
     }
 
 
     // save calculated ranks
     function save() {
 	global $Conf;
-	$sqltag = sqlq($this->tag);
+	$sqltag = sqlq($this->dest_tag);
 	$values = array();
 	foreach ($this->rank as $p => $rank)
 	    $values[] = "($p, '$sqltag', $rank)";

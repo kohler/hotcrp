@@ -210,6 +210,23 @@ function defact(what) {
 	elt.value = what;
 }
 
+function placttagtype_fold() {
+    var elt = e("placttagtype"), folded;
+    if (elt) {
+	folded = elt.selectedIndex < 0 || elt.options[elt.selectedIndex].value != "cr";
+	fold("placttags", folded, 99);
+	if (folded)
+	    fold("placttags", true);
+	else if ((elt = e("sel"))) {
+	    if ((elt.tagcr_source && elt.tagcr_source.value != "")
+		|| (elt.tagcr_method && elt.tagcr_method.selectedIndex >= 0
+		    && elt.tagcr_method.options[elt.tagcr_method.selectedIndex].value != "schulze")
+		|| (elt.tagcr_gapless && elt.tagcr_gapless.checked))
+		fold("placttags", false);
+	}
+    }
+}
+
 
 // assignment selection
 var selassign_blur = 0;
