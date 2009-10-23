@@ -542,9 +542,9 @@ function _oneListLink($id, $baseUrl, $urlrest, $listtype, $isprev) {
     } else
 	$paperText = "#$id";
     return "<a href=\"$baseUrl$id$urlrest\">"
-	. ($isprev ? $Conf->cacheableImage("prev.png", "&lt;-") : "")
+	. ($isprev ? $Conf->cacheableImage("_.gif", "&lt;-", null, "prev") : "")
 	. $paperText
-	. ($isprev ? "" : $Conf->cacheableImage("next.png", "-&gt;"))
+	. ($isprev ? "" : $Conf->cacheableImage("_.gif", "-&gt;", null, "next"))
 	. "</a>";
 }
 

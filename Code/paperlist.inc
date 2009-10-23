@@ -707,11 +707,9 @@ class PaperList extends BaseList {
 		$a2 = "</a>";
 	    }
 	    if ($row->conflictType > 0 && $this->showConflict) {
-		$which = "-1.png";
 		$alt = "Conflict";
 		$class = "-1";
 	    } else if ($row->reviewType === null) {
-		$which = "0.gif";
 		$alt = "";
 		$class = "0";
 	    } else {
@@ -721,7 +719,6 @@ class PaperList extends BaseList {
 		    $class .= "n";
 		    $alt .= " (not complete)";
 		}
-		$which = "$class.gif";
 		if (!$row->reviewRound)
 		    /* nada */;
 		else if (($t = defval($Conf->settings["rounds"], $row->reviewRound)))
@@ -731,7 +728,7 @@ class PaperList extends BaseList {
 		if ($a3)
 		    $a3 = "&nbsp;<span class='revround' title='Review round'>" . htmlspecialchars($a3) . "</span>";
 	    }
-	    return $a1 . $Conf->cacheableImage("ass$which", $alt, $alt, "ass$class") . $a2 . $a3;
+	    return $a1 . $Conf->cacheableImage("_.gif", $alt, $alt, "ass$class") . $a2 . $a3;
 	case self::FIELD_REVIEWS_STATUS:
 	    // see also _sortReviewsStatus
 	    if ($row->conflictType > 0 && !$this->contact->privChair
@@ -1110,7 +1107,7 @@ class PaperList extends BaseList {
 	$extraFooter = ($this->footer && $this->footer !== true ? $this->footer : "");
 	return " <tfoot>\n"
 	    . "  <tr class='pl_footgap $trclass'><td class='pl_blank' colspan='$ncol'></td></tr>\n"
-	    . "  <tr class='pl_footrow'>\n    <td class='pl_footselector' style='vertical-align: top; padding-right: 4px;'>" . $Conf->cacheableImage("bendulft.png", "^^", null, "placthook") . "</td>\n"
+	    . "  <tr class='pl_footrow'>\n    <td class='pl_footselector' style='vertical-align: top; padding-right: 4px;'>" . $Conf->cacheableImage("_.gif", "^^", null, "placthook") . "</td>\n"
 	    . "    <td class='pl_footer' colspan='" . ($ncol - 1) . "'>"
 	    . "<table id='plact' class='linelinks$whichlll'><tr><td><a name='plact'><b>Select papers</b></a> (or <a href=\""
 	    . selfHref(array("selectall" => 1))

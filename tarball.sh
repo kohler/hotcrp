@@ -111,6 +111,7 @@ images/.htaccess
 images/_.gif
 images/GenChart.php
 images/allreviews24.png
+images/asprite.gif
 images/ass-2.png
 images/ass-1.png
 images/ass0.gif
@@ -158,6 +159,7 @@ images/review18.png
 images/review24.png
 images/sortdown.png
 images/sortup.png
+images/sprite.png
 images/stophand45.png
 images/timestamp12.png
 images/txt.png

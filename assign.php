@@ -526,18 +526,17 @@ if ($Me->actChair($prow)) {
 	    echo "<td id='ass$p->contactId' class='name-2'>",
 		str_replace(' ', "&nbsp;", contactHtml($p)),
 		"</td><td class='ass'>",
-		"<img alt='(Author)' title='Author' src='images/ass-2.png' />",
+		"<img class='ass-2' alt='(Author)' title='Author' src='images/_.gif' />",
 		"</td>";
 	} else {
 	    $cid = ($p->conflictType > 0 ? -1 : $p->reviewType + 0);
-	    $extension = ($cid == -1 ? ".png" : ".gif");
 	    echo "<td id='ass$p->contactId' class='name$cid'>";
 	    echo str_replace(' ', "&nbsp;", contactHtml($p));
 	    if ($p->conflictType == 0
 		&& ($p->preference || $p->topicInterestScore))
 		echo preferenceSpan($p->preference, $p->topicInterestScore);
 	    echo "</td><td class='ass'>";
-	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'><img alt='Assignment' id='assimg$p->contactId' src=\"images/ass$cid$extension\" /><img alt='&gt;' src=\"images/next.png\" /></a>&nbsp;";
+	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'><img class='ass$cid' id='assimg$p->contactId' src='images/_.gif' alt='Assignment' /><img class='next' src='images/_.gif' alt='&gt;' /></a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention
 	    echo tagg_select("pcs$p->contactId",
 			     array(0 => "None", REVIEW_PRIMARY => "Primary",

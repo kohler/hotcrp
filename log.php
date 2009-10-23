@@ -127,7 +127,7 @@ function searchbar() {
 	    echo "<a href='$url&amp;page=1'><strong>Newest</strong></a> &nbsp;|&nbsp;&nbsp;";
 	echo "</div></td><td id='newer'><div>";
 	if ($page > 1)
-	    echo "<a href='$url&amp;page=", ($page - 1), "'><strong>", $Conf->cacheableImage("prev.png", "&lt;-"), " Newer</strong></a>";
+	    echo "<a href='$url&amp;page=", ($page - 1), "'><strong>", $Conf->cacheableImage("_.gif", "&lt;-", null, "prev"), " Newer</strong></a>";
 	echo "</div></td><td id='newnum'><div>";
 	if ($page - 4 > 0)
 	    echo "&nbsp;...";
@@ -141,7 +141,7 @@ function searchbar() {
 	    echo "...&nbsp;";
 	echo "</div></td><td id='older'><div>";
 	if ($nrows > $count)
-	    echo "<a href='$url&amp;page=", ($page + 1), "'><strong>Older ", $Conf->cacheableImage("next.png", "-&gt;"), "</strong></a>";
+	    echo "<a href='$url&amp;page=", ($page + 1), "'><strong>Older ", $Conf->cacheableImage("_.gif", "-&gt;", null, "next"), "</strong></a>";
 	echo "</div></td><td id='oldest'><div>";
 	if ($nrows > $count)
 	    echo "&nbsp;&nbsp;|&nbsp; <a href='$url&amp;page=earliest'><strong>Oldest</strong></a>";

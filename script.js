@@ -228,8 +228,7 @@ function selassign(elt, which) {
     if (elt) {
 	e("ass" + which).className = "name" + elt.value;
 	var i = e("assimg" + which);
-	var ext = (elt.value < 0 ? ".png" : ".gif");
-	i.src = i.src.replace(/ass-?\d\.\w\w\w/, "ass" + elt.value + ext);
+	i.className = "ass" + elt.value;
 	hiliter(elt);
     }
     var folder = e("folderass" + which);
