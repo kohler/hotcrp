@@ -19,6 +19,7 @@ class Conference {
 
     var $scriptStuff;
     var $footerStuff;
+    var $footerScripting;
 
     function Conference() {
 	global $Opt;
@@ -29,6 +30,7 @@ class Conference {
 	$this->msgcount = 0;
 	$this->scriptStuff = "";
 	$this->footerStuff = "";
+	$this->footerScripting = false;
 
 	// unpack dsn and connect to database
 	if (!isset($Opt['dsn']))
@@ -426,6 +428,25 @@ class Conference {
 	    echo $this->scriptStuff;
 	$this->scriptStuff = "";
 	echo "<script type='text/javascript'>", $script, "</script>";
+    }
+
+    function footerScript($script) {
+	if ($script != "") {
+	    if (!$this->footerScripting) {
+		$this->footerStuff .= "<script type='text/javascript'>";
+		$this->footerScripting = true;
+	    } else if (($c = $this->footerStuff[strlen($this->footerStuff) - 1]) != "}" && $c != "{" && $c != ";")
+		$this->footerStuff .= ";";
+	    $this->footerStuff .= $script;
+	}
+    }
+
+    function footerHtml($html) {
+	if ($this->footerScripting) {
+	    $this->footerStuff .= "</script>";
+	    $this->footerScripting = false;
+	}
+	$this->footerStuff .= $html;
     }
 
 
@@ -1333,6 +1354,8 @@ class Conference {
 	    "<a href='http://www.cs.ucla.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software";
 	if (!defval($Opt, "noFooterVersion", 0))
 	    echo "<!-- Version ", HOTCRP_VERSION, " -->";
+	if ($this->footerScripting)
+	    $this->footerHtml("");
 	echo "</div>\n  <div class='clear'></div></div>\n",
 	    $this->scriptStuff, $this->footerStuff,
 	    "</body>\n</html>\n";

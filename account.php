@@ -616,9 +616,9 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $tracks = databaseTracks($Acct->contactId);
     $buttons[] = array("<button type='button' class='b' onclick=\"popup(this, 'd', 0)\">Delete user</button>", "(admin only)");
     if (count($tracks->soleAuthor)) {
-	$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p><strong>This user cannot be deleted</strong> because they are the sole contact author for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".  Delete these papers from the database or add alternate contact authors and you will be able to delete this user.\n<div class='popup_actions'><button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Close</button></div></div>";
+	$Conf->footerHtml("<div id='popup_d' class='popupc'><p><strong>This user cannot be deleted</strong> because they are the sole contact author for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".  Delete these papers from the database or add alternate contact authors and you will be able to delete this user.\n<div class='popup_actions'><button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Close</button></div></div>");
     } else {
-	$Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this user from the database and <strong>cannot be undone</strong>.</p>";
+	$Conf->footerHtml("<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this user from the database and <strong>cannot be undone</strong>.</p>");
 	if (count($tracks->author) + count($tracks->review) + count($tracks->comment)) {
 	    $x = $y = array();
 	    if (count($tracks->author)) {
@@ -633,10 +633,10 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
 		$x[] = "commenter for " . pluralx($tracks->comment, "paper") . " " . textArrayPapers($tracks->comment);
 		$y[] = "<strong>permanently delete</strong> " . pluralx($tracks->comment, "this") . " " . pluralx($tracks->comment, "comment");
 	    }
-	    $Conf->footerStuff .= "<p>This user is " . textArrayJoin($x)
-		. ".  Deleting the user will also " . textArrayJoin($y) . ".</p>";
+	    $Conf->footerHtml("<p>This user is " . textArrayJoin($x)
+			      . ".  Deleting the user will also " . textArrayJoin($y) . ".</p>");
 	}
-	$Conf->footerStuff .= "<form method='post' action=\"account$ConfSiteSuffix?contact=" . $Acct->contactId . "&amp;post=1\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='delete' value='Delete user' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
+	$Conf->footerHtml("<form method='post' action=\"account$ConfSiteSuffix?contact=" . $Acct->contactId . "&amp;post=1\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='delete' value='Delete user' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>");
     }
 }
 echo "    <tr>\n";
@@ -652,5 +652,5 @@ foreach ($buttons as $b) {
 echo "    </tr>\n    </table></div></td>\n</tr>
 </table></div></form>\n";
 
-$Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"account\");</script>";
+$Conf->footerScript("crpfocus(\"account\")");
 $Conf->footer();

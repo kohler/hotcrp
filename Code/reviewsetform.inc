@@ -183,15 +183,15 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 
     // author view
     if (count($scoreHelps) == 0)
-	$Conf->footerStuff .= "<script type='text/javascript'>addScoreHelp();</script>";
+	$Conf->footerScript("addScoreHelp()");
     if (!isset($scoreHelps["vis"])) {
 	$scoreHelps["vis"] = 1;
-	$Conf->footerStuff .= "<div class='scorehelpc' id='scorehelp_vis'><strong>Visibility</strong> choices are:
+	$Conf->footerHtml("<div class='scorehelpc' id='scorehelp_vis'><strong>Visibility</strong> choices are:
 <dl><dt><strong>Authors &amp; reviewers</strong></dt><dd>Visible to authors, reviewers, and the PC</dd>
   <dt><strong>Reviewers only</strong></dt><dd>Visible to reviewers and the PC, but not authors</dd>
   <dt><strong>Private</strong></dt><dd>Set by review authors, but visible only to administrators</dd>
   <dt><strong>Secret</strong></dt><dd>Only set by and visible to administrators</dd></dl>
-</div>";
+</div>");
     }
     if (isset($_REQUEST["shortName_$row->fieldName"]) && !isset($_REQUEST["authorView_$row->fieldName"]))
 	$_REQUEST["authorView_$row->fieldName"] = 0;

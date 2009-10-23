@@ -982,7 +982,7 @@ if (isset($tabs[defval($_REQUEST, "tab", "x")]))
     $activetab = $tabs[$_REQUEST["tab"]];
 if ($activetab == 3 && (!$pl || $pl->count == 0))
     $activetab = 1;
-$Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"searchform\", $activetab, 1);</script>";
+$Conf->footerScript("crpfocus(\"searchform\", $activetab, 1)");
 
 $tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
 
@@ -1038,7 +1038,7 @@ if ($pl) {
 echo "<table id='searchform' class='tablinks$activetab fold4o'>
 <tr><td><div class='tlx'><div class='tld1'>";
 if (!$ajaxDisplayChecked)
-    $Conf->footerStuff .= "<script type='text/javascript'>fold(e('searchform'),1,4)</script>";
+    $Conf->footerScript("fold(e('searchform'),1,4)");
 
 // Basic search
 echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>
@@ -1186,17 +1186,16 @@ if ($pl && $pl->count > 0) {
     <a class='fx5' href='javascript:void savedisplayoptions()'>",
 		"Make these display options the default</a>",
 		" <span id='savedisplayoptionsformcheck' class='fn5'></span>";
-	    $Conf->footerStuff .= "<form id='savedisplayoptionsform' method='post' action='search$ConfSiteSuffix?savedisplayoptions=1' enctype='multipart/form-data' accept-charset='UTF-8'>"
+	    $Conf->footerHtml("<form id='savedisplayoptionsform' method='post' action='search$ConfSiteSuffix?savedisplayoptions=1' enctype='multipart/form-data' accept-charset='UTF-8'>"
 . "<div><input id='scoresortsave' type='hidden' name='scoresort' value='"
-. $_SESSION["scoresort"] . "' /></div></form>"
-. "<script type='text/javascript'>function foldplinfo_extra() { fold('redisplay', 0, 5); }";
+. $_SESSION["scoresort"] . "' /></div></form>");
+	    $Conf->footerScript("function foldplinfo_extra() { fold('redisplay', 0, 5); }");
 	    // strings might be in different orders, so sort before comparing
 	    $pld = str_split($Conf->settingText("pldisplay_default", chr(PaperList::FIELD_SCORE)));
 	    sort($pld);
 	    if ($_SESSION["pldisplay"] != join("", $pld)
 		|| $_SESSION["scoresort"] != $Conf->settingText("scoresort_default", $defaultScoreSort))
-		$Conf->footerStuff .= " foldplinfo_extra();";
-	    $Conf->footerStuff .= "</script>";
+		$Conf->footerScript("foldplinfo_extra()");
 	}
 
 	// Conflict display

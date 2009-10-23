@@ -419,7 +419,7 @@ echo "<table id='foldpsel' class='fold8c'><tr><td>",
 		  array("id" => "plimit",
 			"onchange" => "fold('psel', !this.checked, 8)")),
     "&nbsp;</td><td>", tagg_label("Choose individual papers", "plimit");
-$Conf->footerStuff .= "<script type='text/javascript'>fold(\"psel\",!e(\"plimit\").checked,8);</script>";
+$Conf->footerScript("fold(\"psel\",!e(\"plimit\").checked,8)");
 echo "<span class='fx8'>:</span><br />
 <div class='fx8'>";
 $q = defval($_REQUEST, "q", "(All)");

@@ -377,10 +377,10 @@ class PaperTable {
 	    && defval($prow, "mimetype", "application/pdf") == "application/pdf"
 	    && $Conf->setting("sub_banal")) {
 	    echo "<div id='foldcheckformat' class='foldc'><div id='checkformatformresult' class='fx'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
-	    $Conf->footerStuff .= "<form id='checkformatform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId";
+	    $Conf->footerHtml("<form id='checkformatform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId");
 	    if ($final)
-		$Conf->footerStuff .= "&amp;final=1";
-	    $Conf->footerStuff .= "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"checkformatform\")'><input type='hidden' name='checkformat' value='1' /></form>";
+		$Conf->footerHtml("&amp;final=1");
+	    $Conf->footerHtml("' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"checkformatform\")'><input type='hidden' name='checkformat' value='1' /></form>");
 	}
 
 	if (!$final && (!$doc || $Conf->setting("sub_freeze"))) {
@@ -974,7 +974,7 @@ class PaperTable {
 	    echo "<form id='${type}form' class='fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"${type}form\")'>",
 		"<div id='fold$type' class='", ($showedit ? "foldo" : "foldc"), ($wholefold ? " fold2c" : " fold2o"), " inform'><div class='fx2'>",
 		"<input type='hidden' name='set$type' value='1' />";
-	    $Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"${type}form\");</script>";
+	    $Conf->footerScript("Miniajax.onload(\"${type}form\")");
 	}
 
 	echo $this->papt($type, $name, array("type" => "ps", "editfolder" => ($editable && !$showedit ? $type : 0))),
@@ -1032,7 +1032,7 @@ class PaperTable {
 		"<div class='psv'>";
 	    if ($editable) {
 		// tag report form
-		$Conf->footerStuff .= "<form id='tagreportform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'><div class='aahc'><input type='hidden' name='tagreport' value='1' /></div></form>";
+		$Conf->footerHtml("<form id='tagreportform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'><div class='aahc'><input type='hidden' name='tagreport' value='1' /></div></form>");
 
 		$t = tagsToText($prow, false, $Me, true);
 		echo "<div class='fn'>", ($tx == "" ? "None" : $tx),
@@ -1078,7 +1078,7 @@ class PaperTable {
 	    "</div></form><div class='fn'>",
 	    $rf->options["outcome"][$prow->outcome],
 	    "</div></div></div>\n";
-	$Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"decisionform\");</script>";
+	$Conf->footerScript("Miniajax.onload(\"decisionform\")");
     }
 
     function papstripReviewPreference($prow) {
@@ -1095,7 +1095,7 @@ class PaperTable {
 	    " <input class='b fx7' type='submit' value='Save' />",
 	    " <span id='revprefformresult'></span>",
 	    "</div></form></div>\n";
-	$Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"revprefform\");</script>";
+	$Conf->footerScript("Miniajax.onload(\"revprefform\")");
     }
 
     function papstripRank($prow) {
@@ -1118,7 +1118,7 @@ class PaperTable {
 	    $rp = "";
 
 	// rank context form
-	$Conf->footerStuff .= "<form id='rankctxform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankctxform\")'><div class='aahc'><input type='hidden' name='rankctx' value='1' /></div></form>";
+	$Conf->footerHtml("<form id='rankctxform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankctxform\")'><div class='aahc'><input type='hidden' name='rankctx' value='1' /></div></form>");
 
 	echo "<div id='foldrank' class='foldc fold2c'>",
 	    $this->papt("rank", "Rank", array("type" => "ps", "editfolder" => "rank")),
@@ -1139,7 +1139,7 @@ class PaperTable {
 	echo "</div>",
 	    "<div id='rankctxformresult' class='fx2'>Loading...</div>",
 	    "</div></div>\n";
-	$Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"rankform\");</script>";
+	$Conf->footerScript("Miniajax.onload(\"rankform\")");
     }
 
     function papstripWatch($prow) {
@@ -1177,7 +1177,7 @@ class PaperTable {
 	    "<input class='b fx7' type='submit' value='Save' />",
 	    "</div></div></form>\n\n";
 
-	$Conf->footerStuff .= "<script type='text/javascript'>Miniajax.onload(\"watchform\");</script>";
+	$Conf->footerScript("Miniajax.onload(\"watchform\")");
     }
 
 
@@ -1282,18 +1282,18 @@ class PaperTable {
 		$buttons[] = "<input class='b' type='submit' name='withdraw' value='Withdraw paper' />";
 	    else {
 		$buttons[] = "<button type='button' class='b' onclick=\"popup(this, 'w', 0)\">Withdraw paper</button>";
-		$Conf->footerStuff .= "<div id='popup_w' class='popupc'><p>Are you sure you want to withdraw this paper from consideration and/or publication?";
+		$Conf->footerHtml("<div id='popup_w' class='popupc'><p>Are you sure you want to withdraw this paper from consideration and/or publication?");
 		if ((!$Me->privChair || $prow->conflictType >= CONFLICT_AUTHOR)
 		    && !$Conf->timeFinalizePaper($prow))
-		    $Conf->footerStuff .= "  Only administrators can undo this step.";
-		$Conf->footerStuff .= "</p><form method='post' action=\"paper$ConfSiteSuffix?p=" . $prow->paperId . "&amp;post=1&amp;m=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'w', 1)\">Cancel</button></div></form></div>";
+		    $Conf->footerHtml("  Only administrators can undo this step.");
+		$Conf->footerHtml("</p><form method='post' action=\"paper$ConfSiteSuffix?p=" . $prow->paperId . "&amp;post=1&amp;m=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='withdraw' value='Withdraw paper' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'w', 1)\">Cancel</button></div></form></div>");
 	    }
 	    if (!$this->editable)
 		$buttons[] = "<button type='button' class='b' onclick='document.location=\"contactauthors$ConfSiteSuffix?p=" . $prow->paperId . "$linkExtra\"'>Edit contact authors</button>";
 	}
 	if ($Me->privChair && $prow) {
 	    $buttons[] = array("<button type='button' class='b' onclick=\"popup(this, 'd', 0)\">Delete paper</button>", "(admin only)");
-	    $Conf->footerStuff .= "<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"paper$ConfSiteSuffix?p=" . $prow->paperId . "&amp;post=1&amp;m=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='delete' value='Delete paper' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>";
+	    $Conf->footerHtml("<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"paper$ConfSiteSuffix?p=" . $prow->paperId . "&amp;post=1&amp;m=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='delete' value='Delete paper' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>");
 	}
 	echo "    <tr>\n";
 	foreach ($buttons as $b) {

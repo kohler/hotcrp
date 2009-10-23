@@ -383,7 +383,7 @@ Sign in to submit or review papers.";
 </div>
 </div></form>
 <hr class='home' /></div>\n";
-    $Conf->footerStuff .= "<script type='text/javascript'>crpfocus(\"login\", null, 2);</script>";
+    $Conf->footerScript("crpfocus(\"login\", null, 2)");
 }
 
 

@@ -214,7 +214,7 @@ div#mailref, pre.email, tt.email {
 table, tr, td {
 	padding: 0px;
 	border-spacing: 0px;
-	border: 0px none;
+	border: 0 none;
 	border-collapse: collapse;
 	empty-cells: show;
 }
@@ -626,7 +626,7 @@ tr.topspace td.caption {
 	padding: 7px 0.5em 3px 4px;
 }
 tr.id td.caption, table.comment tr.id td.caption {
-	border: 0px none;
+	border: 0 none;
 	background: #ffffff;
 	color: black;
 }
@@ -1290,7 +1290,7 @@ div.merror pre {
 
 hr.hr {
 	margin: 0.75em 0em;
-	border: 0px none;
+	border: 0 none;
 	height: 1px;
 	color: #9999cc; /* for IE6 */
 	background-color: #9999cc;
@@ -1521,7 +1521,7 @@ div#rankctxformresult {
 }
 div#rankctxformresult div.xconfirm {
 	background: none;
-	border: 0px none;
+	border: 0 none;
 	padding: 0px;
 }
 div.rankctx, div.rankctx_h {

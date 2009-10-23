@@ -161,13 +161,13 @@ class PaperList extends BaseList {
 	case self::FIELD_REVIEWER_PREFERENCE:
 	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
 	    $queryOptions['reviewerPreference'] = 1;
-	    $Conf->footerStuff .= "<script type='text/javascript'>addRevprefAjax();</script>";
+	    $Conf->footerScript("addRevprefAjax()");
 	    break;
 	case self::FIELD_ASSIGN_REVIEW:
-	    $Conf->footerStuff .= "<script type='text/javascript'>addAssrevAjax();</script>";
+	    $Conf->footerScript("addAssrevAjax()");
 	    break;
 	case self::FIELD_SELECTOR_CONFLICT:
-	    $Conf->footerStuff .= "<script type='text/javascript'>addConflictAjax();</script>";
+	    $Conf->footerScript("addConflictAjax()");
 	    break;
 	case self::FIELD_DESIRABILITY:
 	    $queryOptions['desirability'] = 1;
@@ -1056,7 +1056,7 @@ class PaperList extends BaseList {
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "assign")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Assign</a></td><td id='foldass' class='lld$nlll foldo'><b>:</b> &nbsp;";
-	    $Conf->footerStuff .= "<script type='text/javascript'>fold('ass')</script>";
+	    $Conf->footerScript("fold('ass')");
 	    $t .= tagg_select("marktype",
 			      array("xauto" => "Automatic assignments",
 				    "zzz1" => null,
@@ -1216,15 +1216,15 @@ class PaperList extends BaseList {
 
     function _addAjaxLoadForm($formname, $getname, $pap, $extra = "") {
 	global $Conf, $ConfSiteSuffix;
-	$Conf->footerStuff .= "<div>"
+	$Conf->footerHtml("<div>"
 	    . "<form id='${formname}loadform' method='post'"
 	    . " action='search$ConfSiteSuffix?get=$getname&amp;ajax=1"
 	    . $this->paperLinkArgs . "' accept-charset='UTF-8'>"
 	    . "<div class='inform'><input type='hidden' name='pap'"
 	    . " value='" . join(" ", $pap) . "' />"
 	    . $extra
-	    . "</div></form></div><script type='text/javascript'>"
-	    . "plinfo_needload.$formname = true;</script>";
+	    . "</div></form></div>");
+	$Conf->footerScript("plinfo_needload.$formname = true");
     }
 
     function text($listname, $me) {
