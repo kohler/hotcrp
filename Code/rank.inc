@@ -15,8 +15,11 @@ class PaperRank {
     var $pref;
     var $anypref;
     var $voters;
+    var $totalpref;
+    var $deletedpref;
     var $rank;
     var $currank;
+    var $info_printed;
 
     function PaperRank($source_tag, $dest_tag, $papersel, $strict) {
 	global $Conf;
@@ -24,6 +27,7 @@ class PaperRank {
 	$this->ordertype = ($strict ? "aos" : "ao");
 	$this->papersel = $papersel;
 	$this->userrank = array();
+	$this->info_printed = false;
 
 	// generate random order for paper comparisons
 	if (count($papersel)) {
@@ -65,6 +69,26 @@ class PaperRank {
     function _nextRank() {
 	$this->currank += orderedTagStep($this->ordertype);
 	return $this->currank;
+    }
+
+    function _info() {
+	$n = count($this->rank);
+	if (!count($this->papersel)
+	    || ($n >= count($this->papersel) && !$this->info_printed))
+	    return;
+	$pct = round($n / count($this->papersel) * 100);
+	if (!$this->info_printed) {
+	    echo "<div id='foldrankcalculation' class='foldc'><div class='fn info'>Calculating ranks; this can take a while.  <span id='rankpercentage'>$pct</span>% of ranks assigned<span id='rankdeletedpref'></span>.</div></div>";
+	    $this->info_printed = true;
+	}
+	if ($n < count($this->papersel)) {
+	    echo "<script type='text/javascript'>document.getElementById('rankpercentage').innerHTML = '$pct'";
+	    if ($this->deletedpref > 0)
+		echo ";document.getElementById('rankdeletedpref').innerHTML = ', ", round(($this->totalpref - $this->deletedpref) / $this->totalpref * 100), "% of preferences remain'";
+	    echo "</script>\n";
+	} else
+	    echo "<script type='text/javascript'>document.getElementById('foldrankcalculation').className = 'foldo'</script>\n";
+	flush();
     }
 
 
@@ -194,6 +218,8 @@ class PaperRank {
 	$this->anypref = array_combine($this->papersel, array_fill(0, count($this->papersel), 0));
 	$this->voters = $this->anypref;
 	$this->pref = array_combine($this->papersel, array_fill(0, count($this->papersel), $this->anypref));
+	$this->totalpref = 0;
+	$this->deletedpref = 0;
 
 	foreach ($this->userrank as $user => &$ranks) {
 	    for ($i = 0; $i < count($ranks); ++$i) {
@@ -209,6 +235,7 @@ class PaperRank {
 		    ++$this->pref[$p1][$p2];
 		    ++$this->anypref[$p1];
 		    ++$this->anypref[$p2];
+		    ++$this->totalpref;
 		}
 	    }
 	}
@@ -355,6 +382,7 @@ class PaperRank {
 	// base case: only one paper
 	if (count($papersel) == 1) {
 	    $this->rank[$papersel[0]] = $this->_nextRank();
+	    $this->_info();
 	    return;
 	}
 
@@ -385,6 +413,7 @@ class PaperRank {
 		$grouprank = ($grouprank ? $grouprank : $nextrank);
 		$this->rank[$p1] = $grouprank;
 	    }
+	    $this->_info();
 
 	} else {
 	    // remove the preferences corresponding to the weakest defeat
@@ -398,8 +427,10 @@ class PaperRank {
 		$thisweakness = current($weakness);
 		list($x, $y) = explode(" ", key($weakness));
 		//error_log("... ${x}d$y " . $this->pref[(int) $x][(int) $y] . "," . $this->pref[(int) $y][(int) $x]);
+		//echo "DROP $x&gt;$y ", join(",", $thisweakness), "<br />"; flush();
 		$this->pref[(int) $x][(int) $y] = 0;
 		$this->pref[(int) $y][(int) $x] = 0;
+		$this->deletedpref += $thisweakness[0] + $thisweakness[1];
 		next($weakness);
 	    }
 
@@ -428,6 +459,7 @@ class PaperRank {
 	foreach ($this->papersel as $p)
 	    if ($this->anypref[$p] == 0)
 		$this->rank[$p] = $norank;
+	$this->_info();
     }
 
 
@@ -475,6 +507,7 @@ class PaperRank {
 	// base case: only one paper
 	if (count($papersel) == 1) {
 	    $this->rank[$papersel[0]] = $this->_nextRank();
+	    $this->_info();
 	    return;
 	}
 
@@ -502,6 +535,7 @@ class PaperRank {
 	    }
 	    $this->rank[$pa[0]] = $grouprank;
 	}
+	$this->_info();
 
 	// recurse on the non-Schwartz set
 	if (count($nonschwartz) != 0)
