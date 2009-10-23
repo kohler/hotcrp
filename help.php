@@ -468,8 +468,8 @@ The tag names &ldquo;red&rdquo;, &ldquo;orange&rdquo;, &ldquo;yellow&rdquo;,
 &ldquo;green&rdquo;, &ldquo;blue&rdquo;, &ldquo;purple&rdquo;, and
 &ldquo;grey&rdquo; act as highlight colors.  For example, papers tagged with
 &ldquo;red&rdquo; will appear red in paper lists (for people who can see that
-tag).  Tag a paper &ldquo;~red&rdquo; to make it red in your own paper list,
-but no one else's.  System administrators can also <a
+tag).  Tag a paper &ldquo;~red&rdquo; to make it red on your displays, but not
+others'.  System administrators can <a
 href='settings$ConfSiteSuffix?group=rev'>associate other tags with colors</a>
 so that, for example, &ldquo;<a
 href='search$ConfSiteSuffix?q=tag:reject'>tag:reject</a>&rdquo; papers show up
