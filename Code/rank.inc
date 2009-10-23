@@ -352,9 +352,12 @@ class PaperRank {
 
 	if (count($weakness) == 0) {
 	    // if no defeats, end with a tie
-	    $nextrank = $this->_nextRank();
-	    foreach ($schwartz as $p1)
-		$this->rank[$p1] = $nextrank;
+	    $grouprank = 0;
+	    foreach ($schwartz as $p1) {
+		$nextrank = $this->_nextRank();
+		$grouprank = ($grouprank ? $grouprank : $nextrank);
+		$this->rank[$p1] = $grouprank;
+	    }
 
 	} else {
 	    // remove the preferences corresponding to the weakest defeat
@@ -444,11 +447,12 @@ class PaperRank {
 	// rank the Schwartz set
 	$px = -1;
 	foreach ($prefagainst as $pa) {
+	    $nextrank = $this->_nextRank();
 	    if ($pa[1] != $px) {
-		$currank = $this->_nextRank();
+		$grouprank = $nextrank;
 		$px = $pa[1];
 	    }
-	    $this->rank[$pa[0]] = $currank;
+	    $this->rank[$pa[0]] = $grouprank;
 	}
 
 	// recurse on the non-Schwartz set
