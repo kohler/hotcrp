@@ -207,108 +207,79 @@ class PaperRank {
     }
 
     function _reachableClosure(&$reachable, &$papersel) {
-	do {
-	    $changed = false;
-	    foreach ($papersel as $p1) {
-		if (!isset($reachable[$p1]))
-		    continue;
-		$r = $reachable[$p1];
-		foreach ($r as $p2 => $xx) {
-		    if (!isset($reachable[$p2]))
-			continue;
-		    foreach ($reachable[$p2] as $p3 => $xxx)
-			if ($p3 != $p1 && !isset($reachable[$p1][$p3]))
-			    $reachable[$p1][$p3] = $changed = true;
-		}
-	    }
-	} while ($changed);
-    }
-
-    function _reachableClosure2(&$reachable, &$papersel, $pairs) {
-	while (count($pairs)) {
-	    list($p1, $p2) = array_pop($pairs);
-	    $reachable[$p1][$p2] = true;
-	    foreach ($papersel as $px) {
-		if (isset($reachable[$px][$p1]) && !isset($reachable[$px][$p2]))
-		    array_push($pairs, array($px, $p2));
-		if (isset($reachable[$p2][$px]) && !isset($reachable[$p1][$px]))
-		    array_push($pairs, array($p1, $px));
+	$closure = array();
+	// find transitive closure by repeated DFS: O(n^3)
+	// destroys $reachable
+	foreach ($reachable as $p1 => &$reach) {
+	    $work = array_keys($reach);
+	    while (count($work)) {
+		$p2 = array_pop($work);
+		$closure[$p1][$p2] = true;
+		if (isset($reachable[$p2]))
+		    foreach ($reachable[$p2] as $p3 => $x) {
+			if (!isset($reach[$p3])) {
+			    $reach[$p3] = true;
+			    array_push($work, $p3);
+			}
+		    }
 	    }
 	}
+	return $closure;
     }
 
     function _calculateDefeats(&$papersel) {
 	// $defeat maps paper1 => paper2 => true
 	// first initialize with preferences
+	//$t0 = microtime(true);
+
 	$defeat = array();
 	for ($i = 0; $i < count($papersel); ++$i) {
 	    $p1 = $papersel[$i];
 	    for ($j = $i + 1; $j < count($papersel); ++$j) {
 		$p2 = $papersel[$j];
-		if ($this->pref[$p1][$p2] > $this->pref[$p2][$p1])
+		$pref12 = $this->pref[$p1][$p2];
+		$pref21 = $this->pref[$p2][$p1];
+		if ($pref12 > $pref21)
 		    $defeat[$p1][$p2] = true;
-		else if ($this->pref[$p1][$p2] < $this->pref[$p2][$p1])
+		else if ($pref12 < $pref21)
 		    $defeat[$p2][$p1] = true;
 	    }
 	}
 
-	$this->_reachableClosure($defeat, $papersel);
+	// $defeat maps paper1 => paper2 => true
+	$defeat = $this->_reachableClosure($defeat, $papersel);
+
+	//echo "<p>Defeat calc ", (microtime(true) - $t0), "</p>"; flush();
 	return $defeat;
     }
 
     function _calculateSchwartz(&$schwartz, &$nonschwartz, &$defeat, &$papersel) {
+	//$t0 = microtime(true);
+
 	// find Schwartz set, which contains anyone who suffers no
 	// unambiguous defeats
-	$work = array_flip($papersel);
-	$schwartz = $nonschwartz = array();
-	while (count($work)) {
-	    reset($work);
-	    $p = key($work);
-
-	    // find all papers defeated by $p, set $circular if they defeat $p
-	    $active = array($p);
-	    $pdefeat = array();
-	    $circular = false;
-	    while (count($active)) {
-		$px = array_pop($active);
-		$pdefeat[$px] = true;
-		if (isset($defeat[$px]))
-		    foreach ($defeat[$px] as $py => $x) {
-			if (!isset($pdefeat[$py])
-			    && (isset($work[$py]) || isset($schwartz[$py])))
-			    array_push($active, $py);
-			if ($py == $p)
-			    $circular = true;
-		    }
-	    }
-
-	    // if an element not in $pdefeat defeats $p, nonschwartz
-	    $inschwartz = true;
-	    foreach ($papersel as $px)
-		if (!isset($pdefeat[$px]) && isset($defeat[$px][$p])) {
-		    $inschwartz = false;
-		    break;
-		}
-
-	    // add to schwartz if proper
-	    if ($inschwartz) {
-		$schwartz[$p] = true;
-		if ($circular)
-		    $pdefeat = array();
-		unset($pdefeat[$p]);
-		unset($work[$p]);
-	    }
-
-	    // remove from nonschwartz
-	    foreach ($pdefeat as $px => $x) {
-		$nonschwartz[$px] = true;
-		unset($work[$px]);
+	$nonschwartz = array();
+	for ($i = 0; $i < count($papersel); ++$i) {
+	    $p1 = $papersel[$i];
+	    for ($j = $i + 1; $j < count($papersel); ++$j) {
+		$p2 = $papersel[$j];
+		$d12 = isset($defeat[$p1]) && isset($defeat[$p1][$p2]);
+		$d21 = isset($defeat[$p2]) && isset($defeat[$p2][$p1]);
+		if ($d12 && !$d21)
+		    $nonschwartz[$p2] = true;
+		else if ($d21 && !$d12)
+		    $nonschwartz[$p1] = true;
 	    }
 	}
 
-	$schwartz = array_keys($schwartz);
+	$schwartz = array();
+	foreach ($papersel as $p1) {
+	    if (!isset($nonschwartz[$p1]))
+		$schwartz[] = $p1;
+	}
 	$nonschwartz = array_keys($nonschwartz);
 	//error_log("SCH " . join(",", $schwartz) . " (" . join(",",$papersel) . ")");
+	//echo "<p>Schwartz calc ", (microtime(true) - $t0), "</p>"; flush();
 	assert(count($schwartz) != 0);
 	if (count($schwartz) == 0)
 	    exit;
@@ -319,14 +290,6 @@ class PaperRank {
 	    return ($a[0] < $b[0] ? -1 : 1);
 	if ($a[1] != $b[1])
 	    return ($a[1] > $b[1] ? -1 : 1);
-	return 0;
-    }
-
-    function _comparStrength($a, $b) {
-	if ($a[0] != $b[0])
-	    return ($a[0] > $b[0] ? -1 : 1);
-	if ($a[1] != $b[1])
-	    return ($a[1] < $b[1] ? -1 : 1);
 	return 0;
     }
 
@@ -406,6 +369,27 @@ class PaperRank {
 
 
     // global rank calculation by CIVS Ranked Pairs
+
+    function _comparStrength($a, $b) {
+	if ($a[0] != $b[0])
+	    return ($a[0] > $b[0] ? -1 : 1);
+	if ($a[1] != $b[1])
+	    return ($a[1] < $b[1] ? -1 : 1);
+	return 0;
+    }
+
+    function _reachableClosure2(&$reachable, &$papersel, $pairs) {
+	while (count($pairs)) {
+	    list($p1, $p2) = array_pop($pairs);
+	    $reachable[$p1][$p2] = true;
+	    foreach ($papersel as $px) {
+		if (isset($reachable[$px][$p1]) && !isset($reachable[$px][$p2]))
+		    array_push($pairs, array($px, $p2));
+		if (isset($reachable[$p2][$px]) && !isset($reachable[$p1][$px]))
+		    array_push($pairs, array($p1, $px));
+	    }
+	}
+    }
 
     function _includePairs(&$defeat, &$reachable, &$adddefeat) {
 	foreach ($adddefeat as $x)
