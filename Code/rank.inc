@@ -293,8 +293,10 @@ class PaperRank {
 	return 0;
     }
 
-    function _schulzeStep(&$papersel, &$defeat) {
+    function _schulzeStep(&$stack) {
 	//error_log("SET " . join(",", $papersel));
+	list($papersel, $defeat) = array_pop($stack);
+
 	// base case: only one paper
 	if (count($papersel) == 1) {
 	    $this->rank[$papersel[0]] = $this->_nextRank();
@@ -302,6 +304,11 @@ class PaperRank {
 	}
 
 	$this->_calculateSchwartz($schwartz, $nonschwartz, $defeat, $papersel);
+	//echo "<p>S ", join(" ", $schwartz), "<br />NS ", join(" ", $nonschwartz), "</p>"; flush();
+
+	// recurse on the non-Schwartz set second
+	if (count($nonschwartz))
+	    $stack[] = array($nonschwartz, $defeat);
 
 	// $weakness measures weaknesses of defeats within the Schwartz set
 	$weakness = array();
@@ -340,12 +347,8 @@ class PaperRank {
 	    }
 
 	    $newdefeat = $this->_calculateDefeats($schwartz);
-	    $this->_schulzeStep($schwartz, $newdefeat);
+	    $stack[] = array($schwartz, $newdefeat);
 	}
-
-	// recurse on the non-Schwartz set
-	if (count($nonschwartz) != 0)
-	    $this->_schulzeStep($nonschwartz, $defeat);
     }
 
     // global rank calculation by the Schulze method
@@ -354,7 +357,11 @@ class PaperRank {
 
 	// run Schulze
 	$defeat = $this->_calculateDefeats($this->papersel);
-	$this->_schulzeStep($this->papersel, $defeat);
+	$stack = array(array($this->papersel, $defeat));
+	while (count($stack)) {
+	    $this->_schulzeStep($stack);
+	    $this->_info();
+	}
 
 	// correct output rankings for papers with no input rankings
 	// (set them to 999)
