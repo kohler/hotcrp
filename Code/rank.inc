@@ -14,6 +14,7 @@ class PaperRank {
     var $papershuffle;
     var $pref;
     var $anypref;
+    var $voters;
     var $rank;
     var $currank;
 
@@ -191,16 +192,23 @@ class PaperRank {
 
     function _calculatePrefs() {
 	$this->anypref = array_combine($this->papersel, array_fill(0, count($this->papersel), 0));
+	$this->voters = $this->anypref;
 	$this->pref = array_combine($this->papersel, array_fill(0, count($this->papersel), $this->anypref));
+
 	foreach ($this->userrank as $user => &$ranks) {
 	    for ($i = 0; $i < count($ranks); ++$i) {
+		list($rank, $p1) = $ranks[$i];
+		++$this->voters[$p1];
 		$j = $i + 1;
-		while ($j < count($ranks) && $ranks[$i][0] == $ranks[$j][0])
+		while ($j < count($ranks) && $ranks[$j][0] == $rank) {
+		    $p2 = $ranks[$j][1];
 		    ++$j;
+		}
 		for (; $j < count($ranks); ++$j) {
-		    ++$this->pref[$ranks[$i][1]][$ranks[$j][1]];
-		    ++$this->anypref[$ranks[$i][1]];
-		    ++$this->anypref[$ranks[$j][1]];
+		    $p2 = $ranks[$j][1];
+		    ++$this->pref[$p1][$p2];
+		    ++$this->anypref[$p1];
+		    ++$this->anypref[$p2];
 		}
 	    }
 	}
@@ -286,10 +294,57 @@ class PaperRank {
     }
 
     function _comparWeakness($a, $b) {
-	if ($a[0] != $b[0])
-	    return ($a[0] < $b[0] ? -1 : 1);
-	if ($a[1] != $b[1])
-	    return ($a[1] > $b[1] ? -1 : 1);
+	// This function is used to determine the weakest preference.  Schulze
+	// will remove the weakest preference to attempt to break cycles.
+
+	// If every voter voted on every candidate, the outcome of ranking
+	// would not be sensitive to the weakness comparison function.
+	// However, in the PC context, we expect most voters to express
+	// preferences for a small subset of the candidates.  As a result the
+	// outcome is quite sensitive to this comparison.
+
+	// We expect that most good papers will have many voters, whereas bad
+	// papers will tend to have fewer voters (because a bad paper won't
+	// get additional reviews).  That argues that we should privilege
+	// preferences involving an infrequently-reviewed paper.
+
+	// The following algorithm ranks preferences by margins: in general,
+	// the smaller margin is weaker.  (Thus, a 10-9 preference is
+	// considered weaker than a 4-2 preference.  The alternative is
+	// "winning votes", which would consider 4-2 weaker because it has
+	// fewer winning votes.)  However, the algorithm scales the margins by
+	// the minimum number of voters who expressed a preference in either
+	// involved paper.  This deflates the margins for frequently-reviewed
+	// papers and, as a result, preserves preferences for
+	// infrequently-reviewed papers.
+
+	// If scaled margins give a tie, we compare scaled winning votes, then
+	// as a last resort, the preference held by more voters is considered
+	// weaker.
+
+	$aminvoters = $a[2];
+	$bminvoters = $b[2];
+
+	$awin_scaled = $a[0] / $aminvoters;
+	$alose_scaled = $a[1] / $aminvoters;
+	$bwin_scaled = $b[0] / $bminvoters;
+	$blose_scaled = $b[1] / $bminvoters;
+
+	$amargin = $awin_scaled - $alose_scaled;
+	$bmargin = $bwin_scaled - $blose_scaled;
+
+	if ($amargin != $bmargin)
+	    return ($amargin < $bmargin ? -1 : 1);
+
+	if ($awin_scaled != $bwin_scaled)
+	    return ($awin_scaled < $bwin_scaled ? -1 : 1);
+
+	if ($alose_scaled != $blose_scaled)
+	    return ($alose_scaled > $blose_scaled ? -1 : 1);
+
+	if ($aminvoters != $bminvoters)
+	    return ($aminvoters > $bminvoters ? -1 : 1);
+
 	return 0;
     }
 
@@ -316,8 +371,10 @@ class PaperRank {
 	    foreach ($schwartz as $p2) {
 		$pref12 = $this->pref[$p1][$p2];
 		$pref21 = $this->pref[$p2][$p1];
-		if ($pref12 > $pref21)
-		    $weakness["$p1 $p2"] = array($pref12, $pref21);
+		if ($pref12 > $pref21) {
+		    $minvoters = min($this->voters[$p1], $this->voters[$p2]);
+		    $weakness["$p1 $p2"] = array($pref12, $pref21, $minvoters);
+		}
 	    }
 
 	if (count($weakness) == 0) {
