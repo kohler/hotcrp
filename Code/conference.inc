@@ -873,6 +873,7 @@ class Conference {
 		if ($myPaperReview)
 		    $pq .= ",\n		$myPaperReview.$field";
 	    }
+	    $pq .= ",\n		PaperScores.numScores";
 	}
 	if (isset($options['topicInterestScore']))
 	    $pq .= ",
@@ -958,6 +959,7 @@ class Conference {
 	    $pq .= "		left join (select paperId";
 	    foreach ($options['scores'] as $field)
 		$pq .= ", group_concat($field) as ${field}Scores";
+	    $pq .= ", count(*) as numScores";
 	    $pq .= " from PaperReview where reviewSubmitted>0 group by paperId) as PaperScores on (PaperScores.paperId=Paper.paperId)\n";
 	}
 
