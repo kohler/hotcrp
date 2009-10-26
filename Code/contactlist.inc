@@ -7,8 +7,8 @@ require_once("baselist.inc");
 
 class ContactList extends BaseList {
 
-    const FIELD_SELECTOR = 100;
-    const FIELD_SELECTOR_ON = 101;
+    const FIELD_SELECTOR = 1000;
+    const FIELD_SELECTOR_ON = 1001;
 
     const FIELD_NAME = 1;
     const FIELD_EMAIL = 2;

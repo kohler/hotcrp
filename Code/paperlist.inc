@@ -7,9 +7,10 @@ require_once("baselist.inc");
 
 class PaperList extends BaseList {
 
-    const FIELD_SELECTOR = 100;
-    const FIELD_SELECTOR_ON = 101;
-    const FIELD_SELECTOR_CONFLICT = 102;
+    const FIELD_SELECTOR = 1000;
+    const FIELD_SELECTOR_ON = 1001;
+    const FIELD_SELECTOR_CONFLICT = 1002;
+    const FIELD_LAST_SELECTOR = 1002;
 
     const FIELD_ID = 1;
     const FIELD_TAGINDEX = 8;
@@ -1188,23 +1189,23 @@ class PaperList extends BaseList {
 	    return array(1, 11, 20);
 	case "s":
 	case "acc":
-	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
+	    return $this->addScores(array(1000, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
 	case "all":
 	case "act":
-	    return array(100, 1, 11, 20, 27, 70, 72, 71, 73, 74, 75, 76, 77, 78);
+	    return array(1000, 1, 11, 20, 27, 70, 72, 71, 73, 74, 75, 76, 77, 78);
 	case "reviewerHome":
 	    $this->paperLink = "review";
 	    return array(1, 11, 27, 21);
 	case "r":
 	case "lead":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
+	    return $this->addScores(array(1000, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
 	case "rout":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
+	    return $this->addScores(array(1000, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
 	case "req":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(100, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
+	    return $this->addScores(array(1000, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
 	case "reqrevs":
 	    $this->paperLink = "review";
 	    return array(1, 11, self::FIELD_REVIEWER_MONITOR, self::FIELD_REVIEWER_STATUS, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78);
@@ -1216,7 +1217,7 @@ class PaperList extends BaseList {
 	    return array(102, 1, 11, self::FIELD_CONFLICT_CONFIRM, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
 	  case "editReviewPreference":
 	    $this->paperLink = "paper";
-	    return array(100, 1, 11, 36, 27, 40, 70, 72, 37);
+	    return array(1000, 1, 11, 36, 27, 40, 70, 72, 37);
 	  case "reviewers":
 	    $this->paperLink = "assign";
 	    return array(1, 11, 21, 38);
@@ -1530,6 +1531,7 @@ class PaperList extends BaseList {
 		    if ($this->sortField == null && $fieldId < 10)
 			$this->sortField = $fieldId;
 		    $sortableSelector = $fieldId >= self::FIELD_SELECTOR
+			&& $fieldId <= self::FIELD_LAST_SELECTOR
 			&& $this->specialSortable;
 		    if ($fieldId == $this->sortField
 			|| ($sortableSelector && $this->sortField == $this->specialSortable))
