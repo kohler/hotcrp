@@ -820,24 +820,8 @@ class PaperSearch {
 
 	// Finally, look for a review field.
 	if ($special && !isset($searchTags[$special])) {
-	    $a = preg_split("/([^a-zA-Z0-9])/", $special, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
-	    for ($i = 0; $i < count($a); ++$i)
-		$a[$i] = preg_quote($a[$i], "/");
-	    $field = null;
 	    $rf = reviewForm();
-	    foreach ($rf->fieldOrder as $fn) {
-		if (count($a) == 1 && strcasecmp($a[0], $rf->abbrevName[$fn]) == 0) {
-		    $field = $fn;
-		    break;
-		}
-		for ($i = 0; $i < count($a); ++$i)
-		    if ($a[$i] != "-" && $a[$i] != "_"
-			&& !preg_match("{\\b$a[$i]}i", $rf->shortName[$fn]))
-			break;
-		if ($i == count($a))
-		    $field = ($field === null ? $fn : false);
-	    }
-	    if ($field)
+	    if (($field = $rf->unabbreviateField($special)))
 		$this->_searchReviews($word, $rf, $field, $negated, $qt);
 	    else
 		$this->_searchOptions("$special:$word", $negated, $qt);

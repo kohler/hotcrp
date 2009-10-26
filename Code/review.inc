@@ -85,6 +85,24 @@ class ReviewForm {
 	return $x;
     }
 
+    function unabbreviateField($name) {
+	$a = preg_split("/([^a-zA-Z0-9])/", $name, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+	for ($i = 0; $i < count($a); ++$i)
+	    $a[$i] = preg_quote($a[$i], "/");
+	$field = null;
+	foreach ($this->fieldOrder as $fn) {
+	    if (count($a) == 1 && strcasecmp($a[0], $this->abbrevName[$fn]) == 0)
+		return $fn;
+	    for ($i = 0; $i < count($a); ++$i)
+		if ($a[$i] != "-" && $a[$i] != "_"
+		    && !preg_match("{\\b$a[$i]}i", $this->shortName[$fn]))
+		    break;
+	    if ($i == count($a))
+		$field = ($field === null ? $fn : false);
+	}
+	return $field;
+    }
+
     function parseOption($optname, $text, $strict) {
 	if (!$strict && strlen($text) > 1
 	    && preg_match('/\A\s*([0-9]+|[A-Z])(\W|\z)/', $text, $m))
