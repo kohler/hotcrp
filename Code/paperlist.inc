@@ -194,9 +194,9 @@ class PaperList extends BaseList {
 		$revView = $this->contact->viewReviewFieldsScore(null, true);
 		if ($this->rf->authorView[$score] <= $revView)
 		    return false;
-		if (!isset($queryOptions['scores']))
-		    $queryOptions['scores'] = array();
-		$queryOptions['scores'][] = $score;
+		if (!isset($queryOptions["scores"]))
+		    $queryOptions["scores"] = array();
+		$queryOptions["scores"][$score] = true;
 		$this->scoreMax[$score] = $this->rf->maxNumericScore($score);
 	    }
 	    break;
@@ -1341,6 +1341,8 @@ class PaperList extends BaseList {
 	    while (($row = edb_orow($result)))
 		$reviewList[$row->paperId][] = $row;
 	}
+	if (isset($queryOptions["scores"]))
+	    $queryOptions["scores"] = array_keys($queryOptions["scores"]);
 
 	// prepare query text
 	if ($me->contactId == $this->search->contactId)
