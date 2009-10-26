@@ -1171,7 +1171,7 @@ table.auedittable th {
 	padding-left: 0.125em;
 	padding-right: 1em;
 }
-table.pltable th.pl_topicMatch {
+table.pltable th.pl_topicMatch, table.pltable .pl_calculated {
 	text-align: center;
 	padding-left: 0.5em;
 	padding-right: 0.5em;

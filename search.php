@@ -971,6 +971,14 @@ if ($Me->privChair) {
 }
 
 
+// calculated column
+$calculated_column = null;
+if (isset($_REQUEST["calc"]) && trim($_REQUEST["calc"]) !== "" && $Me->privChair) {
+    require_once("Code/paperexpr.inc");
+    if (($e = PaperExpr::parse($_REQUEST["calc"])))
+	$calculated_column = PaperExpr::compile_function($e, $Me);
+}
+
 // search
 $Conf->header("Search", 'search', actionBar());
 unset($_REQUEST["urlbase"]);
@@ -978,6 +986,8 @@ $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"])) {
     $pl = new PaperList(true, true, $Search);
     $pl->showHeader = PaperList::HEADER_TITLES;
+    if ($calculated_column)
+	$pl->calculatedColumns[] = array("&times;", $calculated_column);
     $pl_text = $pl->text($Search->limitName, $Me);
 } else
     $pl = null;
@@ -1212,6 +1222,12 @@ if ($pl && $pl->count > 0) {
 		$Conf->footerScript("foldplinfo_extra()");
 	}
 
+	// Calculated column
+	if ($Me->privChair) {
+	    echo "\n<div class='g'></div>
+    Calculated column: &nbsp;<input class='textlite' type='text' size='20' name='calc' value=\"", htmlspecialchars(defval($_REQUEST, "calc", "")), "\"' />";
+	}
+
 	// Conflict display
 	if ($Me->privChair)
 	    echo "\n<div class='g'></div>",
@@ -1254,6 +1270,8 @@ if ($pl) {
 	echo "<form method='post' action=\"", selfHref(array("selector" => 1), "search$ConfSiteSuffix"), "\" enctype='multipart/formdata' accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck();'><div class='inform'>\n",
 	    "<input id='defaultact' type='hidden' name='defaultact' value='' />",
 	    "<input class='hidden' type='submit' name='default' value='1' />";
+    if (isset($_REQUEST["calc"]))
+	echo "<input type='hidden' name='calc' value=\"", htmlspecialchars($_REQUEST["calc"]), "\" />";
 
     echo $pl_text;
     if ($pl->count == 0 && $_REQUEST["t"] != "s") {

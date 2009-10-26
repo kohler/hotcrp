@@ -17,6 +17,9 @@ class BaseList {
     const FIELD_NUMSCORES = 11;
     const FIELD_SCORE_OVERALL_MERIT = 50; // also used in help.php
 
+    const FIELD_CALCULATED = 100;
+    const FIELD_NUMCALCULATED = 100;
+
     const LOTSAZEROS = "00000000000000";
 
     var $sortInfo;
@@ -26,6 +29,8 @@ class BaseList {
     function _normalizeField($fieldId) {
 	if ($fieldId >= self::FIELD_SCORE && $fieldId < self::FIELD_SCORE + self::FIELD_NUMSCORES)
 	    return self::FIELD_SCORE;
+	else if ($fieldId >= self::FIELD_CALCULATED && $fieldId < self::FIELD_CALCULATED + self::FIELD_NUMCALCULATED)
+	    return self::FIELD_CALCULATED;
 	else
 	    return $fieldId;
     }

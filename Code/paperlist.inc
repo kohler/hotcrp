@@ -49,6 +49,8 @@ class PaperList extends BaseList {
     const FIELD_SHEPHERD = 78;
     const FIELD_FOLD = 80;
 
+    const FIELD_CALCULATED = 100;
+
     const HEADER_ALL = 2;
     const HEADER_TITLES = 1;
     const HEADER_NONE = 0;
@@ -70,6 +72,7 @@ class PaperList extends BaseList {
     var $listNumber;
     var $contact;
     var $scoresOk;
+    var $calculatedColumns;
     var $scoreMax;
     var $search;
     var $extraText;
@@ -122,6 +125,7 @@ class PaperList extends BaseList {
 	$this->search = $search;
 	$this->extraText = $extraText;
 	$this->scoresOk = false;
+	$this->calculatedColumns = array();
 	$this->showConflict = true;
 	$this->papersel = null;
 	$this->footer = true;
@@ -199,6 +203,19 @@ class PaperList extends BaseList {
 		$queryOptions["scores"][$score] = true;
 		$this->scoreMax[$score] = $this->rf->maxNumericScore($score);
 	    }
+	    break;
+	case self::FIELD_CALCULATED:
+	    if (!$this->scoresOk
+		|| $fieldId - self::FIELD_CALCULATED >= count($this->calculatedColumns))
+		return false;
+	    $revView = $this->contact->viewReviewFieldsScore(null, true);
+	    foreach ($this->rf->fieldOrder as $field)
+		if ($this->rf->authorView[$field] > $revView
+		    && isset($this->rf->options[$field])) {
+		    if (!isset($queryOptions["scores"]))
+			$queryOptions["scores"] = array();
+		    $queryOptions["scores"][$field] = true;
+		}
 	    break;
 	case self::FIELD_FOLD:
 	    $this->unfolded = false;
@@ -390,6 +407,20 @@ class PaperList extends BaseList {
 		}
 	    usort($rows, array($this, ($scoresort == "M" || $scoresort == "C" || $scoresort == "Y" ? "_sortScore" : "_sortScoreNum")));
 	    break;
+	case self::FIELD_CALCULATED:
+	    $col = $this->calculatedColumns[$this->sortField - self::FIELD_CALCULATED];
+	    $colf = $col[1];
+	    $this->sortInfo = array();
+	    $this->sortAverage = array();
+	    foreach ($rows as $row) {
+		$x = $colf($row, $this->contact);
+		if ($x === true)
+		    $x = 1;
+		$this->sortInfo[$row->paperId] = $x;
+		$this->sortAverage[$row->paperId] = 0;
+	    }
+	    usort($rows, array($this, "_sortScoreNum"));
+	    break;
 	}
 	return $rows;
     }
@@ -475,6 +506,8 @@ class PaperList extends BaseList {
 	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
 	    return $this->rf->webFieldAbbrev($scoreName);
 	}
+	case self::FIELD_CALCULATED:
+	    return $this->calculatedColumns[$fieldId - self::FIELD_CALCULATED][0];
 	case self::FIELD_AUTHOR_MATCH:
 	    return "<span class='match'>Potential conflict in authors</span>";
 	case self::FIELD_COLLABORATORS_MATCH:
@@ -511,6 +544,7 @@ class PaperList extends BaseList {
 	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
 	case self::FIELD_DESIRABILITY:
 	case self::FIELD_SCORE:
+	case self::FIELD_CALCULATED:
 	    return "<col width='0*' />";
 	default:
 	    return "<col />";
@@ -870,6 +904,17 @@ class PaperList extends BaseList {
 		return false;
 	    }
 	    return "";
+	case self::FIELD_CALCULATED:
+	    $col = $this->calculatedColumns[$fieldId - self::FIELD_CALCULATED];
+	    $colf = $col[1];
+	    $tdextra = " fx" . $fieldId;
+	    $x = $colf($row, $this->contact);
+	    if ($x === null)
+		return "";
+	    else if ($x === true)
+		return "&#x2713;";
+	    else
+		return round($x * 100) / 100;
 	case self::FIELD_AUTHOR_MATCH:
 	    if (defval($this->search->matchPreg, "authorInformation", "") == "")
 		return "";
@@ -1140,6 +1185,8 @@ class PaperList extends BaseList {
 	    foreach ($this->rf->fieldOrder as $fn)
 		if (($k = array_search($fn, $reviewScoreNames)) !== false)
 		    array_push($a, self::FIELD_SCORE + $k);
+	    for ($i = 0; $i < count($this->calculatedColumns); ++$i)
+		array_push($a, self::FIELD_CALCULATED + $i);
 	    $this->scoreMax = array();
 	}
 	return $a;
@@ -1625,6 +1672,7 @@ $paperListFields = array( // array(CSS_FIELD_NAME, COLUMN_TYPE, SORTABLE)
 	PaperList::FIELD_DESIRABILITY => array('desirability', 1, 1),
 	PaperList::FIELD_ALL_PREFERENCES => array('allPreferences', 2, 0),
 	PaperList::FIELD_SCORE => array('score', 1, 1),
+	PaperList::FIELD_CALCULATED => array('calculated', 1, 1),
 	PaperList::FIELD_AUTHOR_MATCH => array('authorsMatch', 2, 0),
 	PaperList::FIELD_COLLABORATORS_MATCH => array('collaboratorsMatch', 2, 0),
 	PaperList::FIELD_OPT_AUTHORS => array('authors', 3, 0),
