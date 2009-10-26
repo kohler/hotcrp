@@ -503,16 +503,6 @@ insert into ReviewFormField set fieldName='overAllMerit',
 	shortName='Overall merit', sortOrder=0;
 insert into ReviewFormField set fieldName='reviewerQualification',
 	shortName='Reviewer expertise', sortOrder=1;
-insert into ReviewFormField set fieldName='novelty',
-	shortName='Novelty';
-insert into ReviewFormField set fieldName='technicalMerit',
-	shortName='Technical merit';
-insert into ReviewFormField set fieldName='interestToCommunity',
-	shortName='Community interest';
-insert into ReviewFormField set fieldName='longevity',
-	shortName='Longevity', description='How important will this work be over time?';
-insert into ReviewFormField set fieldName='grammar',
-	shortName='Writing';
 insert into ReviewFormField set fieldName='suitableForShort',
 	shortName='Suitable for short paper';
 insert into ReviewFormField set fieldName='paperSummary',
@@ -524,9 +514,19 @@ insert into ReviewFormField set fieldName='commentsToPC',
 insert into ReviewFormField set fieldName='commentsToAddress',
 	shortName='Comments to address in the response', rows=10;
 insert into ReviewFormField set fieldName='weaknessOfPaper',
-	shortName='Paper weakness', rows=5;
+	shortName='Paper weaknesses', rows=5;
 insert into ReviewFormField set fieldName='strengthOfPaper',
 	shortName='Paper strengths', rows=5;
+insert into ReviewFormField set fieldName='novelty',
+	shortName='Novelty';
+insert into ReviewFormField set fieldName='technicalMerit',
+	shortName='Additional score field';
+insert into ReviewFormField set fieldName='interestToCommunity',
+	shortName='Additional score field';
+insert into ReviewFormField set fieldName='longevity',
+	shortName='Additional score field';
+insert into ReviewFormField set fieldName='grammar',
+	shortName='Additional score field';
 insert into ReviewFormField set fieldName='likelyPresentation',
 	shortName='Additional score field';
 insert into ReviewFormField set fieldName='potential',
