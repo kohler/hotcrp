@@ -4,7 +4,8 @@
 // Distributed under an MIT-like license; see LICENSE
 
 // Note that tags MUST NOT contain HTML or URL special characters:
-// no "'&<>
+// no "'&<>.  If you add PHP-protected characters, such as $, make sure you
+// check for uses of eval().
 
 define("CHECKTAG_ALLOWRESERVED", 1);
 define("CHECKTAG_NOPRIVATE", 2);
@@ -13,12 +14,15 @@ define("CHECKTAG_CHAIR", 8);
 define("CHECKTAG_QUIET", 16);
 define("CHECKTAG_ERRORARRAY", 32);
 
+define("TAG_REGEX", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*');
+define("TAG_REGEX_OPTVALUE", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*([#=](-\d)?\d*)?');
+
 function checkTagError($tag, $flags) {
     if ($tag == "")
 	return "Empty tag.";
     else if (strlen($tag) > TAG_MAXLEN)
 	return "Tag \"$tag\" too long; maximum " . TAG_MAXLEN . " characters.";
-    else if (!preg_match('/\A~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*([#=](-\d)?\d*)?\z/', $tag, $m))
+    else if (!preg_match('/\A' . TAG_REGEX_OPTVALUE . '\z/', $tag, $m))
 	return "Tag \"$tag\" contains odd characters.";
     else if (count($m) > 1 && $m[1] && ($flags & CHECKTAG_NOINDEX))
 	return "Tag numbers not allowed here.";
