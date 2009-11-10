@@ -1198,8 +1198,8 @@ function doSubGroup() {
     doCheckbox('sub_open', '<b>Open site for submissions</b>');
 
     echo "<div class='g'></div>\n";
-    echo "<strong>Submitter anonymization:</strong> Are author names visible to reviewers?<br />\n";
-    doRadio("sub_blind", array(BLIND_ALWAYS => "No&mdash;submissions are anonymous (blind)", BLIND_NEVER => "Yes", BLIND_OPTIONAL => "Maybe (authors decide whether to expose their names)"));
+    echo "<strong>Blind submission:</strong> Are author names hidden from reviewers?<br />\n";
+    doRadio("sub_blind", array(BLIND_ALWAYS => "Yes&mdash;submissions are anonymous", BLIND_NEVER => "No&mdash;author names are visible to reviewers", BLIND_OPTIONAL => "Maybe&mdash;authors decide whether to expose their names"));
 
     echo "<div class='g'></div>\n<table>\n";
     doDateRow("sub_reg", "Paper registration deadline", "sub_sub");
@@ -1425,8 +1425,8 @@ function doRevGroup() {
     doCheckbox('cmt_always', 'Allow comments even if reviewing is closed');
 
     echo "<div class='g'></div>\n";
-    echo "<strong>Reviewer anonymization:</strong> Are reviewer names visible to authors?<br />\n";
-    doRadio("rev_blind", array(BLIND_ALWAYS => "No&mdash;reviewers are anonymous", BLIND_NEVER => "Yes", BLIND_OPTIONAL => "Maybe (reviewers decide whether to expose their names)"));
+    echo "<strong>Review anonymity:</strong> Are reviewer names hidden from authors?<br />\n";
+    doRadio("rev_blind", array(BLIND_ALWAYS => "Yes&mdash;reviews are anonymous", BLIND_NEVER => "No&mdash;reviewer names are visible to authors", BLIND_OPTIONAL => "Maybe&mdash;reviewers decide whether to expose their names"));
 
     echo "<div class='g'></div>\n";
     doCheckbox('rev_notifychair', 'PC chairs are notified of new reviews by email');
