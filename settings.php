@@ -1221,7 +1221,7 @@ function doSubGroup() {
 
     if (is_executable("Code/banal")) {
 	echo "<div class='g'></div><table id='foldbanal' class='", ($Conf->setting("sub_banal") ? "foldo" : "foldc"), "'>";
-	doCheckbox("sub_banal", "<strong>Automated format checker<span class='fx'>:</span></strong>", true, "hiliter(this);void fold(\"banal\",!this.checked)");
+	doCheckbox("sub_banal", "<strong>Automated format checker<span class='fx'>:</span></strong>", true, "hiliter(this);void fold('banal',!this.checked)");
 	echo "<tr class='fx'><td></td><td class='top'><table>";
 	$bsetting = explode(";", preg_replace("/>.*/", "", $Conf->settingText("sub_banal", "")));
 	for ($i = 0; $i < 6; $i++)
