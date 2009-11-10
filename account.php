@@ -431,18 +431,30 @@ else
 
 if (isset($UpdateError))
     $Conf->errorMsg($UpdateError);
-else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1
-	 && ($Acct->roles & Contact::ROLE_PC)) {
-    $_SESSION["AskedYouToUpdateContactInfo"] = 3;
-    $msg = ($Acct->lastName ? "" : "Please take a moment to update your contact information.  ");
-    $msg .= "We need a list of your recent collaborators to detect paper conflicts.  If you have no collaborators, enter \"None\".";
-    $result = $Conf->q("select * from TopicArea");
-    if (edb_nrows($result) > 0)
-	$msg .= "  Additionally, we use your topic interests to assign you papers you might like.";
+else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1) {
+    $ispc = ($Acct->roles & Contact::ROLE_PC) != 0;
+    $_SESSION["AskedYouToUpdateContactInfo"] = $ispc ? 3 : 2;
+    if (!$Me->lastName)
+	$msg = "Please take a moment to enter your last name and update your other contact information.";
+    else
+	$msg = "Please take a moment to update your contact information.";
+    if (!$Me->affiliation || ($ispc && !$Me->collaborators)) {
+	$msg .= "  We use your ";
+	if (!$Me->affiliation)
+	    $msg .= "affiliation ";
+	if ($ispc && !$Me->collaborators)
+	    $msg .= ($Me->affiliation ? "" : "and ") . "recent collaborators ";
+	$msg .= "to detect paper conflicts.  Enter \"None\"";
+	if (!$Me->affiliation)
+	    $msg .= " or \"Unaffiliated\"";
+	$msg .= " if you have none.";
+    }
+    if ($ispc) {
+	$result = $Conf->q("select * from TopicArea");
+	if (edb_nrows($result) > 0)
+	    $msg .= "  Additionally, we use your topic interests to assign you papers you might like.";
+    }
     $Conf->infoMsg($msg);
-} else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1) {
-    $_SESSION["AskedYouToUpdateContactInfo"] = 2;
-    $Conf->infoMsg("Please take a moment to update your contact information.");
 }
 
 

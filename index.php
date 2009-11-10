@@ -201,7 +201,7 @@ if (!$Me->valid())
 if ($Me->valid() && !isset($_SESSION["AskedYouToUpdateContactInfo"]))
     $_SESSION["AskedYouToUpdateContactInfo"] = 0;
 if ($Me->valid() && (($_SESSION["AskedYouToUpdateContactInfo"] < 2
-		      && !($Me->lastName && $Me->affiliation))
+		      && (!$Me->lastName || !$Me->affiliation))
 		     || ($_SESSION["AskedYouToUpdateContactInfo"] < 3
 			 && ($Me->roles & Contact::ROLE_PC)
 			 && !$Me->collaborators))) {
