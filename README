@@ -54,13 +54,14 @@ be corrupted.
 
 Configuration
 -------------
-* Database configuration
+* Database initialization
 
-  - Run "sudo Code/createdb.sh" to create the database.  You may also run
-    "sudo Code/createdb.sh OPTIONS" to pass options to MySQL, such as
-    --user and --password.  Run "Code/createdb.sh --help" for more
-    information.  You will need to decide on a name for your database (no
-    spaces allowed).
+  - Run "Code/createdb.sh" to create the database.  Use "Code/createdb.sh
+    OPTIONS" to pass options to MySQL, such as --user and --password.  Many
+    MySQL installations require privilege to create tables, so you may need
+    "sudo Code/createdb.sh OPTIONS".  Run "Code/createdb.sh --help" for
+    more information.  You will need to decide on a name for your database
+    (no spaces allowed).
 
 * Site configuration
 
