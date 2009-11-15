@@ -559,9 +559,17 @@ if ($Me->actChair($prow)) {
 	echo "      <tr><td class='nrev' colspan='2'>";
 	$numReviews = strlen($p->allReviews);
 	$numPrimary = preg_match_all("|" . REVIEW_PRIMARY . "|", $p->allReviews, $matches);
-	echo plural($numReviews, "review");
-	if ($numPrimary && $numPrimary < $numReviews)
-	    echo ", ", $numPrimary, " primary";
+	if (!$numReviews)
+	    echo "0 reviews";
+	else {
+	    echo "<a href=\"search", $ConfSiteSuffix, "?q=re:",
+		htmlspecialchars($p->email), "\">",
+		plural($numReviews, "review"), "</a>";
+	    if ($numPrimary && $numPrimary < $numReviews)
+		echo "&nbsp; (<a href=\"search", $ConfSiteSuffix, "?q=pri:",
+		    htmlspecialchars($p->email), "\">",
+		    $numPrimary, " primary</a>)";
+	}
 	echo "</td></tr>\n";
     }
 

@@ -593,7 +593,7 @@ if (isset($assignments) && count($assignments) > 0) {
 		. "</td></tr><tr><td class='nrev'>After assignment: "
 		. plural($nreviews[$id], "review");
 	    if ($nprimary[$id] && $nprimary[$id] < $nreviews[$id])
-		$c .= ", " . $nprimary[$id] . " primary";
+		$c .= "&nbsp; (" . $nprimary[$id] . " primary)";
 	    $pcdesc[] = $c . "</td></tr>\n";
 	}
 	$n = intval((count($pcdesc) + 2) / 3);
@@ -742,10 +742,18 @@ foreach ($pcm as $id => $p) {
 			      "onchange" => "pselClick(event, this, $count, 'pcsel');e('pctyp_sel').checked=true"))
 	. "&nbsp;</td><td class='name'>"
 	. tagg_label(contactNameHtml($p), "pcsel$count")
-	. "</td></tr><tr><td></td><td class='nrev'>"
-	. plural($nreviews[$id], "review");
-    if ($nprimary[$id] && $nprimary[$id] < $nreviews[$id])
-	$c .= ", " . $nprimary[$id] . " primary";
+	. "</td></tr><tr><td></td><td class='nrev'>";
+    if ($nreviews[$id] == 0)
+	$c .= "0 reviews";
+    else {
+	$c .= "<a href=\"search$ConfSiteSuffix?q=re:"
+	    . htmlspecialchars($p->email)
+	    . "\">" . plural($nreviews[$id], "review") . "</a>";
+	if ($nprimary[$id] && $nprimary[$id] < $nreviews[$id])
+	    $c .= "&nbsp; (<a href=\"search$ConfSiteSuffix?q=pri:"
+		. htmlspecialchars($p->email)
+		. "\">" . $nprimary[$id] . " primary</a>)";
+    }
     $c .= "</td></tr>";
     $pcdesc[] = $c;
 }
