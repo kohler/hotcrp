@@ -66,7 +66,11 @@ $Error = array();
 
 function countReviews(&$reviews, &$primary, &$secondary) {
     global $Conf;
-    $result = $Conf->qe("select PCMember.contactId, group_concat(reviewType separator '') from PCMember left join PaperReview on (PCMember.contactId=PaperReview.contactId) group by PCMember.contactId", "while counting reviews");
+    $result = $Conf->qe("select PCMember.contactId, group_concat(reviewType separator '')
+	from PCMember
+	left join Paper on (Paper.timeWithdrawn<=0)
+	left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=PCMember.contactId)
+	group by PCMember.contactId", "while counting reviews");
     $reviews = array();
     $primary = array();
     $secondary = array();

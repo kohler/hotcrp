@@ -487,14 +487,14 @@ if ($Me->actChair($prow)) {
     $result = $Conf->qe("select ContactInfo.contactId, firstName, lastName,
 	PaperConflict.conflictType,
 	PaperReview.reviewType,	coalesce(preference, 0) as preference,
-	group_concat(AllReviews.reviewType separator '') as allReviews,
+	coalesce(allReviews,'') as allReviews,
 	coalesce(PaperTopics.topicInterestScore,0) as topicInterestScore
 	from ContactInfo
 	join PCMember using (contactId)
 	left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$prow->paperId)
 	left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$prow->paperId)
 	left join PaperReviewPreference on (PaperReviewPreference.contactId=ContactInfo.contactId and PaperReviewPreference.paperId=$prow->paperId)
-	left join PaperReview as AllReviews on (AllReviews.contactId=ContactInfo.contactId)
+	left join (select PaperReview.contactId, group_concat(reviewType separator '') as allReviews from PaperReview join Paper on (Paper.paperId=PaperReview.paperId and timeWithdrawn<=0) group by PaperReview.contactId) as AllReviews on (AllReviews.contactId=ContactInfo.contactId)
 	left join (select contactId, sum(if(interest=2,2,interest-1)) as topicInterestScore from PaperTopic join TopicInterest using (topicId) where paperId=$prow->paperId group by contactId) as PaperTopics on (PaperTopics.contactId=ContactInfo.contactId)
 	group by email
 	order by lastName, firstName, email", "while looking up PC");
