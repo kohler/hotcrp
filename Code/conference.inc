@@ -1002,7 +1002,8 @@ class Conference {
 	    $where[] = "outcome>0";
 	if (isset($options['undecided']))
 	    $where[] = "outcome=0";
-	if (isset($options['active']))
+	if (isset($options["active"]) || isset($options["myReviews"])
+	    || isset($options["myReviewRequests"]))
 	    $where[] = "timeWithdrawn<=0";
 	if (isset($options["myLead"]))
 	    $where[] = "leadContactId=$contactId";
