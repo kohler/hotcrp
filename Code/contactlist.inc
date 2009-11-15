@@ -458,7 +458,7 @@ class ContactList extends BaseList {
 	}
 	if (isset($queryOptions['scores']))
 	    foreach ($queryOptions['scores'] as $score)
-		$pq .= ",\n\tgroup_concat(PaperReview.$score) as $score";
+		$pq .= ",\n\tgroup_concat(if(PaperReview.reviewSubmitted>0,PaperReview.$score,null)) as $score";
 	if (isset($queryOptions['repapers']))
 	    $pq .= ",\n\tgroup_concat(PaperReview.paperId) as paperIds,
 	group_concat(PaperReview.reviewId) as reviewIds";
