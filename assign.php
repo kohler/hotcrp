@@ -484,7 +484,8 @@ if ($t != "")
 
 // PC assignments
 if ($Me->actChair($prow)) {
-    $result = $Conf->qe("select ContactInfo.contactId, firstName, lastName,
+    $result = $Conf->qe("select ContactInfo.contactId,
+	firstName, lastName, email,
 	PaperConflict.conflictType,
 	PaperReview.reviewType,	coalesce(preference, 0) as preference,
 	coalesce(allReviews,'') as allReviews,
@@ -524,14 +525,14 @@ if ($Me->actChair($prow)) {
 	echo "      <tr>";
 	if ($p->conflictType >= CONFLICT_AUTHOR) {
 	    echo "<td id='ass$p->contactId' class='name-2'>",
-		str_replace(' ', "&nbsp;", contactHtml($p)),
+		str_replace(' ', "&nbsp;", contactNameHtml($p)),
 		"</td><td class='ass'>",
 		"<img class='ass-2' alt='(Author)' title='Author' src='images/_.gif' />",
 		"</td>";
 	} else {
 	    $cid = ($p->conflictType > 0 ? -1 : $p->reviewType + 0);
 	    echo "<td id='ass$p->contactId' class='name$cid'>";
-	    echo str_replace(' ', "&nbsp;", contactHtml($p));
+	    echo str_replace(' ', "&nbsp;", contactNameHtml($p));
 	    if ($p->conflictType == 0
 		&& ($p->preference || $p->topicInterestScore))
 		echo preferenceSpan($p->preference, $p->topicInterestScore);

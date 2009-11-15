@@ -553,7 +553,7 @@ if (isset($assignments) && count($assignments) > 0) {
 	$t = "";
 	foreach ($pcm as $pc)
 	    if (in_array($pc->contactId, $pcs)) {
-		$t .= ($t ? ", " : "") . contactHtml($pc->firstName, $pc->lastName);
+		$t .= ($t ? ", " : "") . contactNameHtml($pc);
 		$pref = $assignprefs["$pid:$pc->contactId"];
 		if ($pref !== "X" && $pref != 0)
 		    $t .= " <span class='asspref" . ($pref > 0 ? 1 : -1)
@@ -588,7 +588,7 @@ if (isset($assignments) && count($assignments) > 0) {
 		$nsecondary[$id] += $nnew;
 	    }
 	    $c = "<tr><td class='name'>"
-		. contactHtml($p->firstName, $p->lastName)
+		. contactNameHtml($p)
 		. ": " . plural($nnew, "assignment")
 		. "</td></tr><tr><td class='nrev'>After assignment: "
 		. plural($nreviews[$id], "review");
@@ -741,7 +741,7 @@ foreach ($pcm as $id => $p) {
 			array("id" => "pcsel$count",
 			      "onchange" => "pselClick(event, this, $count, 'pcsel');e('pctyp_sel').checked=true"))
 	. "&nbsp;</td><td class='name'>"
-	. tagg_label(contactHtml($p->firstName, $p->lastName), "pcsel$count")
+	. tagg_label(contactNameHtml($p), "pcsel$count")
 	. "</td></tr><tr><td></td><td class='nrev'>"
 	. plural($nreviews[$id], "review");
     if ($nprimary[$id] && $nprimary[$id] < $nreviews[$id])
