@@ -693,6 +693,9 @@ class Conference {
 	header("Content-Type: application/zip");
 	if (!$zlib_output_compression)
 	    header("Content-Length: " . filesize("$tmpdir/x.zip"));
+	// flush all output buffers to avoid holding large files in memory
+	ob_clean();
+	flush();
 	readfile("$tmpdir/x.zip");
 	return 1;
     }
