@@ -984,7 +984,8 @@ class PaperList extends BaseList {
 	    }
 	case self::FIELD_COLLABORATORS:
 	    if ($row->collaborators == ""
-		|| strcasecmp($row->collaborators, "None") == 0)
+		|| strcasecmp($row->collaborators, "None") == 0
+		|| (!$this->contact->privChair && paperBlind($row)))
 		return "";
 	    if ($this->folds->collab === false) {
 		$x = "";
