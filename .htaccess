@@ -3,6 +3,9 @@
 php_value upload_max_filesize 15M
 php_value post_max_size 15M
 
+# A large memory_limit helps when sending very large zipped files.
+php_value memory_limit 128M
+
 # Turn off the hateful magic_quotes_gpc.
 php_flag magic_quotes_gpc off
 
