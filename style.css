@@ -303,31 +303,34 @@ span.hastitle {
 
 
 /* Tab links, as in search form */
-.tablinks1 .tll1, .tablinks2 .tll2, .tablinks3 .tll3 {
+.tablinks1 .tll1, .tablinks2 .tll2,
+.tablinks3 .tll3, .tablinks4 .tll4 {
 	background: #fff4d5;
 	border-left: 2px solid #f3d06e;
 	border-bottom: 2px solid #f3d06e;
 	border-right: 2px solid #f3d06e;
 	font-weight: bold;
 }
-.tablinks1 .tll1 a.tla, .tablinks2 .tll2 a.tla, .tablinks3 .tll3 a.tla {
+.tablinks1 .tll1 a.tla, .tablinks2 .tll2 a.tla,
+.tablinks3 .tll3 a.tla, .tablinks4 .tll4 a.tla {
 	text-decoration: none;
 	color: black;
 }
-.tablinks1 .tll1 a:hover, .tll2 .link2 a:hover, .tablinks3 .tll3 a:hover {
+.tablinks1 .tll1 a.tla:hover, .tablinks2 .tll2 a.tla:hover,
+.tablinks3 .tll3 a.tla:hover, .tablinks4 .tll4 a.tla:hover {
 	text-decoration: underline;
 }
-.tll1, .tll2, .tll3 {
+.tll1, .tll2, .tll3, .tll4 {
 	position: relative;
 	top: -3px;
 	z-index: 4;
 	padding: 3px 0.75em 2px 0.75em;
 	font-size: smaller;
 }
-.tablinks1 .tld1, .tablinks2 .tld2, .tablinks3 .tld3 {
+.tablinks1 .tld1, .tablinks2 .tld2, .tablinks3 .tld3, .tablinks4 .tld4 {
 	display: block;
 }
-.tld1, .tld2, .tld3 {
+.tld1, .tld2, .tld3, .tld4 {
 	display: none;
 	position: relative;
 	z-index: 5;
