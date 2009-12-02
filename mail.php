@@ -229,7 +229,7 @@ function checkMail($send) {
 	    if ($send)
 		echo "<td class='mhx'></td>";
 	    else
-		echo "<td><input type='checkbox' name='$checker' value='1' checked='checked' /> &nbsp;</td>";
+		echo "<td><input type='checkbox' class='cb' name='$checker' value='1' checked='checked' /> &nbsp;</td>";
 
 	    echo "<td><table>\n";
 	    foreach (array("fullTo" => "To", "cc" => "Cc", "bcc" => "Bcc",

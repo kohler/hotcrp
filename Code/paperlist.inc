@@ -789,7 +789,7 @@ class PaperList extends BaseList {
 		$c .= " disabled='disabled'";
 	    if ($fieldId != self::FIELD_SELECTOR_CONFLICT)
 		$c .= " onclick='pselClick(event, this, $this->count)'";
-	    return "<span class='pl_rownum fx6'>" . $this->count . ". </span>" . "<input type='checkbox' name='pap[]' value='$row->paperId' tabindex='3' id='psel$this->count' $c/>";
+	    return "<span class='pl_rownum fx6'>" . $this->count . ". </span>" . "<input type='checkbox' class='cb' name='pap[]' value='$row->paperId' tabindex='3' id='psel$this->count' $c/>";
 	case self::FIELD_CONFLICT_CONFIRM:
 	    return "<span id='assrev" . $row->paperId . "ok'></span>";
 	case self::FIELD_ASSIGN_REVIEW:

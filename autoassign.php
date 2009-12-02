@@ -692,7 +692,7 @@ echo "&nbsp; review(s) per paper</div>\n";
 
 // Review round
 echo divClass("rev_roundtag");
-echo "<input style='visibility: hidden' type='radio' name='a' value='rev_roundtag' disabled='disabled' />&nbsp;";
+echo "<input style='visibility: hidden' type='radio' class='cb' name='a' value='rev_roundtag' disabled='disabled' />&nbsp;";
 echo "Review round: &nbsp;";
 $rev_roundtag = defval($_REQUEST, "rev_roundtag", $Conf->settingText("rev_roundtag"));
 if (!$rev_roundtag)
