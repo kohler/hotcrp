@@ -1016,17 +1016,24 @@ $tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
 // Prepare more display options
 $ajaxDisplayChecked = false;
 
-function ajaxDisplayer($type, $title, $disabled = false) {
+function displayOptionCheckbox($type, $title, $opt = array()) {
     global $ajaxDisplayChecked, $paperListFolds, $pldisplay;
     $foldnum = defval($paperListFolds, $type, -1);
-    if (($checked = (defval($_REQUEST, "show$type")
-		     || strpos($pldisplay, chr($foldnum)) !== false)))
+    $checked = (defval($_REQUEST, "show$type")
+		|| ($foldnum >= 0
+		    && strpos($pldisplay, chr($foldnum)) !== false));
+    $loadresult = "";
+
+    if ($checked)
 	$ajaxDisplayChecked = true;
-    return tagg_checkbox("show$type", 1, $checked,
-			 array("disabled" => $disabled,
-			       "onchange" => "foldplinfo(this,$foldnum,'$type')"))
-	. "&nbsp;" . tagg_label($title)
-	. "<br /><div id='${type}loadformresult'></div>\n";
+    if (!isset($opt["onchange"])) {
+	$opt["onchange"] = "foldplinfo(this,$foldnum,'$type')";
+	$loadresult = "<div id='${type}loadformresult'></div>";
+    } else
+	$loadresult = "<div></div>";
+
+    return tagg_checkbox("show$type", 1, $checked, $opt)
+	. "&nbsp;" . tagg_label($title) . $loadresult;
 }
 
 if ($pl) {
@@ -1036,26 +1043,24 @@ if ($pl) {
 	|| $_REQUEST["t"] == "a";
 
     $ajaxDisplayChecked = false;
+
     if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAllAuthors
 	|| $Me->privChair)
-	$moredisplay .= ajaxDisplayer("aufull", "Full author info");
+	$moredisplay .= displayOptionCheckbox("aufull", "Full author info");
     if ($pl->headerInfo["collab"])
-	$moredisplay .= ajaxDisplayer("collab", "Collaborators");
+	$moredisplay .= displayOptionCheckbox("collab", "Collaborators");
     if ($pl->headerInfo["topics"])
-	$moredisplay .= ajaxDisplayer("topics", "Topics");
+	$moredisplay .= displayOptionCheckbox("topics", "Topics");
     if ($Me->privChair)
-	$moredisplay .= ajaxDisplayer("reviewers", "Reviewers");
+	$moredisplay .= displayOptionCheckbox("reviewers", "Reviewers");
     if ($Me->privChair)
-	$moredisplay .= ajaxDisplayer("pcconf", "PC conflicts");
+	$moredisplay .= displayOptionCheckbox("pcconf", "PC conflicts");
     if ($Me->isPC && $pl->headerInfo["lead"])
-	$moredisplay .= ajaxDisplayer("lead", "Discussion leads");
+	$moredisplay .= displayOptionCheckbox("lead", "Discussion leads");
     if ($Me->isPC && $pl->headerInfo["shepherd"])
-	$moredisplay .= ajaxDisplayer("shepherd", "Shepherds");
-    if ($pl->anySelector) {
-	$moredisplay .= tagg_checkbox("showrownum", 1, strpos($pldisplay, "\6") !== false,
-				      array("onchange" => "fold('pl',!this.checked,6)"))
-	    . "&nbsp;" . tagg_label("Row numbers") . "<br />\n";
-    }
+	$moredisplay .= displayOptionCheckbox("shepherd", "Shepherds");
+    if ($pl->anySelector)
+	$moredisplay .= displayOptionCheckbox("rownum", "Row numbers", array("onchange" => "fold('pl',!this.checked,6)"));
 }
 
 
@@ -1151,35 +1156,31 @@ if ($pl && $pl->count > 0) {
 	    $onchange .= ";fold('pl',!this.checked,2)";
 	if ($Me->privChair)
 	    $onchange .= ";foldplinfo_extra()";
-	echo tagg_checkbox("showau", 1, strpos($pldisplay, "\1") !== false,
-			   array("id" => "showau", "onchange" => $onchange)),
-	    "&nbsp;", tagg_label("Authors", "showau"), "<br />\n";
+	echo displayOptionCheckbox("au", "Authors", array("id" => "showau", "onchange" => $onchange));
     }
     if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair && !$viewAllAuthors) {
 	$onchange = "fold('pl',!this.checked,2)";
 	if ($Me->privChair)
 	    $onchange .= ";foldplinfo_extra()";
+	if ($Conf->blindSubmission() == BLIND_OPTIONAL) {
+	    $id = false;
+	    $label = "Anonymous authors";
+	} else {
+	    $id = "showau";
+	    $label = "Authors";
+	}
 	$id = ($Conf->blindSubmission() == BLIND_OPTIONAL ? false : "showau");
-	echo tagg_checkbox("showanonau", 1, strpos($pldisplay, "\2") !== false,
-			   array("id" => $id, "onchange" => $onchange,
-				 "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2)))),
-	    "&nbsp;", tagg_label($Conf->blindSubmission() == BLIND_OPTIONAL ? "Anonymous authors" : "Authors", $id),
-	    "<br />\n";
+	echo displayOptionCheckbox("anonau", $label, array("id" => $id, "onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2))));
     }
 
     if ($pl->headerInfo["abstract"])
-	echo ajaxDisplayer("abstract", "Abstracts");
+	echo displayOptionCheckbox("abstract", "Abstracts");
     if ($Me->isPC && $pl->headerInfo["tags"])
-	echo ajaxDisplayer("tags", "Tags",
-			   ($_REQUEST["t"] == "a" && !$Me->privChair));
+	echo displayOptionCheckbox("tags", "Tags",
+				   ($_REQUEST["t"] == "a" && !$Me->privChair));
 
     if ($moredisplay !== "") {
-	echo //"<div class='ug'></div>",
-	    //"<a class='fn4' href='javascript:void fold(e(\"searchform\"),0,4)'>More &#187;</a>",
-	    "</td><td class='pad fx4'>", $moredisplay,
-	    //"<div class='ug'></div>",
-	    //"<a class='fx4' href='javascript:void fold(e(\"searchform\"),1,4)'>&#171; Fewer</a>",
-	    "</td>\n";
+	echo "</td><td class='pad fx4'>", $moredisplay, "</td>\n";
     } else
 	echo "</td>\n";
 
@@ -1193,7 +1194,7 @@ if ($pl && $pl->count > 0) {
 	foreach ($rf->fieldOrder as $field)
 	    if ($rf->authorView[$field] > $revViewScore
 		&& isset($rf->options[$field]))
-		echo ajaxDisplayer($field, htmlspecialchars($rf->shortName[$field]));
+		echo displayOptionCheckbox($field, htmlspecialchars($rf->shortName[$field]));
 	$onchange = "highlightUpdate(\"redisplay\")";
 	if ($Me->privChair)
 	    $onchange .= ";foldplinfo_extra()";
