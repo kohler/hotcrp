@@ -133,7 +133,7 @@ td.spanner {
 
 /* generic horizontal styles */
 a.q, a.u {
-	color: #000000;
+	color: black;
 }
 a.q, a.x {
 	text-decoration: none;
@@ -310,7 +310,7 @@ span.hastitle {
 	border-right: 2px solid #f3d06e;
 	font-weight: bold;
 }
-.tablinks1 .tll1 a, .tablinks2 .tll2 a, .tablinks3 .tll3 a {
+.tablinks1 .tll1 a.tla, .tablinks2 .tll2 a.tla, .tablinks3 .tll3 a.tla {
 	text-decoration: none;
 	color: black;
 }

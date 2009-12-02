@@ -184,8 +184,8 @@ if (count($tOpt) > 1) {
 
     // Tab selectors
     echo "<tr><td class='tllx'><table><tr>
-  <td><div class='tll1'><a onclick='return crpfocus(\"contactsform\", 1)' href=''>User selection</a></div></td>
-  <td><div class='tll2'><a onclick='return crpfocus(\"contactsform\", 2)' href=''>Display options</a></div></td>
+  <td><div class='tll1'><a class='tla' onclick='return crpfocus(\"contactsform\", 1)' href=''>User selection</a></div></td>
+  <td><div class='tll2'><a class='tla' onclick='return crpfocus(\"contactsform\", 2)' href=''>Display options</a></div></td>
 </tr></table></td></tr>
 </table>\n\n";
 }

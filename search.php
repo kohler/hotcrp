@@ -1250,10 +1250,10 @@ echo "</div>";
 // Tab selectors
 echo "</td></tr>
 <tr><td class='tllx'><table><tr>
-  <td><div class='tll1'><a onclick='return crpfocus(\"searchform\", 1)' href=\"", selfHref(array("tab" => "basic")), "\">Basic search</a></div></td>
-  <td><div class='tll2'><a onclick='return crpfocus(\"searchform\", 2)' href=\"", selfHref(array("tab" => "advanced")), "\">Advanced search</a></div></td>\n";
+  <td><div class='tll1'><a class='tla' onclick='return crpfocus(\"searchform\", 1)' href=\"", selfHref(array("tab" => "basic")), "\">Basic search</a></div></td>
+  <td><div class='tll2'><a class='tla' onclick='return crpfocus(\"searchform\", 2)' href=\"", selfHref(array("tab" => "advanced")), "\">Advanced search</a></div></td>\n";
 if ($pl && $pl->count > 0)
-    echo "  <td><div class='tll3'><a onclick='return crpfocus(\"searchform\", 3)' href=\"", selfHref(array("tab" => "display")), "\">Display options</a></div></td>\n";
+    echo "  <td><div class='tll3'><a class='tla' onclick='return crpfocus(\"searchform\", 3)' href=\"", selfHref(array("tab" => "display")), "\">Display options</a></div></td>\n";
 echo "</tr></table></td></tr>
 </table>\n\n";
 
