@@ -1008,11 +1008,20 @@ class PaperSearch {
 	if ($roundterm && !$first_applied)
 	    for ($j = 0; $j < count($qc); ++$j)
 		$applied = $this->_queryApplyRounds($qc[$j], $roundterm);
+
+	// "round:R" on its own means either "round:R re:ME" or "round:R
+	// re:ANY" (or "round:R" for the requested review), depending on the
+	// current search type.
 	if ($roundterm && !$applied) {
-	    $t = new SearchTerm("re", 0, "=" . $this->contactId);
+	    if ($this->limitName == "r" || $this->limitName == "rout") {
+		$t = new SearchTerm("re", 0, "=" . $this->contactId);
+		$this->reviewerContact++;
+	    } else if ($this->limitName == "req" || $this->limitName == "reqrevs")
+		$t = new SearchTerm("rf", 0, "requestedBy=" . $this->contactId . " and reviewType=" . REVIEW_EXTERNAL);
+	    else
+		$t = new SearchTerm("nre", 0, ">0");
 	    $t->extra = $roundterm->value;
 	    $qc[] = array($t);
-	    $this->reviewerContact++;
 	}
     }
 
