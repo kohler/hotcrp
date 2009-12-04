@@ -819,7 +819,7 @@ class PaperSearch {
 	}
 
 	// Finally, look for a review field.
-	if ($special && !isset($searchTags[$special])) {
+	if ($special && !isset($searchTags[$special]) && count($qt) == $nqt) {
 	    $rf = reviewForm();
 	    if (($field = $rf->unabbreviateField($special)))
 		$this->_searchReviews($word, $rf, $field, $negated, $qt);
