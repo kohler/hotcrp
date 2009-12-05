@@ -163,17 +163,20 @@ function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
 	$_REQUEST["r"] = $_REQUEST["reviewId"];
     if (isset($_REQUEST["commentId"]) && !isset($_REQUEST["c"]))
 	$_REQUEST["c"] = $_REQUEST["commentId"];
-    foreach (array("p", "r", "c", "m", "mode", "forceShow", "validator", "list", "t", "q", "qo", "qx", "qt", "tab", "atab", "group", "sort", "monreq") as $what)
+    foreach (array("p", "r", "c", "m", "mode", "forceShow", "validator", "ls", "list", "t", "q", "qo", "qx", "qt", "tab", "atab", "group", "sort", "monreq") as $what)
 	if (isset($_REQUEST[$what]) && !isset($extra[$what])) {
 	    $x .= "$sep$what=" . urlencode($_REQUEST[$what]);
 	    $sep = "&";
 	}
-    foreach ($extra as $key => $value) {
-	$x .= "$sep$key=" . urlencode($value);
-	$sep = "&";
-    }
+    foreach ($extra as $key => $value)
+	if ($key != "anchor") {
+	    $x .= "$sep$key=" . urlencode($value);
+	    $sep = "&";
+	}
     if (isset($CurrentList) && $CurrentList > 0)
 	$x .= $sep . "ls=" . $CurrentList;
+    if (isset($extra["anchor"]))
+	$x .= "#" . $extra["anchor"];
     return $htmlspecialchars ? htmlspecialchars($x) : $x;
 }
 
