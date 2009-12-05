@@ -11,14 +11,9 @@ if (isset($_REQUEST["var"])) {
 	if (isset($_REQUEST["sub"]) && $_REQUEST["sub"] == "")
 	    /* do nothing */;
 	else if (isset($_REQUEST["sub"])) {
-	    $str = defval($_SESSION, $v, "");
 	    $on = !(isset($_REQUEST["val"]) && intval($_REQUEST["val"]) > 0);
-	    if (($sub = intval($_REQUEST["sub"])) > 0 && $sub < 256) {
-		$str = str_replace(chr($sub), "", $str);
-		if ($on)
-		    $str .= chr($sub);
-		$_SESSION[$v] = $str;
-	    }
+	    if (($sub = intval($_REQUEST["sub"])) > 0)
+		displayOptionsSet($v, $sub, $on);
 	} else if (isset($_REQUEST["val"]))
 	    $_SESSION[$v] = intval($_REQUEST["val"]);
 	else

@@ -1298,6 +1298,37 @@ function unparseScoreAverage($avg, $levelChar) {
 	return sprintf("%0.2f", $avg);
 }
 
+function displayOptionsSet($sessionvar, $var = null, $val = null) {
+    global $Conf;
+    if (isset($_SESSION[$sessionvar]))
+	$x = $_SESSION[$sessionvar];
+    else if ($sessionvar == "pldisplay")
+	// 50 == PaperList::FIELD_SCORE
+	$x = $Conf->settingText("pldisplay_default", " 50 ");
+    else
+	$x = "";
+    if ($x == null || $x == "")
+	$x = " ";
+
+    // translate old form (character list) into new form (space-separated)
+    if (strpos($x, " ") === false) {
+	$a = str_split($x);
+	$x = " ";
+	for ($i = 0; $i < count($a); ++$i)
+	    $x .= ord($a[$i]) . " ";
+    }
+
+    // set $var to $val in list
+    if ($var) {
+	$x = str_replace(" $var ", " ", $x);
+	if ($val)
+	    $x .= "$var ";
+    }
+
+    // store list in $_SESSION
+    return ($_SESSION[$sessionvar] = $x);
+}
+
 
 function splitName($name, $withEmail = false) {
     if ($withEmail) {

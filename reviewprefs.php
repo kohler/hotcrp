@@ -190,12 +190,12 @@ list.</p>");
 
 // set options to view
 if (isset($_REQUEST["redisplay"])) {
-    $_SESSION["pfdisplay"] = "";
+    $_SESSION["pfdisplay"] = " ";
     foreach ($paperListFolds as $n => $v)
 	if (defval($_REQUEST, "show$n"))
-	    $_SESSION["pfdisplay"] .= chr($v);
+	    $_SESSION["pfdisplay"] .= "$v ";
 }
-$pldisplay = defval($_SESSION, "pfdisplay", "");
+$pldisplay = displayOptionsSet("pfdisplay");
 
 
 // search
@@ -245,21 +245,21 @@ echo "<tr><td class='lxcaption'><strong>Show:</strong> &nbsp;",
     foldsessionpixel("pl", "pfdisplay", null),
     "</td><td class='lentry'>";
 if ($Conf->blindSubmission() <= BLIND_OPTIONAL) {
-    echo tagg_checkbox("showau", 1, strpos($pldisplay, "\1") !== false,
+    echo tagg_checkbox("showau", 1, strpos($pldisplay, " 1 ") !== false,
 		       array("disabled" => ($Conf->blindSubmission() == BLIND_OPTIONAL && !($pl->headerInfo["authors"] & 1)),
 			     "onchange" => "fold('pl',!this.checked,1)")),
 	"&nbsp;", tagg_label("Authors"),
 	"<span class='sep'></span>\n";
 }
 if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair) {
-    echo tagg_checkbox("showanonau", 1, strpos($pldisplay, "\2") !== false,
+    echo tagg_checkbox("showanonau", 1, strpos($pldisplay, " 2 ") !== false,
 		       array("disabled" => !($pl->headerInfo["authors"] & 2),
 			     "onchange" => "fold('pl',!this.checked,2)")),
 	"&nbsp;", tagg_label($Conf->blindSubmission() == BLIND_OPTIONAL ? "Anonymous authors" : "Authors"),
 	"<span class='sep'></span>\n";
 }
 if ($pl->headerInfo["abstract"]) {
-    echo tagg_checkbox("showabstract", 1, strpos($pldisplay, "\5") !== false,
+    echo tagg_checkbox("showabstract", 1, strpos($pldisplay, " 5 ") !== false,
 		       array("onchange" => "foldplinfo(this,5,'abstract')")),
 	"&nbsp;", tagg_label("Abstracts"),
 	"<br /><div id='abstractloadformresult'></div>\n";

@@ -161,14 +161,7 @@ if ($getaction == "authors" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $matchPreg = PaperList::sessionMatchPreg("authorInformation");
     $full = defval($_REQUEST, "full", 0);
 
-    if (isset($_SESSION["pldisplay"]))
-	$pldisplay = $_SESSION["pldisplay"];
-    else
-	$pldisplay = $Conf->settingText("pldisplay_default", chr(PaperList::FIELD_SCORE));
-    str_replace(chr($paperListFolds["aufull"]), "", $pldisplay);
-    if ($full)
-	$pldisplay .= chr($paperListFolds["aufull"]);
-    $_SESSION["pldisplay"] = $pldisplay;
+    $pldisplay = displayOptionsSet("pldisplay", "aufull", $full);
 
     while ($prow = edb_orow($result)) {
 	if (!$Me->canViewPaper($prow, $whyNot))
@@ -920,13 +913,12 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 
 // set fields to view
 if (isset($_REQUEST["redisplay"])) {
-    $_SESSION["pldisplay"] = "";
+    $_SESSION["pldisplay"] = " ";
     foreach ($paperListFolds as $n => $v)
 	if (defval($_REQUEST, "show$n", 0))
-	    $_SESSION["pldisplay"] .= chr($v);
+	    $_SESSION["pldisplay"] .= $v . " ";
 }
-if (!isset($_SESSION["pldisplay"]))
-    $_SESSION["pldisplay"] = $Conf->settingText("pldisplay_default", chr(PaperList::FIELD_SCORE));
+displayOptionsSet("pldisplay");
 if (defval($_REQUEST, "scoresort") == "M")
     $_REQUEST["scoresort"] = "C";
 if (isset($_REQUEST["scoresort"]) && isset($scoreSorts[$_REQUEST["scoresort"]]))
@@ -940,10 +932,10 @@ if (isset($_REQUEST["redisplay"]))
 // save display options
 if (isset($_REQUEST["savedisplayoptions"]) && $Me->privChair) {
     $while = "while saving display options";
-    if ($_SESSION["pldisplay"] != chr(PaperList::FIELD_SCORE)) {
-	$pldisplay = str_split($_SESSION["pldisplay"]);
+    if ($_SESSION["pldisplay"] != PaperList::SCORE_DISPLAY_OPTIONS) {
+	$pldisplay = explode(" ", trim($_SESSION["pldisplay"]));
 	sort($pldisplay);
-	$_SESSION["pldisplay"] = join("", $pldisplay);
+	$_SESSION["pldisplay"] = " " . ltrim(join(" ", $pldisplay) . " ");
 	$Conf->qe("insert into Settings (name, value, data) values ('pldisplay_default', 1, '" . sqlq($_SESSION["pldisplay"]) . "') on duplicate key update data=values(data)", $while);
     } else
 	$Conf->qe("delete from Settings where name='pldisplay_default'", $while);
@@ -966,7 +958,7 @@ if (defval($_REQUEST, "ajax"))
 // set display options, including forceShow if chair
 $pldisplay = $_SESSION["pldisplay"];
 if ($Me->privChair) {
-    if (strpos($pldisplay, chr($paperListFolds["force"])) !== false)
+    if (strpos($pldisplay, " " . $paperListFolds["force"] . " ") !== false)
 	$_REQUEST["forceShow"] = 1;
     else
 	unset($_REQUEST["forceShow"]);
@@ -1023,7 +1015,7 @@ function displayOptionCheckbox($type, $title, $opt = array()) {
     $foldnum = defval($paperListFolds, $type, -1);
     $checked = (defval($_REQUEST, "show$type")
 		|| ($foldnum >= 0
-		    && strpos($pldisplay, chr($foldnum)) !== false));
+		    && strpos($pldisplay, " $foldnum ") !== false));
     $loadresult = "";
 
     if (!isset($opt["onchange"])) {
@@ -1252,9 +1244,9 @@ if ($pl && $pl->count > 0) {
 . $_SESSION["scoresort"] . "' /></div></form>");
 	    $Conf->footerScript("function foldplinfo_extra() { fold('redisplay', 0, 5); }");
 	    // strings might be in different orders, so sort before comparing
-	    $pld = str_split($Conf->settingText("pldisplay_default", chr(PaperList::FIELD_SCORE)));
+	    $pld = explode(" ", trim($Conf->settingText("pldisplay_default", PaperList::SCORE_DISPLAY_OPTIONS)));
 	    sort($pld);
-	    if ($_SESSION["pldisplay"] != join("", $pld)
+	    if ($_SESSION["pldisplay"] != " " . ltrim(join(" ", $pld) . " ")
 		|| $_SESSION["scoresort"] != $Conf->settingText("scoresort_default", $defaultScoreSort))
 		$Conf->footerScript("foldplinfo_extra()");
 	}

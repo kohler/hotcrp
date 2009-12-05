@@ -1325,7 +1325,7 @@ class PaperList extends BaseList {
 	$pldisplay = defval($_SESSION, $this->foldtype . "display", "");
 	foreach ($paperListFolds as $n => $foldnum) {
 	    if (!defval($_REQUEST, "show$n")
-		&& strpos($pldisplay, chr($foldnum)) === false)
+		&& strpos($pldisplay, " $foldnum ") === false)
 		$this->folds->$n = array();
 	    else
 		$this->folds->$n = false;
@@ -1522,7 +1522,7 @@ class PaperList extends BaseList {
 	if (!$unfolded)
 	    $x .= " fold3c";
 	if ($this->anySelector)
-	    $x .= " fold6" . (strpos($pldisplay, "\6") === false ? "c" : "o");
+	    $x .= " fold6" . (strpos($pldisplay, " 6 ") === false ? "c" : "o");
 	if ($this->contact->privChair)
 	    $x .= " fold20" . (defval($_REQUEST, "forceShow") ? "o" : "c");
 	if (count($foldinfo) || !$unfolded || $this->anySelector
