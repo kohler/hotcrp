@@ -235,6 +235,11 @@ function saveComment($text) {
 	unset($_REQUEST["commentId"]);
     $_REQUEST["noedit"] = 1;
 
+    if ($text != "")
+	redirectSelf(array("anchor" => "comment$savedCommentId"));
+    else
+	redirectSelf();
+
     return ($crow ? false : true);
 }
 
@@ -251,11 +256,11 @@ function saveResponse($text) {
     return saveComment($text);
 }
 
-if (isset($_REQUEST['submit']) && defval($_REQUEST, 'response')) {
+if (isset($_REQUEST["submit"]) && defval($_REQUEST, "response")) {
     if (!$Me->canRespond($prow, $crow, $whyNot, true)) {
-	$Conf->errorMsg(whyNotText($whyNot, "respond"));
+	$Conf->errorMsg(whyNotText($whyNot, "respond to reviews for"));
 	$useRequest = true;
-    } else if (!($text = defval($_REQUEST, 'comment')) && !$crow) {
+    } else if (!($text = defval($_REQUEST, "comment")) && !$crow) {
 	$Conf->errorMsg("Enter a comment.");
 	$useRequest = true;
     } else {
@@ -265,11 +270,11 @@ if (isset($_REQUEST['submit']) && defval($_REQUEST, 'response')) {
 	loadRows();
 	watch($newComment);
     }
-} else if (isset($_REQUEST['submit'])) {
+} else if (isset($_REQUEST["submit"])) {
     if (!$Me->canSubmitComment($prow, $crow, $whyNot)) {
-	$Conf->errorMsg(whyNotText($whyNot, "comment"));
+	$Conf->errorMsg(whyNotText($whyNot, "comment on"));
 	$useRequest = true;
-    } else if (!($text = defval($_REQUEST, 'comment')) && !$crow) {
+    } else if (!($text = defval($_REQUEST, "comment")) && !$crow) {
 	$Conf->errorMsg("Enter a comment.");
 	$useRequest = true;
     } else {
@@ -277,9 +282,9 @@ if (isset($_REQUEST['submit']) && defval($_REQUEST, 'response')) {
 	loadRows();
 	watch($newComment);
     }
-} else if (isset($_REQUEST['delete']) && $crow) {
+} else if (isset($_REQUEST["delete"]) && $crow) {
     if (!$Me->canSubmitComment($prow, $crow, $whyNot)) {
-	$Conf->errorMsg(whyNotText($whyNot, "comment"));
+	$Conf->errorMsg(whyNotText($whyNot, "comment on"));
 	$useRequest = true;
     } else {
 	saveComment("");
