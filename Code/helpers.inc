@@ -177,6 +177,37 @@ function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
     return $htmlspecialchars ? htmlspecialchars($x) : $x;
 }
 
+function requestAbsoluteURI($trim) {
+    foreach (array("HTTP_HOST", "SERVER_PORT", "REQUEST_URI") as $x)
+	if (!isset($_SERVER[$x]) || !$_SERVER[$x])
+	    return false;
+
+    if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] != "" && $_SERVER["HTTPS"] != "off") {
+	$host = "https://" . $_SERVER["HTTP_HOST"];
+	if (($port = defval($_SERVER, "SERVER_PORT", 443)) != 443)
+	    $host .= ":" . $port;
+    } else {
+	$host = "http://" . $_SERVER["HTTP_HOST"];
+	if (($port = defval($_SERVER, "SERVER_PORT", 80)) != 80)
+	    $host .= ":" . $port;
+    }
+
+    $tail = $_SERVER["REQUEST_URI"];
+    if ($trim)
+	$tail = preg_replace('/\A([^\?\#]*).*\z/', '\1', $tail);
+    return $host . $tail;
+}
+
+function redirectSelf($extra = array()) {
+    global $Conf;
+    if (!($absuri = requestAbsoluteURI(true)))
+	return false;
+    $want = preg_replace('/\A.*\?/', "", selfHref($extra, null, false));
+    if ($want != "")
+	$absuri .= "?" . $want;
+    $Conf->go($absuri);
+}
+
 function validateEmail($email) {
     // validate email address
     // Allow @_.com email addresses.  Simpler than RFC822 validation.
