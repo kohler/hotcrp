@@ -574,9 +574,7 @@ Miniajax.submit = function(formname, callback, timeout) {
 	fold(form, 0, 7);
 	return true;
     }
-    var resultelt = e(formname + "result");
-    if (!resultelt)
-	resultelt = {};
+    var resultelt = e(formname + "result") || {};
     var checkelt = e(formname + "check");
     if (!callback)
 	callback = function(rv) {
@@ -600,6 +598,7 @@ Miniajax.submit = function(formname, callback, timeout) {
 	    return;
 	clearTimeout(timer);
 	if (req.status == 200) {
+	    resultelt.innerHTML = "";
 	    var rv = eval(req.responseText);
 	    callback(rv);
 	    if (rv.ok)
@@ -658,7 +657,7 @@ function foldplinfo(dofold, foldnum, type, which) {
 	h6 = "";
 
     // may need to load information by ajax
-    if ((!dofold || foldnum < 0) && plinfo_needload[type]) {
+    if ((!dofold || foldnum < 0 || type == "aufull") && plinfo_needload[type]) {
 	// set up "loading" display
 	if (foldnum >= 0 && (elt = e("fold" + which))) {
 	    divs = elt.getElementsByTagName("div");

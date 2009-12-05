@@ -1016,60 +1016,109 @@ $tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
 // SEARCH FORMS
 
 // Prepare more display options
-$ajaxDisplayChecked = false;
+$displayOptions = array();
 
 function displayOptionCheckbox($type, $title, $opt = array()) {
-    global $ajaxDisplayChecked, $paperListFolds, $pldisplay;
+    global $displayOptions, $paperListFolds, $pldisplay;
     $foldnum = defval($paperListFolds, $type, -1);
     $checked = (defval($_REQUEST, "show$type")
 		|| ($foldnum >= 0
 		    && strpos($pldisplay, chr($foldnum)) !== false));
     $loadresult = "";
 
-    if ($checked)
-	$ajaxDisplayChecked = true;
     if (!isset($opt["onchange"])) {
 	$opt["onchange"] = "foldplinfo(this,$foldnum,'$type')";
 	$loadresult = "<div id='${type}loadformresult'></div>";
     } else
 	$loadresult = "<div></div>";
 
-    return tagg_checkbox("show$type", 1, $checked, $opt)
+    $text = tagg_checkbox("show$type", 1, $checked, $opt)
 	. "&nbsp;" . tagg_label($title) . $loadresult;
+    $displayOptions[] = (object) array("type" => $type, "text" => $text,
+				       "checked" => $checked,
+				       "fold" => !$checked && !defval($opt, "unfold"));
 }
 
+// Create checkboxes
+
+$displayOptions = array();
+
 if ($pl) {
-    $moredisplay = "";
     $viewAllAuthors =
 	($_REQUEST["t"] == "acc" && $Conf->timeReviewerViewAcceptedAuthors())
 	|| $_REQUEST["t"] == "a";
 
-    $ajaxDisplayChecked = false;
-
+    // Authors group
+    if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAllAuthors) {
+	$onchange = "fold('pl',!this.checked,1)";
+	if ($viewAllAuthors)
+	    $onchange .= ";fold('pl',!this.checked,2)";
+	if ($Me->privChair)
+	    $onchange .= ";foldplinfo_extra()";
+	displayOptionCheckbox("au", "Authors", array("id" => "showau", "onchange" => $onchange, "unfold" => true));
+    } else if ($Conf->blindSubmission() > BLIND_OPTIONAL && $Me->privChair) {
+	$onchange = "fold('pl',!this.checked,2);foldplinfo_extra()";
+	displayOptionCheckbox("anonau", "Authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2)), "unfold" => true));
+    }
     if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAllAuthors
 	|| $Me->privChair)
-	$moredisplay .= displayOptionCheckbox("aufull", "Full author info");
+	displayOptionCheckbox("aufull", "Full author info");
+    if ($Conf->blindSubmission() == BLIND_OPTIONAL && !$viewAllAuthors
+	&& $Me->privChair) {
+	$onchange = "fold('pl',!this.checked,2);foldplinfo_extra()";
+	displayOptionCheckbox("anonau", "Anonymous authors", array("onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2))));
+    }
     if ($pl->headerInfo["collab"])
-	$moredisplay .= displayOptionCheckbox("collab", "Collaborators");
+	displayOptionCheckbox("collab", "Collaborators");
+
+    // Abstract group
+    if ($pl->headerInfo["abstract"])
+	displayOptionCheckbox("abstract", "Abstracts", array("unfold" => true));
     if ($pl->headerInfo["topics"])
-	$moredisplay .= displayOptionCheckbox("topics", "Topics");
-    if ($Me->privChair)
-	$moredisplay .= displayOptionCheckbox("reviewers", "Reviewers");
-    if ($Me->privChair)
-	$moredisplay .= displayOptionCheckbox("pcconf", "PC conflicts");
+	displayOptionCheckbox("topics", "Topics");
+
+    // Tags group
+    if ($Me->isPC && $pl->headerInfo["tags"])
+	displayOptionCheckbox("tags", "Tags", array("disabled" => ($_REQUEST["t"] == "a" && !$Me->privChair), "unfold" => true));
+
+    // Reviewers group
+    if ($Me->privChair) {
+	displayOptionCheckbox("reviewers", "Reviewers");
+	displayOptionCheckbox("pcconf", "PC conflicts");
+    }
     if ($Me->isPC && $pl->headerInfo["lead"])
-	$moredisplay .= displayOptionCheckbox("lead", "Discussion leads");
+	displayOptionCheckbox("lead", "Discussion leads");
     if ($Me->isPC && $pl->headerInfo["shepherd"])
-	$moredisplay .= displayOptionCheckbox("shepherd", "Shepherds");
+	displayOptionCheckbox("shepherd", "Shepherds");
+
+    // Scores group
+    if (isset($pl->scoreMax)) {
+	$rf = reviewForm();
+	if ($Me->amReviewer() && $_REQUEST["t"] != "a")
+	    $revViewScore = $Me->viewReviewFieldsScore(null, true);
+	else
+	    $revViewScore = 0;
+	$n = count($displayOptions);
+	$nchecked = 0;
+	foreach ($rf->fieldOrder as $field)
+	    if ($rf->authorView[$field] > $revViewScore
+		&& isset($rf->options[$field])) {
+		displayOptionCheckbox($field, htmlspecialchars($rf->shortName[$field]));
+		if ($displayOptions[count($displayOptions) - 1]->checked)
+		    ++$nchecked;
+	    }
+	if (count($displayOptions) > $n && $nchecked == 0)
+	    $displayOptions[$n]->fold = false;
+    }
+
     if ($pl->anySelector)
-	$moredisplay .= displayOptionCheckbox("rownum", "Row numbers", array("onchange" => "fold('pl',!this.checked,6)"));
+	displayOptionCheckbox("rownum", "Row numbers", array("onchange" => "fold('pl',!this.checked,6)", "unfold" => true));
 }
 
 
 echo "<table id='searchform' class='tablinks$activetab fold4o'>
 <tr><td><div class='tlx'><div class='tld1'>";
-if (!$ajaxDisplayChecked)
-    $Conf->footerScript("fold(e('searchform'),1,4)");
+$Conf->footerScript("fold(e('searchform'),1,4)");
 
 // Basic search
 echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>
@@ -1140,51 +1189,36 @@ if ($pl && $pl->count > 0) {
     echo "<table><tr>
   <td class='pad nowrap'><strong>Show:</strong>",
 	foldsessionpixel("pl", "pldisplay", null);
-    if ($moredisplay !== "")
+
+    $moredisplay = false;
+    foreach ($displayOptions as $do)
+	if ($do->fold) {
+	    $moredisplay = true;
+	    break;
+	}
+
+    if ($moredisplay)
 	echo "<span class='sep'></span>",
 	    "<a class='fn4' href='javascript:void fold(e(\"searchform\"),0,4)'>More &#187;</a>",
-	    "</td>\n  <td class='fx4'>",
-	    //"<a class='fx4' href='javascript:void fold(e(\"searchform\"),1,4)'>&#171; Fewer</a>",
-	    "</td>\n";
+	    "<a class='fx4' href='javascript:void fold(e(\"searchform\"),1,4)'>&#171; Fewer</a>",
+	    "</td>\n  <td class='fx4'></td>\n";
     else
 	echo "</td>\n";
     if (isset($pl->scoreMax))
-	echo "  <td class='padl'><strong>Scores:</strong></td>\n";
+	echo "  <td class='padl'></td>\n";
     echo "</tr><tr>
   <td class='pad'>";
-    if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAllAuthors) {
-	$onchange = "fold('pl',!this.checked,1)";
-	if ($viewAllAuthors)
-	    $onchange .= ";fold('pl',!this.checked,2)";
-	if ($Me->privChair)
-	    $onchange .= ";foldplinfo_extra()";
-	echo displayOptionCheckbox("au", "Authors", array("id" => "showau", "onchange" => $onchange));
-    }
-    if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair && !$viewAllAuthors) {
-	$onchange = "fold('pl',!this.checked,2)";
-	if ($Me->privChair)
-	    $onchange .= ";foldplinfo_extra()";
-	if ($Conf->blindSubmission() == BLIND_OPTIONAL) {
-	    $id = false;
-	    $label = "Anonymous authors";
-	} else {
-	    $id = "showau";
-	    $label = "Authors";
-	}
-	$id = ($Conf->blindSubmission() == BLIND_OPTIONAL ? false : "showau");
-	echo displayOptionCheckbox("anonau", $label, array("id" => $id, "onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2))));
-    }
 
-    if ($pl->headerInfo["abstract"])
-	echo displayOptionCheckbox("abstract", "Abstracts");
-    if ($Me->isPC && $pl->headerInfo["tags"])
-	echo displayOptionCheckbox("tags", "Tags",
-				   ($_REQUEST["t"] == "a" && !$Me->privChair));
-
-    if ($moredisplay !== "") {
-	echo "</td><td class='pad fx4'>", $moredisplay, "</td>\n";
-    } else
-	echo "</td>\n";
+    foreach ($displayOptions as $do)
+	if (!$do->fold)
+	    echo $do->text;
+    if ($moredisplay) {
+	echo "</td><td class='pad fx4'>";
+	foreach ($displayOptions as $do)
+	    if ($do->fold)
+		echo $do->text;
+    }
+    echo "</td>\n";
 
     if (isset($pl->scoreMax)) {
 	echo "  <td class='padl'><table><tr><td>";
@@ -1203,7 +1237,7 @@ if ($pl && $pl->count > 0) {
 	echo "<div class='g'></div></td>
     <td><input id='redisplay' class='b' type='submit' name='redisplay' value='Redisplay' /></td>
   </tr><tr>
-    <td colspan='2'>Sort method: &nbsp;",
+    <td colspan='2'>Score sort: &nbsp;",
 	    tagg_select("scoresort", $scoreSorts, $_SESSION["scoresort"], array("onchange" => $onchange, "id" => "scoresort")),
 	    " &nbsp; <a href='help$ConfSiteSuffix?t=scoresort' class='hint'>What is this?</a>";
 

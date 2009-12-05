@@ -1290,7 +1290,7 @@ class PaperList extends BaseList {
 	    . " value='" . join(" ", $pap) . "' />"
 	    . $extra
 	    . "</div></form></div>");
-	$Conf->footerScript("plinfo_needload.$formname = true");
+	$Conf->footerScript("plinfo_needload.$formname=true");
     }
 
     function text($listname, $me) {
@@ -1692,6 +1692,6 @@ global $paperListFolds, $reviewScoreNames;
 $paperListFolds = array("au" => 1, "anonau" => 2, "tags" => 4, "abstract" => 5,
 			"rownum" => 6, "reviewers" => 10, "shepherd" => 11,
 			"lead" => 12, "topics" => 13, "pcconf" => 14,
-			"collab" => 15, "aufull" => -2, "force" => 20);
+			"collab" => 15, "aufull" => 16, "force" => 20);
 foreach ($reviewScoreNames as $k => $n)
     $paperListFolds[$n] = PaperList::FIELD_SCORE + $k;
