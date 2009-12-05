@@ -12,7 +12,6 @@ $useRequest = false;
 $forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair);
 $linkExtra = ($forceShow ? "&amp;forceShow=1" : "");
 $Error = array();
-$CommentMsg = array();
 
 
 // header
@@ -148,7 +147,7 @@ function watch($newComment) {
 
 // update comment action
 function saveComment($text) {
-    global $Me, $Conf, $CommentMsg, $prow, $crow, $savedCommentId;
+    global $Me, $Conf, $prow, $crow, $savedCommentId;
 
     // options
     $visibility = defval($_REQUEST, "visibility", "r");
@@ -205,15 +204,17 @@ function saveComment($text) {
 
     // log, end
     $what = ($forAuthors > 1 ? "Response" : "Comment");
+    if ($text != "" && !isset($_SESSION["comment_msgs"]))
+	$_SESSION["comment_msgs"] = array();
     if ($text != "" && $forAuthors > 1 && $forReviewers == 0) {
 	$deadline = $Conf->printableTimeSetting("resp_done");
 	if ($deadline != "N/A")
 	    $extratext = "  You have until $deadline to send the response to the reviewers.";
 	else
 	    $extratext = "";
-	$CommentMsg[$savedCommentId] = "<div class='xwarning'>$what saved.  However, at your request, this response will not be shown to reviewers.$extratext</div>";
+	$_SESSION["comment_msgs"][$savedCommentId] = "<div class='xwarning'>$what saved.  However, at your request, this response will not be shown to reviewers.$extratext</div>";
     } else if ($text != "")
-	$CommentMsg[$savedCommentId] = "<div class='xconfirm'>$what saved.</div>";
+	$_SESSION["comment_msgs"][$savedCommentId] = "<div class='xconfirm'>$what saved.</div>";
     else
 	$Conf->confirmMsg("$what deleted.");
     $Conf->log("Comment $savedCommentId " . ($text != "" ? "saved" : "deleted"),
@@ -228,10 +229,10 @@ function saveComment($text) {
 
     unset($_REQUEST["c"]);
     $_REQUEST["paperId"] = $prow->paperId;
-    if ($text == "")
-	unset($_REQUEST["commentId"]);
-    else
+    if ($text != "")
 	$_REQUEST["commentId"] = $savedCommentId;
+    else
+	unset($_REQUEST["commentId"]);
     $_REQUEST["noedit"] = 1;
 
     return ($crow ? false : true);

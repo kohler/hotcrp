@@ -26,6 +26,7 @@ if (isset($_REQUEST["signin"]) || isset($_REQUEST["signout"])) {
     unset($_SESSION["info"]);
     unset($_SESSION["rev_tokens"]);
     unset($_SESSION["rev_token_fail"]);
+    unset($_SESSION["comment_msgs"]);
     foreach ($allowedSessionVars as $v)
 	unset($_SESSION[$v]);
     if (isset($_REQUEST["signout"]))

@@ -1654,6 +1654,7 @@ class PaperTable {
 		$cv->showResponse($prow, null, false, true);
 
 	    $cv->endTable();
+	    unset($_SESSION["comment_msgs"]);
 	}
     }
 

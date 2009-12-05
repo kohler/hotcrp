@@ -66,7 +66,7 @@ class CommentView {
     }
 
     function show($prow, $crow, $useRequest, $editMode, $foldnew = true) {
-	global $Conf, $ConfSiteSuffix, $CommentMsg, $Me, $forceShow, $linkExtra;
+	global $Conf, $ConfSiteSuffix, $Me, $forceShow, $linkExtra;
 
 	if ($crow && $crow->forAuthors > 1)
 	    return $this->showResponse($prow, $crow, $useRequest, $editMode);
@@ -80,12 +80,9 @@ class CommentView {
 	$this->ncomment++;
 
 	if ($editMode) {
-	    echo "<form action='comment$ConfSiteSuffix?p=$prow->paperId";
-	    if ($crow)
-		echo "&amp;c=$crow->commentId";
-	    echo "$linkExtra&amp;post=1";
-	    if ($crow)
-		echo "#comment$crow->commentId";
+	    echo "<form action='comment$ConfSiteSuffix?p=$prow->paperId&amp;c=",
+		($crow ? $crow->commentId : "new"),
+		"$linkExtra&amp;post=1";
 	    echo "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'>";
 	    if (!$crow && $foldnew)
 		echo "<div class='aahc foldc' id='foldaddcomment'>";
@@ -121,8 +118,9 @@ class CommentView {
 
 	echo "</div><div class='cmtv", (!$crow && $editMode && $foldnew ? " fx" : ""), "'>";
 
-	if (isset($CommentMsg) && $crow && isset($CommentMsg[$crow->commentId]))
-	    echo $CommentMsg[$crow->commentId];
+	if (isset($_SESSION["comment_msgs"]) && $crow
+	    && isset($_SESSION["comment_msgs"][$crow->commentId]))
+	    echo $_SESSION["comment_msgs"][$crow->commentId];
 
 	if (!$editMode) {
 	    echo htmlWrapText(htmlspecialchars($crow->comment)), "</div>\n\n";
@@ -172,7 +170,7 @@ class CommentView {
     }
 
     function showResponse($prow, $crow, $useRequest, $editMode) {
-	global $Conf, $ConfSiteSuffix, $CommentMsg, $Me, $forceShow, $linkExtra;
+	global $Conf, $ConfSiteSuffix, $Me, $forceShow, $linkExtra;
 
 	$this->endTable();
 	if ($editMode && !$Me->canRespond($prow, $crow)
@@ -232,8 +230,9 @@ has passed.  Please keep the response short and to the point",
 	echo "</td><td></td></tr>
   <tr><td></td><td class='cmtcc'>";
 
-	if (isset($CommentMsg) && $crow && isset($CommentMsg[$crow->commentId]))
-	    echo $CommentMsg[$crow->commentId];
+	if (isset($_SESSION["comment_msgs"]) && $crow
+	    && isset($_SESSION["comment_msgs"][$crow->commentId]))
+	    echo $_SESSION["comment_msgs"][$crow->commentId];
 
 	if (!$editMode) {
 	    if ($Me->privChair && $crow->forReviewers == 0)
