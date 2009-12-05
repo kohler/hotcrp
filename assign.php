@@ -562,11 +562,11 @@ if ($Me->actChair($prow)) {
 	if (!$numReviews)
 	    echo "0 reviews";
 	else {
-	    echo "<a href=\"search", $ConfSiteSuffix, "?q=re:",
+	    echo "<a class='q' href=\"search", $ConfSiteSuffix, "?q=re:",
 		htmlspecialchars($p->email), "\">",
 		plural($numReviews, "review"), "</a>";
 	    if ($numPrimary && $numPrimary < $numReviews)
-		echo "&nbsp; (<a href=\"search", $ConfSiteSuffix, "?q=pri:",
+		echo "&nbsp; (<a class='q' href=\"search", $ConfSiteSuffix, "?q=pri:",
 		    htmlspecialchars($p->email), "\">",
 		    $numPrimary, " primary</a>)";
 	}
