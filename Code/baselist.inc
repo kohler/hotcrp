@@ -13,7 +13,8 @@ $defaultScoreSort = "C";
 
 class BaseList {
 
-    const FIELD_SCORE = 50;	// see also displayOptionsSet()
+    const FIELD_SCORE = 50;
+    const SCORE_DISPLAY_OPTIONS = " 50 "; // see also displayOptionsSet()
     const FIELD_NUMSCORES = 11;
     const FIELD_SCORE_OVERALL_MERIT = 50; // also used in help.php
 
