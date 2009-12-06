@@ -11,9 +11,12 @@ if (isset($_REQUEST["var"])) {
 	if (isset($_REQUEST["sub"]) && $_REQUEST["sub"] == "")
 	    /* do nothing */;
 	else if (isset($_REQUEST["sub"])) {
+	    // sessionvar.php is called from fold(), which sets "val" to 1 iff
+	    // the element is folded.  So add $sub to the session variable iff
+	    // "val" is NOT 1.
 	    $on = !(isset($_REQUEST["val"]) && intval($_REQUEST["val"]) > 0);
-	    if (($sub = intval($_REQUEST["sub"])) > 0)
-		displayOptionsSet($v, $sub, $on);
+	    if (preg_match('/\A[a-zA-Z]*(?:0|[1-9][0-9]*)\z/', $_REQUEST["sub"]))
+		displayOptionsSet($v, $_REQUEST["sub"], $on);
 	} else if (isset($_REQUEST["val"]))
 	    $_SESSION[$v] = intval($_REQUEST["val"]);
 	else
