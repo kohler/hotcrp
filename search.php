@@ -969,8 +969,7 @@ if ($Me->privChair) {
 $calculated_column = null;
 if (isset($_REQUEST["calc"]) && trim($_REQUEST["calc"]) !== "" && $Me->privChair) {
     require_once("Code/paperexpr.inc");
-    if (($e = PaperExpr::parse($_REQUEST["calc"])))
-	$calculated_column = PaperExpr::compile_function($e, $Me);
+    $calculated_column = PaperExpr::parse($_REQUEST["calc"]);
 }
 
 // search
@@ -981,7 +980,7 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"])) {
     $pl = new PaperList(true, true, $Search);
     $pl->showHeader = PaperList::HEADER_TITLES;
     if ($calculated_column)
-	$pl->calculatedColumns[] = array("&times;", $calculated_column);
+	$pl->calculatedColumns[] = array("&times;", $calculated_column, PaperExpr::compile_function($calculated_column, $Me));
     $pl_text = $pl->text($Search->limitName, $Me);
 } else
     $pl = null;

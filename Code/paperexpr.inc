@@ -32,6 +32,7 @@ class PaperExprCompileState {
     var $lprefix;
     var $maxlprefix;
     var $indent;
+    var $queryOptions;
 
     function PaperExprCompileState($contact) {
 	$this->contact = $contact;
@@ -42,6 +43,7 @@ class PaperExprCompileState {
 	$this->lprefix = 0;
 	$this->maxlprefix = 0;
 	$this->indent = 2;
+	$this->queryOptions = array();
     }
 }
 
@@ -50,17 +52,20 @@ class PaperExpr {
     const UNARY_OPERATOR_REGEX = '/\A[-+!]/';
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%\&^\|]|[=!]=|\*\*?|\&\&|\|\||<[<=]?|>[>=]?)/';
 
-    function parse($t) {
+    function parse($t, $noErrors = false) {
 	global $Conf;
 	$e = self::_parse_ternary($t);
 	if ($t != "") {
-	    $Conf->errorMsg("Illegal expression: parse error at &ldquo;" . htmlspecialchars($t) . "&rdquo;.");
+	    if (!$noErrors)
+		$Conf->errorMsg("Illegal expression: parse error at &ldquo;" . htmlspecialchars($t) . "&rdquo;.");
 	    return null;
 	} else if (!$e) {
-	    $Conf->errorMsg("Illegal expression: parse error at end of expression.");
+	    if (!$noErrors)
+		$Conf->errorMsg("Illegal expression: parse error at end of expression.");
 	    return null;
 	} else if ($e[1]) {
-	    $Conf->errorMsg("Illegal expression: can't return a raw score, use an aggregate function.");
+	    if (!$noErrors)
+		$Conf->errorMsg("Illegal expression: can't return a raw score, use an aggregate function.");
 	    return null;
 	} else {
 	    //$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars(var_export($e, true)))));
@@ -123,7 +128,7 @@ class PaperExpr {
     }
 
     function _parse_expr(&$t, $level) {
-	global $Conf, $paperExprOperators;
+	global $paperExprOperators;
 
 	if (($t = ltrim($t)) == "")
 	    return null;
@@ -267,6 +272,7 @@ class PaperExpr {
 	$op = $e[0];
 
 	if ($op == "tag" || $op == "tagval") {
+	    $state->queryOptions["tags"] = true;
 	    $e_tag = checkTag($e[2], CHECKTAG_QUIET, $state->contact->contactId);
 	    $t_tags = self::_addgtemp($state, "(\$contact->canViewTags(\$prow) ? ' ' . \$prow->paperTags : '')", "tags");
 	    $t_tagpos = self::_addgtemp($state, "strpos($t_tags, \" $e_tag#\")", "tagpos $e[2]");
@@ -282,8 +288,12 @@ class PaperExpr {
 	    $revView = $state->contact->viewReviewFieldsScore(null, true);
 	    if ($state->rf->authorView[$score] <= $revView)
 		$t_f = "0";
-	    else
+	    else {
+		if (!isset($state->queryOptions["scores"]))
+		    $state->queryOptions["scores"] = array();
+		$state->queryOptions["scores"][$score] = true;
 		$t_f = self::_addgtemp($state, "explode(',', \$prow->${score}Scores)", "rev $score") . "[\$ri_" . $state->lprefix . "]";
+	    }
 	    return "($t_f === 0 ? null : $t_f)";
 	}
 
@@ -348,14 +358,31 @@ class PaperExpr {
 	$e = self::_compile($state, $e);
 	$t =  join("\n  ", $state->gstmt)
 	    . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
-	    . join("\n  ", $state->lstmt)
-	    . "\n  return $e;\n";
+	    . join("\n  ", $state->lstmt) . "\n"
+	    . "  \$x = $e;\n"
+	    . '  if ($format == "h") {
+    if ($x === null)
+      return "";
+    else if ($x === true)
+      return "&#x2713;";
+    else
+      return round($x * 100) / 100;
+  } else if ($format == "s")
+    return ($x === true ? 1 : $x);
+  else
+    return $x;' . "\n";
 	//$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars("function (\$prow) {\n  " . $t . "}\n"))));
 	return $t;
     }
 
     function compile_function($e, $contact) {
-	return create_function("\$prow, \$contact", self::compile_function_body($e, $contact));
+	return create_function("\$prow, \$contact, \$format = null", self::compile_function_body($e, $contact));
+    }
+
+    function add_query_options(&$queryOptions, $e, $contact) {
+	$state = new PaperExprCompileState($contact);
+	$state->queryOptions =& $queryOptions;
+	self::_compile($state, $e);
     }
 
 }

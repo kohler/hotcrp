@@ -208,14 +208,8 @@ class PaperList extends BaseList {
 	    if (!$this->scoresOk
 		|| $fieldId - self::FIELD_CALCULATED >= count($this->calculatedColumns))
 		return false;
-	    $revView = $this->contact->viewReviewFieldsScore(null, true);
-	    foreach ($this->rf->fieldOrder as $field)
-		if ($this->rf->authorView[$field] > $revView
-		    && isset($this->rf->options[$field])) {
-		    if (!isset($queryOptions["scores"]))
-			$queryOptions["scores"] = array();
-		    $queryOptions["scores"][$field] = true;
-		}
+	    $formula = $this->calculatedColumns[$fieldId - self::FIELD_CALCULATED];
+	    PaperExpr::add_query_options($queryOptions, $formula[1], $this->contact);
 	    break;
 	case self::FIELD_FOLD:
 	    $this->unfolded = false;
@@ -409,14 +403,11 @@ class PaperList extends BaseList {
 	    break;
 	case self::FIELD_CALCULATED:
 	    $col = $this->calculatedColumns[$this->sortField - self::FIELD_CALCULATED];
-	    $colf = $col[1];
+	    $colf = $col[2];
 	    $this->sortInfo = array();
 	    $this->sortAverage = array();
 	    foreach ($rows as $row) {
-		$x = $colf($row, $this->contact);
-		if ($x === true)
-		    $x = 1;
-		$this->sortInfo[$row->paperId] = $x;
+		$this->sortInfo[$row->paperId] = $colf($row, $this->contact, "s");
 		$this->sortAverage[$row->paperId] = 0;
 	    }
 	    usort($rows, array($this, "_sortScoreNum"));
@@ -906,15 +897,9 @@ class PaperList extends BaseList {
 	    return "";
 	case self::FIELD_CALCULATED:
 	    $col = $this->calculatedColumns[$fieldId - self::FIELD_CALCULATED];
-	    $colf = $col[1];
+	    $colf = $col[2];
 	    $tdextra = " fx" . $fieldId;
-	    $x = $colf($row, $this->contact);
-	    if ($x === null)
-		return "";
-	    else if ($x === true)
-		return "&#x2713;";
-	    else
-		return round($x * 100) / 100;
+	    return $colf($row, $this->contact, "h");
 	case self::FIELD_AUTHOR_MATCH:
 	    if (defval($this->search->matchPreg, "authorInformation", "") == "")
 		return "";
