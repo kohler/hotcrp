@@ -647,6 +647,40 @@ class PaperList extends BaseList {
 	return "<span class='fn20'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"javascript:void fold('pl',0,20)\">Show</a></span><span class='fx20'>$text</span>";
     }
 
+    function contentEmpty($fieldId, $row) {
+	switch (self::_normalizeField($fieldId)) {
+	case self::FIELD_REVIEWER_TYPE:
+	    return !$row->reviewType && $row->conflictType <= 0;
+	case self::FIELD_REVIEWER_STATUS:
+	    return !$row->reviewId;
+	case self::FIELD_OPT_TOPIC_NAMES:
+	case self::FIELD_TOPIC_NAMES:
+	    return !$row->topicIds;
+	case self::FIELD_SCORE:
+	    return !$this->contact->canViewReview($row, null, $fakeWhyNotView, true) && !$this->contact->privChair;
+	case self::FIELD_AUTHOR_MATCH:
+	    return defval($this->search->matchPreg, "authorInformation", "") == "";
+	case self::FIELD_COLLABORATORS_MATCH:
+	    return defval($this->search->matchPreg, "collaborators", "") == "";
+	case self::FIELD_OPT_ABSTRACT:
+	    return $row->abstract == "";
+	case self::FIELD_TAGS:
+	    return !$this->contact->canViewTags($row);
+	case self::FIELD_LEAD:
+	    return (!$this->contact->actPC($row, true) || !$row->leadContactId);
+	case self::FIELD_SHEPHERD:
+	    return ((!$this->contact->actPC($row, true)
+		     && !$this->contact->canViewDecision($row))
+		    || !$row->shepherdContactId);
+	case self::FIELD_COLLABORATORS:
+	    return ($row->collaborators == ""
+		    || strcasecmp($row->collaborators, "None") == 0
+		    || (!$this->contact->privChair && paperBlind($row)));
+	default:
+	    return false;
+	}
+    }
+
     function content($fieldId, $row, $reviewList, &$tdextra) {
 	global $ConfSiteSuffix, $Conf, $reviewTypeName, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
@@ -1448,7 +1482,10 @@ class PaperList extends BaseList {
 	    foreach ($fieldDef as $fieldId => $fdef)
 		if ($fdef[1] == 1) {
 		    $tx = "";
-		    $c = $this->content($fieldId, $row, $reviewList, $tx);
+		    if ($this->contentEmpty($fieldId, $row))
+			$c = "";
+		    else
+			$c = $this->content($fieldId, $row, $reviewList, $tx);
 		    $t .= "    <td class=\"pl_$fdef[0]$tx\">$c</td>\n";
 		    if ($c !== "")
 			$anyData[$fieldId] = 1;
@@ -1458,6 +1495,7 @@ class PaperList extends BaseList {
 	    $tt = "";
 	    foreach ($fieldDef as $fieldId => $fdef)
 		if ($fdef[1] >= 2
+		    && !$this->contentEmpty($fieldId, $row)
 		    && ($d = $this->content($fieldId, $row, $reviewList, $tx)) !== "") {
 		    $tt .= "<div id=\"$fdef[0]$row->paperId\"";
 		    if ($fdef[1] > 2) {
