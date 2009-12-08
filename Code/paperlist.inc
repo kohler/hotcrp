@@ -899,7 +899,12 @@ class PaperList extends BaseList {
 	    $col = $this->calculatedColumns[$fieldId - self::FIELD_CALCULATED];
 	    $colf = $col[2];
 	    $tdextra = " fx" . $fieldId;
-	    return $colf($row, $this->contact, "h");
+	    $t = $colf($row, $this->contact, "h");
+	    if ($row->conflictType > 0 && $this->contact->privChair)
+		return "<span class='fn20'>$t</span><span class='fx20'>"
+		    . $colf($row, $this->contact, "h", true) . "</span>";
+	    else
+		return $t;
 	case self::FIELD_AUTHOR_MATCH:
 	    if (defval($this->search->matchPreg, "authorInformation", "") == "")
 		return "";

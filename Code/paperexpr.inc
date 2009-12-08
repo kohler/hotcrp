@@ -224,7 +224,7 @@ class PaperExpr {
     function _addnumscores($state) {
 	if (!isset($state->gtmp["numScores"])) {
 	    $state->gtmp["numscores"] = "\$numScores";
-	    $state->gstmt[] = "\$numScores = (\$contact->canViewReview(\$prow, null, \$fakeWhyNotView, true) ? \$prow->numScores : 0);";
+	    $state->gstmt[] = "\$numScores = (\$forceShow || \$contact->canViewReview(\$prow, null, \$fakeWhyNotView, true) ? \$prow->numScores : 0);";
 	}
 	return "\$numScores";
     }
@@ -274,7 +274,7 @@ class PaperExpr {
 	if ($op == "tag" || $op == "tagval") {
 	    $state->queryOptions["tags"] = true;
 	    $e_tag = checkTag($e[2], CHECKTAG_QUIET, $state->contact->contactId);
-	    $t_tags = self::_addgtemp($state, "(\$contact->canViewTags(\$prow) ? ' ' . \$prow->paperTags : '')", "tags");
+	    $t_tags = self::_addgtemp($state, "(\$forceShow || \$contact->canViewTags(\$prow) ? ' ' . \$prow->paperTags : '')", "tags");
 	    $t_tagpos = self::_addgtemp($state, "strpos($t_tags, \" $e_tag#\")", "tagpos $e[2]");
 	    $t_tagval = self::_addgtemp($state, "($t_tagpos === false ? null : (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . "))", "tagval $e[2]");
 	    if ($op == "tag")
@@ -376,7 +376,7 @@ class PaperExpr {
     }
 
     function compile_function($e, $contact) {
-	return create_function("\$prow, \$contact, \$format = null", self::compile_function_body($e, $contact));
+	return create_function("\$prow, \$contact, \$format = null, \$forceShow = false", self::compile_function_body($e, $contact));
     }
 
     function add_query_options(&$queryOptions, $e, $contact) {
