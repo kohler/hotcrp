@@ -926,7 +926,7 @@ if (isset($_REQUEST["scoresort"]) && isset($scoreSorts[$_REQUEST["scoresort"]]))
 if (!isset($_SESSION["scoresort"]))
     $_SESSION["scoresort"] = $Conf->settingText("scoresort_default", $defaultScoreSort);
 if (isset($_REQUEST["redisplay"]))
-    redirectSelf(array("tab" => "display"));
+    redirectSelf(array("tab" => "display", "calc" => defval($_REQUEST, "calc", "")));
 
 
 // save display options
