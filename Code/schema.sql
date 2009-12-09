@@ -87,6 +87,23 @@ CREATE TABLE `ContactInfo` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
+-- Table structure for table `Formula`
+--
+
+DROP TABLE IF EXISTS `Formula`;
+CREATE TABLE `Formula` (
+  `formulaId` int(11) NOT NULL auto_increment,
+  `name` varchar(200) NOT NULL,
+  `heading` varchar(200) NOT NULL default '',
+  `headingTitle` text NOT NULL default '',
+  `expression` text NOT NULL,
+  `authorView` tinyint(1) NOT NULL default '1',
+  PRIMARY KEY  (`formulaId`),
+  UNIQUE KEY `formulaId` (`formulaId`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
 -- Table structure for table `OptionType`
 --
 
@@ -484,7 +501,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 29);
+insert into Settings (name, value) values ('allowPaperOption', 31);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags

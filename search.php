@@ -926,7 +926,7 @@ if (isset($_REQUEST["scoresort"]) && isset($scoreSorts[$_REQUEST["scoresort"]]))
 if (!isset($_SESSION["scoresort"]))
     $_SESSION["scoresort"] = $Conf->settingText("scoresort_default", $defaultScoreSort);
 if (isset($_REQUEST["redisplay"]))
-    redirectSelf(array("tab" => "display", "calc" => defval($_REQUEST, "calc", "")));
+    redirectSelf(array("tab" => "display"));
 
 
 // save display options
@@ -965,13 +965,6 @@ if ($Me->privChair) {
 }
 
 
-// calculated column
-$calculated_column = null;
-if (isset($_REQUEST["calc"]) && trim($_REQUEST["calc"]) !== "" && $Me->privChair) {
-    require_once("Code/paperexpr.inc");
-    $calculated_column = PaperExpr::parse($_REQUEST["calc"]);
-}
-
 // search
 $Conf->header("Search", 'search', actionBar());
 unset($_REQUEST["urlbase"]);
@@ -979,8 +972,6 @@ $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"])) {
     $pl = new PaperList(true, true, $Search);
     $pl->showHeader = PaperList::HEADER_TITLES;
-    if ($calculated_column)
-	$pl->calculatedColumns[] = array("&times;", $calculated_column, PaperExpr::compile_function($calculated_column, $Me));
     $pl_text = $pl->text($Search->limitName, $Me);
 } else
     $pl = null;
@@ -1099,6 +1090,10 @@ if ($pl) {
 	if (count($displayOptions) > $n && $nchecked == 0)
 	    $displayOptions[$n]->fold = false;
     }
+
+    // Formulas group
+    foreach ($paperListFormulas as $formula)
+	displayOptionCheckbox("formula" . $formula->formulaId, htmlspecialchars($formula->name));
 
     if ($pl->anySelector)
 	displayOptionCheckbox("rownum", "Row numbers", array("onchange" => "fold('pl',!this.checked,'rownum')", "unfold" => true));
@@ -1246,12 +1241,6 @@ if ($pl && $pl->count > 0) {
 	    if ($_SESSION["pldisplay"] != " " . ltrim(join(" ", $pld) . " ")
 		|| $_SESSION["scoresort"] != $Conf->settingText("scoresort_default", $defaultScoreSort))
 		$Conf->footerScript("foldplinfo_extra()");
-	}
-
-	// Calculated column
-	if ($Me->privChair) {
-	    echo "\n<div class='g'></div>
-    Calculated column: &nbsp;<input class='textlite' type='text' size='20' name='calc' value=\"", htmlspecialchars(defval($_REQUEST, "calc", "")), "\"' />";
 	}
 
 	// Conflict display

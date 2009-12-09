@@ -1174,13 +1174,14 @@ table.auedittable th {
 	padding-left: 0.125em;
 	padding-right: 1em;
 }
-table.pltable th.pl_topicMatch, table.pltable .pl_calculated {
+table.pltable th.pl_topicMatch {
 	text-align: center;
 	padding-left: 0.5em;
 	padding-right: 0.5em;
 }
-table.pltable th.pl_id, .pl_score, table.pltable th.pl_score, 
-table.ppltable th.pl_score, table.altable th.pl_id,
+table.pltable th.pl_id,
+.pl_score, table.pltable th.pl_score, table.ppltable th.pl_score,
+table.altable th.pl_id,
 table.pltable th.pl_selector {
 	text-align: center;
 	white-space: nowrap;
@@ -1191,7 +1192,7 @@ table.pltable th.pl_selector {
 	padding-right: 3px;
 	white-space: nowrap;
 }
-.pl_revstat, table.pltable th.pl_revstat {
+.pl_revstat, table.pltable th.pl_revstat, table.pltable th.pl_formula {
 	text-align: center;
 }
 .pl_selector, .pl_footselector {
@@ -1210,7 +1211,7 @@ span.pl_rownum {
 	color: #333333;
 }
 td.pl_id, td.pl_topicMatch, td.pl_revpref,
-td.pl_desirability, td.pl_visits {
+td.pl_desirability, td.pl_visits, td.pl_formula {
 	text-align: right;
 	padding-left: 0.4em;
 	padding-right: 0.4em;
@@ -1847,6 +1848,18 @@ div.mail td.mhd {
 .fold18c .fx18, .fold18o .fn18,
 .fold19c .fx19, .fold19o .fn19,
 .fold20c .fx20, .fold20o .fn20,
+.fold21c .fx21, .fold21o .fn21,
+.fold22c .fx22, .fold22o .fn22,
+.fold23c .fx23, .fold23o .fn23,
+.fold24c .fx24, .fold24o .fn24,
+.fold25c .fx25, .fold25o .fn25,
+.fold26c .fx26, .fold26o .fn26,
+.fold27c .fx27, .fold27o .fn27,
+.fold28c .fx28, .fold28o .fn28,
+.fold29c .fx29, .fold29o .fn29,
+.fold30c .fx30, .fold30o .fn30,
+.fold31c .fx31, .fold31o .fn31,
+.fold32c .fx32, .fold32o .fn32,
 .fold50c .fx50, .fold50o .fn50,
 .fold51c .fx51, .fold51o .fn51,
 .fold52c .fx52, .fold52o .fn52,

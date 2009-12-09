@@ -158,6 +158,21 @@ function updateSchema($Conf) {
 	&& $Conf->q("update Settings set data='" . sqlq($pld2) . "' where name='pldisplay_default'")
 	&& $Conf->q("update Settings set value=30 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 30;
+    if ($Conf->settings["allowPaperOption"] == 30
+	&& $Conf->q("DROP TABLE IF EXISTS `Formula`")
+	&& $Conf->q("CREATE TABLE `Formula` (
+  `formulaId` int(11) NOT NULL auto_increment,
+  `name` varchar(200) NOT NULL,
+  `heading` varchar(200) NOT NULL default '',
+  `headingTitle` text NOT NULL default '',
+  `expression` text NOT NULL,
+  `authorView` tinyint(1) NOT NULL default '1',
+  PRIMARY KEY  (`formulaId`),
+  UNIQUE KEY `formulaId` (`formulaId`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8")
+	&& $Conf->q("update Settings set value=31 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 31;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;
