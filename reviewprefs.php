@@ -157,6 +157,17 @@ if (isset($_REQUEST["get"]) && isset($papersel)) {
 }
 
 
+// set options to view
+if (isset($_REQUEST["redisplay"])) {
+    $_SESSION["pfdisplay"] = " ";
+    foreach ($paperListFolds as $n => $v)
+	if (defval($_REQUEST, "show$n"))
+	    $_SESSION["pfdisplay"] .= "$n ";
+    redirectSelf();
+}
+$pldisplay = displayOptionsSet("pfdisplay");
+
+
 // Header and body
 $Conf->header("Review Preferences", "revpref", actionBar());
 
@@ -186,16 +197,6 @@ to sort by that column.  Enter preferences in the text boxes or by following
 the paper links.  You may also upload preferences from a text file; see the
 &ldquo;Download&rdquo; and &ldquo;Upload&rdquo; links below the paper
 list.</p>");
-
-
-// set options to view
-if (isset($_REQUEST["redisplay"])) {
-    $_SESSION["pfdisplay"] = " ";
-    foreach ($paperListFolds as $n => $v)
-	if (defval($_REQUEST, "show$n"))
-	    $_SESSION["pfdisplay"] .= "$v ";
-}
-$pldisplay = displayOptionsSet("pfdisplay");
 
 
 // search
@@ -245,22 +246,22 @@ echo "<tr><td class='lxcaption'><strong>Show:</strong> &nbsp;",
     foldsessionpixel("pl", "pfdisplay", null),
     "</td><td class='lentry'>";
 if ($Conf->blindSubmission() <= BLIND_OPTIONAL) {
-    echo tagg_checkbox("showau", 1, strpos($pldisplay, " 1 ") !== false,
+    echo tagg_checkbox("showau", 1, strpos($pldisplay, " au ") !== false,
 		       array("disabled" => ($Conf->blindSubmission() == BLIND_OPTIONAL && !($pl->headerInfo["authors"] & 1)),
-			     "onchange" => "fold('pl',!this.checked,1)")),
+			     "onchange" => "fold('pl',!this.checked,'au')")),
 	"&nbsp;", tagg_label("Authors"),
 	"<span class='sep'></span>\n";
 }
 if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair) {
-    echo tagg_checkbox("showanonau", 1, strpos($pldisplay, " 2 ") !== false,
+    echo tagg_checkbox("showanonau", 1, strpos($pldisplay, " anonau ") !== false,
 		       array("disabled" => !($pl->headerInfo["authors"] & 2),
-			     "onchange" => "fold('pl',!this.checked,2)")),
+			     "onchange" => "fold('pl',!this.checked,'anonau')")),
 	"&nbsp;", tagg_label($Conf->blindSubmission() == BLIND_OPTIONAL ? "Anonymous authors" : "Authors"),
 	"<span class='sep'></span>\n";
 }
 if ($pl->headerInfo["abstract"]) {
-    echo tagg_checkbox("showabstract", 1, strpos($pldisplay, " 5 ") !== false,
-		       array("onchange" => "foldplinfo(this,5,'abstract')")),
+    echo tagg_checkbox("showabstract", 1, strpos($pldisplay, " abstract ") !== false,
+		       array("onchange" => "foldplinfo(this,'abstract')")),
 	"&nbsp;", tagg_label("Abstracts"),
 	"<br /><div id='abstractloadformresult'></div>\n";
 }

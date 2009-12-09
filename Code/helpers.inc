@@ -1298,25 +1298,34 @@ function unparseScoreAverage($avg, $levelChar) {
 	return sprintf("%0.2f", $avg);
 }
 
+function updatePaperListDisplayOptions($x) {
+    global $paperListFolds;
+    require_once("paperlist.inc");
+    $paperListFoldMap = array_flip($paperListFolds);
+    $a = str_split($x);
+    $x = " ";
+    for ($i = 0; $i < count($a); ++$i) {
+	$score = ord($a[$i]);
+	if (isset($paperListFoldMap[$score]))
+	    $x .= $paperListFoldMap[$score] . " ";
+    }
+    return $x;
+}
+
 function displayOptionsSet($sessionvar, $var = null, $val = null) {
     global $Conf;
     if (isset($_SESSION[$sessionvar]))
 	$x = $_SESSION[$sessionvar];
     else if ($sessionvar == "pldisplay")
-	// 50 == PaperList::FIELD_SCORE
-	$x = $Conf->settingText("pldisplay_default", " 50 ");
+	$x = $Conf->settingText("pldisplay_default", " overAllMerit ");
     else
 	$x = "";
     if ($x == null || $x == "")
 	$x = " ";
 
     // translate old form (character list) into new form (space-separated)
-    if (strpos($x, " ") === false) {
-	$a = str_split($x);
-	$x = " ";
-	for ($i = 0; $i < count($a); ++$i)
-	    $x .= ord($a[$i]) . " ";
-    }
+    if (strpos($x, " ") === false)
+	$x = updatePaperListDisplayOptions($x);
 
     // set $var to $val in list
     if ($var) {

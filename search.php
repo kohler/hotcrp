@@ -916,7 +916,7 @@ if (isset($_REQUEST["redisplay"])) {
     $_SESSION["pldisplay"] = " ";
     foreach ($paperListFolds as $n => $v)
 	if (defval($_REQUEST, "show$n", 0))
-	    $_SESSION["pldisplay"] .= $v . " ";
+	    $_SESSION["pldisplay"] .= $n . " ";
 }
 displayOptionsSet("pldisplay");
 if (defval($_REQUEST, "scoresort") == "M")
@@ -932,7 +932,7 @@ if (isset($_REQUEST["redisplay"]))
 // save display options
 if (isset($_REQUEST["savedisplayoptions"]) && $Me->privChair) {
     $while = "while saving display options";
-    if ($_SESSION["pldisplay"] != PaperList::SCORE_DISPLAY_OPTIONS) {
+    if ($_SESSION["pldisplay"] != " overAllMerit ") {
 	$pldisplay = explode(" ", trim($_SESSION["pldisplay"]));
 	sort($pldisplay);
 	$_SESSION["pldisplay"] = " " . ltrim(join(" ", $pldisplay) . " ");
@@ -958,7 +958,7 @@ if (defval($_REQUEST, "ajax"))
 // set display options, including forceShow if chair
 $pldisplay = $_SESSION["pldisplay"];
 if ($Me->privChair) {
-    if (strpos($pldisplay, " " . $paperListFolds["force"] . " ") !== false)
+    if (strpos($pldisplay, " force ") !== false)
 	$_REQUEST["forceShow"] = 1;
     else
 	unset($_REQUEST["forceShow"]);
@@ -1010,15 +1010,13 @@ $tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
 $displayOptions = array();
 
 function displayOptionCheckbox($type, $title, $opt = array()) {
-    global $displayOptions, $paperListFolds, $pldisplay;
-    $foldnum = defval($paperListFolds, $type, -1);
+    global $displayOptions, $pldisplay;
     $checked = (defval($_REQUEST, "show$type")
-		|| ($foldnum >= 0
-		    && strpos($pldisplay, " $foldnum ") !== false));
+		|| strpos($pldisplay, " $type ") !== false);
     $loadresult = "";
 
     if (!isset($opt["onchange"])) {
-	$opt["onchange"] = "foldplinfo(this,$foldnum,'$type')";
+	$opt["onchange"] = "foldplinfo(this,'$type')";
 	$loadresult = "<div id='${type}loadformresult'></div>";
     } else
 	$loadresult = "<div></div>";
@@ -1041,14 +1039,14 @@ if ($pl) {
 
     // Authors group
     if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAllAuthors) {
-	$onchange = "fold('pl',!this.checked,1)";
+	$onchange = "fold('pl',!this.checked,'au')";
 	if ($viewAllAuthors)
-	    $onchange .= ";fold('pl',!this.checked,2)";
+	    $onchange .= ";fold('pl',!this.checked,'anonau')";
 	if ($Me->privChair)
 	    $onchange .= ";foldplinfo_extra()";
 	displayOptionCheckbox("au", "Authors", array("id" => "showau", "onchange" => $onchange, "unfold" => true));
     } else if ($Conf->blindSubmission() > BLIND_OPTIONAL && $Me->privChair) {
-	$onchange = "fold('pl',!this.checked,2);foldplinfo_extra()";
+	$onchange = "fold('pl',!this.checked,'anonau');foldplinfo_extra()";
 	displayOptionCheckbox("anonau", "Authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2)), "unfold" => true));
     }
     if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAllAuthors
@@ -1056,7 +1054,7 @@ if ($pl) {
 	displayOptionCheckbox("aufull", "Full author info");
     if ($Conf->blindSubmission() == BLIND_OPTIONAL && !$viewAllAuthors
 	&& $Me->privChair) {
-	$onchange = "fold('pl',!this.checked,2);foldplinfo_extra()";
+	$onchange = "fold('pl',!this.checked,'anonau');foldplinfo_extra()";
 	displayOptionCheckbox("anonau", "Anonymous authors", array("onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2))));
     }
     if ($pl->headerInfo["collab"])
@@ -1103,7 +1101,7 @@ if ($pl) {
     }
 
     if ($pl->anySelector)
-	displayOptionCheckbox("rownum", "Row numbers", array("onchange" => "fold('pl',!this.checked,6)", "unfold" => true));
+	displayOptionCheckbox("rownum", "Row numbers", array("onchange" => "fold('pl',!this.checked,'rownum')", "unfold" => true));
 }
 
 
@@ -1243,7 +1241,7 @@ if ($pl && $pl->count > 0) {
 . $_SESSION["scoresort"] . "' /></div></form>");
 	    $Conf->footerScript("function foldplinfo_extra() { fold('redisplay', 0, 5); }");
 	    // strings might be in different orders, so sort before comparing
-	    $pld = explode(" ", trim($Conf->settingText("pldisplay_default", PaperList::SCORE_DISPLAY_OPTIONS)));
+	    $pld = explode(" ", trim($Conf->settingText("pldisplay_default", " overAllMerit ")));
 	    sort($pld);
 	    if ($_SESSION["pldisplay"] != " " . ltrim(join(" ", $pld) . " ")
 		|| $_SESSION["scoresort"] != $Conf->settingText("scoresort_default", $defaultScoreSort))
@@ -1261,7 +1259,7 @@ if ($pl && $pl->count > 0) {
 	    echo "\n<div class='g'></div>",
 		tagg_checkbox("showforce", 1, !!defval($_REQUEST, "forceShow"),
 			      array("id" => "showforce",
-				    "onchange" => "fold('pl',!this.checked,20)")),
+				    "onchange" => "fold('pl',!this.checked,'force')")),
 		"&nbsp;", tagg_label("Override conflicts", "showforce"),
 		"<br />\n";
 

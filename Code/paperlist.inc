@@ -644,7 +644,7 @@ class PaperList extends BaseList {
     }
 
     function wrapConflict($text) {
-	return "<span class='fn20'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"javascript:void fold('pl',0,20)\">Show</a></span><span class='fx20'>$text</span>";
+	return "<span class='fn20'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"javascript:void fold('pl',0,'force')\">Show</a></span><span class='fx20'>$text</span>";
     }
 
     function contentEmpty($fieldId, $row) {
@@ -1304,7 +1304,7 @@ class PaperList extends BaseList {
 	$pldisplay = defval($_SESSION, $this->foldtype . "display", "");
 	foreach ($paperListFolds as $n => $foldnum) {
 	    if (!defval($_REQUEST, "show$n")
-		&& strpos($pldisplay, " $foldnum ") === false)
+		&& strpos($pldisplay, " $n ") === false)
 		$this->folds[$n] = array();
 	    else
 		$this->folds[$n] = false;
@@ -1492,12 +1492,14 @@ class PaperList extends BaseList {
 	}
 
 	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname);
+	$foldmap = array();
 	// Ajax load forms for extra fields
 	foreach ($paperListFolds as $k => $n) {
 	    if ($n >= 50 && !isset($fieldDef[$n]))
 		continue;
 	    if ($n >= 50 ? isset($fieldDef[$n]) : isset($foldinfo[$n])) {
 		$x .= " fold$n" . ($this->folds[$k] !== false ? "c" : "o");
+		$foldmap[] = "\"$k\":$n";
 		if ($this->folds[$k] !== false && count($this->folds[$k])) {
 		    $extra = "";
 		    if ($k == "tags" && $this->search->orderTag)
@@ -1507,20 +1509,32 @@ class PaperList extends BaseList {
 	    }
 	}
 	// full authorship is a special case
-	if (isset($foldinfo[1]) || isset($foldinfo[2]))
+	if (isset($foldinfo[1]))
+	    $foldmap[] = "\"au\":1";
+	if (isset($foldinfo[2]))
+	    $foldmap[] = "\"anonau\":2";
+	if (isset($foldinfo[1]) || isset($foldinfo[2])) {
+	    $foldmap[] = "\"aufull\":16";
 	    $this->_addAjaxLoadForm("aufull", "authors", $ids,
 				    "<input type='hidden' id='aufullform_unfold' name='full' value='' />");
+	}
 	// total folding, row number folding
 	if (!$unfolded)
 	    $x .= " fold3c";
-	if ($this->anySelector)
-	    $x .= " fold6" . (strpos($pldisplay, " 6 ") === false ? "c" : "o");
-	if ($this->contact->privChair)
+	if ($this->anySelector) {
+	    $foldmap[] = "\"rownum\":6";
+	    $x .= " fold6" . (strpos($pldisplay, " rownum ") === false ? "c" : "o");
+	}
+	if ($this->contact->privChair) {
+	    $foldmap[] = "\"force\":20";
 	    $x .= " fold20" . (defval($_REQUEST, "forceShow") ? "o" : "c");
+	}
 	if (count($foldinfo) || !$unfolded || $this->anySelector
 	    || $this->contact->privChair)
 	    $x .= "\" id=\"foldpl";
 	$x .= "\">\n";
+	if (count($foldmap) > 0)
+	    $Conf->footerScript("foldmap.pl={" . join(",", $foldmap) . "};");
 
 	$t .= "<img id='foldplactsession' alt='' src='sessionvar$ConfSiteSuffix?var=foldplact&amp;val=" . defval($_SESSION, "foldplact", 1) . "&amp;cache=1' width='1' height='1' />";
 
@@ -1537,22 +1551,22 @@ class PaperList extends BaseList {
 
 	    $titleextra = "";
 	    if (!$unfolded)
-		$titleextra .= "<span class='sep'></span><a class='fn3' href='javascript:void fold(\"pl\",0,3)'>Show all papers</a>";
+		$titleextra .= "<span class='sep'></span><a class='fn3' href=\"javascript:void fold('pl',0,3)\">Show all papers</a>";
 	    if ((isset($foldinfo[1]) || isset($foldinfo[2]))
 		&& $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
 		if ($Conf->blindSubmission() == BLIND_NEVER)
-		    $titleextra .= "<a class='fn1' href='javascript:void fold(\"pl\",0,1)'>Show authors</a><a class='fx1' href='javascript:void fold(\"pl\",1,1)'>Hide authors</a>";
-		else if ($this->contact->privChair && isset($foldinfo[2]) && !$foldinfo[1])
-		    $titleextra .= "<a class='fn2' href='javascript:void fold(\"pl\",0,2)'>Show authors</a><a class='fx2' href='javascript:void fold(\"pl\",1,2)'>Hide authors</a>";
+		    $titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
+		else if ($this->contact->privChair && isset($foldinfo[2]) && !isset($foldinfo[1]))
+		    $titleextra .= "<a class='fn2' href=\"javascript:void fold('pl',0,'anonau')\">Show authors</a><a class='fx2' href=\"javascript:void fold('pl',1,'anonau')\">Hide authors</a>";
 		else if ($this->contact->privChair && isset($foldinfo[2]))
-		    $titleextra .= "<a class='fn1' href='javascript:void fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='fx1 fn2' href='javascript:void fold(\"pl\",0,2)'>Show all authors</a><a class='fx2' href='javascript:fold(\"pl\",1,1);void fold(\"pl\",1,2)'>Hide authors</a>";
+		    $titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show non-anonymous authors</a><a class='fx1 fn2' href=\"javascript:void fold('pl',0,'anonau')\">Show all authors</a><a class='fx2' href=\"javascript:fold('pl',1,'au');void fold('pl',1,'anonau')\">Hide authors</a>";
 		else
-		    $titleextra .= "<a class='fn1' href='javascript:void fold(\"pl\",0,1)'>Show non-anonymous authors</a><a class='fx1' href='javascript:void fold(\"pl\",1,1)'>Hide authors</a>";
+		    $titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show non-anonymous authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
 	    }
 	    if (isset($foldinfo[4]) && $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
-		$titleextra .= "<a class='fn4' href='javascript:void foldplinfo(0,4,\"tags\")'>Show tags</a><a class='fx4' href='javascript:void foldplinfo(1,4,\"tags\")'>Hide tags</a><span id='tagsloadformresult'></span>";
+		$titleextra .= "<a class='fn4' href='javascript:void foldplinfo(0,\"tags\")'>Show tags</a><a class='fx4' href='javascript:void foldplinfo(1,\"tags\")'>Hide tags</a><span id='tagsloadformresult'></span>";
 	    }
 
 	    if ($this->sortable && $url) {

@@ -69,24 +69,34 @@ function hiliter(which, off) {
 	elt.className = elt.className + " alert";
 }
 
-var foldsession_unique = 1;
-function fold(which, dofold, foldnum) {
-    var i, elt, selt, opentxt, closetxt, foldnumid = (foldnum ? foldnum : "");
+var foldmap = {}, foldsession_unique = 1;
+function fold(which, dofold, foldtype) {
+    var i, elt, selt, opentxt, closetxt, foldnum, foldnumid;
     if (which instanceof Array) {
 	for (i = 0; i < which.length; i++)
-	    fold(which[i], dofold, foldnum);
+	    fold(which[i], dofold, foldtype);
+
     } else if (typeof which == "string") {
-	elt = e('fold' + which);
+	foldnum = foldtype;
+	if (foldmap[which] != null && foldmap[which][foldtype] != null)
+	    foldnum = foldmap[which][foldtype];
+	foldnumid = foldnum ? foldnum : "";
+
+	elt = e("fold" + which);
 	fold(elt, dofold, foldnum);
+
 	// check for session
 	if ((selt = e('foldsession.' + which + foldnumid)))
 	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0) + '&u=' + foldsession_unique++);
 	else if ((selt = e('foldsession.' + which)))
-	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0) + '&sub=' + foldnumid + '&u=' + foldsession_unique++);
+	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0) + '&sub=' + (foldtype || foldnumid) + '&u=' + foldsession_unique++);
+
 	// check for focus
 	if (!dofold && (selt = e("fold" + which + foldnumid + "_d")))
 	    selt.focus();
+
     } else if (which) {
+	foldnumid = foldtype ? foldtype : "";
 	opentxt = "fold" + foldnumid + "o";
 	closetxt = "fold" + foldnumid + "c";
 	if (dofold == null && which.className.indexOf(opentxt) >= 0)
@@ -102,6 +112,7 @@ function fold(which, dofold, foldnum) {
 	    } catch (err) {
 	    }
     }
+
     return false;
 }
 
@@ -637,7 +648,7 @@ var plinfo_title = {
     aufull: "Authors"
 };
 var plinfo_needload = { };
-function foldplinfo(dofold, foldnum, type, which) {
+function foldplinfo(dofold, type, which) {
     var elt, i, divs, h6, callback;
 
     // fold
@@ -645,8 +656,7 @@ function foldplinfo(dofold, foldnum, type, which) {
 	which = "pl";
     if (dofold.checked !== undefined)
 	dofold = !dofold.checked;
-    if (foldnum >= 0)
-	fold(which, dofold, foldnum);
+    fold(which, dofold, type);
     if (type == "aufull" && !dofold && (elt = e("showau")) && !elt.checked)
 	elt.click();
     if (window.foldplinfo_extra)
@@ -657,14 +667,14 @@ function foldplinfo(dofold, foldnum, type, which) {
 	h6 = "";
 
     // may need to load information by ajax
-    if ((!dofold || foldnum < 0 || type == "aufull") && plinfo_needload[type]) {
+    if ((!dofold || type == "aufull") && plinfo_needload[type]) {
 	// set up "loading" display
-	if (foldnum >= 0 && (elt = e("fold" + which))) {
+	if ((elt = e("fold" + which))) {
 	    divs = elt.getElementsByTagName("div");
 	    for (i = 0; i < divs.length; i++)
 		if (divs[i].id.substr(0, type.length) == type) {
 		    if (divs[i].className == "")
-			divs[i].className = "fx" + foldnum;
+			divs[i].className = "fx" + foldmap[which][type];
 		    divs[i].innerHTML = h6 + " Loading";
 		}
 	}
@@ -685,10 +695,8 @@ function foldplinfo(dofold, foldnum, type, which) {
 			else
 			    elt.innerHTML = h6 + rv[i];
 		    }
-		if (foldnum >= 0) {
-		    plinfo_needload[type] = false;
-		    fold(which, dofold, foldnum);
-		}
+		plinfo_needload[type] = false;
+		fold(which, dofold, type);
 	    });
     }
 

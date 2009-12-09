@@ -152,6 +152,12 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table OptionType add `sortOrder` tinyint(1) NOT NULL default '0'")
 	&& $Conf->q("update Settings set value=29 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 29;
+    if ($Conf->settings["allowPaperOption"] == 29
+	&& ($pld = $Conf->settingText("pldisplay_default"))
+	&& ($pld2 = updatePaperListDisplayOptions($pld)) != $pld
+	&& $Conf->q("update Settings set data='" . sqlq($pld2) . "' where name='pldisplay_default'")
+	&& $Conf->q("update Settings set value=30 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 30;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;
