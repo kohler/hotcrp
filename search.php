@@ -159,7 +159,7 @@ if ($getaction == "authors" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $result = $Conf->qe($q, "while selecting papers");
     $response = array();
     $matchPreg = PaperList::sessionMatchPreg("authorInformation");
-    $full = defval($_REQUEST, "full", 0);
+    $full = defval($_REQUEST, "aufull", 0);
 
     $pldisplay = displayOptionsSet("pldisplay", "aufull", $full);
 

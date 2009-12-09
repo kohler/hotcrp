@@ -74,6 +74,7 @@ class PaperSearch {
     var $privChair;
     var $amPC;
     var $limitName;
+    var $qt;
     var $allowAuthor;
     var $fields;
     var $orderTag;
@@ -163,6 +164,7 @@ class PaperSearch {
 	    $this->fields["re"] = 1;
 	if ($this->amPC && $qtype == "tag")
 	    $this->fields["tag"] = 1;
+	$this->qt = ($qtype == "n" ? "" : $qtype);
 
 	// the query itself
 	$this->q = trim(defval($opt, "q", ""));

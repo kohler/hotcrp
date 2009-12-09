@@ -1264,17 +1264,26 @@ class PaperList extends BaseList {
 	}
     }
 
-    function _addAjaxLoadForm($formname, $getname, $pap, $extra = "") {
+    function _addAjaxLoadForm($pap, $extra = "") {
 	global $Conf, $ConfSiteSuffix;
-	$Conf->footerHtml("<div>"
-	    . "<form id='${formname}loadform' method='post'"
-	    . " action='search$ConfSiteSuffix?get=$getname&amp;ajax=1"
-	    . $this->paperLinkArgs . "' accept-charset='UTF-8'>"
-	    . "<div class='inform'><input type='hidden' name='pap'"
-	    . " value='" . join(" ", $pap) . "' />"
-	    . $extra
-	    . "</div></form></div>");
-	$Conf->footerScript("plinfo_needload.$formname=true");
+	$t = "<div><form id='plloadform' method='post' action='search$ConfSiteSuffix?ajax=1" . $this->paperLinkArgs . "' accept-charset='UTF-8'>"
+	    . "<div class='inform'>";
+	if (($s = $this->search)) {
+	    if ($s->qx)
+		$t .= "<input type='hidden' name='qx' value=\"" . htmlspecialchars($s->qx) . "\" />";
+	    if ($s->qo)
+		$t .= "<input type='hidden' name='qo' value=\"" . htmlspecialchars($s->qx) . "\" />";
+	    if ($s->q || (!$s->qx && !$s->qo))
+		$t .= "<input type='hidden' name='q' value=\"" . htmlspecialchars($s->q) . "\" />";
+	    if ($s->qt)
+		$t .= "<input type='hidden' name='qt' value=\"" . htmlspecialchars($s->qt) . "\" />";
+	    $t .= "<input type='hidden' name='t' value=\"" . htmlspecialchars($s->limitName) . "\" />";
+	}
+	$t .= "<input type='hidden' name='pap' value='" . join(" ", $pap) . "' />"
+	    . "<input id='plloadform_get' type='hidden' name='get' value='' />"
+	    . "<input id='plloadform_aufull' type='hidden' name='aufull' value='" . ($this->aufull ? "1" : "") . "' />"
+	    . "</div></form></div>";
+	$Conf->footerHtml($t);
     }
 
     function text($listname, $me) {
@@ -1506,17 +1515,14 @@ class PaperList extends BaseList {
 
 	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname);
 	$foldmap = array();
+	$needloadmap = array();
 	// Ajax load forms for extra fields
 	foreach ($paperListFolds as $k => $n) {
 	    if (isset($foldinfo[$n])) {
 		$x .= " fold$n" . ($folds[$k] !== false ? "c" : "o");
 		$foldmap[] = "\"$k\":$n";
-		if ($folds[$k] !== false && count($folds[$k])) {
-		    $extra = "";
-		    if ($k == "tags" && $this->search->orderTag)
-			$extra = "<input type='hidden' name='highlight' value=\"" . htmlspecialchars($this->search->orderTag) . "\" />";
-		    $this->_addAjaxLoadForm($k, $k, $folds[$k], $extra);
-		}
+		if ($folds[$k] !== false && count($folds[$k]))
+		    $needloadmap[] = "\"$k\":true";
 	    }
 	}
 	// full authorship is a special case
@@ -1526,8 +1532,7 @@ class PaperList extends BaseList {
 	    $foldmap[] = "\"anonau\":2";
 	if (isset($foldinfo[1]) || isset($foldinfo[2])) {
 	    $foldmap[] = "\"aufull\":16";
-	    $this->_addAjaxLoadForm("aufull", "authors", $ids,
-				    "<input type='hidden' id='aufullform_unfold' name='full' value='' />");
+	    $needloadmap[] = "\"aufull\":true";
 	}
 	// total folding, row number folding
 	if (!$unfolded)
@@ -1546,6 +1551,10 @@ class PaperList extends BaseList {
 	$x .= "\">\n";
 	if (count($foldmap) > 0)
 	    $Conf->footerScript("foldmap.pl={" . join(",", $foldmap) . "};");
+	if (count($needloadmap) > 0) {
+	    $Conf->footerScript("plinfo_needload={" . join(",", $needloadmap) . "};");
+	    $this->_addAjaxLoadForm($ids);
+	}
 
 	$t .= "<img id='foldplactsession' alt='' src='sessionvar$ConfSiteSuffix?var=foldplact&amp;val=" . defval($_SESSION, "foldplact", 1) . "&amp;cache=1' width='1' height='1' />";
 

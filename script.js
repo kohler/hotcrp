@@ -6,6 +6,14 @@ function e(id) {
     return document.getElementById(id);
 }
 
+function e_value(id, value) {
+    var elt = e(id);
+    if (value == null)
+	return elt ? elt.value : undefined;
+    else if (elt)
+	elt.value = value;
+}
+
 function hotcrpLoad(servtime, servzone, hr24) {
     var s, d, hr, elt = e("usertime");
     if (elt && Math.abs) {
@@ -290,8 +298,7 @@ function authorfold(prefix, relative, n) {
 	    break;
     // set number displayed
     if (relative >= 0) {
-	if ((elt = e(prefix + "count")))
-	    elt.value = n;
+	e_value(prefix + "count", n);
 	numauthorfold[prefix] = n;
     }
     // IE won't actually do the fold unless we yell at it
@@ -579,14 +586,21 @@ Miniajax.onload = function(formname) {
     if (req)
 	fold(e(formname), 1, 7);
 }
-Miniajax.submit = function(formname, callback, timeout) {
-    var form = e(formname), req = Miniajax.newRequest();
+Miniajax.submit = function (formname, callback, timeout) {
+    var form, req = Miniajax.newRequest(), resultname;
+    if (typeof formname !== "string") {
+	resultname = formname[1];
+	formname = formname[0];
+    } else
+	resultname = formname;
+
+    form = e(formname);
     if (!form || !req || form.method != "post") {
 	fold(form, 0, 7);
 	return true;
     }
-    var resultelt = e(formname + "result") || {};
-    var checkelt = e(formname + "check");
+    var resultelt = e(resultname + "result") || {};
+    var checkelt = e(resultname + "check");
     if (!callback)
 	callback = function(rv) {
 	    resultelt.innerHTML = rv.response;
@@ -679,12 +693,13 @@ function foldplinfo(dofold, type, which) {
 		}
 	}
 
-	// maybe set
-	if ((elt = e(type + "form_unfold")))
-	    elt.value = (dofold ? "" : "1");
-
 	// initiate load
-	Miniajax.submit(type + "loadform", function(rv) {
+	if (type == "aufull") {
+	    e_value("plloadform_get", "authors");
+	    e_value("plloadform_aufull", (dofold ? "" : "1"));
+	} else
+	    e_value("plloadform_get", type);
+	Miniajax.submit(["plloadform", type + "loadform"], function (rv) {
 		var elt, eltx;
 		if ("type" in rv)
 		    type = rv["type"];
