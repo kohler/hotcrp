@@ -61,7 +61,6 @@ class PaperList extends BaseList {
     var $sortAverage;
     var $reverseSort;
     var $sortable;
-    var $specialSortable;
     var $count;
     var $accepted;
     var $needFinalize;
@@ -112,7 +111,6 @@ class PaperList extends BaseList {
 	else
 	    $this->sortField = null;
 	$this->sortable = $sortable;
-	$this->specialSortable = null;
 
 	$this->paperLink = "";
 	$this->paperLinkArgs = "";
@@ -470,12 +468,7 @@ class PaperList extends BaseList {
 	    return "<span class='hastitle' title='\"1/2\" means 1 complete review out of 2 assigned reviews'>#&nbsp;Reviews</span>";
 	case self::FIELD_SELECTOR:
 	case self::FIELD_SELECTOR_ON:
-	    if ($this->specialSortable == self::FIELD_TAGINDEX)
-		return "<span class='hastitle' title='Sort by tag order'>#</span>";
-	    else if ($this->specialSortable == self::FIELD_PIDARRAY)
-		return "<span class='hastitle' title='Sort by search term order'>#</span>";
-	    else
-		return ($ordinal ? "&nbsp;" : "");
+	    return ($ordinal ? "&nbsp;" : "");
 	case self::FIELD_SELECTOR_CONFLICT:
 	    return "Conflict?";
 	case self::FIELD_ASSIGN_REVIEW:
@@ -1340,18 +1333,18 @@ class PaperList extends BaseList {
 
 	// paper list query?
 	$pidarray = null;
-	$this->specialSortable = false;
+	$specialSortable = false;
 	if ($this->search->orderTag) {
 	    $queryOptions["tagIndex"] = $this->search->orderTag;
 	    if ($this->search->orderReverse)
 		$this->reverseSort = !$this->reverseSort;
-	    $this->specialSortable = self::FIELD_TAGINDEX;
+	    $specialSortable = self::FIELD_TAGINDEX;
 	} else if (($pidarray = $this->search->simplePaperList()) !== null)
-	    $this->specialSortable = self::FIELD_PIDARRAY;
+	    $specialSortable = self::FIELD_PIDARRAY;
 	if ($this->sortField && !in_array($this->sortField, $baseFieldId))
 	    $this->sortField = null;
-	if (!$this->sortField && $this->specialSortable)
-	    $this->sortField = $this->specialSortable;
+	if (!$this->sortField && $specialSortable)
+	    $this->sortField = $specialSortable;
 
 	// get field array
 	$fieldDef = array();
@@ -1602,18 +1595,24 @@ class PaperList extends BaseList {
 			$x .= " fx" . $fdef->foldnum;
 		    $x .= "\">";
 		    $ftext = $this->header($fieldId, $ord++);
-		    if ($this->sortField == null && $fieldId < 10)
-			$this->sortField = $fieldId;
+
 		    $sortableSelector = $fieldId >= self::FIELD_SELECTOR
 			&& $fieldId <= self::FIELD_LAST_SELECTOR
-			&& $this->specialSortable;
+			&& $specialSortable;
+		    if ($sortableSelector && $specialSortable == self::FIELD_TAGINDEX)
+			$ftext = "<span class='hastitle' title='Sort by tag order'>#</span>";
+		    else if ($sortableSelector && $specialSortable == self::FIELD_PIDARRAY)
+			$ftext = "<span class='hastitle' title='Sort by search term order'>#</span>";
+
+		    if ($this->sortField == null && $fieldId < 10)
+			$this->sortField = $fieldId;
 		    if ($fieldId == $this->sortField
-			|| ($sortableSelector && $this->sortField == $this->specialSortable))
+			|| ($sortableSelector && $this->sortField == $specialSortable))
 			$x .= "<a class='pl_sort_def" . ($this->reverseSort ? "_rev" : "") . "' title='Reverse sort' href=\"" . $sortUrl . $this->sortField . ($this->reverseSort ? "N" : "R") . "\">" . $ftext . "</a>";
 		    else if ($fdef->sortable)
 			$x .= $q . $fieldId . "\">" . $ftext . "</a>";
 		    else if ($sortableSelector)
-			$x .= $q . $this->specialSortable . "\">" . $ftext . "</a>";
+			$x .= $q . $specialSortable . "\">" . $ftext . "</a>";
 		    else
 			$x .= $ftext;
 		    if ($titleextra && $fdef->cssname == "title") {
