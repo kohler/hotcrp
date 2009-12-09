@@ -77,7 +77,7 @@ class PaperList extends BaseList {
     var $extraText;
     var $foldtype;
     var $unfolded;
-    var $folds;
+    var $aufull;
     var $paperLink;
     var $paperLinkArgs;
     var $showConflict;
@@ -133,34 +133,34 @@ class PaperList extends BaseList {
 	$this->formulas = array();
     }
 
-    function selector($fieldId, &$queryOptions) {
+    function selector($fieldId, &$queryOptions, $folded) {
 	global $Conf, $reviewScoreNames, $paperListFields, $paperListFormulas;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_TOPIC_INTEREST:
 	    if (!count($this->rf->topicName))
 		return false;
-	    $queryOptions['topicInterestScore'] = 1;
+	    $queryOptions["topicInterestScore"] = 1;
 	    break;
 	case self::FIELD_TOPIC_NAMES:
 	    if (!count($this->rf->topicName))
 		return false;
-	    $queryOptions['topics'] = 1;
+	    $queryOptions["topics"] = 1;
 	    break;
 	case self::FIELD_OPT_TOPIC_NAMES:
 	    if (!count($this->rf->topicName))
 		return false;
-	    if ($this->folds["topics"] === false)
+	    if (!$folded)
 		$queryOptions["topics"] = 1;
 	    break;
 	case self::FIELD_ALL_REVIEWER_NAMES:
 	    if (!$this->contact->privChair)
 		return false;
-	    $queryOptions['reviewList'] = 1;
+	    $queryOptions["reviewList"] = 1;
 	    break;
 	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
 	    if (!$this->contact->privChair)
 		return false;
-	    if ($this->folds["reviewers"] === false)
+	    if (!$folded)
 		$queryOptions["reviewList"] = 1;
 	    break;
 	case self::FIELD_REVIEWER_PREFERENCE:
@@ -193,8 +193,8 @@ class PaperList extends BaseList {
 	case self::FIELD_SCORE:
 	    if (!$this->scoresOk)
 		return false;
-	    $score = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
-	    if ($this->folds[$score] === false) {
+	    if (!$folded) {
+		$score = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
 		$revView = $this->contact->viewReviewFieldsScore(null, true);
 		if ($this->rf->authorView[$score] <= $revView)
 		    return false;
@@ -241,7 +241,7 @@ class PaperList extends BaseList {
 	case self::FIELD_TAGS:
 	    if (!$this->contact->isPC)
 		return false;
-	    if ($this->folds["tags"] === false) {
+	    if (!$folded) {
 		require_once("tags.inc");
 		$queryOptions["tags"] = 1;
 	    }
@@ -258,7 +258,7 @@ class PaperList extends BaseList {
 	case self::FIELD_OPT_PC_CONFLICTS:
 	    if (!$this->contact->privChair)
 		return false;
-	    if ($this->folds["pcconf"] === false)
+	    if (!$folded)
 		$queryOptions["allConflictType"] = 1;
 	    break;
 	}
@@ -942,8 +942,7 @@ class PaperList extends BaseList {
 	    return $this->_joinMatches($matches);
 	case self::FIELD_OPT_AUTHORS:
 	    $highlight = defval($this->search->matchPreg, "authorInformation", "");
-	    return self::authorInfo($row, $this->contact,
-				    $this->folds["aufull"] === false,
+	    return self::authorInfo($row, $this->contact, $this->aufull,
 				    $highlight);
 	case self::FIELD_OPT_ABSTRACT:
 	    if ($row->abstract == "")
@@ -1313,15 +1312,16 @@ class PaperList extends BaseList {
 	    $baseFieldId[0] = self::FIELD_SELECTOR_ON;
 
 	// check what is folded
-	$this->folds = array();
+	$folds = array();
 	$pldisplay = defval($_SESSION, $this->foldtype . "display", "");
 	foreach ($paperListFolds as $n => $foldnum) {
 	    if (!defval($_REQUEST, "show$n")
 		&& strpos($pldisplay, " $n ") === false)
-		$this->folds[$n] = array();
+		$folds[$n] = array();
 	    else
-		$this->folds[$n] = false;
+		$folds[$n] = false;
 	}
+	$this->aufull = $folds["aufull"] === false;
 
 	// check paper link destination
 	if (isset($_REQUEST["linkto"]) && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
@@ -1358,11 +1358,14 @@ class PaperList extends BaseList {
 	$ncol = 0;
 	$this->unfolded = true;
 	foreach ($baseFieldId as $fid) {
-	    if ($this->selector($fid, $queryOptions) === false)
+	    if (!($fdef = defval($paperListFields, $fid)))
 		continue;
-	    $fieldDef[$fid] = $paperListFields[$fid];
-	    if ($paperListFields[$fid]->type == 1)
-		$ncol++;
+	    $folded = $fdef->foldname && defval($folds, $fdef->foldname, false) !== false;
+	    if ($this->selector($fid, $queryOptions, $folded)) {
+		$fieldDef[$fid] = $fdef;
+		if ($fdef->type == 1)
+		    $ncol++;
+	    }
 	}
 	$unfolded = $this->unfolded;
 
@@ -1455,8 +1458,8 @@ class PaperList extends BaseList {
 		}
 		if ($this->contentEmpty($fieldId, $row))
 		    $t .= $td . "\"></td>\n";
-		else if (isset($this->folds[$foldname]) && $this->folds[$foldname] !== false) {
-		    $this->folds[$foldname][] = $row->paperId;
+		else if (isset($folds[$foldname]) && $folds[$foldname] !== false) {
+		    $folds[$foldname][] = $row->paperId;
 		    $t .= $td . "\" id=\"$foldname.$row->paperId\"></td>\n";
 		    $anyData[$fieldId] = 1;
 		} else {
@@ -1478,8 +1481,8 @@ class PaperList extends BaseList {
 			$foldnum = (paperBlind($row) ? 2 : 1);
 		    $foldinfo[$foldnum] = true;
 		}
-		if (isset($this->folds[$foldname]) && $this->folds[$foldname] !== false) {
-		    $this->folds[$foldname][] = $row->paperId;
+		if (isset($folds[$foldname]) && $folds[$foldname] !== false) {
+		    $folds[$foldname][] = $row->paperId;
 		    $tt .= "<div id=\"$foldname.$row->paperId\"></div>";
 		} else {
 		    $c = $this->content($fieldId, $row, $reviewList);
@@ -1513,13 +1516,13 @@ class PaperList extends BaseList {
 	// Ajax load forms for extra fields
 	foreach ($paperListFolds as $k => $n) {
 	    if (isset($foldinfo[$n])) {
-		$x .= " fold$n" . ($this->folds[$k] !== false ? "c" : "o");
+		$x .= " fold$n" . ($folds[$k] !== false ? "c" : "o");
 		$foldmap[] = "\"$k\":$n";
-		if ($this->folds[$k] !== false && count($this->folds[$k])) {
+		if ($folds[$k] !== false && count($folds[$k])) {
 		    $extra = "";
 		    if ($k == "tags" && $this->search->orderTag)
 			$extra = "<input type='hidden' name='highlight' value=\"" . htmlspecialchars($this->search->orderTag) . "\" />";
-		    $this->_addAjaxLoadForm($k, $k, $this->folds[$k], $extra);
+		    $this->_addAjaxLoadForm($k, $k, $folds[$k], $extra);
 		}
 	    }
 	}
