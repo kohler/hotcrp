@@ -1135,8 +1135,6 @@ if ($pl) {
 	echo "<form method='post' action=\"", selfHref(array("selector" => 1), "search$ConfSiteSuffix"), "\" enctype='multipart/formdata' accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck();'><div class='inform'>\n",
 	    "<input id='defaultact' type='hidden' name='defaultact' value='' />",
 	    "<input class='hidden' type='submit' name='default' value='1' />";
-    if (isset($_REQUEST["calc"]))
-	echo "<input type='hidden' name='calc' value=\"", htmlspecialchars($_REQUEST["calc"]), "\" />";
 
     echo $pl_text;
     if ($pl->count == 0 && $_REQUEST["t"] != "s") {
