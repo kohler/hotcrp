@@ -87,7 +87,7 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
 	    $x = htmlspecialchars($prow->abstract);
 	    if ($matchPreg !== "")
 		$x = highlightMatch($matchPreg, $x);
-	    $response["abstract$prow->paperId"] = $x;
+	    $response["abstract.$prow->paperId"] = $x;
 	}
     }
     $response["ok"] = (count($response) > 0);
@@ -146,7 +146,7 @@ if ($getaction == "tags" && isset($papersel) && defval($_REQUEST, "ajax")) {
 	    $t = "";
 	else
 	    $t = tagsToText($prow, $csb, $Me, false, $highlight);
-	$response["tags$prow->paperId"] = $t;
+	$response["tags.$prow->paperId"] = $t;
     }
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
@@ -167,7 +167,7 @@ if ($getaction == "authors" && isset($papersel) && defval($_REQUEST, "ajax")) {
 	if (!$Me->canViewPaper($prow, $whyNot))
 	    $Conf->errorMsg(whyNotText($whyNot, "view"));
 	else
-	    $response["authors$prow->paperId"] = PaperList::authorInfo($prow, $Me, $full, $matchPreg);
+	    $response["authors.$prow->paperId"] = PaperList::authorInfo($prow, $Me, $full, $matchPreg);
     }
     $response["ok"] = (count($response) > 0);
     $response["type"] = "authors";
@@ -191,7 +191,7 @@ if ($getaction == "collab" && isset($papersel) && defval($_REQUEST, "ajax")) {
 		$x .= ($x === "" ? "" : ", ") . htmlspecialchars(trim($c));
 	    if ($matchPreg !== "")
 		$x = highlightMatch($matchPreg, $x);
-	    $response["collab$prow->paperId"] = $x;
+	    $response["collab.$prow->paperId"] = $x;
 	}
     }
     $response["ok"] = (count($response) > 0);
@@ -216,7 +216,7 @@ if ($getaction == "reviewers" && isset($papersel) && defval($_REQUEST, "ajax")
     $conflict = array();
     while (($xrow = edb_orow($result)))
 	if ($xrow->lastName) {
-	    $x = "reviewers" . $xrow->paperId;
+	    $x = "reviewers." . $xrow->paperId;
 	    if (isset($response[$x]))
 		$response[$x] .= ", ";
 	    else
@@ -546,7 +546,7 @@ if ($getaction == "pcconf" && isset($papersel) && $Me->privChair) {
 	    foreach ($pcm as $pc)
 		if (strpos($x, " $pc->contactId ") !== false)
 		    $y[] = contactHtml($pc->firstName, $pc->lastName);
-	    $response["pcconf$row[0]"] = join(", ", $y);
+	    $response["pcconf.$row[0]"] = join(", ", $y);
 	}
 	cleanAjaxResponse($response, $getaction);
 	$response["ok"] = (count($response) > 0);
@@ -586,7 +586,7 @@ if (($getaction == "lead" || $getaction == "shepherd")
 	$response = array();
 	while (($row = edb_orow($result)))
 	    if ($Me->actPC($row, true) || ($shep && $Me->canViewDecision($row)))
-		$response[$getaction . $row->paperId] = contactNameHtml($row);
+		$response["$getaction.$row->paperId"] = contactNameHtml($row);
 	cleanAjaxResponse($response, $getaction);
 	$response["ok"] = (count($response) > 0);
 	$Conf->ajaxExit($response);
@@ -688,7 +688,7 @@ if ($getaction && defval($paperListFolds, $getaction) >= 50
 	$reviewField = $rf->reviewFields[$getaction];
 	while (($row = edb_orow($result))) {
 	    if ($Me->canViewReview($row, null) && $row->$itemName)
-		$response[$getaction . $row->paperId] = $Conf->textValuesGraph($row->$itemName, $scoreMax, 1, defval($row, $getaction), $reviewField);
+		$response["$getaction.$row->paperId"] = $Conf->textValuesGraph($row->$itemName, $scoreMax, 1, defval($row, $getaction), $reviewField);
 	}
     }
     cleanAjaxResponse($response, $getaction);
@@ -756,7 +756,7 @@ if ($getaction == "topics" && isset($papersel)) {
 	$response = array();
 	while ($row = edb_orow($result))
 	    if ($Me->canViewPaper($row))
-		$response["topics$row->paperId"] = join(", ", $rf->webTopicArray($row->topicIds));
+		$response["topics.$row->paperId"] = join(", ", $rf->webTopicArray($row->topicIds));
 	cleanAjaxResponse($response, "topics");
 	$response["ok"] = (count($response) > 0);
 	$Conf->ajaxExit($response);

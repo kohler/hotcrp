@@ -1457,7 +1457,7 @@ class PaperList extends BaseList {
 		    $t .= $td . "\"></td>\n";
 		else if (isset($this->folds[$foldname]) && $this->folds[$foldname] !== false) {
 		    $this->folds[$foldname][] = $row->paperId;
-		    $t .= $td . "\" id=\"${foldname}$row->paperId\"></td>\n";
+		    $t .= $td . "\" id=\"$foldname.$row->paperId\"></td>\n";
 		    $anyData[$fieldId] = 1;
 		} else {
 		    $c = $this->content($fieldId, $row, $reviewList);
@@ -1480,11 +1480,11 @@ class PaperList extends BaseList {
 		}
 		if (isset($this->folds[$foldname]) && $this->folds[$foldname] !== false) {
 		    $this->folds[$foldname][] = $row->paperId;
-		    $tt .= "<div id=\"$foldname$row->paperId\"></div>";
+		    $tt .= "<div id=\"$foldname.$row->paperId\"></div>";
 		} else {
 		    $c = $this->content($fieldId, $row, $reviewList);
 		    if ($c !== "") {
-			$tt .= "<div id=\"$foldname$row->paperId\"";
+			$tt .= "<div id=\"$foldname.$row->paperId\"";
 			if ($fdef->foldnum > 2)
 			    $tt .= " class=\"fx$foldnum\"";
 			$tt .= "><h6>" . $this->header($fieldId, -1, $row, $reviewList) . ":</h6> " . $c . "</div>";
