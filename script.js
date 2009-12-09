@@ -315,7 +315,7 @@ function authorfold(prefix, relative, n) {
 function staged_foreach(a, f, backwards) {
     var i = (backwards ? a.length - 1 : 0);
     var step = (backwards ? -1 : 1);
-    var stagef = function() {
+    var stagef = function () {
 	var x;
 	for (x = 0; i >= 0 && i < a.length && x < 50; i += step, ++x)
 	    f(a[i]);
@@ -334,7 +334,7 @@ function tempText(elt, text, on) {
 }
 
 function maketemptext(input, text, on, do_defact) {
-    return function() {
+    return function () {
 	tempText(input, text, on);
 	if (do_defact)
 	    defact("");
@@ -353,19 +353,19 @@ function setajaxcheck(elt, rv) {
 }
 
 function makerevprefajax(input, paperId) {
-    return function() {
+    return function () {
 	var form = e("prefform");
 	if (form && form.p && form.revpref) {
 	    form.p.value = paperId;
 	    form.revpref.value = input.value;
-	    Miniajax.submit("prefform", function(rv) { setajaxcheck("revpref" + paperId + "ok", rv); });
+	    Miniajax.submit("prefform", function (rv) { setajaxcheck("revpref" + paperId + "ok", rv); });
 	}
     };
 }
 
 function addRevprefAjax() {
     var inputs = document.getElementsByTagName("input");
-    staged_foreach(inputs, function(elt) {
+    staged_foreach(inputs, function (elt) {
 	if (elt.type == "text" && elt.name.substr(0, 7) == "revpref") {
 	    var whichpaper = elt.name.substr(7);
 	    elt.onfocus = maketemptext(elt, "0", 1, true);
@@ -376,7 +376,7 @@ function addRevprefAjax() {
 }
 
 function makeassrevajax(select, pcs, paperId) {
-    return function() {
+    return function () {
 	var form = e("assrevform");
 	var immediate = e("assrevimmediate");
 	var roundtag = e("assrevroundtag");
@@ -384,7 +384,7 @@ function makeassrevajax(select, pcs, paperId) {
 	    form.p.value = paperId;
 	    form.rev_roundtag.value = (roundtag ? roundtag.value : "");
 	    form[pcs].value = select.value;
-	    Miniajax.submit("assrevform", function(rv) { setajaxcheck("assrev" + paperId + "ok", rv); });
+	    Miniajax.submit("assrevform", function (rv) { setajaxcheck("assrev" + paperId + "ok", rv); });
 	} else
 	    hiliter(select);
     };
@@ -396,7 +396,7 @@ function addAssrevAjax() {
 	return;
     var pcs = "pcs" + form.reviewer.value;
     var inputs = document.getElementsByTagName("select");
-    staged_foreach(inputs, function(elt) {
+    staged_foreach(inputs, function (elt) {
 	if (elt.name.substr(0, 6) == "assrev") {
 	    var whichpaper = elt.name.substr(6);
 	    elt.onchange = makeassrevajax(elt, pcs, whichpaper);
@@ -405,13 +405,13 @@ function addAssrevAjax() {
 }
 
 function makeconflictajax(input, pcs, paperId) {
-    return function() {
+    return function () {
 	var form = e("assrevform");
 	var immediate = e("assrevimmediate");
 	if (form && form.p && form[pcs] && immediate && immediate.checked) {
 	    form.p.value = paperId;
 	    form[pcs].value = (input.checked ? -1 : 0);
-	    Miniajax.submit("assrevform", function(rv) { setajaxcheck("assrev" + paperId + "ok", rv); });
+	    Miniajax.submit("assrevform", function (rv) { setajaxcheck("assrev" + paperId + "ok", rv); });
 	} else
 	    hiliter(input);
     };
@@ -423,7 +423,7 @@ function addConflictAjax() {
 	return;
     var pcs = "pcs" + form.reviewer.value;
     var inputs = document.getElementsByTagName("input");
-    staged_foreach(inputs, function(elt) {
+    staged_foreach(inputs, function (elt) {
 	if (elt.name == "pap[]") {
 	    var whichpaper = elt.value;
 	    elt.onclick = makeconflictajax(elt, pcs, whichpaper);
@@ -435,7 +435,7 @@ function addConflictAjax() {
 // thank you David Flanagan
 var Geometry = null;
 if (window.innerWidth) {
-    Geometry = function() {
+    Geometry = function () {
 	return {
 	    left: window.pageXOffset,
 	    top: window.pageYOffset,
@@ -446,7 +446,7 @@ if (window.innerWidth) {
 	};
     };
 } else if (document.documentElement && document.documentElement.clientWidth) {
-    Geometry = function() {
+    Geometry = function () {
 	var e = document.documentElement;
 	return {
 	    left: e.scrollLeft,
@@ -458,7 +458,7 @@ if (window.innerWidth) {
 	};
     };
 } else if (document.body.clientWidth) {
-    Geometry = function() {
+    Geometry = function () {
 	var e = document.body;
 	return {
 	    left: e.scrollLeft,
@@ -487,7 +487,7 @@ function eltPos(e) {
 
 // score help
 function makescorehelp(anchor, which, dofold) {
-    return function() {
+    return function () {
 	var elt = e("scorehelp_" + which);
 	if (elt && dofold)
 	    elt.className = "scorehelpc";
@@ -521,15 +521,15 @@ function addScoreHelp() {
 function makeratingajax(form, id) {
     var selects;
     form.className = "fold7c";
-    form.onsubmit = function() {
-	return Miniajax.submit(id, function(rv) {
+    form.onsubmit = function () {
+	return Miniajax.submit(id, function (rv) {
 		if ((ee = e(id + "result")) && rv.result)
 		    ee.innerHTML = " &nbsp;<span class='barsep'>|</span>&nbsp; " + rv.result;
 	    });
     };
     selects = form.getElementsByTagName("select");
     for (var i = 0; i < selects.length; ++i)
-	selects[i].onchange = function() {
+	selects[i].onchange = function () {
 	    void form.onsubmit();
 	};
 }
@@ -565,11 +565,11 @@ function popup(anchor, which, dofold) {
 // Thank you David Flanagan
 var Miniajax = {};
 Miniajax._factories = [
-    function() { return new XMLHttpRequest(); },
-    function() { return new ActiveXObject("Msxml2.XMLHTTP"); },
-    function() { return new ActiveXObject("Microsoft.XMLHTTP"); }
+    function () { return new XMLHttpRequest(); },
+    function () { return new ActiveXObject("Msxml2.XMLHTTP"); },
+    function () { return new ActiveXObject("Microsoft.XMLHTTP"); }
 ];
-Miniajax.newRequest = function() {
+Miniajax.newRequest = function () {
     while (Miniajax._factories.length) {
 	try {
 	    var req = Miniajax._factories[0]();
@@ -581,7 +581,7 @@ Miniajax.newRequest = function() {
     }
     return null;
 };
-Miniajax.onload = function(formname) {
+Miniajax.onload = function (formname) {
     var req = Miniajax.newRequest();
     if (req)
 	fold(e(formname), 1, 7);
@@ -602,7 +602,7 @@ Miniajax.submit = function (formname, callback, timeout) {
     var resultelt = e(resultname + "result") || {};
     var checkelt = e(resultname + "check");
     if (!callback)
-	callback = function(rv) {
+	callback = function (rv) {
 	    resultelt.innerHTML = rv.response;
 	    if (checkelt)
 		setajaxcheck(checkelt, rv);
@@ -611,14 +611,14 @@ Miniajax.submit = function (formname, callback, timeout) {
 	timeout = 4000;
 
     // set request
-    var timer = setTimeout(function() {
+    var timer = setTimeout(function () {
 			       req.abort();
 			       resultelt.innerHTML = "<span class='error'>Network timeout.  Please try again.</span>";
 			       form.onsubmit = "";
 			       fold(form, 0, 7);
 			   }, timeout);
 
-    req.onreadystatechange = function() {
+    req.onreadystatechange = function () {
 	if (req.readyState != 4)
 	    return;
 	clearTimeout(timer);
@@ -701,8 +701,8 @@ function foldplinfo(dofold, type, which) {
 	    e_value("plloadform_get", type);
 	Miniajax.submit(["plloadform", type + "loadform"], function (rv) {
 		var elt, eltx;
-		if ("type" in rv)
-		    type = rv["type"];
+		if ({au: 1, anonau: 1, aufull: 1}[type])
+		    type = "authors";
 		for (var i in rv)
 		    if (i.substr(0, type.length) == type && (elt = e(i))) {
 			if (rv[i] == "")
@@ -727,7 +727,7 @@ function savedisplayoptions() {
 		elt.innerHTML = "<span class='confirm'>Preferences saved</span>";
 	    else
 		elt.innerHTML = "<span class='error'>Preferences not saved</span>";
-	    setTimeout(function() {
+	    setTimeout(function () {
 		    elt.innerHTML = "";
 		}, rv.ok ? 2000 : 4000);
 	});

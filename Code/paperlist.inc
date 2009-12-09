@@ -1316,7 +1316,7 @@ class PaperList extends BaseList {
 	// check what is folded
 	$folds = array();
 	$pldisplay = defval($_SESSION, $this->foldtype . "display", "");
-	foreach ($paperListFolds as $n => $foldnum) {
+	foreach ($paperListFolds as $n => $fdef) {
 	    if (!defval($_REQUEST, "show$n")
 		&& strpos($pldisplay, " $n ") === false)
 		$folds[$n] = array();
@@ -1517,12 +1517,12 @@ class PaperList extends BaseList {
 	$foldmap = array();
 	$needloadmap = array();
 	// Ajax load forms for extra fields
-	foreach ($paperListFolds as $k => $n) {
-	    if (isset($foldinfo[$n])) {
-		$x .= " fold$n" . ($folds[$k] !== false ? "c" : "o");
-		$foldmap[] = "\"$k\":$n";
-		if ($folds[$k] !== false && count($folds[$k]))
-		    $needloadmap[] = "\"$k\":true";
+	foreach ($paperListFolds as $n => $fdef) {
+	    if (isset($foldinfo[$fdef->foldnum])) {
+		$x .= " fold$fdef->foldnum" . ($folds[$n] !== false ? "c" : "o");
+		$foldmap[] = "\"$n\":$fdef->foldnum";
+		if ($folds[$n] !== false && count($folds[$n]))
+		    $needloadmap[] = "\"$n\":true";
 	    }
 	}
 	// full authorship is a special case
@@ -1676,6 +1676,89 @@ class PaperList extends BaseList {
 	return $x;
     }
 
+    function ajaxColumn($fieldId, $me) {
+	global $Conf, $ConfSiteSuffix, $paperListFields;
+
+	$this->contact = $me;
+	$this->count = 0;
+	$this->accepted = 0;
+	$this->needFinalize = 0;
+	$this->needFinalCopy = 0;
+	$this->needSubmitReview = 0;
+	$this->anySelector = false;
+	$this->anyFinalPaper = false;
+	$url = $this->search->url();
+
+	// check role type
+	$this->scoresOk = $me->privChair || $me->amReviewer()
+	    || $Conf->timeAuthorViewReviews();
+
+	// check what is folded
+	$pldisplay = defval($_SESSION, $this->foldtype . "display", "");
+	$this->aufull = defval($_REQUEST, "showaufull") || strpos($pldisplay, " aufull ") !== false;
+
+	// check paper link destination
+	if (isset($_REQUEST["linkto"]) && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
+	    $this->paperLink = $_REQUEST["linkto"];
+
+	// initialize query
+	$queryOptions = array("joins" => array());
+	if ($this->search->complexSearch($queryOptions)) {
+	    if (!$this->search->search())
+		return null;
+	    $queryOptions["joins"][] = "join Matches on (Paper.paperId=Matches.paperId)";
+	}
+
+	// get field array
+	$ncol = 0;
+	$this->unfolded = true;
+	if (!($fdef = defval($paperListFields, $fieldId))
+	    || !$this->selector($fieldId, $queryOptions, false))
+	    return null;
+	$unfolded = $this->unfolded;
+
+	// prepare review query (see also search > getaction == "reviewers")
+	$reviewList = array();
+	if (isset($queryOptions['reviewList'])) {
+	    $result = $Conf->qe("select Paper.paperId, reviewId, reviewType,
+		reviewSubmitted, reviewModified,
+		PaperReview.contactId, lastName, firstName, email
+		from Paper
+		join PaperReview using (paperId)
+		join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
+		where " . ($this->search->limitName != 'a' ? "timeSubmitted>0" : "paperId=-1") . "
+		order by lastName, firstName, email", "while fetching reviews");
+	    while (($row = edb_orow($result)))
+		$reviewList[$row->paperId][] = $row;
+	}
+	if (isset($queryOptions["scores"]))
+	    $queryOptions["scores"] = array_keys($queryOptions["scores"]);
+
+	// prepare query text
+	if ($me->contactId == $this->search->contactId)
+	    $pq = $Conf->paperQuery($me, $queryOptions);
+	else
+	    $pq = $Conf->paperQuery($this->search->contactId, $queryOptions);
+
+	// make query
+	$result = $Conf->qe($pq, "while selecting papers");
+	if (!$result)
+	    return null;
+
+	// collect row data
+	$data = array();
+	$foldname = $fdef->foldname;
+	while (($row = edb_orow($result))) {
+	    if ($this->contentEmpty($fieldId, $row))
+		$c = "";
+	    else
+		$c = $this->content($fieldId, $row, $reviewList);
+	    $data["$foldname.$row->paperId"] = $c;
+	}
+
+	return $data;
+    }
+
 }
 
 
@@ -1697,19 +1780,27 @@ class PaperListField {
     }
 
     function make($id, $cssname, $type, $foldnum = 0, $sortable = false) {
-	global $paperListFields;
+	global $paperListFields, $paperListFolds;
 	if ($foldnum === true && $sortable === false) {
 	    $foldnum = 0;
 	    $sortable = true;
 	}
 	$f = new PaperListField($id, $cssname, $type, $foldnum, $sortable);
 	$paperListFields[$id] = $f;
+	if ($foldnum > 3  /* "authors" == 1 or 2, requires special handling */)
+	    $paperListFolds[$f->foldname] = $f;
 	return $f;
     }
 
     function initialize() {
 	global $paperListFields, $paperListFolds, $paperListFormulas,
 	    $reviewScoreNames, $Conf;
+
+	$paperListFolds = array("au" => (object) array("id" => PaperList::FIELD_OPT_AUTHORS, "foldnum" => 1),
+				"anonau" => (object) array("id" => PaperList::FIELD_OPT_AUTHORS, "foldnum" => 2),
+				"rownum" => (object) array("foldnum" => 6),
+				"aufull" => (object) array("foldnum" => 16),
+				"force" => (object) array("foldnum" => 20));
 
 	$paperListFields = array();
 	PaperListField::make(PaperList::FIELD_SELECTOR, "selector", 1);
@@ -1749,24 +1840,7 @@ class PaperListField {
 	PaperListField::make(PaperList::FIELD_COLLABORATORS, "collab", 2, 15);
 	PaperListField::make(PaperList::FIELD_FOLD, "fold", 0);
 
-	$paperListFolds = array("au" => 1,
-				"anonau" => 2,
-				// all papers => 3
-				"tags" => 4,
-				"abstract" => 5,
-				"rownum" => 6,
-				// not used => 7, 8, 9
-				"reviewers" => 10,
-				"shepherd" => 11,
-				"lead" => 12,
-				"topics" => 13,
-				"pcconf" => 14,
-				"collab" => 15,
-				"aufull" => 16,
-				"force" => 20);
-
 	foreach ($reviewScoreNames as $k => $n) {
-	    $paperListFolds[$n] = PaperList::FIELD_SCORE + $k;
 	    $fdef = PaperListField::make(PaperList::FIELD_SCORE + $k, $n, 1, PaperList::FIELD_SCORE + $k, true);
 	    $fdef->cssname = "score";
 	}
@@ -1777,7 +1851,6 @@ class PaperListField {
 	    $result = $Conf->q("select * from Formula");
 	    while (($row = edb_orow($result))) {
 		$fid = $row->formulaId;
-		$paperListFolds["formula$fid"] = $nextfold;
 		$fdef = PaperListField::make(PaperList::FIELD_FORMULA + $fid, "formula$fid", 1, $nextfold, true);
 		$fdef->cssname = "formula";
 		$paperListFormulas[$fid] = $row;

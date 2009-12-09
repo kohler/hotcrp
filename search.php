@@ -75,21 +75,9 @@ if ($getaction == "paper" && isset($papersel)) {
 
 // download selected abstracts
 if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
-    $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
-    $result = $Conf->qe($q, "while selecting papers");
-    $response = array();
-    $matchPreg = PaperList::sessionMatchPreg("abstract");
-
-    while ($prow = edb_orow($result)) {
-	if (!$Me->canViewPaper($prow, $whyNot))
-	    $Conf->errorMsg(whyNotText($whyNot, "view"));
-	else {
-	    $x = htmlspecialchars($prow->abstract);
-	    if ($matchPreg !== "")
-		$x = highlightMatch($matchPreg, $x);
-	    $response["abstract.$prow->paperId"] = $x;
-	}
-    }
+    $Search = new PaperSearch($Me, $_REQUEST);
+    $pl = new PaperList(true, true, $Search);
+    $response = $pl->ajaxColumn(PaperList::FIELD_OPT_ABSTRACT, $Me);
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
 } else if ($getaction == "abstract" && isset($papersel)) {
@@ -133,107 +121,24 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
 }
 
 
-// download selected tags
-if ($getaction == "tags" && isset($papersel) && defval($_REQUEST, "ajax")) {
-    require_once("Code/tags.inc");
-    $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tags" => 1));
-    $result = $Conf->qe($q, "while selecting papers");
-    $response = array();
-    $csb = htmlspecialchars(defval($_REQUEST, "sitebase", ""));
-    $highlight = defval($_REQUEST, "highlight", false);
-    while ($prow = edb_orow($result)) {
-	if (!$Me->canViewTags($prow))
-	    $t = "";
-	else
-	    $t = tagsToText($prow, $csb, $Me, false, $highlight);
-	$response["tags.$prow->paperId"] = $t;
-    }
-    $response["ok"] = (count($response) > 0);
-    $Conf->ajaxExit($response);
-}
-
-
 // download selected authors
 if ($getaction == "authors" && isset($papersel) && defval($_REQUEST, "ajax")) {
-    $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
-    $result = $Conf->qe($q, "while selecting papers");
-    $response = array();
-    $matchPreg = PaperList::sessionMatchPreg("authorInformation");
     $full = defval($_REQUEST, "aufull", 0);
-
-    $pldisplay = displayOptionsSet("pldisplay", "aufull", $full);
-
-    while ($prow = edb_orow($result)) {
-	if (!$Me->canViewPaper($prow, $whyNot))
-	    $Conf->errorMsg(whyNotText($whyNot, "view"));
-	else
-	    $response["authors.$prow->paperId"] = PaperList::authorInfo($prow, $Me, $full, $matchPreg);
-    }
-    $response["ok"] = (count($response) > 0);
-    $response["type"] = "authors";
-    $Conf->ajaxExit($response);
-}
-
-
-// download selected collaborators
-if ($getaction == "collab" && isset($papersel) && defval($_REQUEST, "ajax")) {
-    $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
-    $result = $Conf->qe($q, "while selecting papers");
-    $response = array();
-    $matchPreg = PaperList::sessionMatchPreg("collaborators");
-
-    while ($prow = edb_orow($result)) {
-	if (!$Me->canViewPaper($prow, $whyNot))
-	    $Conf->errorMsg(whyNotText($whyNot, "view"));
-	else {
-	    $x = "";
-	    foreach (explode("\n", $prow->collaborators) as $c)
-		$x .= ($x === "" ? "" : ", ") . htmlspecialchars(trim($c));
-	    if ($matchPreg !== "")
-		$x = highlightMatch($matchPreg, $x);
-	    $response["collab.$prow->paperId"] = $x;
-	}
-    }
+    displayOptionsSet("pldisplay", "aufull", $full);
+    $Search = new PaperSearch($Me, $_REQUEST);
+    $pl = new PaperList(true, true, $Search);
+    $response = $pl->ajaxColumn(PaperList::FIELD_OPT_AUTHORS, $Me);
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
 }
 
 
-// download selected reviewers
-if ($getaction == "reviewers" && isset($papersel) && defval($_REQUEST, "ajax")
-    && $Me->privChair) {
-    $result = $Conf->qe("select Paper.paperId, reviewId, reviewType,
-		reviewSubmitted, reviewModified,
-		PaperReview.contactId, lastName, firstName, email,
-		conflictType
-		from Paper
-		join PaperReview using (paperId)
-		join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
-		left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$Me->contactId)
-		where Paper.paperId in (" . join(",", $papersel) . ")
-		order by lastName, firstName, email", "while fetching reviews");
-    $response = array();
-    $conflict = array();
-    while (($xrow = edb_orow($result)))
-	if ($xrow->lastName) {
-	    $x = "reviewers." . $xrow->paperId;
-	    if (isset($response[$x]))
-		$response[$x] .= ", ";
-	    else
-		$response[$x] = "";
-	    $response[$x] .= contactHtml($xrow->firstName, $xrow->lastName);
-	    if ($xrow->reviewType == REVIEW_PRIMARY)
-		$response[$x] .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_PRIMARY . ".gif", "Primary");
-	    else if ($xrow->reviewType == REVIEW_SECONDARY)
-		$response[$x] .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_SECONDARY . ".gif", "Secondary");
-	    if ($xrow->conflictType != 0)
-		$conflict[$x] = true;
-	}
-    if (count($conflict)) {
-	foreach ($conflict as $x => $y)
-	    $response[$x] = PaperList::wrapConflict($response[$x]);
-    }
-    cleanAjaxResponse($response, "reviewers");
+// other field-based Ajax downloads: tags, collaborators, ...
+if ($getaction && ($fdef = defval($paperListFolds, $getaction))
+    && isset($fdef->id) && defval($_REQUEST, "ajax")) {
+    $Search = new PaperSearch($Me, $_REQUEST);
+    $pl = new PaperList(true, true, $Search);
+    $response = $pl->ajaxColumn($fdef->id, $Me);
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
 }
@@ -538,20 +443,7 @@ if ($getaction == "pcconf" && isset($papersel) && $Me->privChair) {
 		where $idq
 		group by Paper.paperId", "while fetching PC conflicts");
     $pcm = pcMembers();
-    if (defval($_REQUEST, "ajax")) {
-	$response = array();
-	while (($row = edb_row($result))) {
-	    $x = " " . $row[2] . " ";
-	    $y = array();
-	    foreach ($pcm as $pc)
-		if (strpos($x, " $pc->contactId ") !== false)
-		    $y[] = contactHtml($pc->firstName, $pc->lastName);
-	    $response["pcconf.$row[0]"] = join(", ", $y);
-	}
-	cleanAjaxResponse($response, $getaction);
-	$response["ok"] = (count($response) > 0);
-	$Conf->ajaxExit($response);
-    } else if ($result) {
+    if ($result) {
 	$texts = array();
 	while (($row = edb_row($result))) {
 	    $x = " " . $row[2] . " ";
@@ -582,15 +474,7 @@ if (($getaction == "lead" || $getaction == "shepherd")
 		where $idq
 		group by Paper.paperId", "while fetching ${getaction}s");
     $shep = $getaction == "shepherd";
-    if (defval($_REQUEST, "ajax")) {
-	$response = array();
-	while (($row = edb_orow($result)))
-	    if ($Me->actPC($row, true) || ($shep && $Me->canViewDecision($row)))
-		$response["$getaction.$row->paperId"] = contactNameHtml($row);
-	cleanAjaxResponse($response, $getaction);
-	$response["ok"] = (count($response) > 0);
-	$Conf->ajaxExit($response);
-    } else if ($result) {
+    if ($result) {
 	$texts = array();
 	while (($row = edb_orow($result)))
 	    if ($Me->actPC($row, true) || ($shep && $Me->canViewDecision($row)))
@@ -674,30 +558,6 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 }
 
 
-// download score graphs for selected papers
-if ($getaction && defval($paperListFolds, $getaction) >= 50
-    && defval($_REQUEST, "ajax")) {
-    $rf = reviewForm();
-    $revView = $Me->viewReviewFieldsScore(null, true);
-    $response = array();
-    if ($rf->authorView[$getaction] > $revView) {
-	$result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "scores" => array($getaction))), "while selecting papers");
-	$revView = $Me->viewReviewFieldsScore(null, true);
-	$scoreMax = $rf->maxNumericScore($getaction);
-	$itemName = "${getaction}Scores";
-	$reviewField = $rf->reviewFields[$getaction];
-	while (($row = edb_orow($result))) {
-	    if ($Me->canViewReview($row, null) && $row->$itemName)
-		// XXX doesn't work with "Override conflict" JS.
-		$response["$getaction.$row->paperId"] = $Conf->textValuesGraph($row->$itemName, $scoreMax, 1, defval($row, $getaction), $reviewField);
-	}
-    }
-    cleanAjaxResponse($response, $getaction);
-    $response["ok"] = (count($response) > 0);
-    $Conf->ajaxExit($response);
-}
-
-
 // download preferences for selected papers
 function downloadRevpref($extended) {
     global $Conf, $Me, $Opt, $papersel, $paperselmap;
@@ -753,38 +613,27 @@ if ($getaction == "topics" && isset($papersel)) {
     $result = $Conf->qe($q, "while selecting papers");
 
     $rf = reviewForm();
-    if (defval($_REQUEST, "ajax")) {
-	$response = array();
-	while ($row = edb_orow($result))
-	    if ($Me->canViewPaper($row))
-		$response["topics.$row->paperId"] = join(", ", $rf->webTopicArray($row->topicIds));
-	cleanAjaxResponse($response, "topics");
-	$response["ok"] = (count($response) > 0);
-	$Conf->ajaxExit($response);
+    $texts = array();
 
-    } else {
-	$texts = array();
+    while ($row = edb_orow($result)) {
+	if (!$Me->canViewPaper($row) || $row->topicIds === "")
+	    continue;
+	$topicIds = explode(",", $row->topicIds);
+	$out = array();
+	for ($i = 0; $i < count($topicIds); ++$i)
+	    $out[$rf->topicOrder[$topicIds[$i]]] =
+		$row->paperId . "\t" . $row->title . "\t" . $rf->topicName[$topicIds[$i]] . "\n";
+	ksort($out);
+	defappend($texts[$paperselmap[$row->paperId]], join("", $out));
+    }
 
-	while ($row = edb_orow($result)) {
-	    if (!$Me->canViewPaper($row) || $row->topicIds === "")
-		continue;
-	    $topicIds = explode(",", $row->topicIds);
-	    $out = array();
-	    for ($i = 0; $i < count($topicIds); ++$i)
-		$out[$rf->topicOrder[$topicIds[$i]]] =
-		    $row->paperId . "\t" . $row->title . "\t" . $rf->topicName[$topicIds[$i]] . "\n";
-	    ksort($out);
-	    defappend($texts[$paperselmap[$row->paperId]], join("", $out));
-	}
-
-	if (count($texts) == "")
-	    $Conf->errorMsg(join("", $errors) . "No papers selected.");
-	else {
-	    ksort($texts);
-	    $text = "#paper\ttitle\ttopic\n" . join("", $texts);
-	    downloadText($text, $Opt['downloadPrefix'] . "topics.txt", "topics");
-	    exit;
-	}
+    if (count($texts) == "")
+	$Conf->errorMsg(join("", $errors) . "No papers selected.");
+    else {
+	ksort($texts);
+	$text = "#paper\ttitle\ttopic\n" . join("", $texts);
+	downloadText($text, $Opt['downloadPrefix'] . "topics.txt", "topics");
+	exit;
     }
 }
 
@@ -915,7 +764,7 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 // set fields to view
 if (isset($_REQUEST["redisplay"])) {
     $_SESSION["pldisplay"] = " ";
-    foreach ($paperListFolds as $n => $v)
+    foreach ($paperListFolds as $n => $foldnum)
 	if (defval($_REQUEST, "show$n", 0))
 	    $_SESSION["pldisplay"] .= $n . " ";
 }

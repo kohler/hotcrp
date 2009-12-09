@@ -160,7 +160,7 @@ if (isset($_REQUEST["get"]) && isset($papersel)) {
 // set options to view
 if (isset($_REQUEST["redisplay"])) {
     $_SESSION["pfdisplay"] = " ";
-    foreach ($paperListFolds as $n => $v)
+    foreach ($paperListFolds as $n => $fdef)
 	if (defval($_REQUEST, "show$n"))
 	    $_SESSION["pfdisplay"] .= "$n ";
     redirectSelf();
