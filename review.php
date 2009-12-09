@@ -15,7 +15,6 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])
     foreach (array("paperId", "reviewId", "commentId", "p", "r", "c", "accept", "refuse") as $opt)
 	if (isset($_REQUEST[$opt]))
 	    $after .= ($after === "" ? "" : "&") . $opt . "=" . urlencode($_REQUEST[$opt]);
-    error_log(("index$ConfSiteSuffix?email=" . urlencode($_REQUEST["email"]) . "&password=" . urlencode($_REQUEST["password"]) . "&go=" . urlencode("review$ConfSiteSuffix?$after")));
     $Me->go("index$ConfSiteSuffix?email=" . urlencode($_REQUEST["email"]) . "&password=" . urlencode($_REQUEST["password"]) . "&go=" . urlencode("review$ConfSiteSuffix?$after"));
 }
 
