@@ -688,6 +688,7 @@ if ($getaction && defval($paperListFolds, $getaction) >= 50
 	$reviewField = $rf->reviewFields[$getaction];
 	while (($row = edb_orow($result))) {
 	    if ($Me->canViewReview($row, null) && $row->$itemName)
+		// XXX doesn't work with "Override conflict" JS.
 		$response["$getaction.$row->paperId"] = $Conf->textValuesGraph($row->$itemName, $scoreMax, 1, defval($row, $getaction), $reviewField);
 	}
     }
