@@ -201,7 +201,8 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 			    0 => "Reviewers only",
 			    -1 => "Private",
 			    -2 => "Secret"),
-		      max(min(cvtint(rf_getField($row, "authorView"), -10000), 1), -2))
+		      max(min(cvtint(rf_getField($row, "authorView"), -10000), 1), -2),
+		      array("onchange" => "hiliter(this)"))
 	. " &nbsp;<a class='scorehelp small' href='scorehelp$ConfSiteSuffix?f=vis'>(What is this?)</a>"
 	. "</td><td class='hint'></td></tr>\n";
 
