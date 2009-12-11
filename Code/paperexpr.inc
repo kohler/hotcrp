@@ -92,6 +92,7 @@ class PaperExpr {
     }
 
     function _parse_function($op, &$t, $allow_aggregate) {
+	global $paperExprOperators;
 	$t = ltrim($t);
 	$e = array($op, false);
 
