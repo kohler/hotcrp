@@ -151,11 +151,11 @@ class PaperExpr {
 	} else if (preg_match('/\A(\d+\.?\d*|\.\d+)(.*)\z/s', $t, $m)) {
 	    $e = $m[1] + 0.0;
 	    $t = $m[2];
-	} else if (preg_match('/\Atag\s*:?\s*(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
+	} else if (preg_match('/\Atag(?:\s*:\s*|\s+)(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
 		   || preg_match('/\Atag\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
 	    $e = array("tag", false, $m[1]);
 	    $t = $m[2];
-	} else if (preg_match('/\Atag(?:v|-?val|-?value)\s*:?\s*(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
+	} else if (preg_match('/\Atag(?:v|-?val|-?value)(?:\s*:\s*|\s+)(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
 		   || preg_match('/\Atag(?:v|-?val|-?value)\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
 	    $e = array("tagval", false, $m[1]);
 	    $t = $m[2];
