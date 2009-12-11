@@ -70,6 +70,18 @@ function tagSplit($tag) {
 	return array(substr($tag, 0, $pos), (int) substr($tag, $pos + 1));
 }
 
+function tagViewScore($tag, $contact) {
+    if ($tag === false)
+	return -3;
+    else if (($pos = strpos($tag, "~")) !== false) {
+	if ($pos == 0 && $tag[1] === "~")
+	    return -2;
+	else
+	    return (substr($tag, 0, $pos) == $contact->contactId ? 0 : -2);
+    } else
+	return 0;
+}
+
 function chairTags() {
     global $Conf;
     if ($Conf->setting("tag_chair"))
@@ -440,7 +452,7 @@ function tagsToText($prow, $makeUrls, $contact, $drop = false,
 	    }
     }
 
-    // clean #0 and our twiddle tags, remove others' twiddle tags
+    // clean #0 and our twiddle tags, remove other twiddle tags
     $t = str_replace("#0", "", $t);
     if (strpos($t, "~") !== false) {
 	$t = str_replace(" " . $contact->contactId . "~", " ~", " $t ");

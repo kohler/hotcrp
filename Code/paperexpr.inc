@@ -386,4 +386,35 @@ class PaperExpr {
 	self::_compile($state, $e);
     }
 
+    function expression_view_score($e, $contact) {
+	global $paperExprOperators;
+
+	if (!is_array($e))
+	    return 1;
+
+	$op = $e[0];
+
+	if ($op == "tag" || $op == "tagval") {
+	    $e_tag = checkTag($e[2], CHECKTAG_QUIET | ($contact->privChair ? CHECKTAG_CHAIR : 0), $contact->contactId);
+	    return tagViewScore($e_tag, $contact);
+	}
+
+	if ($op == "rf") {
+	    $rf = reviewForm();
+	    return $rf->authorView[$e[2]];
+	}
+
+	if ($op == "?:") {
+	    $t = self::expression_view_score($e[2], $contact);
+	    $tt = self::expression_view_score($e[3], $contact);
+	    $tf = self::expression_view_score($e[4], $contact);
+	    return min($t, max($tt, $tf));
+	}
+
+	$score = 1;
+	for ($i = 2; $i < count($e); ++$i)
+	    $score = min($score, self::expression_view_score($e[$i], $contact));
+	return $score;
+    }
+
 }
