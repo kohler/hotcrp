@@ -882,6 +882,7 @@ span.textlite {
 }
 textarea {
 	font-family: verdana, tahoma, sans-serif;
+	font-size: 100%;
 }
 input.textlite-tt, textarea.tt {
 	font-family: monospace;
