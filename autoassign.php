@@ -610,10 +610,10 @@ if (isset($assignments) && count($assignments) > 0) {
 	    echo "<strong>Review round:</strong> ", htmlspecialchars($rev_roundtag);
     }
 
-    echo "<div class='g'></div>";
-    echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'><div class='aahc'><div class='aa'>\n";
-    echo "<input type='submit' class='b' name='saveassign' value='Save assignment' />\n";
-    echo "&nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />\n";
+    echo "<div class='g'></div>",
+	"<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'><div class='aahc'><div class='aa'>\n",
+	"<input type='submit' class='b' name='saveassign' value='Save assignment' />\n",
+	"&nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />\n";
     foreach (array("t", "q", "a", "revaddtype", "revtype", "cleartype", "revct", "revaddct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag") as $t)
 	if (isset($_REQUEST[$t]))
 	    echo "<input type='hidden' name='$t' value=\"", htmlspecialchars($_REQUEST[$t]), "\" />\n";

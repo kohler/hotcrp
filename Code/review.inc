@@ -1232,12 +1232,17 @@ $blind\n";
 	if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType < REVIEW_SECONDARY) {
 	    echo "\n<div class='revref'><a id='popupanchor_ref' href=\"javascript:void popup(null, 'ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it</div>\n";
 	    // Also see $_REQUEST["refuse"] case in review.php.
-	    $Conf->footerHtml("<div id='popup_ref' class='popupc'><p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'>
-  <input type='hidden' name='refuse' value='refuse' />
-  <textarea name='reason' rows='3' cols='40'></textarea>
-  <div class='g'></div>
-  <input class='b' type='submit' value='Refuse review' />
-  &nbsp;<button type='button' class='b' onclick=\"popup(null, 'ref', 1)\">Cancel</button></div></form></div>");
+	    $Conf->footerHtml("<div id='popup_ref' class='popupc'>
+  <p>Thank you for telling us that you cannot complete your review.  You
+  may give a few words of explanation if you'd like.</p>
+  <form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+    <input type='hidden' name='refuse' value='refuse' />
+    <textarea name='reason' rows='3' cols='40'></textarea>
+    <div class='popup_actions'>
+      <button type='button' class='b' onclick=\"popup(null, 'ref', 1)\">Cancel</button>
+      &nbsp;<input class='bb' type='submit' value='Refuse review' />
+    </div>
+  </div></form></div>");
 	}
 
 	// delegate?
@@ -1311,7 +1316,16 @@ $blind\n";
 	    $buttons[] = "<input class='bb' type='submit' value='Save changes' name='update' />";
 	    if ($rrow && $Me->privChair) {
 		$buttons[] = array("<button type='button' class='b' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
-		$Conf->footerHtml("<div id='popup_d' class='popupc'><p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p><form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='popup_actions'><input class='b' type='submit' name='delete' value='Delete review' /> &nbsp;<button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button></div></form></div>");
+		$Conf->footerHtml("<div id='popup_d' class='popupc'>
+  <p>Be careful: This will permanently delete all information about this
+  review assignment from the database and <strong>cannot be
+  undone</strong>.</p>
+  <form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'>
+    <div class='popup_actions'>
+      <button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button>
+      &nbsp;<input class='bb' type='submit' name='delete' value='Delete review' />
+    </div>
+  </form></div>");
 	    }
 
 	    echo "    <tr>\n";
