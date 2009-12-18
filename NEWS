@@ -1,5 +1,49 @@
 HotCRP NEWS
 
+Version 2.36   17.Dec.2009
+
+* Formulas
+
+** PC members and administrators can define formula columns for search
+   results, which might show, for example, the sum of a paper's overall
+   merit scores, or average overall merit weighted by reviewer expertise.
+   See help for more details.
+
+* Paper ranking improvements
+
+** Improve Schulze-method rank calculation by weighting preferences
+   differently.  Specifically, if few voters specified any preference
+   involving paper A, then weight those preferences heavily.  This deflates
+   the margins for frequently-reviewed papers and, as a result, preserves
+   preferences for infrequently-reviewed papers.  Without a weighting like
+   this, multi-round conferences might see papers eliminated in early
+   rounds unexpectedly rise to the top.  Based on observations from SOSP.
+
+** Hugely faster rank calculation.
+
+** Report incremental progress for rank calculation.
+
+** Add options for calculating ranks: select which ranking method you want
+   to use using the UI.  Also, you can define a gapless order or calculate
+   a rank using a different source tag.
+
+* Rename "Define sequential" to "Define gapless order."
+
+* Improve paper search displays by shrinking typically-narrow columns.
+
+* Bug fix: Submitting a final copy doesn't reset PC conflicts.
+
+* Support reordering paper options on the submission form.
+
+* Allow explicit account creation even when LDAP logins are on.
+
+* Other bug fixes, including two minor information leaks.
+
+* Thanks to Laurent Réveillère, John Heidemann, Ratul Mahajan, S. Keshav,
+  Gareth Gale, Alex Aiken, Benjamin Pierce, Tom Anderson, Mike Freedman,
+  and John P. John.
+
+
 Version 2.35   7.Oct.2009
 
 * Paper options: Support numeric values, text values, and PDF uploads.
