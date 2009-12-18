@@ -1197,7 +1197,8 @@ if ($pl && $pl->count > 0) {
 
 	echo "<p style='width:44em;margin-top:0'><strong>Formulas</strong> are calculated
 from review statistics.  For example, &ldquo;sum(OveMer)&rdquo;
-would display the sum of a paper's Overall merit scores.</p>";
+would display the sum of a paper's Overall merit scores.
+<a class='hint' href='help$ConfSiteSuffix?t=formulas' target='_blank'>Learn more</a></p>";
 
 	echo "<table id='formuladefinitions'><thead><tr>",
 	    "<th></th><th class='f-c'>Name</th><th class='f-c'>Definition</th>",
