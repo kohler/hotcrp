@@ -594,6 +594,19 @@ td.caption a.foldbutton {
 	border-right: 1px solid #999966;
 }
 
+/* checkboxes */
+input.cblx {
+	margin-left: 0;
+	padding-left: 0;
+}
+input.cbx {
+	margin-left: 0;
+	margin-bottom: 0;
+	padding-left: 0;
+	padding-bottom: 0;
+	position: relative;
+	bottom: -0.4ex;
+}
 
 /* Action area */
 div.aa {
@@ -802,10 +815,15 @@ div.f-ix {
 	width: auto;
 	float: left;
 }
-div.f-c {
+div.f-c, th.f-c {
 	font-weight: bold;
 	color: #555555;
+}
+div.f-c {
 	font-size: smaller;
+}
+th.f-c {
+	text-align: left;
 }
 div.f-h {
 	font-size: smaller;
@@ -819,6 +837,9 @@ span.f-cx {
 
 td.pad, th.pad {
 	padding-right: 1em;
+}
+td.padb, th.padb {
+	padding-right: 2em;
 }
 td.padl, th.padl {
 	padding-left: 2em;
@@ -882,6 +903,8 @@ span.textlite {
 }
 textarea {
 	font-family: verdana, tahoma, sans-serif;
+}
+input.textlite, textarea {
 	font-size: 100%;
 }
 input.textlite-tt, textarea.tt {
