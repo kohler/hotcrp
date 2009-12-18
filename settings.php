@@ -1387,7 +1387,7 @@ function doOptGroup() {
 
     // Topics
     echo "<hr class='hr' /><h3>Topics</h3>\n";
-    echo "Enter topics one per line.  Authors use checkboxes to identify the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its text.\n";
+    echo "Enter topics one per line.  Authors select the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its name.\n";
     echo "<div class='g'></div><table id='newtoptable'>";
     $td1 = "<td class='lcaption'>Current</td>";
     foreach ($rf->topicOrder as $tid => $crap) {
