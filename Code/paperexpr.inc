@@ -55,7 +55,7 @@ class PaperExpr {
     function parse($t, $noErrors = false) {
 	global $Conf;
 	$e = self::_parse_ternary($t);
-	if ($t != "") {
+	if ($t !== "") {
 	    if (!$noErrors)
 		$Conf->errorMsg("Illegal expression: parse error at &ldquo;" . htmlspecialchars($t) . "&rdquo;.");
 	    return null;
@@ -75,16 +75,14 @@ class PaperExpr {
 
     function _parse_ternary(&$t) {
 	$e = self::_parse_expr($t, 0);
-	if (($t = ltrim($t)) == "" || $t[0] != "?")
+	if (!$e || ($t = ltrim($t)) === "" || $t[0] !== "?")
 	    return $e;
 	$t = substr($t, 1);
-	if (($e1 = self::_parse_ternary($t)))
-	    if (($t = ltrim($t)) != "" && $t[0] == ":") {
+	if (($e1 = self::_parse_ternary($t)) !== null)
+	    if (($t = ltrim($t)) !== "" && $t[0] === ":") {
 		$t = substr($t, 1);
 		if (($e2 = self::_parse_ternary($t))) {
-		    $perrev = (is_array($e) && $e[1])
-			|| (is_array($e1) && $e1[1])
-			|| (is_array($e2) && $e2[1]);
+		    $perrev = $e[1] || $e1[1] || $e2[1];
 		    return array("?:", $perrev, $e, $e1, $e2);
 		}
 	    }
@@ -97,16 +95,16 @@ class PaperExpr {
 	$e = array($op, false);
 
 	// collect arguments
-	if ($t != "" && $t[0] == "(") {
+	if ($t !== "" && $t[0] === "(") {
 	    while (1) {
 		$t = substr($t, 1);
 		if (!($e2 = self::_parse_ternary($t)))
 		    return null;
 		$e[] = $e2;
 		$t = ltrim($t);
-		if ($t != "" && $t[0] == ")")
+		if ($t !== "" && $t[0] === ")")
 		    break;
-		else if ($t == "" || $t[0] != ",")
+		else if ($t === "" || $t[0] !== ",")
 		    return null;
 	    }
 	    $t = substr($t, 1);
@@ -117,7 +115,7 @@ class PaperExpr {
 
 	// check for aggregateness
 	for ($i = 2, $any = false; $i < count($e); ++$i) {
-	    if (is_array($e[$i]) && $e[$i][1])
+	    if ($e[$i][1])
 		$any = true;
 	}
 	if ($any && count($e) == 3 && $allow_aggregate)
@@ -131,25 +129,24 @@ class PaperExpr {
     function _parse_expr(&$t, $level) {
 	global $paperExprOperators;
 
-	if (($t = ltrim($t)) == "")
+	if (($t = ltrim($t)) === "")
 	    return null;
 
-	if ($t[0] == "(") {
+	if ($t[0] === "(") {
 	    $t = substr($t, 1);
 	    $e = self::_parse_ternary($t);
 	    $t = ltrim($t);
-	    if (!$e || $t[0] != ")")
+	    if (!$e || $t[0] !== ")")
 		return null;
 	    $t = substr($t, 1);
-	} else if ($t[0] == "-" || $t[0] == "+" || $t[0] == "!") {
+	} else if ($t[0] === "-" || $t[0] === "+" || $t[0] === "!") {
 	    $op = $t[0];
 	    $t = substr($t, 1);
 	    if (!($e = self::_parse_expr($t, $paperExprOperators["u$op"])))
 		return null;
-	    $perrev = is_array($e) ? $e[1] : false;
-	    $e = array($op, $perrev, $e);
+	    $e = array($op, $e[1], $e);
 	} else if (preg_match('/\A(\d+\.?\d*|\.\d+)(.*)\z/s', $t, $m)) {
-	    $e = $m[1] + 0.0;
+	    $e = array("", false, $m[1] + 0.0);
 	    $t = $m[2];
 	} else if (preg_match('/\Atag(?:\s*:\s*|\s+)(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
 		   || preg_match('/\Atag\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
@@ -169,11 +166,14 @@ class PaperExpr {
 	    $t = $m[2];
 	    if (!($e = self::_parse_function($m[1], $t, false)))
 		return null;
+	} else if (preg_match('/\Anull\b(.*)\z/s', $t, $m)) {
+	    $e = array("", false, "null");
+	    $t = $m[1];
 	} else if (preg_match('/\A([a-zA-Z0-9_]+|\".*?\")(.*)\z/s', $t, $m)
-		   && $m[1] != "\"\"") {
+		   && $m[1] !== "\"\"") {
 	    $field = $m[1];
 	    $t = $m[2];
-	    if ($field[0] == "\"")
+	    if ($field[0] === "\"")
 		$field = substr($field, 1, strlen($field) - 2);
 	    $rf = reviewForm();
 	    if (!($field = $rf->unabbreviateField($field)))
@@ -182,10 +182,10 @@ class PaperExpr {
 	} else
 	    return null;
 
-	$perrev = is_array($e) ? $e[1] : false;
+	$perrev = $e[1];
 
 	while (1) {
-	    if (($t = ltrim($t)) == ""
+	    if (($t = ltrim($t)) === ""
 		|| !preg_match(self::BINARY_OPERATOR_REGEX, $t, $m))
 		return $e;
 
@@ -197,7 +197,7 @@ class PaperExpr {
 	    $t = substr($t, strlen($op));
 	    if (!($e2 = self::_parse_expr($t, $opprec == 12 ? $opprec : $opprec + 1)))
 		return null;
-	    if (is_array($e2) && $e2[1])
+	    if ($e2[1])
 		$perrev = true;
 
 	    $e = array($op, $perrev, $e, $e2);
@@ -267,10 +267,10 @@ class PaperExpr {
     function _compile($state, $e) {
 	global $paperExprOperators;
 
-	if (!is_array($e))
-	    return $e;
-
 	$op = $e[0];
+
+	if ($op == "")
+	    return $e[2];
 
 	if ($op == "tag" || $op == "tagval") {
 	    $state->queryOptions["tags"] = true;
@@ -389,10 +389,10 @@ class PaperExpr {
     function expression_view_score($e, $contact) {
 	global $paperExprOperators;
 
-	if (!is_array($e))
-	    return 1;
-
 	$op = $e[0];
+
+	if ($op == "")
+	    return 1;
 
 	if ($op == "tag" || $op == "tagval") {
 	    $e_tag = checkTag($e[2], CHECKTAG_QUIET | ($contact->privChair ? CHECKTAG_CHAIR : 0), $contact->contactId);
