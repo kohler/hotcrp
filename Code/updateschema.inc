@@ -173,6 +173,12 @@ function updateSchema($Conf) {
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8")
 	&& $Conf->q("update Settings set value=31 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 31;
+    if ($Conf->settings["allowPaperOption"] == 31
+	&& $Conf->q("alter table Formula add `createdBy` int(11) NOT NULL default '0'")
+	&& $Conf->q("alter table Formula add `timeModified` int(11) NOT NULL default '0'")
+	&& $Conf->q("alter table Formula drop index `name`")
+	&& $Conf->q("update Settings set value=32 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 32;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

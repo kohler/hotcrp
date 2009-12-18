@@ -98,9 +98,10 @@ CREATE TABLE `Formula` (
   `headingTitle` text NOT NULL default '',
   `expression` text NOT NULL,
   `authorView` tinyint(1) NOT NULL default '1',
+  `createdBy` int(11) NOT NULL default '0',
+  `timeModified` int(11) NOT NULL default '0',
   PRIMARY KEY  (`formulaId`),
-  UNIQUE KEY `formulaId` (`formulaId`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `formulaId` (`formulaId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
@@ -501,7 +502,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 31);
+insert into Settings (name, value) values ('allowPaperOption', 32);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags
