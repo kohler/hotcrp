@@ -90,7 +90,7 @@ function fold(which, dofold, foldtype) {
 	    foldnum = foldmap[which][foldtype];
 	foldnumid = foldnum ? foldnum : "";
 
-	elt = e("fold" + which);
+	elt = e("fold" + which) || e(which);
 	fold(elt, dofold, foldnum);
 
 	// check for session
@@ -559,6 +559,7 @@ function popup(anchor, which, dofold) {
 	elt.style.left = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) + "px";
 	elt.style.top = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) + "px";
     }
+    return false;
 }
 
 
