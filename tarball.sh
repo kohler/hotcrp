@@ -91,6 +91,7 @@ Code/helpers.inc
 Code/ldaplogin.inc
 Code/mailtemplate.inc
 Code/paperactions.inc
+Code/paperexpr.inc
 Code/paperlist.inc
 Code/papertable.inc
 Code/rank.inc
