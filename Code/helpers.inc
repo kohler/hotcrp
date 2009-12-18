@@ -1511,8 +1511,12 @@ function tagg_checkbox($name, $value = 1, $checked = false, $js = null) {
 	$id = $js["id"];
     else
 	$id = "taggctl" . ++$tagg_controlid;
+    if ($js && isset($js["class"]))
+	$class = $js["class"];
+    else
+	$class = "cb";
     $tagg_lastcontrolid = $id;
-    $t = "<input type=\"checkbox\" class=\"cb\" id=\"$id\"";
+    $t = "<input type=\"checkbox\" class=\"$class\" id=\"$id\"";
     if ($name)
 	$t .= " name=\"$name\" value=\"" . htmlspecialchars($value) . "\"";
     if ($checked)
