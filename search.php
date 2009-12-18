@@ -800,6 +800,74 @@ if (isset($_REQUEST["savedisplayoptions"]) && $Me->privChair) {
 }
 
 
+// save formula
+function formulas_with_new() {
+    global $paperListFormulas;
+    $formulas = $paperListFormulas;
+    $formulas["n"] = (object) array("formulaId" => "n", "name" => "",
+				    "expression" => "", "createdBy" => 0);
+    return $formulas;
+}
+
+function saveformulas() {
+    global $Conf, $Me, $paperListFormulas, $OK;
+    require_once("Code/paperexpr.inc");
+    $while = "while saving new formula";
+
+    // parse names and expressions
+    $revViewScore = $Me->viewReviewFieldsScore(null, true);
+    $ok = true;
+    $changes = array();
+    $names = array();
+
+    foreach (formulas_with_new() as $fdef) {
+	$name = simplifyWhitespace(defval($_REQUEST, "name_$fdef->formulaId", $fdef->name));
+	$expr = simplifyWhitespace(defval($_REQUEST, "expression_$fdef->formulaId", $fdef->expression));
+
+	if ($name != "" && $expr != "") {
+	    if (isset($names[$name]))
+		$ok = $Conf->errorMsg("You have two formulas with the same name, &ldquo;" . htmlspecialchars($name) . ".&rdquo;  Please change one of the names.");
+	    $names[$name] = true;
+	}
+
+	if ($name == $fdef->name && $expr == $fdef->expression)
+	    /* do nothing */;
+	else if (!$Me->privChair && $fdef->createdBy < 0)
+	    $ok = $Conf->errorMsg("You can't change formula &ldquo;" . htmlspecialchars($fdef->name) . "&rdquo; because it was created by an administrator.");
+	else if (($name == "" || $expr == "") && $fdef->formulaId != "n")
+	    $changes[] = "delete from Formula where formulaId=$fdef->formulaId";
+	else if ($name == "")
+	    $ok = $Conf->errorMsg("Please enter a name for your new formula.");
+	else if ($expr == "")
+	    $ok = $Conf->errorMsg("Please enter a definition for your new formula.");
+	else if (!($paperexpr = PaperExpr::parse($expr)))
+	    $ok = false;	/* errors already generated */
+	else {
+	    $exprViewScore = PaperExpr::expression_view_score($paperexpr, $Me);
+	    if ($exprViewScore <= $Me->viewReviewFieldsScore(null, true))
+		$ok = $Conf->errorMsg("The expression &ldquo;" . htmlspecialchars($expr) . "&rdquo; refers to paper properties that you aren't allowed to view.  Please define a different expression.");
+	    else if ($fdef->formulaId == "n")
+		$changes[] = "insert into Formula (name, expression, authorView, createdBy, timeModified) values ('" . sqlq($name) . "', '" . sqlq($expr) . "', $exprViewScore, " . ($Me->privChair ? -$Me->contactId : $Me->contactId) . ", " . time() . ")";
+	    else
+		$changes[] = "update Formula set name='" . sqlq($name) . "', expression='" . sqlq($expr) . "', authorView=$exprViewScore, timeModified=" . time() . " where formulaId=$fdef->formulaId";
+	}
+    }
+
+    $_REQUEST["tab"] = "formulas";
+    if ($ok) {
+	foreach ($changes as $change)
+	    $Conf->qe($change, $while);
+	if ($OK) {
+	    $Conf->confirmMsg("Formulas saved.");
+	    redirectSelf();
+	}
+    }
+}
+
+if (isset($_REQUEST["saveformulas"]) && $Me->isPC && $Conf->sversion >= 32)
+    saveformulas();
+
+
 // exit early if Ajax
 if (defval($_REQUEST, "ajax"))
     $Conf->ajaxExit(array("response" => ""));
@@ -836,11 +904,16 @@ else if (defval($_REQUEST, "qx", "") != "" || defval($_REQUEST, "qo", "") != ""
 else
     $activetab = 1;
 $tabs = array("display" => 3, "advanced" => 2, "normal" => 1);
+$searchform_formulas = "c";
 if (isset($tabs[defval($_REQUEST, "tab", "x")]))
     $activetab = $tabs[$_REQUEST["tab"]];
+else if (defval($_REQUEST, "tab", "x") == "formulas") {
+    $activetab = 3;
+    $searchform_formulas = "o";
+}
 if ($activetab == 3 && (!$pl || $pl->count == 0))
     $activetab = 1;
-$Conf->footerScript("crpfocus(\"searchform\", $activetab, 1)");
+$Conf->footerScript("crpfocus(\"searchform\",$activetab,1)");
 
 $tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
 
@@ -850,7 +923,7 @@ $tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
 // Prepare more display options
 $displayOptions = array();
 
-function displayOptionCheckbox($type, $title, $opt = array()) {
+function displayOptionCheckbox($type, $column, $title, $opt = array()) {
     global $displayOptions, $pldisplay;
     $checked = (defval($_REQUEST, "show$type")
 		|| strpos($pldisplay, " $type ") !== false);
@@ -861,12 +934,21 @@ function displayOptionCheckbox($type, $title, $opt = array()) {
 	$loadresult = "<div id='${type}loadformresult'></div>";
     } else
 	$loadresult = "<div></div>";
+    $opt["class"] = "cbx";
 
     $text = tagg_checkbox("show$type", 1, $checked, $opt)
 	. "&nbsp;" . tagg_label($title) . $loadresult;
     $displayOptions[] = (object) array("type" => $type, "text" => $text,
-				       "checked" => $checked,
-				       "fold" => !$checked && !defval($opt, "unfold"));
+		"checked" => $checked, "column" => $column,
+		"indent" => defval($opt, "indent"),
+		"fold" => !$checked && !defval($opt, "unfold"));
+}
+
+function displayOptionText($text, $column, $opt = array()) {
+    global $displayOptions;
+    $displayOptions[] = (object) array("text" => $text,
+		"column" => $column, "indent" => defval($opt, "indent"),
+		"fold" => !defval($opt, "unfold"));
 }
 
 // Create checkboxes
@@ -885,41 +967,45 @@ if ($pl) {
 	    $onchange .= ";fold('pl',!this.checked,'anonau')";
 	if ($Me->privChair)
 	    $onchange .= ";foldplinfo_extra()";
-	displayOptionCheckbox("au", "Authors", array("id" => "showau", "onchange" => $onchange, "unfold" => true));
+	displayOptionCheckbox("au", 1, "Authors", array("id" => "showau", "onchange" => $onchange, "unfold" => true));
     } else if ($Conf->blindSubmission() > BLIND_OPTIONAL && $Me->privChair) {
 	$onchange = "fold('pl',!this.checked,'anonau');foldplinfo_extra()";
-	displayOptionCheckbox("anonau", "Authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2)), "unfold" => true));
+	displayOptionCheckbox("anonau", 1, "Authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2)), "unfold" => true));
     }
     if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAllAuthors
 	|| $Me->privChair)
-	displayOptionCheckbox("aufull", "Full author info");
+	displayOptionCheckbox("aufull", 1, "Full author info", array("indent" => true));
     if ($Conf->blindSubmission() == BLIND_OPTIONAL && !$viewAllAuthors
 	&& $Me->privChair) {
 	$onchange = "fold('pl',!this.checked,'anonau');foldplinfo_extra()";
-	displayOptionCheckbox("anonau", "Anonymous authors", array("onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2))));
+	displayOptionCheckbox("anonau", 1, "Anonymous authors", array("onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2)), "indent" => true));
     }
     if ($pl->headerInfo["collab"])
-	displayOptionCheckbox("collab", "Collaborators");
+	displayOptionCheckbox("collab", 1, "Collaborators", array("indent" => true));
 
     // Abstract group
     if ($pl->headerInfo["abstract"])
-	displayOptionCheckbox("abstract", "Abstracts", array("unfold" => true));
+	displayOptionCheckbox("abstract", 1, "Abstracts", array("unfold" => true));
     if ($pl->headerInfo["topics"])
-	displayOptionCheckbox("topics", "Topics");
+	displayOptionCheckbox("topics", 1, "Topics");
 
     // Tags group
     if ($Me->isPC && $pl->headerInfo["tags"])
-	displayOptionCheckbox("tags", "Tags", array("disabled" => ($_REQUEST["t"] == "a" && !$Me->privChair), "unfold" => true));
+	displayOptionCheckbox("tags", 1, "Tags", array("disabled" => ($_REQUEST["t"] == "a" && !$Me->privChair), "unfold" => true));
+
+    // Row numbers
+    if ($pl->anySelector)
+	displayOptionCheckbox("rownum", 1, "Row numbers", array("onchange" => "fold('pl',!this.checked,'rownum')"));
 
     // Reviewers group
     if ($Me->privChair) {
-	displayOptionCheckbox("reviewers", "Reviewers");
-	displayOptionCheckbox("pcconf", "PC conflicts");
+	displayOptionCheckbox("reviewers", 2, "Reviewers");
+	displayOptionCheckbox("pcconf", 2, "PC conflicts");
     }
     if ($Me->isPC && $pl->headerInfo["lead"])
-	displayOptionCheckbox("lead", "Discussion leads");
+	displayOptionCheckbox("lead", 2, "Discussion leads");
     if ($Me->isPC && $pl->headerInfo["shepherd"])
-	displayOptionCheckbox("shepherd", "Shepherds");
+	displayOptionCheckbox("shepherd", 2, "Shepherds");
 
     // Scores group
     if (isset($pl->scoreMax)) {
@@ -933,26 +1019,36 @@ if ($pl) {
 	foreach ($rf->fieldOrder as $field)
 	    if ($rf->authorView[$field] > $revViewScore
 		&& isset($rf->options[$field])) {
-		displayOptionCheckbox($field, htmlspecialchars($rf->shortName[$field]));
+		if (count($displayOptions) == $n)
+		    displayOptionText("<strong>Scores</strong>", 3);
+		displayOptionCheckbox($field, 3, htmlspecialchars($rf->shortName[$field]));
 		if ($displayOptions[count($displayOptions) - 1]->checked)
 		    ++$nchecked;
 	    }
 	if (count($displayOptions) > $n && $nchecked == 0)
 	    $displayOptions[$n]->fold = false;
+	if (count($displayOptions) > $n) {
+	    $onchange = "highlightUpdate(\"redisplay\")";
+	    if ($Me->privChair)
+		$onchange .= ";foldplinfo_extra()";
+	    displayOptionText("<div style='padding-top:1ex'>Sort by:<a class='help' href='help$ConfSiteSuffix?t=scoresort' target='_blank' title='Learn more'>?</a> &nbsp;"
+		. tagg_select("scoresort", $scoreSorts, $_SESSION["scoresort"], array("onchange" => $onchange, "id" => "scoresort", "style" => "font-size: 100%"))
+		. "</div>", 3);
+	}
     }
 
     // Formulas group
-    foreach ($paperListFormulas as $formula)
-	displayOptionCheckbox("formula" . $formula->formulaId, htmlspecialchars($formula->name));
-
-    if ($pl->anySelector)
-	displayOptionCheckbox("rownum", "Row numbers", array("onchange" => "fold('pl',!this.checked,'rownum')", "unfold" => true));
+    if (count($paperListFormulas)) {
+	displayOptionText("<div style='padding-top:2ex'><strong>Formulas</strong> <span class='barsep'>&nbsp;|&nbsp;</span> <a href=\"" . selfHref(array("tab" => "formulas")) . "\" onclick='return fold(\"searchform\",0,3)'>Edit formulas</a></div>", 3);
+	foreach ($paperListFormulas as $formula)
+	    displayOptionCheckbox("formula" . $formula->formulaId, 3, htmlspecialchars($formula->name));
+    } else if ($Me->isPC && $Conf->sversion >= 32)
+	displayOptionText("<div style='padding-top:2ex'><strong><a href=\"" . selfHref(array("tab" => "formulas")) . "\" onclick='return fold(\"searchform\",0,3)'>Add formulas</a></strong></div>", 3);
 }
 
 
-echo "<table id='searchform' class='tablinks$activetab fold4o'>
-<tr><td><div class='tlx'><div class='tld1'>";
-$Conf->footerScript("fold(e('searchform'),1,4)");
+echo "<table id='searchform' class='tablinks$activetab fold3$searchform_formulas fold4o'>\n<tr><td><div class='tlx'><div class='tld1'>";
+$Conf->footerScript("fold('searchform',1,4)");
 
 // Basic search
 echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>
@@ -1013,101 +1109,129 @@ echo "</div>";
 
 // Display options
 if ($pl && $pl->count > 0) {
-    echo "<div class='tld3'>";
+    echo "<div class='tld3' style='padding-bottom:1ex'>";
 
-    echo "<form id='foldredisplay' class='fold5c' method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div>\n";
+    echo "<form id='foldredisplay' class='fn3 fold5c' method='post' action='search$ConfSiteSuffix?redisplay=1' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
     foreach (array("q", "qx", "qo", "qt", "t", "sort") as $x)
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
 
     echo "<table><tr>
-  <td class='pad nowrap'><strong>Show:</strong>",
+  <td class='pad nowrap' colspan='2'><strong>Show:</strong>",
 	foldsessionpixel("pl", "pldisplay", null);
 
-    $moredisplay = false;
     foreach ($displayOptions as $do)
 	if ($do->fold) {
-	    $moredisplay = true;
+	    echo "<span class='sep'></span>",
+		"<a class='fn4' href='javascript:void fold(\"searchform\",0,4)'>More &#187;</a>",
+		"<a class='fx4' href='javascript:void fold(\"searchform\",1,4)'>&#171; Fewer</a>";
 	    break;
 	}
 
-    if ($moredisplay)
-	echo "<span class='sep'></span>",
-	    "<a class='fn4' href='javascript:void fold(e(\"searchform\"),0,4)'>More &#187;</a>",
-	    "<a class='fx4' href='javascript:void fold(e(\"searchform\"),1,4)'>&#171; Fewer</a>",
-	    "</td>\n  <td class='fx4'></td>\n";
-    else
-	echo "</td>\n";
-    if (isset($pl->scoreMax))
-	echo "  <td class='padl'></td>\n";
-    echo "</tr><tr>
-  <td class='pad'>";
-
-    foreach ($displayOptions as $do)
-	if (!$do->fold)
-	    echo $do->text;
-    if ($moredisplay) {
-	echo "</td><td class='pad fx4'>";
-	foreach ($displayOptions as $do)
-	    if ($do->fold)
-		echo $do->text;
+    echo "</td></tr>\n";
+    echo "<tr><td class='top'><table>";
+    $column = 0;
+    foreach ($displayOptions as $do) {
+	if ($column && $do->column != $column)
+	    echo "</table></td><td class='top'><table>";
+	$column = $do->column;
+	echo "<tr><td class='padb";
+	if ($do->fold)
+	    echo " fx4";
+	if ($do->indent)
+	    echo "' style='padding-left:2em";
+	echo "'>", $do->text, "</td></tr>\n";
     }
-    echo "</td>\n";
+    echo "</table></td>\n";
 
-    if (isset($pl->scoreMax)) {
-	echo "  <td class='padl'><table><tr><td>";
-	$rf = reviewForm();
-	if ($Me->amReviewer() && $_REQUEST["t"] != "a")
-	    $revViewScore = $Me->viewReviewFieldsScore(null, true);
-	else
-	    $revViewScore = 0;
-	foreach ($rf->fieldOrder as $field)
-	    if ($rf->authorView[$field] > $revViewScore
-		&& isset($rf->options[$field]))
-		echo displayOptionCheckbox($field, htmlspecialchars($rf->shortName[$field]));
-	$onchange = "highlightUpdate(\"redisplay\")";
-	if ($Me->privChair)
-	    $onchange .= ";foldplinfo_extra()";
-	echo "<div class='g'></div></td>
-    <td><input id='redisplay' class='b' type='submit' name='redisplay' value='Redisplay' /></td>
-  </tr><tr>
-    <td colspan='2'>Score sort: &nbsp;",
-	    tagg_select("scoresort", $scoreSorts, $_SESSION["scoresort"], array("onchange" => $onchange, "id" => "scoresort", "style" => "font-size: 100%")),
-	    " &nbsp; <a href='help$ConfSiteSuffix?t=scoresort' class='hint'>What is this?</a>";
+    // "Redisplay" column
+    echo "<td class='top padl'>";
 
-	// "Save display options"
-	if ($Me->privChair) {
-	    echo "\n<div class='g'></div>
+    // Conflict display
+    if ($Me->privChair)
+	echo tagg_checkbox("showforce", 1, !!defval($_REQUEST, "forceShow"),
+			   array("id" => "showforce", "class" => "cbx",
+				 "onchange" => "fold('pl',!this.checked,'force')")),
+	    "&nbsp;", tagg_label("Override conflicts", "showforce"),
+	    "<div class='g'></div>\n";
+
+    echo "<input id='redisplay' class='b' type='submit' value='Redisplay' />";
+
+    // "Make default"
+    if ($Me->privChair) {
+	echo "\n<div class='g'></div>
     <a class='fx5' href='javascript:void savedisplayoptions()'>",
-		"Make these display options the default</a>",
-		" <span id='savedisplayoptionsformcheck' class='fn5'></span>";
-	    $Conf->footerHtml("<form id='savedisplayoptionsform' method='post' action='search$ConfSiteSuffix?savedisplayoptions=1' enctype='multipart/form-data' accept-charset='UTF-8'>"
+	    "Make default</a>",
+	    " <span id='savedisplayoptionsformcheck' class='fn5'></span>";
+	$Conf->footerHtml("<form id='savedisplayoptionsform' method='post' action='search$ConfSiteSuffix?savedisplayoptions=1' enctype='multipart/form-data' accept-charset='UTF-8'>"
 . "<div><input id='scoresortsave' type='hidden' name='scoresort' value='"
 . $_SESSION["scoresort"] . "' /></div></form>");
-	    $Conf->footerScript("function foldplinfo_extra() { fold('redisplay', 0, 5); }");
-	    // strings might be in different orders, so sort before comparing
-	    $pld = explode(" ", trim($Conf->settingText("pldisplay_default", " overAllMerit ")));
-	    sort($pld);
-	    if ($_SESSION["pldisplay"] != " " . ltrim(join(" ", $pld) . " ")
-		|| $_SESSION["scoresort"] != $Conf->settingText("scoresort_default", $defaultScoreSort))
-		$Conf->footerScript("foldplinfo_extra()");
+	$Conf->footerScript("function foldplinfo_extra() { fold('redisplay', 0, 5); }");
+	// strings might be in different orders, so sort before comparing
+	$pld = explode(" ", trim($Conf->settingText("pldisplay_default", " overAllMerit ")));
+	sort($pld);
+	if ($_SESSION["pldisplay"] != " " . ltrim(join(" ", $pld) . " ")
+	    || $_SESSION["scoresort"] != $Conf->settingText("scoresort_default", $defaultScoreSort))
+	    $Conf->footerScript("foldplinfo_extra()");
+    }
+
+    echo "</td>";
+
+    // Done
+    echo "</tr></table></div></form>";
+
+    // Formulas
+    if ($Me->isPC && $Conf->sversion >= 32) {
+	echo "<form class='fx3' method='post' action='search$ConfSiteSuffix?saveformulas=1' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
+	foreach (array("q", "qx", "qo", "qt", "t", "sort") as $x)
+	    if (isset($_REQUEST[$x]))
+		echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />";
+
+	$fs = array();
+	$ftexts = array();
+	foreach ($paperListFormulas as $fdef)
+	    $fs[$fdef->formulaId] = strtolower($fdef->name);
+	asort($fs);
+	$fs["n"] = "(New formula)";
+	$fold = 10;
+
+	echo "<p style='width:44em;margin-top:0'><strong>Formulas</strong> are calculated
+from review statistics.  For example, &ldquo;sum(OveMer)&rdquo;
+would display the sum of a paper's Overall merit scores.</p>";
+
+	echo "<table id='formuladefinitions'><thead><tr>",
+	    "<th></th><th class='f-c'>Name</th><th class='f-c'>Definition</th>",
+	    "</tr></thead><tbody>";
+	$any = 0;
+	foreach ($fs as $formulaId => $name) {
+	    if ($formulaId == "n")
+		$fdef = (object) array("formulaId" => "n", "name" => "", "expression" => "", "createdBy" => 0);
+	    else
+		$fdef = $paperListFormulas[$formulaId];
+	    $name = defval($_REQUEST, "name_$formulaId", $fdef->name);
+	    $expression = defval($_REQUEST, "expression_$formulaId", $fdef->expression);
+	    $disabled = ($Me->privChair || $fdef->createdBy > 0 ? "" : " disabled='disabled'");
+	    echo "<tr>";
+	    if ($fdef->formulaId == "n")
+		echo "<td class='lmcaption' style='padding:10px 1em 0 0'>New formula</td>";
+	    else if ($any == 0) {
+		echo "<td class='lmcaption' style='padding:0 1em 0 0'>Existing formulas</td>";
+		$any = 1;
+	    } else
+		echo "<td></td>";
+	    echo "<td class='lxcaption'>",
+		"<input class='textlite' type='text' style='width:16em' name='name_$formulaId'$disabled tabindex='8' value=\"" . htmlspecialchars($name) . "\" />",
+		"</td><td style='padding:2px 0'>",
+		"<input class='textlite' type='text' style='width:30em' name='expression_$formulaId'$disabled tabindex='8' value=\"" . htmlspecialchars($expression) . "\" />",
+		"</td></tr>\n";
 	}
+	echo "<tr><td colspan='3' style='padding:1ex 0;text-align:right'>",
+	    "<input type='reset' value='Cancel' onclick='fold(\"searchform\",1,3)' tabindex='8' />",
+	    "&nbsp; <input type='submit' style='font-weight:bold' value='Save changes' tabindex='8' />",
+	    "</td></tr></tbody></table></div></form>\n";
+    }
 
-	// Conflict display
-	if ($Me->privChair)
-	    echo "\n<div class='g'></div>",
-		tagg_checkbox("showforce", 1, !!defval($_REQUEST, "forceShow"),
-			      array("id" => "showforce",
-				    "onchange" => "fold('pl',!this.checked,'force')")),
-		"&nbsp;", tagg_label("Override conflicts", "showforce"),
-		"<br />\n";
-
-	echo "</td>
-  </tr></table></td>\n";
-    } else
-	echo "<td><input id='redisplay' class='b' type='submit' name='redisplay' value='Redisplay' /></td>\n";
-
-    echo "</tr></table></div></form></div>";
+    echo "</div>";
 }
 
 echo "</div>";
@@ -1118,7 +1242,7 @@ echo "</td></tr>
   <td><div class='tll1'><a class='tla' onclick='return crpfocus(\"searchform\", 1)' href=\"", selfHref(array("tab" => "basic")), "\">Basic search</a></div></td>
   <td><div class='tll2'><a class='tla' onclick='return crpfocus(\"searchform\", 2)' href=\"", selfHref(array("tab" => "advanced")), "\">Advanced search</a></div></td>\n";
 if ($pl && $pl->count > 0)
-    echo "  <td><div class='tll3'><a class='tla' onclick='return crpfocus(\"searchform\", 3)' href=\"", selfHref(array("tab" => "display")), "\">Display options</a></div></td>\n";
+    echo "  <td><div class='tll3'><a class='tla' onclick='fold(\"searchform\",1,3);return crpfocus(\"searchform\",3)' href=\"", selfHref(array("tab" => "display")), "\">Display options</a></div></td>\n";
 echo "</tr></table></td></tr>
 </table>\n\n";
 

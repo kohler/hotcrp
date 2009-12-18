@@ -347,7 +347,9 @@ span.hastitle {
 	margin: 0px auto;
 	position: relative;
 }
-#searchform .tld3, #contactsform .tld2 {
+#searchform #foldredisplay,
+#searchform #formuladefinitions,
+#contactsform .tld2 {
 	font-size: smaller;
 }
 
