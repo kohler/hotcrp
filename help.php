@@ -17,6 +17,7 @@ $topicTitles = array("topics" => "Help topics",
 		     "votetags" => "Voting tags",
 		     "scoresort" => "Sorting scores",
 		     "ranking" => "Paper ranking",
+		     "formulas" => "Formulas",
 		     "chair" => "Chair's guide");
 
 $topic = defval($_REQUEST, "t", "topics");
@@ -41,12 +42,16 @@ else
     $Conf->header("<a href='help$ConfSiteSuffix'>Help</a>", null, $abar);
 
 
-function _alternateRow($caption, $entry) {
+function _alternateRow($caption, $entry, $next = null) {
     global $rowidx;
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
-    echo "<tr class='k", ($rowidx % 2), "'>";
-    echo "<td class='srcaption nowrap'>", $caption, "</td>";
-    echo "<td class='sentry'>", $entry, "</td></tr>\n";
+    echo "<tr class='k", ($rowidx % 2), "'>",
+	"<td class='srcaption nowrap'>", $caption, "</td>",
+	"<td class='sentry'", ($next === null ? " colspan='2'>" : ">"),
+	$entry, "</td>";
+    if ($next !== null)
+	echo "<td class='sentry'>", $next, "</td>";
+    echo "</tr>\n";
 }
 
 
@@ -62,6 +67,7 @@ function topics() {
     _alternateRow("<a href='help$ConfSiteSuffix?t=revrate'>Review ratings</a>", "Rating reviews.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=votetags'>Voting tags</a>", "Voting for papers.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=ranking'>Paper ranking</a>", "Ranking papers using tags.");
+    _alternateRow("<a href='help$ConfSiteSuffix?t=formulas'>Formulas</a>", "Creating score formulas.");
     echo "</table>";
 }
 
@@ -735,6 +741,77 @@ X	11	Analyzing Scatter/Gather I/O Using Encrypted Epistemologies
 }
 
 
+function showformulas() {
+    global $Conf, $ConfSiteSuffix, $Me;
+
+    echo "<table>";
+    _alternateRow("Formulas basics", "
+Program committee members and administrators can display <em>formulas</em>
+that calculate properties of paper scores&mdash;for instance, the
+standard deviation of papers' Overall merit scores, or average Overall
+merit among reviewers with high Reviewer expertise.
+Formula values become display options that show up on paper search screens.
+
+<p>Add new formulas using <a
+href=\"search$ConfSiteSuffix?q=&amp;tab=formulas\">Search &gt; Display options
+&gt; More</a>.  Each formula has a name and a definition.  The definition uses
+a familiar expression language.  Formulas do not work well for alphabetical
+scores.</p>
+
+<p>As an example, the following formula calculates a weighted average of the
+Overall merit score, where reviews are weighted proportional to the Reviewer
+expertise score (so low expertise has low weight):</p>
+
+<blockquote>wavg(OveMer, RevExp)</blockquote>
+
+<p>But this weighting function might be too aggressive; the following function
+weights low expertise just slightly less than high expertise.</p>
+
+<blockquote>wavg(OveMer, RevExp < 3 ? 0.8 : 1)</blockquote>
+
+<p>Formula expressions are built from the following parts:</p>");
+    _alternateRow("Arithmetic", "2", "Numbers");
+    _alternateRow("", "<em>e</em> + <em>e</em>, <em>e</em> - <em>e</em>", "Addition, subtraction");
+    _alternateRow("", "<em>e</em> * <em>e</em>, <em>e</em> / <em>e</em>, <em>e</em> % <em>e</em>", "Multiplication, division, remainder");
+    _alternateRow("", "<em>e</em> ** <em>e</em>", "Exponentiation");
+    _alternateRow("", "<em>e</em> == <em>e</em>, <em>e</em> != <em>e</em>,<br /><em>e</em> &lt; <em>e</em>, <em>e</em> &gt; <em>e</em>, <em>e</em> &lt;= <em>e</em>, <em>e</em> &gt;= <em>e</em>", "Comparisons (return 0 or 1)");
+    _alternateRow("", "!<em>e</em>", "Logical not (returns 0 or 1)");
+    _alternateRow("", "<em>e</em> &amp;&amp; <em>e</em>, <em>e</em> || <em>e</em>", "Logical and, logical or (return 0 or 1)");
+    _alternateRow("", "<em>test</em> ? <em>iftrue</em> : <em>iffalse</em>", "If-then-else operator");
+    _alternateRow("", "(<em>e</em>)", "Parentheses");
+    _alternateRow("", "greatest(<em>e</em>, <em>e</em>, ...)", "Maximum");
+    _alternateRow("", "least(<em>e</em>, <em>e</em>, ...)", "Minimum");
+    _alternateRow("", "null", "The blank value");
+    _alternateRow("Tags", "tag:<em>tagname</em>", "True if this paper has tag <em>tagname</em>");
+    _alternateRow("", "tagval:<em>tagname</em>", "The value of tag <em>tagname</em>, or blank if this paper doesn't have that tag");
+    _alternateRow("Review scores", "overall-merit", "This paper's Overall merit score");
+    _alternateRow("", "OveMer", "Abbreviations are also accepted");
+    _alternateRow("Aggregate functions", "Aggregate functions calculate a
+value based on all of a paper's visible reviews.  For instance,
+&ldquo;max(OveMer)&rdquo; would return the maximum Overall merit score
+assigned to a paper.
+
+<p>An aggregate function's argument is calculated once per visible review.
+For instance, &ldquo;max(OveMer/RevExp)&rdquo; calculates the maximum value of
+&ldquo;OveMer/RevExp&rdquo; for any review, whereas
+&ldquo;max(OveMer)/max(RevExp)&rdquo; divides the maximum overall merit by the
+maximum reviewer expertise.</p>
+
+<p>The top-level value of a formula expression cannot be a raw review score.
+Use an aggregate function to calculate a property over all review scores.</p>");
+    _alternateRow("", "max(<em>e</em>), min(<em>e</em>)", "Maximum, minimum");
+    _alternateRow("", "count(<em>e</em>)", "Number of reviews where <em>e</em> is not blank");
+    _alternateRow("", "sum(<em>e</em>)", "Sum");
+    _alternateRow("", "avg(<em>e</em>)", "Average");
+    _alternateRow("", "wavg(<em>e</em>, <em>weight</em>)", "Weighted average; equals &ldquo;sum(<em>e</em> * <em>weight</em>) / sum(<em>weight</em>)&rdquo;");
+    _alternateRow("", "stddev(<em>e</em>)", "Sample standard deviation");
+    _alternateRow("", "var(<em>e</em>)", "Sample variance");
+    _alternateRow("", "stddev_pop(<em>e</em>), var_pop(<em>e</em>)", "Population standard deviation, population variance");
+
+    echo "</table>\n";
+}
+
+
 function chair() {
     global $ConfSiteSuffix;
     echo "<table>";
@@ -1049,6 +1126,8 @@ else if ($topic == "scoresort")
     scoresort();
 else if ($topic == "ranking")
     showranking();
+else if ($topic == "formulas")
+    showformulas();
 else if ($topic == "chair")
     chair();
 
