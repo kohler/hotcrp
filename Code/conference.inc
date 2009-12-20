@@ -47,8 +47,11 @@ class Conference {
 	} else
 	    die("Package misconfigured: dsn syntax error");
 
-	if (!$this->dblink || !mysql_select_db($dbname, $this->dblink))
-	    die("Unable to connect to database at " . $Opt["dsn"]);
+	if (!$this->dblink || !mysql_select_db($dbname, $this->dblink)) {
+	    // Obscure password
+	    $dsn = preg_replace('{\A(\w+://[^/:]*:)[^\@/]+([\@/])}', '$1PASSWORD$2', $Opt["dsn"]);
+	    die("Unable to connect to database at " . $dsn);
+	}
 	mysql_query("set names 'utf8'", $this->dblink);
 	// XXX NB: Many MySQL versions, if not all of them, will ignore the
 	// @@max_allowed_packet setting.  Keeping the code in case it's
