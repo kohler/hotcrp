@@ -1301,13 +1301,18 @@ function unparseScoreAverage($avg, $levelChar) {
 function updatePaperListDisplayOptions($x) {
     global $paperListFolds;
     require_once("paperlist.inc");
-    $paperListFoldMap = array_flip($paperListFolds);
-    $a = str_split($x);
-    $x = " ";
-    for ($i = 0; $i < count($a); ++$i) {
-	$score = ord($a[$i]);
-	if (isset($paperListFoldMap[$score]))
-	    $x .= $paperListFoldMap[$score] . " ";
+    $foldmap = array();
+    foreach ($paperListFolds as $name => $fdef)
+	$foldmap[$fdef->foldnum] = $name;
+
+    if ($x) {
+	$a = str_split($x);
+	$x = " ";
+	for ($i = 0; $i < count($a); ++$i) {
+	    $score = ord($a[$i]);
+	    if (isset($foldmap[$score]))
+		$x .= $foldmap[$score] . " ";
+	}
     }
     return $x;
 }
