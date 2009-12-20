@@ -1847,7 +1847,7 @@ class PaperListField {
 
 	$nextfold = 21;
 	$paperListFormulas = array();
-	if ($Conf->setting("formulas") && $Conf->sversion >= 32) {
+	if ($Conf && $Conf->setting("formulas") && $Conf->sversion >= 32) {
 	    $result = $Conf->q("select * from Formula");
 	    while (($row = edb_orow($result))) {
 		$fid = $row->formulaId;
