@@ -1157,11 +1157,11 @@ if ($pl && $pl->count > 0) {
 
     echo "<input id='redisplay' class='b' type='submit' value='Redisplay' />";
 
-    // "Make default"
+    // "Set default display"
     if ($Me->privChair) {
 	echo "\n<div class='g'></div>
     <a class='fx5' href='javascript:void savedisplayoptions()'>",
-	    "Make default</a>",
+	    "Make this the default display</a>",
 	    " <span id='savedisplayoptionsformcheck' class='fn5'></span>";
 	$Conf->footerHtml("<form id='savedisplayoptionsform' method='post' action='search$ConfSiteSuffix?savedisplayoptions=1' enctype='multipart/form-data' accept-charset='UTF-8'>"
 . "<div><input id='scoresortsave' type='hidden' name='scoresort' value='"
