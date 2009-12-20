@@ -1158,7 +1158,13 @@ span.pstat_with {
 	color: #333333;
 }
 span.pstat_sub {
-	color: #007700;
+	color: #923e58;
+}
+span.pstat_decno {
+	color: #9f0000;
+}
+span.pstat_decyes {
+	color: #259f00;
 }
 
 table.pt_buttons td.ptb_explain {

@@ -1098,19 +1098,32 @@ class Contact {
     }
 
     function paperStatus($paperId, $row, $long) {
-	global $Conf;
+	global $Conf, $paperStatusCache;
 	if ($row->timeWithdrawn > 0)
 	    return "<span class='pstat pstat_with'>Withdrawn</span>";
 	else if ($row->timeSubmitted <= 0 && $row->paperStorageId == 1)
 	    return "<span class='pstat pstat_noup'>Not uploaded</span>";
 	else if (isset($row->outcome) && $row->outcome != 0
 		 && $this->canViewDecision($row, abs($long) > 1)) {
-	    $rf = reviewForm();
-	    $x =& $rf->options['outcome'][$row->outcome];
-	    if (isset($x))
-		return "<span class=\"pstat pstat_" . htmlspecialchars($x) . "\">" . htmlspecialchars($x) . "</span>";
-	    else
-		return "<span class='pstat'>Unknown decision \"" . htmlspecialchars($row->outcome) . "\"</span>";
+	    if (!isset($paperStatusCache) || !$paperStatusCache)
+		$paperStatusCache = array();
+	    if (!isset($paperStatusCache[$row->outcome])) {
+		$data = "<span class=\"pstat "
+		    . ($row->outcome > 0 ? "pstat_decyes" : "pstat_decno");
+
+		$rf = reviewForm();
+		$decname =& $rf->options["outcome"][$row->outcome];
+		if (isset($decname)) {
+		    $trdecname = preg_replace('/[^-.\w]/', '', $decname);
+		    if ($trdecname != "")
+			$data .= " pstat_" . strtolower($trdecname);
+		    $data .= "\">" . htmlspecialchars($decname) . "</span>";
+		} else
+		    $data .= "\">Unknown decision #" . htmlspecialchars($row->outcome) . "</span>";
+
+		$paperStatusCache[$row->outcome] = $data;
+	    }
+	    return $paperStatusCache[$row->outcome];
 	//} else if (isset($row->reviewCount) && $row->reviewCount > 0) {
 	//    if ($long < 0 && $row->conflictType < CONFLICT_AUTHOR)
 	//	return "";
