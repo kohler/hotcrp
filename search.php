@@ -1026,7 +1026,7 @@ if ($pl) {
 		    ++$nchecked;
 	    }
 	if (count($displayOptions) > $n && $nchecked == 0)
-	    $displayOptions[$n]->fold = false;
+	    $displayOptions[$n + 1]->fold = false;
 	if (count($displayOptions) > $n) {
 	    $onchange = "highlightUpdate(\"redisplay\")";
 	    if ($Me->privChair)
