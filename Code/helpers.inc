@@ -71,7 +71,8 @@ function cleannl($text) {
 }
 
 
-// other helpers
+// string helpers
+
 function simplifyWhitespace($x) {
     return trim(preg_replace('/\s+/', " ", $x));
 }
@@ -103,6 +104,17 @@ function mkarray($value) {
     else
 	return array($value);
 }
+
+function is_valid_utf8($str) {
+    return @iconv("UTF-8", "UTF-8", $str) === false;
+}
+
+function windows_1252_to_utf8($str) {
+    return iconv("Windows-1252", "UTF-8//TRANSLIT//IGNORE", $str);
+}
+
+
+// web helpers
 
 function alert($string = "") {
     print "<script type='text/javascript'>\n";
