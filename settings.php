@@ -971,6 +971,14 @@ if (isset($_REQUEST["update"])) {
 	&& time() < $Conf->setting("pcrev_soft")
 	&& count($Error) == 0)
 	$Conf->warnMsg("Authors can now see reviews and comments although it is before the review deadline.  This is sometimes unintentional.");
+    if (array_key_exists("final_open", $Values)
+	&& $Values["final_open"]
+	&& (!array_key_exists("final_done", $Values) || !$Values["final_done"]
+	    || $Values["final_done"] > time())
+	&& (array_key_exists("seedec", $Values)
+	    ? $Values["seedec"] != SEEDEC_ALL
+	    : $Conf->setting("seedec") != SEEDEC_ALL))
+	$Conf->warnMsg("Authors will not be able to submit final copies until they can see paper decisions.  You may want to change the &ldquo;Who can see decisions&rdquo; setting.");
 
     // unset text messages that equal the default
     if (array_key_exists("conflictdefmsg", $Values)
