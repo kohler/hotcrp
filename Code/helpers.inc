@@ -106,7 +106,7 @@ function mkarray($value) {
 }
 
 function is_valid_utf8($str) {
-    return @iconv("UTF-8", "UTF-8", $str) === false;
+    return @mb_check_encoding($str, "UTF-8");
 }
 
 function windows_1252_to_utf8($str) {

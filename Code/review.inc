@@ -362,7 +362,7 @@ class ReviewForm {
 		    // it were Windows-1252, which is a superset of
 		    // ISO-8859-1.
 		    if (!is_valid_utf8($fval))
-			$fval = windows_1252_to_utf8($fval);
+			$req[$field] = $fval = windows_1252_to_utf8($fval);
 		}
 		$q[] = "$field='" . sqlq($fval) . "'";
 	    }
