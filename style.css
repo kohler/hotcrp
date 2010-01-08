@@ -622,6 +622,22 @@ div.aahc.alert div.aa {
 }
 
 
+/* Ajax checks */
+img.ajaxcheck, img.ajaxcheck_good, img.ajaxcheck_bad {
+	width: 8px;
+	height: 9px;
+}
+img.ajaxcheck_good, img.ajaxcheck_bad {
+	background-image: url(images/sprite.png?2);
+}
+img.ajaxcheck_good {
+	background-position: -52px 0;
+}
+img.ajaxcheck_bad {
+	background-position: -52px -10px;
+}
+
+
 /* Normal captions and entries */
 td.caption {
 	text-align: right;
@@ -881,7 +897,7 @@ img.dlimg, img.placthook {
 img.placthook {
 	width: 12px;
 	width: 12px;
-	background-image: url(images/sprite.png);
+	background-image: url(images/sprite.png?2);
 	background-position: -40px 0px;
 }
 img.sdlimg {
@@ -1017,7 +1033,7 @@ span.asspref-1 {
 }
 
 img.ass-1, img.ass-2 {
-	background-image: url(images/sprite.png);
+	background-image: url(images/sprite.png?2);
 	width: 12px;
 	height: 12px;
 }
@@ -1059,7 +1075,7 @@ img.ass4n {
 }
 
 img.prev, img.next {
-	background-image: url(images/sprite.png);
+	background-image: url(images/sprite.png?2);
 	width: 8px;
 	height: 9px;
 }
@@ -1071,7 +1087,7 @@ img.next {
 }
 
 img.checksum12, img.timestamp12 {
-	background-image: url(images/sprite.png);
+	background-image: url(images/sprite.png?2);
 	width: 12px;
 	height: 12px;
 }
@@ -1083,7 +1099,7 @@ img.timestamp12 {
 }
 
 img.expander {
-	background-image: url(images/sprite.png);
+	background-image: url(images/sprite.png?2);
 	width: 9px;
 	height: 9px;
 	border: 0 none;
@@ -1260,7 +1276,7 @@ td.pl_lastvisit, td.al_time {
 	font-size: smaller;
 	white-space: nowrap;
 }
-td.pl_name, td.al_name, td.pl_assrev {
+td.pl_name, td.al_name, td.pl_assrev, td.pl_editrevpref {
 	white-space: nowrap;
 }
 table.ppltable td.pl_score {

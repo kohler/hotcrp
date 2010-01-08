@@ -345,10 +345,11 @@ function setajaxcheck(elt, rv) {
     if (typeof elt == "string")
 	elt = e(elt);
     if (elt) {
-	var i = (rv.ok ? "check" : "cross");
-	var s = (rv.ok ? "Saved" : (rv.error ? rv.error : "Error"));
-	s = s.replace(/\"/g, "\\\"");
-	elt.innerHTML = "<img class='check' src='images/" + i + ".png' alt='' title=\"" + s + "\" />";
+	var s = (rv.ok ? "Saved" : (rv.error ? rv.error : "Error")),
+	    c = elt.className.replace(/\s*ajaxcheck\w*\s*/, "");
+	elt.setAttribute("title", s);
+	elt.setAttribute("alt", rv.ok ? "Saved" : "Error");
+	elt.className = c + " ajaxcheck_" + (rv.ok ? "good" : "bad");
     }
 }
 
