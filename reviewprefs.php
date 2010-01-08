@@ -37,8 +37,7 @@ function savePreferences($reviewer) {
 	if (strlen($k) > 7 && $k[0] == "r" && substr($k, 0, 7) == "revpref"
 	    && ($p = rcvtint(substr($k, 7))) > 0) {
 	    if (($v = cvtpref($v)) >= -1000000) {
-		if ($v != 0)
-		    $setting[$p] = $v;
+		$setting[$p] = $v;
 		$pmax = max($pmax, $p);
 	    } else
 		$error = true;
@@ -56,26 +55,23 @@ function savePreferences($reviewer) {
     if (!$result)
 	return $result;
 
-    $delete = "delete from PaperReviewPreference where contactId=$reviewer and (";
-    $orjoin = "";
+    $deletes = array();
     for ($p = 1; $p <= $pmax; $p++)
 	if (isset($setting[$p])) {
-	    $delete .= $orjoin;
-	    if (!isset($setting[$p + 1]))
-		$delete .= "paperId=$p";
-	    else {
-		$delete .= "paperId between $p and ";
-		for ($p++; isset($setting[$p + 1]); $p++)
-		    /* nada */;
-		$delete .= $p;
-	    }
-	    $orjoin = " or ";
+	    $p0 = $p;
+	    while (isset($setting[$p + 1]))
+		++$p;
+	    if ($p0 == $p)
+		$deletes[] = "paperId=$p0";
+	    else
+		$deletes[] = "paperId between $p0 and $p";
 	}
-    $Conf->qe($delete . ")", $while);
+    if (count($deletes))
+	$Conf->qe("delete from PaperReviewPreference where contactId=$reviewer and (" . join(" or ", $deletes) . ")", $while);
 
     $q = "";
     for ($p = 1; $p <= $pmax; $p++)
-	if (isset($setting[$p]))
+	if (isset($setting[$p]) && $setting[$p] != 0)
 	    $q .= "($p, $reviewer, $setting[$p]), ";
     if (strlen($q))
 	$Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values " . substr($q, 0, strlen($q) - 2), $while);
