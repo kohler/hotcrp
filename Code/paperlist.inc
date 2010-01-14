@@ -1220,23 +1220,23 @@ class PaperList extends BaseList {
 	    return array(1, 11, 20);
 	case "s":
 	case "acc":
-	    return $this->addScores(array(1000, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
+	    return $this->addScores(array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
 	case "all":
 	case "act":
-	    return array(1000, 1, 11, 20, 27, 70, 72, 71, 73, 74, 75, 76, 77, 78);
+	    return array(self::FIELD_SELECTOR, 1, 11, 20, 27, 70, 72, 71, 73, 74, 75, 76, 77, 78);
 	case "reviewerHome":
 	    $this->paperLink = "review";
 	    return array(1, 11, 27, 21);
 	case "r":
 	case "lead":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(1000, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
+	    return $this->addScores(array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
 	case "rout":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(1000, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
+	    return $this->addScores(array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
 	case "req":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(1000, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
+	    return $this->addScores(array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
 	case "reqrevs":
 	    $this->paperLink = "review";
 	    return array(1, 11, self::FIELD_REVIEWER_MONITOR, self::FIELD_REVIEWER_STATUS, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78);
@@ -1245,16 +1245,16 @@ class PaperList extends BaseList {
 	    return array(1, 11, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48);
 	  case "conflict":
 	    $this->paperLink = "assign";
-	    return array(102, 1, 11, self::FIELD_CONFLICT_CONFIRM, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
+	    return array(self::FIELD_SELECTOR_CONFLICT, 1, 11, self::FIELD_CONFLICT_CONFIRM, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
 	  case "editReviewPreference":
 	    $this->paperLink = "paper";
-	    return array(1000, 1, 11, 36, 27, 40, 70, 72, 37);
+	    return array(self::FIELD_SELECTOR, 1, 11, 36, 27, 40, 70, 72, 37);
 	  case "reviewers":
 	    $this->paperLink = "assign";
 	    return array(1, 11, 21, 38);
 	  case "reviewersSel":
 	    $this->paperLink = "assign";
-	    return array(101, 1, 11, 21, 38);
+	    return array(self::FIELD_SELECTOR_ON, 1, 11, 21, 38);
 	  case "revs":
 	    $this->paperLink = "review";
 	    return array(1, 11, 25, 27);
