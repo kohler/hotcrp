@@ -7,31 +7,55 @@ function rf_checkOptions(&$var, &$options, &$order, &$levelChar) {
     global $Conf;
     if (!isset($var))
 	return false;
+
     $var = cleannl($var);
-    if ($var && ord($var[0]) >= 65 && ord($var[0]) <= 90
-	&& $Conf->sversion >= 9)
-	$expect = $var[0];
-    else
-	$expect = 1;
-    $text = '';
-    $options = array();
+    $letters = ($var && ord($var[0]) >= 65 && ord($var[0]) <= 90
+		&& $Conf->sversion >= 9);
+    $expect = ($letters ? "[A-Z]" : "[1-9]");
+
+    $opts = array();
+    $lowonum = 10000;
+
     foreach (explode("\n", $var) as $line) {
 	$line = trim($line);
 	if ($line != "") {
-	    if (preg_match("/^$expect\\.\\s*(\\S.*)/", $line, $matches)
-		|| preg_match("/^$expect\\s+(\\S.*)/", $line, $matches)) {
-		$text .= "$expect. $matches[1]\n";
-		$options[$expect] = $matches[1];
-		$expect = (ord($expect) >= 65 ? chr(ord($expect) + 1) : $expect + 1);
+	    if ((preg_match("/^($expect)\\.\\s*(\\S.*)/", $line, $m)
+		 || preg_match("/^($expect)\\s+(\\S.*)/", $line, $m))
+		&& !isset($opts[$m[1]])) {
+		$onum = ($letters ? ord($m[1]) : (int) $m[1]);
+		$lowonum = min($lowonum, $onum);
+		$opts[$onum] = $m[2];
 	    } else
 		return false;
 	}
     }
+
+    // numeric options must start from 1
+    if (!$letters && count($opts) > 0 && $lowonum != 1)
+	return false;
+    // must have at least 2 options, but off-form fields don't count
+    if (count($opts) < 2 && (!isset($order) || rcvtint($order) >= 0))
+	return false;
+
+    $text = "";
+    $seqopts = array();
+    for ($onum = $lowonum; $onum < $lowonum + count($opts); ++$onum) {
+	if (!isset($opts[$onum]))	// options out of order
+	    return false;
+	$ochr = ($letters ? chr($onum) : $onum);
+	$seqopts[$ochr] = $opts[$onum];
+	$text .= $ochr . ". " . $opts[$onum] . "\n";
+    }
+
+    if ($letters) {
+	$options = array_reverse($seqopts, true);
+	$levelChar = $lowonum + count($opts);
+    } else {
+	$options = $seqopts;
+	$levelChar = 1;
+    }
     $var = $text;
-    if (ord($expect) >= 65)
-	$options = array_reverse($options, true);
-    $levelChar = (ord($expect) >= 65 ? ord($expect) : 1);
-    return (count($options) >= 2 || (isset($order) && rcvtint($order) < 0));
+    return true;
 }
 
 function rf_update($lock) {
