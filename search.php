@@ -890,7 +890,7 @@ $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"])) {
     $pl = new PaperList(true, true, $Search);
     $pl->showHeader = PaperList::HEADER_TITLES;
-    $pl_text = $pl->text($Search->limitName, $Me);
+    $pl_text = $pl->text($Search->limitName, $Me, "pltable_full");
 } else
     $pl = null;
 
@@ -1254,7 +1254,7 @@ if ($pl) {
 	$Conf->warnMsg(join("<br />\n", $Search->warnings));
     }
 
-    echo "<div class='maintabsep'></div>\n\n<div class='searchresult'>";
+    echo "<div class='maintabsep'></div>\n\n<div class='pltable_full_ctr'>";
 
     if ($pl->anySelector)
 	echo "<form method='post' action=\"", selfHref(array("selector" => 1), "search$ConfSiteSuffix"), "\" enctype='multipart/formdata' accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck();'><div class='inform'>\n",

@@ -203,7 +203,7 @@ $pl = new PaperList(true, true, $search);
 $pl->showHeader = PaperList::HEADER_TITLES;
 $pl->foldtype = "pf";
 $pl->footer = "<div id='plactr'><input class='hb' type='submit' name='update' value='Save changes' /></div>";
-$pl_text = $pl->text("editReviewPreference", $Me);
+$pl_text = $pl->text("editReviewPreference", $Me, "pltable_full");
 
 
 // DISPLAY OPTIONS
@@ -282,7 +282,7 @@ echo "<form class='assignpc' method='post' action=\"reviewprefs$ConfSiteSuffix?r
     "<div class='inform'>",
     "<input id='defaultact' type='hidden' name='defaultact' value='' />",
     "<input class='hidden' type='submit' name='default' value='1' />",
-    "<div class='assignresult'>\n",
+    "<div class='pltable_full_ctr'>\n",
     $pl_text,
     "</div>";
 // echo "<table class='center'><tr><td><input class='hb' type='submit' name='update' value='Save preferences' /></td></tr></table>\n";

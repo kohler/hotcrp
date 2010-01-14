@@ -1285,7 +1285,7 @@ class PaperList extends BaseList {
 	$Conf->footerHtml($t);
     }
 
-    function text($listname, $me) {
+    function text($listname, $me, $extra_class = "") {
 	global $Conf, $ConfSiteSuffix, $paperListFields, $paperListFolds,
 	    $reviewScoreNames;
 
@@ -1513,6 +1513,8 @@ class PaperList extends BaseList {
 	}
 
 	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname);
+	if ($extra_class != "")
+	    $x .= " " . $extra_class;
 	$foldmap = array();
 	$needloadmap = array();
 	// Ajax load forms for extra fields
