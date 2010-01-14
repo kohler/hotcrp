@@ -398,7 +398,7 @@ class PaperSearch {
 		    // switch meaning of inequality
 		    if ($m[2][0] == "<")
 			$m[2] = ">" . substr($m[2], 1);
-		    else
+		    else if ($m[2][0] == ">")
 			$m[2] = "<" . substr($m[2], 1);
 		    $value = array($field . $m[2] . ($rf->reviewFields[$field] - ord(strtoupper($m[3]))), $m[1]);
 		} else
