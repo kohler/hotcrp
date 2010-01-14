@@ -57,10 +57,8 @@ function highlightUpdate(which, off) {
     }
 
     if (which.className) {
-	if (off)
-	    which.className = which.className.replace(" alert", "");
-	else
-	    which.className = which.className + " alert";
+	result = which.className.replace(" alert", "");
+	which.className = (off ? result : result + " alert");
     }
 }
 

@@ -9,6 +9,13 @@ require_once('Code/search.inc');
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair();
+
+// paper selection
+if (!isset($_REQUEST["q"]) || trim($_REQUEST["q"]) == "(All)")
+    $_REQUEST["q"] = "";
+if (!isset($_REQUEST["t"]))
+    $_REQUEST["t"] = "s";
+
 $kind = defval($_REQUEST, "kind", "a");
 if ($kind != "a" && $kind != "c")
     $kind = "a";
@@ -18,6 +25,13 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && $kind == "c") {
     foreach ($_REQUEST["pap"] as $p)
 	if (($p = cvtint($p)) > 0)
 	    $_REQUEST["assrev$p"] = -1;
+}
+if (isset($_REQUEST["papx"]) && is_string($_REQUEST["papx"]))
+    $_REQUEST["papx"] = preg_split('/\s+/', $_REQUEST["papx"]);
+if (isset($_REQUEST["papx"]) && is_array($_REQUEST["papx"])) {
+    foreach ($_REQUEST["papx"] as $p)
+	if (($p = cvtint($p)) > 0 && !isset($_REQUEST["assrev$p"]))
+	    $_REQUEST["assrev$p"] = 0;
 }
 
 // set review round
@@ -72,10 +86,12 @@ function saveAssignments($reviewer) {
     $lastPaperId = -1;
     $del = $ins = "";
     while (($row = edb_orow($result))) {
-	if ($row->paperId == $lastPaperId || $row->conflictType >= CONFLICT_AUTHOR)
+	if ($row->paperId == $lastPaperId
+	    || $row->conflictType >= CONFLICT_AUTHOR
+	    || !isset($_REQUEST["assrev$row->paperId"]))
 	    continue;
 	$lastPaperId = $row->paperId;
-	$type = rcvtint($_REQUEST["assrev$row->paperId"], 0);
+	$type = cvtint($_REQUEST["assrev$row->paperId"], 0);
 	if ($type >= 0 && $row->conflictType > 0 && $row->conflictType < CONFLICT_AUTHOR)
 	    $del .= " or paperId=$row->paperId";
 	if ($type < 0 && $row->conflictType < CONFLICT_CHAIRMARK)
@@ -122,6 +138,73 @@ if ($kind == "a")
 echo "</dl>\nClick a heading to sort.\n</div></div>";
 
 
+$pcm = pcMembers();
+if ($reviewer > 0)
+    echo "<h2 style='margin-top:1em'>Assignments for ", contactNameHtml($pcm[$reviewer]), "</h2>\n";
+else
+    echo "<h2 style='margin-top:1em'>Assignments by PC member</h2>\n";
+
+
+// Change PC member
+echo "<div class='aahc assignpc_pcsel'>",
+    "<form method='get' action='manualassign$ConfSiteSuffix' accept-charset='UTF-8' id='selectreviewerform'><div class='inform'>\n";
+
+$query = "select ContactInfo.contactId, firstName, lastName,
+		count(reviewId) as reviewCount
+		from ContactInfo
+		join PCMember using (contactId)
+		left join PaperReview on (ContactInfo.contactId=PaperReview.contactId and PaperReview.reviewType>=" . REVIEW_SECONDARY . ")
+		group by contactId
+		order by lastName, firstName, email";
+$result = $Conf->qe($query);
+$rev_opt = array();
+if ($reviewer <= 0)
+    $rev_opt[0] = "(Select a PC member)";
+while (($row = edb_orow($result)))
+    $rev_opt[$row->contactId] = contactHtml($row) . " ("
+	. plural($row->reviewCount, "assignment") . ")";
+
+echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
+    "<td>", tagg_select("reviewer", $rev_opt, $reviewer, array("onchange" => "hiliter(this)")), "</td></tr>",
+    "<tr><td colspan='2'><div class='g'></div></td></tr>\n";
+
+// Paper selection
+$tOpt = array("s" => "Submitted papers",
+	      "acc" => "Accepted papers",
+	      "und" => "Undecided papers",
+	      "all" => "All papers");
+if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
+    $_REQUEST["t"] = "s";
+$q = (defval($_REQUEST, "q", "") == "" ? "(All)" : $_REQUEST["q"]);
+echo "<tr><td>Paper selection: &nbsp;</td>",
+    "<td><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" onchange='hiliter(this)' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
+    tagg_select("t", $tOpt, $_REQUEST["t"], array("onchange" => "hiliter(this)")),
+    "</td></tr>\n",
+    "<tr><td colspan='2'><div class='g'></div>\n";
+
+echo tagg_radio("kind", "a", $kind == "a",
+	       array("onchange" => "hiliter(this)")),
+    "&nbsp;", tagg_label("Assign reviews and/or conflicts"), "<br />\n",
+    tagg_radio("kind", "c", $kind == "c",
+	       array("onchange" => "hiliter(this)")),
+    "&nbsp;", tagg_label("Assign conflicts only (and limit papers to potential conflicts)"), "</td></tr>\n";
+
+if ($kind == "a")
+    echo "<tr><td colspan='2'><div class='g'></div></td></tr>\n",
+	"<tr><td>",
+	(isset($Error["rev_roundtag"]) ? "<span class='error'>" : ""),
+	"Review round: &nbsp;</td>",
+	"<td><input id='assrevroundtag' class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
+	(isset($Error["rev_roundtag"]) ? "</span>" : ""),
+	" &nbsp;<a class='hint' href='help$ConfSiteSuffix?t=revround'>What is this?</a>\n",
+	"</td></tr>";
+
+echo "<tr><td colspan='2'><div class='aax' style='text-align:right'>",
+    "<input class='bb' type='submit' value='Go' />",
+    "</div></td></tr>\n",
+    "</table>\n</div></form></div>\n";
+
+
 // Current PC member information
 if ($reviewer > 0) {
     // Topic links
@@ -129,27 +212,19 @@ if ($reviewer > 0) {
     $interest = array();
     while (($row = edb_row($result)))
 	$interest[$row[1]][] = htmlspecialchars($row[0]);
-    $pcm = pcMembers();
-    echo "<table>
-<tr class='id'>
-  <td class='caption'></td>
-  <td class='entry'><h2>Assignments for ", contactNameHtml($pcm[$reviewer]), "</h2></td>
-</tr>\n";
-    $extraclass = " initial";
-    if (isset($interest[2])) {
-	echo "<tr>
-  <td class='caption$extraclass'>High interest topics</td>
-  <td class='entry$extraclass'><span class='topic2'>", join("</span>, <span class='topic2'>", $interest[2]), "</span></td>
-</tr>\n";
-	$extraclass = "";
-    }
-    if (isset($interest[0])) {
-	echo "<tr>
-  <td class='caption$extraclass'>Low interest topics</td>
-  <td class='entry$extraclass'><span class='topic0'>", join("</span>, <span class='topic0'>", $interest[0]), "</span></td>
-</tr>\n";
-	$extraclass = "";
-    }
+
+    echo "<table>";
+    $x = array();
+    if (isset($interest[2]))
+	$x[] = "<div class='f-c'>High interest topics</div><div class='f-e'><span class='topic2'>"
+	    . join("</span>, <span class='topic2'>", $interest[2])
+	    . "</span></div>";
+    if (isset($interest[0]))
+	$x[] = "<div class='f-c'>Low interest topics</div><div class='f-e'><span class='topic0'>"
+	    . join("</span>, <span class='topic0'>", $interest[0])
+	    . "</span></div>";
+    if (count($x))
+	echo "<tr><td style='padding:0 2em 1ex 0'>", join("</td><td style='padding:0 2em 1ex 0'>", $x), "</td></tr>\n";
 
     // Conflict information
     $result = $Conf->qe("select firstName, lastName, affiliation, collaborators from ContactInfo where contactId=$reviewer");
@@ -176,75 +251,18 @@ if ($reviewer > 0) {
 		$useless[$s] = 1;
 	    }
 
-	echo "<tr>
-  <td class='caption top$extraclass'>Potential conflicts</td>
-  <td class='entry top$extraclass'><table>",
-	    "<tr><td class='lxcaption'>Authors</td><td>", htmlspecialchars(substr($showau, 0, strlen($showau) - 1)), "</td></tr>\n",
-	    "<tr><td class='lxcaption'>Collaborators</td><td>", htmlspecialchars(substr($showco, 0, strlen($showco) - 1)), "</td></tr>\n",
-	    "</table>",
-	    "<a href=\"search$ConfSiteSuffix?q=", urlencode(join(" OR ", $search)), "&amp;linkto=assign\">Search for potential conflicts</a>",
-	    "<div class='g'></div></td>
-</tr>\n";
-	$extraclass = "";
+	$x = array();
+	$x[] = "<div class='f-c'>Potential conflicts in authors</div><div class='f-e'>"
+	    . htmlspecialchars(substr($showau, 0, strlen($showau) - 1))
+	    . "</div>";
+	$x[] = "<div class='f-c'>Potential conflicts in collaborators</div><div class='f-e'>"
+	    . htmlspecialchars(substr($showco, 0, strlen($showco) - 1))
+	    . "</div>";
+	echo "<tr><td style='padding:0 2em 1ex 0'>", join("</td><td style='padding:0 2em 1ex 0'>", $x), "</td></tr>\n";
+	echo "<tr><td colspan='2' style='padding:0 2em 1ex 0'><a href=\"search$ConfSiteSuffix?q=", urlencode(join(" OR ", $search)), "&amp;linkto=assign\">Search for potential conflicts</a></td></tr>\n";
     }
+    echo "</table>\n";
 
-    echo "<tr>
-  <td class='caption$extraclass final'>Change PC member</td>
-  <td class='entry top$extraclass final'>\n";
-} else {
-    echo "<table class='manyassign'>
-<tr>
-  <td class='caption initial final'>Choose PC member</td>
-  <td class='entry top initial final'>\n";
-}
-
-
-// Change PC member
-echo "<form method='get' action='manualassign$ConfSiteSuffix' accept-charset='UTF-8' id='selectreviewerform'><div class='inform'>\n";
-
-$query = "select ContactInfo.contactId, firstName, lastName,
-		count(reviewId) as reviewCount
-		from ContactInfo
-		join PCMember using (contactId)
-		left join PaperReview on (ContactInfo.contactId=PaperReview.contactId and PaperReview.reviewType>=" . REVIEW_SECONDARY . ")
-		group by contactId
-		order by lastName, firstName, email";
-$result = $Conf->qe($query);
-$rev_opt = array();
-if ($reviewer <= 0)
-    $rev_opt[0] = "(Select a PC member)";
-while (($row = edb_orow($result)))
-    $rev_opt[$row->contactId] = contactHtml($row) . " ("
-	. plural($row->reviewCount, "assignment") . ")";
-
-echo tagg_select("reviewer", $rev_opt, $reviewer, array("onchange" => "highlightUpdate(\"assrevupdate\")")),
-    " &nbsp; ",
-    "<input id='assrevupdate' class='b' type='submit' value='Go' />
-    <div class='g'></div>\n",
-    tagg_radio("kind", "a", $kind == "a",
-	       array("onchange" => "highlightUpdate('assrevupdate')")),
-    "&nbsp;", tagg_label("Assign reviews and/or conflicts"), "<br />\n",
-    tagg_radio("kind", "c", $kind == "c",
-	       array("onchange" => "highlightUpdate('assrevupdate')")),
-    "&nbsp;", tagg_label("Assign conflicts only (and limit papers to potential conflicts)"), "\n";
-
-if ($kind == "a")
-    echo "    <div class='g'></div>\n    ",
-	(isset($Error["rev_roundtag"]) ? "<span class='error'>" : ""),
-	"Review round: &nbsp;",
-	"<input id='assrevroundtag' class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
-	(isset($Error["rev_roundtag"]) ? "</span>" : ""),
-	" &nbsp;<a class='hint' href='help$ConfSiteSuffix?t=revround'>What is this?</a>\n";
-
-echo "    <div class='g'></div>\n    ",
-    tagg_checkbox(false, false, true, array("id" => "assrevimmediate")),
-    "&nbsp;", tagg_label("Save assignments as they are made", "assrevimmediate"), "<br />
-  </div></form></td>
-</tr>
-</table>\n";
-
-
-if ($reviewer > 0) {
     // ajax assignment form
     echo "<form id='assrevform' method='post' action=\"assign$ConfSiteSuffix?update=1\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='clear'>",
 	"<input type='hidden' name='kind' value='$kind' />",
@@ -254,7 +272,10 @@ if ($reviewer > 0) {
 	"<input type='hidden' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag), "\" />",
 	"</div></form>\n\n";
 
-    $search = new PaperSearch($Me, array("t" => "s", "c" => $reviewer,
+    // main assignment form
+    $search = new PaperSearch($Me, array("t" => $_REQUEST["t"],
+					 "q" => $_REQUEST["q"],
+					 "c" => $reviewer,
 					 "urlbase" => "manualassign$ConfSiteSuffix?reviewer=$reviewer"));
     $paperList = new PaperList(true, true, $search);
     if (isset($showau)) {
@@ -269,9 +290,16 @@ if ($reviewer > 0) {
     if (isset($_REQUEST["sort"]))
 	echo "&amp;sort=", urlencode($_REQUEST["sort"]);
     echo "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
-	"<div class='aa'><table class='center'><tr><td><input type='submit' class='bb' name='update' value='Save assignments' /></td></tr></table></div>\n";
-    echo $paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me);
-    echo "<div class='aa'><table class='center'><tr><td><input type='submit' class='bb' name='update' value='Save assignments' /></td></tr></table></div>\n",
+	"<input type='hidden' name='t' value='", $_REQUEST["t"], "' />",
+	"<input type='hidden' name='q' value=\"", htmlspecialchars($_REQUEST["q"]), "\" />",
+	"<input type='hidden' name='papx' value='", join(" ", $search->paperList()), "' />",
+	"<div class='aa'><input type='submit' class='bb' name='update' value='Save assignments' />",
+	"<span style='padding:0 0 0 2em'>",
+	tagg_checkbox(false, false, true, array("id" => "assrevimmediate")),
+	"&nbsp;", tagg_label("Automatically save assignments", "assrevimmediate"),
+	"</span></div>\n",
+	$paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me, "pltable_full"),
+	"<div class='aa'><input type='submit' class='bb' name='update' value='Save assignments' /></div>\n",
 	"</div></form></div>\n";
 }
 

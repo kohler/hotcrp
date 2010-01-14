@@ -11,7 +11,7 @@ $Me->goIfInvalid();
 $Me->goIfNotPrivChair();
 
 // paper selection
-if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
+if (!isset($_REQUEST["q"]) || trim($_REQUEST["q"]) == "(All)")
     $_REQUEST["q"] = "";
 if (isset($_REQUEST["pcs"]) && is_string($_REQUEST["pcs"]))
     $_REQUEST["pcs"] = preg_split('/\s+/', $_REQUEST["pcs"]);
@@ -32,7 +32,6 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && !isset($_REQUEST["r
 } else {
     $papersel = array();
     $_REQUEST["t"] = defval($_REQUEST, "t", "s");
-    $_REQUEST["q"] = defval($_REQUEST, "q", "");
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
     $papersel = $search->paperList();
 }

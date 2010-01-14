@@ -224,10 +224,9 @@ Types of PC assignment:
 </div></div>";
 
 
-echo "<table class='manyassign'>
-<tr>
-  <td class='caption initial final'>Upload</td>
-  <td class='entry initial final'><form action='bulkassign$ConfSiteSuffix?upload=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+echo "<h2 style='margin-top:1em'>Upload assignments</h2>
+
+<form action='bulkassign$ConfSiteSuffix?upload=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 Assign &nbsp;",
     tagg_select("t", array(REVIEW_PRIMARY => "primary",
 			   REVIEW_SECONDARY => "secondary",
@@ -269,23 +268,21 @@ tab-separated text file with one line per assignment.  The first column must
 be a paper number, and the second and third columns should contain the
 proposed reviewer's name and email address.  For example:</p>
 
-<pre class='entryexample'>
+<table style='width:60%'><tr><td><pre class='entryexample'>
 1	Alice Man	man@alice.org
 10	noname@anonymous.org
 11	Manny Ramirez &lt;slugger@manny.com&gt;
-</pre>
+</pre></td></tr></table>
 
 <p>Primary and secondary reviewers must be PC members, so for those reviewer
 types you don't need a full name or email address, just some substring that
 identifies the PC member uniquely.  For example:</p>
 
-<pre class='entryexample'>
+<table style='width:60%'><tr><td><pre class='entryexample'>
 24	sylvia
 1	Frank
 100	feldmann
-</pre>
-</td></tr>
-</table>\n";
+</pre></td></tr></table>\n";
 
 
 $Conf->footerScript("fold('email',e('tsel').value!=" . REVIEW_EXTERNAL . ")");

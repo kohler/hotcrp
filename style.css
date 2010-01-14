@@ -430,8 +430,7 @@ table.center {
 	margin-left: auto;
 	margin-right: auto;
 }
-body#revpref table.pltable, body#assignpc table.pltable,
-body#accounts table.ppltable {
+body#revpref table.pltable, body#accounts table.ppltable {
 	margin: 0px auto;
 }
 
@@ -609,13 +608,15 @@ input.cbx {
 }
 
 /* Action area */
-div.aa {
+.aa, .aax {
 	padding: 0.3em;
 	margin: 0.5em 0em;
+}
+.aa {
 	background: #f2f2f2;
 	clear: both;
 }
-div.aahc.alert div.aa {
+div.aahc.alert .aa, div.aahc.alert .aax {
 	background: #ffaaaa;
 }
 
@@ -822,12 +823,11 @@ div.f-ii {
 	clear: both;
 }
 div.f-i {
-	margin: 1ex 0px;
+	margin: 1ex 0;
 	width: auto;
-	clear: both;
 }
 div.f-ix {
-	margin: 0px 1em 0px 0px;
+	margin: 0 1em 0 0;
 	width: auto;
 	float: left;
 }
@@ -1362,9 +1362,16 @@ div.msgpg { /* message-paper gap */
 	margin: 2ex 0em;
 }
 
-body#assignpc div.topicinterest {
-	margin-left: 3em;
+.assignpc_pcsel {
+	width: auto;
+	font-size: smaller;
+	background: #fcf6e3;
+	border: 2px solid #ccc1a3;
+	padding: 1em 1em 0.25em;
+	display: table;
+	margin: 0 0 1.5em;
 }
+
 
 span.autblentry {
 	margin-right: 0.75em;
