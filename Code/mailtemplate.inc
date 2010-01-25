@@ -791,11 +791,9 @@ class Mailer {
 	$q = "select PaperComment.*,
 		ContactInfo.firstName as reviewFirstName,
 		ContactInfo.lastName as reviewLastName,
-		ContactInfo.email as reviewEmail,
-		PaperConflict.conflictType
+		ContactInfo.email as reviewEmail
 		from PaperComment
-		join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
-		left join PaperConflict on (PaperConflict.paperId=PaperComment.paperId and PaperConflict.contactId=PaperComment.contactId)";
+		join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)";
 	if (is_array($this->commentId))
 	    $q .= "\n\t\twhere PaperComment.commentId in (" . join(", ", $this->commentId) . ")";
 	else if ($this->commentId)
