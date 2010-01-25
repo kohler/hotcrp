@@ -630,7 +630,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
     else if ($startable || $Me->privChair) {
 	echo "<strong><a href='paper$ConfSiteSuffix?p=new'>Start new paper</a></strong> <span class='deadline'>(", $Conf->printableDeadlineSetting('sub_reg'), ")</span>";
 	if ($Me->privChair)
-	    echo "<br />\n<span class='hint'>As an administrator, you can start papers regardless of deadlines and on other people's behalf.</span>";
+	    echo "<br />\n<span class='hint'>As an administrator, you can start a paper regardless of deadlines and on behalf of others.</span>";
     }
 
     $plist = null;
