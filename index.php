@@ -415,7 +415,7 @@ if ($homelist) {
 
 
 // Review token printing
-function reviewTokenGroup() {
+function reviewTokenGroup($close_hr) {
     global $reviewTokenGroupPrinted, $ConfSiteSuffix;
     if ($reviewTokenGroupPrinted)
 	return;
@@ -433,7 +433,9 @@ function reviewTokenGroup() {
 	"<div class='hint'>Enter review tokens here to gain access to the corresponding reviews.</div>",
 	"</div></form>\n";
 
-    echo "<hr class='home' /></div>\n";
+    if ($close_hr)
+	echo "<hr class='home' />";
+    echo "</div>\n";
     $reviewTokenGroupPrinted = true;
 }
 
@@ -443,7 +445,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     echo "<div class='homegrp' id='homerev'>\n";
 
     // Overview
-    echo "  <h4>Reviews: &nbsp;</h4> ";
+    echo "<h4>Reviews: &nbsp;</h4> ";
     $result = $Conf->qe("select PaperReview.contactId, count(reviewSubmitted), count(if(reviewNeedsSubmit=0,reviewSubmitted,1)), group_concat(overAllMerit), PCMember.contactId as pc from PaperReview join Paper using (paperId) left join PCMember on (PaperReview.contactId=PCMember.contactId) where Paper.timeSubmitted>0 group by PaperReview.contactId", "while fetching review status");
     $rf = reviewForm();
     $maxOverAllMerit = $rf->maxNumericScore("overAllMerit");
@@ -573,13 +575,43 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    echo "<div class='fx'><div class='g'></div>", $ptext, "</div>";
     }
 
-    if ($Conf->setting("rev_tokens")) {
-	echo "</div>\n";
-	reviewTokenGroup();
-    } else
-	echo "<hr class='home' /></div>\n";
-}
+    if ($Conf->setting("rev_tokens"))
+	reviewTokenGroup(false);
 
+    if ($Me->amReviewer()) {
+	require_once("Code/commentview.inc");
+	$offset = 0;
+	$t0 = 0;
+	$entries = array();
+	$ncmt = 0;
+	$limit = 30;
+	while (count($entries) < $limit) {
+	    $crows = $Conf->commentRows(CommentView::commentFlowQuery($Me, $t0, $limit, $offset));
+	    if (count($crows) == 0)
+		break;
+	    foreach ($crows as $cr)
+		if ($Me->canViewComment($cr, $cr, $whyNot, true)) {
+		    $entries[] = CommentView::commentFlowEntry($Me, $cr, "k" . (count($entries) % 2) . (count($entries) >= 10 ? " fx21" : ""));
+		    if (count($entries) == $limit)
+			break;
+		}
+	    $offset += $limit;
+	}
+	if (count($entries)) {
+	    $fold20 = defval($_SESSION, "foldhomeactivity", 1) ? "fold20c" : "fold20o";
+	    echo "<div class='homegrp $fold20 fold21c' id='homeactivity'>",
+		foldbutton("homeactivity", "recent activity", 20),
+		"&nbsp;<h4><a href=\"javascript:void fold('homeactivity',null,20)\" class='x homeactivity'>Recent comments<span class='fx20'>:</span></a></h4>";
+	    if (count($entries) > 10)
+		echo "&nbsp; <a href=\"javascript:void fold('homeactivity',null,21)\" class='fx20'><span class='fn21'>More &#187;</span><span class='fx21'>&#171; Fewer</span></a>";
+	    echo foldsessionpixel("homeactivity20", "foldhomeactivity"),
+		"<div class='fx20' style='overflow:hidden;padding-top:3px'><table><tbody>",
+		join("", $entries), "</tbody></table></div></div>";
+	}
+    }
+
+    echo "<hr class='home' /></div>\n";
+}
 
 // Authored papers
 if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
@@ -656,7 +688,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 
 // Review tokens
 if ($Me->valid() && $Conf->setting("rev_tokens"))
-    reviewTokenGroup();
+    reviewTokenGroup(true);
 
 
 echo "<div class='clear'></div>\n";

@@ -272,4 +272,50 @@ has passed.  Please keep the response short and to the point",
 	    "</td></tr>\n</table>\n</div></form>\n\n";
     }
 
+
+    function commentFlowQuery($contact, $t0, $limit, $offset) {
+	$q = "select PaperComment.*,
+		substring(PaperComment.comment from 1 for 300) as shortComment,
+		Paper.title,
+		substring(Paper.title from 1 for 80) as shortTitle,
+		ContactInfo.firstName as reviewFirstName,
+		ContactInfo.lastName as reviewLastName,
+		ContactInfo.email as reviewEmail,
+		PaperConflict.conflictType,
+		MyPaperReview.reviewType as myReviewType,
+		MyPaperReview.reviewSubmitted as myReviewSubmitted,
+		MyPaperReview.reviewNeedsSubmit as myReviewNeedsSubmit
+		from PaperComment
+		join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
+		join Paper on (Paper.paperId=PaperComment.paperId)
+		left join PaperConflict on (PaperConflict.paperId=PaperComment.paperId and PaperConflict.contactId=$contact->contactId)
+		left join PaperReview as MyPaperReview on (MyPaperReview.paperId=PaperComment.paperId and MyPaperReview.contactId=$contact->contactId)
+		where timeModified>=$t0
+		order by timeModified desc, commentId desc";
+	if ($limit)
+	    $q .= " limit $limit" . ($offset ? " offset $offset" : "");
+	return $q;
+    }
+
+    function commentFlowEntry($contact, $crow, $trclass) {
+	global $ConfSiteSuffix, $Conf;
+	$a = "<a href='paper$ConfSiteSuffix?p=$crow->paperId#comment$crow->commentId'>";
+	$t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a
+	    . $Conf->cacheableImage("comment24.png", "[Comment]", null, "dlimg")
+	    . "</a></td><td class='pl_activityid'>"
+	    . $a . "#$crow->paperId</a></td><td class='pl_activitymain'><small>"
+	    . $a . htmlspecialchars($crow->shortTitle);
+	if (strlen($crow->shortTitle) != strlen($crow->title))
+	    $t .= "...";
+	$t .= "</a>";
+	if ($contact->canViewCommentIdentity($crow, $crow, true))
+	    $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>comment by</span> " . contactHtml($crow->reviewFirstName, $crow->reviewLastName, $crow->reviewEmail);
+	$t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>posted</span> " . $Conf->parseableTime($crow->timeModified);
+	$t .= "</small><br /><a class='q'" . substr($a, 3)
+	    . htmlspecialchars($crow->shortComment);
+	if (strlen($crow->shortComment) < strlen($crow->comment))
+	    $t .= "...";
+	return $t . "</a></td></tr>";
+    }
+
 }

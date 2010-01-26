@@ -56,7 +56,7 @@ $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
 
 global $allowedSessionVars;
 $allowedSessionVars = array("foldassigna", "foldpaperp", "foldpaperb",
-			    "foldpapert", "foldpscollab",
+			    "foldpapert", "foldpscollab", "foldhomeactivity",
 			    "pfdisplay", "pldisplay");
 
 global $authorConflictTypes;

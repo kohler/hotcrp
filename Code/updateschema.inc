@@ -181,6 +181,10 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table Formula drop index `name`")
 	&& $Conf->q("update Settings set value=32 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 32;
+    if ($Conf->settings["allowPaperOption"] == 32
+	&& $Conf->q("alter table PaperComment add key `timeModified` (`timeModified`)")
+	&& $Conf->q("update Settings set value=33 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 33;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

@@ -254,12 +254,12 @@ function foldsessionpixel($name, $var, $sub = false) {
     return "<img id='foldsession." . $name . "' alt='' src='sessionvar$ConfSiteSuffix?var=" . $var . $val . "&amp;cache=1' width='1' height='1' />";
 }
 
-function foldbutton($foldtype, $title, $foldnum=0) {
+function foldbutton($foldtype, $title, $foldnum = 0) {
     $showtitle = ($title ? " title='" . htmlspecialchars("Show $title") . "'" : "");
     $hidetitle = ($title ? " title='" . htmlspecialchars("Hide $title") . "'" : "");
     $foldclass = ($foldnum ? $foldnum : "");
-    $foldnum = ($foldnum ? ", $foldnum" : "");
-    return "<a href=\"javascript:void fold('$foldtype', 0$foldnum)\" class='foldbutton fn$foldclass'$showtitle>+</a><a href=\"javascript:void fold('$foldtype', 1$foldnum)\" class='foldbutton fx$foldclass'$hidetitle>&ndash;</a>";
+    $foldnum = ($foldnum ? ",$foldnum" : "");
+    return "<a href=\"javascript:void fold('$foldtype',0$foldnum)\" class='foldbutton fn$foldclass'$showtitle>+</a><a href=\"javascript:void fold('$foldtype',1$foldnum)\" class='foldbutton fx$foldclass'$hidetitle>&ndash;</a>";
 }
 
 function reviewType($paperId, $row, $long = 0) {

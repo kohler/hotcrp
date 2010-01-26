@@ -7,7 +7,7 @@ body {
 	font-family: verdana, tahoma, sans-serif;
 	font-size: 10.5pt;
 	color: black;
-	margin: 0px;
+	margin: 0;
 }
 
 
@@ -19,7 +19,7 @@ div#header {
 	background-color: #ffffff;
 }
 div#header_right {
-	padding: 8px 12px 0px 12px;
+	padding: 8px 12px 0 12px;
 	font-size: smaller;
 	text-align: right;
 	float: right;
@@ -40,23 +40,23 @@ div#header_left_conf {
 }
 div#header_left_page {
 	float: left;
-	padding: 0.2em 0em 0em 0.8em;
+	padding: 0.2em 0 0 0.8em;
 }
 h1 {
 	display: inline;
 	font-size: 144%;
-	margin: 0em;
+	margin: 0;
 }
 
 /* Tab bar */
 div.vbar {
-	padding: 0px 12px;
+	padding: 0 12px;
 	position: relative;
 	clear: left;
 	border-bottom: 2px solid #9999cc;
 }
 div.nvbar {
-	padding: 0px 12px;
+	padding: 0 12px;
 	margin-bottom: -4px;
 	position: relative;
 	clear: left;
@@ -74,11 +74,11 @@ table.vbar td#vbartabs {
 	padding-top: 6px;
 }
 table.vbar div.vbtab, table.vbar div.vbtab1 {
-	margin: 0px 0.75em;
+	margin: 0 0.75em;
 	white-space: nowrap;
 }
 table.vbar div.vbtab, table.vbar div.vbtab1y {
-	padding: 0px 1em 1px 1em;
+	padding: 0 1em 1px;
 }
 table.vbar div.vbtab {
 	background: #fcf6e3; /*#e6dcc1;*/
@@ -163,23 +163,23 @@ span.lgsep {
 
 /* generic vertical styles */
 div.g { /* small gap */
-	margin: 0.65em 0em;
+	margin: 0.65em 0;
 }
 div.ug { /* microgap */
-	margin: 0.35em 0em;
+	margin: 0.35em 0;
 }
 .clear {
 	clear: both;
 }
 div.clear {
-	margin: 0em;
+	margin: 0;
 }
 form {
-	margin-bottom: 0px;
+	margin-bottom: 0;
 	display: inline;
 }
 div.inform {
-	margin: 0em;
+	margin: 0;
 	display: inline;
 }
 
@@ -190,6 +190,9 @@ div.body {
 	background-color: #ffffff;
 	position: relative;
 	z-index: 3;
+}
+body#home div.body {
+	margin: 2px 0.8em 2px 1em;
 }
 body#paper_view div.body, body#paper_edit div.body,
 body#review div.body, body#comment div.body, body#contactauthors div.body,
@@ -210,8 +213,8 @@ div#mailref, pre.email, tt.email {
 
 /* general */
 table, tr, td {
-	padding: 0px;
-	border-spacing: 0px;
+	padding: 0;
+	border-spacing: 0;
 	border: 0 none;
 	border-collapse: collapse;
 	empty-cells: show;
@@ -221,7 +224,7 @@ table, tr, td {
 /* footer */
 div#footer {
 	margin-top: 0.5em;
-	padding: 0em 12px 3px 12px;
+	padding: 0 12px 3px 12px;
 	clear: both;
 }
 div#footer_crp {
@@ -237,11 +240,11 @@ div.info, div.warning, div.confirm, div.merror {
 	background: #eeeeff url(images/info45.png) 10px 10px no-repeat;
 	padding: 0.5em 0.5em 0.5em 65px;
 	border: 1px solid #ccccee;
-	margin: 0.5em 0em;
+	margin: 0.5em 0;
 	min-height: 45px;
 }
 div.help {
-	padding: 0.5em 0.5em 0.5em 0.5em;
+	padding: 0.5em;
 	border: 1px solid #cccccc;
 	margin-top: 0.5em;
 	margin-bottom: 0.5em;
@@ -261,15 +264,15 @@ div.merror {
 	border: 1px solid #eecccc;
 }
 div.merror p:first-child, div.info p:first-child, div.warning p:first-child, div.confirm p:first-child, div.help p:first-child {
-	margin-top: 0em;
+	margin-top: 0;
 }
 div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 	margin-top: 0.75em;
-	margin-bottom: 0em;
+	margin-bottom: 0;
 }
 div.xinfo, div.xconfirm, div.xwarning, div.xmerror {
-	padding: 0.5em 0.5em 0.5em 0.5em;
-	margin: 4px 0em;
+	padding: 0.5em;
+	margin: 4px 0;
 }
 div.xinfo {
 	background: #eeeeff;
@@ -332,17 +335,17 @@ span.hastitle {
 	display: none;
 	position: relative;
 	z-index: 5;
-	padding: 4px 0px;
+	padding: 4px 0;
 	background-color: #ffffff;
 }
 .tlx {
 	border-bottom: 2px solid #f3d06e;
 }
 .tllx {
-	padding: 0px 7px;
+	padding: 0 7px;
 }
 #searchform, #contactsform, #offlineform {
-	margin: 0px auto;
+	margin: 0 auto;
 	position: relative;
 }
 #searchform #foldredisplay,
@@ -383,11 +386,11 @@ table.lhsel {
 	position: relative;
 }
 table.lhsel td {
-	padding: 2px 0px;
+	padding: 2px 0;
 	position: relative;
 }
 div.lhl0 {
-	padding: 2px 0px 2px 0.9em;
+	padding: 2px 0 2px 0.9em;
 	position: relative;
 }
 div.lhl1 {
@@ -431,22 +434,22 @@ table.center {
 	margin-right: auto;
 }
 body#revpref table.pltable, body#accounts table.ppltable {
-	margin: 0px auto;
+	margin: 0 auto;
 }
 
 
 /* Main */
 div.homegrp {
-	margin: 0.8em 0em 0em 0.2em;
+	margin: 0.8em 0 0;
 }
 div#homelist h4, div#homemgmt h4, div#homerev h4, div#homeau h4, 
-div#homeacct h4, div#homeinfo h4 {
+div#homeacct h4, div#homeinfo h4, div#homeactivity h4 {
 	display: inline;
 }
 div#homelist h4 {
 	color: #8b3030;
 }
-div#homerev h4 {
+div#homerev h4, div#homeactivity h4, a.homeactivity {
 	color: #1b1ba4;
 }
 div#homeau h4 {
@@ -464,22 +467,22 @@ div.homeinside {
 	background-color: #fffdf0;
 	border: 1px solid #b2a584 /*#9999cc*/;
 	padding: 0.5em 1em 0.75em 0.75em;
-	margin: 0em 0em 0.5em 1em;
+	margin: 0 0 0.5em 1em;
 }
 div#homeacct {
-	margin: 1em 0em 0em 0em;
+	margin: 1em 0 0;
 }
 div#homemgmt {
 	background-color: #ffffdd;
 	/*border: 1px solid #b2a584;*/
 }
 div.homeside ul {
-	margin: 0em;
-	padding: 0em 0em 0em 2em;
+	margin: 0;
+	padding: 0 0 0 2em;
 	list-style-type: none;
 }
 hr.home {
-	margin: 0.8em 0px;
+	margin: 0.8em 0;
 	border: 0;
 	height: 1px;
 	color: #d8deff; /* for IE6 */
@@ -495,7 +498,7 @@ strong.overdue {
 /* gopaper form */
 div.gopaper {
 	float: right;
-	margin-bottom: 0em;
+	margin-bottom: 0;
 }
 
 
@@ -575,10 +578,10 @@ a.button_small {
 a.foldbutton {
 	font-size: smaller;
 	font-weight: normal;
-	padding: 0px 0.25em;
+	padding: 0 0.25em;
 	text-decoration: none;
 	color: black;
-	margin: 3px 0px;
+	margin: 3px 0;
 	background: #ffffdd;
 	border-top: 1px solid #eeee66;
 	border-left: 1px solid #eeee66;
@@ -610,7 +613,7 @@ input.cbx {
 /* Action area */
 .aa, .aax {
 	padding: 0.3em;
-	margin: 0.5em 0em;
+	margin: 0.5em 0;
 }
 .aa {
 	background: #f2f2f2;
@@ -641,7 +644,7 @@ img.ajaxcheck_bad {
 td.caption {
 	text-align: right;
 	padding: 2px 0.5em 4px 0.5em;
-	margin: 0px;
+	margin: 0;
 	font-weight: bold;
 	color: #555555;
 	width: 11em;
@@ -664,7 +667,7 @@ tr.id td.caption, table.comment tr.id td.caption {
 	color: black;
 }
 tr.last td.caption, tr.last td.entry {
-	padding: 1px 0px;
+	padding: 1px 0;
 }
 tr.last td.caption {
 	border-bottom: 1px solid #ccb7a3; /* #9999cc; */
@@ -693,7 +696,7 @@ td.entry, th.entry {
 	padding: 2px 1em 4px 0.5em;
 }
 tr.last td.entry {
-	padding: 0px 1em 0px 0.5em;
+	padding: 0 1em 0 0.5em;
 }
 tr.pt_abstract td.entry {
 	font-size: 85%;
@@ -719,27 +722,27 @@ td.textarea, td.top {
 }
 td.rcaption {
 	text-align: right;
-	padding: 3px 0.5em 3px 0em;
+	padding: 3px 0.5em 3px 0;
 	font-weight: bold;
 }
 td.rxcaption {
 	text-align: right;
-	padding: 3px 0.5em 3px 0em;
+	padding: 3px 0.5em 3px 0;
 }
 td.srcaption {
 	text-align: right;
-	padding: 3px 0.75em 3px 0.75em;
+	padding: 3px 0.75em;
 	font-weight: bold;
 }
 td.sentry {
-	padding: 3px 0.75em 3px 0.75em;
+	padding: 3px 0.75em;
 }
 td.lcaption {
-	padding: 3px 1em 3px 0em;
+	padding: 3px 1em 3px 0;
 	font-weight: bold;
 }
 td.lxcaption {
-	padding: 2px 1em 2px 0em;
+	padding: 2px 1em 2px 0;
 }
 td.mcaption {
 	text-align: right;
@@ -752,17 +755,17 @@ td.leftentry {
 	width: 18em;
 }
 td.lentry {
-	padding: 2px 0.5em 2px 0em;
+	padding: 2px 0.5em 2px 0;
 }
 td.rentry {
-	padding: 2px 0em;
+	padding: 2px 0;
 	text-align: right;
 }
 td.llentry {
-	padding: 0px 0.75em;
+	padding: 0 0.75em;
 }
 td.hint {
-	padding: 0em 0.5em;
+	padding: 0 0.5em;
 	font-size: smaller;
 	color: #555555;
 }
@@ -785,8 +788,8 @@ div#aumg td.hint, table.paper td.hint, table.setreviewform td.hint {
 	width: 25%;
 }
 td h2, td h3 {
-	margin-top: 0px;
-	margin-bottom: 0px;
+	margin-top: 0;
+	margin-bottom: 0;
 }
 
 
@@ -794,7 +797,7 @@ td h2, td h3 {
 table.settings td h3 {
 	background: #eff1ff;
 	margin-bottom: 0.5em;
-	padding: 0px 4px;
+	padding: 0 4px;
 }
 table#foldtag_color th {
 	text-align: left;
@@ -806,14 +809,14 @@ table#foldtag_color th {
 /* help pages */
 ul.compact {
 	margin-top: 0.5em;
-	margin-bottom: 0em;
+	margin-bottom: 0;
 	padding-left: 1em;
 }
 
 
 /* vertically arranged forms */
 div.f-i:first-child {
-	margin-top: 0px;
+	margin-top: 0;
 }
 div#homeacct div.f-ii, div#homeacct div.f-i {
 	clear: none;
@@ -896,7 +899,7 @@ img.placthook {
 	width: 12px;
 	width: 12px;
 	background-image: url(images/sprite.png?2);
-	background-position: -40px 0px;
+	background-position: -40px 0;
 }
 img.sdlimg {
 	position: relative;
@@ -914,7 +917,7 @@ img.check {
 
 span.textlite {
 	border: solid 1px #aaaadd;
-	padding: 0px 4px;
+	padding: 0 4px;
 	background: #fcfcfc;
 }
 textarea {
@@ -936,15 +939,15 @@ input.textlite-tt, textarea.tt {
 
 div.prevpaperlink, table.floatleft {
 	float: left;
-	margin: 0em;
+	margin: 0;
 }
 div.nextpaperlink, div.floatright {
 	float: right;
-	margin: 0em;
+	margin: 0;
 }
 
 h2 {
-	margin-top: 0em;
+	margin-top: 0;
 	font-size: larger;
 }
 
@@ -969,7 +972,7 @@ pre.entryexample {
 	background: #eeeeee;
 }
 pre.email {
-	margin: 0em;
+	margin: 0;
 }
 
 td.rpad {
@@ -1042,31 +1045,31 @@ img.ass4, img.ass4n {
 	height: 12px;
 }
 img.ass-1 {
-	background-position: 0px -11px;
+	background-position: 0 -11px;
 }
 img.ass-2 {
 	background-position: -14px -11px;
 }
 img.ass1 {
-	background-position: -14px 0px;
+	background-position: -14px 0;
 }
 img.ass1n {
 	background-position: -14px -14px;
 }
 img.ass2 {
-	background-position: -28px 0px;
+	background-position: -28px 0;
 }
 img.ass2n {
 	background-position: -28px -14px;
 }
 img.ass3 {
-	background-position: -42px 0px;
+	background-position: -42px 0;
 }
 img.ass3n {
 	background-position: -42px -14px;
 }
 img.ass4 {
-	background-position: -56px 0px;
+	background-position: -56px 0;
 }
 img.ass4n {
 	background-position: -56px -14px;
@@ -1078,10 +1081,10 @@ img.prev, img.next {
 	height: 9px;
 }
 img.prev {
-	background-position: -32px 0px;
+	background-position: -32px 0;
 }
 img.next {
-	background-position: -10px 0px;
+	background-position: -10px 0;
 }
 
 img.checksum12, img.timestamp12 {
@@ -1103,10 +1106,10 @@ img.expander {
 	border: 0 none;
 }
 .foldc img.expander {
-	background-position: -11px 0px;
+	background-position: -11px 0;
 }
 .foldo img.expander {
-	background-position: -21px 0px;
+	background-position: -21px 0;
 }
 
 table.topicinterest tr td.ti_interest, table.topicinterest tr th {
@@ -1129,7 +1132,7 @@ table.reviewers tr.hilite {
 }
 table.reviewers th {
 	font-size: smaller;
-	padding: 0em 0.25em;
+	padding: 0 0.25em;
 }
 table.reviewers td.highlight {
 	padding-right: 0.25em;
@@ -1140,7 +1143,7 @@ span.revround {
 	/* border-bottom: 1px dotted #777777; */
 }
 table.reviewers td.revscore {
-	padding-right: 0em;
+	padding-right: 0;
 	text-align: center;
 	font-weight: bold;
 	color: red;
@@ -1149,7 +1152,7 @@ table.reviewers td.rs_id, table.reviewscores td.rs_num {
 	text-align: left;
 }
 table.reviewers td.empty {
-	padding: 0em 0em;
+	padding: 0;
 }
 
 
@@ -1182,12 +1185,12 @@ span.pstat_decyes {
 }
 
 table.pt_buttons td.ptb_explain {
-	padding: 0px 1em 0px 0px;
+	padding: 0 1em 0 0;
 	text-align: center;
 	font-size: smaller;
 }
 table.pt_buttons td.ptb_button {
-	padding: 0px 1em 0px 0px;
+	padding: 0 1em 0 0;
 }
 
 .pltable_full_ctr {
@@ -1220,6 +1223,21 @@ table.auedittable th {
 	padding-left: 0.125em;
 	padding-right: 1em;
 }
+.pl_activityicon {
+	padding: 0.2ex 0 0.3ex 0.3em;
+	vertical-align: top;
+}
+.pl_activityid {
+	text-align: right;
+	padding: 0.2ex 0.4em 0.3ex;
+	vertical-align: top;
+}
+.pl_activitymain {
+	padding: 0.2ex 0 0.3ex 0.125em;
+	vertical-align: top;
+	font-size: 90%;
+	white-space: nowrap;
+}
 table.pltable th.pl_topicMatch {
 	text-align: center;
 	padding-left: 0.5em;
@@ -1250,7 +1268,7 @@ table.pltable th.pl_selector {
 	white-space: nowrap;
 }
 table.pltable th.pl_selector {
-	padding-right: 0px;
+	padding-right: 0;
 }
 span.pl_rownum {
 	font-size: smaller;
@@ -1263,7 +1281,7 @@ td.pl_desirability, td.pl_visits, td.pl_formula {
 	padding-right: 0.4em;
 }
 td.pl_conflictconfirm {
-	padding: 0em;
+	padding: 0;
 }
 td.pl_title img, img.b {
 	vertical-align: text-bottom;
@@ -1336,8 +1354,8 @@ span.match {
 
 div.merror div.parseerr p, div.warning div.parseerr p,
 div.confirm div.parseerr p {
-	margin: 0px;
-	padding: 0px 0px 0px 3em;
+	margin: 0;
+	padding: 0 0 0 3em;
 	text-indent: -3em;
 }
 div.parseerr span.lineno {
@@ -1352,14 +1370,14 @@ div.merror pre {
 }
 
 hr.hr {
-	margin: 0.75em 0em;
+	margin: 0.75em 0;
 	border: 0 none;
 	height: 1px;
 	color: #9999cc; /* for IE6 */
 	background-color: #9999cc;
 }
 div.msgpg { /* message-paper gap */
-	margin: 2ex 0em;
+	margin: 2ex 0;
 }
 
 .assignpc_pcsel {
@@ -1506,7 +1524,7 @@ span.contactpulldown select {
 table.pbox {
 	position: relative;
 	width: 100%;
-	margin: 0.5em 0em;
+	margin: 0.5em 0;
 }
 td.pboxi, td.pboxl {
 	width: 13em;
@@ -1548,7 +1566,7 @@ div.pst span.hint {
 	float: right;
 }
 div.psv {
-	padding: 2px 0px 1em 4px;
+	padding: 2px 0 1em 4px;
 }
 
 div.psmodec {
@@ -1558,7 +1576,7 @@ div.psmodec {
 	z-index: -1;
 }
 div.psmode {
-	padding: 0em 0em 1em 0em;
+	padding: 0 0 1em 0;
 	position: absolute;
 }
 div.papmode, div.papmodex {
@@ -1566,7 +1584,7 @@ div.papmode, div.papmodex {
 	text-align: center;
 	font-size: smaller;
 	padding: 0.5ex 5px 0.6ex 5px;
-	margin: 0px 5px;
+	margin: 0 5px;
 }
 div.papmodex {
 	background: #cec1ff;
@@ -1581,7 +1599,7 @@ div.papmodex a:hover {
 }
 div.papmode img, div.papmodex img {
 	position: relative;
-	margin: -10px 0px;
+	margin: -10px 0;
 	bottom: 10px;
 }
 
@@ -1592,7 +1610,7 @@ div#rankctxformresult {
 div#rankctxformresult div.xconfirm {
 	background: none;
 	border: 0 none;
-	padding: 0px;
+	padding: 0;
 }
 div.rankctx, div.rankctx_h {
 	padding-left: 2em;
@@ -1652,7 +1670,7 @@ td.paple, td.papre {
 	font-size: smaller;
 }
 td.papce {
-	padding: 0em 0.5em;
+	padding: 0 0.5em;
 }
 div.papt {
 	padding: 0.25em 1em 0.25em 8px;
@@ -1682,7 +1700,7 @@ div.paphint, div.pshint {
 	padding: 0.2em 1em 0.3em 8px;
 }
 div.papv {
-	padding: 2px 0px 1em 7px;
+	padding: 2px 0 1em 7px;
 }
 
 /* reviews */
@@ -1706,17 +1724,17 @@ div.inrevct {
 	margin: 0.4em 0.5em;
 }
 td.revcc div.aa, td.revct div.aa {
-	margin: 0.2em 0em 0.3em;
+	margin: 0.2em 0 0.3em;
 }
 td.revhead h3 {
 	display: inline;
-	padding: 0em 0.5em 0em 0em;
+	padding: 0 0.5em 0 0;
 }
 td.revhead span.revinfo {
 	font-size: smaller;
 }
 td.revhead {
-	padding: 0px 0px 4px 0px;
+	padding: 0 0 4px 0;
 }
 div.revt {
 	font-size: smaller;
@@ -1732,19 +1750,19 @@ div.revt span.hint {
 	float: right;
 }
 div.revv {
-	padding: 2px 0px 1em 7px;
+	padding: 2px 0 1em 7px;
 }
 table.revoff {
-	margin: 0.2em 0em 0.5em 0em;
+	margin: 0.2em 0 0.5em 0;
 	font-size: smaller;
 }
 table.revoff span.revfn {
 	font-variant: small-caps;
 	font-weight: bold;
-	padding: 0px 1em 5px 0px;
+	padding: 0 1em 5px 0;
 }
 div.revev {
-	padding: 5px 0px 1em 2px;
+	padding: 5px 0 1em 2px;
 }
 div.revhint {
 	font-size: smaller;
@@ -1761,13 +1779,13 @@ td.revle, td.revre {
 	vertical-align: top;
 }
 td.revce {
-	padding: 0px 0.5em;
+	padding: 0 0.5em;
 }
 
 /* review ratings */
 div.rev_rating {
 	font-size: 69%;
-	padding: 0.4em 0.8em 0.4em 0em;
+	padding: 0.4em 0.8em 0.4em 0;
 }
 div.rev_rating select, div.rev_rating input {
 	font-size: smaller;
@@ -1795,14 +1813,14 @@ td.cmtcc {
 	padding: 0.4em 0.5em;
 }
 td.cmtcc div.aa {
-	margin: 0.2em 0em 0.3em;
+	margin: 0.2em 0 0.3em;
 }
 td.cmthead h3 {
 	display: inline;
-	padding: 0em 0.5em 0em 0em;
+	padding: 0 0.5em 0 0;
 }
 td.cmthead {
-	padding: 0px 0px 4px 0px;
+	padding: 0 0 4px 0;
 }
 td.cmthead span.cmtfn {
 	font-size: smaller;
@@ -1822,22 +1840,22 @@ div.cmtt div.floatright {
 	padding-left: 0.5em;
 }
 div.cmtv {
-	padding: 2px 0px 1em 7px;
+	padding: 2px 0 1em 7px;
 }
 div#foldaddcomment div.cmtv {
-	padding-bottom: 0px;
+	padding-bottom: 0;
 }
 table.cmtoff {
-	margin: 0.2em 0em 0.5em 0em;
+	margin: 0.2em 0 0.5em 0;
 	font-size: smaller;
 }
 table.cmtoff span.cmtfn {
 	font-variant: small-caps;
 	font-weight: bold;
-	padding: 0px 1em 5px 0px;
+	padding: 0 1em 5px 0;
 }
 div.cmtev {
-	padding: 5px 0px 1em 2px;
+	padding: 5px 0 1em 2px;
 }
 div.cmthint {
 	font-size: smaller;
@@ -1852,11 +1870,11 @@ div.cmthint {
 div.mail {
 	background-color: #e6e1cf;
 	padding: 8px;
-	margin: 8px 0px;
+	margin: 8px 0;
 	float: left;
 }
 div.mail td.mhx {
-	padding: 0em 1em;
+	padding: 0 1em;
 }
 div.mail td.mhn {
 	text-align: right;
@@ -1866,7 +1884,7 @@ div.mail td.mhn, div.mail td.mhd, div.mail td.mhdd {
 	padding: 2px 4px;
 }
 div.mail td.mhb {
-	padding: 4px 2em 4px 0px;
+	padding: 4px 2em 4px 0;
 }
 div.mail td.mhb pre {
 	background-color: #ffffff;
@@ -1975,7 +1993,7 @@ div.popupc {
 	display: none;
 }
 div.popupc p:first-child, div.popupo p:first-child {
-	margin-top: 0px;
+	margin-top: 0;
 }
 div.popup_actions {
 	text-align: right;
@@ -2019,13 +2037,13 @@ table#offlineform ul {
 }
 table#offlineform table, table#offlineform form {
 	margin: 0.5em 1.5em;
-	padding: 0px;
+	padding: 0;
 	display: block;
 }
 
 /* action log */
 table.lognav {
-	margin: 0.75em auto 0em auto;
+	margin: 0.75em auto 0 auto;
 }
 table.lognav td#newest div, table.lognav td#newer div,
 table.lognav td#newnum div, table.lognav td#oldnum div,

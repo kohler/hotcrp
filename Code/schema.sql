@@ -190,7 +190,8 @@ CREATE TABLE `PaperComment` (
   UNIQUE KEY `commentId` (`commentId`),
   KEY `contactId` (`contactId`),
   KEY `paperId` (`paperId`),
-  KEY `contactPaper` (`contactId`,`paperId`)
+  KEY `contactPaper` (`contactId`,`paperId`),
+  KEY `timeModified` (`timeModified`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
@@ -502,7 +503,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 32);
+insert into Settings (name, value) values ('allowPaperOption', 33);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags
