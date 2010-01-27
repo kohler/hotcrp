@@ -218,7 +218,7 @@ function requestSameAsPaper($prow) {
 	$result = $Conf->q("select ot.optionId, coalesce(po.value, 0), $qa from OptionType ot left join PaperOption po on po.paperId=$prow->paperId and po.optionId=ot.optionId");
 	while (($row = edb_row($result))) {
 	    $got = defval($_REQUEST, "opt$row[0]", "");
-	    if (($row[2] == 4 && fileUploaded("opt$row[0]"))
+	    if (($row[2] == 4 && fileUploaded($_FILES["opt$row[0]"], $Conf))
 		|| ($row[2] == 3 && simplifyWhitespace($got) != $row[3])
 		|| (($row[2] == 0 || $row[2] == 1 || $row[2] == 2)
 		    && cvtint($got, 0) != $row[1]))
