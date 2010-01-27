@@ -854,9 +854,11 @@ class Conference {
 		ReviewerContactInfo.lastLogin as reviewLastLogin";
 	if ($reviewerQuery || $scoresQuery) {
 	    $rf = reviewForm();
+	    if ($this->sversion >= 17)
+		$pq .= ",\n\t\tPaperReview.reviewEditVersion as reviewEditVersion";
 	    foreach ($rf->fieldOrder as $k)
 		if (!$scoresQuery || $rf->reviewFields[$k])
-		    $pq .= ",\t\tPaperReview.$k as $k";
+		    $pq .= ",\n\t\tPaperReview.$k as $k";
 	}
 	if (isset($options['allComments'])) {
 	    $pq .= ",
