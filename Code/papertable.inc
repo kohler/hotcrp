@@ -624,7 +624,8 @@ class PaperTable {
     function paptabTopicsOptions($prow, $showAllOptions) {
 	global $Conf, $Me, $forceShow;
 	$topicdata = topicTable($prow, -1);
-	$optiondata = "";
+	$optiondata = array();
+	$ndocuments = 0;
 	if (($options = paperOptions())) {
 	    preg_match_all('/(\d+)#(\d+)/', defval($prow, "optionIds", ""), $m);
 	    $optsel = array();
@@ -636,26 +637,31 @@ class PaperTable {
 		    && ($showAllOptions
 			|| $Me->canViewPaperOption($prow, $o))) {
 		    if ($o->type == 0)
-			$optiondata .= htmlspecialchars($o->optionName) . "<br />\n";
+			$optiondata[] = htmlspecialchars($o->optionName) . "<br />\n";
 		    else if ($o->type == 1) {
 			$om = explode("\n", $o->optionValues);
 			if (defval($om, $ov, "") != "")
-			    $optiondata .= htmlspecialchars("$o->optionName: $om[$ov]") . "<br />\n";
+			    $optiondata[] = htmlspecialchars("$o->optionName: $om[$ov]") . "<br />\n";
 		    } else if ($o->type == 2 && $ov != "")
-			$optiondata .= htmlspecialchars("$o->optionName: " . $ov) . "<br />\n";
-		    else if ($o->type == 4 && $ov)
-			$optiondata .= "<a href=\"" . $Conf->makeDownloadPath($prow->paperId, "application/pdf", $o->optionId) . "\">" . $Conf->cacheableImage("pdf.png", "[PDF]", null, "sdlimg") . "&nbsp;" . htmlspecialchars($o->optionName) . "</a><br />\n";
+			$optiondata[] = htmlspecialchars("$o->optionName: " . $ov) . "<br />\n";
+		    else if ($o->type == 4 && $ov) {
+			$optiondata[] = "<a href=\"" . $Conf->makeDownloadPath($prow->paperId, "application/pdf", $o->optionId) . "\">" . $Conf->cacheableImage("pdf.png", "[PDF]", null, "sdlimg") . "&nbsp;" . htmlspecialchars($o->optionName) . "</a><br />\n";
+			++$ndocuments;
+		    }
 		}
 	    }
 	}
 
-	if ($topicdata != "" || $optiondata != "") {
-	    if ($topicdata != "" && $optiondata != "")
-		$tanda = "Topics and Options";
-	    else if ($topicdata != "")
-		$tanda = "Topics";
-	    else
-		$tanda = "Options";
+	if ($topicdata != "" || count($optiondata)) {
+	    $infotypes = array();
+	    if ($ndocuments > 0)
+		$infotypes[] = "Documents";
+	    if (count($optiondata) != $ndocuments)
+		$infotypes[] = "Options";
+	    $options_name = commajoin($infotypes);
+	    if ($topicdata != "")
+		array_unshift($infotypes, "Topics");
+	    $tanda = commajoin($infotypes);
 
 	    if ($this->allFolded) {
 		$extra = array("fold" => "paper", "foldnum" => 5,
@@ -676,13 +682,13 @@ class PaperTable {
 		if ($extra)
 		    $extra = array("extraclass" => "fx5");
 		$before = "";
-		$tanda = "Options";
+		$tanda = $options_name;
 	    }
 
-	    if ($optiondata != "") {
-		echo $this->papt("options", array("Options", $tanda), $extra),
+	    if (count($optiondata)) {
+		echo $this->papt("options", array($options_name, $tanda), $extra),
 		    $before,
-		    "<div class='papv$eclass'>", $optiondata, "</div>\n\n";
+		    "<div class='papv$eclass'>", join("", $optiondata), "</div>\n\n";
 	    }
 	}
     }
