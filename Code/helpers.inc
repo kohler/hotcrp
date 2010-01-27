@@ -751,7 +751,7 @@ function commajoin($what) {
 	return $what[0] . " and " . $what[1];
     if (count($what) == 1)
 	return $what[0];
-    return join(", ", array_slice($what, 0, -1)) . " and " . $what[count($what) - 1];
+    return join(", ", array_slice($what, 0, -1)) . ", and " . $what[count($what) - 1];
 }
 
 function ordinal($n) {
