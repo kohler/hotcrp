@@ -105,12 +105,43 @@ function mkarray($value) {
 	return array($value);
 }
 
-function is_valid_utf8($str) {
-    return @mb_check_encoding($str, "UTF-8");
+if (function_exists("mb_check_encoding")) {
+    function is_valid_utf8($str) {
+	return @mb_check_encoding($str, "UTF-8");
+    }
+} else if (function_exists("iconv")) {
+    // Aren't these hoops delicious?
+    function _is_valid_utf8_error_handler($errno, $errstr) {
+	global $_is_valid_utf8_result;
+	$_is_valid_utf8_result = false;
+	return false;
+    }
+    function is_valid_utf8($str) {
+	global $_is_valid_utf8_result;
+	$_is_valid_utf8_result = true;
+	set_error_handler("_is_valid_utf8_error_handler");
+	@iconv("UTF-8", "UTF-8", $str); // possible E_NOTICE captured above
+	restore_error_handler();
+	return $_is_valid_utf8_result;
+	// While it might also work to compare iconv's return value to the
+	// original string, who knows whether iconv canonicalizes composed
+	// Unicode character sequences or something?  Safer to check for
+	// errors.
+    }
+} else {
+    function is_valid_utf8($str) {
+	return true;		// give up
+    }
 }
 
-function windows_1252_to_utf8($str) {
-    return iconv("Windows-1252", "UTF-8//TRANSLIT//IGNORE", $str);
+if (function_exists("iconv")) {
+    function windows_1252_to_utf8($str) {
+	return iconv("Windows-1252", "UTF-8//TRANSLIT//IGNORE", $str);
+    }
+} else {
+    function windows_1252_to_utf8($str) {
+	return $str;		// give up
+    }
 }
 
 
