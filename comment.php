@@ -90,7 +90,7 @@ function setReviewInfo($dst, $src) {
     $dst->conflictType = $src->conflictType;
 }
 
-function watch($newComment) {
+function watch() {
     global $Conf, $Me, $prow, $savedCrow;
 
     $apo = $Conf->sversion;
@@ -146,7 +146,7 @@ function watch($newComment) {
 
 
 // update comment action
-function saveComment($text) {
+function saveComment($text, $locked) {
     global $Me, $Conf, $prow, $crow, $savedCommentId;
 
     // options
@@ -202,6 +202,10 @@ function saveComment($text) {
     else if (!($savedCommentId = $Conf->lastInsertId($while)))
 	return false;
 
+    // we are done saving the comment; unlock tables
+    if ($locked)
+	$Conf->q("unlock tables");
+
     // log, end
     $what = ($forAuthors > 1 ? "Response" : "Comment");
     if ($text != "" && !isset($_SESSION["comment_msgs"]))
@@ -222,7 +226,6 @@ function saveComment($text) {
 
     // adjust comment counts
     if ($change) {
-	$Conf->q("unlock tables");	// just in case
 	// see also account.php:delete user
 	$Conf->qe("update Paper set numComments=(select count(commentId) from PaperComment where paperId=$prow->paperId), numAuthorComments=(select count(commentId) from PaperComment where paperId=$prow->paperId and forAuthors>0) where paperId=$prow->paperId", $while);
     }
@@ -235,12 +238,14 @@ function saveComment($text) {
 	unset($_REQUEST["commentId"]);
     $_REQUEST["noedit"] = 1;
 
-    if ($text != "")
+    loadRows();
+    if ($text != "") {
+	watch();
 	redirectSelf(array("anchor" => "comment$savedCommentId"));
-    else
+    } else
 	redirectSelf();
-
-    return ($crow ? false : true);
+    // NB normally redirectSelf() does not return
+    return true;
 }
 
 function saveResponse($text) {
@@ -253,7 +258,10 @@ function saveResponse($text) {
 	    return $Conf->errorMsg("A paper response has already been entered.  <a href=\"comment$ConfSiteSuffix?c=$row[0]$linkExtra\">Edit that response</a>");
     }
 
-    return saveComment($text);
+    $Conf->qe("lock tables Paper write, PaperComment write, ActionLog write");
+    $success = saveComment($text, true);
+    if (!$success)
+	$Conf->qe("unlock tables");
 }
 
 if (isset($_REQUEST["submit"]) && defval($_REQUEST, "response")) {
@@ -263,13 +271,8 @@ if (isset($_REQUEST["submit"]) && defval($_REQUEST, "response")) {
     } else if (!($text = defval($_REQUEST, "comment")) && !$crow) {
 	$Conf->errorMsg("Enter a comment.");
 	$useRequest = true;
-    } else {
-	$Conf->qe("lock tables Paper write, PaperComment write, ActionLog write");
-	$newComment = saveResponse($text);
-	$Conf->qe("unlock tables");
-	loadRows();
-	watch($newComment);
-    }
+    } else
+	saveResponse($text);
 } else if (isset($_REQUEST["submit"])) {
     if (!$Me->canSubmitComment($prow, $crow, $whyNot)) {
 	$Conf->errorMsg(whyNotText($whyNot, "comment on"));
@@ -277,19 +280,14 @@ if (isset($_REQUEST["submit"]) && defval($_REQUEST, "response")) {
     } else if (!($text = defval($_REQUEST, "comment")) && !$crow) {
 	$Conf->errorMsg("Enter a comment.");
 	$useRequest = true;
-    } else {
-	$newComment = saveComment($text);
-	loadRows();
-	watch($newComment);
-    }
+    } else
+	saveComment($text, false);
 } else if (isset($_REQUEST["delete"]) && $crow) {
     if (!$Me->canSubmitComment($prow, $crow, $whyNot)) {
 	$Conf->errorMsg(whyNotText($whyNot, "comment on"));
 	$useRequest = true;
-    } else {
-	saveComment("");
-	loadRows();
-    }
+    } else
+	saveComment("", false);
 } else if (isset($_REQUEST["cancel"]) && $crow)
     $_REQUEST["noedit"] = 1;
 

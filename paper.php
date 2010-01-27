@@ -571,6 +571,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 
     $Conf->log($actiontext, $Me, $paperId);
     redirectSelf();
+    // NB normally redirectSelf() does not return
     return true;
 }
 
@@ -598,8 +599,10 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"])) {
 	else
 	    $action = ($newPaper ? "register" : "update");
 	$Conf->errorMsg(whyNotText($whyNot, $action));
-    } else if (updatePaper($Me, isset($_REQUEST["submit"]), isset($_REQUEST["submitfinal"])))
+    } else if (updatePaper($Me, isset($_REQUEST["submit"]), isset($_REQUEST["submitfinal"]))) {
 	redirectSelf(array("p" => $paperId, "m" => "pe"));
+	// NB normally redirectSelf() does not return
+    }
 
     // use request?
     $useRequest = ($ok || $Me->privChair);

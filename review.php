@@ -170,6 +170,7 @@ if (isset($_REQUEST['update'])) {
 	if ($rf->saveRequest($_REQUEST, $paperTable->editrrow, $prow)) {
 	    $Conf->confirmMsg(defval($_REQUEST, "ready", false) && !defval($_REQUEST, "unready", false) ? "Review submitted." : "Review saved.  However, this version is marked as not ready for others to see.  Please finish the review and submit again.");
 	    redirectSelf();
+	    // NB normally redirectSelf() does not return
 	    loadRows();
 	} else
 	    $useRequest = true;
