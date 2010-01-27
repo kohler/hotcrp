@@ -42,7 +42,7 @@ define("BLIND_ALWAYS", 2);	/* ordering is important */
 define("BLIND_OPTIONAL", 1);
 define("BLIND_NEVER", 0);
 
-define("HOTCRP_VERSION", "2.37");
+define("HOTCRP_VERSION", "2.38");
 
 global $rf;
 $rf = null;

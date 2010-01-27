@@ -1,5 +1,25 @@
 HotCRP NEWS
 
+Version 2.38   27.Jan.2010
+
+* Add "Recent comments" section to the home page for PC members.  This
+  lists recent viewable comments, newest comments first.
+
+* Detect and compensate for invalid UTF-8 in uploaded review files (assume
+  invalid UTF-8 means Windows 1252/ISO-8859-1).
+
+* Many bug fixes, including SQL errors when saving all-zero preferences,
+  searches for letter scores (i.e. "revexp:X"), manual conflict
+  assignments, sending email to contact authors when a chair withdraws a
+  paper, and actually sending email to users "watching" a paper's comments.
+
+* PC members can elect to receive email on ALL papers' comment updates
+  (except for comments).
+
+* Thanks especially to Alex Aiken, and to David Evans, John Ousterhout,
+  Tony Del Porto, Jane-Ellen Long, and Casey Henderson.
+
+
 Version 2.37   19.Dec.2009
 
 * Bug-fix release.
