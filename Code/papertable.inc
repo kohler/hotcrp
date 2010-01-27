@@ -1287,7 +1287,7 @@ class PaperTable {
 	    if ($prow->timeSubmitted <= 0)
 		$buttons[] = "<input class='b' type='submit' name='withdraw' value='Withdraw paper' />";
 	    else {
-		$buttons[] = "<button type='button' class='b' onclick=\"popup(this, 'w', 0)\">Withdraw paper</button>";
+		$buttons[] = "<button type='button' class='b' onclick=\"popup(this,'w',0,true)\">Withdraw paper</button>";
 		$admins = "";
 		if ((!$Me->privChair || $prow->conflictType >= CONFLICT_AUTHOR)
 		    && !$Conf->timeFinalizePaper($prow))
@@ -1297,6 +1297,8 @@ class PaperTable {
   publication?  $admins</p>
   <form method='post' action=\"paper$ConfSiteSuffix?p=" . $prow->paperId . "&amp;post=1&amp;m=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'>
     <div class='popup_actions'>
+      <input class='popup_populate' type='hidden' name='doemail' value='1' />
+      <input class='popup_populate' type='hidden' name='emailNote' value='' />
       <button type='button' class='b' onclick=\"popup(null, 'w', 1)\">Cancel</button>
       &nbsp;<input class='bb' type='submit' name='withdraw' value='Withdraw paper' />
     </div>
@@ -1306,12 +1308,14 @@ class PaperTable {
 		$buttons[] = "<button type='button' class='b' onclick='document.location=\"contactauthors$ConfSiteSuffix?p=" . $prow->paperId . "$linkExtra\"'>Edit contact authors</button>";
 	}
 	if ($Me->privChair && $prow) {
-	    $buttons[] = array("<button type='button' class='b' onclick=\"popup(this, 'd', 0)\">Delete paper</button>", "(admin only)");
+	    $buttons[] = array("<button type='button' class='b' onclick=\"popup(this,'d',0,true)\">Delete paper</button>", "(admin only)");
 	    $Conf->footerHtml("<div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
   paper from the database and <strong>cannot be undone</strong>.</p>
   <form method='post' action=\"paper$ConfSiteSuffix?p=" . $prow->paperId . "&amp;post=1&amp;m=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'>
     <div class='popup_actions'>
+      <input class='popup_populate' type='hidden' name='doemail' value='1' />
+      <input class='popup_populate' type='hidden' name='emailNote' value='' />
       <button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button>
       &nbsp;<input class='bb' type='submit' name='delete' value='Delete paper' />
     </div>

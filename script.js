@@ -543,8 +543,8 @@ function addRatingAjax() {
 
 
 // popup dialogs
-function popup(anchor, which, dofold) {
-    var elt = e("popup_" + which);
+function popup(anchor, which, dofold, populate) {
+    var elt = e("popup_" + which), form, elts, populates, i, xelt, type;
     if (elt && dofold)
 	elt.className = "popupc";
     else if (elt && Geometry) {
@@ -558,6 +558,26 @@ function popup(anchor, which, dofold) {
 	elt.style.left = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) + "px";
 	elt.style.top = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) + "px";
     }
+
+    // transfer input values to the new form if asked
+    if (anchor && populate) {
+	elts = elt.getElementsByTagName("input");
+	populates = {};
+	for (i = 0; i < elts.length; ++i)
+	    if (elts[i].className.indexOf("popup_populate") >= 0)
+		populates[elts[i].name] = elts[i];
+	for (form = anchor; form && form.tagName != "FORM"; )
+	    form = form.parentNode;
+	elts = (form ? form.getElementsByTagName("input") : []);
+	for (i = 0; i < elts.length; ++i)
+	    if (elts[i].name && (xelt = populates[elts[i].name])) {
+		if (elts[i].type == "checkbox" && !elts[i].checked)
+		    xelt.value = "";
+		else if (elts[i].type != "radio" || elts[i].checked)
+		    xelt.value = elts[i].value;
+	    }
+    }
+
     return false;
 }
 

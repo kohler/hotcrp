@@ -133,8 +133,10 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	    Mailer::sendContactAuthors("@adminwithdraw", $prow, null, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
 
 	// email reviewers
-	if ($numreviews > 0 || $prow->startedReviewCount > 0)
-	    Mailer::sendReviewers("@withdrawreviewer", $prow, null, array("reason" => defval($_REQUEST, "emailNote", "")));
+	if ($numreviews > 0 || $prow->startedReviewCount > 0) {
+	    $emailNote = ($Me->privChair && defval($_REQUEST, "doemail") > 0 ? defval($_REQUEST, "emailNote", "") : "");
+	    Mailer::sendReviewers("@withdrawreviewer", $prow, null, array("reason" => $emailNote));
+	}
 
 	// remove voting tags so people don't have phantom votes
 	require_once("Code/tags.inc");
