@@ -1,6 +1,6 @@
 <?php
 // reviewtable.inc -- HotCRP helper class for table of all reviews
-// HotCRP is Copyright (c) 2006-2009 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2010 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 // reviewer information

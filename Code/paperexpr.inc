@@ -1,6 +1,6 @@
 <?php
 // paperexpr.inc -- HotCRP helper class for paper expressions
-// HotCRP is Copyright (c) 2009 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2009-2010 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("tags.inc");
