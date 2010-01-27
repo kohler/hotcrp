@@ -1172,7 +1172,7 @@ class PaperTable {
 				       array("onchange" => "Miniajax.submit('watchform')"))
 			 . "&nbsp;" . tagg_label("Comment notification"),
 			 array("type" => "ps")),
-	    "<div class='pshint'>If selected, the system will email you when updated comments are available. <span id='watchformresult'></span></div>",
+	    "<div class='pshint'>If selected, you will receive email when updated comments are available for this paper. <span id='watchformresult'></span></div>",
 	    "<div class='papv'>",
 	    "<input class='b fx7' type='submit' value='Save' />",
 	    "</div></div></form>\n\n";

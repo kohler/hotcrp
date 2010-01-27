@@ -113,7 +113,7 @@ function watch() {
 		left join PaperComment on (PaperComment.paperId=$prow->paperId and PaperComment.contactId=ContactInfo.contactId)
 		left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId)
 		left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId)
-		where conflictType>=" . CONFLICT_AUTHOR . " or reviewType is not null or watch is not null or commentId is not null");
+		where conflictType>=" . CONFLICT_AUTHOR . " or reviewType is not null or watch is not null or commentId is not null or (defaultWatch & " . WATCH_ALLCOMMENTS . ")!=0");
 
     $saveProw = (object) null;
     $lastContactId = 0;
@@ -128,7 +128,7 @@ function watch() {
 	    if (!($row->watch & WATCH_COMMENT))
 		continue;
 	} else {
-	    if (!($row->defaultWatch & WATCH_COMMENT))
+	    if (!($row->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)))
 		continue;
 	}
 

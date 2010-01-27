@@ -23,6 +23,7 @@ define("TAG_MAXLEN", 40);
 
 define("WATCH_COMMENTSET", 1);
 define("WATCH_COMMENT", 2);
+define("WATCH_ALLCOMMENTS", 4);
 
 define("REV_RATINGS_PC", 0);
 define("REV_RATINGS_PC_EXTERNAL", 1);

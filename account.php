@@ -183,8 +183,12 @@ function createUser(&$tf, $newProfile) {
 	if (isset($_REQUEST[$v]))
 	    $Acct->$v = $_REQUEST[$v];
     $Acct->defaultWatch = 0;
-    if (isset($_REQUEST["watchcomment"]))
+    if (isset($_REQUEST["watchcomment"])) {
 	$Acct->defaultWatch |= WATCH_COMMENT;
+	if (($Acct->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR))
+	    && defval($_REQUEST, "watchcommenttype", "ar") == "all")
+	    $Acct->defaultWatch |= WATCH_ALLCOMMENTS;
+    }
 
     if ($OK)
 	$Acct->updateDB();
@@ -552,9 +556,14 @@ echo "</div></td>\n</tr>\n\n";
 if ($Conf->sversion >= 6) {
     echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n\n",
 	"<tr><td class='caption'>Email notification</td><td class='entry'>",
-	tagg_checkbox_h("watchcomment", WATCH_COMMENT, $Acct->defaultWatch & WATCH_COMMENT),
-	"&nbsp;", tagg_label("Send mail when new comments are available for authored or reviewed papers"),
-	"</td></tr>\n\n";
+	tagg_checkbox_h("watchcomment", WATCH_COMMENT, $Acct->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)),
+	"&nbsp;";
+    if ((!$newProfile && $Acct->isPC) || $Me->privChair)
+	echo tagg_label("Send mail when new comments are available for"),
+	    " &nbsp;", tagg_select("watchcommenttype", array("ar" => "authored or reviewed papers", "all" => "any paper"), ($Acct->defaultWatch & WATCH_ALLCOMMENTS ? "all" : "ar"), array("onchange" => "hiliter(this)"));
+    else
+	echo tagg_label("Send mail when new comments are available for authored or reviewed papers");
+    echo "</td></tr>\n\n";
 }
 
 
