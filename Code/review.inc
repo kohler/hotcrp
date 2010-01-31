@@ -302,7 +302,13 @@ class ReviewForm {
 	    self::tfError($tf, false, textArrayJoin($missing) . " " . pluralx($missing, "field") . " missing from form.  Preserving any existing values.");
 	if ($rrow && defval($rrow, "reviewEditVersion", 0) > defval($req, "version", 0)
 	    && $nokfields > 0 && $tf && isset($tf["text"])) {
-	    self::tfError($tf, true, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line &ldquo;<code>==+== Version " . $rrow->reviewEditVersion . "</code>&rdquo; to your offline review form for paper #" . $req["paperId"] . " and upload the form again.");
+	    self::tfError($tf, true, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line &ldquo;<code>==+==&nbsp;Version&nbsp;" . $rrow->reviewEditVersion . "</code>&rdquo; to your offline review form for paper #" . $req["paperId"] . " and upload the form again.");
+	    return 0;
+	}
+	if (isset($req["reviewerEmail"]) && $rrow
+	    && $rrow->email != $req["reviewerEmail"]
+	    && (!isset($req["reviewerName"]) || $req["reviewerName"] != trim("$rrow->firstName $rrow->lastName"))) {
+	    self::tfError($tf, true, "This review form claims to be written by " . htmlspecialchars($req["reviewerEmail"]) . " rather than the review's owner, " . contactHtml($rrow) . ".  If you want to upload it anyway, remove the &ldquo;<code>==+==&nbsp;Reviewer</code>&rdquo; line from the form and try again.", "reviewerEmail");
 	    return 0;
 	}
 	if (isset($outofrange)) {
@@ -790,6 +796,10 @@ $blind\n";
 		    $req['paperId'] = $tf['paperId'] = $match[1];
 		    $req['blind'] = 1;
 		    $tf['firstLineno'] = $lineno;
+		} else if (preg_match('/^==\+== Reviewer:\s*(.*?)\s*<(\S+?)>/', $line, $match)) {
+		    $tf["fieldLineno"]["reviewerEmail"] = $lineno;
+		    $req["reviewerName"] = $match[1];
+		    $req["reviewerEmail"] = $match[2];
 		} else if (preg_match('/^==\+== Paper (Number|\#)\s*$/i', $line)) {
 		    if ($nfields > 0)
 			break;
