@@ -1,3 +1,5 @@
+- comments that can only be seen by chairs [Ernst Biersack/S. Keshav]
+
 - visibility of review fields is too subtle on web form [David Evans]
 
 - An external reviewer can refuse their review using the site, but there is
@@ -28,8 +30,6 @@
   scores [Casey Henderson/Adam Moskowitz].
 
 - string options
-
-- upload multiple documents [Gareth Gale]
 
 - When external reviewers submit their reviews, it might be a good idea to
   inform the requesting PC member that the review has been
