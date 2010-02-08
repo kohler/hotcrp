@@ -124,7 +124,7 @@ conference. Options include:</p>
 <ul class='compact'>
 <li><b>Submitted papers</b> &mdash; all submitted papers.</li>
 <li><b>All papers</b> &mdash; all papers, including withdrawn and other non-submitted papers.</li>
-<li><b>Your submissions</b> &mdash; papers for which you're a contact author.</li>
+<li><b>Your submissions</b> &mdash; papers for which you're a contact.</li>
 <li><b>Your reviews</b> &mdash; papers you've been assigned to review.</li>
 <li><b>Your incomplete reviews</b> &mdash; papers you've been assigned to review, but haven't submitted a review yet.</li>
 </ul>
@@ -224,7 +224,7 @@ function searchQuickref() {
     _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains &ldquo;very novel&rdquo;");
     _searchQuickrefRow("Authors", "au:poletto", "author list contains &ldquo;poletto&rdquo;");
     if ($Me->isPC)
-	_searchQuickrefRow("", "au:pc", "one or more contact authors are PC members");
+	_searchQuickrefRow("", "au:pc", "one or more authors are PC members");
     _searchQuickrefRow("Collaborators", "co:liskov", "collaborators contains &ldquo;liskov&rdquo;");
     _searchQuickrefRow("Topics", "topic:link", "selected topics match &ldquo;link&rdquo;");
     _searchQuickrefRow("Options", "opt:shadow", "selected submission options match &ldquo;shadow&rdquo;");

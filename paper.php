@@ -356,7 +356,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // defined contact ID
     if ($newPaper && (isset($_REQUEST["contact_email"]) || isset($_REQUEST["contact_name"])) && $Me->privChair)
 	if (!($contactId = $Conf->getContactId($_REQUEST["contact_email"], "contact_"))) {
-	    $Conf->errorMsg("You must supply a valid email address for the contact author.");
+	    $Conf->errorMsg("You must supply a valid email address for the paper contact.");
 	    $Error["contactAuthor"] = 1;
 	    return false;
 	}

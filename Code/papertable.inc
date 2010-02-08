@@ -533,7 +533,7 @@ class PaperTable {
 	$result = $Conf->qe("select firstName, lastName, email, '' as affiliation, contactId
 		from ContactInfo join PaperConflict using (contactId)
 		where paperId=$prow->paperId and conflictType>=" . CONFLICT_AUTHOR . "
-		order by lastName, firstName, email", "while finding contact authors");
+		order by lastName, firstName, email", "while finding contacts");
 	$contacts = array();
 	while (($row = edb_row($result))) {
 	    $match = -1;
@@ -695,8 +695,8 @@ class PaperTable {
 
     function echoNewContactAuthor($pulldown) {
 	global $Me, $Conf;
-	echo $this->papt("contactAuthor", "Contact author"),
-	    "<div class='paphint'>You will be able to add more contact authors after you register the paper.</div>",
+	echo $this->papt("contactAuthor", "Contact"),
+	    "<div class='paphint'>You will be able to add more contacts after you register the paper.</div>",
 	    "<div class='papv'>";
 	if ($pulldown)
 	    contactPulldown("contact", "contact", $Conf, $Me);
@@ -711,8 +711,8 @@ class PaperTable {
 		from ContactInfo
 		join PaperConflict using (contactId)
 		where paperId=$prow->paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . "
-		order by lastName, firstName, email", "while finding contact authors");
-	echo $this->papt("contactAuthor", pluralx(edb_nrows($result), "Contact author")),
+		order by lastName, firstName, email", "while finding contacts");
+	echo $this->papt("contactAuthor", pluralx(edb_nrows($result), "Contact")),
 	    "<div class='papv'>";
 	if ($result) {
 	    $aus = array();
@@ -721,7 +721,7 @@ class PaperTable {
 	    echo authorTable($aus, $Me);
 	}
 	if ($editMode || ($editMode === false && ($this->editable || $Me->privChair)))
-	    echo "(<a href='contactauthors$ConfSiteSuffix?p=$prow->paperId'>Edit&nbsp;contact&nbsp;authors</a>)";
+	    echo "(<a href='contactauthors$ConfSiteSuffix?p=$prow->paperId'>Edit&nbsp;contacts</a>)";
 	echo "</div>\n\n";
     }
 
@@ -1249,13 +1249,13 @@ class PaperTable {
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR && $prow->outcome > 0
 		   && $Conf->timeSubmitFinalPaper()) {
 	    $updateDeadline = $this->deadlineSettingIs("final_soft");
-	    $m .= "<div class='xinfo'>" . "Congratulations!  This paper was accepted.  Submit a final copy for the paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or edit contact authors, allowing others to view reviews and make changes." . "</div>";
+	    $m .= "<div class='xinfo'>" . "Congratulations!  This paper was accepted.  Submit a final copy for the paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or edit paper contacts, allowing others to view reviews and make changes." . "</div>";
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR) {
 	    $override2 = ($Me->privChair ? "  However, as an administrator, you can update the paper anyway by selecting \"Override deadlines\"." : "");
 	    if ($this->mode == "pe")
 		$m .= "<div class='xinfo'>" . "This paper is under review and can no longer be changed, although you may still withdraw it from the conference.$override2" . "</div>";
 	} else
-	    $m .= "<div class='xinfo'>" . "You aren't a contact author for this paper, but as an administrator you can still make changes." . "</div>";
+	    $m .= "<div class='xinfo'>" . "You aren't a contact for this paper, but as an administrator you can still make changes." . "</div>";
 
 	return $m;
     }
@@ -1305,7 +1305,7 @@ class PaperTable {
   </form></div>");
 	    }
 	    if (!$this->editable)
-		$buttons[] = "<button type='button' class='b' onclick='document.location=\"contactauthors$ConfSiteSuffix?p=" . $prow->paperId . "$linkExtra\"'>Edit contact authors</button>";
+		$buttons[] = "<button type='button' class='b' onclick='document.location=\"contactauthors$ConfSiteSuffix?p=" . $prow->paperId . "$linkExtra\"'>Edit contacts</button>";
 	}
 	if ($Me->privChair && $prow) {
 	    $buttons[] = array("<button type='button' class='b' onclick=\"popup(this,'d',0,true)\">Delete paper</button>", "(admin only)");

@@ -981,7 +981,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['blindSubmission']))
 	$text .= "Submission to this conference is blind.  ";
     if (isset($whyNot['author']))
-	$text .= "You aren't a contact author for $thisPaper.  ";
+	$text .= "You aren't a contact for $thisPaper.  ";
     if (isset($whyNot['conflict']))
 	$text .= "You have a conflict with $thisPaper.  ";
     if (isset($whyNot['externalReviewer']))

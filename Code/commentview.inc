@@ -224,7 +224,7 @@ augment the paper's content or form&mdash;the conference deadline
 has passed.  Please keep the response short and to the point",
 		$limittext, ".</div>\n";
 	    if ($prow->conflictType < CONFLICT_AUTHOR)
-		echo "<div class='hint'>Although you aren't a contact author for this paper, as an administrator you can edit the authors' response.</div>\n";
+		echo "<div class='hint'>Although you aren't a contact for this paper, as an administrator you can edit the authors' response.</div>\n";
 	}
 
 	echo "</td><td></td></tr>

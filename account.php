@@ -340,7 +340,7 @@ if (isset($_REQUEST["delete"]) && $OK) {
     else {
 	$tracks = databaseTracks($Acct->contactId);
 	if (count($tracks->soleAuthor))
-	    $Conf->errorMsg("This user can't be deleted since they are sole contact author for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".  You will be able to delete the user after deleting those papers or adding additional contact authors.");
+	    $Conf->errorMsg("This user can't be deleted since they are sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".  You will be able to delete the user after deleting those papers or adding additional paper contacts.");
 	else {
 	    $while = "while deleting user";
 	    foreach (array("ContactInfo", "Chair", "ChairAssistant",
@@ -639,8 +639,8 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     if (count($tracks->soleAuthor)) {
 	$Conf->footerHtml("<div id='popup_d' class='popupc'>
   <p><strong>This user cannot be deleted</strong> because they are the sole
-  contact author for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".
-  Delete these papers from the database or add alternate contact authors and
+  contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".
+  Delete these papers from the database or add alternate paper contacts and
   you will be able to delete this user.</p>
   <div class='popup_actions'>
     <button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Close</button>
@@ -649,7 +649,7 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
 	if (count($tracks->author) + count($tracks->review) + count($tracks->comment)) {
 	    $x = $y = array();
 	    if (count($tracks->author)) {
-		$x[] = "contact author for " . pluralx($tracks->author, "paper") . " " . textArrayPapers($tracks->author);
+		$x[] = "contact for " . pluralx($tracks->author, "paper") . " " . textArrayPapers($tracks->author);
 		$y[] = "delete " . pluralx($tracks->author, "this") . " " . pluralx($tracks->author, "authorship association");
 	    }
 	    if (count($tracks->review)) {

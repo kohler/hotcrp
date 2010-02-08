@@ -1104,7 +1104,7 @@ class Conference {
 
 
     function paperContactAuthors($paperId) {
-	$result = $this->qe("select firstName, lastName, email, contactId from ContactInfo join PaperConflict using (contactId) where paperId=$paperId and conflictType>=" . CONFLICT_AUTHOR, "while looking up paper contact authors");
+	$result = $this->qe("select firstName, lastName, email, contactId from ContactInfo join PaperConflict using (contactId) where paperId=$paperId and conflictType>=" . CONFLICT_AUTHOR, "while looking up paper contacts");
 	$aus = array();
 	while (($row = edb_row($result)))
 	    $aus[] = $row;

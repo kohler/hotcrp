@@ -999,7 +999,7 @@ class Mailer {
 		firstName, lastName, email$qa, password, conflictType, 0 as myReviewType
 		from ContactInfo join PaperConflict using (contactId)
 		where paperId=$row->paperId and conflictType>=" . CONFLICT_AUTHOR . "
-		group by ContactInfo.contactId", "while looking up contact authors to send email");
+		group by ContactInfo.contactId", "while looking up contacts to send email");
 
 	// must set the current conflict type in $row for each contact
 	$old_conflictType = $row->conflictType;
@@ -1015,9 +1015,9 @@ class Mailer {
 	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts) && $Me->privChair) {
 	    $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
 	    if (isset($rest["infoNames"]) && $Me->privChair)
-		$contactsmsg = pluralx($contacts, "contact author") . ", " . commajoin($contacts);
+		$contactsmsg = pluralx($contacts, "contact") . ", " . commajoin($contacts);
 	    else
-		$contactsmsg = "contact author(s)";
+		$contactsmsg = "contact(s)";
 	    $Conf->infoMsg("Sent email to paper #$row->paperId's $contactsmsg$endmsg");
 	}
     }
