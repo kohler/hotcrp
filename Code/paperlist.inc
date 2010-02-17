@@ -550,16 +550,16 @@ class PaperList extends BaseList {
 
     function _contentDownload($row) {
 	global $Conf;
-	$finalsuffix = "";
-	$finaltitle = null;
-	$documentType = 0;
 	if ($row->finalPaperStorageId != 0) {
 	    $this->anyFinalPaper = true;
 	    $finalsuffix = "f";
 	    $finaltitle = "Final copy";
-	    $documentType = -1;
+	    $documentType = DOCUMENT_FINAL;
+	} else {
+	    $finalsuffix = "";
+	    $finaltitle = null;
+	    $documentType = DOCUMENT_SUBMISSION;
 	}
-	$finalsuffix = ($documentType < 0 ? "f" : "");
 	if ($row->size == 0 || !$this->contact->canDownloadPaper($row))
 	    return "";
 	else if ($row->mimetype == "application/pdf")

@@ -110,7 +110,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-	if ($this->settings["allowPaperOption"] < 33) {
+	if ($this->settings["allowPaperOption"] < 34) {
 	    require_once("updateschema.inc");
 	    $oldOK = $OK;
 	    updateSchema($this);
@@ -554,7 +554,7 @@ class Conference {
 	if (!defval($Opt, "disablePS"))
 	    $mimetypes[] = "application/postscript";
 
-	$doc = $this->storePDF($uploadId, $paperId, $final ? -1 : 0, $mimetypes);
+	$doc = $this->storePDF($uploadId, $paperId, $final ? DOCUMENT_FINAL : DOCUMENT_SUBMISSION, $mimetypes);
 	if (!$doc)
 	    return false;
 
@@ -619,9 +619,9 @@ class Conference {
     function downloadPaperName($paperId, $mimetype, $documentType) {
 	global $Opt;
 	$title = $Opt["downloadPrefix"];
-	if ($documentType < 0)
+	if ($documentType == DOCUMENT_FINAL)
 	    $title .= "final";
-	else if ($documentType == 0)
+	else if ($documentType == DOCUMENT_SUBMISSION)
 	    $title .= "paper";
 	else {
 	    $opt = paperOptions();

@@ -145,7 +145,7 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table PaperStorage add `sha1` varbinary(20) NOT NULL default ''")
 	&& $Conf->q("alter table PaperStorage add `documentType` int(3) NOT NULL default '0'")
 	&& $Conf->q("update PaperStorage s, Paper p set s.sha1=p.sha1 where s.paperStorageId=p.paperStorageId and p.finalPaperStorageId=0 and s.paperStorageId>0")
-	&& $Conf->q("update PaperStorage s, Paper p set s.sha1=p.sha1, s.documentType=-1 where s.paperStorageId=p.finalPaperStorageId and s.paperStorageId>0")
+	&& $Conf->q("update PaperStorage s, Paper p set s.sha1=p.sha1, s.documentType=" . DOCUMENT_FINAL . " where s.paperStorageId=p.finalPaperStorageId and s.paperStorageId>0")
 	&& $Conf->q("update Settings set value=28 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 28;
     if ($Conf->settings["allowPaperOption"] == 28
@@ -185,6 +185,10 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table PaperComment add key `timeModified` (`timeModified`)")
 	&& $Conf->q("update Settings set value=33 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 33;
+    if ($Conf->settings["allowPaperOption"] == 33
+	&& $Conf->q("alter table PaperComment add `paperStorageId` int(11) NOT NULL default '0'")
+	&& $Conf->q("update Settings set value=34 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 34;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

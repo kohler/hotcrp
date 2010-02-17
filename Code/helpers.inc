@@ -332,7 +332,7 @@ function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
 function documentDownload($data) {
     global $Conf;
     $mimetype = defval($data, "mimetype", "");
-    $documentType = defval($data, "documentType", 0);
+    $documentType = defval($data, "documentType", DOCUMENT_SUBMISSION);
     $p = $Conf->makeDownloadPath($data->paperId, $mimetype, $documentType);
     $finalsuffix = ($documentType < 0 ? "f" : "");
     if ($mimetype == "application/postscript")
@@ -346,13 +346,15 @@ function documentDownload($data) {
     return $x . "</a>";
 }
 
-function paperDocumentData($prow, $documentType = 0, $paperStorageId = 0) {
+function paperDocumentData($prow, $documentType = DOCUMENT_SUBMISSION, $paperStorageId = 0) {
     global $Conf, $Opt;
-    assert($paperStorageId || $documentType <= 0);
-    if ($documentType < 0 && $prow->finalPaperStorageId <= 0)
-	$documentType = 0;
-    if ($paperStorageId == 0 && $documentType <= 0)
-	$paperStorageId = ($documentType < 0 ? $prow->finalPaperStorageId : $prow->paperStorageId);
+    assert($paperStorageId || $documentType == DOCUMENT_SUBMISSION || $documentType == DOCUMENT_FINAL);
+    if ($documentType == DOCUMENT_FINAL && $prow->finalPaperStorageId <= 0)
+	$documentType = DOCUMENT_SUBMISSION;
+    if ($paperStorageId == 0 && $documentType == DOCUMENT_FINAL)
+	$paperStorageId = $prow->finalPaperStorageId;
+    else if ($paperStorageId == 0)
+	$paperStorageId = $prow->paperStorageId;
     if ($paperStorageId == 1)
 	return null;
 
@@ -364,10 +366,10 @@ function paperDocumentData($prow, $documentType = 0, $paperStorageId = 0) {
 			  "sha1" => defval($prow, "sha1", ""));
     if ($prow->finalPaperStorageId > 0) {
 	$doc->paperStorageId = $prow->finalPaperStorageId;
-	$doc->documentType = -1;
+	$doc->documentType = DOCUMENT_FINAL;
     } else {
 	$doc->paperStorageId = $prow->paperStorageId;
-	$doc->documentType = 0;
+	$doc->documentType = DOCUMENT_SUBMISSION;
     }
 
     // load document object from database if pre-loaded version doesn't work

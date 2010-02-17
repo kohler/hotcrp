@@ -14,9 +14,9 @@ $Me->goIfInvalid();
 // Determine the intended paper
 
 if (defval($_REQUEST, "final", 0) != 0)
-    $documentType = -1;
+    $documentType = DOCUMENT_FINAL;
 else
-    $documentType = cvtint(defval($_REQUEST, "dt", 0), 0);
+    $documentType = cvtint(defval($_REQUEST, "dt", DOCUMENT_SUBMISSION), DOCUMENT_SUBMISSION);
 
 if (isset($_REQUEST["p"]))
     $paperId = rcvtint($_REQUEST["p"]);
@@ -29,7 +29,7 @@ else {
 	$paperId = $match[3];
 	$pt = strtolower($match[2]);
 	if ($pt == "final")
-	    $documentType = -1;
+	    $documentType = DOCUMENT_FINAL;
 	else if ($pt != "paper") {
 	    foreach (paperOptions() as $o)
 		if ($o->optionAbbrev == $pt
