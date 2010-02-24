@@ -120,5 +120,7 @@ $Opt["emailSubmissions"] = 0;
 //                   page, before the HotCRP link.  If set, should generally
 //                   end with " <span class='barsep'>|</span> ".
 //   noFooterVersion Set to true to avoid a version comment in footer HTML.
+//   zipCommand      Set to the path to the "zip" executable.  Defaults to
+//                   "zip".
 
 $Opt["disablePS"] = true;

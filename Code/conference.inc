@@ -697,9 +697,11 @@ class Conference {
     }
 
     function zipFinish(&$tmpdir, $name, &$files) {
-	global $zlib_output_compression;
+	global $Opt, $zlib_output_compression;
 
-	$out = system("zip -jq $tmpdir/x.zip " . join(" ", $files) . " 2>&1", $status);
+	if (!($zipcmd = defval($Opt, "zipCommand", "zip")))
+	    return new PEAR_Error("<code>zip</code> is not supported on this installation.");
+	$out = system("$zipcmd -jq $tmpdir/x.zip " . join(" ", $files) . " 2>&1", $status);
 	if ($status != 0)
 	    return new PEAR_Error("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
 	if (!file_exists("$tmpdir/x.zip"))
