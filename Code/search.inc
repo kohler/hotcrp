@@ -495,7 +495,7 @@ class PaperSearch {
 	$qt[] = new SearchTerm("tag", $rt, $extra ? array($value, $extra) : $value);
     }
 
-    function _searchOptions($word, $negate, &$qt) {
+    function _searchOptions($word, $negate, &$qt, $error) {
 	$type = "option";
 	if (preg_match('/\A(.*?)([:#][<>!=]?=?|[<>!=]=?)(.*)\z/', $word, $m)) {
 	    $oname = $m[1];
@@ -562,12 +562,13 @@ class PaperSearch {
 	// if "none", negate
 	if (count($qo) > 0 && $oname === "none")
 	    $qo = array("not", 0, $qo);
-	if (count($qo) == 0) {
+	if (count($qo) == 0 && ($option_failure || $error)) {
+	    $qo[] = new SearchTerm("f");
 	    if (!$option_failure)
 		$this->warn("&ldquo;" . htmlspecialchars($word) . "&rdquo; doesn't match a submission option.");
-	    $qo[] = new SearchTerm("f", 0, "");
 	}
 	$qt = array_merge($qt, $qo);
+	return count($qo) != 0;
     }
 
     function _searchPopWord(&$str) {
@@ -576,7 +577,7 @@ class PaperSearch {
 	return $m[0];
     }
 
-    function _searchQueryWord($word, &$rest, $negated, &$qt) {
+    function _searchQueryWord($word, &$rest, $negated, &$qt, $unrecognized_keyword_error) {
 	global $searchTags, $ratingTypes, $Conf;
 	$nqt = count($qt);
 
@@ -593,6 +594,10 @@ class PaperSearch {
 	    } else
 		$qt[] = new SearchTerm($negated ? "npn" : "pn", 0, -1);
 	    return;
+	} else if (preg_match('/\A([-_A-Za-z0-9]+)([<>!=]=?[^:]+)\z/', $word, $m)) {
+	    // Allow searches like "ovemer>2"; parse as "ovemer:>2".
+	    if ($this->_searchQueryWord($m[1] . ":" . $m[2], $rest, $negated, $qt, false))
+		return;
 	}
 
 	$special = null;
@@ -689,7 +694,7 @@ class PaperSearch {
 	    }
 	}
 	if (($special ? $special == "option" : isset($this->fields['option'])))
-	    $this->_searchOptions($word, $negated, $qt);
+	    $this->_searchOptions($word, $negated, $qt, true);
 	if ($special ? $special == "status" : isset($this->fields['status'])) {
 	    if (strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
 		$qt[] = new SearchTerm("pf", 0, array("timeWithdrawn", ">0"));
@@ -825,8 +830,11 @@ class PaperSearch {
 	    $rf = reviewForm();
 	    if (($field = $rf->unabbreviateField($special)))
 		$this->_searchReviews($word, $rf, $field, $negated, $qt);
-	    else
-		$this->_searchOptions("$special:$word", $negated, $qt);
+	    else if (!$this->_searchOptions("$special:$word", $negated, $qt, false)
+		     && $unrecognized_keyword_error) {
+		$this->warn("Unrecognized keyword &ldquo;" . htmlspecialchars($special) . "&rdquo;.");
+		$qt[] = new SearchTerm("f");
+	    }
 	}
 
 	for ($i = $nqt; $i < count($qt) - 1; ++$i)
@@ -837,6 +845,8 @@ class PaperSearch {
 	    $value = array_splice($qt, $nqt);
 	    $qt[] = new SearchTerm("not", 0, $value);
 	}
+
+	return count($qt) != $nqt;
     }
 
     function _searchQueryType($str, $type, &$qt) {
@@ -855,7 +865,7 @@ class PaperSearch {
 		$neg = ($word[0] == "-");
 		$word = substr($word, 1);
 	    }
-	    $this->_searchQueryWord($word, $str, $neg || $type == "none", $qt);
+	    $this->_searchQueryWord($word, $str, $neg || $type == "none", $qt, true);
 	}
     }
 
