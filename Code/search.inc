@@ -403,6 +403,13 @@ class PaperSearch {
 		    $value = array($field . $m[2] . ($rf->reviewFields[$field] - ord(strtoupper($m[3]))), $m[1]);
 		} else
 		    $value = array($field . $m[2] . $m[3], $m[1]);
+	    } else if ($rf->reviewFields[$field] > 1
+		       && preg_match('/\A\s*[A-Za-z][A-Za-z\s]*\z/s', $word, $m)) {
+		while (($word = ltrim($word)) !== "") {
+		    $this->_searchReviews(substr($word, 0, 1), $rf, $field, false, $qt);
+		    $word = substr($word, 1);
+		}
+		return;
 	    } else		// XXX
 		$value = "$field=-1";
 	} else {
