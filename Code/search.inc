@@ -254,7 +254,7 @@ class PaperSearch {
 	    return $compar;
     }
 
-    function _searchReviewer($word, $rtype, $negated, &$qt) {
+    function _searchReviewer($word, $rtype, &$qt) {
 	global $Conf;
 
 	if ($word == "any")
@@ -380,7 +380,7 @@ class PaperSearch {
 	    $qt[] = new SearchTerm("f");
     }
 
-    function _searchReviews($word, $rf, $field, $negated, &$qt) {
+    function _searchReviews($word, $rf, $field, &$qt) {
 	global $Conf;
 
 	if (isset($rf->options[$field])) {
@@ -406,7 +406,7 @@ class PaperSearch {
 	    } else if ($rf->reviewFields[$field] > 1
 		       && preg_match('/\A\s*[A-Za-z][A-Za-z\s]*\z/s', $word, $m)) {
 		while (($word = ltrim($word)) !== "") {
-		    $this->_searchReviews(substr($word, 0, 1), $rf, $field, false, $qt);
+		    $this->_searchReviews(substr($word, 0, 1), $rf, $field, $qt);
 		    $word = substr($word, 1);
 		}
 		return;
@@ -445,7 +445,7 @@ class PaperSearch {
 	    $qt[] = new SearchTerm("f");
     }
 
-    function _searchTags($word, $special, $negated, &$qt) {
+    function _searchTags($word, $special, $set_order_tag, &$qt) {
 	global $Conf;
 	require_once("tags.inc");
 
@@ -495,14 +495,14 @@ class PaperSearch {
 	else if (!$this->privChair && $Conf->setting("tag_seeall") <= 0)
 	    $rt |= self::F_NONCONFLICT;
 	if (($special == "order" || $special == "rorder" || !$special)
-	    && !$negated) {
+	    && $set_order_tag) {
 	    $this->orderTag = ($this->orderTag === false ? $value : null);
 	    $this->orderReverse = ($special == "rorder");
 	}
 	$qt[] = new SearchTerm("tag", $rt, $extra ? array($value, $extra) : $value);
     }
 
-    function _searchOptions($word, $negate, &$qt, $error) {
+    function _searchOptions($word, &$qt, $error) {
 	$type = "option";
 	if (preg_match('/\A(.*?)([:#][<>!=]?=?|[<>!=]=?)(.*)\z/', $word, $m)) {
 	    $oname = $m[1];
@@ -641,7 +641,7 @@ class PaperSearch {
 	    $this->_searchField($word, "co", !$negated, $qt, true);
 	foreach (array("re", "cre", "ire", "pri", "cpri", "ipri", "sec", "csec", "isec", "ext", "cext", "iext") as $rtype)
 	    if ($special ? $special == $rtype : isset($this->fields[$rtype]))
-		$this->_searchReviewer($word, $rtype, $negated, $qt);
+		$this->_searchReviewer($word, $rtype, $qt);
 	foreach (array("cmt", "aucmt") as $ctype)
 	    if ($special ? $special == $ctype : isset($this->fields[$ctype]))
 		$this->_searchComment($word, $ctype, $qt);
@@ -674,7 +674,7 @@ class PaperSearch {
 	}
 	if (($special ? $special == "tag" : isset($this->fields['tag']))
 	    || $special == "order" || $special == "rorder")
-	    $this->_searchTags($word, $special, $negated, $qt);
+	    $this->_searchTags($word, $special, !$negated, $qt);
 	if (($special ? $special == "topic" : isset($this->fields['topic']))) {
 	    $type = "topic";
 	    $value = null;
@@ -701,7 +701,7 @@ class PaperSearch {
 	    }
 	}
 	if (($special ? $special == "option" : isset($this->fields['option'])))
-	    $this->_searchOptions($word, $negated, $qt, true);
+	    $this->_searchOptions($word, $qt, true);
 	if ($special ? $special == "status" : isset($this->fields['status'])) {
 	    if (strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
 		$qt[] = new SearchTerm("pf", 0, array("timeWithdrawn", ">0"));
@@ -836,8 +836,8 @@ class PaperSearch {
 	if ($special && !isset($searchTags[$special]) && count($qt) == $nqt) {
 	    $rf = reviewForm();
 	    if (($field = $rf->unabbreviateField($special)))
-		$this->_searchReviews($word, $rf, $field, $negated, $qt);
-	    else if (!$this->_searchOptions("$special:$word", $negated, $qt, false)
+		$this->_searchReviews($word, $rf, $field, $qt);
+	    else if (!$this->_searchOptions("$special:$word", $qt, false)
 		     && $unrecognized_keyword_error) {
 		$this->warn("Unrecognized keyword &ldquo;" . htmlspecialchars($special) . "&rdquo;.");
 		$qt[] = new SearchTerm("f");
@@ -867,12 +867,15 @@ class PaperSearch {
 		    continue;
 	    }
 
-	    $neg = false;
+	    $negated = false;
 	    if ($word[0] == "-" || $word[0] == "+") {
-		$neg = ($word[0] == "-");
+		$negated = ($word[0] == "-");
 		$word = substr($word, 1);
 	    }
-	    $this->_searchQueryWord($word, $str, $neg || $type == "none", $qt, true);
+	    if ($type == "none")
+		$negated = !$negated;
+
+	    $this->_searchQueryWord($word, $str, $negated, $qt, true);
 	}
     }
 
