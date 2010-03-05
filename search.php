@@ -913,7 +913,10 @@ else if (defval($_REQUEST, "tab", "x") == "formulas") {
 }
 if ($activetab == 3 && (!$pl || $pl->count == 0))
     $activetab = 1;
-$Conf->footerScript("crpfocus(\"searchform\",$activetab,1)");
+if ($pl && $pl->count > 0)
+    $Conf->footerScript("crpfocus(\"searchform\",$activetab,1)");
+else
+    $Conf->footerScript("crpfocus(\"searchform\",$activetab)");
 
 $tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
 
