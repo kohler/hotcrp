@@ -978,7 +978,7 @@ if (isset($_REQUEST["update"])) {
 	&& (array_key_exists("seedec", $Values)
 	    ? $Values["seedec"] != SEEDEC_ALL
 	    : $Conf->setting("seedec") != SEEDEC_ALL))
-	$Conf->warnMsg("Authors will not be able to submit final copies until they can see paper decisions.  You may want to change the &ldquo;Who can see decisions&rdquo; setting.");
+	$Conf->warnMsg("Authors cannot submit final copies until they know their papers have been accepted.  You should change the &ldquo;Who can see a paper&rsquo;s decision&rdquo; setting to &ldquo;The paper&rsquo;s <strong>authors</strong>....&rdquo;");
 
     // unset text messages that equal the default
     if (array_key_exists("conflictdefmsg", $Values)
@@ -1446,7 +1446,7 @@ function doRevGroup() {
     echo "<h3>Review visibility</h3>\n";
 
     echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
-    doRadio("pc_seeallrev", array(0 => "No&mdash;a PC member can see a paper's reviews only after submitting their own review for that paper",
+    doRadio("pc_seeallrev", array(0 => "No&mdash;a PC member can see a paper&rsquo;s reviews only after submitting their own review for that paper",
 				  3 => "Yes, unless they haven't completed an assigned review for the same paper",
 				  1 => "Yes"));
 
@@ -1582,7 +1582,7 @@ function doDecGroup() {
 
     // doCheckbox('au_seerev', '<b>Authors can see reviews</b>');
     echo "Can <b>authors see reviews and comments</b> for their papers?<br />";
-    doRadio("au_seerev", array(AU_SEEREV_NO => "No", AU_SEEREV_ALWAYS => "Yes", AU_SEEREV_YES => "Yes, once they've completed any requested reviews"));
+    doRadio("au_seerev", array(AU_SEEREV_NO => "No", AU_SEEREV_ALWAYS => "Yes", AU_SEEREV_YES => "Yes, once they&rsquo;ve completed any requested reviews"));
 
     echo "<div class='g'></div>\n<table>";
     doCheckbox('resp_open', "<b>Collect authors&rsquo; responses to the reviews:</b>", true);
@@ -1592,8 +1592,8 @@ function doDecGroup() {
     echo "</table></td></tr></table>";
 
     echo "<div class='g'></div>\n<hr class='hr' />\n",
-	"Who can see <b>decisions</b> (accept/reject)?<br />\n";
-    doRadio("seedec", array(SEEDEC_ADMIN => "Only administrators", SEEDEC_NCREV => "PC members and external reviewers", SEEDEC_REV => "All PC members (conflicted or not) and external reviewers", SEEDEC_ALL => "<b>Authors</b>, all PC members, and reviewers (and reviewers can see accepted authors)"));
+	"Who can see a paper&rsquo;s <b>decision</b> (accept/reject)?<br />\n";
+    doRadio("seedec", array(SEEDEC_ADMIN => "Only administrators", SEEDEC_NCREV => "The paper&rsquo;s reviewers and non-conflicted PC members", SEEDEC_REV => "The paper&rsquo;s reviewers and <em>all</em> PC members", SEEDEC_ALL => "The paper&rsquo;s <b>authors</b> and reviewers, and all PC members (and reviewers can see accepted papers&rsquo; author lists)"));
 
     echo "<div class='g'></div>\n";
     echo "<table>\n";
