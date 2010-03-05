@@ -384,6 +384,7 @@ class PaperSearch {
 	global $Conf;
 
 	if (isset($rf->options[$field])) {
+	    $letters = $rf->reviewFields[$field] > 1;
 	    if ($word == "any")
 		$value = "$field>0";
 	    else if ($word == "none")
@@ -392,24 +393,36 @@ class PaperSearch {
 		if ($m[1] == "")
 		    $m[1] = 1;
 		$m[2] = self::_cleanCompar($m[2]);
-		if (($rf->reviewFields[$field] > 1) != (ctype_digit($m[3]) == false))
-		    $value = "$field=-1";
-		else if ($rf->reviewFields[$field] > 1) {
-		    // switch meaning of inequality
-		    if ($m[2][0] == "<")
-			$m[2] = ">" . substr($m[2], 1);
-		    else if ($m[2][0] == ">")
-			$m[2] = "<" . substr($m[2], 1);
-		    $value = array($field . $m[2] . ($rf->reviewFields[$field] - ord(strtoupper($m[3]))), $m[1]);
-		} else
-		    $value = array($field . $m[2] . $m[3], $m[1]);
-	    } else if ($rf->reviewFields[$field] > 1
-		       && preg_match('/\A\s*(?:[A-Za-z][A-Za-z\s]*|[A-Za-z]-[A-Za-z])\z/s', $word)) {
-		while (($word = ltrim($word)) !== "") {
-		    if (($char = substr($word, 0, 1)) !== "-")
-			$this->_searchReviews($char, $rf, $field, $qt);
-		    $word = substr($word, 1);
+		if ($letters != (ctype_digit($m[3]) == false))
+		    $value = "$field=-1"; // XXX
+		else {
+		    if ($letters) {
+			// switch meaning of inequality
+			if ($m[2][0] == "<")
+			    $m[2] = ">" . substr($m[2], 1);
+			else if ($m[2][0] == ">")
+			    $m[2] = "<" . substr($m[2], 1);
+			$m[3] = $rf->reviewFields[$field] - ord(strtoupper($m[3]));
+		    }
+		    if (($m[3] < 1 && ($m[2][0] == "<" || $m[2][0] == "="))
+			|| ($m[3] == 1 && $m[2] == "<")
+			|| ($m[3] == count($rf->options[$field]) && $m[2] == ">")
+			|| ($m[3] > count($rf->options[$field]) && ($m[2][0] == ">" || $m[2][0] == "=")))
+			return false;
+		    else
+			$value = array($field . $m[2] . $m[3], $m[1]);
 		}
+	    } else if ($letters
+		       ? preg_match('/\A\s*([A-Za-z])\s*-?\s*([A-Za-z])\s*\z/s', $word, $m)
+		       : preg_match('/\A\s*(\d+)\s*-\s*(\d+)\s*\z/s', $word, $m)) {
+		$qo = array();
+		$this->_searchReviews($m[1], $rf, $field, $qo);
+		$this->_searchReviews($m[2], $rf, $field, $qo);
+		if ($this->_searchReviews("<" . $m[1], $rf, $field, $qo))
+		    $qo[count($qo) - 1] = new SearchTerm("not", 0, array($qo[count($qo) - 1]));
+		if ($this->_searchReviews(">" . $m[2], $rf, $field, $qo))
+		    $qo[count($qo) - 1] = new SearchTerm("not", 0, array($qo[count($qo) - 1]));
+		$qt[] = new SearchTerm("and", 0, $qo);
 		return;
 	    } else		// XXX
 		$value = "$field=-1";
@@ -442,8 +455,7 @@ class PaperSearch {
 	    if ($Conf->timeAuthorViewReviews())
 		$qt[] = new SearchTerm("rf", ($rt & ~self::F_TYPEMASK) | self::F_AUTHOR | self::F_COMPLETE, $value);
 	}
-	if (count($qt) == $nqt)
-	    $qt[] = new SearchTerm("f");
+	return count($qt) != $nqt;
     }
 
     function _searchTags($word, $special, $set_order_tag, &$qt) {
@@ -836,10 +848,11 @@ class PaperSearch {
 	// Finally, look for a review field.
 	if ($special && !isset($searchTags[$special]) && count($qt) == $nqt) {
 	    $rf = reviewForm();
-	    if (($field = $rf->unabbreviateField($special)))
-		$this->_searchReviews($word, $rf, $field, $qt);
-	    else if (!$this->_searchOptions("$special:$word", $qt, false)
-		     && $unrecognized_keyword_error) {
+	    if (($field = $rf->unabbreviateField($special))) {
+		if (!$this->_searchReviews($word, $rf, $field, $qt))
+		    $qt[] = new SearchTerm("f");
+	    } else if (!$this->_searchOptions("$special:$word", $qt, false)
+		       && $unrecognized_keyword_error) {
 		$this->warn("Unrecognized keyword &ldquo;" . htmlspecialchars($special) . "&rdquo;.");
 		$qt[] = new SearchTerm("f");
 	    }
@@ -969,7 +982,8 @@ class PaperSearch {
 			$x["rate"] = "not (" . $negterm->value["rate"] . ")";
 		    $qt = new SearchTerm("revadj", 0, $x);
 		}
-	    }
+	    } else if ($qt->type == "and")
+		$this->_queryFixRounds($qt->value, $rounderror);
 
 	for ($i = 1; $i < count($qcl); $i++)
 	    if ($qcl[$i]->type == "revadj") {
@@ -993,7 +1007,7 @@ class PaperSearch {
     function _queryApplyRounds(&$qcl, &$roundterm) {
 	$applied = 0;
 	foreach ($qcl as &$qt)
-	    if ($qt->type == "not")
+	    if ($qt->type == "not" || $qt->type == "and")
 		$applied += $this->_queryApplyRounds($qt->value, $roundterm);
 	    else if ($qt->type == "re" || $qt->type == "nre"
 		     || $qt->type == "rf") {
@@ -1325,6 +1339,13 @@ class PaperSearch {
 	    if (!count($ff))
 		$ff[] = "false";
 	    $f[] = "not (" . join(" or ", $ff) . ")";
+	} else if ($tt == "and") {
+	    $ff = array();
+	    foreach ($t->value as $subt)
+		$this->_clauseTermSet($subt, true, $tables, $columns, $ff);
+	    if (!count($ff))
+		$ff[] = "false";
+	    $f[] = "(" . join(" and ", $ff) . ")";
 	} else if ($tt == "f")
 	    $f[] = "false";
 	else if ($tt == "t")
@@ -1451,6 +1472,10 @@ class PaperSearch {
 	    $ans = true;
 	    foreach ($t->value as $subt)
 		$ans = $ans && !$this->_clauseTermCheck($subt, $row);
+	} else if ($tt == "and") {
+	    $ans = true;
+	    foreach ($t->value as $subt)
+		$ans = $ans && $this->_clauseTermCheck($subt, $row);
 	} else if ($tt == "f")
 	    $ans = false;
 	else if ($tt == "t")
