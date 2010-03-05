@@ -404,9 +404,10 @@ class PaperSearch {
 		} else
 		    $value = array($field . $m[2] . $m[3], $m[1]);
 	    } else if ($rf->reviewFields[$field] > 1
-		       && preg_match('/\A\s*[A-Za-z][A-Za-z\s]*\z/s', $word, $m)) {
+		       && preg_match('/\A\s*(?:[A-Za-z][A-Za-z\s]*|[A-Za-z]-[A-Za-z])\z/s', $word)) {
 		while (($word = ltrim($word)) !== "") {
-		    $this->_searchReviews(substr($word, 0, 1), $rf, $field, $qt);
+		    if (($char = substr($word, 0, 1)) !== "-")
+			$this->_searchReviews($char, $rf, $field, $qt);
 		    $word = substr($word, 1);
 		}
 		return;
