@@ -14,7 +14,7 @@ Version 2.38   27.Jan.2010
   paper, and actually sending email to users "watching" a paper's comments.
 
 * PC members can elect to receive email on ALL papers' comment updates
-  (except for comments).
+  (except for conflicts).
 
 * Thanks especially to Alex Aiken, and to David Evans, John Ousterhout,
   Tony Del Porto, Jane-Ellen Long, and Casey Henderson.
