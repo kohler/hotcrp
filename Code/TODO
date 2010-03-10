@@ -96,6 +96,45 @@
 - While displaying abstracts of papers, paragraph breaks are
   ignored. [Moses Charikar]
 
+- I was going to put out the abstracts for accepted papers together with
+  the accepted papers list. In the current system, is there a way for
+  authors to update the text abstract they submitted ? I suppose not,
+  because they could probably change their submission too if we opened up
+  the system for edits. [Moses Charikar]
+
+- Related to the previous point, I may have to collect tex files containing
+  titles and abstracts from authors. I know the system allows collection of
+  final versions (and archives original submissions). Would there be a way
+  for the authors to submit additional files too ? [Moses Charikar]
+
+- I was very grateful for your implementation of the ability for PC members
+  to edit their own external reviews - that was very useful. One thing that
+  I realized later was this: PC members would sometimes leave information
+  in the comments to PC section that they would rather not be visible to
+  the external reviewers (yes, this should be left as a comment rather than
+  an edit to the review, but editing the review directly is more
+  convenient). Also PC members sometimes adjusted scores from external
+  reviewers, and this was visible to the reviewers if they logged in
+  again. It would be useful to have a feature that prevents external
+  reviewers from having access to their report after having submitted it -
+  perhaps the PC member clicks a button to indicate that the review is now
+  private ? [Moses Charikar]
+
+- Another related issue that I am sure other conferences grapple with:
+  external reviewers are comfortable giving absolute ratings
+  (accept/reject/borderline etc), but they really aren't in a good position
+  to estimate the percentile ranking of the submission (top 20%, bottom
+  50%, etc).  PC members on the other hand are much better placed to pass
+  judgement on percentile ranking. I had descriptive names for scores
+  (accept/reject etc), but also tied them to suggested percentile
+  ranges. In retrospect, it would have been convenient to have external
+  reviewers give an overall rating suggestion, which would have to be
+  finalized by the PC member. (By default the final rating could be same as
+  the suggestion by the reviewer). Again, it would be convenient to have
+  this final rating invisible to the external reviewer. ... maybe this is
+  asking for too much, but this is usually the way PCs for theory
+  conferences work. [Moses Charikar]
+
 - 1. We had an author withdraw their paper several weeks after submission.
   As a result, the paper, all its reviews and the review assignments also
   vanished.  And not only that, even though we actually reviewed 176
