@@ -27,7 +27,6 @@ class PaperList extends BaseList {
     const FIELD_REVIEWER_MONITOR = 29;
     const FIELD_ASSIGN_REVIEW = 35;
     const FIELD_TOPIC_INTEREST = 36;
-    const FIELD_TOPIC_NAMES = 37;
     const FIELD_ALL_REVIEWER_NAMES = 38;
     const FIELD_REVIEWER_PREFERENCE = 39;
     const FIELD_EDIT_REVIEWER_PREFERENCE = 40;
@@ -138,11 +137,6 @@ class PaperList extends BaseList {
 	    if (!count($this->rf->topicName))
 		return false;
 	    $queryOptions["topicInterestScore"] = 1;
-	    break;
-	case self::FIELD_TOPIC_NAMES:
-	    if (!count($this->rf->topicName))
-		return false;
-	    $queryOptions["topics"] = 1;
 	    break;
 	case self::FIELD_OPT_TOPIC_NAMES:
 	    if (!count($this->rf->topicName))
@@ -475,7 +469,6 @@ class PaperList extends BaseList {
 	    return "Assignment";
 	case self::FIELD_TOPIC_INTEREST:
 	    return "Topic<br/>score";
-	case self::FIELD_TOPIC_NAMES:
 	case self::FIELD_OPT_TOPIC_NAMES:
 	    return "Topics";
 	case self::FIELD_ALL_REVIEWER_NAMES:
@@ -660,7 +653,6 @@ class PaperList extends BaseList {
 	case self::FIELD_REVIEWER_STATUS:
 	    return !$row->reviewId;
 	case self::FIELD_OPT_TOPIC_NAMES:
-	case self::FIELD_TOPIC_NAMES:
 	    return isset($row->topicIds) && $row->topicIds == "";
 	case self::FIELD_SCORE:
 	    return !$this->contact->canViewReview($row, null, $fakeWhyNotView, true) && !$this->contact->privChair;
@@ -836,7 +828,6 @@ class PaperList extends BaseList {
 	case self::FIELD_TOPIC_INTEREST:
 	    return htmlspecialchars($row->topicInterestScore + 0);
 	case self::FIELD_OPT_TOPIC_NAMES:
-	case self::FIELD_TOPIC_NAMES:
 	    return join(", ", $this->rf->webTopicArray($row->topicIds, defval($row, "topicInterest")));
 	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
 	case self::FIELD_ALL_REVIEWER_NAMES:
@@ -1220,35 +1211,35 @@ class PaperList extends BaseList {
 	    return array(1, 11, 20);
 	case "s":
 	case "acc":
-	    return $this->addScores(array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
+	    return $this->addScores(array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78));
 	case "all":
 	case "act":
-	    return array(self::FIELD_SELECTOR, 1, 11, 20, 27, 70, 72, 71, 73, 74, 75, 76, 77, 78);
+	    return array(self::FIELD_SELECTOR, 1, 11, 20, 27, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78);
 	case "reviewerHome":
 	    $this->paperLink = "review";
 	    return array(1, 11, 27, 21);
 	case "r":
 	case "lead":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
+	    return $this->addScores(array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78));
 	case "rout":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
+	    return $this->addScores(array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78));
 	case "req":
 	    $this->paperLink = "review";
-	    return $this->addScores(array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78));
+	    return $this->addScores(array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78));
 	case "reqrevs":
 	    $this->paperLink = "review";
-	    return array(1, 11, self::FIELD_REVIEWER_MONITOR, self::FIELD_REVIEWER_STATUS, 41, 21, 70, 72, 71, 73, 74, 75, 76, 77, 78);
+	    return array(1, 11, self::FIELD_REVIEWER_MONITOR, self::FIELD_REVIEWER_STATUS, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78);
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
-	    return array(1, 11, 39, 36, 43, 35, 70, 37, 38, 44, 47, 48);
+	    return array(1, 11, 39, 36, 43, 35, self::FIELD_OPT_AUTHORS, 37, 38, 44, 47, 48);
 	  case "conflict":
 	    $this->paperLink = "assign";
 	    return array(self::FIELD_SELECTOR_CONFLICT, 1, 11, self::FIELD_CONFLICT_CONFIRM, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
 	  case "editReviewPreference":
 	    $this->paperLink = "paper";
-	    return array(self::FIELD_SELECTOR, 1, 11, 36, 27, 40, 70, 72, 37);
+	    return array(self::FIELD_SELECTOR, 1, 11, 36, 27, 40, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_OPT_TOPIC_NAMES);
 	  case "reviewers":
 	    $this->paperLink = "assign";
 	    return array(1, 11, 21, 38);
@@ -1819,7 +1810,6 @@ class PaperListField {
 	PaperListField::make(PaperList::FIELD_ASSIGN_REVIEW, "assrev", 1, true);
 	PaperListField::make(PaperList::FIELD_TOPIC_INTEREST, "topicMatch", 1, true);
 	PaperListField::make(PaperList::FIELD_OPT_TOPIC_NAMES, "topics", 2, 13);
-	PaperListField::make(PaperList::FIELD_TOPIC_NAMES, "topics", 2);
 	PaperListField::make(PaperList::FIELD_ALL_REVIEWER_NAMES, "reviewers", 2);
 	PaperListField::make(PaperList::FIELD_REVIEWER_PREFERENCE, "revpref", 1, true);
 	PaperListField::make(PaperList::FIELD_EDIT_REVIEWER_PREFERENCE, "editrevpref", 1, true);

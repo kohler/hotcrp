@@ -240,27 +240,43 @@ echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'>
 
 echo "<tr><td class='lxcaption'><strong>Show:</strong> &nbsp;",
     foldsessionpixel("pl", "pfdisplay", null),
-    "</td><td class='lentry'>";
+    "</td><td colspan='2' class='lentry'>";
+$sep = "";
+$loadforms = "";
 if ($Conf->blindSubmission() <= BLIND_OPTIONAL) {
-    echo tagg_checkbox("showau", 1, strpos($pldisplay, " au ") !== false,
-		       array("disabled" => ($Conf->blindSubmission() == BLIND_OPTIONAL && !($pl->headerInfo["authors"] & 1)),
-			     "onchange" => "fold('pl',!this.checked,'au')")),
-	"&nbsp;", tagg_label("Authors"),
-	"<span class='sep'></span>\n";
+    echo $sep,
+	tagg_checkbox("showau", 1, strpos($pldisplay, " au ") !== false,
+		      array("disabled" => ($Conf->blindSubmission() == BLIND_OPTIONAL && !($pl->headerInfo["authors"] & 1)),
+			    "onchange" => "fold('pl',!this.checked,'au')")),
+	"&nbsp;", tagg_label("Authors");
+    $sep = "<span class='sep'></span>\n";
 }
 if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair) {
-    echo tagg_checkbox("showanonau", 1, strpos($pldisplay, " anonau ") !== false,
-		       array("disabled" => !($pl->headerInfo["authors"] & 2),
-			     "onchange" => "fold('pl',!this.checked,'anonau')")),
-	"&nbsp;", tagg_label($Conf->blindSubmission() == BLIND_OPTIONAL ? "Anonymous authors" : "Authors"),
-	"<span class='sep'></span>\n";
+    echo $sep,
+	tagg_checkbox("showanonau", 1, strpos($pldisplay, " anonau ") !== false,
+		      array("disabled" => !($pl->headerInfo["authors"] & 2),
+			    "onchange" => "fold('pl',!this.checked,'anonau')")),
+	"&nbsp;", tagg_label($Conf->blindSubmission() == BLIND_OPTIONAL ? "Anonymous authors" : "Authors");
+    $sep = "<span class='sep'></span>\n";
 }
 if ($pl->headerInfo["abstract"]) {
-    echo tagg_checkbox("showabstract", 1, strpos($pldisplay, " abstract ") !== false,
-		       array("onchange" => "foldplinfo(this,'abstract')")),
-	"&nbsp;", tagg_label("Abstracts"),
-	"<br /><div id='abstractloadformresult'></div>\n";
+    echo $sep,
+	tagg_checkbox("showabstract", 1, strpos($pldisplay, " abstract ") !== false,
+		      array("onchange" => "foldplinfo(this,'abstract')")),
+	"&nbsp;", tagg_label("Abstracts");
+    $sep = "<span class='sep'></span>\n";
+    $loadforms .= "<div id='abstractloadformresult'></div>";
 }
+if ($pl->headerInfo["topics"]) {
+    echo $sep,
+	tagg_checkbox("showtopics", 1, strpos($pldisplay, " topics ") !== false,
+		      array("onchange" => "foldplinfo(this,'topics')")),
+	"&nbsp;", tagg_label("Topics");
+    $sep = "<span class='sep'></span>\n";
+    $loadforms .= "<div id='topicsloadformresult'></div>";
+}
+if ($loadforms)
+     echo "<br />", $loadforms;
 echo "</td></tr>\n</table></form>"; // </div></div>
 echo "</td></tr></table>\n";
 
