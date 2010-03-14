@@ -265,7 +265,7 @@ function cleanXHTML($t, &$err) {
 	    else if (count($tagstack) == 0)
 		return _cleanXHTMLError($err, "a extra close tag <code>&lt;/$tag&gt;</code>");
 	    else if (($last = array_pop($tagstack)) != $tag)
-		return _cleanXHTMLError($err, "a close tag <code>&lt;/$tag</code> that doesn't match the open tag <code>&lt;$last</code>");
+		return _cleanXHTMLError($err, "a close tag <code>&lt;/$tag</code> that doesn&rsquo;t match the open tag <code>&lt;$last</code>");
 	    $x .= "</$tag>";
 	    $t = $m[2];
 	} else {
@@ -947,7 +947,7 @@ if (isset($_REQUEST["update"])) {
 	    || $Values["au_seerev"] <= 0)
 	&& (!array_key_exists("resp_done", $Values)
 	    || time() < $Values["resp_done"]))
-	$Conf->warnMsg("You have allowed authors to respond to the reviews, but authors can't see the reviews.  This seems odd.");
+	$Conf->warnMsg("You have allowed authors to respond to the reviews, but authors can&rsquo;t see the reviews.  This seems odd.");
     if (array_key_exists("sub_freeze", $Values)
 	&& $Values["sub_freeze"] == 0
 	&& defval($Values, "sub_open", 0) > 0
@@ -1167,9 +1167,9 @@ function doAccGroup() {
     global $Conf, $ConfSiteSuffix, $Me, $belowHr;
 
     if ($Conf->sversion >= 5)
-	doCheckbox("acct_addr", "Collect users' addresses and phone numbers");
+	doCheckbox("acct_addr", "Collect users&rsquo; addresses and phone numbers");
     else
-	doCheckbox("acct_addr", "Collect users' phone numbers");
+	doCheckbox("acct_addr", "Collect users&rsquo; phone numbers");
 
     echo "<hr class='hr' /><h3>Program committee &amp; system administrators</h3>";
 
@@ -1447,7 +1447,7 @@ function doRevGroup() {
 
     echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
     doRadio("pc_seeallrev", array(0 => "No&mdash;a PC member can see a paper&rsquo;s reviews only after submitting their own review for that paper",
-				  3 => "Yes, unless they haven't completed an assigned review for the same paper",
+				  3 => "Yes, unless they haven&rsquo;t completed an assigned review for the same paper",
 				  1 => "Yes"));
 
     echo "<div class='g'></div>\n";
@@ -1456,8 +1456,8 @@ function doRevGroup() {
 				    1 => "Only after completing a review for the same paper"));
 
     echo "<div class='g'></div>";
-    echo "Can external reviewers see the other reviews for their assigned papers, once they've submitted their own?<br />\n";
-    doRadio("extrev_view", array(0 => "No", 2 => "Yes", 1 => "Yes, but they can't see who wrote blind reviews"));
+    echo "Can external reviewers see the other reviews for their assigned papers, once they&rsquo;ve submitted their own?<br />\n";
+    doRadio("extrev_view", array(0 => "No", 2 => "Yes", 1 => "Yes, but they can&rsquo;t see who wrote blind reviews"));
 
     echo "<hr class='hr' />";
 
