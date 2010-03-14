@@ -1207,7 +1207,7 @@ function doSubGroup() {
 
     echo "<div class='g'></div>\n";
     echo "<strong>Blind submission:</strong> Are author names hidden from reviewers?<br />\n";
-    doRadio("sub_blind", array(BLIND_ALWAYS => "Yes&mdash;submissions are anonymous", BLIND_NEVER => "No&mdash;author names are visible to reviewers", BLIND_OPTIONAL => "Maybe&mdash;authors decide whether to expose their names"));
+    doRadio("sub_blind", array(BLIND_ALWAYS => "Yes&mdash;submissions are anonymous", BLIND_NEVER => "No&mdash;author names are visible to reviewers", BLIND_OPTIONAL => "Depends&mdash;authors decide whether to expose their names"));
 
     echo "<div class='g'></div>\n<table>\n";
     doDateRow("sub_reg", "Paper registration deadline", "sub_sub");
@@ -1434,7 +1434,7 @@ function doRevGroup() {
 
     echo "<div class='g'></div>\n";
     echo "<strong>Review anonymity:</strong> Are reviewer names hidden from authors?<br />\n";
-    doRadio("rev_blind", array(BLIND_ALWAYS => "Yes&mdash;reviews are anonymous", BLIND_NEVER => "No&mdash;reviewer names are visible to authors", BLIND_OPTIONAL => "Maybe&mdash;reviewers decide whether to expose their names"));
+    doRadio("rev_blind", array(BLIND_ALWAYS => "Yes&mdash;reviews are anonymous", BLIND_NEVER => "No&mdash;reviewer names are visible to authors", BLIND_OPTIONAL => "Depends&mdash;reviewers decide whether to expose their names"));
 
     echo "<div class='g'></div>\n";
     doCheckbox('rev_notifychair', 'PC chairs are notified of new reviews by email');
