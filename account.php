@@ -247,9 +247,9 @@ function parseBulkFile($text, $filename) {
 	    continue;
 
 	$_REQUEST["affiliation"] = "";
-	if (preg_match('/^(.*\@\S+)\s+([^\s"][^"]*)$/', $line, $m)) {
+	if (preg_match('/^(.*\@\S+)\s+(.*?)\s*$/', $line, $m)) {
 	    $line = $m[1];
-	    $_REQUEST["affiliation"] = simplifyWhitespace($m[2]);
+	    $_REQUEST["affiliation"] = simplifyWhitespace(preg_replace('/^"\s*(.*?)\s*"$/', '$1', $m[2]));
 	}
 	list($_REQUEST["firstName"], $_REQUEST["lastName"],
 	     $_REQUEST["uemail"]) = splitName(simplifyWhitespace($line), true);
