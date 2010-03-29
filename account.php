@@ -230,6 +230,8 @@ function createUser(&$tf, $newProfile) {
 function parseBulkFile($text, $filename) {
     global $Conf, $ConfSiteSuffix, $Acct;
     $text = cleannl($text);
+    if (!is_valid_utf8($text))
+	$text = windows_1252_to_utf8($text);
     $tf = array("err" => array(), "filename" => $filename, "lineno" => 0);
     $success = array();
 
