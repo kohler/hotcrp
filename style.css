@@ -761,6 +761,10 @@ td.rentry {
 	padding: 2px 0;
 	text-align: right;
 }
+td.rpentry {
+	padding: 2px 0.5em 2px 0;
+	text-align: right;
+}
 td.llentry {
 	padding: 0 0.75em;
 }

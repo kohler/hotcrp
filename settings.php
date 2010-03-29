@@ -1394,12 +1394,27 @@ function doOptGroup() {
 
 
     // Topics
+    // load topic interests
+    $result = $Conf->q("select topicId, interest, count(*) from TopicInterest group by topicId, interest");
+    $interests = array();
+    while (($row = edb_row($result))) {
+	if (!isset($interests[$row[0]]))
+	    $interests[$row[0]] = array();
+	$interests[$row[0]][$row[1]] = $row[2];
+    }
+
     echo "<hr class='hr' /><h3>Topics</h3>\n";
     echo "Enter topics one per line.  Authors select the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its name.\n";
-    echo "<div class='g'></div><table id='newtoptable'>";
+    echo "<div class='g'></div><table id='newtoptable' class='foldc'>";
+    echo "<tr><th colspan='2'></th><th class='fx'><small>Low</small></th><th class='fx'><small>High</small></th></tr>";
     $td1 = "<td class='lcaption'>Current</td>";
     foreach ($rf->topicOrder as $tid => $crap) {
-	echo "<tr>$td1<td class='lentry'><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($rf->topicName[$tid]), "\" size='50' onchange='hiliter(this)' /></td>";
+	echo "<tr>$td1<td class='lentry'><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($rf->topicName[$tid]), "\" size='40' onchange='hiliter(this)' /></td>";
+
+	$tinterests = defval($interests, $tid, array());
+	echo "<td class='fx rpentry'>", (defval($tinterests, 0) ? "<span class='topic0'>" . $tinterests[0] . "</span>" : ""), "</td>",
+	    "<td class='fx rpentry'>", (defval($tinterests, 2) ? "<span class='topic2'>" . $tinterests[2] . "</span>" : ""), "</td>";
+
 	if ($td1 !== "<td></td>") {
 	    // example search
 	    echo "<td class='llentry' style='vertical-align: top' rowspan='40'><div class='f-i'>",
@@ -1410,6 +1425,8 @@ function doOptGroup() {
 	    echo "&ldquo;<a href=\"search$ConfSiteSuffix?q=topic:", urlencode($oabbrev), "\">",
 		"topic:", htmlspecialchars($oabbrev), "</a>&rdquo;",
 		"<div class='hint'>Topic abbreviations are also allowed.</div>",
+		"<a class='hint fn' href=\"javascript:void fold('newtoptable')\">Show PC interest counts</a>",
+		"<a class='hint fx' href=\"javascript:void fold('newtoptable')\">Hide PC interest counts</a>",
 		"</div></td>";
 	}
 	echo "</tr>\n";
@@ -1417,7 +1434,7 @@ function doOptGroup() {
     }
     $td1 = "<td class='lcaption' rowspan='40'>New<br /><small><a href='javascript:void authorfold(\"newtop\",1,1)'>More</a> | <a href='javascript:void authorfold(\"newtop\",1,-1)'>Fewer</a></small></td>";
     for ($i = 1; $i <= 40; $i++) {
-	echo "<tr id='newtop$i' class='auedito'>$td1<td class='lentry'><input type='text' class='textlite' name='topn$i' value=\"\" size='50' onchange='hiliter(this)' /></td></tr>\n";
+	echo "<tr id='newtop$i' class='auedito'>$td1<td class='lentry'><input type='text' class='textlite' name='topn$i' value=\"\" size='40' onchange='hiliter(this)' /></td></tr>\n";
 	$td1 = "";
     }
     echo "</table>",
