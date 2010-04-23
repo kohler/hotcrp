@@ -288,20 +288,20 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     foreach (paperOptions() as $opt) {
 	$oname = "opt$opt->optionId";
 	$v = trim(defval($_REQUEST, $oname, ""));
-	if ($opt->type == 0)
+	if ($opt->type == OPTIONTYPE_CHECKBOX)
 	    $_REQUEST[$oname] = ($v == 0 || $v == "" ? "" : 1);
-	else if ($opt->type == 1)
+	else if ($opt->type == OPTIONTYPE_SELECTOR)
 	    $_REQUEST[$oname] = cvtint($v, 0);
-	else if ($opt->type == 2) {
+	else if ($opt->type == OPTIONTYPE_NUMERIC) {
 	    if ($v == "" || ($v = cvtint($v, null)) !== null)
 		$_REQUEST[$oname] = ($v == "" ? "0" : $v);
 	    else {
 		$Error[$oname] = 1;
 		$emsg .= "&ldquo;" . htmlspecialchars($opt->optionName) . "&rdquo; must be an integer.  ";
 	    }
-	} else if ($opt->type == 3)
+	} else if ($opt->type == OPTIONTYPE_TEXT)
 	    $_REQUEST[$oname] = simplifyWhitespace($v);
-	else if ($opt->type == 4) {
+	else if ($opt->type == OPTIONTYPE_PDF) {
 	    unset($_REQUEST[$oname]);
 	    if (fileUploaded($_FILES[$oname], $Conf))
 		uploadOption($opt);
@@ -344,7 +344,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    if (fileUploaded($_FILES["paperUpload"], $Conf))
 		uploadPaper($isSubmitFinal);
 	    foreach (paperOptions() as $o)
-		if ($o->type == 4 && isset($_REQUEST["opt$o->optionId"]))
+		if ($o->type == OPTIONTYPE_PDF
+		    && isset($_REQUEST["opt$o->optionId"]))
 		    $Conf->qe("insert into PaperOption (paperId, optionId, value, data) values ($prow->paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . ", null) on duplicate key update value=VALUES(value)", "while uploading option PDF");
 	}
 	return false;
@@ -432,7 +433,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$q_optdata = ($Conf->sversion >= 27 ? ", null" : "");
 	foreach (paperOptions() as $o)
 	    if (defval($_REQUEST, "opt$o->optionId", "") != "") {
-		if ($o->type == 3)
+		if ($o->type == OPTIONTYPE_TEXT)
 		    $q .= "($paperId, $o->optionId, 1, '" . sqlq($_REQUEST["opt$o->optionId"]) . "'), ";
 		else
 		    $q .= "($paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . $q_optdata . "), ";
@@ -443,7 +444,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	// update PaperStorage.paperId for newly registered papers' PDF uploads
 	if ($newPaper)
 	    foreach (paperOptions() as $o)
-		if ($o->type == 4 && isset($_REQUEST["opt$o->optionId"]))
+		if ($o->type == OPTIONTYPE_PDF
+		    && isset($_REQUEST["opt$o->optionId"]))
 		    $Conf->qe("update PaperStorage set paperId=$paperId where paperStorageId=" . $_REQUEST["opt$o->optionId"], $while);
     }
 

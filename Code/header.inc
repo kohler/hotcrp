@@ -46,6 +46,12 @@ define("DOCUMENT_SUBMISSION", 0);
 define("DOCUMENT_FINAL", -1);
 define("DOCUMENT_COMMENT", -2);
 
+define("OPTIONTYPE_CHECKBOX", 0);
+define("OPTIONTYPE_SELECTOR", 1);
+define("OPTIONTYPE_NUMERIC", 2);
+define("OPTIONTYPE_TEXT", 3);
+define("OPTIONTYPE_PDF", 4);
+
 define("HOTCRP_VERSION", "2.38");
 
 global $rf;

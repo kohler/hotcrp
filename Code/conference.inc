@@ -625,7 +625,7 @@ class Conference {
 	    $title .= "paper";
 	else {
 	    $opt = paperOptions();
-	    if (($o = $opt[$documentType]) && $o->type == 4)
+	    if (($o = $opt[$documentType]) && $o->type == OPTIONTYPE_PDF)
 		$title .= $o->optionAbbrev;
 	    else
 		$title .= "xxx";

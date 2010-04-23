@@ -1300,9 +1300,9 @@ function paperOptions() {
 	    if (!isset($row->optionValues))	   // backwards compatibility
 		$row->optionValues = "";
 	    if (!isset($row->type) && $row->optionValues == "\x7Fi")
-		$row->type = 2;
+		$row->type = OPTIONTYPE_NUMERIC;
 	    else if (!isset($row->type))
-		$row->type = ($row->optionValues ? 1 : 0);
+		$row->type = ($row->optionValues ? OPTIONTYPE_SELECTOR : OPTIONTYPE_CHECKBOX);
 	    $row->optionAbbrev = preg_replace("/-+\$/", "", preg_replace("/[^a-z0-9_]+/", "-", strtolower($row->optionName)));
 	    $row->sortOrder = $order++;
 	    $opt[$row->optionId] = $row;

@@ -636,15 +636,15 @@ class PaperTable {
 		if (($ov || $o->type)
 		    && ($showAllOptions
 			|| $Me->canViewPaperOption($prow, $o))) {
-		    if ($o->type == 0)
+		    if ($o->type == OPTIONTYPE_CHECKBOX)
 			$optiondata[] = htmlspecialchars($o->optionName) . "<br />\n";
-		    else if ($o->type == 1) {
+		    else if ($o->type == OPTIONTYPE_SELECTOR) {
 			$om = explode("\n", $o->optionValues);
 			if (defval($om, $ov, "") != "")
 			    $optiondata[] = htmlspecialchars("$o->optionName: $om[$ov]") . "<br />\n";
-		    } else if ($o->type == 2 && $ov != "")
+		    } else if ($o->type == OPTIONTYPE_NUMERIC && $ov != "")
 			$optiondata[] = htmlspecialchars("$o->optionName: " . $ov) . "<br />\n";
-		    else if ($o->type == 4 && $ov) {
+		    else if ($o->type == OPTIONTYPE_PDF && $ov) {
 			$optiondata[] = "<a href=\"" . $Conf->makeDownloadPath($prow->paperId, "application/pdf", $o->optionId) . "\">" . $Conf->cacheableImage("pdf.png", "[PDF]", null, "sdlimg") . "&nbsp;" . htmlspecialchars($o->optionName) . "</a><br />\n";
 			++$ndocuments;
 		    }
@@ -807,7 +807,7 @@ class PaperTable {
 	    $optid = "opt$o->optionId";
 	    if ($this->useRequest)
 		$myval = defval($_REQUEST, $optid);
-	    else if ($o->type != 3)
+	    else if ($o->type != OPTIONTYPE_TEXT)
 		$myval = defval($optsel, $o->optionId);
 	    else {
 		if (!$optdata && $prow) {
@@ -819,19 +819,19 @@ class PaperTable {
 		$myval = defval($optdata, $o->optionId);
 	    }
 
-	    if ($o->type == 0) {
+	    if ($o->type == OPTIONTYPE_CHECKBOX) {
 		echo $this->papt($optid, tagg_checkbox_h($optid, 1, $myval)
 				 . "&nbsp;" . tagg_label(htmlspecialchars($o->optionName)));
 		if ($o->description)
 		    echo "<div class='paphint'>", $o->description, "</div>";
 		echo "<div class='papv'></div>\n\n";
-	    } else if ($o->type < 4) {
+	    } else if ($o->type < OPTIONTYPE_PDF) {
 		echo $this->papt($optid, htmlspecialchars($o->optionName));
 		if ($o->description)
 		    echo "<div class='paphint'>", $o->description, "</div>";
-		if ($o->type == 1)
+		if ($o->type == OPTIONTYPE_SELECTOR)
 		    echo "<div class='papv'>", tagg_select("opt$o->optionId", explode("\n", $o->optionValues), $myval, array("onchange" => "hiliter(this)")), "</div>\n\n";
-		else if ($o->type == 2)
+		else if ($o->type == OPTIONTYPE_NUMERIC)
 		    echo "<div class='papv'><input type='text' class='textlite' name='$optid' value=\"", htmlspecialchars($myval), "\" size='8' onchange='hiliter(this)' /></div>\n\n";
 		else
 		    echo "<div class='papv'><input type='text' class='textlite papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' /></div>\n\n";
