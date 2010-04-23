@@ -624,11 +624,12 @@ class PaperTable {
     function paptabTopicsOptions($prow, $showAllOptions) {
 	global $Conf, $Me, $forceShow;
 	$topicdata = topicTable($prow, -1);
-	$optiondata = array();
+	$optionhtml = array();
 	$ndocuments = 0;
 	if (($options = paperOptions())) {
 	    preg_match_all('/(\d+)#(\d+)/', defval($prow, "optionIds", ""), $m);
 	    $optsel = array();
+	    $optdata = null;
 	    for ($i = 0; $i < count($m[1]); ++$i)
 		$optsel[$m[1][$i]] = $m[2][$i];
 	    foreach ($options as $o) {
@@ -636,27 +637,40 @@ class PaperTable {
 		if (($ov || $o->type)
 		    && ($showAllOptions
 			|| $Me->canViewPaperOption($prow, $o))) {
+		    $on = htmlspecialchars($o->optionName);
+		    $ox = "";
 		    if ($o->type == OPTIONTYPE_CHECKBOX)
-			$optiondata[] = htmlspecialchars($o->optionName) . "<br />\n";
+			$ox = $on;
 		    else if ($o->type == OPTIONTYPE_SELECTOR) {
 			$om = explode("\n", $o->optionValues);
 			if (defval($om, $ov, "") != "")
-			    $optiondata[] = htmlspecialchars("$o->optionName: $om[$ov]") . "<br />\n";
+			    $ox = "$on: <span class=\"optvalue\">" . htmlspecialchars($om[$ov]) . "</span>";
 		    } else if ($o->type == OPTIONTYPE_NUMERIC && $ov != "")
-			$optiondata[] = htmlspecialchars("$o->optionName: " . $ov) . "<br />\n";
-		    else if ($o->type == OPTIONTYPE_PDF && $ov) {
-			$optiondata[] = "<a href=\"" . $Conf->makeDownloadPath($prow->paperId, "application/pdf", $o->optionId) . "\">" . $Conf->cacheableImage("pdf.png", "[PDF]", null, "sdlimg") . "&nbsp;" . htmlspecialchars($o->optionName) . "</a><br />\n";
+			$ox = "$on: <span class=\"optvalue\">" . htmlspecialchars($ov) . "</span>";
+		    else if ($o->type == OPTIONTYPE_TEXT && $ov != "") {
+			if ($optdata == null) {
+			    $optdata = array();
+			    $result = $Conf->qe("select optionId, data from PaperOption where paperId=$prow->paperId", "while selecting paper options");
+			    while (($row = edb_row($result)))
+				$optdata[$row[0]] = $row[1];
+			}
+			if ($optdata[$o->optionId] != "")
+			    $ox = "$on: <span class=\"optvalue\">" . htmlspecialchars($optdata[$o->optionId]) . "</span>";
+		    } else if ($o->type == OPTIONTYPE_PDF && $ov) {
+			$optionhtml[] = "<a href=\"" . $Conf->makeDownloadPath($prow->paperId, "application/pdf", $o->optionId) . "\">" . $Conf->cacheableImage("pdf.png", "[PDF]", null, "sdlimg") . "&nbsp;" . $on . "</a>";
 			++$ndocuments;
 		    }
+		    if ($ox != "")
+			$optionhtml[] = $ox . "<br />\n";
 		}
 	    }
 	}
 
-	if ($topicdata != "" || count($optiondata)) {
+	if ($topicdata != "" || count($optionhtml)) {
 	    $infotypes = array();
 	    if ($ndocuments > 0)
 		$infotypes[] = "Documents";
-	    if (count($optiondata) != $ndocuments)
+	    if (count($optionhtml) != $ndocuments)
 		$infotypes[] = "Options";
 	    $options_name = commajoin($infotypes);
 	    if ($topicdata != "")
@@ -685,10 +699,10 @@ class PaperTable {
 		$tanda = $options_name;
 	    }
 
-	    if (count($optiondata)) {
+	    if (count($optionhtml)) {
 		echo $this->papt("options", array($options_name, $tanda), $extra),
 		    $before,
-		    "<div class='papv$eclass'>", join("", $optiondata), "</div>\n\n";
+		    "<div class='papv$eclass'>", join("", $optionhtml), "</div>\n\n";
 	    }
 	}
     }

@@ -427,6 +427,9 @@ table.ppltable td.pl_topics span.topic2 {
 	text-decoration: none;
 	font-weight: normal;
 }
+span.optvalue {
+	color: #555;
+}
 
 
 table.center {
