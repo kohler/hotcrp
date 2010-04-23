@@ -42,6 +42,7 @@ class Contact {
     var $roles;
     var $isPC;
     var $privChair;
+    var $contactTags;
     var $reviewsOutstanding;
     var $chairContactId;
     var $validated;
@@ -152,6 +153,7 @@ class Contact {
 	    $this->$k = '';
 	foreach (self::_addressKeys() as $k)
 	    $this->$k = null;
+	$this->contactTags = null;
 	$this->note = 0;
 	$this->defaultWatch = WATCH_COMMENT;
 
@@ -228,6 +230,12 @@ class Contact {
 	    $qa .= ", roles='$this->roles', defaultWatch='$this->defaultWatch'";
 	if ($Conf->sversion >= 25 && $this->preferredEmail != "")
 	    $qa .= ", preferredEmail='" . sqlq($this->preferredEmail) . "'";
+	if ($Conf->sversion >= 35) {
+	    if ($this->contactTags)
+		$qa .= ", contactTags='" . sqlq($this->contactTags) . "'";
+	    else
+		$qa .= ", contactTags=null";
+	}
 	$query = sprintf("update ContactInfo set firstName='%s', lastName='%s',
 		email='%s', affiliation='%s', voicePhoneNumber='%s',
 		faxPhoneNumber='%s', password='%s', collaborators='%s'$qa
@@ -327,6 +335,7 @@ class Contact {
 	    $this->note = $fromdb->note;
 	    $this->collaborators = $fromdb->collaborators;
 	    $this->defaultWatch = defval($fromdb, "defaultWatch", 0);
+	    $this->contactTags = defval($fromdb, "contactTags", null);
 
 	    $this->confDsn = $Opt["dsn"];
 

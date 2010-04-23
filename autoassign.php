@@ -482,19 +482,20 @@ $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowr
 $Conf->header("Review Assignments", "autoassign", $abar);
 
 
-function doRadio($name, $value, $text) {
+function doRadio($name, $value, $text, $extra = null) {
     if (($checked = (!isset($_REQUEST[$name]) || $_REQUEST[$name] == $value)))
 	$_REQUEST[$name] = $value;
-    echo tagg_radio($name, $value, $checked, array("id" => "${name}_$value")),
-	"&nbsp;";
+    $extra = ($extra ? $extra : array());
+    $extra["id"] = "${name}_$value";
+    echo tagg_radio($name, $value, $checked, $extra), "&nbsp;";
     if ($text != "")
 	echo tagg_label($text, "${name}_$value");
 }
 
-function doSelect($name, $opts) {
+function doSelect($name, $opts, $extra = null) {
     if (!isset($_REQUEST[$name]))
 	$_REQUEST[$name] = key($opts);
-    echo tagg_select($name, $opts, $_REQUEST[$name]);
+    echo tagg_select($name, $opts, $_REQUEST[$name], $extra);
 }
 
 function divClass($name) {
@@ -723,6 +724,24 @@ echo "</div></div>\n";
 echo "<h3>PC members</h3><table><tr><td>";
 doRadio('pctyp', 'all', '');
 echo "</td><td>", tagg_label("Use entire PC", "pctyp_all"), "</td></tr>\n";
+
+$pctags = pcTags();
+if (count($pctags)) {
+    echo "<tr><td>";
+    doRadio("pctyp", "tag", "", array("onclick" => "pcselSetTag()"));
+    if (defval($_REQUEST, "pctag", "") == "") {
+	$pctags[""] = "&mdash;";
+	ksort($pctags);
+    }
+    echo "</td><td>", tagg_label("Use PC members tagged", "pctyp_tag"), " &nbsp;";
+    doSelect('pctag', $pctags, array("id" => "pctag", "onclick" => "pcselSetTag()", "onchange" => "pcselSetTag()", "disabled" => array("" => true)));
+    echo "</td></tr>\n";
+    $tagsjson = array();
+    foreach (pcMembers() as $pc)
+	if ($pc->contactTags)
+	    $tagsjson[] = "\"$pc->contactId\":\"$pc->contactTags\"";
+    $Conf->footerScript("pc_tags_json={" . join(",", $tagsjson) . "}");
+}
 
 echo "<tr><td>";
 doRadio('pctyp', 'sel', '');

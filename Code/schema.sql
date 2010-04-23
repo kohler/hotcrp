@@ -74,6 +74,7 @@ CREATE TABLE `ContactInfo` (
   `lastLogin` int(11) NOT NULL default '0',
   `defaultWatch` tinyint(1) NOT NULL default '2',
   `roles` tinyint(1) NOT NULL default '0',
+  `contactTags` text,
   PRIMARY KEY  (`contactId`),
   UNIQUE KEY `contactId` (`contactId`),
   UNIQUE KEY `contactIdRoles` (`contactId`,`roles`),
@@ -504,7 +505,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 34);
+insert into Settings (name, value) values ('allowPaperOption', 35);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags

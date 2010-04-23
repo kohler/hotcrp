@@ -221,6 +221,23 @@ function pselClick(evt, elt, thisnum, name) {
     return true;
 }
 
+function pcselSetTag() {
+    var ins = document.getElementsByTagName("input"), tags,
+	elt = e("pctag"),
+	thetag = " " + elt.options[elt.selectedIndex].value + " ";
+    if (thetag != "  ") {
+	if (elt.options[0].value == "")
+	    elt.options[0] = null;
+	for (var i = 0; i < ins.length; i++)
+	    if (ins[i].name == "pcs[]") {
+		tags = pc_tags_json[ins[i].value];
+		ins[i].checked = !!(tags && tags.indexOf(thetag) >= 0);
+	    }
+	e("pctyp_tag").checked = true;
+    }
+    return false;
+}
+
 function defact(what) {
     var elt = e("defaultact");
     if (elt)

@@ -189,6 +189,29 @@ function createUser(&$tf, $newProfile) {
 	    && defval($_REQUEST, "watchcommenttype", "ar") == "all")
 	    $Acct->defaultWatch |= WATCH_ALLCOMMENTS;
     }
+    $newTags = null;
+    if (($Acct->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR))
+	&& defval($_REQUEST, "contactTags", "") != "") {
+	require_once("Code/tags.inc");
+	$tout = "";
+	$warn = "";
+	foreach (preg_split('/\s+/', $_REQUEST["contactTags"]) as $t)
+	    if ($t != "") {
+		$e = checkTagError($t, CHECKTAG_NOPRIVATE | CHECKTAG_NOINDEX);
+		if ($e == "")
+		    $tout .= " " . $t;
+		else
+		    $warn .= htmlspecialchars($e) . "<br />\n";
+	    }
+	if ($warn != "")
+	    return tfError($tf, "contactTags", $warn);
+	if ($tout != "")
+	    $newTags = $tout . " ";
+    }
+    if ($newTags !== $Acct->contactTags) {
+	$Acct->contactTags = $newTags;
+	$updatepc = true;
+    }
 
     if ($OK)
 	$Acct->updateDB();
@@ -380,9 +403,10 @@ function crpformvalue($val, $field = null) {
     global $Acct;
     if (isset($_REQUEST[$val]))
 	return htmlspecialchars($_REQUEST[$val]);
-    else if ($field !== false)
-	return htmlspecialchars($field ? $Acct->$field : $Acct->$val);
-    else
+    else if ($field !== false) {
+	$v = $field ? $Acct->$field : $Acct->$val;
+	return htmlspecialchars($v === null ? "" : $v);
+    } else
 	return "";
 }
 
@@ -626,6 +650,18 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 	}
 	echo "    </table></td>
 </tr>";
+    }
+
+
+    if ($Conf->sversion >= 35) {
+	echo "<tr class='fx1'><td class='caption'></td><td class='entry'><div class='gs'></div></td></tr>\n",
+	    "<tr class='fx1'>
+  <td class='caption'>Tags</td>
+  <td class='entry'><div class='", feclass("contactTags"), "'>",
+	    textinput("contactTags", trim(crpformvalue("contactTags")), 60),
+	    "</div>
+  <div class='hint'><strong>Admin only:</strong> Tags define PC subgroups.  Separate tags by spaces.  Examples: &ldquo;heavy&rdquo;.</div></td>
+</tr>\n\n";
     }
 }
 

@@ -1167,7 +1167,8 @@ function pcMembers() {
 	|| !is_array($_SESSION["pcmembers"][1])
 	|| count($_SESSION["pcmembers"][1]) == 0) {
 	$pc = array();
-	$result = $Conf->q("select firstName, lastName, affiliation, email, ContactInfo.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair from ContactInfo join PCMember using (contactId) left join ChairAssistant on (PCMember.contactId=ChairAssistant.contactId) left join Chair on (PCMember.contactId=Chair.contactId) order by lastName, firstName");
+	$qa = ($Conf->sversion >= 35 ? ", contactTags" : "");
+	$result = $Conf->q("select firstName, lastName, affiliation, email, ContactInfo.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair$qa from ContactInfo join PCMember using (contactId) left join ChairAssistant on (PCMember.contactId=ChairAssistant.contactId) left join Chair on (PCMember.contactId=Chair.contactId) order by lastName, firstName");
 	while (($row = edb_orow($result)))
 	    $pc[$row->contactId] = $row;
 	$_SESSION["pcmembers"] = array($Conf->setting('pc'), $pc);
@@ -1184,12 +1185,26 @@ function pcMembersAndAdmins() {
 	|| !is_array($_SESSION["pcmembersa"][1])
 	|| count($_SESSION["pcmembersa"][1]) == 0) {
 	$pc = array();
-	$result = $Conf->q("select firstName, lastName, email, ContactInfo.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair from ContactInfo left join PCMember using (contactId) left join ChairAssistant on (ContactInfo.contactId=ChairAssistant.contactId) left join Chair on (ContactInfo.contactId=Chair.contactId) where PCMember.contactId is not null or ChairAssistant.contactId is not null order by lastName, firstName");
+	$qa = ($Conf->sversion >= 35 ? ", contactTags" : "");
+	$result = $Conf->q("select firstName, lastName, email, ContactInfo.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair$qa from ContactInfo left join PCMember using (contactId) left join ChairAssistant on (ContactInfo.contactId=ChairAssistant.contactId) left join Chair on (ContactInfo.contactId=Chair.contactId) where PCMember.contactId is not null or ChairAssistant.contactId is not null order by lastName, firstName");
 	while (($row = edb_orow($result)))
 	    $pc[$row->contactId] = $row;
 	$_SESSION["pcmembersa"] = array($Conf->setting('pc'), $pc);
     }
     return $_SESSION["pcmembersa"][1];
+}
+
+function pcTags() {
+    $pcm = pcMembers();
+    $tags = array();
+    foreach ($pcm as $pc)
+	if (isset($pc->contactTags) && $pc->contactTags) {
+	    foreach (explode(" ", $pc->contactTags) as $t)
+		if ($t !== "")
+		    $tags[$t] = $t;
+	}
+    ksort($tags);
+    return $tags;
 }
 
 function pcByEmail($email) {
@@ -1537,6 +1552,9 @@ function tagg_select($name, $opt, $selected=null, $extra=null) {
 	    $x .= "<option value='$value'";
 	    if (strcmp($value, $selected) == 0)
 		$x .= " selected='selected'";
+	    if ($extra && isset($extra["disabled"])
+		&& defval($extra["disabled"], $value))
+		$x .= " disabled='disabled'";
 	    $x .= ">" . $text . "</option>";
 	}
     return $x . "</select>";
