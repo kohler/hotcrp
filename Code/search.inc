@@ -254,7 +254,34 @@ class PaperSearch {
 	    return $compar;
     }
 
-    function _searchReviewer($word, $rtype, &$qt) {
+    function _typeCompar($compar, $value, $type) {
+	$compar = self::_cleanCompar($compar);
+	if ($value == 0 && $compar == "<")
+	    return array("f", null);
+	else if ($value == 0 && $compar == ">=")
+	    return array("t", null);
+	else
+	    return array($type, $compar . $value);
+    }
+
+    function _sqlNumericSet($a, $neg = false) {
+	if (count($a) == 0)
+	    return ($neg ? "!" : "") . "=-1";
+	else if (count($a) == 1)
+	    return ($neg ? "!" : "") . "=" . $a[0];
+	else
+	    return ($neg ? " not" : "") . " in (" . join(",", $a) . ")";
+    }
+
+    function _pcContactIdsWithTag($tag) {
+	$a = array();
+	foreach (pcMembers() as $pc)
+	    if ($pc->contactTags && strpos($pc->contactTags, " $tag ") !== false)
+		$a[] = $pc->contactId;
+	return $a;
+    }
+
+    function _searchReviewer($word, $rtype, &$qt, $quoted) {
 	global $Conf;
 
 	if ($word == "any")
@@ -274,17 +301,33 @@ class PaperSearch {
 	if ($rtype == "ire" || $rtype == "ipri" || $rtype == "isec" || $rtype == "iext")
 	    $rt |= self::F_INCOMPLETE;
 
-	if (preg_match('/\A([<>]?=?\s*)?(\d+)\z/s', $word, $m)) {
-	    $m[1] = self::_cleanCompar($m[1]);
-	    if ($m[2] == 0 && $m[1] == "<")
-		$type = "f";
-	    else if ($m[2] == 0 && $m[1] == ">=")
-		$type = "t";
-	    else {
-		$type = "nre";
-		$value = $m[1] . $m[2];
+	$type = null;
+	if (!preg_match('/\A(.*?)([<>]?=?\s*)?(\d+)\z/s', $word, $m))
+	    $m = array($word, $word, "", "");
+
+	if ($m[1] == "" && $m[3] != "")
+	    list($type, $value) = self::_typeCompar($m[2], $m[3], "re");
+
+	if (!$type && $m[1] != "" && $this->amPC && !$quoted
+	    && count($pctags = pcTags())) {
+	    $negtag = $m[1][0] == "-";
+	    $tag = $negtag ? substr($m[1], 1) : $m[1];
+	    if (isset($pctags[$tag])) {
+		if ($m[3] != "")
+		    list($type, $value) = self::_typeCompar($m[2], $m[3], "re");
+		else
+		    list($type, $value) = array("re", ">=1");
+		if ($type == "re") {
+		    $this->contactmatch[] = "\2contactId" . self::_sqlNumericSet(self::_pcContactIdsWithTag($tag), $negtag);
+		    if ($negtag)
+			$this->contactmatchPC = false;
+		    $value = array("\1" . (count($this->contactmatch) - 1) . "\1", $value);
+		    $this->reviewerContact++;
+		}
 	    }
-	} else {
+	}
+
+	if (!$type) {
 	    $this->contactmatch[] = sqlq_for_like($word);
 	    $this->contactmatchPC = false;
 	    $type = "re";
@@ -348,17 +391,9 @@ class PaperSearch {
 	else if ($word == "none")
 	    $word = "=0";
 
-	if (preg_match('/\A([<>]?=?\s*)?(\d+)\z/s', $word, $m)) {
-	    $m[1] = self::_cleanCompar($m[1]);
-	    if ($m[2] == 0 && $m[1] == "<")
-		$type = "f";
-	    else if ($m[2] == 0 && $m[1] == ">=")
-		$type = "t";
-	    else {
-		$type = "ncmt";
-		$value = $m[1] . $m[2];
-	    }
-	} else
+	if (preg_match('/\A([<>]?=?\s*)?(\d+)\z/s', $word, $m))
+	    list($type, $value) = self::_typeCompar($m[1], $m[2], "ncmt");
+	else
 	    $type = "f";
 
 	$rt = ($ctype == "aucmt" ? self::F_AUTHORCOMMENT : 0);
@@ -410,7 +445,7 @@ class PaperSearch {
 			|| ($m[3] > count($rf->options[$field]) && ($m[2][0] == ">" || $m[2][0] == "=")))
 			return false;
 		    else
-			$value = array($field . $m[2] . $m[3], $m[1]);
+			$value = array($field . $m[2] . $m[3], ">=" . $m[1]);
 		}
 	    } else if ($letters
 		       ? preg_match('/\A\s*([A-Za-z])\s*-?\s*([A-Za-z])\s*\z/s', $word, $m)
@@ -654,7 +689,7 @@ class PaperSearch {
 	    $this->_searchField($word, "co", !$negated, $qt, true);
 	foreach (array("re", "cre", "ire", "pri", "cpri", "ipri", "sec", "csec", "isec", "ext", "cext", "iext") as $rtype)
 	    if ($special ? $special == $rtype : isset($this->fields[$rtype]))
-		$this->_searchReviewer($word, $rtype, $qt);
+		$this->_searchReviewer($word, $rtype, $qt, $quoted);
 	foreach (array("cmt", "aucmt") as $ctype)
 	    if ($special ? $special == $ctype : isset($this->fields[$ctype]))
 		$this->_searchComment($word, $ctype, $qt);
@@ -741,10 +776,7 @@ class PaperSearch {
 		    $this->warn("&ldquo;" . htmlspecialchars($word) . "&rdquo; doesn't match a decision.");
 		    $value[] = -10000000;
 		}
-		if (count($value) == 1)
-		    $value = "=" . $value[0];
-		else
-		    $value = " in (" . join(",", $value) . ")";
+		$value = self::_sqlNumericSet($value);
 	    }
 	    $value = array("outcome", $value);
 	    $nqt = count($qt);
@@ -1255,8 +1287,8 @@ class PaperSearch {
 	    }
 	    if (isset($t->extra) && isset($t->extra["rate"]))
 		$this->_clauseTermSetRating($reviewtable, $where, $t->extra["rate"]);
-	    if ($tt != "rf" || !is_array($t->value))
-		$t->value = array($t->value, 1);
+	    if (!is_array($t->value))
+		$t->value = array($t->value, ">=1");
 	    if ($tt == "re")
 		$where[] = "contactId" . $t->value[0];
 	    else
@@ -1266,7 +1298,7 @@ class PaperSearch {
 	    $columns[$thistab . "_matches"] = "$thistab.nre";
 	    $q = array();
 	    $this->_clauseTermSetFlags($t->flags, $q);
-	    $q[] = "coalesce($thistab.nre,0)>=" . $t->value[1];
+	    $q[] = "coalesce($thistab.nre,0)" . $t->value[1];
 	    $f[] = "(" . join(" and ", $q) . ")";
 	    $t->link = $thistab . "_matches";
 	} else if ($tt == "ncmt") {
@@ -1414,7 +1446,8 @@ class PaperSearch {
 		$ans = false;
 	    else {
 		$fieldname = $t->link;
-		$ans = $row->$fieldname >= $t->value[1];
+		$x = $row->$fieldname;
+		$ans = eval("return \$x" . $t->value[1] . ";");
 	    }
 	} else if ($tt == "ncmt") {
 	    if (!$this->_clauseTermCheckFlags($t->flags, $row))
@@ -1422,7 +1455,7 @@ class PaperSearch {
 	    else {
 		$fieldname = $t->link;
 		$x = $row->$fieldname;
-		$ans = eval("return \$x$t[2];");
+		$ans = eval("return \$x$t->value;");
 	    }
 	} else if ($tt == "pn") {
 	    if (count($t->value[0]) && array_search($row->paperId, $t->value[0]) === false)
@@ -1584,7 +1617,9 @@ class PaperSearch {
 		. " where ";
 	    for ($i = 0; $i < count($this->contactmatch); ++$i) {
 		$s = simplifyWhitespace($this->contactmatch[$i]);
-		if (($pos = strpos($s, "@")) !== false)
+		if ($s[0] == "\2")
+		    $qm = "(" . substr($s, 1) . ")";
+		else if (($pos = strpos($s, "@")) !== false)
 		    $qm = "(email like '" . substr($s, 0, $pos + 1) . "%" . substr($s, $pos + 1) . "%')";
 		else if (preg_match('/\A(.*?)\s*([,\s])\s*(.*)\z/', $s, $m)) {
 		    if ($m[2] == ",")
@@ -1623,16 +1658,8 @@ class PaperSearch {
 
 	// clean up contact matches
 	if (count($this->contactmatch))
-	    for ($i = 0; $i < count($this->contactmatch); $i++) {
-		$carr = $this->contactmatch[$i];
-		if (count($carr) == 0)
-		    $c = "=-1";
-		else if (count($carr) == 1)
-		    $c = "=$carr[0]";
-		else
-		    $c = " in (" . join(",", $carr) . ")";
-		$q = str_replace("\1$i\1", $c, $q);
-	    }
+	    for ($i = 0; $i < count($this->contactmatch); $i++)
+		$q = str_replace("\1$i\1", self::_sqlNumericSet($this->contactmatch[$i]), $q);
 	//$Conf->infoMsg(htmlspecialchars($q));
 
 	// actually perform query
