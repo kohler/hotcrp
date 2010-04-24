@@ -569,7 +569,7 @@ if ($newProfile) {
     echo "<div class='f-i'><table style='font-size: smaller'><tr><td>", foldbutton("account", "", 2),
 	"&nbsp;</td><td><a href=\"javascript:void fold('account',null,2)\"><strong>Bulk account creation</strong></a></td></tr>",
 	"<tr class='fx2'><td></td><td>",
-	"<p>Create a text file with one line per account.  Specify name, email address, and (if any) affiliation.  For example:</p>\n",
+	"<p>Create a text file with one line per account.  Specify name, email address, and (if any) affiliation; roles and PC information are taken from the Web form.  For example:</p>\n",
 	"<pre class='entryexample'>
 John Adams &lt;john@earbox.org&gt; UC Berkeley
 Adams, John Quincy &lt;quincy@whitehouse.gov&gt;
