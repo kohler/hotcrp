@@ -189,8 +189,9 @@ function createUser(&$tf, $newProfile) {
 	    && defval($_REQUEST, "watchcommenttype", "ar") == "all")
 	    $Acct->defaultWatch |= WATCH_ALLCOMMENTS;
     }
-    $newTags = null;
+    $newTags = ($Me->privChair ? null : $Acct->contactTags);
     if (($Acct->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR))
+	&& $Me->privChair
 	&& defval($_REQUEST, "contactTags", "") != "") {
 	require_once("Code/tags.inc");
 	$tout = "";
@@ -653,15 +654,20 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
     }
 
 
-    if ($Conf->sversion >= 35) {
+    if ($Conf->sversion >= 35 && ($Me->privChair || $Acct->contactTags)) {
 	echo "<tr class='fx1'><td class='caption'></td><td class='entry'><div class='gs'></div></td></tr>\n",
-	    "<tr class='fx1'>
-  <td class='caption'>Tags</td>
-  <td class='entry'><div class='", feclass("contactTags"), "'>",
-	    textinput("contactTags", trim(crpformvalue("contactTags")), 60),
-	    "</div>
-  <div class='hint'><strong>Admin only:</strong> Tags define PC subgroups.  Separate tags by spaces.  Examples: &ldquo;heavy&rdquo;.</div></td>
+	    "<tr class='fx1'><td class='caption'>Tags</td><td class='entry'>";
+	if ($Me->privChair) {
+	    echo "<div class='", feclass("contactTags"), "'>",
+		textinput("contactTags", trim(crpformvalue("contactTags")), 60),
+		"</div>
+  <div class='hint'>Tags define PC subgroups, and can only be set by administrators.  Separate tags by spaces.  Examples: &ldquo;heavy&rdquo;.</div></td>
 </tr>\n\n";
+	} else {
+	    echo trim($Acct->contactTags), "
+  <div class='hint'>Administrators use tags to create PC subgroups.</div></td>
+</tr>\n\n";
+	}
     }
 }
 
