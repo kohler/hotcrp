@@ -277,7 +277,7 @@ function foldassign(which) {
 
 function selassign(elt, which) {
     if (elt) {
-	e("ass" + which).className = "name" + elt.value;
+	e("ass" + which).className = "pctbname" + elt.value + " pctbl";
 	var i = e("assimg" + which);
 	i.className = "ass" + elt.value;
 	hiliter(elt);

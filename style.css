@@ -996,39 +996,6 @@ tr.rev_reviewers_hdr td.caption, tr.rev_reviewers_hdr td.entry,
 tr.pt_conflict_ass td.entry, tr.propass td.entry {
 	vertical-align: top;
 }
-table.pcass td.colmid {
-	border-left: 1px dotted #cec1ff;
-	padding-left: 0.5em;
-	vertical-align: top;
-}
-table.pcass td.name, table.pcass td.name-1, table.pcass td.name-2,
-table.pcass td.name0, table.pcass td.name1, table.pcass td.name2, 
-table.pcass td.name3, table.pcass td.name4 {
-	padding-right: 1em;
-}
-table.pcass td.name-1, table.pcass td.name-2 {
-	color: gray;
-}
-table.pcass td.name3, table.pcass td.name4 {
-	font-weight: bold;
-}
-table.pcass td.ass {
-	padding-right: 0.45em;
-	font-size: smaller;
-	white-space: nowrap;
-}
-table.pcass td.confsel {
-	padding-right: 1em;
-	white-space: nowrap;
-}
-table.pcass td.confsel select {
-	font-size: 69%;
-}
-table.pcass td.nrev {
-	font-size: 69%;
-	padding-bottom: 2px;
-	padding-right: 0.65em;
-}
 span.asspref, span.asspref1, span.asspref-1 {
 	font-size: 69%;
 	font-weight: normal;
@@ -1038,6 +1005,43 @@ span.asspref1 {
 }
 span.asspref-1 {
 	color: #800000;
+}
+
+.pctbname, .pctbname-1, .pctbname-2, .pctbname0, .pctbname1, .pctbname2,
+.pctbname3, .pctbname4 {
+	padding-right: 1em;
+}
+.pctbname-1, .pctbname-2 {
+	color: gray;
+}
+.pctbname3, .pctbname4 {
+	font-weight: bold;
+}
+.pctbnrev {
+	font-size: 69%;
+	padding-bottom: 2px;
+	padding-right: 1em;
+}
+.pctbass {
+	padding-right: 0.45em;
+	font-size: smaller;
+	white-space: nowrap;
+}
+.pctbconfsel {
+	padding-right: 1em;
+	white-space: nowrap;
+}
+.pctbconfselector {
+	font-size: 69%;
+}
+.pctbl {
+	padding-left: 7px;
+}
+.pctbcolleft, .pctbcolmid {
+	vertical-align: top;
+}
+.pctbcolmid {
+	border-left: 1px dotted #cec1ff;
 }
 
 img.ass-1, img.ass-2 {

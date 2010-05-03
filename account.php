@@ -661,7 +661,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 	    echo "<div class='", feclass("contactTags"), "'>",
 		textinput("contactTags", trim(crpformvalue("contactTags")), 60),
 		"</div>
-  <div class='hint'>Tags define PC subgroups, and can only be set by administrators.  Separate tags by spaces.  Examples: &ldquo;heavy&rdquo;.</div></td>
+  <div class='hint'>Administrators can set tags to define PC subgroups.  Separate tags by spaces.  Examples: &ldquo;heavy&rdquo;, &ldquo;red&rdquo;.</div></td>
 </tr>\n\n";
 	} else {
 	    echo trim($Acct->contactTags), "

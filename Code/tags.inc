@@ -529,7 +529,7 @@ class TagColorizer {
 		$this->re .= "|" . substr($k, 0, $i);
 		$this->map[substr($k, 0, $i)] = substr($k, $i + 1);
 	    }
-	$this->re .= ")#/";
+	$this->re .= ")[# ]/";
     }
 
     function match($tags) {

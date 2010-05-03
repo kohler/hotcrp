@@ -905,7 +905,7 @@ class PaperTable {
 	$pcconfs = array();
 	if ($selectors) {
 	    foreach ($pcm as $id => $p) {
-		$c = "<tr><td class='name0'>". contactHtml($p->firstName, $p->lastName) . "</td><td class='confsel'>";
+		$c = "<tr><td class='pctbname0 pctbl'>". contactHtml($p->firstName, $p->lastName) . "</td><td class='pctbconfsel'>";
 		if (isset($conflict[$id]) && $conflict[$id] > 0
 		    && ($conflict[$id] < CONFLICT_AUTHORMARK
 			|| $conflict[$id] > $maxauthormark)) {
@@ -916,13 +916,14 @@ class PaperTable {
 		} else
 		    $c .= tagg_select("pcc$id", $authorConflictTypes,
 				      defval($conflict, $id, 0),
-				      array("onchange" => "hiliter(this)"));
+				      array("onchange" => "hiliter(this)",
+					    "class" => "pctbconfselector"));
 		$c .= "</td></tr>\n";
 		$pcconfs[] = $c;
 	    }
-	    $tclass = "pcass";
-	    $topen = "<td><table>";
-	    $tswitch = "</table></td><td class='colmid'><table>";
+	    $tclass = " style='padding-left:0'><table class='pctb'";
+	    $topen = "<td class='pctbcolleft'><table>";
+	    $tswitch = "</table></td><td class='pctbcolmid'><table>";
 	    $tclose = "</table>";
 	} else {
 	    foreach ($pcm as $id => $p) {
@@ -936,7 +937,7 @@ class PaperTable {
 		else
 		    $pcconfs[] = "$cbox&nbsp;$label<br />\n";
 	    }
-	    $tclass = "";
+	    $tclass = "><table";
 	    $topen = "<td class='rpad'>";
 	    $tclose = "";
 	    $tswitch = "</td><td class='rpad'>";
@@ -944,8 +945,7 @@ class PaperTable {
 
 	echo $this->papt("pcconf", "PC conflicts"),
 	    "<div class='paphint'>Select the PC members who have conflicts of interest with this paper.  ", $Conf->conflictDefinitionText(), "</div>\n",
-	    "<div class='papv'><table",
-	    ($tclass === "" ? "" : " class='$tclass'"), "><tr>", $topen;
+	    "<div class='papv'", $tclass, "><tr>", $topen;
 	$n = ($selectors
 	      ? intval((count($pcconfs) + 1) / 2)
 	      : intval((count($pcconfs) + 2) / 3));

@@ -6,6 +6,7 @@
 require_once("Code/header.inc");
 require_once("Code/paperlist.inc");
 require_once("Code/search.inc");
+require_once("Code/tags.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair();
@@ -574,7 +575,8 @@ if (isset($assignments) && count($assignments) > 0) {
     if ($atype != "prefconflict") {
 	echo "<div class='g'></div>";
 	echo "<strong>Assignment Summary</strong><br />\n";
-	echo "<table class='pcass'><tr><td><table>";
+	echo "<table class='pctb'><tr><td class='pctbcolleft'><table>";
+	$colorizer = new TagColorizer($Me);
 	$pcdesc = array();
 	foreach ($pcm as $id => $p) {
 	    $nnew = defval($pc_nass, $id, 0);
@@ -587,10 +589,12 @@ if (isset($assignments) && count($assignments) > 0) {
 		$nreviews[$id] += $nnew;
 		$nsecondary[$id] += $nnew;
 	    }
-	    $c = "<tr><td class='name'>"
+	    $color = $colorizer->match($p->contactTags);
+	    $color = ($color ? " class='${color}tag'" : "");
+	    $c = "<tr$color><td class='pctbname pctbl'>"
 		. contactNameHtml($p)
 		. ": " . plural($nnew, "assignment")
-		. "</td></tr><tr><td class='nrev'>After assignment: "
+		. "</td></tr><tr$color><td class='pctbnrev pctbl'>After assignment: "
 		. plural($nreviews[$id], "review");
 	    if ($nprimary[$id] && $nprimary[$id] < $nreviews[$id])
 		$c .= "&nbsp; (" . $nprimary[$id] . " primary)";
@@ -599,7 +603,7 @@ if (isset($assignments) && count($assignments) > 0) {
 	$n = intval((count($pcdesc) + 2) / 3);
 	for ($i = 0; $i < count($pcdesc); $i++) {
 	    if (($i % $n) == 0 && $i)
-		echo "</table></td><td class='colmid'><table>";
+		echo "</table></td><td class='pctbcolmid'><table>";
 	    echo $pcdesc[$i];
 	}
 	echo "</table></td></tr></table>\n";
@@ -747,20 +751,23 @@ echo "<tr><td>";
 doRadio('pctyp', 'sel', '');
 echo "</td><td>", tagg_label("Use selected PC members:", "pctyp_sel"), " &nbsp; ",
     "(<a href='javascript:papersel(1,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>All</a> | <a href='javascript:papersel(0,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>None</a>)";
-echo "</td></tr>\n<tr><td></td><td><table class='pcass'><tr><td><table>";
+echo "</td></tr>\n<tr><td></td><td><table class='pctb'><tr><td class='pctbcolleft'><table>";
 
 $pcm = pcMembers();
 countReviews($nreviews, $nprimary, $nsecondary);
 $pcdesc = array();
+$colorizer = new TagColorizer($Me);
 foreach ($pcm as $id => $p) {
     $count = count($pcdesc) + 1;
-    $c = "<tr><td>"
+    $color = $colorizer->match($p->contactTags);
+    $color = ($color ? " class='${color}tag'" : "");
+    $c = "<tr$color><td class='pctbl'>"
 	. tagg_checkbox("pcs[]", $id, isset($pcsel[$id]),
 			array("id" => "pcsel$count",
 			      "onchange" => "pselClick(event, this, $count, 'pcsel');e('pctyp_sel').checked=true"))
-	. "&nbsp;</td><td class='name'>"
+	. "&nbsp;</td><td class='pctbname'>"
 	. tagg_label(contactNameHtml($p), "pcsel$count")
-	. "</td></tr><tr><td></td><td class='nrev'>";
+	. "</td></tr><tr$color><td class='pctbl'></td><td class='pctbnrev'>";
     if ($nreviews[$id] == 0)
 	$c .= "0 reviews";
     else {
@@ -778,7 +785,7 @@ foreach ($pcm as $id => $p) {
 $n = intval((count($pcdesc) + 2) / 3);
 for ($i = 0; $i < count($pcdesc); $i++) {
     if (($i % $n) == 0 && $i)
-	echo "</table></td><td class='colmid'><table>";
+	echo "</table></td><td class='pctbcolmid'><table>";
     echo $pcdesc[$i];
 }
 echo "</table></td></tr></table></td></tr></table>";

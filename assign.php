@@ -6,6 +6,7 @@
 require_once("Code/header.inc");
 require_once("Code/papertable.inc");
 require_once("Code/reviewtable.inc");
+require_once("Code/tags.inc");
 $Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->privChair)
@@ -485,7 +486,7 @@ if ($t != "")
 // PC assignments
 if ($Me->actChair($prow)) {
     $result = $Conf->qe("select ContactInfo.contactId,
-	firstName, lastName, email,
+	firstName, lastName, email, contactTags,
 	PaperConflict.conflictType,
 	PaperReview.reviewType,	coalesce(preference, 0) as preference,
 	coalesce(allReviews,'') as allReviews,
@@ -508,35 +509,38 @@ if ($Me->actChair($prow)) {
 	<tr><td></td><td class='papcc'>",
 	"<div class='papt'><span class='papfn'>PC review assignments</span>",
 	"<div class='clear'></div></div>",
-	"<div class='paphint'>Review preferences are shown as &ldquo;P#&rdquo;";
+	"<div class='paphint'>Review preferences display as &ldquo;P#&rdquo;";
     if (count($rf->topicName))
 	echo ", topic scores as &ldquo;T#&rdquo;";
-    echo ".</div><div class='papv'>";
+    echo ".</div><div class='papv' style='padding-left:0'>";
 
-    echo "<table class='pcass'><tr><td><table>\n";
+    echo "<table class='pctb'><tr><td class='pctbcolleft'><table>\n";
+    $colorizer = new TagColorizer($Me);
 
     $n = intval((count($pcx) + 2) / 3);
     for ($i = 0; $i < count($pcx); $i++) {
 	if (($i % $n) == 0 && $i)
-	    echo "    </table></td><td class='colmid'><table>\n";
+	    echo "    </table></td><td class='pctbcolmid'><table>\n";
 	$p = $pcx[$i];
 
 	// first, name and assignment
-	echo "      <tr>";
+	$color = $colorizer->match($p->contactTags);
+	$color = ($color ? " class='${color}tag'" : "");
+	echo "      <tr$color>";
 	if ($p->conflictType >= CONFLICT_AUTHOR) {
-	    echo "<td id='ass$p->contactId' class='name-2'>",
+	    echo "<td id='ass$p->contactId' class='pctbname-2 pctbl'>",
 		str_replace(' ', "&nbsp;", contactNameHtml($p)),
-		"</td><td class='ass'>",
+		"</td><td class='pctbass'>",
 		"<img class='ass-2' alt='(Author)' title='Author' src='images/_.gif' />",
 		"</td>";
 	} else {
 	    $cid = ($p->conflictType > 0 ? -1 : $p->reviewType + 0);
-	    echo "<td id='ass$p->contactId' class='name$cid'>";
+	    echo "<td id='ass$p->contactId' class='pctbname$cid pctbl'>";
 	    echo str_replace(' ', "&nbsp;", contactNameHtml($p));
 	    if ($p->conflictType == 0
 		&& ($p->preference || $p->topicInterestScore))
 		echo preferenceSpan($p->preference, $p->topicInterestScore);
-	    echo "</td><td class='ass'>";
+	    echo "</td><td class='pctbass'>";
 	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'><img class='ass$cid' id='assimg$p->contactId' src='images/_.gif' alt='Assignment' /><img class='next' src='images/_.gif' alt='&gt;' /></a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention
 	    echo tagg_select("pcs$p->contactId",
@@ -556,7 +560,7 @@ if ($Me->actChair($prow)) {
 	echo "</tr>\n";
 
 	// then, number of reviews
-	echo "      <tr><td class='nrev' colspan='2'>";
+	echo "      <tr$color><td class='pctbnrev pctbl' colspan='2'>";
 	$numReviews = strlen($p->allReviews);
 	$numPrimary = preg_match_all("|" . REVIEW_PRIMARY . "|", $p->allReviews, $matches);
 	if (!$numReviews)
