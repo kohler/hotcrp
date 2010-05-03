@@ -661,7 +661,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 	    echo "<div class='", feclass("contactTags"), "'>",
 		textinput("contactTags", trim(crpformvalue("contactTags")), 60),
 		"</div>
-  <div class='hint'>Administrators can set tags to define PC subgroups.  Separate tags by spaces.  Examples: &ldquo;heavy&rdquo;, &ldquo;red&rdquo;.</div></td>
+  <div class='hint'>Administrators can set tags to define PC subgroups.  Separate tags by spaces.  Example: &ldquo;heavy&rdquo;.<br /><strong>Tip:</strong>&nbsp;Use <a href='settings${ConfSiteSuffix}?group=rev&amp;tagcolor=1#tagcolor'>tag colors</a> to highlight subgroups in review lists.</div></td>
 </tr>\n\n";
 	} else {
 	    echo trim($Acct->contactTags), "

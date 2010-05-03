@@ -1560,9 +1560,10 @@ function doRevGroup() {
     doCheckbox('tag_seeall', "PC can see tags for conflicted papers");
 
     echo "<div class='g'></div>\n";
-    echo "<table id='foldtag_color' class='foldc'><tr>",
+    echo "<table id='foldtag_color' class='",
+	(defval($_REQUEST, "tagcolor") ? "foldo" : "foldc"), "'><tr>",
 	"<td>", foldbutton("tag_color", ""), "&nbsp;</td>",
-	"<td><a href='javascript:void fold(\"tag_color\")' class='q'><strong>Colors</strong></a><br />\n",
+	"<td><a href='javascript:void fold(\"tag_color\")' name='tagcolor' class='q'><strong>Colors</strong></a><br />\n",
 	"<div class='hint fx'>Papers tagged with a color name, or with one of the associated tags (if any), will appear in that color in paper lists.</div>",
 	"<div class='smg fx'></div>",
 	"<table class='fx'><tr><th colspan='2'>Color name</th><th>Tags</th></tr>";

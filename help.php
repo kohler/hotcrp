@@ -208,6 +208,15 @@ function searchQuickref() {
     else
 	$aunote = "<br /><span class='hint'>Search only examines visible fields.  For example, PC member searches do not examine authors.</span>";
 
+    // does a reviewer tag exist?
+    $retag = "";
+    if ($Me->isPC) {
+	foreach (pcMembers() as $pc)
+	    if ($pc->contactTags
+		&& preg_match('/(\S+)/', $pc->contactTags, $m))
+		$retag = $m[1];
+    }
+
     echo "<table>\n";
     _searchQuickrefRow("Basics", "", "all papers in the search category");
     _searchQuickrefRow("", "story", "&ldquo;story&rdquo; in title, abstract, authors$aunote");
@@ -233,8 +242,14 @@ function searchQuickref() {
     _searchQuickrefRow("", "-tag:discuss", "not tagged &ldquo;discuss&rdquo;");
     _searchQuickrefRow("", "order:discuss", "tagged &ldquo;discuss&rdquo;, sort by tag order (&ldquo;rorder:&rdquo; for reverse order)");
     _searchQuickrefRow("Reviews", "re:fdabek", "&ldquo;fdabek&rdquo; in reviewer name/email");
+    if ($retag) {
+	_searchQuickrefRow("", "re:$retag", "has a reviewer tagged &ldquo;$retag&rdquo;");
+	_searchQuickrefRow("", "re:\"$retag\"", "&ldquo;$retag&rdquo; in reviewer name/email");
+    }
     _searchQuickrefRow("", "cre:fdabek", "&ldquo;fdabek&rdquo; (in reviewer name/email) has completed a review");
     _searchQuickrefRow("", "re:4", "four reviewers (assigned and/or completed)");
+    if ($retag)
+	_searchQuickrefRow("", "re:$retag>1", "at least two reviewers (assigned and/or completed) tagged &ldquo;$retag&rdquo;");
     _searchQuickrefRow("", "cre:<3", "less than three completed reviews");
     _searchQuickrefRow("", "ire:>0", "at least one incomplete review");
     _searchQuickrefRow("", "pri:>=1", "at least one primary reviewer (&ldquo;cpri:&rdquo;, &ldquo;ipri:&rdquo;, and reviewer name/email also work)");
