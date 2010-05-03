@@ -18,6 +18,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	$hideUnviewable = true;
     $effAssistant = $Me->privChair && !$hideUnviewable;
     $anyScores = false;
+    $anyColors = false;
+    $colorizer = null;
     $nNumeric = $rf->numNumericScores($prow, $Me);
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 
@@ -37,10 +39,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	    continue;
 	}
 
-	if ($rrow && $highlight)
-	    $t = "    <tr class='hilite'>";
-	else
-	    $t = "    <tr>";
+	$t = "";
+	$tclass = ($rrow && $highlight ? "hilite" : "");
 
 	// review ID
 	$id = "Review";
@@ -97,6 +97,14 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	    $t .= "</td>";
 	    if ($mode == "assign")
 		$t .= "<td>" . contactHtml(null, null, $rr->email) . "</td>";
+	    if (isset($rr->contactTags) && $rr->contactTags && $Me->isPC) {
+		if (!$colorizer) {
+		    require_once("tags.inc");
+		    $colorizer = new TagColorizer($Me);
+		}
+		if (($color = $colorizer->match($rr->contactTags)))
+		    $tclass = $color . "tag";
+	    }
 	}
 
 	// review type
@@ -119,19 +127,20 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	else if ($mode != "edit" && $mode != "re")
 	    $t .= $rf->webNumericScoresRow($rr, $prow, $Me, $anyScores);
 
-	$t .= "<td></td></tr>\n";
+	$t .= "<td></td>";
 
 	// affix
 	if (!$rr->reviewSubmitted)
-	    $nonsubrev[] = $t;
+	    $nonsubrev[] = array($tclass, $t);
 	else
-	    $subrev[] = $t;
+	    $subrev[] = array($tclass, $t);
+	$anyColors = $anyColors || ($tclass != "");
     }
 
     // headers
     $numericHeaders = "";
     if ($anyScores)
-	$numericHeaders = "    <tr><td class='empty' colspan='2'></td>" . $rf->webNumericScoresHeader($prow, $Me) . "</tr>\n";
+	$numericHeaders = "<td class='empty' colspan='2'></td>" . $rf->webNumericScoresHeader($prow, $Me);
 
     // unfinished review notification
     $notetxt = "";
@@ -147,11 +156,17 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
     }
 
     // completion
-    if (count($nonsubrev) + count($subrev))
-	return "<table class='reviewers'>\n"
-	    . $numericHeaders . join("", $subrev) . join("", $nonsubrev)
-	    . "  </table>\n" . $notetxt;
-    else
+    if (count($nonsubrev) + count($subrev)) {
+	$t = "<table class='reviewers'>\n";
+	$trstart = ($anyColors ? "<td class='empty' style='padding-right:7px'></td>" : "");
+	if ($numericHeaders)
+	    $t .= "<tr>" . $trstart . $numericHeaders . "</tr>\n";
+	foreach ($subrev as $r)
+	    $t .= "<tr" . ($r[0] ? " class='$r[0]'" : "") . $trstart . $r[1] . "</tr>\n";
+	foreach ($nonsubrev as $r)
+	    $t .= "<tr" . ($r[0] ? " class='$r[0]'" : "") . $trstart . $r[1] . "</tr>\n";
+	return $t . "</table>\n" . $notetxt;
+    } else
 	return $notetxt;
 }
 

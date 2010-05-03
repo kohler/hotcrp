@@ -1138,9 +1138,13 @@ class Conference {
 	    unset($selector["ratings"]);
 	    unset($selector["myRating"]);
 	}
+	$contactTags = "NULL as contactTags";
+	if ($Conf->sversion >= 35)
+	    $contactTags = "ContactInfo.contactTags";
 
 	$q = "select PaperReview.*,
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
+		$contactTags,
 		ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail, ReqCI.contactId as reqContactId";
 	if (isset($selector["ratings"]))
 	    $q .= ",
