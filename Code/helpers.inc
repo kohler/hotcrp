@@ -749,11 +749,15 @@ function plural($n, $what) {
 
 function commajoin($what) {
     $what = array_values($what);
-    if (count($what) == 2)
-	return $what[0] . " and " . $what[1];
-    if (count($what) == 1)
+    $c = count($what);
+    if ($c == 0)
+	return "";
+    else if ($c == 1)
 	return $what[0];
-    return join(", ", array_slice($what, 0, -1)) . ", and " . $what[count($what) - 1];
+    else if ($c == 2)
+	return $what[0] . " and " . $what[1];
+    else
+	return join(", ", array_slice($what, 0, -1)) . ", and " . $what[count($what) - 1];
 }
 
 function ordinal($n) {
