@@ -408,6 +408,11 @@ class ContactList extends BaseList {
 	$this->contact = $me;
 	$this->count = 0;
 	$this->anySelector = 0;
+	$colorizer = null;
+	if ($me->isPC) {
+	    require_once("tags.inc");
+	    $colorizer = new TagColorizer($me);
+	}
 
 	// get paper list
 	if (!($baseFieldId = $this->listFields($listname))) {
@@ -441,7 +446,7 @@ class ContactList extends BaseList {
 	$aulimit = (strlen($this->limit) >= 2 && $this->limit[0] == 'a' && $this->limit[1] == 'u');
 	$pq = "select ContactInfo.contactId,
 	ContactInfo.contactId as paperId,
-	firstName, lastName, email, affiliation,
+	firstName, lastName, email, affiliation, contactTags,
 	voicePhoneNumber, faxPhoneNumber,
 	ContactInfo.collaborators, lastLogin, visits, note,
 	PCMember.contactId as pc, Chair.contactId as chair,
@@ -556,6 +561,8 @@ class ContactList extends BaseList {
 		continue;
 
 	    $trclass = "k" . ($this->count % 2);
+	    if ($colorizer && ($c = $colorizer->match($row->contactTags)))
+		$trclass .= " " . $c;
 	    $this->count++;
 	    $ids[] = $row->contactId;
 
