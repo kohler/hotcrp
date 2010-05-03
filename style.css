@@ -1456,7 +1456,7 @@ a.pl_sort_def_rev {
 tr.k1 td {
 	background: #f2f2ff;
 }
-tr.k0.red td, tr.k1.red td, .redtag {
+tr.k0.red td, tr.k1.red td, .redtag, tr.redtag td {
 	background: #ffe4e4;
 }
 tr.pl.k0.red td, tr.pl.k1.red td {
@@ -1465,7 +1465,7 @@ tr.pl.k0.red td, tr.pl.k1.red td {
 .redtag div.pst {
 	background: #f8dddd;
 }
-tr.k0.orange td, tr.k1.orange td, .orangetag {
+tr.k0.orange td, tr.k1.orange td, .orangetag, tr.orangetag td {
 	background: #fdf0d6;
 }
 tr.pl.k0.orange td, tr.pl.k1.orange td {
@@ -1474,7 +1474,7 @@ tr.pl.k0.orange td, tr.pl.k1.orange td {
 .orangetag div.pst {
 	background: #f5eed0;
 }
-tr.k0.yellow td, tr.k1.yellow td, .yellowtag {
+tr.k0.yellow td, tr.k1.yellow td, .yellowtag, tr.yellowtag td {
 	background: #ffffd5;
 }
 tr.pl.k0.yellow td, tr.pl.k1.yellow td {
@@ -1483,7 +1483,7 @@ tr.pl.k0.yellow td, tr.pl.k1.yellow td {
 .yellowtag div.pst {
 	background: #f6f6d8;
 }
-tr.k0.green td, tr.k1.green td, .greentag {
+tr.k0.green td, tr.k1.green td, .greentag, tr.greentag td {
 	background: #e4ffe4;
 }
 tr.pl.k0.green td, tr.pl.k1.green td {
@@ -1492,7 +1492,7 @@ tr.pl.k0.green td, tr.pl.k1.green td {
 .greentag div.pst {
 	background: #ddf8dd;
 }
-tr.k0.blue td, tr.k1.blue td, .bluetag {
+tr.k0.blue td, tr.k1.blue td, .bluetag, tr.bluetag td {
 	background: #e0e0ff;
 }
 tr.pl.k0.blue td, tr.pl.k1.blue td {
@@ -1502,7 +1502,7 @@ tr.pl.k0.blue td, tr.pl.k1.blue td {
 	background: #ddddf8;
 }
 tr.k0.purple td, tr.k0.violet td, tr.k1.purple td, tr.k1.violet td,
-.purpletag, .violettag {
+.purpletag, .violettag, tr.purpletag td, tr.violettag td {
 	background: #f2e0f8;
 }
 tr.pl.k0.purple td, tr.pl.k1.purple td, tr.pl.k0.violet td, tr.pl.k1.violet td {
@@ -1512,7 +1512,7 @@ tr.pl.k0.purple td, tr.pl.k1.purple td, tr.pl.k0.violet td, tr.pl.k1.violet td {
 	background: #f2dbf2;
 }
 tr.k0.grey td, tr.k0.gray td, tr.k1.grey td, tr.k1.gray td,
-.greytag, .graytag {
+.greytag, .graytag, tr.greytag td, tr.graytag td {
 	background: #e2e2e2;
 }
 tr.pl.k0.grey td, tr.pl.k1.grey td, tr.pl.k0.gray td, tr.pl.k1.gray td {
