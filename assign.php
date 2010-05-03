@@ -485,8 +485,11 @@ if ($t != "")
 
 // PC assignments
 if ($Me->actChair($prow)) {
+    $contactTags = "NULL as contactTags";
+    if ($Conf->sversion >= 35)
+	$contactTags = "contactTags";
     $result = $Conf->qe("select ContactInfo.contactId,
-	firstName, lastName, email, contactTags,
+	firstName, lastName, email, $contactTags,
 	PaperConflict.conflictType,
 	PaperReview.reviewType,	coalesce(preference, 0) as preference,
 	coalesce(allReviews,'') as allReviews,
