@@ -1452,69 +1452,71 @@ a.pl_sort_def_rev {
 tr.k1 td {
 	background: #f2f2ff;
 }
-tr.k0.red td, tr.k1.red td {
+tr.k0.red td, tr.k1.red td, .redtag {
 	background: #ffe4e4;
 }
 tr.pl.k0.red td, tr.pl.k1.red td {
 	border-top: 1px solid #f8dddd;
 }
-/*tr.k1.red td {
+.redtag div.pst {
 	background: #f8dddd;
-}*/
-tr.k0.orange td, tr.k1.orange td {
+}
+tr.k0.orange td, tr.k1.orange td, .orangetag {
 	background: #fdf0d6;
 }
 tr.pl.k0.orange td, tr.pl.k1.orange td {
 	border-top: 1px solid #f2e4c8;
 }
-/*tr.k1.orange td {
+.orangetag div.pst {
 	background: #f5eed0;
-}*/
-tr.k0.yellow td, tr.k1.yellow td {
+}
+tr.k0.yellow td, tr.k1.yellow td, .yellowtag {
 	background: #ffffd5;
 }
 tr.pl.k0.yellow td, tr.pl.k1.yellow td {
 	border-top: 1px solid #f3f3d0;
 }
-/*tr.k1.yellow td {
+.yellowtag div.pst {
 	background: #f6f6d8;
-}*/
-tr.k0.green td, tr.k1.green td {
+}
+tr.k0.green td, tr.k1.green td, .greentag {
 	background: #e4ffe4;
 }
 tr.pl.k0.green td, tr.pl.k1.green td {
 	border-top: 1px solid #d2f6d2;
 }
-/*tr.k1.green td {
+.greentag div.pst {
 	background: #ddf8dd;
-}*/
-tr.k0.blue td, tr.k1.blue td {
+}
+tr.k0.blue td, tr.k1.blue td, .bluetag {
 	background: #e0e0ff;
 }
 tr.pl.k0.blue td, tr.pl.k1.blue td {
 	border-top: 1px solid #d6d6f2;
 }
-/*tr.k1.blue td {
+.bluetag div.pst {
 	background: #ddddf8;
-}*/
-tr.k0.purple td, tr.k0.violet td, tr.k1.purple td, tr.k1.violet td {
+}
+tr.k0.purple td, tr.k0.violet td, tr.k1.purple td, tr.k1.violet td,
+.purpletag, .violettag {
 	background: #f2e0f8;
 }
 tr.pl.k0.purple td, tr.pl.k1.purple td, tr.pl.k0.violet td, tr.pl.k1.violet td {
 	border-top: 1px solid #f0d8f0;
 }
-/*tr.k1.purple td, tr.k1.violet td {
+.purpletag div.pst, .violettag div.pst {
 	background: #f2dbf2;
-}*/
-tr.k0.grey td, tr.k0.gray td, tr.k1.grey td, tr.k1.gray td {
+}
+tr.k0.grey td, tr.k0.gray td, tr.k1.grey td, tr.k1.gray td,
+.greytag, .graytag {
 	background: #e2e2e2;
 }
 tr.pl.k0.grey td, tr.pl.k1.grey td, tr.pl.k0.gray td, tr.pl.k1.gray td {
 	border-top: 1px solid #d9d9d9;
 }
-/*tr.k1.grey td, tr.k1.gray td {
+.greytag div.pst, .graytag div.pst {
 	background: #dddddd;
-}*/
+}
 
 body#offrev td#upload {
 	padding-left: 3em;
@@ -1553,6 +1555,7 @@ div.papstrip {
 	width: 100%;
 	z-index: 4;
 	font-size: smaller;
+	margin-top: -0.5em;
 }
 div.papstrip textarea {
 	font-size: small;
@@ -1561,6 +1564,7 @@ div.papstrip select {
 	font-size: inherit;
 }
 div.pst {
+	margin-top: 0.5em;
 	padding: 0.25em 0.5em 0.25em 4px;
 	background: #eaeaea; /*#ffeaee;*/
 }
@@ -1573,7 +1577,7 @@ div.pst span.hint {
 	float: right;
 }
 div.psv {
-	padding: 2px 0 1em 4px;
+	padding: 2px 0 0.5em 4px;
 }
 
 div.psmodec {

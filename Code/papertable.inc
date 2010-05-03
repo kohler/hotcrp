@@ -1048,6 +1048,10 @@ class PaperTable {
 	    if ($editable)
 		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div id='foldtags' class='", ($unfolded ? "foldo" : "foldc"), " inform'>";
 
+	    $colors = new TagColorizer($Me);
+	    if (($color = $colors->match($prow->paperTags)))
+		echo "<div class='", $color, "tag psshaper'>";
+
 	    echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($editable ? "tags" : 0), "oneditunfold" => "Miniajax.submit(\"tagreportform\")")),
 		"<div class='psv'>";
 	    if ($editable) {
@@ -1074,6 +1078,8 @@ class PaperTable {
 		echo ($tx == "" ? "None" : $tx);
 	    echo "</div>";
 
+	    if ($color)
+		echo "</div>";
 	    if ($editable)
 		echo "</div></form>";
 	    echo "\n";
