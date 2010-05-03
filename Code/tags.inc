@@ -510,3 +510,32 @@ function tagsToText($prow, $makeUrls, $contact, $drop = false,
     }
     return rtrim($tt);
 }
+
+class TagColorizer {
+    var $re;
+    var $map;
+
+    function TagColorizer($contact = null, $conf = null) {
+	global $Conf;
+	$conf = $conf ? $conf : $Conf;
+	$this->re = "/(?:\\A| )";
+	if ($contact)
+	    $this->re .= "(?:" . $contact->contactId . "~"
+		. ($contact->privChair ? "|~~" : "") . ")?";
+	$this->re .= "(red|orange|yellow|green|blue|violet|purple|grey|gray";
+	$this->map = array();
+	foreach (explode(" ", $conf->settingText("tag_color", "")) as $k)
+	    if ($k != "" && ($i = strpos($k, "=")) !== false) {
+		$this->re .= "|" . substr($k, 0, $i);
+		$this->map[substr($k, 0, $i)] = substr($k, $i + 1);
+	    }
+	$this->re .= ")#/";
+    }
+
+    function match($tags) {
+	if (preg_match($this->re, $tags, $m))
+	    return defval($this->map, $m[1], $m[1]);
+	else
+	    return false;
+    }
+}

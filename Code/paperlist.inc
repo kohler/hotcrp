@@ -1279,6 +1279,7 @@ class PaperList extends BaseList {
     function text($listname, $me, $extra_class = "") {
 	global $Conf, $ConfSiteSuffix, $paperListFields, $paperListFolds,
 	    $reviewScoreNames;
+	require_once("tags.inc"); // for TagColorizer
 
 	$this->contact = $me;
 	$this->count = 0;
@@ -1412,16 +1413,7 @@ class PaperList extends BaseList {
 		++$skipcallout;
 
 	// tag colors
-	$colorre = "/(?:\\A| )(?:" . $this->contact->contactId . "~"
-	    . ($this->contact->privChair ? "|~~" : "")
-	    . ")?(red|orange|yellow|green|blue|violet|purple|grey|gray";
-	$colormap = array();
-	foreach (explode(" ", $Conf->settingText("tag_color", "")) as $k)
-	    if ($k != "" && ($i = strpos($k, "=")) !== false) {
-		$colorre .= "|" . substr($k, 0, $i);
-		$colormap[substr($k, 0, $i)] = substr($k, $i + 1);
-	    }
-	$colorre .= ")#/";
+	$colors = new TagColorizer($this->contact);
 
 	// collect row data
 	$ids = array();
@@ -1431,10 +1423,9 @@ class PaperList extends BaseList {
 	foreach ($srows as $row) {
 	    $ids[] = $row->paperId;
 	    $trclass = "k" . ($this->count % 2);
-	    if (defval($row, "paperTags")
-		&& $this->contact->canViewTags($row)
-		&& preg_match($colorre, $row->paperTags, $m))
-		$trclass .= " " . defval($colormap, $m[1], $m[1]);
+	    if (defval($row, "paperTags") && $this->contact->canViewTags($row)
+		&& ($m = $colors->match($row->paperTags)))
+		$trclass .= " " . $m;
 	    $this->count++;
 	    $this->unfolded = $unfolded;
 
