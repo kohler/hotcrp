@@ -1461,6 +1461,7 @@ tr.k0.red td, tr.k1.red td, .redtag, tr.redtag td {
 }
 tr.pl.k0.red td, tr.pl.k1.red td {
 	border-top: 1px solid #f8dddd;
+	padding-top: 1px;
 }
 .redtag div.pst {
 	background: #f8dddd;
@@ -1470,6 +1471,7 @@ tr.k0.orange td, tr.k1.orange td, .orangetag, tr.orangetag td {
 }
 tr.pl.k0.orange td, tr.pl.k1.orange td {
 	border-top: 1px solid #f2e4c8;
+	padding-top: 1px;
 }
 .orangetag div.pst {
 	background: #f5eed0;
@@ -1479,6 +1481,7 @@ tr.k0.yellow td, tr.k1.yellow td, .yellowtag, tr.yellowtag td {
 }
 tr.pl.k0.yellow td, tr.pl.k1.yellow td {
 	border-top: 1px solid #f3f3d0;
+	padding-top: 1px;
 }
 .yellowtag div.pst {
 	background: #f6f6d8;
@@ -1488,6 +1491,7 @@ tr.k0.green td, tr.k1.green td, .greentag, tr.greentag td {
 }
 tr.pl.k0.green td, tr.pl.k1.green td {
 	border-top: 1px solid #d2f6d2;
+	padding-top: 1px;
 }
 .greentag div.pst {
 	background: #ddf8dd;
@@ -1497,6 +1501,7 @@ tr.k0.blue td, tr.k1.blue td, .bluetag, tr.bluetag td {
 }
 tr.pl.k0.blue td, tr.pl.k1.blue td {
 	border-top: 1px solid #d6d6f2;
+	padding-top: 1px;
 }
 .bluetag div.pst {
 	background: #ddddf8;
@@ -1507,6 +1512,7 @@ tr.k0.purple td, tr.k0.violet td, tr.k1.purple td, tr.k1.violet td,
 }
 tr.pl.k0.purple td, tr.pl.k1.purple td, tr.pl.k0.violet td, tr.pl.k1.violet td {
 	border-top: 1px solid #f0d8f0;
+	padding-top: 1px;
 }
 .purpletag div.pst, .violettag div.pst {
 	background: #f2dbf2;
@@ -1517,6 +1523,7 @@ tr.k0.grey td, tr.k0.gray td, tr.k1.grey td, tr.k1.gray td,
 }
 tr.pl.k0.grey td, tr.pl.k1.grey td, tr.pl.k0.gray td, tr.pl.k1.gray td {
 	border-top: 1px solid #d9d9d9;
+	padding-top: 1px;
 }
 .greytag div.pst, .graytag div.pst {
 	background: #dddddd;
