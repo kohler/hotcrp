@@ -156,6 +156,8 @@ class PaperActions {
 	    $Error["tags"] = "You can't set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : "");
 	if ($ajax)
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "tags")));
+	redirectSelf();
+	// NB normally redirectSelf() does not return
     }
 
     function tagReport($prow, $return = false) {
