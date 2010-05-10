@@ -1139,7 +1139,7 @@ class Conference {
 	    unset($selector["myRating"]);
 	}
 	$contactTags = "NULL as contactTags";
-	if ($Conf->sversion >= 35)
+	if ($this->sversion >= 35)
 	    $contactTags = "ContactInfo.contactTags";
 
 	$q = "select PaperReview.*,
