@@ -49,7 +49,7 @@ $SettingGroups = array("acc" => array(
 			     "pcrev_soft" => "date",
 			     "pcrev_hard" => "date",
 			     "x_rev_roundtag" => "special",
-			     "pc_seeallrev" => 3,
+			     "pc_seeallrev" => 4,
 			     "pc_seeblindrev" => 1,
 			     "pcrev_editdelegate" => "check",
 			     "extrev_chairreq" => "check",
@@ -1467,6 +1467,7 @@ function doRevGroup() {
 
     echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
     doRadio("pc_seeallrev", array(0 => "No&mdash;a PC member can see a paper&rsquo;s reviews only after submitting their own review for that paper",
+				  4 => "Yes, once they&rsquo;ve completed all their assigned reviews",
 				  3 => "Yes, unless they haven&rsquo;t completed an assigned review for the same paper",
 				  1 => "Yes"));
 

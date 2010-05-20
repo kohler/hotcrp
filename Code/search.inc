@@ -359,6 +359,8 @@ class PaperSearch {
 	    } else if ($this->amPC) {
 		$pc_seeallrev = $Conf->setting("pc_seeallrev");
 		$pc_seeblindrev = $Conf->setting("pc_seeblindrev");
+		if ($pc_seeallrev == 4 && !$this->contact->reviewsOutstanding)
+		    $pc_seeallrev = 1;
 
 		if ($pc_seeallrev == 1
 		    && ($deblinder == 0 || $pc_seeblindrev == 0))
@@ -477,6 +479,8 @@ class PaperSearch {
 	else {
 	    if ($this->amPC) {
 		$pc_seeallrev = $Conf->setting("pc_seeallrev");
+		if ($pc_seeallrev == 4 && !$this->contact->reviewsOutstanding)
+		    $pc_seeallrev = 1;
 
 		if ($pc_seeallrev == 1)
 		    $qt[] = new SearchTerm("rf", $rt | self::F_NONCONFLICT, $value);

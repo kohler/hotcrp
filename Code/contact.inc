@@ -653,6 +653,7 @@ class Contact {
 		|| ($this->isPC
 		    && $prow->conflictType == 0 && $rrowSubmitted
 		    && $pc_seeallrev > 0
+		    && ($pc_seeallrev != 4 || !$this->reviewsOutstanding)
 		    && ($pc_seeallrev != 3 || !defval($prow, "myReviewType")))
 		|| (defval($prow, "myReviewType") > 0
 		    && $prow->conflictType == 0 && $rrowSubmitted
