@@ -750,7 +750,7 @@ if (count($pctags)) {
 echo "<tr><td>";
 doRadio('pctyp', 'sel', '');
 echo "</td><td>", tagg_label("Use selected PC members:", "pctyp_sel"), " &nbsp; ",
-    "(<a href='javascript:papersel(1,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>All</a> | <a href='javascript:papersel(0,\"pcs[]\");void (e(\"pctyp_sel\").checked=true)'>None</a>)";
+    "(<a href='javascript:papersel(1,\"pcs[]\");void (\$\$(\"pctyp_sel\").checked=true)'>All</a> | <a href='javascript:papersel(0,\"pcs[]\");void (\$\$(\"pctyp_sel\").checked=true)'>None</a>)";
 echo "</td></tr>\n<tr><td></td><td><table class='pctb'><tr><td class='pctbcolleft'><table>";
 
 $pcm = pcMembers();
@@ -764,7 +764,7 @@ foreach ($pcm as $id => $p) {
     $c = "<tr$color><td class='pctbl'>"
 	. tagg_checkbox("pcs[]", $id, isset($pcsel[$id]),
 			array("id" => "pcsel$count",
-			      "onchange" => "pselClick(event, this, $count, 'pcsel');e('pctyp_sel').checked=true"))
+			      "onchange" => "pselClick(event, this, $count, 'pcsel');\$\$('pctyp_sel').checked=true"))
 	. "&nbsp;</td><td class='pctbname'>"
 	. tagg_label(contactNameHtml($p), "pcsel$count")
 	. "</td></tr><tr$color><td class='pctbl'></td><td class='pctbnrev'>";
@@ -804,7 +804,7 @@ function bpSelector($i, $which) {
 	$numBadPairs = max($i, $numBadPairs);
     $sel_extra = array();
     if ($i == 1)
-	$sel_extra["onchange"] = "if (!((x=e(\"badpairs\")).checked)) x.click()";
+	$sel_extra["onchange"] = "if (!((x=\$\$(\"badpairs\")).checked)) x.click()";
     return tagg_select("bp$which$i", $sel_opt, $selected, $sel_extra);
 }
 

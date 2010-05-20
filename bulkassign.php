@@ -285,5 +285,5 @@ identifies the PC member uniquely.  For example:</p>
 </pre></td></tr></table>\n";
 
 
-$Conf->footerScript("fold('email',e('tsel').value!=" . REVIEW_EXTERNAL . ")");
+$Conf->footerScript("fold('email',\$\$('tsel').value!=" . REVIEW_EXTERNAL . ")");
 $Conf->footer();

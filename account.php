@@ -602,7 +602,7 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     foreach (array("chair" => "PC chair", "pc" => "PC member",
 		   "no" => "Not on the PC") as $k => $v) {
 	echo tagg_radio_h("pctype", $k, $k == $_REQUEST["pctype"],
-			  array("id" => "pctype_$k", "onchange" => "hiliter(this);fold('account',e('pctype_no').checked,1)")),
+			  array("id" => "pctype_$k", "onchange" => "hiliter(this);fold('account',\$\$('pctype_no').checked,1)")),
 	    "&nbsp;", tagg_label($v), "<br />\n";
     }
 

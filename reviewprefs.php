@@ -230,7 +230,7 @@ if ($Me->privChair) {
 	    $revopt[$row->contactId] .= " (no preferences)";
     }
 
-    echo tagg_select("reviewer", $revopt, $reviewer, array("onchange" => "e(\"redisplayform\").submit()")),
+    echo tagg_select("reviewer", $revopt, $reviewer, array("onchange" => "\$\$(\"redisplayform\").submit()")),
 	"<div class='g'></div></td></tr>\n";
 }
 

@@ -212,7 +212,7 @@ function checkMail($send) {
 		$Conf->log("Receiver of mail \"" . $preparation["subject"] . "\"", $row->contactId, $row->paperId);
 	    }
 	    if ($nrows_print) {
-		$Conf->echoScript("e('mailcount').innerHTML = \"$nrows_left mails remaining.\";");
+		$Conf->echoScript("\$\$('mailcount').innerHTML = \"$nrows_left mails remaining.\";");
 		$nrows_print = false;
 	    }
 
@@ -248,7 +248,7 @@ function checkMail($send) {
 	if ($nwarnings != $rest["mstate"]->nwarnings()) {
 	    $nwarnings = $rest["mstate"]->nwarnings();
 	    echo "<div id='foldmailwarn$nwarnings' class='hidden'><div class='warning'>", join("<br />", $rest["mstate"]->warnings()), "</div></div>";
-	    $Conf->echoScript("e('mailwarnings').innerHTML = e('foldmailwarn$nwarnings').innerHTML;");
+	    $Conf->echoScript("\$\$('mailwarnings').innerHTML = \$\$('foldmailwarn$nwarnings').innerHTML;");
 	}
     }
 
@@ -419,7 +419,7 @@ echo "<table id='foldpsel' class='fold8c'><tr><td>",
 		  array("id" => "plimit",
 			"onchange" => "fold('psel', !this.checked, 8)")),
     "&nbsp;</td><td>", tagg_label("Choose individual papers", "plimit");
-$Conf->footerScript("fold(\"psel\",!e(\"plimit\").checked,8)");
+$Conf->footerScript("fold(\"psel\",!\$\$(\"plimit\").checked,8)");
 echo "<span class='fx8'>:</span><br />
 <div class='fx8'>";
 $q = defval($_REQUEST, "q", "(All)");

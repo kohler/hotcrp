@@ -2,12 +2,14 @@
 // HotCRP is Copyright (c) 2006-2010 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-function e(id) {
+function $$(id) {
     return document.getElementById(id);
 }
 
+e = $$;				// old version
+
 function e_value(id, value) {
-    var elt = e(id);
+    var elt = $$(id);
     if (value == null)
 	return elt ? elt.value : undefined;
     else if (elt)
@@ -15,14 +17,9 @@ function e_value(id, value) {
 }
 
 function hotcrpLoad(servtime, servzone, hr24) {
-    var s, d, hr, elt = e("usertime");
-    if (elt && Math.abs) {
-	d = new Date();
-	// print local time if local time is more than 10 minutes off,
-	// or if server time is more than 3 time zones distant
-	if (Math.abs(d.getTime()/1000 - servtime) <= 10 * 60
-	    && Math.abs(d.getTimezoneOffset() - servzone) <= 3 * 60)
-	    return;
+    var elt = $$("usertime"), x;
+    function update_local_time(elt, d) {
+	var s, hr;
 	s = ["Sun", "Mon", "Tues", "Wednes", "Thurs", "Fri", "Satur"][d.getDay()];
 	s += "day " + d.getDate() + " ";
 	s += ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
@@ -35,15 +32,23 @@ function hotcrpLoad(servtime, servzone, hr24) {
 	    s += (hr < 12 ? "am" : "pm");
 	elt.innerHTML = "Your local time: " + s;
     }
+    if (elt && Math.abs) {
+	x = new Date();
+	// print local time if local time is more than 10 minutes off,
+	// or if server time is more than 3 time zones distant
+	if (Math.abs(x.getTime()/1000 - servtime) > 10 * 60
+	    || Math.abs(x.getTimezoneOffset() - servzone) > 3 * 60)
+	    update_local_time(elt, x);
+    }
 }
 
 function highlightUpdate(which, off) {
     var ins, i, result;
     if (typeof which == "string") {
-	result = e(which + "result");
+	result = $$(which + "result");
 	if (result && !off)
 	    result.innerHTML = "";
-	which = e(which);
+	which = $$(which);
     }
 
     if (!which)
@@ -88,17 +93,17 @@ function fold(which, dofold, foldtype) {
 	    foldnum = foldmap[which][foldtype];
 	foldnumid = foldnum ? foldnum : "";
 
-	elt = e("fold" + which) || e(which);
+	elt = $$("fold" + which) || $$(which);
 	fold(elt, dofold, foldnum);
 
 	// check for session
-	if ((selt = e('foldsession.' + which + foldnumid)))
+	if ((selt = $$('foldsession.' + which + foldnumid)))
 	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0) + '&u=' + foldsession_unique++);
-	else if ((selt = e('foldsession.' + which)))
+	else if ((selt = $$('foldsession.' + which)))
 	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0) + '&sub=' + (foldtype || foldnumid) + '&u=' + foldsession_unique++);
 
 	// check for focus
-	if (!dofold && (selt = e("fold" + which + foldnumid + "_d")))
+	if (!dofold && (selt = $$("fold" + which + foldnumid + "_d")))
 	    selt.focus();
 
     } else if (which) {
@@ -123,10 +128,10 @@ function fold(which, dofold, foldtype) {
 }
 
 function crpfocus(id, subfocus, seltype) {
-    var selt = e(id);
+    var selt = $$(id);
     if (selt && subfocus)
 	selt.className = selt.className.replace(/links[0-9]*/, 'links' + subfocus);
-    var felt = e(id + (subfocus ? subfocus : "") + "_d");
+    var felt = $$(id + (subfocus ? subfocus : "") + "_d");
     if (felt && !(felt.type == "text" && felt.value && seltype == 1))
 	felt.focus();
     if ((selt || felt) && window.event)
@@ -156,20 +161,20 @@ function crpSubmitKeyFilter(elt, event) {
 
 // accounts
 function contactPulldown(which) {
-    var pulldown = e(which + "_pulldown");
+    var pulldown = $$(which + "_pulldown");
     if (pulldown.value != "") {
-	var name = e(which + "_name");
-	var email = e(which + "_email");
+	var name = $$(which + "_name");
+	var email = $$(which + "_email");
 	var parse = pulldown.value.split("`````");
 	email.value = parse[0];
 	name.value = (parse.length > 1 ? parse[1] : "");
     }
-    var folder = e('fold' + which);
+    var folder = $$('fold' + which);
     folder.className = folder.className.replace("foldo", "foldc");
 }
 
 function shiftPassword(direction) {
-    var form = e("accountform");
+    var form = $$("accountform");
     fold("account", direction);
     if (form && form.whichpassword)
 	form.whichpassword.value = direction ? "" : "t";
@@ -213,7 +218,7 @@ function pselClick(evt, elt, thisnum, name) {
 	    j = pselclick_last[name];
 	}
 	for (; i <= j; i++) {
-	    if ((sel = e(name + i)))
+	    if ((sel = $$(name + i)))
 		sel.checked = elt.checked;
 	}
     }
@@ -223,7 +228,7 @@ function pselClick(evt, elt, thisnum, name) {
 
 function pcselSetTag() {
     var ins = document.getElementsByTagName("input"), tags,
-	elt = e("pctag"),
+	elt = $$("pctag"),
 	thetag = " " + elt.options[elt.selectedIndex].value + " ";
     if (thetag != "  ") {
 	if (elt.options[0].value == "")
@@ -233,25 +238,25 @@ function pcselSetTag() {
 		tags = pc_tags_json[ins[i].value];
 		ins[i].checked = !!(tags && tags.indexOf(thetag) >= 0);
 	    }
-	e("pctyp_tag").checked = true;
+	$$("pctyp_tag").checked = true;
     }
     return false;
 }
 
 function defact(what) {
-    var elt = e("defaultact");
+    var elt = $$("defaultact");
     if (elt)
 	elt.value = what;
 }
 
 function placttagtype_fold() {
-    var elt = e("placttagtype"), folded;
+    var elt = $$("placttagtype"), folded;
     if (elt) {
 	folded = elt.selectedIndex < 0 || elt.options[elt.selectedIndex].value != "cr";
 	fold("placttags", folded, 99);
 	if (folded)
 	    fold("placttags", true);
-	else if ((elt = e("sel"))) {
+	else if ((elt = $$("sel"))) {
 	    if ((elt.tagcr_source && elt.tagcr_source.value != "")
 		|| (elt.tagcr_method && elt.tagcr_method.selectedIndex >= 0
 		    && elt.tagcr_method.options[elt.tagcr_method.selectedIndex].value != "schulze")
@@ -266,10 +271,10 @@ function placttagtype_fold() {
 var selassign_blur = 0;
 
 function foldassign(which) {
-    var folder = e("foldass" + which);
+    var folder = $$("foldass" + which);
     if (folder.className.indexOf("foldo") < 0 && selassign_blur != which) {
 	fold("ass" + which, false);
-	e("pcs" + which).focus();
+	$$("pcs" + which).focus();
     }
     selassign_blur = 0;
     return false;
@@ -277,12 +282,12 @@ function foldassign(which) {
 
 function selassign(elt, which) {
     if (elt) {
-	e("ass" + which).className = "pctbname" + elt.value + " pctbl";
-	var i = e("assimg" + which);
+	$$("ass" + which).className = "pctbname" + elt.value + " pctbl";
+	var i = $$("assimg" + which);
 	i.className = "ass" + elt.value;
 	hiliter(elt);
     }
-    var folder = e("folderass" + which);
+    var folder = $$("folderass" + which);
     if (folder && elt !== 0)
 	folder.focus();
     setTimeout("fold(\"ass" + which + "\", true)", 50);
@@ -302,12 +307,12 @@ function authorfold(prefix, relative, n) {
     if (n <= 1)
 	n = 1;
     for (var i = 1; i <= n; i++)
-	if ((elt = e(prefix + i)) && elt.className == "aueditc")
+	if ((elt = $$(prefix + i)) && elt.className == "aueditc")
 	    elt.className = "auedito";
 	else if (!elt)
 	    n = i - 1;
     for (var i = n + 1; i <= 50; i++)
-	if ((elt = e(prefix + i)) && elt.className == "auedito")
+	if ((elt = $$(prefix + i)) && elt.className == "auedito")
 	    elt.className = "aueditc";
 	else if (!elt)
 	    break;
@@ -317,7 +322,7 @@ function authorfold(prefix, relative, n) {
 	numauthorfold[prefix] = n;
     }
     // IE won't actually do the fold unless we yell at it
-    elt = e(prefix + "table");
+    elt = $$(prefix + "table");
     if (document.recalc && elt)
 	try {
 	    elt.innerHTML = elt.innerHTML + "";
@@ -358,7 +363,7 @@ function maketemptext(input, text, on, do_defact) {
 
 function setajaxcheck(elt, rv) {
     if (typeof elt == "string")
-	elt = e(elt);
+	elt = $$(elt);
     if (elt) {
 	var s = (rv.ok ? "Saved" : (rv.error ? rv.error : "Error")),
 	    c = elt.className.replace(/\s*ajaxcheck\w*\s*/, "");
@@ -370,7 +375,7 @@ function setajaxcheck(elt, rv) {
 
 function makerevprefajax(input, paperId) {
     return function () {
-	var form = e("prefform");
+	var form = $$("prefform");
 	if (form && form.p && form.revpref) {
 	    form.p.value = paperId;
 	    form.revpref.value = input.value;
@@ -393,9 +398,9 @@ function addRevprefAjax() {
 
 function makeassrevajax(select, pcs, paperId) {
     return function () {
-	var form = e("assrevform");
-	var immediate = e("assrevimmediate");
-	var roundtag = e("assrevroundtag");
+	var form = $$("assrevform");
+	var immediate = $$("assrevimmediate");
+	var roundtag = $$("assrevroundtag");
 	if (form && form.p && form[pcs] && immediate && immediate.checked) {
 	    form.p.value = paperId;
 	    form.rev_roundtag.value = (roundtag ? roundtag.value : "");
@@ -407,7 +412,7 @@ function makeassrevajax(select, pcs, paperId) {
 }
 
 function addAssrevAjax() {
-    var form = e("assrevform");
+    var form = $$("assrevform");
     if (!form || !form.reviewer)
 	return;
     var pcs = "pcs" + form.reviewer.value;
@@ -422,8 +427,8 @@ function addAssrevAjax() {
 
 function makeconflictajax(input, pcs, paperId) {
     return function () {
-	var form = e("assrevform");
-	var immediate = e("assrevimmediate");
+	var form = $$("assrevform");
+	var immediate = $$("assrevimmediate");
 	if (form && form.p && form[pcs] && immediate && immediate.checked) {
 	    form.p.value = paperId;
 	    form[pcs].value = (input.checked ? -1 : 0);
@@ -434,7 +439,7 @@ function makeconflictajax(input, pcs, paperId) {
 }
 
 function addConflictAjax() {
-    var form = e("assrevform");
+    var form = $$("assrevform");
     if (!form || !form.reviewer)
 	return;
     var pcs = "pcs" + form.reviewer.value;
@@ -504,7 +509,7 @@ function eltPos(e) {
 // score help
 function makescorehelp(anchor, which, dofold) {
     return function () {
-	var elt = e("scorehelp_" + which);
+	var elt = $$("scorehelp_" + which);
 	if (elt && dofold)
 	    elt.className = "scorehelpc";
 	else if (elt && Geometry) {
@@ -539,7 +544,7 @@ function makeratingajax(form, id) {
     form.className = "fold7c";
     form.onsubmit = function () {
 	return Miniajax.submit(id, function (rv) {
-		if ((ee = e(id + "result")) && rv.result)
+		if ((ee = $$(id + "result")) && rv.result)
 		    ee.innerHTML = " &nbsp;<span class='barsep'>|</span>&nbsp; " + rv.result;
 	    });
     };
@@ -561,12 +566,12 @@ function addRatingAjax() {
 
 // popup dialogs
 function popup(anchor, which, dofold, populate) {
-    var elt = e("popup_" + which), form, elts, populates, i, xelt, type;
+    var elt = $$("popup_" + which), form, elts, populates, i, xelt, type;
     if (elt && dofold)
 	elt.className = "popupc";
     else if (elt && Geometry) {
 	if (!anchor)
-	    anchor = e("popupanchor_" + which);
+	    anchor = $$("popupanchor_" + which);
 	var anchorPos = eltPos(anchor);
 	var wg = Geometry();
 	elt.className = "popupo";
@@ -621,7 +626,7 @@ Miniajax.newRequest = function () {
 Miniajax.onload = function (formname) {
     var req = Miniajax.newRequest();
     if (req)
-	fold(e(formname), 1, 7);
+	fold($$(formname), 1, 7);
 }
 Miniajax.submit = function (formname, callback, timeout) {
     var form, req = Miniajax.newRequest(), resultname;
@@ -631,13 +636,13 @@ Miniajax.submit = function (formname, callback, timeout) {
     } else
 	resultname = formname;
 
-    form = e(formname);
+    form = $$(formname);
     if (!form || !req || form.method != "post") {
 	fold(form, 0, 7);
 	return true;
     }
-    var resultelt = e(resultname + "result") || {};
-    var checkelt = e(resultname + "check");
+    var resultelt = $$(resultname + "result") || {};
+    var checkelt = $$(resultname + "check");
     if (!callback)
 	callback = function (rv) {
 	    resultelt.innerHTML = rv.response;
@@ -708,7 +713,7 @@ function foldplinfo(dofold, type, which) {
     if (dofold.checked !== undefined)
 	dofold = !dofold.checked;
     fold(which, dofold, type);
-    if (type == "aufull" && !dofold && (elt = e("showau")) && !elt.checked)
+    if (type == "aufull" && !dofold && (elt = $$("showau")) && !elt.checked)
 	elt.click();
     if (window.foldplinfo_extra)
 	foldplinfo_extra();
@@ -720,7 +725,7 @@ function foldplinfo(dofold, type, which) {
     // may need to load information by ajax
     if ((!dofold || type == "aufull") && plinfo_needload[type]) {
 	// set up "loading" display
-	if ((elt = e("fold" + which))) {
+	if ((elt = $$("fold" + which))) {
 	    divs = elt.getElementsByTagName("div");
 	    for (i = 0; i < divs.length; i++)
 		if (divs[i].id.substr(0, type.length) == type) {
@@ -741,7 +746,7 @@ function foldplinfo(dofold, type, which) {
 		if ({au: 1, anonau: 1, aufull: 1}[type])
 		    type = "authors";
 		for (var i in rv)
-		    if (i.substr(0, type.length) == type && (elt = e(i))) {
+		    if (i.substr(0, type.length) == type && (elt = $$(i))) {
 			if (rv[i] == "")
 			    elt.innerHTML = "";
 			else
@@ -756,8 +761,8 @@ function foldplinfo(dofold, type, which) {
 }
 
 function savedisplayoptions() {
-    var elt = e("savedisplayoptionsformcheck");
-    e("scoresortsave").value = e("scoresort").value;
+    var elt = $$("savedisplayoptionsformcheck");
+    $$("scoresortsave").value = $$("scoresort").value;
     Miniajax.submit("savedisplayoptionsform", function (rv) {
 	    fold("redisplay", 1, 5);
 	    if (rv.ok)
@@ -771,7 +776,7 @@ function savedisplayoptions() {
 }
 
 function docheckformat() {
-    var form = e("checkformatform");
+    var form = $$("checkformatform");
     if (!form.onsubmit)
 	return true;
     fold('checkformat', 0);
@@ -779,7 +784,7 @@ function docheckformat() {
 }
 
 function dosubmitdecision() {
-    var sel = e("folddecision_d");
+    var sel = $$("folddecision_d");
     if (sel && sel.value > 0)
 	fold("shepherd", 0, 2);
     return Miniajax.submit("decisionform");
@@ -789,7 +794,7 @@ function dosubmitdecision() {
 // mail
 function setmailpsel(sel) {
     if (sel.value == "pc") {
-	e("plimit").checked = false;
+	$$("plimit").checked = false;
 	fold("psel", 1, 8);
     }
 }
