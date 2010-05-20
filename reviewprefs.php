@@ -181,7 +181,7 @@ are interested in the paper's topics";
 $Conf->infoMsg("<p>A review preference is a small integer that indicates how much you want to
 review a paper.  Positive numbers mean you want to review the paper, negative
 numbers mean you don't.  The further from 0, the stronger you feel; the
-default, 0, means you're indifferent.  &minus;100 indicates a conflict, and
+default, 0, means you're indifferent.  &minus;100 means you think you have a conflict, and
 &minus;20 to 20 is a typical range for real preferences.  Multiple papers can
 have the same preference.  The system's automatic assignment algorithm
 attempts to assign reviews in preference order$topicnote2.  Different users'
