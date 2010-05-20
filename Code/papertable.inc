@@ -404,7 +404,7 @@ class PaperTable {
 		echo "</td><td>", tagg_label("<strong>This is the final submission.</strong>"),
 		    "</td></tr><tr><td></td><td><small>You must submit a final version before the deadline or your paper will not be reviewed.  Once you submit a final version you will not be able to make further changes.</small>";
 	    else
-		echo tagg_label("The submission is ready for review.");
+		echo tagg_label("This submission is ready for review.");
 	    echo "</td></tr></table></div>\n";
 	} else
 	    echo "<input type='hidden' name='submit' value='1' />";
@@ -1231,14 +1231,20 @@ class PaperTable {
 	    $startDeadline = $this->deadlineSettingIs("sub_reg");
 	    if (!$timeStart) {
 		if ($Conf->setting("sub_open") <= 0)
-		    $msg = "You can't register new papers because the conference site has not been opened for submissions.$override";
+		    $msg = "You can&rsquo;t register new papers because the conference site has not been opened for submissions.$override";
 		else
-		    $msg = "You can't register new papers since the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed.$startDeadline$override";
+		    $msg = "You can&rsquo;t register new papers since the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed.$startDeadline$override";
 		if (!$Me->privChair)
 		    errorMsgExit($msg);
 		$m .= "<div class='xinfo'>" . $msg . "</div>";
-	    } else
-		$m .= "<div class='xinfo'>" . "Enter information about your paper here.  You don't have to upload the paper itself right away, but the paper will not be considered until it is complete.$startDeadline" . "</div>";
+	    } else {
+		$m .= "<div class='xinfo'>" . "Enter information about your paper.  ";
+		if ($startDeadline && !$Conf->setting("sub_freeze"))
+		    $m .= "You can make changes until the deadline, but thereafter ";
+		else
+		    $m .= "You don&rsquo;t have to upload the paper itself right away, but ";
+		$m .= "incomplete submissions will not be considered.$startDeadline" . "</div>";
+	    }
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR
 		   && ($Conf->timeUpdatePaper($prow)
 		       || $prow->timeSubmitted <= 0)) {
@@ -1253,13 +1259,13 @@ class PaperTable {
 	    } else if ($timeUpdate) {
 		if ($prow->timeSubmitted <= 0) {
 		    if ($prow->paperStorageId <= 1)
-			$m .= "<div class='xwarning'>" . "You haven't uploaded a paper yet.$updateDeadline" . "</div>";
+			$m .= "<div class='xwarning'>" . "You haven&rsquo;t uploaded a paper yet.$updateDeadline" . "</div>";
 		    else if ($Conf->setting('sub_freeze'))
 			$m .= "<div class='xwarning'>" . "You must submit a final version of this paper before it can be reviewed.$updateDeadline" . "</div>";
 		    else
-			$m .= "<div class='xwarning'>" . "The current version of the paper is marked as not ready for review.  If you don't submit a reviewable version of the paper, it will not be considered.$updateDeadline" . "</div>";
+			$m .= "<div class='xwarning'>" . "The current version of the paper is marked as not ready for review.  If you don&rsquo;t submit a reviewable version of the paper, it will not be considered.$updateDeadline" . "</div>";
 		} else if ($this->mode == "pe")
-		    $m .= "<div class='xconfirm'>" . "This paper is ready for review and will be considered for the conference, but you still have time to make changes if necessary.$updateDeadline" . "</div>";
+		    $m .= "<div class='xconfirm'>" . "This paper is ready and will be considered for review.  You still have time to make changes if necessary.$updateDeadline" . "</div>";
 	    } else if ($timeSubmit)
 		$m .= "<div class='xwarning'>" . "You cannot make any changes as the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override" . "</div>";
 	    else if ($Conf->settingsBetween("", "sub_grace", "sub_sub"))
