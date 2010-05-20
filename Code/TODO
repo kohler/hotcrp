@@ -1,3 +1,100 @@
+- As far as I can tell, after the reviews have been assigned, a PC member
+  who then discovers a conflict (e.g., I just hired the author as an
+  intern) has no way to get HotCRP to record this.  That is, I can set my
+  preference for the paper to -100, but that in itself doesn't seem to
+  cause HotCRP to realize that I now should be treated as conflicted wrt
+  the paper.
+
+  Obviously, one approach is to have the PC members report their conflicts
+  to the PC chair, but it seems like there should be some way to do this
+  in-band.  (If so, this should perhaps not be allowed if the PC member has
+  already been assigned to review the paper -- then the PC chair needs to
+  be explicitly involved.) [Jeff Mogul]
+
+-  1) discussion list during the PC meeting
+
+  we created a separate page for the paper discussion list for the meeting,
+  which looked something like:
+
+  http://cseweb.ucsd.edu/~voelker/sigcomm10/example/
+
+  we displayed the page on the room projection screen so it was visible to
+  all PC members.  many people loaded it on their laptops to use the links
+  to jump to papers.  during the meeting we moved papers among the various
+  categories as we went through the papers.  the page auto-reloaded to keep
+  it up-to-date.
+
+  we thought having a similar feature in HotCRP would be useful, and I
+  think it can almost be emulated in HotCRP as is.  a discussion page would
+  be defined by a list of ordered tags, and the discussion list would be
+  broken up into groups according to the tags.  moving a paper from one
+  list to another would just require retagging.  two possible extensions
+  are a feature for auto-reloading the page, and a visual separation
+  between tag groups (perhaps with a sub-header based on the tag name) to
+  keep the groups straight.  adding per-group colored tags might do the
+  trick, although moving a paper from one category to another would require
+  adjusting multiple tags and might be prone to error.
+
+  there is also the question of whether conflicted papers should be shown
+  or not.  when it gets to the discussion list at PC meeting time, we
+  preferred to have everyone see the same list.  Jeff's idea of a
+  discussion timer would naturally fold in with this.
+
+  2) chair-specific tags: similar to personal tags, but visible and
+  changeable across all PC chairs.  there were times when one of us wanted
+  to define a group that only we could see and change; we wanted them to be
+  used by more than one person, but not to the entire PC.
+
+  3) more examples of complex searches (e.g., when narrowing papers down
+  between an upper range and a lower range).  after experimentation we got
+  the hang of it.
+
+  4) partition papers into sub-groups and then sorting the sub-groups based
+  on some criteria.  this comes from when we were formulating the
+  discussion order by first separating papers into different groups, and
+  then sorting the papers within the group.  we did this by first tagging
+  papers into a group and then sorting within that group. [Geoff Voelker /
+  KK Ramakrishnan]
+
+- It would be nice if the To: choice in the Send Mail function allowed me
+  to select "Reviewers with no preferences" (or perhaps "PC members with no
+  preferences"). [Jeff Mogul]
+
+- I see your point; possibly this means that the per-paper screen that the
+  reviewer sees should have an "I have a conflict" button that they can
+  push, but only the chair can un-push it. [Jeff Mogul]
+
+- On the Conference Setting/Submissions Options page, it's a bit tedious to
+  type or cut-n-paste all of the topics.  Seems like a way to bulk-upload
+  this list would be useful to future PC chairs. [Jeff Mogul]
+
+- At recent PC meetings that I have attended, it has been hard for the PC
+  chairs to keep track of the amount of time spent discussing each paper
+  (since they are juggling lots of other tasks).
+
+  I realize that this could be a bit tricky to get right, but perrhaps
+  HotCRP could have a "discussion timer" function, sort of a per-paper
+  stopwatch.
+
+  Probably there should be two values: the time spent in the current
+  discussion, and the total time spent discussing the paper (since PC
+  meetings generally have loops).
+
+  The PC chairs would see a Start-/Stop- timer button.
+
+  Possibly this timing info should be hidden from the conflicted reviewers.
+
+  Additional possibilities would be to do fancy things such as estimating
+  how much time is remaining to discuss the average paper, or how late the
+  PC dinner will be if we keep spending so many minutes per paper,
+  etc. [Jeff Mogul]
+
+- I am using your software as part of the program committee of PETS2010. I
+  really like it, easy to use and convenient. However, I am missing the
+  option of being notified when new reviews (for my assigned papers, or
+  others) are input in the system -- there is the option of being notified
+  of the comments, but not the reviews. [Carmela Troncoso]
+
 - comments that can only be seen by chairs [Ernst Biersack/S. Keshav]
 
 - visibility of review fields is too subtle on web form [David Evans]
