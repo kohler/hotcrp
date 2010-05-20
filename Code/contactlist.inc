@@ -660,7 +660,7 @@ class ContactList extends BaseList {
 
 	$x .= $body;
 
-	$x .= "  <tr class='pl_footgap k" . (($this->count - 1) % 2) . "'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
+	$x .= "  <tr class='pl_footgap $trclass'><td class='pl_blank' colspan='$ncol'></td></tr>\n";
 	reset($fieldDef);
 	if (key($fieldDef) == self::FIELD_SELECTOR)
 	    $x .= $this->footer($ncol);
