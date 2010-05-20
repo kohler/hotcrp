@@ -1397,15 +1397,17 @@ function doOptGroup() {
     // load topic interests
     $result = $Conf->q("select topicId, interest, count(*) from TopicInterest group by topicId, interest");
     $interests = array();
+    $ninterests = 0;
     while (($row = edb_row($result))) {
 	if (!isset($interests[$row[0]]))
 	    $interests[$row[0]] = array();
 	$interests[$row[0]][$row[1]] = $row[2];
+	$ninterests += ($row[2] ? 1 : 0);
     }
 
     echo "<hr class='hr' /><h3>Topics</h3>\n";
     echo "Enter topics one per line.  Authors select the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its name.\n";
-    echo "<div class='g'></div><table id='newtoptable' class='foldc'>";
+    echo "<div class='g'></div><table id='newtoptable' class='", ($ninterests ? "foldo" : "foldc"), "'>";
     echo "<tr><th colspan='2'></th><th class='fx'><small>Low</small></th><th class='fx'><small>High</small></th></tr>";
     $td1 = "<td class='lcaption'>Current</td>";
     foreach ($rf->topicOrder as $tid => $crap) {
@@ -1424,10 +1426,11 @@ function doOptGroup() {
 		$oabbrev = "\"$oabbrev\"";
 	    echo "&ldquo;<a href=\"search$ConfSiteSuffix?q=topic:", urlencode($oabbrev), "\">",
 		"topic:", htmlspecialchars($oabbrev), "</a>&rdquo;",
-		"<div class='hint'>Topic abbreviations are also allowed.</div>",
-		"<a class='hint fn' href=\"javascript:void fold('newtoptable')\">Show PC interest counts</a>",
-		"<a class='hint fx' href=\"javascript:void fold('newtoptable')\">Hide PC interest counts</a>",
-		"</div></td>";
+		"<div class='hint'>Topic abbreviations are also allowed.</div>";
+	    if ($ninterests)
+		echo "<a class='hint fn' href=\"javascript:void fold('newtoptable')\">Show PC interest counts</a>",
+		    "<a class='hint fx' href=\"javascript:void fold('newtoptable')\">Hide PC interest counts</a>";
+	    echo "</div></td>";
 	}
 	echo "</tr>\n";
 	$td1 = "<td></td>";
