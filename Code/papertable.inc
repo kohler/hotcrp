@@ -361,7 +361,7 @@ class PaperTable {
 	$uploader = "";
 	if (!defval($Opt, "noPapers")) {
 	    $uploader = ($doc ? "<div class='g'></div>\nUpload new version:" : "Upload:")
-		. "&nbsp; <input class='textlite' type='file' name='paperUpload' accept='"
+		. "&nbsp; <input id='paperUpload' class='textlite' type='file' name='paperUpload' accept='"
 		. (defval($Opt, "disablePDF") ? "" : "application/pdf ")
 		. (defval($Opt, "disablePS") ? "" : "application/postscript ")
 		. "' size='30' onchange='hiliter(this)";
@@ -406,6 +406,7 @@ class PaperTable {
 	    else
 		echo tagg_label("This submission is ready for review.");
 	    echo "</td></tr></table></div>\n";
+	    $Conf->footerScript("hotcrp_onload.push(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0)})");
 	} else
 	    echo "<input type='hidden' name='submit' value='1' />";
 

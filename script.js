@@ -16,6 +16,7 @@ function e_value(id, value) {
 	elt.value = value;
 }
 
+var hotcrp_onload = [];
 function hotcrpLoad(servtime, servzone, hr24) {
     var elt = $$("usertime"), x;
     function update_local_time(elt, d) {
@@ -40,6 +41,8 @@ function hotcrpLoad(servtime, servzone, hr24) {
 	    || Math.abs(x.getTimezoneOffset() - servzone) > 3 * 60)
 	    update_local_time(elt, x);
     }
+    for (x = 0; x < hotcrp_onload.length; ++x)
+	hotcrp_onload[x]();
 }
 
 function highlightUpdate(which, off) {
