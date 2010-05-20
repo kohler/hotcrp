@@ -1131,7 +1131,7 @@ function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
 	|| (count($Error) == 0 && $othername && setting($othername) == $x))
 	$v = "N/A";
     else if (count($Error) == 0)
-	$v = $Conf->parseableTime($x);
+	$v = $Conf->parseableTime($x, true);
     else
 	$v = $x;
     if ($DateExplanation) {

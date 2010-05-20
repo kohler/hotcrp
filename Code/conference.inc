@@ -263,12 +263,13 @@ class Conference {
     }
 
 
-    function parseableTime($value) {
+    function parseableTime($value, $include_zone) {
 	global $Opt;
+	$zone = $include_zone ? " T" : "";
 	if (defval($Opt, "time24hour"))
-	    return date("j M Y H:i:s", $value);
+	    return date("j M Y H:i:s" . $zone, $value);
 	else
-	    return date("j M Y g:i:sa", $value);
+	    return date("j M Y g:i:sa" . $zone, $value);
     }
     function printableTime($value) {
 	global $Opt;

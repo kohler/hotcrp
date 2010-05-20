@@ -312,7 +312,7 @@ has passed.  Please keep the response short and to the point",
 	$t .= "</a>";
 	if ($contact->canViewCommentIdentity($crow, $crow, true))
 	    $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>comment by</span> " . contactHtml($crow->reviewFirstName, $crow->reviewLastName, $crow->reviewEmail);
-	$t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>posted</span> " . $Conf->parseableTime($crow->timeModified);
+	$t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>posted</span> " . $Conf->parseableTime($crow->timeModified, false);
 	$t .= "</small><br /><a class='q'" . substr($a, 3)
 	    . htmlspecialchars($crow->shortComment);
 	if (strlen($crow->shortComment) < strlen($crow->comment))
