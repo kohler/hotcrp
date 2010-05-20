@@ -146,8 +146,7 @@ else
 
 
 // Change PC member
-echo "<div class='aahc assignpc_pcsel'>",
-    "<form method='get' action='manualassign$ConfSiteSuffix' accept-charset='UTF-8' id='selectreviewerform'><div class='inform'>\n";
+echo "<table><tr><td><div class='aahc assignpc_pcsel'><form method='get' action='manualassign$ConfSiteSuffix' accept-charset='UTF-8' id='selectreviewerform'><div class='inform'>\n";
 
 $query = "select ContactInfo.contactId, firstName, lastName,
 		count(reviewId) as reviewCount
@@ -202,7 +201,7 @@ if ($kind == "a")
 echo "<tr><td colspan='2'><div class='aax' style='text-align:right'>",
     "<input class='bb' type='submit' value='Go' />",
     "</div></td></tr>\n",
-    "</table>\n</div></form></div>\n";
+    "</table>\n</div></form></div></td></tr></table>\n";
 
 
 // Current PC member information

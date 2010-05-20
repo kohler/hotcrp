@@ -1392,12 +1392,10 @@ div.msgpg { /* message-paper gap */
 }
 
 .assignpc_pcsel {
-	width: auto;
 	font-size: smaller;
 	background: #fcf6e3;
 	border: 2px solid #ccc1a3;
 	padding: 1em 1em 0.25em;
-	display: table;
 	margin: 0 0 1.5em;
 }
 
