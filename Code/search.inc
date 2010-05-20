@@ -800,11 +800,14 @@ class PaperSearch {
 	}
 	if (($special ? $special == "conflict" : isset($this->fields['conflict']))
 	    && $this->privChair) {
-	    if ($word == "none" || $word == "any")
+	    if (!$quoted && ($word == "none" || $word == "any"))
 		$value = $word;
-	    else if (strcasecmp($word, "pc") == 0)
+	    else if (!$quoted && strcasecmp($word, "pc") == 0)
 		$value = array_keys(pcMembers());
-	    else {
+	    else if (!$quoted && count($pctags = pcTags()) && isset($pctags[$word])) {
+		$this->contactmatch[] = "\2contactId" . self::_sqlNumericSet(self::_pcContactIdsWithTag($word), false);
+		$value = "\1" . (count($this->contactmatch) - 1) . "\1";
+	    } else {
 		$this->contactmatch[] = sqlq_for_like($word);
 		$this->contactmatchPC = false;
 		$value = "\1" . (count($this->contactmatch) - 1) . "\1";
