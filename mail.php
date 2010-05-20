@@ -14,6 +14,7 @@ $nullMailer = new Mailer(null, null, $Me);
 $nullMailer->width = 10000000;
 $checkReviewNeedsSubmit = false;
 $Error = array();
+$pctags = pcTags();
 
 // create options
 $tOpt = array();
@@ -72,7 +73,7 @@ function contactQuery($type) {
 
     // paper limit
     $where = array();
-    if ($type != "pc" && isset($papersel))
+    if ($type != "pc" && substr($type, 0, 3) != "pc:" && isset($papersel))
 	$where[] = "Paper.paperId in (" . join(", ", $papersel) . ")";
     else if ($type == "s")
 	$where[] = "Paper.timeSubmitted>0";
@@ -99,9 +100,11 @@ function contactQuery($type) {
 	$where[] = "PaperReview.requestedBy=" . $Me->contactId;
 
     // build query
-    if ($type == "pc") {
+    if ($type == "pc" || substr($type, 0, 3) == "pc:") {
 	$q = "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo join PCMember using (contactId)";
 	$orderby = "email";
+	if ($type != "pc")
+	    $where[] = "ContactInfo.contactTags like '% " . sqlq_for_like(substr($type, 3)) . " %'";
     } else if ($type == "rev" || $type == "crev" || $type == "uncrev" || $type == "extrev" || $type == "myextrev" || $type == "uncextrev" || $type == "myuncextrev") {
 	$q = "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId)";
 	$orderby = "email, Paper.paperId";
@@ -333,6 +336,11 @@ if ($Me->privChair) {
 $recip["myextrev"] = "Your requested reviewers";
 $recip["myuncextrev"] = "Your requested reviewers with incomplete reviews";
 $recip["pc"] = "Program committee";
+if (count($pctags)) {
+    foreach ($pctags as $t)
+	$recip["pc:$t"] = "PC members tagged &ldquo;$t&rdquo;";
+}
+
 if (!isset($_REQUEST["recipients"]) || !isset($recip[$_REQUEST["recipients"]]))
     $_REQUEST["recipients"] = key($recip);
 
