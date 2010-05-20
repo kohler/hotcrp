@@ -414,6 +414,13 @@ class ContactList extends BaseList {
 	    $colorizer = new TagColorizer($me);
 	}
 
+	// PC tags
+	$mainwhere = array();
+	if (substr($listname, 0, 3) == "pc:") {
+	    $mainwhere[] = "(ContactInfo.contactTags like '% " . sqlq_for_like(substr($listname, 3)) . " %')";
+	    $listname = "pc";
+	}
+
 	// get paper list
 	if (!($baseFieldId = $this->listFields($listname))) {
 	    $Conf->errorMsg("There is no people list query named '" . htmlspecialchars($listname) . "'.");
@@ -520,9 +527,11 @@ class ContactList extends BaseList {
 	if ($this->limit == "all")
 	    $pq .= "\tleft join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")\n";
 	if ($this->limit == "admin")
-	    $pq .= "\twhere Chair.contactId is not null or ChairAssistant.contactId is not null\n";
+	    $mainwhere[] = "(Chair.contactId is not null or ChairAssistant.contactId is not null)";
 	if ($this->limit == "pcadmin" || $this->limit == "pcadminx")
-	    $pq .= "\twhere Chair.contactId is not null or ChairAssistant.contactId is not null or PCMember.contactId is not null";
+	    $mainwhere[] = "(Chair.contactId is not null or ChairAssistant.contactId is not null or PCMember.contactId is not null)";
+	if (count($mainwhere))
+	    $pq .= "\twhere " . join(" and ", $mainwhere) . "\n";
 
 	$pq .= "	group by ContactInfo.contactId
 	order by lastName, firstName, email";

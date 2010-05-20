@@ -17,6 +17,10 @@ else if (isset($_REQUEST["getgo"]) && isset($_REQUEST["getaction"]))
 // list type
 $tOpt = array();
 $tOpt["pc"] = "Program committee";
+if ($Me->isPC && count($pctags = pcTags())) {
+    foreach ($pctags as $t)
+	$tOpt["pc:$t"] = "PC members tagged &ldquo;$t&rdquo;";
+}
 if ($Me->isPC)
     $tOpt["admin"] = "System administrators";
 if ($Me->privChair || ($Me->isPC && $Conf->timePCViewAllReviews())) {
@@ -113,7 +117,12 @@ if (isset($_REQUEST["scoresort"])
     $_SESSION["pplscoresort"] = $_REQUEST["scoresort"];
 
 
-$title = ($_REQUEST["t"] == "pc" ? "Program Committee" : "Users");
+if ($_REQUEST["t"] == "pc")
+    $title = "Program Committee";
+else if (substr($_REQUEST["t"], 0, 3) == "pc:")
+    $title = "&ldquo;" . substr($_REQUEST["t"], 3) . "&rdquo; Program Committee";
+else
+    $title = "Users";
 $Conf->header($title, "accounts", actionBar());
 
 
