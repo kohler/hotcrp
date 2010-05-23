@@ -681,22 +681,18 @@ class PaperSearch {
 	$nqt = count($qt);
 
 	// check for paper number
-	if ($word[0] == "#" && preg_match('/\A#\d+(-#?\d+)?/', $word))
-	    $word = substr($word, 1);
-	if (ctype_digit($word)) {
-	    $qt[] = new SearchTerm($negated ? "npn" : "pn", 0, $word);
-	    return;
-	} else if (preg_match('/\A(\d+)-#?(\d+)$/', $word, $m)) {
-	    if ($m[1] <= $m[2]) {
-		for ($i = $m[1]; $i <= $m[2]; ++$i)
-		    $qt[] = new SearchTerm($negated ? "npn" : "pn", 0, $i);
-	    } else
-		$qt[] = new SearchTerm($negated ? "npn" : "pn", 0, -1);
-	    return;
-	} else if (preg_match('/\A([-_A-Za-z0-9]+)([<>!=]=?[^:]+)\z/', $word, $m)) {
-	    // Allow searches like "ovemer>2"; parse as "ovemer:>2".
+	if (preg_match('/\A#?(\d+)(?:-#?(\d+))?\z/', $word, $m)) {
+	    $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
+	    $x = range($m[1], $m[2]);
+	    $x = ($negated ? array(array(), $x) : array($x, array()));
+	    $qt[] = new SearchTerm("pn", 0, $x);
+	    return true;
+	}
+
+	// Allow searches like "ovemer>2"; parse as "ovemer:>2".
+	if (preg_match('/\A([-_A-Za-z0-9]+)([<>!=]=?[^:]+)\z/', $word, $m)) {
 	    if ($this->_searchQueryWord($m[1] . ":" . $m[2], $rest, $negated, $qt, false))
-		return;
+		return true;
 	}
 
 	$special = null;
@@ -978,15 +974,15 @@ class PaperSearch {
 	for ($i = 0; $i < count($qt); ++$i) {
 	    $t = $qt[$i];
 
-	    if ($t->type == "pn" || $t->type == "npn") {
+	    if ($t->type == "pn") {
 		// Combine adjacent paper number queries.
 		$x = array(array(), array());
 		while (1) {
-		    $x[$t->type == "pn" ? 0 : 1][] = $t->value;
+		    $x[0] = array_merge($x[0], $t->value[0]);
+		    $x[1] = array_merge($x[1], $t->value[1]);
 		    if ($i + 1 == count($qt)
 			|| $t->link
-			|| ($qt[$i+1]->type != "pn"
-			    && $qt[$i+1]->type != "npn"))
+			|| $qt[$i+1]->type != "pn")
 			break;
 		    ++$i;
 		    $t = $qt[$i];
@@ -1814,10 +1810,9 @@ class PaperSearch {
 		    $word = substr($word, 1);
 		if (ctype_digit($word))
 		    $a[] = $word;
-		else if (preg_match('/\A(\d+)-#?(\d+)\z/s', $word, $m)) {
-		    for ($i = $m[1]; $i <= $m[2]; $i++)
-			$a[] = $i;
-		} else
+		else if (preg_match('/\A(\d+)-#?(\d+)\z/s', $word, $m))
+		    $a = array_merge($a, range($m[1], $m[2]));
+		else
 		    return null;
 	    }
 	    return $a;
