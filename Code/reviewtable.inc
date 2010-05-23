@@ -162,9 +162,9 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	if ($numericHeaders)
 	    $t .= "<tr>" . $trstart . $numericHeaders . "</tr>\n";
 	foreach ($subrev as $r)
-	    $t .= "<tr" . ($r[0] ? " class='$r[0]'" : "") . $trstart . $r[1] . "</tr>\n";
+	    $t .= "<tr" . ($r[0] ? " class='$r[0]'>" : ">") . $trstart . $r[1] . "</tr>\n";
 	foreach ($nonsubrev as $r)
-	    $t .= "<tr" . ($r[0] ? " class='$r[0]'" : "") . $trstart . $r[1] . "</tr>\n";
+	    $t .= "<tr" . ($r[0] ? " class='$r[0]'>" : ">") . $trstart . $r[1] . "</tr>\n";
 	return $t . "</table>\n" . $notetxt;
     } else
 	return $notetxt;
