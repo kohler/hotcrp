@@ -452,7 +452,7 @@ function tagsToText($prow, $makeUrls, $contact, $drop = false,
 	    }
     }
 
-    // clean #0 and our twiddle tags, remove other twiddle tags
+    /* clean #0 and our twiddle tags, remove other twiddle tags */
     $t = str_replace("#0", "", $t);
     if (strpos($t, "~") !== false) {
 	$t = str_replace(" " . $contact->contactId . "~", " ~", " $t ");
@@ -471,7 +471,7 @@ function tagsToText($prow, $makeUrls, $contact, $drop = false,
 	foreach ($vtags as $tag => $v)
 	    $t = trim(preg_replace("{ " . preg_quote($tag) . "(#-?\\d*)? }", " ", " $t "));
     }
-    if ($drop && $Conf->setting("tag_rank"))
+    if ($drop && !$contact->privChair && $Conf->setting("tag_rank"))
 	$t = trim(preg_replace("{ " . preg_quote($Conf->settingText("tag_rank")) . "(#-?\\d*)? }", " ", " $t "));
 
     if ($makeUrls === false || $t === "")
@@ -480,9 +480,20 @@ function tagsToText($prow, $makeUrls, $contact, $drop = false,
     // decorate with URL matches
     if (!is_string($makeUrls))
 	$makeUrls = "";
-    if ($highlight !== false && ($pos = strpos($highlight, "~")) !== false)
-	$highlight = substr($highlight, $pos);
     $tt = "";
+
+    // clean $highlight
+    $byhighlight = array();
+    $anyhighlight = false;
+    assert($highlight === false || is_array($highlight));
+    if ($highlight !== false && count($highlight))
+	for ($i = 0; $i < count($highlight); ++$i) {
+	    $tag = $highlight[$i]->tag;
+	    if (($pos = strpos($tag, "~")) !== false)
+		$tag = substr($tag, $pos);
+	    $byhighlight[$tag] = "";
+	}
+
     foreach (preg_split('/\s+/', $t) as $tag) {
 	$base = tagBase($tag);
 	if (isset($vtags[$base])) {
@@ -503,12 +514,17 @@ function tagsToText($prow, $makeUrls, $contact, $drop = false,
 	    $title = "Tag search";
 	}
 	$tx = "<a class='q' href=\"${makeUrls}search$ConfSiteSuffix?q=$link:$base\" title=\"$title\">" . $base . "</a>" . substr($tag, strlen($base));
-	if ($highlight !== false && $highlight == $base)
-	    $tt = "<strong>" . $tx . "</strong> " . $tt;
-	else
-	    $tt .= $tx.  " ";
+	if (isset($byhighlight[$base])) {
+	    $byhighlight[$base] .= "<strong>" . $tx . "</strong> ";
+	    $anyhighlight = true;
+	} else
+	    $tt .= $tx . " ";
     }
-    return rtrim($tt);
+
+    if ($anyhighlight)
+	return rtrim(join("", $byhighlight) . $tt);
+    else
+	return rtrim($tt);
 }
 
 class TagColorizer {

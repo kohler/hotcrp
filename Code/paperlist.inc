@@ -336,16 +336,29 @@ class PaperList extends BaseList {
     }
 
     function _sortTagIndex($a, $b) {
-	if (($a->conflictType > 0 && $this->sortInfo) || $a->tagIndex === null)
-	    $av = 2147483647;
-	else
-	    $av = $a->tagIndex;
-	if (($b->conflictType > 0 && $this->sortInfo) || $b->tagIndex === null)
-	    $bv = 2147483647;
-	else
-	    $bv = $b->tagIndex;
-	$x = ($av < $bv ? -1 : ($av == $bv ? 0 : 1));
+	$x = 0;
+	$ot = $this->search->orderTags;
+	for ($i = 0; $x == 0 && $i < count($ot); ++$i) {
+	    $n = "tagIndex" . ($i?$i:"");
+	    if (($a->conflictType > 0 && $this->sortInfo) || $a->$n === null)
+		$av = 2147483647;
+	    else
+		$av = $a->$n;
+	    if (($b->conflictType > 0 && $this->sortInfo) || $b->$n === null)
+		$bv = 2147483647;
+	    else
+		$bv = $b->$n;
+	    $x = ($av < $bv ? -1 : ($av == $bv ? 0 : 1));
+	    if ($ot[$i]->reverse)
+		$x = -$x;
+	}
 	return $x ? $x : $a->paperId - $b->paperId;
+    }
+
+    function _sortThenmap($a, $b) {
+	$thenmap = $this->search->thenmap;
+	$x = $thenmap[$a->paperId] - $thenmap[$b->paperId];
+	return $x ? $x : $this->sortInfo[$a->paperId] - $this->sortInfo[$b->paperId];
     }
 
     function _sort($rows, $pidarray) {
@@ -419,6 +432,14 @@ class PaperList extends BaseList {
 	    usort($rows, array($this, "_sortScoreNum"));
 	    break;
 	}
+
+	if ($this->search->thenmap) {
+	    $this->sortInfo = array();
+	    for ($i = 0; $i < count($rows); ++$i)
+		$this->sortInfo[$rows[$i]->paperId] = $i;
+	    usort($rows, array($this, "_sortThenmap"));
+	}
+
 	return $rows;
     }
 
@@ -948,7 +969,7 @@ class PaperList extends BaseList {
 		return "";
 	    if (($t = $row->paperTags) !== "")
 		$t = tagsToText($row, true, $this->contact, false,
-				$this->search->orderTag);
+				$this->search->orderTags);
 	    return $t;
 	case self::FIELD_LEAD:
 	    if (!$this->contact->actPC($row, true) || !$row->leadContactId)
@@ -1343,10 +1364,10 @@ class PaperList extends BaseList {
 	// paper list query?
 	$pidarray = null;
 	$specialSortable = false;
-	if ($this->search->orderTag) {
-	    $queryOptions["tagIndex"] = $this->search->orderTag;
-	    if ($this->search->orderReverse)
-		$this->reverseSort = !$this->reverseSort;
+	if (count($this->search->orderTags)) {
+	    $queryOptions["tagIndex"] = array();
+	    foreach ($this->search->orderTags as $x)
+		$queryOptions["tagIndex"][] = $x->tag;
 	    $specialSortable = self::FIELD_TAGINDEX;
 	} else if (($pidarray = $this->search->simplePaperList()) !== null)
 	    $specialSortable = self::FIELD_PIDARRAY;
