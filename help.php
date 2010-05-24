@@ -224,11 +224,15 @@ function searchQuickref() {
     _searchQuickrefRow("", "1 2 5 12-24 kernel", "papers in the numbered set with &ldquo;kernel&rdquo; in title, abstract, authors");
     _searchQuickrefRow("", "\"802\"", "&ldquo;802&rdquo; in title, abstract, authors (not paper #802)");
     _searchQuickrefRow("", "very new", "&ldquo;very&rdquo; <em>and</em> &ldquo;new&rdquo; in title, abstract, authors");
+    _searchQuickrefRow("", "very AND new", "the same");
     _searchQuickrefRow("", "\"very new\"", "the phrase &ldquo;very new&rdquo; in title, abstract, authors");
     _searchQuickrefRow("", "very OR new", "<em>either</em> &ldquo;very&rdquo; <em>or</em> &ldquo;new&rdquo; in title, abstract, authors");
+    _searchQuickrefRow("", "(very AND new) OR newest", "use parentheses to group");
     _searchQuickrefRow("", "very -new", "&ldquo;very&rdquo; <em>but not</em> &ldquo;new&rdquo; in title, abstract, authors");
+    _searchQuickrefRow("", "very NOT new", "the same");
     _searchQuickrefRow("", "ve*", "words that <em>start with</em> &ldquo;ve&rdquo; in title, abstract, authors");
     _searchQuickrefRow("", "*me*", "words that <em>contain</em> &ldquo;me&rdquo; in title, abstract, authors");
+    _searchQuickrefRow("", "very THEN new", "like &ldquo;very OR new&rdquo;, but papers matching &ldquo;very&rdquo; appear earlier in the sorting order");
     _searchQuickrefRow("Title", "ti:flexible", "title contains &ldquo;flexible&rdquo;");
     _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains &ldquo;very novel&rdquo;");
     _searchQuickrefRow("Authors", "au:poletto", "author list contains &ldquo;poletto&rdquo;");
