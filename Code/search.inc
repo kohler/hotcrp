@@ -38,6 +38,29 @@ $searchTags = array('ti' => 'ti', 'title' => 'ti',
 		    'status' => 'status',
 		    'rating' => 'rate', 'rate' => 'rate');
 
+class SearchKeyword {
+    var $op;
+    var $unary;
+    var $precedence;
+    function SearchKeyword($what, $unary, $precedence) {
+	$this->op = $what;
+	$this->unary = $unary;
+	$this->precedence = $precedence;
+    }
+}
+
+global $searchKeywords;
+$searchKeywords = array("(" => new SearchKeyword("(", true, null),
+			"NOT" => new SearchKeyword("NOT", true, 5),
+			"-" => new SearchKeyword("NOT", true, 5),
+			"+" => new SearchKeyword("+", true, 5),
+			"AND" => new SearchKeyword("and", false, 4),
+			"OR" => new SearchKeyword("or", false, 3),
+			"XAND" => new SearchKeyword("and", false, 2),
+			"XOR" => new SearchKeyword("or", false, 2),
+			")" => null);
+
+
 class SearchTerm {
     var $type;
     var $link;
@@ -684,7 +707,7 @@ class PaperSearch {
     }
 
     function _searchPopWord(&$str) {
-	preg_match('/\A([-+]?"[^"]*"?|[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?|[^"\s]+)/s', $str, $m);
+	preg_match('/\A(-?"[^"]*"?|-?[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?|[^"\s()]+)/s', $str, $m);
 	$str = ltrim(substr($str, strlen($m[0])));
 	return $m[0];
     }
@@ -936,45 +959,84 @@ class PaperSearch {
 	return $negated ? SearchTerm::negate($qe) : $qe;
     }
 
+    function _searchPopKeyword($str) {
+	if (preg_match('/\A([-+()]|(?:AND|OR|NOT)(?=[\s\(]))/s', $str, $m))
+	    return array($m[1], ltrim(substr($str, strlen($m[0]))));
+	else
+	    return array(null, $str);
+    }
+
+    function _searchPopStack($curqe, &$stack) {
+	$x = array_pop($stack);
+	if (!$curqe)
+	    return $x->leftqe;
+	else if ($x->kw->op == "NOT")
+	    return SearchTerm::negate($curqe);
+	else if ($x->kw->op == "+")
+	    return $curqe;
+	else if ($x->used) {
+	    $x->leftqe->value[] = $curqe;
+	    return $x->leftqe;
+	} else
+	    return SearchTerm::combine($x->kw->op, array($x->leftqe, $curqe));
+    }
+
     function _searchQueryType($str, $type) {
-	$qt = array();
-	$connection = null;
+	global $searchKeywords, $Conf;
+
+	$stack = array();
+	$parens = 0;
+	$defaultop = ($type == "all" ? "XAND" : "XOR");
+	$curqe = null;
+	$lastprec = 1000;
+
 	while ($str !== "") {
-	    $word = $this->_searchPopWord($str);
-	    if ($word == "OR") {
-		$connection = "OR";
-		continue;
+	    list($kwstr, $nextstr) = self::_searchPopKeyword($str);
+	    $kw = $kwstr ? $searchKeywords[$kwstr] : null;
+
+	    if ($curqe && (!$kw || $kw->unary)) {
+		list($kwstr, $kw, $nextstr) =
+		    array("", $searchKeywords[$parens ? "XAND" : $defaultop], $str);
 	    }
 
-	    $negated = false;
-	    if ($word[0] == "-" || $word[0] == "+") {
-		$negated = ($word[0] == "-");
-		$word = substr($word, 1);
-	    }
-
-	    if (($qe = $this->_searchQueryWord($word, $str, true))) {
-		if ($negated)
-		    $qe = SearchTerm::negate($qe);
-		if ($connection == "OR" && count($qt)) {
-		    $nqt = count($qt) - 1;
-		    if ($qt[$nqt]->type != "or")
-			$qt[$nqt] = new SearchTerm("or", 0, array($qt[$nqt]));
-		    $qt[$nqt]->value[] = $qe;
+	    if ($kwstr === null) {
+		$word = self::_searchPopWord($nextstr);
+		$curqe = $this->_searchQueryWord($word, $nextstr, true);
+	    } else if ($kwstr == ")") {
+		while (count($stack)
+		       && $stack[count($stack) - 1]->kw->op != "(")
+		    $curqe = self::_searchPopStack($curqe, $stack);
+		if (count($stack)) {
+		    array_pop($stack);
+		    --$parens;
+		}
+	    } else if ($kwstr == "(") {
+		assert(!$curqe);
+		$stack[] = (object) array("kw" => $kw, "leftqe" => null, "used" => false);
+		++$parens;
+	    } else {
+		while (count($stack)
+		       && $stack[count($stack) - 1]->kw->precedence > $kw->precedence)
+		    $curqe = self::_searchPopStack($curqe, $stack);
+		$top = count($stack) ? $stack[count($stack) - 1] : null;
+		if ($top && !$kw->unary && $top->kw->op == $kw->op) {
+		    if ($top->used)
+			$top->leftqe->value[] = $curqe;
+		    else {
+			$top->leftqe = SearchTerm::combine($kw->op, array($top->leftqe, $curqe));
+			$top->used = true;
+		    }
 		} else
-		    $qt[] = $qe;
+		    $stack[] = (object) array("kw" => $kw, "leftqe" => $curqe, "used" => false);
+		$curqe = null;
 	    }
 
-	    $connection = null;
+	    $str = $nextstr;
 	}
 
-	if ($type == "any")
-	    return SearchTerm::combine("or", $qt);
-	else if ($type == "all")
-	    return SearchTerm::combine("and", $qt);
-	else if ($type == "none") {
-	    $qe = SearchTerm::combine("or", $qt);
-	    return SearchTerm::negate($qe);
-	}
+	while (count($stack))
+	    $curqe = self::_searchPopStack($curqe, $stack);
+	return $type == "none" ? SearchTerm::negate($curqe) : $curqe;
     }
 
 
