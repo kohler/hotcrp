@@ -45,11 +45,29 @@ class SearchTerm {
     var $value;
     var $extra;
 
-    function SearchTerm($t, $f = 0, $v = null) {
+    function SearchTerm($t, $f = 0, $v = null, $extra = null) {
 	$this->type = $t;
 	$this->link = false;
 	$this->flags = $f;
 	$this->value = $v;
+	if ($extra)
+	    $this->extra = $extra;
+    }
+    function combine($combiner, $terms) {
+	if (count($terms) == 0)
+	    return null;
+	else if (count($terms) == 1)
+	    return $terms[0];
+	else
+	    return new SearchTerm($combiner, 0, $terms);
+    }
+    function negate($term) {
+	if (!$term)
+	    return null;
+	else if ($term->type == "not")
+	    return $term->value;
+	else
+	    return new SearchTerm("not", 0, $term);
     }
 }
 
@@ -97,6 +115,7 @@ class PaperSearch {
     var $preciseQuery;
     var $needflags;
     var $reviewAdjust;
+    var $_reviewAdjustError;
 
     function PaperSearch($me, $opt) {
 	global $Conf, $ConfSiteSuffix;
@@ -138,9 +157,6 @@ class PaperSearch {
 	if ($me->privChair || $me->isAuthor
 	    || ($this->amPC && $Conf->blindSubmission() <= BLIND_OPTIONAL))
 	    $this->allowAuthor = true;
-	$this->orderTag = false;
-	$this->orderReverse = false;
-	$this->reviewerContact = 0;
 	$this->contactId = $me->contactId;
 	$this->warnings = null;
 	if ($this->privChair && rcvtint($opt["c"]) > 0)
@@ -190,6 +206,10 @@ class PaperSearch {
 	$this->noratings = false;
 	$this->interestingRatings = array();
 	$this->reviewAdjust = false;
+	$this->_reviewAdjustError = false;
+	$this->orderTag = false;
+	$this->orderReverse = false;
+	$this->reviewerContact = false;
     }
 
     function warn($text) {
@@ -200,10 +220,9 @@ class PaperSearch {
 
 
     // PARSING
-    // Transforms a search string into a series of terms.
-    // By default terms are linked by "and" ($t->link == false);
-    // occasionally terms are linked by "or" ($t->link == true).
-    // Negation is represented by nesting within a "not" term ($t->type "not").
+    // Transforms a search string into an expression object, possibly
+    // including "and", "or", and "not" expressions (which point at other
+    // expressions).
 
     function _fieldPreg($word) {
 	if (ctype_alnum($word))
@@ -218,30 +237,28 @@ class PaperSearch {
 	}
     }
 
-    function _searchField($word, $rtype, $add_regex, &$qt, $blind) {
+    function _searchField($word, $rtype, &$qt, $blind) {
 	global $Conf;
+	$extra = array("regex" => array($rtype, self::_fieldPreg($word)));
 
 	if ($this->privChair
 	    || ($this->amPC && !$blind)
 	    || ($this->amPC && $Conf->blindSubmission() == BLIND_NEVER))
-	    $qt[] = new SearchTerm($rtype, 0, $word);
+	    $qt[] = new SearchTerm($rtype, 0, $word, $extra);
 	else {
 	    if ($blind && $Conf->blindSubmission() == BLIND_ALWAYS
 		&& !$Conf->timeReviewerViewAcceptedAuthors())
 		/* only look at papers you submitted */;
 	    else if ($this->amPC)
-		$qt[] = new SearchTerm($rtype, self::F_PAPERNONBLIND, $word);
+		$qt[] = new SearchTerm($rtype, self::F_PAPERNONBLIND, $word, $extra);
 	    else {
 		$rt = self::F_REVIEWER;
 		if ($blind && $Conf->blindSubmission() != BLIND_NEVER)
 		    $rt |= self::F_PAPERNONBLIND;
-		$qt[] = new SearchTerm($rtype, $rt, $word);
+		$qt[] = new SearchTerm($rtype, $rt, $word, $extra);
 	    }
-	    $qt[] = new SearchTerm($rtype, self::F_AUTHOR, $word);
+	    $qt[] = new SearchTerm($rtype, self::F_AUTHOR, $word, $extra);
 	}
-
-	if ($add_regex)
-	    $this->regex[$rtype][] = self::_fieldPreg($word);
     }
 
     function _cleanCompar($compar) {
@@ -340,7 +357,6 @@ class PaperSearch {
 		    $this->contactmatchPC = false;
 		$type = "re";
 		$value = array("\1" . (count($this->contactmatch) - 1) . "\1", $m[2]);
-		$this->reviewerContact++;
 	    }
 	}
 
@@ -349,7 +365,6 @@ class PaperSearch {
 	    $this->contactmatchPC = false;
 	    $type = "re";
 	    $value = array("\1" . (count($this->contactmatch) - 1) . "\1", $m[2]);
-	    $this->reviewerContact++;
 	}
 
 	$nqt = count($qt);
@@ -496,9 +511,9 @@ class PaperSearch {
 		$this->_searchReviews($m[1], $rf, $field, $qo);
 		$this->_searchReviews($m[2], $rf, $field, $qo);
 		if ($this->_searchReviews("<" . $m[1], $rf, $field, $qo))
-		    $qo[count($qo) - 1] = new SearchTerm("not", 0, array($qo[count($qo) - 1]));
+		    $qo[count($qo) - 1] = SearchTerm::negate($qo[count($qo) - 1]);
 		if ($this->_searchReviews(">" . $m[2], $rf, $field, $qo))
-		    $qo[count($qo) - 1] = new SearchTerm("not", 0, array($qo[count($qo) - 1]));
+		    $qo[count($qo) - 1] = SearchTerm::negate($qo[count($qo) - 1]);
 		$qt[] = new SearchTerm("and", 0, $qo);
 		return;
 	    } else		// XXX
@@ -537,7 +552,7 @@ class PaperSearch {
 	return count($qt) != $nqt;
     }
 
-    function _searchTags($word, $special, $set_order_tag, &$qt) {
+    function _searchTags($word, $special, &$qt) {
 	global $Conf;
 	require_once("tags.inc");
 
@@ -555,10 +570,10 @@ class PaperSearch {
 	    && $m[1] != "any" && $m[1] != "none"
 	    && ($m[2] != "" || $m[3] != "")) {
 	    $tagword = $m[1];
-	    $extra = self::_cleanCompar($m[3]) . $m[4];
+	    $compar = self::_cleanCompar($m[3]) . $m[4];
 	} else {
 	    $tagword = $word;
-	    $extra = null;
+	    $compar = null;
 	}
 
 	$twiddle = strpos($tagword, "~");
@@ -576,7 +591,7 @@ class PaperSearch {
 
 	if (($e = checkTagError($tagword, CHECKTAG_ALLOWRESERVED | CHECKTAG_NOINDEX | ($this->privChair ? CHECKTAG_CHAIR : 0)))) {
 	    $this->warn(htmlspecialchars($e));
-	    $qt[] = new SearchTerm("f", 0, "");
+	    $qt[] = new SearchTerm("f");
 	    return;
 	}
 
@@ -586,12 +601,10 @@ class PaperSearch {
 	    $value = $twiddlecid . $value;
 	else if (!$this->privChair && $Conf->setting("tag_seeall") <= 0)
 	    $rt |= self::F_NONCONFLICT;
-	if (($special == "order" || $special == "rorder" || !$special)
-	    && $set_order_tag) {
-	    $this->orderTag = ($this->orderTag === false ? $value : null);
-	    $this->orderReverse = ($special == "rorder");
-	}
-	$qt[] = new SearchTerm("tag", $rt, $extra ? array($value, $extra) : $value);
+	$extra = null;
+	if ($special == "order" || $special == "rorder" || !$special)
+	    $extra = array("tagorder" => array($value, $special == "rorder"));
+	$qt[] = new SearchTerm("tag", $rt, $compar ? array($value, $compar) : $value, $extra);
     }
 
     function _searchOptions($word, &$qt, $error) {
@@ -660,7 +673,7 @@ class PaperSearch {
 
 	// if "none", negate
 	if (count($qo) > 0 && $oname === "none")
-	    $qo = array("not", 0, $qo);
+	    $qo = array(SearchTerm::negate(SearchTerm::combine("or", $qo)));
 	if (count($qo) == 0 && ($option_failure || $error)) {
 	    $qo[] = new SearchTerm("f");
 	    if (!$option_failure)
@@ -676,23 +689,19 @@ class PaperSearch {
 	return $m[0];
     }
 
-    function _searchQueryWord($word, &$rest, $negated, &$qt, $unrecognized_keyword_error) {
+    function _searchQueryWord($word, &$rest, $unrecognized_keyword_error) {
 	global $searchTags, $ratingTypes, $Conf;
-	$nqt = count($qt);
 
 	// check for paper number
 	if (preg_match('/\A#?(\d+)(?:-#?(\d+))?\z/', $word, $m)) {
 	    $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
-	    $x = range($m[1], $m[2]);
-	    $x = ($negated ? array(array(), $x) : array($x, array()));
-	    $qt[] = new SearchTerm("pn", 0, $x);
-	    return true;
+	    return new SearchTerm("pn", 0, array(range($m[1], $m[2]), array()));
 	}
 
 	// Allow searches like "ovemer>2"; parse as "ovemer:>2".
 	if (preg_match('/\A([-_A-Za-z0-9]+)([<>!=]=?[^:]+)\z/', $word, $m)) {
-	    if ($this->_searchQueryWord($m[1] . ":" . $m[2], $rest, $negated, $qt, false))
-		return true;
+	    if (($qe = $this->_searchQueryWord($m[1] . ":" . $m[2], $rest, $qt, false)))
+		return $qe;
 	}
 
 	$special = null;
@@ -710,23 +719,25 @@ class PaperSearch {
 	}
 
 	$quoted = ($word[0] == '"');
+	$negated = false;
 	if ($quoted)
 	    $word = str_replace(array('"', '*'), array('', '\*'), $word);
 	if ($special ? $special == "notag" : isset($this->fields['notag'])) {
 	    $special = "tag";
-	    $negated = !$negated;
+	    $negated = true;
 	}
 
+	$qt = array();
 	if ($special ? $special == "ti" : isset($this->fields['ti']))
-	    $this->_searchField($word, "ti", !$negated, $qt, false);
+	    $this->_searchField($word, "ti", $qt, false);
 	if ($special ? $special == "ab" : isset($this->fields['ab']))
-	    $this->_searchField($word, "ab", !$negated, $qt, false);
+	    $this->_searchField($word, "ab", $qt, false);
 	if ($special == "au" && !$quoted && strcasecmp($word, "pc") == 0)
 	    $this->_searchField(array_keys(pcMembers()), "au_cid", false, $qt, true);
 	else if ($special ? $special == "au" : isset($this->fields['au']))
-	    $this->_searchField($word, "au", !$negated, $qt, true);
+	    $this->_searchField($word, "au", $qt, true);
 	if ($special ? $special == "co" : isset($this->fields['co']))
-	    $this->_searchField($word, "co", !$negated, $qt, true);
+	    $this->_searchField($word, "co", $qt, true);
 	foreach (array("re", "cre", "ire", "pri", "cpri", "ipri", "sec", "csec", "isec", "ext", "cext", "iext") as $rtype)
 	    if ($special ? $special == $rtype : isset($this->fields[$rtype]))
 		$this->_searchReviewer($word, $rtype, $qt, $quoted);
@@ -762,7 +773,7 @@ class PaperSearch {
 	}
 	if (($special ? $special == "tag" : isset($this->fields['tag']))
 	    || $special == "order" || $special == "rorder")
-	    $this->_searchTags($word, $special, !$negated, $qt);
+	    $this->_searchTags($word, $special, $qt);
 	if (($special ? $special == "topic" : isset($this->fields['topic']))) {
 	    $type = "topic";
 	    $value = null;
@@ -871,6 +882,7 @@ class PaperSearch {
 		    $m[2] = ($m[3] == 0 ? "=" : ">=");
 		else
 		    $m[2] = self::_cleanCompar($m[2]);
+		$nqt = count($qt);
 
 		// resolve rating type
 		if ($m[1] === "+" || $m[1] === "good") {
@@ -908,7 +920,7 @@ class PaperSearch {
 	}
 
 	// Finally, look for a review field.
-	if ($special && !isset($searchTags[$special]) && count($qt) == $nqt) {
+	if ($special && !isset($searchTags[$special]) && count($qt) == 0) {
 	    $rf = reviewForm();
 	    if (($field = $rf->unabbreviateField($special))) {
 		if (!$this->_searchReviews($word, $rf, $field, $qt))
@@ -920,27 +932,18 @@ class PaperSearch {
 	    }
 	}
 
-	for ($i = $nqt; $i < count($qt) - 1; ++$i)
-	    $qt[$i]->link = true;
-	//if ($negated && count($qt) == $nqt + 1 && $qt[$nqt]->type == "round")
-	//$qt->value = array_diff(array_keys($Conf->settings["rounds"]), $qt->value);
-	if ($negated && count($qt) != $nqt) {
-	    $value = array_splice($qt, $nqt);
-	    $qt[] = new SearchTerm("not", 0, $value);
-	}
-
-	return count($qt) != $nqt;
+	$qe = SearchTerm::combine("or", $qt);
+	return $negated ? SearchTerm::negate($qe) : $qe;
     }
 
-    function _searchQueryType($str, $type, &$qt) {
-	$nqt = count($qt);
+    function _searchQueryType($str, $type) {
+	$qt = array();
+	$connection = null;
 	while ($str !== "") {
 	    $word = $this->_searchPopWord($str);
-	    if ($word == "OR" || $type == "any") {
-		if (count($qt) > $nqt)
-		    $qt[count($qt) - 1]->link = true;
-		if ($word == "OR")
-		    continue;
+	    if ($word == "OR") {
+		$connection = "OR";
+		continue;
 	    }
 
 	    $negated = false;
@@ -948,187 +951,220 @@ class PaperSearch {
 		$negated = ($word[0] == "-");
 		$word = substr($word, 1);
 	    }
-	    if ($type == "none")
-		$negated = !$negated;
 
-	    $this->_searchQueryWord($word, $str, $negated, $qt, true);
-	}
-    }
-
-
-    // CLAUSING
-    // Combines the term series into clauses.  The basic purpose of this step
-    // is to combine all paper numbers into a single group, and link associated
-    // "or" terms.
-
-    function _queryMakeClauses(&$qt, &$qc) {
-	// group words into "CNF" clauses: an array of clauses connected by
-	// AND, where each clause is an array of terms connected by OR.
-	// Words connected by "OR" are in the same CNF clause.
-	// All words connected by "OR" to any paper number are in the same
-	// CNF clause.
-
-	$tpn = new SearchTerm("pn", 0, array(array(), array()));
-	$qc = array();
-	$qor = null;
-	for ($i = 0; $i < count($qt); ++$i) {
-	    $t = $qt[$i];
-
-	    if ($t->type == "pn") {
-		// Combine adjacent paper number queries.
-		$x = array(array(), array());
-		while (1) {
-		    $x[0] = array_merge($x[0], $t->value[0]);
-		    $x[1] = array_merge($x[1], $t->value[1]);
-		    if ($i + 1 == count($qt)
-			|| $t->link
-			|| $qt[$i+1]->type != "pn")
-			break;
-		    ++$i;
-		    $t = $qt[$i];
-		}
-		// Collect top-level paper numbers into a single $tpn.
-		if ((!$t->link || $i + 1 == count($qt)) && !$qor) {
-		    $tpn->value[0] = array_merge($tpn->value[0], $x[0]);
-		    $tpn->value[1] = array_merge($tpn->value[1], $x[1]);
-		    continue;
-		}
-		$tt = new SearchTerm("pn", 0, $x);
-	    } else
-		$tt = $t;
-
-	    // Clauses joined by OR go into a $qor array.
-	    if ($qor)
-		$qor[] = $tt;
-	    else if ($t->link)
-		$qor = array($tt);
-	    else
-		$qc[] = array($tt);
-
-	    // If done with an OR array, we've built a clause.
-	    if ((!$t->link || $i + 1 == count($qt)) && $qor) {
-		$qc[] = $qor;
-		$qor = null;
-	    }
-	}
-
-	if (count($tpn->value[0]) || count($tpn->value[1]))
-	    $qc[] = array($tpn);
-
-	// Now we have an array of arrays in "CNF"
-	if ($this->reviewAdjust) {
-	    $rounderror = false;
-	    for ($i = 0; $i < count($qc); $i++)
-		$this->_queryFixRounds($qc[$i], $rounderror);
-	    $this->_queryApplyAllRounds($qc);
-	    if ($rounderror) {
-		global $Conf;
-		$Conf->errorMsg("Unexpected use of &ldquo;round:&rdquo; or &ldquo;rate:&rdquo; ignored.  Stick to the basics, such as &ldquo;re:reviewername round:roundname&rdquo;.");
-	    }
-	}
-    }
-
-    // remove strange uses of rounds
-    function _queryFixRounds(&$qcl, &$rounderror) {
-	global $Conf;
-
-	foreach ($qcl as &$qt)
-	    if ($qt->type == "not") {
-		$this->_queryFixRounds($qt->value, $rounderror);
-		if (count($qt->value) == 1 && $qt->value[0]->type == "revadj") {
-		    $negterm = $qt->value[0];
-		    $x = array();
-		    if (isset($negterm->value["round"]))
-			$x["round"] = array_diff(array_keys($Conf->settings["rounds"]), $negterm->value["round"]);
-		    if (isset($negterm->value["rate"]))
-			$x["rate"] = "not (" . $negterm->value["rate"] . ")";
-		    $qt = new SearchTerm("revadj", 0, $x);
-		}
-	    } else if ($qt->type == "and")
-		$this->_queryFixRounds($qt->value, $rounderror);
-
-	for ($i = 1; $i < count($qcl); $i++)
-	    if ($qcl[$i]->type == "revadj") {
-		if ($i == 1 && $qcl[0]->type == "revadj") {
-		    if (isset($qcl[1]->value["round"]))
-			$qcl[0]->value["round"] = array_unique(array_merge(defval($qcl[0]->value, "round", array()), $qcl[1]->value["round"]));
-		    if (isset($qcl[1]->value["rate"]))
-			$qcl[0]->value["rate"] = "(" . defval($qcl[0]->value, "rate", "false") . ") or (" . $qcl[1]->value["rate"] . ")";
+	    if (($qe = $this->_searchQueryWord($word, $str, true))) {
+		if ($negated)
+		    $qe = SearchTerm::negate($qe);
+		if ($connection == "OR" && count($qt)) {
+		    $nqt = count($qt) - 1;
+		    if ($qt[$nqt]->type != "or")
+			$qt[$nqt] = new SearchTerm("or", 0, array($qt[$nqt]));
+		    $qt[$nqt]->value[] = $qe;
 		} else
-		    $rounderror = true;
-		array_splice($qcl, 1, 1);
-		$i--;
+		    $qt[] = $qe;
 	    }
-	if ($qcl[0]->type == "revadj" && count($qcl) > 1) {
-	    $rounderror = true;
-	    array_splice($qcl, 0, 1);
+
+	    $connection = null;
 	}
+
+	if ($type == "any")
+	    return SearchTerm::combine("or", $qt);
+	else if ($type == "all")
+	    return SearchTerm::combine("and", $qt);
+	else if ($type == "none") {
+	    $qe = SearchTerm::combine("or", $qt);
+	    return SearchTerm::negate($qe);
+	}
+    }
+
+
+    // CLEANING
+    // Clean an input expression series into clauses.  The basic purpose of
+    // this step is to combine all paper numbers into a single group, and to
+    // assign review adjustments (rates & rounds).
+
+    function _queryClean($qe) {
+	global $Conf;
+	if (!$qe)
+	    return $qe;
+	else if ($qe->type == "not")
+	    return $this->_queryCleanNot($qe);
+	else if ($qe->type == "or")
+	    return $this->_queryCleanOr($qe);
+	else if ($qe->type == "and")
+	    return $this->_queryCleanAnd($qe);
+	else
+	    return $qe;
+    }
+
+    function _queryCleanNot($qe) {
+	$qe->value = $qv = $this->_queryClean($qe->value);
+	if ($qv->type == "not")
+	    return $qv->value;
+	else if ($qv->type == "pn")
+	    return new SearchTerm("pn", 0, array($qv->value[1], $qv->value[0]));
+	else if ($qv->type == "revadj") {
+	    $x = array();
+	    if (isset($qv->value["round"]))
+		$x["round"] = array_diff(array_keys($Conf->settings["rounds"]), $qv->value["round"]);
+	    if (isset($qv->value["rate"]))
+		$x["rate"] = "not (" . $qv->value["rate"] . ")";
+	    return new SearchTerm("revadj", 0, $x);
+	} else
+	    return $qe;
+    }
+
+    function _queryCleanOr($qe) {
+	$revadj = null;
+
+	for ($i = 0; $i < count($qe->value); ) {
+	    $qv = $this->_queryClean($qe->value[$i]);
+	    if ($qv->type == "revadj") {
+		if (!$revadj)
+		    $revadj = $qv;
+		else {
+		    if (isset($qv->value["round"]))
+			$revadj->value["round"] = array_unique(array_merge(defval($revadj->value, "round", array()), $qv->value["round"]));
+		    if (isset($qv->value["rate"]))
+			$revadj->value["rate"] = "(" . defval($revadj->value, "rate", "false") . ") or (" . $qv->value["rate"] . ")";
+		}
+		array_splice($qe->value, $i, 1);
+	    } else {
+		$qe->value[$i] = $qv;
+		++$i;
+	    }
+	}
+
+	if ($revadj && count($qe->value) == 0)
+	    return $revadj;
+	else if ($revadj)
+	    $this->_reviewAdjustError = true;
+	return SearchTerm::combine("or", $qe->value);
+    }
+
+    function _queryCleanAnd($qe) {
+	$pn = array(array(), array());
+	$revadj = null;
+
+	for ($i = 0; $i < count($qe->value); ) {
+	    $qe->value[$i] = $qv = $this->_queryClean($qe->value[$i]);
+	    if ($qv->type == "pn") {
+		$pn[0] = array_merge($pn[0], $qv->value[0]);
+		$pn[1] = array_merge($pn[1], $qv->value[1]);
+		array_splice($qe->value, $i, 1);
+	    } else if ($qv->type == "revadj") {
+		if (!$revadj)
+		    $revadj = $qv;
+		else {
+		    if (isset($revadj->value["round"]) && isset($qv->value["round"]))
+			$revadj->value["round"] = array_intersect($revadj->value["round"], $qv->value["round"]);
+		    else if (isset($qv->value["round"]))
+			$revadj->value["round"] = $qv->value["round"];
+		    if (isset($qv->value["rate"]))
+			$revadj->value["rate"] = "(" . defval($revadj->value, "rate", "true") . ") and (" . $qv->value["rate"] . ")";
+		}
+		array_splice($qe->value, $i, 1);
+	    } else {
+		$qe->value[$i] = $qv;
+		++$i;
+	    }
+	}
+
+	if (count($pn[0]) || count($pn[1]))
+	    array_unshift($qe->value, new SearchTerm("pn", 0, $pn));
+	if ($revadj)		// must be first
+	    array_unshift($qe->value, $revadj);
+	return SearchTerm::combine("and", $qe->value);
     }
 
     // apply rounds to reviewer searches
-    function _queryApplyRounds(&$qcl, &$roundterm) {
-	$applied = 0;
-	foreach ($qcl as &$qt)
-	    if ($qt->type == "not" || $qt->type == "and")
-		$applied += $this->_queryApplyRounds($qt->value, $roundterm);
-	    else if ($qt->type == "re" || $qt->type == "nre"
-		     || $qt->type == "rf") {
-		$qt->extra = $roundterm->value;
-		++$applied;
-	    }
-	return $applied;
+    function _queryMakeAdjustedReviewSearch($roundterm) {
+	if ($this->limitName == "r" || $this->limitName == "rout")
+	    return new SearchTerm("re", 0, "=" . $this->contactId, $roundterm->value);
+	else if ($this->limitName == "req" || $this->limitName == "reqrevs")
+	    return new SearchTerm("rf", 0, "requestedBy=" . $this->contactId . " and reviewType=" . REVIEW_EXTERNAL, $roundterm->value);
+	else
+	    return new SearchTerm("nre", 0, array(null, ">0"), $roundterm->value);
     }
 
-    function _queryApplyAllRounds(&$qc) {
-	$roundterm = null;
+    function _queryAdjustReviews($qe, $revadj) {
 	$applied = $first_applied = 0;
-	for ($i = count($qc) - 1; $i >= 0; --$i)
-	    if ($qc[$i][0]->type == "revadj") {
-		if (!$roundterm || $applied) {
-		    $roundterm =& $qc[$i][0];
-		    $applied = false;
-		} else {
-		    if (isset($roundterm->value["round"])
-			&& isset($qc[$i][0]->value["round"]))
-			$roundterm->value["round"] = array_intersect($roundterm->value["round"], $qc[$i][0]->value["round"]);
-		    else if (isset($qc[$i][0]->value["round"]))
-			$roundterm->value["round"] = $qc[$i][0]->value["round"];
-		    if (isset($qc[$i][0]->value["rate"]))
-			$roundterm->value["rate"] = "(" . defval($roundterm->value, "rate", "true") . ") and (" . $qc[$i][0]->value["rate"] . ")";
+	if ($qe->type == "not")
+	    $this->_queryAdjustReviews($qe->value, $revadj);
+	else if ($qe->type == "and") {
+	    $myrevadj = ($qe->value[0]->type == "revadj" ? $qe->value[0] : null);
+	    if ($myrevadj) {
+		$used_revadj = false;
+		if (!isset($myrevadj->value["round"]) && isset($revadj->value["round"])) {
+		    $myrevadj->value["round"] = $revadj->value["round"];
+		    $used_revadj = true;
 		}
-	    } else if ($roundterm) {
-		$applied += $this->_queryApplyRounds($qc[$i], $roundterm);
-		if ($applied && !$first_applied) {
-		    for ($j = $i + 1; $j < count($qc); ++$j)
-			$this->_queryApplyRounds($qc[$j], $roundterm);
-		    $first_applied = true;
+		if (!isset($myrevadj->value["rate"]) && isset($revadj->value["rate"])) {
+		    $myrevadj->value["rate"] = $revadj->value["rate"];
+		    $used_revadj = true;
 		}
 	    }
-	if ($roundterm && !$first_applied)
-	    for ($j = 0; $j < count($qc); ++$j)
-		$applied = $this->_queryApplyRounds($qc[$j], $roundterm);
 
-	// "round:R" on its own means either "round:R re:ME" or "round:R
-	// re:ANY" (or "round:R" for the requested review), depending on the
-	// current search type.
-	if ($roundterm && !$applied) {
-	    if ($this->limitName == "r" || $this->limitName == "rout") {
-		$t = new SearchTerm("re", 0, "=" . $this->contactId);
-		$this->reviewerContact++;
-	    } else if ($this->limitName == "req" || $this->limitName == "reqrevs")
-		$t = new SearchTerm("rf", 0, "requestedBy=" . $this->contactId . " and reviewType=" . REVIEW_EXTERNAL);
-	    else
-		$t = new SearchTerm("nre", 0, array(null, ">0"));
-	    $t->extra = $roundterm->value;
-	    $qc[] = array($t);
+	    $rdown = $myrevadj ? $myrevadj : $revadj;
+	    for ($i = 0; $i < count($qe->value); ++$i)
+		if ($qe->value[$i]->type != "revadj")
+		    $this->_queryAdjustReviews($qe->value[$i], $rdown);
+
+	    if ($myrevadj && !$myrevadj->extra) {
+		$qe->value[0] = $this->_queryMakeAdjustedReviewSearch($myrevadj);
+		if ($used_revadj)
+		    $revadj->extra = true;
+	    }
+	} else if ($qe->type == "or") {
+	    for ($i = 0; $i < count($qe->value); ++$i)
+		$this->_queryAdjustReviews($qe->value[$i], $revadj);
+	} else if (($qe->type == "re" || $qe->type == "nre" || $qe->type == "rf") && $revadj) {
+	    $qe->extra = $revadj->value;
+	    $revadj->extra = true;
+	} else if ($qe->type == "revadj") {
+	    assert(!$revadj);
+	    return $this->_queryMakeAdjustedReviewSearch($qe);
+	}
+	return $qe;
+    }
+
+    function _queryExtractInfo($qe, $top) {
+	if ($qe->type == "and" || $qe->type == "or") {
+	    foreach ($qe->value as $qv)
+		$this->_queryExtractInfo($qv, $top && $qe->type == "and");
+	}
+	if (isset($qe->extra)) {
+	    if (($x = defval($qe->extra, "regex"))) {
+		$this->regex[$x[0]] = defval($this->regex, $x[0], array());
+		$this->regex[$x[0]][] = $x[1];
+	    }
+	    if (($x = defval($qe->extra, "tagorder"))) {
+		if ($this->orderTag === false) {
+		    $this->orderTag = $x[0];
+		    $this->orderReverse = $x[1];
+		} else
+		    $this->orderTag = null;
+	    }
+	}
+	if ($top && $qe->type == "re") {
+	    if ($this->reviewerContact === false) {
+		$v = $qe->value[0];
+		if ($v[0] == "=")
+		    $this->reviewerContact = (int) substr($v, 1);
+		else if ($v[0] == "\1") {
+		    $v = (int) substr($v, 1, strlen($v) - 2);
+		    if (count($this->contactmatch[$v]) == 1)
+			$this->reviewerContact = $this->contactmatch[$v][0];
+		}
+	    } else
+		$this->reviewerContact = null;
 	}
     }
 
 
     // QUERY CONSTRUCTION
-    // Build a database query corresponding to a set of clauses.
+    // Build a database query corresponding to an expression.
     // The query may be conservative; QUERY EVALUATION makes it precise.
-    // At this point $t->link is garbage, and is reused.
 
     function _clauseTermSetFlags($flags, &$q) {
 	global $Conf;
@@ -1290,19 +1326,20 @@ class PaperSearch {
 				       "PaperConflict", "contactId", " and %.conflictType>=" . CONFLICT_AUTHOR,
 				       $tables, $columns, $f);
 	} else if ($tt == "nre") {
-	    $rtype = $t->flags & (self::F_TYPEMASK | self::F_NONBLIND | self::F_COMPLETE | self::F_INCOMPLETE);
+	    $rflags = $t->flags & (self::F_TYPEMASK | self::F_NONBLIND | self::F_COMPLETE | self::F_INCOMPLETE);
+	    $rtype = $rflags;
 	    if (isset($t->extra))
 		$rtype = "X" . count($tables);
 	    if (!isset($tables["Numreviews_$rtype"])) {
 		$where = array();
 		$reviewtable = "PaperReview";
-		if ($rtype & self::F_TYPEMASK)
-		    $where[] = "reviewType=" . ($rtype & self::F_TYPEMASK);
-		if ($rtype & self::F_NONBLIND)
+		if ($rflags & self::F_TYPEMASK)
+		    $where[] = "reviewType=" . ($rflags & self::F_TYPEMASK);
+		if ($rflags & self::F_NONBLIND)
 		    $where[] = "reviewBlind=0";
-		if ($rtype & self::F_COMPLETE)
+		if ($rflags & self::F_COMPLETE)
 		    $where[] = "reviewSubmitted>0";
-		else if ($rtype & self::F_INCOMPLETE)
+		else if ($rflags & self::F_INCOMPLETE)
 		    $where[] = "reviewNeedsSubmit>0";
 		if (isset($t->extra) && isset($t->extra["round"])) {
 		    if (count($t->extra["round"]) == 0)
@@ -1419,18 +1456,24 @@ class PaperSearch {
 	    $f[] = "(" . join(" and ", $q) . ")";
 	} else if ($tt == "not") {
 	    $ff = array();
-	    foreach ($t->value as $subt)
-		$this->_clauseTermSet($subt, true, $tables, $columns, $ff);
+	    $this->_clauseTermSet($t->value, true, $tables, $columns, $ff);
 	    if (!count($ff))
 		$ff[] = "false";
 	    $f[] = "not (" . join(" or ", $ff) . ")";
 	} else if ($tt == "and") {
 	    $ff = array();
 	    foreach ($t->value as $subt)
-		$this->_clauseTermSet($subt, true, $tables, $columns, $ff);
+		$this->_clauseTermSet($subt, false, $tables, $columns, $ff);
 	    if (!count($ff))
 		$ff[] = "false";
 	    $f[] = "(" . join(" and ", $ff) . ")";
+	} else if ($tt == "or") {
+	    $ff = array();
+	    foreach ($t->value as $subt)
+		$this->_clauseTermSet($subt, false, $tables, $columns, $ff);
+	    if (!count($ff))
+		$ff[] = "false";
+	    $f[] = "(" . join(" or ", $ff) . ")";
 	} else if ($tt == "f")
 	    $f[] = "false";
 	else if ($tt == "t")
@@ -1547,13 +1590,15 @@ class PaperSearch {
 		    $ans = $row->$fieldname != 0;
 	    }
 	} else if ($tt == "not") {
-	    $ans = true;
-	    foreach ($t->value as $subt)
-		$ans = $ans && !$this->_clauseTermCheck($subt, $row);
+	    $ans = !$this->_clauseTermCheck($t->value, $row);
 	} else if ($tt == "and") {
 	    $ans = true;
 	    foreach ($t->value as $subt)
 		$ans = $ans && $this->_clauseTermCheck($subt, $row);
+	} else if ($tt == "or") {
+	    $ans = false;
+	    foreach ($t->value as $subt)
+		$ans = $ans || $this->_clauseTermCheck($subt, $row);
 	} else if ($tt == "f")
 	    $ans = false;
 	else if ($tt == "t")
@@ -1576,13 +1621,24 @@ class PaperSearch {
 
 	// collect query terms
 	$qt = array();
-	$this->_searchQueryType($this->q, "all", $qt);
-	$this->_searchQueryType($this->qo, "any", $qt);
-	$this->_searchQueryType($this->qx, "none", $qt);
+	if (($qe = $this->_searchQueryType($this->q, "all")))
+	    $qt[] = $qe;
+	if (($qe = $this->_searchQueryType($this->qo, "any")))
+	    $qt[] = $qe;
+	if (($qe = $this->_searchQueryType($this->qx, "none")))
+	    $qt[] = $qe;
 
-	// group terms into clauses
-	$this->_queryMakeClauses($qt, $qc);
-	//$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars(var_export($qc, true)))));
+	// clean the query
+	$qe = $this->_queryClean(SearchTerm::combine("and", $qt));
+
+	// apply review rounds (top down, needs separate step)
+	if ($this->reviewAdjust) {
+	    $qe = $this->_queryAdjustReviews($qe, null);
+	    if ($this->_reviewAdjustError)
+		$Conf->errorMsg("Unexpected use of &ldquo;round:&rdquo; or &ldquo;rate:&rdquo; ignored.  Stick to the basics, such as &ldquo;re:reviewername round:roundname&rdquo;.");
+	}
+
+	//$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars(var_export($qe, true)))));
 
 	// collect clauses into tables, columns, and filters
 	$tables = array("Paper" => true);
@@ -1590,15 +1646,7 @@ class PaperSearch {
 	$filters = array();
 	$this->preciseQuery = false;
 	$this->needflags = 0;
-	foreach ($qc as &$c) {
-	    $f = array();
-	    foreach ($c as &$t)
-		$this->_clauseTermSet($t, false, $tables, $columns, $f);
-	    unset($t);
-	    if (count($f))
-		$filters[] = "(" . join(" or ", $f) . ")";
-	}
-	unset($c);
+	$this->_clauseTermSet($qe, false, $tables, $columns, $filters);
 	//$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars(var_export($filters, true)))));
 
 	// status limitation parts
@@ -1720,18 +1768,8 @@ class PaperSearch {
 	    $delete = array();
 	    $result = $Conf->qe("select * from Matches", "while performing search");
 	    while (($row = edb_orow($result))) {
-		foreach ($qc as &$c) {
-		    $f = false;
-		    foreach ($c as &$t)
-			if (($f = $this->_clauseTermCheck($t, $row)))
-			    break;
-		    unset($t);
-		    if (!$f) {
-			$delete[] = $row->paperId;
-			break;
-		    }
-		}
-		unset($c);
+		if (!$this->_clauseTermCheck($qe, $row))
+		    $delete[] = $row->paperId;
 	    }
 	    if (count($delete)) {
 		$q = "delete from Matches where paperId in (" . join(",", $delete) . ")";
@@ -1741,7 +1779,11 @@ class PaperSearch {
 	    }
 	}
 
-	// set matchPreg
+	// extract regular expressions and set reviewerContact if the query is
+	// about exactly one reviewer
+	$this->_queryExtractInfo($qe, true);
+
+	// set $this->matchPreg from $this->regex
 	if (!$this->overrideMatchPreg) {
 	    $this->matchPreg = array();
 	    foreach (array("ti" => "title", "au" => "authorInformation",
@@ -1750,25 +1792,6 @@ class PaperSearch {
 		if (isset($this->regex[$k]) && count($this->regex[$k]))
 		    $this->matchPreg[$v] = join("|", $this->regex[$k]);
 	}
-
-	// set reviewerContact if the query is about exactly one reviewer
-	if ($this->reviewerContact == 1) {
-	    $this->reviewerContact = false;
-	    foreach ($qc as &$c) {
-		if (count($c) == 1 && $c[0]->type == "re") {
-		    $v = $c[0]->value[0];
-		    if ($v[0] == "=")
-			$this->reviewerContact = (int) substr($v, 1);
-		    else if ($v[0] == "\1") {
-			$v = (int) substr($v, 1, strlen($v) - 2);
-			if (count($this->contactmatch[$v]) == 1)
-			    $this->reviewerContact = $this->contactmatch[$v][0];
-		    }
-		    break;
-		}
-	    }
-	} else
-	    $this->reviewerContact = false;
 
 	return true;
     }
