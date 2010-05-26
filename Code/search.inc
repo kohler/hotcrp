@@ -115,6 +115,8 @@ class PaperSearch {
     var $contactId;
     var $privChair;
     var $amPC;
+    var $reviewsOutstanding;
+
     var $limitName;
     var $qt;
     var $allowAuthor;
@@ -146,8 +148,12 @@ class PaperSearch {
 	global $Conf, $ConfSiteSuffix;
 
 	// contact facts
+	$this->contactId = $me->contactId;
+	if ($this->privChair && rcvtint($opt["c"]) > 0)
+	    $this->contactId = rcvtint($opt["c"]);
 	$this->privChair = $me->privChair;
 	$this->amPC = $me->isPC;
+	$this->reviewsOutstanding = $me->reviewsOutstanding;
 
 	// paper selection
 	$ptype = defval($opt, "t", "");
@@ -182,10 +188,7 @@ class PaperSearch {
 	if ($me->privChair || $me->isAuthor
 	    || ($this->amPC && $Conf->blindSubmission() <= BLIND_OPTIONAL))
 	    $this->allowAuthor = true;
-	$this->contactId = $me->contactId;
 	$this->warnings = null;
-	if ($this->privChair && rcvtint($opt["c"]) > 0)
-	    $this->contactId = rcvtint($opt["c"]);
 
 	// default query fields
 	// NB: If a complex query field, e.g., "re", "tag", or "option", is
@@ -415,7 +418,7 @@ class PaperSearch {
 	    } else if ($this->amPC) {
 		$pc_seeallrev = $Conf->setting("pc_seeallrev");
 		$pc_seeblindrev = $Conf->setting("pc_seeblindrev");
-		if ($pc_seeallrev == 4 && !$this->contact->reviewsOutstanding)
+		if ($pc_seeallrev == 4 && !$this->reviewsOutstanding)
 		    $pc_seeallrev = 1;
 
 		if ($pc_seeallrev == 1
@@ -560,7 +563,7 @@ class PaperSearch {
 	else {
 	    if ($this->amPC) {
 		$pc_seeallrev = $Conf->setting("pc_seeallrev");
-		if ($pc_seeallrev == 4 && !$this->contact->reviewsOutstanding)
+		if ($pc_seeallrev == 4 && !$this->reviewsOutstanding)
 		    $pc_seeallrev = 1;
 
 		if ($pc_seeallrev == 1)
