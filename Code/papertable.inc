@@ -1382,11 +1382,12 @@ class PaperTable {
 	if ($Me->canSetRank($prow))
 	    $this->papstripRank($prow);
 	$this->papstripWatch($prow);
-	if (($Me->actChair($prow) || $prow->conflictType >= CONFLICT_AUTHOR)
-	    && !$this->editable) {
+	if (($Me->privChair || ($Me->isPC && $Me->canViewAuthors($prow, false)))
+	    && !$this->editable)
 	    $this->papstripPCConflicts($prow);
+	if (($Me->actChair($prow) || $Me->canViewAuthors($prow, false))
+	    && !$this->editable)
 	    $this->papstripCollaborators($prow);
-	}
 
 	$foldDecisions = false;
 	$foldShepherd = $Me->canSetOutcome($prow) && $prow->outcome <= 0
