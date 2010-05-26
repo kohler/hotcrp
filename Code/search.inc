@@ -456,6 +456,8 @@ class PaperSearch {
 	$value = null;
 	if (!$quoted && ($m[1] == "" || strcasecmp($m[1], "pc") == 0))
 	    $value = array_keys(pcMembers());
+	else if (!$quoted && strcasecmp($m[1], "me") == 0)
+	    $value = array($this->contactId);
 	else if (!$quoted && count(($pctags = pcTags()))
 	    && isset($pctags[$m[1]])) {
 	    $this->contactmatch[] = "\2contactId" . self::_sqlNumericSet(self::_pcContactIdsWithTag($m[1]), false);
