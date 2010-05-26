@@ -1176,7 +1176,7 @@ class PaperTable {
 	      && $prow->timeSubmitted > 0
 	      && ($prow->conflictType >= CONFLICT_AUTHOR
 		  || $prow->conflictType <= 0
-		  || ($Me->privChair && isset($_REQUEST["forceShow"])))))
+		  || ($Me->privChair && defval($_REQUEST, "forceShow")))))
 	    return;
 	// watch note
 	$result = $Conf->q("select ContactInfo.contactId, reviewType, commentId, conflictType, watch from ContactInfo left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperComment on (PaperComment.paperId=$prow->paperId and PaperComment.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId) left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId) where ContactInfo.contactId=$Me->contactId");
