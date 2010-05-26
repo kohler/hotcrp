@@ -281,9 +281,7 @@ class PaperSearch {
 	    else if ($this->amPC)
 		$qt[] = new SearchTerm($rtype, self::F_PAPERNONBLIND, $word, $extra);
 	    else {
-		$rt = self::F_REVIEWER;
-		if ($blind && $Conf->blindSubmission() != BLIND_NEVER)
-		    $rt |= self::F_PAPERNONBLIND;
+		$rt = self::F_REVIEWER | ($blind ? self::F_PAPERNONBLIND : 0);
 		$qt[] = new SearchTerm($rtype, $rt, $word, $extra);
 	    }
 	    $qt[] = new SearchTerm($rtype, self::F_AUTHOR, $word, $extra);
@@ -454,11 +452,13 @@ class PaperSearch {
 	}
 
 	$value = null;
+	$self_search = false;
 	if (!$quoted && ($m[1] == "" || strcasecmp($m[1], "pc") == 0))
 	    $value = array_keys(pcMembers());
-	else if (!$quoted && strcasecmp($m[1], "me") == 0)
+	else if (!$quoted && strcasecmp($m[1], "me") == 0) {
 	    $value = array($this->contactId);
-	else if (!$quoted && count(($pctags = pcTags()))
+	    $self_search = true;
+	} else if (!$quoted && count(($pctags = pcTags()))
 	    && isset($pctags[$m[1]])) {
 	    $this->contactmatch[] = "\2contactId" . self::_sqlNumericSet(self::_pcContactIdsWithTag($m[1]), false);
 	    $value = "\1" . (count($this->contactmatch) - 1) . "\1";
@@ -468,7 +468,10 @@ class PaperSearch {
 	    $value = "\1" . (count($this->contactmatch) - 1) . "\1";
 	}
 
-	$qt[] = new SearchTerm("conflict", 0, array($value, $m[2]));
+	$flags = 0;
+	if (!$this->privChair && !$self_search)
+	    $flags |= self::F_PAPERNONBLIND;
+	$qt[] = new SearchTerm("conflict", $flags, array($value, $m[2]));
     }
 
     function _searchComment($word, $ctype, &$qt) {
@@ -693,11 +696,10 @@ class PaperSearch {
 		if ($this->privChair || ($this->amPC && $o->pcView == 1))
 		    $qo[] = new SearchTerm($type, 0, array($oid, $xval));
 		else {
-		    $rt = self::F_REVIEWER;
-		    if ($o->pcView == 2 && $Conf->blindSubmission() != BLIND_NEVER)
-			$rt |= self::F_PAPERNONBLIND;
-		    if ($o->pcView)
+		    if ($o->pcView) {
+			$rt = self::F_REVIEWER | ($o->pcView == 2 ? self::F_PAPERNONBLIND : 0);
 			$qo[] = new SearchTerm($type, $rt, array($oid, $xval));
+		    }
 		    $qo[] = new SearchTerm($type, self::F_AUTHOR, array($oid, $xval));
 		}
 	    }
@@ -877,7 +879,7 @@ class PaperSearch {
 		$qt[] = new SearchTerm("f");
 	}
 	if (($special ? $special == "conflict" : isset($this->fields['conflict']))
-	    && $this->privChair)
+	    && $this->amPC)
 	    $this->_searchConflict($word, $qt, $quoted);
 	if (($special ? $special == "round" : isset($this->fields["round"]))
 	    && $this->amPC) {
@@ -1253,7 +1255,17 @@ class PaperSearch {
 
     function _clauseTermSetFlags($flags, &$q) {
 	global $Conf;
+
+	// Maybe we don't actually need to check blindness.
+	if ($flags & self::F_PAPERNONBLIND) {
+	    if ($Conf->blindSubmission() == BLIND_NEVER)
+		$flags &= ~self::F_PAPERNONBLIND;
+	    else if ($Conf->blindSubmission() == BLIND_ALWAYS)
+		$flags = ($flags & ~self::F_PAPERNONBLIND) | self::F_FALSE;
+	}
+
 	$this->needflags |= $flags;
+
 	if ($flags & self::F_NONCONFLICT)
 	    $q[] = "PaperConflict.conflictType is null";
 	if ($flags & self::F_AUTHOR)
@@ -1589,6 +1601,7 @@ class PaperSearch {
 	    return false;
 	// NB: F_REVIEWER must be set by caller if necessary
 	if (($flags & self::F_PAPERNONBLIND)
+	    && $Conf->blindSubmission() != BLIND_NEVER
 	    && ($row->paperBlind || $Conf->blindSubmission() == BLIND_ALWAYS)
 	    && !($row->outcome > 0 && $Conf->timeReviewerViewAcceptedAuthors()))
 	    return false;
