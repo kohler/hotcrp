@@ -271,7 +271,8 @@ function searchQuickref() {
     _searchQuickrefRow("", "lead:none", "no assigned discussion lead");
     _searchQuickrefRow("", "lead:any", "some assigned discussion lead");
     _searchQuickrefRow("Shepherds", "shep:fdabek", "&ldquo;fdabek&rdquo; (in name/email) is shepherd (&ldquo;none&rdquo; and &ldquo;any&rdquo; also work)");
-    _searchQuickrefRow("Conflicts", "conflict:fdabek", "&ldquo;fdabek&rdquo; (in name/email) has a conflict with the paper");
+    _searchQuickrefRow("Conflicts", "conflict:me", "you have a conflict with a paper");
+    _searchQuickrefRow("", "conflict:fdabek", "&ldquo;fdabek&rdquo; (in name/email) has a conflict with the paper<br /><span class='hint'>This search is only available to chairs and to PC members who can see the paper&rsquo;s author list.</span>");
     _searchQuickrefRow("", "conflict:pc", "some PC member has a conflict with the paper");
     _searchQuickrefRow("Status", "status:sub", "paper is submitted for review", "t=all");
     _searchQuickrefRow("", "status:unsub", "paper is neither submitted nor withdrawn", "t=all");
