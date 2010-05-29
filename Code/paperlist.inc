@@ -277,7 +277,9 @@ class PaperList extends BaseList {
     }
 
     function _sortStatus($a, $b) {
-	$x = $b->outcome - $a->outcome;
+	$a_dec = $this->contact->canViewDecision($a) ? $a->outcome : -10000;
+	$b_dec = $this->contact->canViewDecision($b) ? $b->outcome : -10000;
+	$x = $b_dec - $a_dec;
 	$x = $x ? $x : ($a->timeWithdrawn > 0) - ($b->timeWithdrawn > 0);
 	$x = $x ? $x : ($b->timeSubmitted > 0) - ($a->timeSubmitted > 0);
 	$x = $x ? $x : ($b->paperStorageId > 1) - ($a->paperStorageId > 1);
