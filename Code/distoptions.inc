@@ -57,11 +57,18 @@ $Opt["paperSite"] = "http://your.site.here.com/";
 //                   or certain spam filters will reject email from HotCRP.
 //   emailCc         Default "Cc:" address for email sent by HotCRP.  If not
 //                   set, the default Cc is $Opt["contactEmail"].
-//   emailReplyTo    If set, default "Reply-To:" field for email sent by HotCRP.
+//   emailReplyTo    If set, default "Reply-To:" address for email sent by
+//                   HotCRP.
 //   sendmailParam   Extra parameters to be passed to PHP's mail() function.
 //                   If your system's mailer is not sendmail, you may need to
 //                   change the default value; see Code/mailtemplate.inc,
 //                   sendPrepared().
+//   postfixEOL      Set to true if your system mailer is UNIX Postfix and
+//                   HotCRP mail has garbled headers, particularly for long or
+//                   non-ASCII subject lines.  (The symptom is that some mail
+//                   headers will appear as part of the message body.)  It's
+//                   always safe to set postfixEOL to true, although the
+//                   resulting mails may not be standards compliant.
 
 $Opt["contactName"] = "Your Name";
 $Opt["contactEmail"] = "your@name.edu";

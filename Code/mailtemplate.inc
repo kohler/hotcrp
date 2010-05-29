@@ -389,6 +389,13 @@ global $ConfSitePATH;
 if (file_exists("$ConfSitePATH/Code/mailtemplate-local.inc"))
     require_once("$ConfSitePATH/Code/mailtemplate-local.inc");
 
+// set HOTCRP_EOL
+if (!isset($Opt["postfixEOL"]) || !$Opt["postfixEOL"])
+    define("HOTCRP_EOL", "\r\n");
+else if ($Opt["postfixEOL"] === true)
+    define("HOTCRP_EOL", PHP_EOL);
+else
+    define("HOTCRP_EOL", $Opt["postfixEOL"]);
 
 class MailerState {
     var $unexpanded;
@@ -938,7 +945,7 @@ class Mailer {
 	$m["fullTo"] = substr($hdr, 4);
 
 	// parse headers
-	$headers = "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n" . $hdr . "\r\n";
+	$headers = "MIME-Version: 1.0" . HOTCRP_EOL . "Content-Type: text/plain; charset=utf-8" . HOTCRP_EOL . $hdr . HOTCRP_EOL;
 	foreach ($mailHeaders as $n => $h)
 	    if (isset($m[$n]) && $m[$n] != "" && $m[$n] != "<none>") {
 		$hdr = Mailer::mimeEmailHeader($h . ": ", $m[$n]);
@@ -950,7 +957,7 @@ class Mailer {
 		    return false;
 		}
 		$m[$n] = substr($hdr, strlen($h) + 2);
-		$headers .= $hdr . "\r\n";
+		$headers .= $hdr . HOTCRP_EOL;
 	    } else
 		unset($m[$n]);
 	$m["headers"] = $headers;
@@ -972,10 +979,12 @@ class Mailer {
 	    // try to extract a valid To: header
 	    $to = $preparation["to"];
 	    $headers = $preparation["headers"];
-	    if (($topos = strpos($headers, "\r\nTo: ")) !== false
-		&& ($nlpos = strpos($headers, "\r\n", $topos + 1)) !== false
-		&& ($nlpos + 2 == strlen($headers) || !ctype_space($headers[$nlpos + 2]))) {
-		$to = substr($headers, $topos + 6, $nlpos - $topos - 6);
+	    $eollen = strlen(HOTCRP_EOL);
+	    if (($topos = strpos($headers, HOTCRP_EOL . "To: ")) !== false
+		&& ($nlpos = strpos($headers, HOTCRP_EOL, $topos + 1)) !== false
+		&& ($nlpos + $eollen == strlen($headers) || !ctype_space($headers[$nlpos + $eollen]))) {
+		$tovalpos = $topos + $eollen + 4;
+		$to = substr($headers, $tovalpos, $nlpos - $tovalpos);
 		$headers = substr($headers, 0, $topos) . substr($headers, $nlpos);
 	    } else if ($topos !== false)
 		$to = "";
@@ -1087,7 +1096,7 @@ class Mailer {
 	    $maxlinelen = ($utf8 ? 76 - 12 : 78);
 	    if (($linelen + $z > $maxlinelen && $linelen > 30)
 		|| ($utf8 && substr($result, strlen($result) - 2) == "?=")) {
-		$result .= "\r\n ";
+		$result .= HOTCRP_EOL . " ";
 		$linelen = 1;
 		while (!$utf8 && $xstr !== "" && ctype_space($xstr[0])) {
 		    $xstr = substr($xstr, 1);
