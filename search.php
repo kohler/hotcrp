@@ -846,9 +846,11 @@ function saveformulas() {
 	    $exprViewScore = PaperExpr::expression_view_score($paperexpr, $Me);
 	    if ($exprViewScore <= $Me->viewReviewFieldsScore(null, true))
 		$ok = $Conf->errorMsg("The expression &ldquo;" . htmlspecialchars($expr) . "&rdquo; refers to paper properties that you aren't allowed to view.  Please define a different expression.");
-	    else if ($fdef->formulaId == "n")
+	    else if ($fdef->formulaId == "n") {
 		$changes[] = "insert into Formula (name, expression, authorView, createdBy, timeModified) values ('" . sqlq($name) . "', '" . sqlq($expr) . "', $exprViewScore, " . ($Me->privChair ? -$Me->contactId : $Me->contactId) . ", " . time() . ")";
-	    else
+		if (!$Conf->setting("formulas"))
+		    $changes[] = "insert into Settings (name, value) values ('formulas', 1) on duplicate key update value=1";
+	    } else
 		$changes[] = "update Formula set name='" . sqlq($name) . "', expression='" . sqlq($expr) . "', authorView=$exprViewScore, timeModified=" . time() . " where formulaId=$fdef->formulaId";
 	}
     }
