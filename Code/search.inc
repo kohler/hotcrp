@@ -268,7 +268,10 @@ class PaperSearch {
 
     function _searchField($word, $rtype, &$qt, $blind) {
 	global $Conf;
-	$extra = array("regex" => array($rtype, self::_fieldPreg($word)));
+	if (!is_array($word))
+	    $extra = array("regex" => array($rtype, self::_fieldPreg($word)));
+	else
+	    $extra = null;
 
 	if ($this->privChair
 	    || ($this->amPC && !$blind)
@@ -766,7 +769,7 @@ class PaperSearch {
 	if ($special ? $special == "ab" : isset($this->fields['ab']))
 	    $this->_searchField($word, "ab", $qt, false);
 	if ($special == "au" && !$quoted && strcasecmp($word, "pc") == 0)
-	    $this->_searchField(array_keys(pcMembers()), "au_cid", false, $qt, true);
+	    $this->_searchField(array_keys(pcMembers()), "au_cid", $qt, true);
 	else if ($special ? $special == "au" : isset($this->fields['au']))
 	    $this->_searchField($word, "au", $qt, true);
 	if ($special ? $special == "co" : isset($this->fields['co']))
