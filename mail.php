@@ -375,7 +375,7 @@ else if (defval($_REQUEST, "send"))
 
 if (isset($_REQUEST["monreq"])) {
     require_once("Code/paperlist.inc");
-    $plist = new PaperList(false, true, new PaperSearch($Me, array("t" => "reqrevs", "q" => "")));
+    $plist = new PaperList(new PaperSearch($Me, array("t" => "reqrevs", "q" => "")), false, true);
     $ptext = $plist->text("reqrevs", $Me);
     if ($plist->count == 0)
 	$Conf->infoMsg("You have not requested any external reviews.  <a href='index$ConfSiteSuffix'>Return home</a>");

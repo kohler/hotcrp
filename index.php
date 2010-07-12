@@ -569,7 +569,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     }
 
     if ($Me->isReviewer) {
-	$plist = new PaperList(false, true, new PaperSearch($Me, array("t" => "r")));
+	$plist = new PaperList(new PaperSearch($Me, array("t" => "r")), false, true);
 	$ptext = $plist->text("reviewerHome", $Me);
 	if ($plist->count > 0)
 	    echo "<div class='fx'><div class='g'></div>", $ptext, "</div>";
@@ -635,7 +635,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 
     $plist = null;
     if ($Me->isAuthor) {
-	$plist = new PaperList(false, true, new PaperSearch($Me, array("t" => "a")));
+	$plist = new PaperList(new PaperSearch($Me, array("t" => "a")), false, true);
 	$plist->showHeader = 0;
 	$ptext = $plist->text("authorHome", $Me);
 	if ($plist->count > 0)

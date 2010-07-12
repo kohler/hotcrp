@@ -86,7 +86,7 @@ class PaperList extends BaseList {
     var $rf;
     var $formulas;
 
-    function PaperList($sortable = true, $list = false, $search = null, $extraText = null) {
+    function PaperList($search, $sortable = true, $list = false, $extraText = null) {
 	global $paperListFields, $scoreSorts, $Conf;
 	$this->showHeader = self::HEADER_ALL;
 
@@ -115,7 +115,7 @@ class PaperList extends BaseList {
 	$this->paperLink = "";
 	$this->paperLinkArgs = "";
 	if ($list) {
-	    $this->listNumber = oldestListNumber($search ? $search->listId(defval($_REQUEST, "sort", "")) : "");
+	    $this->listNumber = oldestListNumber($search->listId(defval($_REQUEST, "sort", "")));
 	    $this->paperLinkArgs .= "&amp;ls=" . $this->listNumber;
 	} else
 	    $this->listNumber = 0;
@@ -205,7 +205,7 @@ class PaperList extends BaseList {
 	case self::FIELD_FORMULA:
 	    $revView = 0;
 	    if ($this->contact->amReviewer()
-		&& (!$this->search || $this->search->limitName != "a"))
+		&& $this->search->limitName != "a")
 		$revView = $this->contact->viewReviewFieldsScore(null, true);
 	    if (!$this->scoresOk
 		|| !($formula = $paperListFormulas[$fieldId - self::FIELD_FORMULA])
@@ -1290,18 +1290,17 @@ class PaperList extends BaseList {
 	global $Conf, $ConfSiteSuffix;
 	$t = "<div><form id='plloadform' method='post' action='search$ConfSiteSuffix?ajax=1" . $this->paperLinkArgs . "' accept-charset='UTF-8'>"
 	    . "<div class='inform'>";
-	if (($s = $this->search)) {
-	    if ($s->qx)
-		$t .= "<input type='hidden' name='qx' value=\"" . htmlspecialchars($s->qx) . "\" />";
-	    if ($s->qo)
-		$t .= "<input type='hidden' name='qo' value=\"" . htmlspecialchars($s->qx) . "\" />";
-	    if ($s->q || (!$s->qx && !$s->qo))
-		$t .= "<input type='hidden' name='q' value=\"" . htmlspecialchars($s->q) . "\" />";
-	    if ($s->qt)
-		$t .= "<input type='hidden' name='qt' value=\"" . htmlspecialchars($s->qt) . "\" />";
-	    $t .= "<input type='hidden' name='t' value=\"" . htmlspecialchars($s->limitName) . "\" />";
-	}
-	$t .= "<input type='hidden' name='pap' value='" . join(" ", $pap) . "' />"
+	$s = $this->search;
+	if ($s->qx)
+	    $t .= "<input type='hidden' name='qx' value=\"" . htmlspecialchars($s->qx) . "\" />";
+	if ($s->qo)
+	    $t .= "<input type='hidden' name='qo' value=\"" . htmlspecialchars($s->qx) . "\" />";
+	if ($s->q || (!$s->qx && !$s->qo))
+	    $t .= "<input type='hidden' name='q' value=\"" . htmlspecialchars($s->q) . "\" />";
+	if ($s->qt)
+	    $t .= "<input type='hidden' name='qt' value=\"" . htmlspecialchars($s->qt) . "\" />";
+	$t .= "<input type='hidden' name='t' value=\"" . htmlspecialchars($s->limitName) . "\" />"
+	    . "<input type='hidden' name='pap' value='" . join(" ", $pap) . "' />"
 	    . "<input id='plloadform_get' type='hidden' name='get' value='' />"
 	    . "<input id='plloadform_aufull' type='hidden' name='aufull' value='" . ($this->aufull ? "1" : "") . "' />"
 	    . "</div></form></div>";

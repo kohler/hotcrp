@@ -199,7 +199,7 @@ list.</p>");
 $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "c" => $reviewer,
 				     "urlbase" => "reviewprefs$ConfSiteSuffix?reviewer=$reviewer",
 				     "q" => defval($_REQUEST, "q", "")));
-$pl = new PaperList(true, true, $search);
+$pl = new PaperList($search, true, true);
 $pl->showHeader = PaperList::HEADER_TITLES;
 $pl->foldtype = "pf";
 $pl->footer = "<div id='plactr'><input class='hb' type='submit' name='update' value='Save changes' /></div>";

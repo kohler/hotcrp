@@ -569,7 +569,7 @@ if (isset($assignments) && count($assignments) > 0) {
     }
 
     $search = new PaperSearch($Me, array("t" => "s", "q" => join(" ", array_keys($assignments))));
-    $plist = new PaperList(false, false, $search, $atext);
+    $plist = new PaperList($search, false, false, $atext);
     echo $plist->text("reviewers", $Me);
 
     if ($atype != "prefconflict") {
@@ -665,7 +665,7 @@ if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
 <div class='g'></div>";
 
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
-    $plist = new PaperList(false, false, $search);
+    $plist = new PaperList($search, false, false);
     $plist->footer = false;
     $plist->papersel = array_fill_keys($papersel, 1);
     foreach (preg_split('/\s+/', defval($_REQUEST, "prevpap")) as $p)

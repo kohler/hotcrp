@@ -276,7 +276,7 @@ if ($reviewer > 0) {
 					 "q" => $_REQUEST["q"],
 					 "c" => $reviewer,
 					 "urlbase" => "manualassign$ConfSiteSuffix?reviewer=$reviewer"));
-    $paperList = new PaperList(true, true, $search);
+    $paperList = new PaperList($search, true, true);
     if (isset($showau)) {
 	$search->overrideMatchPreg = true;
 	$search->matchPreg = array();
