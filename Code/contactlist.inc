@@ -429,7 +429,7 @@ class ContactList extends BaseList {
 	$this->limit = array_shift($baseFieldId);
 
 	if ($this->listNumber === true) {
-	    $this->listNumber = oldestListNumber("account:" . $this->limit);
+	    $this->listNumber = allocateListNumber("a:" . $this->limit . "::");
 	    $this->contactLinkArgs .= "&amp;ls=" . $this->listNumber;
 	}
 
@@ -670,9 +670,8 @@ class ContactList extends BaseList {
 	if ($this->listNumber) {
 	    $ids["description"] = ($listtitle ? $listtitle : "Users");
 	    $ids["timestamp"] = time();
-	    $ids["listid"] = "account:" . $this->limit;
+	    $ids["listid"] = "a:" . $this->limit . "::";
 	    $ids["url"] = "contacts$ConfSiteSuffix?t=" . $this->limit;
-	    $ids["type"] = "a";
 	    $_SESSION["l"][$this->listNumber] = $ids;
 	}
 

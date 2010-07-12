@@ -570,26 +570,22 @@ function contactEmailTo($firstName, $lastName = null, $email = null) {
 	return $email ? $email : "<none>";
 }
 
-function oldestListNumber($listid = "") {
+function allocateListNumber($listid) {
     if (!isset($_SESSION["l"]))
 	$_SESSION["l"] = array();
-    if (count($_SESSION["l"]) == 0)
-	return 1;
-    $l = $_SESSION["l"][1];
-    $oldest = 0;
-    for ($i = 1; $i <= 8; $i++)
-	if (!isset($_SESSION["l"][$i]))
-	    return $i;
-	else if ($listid && defval($_SESSION["l"][$i], "listid") == $listid)
-	    return $i;
-	else if (!$oldest
-		 || (defval($_SESSION["l"][$i], "timestamp")
-		     < defval($_SESSION["l"][$oldest], "timestamp")))
-	    $oldest = $i;
-    return $oldest;
+    $oldest = $empty = 0;
+    for ($i = 1; $i <= 8; ++$i)
+	if (($l = defval($_SESSION["l"], $i))) {
+	    if (defval($l, "listid") == $listid)
+		return $i;
+	    else if (!$oldest || defval($l, "timestamp", 0) < defval($_SESSION["l"][$oldest], "timestamp", 0))
+		$oldest = $i;
+	} else if (!$empty)
+	    $empty = $i;
+    return $empty ? $empty : $oldest;
 }
 
-function _tryNewList($opt, $which, $listtype) {
+function _tryNewList($opt, $listtype) {
     global $Conf, $ConfSiteSuffix, $Me;
     if ($listtype == "a" && $Me->privChair) {
 	$searchtype = (defval($opt, "t") === "all" ? "all" : "pc");
@@ -600,15 +596,14 @@ function _tryNewList($opt, $which, $listtype) {
 	$a = array();
 	while (($row = edb_row($result)))
 	    $a[] = $row[0];
-	$a["url"] = "contacts$ConfSiteSuffix?t=" . $searchtype;
 	$a["description"] = ($searchtype == "pc" ? "Program committee" : "Users");
-	$a["type"] = "a";
-	$_SESSION["l"][$which] = $a;
+	$a["listid"] = "a:" . $searchtype . "::";
+	$a["url"] = "contacts$ConfSiteSuffix?t=" . $searchtype;
+	return $a;
     } else {
 	require_once("search.inc");
 	$search = new PaperSearch($Me, $opt);
-	$_SESSION["l"][$which] = $search->sessionList($search->limitName);
-	$Conf->qx("drop temporary table Matches");
+	return $search->sessionList();
     }
 }
 
@@ -629,47 +624,54 @@ function _oneListLink($id, $baseUrl, $urlrest, $listtype, $isprev) {
 
 function listLinks($id, $baseUrl, $args, $listtype) {
     global $Me, $ConfSiteSuffix, $Conf, $CurrentList;
-    $replaceList = oldestListNumber();
 
+    $list = false;
+    $CurrentList = 0;
     if (isset($_REQUEST["ls"])
-	&& ($CurrentList = rcvtint($_REQUEST["ls"])) > 0
-	&& isset($_SESSION["l"][$CurrentList])
-	&& defval($_SESSION["l"][$CurrentList], "type", "p") == $listtype)
-	$_SESSION["l"][$CurrentList]["timestamp"] = time();
-    else if (isset($_REQUEST["list"]) && $listtype == "p") {
+	&& ($listno = rcvtint($_REQUEST["ls"])) > 0
+	&& isset($_SESSION["l"][$listno])
+	&& substr(defval($_SESSION["l"][$listno], "listid", "p"), 0, 1) == $listtype) {
+	$list = $_SESSION["l"][$listno];
+	$CurrentList = $listno;
+    } else if (isset($_REQUEST["list"]) && $listtype == "p") {
 	$l = $_REQUEST["list"];
 	if (preg_match('/\A[a-z]+\z/', $l))
-	    _tryNewList(array("t" => $l), $replaceList, $listtype);
+	    $list = _tryNewList(array("t" => $l), $listtype);
 	else if (preg_match('/\A(all|s):(.*)\z/s', $l, $m))
-	    _tryNewList(array("t" => $m[1], "q" => $m[2]), $replaceList, $listtype);
+	    $list = _tryNewList(array("t" => $m[1], "q" => $m[2]), $listtype);
 	else
-	    _tryNewList(array("q" => $l), $replaceList, $listtype);
-	$CurrentList = $replaceList;
-    } else
-	$CurrentList = 0;
-
-    $k = false;
-    if ($CurrentList != 0)
-	$k = array_search($id, $_SESSION["l"][$CurrentList]);
-
-    if ($k === false && !isset($_REQUEST["list"])) {
-	_tryNewList(array(), $replaceList, $listtype);
-	$k = array_search($id, $_SESSION["l"][$replaceList]);
-	if ($k === false && $Me->privChair) {
-	    _tryNewList(array("t" => "all"), $replaceList, $listtype);
-	    $k = array_search($id, $_SESSION["l"][$replaceList]);
-	}
-	$CurrentList = ($k === false ? 0 : $replaceList);
+	    $list = _tryNewList(array("q" => $l), $listtype);
     }
 
-    if ($CurrentList == 0)
+    $k = false;
+    if ($list)
+	$k = array_search($id, $list);
+
+    if ($k === false && !isset($_REQUEST["list"])) {
+	$CurrentList = 0;
+	$list = _tryNewList(array(), $listtype);
+	$k = array_search($id, $list);
+	if ($k === false && $Me->privChair) {
+	    $list = _tryNewList(array("t" => "all"), $listtype);
+	    $k = array_search($id, $list);
+	}
+	if ($k === false)
+	    $list = false;
+    }
+
+    if (!$list)
 	return "";
+
+    if ($CurrentList == 0) {
+	$CurrentList = allocateListNumber($list["listid"]);
+	$_SESSION["l"][$CurrentList] = $list;
+    }
+    $_SESSION["l"][$CurrentList]["timestamp"] = time();
 
     $urlrest = "&amp;ls=" . $CurrentList;
     foreach ($args as $what => $val)
 	$urlrest .= "&amp;" . htmlspecialchars($what) . "=" . htmlspecialchars($val);
 
-    $list = $_SESSION["l"][$CurrentList];
     $x = "";
     if ($k > 0)
 	$x .= _oneListLink($list[$k - 1], $baseUrl, $urlrest, $listtype, true);

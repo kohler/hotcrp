@@ -61,6 +61,8 @@ $searchKeywords = array("(" => new SearchKeyword("(", true, null),
 			"THEN" => new SearchKeyword("then", false, 1),
 			")" => null);
 
+global $searchMatchNumber;
+$searchMatchNumber = 0;
 
 class SearchTerm {
     var $type;
@@ -144,9 +146,9 @@ class PaperSearch {
     var $_thenError;
     var $thenmap;
 
-    var $paperList;
+    var $_matchTable;
 
-    function PaperSearch($me, $opt) {
+    function __construct($me, $opt) {
 	global $Conf, $ConfSiteSuffix;
 
 	// contact facts
@@ -227,10 +229,7 @@ class PaperSearch {
 	}
 
 	$this->overrideMatchPreg = false;
-	$this->paperList = false;
-    }
 
-    function _resetQuery() {
 	$this->regex = array();
 	$this->contactmatch = array();
 	$this->contactmatchPC = true;
@@ -242,6 +241,13 @@ class PaperSearch {
 	$this->thenmap = null;
 	$this->orderTags = array();
 	$this->reviewerContact = false;
+	$this->_matchTable = null;
+    }
+
+    function __destruct() {
+	global $Conf;
+	if ($this->_matchTable)
+	    $Conf->q("drop temporary table $this->_matchTable");
     }
 
     function warn($text) {
@@ -1717,12 +1723,18 @@ class PaperSearch {
 
     // BASIC QUERY FUNCTION
 
-    function search() {
-	global $Conf;
+    function _search() {
+	global $Conf, $searchMatchNumber;
+	assert($this->_matchTable === null);
+	$this->_matchTable = "PaperMatches_" . $searchMatchNumber;
+	++$searchMatchNumber;
 
-	$this->_resetQuery();
-	if ($this->limitName == "x")
-	    return array("create temporary table Matches select Paper.paperId from Paper where false", "");
+	if ($this->limitName == "x") {
+	    if (!$Conf->qe("create temporary table $this->_matchTable select Paper.paperId from Paper where false", "while performing search"))
+		return ($this->_matchTable = false);
+	    else
+		return true;
+	}
 
 	// collect query terms
 	$qt = array();
@@ -1867,14 +1879,14 @@ class PaperSearch {
 	//$Conf->infoMsg(htmlspecialchars($q));
 
 	// actually perform query
-	if (!$Conf->qe("create temporary table Matches $q", "while performing search"))
-	    return false;
+	if (!$Conf->qe("create temporary table $this->_matchTable $q", "while performing search"))
+	    return ($this->_matchTable = false);
 
 	// correct query
 	$this->thenmap = ($qe->type == "then" ? array() : null);
 	if ($this->preciseQuery || $this->thenmap !== null) {
 	    $delete = array();
-	    $result = $Conf->qe("select * from Matches", "while performing search");
+	    $result = $Conf->qe("select * from $this->_matchTable", "while performing search");
 	    while (($row = edb_orow($result))) {
 		if ($this->thenmap !== null) {
 		    $x = false;
@@ -1889,10 +1901,12 @@ class PaperSearch {
 		    $this->thenmap[$row->paperId] = $x;
 	    }
 	    if (count($delete)) {
-		$q = "delete from Matches where paperId in (" . join(",", $delete) . ")";
+		$q = "delete from $this->_matchTable where paperId in (" . join(",", $delete) . ")";
 		//$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars($q))));
-		if (!$Conf->qe($q, "while performing search"))
-		    return false;
+		if (!$Conf->qe($q, "while performing search")) {
+		    $Conf->q("drop temporary table $this->_matchTable");
+		    return ($this->_matchTable = false);
+		}
 	    }
 	}
 
@@ -1939,7 +1953,6 @@ class PaperSearch {
 	    $queryOptions["active"] = 1;
 	else if ($this->limitName == "lead")
 	    $queryOptions["myLead"] = 1;
-	$this->_resetQuery();
 	return false;
     }
 
@@ -1963,18 +1976,21 @@ class PaperSearch {
 	    return null;
     }
 
+    function matchTable() {
+	if ($this->_matchTable === null)
+	    $this->_search();
+	return $this->_matchTable;
+    }
+
     function paperList() {
 	global $Conf;
-	if ($this->paperList === false) {
-	    $this->paperList = array();
-	    if ($this->search()) {
-		$result = $Conf->qe("select paperId from Matches", "while searching papers");
-		while (($row = edb_row($result)))
-		    $this->paperList[] = $row[0];
-		$Conf->q("drop temporary table Matches");
-	    }
-	}
-	return $this->paperList;
+	if ($this->_matchTable === null && !$this->_search())
+	    return array();
+	$x = array();
+	$result = $Conf->q("select paperId from $this->_matchTable");
+	while (($row = edb_row($result)))
+	    $x[] = $row[0];
+	return $x;
     }
 
     function url() {
@@ -2025,15 +2041,13 @@ class PaperSearch {
     }
 
     function listId($sort = "") {
-	if ($this->q == "" && $this->qo == "" && $this->qx == "")
-	    return $this->limitName . ":" . $sort;
-	else
-	    return "";
+	return "p:" . $this->limitName . ":" . addcslashes($this->q, "\\:")
+	    . ":" . addcslashes($this->qo, "\\:")
+	    . ":" . addcslashes($this->qx, "\\:") . ":" . $sort;
     }
 
     function decorateSessionList($l, $listname, $sort = "") {
 	$l["url"] = $this->url();
-	$l["t"] = $this->limitName;
 	$l["description"] = $this->description($listname);
 	$l["timestamp"] = time();
 	$l["listid"] = $this->listId($sort);
@@ -2042,8 +2056,8 @@ class PaperSearch {
 	return $l;
     }
 
-    function sessionList($listname) {
-	return $this->decorateSessionList($this->paperList(), $listname);
+    function sessionList() {
+	return $this->decorateSessionList($this->paperList(), $this->limitName);
     }
 
     function parsePapersel() {

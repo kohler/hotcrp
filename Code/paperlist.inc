@@ -115,7 +115,7 @@ class PaperList extends BaseList {
 	$this->paperLink = "";
 	$this->paperLinkArgs = "";
 	if ($list) {
-	    $this->listNumber = oldestListNumber($search->listId(defval($_REQUEST, "sort", "")));
+	    $this->listNumber = allocateListNumber($search->listId($this->_sortdef()));
 	    $this->paperLinkArgs .= "&amp;ls=" . $this->listNumber;
 	} else
 	    $this->listNumber = 0;
@@ -445,6 +445,15 @@ class PaperList extends BaseList {
 	return $rows;
     }
 
+    function _sortdef() {
+	global $defaultScoreSort;
+	if ($this->sortField && defval($_REQUEST, "sort", "") != ""
+	    && ($this->sortField != 1 || $this->reverseSort))
+	    return $this->sortField . ($this->reverseSort ? "R" : "") . defval($_SESSION, "scoresort", $defaultScoreSort);
+	else
+	    return "";
+    }
+
     function _sortReviewOrdinal(&$rows) {
 	for ($i = 0; $i < count($rows); $i++) {
 	    for ($j = $i + 1; $j < count($rows) && $rows[$i]->paperId == $rows[$j]->paperId; $j++)
@@ -631,6 +640,7 @@ class PaperList extends BaseList {
     // content downloaders
     function sessionMatchPreg($name) {
 	if (isset($_REQUEST["ls"])
+	    && ctype_digit($_REQUEST["ls"])
 	    && isset($_SESSION["l"][$_REQUEST["ls"]])
 	    && isset($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"]))
 	    return defval($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"],
@@ -1357,9 +1367,9 @@ class PaperList extends BaseList {
 	if ($this->contact->canViewTags(null))
 	    $queryOptions["tags"] = 1;
 	if ($this->search->complexSearch($queryOptions)) {
-	    if (!$this->search->search())
-		return NULL;
-	    $queryOptions["joins"][] = "join Matches on (Paper.paperId=Matches.paperId)";
+	    if (!($table = $this->search->matchTable()))
+		return null;
+	    $queryOptions["joins"][] = "join $table on (Paper.paperId=$table.paperId)";
 	}
 
 	// paper list query?
@@ -1668,7 +1678,7 @@ class PaperList extends BaseList {
 
 	// session variable to remember the list
 	if ($this->listNumber) {
-	    $idx = $this->search->decorateSessionList($ids, $listname, defval($_REQUEST, "sort", ""));
+	    $idx = $this->search->decorateSessionList($ids, $listname, $this->_sortdef());
 	    if (isset($_REQUEST["sort"]))
 		$url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
 	    $idx["url"] = $url;
@@ -1718,9 +1728,9 @@ class PaperList extends BaseList {
 	// initialize query
 	$queryOptions = array("joins" => array());
 	if ($this->search->complexSearch($queryOptions)) {
-	    if (!$this->search->search())
+	    if (!($table = $this->search->matchTable()))
 		return null;
-	    $queryOptions["joins"][] = "join Matches on (Paper.paperId=Matches.paperId)";
+	    $queryOptions["joins"][] = "join $table on (Paper.paperId=$table.paperId)";
 	}
 
 	// get field array

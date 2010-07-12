@@ -1830,9 +1830,8 @@ class PaperTable {
 	    if ($search->matchPreg)
 		$thisMatchPreg = $search->matchPreg;
 	    $_REQUEST["paperId"] = $pl[0];
-	    $replaceList = oldestListNumber();
-	    $_SESSION["l"][$replaceList] = $search->sessionList($search->limitName);
-	    $_REQUEST["ls"] = $replaceList;
+	    $_REQUEST["ls"] = allocateListNumber($search->listId());
+	    $_SESSION["l"][$_REQUEST["ls"]] = $search->sessionList();
 	    return true;
 	} else {
 	    $t = (defval($_REQUEST, "t", 0) ? "&t=" . urlencode($_REQUEST["t"]) : "");
