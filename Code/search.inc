@@ -144,6 +144,8 @@ class PaperSearch {
     var $_thenError;
     var $thenmap;
 
+    var $paperList;
+
     function PaperSearch($me, $opt) {
 	global $Conf, $ConfSiteSuffix;
 
@@ -225,6 +227,7 @@ class PaperSearch {
 	}
 
 	$this->overrideMatchPreg = false;
+	$this->paperList = false;
     }
 
     function _resetQuery() {
@@ -1962,14 +1965,16 @@ class PaperSearch {
 
     function paperList() {
 	global $Conf;
-	if (!$this->search())
-	    return array();
-	$x = array();
-	$result = $Conf->qe("select paperId from Matches", "while searching papers");
-	while (($row = edb_row($result)))
-	    $x[] = $row[0];
-	$Conf->q("drop temporary table Matches");
-	return $x;
+	if ($this->paperList === false) {
+	    $this->paperList = array();
+	    if ($this->search()) {
+		$result = $Conf->qe("select paperId from Matches", "while searching papers");
+		while (($row = edb_row($result)))
+		    $this->paperList[] = $row[0];
+		$Conf->q("drop temporary table Matches");
+	    }
+	}
+	return $this->paperList;
     }
 
     function url() {
