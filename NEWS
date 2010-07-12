@@ -1,5 +1,21 @@
 HotCRP NEWS
 
+Version 2.40
+
+* Search expression improvements: Allow parenthesized expressions, "AND"
+  keywords, and "THEN" searches.  "THEN" is the lowest precedence operator.
+  It is like "OR", but can only appear at the top level, and also affects
+  the sort order -- in a search like "a THEN b", the papers matching "a"
+  will appear in the list before the papers matching "b".
+
+* New features: PC member tags appear in user search, PC member tags work
+  in "conflict:" searches, allow searches like "conflict>2", "conflict:me"
+  searches for your own conflicts, allow searches like "5-1".
+
+* Thanks to Geoff Voelker, Stephanie Weirich, Umesh Shankar, Jane-Ellen
+  Long, and Dana Randall.
+
+
 Version 2.39   20.May.2010
 
 * PC member tags.  Each PC member can be associated with a list of tags,
