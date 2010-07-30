@@ -1,6 +1,6 @@
 HotCRP NEWS
 
-Version 2.40
+Version 2.40   30.Jul.2010
 
 * Search expression improvements: Allow parenthesized expressions, "AND"
   keywords, and "THEN" searches.  "THEN" is the lowest precedence operator.
@@ -8,9 +8,16 @@ Version 2.40
   the sort order -- in a search like "a THEN b", the papers matching "a"
   will appear in the list before the papers matching "b".
 
-* New features: PC member tags appear in user search, PC member tags work
-  in "conflict:" searches, allow searches like "conflict>2", "conflict:me"
-  searches for your own conflicts, allow searches like "5-1".
+* New features: PC member tags appear in user search; PC member tags work
+  in "conflict:" searches; allow searches like "conflict>2"; "conflict:me"
+  searches for your own conflicts; allow searches like "5-1".
+
+* Bug fixes: Support Postfix mailers on UNIX; fix formulas (previously,
+  adding a formula appeared to do nothing); paper list sort order does not
+  expose accept/reject status to PC members.
+
+* PC conflict visibility: PC members can see a paper's conflicts if they
+  can see its authors.
 
 * Thanks to Geoff Voelker, Stephanie Weirich, Umesh Shankar, Jane-Ellen
   Long, and Dana Randall.

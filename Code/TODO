@@ -1,3 +1,11 @@
+- it would be really nice if email replies to comments became comments.
+  yes, there is an auth/anti-spam issue.  but you know the emails of the
+  reviewer set.
+
+  all real noc ticketing systems do this.  it's a users' expectation that,
+  if i receive an email and respond to it, the response will have the same
+  level of distribution as the message to which one is responding. [Randy Bush]
+
 - As far as I can tell, after the reviews have been assigned, a PC member
   who then discovers a conflict (e.g., I just hired the author as an
   intern) has no way to get HotCRP to record this.  That is, I can set my
