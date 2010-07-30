@@ -467,23 +467,27 @@ class PaperSearch {
 	$self_search = false;
 	if (!$quoted && ($m[1] == "" || strcasecmp($m[1], "pc") == 0))
 	    $value = array_keys(pcMembers());
-	else if (!$quoted && strcasecmp($m[1], "me") == 0) {
+	else if (!$quoted && strcasecmp($m[1], "me") == 0)
 	    $value = array($this->contactId);
-	    $self_search = true;
-	} else if (!$quoted && count(($pctags = pcTags()))
-	    && isset($pctags[$m[1]])) {
-	    $this->contactmatch[] = "\2contactId" . self::_sqlNumericSet(self::_pcContactIdsWithTag($m[1]), false);
-	    $value = "\1" . (count($this->contactmatch) - 1) . "\1";
-	} else {
+	else if (!$quoted && count(($pctags = pcTags()))
+		 && isset($pctags[$m[1]]))
+	    $value = self::_pcContactIdsWithTag($m[1]);
+	else {
 	    $this->contactmatch[] = sqlq_for_like($word);
 	    $this->contactmatchPC = false;
 	    $value = "\1" . (count($this->contactmatch) - 1) . "\1";
 	}
 
-	$flags = 0;
-	if (!$this->privChair && !$self_search)
-	    $flags |= self::F_PAPERNONBLIND;
-	$qt[] = new SearchTerm("conflict", $flags, array($value, $m[2]));
+	if ($this->privChair
+	    || (is_array($value) && count($value) == 1 && $value[0] == $this->contactId))
+	    $qt[] = new SearchTerm("conflict", 0, array($value, $m[2]));
+	else {
+	    $qt[] = new SearchTerm("conflict", self::F_PAPERNONBLIND, array($value, $m[2]));
+	    if (!is_array($value))
+		$qt[] = new SearchTerm("conflict", 0, array("$value and \3=" . $this->contactId, $m[2]));
+	    else if (in_array($this->contactId, $value))
+		$qt[] = new SearchTerm("conflict", 0, array(array($this->contactId), $m[2]));
+	}
     }
 
     function _searchComment($word, $ctype, &$qt) {
@@ -789,7 +793,7 @@ class PaperSearch {
 	foreach (array("cmt", "aucmt") as $ctype)
 	    if ($special ? $special == $ctype : isset($this->fields[$ctype]))
 		$this->_searchComment($word, $ctype, $qt);
-	if (($special ? $special == "lead" : isset($this->fields['lead']))
+	if (($special ? $special == "lead" : isset($this->fields["lead"]))
 	    && $this->amPC) {
 	    if ($word == "none")
 		$x = "=0";
@@ -1251,7 +1255,7 @@ class PaperSearch {
 		if ($v[0] == "=")
 		    $this->reviewerContact = (int) substr($v, 1);
 		else if ($v[0] == "\1") {
-		    $v = (int) substr($v, 1, strlen($v) - 2);
+		    $v = (int) substr($v, 1, strpos($v, "\1", 1) - 1);
 		    if (count($this->contactmatch[$v]) == 1)
 			$this->reviewerContact = $this->contactmatch[$v][0];
 		}
@@ -1344,7 +1348,7 @@ class PaperSearch {
 	    else
 		$tdef = array("left join", $table, "false");
 	} else if ($value[0] == "\1") {
-	    $tdef = array("left join", $table, "$thistab.$field" . $value);
+	    $tdef = array("left join", $table, str_replace("\3", "$thistab.$field", "\3$value"));
 	} else {
 	    $tdef = array("left join", $table, "$thistab.$field='" . sqlq($value) . "'");
 	}
@@ -1684,7 +1688,7 @@ class PaperSearch {
 		    else if ($expr[0] == '>')
 			$ans = $row->$fieldname > substr($expr, 1);
 		    else if ($expr[0] == "\1")
-			$ans = array_search($row->$fieldname, $this->contactmatch[substr($expr, 1, strlen($expr) - 2)]) !== false;
+			$ans = array_search($row->$fieldname, $this->contactmatch[substr($expr, 1, strpos($expr, "\1", 1) - 1)]) !== false;
 		    else
 			$ans = false;
 		}
