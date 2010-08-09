@@ -753,6 +753,10 @@ class PaperSearch {
 		return $qe;
 	}
 
+	// Treat unquoted "*", "ANY", and "ALL" as special; return true.
+	if ($word == "*" || $word == "ANY" || $word == "ALL")
+	    return new SearchTerm("t");
+
 	$special = null;
 	if (($colon = strpos($word, ':')) !== false) {
 	    $x = substr($word, 0, $colon);
