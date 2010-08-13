@@ -622,7 +622,7 @@ $blind\n";
 		$d = cleannl($this->description[$field]);
 		if (strpbrk($d, "&<") !== false)
 		    $d = self::cleanDescription($d);
-		$x .= wordWrapIndent($d, "==-==    ", "==-==    ") . "\n";
+		$x .= wordWrapIndent($d, "==-==    ", "==-==    ");
 	    }
 	    if ($options && $myReview) {
 		$first = true;
