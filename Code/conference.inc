@@ -489,9 +489,9 @@ class Conference {
 
 	// Check if paper one of the allowed mimetypes.
 	// We prefer to look at data since MacOS browsers get this wrong.
-	if (strncasecmp("%PDF-", $contents, 5) == 0)
+	if (strncmp("%PDF-", $contents, 5) == 0)
 	    $mimetype = "application/pdf";
-	else if (strncasecmp("%!PS-", $contents, 5) == 0)
+	else if (strncmp("%!PS-", $contents, 5) == 0)
 	    $mimetype = "application/postscript";
 	else
 	    $mimetype = defval($_FILES[$uploadId], "type", "application/octet-stream");
@@ -665,6 +665,8 @@ class Conference {
 	header("Content-Description: PHP Generated Data");
 	$name = $this->downloadPaperName($paperId, $mimetype, $documentType);
 	header("Content-Disposition: " . ($saveit ? "attachment" : "inline") . "; filename=$name");
+	// reduce likelihood of XSS attacks in IE
+	header("X-Content-Type-Options: nosniff");
 	if ($compression == 1)
 	    $content = gzinflate($content);
 	if (!$zlib_output_compression)
