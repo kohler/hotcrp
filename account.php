@@ -355,7 +355,7 @@ function databaseTracks($who) {
 function textArrayPapers($pids) {
     global $ConfSiteSuffix;
     $ls = "&amp;list=" . join("+", $pids);
-    return textArrayJoin(preg_replace('/(\d+)/', "<a href='paper$ConfSiteSuffix?p=\$1$ls'>\$1</a>", $pids));
+    return commajoin(preg_replace('/(\d+)/', "<a href='paper$ConfSiteSuffix?p=\$1$ls'>\$1</a>", $pids));
 }
 
 if (isset($_REQUEST["delete"]) && $OK) {
@@ -704,8 +704,8 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
 		$x[] = "commenter for " . pluralx($tracks->comment, "paper") . " " . textArrayPapers($tracks->comment);
 		$y[] = "<strong>permanently delete</strong> " . pluralx($tracks->comment, "this") . " " . pluralx($tracks->comment, "comment");
 	    }
-	    $dialog = "<p>This user is " . textArrayJoin($x) . ".
-  Deleting the user will also " . textArrayJoin($y) . ".</p>";
+	    $dialog = "<p>This user is " . commajoin($x) . ".
+  Deleting the user will also " . commajoin($y) . ".</p>";
 	} else
 	    $dialog = "";
 	$Conf->footerHtml("<div id='popup_d' class='popupc'>

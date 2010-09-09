@@ -709,15 +709,6 @@ function goPaperForm($baseUrl = null, $args = array()) {
     return $x;
 }
 
-function textArrayJoin($arr) {
-    if (count($arr) == 1)
-	return $arr[0];
-    else if (count($arr) == 2)
-	return $arr[0] . " and " . $arr[1];
-    else
-	return join(", ", array_slice($arr, 0, -1)) . ", and " . $arr[count($arr) - 1];
-}
-
 function tempdir($dir, $prefix, $mode = 0700) {
     if (!isset($dir) || !is_dir($dir)) {
 	if (function_exists("sys_get_temp_dir"))
@@ -733,40 +724,6 @@ function tempdir($dir, $prefix, $mode = 0700) {
 	    return $path;
     }
     return false;
-}
-
-
-function pluralx($n, $what) {
-    if (is_array($n))
-	$n = count($n);
-    if ($what == "this")
-	return ($n == 1 ? "this" : "these");
-    else
-	return ($n == 1 ? $what : $what . "s");
-}
-
-function plural($n, $what) {
-    return (is_array($n) ? count($n) : $n) . ' ' . pluralx($n, $what);
-}
-
-function commajoin($what) {
-    $what = array_values($what);
-    $c = count($what);
-    if ($c == 0)
-	return "";
-    else if ($c == 1)
-	return $what[0];
-    else if ($c == 2)
-	return $what[0] . " and " . $what[1];
-    else
-	return join(", ", array_slice($what, 0, -1)) . ", and " . $what[count($what) - 1];
-}
-
-function ordinal($n) {
-    if ($n >= 1 && $n <= 3)
-	return $n . ($n == 1 ? "st" : ($n == 2 ? "nd" : "rd"));
-    else
-	return $n . "th";
 }
 
 
@@ -793,6 +750,40 @@ function commentBlind($crow) {
     return (isset($crow->commentBlind) ? $crow->commentBlind : $crow->blind);
 }
 
+// text helpers
+function commajoin($what) {
+    $what = array_values($what);
+    $c = count($what);
+    if ($c == 0)
+	return "";
+    else if ($c == 1)
+	return $what[0];
+    else if ($c == 2)
+	return $what[0] . " and " . $what[1];
+    else
+	return join(", ", array_slice($what, 0, -1)) . ", and " . $what[count($what) - 1];
+}
+
+function pluralx($n, $what) {
+    if (is_array($n))
+	$n = count($n);
+    if ($what == "this")
+	return ($n == 1 ? "this" : "these");
+    else
+	return ($n == 1 ? $what : $what . "s");
+}
+
+function plural($n, $what) {
+    return (is_array($n) ? count($n) : $n) . ' ' . pluralx($n, $what);
+}
+
+function ordinal($n) {
+    if ($n >= 1 && $n <= 3)
+	return $n . ($n == 1 ? "st" : ($n == 2 ? "nd" : "rd"));
+    else
+	return $n . "th";
+}
+
 function tabLength($text, $all) {
     $len = 0;
     for ($i = 0; $i < strlen($text); $i++)
@@ -805,6 +796,27 @@ function tabLength($text, $all) {
 	else
 	    $len++;
     return $len;
+}
+
+function wordWrapIndent($text, $info, $indent = 18, $totWidth = 75, $rjinfo = true) {
+    if (is_int($indent)) {
+	$indentlen = $indent;
+	$indent = str_pad("", $indent);
+    } else
+	$indentlen = strlen($indent);
+
+    $out = "";
+    while (ctype_space($text[0])) {
+	$out .= $text[0];
+	$text = substr($text, 1);
+    }
+
+    $out .= preg_replace("/^(?!\\Z)/m", $indent, wordwrap($text, $totWidth - $indentlen));
+    if (strlen($info) <= $indentlen) {
+	$info = str_pad($info, $indentlen, " ", ($rjinfo ? STR_PAD_LEFT : STR_PAD_RIGHT));
+	return $info . substr($out, $indentlen);
+    } else
+	return $info . "\n" . $out;
 }
 
 function htmlWrapText($text) {
@@ -866,27 +878,6 @@ function htmlFold($text, $maxWords) {
     $x .= "<span id='fold$fid' class='foldc'><span class='fn'> ... </span><a class='fn' href='javascript:void fold($fid, 0)'>[More]</a><span class='fx'> " . join(" ", array_slice($words, $maxWords)) . " </span><a class='fx' href='javascript:void fold($fid, 1)'>[Less]</a></span>";
 
     return $x;
-}
-
-function wordWrapIndent($text, $info, $indent = 18, $totWidth = 75, $rjinfo = true) {
-    if (is_int($indent)) {
-	$indentlen = $indent;
-	$indent = str_pad("", $indent);
-    } else
-	$indentlen = strlen($indent);
-
-    $out = "";
-    while (ctype_space($text[0])) {
-	$out .= $text[0];
-	$text = substr($text, 1);
-    }
-
-    $out .= preg_replace("/^(?!\\Z)/m", $indent, wordwrap($text, $totWidth - $indentlen));
-    if (strlen($info) <= $indentlen) {
-	$info = str_pad($info, $indentlen, " ", ($rjinfo ? STR_PAD_LEFT : STR_PAD_RIGHT));
-	return $info . substr($out, $indentlen);
-    } else
-	return $info . "\n" . $out;
 }
 
 function ini_get_bytes($varname) {

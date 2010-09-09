@@ -299,7 +299,7 @@ class ReviewForm {
 		$nokfields++;
 	}
 	if (isset($missing) && $tf)
-	    self::tfError($tf, false, textArrayJoin($missing) . " " . pluralx($missing, "field") . " missing from form.  Preserving any existing values.");
+	    self::tfError($tf, false, commajoin($missing) . " " . pluralx($missing, "field") . " missing from form.  Preserving any existing values.");
 	if ($rrow && defval($rrow, "reviewEditVersion", 0) > defval($req, "version", 0)
 	    && $nokfields > 0 && $tf && isset($tf["text"])) {
 	    self::tfError($tf, true, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line &ldquo;<code>==+==&nbsp;Version&nbsp;" . $rrow->reviewEditVersion . "</code>&rdquo; to your offline review form for paper #" . $req["paperId"] . " and upload the form again.");
@@ -318,7 +318,7 @@ class ReviewForm {
 	    else {
 		foreach ($outofrange as $field)
 		    $oor2[] = htmlspecialchars($this->shortName[$field]);
-		$Conf->errorMsg("Bad values for " . textArrayJoin($oor2) . ".  Please fix this and submit again.");
+		$Conf->errorMsg("Bad values for " . commajoin($oor2) . ".  Please fix this and submit again.");
 	    }
 	    return 0;
 	}
@@ -327,7 +327,7 @@ class ReviewForm {
 	    return 0;
 	}
 	if (isset($provide)) {
-	    $w = "This review is still not ready for others to see because you did not set some mandatory fields.  Please set " . htmlspecialchars(textArrayJoin($provide)) . " and submit again.";
+	    $w = "This review is still not ready for others to see because you did not set some mandatory fields.  Please set " . htmlspecialchars(commajoin($provide)) . " and submit again.";
 	    if ($tf)
 		self::tfError($tf, false, $w);
 	    else
@@ -890,7 +890,7 @@ $blind\n";
 
 	if (isset($tf["ignoredBlank"]) && count($tf["ignoredBlank"]) > 0) {
 	    unset($tf["paperId"]);
-	    self::tfError($tf, false, "Ignored blank " . pluralx(count($tf["ignoredBlank"]), "review form") . " for " . pluralx(count($tf["ignoredBlank"]), "paper") . " " . textArrayJoin($tf["ignoredBlank"]) . ".");
+	    self::tfError($tf, false, "Ignored blank " . pluralx(count($tf["ignoredBlank"]), "review form") . " for " . pluralx(count($tf["ignoredBlank"]), "paper") . " " . commajoin($tf["ignoredBlank"]) . ".");
 	}
 	if (count($tf['err']) > 0) {
 	    $Conf->msg("There were " . (defval($tf, 'anyErrors') && defval($tf, 'anyWarnings') ? "errors and warnings" : (defval($tf, 'anyErrors') ? "errors" : "warnings")) . " while parsing the uploaded reviews file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf['err']) . "</p></div>",

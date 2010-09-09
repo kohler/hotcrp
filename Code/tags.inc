@@ -424,7 +424,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
 	    $vtext[] = "<a href=\"search$ConfSiteSuffix?q=rorder:$k&amp;showtags=1\">" . htmlspecialchars($k) . "</a>";
 	    $q .= ($q === "" ? "" : "+") . "rorder:$k";
 	}
-	defappend($Error["tags"], "You exhausted your vote allotment for " . textArrayJoin($vtext) . ".  You may want to change <a href=\"search$ConfSiteSuffix?q=$q&amp;showtags=1\">your other votes</a> and try again.<br />\n");
+	defappend($Error["tags"], "You exhausted your vote allotment for " . commajoin($vtext) . ".  You may want to change <a href=\"search$ConfSiteSuffix?q=$q&amp;showtags=1\">your other votes</a> and try again.<br />\n");
     }
 
     $modeexplanation = array("so" => "define order", "ao" => "add to order", "sos" => "define gapless order", "aos" => "add to gapless order", "d" => "remove", "da" => "clear twiddle", "s" => "define", "a" => "add", "p" => "set");

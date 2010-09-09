@@ -546,7 +546,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    if (count($a) > 0) {
 		echo "<div class='hint g'>\nOther reviewers ",
 		    "<a href='help$ConfSiteSuffix?t=revrate' title='What is this?'>rated</a> ",
-		    textArrayJoin($a);
+		    commajoin($a);
 		if (count($a) > 1)
 		    echo " (these sets might overlap)";
 		echo ".</div>\n";
@@ -560,7 +560,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 		    $a[] = "<a href=\"search$ConfSiteSuffix?q=rate:%22" . urlencode($ratingTypes[$row[0]]) . "%22\" title='List rated reviews'>$row[1] &ldquo;" . htmlspecialchars($ratingTypes[$row[0]]) . "&rdquo; " . pluralx($row[1], "rating") . "</a>";
 	    if (count($a) > 0) {
 		echo "<div class='hint g'>\nYour reviews have received ",
-		    textArrayJoin($a);
+		    commajoin($a);
 		if (count($a) > 1)
 		    echo " (these sets might overlap)";
 		echo ".<a class='help' href='help$ConfSiteSuffix?t=revrate' title='About ratings'>?</a></div>\n";
