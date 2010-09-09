@@ -750,6 +750,79 @@ function commentBlind($crow) {
     return (isset($crow->commentBlind) ? $crow->commentBlind : $crow->blind);
 }
 
+// watch functions
+function setReviewInfo($dst, $src) {
+    $dst->myReviewType = $src->myReviewType;
+    $dst->myReviewSubmitted = $src->myReviewSubmitted;
+    $dst->myReviewNeedsSubmit = $src->myReviewNeedsSubmit;
+    $dst->conflictType = $src->conflictType;
+}
+
+function saveWatchPreference($paperId, $contactId, $watchtype, $on) {
+    global $Conf, $OK;
+    $explicit = ($watchtype << WATCHSHIFT_EXPLICIT);
+    $selected = ($watchtype << WATCHSHIFT_NORMAL);
+    $onvalue = $explicit | ($on ? $selected : 0);
+    $Conf->qe("insert into PaperWatch (paperId, contactId, watch)
+		values ($paperId, $contactId, $onvalue)
+		on duplicate key update watch = (watch & ~" . ($explicit | $selected) . ") | $onvalue",
+	      "while saving email notification preference");
+    return $OK;
+}
+
+function genericWatch($prow, $watchtype, $callback) {
+    global $Conf, $Me;
+
+    $q = "select ContactInfo.contactId, firstName, lastName, email,
+		password, roles, defaultWatch,
+		reviewType as myReviewType,
+		reviewSubmitted as myReviewSubmitted,
+		reviewNeedsSubmit as myReviewNeedsSubmit,
+		conflictType, watch";
+    if ($Conf->sversion >= 25)
+	$q .= ", preferredEmail";
+
+    $q .= "\nfrom ContactInfo
+		left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId)
+		left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId)
+		left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId)
+		left join PaperComment on (PaperComment.paperId=$prow->paperId and PaperComment.contactId=ContactInfo.contactId)\n";
+
+    $q .= "where watch is not null"
+	. " or conflictType>=" . CONFLICT_AUTHOR
+	. " or reviewType is not null or commentId is not null"
+	. " or (defaultWatch & " . ($watchtype << WATCHSHIFT_ALL) . ")!=0";
+
+    // save review information since we modify $prow
+    $saveProw = (object) null;
+    setReviewInfo($saveProw, $prow);
+
+    $lastContactId = 0;
+    $result = $Conf->qe($q, "while processing email notifications");
+    while (($row = edb_orow($result))) {
+	if ($row->contactId == $lastContactId
+	    || $row->contactId == $Me->contactId)
+	    continue;
+	$lastContactId = $row->contactId;
+
+	if ($row->watch
+	    && ($row->watch & ($watchtype << WATCHSHIFT_EXPLICIT))) {
+	    if (!($row->watch & ($watchtype << WATCHSHIFT_NORMAL)))
+		continue;
+	} else {
+	    if (!($row->defaultWatch & (($watchtype << WATCHSHIFT_NORMAL) | ($watchtype << WATCHSHIFT_ALL))))
+		continue;
+	}
+
+	$minic = Contact::makeMinicontact($row);
+	setReviewInfo($prow, $row);
+	$callback($prow, $minic);
+    }
+
+    setReviewInfo($prow, $saveProw);
+}
+
+
 // text helpers
 function commajoin($what) {
     $what = array_values($what);

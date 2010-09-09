@@ -70,11 +70,7 @@ if (isset($_REQUEST['setwatch']) && $prow) {
     if (!$Me->privChair
 	|| ($contactId = rcvtint($_REQUEST["contactId"])) <= 0)
 	$contactId = $Me->contactId;
-    if (defval($_REQUEST, 'watch'))
-	$q = "insert into PaperWatch (paperId, contactId, watch) values ($prow->paperId, $contactId, " . (WATCH_COMMENTSET | WATCH_COMMENT) . ") on duplicate key update watch = watch | " . (WATCH_COMMENTSET | WATCH_COMMENT);
-    else
-	$q = "insert into PaperWatch (paperId, contactId, watch) values ($prow->paperId, $contactId, " . WATCH_COMMENTSET . ") on duplicate key update watch = (watch | " . WATCH_COMMENTSET . ") & " . (~WATCH_COMMENT & 127);
-    $Conf->qe($q, "while saving watch preference");
+    saveWatchPreference($prow->paperId, $contactId, WATCHTYPE_COMMENT, defval($_REQUEST, "watch"));
     if ($OK)
 	$Conf->confirmMsg("Saved");
     if ($ajax)
@@ -83,65 +79,23 @@ if (isset($_REQUEST['setwatch']) && $prow) {
 
 
 // send watch messages
-function setReviewInfo($dst, $src) {
-    $dst->myReviewType = $src->myReviewType;
-    $dst->myReviewSubmitted = $src->myReviewSubmitted;
-    $dst->myReviewNeedsSubmit = $src->myReviewNeedsSubmit;
-    $dst->conflictType = $src->conflictType;
+function comment_watch_callback($prow, $minic) {
+    global $Me, $savedCrow;
+    $tmpl = ($savedCrow->forAuthors > 1 ? "@responsenotify" : "@commentnotify");
+    if ($minic->canViewComment($prow, $savedCrow)) {
+	require_once("Code/mailtemplate.inc");
+	Mailer::send($tmpl, $prow, $minic, null, array("commentId" => $savedCrow->commentId));
+    }
 }
 
 function watch() {
     global $Conf, $Me, $prow, $savedCrow;
-
     $apo = $Conf->sversion;
-    if ($apo < 6 || !$savedCrow)
+    if ($apo < 6 || !$savedCrow
+	// ignore changes to a comment within 3 hours (see saveComment())
+	|| ($apo >= 21 && $savedCrow->timeNotified != $savedCrow->timeModified))
 	return;
-
-    // ignore changes to a comment within 3 hours (see saveComment())
-    if ($apo >= 21 && $savedCrow->timeNotified != $savedCrow->timeModified)
-	return;
-
-    $qa = ($apo >= 25 ? ", preferredEmail" : "");
-    $result = $Conf->qe("select ContactInfo.contactId,
-		firstName, lastName, email$qa, password, roles, defaultWatch,
-		reviewType as myReviewType,
-		reviewSubmitted as myReviewSubmitted,
-		reviewNeedsSubmit as myReviewNeedsSubmit,
-		commentId, conflictType, watch
-		from ContactInfo
-		left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId)
-		left join PaperComment on (PaperComment.paperId=$prow->paperId and PaperComment.contactId=ContactInfo.contactId)
-		left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId)
-		left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId)
-		where conflictType>=" . CONFLICT_AUTHOR . " or reviewType is not null or watch is not null or commentId is not null or (defaultWatch & " . WATCH_ALLCOMMENTS . ")!=0");
-
-    $saveProw = (object) null;
-    $lastContactId = 0;
-    setReviewInfo($saveProw, $prow);
-    $tmpl = ($savedCrow->forAuthors > 1 ? "@responsenotify" : "@commentnotify");
-
-    while (($row = edb_orow($result))) {
-	if ($row->contactId == $lastContactId)
-	    continue;
-	$lastContactId = $row->contactId;
-	if ($row->watch & WATCH_COMMENTSET) {
-	    if (!($row->watch & WATCH_COMMENT))
-		continue;
-	} else {
-	    if (!($row->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)))
-		continue;
-	}
-
-	$minic = Contact::makeMinicontact($row);
-	setReviewInfo($prow, $row);
-	if ($minic->canViewComment($prow, $savedCrow)
-	    && $minic->contactId != $Me->contactId) {
-	    require_once("Code/mailtemplate.inc");
-	    Mailer::send($tmpl, $prow, $minic, null, array("commentId" => $savedCrow->commentId));
-	}
-    }
-
-    setReviewInfo($prow, $saveProw);
+    genericWatch($prow, WATCHTYPE_COMMENT, "comment_watch_callback");
 }
 
 

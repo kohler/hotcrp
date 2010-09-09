@@ -21,9 +21,17 @@ define("CONFLICT_CONTACTAUTHOR", 10);
 
 define("TAG_MAXLEN", 40);
 
-define("WATCH_COMMENTSET", 1);
-define("WATCH_COMMENT", 2);
-define("WATCH_ALLCOMMENTS", 4);
+// User explicitly set notification preference (only in PaperWatch.watch)
+define("WATCHSHIFT_EXPLICIT", 0);
+// Notify if author, reviewer, commenter
+define("WATCHSHIFT_NORMAL", 1);
+// Always notify (only in ContactInfo.defaultWatch, generally admin only)
+define("WATCHSHIFT_ALL", 2);
+
+define("WATCHTYPE_COMMENT", 1);
+define("WATCH_COMMENTSET", WATCHTYPE_COMMENT << WATCHSHIFT_EXPLICIT);
+define("WATCH_COMMENT", WATCHTYPE_COMMENT << WATCHSHIFT_NORMAL);
+define("WATCH_ALLCOMMENTS", WATCHTYPE_COMMENT << WATCHSHIFT_ALL);
 
 define("REV_RATINGS_PC", 0);
 define("REV_RATINGS_PC_EXTERNAL", 1);
