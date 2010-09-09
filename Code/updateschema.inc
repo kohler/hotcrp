@@ -193,6 +193,11 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table ContactInfo add `contactTags` text")
 	&& $Conf->q("update Settings set value=35 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 35;
+    if ($Conf->settings["allowPaperOption"] == 35
+	&& $Conf->q("alter table ContactInfo modify `defaultWatch` int(11) NOT NULL default '2'")
+	&& $Conf->q("alter table PaperWatch modify `watch` int(11) NOT NULL default '0'")
+	&& $Conf->q("update Settings set value=36 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 36;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

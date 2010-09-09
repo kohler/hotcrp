@@ -72,7 +72,7 @@ CREATE TABLE `ContactInfo` (
   `collaborators` mediumtext,
   `creationTime` int(11) NOT NULL default '0',
   `lastLogin` int(11) NOT NULL default '0',
-  `defaultWatch` tinyint(1) NOT NULL default '2',
+  `defaultWatch` int(11) NOT NULL default '2',
   `roles` tinyint(1) NOT NULL default '0',
   `contactTags` text,
   PRIMARY KEY  (`contactId`),
@@ -400,7 +400,7 @@ DROP TABLE IF EXISTS `PaperWatch`;
 CREATE TABLE `PaperWatch` (
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
-  `watch` tinyint(1) NOT NULL default '0',
+  `watch` int(11) NOT NULL default '0',
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
   UNIQUE KEY `contactPaperWatch` (`contactId`,`paperId`,`watch`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -505,7 +505,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 35);
+insert into Settings (name, value) values ('allowPaperOption', 36);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags
