@@ -183,12 +183,15 @@ function createUser(&$tf, $newProfile) {
 	if (isset($_REQUEST[$v]))
 	    $Acct->$v = $_REQUEST[$v];
     $Acct->defaultWatch = 0;
-    if (isset($_REQUEST["watchcomment"])) {
+    if (isset($_REQUEST["watchcomment"]) || isset($_REQUEST["watchcommentall"])) {
 	$Acct->defaultWatch |= WATCH_COMMENT;
 	if (($Acct->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR))
-	    && defval($_REQUEST, "watchcommenttype", "ar") == "all")
+	    && isset($_REQUEST["watchcommentall"]))
 	    $Acct->defaultWatch |= WATCH_ALLCOMMENTS;
     }
+    if (isset($_REQUEST["watchfinalall"])
+	&& ($Acct->roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)))
+	$Acct->defaultWatch |= (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL);
     $newTags = ($Me->privChair ? null : $Acct->contactTags);
     if (($Acct->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR))
 	&& $Me->privChair
@@ -313,6 +316,8 @@ if (isset($_REQUEST["register"]) && $newProfile
 	    $Conf->confirmMsg("Account profile updated.");
 	if (isset($_REQUEST["redirect"]))
 	    $Me->go("index$ConfSiteSuffix");
+	else
+	    redirectSelf();
     }
 }
 
@@ -582,14 +587,20 @@ echo "</div></td>\n</tr>\n\n";
 
 if ($Conf->sversion >= 6) {
     echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n\n",
-	"<tr><td class='caption'>Email notification</td><td class='entry'>",
-	tagg_checkbox_h("watchcomment", WATCH_COMMENT, $Acct->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)),
-	"&nbsp;";
-    if ((!$newProfile && $Acct->isPC) || $Me->privChair)
-	echo tagg_label("Send mail when new comments are available for"),
-	    " &nbsp;", tagg_select("watchcommenttype", array("ar" => "authored or reviewed papers", "all" => "any paper"), ($Acct->defaultWatch & WATCH_ALLCOMMENTS ? "all" : "ar"), array("onchange" => "hiliter(this)"));
-    else
-	echo tagg_label("Send mail when new comments are available for authored or reviewed papers");
+	"<tr><td class='caption'>Email notification</td><td class='entry'>";
+    if ((!$newProfile && $Acct->isPC) || $Me->privChair) {
+	echo "<table><tr><td>Send mail on: &nbsp;</td>",
+	    "<td>", tagg_checkbox_h("watchcomment", 1, $Acct->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)), "&nbsp;",
+	    tagg_label("New comments for authored or reviewed papers"), "</td></tr>",
+	    "<tr><td></td><td>", tagg_checkbox_h("watchcommentall", 1, $Acct->defaultWatch & WATCH_ALLCOMMENTS), "&nbsp;",
+	    tagg_label("New comments for <i>any</i> paper"), "</td></tr>";
+	if ($Me->privChair)
+	    echo "<tr><td></td><td>", tagg_checkbox_h("watchfinalall", 1, $Acct->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL)), "&nbsp;",
+		tagg_label("Updates to final versions"), "</td></tr>";
+	echo "</table>";
+    } else
+	echo tagg_checkbox_h("watchcomment", WATCH_COMMENT, $Acct->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)), "&nbsp;",
+	    tagg_label("Send mail on new comments for authored or reviewed papers");
     echo "</td></tr>\n\n";
 }
 

@@ -312,6 +312,16 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 %COMMENTS%\n"),
 
+     "finalsubmitnotify" =>
+     array("subject" => "[%CONFSHORTNAME%] Updated final paper #%NUMBER% %TITLEHINT%",
+	   "body" => "The final version for %CONFNAME% paper #%NUMBER% has been updated.  The authors may still be able make updates; for the most up-to-date version, or to turn off notification emails, see the paper site.
+
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+- %CONFSHORTNAME% Submissions\n"),
+
      "genericmailtool" =>
      array("mailtool_name" => "Generic",
 	   "mailtool_pc" => true,

@@ -80,7 +80,7 @@ if (isset($_REQUEST['setwatch']) && $prow) {
 
 // send watch messages
 function comment_watch_callback($prow, $minic) {
-    global $Me, $savedCrow;
+    global $savedCrow;
     $tmpl = ($savedCrow->forAuthors > 1 ? "@responsenotify" : "@commentnotify");
     if ($minic->canViewComment($prow, $savedCrow)) {
 	require_once("Code/mailtemplate.inc");

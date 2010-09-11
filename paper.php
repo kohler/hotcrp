@@ -244,6 +244,14 @@ function uploadOption($o) {
 	$Error["opt$o->optionId"] = 1;
 }
 
+// send watch messages
+function final_submit_watch_callback($prow, $minic) {
+    if ($minic->canViewPaper($prow)) {
+	require_once("Code/mailtemplate.inc");
+	Mailer::send("@finalsubmitnotify", $prow, $minic);
+    }
+}
+
 function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     global $ConfSiteSuffix, $paperId, $newPaper, $Error, $Conf, $Opt, $prow;
     $contactId = $Me->contactId;
@@ -558,6 +566,10 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    $options["notes"] = preg_replace("|</?strong>|", "", $notes) . "\n\n";
 	Mailer::sendContactAuthors($template, $prow, null, $options);
     }
+
+    // other mail confirmations
+    if ($isSubmitFinal && $Conf->sversion >= 36)
+	genericWatch($prow, WATCHTYPE_FINAL_SUBMIT, "final_submit_watch_callback");
 
     $Conf->log($actiontext, $Me, $paperId);
     redirectSelf();

@@ -28,10 +28,12 @@ define("WATCHSHIFT_NORMAL", 1);
 // Always notify (only in ContactInfo.defaultWatch, generally admin only)
 define("WATCHSHIFT_ALL", 2);
 
-define("WATCHTYPE_COMMENT", 1);
+define("WATCHTYPE_COMMENT", (1 << 0));
 define("WATCH_COMMENTSET", WATCHTYPE_COMMENT << WATCHSHIFT_EXPLICIT);
 define("WATCH_COMMENT", WATCHTYPE_COMMENT << WATCHSHIFT_NORMAL);
 define("WATCH_ALLCOMMENTS", WATCHTYPE_COMMENT << WATCHSHIFT_ALL);
+
+define("WATCHTYPE_FINAL_SUBMIT", (1 << 3));
 
 define("REV_RATINGS_PC", 0);
 define("REV_RATINGS_PC_EXTERNAL", 1);
